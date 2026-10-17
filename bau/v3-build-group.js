@@ -1,0 +1,83 @@
+export const meta = {
+  name: 'synquenzer-v3-group',
+  description: 'Build one group of SYNQUENZER v3 packages (spec v3 §17): each package built + tested + verified + fixed, then a group regression round',
+  phases: [
+    { title: 'Build', detail: 'one package at a time' },
+    { title: 'Test', detail: 'lens testers with Playwright' },
+    { title: 'Verify', detail: 'reproduce each finding' },
+    { title: 'Fix', detail: 'apply confirmed fixes' },
+  ],
+}
+const P = args.paths
+const PACKAGES = args.packages
+const GROUP = args.group
+
+const ENV = `
+ENVIRONMENT
+- The app (single self-contained HTML, edit in place): ${P.app}
+- It lives in a git worktree on branch dirigent-synth (${P.wt}). Do NOT commit or push; the orchestrator does that.
+- Spec v3 (authoritative for this build; read §0, §1, §16, §17 and every chapter your package references): ${P.spec3}
+- Spec v3 NACHTRAG (binding amendments, has priority over spec v3 where they differ; read the part for your package): ${P.nachtrag}
+- Spec v2 (background for existing features): ${P.spec2}
+- Latest user feedback that motivated v3 (German): ${P.feedback} and ${P.feedback2}
+- Snapshots dir (copy the app here after each finished package as <package>.html, e.g. V0a.html): ${P.snap}
+- Test harness dir: ${P.test} - playwright is installed there. Launch Chromium ONLY with chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args:['--autoplay-policy=no-user-gesture-required'] }). Never run "playwright install". Smoke test: node ${P.test}/smoke.mjs <file> <png>. Put your own test scripts in ${P.test} with unique names (prefix v3-). Never write files into /home/user/Deutsch-Mit-Xander.
+- The page runs (a) standalone in iPhone Safari and (b) inside the claude.ai artifact viewer (sandboxed iframe): no alert/confirm/prompt, no plain downloads there (window.claude.use('downloads') -> save({filename,data}); allowed types per downloads.d.ts and Nachtrag EN-12 - .mid and .syx must go into a store-only .zip), localStorage/IndexedDB may throw (try/catch, app must still work), no microphone.
+- Audible-effect rule: every control you add must change the sound measurably (use OfflineAudioContext or an AnalyserNode capture and assert dB/spectrum deltas as the spec demands). Nothing may click, snap or drop out.
+`
+
+const FINDINGS = { type: 'object', properties: { findings: { type: 'array', items: { type: 'object', properties: {
+  title: { type: 'string' }, severity: { type: 'string', enum: ['critical', 'major', 'minor'] },
+  repro: { type: 'string' }, expected: { type: 'string' }, actual: { type: 'string' },
+}, required: ['title', 'severity', 'repro', 'expected', 'actual'] } } }, required: ['findings'] }
+const VERDICT = { type: 'object', properties: { real: { type: 'boolean' }, evidence: { type: 'string' } }, required: ['real', 'evidence'] }
+
+async function testVerifyFix(tag, lenses, extra) {
+  const results = await pipeline(lenses,
+    l => agent(`You are a strict QA tester (lens: ${l.key}) for the SYNQUENZER web app. ${l.prompt}
+${extra}
+${ENV}
+Write and RUN real tests (Playwright/node) - do not guess. Report only genuine defects or clear violations of the spec's acceptance checklists that you actually observed, with exact repro. Ignore features that belong to later packages of spec v3 §17 that are not built yet. Return an empty list if everything is fine.`, { label: `test:${tag}:${l.key}`, phase: 'Test', schema: FINDINGS }),
+    (res, l) => parallel((res?.findings || []).map(f => () =>
+      agent(`Independently try to REPRODUCE this reported defect in the SYNQUENZER app at ${P.app} (spec ${P.spec3}). Default to real=false if you cannot reproduce it with an actual run or if it is not a genuine problem for the user.
+Finding: ${JSON.stringify(f)}
+${ENV}`, { label: `verify:${tag}:${f.title.slice(0, 28)}`, phase: 'Verify', schema: VERDICT })
+        .then(v => v && v.real ? Object.assign({}, f, { lens: l.key, evidence: v.evidence }) : null))))
+  const confirmed = results.flat().filter(Boolean)
+  log(`${tag}: ${confirmed.length} bestätigte Fehler`)
+  if (confirmed.length) await fixAll(tag, confirmed)
+  return confirmed
+}
+
+function fixAll(tag, confirmed) {
+  return agent(`Fix ALL of these confirmed defects in the SYNQUENZER app at ${P.app} (spec ${P.spec3}). RESTART SAFETY: if ${P.snap}/${tag}-fix.html already exists, check which defects are already fixed and finish only the rest. Re-run each repro afterwards to prove it is fixed (layout checks must use the app's real font, not a fallback), then run the smoke test. Do not break other features. Afterwards copy the app to ${P.snap}/${tag}-fix.html.
+${ENV}
+DEFECTS: ${typeof confirmed === 'string' ? 'read the JSON list in ' + confirmed : JSON.stringify(confirmed)}
+Return a list of what you changed.`, { label: `fix:${tag}`, phase: 'Fix', effort: 'high' })
+}
+
+if (args.pendingFix && args.pendingFix.defectsFile) {
+  phase('Fix')
+  log(`Offene Fehler aus ${args.pendingFix.tag} beheben`)
+  await fixAll(args.pendingFix.tag, args.pendingFix.defectsFile)
+}
+
+for (const wp of PACKAGES) {
+  phase('Build')
+  log(`Baue ${wp}`)
+  const summary = await agent(`Implement package ${wp} of the SYNQUENZER v3 spec (${P.spec3} §17 "${wp}", plus every chapter it references, plus all amendments to ${wp} in the Nachtrag ${P.nachtrag}; if ${wp} is defined only in the Nachtrag, use that definition) in the app ${P.app}. Packages run in the group order of the Nachtrag; earlier groups are already in the app.
+${ENV}
+RESTART SAFETY: first check whether ${P.snap}/${wp}.html already exists and the app already contains this package (e.g. after a container restart). If so, do NOT rebuild: re-verify its acceptance checklist, finish only what is missing, and refresh the snapshot. If you find half-done work from an interrupted attempt, either complete it or cleanly revert it.
+Rules: keep everything that already works (v1/v2 features, harmony core, logo, test API window.SYNQUENZER, old project files load); leave the app working after your package; follow the spec's UI layouts for portrait 390x844, 375x667, 320x568 and landscape 844x390 / 667x375; German UI; big touch targets; simple first, depth optional; no accidental edits; performance on iPhone. When done, run the package's ABNAHME checklist (IDs ${wp}-NN) yourself with real Playwright/audio tests and fix what fails, run the smoke test, look at screenshots in portrait and landscape and fix layout problems, append a section to ${P.scratch}/CHANGES-V3.md, then copy the app to ${P.snap}/${wp}.html. Return a concise summary: what you built, deviations from the spec, known gaps.`, { label: `build:${wp}`, phase: 'Build', effort: 'max' })
+  await testVerifyFix(wp, [
+    { key: 'acceptance', prompt: `Check the ABNAHME checklist of ${wp} in ${P.spec3} §17 item by item, plus every N-point the Nachtrag ${P.nachtrag} adds to ${wp} (measure audible effects where required).` },
+    { key: 'regression', prompt: `Regression check after ${wp}: core still works - record a clip, FANG, launch scenes, transpose with single notes and chords, stop single clips, drums play, synth editor and FM page work, save/load (also an old v2 project file), MIDI export zip; no console errors; portrait and landscape layout intact, nothing clipped or overlapping.` },
+  ], `Package under test: ${wp}. Builder summary: ${(summary || '').slice(0, 3000)}`)
+}
+
+const GROUPCHECK = [
+  { key: 'user-flow', prompt: `USER FLOW (think like Xander, a synthpop musician on an iPhone, no theory): try the typical songwriting flow end to end with the features of group ${GROUP} (see ${P.feedback} for what he wants). Report anything confusing, hidden, too many steps, inaudible, or broken.` },
+  { key: 'stability', prompt: `STABILITY & AUDIO: long playback (3+ min) with all tracks, scene switches, edits while playing; no clicks/dropouts, no stuck notes, no console errors, CPU badge sane; undo/redo of every new action; save/load roundtrip of a project using the new features.` },
+]
+const c = await testVerifyFix(GROUP + '-gruppe', GROUPCHECK, `Group regression after packages ${PACKAGES.join(', ')}.`)
+return { group: GROUP, packages: PACKAGES, groupDefects: c.length }
