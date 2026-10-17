@@ -283,7 +283,9 @@ svg{display:block}
 #carVal{font:700 30px/1 var(--font-ui);color:var(--amber);letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;min-width:0;filter:drop-shadow(0 0 6px var(--amber-glow))}
 #carVal.orig{color:var(--text-dim);font-size:20px;letter-spacing:.06em;filter:none}
 #carShift{font:700 16px/1 var(--font-num);color:var(--amber);flex:none}
-#carTgt{font:600 11px/1.2 var(--font-ui);color:var(--amber);opacity:.85;letter-spacing:.01em;flex:0 1000 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#carTgt{font:600 11px/1.2 var(--font-ui);color:var(--amber);opacity:.85;letter-spacing:.01em;flex:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#readout .l1 #carTgt{font-size:10px;line-height:1.1}   /* V0a fix: no room next to the chord name -> the target key moves up to the label line */
+#carVal.fit{flex:none}
 #carTgt:empty{display:none}
 #carShift.deg{font:600 12px/1.2 var(--font-ui);letter-spacing:.01em;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #carShift.own{font:600 9px/1.1 var(--font-ui);letter-spacing:.02em;text-transform:uppercase;color:var(--amber);opacity:.85;flex:1 1 0;min-width:0;white-space:normal;align-self:center}
@@ -2102,6 +2104,8 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 #bCpu{color:var(--amber);border-color:#6b4c16;font-size:9px;letter-spacing:.1em;min-width:40px}
 #bCpu[hidden]{display:none!important}
 .takt .lbl.cpul{color:var(--amber);font-weight:700;letter-spacing:.02em}
+/* V0a fix K-14: in the fixed 76 px portrait box the bold „CPU n“ must not be wider than „Takt“, or it pushes the 4th beat LED out */
+@media (orientation:portrait){ .takt .lbl.cpul{font-size:8px;letter-spacing:0} }
 @media (orientation:portrait) and (max-width:359px){
   .pg.pg-fxg{gap:2px 4px}
   .pg-fxg>.lgrp.fxrow>.lbl,.pg-fx-master>.fxmode .lgrp>.lbl{min-width:0}
@@ -4262,8 +4266,10 @@ const RecHelpers = (() => {
       V.rowH = clamp(V.rowH, 16, 48);
       V.top = clamp(V.top, 0, Math.max(0, V.rows.length - V.H / V.rowH));
       if (V.freeze) return;                                         // length handle in use: the view stays as it was at the touch (K-05)
-      V.ppb = clamp(V.ppb, V.W / Math.max(4, L() + 4), 400);
-      V.x0 = clamp(V.x0, -.25, Math.max(0, L() + 4 - V.W / V.ppb)); // ≥ 1 bar of room behind the clip end
+      // widest view: ≥ 1 bar of room behind the clip end, and at least the 12 % of ⤢ (long clips: L/.88 > L+4, V0a fix K-05)
+      const span = Math.max(4, L() + 4, L() / FITK);
+      V.ppb = clamp(V.ppb, V.W / span, 400);
+      V.x0 = clamp(V.x0, -.25, Math.max(0, span - V.W / V.ppb));
     }
     function noteRect(nt) { const r = rowOfNote(nt.n); return {x: xOf(nt.t), y: yOfRow(r), w: Math.max(3, nt.d * V.ppb), h: V.rowH}; }
     // generous hit-test: rows get 4 px of slop, tiny notes are at least 22 px wide to the finger
@@ -6272,10 +6278,13 @@ const RecHelpers = (() => {
     else { trim.connect(fA); if (fB) { fA.connect(fB); fB.connect(vca); } else fA.connect(vca); }
     vca.connect(post);
     let out = post;
+    // V0a-19 fix: o.natTrim = the measured level residual of an unedited factory VA sound (linear, see nativeTrim in the app)
+    const nt = o.natTrim > 0 && Math.abs(o.natTrim - 1) > 1e-4 ? o.natTrim : 1;
     // o.unity (WP7, FM6): the mono DX voice leaves stereo with the worklet's pan law (sqrt(1 -/+ pan): unity in the centre),
     // so the native fallback is as loud as the worklet whether or not the track chain carries a stereo source
     if ((o.pan || o.unity) && c.createStereoPanner) { const pn = c.createStereoPanner(); pn.pan.value = Math.max(-1, Math.min(1, o.pan || 0)); nodes.push(pn);
-      if (o.unity) { const k = G_(Math.SQRT2); post.connect(k); k.connect(pn); } else post.connect(pn); out = pn; }
+      if (o.unity || nt !== 1) { const k = G_((o.unity ? Math.SQRT2 : 1) * nt); post.connect(k); k.connect(pn); } else post.connect(pn); out = pn; }
+    else if (nt !== 1) { const k = G_(nt); post.connect(k); out = k; }
     out.connect(dest);
     return {nodes, srcs, vca, post, fenvSrc: fe, fenvGain, ktGain, fA, fB, trim, shaped: T.shaped, peak: peakFor(P, vel), base};
   }
@@ -9112,6 +9121,33 @@ function spawnWkVoice(i, out, vel, t0, o, E, snd) {
 function wkVoiceDead(v) { if (v.dead) return; v.dead = true; v.E.proxies.delete(v.id); const k = VOICES.indexOf(v); if (k >= 0) VOICES.splice(k, 1); }
 // pan spread (Streuung): alternate voices left / right by the spread amount (native stand-in for the voice pan of the core)
 function voicePan(A, P) { if (!(P.spread > .01)) return 0; A.panIdx = ((A.panIdx || 0) + 1) % 4; return [-.9, .9, -.45, .45][A.panIdx] * P.spread; }
+/* V0a-19 fix (K-17): the native VA fallback cannot play every worklet route (§v2-9.5: vel→cutoff, menv→pitch, lfo→res …) nor the
+   ladder's saturation near self-oscillation. For the factory VA sounds the remaining level difference is measured (preview
+   phrase, dry, mean of 4 phrases per path, v3-v0afix-native.mjs) and evened out here, in dB to add on the native path. It
+   applies only while the sound's tone settings are the factory ones (level, pan, spread, glide and fx may change): an edited
+   sound falls back to the general calibration (trimFor), it never gets a correction measured for another sound. */
+const NATIVE_TRIM_DB = {          // −(native − worklet), pooled over three independent runs of 3–4 phrases each
+  'f-nass-quietsch': -5.2,          // LP24 res .97 + lfo1→res: the linear biquad lifts the 24th partial, the ladder saturates
+  'f-tropfen': 3.05,                // BP24 res .99 + menv→pitch (the 8-semitone „plop“ the native path does not play)
+  'f-pfeif-lead': -1.8, 'f-gummi-bass': 1.4, 'f-moog-bass': 1.3, 'f-acid-303': -1.15, 'f-poly-stab': .85, 'f-moroder-puls': -1,
+  'f-prophet-poly': .75, 'f-aether': -.75, 'f-analog-harfe': -.7, 'f-samtpolster': -.65, 'f-juno-streicher': -.5, 'f-sync-lead': -.5,
+  'f-kristall-flaeche': .25, 'f-weite-82': .45, 'f-berlin-schule': -.45, 'f-ob-brass': .3, 'f-ensemble-streicher': -.3};
+const NT_SKIP = new Set(['level', 'pan', 'spread', 'glide']);
+const NT_SIG = new Map();
+function ntSig(snd) {
+  const P = snd.p || {}, r = x => (typeof x === 'number' ? Math.round(x * 1e4) / 1e4 : x);
+  const ks = Object.keys(P).filter(k => !NT_SKIP.has(k)).sort();
+  return JSON.stringify([ks.map(k => [k, r(P[k])]), (snd.mods || []).map(m => [m.src, m.dst, r(+m.amt)])]);
+}
+function nativeTrim(snd, eng) {
+  try {
+    if (eng !== 'analog' || !snd || !snd.origin) return 1;
+    const db = NATIVE_TRIM_DB[snd.origin]; if (!db) return 1;
+    let ref = NT_SIG.get(snd.origin);
+    if (ref == null) { const f = factorySound(snd.origin); ref = f && f.engine === 'analog' ? ntSig(f) : ''; NT_SIG.set(snd.origin, ref); }
+    return ref && ntSig(snd) === ref ? Math.pow(10, db / 20) : 1;
+  } catch (e) { return 1; }
+}
 /* one native synth voice (§5.5): NativeVoice.source (engine oscillators) + NativeVoice.tail (drive, filter, envelopes, VCA),
    envelopes with the cancel-safe envStart / VoiceProto.release. o.sound: play another sound than the track's (browser
    preview of a row that is not loaded); o.gs: the glide state (preview phrases glide among themselves, not from the clip) */
@@ -9163,7 +9199,7 @@ function spawnVoice(i, out, vel, t0, o) {
   if (eng === 'analog') { v.aenv.c = P.aCurve == null ? .5 : +P.aCurve; v.fenv.c = P.fCurve == null ? .5 : +P.fCurve; }   // V0a-19: the worklet's envelope shapes
   // V0a K-17: every native voice leaves with the worklet's pan law (√2 into a StereoPanner = unity in the centre); a voice with
   // Streuung was 3 dB quieter than on the worklet (mono into its StereoPanner)
-  const tl = NativeVoice.tail(c, P, out, vel, src.out, o.chain ? o.chain.trackIn : A.trackIn, cv.out, {mkConst: constSrc, pan: voicePan(A, P), bypass: NativeVoice.fmBypass(P, eng), unity: true, eng, t0});
+  const tl = NativeVoice.tail(c, P, out, vel, src.out, o.chain ? o.chain.trackIn : A.trackIn, cv.out, {mkConst: constSrc, pan: voicePan(A, P), bypass: NativeVoice.fmBypass(P, eng), unity: true, eng, t0, natTrim: nativeTrim(snd, eng)});
   nodes.push(...tl.nodes);
   for (const s of tl.srcs) { srcs.push(s); starts.push([s, 0]); }
   if (N) { try { N.lfoCut.connect(tl.fA.detune); if (tl.fB) N.lfoCut.connect(tl.fB.detune); v.tapC = N.lfoCut; } catch (e) {} }
@@ -11660,7 +11696,6 @@ function renderCarrier(now) {
   EL.carShift.textContent = tgt ? (deg ? (degLab ? (ownInShift ? own : '') : '· ' + deg) : fmtShift(ss.shift)) : '';
   // V0a K-08: the key the music is mapped onto, next to the heard shift („+3 · → C-Dur“); a single key shows its degree instead
   const tt = tgt && !deg && ss.target ? '· → ' + ss.target : '';
-  if (EL.carTgt && (EL.carTgt._full !== tt || EL.carTgt._w !== innerWidth)) { EL.carTgt._full = tt; EL.carTgt._w = null; EL.carTgt.textContent = tt; }
   EL.carShift.classList.toggle('deg', !!deg && !degLab);
   EL.carShift.classList.toggle('own', ownInShift);
   EL.carLock.classList.toggle('show', !!(S.settings.harmony.latch && tgt));
@@ -11677,9 +11712,9 @@ function renderCarrier(now) {
     else lab += ' · ' + own;
   }
   EL.carLabel.textContent = lab; EL.carLabel.className = cls;
-  fitCarVal();
-  // narrow phones (P2/P3): „→ C“ (short key name) when „· → C-Dur“ does not fit next to the shift; measured once per text / width
-  if (EL.carTgt && EL.carTgt._full && EL.carTgt._w == null) { EL.carTgt._w = innerWidth; if (EL.carTgt.scrollWidth > EL.carTgt.clientWidth + 1 && ss.key) EL.carTgt.textContent = '→ ' + keyShort(ss.key); }
+  // V0a fix (K-08/L6): chord name first at its full size, then the target key where it fits whole: „· → C-Dur“ / „→ C“
+  // next to the shift, else in the label line; re-measured on every render (chord change, width, font load)
+  fitReadout(tt, tt && ss.key ? '→ ' + keyShort(ss.key) : '');
   EL.carRing.classList.toggle('show', !!queued);
   UI.queued = queued;
   EL.bLatch.classList.toggle('on', S.settings.harmony.latch);
@@ -11712,14 +11747,58 @@ function carrierShown() {
   return {shift: ss.shift, target: ss.target, text: fmtShift(ss.shift) + (ss.target ? ' · → ' + ss.target : '')};
 }
 // the chord name must never be cut ("Cm…" for Cmaj7 reads as C minor): shrink the font until it fits
+// overflow test with sub-pixel precision: scrollWidth is an integer, so a text 76.14 px wide in a 76.08 px box passed it
+function textW(e) { try { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect().width; } catch (err) { return e.scrollWidth; } }
+function overflows(e) { return e.scrollWidth > e.clientWidth + .5 || textW(e) > e.getBoundingClientRect().width + .05; }
 function fitText(e, min) {
   if (!e) return;
   e.style.fontSize = '';
   if (!e.clientWidth) return;
   let fs = parseFloat(getComputedStyle(e).fontSize) || 30;
-  for (let g = 0; g < 16 && e.scrollWidth > e.clientWidth + .5 && fs > min; g++) { fs = Math.max(min, fs - (fs > 20 ? 2 : 1)); e.style.fontSize = fs + 'px'; }
+  for (let g = 0; g < 16 && overflows(e) && fs > min; g++) { fs = Math.max(min, fs - (fs > 20 ? 2 : 1)); e.style.fontSize = fs + 'px'; }
 }
 function fitCarVal() { fitText(EL.carVal, 11); fitText(EL.carLabel, 8); }
+// readout line 2 = chord name · shift · target key · lock. The chord name never shrinks for the target key: the target goes
+// in full („· → C-Dur“), short („→ C“), up into the label line („TRÄGER  → C-Dur“) or — only if nothing fits — away
+function fitReadout(full, short) {
+  const t = EL.carTgt, v = EL.carVal; if (!t) { fitCarVal(); return; }
+  const l2 = v.parentNode, l1 = EL.carLabel.parentNode;
+  if (t.parentNode !== l2) l2.insertBefore(t, EL.carLock);
+  t.textContent = '';
+  v.style.fontSize = ''; EL.carLabel.style.fontSize = '';
+  // a flexible shift text (degree / own-key note) shares the line itself: no target there, old fitting
+  const flexShift = EL.carShift.classList.contains('deg') || EL.carShift.classList.contains('own');
+  v.classList.toggle('fit', !flexShift);
+  const W = l2.getBoundingClientRect().width;
+  if (!W || flexShift) { fitCarVal(); return; }
+  const gap = parseFloat(getComputedStyle(l2).columnGap) || 0;
+  let others = 0, n = 0;
+  for (const k of l2.children) { if (k === v || k === t) continue; const w = k.getBoundingClientRect().width; if (w > 0) { others += w; n++; } }
+  const room = W - others - n * gap;          // width left for chord name (+ gap + target)
+  const vw = () => v.getBoundingClientRect().width, tw = () => t.getBoundingClientRect().width;
+  let placed = false;
+  if (full) for (const txt of [full, short]) {
+    if (!txt) continue; t.textContent = txt;
+    if (vw() + gap + tw() <= room + .01) { placed = true; break; }
+  }
+  if (!placed) t.textContent = '';
+  if (full && !placed) {
+    l1.appendChild(t);
+    const l1W = l1.getBoundingClientRect().width, g1 = parseFloat(getComputedStyle(l1).columnGap) || 0;
+    let o1 = 0; for (const k of l1.children) if (k !== t && k !== EL.carLabel) { const w = k.getBoundingClientRect().width; if (w > 0) o1 += w + g1; }
+    const labW = EL.carLabel.textContent ? textW(EL.carLabel) + g1 : 0;
+    for (const txt of [full.replace(/^· /, ''), short]) {
+      if (!txt) continue; t.textContent = txt;
+      if (labW + o1 + tw() <= l1W + .01) { placed = true; break; }
+    }
+    if (!placed) { t.textContent = ''; l2.insertBefore(t, EL.carLock); }
+  }
+  // the chord name: full size unless it alone does not fit next to the shift (then shrink, never cut)
+  const lim = room - (t.parentNode === l2 && t.textContent ? gap + tw() : 0);
+  let fs = parseFloat(getComputedStyle(v).fontSize) || 30;
+  for (let g = 0; g < 20 && vw() > lim + .01 && fs > 11; g++) { fs = Math.max(11, fs - (fs > 20 ? 2 : 1)); v.style.fontSize = fs + 'px'; }
+  fitText(EL.carLabel, 8);
+}
 function renderCarrierNow() { if (!EL.carVal) return; UI.last.eff = T.targetAt(nowT()); UI.last.cur = T.current(); renderCarrier(nowT()); kbPaint(); UI.dirty.carrier = false; }
 function renderRing(now) {
   const q = UI.queued; if (!q) return;
