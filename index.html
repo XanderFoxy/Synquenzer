@@ -2257,6 +2257,10 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .fmdiag svg,.athumb svg{width:100%;height:100%;display:block;overflow:visible}
 svg.alg .w{fill:none;stroke:#6b7280;stroke-width:1.5}
 svg.alg .fb{fill:none;stroke:#ff9b3d;stroke-width:1.6;stroke-linejoin:round}
+svg.alg .fb.fb0{stroke:#7b828f;stroke-width:1px;stroke-dasharray:3 2}
+.fmdiag{position:relative}
+.fmdiag .fblbl{position:absolute;left:4px;right:4px;bottom:2px;font:700 9.5px/11px var(--font-ui);letter-spacing:.02em;color:#c98a4a;text-align:right;white-space:nowrap;overflow:hidden;pointer-events:none}
+.fmdiag .fblbl.z{color:#7b828f}
 svg.alg .op rect{fill:#23262d;stroke:#8b93a1;stroke-width:1.4}
 svg.alg .op text{fill:var(--text);font:700 13px/1 var(--font-num);text-anchor:middle}
 svg.alg .op.car rect{fill:var(--tc,var(--sel));stroke:var(--tc,var(--sel))}
@@ -2296,38 +2300,26 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .fmcol .fader .ftrack{width:36px;align-self:center}
 .fmcol .fader .kn{font-size:11px;letter-spacing:-.04em}
 .fmcol.off .fader{opacity:.45}
-.fmspk{flex:none;height:22px;border-radius:4px;background:var(--lcd);padding:1px}
-.fmspk svg{width:100%;height:100%;display:block}
-.fmspk path{fill:none;stroke:var(--tc,var(--sel));stroke-width:1.4;vector-effect:non-scaling-stroke}
-.fmcol.off .fmspk path{stroke:#4a4f59}
+.fmspk{flex:none;height:22px;min-height:10px;border-radius:4px;background:var(--lcd);padding:0;overflow:hidden;cursor:pointer}
+.fmspk svg{display:block}
+.fmspk .sl{fill:none;stroke:var(--tc,var(--sel));stroke-width:1.5;stroke-linejoin:round}
+.fmspk .sf{fill:var(--tc,var(--sel));opacity:.2;stroke:none}
+.fmcol.off .fmspk .sl{stroke:#4a4f59}
+.fmcol.off .fmspk .sf{fill:#4a4f59}
+.fmcol .fader .fcap{font:700 9.5px/14px var(--font-num);color:var(--tc,var(--sel));text-align:center;letter-spacing:-.02em}
+.fmcol .fader .fcap::after{display:none}
 .fmhint{flex:none;color:#e0b25a}
+.fmlage{flex:none;display:flex;align-items:center;gap:8px;font:700 11px/14px var(--font-ui);color:#e0b25a}
+.fmlage .hb{height:30px;padding:0 10px;font-size:11px}
+.fmlage[hidden]{display:none}
 .fmhint[hidden]{display:none}
 /* OP page */
-.fmophd{flex-wrap:wrap;gap:6px 6px}
-.fmophd .pa{width:40px;height:40px;padding:0;font-size:18px;flex:none}
-.fmoptl{flex:1 1 0;min-width:0;font:700 13px/1.2 var(--font-ui);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fmsolo{height:40px;padding:0 10px}
 .fmsolo.on{color:#0b0c0e;background:#ffe14d;border-color:#ffe14d}
-.seg.fmsub{flex:1 1 100%}
-.seg.fmsub button{flex:1 1 0}
 .fmfreq{flex-wrap:nowrap}
 .fmbig{flex:1 1 auto;min-width:0;text-align:right;font:600 28px/1 var(--font-num);color:var(--tc,var(--sel));white-space:nowrap;overflow:hidden}
 .fminfo{flex:none;font:500 11px/14px var(--font-ui);color:var(--text-dim)}
 .kn-row.fmk4{grid-template-columns:repeat(4,minmax(0,72px));justify-content:space-between;gap:2px 4px}
 @media (orientation:portrait) and (min-width:360px){.kn-row.fmk4{grid-template-columns:repeat(4,minmax(0,1fr));justify-content:stretch}.kn-row.fmk4 .knob{width:auto;min-width:0}.kn-row.fmk4 .knob .kl{max-width:100%}}
-.fmenv{flex:1 1 auto;min-height:84px;position:relative;border-radius:8px;background:var(--lcd);box-shadow:inset 0 1px 5px rgba(0,0,0,.9);border:1px solid var(--panel-edge);touch-action:none;overflow:hidden}
-.fmenv svg{position:absolute;inset:0;width:100%;height:100%}
-.fmenv .lanes rect{fill:rgba(255,255,255,.025)}
-.fmenv .lanes rect.b{fill:rgba(255,255,255,.055)}
-.fmenv .lanes rect.on{fill:rgba(255,255,255,.12)}
-.fmenv .lanes text{fill:var(--text-dim);font:700 10px/1 var(--font-ui);text-anchor:middle}
-.fmenv .fill{fill:var(--tc,var(--sel));opacity:.16}
-.fmenv .line{fill:none;stroke:var(--tc,var(--sel));stroke-width:2;stroke-linejoin:round}
-.fmenv circle{fill:#0b0c0e;stroke:var(--tc,var(--sel));stroke-width:2}
-.fmenv circle.on{fill:var(--tc,var(--sel))}
-.fmtimes{flex:none;font:500 12px/16px var(--font-num);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fmebtn{flex-wrap:nowrap;gap:5px}
-.fmebtn .hb{flex:1 1 auto;min-width:0;padding:0 6px;font-size:11px;height:38px;overflow:hidden;text-overflow:ellipsis}
 .fmcurves{flex-direction:column;align-items:flex-start;gap:6px}
 .fmcurves .seg{flex-wrap:nowrap}
 .fmcurves .lgrp>.lbl{min-width:62px}
@@ -2358,7 +2350,6 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 #synthSheet .sh-body.fit1 .fmled{height:28px}
 #synthSheet .sh-body.fit1 .fmspk{height:18px}
 #synthSheet .sh-body.fit1 .fmcol .fader{min-height:54px}
-#synthSheet .sh-body.fit1 .fmenv{min-height:70px}
 #synthSheet .sh-body.fit1 .fmophd .pa,#synthSheet .sh-body.fit1 .fmsolo{height:36px}
 #synthSheet .sh-body.fit1 .seg.fmsub button{height:30px}
 #synthSheet .sh-body.fit1 .fminfo{line-height:13px}
@@ -2369,10 +2360,8 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 #synthSheet .sh-body.fit2 .fmcol .fader{min-height:46px}
 #synthSheet .sh-body.fit2 .fmled{height:26px}
 #synthSheet .sh-body.fit2 .fmspk{height:16px}
-#synthSheet .sh-body.fit2 .fmebtn .hb{height:32px}
 #synthSheet .sh-body.fit2 .fmaside .fmstep .pa,#synthSheet .sh-body.fit2 .hb.fmlist{height:34px}
 #synthSheet .sh-body.fit2 .fminfo{display:none}
-#synthSheet .sh-body.fit2 .fmenv{min-height:60px}
 #synthSheet .sh-body.fit2 .fmophd .pa,#synthSheet .sh-body.fit2 .fmsolo{height:34px}
 #synthSheet .sh-body.fit3 .fmdiag{height:96px;width:116px}
 #synthSheet .sh-body.fit3 .fmled{height:24px}
@@ -2383,7 +2372,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 #synthSheet .sh-body.fit3 .fmcurves .seg button{height:28px}
 #synthSheet .sh-body.fit3 :is(.pg-osc-op,.pg-osc-makro) .knob{height:64px}
 #synthSheet .sh-body.fit3 :is(.pg-osc-op,.pg-osc-makro) .knob svg{width:38px;height:38px}
-#synthSheet .sh-body.fit3 .fmspk{display:none}
+#synthSheet .sh-body.fit3 .fmspk{height:10px}
 #synthSheet .sh-body.fit3 .fmname{display:none}
 #synthSheet .sh-body.fit3 .fmbig{font-size:22px}
 @media (orientation:portrait) and (max-width:359px){
@@ -2393,10 +2382,9 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
   .fmaside>.fmfb{width:62px}
   .pg-osc-op .k5 .knob .kl,.pg-osc-op .k5 .knob .kl.lg{font-size:8.5px;letter-spacing:-.02em}
   .fmcurves .seg button{min-width:38px;padding:0 3px;font-size:10.5px}
-  #synthSheet .pg-osc-algo .fmspk{display:none}
+  #synthSheet .pg-osc-algo .fmspk{height:10px}
   .fmrat{font-size:10px}
   .fmled{gap:3px;font-size:12px;padding:0 2px}
-  .fmebtn .hb{font-size:10px;padding:0 3px}
   .acell small{font-size:8.5px}
   #synthSheet .pg.pg-osc-makro .kn-row.fmk2:not(.k5){grid-template-columns:repeat(2,minmax(0,104px));justify-content:start;gap:2px 18px}
   #synthSheet .pg.pg-osc-makro .kn-row.fmk2:not(.k5) .knob{width:auto}
@@ -2420,7 +2408,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
   #synthSheet .pg-osc-algo .fmaside>.fmlist{grid-column:1;grid-row:2;height:34px;justify-self:stretch}
   #synthSheet .pg-osc-algo .fmaside>.fmfb{grid-column:2;grid-row:1/3}
   #synthSheet .pg-osc-algo .fmstep .pa{height:36px}
-  #synthSheet .pg-osc-algo .fmspk{height:14px}
+  #synthSheet .pg-osc-algo .fmspk{height:16px}
   #synthSheet .pg-osc-algo .fmled{height:26px}
   #synthSheet .pg-osc-algo .fmrat{height:21px}
 }
@@ -2447,11 +2435,6 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
   .pg-fmop-freq>.kn-row{grid-column:2;grid-row:2;display:flex;gap:2px 6px;align-self:center}
   .pg-fmop-freq>.fminfo{grid-column:1/-1;grid-row:3}
   .pg-fmop-freq .fmbig{text-align:left;font-size:24px}
-  .pg-fmop-env{grid-template-columns:minmax(0,1fr) minmax(0,auto)}
-  .pg-fmop-env>.fmenv{grid-column:1;grid-row:2/4;min-height:0}
-  .pg-fmop-env>.fmtimes{grid-column:2;grid-row:2;white-space:normal;max-width:200px;font-size:11px;line-height:15px}
-  .pg-fmop-env>.fmebtn{grid-column:2;grid-row:3;display:grid;grid-template-columns:1fr 1fr;gap:4px;width:236px;align-self:end}
-  .pg-fmop-env .fmebtn .hb{height:30px;font-size:10px;padding:0 3px}
   .pg-fmop-scale>.kn-row{grid-column:1;grid-row:2;display:flex;gap:2px 4px}
   .pg-fmop-scale>.fmcurves{grid-column:2;grid-row:2;justify-content:center;gap:4px}
   .pg-fmop-scale .fmcurves .seg button{min-width:36px;height:30px;padding:0 3px;font-size:10.5px}
@@ -2478,7 +2461,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
   .pg-osc-algo .fmstrip{width:318px}
   .fmled{height:24px}
   .fmrat{height:18px;font-size:10.5px}
-  .fmspk{height:12px}
+  .fmspk{height:16px}
   .fmcol .fader{min-height:50px}
   .fmstep .pa{width:32px}
   .fmnum{min-width:26px;font-size:18px}
@@ -2494,8 +2477,181 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 }
 /* small L: the HÜLLK. times row in one line (it wrapped under the buttons) */
 @media (orientation:landscape) and (max-width:760px){
-  .pg-fmop-env>.fmtimes{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:none;font-size:9.5px;letter-spacing:-.02em}
 }
+/* ---------- V0d (A.4b 4–6): FM envelope editor (OP › HÜLLK., HÜLLK. › OPERATOREN / TONHÖHE). Zeilentabelle: no inner
+   margin, 3 px between rows (L: 12 px between the columns, 4 px in the right one); P1 head 44 · role 24 · presets 36 · graph ·
+   times 16 · DX 36 · buttons 44; P2/P3 head 36 · role 20 · presets 34 · graph · DX 34; L left graph + presets 36, right
+   (324 px) head 34 · DX 34 · buttons 36 ---------- */
+#synthSheet .pg.fmev{padding:0;gap:3px;position:relative;overflow:hidden;border:0;background:none;box-shadow:none}
+.fmev>.fmevL,.fmev>.fmevR{display:contents}
+.fmev .fmophd,.fmev .fmops,.fmev .fmpegh{order:1}
+.fmev .fmrole{order:2}
+.fmev .fmpre{order:3}
+.fmev .fmg{order:4}
+.fmev .fmtl{order:5}
+.fmev .fmdx{order:6}
+.fmev .fmbt{order:7}
+.fmev .fmhint{position:absolute;right:6px;bottom:2px;max-width:70%;pointer-events:none;font-size:10px;line-height:12px;text-align:right;z-index:2}
+/* head of the OP page (all OP sub-pages): [‹] OP n [›] [FREQ│HÜLLK.│SKAL.] [Solo] / [⋯] */
+.fmophd{flex:none;flex-wrap:nowrap;gap:4px;align-items:center;height:44px;min-width:0}
+.fmophd .pa{width:44px;height:44px;padding:0;font-size:18px;flex:none}
+.fmoptl{flex:1 1 auto;min-width:0;font:700 14px/1.1 var(--font-ui);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.fmoptl .ls{display:none;font-weight:600;color:var(--text-dim);font-size:12px}
+.seg.fmsub{flex:0 1 auto;min-width:0}
+.seg.fmsub button{flex:1 1 0;min-width:0;padding:0 5px;font-size:11px;height:40px}
+.fmsolo{height:44px;padding:0 9px;flex:none}
+.fmophd .fmmore2{display:none;width:36px;height:36px;padding:0;flex:none}
+.fmrole{flex:none;height:24px;display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;white-space:nowrap}
+.fmrole .rp{font:700 15px/20px var(--font-ui);padding:0 7px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.fmrole .rp.out{background:var(--tc,var(--sel));color:#0b0c0e}
+.fmrole .rp.mod{border:1.5px solid #8b93a1;color:#e8ebf0;line-height:17px}
+.fmrole .rs{font:700 12px/1 var(--font-ui);color:#ffb02e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.fmpre{flex:none;height:36px;display:flex;gap:4px;align-items:stretch;min-width:0}
+.fmchip{height:auto;min-width:0;flex:1 1 0;padding:0 4px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fmchip.fmadd,.fmchip.fmol95{flex:1.6 1 0;color:#0b0c0e;background:#ffb02e;border-color:#ffb02e}
+.fmchip[hidden]{display:none}
+.fmfine{flex:0 0 56px;padding:0;font-size:11px;height:auto}
+.fmfine.on{color:#0b0c0e;background:#ffb02e;border-color:#ffb02e}
+.fmfine.fl{display:none}
+.seg.fmrng{flex:0 0 auto}
+.seg.fmrng button{padding:0 6px;font-size:11px;height:100%}
+.fmg{flex:1 1 auto;min-height:70px;position:relative;border-radius:8px;background:var(--lcd);box-shadow:inset 0 1px 5px rgba(0,0,0,.9);border:1px solid var(--panel-edge);touch-action:none;overflow:hidden}
+.fmg svg{position:absolute;left:0;top:0;display:block}
+.fmg .ra{stroke:#4b515c;stroke-width:1}
+.fmg .rt{stroke:#6b7280;stroke-width:1}
+.fmg .rl{fill:#8b93a1;font:600 8.5px/1 var(--font-num);text-anchor:middle}
+.fmg .gap{stroke:#5b616c;stroke-width:1;stroke-dasharray:3 3}
+.fmg .zero{stroke:#3b414c;stroke-width:1}
+.fmg .yl{fill:#6b7280;font:600 8.5px/1 var(--font-num)}
+.fmg .hz{fill:rgba(255,155,61,.13);stroke:rgba(255,155,61,.35);stroke-dasharray:2 3}
+.fmg .hzl{fill:#c98a4a;font:700 9px/1 var(--font-ui);text-anchor:middle}
+.fmg .fill{fill:var(--tc,var(--sel));opacity:.16}
+.fmg .line,.fmg .relz{fill:none;stroke:var(--tc,var(--sel));stroke-width:2;stroke-linejoin:round}
+.fmg circle{fill:#0b0c0e;stroke:var(--tc,var(--sel));stroke-width:2}
+.fmg circle.on{fill:var(--tc,var(--sel))}
+.fmg circle.lim{stroke:#ffb02e;stroke-width:3.5}
+.fmg circle.twin{fill:none;stroke-dasharray:2 2}
+.fmg .hl{stroke:#9aa1ad;stroke-width:.75}
+.fmg .dl{fill:#c7ccd4;font:700 8.5px/1 var(--font-ui);text-anchor:middle;pointer-events:none}
+.fmgro{position:absolute;top:13px;right:6px;max-width:calc(100% - 44px);font:600 10.5px/11px var(--font-num);color:#fff;background:rgba(11,12,14,.78);border-radius:4px;padding:1px 5px;pointer-events:none;white-space:nowrap;overflow:hidden;z-index:2}
+.fmgro.lft{right:auto;left:34px}
+.fmgro div{white-space:nowrap;overflow:hidden}
+.fmgro[hidden]{display:none}
+.fmgtl{display:none;position:absolute;top:14px;left:34px;right:44px;font:600 9.5px/11px var(--font-num);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.fmgfine{position:absolute;top:14px;right:6px;font:800 9.5px/12px var(--font-ui);color:#0b0c0e;background:#ffb02e;border-radius:3px;padding:0 4px;pointer-events:none;z-index:1}
+.fmgfine[hidden]{display:none}
+.fmgnote{position:absolute;right:6px;bottom:3px;font:700 10px/12px var(--font-ui);color:#ffb02e;pointer-events:none}
+.fmgnote[hidden]{display:none}
+.fmev-peg .fmref{left:auto;right:2px}
+#synthSheet .stab .ls{display:none}
+#synthSheet .stab:is([data-sub="ops"],[data-sub="peg"],[data-sub="amp"]){letter-spacing:0;padding-left:2px;padding-right:2px}
+#synthSheet .stab[data-sub="ops"]{font-size:10.5px}
+#synthSheet .sh-subs:has(.stab:nth-child(5)) .stab .ll{display:none}
+#synthSheet .sh-subs:has(.stab:nth-child(5)) .stab .ls{display:inline}
+@media (max-width:359px){#synthSheet .stab[data-sub="ops"] .ll{display:none}#synthSheet .stab[data-sub="ops"] .ls{display:inline}}
+.fmref{position:absolute;left:0;bottom:2px;width:31px;height:24px;padding:0;border:0;background:none;color:#8b93a1;font:700 8px/9px var(--font-num);white-space:normal;text-align:center;word-spacing:30px;z-index:1}
+.fmtl{flex:none;height:16px;font:500 12px/16px var(--font-num);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.fmdx{flex:none;height:36px;display:flex;gap:4px;justify-content:center;align-items:stretch;touch-action:none}
+.fmdx .seg.fmrl{display:none}
+.fmdf{flex:0 0 40px;width:40px;height:auto;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border-radius:6px;background:#1b1e24;border:1px solid var(--line);color:var(--text);touch-action:none}
+.fmdf small{font:700 8.5px/10px var(--font-ui);color:var(--text-dim)}
+.fmdf b{font:700 14px/16px var(--font-num)}
+.fmdf.stg{border-color:#6b7280}
+.fmdf.on{border-color:var(--tc,var(--sel));box-shadow:inset 0 0 0 1px var(--tc,var(--sel))}
+.fmbt{flex:none;height:44px;display:flex;gap:4px;align-items:stretch}
+.fmbt .hb{height:auto;min-width:0;padding:0 8px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fmbt .fmpm{flex:0 0 46px;padding:0;font:700 14px/1 var(--font-num)}
+.fmbt .fmall1,.fmbt .fmall2{flex:1 1 auto}
+.fmbt .fmmore{flex:0 0 44px;padding:0}
+/* HÜLLK. › OPERATOREN: groups 14 + chips 44 */
+.fmops{flex:none;display:flex;flex-direction:column;gap:3px}
+.fmgrp{height:14px;display:flex;gap:10px;font:700 9.5px/14px var(--font-ui);letter-spacing:.03em;color:var(--text-dim);white-space:nowrap;overflow:hidden}
+.fmgrp span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.fmopc{height:44px;display:flex;gap:4px;justify-content:flex-start}
+.fmoc{flex:0 1 52px;width:52px;min-width:0;height:44px;padding:1px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border-radius:6px;background:#1b1e24;border:1.5px solid #8b93a1;color:#e8ebf0}
+.fmoc.gap{margin-left:10px}
+.fmoc.out{background:color-mix(in srgb,var(--tc,var(--sel)) 22%,#1b1e24);border-color:var(--tc,var(--sel))}
+.fmoc.on{box-shadow:0 0 0 2px #fff}
+.fmoc.off{opacity:.5}
+.fmoc b{font:700 12px/13px var(--font-num)}
+.fmoc svg{width:40px;height:12px;display:block}
+.fmoc path{fill:none;stroke:var(--tc,var(--sel));stroke-width:1.3}
+.fmoc small{font:600 8.5px/10px var(--font-num);color:var(--text-dim);white-space:nowrap}
+.fmpegh{flex:none;height:20px;font:600 11px/20px var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fmpegh b{color:var(--text);font-weight:800;font-size:12px}
+.fmband{flex:none;display:flex;gap:8px;align-items:center;font:600 11px/14px var(--font-ui);color:#e0b25a;min-height:20px}
+.fmband .hb{height:32px;padding:0 10px}
+.fmband.grey{color:var(--text-dim)}
+.pg.egrey>:not(.fmband){opacity:.45}
+.kn-row.fmk5{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px 2px}
+.kn-row.fmk5 .knob{width:auto;min-width:0}
+/* P2 / P3 (short portrait: 375×667, 320×568, 390×664): head 36 · role 20 · presets 34 · graph · DX 34; times as a label in the
+   graph, no button row ([⋯] in the head holds Auf alle Mod., Auf alle, Solo) */
+@media (orientation:portrait) and (max-height:700px){
+  .fmophd{height:36px}
+  .fmophd .pa{width:36px;height:36px}
+  .seg.fmsub button{height:34px;font-size:10.5px;padding:0 3px}
+  .fmophd .fmsolo{display:none}
+  .fmophd .fmmore2{display:block}
+  .fmrole{height:20px}
+  .fmrole .rp{font-size:13px;line-height:17px}
+  .fmpre{height:34px}
+  .fmev .fmtl,.fmev .fmbt{display:none}
+  .fmev .fmgtl{display:block}
+  .fmdx{height:34px}
+  .fmoptl{font-size:13px}
+}
+/* P3 (≤ 359 px wide): [R│L] + 4 fields à 59 px */
+@media (orientation:portrait) and (max-width:359px){
+  .fmdx .seg.fmrl{display:flex;flex:0 0 52px;flex-wrap:nowrap;min-width:0}
+  .fmdx .seg.fmrl{height:34px;padding:0;box-sizing:border-box;overflow:hidden;align-self:flex-start}
+  .fmdx .seg.fmrl button{flex:1 1 0;min-width:0;padding:0;height:100%;min-height:0}
+  .fmdf{flex:1 1 0;width:auto;min-width:36px}
+  .fmdf.hid{display:none}
+  .fmchip{font-size:11px;padding:0 2px}
+  .fmfine{flex-basis:48px}
+  .fmoc{flex-basis:48px}
+}
+/* L: two columns */
+@media (orientation:landscape){
+  #synthSheet .pg.fmev{display:grid;grid-template-columns:minmax(0,1fr) 324px;column-gap:12px;row-gap:0;grid-template-rows:minmax(0,1fr);align-items:stretch}
+  .fmev>.fmevL{display:flex;flex-direction:column;gap:3px;min-width:0;min-height:0;grid-column:1;grid-row:1}
+  .fmev .fmevL>*,.fmev .fmevR>*{order:0}
+  .fmev>.fmevR{display:flex;flex-direction:column;gap:4px;min-width:0;grid-column:2;grid-row:1}
+  .fmev .fmrole,.fmev .fmtl{display:none}
+  .fmev .fmgtl{display:block}
+  .fmev .fmg{min-height:90px}
+  .fmev .fmophd{height:34px;gap:3px}
+  .fmev .fmophd .pa{width:40px;height:34px}
+  .fmev .fmoptl{font-size:11.5px;letter-spacing:-.02em}
+  .fmev .fmoptl .ls{display:inline;font-size:10.5px}
+  .fmev .fmophd .pa{width:36px}
+  .fmev .seg.fmsub{flex:0 0 138px;width:138px}
+  .fmev .seg.fmsub button{height:34px;font-size:10px;padding:0 1px;min-width:0;letter-spacing:-.02em}
+  .fmev .fmophd .fmsolo,.fmev .fmophd .fmmore2{display:none}
+  .fmev .fmdx{height:34px;justify-content:flex-start}
+  .fmev .fmdf{flex:0 0 37px;width:37px}
+  .fmev .fmbt{height:36px}
+  .fmev .fmbt .fmall2{display:none}
+  .fmev .fmbt .fmpm{flex-basis:40px}
+  .fmev .fmbt .fmmore{flex-basis:40px}
+  .fmev .fmfine.fp{display:none}
+  .fmev .fmfine.fl{display:block;flex:0 0 56px;height:auto}
+  .fmev .fmpre{height:36px}
+  .fmev .fmops{gap:0}
+  .fmev .fmgrp{display:none}
+  .fmev .fmopc{height:34px;gap:4px}
+  .fmev .fmoc{flex:0 0 50px;width:50px;height:34px;flex-direction:row;gap:2px;padding:0 2px}
+  .fmev .fmoc.gap{margin-left:0}
+  .fmev .fmoc svg{width:22px}
+  .fmev .fmoc small{display:none}
+  .fmev .fmpegh{height:34px;line-height:34px}
+  .pg-osc-makro .kn-row.fmk5{display:flex;gap:2px 4px}
+}
+@media (orientation:landscape){.pg-osc-op:not(.fmev)>.fmrole{display:none}.pg-osc-op:not(.fmev) .fmoptl .ls{display:inline}.pg-osc-op:not(.fmev) .fmophd .fmmore2{display:none}}
+@media (orientation:landscape) and (max-width:760px){.pg-osc-makro .kn-row.fmk5 .knob{width:60px}.pg-osc-makro .kn-row.fmk2 .knob{width:70px}.pg-osc-makro .kn-row .knob .kl{font-size:8.5px;letter-spacing:0}.pg-osc-makro .fmamp .seg button{padding:0 4px}}
+.fmpegh span{display:none}
+@media (orientation:portrait) and (min-width:380px) and (min-height:701px){.fmpegh span{display:inline}}
 /* ---------- end FM tab CSS ---------- */
 </style>
 </head>
@@ -2666,6 +2822,13 @@ function scaleLevel(note, ks) { // ks = {bp (0..99, 39 = C3), ld, rd, lc, rc}
 const FENV_BLK = CR;                                  // DX envelopes step per 16-sample control block (DX6: 32); gain interpolated per sample
 const LVL_PER_SEC = q => (4 + (q & 3)) * Math.pow(2, (q >> 2) - 8) * (44100 / 64); // msfa increment, in 1/256-doubling units per second
 const GAIN_THRESH = 1120 / 16777216;                  // msfa kLevelThresh
+// V0d (A.4b 2): Dexed ACCURATE_ENVELOPE static phase (env.cc statics[], samples at 44.1 kHz; held in SECONDS at any rate)
+const EG_STATICS = [1764000, 1764000, 1411200, 1411200, 1190700, 1014300, 992250, 882000, 705600, 705600, 584325, 507150, 502740, 441000, 418950, 352800, 308700, 286650, 253575, 220500, 220500, 176400, 145530, 145530, 125685, 110250, 110250, 88200, 88200, 74970, 61740, 61740, 55125, 48510, 44100, 37485, 31311, 30870, 27562, 27562, 22050, 18522, 17640, 15435, 14112, 13230, 11025, 9261, 9261, 7717, 6615, 6615, 5512, 5512, 4410, 3969, 3969, 3439, 2866, 2690, 2249, 1984, 1896, 1808, 1411, 1367, 1234, 1146, 926, 837, 837, 705, 573, 573, 529, 441, 441];
+function egHoldSec(rr, att0) { rr = Math.min(99, Math.max(0, rr)); let n = rr < 77 ? EG_STATICS[rr] : 20 * (99 - rr); if (rr < 77 && att0) n = Math.floor(n / 20); return n / 44100; }
+// V0d (A.4b 3): msfa pitch EG tables (pitchenv.cc): rate -> octaves/s = PEG_RATE[r] / 21.3, level -> octaves = PEG_TAB[l] / 32
+const PEG_RATE = [1, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 16, 16, 17, 18, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 33, 34, 36, 37, 38, 39, 41, 42, 44, 46, 47, 49, 51, 53, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 79, 82, 85, 88, 91, 94, 98, 102, 106, 110, 115, 120, 125, 130, 135, 141, 147, 153, 159, 165, 171, 178, 185, 193, 202, 211, 232, 243, 254, 255];
+const PEG_TAB = [-128, -116, -104, -95, -85, -76, -68, -61, -56, -52, -49, -46, -43, -41, -39, -37, -35, -33, -32, -31, -30, -29, -28, -27, -26, -25, -24, -23, -22, -21, -20, -19, -18, -17, -16, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 38, 40, 43, 46, 49, 53, 58, 65, 73, 82, 92, 103, 115, 127];
+const BITE_LIMQ = (82 * 41) >> 6;                      // V0d (A.4b 7): BISS never makes a >= 12 dB modulator fall faster than R 82
 // a plain sine (OP1 output, the others off) until the host sends the sound's {fm6}
 const FM_OP0 = {on: 1, fixed: 0, coarse: 1, fine: 0, det: 0, ol: 0, r: [99, 99, 99, 99], l: [0, 0, 0, 0], vs: 0, rs: 0};
 const FM_INIT = {alg: 1, fb: 0, trans: 0, ops: [Object.assign({}, FM_OP0, {ol: 99, r: [99, 99, 99, 70], l: [99, 99, 99, 0]}), FM_OP0, FM_OP0, FM_OP0, FM_OP0, FM_OP0]};
@@ -2703,7 +2866,7 @@ function defaults() {
     glide: 0, mode: 0, poly: 8, spread: .2, level: .3, mw: 0,   // mode 0 poly, 1 mono, 2 legato
     lq: 1,                                                       // ladder quality: 0 eco (1 nonlinearity), 1 analog (5)
     eng: 0,                                                      // engine: 0 analog (VA), 1 fm6 (WP7)
-    fmAmp: 0, fmBright: 0, fmAtk: 0, fmDec: 0, fmRel: 0,         // FM6 (6.2): DX envelopes = volume | ADSR; brightness dB; rate offsets
+    fmAmp: 0, fmBright: 0, fmAtk: 0, fmDec: 0, fmRel: 0, fmBite: 0,         // FM6 (6.2): DX envelopes = volume | ADSR; brightness dB; rate offsets
   };
 }
 
@@ -2752,6 +2915,8 @@ class Voice {
     this.flvl = new Float64Array(6); this.ftgt = new Float64Array(6); this.frate = new Float64Array(6);
     this.fg0 = new Float64Array(6); this.fg1 = new Float64Array(6); this.foutLvl = new Float64Array(6);
     this.fix = new Int8Array(6).fill(4); this.frise = new Uint8Array(6); this.frs = new Int8Array(6);
+    this.fhold = new Float64Array(6); this.fholdE = new Float64Array(6); this.fholdOn = new Uint8Array(6);   // V0d: static phase (samples left / held)
+    this.pegL = 0; this.pegT = 0; this.pegIx = 4; this.pegRise = 0; this.pegR = 0;                         // V0d: pitch EG (octaves)
     this.fratio = new Float64Array(6); this.ffixed = new Float64Array(6); this.fon = new Uint8Array(6);
     this.fbuf = [0, 1, 2, 3, 4, 5].map(() => new Float32Array(CR)); this.fmodIn = new Float32Array(CR);
     this.ffb0 = 0; this.ffb1 = 0; this.fdone = 0; this.fnote = 60; this.fvel = 100;
@@ -2914,7 +3079,7 @@ class AnalogCore extends AudioWorkletProcessor {
       for (const s of this.stack) if (!this.findId(s.id)) this.ended.push(s.id);
       this.stack.length = 0;
       for (const v of this.V) if (v.on) this.endVoice(v);
-    } else if (P.eng === 1 && ('fmAtk' in o || 'fmDec' in o || 'fmRel' in o)) {
+    } else if (P.eng === 1 && ('fmAtk' in o || 'fmDec' in o || 'fmRel' in o || 'fmBite' in o)) {
       for (const v of this.V) if (v.on) for (let k = 0; k < 6; k++) if (v.fix[k] < 4) this.fmAdvance(v, k, v.fix[k]);
     }
     if ((P.mode > 0) !== mono0) {
@@ -3317,15 +3482,27 @@ class AnalogCore extends AudioWorkletProcessor {
   fmNoteOn(v) {                                                 // from startVoice when eng 1 (key sync: phases to 0)
     const P = this.fm, note = v.note + (P.trans | 0), vel127 = Math.max(1, Math.min(127, Math.round(v.vel * 127)));
     v.fdone = 0; v.ffb0 = v.ffb1 = 0; v.frel = 0; v.frelN = 0; v.fgate = 0; v.falive = true;
-    for (let k = 0; k < 6; k++) { v.fph[k] = 0; v.flvl[k] = 0; v.fg0[k] = 0; v.fg1[k] = 0; }
+    for (let k = 0; k < 6; k++) { v.fph[k] = 0; v.flvl[k] = 0; v.fg0[k] = 0; v.fg1[k] = 0; v.fix[k] = 4; }
     this.fmVoicePatch(v, false, note, vel127);
     for (let k = 0; k < 6; k++) this.fmAdvance(v, k, 0);
+    const G = this.fm.peg; v.pegL = G ? PEG_TAB[G.l[3]] / 32 : 0; this.pegAdvance(v, G ? 0 : 4);
+  }
+  // V0d (A.4b 3): pitch EG like msfa (start at L4, L1 -> L2 -> L3, hold L3; key off -> L4), linear in octaves
+  pegAdvance(v, ix) {
+    v.pegIx = ix; const G = this.fm.peg; if (!G || ix > 3) return;
+    v.pegT = PEG_TAB[G.l[ix]] / 32; v.pegRise = v.pegT > v.pegL ? 1 : 0; v.pegR = PEG_RATE[G.r[ix]] / 21.3 * CR / SR;
+  }
+  pegStep(v) {
+    const ix = v.pegIx; if (!(ix < 3 || (ix < 4 && !v.gate))) return;
+    if (v.pegRise) { v.pegL += v.pegR; if (v.pegL >= v.pegT) { v.pegL = v.pegT; this.pegAdvance(v, ix + 1); } }
+    else { v.pegL -= v.pegR; if (v.pegL <= v.pegT) { v.pegL = v.pegT; this.pegAdvance(v, ix + 1); } }
   }
   fmRetrig(v) {                                                 // MONO: the new note restarts the stages from the current level
     const P = this.fm, note = v.note + (P.trans | 0), vel127 = Math.max(1, Math.min(127, Math.round(v.vel * 127)));
     v.frel = 0; v.frelN = 0; v.fdone = 0;
     this.fmVoicePatch(v, false, note, vel127);
-    for (let k = 0; k < 6; k++) this.fmAdvance(v, k, 0);
+    for (let k = 0; k < 6; k++) { v.fix[k] = 4; this.fmAdvance(v, k, 0); }
+    if (this.fm.peg) this.pegAdvance(v, 0); else { v.pegL = 0; v.pegIx = 4; }   // the PEG restarts from its current value (no jump)
   }
   // per-op output level, rate scaling, ratio / fixed frequency (msfa maths); live: re-target the running stage
   fmVoicePatch(v, live, note, vel127) {
@@ -3348,20 +3525,40 @@ class AnalogCore extends AudioWorkletProcessor {
       if (live && v.fix[k] < 4) this.fmAdvance(v, k, v.fix[k] === 3 && v.gate ? 2 : v.fix[k]);
     }
   }
-  // stage target + rate; macro rate offsets: fmAtk on R1 (+ = faster), fmDec on R2 / R3 and fmRel on R4 with the sign
-  // flipped (+ = Laenge / Release longer = slower rate), clamped 0..99 (6.2)
+  // stage target + rate; macro rate offsets: fmAtk on R1 (+ = faster), fmRel on R4 with the sign flipped (+ = Release
+  // longer = slower rate), V0d (A.4b 7): fmDec (LAENGE) on R2 / R3 of the OUTPUTS only, clamped 0..99 (6.2); fmBite (BISS)
+  // is a time factor 2^(-BISS/10) on D1 / D2 of the operators that are no output (rate x 2^(BISS/10), hold / 2^(BISS/10)),
+  // clamped at the modulator click limit (a >= 12 dB fall never faster than R 82 at the same rate scaling).
+  // V0d (A.4b 2): static phase like Dexed ACCURATE_ENVELOPE when the new target equals the current level (or stage 1 with
+  // L1 = 0); hold time from the EFFECTIVE rate, in seconds. A re-target into the SAME stage (live edits, macros) keeps the
+  // time already held: rest = max(0, new hold - held), the hold never restarts.
   fmAdvance(v, k, ix) {
+    const same = v.fix[k] === ix;
     v.fix[k] = ix;
+    if (!same) { v.fholdE[k] = 0; v.fholdOn[k] = 0; }
+    v.fhold[k] = 0;
     if (ix > 3) return;
-    const op = this.fm.ops[k], P = this.P;
-    const off = ix === 0 ? P.fmAtk : ix === 3 ? -P.fmRel : -P.fmDec, r = Math.max(0, Math.min(99, op.r[ix] + Math.round(off || 0)));
+    const op = this.fm.ops[k], P = this.P, car = this.alg.car[k];
+    const off = ix === 0 ? P.fmAtk : ix === 3 ? -P.fmRel : car ? -P.fmDec : 0, r = Math.max(0, Math.min(99, op.r[ix] + Math.round(off || 0)));
     const t = Math.max(16, ((scaleOL(op.l[ix]) >> 1) << 6) + v.foutLvl[k] - 4256);
+    const bite = !car && (ix === 1 || ix === 2) ? +P.fmBite || 0 : 0, bf = bite ? Math.pow(2, bite / 10) : 1;
+    const att0 = ix === 0 && op.l[0] === 0;
+    if (t === v.flvl[k] || att0) {
+      const h = egHoldSec(r + v.frs[k], att0) * SR / bf;
+      v.fhold[k] = same && v.fholdOn[k] ? Math.max(0, h - v.fholdE[k]) : h; v.fholdOn[k] = 1;
+      if (v.fhold[k] <= 0) v.fhold[k] = 1e-9;
+    }
     v.ftgt[k] = t; v.frise[k] = t > v.flvl[k] ? 1 : 0;
-    v.frate[k] = LVL_PER_SEC(Math.min(63, ((r * 41) >> 6) + v.frs[k])) * FENV_BLK / SR;   // level units per control block
+    let rate = LVL_PER_SEC(Math.min(63, ((r * 41) >> 6) + v.frs[k])) * FENV_BLK / SR;   // level units per control block
+    if (bf !== 1) { const q = rate * bf;
+      if (bf > 1 && !v.frise[k] && v.flvl[k] - t >= 510) rate = Math.min(q, Math.max(rate, LVL_PER_SEC(Math.min(63, BITE_LIMQ + v.frs[k])) * FENV_BLK / SR));
+      else rate = q; }
+    v.frate[k] = rate;
   }
   fmEnvStep(v, k) {                                             // msfa Env::getsample, once per control block
     const ix = v.fix[k];
     if (!(ix < 3 || (ix < 4 && !v.gate))) return;
+    if (v.fhold[k] > 0) { v.fhold[k] -= FENV_BLK; v.fholdE[k] += FENV_BLK; if (v.fhold[k] <= 0) { v.fhold[k] = 0; this.fmAdvance(v, k, ix + 1); } return; }
     let l = v.flvl[k];
     if (v.frise[k]) {
       if (l < 1716) l = 1716;                                         // DX7 attack jump (~ -50 dB)
@@ -3376,8 +3573,9 @@ class AnalogCore extends AudioWorkletProcessor {
   // per control block (6.3.6): envelopes, gains 2^(lvl/256-14) * 10^(dB/20), frequencies (glide, retune, LFO pitch as analog)
   fmControl(v, dst) {
     const P = this.P, fm = this.fm, alg = this.alg;
-    if (!v.gate && !v.frel) { v.frel = 1; for (let k = 0; k < 6; k++) this.fmAdvance(v, k, 3); }   // gate off -> release stage once
-    const f0 = lut(FREQ, v.pitch + v.dP + (fm.trans | 0) + dst[D_PITCH] * 24);
+    if (!v.gate && !v.frel) { v.frel = 1; for (let k = 0; k < 6; k++) { if (v.fix[k] !== 3) this.fmAdvance(v, k, 3); else { v.fix[k] = 2; this.fmAdvance(v, k, 3); } } if (fm.peg) this.pegAdvance(v, 3); }   // gate off -> release stage once
+    if (fm.peg) this.pegStep(v);
+    const f0 = lut(FREQ, v.pitch + v.dP + (fm.trans | 0) + dst[D_PITCH] * 24 + v.pegL * 12);
     const br = P.fmBright + dst[D_FMBRIGHT] * 24;
     let alive = false, car = 0;
     for (let k = 0; k < 6; k++) {
@@ -5259,9 +5457,9 @@ const RecHelpers = (() => {
     l1shape: [0, 4, 1], l1rate: [.01, 40], l1sync: [0, 64], l1retrig: [0, 1, 1], l1fade: [0, 10],
     l2shape: [0, 4, 1], l2rate: [.01, 40], l2sync: [0, 64], l2retrig: [0, 1, 1], l2fade: [0, 10],
     glide: [0, 2], mode: [0, 2, 1], poly: [1, 8, 1], spread: [0, 1], level: [0, 4], mw: [0, 1], lq: [0, 1, 1],
-    fmAmp: [0, 1, 1], fmBright: [-24, 24], fmAtk: [-30, 30], fmDec: [-30, 30], fmRel: [-30, 30],
+    fmAmp: [0, 1, 1], fmBright: [-24, 24], fmAtk: [-30, 30], fmDec: [-30, 30], fmRel: [-30, 30], fmBite: [-20, 20],
   };
-  const AN_DEF = {fmAmp: 0, fmBright: 0, fmAtk: 0, fmDec: 0, fmRel: 0};          // keys that ANALOG_BASE (v1) does not know
+  const AN_DEF = {fmAmp: 0, fmBright: 0, fmAtk: 0, fmDec: 0, fmRel: 0, fmBite: 0};          // keys that ANALOG_BASE (v1) does not know
   // §6.2: FM defaults, applied when a sound is created as FM (the other keys come from ANALOG_BASE): the filter is open
   const FM_BASE = {ftype: 1, cutoff: 20000, res: 0, drive: 0, kt: 0, fenv: 0, fvel: 0, bass: 0, lq: 0, aA: .002, aD: .05, aS: 1, aR: .05,
     ampVel: 0, fmAmp: 0, analog: 0, spread: .15, level: 1};
@@ -5271,7 +5469,7 @@ const RecHelpers = (() => {
     'fmbright', 'op1', 'op2', 'op3', 'op4', 'op5', 'op6',
     'fx.rev', 'fx.dly', 'fx.pan', 'fx.vol'];                    // §9.6 (P1, WP5): track-FX routes from LFO 1/2 (native, never sent to the worklet)
   const CHORUS = ['off', 'I', 'II', 'I+II', 'ENS', 'BREIT'];
-  const CATS = ['bass', 'lead', 'poly', 'flaeche', 'pluck', 'sequenz', 'fm', 'glocke', 'wt', 'drums', 'eigene', 'init'];   // V0b: + init (§12.7)
+  const CATS = ['bass', 'lead', 'poly', 'flaeche', 'pluck', 'sequenz', 'fm', 'glocke', 'wt', 'drums', 'eigene', 'init', 'effekt'];   // V0b: + init (§12.7); V0d: + effekt
   const SYNTH_ENGINES = ['analog', 'fm6', 'wt', 'fm2'], ENGINES = SYNTH_ENGINES.concat(['drum']);
   const WT_TABLES = ['digital', 'vocal', 'glas', 'orgel'], FM2_RATIOS = [.5, 1, 1.41, 2, 3, 3.5, 4, 5, 7];
   const PUMP_REL = ['1/16', '1/8', '1/4'];
@@ -5301,10 +5499,32 @@ const RecHelpers = (() => {
       lc: Math.round(clamp(num(op.ks.lc, 0), 0, 3)), rc: Math.round(clamp(num(op.ks.rc, 0), 0, 3))};
     return o;
   }
+  // V0d (A.4b 3): fm6.peg = {r[4], l[4]} 0..99 (L 50 = 0 HT); missing or all L 50 = no pitch EG, no field stored
+  function normPeg(g) {
+    if (!g || typeof g !== 'object' || !Array.isArray(g.l)) return null;
+    const arr = (x, d) => [0, 1, 2, 3].map(i => Math.round(clamp(num(x && x[i], d), 0, 99)));
+    const o = {r: arr(g.r, 99), l: arr(g.l, 50)};
+    return o.l.every(x => x === 50) ? null : o;
+  }
   function normFm6(p) {
     p = p || {}; const ops = Array.isArray(p.ops) ? p.ops : [];
-    return {alg: Math.round(clamp(num(p.alg, 1), 1, 32)), fb: Math.round(clamp(num(p.fb, 0), 0, 7)), trans: Math.round(clamp(num(p.trans, 0), -24, 24)),
+    const o = {alg: Math.round(clamp(num(p.alg, 1), 1, 32)), fb: Math.round(clamp(num(p.fb, 0), 0, 7)), trans: Math.round(clamp(num(p.trans, 0), -24, 24)),
       ops: [0, 1, 2, 3, 4, 5].map(i => normOp(ops[i] || {ol: 0}))};
+    const g = normPeg(p.peg); if (g) o.peg = g;
+    return o;
+  }
+  // V0d (A.4b 7): carriers per algorithm (DX_ALGS, first field) for the fmDec -> fmBite migration
+  const FM_CARS = ['13', '13', '14', '14', '135', '135', '13', '13', '13', '14', '14', '13', '13', '13', '13', '1', '1', '1', '145', '124', '1245', '1345',
+    '1245', '12345', '12345', '124', '124', '136', '1235', '1236', '12345', '123456'];
+  // a stored patch WITHOUT fmBite (before V0d): LAENGE (fmDec) was a rate offset on R2 / R3 of every operator; since V0d it acts
+  // on the outputs only and BISS is a time factor on the modulators. The old offset is burnt into R2 / R3 of every operator
+  // that is no output (bit-identical render), then fmBite = 0. Trigger is only the missing field (idempotent).
+  function migrateBite(flat, fm) {
+    if (!fm || !Array.isArray(fm.ops) || (flat && 'fmBite' in flat)) return;
+    const d = Math.round(num(flat && flat.fmDec, 0)); if (!d) return;
+    const cars = FM_CARS[Math.round(clamp(num(fm.alg, 1), 1, 32)) - 1];
+    fm.ops.forEach((op, k) => { if (cars.includes(String(k + 1)) || !op || !Array.isArray(op.r)) return;
+      op.r = op.r.slice(); op.r[1] = clamp(Math.round(num(op.r[1], 99)) - d, 0, 99); op.r[2] = clamp(Math.round(num(op.r[2], 99)) - d, 0, 99); });
   }
   // §12.3.1: every synth engine stores the FULL flat patch; the engine blocks of the other engines are kept (lossless engine
   // switch, §5.2); the block of the sound's own engine always exists (missing -> default)
@@ -5316,7 +5536,7 @@ const RecHelpers = (() => {
     const o = normAnalog(bare ? Object.assign({}, FM_BASE, flat) : flat);
     if (p.wt || engine === 'wt') o.wt = normWt(p.wt);
     if (p.fm2 || engine === 'fm2') o.fm2 = normFm2(p.fm2);
-    if (p.fm6 || engine === 'fm6') o.fm6 = normFm6(p.fm6 || (Array.isArray(p.ops) ? p : null));
+    if (p.fm6 || engine === 'fm6') { o.fm6 = normFm6(p.fm6 || (Array.isArray(p.ops) ? p : null)); migrateBite(flat, o.fm6); }
     return o;
   }
   function normDrum(p) {        // flat per-slot params: keep finite numbers and short strings only (engine clamps the rest)
@@ -5875,12 +6095,14 @@ const RecHelpers = (() => {
     fmbright: 15, op1: 16, op2: 17, op3: 18, op4: 19, op5: 20, op6: 21};   // §9.2 / Anhang A.4: FM6 destinations (WP7)
   // LFO sync values are BEATS per cycle (AnalogCore l*sync): 1/16 .25, 1/8 .5, 1/8. .75, 1/4 1, 1/2 2, 1 bar 4, 2 bars 8, 4 bars 16, 8 bars 32
   const CATS = [['bass', 'Bass'], ['lead', 'Lead'], ['poly', 'Poly & Brass'], ['flaeche', 'Fläche'], ['pluck', 'Pluck & Keys'],
-    ['sequenz', 'Sequenz'], ['fm', 'FM'], ['glocke', 'Glocken'], ['drums', 'Drums']];
+    ['sequenz', 'Sequenz'], ['fm', 'FM'], ['glocke', 'Glocken'], ['effekt', 'Effekte'], ['drums', 'Drums']];
 
   const FX = (o) => Object.assign({drive: 0, chorus: {mode: 'off', mix: 1, rate: 1, depth: 1}, rev: .15, dly: 0, vol: .8, pan: 0}, o,
     o && o.chorus ? {chorus: Object.assign({mode: 'off', mix: 1, rate: 1, depth: 1}, o.chorus)} : {});
   const M = (src, dst, amt) => ({src, dst, amt});
   const A = (id, name, cat, demo, ref, tip, p, mods, fx, bus) => ({id: 'f-' + id, name, cat, engine: 'analog', ev: 1, demo, ref, tip, p, mods: mods || [], fx: FX(fx), bus: bus || null});
+  // V0d: levels of the new analog sounds, calibrated to −18 LUFS on their preview phrase (dry, v3-v0d-sounds.mjs)
+  const LV_TROPFEN = 3.0, LV_PING = 3.74, LV_N71 = .64, LV_N72 = .649, LV_N73 = 1.033, LV_N74 = 3.5, LV_N75 = .275, LV_N76 = 1.83;
 
   /* ============================== ANALOG (30) ============================== */
   const ANALOG = [
@@ -6040,11 +6262,43 @@ const RecHelpers = (() => {
       {o1lvl: 0.5, o2w: 1, o2pw: .45, o2oct: -1, o2fine: 3, o2lvl: 0.4, cutoff: 330, res: .6, drive: 0.2, bass: 0.2, kt: .6, fenv: .48, fvel: .3, fA: .001, fD: .12, fS: .02, fR: .1,
         aA: .001, aD: .3, aS: .45, aR: .1, ampVel: .4, mode: 1, poly: 1, reset: 1, l1shape: 1, l1sync: 32, analog: .3, spread: 0, level: 2.133},
       [M('lfo1', 'cutoff', .13)], {drive: .1, dly: .4, rev: .4}, {echo: {mode: 'pp', divL: '1/8', fb: .45}}),
-    A('tropfen', 'Tropfen', 'sequenz', 'seq8', 'Wassertropfen-Sequenz (Jarre)',
-      'Hüllkurve 2 hebt die Tonhöhe beim Anschlag 8 Halbtöne an und fällt in 50 ms zurück. Die Obertöne einer leisen Säge (20 %) rutschen dabei durch ein resonantes Bandpass-Filter (99 %), das fest auf C7 steht (Keytrack 0, keine Filter-Hüllkurve): jeder Ton „plopt“ und klingelt hell auf demselben Ton. Viel Echo und Hall = Wasser.',
-      {o1w: 0, o1lvl: .2, o2w: 3, o2oct: 1, o2fine: 0, o2lvl: .3, ftype: 2, cutoff: 2122, res: .99, drive: .15, bass: .2, kt: 0, fenv: 0, fvel: 0, fA: .001, fD: .1, fS: 0, fR: .08,
-        aA: .004, aD: .5, aS: 0, aR: .25, ampVel: .5, mA: .001, mD: .05, mS: 0, mR: .05, poly: 4, analog: .1, spread: .5, level: 1.516},
-      [M('menv', 'pitch', .35)], {dly: .4, rev: .45}, {echo: {mode: 'pp', divL: '1/8.', fb: .45}}),
+    // V0d (A.4 8, EN-16): „Tropfen“ = Rezept N69 Tropfen-Plopp (r6/mess/tropfen.mjs, gemessen): the pitch rises to the note and
+    // follows the key (G5/C5 = 1,50), 35 ms to −20 dB; Tropfen-Ping = N70. Role Effekt / Sequenz (EN-18)
+    A('tropfen', 'Tropfen', 'sequenz', 'seq8', 'Wassertropfen (Jarre-artig; wie Jarre sie baute, ist unbelegt)',
+      'Sinus, Hüllkurve 2 zieht die Tonhöhe in 45 ms von 7 Halbtönen darunter hinauf auf die Note: jeder Ton „ploppt“ und folgt der Taste. Kurzer Ausklang (110 ms), dazu Echo punktiert und Hall = Wasser. Lieber ein fester Ton? Menge der Hüllkurve 2 auf 0.',
+      {o1w: 3, o1lvl: 1, o2lvl: 0, ftype: 1, cutoff: 16000, res: 0, drive: 0, kt: 0, fenv: 0, fvel: 0, aA: .001, aD: .11, aS: 0, aR: .08, aCurve: .8, ampVel: .5,
+        mA: .001, mD: .045, mS: 0, mR: .05, mCurve: .6, poly: 6, analog: 0, spread: .5, level: LV_TROPFEN},
+      [M('menv', 'pitch', -.3)], {rev: .4, dly: .45}, {hall: {decay: 3}, echo: {mode: 'pp', divL: '1/8.', fb: .35}}),
+    A('tropfen-ping', 'Tropfen-Ping', 'effekt', 'seq8', 'Filter-Ping (Jarre-artig)',
+      'Säge + 5 % Rauschen durch ein Bandpass mit 100 % Resonanz, das der Taste folgt (Keytrack 100 %, 2 Oktaven darüber). Die Filter-Hüllkurve zieht es in 60 ms von 7 Halbtönen darunter hinauf: ein heller Ping auf jeder Note.',
+      {o1w: 0, o1lvl: .7, o2lvl: 0, noise: .1, ftype: 2, cutoff: 1046.5, res: 1, drive: .1, bass: 0, kt: 1, fenv: -.1, fvel: 0, fA: .001, fD: .06, fS: 0, fR: .05, fCurve: .7,
+        aA: .001, aD: .1, aS: 0, aR: .06, aCurve: .8, ampVel: .5, poly: 6, analog: 0, spread: .5, level: LV_PING},
+      [], {rev: .3, dly: .3}, {hall: {decay: 3}, echo: {mode: 'pp', divL: '1/8.', fb: .35}}),
+    // V0d (A.4 9, P1): effects N71–N76 (r6/n6/rezepte76.json; N71/N73/N75 measured in r6/mess), role Effekt (EN-18)
+    A('pfeif-rampe', 'Pfeif-Rampe', 'effekt', 'fx', 'Selbstschwingendes Filter',
+      'Keine Oszillatoren: nur 6 % Rauschen in ein Tiefpass mit 110 % Resonanz – das Filter pfeift von selbst. Keytrack 100 % = der Pfeifton folgt der Taste, Hüllkurve 2 (Anstieg 4 s) fährt ihn vier Oktaven hinauf.',
+      {o1lvl: 0, o2lvl: 0, noise: .06, ftype: 1, cutoff: 130.81, res: 1.1, drive: .1, bass: 0, kt: 1, fenv: 0, fvel: 0, aA: .01, aD: .1, aS: 1, aR: .5,
+        mA: 4, mD: 1, mS: 1, mR: .5, mCurve: .1, mode: 1, poly: 1, analog: 0, level: LV_N71}, [M('menv', 'cutoff', .4)], {rev: .4, dly: .25}, {hall: {decay: 4}, echo: {mode: 'mono', divL: '1/4', fb: .35}}),
+    A('sturzflug', 'Sturzflug', 'effekt', 'fx', 'Selbstschwingendes Filter abwärts',
+      'Wie die Pfeif-Rampe, aber Hüllkurve 2 springt beim Anschlag hoch und fällt in 2 s zurück: der Pfeifton stürzt vier Oktaven hinab.',
+      {o1lvl: 0, o2lvl: 0, noise: .06, ftype: 1, cutoff: 130.81, res: 1.1, drive: .1, bass: 0, kt: 1, fenv: 0, fvel: 0, aA: .01, aD: .1, aS: 1, aR: .5,
+        mA: .001, mD: 2, mS: 0, mR: .5, mCurve: .5, mode: 1, poly: 1, analog: 0, level: LV_N72}, [M('menv', 'cutoff', .4)], {rev: .4}, {hall: {decay: 4}}),
+    A('aufsteiger', 'Aufsteiger', 'effekt', 'fx', 'Riser',
+      '80 % Rauschen + Säge mit 5 Stimmen durch ein Tiefpass bei 150 Hz. Hüllkurve 2 (4 s) öffnet den Filter um 60 Halbtöne und hebt die Tonhöhe um eine Oktave; die Lautstärke schwillt in 2,5 s an. Halten bis zum Drop.',
+      {o1w: 0, o1uni: 5, uniDet: .5, o1lvl: .5, noise: .8, ftype: 0, cutoff: 150, res: .45, drive: .2, kt: 0, fenv: 0, aA: 2.5, aD: 1, aS: 1, aR: .3, aCurve: .2,
+        mA: 4, mD: 1, mS: 1, mR: .3, mCurve: .15, mode: 1, poly: 1, analog: .1, level: LV_N73}, [M('menv', 'cutoff', .5), M('menv', 'pitch', .5)], {rev: .4}, {hall: {decay: 5}}),
+    A('absteiger', 'Absteiger', 'effekt', 'fx', 'Downlifter',
+      'Reines Rauschen durch ein Tiefpass; Hüllkurve 2 öffnet beim Anschlag weit und schließt in 2 s – das Rauschen sinkt ab und verklingt in 2,5 s.',
+      {fenv: 0, o2fine: 0, o1lvl: 0, noise: 1, ftype: 0, cutoff: 300, res: .3, kt: 0, mA: .001, mD: 2, mS: 0, aA: .005, aD: 2.5, aS: 0, aR: .5, mode: 1, poly: 1, level: LV_N74},
+      [M('menv', 'cutoff', .5)], {rev: .4}, {hall: {decay: 5}}),
+    A('wellen-sweep', 'Wellen-Sweep-Fläche', 'effekt', 'pad', 'Filter-Sweep-Fläche',
+      'Säge mit 5 Stimmen + zweite Säge 9 ct höher durch ein Tiefpass 600 Hz mit 55 % Resonanz. LFO 2 (Dreieck, 8 s, Neustart je Note) fährt den Filter ±30 Halbtöne: die Fläche rollt wie eine Welle.',
+      {o1w: 0, o1uni: 5, uniDet: .35, o2w: 0, o2lvl: .6, o2fine: 9, ftype: 0, cutoff: 600, res: .55, drive: .2, kt: .3, fenv: 0, aA: .3, aD: 1, aS: 1, aR: 1,
+        l2shape: 1, l2rate: .125, l2retrig: 1, poly: 6, analog: .15, level: LV_N75}, [M('lfo2', 'cutoff', .25)], {rev: .4}, {hall: {decay: 4}}),
+    A('kassetten-laden', 'Kassetten-Laden', 'effekt', 'fx', 'Heimcomputer-Ladegeräusch',
+      'Rechteck, dessen Tonhöhe LFO 1 (Rechteck, 30 Hz) um ±19 Halbtöne springen lässt, dazu 20 % Rauschen durch ein Hochpass bei 600 Hz – das Piepsen eines ladenden Bandes.',
+      {fenv: 0, o2fine: 0, o1w: 1, o1pw: .5, noise: .2, ftype: 5, cutoff: 600, res: .1, l1shape: 3, l1rate: 30, aA: .001, aD: .25, aS: 0, aR: .05, mode: 1, poly: 1, level: LV_N76},
+      [M('lfo1', 'pitch', .7917)], {}),
   ];
 
   /* ============================== FM6 (12) ==============================
@@ -6052,6 +6306,9 @@ const RecHelpers = (() => {
      r[R1..R4] / l[L1..L4] 0..99, vs velocity 0..7, rs rate scaling 0..7, ks {bp, ld, rd, lc, rc}. Times in comments come from FMH.envTimes. */
   const OP = (coarse, ol, r, l, x) => Object.assign({on: 1, fixed: 0, coarse, fine: 0, det: 0, ol, r, l, vs: 0, rs: 0}, x || {});
   const OFF = () => OP(1, 0, [99, 99, 99, 99], [0, 0, 0, 0]);
+  // V0d (A.4 5): keyboard scaling left +LIN, breakpoint C2 (bp 19): the modulators get brighter below C2 (E1 on a phone)
+  const KSL = ld => ({bp: 19, ld, rd: 0, lc: 3, rc: 0});
+  const GN_POP = -6.2, GN_SOLID = -2.6, GN_STAPEL = -8.7, GN_N63 = -7, GN_N64 = -7, GN_N65 = -9, GN_N66 = -10.7, GN_N67 = -15.2, GN_N68 = -9.8;
   const F = (id, name, cat, demo, ref, tip, fm, common, fx) => ({id: 'f-' + id, name, cat, engine: 'fm6', ev: 1, demo, ref, tip,
     p: Object.assign({trans: 0}, fm), common: Object.assign({gain: 0, glide: 0, mode: 0, poly: 8, lfo: {wave: 'sine', rate: 5.5, delay: 0, pitch: 0, amp: 0}}, common || {}), fx: FX(fx)});
   const FM6 = [
@@ -6076,27 +6333,30 @@ const RecHelpers = (() => {
         OP(1, 72, [95, 40, 25, 50], [99, 85, 0, 0], {det: 6, vs: 6, rs: 3})]},
       {gain: -15.7}, {chorus: {mode: 'II', mix: .7}, rev: .3}),
     F('pop-bass-dx', 'Pop-Bass DX', 'fm', 'bass', 'FM-Bass der 80er (Lately, Take On Me)',
-      'Holzig und knackig: Modulator-Pegel fallen schnell = der Biss ist nur im Anschlag. Anschlag öffnet die Modulatoren (Velocity 5–6).',
-      // trans +12 with the ×0.5 carriers = the fundamental at the played note (Anhang B.2 F3 had −12 = two octaves below,
-      // 16 Hz for C2: inaudible on phones, §11.1 Bass gate fixed here); OP2 hotter (ol 90, L2 72) for the 220 Hz gate
-      {alg: 5, fb: 5, trans: 12, ops: [
-        OP(0, 99, [99, 45, 30, 70], [99, 85, 0, 0], {vs: 2, rs: 2}),
-        OP(0, 90, [99, 70, 40, 70], [99, 72, 0, 0], {vs: 5, rs: 3}),
-        OP(1, 86, [99, 60, 30, 70], [99, 70, 0, 0], {det: 2, vs: 2, rs: 2}),
-        OP(3, 72, [99, 85, 50, 70], [99, 0, 0, 0], {vs: 6, rs: 3}),
-        OP(0, 80, [99, 50, 30, 70], [99, 80, 0, 0], {det: -2, rs: 2}),
-        OP(1, 70, [99, 60, 35, 70], [99, 60, 0, 0], {vs: 3, rs: 2})]},
-      {gain: -6.2, mode: 1, poly: 1}, {rev: .05}),            // −4.6 dB: two octaves up is louder (−18 LUFS, FM3)
+      'Holzig und knackig: drei Paare, jeder Modulator fällt nach dem Anschlag schnell auf 72 und hält dort – der Biss ist im Anschlag, der Körper bleibt (auch am Handy). Anschlag öffnet die Modulatoren (Velocity 5–6), Tastaturskalierung links hält die tiefen Töne hell.',
+      // V0d (A.4 5, EN-03): notated pitch (all ratios ×2, trans 0), modulators R2 72 / L3 72 (they snap and hold), OP 4/6 OL +14,
+      // OP 2 95, KS left +LIN bp 19 (C2) ld 50: C2 64,5 Hz, M-HANDYrel −12,5 / E1 −15,8 dB, M-BISS 28,5 / 28,8 dB (v3-v0d-sounds.mjs)
+      {alg: 5, fb: 5, trans: 0, ops: [
+        OP(1, 99, [99, 45, 30, 70], [99, 85, 0, 0], {vs: 2, rs: 2}),
+        OP(1, 95, [99, 72, 40, 70], [99, 80, 72, 0], {vs: 5, rs: 3, ks: KSL(50)}),
+        OP(2, 86, [99, 60, 30, 70], [99, 70, 0, 0], {det: 2, vs: 2, rs: 2}),
+        OP(6, 86, [99, 72, 50, 70], [99, 80, 72, 0], {vs: 6, rs: 3, ks: KSL(50)}),
+        OP(1, 80, [99, 50, 30, 70], [99, 80, 0, 0], {det: -2, rs: 2}),
+        OP(2, 84, [99, 72, 35, 70], [99, 80, 72, 0], {vs: 3, rs: 2, ks: KSL(50)})]},
+      {gain: GN_POP, mode: 1, poly: 1}, {rev: .05}),
     F('solid-bass', 'Solid-Bass', 'fm', 'bass', 'Slap-artiger FM-Bass',
-      'Paar 1 = Sub (0,5 : 0,5, fast reiner Sinus), Paar 2 = Körper mit „Twang“ (schnell fallender 1:1-Modulator), Paar 3 = Klick (3:1 mit Feedback, 40 ms). Drei Bausteine, drei Aufgaben.',
+      'Paar 1 = Sub (0,5 : 0,5) unter dem Körper, Paar 2 = Körper mit „Twang“ (1:1-Modulator fällt schnell auf 72 und hält), Paar 3 = Glanz (3:1 mit Feedback). Drei Bausteine, drei Aufgaben; Tastaturskalierung links hält E1 am Handy hörbar.',
+      // V0d (A.4 5, EN-03): the ×0,5 pair stays as a sub next to the ×1 output (body OP 3 OL 99); modulators R2 72 / L3 72,
+      // OP 4 OL 95, sub OP 1 70 / OP 2 80, KS left ld 70: C2 lowest 32,2 Hz with the 65-Hz partial the strongest, M-HANDYrel
+      // −12,8 / E1 −19,0 dB, M-BISS 44 / 50 dB (21 variants of the research reached E1 −23,2 dB; KS ld 70 and a quieter sub did it)
       {alg: 5, fb: 6, ops: [
-        OP(0, 92, [99, 40, 30, 72], [99, 88, 0, 0], {vs: 1, rs: 2}),
-        OP(0, 50, [99, 50, 40, 72], [99, 70, 0, 0], {vs: 2}),
-        OP(1, 95, [99, 52, 30, 72], [99, 70, 0, 0], {vs: 2, rs: 3}),
-        OP(1, 84, [99, 74, 45, 72], [99, 32, 0, 0], {vs: 5, rs: 3}),
+        OP(0, 70, [99, 40, 30, 72], [99, 88, 0, 0], {vs: 1, rs: 2}),
+        OP(0, 80, [99, 72, 40, 72], [99, 80, 72, 0], {vs: 2, ks: KSL(70)}),
+        OP(1, 99, [99, 52, 30, 72], [99, 70, 0, 0], {vs: 2, rs: 3}),
+        OP(1, 95, [99, 72, 45, 72], [99, 80, 72, 0], {vs: 5, rs: 3, ks: KSL(70)}),
         OP(1, 80, [99, 70, 40, 72], [99, 40, 0, 0], {det: 3, vs: 3, rs: 3}),
-        OP(3, 72, [99, 80, 60, 72], [99, 0, 0, 0], {vs: 6, rs: 4})]},
-      {gain: -2.2, mode: 1, poly: 1}, {rev: .04}),
+        OP(3, 72, [99, 72, 60, 72], [99, 80, 72, 0], {vs: 6, rs: 4, ks: KSL(70)})]},
+      {gain: GN_SOLID, mode: 1, poly: 1}, {rev: .04}),
     F('roehrenglocke', 'Röhrenglocke', 'glocke', 'bell', 'FM-Röhrenglocke',
       'Glocke = unharmonisches Verhältnis: Modulator 3,5 : 1. Zwei Paare minimal gegeneinander verstimmt = Schwebung wie bei echtem Metall. Lange Abklingzeit, kein Sustain.',
       {alg: 5, fb: 4, ops: [
@@ -6176,6 +6436,77 @@ const RecHelpers = (() => {
         OP(0, 80, [60, 50, 60, 60], [99, 92, 90, 0], {vs: 1}),
         OP(1, 78, [38, 36, 55, 60], [92, 84, 82, 0], {vs: 3})]},
       {gain: -14.2, lfo: {wave: 'sine', rate: 5.2, delay: .9, pitch: .05, amp: 0}}, {rev: .3}),
+
+    // ---------- V0d (A.4 6): 7 new FM sounds (r6/bibliothek-recherche.md R6-Tabelle F, parameters r6/n6/rezepte76.json; R6-B1 from
+    // r6/fm-measure-d.out); gains calibrated to −18 LUFS on the role phrase (v3-v0d-sounds.mjs)
+    F('stapel-bass', 'Stapel-Bass FM', 'fm', 'bass', 'FM-Bass aus zwei 1:1-Paaren',
+      'Algorithmus 1, zwei 1:1-Paare übereinander: die Modulatoren schnappen nach dem Anschlag auf 82/78 bzw. 76/70 und halten – der Biss kommt aus dem Fall, der Körper bleibt. Tastaturskalierung links hebt die Modulatoren unter C2 an, damit auch E1 am Handy klingt.',
+      {alg: 1, fb: 0, ops: [
+        OP(1, 99, [99, 45, 30, 62], [99, 92, 86, 0], {rs: 2}),
+        OP(1, 94, [99, 70, 30, 62], [99, 82, 78, 0], {vs: 3, rs: 2, ks: KSL(35)}),
+        OP(1, 86, [99, 45, 30, 62], [99, 92, 86, 0], {det: 3, rs: 2}),
+        OP(1, 78, [99, 70, 30, 62], [99, 76, 70, 0], {det: -3, vs: 3, rs: 2, ks: KSL(35)}),
+        OFF(), OFF()]},
+      {gain: GN_STAPEL, mode: 1, poly: 1}, {rev: .05}),
+    F('abgrund-bass', 'Abgrund-Bass FM', 'fm', 'bass', 'Tiefer FM-Bass aus drei Paaren',
+      'Drei Paare (Algorithmus 5): Sub ×1, Körper ×1 mit schnappendem Modulator (R2 75, hält bei 82), Klick ×2 ← ×5 mit Feedback 6. Anschlag öffnet die Modulatoren; Tastaturskalierung links hält die tiefen Töne hell genug fürs Handy.',
+      {alg: 5, fb: 6, ops: [
+        OP(1, 85, [99, 45, 30, 62], [99, 92, 86, 0], {rs: 2}),
+        OP(1, 60, [99, 45, 30, 62], [99, 90, 85, 0], {vs: 6, rs: 2, ks: KSL(35)}),
+        OP(1, 99, [99, 45, 30, 62], [99, 92, 86, 0], {rs: 2}),
+        OP(1, 92, [99, 75, 30, 62], [99, 85, 82, 0], {vs: 6, rs: 2, ks: KSL(35)}),
+        OP(2, 82, [99, 85, 50, 62], [99, 0, 0, 0], {rs: 2}),
+        OP(5, 80, [99, 85, 30, 62], [99, 85, 80, 0], {vs: 6, rs: 2, ks: KSL(35)})]},
+      {gain: GN_N63, mode: 1, poly: 1}, {rev: .05}),
+    F('knurr-bass', 'Knurr-Bass FM', 'fm', 'bass', 'FM-Bass mit Feedback-Säge',
+      'Algorithmus 2: Feedback 6 auf dem 1:1-Modulator macht eine Säge – der Bass knurrt. Das zweite Paar (×1 ← ×2) gibt einen kurzen Glanz obendrauf.',
+      {alg: 2, fb: 6, ops: [
+        OP(1, 99, [99, 45, 30, 62], [99, 92, 86, 0], {rs: 2}),
+        OP(1, 90, [99, 65, 30, 62], [99, 80, 76, 0], {vs: 3, rs: 2}),
+        OP(1, 88, [99, 60, 40, 62], [99, 70, 0, 0], {rs: 2}),
+        OP(2, 70, [99, 60, 30, 62], [99, 80, 70, 0], {vs: 3, rs: 2}),
+        OFF(), OFF()]},
+      {gain: GN_N64, mode: 1, poly: 1}, {rev: .05}),
+    F('kristall-lead', 'Kristall-Lead FM', 'fm', 'lead', 'Gläserner FM-Lead',
+      'Algorithmus 1: ×1 ← ×2 als hohler Kern, dazu eine leicht verstimmte Kette ×1 ← ×1 ← ×3 mit Feedback 4 für Glanz. Vibrato setzt nach 0,5 s ein, Legato-Glide 30 ms.',
+      {alg: 1, fb: 4, ops: [
+        OP(1, 99, [80, 40, 30, 55], [99, 92, 88, 0]),
+        OP(2, 72, [80, 40, 30, 55], [99, 90, 85, 0], {vs: 3}),
+        OP(1, 92, [80, 40, 30, 55], [99, 92, 88, 0], {det: 3}),
+        OP(1, 75, [80, 40, 30, 55], [99, 90, 85, 0], {vs: 2}),
+        OP(3, 60, [80, 40, 30, 55], [99, 88, 82, 0]),
+        OP(1, 60, [80, 40, 30, 55], [99, 88, 82, 0])]},
+      {gain: GN_N65, glide: .03, mode: 2, poly: 1, lfo: {wave: 'sine', rate: 5.5, delay: .5, pitch: .12, amp: 0}}, {rev: .25, dly: .2}),
+    F('funk-stich', 'Funk-Stich FM', 'fm', 'keys', 'Funkiger FM-Stich',
+      'Drei Paare: ×1 ← ×3 (schneller Biss), ×2 ← ×5 (Klick, kurz), ×1 ← ×1. Die Ausgänge klingen aus wie gezupft – für kurze, funkige Akkorde.',
+      {alg: 5, fb: 6, ops: [
+        OP(1, 99, [99, 55, 30, 60], [99, 85, 0, 0]),
+        OP(3, 80, [99, 70, 40, 60], [99, 75, 0, 0], {vs: 4}),
+        OP(2, 90, [99, 55, 30, 60], [99, 85, 0, 0]),
+        OP(5, 65, [99, 85, 50, 60], [99, 0, 0, 0], {vs: 4}),
+        OP(1, 85, [99, 55, 30, 60], [99, 85, 0, 0]),
+        OP(1, 60, [99, 60, 40, 60], [99, 80, 0, 0])]},
+      {gain: GN_N66}, {rev: .15}),
+    F('atem-orgelflaeche', 'Atem-Orgelfläche FM', 'fm', 'pad', 'Additive Orgelfläche',
+      'Algorithmus 32 = sechs Sinus-Ausgänge auf ×1 … ×6 wie Zugriegel, langsamer Anstieg (R1 45) = die Fläche atmet ein. Chorus ENS und Hall machen sie breit.',
+      {alg: 32, fb: 2, ops: [
+        OP(1, 99, [45, 30, 30, 50], [99, 95, 95, 0]),
+        OP(2, 88, [45, 30, 30, 50], [99, 95, 95, 0]),
+        OP(3, 82, [45, 30, 30, 50], [99, 95, 95, 0]),
+        OP(4, 76, [45, 30, 30, 50], [99, 95, 95, 0]),
+        OP(5, 70, [45, 30, 30, 50], [99, 95, 95, 0]),
+        OP(6, 64, [45, 30, 30, 50], [99, 95, 95, 0])]},
+      {gain: GN_N67}, {chorus: {mode: 'ENS', mix: 1}, rev: .4}),
+    F('fm-fluegel', 'FM-Flügel', 'fm', 'keys', 'FM-Klavier (Annäherung)',
+      'Prinzip: Teiltongruppen getrennt bauen, wie Manny Fernandez’ FM-X-Klavier (SE); hier mit 6 Operatoren: Körper ×1 ← ×1, Obertöne ×1 (verstimmt) ← ×7 kurz, Hammer fest 1,8 kHz ← ×1,41 (15 ms). Rate-Skalierung 4: hohe Töne klingen kürzer.',
+      {alg: 5, fb: 0, ops: [
+        OP(1, 99, [96, 30, 25, 55], [99, 80, 0, 0], {vs: 3, rs: 4}),
+        OP(1, 62, [96, 30, 25, 55], [99, 75, 0, 0], {vs: 5, rs: 4}),
+        OP(1, 85, [96, 55, 35, 60], [99, 60, 0, 0], {det: 4, vs: 3, rs: 4}),
+        OP(7, 55, [99, 70, 40, 60], [99, 0, 0, 0], {vs: 5, rs: 4}),
+        OP(3, 70, [99, 85, 60, 60], [99, 0, 0, 0], {fixed: 1, fine: 26, vs: 5, rs: 4}),
+        OP(1, 85, [99, 90, 60, 60], [99, 0, 0, 0], {fine: 41, vs: 5, rs: 4})]},
+      {gain: GN_N68}, {rev: .25}),
   ];
 
   /* ============================== DRUM KITS (5 from drumresearch/kits.js + 2 new) ==============================
@@ -6251,8 +6582,9 @@ const RecHelpers = (() => {
     arp: rep(32, i => [i * .25, .2, [60, 63, 67, 70, 72, 70, 67, 63][i % 8], i % 4 ? .65 : .9]),
     keys: [[0, 1.8, 48, .7], [0, 1.8, 55, .65], [0, 1.8, 58, .65], [0, 1.8, 63, .7], [2, 1.8, 46, .7], [2, 1.8, 53, .65], [2, 1.8, 57, .65], [2, 1.8, 62, .7], [4, 3, 44, .7], [4, 3, 51, .65], [4, 3, 55, .65], [4, 3, 60, .7]],
     bell: [[0, 1, 72, .8], [1, 1, 79, .7], [2, 1, 84, .8], [3, 2, 76, .7]],
+    fx: [[0, 8, 48, .8]],   // V0d: effects (riser, ramp): one long C3
   };
-  const PREVIEW_SEC = {bass: 5, seq16: 5.5, seq8: 5, lead: 6, chord: 8, pad: 12, stab: 5, arp: 5.5, keys: 7, bell: 8};
+  const PREVIEW_SEC = {bass: 5, seq16: 5.5, seq8: 5, lead: 6, chord: 8, pad: 12, stab: 5, arp: 5.5, keys: 7, bell: 8, fx: 6};
 
   /* ---------- helpers ---------- */
   function materialize(preset) {              // factory/user analog preset -> full flat patch (never mutates the preset)
@@ -6364,11 +6696,12 @@ const RecHelpers = (() => {
 
   // §6.2 macros at note-on (the native path has no live edits, §6.4): fmAtk on R1 (+ = faster); fmDec on R2 / R3 and fmRel on R4
   // subtracted (+ = Länge / Release longer, as the MAKRO knobs say), clamped 0..99 — the same rule as the worklet's fmAdvance
+  // V0d (A.4b 7): fmDec (Länge) only on the outputs; BISS (fmBite) goes to DXN.voice as opt.bite (time factor on D1 / D2)
   function fm6Macro(P) {
     const f = P.fm6, a = Math.round(+P.fmAtk || 0), d = -Math.round(+P.fmDec || 0), r = -Math.round(+P.fmRel || 0);
     if (!a && !d && !r) return f;
-    const cl = x => Math.max(0, Math.min(99, x));
-    return Object.assign({}, f, {ops: f.ops.map(op => Object.assign({}, op, {r: [cl(op.r[0] + a), cl(op.r[1] + d), cl(op.r[2] + d), cl(op.r[3] + r)]}))});
+    const cl = x => Math.max(0, Math.min(99, x)), A = G.DXN && G.DXN.ALGS[(f.alg | 0) - 1], car = k => !A || A.car[k];
+    return Object.assign({}, f, {ops: f.ops.map((op, k) => { const dd = car(k) ? d : 0; return Object.assign({}, op, {r: [cl(op.r[0] + a), cl(op.r[1] + dd), cl(op.r[2] + dd), cl(op.r[3] + r)]}); })});
   }
   // §6.3.8 / §6.4: an FM sound with an open filter skips the filter (gain exactly 1, like the worklet's bypass)
   const fmBypass = (P, engine) => engine === 'fm6' && P.ftype <= 1 && P.cutoff >= 18000 && P.res <= .02 && P.fenv === 0 && P.drive <= .01;
@@ -6410,7 +6743,7 @@ const RecHelpers = (() => {
     } else if (engine === 'fm6' && G.DXN && P.fm6) {
       // §6.4: the native FM voice; the DX sources are started by DXN.voice itself (no `starts` entries)
       const fm = fm6Macro(P), n6 = note + (fm.trans | 0);
-      const dx = G.DXN.voice(c, fm, n6, vel, t0, mix, cvOut, {bright: +P.fmBright || 0});
+      const dx = G.DXN.voice(c, fm, n6, vel, t0, mix, cvOut, {bright: +P.fmBright || 0, bite: +P.fmBite || 0});
       srcs.push(...dx.srcs); nodes.push(...dx.nodes);
       // AC coupling like the worklet's 5 Hz DC blocker: 1:1 FM pairs (E-pianos) carry DC (the J-1 sideband), heard as a thump
       const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 5; hp.Q.value = Math.SQRT1_2; nodes.push(hp); mix.connect(hp);
@@ -7608,6 +7941,8 @@ const DXN = (() => {
   const scaleLevel = (n, ks) => { if (!ks) return 0; const o = n - ks.bp - 17; return o >= 0 ? scaleCurve(((o + 1) / 3) | 0, ks.rd, ks.rc) : scaleCurve((-(o - 1) / 3) | 0, ks.ld, ks.lc); };
   const LVL_PER_SEC = q => (4 + (q & 3)) * Math.pow(2, (q >> 2) - 8) * (44100 / 64);
   const amp = l => Math.pow(2, l / 256 - 14);                  // level units -> gain (2.0 at the top = 4*pi rad for a modulator)
+  const PEG_RATE = [1, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 16, 16, 17, 18, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 33, 34, 36, 37, 38, 39, 41, 42, 44, 46, 47, 49, 51, 53, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 79, 82, 85, 88, 91, 94, 98, 102, 106, 110, 115, 120, 125, 130, 135, 141, 147, 153, 159, 165, 171, 178, 185, 193, 202, 211, 232, 243, 254, 255];
+  const PEG_TAB = [-128, -116, -104, -95, -85, -76, -68, -61, -56, -52, -49, -46, -43, -41, -39, -37, -35, -33, -32, -31, -30, -29, -28, -27, -26, -25, -24, -23, -22, -21, -20, -19, -18, -17, -16, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 38, 40, 43, 46, 49, 53, 58, 65, 73, 82, 92, 103, 115, 127];
 
   // Kepler/Bessel: steady state of y = sin(phi + beta*y) is  sum_n 2/(n*beta) * J_n(n*beta) * sin(n*phi)  (valid for beta < 1)
   function besselJ(n, x) { let s = 0; const M = 96; for (let i = 0; i < M; i++) { const t = (i + .5) * Math.PI / M; s += Math.cos(n * t - x * Math.sin(t)); } return s / M; }
@@ -7635,12 +7970,20 @@ const DXN = (() => {
     const w = ctx.createPeriodicWave(re, im, {disableNormalization: true}); WAVES.set(key, w); return w;
   }
 
-  // envelope -> list of {t, set|target} events (absolute level units), evaluated analytically for live release
-  function envPlan(op, outLvl, rsd, t0, fromLvl, stages) {
+  // envelope -> list of {t, set|target} events (absolute level units), evaluated analytically for live release.
+  // V0d (A.4b 2/9): static phase (Dexed ACCURATE_ENVELOPE) as an event 'hold' (constant level for the hold time, seconds);
+  // bf = BISS time factor 2^(BISS/10) for D1 / D2 of a modulator (fall >= 12 dB clamped at R 82 unless already faster)
+  const EG_STATICS = [1764000, 1764000, 1411200, 1411200, 1190700, 1014300, 992250, 882000, 705600, 705600, 584325, 507150, 502740, 441000, 418950, 352800, 308700, 286650, 253575, 220500, 220500, 176400, 145530, 145530, 125685, 110250, 110250, 88200, 88200, 74970, 61740, 61740, 55125, 48510, 44100, 37485, 31311, 30870, 27562, 27562, 22050, 18522, 17640, 15435, 14112, 13230, 11025, 9261, 9261, 7717, 6615, 6615, 5512, 5512, 4410, 3969, 3969, 3439, 2866, 2690, 2249, 1984, 1896, 1808, 1411, 1367, 1234, 1146, 926, 837, 837, 705, 573, 573, 529, 441, 441];
+  const holdSec = (rr, att0) => { rr = Math.min(99, Math.max(0, rr)); let n = rr < 77 ? EG_STATICS[rr] : 20 * (99 - rr); if (rr < 77 && att0) n = Math.floor(n / 20); return n / 44100; };
+  function envPlan(op, outLvl, rsd, t0, fromLvl, stages, bf) {
     const ev = []; let t = t0, l = fromLvl;
     for (const ix of stages) {
       const tgt = Math.max(16, ((scaleOL(op.l[ix]) >> 1) << 6) + outLvl - 4256);
-      const R = LVL_PER_SEC(Math.min(63, ((op.r[ix] * 41) >> 6) + rsd));
+      const f = bf && (ix === 1 || ix === 2) ? bf : 1;
+      let R = LVL_PER_SEC(Math.min(63, ((op.r[ix] * 41) >> 6) + rsd));
+      const att0 = ix === 0 && op.l[0] === 0;
+      if (tgt === l || att0) { const h = holdSec(op.r[ix] + rsd, att0) / f; ev.push({t, kind: 'hold', a: l, b: l, dur: h}); t += h; continue; }
+      if (f !== 1) { const q = R * f; R = f > 1 && l - tgt >= 510 ? Math.min(q, Math.max(R, LVL_PER_SEC(Math.min(63, ((82 * 41) >> 6) + rsd)))) : q; }
       if (tgt > l) {                                            // rising: msfa approaches 17 doublings in integer bands
         if (l < 1716) l = 1716;
         let x = l; while (x < tgt) { const band = Math.floor(x / 256), nx = Math.min(tgt, (band + 1) * 256), dt = Math.max((nx - x) / ((17 - band) * R), .0002);
@@ -7654,6 +7997,7 @@ const DXN = (() => {
     let l = l0;
     for (const e of plan.ev) { if (t < e.t) return l; if (t >= e.t + e.dur) { l = e.b; continue; }
       const x = (t - e.t) / e.dur;
+      if (e.kind === 'hold') return e.a;
       if (e.kind === 'fall') return e.a + (e.b - e.a) * x;
       const A = amp(e.a), B = amp(e.b), v = A + (B - A) * (1 - Math.exp(-x / 3)) / (1 - Math.exp(-1 / 3)); return 256 * (Math.log2(v) + 14); }
     return l;
@@ -7662,6 +8006,7 @@ const DXN = (() => {
     for (const e of plan.ev) {
       const A = amp(e.a) * scale, B = amp(e.b) * scale;
       p.setValueAtTime(A, e.t);
+      if (e.kind === 'hold') { p.setValueAtTime(A, e.t + e.dur); continue; }
       if (e.kind === 'fall') { p.setTargetAtTime(0, e.t, e.dur / Math.log(A / B)); }      // linear-in-dB decay, exact
       else { p.setTargetAtTime(A + (B - A) / (1 - Math.exp(-1 / 3)), e.t, e.dur * 3); }       // ~linear within one 6 dB band
       p.setValueAtTime(B, e.t + e.dur);
@@ -7674,6 +8019,18 @@ const DXN = (() => {
     const v127 = Math.max(1, Math.min(127, Math.round(vel * 127))), outScale = 0.5 / Math.sqrt(alg.nCar);
     const bright = opt.bright ? Math.pow(10, opt.bright / 20) : 1;          // WP7: Helligkeit (dB on the modulators) at note-on
     const ops = [], srcs = [], nodes = [];
+    // V0d (A.4b 3/9): pitch EG as cents on `detune` of every ratio oscillator (never on the 2*pi*f modulator gains / mul nodes:
+    // detune scales the FM deviation fed into `frequency` too, the index stays); stages as linear ramps (linear in octaves)
+    const PG = P.peg && P.peg.l && !P.peg.l.every(x => x === 50) ? P.peg : null;
+    let pegCs = null, pegCur = 0, pegT = t0;
+    const pegRamp = (p, from, ixs, t) => { let c = from;
+      for (const ix of ixs) { const tgt = PEG_TAB[PG.l[ix]] / 32, rate = PEG_RATE[PG.r[ix]] / 21.3, dt = Math.abs(tgt - c) / rate;
+        t += dt; p.linearRampToValueAtTime(tgt * 1200, t); c = tgt; }
+      return t; };
+    if (PG && ctx.createConstantSource) {
+      pegCs = ctx.createConstantSource(); pegCur = PEG_TAB[PG.l[3]] / 32; pegCs.offset.setValueAtTime(pegCur * 1200, t0);
+      pegT = pegRamp(pegCs.offset, pegCur, [0, 1, 2], t0); srcs.push(pegCs); nodes.push(pegCs);
+    }
     for (let k = 0; k < 6; k++) {
       const op = P.ops[k]; if (op.on === 0 || !(op.ol > 0)) { ops.push(null); continue; }
       const outLvl = Math.max(0, (Math.min(127, scaleOL(op.ol) + scaleLevel(note, op.ks)) << 5) + scaleVel(v127, op.vs | 0));
@@ -7684,13 +8041,15 @@ const DXN = (() => {
       if (f > ctx.sampleRate * .45) { ops.push(null); continue; }  // Nyquist guard
       const o = ctx.createOscillator(); o.frequency.value = f;
       let beta = 0;
-      const plan = envPlan(op, outLvl, rsd, t0, 0, [0, 1, 2]);
+      const bf = !alg.car[k] && opt.bite ? Math.pow(2, opt.bite / 10) : 0;
+      const plan = envPlan(op, outLvl, rsd, t0, 0, [0, 1, 2], bf);
       if (k === alg.fbDst && P.fb > 0) {                            // static feedback timbre: op level 300 ms into the note ("body")
         beta = Math.min(2 * Math.PI * amp(levelAt(plan, t0 + (opt.fbAt ?? .3), 0)) * Math.pow(2, P.fb - 8), 3.2);
       }
       const form = alg.car[k] ? 'car' : (opt.sineMod ? 'car' : 'mod');
       if (beta > 0 || form === 'mod') o.setPeriodicWave(opWave(ctx, beta, form));
       if (!op.fixed && cvOut) cvOut.connect(o.detune);
+      if (!op.fixed && pegCs) pegCs.connect(o.detune);
       const g = ctx.createGain(); g.gain.value = 0; o.connect(g);
       // FM input must be d/dt of the PM output: A*y'(theta)*2*pi*(f + delta(t)). Plain modulator (delta = 0): fold
       // 2*pi*f into the envelope gain. Middle of a stack: env gain * 2*pi, then a GainNode "mul" whose gain = f + delta(t).
@@ -7709,6 +8068,12 @@ const DXN = (() => {
     return {srcs, nodes,
       release(t) {
         end = t;
+        if (pegCs) {                                                        // key off -> the PEG ramps from its current value to L4
+          const p = pegCs.offset; let cur = PEG_TAB[PG.l[3]] / 32, tt = t0;
+          for (const ix of [0, 1, 2]) { const tgt = PEG_TAB[PG.l[ix]] / 32, dt = Math.abs(tgt - cur) / (PEG_RATE[PG.r[ix]] / 21.3);
+            if (t < tt + dt) { cur = cur + (tgt - cur) * (dt > 0 ? (t - tt) / dt : 1); tt = t; break; } tt += dt; cur = tgt; }
+          p.cancelScheduledValues(t); p.setValueAtTime(cur * 1200, t); pegRamp(p, cur, [3], t);
+        }
         for (const X of ops) { if (!X) continue;
           const l = levelAt(X.plan, t, 0), p = X.g.gain;
           p.cancelScheduledValues(t); p.setValueAtTime(amp(l) * X.scale, t);
@@ -7729,7 +8094,7 @@ const DXN = (() => {
       T = Math.max(T, (top - Math.max(l4, top - 2550)) / R); }                 // until -60 dB below the loudest stage (2550 units)
     return Math.min(T, 12);
   }
-  return {voice, releaseTime, opWave, fbHarmonics, ALGS, DX_ALGS, besselJ, envPlan, levelAt};
+  return {voice, releaseTime, opWave, fbHarmonics, ALGS, DX_ALGS, besselJ, envPlan, levelAt, holdSec, PEG_RATE, PEG_TAB};
 })();
 
 // ---------- FMH: UI helpers (same maths as the worklet; from dx6-presets.js, without its ROM presets) ----------
@@ -7740,22 +8105,52 @@ const FMH = (() => {
   const LVL_PER_SEC = q => (4 + (q & 3)) * Math.pow(2, (q >> 2) - 8) * (44100 / 64);
   const lvlOf = (L, ol) => Math.max(16, ((scaleOL(L) >> 1) << 6) + (scaleOL(ol) << 5) - 4256);   // velocity/scaling neutral
   const scaleRate = (n, s) => (s * Math.min(31, Math.max(0, ((n / 3) | 0) - 7))) >> 3;
-  function segTime(r, from, to, rsd = 0) {             // seconds for one stage, levels in internal units
-    const R = LVL_PER_SEC(Math.min(63, ((r * 41) >> 6) + rsd));
+  const qOf = (r, rsd) => Math.min(63, ((r * 41) >> 6) + rsd);
+  function segTime(r, from, to, rsd = 0, rf = 1) {     // seconds for one stage, levels in internal units (rf: rate factor, BISS)
+    const R = LVL_PER_SEC(qOf(r, rsd)) * rf;
     if (to < from) return (from - to) / R;
     let t = 0, x = Math.max(from, 1716); while (x < to) { const b = Math.floor(x / 256), nx = Math.min(to, (b + 1) * 256); t += (nx - x) / ((17 - b) * R); x = nx; } return t;
   }
-  // times of the 4 stages for display under the envelope graph ("A 4 ms · D1 320 ms · D2 2,1 s · R 450 ms")
-  function envTimes(op, note = 60) {
-    const lv = op.l.map(L => lvlOf(L, op.ol)), rsd = scaleRate(note, op.rs | 0);
-    const prev = [lvlOf(op.l[3], op.ol), lv[0], lv[1], Math.max(lv[1], lv[2])];   // release shown from the body level
-    return op.r.map((r, i) => segTime(r, prev[i], lv[i], rsd));
+  // V0d (A.4b 2): Dexed ACCURATE_ENVELOPE static phase, seconds (held at the 44.1 kHz time at every sample rate)
+  const STATICS = [1764000, 1764000, 1411200, 1411200, 1190700, 1014300, 992250, 882000, 705600, 705600, 584325, 507150, 502740, 441000, 418950, 352800, 308700, 286650, 253575, 220500, 220500, 176400, 145530, 145530, 125685, 110250, 110250, 88200, 88200, 74970, 61740, 61740, 55125, 48510, 44100, 37485, 31311, 30870, 27562, 27562, 22050, 18522, 17640, 15435, 14112, 13230, 11025, 9261, 9261, 7717, 6615, 6615, 5512, 5512, 4410, 3969, 3969, 3439, 2866, 2690, 2249, 1984, 1896, 1808, 1411, 1367, 1234, 1146, 926, 837, 837, 705, 573, 573, 529, 441, 441];
+  const holdSec = (rr, att0) => { rr = Math.min(99, Math.max(0, rr)); let n = rr < 77 ? STATICS[rr] : 20 * (99 - rr); if (rr < 77 && att0) n = Math.floor(n / 20); return n / 44100; };
+  // effective rate of a stage after the MAKRO offsets (m = {atk, dec, rel, bite, car}); fmDec only on outputs (A.4b 7)
+  const clampR = x => Math.max(0, Math.min(99, Math.round(x)));
+  function effR(r, ix, m) { if (!m) return r; const off = ix === 0 ? +m.atk || 0 : ix === 3 ? -(+m.rel || 0) : m.car ? -(+m.dec || 0) : 0; return clampR(r + Math.round(off)); }
+  // levels each stage starts from: the attack from 0 (msfa Env::init, A.4b 4c), the release from the body level (display)
+  function stageFrom(op, stage) {
+    const lv = op.l.map(L => lvlOf(L, op.ol));
+    return stage === 0 ? 0 : stage === 1 ? (op.l[0] === 0 ? 0 : lv[0]) : stage === 2 ? lv[1] : Math.max(lv[1], lv[2]);
   }
-  // inverse for drag-to-time: the rate 0..99 whose stage time is closest (in log time) to `sec`
-  function rateForTime(op, stage, sec, note = 60) {
-    const lv = op.l.map(L => lvlOf(L, op.ol)), from = stage === 0 ? lvlOf(op.l[3], op.ol) : stage === 3 ? Math.max(lv[1], lv[2]) : lv[stage - 1];
-    const rsd = scaleRate(note, op.rs | 0); let best = 0, bd = Infinity;
-    for (let r = 0; r <= 99; r++) { const t = segTime(r, from, lv[stage], rsd); const d = Math.abs(Math.log((t + 1e-4) / (sec + 1e-4))); if (d < bd) { bd = d; best = r; } }
+  // seconds of one stage with stored rate r: hold if the target equals the level (or L1 = 0 at stage 1), BISS on D1 / D2 of a
+  // modulator (time / 2^(BISS/10), a >= 12 dB fall never faster than R 82 unless the stored rate is faster)
+  function stageTime(op, stage, r, note = 60, m) {
+    const rsd = scaleRate(note, op.rs | 0), from = stageFrom(op, stage), to = lvlOf(op.l[stage], op.ol), re = effR(r, stage, m);
+    const bf = m && !m.car && m.bite && (stage === 1 || stage === 2) ? Math.pow(2, m.bite / 10) : 1, att0 = stage === 0 && op.l[0] === 0;
+    if (to === from || att0) return holdSec(re + rsd, att0) / bf;
+    let rf = bf;
+    if (bf > 1 && from - to >= 510) { const R = LVL_PER_SEC(qOf(re, rsd)); rf = Math.min(R * bf, Math.max(R, LVL_PER_SEC(qOf(82, rsd)))) / R; }
+    return segTime(re, from, to, rsd, rf);
+  }
+  // times of the 4 stages for display ("A 0,5 ms · D1 70 ms · D2 124 ms · R 358 ms"), with static phases
+  function envTimes(op, note = 60, m) { return [0, 1, 2, 3].map(i => stageTime(op, i, op.r[i], note, m)); }
+  // V0d (A.4b 4g): click limit of a stage (stored rate), or null. Outputs: falls >= 20 dB at most 8 dB/ms (effective qrate <= 59),
+  // rises >= 20 dB mid-note the same (not the attack out of silence); modulators: falls >= 12 dB at most 2.5 dB/ms (qrate <= 52)
+  function limitR(op, stage, car, note = 60, m) {
+    const rsd = scaleRate(note, op.rs | 0), from = stageFrom(op, stage), to = lvlOf(op.l[stage], op.ol);
+    let qmax = null;
+    if (to < from && from - to >= (car ? 850 : 510)) qmax = car ? 59 : 52;
+    else if (car && to > from && to - from >= 850 && !(stage === 0 || from < 1716)) qmax = 59;
+    if (qmax == null) return null;
+    let best = -1; for (let r = 0; r <= 99; r++) if (qOf(effR(r, stage, m), rsd) <= qmax) best = r;
+    return Math.max(0, best);
+  }
+  // inverse for drag-to-time: the stored rate (within lo..hi) whose stage time is closest (in log time) to `sec`; equal times
+  // (same qrate) -> the rate closest to the current one (A.4b 4c); static phases included
+  function rateForTime(op, stage, sec, note = 60, o = {}) {
+    const lo = o.lo ?? 0, hi = o.hi ?? 99, cur = o.cur ?? op.r[stage]; let best = hi, bd = Infinity;
+    for (let r = lo; r <= hi; r++) { const t = stageTime(op, stage, r, note, o.m), d = Math.abs(Math.log((t + 1e-4) / (sec + 1e-4)));
+      if (d < bd - 1e-9 || (d <= bd + 1e-9 && Math.abs(r - cur) < Math.abs(best - cur))) { if (d < bd - 1e-9) bd = d; best = r; } }
     return best;
   }
   // what a modulator's level means: peak modulation index in radians (4*pi at OL 99/L 99)
@@ -7769,12 +8164,16 @@ const FMH = (() => {
     const r = fm.ratio, coarse = r < 1 ? 0 : Math.floor(r), fine = Math.round(((r / (coarse || .5)) - 1) * 100);
     const L2 = Math.max(0, Math.min(99, Math.round(99 + 20 * Math.log10(Math.max(fm.modSus, 1e-3)) / 0.75)));   // 0.75 dB per level step
     const mod = OP(coarse, olForIndex(fm.index), [99, 50, 99, 70], [99, L2, 0, 0], {fine: Math.min(99, Math.max(0, fine))});
-    mod.l[2] = mod.l[1]; mod.r[1] = rateForTime(mod, 1, fm.modDecay);
+    mod.l[2] = mod.l[1];
+    { // L7: the FM2 -> FM6 migration keeps its pre-V0d rate choice (plain segment time, no static phase)
+      const lv = mod.l.map(L => lvlOf(L, mod.ol)); let best = 0, bd = Infinity;
+      for (let r = 0; r <= 99; r++) { const t = segTime(r, lv[0], lv[1], 0), d = Math.abs(Math.log((t + 1e-4) / (fm.modDecay + 1e-4))); if (d < bd) { bd = d; best = r; } }
+      mod.r[1] = best; }
     return {alg: 1, fb: 0, trans: 0, ops: [car, mod, off, Object.assign({}, off), Object.assign({}, off), Object.assign({}, off)]};
   }
   // WP7 (UI): an output operator's level in dB ((ol − 99) · 0.75, Anhang A.2) and the fixed frequency of FEST
   const outDb = ol => (ol - 99) * .75;
-  return {envTimes, rateForTime, modIndex, olForIndex, ratioOf, fromV1, segTime, lvlOf, outDb, scaleOL};
+  return {envTimes, rateForTime, modIndex, olForIndex, ratioOf, fromV1, segTime, lvlOf, outDb, scaleOL, stageTime, stageFrom, limitR, holdSec, effR, scaleRate, qOf};
 })();
 
 // ---------- algorithm diagram (algsvg.js): carriers bottom row, modulators stacked above their targets ----------
@@ -7805,9 +8204,10 @@ function algSvg(alg, o = {}) {
   const cars = [0, 1, 2, 3, 4, 5].filter(k => alg.car[k]), yb = H - PAD - 4;   // output bus
   s += `<path class="w" d="M${x(cars[0]) + B / 2} ${yb}H${x(cars[cars.length - 1]) + B / 2}"/>`;
   for (const k of cars) s += `<path class="w" d="M${x(k) + B / 2} ${y(k) + B}V${yb}"/>`;
-  if (o.fb !== 0) {                                                            // feedback loop: src right side -> dst top
-    const d = alg.fbDst, sc = alg.fbSrc, xr = Math.max(x(d), x(sc)) + B + 5;
-    s += `<path class="fb" d="M${x(sc) + B} ${y(sc) + B / 2}H${xr}V${y(d) - 5}H${x(d) + B / 2}V${y(d)}"${o.fbW ? ` style="stroke-width:${o.fbW}"` : ''}/>`;
+  {                                                                            // feedback loop: src right side -> dst top
+    // V0d (A.4 1): always drawn — FB 0 grey dashed 1 px, FB > 0 orange (thickness ~ fb); data-fbop = the feedback operator
+    const d = alg.fbDst, sc = alg.fbSrc, xr = Math.max(x(d), x(sc)) + B + 5, z = o.fb === 0;
+    s += `<path class="fb${z ? ' fb0' : ''}" data-fbop="${d + 1}" d="M${x(sc) + B} ${y(sc) + B / 2}H${xr}V${y(d) - 5}H${x(d) + B / 2}V${y(d)}"${!z && o.fbW ? ` style="stroke-width:${o.fbW}"` : ''}/>`;
   }
   for (let k = 0; k < 6; k++) {
     const sel = o.sel === k ? ' sel' : '', off = o.levels && !(o.levels[k] > 0) ? ' off' : '';
@@ -7826,7 +8226,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '3.2.0';
+const VERSION = '3.4.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -7949,6 +8349,7 @@ function toNorm(d, v) {
   else if (d.c === 'db') n = v > 0 ? (20 * Math.log10(v) + 40) / 52 : 0;          // −40…+12 dB, norm 0 = −∞ (Ausgang, §5.1)
   else if (d.c === 'hdec') n = v >= 59 ? 1 : .96 * Math.log(Math.max(v, .2) / .2) / Math.log(100);
   else if (d.c === 'pow') n = Math.pow(Math.max(0, (v - d.min) / (d.max - d.min)), 1 / d.k);
+  else if (d.c === 'bipow') { const u = Math.sign(v) * Math.pow(Math.min(1, Math.abs(v) / d.max), 1 / d.k); n = (u + 1) / 2; }   // V0d: symmetric curve from the centre
   else n = (v - d.min) / (d.max - d.min);
   return clamp(isNum(n) ? n : 0, 0, 1);
 }
@@ -7959,6 +8360,7 @@ function fromNorm(d, n) {
   if (d.c === 'db') return n <= 0 ? 0 : Math.min(d.max, Math.pow(10, (52 * n - 40) / 20));
   if (d.c === 'hdec') return n >= .985 ? 60 : Math.min(20, .2 * Math.pow(100, n / .96));
   if (d.c === 'pow') return d.min + (d.max - d.min) * Math.pow(n, d.k);
+  if (d.c === 'bipow') { const u = 2 * n - 1; return d.max * Math.sign(u) * Math.pow(Math.abs(u), d.k); }
   return d.min + (d.max - d.min) * n;
 }
 function clampToDesc(d, v, fallback) {
@@ -8153,8 +8555,9 @@ const FACTORY_BY_ID = new Map(FACTORY.concat(DRUM_FACTORY, INIT_SYNTH, [INIT_KIT
    one and the factory „Tropfen“ as Effekt (EN-16). „Glocke“ exists only in FM. */
 const BROLES = [['bass', 'Bass'], ['seq', 'Sequenz'], ['lead', 'Lead'], ['chord', 'Akkord'], ['pad', 'Fläche'], ['keys', 'Keys'], ['atmo', 'Atmo'], ['fx', 'Effekt'], ['bell', 'Glocke'], ['init', 'Init']];
 const ROLE_LABEL = Object.fromEntries(BROLES);
-const ROLE_OF_ID = {'f-glas-pluck': 'keys', 'f-analog-harfe': 'keys', 'f-pop-pluck': 'seq', 'f-tropfen': 'fx', 'f-wt-vokal': 'pad', 'f-wt-glas': 'keys', 'f-wt-orgel': 'keys', 'f-wt-digital': 'lead'};
-const ROLE_OF_CAT = {bass: 'bass', lead: 'lead', poly: 'chord', flaeche: 'pad', pluck: 'keys', sequenz: 'seq', glocke: 'bell', fm: 'keys', wt: 'pad', init: 'init'};
+const ROLE_OF_ID = {'f-glas-pluck': 'keys', 'f-analog-harfe': 'keys', 'f-pop-pluck': 'seq', 'f-tropfen': 'fx', 'f-tropfen-ping': 'seq', 'f-pfeif-rampe': 'fx',
+  'f-sturzflug': 'fx', 'f-aufsteiger': 'fx', 'f-absteiger': 'fx', 'f-wellen-sweep': 'fx', 'f-kassetten-laden': 'fx', 'f-wt-vokal': 'pad', 'f-wt-glas': 'keys', 'f-wt-orgel': 'keys', 'f-wt-digital': 'lead'};
+const ROLE_OF_CAT = {bass: 'bass', lead: 'lead', poly: 'chord', flaeche: 'pad', pluck: 'keys', sequenz: 'seq', glocke: 'bell', fm: 'keys', wt: 'pad', init: 'init', effekt: 'fx'};
 const ROLE_OF_DEMO = {bass: 'bass', keys: 'keys', arp: 'seq', chord: 'chord', bell: 'bell', pad: 'pad', lead: 'lead', seq16: 'seq', seq8: 'seq', stab: 'chord'};
 const engKey = e => (e === 'fm2' ? 'fm6' : e);
 function soundRole(rec) {
@@ -8198,7 +8601,7 @@ function factorySound(id) {
 }
 // browser categories (§11.1/11.2): chip label (P), column label (L)
 const BCATS = [['alle', 'Alle', 'Alle'], ['bass', 'Bass', 'Bass'], ['lead', 'Lead', 'Lead'], ['poly', 'Poly', 'Poly & Brass'], ['flaeche', 'Fläche', 'Fläche'],
-  ['pluck', 'Pluck', 'Pluck & Keys'], ['sequenz', 'Seq', 'Sequenz'], ['fm', 'FM', 'FM'], ['glocke', 'Glocken', 'Glocken'], ['wt', 'WT', 'WT (klassisch)'], ['eigene', 'Eigene', 'Eigene']];
+  ['pluck', 'Pluck', 'Pluck & Keys'], ['sequenz', 'Seq', 'Sequenz'], ['fm', 'FM', 'FM'], ['glocke', 'Glocken', 'Glocken'], ['wt', 'WT', 'WT (klassisch)'], ['effekt', 'Effekt', 'Effekte'], ['eigene', 'Eigene', 'Eigene']];
 const DCATS = [['kits', 'Kits', 'Kits'], ['ekits', 'Eigene', 'Eigene Kits']];                 // §11.2: the drum track's browser
 const CAT_LABEL = Object.fromEntries(BCATS.map(c => [c[0], c[2]]));
 // GM program of a track in the MIDI export, by the category of its sound (§17 WP3)
@@ -8270,9 +8673,12 @@ pd('l1sync l2sync', 'Takt', {vals: LFO_SYNC, def: 0, fmt: 'sync'});
 pd('l1retrig l2retrig', 'Start', {vals: [0, 1], def: 0});
 pd('l1fade l2fade', 'Einblenden', {min: 0, max: 10, c: 'pow', k: 2, def: 0, fmt: 's'});
 pd('fmAmp', 'Lautstärke-Form', {vals: [0, 1], def: 0});
-pd('fmBright', 'Helligkeit', {min: -24, max: 24, c: 'bip', def: 0, fmt: 'num1', mod: 'fmbright'});
+// V0d (A.4 3b): travel v −1…1 from the centre -> 24 · sgn(v) · |v|^0,5 dB (v = 1/16, ¼, ½, 1 -> 6 / 12 / 17 / 24 dB); data, range,
+// mod target (1,0 = 24 dB) and .syx stay as they are
+pd('fmBright', 'Helligkeit', {min: -24, max: 24, c: 'bipow', k: .5, def: 0, fmt: 'num1', mod: 'fmbright'});
 pd('fmAtk fmDec fmRel', 'Härte', {min: -30, max: 30, c: 'bip', def: 0, fmt: 'num1'});
 PD.fmDec.l = 'Länge'; PD.fmRel.l = 'Release';
+pd('fmBite', 'Biss', {min: -20, max: 20, c: 'bip', def: 0, fmt: 'num1'});   // V0d (A.4b 7): time factor 2^(−BISS/10) on D1/D2 of the modulators
 // engine blocks and the track effects (paths into sound.p.wt / sound.p.fm2 / sound.fx)
 [['wt.table', 'Tabelle', {vals: ['digital', 'vocal', 'glas', 'orgel'], def: 'digital'}],
   ['wt.pos', 'Position', {min: 0, max: 1, c: 'lin', def: .3, fmt: 'pct'}],
@@ -9459,6 +9865,7 @@ function spawnVoice(i, out, vel, t0, o) {
   if (!c || !A || !tr || tr.kind !== 'synth') return null;
   const snd = o.sound || tr.sound, P = snd.p, eng = snd.engine === 'fm6' && !P.fm6 ? 'analog' : snd.engine;
   out = clamp(Math.round(out), 0, 127);
+  if (o.src !== 'audition' && o.src !== 'preview' && !o.sound) FMEV.note[i] = out;   // V0d (A.4b 4a): the FM editor's reference note
   // §5.4: VA (and FM6 from WP7) play through the track's worklet engine; a browser preview of another sound through its own
   // preview engine. The choice is made per note: until the module is ready (or when it is blocked) the native path plays.
   if (isWkEngine(snd.engine)) {
@@ -13206,7 +13613,7 @@ function modFrame() {
    modT: the track of the routes (default R.selT), modSrcs: the sources it accepts (FX knobs: LFO 1/2 only, §9.6)} */
 function makeCtl(d, get, set, o) {
   o = o || {};
-  const fader = o.kind === 'fader', stepped = !!d.vals, bip = d.c === 'bip' && !stepped;
+  const fader = o.kind === 'fader', stepped = !!d.vals, bip = (d.c === 'bip' || d.c === 'bipow') && !stepped;
   const label = o.label || d.l, fmt = v => (o.fmt ? o.fmt(v) : fmtVal(d.fmt, v));
   const dst = typeof o.mod === 'string' && o.mod ? o.mod : null, mi = o.modT == null ? R.selT : o.modT;
   const srcOk = s => !!dst && !!MSRC[s] && (!o.modSrcs || o.modSrcs.includes(s));
@@ -13237,6 +13644,9 @@ function makeCtl(d, get, set, o) {
   let g = null, lastTap = {t: 0, x: 0, y: 0}, lastN = -2, lastTxt = null, lastTick = -1;
   let mSig = '', routes = [], act = [], all = [], lastDot = -9, trackPx = 0, trackLay = -1, lastBadges = '', ariaLast = '';
   const nBase = () => toNorm(d, get());
+  // V0d: a curved knob (Helligkeit, 'bipow') is modulated linearly in its unit (1,0 = half the range): ring / dot / range text
+  // are placed through the value, so they show the real dB
+  const sN = (n, off) => (d.c === 'bipow' || d.c === 'pow' ? toNorm(d, clamp(fromNorm(d, n) + off * (d.max - d.min), d.min, d.max)) : n + off);
   // the routes this control shows: all of its destination, in mod mode only the active source (§9.3)
   function modUpdate(n) {
     all = modRoutes(mi, dst);
@@ -13252,9 +13662,9 @@ function makeCtl(d, get, set, o) {
       const [lo, hi] = spanOf(routes), main = routes.reduce((b, m) => (Math.abs(m.amt) > Math.abs(b.amt) ? m : b));
       k.style.setProperty('--mc', MSRC[main.src].c);
       if (fader) {
-        k.style.setProperty('--m0', clamp(n + lo, 0, 1).toFixed(4)); k.style.setProperty('--m1', clamp(n + hi, 0, 1).toFixed(4));
-        k.style.setProperty('--x0', clamp(n + lo, -.06, 1.06).toFixed(4)); k.style.setProperty('--x1', clamp(n + hi, -.06, 1.06).toFixed(4));
-      } else { setArc(kmr, ARC_LM, n + lo, n + hi); setRingX(kmx, n + lo, n + hi); }
+        k.style.setProperty('--m0', clamp(sN(n, lo), 0, 1).toFixed(4)); k.style.setProperty('--m1', clamp(sN(n, hi), 0, 1).toFixed(4));
+        k.style.setProperty('--x0', clamp(sN(n, lo), -.06, 1.06).toFixed(4)); k.style.setProperty('--x1', clamp(sN(n, hi), -.06, 1.06).toFixed(4));
+      } else { setArc(kmr, ARC_LM, sN(n, lo), sN(n, hi)); setRingX(kmx, sN(n, lo), sN(n, hi)); }
     } else {
       k.style.removeProperty('--mc');
       if (!fader) { kmr.setAttribute('visibility', 'hidden'); setRingX(kmx, 0, 0); }
@@ -13273,7 +13683,7 @@ function makeCtl(d, get, set, o) {
     if (!dst) return '';
     const rs = modRoutes(mi, dst).filter(m => !only || m.src === only); if (!rs.length) return '';
     const n = nBase(), [lo, hi] = spanOf(rs);
-    return fmt(fromNorm(d, clamp(n + lo, 0, 1))) + ' … ' + fmt(fromNorm(d, clamp(n + hi, 0, 1)));
+    return fmt(fromNorm(d, clamp(sN(n, lo), 0, 1))) + ' … ' + fmt(fromNorm(d, clamp(sN(n, hi), 0, 1)));
   }
   function ariaTxt(t) {
     let s = label + ' ' + t;
@@ -13302,7 +13712,7 @@ function makeCtl(d, get, set, o) {
     if (!act.length) return;
     let off = 0; const K = ringK(dst);
     for (const m of act) off += (m.amt / K) * (sv[m.src] || 0);
-    const nm = clamp(nBase() + off, 0, 1);
+    const nm = clamp(sN(nBase(), off), 0, 1);
     if (Math.abs(nm - lastDot) < 2e-4) return;
     lastDot = nm; k._dot = nm;
     if (fader) {
@@ -13585,6 +13995,7 @@ function openEditor() {
   if (!sh.classList.contains('open')) closeSheets();
   else { EL.clipSheet.classList.remove('open'); (sh === EL.drumSheet ? EL.synthSheet : EL.drumSheet).classList.remove('open'); }
   R.editor = tr.kind === 'drum' ? 'drum' : 'synth';
+  if (R.editor === 'synth' && !sh.classList.contains('open') && tr.sound.engine === 'fm6') fmInitSel(R.selT, false);   // V0d (A.4b 1)
   if (R.editor === 'synth') buildSynthEd(); else buildDrumEd();
   setSheetOpen(true);
   UI.dirty.all = true;
@@ -13763,7 +14174,9 @@ function fmChanged(i, now) {
 function applySound(i, snd, opts) {
   opts = opts || {};
   const T = S.tracks[i]; if (!T || T.kind !== 'synth' || !snd) return;
+  const old = T.sound, other = !old || old.name !== snd.name || old.origin !== snd.origin || old.engine !== snd.engine;
   T.sound = snd; markDirty(); UI.dirty.strip = UI.dirty.grid = UI.dirty.edHead = true; UI.sndVer++;
+  if (other && snd.engine === 'fm6') { try { fmInitSel(i, true); } catch (e) { logErr(e); } }   // V0d (A.4b 1): a newly loaded sound resets the choice
   const c = AU.ctx, A = AU.tracks[i];
   if (!c || !A) return;
   if (AU.synth[i] && wkWanted(i)) { syncEngine(i, true); applyTrackParams(i, !!opts.immediate); return; }
@@ -14078,6 +14491,9 @@ function subTabsFor(tab, eng) {
     : eng === 'fm6' ? [['algo', 'ALGO'], ['op', 'OP ' + ((ED.fmOp | 0) + 1)], ['makro', 'MAKRO'], ['voice', 'STIMME']]      // §6.5 (WP7)
     : [['eng', eng === 'wt' ? 'WT' : 'FM'], ['voice', 'STIMME']];
   if (tab === 'filter') return [['ctl', 'REGLER'], ['xy', 'XY']];
+  // V0d (A.4b 5): FM = OPERATOREN · TONHÖHE · FILTER · MOD-HK, at fmAmp 1 LAUTST. (ADSR) in front (reached by a tap only)
+  if (tab === 'env' && eng === 'fm6') { const p = S.tracks[R.selT].sound.p; const L_ = (l, s) => `<span class="ll">${l}</span><span class="ls">${s}</span>`;
+    return (p.fmAmp >= 1 ? [['amp', L_('LAUTST. (ADSR)', 'ADSR')]] : []).concat([['ops', L_('OPERATOREN', 'OPERAT.')], ['peg', L_('TONHÖHE', 'TONH.')], ['flt', 'FILTER'], ['mod', 'MOD-HK']]); }
   if (tab === 'env') return [['amp', 'LAUTST.-HÜLLK.'], ['flt', 'FILTER'], ['mod', 'MOD']];   // V0b U-04
   if (tab === 'lfo') return [['l1', 'LFO 1'], ['l2', 'LFO 2']];
   if (tab === 'fx') return FX_SUBS;
@@ -14093,11 +14509,14 @@ function buildSynthEd() {
   const eng = tr.sound.engine;
   if (!['osc', 'filter', 'env', 'lfo', 'mod', 'fx'].includes(ED.tab)) ED.tab = 'osc';
   let subs = subTabsFor(ED.tab, eng);
-  if (subs && !subs.some(x => x[0] === ED.sub[ED.tab])) ED.sub[ED.tab] = subs[0][0];
+  // V0d (A.4b 5): the FM envelope tab keeps its own sub-tab (ED.sub.envfm, default OPERATOREN), apart from the VA one
+  const SK = ED.tab === 'env' && eng === 'fm6' ? 'envfm' : ED.tab;
+  if (subs && !subs.some(x => x[0] === ED.sub[SK])) ED.sub[SK] = SK === 'envfm' ? 'ops' : subs[0][0];
+  if (eng === 'fm6' && ED.fmT !== i) fmInitSel(i, false);
   if (UI.fmSolo && (UI.fmSolo.t !== i || eng !== 'fm6' || ED.tab !== 'osc' || ED.sub.osc !== 'op')) fmSoloOff();   // §6.5: Solo is monitor-only
   const F = sheetFrame(sh, tr.name, [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']], ED.tab,
     id => { ED.tab = id; safeRebuild(buildSynthEd); },
-    subs ? {list: subs, cur: ED.sub[ED.tab], on: id => { ED.sub[ED.tab] = id; safeRebuild(buildSynthEd); }} : null);
+    subs ? {list: subs, cur: ED.sub[SK], on: id => { ED.sub[SK] = id; FMEV.fine = false; safeRebuild(buildSynthEd); }} : null);
   // row 1: ● SYNTH n · [VA | FM | WT] · ⇅ chip · ECO-Klang badge (native fallback, §1.3) · ↶ ↷ · ✕
   const engSeg = makeSeg([['analog', 'VA', 'VA'], ['fm6', 'FM', 'FM'], ['wt', 'WT', 'WT']], () => (S.tracks[i].sound.engine === 'fm2' ? 'fm6' : S.tracks[i].sound.engine),
     v => setEngine(i, v), 'eng', {undo: soundUndo(i), label: 'Klangerzeugung'});
@@ -14153,6 +14572,7 @@ function buildSynthEd() {
   if (ED.tab === 'fx' && GLOBAL_SUBS.has(ED.sub.fx)) globalBand(F);
   fillSynthTab(F.body, i);
   sh.classList.add('open');
+  if (UI.lcdNext) { lcdShow(UI.lcdNext[0], UI.lcdNext[1]); UI.lcdNext = null; }
   if (UI.modSrc) requestAnimationFrame(() => modModeRefresh());
   if (UI.wia) { wiaPaint(); wiaTrick(); }
 }
@@ -14193,7 +14613,8 @@ function edHeadRefresh() {
 }
 function fillSynthTab(body, i) {
   const pg = el('div', 'pg rest'); body.appendChild(pg);
-  const tab = ED.tab, sub = ED.sub[tab];
+  const fmE = ED.tab === 'env' && S.tracks[i].sound.engine === 'fm6';
+  const tab = ED.tab, sub = ED.sub[fmE ? 'envfm' : tab];
   pg.classList.add('pg-' + tab + (sub ? '-' + sub : ''));
   if (tab === 'osc') {
     if (sub === 'o1' || sub === 'o2' || sub === 'o3') pageOsc(pg, i, +sub[1]);
@@ -14205,6 +14626,7 @@ function fillSynthTab(body, i) {
     else if (S.tracks[i].sound.engine === 'wt') pageWt(pg, i);
     else pageFm2(pg, i);
   } else if (tab === 'filter') { if (sub === 'xy') pageXY(pg, i); else pageFilter(pg, i); }
+  else if (tab === 'env' && fmE) pageFmEnv(pg, i, sub);
   else if (tab === 'env') pageEnv(pg, i, sub === 'flt' ? 'f' : sub === 'mod' ? 'm' : 'a');
   else if (tab === 'lfo') pageLfo(pg, i, sub === 'l2' ? 2 : 1);
   else if (tab === 'mod') pageMod(pg, i);
@@ -14405,7 +14827,8 @@ const FM_RANGE = {on: [0, 1], fixed: [0, 1], coarse: [0, 31], fine: [0, 99], det
   lc: [0, 3], rc: [0, 3], alg: [1, 32], fb: [0, 7], trans: [-24, 24]};
 const fmClampV = (key, v) => { const r = FM_RANGE[key]; return r ? clamp(Math.round(+v || 0), r[0], r[1]) : v; };
 // the DX7 INIT VOICE: OP 1 alone as an output at 99, the other operators at 0
-const FM_INIT_OP = k => ({on: 1, fixed: 0, coarse: 1, fine: 0, det: 0, ol: k === 0 ? 99 : 0, r: [99, 99, 99, 99], l: [99, 99, 99, 0], vs: 0, rs: 0});
+// V0d (A.4b 8): Init R4 80 instead of the DX7's 99 (falls to −40 dB in 22 ms instead of 2.8 ms: no click on key-off)
+const FM_INIT_OP = k => ({on: 1, fixed: 0, coarse: 1, fine: 0, det: 0, ol: k === 0 ? 99 : 0, r: [99, 99, 99, 80], l: [99, 99, 99, 0], vs: 0, rs: 0});
 const FM_INIT = () => ({alg: 1, fb: 0, trans: 0, ops: [0, 1, 2, 3, 4, 5].map(FM_INIT_OP)});
 const FM_CURVE = [[0, '−LIN'], [1, '−EXP'], [2, '+EXP'], [3, '+LIN']];
 const fmAlg = fm => DXN.ALGS[(fm.alg | 0) - 1] || DXN.ALGS[0];
@@ -14448,7 +14871,9 @@ const fmIsOut = (fm, k) => !!fmAlg(fm).car[k];
 // value texts (Anhang A.2): ratio „×3,50“ or fixed „324 Hz“; level of an output in dB ((ol − 99) · 0.75), of a modulator as
 // the modulation index „I 3,1“ (FMH.modIndex, radians)
 const fmRatioTxt = op => (op.fixed ? fmtVal('hz', FMH.ratioOf(op)) : '×' + fmtDec(FMH.ratioOf(op), 2));
-const fmOlTxt = (out, ol) => (out ? (ol >= 99 ? '0 dB' : MINUS + fmtDec((99 - ol) * .75, 1).replace(/,0$/, '') + ' dB') : 'I ' + fmtDec(FMH.modIndex(Math.round(ol)), 1));
+// V0d (A.4 3): the index below 1 with two decimals („I 0,08“), above with one („I 3,1“): from OL 20 on never „I 0,0“
+const fmIdxTxt = ol => { const x = FMH.modIndex(Math.round(ol)); return fmtDec(x, x < 1 ? 2 : 1); };
+const fmOlTxt = (out, ol) => (out ? (ol >= 99 ? '0 dB' : MINUS + fmtDec((99 - ol) * .75, 1).replace(/,0$/, '') + ' dB') : 'I ' + fmIdxTxt(ol));
 const fmBpTxt = v => noteLabel(clamp(Math.round(v), 0, 99) + 21);          // 0 = A-1 (DX7), 39 = middle C
 const fmSign = v => { const r = Math.round(v); return (r > 0 ? '+' : r < 0 ? MINUS : '') + Math.abs(r); };
 const fmTimeTxt = t => (t > 20 ? '>20 s' : fmtVal('s', Math.max(t, .001)));
@@ -14459,7 +14884,9 @@ function fmOpCtl(i, k, key, o) {
     coarse: {l: 'Grob', vals: range(0, 31), def: 1},
     fine: {l: 'Fein', min: 0, max: 99, c: 'lin', def: 0},
     det: {l: 'Verstimmung', vals: range(-7, 7), def: 0},
-    ol: {l: 'OP-Pegel', min: 0, max: 99, c: 'lin', def: out ? 99 : 0},
+    // V0d (A.4 3): a modulator's fader / knob travel p -> OL = round(99 · p^0,45) (OL 64 = audible FM at 38 % instead of 65 %);
+    // outputs stay linear in OL (0,75 dB per step); the data stay ol 0–99
+    ol: out ? {l: 'OP-Pegel', min: 0, max: 99, c: 'lin', def: 99} : {l: 'OP-Pegel', min: 0, max: 99, c: 'pow', k: .45, def: 0},
     vs: {l: 'Anschlag', vals: range(0, 7), def: 0},
     rs: {l: 'Key→Zeit', vals: range(0, 7), def: 0},
     bp: {l: 'Breakpoint', min: 0, max: 99, c: 'lin', def: 39},
@@ -14490,9 +14917,19 @@ function fmEnvPts(op, W, H, pad) {
   return {t, pts: [[x0, y(op.l[3])], [x1, y(op.l[0])], [x2, y(op.l[1])], [x3, y(op.l[2])], [xs, y(op.l[2])], [x4, y(op.l[3])]], lw, sus, y};
 }
 function fmSparkD(op) { const {pts} = fmEnvPts(op, 48, 20, 1.5); return 'M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L'); }
+// V0d (A.4 2): the sparkline in pixels of its box: 2 px free at the top, 3 px at the bottom (the 1,5-px line ends ≥ 2 px above the
+// box edge), 2 px left / right; the filled area under it closes on the zero line
+function fmSparkPx(op, W, H) {
+  const T = 2.75, Bm = 3, X = 2, lw = (W - 2 * X) / 4.4, sus = .4 * lw, t = FMH.envTimes(op, 60), y = L => T + (1 - L / 99) * (H - T - Bm);
+  const x0 = X, x1 = x0 + fmLaneX(t[0]) * lw, x2 = x0 + lw + fmLaneX(t[1]) * lw, x3 = x0 + 2 * lw + fmLaneX(t[2]) * lw, xs = x0 + 3 * lw + sus, x4 = xs + fmLaneX(t[3]) * lw;
+  const pts = [[x0, y(op.l[3])], [x1, y(op.l[0])], [x2, y(op.l[1])], [x3, y(op.l[2])], [xs, y(op.l[2])], [x4, y(op.l[3])]];
+  const d = 'M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L'), y0 = y(0).toFixed(1);
+  return {d, fill: d + `L${pts[5][0].toFixed(1)} ${y0}L${x0} ${y0}Z`};
+}
 // selecting an operator (diagram box, ratio button, ‹ ›): the OP page shows it; the sub-tab says which
 function fmSelect(i, k, lcd) {
   ED.fmOp = clamp(k | 0, 0, 5);
+  if (!ED.fmOpT) ED.fmOpT = {}; ED.fmOpT[i] = ED.fmOp; ED.fmT = i;            // V0d (A.4b 1): the last choice per track
   const st = EL.synthSheet.querySelector('.stab[data-sub="op"]'); if (st) st.textContent = 'OP ' + (ED.fmOp + 1);
   if (UI.fmSolo && UI.fmSolo.t === i && UI.fmSolo.k !== ED.fmOp) { UI.fmSolo.k = ED.fmOp; wkFm6(i, true); }
   edRefresh();
@@ -14502,19 +14939,41 @@ function fmSelect(i, k, lcd) {
 function fmAlgSet(i, a, label) {
   const fm = fmOf(i); if (!fm) return;
   a = ((Math.round(a) - 1) % 32 + 32) % 32 + 1; if (a === fm.alg) return;
+  const A0 = fmAlg(fm), A1 = DXN.ALGS[a - 1];
   soundEdit(i, label || 'Algorithmus ' + a, () => fmSetPatch(i, 'alg', a));
-  lcdShow('Algorithmus', a + (FM_ALG_NAME[a] ? ' · ' + FM_ALG_NAME[a] : ''));
+  // V0d (A.4 1): same connections, other feedback place -> say so (the pairs come from the table, not from a list)
+  if (fmEdgeKey(A0) === fmEdgeKey(A1) && fmFbOpTxt(A0) !== fmFbOpTxt(A1)) {
+    UI.fmAlgNote = 'Unterschied nur: Feedback auf OP ' + fmFbOpTxt(A1) + ' statt OP ' + fmFbOpTxt(A0) + ' – hörbar ab FB ≈ 5';
+    UI.lcdNext = ['Algorithmus ' + a, UI.fmAlgNote];
+  } else { UI.fmAlgNote = null; UI.lcdNext = ['Algorithmus', a + (FM_ALG_NAME[a] ? ' · ' + FM_ALG_NAME[a] : '')]; }
   haptic('snap');
   safeRebuild(buildSynthEd);
+  if (UI.lcdNext && !GEST.size) { lcdShow(UI.lcdNext[0], UI.lcdNext[1]); UI.lcdNext = null; }   // the rebuilt sheet has a new LCD line
 }
 // the algorithm diagram (§6.5): a fixed box (the page never jumps), outputs filled in the track colour, the feedback loop
 // orange with a thickness ~ fb. Tap a box = select that operator; tap empty space = the algorithm sheet; swipe = ±1
+// V0d (A.4 1): the feedback operator as text („6“, alg 4 „6→4“, alg 6 „6→5“) and why FEEDBACK is silent (L2): the FB operator is
+// off / at level 0, or every way from it to an output passes an operator at level 0
+const fmFbOpTxt = A => (A.fbDst === A.fbSrc ? String(A.fbDst + 1) : (A.fbDst + 1) + '→' + (A.fbSrc + 1));
+function fmFbIdle(fm) {
+  const A = fmAlg(fm), k = A.fbDst, live = j => fm.ops[j].on !== 0 && fm.ops[j].ol > 0;
+  if (!live(k)) return 'wirkt erst, wenn OP ' + (k + 1) + ' klingt';
+  let mute = null;
+  const reach = j => { if (A.car[j]) return true;
+    for (let t = 0; t < 6; t++) if (A.mods[t].includes(j)) { if (!live(t)) { if (mute == null) mute = t; continue; } if (reach(t)) return true; }
+    return false; };
+  return reach(k) ? '' : 'Weg über OP ' + (mute + 1) + ' stumm';
+}
+// two algorithms with the same connections apart from the feedback (computed from the table, e.g. 1↔2, 3↔4)
+const fmEdgeKey = A => A.car.join('') + '|' + A.mods.map(m => Array.from(m).sort().join(',')).join(';');
+const FM_FB_HELP = 'Feedback hörst du ab ≈ 3, wenn sein Operator ein Ausgang ist, als Modulator ab ≈ 5.';
 function fmDiagram(i) {
   const box = el('div', 'fmdiag'); guardTouch(box); box.setAttribute('role', 'img');
   const draw = () => {
     const fm = fmOf(i), A = fmAlg(fm);
-    const h = algSvg(A, {box: 26, gx: 10, gy: 12, sel: ED.fmOp | 0, fb: fm.fb, fbW: (1.4 + fm.fb * .5).toFixed(1), levels: fm.ops.map(o => (o.on !== 0 ? o.ol : 0)), fit: true});
-    if (box._h !== h) { box._h = h; box.innerHTML = h; box.setAttribute('aria-label', 'Algorithmus ' + fm.alg + (FM_ALG_NAME[fm.alg] ? ' – ' + FM_ALG_NAME[fm.alg] : '')); }
+    const h = algSvg(A, {box: 26, gx: 10, gy: 12, sel: ED.fmOp | 0, fb: fm.fb, fbW: (1.4 + fm.fb * .5).toFixed(1), levels: fm.ops.map(o => (o.on !== 0 ? o.ol : 0)), fit: true}) +
+      `<div class="fblbl${fm.fb ? '' : ' z'}">FEEDBACK · OP ${fmFbOpTxt(A)}</div>`;
+    if (box._h !== h) { box._h = h; box.innerHTML = h; box.setAttribute('aria-label', 'Algorithmus ' + fm.alg + (FM_ALG_NAME[fm.alg] ? ' – ' + FM_ALG_NAME[fm.alg] : '') + ', Feedback auf OP ' + fmFbOpTxt(A)); }
   };
   let g = null;
   on(box, 'pointerdown', e => {
@@ -14560,8 +15019,12 @@ function fmStripCol(i, k) {
   const col = el('div', 'fmcol rest'); col.dataset.op = k;
   const led = el('button', 'fmled rb', `<i class="led"></i><b>${k + 1}</b>`); led.setAttribute('role', 'switch'); led.dataset.key = 'fm.' + k + '.on';
   const rat = el('button', 'fmrat rb'); rat.dataset.key = 'fm.' + k + '.ratio';
-  const fd = fmOpCtl(i, k, 'ol', {kind: 'fader', label: 'OP ' + (k + 1)});
-  const spk = el('div', 'fmspk', '<svg viewBox="0 0 48 20" preserveAspectRatio="none" aria-hidden="true"><path/></svg>'), path = spk.querySelector('path');
+  const fd = fmOpCtl(i, k, 'ol', {kind: 'fader', label: 'OP ' + (k + 1)}), cap = fd.querySelector('.fcap');
+  // V0d (A.4 2): the envelope sparkline in device pixels (no stretching): ≥ 2 px free at the top, ≥ 3 px at the bottom, the area
+  // under the curve at 20 %; tap = OP › HÜLLK. of this operator (an extra way, A.4b 1)
+  const spk = el('div', 'fmspk', '<svg aria-hidden="true"><path class="sf"/><path class="sl"/></svg>'), svgS = spk.querySelector('svg'), path = spk.querySelector('.sl'), pathF = spk.querySelector('.sf');
+  spk.setAttribute('role', 'button'); spk.setAttribute('aria-label', 'Hüllkurve OP ' + (k + 1) + ' bearbeiten');
+  onTap(spk, () => { fmSelect(i, k, false); ED.sub.osc = 'op'; ED.fmSub = 'env'; safeRebuild(buildSynthEd); });
   onTap(led, () => {
     const before = soundSnapshot(i), on_ = fmGetOp(i, k, 'on') ? 0 : 1;
     fmSetOp(i, k, 'on', on_); commitSound(i, before, 'OP ' + (k + 1) + (on_ ? ' an' : ' aus'));
@@ -14569,20 +15032,26 @@ function fmStripCol(i, k) {
   });
   onTap(rat, () => fmSelect(i, k));
   const upd = () => {
-    const fm = fmOf(i), op = fm.ops[k], on_ = op.on !== 0, out = fmIsOut(fm, k), t = fmRatioTxt(op), d = fmSparkD(op);
+    const fm = fmOf(i), op = fm.ops[k], on_ = op.on !== 0, out = fmIsOut(fm, k), t = fmRatioTxt(op);
+    const W = spk.clientWidth, H = spk.clientHeight, sp = W > 4 && H > 4 ? fmSparkPx(op, W, H) : null, d = sp ? sp.d + '|' + W + 'x' + H : '';
+    if (cap && cap.textContent !== String(op.ol)) cap.textContent = String(op.ol);
     led.classList.toggle('on', on_); led.setAttribute('aria-checked', String(on_)); led.setAttribute('aria-label', 'OP ' + (k + 1) + (on_ ? ' an' : ' aus'));
     if (rat._t !== t) { rat._t = t; rat.textContent = t; rat.setAttribute('aria-label', 'OP ' + (k + 1) + ' wählen – ' + t); }
     col.classList.toggle('out', out); col.classList.toggle('off', !on_); col.classList.toggle('sel', (ED.fmOp | 0) === k);
-    if (path._d !== d) { path._d = d; path.setAttribute('d', d); }
+    if (path._d !== d && sp) { path._d = d; svgS.setAttribute('viewBox', `0 0 ${W} ${H}`); svgS.setAttribute('width', W); svgS.setAttribute('height', H); path.setAttribute('d', sp.d); pathF.setAttribute('d', sp.fill); }
     fd.update();
   };
   col.append(led, rat, fd, spk);
   upd(); ED.refreshers.push(upd);
+  if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(() => { if (!col.isConnected) { ro.disconnect(); return; } upd(); }); ro.observe(spk); }
   return col;
 }
 function fmNativeHint(i) {
   const h = el('div', 'fmhint small');
-  const upd = () => { const on_ = !trackOnWorklet(i); h.hidden = !on_; if (on_) h.textContent = 'Kompatibel: Änderungen ab der nächsten Note'; };
+  // V0d (A.4b 9): in ECO a modulator at OL ≥ 75 gets the known limit of the native path (FM instead of PM)
+  const upd = () => { const on_ = !trackOnWorklet(i); h.hidden = !on_;
+    if (on_) { const f = fmOf(i), A = fmAlg(f), hi = f.ops.some((o, k) => !A.car[k] && o.on !== 0 && o.ol >= 75);
+      const t = 'Kompatibel: Änderungen ab der nächsten Note' + (hi ? ' · ECO: Klangfarbe bei hohem Pegel angenähert' : ''); if (h.textContent !== t) h.textContent = t; } };
   upd(); ED.refreshers.push(upd); return h;
 }
 // ALGO (§6.5): diagram + algorithm stepper / name / [Liste] / FEEDBACK, the operator strip
@@ -14596,7 +15065,7 @@ function pageFmAlgo(pg, i) {
   stp.append(bP, num, bN);
   const nm = el('div', 'fmname');
   const bList = el('button', 'hb rb fmlist', 'Liste'); bList.setAttribute('aria-label', 'Alle 32 Algorithmen');
-  const fb = fmPatchCtl(i, 'fb');
+  const fb = fmPatchCtl(i, 'fb', {idle: () => fmFbIdle(fmOf(i)), onTouch: () => { if (!fmFbIdle(fmOf(i))) setTimeout(() => lcdShow('Feedback', String(fmOf(i).fb), '', FM_FB_HELP), 0); }});
   onTap(bP, () => fmAlgSet(i, fmOf(i).alg - 1)); onTap(bN, () => fmAlgSet(i, fmOf(i).alg + 1)); onTap(bList, () => openAlgSheet(i));
   const upd = () => { const f = fmOf(i), t = String(f.alg), n = FM_ALG_NAME[f.alg] ? '„' + FM_ALG_NAME[f.alg] + '“' : fmAlg(f).nCar + (fmAlg(f).nCar === 1 ? ' Ausgang' : ' Ausgänge');
     if (num.textContent !== t) num.textContent = t; if (nm.textContent !== n) nm.textContent = n; fb.update(); };
@@ -14606,103 +15075,570 @@ function pageFmAlgo(pg, i) {
   top.append(dg, side);
   const strip = el('div', 'fmstrip rest');
   for (let k = 0; k < 6; k++) strip.appendChild(fmStripCol(i, k));
-  pg.append(top, strip, fmNativeHint(i));
+  pg.append(top, strip, fmLageBand(i), fmNativeHint(i));
   fxLongLabels(pg);
   void fm;
 }
-// the rate / level envelope of one operator (§6.5 HÜLLK.): four lanes A | D1 | D2 | (sustain) | R. A finger in a lane grabs
-// that stage: vertical = its level (L1–L4), horizontal = its time (relative, log; FMH.rateForTime makes the DX rate);
-// one axis per gesture after 4 px, one undo entry per gesture, double tap = the INIT value of that stage
-function fmEnvGraph(i) {
-  const wrap = el('div', 'fmenv rest'), NS = 'http://www.w3.org/2000/svg';
-  wrap.innerHTML = '<svg aria-hidden="true"><g class="lanes"></g><path class="fill"/><path class="line"/><g class="pts"></g></svg><div class="fmenvlbl"></div>';
-  guardTouch(wrap);
-  const svg = wrap.querySelector('svg'), lanes = svg.querySelector('.lanes'), fill = svg.querySelector('.fill'), line = svg.querySelector('.line'), ptsG = svg.querySelector('.pts');
-  const dots = [0, 1, 2, 3].map(() => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('r', '5'); ptsG.appendChild(c); return c; });
-  const STG = ['A', 'D1', 'D2', 'R'];
-  let W = 300, H = 110, geo = null, G = null, lastTap = {t: 0, x: 0, y: 0};
-  const op = () => fmOf(i).ops[ED.fmOp | 0];
-  const draw = () => {
-    const r = wrap.getBoundingClientRect(); if (r.width > 20) { W = r.width; H = r.height; }
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    geo = fmEnvPts(op(), W, H, 8);
-    const P = geo.pts, d = 'M' + P.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L');
-    line.setAttribute('d', d); fill.setAttribute('d', d + `L${P[5][0].toFixed(1)} ${H - 8}L8 ${H - 8}Z`);
-    let lh = '';
-    for (let k = 0; k < 4; k++) { const x = 8 + (k < 3 ? k * geo.lw : 3 * geo.lw + geo.sus); lh += `<rect x="${x.toFixed(1)}" y="4" width="${geo.lw.toFixed(1)}" height="${H - 8}" class="${k % 2 ? 'b' : 'a'}${G && G.stage === k ? ' on' : ''}"/>`; }
-    lh += `<text x="${(8 + 3 * geo.lw + geo.sus / 2).toFixed(1)}" y="${H - 12}" class="sus">S</text>`;
-    lanes.innerHTML = lh;
-    const idx = [1, 2, 3, 5];
-    dots.forEach((c, k) => { c.setAttribute('cx', P[idx[k]][0].toFixed(1)); c.setAttribute('cy', P[idx[k]][1].toFixed(1)); c.classList.toggle('on', !!(G && G.stage === k)); });
-  };
-  const laneOf = x => { if (!geo) return 0; const lx = x - 8; if (lx < 3 * geo.lw) return clamp(Math.floor(lx / geo.lw), 0, 2); return 3; };
-  const show = st => { const o = op(), t = FMH.envTimes(o, 60); lcdShow(STG[st] + ' · OP ' + ((ED.fmOp | 0) + 1), fmTimeTxt(t[st]) + ' · Pegel ' + o.l[st], 'R' + (st + 1) + ' ' + o.r[st]); };
-  on(wrap, 'pointerdown', e => {
-    if (G || e.button > 0) return; e.preventDefault();
-    try { wrap.setPointerCapture(e.pointerId); } catch (_) {}
-    const r = wrap.getBoundingClientRect(), st = laneOf(e.clientX - r.left), o = op();
-    G = {id: e.pointerId, x0: e.clientX, y0: e.clientY, st: 'down', stage: st, before: soundSnapshot(i), axis: null,
-      l0: o.l[st], t0: Math.log(Math.max(FMH.envTimes(o, 60)[st], FM_TLO)), h: r.height, w: geo ? geo.lw : r.width / 4.4};
-    gestBegin(e.pointerId, () => { G = null; draw(); });
-    show(st); draw();
-  });
-  on(wrap, 'pointermove', e => {
-    if (!G || e.pointerId !== G.id) return;
-    const dx = e.clientX - G.x0, dy = e.clientY - G.y0;
-    if (!G.axis) { if (Math.max(Math.abs(dx), Math.abs(dy)) < 4) return; G.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'; G.st = 'drag'; }
-    const f = ctlPrecision(G.axis === 'x' ? Math.abs(dy) : Math.abs(dx)), k = ED.fmOp | 0;
-    if (G.axis === 'y') {
-      const L = clamp(Math.round(G.l0 - dy / (G.h - 16) * 99 * f), 0, 99);
-      fmSetEnv(i, k, 'l', G.stage, L); draw();
-    } else {
-      // the lane spans 1 ms … 40 s (log); the rate is the DX rate whose stage time is nearest (FMH.rateForTime)
-      const lt = G.t0 + dx / G.w * Math.log(FM_THI / FM_TLO) * f, sec = clamp(Math.exp(lt), FM_TLO, FM_THI);
-      fmSetEnv(i, k, 'r', G.stage, FMH.rateForTime(op(), G.stage, sec, 60)); draw();
+/* ---------- V0d (A.4b 1, 4–7): FM envelope editor `fmEnvEditor` (OP › HÜLLK. and HÜLLK. › OPERATOREN) and the pitch EG
+   editor (HÜLLK. › TONHÖHE). One log time axis (0,5 ms … 10 s „Halten“, a gap „Loslassen“, 5 ms … 12 s „Release“), no
+   coarse grid, a fine mode (×¼: [FEIN] or a resting second finger), readings in ms AND DX rate, a click limit instead of
+   cutting off, the DX row R1–R4 · L1–L4, presets per role (Tabelle T2), „auf mehrere“. Every gesture is one undo step
+   (also when it is aborted: blur, pagehide); with the transport stopped every change plays the reference note (Vorhören). */
+// Tabelle T2: [modulator r, l, output r, l]
+const FM_T2 = {
+  Snap: [[99, 60, 35, 60], [99, 80, 78, 0], [99, 50, 35, 65], [99, 92, 88, 0]],
+  Pluck: [[99, 58, 40, 60], [99, 50, 0, 0], [99, 60, 45, 62], [99, 80, 0, 0]],
+  Pad: [[45, 40, 35, 50], [80, 99, 90, 0], [52, 45, 35, 50], [99, 96, 92, 0]],
+  Orgel: [[99, 99, 99, 75], [99, 99, 99, 0], [99, 99, 99, 80], [99, 99, 99, 0]],
+};
+const FM_PEG_PRE = {Aus: [[99, 99, 99, 99], [50, 50, 50, 50]], Ruck: [[99, 99, 99, 0], [50, 50, 50, 56]], Fall: [[70, 99, 99, 0], [50, 50, 50, 70]], Anstieg: [[70, 99, 99, 0], [50, 50, 50, 38]]};
+const FMEV = {fine: false, audition: true, auditions: 0, audV: null, audT: 0, note: {}, shown: {}, lock: {}, lastG: 0, extra: new Set(), view: null, rl: 'r', pegRange: 12, field: null, clip: null, anim: null};
+const FM_STG = ['A', 'D1', 'D2', 'R'];
+// A.4b 1: the operator the editor opens on: the lowest modulator that is on and has a level, else the first output
+function fmDefaultOp(fm) {
+  const A = fmAlg(fm);
+  for (let k = 0; k < 6; k++) if (!A.car[k] && fm.ops[k].on !== 0 && fm.ops[k].ol > 0) return k;
+  for (let k = 0; k < 6; k++) if (A.car[k]) return k;
+  return 0;
+}
+const fmHasMod = fm => { const A = fmAlg(fm); return fm.ops.some((o, k) => !A.car[k] && o.on !== 0 && o.ol > 0); };
+// the selection when the editor opens / another sound lands on the track (ED.fmOpT[i] remembers the last choice per track)
+function fmInitSel(i, reset) {
+  const fm = fmOf(i); if (!fm) return;
+  if (!ED.fmOpT) ED.fmOpT = {};
+  if (reset) delete ED.fmOpT[i];
+  const k = ED.fmOpT[i] != null ? ED.fmOpT[i] : fmDefaultOp(fm);
+  ED.fmOp = k; ED.fmT = i;
+  if (!fmIsOut(fm, k) || reset) ED.fmSub = fmIsOut(fm, k) ? (ED.fmSub || 'freq') : 'env';
+  if (!fmIsOut(fm, k)) ED.fmSub = 'env';
+  ED.sub.envfm = 'ops';
+}
+// the reference note: the last note played on this track (else C4); it changes only between gestures (≥ 600 ms after the last)
+function fmRefNote(i) {
+  if (FMEV.lock[i] != null) return FMEV.lock[i];
+  const n = FMEV.note[i] != null ? FMEV.note[i] : 60;
+  if (FMEV.shown[i] == null) FMEV.shown[i] = n;
+  if (n !== FMEV.shown[i] && !FMEV.g && performance.now() - FMEV.lastG >= 600) { FMEV.anim = {t0: performance.now(), from: FMEV.shown[i]}; FMEV.shown[i] = n; }
+  return FMEV.shown[i];
+}
+// the MAKRO offsets that act on operator k (A.4b 2: the hold time uses the effective rate; display = sound)
+function fmMacroOf(i, k) { const p = sndOf(i).p, fm = fmOf(i); return {atk: +p.fmAtk || 0, dec: +p.fmDec || 0, rel: +p.fmRel || 0, bite: +p.fmBite || 0, car: fmIsOut(fm, k)}; }
+// time text (4f): < 10 ms one decimal, < 1 s whole ms, from 1 s two significant digits
+function fmMs(t) {
+  if (!(t >= 0) || !isFinite(t)) return '–';
+  if (t < .01) return fmtDec(Math.max(t, 0) * 1000, 1) + ' ms';
+  if (t < 1) return Math.round(t * 1000) + ' ms';
+  return (t < 10 ? fmtDec(t, 1) : String(Math.round(t))) + ' s';
+}
+const fmLvlDb = (L, ol) => (FMH.lvlOf(L, ol) - FMH.lvlOf(99, ol)) * 20 * Math.log10(2) / 256;
+const fmLvlIdx = (L, ol) => 2 * Math.PI * Math.pow(2, FMH.lvlOf(L, ol) / 256 - 14);
+const fmDbTxt = x => (x > -.05 ? '0 dB' : MINUS + fmtDec(-x, 1) + ' dB');
+// ---------- pitch EG maths (A.4b 3): level L -> octaves PEG_TAB[L]/32, rate R -> PEG_RATE[R]/21,3 octaves per second
+const pegOct = L => DXN.PEG_TAB[clamp(L | 0, 0, 99)] / 32, pegHt = L => pegOct(L) * 12, pegSpeed = R => DXN.PEG_RATE[clamp(R | 0, 0, 99)] / 21.3;
+const PEG_FLAT = () => ({r: [99, 99, 99, 99], l: [50, 50, 50, 50]});
+const fmPegOf = fm => fm.peg || PEG_FLAT();
+function pegTimes(g) { const from = [g.l[3], g.l[0], g.l[1], g.l[2]]; return [0, 1, 2, 3].map(s => Math.abs(pegOct(g.l[s]) - pegOct(from[s])) / pegSpeed(g.r[s])); }
+function pegRateFor(g, s, sec) {
+  const from = s === 0 ? g.l[3] : g.l[s - 1], d = Math.abs(pegOct(g.l[s]) - pegOct(from)); if (d < 1e-9) return g.r[s];
+  let best = g.r[s], bd = Infinity; for (let r = 0; r <= 99; r++) { const t = d / pegSpeed(r), e = Math.abs(Math.log((t + 1e-4) / (sec + 1e-4))); if (e < bd - 1e-9 || (e <= bd + 1e-9 && Math.abs(r - g.r[s]) < Math.abs(best - g.r[s]))) { if (e < bd - 1e-9) bd = e; best = r; } }
+  return best;
+}
+const htTxt = h => (h > .04 ? '+' : h < -.04 ? MINUS : '±') + fmtDec(Math.abs(h), 1);
+const pegNearestL = ht => { let best = 50, bd = Infinity; for (let L = 0; L <= 99; L++) { const d = Math.abs(pegHt(L) - ht); if (d < bd) { bd = d; best = L; } } return best; };
+function fmSetPeg(i, g) {
+  const fm = fmOf(i); if (!fm) return;
+  if (!g || g.l.every(x => x === 50)) { if (fm.peg) { delete fm.peg; fmChanged(i, true); } return; }
+  const n = {r: g.r.map(x => clamp(Math.round(x), 0, 99)), l: g.l.map(x => clamp(Math.round(x), 0, 99))};
+  if (fm.peg && JSON.stringify(fm.peg) === JSON.stringify(n)) return;
+  fm.peg = n; fmChanged(i, true);
+}
+// ---------- Vorhören (4o): after every editor commit, transport stopped, no key held: the reference note, vel .8, gate .5 s
+function fmAudition(i) {
+  if (!FMEV.audition || R.playing || Object.keys(R.inputs).length) return;
+  try {
+    if (FMEV.audV) { FMEV.audV.release(nowT()); FMEV.audV = null; }
+    clearTimeout(FMEV.audT);
+    const v = auditionStart(i, fmRefNote(i), .8); FMEV.auditions++;
+    if (v) { FMEV.audV = v; FMEV.audT = setTimeout(() => { if (FMEV.audV === v) { v.release(nowT()); FMEV.audV = null; } }, 500); }
+  } catch (e) { logErr(e); }
+}
+function fmEvCommit(i, before, label) { const ok = commitSound(i, before, label); if (ok) fmAudition(i); FMEV.lastG = performance.now(); return ok; }
+// ---------- the axis (4a, Zeilentabelle): 32 px margin left (iOS edge swipe), 8 px right; widths per viewport
+function fmEvAxis(W) {
+  const TAB = {374: [211, 18, 105], 359: [201, 18, 100], 304: [168, 12, 84], 492: [301, 16, 135], 315: [173, 12, 90]};
+  let t = TAB[Math.round(W)];
+  if (!t) { const g = W >= 470 ? 16 : W >= 340 ? 18 : 12, rest = Math.max(60, W - 40 - g), hw = Math.round(rest * (W >= 470 ? .69 : .668)); t = [hw, g, rest - hw]; }
+  const [hw, g, rw] = t, x0 = 32, xGap = x0 + hw, xRel = xGap + g, x1 = xRel + rw;
+  const tMin = .0005, tMax = 10, tRelMin = .005, tRelMax = 12, LH = Math.log(tMax / tMin), LR = Math.log(tRelMax / tRelMin);
+  return {x0, xGap, xRel, x1, hw, rw, tMin, tMax, tRelMin, tRelMax,
+    xh: s => x0 + Math.log(clamp(s, tMin, tMax) / tMin) / LH * hw, th: x => tMin * Math.exp((x - x0) / hw * LH),
+    xr: s => xRel + Math.log(clamp(s, tRelMin, tRelMax) / tRelMin) / LR * rw, tr: x => tRelMin * Math.exp((x - xRel) / rw * LR)};
+}
+// ---------- the editor
+// o.target 'op' | 'peg'; o.head: element(s) for the head slot; o.kind 'op' (OP › HÜLLK.) | 'ops' (HÜLLK. › OPERATOREN) | 'peg'
+function fmEnvEditor(pg, i, o) {
+  const peg = o.target === 'peg', NS = 'http://www.w3.org/2000/svg';
+  pg.classList.add('fmev', 'fmev-' + o.kind);
+  FMEV.fine = false;
+  const L = el('div', 'fmevL'), Rr = el('div', 'fmevR');
+  const k = () => ED.fmOp | 0, fm = () => fmOf(i), op = () => fm().ops[k()], car = () => fmIsOut(fm(), k());
+  const env = () => (peg ? fmPegOf(fm()) : op());
+  // --- role line (P) ---
+  const role = el('div', 'fmrole');
+  // --- presets row ---
+  const pre = el('div', 'fmpre rest'), preX = el('div', 'fmprex');
+  const names = peg ? ['Aus', 'Ruck', 'Fall', 'Anstieg'] : ['Snap', 'Pluck', 'Pad', 'Orgel'];
+  const chipAdd = el('button', 'hb rb fmchip fmadd', '+ Modulator'), chipOl = el('button', 'hb rb fmchip fmol95', 'Pegel 95');
+  chipAdd.setAttribute('aria-label', 'Modulator dazu: OP an, ×1, Pegel 95, Snap'); chipOl.setAttribute('aria-label', 'Pegel 95 (Biss braucht OL ≥ 90)');
+  pre.append(chipAdd, chipOl);
+  const preB = names.map(n => { const b = el('button', 'hb rb fmchip fmp', n); b.dataset.p = n; pre.appendChild(b); return b; });
+  let rng = null;
+  if (peg) { rng = makeSeg([[12, '±12'], [48, '±48']], () => FMEV.pegRange, v => { FMEV.pegRange = v; draw(); }, 'fmrng', {lcd: false}); pre.appendChild(rng); }
+  const mkFine = cls => { const b = el('button', 'hb rb fmfine ' + cls, 'FEIN'); b.setAttribute('aria-label', 'Fein-Modus ×¼'); b.setAttribute('aria-pressed', 'false'); onTap(b, () => { FMEV.fine = !FMEV.fine; fineUpd(); haptic('tick'); }); return b; };
+  const fineP = mkFine('fp'), fineL = mkFine('fl');
+  pre.appendChild(fineP);
+  const fineUpd = () => { for (const b of [fineP, fineL]) { b.classList.toggle('on', FMEV.fine); b.setAttribute('aria-pressed', String(FMEV.fine)); } draw(); };
+  // --- graph ---
+  const g = el('div', 'fmg rest'); guardTouch(g);
+  g.innerHTML = `<svg aria-hidden="true"><g class="rul"></g><g class="clk"></g><path class="fill"/><path class="line"/><path class="relz"/><g class="hair"></g><g class="pts"></g></svg>` +
+    `<div class="fmgro" aria-live="polite"></div><div class="fmgtl"></div><div class="fmgfine">FEIN ×¼</div><div class="fmgnote" hidden></div><button class="fmref rb" aria-label="Bezugsnote festhalten"></button>`;
+  const svg = g.querySelector('svg'), rul = svg.querySelector('.rul'), clk = svg.querySelector('.clk'), fill = svg.querySelector('.fill'), line = svg.querySelector('.line'), relz = svg.querySelector('.relz'), hair = svg.querySelector('.hair'), ptsG = svg.querySelector('.pts');
+  const ro = g.querySelector('.fmgro'), gtl = g.querySelector('.fmgtl'), gfine = g.querySelector('.fmgfine'), refB = g.querySelector('.fmref'), gnote = g.querySelector('.fmgnote');
+  const DOTN = peg ? 5 : 4;   // peg: + the hollow start twin of L4
+  const dots = []; for (let d = 0; d < DOTN; d++) { const c = document.createElementNS(NS, 'circle'); c.setAttribute('r', '6'); ptsG.appendChild(c); dots.push(c); }
+  const lbls = []; for (let d = 0; d < 4; d++) { const t = document.createElementNS(NS, 'text'); t.setAttribute('class', 'dl'); ptsG.appendChild(t); lbls.push(t); }
+  // --- times line (P1) ---
+  const tl = el('div', 'fmtl');
+  // --- DX row ---
+  const dx = el('div', 'fmdx rest'); guardTouch(dx);
+  const rlSeg = el('div', 'seg fmrl', '<button data-v="r">R</button><button data-v="l">L</button>');
+  dx.appendChild(rlSeg);
+  const fields = []; for (let f = 0; f < 8; f++) { const b = el('button', 'fmdf rb'); b.dataset.f = f; b.innerHTML = `<small>${f < 4 ? 'R' : 'L'}${(f % 4) + 1}</small><b></b>`; dx.appendChild(b); fields.push(b); }
+  // --- buttons row ---
+  const bt = el('div', 'fmbt rest');
+  const bM = el('button', 'hb rb fmpm', MINUS + '1'), bP = el('button', 'hb rb fmpm', '+1');
+  const bAllRole = el('button', 'hb rb fmall1'), bAll = el('button', 'hb rb fmall2', 'Auf alle'), bMore = el('button', 'hb rb fmmore', '⋯');
+  bMore.setAttribute('aria-label', 'Mehr: andere Rolle, Kopieren, Einfügen, Init, Vorhören, Solo');
+  if (peg) bt.append(bM, bP, fineL, bMore); else bt.append(bM, bP, fineL, bAllRole, bAll, bMore);
+  // layout: P = everything in one column (the wrappers are display:contents), L = graph + presets left, head + DX + buttons right
+  const heads = [].concat(o.head || []);
+  for (const h of heads) Rr.appendChild(h);
+  L.append(g, pre); Rr.append(dx, bt);
+  if (o.kind === 'op') pg.append(role);
+  if (peg) { chipAdd.hidden = true; chipOl.hidden = true; }
+  pg.append(L, tl, Rr);
+  // ---------- drawing
+  let geo = null, W = 300, H = 120, G = null, lastTap = {t: 0, x: 0, y: 0, d: -1}, curStage = FMEV.stage != null ? FMEV.stage : 1, roTxt = [], limHit = false, limStage = null;
+  const yT = () => 16, yB = () => H - 8;
+  const yOfL = Lv => yT() + (1 - Lv / 99) * (yB() - yT());
+  const yOfHt = ht => { const m = (yT() + yB()) / 2, h = (yB() - yT()) / 2; return clamp(m - ht / FMEV.pegRange * h, yT() - 2, yB() + 2); };
+  const LofY = y => clamp(Math.round((1 - (y - yT()) / (yB() - yT())) * 99), 0, 99);
+  function times(e, note) { return peg ? pegTimes(e) : FMH.envTimes(e, note, fmMacroOf(i, k())); }
+  function layout(e, note) {
+    const A = geo, t = times(e, note), c0 = t[0], c1 = c0 + t[1], c2 = c1 + t[2];
+    const yv = s => (peg ? yOfHt(pegHt(e.l[s])) : yOfL(e.l[s]));
+    const xs = [A.xh(c0), A.xh(c1), A.xh(c2)], xd = xs.slice(), fan = [false, false, false];
+    for (let j = 1; j < 3; j++) if (xd[j] - xd[j - 1] < 16) { xd[j] = xd[j - 1] + 16; fan[j] = true; }
+    if (xd[0] < A.x0 + 0) xd[0] = A.x0;
+    const ds = [{stage: 0, x: xd[0], y: yv(0), xTrue: xs[0], fanned: fan[0], sec: t[0]}, {stage: 1, x: xd[1], y: yv(1), xTrue: xs[1], fanned: fan[1], sec: t[1]},
+      {stage: 2, x: xd[2], y: yv(2), xTrue: xs[2], fanned: fan[2], sec: t[2]}, {stage: 3, x: A.xr(t[3]), y: yv(3), xTrue: A.xr(t[3]), fanned: false, sec: t[3]}];
+    return {t, ds, cum: [c0, c1, c2], start: {x: A.x0, y: yv(3)}};
+  }
+  function lerpLay(a, b, f) { return {t: b.t, cum: b.cum, start: b.start, ds: b.ds.map((d, j) => Object.assign({}, d, {x: a.ds[j].x + (d.x - a.ds[j].x) * f, y: a.ds[j].y + (d.y - a.ds[j].y) * f}))}; }
+  let LAY = null;
+  function draw() {
+    if (!g.isConnected) return;
+    const r = g.getBoundingClientRect(); if (r.width > 20) { W = r.width; H = r.height; }
+    geo = fmEvAxis(W);
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('width', W); svg.setAttribute('height', H);
+    const e = env(), note = fmRefNote(i);
+    LAY = layout(e, note);
+    if (FMEV.anim && !G) { const f = (performance.now() - FMEV.anim.t0) / 150; if (f < 1) { LAY = lerpLay(layout(e, FMEV.anim.from), LAY, f); requestAnimationFrame(draw); } else FMEV.anim = null; }
+    const A = geo, ds = LAY.ds, y3 = ds[2].y, yR = peg ? ds[2].y : yOfL(Math.max(e.l[1], e.l[2]));
+    // ruler 12 px: 1 ms · 10 ms · 100 ms · 1 s · 10 s; release 5 ms … 12 s; „bei C2“
+    let rh = `<line x1="${A.x0}" y1="12" x2="${A.xGap}" y2="12" class="ra"/><line x1="${A.xRel}" y1="12" x2="${A.x1}" y2="12" class="ra"/>`;
+    const anc = (lb, a_) => (a_ ? ` style="text-anchor:${a_}"` : '');
+    for (const [s, lb, a_] of [[.0005, ',5', 'end'], [.001, '1ms', 'start'], [.01, '10'], [.1, '100'], [1, '1s'], [10, '10s', 'end']]) { const x = A.xh(s); rh += `<line x1="${x.toFixed(1)}" y1="8" x2="${x.toFixed(1)}" y2="12" class="rt"/><text x="${x.toFixed(1)}" y="7" class="rl"${anc(lb, a_)}>${lb}</text>`; }
+    for (const [s, lb, a_] of [[.005, '5ms', 'start'], [.1, '100'], [1, '1s'], [12, '12s', 'end']]) { const x = A.xr(s); rh += `<line x1="${x.toFixed(1)}" y1="8" x2="${x.toFixed(1)}" y2="12" class="rt"/><text x="${x.toFixed(1)}" y="7" class="rl"${anc(lb, a_)}>${lb}</text>`; }
+    rh += `<line x1="${((A.xGap + A.xRel) / 2).toFixed(1)}" y1="14" x2="${((A.xGap + A.xRel) / 2).toFixed(1)}" y2="${H - 4}" class="gap"/>`;
+    if (peg) { const m = (yT() + yB()) / 2; rh += `<line x1="${A.x0}" y1="${m.toFixed(1)}" x2="${A.x1}" y2="${m.toFixed(1)}" class="zero"/><text x="4" y="${(yT() + 4).toFixed(1)}" class="yl">+${FMEV.pegRange}</text><text x="4" y="${(m + 3).toFixed(1)}" class="yl">0</text><text x="4" y="${(yB()).toFixed(1)}" class="yl">${MINUS}${FMEV.pegRange}</text>`; }
+    if (rul._h !== rh) { rul._h = rh; rul.innerHTML = rh; }
+    // the click zone of the selected stage (4g): hatched left of the limit time
+    let ch = ''; limStage = null;
+    if (!peg && curStage != null) {
+      const lim = FMH.limitR(e, curStage, car(), note, fmMacroOf(i, k()));
+      if (lim != null) { limStage = lim; const tl_ = FMH.stageTime(e, curStage, lim, note, fmMacroOf(i, k()));
+        let xa, xb; if (curStage === 3) { xa = A.xRel; xb = A.xr(tl_); } else { const prev = curStage ? LAY.cum[curStage - 1] : 0; xa = curStage ? A.xh(prev) : A.x0; xb = A.xh(prev + tl_); }
+        if (xb > xa + 1) ch = `<rect x="${xa.toFixed(1)}" y="14" width="${(xb - xa).toFixed(1)}" height="${(H - 22).toFixed(1)}" class="hz"/><text x="${((xa + xb) / 2).toFixed(1)}" y="${(H - 11).toFixed(1)}" class="hzl">Klick</text>`; }
     }
-    show(G.stage);
+    if (clk._h !== ch) { clk._h = ch; clk.innerHTML = ch; }
+    // the curve: start (L4) -> A -> D1 -> D2 -> sustain to the gap ┊ release from the body level to L4
+    const st = LAY.start, pth = `M${st.x.toFixed(1)} ${st.y.toFixed(1)}L${ds[0].x.toFixed(1)} ${ds[0].y.toFixed(1)}L${ds[1].x.toFixed(1)} ${ds[1].y.toFixed(1)}L${ds[2].x.toFixed(1)} ${y3.toFixed(1)}L${A.xGap.toFixed(1)} ${y3.toFixed(1)}`;
+    line.setAttribute('d', pth); relz.setAttribute('d', `M${A.xRel.toFixed(1)} ${yR.toFixed(1)}L${ds[3].x.toFixed(1)} ${ds[3].y.toFixed(1)}`);
+    const base = peg ? ((yT() + yB()) / 2).toFixed(1) : yB().toFixed(1);
+    fill.setAttribute('d', pth + `L${A.xGap.toFixed(1)} ${base}L${st.x.toFixed(1)} ${base}Z`);
+    // dots, fanned ones with a hairline to the true place and a small label
+    let hh = '';
+    ds.forEach((d, j) => {
+      const c = dots[j]; c.setAttribute('cx', d.x.toFixed(1)); c.setAttribute('cy', d.y.toFixed(1));
+      c.setAttribute('class', (curStage === j ? 'on' : '') + (G && G.stage === j && G.lim ? ' lim' : '') + (d.fanned ? ' fan' : ''));
+      if (d.fanned) hh += `<line x1="${d.x.toFixed(1)}" y1="${d.y.toFixed(1)}" x2="${d.xTrue.toFixed(1)}" y2="${d.y.toFixed(1)}" class="hl"/>`;
+      const showL = d.fanned || (j < 3 && ds[j + 1] && j < 2 && ds[j + 1].fanned);
+      lbls[j].textContent = showL ? FM_STG[j] : ''; lbls[j].setAttribute('x', d.x.toFixed(1)); lbls[j].setAttribute('y', (d.y - 9).toFixed(1));
+    });
+    if (peg) { const c = dots[4]; c.setAttribute('cx', st.x.toFixed(1)); c.setAttribute('cy', st.y.toFixed(1)); c.setAttribute('class', 'twin'); hh += `<text x="${(st.x + 8).toFixed(1)}" y="${(st.y - 7).toFixed(1)}" class="dl">= L4</text>`; }
+    if (hair._h !== hh) { hair._h = hh; hair.innerHTML = hh; }
+    // the times line / label in the graph, the readout while grabbing, FEIN badge, reference note
+    const t = LAY.t, ts = 'A ' + fmMs(t[0]) + ' · D1 ' + fmMs(t[1]) + ' · D2 ' + fmMs(t[2]) + ' · R ' + fmMs(t[3]);
+    if (tl.textContent !== ts) tl.textContent = ts;
+    const showRo = !!(G && (G.moved || G.grab)) || (limHit && G);
+    const lines = showRo ? roTxt : [];
+    const rhh = lines.map(x => `<div>${esc(x)}</div>`).join('');
+    if (ro._h !== rhh) { ro._h = rhh; ro.innerHTML = rhh; }
+    ro.hidden = !lines.length;
+    if (G && lines.length) { const left = G.cx > W / 2; ro.classList.toggle('lft', left); }
+    gtl.textContent = showRo ? '' : ts.replace(/ ms/g, '').replace(/ · R (.+)$/, ' · R $1') + (/ s$/.test(ts) ? '' : ' ms');
+    gfine.hidden = !FMEV.fine;
+    const rn = 'bei ' + noteLabel(note) + (FMEV.lock[i] != null ? ' 🔒' : '');
+    if (refB.textContent !== rn) refB.textContent = rn;
+    // DX row
+    const fsel = FMEV.field;
+    fields.forEach((b, f) => {
+      const v = f < 4 ? e.r[f] : e.l[f - 4], txt = peg && f >= 4 ? htTxt(pegHt(v)) : String(v);
+      const bb = b.querySelector('b'); if (bb.textContent !== txt) bb.textContent = txt;
+      b.classList.toggle('on', fsel === f); b.classList.toggle('stg', fsel == null && curStage === f % 4);
+      b.classList.toggle('hid', FMEV.rl === 'r' ? f >= 4 : f < 4);
+      b.setAttribute('aria-label', (f < 4 ? 'R' : 'L') + ((f % 4) + 1) + ' ' + txt);
+    });
+    for (const b of rlSeg.children) b.classList.toggle('on', b.dataset.v === FMEV.rl);
+    const lab = fsel != null ? (fsel < 4 ? 'R' : 'L') + ((fsel % 4) + 1) : (curStage != null ? 'R' + (curStage + 1) : 'R');
+    bM.setAttribute('aria-label', lab + ' ' + MINUS + '1'); bP.setAttribute('aria-label', lab + ' +1');
+    // role line, chips
+    if (!peg) {
+      const out = car(), rt = out ? 'AUSGANG · Lautstärke' : 'MODULATOR → ' + fmRole(fm(), k()).replace(/^Modulator → /, '').replace(/ · Feedback$/, '') + ' · Klangfarbe';
+      const solo = UI.fmSolo && UI.fmSolo.t === i ? 'Solo: OP ' + (k() + 1) + ' klingt als Ausgang' : '';
+      const h2 = `<span class="rp ${out ? 'out' : 'mod'}">${esc(rt)}</span>` + (solo ? `<span class="rs">${esc(solo)}</span>` : '');
+      if (role._h !== h2) { role._h = h2; role.innerHTML = h2; }
+      chipAdd.hidden = !(out && !fmHasMod(fm()));
+      const o_ = op(), snapM = FM_T2.Snap;
+      chipOl.hidden = !(!out && o_.ol < 90 && o_.r.join() === snapM[0].join() && o_.l.join() === snapM[1].join());
+      const nt = !chipOl.hidden ? 'Biss braucht OL ≥ 90' : ''; gnote.hidden = !nt; if (gnote.textContent !== nt) gnote.textContent = nt;
+      bAllRole.textContent = out ? 'Auf alle Ausg.' : 'Auf alle Mod.';
+      bAllRole.setAttribute('aria-label', out ? 'Hüllkurve auf alle Ausgänge' : 'Hüllkurve auf alle Modulatoren');
+    }
+    if (o.onDraw) o.onDraw();
+  }
+  // ---------- readout (4f)
+  function readout(st, axis) {
+    // landscape: the LCD has ≈ 150 px for head + value (V0d-2-09): head = the stage only, the level value without the index
+    // (the full text stays in the graph readout)
+    const LS = matchMedia('(orientation: landscape)').matches;
+    const e = env(), note = fmRefNote(i), t = times(e, note), r = e.r[st], Lv = e.l[st], nm = LS ? FM_STG[st] : FM_STG[st] + ' · ' + (peg ? 'TONHÖHE' : 'OP ' + (k() + 1));
+    if (peg) {
+      const l1 = st === 3 ? 'L4 ' + htTxt(pegHt(Lv)) + ' HT (Start und Ende)' : 'L' + (st + 1) + ' ' + htTxt(pegHt(Lv)) + ' HT (L ' + Lv + ') · R' + (st + 1) + ' ' + r + ' = ' + fmtDec(pegSpeed(r), 1) + ' Okt./s';
+      roTxt = [FM_STG[st] + ' ' + fmMs(t[st]) + ' · R' + (st + 1) + ' ' + r, l1];
+      if (axis === 'y') lcdShow(nm, 'L' + (st + 1) + ' ' + htTxt(pegHt(Lv)) + ' HT'); else lcdShow(nm, fmMs(t[st]) + ' · R' + (st + 1) + ' ' + r);
+      return;
+    }
+    const o_ = op(), dbv = fmLvlDb(Lv, o_.ol), I = car() ? '' : ' · I ' + fmtDec(fmLvlIdx(Lv, o_.ol), fmLvlIdx(Lv, o_.ol) < 1 ? 2 : 1);
+    roTxt = [FM_STG[st] + ' ' + fmMs(t[st]) + ' · R' + (st + 1) + ' ' + r, 'L' + (st + 1) + ' ' + Lv + ' · ' + fmDbTxt(dbv) + I];
+    if (G && G.lim) roTxt[0] = 'Klick-Grenze ' + (car() ? '5' : '8') + ' ms · nochmal ziehen = schneller';
+    if (G && G.raised) roTxt.push('Zeit auf Klick-Grenze angehoben');
+    if (!car() && o_.ol < 90 && o_.r.join() === FM_T2.Snap[0].join() && o_.l.join() === FM_T2.Snap[1].join()) roTxt.push('Biss braucht OL ≥ 90');
+    if (axis === 'y') lcdShow(nm, 'L' + (st + 1) + ' ' + Lv + ' = ' + fmDbTxt(dbv) + (LS ? '' : I), G && G.f < 1 ? 'fein' : '', G && G.noHold ? 'Zeit nicht haltbar' : '');
+    else lcdShow(nm, fmMs(t[st]) + ' · R' + (st + 1) + ' ' + r, G && G.f < 1 ? 'fein' : '', G && G.free ? 'Klick-Bereich: ' + (car() ? 'Ausgang knackt unter 5 ms' : 'Modulator knackt unter 8 ms') : '');
+  }
+  // ---------- set values (with the editor's own rules)
+  const setEnvVal = (which, st, v) => {
+    if (peg) { const e = deep(fmPegOf(fm())); e[which][st] = clamp(Math.round(v), 0, 99); fmSetPeg(i, e); return e[which][st]; }
+    return fmSetEnv(i, k(), which, st, v);
+  };
+  const fineF = () => (FMEV.fine || FMEV.extra.size > 0 ? .25 : 1);
+  // hit test (4m): nearest drawn dot (44×44), the selected stage first, then the dot in the drag direction (later)
+  function hit(x, y) {
+    const ds = LAY ? LAY.ds : []; let best = null, bd = Infinity;
+    const R_ = 22, sel = curStage != null ? ds[curStage] : null;
+    for (const d of ds) { if (Math.abs(d.x - x) > R_ || Math.abs(d.y - y) > R_) continue; const dd = Math.hypot(d.x - x, d.y - y); if (dd < bd) { bd = dd; best = d; } }
+    if (!best) return null;
+    // the selected stage wins only when it is (about) as near as the nearest dot: a fanned neighbour 16 px away stays reachable
+    if (sel && sel !== best && Math.abs(sel.x - x) <= R_ && Math.abs(sel.y - y) <= R_ && Math.hypot(sel.x - x, sel.y - y) <= bd + 4) return sel.stage;
+    if (sel === best) return sel.stage;
+    const near = ds.filter(d => d !== best && Math.hypot(d.x - best.x, d.y - best.y) < 12);
+    return near.length ? Math.min(best.stage, ...near.map(d => d.stage)) : best.stage;   // drag direction decided on the move
+  }
+  on(g, 'pointerdown', e => {
+    if (e.button > 0) return;
+    if (G) return;                                           // a second finger on the graph: FEIN (root listener), never a 2nd point
+    const r = g.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    if (e.target === refB) return;
+    const st = hit(x, y);
+    e.preventDefault();
+    if (st == null) return;
+    try { g.setPointerCapture(e.pointerId); } catch (_) {}
+    const en = deep(env()), note = fmRefNote(i), m = peg ? null : fmMacroOf(i, k());
+    const t0 = times(en, note);
+    const lim0 = peg ? null : FMH.limitR(en, st, car(), note, m);
+    G = {id: e.pointerId, x0: e.clientX, y0: e.clientY, cx: x, stage: st, before: soundSnapshot(i), axis: null, moved: false, grab: true, vx: 0, vy: 0,
+      env0: en, t0, L0: en.l[st], d: LAY.ds[st], f: 1, lim: false, raised: false, free: lim0 != null && en.r[st] >= lim0, note, m, label: null};
+    FMEV.g = true; curStage = st; FMEV.stage = st; FMEV.field = null;
+    gestBegin(e.pointerId, () => { const g0 = G; G = null; FMEV.g = false; FMEV.extra.clear(); if (g0 && g0.moved) fmEvCommit(i, g0.before, g0.label || 'Hüllkurve'); draw(); });
+    readout(st, null); draw();
+  });
+  // the rate for a finger position (time axis): beyond the end of the hold axis (or of the release axis) = R 0 (V0d-2-07:
+  // „R = 0 entsteht nur ganz rechts“; the 10-s end of the axis is reached by R 1 for holds)
+  function rateAtX(x) {
+    const st = G.stage, A = geo, en = op();
+    if (st === 3 ? x >= A.x1 : x >= A.xGap) return 0;
+    const prev = st === 3 ? 0 : G.t0.slice(0, st).reduce((a, b) => a + b, 0);
+    const sec = st === 3 ? A.tr(x) : Math.max(1e-6, A.th(x) - prev);
+    return FMH.rateForTime(en, st, sec, G.note, {lo: 0, hi: 99, m: G.m, cur: en.r[st]});
+  }
+  on(g, 'pointermove', e => {
+    if (!G || e.pointerId !== G.id) return;
+    const r = g.getBoundingClientRect(); G.cx = e.clientX - r.left;
+    let dx_ = e.clientX - G.x0, dy_ = e.clientY - G.y0;
+    if (!G.axis) {
+      if (Math.max(Math.abs(dx_), Math.abs(dy_)) < 6) return;
+      G.axis = Math.abs(dx_) >= Math.abs(dy_) ? 'x' : 'y';
+      // the dead zone is swallowed (as the VA editor): the anchor moves to where the axis was chosen
+      G.x0 = e.clientX; G.y0 = e.clientY; G.vx = 0; G.vy = 0; G.lx = e.clientX; G.ly = e.clientY;
+      // two dots < 12 px apart: the drag direction decides (to the left = the earlier one)
+      const near = LAY.ds.filter(d => d.stage !== G.stage && Math.hypot(d.x - G.d.x, d.y - G.d.y) < 12);
+      if (near.length && G.axis === 'x' && dx_ > 0) { const later = Math.max(G.stage, ...near.map(d => d.stage)); if (later !== G.stage) { G.stage = later; curStage = later; FMEV.stage = later; G.L0 = G.env0.l[later]; G.d = LAY.ds[later]; } }
+      // A.4b 4b / V0d-2-07: the first px after the dead zone already moves one qrate step (no hidden slack inside the
+      // current qrate band): the anchor is set to the edge of the band in the drag direction (≤ one band, ≤ 5 px)
+      if (G.axis === 'x' && !peg) {
+        const dir = Math.sign(dx_), q0 = FMH.qOf(op().r[G.stage], 0);
+        for (let off = .25; off <= 6; off += .25) { const rr = rateAtX(G.d.xTrue + dir * off); if (FMH.qOf(rr, 0) !== q0) { G.vx = dir * Math.max(0, off - 1); break; } }
+      }
+      return;
+    }
+    const f = fineF(); G.f = f;
+    G.vx += (e.clientX - G.lx) * f; G.vy += (e.clientY - G.ly) * f; G.lx = e.clientX; G.ly = e.clientY;
+    const st = G.stage, A = geo;
+    if (G.axis === 'x') {
+      if (peg) {
+        const g0 = G.env0;
+        let sec = st === 3 ? A.tr(G.d.xTrue + G.vx) : Math.max(1e-5, A.th(G.d.xTrue + G.vx) - (st ? G.t0.slice(0, st).reduce((a, b) => a + b, 0) : 0));
+        const rr = pegRateFor(g0, st, sec);
+        if (setEnvVal('r', st, rr) !== G.env0.r[st] || G.moved) G.moved = true;
+        G.label = 'Zeit ' + FM_STG[st] + ' Tonhöhe';
+      } else {
+        const en = op(), note = G.note, m = G.m, lim = FMH.limitR(en, st, car(), note, m), hi = G.free || lim == null ? 99 : lim;
+        let rr = rateAtX(G.d.xTrue + G.vx);
+        const want = rr;
+        if (rr > hi) rr = hi;
+        // never more than one qrate step per px: limit the change against the previous value
+        const wasLim = G.lim; G.lim = want > hi && !G.free;
+        if (G.lim && !wasLim) { haptic('tick'); limHit = true; }
+        if (setEnvVal('r', st, rr) !== G.env0.r[st] || G.moved) G.moved = true;
+        G.label = 'Zeit ' + FM_STG[st] + ' OP ' + (k() + 1);
+      }
+    } else {
+      if (peg) {
+        const ht = (yT() + yB()) / 2 - (G.d.y + G.vy), h = (yB() - yT()) / 2, L_ = pegNearestL(ht / h * FMEV.pegRange);
+        if (setEnvVal('l', st, L_) !== G.env0.l[st] || G.moved) G.moved = true;
+        // keep the times (A.4b 4d): the stage and the next one
+        const e2 = deep(fmPegOf(fm()));
+        for (const s of st === 3 ? [3, 0] : [st, st + 1]) { if (s > 3) continue; const tt = G.t0[s]; if (tt > 0) e2.r[s] = pegRateFor(e2, s, tt); }
+        fmSetPeg(i, e2);
+        G.label = 'Pegel ' + FM_STG[st] + ' Tonhöhe';
+      } else {
+        const Lv = LofY(G.d.y + G.vy);
+        setEnvVal('l', st, Lv);
+        G.moved = true;
+        // A.4b 4d: R_i and R_i+1 follow so both stage times stay near their times at the start of the gesture; 4g: never
+        // faster than the click limit of the role (the time grows to the limit time, „Zeit auf Klick-Grenze angehoben“)
+        const en = op(), note = G.note, m = G.m; G.raised = false; G.noHold = false;
+        for (const s of st === 3 ? [3] : [st, st + 1]) {
+          if (s > 3) continue;
+          let rr = FMH.rateForTime(en, s, G.t0[s], note, {m, cur: G.env0.r[s]});
+          const lim = FMH.limitR(en, s, car(), note, m);
+          if (lim != null && rr > lim) { rr = lim; G.raised = true; }
+          fmSetEnv(i, k(), 'r', s, rr);
+          const tn = FMH.stageTime(op(), s, rr, note, m); if (!G.raised && G.t0[s] > .002 && Math.abs(Math.log(tn / G.t0[s])) > .4) G.noHold = true;
+        }
+        G.label = 'Pegel ' + FM_STG[st] + ' OP ' + (k() + 1);
+      }
+    }
+    G.grab = false;
+    readout(st, G.axis); draw();
   });
   const fin = (e, why) => {
-    if (!G || e.pointerId !== G.id) return; const g0 = G; G = null; gestEnd(e.pointerId);
-    if (g0.st === 'drag') commitSound(i, g0.before, (g0.axis === 'y' ? 'Pegel ' : 'Zeit ') + STG[g0.stage] + ' OP ' + ((ED.fmOp | 0) + 1));
-    else if (why === 'up') {
+    if (!G || e.pointerId !== G.id) return;
+    const g0 = G; G = null; FMEV.g = false; gestEnd(e.pointerId); limHit = false;
+    if (g0.moved) fmEvCommit(i, g0.before, g0.label || 'Hüllkurve');
+    else if (why === 'up') {                                 // double tap on a dot = the INIT value of that stage (4l)
       const t = performance.now();
-      if (t - lastTap.t < DBL_MS && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < DBL_PX * 3) {
+      if (t - lastTap.t < DBL_MS && lastTap.d === g0.stage && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < DBL_PX * 3) {
         lastTap.t = 0;
-        const k = ED.fmOp | 0, ini = FM_INIT_OP(k), before = soundSnapshot(i);
-        fmSetEnv(i, k, 'r', g0.stage, ini.r[g0.stage]); fmSetEnv(i, k, 'l', g0.stage, ini.l[g0.stage]);
-        if (commitSound(i, before, STG[g0.stage] + ' zurückgesetzt')) toast(STG[g0.stage] + ' zurückgesetzt', {label: 'Rückgängig', fn: () => undo()});
-      } else lastTap = {t, x: e.clientX, y: e.clientY};
+        const before = soundSnapshot(i), st = g0.stage;
+        if (peg) { const e2 = deep(fmPegOf(fm())); e2.r[st] = 99; e2.l[st] = 50; fmSetPeg(i, e2); }
+        else { const ini = FM_INIT_OP(k()); fmSetEnv(i, k(), 'r', st, ini.r[st]); fmSetEnv(i, k(), 'l', st, ini.l[st]); }
+        if (fmEvCommit(i, before, FM_STG[st] + ' zurückgesetzt')) toast(FM_STG[st] + ' zurückgesetzt', {label: 'Rückgängig', fn: () => undo()});
+      } else lastTap = {t, x: e.clientX, y: e.clientY, d: g0.stage};
     }
+    FMEV.extra.clear();
     draw();
   };
-  on(wrap, 'pointerup', e => fin(e, 'up')); on(wrap, 'pointercancel', e => fin(e, 'cancel')); on(wrap, 'lostpointercapture', e => fin(e, 'lost'));
+  on(g, 'pointerup', e => fin(e, 'up')); on(g, 'pointercancel', e => fin(e, 'cancel')); on(g, 'lostpointercapture', e => fin(e, 'lost'));
+  onTap(refB, () => { if (FMEV.lock[i] != null) delete FMEV.lock[i]; else FMEV.lock[i] = fmRefNote(i); lcdShow('Bezugsnote', FMEV.lock[i] != null ? noteLabel(FMEV.lock[i]) + ' festgehalten' : 'folgt der zuletzt gespielten Note'); draw(); });
+  // a second finger anywhere in the editor body = FEIN while a drag runs (4e); it never grabs a second point
+  const root = pg;
+  root.addEventListener('pointerdown', e => { if ((G && e.pointerId !== G.id) || (DXG && e.pointerId !== DXG.id)) { FMEV.extra.add(e.pointerId); e.stopPropagation(); e.preventDefault(); } }, true);
+  const xEnd = e => { if (FMEV.extra.delete(e.pointerId)) e.stopPropagation(); };
+  root.addEventListener('pointerup', xEnd, true); root.addEventListener('pointercancel', xEnd, true);
+  // ---------- DX row (4h): tap = select the field (and its stage), vertical swipe = ±1 per 10 px (FEIN 40 px); one undo per swipe
+  let DXG = null;
+  on(dx, 'pointerdown', e => {
+    const b = e.target.closest('.fmdf'); if (!b || e.button > 0 || DXG || G) return;
+    e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (_) {}
+    const f = +b.dataset.f, en = env();
+    DXG = {id: e.pointerId, f, y0: e.clientY, acc: 0, v0: f < 4 ? en.r[f] : en.l[f - 4], before: soundSnapshot(i), moved: false, b};
+    FMEV.field = f; curStage = f % 4; FMEV.stage = curStage;
+    gestBegin(e.pointerId, () => { const d = DXG; DXG = null; FMEV.extra.clear(); if (d && d.moved) fmEvCommit(i, d.before, (d.f < 4 ? 'R' : 'L') + ((d.f % 4) + 1)); draw(); });
+    readout(curStage, f < 4 ? 'x' : 'y'); draw();
+  });
+  on(dx, 'pointermove', e => {
+    if (!DXG || e.pointerId !== DXG.id) return;
+    const step = (FMEV.fine || FMEV.extra.size ? 40 : 10), n = Math.trunc((DXG.y0 - e.clientY) / step);
+    const v = clamp(DXG.v0 + n, 0, 99), which = DXG.f < 4 ? 'r' : 'l', st = DXG.f % 4, cur = DXG.f < 4 ? env().r[st] : env().l[st];
+    if (v !== cur) { setEnvVal(which, st, v); DXG.moved = true; haptic('tick'); readout(st, which === 'r' ? 'x' : 'y'); draw(); }
+  });
+  const dxEnd = e => { if (!DXG || e.pointerId !== DXG.id) return; const d = DXG; DXG = null; gestEnd(e.pointerId); FMEV.extra.clear(); if (d.moved) fmEvCommit(i, d.before, (d.f < 4 ? 'R' : 'L') + ((d.f % 4) + 1)); draw(); };
+  on(dx, 'pointerup', dxEnd); on(dx, 'pointercancel', dxEnd); on(dx, 'lostpointercapture', dxEnd);
+  onTap(rlSeg, b => { FMEV.rl = b.dataset.v; if (FMEV.field != null && (FMEV.field < 4) !== (FMEV.rl === 'r')) FMEV.field = (FMEV.field % 4) + (FMEV.rl === 'r' ? 0 : 4); draw(); }, 'button');
+  const step1 = d => {
+    const f = FMEV.field != null ? FMEV.field : (curStage != null ? curStage : 1), which = f < 4 ? 'r' : 'l', st = f % 4, e = env(), cur = which === 'r' ? e.r[st] : e.l[st];
+    const before = soundSnapshot(i); setEnvVal(which, st, cur + d); FMEV.field = f;
+    fmEvCommit(i, before, (which === 'r' ? 'R' : 'L') + (st + 1) + (d > 0 ? ' +1' : ' ' + MINUS + '1'));
+    readout(st, which === 'r' ? 'x' : 'y'); draw(); haptic('tick');
+  };
+  onTap(bM, () => step1(-1)); onTap(bP, () => step1(1));
+  // ---------- presets (4i, Tabelle T2; PEG table in point 6)
+  const applyPreset = (name, role_) => {
+    const before = soundSnapshot(i);
+    if (peg) { const p_ = FM_PEG_PRE[name]; fmSetPeg(i, {r: p_[0].slice(), l: p_[1].slice()}); }
+    else { const T = FM_T2[name], out = role_ != null ? role_ === 'out' : car(), rr = out ? T[2] : T[0], ll = out ? T[3] : T[1];
+      for (let s = 0; s < 4; s++) { fmSetEnv(i, k(), 'r', s, rr[s]); fmSetEnv(i, k(), 'l', s, ll[s]); } }
+    fmEvCommit(i, before, 'Vorlage ' + name);
+    const tt = times(env(), fmRefNote(i));
+    lcdShow('Vorlage ' + name + (peg ? '' : ' · OP ' + (k() + 1)), 'A ' + fmMs(tt[0]) + ' · D1 ' + fmMs(tt[1]) + ' · D2 ' + fmMs(tt[2]) + ' · R ' + fmMs(tt[3]));
+    haptic('pop'); draw();
+  };
+  onTap(pre, b => applyPreset(b.dataset.p), '.fmp');
+  onTap(chipAdd, () => {                                     // [+ Modulator] (A.4b 1): the first non-output of the algorithm, Snap
+    const f_ = fm(), A = fmAlg(f_); let m_ = -1; for (let j = 0; j < 6; j++) if (!A.car[j]) { m_ = j; break; } if (m_ < 0) return;
+    const before = soundSnapshot(i), T = FM_T2.Snap, o_ = f_.ops[m_];
+    o_.on = 1; o_.fixed = 0; o_.coarse = 1; o_.fine = 0; o_.ol = 95; o_.r = T[0].slice(); o_.l = T[1].slice();
+    fmChanged(i, true); ED.fmOp = m_; if (!ED.fmOpT) ED.fmOpT = {}; ED.fmOpT[i] = m_;
+    fmEvCommit(i, before, '+ Modulator OP ' + (m_ + 1));
+    lcdShow('OP ' + (m_ + 1), 'Modulator · ×1 · Pegel 95 · Snap'); haptic('pop'); safeRebuild(buildSynthEd);
+  });
+  onTap(chipOl, () => { const before = soundSnapshot(i); fmSetOp(i, k(), 'ol', 95); fmEvCommit(i, before, 'Pegel 95 OP ' + (k() + 1)); lcdShow('OP ' + (k() + 1), 'Pegel 95'); draw(); });
+  // ---------- on several operators (4j)
+  const envOf = o_ => ({r: o_.r.slice(), l: o_.l.slice()});
+  const putEnv = (kk, e) => { const o_ = fm().ops[kk]; let ch = false; for (let s = 0; s < 4; s++) { if (o_.r[s] !== e.r[s] || o_.l[s] !== e.l[s]) ch = true; o_.r[s] = e.r[s]; o_.l[s] = e.l[s]; } return ch; };
+  const toMany = which => {
+    const f_ = fm(), e = envOf(f_.ops[k()]), before = soundSnapshot(i); let n = 0;
+    for (let kk = 0; kk < 6; kk++) { if (kk === k()) continue; const out = fmIsOut(f_, kk); if ((which === 'mod' && out) || (which === 'out' && !out)) continue; if (putEnv(kk, e)) n++; }
+    if (n) { fmChanged(i, true); fmEvCommit(i, before, which === 'all' ? 'Hüllkurve auf alle' : which === 'mod' ? 'Hüllkurve auf alle Modulatoren' : 'Hüllkurve auf alle Ausgänge'); }
+    lcdShow('Hüllkurve', n ? 'auf ' + n + ' Operator' + (n === 1 ? '' : 'en') + ' übertragen' : 'keine anderen Operatoren'); haptic('pop'); draw();
+  };
+  onTap(bAllRole, () => toMany(car() ? 'out' : 'mod')); onTap(bAll, () => toMany('all'));
+  const soloToggle = () => {
+    if (UI.fmSolo && UI.fmSolo.t === i) { fmSoloOff(); lcdShow('Solo', 'aus'); }
+    else { UI.fmSolo = {t: i, k: k()}; wkFm6(i, true); lcdShow('Solo', 'nur OP ' + (k() + 1) + ' hören (wird nicht gespeichert)'); }
+    haptic('tick'); draw();
+  };
+  const openMore = anchor => openPop(anchor, p => {
+    const out = car(), other = out ? 'mod' : 'out';
+    let h = `<h4>${peg ? 'Tonhöhe' : 'OP ' + (k() + 1)}</h4><div class="plist fmmorel">`;
+    if (!peg) h += names.map(n => `<button class="rb" data-a="o:${n}"><b>${n}</b><small>Vorlage für ${other === 'mod' ? 'Modulatoren' : 'Ausgänge'}</small></button>`).join('') +
+      `<button class="rb mx" data-a="mod"><b>Auf alle Mod.</b></button><button class="rb mx" data-a="all"><b>Auf alle</b></button><button class="rb mxl" data-a="out"><b>${out ? 'Auf alle Ausg.' : 'Auf alle Mod.'}</b></button>` +
+      `<button class="rb" data-a="copy"><b>Kopieren</b></button><button class="rb" data-a="paste"${FMC.env ? '' : ' disabled'}><b>Einfügen</b></button>` +
+      `<button class="rb" data-a="solo"><b>Solo</b><small>${UI.fmSolo && UI.fmSolo.t === i ? 'an – tippen = aus' : 'nur diesen Operator hören'}</small></button>`;
+    h += `<button class="rb" data-a="init"><b>Init</b><small>${peg ? 'flach (L 50)' : 'R 99 99 99 80 · L 99 99 99 0'}</small></button>` +
+      `<button class="rb${FMEV.audition ? ' on' : ''}" data-a="aud"><b>Vorhören ${FMEV.audition ? 'an' : 'aus'}</b><small>jede Änderung spielt ${noteLabel(fmRefNote(i))}</small></button></div>`;
+    p.innerHTML = h; guardTouch(p);
+    onTap(p, b => {
+      const a = b.dataset.a; closePop();
+      if (a.startsWith('o:')) applyPreset(a.slice(2), other);
+      else if (a === 'mod' || a === 'all' || a === 'out') toMany(a === 'out' ? (out ? 'out' : 'mod') : a);
+      else if (a === 'copy') { FMC.env = envOf(op()); lcdShow('Hüllkurve', 'kopiert (OP ' + (k() + 1) + ')'); }
+      else if (a === 'paste') { if (!FMC.env) return; const before = soundSnapshot(i); if (putEnv(k(), FMC.env)) { fmChanged(i, true); fmEvCommit(i, before, 'Hüllkurve eingefügt'); } lcdShow('Hüllkurve', 'eingefügt (OP ' + (k() + 1) + ')'); draw(); }
+      else if (a === 'solo') soloToggle();
+      else if (a === 'init') { const before = soundSnapshot(i); if (peg) fmSetPeg(i, null); else if (putEnv(k(), FM_INIT_OP(k()))) fmChanged(i, true);
+        fmEvCommit(i, before, peg ? 'Tonhöhe Init' : 'Hüllkurve Init'); lcdShow(peg ? 'Tonhöhe' : 'Hüllkurve', peg ? 'Init (flach)' : 'Init (R 99 99 99 80 · L 99 99 99 0)'); draw(); }
+      else if (a === 'aud') { FMEV.audition = !FMEV.audition; lcdShow('Vorhören', FMEV.audition ? 'an' : 'aus'); }
+    }, 'button[data-a]');
+  }, {name: 'fmmore'});
+  onTap(bMore, () => openMore(bMore));
+  if (o.moreBtn) onTap(o.moreBtn, () => openMore(o.moreBtn));
+  // test hook: geometry and values of the open editor (client px)
+  FMEV.view = () => {
+    if (!g.isConnected || !LAY) return null;
+    const r = g.getBoundingClientRect(), ox = r.left, oy = r.top, A = geo;
+    const e = env();
+    return {op: k(), role: car() ? 'out' : 'mod', target: peg ? 'peg' : 'op', refNote: fmRefNote(i), fine: FMEV.fine, stage: curStage,
+      axis: {x0: ox + A.x0, xGap: ox + A.xGap, xRel: ox + A.xRel, x1: ox + A.x1, tMin: A.tMin, tMax: A.tMax, tRelMin: A.tRelMin, tRelMax: A.tRelMax, y0: oy + yT(), y1: oy + yB()},
+      dots: LAY.ds.map(d => ({stage: d.stage, x: ox + d.x, y: oy + d.y, xTrue: ox + d.xTrue, fanned: d.fanned, sec: d.sec, r: e.r[d.stage], l: e.l[d.stage]})),
+      times: LAY.t.slice(), limitR: peg ? null : FMH.limitR(e, curStage != null ? curStage : 1, car(), fmRefNote(i), fmMacroOf(i, k())), refLocked: FMEV.lock[i] != null,
+      readout: ro.hidden ? [] : Array.from(ro.children).map(x => x.textContent), lim: !!(G && G.lim)};
+  };
   ED.refreshers.push(() => draw());
   requestAnimationFrame(draw);
-  if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(() => { if (!wrap.isConnected) { ro.disconnect(); return; } draw(); }); ro.observe(wrap); }
-  return wrap;
+  if (typeof ResizeObserver === 'function') { const rob = new ResizeObserver(() => { if (!g.isConnected) { rob.disconnect(); return; } draw(); }); rob.observe(g); }
+  return {draw, root: pg};
 }
-// OP (§6.5): header „OP 2 · Modulator → OP 1“ ‹ › [Solo] · seg FREQ | HÜLLK. | SKAL. · the page of that part
-function pageFmOp(pg, i) {
-  const k = ED.fmOp | 0, fm = fmOf(i), op = () => fmOf(i).ops[ED.fmOp | 0];
-  if (!['freq', 'env', 'scale'].includes(ED.fmSub)) ED.fmSub = 'freq';
+// the OP page head (A.4b 1, Zeilentabelle): [‹] OP n [›] [FREQ│HÜLLK.│SKAL.] [Solo] (P1) / [⋯] (P2, P3, L); L: „OP 2 · MOD.→1“
+function fmOpHead(i) {
   const hd = el('div', 'pgrow fmophd rest');
-  const bP = el('button', 'pa rb', '‹'), ttl = el('div', 'fmoptl'), bN = el('button', 'pa rb', '›'), solo = el('button', 'hb rb fmsolo', 'Solo');
-  bP.setAttribute('aria-label', 'Voriger Operator'); bN.setAttribute('aria-label', 'Nächster Operator');
+  const bP = el('button', 'pa rb', '‹'), ttl = el('div', 'fmoptl'), bN = el('button', 'pa rb', '›'), solo = el('button', 'hb rb fmsolo', 'Solo'), more = el('button', 'hb rb fmmore2', '⋯');
+  bP.setAttribute('aria-label', 'Voriger Operator'); bN.setAttribute('aria-label', 'Nächster Operator'); more.setAttribute('aria-label', 'Mehr: Auf alle, Solo …');
   solo.setAttribute('aria-label', 'Solo: nur diesen Operator hören (wird nicht gespeichert)');
   ED.fmSoloB = solo;
-  onTap(bP, () => { fmSelect(i, (ED.fmOp + 5) % 6); safeRebuild(buildSynthEd); });
-  onTap(bN, () => { fmSelect(i, (ED.fmOp + 1) % 6); safeRebuild(buildSynthEd); });
+  const go = d => { fmSelect(i, (ED.fmOp + d + 6) % 6); FMEV.fine = false; safeRebuild(buildSynthEd); };
+  onTap(bP, () => go(-1)); onTap(bN, () => go(1));
   onTap(solo, () => {
     if (UI.fmSolo && UI.fmSolo.t === i) { fmSoloOff(); lcdShow('Solo', 'aus'); }
     else { UI.fmSolo = {t: i, k: ED.fmOp | 0}; wkFm6(i, true); solo.classList.add('on'); lcdShow('Solo', 'nur OP ' + (ED.fmOp + 1) + ' hören (wird nicht gespeichert)'); }
-    haptic('tick');
+    haptic('tick'); edRefresh();
   });
-  const updHd = () => { const t = 'OP ' + ((ED.fmOp | 0) + 1) + ' · ' + fmRole(fmOf(i), ED.fmOp | 0); if (ttl.textContent !== t) ttl.textContent = t; solo.classList.toggle('on', !!(UI.fmSolo && UI.fmSolo.t === i)); };
+  const updHd = () => {
+    const f = fmOf(i), kk = ED.fmOp | 0, out = fmIsOut(f, kk), tg = []; fmAlg(f).mods.forEach((ms, t) => { if (ms.includes(kk)) tg.push(t + 1); });
+    const h = `<b>OP ${kk + 1}</b><span class="ls"> · ${out ? 'AUSG.' : 'MOD.→' + tg.join('+')}</span>`;
+    if (ttl._h !== h) { ttl._h = h; ttl.innerHTML = h; }
+    solo.classList.toggle('on', !!(UI.fmSolo && UI.fmSolo.t === i));
+  };
   updHd(); ED.refreshers.push(updHd);
-  const sub = makeSeg([['freq', 'FREQ'], ['env', 'HÜLLK.'], ['scale', 'SKAL.']], () => ED.fmSub, v => { ED.fmSub = v; safeRebuild(buildSynthEd); }, 'fmsub', {lcd: false});
-  hd.append(bP, ttl, bN, solo, sub);
-  pg.appendChild(hd);
+  const sub = makeSeg([['freq', 'FREQ'], ['env', 'HÜLLK.'], ['scale', 'SKAL.']], () => ED.fmSub, v => { ED.fmSub = v; FMEV.fine = false; safeRebuild(buildSynthEd); }, 'fmsub', {lcd: false});
+  hd.append(bP, ttl, bN, sub, solo, more);
+  return {hd, more};
+}
+// OP (§6.5, A.4b): head · the page of FREQ | HÜLLK. | SKAL.
+function pageFmOp(pg, i) {
+  const k = ED.fmOp | 0, fm = fmOf(i), op = () => fmOf(i).ops[ED.fmOp | 0];
+  if (!['freq', 'env', 'scale'].includes(ED.fmSub)) ED.fmSub = fmIsOut(fm, k) ? 'freq' : 'env';
+  const {hd, more} = fmOpHead(i);
   pg.classList.add('pg-fmop-' + ED.fmSub);
+  if (ED.fmSub === 'env') {
+    fmEnvEditor(pg, i, {target: 'op', kind: 'op', head: hd, moreBtn: more});
+    pg.appendChild(fmNativeHint(i));
+    fxLongLabels(pg);
+    return;
+  }
+  // FREQ / SKAL.: the head, the role line, the page (the head's [⋯] holds Solo)
+  onTap(more, () => openPop(more, p => {
+    p.innerHTML = `<h4>OP ${k + 1}</h4><div class="plist"><button class="rb" data-a="solo"><b>Solo</b><small>${UI.fmSolo && UI.fmSolo.t === i ? 'an – tippen = aus' : 'nur diesen Operator hören'}</small></button></div>`; guardTouch(p);
+    onTap(p, () => { closePop(); if (UI.fmSolo && UI.fmSolo.t === i) { fmSoloOff(); lcdShow('Solo', 'aus'); } else { UI.fmSolo = {t: i, k}; wkFm6(i, true); lcdShow('Solo', 'nur OP ' + (k + 1) + ' hören (wird nicht gespeichert)'); } edRefresh(); }, 'button[data-a]');
+  }, {name: 'fmmore'}));
+  pg.appendChild(hd);
+  const role = el('div', 'fmrole');
+  const updRole = () => { const out = fmIsOut(fmOf(i), k), rt = out ? 'AUSGANG · Lautstärke' : 'MODULATOR → ' + fmRole(fmOf(i), k).replace(/^Modulator → /, '').replace(/ · Feedback$/, '') + ' · Klangfarbe';
+    const h = `<span class="rp ${out ? 'out' : 'mod'}">${esc(rt)}</span>` + (UI.fmSolo && UI.fmSolo.t === i ? `<span class="rs">Solo: OP ${k + 1} klingt als Ausgang</span>` : ''); if (role._h !== h) { role._h = h; role.innerHTML = h; } };
+  updRole(); ED.refreshers.push(updRole);
+  pg.appendChild(role);
   if (ED.fmSub === 'freq') {
     const mode = makeSeg([[0, 'RATIO'], [1, 'FEST']], () => op().fixed, v => fmSetOp(i, k, 'fixed', v), null, {undo: soundUndo(i), label: 'Frequenz OP ' + (k + 1)});
     mode.dataset.key = 'fm.' + k + '.fixed';
@@ -14711,40 +15647,13 @@ function pageFmOp(pg, i) {
     const upd = () => {
       const f = fmOf(i), o = f.ops[k], t = fmRatioTxt(o), out = fmIsOut(f, k);
       if (big.textContent !== t) big.textContent = t;
-      const it = out ? 'Ausgang: ' + fmOlTxt(true, o.ol) : 'Modulationsindex ' + fmtDec(FMH.modIndex(o.ol), 1) + ' rad';
+      const it = (out ? 'Ausgang: ' + fmOlTxt(true, o.ol) : 'Modulationsindex ' + fmIdxTxt(o.ol) + ' rad') + ' · OL ' + o.ol;
       if (inf.textContent !== it) inf.textContent = it;
       mode.update(); ks.forEach(x => x.update());
     };
     upd(); ED.refreshers.push(upd);
     const r1 = el('div', 'pgrow segs rest fmfreq'); r1.append(lgrp('Frequenz', mode), big);
     pg.append(r1, knobRow(ks, 'fmk4'), inf);
-  } else if (ED.fmSub === 'env') {
-    const g = fmEnvGraph(i), times = el('div', 'fmtimes');
-    const updT = () => { const t = FMH.envTimes(op(), 60), s = 'A ' + fmTimeTxt(t[0]) + ' · D1 ' + fmTimeTxt(t[1]) + ' · D2 ' + fmTimeTxt(t[2]) + ' · R ' + fmTimeTxt(t[3]); if (times.textContent !== s) times.textContent = s; };
-    updT(); ED.refreshers.push(updT);
-    const bAll = el('button', 'hb rb', 'Auf alle Ausgänge'), bCp = el('button', 'hb rb', 'Kopieren'), bPa = el('button', 'hb rb', 'Einfügen'), bIn = el('button', 'hb rb', 'Init');
-    const envOf = o => ({r: o.r.slice(), l: o.l.slice()});
-    const putEnv = (kk, e) => { const o = fmOf(i).ops[kk]; let ch = false; for (let s = 0; s < 4; s++) { if (o.r[s] !== e.r[s] || o.l[s] !== e.l[s]) ch = true; o.r[s] = e.r[s]; o.l[s] = e.l[s]; } return ch; };
-    onTap(bAll, () => {
-      const f = fmOf(i), e = envOf(f.ops[k]), before = soundSnapshot(i); let n = 0;
-      for (let kk = 0; kk < 6; kk++) if (kk !== k && fmIsOut(f, kk) && putEnv(kk, e)) n++;
-      if (n) { fmChanged(i, true); commitSound(i, before, 'Hüllkurve auf alle Ausgänge'); }
-      lcdShow('Hüllkurve', n ? 'auf ' + n + (n === 1 ? ' Ausgang' : ' Ausgänge') + ' übertragen' : 'keine anderen Ausgänge'); haptic('pop');
-    });
-    onTap(bCp, () => { FMC.env = envOf(op()); lcdShow('Hüllkurve', 'kopiert (OP ' + (k + 1) + ')'); bPa.disabled = false; haptic('tick'); });
-    onTap(bPa, () => {
-      if (!FMC.env) return; const before = soundSnapshot(i);
-      if (putEnv(k, FMC.env)) { fmChanged(i, true); commitSound(i, before, 'Hüllkurve eingefügt'); }
-      lcdShow('Hüllkurve', 'eingefügt (OP ' + (k + 1) + ')'); haptic('tick');
-    });
-    onTap(bIn, () => {
-      const before = soundSnapshot(i);
-      if (putEnv(k, FM_INIT_OP(k))) { fmChanged(i, true); commitSound(i, before, 'Hüllkurve Init'); }
-      lcdShow('Hüllkurve', 'Init (R 99 99 99 99 · L 99 99 99 0)'); haptic('tick');
-    });
-    bPa.disabled = !FMC.env;
-    const br = el('div', 'pgrow fmebtn rest'); br.append(bAll, bCp, bPa, bIn);
-    pg.append(g, times, br);
   } else {
     const ks = [fmOpCtl(i, k, 'vs', {idle: festIdle}), fmOpCtl(i, k, 'rs'), fmOpCtl(i, k, 'bp'), fmOpCtl(i, k, 'ld'), fmOpCtl(i, k, 'rd')];
     const cl = makeSeg(FM_CURVE, () => fmGetOp(i, k, 'lc'), v => fmSetOp(i, k, 'lc', v), null, {undo: soundUndo(i), label: 'Kurve L'});
@@ -14758,23 +15667,89 @@ function pageFmOp(pg, i) {
   fxLongLabels(pg);
   void fm;
 }
+// HÜLLK. › OPERATOREN (A.4b 5): chips per operator (outputs left „AUSGÄNGE · Lautst.“, modulators right „MODULATOREN ·
+// Klangfarbe“, mini curve + D1 time), the same editor as OP › HÜLLK.
+function pageFmEnvOps(pg, i) {
+  const fm = fmOf(i), A = fmAlg(fm);
+  if (ED.fmOp == null) ED.fmOp = fmDefaultOp(fm);
+  const head = el('div', 'fmops rest'), grpR = el('div', 'fmgrp'), chipR = el('div', 'fmopc');
+  const outs = [0, 1, 2, 3, 4, 5].filter(k => A.car[k]), mods = [0, 1, 2, 3, 4, 5].filter(k => !A.car[k]);
+  grpR.innerHTML = `<span style="flex:${outs.length} 1 0">AUSGÄNGE · Lautst.</span>` + (mods.length ? `<span style="flex:${mods.length} 1 0">MODULATOREN · Klangfarbe</span>` : '');
+  const chips = outs.concat(mods).map(k => { const b = el('button', 'fmoc rb' + (A.car[k] ? ' out' : ' mod')); b.dataset.k = k;
+    b.innerHTML = `<b>${k + 1}</b><svg aria-hidden="true" viewBox="0 0 40 12"><path/></svg><small></small>`; chipR.appendChild(b); return b; });
+  if (outs.length && mods.length) chips[outs.length].classList.add('gap');
+  head.append(grpR, chipR);
+  onTap(chipR, b => { fmSelect(i, +b.dataset.k, true); FMEV.fine = false; FMEV.stage = 1; if (!ED.fmOpT) ED.fmOpT = {}; ED.fmOpT[i] = ED.fmOp; safeRebuild(buildSynthEd); }, '.fmoc');
+  const upd = () => { const f = fmOf(i); chips.forEach(b => { const kk = +b.dataset.k, o = f.ops[kk];
+    const sp = fmSparkPx(o, 40, 12), p = b.querySelector('path'); if (p._d !== sp.d) { p._d = sp.d; p.setAttribute('d', sp.d); }
+    const tx = 'D1 ' + fmMs(FMH.envTimes(o, 60, fmMacroOf(i, kk))[1]); const sm = b.querySelector('small'); if (sm.textContent !== tx) sm.textContent = tx;
+    b.classList.toggle('on', kk === (ED.fmOp | 0)); b.classList.toggle('off', o.on === 0 || !(o.ol > 0)); b.setAttribute('aria-label', 'OP ' + (kk + 1) + (A.car[kk] ? ' Ausgang' : ' Modulator') + ' · ' + tx); }); };
+  upd(); ED.refreshers.push(upd);
+  fmEnvEditor(pg, i, {target: 'op', kind: 'ops', head});
+  pg.appendChild(fmNativeHint(i));
+}
+// HÜLLK. › TONHÖHE (A.4b 6): the pitch EG, bipolar ±12 / ±48 HT, on all ratio operators
+function pageFmPeg(pg, i) {
+  const head = el('div', 'fmpegh', '<b>TONHÖHE · alle OP mit Verhältnis</b><span> (feste Frequenz bleibt)</span>');
+  head.title = 'wirkt auf alle Operatoren mit Verhältnis; feste Frequenz bleibt';
+  fmEnvEditor(pg, i, {target: 'peg', kind: 'peg', head});
+  pg.appendChild(fmNativeHint(i));
+}
+// V0d (A.4b 7): LCD while BISS moves: „Biss +10 · D1 OP 2: 70 → 35 ms“, „Biss am Klick-Limit“ when a modulator reaches it
+function fmBiteLcd(i) {
+  setTimeout(() => {
+    const fm = fmOf(i); if (!fm) return;
+    const b = Math.round(+sndOf(i).p.fmBite || 0), k = fmDefaultOp(fm), A = fmAlg(fm), note = fmRefNote(i);
+    if (A.car[k]) { lcdShow('Biss ' + fmSign(b), 'kein Modulator klingt'); return; }
+    const m1 = fmMacroOf(i, k), m0 = Object.assign({}, m1, {bite: 0}), o = fm.ops[k];
+    const t0 = FMH.stageTime(o, 1, o.r[1], note, m0), t1 = FMH.stageTime(o, 1, o.r[1], note, m1);
+    let lim = false;
+    if (b > 0) fm.ops.forEach((x, kk) => { if (A.car[kk] || x.on === 0 || !(x.ol > 0)) return; const mm = Object.assign(fmMacroOf(i, kk), {bite: 0});
+      for (const s of [1, 2]) if (FMH.limitR(x, s, false, note, mm) != null && FMH.stageTime(x, s, x.r[s], note, mm) / Math.pow(2, b / 10) < FMH.stageTime(x, s, 82, note, mm) * .999 && x.r[s] < 82) lim = true; });
+    lcdShow('Biss ' + fmSign(b), 'D1 OP ' + (k + 1) + ': ' + fmMs(t0) + ' → ' + fmMs(t1), '', lim ? 'Biss am Klick-Limit' : '');
+  }, 0);
+}
+// V0d (A.4b 5): HÜLLK. at FM: OPERATOREN (the DX operator envelopes), TONHÖHE (pitch EG), FILTER (grey while the filter is
+// bypassed), MOD-HK (grey without a route from it), at fmAmp 1 LAUTST. (ADSR) with its band and [DX-Hüllkurven]
+function pageFmEnv(pg, i, sub) {
+  if (sub === 'ops') { pageFmEnvOps(pg, i); return; }
+  if (sub === 'peg') { pageFmPeg(pg, i); return; }
+  const P = sndOf(i).p;
+  if (sub === 'amp') {
+    const band = el('div', 'fmband rest', '<span>ADSR liegt über dem ganzen FM-Klang</span>'), b = el('button', 'hb rb', 'DX-Hüllkurven');
+    b.setAttribute('aria-label', 'Lautstärke-Form DX-Hüllkurven (ADSR aus)');
+    onTap(b, () => { const before = soundSnapshot(i); setP(i, 'fmAmp', 0); commitSound(i, before, 'DX-Hüllkurven'); ED.sub.envfm = 'ops'; lcdShow('Lautstärke-Form', 'DX-Hüllkurven'); safeRebuild(buildSynthEd); });
+    band.appendChild(b); pg.appendChild(band);
+    pageEnv(pg, i, 'a'); return;
+  }
+  if (sub === 'flt') {
+    pageEnv(pg, i, 'f');
+    const byp = P.ftype <= 1 && P.cutoff >= 18000 && P.res <= .02 && P.fenv === 0 && P.drive <= .01;
+    if (byp) { pg.classList.add('egrey'); pg.insertBefore(el('div', 'fmband grey', 'wirkt erst, wenn der Filter schließt (Cutoff < 18 kHz)'), pg.firstChild); }
+    return;
+  }
+  pageEnv(pg, i, 'm');
+  if (!(sndOf(i).mods || []).some(m => m.src === 'menv')) { pg.classList.add('egrey'); pg.insertBefore(el('div', 'fmband grey', 'wirkt nur über eine Route (MOD)'), pg.firstChild); }
+}
 // MAKRO (§6.5): Helligkeit (modulatable: fmbright), Härte, Länge, Release, Transponieren, Ausgang · Lautstärke-Form · [Init FM]
 function pageFmMakro(pg, i) {
+  // V0d (A.4b 7): row 1 = Helligkeit · BISS · Härte · Länge · Release (BISS: time factor on D1/D2 of the modulators, LÄNGE:
+  // R2/R3 of the outputs only)
   const ks = [sKnob('fmBright', {fmt: v => (v > .05 ? '+' : v < -.05 ? MINUS : '±') + fmtDec(Math.abs(v), 1).replace(/,0$/, '') + ' dB'}),
-    sKnob('fmAtk', {fmt: fmSign}), sKnob('fmDec', {fmt: fmSign}), sKnob('fmRel', {fmt: fmSign}), fmPatchCtl(i, 'trans'), sKnob('level')];
+    sKnob('fmBite', {fmt: fmSign, onChange: () => fmBiteLcd(i)}), sKnob('fmAtk', {fmt: fmSign}), sKnob('fmDec', {fmt: fmSign}), sKnob('fmRel', {fmt: fmSign}), fmPatchCtl(i, 'trans'), sKnob('level')];
   const amp = sSeg('fmAmp', [[0, 'DX-HÜLLKURVEN'], [1, 'ADSR']], null, 'Lautstärke-Form');
   const bInit = el('button', 'hb rb fminit', 'Init FM'); bInit.setAttribute('aria-label', 'FM-Teil auf den Grundklang (DX7 Init Voice) setzen');
   onTap(bInit, () => {                                  // one undo step (no confirm: ↶ brings it back)
     const before = soundSnapshot(i), snd = deep(sndOf(i));
-    snd.p.fm6 = FM_INIT(); for (const k of ['fmBright', 'fmAtk', 'fmDec', 'fmRel']) snd.p[k] = 0; snd.p.fmAmp = 0;
+    snd.p.fm6 = FM_INIT(); for (const k of ['fmBright', 'fmBite', 'fmAtk', 'fmDec', 'fmRel']) snd.p[k] = 0; snd.p.fmAmp = 0;
     applySound(i, snd);
     if (commitSound(i, before, 'Init FM')) toast('FM auf den Grundklang gesetzt', {label: 'Rückgängig', fn: () => undo()});
     safeRebuild(buildSynthEd);
   });
   ED.refreshers.push(() => { ks.forEach(x => x.update()); amp.update(); });
   const r2 = el('div', 'pgrow segs rest fmamp'); r2.append(lgrp('Lautstärke-Form', amp), bInit);
-  pg.append(knobRow(ks.slice(0, 4)), knobRow(ks.slice(4), 'fmk2'), r2,
-    el('div', 'fminfo', 'Helligkeit: alle Modulatoren lauter/leiser (dB) · mehr Härte = schnellerer Anstieg, mehr Länge/Release = längeres Abklingen aller Operatoren · DX-Hüllkurven: die Operator-Hüllkurven formen die Lautstärke, ADSR: zusätzlich die Lautstärke-Hüllkurve'),
+  pg.append(knobRow(ks.slice(0, 5), 'k5 fmk5'), knobRow(ks.slice(5), 'fmk2'), r2,
+    el('div', 'fminfo', 'Helligkeit: alle Modulatoren lauter/leiser (dB) · BISS: Modulatoren knackiger (+) oder weicher (−) · Härte = Anstieg · Länge = Abklingen der Ausgänge · Release = Ausklang · DX-Hüllkurven: die Operator-Hüllkurven formen die Lautstärke, ADSR: zusätzlich die Lautstärke-Hüllkurve'),
     fmNativeHint(i));
   fxLongLabels(pg);
 }
@@ -15360,7 +16335,7 @@ function pvDrumRetire() {
   const D = PV.drum; PV.drum = null; if (!D || !D.strips) return;
   setTimeout(() => { for (const k in D.strips) { const x = D.strips[k]; for (const n of [x.in, x.pan, x.room, x.gate]) if (n) { try { n.disconnect(); } catch (e) {} } } }, 2500);
 }
-const demoForCat = c => ({bass: 'bass', lead: 'lead', poly: 'chord', flaeche: 'pad', pluck: 'arp', sequenz: 'seq16', fm: 'keys', glocke: 'bell', wt: 'pad'})[c] || 'lead';
+const demoForCat = c => ({bass: 'bass', lead: 'lead', poly: 'chord', flaeche: 'pad', pluck: 'arp', sequenz: 'seq16', fm: 'keys', glocke: 'bell', wt: 'pad', effekt: 'fx'})[c] || 'lead';
 
 /* ---------- sound browser (§11.2; V0b §12.1, EN-04/EN-18): P sheet over grid + strip + carrier, L chips in a 120 px column.
    Name = load silently (one undo, toast); ▶ = preview (one at a time). Filter = the track's engine, „Alle Engines“ on
@@ -15539,7 +16514,9 @@ function brLoad(rec) {
   else soundEdit(t, 'Sound ' + rec.name, () => loadPreset(t, rec.id));
   BR.open = rec.id; BR.more = BR.ren = null;
   const id = rec.id;
-  toast('„' + rec.name + '“ geladen' + (cross ? ' · wechselt zu ' + (ENGINE_LABEL[rec.engine] || 'VA') : ''),
+  const lage = !drum && tr.sound.engine === 'fm6' ? syxHint(tr.sound.p.fm6).oct : 0;     // V0d (A.4 7)
+  if (lage) toast('„' + rec.name + '“ geladen · klingt ' + lage + ' Okt. unter notiert', [{label: 'An Spur anpassen', fn: () => fmLageFix(t)}, {label: 'Rückgängig', fn: () => undo()}]);
+  else toast('„' + rec.name + '“ geladen' + (cross ? ' · wechselt zu ' + (ENGINE_LABEL[rec.engine] || 'VA') : ''),
     [{label: '▶ Hören', fn: () => { const r = FACTORY_BY_ID.get(id) || (LIB.ok ? LIB.lib.get(id) : null); if (r && BR.t === t && R.editor === 'browser') { previewFor(t, r); brRefresh(); } else if (r) previewFor(t, r); }},
      {label: 'Rückgängig', fn: () => undo()}]);
   brRefresh();
@@ -15597,7 +16574,7 @@ async function importSoundsText(text) {
    32 FM6 user sounds (engine fm6, cat fm, the bank's names, p = FM_BASE + {fm6}) merged into the library (hash dedupe).
    The field layout is that of fmresearch/tools/syx.mjs (verified on ROM1A). A bad checksum warns and still imports.
    P1: the DX LFO -> LFO 1 (speed -> rate via the msfa table, delay -> Einblenden, wave), PMD x PMS -> lfo1->pitch,
-   AMD -> lfo1->amp (when an output operator has AMS). The pitch EG is ignored (§18). ---------- */
+   AMD -> lfo1->amp (when an output operator has AMS). V0d: the pitch EG is kept as fm6.peg (A.4b 3; export in V4c). ---------- */
 const DX_LFO_HZ = [0.062541, 0.125031, 0.312393, 0.437120, 0.624610, 0.750694, 0.936330, 1.125302, 1.249609, 1.436782, 1.560915, 1.752081, 1.875117,
   2.062494, 2.247191, 2.374451, 2.560492, 2.686728, 2.873976, 2.998950, 3.188013, 3.369840, 3.500175, 3.682224, 3.812065, 4.000800, 4.186202, 4.310716,
   4.501260, 4.623209, 4.814636, 4.930480, 5.121901, 5.315191, 5.434783, 5.617346, 5.750431, 5.946717, 6.062811, 6.248438, 6.431695, 6.564264, 6.749460,
@@ -15626,13 +16603,16 @@ function parseSyxBank(bytes) {
       ops.push(op);
     }
     const name = String.fromCharCode(...b.subarray(118, 128)).replace(/[^\x20-\x7e]/g, '?').replace(/\s+/g, ' ').trim() || 'DX7 ' + (v + 1);
-    voices.push({name, alg: (b[110] & 31) + 1, fb: b[111] & 7, trans: (b[117] & 63) - 24, ops,
+    // V0d (A.4b 3): the pitch EG (packed bytes 102–109: R1–R4, L1–L4) is kept, not dropped
+    const peg = {r: [102, 103, 104, 105].map(i => Math.min(99, b[i] & 127)), l: [106, 107, 108, 109].map(i => Math.min(99, b[i] & 127))};
+    voices.push({name, alg: (b[110] & 31) + 1, fb: b[111] & 7, trans: (b[117] & 63) - 24, ops, peg,
       lfo: {spd: Math.min(99, b[112] & 127), dly: Math.min(99, b[113] & 127), pmd: Math.min(99, b[114] & 127), amd: Math.min(99, b[115] & 127), wave: (b[116] >> 1) & 7, pms: (b[116] >> 4) & 7}});
   }
   return {ok: true, ckOk, voices};
 }
 function syxVoiceSound(v) {
   const fm6 = {alg: v.alg, fb: v.fb, trans: clamp(v.trans, -24, 24), ops: v.ops.map(o => { const x = Object.assign({}, o); delete x.ams; return x; })};
+  if (v.peg && !v.peg.l.every(x => x === 50)) fm6.peg = {r: v.peg.r.slice(), l: v.peg.l.slice()};
   const p = Object.assign({}, SQStore.FM_BASE, {level: SYX_LEVEL, fm6}), mods = [], L = v.lfo, A = DXN.ALGS[fm6.alg - 1] || DXN.ALGS[0];
   p.l1shape = [1, 2, 2, 3, 0, 4][L.wave] != null ? [1, 2, 2, 3, 0, 4][L.wave] : 0; p.l1rate = clamp(DX_LFO_HZ[L.spd] || 1, .01, 40); p.l1sync = 0;
   // DX7 LFO delay: (99 − delay) sets the wait + fade (msfa lfo.cc); here one fade-in from the key-down
@@ -15643,6 +16623,30 @@ function syxVoiceSound(v) {
   const ams = Math.max(0, ...v.ops.filter((o, k) => A.car[k]).map(o => o.ams || 0));
   if (L.amd && ams) mods.push({src: 'lfo1', dst: 'amp', amt: -clamp(L.amd / 99 * [0, .3, .6, 1][ams] * .5, 0, 1)});
   return {engine: 'fm6', cat: 'fm', name: v.name, p, mods, fx: {drive: 0, rev: .2, dly: 0, vol: .8, pan: 0}, origin: null};
+}
+// V0d (A.4 7): „klingt n Okt. unter notiert“ after a .syx import. Reference = the HIGHEST ratio among the outputs whose OL is
+// at most 12 steps (≈ 9 dB) under the loudest output (outputs with a fixed frequency do not count) — not the lowest partial:
+// EN-03 allows a ×0,5 sub pair next to a ×1 output (R6-B2 must not get a hint). Below 40 Hz at C2 -> n = round(log2(65,41 / ref))
+function syxHint(fm6) {
+  if (!fm6 || !Array.isArray(fm6.ops)) return {oct: 0, refHz: 0};
+  const A = DXN.ALGS[(fm6.alg | 0) - 1] || DXN.ALGS[0], outs = fm6.ops.map((o, k) => ({o, k})).filter(x => A.car[x.k] && x.o.on !== 0 && x.o.ol > 0 && !x.o.fixed);
+  if (!outs.length) return {oct: 0, refHz: 0};
+  const top = Math.max(...outs.map(x => x.o.ol)), ratio = Math.max(...outs.filter(x => x.o.ol >= top - 12).map(x => FMH.ratioOf(x.o)));
+  const refHz = 65.41 * ratio * Math.pow(2, (fm6.trans | 0) / 12), oct = refHz < 40 ? Math.round(Math.log2(65.41 / refHz)) : 0;
+  return {oct: Math.max(0, oct), refHz};
+}
+// [An Spur anpassen]: trans + 12 · n within ±24, one undo
+function fmLageFix(t) {
+  const f = fmOf(t); if (!f) return false; const h = syxHint(f); if (!h.oct) return false;
+  const b = soundSnapshot(t); fmSetPatch(t, 'trans', clamp((f.trans | 0) + 12 * h.oct, -24, 24));
+  const ok = commitSound(t, b, 'An Spur anpassen'); lcdShow('Transponieren', fmtVal('semi', fmOf(t).trans) + ' · klingt jetzt in notierter Lage'); edRefresh(); return ok;
+}
+function fmLageBand(i) {
+  const h = el('div', 'fmlage'), tx = el('span'), b = el('button', 'hb rb', 'An Spur anpassen'); h.append(tx, b);
+  b.setAttribute('aria-label', 'Transposition so ändern, dass der Sound in notierter Lage klingt');
+  onTap(b, () => fmLageFix(i));
+  const upd = () => { const x = syxHint(fmOf(i)); h.hidden = !x.oct; if (x.oct) { const s = 'klingt ' + x.oct + ' Okt. unter notiert'; if (tx.textContent !== s) tx.textContent = s; } };
+  upd(); ED.refreshers.push(upd); return h;
 }
 // bytes (Uint8Array) -> {added, skipped, names}; toasts the result (§6.6)
 async function importSyx(bytes) {
@@ -17405,7 +18409,9 @@ function openMenu(goto) {
     'LAUF: Basslauf oder Sequenz Schritt für Schritt – Schritt antippen = an, hoch/runter ziehen = Ton in der Tonart.',
     'SONG: SONG ⇄ (Ecke oben links im Raster) zeigt den Song. ● SONG nimmt Szenenwechsel, Clip-Stopps, Träger und deine Melodie mit, ▶ SONG spielt alles ab. Eine Zelle antippen = anderer Clip in diesem Takt, wischen = blättern. Während der Song läuft: Clip starten = Spur übernehmen, ↩ SONG gibt sie zurück; ● MEL. spielt eine Melodie dazu. Unter MEL. ⋯: Melodie als Clip, Kette aus Szenen.',
     'DRUMS: 12 Pads – oben antippen = laut, unten = leise. KLANG öffnet den Drum-Editor: SOUND (Modell und Regler), TIEF (alle Schichten), SCHRITTE (Euklid, Muster), KIT (Gate, Raum, Akzent).',
-    'FM: Klangerzeugung FM = 6 Operatoren wie beim DX7. ALGO zeigt, wer wen moduliert (farbig = Ausgang); Box antippen = Operator wählen, wischen = anderer Algorithmus. Die Regler unten sind die Pegel der Operatoren (Modulator: Helligkeit, Ausgang: Lautstärke). OP stellt Frequenz, Hüllkurve und Skalierung ein, MAKRO macht alles auf einmal heller, härter oder länger. Menü → Sounds lädt DX7-Bänke (.syx).',
+    'FM: Klangerzeugung FM = 6 Operatoren wie beim DX7. ALGO zeigt, wer wen moduliert (farbig = Ausgang); Box antippen = Operator wählen, wischen = anderer Algorithmus. Die Regler unten sind die Pegel der Operatoren (Modulator: Helligkeit, Ausgang: Lautstärke). OP stellt Frequenz, Hüllkurve und Skalierung ein, MAKRO macht alles auf einmal heller, bissiger, härter oder länger. Menü → Sounds lädt DX7-Bänke (.syx).',
+    'FM-HÜLLKURVEN (OP › HÜLLK. oder HÜLLK. › OPERATOREN): Punkt waagrecht ziehen = Zeit (Anzeige in ms und als DX-Rate R), senkrecht = Pegel L. Ein zweiter Finger oder [FEIN] = fein, Doppeltipp = Init-Wert. Ausgänge machen die Lautstärke, Modulatoren die Klangfarbe. Zu schnelle Stufen knacken: Der Zug hält an der Klick-Grenze, ein zweiter Zug geht darüber hinaus. Vorlagen [Snap] [Pluck] [Pad] [Orgel]; TONHÖHE = Tonhöhen-Hüllkurve ([Ruck], [Fall], [Anstieg]).',
+    'FEEDBACK: Der Bogen im ALGO-Bild zeigt, welcher Operator sich selbst moduliert. Hörbar ab ≈ 3, wenn dieser Operator ein Ausgang ist, als Modulator ab ≈ 5 – und nur, wenn er klingt (sonst steht der Regler grau mit Grund).',
     'EFFEKTE: Im Klang-Editor unter FX. SPUR und CHORUS gehören zur Spur, HALL, ECHO und MASTER wirken auf alle Spuren. Nach dem Stopp klingen Hall und Echo aus – ■ zweimal schneidet sie ab.',
     'Jede Änderung lässt sich mit ↶ rückgängig machen, ↷ stellt sie wieder her.',
     'CPU 1 – CPU 3 (oben): Das Gerät rechnet am Limit, der Begrenzer spart Stimmen und Unisono. Deine Sounds bleiben dabei unverändert.',
@@ -18740,13 +19746,31 @@ const SYNQUENZER = {
   },
   browserRows: () => (R.editor === 'browser' ? brItems().map(f => ({id: f.id, name: f.name, engine: engKey(f.engine), role: f.engine === 'drum' ? 'drums' : soundRole(f)})) : []),
   initSound: t => { initSound(t); },
+  // V0d (Nachtrag Teil D, A.4b): FM editor and maths
+  fmDefaultOp: t => { const f = fmOf(t); if (!f) throw new Error('Keine Synth-Spur: ' + t); return fmDefaultOp(f); },
+  fmEnvView: () => (FMEV.view ? FMEV.view() : null),
+  fmAuditions: () => FMEV.auditions,
+  fmEnvPreset: (t, op, name) => {
+    const f = fmOf(t); if (!f) throw new Error('Keine Synth-Spur: ' + t);
+    const b = soundSnapshot(t);
+    if (op === 'peg') { const p_ = FM_PEG_PRE[name]; if (!p_) throw new Error('Unbekannte Vorlage: ' + name); fmSetPeg(t, {r: p_[0].slice(), l: p_[1].slice()}); }
+    else { const T = FM_T2[name]; if (!T) throw new Error('Unbekannte Vorlage: ' + name); const k = clamp(op | 0, 0, 5), out = fmIsOut(f, k);
+      for (let s = 0; s < 4; s++) { fmSetEnv(t, k, 'r', s, (out ? T[2] : T[0])[s]); fmSetEnv(t, k, 'l', s, (out ? T[3] : T[1])[s]); } }
+    commitSound(t, b, 'Vorlage ' + name);
+    if (R.editor === 'synth' && t === R.selT) edRefresh();
+  },
+  setFmPeg: (t, peg) => { const f = fmOf(t); if (!f) throw new Error('Keine Synth-Spur: ' + t); const b = soundSnapshot(t); fmSetPeg(t, peg ? {r: peg.r.slice(0, 4), l: peg.l.slice(0, 4)} : null); commitSound(t, b, 'Tonhöhe'); if (R.editor === 'synth' && t === R.selT) edRefresh(); },
+  fmFader: p => Math.round(99 * Math.pow(clamp(+p || 0, 0, 1), .45)),
+  fmBrightFader: v => { v = clamp(+v || 0, -1, 1); return 24 * Math.sign(v) * Math.sqrt(Math.abs(v)); },
+  syxHint: fm6 => syxHint(fm6),
 };
 // every state-changing API call leaves the UI rendered (no need to wait for the next animation frame)
 function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
 const NO_SYNC = new Set(['state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
-  'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows']);
+  'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
+  'fmDefaultOp', 'fmEnvView', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint']);
 for (const k of Object.keys(SYNQUENZER)) {
   const f = SYNQUENZER[k]; if (typeof f !== 'function' || NO_SYNC.has(k)) continue;
   SYNQUENZER[k] = function () { const r = f.apply(this, arguments); uiSync(); if (r && typeof r.then === 'function') return r.then(v => { uiSync(); return v; }); return r; };
