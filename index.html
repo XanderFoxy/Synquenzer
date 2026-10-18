@@ -3187,7 +3187,7 @@ function ptCompile(e, pit, pr) {
   let sus = free ? -1 : ix(e.sus), la = ix(e.la), lb = ix(e.lb); if (!(la >= 0 && lb > la)) la = lb = -1;
   const pre = la >= 0 && sus >= 0 && la < sus ? 1 : 0;
   let r = null; if (!pit && Array.isArray(e.dxr) && e.dxr.length === k) { r = new Int8Array(k + 1).fill(-1); for (let i = 1; i <= k; i++) { const x = Math.round(+e.dxr[i - 1]); r[i] = x >= 0 && x <= 99 ? x : -1; } }
-  return {k, v, tm, sus, la, lb, skip: sus >= 0 && e.skip ? 1 : 0, lin: e.crv === 'lin' ? 1 : 0, free, pre, span: pre && lb > sus ? 1 : 0, pit: pit ? 1 : 0, r};
+  return {k, v, tm, sus, la, lb, adj: la >= 0 && lb === la + 1 ? 1 : 0, skip: sus >= 0 && e.skip ? 1 : 0, lin: e.crv === 'lin' ? 1 : 0, free, pre, span: pre && lb > sus ? 1 : 0, pit: pit ? 1 : 0, r};
 }
 // K2-57: the msfa attack (Dexed env.cc): +floor(17 - l/256) units per step (= 16 - band inside a band, as fmEnvStep),
 // measured in steps ("tau"): G(a, b) = steps from a to b at rate 1; riseAt walks the same bands (a segment of time t runs
@@ -4114,7 +4114,10 @@ class AnalogCore extends AudioWorkletProcessor {
     st.pN[s] = Math.max(1e-6, E.tm[j] * tf * SR / (1000 * CR));
   }
   ptReach(st, s, E, j, gate, ofs, v) {                                     // point j reached
-    if (E.la >= 0 && j === E.lb && (E.free || !E.pre || gate)) { const n = E.la + 1; this.ptEnter(st, s, E, n, st.pV[s], ofs, this.ptTf(E, s % 6, n, v)); return; }
+    if (E.la >= 0 && j === E.lb && (E.free || !E.pre || gate)) {
+      // G3-klein: a loop between neighbouring points swings back: B -> A in the time of A -> B, then A -> B again (else it is flat)
+      if (E.adj) { const tf = this.ptTf(E, s % 6, E.lb, v); this.ptEnter(st, s, E, E.la, st.pV[s], ofs, tf); st.pN[s] = Math.max(1e-6, E.tm[E.lb] * tf * SR / (1000 * CR)); return; }
+      const n = E.la + 1; this.ptEnter(st, s, E, n, st.pV[s], ofs, this.ptTf(E, s % 6, n, v)); return; }
     if (j === E.sus && gate && !E.span) { st.pH[s] = 1; return; }
     if (j >= E.k) { st.pH[s] = 2; return; }
     this.ptEnter(st, s, E, j + 1, st.pV[s], ofs, this.ptTf(E, s % 6, j + 1, v));
@@ -4130,8 +4133,9 @@ class AnalogCore extends AudioWorkletProcessor {
       this.ptReach(st, s, E, j0, gate, ofs, v);
       // V4f-fix: a long catch-up (free run after a pause) inside a loop: at the 2nd wrap to Pla the state repeats exactly every
       // period, so whole periods are skipped (the same result as stepping them, in O(1) instead of up to 4096 steps per slot)
-      if (E.la >= 0 && j0 === E.lb && st.pS[s] === E.la + 1 && ++wrap === 2 && dt > 0) {
+      if (E.la >= 0 && j0 === E.lb && st.pS[s] === (E.adj ? E.la : E.la + 1) && ++wrap === 2 && dt > 0) {
         let P = 0; for (let j = E.la + 1; j <= E.lb; j++) P += Math.max(1e-6, E.tm[j] * this.ptTf(E, s % 6, j, v) * SR / (1000 * CR));
+        if (E.adj) P *= 2;                                                // the swing back B -> A takes as long
         if (P > 0 && dt > P) dt -= Math.floor(dt / P) * P;
       }
     }
@@ -6802,7 +6806,7 @@ const RecHelpers = (() => {
     } else if (kind === 'loopA' || kind === 'loopB') {
       if (i == null || i < 0 || i > last) return {x: null, lcd: '', sel: i};
       if (kind === 'loopA') { e.la = i; if (e.lb >= 0 && e.lb <= i) e.lb = -1; } else { e.lb = i; if (e.la >= i) e.la = -1; }
-      lcd = e.la >= 0 && e.lb > e.la ? 'Schleife ' + e.la + ' → ' + e.lb : (kind === 'loopA' ? 'Schleife ab ' + i + ' – jetzt [Loop B]' : 'Schleife bis ' + i + ' – jetzt [Loop A]');
+      lcd = e.la >= 0 && e.lb > e.la ? 'Schleife ' + e.la + ' → ' + e.lb + (e.lb === e.la + 1 ? ' · Nachbarpunkte: pendelt ' + e.la + ' ↔ ' + e.lb : '') : (kind === 'loopA' ? 'Schleife ab ' + i + ' – jetzt [Loop B]' : 'Schleife bis ' + i + ' – jetzt [Loop A]');
     } else if (kind === 'unloop') {
       e.la = -1; e.lb = -1; lcd = 'Schleife entfernt';
     } else if (kind === 'crv') {
@@ -6879,20 +6883,21 @@ const RecHelpers = (() => {
   function simPtAmp(e, ol, held, tot, dt) {
     const H = FMHx(), L = e.y.map(y => (y <= 0 ? 0 : H.lvlOf(y, ol))), k = e.y.length - 1, out = [];
     const amp = l => Math.pow(2, l / 256), lvl = a => (a <= 1 ? 0 : 256 * Math.log2(a));
-    let seg = 1, from = L[0], el = 0, rel = false, cur = L[0], Tx = null;
+    let seg = 1, from = L[0], el = 0, rel = false, cur = L[0], Tx = null, rt = false;   // rt: the swing back of a loop between neighbours
     for (let t = 0; t < tot; t += dt) {
       // Skip on Release: on to the segment after Psus from the level now, at that segment's rate (worklet ptRelScale)
       if (!rel && t >= held) { rel = true; if (e.sus >= 0 && e.run !== 'free' && seg <= e.sus && e.skip && e.sus < k) {
-        seg = e.sus + 1; from = cur; el = 0; const dn = Math.abs(L[seg] - L[e.sus]), d = Math.abs(cur - L[seg]); Tx = Math.max(.0005, e.t[seg - 1] / 1000 * (d / (dn > 1e-9 ? dn : 256))); } }
+        seg = e.sus + 1; from = cur; el = 0; rt = false; const dn = Math.abs(L[seg] - L[e.sus]), d = Math.abs(cur - L[seg]); Tx = Math.max(.0005, e.t[seg - 1] / 1000 * (d / (dn > 1e-9 ? dn : 256))); } }
       const holdAt = e.sus >= 0 && !rel && e.run !== 'free' && seg === e.sus + 1 && el === 0 && Math.abs(cur - L[e.sus]) < 1e-9;
       if (seg > k || holdAt) { out.push(cur); continue; }
-      const T = Tx != null ? Tx : Math.max(.0005, e.t[seg - 1] / 1000), to = L[seg];
+      const T = Tx != null ? Tx : Math.max(.0005, e.t[seg - 1] / 1000), to = L[rt ? e.la : seg];
       el += dt; const q = Math.min(1, el / T);
       if (e.crv === 'lin') cur = lvl(amp(from) + (amp(to) - amp(from)) * q);
       else if (to < from) cur = from + (to - from) * q; else cur = q >= 1 ? to : riseAt(from, to, q);
       if (q >= 1) {
         cur = to; from = to; el = 0; Tx = null;
-        if (e.la >= 0 && e.lb >= 0 && seg === e.lb && !(rel && e.lb <= e.sus)) seg = e.la + 1;
+        if (rt) rt = false;
+        else if (e.la >= 0 && e.lb >= 0 && seg === e.lb && !(rel && e.lb <= e.sus)) { if (e.lb === e.la + 1) rt = true; else seg = e.la + 1; }
         else if (e.sus >= 0 && !rel && e.run !== 'free' && seg === e.sus) seg = e.sus + 1;
         else seg++;
       }
@@ -6946,13 +6951,13 @@ const RecHelpers = (() => {
       const tg = pegHt(e.l[ix]), sp = DXNx().PEG_RATE[e.r[ix]] / 21.3 * 12 * dt;
       if (Math.abs(tg - cur) <= sp) { cur = tg; if (ix < 2) ix++; } else cur += Math.sign(tg - cur) * sp; out.push(cur); }
     return out; }
-  function simPtPit(e, pr, held, tot, dt) { const R = PR_HT[pr] || 12, h = e.y.map(y => yHt(y, R)), k = e.y.length - 1, out = []; let seg = 1, from = h[0], el = 0, rel = false, cur = h[0];
+  function simPtPit(e, pr, held, tot, dt) { const R = PR_HT[pr] || 12, h = e.y.map(y => yHt(y, R)), k = e.y.length - 1, out = []; let seg = 1, from = h[0], el = 0, rel = false, cur = h[0], rt = false;
     for (let t = 0; t < tot; t += dt) {
-      if (!rel && t >= held) { rel = true; if (e.sus >= 0 && seg <= e.sus && e.skip) { seg = e.sus + 1; from = cur; el = 0; } }
+      if (!rel && t >= held) { rel = true; if (e.sus >= 0 && seg <= e.sus && e.skip) { seg = e.sus + 1; from = cur; el = 0; rt = false; } }
       if (seg > k || (e.sus >= 0 && !rel && seg === e.sus + 1 && el === 0 && cur === h[e.sus])) { out.push(cur); continue; }
-      const T = Math.max(.0005, e.t[seg - 1] / 1000), to = h[seg]; el += dt; const q = Math.min(1, el / T);
+      const T = Math.max(.0005, e.t[seg - 1] / 1000), to = h[rt ? e.la : seg]; el += dt; const q = Math.min(1, el / T);
       cur = e.crv === 'lin' ? 12 * Math.log2(Math.pow(2, from / 12) + (Math.pow(2, to / 12) - Math.pow(2, from / 12)) * q) : from + (to - from) * q;
-      if (q >= 1) { cur = to; from = to; el = 0; if (e.la >= 0 && e.lb >= 0 && seg === e.lb && !(rel && e.lb <= e.sus)) seg = e.la + 1; else seg++; }
+      if (q >= 1) { cur = to; from = to; el = 0; if (rt) rt = false; else if (e.la >= 0 && e.lb >= 0 && seg === e.lb && !(rel && e.lb <= e.sus)) { if (e.lb === e.la + 1) rt = true; else seg = e.la + 1; } else seg++; }
       out.push(cur); }
     return out; }
   function pitDev(pt, pr, dx) { const held = Math.min(4, Math.max(.4, segSum(pt, 0, pt.sus >= 0 ? pt.sus : pt.t.length) + .3)), tot = held + 1.5, dt = .002;
@@ -9732,7 +9737,7 @@ const DXN = (() => {
     let sus = free ? -1 : ix(e.sus), la = ix(e.la), lb = ix(e.lb); if (!(la >= 0 && lb > la)) la = lb = -1;
     const pre = la >= 0 && sus >= 0 && la < sus ? 1 : 0;
     let r = null; if (!pit && Array.isArray(e.dxr) && e.dxr.length === k) { r = [-1]; for (let i = 1; i <= k; i++) { const x = Math.round(+e.dxr[i - 1]); r.push(x >= 0 && x <= 99 ? x : -1); } }
-    return {k, v, tm, sus, la, lb, skip: sus >= 0 && e.skip ? 1 : 0, lin: e.crv === 'lin' ? 1 : 0, free, pre, span: pre && lb > sus ? 1 : 0, pit: pit ? 1 : 0, r};
+    return {k, v, tm, sus, la, lb, adj: la >= 0 && lb === la + 1 ? 1 : 0, skip: sus >= 0 && e.skip ? 1 : 0, lin: e.crv === 'lin' ? 1 : 0, free, pre, span: pre && lb > sus ? 1 : 0, pit: pit ? 1 : 0, r};
   }
   const riseG = (a, b) => { let t = 0, x = a; while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256); t += (nx - x) / Math.max(1, 16 - bd); x = nx; } return t; };
   // V4f-fix (N7F-45): the Skip release keeps the rate of the segment after Psus (same rule as the worklet's ptRelScale)
@@ -9771,18 +9776,18 @@ const DXN = (() => {
   // the segments from segment j (start value cur), key down (gate) or up; firstDur: the rest of a running segment (s)
   function ptPlan(E, ofs, t0, cur, j, gate, tfOf, firstDur) {
     const ev = [], tg = jj => (E.pit ? E.v[jj] : Math.max(16, ((scaleOL(E.v[jj] | 0) >> 1) << 6) + ofs));
-    let t = t0, guard = 0, hold = false;
-    while (j >= 1 && j <= E.k && guard++ < 400 && t - t0 < 12.5) {
-      const b = tg(j); let a = cur;
+    let t = t0, guard = 0, hold = false, ret = 0;                          // ret: the swing back B -> A of a loop between neighbours
+    while ((j >= 1 || ret || (E.adj && j === E.la)) && j <= E.k && guard++ < 400 && t - t0 < 12.5) {
+      const b = tg(j), jt = ret ? E.lb : j; let a = cur;
       if (!E.pit && !E.lin && b > 1716 && a < 1716) a = 1716;
-      const dur = Math.max(1e-5, firstDur != null ? firstDur : E.tm[j] * tfOf(j) / 1000); firstDur = null;
+      const dur = Math.max(1e-5, firstDur != null ? firstDur : E.tm[jt] * tfOf(jt) / 1000); firstDur = null; ret = 0;
       if (E.pit) ev.push({t, kind: E.lin ? 'plin' : 'pexp', a, b, dur, j});
       else if (a === b) ev.push({t, kind: 'hold', a, b, dur, j});
       else if (E.lin) ev.push({t, kind: 'lin', a, b, dur, j});
       else if (b < a) ev.push({t, kind: 'fall', a, b, dur, j});
       else { const G = riseG(a, b); let x = a, tt = t; while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256), dt = (nx - x) / Math.max(1, 16 - bd) / G * dur; ev.push({t: tt, kind: 'rise', a: x, b: nx, dur: Math.max(dt, 1e-6), j}); tt += dt; x = nx; } }
       t += dur; cur = b;
-      if (E.la >= 0 && j === E.lb && (E.free || !E.pre || gate)) { j = E.la + 1; continue; }
+      if (E.la >= 0 && j === E.lb && (E.free || !E.pre || gate)) { if (E.adj) { j = E.la; ret = 1; } else j = E.la + 1; continue; }
       if (j === E.sus && gate && !E.span) { hold = true; break; }
       if (j >= E.k) break;
       j++;
@@ -16231,6 +16236,16 @@ function randomize(t) {
   const tr = S.tracks[t]; if (!tr) throw new Error('Keine Spur: ' + t);
   if (tr.kind === 'drum') { randomizeDrumVoice(DRUM_VOICES[ED.dVoice].id); return; }
   const snd = deep(tr.sound), p = snd.p, R_ = Math.random, U = (a, b) => a + (b - a) * R_(), E = (a, b) => a * Math.pow(b / a, R_()), pick = a => a[Math.floor(R_() * a.length)];
+  // G3-klein: a FELD graph the DX form cannot carry (free graph, other numbers, waves, point envelopes, phases, feedback paths …)
+  // is rolled FELD-gerecht: frequencies, DX-form envelopes and levels; the graph, waves and point envelopes stay (nothing is lost
+  // silently; the one undo step of the caller restores it exactly)
+  if (snd.engine === 'fm6' && p.fmx && !FMX.badge(p.fmx).ok) {
+    fxPut(t, fxRandGraph(deep(p.fmx), {freq: true, env: true, lvl: true}), true);
+    UI.ab = null;
+    if (R.editor === 'synth' && t === R.selT) safeRebuild(buildSynthEd);
+    lcdShow('Zufall (FELD)', 'Verbindungen, Wellen und Punkt-Hüllkurven bleiben');
+    return;
+  }
   if (snd.engine === 'fm6' && p.fm6) {                 // WP7: an FM sound varies its FM patch (Anhang A.1 covers VA only)
     randomizeFm(p, R_);
     UI.ab = null; applySound(t, snd);
@@ -18169,9 +18184,10 @@ function fxRandSheet(i, anchor) {
     b.classList.toggle('on');
   }, 'button');
 }
-function fxRandomize(i, on_) {
+// the graph part of Zufall (pure on a copy): only DX-form envelopes are rolled, point envelopes, waves (unless ☑ Wellen) and
+// the graph (unless ☑ Algorithmus) stay
+function fxRandGraph(x, on_) {
   const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-  let x = deep(fxX(i));
   if (on_.alg) x = FMX.applyAlg(x, rnd(1, 32));
   x.ops.forEach((o, k) => {
     if (on_.freq) { o.fixed = 0; o.coarse = [1, 1, 1, 2, 2, 3, 4, 5, 7, 0, 14][rnd(0, 10)]; o.fine = Math.random() < .8 ? 0 : rnd(0, 99); o.det = rnd(-3, 3); }
@@ -18184,6 +18200,11 @@ function fxRandomize(i, on_) {
   if (on_.lfo) { const fm_ = [0, 0, 18, 36][rnd(0, 3)]; x.ops.forEach(o => { o.lfoFm = fm_; }); }
   if (on_.lvl && !x.ops.some(o => o.r === 0 && o.ol >= 80)) { const o = x.ops.find(q => q.r === 0); if (o) o.ol = 99; }
   if (on_.lvl) x.ops.forEach(o => { if (o.r === 0) o.on = 1; });
+  return x;
+}
+function fxRandomize(i, on_) {
+  const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const x = fxRandGraph(deep(fxX(i)), on_);
   const before = soundSnapshot(i), st = fxState(i);
   let ch = fxPut(i, x, true);
   if (on_.lfo) { const P = sndOf(i).p, set = (k_, v) => { if (P[k_] !== v) { setP(i, k_, v); ch = true; } };
@@ -20513,7 +20534,7 @@ async function exportSyxBank(ids) {
   if (!voices.length) { toast('Kein DX-tauglicher FM-Sound · ' + skipTxt); return {count: 0, skipped, over}; }
   const bytes = buildSyxBank(voices), d = new Date(), z = n => String(n).padStart(2, '0');
   const base = 'synquenzer-dx7-bank-' + d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes());
-  const how = await deliver(base, bytes, 'syx', voices.length + ' Stimmen' + (skipTxt ? ' · ' + skipTxt : ''));
+  const how = await deliver(base, bytes, 'syx', voices.length + (voices.length === 1 ? ' Stimme' : ' Stimmen') + (skipTxt ? ' · ' + skipTxt : ''));
   return {count: voices.length, skipped, over, base, how, bytes: Array.from(bytes)};
 }
 function onSyxPicked(file) {

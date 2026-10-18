@@ -1472,3 +1472,28 @@ Nummern, 3838 Zeilen), `v3-rep-dxnum-ui.mjs`, `v3-grpG3-convui.mjs`, `v3-repro-p
 **Bekannt, unverändert:** die DX-Fußzeile ist auf P1/P2/L1 breiter als ihr Feld und wird mit „…“ gekürzt (z. B. 326 > 236 px);
 eine flache DX-Stufe > 20 s bleibt in der Punkt-Form 20 s (längstes Segment); Lin rechnet Time/Key über die lineare Strecke, ein
 Angriff unter 1 ms kann nach [Exp] → Lin bis 0,5 ms anders lesen.
+
+## G3-klein-fix — 🎲 auf FELD-Sounds verliert nichts, Loop zwischen Nachbarpunkten pendelt, „1 Stimme“, zwei Testerwartungen · App 3.11.0
+
+1. **Kopf-🎲 auf einem FELD-Sound, den die DX-Form nicht tragen kann** (Badge nicht ✓: freier Graph, andere Nummern, Wellen,
+   Punkt-Hüllkurven, Phasen, Feedback-Wege): würfelt jetzt FELD-gerecht wie das Zufall-Blatt (`fxRandGraph`, gemeinsam mit
+   `fxRandomize`) – Frequenzen, DX-Form-Hüllkurven und Pegel; Verbindungen, Plätze, Feedback, Wellen, Phasen und Punkt-Hüllkurven
+   bleiben. LCD „Zufall (FELD) · Verbindungen, Wellen und Punkt-Hüllkurven bleiben“. Ein Undo je 🎲 stellt den Sound exakt her.
+   Ein reiner DX-Graph (Badge ✓) würfelt wie bisher (auch den Algorithmus); dort geht nichts verloren.
+2. **[Loop A]/[Loop B] auf Nachbarpunkten** (Worklet, nativer Pfad, Abgleichs-Simulation): die Schleife pendelt A ↔ B – von B zurück
+   nach A in der Zeit von A → B, dann wieder A → B (Periode 2 × Segment). Vorher lief das Segment von B nach B und blieb flach.
+   Schleifen über drei oder mehr Punkte unverändert. Auch mit A = P0, vor dem Sustain (endet beim Loslassen) und mit [Frei]
+   (Aufholen ganzer Perioden). LCD „Schleife 1 → 2 · Nachbarpunkte: pendelt 1 ↔ 2“.
+3. **DX7-Bank-Toast:** „1 Stimme“, „n Stimmen“.
+4. **`v3-acc4c-syx.mjs` „FELD stumm“ / „FELD Nummern“: Testerwartung falsch, App richtig** (KP §6.4): Nr. 1 – DX-tauglich nur mit
+   der eigenen Nummerierung; ein Graph „wie DX 1 – Nummern anders“ braucht erst [Nummern angleichen], der Export überspringt ihn mit
+   Grund (N7F-50). Nr. 7 – das DX7-Stimmenformat (VMEM) hat kein Operator-an-Bit, ein stummer OP wird mit Pegel 0 geschrieben und
+   kommt als an · OL 0 zurück (klingt gleich). Test angepasst: 5 exportiert, „FELD Welle“ und „FELD Nummern“ übersprungen, stumm ≙ OL 0.
+5. **V0d-2-11 (`v3-v0d-ui-d.mjs`) und Tabelle T2 (Nachtrag 1):** die angezeigten Zeiten folgen seit V4f-fix der msfa-Anstiegskurve
+   (K2-57 bleibt) und sind richtig: Ausgang A 0,8 ms (statt 0,6), Pad-Ausgang A 138 ms (108), Pad-Modulator A 130 ms (113),
+   D1 183 ms (143). Testerwartung und T2 angepasst, App unverändert.
+
+**Abnahme (`dirigent-test/`):** `v3-g3k-dice.mjs` (13/13), `v3-g3k-loopnb.mjs` (Worklet und nativ über die App, 7/7; auf dem
+alten Stand 6 rot), `v3-g3k-loopnb-off.mjs` (Periode ±3 % bei 44,1/48 kHz, M-KLICK, Release, 18/18), `v3-g3k-loopnb-free.mjs`,
+`v3-g3k-lcdfont.mjs` (P/P375/P320/L/L667 mit Barlow Semi Condensed: nichts abgeschnitten), `v3-grpG3-loopadj.mjs`,
+`v3-acc4c-syx.mjs` (6/6), `v3-v0d-ui-d.mjs` (51/51); Regression `v3-g3k-reg.sh`; Smoke ohne Fehler.
