@@ -2416,6 +2416,10 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 @media (orientation:portrait) and (min-width:360px) and (max-width:374px){.fmdiag{width:154px}}
 /* short portrait screens (375×667, 320×568): a compact head row (diagram + stepper / Liste + FEEDBACK) so the faders keep travel */
 @media (orientation:portrait) and (max-height:700px){
+  /* V4a: a visible hint line (ECO / 6 Stimmen) takes the row of the small envelope pictures (it ran over them) */
+  #synthSheet .pg-osc-algo:has(>.fmhint:not([hidden])) .fmspk{display:none}
+  #synthSheet .pg-osc-algo:has(>.fmhint:not([hidden])) .fmcol .fader{min-height:40px}
+  #synthSheet .pg-osc-algo>.fmhint{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #synthSheet .pg-osc-algo .fmtop{height:84px}
   #synthSheet .pg-osc-algo .fmdiag,#synthSheet .sh-body[class*="fit"] .pg-osc-algo .fmdiag{height:84px;width:104px}
   #synthSheet .pg-osc-algo .fmaside{grid-template-columns:auto auto;grid-template-rows:auto auto;align-content:center;justify-content:start;gap:4px 8px}
@@ -2776,6 +2780,8 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
      {set: {param: number, ...}}   {mods: [{src, dst, amt}]}   {dispose: true}   {scope: bool}
      {fm6: {alg 1..32, fb 0..7, trans, ops: [6 x {on, fixed, coarse, fine, det, ol, r[4], l[4], vs, rs, ks?}]}}  (DX7 units;
        sounding FM voices re-target their running envelope stage; an algorithm change crossfades like a structural change)
+       V4a: fm6.x = p.fmx (format 2, Nachtrag 2 Teil A / KP 6.1) -> the graph renderer plays the fmx graph instead of fm6
+     {fmxLv: bool}   V4a: live operator levels {fmxLv: [6 x 0..1]} at ~30 Hz while on (only while the FM field is shown)
      {tempo: {bpm, start: ctxTimeOfBeat0 | null, at?: ctxTime}}   (with at: takes effect at that audio time, so a late message
        never bends the phase of synced LFOs; without: at once and pending changes are dropped)
    Worklet -> main: {end: [ids]} when voices are free, {load: fractionOfRealtime, voices: n} once per second,
@@ -2803,6 +2809,7 @@ const NSLOT = 8;
 const XF_KEYS = ['o1w', 'o2w', 'o3w', 'o1uni', 'o2uni', 'o3uni', 'o2sync', 'ftype', 'subW', 'subOct', 'lq', 'mode', 'eng', 'fmAmp'];
 const XF_D = CR / 96;      // structural crossfade: 96 samples down, 96 up
 const EXF_N = Math.round(.04 * SR);   // V0b-fix (L3, PR5): engine change at sounding voices = 40 ms equal-power voice crossfade
+const SXF_N = Math.round(.03 * SR);   // V4a (L3, Z11): structural change at sounding voices = 30 ms equal-power voice crossfade
 
 /* ---- FM6 (spec v2 6.3, WP7): tables and msfa maths copied verbatim from fmresearch/proto/dx6-worklet.js ---- */
 const SIN_N = 4096, SIN = new Float32Array(SIN_N + 1);
@@ -2855,6 +2862,125 @@ const FM_INIT = {alg: 1, fb: 0, trans: 0, ops: [Object.assign({}, FM_OP0, {ol: 9
 const FM_GATE_C = Math.exp(-1 / (.00025 * SR));
 const FM_MAXREL = 12 * SR;                            // DX end rule: a released FM voice ends after 12 s at the latest
 
+/* ---- V4a (Nachtrag 2 K2-40, KD 6.2): factory waves 0..11 of the FM graph. 0 = the sine path above (bit-identical to fm6);
+   1..11 = 512-sample tables, linear interpolation, band-limited with one mip level per octave (level L keeps the harmonics
+   n <= 2^(8-L), level 0 n <= 255), DC free, peak 1 (the scale of level 0 for all levels). Built when the module loads. ---- */
+const WV_N = 512, WV_M = WV_N - 1, WV_LV = 10, WV_FR = 1 / 8388608;  // 10 levels: 9 = copy of 8 (the crossfade partner of 8)
+const WV_Q = Math.log2(512 / SR);                     // mip position q = log2(f) + WV_Q: level L is alias-free while q <= L
+const WV_SIN = new Float64Array(WV_N); for (let i = 0; i < WV_N; i++) WV_SIN[i] = Math.sin(2 * Math.PI * i / WV_N);
+const WAVES = [];
+function waveCoef(w) {                                // [a_n (cos), b_n (sin)] for n = 1..255
+  const a = new Float64Array(256), b = new Float64Array(256), PI = Math.PI;
+  for (let n = 1; n < 256; n++) {
+    const odd = n & 1;
+    if (w === 1) b[n] = 1 / n;                                                     // Saege: sum sin(2 pi n x) / n
+    else if (w === 2) b[n] = 1 / (n * n);                                          // Saege weich: 1 / n^2
+    else if (w === 3) b[n] = odd ? ((n >> 1) & 1 ? -1 : 1) / (n * n) : 0;           // Dreieck: odd n, alternating, 1 / n^2
+    else if (w === 4) b[n] = odd ? 1 / n : 0;                                      // Rechteck: odd n, 1 / n
+    else if (w === 5) { if (n === 1) b[n] = .5; else if (!odd) a[n] = -2 / (PI * (n * n - 1)); }   // Halbsinus max(sin, 0)
+    else if (w === 6) { a[n] = Math.sin(PI * n / 2) / (PI * n); b[n] = (1 - Math.cos(PI * n / 2)) / (PI * n); }   // Puls 25 %
+    else if (w === 7) b[n] = n === 1 ? 1 : n === 2 ? .5 : 0;                        // Oberton 2
+    else if (w === 8) b[n] = n === 1 ? 1 : n === 3 ? .5 : 0;                        // Oberton 3
+    else if (w === 9) b[n] = 4 * n / PI * (1 / (4 * n * n - 1) - 1 / (4 * n * n - 9));   // Sinus weich: sin(2 pi x) sin(pi x)
+    else if (w === 10) b[n] = n === 1 ? 5 / 16 : n === 2 ? -.25 : n === 3 ? 1 / 16 : 0;    // Sinus weich 2: sin(2 pi x) sin^4(pi x)
+  }
+  if (w === 11) { let r = 0x9E3779B9; for (let n = 1; n < 256; n++) {           // Rauschen: flat spectrum, fixed random phases
+    r ^= r << 13; r ^= r >>> 17; r ^= r << 5; const ph = ((r >>> 0) / 4294967296) * 2 * PI; a[n] = Math.cos(ph); b[n] = Math.sin(ph); } }
+  return [a, b];
+}
+function waveTab(w) {
+  let T = WAVES[w]; if (T) return T;
+  const [a, b] = waveCoef(w); T = [];
+  for (let L = 0; L < 9; L++) {
+    const H = Math.min(255, 1 << (8 - L)), t = new Float32Array(WV_N + 1), x = new Float64Array(WV_N);
+    for (let n = 1; n <= H; n++) { const an = a[n], bn = b[n]; if (!an && !bn) continue;
+      for (let i = 0, j = 0; i < WV_N; i++, j = (j + n) & WV_M) x[i] += bn * WV_SIN[j] + an * WV_SIN[(j + 128) & WV_M]; }
+    T.push(x);
+  }
+  let pk = 0; for (const v of T[0]) pk = Math.max(pk, Math.abs(v)); const sc = pk > 0 ? 1 / pk : 1;
+  T = T.map(x => { const t = new Float32Array(WV_N + 1); for (let i = 0; i < WV_N; i++) t[i] = x[i] * sc; t[WV_N] = t[0]; return t; });
+  T.push(T[8]);
+  return (WAVES[w] = T);
+}
+// FP-IPHONE: built when the module loads (once, before any voice; 11 tables, ~45 ms cold on the Xeon), not on first use: a
+// cold build in a render quantum took 29 ms (Node) and would drop out on the audio thread
+for (let w = 1; w < 12; w++) waveTab(w);
+// V4a (KP 4.8, N4a-01): lfoFm 0..127 -> semitones at full LFO 1 (shape of the msfa pitch mod sensitivity, 127 = +-12 HT);
+// lfoAm 0..127 -> dB of attenuation at the LFO minimum (127 = 24 dB)
+const PMS_T = [0, 10, 20, 33, 55, 92, 153, 255];
+const LFOFM_HT = new Float64Array(128); for (let i = 0; i < 128; i++) { const x = i * 7 / 127, j = Math.min(6, x | 0); LFOFM_HT[i] = 12 * (PMS_T[j] + (PMS_T[j + 1] - PMS_T[j]) * (x - j)) / 255; }
+const LFOAM_DB = 24 / 127;
+const FMX_EDGE_CAP = 12;                              // V4a (K2-42, N7F-10 measured 15.7 % with 15 edges and a loop): > 12 edges -> 6 voices
+const MUTE_STEP = CR / (.03 * SR);                     // V4a (N7F-06): [M] / on fades an operator in 30 ms (10 ms tripped M-KLICK on a bright modulator)
+
+// V4a (Nachtrag 2 Teil A, KP 6.1): p.fmx (format 2) -> {fm: an fm6-like patch for the envelope / level code (r, l = the DX
+// form of amp), alg: {car, mods, nCar} like ALGS, gx: the graph}. null when the data is unusable (the fm6 patch plays then).
+const PHM = {fix: 0, rnd: 1, free: 2};
+function fmxEdges(X) {
+  const E = [];
+  for (const e of Array.isArray(X.edges) ? X.edges : []) { const a = ((e && e.from) | 0) - 1, b = ((e && e.to) | 0) - 1; if (a >= 0 && a < 6 && b >= 0 && b < 6 && a !== b) E.push([a, b]); }
+  return E;
+}
+function fmxSig(P) {                                    // what makes a change structural: edges, waves, feedback sources
+  const X = P && P.x; if (!X || !Array.isArray(X.ops) || X.ops.length < 6) return 'a' + ((P && P.alg) | 0);
+  let s = 'x' + fmxEdges(X).map(e => e[0] * 6 + e[1]).sort((a, b) => a - b).join(',') + '|';
+  for (let k = 0; k < 6; k++) { const o = X.ops[k] || {}; s += (o.wave | 0) + ':' + (o.fbSrc | 0) + ' '; }
+  return s;
+}
+function envDx(e) {                                     // the DX form of an envelope; the point form (V4f) approximated
+  const c = (x, d) => { x = Math.round(+x); return x >= 0 && x <= 99 ? x : d; };
+  if (e && e.f === 'dx' && Array.isArray(e.r) && Array.isArray(e.l)) return {r: [0, 1, 2, 3].map(i => c(e.r[i], 99)), l: [0, 1, 2, 3].map(i => c(e.l[i], i < 3 ? 99 : 0))};
+  if (e && e.f === 'pt' && Array.isArray(e.y) && Array.isArray(e.t) && e.y.length >= 2) {
+    const y = e.y, t = e.t, k = y.length - 1, sus = e.sus >= 1 && e.sus <= k ? e.sus : Math.min(3, k);
+    const rt = ms => c(99 - 7.2 * Math.log2(Math.max(3, +ms || 3) / 3), 99), L = [y[1], y[Math.min(2, sus)], y[sus], y[k]];
+    return {r: [rt(t[0]), rt(t[1]), rt(t[2]), rt(t[k - 1])], l: L.map((v, i) => c(v, i < 3 ? 99 : 0))};
+  }
+  return {r: [99, 99, 99, 80], l: [99, 99, 99, 0]};
+}
+function sameEdges(E, A) {
+  const a = E.map(e => e[0] * 6 + e[1]).sort((x, y) => x - y).join(','), b = [];
+  A.mods.forEach((ms, t) => { for (const s of ms) b.push(s * 6 + t); });
+  return a === b.sort((x, y) => x - y).join(',');
+}
+function fmxCompile(X) {
+  const ops = X && X.ops; if (!Array.isArray(ops) || ops.length < 6) return null;
+  const E = fmxEdges(X), srcs = [[], [], [], [], [], []], tg = [[], [], [], [], [], []];
+  for (const [a, b] of E) if (!srcs[b].includes(a)) { srcs[b].push(a); tg[a].push(b); }
+  for (const s of srcs) s.sort((a, b) => a - b);
+  const fbK = new Int8Array(6).fill(-1), fbS = new Float64Array(6);
+  for (let k = 0; k < 6; k++) { const o = ops[k] || {}, s = (o.fbSrc | 0) - 1, amt = Math.min(7, +o.fbAmt || 0);
+    if (s >= 0 && s < 6) { fbK[k] = s; fbS[k] = amt > 0 ? Math.pow(2, amt - 8) : 0; } }
+  // N7F-02: DX alg 4 / 6 (receiver 6, source 4 / 5) are computed on the WP7 way: folded into OP6 self-feedback (as msfa)
+  if ((fbK[5] === 3 && sameEdges(E, ALGS[3])) || (fbK[5] === 4 && sameEdges(E, ALGS[5]))) fbK[5] = 5;
+  // order: modulators first, among the ready ones the highest number (= 6..1 for every DX graph, as fm6); a foreign
+  // feedback source goes before its receiver where no loop forbids it (then one block-wise pass is exact)
+  const pre = srcs.map(s => s.slice()), nx = tg.map(t => t.slice());
+  const reach = (a, b) => { const seen = new Uint8Array(6), st = [a]; while (st.length) { const x = st.pop(); if (x === b) return true; if (seen[x]) continue; seen[x] = 1; for (const y of nx[x]) st.push(y); } return false; };
+  for (let k = 0; k < 6; k++) { const f = fbK[k]; if (f >= 0 && f !== k && fbS[k] > 0 && !reach(k, f)) { pre[k].push(f); nx[f].push(k); } }
+  const deg = pre.map(p => p.length), ord = [], pos = new Int8Array(6);
+  while (ord.length < 6) {
+    let pick = -1; for (let k = 5; k >= 0; k--) if (deg[k] === 0 && !ord.includes(k)) { pick = k; break; }
+    if (pick < 0) return null;                          // a loop in the edges (invalid): play the fm6 patch
+    pos[pick] = ord.length; ord.push(pick); for (const y of nx[pick]) deg[y]--;
+  }
+  let ps = false; for (let k = 0; k < 6; k++) { const f = fbK[k]; if (f >= 0 && f !== k && fbS[k] > 0 && pos[f] > pos[k]) ps = true; }
+  const car = new Uint8Array(6); let nCar = 0; for (let k = 0; k < 6; k++) if (!tg[k].length) { car[k] = 1; nCar++; }
+  const gx = {ord: Int8Array.from(ord), srcs: srcs.map(s => Int8Array.from(s)), car, nCar, outScale: 0.5 / Math.sqrt(Math.max(1, nCar)), fbK, fbS, ps,
+    wave: new Uint8Array(6), on: new Float64Array(6), ph0: new Float64Array(6), phm: new Uint8Array(6), pit: [], am: new Float64Array(6), fmS: new Float64Array(6), sig: fmxSig({x: X}), nE: E.length};
+  const fops = [];
+  for (let k = 0; k < 6; k++) {
+    const o = ops[k] || {}, A = envDx(o.amp), fixed = o.fixed ? 1 : 0;
+    fops.push({on: 1, fixed, coarse: o.coarse | 0, fine: +o.fine || 0, det: o.det | 0, ol: Math.max(0, Math.min(99, o.ol | 0)), r: A.r, l: A.l,
+      vs: Math.max(-7, Math.min(7, o.vs | 0)), rs: o.rs | 0, ks: o.ks && typeof o.ks === 'object' ? o.ks : undefined});
+    const w = o.wave | 0; gx.wave[k] = w > 0 && w < 12 ? w : 0;           // eigene Wellen 12..47 kommen mit V4e
+    gx.on[k] = o.on === 0 ? 0 : 1; gx.ph0[k] = (Math.max(0, Math.min(127, o.ph | 0)) * 33554432); gx.phm[k] = PHM[o.phm] || 0;
+    const P = o.pit;
+    gx.pit.push(P && P.f === 'dx' && !fixed && (o.pr == null || o.pr === 'dx') && Array.isArray(P.l) && !P.l.every(x => (x | 0) === 50) ? envDx(P) : null);
+    gx.am[k] = Math.max(0, Math.min(127, o.lfoAm | 0)) * LFOAM_DB; gx.fmS[k] = LFOFM_HT[Math.max(0, Math.min(127, o.lfoFm | 0))];
+  }
+  return {fm: {trans: X.trans | 0, ops: fops, peg: null, x: true}, alg: {car, mods: gx.srcs, fbDst: -1, fbSrc: -1, nCar}, gx};
+}
+
 function mtof(n) { return 440 * Math.pow(2, (n - 69) / 12); }
 // lookup tables over the MIDI note scale (1/8 semitone steps, linear interpolation: < 0.02 cent error)
 const LT0 = -48, LTR = 8, LTN = (176 - LT0) * LTR, FREQ = new Float64Array(LTN + 2), GTAN = new Float64Array(LTN + 2);
@@ -2883,6 +3009,7 @@ function defaults() {
     lq: 1,                                                       // ladder quality: 0 eco (1 nonlinearity), 1 analog (5)
     eng: 0,                                                      // engine: 0 analog (VA), 1 fm6 (WP7)
     fmAmp: 0, fmBright: 0, fmAtk: 0, fmDec: 0, fmRel: 0, fmBite: 0,         // FM6 (6.2): DX envelopes = volume | ADSR; brightness dB; rate offsets
+    xfLite: 0,                                                   // V4a: 1 = limiter level >= 2: structural changes use the WP4 dip
   };
 }
 
@@ -2937,7 +3064,22 @@ class Voice {
     this.fbuf = [0, 1, 2, 3, 4, 5].map(() => new Float32Array(CR)); this.fmodIn = new Float32Array(CR);
     this.ffb0 = 0; this.ffb1 = 0; this.fdone = 0; this.fnote = 60; this.fvel = 100;
     this.frel = 0; this.frelN = 0; this.fgate = 0; this.falive = false;   // release started, samples since, gate amp, a carrier sounds
+    // V4a (fmx graph): pitch EG per operator (octaves), mute ramp, wave mip level / weight (now, target), self-feedback history
+    // per operator, foreign-feedback history (last sample of the previous / current block), per-sample outputs (now, previous)
+    this.xpL = new Float64Array(6); this.xpT = new Float64Array(6); this.xpR = new Float64Array(6); this.xpIx = new Int8Array(6).fill(4); this.xpRise = new Uint8Array(6);
+    this.xmu = new Float64Array(6).fill(1); this.xwa = new Int8Array(6); this.xwb = new Int8Array(6); this.xww = new Float64Array(6); this.xwt = new Float64Array(6);
+    this.xf0 = new Float64Array(6); this.xf1 = new Float64Array(6); this.fyl = new Float64Array(6); this.fyp = new Float64Array(6);
+    this.xy = new Float64Array(6); this.xyp = new Float64Array(6); this.xnew = 0;
   }
+}
+// V4a (L3): the phase (cycles) at which a VA wave's fundamental is +sin: saw (2t-1) 0.5, pulse pw/2 - 1/4, triangle 1/4, sine 0
+function wavePhi(w, pw) { return w === W_SAW ? .5 : w === W_PULSE ? pw / 2 - .25 : w === W_TRI ? .25 : 0; }
+// V4a (L3): a deep copy of a voice (typed arrays and the arrays of typed arrays copied) for the structural voice crossfade
+function cloneVoice(v) {
+  const c = new Voice(v.idx);                                   // the same hidden class as every voice (no slower property access)
+  for (const k of Object.keys(v)) { const x = v[k], y = c[k];
+    if (ArrayBuffer.isView(x)) y.set(x); else if (Array.isArray(x)) x.forEach((z, i) => { if (ArrayBuffer.isView(z)) y[i].set(z); else y[i] = z; }); else c[k] = x; }
+  return c;
 }
 
 class AnalogCore extends AudioWorkletProcessor {
@@ -2970,6 +3112,13 @@ class AnalogCore extends AudioWorkletProcessor {
     this.uniMod = false;                // a route targets D_UNIDET
     // FM6 (6.3): the patch, its algorithm, the feedback shift, filter bypass, a patch waiting for the structural crossfade
     this.fm = FM_INIT; this.alg = ALGS[0]; this.fbShift = 0; this.fmBypass = false; this.fmRoutesFilt = false; this.pendFm = null;
+    // V4a: the compiled fmx graph (null = the fm6 path), live operator levels on request, the frame of the current control
+    // block, the free-running phase reference of 'free' operators, a structural change waiting for the running crossfade
+    this.gx = null; this.lvOn = false; this.lvNext = 0; this.curF = 0; this.frPh = new Float64Array(6); this.frInc = new Float64Array(6); this.frF = new Float64Array(6).fill(-1);
+    this.pendS = null; this.xfLen = EXF_N; this.sxfOn = false;
+    this.ps = {act: new Uint8Array(6), g: new Float64Array(6), dg: new Float64Array(6), ph: new Float64Array(6), inc: new Float64Array(6),
+      w: new Float64Array(6), dw: new Float64Array(6), ta: [null, null, null, null, null, null], tb: [null, null, null, null, null, null], fs: new Float64Array(6),
+      ord: new Int8Array(6), fk: new Int8Array(6), ms: new Int8Array(36), mn: new Uint8Array(6), ca: new Uint8Array(6), tw: new Uint8Array(6)};
     this.hasPerf = typeof performance !== 'undefined' && typeof performance.now === 'function';
     const po = opt && opt.processorOptions;
     if (po && po.patch) this.setParams(po.patch); else this.derive();
@@ -2980,9 +3129,10 @@ class AnalogCore extends AudioWorkletProcessor {
 
   onMsg(m) {
     if (m.ev) { for (const e of m.ev) this.enqueue(e); }
-    if (m.set) this.setReq(m.set, !!m.xf);
+    if (m.set) this.setReq(m.set, !!m.xf, m.fm6 || null);      // V4a: a whole sound = params + FM patch in one crossfade
     if (m.mods) this.setMods(m.mods);
-    if (m.fm6) this.fmMsg(m.fm6);
+    if (m.fm6 && !m.set) this.fmMsg(m.fm6);
+    if (m.fmxLv != null) { this.lvOn = !!m.fmxLv; this.lvNext = 0; }
     if (m.tempo) {
       const e = {bpm: m.tempo.bpm || 120, start: m.tempo.start == null ? -1 : m.tempo.start, at: m.tempo.at};
       if (e.at != null && isFinite(e.at)) { this.tnext.push(e); this.tnext.sort((a, b) => a.at - b.at); }
@@ -3005,20 +3155,68 @@ class AnalogCore extends AudioWorkletProcessor {
     let i = q.length; while (i > 0 && q[i - 1][0] > f) i--;   // events arrive mostly in order: cheap insertion
     q.splice(i, 0, ev);
   }
-  // 12c: a change that would step the waveform waits for a 2 ms fade-out of every sounding voice
-  setReq(o, force) {
+  // 12c / V4a (L3, Z11): a change that would step the waveform (XF_KEYS, a whole sound, a new FM structure) at sounding voices:
+  // a 30 ms equal-power voice crossfade (structXf). The WP4 dip (2 ms out, change, 2 ms in) stays only as the fallback at
+  // limiter level >= 2 (xfLite) and for a poly <-> mono change (that releases the held voices anyway). fm: the FM patch of
+  // the same message (a whole sound: params and operators go through one crossfade)
+  setReq(o, force, fm) {
     let active = false; for (const v of this.V) if (v.on) { active = true; break; }
     if (active && typeof o.eng === 'number' && o.eng !== this.P.eng) {   // V0b-fix: never the WP4 dip / cut for an engine change
-      const m = this.pend ? Object.assign({}, this.pend, o) : o; this.pend = null; this.engXf(m); return;
+      const m = this.pend ? Object.assign({}, this.pend, o) : o; this.pend = null; this.engXf(m); if (fm) this.fmMsg(fm); return;
     }
-    if (this.xfState === 3) { this.setParams(o); return; }           // fresh voices still fading in: no second dip
-    if (this.pend) { Object.assign(this.pend, o); return; }
+    if (this.xfState === 3 && !this.sxfOn) { this.setParams(o); if (fm) this.fmMsg(fm); return; }   // engine crossfade fading in: no second dip
+    if (this.pend) { Object.assign(this.pend, o); if (fm) this.pendFm = fm; return; }
+    if (this.pendS) { Object.assign(this.pendS.o, o); if (fm) this.pendS.fm = fm; return; }   // V4a: waits for the running crossfade
     if (active) {
       let xf = force; const P = this.P;
       if (!xf) for (const k of XF_KEYS) if (k in o && typeof o[k] === 'number' && o[k] !== P[k]) { xf = true; break; }
-      if (xf) { this.pend = Object.assign({}, o); this.xfState = 1; return; }
+      if (!xf && fm && P.eng === 1 && this.fmStruct(fm)) xf = true;
+      if (xf) {
+        if (P.xfLite >= 1 || ('mode' in o && (o.mode > 0) !== (P.mode > 0))) { this.pend = Object.assign({}, o); if (fm) this.pendFm = fm; this.xfState = 1; return; }
+        this.structReq(o, fm); return;
+      }
     }
-    this.setParams(o);
+    this.setParams(o); if (fm) this.fmMsg(fm);
+  }
+  // V4a (L3): one structural crossfade at a time (load at most x 2, V4a-11); a change during it waits and merges
+  structReq(o, fm) {
+    if (this.sxfOn || this.xfState) { const q = this.pendS || (this.pendS = {o: {}, fm: null}); if (o) Object.assign(q.o, o); if (fm) q.fm = fm; return; }
+    this.structXf(o, fm);
+  }
+  // the ghost keeps COPIES of the sounding voices with the old sound and fades out (cos); the voices themselves go on with the
+  // new values (same phases, envelopes, filter states) and fade in (sin): equal power, no hole, no restart
+  structXf(o, fm) {
+    const g = this.mkGhost(); g.V = []; for (const v of this.V) if (v.on) g.V.push(cloneVoice(v));
+    g.noSpare = true; g.xfN = SXF_N;
+    const ow = Array.from(this.oW);
+    if (o && Object.keys(o).length) this.setParams(o);
+    // a VA wave change: the new wave starts with its fundamental in phase with the old one (saw and pulse are anti-correlated
+    // at the same phase: their sum would dip by up to 7 dB in the middle of the crossfade); the new voice is the only one
+    // that hears the phase step, inside its fade-in
+    if (this.P.eng !== 1) for (let n = 0; n < NOSC; n++) if (this.oW[n] !== ow[n]) for (const v of this.V) if (v.on) {
+      const d = wavePhi(this.oW[n], v.pw[n]) - wavePhi(ow[n], v.pw[n]);
+      for (let u = 0; u < MAXU; u++) { let t = v.ph[n * MAXU + u] + d; t -= Math.floor(t); v.ph[n * MAXU + u] = t; }
+    }
+    if (fm) this.setFm(fm, true);
+    for (const v of this.V) if (v.on) { v.pl0 = 0; v.pr0 = 0; }       // their output ramp starts at 0 (the ghost carries the old)
+    this.sxfOn = true; this.xfState = 3; this.xfT = 0; this.xfLen = SXF_N; this.xg = this.xg1 = 0;
+  }
+  sxfEnd() {
+    this.sxfOn = false; const q = this.pendS; this.pendS = null; if (!q) return;
+    let active = false; for (const v of this.V) if (v.on) { active = true; break; }
+    if (active) this.structXf(q.o, q.fm); else { if (Object.keys(q.o).length) this.setParams(q.o); if (q.fm) this.setFm(q.fm, true); }
+  }
+  mkGhost() {
+    // a spread copy keeps fast properties (Object.create + keyed stores turned the ghost into a dictionary object, +15 % load)
+    const g = Object.setPrototypeOf({...this}, AnalogCore.prototype);
+    for (const k of Object.keys(g)) { const x = g[k]; if (ArrayBuffer.isView(x)) g[k] = x.slice(); }
+    g.P = Object.assign({}, this.P); g.A = Object.assign({}, this.A); g.F = Object.assign({}, this.F); g.M = Object.assign({}, this.M);
+    g.q = []; g.stack = []; g.ended = []; g.tnext = this.tnext.slice(); g.ghosts = null; g.spare = null;
+    g.pend = null; g.pendFm = null; g.pendS = null; g.sxfOn = false; g.scopeOn = false; g.scopeDst = false; g.lvOn = false; g.noSpare = false;
+    g.xfState = 4; g.xfT = 0; g.xfA = this.xg1; g.xg = g.xg1 = this.xg1;
+    if (this.ghosts.length >= 3) this.dropGhost(this.ghosts.shift());
+    this.ghosts.push(g);
+    return g;
   }
   // V0b-fix (spec v3 0.2 L3, 12.1 PR5): the old engine's voices keep sounding in a ghost copy and fade out over 40 ms
   // (cos), the keys still held start at once in the new engine and fade in (sin): equal power, no hole, no cut
@@ -3035,14 +3233,7 @@ class AnalogCore extends AudioWorkletProcessor {
     const keep = new Set(held.map(h => h.id));
     for (const v of this.V) if (v.on && !keep.has(v.id)) this.ended.push(v.id);           // tails: done for the host (they fade in the ghost)
     for (const s of this.stack) if (!keep.has(s.id) && !this.findId(s.id)) this.ended.push(s.id);
-    const g = Object.create(AnalogCore.prototype);
-    for (const k of Object.keys(this)) { const x = this[k]; g[k] = ArrayBuffer.isView(x) ? x.slice() : x; }
-    g.P = Object.assign({}, this.P); g.A = Object.assign({}, this.A); g.F = Object.assign({}, this.F); g.M = Object.assign({}, this.M);
-    g.q = []; g.stack = []; g.ended = []; g.tnext = this.tnext.slice(); g.ghosts = null; g.spare = null;
-    g.pend = null; g.pendFm = null; g.scopeOn = false; g.scopeDst = false;
-    g.xfState = 4; g.xfT = 0; g.xfA = this.xg1; g.xg = g.xg1 = this.xg1;
-    if (this.ghosts.length >= 3) this.dropGhost(this.ghosts.shift());
-    this.ghosts.push(g);
+    const g = this.mkGhost(); this.sxfOn = false; this.pendS = null; this.xfLen = EXF_N;
     const V = this.spare.length ? this.spare.pop() : Array.from({length: POOL}, (_, i) => new Voice(i));
     for (const v of V) { v.on = false; v.id = -1; v.fade = 0; v.gate = false; }
     this.V = V; this.stack = [];
@@ -3076,17 +3267,17 @@ class AnalogCore extends AudioWorkletProcessor {
     H.splice(k, 1); this.ended.push(id); if (!H.length) { this.xfZC = null; this.xfNeedFm = false; this.engStart(H); } return true;
   }
   heldAllEnd() { const H = this.xfHeld; if (H) { for (const h of H) this.ended.push(h.id); this.xfHeld = null; this.xfZC = null; this.xfNeedFm = false; } }
-  dropGhost(g) { for (const v of g.V) { v.on = false; v.id = -1; v.fade = 0; } if (this.spare.length < 2) this.spare.push(g.V); }
+  dropGhost(g) { for (const v of g.V) { v.on = false; v.id = -1; v.fade = 0; } if (!g.noSpare && this.spare.length < 2) this.spare.push(g.V); }
   xfBlock() {
     this.xg = this.xg1;
     if (this.xfState >= 3) {                       // 3: fade in (sin), 4: ghost fade out (cos from xfA)
-      this.xfT += CR; const x = Math.min(1, this.xfT / (this.xfState === 4 && this.xfN ? this.xfN : EXF_N));
-      if (this.xfState === 3) { if (this.xfHeld) { this.xfT = 0; this.xg1 = 0; return; } this.xg1 = Math.sin(x * Math.PI / 2); if (x >= 1) { this.xg1 = 1; this.xfState = 0; } }
+      this.xfT += CR; const x = Math.min(1, this.xfT / (this.xfState === 4 ? this.xfN || EXF_N : this.xfLen || EXF_N));
+      if (this.xfState === 3) { if (this.xfHeld) { this.xfT = 0; this.xg1 = 0; return; } this.xg1 = Math.sin(x * Math.PI / 2); if (x >= 1) { this.xg1 = 1; this.xfState = 0; this.sxfEnd(); } }
       else { this.xg1 = x >= 1 ? 0 : this.xfA * Math.cos(x * Math.PI / 2); if (x >= 1) this.xfState = 5; }
       return;
     }
     if (this.xfState === 1) { this.xg1 = Math.max(0, this.xg - XF_D); if (this.xg === 0) { const o = this.pend; this.pend = null; if (o) this.setParams(o); this.fmPendApply(); this.xfState = 2; this.xg1 = Math.min(1, XF_D); } }
-    else if (this.xfState === 2) { this.xg1 = Math.min(1, this.xg + XF_D); if (this.xg1 >= 1) this.xfState = 0; }
+    else if (this.xfState === 2) { this.xg1 = Math.min(1, this.xg + XF_D); if (this.xg1 >= 1) { this.xfState = 0; if (this.pendS) this.sxfEnd(); } }
   }
   setParams(o) {
     const P = this.P, mono0 = P.mode > 0, eng0 = P.eng;
@@ -3162,7 +3353,7 @@ class AnalogCore extends AudioWorkletProcessor {
     this.endVoice(best); return best;
   }
   stealIfFull() {
-    const poly = clamp(this.P.poly | 0, 1, 8);
+    const poly = clamp(this.P.poly | 0, 1, this.P.eng === 1 && this.gx && this.gx.nE > FMX_EDGE_CAP ? 6 : 8);   // V4a (K2-42): > 12 edges -> 6 voices
     let n = 0; for (const v of this.V) if (v.on && v.fade === 0) n++;
     while (n >= poly) {
       let victim = null;
@@ -3479,20 +3670,31 @@ class AnalogCore extends AudioWorkletProcessor {
   fmMsg(P) {
     if (!P || !Array.isArray(P.ops) || P.ops.length < 6) return;
     if (this.pend) { this.pendFm = P; return; }             // a structural crossfade is running: apply with it
-    if (this.xfState === 3) {                                 // V0b-fix: engine crossfade, the held keys start with this patch
+    if (this.xfState === 3 && !this.sxfOn) {                  // V0b-fix: engine crossfade, the held keys start with this patch
       if (this.xfHeld) { this.setFm(P, false); this.xfNeedFm = false; this.xfTry(); }
       else this.setFm(P, true);                               // voices already run: re-target them (never a restart mid-fade)
       return;
     }
+    if (this.pendS) { this.pendS.fm = P; return; }           // V4a: a structural change waits for the running crossfade: newest patch
     let active = false; for (const v of this.V) if (v.on) { active = true; break; }
-    if (active && this.P.eng === 1 && (P.alg | 0) !== (this.fm.alg | 0)) { this.pendFm = P; this.pend = {}; this.xfState = 1; return; }   // new routing: fade through it
+    if (active && this.P.eng === 1 && this.fmStruct(P)) {    // new routing / waves / feedback sources at sounding voices
+      if (this.P.xfLite >= 1) { this.pendFm = P; this.pend = {}; this.xfState = 1; return; }   // limiter level >= 2: the WP4 dip
+      this.structReq(null, P); return;                        // V4a (L3): 30 ms voice crossfade
+    }
     this.setFm(P, true);
   }
   fmPendApply() { const f = this.pendFm; if (f) { this.pendFm = null; this.setFm(f, true); } }
+  // V4a: does a patch change the structure of the sounding FM voices (algorithm, fmx edges, waves, feedback sources)?
+  fmStruct(P) { return fmxSig(P) !== (this.gx ? this.gx.sig : 'a' + (this.fm.alg | 0)); }
   setFm(P, live) {
     if (!P || !Array.isArray(P.ops) || P.ops.length < 6) return;
-    this.fm = P; this.alg = ALGS[(P.alg | 0) - 1] || ALGS[0];
-    this.fbShift = P.fb > 0 ? Math.pow(2, (P.fb | 0) - 8) : 0;   // (y0+y1)/2 * 2^(fb-8) cycles, like msfa
+    const c = P.x ? fmxCompile(P.x) : null;                    // V4a: p.fmx rides along as fm6.x
+    if (c) { this.fm = c.fm; this.alg = c.alg; this.gx = c.gx; this.fbShift = 0; }
+    else {
+      this.gx = null;
+      this.fm = P; this.alg = ALGS[(P.alg | 0) - 1] || ALGS[0];
+      this.fbShift = P.fb > 0 ? Math.pow(2, (P.fb | 0) - 8) : 0;   // (y0+y1)/2 * 2^(fb-8) cycles, like msfa
+    }
     if (live && this.P.eng === 1) for (const v of this.V) if (v.on) this.fmVoicePatch(v, true);
   }
   fmNoteOn(v) {                                                 // from startVoice when eng 1 (key sync: phases to 0)
@@ -3502,6 +3704,31 @@ class AnalogCore extends AudioWorkletProcessor {
     this.fmVoicePatch(v, false, note, vel127);
     for (let k = 0; k < 6; k++) this.fmAdvance(v, k, 0);
     const G = this.fm.peg; v.pegL = G ? PEG_TAB[G.l[3]] / 32 : 0; this.pegAdvance(v, G ? 0 : 4);
+    if (this.gx) this.fmxNoteOn(v);
+  }
+  // V4a (KP 6.1, N7F-04): start phase per operator ('fix' ph/128 of a cycle, 'rnd' random, 'free' = the operator's running
+  // phase: the start phase of the previous note advanced by its increment), pitch EG per operator, mute ramp, mip level,
+  // feedback histories
+  fmxNoteOn(v) {
+    const X = this.gx, F = this.curF;
+    for (let k = 0; k < 6; k++) {
+      const m = X.phm[k];
+      if (m === 1) { let x = v.rng; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; v.rng = x >>> 0; v.fph[k] = v.rng; }
+      else if (m === 2) { if (this.frF[k] >= 0) v.fph[k] = (this.frPh[k] + this.frInc[k] * (F - this.frF[k])) % 4294967296; else v.fph[k] = 0; }
+      else v.fph[k] = X.ph0[k];
+      v.xmu[k] = X.on[k]; v.xf0[k] = v.xf1[k] = 0; v.fyl[k] = v.fyp[k] = 0; v.xy[k] = v.xyp[k] = 0; v.xwa[k] = -1;
+      const E = X.pit[k]; v.xpL[k] = E ? PEG_TAB[E.l[3]] / 32 : 0; this.xpAdvance(v, k, E ? 0 : 4);
+    }
+    v.xnew = 1;                                                 // the free-run reference is taken after the first block
+  }
+  xpAdvance(v, k, ix) {                                         // the msfa pitch EG per operator (same maths as pegAdvance)
+    v.xpIx[k] = ix; const E = this.gx && this.gx.pit[k]; if (!E || ix > 3) return;
+    v.xpT[k] = PEG_TAB[E.l[ix]] / 32; v.xpRise[k] = v.xpT[k] > v.xpL[k] ? 1 : 0; v.xpR[k] = PEG_RATE[E.r[ix]] / 21.3 * CR / SR;
+  }
+  xpStep(v, k) {
+    const ix = v.xpIx[k]; if (!(ix < 3 || (ix < 4 && !v.gate))) return;
+    if (v.xpRise[k]) { v.xpL[k] += v.xpR[k]; if (v.xpL[k] >= v.xpT[k]) { v.xpL[k] = v.xpT[k]; this.xpAdvance(v, k, ix + 1); } }
+    else { v.xpL[k] -= v.xpR[k]; if (v.xpL[k] <= v.xpT[k]) { v.xpL[k] = v.xpT[k]; this.xpAdvance(v, k, ix + 1); } }
   }
   // V0d (A.4b 3): pitch EG like msfa (start at L4, L1 -> L2 -> L3, hold L3; key off -> L4), linear in octaves
   pegAdvance(v, ix) {
@@ -3519,17 +3746,19 @@ class AnalogCore extends AudioWorkletProcessor {
     this.fmVoicePatch(v, false, note, vel127);
     for (let k = 0; k < 6; k++) { v.fix[k] = 4; this.fmAdvance(v, k, 0); }
     if (this.fm.peg) this.pegAdvance(v, 0); else { v.pegL = 0; v.pegIx = 4; }   // the PEG restarts from its current value (no jump)
+    if (this.gx) for (let k = 0; k < 6; k++) { if (this.gx.pit[k]) this.xpAdvance(v, k, 0); else { v.xpL[k] = 0; v.xpIx[k] = 4; } }
   }
   // per-op output level, rate scaling, ratio / fixed frequency (msfa maths); live: re-target the running stage
   fmVoicePatch(v, live, note, vel127) {
     if (note == null) note = v.fnote; if (vel127 == null) vel127 = v.fvel;
     v.fnote = note; v.fvel = vel127;
-    const P = this.fm, lf = Math.log2(440 * Math.pow(2, (note - 69) / 12));
+    const P = this.fm, lf = Math.log2(440 * Math.pow(2, (note - 69) / 12)), X = this.gx;
     for (let k = 0; k < 6; k++) {
       const op = P.ops[k];
-      v.fon[k] = op.on !== 0 && op.ol > 0 ? 1 : 0;
+      v.fon[k] = (op.on !== 0 || X) && op.ol > 0 ? 1 : 0;          // V4a: an fmx operator mutes through its 10 ms ramp (xmu)
       let ol = scaleOL(op.ol | 0) + scaleLevel(note, op.ks);
-      ol = Math.max(0, (Math.min(127, ol) << 5) + scaleVel(vel127, op.vs | 0));
+      const vs = op.vs | 0;                                          // V4a (N7F-07): vs < 0 = the mirrored curve (soft = loud)
+      ol = Math.max(0, (Math.min(127, ol) << 5) + (vs < 0 ? scaleVel(128 - vel127, -vs) : scaleVel(vel127, vs)));
       v.foutLvl[k] = ol; v.frs[k] = scaleRate(note, op.rs | 0);
       if (op.fixed) { v.ffixed[k] = Math.pow(10, (op.coarse & 3) + op.fine / 100) * Math.pow(2, (op.det > 0 ? op.det : 0) * 13457 / 16777216); v.fratio[k] = 0; }
       else {
@@ -3588,6 +3817,7 @@ class AnalogCore extends AudioWorkletProcessor {
   }
   // per control block (6.3.6): envelopes, gains 2^(lvl/256-14) * 10^(dB/20), frequencies (glide, retune, LFO pitch as analog)
   fmControl(v, dst) {
+    if (this.gx) { this.fmxControl(v, dst); return; }
     const P = this.P, fm = this.fm, alg = this.alg;
     if (!v.gate && !v.frel) { v.frel = 1; for (let k = 0; k < 6; k++) { if (v.fix[k] !== 3) this.fmAdvance(v, k, 3); else { v.fix[k] = 2; this.fmAdvance(v, k, 3); } } if (fm.peg) this.pegAdvance(v, 3); }   // gate off -> release stage once
     if (fm.peg) this.pegStep(v);
@@ -3637,10 +3867,142 @@ class AnalogCore extends AudioWorkletProcessor {
       if (alg.car[k]) for (let i = 0; i < n; i++) out[i] += b[i] * outScale;   // output in cycles of phase (peak 2 = 4*pi rad)
     }
   }
+  // V4a: the control block of an fmx voice: like fmControl, plus the pitch EG per operator (pit), LFO 1 on the level (lfoAm)
+  // and the pitch (lfoFm) of each operator, the 10 ms mute ramp and the mip position of the operator's wave. With the same
+  // values as an fm6 patch the arithmetic is the same (FM6 bit-identical, N7F-02/-03).
+  fmxControl(v, dst) {
+    const P = this.P, X = this.gx, alg = this.alg;
+    if (!v.gate && !v.frel) { v.frel = 1; for (let k = 0; k < 6; k++) { if (v.fix[k] !== 3) this.fmAdvance(v, k, 3); else { v.fix[k] = 2; this.fmAdvance(v, k, 3); } if (X.pit[k]) this.xpAdvance(v, k, 3); } }
+    const base = v.pitch + v.dP + (this.fm.trans | 0) + dst[D_PITCH] * 24;
+    const br = P.fmBright + dst[D_FMBRIGHT] * 24, l1 = this.src[S_LFO1];
+    let alive = false, car = 0, sL = NaN, fL = 0;
+    for (let k = 0; k < 6; k++) {
+      if (X.pit[k]) this.xpStep(v, k);
+      this.fmEnvStep(v, k);
+      v.fg0[k] = v.fg1[k];
+      const mt = X.on[k]; let mu = v.xmu[k];
+      if (mu !== mt) { mu = mt > mu ? Math.min(mt, mu + MUTE_STEP) : Math.max(mt, mu - MUTE_STEP); v.xmu[k] = mu; }
+      let db = (alg.car[k] ? 0 : br) + dst[D_OP1 + k] * 99 * .75;
+      if (X.am[k]) db -= X.am[k] * (1 - l1) * .5;
+      const g = v.fon[k] && mu > 0 ? Math.pow(2, v.flvl[k] / 256 - 14) * (db ? Math.pow(10, db / 20) : 1) * mu : 0;
+      v.fg1[k] = g;
+      const fmv = X.fmS[k] ? X.fmS[k] * l1 : 0;
+      let f;
+      if (v.ffixed[k]) f = fmv ? v.ffixed[k] * Math.pow(2, fmv / 12) : v.ffixed[k];
+      else { const sm = base + v.xpL[k] * 12 + fmv; if (sm !== sL) { sL = sm; fL = lut(FREQ, sm); } f = fL * v.fratio[k]; }
+      v.finc[k] = f < SR * 0.45 ? Math.round(f / SR * 4294967296) : 0;   // Nyquist guard: silence ops above 0.45 fs
+      if (X.wave[k]) {                                         // K2-40: mip levels a, a + 1 (both alias-free), weight w
+        const q = Math.log2(f) + WV_Q; let a = 0, w = 0;
+        if (q > 0) { a = Math.ceil(q); w = q - a + 1; if (a > 8) { a = 8; w = 1; } }
+        v.xwb[k] = a; v.xwt[k] = w;
+      }
+      if (alg.car[k]) { if (g > GAIN_THRESH || v.fg0[k] > GAIN_THRESH) alive = true; if (g > car) car = g; }
+    }
+    if (v.xnew) { v.xnew = 0; for (let k = 0; k < 6; k++) if (X.phm[k] === 2) { this.frPh[k] = v.fph[k]; this.frInc[k] = v.finc[k]; this.frF[k] = this.curF; } }
+    v.falive = alive;
+    if (!(P.fmAmp >= 1)) v.aOut = Math.min(1, car * .5);
+  }
+  // V4a (KP 4.8, 9.3): the fmx graph, block by block in topological order (modulators first; DX graphs in the fm6 order
+  // 6..1). Modulation input = sum of the modulator buffers. Feedback: self = DX (2-sample average, 2^(fbAmt-8)), a foreign
+  // source = its output one sample earlier (the source is rendered before the receiver here; a real loop runs fmxRenderPS).
+  // Wave 0 = the fm6 sine path; waves 1..11 = 512-sample tables, crossfade between two mip levels.
+  fmxRender(v) {
+    const X = this.gx, out = this.bl, n = CR, outScale = X.outScale;
+    out.fill(0);
+    if (X.ps) { this.fmxRenderPS(v); return; }
+    for (let j = 0; j < 6; j++) {
+      const k = X.ord[j], b = v.fbuf[k], ga = v.fg0[k], gb = v.fg1[k];
+      v.fyp[k] = v.fyl[k];
+      if (ga < GAIN_THRESH && gb < GAIN_THRESH) { b.fill(0); v.xf0[k] = v.xf1[k] = 0; v.fyl[k] = 0; continue; }
+      const dg = (gb - ga) / n, inc = v.finc[k], mods = X.srcs[k];
+      let ph = v.fph[k], g = ga, mi = null;
+      if (mods.length === 1) mi = v.fbuf[mods[0]];
+      else if (mods.length > 1) { mi = v.fmodIn; const a = v.fbuf[mods[0]]; for (let i = 0; i < n; i++) mi[i] = a[i];
+        for (let m = 1; m < mods.length; m++) { const c = v.fbuf[mods[m]]; for (let i = 0; i < n; i++) mi[i] += c[i]; } }
+      const fk = X.fbK[k], fsh = X.fbS[k], w = X.wave[k];
+      if (w === 0) {
+        if (fk === k && fsh > 0) {                               // self-feedback exactly as fm6 (incl. the alg 4 / 6 fold)
+          const fs = fsh * 0.5 * 4294967296; let f0 = v.xf0[k], f1 = v.xf1[k];
+          for (let i = 0; i < n; i++) { g += dg; const pp = (ph + ((f0 + f1) * fs | 0) + (mi ? (mi[i] * 4294967296 | 0) : 0)) >>> 0;
+            const x = pp >>> 20, y = (SIN[x] + (SIN[x + 1] - SIN[x]) * ((pp & 1048575) * 9.5367431640625e-7)) * g;
+            b[i] = y; f0 = f1; f1 = y; ph = (ph + inc) >>> 0; }
+          v.xf0[k] = f0; v.xf1[k] = f1;
+        } else if (fk >= 0 && fsh > 0) {                         // foreign source, one sample late
+          const fs = fsh * 4294967296, sb = v.fbuf[fk]; let yp = v.fyp[fk];
+          for (let i = 0; i < n; i++) { g += dg; const pp = (ph + (yp * fs | 0) + (mi ? (mi[i] * 4294967296 | 0) : 0)) >>> 0;
+            const x = pp >>> 20; b[i] = (SIN[x] + (SIN[x + 1] - SIN[x]) * ((pp & 1048575) * 9.5367431640625e-7)) * g; yp = sb[i]; ph = (ph + inc) >>> 0; }
+        } else if (mi) {
+          for (let i = 0; i < n; i++) { g += dg; const pp = (ph + (mi[i] * 4294967296 | 0)) >>> 0;
+            const x = pp >>> 20; b[i] = (SIN[x] + (SIN[x + 1] - SIN[x]) * ((pp & 1048575) * 9.5367431640625e-7)) * g; ph = (ph + inc) >>> 0; }
+        } else {
+          for (let i = 0; i < n; i++) { g += dg; const x = ph >>> 20;
+            b[i] = (SIN[x] + (SIN[x + 1] - SIN[x]) * ((ph & 1048575) * 9.5367431640625e-7)) * g; ph = (ph + inc) >>> 0; }
+        }
+      } else {
+        const T = waveTab(w); let w0, w1;
+        if (v.xwa[k] !== v.xwb[k]) { v.xwa[k] = v.xwb[k]; w0 = w1 = v.xwt[k]; } else { w0 = v.xww[k]; w1 = v.xwt[k]; }
+        v.xww[k] = w1;
+        const TA = T[v.xwa[k]], TB = T[v.xwa[k] + 1], dw = (w1 - w0) / n; let wv = w0;
+        const self = fk === k && fsh > 0, fsS = fsh * 0.5 * 4294967296, fsF = fsh * 4294967296, sb = fk >= 0 && !self && fsh > 0 ? v.fbuf[fk] : null;
+        let f0 = v.xf0[k], f1 = v.xf1[k], yp = sb ? v.fyp[fk] : 0;
+        for (let i = 0; i < n; i++) {
+          g += dg; wv += dw;
+          let pp = ph + (mi ? (mi[i] * 4294967296 | 0) : 0);
+          if (self) pp += (f0 + f1) * fsS | 0; else if (sb) { pp += yp * fsF | 0; yp = sb[i]; }
+          pp >>>= 0;
+          const x = pp >>> 23, fr = (pp & 8388607) * WV_FR, ya = TA[x] + (TA[x + 1] - TA[x]) * fr, y = (ya + (TB[x] + (TB[x + 1] - TB[x]) * fr - ya) * wv) * g;
+          b[i] = y; f0 = f1; f1 = y; ph = (ph + inc) >>> 0;
+        }
+        if (self) { v.xf0[k] = f0; v.xf1[k] = f1; }
+      }
+      v.fph[k] = ph; v.fyl[k] = b[n - 1];
+      if (X.car[k]) for (let i = 0; i < n; i++) out[i] += b[i] * outScale;   // output in cycles of phase (peak 2 = 4*pi rad)
+    }
+  }
+  // V4a: a graph with a real feedback loop (a foreign source that is rendered after its receiver): all operators sample by
+  // sample, the foreign source's output of the previous sample (1 sample delay, Spec 9.3)
+  fmxRenderPS(v) {
+    const X = this.gx, out = this.bl, n = CR, os = X.outScale, S = this.ps;
+    const y = v.xy, yp = v.xyp, G = S.g, DG = S.dg, PH = S.ph, IN = S.inc, W = S.w, DW = S.dw, TA = S.ta, TB = S.tb, FS = S.fs;
+    const ord = S.ord, FK = S.fk, MS = S.ms, MN = S.mn, CA = S.ca, TW = S.tw; let na = 0;
+    for (let j = 0; j < 6; j++) {                               // the active operators in render order, their constants
+      const k = X.ord[j], ga = v.fg0[k], gb = v.fg1[k];
+      if (ga < GAIN_THRESH && gb < GAIN_THRESH) { v.xf0[k] = v.xf1[k] = 0; y[k] = 0; continue; }
+      ord[na++] = k; G[k] = ga; DG[k] = (gb - ga) / n; PH[k] = v.fph[k]; IN[k] = v.finc[k];
+      const fk = X.fbK[k]; FK[k] = X.fbS[k] > 0 ? fk : -1; FS[k] = X.fbS[k] > 0 ? X.fbS[k] * (fk === k ? 0.5 : 1) * 4294967296 : 0;
+      const sr = X.srcs[k]; MN[k] = sr.length; for (let q = 0; q < sr.length; q++) MS[k * 6 + q] = sr[q];
+      CA[k] = X.car[k]; const w = X.wave[k]; TW[k] = w ? 1 : 0;
+      if (w) { const T = waveTab(w); let w0, w1;
+        if (v.xwa[k] !== v.xwb[k]) { v.xwa[k] = v.xwb[k]; w0 = w1 = v.xwt[k]; } else { w0 = v.xww[k]; w1 = v.xwt[k]; }
+        v.xww[k] = w1; TA[k] = T[v.xwa[k]]; TB[k] = T[v.xwa[k] + 1]; W[k] = w0; DW[k] = (w1 - w0) / n; }
+    }
+    const F0 = v.xf0, F1 = v.xf1;
+    for (let i = 0; i < n; i++) {
+      let o = 0;
+      for (let j = 0; j < na; j++) {
+        const k = ord[j], g = (G[k] += DG[k]), mn = MN[k]; let m = 0;
+        for (let q = 0, b0 = k * 6; q < mn; q++) m += y[MS[b0 + q]];
+        let pp = PH[k] + (m * 4294967296 | 0);
+        const fk = FK[k];
+        if (fk >= 0) pp += (fk === k ? (F0[k] + F1[k]) * FS[k] : yp[fk] * FS[k]) | 0;
+        pp >>>= 0;
+        let s;
+        if (TW[k]) { const x = pp >>> 23, fr = (pp & 8388607) * WV_FR, A = TA[k], B = TB[k], ya = A[x] + (A[x + 1] - A[x]) * fr, wv = (W[k] += DW[k]);
+          s = (ya + (B[x] + (B[x + 1] - B[x]) * fr - ya) * wv) * g; }
+        else { const x = pp >>> 20; s = (SIN[x] + (SIN[x + 1] - SIN[x]) * ((pp & 1048575) * 9.5367431640625e-7)) * g; }
+        y[k] = s; F0[k] = F1[k]; F1[k] = s;
+        PH[k] = (PH[k] + IN[k]) >>> 0;
+        if (CA[k]) o += s;
+      }
+      yp[0] = y[0]; yp[1] = y[1]; yp[2] = y[2]; yp[3] = y[3]; yp[4] = y[4]; yp[5] = y[5];
+      out[i] = o * os;
+    }
+    for (let j = 0; j < na; j++) { const k = ord[j]; v.fph[k] = PH[k]; }
+  }
   // one control block of an FM voice: operators, the ladder unless bypassed, the amp (6.3.9), steal fade, pan, sum, end rule
   fmRenderVoice(v, L, R, off) {
     const bl = this.bl, P = this.P, byp = this.fmBypass;
-    this.fmRender(v);
+    if (this.gx) this.fmxRender(v); else this.fmRender(v);
     if (!byp) { if (P.lq >= 1) this.ladder(v, bl, false); else this.ladderEco(v, bl, false); }
     const gain = v.vgain * (byp ? 1 : v.outG);
     const pl1 = gain * v.panL * this.xg1, pr1 = gain * v.panR * this.xg1;
@@ -3742,8 +4104,10 @@ class AnalogCore extends AudioWorkletProcessor {
     if (this.xfHeld && this.xfNeedFm && --this.xfWait <= 0) { this.xfNeedFm = false; this.xfTry(); }   // the FM patch did not come: start with the current one
     let any = this.q.length > 0 || this.ghosts.length > 0; for (const v of this.V) if (v.on) { any = true; break; }
     if (this.pend && !any) { const o = this.pend; this.pend = null; this.setParams(o); this.fmPendApply(); this.xfState = 0; this.xg = this.xg1 = 1; }
+    if (!any && !this.xfHeld && (this.xfState === 3 || this.pendS)) { this.xfState = 0; this.xg = this.xg1 = 1; this.sxfEnd(); }   // V4a: nothing sounds any more
     if (any) {
       for (let off = 0; off < N; off += CR) {
+        this.curF = f0 + off;
         this.runEvents(f0 + off + CR);
         this.xfBlock();
         this.control(f0 + off);
@@ -3784,6 +4148,18 @@ class AnalogCore extends AudioWorkletProcessor {
       if (this.scopeDst) { if (!nv) this.scD.fill(0); this.port.postMessage({scope: Array.from(sc), t: f0 * ISR, nv, dst: Array.from(this.scD)}); }
       else this.port.postMessage({scope: Array.from(sc), t: f0 * ISR, nv});
       this.scHas = false;
+    }
+    // V4a (N7F-09): live operator levels (level x envelope of every operator, max over the voices, on the OL scale 0..1 of the
+    // field's bar) at ~30 Hz, only while the host asks (the FM field is shown)
+    if (this.lvOn && f0 >= this.lvNext) {
+      this.lvNext = f0 + ((SR / 30) | 0);
+      const lv = [0, 0, 0, 0, 0, 0];
+      if (this.P.eng === 1) for (const v of this.V) if (v.on && v.fade === 0) for (let k = 0; k < 6; k++) {
+        const g = v.fg1[k]; if (!(g > GAIN_THRESH)) continue;
+        const x = ((Math.log2(g) + 14) * 256 + 224) / 32 - 28; if (x > lv[k]) lv[k] = x;
+      }
+      for (let k = 0; k < 6; k++) lv[k] = Math.max(0, Math.min(1, lv[k] / 99));
+      this.port.postMessage({fmxLv: lv, t: f0 * ISR});
     }
     // CPU estimate: sum of (quantised) durations is unbiased; report once per second of audio
     this.busy += (this.hasPerf ? performance.now() : Date.now()) - t0; this.busyN += N;
@@ -5389,6 +5765,260 @@ const RecHelpers = (() => {
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
+/* ===== V4a: FMX — the FM graph p.fmx, format 2 (Nachtrag 2 Teil A; KP §6 with K2-37, K2-42) =====
+   p.fmx = {v: 2, n: 6, trans, ops[6]: {on, c, r, wave, ph, phm, ol, fixed, coarse, fine, det, fbSrc, fbAmt, vs, lfoAm, lfoFm,
+            rs, ks: {bp, ld, rd, lc, rc}, amp: Env, pit: Env | null, pr}, edges: [{from, to}]}   (Nummer = Index + 1)
+   Env = {f: 'dx', r[4], l[4]} | {f: 'pt', y[2..6], t[1..5] ms, sus, la, lb, skip, crv, run}       (Punkt-Form klingt ab V4f)
+   Invarianten I1–I4 (KP §4.1): I1 keine Zelle doppelt · I2 jede Kante zeigt nach unten · I3 Reihe > 0 hat ein Ziel ·
+   I4 Reihe 0 hat kein Ziel. Self-contained (own DX table), used by SQStore (normalize), the engine host and the test API.
+     norm(x, log?) -> fmx | null       clamp, defaults, repair in fixed order (KP §6.2); twice = same result
+     check(x) -> [reasons]             I1–I4, 6 operators, edge ranges (setFmx throws on any)
+     fromFm6(fm6) -> fmx               lossless for the sound (N7F-02): dxLayout, feedback on ALGS.fbDst, DX-form envelopes
+     dxLayout(alg) -> {pos, edges}     the 32 DX algorithms in the 6 × 6 grid (KP §6.5)
+     dxMatch(fmx) -> {match, perm}     DX algorithm with the field's numbering first, else over all 720 numberings
+     dx(fmx) -> {match, perm, reasons} DX-tauglich (KP §6.4 / K2-37); reasons = the violated conditions in German
+     toFm6(fmx) -> fm6 | null          when DX-tauglich (identity numbering); else null
+     approxFm6(fmx) -> fm6             the nearest DX algorithm (fewest differing edges over all numberings), approx: true
+     WAVES                             names of the factory waves 0–11 (K2-40) */
+(function (G) {
+  'use strict';
+  const DX_ALGS = ['13|12 34 45 56|66', '13|12 34 45 56|22', '14|12 23 45 56|66', '14|12 23 45 56|64', '135|12 34 56|66', '135|12 34 56|65',
+    '13|12 34 35 56|66', '13|12 34 35 56|44', '13|12 34 35 56|22', '14|12 23 45 46|33', '14|12 23 45 46|66', '13|12 34 35 36|22',
+    '13|12 34 35 36|66', '13|12 34 45 46|66', '13|12 34 45 46|22', '1|12 13 15 34 56|66', '1|12 13 15 34 56|22', '1|12 13 14 45 56|33',
+    '145|12 23 46 56|66', '124|13 23 45 46|33', '1245|13 23 46 56|33', '1345|12 36 46 56|66', '1245|23 46 56|66', '12345|36 46 56|66',
+    '12345|46 56|66', '124|23 45 46|66', '124|23 45 46|33', '136|12 34 45|55', '1235|34 56|66', '1236|34 45|55', '12345|56|66', '123456||66'];
+  // edges [from, to] 0-based (modulator -> target), carriers, feedback receiver / source (0-based)
+  const ALGS = DX_ALGS.map(s => {
+    const [c, m, f] = s.split('|'), car = [0, 0, 0, 0, 0, 0], edges = [];
+    for (const ch of c) car[+ch - 1] = 1;
+    for (const p of m.split(' ').filter(Boolean)) edges.push([+p[1] - 1, +p[0] - 1]);
+    return {car, edges, fbDst: +f[0] - 1, fbSrc: +f[1] - 1};
+  });
+  const WAVES = ['Sinus', 'Säge', 'Säge weich', 'Dreieck', 'Rechteck', 'Halbsinus', 'Puls 25 %', 'Oberton 2', 'Oberton 3', 'Sinus weich', 'Sinus weich 2', 'Rauschen'];
+  const PR = ['dx', 'ton', 'q5', 1, 2, 4, 8], PHM = ['fix', 'rnd', 'free'];
+  const num = (x, d) => (typeof x === 'number' && isFinite(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(+x) ? +x : d);
+  const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
+  const int = (x, a, b, d) => Math.round(clamp(num(x, d), a, b));
+  const r1 = x => Math.round(x * 10) / 10;
+  const AMP0 = () => ({f: 'dx', r: [99, 99, 99, 80], l: [99, 99, 99, 0]});
+  function normEnv(e, def) {
+    if (e && e.f === 'pt' && Array.isArray(e.y) && Array.isArray(e.t)) {
+      const k = clamp(e.y.length - 1, 1, 5), y = [], t = [];
+      for (let i = 0; i <= k; i++) y.push(int(e.y[i], 0, 99, 0));
+      for (let i = 0; i < k; i++) t.push(Math.round(clamp(num(e.t[i], 10), .5, 20000) * 10) / 10);
+      const ix = x => { const i = Math.round(num(x, -1)); return i >= 0 && i <= k ? i : -1; };
+      const o = {f: 'pt', y, t, sus: ix(e.sus), la: ix(e.la), lb: ix(e.lb), skip: 0, crv: e.crv === 'lin' ? 'lin' : 'exp', run: e.run === 'free' ? 'free' : 'retrig'};
+      if (o.sus >= 0 && e.skip) o.skip = 1;
+      if (o.la < 0 || o.lb < 0 || o.la >= o.lb) { o.la = -1; o.lb = -1; }
+      return o;
+    }
+    if (e && typeof e === 'object' && Array.isArray(e.r) && Array.isArray(e.l)) {
+      const d = def || AMP0();
+      return {f: 'dx', r: [0, 1, 2, 3].map(i => int(e.r[i], 0, 99, d.r[i])), l: [0, 1, 2, 3].map(i => int(e.l[i], 0, 99, d.l[i]))};
+    }
+    return def ? JSON.parse(JSON.stringify(def)) : null;
+  }
+  function normOp(o, k) {
+    o = o && typeof o === 'object' ? o : {};
+    const ks = o.ks && typeof o.ks === 'object' ? o.ks : {};
+    const pr = PR.includes(o.pr) ? o.pr : PR.includes(+o.pr) ? +o.pr : 'dx';
+    return {on: o.on === 0 || o.on === false ? 0 : 1, c: int(o.c, 0, 5, k), r: int(o.r, 0, 5, 0),
+      wave: int(o.wave, 0, 47, 0), ph: int(o.ph, 0, 127, 0), phm: PHM.includes(o.phm) ? o.phm : 'fix',
+      ol: int(o.ol, 0, 99, 0), fixed: o.fixed ? 1 : 0, coarse: int(o.coarse, 0, 31, 1), fine: int(o.fine, 0, 99, 0), det: int(o.det, -7, 7, 0),
+      fbSrc: int(o.fbSrc, 0, 6, 0), fbAmt: r1(clamp(num(o.fbAmt, 0), 0, 7)), vs: int(o.vs, -7, 7, 0),
+      lfoAm: int(o.lfoAm, 0, 127, 0), lfoFm: int(o.lfoFm, 0, 127, 0), rs: int(o.rs, 0, 7, 0),
+      ks: {bp: int(ks.bp, 0, 99, 39), ld: int(ks.ld, 0, 99, 0), rd: int(ks.rd, 0, 99, 0), lc: int(ks.lc, 0, 3, 0), rc: int(ks.rc, 0, 3, 0)},
+      amp: normEnv(o.amp, AMP0()), pit: o.pit ? normEnv(o.pit, null) : null, pr};
+  }
+  const cell = o => o.c + ',' + o.r;
+  const sortEdges = E => E.sort((a, b) => a.from - b.from || a.to - b.to);
+  // operators with a path to X (X's upper tree), 0-based
+  function upper(E, x) { const s = new Set(), st = [x]; while (st.length) { const y = st.pop(); for (const e of E) if (e.to - 1 === y && !s.has(e.from - 1)) { s.add(e.from - 1); st.push(e.from - 1); } } return s; }
+  function norm(x, log) {
+    if (!x || typeof x !== 'object' || !Array.isArray(x.ops)) return null;
+    const say = m => { if (log !== false) try { console.log('fmx repariert: ' + m); } catch (e) {} };
+    const ops = [0, 1, 2, 3, 4, 5].map(k => normOp(x.ops[k], k));
+    if (x.ops.length !== 6) say('Operatoren ' + x.ops.length + ' → 6');
+    // edges: known operators, no self edge, no duplicates
+    let E = [];
+    for (const e of Array.isArray(x.edges) ? x.edges : []) {
+      const a = Math.round(num(e && e.from, 0)), b = Math.round(num(e && e.to, 0));
+      if (!(a >= 1 && a <= 6 && b >= 1 && b <= 6) || a === b) { say('Kante ' + a + '→' + b + ' entfernt (unbekannt)'); continue; }
+      if (E.some(f => f.from === a && f.to === b)) continue;
+      E.push({from: a, to: b});
+    }
+    // I1: a doubled cell -> the later operator to the next free column of the same row
+    const used = new Map();
+    for (let k = 0; k < 6; k++) {
+      const o = ops[k]; if (!used.has(cell(o))) { used.set(cell(o), k); continue; }
+      let c = -1; for (let d = 1; d < 6 && c < 0; d++) { const cc = (o.c + d) % 6; if (!used.has(cc + ',' + o.r)) c = cc; }
+      if (c < 0) { for (let r = 0; r < 6 && c < 0; r++) for (let cc = 0; cc < 6 && c < 0; cc++) if (!used.has(cc + ',' + r)) { c = cc; o.r = r; } }
+      say('OP ' + (k + 1) + ' Zelle doppelt → (' + c + ', ' + o.r + ')'); o.c = c; used.set(cell(o), k);
+    }
+    // I2: every edge points down
+    E = E.filter(e => { const ok = ops[e.from - 1].r > ops[e.to - 1].r; if (!ok) say('Kante ' + e.from + '→' + e.to + ' entfernt (zeigt nicht nach unten)'); return ok; });
+    // I4: an output (row 0) has no target
+    E = E.filter(e => { const ok = ops[e.from - 1].r > 0; if (!ok) say('Kante ' + e.from + '→' + e.to + ' entfernt (Ausgang mit Ziel)'); return ok; });
+    // I3: an operator above row 0 without a target falls (R7): down its column onto the topmost operator Z below that is
+    // not in its upper tree (edge X -> Z, cell above Z), else to row 0 (free column nearest, right wins a tie)
+    for (let k = 0; k < 6; k++) {
+      const o = ops[k]; if (o.r === 0 || E.some(e => e.from === k + 1)) continue;
+      const up = upper(E, k); let z = -1;
+      for (let r = o.r - 1; r >= 0 && z < 0; r--) { const j = ops.findIndex((p, i) => i !== k && p.c === o.c && p.r === r); if (j >= 0 && !up.has(j)) z = j; }
+      if (z >= 0 && !ops.some((p, i) => i !== k && p.c === o.c && p.r === ops[z].r + 1)) { o.r = ops[z].r + 1; E.push({from: k + 1, to: z + 1}); say('OP ' + (k + 1) + ' ohne Ziel fällt auf OP ' + (z + 1)); }
+      else {
+        let best = -1; for (let d = 0; d < 6 && best < 0; d++) for (const c of [o.c + d, o.c - d]) if (best < 0 && c >= 0 && c < 6 && !ops.some((p, i) => i !== k && p.c === c && p.r === 0)) best = c;
+        o.c = best; o.r = 0; say('OP ' + (k + 1) + ' ohne Ziel fällt zum Ausgang');
+      }
+      if (o.r === 0) E = E.filter(e => e.from !== k + 1);           // I4 for the new output (it had no target anyway)
+    }
+    const out = {v: 2, n: 6, trans: int(x.trans, -24, 24, 0), ops, edges: sortEdges(E)};
+    if (x.uw && typeof x.uw === 'object') out.uw = x.uw;                // V4e (eigene Wellen), kept as is
+    return out;
+  }
+  function check(x) {
+    const R = [];
+    if (!x || typeof x !== 'object' || !Array.isArray(x.ops)) return ['kein FM-Graph'];
+    if (x.ops.length !== 6) R.push(x.ops.length > 6 ? 'höchstens 6 Operatoren (' + x.ops.length + '.)' : 'genau 6 Operatoren');
+    const ops = x.ops.slice(0, 6), seen = new Map();
+    ops.forEach((o, k) => { const c = Math.round(num(o && o.c, -1)), r = Math.round(num(o && o.r, -1));
+      if (!(c >= 0 && c < 6 && r >= 0 && r < 6)) R.push('OP ' + (k + 1) + ': Zelle außerhalb des Rasters');
+      else if (seen.has(c + ',' + r)) R.push('I1: OP ' + (seen.get(c + ',' + r) + 1) + ' und OP ' + (k + 1) + ' in derselben Zelle'); else seen.set(c + ',' + r, k); });
+    const E = Array.isArray(x.edges) ? x.edges : [], row = k => Math.round(num(ops[k] && ops[k].r, 0)), has = new Set();
+    for (const e of E) {
+      const a = Math.round(num(e && e.from, 0)), b = Math.round(num(e && e.to, 0));
+      if (!(a >= 1 && a <= ops.length && b >= 1 && b <= ops.length) || a === b) { R.push('Kante ' + a + '→' + b + ': unbekannter Operator'); continue; }
+      if (row(a - 1) <= row(b - 1)) R.push('I2: Kante ' + a + '→' + b + ' zeigt nicht nach unten');
+      if (row(a - 1) === 0) R.push('I4: Ausgang OP ' + a + ' hat ein Ziel');
+      has.add(a);
+    }
+    ops.forEach((o, k) => { if (row(k) > 0 && !has.has(k + 1)) R.push('I3: OP ' + (k + 1) + ' (Reihe ' + row(k) + ') hat kein Ziel'); });
+    ops.forEach((o, k) => { const s = Math.round(num(o && o.fbSrc, 0)); if (s < 0 || s > 6) R.push('OP ' + (k + 1) + ': Feedback-Quelle ' + s); });
+    return R;
+  }
+  // KP §6.5
+  function dxLayout(alg) {
+    const A = ALGS[clamp(Math.round(num(alg, 1)), 1, 32) - 1], pos = {}, tg = [[], [], [], [], [], []], lev = [0, 0, 0, 0, 0, 0];
+    for (const [f, t] of A.edges) tg[f].push(t);
+    const busy = new Set(); let c0 = 0;
+    for (let k = 0; k < 6; k++) if (A.car[k]) { pos[k + 1] = [c0, 0]; busy.add(c0 + ',0'); c0++; }
+    const L = k => (A.car[k] ? 0 : 1 + Math.max(...tg[k].map(L)));
+    for (let k = 0; k < 6; k++) lev[k] = L(k);
+    const mods = [0, 1, 2, 3, 4, 5].filter(k => !A.car[k]).sort((a, b) => lev[a] - lev[b] || a - b);
+    for (const k of mods) {
+      const cols = tg[k].map(t => pos[t + 1][0]).sort((a, b) => a - b), want = cols[(cols.length - 1) >> 1];
+      const row = 1 + Math.max(...tg[k].map(t => pos[t + 1][1]));
+      let c = want;
+      if (busy.has(c + ',' + row)) { c = -1; for (let d = 1; d < 6 && c < 0; d++) for (const x of [want + d, want - d]) if (c < 0 && x >= 0 && x < 6 && !busy.has(x + ',' + row)) c = x; }
+      pos[k + 1] = [c, row]; busy.add(c + ',' + row);
+    }
+    return {pos, edges: A.edges.map(([f, t]) => [f + 1, t + 1])};
+  }
+  function fromFm6(fm6) {
+    const f = fm6 && typeof fm6 === 'object' ? fm6 : {}, alg = clamp(Math.round(num(f.alg, 1)), 1, 32), A = ALGS[alg - 1], Lt = dxLayout(alg);
+    const ams = Array.isArray(f.ams) ? f.ams : [], pms = int(f.pms, 0, 7, 0), peg = f.peg && Array.isArray(f.peg.l) && !f.peg.l.every(x => x === 50) ? f.peg : null;
+    const ops = [0, 1, 2, 3, 4, 5].map(k => {
+      const o = (Array.isArray(f.ops) && f.ops[k]) || {ol: 0}, [c, r] = Lt.pos[k + 1];
+      return normOp({on: o.on === 0 ? 0 : 1, c, r, wave: 0, ph: 0, phm: f.osync === 0 ? 'free' : 'fix', ol: o.ol, fixed: o.fixed, coarse: o.coarse, fine: o.fine, det: o.det,
+        fbSrc: 0, fbAmt: 0, vs: o.vs, lfoAm: Math.round(127 * int(ams[k], 0, 3, 0) / 3), lfoFm: Math.round(127 * pms / 7), rs: o.rs, ks: o.ks,
+        amp: {f: 'dx', r: o.r || [99, 99, 99, 99], l: o.l || [99, 99, 99, 0]}, pit: peg && !o.fixed ? {f: 'dx', r: peg.r.slice(), l: peg.l.slice()} : null, pr: 'dx'}, k);
+    });
+    ops[A.fbDst].fbSrc = A.fbSrc + 1; ops[A.fbDst].fbAmt = int(f.fb, 0, 7, 0);
+    return {v: 2, n: 6, trans: int(f.trans, -24, 24, 0), ops, edges: sortEdges(A.edges.map(([a, b]) => ({from: a + 1, to: b + 1})))};
+  }
+  // all 720 numberings (perm[i] = DX operator index of field operator i), identity first
+  const PERMS = (() => { const out = [], p = [0, 1, 2, 3, 4, 5], rec = (a, i) => { if (i === 6) { out.push(a.slice()); return; } for (let j = i; j < 6; j++) { [a[i], a[j]] = [a[j], a[i]]; rec(a, i + 1); [a[i], a[j]] = [a[j], a[i]]; } }; rec(p, 0);
+    return out.sort((a, b) => a.join('') < b.join('') ? -1 : 1); })();
+  const ALG_KEY = ALGS.map(A => A.edges.map(([f, t]) => f * 6 + t).sort((a, b) => a - b).join(','));
+  const edgeKey = (E, perm) => E.map(e => perm[e.from - 1] * 6 + perm[e.to - 1]).sort((a, b) => a - b).join(',');
+  // the feedback paths of a field: [receiver, source] 0-based (fbSrc > 0 counts, also with fbAmt 0: DX alg 2 vs 1)
+  const fbPaths = X => X.ops.map((o, k) => [k, (o.fbSrc | 0) - 1]).filter(p => p[1] >= 0);
+  function dxMatch(X) {
+    if (!X || !Array.isArray(X.ops) || X.ops.length !== 6) return {match: null, perm: null};
+    const fb = fbPaths(X), E = Array.isArray(X.edges) ? X.edges : [];
+    const tryPerm = perm => {
+      const key = edgeKey(E, perm); let best = null;
+      for (let a = 0; a < 32; a++) {
+        if (ALG_KEY[a] !== key) continue;
+        const A = ALGS[a];
+        if (fb.length === 1 && perm[fb[0][0]] === A.fbDst && perm[fb[0][1]] === A.fbSrc) return a + 1;
+        if (!fb.length && best == null) best = a + 1;
+      }
+      return best;
+    };
+    const id = [0, 1, 2, 3, 4, 5], m0 = tryPerm(id);
+    if (m0) return {match: m0, perm: id};
+    for (const p of PERMS) { const m = tryPerm(p); if (m) return {match: m, perm: p}; }
+    return {match: null, perm: null};
+  }
+  function dx(X) {
+    const R = [];
+    if (!X || !Array.isArray(X.ops)) return {match: null, perm: null, reasons: ['kein FM-Graph']};
+    const m = dxMatch(X), fb = fbPaths(X);
+    if (!m.match) R.push('Verbindungen: kein DX-Algorithmus');
+    else if (m.perm.some((p, i) => p !== i)) R.push('Nummern anders (wie DX ' + m.match + ')');
+    if (fb.length > 1) R.push('Feedback an ' + fb.map(p => 'OP ' + (p[0] + 1)).join(' und '));
+    else if (fb.length === 1 && m.match) { const A = ALGS[m.match - 1];
+      if (m.perm[fb[0][0]] !== A.fbDst || m.perm[fb[0][1]] !== A.fbSrc) R.push('Feedback OP ' + (fb[0][0] + 1) + ' ← ' + (fb[0][1] + 1) + ' passt nicht zu DX ' + m.match); }
+    const amt = fb.length === 1 ? X.ops[fb[0][0]].fbAmt : 0; if (amt !== Math.round(amt)) R.push('Feedback-Stärke ' + String(amt).replace('.', ',') + ' (DX: ganze Zahl)');
+    const ratio = X.ops.map((o, k) => k).filter(k => !X.ops[k].fixed), pits = ratio.map(k => JSON.stringify(X.ops[k].pit || null));
+    X.ops.forEach((o, k) => {
+      if (o.wave) R.push('OP ' + (k + 1) + ': Welle ' + (WAVES[o.wave] || 'eigene ' + o.wave));
+      if (!o.amp || o.amp.f !== 'dx') R.push('OP ' + (k + 1) + ': Hüllkurve frei');
+      if (o.pit && (o.pit.f !== 'dx' || o.pr !== 'dx')) R.push('OP ' + (k + 1) + ': Tonhöhen-Hüllkurve frei');
+      if (o.fixed && o.pit) R.push('OP ' + (k + 1) + ': feste Frequenz mit Tonhöhen-Hüllkurve');
+      if (o.ph) R.push('OP ' + (k + 1) + ': Phase ' + o.ph);
+      if (o.vs < 0) R.push('OP ' + (k + 1) + ': Anschlag ' + o.vs);
+      if (![0, 42, 85, 127].includes(o.lfoAm)) R.push('OP ' + (k + 1) + ': LFO-Pegel ' + o.lfoAm);
+    });
+    if (new Set(pits).size > 1) R.push('Tonhöhen-Hüllkurven verschieden');
+    const phm = new Set(X.ops.map(o => o.phm)); if (phm.size > 1 || phm.has('rnd')) R.push('Phase-Modus ' + [...phm].join(' / '));
+    if (new Set(X.ops.map(o => o.lfoFm)).size > 1) R.push('LFO-Tonhöhe je Operator verschieden');
+    else if (Math.round(127 * Math.round(X.ops[0].lfoFm * 7 / 127) / 7) !== X.ops[0].lfoFm) R.push('LFO-Tonhöhe ' + X.ops[0].lfoFm + ' (DX: 0, 18, 36, 54, 73, 91, 109, 127)');
+    return {match: m.match, perm: m.perm, reasons: R};
+  }
+  function opFm6(o) {
+    const x = {on: o.on, fixed: o.fixed, coarse: o.coarse, fine: o.fine, det: o.det, ol: o.ol, r: (o.amp.f === 'dx' ? o.amp.r : [99, 99, 99, 80]).slice(), l: (o.amp.f === 'dx' ? o.amp.l : [99, 99, 99, 0]).slice(),
+      vs: clamp(o.vs, 0, 7), rs: o.rs};
+    if (o.ks && (o.ks.ld || o.ks.rd)) x.ks = Object.assign({}, o.ks);
+    return x;
+  }
+  function fm6Extras(X, f, perm) {
+    const inv = [0, 1, 2, 3, 4, 5]; if (perm) perm.forEach((p, i) => { inv[p] = i; });
+    const ams = inv.map(i => Math.round(X.ops[i].lfoAm * 3 / 127)); if (ams.some(a => a > 0)) f.ams = ams;
+    const pms = Math.round(Math.max(...X.ops.map(o => o.lfoFm)) * 7 / 127); if (pms > 0) f.pms = pms;
+    if (X.ops.every(o => o.phm === 'free')) f.osync = 0;
+    const pr = X.ops.find(o => !o.fixed && o.pit && o.pit.f === 'dx'); if (pr) f.peg = {r: pr.pit.r.slice(), l: pr.pit.l.slice()};
+    return f;
+  }
+  function toFm6(X) {
+    const d = dx(X); if (d.reasons.length || !d.match) return null;
+    const fb = fbPaths(X);
+    return fm6Extras(X, {alg: d.match, fb: fb.length ? Math.round(X.ops[fb[0][0]].fbAmt) : 0, trans: X.trans, ops: X.ops.map(opFm6)}, null);
+  }
+  // nearest DX algorithm: fewest differing edges (+ carriers) over all numberings; the operators are renumbered with it
+  function approxFm6(X) {
+    const E = Array.isArray(X.edges) ? X.edges : [];
+    let best = null;
+    for (const p of PERMS) {
+      const mine = new Set(E.map(e => p[e.from - 1] * 6 + p[e.to - 1]));
+      for (let a = 0; a < 32; a++) {
+        const theirs = ALGS[a].edges.map(([f, t]) => f * 6 + t); let d = 0;
+        for (const x of theirs) if (!mine.has(x)) d++;
+        d += mine.size - (theirs.length - d);
+        if (!best || d < best.d) best = {d, a, p};
+      }
+      if (best && best.d === 0) break;
+    }
+    const inv = [0, 0, 0, 0, 0, 0]; best.p.forEach((q, i) => { inv[q] = i; });
+    const fbAll = fbPaths(X), fbv = fbAll.length ? Math.round(Math.max(...fbAll.map(q => X.ops[q[0]].fbAmt))) : 0;
+    const f = {alg: best.a + 1, fb: clamp(fbv, 0, 7), trans: X.trans, ops: inv.map(i => opFm6(X.ops[i])), approx: true};
+    return fm6Extras(X, f, best.p);
+  }
+  G.FMX = {norm, check, fromFm6, dxLayout, dxMatch, dx, toFm6, approxFm6, WAVES, ALGS, normEnv};
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
 /* ===== SQStore — embedded from scratchpad/presetlib/preset-store.js (spec v2 §1.1 block 7, §12) =====
    WP1 changes against the research file: bornRun is a runtime key; compact notes keep extra fields as a 5th element;
    Autosave gained markDirtyPlaying (2 s / 20 s), unique history keys, snapshotNow(), lastOk/lastErr and a rescue write
@@ -5527,6 +6157,12 @@ const RecHelpers = (() => {
     const o = {alg: Math.round(clamp(num(p.alg, 1), 1, 32)), fb: Math.round(clamp(num(p.fb, 0), 0, 7)), trans: Math.round(clamp(num(p.trans, 0), -24, 24)),
       ops: [0, 1, 2, 3, 4, 5].map(i => normOp(ops[i] || {ol: 0}))};
     const g = normPeg(p.peg); if (g) o.peg = g;
+    // V4a (KP 6.1, A.4b P. 11): the DX LFO of a .syx voice per operator (AMS), its PMS and the oscillator key sync are kept
+    // (fmxFromFm6: lfoAm / lfoFm / phm); approx: this fm6 is only the nearest DX algorithm of a p.fmx (native fallback)
+    if (Array.isArray(p.ams) && p.ams.some(x => num(x, 0) > 0)) o.ams = [0, 1, 2, 3, 4, 5].map(i => Math.round(clamp(num(p.ams[i], 0), 0, 3)));
+    const pms = Math.round(clamp(num(p.pms, 0), 0, 7)); if (pms) o.pms = pms;
+    if (p.osync === 0) o.osync = 0;
+    if (p.approx === true) o.approx = true;
     return o;
   }
   // V0d (A.4b 7): carriers per algorithm (DX_ALGS, first field) for the fmDec -> fmBite migration
@@ -5553,6 +6189,8 @@ const RecHelpers = (() => {
     if (p.wt || engine === 'wt') o.wt = normWt(p.wt);
     if (p.fm2 || engine === 'fm2') o.fm2 = normFm2(p.fm2);
     if (p.fm6 || engine === 'fm6') { o.fm6 = normFm6(p.fm6 || (Array.isArray(p.ops) ? p : null)); migrateBite(flat, o.fm6); }
+    // V4a: the FM graph (format 2); kept for every synth engine like the other engine blocks (lossless engine switch)
+    if (p.fmx && typeof p.fmx === 'object' && G.FMX) { const x = G.FMX.norm(p.fmx); if (x) o.fmx = x; }
     return o;
   }
   function normDrum(p) {        // flat per-slot params: keep finite numbers and short strings only (engine clamps the rest)
@@ -7058,12 +7696,13 @@ const RecHelpers = (() => {
     const node = new AudioWorkletNode(ctx, 'dirigent-analog', {
       numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: fm6 ? {patch, mods: mods || [], fm6} : {patch, mods: mods || []}});
     node.connect(dest);
-    const E = {node, q: [], load: 0, nv: 0, onEnd: null, onScope: null, flushQueued: false, dead: false, sent: Object.assign({}, patch), proxies: new Map()};
+    const E = {node, q: [], load: 0, nv: 0, onEnd: null, onScope: null, flushQueued: false, dead: false, sent: Object.assign({}, patch), proxies: new Map(), lv: null, lvN: 0, lvT: 0, lvOn: false};
     node.port.onmessage = e => {
       const m = e.data; if (!m) return;
       if (m.end && E.onEnd) for (const id of m.end) E.onEnd(id);
       if (m.load != null) { E.load = m.load; E.nv = m.voices; }
       if (m.scope && E.onScope) E.onScope(m);
+      if (m.fmxLv) { E.lv = m.fmxLv; E.lvN++; E.lvT = m.t; }        // V4a (N7F-09): live operator levels
     };
     const post = m => { if (!E.dead) node.port.postMessage(m); };
     const push = ev => { if (E.dead) return; E.q.push(ev); if (!E.flushQueued) { E.flushQueued = true; queueMicrotask(E.flush); } };
@@ -7082,6 +7721,7 @@ const RecHelpers = (() => {
     E.fm6 = patch => { E.flush(); post({fm6: patch}); };     // WP7: the FM operators (structured clone = a snapshot)
     E.tempo = (bpm, start, at) => post({tempo: at == null ? {bpm, start} : {bpm, start, at}});
     E.scope = on => post({scope: !!on});
+    E.fmxLv = on => { on = !!on; if (on === E.lvOn) return; E.lvOn = on; if (!on) E.lv = null; post({fmxLv: on}); };   // V4a: only while the FM field is shown
     E.scopeDst = on => post({scopeDst: !!on});          // WP5 debug (MO47): {scope} also carries the focus voice's dst sums
     E.dispose = () => { if (E.dead) return; E.flush(); post({dispose: true}); E.dead = true; node.port.onmessage = null; try { node.disconnect(); } catch (e) {} };
     return E;
@@ -8319,7 +8959,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '3.4.0';
+const VERSION = '3.8.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -9573,7 +10213,7 @@ function wkFlat(snd) {
 const toEngineMods = mods => SQF.toEngineMods((mods || []).filter(m => !String(m.dst).startsWith('fx.')));
 const wkMods = snd => toEngineMods(snd.mods);
 function newEngine(dest, snd) {
-  const E = SynthHost.track(AU.ctx, dest, wkFlat(snd), wkMods(snd), snd.engine === 'fm6' && snd.p.fm6 ? snd.p.fm6 : null);
+  const E = SynthHost.track(AU.ctx, dest, wkFlat(snd), wkMods(snd), snd.engine === 'fm6' && snd.p.fm6 ? wkFmOf(snd.p) : null);
   E.onEnd = id => { const v = E.proxies.get(id); if (v) wkVoiceDead(v); };
   E.tempo(S.bpm, R.playing ? R.startTime : null);
   return E;
@@ -9582,7 +10222,7 @@ function newEngine(dest, snd) {
 function syncEngine(i, full) {
   const A = AU.tracks[i], tr = S.tracks[i]; if (!A || !tr || tr.kind !== 'synth') return;
   if (wkWanted(i)) {
-    if (!AU.synth[i]) AU.synth[i] = newEngine(A.trackIn, tr.sound);
+    if (!AU.synth[i]) { AU.synth[i] = newEngine(A.trackIn, tr.sound); if (UI.fmxLvT === i) AU.synth[i].fmxLv(true); }
     else if (full) {          // V0b-fix: routes and FM patch ride in the same message (an engine change restarts held keys with them at once)
       WKSET[i] = null; const fp = tr.sound.engine === 'fm6' ? wkFm6Patch(i) : null;
       AU.synth[i].set(wkFlat(tr.sound), true, fp, wkMods(tr.sound)); if (fp) { clearTimeout(WKFM[i]); WKFM[i] = 0; WKFM_AT[i] = performance.now(); }
@@ -9630,8 +10270,10 @@ function wkFlushAll() { wkFlushT = 0; for (let i = 0; i < 4; i++) wkFlush(i); }
 const WKFM = [0, 0, 0, 0], WKFM_AT = [0, 0, 0, 0];
 function wkFm6Patch(i) {
   const snd = sndOf(i); if (!snd || snd.engine !== 'fm6' || !snd.p.fm6) return null;
-  return UI.fmSolo && UI.fmSolo.t === i ? fmSoloPatch(snd.p.fm6, UI.fmSolo.k) : snd.p.fm6;
+  return UI.fmSolo && UI.fmSolo.t === i ? fmSoloPatch(snd.p.fm6, UI.fmSolo.k, snd.p.fmx) : wkFmOf(snd.p);
 }
+// V4a: the FM patch for the worklet: p.fm6, with p.fmx (the graph) riding along as .x when the sound has one
+const wkFmOf = p => (p.fmx ? Object.assign({}, p.fm6, {x: p.fmx}) : p.fm6);
 function wkFm6(i, now) {
   const send = () => {
     WKFM[i] = 0; const E = AU.synth[i], fp = wkFm6Patch(i);
@@ -9674,7 +10316,8 @@ function limited(P) {
   const L = LIM.level, cap = (v, c) => Math.min(v, c);
   return {lq: L >= 1 && P.poly > 1 && !P.mode ? 0 : P.lq,
     o1uni: L >= 2 ? cap(P.o1uni, 3) : P.o1uni, o2uni: L >= 2 ? cap(P.o2uni, 3) : P.o2uni, o3uni: L >= 2 ? cap(P.o3uni, 3) : P.o3uni,
-    poly: L >= 3 ? cap(P.poly, 4) : L >= 2 ? cap(P.poly, 6) : P.poly};
+    poly: L >= 3 ? cap(P.poly, 4) : L >= 2 ? cap(P.poly, 6) : P.poly,
+    xfLite: L >= 2 ? 1 : 0};                    // V4a (Spec V4a): the WP4 dip instead of the 30 ms voice crossfade
 }
 function applyLimiter() {
   for (let i = 0; i < 4; i++) if (AU.synth[i]) AU.synth[i].set(limited(S.tracks[i].sound.p));
@@ -14265,11 +14908,43 @@ function setP(i, key, v) {
 }
 // WP7 (§6.5): an edit of the FM operator block of track i (p.fm6): dirty marks, the worklet at 30 Hz (now: at once), the
 // editor's controls. The native path takes it from the next note (§6.4: „Kompatibel: Änderungen ab der nächsten Note“)
-function fmChanged(i, now) {
+function fmChanged(i, now, fromFmx) {
   if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') UI.ab = null;
+  if (!fromFmx) { const s_ = sndOf(i); if (s_) fmxAfterFm6Edit(s_.p); }
   UI.sndVer++; UI.dirty.strip = true; markDirty();
   wkFm6(i, !!now);
   if (R.editor === 'synth' && i === R.selT) edParamChanged('fm6');
+}
+/* ---------- V4a: the FM graph p.fmx (Nachtrag 2 Teil A, KP §6) ----------
+   p.fmx is the sound once it exists (the worklet plays it, fm6.x); p.fm6 follows it: the same sound when the graph is
+   DX-tauglich (KP §6.4), else the nearest DX algorithm with approx: true for the native fallback („ECO: angenähert“). */
+function fmxApply(p, x) {
+  p.fmx = x;
+  const f = FMX.toFm6(x);
+  p.fm6 = SQStore.normFm6(f || FMX.approxFm6(x));
+}
+// an edit on the DX pages (ALGO / OP / MAKRO, randomize, Init) of a sound with p.fmx: the fm6 is the sound now (V4b locks
+// those pages for graphs that are not DX-tauglich, KP §4.12); the field keeps its cells while the algorithm stays the same
+function fmxAfterFm6Edit(p) {
+  if (!p || !p.fmx || !p.fm6) return;
+  const old = p.fmx; delete p.fm6.approx;
+  const x = FMX.fromFm6(p.fm6), m = FMX.dxMatch(old);
+  if (m.match === p.fm6.alg && m.perm.every((q, k) => q === k)) x.ops.forEach((o, k) => { o.c = old.ops[k].c; o.r = old.ops[k].r; });
+  p.fmx = x;
+}
+function setFmxApi(t, x) {
+  const snd = sndOf(t); if (!snd || snd.engine !== 'fm6') throw new Error('Keine FM-Spur: ' + t);
+  const bad = FMX.check(x); if (bad.length) throw new Error('setFmx: ' + bad.join(' · '));
+  const nx = FMX.norm(x, false), b = soundSnapshot(t);
+  fmxApply(snd.p, nx);
+  fmChanged(t, true, true);
+  commitSound(t, b, 'FM-Feld');
+  return deep(snd.p.fmx);
+}
+// live operator levels (N7F-09): the worklet sends them only while UI.fmxLvT names the track (the FM field is shown, V4b)
+function fmxLvWant(t, on) {
+  const prev = UI.fmxLvT; UI.fmxLvT = on ? t : (prev === t ? -1 : prev);
+  for (let i = 0; i < 4; i++) { const E = AU.synth[i]; if (E) E.fmxLv(UI.fmxLvT === i); }
 }
 // D.11: a whole sound (preset load, undo, engine switch, setSound, A/B). The track owns this copy.
 // Worklet -> worklet (§5.4, §11.5 PR5): E.set(full flat) + E.mods; sounding and queued notes continue with the new
@@ -14384,7 +15059,7 @@ function randomizeFm(p, R_) {
       r: [I(70, 99), I(25, 80), I(20, 60), I(40, 80)], l: [99, I(40, 90), I(0, 80), 0]});
     return x;
   });
-  p.fm6 = SQStore.normFm6(f);
+  p.fm6 = SQStore.normFm6(f); fmxAfterFm6Edit(p);
 }
 /* Anhang C.1: the v2 parameter paths keep working (old tests, old data). set: v2 value -> v3; get: the inverse */
 const WAVE_IDX = {saw: 0, square: 1, triangle: 2, sine: 3}, WAVE_V2 = ['saw', 'square', 'triangle', 'sine'];
@@ -14418,7 +15093,7 @@ function setFm1(t, key, value) {
   const snd = sndOf(t), v1 = fm1Of(t, snd), v = +value;
   if (!isNum(v)) throw new Error('Ungültiger Wert für fm.' + key + ': ' + value);
   v1[key] = key === 'ratio' ? clamp(v, .5, 31) : key === 'index' ? clamp(v, 0, 10) : key === 'modDecay' ? clamp(v, .01, 4) : clamp(v, 0, 1);
-  snd.p.fm6 = SQStore.normFm6(FMH.fromV1(v1)); LEGACY_FM1[t] = {v1: Object.assign({}, v1), fm6: deep(snd.p.fm6)};
+  snd.p.fm6 = SQStore.normFm6(FMH.fromV1(v1)); fmxAfterFm6Edit(snd.p); LEGACY_FM1[t] = {v1: Object.assign({}, v1), fm6: deep(snd.p.fm6)};
   fmChanged(t, true);
   return v1[key];
 }
@@ -14627,12 +15302,12 @@ function buildSynthEd() {
     v => setEngine(i, v), 'eng', {undo: soundUndo(i), label: 'Klangerzeugung'});
   F.r1.insertBefore(engSeg, F.r1.querySelector('.sh-title').nextSibling);
   const eco = el('span', 'ecob', 'ECO-Klang'); eco.hidden = true; eco.title = 'Vereinfachte Klangerzeugung: der Studio-Klang (AudioWorklet) ist hier nicht verfügbar';
-  eco.setAttribute('role', 'note'); onTap(eco, () => lcdShow('ECO-Klang', 'Studio-Klang nicht verfügbar – vereinfachte Klangerzeugung'));
+  eco.setAttribute('role', 'note'); onTap(eco, () => lcdShow('ECO-Klang', ecoMsg(i)));
   F.r1.insertBefore(eco, engSeg.nextSibling); ED.eco = eco;
   // P has no room for the badge in row 1 (the track name would vanish): there the VA button carries a small „ECO“ line
   // (CSS ::before of the class 'eco', so the button text stays „VA“)
   ED.ecoB = engSeg.children[0];
-  onTap(ED.ecoB, b => { if (b.classList.contains('eco')) lcdShow('ECO-Klang', 'Studio-Klang nicht verfügbar – vereinfachte Klangerzeugung'); });
+  onTap(ED.ecoB, b => { if (b.classList.contains('eco')) lcdShow('ECO-Klang', ecoMsg(i)); });
   // row 2: ‹ name • › · [A/B] · Sichern · 🎲 · ▶ Hören
   const pre = el('div', 'preset');
   const pPrev = el('button', 'pa rb', '‹'), pName = el('button', 'pv rb', ''), pNext = el('button', 'pa rb', '›');
@@ -14706,7 +15381,8 @@ function openEdMore(anchor, t) {
 function edHeadRefresh() {
   const H = ED.hdr; if (!H || !H.pName.isConnected) return;
   const tr = S.tracks[R.selT]; if (tr.kind !== 'synth') return;
-  if (ED.eco) { const e = !trackEco(R.selT); if (ED.eco.hidden !== e) { ED.eco.hidden = e; if (ED.ecoB) ED.ecoB.classList.toggle('eco', !e); } }
+  if (ED.eco) { const e = !trackEco(R.selT); if (ED.eco.hidden !== e) { ED.eco.hidden = e; if (ED.ecoB) ED.ecoB.classList.toggle('eco', !e); }
+    const ft = e ? '' : ecoMsg(R.selT); if (ED.eco.title !== ft && !e) ED.eco.title = ft; }
   const snd = tr.sound, edited = soundEdited(snd), abOn = !!(UI.ab && UI.ab.t === R.selT);
   const key = snd.name + '|' + edited + '|' + abOn + '|' + (abOn ? UI.ab.side : '');
   if (H.key === key) return; H.key = key;
@@ -14961,8 +15637,11 @@ function fmSetPatch(i, key, v) {
   return nv;
 }
 // [Solo] on the OP page (§6.5): only this operator, as an output (algorithm 32), monitor only — the sound is not changed
-function fmSoloPatch(fm, k) {
-  return {alg: 32, fb: k === 5 ? fm.fb : 0, trans: fm.trans, ops: fm.ops.map((op, j) => Object.assign({}, op, {on: j === k ? 1 : 0}))};
+function fmSoloPatch(fm, k, fmx) {
+  const o = {alg: 32, fb: k === 5 ? fm.fb : 0, trans: fm.trans, ops: fm.ops.map((op, j) => Object.assign({}, op, {on: j === k ? 1 : 0}))};
+  // V4a: an FM graph: every operator an output in its own column, only k on (its self-feedback stays)
+  if (fmx) o.x = {v: 2, n: 6, trans: fmx.trans, edges: [], ops: fmx.ops.map((op, j) => Object.assign({}, op, {c: j, r: 0, on: j === k ? 1 : 0, fbSrc: j === k && op.fbSrc === k + 1 ? op.fbSrc : 0}))};
+  return o;
 }
 function fmSoloOff() { const s = UI.fmSolo; if (!s) return; UI.fmSolo = null; wkFm6(s.t, true); if (ED.fmSoloB) ED.fmSoloB.classList.remove('on'); }
 // what an operator is in the current algorithm: „Ausgang“ or „Modulator → OP 1 + 3“ (+ „· Feedback“)
@@ -15151,12 +15830,20 @@ function fmStripCol(i, k) {
   if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(() => { if (!col.isConnected) { ro.disconnect(); return; } upd(); }); ro.observe(spk); }
   return col;
 }
+// V4a (K2-42, L9): a graph with more than 12 connections plays 6 voices (the reason stands in the FM page's head line)
+const fmxVoiceCap = i => { const s_ = sndOf(i), x = s_ && s_.engine === 'fm6' && s_.p.fmx; return !!(x && x.edges.length > 12); };
+const FMX_CAP_TXT = '6 Stimmen · mehr als 12 Verbindungen';
+// V4a (Spec 9.3, V4a-07): a FM graph that is not DX-tauglich plays natively as its nearest DX algorithm
+function ecoMsg(i) { const s_ = sndOf(i), f = s_ && s_.engine === 'fm6' && s_.p.fm6; return f && f.approx ? fmxEcoTxt(f) : 'Studio-Klang nicht verfügbar – vereinfachte Klangerzeugung'; }
+const fmxEcoTxt = f => 'ECO: angenähert (nächster DX-Alg. ' + (f.alg | 0) + ')';
 function fmNativeHint(i) {
   const h = el('div', 'fmhint small');
   // V0d (A.4b 9): in ECO a modulator at OL ≥ 75 gets the known limit of the native path (FM instead of PM)
-  const upd = () => { const on_ = !trackOnWorklet(i); h.hidden = !on_;
+  const upd = () => { const on_ = !trackOnWorklet(i), cap = fmxVoiceCap(i); h.hidden = !on_ && !cap;
     if (on_) { const f = fmOf(i), A = fmAlg(f), hi = f.ops.some((o, k) => !A.car[k] && o.on !== 0 && o.ol >= 75);
-      const t = 'Kompatibel: Änderungen ab der nächsten Note' + (hi ? ' · ECO: Klangfarbe bei hohem Pegel angenähert' : ''); if (h.textContent !== t) h.textContent = t; } };
+      // V4a: one line (two lines ran into the fader row at 320 px): the graph's approximation says all that matters
+      const t = f.approx ? fmxEcoTxt(f) : 'Kompatibel: Änderungen ab der nächsten Note' + (hi ? ' · ECO: Klangfarbe bei hohem Pegel angenähert' : ''); if (h.textContent !== t) h.textContent = t; }
+    else if (cap) { const t = FMX_CAP_TXT; if (h.textContent !== t) h.textContent = t; } };
   upd(); ED.refreshers.push(upd); return h;
 }
 // ALGO (§6.5): diagram + algorithm stepper / name / [Liste] / FEEDBACK, the operator strip
@@ -15846,7 +16533,7 @@ function pageFmMakro(pg, i) {
   const bInit = el('button', 'hb rb fminit', 'Init FM'); bInit.setAttribute('aria-label', 'FM-Teil auf den Grundklang (DX7 Init Voice) setzen');
   onTap(bInit, () => {                                  // one undo step (no confirm: ↶ brings it back)
     const before = soundSnapshot(i), snd = deep(sndOf(i));
-    snd.p.fm6 = FM_INIT(); for (const k of ['fmBright', 'fmBite', 'fmAtk', 'fmDec', 'fmRel']) snd.p[k] = 0; snd.p.fmAmp = 0;
+    snd.p.fm6 = FM_INIT(); delete snd.p.fmx; for (const k of ['fmBright', 'fmBite', 'fmAtk', 'fmDec', 'fmRel']) snd.p[k] = 0; snd.p.fmAmp = 0;
     applySound(i, snd);
     if (commitSound(i, before, 'Init FM')) toast('FM auf den Grundklang gesetzt', {label: 'Rückgängig', fn: () => undo()});
     safeRebuild(buildSynthEd);
@@ -16710,7 +17397,7 @@ function parseSyxBank(bytes) {
     const name = String.fromCharCode(...b.subarray(118, 128)).replace(/[^\x20-\x7e]/g, '?').replace(/\s+/g, ' ').trim() || 'DX7 ' + (v + 1);
     // V0d (A.4b 3): the pitch EG (packed bytes 102–109: R1–R4, L1–L4) is kept, not dropped
     const peg = {r: [102, 103, 104, 105].map(i => Math.min(99, b[i] & 127)), l: [106, 107, 108, 109].map(i => Math.min(99, b[i] & 127))};
-    voices.push({name, alg: (b[110] & 31) + 1, fb: b[111] & 7, trans: (b[117] & 63) - 24, ops, peg,
+    voices.push({name, alg: (b[110] & 31) + 1, fb: b[111] & 7, osync: (b[111] >> 3) & 1, trans: (b[117] & 63) - 24, ops, peg,
       lfo: {spd: Math.min(99, b[112] & 127), dly: Math.min(99, b[113] & 127), pmd: Math.min(99, b[114] & 127), amd: Math.min(99, b[115] & 127), wave: (b[116] >> 1) & 7, pms: (b[116] >> 4) & 7}});
   }
   return {ok: true, ckOk, voices};
@@ -16718,6 +17405,11 @@ function parseSyxBank(bytes) {
 function syxVoiceSound(v) {
   const fm6 = {alg: v.alg, fb: v.fb, trans: clamp(v.trans, -24, 24), ops: v.ops.map(o => { const x = Object.assign({}, o); delete x.ams; return x; })};
   if (v.peg && !v.peg.l.every(x => x === 50)) fm6.peg = {r: v.peg.r.slice(), l: v.peg.l.slice()};
+  // V4a (A.4b P. 11, Diagnose 3h): AMS per operator (also on modulators), PMS and „Key-Sync aus“ are kept in fm6 (the FM field
+  // takes them as lfoAm / lfoFm / phm 'free'); a sensitivity without LFO depth (AMD / PMD 0) does nothing on a DX and is dropped
+  if (v.lfo.amd && v.ops.some(o => o.ams)) fm6.ams = v.ops.map(o => o.ams | 0);
+  if (v.lfo.pmd && v.lfo.pms) fm6.pms = v.lfo.pms;
+  if (v.osync === 0) fm6.osync = 0;
   const p = Object.assign({}, SQStore.FM_BASE, {level: SYX_LEVEL, fm6}), mods = [], L = v.lfo, A = DXN.ALGS[fm6.alg - 1] || DXN.ALGS[0];
   p.l1shape = [1, 2, 2, 3, 0, 4][L.wave] != null ? [1, 2, 2, 3, 0, 4][L.wave] : 0; p.l1rate = clamp(DX_LFO_HZ[L.spd] || 1, .01, 40); p.l1sync = 0;
   // DX7 LFO delay: (99 − delay) sets the wait + fade (msfa lfo.cc); here one fade-in from the key-down
@@ -19624,7 +20316,7 @@ function engineInfo() {
   return {synth, how: SynthHost.how || null, err: UI.forceNative ? 'abgeschaltet (forceNative)' : SynthHost.err || null, hall: AU.hallKind, load: +cpuLoad().toFixed(4),
     limiter: LIM.level, quality: S.settings.quality, loadMs: Math.round(SynthHost.ms || 0),
     perTrack: [0, 1, 2, 3].map(i => { const E = AU.synth[i];
-      return E ? {voices: E.nv, load: E.load, path: 'worklet', poly: E.sent.poly, lq: E.sent.lq, uni: [E.sent.o1uni, E.sent.o2uni, E.sent.o3uni]}
+      return E ? {voices: E.nv, load: E.load, path: 'worklet', poly: E.sent.poly, lq: E.sent.lq, uni: [E.sent.o1uni, E.sent.o2uni, E.sent.o3uni], voiceCap: fmxVoiceCap(i) ? 6 : 8}
         : {voices: VOICES.filter(v => !v.dead && !v.wk && v.track === i).length, load: 0, path: S.tracks[i].kind === 'synth' && isWkEngine(S.tracks[i].sound.engine) ? 'native' : 'native-only'}; }),
     loopExtra: AU.loopExtra, graphLat: AU.graphLat, compLat: AU.compLat, measured: AU.measured, outLat: AU.outLat, devLat: AU.devLat,
     storage: kv ? kv.mode : 'memory', hint: AU.hint};
@@ -19868,6 +20560,14 @@ const SYNQUENZER = {
   fmFader: p => Math.round(99 * Math.pow(clamp(+p || 0, 0, 1), .45)),
   fmBrightFader: v => { v = clamp(+v || 0, -1, 1); return 24 * Math.sign(v) * Math.sqrt(Math.abs(v)); },
   syxHint: fm6 => syxHint(fm6),
+  // V4a (Nachtrag 2 Teil A, KP §7): the FM graph p.fmx (format 2, 6 operators)
+  getFmx: t => { const snd = sndOf(t); return snd && snd.p.fmx ? deep(snd.p.fmx) : null; },
+  setFmx: (t, fmx) => setFmxApi(t, fmx),                                       // throws on I1–I4 / a 7th operator; one undo
+  fmxLevels: t => { const E = AU.synth[t]; return E && E.lv ? E.lv.slice() : [0, 0, 0, 0, 0, 0]; },
+  fmxLevelWatch: (t, on) => { fmxLvWant(t, on); const E = AU.synth[t]; return {on: UI.fmxLvT === t, n: E ? E.lvN : 0}; },   // V4b: while the field is shown
+  dxLayout: alg => FMX.dxLayout(alg),
+  fmxDx: t => { const snd = sndOf(t); const x = snd && snd.p.fmx; return x ? FMX.dx(x) : null; },
+  fmxFromFm6: fm6 => FMX.fromFm6(fm6),
 };
 // every state-changing API call leaves the UI rendered (no need to wait for the next animation frame)
 function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
@@ -19875,7 +20575,7 @@ const NO_SYNC = new Set(['state', 'project', 'runtime', 'getClip', 'getParam', '
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
-  'fmDefaultOp', 'fmEnvView', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint']);
+  'fmDefaultOp', 'fmEnvView', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint', 'getFmx', 'fmxLevels', 'dxLayout', 'fmxDx', 'fmxFromFm6']);
 for (const k of Object.keys(SYNQUENZER)) {
   const f = SYNQUENZER[k]; if (typeof f !== 'function' || NO_SYNC.has(k)) continue;
   SYNQUENZER[k] = function () { const r = f.apply(this, arguments); uiSync(); if (r && typeof r.then === 'function') return r.then(v => { uiSync(); return v; }); return r; };

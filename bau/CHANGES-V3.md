@@ -8,7 +8,7 @@ capabilities: {
 }
 ```
 
-V0a, V0b und V0d fügen keine Fähigkeit hinzu. Die App läuft weiter ohne jede Fähigkeit (`use()` → `null`, EN-13).
+V0a, V0b, V0d und V4a fügen keine Fähigkeit hinzu. Die App läuft weiter ohne jede Fähigkeit (`use()` → `null`, EN-13).
 
 ---
 
@@ -615,3 +615,188 @@ rechnet“). Jetzt rechnet ECO PM und trifft das Worklet (= msfa) genau — das 
   `wp4-dod`/`wp7-dod` und die native DoD bestehen, auf dem iPhone ungemessen.
 - Kein WebKit-Test (Chromium only); `IIRFilterNode` gibt es in Safari seit 14.1.
 
+
+---
+
+## V4a — FM-Graph-Engine (`p.fmx` Format 2, 6 Operatoren) · App 3.8.0
+
+Grundlage: Nachtrag 2 Teil A (A.3–A.7, K2-37 … K2-45, K2-58 … K2-62) mit `r7/kodamo-delta-pdf.md` (KP §4.8–4.11, §6, §7, §9 V4a)
+und `r7/kodamo-delta.md` §6.2/§6.4/§6.5 (nur nach A.3); Spec v3 §9.3 und §17 V4a. Gebaut auf `synq-snapshots/V0-gruppe-fix.html`
+(Gruppe 1 ohne V0c; Gruppe 2 ist noch nicht gebaut, V4a braucht nur V0d). Die Fähigkeiten-Summe ändert sich nicht.
+Keine Oberfläche des FM-Felds (die kommt mit V4b); sichtbar ist in V4a nur die Hinweiszeile auf der FM-Seite.
+
+### Gebaut
+
+**Datenmodell `p.fmx` (KP §6.1, Format 2, `n` = 6)** — neues Modul `FMX` (eigener `<script>` vor SQStore, eigene DX-Tabelle):
+- `FMX.norm` (`normFmx`): Bereiche und Vorgaben je Feld, Hüllkurven in DX-Form `{f:'dx', r[4], l[4]}` oder Punkt-Form
+  `{f:'pt', y, t, sus, la, lb, skip, crv, run}` (Punkt-Form wird gespeichert, klingt aber erst ab V4f, s. Lücken);
+  Reparatur in fester Reihenfolge (KP §6.2 ohne die 16-Kanten-Regel, K2-42): doppelte Zelle → nächste freie Spalte der
+  Reihe; Kante gegen I2 oder mit unbekanntem OP → weg; Ausgang mit Ziel → Ziel weg (I4); OP ohne Ziel fällt nach R7 auf den
+  obersten Nicht-Vorfahren darunter, sonst zum Ausgang (I3). Jede Reparatur schreibt eine Konsolenzeile; zweimal = gleich.
+- `FMX.check` (I1–I4, genau 6 Operatoren) — `setFmx` wirft damit, die Daten bleiben unverändert (K2-37, V4a-05).
+- `FMX.fromFm6` (`fmxFromFm6`, KP §6.3): Plätze nach `dxLayout`, Feedback am Empfänger `fbDst` mit Quelle `fbSrc`
+  (Alg. 4/6: Empfänger 6, Quelle 4/5), DX-Form-Hüllkurven, `fm6.peg` in jeden Verhältnis-OP (`pr 'dx'`),
+  `lfoAm = round(127·ams/3)`, `lfoFm = round(127·pms/7)`, `phm = osync 0 ? 'free' : 'fix'`.
+- `FMX.dxLayout` (KP §6.5), `FMX.dxMatch` (eigene Nummerierung zuerst, dann alle 720), `FMX.dx` (DX-tauglich nach KP §6.4
+  mit deutschen Gründen: „OP 3: Welle Säge“, „Feedback an OP 2 und OP 6“, „Nummern anders (wie DX 5)“ …), `FMX.toFm6`,
+  `FMX.approxFm6` (nächster DX-Algorithmus: wenigste abweichende Kanten über alle Nummerierungen, `approx: true`).
+- `SQStore`: `normSynthP` trägt `p.fmx` (normalisiert); `normFm6` behält jetzt `ams[6]`, `pms`, `osync: 0` und `approx`.
+- `p.fm6` folgt dem Graph (`fmxApply`): DX-tauglich → derselbe Klang als fm6; sonst der nächste DX-Algorithmus mit
+  `approx: true` für den nativen Rückfall. Eine Änderung auf den DX-Seiten (ALGO/OP/MAKRO, Zufall, v1-Pfade) macht fm6
+  zum Klang und baut `p.fmx` daraus neu (Zellen bleiben, wenn der Algorithmus gleich bleibt); [Init] löscht `p.fmx`.
+
+**Worklet: Graph-Renderer** (`fm6.x` = `p.fmx` reist in der `{fm6}`-Nachricht mit; ohne `x` läuft der fm6-Weg unverändert):
+- `fmxCompile`: Ausgänge = OPs ohne Ziel, Modulator-Summen je Ziel, Reihenfolge topologisch (Modulatoren zuerst, unter den
+  bereiten die höchste Nummer → für jeden DX-Graph genau die fm6-Reihenfolge 6…1, also dieselben Rechenschritte).
+- **Feedback je Operator:** Selbst wie DX (2-Sample-Mittel, `2^(fbAmt−8)`, `fbAmt` in 0,1-Schritten, N4a-01); fremde Quelle
+  mit 1 Sample Verzögerung. Liegt die Quelle oberhalb, rechnet der Block-Weg exakt (Quelle vor dem Empfänger); bildet sie
+  eine echte Schleife, rechnet `fmxRenderPS` alle Operatoren Sample für Sample. DX-Alg. 4/6 (Empfänger 6, Quelle 4/5)
+  laufen wie N7F-02 verlangt auf dem WP7-Weg (in OP 6 gefaltet).
+- **Werkswellen 0–11** (K2-40, KD §6.2): 0 = der bisherige Sinus-Pfad (bitgleich), 1–11 Tabellen mit 512 Samples und
+  linearer Interpolation, Teiltöne geschlossen gerechnet (Säge, Säge weich, Dreieck, Rechteck, Halbsinus, Puls 25 %,
+  Oberton 2/3, Sinus weich = sin 2πx·sin πx, Sinus weich 2, Rauschen = flaches Spektrum mit festen Zufallsphasen), Spitze 1,
+  gleichanteilfrei; **Mipmaps** mit einer Stufe je Oktave (Stufe L: Teiltöne ≤ 2^(8−L)); Wahl je Stimme und Operator in
+  jedem Steuerblock aus der aktuellen Operatorfrequenz (mit Tonhöhen-Hk., LFO, Bend) mit Überblendung zwischen zwei
+  Nachbarstufen, beide aliasfrei (Bandbreite zwischen fs/4 und fs/2).
+- **Phase** `ph` 0…127 und `phm` 'fix' │ 'rnd' │ 'free' ('free' = die weiterlaufende Phase des Operators).
+- **Anschlag ±:** `vs` −7…+7; negativ = gespiegelte DX-Kurve (leise Anschläge laut). `vs` 0…7 rechnet wie fm6.
+- **LFO je Operator:** `lfoAm` (LFO 1 der Spur auf den Pegel, 127 = 24 dB Absenkung am LFO-Tiefpunkt) und `lfoFm`
+  (Tonhöhe, Kurve der msfa-PMS-Tabelle, 127 = ±12 HT).
+- **Tonhöhen-Hüllkurve je Operator** `pit` in DX-Form (`pr 'dx'`, msfa-PEG-Rechnung wie V0d); feste OPs ohne PEG (K2-58).
+- **Stumm** `on 0` rechnet wie `ol 0`; Umschalten bei klingender Note über eine 30-ms-Rampe.
+- **Live-Pegel** (N7F-09): `{fmxLv: [6]}` mit ~30 Hz nur auf Anforderung (`{fmxLv: true}`), Maximum über die Stimmen,
+  Pegel × Hüllkurve auf der OL-Skala der Kachel (OL 99 voll = 1, OL 80 = 0,81). Host: `E.fmxLv(on)`, `fmxLvWant(t, on)`
+  (V4b ruft das, solange das FELD sichtbar ist), `E.lv`.
+- **Stimmen-Überblendung 30 ms (L3, Z11) in allen Worklet-Engines:** Ein Strukturwechsel bei klingenden Stimmen (XF_KEYS
+  bei VA, ganzer Sound, FM-Algorithmus, fmx-Kanten/Wellen/Feedback-Quellen) kopiert die klingenden Stimmen in einen Geist
+  mit dem alten Klang (cos), die Stimmen selbst laufen mit dem neuen weiter (sin), gleichleistungsgemäß. Ein Wechsel während
+  der Blende wartet und wird zusammengefasst (höchstens ein Geist, Last höchstens ×2,2). Bei einem VA-Wellenwechsel startet
+  die neue Welle mit ihrem Grundton in Phase mit der alten (`wavePhi`; Säge und Puls sind sonst gegenphasig: −7 dB Loch).
+  Die WP4-Blende (96 Samples ab, 96 auf) bleibt als Rückfall ab Begrenzer-Stufe 2 (`xfLite` aus `limited()`) und für
+  einen Wechsel Poly ↔ Mono. Geist als Spread-Kopie (die alte Kopie mit Schlüssel-Zuweisungen lief im V8-Wörterbuch-Modus,
+  +15 % Last; betrifft auch den Engine-Wechsel aus V0b-fix).
+- **Stimmenregel (K2-42):** Der schlechteste Fall mit echter Schleife lag mit 8 Stimmen bei 15,7 % je Spur → ab jetzt gilt
+  „mehr als 12 Kanten → 6 Stimmen“; Grund in der Hinweiszeile der FM-Seite („6 Stimmen · mehr als 12 Verbindungen“),
+  `engineInfo().perTrack[i].voiceCap`.
+- Werkswellen werden beim Laden des Worklet-Moduls gebaut (FP-IPHONE, s. Fach-Prüfung).
+
+**Nativer Rückfall (Spec 9.3, V4a-07):** DXN spielt `p.fm6`; bei `approx` der nächste DX-Algorithmus. Hinweis auf der FM-Seite
+„ECO: angenähert (nächster DX-Alg. n)“, dasselbe im Titel/LCD des ECO-Abzeichens.
+
+**.syx-Import (A.4b P. 11, Diagnose 3h):** AMS je Operator (auch Modulatoren), PMS und „Key-Sync aus“ bleiben in fm6
+(`ams`, `pms`, `osync: 0`); eine Empfindlichkeit ohne LFO-Tiefe (AMD/PMD 0) wird verworfen.
+
+**Mod-Ziele:** `op1…op6` und `fmbright` wirken auf den Graph wie auf fm6 (N7F-11, N7F-12).
+
+**Test-API (KP §7, V4a):** `getFmx(t)`, `setFmx(t, fmx)` (wirft bei I1–I4 / 7. Operator, ein Undo), `fmxLevels(t)`,
+`fmxLevelWatch(t, on)`, `dxLayout(alg)`, `fmxDx(t)`, `fmxFromFm6(fm6)`; `engineInfo().perTrack[i].voiceCap`.
+
+**Layout:** Die Hinweiszeile der FM-Seite (ECO / 6 Stimmen) lief auf kurzen Hochformaten (375 × 667, 320 × 568) in die
+Fader-Reihe (auch der V0d-Hinweis „Kompatibel …“): Dort nimmt sie jetzt die Zeile der kleinen Hüllkurvenbilder, die
+Fader werden kürzer (min. 40 px), der Text bleibt einzeilig.
+
+### Abnahme (V4a: N7F-01 … N7F-12 mit K2-37/K2-40/K2-42; Spec V4a-02 … -11)
+
+Tests: `dirigent-test/v3-v4a-node.mjs` (Node-Shim des Worklets, KP §9), `v3-v4a-ui.mjs` (Chromium, App),
+`v3-v4a-bench.mjs` (CPU, Node), `v3-v4a-shot.mjs` (Bildschirmfotos, M-PLATZ). Ausgaben in `dirigent-test/v3-v4a/`.
+
+| Punkt | Messung | Ergebnis |
+|---|---|---|
+| N7F-01 Format | 200 Zufallsgraphen (6 Op, alle Kantenzahlen, DX- und Punkt-Hüllkurven): `normFmx` zweimal gleich, `setFmx` = `getFmx`, Kopie (getSound/setSound), Undo, Speichern/Laden (10 Runden) deep-equal; Reparatur doppelte Zelle / Kante nach oben / schwebender OP / Ausgang mit Ziel → I1–I4, zweimal gleich | 200/200 · 10/10 · 4/4 |
+| N7F-02 (V4a-01) | `fmxFromFm6` alle 32 Algorithmen, alle 6 OP an, Mod. OL 80, Ausgänge 99, fb 5, PEG [Fall], C3, Anschlag 0,8, 1 s, gegen fm6 | bitgleich (Differenz 0) · Alg. 4/6: Empfänger 6, Quelle 4/5 |
+| N7F-03 Wellen | Welle 0 gegen den Sinus-Pfad · KD §6.2: Säge H2 −6,0 · Säge weich H2 −12,0 · Dreieck H3 −19,1 (H2 −119) · Rechteck H3 −9,5 · Halbsinus H2 −7,4 · Puls 25 % H4 −110 · Oberton 2 H2 −6,0 · Oberton 3 H3 −6,0 · Sinus weich H2 −10,9, Spitze 30,5 % · Sinus weich 2 H2 −1,9 / H3 −14,0, Spitze 36,5 % · Rauschen max. Teilton 0,0 dB über Median · Welle 4 bei C7 gefaltete Energie · Wellenwechsel bei gehaltener Note · Gleiten C5→C8 durch die Mip-Stufen (Säge, Rechteck, Rauschen) | bitgleich · alle ±0,5 dB / ±1 % · −76,9 dB (≤ −50) · M-KLICK 3,6 dB · 2,8 / 0,8 / 0,7 dB |
+| N7F-04 Phase | 'fix' ph 0: zwei Anschläge 64 Samples · ph 64: Start umgekehrt · 'rnd': 10 Anschläge · 'free': 2. Start = fortgelaufene Phase | −147 dB · ja · 10/10 verschieden · Fehler 0/128 |
+| N7F-05 Feedback | Selbst-Feedback fb 7 gegen DX · `fbSrc` an jedem OP (selbst und fremd) · 15 Kanten + 6 Wege (2 fremd, eine echte Schleife): 60 Zufallsgraphen × 1000 Blöcke = 60 000 Blöcke · `fbAmt` 4,5 im M-SP | bitgleich · 12/12 · kein NaN, Spitze −8,3 dBFS bei Pegel 0,35 (8 Stimmen zusammen −2,6) · 666 Hz zwischen 316 und 1542 |
+| N7F-06 Stumm | `on 0` gegen `ol 0` · Umschalten bei gehaltener Note (Modulator / Ausgang) | identisch · M-KLICK 1,2 / 0,5 dB, M-EINBRUCH 0,3 / 0,5 dB |
+| N7F-07 Anschlag | `vs` −7: Anschlag 0,3 gegen 1,0 · `vs` 0…7 gegen fm6 | +76 dB · bitgleich |
+| N7F-08 LFO je OP | `lfoAm` 127 (LFO 1 5 Hz) · `lfoFm` 127 · 0 = keine Wirkung · .syx AMS 3 an Modulator OP 2 (AMD 50), PMS 3 (PMD 20), Key-Sync aus | 24,0 dB Spitze-Spitze · ±1198 Cent · identisch · `lfoAm` 127, `lfoFm` 54, `phm` 'free' |
+| N7F-09 Live-Pegel | ohne Anforderung · mit (Node / AudioWorklet) · Werte · Mehrlast | 0 Nachrichten · 29,0 / 29,0 je s · 1,00 0,81 … (OL 99 / 80) · +0,001 % |
+| N7F-10 (K2-42) CPU | Chromium-AudioWorklet, Median 10 s, Xeon: 15 Kanten + 6 Wege (2 fremd), Wellen 1–6, DX-Form, 8 Tasten; ohne / mit echter Schleife. Vor der Regel (8 Stimmen) gemessen: 10,7 % / **15,7 %** → Regel „mehr als 12 Kanten → 6 Stimmen“ greift (K2-42), Grund in der Hinweiszeile | 6 Stimmen: 4,1 … 5,6 % / 5,9 … 10,3 % (≤ 12; Chromium-Werte schwanken ±40 % von Lauf zu Lauf) |
+| N7F-10 fm6-Weg | 6 Op DX-Form, 8 Stimmen, Node (stabil, bester von 5 × 10 s): vor V4a 2,87 / 3,03 / 3,08 / 3,14 % · nach V4a 2,74 / 2,83 / 2,94 / 2,98 %; derselbe Klang als fmx 2,82 … 3,31 % | ≤ vorher + 5 % ✓ (Chromium 1,5 … 3,5 % vorher wie nachher) |
+| N7F-11 (V4a-08) | `lfo1→op2` und `lfo1→fmbright` auf einem Graph, Schwerpunkt max/min | 5,36 / 5,21 (> 1,5) |
+| N7F-12: V4a-02 | FM1–FM10 (`wp7-accept` fm4/fm7/fm10, `node-fm`, `fm-pr1`, `wp7-fm9`, `wp7-gates`) | unverändert (node-fm: derselbe alte Fehler wie V0d) |
+| V4a-03 | s. N7F-05 | bestanden |
+| V4a-04 (K2-42) | 6 Operatoren, 8 gehaltene Tasten | 8 Stimmen; > 12 Kanten 6 Stimmen mit Grund |
+| V4a-05 (K2-37) | `setFmx` mit 7. Operator, I1, I2, I3, I4 | wirft 5/5, Sound unverändert |
+| V4a-07 | nicht DX-tauglicher Graph (Welle, fremdes Feedback 2,5, Zusatzkante), `forceNative(true)` | nächster DX-Alg. 1, −15,1 dBFS (> −40), Hinweis „ECO: angenähert (nächster DX-Alg. 1)“ |
+| V4a-09 | Sounds ohne fmx bleiben ohne; Graph-Sound in die Bibliothek und zurück | ja / deep-equal |
+| V4a-11 | VA-Fläche Säge → Puls (D5 + G5 gehalten): M-KLICK 2,8 dB, M-EINBRUCH −1,3 dB (kein Loch); alle 12 VA-Wellenwechsel: M-KLICK ≤ 3,8, M-EINBRUCH ≤ 0,2 dB; FM-Graph-Wechsel: 1,6 / 0,0 dB; fm6 Alg. 1 → 5: 2,2 / 0,0 dB. **Vergleich WP4-Blende** (jetzt nur `xfLite`): VA 2,8 / −0,4 dB, FM-Graph 2,9 / **6,8 dB** (Loch). Stimmen während der Blende 2 → 4; Rechenzeit je Block ×2,10 / ×2,11 (der Block mit der Kopie ×2,4 / ×3,0) | bestanden bis auf die Last-Grenze ×2 (Abweichung 1) |
+| V4a-10 | Regression (`v3-v4a-reg.sh`, Liste von V0d mit 6 Versions-Anpassungen `v3-v4a-adapt-*` für 3.8.0) + V0d-Suiten + DoD | s. unten |
+
+**Regression:** `v3-v4a-reg.sh` (Ausgaben `v3-v4a-reg/run1`, Einzel-Wiederholungen `v3-v4a-reg/rerun`): alles bestanden außer den
+schon in V0d gleich scheiternden Prüfungen (`node-fm` 1, `v3-v0b-adapt-wp3-browser` 3, `wp3-adapt-func-build` und `-native`
+je 2 (C2, D5), `wp4-offline` 2, `v3-v0b-adapt-wp3-ui` 2 (MO49, wie V0d `run1`)). Im Parallel-Lauf zusätzlich gescheitert und
+einzeln bestanden: `wp7-accept fm4` 40/0, `v3-v0b-adapt-v0a-fix` 26/0, `v3-v0b-adapt-wp6-extras L` 20/0, `wp6-drums P` 38/0
+(Zeit-Messungen unter Last). Versions-Prüfungen (3.4.0 fest im Test): neue Kopien `v3-v4a-adapt-wp1-brand` 41/0, `-wp1-misc`
+104/0, `-wp1-store` 41/0, `-wp3-api` 30/0, `-wp3-store` 55/0, `-n0a`. DoD (wp1…wp7-dod, `wp7-adapt-wp1-perf`) bestanden.
+V0d-Suiten: `v3-v0d-eng1` 34/0, `-eng2` 34/0, `v3-v0dfix-adapt-v0d-native` 10/0, `-sounds` 61/0, `-fm-sound` 11/0, `-migr` 5/0,
+`-band` 1/0, `-ui-a…d` 17/15/46/51 ohne Fehler. V4a: `v3-v4a-node` 46/0, `v3-v4a-ui` 23/0, `v3-v4a-shot` 10/0.
+Smoke-Test: Titel SYNQUENZER, keine Fehler. Worklet-ASCII-Prüfung bestanden (110 KB). Dateigröße 1 531 473 Byte (+54,5 KB).
+
+Bildschirmfotos: `dirigent-test/v3-v4a/shots/fm-eco-*.png` und `fm-cap-*.png` (P 390 × 844, P375, P320, L 844 × 390, L667).
+
+### Fach-Prüfung (Teil J: FP-DSP Haupt-Blick, FP-IPHONE Zweit-Blick; V4a ist blockierend ●)
+
+Kein eigener Prüf-Agent verfügbar: Ich habe beide Checklisten (J.2) selbst über Diff, Testausgaben, Messwerte und Bilder
+abgearbeitet. 7 Befunde, 6 behoben, 1 begründet:
+
+1. **FP-IPHONE · Wellen-Bau auf dem Audio-Thread** (`waveTab`, erster Gebrauch): kalt 29 ms in einem Block (Node; iPhone
+   eher mehr) → Aussetzer. **Behoben:** alle 11 Tabellen beim Laden des Moduls (einmal, vor jeder Stimme; danach ≤ 1 ms je
+   Welle). Speicher ≈ 250 KB.
+2. **FP-DSP · Geist im V8-Wörterbuch-Modus:** Der Geist (Engine-Wechsel V0b-fix und die neue Struktur-Blende) entstand per
+   `Object.create` + Schlüssel-Zuweisung → langsame Eigenschaften (`%HasFastProperties` false), +15 % Last während der Blende.
+   **Behoben:** Spread-Kopie (schnelle Eigenschaften), Stimmen-Kopie über den `Voice`-Konstruktor (gleiche Hidden Class).
+3. **FP-DSP · Loch bei Säge → Puls:** gleichphasige Säge und Puls sind gegenphasig im Grundton; die gleichleistungsgemäße
+   Blende hatte −6 dB (M-EINBRUCH). **Behoben:** die neue Welle startet mit ihrem Grundton in Phase (`wavePhi`); alle 12
+   VA-Wellenwechsel ≤ 0,2 dB.
+4. **FP-DSP · Stumm-Rampe 10 ms** an einem hellen Modulator: in der Grenzlage von M-KLICK. **Behoben:** 30 ms.
+5. **FP-DSP/FP-IPHONE · Schlechtester Fall mit Schleife 15,7 % je Spur** (> 12 %). **Behoben** nach K2-42: > 12 Kanten →
+   6 Stimmen, Grund in der Hinweiszeile; `fmxRenderPS` zusätzlich mit vorbereiteten Arrays (≈ 3 % schneller).
+6. **FP-TOUCH (M-PLATZ) · Hinweiszeile über den Fadern** auf 375 × 667 und 320 × 568 (betraf schon den V0d-Hinweis
+   „Kompatibel …“ im ECO). **Behoben:** einzeilig, nimmt dort die Zeile der kleinen Hüllkurvenbilder, Fader min. 40 px.
+7. **FP-DSP · Last während der 30-ms-Blende ×2,1** (Spec: höchstens doppelt). **Begründet** (Abweichung 1).
+
+### Abweichungen von der Spec
+
+1. **V4a-11 Last ×2,1 statt ×2** während der 30 ms (Node, Rechenzeit je Block; der Block mit der Stimmen-Kopie ×2,4 bzw. ×3,0
+   bei einem FM-Graph mit `fmxCompile`). Der Geist rechnet seine eigene Steuerung (LFO, Mod-Matrix, Hüllkurven); 6 gewöhnliche
+   Stimmen statt 3 + 3 im Geist kosten ×1,87. Ein zweiter Wechsel während der Blende startet keinen zweiten Geist (wartet).
+2. **K2-42 angewandt:** „mehr als 12 Kanten → 6 Stimmen“ gilt jetzt (der Messwert 15,7 % lag über 12 %). Gezählt werden nur
+   Kanten (nicht Feedback-Wege), wie in K2-42 formuliert; DX-Algorithmen haben höchstens 5 Kanten.
+3. **Mipmap-Bandbreite:** beide Nachbarstufen sind aliasfrei; dafür reicht der obere Teilton je nach Lage nur bis fs/4 … fs/2
+   (12–24 kHz bei 48 kHz). KD §6.4 „Aufbau beim ersten Gebrauch“ → beim Laden des Moduls (FP-IPHONE 1).
+4. **`lfoAm` / `lfoFm` Skalen** (die Specs nennen keine): `lfoAm` 127 = 24 dB Absenkung am LFO-Tiefpunkt (linear in 0…127),
+   `lfoFm` nach der msfa-PMS-Kurve, 127 = ±12 HT. DX-tauglich verlangt zusätzlich `lfoFm` ∈ {round(127·p/7)}, damit
+   fm6 ↔ fmx verlustfrei hin und zurück geht (KP §6.4 nennt nur „bei allen OP gleich“). `fmxFromFm6` bildet `pms` auch
+   dann ab, wenn der Sound die vom .syx-Import angelegte Route `lfo1→pitch` hat (doppeltes Vibrato bei der Umwandlung eines
+   Import-Klangs ins FELD; V4b muss die Route dabei entfernen); der Import speichert AMS/PMS nur bei AMD/PMD > 0.
+5. **`vs` negativ** = gespiegelte DX-Kurve (Anschlag 1,0 bei `vs` −7 so leise wie Anschlag ≈ 0 bei +7; N7F-07 misst +76 dB).
+6. **Nativer Rückfall nicht DX-tauglicher Graphen:** `p.fm6` ist der nächste DX-Algorithmus des aktuellen Graphen (mit den
+   aktuellen Werten), nicht „der letzte DX-taugliche Stand“ (KP §6.3) – klingt näher am Graph und deckt Graphen ab, die nie
+   DX-tauglich waren (Spec 9.3 / V4a-07 verlangen den nächsten Algorithmus).
+7. **Bearbeiten auf den DX-Seiten** eines Sounds mit `p.fmx` baut `p.fmx` aus fm6 neu (ein nicht DX-tauglicher Graph geht
+   dabei in seinen nächsten DX-Algorithmus über). KP §4.12 sperrt die DX-Seiten dann – das kommt mit V4b.
+8. **Größe +54 KB** statt +48 KB (eigene DX-Tabelle im Modul `FMX`, damit es vor SQStore stehen kann; Kommentare).
+9. **M-KLICK-Messung** wie in den V0b-fix-Werkzeugen (Hochpass 4. Ordnung, Fenster unter −80 dB werden nicht beurteilt);
+   M-EINBRUCH misst das Loch gegen den leiseren der beiden Klänge (ein neuer, leiserer Klang ist kein Loch). Für
+   Wellenwechsel klingen D5 + G5 (bei A3 + E4 enthält manches 2-ms-Fenster keine Sägezahn-Flanke und gewinnt den Median).
+
+### iPhone-Prüfpunkte (Xander)
+
+V4a hat noch kein FM-Feld (kommt mit V4b); auf dem Gerät prüfbar ist nur, dass nichts schlechter wurde:
+1. FM-Pluck, FM-Bässe und E-Piano klingen wie vorher (der fm6-Weg ist bitgleich).
+2. Eine VA-Fläche halten und im Editor die Welle (Säge → Puls → Dreieck) wechseln: kein Knacken, kein Loch.
+3. Einen FM-Sound halten und den Algorithmus wechseln: weich überblendet, kein Aussetzer.
+4. Eine .syx-Bank importieren: Klänge wie vorher.
+
+### Bekannte Lücken
+
+- **Punkt-Form-Hüllkurven** (`f:'pt'`) werden gespeichert und normalisiert, klingen aber erst mit V4f; bis dahin rechnet das
+  Worklet eine grobe DX-Näherung daraus (nicht über die Oberfläche erreichbar, nur per `setFmx`). Ebenso Tonhöhen-Bereiche
+  außer `'dx'` (V4f) und eigene Wellen 12–47 (V4e: bis dahin Sinus).
+- Kein FM-Feld (V4b); `fmxLvWant`/`fmxLevelWatch` warten auf die Sichtbarkeit des Felds.
+- Solo (`fmSoloPatch`) eines Graphs: alle Operatoren einzeln als Ausgang, nur der gewählte an (Oberfläche kommt mit V4b).
+- Die DX-Seiten zeigen bei einem nicht DX-tauglichen Graph den Näherungs-Algorithmus ohne Sperre (V4b, KP §4.12).
+- Kein WebKit-/iPhone-Test (Chromium und Node); iPhone-Faktor der CPU unbelegt.
+- Chromium-Lastwerte (`engineInfo().perTrack[i].load`) schwanken von Lauf zu Lauf um ±40 %; der Vergleich vor/nach V4a
+  stützt sich auf die Node-Messung (`v3-v4a-bench.mjs`, bester von 5 × 10 s).
