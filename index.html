@@ -929,6 +929,22 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 @media (orientation:portrait) and (max-height:700px){#synthSheet .hb.wial{top:5px;height:20px}}
 @media (orientation:portrait) and (max-height:600px){.hb.wial{display:none}.hb.wia2{display:inline-flex;align-items:center;justify-content:center}}
 @media (orientation:landscape){#synthSheet .hb.wial{top:auto;bottom:6px;height:22px;right:8px}}
+/* L4 (§0.2) for ⋯ and ◎ on the LCD line (offsets count from the padding box, inside the 1 px border):
+   - portrait taller than 700 px (P1, W): hit areas ≥ 44×44. The LCD line is 35 px there instead of 28 so that they fit
+     between header row 2 and the tabs with a 1 px gap to each (the editor body gives 7 px; no fit stage changes).
+   - portrait 601–700 px (P2): the sheet has no spare pixel (OSZ 2 already fills its body), so the hit areas take the whole
+     band from header row 2 to the tabs: 44×34 / 48×34, above the dense-grid floor (L4: 36×34) that Nachtrag 1 A.4b also
+     uses for head buttons in P2/P3. Neither overlaps another button. The docked toast ends left of both (lcdDockRect). */
+@media (orientation:portrait) and (min-height:701px){
+  #synthSheet .lcd{height:35px}
+  #synthSheet .hb.edmL,#synthSheet .hb.wial{top:6px;height:31px}
+  #synthSheet .hb.edmL::after{top:-8px;bottom:-7px;left:-5px;right:-5px}
+  #synthSheet .hb.wial::after{top:-8px;bottom:-7px;left:-7px;right:-7px}
+}
+@media (orientation:portrait) and (min-height:601px) and (max-height:700px){
+  #synthSheet .hb.edmL::after{top:-9px;bottom:-7px;left:-5px;right:-5px}
+  #synthSheet .hb.wial::after{top:-9px;bottom:-7px;left:-7px;right:-7px}
+}
 .lcd.wia{white-space:normal}
 .lcd.wia .lv{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font:500 10.5px/1.18 var(--font-ui);letter-spacing:.01em;overflow:hidden;padding-bottom:0;margin-bottom:0}
 .adsr{width:100%;max-width:420px;height:78px;background:var(--lcd);border:1px solid var(--panel-edge);border-radius:var(--r-s);box-shadow:inset 0 1px 6px rgba(0,0,0,.8)}
@@ -13045,7 +13061,7 @@ function hintSideSync() {
 function toastHome() {
   if ((R.editor === 'synth' || R.editor === 'drum') && (EL.synthSheet.classList.contains('open') || EL.drumSheet.classList.contains('open'))) {
     const l = ED.lcd;
-    if (l && l.isConnected && l.offsetHeight >= 18 && l.offsetWidth >= 160) return {kind: 'lcd', ref: l};
+    if (l && l.isConnected && l.offsetHeight >= 18 && lcdDockRect(l).width >= 160) return {kind: 'lcd', ref: l};
     return {kind: 'kb', ref: EL.kbArea};
   }
   if (EL.menu.classList.contains('open')) return {kind: 'band', ref: EL.menu};
@@ -13054,6 +13070,18 @@ function toastHome() {
   return {kind: 'car', r: carDockRect(false)};
 }
 const vis = e => !!(e && e.isConnected && e.offsetWidth > 0 && e.offsetHeight > 0);
+/* the LCD line is a display, but ◎ (WP5) and ⋯ (V0b) sit on its right end: a toast docked there ends 10 px left of
+   their drawn buttons (their hit areas reach 4–7 px past them), so a tap meant for ◎ or ⋯ never lands on the toast's
+   [Rückgängig] or [▶ Hören] and never undoes what was just loaded */
+function lcdDockRect(l) {
+  const r = l.getBoundingClientRect(); let right = r.right;
+  for (const b of l.parentNode ? l.parentNode.children : []) {
+    if (b === l || b.tagName !== 'BUTTON' || !vis(b)) continue;
+    const q = b.getBoundingClientRect();
+    if (q.top < r.bottom && q.bottom > r.top && q.left < r.right && q.right > r.left) right = Math.min(right, q.left - 10);
+  }
+  return {left: r.left, top: r.top, width: Math.max(0, right - r.left), height: r.height};
+}
 /* main-screen dock (§3.1 Result): P – the carrier bar's row (inset), or while the Aufnahme-Leiste shows, its display part
    (never ● FERTIG); L – the Träger readout, wide = readout + the AKKORD/LATCH/ORIGINAL row (only if the text needs it) */
 function carDockRect(wide) {
@@ -13098,7 +13126,7 @@ function toastPlace1(t) {
     return;
   }
   t.classList.remove('cark');
-  const r = h.ref.getBoundingClientRect();
+  const r = h.kind === 'lcd' ? lcdDockRect(h.ref) : h.ref.getBoundingClientRect();
   const css = h.kind === 'lcd' ? `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`
     : `left:${r.left + 8}px;top:${r.top + 6}px;width:${Math.max(0, r.width - 16)}px;height:44px`;
   if (UI.toastPos !== css) {
