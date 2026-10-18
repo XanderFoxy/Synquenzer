@@ -2813,6 +2813,17 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .fxpg .fxedx{position:absolute;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:34px;gap:2px 4px}
 .fxpg .fxdf{min-width:0;height:100%;border-radius:4px;border:1px solid #5B6170;background:#1A1C24;color:#47CA0A;display:flex;align-items:center;justify-content:center;gap:5px;font:700 13px/1 system-ui;font-variant-numeric:tabular-nums;touch-action:none}
 .fxpg .fxdf small{color:#B8BDCC;font-size:10px}.fxpg .fxdf.on{border-color:#0ACA9F}
+/* V4f: point form (KP 4.11, K2-55): blue sustain line, violet loop zone, point colours, warn chip, scale sheet, big view */
+.fxpg .fxdf.sus{box-shadow:inset 0 -3px 0 #0A6AFF}.fxpg .fxdf.pt{gap:3px;overflow:hidden;white-space:nowrap}
+.fxpg .fxeg .sus{stroke:#0A6AFF;stroke-width:1}.fxpg .fxeg .lpz{fill:rgba(161,92,255,.13)}.fxpg .fxeg .lpm{stroke:#A15CFF;stroke-width:1;stroke-dasharray:3 2}
+.fxpg .fxeg .lpt{fill:#C9A6FF;font:700 8.5px system-ui}.fxpg .fxeg .rl.yl{text-anchor:end}
+.fxpg .fxeg circle.p0{fill:#121317}.fxpg .fxeg circle.on{fill:#F7C948}
+.fxpg .fxewarn{position:absolute;right:2px;top:14px;max-width:62%;min-height:20px;padding:2px 5px;border-radius:4px;border:1px solid #F7C948;background:#2A2410;color:#F7C948;font:700 9.5px/1.15 system-ui;text-align:left;white-space:normal;z-index:2}
+.fxpg .fxeb.lp.on{background:#4B2A80;border-color:#A15CFF}.fxpg .fxeb.del{color:#FF6B6B}.fxpg .fxeb.addp{color:#7BE04A}.fxpg .fxeb.tg{color:#F7C948}
+.fmpegh .fxptf{float:right;height:26px;margin-top:-4px;padding:0 8px;font:700 12px/1 system-ui;border-radius:5px}
+.fxbigpg{position:relative;overflow:hidden}.fxbigpg .fxbighd{position:absolute;left:0;right:0;top:0;height:18px;font:700 13px/18px system-ui;color:#0ACA9F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fxscale label{display:flex;align-items:center;gap:8px;margin:6px 0;font:600 13px system-ui;color:#E6E8F0}.fxscale label b{min-width:44px;color:#47CA0A;font-variant-numeric:tabular-nums}
+.fxscale input[type=range]{flex:1;min-width:140px;height:34px;accent-color:#0ACA9F}.fxscale .fxsb{display:flex;gap:6px;margin-top:6px}.fxscale .fxsb .fxmi{flex:1;min-height:40px}
 /* popups */
 .pop.fxlist{min-width:200px;max-width:min(340px,calc(100vw - 16px));max-height:calc(100vh - 32px);overflow:auto}
 .pop.fxlist h4{margin:0 0 6px}
@@ -3124,6 +3135,38 @@ function envDx(e) {                                     // the DX form of an env
   }
   return {r: [99, 99, 99, 80], l: [99, 99, 99, 0]};
 }
+// V4f (KP 4.11, K2-55 ... K2-58): the point form compiled for the voice: values v[0..k] (amp: y 0..99 on the DX level scale,
+// pitch: semitones), segment times tm[1..k] (ms), sustain / loop / skip indices, lin, free; pre = a loop that starts before
+// the sustain point (runs only while the key is down), span = such a loop spans the sustain point (no hold inside the loop)
+const PR_HT = {ton: 2, q5: 7, 1: 12, 2: 24, 4: 48, 8: 96, dx: 48};
+function ptCompile(e, pit, pr) {
+  if (!e || e.f !== 'pt' || !Array.isArray(e.y) || !Array.isArray(e.t) || e.y.length < 2) return null;
+  const k = Math.min(5, e.y.length - 1), R = PR_HT[pr] || 12, v = new Float64Array(k + 1), tm = new Float64Array(k + 1);
+  for (let i = 0; i <= k; i++) { const y = Math.max(0, Math.min(99, Math.round(+e.y[i] || 0))); v[i] = pit ? (y >= 50 ? (y - 50) / 49 : (y - 50) / 50) * R : y; }
+  for (let i = 1; i <= k; i++) { const t = +e.t[i - 1]; tm[i] = t >= .5 ? Math.min(20000, t) : .5; }
+  const ix = x => (x >= 0 && x <= k ? x | 0 : -1), free = e.run === 'free';
+  let sus = free ? -1 : ix(e.sus), la = ix(e.la), lb = ix(e.lb); if (!(la >= 0 && lb > la)) la = lb = -1;
+  const pre = la >= 0 && sus >= 0 && la < sus ? 1 : 0;
+  return {k, v, tm, sus, la, lb, skip: sus >= 0 && e.skip ? 1 : 0, lin: e.crv === 'lin' ? 1 : 0, free, pre, span: pre && lb > sus ? 1 : 0, pit: pit ? 1 : 0};
+}
+// K2-57: the msfa attack (Dexed env.cc): +floor(17 - l/256) units per step, measured in steps ("tau"): G(a, b) = steps from a to b
+// at rate 1; riseAt walks the same bands (a segment of time t runs tau = x * G, so the shape is the A.4b attack, the time exact)
+function riseG(a, b) { let t = 0, x = a; while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256); t += (nx - x) / Math.max(1, 17 - bd); x = nx; } return t; }
+function riseAt(a, b, tau) { let x = a; while (x < b && tau > 0) { const bd = Math.floor(x / 256), m = Math.max(1, 17 - bd), nx = Math.min(b, (bd + 1) * 256), need = (nx - x) / m; if (tau <= need) return x + tau * m; tau -= need; x = nx; } return b; }
+// a value between a (x 0) and b (x 1): pitch Exp = linear in semitones, Lin = linear in Hz; amp Exp falling = linear in level
+// (dB-linear like the msfa decay), Exp rising = the msfa attack, Lin = linear in amplitude
+function ptVal(E, a, b, x, G) {
+  if (x >= 1) return b;
+  if (E.pit) { if (!E.lin) return a + (b - a) * x; const A = Math.pow(2, a / 12), B = Math.pow(2, b / 12); return 12 * Math.log2(A + (B - A) * x); }
+  if (E.lin) { const A = Math.pow(2, a / 256), B = Math.pow(2, b / 256); return 256 * Math.log2(A + (B - A) * x); }
+  if (b <= a || !(G > 0)) return a + (b - a) * x;
+  return riseAt(a, b, x * G);
+}
+// the state of up to 12 point envelopes (slot k = amp of OP k+1, 6 + k = its pitch): segment (heading to point pS), 0 run /
+// 1 hold at the sustain point / 2 done (at the last point), blocks of the segment, blocks run, start / target value, attack G,
+// value now, frame of the last step (free run), mode (0 DX, 1 point retrig, 2 point free)
+function ptState() { return {pS: new Int8Array(12), pH: new Uint8Array(12), pN: new Float64Array(12), pX: new Float64Array(12), pA: new Float64Array(12),
+  pB: new Float64Array(12), pG: new Float64Array(12), pV: new Float64Array(12), pT: new Float64Array(12), pM: new Uint8Array(12)}; }
 function sameEdges(E, A) {
   const a = E.map(e => e[0] * 6 + e[1]).sort((x, y) => x - y).join(','), b = [];
   A.mods.forEach((ms, t) => { for (const s of ms) b.push(s * 6 + t); });
@@ -3153,7 +3196,8 @@ function fmxCompile(X) {
   let ps = false; for (let k = 0; k < 6; k++) { const f = fbK[k]; if (f >= 0 && f !== k && fbS[k] > 0 && pos[f] > pos[k]) ps = true; }
   const car = new Uint8Array(6); let nCar = 0; for (let k = 0; k < 6; k++) if (!tg[k].length) { car[k] = 1; nCar++; }
   const gx = {ord: Int8Array.from(ord), srcs: srcs.map(s => Int8Array.from(s)), car, nCar, outScale: 0.5 / Math.sqrt(Math.max(1, nCar)), fbK, fbS, ps,
-    wave: new Uint8Array(6), on: new Float64Array(6), ph0: new Float64Array(6), phm: new Uint8Array(6), pit: [], am: new Float64Array(6), fmS: new Float64Array(6), sig: fmxSig({x: X}), nE: E.length};
+    wave: new Uint8Array(6), on: new Float64Array(6), ph0: new Float64Array(6), phm: new Uint8Array(6), pit: [], am: new Float64Array(6), fmS: new Float64Array(6), sig: fmxSig({x: X}), nE: E.length,
+    pe: [], anyPt: false, anyFree: false, anyLoop: false};
   const fops = [];
   for (let k = 0; k < 6; k++) {
     const o = ops[k] || {}, A = envDx(o.amp), fixed = o.fixed ? 1 : 0;
@@ -3164,8 +3208,10 @@ function fmxCompile(X) {
     gx.on[k] = o.on === 0 || !(o.ol > 0) ? 0 : 1; gx.ph0[k] = (Math.max(0, Math.min(127, o.ph | 0)) * 33554432); gx.phm[k] = PHM[o.phm] || 0;
     const P = o.pit;
     gx.pit.push(P && P.f === 'dx' && !fixed && (o.pr == null || o.pr === 'dx') && Array.isArray(P.l) && !P.l.every(x => (x | 0) === 50) ? envDx(P) : null);
+    gx.pe[k] = ptCompile(o.amp, false); gx.pe[6 + k] = ptCompile(P, true, o.pr);       // V4f: the point form (pitch also on fixed operators, K2-58)
     gx.am[k] = Math.max(0, Math.min(127, o.lfoAm | 0)) * LFOAM_DB; gx.fmS[k] = LFOFM_HT[Math.max(0, Math.min(127, o.lfoFm | 0))];
   }
+  for (const E of gx.pe) if (E) { gx.anyPt = true; if (E.free) gx.anyFree = true; if (E.la >= 0) gx.anyLoop = true; }
   return {fm: {trans: X.trans | 0, ops: fops, peg: null, x: true}, alg: {car, mods: gx.srcs, fbDst: -1, fbSrc: -1, nCar}, gx};
 }
 
@@ -3262,6 +3308,7 @@ class Voice {
     this.xmu = new Float64Array(6).fill(1); this.xwa = new Int8Array(6); this.xwb = new Int8Array(6); this.xww = new Float64Array(6); this.xwt = new Float64Array(6);
     this.xf0 = new Float64Array(6); this.xf1 = new Float64Array(6); this.fyl = new Float64Array(6); this.fyp = new Float64Array(6);
     this.xy = new Float64Array(6); this.xyp = new Float64Array(6); this.xnew = 0;
+    Object.assign(this, ptState());                    // V4f: point-form envelopes (typed arrays: cloneVoice copies them)
   }
 }
 // V4a (L3): the phase (cycles) at which a VA wave's fundamental is +sin: saw (2t-1) 0.5, pulse pw/2 - 1/4, triangle 1/4, sine 0
@@ -3306,7 +3353,7 @@ class AnalogCore extends AudioWorkletProcessor {
     this.fm = FM_INIT; this.alg = ALGS[0]; this.fbShift = 0; this.fmBypass = false; this.fmRoutesFilt = false; this.pendFm = null;
     // V4a: the compiled fmx graph (null = the fm6 path), live operator levels on request, the frame of the current control
     // block, the free-running phase reference of 'free' operators, a structural change waiting for the running crossfade
-    this.gx = null; this.lvOn = false; this.lvNext = 0; this.curF = 0; this.frPh = new Float64Array(6); this.frInc = new Float64Array(6); this.frF = new Float64Array(6).fill(-1);
+    this.gx = null; this.lvOn = false; this.lvNext = 0; this.curF = 0; this.fr = ptState(); this.frStamp = -1; this.frPh = new Float64Array(6); this.frInc = new Float64Array(6); this.frF = new Float64Array(6).fill(-1);
     this.pendS = null; this.xfLen = EXF_N; this.sxfOn = false;
     // V4a-fix: the running structural crossfade: its ghost, the voice stamp, the position, a finish due next block, the
     // separate sums of the old copies (o) and the continuing voices (n), running powers / cross power, last block's gains
@@ -3429,6 +3476,7 @@ class AnalogCore extends AudioWorkletProcessor {
     // a spread copy keeps fast properties (Object.create + keyed stores turned the ghost into a dictionary object, +15 % load)
     const g = Object.setPrototypeOf({...this}, AnalogCore.prototype);
     for (const k of Object.keys(g)) { const x = g[k]; if (ArrayBuffer.isView(x)) g[k] = x.slice(); }
+    if (this.fr) { g.fr = {}; for (const k of Object.keys(this.fr)) g.fr[k] = this.fr[k].slice(); }   // V4f: the free-run envelopes
     g.P = Object.assign({}, this.P); g.A = Object.assign({}, this.A); g.F = Object.assign({}, this.F); g.M = Object.assign({}, this.M);
     g.q = []; g.stack = []; g.ended = []; g.tnext = this.tnext.slice(); g.ghosts = null; g.spare = null;
     g.pend = null; g.pendFm = null; g.pendS = null; g.sxfOn = false; g.scopeOn = false; g.scopeDst = false; g.lvOn = false; g.noSpare = false;
@@ -3580,7 +3628,9 @@ class AnalogCore extends AudioWorkletProcessor {
     this.endVoice(best); return best;
   }
   stealIfFull() {
-    const poly = clamp(this.P.poly | 0, 1, this.P.eng === 1 && this.gx && this.gx.nE > FMX_EDGE_CAP ? 6 : 8);   // V4a (K2-42): > 12 edges -> 6 voices
+    // V4a (K2-42): > 12 edges -> 6 voices; V4f (K2-62, Spec 15.2 Stufe 2): at limiter level >= 2 such a graph or a looped point form -> 4
+    const gx_ = this.P.eng === 1 ? this.gx : null, lim2 = gx_ && this.P.xfLite >= 1 && (gx_.nE > FMX_EDGE_CAP || gx_.anyLoop);
+    const poly = clamp(this.P.poly | 0, 1, lim2 ? 4 : gx_ && gx_.nE > FMX_EDGE_CAP ? 6 : 8);
     let n = 0; for (const v of this.V) if (v.on && v.fade === 0) n++;
     while (n >= poly) {
       let victim = null;
@@ -3923,6 +3973,7 @@ class AnalogCore extends AudioWorkletProcessor {
       this.fm = P; this.alg = ALGS[(P.alg | 0) - 1] || ALGS[0];
       this.fbShift = P.fb > 0 ? Math.pow(2, (P.fb | 0) - 8) : 0;   // (y0+y1)/2 * 2^(fb-8) cycles, like msfa
     }
+    if (live && this.gx && this.gx.anyFree) for (let s = 0; s < 12; s++) { const E = this.gx.pe[s]; if (E && E.free && this.fr.pM[s] === 2) this.ptRebase(this.fr, s, E, s < 6 ? -192 : 0, null); }
     if (live && this.P.eng === 1) for (const v of this.V) if (v.on) this.fmVoicePatch(v, true);
   }
   fmNoteOn(v) {                                                 // from startVoice when eng 1 (key sync: phases to 0)
@@ -3947,6 +3998,7 @@ class AnalogCore extends AudioWorkletProcessor {
       v.xmu[k] = X.on[k]; v.olN[k] = 0; v.xf0[k] = v.xf1[k] = 0; v.fyl[k] = v.fyp[k] = 0; v.xy[k] = v.xyp[k] = 0; v.xwa[k] = -1;
       const E = X.pit[k]; v.xpL[k] = E ? PEG_TAB[E.l[3]] / 32 : 0; this.xpAdvance(v, k, E ? 0 : 4);
     }
+    if (X.anyPt) for (let s = 0; s < 12; s++) this.ptStart(v, s, X.pe[s]); else v.pM.fill(0);
     v.xnew = 1;                                                 // the free-run reference is taken after the first block
   }
   xpAdvance(v, k, ix) {                                         // the msfa pitch EG per operator (same maths as pegAdvance)
@@ -3957,6 +4009,110 @@ class AnalogCore extends AudioWorkletProcessor {
     const ix = v.xpIx[k]; if (!(ix < 3 || (ix < 4 && !v.gate))) return;
     if (v.xpRise[k]) { v.xpL[k] += v.xpR[k]; if (v.xpL[k] >= v.xpT[k]) { v.xpL[k] = v.xpT[k]; this.xpAdvance(v, k, ix + 1); } }
     else { v.xpL[k] -= v.xpR[k]; if (v.xpL[k] <= v.xpT[k]) { v.xpL[k] = v.xpT[k]; this.xpAdvance(v, k, ix + 1); } }
+  }
+  // ---- V4f (KP 4.11): point-form envelopes. st = a voice or this.fr (the free-run envelopes of the track, shared by its voices,
+  // computed for the full output level: a voice adds its own foutLvl - 4064). Slot s: amp of OP s+1 (s < 6), pitch of OP s-5.
+  ptOfs(v, s) { return s < 6 ? v.foutLvl[s] - 4256 : 0; }
+  ptTgt(E, j, ofs) { const y = E.v[j]; return E.pit ? y : Math.max(16, ((scaleOL(y | 0) >> 1) << 6) + ofs); }
+  // the time factor of segment j of an amp envelope: Time/Key (rs, like the msfa qrate: +4 = twice as fast) and the MAKRO offsets
+  // with the signs of fmAdvance: HAERTE on segment 1, RELEASE after the sustain point, LAENGE on the other segments of an output,
+  // BISS on segments 2 / 3 of a modulator
+  ptTf(E, s, j, v) {
+    if (E.pit) return 1;
+    const P = this.P, car = this.alg.car[s]; let f = v ? Math.pow(2, -v.frs[s] / 4) : 1;
+    if (j === 1) { if (P.fmAtk) f *= Math.pow(2, -P.fmAtk * 41 / 256); }
+    else if (E.sus >= 0 && j > E.sus) { if (P.fmRel) f *= Math.pow(2, P.fmRel * 41 / 256); }
+    else if (car && P.fmDec) f *= Math.pow(2, P.fmDec * 41 / 256);
+    if (!car && (j === 2 || j === 3) && P.fmBite) f /= Math.pow(2, P.fmBite / 10);
+    return f;
+  }
+  ptEnter(st, s, E, j, cur, ofs, tf) {
+    st.pS[s] = j; st.pH[s] = 0; st.pX[s] = 0;
+    const b = this.ptTgt(E, j, ofs); let a = cur;
+    if (!E.pit && !E.lin && b > 1716 && a < 1716) a = 1716;               // the msfa attack jump (-50 dB), as the DX form
+    st.pA[s] = a; st.pB[s] = b; st.pG[s] = !E.pit && !E.lin && b > a ? riseG(a, b) : 0;
+    st.pN[s] = Math.max(1e-6, E.tm[j] * tf * SR / (1000 * CR));
+  }
+  ptReach(st, s, E, j, gate, ofs, v) {                                     // point j reached
+    if (E.la >= 0 && j === E.lb && (E.free || !E.pre || gate)) { const n = E.la + 1; this.ptEnter(st, s, E, n, st.pV[s], ofs, this.ptTf(E, s % 6, n, v)); return; }
+    if (j === E.sus && gate && !E.span) { st.pH[s] = 1; return; }
+    if (j >= E.k) { st.pH[s] = 2; return; }
+    this.ptEnter(st, s, E, j + 1, st.pV[s], ofs, this.ptTf(E, s % 6, j + 1, v));
+  }
+  ptRun(st, s, E, dt, gate, ofs, v, guard) {                               // dt control blocks
+    let g = guard || 64;
+    while (dt > 1e-9 && g-- > 0) {
+      if (st.pH[s]) return;
+      const rem = st.pN[s] - st.pX[s];
+      if (dt < rem) { st.pX[s] += dt; st.pV[s] = ptVal(E, st.pA[s], st.pB[s], st.pX[s] / st.pN[s], st.pG[s]); return; }
+      dt -= rem; st.pX[s] = st.pN[s]; st.pV[s] = st.pB[s];
+      this.ptReach(st, s, E, st.pS[s], gate, ofs, v);
+    }
+  }
+  // key off: from the sustain point (or, with Skip on Release, from wherever it is before it) on to the segment after it
+  ptRelease(v, s, E) {
+    if (E.sus < 0) return;
+    if (v.pH[s] === 1 || (E.skip && v.pH[s] === 0 && v.pS[s] <= E.sus)) {
+      if (E.sus < E.k) this.ptEnter(v, s, E, E.sus + 1, v.pV[s], this.ptOfs(v, s), this.ptTf(E, s % 6, E.sus + 1, v)); else v.pH[s] = 2;
+    }
+  }
+  ptStart(v, s, E) {                                                       // note on (retrig: from P0; free: join / start the shared one)
+    if (!E) { v.pM[s] = 0; return; }
+    if (E.free) { v.pM[s] = 2; const F = this.fr; if (F.pM[s] !== 2 || F.pH[s] === 2) this.ptFreeStart(s, E); return; }
+    const ofs = this.ptOfs(v, s); v.pM[s] = 1; v.pV[s] = this.ptTgt(E, 0, ofs); this.ptEnter(v, s, E, 1, v.pV[s], ofs, this.ptTf(E, s % 6, 1, v));
+  }
+  ptFreeStart(s, E) { const F = this.fr, ofs = s < 6 ? -192 : 0; F.pM[s] = 2; F.pV[s] = this.ptTgt(E, 0, ofs); this.ptEnter(F, s, E, 1, F.pV[s], ofs, this.ptTf(E, s % 6, 1, null)); F.pT[s] = this.curF - CR; }
+  ptFreeStep() {                                                           // once per control block, by the frames passed (also between notes)
+    const F = this.fr, X = this.gx;
+    for (let s = 0; s < 12; s++) { const E = X.pe[s]; if (!E || !E.free || F.pM[s] !== 2) continue;
+      const dt = (this.curF - F.pT[s]) / CR; F.pT[s] = this.curF; if (dt > 0) this.ptRun(F, s, E, dt, true, s < 6 ? -192 : 0, null, 4096); }
+  }
+  // a live edit: the same segment with the new target and the rest of its new time, from the value now (no jump); at the
+  // sustain point / the end a 20 ms glide to the new level
+  ptRebase(st, s, E, ofs, v) {
+    const cur = st.pV[s], GL = Math.max(1, .02 * SR / CR);
+    if (st.pH[s] === 2 || (st.pH[s] === 1 && E.sus < 0)) { if (st.pH[s] === 1 && st.pS[s] < E.k) { this.ptEnter(st, s, E, Math.min(E.k, st.pS[s] + 1), cur, ofs, this.ptTf(E, s % 6, st.pS[s] + 1, v)); return; }
+      if (Math.abs(this.ptTgt(E, E.k, ofs) - cur) > 1e-9) { this.ptEnter(st, s, E, E.k, cur, ofs, 1); st.pN[s] = GL; } else { st.pS[s] = E.k; st.pH[s] = 2; } return; }
+    if (st.pH[s] === 1) { const j = E.sus; if (Math.abs(this.ptTgt(E, j, ofs) - cur) > 1e-9) { this.ptEnter(st, s, E, j, cur, ofs, 1); st.pN[s] = GL; } else st.pS[s] = j; return; }
+    const j = Math.max(1, Math.min(E.k, st.pS[s])), x = st.pN[s] > 0 ? Math.min(1, st.pX[s] / st.pN[s]) : 1;
+    this.ptEnter(st, s, E, j, cur, ofs, this.ptTf(E, s % 6, j, v)); st.pN[s] = Math.max(1e-6, st.pN[s] * (1 - x));
+  }
+  // a running DX stage ix (0..3; 3 with the key down = holding at L3; 4 = done) continues in the point form without a jump
+  ptJoin(v, s, E, ix, cur) {
+    const ofs = this.ptOfs(v, s), GL = Math.max(1, .02 * SR / CR); v.pM[s] = 1; v.pV[s] = cur;
+    if (ix >= 4) { this.ptEnter(v, s, E, E.k, cur, ofs, 1); v.pN[s] = GL; return; }
+    if (ix === 3 && v.gate && E.sus >= 0) { this.ptEnter(v, s, E, E.sus, cur, ofs, 1); v.pN[s] = GL; return; }
+    const j = Math.min(E.k, ix + 1); this.ptEnter(v, s, E, j, cur, ofs, this.ptTf(E, s % 6, j, v));
+  }
+  ptLive(v, k) {
+    const X = this.gx, F = this.fr;
+    for (const s of [k, 6 + k]) {
+      const E = X.pe[s], m = v.pM[s], amp = s < 6;
+      if (!E) {
+        if (!m) continue;
+        const ix = v.pH[s] === 2 ? 4 : v.pH[s] === 1 ? 3 : Math.max(0, Math.min(3, v.pS[s] - 1)); v.pM[s] = 0;
+        if (m === 2) { if (amp) v.flvl[k] = Math.max(0, F.pV[s] + v.foutLvl[k] - 4064); else v.xpL[k] = F.pV[s] / 12; }
+        if (amp) v.fix[k] = ix; else { v.xpIx[k] = ix; if (X.pit[k]) this.xpAdvance(v, k, ix === 3 && v.gate ? 2 : ix); else { v.xpL[k] = 0; v.xpIx[k] = 4; } }
+        continue;
+      }
+      const ofs = this.ptOfs(v, s);
+      if (E.free) {
+        if (m === 2) continue;
+        if (F.pM[s] !== 2 || F.pH[s] === 2) {                               // the shared envelope starts where this voice is
+          for (const f of ['pS', 'pH', 'pN', 'pX', 'pG']) F[f][s] = v[f][s];
+          const d = amp ? -192 - ofs : 0; F.pV[s] = (m ? v.pV[s] : amp ? v.flvl[k] : v.xpL[k] * 12) + d; F.pA[s] = v.pA[s] + d; F.pB[s] = v.pB[s] + d; F.pM[s] = 2; F.pT[s] = this.curF;
+          if (!m) this.ptRebase(F, s, E, amp ? -192 : 0, null);
+        }
+        v.pM[s] = 2; continue;
+      }
+      if (m === 2) {                                                        // free -> retrig: this voice takes over the shared state
+        const d = amp ? ofs + 192 : 0;
+        for (const f of ['pS', 'pH', 'pN', 'pX', 'pG']) v[f][s] = F[f][s];
+        v.pV[s] = F.pV[s] + d; v.pA[s] = F.pA[s] + d; v.pB[s] = F.pB[s] + d; v.pM[s] = 1; this.ptRebase(v, s, E, ofs, v); continue;
+      }
+      if (m === 1) { this.ptRebase(v, s, E, ofs, v); continue; }
+      this.ptJoin(v, s, E, amp ? v.fix[k] : v.xpIx[k], amp ? v.flvl[k] : v.xpL[k] * 12);
+    }
   }
   // V0d (A.4b 3): pitch EG like msfa (start at L4, L1 -> L2 -> L3, hold L3; key off -> L4), linear in octaves
   pegAdvance(v, ix) {
@@ -3974,7 +4130,9 @@ class AnalogCore extends AudioWorkletProcessor {
     this.fmVoicePatch(v, false, note, vel127);
     for (let k = 0; k < 6; k++) { v.fix[k] = 4; this.fmAdvance(v, k, 0); }
     if (this.fm.peg) this.pegAdvance(v, 0); else { v.pegL = 0; v.pegIx = 4; }   // the PEG restarts from its current value (no jump)
-    if (this.gx) for (let k = 0; k < 6; k++) { if (this.gx.pit[k]) this.xpAdvance(v, k, 0); else { v.xpL[k] = 0; v.xpIx[k] = 4; } }
+    if (this.gx) for (let k = 0; k < 6; k++) { if (this.gx.pit[k]) this.xpAdvance(v, k, 0); else if (!this.gx.pe[6 + k]) { v.xpL[k] = 0; v.xpIx[k] = 4; } }
+    if (this.gx && this.gx.anyPt) for (let s = 0; s < 12; s++) { const E = this.gx.pe[s];           // V4f: from the current value (no jump)
+      if (E && !E.free && v.pM[s] === 1) this.ptEnter(v, s, E, 1, v.pV[s], this.ptOfs(v, s), this.ptTf(E, s, 1, v)); }
   }
   // per-op output level, rate scaling, ratio / fixed frequency (msfa maths); live: re-target the running stage
   fmVoicePatch(v, live, note, vel127) {
@@ -3996,7 +4154,8 @@ class AnalogCore extends AudioWorkletProcessor {
       }
       // live: re-target the running stage; a held note at its sustain (stage index 3 while the key is down) re-enters
       // stage 2 toward the new L3, so an edit is heard on a sustained note too (msfa Env::update)
-      if (live && v.fix[k] < 4) this.fmAdvance(v, k, v.fix[k] === 3 && v.gate ? 2 : v.fix[k]);
+      if (live && X) this.ptLive(v, k);                                   // V4f: point form <-> DX form, re-target without a jump
+      if (live && v.fix[k] < 4 && !(X && X.pe[k])) this.fmAdvance(v, k, v.fix[k] === 3 && v.gate ? 2 : v.fix[k]);
     }
   }
   // stage target + rate; macro rate offsets: fmAtk on R1 (+ = faster), fmRel on R4 with the sign flipped (+ = Release
@@ -4101,13 +4260,20 @@ class AnalogCore extends AudioWorkletProcessor {
   // values as an fm6 patch the arithmetic is the same (FM6 bit-identical, N7F-02/-03).
   fmxControl(v, dst) {
     const P = this.P, X = this.gx, alg = this.alg;
-    if (!v.gate && !v.frel) { v.frel = 1; for (let k = 0; k < 6; k++) { if (v.fix[k] !== 3) this.fmAdvance(v, k, 3); else { v.fix[k] = 2; this.fmAdvance(v, k, 3); } if (X.pit[k]) this.xpAdvance(v, k, 3); } }
+    const PE = X.pe;
+    if (!v.gate && !v.frel) { v.frel = 1; for (let k = 0; k < 6; k++) {
+      if (PE[k]) { if (!PE[k].free) this.ptRelease(v, k, PE[k]); } else if (v.fix[k] !== 3) this.fmAdvance(v, k, 3); else { v.fix[k] = 2; this.fmAdvance(v, k, 3); }
+      if (PE[6 + k]) { if (!PE[6 + k].free) this.ptRelease(v, 6 + k, PE[6 + k]); } else if (X.pit[k]) this.xpAdvance(v, k, 3); } }
+    if (X.anyFree && this.frStamp !== this.curF) { this.frStamp = this.curF; this.ptFreeStep(); }
     const base = v.pitch + v.dP + (this.fm.trans | 0) + dst[D_PITCH] * 24;
     const br = P.fmBright + dst[D_FMBRIGHT] * 24, l1 = this.src[S_LFO1];
     let alive = false, car = 0, sL = NaN, fL = 0;
     for (let k = 0; k < 6; k++) {
-      if (X.pit[k]) this.xpStep(v, k);
-      this.fmEnvStep(v, k);
+      const Ea = PE[k], Ep = PE[6 + k];
+      if (Ep) { if (Ep.free) v.xpL[k] = this.fr.pV[6 + k] / 12; else { this.ptRun(v, 6 + k, Ep, 1, v.gate, 0, v); v.xpL[k] = v.pV[6 + k] / 12; } }
+      else if (X.pit[k]) this.xpStep(v, k);
+      if (Ea) { if (Ea.free) v.flvl[k] = Math.max(0, this.fr.pV[k] + v.foutLvl[k] - 4064); else { this.ptRun(v, k, Ea, 1, v.gate, v.foutLvl[k] - 4256, v); v.flvl[k] = v.pV[k]; } }
+      else this.fmEnvStep(v, k);
       v.fg0[k] = v.fg1[k];
       const mt = X.on[k]; let mu = v.xmu[k];
       if (mu !== mt) { mu = mt > mu ? Math.min(mt, mu + MUTE_STEP) : Math.max(mt, mu - MUTE_STEP); v.xmu[k] = mu; }
@@ -4118,7 +4284,7 @@ class AnalogCore extends AudioWorkletProcessor {
       v.fg1[k] = g;
       const fmv = X.fmS[k] ? X.fmS[k] * l1 : 0;
       let f;
-      if (v.ffixed[k]) f = fmv ? v.ffixed[k] * Math.pow(2, fmv / 12) : v.ffixed[k];
+      if (v.ffixed[k]) { const pv = Ep ? v.xpL[k] * 12 + fmv : fmv; f = pv ? v.ffixed[k] * Math.pow(2, pv / 12) : v.ffixed[k]; }   // K2-58
       else { const sm = base + v.xpL[k] * 12 + fmv; if (sm !== sL) { sL = sm; fL = lut(FREQ, sm); } f = fL * v.fratio[k]; }
       v.finc[k] = f < SR * 0.45 ? Math.round(f / SR * 4294967296) : 0;   // Nyquist guard: silence ops above 0.45 fs
       if (X.wave[k]) {                                         // K2-40: mip levels a, a + 1 (both alias-free), weight w
@@ -6055,7 +6221,7 @@ const RecHelpers = (() => {
       const ix = x => { const i = Math.round(num(x, -1)); return i >= 0 && i <= k ? i : -1; };
       const o = {f: 'pt', y, t, sus: ix(e.sus), la: ix(e.la), lb: ix(e.lb), skip: 0, crv: e.crv === 'lin' ? 'lin' : 'exp', run: e.run === 'free' ? 'free' : 'retrig'};
       if (o.sus >= 0 && e.skip) o.skip = 1;
-      if (o.la < 0 || o.lb < 0 || o.la >= o.lb) { o.la = -1; o.lb = -1; }
+      if (o.la >= 0 && o.lb >= 0 && o.la >= o.lb) { o.la = -1; o.lb = -1; }      // V4f: one marker alone is kept (A set, B still to come)
       return o;
     }
     if (e && typeof e === 'object' && Array.isArray(e.r) && Array.isArray(e.l)) {
@@ -6389,7 +6555,107 @@ const RecHelpers = (() => {
     if (m) return {txt: 'wie DX ' + m + ' – Nummern anders', ok: false, match: m, near: m, perm: d.perm, renum: true};
     return {txt: 'kein DX-Alg. · nächster: ' + approxFm6(X).alg, ok: false, match: null, near: approxFm6(X).alg, renum: false};
   }
-  G.FMX = {norm, check, fromFm6, dxLayout, dxMatch, dx, toFm6, approxFm6, WAVES, ALGS, normEnv, gesture, renumber, applyAlg, badge, upper: (X, k) => [...upper(X.edges, k)]};
+  /* ----- V4f (KP 4.11, A.5 Nr. 4, K2-55 … K2-60): the point form. ptFromDx turns a DX-form envelope into points with the times and
+     levels it plays (frs 0, no MAKRO: the voice adds both to either form), so the sound stays (N7F-45): P0 = start (amp 0, pitch
+     L4), P1..P3 = L1..L3, sustain 3, P4 = L4, Skip on Release on (the DX form leaves its stages at key off), Exp, Retrig.
+     envAct(X, k, which, a) -> {x, lcd, sel} applies one editor action (pure; converts a DX envelope first). */
+  // the msfa maths of FMH / DXN (defined later in the page, used at call time)
+  const lvlOf = (L, ol) => G.FMH.lvlOf(L, ol), holdS = (rr, att0) => G.FMH.holdSec(rr, att0), segS = (r, from, to) => G.FMH.segTime(r, from, to);
+  const PR_HT = {ton: 2, q5: 7, 1: 12, 2: 24, 4: 48, 8: 96};
+  const PR_UP = ['ton', 'q5', 1, 2, 4, 8];
+  const ms1 = s => Math.round(clamp(s * 1000, .5, 20000) * 10) / 10;
+  const htY = (h, R) => clamp(Math.round(h >= 0 ? 50 + h / R * 49 : 50 + h / R * 50), 0, 99);
+  const yHt = (y, R) => (y >= 50 ? (y - 50) / 49 : (y - 50) / 50) * R;
+  // seconds of the 4 DX stages as the worklet runs them (attack from level 0, static phases, the release from L3)
+  function dxTimes(e, ol) {
+    const lv = e.l.map(L => lvlOf(L, ol)), T = []; let cur = 0;
+    for (let ix = 0; ix < 4; ix++) {
+      const tg = lv[ix], att0 = ix === 0 && e.l[0] === 0; if (ix === 3) cur = lv[2];
+      if (tg === cur || att0) { T.push(holdS(e.r[ix], att0)); continue; }
+      T.push(segS(e.r[ix], cur, tg)); cur = tg;
+    }
+    return T;
+  }
+  function pegTimesX(e) { const T = G.DXN.PEG_TAB, o = L => T[L] / 32, from = [e.l[3], e.l[0], e.l[1], e.l[2]]; return [0, 1, 2, 3].map(s => Math.abs(o(e.l[s]) - o(from[s])) / (G.DXN.PEG_RATE[e.r[s]] / 21.3)); }
+  function ptFromDx(e, which, ol, prWant) {
+    const base = {sus: 3, la: -1, lb: -1, skip: 1, crv: 'exp', run: 'retrig'};
+    if (which === 'amp') { const T = dxTimes(e, ol); return {env: Object.assign({f: 'pt', y: [0, e.l[0], e.l[1], e.l[2], e.l[3]], t: T.map(ms1)}, base), pr: null}; }
+    const H = [e.l[3], e.l[0], e.l[1], e.l[2], e.l[3]].map(L => G.DXN.PEG_TAB[L] * 12 / 32), mx = Math.max(...H.map(Math.abs));
+    const pr = prWant && PR_HT[prWant] ? prWant : PR_UP.find(p => PR_HT[p] >= mx - 1e-9) || 8, R = PR_HT[pr];
+    return {env: Object.assign({f: 'pt', y: H.map(h => htY(clamp(h, -R, R), R)), t: pegTimesX(e).map(ms1)}, base), pr};
+  }
+  const FLAT_PT = () => ({f: 'pt', y: [50, 50], t: [10], sus: -1, la: -1, lb: -1, skip: 0, crv: 'exp', run: 'retrig'});
+  // the point form of OP k's envelope (converted when it is DX) -> {e, conv}; the op is changed in place
+  function ptOf(o, which, prWant) {
+    const cur = which === 'amp' ? o.amp : o.pit;
+    if (cur && cur.f === 'pt') return {e: cur, conv: false};
+    if (which === 'pit' && !cur) { o.pit = FLAT_PT(); if (!PR_HT[o.pr]) o.pr = prWant && PR_HT[prWant] ? prWant : 'ton'; return {e: o.pit, conv: true}; }
+    const r = ptFromDx(cur, which, o.ol, prWant);
+    if (which === 'amp') o.amp = r.env; else { o.pit = r.env; o.pr = r.pr; }
+    return {e: r.env, conv: true};
+  }
+  function envAct(X0, k, which, a) {
+    const X = cp(X0), o = X.ops[k]; if (!o || !a) return {x: null, lcd: '', sel: null};
+    const kind = a.kind, i = a.i == null ? null : Math.round(num(a.i, -1));
+    if (kind === 'range') {
+      const v = PR_UP.includes(a.v) ? a.v : PR_UP.includes(+a.v) ? +a.v : a.v === 'dx' ? 'dx' : null;
+      if (v == null) return {x: null, lcd: '', sel: null};
+      if (v === 'dx') { if (o.pit && o.pit.f === 'pt') return {x: null, lcd: 'zurück zu DX nur über [DX-tauglich machen]', sel: null}; return {x: null, lcd: '', sel: null}; }
+      const conv = !(o.pit && o.pit.f === 'pt');
+      if (!conv) o.pr = v; else if (o.pit) { o.pit = normEnv(ptFromDx(o.pit, 'pit', o.ol, v).env, null); o.pr = v; } else { o.pit = FLAT_PT(); o.pr = v; }
+      if (conv) return {x: X, lcd: 'Hüllkurve frei (Punkt-Form) – nicht mehr DX · Bereich ' + ({ton: 'Ton', q5: 'Quinte'}[v] || v + ' Okt.'), sel: null};
+      return {x: X, lcd: 'Bereich ' + ({ton: 'Ton', q5: 'Quinte'}[v] || v + ' Okt.'), sel: null};
+    }
+    const {e, conv} = ptOf(o, which);
+    const n = e.y.length, last = n - 1, sh = (j, at, d) => (j > at ? j + d : j);
+    let lcd = '', sel = i;
+    if (kind === 'add') {
+      if (n >= 6) return {x: null, lcd: 'höchstens 6 Punkte', sel: i};
+      if (i == null || i >= last) { const tt = 100; e.y.push(e.y[last]); e.t.push(tt); sel = n; }
+      else { const half = Math.max(.5, Math.round(e.t[i] * 5) / 10); e.y.splice(i + 1, 0, Math.round((e.y[i] + e.y[i + 1]) / 2)); e.t.splice(i, 1, half, Math.max(.5, Math.round((e.t[i] - half) * 10) / 10));
+        e.sus = sh(e.sus, i, 1); e.la = sh(e.la, i, 1); e.lb = sh(e.lb, i, 1); sel = i + 1; }
+      lcd = 'Punkt ' + sel + ' dazu';
+    } else if (kind === 'del') {
+      if (i == null || i < 1 || i > last || n <= 2) return {x: null, lcd: n <= 2 ? 'mindestens 2 Punkte' : '', sel: i};
+      e.y.splice(i, 1);
+      if (i < last) e.t.splice(i - 1, 2, Math.min(20000, e.t[i - 1] + e.t[i])); else e.t.splice(i - 1, 1);
+      const dl = j => (j === i ? -1 : sh(j, i, -1)); e.sus = dl(e.sus); e.la = dl(e.la); e.lb = dl(e.lb); if (e.sus < 0) e.skip = 0;
+      lcd = 'Punkt ' + i + ' gelöscht'; sel = null;
+    } else if (kind === 'sus') {
+      if (i == null || i < 0 || i > last) return {x: null, lcd: '', sel: i};
+      e.sus = e.sus === i ? -1 : i; if (e.sus < 0) e.skip = 0; lcd = e.sus < 0 ? 'kein Sustain' : 'Sustain auf Punkt ' + i;
+    } else if (kind === 'skip') {
+      if (i == null || i !== e.sus) return {x: null, lcd: 'Skip nur am Sustain-Punkt', sel: i};
+      e.skip = e.skip ? 0 : 1; lcd = e.skip ? 'Skip beim Loslassen an' : 'Skip beim Loslassen aus';
+    } else if (kind === 'loopA' || kind === 'loopB') {
+      if (i == null || i < 0 || i > last) return {x: null, lcd: '', sel: i};
+      if (kind === 'loopA') { e.la = i; if (e.lb >= 0 && e.lb <= i) e.lb = -1; } else { e.lb = i; if (e.la >= i) e.la = -1; }
+      lcd = e.la >= 0 && e.lb > e.la ? 'Schleife ' + e.la + ' → ' + e.lb : (kind === 'loopA' ? 'Schleife ab ' + i + ' – jetzt [Loop B]' : 'Schleife bis ' + i + ' – jetzt [Loop A]');
+    } else if (kind === 'unloop') {
+      e.la = -1; e.lb = -1; lcd = 'Schleife entfernt';
+    } else if (kind === 'crv') {
+      e.crv = a.v === 'lin' || a.v === 'exp' ? a.v : e.crv === 'lin' ? 'exp' : 'lin'; lcd = e.crv === 'lin' ? 'Lin: linear' : 'Exp: wie DX';
+    } else if (kind === 'run') {
+      e.run = a.v === 'free' || a.v === 'retrig' ? a.v : e.run === 'free' ? 'retrig' : 'free'; lcd = e.run === 'free' ? 'Frei: eine Hüllkurve für alle Noten, Sustain aus' : 'Retrig: jede Note neu';
+    } else if (kind === 'scale') {
+      const ft = clamp(num(a.time, 1), .25, 4), fh = clamp(num(a.height, 1), 0, 1.5);
+      e.t = e.t.map(t => Math.round(clamp(t * ft, .5, 20000) * 10) / 10);
+      e.y = e.y.map(y => (which === 'pit' ? clamp(Math.round(50 + (y - 50) * fh), 0, 99) : clamp(Math.round(y * fh), 0, 99)));
+      lcd = 'Skala: Zeit ×' + String(Math.round(ft * 100) / 100).replace('.', ',') + ' · Höhe ×' + String(Math.round(fh * 100) / 100).replace('.', ',');
+    } else if (kind === 'center') {
+      if (which !== 'pit' || i == null || i < 0 || i > last) return {x: null, lcd: '', sel: i};
+      e.y[i] = 50; lcd = 'Punkt ' + i + ' in die Mitte';
+    } else if (kind === 'set') {                                            // a point moved: {i, y?, t? (ms of its segment)}
+      if (i == null || i < 0 || i > last) return {x: null, lcd: '', sel: i};
+      if (a.y != null) e.y[i] = int(a.y, 0, 99, e.y[i]);
+      if (a.t != null && i > 0) e.t[i - 1] = Math.round(clamp(num(a.t, e.t[i - 1]), .5, 20000) * 10) / 10;
+    } else if (kind !== 'pt') return {x: null, lcd: '', sel: i};
+    if (conv) lcd = 'Hüllkurve frei (Punkt-Form) – nicht mehr DX' + (lcd ? ' · ' + lcd : '');
+    if (which === 'amp') o.amp = normEnv(e, null); else o.pit = normEnv(e, null);
+    return {x: X, lcd, sel};
+  }
+  G.FMX = {norm, check, fromFm6, dxLayout, dxMatch, dx, toFm6, approxFm6, WAVES, ALGS, normEnv, gesture, renumber, applyAlg, badge, upper: (X, k) => [...upper(X.edges, k)],
+    ptFromDx, envAct, dxTimes, yHt, htY, PR_HT, PR_UP};
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
@@ -7733,6 +7999,13 @@ const RecHelpers = (() => {
     return Object.assign({}, f, {ops: f.ops.map((op, k) => { const dd = car(k) ? d : 0; return Object.assign({}, op, {r: [cl(op.r[0] + a), cl(op.r[1] + dd), cl(op.r[2] + dd), cl(op.r[3] + r)]}); })});
   }
   // §6.3.8 / §6.4: an FM sound with an open filter skips the filter (gain exactly 1, like the worklet's bypass)
+  // V4f: the point-form envelopes of p.fmx per fm6 operator (fm6.perm: fm6 operator perm[k] = field operator k), null without any
+  function fmxPtNative(P) {
+    const X = P.fmx; if (!X || !Array.isArray(X.ops) || !G.DXN || !X.ops.some(o => (o.amp && o.amp.f === 'pt') || (o.pit && o.pit.f === 'pt'))) return null;
+    const perm = P.fm6 && P.fm6.perm, pt = [];
+    for (let j = 0; j < 6; j++) { const o = X.ops[perm ? perm.indexOf(j) : j]; pt.push(o ? {a: G.DXN.ptc(o.amp, false), p: G.DXN.ptc(o.pit, true, o.pr)} : null); }
+    return pt;
+  }
   const fmBypass = (P, engine) => engine === 'fm6' && P.ftype <= 1 && P.cutoff >= 18000 && P.res <= .02 && P.fenv === 0 && P.drive <= .01;
   function source(c, P, engine, note, vel, cvOut, o) {
     o = o || {};
@@ -7771,12 +8044,12 @@ const RecHelpers = (() => {
       mix.gain.value = .85;
     } else if (engine === 'fm6' && G.DXN && P.fm6) {
       // §6.4: the native FM voice; the DX sources are started by DXN.voice itself (no `starts` entries)
-      const fm = fm6Macro(P), n6 = note + (fm.trans | 0);
-      const dx = G.DXN.voice(c, fm, n6, vel, t0, mix, cvOut, {bright: +P.fmBright || 0, bite: +P.fmBite || 0});
+      const fm = fm6Macro(P), n6 = note + (fm.trans | 0), pt = fmxPtNative(P);
+      const dx = G.DXN.voice(c, fm, n6, vel, t0, mix, cvOut, {bright: +P.fmBright || 0, bite: +P.fmBite || 0, pt, mac: {atk: +P.fmAtk || 0, dec: +P.fmDec || 0, rel: +P.fmRel || 0}});
       srcs.push(...dx.srcs); nodes.push(...dx.nodes);
       // AC coupling like the worklet's 5 Hz DC blocker: 1:1 FM pairs (E-pianos) carry DC (the J-1 sideband), heard as a thump
       const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 5; hp.Q.value = Math.SQRT1_2; nodes.push(hp); mix.connect(hp);
-      return {out: hp, srcs, nodes, starts, oscs, dx, rt: G.DXN.releaseTime(fm, n6, vel)};
+      return {out: hp, srcs, nodes, starts, oscs, dx, rt: G.DXN.releaseTime(fm, n6, vel, pt)};
     } else if (engine === 'fm2') {
       const fm = P.fm2 || {ratio: 2, index: 3, modDecay: .3, modSus: .2}, mf = f * fm.ratio, I = fm.index * mf;
       const mod = osc(3, mf), mg = G_(0), car = osc(3, f);
@@ -9032,18 +9305,77 @@ const DXN = (() => {
       const x = (t - e.t) / e.dur;
       if (e.kind === 'hold') return e.a;
       if (e.kind === 'fall') return e.a + (e.b - e.a) * x;
+      if (e.kind === 'lin') { const A = amp(e.a), B = amp(e.b); return 256 * (Math.log2(A + (B - A) * x) + 14); }   // V4f: Lin
       const A = amp(e.a), B = amp(e.b), v = A + (B - A) * (1 - Math.exp(-x / 3)) / (1 - Math.exp(-1 / 3)); return 256 * (Math.log2(v) + 14); }
     return l;
   }
   function schedule(p, plan, scale) {                           // only setValueAtTime / setTargetAtTime
-    for (const e of plan.ev) {
-      const A = amp(e.a) * scale, B = amp(e.b) * scale;
+    const ev = plan.ev;
+    for (let n = 0; n < ev.length; n++) {
+      const e = ev[n], A = amp(e.a) * scale, B = amp(e.b) * scale, te = e.t + e.dur;
+      // V4f: the end value only when the next event does not start there: a setValue a few ulp after the next event's start
+      // (summed times) ended its setTarget curve at once (a looped point envelope held its level natively)
+      const endV = !(ev[n + 1] && ev[n + 1].t <= te + 1e-9);
       p.setValueAtTime(A, e.t);
-      if (e.kind === 'hold') { p.setValueAtTime(A, e.t + e.dur); continue; }
+      if (e.kind === 'hold') { if (endV) p.setValueAtTime(A, te); continue; }
+      if (e.kind === 'lin') { p.linearRampToValueAtTime(B, te); continue; }                // V4f: Lin (amplitude-linear)
       if (e.kind === 'fall') { p.setTargetAtTime(0, e.t, e.dur / Math.log(A / B)); }      // linear-in-dB decay, exact
       else { p.setTargetAtTime(A + (B - A) / (1 - Math.exp(-1 / 3)), e.t, e.dur * 3); }       // ~linear within one 6 dB band
-      p.setValueAtTime(B, e.t + e.dur);
+      if (endV) p.setValueAtTime(B, te);
     }
+  }
+
+  // ---- V4f (KP 4.11): the point form natively, the same maths as the worklet (ptCompile / ptVal / the msfa attack bands);
+  // free run plays as retrig here (deviation: one voice per note, no shared state across the native voices)
+  const PT_R = {ton: 2, q5: 7, 1: 12, 2: 24, 4: 48, 8: 96, dx: 48};
+  function ptc(e, pit, pr) {
+    if (!e || e.f !== 'pt' || !Array.isArray(e.y) || !Array.isArray(e.t) || e.y.length < 2) return null;
+    const k = Math.min(5, e.y.length - 1), R = PT_R[pr] || 12, v = [], tm = [0];
+    for (let i = 0; i <= k; i++) { const y = Math.max(0, Math.min(99, Math.round(+e.y[i] || 0))); v.push(pit ? (y >= 50 ? (y - 50) / 49 : (y - 50) / 50) * R : y); }
+    for (let i = 1; i <= k; i++) { const t = +e.t[i - 1]; tm.push(t >= .5 ? Math.min(20000, t) : .5); }
+    const ix = x => (x >= 0 && x <= k ? x | 0 : -1), free = e.run === 'free';
+    let sus = free ? -1 : ix(e.sus), la = ix(e.la), lb = ix(e.lb); if (!(la >= 0 && lb > la)) la = lb = -1;
+    const pre = la >= 0 && sus >= 0 && la < sus ? 1 : 0;
+    return {k, v, tm, sus, la, lb, skip: sus >= 0 && e.skip ? 1 : 0, lin: e.crv === 'lin' ? 1 : 0, free, pre, span: pre && lb > sus ? 1 : 0, pit: pit ? 1 : 0};
+  }
+  const riseG = (a, b) => { let t = 0, x = a; while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256); t += (nx - x) / Math.max(1, 17 - bd); x = nx; } return t; };
+  // the segments from segment j (start value cur), key down (gate) or up; firstDur: the rest of a running segment (s)
+  function ptPlan(E, ofs, t0, cur, j, gate, tfOf, firstDur) {
+    const ev = [], tg = jj => (E.pit ? E.v[jj] : Math.max(16, ((scaleOL(E.v[jj] | 0) >> 1) << 6) + ofs));
+    let t = t0, guard = 0, hold = false;
+    while (j >= 1 && j <= E.k && guard++ < 400 && t - t0 < 12.5) {
+      const b = tg(j); let a = cur;
+      if (!E.pit && !E.lin && b > 1716 && a < 1716) a = 1716;
+      const dur = Math.max(1e-5, firstDur != null ? firstDur : E.tm[j] * tfOf(j) / 1000); firstDur = null;
+      if (E.pit) ev.push({t, kind: E.lin ? 'plin' : 'pexp', a, b, dur, j});
+      else if (a === b) ev.push({t, kind: 'hold', a, b, dur, j});
+      else if (E.lin) ev.push({t, kind: 'lin', a, b, dur, j});
+      else if (b < a) ev.push({t, kind: 'fall', a, b, dur, j});
+      else { const G = riseG(a, b); let x = a, tt = t; while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256), dt = (nx - x) / Math.max(1, 17 - bd) / G * dur; ev.push({t: tt, kind: 'rise', a: x, b: nx, dur: Math.max(dt, 1e-6), j}); tt += dt; x = nx; } }
+      t += dur; cur = b;
+      if (E.la >= 0 && j === E.lb && (E.free || !E.pre || gate)) { j = E.la + 1; continue; }
+      if (j === E.sus && gate && !E.span) { hold = true; break; }
+      if (j >= E.k) break;
+      j++;
+    }
+    return {ev, end: t, last: cur, hold};
+  }
+  // key off at t (value l): from the sustain point / with Skip from before it to the segment after the sustain point; else the
+  // running segment to its end, then on with the key up (a loop before the sustain point ends)
+  function ptRelPlan(E, plan, t, l, ofs, tfOf) {
+    if (E.free) return null;
+    const i = plan.ev.findIndex(x => t >= x.t && t < x.t + x.dur);
+    if (i < 0) { if (plan.hold && E.sus < E.k) return ptPlan(E, ofs, t, l, E.sus + 1, false, tfOf); return {ev: [], end: t, last: l, hold: false}; }
+    const j = plan.ev[i].j;
+    if (E.skip && E.sus >= 0 && j <= E.sus) return E.sus < E.k ? ptPlan(E, ofs, t, l, E.sus + 1, false, tfOf) : {ev: [], end: t, last: l, hold: false};
+    let n = i; while (n + 1 < plan.ev.length && plan.ev[n + 1].j === j && plan.ev[n + 1].kind === 'rise' && plan.ev[n].kind === 'rise') n++;
+    return ptPlan(E, ofs, t, l, j, false, tfOf, plan.ev[n].t + plan.ev[n].dur - t);
+  }
+  const pitVal = (e, x) => (e.kind === 'plin' ? 12 * Math.log2(Math.pow(2, e.a / 12) + (Math.pow(2, e.b / 12) - Math.pow(2, e.a / 12)) * x) : e.a + (e.b - e.a) * x);
+  function pitAt(plan, t, v0) { let v = v0; for (const e of plan.ev) { if (t < e.t) return v; if (t >= e.t + e.dur) { v = e.b; continue; } return pitVal(e, (t - e.t) / e.dur); } return v; }
+  function schedPit(p, plan, f) {                                  // Hz offset on `frequency`: linear ramps, at most 10 ms apart
+    const hz = ht => f * (Math.pow(2, ht / 12) - 1);
+    for (const e of plan.ev) { const N = Math.max(1, Math.min(24, Math.ceil(e.dur / .01))); p.setValueAtTime(hz(e.a), e.t); for (let q = 1; q <= N; q++) p.linearRampToValueAtTime(hz(pitVal(e, q / N)), e.t + e.dur * q / N); }
   }
 
   let COMP_CURVE = null;                                         // 2^(-cents/1200) - 1 over +-12000 cents (input / 12000)
@@ -9094,7 +9426,11 @@ const DXN = (() => {
       const o = ctx.createOscillator(); o.frequency.value = f;
       let beta = 0;
       const bf = !alg.car[k] && opt.bite ? Math.pow(2, opt.bite / 10) : 0;
-      const plan = envPlan(op, outLvl, rsd, t0, 0, [0, 1, 2], bf);
+      // V4f: point form (opt.pt per fm6 operator, built by the host from p.fmx); the time factor as the worklet's ptTf
+      const PT = opt.pt && opt.pt[k], Ea = PT && PT.a, Ep = PT && PT.p, M_ = opt.mac || {};
+      const tfOf = j => { let tf = Math.pow(2, -rsd / 4); if (j === 1) tf *= Math.pow(2, -(+M_.atk || 0) * 41 / 256); else if (Ea.sus >= 0 && j > Ea.sus) tf *= Math.pow(2, (+M_.rel || 0) * 41 / 256); else if (alg.car[k]) tf *= Math.pow(2, (+M_.dec || 0) * 41 / 256);
+        if (!alg.car[k] && (j === 2 || j === 3) && opt.bite) tf /= Math.pow(2, opt.bite / 10); return tf; };
+      const plan = Ea ? ptPlan(Ea, outLvl - 4256, t0, Math.max(16, ((scaleOL(Ea.v[0] | 0) >> 1) << 6) + outLvl - 4256), 1, true, tfOf) : envPlan(op, outLvl, rsd, t0, 0, [0, 1, 2], bf);
       if (k === alg.fbDst && P.fb > 0) {                            // static feedback timbre: op level 300 ms into the note ("body")
         beta = Math.min(2 * Math.PI * amp(levelAt(plan, t0 + (opt.fbAt ?? .3), 0)) * Math.pow(2, P.fb - 8), 3.2);
       }
@@ -9135,7 +9471,11 @@ const DXN = (() => {
       const mid = !PM && !alg.car[k] && alg.mods[k].length > 0 && !opt.noMul;
       const scale = alg.car[k] ? outScale : (mid || PM ? 2 * Math.PI : 2 * Math.PI * f) * bright;
       schedule(g.gain, plan, scale);
-      const X = {o, xo, aux, eg, g, op, outLvl, rsd, plan, scale, f, out: g, mul: null};
+      const X = {o, xo, aux, eg, g, op, outLvl, rsd, plan, scale, f, out: g, mul: null, Ea, tfOf, pp: null};
+      if (Ep && ctx.createConstantSource) {                           // V4f: the pitch point form as a Hz offset on `frequency` (also fixed, K2-58)
+        const cs = ctx.createConstantSource(); cs.offset.value = 0; const pp = ptPlan(Ep, 0, t0, Ep.v[0], 1, true, () => 1);
+        schedPit(cs.offset, pp, f); for (const x of [o, ...xo]) cs.connect(x.frequency); srcs.push(cs); nodes.push(cs); X.pp = {cs, plan: pp, E: Ep, f, v0: Ep.v[0]};
+      }
       if (mid) { X.mul = ctx.createGain(); X.mul.gain.value = f; g.connect(X.mul); X.out = X.mul; nodes.push(X.mul); }
       ops.push(X); srcs.push(o); nodes.push(o, g);
     }
@@ -9182,7 +9522,18 @@ const DXN = (() => {
           p.cancelScheduledValues(t); p.setValueAtTime(cur * 1200, t); pegRamp(p, cur, [3], t);
         }
         for (const X of ops) { if (!X) continue;
+          if (X.pp) { const P_ = X.pp, cur = pitAt(P_.plan, t, P_.v0), rp = ptRelPlan(P_.E, P_.plan, t, cur, 0, () => 1);
+            if (rp) { const q = P_.cs.offset; q.cancelScheduledValues(t); q.linearRampToValueAtTime(P_.f * (Math.pow(2, cur / 12) - 1), t); schedPit(q, rp, P_.f); end = Math.max(end, rp.end); } }
           const l = levelAt(X.plan, t, 0), p = X.g.gain;
+          if (X.Ea) {                                                    // V4f: point form; a Lin ramp running at t is re-drawn up to t
+            const run = X.plan.ev.find(e => t >= e.t && t < e.t + e.dur), rp = ptRelPlan(X.Ea, X.plan, t, l, X.outLvl - 4256, X.tfOf);
+            if (!rp) continue;
+            p.cancelScheduledValues(t); if (run && run.kind === 'lin') p.linearRampToValueAtTime(amp(l) * X.scale, t); else p.setValueAtTime(amp(l) * X.scale, t);
+            schedule(p, rp, X.scale); X.rel = rp;
+            if (X.eg) { const q = X.eg.gain; q.cancelScheduledValues(t); q.setValueAtTime(amp(l) * .5, t); schedule(q, rp, .5); }
+            if (alg.car[ops.indexOf(X)]) end = Math.max(end, rp.ev.length ? rp.end : t);
+            continue;
+          }
           p.cancelScheduledValues(t); p.setValueAtTime(amp(l) * X.scale, t);
           const rp = envPlan(X.op, X.outLvl, X.rsd, t, l, [3]); schedule(p, rp, X.scale); X.rel = rp;
           if (X.eg) { const q = X.eg.gain; q.cancelScheduledValues(t); q.setValueAtTime(amp(l) * .5, t); schedule(q, rp, .5); }
@@ -9193,16 +9544,18 @@ const DXN = (() => {
   }
   // seconds from key-off until every carrier is silent (or at L4), worst case = release from the loudest stage.
   // Used for stopAt / cleanup and as the vca release so the gate never cuts the DX release tail.
-  function releaseTime(P, note, vel) {
+  function releaseTime(P, note, vel, pt) {
     const alg = ALGS[(P.alg | 0) - 1] || ALGS[0], v127 = Math.max(1, Math.min(127, Math.round(vel * 127))); let T = .01;
     for (let k = 0; k < 6; k++) { const op = P.ops[k]; if (!alg.car[k] || op.on === 0 || !(op.ol > 0)) continue;
+      const E = pt && pt[k] && pt[k].a;                              // V4f: point form: the segments after the sustain point (a loop there: the cap)
+      if (E) { if (E.free || (E.la >= 0 && (E.sus < 0 || E.la >= E.sus))) T = 12; else { let s_ = 0; for (let j = E.sus >= 0 ? E.sus + 1 : 1; j <= E.k; j++) s_ += E.tm[j] / 1000; T = Math.max(T, s_ * Math.pow(2, -scaleRate(note, op.rs | 0) / 4) * 2 + .02); } continue; }
       const outLvl = Math.max(0, (Math.min(127, scaleOL(op.ol) + scaleLevel(note, op.ks)) << 5) + scaleVel(v127, op.vs | 0));
       const top = Math.max(...[0, 1, 2].map(i => Math.max(16, ((scaleOL(op.l[i]) >> 1) << 6) + outLvl - 4256)));
       const l4 = Math.max(16, ((scaleOL(op.l[3]) >> 1) << 6) + outLvl - 4256), R = LVL_PER_SEC(Math.min(63, ((op.r[3] * 41) >> 6) + scaleRate(note, op.rs | 0)));
       T = Math.max(T, (top - Math.max(l4, top - 2550)) / R); }                 // until -60 dB below the loudest stage (2550 units)
     return Math.min(T, 12);
   }
-  return {voice, releaseTime, opWave, fbHarmonics, ALGS, DX_ALGS, besselJ, envPlan, levelAt, holdSec, PEG_RATE, PEG_TAB};
+  return {voice, releaseTime, opWave, fbHarmonics, ALGS, DX_ALGS, besselJ, envPlan, levelAt, holdSec, PEG_RATE, PEG_TAB, ptc, ptPlan};
 })();
 
 // ---------- FMH: UI helpers (same maths as the worklet; from dx6-presets.js, without its ROM presets) ----------
@@ -9334,7 +9687,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '3.9.0';
+const VERSION = '3.10.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -17059,7 +17412,8 @@ const FX_HELP = ['Operator auf einen anderen ziehen: verbinden – oben modulier
   'Doppeltipp: stumm/an. Unterste Reihe = Ausgang.',
   'Nichts gewählt: Die Pegel-Seite stellt alle Operatoren; Farbe der Zeile = Farbe des Operators.',
   'Kleine Zahl oben rechts in der Kachel: Feedback-Quelle.',
-  'Tipp: mit einem Operator anfangen, die anderen per Doppeltipp stumm schalten.'];
+  'Tipp: mit einem Operator anfangen, die anderen per Doppeltipp stumm schalten.',
+  'Hüllkurve (Amp/Tonh.): Punkt antippen = Sustain, Loop A/B, ✗, + ; nichts gewählt = Exp/Lin, Skala, Retrig/Frei. Zwei Finger auseinander = Zeit-Zoom.'];
 function fxHelpPop() { openPop(null, p => { p.classList.add('fxlist'); p.innerHTML = '<h4>FM-FELD</h4><ol class="fxhelp">' + FX_HELP.map(t => `<li>${esc(t)}</li>`).join('') + '</ol>'; }, {name: 'fxhelp'}); }
 function fxAbout() { openPop(null, p => { p.classList.add('fxlist'); p.innerHTML = '<h4>ⓘ Vorbild</h4><p>Das FM-FELD folgt der Bedienung des EssenceFM von Kodamo (Handbuch V7.0): Operatoren auf einem Raster, unten die Ausgänge, ziehen = verbinden.</p><p class="small">Marken gehören ihren Inhabern, keine Verbindung.</p>'; }, {name: 'fxabout'}); }
 // ---------- Vorlagen (Algorithm Library): the WP7 sheet with 32 pictures; a choice replaces edges and cells, one undo
@@ -17111,7 +17465,8 @@ function fxMore(i, anchor) {
   if (k != null) {
     items.push(['solo', UI.fmSolo && UI.fmSolo.t === i ? 'Solo aus' : 'Solo (nur zum Hören)'], ['ziele', 'Ziele …'], ['copy', 'Kopieren (Operator)'], ['copyenv', 'Kopieren (nur Hüllkurve)']);
     if (FXF.clip) items.push(['paste', FXF.clip.kind === 'env' ? 'Einfügen (Hüllkurve)' : 'Einfügen (Operator)']);
-    if (FXF.page === 'amp' || FXF.page === 'tonh') items.push(['big', '⤢ Hüllkurve groß']);
+    if (FXF.page === 'amp' || FXF.page === 'tonh') items.push(['big', '⤢ Hüllkurve groß'], ['envall', 'Hüllkurve auf alle'], ['envinit', 'Hüllkurve Init']);
+    if (FXF.page === 'tonh') items.push(['envout', 'Tonhöhe auf alle Ausgänge']);
     if (FXF.page === 'mod') items.push(['curve', 'Kurven: ' + (X.ops[k].ks.lc === 1 || X.ops[k].ks.lc === 2 ? 'exponentiell → linear' : 'linear → exponentiell')]);
     items.push(['modu', 'Modulieren mit …']);
   }
@@ -17141,6 +17496,13 @@ function fxMoreAct(i, a, anchor) {
   if (a === 'curve') { fxMut(i, 'Tasten-Skalierung Kurve', x => { const ks = x.ops[k].ks, sw = c => [1, 0, 3, 2][c]; ks.lc = sw(ks.lc); ks.rc = sw(ks.rc); }); fxRender(true); return; }
   if (a === 'modu') { fxModPick(i, k, anchor); return; }
   if (a === 'big') { fxBigEnv(i, k, FXF.page === 'tonh' ? 'pit' : 'amp'); }
+  if (a === 'envall' || a === 'envout' || a === 'envinit') {                // V4f: [Auf alle] / [Init] / Tonh. [Alle Ausg.] live under ⋯ (K2-56)
+    const which = FXF.page === 'tonh' ? 'pit' : 'amp', src = deep(fxEnvOf(X.ops[k], which)), pr = X.ops[k].pr;
+    if (a === 'envinit') fxMut(i, which === 'pit' ? 'Tonhöhe Init' : 'Hüllkurve Init', x => { const o = x.ops[k]; if (which === 'pit') { o.pit = null; o.pr = 'dx'; } else o.amp = {f: 'dx', r: [99, 99, 99, 80], l: [99, 99, 99, 0]}; });
+    else { let n = 0; fxMut(i, a === 'envall' ? 'Hüllkurve auf alle' : 'Tonhöhe auf alle Ausgänge', x => x.ops.forEach((o, j) => { if (j === k || (a === 'envout' && !fxIsOut(x, j))) return;
+      if (which === 'pit') { if (o.fixed && !(src && src.f === 'pt')) return; o.pit = deep(src); o.pr = pr; } else o.amp = deep(src); n++; })); lcdShow('Hüllkurve', (a === 'envall' ? 'auf alle' : 'auf alle Ausgänge') + ' (' + n + ')'); }
+    FXF.envSel = null; fxRender(true);
+  }
 }
 function fxTargetsPop(i, k, anchor) {
   const X = fxX(i), tg = fxTargets(X, k);
@@ -17178,164 +17540,416 @@ function fxModPick(i, k, anchor) {
     lcdShow('Modulation', MSRC[s].l + ' → OP ' + (k + 1) + ' Pegel' + (has ? ' entfernt' : ' · 50 % (Tiefe im Tab MOD)'));
   }, 'button');
 }
-// ---------- Amp / Tonh. (EK-13, KP §5.1 d / §5.2 c): the DX-form envelope of the focused operator, until V4f without point
-// buttons. P: mini field left (x 0–131), envelope right (x 138–W); L: envelope in the value panel, the field stays.
+// ---------- Amp / Tonh. (EK-13, KP §5.1 d / §5.2 c; V4f KP §4.11): the envelope of the focused operator in the DX form or the
+// point form, with the point buttons. P: mini field left (x 0–131), envelope right (x 138–W); L: envelope in the value panel.
+// ⤢ Hüllkurve groß shows the same editor for a point-form envelope (fxBigPtPage); a DX-form one opens the A.4b editor.
 const fxEnvOf = (o, which) => (which === 'amp' ? o.amp : o.pit);
 const FX_PIT0 = () => ({f: 'dx', r: [99, 99, 99, 99], l: [50, 50, 50, 50]});
+const FX_SUSC = '#0A6AFF', FX_LOOPC = '#A15CFF';
+const FX_PRN = {dx: 'DX', ton: 'Ton', q5: 'Quinte', 1: '1 Okt.', 2: '2 Okt.', 4: '4 Okt.', 8: '8 Okt.'};
 function fxEnvPanel(V) {
-  const i = V.i, g = V.g, k = FXF.focus, which = FXF.page === 'tonh' ? 'pit' : 'amp', W = g.W, H = g.H, NS = 'http://www.w3.org/2000/svg';
-  const env = V.env; env.hidden = false; env.className = 'fxe ' + g.mode;
+  const g = V.g, W = g.W, H = g.H, env = V.env; env.hidden = false; env.className = 'fxe ' + g.mode;
   let box;
   if (g.land) box = {x: g.px, y: g.hdr + 4, w: g.pw, h: H - g.hdr - 4};
   else if (g.mode === 'P3') box = {x: g.px, y: 2 * g.tabH + g.tabGap + 4, w: g.pw, h: H - 2 * g.tabH - g.tabGap - 4};
   else if (g.mode === 'W') box = {x: g.px, y: 2 * g.tabH + 8, w: g.pw, h: H - 2 * g.tabH - 8};
   else { const t0 = fxMiniGeo(g).top; box = {x: 138, y: t0, w: W - 138, h: H - t0}; }
   Object.assign(env.style, {left: box.x + 'px', top: box.y + 'px', width: box.w + 'px', height: box.h + 'px'});
-  // presets row (P1 / P2: over the field, y 38–71; L, W, P3: [Vorl. ▾] among the buttons)
-  const names = which === 'pit' ? ['Aus', 'Ruck', 'Fall', 'Anstieg'] : ['Snap', 'Pluck', 'Pad', 'Orgel'];
-  const fineB = () => { const b = el('button', 'rb fxeb fine' + (FXF.fineChip ? ' on' : ''), 'FEIN'); b.setAttribute('aria-pressed', String(FXF.fineChip)); onTap(b, () => { FXF.fineChip = !FXF.fineChip; b.classList.toggle('on', FXF.fineChip); b.setAttribute('aria-pressed', String(FXF.fineChip)); haptic('tick'); }); return b; };
+  const preRow = g.mode === 'P1' || g.mode === 'P2';
+  if (preRow) { V.pre.hidden = false; Object.assign(V.pre.style, {left: '0px', top: (g.mode === 'P1' ? 38 : 34) + 'px', width: (g.px - 6) + 'px', height: (g.mode === 'P1' ? 34 : 30) + 'px'}); }
+  fxEnvBuild({i: V.i, k: FXF.focus, which: FXF.page === 'tonh' ? 'pit' : 'amp', host: env, box, mode: g.land ? 'L' : g.mode, lmode: g.mode, pre: preRow ? V.pre : null,
+    rebuild: () => fxRender(true), setUpd: f => { V.envUpd = f; }});
+}
+// the selected point of the editor in point-form numbering (DX form: dot s = L(s+1) = point s+1), or null
+const fxSelPt = e => (FXF.envSel == null || !e ? null : e.f === 'pt' ? (FXF.envSel <= e.y.length - 1 ? FXF.envSel : null) : FXF.envSel + 1);
+// what the point buttons show for an envelope in either form (the DX form: points 0..4, sustain 3, Skip on: DX leaves at key off)
+function fxEnvInfo(e, which) {
+  if (e && e.f === 'pt') return {pt: true, n: e.y.length, sus: e.sus, la: e.la, lb: e.lb, skip: e.skip, crv: e.crv, run: e.run};
+  return {pt: false, n: 5, sus: 3, la: -1, lb: -1, skip: 1, crv: 'exp', run: 'retrig', none: which === 'pit' && !e};
+}
+// ctx: {i, k, which, host, box {x, y, w, h}, mode 'P1'|'P2'|'P3'|'W'|'L'|'BIG'|'BIGL', pre (presets row host | null), rebuild, setUpd}
+function fxEnvBuild(ctx) {
+  const {i, k, which, host, box, mode} = ctx, NS = 'http://www.w3.org/2000/svg', pit = which === 'pit';
+  const X0 = fxX(i), o0 = X0.ops[k], e0 = fxEnvOf(o0, which), PT0 = !!(e0 && e0.f === 'pt');
+  if (FXF.envK !== i + ':' + k + ':' + which) { FXF.envK = i + ':' + k + ':' + which; FXF.envZoom = 1; FXF.envOff = 0; }
+  if (PT0 && FXF.envSel != null && FXF.envSel > e0.y.length - 1) FXF.envSel = null;
+  if (!PT0 && FXF.envSel != null && FXF.envSel > 3) FXF.envSel = null;
+  const L = mode === 'L' || mode === 'BIGL', big = mode === 'BIG' || mode === 'BIGL', bh = ctx.lmode === 'L2' ? 32 : 34;
+  // the big view (portrait) on small phones: without the value cells (then under [Punkte]) or with the one-row buttons
+  const bigNoCells = big && !L && box.h - 18 - 5 * (bh + 2) < 100, bigSmall = big && !L && box.h - 18 - 3 * (bh + 2) < 90;
+  const compact = mode === 'P2' || bigSmall || (!L && !big && mode !== 'P3' && box.h < 250), mini3 = mode === 'P3', names = pit ? ['Aus', 'Ruck', 'Fall', 'Anstieg'] : ['Snap', 'Pluck', 'Pad', 'Orgel'];
+  host.innerHTML = '';
+  // ---- actions
+  const sel = () => fxSelPt(fxEnvOf(fxX(i).ops[k], which));
+  const act = (kind, a) => {
+    const r = FMX.envAct(fxX(i), k, which, Object.assign({kind, i: sel()}, a || {}));
+    if (!r.x) { if (r.lcd) lcdShow('Hüllkurve', r.lcd); return false; }
+    const ok = fxCommitX(i, r.x, 'Hüllkurve OP ' + (k + 1) + ': ' + (FX_ACTN[kind] || kind));
+    if (kind === 'del' || kind === 'add') FXF.envSel = r.sel; else if (r.sel != null) FXF.envSel = r.sel;
+    lcdShow('Hüllkurve · OP ' + (k + 1), r.lcd); haptic(ok ? 'snap' : 'tick'); ctx.rebuild(); return ok;
+  };
   const preset = n => {
     fxMut(i, 'Vorlage ' + n + ' (OP ' + (k + 1) + ')', x => { const o = x.ops[k];
-      if (which === 'pit') { const p_ = FM_PEG_PRE[n]; o.pit = n === 'Aus' || o.fixed ? null : {f: 'dx', r: p_[0].slice(), l: p_[1].slice()}; o.pr = 'dx'; }
+      if (pit) { const p_ = FM_PEG_PRE[n]; o.pit = n === 'Aus' || o.fixed ? null : {f: 'dx', r: p_[0].slice(), l: p_[1].slice()}; o.pr = 'dx'; }
       else { const T = FM_T2[n], out = fxIsOut(x, k); o.amp = {f: 'dx', r: (out ? T[2] : T[0]).slice(), l: (out ? T[3] : T[1]).slice()}; } });
-    lcdShow('Vorlage', n + ' · OP ' + (k + 1)); haptic('snap'); fxRender(false);
+    FXF.envSel = null; lcdShow('Vorlage', n + ' · OP ' + (k + 1) + ' (DX-Form)'); haptic('snap'); ctx.rebuild();
   };
-  const preRow = g.mode === 'P1' || g.mode === 'P2';
-  if (preRow) {
-    V.pre.hidden = false; V.pre.innerHTML = ''; Object.assign(V.pre.style, {left: '0px', top: (g.mode === 'P1' ? 38 : 34) + 'px', width: (g.px - 6) + 'px', height: (g.mode === 'P1' ? 34 : 30) + 'px'});
-    for (const n of names) { const b = el('button', 'rb fxeb pre', n); onTap(b, () => preset(n)); V.pre.appendChild(b); }
-    V.pre.appendChild(fineB());
-  }
-  // layout inside the box: P1 / W = graph (ruler + curve 129), times 16, two button rows, DX rows R / L (KP §5.1 d: 289 px);
-  // L = graph left, 3 button rows right; P2 = graph, one button row ([DX ▾] swaps graph and DX rows); P3 = the same, 3 buttons
-  const L = g.land, compact = !L && box.h < 250, mini3 = g.mode === 'P3', bh = g.mode === 'L2' ? 32 : 34;
-  const gw = L ? Math.min(280, box.w - 228) : box.w, btnW = L ? box.w - gw - 8 : box.w;
-  const graphH = L ? box.h - 16 : compact ? Math.max(56, box.h - 16 - 2 - bh) : 129, showDx = !L && !compact;
-  env.innerHTML = '';
+  const toAll = (selF, label) => {
+    const src = deep(fxEnvOf(fxX(i).ops[k], which) || null), pr = fxX(i).ops[k].pr;
+    let n = 0; fxMut(i, label, x => x.ops.forEach((o, j) => { if (j === k || !selF(x, j)) return; if (pit) { if (o.fixed && !(src && src.f === 'pt')) return; o.pit = deep(src); o.pr = pr; } else o.amp = deep(src); n++; }));
+    lcdShow('Hüllkurve', label + (n ? ' (' + n + ')' : ' – keine passenden Operatoren')); ctx.rebuild();
+  };
+  const initEnv = () => { fxMut(i, pit ? 'Tonhöhe Init' : 'Hüllkurve Init', x => { const o = x.ops[k]; if (pit) { o.pit = null; o.pr = 'dx'; } else o.amp = {f: 'dx', r: [99, 99, 99, 80], l: [99, 99, 99, 0]}; }); FXF.envSel = null; ctx.rebuild(); };
+  const copyEnv = () => { FXF.clip = {kind: 'env', amp: deep(fxX(i).ops[k].amp), pit: deep(fxX(i).ops[k].pit), pr: fxX(i).ops[k].pr}; lcdShow('Hüllkurve', 'kopiert (OP ' + (k + 1) + ')'); };
+  const pasteEnv = () => { const C = FXF.clip; if (!C || C.kind !== 'env') { lcdShow('Einfügen', 'erst eine Hüllkurve kopieren'); return; }
+    fxMut(i, 'Hüllkurve eingefügt', x => { const o = x.ops[k]; if (pit) { if (!o.fixed || (C.pit && C.pit.f === 'pt')) { o.pit = deep(C.pit); if (C.pr != null) o.pr = C.pr; } } else o.amp = deep(C.amp); });
+    lcdShow('Hüllkurve', 'eingefügt (OP ' + (k + 1) + ')'); ctx.rebuild(); };
+  const ACT = {mod: ['Auf alle Mod.', () => toAll((x, j) => !fxIsOut(x, j), 'auf alle Modulatoren')], out: ['Auf alle Ausg.', () => toAll((x, j) => fxIsOut(x, j), 'auf alle Ausgänge')],
+    all: ['Auf alle', () => toAll(() => true, 'auf alle')], init: ['Init', initEnv], copy: ['Kopieren', copyEnv], paste: ['Einfügen', pasteEnv]};
+  // ---- graph
+  const gw = L ? (big ? Math.round(box.w * .56) : Math.min(280, box.w - 228)) : box.w;
+  const nBtnRowsP = big ? 3 : 2, cellsH = bigNoCells ? 0 : 2 * (bh + 2);
+  const graphH = L ? box.h - 16 : compact || mini3 ? Math.max(56, box.h - 16 - 2 - bh) : big ? Math.max(90, box.h - 16 - 2 - nBtnRowsP * (bh + 2) - cellsH) : 129;
+  const showCells = !L && !compact && !mini3 && !bigNoCells;
   const gEl = el('div', 'fxeg'); guardTouch(gEl);
-  gEl.innerHTML = '<svg aria-hidden="true"><g class="rul"></g><path class="fl"/><path class="ln"/><g class="pts"></g></svg><div class="fxet"></div><div class="fxeinfo"></div>';
+  gEl.innerHTML = '<svg aria-hidden="true"><g class="rul"></g><g class="deco"></g><path class="fl"/><path class="ln"/><g class="pts"></g></svg><div class="fxet"></div><div class="fxeinfo"></div><button class="fxewarn rb" hidden></button>';
   Object.assign(gEl.style, {left: '0px', top: '0px', width: gw + 'px', height: graphH + 16 + 'px'});
-  env.appendChild(gEl);
-  const svg = gEl.querySelector('svg'), rul = svg.querySelector('.rul'), pf = svg.querySelector('.fl'), pl = svg.querySelector('.ln'), ptsG = svg.querySelector('.pts'), tl = gEl.querySelector('.fxet'), info = gEl.querySelector('.fxeinfo');
-  const dots = [0, 1, 2, 3].map(() => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('r', '6'); ptsG.appendChild(c); return c; });
-  // buttons
+  host.appendChild(gEl);
+  const svg = gEl.querySelector('svg'), rul = svg.querySelector('.rul'), deco = svg.querySelector('.deco'), pf = svg.querySelector('.fl'), pl = svg.querySelector('.ln'), ptsG = svg.querySelector('.pts');
+  const tl = gEl.querySelector('.fxet'), info = gEl.querySelector('.fxeinfo'), warn = gEl.querySelector('.fxewarn');
+  const dots = []; for (let d = 0; d < 6; d++) { const c = document.createElementNS(NS, 'circle'); c.setAttribute('r', '6'); ptsG.appendChild(c); dots.push(c); }
+  onTap(warn, () => lcdShow('Hüllkurve', warn.dataset.full || ''));
+  // ---- buttons
   const bw = el('div', 'fxebtns' + (L ? ' l' : ''));
-  Object.assign(bw.style, L ? {left: gw + 8 + 'px', top: '0px', width: btnW + 'px', gridAutoRows: bh + 'px'} : {left: '0px', top: graphH + 16 + 2 + 'px', width: btnW + 'px', gridTemplateColumns: mini3 ? 'repeat(3,1fr)' : ''});
-  env.appendChild(bw);
-  const mkB = (lb, fn, cls) => { const b = el('button', 'rb fxeb' + (cls ? ' ' + cls : ''), esc(lb)); onTap(b, fn); bw.appendChild(b); return b; };
-  const toAll = (sel, label) => {
-    const src = deep(fxEnvOf(fxX(i).ops[k], which) || FX_PIT0());
-    let n = 0; fxMut(i, label, x => x.ops.forEach((o, j) => { if (j === k || !sel(x, j)) return; if (which === 'pit') { if (o.fixed) return; o.pit = deep(src); } else o.amp = deep(src); n++; }));
-    lcdShow('Hüllkurve', label + (n ? ' (' + n + ')' : ' – keine passenden Operatoren')); fxRender(false);
+  Object.assign(bw.style, L ? {left: gw + 8 + 'px', top: '0px', width: (box.w - gw - 8) + 'px', gridAutoRows: bh + 'px'} : {left: '0px', top: graphH + 16 + 2 + 'px', width: box.w + 'px', gridTemplateColumns: mini3 ? 'repeat(3,1fr)' : '', gridAutoRows: bh + 'px'});
+  host.appendChild(bw);
+  const mkB = (lb, fn, cls, hide) => { const b = el('button', 'rb fxeb' + (cls ? ' ' + cls : ''), esc(lb)); if (hide) b.style.visibility = 'hidden'; else onTap(b, fn); bw.appendChild(b); return b; };
+  const menu = (anchor, items) => { const p = openPop(anchor, pop => { pop.classList.add('fxlist'); pop.innerHTML = items.map((it, j) => (it ? `<button class="rb fxmi${it[2] ? ' on' : ''}" data-j="${j}"${it[4] ? ` data-n="${it[4]}"` : ''}${it[3] ? ' disabled' : ''}>${esc(it[0])}</button>` : '')).join(''); }, {name: 'fxemenu'});
+    onTap(p, b => { closePop(); const it = items[+b.dataset.j]; if (it && !it[3]) it[1](); }, '.fxmi'); };
+  const fineOn = () => FXF.fineChip;
+  const fineB = () => { const b = el('button', 'rb fxeb fine' + (FXF.fineChip ? ' on' : ''), 'FEIN'); b.setAttribute('aria-pressed', String(FXF.fineChip)); onTap(b, () => { FXF.fineChip = !FXF.fineChip; b.classList.toggle('on', FXF.fineChip); b.setAttribute('aria-pressed', String(FXF.fineChip)); haptic('tick'); }); return b; };
+  const scaleSheet = anchor => {
+    let ft = 1, fh = 1;
+    const p = openPop(anchor, pop => {
+      pop.classList.add('fxlist', 'fxscale');
+      pop.innerHTML = `<h4>Skala · OP ${k + 1}</h4><label>Zeit <b class="vt">×1</b><input type="range" class="st" min="-2" max="2" step="0.05" value="0" aria-label="Zeit ×0,25 bis ×4"></label>` +
+        `<label>Höhe <b class="vh">×1</b><input type="range" class="sh" min="0" max="1.5" step="0.05" value="1" aria-label="Höhe ×0 bis ×1,5"></label><div class="fxsb"><button class="rb fxmi ok">Anwenden</button><button class="rb fxmi no">Abbrechen</button></div>`;
+    }, {name: 'fxscale'});
+    const fmt = v => '×' + fmtDec(Math.round(v * 100) / 100, 2).replace(/,?0+$/, '');
+    const st = p.querySelector('.st'), sh = p.querySelector('.sh');
+    st.addEventListener('input', () => { ft = Math.pow(2, +st.value); p.querySelector('.vt').textContent = fmt(ft); });
+    sh.addEventListener('input', () => { fh = +sh.value; p.querySelector('.vh').textContent = fmt(fh); });
+    onTap(p, b => { closePop(); if (b.classList.contains('ok')) act('scale', {time: ft, height: fh}); }, '.fxmi');
   };
-  const nudge = d => { const f = FXF.envField != null ? FXF.envField : (FXF.envSel != null ? FXF.envSel : 1), w2 = f < 4 ? 'r' : 'l', st = f % 4;
-    fxMut(i, (w2 === 'r' ? 'R' : 'L') + (st + 1) + (d > 0 ? ' +1' : ' ' + MINUS + '1'), x => { const o = x.ops[k]; if (which === 'pit' && !o.pit) o.pit = FX_PIT0(); const e = fxEnvOf(o, which); e[w2][st] = clamp(e[w2][st] + d, 0, 99); fxPitClean(o, which); });
-    FXF.envField = f; fxRender(false); };
-  const initEnv = () => { fxMut(i, which === 'pit' ? 'Tonhöhe Init' : 'Hüllkurve Init', x => { const o = x.ops[k]; if (which === 'pit') o.pit = null; else o.amp = {f: 'dx', r: [99, 99, 99, 80], l: [99, 99, 99, 0]}; }); fxRender(false); };
-  const copyEnv = () => { FXF.clip = {kind: 'env', amp: deep(fxX(i).ops[k].amp), pit: deep(fxX(i).ops[k].pit)}; lcdShow('Hüllkurve', 'kopiert (OP ' + (k + 1) + ')'); };
-  const pasteEnv = () => { const C = FXF.clip; if (!C || C.kind !== 'env') { lcdShow('Einfügen', 'erst eine Hüllkurve kopieren'); return; } fxMut(i, 'Hüllkurve eingefügt', x => { const o = x.ops[k]; if (which === 'pit') { if (!o.fixed) o.pit = deep(C.pit); } else o.amp = deep(C.amp); }); lcdShow('Hüllkurve', 'eingefügt (OP ' + (k + 1) + ')'); fxRender(false); };
-  const ACT = {mod: ['auf alle Modulatoren', () => toAll((x, j) => !fxIsOut(x, j), 'auf alle Modulatoren')], out: ['auf alle Ausgänge', () => toAll((x, j) => fxIsOut(x, j), 'auf alle Ausgänge')],
-    all: ['auf alle', () => toAll(() => true, 'auf alle')], init: ['Init', initEnv], copy: ['Kopieren', copyEnv], paste: ['Einfügen', pasteEnv]};
-  const menuB = (lb, keys) => { const b = mkB(lb, () => { const p = openPop(b, pop => { pop.classList.add('fxlist'); pop.innerHTML = keys.map(a_ => (ACT[a_] ? `<button class="rb fxmi" data-a="${a_}">${ACT[a_][0]}</button>` : `<button class="rb fxmi" data-n="${a_}">Vorlage ${a_}</button>`)).join(''); }, {name: 'fxauf'});
-    onTap(p, x => { closePop(); if (x.dataset.n) preset(x.dataset.n); else ACT[x.dataset.a][1](); }, '.fxmi'); }); return b; };
-  const dxB = () => mkB('DX ▾', () => { FXF.envDx = !FXF.envDx; fxRender(true); }, FXF.envDx ? 'on' : '');
-  const vorlB = () => { const pv = mkB('Vorl. ▾', () => { const p = openPop(pv, pop => { pop.classList.add('fxlist'); pop.innerHTML = names.map(n => `<button class="rb fxmi" data-n="${n}">${n}</button>`).join(''); }, {name: 'fxpre'}); onTap(p, b => { closePop(); preset(b.dataset.n); }, '.fxmi'); }); };
-  if (mini3) { menuB('Mehr ▾', ['mod', 'out', 'all', 'init', 'copy', 'paste'].concat(names)); dxB(); bw.appendChild(fineB()); }
-  else if (compact) { menuB('Auf … ▾', ['mod', 'out', 'all', 'init']); mkB('Kopieren', copyEnv); mkB('Einfügen', pasteEnv); dxB(); }
-  else {
-    mkB('Alle Mod.', ACT.mod[1]); mkB('Alle Ausg.', ACT.out[1]); mkB('Kopieren', copyEnv); mkB('Einfügen', pasteEnv);
-    mkB('Auf alle', ACT.all[1]); mkB('Init', initEnv); mkB(MINUS + '1', () => nudge(-1)); mkB('+1', () => nudge(1));
-    if (L) { dxB(); bw.appendChild(fineB()); vorlB(); }
-    else if (!preRow) { bw.appendChild(fineB()); vorlB(); }
+  const rangeMenu = anchor => { const cur = fxX(i).ops[k].pr, ptNow = !!(fxEnvOf(fxX(i).ops[k], 'pit') && fxEnvOf(fxX(i).ops[k], 'pit').f === 'pt');
+    menu(anchor, ['dx', 'ton', 'q5', 1, 2, 4, 8].map(v => [FX_PRN[v] + (v === 'dx' && ptNow ? ' (nur über DX-tauglich machen)' : ''), () => act('range', {v}), String(cur) === String(v), v === 'dx' && ptNow])); };
+  const I = fxEnvInfo(e0, which), s0 = fxSelPt(e0), isSel = s0 != null;
+  const B = {};
+  const pointRows = () => {
+    B.sus = mkB('Sustain', () => act('sus'), I.sus === s0 ? 'on' : '');
+    B.la = mkB('Loop A', () => act('loopA'), I.la === s0 ? 'on lp' : 'lp'); B.lb = mkB('Loop B', () => act('loopB'), I.lb === s0 ? 'on lp' : 'lp');
+    B.ul = mkB('Loop weg', () => act('unloop'), 'lp', !(s0 >= 0 && (s0 === I.la || s0 === I.lb)));
+    B.del = mkB('✗', () => act('del'), 'del', !(I.n > 2 && s0 >= 1)); B.add = mkB('+', () => act('add'), 'addp', I.n >= 6);
+    B.mid = mkB('Mitte', () => act('center'), '', !pit); B.skip = mkB((I.skip ? '☑' : '☐') + ' Skip', () => act('skip'), I.skip ? 'on' : '', s0 !== I.sus);
+  };
+  const noneRows = pitRow => {
+    B.crv = mkB(I.crv === 'lin' ? 'Lin' : 'Exp', () => act('crv'), 'tg'); B.scale = mkB('Skala', () => scaleSheet(B.scale)); B.run = mkB(I.run === 'free' ? 'Frei' : 'Retrig', () => act('run'), 'tg');
+    B.add = mkB('+', () => act('add'), 'addp', I.n >= 6);
+    if (pitRow) { B.rng = mkB('Bereich ▾', () => rangeMenu(B.rng)); mkB('Alle Mod.', ACT.mod[1]); }
+    else { mkB('Alle Mod.', ACT.mod[1]); mkB('Alle Ausg.', ACT.out[1]); }
+    mkB('Kopieren', copyEnv); mkB('Einfügen', pasteEnv);
+  };
+  const dxB = lb => mkB(lb || (PT0 ? 'Punkte ▾' : 'DX-Zeile ▾'), () => { FXF.envDx = !FXF.envDx; ctx.rebuild(); }, FXF.envDx ? 'on' : '');
+  const vorlB = () => { const b = mkB('Vorl. ▾', () => menu(b, names.map(n => [n + ' (DX)', () => preset(n), false, false, n]))); return b; };
+  const aufB = () => { const b = mkB('Auf … ▾', () => menu(b, [[ACT.all[0], ACT.all[1]], [ACT.mod[0], ACT.mod[1]], [ACT.out[0], ACT.out[1]], [ACT.init[0], ACT.init[1]]])); return b; };
+  const ptMenuItems = () => [['Sustain', () => act('sus'), I.sus === s0], ['Loop A', () => act('loopA'), I.la === s0], ['Loop B', () => act('loopB'), I.lb === s0],
+    s0 === I.la || s0 === I.lb ? ['Loop weg', () => act('unloop')] : null, I.n > 2 && s0 >= 1 ? ['✗ Punkt löschen', () => act('del')] : null, I.n < 6 ? ['+ Punkt dazu', () => act('add')] : null,
+    pit ? ['Mitte', () => act('center')] : null, s0 === I.sus ? [(I.skip ? '☑' : '☐') + ' Skip beim Loslassen', () => act('skip')] : null];
+  const moreItems = () => [['Skala …', () => scaleSheet(bw)], I.n < 6 ? ['+ Punkt dazu', () => act('add')] : null, pit ? ['Bereich: ' + FX_PRN[o0.pr] + ' …', () => rangeMenu(bw)] : null,
+    [ACT.mod[0], ACT.mod[1]], [ACT.out[0], ACT.out[1]], [ACT.all[0], ACT.all[1]], [ACT.copy[0], copyEnv], [ACT.paste[0], pasteEnv], [ACT.init[0], initEnv]].concat(names.map(n => ['Vorlage ' + n + ' (DX)', () => preset(n)]))
+    .concat(mini3 ? [['FEIN ' + (FXF.fineChip ? 'aus' : 'an'), () => { FXF.fineChip = !FXF.fineChip; lcdShow('FEIN', FXF.fineChip ? '×¼' : 'aus'); }]] : []);
+  if (mini3) {
+    if (isSel) { B.sus = mkB('Sustain', () => act('sus'), I.sus === s0 ? 'on' : ''); const pm = mkB('Punkt ▾', () => menu(pm, ptMenuItems())); }
+    else { B.crv = mkB(I.crv === 'lin' ? 'Lin' : 'Exp', () => act('crv'), 'tg'); const mm = mkB('Mehr ▾', () => menu(mm, moreItems())); }
+    dxB(PT0 ? 'Punkte' : 'DX ▾');
+  } else if (compact) {
+    if (isSel) { B.sus = mkB('Sustain', () => act('sus'), I.sus === s0 ? 'on' : ''); const lm = mkB('Loop ▾', () => menu(lm, ptMenuItems().slice(1))); B.del = mkB('✗', () => act('del'), 'del', !(I.n > 2 && s0 >= 1)); B.add = mkB('+', () => act('add'), 'addp', I.n >= 6); }
+    else { B.crv = mkB(I.crv === 'lin' ? 'Lin' : 'Exp', () => act('crv'), 'tg'); B.run = mkB(I.run === 'free' ? 'Frei' : 'Retrig', () => act('run'), 'tg'); const mm = mkB('Mehr ▾', () => menu(mm, moreItems())); dxB(PT0 ? 'Punkte' : 'DX ▾'); }
+  } else {
+    if (isSel) pointRows(); else noneRows(pit && !L);
+    if (L) { dxB(); bw.appendChild(fineB()); vorlB(); if (pit && !isSel) B.rng = mkB('Bereich ▾', () => rangeMenu(B.rng)); else aufB(); }
+    else if (big) { vorlB(); bw.appendChild(fineB()); aufB(); if (bigNoCells) dxB(PT0 ? 'Punkte' : 'DX ▾'); else if (pit) B.rng2 = mkB('Bereich ▾', () => rangeMenu(B.rng2)); else mkB('Zoom ×1', () => { FXF.envZoom = 1; FXF.envOff = 0; draw(fxX(i)); }); }
   }
-  // DX rows R1–R4 / L1–L4 (P1, W); the other sizes show them instead of the graph with [DX ▾]
-  const dxW = el('div', 'fxedx');
-  const nBtnRows = Math.ceil(bw.children.length / (mini3 ? 3 : 4)), dxTop = showDx ? graphH + 16 + 2 + nBtnRows * 36 : 0;
-  if (showDx || FXF.envDx) { Object.assign(dxW.style, {left: '0px', top: dxTop + 'px', width: (L ? gw : box.w) + 'px', gridAutoRows: bh + 'px'}); env.appendChild(dxW); if (FXF.envDx && !showDx) gEl.style.visibility = 'hidden'; }
-  const cells = [];
-  for (let f = 0; f < 8; f++) { const c = el('button', 'rb fxdf'); c.dataset.f = f; c.innerHTML = `<small>${f < 4 ? 'R' : 'L'}${(f % 4) + 1}</small><b></b>`; dxW.appendChild(c); cells.push(c); fxDxCell(V, c, f, which); }
+  if (ctx.pre) {
+    ctx.pre.innerHTML = '';
+    for (const n of names) { const b = el('button', 'rb fxeb pre', n); onTap(b, () => preset(n)); ctx.pre.appendChild(b); }
+    ctx.pre.appendChild(fineB());
+  }
+  // ---- value cells: DX R1–R4 / L1–L4, point form P0–P5 (y; tap = select, a second tap = keypad)
+  const nRows = Math.ceil(bw.children.length / (mini3 ? 3 : 4)), dxTop = showCells ? graphH + 16 + 2 + nRows * (bh + 2) : 0;
+  const cellsShown = showCells || FXF.envDx;
+  if (cellsShown) {
+    const dxW = el('div', 'fxedx');
+    const cw_ = L ? gw : box.w, nc = !PT0 || cw_ / 4 >= 64 ? 0 : cw_ / 3 >= 54 ? 3 : 2;    // narrow (P3, L2): the point cells in 3 or 2 columns
+    Object.assign(dxW.style, {left: '0px', top: dxTop + 'px', width: cw_ + 'px', gridAutoRows: bh + 'px', gridTemplateColumns: nc ? `repeat(${nc},1fr)` : ''}); host.appendChild(dxW);
+    if (FXF.envDx && !showCells) gEl.style.visibility = 'hidden';
+    if (PT0) for (let p = 0; p < 6; p++) { const c = el('button', 'rb fxdf pt'); c.dataset.p = p; c.innerHTML = `<small>P${p}</small><b></b>`; dxW.appendChild(c); fxPtCell(ctx, c, p); }
+    else for (let f = 0; f < 8; f++) { const c = el('button', 'rb fxdf'); c.dataset.f = f; c.innerHTML = `<small>${f < 4 ? 'R' : 'L'}${(f % 4) + 1}</small><b></b>`; dxW.appendChild(c); fxDxCell({i, rebuild: ctx.rebuild}, c, f, which); }
+  }
   // ---- drawing
-  let geo = null;
-  const view = x => { const o = x.ops[k]; return which === 'pit' ? (o.pit || FX_PIT0()) : {r: o.amp.r, l: o.amp.l, ol: o.ol, rs: o.rs}; };
-  const macro = x => { const p = sndOf(i).p; return {atk: +p.fmAtk || 0, dec: +p.fmDec || 0, rel: +p.fmRel || 0, bite: +p.fmBite || 0, car: fxIsOut(x, k)}; };
-  const times = x => (which === 'pit' ? pegTimes(view(x)) : FMH.envTimes(view(x), fmRefNote(i), macro(x)));
-  const mkGeo = () => {
-    const w = gw, h = graphH, x0 = 6, hw = Math.round((w - 14) * .68), gap = 8, rw = w - 14 - hw - gap, xRel = x0 + hw + gap;
-    const tMin = .0005, tMax = 10, rMin = .005, rMax = 12, LH = Math.log(tMax / tMin), LR = Math.log(rMax / rMin);
-    return {w, h, x0, hw, xGap: x0 + hw, xRel, x1: xRel + rw, rw, yT: 16, yB: h - 6, xh: s => x0 + Math.log(clamp(s, tMin, tMax) / tMin) / LH * hw, th: x => tMin * Math.exp((x - x0) / hw * LH),
-      xr: s => xRel + Math.log(clamp(s, rMin, rMax) / rMin) / LR * rw, tr: x => rMin * Math.exp((x - xRel) / rw * LR)};
-  };
+  let geo = null, LAY = null, G = null;
   const yOf = Lv => geo.yT + (1 - Lv / 99) * (geo.yB - geo.yT), LofY = y => clamp(Math.round((1 - (y - geo.yT) / (geo.yB - geo.yT)) * 99), 0, 99);
-  const lay = x => { const e = view(x), t = times(x), c0 = t[0], c1 = c0 + t[1], c2 = c1 + t[2]; const xs = [geo.xh(c0), geo.xh(c1), geo.xh(c2)];
-    for (let j = 1; j < 3; j++) if (xs[j] - xs[j - 1] < 12) xs[j] = xs[j - 1] + 12;
-    return {t, e, pts: [{x: xs[0], y: yOf(e.l[0])}, {x: xs[1], y: yOf(e.l[1])}, {x: xs[2], y: yOf(e.l[2])}, {x: geo.xr(t[3]), y: yOf(e.l[3])}], start: {x: geo.x0, y: yOf(e.l[3])}}; };
-  let LAY = null;
+  const viewDx = x => { const o = x.ops[k]; return pit ? (o.pit && o.pit.f === 'dx' ? o.pit : FX_PIT0()) : {r: o.amp.r, l: o.amp.l, ol: o.ol, rs: o.rs}; };
+  const macro = x => { const p = sndOf(i).p; return {atk: +p.fmAtk || 0, dec: +p.fmDec || 0, rel: +p.fmRel || 0, bite: +p.fmBite || 0, car: fxIsOut(x, k)}; };
+  const timesDx = x => (pit ? pegTimes(viewDx(x)) : FMH.envTimes(viewDx(x), fmRefNote(i), macro(x)));
+  // DX form: the A.4b axis (Halten ┊ Release)
+  const geoDx = () => { const w = gw, h = graphH, x0 = 6, hw = Math.round((w - 14) * .68), gap = 8, rw = w - 14 - hw - gap, xRel = x0 + hw + gap;
+    const tMin = .0005, tMax = 10, rMin = .005, rMax = 12, LH = Math.log(tMax / tMin), LR = Math.log(rMax / rMin);
+    return {dx: true, w, h, x0, hw, xGap: x0 + hw, xRel, x1: xRel + rw, rw, yT: 16, yB: h - 6, xh: s => x0 + Math.log(clamp(s, tMin, tMax) / tMin) / LH * hw, th: x => tMin * Math.exp((x - x0) / hw * LH),
+      xr: s => xRel + Math.log(clamp(s, rMin, rMax) / rMin) / LR * rw, tr: x => rMin * Math.exp((x - xRel) / rw * LR)}; };
+  // point form (K2-55): one log time axis log(1 + t / 0,5 ms) over the total length (+25 %), pinch zoom ×1…×8 with an offset
+  const T_MIN = .0005;
+  const geoPt = (e, span) => { const w = gw, h = graphH, x0 = 8, x1 = w - 8, tot = e.t.reduce((a, b) => a + b, 0) / 1000;
+    const sp = span || Math.max(.05, tot * 1.25), U = Math.log1p(sp / T_MIN), z = FXF.envZoom || 1, off = clamp(FXF.envOff || 0, 0, 1 - 1 / z);
+    return {dx: false, w, h, x0, x1, yT: 16, yB: h - 6, span: sp, tot, U, z, off, xc: c => x0 + (Math.log1p(Math.max(0, c) / T_MIN) / U - off) * z * (x1 - x0), cx: x => T_MIN * Math.expm1(((x - x0) / (z * (x1 - x0)) + off) * U)}; };
+  const cumOf = e => { const c = [0]; for (const t of e.t) c.push(c[c.length - 1] + t / 1000); return c; };
+  const R_ = () => FMX.PR_HT[fxX(i).ops[k].pr] || 12;
   const draw = X => {
     if (!gEl.isConnected) return;
-    geo = mkGeo(); svg.setAttribute('width', geo.w); svg.setAttribute('height', geo.h); svg.setAttribute('viewBox', `0 0 ${geo.w} ${geo.h}`);
-    const o = X.ops[k], e = fxEnvOf(o, which);
-    if (which === 'amp' && e && e.f !== 'dx') { info.textContent = 'Punkt-Form (EssenceFM) – Bearbeiten ab dem nächsten Paket'; return; }
-    if (which === 'pit' && o.fixed) info.textContent = 'feste Frequenz: keine Tonhöhen-Hüllkurve (DX)'; else info.textContent = '';
-    LAY = lay(X); const A = geo, P = LAY.pts;
+    const o = X.ops[k], e = fxEnvOf(o, which), PT = !!(e && e.f === 'pt');
+    if (PT !== PT0) { ctx.rebuild(); return; }
+    svg.setAttribute('width', gw); svg.setAttribute('height', graphH); svg.setAttribute('viewBox', `0 0 ${gw} ${graphH}`);
+    const sP = fxSelPt(e);
+    // warn chips (KP 4.11): an output that does not end
+    let wtx = '', wfull = '';
+    if (!pit && fxIsOut(X, k)) {
+      if (PT && e.la >= 0 && e.lb > e.la && (e.sus < 0 || e.la >= e.sus || e.run === 'free')) { wtx = 'endet nicht (Schleife)'; wfull = 'Ausgang endet nicht (Schleife) – die Note klingt bis zur 12-s-Kappe'; }
+      else if (PT ? e.y[e.y.length - 1] > 0 : e.l[3] > 0) { wtx = 'endet nicht bei 0'; wfull = 'Ausgang endet nicht bei 0 – Note klingt bis zur Kappe'; }
+    }
+    warn.hidden = !wtx; warn.textContent = wtx; warn.dataset.full = wfull; warn.title = wfull;
+    if (!PT) { drawDx(X, o, e, sP); return; }
+    geo = geoPt(e, G && G.span); const A = geo, c = cumOf(e), xs = c.map(A.xc), ys = e.y.map(yOf);
+    let rh = `<line x1="${A.x0}" y1="12" x2="${A.x1}" y2="12" class="ra"/>`;
+    for (const [s, lb] of [[.001, '1ms'], [.01, '10'], [.1, '100'], [1, '1s'], [10, '10s']]) { const x = A.xc(s); if (x < A.x0 - .5 || x > A.x1 + .5) continue; rh += `<line x1="${x.toFixed(1)}" y1="9" x2="${x.toFixed(1)}" y2="12" class="rt"/><text x="${x.toFixed(1)}" y="8" class="rl">${lb}</text>`; }
+    if (pit) { const R = R_(); rh += `<line x1="${A.x0}" y1="${yOf(50).toFixed(1)}" x2="${A.x1}" y2="${yOf(50).toFixed(1)}" class="zero"/><text x="${A.x1}" y="${(A.yT + 7).toFixed(1)}" class="rl yl">+${R}</text><text x="${A.x1}" y="${A.yB.toFixed(1)}" class="rl yl">${MINUS}${R}</text>`; }
+    if (rul._h !== rh) { rul._h = rh; rul.innerHTML = rh; }
+    let dh = '';
+    if (e.la >= 0 && e.lb > e.la) dh += `<rect x="${xs[e.la].toFixed(1)}" y="${A.yT - 2}" width="${Math.max(1, xs[e.lb] - xs[e.la]).toFixed(1)}" height="${(A.yB - A.yT + 4).toFixed(1)}" class="lpz"/>`;
+    for (const [j, t] of [[e.la, 'A'], [e.lb, 'B']]) if (j >= 0) dh += `<line x1="${xs[j].toFixed(1)}" y1="${A.yT - 2}" x2="${xs[j].toFixed(1)}" y2="${A.yB + 2}" class="lpm"/><text x="${(xs[j] + 2).toFixed(1)}" y="${(A.yB - 2).toFixed(1)}" class="lpt">${t}</text>`;
+    if (e.sus >= 0) dh += `<line x1="${xs[e.sus].toFixed(1)}" y1="${A.yT - 4}" x2="${xs[e.sus].toFixed(1)}" y2="${A.yB + 4}" class="sus" data-x="${xs[e.sus].toFixed(2)}"/>`;
+    if (deco._h !== dh) { deco._h = dh; deco.innerHTML = dh; }
+    // K2-57: Lin straight between the points, Exp an approach curve (fast, then flat), in segment coordinates
+    let d = `M${xs[0].toFixed(1)} ${ys[0].toFixed(1)}`;
+    for (let j = 1; j < e.y.length; j++) {
+      if (e.crv === 'lin' || ys[j] === ys[j - 1]) { d += `L${xs[j].toFixed(1)} ${ys[j].toFixed(1)}`; continue; }
+      for (let q = 1; q <= 12; q++) { const u = q / 12, yy = ys[j] + (ys[j - 1] - ys[j]) * Math.pow(1 - u, 2.2); d += `L${(xs[j - 1] + (xs[j] - xs[j - 1]) * u).toFixed(1)} ${yy.toFixed(1)}`; }
+    }
+    d += `L${A.x1} ${ys[ys.length - 1].toFixed(1)}`;
+    pl.setAttribute('d', d); pf.setAttribute('d', d);
+    dots.forEach((c_, j) => { const on = j < e.y.length; c_.style.display = on ? '' : 'none'; if (!on) return;
+      c_.setAttribute('cx', xs[j].toFixed(1)); c_.setAttribute('cy', ys[j].toFixed(1)); c_.classList.toggle('on', sP === j); c_.classList.toggle('p0', j === 0);
+      c_.style.stroke = j === 0 ? '#B8BDCC' : FXC[(j - 1) % 6] === '#1B1D25' ? '#8A90A8' : FXC[(j - 1) % 6]; });
+    const zt = A.z > 1.01 ? ' · Zoom ×' + fmtDec(Math.round(A.z * 10) / 10, 1).replace(/,0$/, '') : '';
+    const ttxt = sP != null ? 'X ' + fmMs(c[sP]) + ' · Y ' + (pit ? htTxt(FMX.yHt(e.y[sP], R_())) + ' HT' : e.y[sP]) + zt : 'Gesamt ' + fmMs(A.tot) + zt;
+    if (tl.textContent !== ttxt) tl.textContent = ttxt;
+    info.textContent = '';
+    LAY = {pts: xs.map((x, j) => ({x, y: ys[j]})), cum: c};
+    cellsUpd(X);
+  };
+  const drawDx = (X, o, e, sP) => {
+    geo = geoDx(); const A = geo;
+    if (pit && o.fixed) info.textContent = 'feste Frequenz: DX ohne Tonhöhen-Hk. – ein Bereich wirkt auch hier'; else info.textContent = '';
+    const ev = viewDx(X), t = timesDx(X), c0 = t[0], c1 = c0 + t[1], c2 = c1 + t[2], xs = [A.xh(c0), A.xh(c1), A.xh(c2)];
+    for (let j = 1; j < 3; j++) if (xs[j] - xs[j - 1] < 12) xs[j] = xs[j - 1] + 12;
+    const P = [{x: xs[0], y: yOf(ev.l[0])}, {x: xs[1], y: yOf(ev.l[1])}, {x: xs[2], y: yOf(ev.l[2])}, {x: A.xr(t[3]), y: yOf(ev.l[3])}], st = {x: A.x0, y: yOf(ev.l[3])};
     let rh = `<line x1="${A.x0}" y1="12" x2="${A.xGap}" y2="12" class="ra"/><line x1="${A.xRel}" y1="12" x2="${A.x1}" y2="12" class="ra"/>`;
     for (const [s, lb] of [[.001, '1ms'], [.01, '10'], [.1, '100'], [1, '1s'], [10, '10s']]) { const x = A.xh(s); rh += `<line x1="${x.toFixed(1)}" y1="9" x2="${x.toFixed(1)}" y2="12" class="rt"/><text x="${x.toFixed(1)}" y="8" class="rl">${lb}</text>`; }
-    for (const [s, lb] of [[1, '1s']]) { const x = A.xr(s); rh += `<text x="${x.toFixed(1)}" y="8" class="rl">${lb}</text>`; }
-    rh += `<line x1="${((A.xGap + A.xRel) / 2).toFixed(1)}" y1="14" x2="${((A.xGap + A.xRel) / 2).toFixed(1)}" y2="${A.h - 2}" class="gap"/>`;
-    if (which === 'pit') rh += `<line x1="${A.x0}" y1="${yOf(50).toFixed(1)}" x2="${A.x1}" y2="${yOf(50).toFixed(1)}" class="zero"/>`;
+    rh += `<text x="${A.xr(1).toFixed(1)}" y="8" class="rl">1s</text><line x1="${((A.xGap + A.xRel) / 2).toFixed(1)}" y1="14" x2="${((A.xGap + A.xRel) / 2).toFixed(1)}" y2="${A.h - 2}" class="gap"/>`;
+    if (pit) rh += `<line x1="${A.x0}" y1="${yOf(50).toFixed(1)}" x2="${A.x1}" y2="${yOf(50).toFixed(1)}" class="zero"/>`;
     if (rul._h !== rh) { rul._h = rh; rul.innerHTML = rh; }
-    const d = `M${LAY.start.x.toFixed(1)} ${LAY.start.y.toFixed(1)}L${P[0].x.toFixed(1)} ${P[0].y.toFixed(1)}L${P[1].x.toFixed(1)} ${P[1].y.toFixed(1)}L${P[2].x.toFixed(1)} ${P[2].y.toFixed(1)}L${A.xGap} ${P[2].y.toFixed(1)}M${A.xRel} ${P[2].y.toFixed(1)}L${P[3].x.toFixed(1)} ${P[3].y.toFixed(1)}L${A.x1} ${P[3].y.toFixed(1)}`;
+    if (deco._h !== '') { deco._h = ''; deco.innerHTML = ''; }
+    const d = `M${st.x.toFixed(1)} ${st.y.toFixed(1)}L${P[0].x.toFixed(1)} ${P[0].y.toFixed(1)}L${P[1].x.toFixed(1)} ${P[1].y.toFixed(1)}L${P[2].x.toFixed(1)} ${P[2].y.toFixed(1)}L${A.xGap} ${P[2].y.toFixed(1)}M${A.xRel} ${P[2].y.toFixed(1)}L${P[3].x.toFixed(1)} ${P[3].y.toFixed(1)}L${A.x1} ${P[3].y.toFixed(1)}`;
     pl.setAttribute('d', d); pf.setAttribute('d', d.split('M').filter(Boolean).map(s => 'M' + s).join(''));
-    P.forEach((p, s) => { dots[s].setAttribute('cx', p.x.toFixed(1)); dots[s].setAttribute('cy', p.y.toFixed(1)); dots[s].classList.toggle('on', FXF.envSel === s); });
-    const T = LAY.t, ttxt = which === 'pit' ? 'Ziel ' + htTxt(pegHt(e ? e.l[2] : 50)) + ' HT · R ' + fmMs(T[3]) : 'A ' + fmMs(T[0]) + ' · D1 ' + fmMs(T[1]) + ' · D2 ' + fmMs(T[2]) + ' · R ' + fmMs(T[3]);
+    dots.forEach((c_, s) => { const on = s < 4; c_.style.display = on ? '' : 'none'; c_.style.stroke = ''; c_.classList.remove('p0'); if (!on) return; c_.setAttribute('cx', P[s].x.toFixed(1)); c_.setAttribute('cy', P[s].y.toFixed(1)); c_.classList.toggle('on', FXF.envSel === s); });
+    const ttxt = sP != null ? 'X ' + fmMs(sP === 4 ? t[3] : [c0, c1, c2][sP - 1]) + (sP === 4 ? ' (Release)' : '') + ' · Y ' + (pit ? htTxt(pegHt(ev.l[sP - 1])) + ' HT' : ev.l[sP - 1])
+      : (pit ? 'Ziel ' + htTxt(pegHt(ev.l[2])) + ' HT · R ' + fmMs(t[3]) : 'Gesamt ' + fmMs(c2) + ' · A ' + fmMs(t[0]) + ' · D1 ' + fmMs(t[1]) + ' · D2 ' + fmMs(t[2]) + ' · R ' + fmMs(t[3]));
     if (tl.textContent !== ttxt) tl.textContent = ttxt;
-    const ev = which === 'pit' ? (e || FX_PIT0()) : e;
-    cells.forEach((c, f) => { const v = f < 4 ? ev.r[f] : ev.l[f - 4], b = c.querySelector('b'); if (b.textContent !== String(v)) b.textContent = String(v); c.classList.toggle('on', FXF.envField === f); });
+    LAY = {pts: P, t, dx: true};
+    cellsUpd(X);
   };
-  V.envUpd = draw;
-  // ---- point drags (x = time of the stage, y = level; the first 6 px decide the axis); one undo per drag
-  let G = null;
-  // R0 / KP §4.5: a FEIN finger only changes the factor – the drag re-bases at the point's current place (no jump back)
-  const envF = () => (FXF.fineChip || FXF.fineIds.size ? .25 : 1);
-  const envReb = () => { if (!G) return; const f = envF(); if (f === G.f) return;
-    if (G.lx != null) { const ev = view(fxX(i)); if (ev && geo) G.py = yOf(ev.l[G.s]); if (geo) G.px = clamp(G.px + (G.lx - G.x0) * G.f, geo.x0, geo.x1); G.x0 = G.lx; G.y0 = G.ly; }
-    G.f = f; };
-  on(gEl, 'pointerdown', e => {
-    if (e.button > 0 || G || !LAY) return; e.preventDefault();
-    const r = gEl.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const cellsUpd = X => {
+    const e = fxEnvOf(X.ops[k], which);
+    host.querySelectorAll('.fxdf').forEach(c => {
+      const b = c.querySelector('b');
+      if (c.dataset.p != null) { const p = +c.dataset.p, on = PT0 && e && e.f === 'pt' && p < e.y.length; c.style.visibility = on ? '' : 'hidden'; if (!on) return;
+        const v = pit ? htTxt(FMX.yHt(e.y[p], R_())) : String(e.y[p]); if (b.textContent !== v) b.textContent = v; c.classList.toggle('on', fxSelPt(e) === p); c.classList.toggle('sus', e.sus === p); return; }
+      const f = +c.dataset.f, ev = pit ? (e && e.f === 'dx' ? e : FX_PIT0()) : e; if (!ev || !ev.r) return; const v = String(f < 4 ? ev.r[f] : ev.l[f - 4]); if (b.textContent !== v) b.textContent = v; c.classList.toggle('on', FXF.envField === f); });
+  };
+  ctx.setUpd(draw); ctx.draw = draw;
+  FXF.envView = () => {
+    if (!gEl.isConnected) return null;
+    const X = fxX(i), e = fxEnvOf(X.ops[k], which), r = gEl.getBoundingClientRect(), info2 = fxEnvInfo(e, which);
+    const btn = b => { const q = b.getBoundingClientRect(); return {txt: b.textContent, vis: b.style.visibility !== 'hidden', on: b.classList.contains('on'), x: q.left, y: q.top, w: q.width, h: q.height, sw: b.scrollWidth, cw: b.clientWidth}; };
+    const susL = svg.querySelector('.sus');
+    return {source: 'feld', mode, op: k, which, form: info2.pt ? 'pt' : 'dx', sus: info2.sus, la: info2.la, lb: info2.lb, skip: info2.skip, crv: info2.crv, run: info2.run, zoom: FXF.envZoom || 1, sel: fxSelPt(e),
+      graph: {x: r.left, y: r.top, w: gw, h: graphH}, pts: LAY ? LAY.pts.map(p => ({x: r.left + p.x, y: r.top + p.y})) : [], footer: tl.textContent, warn: warn.hidden ? '' : warn.dataset.full,
+      susX: susL ? r.left + +susL.dataset.x : null, gap: !!svg.querySelector('.gap'), buttons: Array.from(bw.children).map(btn), cells: Array.from(host.querySelectorAll('.fxdf')).map(btn), y: e && e.y ? e.y.slice() : null, t: e && e.t ? e.t.slice() : null};
+  };
+  // ---- touch: point drags (one undo per drag), tap = select / deselect, pinch = zoom ×1…×8 (point form), a resting second finger = FEIN
+  const envF = () => (fineOn() || FXF.fineIds.size ? .25 : 1);
+  const envReb = () => { if (!G || !G.pt) { if (G && G.dxReb) G.dxReb(); return; } const f = envF(); if (f === G.f) return; if (G.lx != null) { const p = LAY.pts[G.s]; G.px = p.x; G.py = p.y; G.x0 = G.lx; G.y0 = G.ly; } G.f = f; };
+  const P_ = new Map(); let Z = null, tapEmpty = null;
+  on(gEl, 'pointerdown', ev => {
+    if (ev.button > 0 || !LAY) return; ev.preventDefault();
+    const r = gEl.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+    P_.set(ev.pointerId, {x: ev.clientX, y: ev.clientY});
+    if (G) { if (G.id !== ev.pointerId) { FXF.fineIds.add(ev.pointerId); envReb(); } return; }
+    if (P_.size === 2 && PT0) { const [a, b] = [...P_.values()]; Z = {d0: Math.hypot(a.x - b.x, a.y - b.y), z0: FXF.envZoom || 1, off0: FXF.envOff || 0, m0: (a.x + b.x) / 2 - r.left, on: false}; tapEmpty = null; return; }
     let best = -1, bd = 22; LAY.pts.forEach((p, s) => { const d = Math.max(Math.abs(p.x - x), Math.abs(p.y - y)); if (d < bd) { bd = d; best = s; } });
-    if (best < 0) return;
-    const X = fxX(i), o = X.ops[k]; if (which === 'pit' && o.fixed) return; if (which === 'amp' && o.amp.f !== 'dx') return;
-    try { gEl.setPointerCapture(e.pointerId); } catch (_) {}
-    FXF.envSel = best; FXF.envField = best;
-    G = {id: e.pointerId, s: best, x0: e.clientX, y0: e.clientY, axis: null, d: null, e0: deep(view(X)), t0: LAY.t.slice(), px: LAY.pts[best].x, py: LAY.pts[best].y, f: envF(), lx: null, ly: null};
-    FXF.valDrag = {fineOn: envReb};
-    gestBegin(e.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; if (g0 && g0.d) fxDragEnd(i, g0.d, 'Hüllkurve OP ' + (k + 1)); });
+    if (best < 0) { tapEmpty = {id: ev.pointerId, x: ev.clientX, y: ev.clientY}; return; }
+    const X = fxX(i), o = X.ops[k], e = fxEnvOf(o, which);
+    try { gEl.setPointerCapture(ev.pointerId); } catch (_) {}
+    if (!PT0) { dxDown(ev, best, X, o); return; }
+    G = {pt: true, id: ev.pointerId, s: best, x0: ev.clientX, y0: ev.clientY, px: LAY.pts[best].x, py: LAY.pts[best].y, f: envF(), lx: null, ly: null, d: null, span: geo.span, cum: LAY.cum.slice(), moved: false, was: FXF.envSel};
+    FXF.envSel = best; FXF.valDrag = {fineOn: envReb};
+    gestBegin(ev.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; if (g0 && g0.d) fxDragEnd(i, g0.d, 'Hüllkurve OP ' + (k + 1)); });
     draw(fxX(i));
-    const s = best, T = LAY.t; lcdShow(FM_STG[s] + ' · OP ' + (k + 1), (which === 'pit' ? htTxt(pegHt(G.e0.l[s])) + ' HT' : 'L ' + G.e0.l[s]) + ' · ' + fmMs(T[s]) + ' · R ' + G.e0.r[s]);
+    lcdShow('P' + best + ' · OP ' + (k + 1), (pit ? htTxt(FMX.yHt(e.y[best], R_())) + ' HT' : 'Y ' + e.y[best]) + ' · X ' + fmMs(LAY.cum[best]));
   });
-  on(gEl, 'pointermove', e => {
-    if (!G || e.pointerId !== G.id) return;
-    envReb(); G.lx = e.clientX; G.ly = e.clientY;
-    const dx = e.clientX - G.x0, dy = e.clientY - G.y0, f = G.f;
+  on(gEl, 'pointermove', ev => {
+    const pp = P_.get(ev.pointerId); if (pp) { pp.x = ev.clientX; pp.y = ev.clientY; }
+    if (Z && P_.size >= 2) {
+      const [a, b] = [...P_.values()], d = Math.hypot(a.x - b.x, a.y - b.y), r = gEl.getBoundingClientRect();
+      if (!Z.on && Math.abs(d - Z.d0) >= 12) Z.on = true;
+      if (Z.on) { const A = geo, w = A.x1 - A.x0, z = clamp(Z.z0 * d / Math.max(1, Z.d0), 1, 8), un = Z.off0 + (Z.m0 - A.x0) / (Z.z0 * w), mx = (a.x + b.x) / 2 - r.left;
+        FXF.envZoom = z; FXF.envOff = clamp(un - (mx - A.x0) / (z * w), 0, 1 - 1 / z); draw(fxX(i)); }
+      return;
+    }
+    if (tapEmpty && tapEmpty.id === ev.pointerId && Math.hypot(ev.clientX - tapEmpty.x, ev.clientY - tapEmpty.y) > 6) tapEmpty = null;
+    if (!G || ev.pointerId !== G.id) return;
+    if (!G.pt) { dxMove(ev); return; }
+    envReb(); G.lx = ev.clientX; G.ly = ev.clientY;
+    const dx = ev.clientX - G.x0, dy = ev.clientY - G.y0, f = G.f;
+    if (!G.moved && Math.max(Math.abs(dx), Math.abs(dy)) < 4) return;
+    G.moved = true; if (!G.d) G.d = fxDragBegin(i);
+    const s = G.s, ny = LofY(G.py + dy * f), nt = s > 0 ? clamp(geo.cx(clamp(G.px + dx * f, geo.x0, geo.x1)) - G.cum[s - 1], .0005, 20) * 1000 : null;
+    fxDragSet(i, x => { const e = fxEnvOf(x.ops[k], which); if (!e || e.f !== 'pt') return; e.y[s] = ny; if (nt != null) e.t[s - 1] = Math.round(nt * 10) / 10; });
+    draw(fxX(i));
+    const e = fxEnvOf(fxX(i).ops[k], which); lcdShow('P' + s + ' · OP ' + (k + 1), (pit ? htTxt(FMX.yHt(e.y[s], R_())) + ' HT' : 'Y ' + e.y[s]) + ' · X ' + fmMs(cumOf(e)[s]) + (s > 0 ? ' · Segment ' + fmMs(e.t[s - 1] / 1000) : '') + (f < 1 ? ' · FEIN ×¼' : ''));
+  });
+  const end = (ev, ok) => {
+    const had = P_.delete(ev.pointerId); FXF.fineIds.delete(ev.pointerId);
+    if (Z) { if (P_.size < 2) { const zon = Z.on; Z = null; if (zon) lcdShow('Zoom', '×' + fmtDec(Math.round((FXF.envZoom || 1) * 10) / 10, 1)); } return; }
+    if (tapEmpty && tapEmpty.id === ev.pointerId) { tapEmpty = null; if (ok && FXF.envSel != null) { FXF.envSel = null; ctx.rebuild(); } return; }
+    if (!G || ev.pointerId !== G.id) return;
+    const g0 = G; G = null; FXF.valDrag = null; gestEnd(ev.pointerId);
+    if (!g0.pt) { dxUp(g0); return; }
+    if (g0.d) fxDragEnd(i, g0.d, 'Hüllkurve OP ' + (k + 1));
+    if (g0.was !== g0.s || !g0.moved) ctx.rebuild(); else draw(fxX(i));
+    void had;
+  };
+  on(gEl, 'pointerup', ev => end(ev, true)); on(gEl, 'pointercancel', ev => end(ev, false)); on(gEl, 'lostpointercapture', ev => { if (G && ev.pointerId === G.id) end(ev, false); });
+  // DX form (A.4b): x = time of the stage, y = level; the first 6 px decide the axis
+  const dxDown = (ev, best, X, o) => {
+    if (pit && o.fixed) return;
+    const was = FXF.envSel; FXF.envSel = best; FXF.envField = best;
+    const e0d = deep(viewDx(X)), t0 = LAY.t.slice(), note = fmRefNote(i), m = macro(X), car = fxIsOut(X, k);
+    // N7F-44: the A.4b rules (4b–4g): the click limit of the role on the time axis (a drag that starts beyond it may go faster), a level
+    // drag keeps the times of its stage and the next (raised to the limit if needed)
+    const lim0 = pit ? null : FMH.limitR({r: e0d.r, l: e0d.l, ol: o.ol, rs: o.rs}, best, car, note, m);
+    G = {pt: false, id: ev.pointerId, s: best, x0: ev.clientX, y0: ev.clientY, axis: null, d: null, e0: e0d, t0, px: LAY.pts[best].x, py: LAY.pts[best].y, f: envF(), lx: null, ly: null, was,
+      note, m, car, free: lim0 != null && e0d.r[best] >= lim0, lim: false, raised: false};
+    G.dxReb = () => { const f = envF(); if (f === G.f) return; if (G.lx != null) { const evv = viewDx(fxX(i)); G.py = yOf(evv.l[G.s]); G.px = clamp(G.px + (G.lx - G.x0) * G.f, geo.x0, geo.x1); G.x0 = G.lx; G.y0 = G.ly; } G.f = f; };
+    FXF.valDrag = {fineOn: envReb};
+    gestBegin(ev.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; if (g0 && g0.d) fxDragEnd(i, g0.d, 'Hüllkurve OP ' + (k + 1)); });
+    draw(fxX(i));
+    lcdShow(FM_STG[best] + ' · OP ' + (k + 1), (pit ? htTxt(pegHt(e0d.l[best])) + ' HT' : 'L ' + e0d.l[best]) + ' · ' + fmMs(t0[best]) + ' · R ' + e0d.r[best]);
+  };
+  const dxMove = ev => {
+    envReb(); G.lx = ev.clientX; G.ly = ev.clientY;
+    const dx = ev.clientX - G.x0, dy = ev.clientY - G.y0, f = G.f;
     if (!G.axis) { if (Math.max(Math.abs(dx), Math.abs(dy)) < 6) return; G.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'; }
     if (!G.d) G.d = fxDragBegin(i);
-    const s = G.s, X = fxX(i), mc = macro(X);
+    const s = G.s, mc = G.m, note = G.note; let lim = false, raised = false;
     fxDragSet(i, x => {
-      const o = x.ops[k]; if (which === 'pit' && !o.pit) o.pit = FX_PIT0(); const en = fxEnvOf(o, which);
-      if (G.axis === 'y') { en.l[s] = LofY(G.py + dy * f); }
-      else {
-        const nx = G.px + dx * f;
-        if (s === 3) { const sec = geo.tr(clamp(nx, geo.xRel, geo.x1)); en.r[3] = which === 'pit' ? pegRateFor(en, 3, sec) : FMH.rateForTime({r: en.r, l: en.l, ol: o.ol, rs: o.rs}, 3, sec, fmRefNote(i), {m: mc, cur: en.r[3]}); }
+      const o = x.ops[k]; if (pit && !o.pit) o.pit = FX_PIT0(); const en = fxEnvOf(o, which); if (!en || en.f !== 'dx') return;
+      const E_ = {r: en.r, l: en.l, ol: o.ol, rs: o.rs};
+      if (G.axis === 'y') {
+        en.l[s] = LofY(G.py + dy * f);
+        if (pit) { for (const q of s === 3 ? [3, 0] : [s, s + 1]) { if (q > 3) continue; const tt = G.t0[q]; if (tt > 0) en.r[q] = pegRateFor(en, q, tt); } }
+        else for (const q of s === 3 ? [3] : [s, s + 1]) { if (q > 3) continue; let rr = FMH.rateForTime(E_, q, G.t0[q], note, {m: mc, cur: G.e0.r[q]}); const lm = FMH.limitR(E_, q, G.car, note, mc); if (lm != null && rr > lm) { rr = lm; raised = true; } en.r[q] = rr; }
+      } else { const nx = G.px + dx * f;
+        // beyond the end of the axis = R 0 (V0d-2-07); faster than the click limit only for a drag that started beyond it (4g)
+        if (s === 3) { const sec = geo.tr(clamp(nx, geo.xRel, geo.x1)); en.r[3] = nx >= geo.x1 ? 0 : pit ? pegRateFor(en, 3, sec) : FMH.rateForTime(E_, 3, sec, note, {m: mc, cur: en.r[3]}); }
         else { const prev = s ? G.t0.slice(0, s).reduce((a, b) => a + b, 0) : 0, sec = Math.max(.0002, geo.th(clamp(nx, geo.x0, geo.xGap)) - prev);
-          en.r[s] = which === 'pit' ? pegRateFor(en, s, sec) : FMH.rateForTime({r: en.r, l: en.l, ol: o.ol, rs: o.rs}, s, sec, fmRefNote(i), {m: mc, cur: en.r[s]}); }
+          en.r[s] = nx >= geo.xGap ? 0 : pit ? pegRateFor(en, s, sec) : FMH.rateForTime(E_, s, sec, note, {m: mc, cur: en.r[s]}); }
+        if (!pit) { const lm = FMH.limitR(E_, s, G.car, note, mc); if (lm != null && !G.free && en.r[s] > lm) { en.r[s] = lm; lim = true; } }
       }
       fxPitClean(o, which);
     });
-    fxRender(false);
-    const ev = view(fxX(i)), T = times(fxX(i)); lcdShow(FM_STG[s] + ' · OP ' + (k + 1), (which === 'pit' ? htTxt(pegHt(ev.l[s])) + ' HT' : 'L ' + ev.l[s]) + ' · ' + fmMs(T[s]) + ' · R ' + ev.r[s] + (f < 1 ? ' · FEIN ×¼' : ''));
+    if (lim && !G.lim) haptic('tick'); G.lim = lim; G.raised = raised;
+    draw(fxX(i));
+    const evv = viewDx(fxX(i)), T = timesDx(fxX(i)); lcdShow(FM_STG[s] + ' · OP ' + (k + 1), (pit ? htTxt(pegHt(evv.l[s])) + ' HT' : 'L ' + evv.l[s]) + ' · ' + fmMs(T[s]) + ' · R ' + evv.r[s] + (lim ? ' · Klick-Grenze – nochmal ziehen = schneller' : raised ? ' · Zeit auf Klick-Grenze angehoben' : '') + (f < 1 ? ' · FEIN ×¼' : ''));
+  };
+  const dxUp = g0 => { if (g0.d) fxDragEnd(i, g0.d, 'Hüllkurve OP ' + (k + 1)); if (g0.was !== g0.s || !g0.d) ctx.rebuild(); else draw(fxX(i)); };
+  draw(X0);
+}
+const FX_ACTN = {add: 'Punkt +', del: 'Punkt ✗', sus: 'Sustain', skip: 'Skip', loopA: 'Loop A', loopB: 'Loop B', unloop: 'Loop weg', crv: 'Exp/Lin', run: 'Retrig/Frei', scale: 'Skala', center: 'Mitte', range: 'Bereich', pt: 'Punkt-Form'};
+// one point cell P0–P5 (point form): horizontal Relativzug 2 px per step (×¼ FEIN) on y; tap selects, a tap on the selected one = keypad
+function fxPtCell(ctx, c, p) {
+  const {i, k, which} = ctx, pit = which === 'pit';
+  let G = null;
+  const get = X => { const e = fxEnvOf(X.ops[k], which); return e && e.y && p < e.y.length ? e.y[p] : 0; };
+  const cF = () => (FXF.fineChip || FXF.fineIds.size ? .25 : 1);
+  const cReb = () => { if (!G) return; const ff = cF(); if (ff === G.f) return; G.v0 = get(fxX(i)); if (G.lx != null) G.x0 = G.lx; G.f = ff; };
+  const put = (x, v) => { const e = fxEnvOf(x.ops[k], which); if (e && e.y && p < e.y.length) e.y[p] = clamp(v, 0, 99); };
+  on(c, 'pointerdown', e => { if (e.button > 0 || G) return; e.preventDefault(); try { c.setPointerCapture(e.pointerId); } catch (_) {} G = {id: e.pointerId, x0: e.clientX, v0: get(fxX(i)), d: null, f: cF(), lx: null}; FXF.valDrag = {fineOn: cReb};
+    gestBegin(e.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; if (g0 && g0.d) fxDragEnd(i, g0.d, 'P' + p + ' OP ' + (k + 1)); }); });
+  on(c, 'pointermove', e => {
+    if (!G || e.pointerId !== G.id) return; cReb(); G.lx = e.clientX; const dx = e.clientX - G.x0; if (!G.d && Math.abs(dx) <= 4) return;
+    const v = clamp(Math.round(G.v0 + dx * G.f / 2), 0, 99); if (!G.d) G.d = fxDragBegin(i);
+    fxDragSet(i, x => put(x, v)); FXF.envSel = p; if (ctx.draw) ctx.draw(fxX(i));
+    lcdShow('P' + p + ' · OP ' + (k + 1), pit ? htTxt(FMX.yHt(v, FMX.PR_HT[fxX(i).ops[k].pr] || 12)) + ' HT' : 'Y ' + v);
   });
-  const end = e => { if (!G || e.pointerId !== G.id) return; const g0 = G; G = null; FXF.valDrag = null; gestEnd(e.pointerId); if (g0.d) fxDragEnd(i, g0.d, 'Hüllkurve OP ' + (k + 1)); draw(fxX(i)); };
-  on(gEl, 'pointerup', end); on(gEl, 'pointercancel', end); on(gEl, 'lostpointercapture', end);
+  const end = (e, ok) => { if (!G || e.pointerId !== G.id) return; const g0 = G; G = null; FXF.valDrag = null; gestEnd(e.pointerId);
+    if (g0.d) { fxDragEnd(i, g0.d, 'P' + p + ' OP ' + (k + 1)); ctx.rebuild(); return; }
+    if (!ok) return;
+    if (FXF.envSel !== p) { FXF.envSel = p; ctx.rebuild(); return; }
+    fxKeypad(c, i, {name: 'P' + p + ' OP ' + (k + 1), zone: X => String(get(X)), keypad: {min: 0, max: 99, step: 1, get, put}, parts: []}); };
+  on(c, 'pointerup', e => end(e, true)); on(c, 'pointercancel', e => end(e, false)); on(c, 'lostpointercapture', e => end(e, false));
+}
+// ⤢ Hüllkurve groß for a point-form envelope (K2-44: the big view edits the same data; the A.4b editor has no point form)
+const fxBigPt = i => { const B = FXF.big; if (!B || B.i !== i) return false; const o = fxX(i).ops[B.k], e = B.which === 'pit' ? o.pit : o.amp; return !!(e && e.f === 'pt'); };
+function fxBigPtPage(pg, i) {
+  const B = FXF.big, k = B.k, which = B.which;
+  pg.classList.remove('rest'); pg.classList.add('fxpg', 'fxbigpg');
+  pg.addEventListener('touchstart', e => { if (e.cancelable && !(e.target.closest && e.target.closest('.pop'))) e.preventDefault(); }, {passive: false});
+  const hd = el('div', 'fxbighd'), host = el('div', 'fxe');
+  pg.append(hd, host);
+  const render = () => {
+    if (!pg.isConnected) return;
+    const X = fxX(i), W = pg.clientWidth, H = pg.clientHeight; if (W < 50 || H < 50) return;
+    if (!fxBigPt(i)) { safeRebuild(buildSynthEd); return; }
+    hd.textContent = 'OP ' + (k + 1) + ' · ' + fxRoleTxt(X, k, W < 400) + ' · ' + (which === 'pit' ? 'TONH.' : 'AMP') + ' · Punkt-Form';
+    const land = fxLand(), box = {x: 0, y: 20, w: W, h: H - 20};
+    Object.assign(host.style, {left: '0px', top: '20px', width: W + 'px', height: (H - 20) + 'px'});
+    fxEnvBuild({i, k, which, host, box, mode: land ? 'BIGL' : 'BIG', lmode: W >= 780 ? 'L1' : 'L2', pre: null, rebuild: render, setUpd: f => { FXF.bigUpd = f; }});
+  };
+  ED.refreshers.push(() => { if (pg.isConnected && FXF.bigUpd) FXF.bigUpd(fxX(i)); });
+  requestAnimationFrame(render);
+  if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(() => { if (!pg.isConnected) { ro.disconnect(); return; } render(); }); ro.observe(pg); }
+}
+// the A.4b editor in the big view (DX form): its ⋯ offers the point buttons; the first one turns the envelope into the point form
+function fxBigPtMenu(i, stage, anchor) {
+  const B = FXF.big; if (!B || B.i !== i) return;
+  const X = fxX(i), e = fxEnvOf(X.ops[B.k], B.which), I = fxEnvInfo(e, B.which), sp = stage != null ? stage + 1 : null, pit = B.which === 'pit';
+  const go = (kind, a) => { const r = FMX.envAct(fxX(i), B.k, B.which, Object.assign({kind, i: sp}, a || {})); if (!r.x) { if (r.lcd) lcdShow('Hüllkurve', r.lcd); return; }
+    fxCommitX(i, r.x, 'Hüllkurve OP ' + (B.k + 1) + ': ' + (FX_ACTN[kind] || kind)); FXF.envSel = r.sel != null ? r.sel : sp; lcdShow('Hüllkurve · OP ' + (B.k + 1), r.lcd); haptic('snap'); safeRebuild(buildSynthEd); };
+  const items = (sp != null ? [['Sustain auf ' + FM_STG[stage], () => go('sus')], ['Loop A', () => go('loopA')], ['Loop B', () => go('loopB')], ['✗ Punkt löschen', () => go('del')], ['+ Punkt dazu', () => go('add')], [(I.skip ? '☑' : '☐') + ' Skip beim Loslassen', () => go('skip'), stage !== 2]] : [])
+    .concat([['Lin statt Exp', () => go('crv')], ['Frei statt Retrig', () => go('run')], ['Skala …', () => { const r_ = FMX.envAct(fxX(i), B.k, B.which, {kind: 'pt'}); if (r_.x) { fxCommitX(i, r_.x, 'Hüllkurve OP ' + (B.k + 1) + ': Punkt-Form'); safeRebuild(buildSynthEd); } }], ['Punkt-Form (Punkte frei setzen)', () => go('pt')]])
+    .concat(pit ? [['Bereich ' + FX_PRN[X.ops[B.k].pr] + ' → 1 Okt.', () => go('range', {v: 1})]] : []);
+  const p = openPop(anchor, pop => { pop.classList.add('fxlist'); pop.innerHTML = '<h4>Punkt-Knöpfe (frei, nicht mehr DX)</h4>' + items.map((it, j) => `<button class="rb fxmi" data-j="${j}"${it[2] ? ' hidden' : ''}>${esc(it[0])}</button>`).join(''); }, {name: 'fxbigpt'});
+  onTap(p, b => { closePop(); items[+b.dataset.j][1](); }, '.fxmi');
 }
 // a pitch envelope at 50 50 50 50 is no envelope (null, DX: flat)
 function fxPitClean(o, which) { if (which === 'pit' && o.pit && o.pit.l.every(v => v === 50)) o.pit = null; }
@@ -17889,6 +18503,7 @@ function fmEnvEditor(pg, i, o) {
       `<button class="rb mx" data-a="mod"><b>Auf alle Mod.</b></button><button class="rb mx" data-a="all"><b>Auf alle</b></button><button class="rb mxl" data-a="out"><b>${out ? 'Auf alle Ausg.' : 'Auf alle Mod.'}</b></button>` +
       `<button class="rb" data-a="copy"><b>Kopieren</b></button><button class="rb" data-a="paste"${FMC.env ? '' : ' disabled'}><b>Einfügen</b></button>` +
       `<button class="rb" data-a="solo"><b>Solo</b><small>${UI.fmSolo && UI.fmSolo.t === i ? 'an – tippen = aus' : 'nur diesen Operator hören'}</small></button>`;
+    if (FXF.big && FXF.big.i === i) h += `<button class="rb mx" data-a="ptf"><b>Punkt-Knöpfe …</b><small>Sustain, Loop, ✗, +, Lin, Frei, Skala (Punkt-Form)</small></button>`;   // V4f (K2-44)
     h += `<button class="rb" data-a="init"><b>Init</b><small>${peg ? 'flach (L 50)' : 'R 99 99 99 80 · L 99 99 99 0'}</small></button>` +
       `<button class="rb${FMEV.audition ? ' on' : ''}" data-a="aud"><b>Vorhören ${FMEV.audition ? 'an' : 'aus'}</b><small>jede Änderung spielt ${noteLabel(fmRefNote(i))}</small></button></div>`;
     p.innerHTML = h; guardTouch(p);
@@ -17902,6 +18517,7 @@ function fmEnvEditor(pg, i, o) {
       else if (a === 'init') { const before = soundSnapshot(i); if (peg) fmSetPeg(i, null); else if (putEnv(k(), FM_INIT_OP(k()))) fmChanged(i, true);
         fmEvCommit(i, before, peg ? 'Tonhöhe Init' : 'Hüllkurve Init'); lcdShow(peg ? 'Tonhöhe' : 'Hüllkurve', peg ? 'Init (flach)' : 'Init (R 99 99 99 80 · L 99 99 99 0)'); draw(); }
       else if (a === 'aud') { FMEV.audition = !FMEV.audition; lcdShow('Vorhören', FMEV.audition ? 'an' : 'aus'); }
+      else if (a === 'ptf') setTimeout(() => fxBigPtMenu(i, curStage, anchor), 0);
     }, 'button[data-a]');
   }, {name: 'fmmore'});
   onTap(bMore, () => openMore(bMore));
@@ -17954,6 +18570,7 @@ function pageFmOp(pg, i) {
   const {hd, more} = fmOpHead(i);
   pg.classList.add('pg-fmop-' + ED.fmSub);
   if (ED.fmSub === 'env') {
+    if (fxBigPt(i)) { fxBigPtPage(pg, i); return; }                    // V4f: ⤢ Hüllkurve groß of a point-form envelope
     fmEnvEditor(pg, i, {target: 'op', kind: 'op', head: hd, moreBtn: more});
     pg.appendChild(fmNativeHint(i));
     fxLongLabels(pg);
@@ -18023,6 +18640,12 @@ function pageFmEnvOps(pg, i) {
 function pageFmPeg(pg, i) {
   const head = el('div', 'fmpegh', '<b>TONHÖHE · alle OP mit Verhältnis</b><span> (feste Frequenz bleibt)</span>');
   head.title = 'wirkt auf alle Operatoren mit Verhältnis; feste Frequenz bleibt';
+  if (fxBigPt(i)) { fxBigPtPage(pg, i); return; }                      // V4f: ⤢ Hüllkurve groß of a point-form pitch envelope
+  if (FXF.big && FXF.big.i === i) {                                      // the big view edits OP n only; its point buttons sit in the head
+    head.innerHTML = `<b>TONHÖHE · OP ${FXF.big.k + 1}</b>`; head.title = '';
+    const pb = el('button', 'hb rb fxptf', 'Punkt-Knöpfe ▾'); pb.setAttribute('aria-label', 'Punkt-Knöpfe: Sustain, Loop, ✗, +, Lin, Frei, Skala, Bereich'); head.appendChild(pb);
+    onTap(pb, () => fxBigPtMenu(i, FMEV.stage != null ? FMEV.stage : null, pb));
+  }
   fmEnvEditor(pg, i, {target: 'peg', kind: 'peg', head});
   pg.appendChild(fmNativeHint(i));
 }
@@ -22085,7 +22708,22 @@ const SYNQUENZER = {
   initSound: t => { initSound(t); },
   // V0d (Nachtrag Teil D, A.4b): FM editor and maths
   fmDefaultOp: t => { const f = fmOf(t); if (!f) throw new Error('Keine Synth-Spur: ' + t); return fmDefaultOp(f); },
-  fmEnvView: () => (FMEV.view ? FMEV.view() : null),
+  // V4f (KP §7): + form, sus, la, lb, crv, run, zoom (the A.4b editor: of its operator in the graph; else the FELD / big point editor)
+  fmEnvView: () => {
+    const a = FMEV.view ? FMEV.view() : null;
+    if (!a) return FXF.envView ? FXF.envView() : null;
+    try { const t = ED.fmT != null ? ED.fmT : R.selT, p = sndOf(t).p, B = FXF.big && FXF.big.i === t ? FXF.big : null;
+      const fk = B ? B.k : p.fm6 && p.fm6.perm ? p.fm6.perm.indexOf(a.op) : a.op, X = fxX(t), e = a.target === 'peg' ? X.ops[fk].pit : X.ops[fk].amp, I = fxEnvInfo(e, a.target === 'peg' ? 'pit' : 'amp');
+      return Object.assign(a, {source: 'a4b', fop: fk, form: I.pt ? 'pt' : 'dx', sus: I.sus, la: I.la, lb: I.lb, skip: I.skip, crv: I.crv, run: I.run, zoom: 1}); } catch (e) { return a; }
+  },
+  fmxEnvAction: (t, op, which, a) => {
+    const snd = sndOf(t); if (!snd || snd.engine !== 'fm6') throw new Error('Keine FM-Spur: ' + t);
+    if (which !== 'amp' && which !== 'pit') throw new Error("fmxEnvAction: which = 'amp' | 'pit'");
+    const k = (op | 0) - 1; if (!(k >= 0 && k < 6)) throw new Error('fmxEnvAction: OP 1–6');
+    const r = FMX.envAct(fxX(t), k, which, a || {});
+    if (r.x) { fxCommitX(t, r.x, 'Hüllkurve OP ' + (k + 1) + ': ' + (FX_ACTN[a.kind] || a.kind)); if (FXF.t === t && FXF.focus === k) FXF.envSel = r.sel; fxRefresh(t); }
+    return {ok: !!r.x, lcd: r.lcd, env: deep(fxEnvOf(fxX(t).ops[k], which))};
+  },
   fmAuditions: () => FMEV.auditions,
   fmEnvPreset: (t, op, name) => {
     const f = fmOf(t); if (!f) throw new Error('Keine Synth-Spur: ' + t);
@@ -22145,7 +22783,7 @@ const NO_SYNC = new Set(['state', 'project', 'runtime', 'getClip', 'getParam', '
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
-  'fmDefaultOp', 'fmEnvView', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint', 'getFmx', 'fmxLevels', 'dxLayout', 'fmxDx', 'fmxFromFm6']);
+  'fmDefaultOp', 'fmEnvView', 'fmxEnvAction', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint', 'getFmx', 'fmxLevels', 'dxLayout', 'fmxDx', 'fmxFromFm6']);
 for (const k of Object.keys(SYNQUENZER)) {
   const f = SYNQUENZER[k]; if (typeof f !== 'function' || NO_SYNC.has(k)) continue;
   SYNQUENZER[k] = function () { const r = f.apply(this, arguments); uiSync(); if (r && typeof r.then === 'function') return r.then(v => { uiSync(); return v; }); return r; };

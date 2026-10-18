@@ -1022,3 +1022,169 @@ Tests mit echter Schrift (Seite über http, Barlow/JetBrains geladen: `dirigent-
   Offline (gleiche Worklet-Quelle, App-Nachrichten): OP1 99→0 9,9 → 5,1 dB, OP2 78→0 15,2 → 5,1 dB, Chip Note 57 5,1 dB
   (Kontrolle 4,9). Rest: Chip bei Note 45 10,6 dB (vorher 24), dort liegt schon der ruhige Klang bei 7,9 dB.
   FM6-bitgleich unverändert (`v3-v4a-node.mjs` 46/46).
+
+## V4f — EssenceFM-Hüllkurven (Punkt-Form) · App 3.10.0
+
+Grundlage: Nachtrag 2 Teil A (A.5, A.6 Zeile V4f, A.7 N2-4f-01/-02, K2-39, K2-40 Zusatz N7F-42, K2-44, K2-45, K2-55 … K2-62) mit
+`r7/kodamo-delta-pdf.md` (KP §4.11, §5.1 d, §5.2 c, §6.1/6.2, §7, §9 N7F-37 … N7F-48) und HK §3.7 (Handbuch S. 31–33). Gebaut auf
+`synq-snapshots/V4b-fix.html`. Format und alte Projekte bleiben: `Env {f:'pt', …}` gab es schon im Schema (V4a), jetzt klingt es.
+
+### Gebaut
+
+**Klang (Worklet, `ptCompile` / `ptRun`, ASCII):** Punkt-Form für `amp` und `pit` jedes Operators, 2–6 Punkte, Segmentzeiten
+0,5 ms … 20 s, blockgenau (16 Samples) mit Bruchteil-Blöcken.
+- **Exp** fallend linear im DX-Pegelraum (dB-linear wie der msfa-Abfall); **steigend nach dem msfa-Anstieg** (Sprung auf −50 dB,
+  +⌊17 − l/256⌋ je Schritt, K2-57) – dieselben Bänder wie der A.4b-Angriff, auf die Segmentzeit gestreckt; **Lin** amplitudenlinear.
+  Tonhöhe: Exp linear in Halbtönen, Lin linear in Hz.
+- **Sustain** hält bis zum Loslassen; **Skip** (nur mit Sustain): Loslassen vor Psus → sofort das Segment nach Psus ab dem
+  aktuellen Pegel; ohne Skip läuft die Hüllkurve erst bis Psus und dann weiter.
+- **Loop A/B:** an Plb weiter mit dem Segment nach Pla ab dem aktuellen Pegel (Periode = Summe der Schleifensegmente). Schleife
+  vor dem Sustain (`la < sus`) läuft nur bei gedrückter Taste; danach weiter bis zur 12-s-Kappe (bestehende Regel `FM_MAXREL`).
+- **Frei (FreeRun):** eine gemeinsame Hüllkurve je Spur und Operator (`this.fr`, nach Frames weitergezählt, auch zwischen den
+  Noten), Start beim ersten Anschlag, ohne Loop erst nach dem Ende neu, Sustain aus; jede Stimme liest sie mit ihrem eigenen
+  Pegel (Anschlag, Tasten-Skalierung).
+- **Tonhöhen-Bereiche** Ton ±2, Quinte ±7, 1/2/4/8 Okt.; y 0/50/99 = −B/0/+B linear in HT; in der Punkt-Form auch an festen
+  Operatoren (K2-58); `pr 'dx'` bleibt die A.4b-PEG.
+- Time/Key (`rs`) und die MAKRO-Knöpfe wirken auch auf die Punkt-Form (HÄRTE Segment 1, RELEASE nach dem Sustain, LÄNGE übrige
+  Segmente der Ausgänge, BISS Segmente 2/3 der Modulatoren), mit den Vorzeichen von `fmAdvance`.
+- **Live-Änderung bei gehaltener Note ohne Sprung:** das laufende Segment geht vom aktuellen Wert mit dem Rest seiner neuen Zeit
+  weiter; am Sustain-Punkt / am Ende 20-ms-Gleiten; DX ↔ Punkt-Form und Retrig ↔ Frei übernehmen den laufenden Stand.
+- K2-62 (§15.2 Stufe 2): bei Begrenzer-Stufe ≥ 2 spielt ein Graph mit > 12 Kanten oder einer Schleife in der Punkt-Form höchstens
+  4 Stimmen.
+- **Nativer Rückfall (`DXN.voice`, opt.pt):** dieselbe Rechnung als Automations-Plan (fall/rise/hold/lin, Schleifen bis 12,5 s
+  ausgerollt), Loslassen nach denselben Regeln, Tonhöhe als Hz-Versatz auf `frequency` (Rampen ≤ 10 ms). Dabei gefunden und
+  behoben: ein End-`setValueAtTime` wenige ulp nach dem Start des nächsten Ereignisses beendete dessen `setTargetAtTime` (eine
+  Schleife hielt nativ ihren Pegel) – das End-Ereignis entfällt, wenn das nächste dort beginnt.
+
+**Daten (FMX):** `FMX.ptFromDx` wandelt eine DX-Form in Punkte mit den Zeiten, die sie spielt (Angriff ab 0, Haltephasen,
+Release ab L3; ohne `rs` und MAKRO, die beide Formen gleich bekommen): P0 = Start, P1–P3 = L1–L3, Sustain 3, P4 = L4, Skip an
+(die DX-Form verlässt ihre Stufe beim Loslassen sofort), Exp, Retrig; Tonhöhe mit dem kleinsten passenden Bereich.
+`FMX.envAct` führt jede Editor-Aktion rein aus (add, del, sus, skip, loopA, loopB, unloop, crv, run, scale, center, range, set,
+pt); eine DX-Hüllkurve wird dabei erst umgewandelt (A.5 Nr. 4, K2-60: auch [✗] und [Skip]). `normEnv` behält eine einzelne
+Loop-Marke (A gesetzt, B folgt).
+
+**Editor (KP §4.11, EK-13, K2-55 … K2-57):** FELD › Amp/Tonh. in beiden Formen:
+- Punkt gewählt: [Sustain] [Loop A] [Loop B] [Loop weg] / [✗] [+] [Mitte] [☑ Skip] – [Loop weg] nur an einem Loop-Punkt,
+  [Skip] nur am Sustain-Punkt, [Mitte] nur Tonh., [+] fehlt bei 6, [✗] bei 2 Punkten (und an P0); unsichtbare Knöpfe behalten
+  ihren Platz.
+- Nichts gewählt: [Exp│Lin] [Skala] [Retrig│Frei] [+] / [Alle Mod.] [Alle Ausg.] [Kopieren] [Einfügen]; Tonh.: [Bereich ▾]
+  [Alle Mod.] [Kopieren] [Einfügen] (K2-56), [Alle Ausg.], [Auf alle] und [Init] unter ⋯.
+- Graph der Punkt-Form: **eine** logarithmische Zeitachse (log(1 + t/0,5 ms) über die Gesamtlänge + 25 %), blaue Sustain-Linie
+  #0A6AFF, violette Loop-Zone mit A/B, Punkte in den Reglerfarben, Lin gerade, Exp als Annäherungskurve; Punkt frei ziehen
+  (x = Zeit seines Segments, y = Pegel), ein Undo je Zug; Tipp ins Leere = keine Auswahl; **Pinch** ×1…×8 (Abstand ≥ 12 px,
+  Mitte bleibt stehen), ruhender zweiter Finger = FEIN.
+- Fußzeile „Gesamt …“ bzw. „X … · Y …“ (+ „Zoom ×n“); **Warnchips** an Ausgängen: „endet nicht (Schleife)“ / „endet nicht bei 0“
+  (Tipp = ganzer Satz im LCD).
+- Wertzeilen P0–P5 (y, Relativzug 2 px je Schritt, Tipp = wählen, zweiter Tipp = Ziffernblock) statt R/L in der Punkt-Form.
+- DX-Form im FELD rechnet jetzt nach A.4b (N7F-44): Klick-Grenze auf der Zeitachse (ein Zug ab der Grenze darf schneller),
+  ein Pegelzug hält die Zeiten seiner und der nächsten Stufe (ggf. auf die Grenze angehoben), ganz rechts = R 0.
+- Skala-Blatt: Zeit ×0,25…4, Höhe ×0…1,5, [Anwenden] = ein Undo.
+- Größen: P1 nach §5.1 d (Graph 236 × 117 + Lineal, 2 Knopfzeilen, 2 Wertzeilen); L1/L2 Graph links, 3 Knopfzeilen
+  ([DX-Zeile ▾]/[Punkte ▾] [FEIN] [Vorl. ▾] [Bereich ▾ bzw. Auf … ▾]); P2 eine Zeile mit [Loop ▾] / [Mehr ▾]; P3 drei Knöpfe mit
+  Menüs.
+- **⤢ Hüllkurve groß:** eine Punkt-Form-Hüllkurve öffnet den Punkt-Editor in voller Höhe (Kopf „OP n · … · Punkt-Form“, drei
+  Knopfzeilen, Wertzeilen; auf kleinen Telefonen ohne Wertzeilen bzw. einzeilig); eine DX-Form den A.4b-Editor, dessen ⋯ (Tonh.:
+  Knopf im Kopf) die „Punkt-Knöpfe …“ anbietet; „✕ FELD“ wie bisher.
+- Hilfe-Zeile 8 zur Hüllkurve. Test-API: `fmxEnvAction(t, op, which, a)` (OP 1–6, ein Undo), `fmEnvView()` mit `form, sus, la,
+  lb, skip, crv, run, zoom` (A.4b-Editor oder Punkt-Editor).
+
+### Abnahme (Skripte in `dirigent-test/`)
+
+- **`v3-v4f-node.mjs` 33/33** (Node-Shim des Worklets, 44,1 und 48 kHz):
+  - N7F-37: 6 Punkte 0,5 ms … 1,5 s, Exp/Lin, höchstens 0,39 dB neben der Rechnung innerhalb ±(1 ms + 1 % t); 20-s-Segment 0 dB;
+    K2-57 Exp 0 → 99 / 100 ms: nach 50 ms Pegel 77 von 99 (Abweichung 1).
+  - N7F-38: Sustain ±0,000 dB über 2 s; Loslassen → Segment nach Psus; Skip an: sofort weiter, M-KLICK 0,8 dB; Skip aus: wie gehalten
+    bis Psus (0,000 dB), dann Release.
+  - N7F-39: Schleife vor Sustain Periode 70,00 ms (Soll 70 ±2 %), endet beim Loslassen; nach Sustain läuft weiter (6 s / 11,9 s) und
+    endet an der 12-s-Kappe.
+  - N7F-40: Frei – zweite Note folgt der laufenden Hüllkurve (0,00 dB), Sustain aus; Retrig – neue Hüllkurve je Note.
+  - N7F-41: Zeit ×0,25 / ×4 genau, Höhe ×1,5 klemmt auf 99, ×0 = 0.
+  - N7F-42: alle 6 Bereiche y 99/0/50 = +B/−B/0 (±0,03 HT); fest mit `pr 'dx'` −0,001 HT; fest mit 1 Okt. y 99 +12,00 HT; Welle 4,
+    C4, +4 Okt.: gefaltete Energie −71,9 dB, M-KLICK 2,2 dB.
+  - N7F-45 / N2-4f-01: [pt], [Skip], [+] an DX-Hüllkurven eines FM-Basses (Alg. 5, kurze Modulator-Hk., Noten 33/40/52) ≤ 0,09 dB
+    (M-PEGEL 20 ms); ganzer Bass in Punkt-Form ≤ 0,21 dB (Noten 28–45); PEG [Fall] umgewandelt ≤ 0,42 dB.
+  - N7F-48: Sound ohne Punkt-Form: fmx bitgleich zu fm6. LIVE: DX → Punkt → Sustain-Pegel → Lin → DX an gehaltener Note, M-KLICK
+    besteht (kein Fenster über dem Boden).
+- **`v3-v4f-native.mjs` 7/7** (Chromium OfflineAudioContext, `DXN.voice`): N7F-37 nativ Exp 0,27 dB, Lin 0,35 dB; Sustain/Release,
+  Skip; Schleife 70,00 ms; Tonhöhe 1 Okt. +12,00 HT.
+- **`v3-v4f-ui.mjs` 417/0** (CDP-Touch, echte Schriften, P1, P2, P3, L1, L2): N7F-43 Knöpfe je Zustand und Sichtbarkeitsregeln,
+  Textbreiten (56/52 px), Fußzeilen, [Bereich ▾] nur ohne Punkt, Taps = `fmxEnvAction` (skip, unloop), ein Undo je Knopf, Undo →
+  DX-Form deep-equal, Badge „kein DX: Hüllkurve“; N7F-47 P1-Geometrie (Hüllkurve x 138–373 ab y 76, Mini-Feld x 0–131, Graph 236 ×
+  117 + 12), kein Scrollen, blaue Sustain-Linie ±0 px #0A6AFF, sus −1/Frei ohne Lücke, DX-Form mit Lücke, Treffer 18/16 px neben
+  dem Punkt, Mini-Feld: Tipp wählt (Seite bleibt, K2-61), Ziehen ändert nichts; N7F-39 Warnchips (Schleife, letzter Punkt > 0, kein
+  Chip am Modulator); Pinch 40 → 160 px = ×4, zu = ×1, Kappe ×8, Zoom in der Fußzeile, Werte unverändert; ruhender zweiter Finger
+  = FEIN (40 px: 37 → 9 Schritte in P1); N7F-46 [Alle Mod.] [Alle Ausg.] Kopieren/Einfügen deep-equal, je ein Undo; N7F-41
+  Skala-Blatt (Zeit ×2, Höhe ×0,5) ein Undo; N2-4f-01 [Exp│Lin] + Undo deep-equal; Punktzug ändert nur sein Segment; Wertzellen
+  P0–P5 (Tipp wählt, Zug +10); N7F-44 Klick-Grenze (R4 ≤ 93, zweiter Zug 99), Pegelzug hält D1/D2 ±15 %, Vorlagen = T2; großer
+  Editor: ⋯ › Punkt-Knöpfe › Lin → Punkt-Editor in voller Höhe, nichts verdeckt, „✕ FELD“ zurück auf OP 4 / Seite.
+  `v3-v4f-cellfit.mjs` 20/0: Wertzellen passen in allen Größen (Tonh. „+7,6“).
+- **N2-4f-02 CPU** (`v3-v4f-cpu.mjs`, Chromium-AudioWorklet, Xeon, Median von 10 s, 8 Tasten → 6 Stimmen nach K2-42): Punkt-Form mit
+  Schleifen an allen 6 OP, Tonhöhe 8 Okt., 15 Kanten + 6 Feedback: 6,49 / 6,29 / 6,39 % je Spur (DX-Form 5,09 / 5,49 / 5,89 %);
+  mit echter Feedback-Schleife (Sample-Pfad) 12,08 / 8,19 / 9,69 % (DX-Form 8,79 / 8,59 / 7,69 %) – Median der drei Läufe 9,69 %
+  ≤ 12; der erste Lauf lag einmal 0,08 % darüber. Node-Bank (`v3-v4f-bench.mjs`): +1,6 % (Block-Pfad) bzw. +0,9 % (Sample-Pfad).
+- **Regression:** `v3-v4f-reg.sh` (V4b-Liste, 99 Suiten, Versionskopien `v3-v4f-adapt-*` für 3.10.0): alle wie V4b-fix; die
+  roten (`node-fm`, `v3-v0b-adapt-wp3-browser`, `-wp3-ui`, `wp4-offline`, `wp3-adapt-func-build(-native)`) haben dieselben
+  FAIL-Zeilen wie im V4b-Lauf; `wp5-mod` MO44 (fps unter Last) allein grün, Versions-Suiten nach Korrektur der Kopie grün.
+  `v3-v4f-reg2.sh`: V0d-Suiten 10/10 (V0d-2-01 … 20, N7F-48), `v3-v0dfix-adapt-v0d-native`, `v3-v4a-node` 46/46 (allein; im
+  Lauf N7F-09 Mehrlast 0,32 % unter Last), `v3-v4a-ui`, `v3-v4b-field` P/L (L nach `data-n` an den Vorlagen-Menüpunkten wieder
+  101/0), `-logic`, `-view`, `-platz`, `-node`, `v3-v4bfix-chip/-lcd/-lock/-p2row6/-p3/-scroll` grün. Wie schon auf V4b-fix rot:
+  `v3-v4bfix-big` (prüft `.fxback`, das die Unterreiter-Klasse seit V4b-fix trägt; am Snapshot gleich) und
+  `v3-v4f-adapt-qareg-v4a-fmxio` (Echtzeit-Aufnahme ±1,5 dB, am Snapshot ebenso rot). Smoke ohne Fehler.
+
+### Abweichungen
+
+1. **K2-57 / N7F-37 „nach 50 ms ≥ 75 % des Endpegels“** ist auf der **Pegelskala** (y) erfüllt (77 von 99), nicht in Amplitude
+   (15 %): Der geforderte msfa-Anstieg („dieselbe Rechnung wie der A.4b-Angriff“) erreicht in der halben Zeit gerechnet nur
+   ≈ 17 % Amplitude – beide Sätze von K2-57 zugleich sind nicht erfüllbar; der Klang folgt dem msfa-Anstieg.
+2. **Exp bei der Tonhöhe** = linear in Halbtönen (wie die DX-PEG), **Lin** = linear in Hz (eigene Festlegung; KP nennt Exp/Lin nur
+   für den Pegel).
+3. **Frei im nativen Rückfall** läuft wie Retrig (keine gemeinsame Hüllkurve über native Stimmen); Live-Änderungen nativ ab der
+   nächsten Note (bestehende Regel).
+4. **Großer Editor:** Die DX-Form bleibt der A.4b-Editor (K2-44, N2-4b-04); seine Punkt-Knöpfe liegen hinter ⋯ › „Punkt-Knöpfe …“
+   (Tonh.: Knopf im Kopf), weil das 365-px-Budget des A.4b-Editors keine zwei weiteren Knopfzeilen hat. Nach der ersten Aktion
+   zeigt der große Bereich den Punkt-Editor.
+5. **[Auf alle] / [Init] / [−1] [+1]** aus V4b: [Auf alle] und [Init] stehen jetzt unter ⋯ (P) bzw. [Auf … ▾] (L, groß), −1/+1
+   entfallen (Ziffernblock auf den Wertzeilen); die Knopfzeilen sind nach KP §4.11 belegt.
+6. **P2/P3** zeigen eine Knopfzeile mit Menüs (KP bemaßt die Punkt-Knöpfe nur für P1 und L1).
+7. **Konvertierung mit Skip an:** Damit ein früh losgelassener Ton gleich bleibt, bekommt die umgewandelte DX-Form `skip 1`;
+   [☑ Skip] zeigt das schon in der DX-Form an (ein Tipp schaltet es aus und wandelt dabei um).
+8. **N7F-44:** Das FELD-Amp hat die A.4b-Regeln (Klick-Grenze, Pegelzug hält Zeiten, Vorlagen T2, ein Undo je Geste); die
+   Pixel-Maße von V0d-2-07 (49,1 px je Dekade usw.) gelten für den A.4b-Editor (⤢ Hüllkurve groß), nicht für den 236-px-Graphen.
+9. **Größe +58,5 KB** statt +40 KB (+46 %, unter der 50-%-Regel): der Punkt-Editor ersetzt den V4b-Amp/Tonh.-Teil (16 KB → 39 KB), dazu Worklet- und
+   native Engine (≈ 13 KB) und FMX-Aktionen (≈ 6 KB). Die FMX-Umwandlung nutzt die Tabellen von FMH/DXN statt eigener Kopien.
+
+### Fach-Prüfung (Nachtrag 2 Teil J, FP-DSP + FP-TOUCH, als eigener Durchgang über Diff, Tests und Bilder)
+
+Blick FP-DSP (Haupt) und FP-TOUCH (Zweit) über Diff, Testausgaben und Bilder; **10 Befunde, alle behoben**:
+1. FP-DSP: nativ hielt eine Schleife ihren Pegel (End-`setValueAtTime` ulp-genau nach dem nächsten `setTargetAtTime`) → behoben
+   in `schedule`, Test N7F-39 nativ.
+2. FP-DSP: Worklet-Quelle enthielt Nicht-ASCII-Zeichen in neuen Kommentaren → ersetzt (Worklet-ASCII).
+3. FP-DSP: Tonhöhen-Punkt-Form live gelöscht (Init) ließ die Tonhöhe bei gehaltener Note stehen → `xpL` 0.
+4. FP-DSP: K2-62 Begrenzer-Stufe 2 fehlte für Schleifen → Poly ≤ 4 bei Stufe ≥ 2.
+5. FP-DSP: DX → Punkt beim früh losgelassenen Ton hätte den Klang geändert → Umwandlung mit Skip an (Abweichung 7).
+6. FP-DSP: CPU-Spitze mit Sample-Pfad einmal 12,08 % → zwei Wiederholungen 8,19 / 9,69 %, Median ≤ 12 (oben).
+7. FP-TOUCH: großer Editor auf P2/P3 überlief die Seite (Wertzeilen verdeckt) → ohne Wertzeilen bzw. einzeilig.
+8. FP-TOUCH: Tonh. im großen A.4b-Editor (P2) ohne Weg zu den Punkt-Knöpfen → Knopf „Punkt-Knöpfe ▾“ im Kopf.
+9. FP-TOUCH: Wertzellen der Tonh. in P3/L2 abgeschnitten → 3 bzw. 2 Spalten.
+10. FP-TOUCH: Vorlagen-Menü ohne `data-n` brach die V4b-Suite in L → wieder gesetzt.
+Geprüft ohne Befund: NaN/Spitzen (Feedback-Pfade unverändert), M-KLICK bei Live-Änderungen und Mip-Wechseln, ein Undo je Geste,
+Pinch vs. FEIN-Finger, `touch-action:none` / `guardTouch` am Graphen, Popover-Schieber ohne `preventDefault`, kein Gerätename in
+LCD/Hilfe/Knöpfen (N2-4b-02), deutsche Texte.
+
+### iPhone-Prüfpunkte (Xander)
+
+1. FM-Spur, INIT FM → FELD → OP 2 antippen → Amp: rechts die Hüllkurve, links das kleine Feld.
+2. Punkt 2 antippen → [Sustain] → Hüllkurve wird frei (blaue Linie am Punkt); [Loop A] auf Punkt 1, [Loop B] auf Punkt 3 → violette
+   Zone; Taste halten: der Klang pulsiert, loslassen: Schleife endet.
+3. Ins Leere tippen → [Exp] → „Lin“; [Retrig] → „Frei“: zwei Tasten nacheinander folgen einer Kurve.
+4. Zwei Finger im Graphen auseinanderziehen → Zeit-Zoom bis ×8; zusammen → ×1.
+5. Tonh.: [Bereich ▾] → 2 Okt., Punkt hochziehen → Tonhöhensprung bis +2 Oktaven.
+6. ⋯ → ⤢ Hüllkurve groß → großer Punkt-Editor; „✕ FELD“ zurück.
+7. Ein Ausgang mit Schleife nach dem Sustain zeigt „endet nicht (Schleife)“.
+8. Undo nach dem ersten Punkt-Knopf → wieder DX-Form, Badge „DX 1 ✓“.
+
+### Bekannte Lücken
+
+- [DX-tauglich machen] (Punkt-Form → DX mit Abweichung), Vorhersage, Raster, .syx-Export: V4c.
+- Mod-Pfade `fmx.<k>.amp.<t1…t5|y0…y5>` kommen mit V5d; Hüllkurven als Mod-Quelle §18.
+- Kein WebKit-/iPhone-Test (Chromium mit CDP-Touch, Node-Shim); Pinch und Skala-Schieber unter iOS nur im Code geprüft.
