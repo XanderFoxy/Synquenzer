@@ -1188,3 +1188,75 @@ LCD/Hilfe/Knöpfen (N2-4b-02), deutsche Texte.
 - [DX-tauglich machen] (Punkt-Form → DX mit Abweichung), Vorhersage, Raster, .syx-Export: V4c.
 - Mod-Pfade `fmx.<k>.amp.<t1…t5|y0…y5>` kommen mit V5d; Hüllkurven als Mod-Quelle §18.
 - Kein WebKit-/iPhone-Test (Chromium mit CDP-Touch, Node-Shim); Pinch und Skala-Schieber unter iOS nur im Code geprüft.
+
+## V4f-fix — Umwandlung DX → Punkt-Form klanggleich, Kopieren mit Bereich, große Tonh., Nyquist, 12-s-Kappe, Frei, Ziehen, Pinch · App 3.10.0
+
+App: `dirigent-wt/index.html`, Snapshot `synq-snapshots/V4f-fix.html`. Zehn Befunde der V4f-Prüfung (`v4f-findings.json`).
+
+- **N7F-45 / N2-4f-01 Umwandlung klanggleich (zwei Befunde):**
+  - *Skip-Release hält die Rate:* Loslassen vor Psus betritt das Segment nach Psus ab dem aktuellen Pegel mit **seiner Rate**
+    (Zeit × Abstand jetzt / Abstand ab Psus), wie die DX-Form mit R4; ein flaches Segment nach Psus (L3 = L4) zählt seine Zeit je
+    256 Pegelschritte (6 dB) bzw. je Oktave – die Umwandlung schreibt dort die R4-Zeit statt der Haltezeit. Worklet (`ptRelScale`)
+    und nativ (`ptRelPlan`) gleich.
+  - *msfa-Anstieg genau:* ⌊17 − l/256⌋ = 16 − Band (bisher 17 − Band, ≈ 4 dB zu schnell) in `riseG`/`riseAt`, nativ, `FMH.segTime`
+    (angezeigte A-Zeiten) und im nativen DX-Plan.
+  - *Time/Key und MAKRO wie DX:* `ptDxF` rechnet die Segmentzeit mit der DX-Arithmetik (qrate + rsd, HÄRTE/LÄNGE/RELEASE am
+    Raten-Index, BISS mit Klick-Grenze, Haltephasen über die Static-Tabelle). Die Umwandlung speichert dazu je Segment die DX-Rate
+    (`dxr`, optional; `normEnv` behält es); sie gilt nur, solange sie die Segmentzeit noch ergibt (nach einem Zug/Skala gilt die
+    kontinuierliche Rechnung). Mit `dxr` folgt die Zeit wie bei DX dem Pegelabstand der Stimme (Anschlag, Tasten-Skalierung).
+  - *Stufen über 20 s* werden einmal geteilt (Zwischenpunkt auf dem Pegelraster, bis dorthin exakt); [+] wandelt dann um und meldet
+    „höchstens 6 Punkte“.
+  - Nachweis: `v3-v4ffix-conv.mjs` (19 Werksklänge, alle 6 OP Amp + DX-PEG umgewandelt, Noten 36/60/84, Gate 0,1/0,3/1,5 s, vel 0,8)
+    **171/171 ≤ 1 dB, schlimmstens 0,21 dB** (vorher 116/171, bis 8,9 dB; mit `KIND=add` ebenso); `v3-qa4f-n5g.mjs` alle PASS (FM-Flügel
+    53,7 → 0,7 dB, Marimba 51,6 → 0,0, FM-Pluck 19,2 → 0,9, Funk 8,2 → 0,1, E-Piano 4,8 → 0,0); `v3-qa4f-n5f.mjs` 2-Op-Pluck 70 → 0,1 dB,
+    E-Piano alle sechs 0,1 dB; `v3-rp4f45-indep.mjs` 0 Fälle über 1 dB (vorher 19); `v3-rp4f45-att.mjs` langsamer Angriff ≤ 0,17 dB
+    (vorher 3,9–4,8); `v3-rp4f45-bass.mjs` FM-Bass ≤ 0,41 dB; `v3-rp-n7f45b.mjs` FM-Flügel/Marimba Taste los 0,3/3 s ≤ 0,3 dB;
+    `v3-fp4f-conv.mjs` 58/60 (Rest: ein Extremfall mit allen vier MAKRO-Knöpfen 1,13 dB im ersten 20-ms-Fenster – Rest der
+    Block-Stufung der DX-Form selbst; ein 30-ms-Ton mit 5 dB Unterschied erst unter −85 dBFS nach dem Stimmende).
+- **N7F-46 ⋯ › Kopieren/Einfügen (Hüllkurve):** nimmt den Tonhöhen-Bereich `pr` mit und setzt ihn wie [Einfügen] (feste OP ohne
+  Punkt-Form bleiben unberührt). `v3-repro-n7f46.mjs`: OP 3 deep-equal OP 2 (pr 8), +7,52 HT wie die Quelle, ein Undo.
+- **⤢ Hüllkurve groß auf Tonh. in Punkt-Form:** `fxBigEnv` und der fm6-Abgleich lesen `r`/`l` nur aus einer DX-Form; der große
+  Punkt-Editor öffnet ohne Fehler (`v3-repro-bigpit-indep.mjs` P und L: Modus BIG/BIGL, keine Fehler; DX-Form und Amp unverändert).
+- **Nyquist-Wächter ohne Schlag (L3):** über 0,45 fs blendet der Operator in 5 ms aus (und wieder ein), seine Phase läuft mit
+  0,45 fs weiter – kein eingefrorener Phasenwert, kein Gleichanteil. In fmx- und fm6-Pfad; darunter bitgleich. `v3-v4ffix-engine.mjs`:
+  tiefpassgefilterter Spitzenwert am Übergang −105,6 / −105,1 / −68,5 dBFS (vorher −17,2 / −20,2 / −35,7 bei Ton −19,9 dBFS),
+  M-KLICK ≤ 0,4 dB; `v3-rpnyq-chrome.mjs` (Chromium-Worklet) −87,8 / −91,6 dBFS gesamt.
+- **12-s-Kappe blendet aus (L3):** Worklet 20-ms-Ausblendung, die 12 s nach dem Loslassen endet; nativ eine Ausblend-Rampe
+  (Punkt-Form-Stimmen). `v3-v4ffix-engine.mjs`: Schleife nach Sustain / Frei + Schleife / Schleife ohne Sustain still ab 12,300 s,
+  M-KLICK −99 dB (vorher 34,8 / 88,7 dB); `v3-repro-cap-native*.mjs`: linear auf 0 bis 12,30 s.
+- **Frei nach langer Pause:** das Nachholen in `ptRun` überspringt ganze Schleifenperioden (gleicher Zustand wie Schritt für
+  Schritt, `v3-v4ffix-freeskip.mjs` 3/3 über 60 s; vorher brach der 4096er-Wächter nach ≈ 2 s Nachholzeit ab). Anschlag-Block nach
+  20/120 s Pause 0,10–0,16 ms (vorher 1,75–2,25 ms; `v3-fp4f-free3.mjs`, `v3-repro-freecatch.mjs`).
+- **Ein Zug erreicht 0,5 ms … 20 s:** über den rechten Rand hinaus wächst die Zeitachse mit dem Überstand (× 2 je 24 px), und
+  solange der Finger am Rand bleibt, wächst sie weiter (≈ × 2,8/s, weiter draußen schneller); der Punkt bleibt am Finger, zurück
+  nach links ist stetig. `v3-qa4f-ui8.mjs`: ein Zug → 20 s (vorher × 1,25 je Zug); `v3-repro-ptdrag.mjs` 1 Zug statt 17.
+- **Pinch mit einem Finger auf einem Punkt:** der zweite Finger bleibt FEIN, solange er ruht; bewegen sich beide und ändert sich der
+  Abstand ≥ 12 px, geht der Punkt zurück (kein Undo-Schritt) und die Zeitachse zoomt. `v3-fp4f-touch.mjs` Teil 1 P/L: Zoom ×1,94 /
+  ×1,90, Hüllkurve unverändert, Undo +0 (vorher Zoom ×1, Segment 46,4 → 0,5 ms, Undo +1).
+
+### Offen: K2-57 / N7F-37 „nach 50 ms ≥ 75 % Amplitude“ (Entscheidung nötig)
+
+Nicht als Klang geändert. K2-57 verlangt für Exp steigend „den msfa-Anstieg (dieselbe Rechnung wie der A.4b-Angriff)“ und
+zugleich ≥ 75 % Amplitude nach der halben Zeit. Der msfa-Anstieg (jetzt genau: 16 − Band) erreicht bei 0 → 99 / 100 ms nach 50 ms
+19 % Amplitude (77 % erst bei 90 ms; Pegelskala ≈ 77 von 99). Eine Kurve mit ≥ 75 % nach halber Zeit (in Amplitude „schnell, dann
+flach“) kann einen DX-Angriff nicht nachbilden: jede Umwandlung eines langsamen DX-Angriffs wiche dann um bis zu ≈ 15 dB ab und
+bräche N7F-45, A.5 Nr. 4 und N2-4f-01. Vorschlag für die Spec: den Prüfsatz auf die Pegelskala („≥ 75 von 99“) stellen, oder für
+Exp steigend eine eigene Kurve zulassen und N7F-45 für umgewandelte Angriffe über `dxr` sichern (hörbarer Formwechsel, sobald ein
+umgewandelter Angriff gezogen wird).
+
+### Geprüft ohne Rückschritt
+- `v3-v4f-reg2.sh` (OUT=fix): V0d-Suiten, `v3-v0dfix-adapt-v0d-native`, V4b-Suiten, `v3-v4bfix-chip/-lcd/-lock/-p2row6/-p3/-scroll`,
+  `v3-v4f-node` 33/33, `v3-v4f-native` 7/7, `v3-v4f-ui` 417/0, `v3-v4f-adapt-qareg-v4a-fmxio` grün. Wie schon vorher rot:
+  `v3-v4bfix-big` (10, gleiche Zeilen wie run2). `v3-v4a-node` N7F-09 Mehrlast schwankt (allein 0,18 % PASS / 0,32 % FAIL; der
+  Stand vor dem Fix ebenso 0,003 % / 0,44 %); `v3-v4a-ui` N7F-10 im Lauf 16,5 %, allein 9,69 % PASS (Last durch Parallelbetrieb).
+- Smoke ohne Fehler (`v3-v4ffix-smoke.png`). `v3-fp4f-touch.mjs` Teile 2 (P2 bleibt bei y-Anschlag nicht unter dem Finger, Punkte
+  rücken nach dem Loslassen um ≤ 7 px, weil die Achse wieder „Gesamt + 25 %“ wird) sind am Stand vor dem Fix gleich rot – nicht
+  Teil dieser Befunde.
+
+### Abweichung (neu)
+
+- **V0d-2-11 / Tabelle T2 angezeigte Zeiten:** Mit dem genauen msfa-Anstieg zeigt die Anzeige jetzt die Zeit, die das Worklet
+  spielt: Angriffe und steigende Stufen ≈ 20–28 % länger als in T2 (Pad-Ausgang A 108 → 138 ms, Pad-Modulator A 113 → 130 ms,
+  D1 143 → 183 ms, A bei R 99 0,6 → 0,8 ms). T2 war mit demselben Rundungsfehler (17 − Band) gerechnet; die R/L-Werte der Vorlagen
+  sind unverändert (deep-equal). Belegt durch `v3-rp4f45-att.mjs`: ein Punkt-Angriff mit 138 ms liegt ≤ 0,17 dB neben der DX-Form,
+  mit 108 ms waren es 4,2 dB. `v3-v0d-ui-d.mjs` prüft noch die alten T2-Texte (1 FAIL, nur diese Zeitangaben).

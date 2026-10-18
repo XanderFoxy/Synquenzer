@@ -3057,6 +3057,8 @@ const FM_INIT = {alg: 1, fb: 0, trans: 0, ops: [Object.assign({}, FM_OP0, {ol: 9
 // instant-attack patches, FM2 asks for the peak within 1 dB of the standalone DX6)
 const FM_GATE_C = Math.exp(-1 / (.00025 * SR));
 const FM_MAXREL = 12 * SR;                            // DX end rule: a released FM voice ends after 12 s at the latest
+const FM_CAPF = Math.round(.02 * SR);                 // V4f-fix: ... with a 20 ms fade (a looped note no longer clicks at the cap)
+const NY_STEP = CR / (.005 * SR);                     // V4f-fix: the Nyquist guard fades an operator out / in over 5 ms
 
 /* ---- V4a (Nachtrag 2 K2-40, KD 6.2): factory waves 0..11 of the FM graph. 0 = the sine path above (bit-identical to fm6);
    1..11 = 512-sample tables, linear interpolation, band-limited with one mip level per octave (level L keeps the harmonics
@@ -3147,12 +3149,50 @@ function ptCompile(e, pit, pr) {
   const ix = x => (x >= 0 && x <= k ? x | 0 : -1), free = e.run === 'free';
   let sus = free ? -1 : ix(e.sus), la = ix(e.la), lb = ix(e.lb); if (!(la >= 0 && lb > la)) la = lb = -1;
   const pre = la >= 0 && sus >= 0 && la < sus ? 1 : 0;
-  return {k, v, tm, sus, la, lb, skip: sus >= 0 && e.skip ? 1 : 0, lin: e.crv === 'lin' ? 1 : 0, free, pre, span: pre && lb > sus ? 1 : 0, pit: pit ? 1 : 0};
+  let r = null; if (!pit && Array.isArray(e.dxr) && e.dxr.length === k) { r = new Int8Array(k + 1).fill(-1); for (let i = 1; i <= k; i++) { const x = Math.round(+e.dxr[i - 1]); r[i] = x >= 0 && x <= 99 ? x : -1; } }
+  return {k, v, tm, sus, la, lb, skip: sus >= 0 && e.skip ? 1 : 0, lin: e.crv === 'lin' ? 1 : 0, free, pre, span: pre && lb > sus ? 1 : 0, pit: pit ? 1 : 0, r};
 }
-// K2-57: the msfa attack (Dexed env.cc): +floor(17 - l/256) units per step, measured in steps ("tau"): G(a, b) = steps from a to b
-// at rate 1; riseAt walks the same bands (a segment of time t runs tau = x * G, so the shape is the A.4b attack, the time exact)
-function riseG(a, b) { let t = 0, x = a; while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256); t += (nx - x) / Math.max(1, 17 - bd); x = nx; } return t; }
-function riseAt(a, b, tau) { let x = a; while (x < b && tau > 0) { const bd = Math.floor(x / 256), m = Math.max(1, 17 - bd), nx = Math.min(b, (bd + 1) * 256), need = (nx - x) / m; if (tau <= need) return x + tau * m; tau -= need; x = nx; } return b; }
+// K2-57: the msfa attack (Dexed env.cc): +floor(17 - l/256) units per step (= 16 - band inside a band, as fmEnvStep),
+// measured in steps ("tau"): G(a, b) = steps from a to b at rate 1; riseAt walks the same bands (a segment of time t runs
+// tau = x * G, so the shape is the A.4b attack, the time exact)
+function riseG(a, b) { let t = 0, x = a; while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256); t += (nx - x) / Math.max(1, 16 - bd); x = nx; } return t; }
+function riseAt(a, b, tau) { let x = a; while (x < b && tau > 0) { const bd = Math.floor(x / 256), m = Math.max(1, 16 - bd), nx = Math.min(b, (bd + 1) * 256), need = (nx - x) / m; if (tau <= need) return x + tau * m; tau -= need; x = nx; } return b; }
+// V4f-fix (N7F-45): the "DX distance" of a segment from a to b (time at a fixed rate): pitch / Lin / falling = |a - b| (level
+// units, semitones), Exp rising = the msfa attack steps (with the -50 dB jump). A Skip release enters the segment after Psus
+// from the level it has and keeps that segment's RATE (time x dist(now) / dist(Psus)), as the DX release does at R4; a flat
+// segment (Psus level = its target) counts its time per 256 level units (6 dB) or per 12 semitones.
+function ptDist(E, a, b) { if (E.pit || E.lin || b <= a) return Math.abs(a - b); return riseG(b > 1716 && a < 1716 ? 1716 : a, b); }
+function ptRelScale(E, aN, cur, b) { const d = ptDist(E, cur, b); if (!(d > 0)) return 1; const dn = ptDist(E, aN, b); return d / (dn > 1e-9 ? dn : E.pit ? 12 : 256); }
+// V4f-fix (N7F-45): Time/Key (rs) on a point segment exactly as the msfa qrate: segment j's own DX rate (from its time and its level
+// distance at the neutral output level ofs0) + rsd, clamped at qrate 63; a flat segment as the DX static phase (rate + rsd).
+// qRc / qInv: LVL_PER_SEC over a continuous qrate (log-interpolated between the integer steps) and its inverse; hC / hInv the same
+// for the static-phase table. ptDxF: the time factor of point segment j with rs and the MAKRO offsets (HAERTE segment 1, RELEASE
+// after Psus, LAENGE other output segments, BISS other modulator segments incl. the click limit), as fmAdvance does it to a DX stage.
+function qRc(q) { if (q <= 0) return LVL_PER_SEC(0) * Math.pow(2, q / 4); if (q >= 63) return LVL_PER_SEC(63) * Math.pow(2, (q - 63) / 4); const n = Math.floor(q), a = LVL_PER_SEC(n); return a * Math.pow(LVL_PER_SEC(n + 1) / a, q - n); }
+function qInv(R) { const r0 = LVL_PER_SEC(0), r63 = LVL_PER_SEC(63); if (R <= r0) return 4 * Math.log2(R / r0); if (R >= r63) return 63 + 4 * Math.log2(R / r63);
+  let n = 0; while (n < 62 && LVL_PER_SEC(n + 1) <= R) n++; const a = LVL_PER_SEC(n); return n + Math.log(R / a) / Math.log(LVL_PER_SEC(n + 1) / a); }
+const hN = rr => (rr < 77 ? EG_STATICS[rr] : Math.max(1, 20 * (99 - rr)));
+function hC(x) { x = Math.max(0, Math.min(99, x)); const n = Math.min(98, Math.floor(x)), a = hN(n), b = hN(n + 1); return a === b ? a : a * Math.pow(b / a, x - n); }
+function hInv(N) { if (N >= hN(0)) return 0; let n = 0; while (n < 98 && hN(n + 1) >= N) n++; const a = hN(n), b = hN(n + 1); return a === b || N <= b ? n + 1 : n + Math.log(N / a) / Math.log(b / a); }
+function ptDxF(E, j, car, rsd, ofs0, atk, dec, rel, bite, ofs) {
+  if (E.pit) return 1;
+  const relSeg = E.sus >= 0 && j > E.sus, off = Math.round(j === 1 ? atk : relSeg ? -rel : car ? -dec : 0), bt = !car && j > 1 && !relSeg ? bite : 0;
+  const rs = E.r ? E.r[j] : -1;                                             // the DX rate a conversion stored (dxr), if it still fits
+  if (!rsd && !off && !bt && !(rs >= 0 && ofs != null && ofs !== ofs0)) return 1;
+  const tg = (y, o) => Math.max(16, ((scaleOL(y | 0) >> 1) << 6) + o), a = tg(E.v[j - 1], ofs0), b = tg(E.v[j], ofs0), sec = E.tm[j] / 1000, bf = bt ? Math.pow(2, bt / 10) : 1;
+  if (a === b && j !== E.sus + 1) { const x = rs >= 0 && Math.abs(Math.log(hN(rs) / (sec * 44100))) < .02 ? rs : hInv(sec * 44100), xr = Math.abs(x - Math.round(x)) < .02 ? Math.round(x) : x; return hC(Math.max(0, Math.min(99, xr + off)) + rsd) / hC(xr) / bf; }
+  const d = a === b ? 256 : ptDist(E, a, b); if (!(d > 0) || !(sec > 0)) return 1;      // flat after Psus: a rate (ptRelScale)
+  const R0 = d / sec; let R1, rr = -1;                                     // rr: the DX rate index of the segment, if known
+  if (rs >= 0 && Math.abs(Math.log(Math.max(d / LVL_PER_SEC((rs * 41) >> 6), .0005) / sec)) < .02) rr = rs;   // stored (also a 0.5 ms floor)
+  else { const q0 = qInv(R0), qi = Math.round(q0);
+    if (Math.abs(q0 - qi) < .02 && qi >= 0 && qi <= 63) { rr = Math.ceil(qi * 64 / 41); if (((rr * 41) >> 6) !== qi) rr = Math.round(qi * 64 / 41); }   // a DX qrate
+    else R1 = q0 >= 63 ? qRc(q0 + Math.min(0, off * 41 / 64)) : qRc(Math.min(63, q0 + off * 41 / 64 + rsd)); }
+  if (rr >= 0) R1 = LVL_PER_SEC(Math.min(63, ((Math.max(0, Math.min(99, rr + off)) * 41) >> 6) + rsd));   // the msfa integers
+  // a stored DX rate: the stage time follows the voice's own level distance (velocity, key scaling), as the DX stage does
+  const dc = rr >= 0 && rr === rs && ofs != null && ofs !== ofs0 && a !== b ? ptDist(E, tg(E.v[j - 1], ofs), tg(E.v[j], ofs)) / d : 1;
+  if (bt) { let q = R1 * bf; if (bf > 1 && b < a && a - b >= 510) q = Math.min(q, Math.max(R1, LVL_PER_SEC(Math.min(63, ((82 * 41) >> 6) + rsd)))); R1 = q; }
+  return R0 / R1 * dc;
+}
 // a value between a (x 0) and b (x 1): pitch Exp = linear in semitones, Lin = linear in Hz; amp Exp falling = linear in level
 // (dB-linear like the msfa decay), Exp rising = the msfa attack, Lin = linear in amplitude
 function ptVal(E, a, b, x, G) {
@@ -3305,6 +3345,7 @@ class Voice {
     // per operator, foreign-feedback history (last sample of the previous / current block), per-sample outputs (now, previous)
     this.xpL = new Float64Array(6); this.xpT = new Float64Array(6); this.xpR = new Float64Array(6); this.xpIx = new Int8Array(6).fill(4); this.xpRise = new Uint8Array(6);
     this.olG = new Float64Array(6); this.olN = new Int16Array(6);
+    this.xny = new Float64Array(6).fill(-1);          // V4f-fix: Nyquist guard factor per op (-1 = set at the first block)
     this.xmu = new Float64Array(6).fill(1); this.xwa = new Int8Array(6); this.xwb = new Int8Array(6); this.xww = new Float64Array(6); this.xwt = new Float64Array(6);
     this.xf0 = new Float64Array(6); this.xf1 = new Float64Array(6); this.fyl = new Float64Array(6); this.fyp = new Float64Array(6);
     this.xy = new Float64Array(6); this.xyp = new Float64Array(6); this.xnew = 0;
@@ -3979,7 +4020,7 @@ class AnalogCore extends AudioWorkletProcessor {
   fmNoteOn(v) {                                                 // from startVoice when eng 1 (key sync: phases to 0)
     const P = this.fm, note = v.note + (P.trans | 0), vel127 = Math.max(1, Math.min(127, Math.round(v.vel * 127)));
     v.fdone = 0; v.ffb0 = v.ffb1 = 0; v.frel = 0; v.frelN = 0; v.fgate = 0; v.falive = true;
-    for (let k = 0; k < 6; k++) { v.fph[k] = 0; v.flvl[k] = 0; v.fg0[k] = 0; v.fg1[k] = 0; v.fix[k] = 4; }
+    for (let k = 0; k < 6; k++) { v.fph[k] = 0; v.flvl[k] = 0; v.fg0[k] = 0; v.fg1[k] = 0; v.fix[k] = 4; v.xny[k] = -1; }
     this.fmVoicePatch(v, false, note, vel127);
     for (let k = 0; k < 6; k++) this.fmAdvance(v, k, 0);
     const G = this.fm.peg; v.pegL = G ? PEG_TAB[G.l[3]] / 32 : 0; this.pegAdvance(v, G ? 0 : 4);
@@ -4017,14 +4058,10 @@ class AnalogCore extends AudioWorkletProcessor {
   // the time factor of segment j of an amp envelope: Time/Key (rs, like the msfa qrate: +4 = twice as fast) and the MAKRO offsets
   // with the signs of fmAdvance: HAERTE on segment 1, RELEASE after the sustain point, LAENGE on the other segments of an output,
   // BISS on segments 2 / 3 of a modulator
-  ptTf(E, s, j, v) {
+  ptTf(E, s, j, v) {                                                       // V4f-fix: the DX arithmetic (ptDxF, N7F-45)
     if (E.pit) return 1;
-    const P = this.P, car = this.alg.car[s]; let f = v ? Math.pow(2, -v.frs[s] / 4) : 1;
-    if (j === 1) { if (P.fmAtk) f *= Math.pow(2, -P.fmAtk * 41 / 256); }
-    else if (E.sus >= 0 && j > E.sus) { if (P.fmRel) f *= Math.pow(2, P.fmRel * 41 / 256); }
-    else if (car && P.fmDec) f *= Math.pow(2, P.fmDec * 41 / 256);
-    if (!car && (j === 2 || j === 3) && P.fmBite) f /= Math.pow(2, P.fmBite / 10);
-    return f;
+    const P = this.P, fo = this.fm.ops[s];
+    return ptDxF(E, j, this.alg.car[s], v ? v.frs[s] : 0, (scaleOL(fo ? fo.ol | 0 : 99) << 5) - 4256, +P.fmAtk || 0, +P.fmDec || 0, +P.fmRel || 0, +P.fmBite || 0, v ? v.foutLvl[s] - 4256 : null);
   }
   ptEnter(st, s, E, j, cur, ofs, tf) {
     st.pS[s] = j; st.pH[s] = 0; st.pX[s] = 0;
@@ -4040,20 +4077,30 @@ class AnalogCore extends AudioWorkletProcessor {
     this.ptEnter(st, s, E, j + 1, st.pV[s], ofs, this.ptTf(E, s % 6, j + 1, v));
   }
   ptRun(st, s, E, dt, gate, ofs, v, guard) {                               // dt control blocks
-    let g = guard || 64;
+    let g = guard || 64, wrap = 0;
     while (dt > 1e-9 && g-- > 0) {
       if (st.pH[s]) return;
       const rem = st.pN[s] - st.pX[s];
       if (dt < rem) { st.pX[s] += dt; st.pV[s] = ptVal(E, st.pA[s], st.pB[s], st.pX[s] / st.pN[s], st.pG[s]); return; }
       dt -= rem; st.pX[s] = st.pN[s]; st.pV[s] = st.pB[s];
-      this.ptReach(st, s, E, st.pS[s], gate, ofs, v);
+      const j0 = st.pS[s];
+      this.ptReach(st, s, E, j0, gate, ofs, v);
+      // V4f-fix: a long catch-up (free run after a pause) inside a loop: at the 2nd wrap to Pla the state repeats exactly every
+      // period, so whole periods are skipped (the same result as stepping them, in O(1) instead of up to 4096 steps per slot)
+      if (E.la >= 0 && j0 === E.lb && st.pS[s] === E.la + 1 && ++wrap === 2 && dt > 0) {
+        let P = 0; for (let j = E.la + 1; j <= E.lb; j++) P += Math.max(1e-6, E.tm[j] * this.ptTf(E, s % 6, j, v) * SR / (1000 * CR));
+        if (P > 0 && dt > P) dt -= Math.floor(dt / P) * P;
+      }
     }
   }
   // key off: from the sustain point (or, with Skip on Release, from wherever it is before it) on to the segment after it
   ptRelease(v, s, E) {
     if (E.sus < 0) return;
-    if (v.pH[s] === 1 || (E.skip && v.pH[s] === 0 && v.pS[s] <= E.sus)) {
-      if (E.sus < E.k) this.ptEnter(v, s, E, E.sus + 1, v.pV[s], this.ptOfs(v, s), this.ptTf(E, s % 6, E.sus + 1, v)); else v.pH[s] = 2;
+    const held = v.pH[s] === 1;
+    if (held || (E.skip && v.pH[s] === 0 && v.pS[s] <= E.sus)) {
+      if (E.sus < E.k) { const ofs = this.ptOfs(v, s), j = E.sus + 1; this.ptEnter(v, s, E, j, v.pV[s], ofs, this.ptTf(E, s % 6, j, v));
+        if (!held) v.pN[s] = Math.max(1e-6, v.pN[s] * ptRelScale(E, this.ptTgt(E, E.sus, ofs), v.pV[s], v.pB[s])); }   // V4f-fix: the rate stays
+      else v.pH[s] = 2;
     }
   }
   ptStart(v, s, E) {                                                       // note on (retrig: from P0; free: join / start the shared one)
@@ -4188,6 +4235,12 @@ class AnalogCore extends AudioWorkletProcessor {
       else rate = q; }
     v.frate[k] = rate;
   }
+  // V4f-fix: the Nyquist guard factor of op k (1 below 0.45 fs, 0 above, a 5 ms ramp between; at note on it starts where it is)
+  nyGuard(v, k, f) {
+    const t = f < SR * 0.45 ? 1 : 0; let n = v.xny[k];
+    if (n < 0) n = t; else if (n !== t) n = t > n ? Math.min(1, n + NY_STEP) : Math.max(0, n - NY_STEP);
+    v.xny[k] = n; return n;
+  }
   fmEnvStep(v, k) {                                             // msfa Env::getsample, once per control block
     const ix = v.fix[k];
     if (!(ix < 3 || (ix < 4 && !v.gate))) return;
@@ -4216,10 +4269,13 @@ class AnalogCore extends AudioWorkletProcessor {
       this.fmEnvStep(v, k);
       v.fg0[k] = v.fg1[k];
       const db = (alg.car[k] ? 0 : br) + dst[D_OP1 + k] * 99 * .75;
-      const g = v.fon[k] ? Math.pow(2, v.flvl[k] / 256 - 14) * (db ? Math.pow(10, db / 20) : 1) : 0;
-      v.fg1[k] = g;
+      let g = v.fon[k] ? Math.pow(2, v.flvl[k] / 256 - 14) * (db ? Math.pow(10, db / 20) : 1) : 0;
       const f = v.ffixed[k] ? v.ffixed[k] : f0 * v.fratio[k];
-      v.finc[k] = f < SR * 0.45 ? Math.round(f / SR * 4294967296) : 0;   // Nyquist guard: silence ops above 0.45 fs
+      // Nyquist guard: ops above 0.45 fs fade out in 5 ms while their phase keeps running at 0.45 fs (V4f-fix: a frozen phase
+      // was a DC step = thump); below it everything is as before (bit-identical)
+      const ny = this.nyGuard(v, k, f); if (ny < 1) g *= ny;
+      v.fg1[k] = g;
+      v.finc[k] = Math.round(Math.min(f, SR * 0.45) / SR * 4294967296);
       if (alg.car[k]) { if (g > GAIN_THRESH || v.fg0[k] > GAIN_THRESH) alive = true; if (g > car) car = g; }
     }
     v.falive = alive;
@@ -4281,12 +4337,13 @@ class AnalogCore extends AudioWorkletProcessor {
       if (X.am[k]) db -= X.am[k] * (1 - l1) * .5;
       let g = v.fon[k] && mu > 0 ? Math.pow(2, v.flvl[k] / 256 - 14) * (db ? Math.pow(10, db / 20) : 1) * mu : 0;
       if (v.olN[k] > 0) { g += (v.olG[k] - g) * (v.olN[k] / (OLX_N + 1)); v.olN[k]--; }
-      v.fg1[k] = g;
       const fmv = X.fmS[k] ? X.fmS[k] * l1 : 0;
       let f;
       if (v.ffixed[k]) { const pv = Ep ? v.xpL[k] * 12 + fmv : fmv; f = pv ? v.ffixed[k] * Math.pow(2, pv / 12) : v.ffixed[k]; }   // K2-58
       else { const sm = base + v.xpL[k] * 12 + fmv; if (sm !== sL) { sL = sm; fL = lut(FREQ, sm); } f = fL * v.fratio[k]; }
-      v.finc[k] = f < SR * 0.45 ? Math.round(f / SR * 4294967296) : 0;   // Nyquist guard: silence ops above 0.45 fs
+      const ny = this.nyGuard(v, k, f); if (ny < 1) g *= ny;                // Nyquist guard (V4f-fix): 5 ms fade, the phase runs on
+      v.fg1[k] = g;
+      v.finc[k] = Math.round(Math.min(f, SR * 0.45) / SR * 4294967296);
       if (X.wave[k]) {                                         // K2-40: mip levels a, a + 1 (both alias-free), weight w
         const q = Math.log2(f) + WV_Q; let a = 0, w = 0;
         if (q > 0) { a = Math.ceil(q); w = q - a + 1; if (a > 8) { a = 8; w = 1; } }
@@ -4437,7 +4494,8 @@ class AnalogCore extends AudioWorkletProcessor {
     if (!v.gate) {
       v.frelN += CR;
       if (v.falive) v.fdone = 0; else v.fdone += CR;
-      if (v.fdone > 256 || v.frelN > FM_MAXREL) this.endVoice(v);
+      if (v.fdone > 256) this.endVoice(v);
+      else if (v.frelN > FM_MAXREL - FM_CAPF && !(v.fade > 0)) this.fadeOut(v, FM_CAPF);   // V4f-fix (L3): the 12 s cap fades out in 20 ms
     }
   }
 
@@ -6222,6 +6280,9 @@ const RecHelpers = (() => {
       const o = {f: 'pt', y, t, sus: ix(e.sus), la: ix(e.la), lb: ix(e.lb), skip: 0, crv: e.crv === 'lin' ? 'lin' : 'exp', run: e.run === 'free' ? 'free' : 'retrig'};
       if (o.sus >= 0 && e.skip) o.skip = 1;
       if (o.la >= 0 && o.lb >= 0 && o.la >= o.lb) { o.la = -1; o.lb = -1; }      // V4f: one marker alone is kept (A set, B still to come)
+      // V4f-fix (N7F-45): the DX rate of each segment from a conversion (-1 = none); the engines use it only while it still
+      // gives the segment's time, so Time/Key and the MAKRO knobs act exactly as on the DX form
+      if (Array.isArray(e.dxr) && e.dxr.length === k && e.dxr.some(r => r >= 0)) o.dxr = e.dxr.map(r => int(r, -1, 99, -1));
       return o;
     }
     if (e && typeof e === 'object' && Array.isArray(e.r) && Array.isArray(e.l)) {
@@ -6579,10 +6640,28 @@ const RecHelpers = (() => {
   function pegTimesX(e) { const T = G.DXN.PEG_TAB, o = L => T[L] / 32, from = [e.l[3], e.l[0], e.l[1], e.l[2]]; return [0, 1, 2, 3].map(s => Math.abs(o(e.l[s]) - o(from[s])) / (G.DXN.PEG_RATE[e.r[s]] / 21.3)); }
   function ptFromDx(e, which, ol, prWant) {
     const base = {sus: 3, la: -1, lb: -1, skip: 1, crv: 'exp', run: 'retrig'};
-    if (which === 'amp') { const T = dxTimes(e, ol); return {env: Object.assign({f: 'pt', y: [0, e.l[0], e.l[1], e.l[2], e.l[3]], t: T.map(ms1)}, base), pr: null}; }
+    // V4f-fix (N7F-45): the Skip release keeps the rate of the segment after Psus (worklet ptRelScale); a flat P3 -> P4 (L3 = L4)
+    // counts its time per 256 level units (amp) or per octave (pitch), so an early key off falls at the DX rate R4
+    if (which === 'amp') { const T = dxTimes(e, ol); if (lvlOf(e.l[2], ol) === lvlOf(e.l[3], ol)) T[3] = segS(e.r[3], 512, 256);
+      const y = [0, e.l[0], e.l[1], e.l[2], e.l[3]], env = Object.assign({f: 'pt', y, t: T.map(ms1)}, base, {dxr: e.r.slice()});
+      // a stage longer than 20 s (the longest point segment) is split once, at the level on the y grid it reaches within 20 s:
+      // exact up to there (msfa falls and rises can be cut anywhere), the rest as its own segment (sustain moves up by one)
+      const from = [0, e.l[0] === 0 ? 0 : lvlOf(e.l[0], ol), lvlOf(e.l[1], ol), lvlOf(e.l[2], ol)];
+      for (let ix = 0; ix < 4; ix++) {
+        const to = lvlOf(e.l[ix], ol); if (!(T[ix] > 20) || to === from[ix] || (ix === 0 && e.l[0] === 0)) continue;
+        let best = -1, bt = 0;
+        for (let yy = 0; yy <= 99; yy++) { const L = lvlOf(yy, ol); if (!(to > from[ix] ? L > from[ix] && L < to : L < from[ix] && L > to)) continue;
+          const tt = segS(e.r[ix], from[ix], L); if (tt <= 20 && tt > bt) { bt = tt; best = yy; } }
+        if (best < 0) break;
+        y.splice(ix + 1, 0, best); env.t.splice(ix, 1, ms1(bt), ms1(segS(e.r[ix], lvlOf(best, ol), to))); env.dxr.splice(ix, 0, e.r[ix]);
+        if (ix < 3) env.sus = 4;
+        break;
+      }
+      return {env, pr: null}; }
     const H = [e.l[3], e.l[0], e.l[1], e.l[2], e.l[3]].map(L => G.DXN.PEG_TAB[L] * 12 / 32), mx = Math.max(...H.map(Math.abs));
-    const pr = prWant && PR_HT[prWant] ? prWant : PR_UP.find(p => PR_HT[p] >= mx - 1e-9) || 8, R = PR_HT[pr];
-    return {env: Object.assign({f: 'pt', y: H.map(h => htY(clamp(h, -R, R), R)), t: pegTimesX(e).map(ms1)}, base), pr};
+    const pr = prWant && PR_HT[prWant] ? prWant : PR_UP.find(p => PR_HT[p] >= mx - 1e-9) || 8, R = PR_HT[pr], PT = pegTimesX(e);
+    if (H[3] === H[4]) PT[3] = 21.3 / G.DXN.PEG_RATE[e.r[3]];
+    return {env: Object.assign({f: 'pt', y: H.map(h => htY(clamp(h, -R, R), R)), t: PT.map(ms1)}, base), pr};
   }
   const FLAT_PT = () => ({f: 'pt', y: [50, 50], t: [10], sus: -1, la: -1, lb: -1, skip: 0, crv: 'exp', run: 'retrig'});
   // the point form of OP k's envelope (converted when it is DX) -> {e, conv}; the op is changed in place
@@ -6610,15 +6689,18 @@ const RecHelpers = (() => {
     const n = e.y.length, last = n - 1, sh = (j, at, d) => (j > at ? j + d : j);
     let lcd = '', sel = i;
     if (kind === 'add') {
-      if (n >= 6) return {x: null, lcd: 'höchstens 6 Punkte', sel: i};
-      if (i == null || i >= last) { const tt = 100; e.y.push(e.y[last]); e.t.push(tt); sel = n; }
-      else { const half = Math.max(.5, Math.round(e.t[i] * 5) / 10); e.y.splice(i + 1, 0, Math.round((e.y[i] + e.y[i + 1]) / 2)); e.t.splice(i, 1, half, Math.max(.5, Math.round((e.t[i] - half) * 10) / 10));
+      if (n >= 6) { if (!conv) return {x: null, lcd: 'höchstens 6 Punkte', sel: i};   // V4f-fix: a conversion that needed 6 points stays converted
+        if (which === 'amp') o.amp = normEnv(e, null); else o.pit = normEnv(e, null);
+        return {x: X, lcd: 'Hüllkurve frei (Punkt-Form) – nicht mehr DX · höchstens 6 Punkte', sel: null}; }
+      if (i == null || i >= last) { const tt = 100; e.y.push(e.y[last]); e.t.push(tt); if (e.dxr) e.dxr.push(-1); sel = n; }
+      else { const half = Math.max(.5, Math.round(e.t[i] * 5) / 10); e.y.splice(i + 1, 0, Math.round((e.y[i] + e.y[i + 1]) / 2)); e.t.splice(i, 1, half, Math.max(.5, Math.round((e.t[i] - half) * 10) / 10)); if (e.dxr) e.dxr.splice(i, 1, -1, -1);
         e.sus = sh(e.sus, i, 1); e.la = sh(e.la, i, 1); e.lb = sh(e.lb, i, 1); sel = i + 1; }
       lcd = 'Punkt ' + sel + ' dazu';
     } else if (kind === 'del') {
       if (i == null || i < 1 || i > last || n <= 2) return {x: null, lcd: n <= 2 ? 'mindestens 2 Punkte' : '', sel: i};
       e.y.splice(i, 1);
       if (i < last) e.t.splice(i - 1, 2, Math.min(20000, e.t[i - 1] + e.t[i])); else e.t.splice(i - 1, 1);
+      if (e.dxr) { if (i < last) e.dxr.splice(i - 1, 2, -1); else e.dxr.splice(i - 1, 1); }
       const dl = j => (j === i ? -1 : sh(j, i, -1)); e.sus = dl(e.sus); e.la = dl(e.la); e.lb = dl(e.lb); if (e.sus < 0) e.skip = 0;
       lcd = 'Punkt ' + i + ' gelöscht'; sel = null;
     } else if (kind === 'sus') {
@@ -9292,7 +9374,7 @@ const DXN = (() => {
       if (f !== 1) { const q = R * f; R = f > 1 && l - tgt >= 510 ? Math.min(q, Math.max(R, LVL_PER_SEC(Math.min(63, ((82 * 41) >> 6) + rsd)))) : q; }
       if (tgt > l) {                                            // rising: msfa approaches 17 doublings in integer bands
         if (l < 1716) l = 1716;
-        let x = l; while (x < tgt) { const band = Math.floor(x / 256), nx = Math.min(tgt, (band + 1) * 256), dt = Math.max((nx - x) / ((17 - band) * R), .0002);
+        let x = l; while (x < tgt) { const band = Math.floor(x / 256), nx = Math.min(tgt, (band + 1) * 256), dt = Math.max((nx - x) / (Math.max(1, 16 - band) * R), .0002);
           ev.push({t, kind: 'rise', a: x, b: nx, dur: dt}); t += dt; x = nx; }
       } else if (tgt < l) { const dt = (l - tgt) / R; ev.push({t, kind: 'fall', a: l, b: tgt, dur: dt}); t += dt; }
       l = tgt;
@@ -9336,9 +9418,43 @@ const DXN = (() => {
     const ix = x => (x >= 0 && x <= k ? x | 0 : -1), free = e.run === 'free';
     let sus = free ? -1 : ix(e.sus), la = ix(e.la), lb = ix(e.lb); if (!(la >= 0 && lb > la)) la = lb = -1;
     const pre = la >= 0 && sus >= 0 && la < sus ? 1 : 0;
-    return {k, v, tm, sus, la, lb, skip: sus >= 0 && e.skip ? 1 : 0, lin: e.crv === 'lin' ? 1 : 0, free, pre, span: pre && lb > sus ? 1 : 0, pit: pit ? 1 : 0};
+    let r = null; if (!pit && Array.isArray(e.dxr) && e.dxr.length === k) { r = [-1]; for (let i = 1; i <= k; i++) { const x = Math.round(+e.dxr[i - 1]); r.push(x >= 0 && x <= 99 ? x : -1); } }
+    return {k, v, tm, sus, la, lb, skip: sus >= 0 && e.skip ? 1 : 0, lin: e.crv === 'lin' ? 1 : 0, free, pre, span: pre && lb > sus ? 1 : 0, pit: pit ? 1 : 0, r};
   }
-  const riseG = (a, b) => { let t = 0, x = a; while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256); t += (nx - x) / Math.max(1, 17 - bd); x = nx; } return t; };
+  const riseG = (a, b) => { let t = 0, x = a; while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256); t += (nx - x) / Math.max(1, 16 - bd); x = nx; } return t; };
+  // V4f-fix (N7F-45): the Skip release keeps the rate of the segment after Psus (same rule as the worklet's ptRelScale)
+  const ptDist = (E, a, b) => (E.pit || E.lin || b <= a ? Math.abs(a - b) : riseG(b > 1716 && a < 1716 ? 1716 : a, b));
+  const ptRelScale = (E, aN, cur, b) => { const d = ptDist(E, cur, b); if (!(d > 0)) return 1; const dn = ptDist(E, aN, b); return d / (dn > 1e-9 ? dn : E.pit ? 12 : 256); };
+  // V4f-fix (N7F-45): Time/Key (rs) on a point segment exactly as the msfa qrate: segment j's own DX rate (from its time and its level
+  // distance at the neutral output level ofs0) + rsd, clamped at qrate 63; a flat segment as the DX static phase (rate + rsd).
+  // qRc / qInv: LVL_PER_SEC over a continuous qrate (log-interpolated between the integer steps) and its inverse; hC / hInv the same
+  // for the static-phase table. ptDxF: the time factor of point segment j with rs and the MAKRO offsets (HAERTE segment 1, RELEASE
+// after Psus, LAENGE other output segments, BISS other modulator segments incl. the click limit), as fmAdvance does it to a DX stage.
+  function qRc(q) { if (q <= 0) return LVL_PER_SEC(0) * Math.pow(2, q / 4); if (q >= 63) return LVL_PER_SEC(63) * Math.pow(2, (q - 63) / 4); const n = Math.floor(q), a = LVL_PER_SEC(n); return a * Math.pow(LVL_PER_SEC(n + 1) / a, q - n); }
+  function qInv(R) { const r0 = LVL_PER_SEC(0), r63 = LVL_PER_SEC(63); if (R <= r0) return 4 * Math.log2(R / r0); if (R >= r63) return 63 + 4 * Math.log2(R / r63);
+    let n = 0; while (n < 62 && LVL_PER_SEC(n + 1) <= R) n++; const a = LVL_PER_SEC(n); return n + Math.log(R / a) / Math.log(LVL_PER_SEC(n + 1) / a); }
+  const hN = rr => (rr < 77 ? EG_STATICS[rr] : Math.max(1, 20 * (99 - rr)));
+  function hC(x) { x = Math.max(0, Math.min(99, x)); const n = Math.min(98, Math.floor(x)), a = hN(n), b = hN(n + 1); return a === b ? a : a * Math.pow(b / a, x - n); }
+  function hInv(N) { if (N >= hN(0)) return 0; let n = 0; while (n < 98 && hN(n + 1) >= N) n++; const a = hN(n), b = hN(n + 1); return a === b || N <= b ? n + 1 : n + Math.log(N / a) / Math.log(b / a); }
+  function ptDxF(E, j, car, rsd, ofs0, atk, dec, rel, bite, ofs) {
+    if (E.pit) return 1;
+    const relSeg = E.sus >= 0 && j > E.sus, off = Math.round(j === 1 ? atk : relSeg ? -rel : car ? -dec : 0), bt = !car && j > 1 && !relSeg ? bite : 0;
+    const rs = E.r ? E.r[j] : -1;                                             // the DX rate a conversion stored (dxr), if it still fits
+    if (!rsd && !off && !bt && !(rs >= 0 && ofs != null && ofs !== ofs0)) return 1;
+    const tg = (y, o) => Math.max(16, ((scaleOL(y | 0) >> 1) << 6) + o), a = tg(E.v[j - 1], ofs0), b = tg(E.v[j], ofs0), sec = E.tm[j] / 1000, bf = bt ? Math.pow(2, bt / 10) : 1;
+    if (a === b && j !== E.sus + 1) { const x = rs >= 0 && Math.abs(Math.log(hN(rs) / (sec * 44100))) < .02 ? rs : hInv(sec * 44100), xr = Math.abs(x - Math.round(x)) < .02 ? Math.round(x) : x; return hC(Math.max(0, Math.min(99, xr + off)) + rsd) / hC(xr) / bf; }
+    const d = a === b ? 256 : ptDist(E, a, b); if (!(d > 0) || !(sec > 0)) return 1;      // flat after Psus: a rate (ptRelScale)
+    const R0 = d / sec; let R1, rr = -1;                                     // rr: the DX rate index of the segment, if known
+    if (rs >= 0 && Math.abs(Math.log(Math.max(d / LVL_PER_SEC((rs * 41) >> 6), .0005) / sec)) < .02) rr = rs;   // stored (also a 0.5 ms floor)
+    else { const q0 = qInv(R0), qi = Math.round(q0);
+      if (Math.abs(q0 - qi) < .02 && qi >= 0 && qi <= 63) { rr = Math.ceil(qi * 64 / 41); if (((rr * 41) >> 6) !== qi) rr = Math.round(qi * 64 / 41); }   // a DX qrate
+      else R1 = q0 >= 63 ? qRc(q0 + Math.min(0, off * 41 / 64)) : qRc(Math.min(63, q0 + off * 41 / 64 + rsd)); }
+    if (rr >= 0) R1 = LVL_PER_SEC(Math.min(63, ((Math.max(0, Math.min(99, rr + off)) * 41) >> 6) + rsd));   // the msfa integers
+    // a stored DX rate: the stage time follows the voice's own level distance (velocity, key scaling), as the DX stage does
+    const dc = rr >= 0 && rr === rs && ofs != null && ofs !== ofs0 && a !== b ? ptDist(E, tg(E.v[j - 1], ofs), tg(E.v[j], ofs)) / d : 1;
+    if (bt) { let q = R1 * bf; if (bf > 1 && b < a && a - b >= 510) q = Math.min(q, Math.max(R1, LVL_PER_SEC(Math.min(63, ((82 * 41) >> 6) + rsd)))); R1 = q; }
+    return R0 / R1 * dc;
+  }
   // the segments from segment j (start value cur), key down (gate) or up; firstDur: the rest of a running segment (s)
   function ptPlan(E, ofs, t0, cur, j, gate, tfOf, firstDur) {
     const ev = [], tg = jj => (E.pit ? E.v[jj] : Math.max(16, ((scaleOL(E.v[jj] | 0) >> 1) << 6) + ofs));
@@ -9351,7 +9467,7 @@ const DXN = (() => {
       else if (a === b) ev.push({t, kind: 'hold', a, b, dur, j});
       else if (E.lin) ev.push({t, kind: 'lin', a, b, dur, j});
       else if (b < a) ev.push({t, kind: 'fall', a, b, dur, j});
-      else { const G = riseG(a, b); let x = a, tt = t; while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256), dt = (nx - x) / Math.max(1, 17 - bd) / G * dur; ev.push({t: tt, kind: 'rise', a: x, b: nx, dur: Math.max(dt, 1e-6), j}); tt += dt; x = nx; } }
+      else { const G = riseG(a, b); let x = a, tt = t; while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256), dt = (nx - x) / Math.max(1, 16 - bd) / G * dur; ev.push({t: tt, kind: 'rise', a: x, b: nx, dur: Math.max(dt, 1e-6), j}); tt += dt; x = nx; } }
       t += dur; cur = b;
       if (E.la >= 0 && j === E.lb && (E.free || !E.pre || gate)) { j = E.la + 1; continue; }
       if (j === E.sus && gate && !E.span) { hold = true; break; }
@@ -9367,7 +9483,11 @@ const DXN = (() => {
     const i = plan.ev.findIndex(x => t >= x.t && t < x.t + x.dur);
     if (i < 0) { if (plan.hold && E.sus < E.k) return ptPlan(E, ofs, t, l, E.sus + 1, false, tfOf); return {ev: [], end: t, last: l, hold: false}; }
     const j = plan.ev[i].j;
-    if (E.skip && E.sus >= 0 && j <= E.sus) return E.sus < E.k ? ptPlan(E, ofs, t, l, E.sus + 1, false, tfOf) : {ev: [], end: t, last: l, hold: false};
+    if (E.skip && E.sus >= 0 && j <= E.sus) {
+      if (E.sus >= E.k) return {ev: [], end: t, last: l, hold: false};
+      const tg = jj => (E.pit ? E.v[jj] : Math.max(16, ((scaleOL(E.v[jj] | 0) >> 1) << 6) + ofs)), j1 = E.sus + 1;
+      return ptPlan(E, ofs, t, l, j1, false, tfOf, Math.max(1e-5, E.tm[j1] * tfOf(j1) / 1000 * ptRelScale(E, tg(E.sus), l, tg(j1))));
+    }
     let n = i; while (n + 1 < plan.ev.length && plan.ev[n + 1].j === j && plan.ev[n + 1].kind === 'rise' && plan.ev[n].kind === 'rise') n++;
     return ptPlan(E, ofs, t, l, j, false, tfOf, plan.ev[n].t + plan.ev[n].dur - t);
   }
@@ -9385,6 +9505,8 @@ const DXN = (() => {
     const v127 = Math.max(1, Math.min(127, Math.round(vel * 127))), outScale = 0.5 / Math.sqrt(alg.nCar);
     const bright = opt.bright ? Math.pow(10, opt.bright / 20) : 1;          // WP7: Helligkeit (dB on the modulators) at note-on
     const ops = [], srcs = [], nodes = [];
+    const capG = opt.pt && opt.pt.some(x => x && (x.a || x.p)) ? ctx.createGain() : null;   // V4f-fix: the 12 s cap fade (point form only)
+    if (capG) { capG.connect(dest); nodes.push(capG); }
     // V0d (A.4b 3/9): pitch EG as cents on `detune` of every ratio oscillator (never on the 2*pi*f modulator gains / mul nodes:
     // detune scales the FM deviation fed into `frequency` too, the index stays); stages as linear ramps (linear in octaves)
     const PG = P.peg && P.peg.l && !P.peg.l.every(x => x === 50) ? P.peg : null;
@@ -9428,8 +9550,7 @@ const DXN = (() => {
       const bf = !alg.car[k] && opt.bite ? Math.pow(2, opt.bite / 10) : 0;
       // V4f: point form (opt.pt per fm6 operator, built by the host from p.fmx); the time factor as the worklet's ptTf
       const PT = opt.pt && opt.pt[k], Ea = PT && PT.a, Ep = PT && PT.p, M_ = opt.mac || {};
-      const tfOf = j => { let tf = Math.pow(2, -rsd / 4); if (j === 1) tf *= Math.pow(2, -(+M_.atk || 0) * 41 / 256); else if (Ea.sus >= 0 && j > Ea.sus) tf *= Math.pow(2, (+M_.rel || 0) * 41 / 256); else if (alg.car[k]) tf *= Math.pow(2, (+M_.dec || 0) * 41 / 256);
-        if (!alg.car[k] && (j === 2 || j === 3) && opt.bite) tf /= Math.pow(2, opt.bite / 10); return tf; };
+      const tfOf = j => ptDxF(Ea, j, alg.car[k], rsd, (scaleOL(op.ol) << 5) - 4256, +M_.atk || 0, +M_.dec || 0, +M_.rel || 0, +opt.bite || 0, outLvl - 4256);   // V4f-fix: as the worklet
       const plan = Ea ? ptPlan(Ea, outLvl - 4256, t0, Math.max(16, ((scaleOL(Ea.v[0] | 0) >> 1) << 6) + outLvl - 4256), 1, true, tfOf) : envPlan(op, outLvl, rsd, t0, 0, [0, 1, 2], bf);
       if (k === alg.fbDst && P.fb > 0) {                            // static feedback timbre: op level 300 ms into the note ("body")
         beta = Math.min(2 * Math.PI * amp(levelAt(plan, t0 + (opt.fbAt ?? .3), 0)) * Math.pow(2, P.fb - 8), 3.2);
@@ -9480,7 +9601,7 @@ const DXN = (() => {
       ops.push(X); srcs.push(o); nodes.push(o, g);
     }
     for (let k = 0; k < 6; k++) { const X = ops[k]; if (!X) continue;
-      if (alg.car[k]) X.g.connect(dest);
+      if (alg.car[k]) X.g.connect(capG || dest);
       if (PM) {                                                         // m (radians) -> (sr/2pi)*(m[n]-m[n-1]) Hz -> frequency
         const ms = alg.mods[k].filter(m => ops[m]); if (!ms.length) continue;
         const d = ctx.createIIRFilter([K, -K], [1]); nodes.push(d);
@@ -9538,6 +9659,8 @@ const DXN = (() => {
           const rp = envPlan(X.op, X.outLvl, X.rsd, t, l, [3]); schedule(p, rp, X.scale); X.rel = rp;
           if (X.eg) { const q = X.eg.gain; q.cancelScheduledValues(t); q.setValueAtTime(amp(l) * .5, t); schedule(q, rp, .5); }
           if (alg.car[ops.indexOf(X)]) end = Math.max(end, rp.end); }
+        // V4f-fix (L3): a point-form note that runs to the 12 s cap (loop after Psus, Frei) fades out in 20 ms, no hard stop
+        if (capG && end > t + 11.98) { end = t + 12; const q = capG.gain; q.setValueAtTime(1, end - .02); q.linearRampToValueAtTime(0, end); }
         for (const s of srcs) s.stop(end + .05);
         return end;
       }};
@@ -9570,7 +9693,7 @@ const FMH = (() => {
   function segTime(r, from, to, rsd = 0, rf = 1) {     // seconds for one stage, levels in internal units (rf: rate factor, BISS)
     const R = LVL_PER_SEC(qOf(r, rsd)) * rf;
     if (to < from) return (from - to) / R;
-    let t = 0, x = Math.max(from, 1716); while (x < to) { const b = Math.floor(x / 256), nx = Math.min(to, (b + 1) * 256); t += (nx - x) / ((17 - b) * R); x = nx; } return t;
+    let t = 0, x = Math.max(from, 1716); while (x < to) { const b = Math.floor(x / 256), nx = Math.min(to, (b + 1) * 256); t += (nx - x) / (Math.max(1, 16 - b) * R); x = nx; } return t;   // msfa: floor(17 - l/256) = 16 - band
   }
   // V0d (A.4b 2): Dexed ACCURATE_ENVELOPE static phase, seconds (held at the 44.1 kHz time at every sample rate)
   const STATICS = [1764000, 1764000, 1411200, 1411200, 1190700, 1014300, 992250, 882000, 705600, 705600, 584325, 507150, 502740, 441000, 418950, 352800, 308700, 286650, 253575, 220500, 220500, 176400, 145530, 145530, 125685, 110250, 110250, 88200, 88200, 74970, 61740, 61740, 55125, 48510, 44100, 37485, 31311, 30870, 27562, 27562, 22050, 18522, 17640, 15435, 14112, 13230, 11025, 9261, 9261, 7717, 6615, 6615, 5512, 5512, 4410, 3969, 3969, 3439, 2866, 2690, 2249, 1984, 1896, 1808, 1411, 1367, 1234, 1146, 926, 837, 837, 705, 573, 573, 529, 441, 441];
@@ -15694,7 +15817,7 @@ function fmxAfterFm6Edit(p) {
     if (J(f.ams) !== J(ref.ams)) x.ops.forEach((o, k) => { o.lfoAm = Math.round(127 * ((f.ams || [])[perm[k]] | 0) / 3); });
     if ((f.pms | 0) !== (ref.pms | 0)) x.ops.forEach(o => { o.lfoFm = Math.round(127 * (f.pms | 0) / 7); });
     fmxApply(p, FMX.norm(x, false));
-    if (bigP >= 0) { const o = p.fmx.ops[bigP]; if (o.pit) p.fm6.peg = {r: o.pit.r.slice(), l: o.pit.l.slice()}; else delete p.fm6.peg; }   // the big Tonh. editor shows this operator
+    if (bigP >= 0) { const o = p.fmx.ops[bigP]; if (o.pit && Array.isArray(o.pit.r) && Array.isArray(o.pit.l)) p.fm6.peg = {r: o.pit.r.slice(), l: o.pit.l.slice()}; else delete p.fm6.peg; }   // the big Tonh. editor shows this operator
     return;
   }
   delete p.fm6.approx; delete p.fm6.perm;
@@ -17485,11 +17608,11 @@ function fxMoreAct(i, a, anchor) {
   }
   if (a === 'ziele') { fxTargetsPop(i, k, anchor); return; }
   if (a === 'copy') { FXF.clip = {kind: 'op', op: deep(X.ops[k])}; lcdShow('Kopiert', 'OP ' + (k + 1) + ' (alle Werte, ohne Platz und Verbindungen)'); return; }
-  if (a === 'copyenv') { FXF.clip = {kind: 'env', amp: deep(X.ops[k].amp), pit: deep(X.ops[k].pit)}; lcdShow('Kopiert', 'Hüllkurve OP ' + (k + 1)); return; }
+  if (a === 'copyenv') { FXF.clip = {kind: 'env', amp: deep(X.ops[k].amp), pit: deep(X.ops[k].pit), pr: X.ops[k].pr}; lcdShow('Kopiert', 'Hüllkurve OP ' + (k + 1)); return; }
   if (a === 'paste' && FXF.clip) {
     const C = FXF.clip;
     fxMut(i, 'Einfügen OP ' + (k + 1), x => { const o = x.ops[k];
-      if (C.kind === 'env') { if (FXF.page === 'tonh') o.pit = deep(C.pit); else o.amp = deep(C.amp); }
+      if (C.kind === 'env') { if (FXF.page === 'tonh') { if (!o.fixed || (C.pit && C.pit.f === 'pt')) { o.pit = deep(C.pit); if (C.pr != null) o.pr = C.pr; } } else o.amp = deep(C.amp); }   // V4f-fix: with the pitch range (N7F-46), as [Einfügen]
       else { const keep = {c: o.c, r: o.r}; Object.assign(o, deep(C.op), keep); } });
     lcdShow('Eingefügt', 'OP ' + (k + 1)); fxRender(true); return;
   }
@@ -17803,21 +17926,62 @@ function fxEnvBuild(ctx) {
     if (ev.button > 0 || !LAY) return; ev.preventDefault();
     const r = gEl.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
     P_.set(ev.pointerId, {x: ev.clientX, y: ev.clientY});
-    if (G) { if (G.id !== ev.pointerId) { FXF.fineIds.add(ev.pointerId); envReb(); } return; }
+    if (G) { if (G.id !== ev.pointerId) { FXF.fineIds.add(ev.pointerId); envReb();
+      // V4f-fix (KP 4.11, N7F-43): remember the second finger; if both fingers move and their distance changes >= 12 px it is a pinch
+      if (G.pt && PT0 && !G.f2) { const a = P_.get(G.id); G.f2 = {id: ev.pointerId, x: ev.clientX, y: ev.clientY, d0: a ? Math.hypot(a.x - ev.clientX, a.y - ev.clientY) : 0, ax: a ? a.x : 0, ay: a ? a.y : 0}; } }
+      return; }
     if (P_.size === 2 && PT0) { const [a, b] = [...P_.values()]; Z = {d0: Math.hypot(a.x - b.x, a.y - b.y), z0: FXF.envZoom || 1, off0: FXF.envOff || 0, m0: (a.x + b.x) / 2 - r.left, on: false}; tapEmpty = null; return; }
     let best = -1, bd = 22; LAY.pts.forEach((p, s) => { const d = Math.max(Math.abs(p.x - x), Math.abs(p.y - y)); if (d < bd) { bd = d; best = s; } });
     if (best < 0) { tapEmpty = {id: ev.pointerId, x: ev.clientX, y: ev.clientY}; return; }
     const X = fxX(i), o = X.ops[k], e = fxEnvOf(o, which);
     try { gEl.setPointerCapture(ev.pointerId); } catch (_) {}
     if (!PT0) { dxDown(ev, best, X, o); return; }
-    G = {pt: true, id: ev.pointerId, s: best, x0: ev.clientX, y0: ev.clientY, px: LAY.pts[best].x, py: LAY.pts[best].y, f: envF(), lx: null, ly: null, d: null, span: geo.span, cum: LAY.cum.slice(), moved: false, was: FXF.envSel};
+    G = {pt: true, id: ev.pointerId, s: best, x0: ev.clientX, y0: ev.clientY, px: LAY.pts[best].x, py: LAY.pts[best].y, f: envF(), lx: null, ly: null, d: null, span: geo.span, cum: LAY.cum.slice(), moved: false, was: FXF.envSel,
+      span0: geo.span, spanT: geo.span, tot0: geo.tot, over: 0, rx: LAY.pts[best].x, e0: deep(e), tick: null, f2: null};
     FXF.envSel = best; FXF.valDrag = {fineOn: envReb};
-    gestBegin(ev.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; if (g0 && g0.d) fxDragEnd(i, g0.d, 'Hüllkurve OP ' + (k + 1)); });
+    gestBegin(ev.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; ptEdgeStop(g0); if (g0 && g0.d) fxDragEnd(i, g0.d, 'Hüllkurve OP ' + (k + 1)); });
     draw(fxX(i));
     lcdShow('P' + best + ' · OP ' + (k + 1), (pit ? htTxt(FMX.yHt(e.y[best], R_())) + ' HT' : 'Y ' + e.y[best]) + ' · X ' + fmMs(LAY.cum[best]));
   });
+  // V4f-fix: a point drag becomes a pinch when both fingers move and their distance changes >= 12 px: the point goes back to where
+  // it was (no undo step) and the time axis zooms from here
+  const toPinch = () => {
+    const g0 = G, r = gEl.getBoundingClientRect(), [a, b] = [...P_.values()];
+    G = null; FXF.valDrag = null; ptEdgeStop(g0); FXF.fineIds.delete(g0.f2.id); gestEnd(g0.id);
+    if (g0.d) fxDragSet(i, x => { const o = x.ops[k]; if (which === 'pit') o.pit = deep(g0.e0); else o.amp = deep(g0.e0); });
+    FXF.envSel = g0.was;
+    Z = {d0: g0.f2.d0, z0: FXF.envZoom || 1, off0: FXF.envOff || 0, m0: (g0.f2.ax + g0.f2.x) / 2 - r.left, on: true}; tapEmpty = null;
+    void a; void b; draw(fxX(i));
+  };
+  // V4f-fix: one drag reaches 0,5 ms … 20 s: past the right edge the axis grows with the overshoot (x 2 per 24 px), and while the
+  // finger stays at the edge it keeps growing (about x 2.8 per second, faster further out) - the point stays under the finger
+  const ptApply = () => {
+    const g = G; if (!g || !g.pt) return;
+    const s = g.s, cap = (g.tot0 + 20) * 1.25;
+    g.span = Math.min(cap, Math.max(g.spanT, g.span0 * Math.pow(2, g.over / 24)));
+    const A = geoPt(fxEnvOf(fxX(i).ops[k], which), g.span), dy = (g.ly == null ? 0 : g.ly - g.y0), ny = LofY(g.py + dy * g.f);
+    const nt = s > 0 ? clamp(A.cx(clamp(g.rx, A.x0, A.x1)) - g.cum[s - 1], .0005, 20) * 1000 : null;
+    fxDragSet(i, x => { const e = fxEnvOf(x.ops[k], which); if (!e || e.f !== 'pt') return; e.y[s] = ny; if (nt != null) e.t[s - 1] = Math.round(nt * 10) / 10; });
+    draw(fxX(i));
+    const e = fxEnvOf(fxX(i).ops[k], which); lcdShow('P' + s + ' · OP ' + (k + 1), (pit ? htTxt(FMX.yHt(e.y[s], R_())) + ' HT' : 'Y ' + e.y[s]) + ' · X ' + fmMs(cumOf(e)[s]) + (s > 0 ? ' · Segment ' + fmMs(e.t[s - 1] / 1000) : '') + (g.f < 1 ? ' · FEIN ×¼' : ''));
+  };
+  const ptEdgeStop = g => { if (g && g.tick) { clearInterval(g.tick); g.tick = null; } };
+  const ptEdge = () => {
+    const g = G; if (!g || !g.pt || g.s < 1) return;
+    const atEdge = g.rx >= geo.x1 - 2;
+    if (!atEdge) { ptEdgeStop(g); return; }
+    if (g.tick) return;
+    g.tick = setInterval(() => { if (G !== g || !gEl.isConnected) { ptEdgeStop(g); return; }
+      g.spanT = Math.min((g.tot0 + 20) * 1.25, Math.max(g.spanT, g.span) * Math.pow(2, .05 * Math.min(8, 1.5 + g.over / 20))); ptApply(); }, 50);
+  };
   on(gEl, 'pointermove', ev => {
     const pp = P_.get(ev.pointerId); if (pp) { pp.x = ev.clientX; pp.y = ev.clientY; }
+    if (G && G.pt && G.f2 && ev.pointerId === G.f2.id) {                       // the second finger: FEIN while it rests, a pinch when both move
+      const a = P_.get(G.id), mv2 = Math.hypot(ev.clientX - G.f2.x, ev.clientY - G.f2.y), mv1 = a ? Math.hypot(a.x - G.f2.ax, a.y - G.f2.ay) : 0;
+      const d = a ? Math.hypot(a.x - ev.clientX, a.y - ev.clientY) : G.f2.d0;
+      if (mv2 >= 6 && mv1 >= 6 && Math.abs(d - G.f2.d0) >= 12) toPinch();
+      if (!Z) return;
+    }
     if (Z && P_.size >= 2) {
       const [a, b] = [...P_.values()], d = Math.hypot(a.x - b.x, a.y - b.y), r = gEl.getBoundingClientRect();
       if (!Z.on && Math.abs(d - Z.d0) >= 12) Z.on = true;
@@ -17832,17 +17996,15 @@ function fxEnvBuild(ctx) {
     const dx = ev.clientX - G.x0, dy = ev.clientY - G.y0, f = G.f;
     if (!G.moved && Math.max(Math.abs(dx), Math.abs(dy)) < 4) return;
     G.moved = true; if (!G.d) G.d = fxDragBegin(i);
-    const s = G.s, ny = LofY(G.py + dy * f), nt = s > 0 ? clamp(geo.cx(clamp(G.px + dx * f, geo.x0, geo.x1)) - G.cum[s - 1], .0005, 20) * 1000 : null;
-    fxDragSet(i, x => { const e = fxEnvOf(x.ops[k], which); if (!e || e.f !== 'pt') return; e.y[s] = ny; if (nt != null) e.t[s - 1] = Math.round(nt * 10) / 10; });
-    draw(fxX(i));
-    const e = fxEnvOf(fxX(i).ops[k], which); lcdShow('P' + s + ' · OP ' + (k + 1), (pit ? htTxt(FMX.yHt(e.y[s], R_())) + ' HT' : 'Y ' + e.y[s]) + ' · X ' + fmMs(cumOf(e)[s]) + (s > 0 ? ' · Segment ' + fmMs(e.t[s - 1] / 1000) : '') + (f < 1 ? ' · FEIN ×¼' : ''));
+    G.rx = G.px + dx * f; G.over = G.s > 0 ? Math.max(0, G.rx - geo.x1) : 0;
+    ptApply(); ptEdge();
   });
   const end = (ev, ok) => {
     const had = P_.delete(ev.pointerId); FXF.fineIds.delete(ev.pointerId);
     if (Z) { if (P_.size < 2) { const zon = Z.on; Z = null; if (zon) lcdShow('Zoom', '×' + fmtDec(Math.round((FXF.envZoom || 1) * 10) / 10, 1)); } return; }
     if (tapEmpty && tapEmpty.id === ev.pointerId) { tapEmpty = null; if (ok && FXF.envSel != null) { FXF.envSel = null; ctx.rebuild(); } return; }
     if (!G || ev.pointerId !== G.id) return;
-    const g0 = G; G = null; FXF.valDrag = null; gestEnd(ev.pointerId);
+    const g0 = G; G = null; FXF.valDrag = null; gestEnd(ev.pointerId); ptEdgeStop(g0);
     if (!g0.pt) { dxUp(g0); return; }
     if (g0.d) fxDragEnd(i, g0.d, 'Hüllkurve OP ' + (k + 1));
     if (g0.was !== g0.s || !g0.moved) ctx.rebuild(); else draw(fxX(i));
@@ -17982,7 +18144,8 @@ function fxBigEnv(i, k, which) {
   fxEnsure(i);
   const f = fmOf(i), q = f.perm ? f.perm[k] : k, o = fxX(i).ops[k];
   FXF.big = {i, k, which, page: FXF.page, focus: k};
-  if (which === 'pit') { f.peg = o.pit ? {r: o.pit.r.slice(), l: o.pit.l.slice()} : undefined; if (!f.peg) delete f.peg; }
+  // V4f-fix: only a DX-form pitch envelope goes into fm6.peg (a point form has y / t, the big point editor reads p.fmx)
+  if (which === 'pit') { f.peg = o.pit && Array.isArray(o.pit.r) && Array.isArray(o.pit.l) ? {r: o.pit.r.slice(), l: o.pit.l.slice()} : undefined; if (!f.peg) delete f.peg; }
   ED.fmOp = q; if (!ED.fmOpT) ED.fmOpT = {}; ED.fmOpT[i] = q;
   if (which === 'pit') { ED.tab = 'env'; ED.sub.envfm = 'peg'; } else { ED.tab = 'osc'; ED.sub.osc = 'op'; ED.fmSub = 'env'; }
   safeRebuild(buildSynthEd);
