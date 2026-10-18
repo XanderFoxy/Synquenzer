@@ -7918,10 +7918,12 @@ const RecHelpers = (() => {
    modulators at note-on: the native form of the Helligkeit macro, §6.4); FMH gets ratioText / fixedHz helpers for the UI. */
 'use strict';
 // DX6 compatibility path: same patch format, native nodes only (no AudioWorklet), for hosts whose CSP blocks
-// blob:/data: worklet modules. Differences to the worklet: FM into OscillatorNode.frequency (linear through-zero FM,
-// identical to PM for a sine modulator, slightly different sideband weights for stacks), feedback = static
-// PeriodicWave (Kepler/Bessel series) instead of a per-sample loop. Envelopes follow the same msfa level maths and
-// use only setValueAtTime + setTargetAtTime (cancel-safe, the app's existing convention).
+// blob:/data: worklet modules. V0d-fix: true phase modulation as in the worklet (the modulators' PM signal through a
+// first-difference IIRFilterNode into OscillatorNode.frequency, the phase sum telescopes to the PM signal); the old
+// through-zero FM path (A*y'(theta)*2*pi*f) stays only for hosts without IIRFilterNode. Feedback = PeriodicWaves
+// (Kepler/Bessel series: the body wave plus up to two brighter waves crossfaded by the operator's level) instead of a
+// per-sample loop. Envelopes follow the same msfa level maths and use only setValueAtTime + setTargetAtTime
+// (cancel-safe, the app's existing convention).
 const DXN = (() => {
   const LEVEL_LUT = [0, 5, 9, 13, 17, 20, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 42, 43, 45, 46];
   const VEL_TAB = [0, 70, 86, 97, 106, 114, 121, 126, 132, 138, 142, 148, 152, 156, 160, 163, 166, 170, 173, 174, 178, 181, 184, 186, 189, 190, 194, 196, 198, 200, 202, 205, 206, 209, 211, 214, 216, 218, 220, 222, 224, 225, 227, 229, 230, 232, 233, 235, 237, 238, 240, 241, 242, 243, 244, 246, 246, 248, 249, 250, 251, 252, 253, 254];
@@ -8013,6 +8015,7 @@ const DXN = (() => {
     }
   }
 
+  let COMP_CURVE = null;                                         // 2^(-cents/1200) - 1 over +-12000 cents (input / 12000)
   // build one voice; returns {release(t), stop(t), srcs, nodes}
   function voice(ctx, P, note, vel, t0, dest, cvOut, opt = {}) {
     const alg = ALGS[(P.alg | 0) - 1] || ALGS[0], hz = 440 * Math.pow(2, (note - 69) / 12), lf = Math.log2(hz);
@@ -8028,8 +8031,26 @@ const DXN = (() => {
         t += dt; p.linearRampToValueAtTime(tgt * 1200, t); c = tgt; }
       return t; };
     if (PG && ctx.createConstantSource) {
-      pegCs = ctx.createConstantSource(); pegCur = PEG_TAB[PG.l[3]] / 32; pegCs.offset.setValueAtTime(pegCur * 1200, t0);
+      pegCs = ctx.createConstantSource(); pegCs.offset.value = 0; pegCur = PEG_TAB[PG.l[3]] / 32; pegCs.offset.setValueAtTime(pegCur * 1200, t0);
       pegT = pegRamp(pegCs.offset, pegCur, [0, 1, 2], t0); srcs.push(pegCs); nodes.push(pegCs);
+    }
+    // V0d-fix (FM4): true phase modulation. Every modulator puts out its PM signal m = 2*pi*A(t)*y(theta) (radians); the sum
+    // of the modulators of an operator runs through a first-difference filter (sr/2pi)*(m[n] - m[n-1]) into its `frequency`, so
+    // the oscillator's phase sum telescopes to exactly m[n-1]. The old FM path (A*y'(theta)*2*pi*f into `frequency`) dropped the
+    // A'(t)*y term: every fast modulator envelope left a random phase offset between carrier and modulator, and for the 1:1
+    // pairs of the basses the 0 Hz sideband no longer cancelled (DC / sub-bass thump at note-on). `detune` (cv, PEG) scales
+    // `frequency` including the FM input, so the input of a detuned operator is divided by 2^(cents/1200) (gain 1 + a WaveShaper
+    // curve 2^(-cents/1200) - 1: 0 cents gives exactly 1 even where a silent shaper input yields silence instead of curve(0)).
+    // Without IIRFilterNode (very old WebKit) the old FM path stays.
+    const PM = !!ctx.createIIRFilter && !opt.legacyFM, K = ctx.sampleRate / (2 * Math.PI);
+    let comp = null;
+    const usesComp = PM && (cvOut || pegCs) && alg.mods.some((ms, k) => ms.length && P.ops[k] && !P.ops[k].fixed);
+    if (usesComp) {
+      const CR = 12000, sum = ctx.createGain(), ws = ctx.createWaveShaper();
+      if (!COMP_CURVE) { const N = 4097; COMP_CURVE = new Float32Array(N); for (let i = 0; i < N; i++) COMP_CURVE[i] = Math.pow(2, -((i / (N - 1)) * 2 - 1) * CR / 1200) - 1; }
+      sum.gain.value = 1 / CR; ws.curve = COMP_CURVE; ws.oversample = 'none'; sum.connect(ws);
+      if (cvOut) cvOut.connect(sum); if (pegCs) pegCs.connect(sum);
+      comp = ws; nodes.push(sum, ws);
     }
     for (let k = 0; k < 6; k++) {
       const op = P.ops[k]; if (op.on === 0 || !(op.ol > 0)) { ops.push(null); continue; }
@@ -8046,24 +8067,79 @@ const DXN = (() => {
       if (k === alg.fbDst && P.fb > 0) {                            // static feedback timbre: op level 300 ms into the note ("body")
         beta = Math.min(2 * Math.PI * amp(levelAt(plan, t0 + (opt.fbAt ?? .3), 0)) * Math.pow(2, P.fb - 8), 3.2);
       }
-      const form = alg.car[k] ? 'car' : (opt.sineMod ? 'car' : 'mod');
+      const form = alg.car[k] || PM ? 'car' : (opt.sineMod ? 'car' : 'mod');
       if (beta > 0 || form === 'mod') o.setPeriodicWave(opWave(ctx, beta, form));
-      if (!op.fixed && cvOut) cvOut.connect(o.detune);
-      if (!op.fixed && pegCs) pegCs.connect(o.detune);
-      const g = ctx.createGain(); g.gain.value = 0; o.connect(g);
+      const g = ctx.createGain(); g.gain.value = 0;
+      // V0d-fix (FM4): the feedback timbre follows the operator's envelope. Up to two more oscillators play the waves of 2x and
+      // 4x the body feedback (as far as the peak level reaches); all waves have the same frequency and phase, so a weighted
+      // sum is the interpolated waveform. The weights (piecewise linear in the operator's own level, from a WaveShaper on a
+      // copy of its envelope) give the body wave at or below the body level and the brighter waves above it. Before, the
+      // attack of a feedback bass (Knurr-Bass) had the duller body timbre (FM4 at 30 ms: 13-17 dB from the worklet).
+      let o2 = null, eg = null; const xo = [], aux = [];
+      if (PM && beta > 0 && !opt.staticFb) {
+        let lp = 0; for (const e of plan.ev) lp = Math.max(lp, e.a, e.b);
+        const aB = amp(levelAt(plan, t0 + (opt.fbAt ?? .3), 0)), aP = amp(lp), bpa = beta / aB, as = [aB];
+        for (let m = 2; m <= 4 && aB * m <= aP * 1.1 && bpa * aB * m / 2 < 3.2; m *= 2) as.push(aB * m);
+        if (as.length > 1) {
+          const FBP = opt.fbP ?? 2;                                       // convex: the harmonics grow faster than linearly with the feedback
+          const cs = ctx.createConstantSource(), N = 1025, gB = ctx.createGain(), neg = ctx.createGain();
+          eg = ctx.createGain(); eg.gain.value = 0; cs.offset.value = 1; cs.connect(eg); schedule(eg.gain, plan, .5);   // level / 2 -> shaper input 0..1
+          gB.gain.value = 1; neg.gain.value = -1; neg.connect(gB.gain); o.connect(gB); gB.connect(g);                   // body weight = 1 - the others
+          srcs.push(cs); aux.push(cs); nodes.push(cs, eg, gB, neg);
+          for (let i = 1; i < as.length; i++) {
+            const lo = as[i - 1], hi = as[i + 1], cur = new Float32Array(N), ws = ctx.createWaveShaper(), gi = ctx.createGain(), oi = ctx.createOscillator();
+            for (let j = 0; j < N; j++) { const x = Math.max(0, (j / (N - 1)) * 2 - 1) * 2;
+              cur[j] = x <= lo ? 0 : x <= as[i] ? Math.pow((x - lo) / (as[i] - lo), FBP) : hi == null ? 1 : x >= hi ? 0 : 1 - Math.pow((x - as[i]) / (hi - as[i]), FBP); }
+            ws.curve = cur; ws.oversample = 'none'; eg.connect(ws); gi.gain.value = 0; ws.connect(gi.gain); ws.connect(neg);
+            oi.frequency.value = f; oi.setPeriodicWave(opWave(ctx, Math.min(bpa * as[i], 3.2), 'car')); oi.connect(gi); gi.connect(g);
+            xo.push(oi); srcs.push(oi); nodes.push(ws, gi, oi);
+          }
+          o2 = xo[0];
+        }
+      }
+      if (!o2) o.connect(g);
+      for (const x of [o, ...xo]) { if (!op.fixed && cvOut) cvOut.connect(x.detune); if (!op.fixed && pegCs) pegCs.connect(x.detune); }
       // FM input must be d/dt of the PM output: A*y'(theta)*2*pi*(f + delta(t)). Plain modulator (delta = 0): fold
       // 2*pi*f into the envelope gain. Middle of a stack: env gain * 2*pi, then a GainNode "mul" whose gain = f + delta(t).
-      const mid = !alg.car[k] && alg.mods[k].length > 0 && !opt.noMul;
-      const scale = alg.car[k] ? outScale : (mid ? 2 * Math.PI : 2 * Math.PI * f) * bright;
+      const mid = !PM && !alg.car[k] && alg.mods[k].length > 0 && !opt.noMul;
+      const scale = alg.car[k] ? outScale : (mid || PM ? 2 * Math.PI : 2 * Math.PI * f) * bright;
       schedule(g.gain, plan, scale);
-      const X = {o, g, op, outLvl, rsd, plan, scale, f, out: g, mul: null};
+      const X = {o, xo, aux, eg, g, op, outLvl, rsd, plan, scale, f, out: g, mul: null};
       if (mid) { X.mul = ctx.createGain(); X.mul.gain.value = f; g.connect(X.mul); X.out = X.mul; nodes.push(X.mul); }
       ops.push(X); srcs.push(o); nodes.push(o, g);
     }
     for (let k = 0; k < 6; k++) { const X = ops[k]; if (!X) continue;
       if (alg.car[k]) X.g.connect(dest);
+      if (PM) {                                                         // m (radians) -> (sr/2pi)*(m[n]-m[n-1]) Hz -> frequency
+        const ms = alg.mods[k].filter(m => ops[m]); if (!ms.length) continue;
+        const d = ctx.createIIRFilter([K, -K], [1]); nodes.push(d);
+        for (const m of ms) ops[m].out.connect(d);
+        let to = d;
+        if (comp && !X.op.fixed) { const fin = ctx.createGain(); fin.gain.value = 1; comp.connect(fin.gain); d.connect(fin); to = fin; nodes.push(fin); }
+        to.connect(X.o.frequency); for (const x of X.xo) to.connect(x.frequency);
+        continue;
+      }
       for (const m of alg.mods[k]) if (ops[m]) { ops[m].out.connect(X.o.frequency); if (X.mul) ops[m].out.connect(X.mul.gain); } }
-    for (const s of srcs) s.start(t0);
+    // V0d-fix (FM4): start times. Chromium handles an oscillator with a-rate `frequency` / `detune` input badly in the render
+    // quantum it starts in when the start is not on the quantum boundary (the modulation reaches the phase only from the next
+    // boundary on), and it does not pull a source that only feeds a not-yet-started node. A voice starting mid-quantum (every
+    // live note) therefore lost the first samples of its modulation; the phase sum began later and kept a constant offset
+    // (DC / sub-bass thump on the 1:1 pairs, random sign per note). Now the voice's sources start in the render quantum before
+    // the one that holds t0, where every modulation input is still 0 (the envelopes, the cv and the PEG offset start at t0,
+    // so nothing sounds earlier): the deepest modulators on its boundary, every operator one sample after its modulators.
+    // An operator sees its modulators one sample late (the phase sums frequency[n-1]), so this lines the phases up like
+    // the worklet's same-sample operator chain. Start times sit 0.001 sample before the frame, so a k-rate oscillator
+    // (sub-sample start) and an a-rate one (whole-frame start) begin on the same frame with the same phase. A boundary the
+    // audio thread has already passed (a late live note) starts every source at the next boundary, all together.
+    if (PM && !opt.noAlign) {
+      const dep = [0, 0, 0, 0, 0, 0];
+      for (let pass = 0; pass < 6; pass++) for (let k = 0; k < 6; k++) if (ops[k]) for (const m of alg.mods[k]) if (ops[m]) dep[m] = Math.max(dep[m], dep[k] + 1);
+      const sr = ctx.sampleRate, B = Math.floor(Math.ceil(t0 * sr - 1e-6) / 128) * 128 - 128, maxD = Math.max(...dep);
+      const at = d => Math.max(0, (B + (opt.noLead ? 0 : maxD - d) - 1e-3) / sr), done = new Set();
+      if (pegCs) { pegCs.start(at(maxD)); done.add(pegCs); }
+      for (let k = 0; k < 6; k++) { const X = ops[k]; if (!X) continue; for (const x of [X.o, ...X.xo, ...X.aux]) { x.start(at(dep[k])); done.add(x); } }
+      for (const x of srcs) if (!done.has(x)) x.start(at(maxD));
+    } else for (const s of srcs) s.start(t0);
     let end = Infinity;
     return {srcs, nodes,
       release(t) {
@@ -8078,6 +8154,7 @@ const DXN = (() => {
           const l = levelAt(X.plan, t, 0), p = X.g.gain;
           p.cancelScheduledValues(t); p.setValueAtTime(amp(l) * X.scale, t);
           const rp = envPlan(X.op, X.outLvl, X.rsd, t, l, [3]); schedule(p, rp, X.scale); X.rel = rp;
+          if (X.eg) { const q = X.eg.gain; q.cancelScheduledValues(t); q.setValueAtTime(amp(l) * .5, t); schedule(q, rp, .5); }
           if (alg.car[ops.indexOf(X)]) end = Math.max(end, rp.end); }
         for (const s of srcs) s.stop(end + .05);
         return end;

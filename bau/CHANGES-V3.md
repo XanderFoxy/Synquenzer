@@ -484,7 +484,7 @@ Anpassungen einzeln (`…/adapt/`, alle bestanden). Wie am Ausgangsstand (V0b-`r
 `v3-v0b-adapt-wp3-browser` 3, `v3-v0b-adapt-wp3-ui` 2, `wp3-adapt-func-build` 2 (auch nativ), `wp7-adapt-sqr6-persist` 1.
 Seit V0b-fix (nicht V0d; mit `synq-snapshots/V0b-fix.html` nachgeprüft, mit `V0b.html` bestanden): `node-fm` „engine switch
 … the voice ends“ (V0b-fix überblendet gehaltene Töne absichtlich in die neue Engine) und `wp4-offline` FX3 Juno-Chorus (2).
-Offen durch V0d: `wp7-accept fm4` — nativer ECO-Weg gegen Worklet bei 30 ms > 10 dB für Pop-Bass DX, Solid-Bass, Stapel-,
+Offen durch V0d (in V0d-fix behoben, siehe unten): `wp7-accept fm4` — nativer ECO-Weg gegen Worklet bei 30 ms > 10 dB für Pop-Bass DX, Solid-Bass, Stapel-,
 Abgrund- und Knurr-Bass (11–19 dB; bei 600 ms ≤ 5,8 dB; DX-Tines wie seit V0a-fix um 10,7–11,2 dB), siehe Lücken.
 Angepasst (Kopf der Datei nennt den Grund): `v3-v0d-adapt-wp1-brand`, `-wp1-misc`, `-wp1-store`, `-wp3-store`, `-n0a`
 (Version 3.4.0), `-wp3-api` (3.4.0, 60 Werks-Sounds, 19 FM), `-wp7-data` (19 FM, „Alle FM“ 20), `-wp7-accept` (PR1 19 FM),
@@ -530,8 +530,88 @@ Bildschirmfotos `v0d-work/final/` (OP › HÜLLK. in P1/P2/P3/L1/L2, HÜLLK. ›
 - **ECO-Weg (nativ) bei tiefen FM-Bässen:** `wp7-accept fm4` misst bei 30 ms 11–19 dB Abstand zum Worklet (zu viel Energie
   unter 60 Hz im nativen Anschlag) für die nachgestimmten und neuen Bässe; ab 600 ms ≤ 5,8 dB. V0d-2-18 (nativ) besteht.
   Ein Versuch, den Phasenfehler der FM-Integration im ECO-Weg auszugleichen, half nur im 48-kHz-Offline-Render und wurde
-  verworfen (bei 44,1 kHz live liegt der Gleichanteil schon ohne Ausgleich bei ≈ 0). Ursache offen.
+  verworfen (bei 44,1 kHz live liegt der Gleichanteil schon ohne Ausgleich bei ≈ 0). Ursache offen. → **In V0d-fix behoben**
+  (Ursache gefunden, siehe V0d-fix).
 - `node-fm` (Engine-Wechsel) und `wp4-offline` FX3 scheitern seit V0b-fix (nicht durch V0d); die Erwartung von `node-fm`
   ist durch die V0b-fix-Überblendung überholt, FX3 nicht untersucht.
 - Die Bässe und Effekte sind gemessen, nicht angehört (E.11).
 - Im LCD von L2 (667×375) bleibt für den Wert wenig Platz; die Ablesung steht dort im Graphen.
+
+---
+
+## V0d-fix — ECO-Anschlag ohne Gleichanteil, `wp7-accept fm4` besteht wieder · App 3.4.0
+
+App: `dirigent-wt/index.html` (1 474 868 B; V0d 1 467 450 B → +7,4 KB), Snapshot `synq-snapshots/V0d-fix.html`.
+Befunde: (1) ECO-Weg (nativ, `DXN.voice`) erzeugt bei Pop-Bass DX, Solid-Bass, Stapel-, Abgrund- und Knurr-Bass einen
+Gleichanteil/Subbass-Stoß beim Anschlag (offline 48 kHz C4: Mittel 0–30 ms +0,131 bzw. −0,185 FS, Energie < 30 Hz −8,8 /
+−6,5 dB statt −32 / −33 dB); (2) dadurch `wp7-accept fm4` bei 30 ms 11–18 dB (Grenze 10), ohne Adapt-Datei (V0d-17, V0d-2-20).
+
+### Ursache
+
+- Der ECO-Weg rechnete FM statt PM: `A·y'(θ)·2πf` in `frequency`. Der Term `A'(t)·y(θ)` fehlte, jede schnelle
+  Modulator-Hüllkurve hinterließ einen festen Phasenversatz zwischen Träger und Modulator; bei den 1:1-Paaren der Bässe
+  (EN-03) hebt sich das 0-Hz-Seitenband dann nicht mehr auf → Gleichanteil-Stufe mit zufälligem Vorzeichen je Note.
+- Chromium: Ein Oszillator mit a-rate-Eingang an `frequency`/`detune`, der mitten in einem Render-Quantum startet, bekommt
+  die Modulation erst ab der nächsten Quantum-Grenze (`v3-v0dfix-start2.mjs`) — jede Live-Note verlor so die ersten
+  Modulationswerte, auch mit echter PM.
+- Feedback-Bässe (Knurr-Bass): die statische Feedback-Welle hatte im Anschlag die dumpfere Körper-Klangfarbe.
+
+### Geändert (nur `DXN.voice`, ECO-Weg; Worklet unverändert)
+
+- **Echte Phasenmodulation:** jeder Modulator gibt `m = 2π·A(t)·y(θ)` (rad) aus; die Summe der Modulatoren eines Operators
+  läuft durch ein Differenzfilter (`IIRFilterNode`, `(sr/2π)·(m[n]−m[n−1])`) in dessen `frequency` — die Phasensumme ist
+  genau `m[n−1]`. Ohne `IIRFilterNode` (sehr altes WebKit) bleibt der alte FM-Weg.
+- **Verstimmte Operatoren:** `detune` (cv, PEG) skaliert auch den FM-Eingang; der Eingang wird darum durch `2^(cents/1200)`
+  geteilt (WaveShaper-Kurve über ±12 000 Cent). `v3-v0dfix-cvcomp.mjs`: cv ±1200/−700/300 Cent = Note ±12/−7/+3, Rest
+  −72 … −89 dB (6/6).
+- **Startzeiten:** die Quellen einer Stimme starten im Quantum vor dem von t0 (dort sind alle Modulationen noch 0, Hüllkurven,
+  cv und PEG beginnen erst bei t0, also klingt nichts früher): die tiefsten Modulatoren auf der Grenze, jeder Operator ein
+  Sample nach seinen Modulatoren (gleicht die Ein-Sample-Verzögerung des Differenzfilters aus wie die Operator-Kette im
+  Worklet). Eine schon vergangene Grenze (späte Live-Note) → alle zusammen auf der nächsten.
+- **Feedback folgt der Hüllkurve:** bis zu zwei weitere Oszillatoren mit den Wellen für 2× und 4× Körper-Feedback, gewichtet
+  über eine WaveShaper-Kurve auf der Kopie der Operator-Hüllkurve (Körper-Welle bis Körperpegel, darüber die helleren);
+  im Release mitgeführt.
+- Der ECO-Hinweis „Klangfarbe bei hohem Pegel angenähert“ bleibt (Feedback ist weiter eine Wellen-Näherung).
+
+### Nachweis (vorher = V0d)
+
+| Prüfung | Vorher | Nachher |
+|---|---|---|
+| `wp7-accept.mjs fm4` und `v3-v0d-adapt-wp7-accept.mjs fm4` (30 ms) | 34/6: Pop 14,1 · Solid 12,1 · Stapel 11,0 · Abgrund 18,0 · Knurr 17,9–18,2 · DX-Tines 10,7 dB | **40/0** beide: 0,4 · 0,1–0,2 · 2,5 · 0,3–0,8 · 2,5 · DX-Tines 1,1 dB (600 ms ≤ 0,8 dB) |
+| `v3-v0d-adapt-wp7-accept.mjs` (alle: FM1–FM10, PR1, PR8, MO, UI) | — | 88/0 |
+| `v3-qa-v0d-ecolf.mjs` (offline 48 kHz, < 30 Hz in 0–60 ms) | Pop C4 −8,8 dB / Mittel +0,131; Knurr C4 −6,5 / −0,185; Pop C2 Mittel −0,168 | Pop C4 −31,8 (Worklet −32,3) / −0,006; Knurr C4 −28,4 (−33,4) / −0,013; Pop C2 −14,6 (−16,1) / +0,062 (Worklet +0,021; 30 ms = 2 Perioden) |
+| `v3-repro-ecothump.mjs` live 44,1 kHz C4 (Mittel 0–30 ms, < 30 Hz) | Pop −0,034 / −14,8 dB · Solid −0,048 / −12,5 · Stapel −10,4 · Abgrund −10,8 · Knurr −17,1 | Pop −0,0015 / −37,5 (Worklet −36,2) · Solid −0,003 / −35,4 (−34,3) · Stapel −34,3 (−42,7) · Abgrund −31,0 (−32,2) · Knurr −42,2 (−37,5); C2 alle ≤ |0,016| |
+| dasselbe bei 48 kHz (iPhone-Rate), C4 | Pop +0,044 / −12,5 · Solid +0,041 / −13,7 · Knurr −0,043 / −11,5 | Pop −0,001 / −36,5 (−36,3) · Solid −0,004 / −32,0 (−34,6) · Knurr −0,002 / −39,5 (−38,1) |
+| `v3-fm4dc-indep.mjs` (Mittel 0–30 ms; LP 30 Hz 0–60 ms nativ/Worklet) | −0,044 … +0,030; Pop −29,1/−42,6 | \|Mittel\| ≤ 0,003; Pop −42,1/−42,6 · Solid −41,0/−40,7 · Stapel −45,5/−45,4 · Abgrund −45,3/−43,1 · Knurr −41,0/−40,9 |
+
+Kontrollsounds (FM-Pluck, FM-Orgel) unverändert unauffällig; die Sinus-Stufe ab 300 ms ist auf beiden Wegen ≈ 0.
+
+**Regression:** `v3-v0d-reg.sh` (Engine-Teil: wp7-accept ui/mo/fm4/fm7/fm10/f1, PR1, wp7-syx/-data/-fm9/-gates/-dod,
+node-fm/-fm-pr1/-an1/-fx1/-engine/-check, wp4-engine/-offline/-gates/-dod, wp3-api/-store/-leak/-browser, func-build und
+func2-build mit Worklet und nativ, wp1-perf, harm-pure; Ausgabe `v3-v0d-reg/v0dfix2/`): alles bestanden außer den schon in
+V0d `run1` gleich scheiternden Prüfungen (`node-fm` 1, `v3-v0b-adapt-wp3-browser` 3, `wp3-adapt-func-build-native` 2,
+`wp4-offline` 2, `wp7-adapt-sqr6-persist` 1 — Meldungen identisch). V0d-Suiten: `v3-v0d-eng1` 34/0, `-eng2` 34/0,
+`-fm-sound` 12/0, `-sounds` 62/0, `v3-v0d-adapt-wp4-engine` 40/0, `-wp7-wp3-sound` 18/0, `v3-v0b-dod.mjs 60` nativ 10/0.
+Smoke-Test: Titel SYNQUENZER, keine Fehler.
+
+### Abweichung: V0d-2-18 nativ (`v3-v0dfix-adapt-v0d-native.mjs` statt `v3-v0d-native.mjs`)
+
+Zwei Schranken von V0d-2-18 waren auf den alten FM-Weg geeicht („Gegen msfa wird nativ nicht geprüft, weil ECO FM statt PM
+rechnet“). Jetzt rechnet ECO PM und trifft das Worklet (= msfa) genau — das Worklet selbst verfehlt diese Schranken:
+- PEG ändert den Index nicht: H2/H1 ohne/mit +7,5 HT nativ −2,81 / −1,78 dB = Worklet −2,81 / −1,78 dB (Differenz 1,03 > 1).
+  Die Messung (8192-FFT, 200 ms) schwankt ohne PEG schon von Ton zu Ton um ±1 dB (Worklet C3 −2,81, G3 −1,62, G#3 −1,70;
+  `v3-v0dfix-pegwk.mjs`). Neu: nativ = Worklet ±0,3 dB mit und ohne PEG und die PEG-Änderung nativ = Worklet ±0,3 dB.
+- SNAP-TEST ×1 M-PEGEL zu „ohne Modulator“ −4,0 … 0,5 (C2) / −4,6 … 0,9 dB (E1) — genau der msfa-Bereich, den V0d-2-05
+  selbst nennt (−4,5 … +0,7). Neu: M-PEGEL gegen das Worklet ≤ 0,5 dB (Schranke aus V0d-2-05) in Fenstern von 2 Perioden
+  (gemessen 0,13 / 0,14 dB); ein 20-ms-Fenster hält bei C2/E1 nur 1,3/0,8 Perioden und hängt dann von der Startphase ab
+  (`v3-v0dfix-natprobe4/5.mjs`: 20 ms bis 2 dB, 2 Perioden ≤ 0,33 dB bei jedem Start im Quantum). M-BISS unverändert
+  ≥ 25 dB (31,1 / 39,7). Alle anderen Punkte der Datei unverändert; 10/10 bestanden.
+
+### Bekannte Lücken
+
+- Offline-Render mit t0 < 1 Quantum (erste Note bei 0 s): die Quellen können nicht vorher starten; Stapel-Bass C4 dort
+  < 30 Hz −26,8 dB statt −39,2 (Mittel −0,018). Live (t0 immer später) und bei t0 ≥ 1 Quantum nicht betroffen.
+- Mehr Knoten je ECO-Stimme (Differenzfilter je modulierten Operator, bis zu 2 Feedback-Oszillatoren); `wp7-adapt-wp1-perf`,
+  `wp4-dod`/`wp7-dod` und die native DoD bestehen, auf dem iPhone ungemessen.
+- Kein WebKit-Test (Chromium only); `IIRFilterNode` gibt es in Safari seit 14.1.
+
