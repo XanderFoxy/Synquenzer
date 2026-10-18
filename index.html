@@ -2810,6 +2810,14 @@ const XF_KEYS = ['o1w', 'o2w', 'o3w', 'o1uni', 'o2uni', 'o3uni', 'o2sync', 'ftyp
 const XF_D = CR / 96;      // structural crossfade: 96 samples down, 96 up
 const EXF_N = Math.round(.04 * SR);   // V0b-fix (L3, PR5): engine change at sounding voices = 40 ms equal-power voice crossfade
 const SXF_N = Math.round(.03 * SR);   // V4a (L3, Z11): structural change at sounding voices = 30 ms equal-power voice crossfade
+// V4a-fix (L3, V4a-11): the structural crossfade keeps the POWER of the sum, measured: old copies and continuing voices are
+// summed apart, their powers and cross power run with 3 ms memory, the gains (1 - t, t) are scaled so the sum's power follows
+// the straight line from the old power to the new one. Plain cos / sin assumes uncorrelated signals; an FM modulator wave
+// change (saw <-> square) gives old / new carrier signals with correlation -0.96 at the same phase: a 13 dB hole.
+// Before the blend starts, 2 ms (SX_M blocks, old at full, new silent) measure the sign of the correlation per voice: a
+// negative one flips the continuing voice's polarity (v.pol, inaudible for a single voice) - the blend then always runs
+// between positively correlated signals and the power factor stays <= 2 (a large factor would lift the uncorrelated highs).
+const SX_EMA = Math.exp(-CR / (.003 * SR)), SX_MAX = 2, SX_M = Math.round(.002 * SR / CR), SXM_N = SX_M * CR;
 
 /* ---- FM6 (spec v2 6.3, WP7): tables and msfa maths copied verbatim from fmresearch/proto/dx6-worklet.js ---- */
 const SIN_N = 4096, SIN = new Float32Array(SIN_N + 1);
@@ -3052,6 +3060,9 @@ class Voice {
     this.ur = new Float64Array(NOSC * MAXU).fill(1);   // unison ratios of this voice while a route modulates Uni-Verstimm. (D_UNIDET)
     this.fadeStep = 0; this.outG = 1; this.panL = 1; this.panR = 1; this.vgain = 0; this.pan0 = 0; this.fenvAmt = 0;
     this.pl0 = -1; this.pr0 = -1; this.lvOk = false;   // last block's output gains (ramp start), smoothed levels valid
+    this.sxk = -1;                                     // V4a-fix: the structural crossfade this voice takes part in (-1 = none)
+    this.sxo = null; this.sxE = new Float64Array(3); this.sxA = 1; this.sxB = 0; this.sxBlk = -1;   // its old copy; per pair: powers, gains
+    this.pol = 1;                                      // V4a-fix: output polarity (-1 after a structural blend against an anti-correlated copy)
     // FM6 (6.3.4): operator phases (uint32 = one cycle), increments, envelope levels / targets / rates (msfa units),
     // per-sample gain ramps g0 -> g1, output levels, stage index, rising flag, rate scaling, ratio or fixed Hz, on flags
     this.fph = new Uint32Array(6); this.finc = new Float64Array(6);
@@ -3116,6 +3127,11 @@ class AnalogCore extends AudioWorkletProcessor {
     // block, the free-running phase reference of 'free' operators, a structural change waiting for the running crossfade
     this.gx = null; this.lvOn = false; this.lvNext = 0; this.curF = 0; this.frPh = new Float64Array(6); this.frInc = new Float64Array(6); this.frF = new Float64Array(6).fill(-1);
     this.pendS = null; this.xfLen = EXF_N; this.sxfOn = false;
+    // V4a-fix: the running structural crossfade: its ghost, the voice stamp, the position, a finish due next block, the
+    // separate sums of the old copies (o) and the continuing voices (n), running powers / cross power, last block's gains
+    this.sxfG = null; this.sxkN = 0; this.sxt = 0; this.sxfFin = false;
+    this.oL = new Float32Array(CR); this.oR = new Float32Array(CR); this.nL = new Float32Array(CR); this.nR = new Float32Array(CR);
+    this.sxBlk = 0;
     this.ps = {act: new Uint8Array(6), g: new Float64Array(6), dg: new Float64Array(6), ph: new Float64Array(6), inc: new Float64Array(6),
       w: new Float64Array(6), dw: new Float64Array(6), ta: [null, null, null, null, null, null], tb: [null, null, null, null, null, null], fs: new Float64Array(6),
       ord: new Int8Array(6), fk: new Int8Array(6), ms: new Int8Array(36), mn: new Uint8Array(6), ca: new Uint8Array(6), tw: new Uint8Array(6)};
@@ -3172,7 +3188,7 @@ class AnalogCore extends AudioWorkletProcessor {
       if (!xf) for (const k of XF_KEYS) if (k in o && typeof o[k] === 'number' && o[k] !== P[k]) { xf = true; break; }
       if (!xf && fm && P.eng === 1 && this.fmStruct(fm)) xf = true;
       if (xf) {
-        if (P.xfLite >= 1 || ('mode' in o && (o.mode > 0) !== (P.mode > 0))) { this.pend = Object.assign({}, o); if (fm) this.pendFm = fm; this.xfState = 1; return; }
+        if ((P.xfLite >= 1 || ('mode' in o && (o.mode > 0) !== (P.mode > 0))) && !this.sxfOn) { this.pend = Object.assign({}, o); if (fm) this.pendFm = fm; this.xfState = 1; return; }
         this.structReq(o, fm); return;
       }
     }
@@ -3186,7 +3202,8 @@ class AnalogCore extends AudioWorkletProcessor {
   // the ghost keeps COPIES of the sounding voices with the old sound and fades out (cos); the voices themselves go on with the
   // new values (same phases, envelopes, filter states) and fade in (sin): equal power, no hole, no restart
   structXf(o, fm) {
-    const g = this.mkGhost(); g.V = []; for (const v of this.V) if (v.on) g.V.push(cloneVoice(v));
+    const g = this.mkGhost(); g.V = [];
+    for (const v of this.V) if (v.on) { const c = cloneVoice(v); c.sxo = null; c.sxE.fill(0); c.sxA = 1; c.sxB = 0; c.sxBlk = -1; v.sxo = c; g.V.push(c); }
     g.noSpare = true; g.xfN = SXF_N;
     const ow = Array.from(this.oW);
     if (o && Object.keys(o).length) this.setParams(o);
@@ -3198,8 +3215,29 @@ class AnalogCore extends AudioWorkletProcessor {
       for (let u = 0; u < MAXU; u++) { let t = v.ph[n * MAXU + u] + d; t -= Math.floor(t); v.ph[n * MAXU + u] = t; }
     }
     if (fm) this.setFm(fm, true);
-    for (const v of this.V) if (v.on) { v.pl0 = 0; v.pr0 = 0; }       // their output ramp starts at 0 (the ghost carries the old)
-    this.sxfOn = true; this.xfState = 3; this.xfT = 0; this.xfLen = SXF_N; this.xg = this.xg1 = 0;
+    // V4a-fix: only THESE voices (stamp sxk) are blended against their copies; a note that starts during the 30 ms has no old
+    // copy and plays at full level from its first sample (FP-DSP). Old and continuing voices render at unity into separate
+    // sums, sxMix blends them with power-keeping gains.
+    this.sxkN++;
+    for (const v of this.V) if (v.on) v.sxk = this.sxkN;
+    this.sxfG = g; g.xg = g.xg1 = 1; this.sxfFin = false; this.sxt = 0; this.sxBlk = 0;
+    this.sxfOn = true; this.xfState = 3; this.xfT = 0; this.xfLen = SXF_N + SXM_N; this.xg = this.xg1 = 0;
+  }
+  // V4a-fix: one control block of one voice pair of the structural crossfade: o = the old copy (ghost), n = the continuing
+  // voice, both at unity (n silent when the voice has gone: the copy fades alone; o silent when the copy has ended). Per pair
+  // (same note, same phase: a steady correlation): gains old (1 - t) s, new t s, s = sqrt(power line / power of the plain blend)
+  sxMix(c, v, L, R, off) {
+    const oL = this.oL, oR = this.oR, nL = this.nL, nR = this.nR, E = c.sxE, n = CR;
+    let oo = 0, nn = 0, on = 0;
+    for (let i = 0; i < n; i++) { const a = oL[i], b = oR[i], p = nL[i], d = nR[i]; oo += a * a + b * b; nn += p * p + d * d; on += a * p + b * d; }
+    E[0] = E[0] * SX_EMA + oo; E[1] = E[1] * SX_EMA + nn; E[2] = E[2] * SX_EMA + on;
+    if (v && this.xfT === SXM_N && E[2] < 0) { v.pol = -v.pol; v.pl0 = -v.pl0; v.pr0 = -v.pr0; E[2] = -E[2]; }   // still silent: flip
+    const t = this.sxt, u = 1 - t, Po = E[0], Pn = E[1], den = u * u * Po + t * t * Pn + 2 * u * t * E[2], tg = u * Po + t * Pn;
+    const sc = tg > 1e-24 ? (den > tg / (SX_MAX * SX_MAX) ? Math.sqrt(tg / den) : SX_MAX) : 1;
+    const a1 = u * sc, b1 = t * sc, a0 = c.sxA, b0 = c.sxB, da = (a1 - a0) / n, db = (b1 - b0) / n;
+    let ga = a0, gb = b0;
+    for (let i = 0; i < n; i++) { ga += da; gb += db; L[off + i] += oL[i] * ga + nL[i] * gb; R[off + i] += oR[i] * ga + nR[i] * gb; }
+    c.sxA = a1; c.sxB = b1;
   }
   sxfEnd() {
     this.sxfOn = false; const q = this.pendS; this.pendS = null; if (!q) return;
@@ -3231,6 +3269,10 @@ class AnalogCore extends AudioWorkletProcessor {
       for (const v of hv) held.push({id: v.id, note: v.target, vel: v.vel});
     }
     const keep = new Set(held.map(h => h.id));
+    if (this.sxfOn) {                              // V4a-fix: a structural blend runs: both halves fade out from their gains
+      const sg = this.sxfG, a = Math.cos(this.sxt * Math.PI / 2); if (sg && sg.xfState === 4) { sg.xfA = a; sg.xfT = 0; sg.xg = sg.xg1 = a; }
+      this.sxfG = null; this.sxfFin = false; this.xg = this.xg1 = Math.sin(this.sxt * Math.PI / 2);
+    }
     for (const v of this.V) if (v.on && !keep.has(v.id)) this.ended.push(v.id);           // tails: done for the host (they fade in the ghost)
     for (const s of this.stack) if (!keep.has(s.id) && !this.findId(s.id)) this.ended.push(s.id);
     const g = this.mkGhost(); this.sxfOn = false; this.pendS = null; this.xfLen = EXF_N;
@@ -3269,9 +3311,13 @@ class AnalogCore extends AudioWorkletProcessor {
   heldAllEnd() { const H = this.xfHeld; if (H) { for (const h of H) this.ended.push(h.id); this.xfHeld = null; this.xfZC = null; this.xfNeedFm = false; } }
   dropGhost(g) { for (const v of g.V) { v.on = false; v.id = -1; v.fade = 0; } if (!g.noSpare && this.spare.length < 2) this.spare.push(g.V); }
   xfBlock() {
+    if (this.sxfFin) { this.sxfFin = false; const g = this.sxfG; this.sxfG = null; if (g) g.xfState = 5; this.sxfEnd(); }   // V4a-fix: the last blend block is done
     this.xg = this.xg1;
     if (this.xfState >= 3) {                       // 3: fade in (sin), 4: ghost fade out (cos from xfA)
       this.xfT += CR; const x = Math.min(1, this.xfT / (this.xfState === 4 ? this.xfN || EXF_N : this.xfLen || EXF_N));
+      if (this.xfState === 3 && this.sxfOn) {      // V4a-fix: structural crossfade: position for sxMix, end after this block
+        this.sxt = Math.max(0, (this.xfT - SXM_N) / SXF_N); this.xg1 = 1; if (x >= 1) { this.sxt = 1; this.xfState = 0; this.sxfFin = true; } return;
+      }
       if (this.xfState === 3) { if (this.xfHeld) { this.xfT = 0; this.xg1 = 0; return; } this.xg1 = Math.sin(x * Math.PI / 2); if (x >= 1) { this.xg1 = 1; this.xfState = 0; this.sxfEnd(); } }
       else { this.xg1 = x >= 1 ? 0 : this.xfA * Math.cos(x * Math.PI / 2); if (x >= 1) this.xfState = 5; }
       return;
@@ -3380,7 +3426,7 @@ class AnalogCore extends AudioWorkletProcessor {
     v.pan0 = (v.idx % 2 ? 1 : -1) * P.spread * (0.5 + 0.5 * rnd()); v.panL0 = Math.sqrt(1 - v.pan0); v.panR0 = Math.sqrt(1 + v.pan0);
     v.l1 = P.l1retrig ? 0 : this.gl1; v.l2 = P.l2retrig ? 0 : this.gl2; v.sh1 = rnd() * 2 - 1; v.sh2 = rnd() * 2 - 1;
     v.gA = v.gB = -1;   // force a fresh coefficient (no interpolation from a stale value)
-    v.pl0 = v.pr0 = -1; v.lvOk = false;
+    v.pl0 = v.pr0 = -1; v.lvOk = false; v.sxk = -1; v.pol = 1;   // V4a-fix: a new note has no old copy: never part of a structural crossfade
     if (P.eng === 1) this.fmNoteOn(v);
   }
 
@@ -3647,7 +3693,8 @@ class AnalogCore extends AudioWorkletProcessor {
     const A = this.A, gain = v.vgain * v.outG;
     let s = v.aSt, e = v.aOut, fg = v.fadeG;
     const fs = v.fade > 0 ? v.fadeStep : 0;
-    const pl1 = gain * v.panL * this.xg1, pr1 = gain * v.panR * this.xg1;
+    const xg = (this.sxfOn ? 1 : this.xg1) * v.pol;   // V4a-fix: in a structural crossfade the voices play at unity, sxMix sets the blend
+    const pl1 = gain * v.panL * xg, pr1 = gain * v.panR * xg;
     let pl = v.pl0 < 0 ? pl1 : v.pl0, pr = v.pr0 < 0 ? pr1 : v.pr0;
     const dpl = (pl1 - pl) / CR, dpr = (pr1 - pr) / CR;
     v.pl0 = pl1; v.pr0 = pr1;
@@ -3678,7 +3725,7 @@ class AnalogCore extends AudioWorkletProcessor {
     if (this.pendS) { this.pendS.fm = P; return; }           // V4a: a structural change waits for the running crossfade: newest patch
     let active = false; for (const v of this.V) if (v.on) { active = true; break; }
     if (active && this.P.eng === 1 && this.fmStruct(P)) {    // new routing / waves / feedback sources at sounding voices
-      if (this.P.xfLite >= 1) { this.pendFm = P; this.pend = {}; this.xfState = 1; return; }   // limiter level >= 2: the WP4 dip
+      if (this.P.xfLite >= 1 && !this.sxfOn) { this.pendFm = P; this.pend = {}; this.xfState = 1; return; }   // limiter level >= 2: the WP4 dip
       this.structReq(null, P); return;                        // V4a (L3): 30 ms voice crossfade
     }
     this.setFm(P, true);
@@ -4005,7 +4052,8 @@ class AnalogCore extends AudioWorkletProcessor {
     if (this.gx) this.fmxRender(v); else this.fmRender(v);
     if (!byp) { if (P.lq >= 1) this.ladder(v, bl, false); else this.ladderEco(v, bl, false); }
     const gain = v.vgain * (byp ? 1 : v.outG);
-    const pl1 = gain * v.panL * this.xg1, pr1 = gain * v.panR * this.xg1;
+    const xg = (this.sxfOn ? 1 : this.xg1) * v.pol;   // V4a-fix: in a structural crossfade the voices play at unity, sxMix sets the blend
+    const pl1 = gain * v.panL * xg, pr1 = gain * v.panR * xg;
     let pl = v.pl0 < 0 ? pl1 : v.pl0, pr = v.pr0 < 0 ? pr1 : v.pr0;
     const dpl = (pl1 - pl) / CR, dpr = (pr1 - pr) / CR;
     v.pl0 = pl1; v.pr0 = pr1;
@@ -4104,15 +4152,30 @@ class AnalogCore extends AudioWorkletProcessor {
     if (this.xfHeld && this.xfNeedFm && --this.xfWait <= 0) { this.xfNeedFm = false; this.xfTry(); }   // the FM patch did not come: start with the current one
     let any = this.q.length > 0 || this.ghosts.length > 0; for (const v of this.V) if (v.on) { any = true; break; }
     if (this.pend && !any) { const o = this.pend; this.pend = null; this.setParams(o); this.fmPendApply(); this.xfState = 0; this.xg = this.xg1 = 1; }
-    if (!any && !this.xfHeld && (this.xfState === 3 || this.pendS)) { this.xfState = 0; this.xg = this.xg1 = 1; this.sxfEnd(); }   // V4a: nothing sounds any more
+    if (!any && !this.xfHeld && (this.xfState === 3 || this.pendS || this.sxfOn)) {
+      this.xfState = 0; this.xg = this.xg1 = 1; this.sxfFin = false; if (this.sxfG) { this.sxfG.xfState = 5; this.sxfG = null; } this.sxfEnd();
+    }   // V4a: nothing sounds any more
     if (any) {
       for (let off = 0; off < N; off += CR) {
         this.curF = f0 + off;
         this.runEvents(f0 + off + CR);
         this.xfBlock();
         this.control(f0 + off);
-        for (const v of this.V) if (v.on) this.renderVoice(v, L, R, off);
+        // V4a-fix: structural blend, voice by voice: each continuing voice against its own old copy (sxMix)
+        const sx = this.sxfOn && this.sxfG && this.sxfG.xfState === 4 && this.ghosts.includes(this.sxfG) ? this.sxfG : null, sk = this.sxkN, bk = ++this.sxBlk;
+        if (sx) sx.control(f0 + off);
+        for (const v of this.V) if (v.on) {
+          if (!this.sxfOn || v.sxk !== sk) { this.renderVoice(v, L, R, off); continue; }
+          const c = v.sxo; this.nL.fill(0); this.nR.fill(0); this.oL.fill(0); this.oR.fill(0);
+          this.renderVoice(v, this.nL, this.nR, 0);
+          if (c) { if (sx && c.on) sx.renderVoice(c, this.oL, this.oR, 0); c.sxBlk = bk; this.sxMix(c, v, L, R, off); }
+          else { const nL = this.nL, nR = this.nR; for (let i = 0; i < CR; i++) { L[off + i] += nL[i]; R[off + i] += nR[i]; } }
+        }
+        if (sx) for (const c of sx.V) if (c.on && c.sxBlk !== bk) {   // an old copy whose voice has gone (stolen, ended): fades alone
+          this.nL.fill(0); this.nR.fill(0); this.oL.fill(0); this.oR.fill(0); sx.renderVoice(c, this.oL, this.oR, 0); c.sxBlk = bk; this.sxMix(c, null, L, R, off);
+        }
         for (const g of this.ghosts) if (g.xfState === 4) {
+          if (g === this.sxfG && this.sxfOn) continue;
           if (this.xfHeld) g.xg = g.xg1; else g.xfBlock();             // the old sound holds until the held keys start in the new one
           g.control(f0 + off);
           const Z = this.xfZC && this.xfZC.g === g && !this.xfZC.ok ? this.xfZC : null;
