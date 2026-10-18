@@ -1643,3 +1643,47 @@ Fähigkeiten-Summe unverändert (V0c deklariert keine Fähigkeit). Für Xander i
 **Bekannte Lücken:** kein WebKit-/iPhone-Test (Chromium + CDP-Touch); der Zwischenstand an Artifact-Adresse und Pages-Seite
 (EN-20/EN2-15) ist Sache des Orchestrators; Text-Eingabe mit iOS-Tastatur nicht am Gerät geprüft (das Blatt springt beim Fokus
 nach oben).
+
+## V0c-fix — eine Aufnahme = ein Undo, „ab Takt n“ im Start-Blatt, Melodie-Spur ohne Clips + Hinweis, Schleife über den ganzen Song, ChordPick wischbar · App 3.11.1
+
+1. **Eine Aufnahme = ein Undo-Schritt, auch wenn du währenddessen im Song etwas änderst** (S-01, TA8). Was du während ● SONG oder
+   [● MEL.] im Song änderst (Zelle antippen, Akkord setzen oder löschen, Schleife, Quantisieren, Melodie-Spur), legt keinen eigenen
+   Undo-Schritt mehr an, sondern gehört zum Schritt der Aufnahme (`pushSongUndo` während `R.songRec`/`R.melRec`). Ein ↶ nach der
+   Aufnahme bringt genau den Song von vorher zurück; kein Schritt landet mehr auf einem halb aufgenommenen Stand (vorher kam das
+   aufgenommene F nach zwei ↶ zurück). Während einer Aufnahme sind ↶/↷ auf Song-Schritte gesperrt („Erst Aufnahme beenden“), die
+   Toasts solcher Änderungen zeigen dann kein [Rückgängig]. Ein [● MEL.]-Durchgang ohne Noten, aber mit Änderungen, wird ein Schritt
+   „Song bearbeitet“.
+2. **Start-Blatt nach Tipp auf Takt n: [Ab Takt n │ Nur Takt n]** (B.1 Nr. 8, K2-27; V0c nur Überschreiben). Ist genau ein Takt
+   gewählt, zeigt das Blatt beide Wahlen; vorgewählt ist „Ab Takt n“ (offenes Ende bis ●, Kopf „AUFNAHME AB TAKT n“), „Nur Takt n“
+   nimmt wie bisher nur diesen Takt auf (Kopf „AUFNAHME TAKT n“, stanzt am Taktende aus). Ab 2 gewählten Takten bleibt es beim
+   Bereich, ohne Auswahl bei „ab Takt n“. P: eigene Zeile unter den Zielen; L: neben dem Kopf. Kein zweiter Tipp zum Abwählen mehr nötig.
+3. **Melodie-Spur beim ersten ● SONG** (S-04, V0c-10): „ohne Clips im Song“ heißt bei leerem Song jetzt „ohne Clips überhaupt“ (die
+   Aufnahme wird die anderen Clips starten). Ist die gewählte Spur so frei, bleibt sie (alte SG-Tests); sonst die freie Spur, bevorzugt
+   nicht MONO/LEGATO. Erst wenn jede Synth-Spur Clips hat, gilt die alte Regel (spielt gerade nichts), dann die gewählte. Demo mit
+   Synth 1 gewählt → Melodie auf Synth 4.
+   **Hinweis „Melodie und Clips teilen sich eine Stimme – Melodie klingt abgehackt“** jetzt auch bei der ersten Aufnahme: sobald die
+   Melodie-Spur (MONO/LEGATO) während der Aufnahme einen Clip startet oder ab Takt 1 spielt, mit [Freie Spur nehmen] (bevorzugt
+   eine Spur ohne Clips; wählt sie auch an; gehört zum Undo-Schritt der Aufnahme); und am Ende in der Schluss-Meldung
+   („Song: n Takte · Melodie: m Noten · Melodie und Clips teilen …“ mit [Freie Spur nehmen] [▶ SONG]). Auch nach einer Wahl in [S4 ▾].
+4. **Ein neu aufgenommener Song schleift über den ganzen Song** (V0c-07): `RecHelpers.logLaunch` verlängert eine Schleife, die den
+   ganzen Song deckt, mit dem Song (vorher blieb `{a:0,b:1}` stehen, wurde gespeichert, und `songLoop(true)` wiederholte nur Takt 1).
+5. **ChordPick: Stufe/Grund/Art mit dem Finger wischbar, Stufen-Zeile passt** (§4.5, M-PLATZ). `guardTouch` lässt Berührungen in
+   Wischlisten (`.cp-sc`, `.pan-x`) nativ scrollen (Tipp weiter über pointerup, den nachfolgenden Klick fängt der Geisterklick-Schutz);
+   die Listen enden mit 2 px Rand, damit der letzte Chip ganz sichtbar wird. Die Stufen-Chips teilen sich die Zeile (≥ 36 px, dichte
+   Zeile nach §0.3), unter 380 px (P) bzw. 760 px (L) ohne das Wort „Stufe“: alle 7 (Moll 8) passen in P1, P2, L1, L2; nur P3 wischt.
+
+**Abnahme (`dirigent-test/`, Chromium + CDP-Touch):** `v3-qa0c-undo.mjs` 4/4, `v3-qa0c-undo2.mjs` 1/1, `v3-rep-takeundo.mjs cell`
+und `chord` je 4/4; `v3-qa0c-ab.mjs` 2/2, `v3-rp-k227.mjs` P und L (prüft den Fehler: G in Takt 5 bleibt, „ab Takt 3“ angeboten);
+`v3-qa0c-mel.mjs` / `-mel-indep.mjs` (Melodie auf Synth 4); `v3-qreg0c-loop.mjs` (48 48 50 50 48 48), `v3-qreg0c-svrec.mjs`,
+`v3-repro-loopstale-ser.mjs` ({a:0,b:4} auch nach Speichern/Laden), `v3-qreg0c-frseq-song.mjs` 14/14 (ein Lauf 13/1 mit der bekannten
+Zeitschwankung 3,5131, wie auf G3-klein-fix); `v3-repro-cpscroll.mjs` (Wischen 160–169 px in allen 5 Größen), `v3-qreg0c-cpfrei.mjs`;
+neu `v3-v0cfix-verify.mjs` 52/52 mit den echten Schriften (über http geladen): Stufen-Zeile in Moll, B und dim7 nach Wischen per
+Finger tippen und übernehmen, kein Geisterklick, Start-Blatt M-PLATZ in P/P375/P320/L/L667, [Nur Takt 3] stanzt aus, S-04-Hinweis
+in der ersten Aufnahme und am Ende, ein Undo. Regression `v3-v0c-song.mjs` 40/40, `v3-v0c-ui.mjs` 41/41, `v3-v0c-frei.mjs` 6/6;
+Smoke ohne Fehler. Bilder in `dirigent-test/v3-v0cfix/`.
+
+Für Xander im Dashboard: nichts.
+
+**Bekannte Lücken:** kein WebKit-/iPhone-Test (natives Wischen in einem Blatt mit Touch-Schutz am Gerät prüfen); `v3-qa0c-meltxt.mjs`
+(Start-Blatt sagt bei MELODIE „überschreibt“, die alten Noten bleiben – Overdub) ist schon auf V0c.html rot und nicht Teil dieses
+Pakets.

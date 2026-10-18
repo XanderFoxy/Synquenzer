@@ -1128,6 +1128,11 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .rs-ov{flex:1 1 auto;min-width:0;font:600 10px/1.25 var(--font-ui);color:#ffcf7a;text-align:right}
 .rs-go{display:flex;width:100%;height:44px;margin-top:8px;font:700 14px/1 var(--font-ui);letter-spacing:.1em;background:linear-gradient(#d22a1f,#9e1710);border-color:#ff5a4c;color:#fff}
 .rs-go .d{margin-right:6px}
+.rs-span{margin-top:6px}
+.rs-span .seg{display:flex;flex-wrap:nowrap;width:100%}
+.rs-span .seg button{flex:1 1 0;min-width:0;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 4px}
+.rs-span .seg button b{font:700 12px/1 var(--font-ui);letter-spacing:.04em}
+.rs-span .seg button small{font:600 9px/1 var(--font-ui);color:var(--text-dim);letter-spacing:.02em}
 .chpick .cp-r1{display:flex;align-items:center;gap:6px;height:44px;margin-top:4px;min-width:0}
 .cp-cur{flex:0 0 auto;min-width:44px;max-width:96px;height:40px;padding:0 8px;display:flex;align-items:center;justify-content:center;border:1px solid #ffaa28;border-radius:8px;background:rgba(255,170,40,.18);font:700 13px/1 var(--font-num);color:#ffcf7a;white-space:nowrap;overflow:hidden}
 .cp-ar{flex:none;color:var(--text-dim)}
@@ -1139,6 +1144,11 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .cp-row.cp-zu{height:36px}
 .cp-sc{flex:1 1 auto;min-width:0;display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;scrollbar-width:none;height:100%;align-items:center}
 .cp-sc::-webkit-scrollbar{display:none}
+.cp-sc{overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;padding-right:2px}   /* fractional widths: the last chip ends fully in view */
+/* V0c-fix: the Stufe chips share the row (dense row: ≥ 36 px, 4 px apart) so all 7 (minor: 8) fit; only P3 swipes */
+.cp-st .cp-c{flex:1 0 36px;min-width:36px;padding:0 3px}
+@media (orientation:portrait) and (max-width:379px){.cp-st .lbl{display:none}}
+@media (orientation:landscape) and (max-width:759px){.cp-st .lbl{display:none}}
 .cp-c{flex:none;min-width:44px;height:40px;padding:0 7px;flex-direction:column;gap:2px;font:700 12px/1 var(--font-num)}
 .cp-zu .cp-c{height:34px}
 .cp-c small{font:600 8px/1 var(--font-ui);color:var(--text-dim)}
@@ -1159,6 +1169,8 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
   .rstart .rs-h{grid-area:h;height:36px}.rstart .rs-tg{grid-area:tg;margin-top:2px}.rstart .rs-mode{grid-area:mode;margin-top:4px;padding:4px 8px;font-size:10px}
   .rstart .rs-pre{grid-area:pre;margin-top:0;flex-wrap:wrap;row-gap:4px}.rstart .rs-go{grid-area:go;margin-top:4px;height:40px}
   .rstart .rs-t{height:40px}.rs-x,.cp-x{height:36px}
+  .pop.rstart.dock.one{grid-template-areas:"h span" "tg pre" "mode go"}
+  .rstart .rs-span{grid-area:span;margin-top:0}.rstart.one .rs-pre{flex-wrap:nowrap}.rstart .rs-span .seg button{height:36px}
 }
 .plist.lpl small{font:600 10px/1 var(--font-num);color:var(--text-dim)}
 .cq .seg button{height:40px}
@@ -5426,7 +5438,10 @@ const RecHelpers = (() => {
     const prev = slotAt(song, track, bar);
     if (prev !== slot) lane.push({bar, slot});
     lane.sort((a, b) => a.bar - b.bar);
+    // V0c-fix: a loop over the whole song (a new song: {a:0, b:0}) keeps covering it while the take makes the song longer
+    const all = !!song.loop && song.loop.a === 0 && song.loop.b >= song.bars;
     song.bars = Math.max(song.bars, bar + (slot >= 0 ? 1 : 0));
+    if (all) song.loop.b = song.bars;
   }
   // shift (optional): the shift that was heard; its direction (sd) is kept so a tritone Träger replays in the same octave
   function logCarrier(song, beat, target, shift) {
@@ -12503,6 +12518,9 @@ function visualSlots(i, bAud) {
    is cancelled again is never logged); playback feeds R.pend at the bar lines and recalls the Träger; a manual launch /
    stop takes a track over until [↩ SONG]. Undo kind 'song' (§10.4) = an S.song snapshot. ---------- */
 const MEL = {open: new Map(), warned: false};
+const songTakeOpen = () => !!(R.songRec || R.melRec);
+// a toast's [Rückgängig] for a song edit — none while a take runs (the edit is part of the take's undo step)
+const songUndoAct = () => (songTakeOpen() ? null : {label: 'Rückgängig', fn: () => undo()});
 function songSnapshot() { return JSON.stringify(S.song); }
 function songChanged() { UI.dirty.song = true; UI.songVer = (UI.songVer | 0) + 1; markDirty(); }
 function restoreSong(o) {
@@ -12512,6 +12530,9 @@ function restoreSong(o) {
   if (R.editor === 'roll' && ED.rollAt && ED.rollAt.mel) { if (S.song && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); } else closeRoll(); }
 }
 function pushSongUndo(before, label, mergeKey) {
+  // V0c-fix (S-01, TA8): an edit of the song while a take (● SONG) or a [● MEL.] pass runs belongs to that take's one undo
+  // step — the take keeps the song from before it, so undoing the take never lands on a state from part-way through it
+  if (songTakeOpen()) { REDO.length = 0; UI.dirty.strip = true; return; }
   const t = performance.now(), top = UNDO[UNDO.length - 1];
   if (mergeKey && top && top.kind === 'song' && top.mergeKey === mergeKey && t - top.time < 2000) { top.time = t; REDO.length = 0; return; }
   undoPush({kind: 'song', before, label, mergeKey: mergeKey || null});
@@ -12524,6 +12545,7 @@ function songLog(i, slot, beat, fromSong) {
   if (sr.over) { if (!fromSong && !R.songApplying) songRecLaunch(i, slot, beat); return; }     // V0c: only what the user does is recorded
   if (beat < sr.startBeat - 1e-6) return;
   RecHelpers.logLaunch(S.song, i, slot, beat - sr.startBeat);
+  if (slot >= 0 && i === S.song.melodyTrack && !sr.hinted) melShareHint({now: true});   // S-04: the melody track now plays clips
   UI.dirty.song = true;
 }
 // a user action on a track while the song plays: that track is taken over until [↩ SONG] (§3.9 take-over)
@@ -12547,6 +12569,7 @@ function songRecStart(o) {
   // the Träger in effect there as the song's first entries (songRecBegin)
   if (!R.playing) { R.songRec = {startBeat: 0, before, pending: true}; play(); }
   else R.songRec = {startBeat: nextBarFromAudible(), before, pending: true};
+  melShareHint({now: true});                                      // S-04: only when no free track was left
   songChanged(); UI.dirty.all = true;
   wakeAcquire();
   return true;
@@ -12555,6 +12578,7 @@ function songRecBegin() {
   const sr = R.songRec; if (!sr || !sr.pending || !S.song) return;
   sr.pending = false;
   for (let i = 0; i < 5; i++) RecHelpers.logLaunch(S.song, i, slotAtBeat(i, sr.startBeat), 0);
+  if (!sr.hinted) melShareHint({now: true});
   const ce = T.targetAt(b2t(sr.startBeat)), cur = ce.target;
   RecHelpers.logCarrier(S.song, 0, cur || null, ce.shift);
   UI.dirty.song = true;
@@ -12594,7 +12618,9 @@ function songRecEnd(atBeat) {
   pushSongUndo(sr.before, 'Song aufgenommen');
   songChanged();
   const mn = song.melody.notes.length;
-  toast('Song: ' + song.bars + (song.bars === 1 ? ' Takt' : ' Takte') + (mn ? ' · Melodie: ' + mn + (mn === 1 ? ' Note' : ' Noten') : ''), {label: '▶ SONG', fn: () => songPlayStart()});
+  const endMsg = 'Song: ' + song.bars + (song.bars === 1 ? ' Takt' : ' Takte') + (mn ? ' · Melodie: ' + mn + (mn === 1 ? ' Note' : ' Noten') : ''), playAct = {label: '▶ SONG', fn: () => songPlayStart()};
+  // S-04: the melody sits on a MONO/LEGATO track that also plays clips in the song: the hint comes with the end message
+  if (!(mn && melShareHint({prefix: endMsg, act: playAct}))) toast(endMsg, playAct);
   SV.lastStop = null;
   carrierRestoreIfIdle();                                         // TA9 (N0c): no song playback runs after the take
   return true;
@@ -12764,21 +12790,42 @@ function melTrackBusy(t) {
   const vs = visualSlots(t, R.playing && AU.ctx ? audBeat() : 0);
   return (vs.playing >= 0) || (vs.queued != null && vs.queued >= 0);
 }
+/* V0c-fix: on the first ● SONG the song is still empty, so „ohne Clips im Song“ means a synth track without clips at all
+   (and none playing now): the take will launch the others' clips. A free selected track stays (it shares its voice with
+   nothing; WP6 SG tests); else a free not-MONO/LEGATO one, then a free MONO one; only when every synth track holds clips
+   the old rule (no clip playing now, not MONO/LEGATO first) and last the selected one */
 function melSuggest(forNew) {
   const sel = R.selT < 4 ? R.selT : (S.song ? S.song.melodyTrack : 3);
-  if (S.tracks[sel].kind === 'synth' && !melTrackBusy(sel)) return sel;
-  const free = [0, 1, 2, 3].filter(t => S.tracks[t].kind === 'synth' && !melTrackBusy(t));
-  if (!free.length) return sel;
-  return free.find(t => !soundMono(t)) ?? free[0];
+  const synth = [0, 1, 2, 3].filter(t => S.tracks[t].kind === 'synth'), empty = !songHasContent();
+  const pick = list => (list.includes(sel) && !soundMono(sel) ? sel : list.find(t => !soundMono(t)) ?? (list.includes(sel) ? sel : list[0]));
+  const free = synth.filter(t => !melTrackBusy(t) && !(empty && S.tracks[t].clips.some(Boolean)));
+  if (free.includes(sel)) return sel;
+  if (free.length) return pick(free);
+  const idle = synth.filter(t => !melTrackBusy(t));
+  return idle.length ? pick(idle) : sel;
+}
+// the melody track of a first take (empty song before it) plays clips in it now (launched or at song bar 1)
+function melTrackPlaysNow(t) {
+  if (songTrackPlays(t)) return true;
+  const vs = R.playing && AU.ctx ? visualSlots(t, audBeat()) : null;
+  return !!vs && (vs.playing >= 0 || (vs.queued != null && vs.queued >= 0));
 }
 // the hint (S-04): the melody shares the voice of a MONO/LEGATO track that also plays clips
-function melShareHint() {
+// o.now (a first take): „plays clips“ = in the song so far or right now; o.prefix: the take's end message in front;
+// o.act: a second button (▶ SONG)
+function melShareHint(o) {
+  o = o || {};
   const song = S.song; if (!song) return false;
-  const t = song.melodyTrack; if (!songTrackPlays(t) || !soundMono(t)) return false;
-  const free = [0, 1, 2, 3].filter(x => x !== t && S.tracks[x].kind === 'synth' && !songTrackPlays(x));
-  toast('Melodie und Clips teilen sich eine Stimme – Melodie klingt abgehackt', free.length ? {label: 'Freie Spur nehmen', fn: () => {
-    const to = free.find(x => !soundMono(x)) ?? free[0]; setMelodyTrack(to); if (R.songRec && R.songRec.over && R.selT !== to) selectTrack(to);
-    toast('Melodie auf ' + S.tracks[to].name, {label: 'Rückgängig', fn: () => undo()}); svButtons(); UI.dirty.song = true; }} : null);
+  const plays = o.now ? melTrackPlaysNow : songTrackPlays, t = song.melodyTrack;
+  if (!plays(t) || !soundMono(t)) return false;
+  if (R.songRec) R.songRec.hinted = true;
+  const hasClips = x => (S.tracks[x].clips.some(Boolean) ? 1 : 0);
+  const free = [0, 1, 2, 3].filter(x => x !== t && S.tracks[x].kind === 'synth' && !plays(x))
+    .sort((a, b) => (o.now ? hasClips(a) - hasClips(b) : 0) || soundMono(a) - soundMono(b) || a - b);
+  const take = free.length ? {label: 'Freie Spur nehmen', fn: () => {
+    const to = free[0]; setMelodyTrack(to); if (R.songRec && R.selT !== to) selectTrack(to);
+    toast('Melodie auf ' + S.tracks[to].name, songUndoAct()); svButtons(); UI.dirty.song = true; }} : null;
+  toast((o.prefix ? o.prefix + ' · ' : '') + 'Melodie und Clips teilen sich eine Stimme – Melodie klingt abgehackt', [take, o.act].filter(Boolean));
   return true;
 }
 
@@ -13010,6 +13057,7 @@ function melRecEnd() {
   const m = R.melRec; if (!m) return false;
   for (const [id, o] of [...MEL.open]) melCommit(id, o);
   R.melRec = null;
+  if (!m.n && S.song && songSnapshot() !== m.before) { pushSongUndo(m.before, 'Song bearbeitet'); songChanged(); }   // edits during the pass: one step
   if (m.n) { pushSongUndo(m.before, 'Melodie (' + m.n + (m.n === 1 ? ' Note)' : ' Noten)')); songChanged(); toast('Melodie: ' + m.n + (m.n === 1 ? ' Note' : ' Noten') + ' aufgenommen', {label: 'Rückgängig', fn: () => undo()}); }
   UI.dirty.song = true;
   return true;
@@ -13044,7 +13092,7 @@ function songCarrierDelete(k) {
   const song = S.song; if (!song || !song.carrier[k]) return false;
   const b = songSnapshot(), c = song.carrier.splice(k, 1)[0];
   pushSongUndo(b, 'Träger ' + (c.target ? c.target.name : 'ORIGINAL') + ' entfernt'); songChanged(); haptic('snap');
-  toast('Träger ' + (c.target ? prettyTarget(c.target) : 'ORIGINAL') + ' entfernt', {label: 'Rückgängig', fn: () => undo()});
+  toast('Träger ' + (c.target ? prettyTarget(c.target) : 'ORIGINAL') + ' entfernt', songUndoAct());
   return true;
 }
 /* V0c S-03 / N7-R10: chord text → Target. Grammar Grundton [♯|#|b|♭|is|es|s]? Art? (/Bass)?; roots A–H (Notennamen „de“:
@@ -13099,7 +13147,7 @@ function songSetChord(bar, chord, o) {
   if (songSnapshot() === b) return true;
   const nm = tg ? prettyTarget(tg) : 'ORIGINAL', bi = Math.floor(beat / 4 + 1e-9), sb = +(beat - bi * 4 + 1).toFixed(2);
   pushSongUndo(b, 'Akkord ' + nm + ' in Takt ' + (bi + 1)); songChanged(); folEdit('song'); haptic('tick');
-  toast('Takt ' + (bi + 1) + (sb !== 1 ? ', Schlag ' + String(sb).replace('.', ',') : '') + ': ' + nm, {label: 'Rückgängig', fn: () => undo()});
+  toast('Takt ' + (bi + 1) + (sb !== 1 ? ', Schlag ' + String(sb).replace('.', ',') : '') + ': ' + nm, songUndoAct());
   return true;
 }
 /* N7-R11: [Akkorde quantisieren] — each entry moves to the nearest grid point (a tie: the later point); several on one point:
@@ -13142,7 +13190,7 @@ function quantizeChords(o) {
   if (r.moved || r.merged) {
     const before = songSnapshot(); song.carrier = r.list;
     pushSongUndo(before, 'Akkorde quantisiert'); songChanged(); folEdit('song');
-    toast('Quantisiert · ' + r.moved + (r.moved === 1 ? ' rückt' : ' rücken') + ' · ' + r.merged + ' ' + (r.merged === 1 ? 'fällt' : 'fallen') + ' zusammen', {label: 'Rückgängig', fn: () => undo()});
+    toast('Quantisiert · ' + r.moved + (r.moved === 1 ? ' rückt' : ' rücken') + ' · ' + r.merged + ' ' + (r.merged === 1 ? 'fällt' : 'fallen') + ' zusammen', songUndoAct());
   } else toast('Alle Akkorde liegen schon im Raster');
   return {moved: r.moved, merged: r.merged};
 }
@@ -13173,7 +13221,7 @@ function svRulerTap(bar) {
 function songClearMelody() {
   const song = S.song; if (!song || !song.melody.notes.length) return false;
   const b = songSnapshot(); song.melody.notes = []; pushSongUndo(b, 'Melodie geleert'); songChanged();
-  toast('Melodie geleert', {label: 'Rückgängig', fn: () => undo()});
+  toast('Melodie geleert', songUndoAct());
   return true;
 }
 // WP6 API (I-04): on/off, boolean back; the range stays as it is (V0c)
@@ -13400,7 +13448,7 @@ function undoApply(e, val) {
   if (e.kind === 'clip' && S.tracks[e.track].kind === 'synth') scheduleAutoKey(e.scene);
 }
 function undo() {
-  if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over)) { toast('Erst Aufnahme beenden'); return false; }
+  if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && UNDO.length && UNDO[UNDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
   const u = UNDO.pop();
   if (!u) { toast('Nichts rückgängig zu machen'); UI.dirty.strip = true; return false; }
   REDO.push(Object.assign({}, u, {before: undoState(u)}));
@@ -13410,7 +13458,7 @@ function undo() {
   return true;
 }
 function redo() {
-  if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over)) { toast('Erst Aufnahme beenden'); return false; }
+  if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && REDO.length && REDO[REDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
   const r = REDO.pop();
   if (!r) { toast('Nichts zu wiederholen'); UI.dirty.strip = true; return false; }
   UNDO.push(Object.assign({}, r, {before: undoState(r), time: performance.now(), mergeKey: null}));
@@ -14592,7 +14640,7 @@ function openMelTrackPop(anchor) {
     p.innerHTML = '<h4>Melodie auf Spur</h4><div class="plist mtl">' + list.map(x => `<button class="rb${x.t === mt ? ' on' : ''}" data-t="${x.t}"><b>${esc(S.tracks[x.t].name)}</b><small>${x.plays ? 'spielt Clips' : 'frei'} · ${esc(S.tracks[x.t].sound.name)}</small></button>`).join('') + '</div>' +
       '<p class="small">Die Melodie nutzt Klang und Stimmen der Spur – eine freie Spur schneidet ihr keine Töne ab.</p>';
     guardTouch(p);
-    onTap(p, b => { closePop(); setMelodyTrack(+b.dataset.t); svButtons(); UI.dirty.song = true; }, 'button[data-t]');
+    onTap(p, b => { closePop(); const t = +b.dataset.t, was = S.song ? S.song.melodyTrack : null; setMelodyTrack(t); if (was !== t) melShareHint(); svButtons(); UI.dirty.song = true; }, 'button[data-t]');
   }, {name: 'meltrack'});
 }
 /* ---------- V0c sheets of the song view: Start-Blatt, SCHLEIFE, Akkord-Auswahl (ChordPick), AKKORDE menu, quantize ---------- */
@@ -14614,26 +14662,32 @@ function popDock(p, top) {
 function openRecStart(anchor) {
   if (!songHasContent()) { songRecToggle(); svButtons(); return; }
   const song = S.song;
+  // K2-27 / B.1 Nr. 8: one selected bar (a tap on its number) → [Ab Takt n │ Nur Takt n]; „ab Takt n“ (open end) first
+  let span = 'ab';
   openPop(anchor, p => {
     p.classList.add('rstart'); guardTouch(p);
     const paint = () => {
       const tg = recTargets(), sel = SV.sel, pre = UI.recPre !== false, cb = R.songPlay && R.playing ? songBeatOf(audBeat()) : null;
       let from = sel ? sel.a : songStartBar(); if (cb != null) from = Math.max(from, Math.floor(cb / 4 + 1e-9));
-      const to = sel && sel.b + 1 > from ? sel.b + 1 : null;
+      const one = !!sel && sel.a === sel.b && sel.b + 1 > from;
+      p.classList.toggle('one', one);
+      const to = sel && sel.b + 1 > from && !(one && span === 'ab') ? sel.b + 1 : null;
       const head = to != null && to - from > 1 ? 'AUFNAHME TAKTE ' + (from + 1) + '–' + to : to != null ? 'AUFNAHME TAKT ' + (from + 1) : 'AUFNAHME AB TAKT ' + (from + 1);
       const over = recTgLong(tg), rng = to != null ? (to - from === 1 ? 'in Takt ' + (from + 1) : 'in Takt ' + (from + 1) + '–' + to) : 'ab Takt ' + (from + 1);
       p.innerHTML = `<div class="rs-h"><b>${head}</b><button class="rb rs-x" data-a="x" aria-label="Schließen">✕</button></div>` +
         `<div class="rs-tg"><span class="lbl">Ziele</span>` + [['clips', 'CLIPS'], ['chords', 'AKKORDE'], ['mel', 'MELODIE']].map(([k, l]) => `<button class="rb rs-t${tg[k] ? ' on' : ''}" data-t="${k}" aria-pressed="${tg[k]}">${tg[k] ? '✓' : ''}${l}</button>`).join('') + `</div>` +
+        (one ? `<div class="rs-span">${segHTML('rsSpan', [['ab', '<b>Ab Takt ' + (from + 1) + '</b><small>bis ●</small>'], ['nur', '<b>Nur Takt ' + (from + 1) + '</b><small>1 Takt</small>']], span)}</div>` : '') +
         `<div class="rs-mode"><b>Überschreiben</b> – was du änderst, ersetzt ${rng}; alles andere bleibt. Szenen-Clips bleiben unberührt.</div>` +
         `<div class="rs-pre"><span class="lbl">Vorlauf</span>${segHTML('rsPre', [['1', '1 Takt'], ['0', 'aus']], pre ? '1' : '0')}<span class="rs-ov">${over.length ? 'überschreibt ' + over.join(', ') + ' ' + rng : 'kein Ziel gewählt'}</span></div>` +
         `<button class="rb rs-go" data-a="go"${over.length ? '' : ' disabled'}><span class="d">●</span> START</button>`;
       bindSegTap(p, 'rsPre', v => { UI.recPre = v === '1'; paint(); popDock(p); });
+      bindSegTap(p, 'rsSpan', v => { span = v === 'nur' ? 'nur' : 'ab'; paint(); popDock(p); });
     };
     paint();
     onTap(p, b => {
       if (b.dataset.t) { const tg = recTargets(); tg[b.dataset.t] = !tg[b.dataset.t]; setRecTargets(tg); haptic('tick'); paint(); popDock(p); return; }
       if (b.dataset.a === 'x') { closePop(); return; }
-      if (b.dataset.a === 'go') { closePop(); songRecStart({}); svButtons(); }
+      if (b.dataset.a === 'go') { const sel = SV.sel, ab = !!sel && sel.a === sel.b && span === 'ab'; closePop(); songRecStart(ab ? {to: null} : {}); svButtons(); }
     }, 'button[data-t],button[data-a]');
   }, {name: 'recstart'});
   popDock(UI.pop && UI.pop.el);
@@ -14751,7 +14805,7 @@ function openChordMenu(anchor) {
         const before = songSnapshot(), lo = sel ? sel.a * 4 : -1, hi = sel ? (sel.b + 1) * 4 : Infinity;
         const n0 = song.carrier.length; song.carrier = song.carrier.filter(c => !(c.beat >= lo - 1e-6 && c.beat < hi - 1e-6));
         const n = n0 - song.carrier.length;
-        if (n) { pushSongUndo(before, 'Akkorde gelöscht'); songChanged(); toast(n + (n === 1 ? ' Akkord' : ' Akkorde') + ' gelöscht', {label: 'Rückgängig', fn: () => undo()}); }
+        if (n) { pushSongUndo(before, 'Akkorde gelöscht'); songChanged(); toast(n + (n === 1 ? ' Akkord' : ' Akkorde') + ' gelöscht', songUndoAct()); }
       }
     }, 'button[data-a]');
   }, {name: 'chordmenu'});
@@ -15990,7 +16044,9 @@ function safeRebuild(fn) { if (GEST.size) pendingRebuild = fn; else fn(); }
 function abortAll(why) { RESTPTR.clear(); for (const [id, g] of [...GEST]) { GEST.delete(id); try { g.abort(why); } catch (_) {} } gestEnd(-1); }
 // iOS: user-select:none does not stop the loupe; a non-passive touchstart preventDefault does. Such surfaces get no
 // click from touch, so everything inside them acts on pointer events (onTap)
-function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
+// V0c-fix: a touch that starts in a sideways swipe list (.cp-sc, .pan-x) keeps its native scrolling (a tap there acts on
+// pointerup as everywhere; its synthetic click is eaten by the ghost-click guard, a swipe ends in pointercancel)
+function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && e.target.closest('.cp-sc,.pan-x')) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
 // tap = pointerdown + pointerup on the same element within 12 px. A click right after a handled pointer tap is ignored;
 // keyboard and programmatic clicks still activate. sel: delegate to children matching sel.
 function onTap(node, fn, sel) {
