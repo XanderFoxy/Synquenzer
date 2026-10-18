@@ -1413,3 +1413,39 @@ Gerätenamen (N2-4b-02), Worklet-Quelle ASCII, keine NaN, M-PLATZ der Blätter i
   sonst greift die 15-Hz-Grenze).
 - Die Echtzeit-Aufnahme im Browser zeigt beim Gleiten M-KLICK 5,5–7,9 dB (Aufnahme-Jitter unter CDP); bindend ist die
   Offline-Messung im Worklet-Shim.
+
+## V4c-fix — LFO-Tiefen PMD/AMD durch Import, FELD und .syx-Export; Einbruch bei [Anwenden]/↶; FERTIG am Taktstrich · App 3.11.0
+
+**5 Befunde (Abnahme + Fach-Prüfung V4c), alle behoben:**
+
+1. **V4c-05: PMS > 0 mit winzigem PMD wurde als PMD 99 exportiert** (8 von 1088 Stimmen der Synprez-Bänke, z. B. WATER GDN
+   PMS 1 / PMD 1: keine Route, weil 0,0047 HT unter der Schwelle). Der Import hält jetzt `fm6.pmd` (und `fm6.amd`) neben
+   PMS/AMS (nur Werte < 99; fehlend = volle Tiefe); der Export schreibt bei fm6-Klängen ohne Route diesen Wert (ist die Route
+   über der Schwelle entfernt worden, PMD 0 = was die App spielt). Rundlauf jetzt 1088/1088 parametergleich (ROM1A + 33 Bänke).
+2. **N7F-51: Import ins FELD verlor PMD/AMD** (Vibrato ×20, Tremolo +20 dB nach einer Null-Bearbeitung; Export danach PMD 99).
+   Neu im Graphen `p.fmx.pmd` / `p.fmx.amd` (0..99, `FMX.norm` hält sie, `fromFm6`/`toFm6` tragen sie): das Worklet spielt
+   `lfoFm × PMD/99` (= die frühere Route lfo1 → pitch) und `lfoAm` an einem Ausgang wie die frühere Route lfo1 → amp
+   (Verstärkung 1 − AMD/99 · s · ½ · LFO), an einem Modulator × AMD/99 in dB. `fxEnsure` nimmt die Tiefe aus der Route
+   (lfo1 → pitch und jetzt auch lfo1 → amp gehen in den Graphen, keine Verdopplung). Ohne die Felder (jeder FELD-Klang) wie bisher.
+   Gemessen: BRASS 1 17,3 → 17,2 Cent (vorher 274,9), PMD 30/PMS 1 28,5 → 28,3 Cent, AMD 20/AMS 3 1,9 → 1,9 dB (vorher 22,3),
+   AMD 99/AMS 3 9,5 → 9,5 dB; Export nach der FELD-Bearbeitung PMD 5 / AMD 20 wie die Bank.
+3. **V4c-05: AMD 99 bei AMS nur an Modulatoren** (ROM1A GUITAR 1 3 → 99, FLUTE 1 13 → 99, VOICE 1 2 → 99): der Export schreibt
+   `fm6.amd`; ROM1A → Export ohne Bearbeitung hat jetzt nur noch AMD-Abweichungen bei Stimmen mit AMS 0 (klangneutral).
+4. **[DX-tauglich machen] [Anwenden] / ↶ auf klingender Note: 6–7 dB Einbruch für ~10 ms** (Welle + Hüllkurven-Form zusammen).
+   Ursache: die Vorzeichen-Messung vor der 30-ms-Überblendung (2 ms) sah anfangs korrelierte Signale, nach ~3 ms −0,9 →
+   Auslöschung. Messfenster jetzt 5 ms (`SX_M`), die Überblendung selbst bleibt 30 ms. Offline-Scan 57 Schaltzeiten × 48/44,1 kHz:
+   0 Einbrüche > 3 dB (vorher 9 bzw. 6), schlimmster −1,3 dB (Kontrolle −1,2); Echtzeit 44 Schaltungen, Spur und Master 0.
+5. **● FERTIG am Taktstrich warf die Aufnahme weg** (P1/P2/P3; L schaltete LATCH): FERTIG wirkt auf pointerdown, die Ergebnis-
+   Meldung mit [Rückgängig] liegt danach unter dem Finger, der Kompatibilitäts-Klick traf sie. ▶, ● und ● FERTIG legen beim Loslassen
+   den Geisterklick-Schutz (`UI.ghost`, jetzt auch für Klicks mit `detail 0`, wie Chromes Tap); die Meldung bleibt stehen.
+
+**Abnahme (Skripte in `dirigent-test/`):** `v3-acc4c-syx.mjs` (1088/1088), `v3-verify-pmd99.mjs` (1024/1024),
+`v3-qa4cfp-vib.mjs`, `-trem.mjs`, `-brass.mjs` (PASS), `v3-indep-syxamd.mjs`, `v3-qa4cfp-syx.mjs`, `v3-fix4c-n7f51.mjs` (echte
+Worklet-Quelle in OfflineAudioContext), `v3-fix4c-amd-audible.mjs` (X.amd hörbar: Modulator-Helligkeit 7,7 / 1,8 / 1,3 dB bei
+AMD 99 / 20 / 3, Ausgangs-Tremolo 9,1 / 1,7 dB), `v3-rv-dxdip-scan.mjs`, `v3-rv-dxdip-rt.mjs many`, `v3-acc4c-msg2.mjs`
+(−1,12 dB, ideal −1,09), `v3-acc4c-apply4.mjs`, `v3-qrg4c-recdone.mjs` P/P375/P320, `v3-qrg4c-recdone2.mjs` (3,3 … 4,1),
+`v3-repro-fertig-ind(-l).mjs` (P 390/375/320, L 844/667: Aufnahme bleibt, LATCH unverändert), Smoke ohne Fehler.
+
+**Abweichung:** ältere Bibliotheks-Sounds aus einem .syx-Import (vor diesem Fix, ohne `fm6.pmd/amd`) bekommen beim ersten
+FELD-Schritt die Tiefe aus ihrer Route; ohne Route ist sie 0 (klingt wie vorher im DX-Pfad). Ein erneuter Import derselben Bank
+wird wegen der neuen Felder nicht als „schon vorhanden“ erkannt.

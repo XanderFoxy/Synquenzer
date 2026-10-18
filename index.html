@@ -3036,10 +3036,12 @@ const SXF_N = Math.round(.03 * SR);   // V4a (L3, Z11): structural change at sou
 // summed apart, their powers and cross power run with 3 ms memory, the gains (1 - t, t) are scaled so the sum's power follows
 // the straight line from the old power to the new one. Plain cos / sin assumes uncorrelated signals; an FM modulator wave
 // change (saw <-> square) gives old / new carrier signals with correlation -0.96 at the same phase: a 13 dB hole.
-// Before the blend starts, 2 ms (SX_M blocks, old at full, new silent) measure the sign of the correlation per voice: a
+// Before the blend starts, 5 ms (SX_M blocks, old at full, new silent) measure the sign of the correlation per voice: a
 // negative one flips the continuing voice's polarity (v.pol, inaudible for a single voice) - the blend then always runs
 // between positively correlated signals and the power factor stays <= 2 (a large factor would lift the uncorrelated highs).
-const SX_EMA = Math.exp(-CR / (.003 * SR)), SX_MAX = 2, SX_M = Math.round(.002 * SR / CR), SXM_N = SX_M * CR;
+// V4c-fix (M-EINBRUCH): 2 ms were too short - a wave change together with an envelope form change (point <-> DX, the usual
+// [DX-tauglich machen]) starts correlated and turns to -0.9 after ~3 ms: the blend then had a 6-7 dB hole at 15 ms.
+const SX_EMA = Math.exp(-CR / (.003 * SR)), SX_MAX = 2, SX_M = Math.round(.005 * SR / CR), SXM_N = SX_M * CR;
 
 /* ---- FM6 (spec v2 6.3, WP7): tables and msfa maths copied verbatim from fmresearch/proto/dx6-worklet.js ---- */
 const SIN_N = 4096, SIN = new Float32Array(SIN_N + 1);
@@ -3271,7 +3273,7 @@ function fmxCompile(X) {
   let ps = false; for (let k = 0; k < 6; k++) { const f = fbK[k]; if (f >= 0 && f !== k && fbS[k] > 0 && pos[f] > pos[k]) ps = true; }
   const car = new Uint8Array(6); let nCar = 0; for (let k = 0; k < 6; k++) if (!tg[k].length) { car[k] = 1; nCar++; }
   const gx = {ord: Int8Array.from(ord), srcs: srcs.map(s => Int8Array.from(s)), car, nCar, outScale: 0.5 / Math.sqrt(Math.max(1, nCar)), fbK, fbS, ps,
-    wave: new Uint8Array(6), on: new Float64Array(6), ph0: new Float64Array(6), phm: new Uint8Array(6), pit: [], am: new Float64Array(6), fmS: new Float64Array(6), sig: fmxSig({x: X}), nE: E.length,
+    wave: new Uint8Array(6), on: new Float64Array(6), ph0: new Float64Array(6), phm: new Uint8Array(6), pit: [], am: new Float64Array(6), amG: new Float64Array(6), fmS: new Float64Array(6), sig: fmxSig({x: X}), nE: E.length,
     pe: [], anyPt: false, anyFree: false, anyLoop: false};
   const fops = [];
   for (let k = 0; k < 6; k++) {
@@ -3284,7 +3286,13 @@ function fmxCompile(X) {
     const P = o.pit;
     gx.pit.push(P && P.f === 'dx' && !fixed && (o.pr == null || o.pr === 'dx') && Array.isArray(P.l) && !P.l.every(x => (x | 0) === 50) ? envDx(P) : null);
     gx.pe[k] = ptCompile(o.amp, false); gx.pe[6 + k] = ptCompile(P, true, o.pr);       // V4f: the point form (pitch also on fixed operators, K2-58)
-    gx.am[k] = Math.max(0, Math.min(127, o.lfoAm | 0)) * LFOAM_DB; gx.fmS[k] = LFOFM_HT[Math.max(0, Math.min(127, o.lfoFm | 0))];
+    // V4c-fix (N7F-51): a .syx voice carries the DX depths X.pmd / X.amd (0..99): lfoFm acts x PMD/99 (= the import's route
+    // lfo1 -> pitch); lfoAm on an output as the import's route lfo1 -> amp (gain 1 - AMD/99 * s * 0.5 * LFO, s = 0 / .3 / .6 / 1
+    // at lfoAm 0 / 42 / 85 / 127), on a modulator x AMD/99 in dB. Without them (every FELD sound) the full depth as before
+    const lA = Math.max(0, Math.min(127, o.lfoAm | 0)), pmK = X.pmd != null && X.pmd >= 0 ? Math.min(99, +X.pmd) / 99 : 1, amK = X.amd != null && X.amd >= 0 ? Math.min(99, +X.amd) / 99 : -1;
+    if (amK >= 0 && car[k]) { gx.am[k] = 0; gx.amG[k] = amK * .5 * (lA <= 42 ? lA / 42 * .3 : lA <= 85 ? .3 + (lA - 42) / 43 * .3 : .6 + (lA - 85) / 42 * .4); }
+    else gx.am[k] = lA * LFOAM_DB * (amK >= 0 ? amK : 1);
+    gx.fmS[k] = LFOFM_HT[Math.max(0, Math.min(127, o.lfoFm | 0))] * pmK;
   }
   for (const E of gx.pe) if (E) { gx.anyPt = true; if (E.free) gx.anyFree = true; if (E.la >= 0) gx.anyLoop = true; }
   return {fm: {trans: X.trans | 0, ops: fops, peg: null, x: true}, alg: {car, mods: gx.srcs, fbDst: -1, fbSrc: -1, nCar}, gx};
@@ -4374,6 +4382,7 @@ class AnalogCore extends AudioWorkletProcessor {
       let db = (alg.car[k] ? 0 : br) + dst[D_OP1 + k] * 99 * .75;
       if (X.am[k]) db -= X.am[k] * (1 - l1) * .5;
       let g = v.fon[k] && mu > 0 ? Math.pow(2, v.flvl[k] / 256 - 14) * (db ? Math.pow(10, db / 20) : 1) * mu : 0;
+      if (X.amG[k]) g *= Math.max(0, 1 - X.amG[k] * l1);
       if (v.olN[k] > 0) { g += (v.olG[k] - g) * (v.olN[k] / (OLX_N + 1)); v.olN[k]--; }
       const fmv = X.fmS[k] ? X.fmS[k] * l1 : 0;
       let f;
@@ -6384,6 +6393,9 @@ const RecHelpers = (() => {
       if (o.r === 0) E = E.filter(e => e.from !== k + 1);           // I4 for the new output (it had no target anyway)
     }
     const out = {v: 2, n: 6, trans: int(x.trans, -24, 24, 0), ops, edges: sortEdges(E)};
+    // V4c-fix (N7F-51): the DX LFO depths PMD / AMD of a .syx voice (0..99; missing = full depth / the dB model, as every FELD sound)
+    if (x.pmd != null && isFinite(+x.pmd) && int(x.pmd, 0, 99, 99) < 99) out.pmd = int(x.pmd, 0, 99, 99);
+    if (x.amd != null && isFinite(+x.amd)) out.amd = int(x.amd, 0, 99, 99);   // amd 99 too: the outputs' lfoAm then acts as the import's route
     if (x.uw && typeof x.uw === 'object') out.uw = x.uw;                // V4e (eigene Wellen), kept as is
     return out;
   }
@@ -6435,7 +6447,10 @@ const RecHelpers = (() => {
         amp: {f: 'dx', r: o.r || [99, 99, 99, 99], l: o.l || [99, 99, 99, 0]}, pit: peg && !o.fixed ? {f: 'dx', r: peg.r.slice(), l: peg.l.slice()} : null, pr: 'dx'}, k);
     });
     ops[A.fbDst].fbSrc = A.fbSrc + 1; ops[A.fbDst].fbAmt = int(f.fb, 0, 7, 0);
-    return {v: 2, n: 6, trans: int(f.trans, -24, 24, 0), ops, edges: sortEdges(A.edges.map(([a, b]) => ({from: a + 1, to: b + 1})))};
+    const out = {v: 2, n: 6, trans: int(f.trans, -24, 24, 0), ops, edges: sortEdges(A.edges.map(([a, b]) => ({from: a + 1, to: b + 1})))};
+    if (pms && f.pmd != null && isFinite(+f.pmd) && int(f.pmd, 0, 99, 99) < 99) out.pmd = int(f.pmd, 0, 99, 99);
+    if (ams.some(a => a > 0) && f.amd != null && isFinite(+f.amd) && int(f.amd, 0, 99, 99) < 99) out.amd = int(f.amd, 0, 99, 99);
+    return out;
   }
   // all 720 numberings (perm[i] = DX operator index of field operator i), identity first
   const PERMS = (() => { const out = [], p = [0, 1, 2, 3, 4, 5], rec = (a, i) => { if (i === 6) { out.push(a.slice()); return; } for (let j = i; j < 6; j++) { [a[i], a[j]] = [a[j], a[i]]; rec(a, i + 1); [a[i], a[j]] = [a[j], a[i]]; } }; rec(p, 0);
@@ -6503,8 +6518,8 @@ const RecHelpers = (() => {
   }
   function fm6Extras(X, f, perm) {
     const inv = [0, 1, 2, 3, 4, 5]; if (perm) perm.forEach((p, i) => { inv[p] = i; });
-    const ams = inv.map(i => Math.round(X.ops[i].lfoAm * 3 / 127)); if (ams.some(a => a > 0)) f.ams = ams;
-    const pms = Math.round(Math.max(...X.ops.map(o => o.lfoFm)) * 7 / 127); if (pms > 0) f.pms = pms;
+    const ams = inv.map(i => Math.round(X.ops[i].lfoAm * 3 / 127)); if (ams.some(a => a > 0)) { f.ams = ams; if (X.amd != null) f.amd = X.amd; }
+    const pms = Math.round(Math.max(...X.ops.map(o => o.lfoFm)) * 7 / 127); if (pms > 0) { f.pms = pms; if (X.pmd != null) f.pmd = X.pmd; }
     if (X.ops.every(o => o.phm === 'free')) f.osync = 0;
     const pr = X.ops.find(o => !o.fixed && o.pit && o.pit.f === 'dx'); if (pr) f.peg = {r: pr.pit.r.slice(), l: pr.pit.l.slice()};
     return f;
@@ -7134,6 +7149,9 @@ const RecHelpers = (() => {
     // (fmxFromFm6: lfoAm / lfoFm / phm); approx: this fm6 is only the nearest DX algorithm of a p.fmx (native fallback)
     if (Array.isArray(p.ams) && p.ams.some(x => num(x, 0) > 0)) o.ams = [0, 1, 2, 3, 4, 5].map(i => Math.round(clamp(num(p.ams[i], 0), 0, 3)));
     const pms = Math.round(clamp(num(p.pms, 0), 0, 7)); if (pms) o.pms = pms;
+    // V4c-fix: the DX LFO depths of the import (0..99), only next to a sensitivity that uses them
+    if (o.pms && p.pmd != null && isFinite(+p.pmd) && Math.round(+p.pmd) < 99) o.pmd = Math.round(clamp(+p.pmd, 0, 99));
+    if (o.ams && p.amd != null && isFinite(+p.amd) && Math.round(+p.amd) < 99) o.amd = Math.round(clamp(+p.amd, 0, 99));
     if (p.osync === 0) o.osync = 0;
     if (p.approx === true) o.approx = true;
     if (o.approx && Array.isArray(p.perm) && p.perm.length === 6 && [...p.perm].sort().join('') === '012345') o.perm = p.perm.map(x => +x);
@@ -17051,17 +17069,42 @@ function fxX(i) {
 const fxState = i => { const p = sndOf(i).p; return {fmx: p.fmx ? deep(p.fmx) : null, fm6: deep(p.fm6)}; };
 // the first FELD edit of a sound without a graph creates it (V4a deviation 4: a .syx import with PMS has the route lfo1 → pitch;
 // the graph carries the PMS as lfoFm, so the route goes, else the vibrato doubles)
+// V4c-fix (N7F-51): the route's depth goes into the graph as X.pmd (PMD 0..99, lfoFm acts × PMD/99), so the vibrato stays the
+// same; an import's tremolo route lfo1 → amp (AMS on an output) goes into X.amd the same way (the worklet plays the output's
+// lfoAm then as that route), else the tremolo doubled. A route deeper than the graph can carry stays a route.
 function fxEnsure(i) {
   const snd = sndOf(i), p = snd.p; if (p.fmx) return;
-  const x = FMX.fromFm6(p.fm6);
-  if (x.ops.some(o => o.lfoFm > 0)) { const n = snd.mods.length; snd.mods = snd.mods.filter(m => !(m.src === 'lfo1' && m.dst === 'pitch')); if (snd.mods.length !== n) modsChanged(i); }
+  const x = FMX.fromFm6(p.fm6), f = p.fm6 || {}, mods = Array.isArray(snd.mods) ? snd.mods : (snd.mods = []);
+  const A = DXN.ALGS[(f.alg | 0) - 1] || DXN.ALGS[0], n0 = mods.length;
+  let keep = mods;
+  if (x.ops.some(o => o.lfoFm > 0)) {
+    const pms = Math.round(Math.max(...x.ops.map(o => o.lfoFm)) * 7 / 127), rp = mods.filter(m => m.src === 'lfo1' && m.dst === 'pitch');
+    if (rp.length === 1 && pms > 0) {
+      const d = clamp(+rp[0].amt || 0, 0, 1) * 24 * 99 * 255 / (12 * DX_PMS[pms]);
+      if (d <= 99.5) { x.pmd = Math.round(d); keep = keep.filter(m => m !== rp[0]); }
+      else x.pmd = 0;                                       // deeper than PMS allows: the route keeps playing it
+    } else if (!rp.length) x.pmd = f.pmd != null && 12 * DX_PMS[pms] / 255 * f.pmd / 99 <= .005 ? f.pmd : 0;   // no route: the import's PMD was tiny, else the route was removed
+    else keep = keep.filter(m => !(m.src === 'lfo1' && m.dst === 'pitch'));          // several routes: as before
+  }
+  const amsCar = Math.max(0, ...x.ops.filter((o, k) => A.car[k]).map(o => Math.round(o.lfoAm * 3 / 127)));
+  if (amsCar > 0) {
+    const ra = keep.filter(m => m.src === 'lfo1' && m.dst === 'amp');
+    if (ra.length === 1 && (+ra[0].amt || 0) <= 0) {
+      const d = -(+ra[0].amt || 0) / ([0, .3, .6, 1][amsCar] * .5) * 99;
+      if (d <= 99.5) { x.amd = Math.round(d); keep = keep.filter(m => m !== ra[0]); }
+    } else if (!ra.length) x.amd = 0;                                                // no tremolo route (removed): none in the graph either
+  }
+  if (x.pmd != null && x.pmd >= 99) delete x.pmd;          // PMD 99 = the full depth (not stored); X.amd 99 stays: the route's model
+  if (keep.length !== n0) { snd.mods = keep; modsChanged(i); }
   p.fmx = x;
 }
 // write a new graph (x already normalized or raw); now: the worklet at once (structure); returns true when something changed
 function fxPut(i, x, now) {
   const p = sndOf(i).p, nx = FMX.norm(x, false); if (!nx) return false;
   if (p.fmx && JSON.stringify(nx) === JSON.stringify(p.fmx)) return false;
-  fxEnsure(i); fmxApply(p, nx); fmChanged(i, now, true);
+  const had = !!p.fmx; fxEnsure(i);
+  if (!had) for (const key of ['pmd', 'amd']) { if (p.fmx[key] != null) nx[key] = p.fmx[key]; else delete nx[key]; }   // V4c-fix: the depths fxEnsure took from the routes
+  fmxApply(p, nx); fmChanged(i, now, true);
   return true;
 }
 // one change with one undo step; the state before it is the [A│B] partner (V4b-09)
@@ -20260,8 +20303,11 @@ function syxVoiceSound(v) {
   if (v.peg && !v.peg.l.every(x => x === 50)) fm6.peg = {r: v.peg.r.slice(), l: v.peg.l.slice()};
   // V4a (A.4b P. 11, Diagnose 3h): AMS per operator (also on modulators), PMS and „Key-Sync aus“ are kept in fm6 (the FM field
   // takes them as lfoAm / lfoFm / phm 'free'); a sensitivity without LFO depth (AMD / PMD 0) does nothing on a DX and is dropped
-  if (v.lfo.amd && v.ops.some(o => o.ams)) fm6.ams = v.ops.map(o => o.ams | 0);
-  if (v.lfo.pmd && v.lfo.pms) fm6.pms = v.lfo.pms;
+  if (v.lfo.amd && v.ops.some(o => o.ams)) { fm6.ams = v.ops.map(o => o.ams | 0); if (v.lfo.amd < 99) fm6.amd = v.lfo.amd; }
+  if (v.lfo.pmd && v.lfo.pms) { fm6.pms = v.lfo.pms; if (v.lfo.pmd < 99) fm6.pmd = v.lfo.pmd; }
+  // V4c-fix (V4c-05, N7F-51): the LFO depths PMD / AMD go with them – the FELD scales lfoFm / lfoAm by them and the .syx
+  // export writes them back (a PMS 1 / PMD 1 voice has no route, a modulator AMS none either: without fm6.pmd / amd the
+  // export wrote 99, the FELD played the full depth); 99 = the full depth is not stored (as on every FELD / factory sound)
   if (v.osync === 0) fm6.osync = 0;
   const p = Object.assign({}, SQStore.FM_BASE, {level: SYX_LEVEL, fm6}), mods = [], L = v.lfo, A = DXN.ALGS[fm6.alg - 1] || DXN.ALGS[0];
   p.l1shape = [1, 2, 2, 3, 0, 4][L.wave] != null ? [1, 2, 2, 3, 0, 4][L.wave] : 0; p.l1rate = clamp(DX_LFO_HZ[L.spd] || 1, .01, 40); p.l1sync = 0;
@@ -20362,13 +20408,19 @@ function syxVoiceOf(snd) {
   const wave = ({1: 0, 2: 1, 3: 3, 0: 4, 4: 5})[p.l1shape | 0]; let dly = 0;
   if (+p.l1fade > 0) { let b2 = Infinity; for (let d = 1; d < 100; d++) { const x = Math.abs(syxFade(d) - p.l1fade); if (x < b2 - 1e-12) { b2 = x; dly = d; } } }
   const rp = mods.find(m => m.src === 'lfo1' && m.dst === 'pitch'), ra = mods.find(m => m.src === 'lfo1' && m.dst === 'amp');
-  let pms = f.pms | 0, pmd = 0;
-  if (rp) { const semis = clamp(+rp.amt || 0, 0, 1) * 24, pmdOf = ps => Math.round(semis * 99 * 255 / (12 * DX_PMS[ps]));
+  let pms = f.pms | 0, pmd = 0; const isX = !!p.fmx;
+  // V4c-fix (V4c-05, N7F-51): the depth the sound plays – a FELD graph's X.pmd / X.amd, else the route, else the import's
+  // fm6.pmd / amd where no route stands for it (PMD below the route threshold, AMS only on modulators)
+  if (isX && pms && f.pmd != null) pmd = f.pmd;
+  else if (rp) { const semis = clamp(+rp.amt || 0, 0, 1) * 24, pmdOf = ps => Math.round(semis * 99 * 255 / (12 * DX_PMS[ps]));
     if (!pms) { pms = 7; for (let ps = 1; ps <= 7; ps++) if (pmdOf(ps) <= 99) { pms = ps; break; } }
     pmd = clamp(pmdOf(pms), 0, 99); }
-  else if (pms) pmd = 99;                                   // FELD: lfoFm acts with the full LFO 1 (no route), on a DX that is PMD 99
+  else if (pms) pmd = isX ? 99                              // FELD without a depth: lfoFm acts with the full LFO 1, on a DX that is PMD 99
+    : f.pmd != null && 12 * DX_PMS[pms] / 255 * f.pmd / 99 <= .005 ? f.pmd : 0;   // fm6: no route = no vibrato (or a tiny one)
   const ams = Array.isArray(f.ams) ? f.ams : [0, 0, 0, 0, 0, 0], amsCar = Math.max(0, ...ams.filter((a, k) => A.car[k]));
-  const amd = ra && amsCar ? clamp(Math.round(-(+ra.amt || 0) / ([0, .3, .6, 1][amsCar] * .5) * 99), 0, 99) : ams.some(a => a > 0) ? 99 : 0;
+  const anyAms = ams.some(a => a > 0), amd = !anyAms ? 0 : isX && f.amd != null ? f.amd
+    : ra && amsCar ? clamp(Math.round(-(+ra.amt || 0) / ([0, .3, .6, 1][amsCar] * .5) * 99), 0, 99)
+    : f.amd != null ? (amsCar ? 0 : f.amd) : 99;           // fm6: an output's AMS without its route = removed; on modulators only: the import's AMD
   const v = {name: syxAscii(snd.name), alg: f.alg, fb: f.fb, osync: f.osync === 0 ? 0 : 1, trans: f.trans, peg: f.peg ? {r: f.peg.r.slice(), l: f.peg.l.slice()} : {r: [99, 99, 99, 99], l: [50, 50, 50, 50]},
     ops: f.ops.map((o, k) => ({ol: o.on === 0 ? 0 : o.ol, fixed: o.fixed ? 1 : 0, coarse: o.coarse | 0, fine: o.fine | 0, det: o.det | 0, r: o.r.slice(), l: o.l.slice(), vs: clamp(o.vs | 0, 0, 7), rs: o.rs | 0,
       ams: ams[k] | 0, ks: Object.assign({}, SYX_KS0, o.ks || {})})),
@@ -22976,7 +23028,7 @@ function bindUI() {
     if (UI.eatClick && performance.now() < UI.eatClick) { UI.eatClick = 0; e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return; }
     // the compatibility click of a tap that onTap already handled (it may land on a control the tap just rendered)
     const gh = UI.ghost;
-    if (gh && performance.now() - gh.t < 450 && Math.abs(e.clientX - gh.x) < 16 && Math.abs(e.clientY - gh.y) < 16 && e.detail > 0) { UI.ghost = null; e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return; }
+    if (gh && performance.now() - gh.t < 450 && Math.abs(e.clientX - gh.x) < 16 && Math.abs(e.clientY - gh.y) < 16 && (e.detail > 0 || gh.hard)) { UI.ghost = null; e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return; }
     const g = UI.lpGuard; if (!g) return;
     const t = performance.now();
     if (t < g.until && t - g.set < 4000) { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); }
@@ -23007,7 +23059,17 @@ function bindUI() {
     elx.addEventListener('pointerdown', mark, true); elx.addEventListener('pointerup', mark, true); elx.addEventListener('pointercancel', mark, true);
     on(elx, 'click', () => { if (elx._ptrT == null || performance.now() - elx._ptrT > 1000) fn(); });
   };
+  // V4c-fix: a button that acts on pointerdown (▶, ● FERTIG) can put new UI under the finger (the take's result toast with
+  // [Rückgängig] docks on the rec lane in P): the compatibility click of that touch hit-tests at the release point and used to
+  // land there (FERTIG at the bar line threw the take away, in L it toggled LATCH). Its release arms the ghost-click guard.
+  const eatUpClick = elx => elx.addEventListener('pointerdown', e => {
+    if (e.button > 0) return; const id = e.pointerId;
+    const up = u => { if (u.pointerId !== id) return; document.removeEventListener('pointerup', up, true); document.removeEventListener('pointercancel', up, true);
+      if (u.type === 'pointerup') UI.ghost = {t: performance.now(), x: u.clientX, y: u.clientY, hard: true}; };   // hard: also a click with detail 0 (Chrome's tap)
+    document.addEventListener('pointerup', up, true); document.addEventListener('pointercancel', up, true);
+  }, true);
   on(EL.bPlay, 'pointerdown', e => { e.preventDefault(); EL.bPlay._ptrT = performance.now(); ensureAudio(); togglePlay(); });
+  eatUpClick(EL.bPlay);
   kbdClick(EL.bPlay, togglePlay);
   on(EL.bRec, 'pointerdown', e => {
     e.preventDefault(); EL.bRec._ptrT = performance.now(); ensureAudio();
@@ -23020,7 +23082,7 @@ function bindUI() {
     const p = UI.recPress; if (!p || p.id !== e.pointerId) return;
     UI.recPress = null; clearTimeout(p.timer);
     if (p.long) releaseLongPressGuard();
-    if (!p.long && e.type === 'pointerup') recPress(p.tc);
+    if (!p.long && e.type === 'pointerup') { UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY, hard: true}; recPress(p.tc); }
   };
   on(EL.bRec, 'pointerup', recUp); on(EL.bRec, 'pointercancel', recUp);
   kbdClick(EL.bRec, recPress);
@@ -23077,6 +23139,7 @@ function bindUI() {
   onTap(EL.bFang, () => capture()); onTap(EL.bFangT, () => capture());
   // [● FERTIG] does exactly what ● does (same close beat: the press time counts, §3.1 R5)
   on(EL.bRecDone, 'pointerdown', e => { e.preventDefault(); EL.bRecDone._ptrT = performance.now(); ensureAudio(); if (rec.state !== 'off') recPress(AU.ctx ? AU.ctx.currentTime : null); });
+  eatUpClick(EL.bRecDone);
   kbdClick(EL.bRecDone, () => { if (rec.state !== 'off') recPress(); });
   on(window, 'resize', () => { if (UI.songView) requestAnimationFrame(() => svLayout()); });
   on(window, 'resize', () => { if (R.editor === 'drum' && ED.dTab === 'steps' && window.matchMedia('(orientation: landscape)').matches !== ED.dLand) safeRebuild(buildDrumEd); if (R.editor === 'roll' && ED.rollAt) { const land = window.matchMedia('(orientation: landscape)').matches; if (land !== ED.rollLand) { ED.rollLand = land; safeRebuild(buildRoll); } rollKbApply(); } });
