@@ -1497,3 +1497,149 @@ Angriff unter 1 ms kann nach [Exp] → Lin bis 0,5 ms anders lesen.
 alten Stand 6 rot), `v3-g3k-loopnb-off.mjs` (Periode ±3 % bei 44,1/48 kHz, M-KLICK, Release, 18/18), `v3-g3k-loopnb-free.mjs`,
 `v3-g3k-lcdfont.mjs` (P/P375/P320/L/L667 mit Barlow Semi Condensed: nichts abgeschnitten), `v3-grpG3-loopadj.mjs`,
 `v3-acc4c-syx.mjs` (6/6), `v3-v0d-ui-d.mjs` (51/51); Regression `v3-g3k-reg.sh`; Smoke ohne Fehler.
+
+## V0c — Song-Sofortmaßnahmen (+ N0c ▶ oben / Träger gehören dem Song, + N7S-01 … N7S-07 nach EN2-05) · App 3.11.1
+
+Grundlage: Spec §2.3 (S-01 … S-04), §4.5, §4.8, §17 V0c; Nachtrag 1 A.3 (N0c: TA9, EN-06); Nachtrag 2 Teil B (EN2-05, B.1 Nr. 4, 8,
+9, 10, 15, K2-05, K2-27, K2-63) mit `r7/song-delta.md` 6.1–6.2, 7.1–7.4, 8.1–8.2, 12.2 und den Maßen aus `r7/song-geo/geo.out`.
+V0c war beim Erscheinen von Nachtrag 2 nicht begonnen → N7S-01 … N7S-07 komplett in V0c (K2-05 Fall A). Gebaut nach V4c/G3-klein-fix;
+Version **3.11.1** statt 3.3.0, weil die Versionen streng steigen (E.5 Punkt 3: nachgeholte Pakete bekommen die nächste Zwischennummer).
+
+**Was neu ist**
+1. **● im Song nimmt nur seine Ziele auf (S-01, N7-R8 „Überschreiben ab n“).** Ist ein Song da, legt ● keinen neuen Song mehr an,
+   sondern öffnet das **Start-Blatt** (Halten auf ● öffnet es jederzeit): Kopf „AUFNAHME AB TAKT n“ (Positionsmarke) bzw.
+   „AUFNAHME TAKT n“ / „TAKTE a–b“ (gelbe Auswahl), Ziele **[CLIPS] [AKKORDE] [MELODIE]** (Standard: leerer Song alles, sonst nur
+   MELODIE), Zeile „Überschreiben – was du änderst, ersetzt …“, **Vorlauf [1 Takt │ aus]** (bei Takt 1 Einzähler), „überschreibt …
+   ab Takt n“, **[● START]**. Stehend: ▶ SONG ab n (bzw. n−1); Clips laufen: der Song übernimmt am nächsten Taktstrich; Song läuft:
+   Einstieg im laufenden Takt. **CLIPS:** jede Spur, die du startest/stoppst, wird ab ihrem ersten Ereignis bis zum Ende ersetzt,
+   danach spielt der alte Teil weiter („Bandmaschine“); **AKKORDE:** Takte mit neuem Akkord werden ersetzt (¼-Schlag-Vorgriff,
+   je Takt gewinnt der jüngste Durchgang), der Song spielt seine übrigen Akkorde weiter; **MELODIE:** Overdub. Mit gelber Auswahl
+   steigt die Aufnahme am Auswahlende von selbst aus; mit SCHLEIFE ist jeder Durchgang Teil derselben Aufnahme (nach jedem
+   Durchgang folgen die aufgenommenen Spuren dem neuen Stand). Nach dem Ende folgen die aufgenommenen Spuren wieder dem Song.
+   **Ein Undo für die ganze Aufnahme.** Szenen-Clips bleiben unberührt (EN7-04). Leerer Song: wie WP6 (alles, SG1–SG8).
+2. **● zeigt die Ziele** („● MEL“, „● AKK+MEL“, „● ALLES“; in der schmalen Spalte zweizeilig). **Banner als Überlagerung**
+   (N7S-02): rot in Lineal-Höhe über der Taktleiste („● Takt 3 · Überschreiben · AKK + MEL · Clips bleiben“), der aufgenommene
+   Bereich rot 12 % getönt, die beschriebenen Zeilen rot gesäumt; **in der Clip-Ansicht in der Kopfzeile** über BPM … ≡ (K2-63,
+   gleiche Höhe, Tipp = Song zeigen), nie über Raster oder Teil-Leiste. Nichts verschiebt sich (±2 px gemessen).
+3. **Taktleiste wählt (N7-R7, N7S-06):** Tipp auf eine Taktnummer = Positionsmarke ▼ + gelber Chip (#ffb22e, dunkle Zahl, Band
+   35 % / Zeilen 7 %), zweite Nummer = Bereich, Tipp in die Auswahl hebt sie auf. **Kein Sprung** bei laufendem Song.
+4. **▶ oben im Song = ▶ SONG (EN-06):** ab der Positionsmarke, sonst ab dem Takt, in dem zuletzt gestoppt wurde; die Taste zeigt
+   „SONG“ unter ▶ (Breite gleich). **[⏮]** in der Song-Transportzeile setzt auf Takt 1. ▶ SONG in der Zeile startet ebenso an der
+   Marke. Song-Ansicht zu: ▶ wie WP7.
+5. **TA9 Träger gehören dem Song (N0c):** Start von ▶ SONG / ● SONG merkt Ziel, Latch, Modus, Verschiebung; sobald keins mehr läuft
+   (Ende, ■, Ende einer Aufnahme auch bei laufenden Szenen), kommt der Stand im selben Moment zurück – Toast „Träger zurück auf
+   ORIGINAL“ mit [F behalten]. Song-Daten unverändert, Harmonie-Kern unverändert (I-01).
+6. **SCHLEIFE (S-02, N7S-07):** Text-Taste **[SCHLEIFE: aus │ Song │ Takt 3–4]** (zweizeilig, P1 83×40) → Blatt [aus] [Song]
+   [Bereich] (Bereich = gelbe Auswahl, sonst der Takt der Marke). Auf dem Lineal **grüne 3-px-Linie** mit Griffen ┃ (Treffer
+   36 × 34, Ziehen mit stehender Ansicht, ein Undo); Gelb und Grün überlagern sich nicht. Daten `song.loop = {on, a, b}`
+   (Migration `loop:true|false` → `{on, a:0, b:bars}`), am Bereichsende Sprung an den Anfang **phasengleich**; eine Schleife über
+   den ganzen Song spielt bitgleich wie vorher (gegen G3-klein-fix gemessen). API `songLoop(on)` unverändert, neu `songLoopRange`.
+7. **Akkorde von Hand (S-03, N7-R10):** Etikett **AKKORDE** (statt TRÄGER). Tipp auf einen Chip → **Akkord-Auswahl** für genau
+   diesen Eintrag (Schlag bleibt, z. B. 6,5), Tipp auf eine leere Stelle → neuer Eintrag am Taktanfang (ersetzt den Takt).
+   Blatt über der Tastatur (P ≈ 216 px, L zweispaltig ≈ 150 px): Kopf „AKKORD · Takt 4, Schlag 1“, aktueller Chip → **Text ⌨**
+   (`parseChord`: Am, A#m7, Bb/B/H je nach Notennamen, C/E, Fmaj7, Gsus, Esus2, D5, F#m7b5, Cdim7, Eaug, C+, Am6, Cadd9, Cis, Es …;
+   ungültig rot mit „z. B. Am7/G“), [✓] [ORIG.] [Löschen]; **Stufe** (7 leitereigene Dreiklänge der Tonart an dieser Stelle, in
+   Moll zusätzlich „V (Dur)“, wischbar), **Zuletzt** (Träger-Verlauf), **[Frei ▾]** (Grund 12 · Art 15 · Bass, [Übernehmen]),
+   [Akkorde quantisieren …]. Ein Undo je Änderung, Toast „Takt 4: Dm7 · [Rückgängig]“. Lang-Druck auf einen Chip löscht wie WP6.
+   Ohne [♪ greifen] und [÷2] (Spec), ohne [– halten] (bei Song-Einträgen sinnlos).
+8. **Akkorde quantisieren (N7-R11):** Etikett AKKORDE → [Akkorde quantisieren …] / [Akkorde (in Takt a–b) löschen]; Mini-Blatt
+   Bereich [Auswahl │ ganzer Song], Raster [Takt │ ½ Takt │ Schlag], Vorschau „6 Akkorde · 5 rücken · 1 fällt zusammen“,
+   [Quantisieren] = ein Undo, Toast mit den Zahlen. Regel: nächster Rasterpunkt (Gleichstand: der spätere), mehrere auf einem
+   Punkt → der zuletzt gespielte gewinnt, danach gleiche Akkorde hintereinander → der spätere fällt weg; ORIGINAL zählt als Akkord;
+   außerhalb der Auswahl bleibt alles deep-equal.
+9. **Melodie verständlich (S-04):** Zeile „MELODIE · S4 · ⇅ fest“. Melodie-Spur-Vorschlag beim ersten ● SONG bzw. bei einer
+   Melodie-Aufnahme ohne Melodie: die gewählte Spur, wenn sie frei ist, sonst eine Synth-Spur ohne Clips im Song (nicht MONO/LEGATO
+   bevorzugt). Spielt die Melodie-Spur Clips mit MONO/LEGATO-Klang: Toast „Melodie und Clips teilen sich eine Stimme – Melodie
+   klingt abgehackt“ mit [Freie Spur nehmen] (ein Undo).
+10. **Hilfe** (Menü → Hilfe): SONG-AUFNAHME, TAKTLEISTE IM SONG, SCHLEIFE, AKKORDE IM SONG, TRÄGER GEHÖREN DEM SONG, MELODIE IM SONG.
+11. **Test-API:** `songLoopRange`, `songRecTargets`, `songRecFrom({from, to, preroll, targets})` (nur 'over'), `songPos`,
+    `songSelect`, `songSetChord(bar, chord, {k})`, `parseChord(text, {names})`, `quantizeChords({grid, a, b, dry})`,
+    `openChordPick`, `openRecStart`; `runtime().song` + `posBar`, `pos`, `sel`, `targets`, `recFrom`, `recTo`, `loop`, `beat`,
+    `carrierSaved`. Alte Namen unverändert (`songRec`, `songPlay`, `songLoop`, `songMel`).
+
+**Abnahme** (`dirigent-test/`, Chromium + CDP-Touch, 240 BPM; Skripte `v3-v0c-song.mjs` P/L 40/0, `v3-v0c-ui.mjs`
+P/P375/P320/L/L667 je 41/0, `v3-v0c-frei.mjs` 6/0)
+
+| ID | Ergebnis | Messung |
+|---|---|---|
+| V0c-01 | ✓ Ziel AKKORDE: Lanes und Melodie deep-equal, F in Takt 2 (4,80), G ersetzt C in Takt 3 (8,97), Rest unverändert; ein Undo → deep-equal | song P/L |
+| V0c-02 | ✓ Ziel MELODIE: Lanes + Träger deep-equal, 3 Noten zusätzlich an den gespielten Schlägen (±0,02) | song |
+| V0c-03 | ✓ Ziel CLIPS: Start Spur 2 in Takt 3 → nur Lane 2 ab Takt 3 ersetzt, alle anderen deep-equal; nach dem Ende spielt der alte Teil weiter | song |
+| V0c-04 | ✓ leerer Song: alle Ziele an; `wp6-song` P/L 27/0 (SG1–SG8) | wp6-song |
+| V0c-05 | ✓ Banner mit Ziel und Starttakt, ●-Chip „● MEL“ → „● AKK+MEL“, Start-Blatt „überschreibt Akkorde, Melodie ab Takt 3“ | ui ×5 |
+| V0c-06 | ✓ SCHLEIFE 83×40 (P1) / 76×37–39 (L); `songLoopRange({on:true,a:2,b:4})`: 3 Durchläufe, jede Note ±0,002 Schlag, an Takt 3 der 3. Clip-Takt (phasengleich) | song, ui |
+| V0c-07 | ✓ Migration `loop:true` → `{on:true,a:0,b:3}`; Wiedergabe gegen G3-klein-fix identisch (noteLog > 40 Noten, ±0,002); `songLoop(true/false)` boolean, Bereich bleibt | song |
+| V0c-08 | ✓ Tipp AKKORDE-Zelle Takt 5 → „Dm7“ ⏎ → Schlag 16, D, m7, ein Undo; Wiedergabe ruft Dm7 bei Song-Schlag 16 ab (±0,01); hörbar: F in Takt 2 macht aus 45 → 53 | ui, song |
+| V0c-09 | ✓ alle 16 Fälle + Es, Cism; X7 und Am/Q → null | song |
+| V0c-10 | ✓ Demo-artig (Synth 1–3 mit Clips) → Synth 4; MONO-Spur mit Clips → Toast mit [Freie Spur nehmen] → Synth 4 | song |
+| V0c-11 | ✓ Regression (unten); M-PLATZ Song-Ansicht + Blätter in P1–P3, L1, L2; Zeilen 44,4 / 32,1 / 28,7 / 27,3 / 25,9 px (L2 wie V0a) | ui |
+| N0c-01 | ✓ ■ oben, ▶ oben (Touch auf `#bPlay`) → `song.play`, kein Szenen-Start, Taste zeigt „SONG“ | ui |
+| N0c-02 | ✓ ■ in Takt 5, ▶ oben → erstes Ereignis bei Song-Schlag 16 ± 0,002; Marke Takt 3 hat Vorrang; [⏮] → Takt 1 | song, ui |
+| N0c-03 | ✓ Song-Ansicht zu: ▶ startet die Szenen | ui |
+| TA9 | ✓ Xanders Weg I2: leerer Song, Szenen laufen, ● SONG, F gespielt, ● Ende → Träger ORIGINAL, Szenen laufen weiter, Bass 48 statt 53; Toast mit [F behalten] | song |
+| N7S-01 | ✓ Canvas P1 306×330,8, L1 392×207,4 (= V0a, auch P2/P3/L2); Ziele im Start-Blatt und beim Halten auf ● | ui |
+| N7S-02 | ✓ während ● alle Elemente ±2 px gleich; Bereich rot getönt (Pixelprobe) | ui |
+| N7S-03 | ✓ Chip bei 6,5 → Dm7 bei 6,5; per Touch „Takt 2, Schlag 3,5“, Stufen-Chip lässt den Schlag | song, ui |
+| N7S-04 | ✓ Am 0 · F 3,8 · C 8,3 · G 11,6 · G 12,2 · Am 16,1 → Am 0 · F 4 · C 8 · G 12 · Am 16, `{moved:5, merged:1}`, Toast, ein Undo | song |
+| N7S-05 | ✓ ½ Takt: C 9,9 → 10, G 11,1 → 12; Auswahl T3: außerhalb deep-equal | song |
+| N7S-06 | ✓ „3“ → `songPos()` 2, `songSelect()` {2,2}, Chip (255,178,46) ±12, Zahl dunkel; „5“ → {2,4}; Tipp hinein → null; laufend kein Neustart (noteLog ohne Lücke); ▶ oben startet bei T3 | ui |
+| N7S-07 | ✓ grüne Linie (Pixel oben grün, Lineal-Mitte amber), Griff am Bereichsanfang; Griff ziehen → Takt 3–5, Ansicht steht, ein Undo | ui |
+| FP-SONG | ✓ ● über laufende Clips → Song am nächsten Taktstrich; Schleifen-Durchgänge (jüngster gewinnt, Melodie im Bereich, ein Undo); Auswahl-Aufnahme steigt selbst aus; `S.tracks[].clips` deep-equal; Speichern/Laden mit Bereich, WP6-Dateien migrieren | song |
+
+**Regression** (`v3-v0c-reg.sh` = V4c-Liste mit Versionskopien `v3-v0c-adapt-*` für 3.11.1, `v3-v0c-reg2.sh`, `v3-v0c-reg3.sh`
+= G3-Suiten + V0c-Suiten; Ausgaben `dirigent-test/v3-v0c-reg/`): rot nur, was auf G3-klein-fix bzw. V4c genauso rot ist
+(`node-fm`, `v3-v0b-adapt-wp3-browser` PR2, `-wp3-ui` MO49, `wp4-offline`, `wp3-adapt-func-build(-native)` C2/D5, `v3-v4bfix-big`,
+`v3-v4b-node` N7F-34 – auf dem Snapshot identisch 14/15, `fp4f-loop` 1/10 wie vorher, `v3-v4a-node` N7F-09 Last), dazu unter Last
+rot und allein bzw. auf dem Snapshot gleich: `wp6-song-P` SG4 (allein P/L 27/0, Snapshot ebenso), `v3-v0b-adapt-v0a-fix` V0a-16 L
+(150-ms-Probe, auf G3-klein-fix 3 × ebenso rot), `wp7-adapt-wp1-perf` PE1 Bildzahl (Snapshot identisch 8/2), `v3-v4a-ui` N7F-10
+CPU 13,2 % (Last). `v3-v0c-adapt-wp1-misc` nach Korrektur der Versionskopie 104/0. Grün u. a. alle DoD-Läufe (wp1–wp7, 60 s),
+`wp1-dod` (Startzeit), `v3-v0b-follow` 52/0, `wp6-drums` P/L, V0d-, V4a-, V4b-, V4f-, V4c-Suiten, `v3-g3fix-*`, Smoke ohne Fehler.
+
+**Fach-Prüfung** (Teil J: FP-TOUCH Haupt-, FP-SONG Zweit-Blick; als zweiter Durchgang über Diff, Tests und Bilder auf mich selbst
+angewandt – ein eigener Agent stand in diesem Bau nicht zur Verfügung). **11 Befunde, alle behoben:**
+1. FP-TOUCH: Segmente (Vorlauf, Art/Bass, Bereich/Raster) in den berührungsgeschützten Blättern reagierten nicht auf den Finger
+   (guardTouch unterdrückt den synthetischen Klick) → `bindSegTap`; Touch-Tests dafür.
+2. FP-TOUCH: [✕] der Blätter 44×32 → 44×40.
+3. FP-TOUCH: Start-Blatt im Querformat 245 px hoch (verdeckte den Song) → zweispaltig ≈ 150 px.
+4. FP-TOUCH: ●-Beschriftung „AKK+MEL“ in der 37-px-Spalte (L, P3) abgeschnitten → zweizeilig.
+5. FP-TOUCH: Banner-Texte im Hochformat abgeschnitten (Song: „… Clips bleibe“, Kopfzeile „ab Ta“) → Kurzformen nach Breite.
+6. FP-TOUCH: „MELODIE“/„AKKORDE“ im schmalen Etikett abgeschnitten → kleinere Schrift in der Seitenspalte.
+7. FP-SONG: ↶/↷ während einer Aufnahme hätte den Song unter der laufenden Aufnahme getauscht → „Erst Aufnahme beenden“.
+8. FP-SONG: ein Song, der hinter der Abspielmarke endet (kürzer gemacht, oder Aufnahme über das Ende ohne Inhalt dort), lief stumm
+   weiter → endet sofort.
+9. FP-SONG: die Abspielmarke sprang nach einem Bereichs-Sprung ≈ 100 ms zu früh (Planer schon im nächsten Durchgang) → `songBeatOf`.
+10. FP-SONG: Einstieg bei laufendem Song erst am nächsten Taktstrich – Melodie-Noten davor gingen verloren → Einstieg im laufenden Takt.
+11. FP-SONG / M-ANSICHT: [↩ SONG] konnte während der Aufnahme erscheinen und die Transportzeile umbrechen → während ● verborgen,
+    die aufgenommenen Spuren werden am Ende zurückgegeben.
+Begründet, nicht geändert: Transportzeile 40 px hoch (V0a; N7S-01 verlangt den Canvas unverändert), [S4 ▾] 33–41 px breit und ●/▶
+in der Seitenspalte 30–37 px breit (V0a-Stand); Griff-Trefferzone 36 × 34 reicht bis in die erste Zeile – ein Wisch, der genau auf
+einem Griff beginnt, verschiebt den Griff statt zu rollen (ein Undo, LCD-Hinweis); TA9-Toast nach jedem Song-Ende mit Akkorden (Spec).
+
+**Abweichungen**
+1. **[● MEL.] ist aus der Transportzeile entfernt** (V2e-Plan vorgezogen): ● mit Ziel MELODIE macht dasselbe (Overdub, Einstieg im
+   laufenden Takt), zwei „● MEL“ nebeneinander wären verwirrend; API `songMel` bleibt, ebenso [S4 ▾].
+2. „Verlassen des Song-Modus“ (TA9) = Ende der Song-Wiedergabe, nicht das Schließen der Song-Ansicht (der Song darf bei offener
+   Clip-Ansicht weiterspielen wie in WP6).
+3. Aufnahme über das Song-Ende hinaus verlängert den Song, wenn dort etwas aufgenommen wurde (Bandmaschine; Spec sagt dazu nichts).
+4. Stufen-Chips nach der Tonart, die an dieser Stelle klingt (`songKeyAtBar`); Song-Tonart kommt mit V2f. [Für alle „Strophe“] erst mit V2e (Marken).
+5. Kopfzeilen-Banner liegt über BPM … ≡ – einen Projekttitel gibt es in `#top` nicht (K2-63 „an der Stelle des Projekttitels“).
+6. V0c kennt nur „Überschreiben“ (wie Spec); „Einfügen“, „Ersetzen/Overdub im Bereich“ und NOTEN auf anderen Spuren: V2d′.
+7. **Größe +64,4 KB** statt +42 KB (+53 %, über der 50-%-Regel): Aufnahme-Ziele mit Durchgängen/Bereich/Rückgabe (≈ 12 KB),
+   ChordPick mit Frei/Text/Stufen (≈ 11 KB), Start-Blatt, Schleifen- und AKKORDE-Blätter (≈ 8 KB), N0c TA9/EN-06 (≈ 5 KB),
+   Taktleiste/Schleife/Banner-Zeichnung (≈ 6 KB), `parseChord`/Quantisieren (≈ 5 KB), CSS (≈ 9 KB), Hilfe und Kommentare.
+   Datei 1,88 MB (Grenze 5,0 MB), Startzeit-Abnahme (`wp1-dod`) grün.
+
+**iPhone-Prüfpunkte für Xander** (N2-0c-01 + Nachtrag 1 C.5 Punkt 3)
+1. Song-Ansicht: einen Akkord-Chip antippen, „Dm7“ eintippen, ⏎ – der Chip heißt Dm7, Schlag gleich; ↶ holt den alten.
+2. Etikett AKKORDE → „Akkorde quantisieren …“ → Raster Takt → [Quantisieren]: alle Chips stehen auf den Taktstrichen.
+3. Auf die Taktnummer 3 tippen: gelb; ▶ oben (zeigt „SONG“) startet dort, nicht die Szenen.
+4. Szenen laufen, leerer Song: ● SONG, einen Akkord (F) spielen, ● beenden → die Szenen spielen wieder untransponiert, Toast [F behalten].
+5. Song mit Inhalt: ● → Start-Blatt, nur AKKORDE an, [● START], in Takt 2 einen anderen Akkord spielen, ● → nur Takt 2 hat sich geändert.
+6. SCHLEIFE → Bereich (vorher Takt 3–4 gelb wählen) → die grüne Linie; den rechten Griff ziehen. (Noten in der Melodie-Rolle während
+   ▶ SONG treffen: V0b, unverändert.)
+
+Fähigkeiten-Summe unverändert (V0c deklariert keine Fähigkeit). Für Xander im Dashboard: nichts.
+
+**Bekannte Lücken:** kein WebKit-/iPhone-Test (Chromium + CDP-Touch); der Zwischenstand an Artifact-Adresse und Pages-Seite
+(EN-20/EN2-15) ist Sache des Orchestrators; Text-Eingabe mit iOS-Tastatur nicht am Gerät geprüft (das Blatt springt beim Fokus
+nach oben).
