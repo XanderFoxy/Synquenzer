@@ -662,6 +662,17 @@ svg{display:block}
 @keyframes lcdmq{0%,14%{transform:translateX(0)}86%,100%{transform:translateX(var(--mq,0))}}
 .pop.lcdfull{max-width:min(420px,92vw)}.pop.lcdfull h4{margin:0 0 4px;font:700 11px/1.2 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}.pop.lcdfull p{margin:0;font:500 13px/1.35 var(--font-ui);color:var(--text);white-space:normal}
 .lcd .lx{flex:none;margin-left:auto;font:700 10px/1 var(--font-ui);color:var(--ink);background:var(--sel);padding:2px 4px;border-radius:3px}
+.lcd .lpv{flex:none;display:flex;align-items:center;height:22px}
+.lcd.pv .lk{display:none}
+.lcd.pv .lv2{display:flex;flex-direction:column;justify-content:center;min-width:0;flex:1 1 auto;gap:1px}
+.lcd.pv .lv2 b,.lcd.pv .lv2 i{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 11.5px/13px var(--font-ui);font-style:normal;color:var(--text)}
+.lcd.pv .lv2 i{font:500 10.5px/12px var(--font-ui);color:#0AFFAD}
+.lcd.lcdpv{position:fixed;z-index:70;margin:0;order:0;flex:none;padding:0 10px;pointer-events:none;display:flex}
+.lcd.lcdpv[hidden]{display:none}
+.lcd.pvo>*{visibility:hidden}
+.fxpg .fxhpv{position:absolute;left:0;right:0;top:22px;height:26px;display:flex;align-items:center;gap:6px;padding:0 6px;border-radius:5px;background:var(--lcd);z-index:4;pointer-events:none}
+.fxpg .fxhpv[hidden]{display:none}
+.fxpg .fxhpv i{flex:1;min-width:0;font:500 11px/13px var(--font-ui);font-style:normal;color:#0AFFAD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sh-tabs{flex:1 1 100%;display:flex;gap:3px;padding:5px 8px 0;min-width:0;height:40px}
 .tab{flex:1 1 0;min-width:0;height:35px;padding:0 6px;border-radius:6px 6px 0 0;font:700 12px/1 var(--font-ui);letter-spacing:.08em;color:var(--text-dim);background:var(--chassis);border:1px solid var(--line);border-bottom:0;white-space:nowrap;overflow:hidden}
 .tab.on{color:var(--text);background:var(--chassis-3);box-shadow:inset 0 2px 0 var(--tc)}
@@ -2784,6 +2795,14 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .fxpg .fxinfo .bt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fxpg .fxbtn{height:24px;padding:0 6px;border-radius:4px;border:1px solid #0ACA9F;background:#0A6E5B;color:#FFFFFF;font:700 11px/1 system-ui;white-space:nowrap}
 .fxpg .fxinfo.dxab .fxbtn{font-size:10px;padding:0 4px}
+.fxpg .fxinfo.dxab .fxr2.mk .bt{display:none}
+.fxpg .fxinfo.dxab .fxr2.mk .mkdx{flex:1;font-size:11px}
+.pop.fxdx .fxdxl{margin:4px 0 8px;padding-left:18px;font:500 12.5px/1.35 var(--font-ui);color:var(--text)}
+.pop.fxdx .fxdxl li{margin:2px 0}
+.pop.fxdx .fxwarn{color:#F7C948}
+.pop.fxdx .fxrrow{display:flex;gap:6px}
+.pop.fxdx .fxrrow .fxbtn{flex:1;width:auto}
+.pop .fxbtn.go{border-color:#0ACA9F;background:#0A6E5B;color:#FFFFFF}
 .fxpg .fxinfo.about{display:flex;gap:6px;align-items:center;padding:0 4px}
 .fxpg .fxinfo.about .fxbtn{flex:1;height:34px;background:#22252F;border-color:#5B6170}
 .fxpg .fxinfo.chk{display:flex;align-items:center;padding:0 4px}
@@ -2835,6 +2854,21 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .pop .fxwi path{fill:none;stroke:#47CA0A;stroke-width:1.5}.pop .fxwi.on{outline:2px solid #0ACA9F}
 .pop .fxtg{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}.pop .fxtg button{min-width:44px;min-height:44px}
 .pop .fxbtn{min-height:44px;width:100%;margin-top:6px}
+/* V4c: the ratio raster (Basis › Verhältnis › value zone) */
+.pop.fxras{width:min(392px,calc(100vw - 16px));max-width:min(392px,calc(100vw - 16px))}
+.fxras .fxrg{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;touch-action:none}
+.pop.fxras .fxrg .fxrc{min-width:0;height:48px;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:6px;border:1px solid #5B6170;background:#121317;color:#FFFFFF}
+.pop.fxras .fxrc b{display:block;font:700 14px/1 var(--font-num);letter-spacing:-.02em;white-space:nowrap}
+.pop.fxras .fxrc[data-v="1.41"] b{font-size:12px}
+.pop.fxras .fxrc i{display:block;font:400 12px/1 system-ui;font-style:normal;color:#0AFFAD;letter-spacing:-1px;white-space:nowrap}
+.pop.fxras .fxrc.c-glocke i{color:#F7C948}
+.pop.fxras .fxrg .fxrc.on{border:2px solid #0ACA9F;background:#0A6E5B}
+.fxras .fxrcur{margin:8px 0 2px;font:600 12.5px/1.25 var(--font-ui);color:var(--text);min-height:32px}
+.fxras .fxrrow{display:flex;gap:6px}
+.fxras .fxrrow .fxbtn{flex:1;width:auto;margin-top:4px}
+.fxras .fxrleg{margin:6px 0 0;font-size:10.5px;line-height:1.3}
+@media (max-width:359px){.pop.fxras .fxrg{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
 .pop .fxrc{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}.pop .fxrc .fxchk{height:44px}
 .pop .fxhelp{margin:0;padding-left:18px;font-size:13px;line-height:1.35}.pop .fxhelp li{margin:4px 0}
 .pop.fxkp{width:236px}
@@ -3109,7 +3143,8 @@ const PMS_T = [0, 10, 20, 33, 55, 92, 153, 255];
 const LFOFM_HT = new Float64Array(128); for (let i = 0; i < 128; i++) { const x = i * 7 / 127, j = Math.min(6, x | 0); LFOFM_HT[i] = 12 * (PMS_T[j] + (PMS_T[j + 1] - PMS_T[j]) * (x - j)) / 255; }
 const LFOAM_DB = 24 / 127;
 const FMX_EDGE_CAP = 12;                              // V4a (K2-42, N7F-10 measured 15.7 % with 15 edges and a loop): > 12 edges -> 6 voices
-const OLX_N = Math.max(1, Math.round(.03 * SR / CR));  // V4b-fix (L3): a live level jump of an fmx operator blends old -> new gain in 30 ms
+const OLX_N = Math.max(1, Math.round(.03 * SR / CR));
+const FRX_N = Math.max(1, Math.round(.01 * SR / CR));  // V4c (Raster gleiten): a live ratio change of an fmx operator glides 10 ms (log), no click  // V4b-fix (L3): a live level jump of an fmx operator blends old -> new gain in 30 ms
 const MUTE_STEP = CR / (.03 * SR);                     // V4a (N7F-06): [M] / on fades an operator in 30 ms (10 ms tripped M-KLICK on a bright modulator)
 
 // V4a (Nachtrag 2 Teil A, KP 6.1): p.fmx (format 2) -> {fm: an fm6-like patch for the envelope / level code (r, l = the DX
@@ -3344,7 +3379,7 @@ class Voice {
     // V4a (fmx graph): pitch EG per operator (octaves), mute ramp, wave mip level / weight (now, target), self-feedback history
     // per operator, foreign-feedback history (last sample of the previous / current block), per-sample outputs (now, previous)
     this.xpL = new Float64Array(6); this.xpT = new Float64Array(6); this.xpR = new Float64Array(6); this.xpIx = new Int8Array(6).fill(4); this.xpRise = new Uint8Array(6);
-    this.olG = new Float64Array(6); this.olN = new Int16Array(6);
+    this.olG = new Float64Array(6); this.olN = new Int16Array(6); this.frA = new Float64Array(6); this.frN = new Int16Array(6);
     this.xny = new Float64Array(6).fill(-1);          // V4f-fix: Nyquist guard factor per op (-1 = set at the first block)
     this.xmu = new Float64Array(6).fill(1); this.xwa = new Int8Array(6); this.xwb = new Int8Array(6); this.xww = new Float64Array(6); this.xwt = new Float64Array(6);
     this.xf0 = new Float64Array(6); this.xf1 = new Float64Array(6); this.fyl = new Float64Array(6); this.fyp = new Float64Array(6);
@@ -4036,7 +4071,7 @@ class AnalogCore extends AudioWorkletProcessor {
       if (m === 1) { let x = v.rng; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; v.rng = x >>> 0; v.fph[k] = v.rng; }
       else if (m === 2) { if (this.frF[k] >= 0) v.fph[k] = (this.frPh[k] + this.frInc[k] * (F - this.frF[k])) % 4294967296; else v.fph[k] = 0; }
       else v.fph[k] = X.ph0[k];
-      v.xmu[k] = X.on[k]; v.olN[k] = 0; v.xf0[k] = v.xf1[k] = 0; v.fyl[k] = v.fyp[k] = 0; v.xy[k] = v.xyp[k] = 0; v.xwa[k] = -1;
+      v.xmu[k] = X.on[k]; v.olN[k] = 0; v.frN[k] = 0; v.xf0[k] = v.xf1[k] = 0; v.fyl[k] = v.fyp[k] = 0; v.xy[k] = v.xyp[k] = 0; v.xwa[k] = -1;
       const E = X.pit[k]; v.xpL[k] = E ? PEG_TAB[E.l[3]] / 32 : 0; this.xpAdvance(v, k, E ? 0 : 4);
     }
     if (X.anyPt) for (let s = 0; s < 12; s++) this.ptStart(v, s, X.pe[s]); else v.pM.fill(0);
@@ -4182,6 +4217,8 @@ class AnalogCore extends AudioWorkletProcessor {
       if (E && !E.free && v.pM[s] === 1) this.ptEnter(v, s, E, 1, v.pV[s], this.ptOfs(v, s), this.ptTf(E, s, 1, v)); }
   }
   // per-op output level, rate scaling, ratio / fixed frequency (msfa maths); live: re-target the running stage
+  // V4c: the gliding ratio (log blend from frA to the target over FRX_N control blocks)
+  frNow(v, k) { const t = v.fratio[k]; return t * Math.pow(v.frA[k] / t, v.frN[k] / (FRX_N + 1)); }
   fmVoicePatch(v, live, note, vel127) {
     if (note == null) note = v.fnote; if (vel127 == null) vel127 = v.fvel;
     v.fnote = note; v.fvel = vel127;
@@ -4196,8 +4233,9 @@ class AnalogCore extends AudioWorkletProcessor {
       v.foutLvl[k] = ol; v.frs[k] = scaleRate(note, op.rs | 0);
       if (op.fixed) { v.ffixed[k] = Math.pow(10, (op.coarse & 3) + op.fine / 100) * Math.pow(2, (op.det > 0 ? op.det : 0) * 13457 / 16777216); v.fratio[k] = 0; }
       else {
-        const det = (op.det || 0) * 0.0209 * Math.exp(-0.396 * lf) / 7 * lf;  // msfa detune, octaves
+        const det = (op.det || 0) * 0.0209 * Math.exp(-0.396 * lf) / 7 * lf, fr0 = v.fratio[k];  // msfa detune, octaves
         v.fratio[k] = (op.coarse ? op.coarse : 0.5) * (1 + (op.fine || 0) / 100) * Math.pow(2, det); v.ffixed[k] = 0;
+        if (live && X && fr0 > 0 && fr0 !== v.fratio[k] && v.fg1[k] > 0) { v.frA[k] = v.frN[k] > 0 ? this.frNow(v, k) : fr0; v.frN[k] = FRX_N; }
       }
       // live: re-target the running stage; a held note at its sustain (stage index 3 while the key is down) re-enters
       // stage 2 toward the new L3, so an edit is heard on a sustained note too (msfa Env::update)
@@ -4340,7 +4378,7 @@ class AnalogCore extends AudioWorkletProcessor {
       const fmv = X.fmS[k] ? X.fmS[k] * l1 : 0;
       let f;
       if (v.ffixed[k]) { const pv = Ep ? v.xpL[k] * 12 + fmv : fmv; f = pv ? v.ffixed[k] * Math.pow(2, pv / 12) : v.ffixed[k]; }   // K2-58
-      else { const sm = base + v.xpL[k] * 12 + fmv; if (sm !== sL) { sL = sm; fL = lut(FREQ, sm); } f = fL * v.fratio[k]; }
+      else { const sm = base + v.xpL[k] * 12 + fmv; if (sm !== sL) { sL = sm; fL = lut(FREQ, sm); } let rt = v.fratio[k]; if (v.frN[k] > 0) { rt = this.frNow(v, k); v.frN[k]--; } f = fL * rt; }
       const ny = this.nyGuard(v, k, f); if (ny < 1) g *= ny;                // Nyquist guard (V4f-fix): 5 ms fade, the phase runs on
       v.fg1[k] = g;
       v.finc[k] = Math.round(Math.min(f, SR * 0.45) / SR * 4294967296);
@@ -6434,7 +6472,8 @@ const RecHelpers = (() => {
     const R = [];
     if (!X || !Array.isArray(X.ops)) return {match: null, perm: null, reasons: ['kein FM-Graph']};
     const m = dxMatch(X), fb = fbPaths(X);
-    if (!m.match) R.push('Verbindungen: kein DX-Algorithmus');
+    // V4c: two feedback paths on DX connections are a feedback reason, not a connection reason
+    if (!m.match) { if (!(fb.length > 1 && edgeMatch(X))) R.push('Verbindungen: kein DX-Algorithmus'); }
     else if (m.perm.some((p, i) => p !== i)) R.push('Nummern anders (wie DX ' + m.match + ')');
     if (fb.length > 1) R.push('Feedback an ' + fb.map(p => 'OP ' + (p[0] + 1)).join(' und '));
     else if (fb.length === 1 && m.match) { const A = ALGS[m.match - 1];
@@ -6736,8 +6775,220 @@ const RecHelpers = (() => {
     if (which === 'amp') o.amp = normEnv(e, null); else o.pit = normEnv(e, null);
     return {x: X, lcd, sel};
   }
+  /* ----- V4c (Spec §9.5/9.6, KP §6.4, Nachtrag 2 A.6 V4c, N7F-49): the ratio raster class and [DX-tauglich machen] -----
+     ratioClass(C, M): 2-op FM, carrier C·f, modulator M·f. Lines at |C + kM|·f; for C, M with denominator 2 (a = 2C, b = 2M,
+     g = gcd(a, b)) the fundamental is g/2·f and partial n is there iff n ≡ ±a' (mod b') (r4/g5/ratio-raster: FFT 15/15).
+     makeDx(X) -> {x, changes[], alg, ok, rest[]}: the nearest DX-tauglich graph with one line per change and its consequence
+     (Rückweg Punkt-Form -> DX with the measured deviation, A.5 Nr. 4). */
+  const gcdI = (x, y) => (y ? gcdI(y, x % y) : x);
+  function ratioClass(C, M) {
+    const a = Math.round(C * 2), b = Math.round(M * 2);
+    if (!(C > 0) || !(M > 0) || Math.abs(a - C * 2) > 1e-6 || Math.abs(b - M * 2) > 1e-6) return {cls: 'glocke', sym: '◇', text: 'Glocke/Metall (unharmonisch)', short: 'Glocke', f0: null, list: [], low: false, nofund: false};
+    const g = gcdI(a, b), A = a / g, B = b / g, f0 = g / 2;
+    const has = n => ((n - A) % B + B) % B === 0 || ((n + A) % B + B) % B === 0;
+    const list = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(has);
+    let cls, sym, text, short;
+    if (B === 1) { cls = 'voll'; sym = '█'; text = 'alle Teiltöne (Säge-artig)'; short = 'alle Teiltöne'; }
+    else if (list.every(n => n % 2) && list.length >= 4) { cls = 'hohl'; sym = '▓'; text = 'nur ungerade (hohl, Rechteck/Klarinette)'; short = 'nur ungerade'; }
+    else if (list.length >= 4) { cls = 'lueckig'; sym = '▒'; text = 'lückig: Teiltöne ' + list.join(' ') + ' (nasal)'; short = 'lückig'; }
+    else { cls = 'duenn'; sym = '░'; text = 'dünn: Teiltöne ' + list.join(' '); short = 'dünn'; }
+    const nofund = !has(1), low = f0 < 1;
+    return {cls, sym, text, short, f0, A, B, list, low, nofund};
+  }
+  // ---- envelope fit Punkt-Form -> DX form (amp: DX level units; pitch: semitones) and a deviation estimate
+  const FMHx = () => G.FMH, DXNx = () => G.DXN;
+  const lvlRate = r => 256 / FMHx().segTime(r, 1000, 744);              // msfa level units per second of a fall at rate r
+  // amp level curve (level units, one value per dt) of a DX envelope: held `held` s, total `tot` s
+  function simDxAmp(e, ol, held, tot, dt) {
+    const H = FMHx(), tg = e.l.map(L => H.lvlOf(L, ol)), out = []; let ix = 0, cur = 0, hold = null, rel = false, done = false;
+    const next = () => { hold = null; if (ix < 2) ix++; else done = true; };
+    for (let t = 0; t < tot; t += dt) {
+      if (!rel && t >= held) { rel = true; ix = 3; hold = null; done = false; }
+      let left = dt;
+      for (let guard = 0; guard < 12 && left > 1e-12 && !done; guard++) {
+        const target = tg[ix], att0 = ix === 0 && e.l[0] === 0;
+        if (hold == null && (att0 || cur === target)) hold = H.holdSec(e.r[ix], att0);
+        if (hold != null) { const u = Math.min(left, hold); hold -= u; left -= u; if (hold <= 1e-12) next(); continue; }
+        const R = lvlRate(e.r[ix]);
+        if (target < cur) { const need = (cur - target) / R; if (need <= left) { cur = target; left -= need; next(); } else { cur -= R * left; left = 0; } }
+        else { if (cur < 1716) cur = Math.min(1716, target); if (cur >= target) { cur = target; next(); continue; }
+          const sp = Math.max(1, 16 - Math.floor(cur / 256)) * R, step = Math.min((Math.floor(cur / 256) + 1) * 256, target) - cur, need = step / sp;
+          if (need <= left) { cur += step; left -= need; if (cur >= target) { cur = target; next(); } } else { cur += sp * left; left = 0; } }
+      }
+      out.push(cur);
+    }
+    return out;
+  }
+  // the natural msfa rise from a to b in units of 1/R (seconds at R = 1) and the level after the fraction q of it
+  function riseNat(a, b) { let t = 0, x = Math.max(a, 1716); while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256); t += (nx - x) / Math.max(1, 16 - bd); x = nx; } return t; }
+  function riseAt(a, b, q) { const D = riseNat(a, b) * q; let t = 0, x = Math.max(a, 1716); if (b <= x) return b;
+    while (x < b) { const bd = Math.floor(x / 256), nx = Math.min(b, (bd + 1) * 256), dt = (nx - x) / Math.max(1, 16 - bd); if (t + dt >= D) return x + (D - t) * Math.max(1, 16 - bd); t += dt; x = nx; } return b; }
+  // amp level curve of a point-form envelope (exp: falls linear in level units, rises msfa-shaped over the segment; lin:
+  // amplitude linear); sustain, Skip on Release and loop A/B as the worklet runs them
+  function simPtAmp(e, ol, held, tot, dt) {
+    const H = FMHx(), L = e.y.map(y => (y <= 0 ? 0 : H.lvlOf(y, ol))), k = e.y.length - 1, out = [];
+    const amp = l => Math.pow(2, l / 256), lvl = a => (a <= 1 ? 0 : 256 * Math.log2(a));
+    let seg = 1, from = L[0], el = 0, rel = false, cur = L[0], Tx = null;
+    for (let t = 0; t < tot; t += dt) {
+      // Skip on Release: on to the segment after Psus from the level now, at that segment's rate (worklet ptRelScale)
+      if (!rel && t >= held) { rel = true; if (e.sus >= 0 && e.run !== 'free' && seg <= e.sus && e.skip && e.sus < k) {
+        seg = e.sus + 1; from = cur; el = 0; const dn = Math.abs(L[seg] - L[e.sus]), d = Math.abs(cur - L[seg]); Tx = Math.max(.0005, e.t[seg - 1] / 1000 * (d / (dn > 1e-9 ? dn : 256))); } }
+      const holdAt = e.sus >= 0 && !rel && e.run !== 'free' && seg === e.sus + 1 && el === 0 && Math.abs(cur - L[e.sus]) < 1e-9;
+      if (seg > k || holdAt) { out.push(cur); continue; }
+      const T = Tx != null ? Tx : Math.max(.0005, e.t[seg - 1] / 1000), to = L[seg];
+      el += dt; const q = Math.min(1, el / T);
+      if (e.crv === 'lin') cur = lvl(amp(from) + (amp(to) - amp(from)) * q);
+      else if (to < from) cur = from + (to - from) * q; else cur = q >= 1 ? to : riseAt(from, to, q);
+      if (q >= 1) {
+        cur = to; from = to; el = 0; Tx = null;
+        if (e.la >= 0 && e.lb >= 0 && seg === e.lb && !(rel && e.lb <= e.sus)) seg = e.la + 1;
+        else if (e.sus >= 0 && !rel && e.run !== 'free' && seg === e.sus) seg = e.sus + 1;
+        else seg++;
+      }
+      out.push(cur);
+    }
+    return out;
+  }
+  const rmsDb = (A, B) => { const pk = Math.max(...A, ...B), fl = pk - 60 / 6.0206 * 256; let s = 0, n = 0;
+    for (let i = 0; i < A.length; i++) { const a = Math.max(A[i], fl), b = Math.max(B[i], fl); if (a <= fl && b <= fl) continue; const x = (a - b) * 6.0206 / 256; s += x * x; n++; } return n ? Math.sqrt(s / n) : 0; };
+  // 3 pre-sustain breakpoints and the release out of a point list: [b1, b2, b3] indices, s the sustain index
+  function dxBreaks(e) {
+    const k = e.y.length - 1, s = e.sus >= 0 && e.run !== 'free' ? e.sus : k;
+    let b;
+    if (s <= 0) b = [0, 0, 0]; else if (s === 1) b = [1, 1, 1]; else if (s === 2) b = [1, 2, 2]; else if (s === 3) b = [1, 2, 3];
+    else { let m = 1; for (let i = 2; i <= s - 2; i++) if (e.y[i] > e.y[m]) m = i; b = [m, s - 1, s]; }
+    return {b, s, k};
+  }
+  const segSum = (e, a, b) => { let t = 0; for (let i = a; i < b; i++) t += e.t[i]; return t / 1000; };
+  function ampToDx(e, ol) {
+    const H = FMHx();
+    // a conversion from the DX form (dxr) whose times are unchanged goes back exactly
+    if (e.dxr && e.y.length === 5 && e.y[0] === 0 && e.sus === 3 && e.la < 0 && e.lb < 0 && e.crv === 'exp' && e.run === 'retrig' && e.skip) {
+      const d = {f: 'dx', r: e.dxr.slice(), l: e.y.slice(1, 5)}, back = ptFromDx(d, 'amp', ol).env;
+      if (back.t.length === e.t.length && back.t.every((x, i) => Math.abs(x - e.t[i]) <= .5) && back.y.every((y, i) => y === e.y[i])) return d;
+    }
+    const {b, s, k} = dxBreaks(e), l = [e.y[b[0]], e.y[b[1]], e.y[b[2]], e.y[k]], T = [segSum(e, 0, b[0]), segSum(e, b[0], b[1]), segSum(e, b[1], b[2]), segSum(e, s, k)];
+    const op = {l, ol, rs: 0}, r = [99, 99, 99, 99];
+    for (let st = 0; st < 4; st++) { let best = 99, bd = Infinity;
+      if (T[st] > 0) for (let rr = 0; rr <= 99; rr++) { const tt = H.stageTime(op, st, rr, 60), dd = Math.abs(Math.log((tt + 1e-4) / (T[st] + 1e-4))); if (dd < bd - 1e-12) { bd = dd; best = rr; } }
+      r[st] = best; }
+    return {f: 'dx', r, l};
+  }
+  function ampDev(pt, dx, ol) {
+    const held = Math.min(4, Math.max(.4, segSum(pt, 0, pt.sus >= 0 ? pt.sus : pt.t.length) + .3)), tot = held + 1.5, dt = .002;
+    return rmsDb(simPtAmp(pt, ol, held, tot, dt), simDxAmp(dx, ol, held, tot, dt));
+  }
+  const pegHt = L => DXNx().PEG_TAB[clamp(L | 0, 0, 99)] * 12 / 32;
+  const pegL = h => { let best = 50, bd = Infinity; for (let L = 0; L <= 99; L++) { const d = Math.abs(pegHt(L) - h); if (d < bd - 1e-9) { bd = d; best = L; } } return best; };
+  function pitToDx(e, pr) {
+    const R = PR_HT[pr] || 12, h = e.y.map(y => yHt(y, R)), {b, s, k} = dxBreaks(e);
+    const l = [pegL(h[b[0]]), pegL(h[b[1]]), pegL(h[b[2]]), pegL(h[0])], T = [segSum(e, 0, b[0]), segSum(e, b[0], b[1]), segSum(e, b[1], b[2]), segSum(e, s, k)];
+    const from = [l[3], l[0], l[1], l[2]], r = [99, 99, 99, 99];
+    for (let st = 0; st < 4; st++) { const oct = Math.abs(pegHt(l[st]) - pegHt(from[st])) / 12; if (!(oct > 0) || !(T[st] > 0)) continue;
+      let best = 99, bd = Infinity; for (let rr = 0; rr <= 99; rr++) { const tt = oct / (DXNx().PEG_RATE[rr] / 21.3), dd = Math.abs(Math.log((tt + 1e-4) / (T[st] + 1e-4))); if (dd < bd - 1e-12) { bd = dd; best = rr; } } r[st] = best; }
+    return {f: 'dx', r, l};
+  }
+  // semitone curves: DX PEG (linear in octaves, start L4, L1 -> L2 -> L3 hold, key off -> L4); point form (exp linear in HT,
+  // lin linear in Hz)
+  function simDxPit(e, held, tot, dt) { const out = []; let ix = 0, cur = pegHt(e.l[3]), rel = false;
+    for (let t = 0; t < tot; t += dt) { if (!rel && t >= held) { rel = true; ix = 3; }
+      const tg = pegHt(e.l[ix]), sp = DXNx().PEG_RATE[e.r[ix]] / 21.3 * 12 * dt;
+      if (Math.abs(tg - cur) <= sp) { cur = tg; if (ix < 2) ix++; } else cur += Math.sign(tg - cur) * sp; out.push(cur); }
+    return out; }
+  function simPtPit(e, pr, held, tot, dt) { const R = PR_HT[pr] || 12, h = e.y.map(y => yHt(y, R)), k = e.y.length - 1, out = []; let seg = 1, from = h[0], el = 0, rel = false, cur = h[0];
+    for (let t = 0; t < tot; t += dt) {
+      if (!rel && t >= held) { rel = true; if (e.sus >= 0 && seg <= e.sus && e.skip) { seg = e.sus + 1; from = cur; el = 0; } }
+      if (seg > k || (e.sus >= 0 && !rel && seg === e.sus + 1 && el === 0 && cur === h[e.sus])) { out.push(cur); continue; }
+      const T = Math.max(.0005, e.t[seg - 1] / 1000), to = h[seg]; el += dt; const q = Math.min(1, el / T);
+      cur = e.crv === 'lin' ? 12 * Math.log2(Math.pow(2, from / 12) + (Math.pow(2, to / 12) - Math.pow(2, from / 12)) * q) : from + (to - from) * q;
+      if (q >= 1) { cur = to; from = to; el = 0; if (e.la >= 0 && e.lb >= 0 && seg === e.lb && !(rel && e.lb <= e.sus)) seg = e.la + 1; else seg++; }
+      out.push(cur); }
+    return out; }
+  function pitDev(pt, pr, dx) { const held = Math.min(4, Math.max(.4, segSum(pt, 0, pt.sus >= 0 ? pt.sus : pt.t.length) + .3)), tot = held + 1.5, dt = .002;
+    const A = simPtPit(pt, pr, held, tot, dt), B = simDxPit(dx, held, tot, dt); let s = 0; for (let i = 0; i < A.length; i++) s += (A[i] - B[i]) ** 2; return Math.sqrt(s / A.length); }
+  const fmtD = x => String(Math.round(x * 10) / 10).replace('.', ',');
+  // edge-only DX match (feedback ignored): identity first, a numbering that puts an existing feedback path on the DX one wins
+  function edgeMatch(X) {
+    const E = X.edges, fb = fbPaths(X), r = memo('e' + JSON.stringify(E) + '|' + JSON.stringify(fb), () => edgeMatch0(E, fb));
+    return r ? {alg: r.alg, perm: r.perm.slice()} : null;
+  }
+  function edgeMatch0(E, fb) {
+    for (const p of PERMS0) {
+      const key = edgeKey(E, p); let first = null;
+      for (let a = 0; a < 32; a++) {
+        if (ALG_KEY[a] !== key) continue;
+        const A = ALGS[a];
+        if (fb.some(q => p[q[0]] === A.fbDst && p[q[1]] === A.fbSrc)) return {alg: a + 1, perm: p.slice()};
+        if (!first) first = {alg: a + 1, perm: p.slice()};
+      }
+      if (first) return first;
+    }
+    return null;
+  }
+  const PERMS0 = [[0, 1, 2, 3, 4, 5]].concat(PERMS);
+  const isId = p => p.every((q, i) => q === i);
+  function makeDx(X0) {
+    const C = [];
+    if (!X0 || !Array.isArray(X0.ops)) return {x: null, changes: [], alg: null, ok: false, rest: ['kein FM-Graph']};
+    let X = cp(X0);
+    // 1. structure: same edges with another numbering -> renumber; no DX form -> the nearest algorithm (fewest edges apart)
+    let m = edgeMatch(X), alg;
+    if (m) { alg = m.alg; if (!isId(m.perm)) { X = renumber(X, m.perm); C.push('Nummern angeglichen (wie DX ' + alg + ')'); } }
+    else {
+      const best = approx0(X.edges); alg = best.a + 1;
+      const Y = renumber(X, best.p), mine = new Set(Y.edges.map(e => e.from + '>' + e.to)), theirs = ALGS[best.a].edges.map(([f, t]) => (f + 1) + '>' + (t + 1));
+      const gone = [...mine].filter(k => !theirs.includes(k)), add = theirs.filter(k => !mine.has(k));
+      X = applyAlg(Y, alg);
+      // applyAlg moves the strongest feedback to the DX path; keep the original paths for step 2
+      X.ops.forEach((o, k) => { o.fbSrc = Y.ops[k].fbSrc; o.fbAmt = Y.ops[k].fbAmt; });
+      C.push('Verbindungen → DX ' + alg + (gone.length ? ' · ' + gone.map(k => k.replace('>', ' → ')).join(', ') + ' gelöst' : '') + (add.length ? ' · ' + add.map(k => k.replace('>', ' → ')).join(', ') + ' neu' : '') +
+        (isId(best.p) ? '' : ' · Nummern angeglichen') + ' – klingt anders');
+    }
+    // 2. feedback: one path, DX receiver / source, a whole number
+    const A = ALGS[alg - 1], fb = fbPaths(X), keep = fb.find(q => q[0] === A.fbDst && q[1] === A.fbSrc);
+    const amt0 = keep ? X.ops[keep[0]].fbAmt : fb.length ? Math.max(...fb.map(q => X.ops[q[0]].fbAmt)) : 0;
+    for (const q of fb) if (q !== keep) C.push('Feedback an OP ' + (q[0] + 1) + ' (← ' + (q[1] + 1) + ') entfernt' + (X.ops[q[0]].fbAmt > 0 ? ' – weniger rau' : ''));
+    X.ops.forEach(o => { o.fbSrc = 0; o.fbAmt = 0; });
+    if (fb.length) {
+      const amt = Math.round(amt0); X.ops[A.fbDst].fbSrc = A.fbSrc + 1; X.ops[A.fbDst].fbAmt = amt;
+      if (!keep && amt > 0) C.push('Feedback → OP ' + (A.fbDst + 1) + ' (← ' + (A.fbSrc + 1) + '), Stärke ' + amt);
+      else if (amt !== amt0) C.push('Feedback-Stärke ' + fmtD(amt0) + ' → ' + amt + ' (DX: ganze Zahl)');
+    }
+    // 3. per operator
+    const ratioOps = X.ops.map((o, k) => k).filter(k => !X.ops[k].fixed);
+    X.ops.forEach((o, k) => {
+      const n = 'OP ' + (k + 1) + ': ';
+      if (o.wave) { C.push(n + 'Welle ' + (WAVES[o.wave] || 'eigene ' + o.wave) + ' → Sinus – weniger Obertöne'); o.wave = 0; }
+      if (o.amp && o.amp.f === 'pt') { const d = ampToDx(o.amp, o.ol), dev = ampDev(o.amp, d, o.ol); C.push(n + 'Hüllkurve frei → DX, Abweichung ' + fmtD(dev) + ' dB'); o.amp = d; }
+      if (o.pit && o.fixed) { C.push(n + 'Tonhöhen-Hüllkurve entfernt (feste Frequenz)'); o.pit = null; o.pr = 'dx'; }
+      else if (o.pit && o.pit.f === 'pt') {
+        const flat = o.pit.y.every(y => y === 50);
+        if (flat) { o.pit = null; o.pr = 'dx'; C.push(n + 'flache Tonhöhen-Hüllkurve entfernt'); }
+        else { const d = pitToDx(o.pit, o.pr), dev = pitDev(o.pit, o.pr, d); C.push(n + 'Tonhöhen-Hüllkurve frei → DX, Abweichung ' + fmtD(dev) + ' HT'); o.pit = d; o.pr = 'dx'; }
+      } else if (o.pit) o.pr = 'dx';
+      if (o.ph) { C.push(n + 'Phase ' + o.ph + ' → 0'); o.ph = 0; }
+      if (o.vs < 0) { C.push(n + 'Anschlag ' + o.vs + ' → 0 (DX: nur positiv)'); o.vs = 0; }
+      if (![0, 42, 85, 127].includes(o.lfoAm)) { const v = [0, 42, 85, 127].reduce((a, b) => (Math.abs(b - o.lfoAm) < Math.abs(a - o.lfoAm) ? b : a)); C.push(n + 'LFO AM ' + o.lfoAm + ' → ' + v); o.lfoAm = v; }
+    });
+    // all ratio operators share one pitch envelope (DX: one PEG per voice)
+    const pits = ratioOps.map(k => JSON.stringify(X.ops[k].pit || null));
+    if (new Set(pits).size > 1) {
+      const cnt = {}; pits.forEach(s => { if (s !== 'null') cnt[s] = (cnt[s] || 0) + 1; });
+      const ref = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0], src = ratioOps[pits.indexOf(ref)];
+      ratioOps.forEach(k => { X.ops[k].pit = JSON.parse(ref); X.ops[k].pr = 'dx'; });
+      C.push('Tonhöhen-Hüllkurve von OP ' + (src + 1) + ' für alle Verhältnis-Operatoren (DX: eine je Stimme)');
+    }
+    const phm = new Set(X.ops.map(o => o.phm));
+    if (phm.size > 1 || phm.has('rnd')) { const free = X.ops.filter(o => o.phm === 'free').length > X.ops.length / 2 ? 'free' : 'fix';
+      C.push('Phase-Modus → ' + (free === 'free' ? 'Frei' : 'Fest') + ' für alle'); X.ops.forEach(o => { o.phm = free; }); }
+    const fmSet = new Set(X.ops.map(o => o.lfoFm)), mx = Math.max(...X.ops.map(o => o.lfoFm)), pv = Math.round(127 * Math.round(mx * 7 / 127) / 7);
+    if (fmSet.size > 1 || pv !== mx) { C.push('LFO FM → ' + pv + ' für alle (DX: eine Tonhöhen-Tiefe)'); X.ops.forEach(o => { o.lfoFm = pv; }); }
+    const Y = norm(X, false), rest = dx(Y).reasons;
+    return {x: sameX(Y, norm(X0, false)) ? null : Y, changes: C, alg: dx(Y).match || alg, ok: !rest.length, rest};
+  }
   G.FMX = {norm, check, fromFm6, dxLayout, dxMatch, dx, toFm6, approxFm6, WAVES, ALGS, normEnv, gesture, renumber, applyAlg, badge, upper: (X, k) => [...upper(X.edges, k)],
-    ptFromDx, envAct, dxTimes, yHt, htY, PR_HT, PR_UP};
+    ptFromDx, envAct, dxTimes, yHt, htY, PR_HT, PR_UP,
+    ratioClass, makeDx, ampToDx, pitToDx, ampDev, pitDev, edgeMatch, simDxAmp, simPtAmp};
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
@@ -9810,7 +10061,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '3.10.0';
+const VERSION = '3.11.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -14964,6 +15215,7 @@ function lcdShow(label, txt, extra, range, rc) {
   const s = label + '\u0001' + txt + '\u0001' + (extra || '') + '\u0001' + (range || '') + '\u0001' + (rc || '');
   if (L._s === s) return; L._s = s;
   if (L.classList.contains('wia')) L.classList.remove('wia');
+  L.classList.remove('pv', 'pvo'); if (UI.lcdPv) UI.lcdPv.hidden = true;
   const fest = range === FEST_HINT; L.classList.toggle('fest', fest);
   L.innerHTML = `<span class="lk">${esc(label)}</span><span class="lv">${esc(txt)}</span>` + (range ? `<span class="lm"${rc ? ` style="--mc:${rc}"` : ''}>${fest ? '' : '↕ '}${esc(range)}</span>` : '') + (fest ? '<span class="lx lfest">POSITION ▸</span>' : extra ? `<span class="lx">${esc(extra)}</span>` : '');
   L._full = [label, txt]; lcdFit(L);
@@ -14988,7 +15240,7 @@ function lcdFit(L) {
   mi.style.setProperty('--mq', -Math.ceil(w + 4) + 'px'); mi.style.setProperty('--mqd', (2.6 + (w + 4) / 38).toFixed(1) + 's');
 }
 function lcdFull(L) {
-  const f = L._full; if (!f || !(L.classList.contains('lng') || L.classList.contains('mq'))) return false;
+  const f = L._full; if (!f || !(L.classList.contains('lng') || L.classList.contains('mq') || L.classList.contains('pv'))) return false;
   openPop(L, pop => { pop.classList.add('lcdfull'); pop.innerHTML = `<h4>${esc(f[0])}</h4><p>${esc(f[1])}</p>`; }, {name: 'lcdfull'});
   return true;
 }
@@ -15790,9 +16042,13 @@ function fmChanged(i, now, fromFmx) {
    p.fmx is the sound once it exists (the worklet plays it, fm6.x); p.fm6 follows it: the same sound when the graph is
    DX-tauglich (KP §6.4), else the nearest DX algorithm with approx: true for the native fallback („ECO: angenähert“). */
 function fmxApply(p, x) {
+  const old = p.fm6;
   p.fmx = x;
   const f = FMX.toFm6(x);
   p.fm6 = SQStore.normFm6(f || FMX.approxFm6(x));
+  // V4c (N7F-51, V4c-05): a pitch EG of a voice with only fixed operators does nothing (DX: PEG on ratio operators only), the
+  // graph has no place for it – fm6 keeps it, so the .syx export writes the bank's bytes back unchanged
+  if (f && !p.fm6.peg && old && old.peg && x.ops.every(o => o.fixed)) p.fm6.peg = {r: old.peg.r.slice(), l: old.peg.l.slice()};
 }
 // an edit on the DX pages (ALGO / OP / MAKRO, randomize, Init) of a sound with p.fmx: the fm6 is the sound now (V4b locks
 // those pages for graphs that are not DX-tauglich, KP §4.12); the field keeps its cells while the algorithm stays the same
@@ -16889,9 +17145,9 @@ function fxCellAt(g, x, y) {
 }
 // ---------- the wave previews (same partials as the worklet tables, 32 harmonics)
 const FX_WPATH = {};
-function fxWavePath(w, W, H) {
-  const key = w + ':' + W + 'x' + H; if (FX_WPATH[key]) return FX_WPATH[key];
-  const N = 48, PI = Math.PI, ys = [];
+// one period of factory wave w (the partials of the worklet tables, 32 harmonics), N + 1 values, not normalised
+function fxWaveVals(w, N) {
+  const PI = Math.PI, ys = [];
   let rr = 0x9E3779B9; const ph = []; for (let n = 1; n < 33; n++) { rr ^= rr << 13; rr ^= rr >>> 17; rr ^= rr << 5; ph[n] = ((rr >>> 0) / 4294967296) * 2 * PI; }
   for (let i = 0; i <= N; i++) {
     const x = i / N; let v = 0;
@@ -16907,11 +17163,171 @@ function fxWavePath(w, W, H) {
     }
     ys.push(v);
   }
+  return ys;
+}
+function fxWavePath(w, W, H) {
+  const key = w + ':' + W + 'x' + H; if (FX_WPATH[key]) return FX_WPATH[key];
+  const N = 48, ys = fxWaveVals(w, N);
   const pk = Math.max(1e-9, ...ys.map(Math.abs));
   const d = 'M' + ys.map((v, i) => (i / N * (W - 2) + 1).toFixed(1) + ' ' + (H / 2 - v / pk * (H / 2 - 2)).toFixed(1)).join('L');
   return (FX_WPATH[key] = d);
 }
 const fxWaveName = w => (FMX.WAVES[w] || 'eigene ' + w);
+// ---------- V4c (Spec §9.5, KP §4.6 Z9): the prediction while dragging – one period, 16 partial bars and a label in the LCD.
+// The graph is rendered in the main thread like the worklet does it (sine / factory waves, feedback with 1 sample, levels at
+// the envelope peak), 2048 samples at f = 48000 / 2048 · 6 (each partial on its own FFT bin), Hann + FFT.
+const FXP = {N: 2048, SR: 48000, WARM: 512, tabs: {}, re: null, im: null, buf: null, ms: 0, n: 0, slow: 0};
+FXP.F = FXP.SR / FXP.N * 6;
+function fxPredTab(w) {
+  if (FXP.tabs[w]) return FXP.tabs[w];
+  const N = 512, ys = fxWaveVals(w, N), pk = Math.max(1e-9, ...ys.map(Math.abs)), T = new Float32Array(N + 1);
+  for (let i = 0; i <= N; i++) T[i] = ys[i % N] / pk;
+  return (FXP.tabs[w] = T);
+}
+function fxFft(re, im) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+  for (let len = 2; len <= n; len <<= 1) { const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang), h = len >> 1;
+    for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let j = 0; j < h; j++) { const a = i + j, b = a + h, br = re[b] * cr - im[b] * ci, bi = re[b] * ci + im[b] * cr;
+      re[b] = re[a] - br; im[b] = im[a] - bi; re[a] += br; im[a] += bi; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } } }
+}
+const fxPeakL = e => (!e ? 99 : e.f === 'pt' ? Math.max(...e.y) : Math.max(e.l[0], e.l[1], e.l[2]));
+// X -> {bars[16] dB (0 = loudest partial), per[48] one period −1..1, cls, label, cent (centroid in partials), low, ms}
+// the graph as flat typed data (only this part reads the graph objects, whose shapes differ: normalized vs. JSON copies)
+function fxPredPrep(X) {
+  const tg = [[], [], [], [], [], []], cnt = new Int8Array(7), insArr = new Int8Array(16), insOff = new Int16Array(7);
+  for (const e of X.edges) { tg[e.from - 1].push(e.to - 1); cnt[e.to - 1]++; }
+  for (let k = 0; k < 6; k++) insOff[k + 1] = insOff[k] + cnt[k];
+  const fill = Int16Array.from(insOff); for (const e of X.edges) insArr[fill[e.to - 1]++] = e.from - 1;
+  const deg = Int8Array.from(cnt), ordA = new Int8Array(6), done = new Uint8Array(6); let nOrd = 0;
+  while (nOrd < 6) { let pick = -1; for (let k = 5; k >= 0; k--) if (deg[k] === 0 && !done[k]) { pick = k; break; } if (pick < 0) break; done[pick] = 1; ordA[nOrd++] = pick; for (const y of tg[pick]) deg[y]--; }
+  const g = new Float64Array(6), inc = new Float64Array(6), fbK = new Int8Array(6).fill(-1), fbS = new Float64Array(6), car = new Uint8Array(6), tab = new Float32Array(6 * 513);
+  for (let k = 0; k < 6; k++) {
+    const o = X.ops[k];
+    g[k] = o.on && o.ol > 0 ? Math.pow(2, FMH.lvlOf(fxPeakL(o.amp), o.ol) / 256 - 14) : 0;
+    const r = FMH.ratioOf(o); inc[k] = (o.fixed ? r : FXP.F * r) / FXP.SR;
+    const sr = (o.fbSrc | 0) - 1; if (sr >= 0 && o.fbAmt > 0) { fbK[k] = sr; fbS[k] = Math.pow(2, Math.min(7, o.fbAmt) - 8); }
+    tab.set(fxPredTab(o.wave > 0 && o.wave < 12 ? o.wave : 0), k * 513);
+    if (!tg[k].length) car[k] = 1;
+  }
+  return {nOrd, ordA, insArr, insOff, g, inc, fbK, fbS, car, tab};
+}
+// the render: typed arrays only (one optimised loop for every graph)
+function fxPredRun(P, buf, N, WARM) {
+  const {nOrd, ordA, insArr, insOff, g, inc, fbK, fbS, car, tab} = P, tot = N + WARM;
+  const y = new Float64Array(6), yp = new Float64Array(6), y2 = new Float64Array(6), ph = new Float64Array(6);
+  for (let s = 0; s < tot; s++) {
+    let out = 0;
+    for (let j = 0; j < nOrd; j++) {
+      const k = ordA[j], gk = g[k]; if (gk === 0) { y[k] = 0; continue; }
+      let m = 0; for (let q = insOff[k], qe = insOff[k + 1]; q < qe; q++) m += y[insArr[q]];
+      const f = fbK[k]; if (f >= 0) m += f === k ? (yp[k] + y2[k]) * .5 * fbS[k] : yp[f] * fbS[k];
+      let pp = ph[k] + m; pp -= Math.floor(pp);
+      const x = pp * 512, i = x | 0, fr = x - i, o = k * 513 + i;
+      const v = (tab[o] + (tab[o + 1] - tab[o]) * fr) * gk; y[k] = v; if (car[k]) out += v;
+      let q = ph[k] + inc[k]; if (q >= 1) q -= Math.floor(q); ph[k] = q;
+    }
+    for (let k = 0; k < 6; k++) { y2[k] = yp[k]; yp[k] = y[k]; }
+    if (s >= WARM) buf[s - WARM] = out;
+  }
+}
+function fxPredict(X) {
+  const t0 = performance.now(), N = FXP.N, SR = FXP.SR, TW = 2 * Math.PI;
+  if (!FXP.buf) { FXP.buf = new Float64Array(N); FXP.re = new Float64Array(N); FXP.im = new Float64Array(N); FXP.mag = new Float64Array(N / 2); }
+  const buf = FXP.buf;
+  fxPredRun(fxPredPrep(X), buf, N, FXP.WARM);
+  const re = FXP.re, im = FXP.im;
+  for (let i = 0; i < N; i++) { re[i] = buf[i] * (.5 - .5 * Math.cos(TW * i / N)); im[i] = 0; }
+  fxFft(re, im);
+  const H = N / 2, mag = FXP.mag; let mx = 1e-12;
+  for (let b = 1; b < H; b++) { mag[b] = Math.hypot(re[b], im[b]); if (mag[b] > mx) mx = mag[b]; }
+  const at = b => Math.max(mag[b - 1] || 0, mag[b], mag[b + 1] || 0), dB = a => 20 * Math.log10(Math.max(a, 1e-12) / mx);
+  const bars = []; for (let h = 1; h <= 16; h++) bars.push(Math.max(-60, dB(at(6 * h))));
+  // classes: energy on the half-partial grid (the centre bins of the multiples of f/2 = bin 3; a Hann line on its bin keeps 2/3
+  // of its energy there, a line between bins about a third), the odd multiples of f/2 (= an octave lower)
+  let tot2 = 0, grid = 0, sub = 0, cw = 0, cs = 0;
+  for (let b = 1; b < H; b++) { const e = mag[b] * mag[b]; tot2 += e; cw += b / 6 * mag[b]; cs += mag[b]; if (b % 3 === 0) { grid += e; if ((b / 3) & 1) sub += e; } }
+  const cent = cs > 0 ? cw / cs : 1, bell = grid < .55 * tot2, low = !bell && sub > .05 * (grid - sub);
+  const base = low ? 3 : 6, lvl = n => dB(at(base * n)), S = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => base * n < H - 1 && lvl(n) > -40);
+  let cls, txt;
+  if (bell) { cls = 'glocke'; txt = 'Glocke/Metall'; }
+  else if (S.length <= 1) { cls = 'sinus'; txt = 'rein (Sinus)'; }
+  else if (S.every(n => n & 1) && S.length >= 3) { cls = 'hohl'; txt = 'nur ungerade'; }
+  else if (S[0] === 1 && S.length >= 3 && S.every((n, i) => n === i + 1)) { cls = 'voll'; txt = 'alle Teiltöne'; }
+  else if (S.length >= 4) { cls = 'lueckig'; txt = 'lückig'; }
+  else { cls = 'duenn'; txt = 'dünn'; }
+  if (low) txt += ' ▼ tiefer';
+  const bright = cent < 1.6 ? 'dunkel' : cent < 3 ? 'warm' : cent < 5 ? 'hell' : 'scharf';
+  // one period of the note (the last 341⅓ samples), 48 points, peak-normalised
+  const P = SR / FXP.F, per = []; let pk = 1e-9;
+  for (let i = 0; i < 48; i++) { const x = N - 1 - P + i * P / 47, i0 = Math.floor(x), v = buf[i0] + (buf[Math.min(N - 1, i0 + 1)] - buf[i0]) * (x - i0); per.push(v); pk = Math.max(pk, Math.abs(v)); }
+  const ms = performance.now() - t0; FXP.ms = ms; FXP.n++;
+  return {bars, per: per.map(v => v / pk), cls, label: txt + ' · ' + bright, txt, bright, cent, low, ms, nofund: !bell && !S.includes(1)};
+}
+// warm-up graphs: the sound itself and variants that run every branch of the render loop (feedback self / foreign, several
+// inputs, waves, a silent and a fixed operator), so no first drag meets unoptimised code
+function fxPredWarmX(X, n) {
+  if (n % 3 === 0) return X;
+  const Y = JSON.parse(JSON.stringify(X));
+  Y.ops.forEach((o, k) => { o.on = 1; o.ol = n % 3 === 1 ? 70 + k : k === 4 ? 0 : 80; o.wave = n % 3 === 1 ? k * 2 : 0; o.fbSrc = (k + n) % 6 + 1; o.fbAmt = 2 + k % 3; o.fixed = k === 3 ? 1 : 0; });
+  return Y;
+}
+// the LCD line of a gesture preview: pair text, label, „heller/dunkler“ against the graph before the drag
+function fxPredLine(X0, P0, pv, k) {
+  if (!pv || !pv.x) return null;
+  const P = fxPredict(pv.x), Y = pv.x, tg = fxTargets(Y, k);
+  let pair = '';
+  if (tg.length && !fxIsOut(Y, k)) pair = fxRatioShort(Y.ops[k]) + ' auf ' + fxRatioShort(Y.ops[tg[0] - 1]);
+  const r = P0 && P0.cent > 0 ? P.cent / P0.cent : 1, cmp = r > 1.15 ? 'heller' : r < .87 ? 'dunkler' : '';
+  P.parts = [P.txt, cmp || P.bright, pair].filter(Boolean); P.line = P.parts.join(' · ');
+  return P;
+}
+function fxPredSvg(P) {
+  const per = 'M' + P.per.map((v, i) => (1 + i * 17 / 47).toFixed(1) + ' ' + (11 - v * 9).toFixed(1)).join('L');
+  let bars = '';
+  P.bars.forEach((d, h) => { const hh = Math.max(1, (d + 48) / 48 * 20); if (d > -48) bars += `<rect x="${22 + h * 3}" y="${(21 - hh).toFixed(1)}" width="2" height="${hh.toFixed(1)}"/>`; });
+  return `<svg width="70" height="22" viewBox="0 0 70 22" aria-hidden="true"><path d="${per}" fill="none" stroke="#E6E8F0" stroke-width="1.1"/><g fill="#0AFFAD">${bars}</g></svg>`;
+}
+// two lines next to the picture: the gesture („3 → 1 verbinden“) and the prediction („×2 auf ×1 · nur ungerade · heller“)
+function lcdPredict(label, txt, P) {
+  if (!P) { lcdShow(label, txt); return; }
+  const L = ED.lcd; if (!L || !L.isConnected) return;
+  const s = 'pv\u0001' + txt + '\u0001' + P.line + '\u0001' + P.bars.map(b => Math.round(b)).join(',') + P.per.slice(0, 8).map(v => v.toFixed(2)).join(',');
+  if (L._s === s) return; L._s = s;
+  L.classList.remove('wia', 'fest', 'lng', 'mq'); L.classList.add('pv');
+  const mk = line => `<span class="lpv">${fxPredSvg(P)}</span><span class="lv lv2"><b>${esc(txt)}</b><i>${esc(line)}</i></span>`;
+  let html = mk(P.line);
+  L.innerHTML = html;
+  L._full = [label, txt + ' · ' + P.line];
+  // L6 „nichts abgeschnitten“: the second line drops its least important parts (pair, then brightness) until it fits; a gesture
+  // text that does not fit next to the picture goes back to the plain LCD line (two lines / marquee)
+  const over = e => e && e.scrollWidth > e.clientWidth + 1;
+  if (!(L.getBoundingClientRect().width < 300 && fxLand())) {
+    if (over(L.querySelector('.lv2 b'))) { L._s = null; lcdShow(label, txt); return; }
+    for (let n = P.parts.length - 1; n >= 1 && over(L.querySelector('.lv2 i')); n--) { html = mk(P.parts.slice(0, n).join(' · ')); L.innerHTML = html; }
+  }
+  // L2 / L667: the LCD is too narrow – during the drag the prediction lies over the sub tabs next to it (not needed while dragging)
+  const r = L.getBoundingClientRect(); let o = UI.lcdPv;
+  const tabs = r.width < 300 && fxLand() ? [...document.querySelectorAll('#synthSheet .stab')].filter(b => b.offsetParent && b.getBoundingClientRect().top < r.bottom && b.getBoundingClientRect().bottom > r.top) : [];
+  if (!tabs.length) { if (o) o.hidden = true; L.classList.remove('pvo'); return; }
+  const left = Math.min(...tabs.map(b => b.getBoundingClientRect().left));
+  if (!o) { o = UI.lcdPv = el('div', 'lcd pv lcdpv'); o.setAttribute('aria-hidden', 'true'); document.body.appendChild(o); }
+  o.innerHTML = html; o.hidden = false; L.classList.add('pvo');
+  Object.assign(o.style, {left: left + 'px', top: r.top + 'px', width: Math.max(r.width, r.right - 44 - left) + 'px', height: r.height + 'px'});
+  for (let n = P.parts.length - 1; n >= 1 && over(o.querySelector('.lv2 i')); n--) o.innerHTML = mk(P.parts.slice(0, n).join(' · '));
+  if (over(o.querySelector('.lv2 b'))) { o.hidden = true; L.classList.remove('pvo'); L._s = null; lcdShow(label, txt); }
+}
+// P3 (320 × 568): the editor has no LCD line there – the prediction sits under the field head (picture + label, no touch)
+function fxHeadPred(V, P) {
+  let b = V.fld.querySelector('.fxhpv');
+  const show = P && (!ED.lcd || !ED.lcd.offsetParent);
+  if (!show) { if (b) b.hidden = true; return; }
+  if (!b) { b = el('div', 'fxhpv'); b.setAttribute('aria-hidden', 'true'); V.fld.appendChild(b); }
+  b.hidden = false; b.innerHTML = `${fxPredSvg(P)}<i></i>`;
+  const i = b.querySelector('i'); i.textContent = P.line;
+  for (let n = P.parts.length - 1; n >= 1 && i.scrollWidth > i.clientWidth + 1; n--) i.textContent = P.parts.slice(0, n).join(' · ');
+}
+function lcdPvHide() { if (UI.lcdPv) UI.lcdPv.hidden = true; if (ED.lcd) ED.lcd.classList.remove('pvo'); }
 // ---------- the page
 const fxLand = () => window.matchMedia('(orientation: landscape)').matches;
 const fxEnvPage = () => FXF.focus != null && (FXF.page === 'amp' || FXF.page === 'tonh');
@@ -16943,6 +17359,9 @@ function pageFmField(pg, i) {
   fxRender(true);
   requestAnimationFrame(() => { fxRender(true); if (ED.lcd && ED.lcd._s == null && !FXF.drag) lcdShow('FELD', fxStatus(fxX(i))); });
   fxLiveStart(i);
+  // V4c: eight predictions ahead of the first drag, one per 60 ms (the JIT tiers need them; ≈ 1–8 ms each, once per session), so the first zone change stays within its 3 ms
+  if (!FXP.warm) { FXP.warm = 1; let n = 0; const step = () => { const W = FXF.view; try { if (W && W.fld.isConnected && !FXF.drag) { fxPredict(fxPredWarmX(fxX(W.i), n)); n++; } } catch (e) { logErr(e); return; } if (n < 12 && W && W.pg.isConnected) setTimeout(step, 50); else if (n < 12) FXP.warm = 0; };
+    setTimeout(step, 300); }
 }
 function fxRefresh(i) { const V = FXF.view; if (V && V.i === i && V.fld.isConnected) fxRender(true); else edRefresh(); }
 // one render: geometry, tiles, lines, head, panel (rebuilt only when focus / page / mode change)
@@ -17067,7 +17486,7 @@ function fxFieldInput(V) {
   const rel = (x, y) => { const r = fld.getBoundingClientRect(); return [x - r.left, y - r.top]; };
   const hit = (x, y) => { for (let k = 0; k < 6; k++) { const t = V.tiles[k]; if (t.hidden) continue; const r = t.getBoundingClientRect(); if (x >= r.left - 2 && x <= r.right + 2 && y >= r.top - 2 && y <= r.bottom + 2) return k; } return -1; };
   const dist = (P, e) => Math.hypot(e.clientX - P.x0, e.clientY - P.y0);
-  const endDrag = () => { const D = FXF.drag; FXF.drag = null; if (D && D.ghost) D.ghost.remove(); for (const t of V.tiles) t.classList.remove('lift'); V.land.hidden = true; V.glG.innerHTML = ''; };
+  const endDrag = () => { const D = FXF.drag; FXF.drag = null; lcdPvHide(); fxHeadPred(V, null); if (D && D.ghost) D.ghost.remove(); for (const t of V.tiles) t.classList.remove('lift'); V.land.hidden = true; V.glG.innerHTML = ''; };
   const abort = () => { endDrag(); FXF.ptr = null; FXF.two = null; fxRender(false); };
   on(fld, 'pointerdown', e => {
     if (e.button > 0) return;
@@ -17105,6 +17524,7 @@ function fxFieldInput(V) {
         gh.classList.add('ghost'); gh.classList.remove('sel'); gh.removeAttribute('data-op'); fld.appendChild(gh); t.classList.add('lift');
         // R4 „Geist folgt dem Finger“: the grip offset is the touch-down point, so the ghost sits exactly under the finger (no 8 px lag)
         FXF.drag = {op: P.op, ghost: gh, ox: P.x0 - r.left, oy: P.y0 - r.top, w: r.width, h: r.height, cell: undefined, lcd: '', g: null, scrollT: 0};
+        try { FXF.drag.p0 = fxPredict(fxX(i)); } catch (er) { logErr(er); }     // V4c: the graph before the drag (for „heller / dunkler“)
         if (V.g.mode === 'P3' && FXF.p3open) { FXF.p3open = false; fxRender(false); }   // P3: the sheet gives way to the drag (targets, Z1 preview, result)
       } else if (P.op < 0) P.swipe = {y: e.clientY, s: FXF.scroll};
     }
@@ -17130,7 +17550,14 @@ function fxFieldInput(V) {
         D.g = !cell ? {kind: 'drop', op: D.op + 1} : y >= 0 ? {kind: 'drop', op: D.op + 1, onOp: y + 1} : {kind: 'drop', op: D.op + 1, cell};
         const pv = FMX.gesture(X, D.g); D.lcd = pv.lcd || 'zurück'; D.pv = pv;
         fxPreviewDraw(V, X, pv, D.op);
-        lcdShow('Loslassen', D.lcd); haptic('tick'); fxRender(false);
+        // V4c (Z9): the prediction of the result in the LCD (label, 16 partials, one period); the graph before the drag once
+        // Spec §9.5 risk: a slow device (> 8 ms per prediction) predicts at most at 15 Hz; a skipped zone follows 70 ms later
+        clearTimeout(FXP.tm);
+        const slow = FXP.ms > 8 && performance.now() - (FXP.at || 0) < 66;
+        let P = null; try { if (pv.ok && pv.x && !slow) { if (!D.p0) D.p0 = fxPredict(X); P = fxPredLine(X, D.p0, pv, D.op); FXP.at = performance.now(); } } catch (e) { logErr(e); }
+        if (slow && pv.ok && pv.x) FXP.tm = setTimeout(() => { if (FXF.drag === D && D.pv === pv) { try { D.pred = fxPredLine(X, D.p0, pv, D.op); FXP.at = performance.now(); lcdPredict('Loslassen', D.lcd, D.pred); fxHeadPred(V, D.pred); } catch (e) { logErr(e); } } }, 70);
+        D.pred = P;
+        lcdPredict('Loslassen', D.lcd, P); fxHeadPred(V, P); haptic('tick'); fxRender(false);
       }
       return;
     }
@@ -17283,7 +17710,7 @@ function fxRow(V, s) {
   });
   if (!bars.some(P => P.line === 1)) l1.classList.add('txt');
   z.setAttribute('aria-label', s.name + ': Wert eingeben');
-  if (s.keypad) onTap(z, () => fxKeypad(z, i, s)); else z.disabled = true;
+  if (s.zoneTap) onTap(z, () => s.zoneTap(z, s)); else if (s.keypad) onTap(z, () => fxKeypad(z, i, s)); else z.disabled = true;
   if (s.onName) onTap(n, () => s.onName(n));
   const pOf = (P, v) => (P.pow ? Math.pow(clamp(v, 0, 99) / 99, 1 / .45) : (v - P.min) / (P.max - P.min));
   const upd = X => {
@@ -17404,7 +17831,8 @@ function fxRowsFor(V, X) {
     R.push(fxRow(V, {key: 'fmx.' + (k + 1) + '.ratio', name: '', cls: 'ratio', info: () => '', zone: x => fxRatioShort(op(x)),
       parts: [{line: 1, get: x => op(x).fine, put: (x, v) => { op(x).fine = v; }, min: 0, max: 99, step: 1, txt: x => 'f ' + op(x).fine, chip: {txt: x => (op(x).fixed ? 'Hz' : '×'), tap: () => { fxMut(i, op(fxX(i)).fixed ? 'Verhältnis' : 'Feste Frequenz', x => { op(x).fixed = op(x).fixed ? 0 : 1; }); lcdShow('Frequenz', op(fxX(i)).fixed ? 'fest (Hz)' : 'Verhältnis (×)'); fxRender(false); }}},
         {line: 2, get: x => op(x).coarse, put: (x, v) => { op(x).coarse = v; }, min: 0, max: 31, step: 1, txt: x => (op(x).fixed ? fmtVal('hz', FMH.ratioOf(op(x))) : '×' + fmtDec(FMH.ratioOf(op(x)), 2)).replace(/ Hz$/, ' Hz')}],
-      keypad: {min: 0, max: 9999, step: 0, dec: true, range: '× 0,5 … 61,7 · Hz 1 … 9772', get: x => +FMH.ratioOf(op(x)).toFixed(2), put: (x, v) => fxRatioSet(op(x), v)}}));
+      keypad: {min: 0, max: 9999, step: 0, dec: true, range: '× 0,5 … 61,7 · Hz 1 … 9772', get: x => +FMH.ratioOf(op(x)).toFixed(2), put: (x, v) => fxRatioSet(op(x), v)},
+      zoneTap: (z, sp) => fxRaster(i, k, z, sp)}));
     R.push(fxRow(V, {key: 'fmx.' + (k + 1) + '.det', name: 'Verstimmung', info: () => '', zone: x => fmSign(op(x).det),
       parts: [{line: 2, get: x => op(x).det, put: (x, v) => { op(x).det = v; }, min: -7, max: 7, step: 1, bip: 0}], keypad: {min: -7, max: 7, step: 1}}));
     R.push(fxRow(V, {key: 'fmx.' + (k + 1) + '.ph', name: 'Phase', info: () => '', zone: x => String(op(x).ph),
@@ -17434,6 +17862,98 @@ function fxRatioSet(o, v) {
   let best = [1, 0], bd = Infinity;
   for (let c = 0; c < 32; c++) for (let f = 0; f < 100; f++) { const r = (c || .5) * (1 + f / 100), d = Math.abs(r - v); if (d < bd - 1e-9) { bd = d; best = [c, f]; } }
   o.coarse = best[0]; o.fine = best[1];
+}
+// ---------- V4c (Spec §9.5, KP §4.7 Basis Zeile 3): the ratio raster. A tap on the value zone of „Verhältnis“ opens it (fixed
+// operators keep the keypad). Each cell names what the ratio does against the partner operator (the first target of a
+// modulator, else the first modulator of an output): █ alle Teiltöne ▓ nur ungerade ▒ lückig ░ dünn ◇ Glocke ▼ klingt tiefer.
+// Gliding over the cells changes the ratio while a held note sounds (transport stopped); lifting sets it – one undo.
+const FX_RASTER = [.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 1.41];
+const fxRasterTxt = v => (v === .5 ? '½' : String(v).replace('.', ','));
+function fxRasterSet(o, v) { if (v === .5) { o.coarse = 0; o.fine = 0; } else if (v === 1.41) { o.coarse = 1; o.fine = 41; } else { o.coarse = v; o.fine = 0; } }
+function fxRasterPartner(X, k) {
+  const tg = fxTargets(X, k);
+  if (tg.length && !fxIsOut(X, k)) return {mode: 'mod', p: tg[0] - 1, head: (k + 1) + ' → ' + tg[0]};
+  const m = X.edges.filter(e => e.to === k + 1).map(e => e.from).sort((a, b) => a - b);
+  if (m.length) return {mode: 'car', p: m[0] - 1, head: m[0] + ' → ' + (k + 1)};
+  return {mode: 'solo', p: -1, head: 'OP ' + (k + 1)};
+}
+// the class of ratio v for operator k (FMX.ratioClass with the partner's ratio)
+function fxRasterCls(X, k, v) {
+  const P = fxRasterPartner(X, k);
+  if (P.p < 0) return {cls: 'solo', sym: '·', short: 'nur ein Teilton', text: 'ohne Modulator: ein Sinus-Teilton bei ×' + fxRasterTxt(v), low: v < 1, f0: v};
+  const q = X.ops[P.p];
+  if (q.fixed) return FMX.ratioClass(1, Math.SQRT2);
+  const pr = FMH.ratioOf(q);
+  return P.mode === 'mod' ? FMX.ratioClass(pr, v) : FMX.ratioClass(v, pr);
+}
+function fxRasterApi(t, op) {
+  const X = fxX(t), k = op - 1, P = fxRasterPartner(X, k);
+  return {head: P.head, mode: P.mode, partner: P.p + 1, cells: FX_RASTER.map(v => { const c = fxRasterCls(X, k, v); return {v, cls: c.cls, sym: c.sym, text: c.text, low: !!c.low, nofund: !!c.nofund}; })};
+}
+function fxRaster(i, k, anchor, spec) {
+  const X0 = fxX(i), o0 = X0.ops[k];
+  if (o0.fixed) { fxKeypad(anchor, i, spec); return; }
+  const P = fxRasterPartner(X0, k);
+  const head = () => { const x = fxX(i), q = P.p >= 0 ? x.ops[P.p] : null; return 'Raster ' + P.head + (q ? ' (' + (q.fixed ? fxRatioShort(q) + ' Hz' : fxRatioShort(q)) + ')' : ''); };
+  const cur = () => FMH.ratioOf(fxX(i).ops[k]);
+  const pop = openPop(anchor, p => {
+    p.classList.add('fxlist', 'fxras');
+    p.innerHTML = `<h4>${esc(head())}</h4><div class="fxrg" role="listbox" aria-label="Verhältnis">` + FX_RASTER.map(v => {
+      const c = fxRasterCls(X0, k, v);
+      return `<button class="rb fxrc c-${c.cls}" data-v="${v}" role="option" aria-label="×${fxRasterTxt(v)}: ${esc(c.text)}${c.low ? ', klingt tiefer' : ''}"><b>${fxRasterTxt(v)}</b><i>${c.sym}${c.low ? '▼' : ''}</i></button>`; }).join('') +
+      `</div><div class="fxrcur"></div><div class="fxrrow"><button class="rb fxbtn" data-a="dn" aria-label="fein kleiner">◁</button><button class="rb fxbtn" data-a="up" aria-label="fein größer">▷</button><button class="rb fxbtn" data-a="kp">Zahl …</button></div>` +
+      '<p class="small fxrleg">█ alle Teiltöne · ▓ nur ungerade · ▒ lückig · ░ dünn · ◇ Glocke · ▼ klingt tiefer</p>';
+  }, {name: 'fxraster'});
+  const grid = pop.querySelector('.fxrg'), curEl = pop.querySelector('.fxrcur');
+  const show = () => {
+    const x = fxX(i), v = cur(), c = fxRasterCls(x, k, Math.round(v * 100) / 100);
+    curEl.textContent = '×' + fmtDec(v, 2) + ' · ' + c.text + (c.low ? ' · klingt tiefer' : '');
+    grid.querySelectorAll('.fxrc').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.v - v) < .006));
+    const h = pop.querySelector('h4'), ht = head(); if (h.textContent !== ht) h.textContent = ht;
+  };
+  show();
+  // gliding: pointer capture on the grid, the cell under the finger sets the ratio (no undo yet), a held note while the
+  // transport stands; lift = one undo step
+  let G = null;
+  const cellAt = (x, y) => { for (const b of grid.querySelectorAll('.fxrc')) { const r = b.getBoundingClientRect(); if (x >= r.left && x < r.right && y >= r.top && y < r.bottom) return b; } return null; };
+  const setV = v => {
+    if (Math.abs(cur() - v) < .006) return;
+    if (!G.d) G.d = fxDragBegin(i);
+    if (fxDragSet(i, x => fxRasterSet(x.ops[k], v))) { haptic('tick'); G.moved = true; }
+    const c = fxRasterCls(fxX(i), k, v);
+    lcdShow('Raster ×' + fxRasterTxt(v), c.text + (c.low ? ' · klingt tiefer' : '')); show(); fxRender(false);
+  };
+  const end = (e, ok) => {
+    if (!G || e.pointerId !== G.id) return;
+    const g0 = G; G = null; gestEnd(e.pointerId);
+    if (g0.voice) { try { g0.voice.release(nowT()); } catch (er) {} }
+    if (g0.d) fxDragEnd(i, g0.d, 'Verhältnis ×' + fxRasterTxt(g0.last));
+    void ok; show(); fxRender(false);
+  };
+  on(grid, 'pointerdown', e => {
+    if (e.button > 0 || G) return; e.preventDefault(); e.stopPropagation();
+    try { grid.setPointerCapture(e.pointerId); } catch (_) {}
+    G = {id: e.pointerId, d: null, last: null, voice: null, moved: false};
+    gestBegin(e.pointerId, () => { if (G) end({pointerId: G.id}, false); });
+    if (FMEV.audition && !R.playing && !Object.keys(R.inputs).length) { try { G.voice = auditionStart(i, fmRefNote(i), .8); FMEV.auditions++; } catch (er) { logErr(er); } }
+    const b = cellAt(e.clientX, e.clientY); if (b) { G.last = +b.dataset.v; setV(G.last); }
+  });
+  on(grid, 'pointermove', e => {
+    if (!G || e.pointerId !== G.id) return;
+    const b = cellAt(e.clientX, e.clientY); if (!b) return;
+    const v = +b.dataset.v; if (v === G.last) return; G.last = v; setV(v);
+  });
+  on(grid, 'pointerup', e => end(e, true)); on(grid, 'pointercancel', e => end(e, false)); on(grid, 'lostpointercapture', e => end(e, false));
+  onTap(pop, b => {
+    const a = b.dataset.a;
+    if (a === 'kp') { closePop(); fxKeypad(anchor, i, spec); return; }
+    if (a === 'up' || a === 'dn') {
+      const d = a === 'up' ? 1 : -1;
+      fxMut(i, 'Verhältnis fein', x => { const o = x.ops[k]; const f = o.fine + d; if (f > 99 && o.coarse < 31) { o.coarse++; o.fine = 0; } else if (f < 0 && o.coarse > 0) { o.coarse--; o.fine = 99; } else o.fine = clamp(f, 0, 99); });
+      fmAudition(i); haptic('tick'); show(); fxRender(false);
+      const c = fxRasterCls(fxX(i), k, Math.round(cur() * 100) / 100); lcdShow('Verhältnis', '×' + fmtDec(cur(), 2) + ' · ' + c.short);
+    }
+  }, '.fxrrow button');
 }
 function fxWavePrev(r, w) {
   let s = r.querySelector('.fxwv'); if (!s) { s = el('span', 'fxwv', '<svg width="34" height="14" aria-hidden="true"><path/></svg>'); r.querySelector('.fxr1').insertBefore(s, r.querySelector('.in')); onTap(s, () => fxWaveList(FXF.view.i, FXF.focus)); }
@@ -17512,9 +18032,12 @@ function fxStimme(V, X) {
   R.push(fxRow(V, {key: 'fmx.trans', name: 'Transponieren', info: () => '', zone: x => fmtVal('semi', x.trans),
     parts: [{line: 2, get: x => x.trans, put: (x, v) => { x.trans = v; }, min: -24, max: 24, step: 1, bip: 0}], keypad: {min: -24, max: 24, step: 1}}));
   const mk = (cls, html, upd, tap) => { const r = el('div', 'fxr fxinfo ' + cls, html); if (tap) onTap(r, tap, 'button'); return {el: r, upd: X => upd(X, r)}; };
-  R.push(mk('dxab', '<div class="fxr1"><span class="n">DX-Abgleich</span></div><div class="fxr2"><span class="bt"></span><button class="rb fxbtn">Nummern angleichen</button></div>',
-    (x, r) => { const b = FMX.badge(x), t = r.querySelector('.bt'); if (t.textContent !== b.txt) t.textContent = b.txt; const bt = r.querySelector('button'); bt.hidden = !b.renum; },
-    () => fxRenum(i)));
+  R.push(mk('dxab', '<div class="fxr1"><span class="n">DX-Abgleich</span></div><div class="fxr2"><span class="bt"></span><button class="rb fxbtn rn">Nummern angleichen</button><button class="rb fxbtn mkdx">DX-tauglich machen</button></div>',
+    (x, r) => { const b = FMX.badge(x), t = r.querySelector('.bt'); if (t.textContent !== b.txt) t.textContent = b.txt; r.querySelector('.rn').hidden = !b.renum;
+      const mkb = r.querySelector('.mkdx'), show = !b.ok && !b.renum; mkb.hidden = !show; r.querySelector('.fxr2').classList.toggle('mk', show); r.classList.toggle('tap', show); }));
+  // L4: the whole row (132 × 44) opens [DX-tauglich machen] while the sound is not DX-tauglich; [Nummern angleichen] stays a button
+  { const row = R[R.length - 1].el; onTap(row, (n, e) => { const bt = e && e.target && e.target.closest ? e.target.closest('button') : null;
+    if (bt && bt.classList.contains('rn')) { fxRenum(i); return; } const b = FMX.badge(fxX(i)); if (!b.ok && !b.renum) fxDxSheet(i, row); }); }
   R.push(mk('budget', '<div class="fxr1"><span class="n">Budget</span><span class="in"></span></div><div class="fxr2"><span class="bt"></span></div>', (x, r) => { const t = '6 Op · ' + fxVoices(x) + ' Stimmen', s = r.querySelector('.bt'), n = r.querySelector('.in'), k = 'Kanten ' + x.edges.length; if (s.textContent !== t) s.textContent = t; if (n.textContent !== k) n.textContent = k; }));
   const chk = (key, name, def) => mk('chk', `<button class="rb fxchk" role="switch"><i></i><span>${esc(name)}</span></button>`, (x, r) => { const on_ = uiPrefs()[key] !== false; const b = r.querySelector('button'); b.classList.toggle('on', on_); b.setAttribute('aria-checked', String(on_)); },
     () => { const on_ = uiPrefs()[key] === false; setUiPref(key, on_); haptic('tick'); fxRender(true); });
@@ -18159,12 +18682,13 @@ function fmLock(pg, i) {
   pg.style.position = 'relative';
   const b = FMX.badge(x), L = el('div', 'fmlock');
   L.innerHTML = `<b>${esc(b.txt)}</b><span>Dieser Klang kommt aus dem FELD. Hier steht der nächste DX-Algorithmus – gesperrt, damit nichts verloren geht:</span><ul>${d.reasons.slice(0, 6).map(r => `<li>${esc(r)}</li>`).join('')}</ul>` +
-    `<div class="fmlbtn"><button class="rb hb fxgo">Im FELD bearbeiten</button>` + (b.renum ? '<button class="rb hb fxrn">Nummern angleichen</button>' : '') + '</div>';
+    `<div class="fmlbtn"><button class="rb hb fxgo">Im FELD bearbeiten</button>` + (b.renum ? '<button class="rb hb fxrn">Nummern angleichen</button>' : '<button class="rb hb fxmk">DX-tauglich machen</button>') + '</div>';
   guardTouch(L); pg.appendChild(L);
   // L6 / M-PLATZ: the reasons never shrink away – if the page is too short, they go to two columns, then the sentence steps back
   const fit = () => { if (!L.isConnected || !L.clientHeight) return; L.classList.remove('t1', 't2'); for (const c of ['t1', 't2']) { if (L.scrollHeight <= L.clientHeight + 1 && L.scrollWidth <= L.clientWidth + 1) return; L.classList.add(c); } };
   fit(); requestAnimationFrame(fit);
-  onTap(L, t => { if (t.classList.contains('fxrn')) { fxRenum(i); safeRebuild(buildSynthEd); return; } ED.sub.osc = 'feld'; fmViewSet(i, 'feld'); safeRebuild(buildSynthEd); }, 'button');
+  onTap(L, t => { if (t.classList.contains('fxrn')) { fxRenum(i); safeRebuild(buildSynthEd); return; }
+    if (t.classList.contains('fxmk')) { fxDxSheet(i, t, () => safeRebuild(buildSynthEd)); return; } ED.sub.osc = 'feld'; fmViewSet(i, 'feld'); safeRebuild(buildSynthEd); }, 'button');
 }
 // N4b-01: FELD or DX per track in S.ui (a view field, not the sound): new sounds, INIT and graphs open FELD; factory and library
 // sounds without a graph (.syx imports among them) open DX
@@ -19727,6 +20251,10 @@ function parseSyxBank(bytes) {
   }
   return {ok: true, ckOk, voices};
 }
+function syxFade(dly) {
+  const a0 = 99 - dly, a = (16 + (a0 & 15)) << (1 + (a0 >> 4)), t1 = 2147483648 / (25190424 * a), t2 = 2147483648 / (25190424 * Math.max(128, a & 0xff80));
+  return dly ? clamp(t1 + t2, 0, 10) : 0;
+}
 function syxVoiceSound(v) {
   const fm6 = {alg: v.alg, fb: v.fb, trans: clamp(v.trans, -24, 24), ops: v.ops.map(o => { const x = Object.assign({}, o); delete x.ams; return x; })};
   if (v.peg && !v.peg.l.every(x => x === 50)) fm6.peg = {r: v.peg.r.slice(), l: v.peg.l.slice()};
@@ -19738,8 +20266,7 @@ function syxVoiceSound(v) {
   const p = Object.assign({}, SQStore.FM_BASE, {level: SYX_LEVEL, fm6}), mods = [], L = v.lfo, A = DXN.ALGS[fm6.alg - 1] || DXN.ALGS[0];
   p.l1shape = [1, 2, 2, 3, 0, 4][L.wave] != null ? [1, 2, 2, 3, 0, 4][L.wave] : 0; p.l1rate = clamp(DX_LFO_HZ[L.spd] || 1, .01, 40); p.l1sync = 0;
   // DX7 LFO delay: (99 − delay) sets the wait + fade (msfa lfo.cc); here one fade-in from the key-down
-  const a0 = 99 - L.dly, a = (16 + (a0 & 15)) << (1 + (a0 >> 4)), t1 = 2147483648 / (25190424 * a), t2 = 2147483648 / (25190424 * Math.max(128, a & 0xff80));
-  p.l1fade = L.dly ? clamp(t1 + t2, 0, 10) : 0;
+  p.l1fade = syxFade(L.dly);
   const semis = 12 * DX_PMS[L.pms] / 255 * L.pmd / 99;
   if (semis > .005) mods.push({src: 'lfo1', dst: 'pitch', amt: clamp(semis / 24, 0, 1)});
   const ams = Math.max(0, ...v.ops.filter((o, k) => A.car[k]).map(o => o.ams || 0));
@@ -19786,6 +20313,105 @@ async function importSyx(bytes) {
   // V0b EN-04: imported FM voices show under „Eigene“ (FM track: its engine view, else Alle Engines)
   if (R.editor === 'browser' && S.tracks[BR.t].kind === 'synth') { if (engKey(S.tracks[BR.t].sound.engine) !== 'fm6') { BR.all = true; BR.eng = null; } BR.role = 'eigene'; brRefresh(); }
   return {added: x.added.length, skipped: x.skipped, names: r.voices.map(v => v.name), checksum: r.ckOk, ids: x.added.slice()};
+}
+/* ---------- V4c (Spec §9.6, KP §4.12, N7F-49 … N7F-51, V4c-05): the DX bridge out of the app. [DX-tauglich machen] (Stimme ›
+   DX-Abgleich, the locked DX / OP page) shows every change with its consequence and applies them as one undo step; the DX7
+   bank export (Menü › Sounds) writes up to 32 DX-tauglich FM sounds of the library as a 32-voice bulk dump in the format the
+   import reads (packed VMEM, Dexed doc/sysex-format.txt), the rest of the bank is INIT VOICE. ---------- */
+function fxDxSheet(i, anchor, after) {
+  const X = fxX(i), r = FMX.makeDx(X), b0 = FMX.badge(X);
+  if (!r.x) { lcdShow('DX-Abgleich', b0.ok ? b0.txt + ' – schon DX-tauglich' : 'nichts zu ändern'); return null; }
+  const p = openPop(anchor, pop => {
+    pop.classList.add('fxlist', 'fxdx');
+    pop.innerHTML = `<h4>DX-tauglich machen</h4><p class="small">Danach DX ${r.alg} ✓ – der Klang steht auch auf der Seite DX und geht in eine DX7-Bank (.syx). Das ändert sich:</p>` +
+      `<ul class="fxdxl">${r.changes.map(c => `<li>${esc(c)}</li>`).join('')}</ul>` + (r.ok ? '' : `<p class="small fxwarn">Bleibt: ${esc(r.rest.join(' · '))}</p>`) +
+      '<div class="fxrrow"><button class="rb fxbtn go" data-a="ok">Anwenden</button><button class="rb fxbtn" data-a="no">Abbrechen</button></div><p class="small">↶ macht alles in einem Schritt rückgängig.</p>';
+  }, {name: 'fxdx'});
+  onTap(p, bt => { closePop(); if (bt.dataset.a === 'ok') fxDxApply(i, after); }, '.fxrrow button');
+  return p;
+}
+function fxDxApply(i, after) {
+  const r = FMX.makeDx(fxX(i)); if (!r.x) return null;
+  fxCommitX(i, r.x, 'DX-tauglich machen', true); FXF.envSel = null;
+  if (r.changes.some(c => /Nummern angeglichen/.test(c))) { FXF.focus = null; FXF.page = 'pegel'; }   // the numbers moved: back to the voice
+  const b = FMX.badge(fxX(i)); lcdShow('DX-tauglich', b.txt + ' · ' + r.changes.length + (r.changes.length === 1 ? ' Änderung' : ' Änderungen')); haptic('snap');
+  if (after) after(); else fxRefresh(i);
+  return r;
+}
+const SYX_KS0 = {bp: 39, ld: 0, rd: 0, lc: 0, rc: 0};
+const SYX_INIT = () => ({name: 'INIT VOICE', alg: 1, fb: 0, osync: 1, trans: 0, peg: {r: [99, 99, 99, 99], l: [50, 50, 50, 50]},
+  ops: [0, 1, 2, 3, 4, 5].map(k => ({ol: k ? 0 : 99, fixed: 0, coarse: 1, fine: 0, det: 0, r: [99, 99, 99, 99], l: [99, 99, 99, 0], vs: 0, rs: 0, ams: 0, ks: Object.assign({}, SYX_KS0)})),
+  lfo: {spd: 35, dly: 0, pmd: 0, amd: 0, wave: 0, pms: 3, sync: 1}});
+// 10 ASCII characters (ä → ae …, the rest '?'), as the import cleans names
+function syxAscii(name) {
+  const s = String(name || '').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/Ä/g, 'Ae').replace(/Ö/g, 'Oe').replace(/Ü/g, 'Ue').replace(/ß/g, 'ss')
+    .replace(/[^\x20-\x7e]/g, '?').replace(/\s+/g, ' ').trim();
+  return s.slice(0, 10).trim() || 'SYNQUENZER';
+}
+// one library / track sound -> {ok, v, why}: the DX voice record of parseSyxBank (the inverse of syxVoiceSound)
+function syxVoiceOf(snd) {
+  if (!snd || snd.engine !== 'fm6' || !snd.p) return {ok: false, why: 'kein FM-Sound'};
+  const p = snd.p; let f;
+  if (p.fmx) { const d = FMX.dx(p.fmx); if (d.reasons.length || !d.match) return {ok: false, why: d.reasons[0] || 'kein DX-Algorithmus'}; f = FMX.toFm6(p.fmx); }
+  else f = p.fm6;
+  if (!f || !Array.isArray(f.ops) || f.approx) return {ok: false, why: 'nur angenähert'};
+  f = SQStore.normFm6(f);
+  const A = DXN.ALGS[f.alg - 1] || DXN.ALGS[0], mods = Array.isArray(snd.mods) ? snd.mods : [];
+  let spd = 35, bd = Infinity; const rate = +p.l1rate || 0;
+  for (let s = 0; s < 100; s++) { const d = Math.abs(clamp(DX_LFO_HZ[s] || 1, .01, 40) - rate); if (d < bd - 1e-12) { bd = d; spd = s; } }
+  const wave = ({1: 0, 2: 1, 3: 3, 0: 4, 4: 5})[p.l1shape | 0]; let dly = 0;
+  if (+p.l1fade > 0) { let b2 = Infinity; for (let d = 1; d < 100; d++) { const x = Math.abs(syxFade(d) - p.l1fade); if (x < b2 - 1e-12) { b2 = x; dly = d; } } }
+  const rp = mods.find(m => m.src === 'lfo1' && m.dst === 'pitch'), ra = mods.find(m => m.src === 'lfo1' && m.dst === 'amp');
+  let pms = f.pms | 0, pmd = 0;
+  if (rp) { const semis = clamp(+rp.amt || 0, 0, 1) * 24, pmdOf = ps => Math.round(semis * 99 * 255 / (12 * DX_PMS[ps]));
+    if (!pms) { pms = 7; for (let ps = 1; ps <= 7; ps++) if (pmdOf(ps) <= 99) { pms = ps; break; } }
+    pmd = clamp(pmdOf(pms), 0, 99); }
+  else if (pms) pmd = 99;                                   // FELD: lfoFm acts with the full LFO 1 (no route), on a DX that is PMD 99
+  const ams = Array.isArray(f.ams) ? f.ams : [0, 0, 0, 0, 0, 0], amsCar = Math.max(0, ...ams.filter((a, k) => A.car[k]));
+  const amd = ra && amsCar ? clamp(Math.round(-(+ra.amt || 0) / ([0, .3, .6, 1][amsCar] * .5) * 99), 0, 99) : ams.some(a => a > 0) ? 99 : 0;
+  const v = {name: syxAscii(snd.name), alg: f.alg, fb: f.fb, osync: f.osync === 0 ? 0 : 1, trans: f.trans, peg: f.peg ? {r: f.peg.r.slice(), l: f.peg.l.slice()} : {r: [99, 99, 99, 99], l: [50, 50, 50, 50]},
+    ops: f.ops.map((o, k) => ({ol: o.on === 0 ? 0 : o.ol, fixed: o.fixed ? 1 : 0, coarse: o.coarse | 0, fine: o.fine | 0, det: o.det | 0, r: o.r.slice(), l: o.l.slice(), vs: clamp(o.vs | 0, 0, 7), rs: o.rs | 0,
+      ams: ams[k] | 0, ks: Object.assign({}, SYX_KS0, o.ks || {})})),
+    lfo: {spd, dly, pmd, amd, wave: wave == null ? 0 : wave, pms, sync: 1}};
+  return {ok: true, v};
+}
+function syxPack(v, b) {
+  const c = (x, hi) => clamp(Math.round(+x || 0), 0, hi);
+  for (let k = 0; k < 6; k++) {
+    const o = v.ops[k], q = (5 - k) * 17, ks = o.ks || SYX_KS0;
+    for (let s = 0; s < 4; s++) { b[q + s] = c(o.r[s], 99); b[q + 4 + s] = c(o.l[s], 99); }
+    b[q + 8] = c(ks.bp, 99); b[q + 9] = c(ks.ld, 99); b[q + 10] = c(ks.rd, 99); b[q + 11] = (c(ks.lc, 3)) | (c(ks.rc, 3) << 2);
+    b[q + 12] = c(o.rs, 7) | (c((o.det | 0) + 7, 14) << 3); b[q + 13] = c(o.ams, 3) | (c(o.vs, 7) << 2);
+    b[q + 14] = c(o.ol, 99); b[q + 15] = (o.fixed ? 1 : 0) | (c(o.coarse, 31) << 1); b[q + 16] = c(o.fine, 99);
+  }
+  for (let s = 0; s < 4; s++) { b[102 + s] = c(v.peg.r[s], 99); b[106 + s] = c(v.peg.l[s], 99); }
+  b[110] = c(v.alg - 1, 31); b[111] = c(v.fb, 7) | ((v.osync ? 1 : 0) << 3);
+  const L = v.lfo; b[112] = c(L.spd, 99); b[113] = c(L.dly, 99); b[114] = c(L.pmd, 99); b[115] = c(L.amd, 99); b[116] = (L.sync ? 1 : 0) | (c(L.wave, 5) << 1) | (c(L.pms, 7) << 4);
+  b[117] = c((v.trans | 0) + 24, 48);
+  const nm = (String(v.name) + '          ').slice(0, 10); for (let i = 0; i < 10; i++) b[118 + i] = nm.charCodeAt(i) & 127;
+}
+// voices (≤ 32 records) -> the 4104-byte bulk dump F0 43 00 09 20 00 · 4096 · checksum · F7
+function buildSyxBank(voices) {
+  const out = new Uint8Array(4104); out.set([0xF0, 0x43, 0x00, 0x09, 0x20, 0x00], 0);
+  const d = out.subarray(6, 6 + 4096);
+  for (let n = 0; n < 32; n++) syxPack(voices[n] || SYX_INIT(), d.subarray(n * 128, n * 128 + 128));
+  let sum = 0; for (let i = 0; i < 4096; i++) sum += d[i];
+  out[6 + 4096] = (128 - (sum & 127)) & 127; out[4103] = 0xF7;
+  return out;
+}
+// Menü › Sounds › [DX7-Bank exportieren (.syx)]: the library's FM sounds (newest first as listed), non-DX ones are skipped and named
+async function exportSyxBank(ids) {
+  await libReady();
+  const all = LIB.lib.all().filter(s => s.engine === 'fm6' && (!ids || ids.includes(s.id)));
+  if (!all.length) { toast('Noch keine eigenen FM-Sounds – im Klang-Editor „Sichern“'); return {count: 0, skipped: [], over: [], none: true}; }
+  const voices = [], skipped = [], over = [];
+  for (const s of all) { const r = syxVoiceOf(s); if (!r.ok) skipped.push({name: s.name, why: r.why}); else if (voices.length < 32) voices.push(r.v); else over.push(s.name); }
+  const skipTxt = (skipped.length ? 'übersprungen: ' + skipped.map(x => x.name + ' (' + x.why + ')').join(', ') : '') + (over.length ? (skipped.length ? ' · ' : '') + over.length + ' über 32 nicht dabei' : '');
+  if (!voices.length) { toast('Kein DX-tauglicher FM-Sound · ' + skipTxt); return {count: 0, skipped, over}; }
+  const bytes = buildSyxBank(voices), d = new Date(), z = n => String(n).padStart(2, '0');
+  const base = 'synquenzer-dx7-bank-' + d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes());
+  const how = await deliver(base, bytes, 'syx', voices.length + ' Stimmen' + (skipTxt ? ' · ' + skipTxt : ''));
+  return {count: voices.length, skipped, over, base, how, bytes: Array.from(bytes)};
 }
 function onSyxPicked(file) {
   if (!file) return;
@@ -21449,7 +22075,9 @@ function openMenu(goto) {
   row(sS, null, bSx, bSi);
   // §6.6 (WP7): a DX7 bank (.syx); the picker has no `accept` attribute (iOS greys out .syx otherwise, §1.7.8)
   const bSyx = btn('DX7-Bank importieren (.syx)'); on(bSyx, 'click', () => { EL.syxIn.value = ''; EL.syxIn.click(); });
-  row(sS, null, bSyx);
+  // V4c (Spec §9.6): up to 32 DX-tauglich FM sounds of the library as a DX7 bank (in the viewer as .zip, EN-12)
+  const bSyxE = btn('DX7-Bank exportieren (.syx)'); on(bSyxE, 'click', () => { exportSyxBank().catch(e => { logErr(e); toast('Export fehlgeschlagen'); }); });
+  row(sS, null, bSyx, bSyxE);
   const nLib = LIB.ok ? LIB.lib.all().length : 0;
   sS.appendChild(el('div', 'small', nLib ? nLib + (nLib === 1 ? ' eigener Sound' : ' eigene Sounds') + ' im Browser – „Als Datei sichern“ nimmt sie mit.' : 'Eigene Sounds entstehen im Klang-Editor mit „Sichern“. Eine Projektdatei enthält immer alle eigenen Sounds.'));
   // 2 MIDI export
@@ -22236,7 +22864,7 @@ async function deliverNow(base, bytes, kind, label) {
     const data = zip ? new Blob([buildZip([{name: base + '.' + kind, data: bytes}])], {type: 'application/zip'}) : new Blob([bytes], {type: DL_MIME[ext] || 'application/octet-stream'});
     try {
       await dl.save({filename, data});
-      toast(kind === 'mid' ? 'MIDI gespeichert (ZIP)' : kind === 'syx' ? 'DX7-Bank gespeichert (ZIP)' : kind === 'webm' || kind === 'm4a' ? 'Audio gespeichert' : (label || 'Projekt gespeichert') + ': ' + filename);
+      toast(kind === 'mid' ? 'MIDI gespeichert (ZIP)' : kind === 'syx' ? 'DX7-Bank gespeichert (ZIP)' + (label ? ' · ' + label : '') : kind === 'webm' || kind === 'm4a' ? 'Audio gespeichert' : (label || 'Projekt gespeichert') + ': ' + filename);
     } catch (e) {
       const c = String((e && (e.code || e.name || e.message)) || '');
       if (/rejected_extension|extension_not_enabled/.test(c)) { toast('Dieses Format ist hier nicht verfügbar – App in Safari öffnen'); return 'format'; }
@@ -22264,7 +22892,7 @@ async function deliverNow(base, bytes, kind, label) {
     document.body.appendChild(a); a.click();
     setTimeout(() => { a.remove(); }, 4000);
     showDlLink(url, fname, kind);
-    toast(kind === 'mid' ? 'MIDI-Datei erstellt' : kind === 'syx' ? 'DX7-Bank erstellt' : kind === 'm4a' || kind === 'webm' ? 'Audio-Datei erstellt' : label ? label + ': ' + fname : 'Projektdatei erstellt');
+    toast(kind === 'mid' ? 'MIDI-Datei erstellt' : kind === 'syx' ? 'DX7-Bank erstellt' + (label ? ' · ' + label : '') : kind === 'm4a' || kind === 'webm' ? 'Audio-Datei erstellt' : label ? label + ': ' + fname : 'Projektdatei erstellt');
   } catch (e) { toast('Export fehlgeschlagen'); }
   return 'download';
 }
@@ -22915,6 +23543,16 @@ const SYNQUENZER = {
   fmxGesture: (t, g) => fxGestureApi(t, g),
   fmxOpen: (t, page, op) => { const D = window.SYNQUENZER; D.selectTrack(t); D.openEditor(); ED.tab = 'osc'; ED.sub.osc = 'feld'; fmViewSet(t, 'feld'); FXF.t = t; FXF.focus = null; if (op != null) fxSelect(t, op - 1); FXF.page = page || (op != null ? 'basis' : 'pegel'); if (FX_PAGES_O.includes(FXF.page)) FXF.opPage = FXF.page; buildSynthEd(); return fxViewApi(t); },
   fmxBadge: t => FMX.badge(fxX(t)),
+  // V4c (Spec §9.5/9.6, KP §6.4): prediction (graph now, or the result of gesture g), the ratio raster of an operator,
+  // [DX-tauglich machen] (apply: one undo), the DX7 bank export (library FM sounds; ids optional) and the voice record of a sound
+  fmxPredict: (t, g) => { const X = fxX(t), r = g ? FMX.gesture(X, g) : null, P = fxPredict(r && r.x ? r.x : X); return {label: P.label, cls: P.cls, txt: P.txt, bright: P.bright, cent: P.cent, low: P.low, bars: P.bars.slice(), per: P.per.slice(), ms: P.ms, lcd: r ? r.lcd : ''}; },
+  fmxPredictX: x => { const P = fxPredict(FMX.norm(x, false)); return {label: P.label, cls: P.cls, bars: P.bars.slice(), cent: P.cent, low: P.low, ms: P.ms}; },
+  fmxRaster: (t, op) => fxRasterApi(t, op),
+  fmxMakeDx: (t, apply) => { const r = FMX.makeDx(fxX(t)); if (apply && r.x) fxDxApply(t); return {changes: r.changes.slice(), alg: r.alg, ok: r.ok, rest: r.rest.slice(), changed: !!r.x, badge: FMX.badge(fxX(t)).txt}; },
+  exportSyx: ids => exportSyxBank(ids),
+  syxVoiceOf: snd => syxVoiceOf(snd),
+  buildSyx: voices => Array.from(buildSyxBank(voices)),
+  parseSyx: bytes => parseSyxBank(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || [])),
 };
 function fxViewApi(t) {
   const V = FXF.view; if (t == null) t = R.selT;
@@ -22946,7 +23584,8 @@ const NO_SYNC = new Set(['state', 'project', 'runtime', 'getClip', 'getParam', '
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
-  'fmDefaultOp', 'fmEnvView', 'fmxEnvAction', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint', 'getFmx', 'fmxLevels', 'dxLayout', 'fmxDx', 'fmxFromFm6']);
+  'fmDefaultOp', 'fmEnvView', 'fmxEnvAction', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint', 'getFmx', 'fmxLevels', 'dxLayout', 'fmxDx', 'fmxFromFm6',
+  'fmxPredict', 'fmxPredictX', 'fmxRaster', 'syxVoiceOf', 'buildSyx', 'parseSyx']);
 for (const k of Object.keys(SYNQUENZER)) {
   const f = SYNQUENZER[k]; if (typeof f !== 'function' || NO_SYNC.has(k)) continue;
   SYNQUENZER[k] = function () { const r = f.apply(this, arguments); uiSync(); if (r && typeof r.then === 'function') return r.then(v => { uiSync(); return v; }); return r; };

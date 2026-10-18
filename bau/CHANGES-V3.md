@@ -1260,3 +1260,156 @@ umgewandelter Angriff gezogen wird).
   D1 143 → 183 ms, A bei R 99 0,6 → 0,8 ms). T2 war mit demselben Rundungsfehler (17 − Band) gerechnet; die R/L-Werte der Vorlagen
   sind unverändert (deep-equal). Belegt durch `v3-rp4f45-att.mjs`: ein Punkt-Angriff mit 138 ms liegt ≤ 0,17 dB neben der DX-Form,
   mit 108 ms waren es 4,2 dB. `v3-v0d-ui-d.mjs` prüft noch die alten T2-Texte (1 FAIL, nur diese Zeitangaben).
+
+## V4c — Vorhersage, Verhältnis-Raster, DX-Brücke (DX-tauglich machen, .syx-Export, Import ins FELD) · App 3.11.0
+
+Grundlage: Nachtrag 2 Teil A (A.6 Zeile V4c, K2-37, K2-39, A.5 Nr. 4, N2-4c-01) mit `r7/kodamo-delta-pdf.md` (KP §4.6 Z9, §4.7
+Basis Zeile 3 und Stimme Zeile 3, §4.12, §6.3–6.5, §9 „V4d“: V4c-01 … V4c-07 und N7F-49 … N7F-52), Spec §9.5/§9.6 und §17 V4c,
+Nachtrag 1 A.4b Nr. 3 (PEG-Bytes zurückschreiben), N0a-03/N4c-01 (.syx im ZIP); Forschung `r4/g5/ratio-raster` (Regel, 15/15) und
+`r4/g5/vorhersage-bench` (Rechenweg). Gebaut auf `synq-snapshots/V4f-fix.html` (3.10.0). Format und alte Projekte bleiben.
+
+### Gebaut
+
+**Vorhersage im LCD beim Ziehen (V4c-01, Z9).** Bei jedem Zonenwechsel einer Kachel-Geste rechnet `fxPredict` das Ergebnis der
+Regel (`FMX.gesture`) im Hauptthread wie das Worklet (Sinus/Werkswellen als 512er-Tabellen, Kanten in Rechenreihenfolge,
+Feedback selbst = 2-Sample-Mittel · 2^(fb−8), fremd = 1 Sample, Pegel am Hüllkurven-Gipfel), 2048 Samples bei f = 48000/2048·6
+(jeder Teilton auf seinem FFT-Bin), Hann + FFT. Das LCD zeigt links **eine Periode** und **16 Teilton-Balken**, rechts zweizeilig
+die Geste („3 → 1 verbinden“) und das **Etikett**: Klasse (alle Teiltöne · nur ungerade · lückig · dünn · Glocke/Metall · rein),
+„▼ tiefer“ bei Teiltönen auf ½ f, dann „heller/dunkler“ gegen den Graph vor dem Ziehen (Schwerpunkt ±15 %), sonst die Helligkeit,
+dann das Paar „×2 auf ×1“. Abgewiesene Zonen zeigen wie bisher nur den Grund. Nach dem Loslassen kommt die Status-Zeile zurück.
+L2 (667 × 375): das LCD ist dort ≈ 150 px breit – während des Ziehens liegt die Vorhersage über den Unterreitern daneben
+(`.lcdpv`, nicht antippbar), danach sind die Reiter wieder da. P3 (320 × 568) hat keine LCD-Zeile: dort steht die Vorhersage
+unter dem Feld-Kopf (`.fxhpv`). L6: passt die zweite Zeile nicht, fallen erst das Paar, dann die Helligkeit weg; passt die Geste
+nicht neben das Bild, zeigt das LCD die normale Zeile (zweizeilig/Laufschrift wie V4b-fix).
+- Rechenzeit (Chromium, Xeon): je Vorschau 0,4–1,4 ms im Ziehen; schlechtester Fall N7F-52 (6 Op, 15 Kanten + 6 Feedback-Wege,
+  Wellen ≠ 0, Punkt-Hüllkurven mit Schleife) Median 0,5–0,9 ms, p95 0,7–1,8 ms. Damit das schon beim ersten Ziehen gilt, rechnet die
+  Seite FELD beim Öffnen 12 Vorhersagen in 50-ms-Abständen vor (JIT); die Schleife liest nur typisierte Felder (eine Vorbereitung
+  liest den Graph) – vorher kostete die erste Geste 5–16 ms, weil JSON-Kopien des Graphen den optimierten Code verwarfen.
+- Spec-Risiko §9.5: bei > 8 ms je Vorschau (langsames Gerät) höchstens 15 Hz; eine übersprungene Zone folgt 70 ms später.
+
+**Verhältnis-Raster (V4c-02, V4c-03; KP §4.7 Basis Zeile 3).** Tipp auf die Wertzone „Verhältnis“ öffnet das Raster (feste
+Frequenz: weiter der Ziffernblock). Kopf „Raster 4 → 3 (×1)“ = Partner (erstes Ziel eines Modulators, sonst erster Modulator
+eines Ausgangs). 16 Felder ½ · 1 … 14 · 1,41, je mit Klasse █ ▓ ▒ ░ ◇ und ▼ (klingt tiefer) nach der Regel aus `ratio-raster`
+(Linien |C + kM|, a = 2C, b = 2M, g = ggT → Grundton g/2, Teilton n ⇔ n ≡ ±a′ mod b′; `FMX.ratioClass`). Darunter der aktuelle
+Wert mit Klasse, [◁] [▷] (fine ±1, je ein Undo), [Zahl …] (Ziffernblock), Legende. **Gleiten:** Finger auf das Raster und über die
+Felder ziehen – das Verhältnis wechselt laufend, bei stehendem Transport klingt dabei die Referenznote (Vorhören), Loslassen
+lässt den Wert stehen, **ein** Undo für das ganze Gleiten. Felder P1 40 × 48, L1 42 × 48, P3 4 × 4 Felder à 66 × 48 (L4).
+- Worklet: eine Verhältnis-Änderung bei klingender fmx-Stimme gleitet jetzt 10 ms (logarithmisch, `FRX_N`, wie die 30-ms-Pegel-
+  Blende aus V4b-fix) statt zu springen – M-KLICK der Raster-Stufen ×1 … ×7 auf gehaltener Note am Modulator 7,2 → 4,5 dB
+  (Grenze 6), am Ausgang 5,8 → 5,7 dB (`v3-v4c-glide.mjs`). Statische Klänge bleiben bitgleich.
+
+**[DX-tauglich machen] (V4c-06, N7F-49; KP §4.12, A.5 Nr. 4).** In Stimme › DX-Abgleich (die ganze Zeile, 132 × 44, solange nicht
+DX-tauglich; [Nummern angleichen] bleibt) und auf der gesperrten DX-/OP-Seite. Das Blatt nennt jede Änderung mit ihrer Folge, ein
+Tipp auf [Anwenden] macht alles in **einem** Undo-Schritt, danach Badge „DX n ✓“, fm6 wird mitgeschrieben (kein „angenähert“),
+die DX-Seite ist frei. `FMX.makeDx` in fester Reihenfolge:
+1. Verbindungen: gleiche Kanten mit anderer Nummerierung → „Nummern angeglichen (wie DX 7)“; keine DX-Form → nächster Algorithmus
+   (wenigste abweichende Kanten über alle 720 Nummerierungen) mit Liste „Verbindungen → DX 5 · 6 → 1 gelöst – klingt anders“.
+2. Feedback: ein Weg am DX-Empfänger/-Quelle, ganze Stärke („Feedback an OP 2 (← 2) entfernt – weniger rau“, „Feedback-Stärke
+   4,5 → 5“).
+3. Je Operator: Welle → Sinus („OP 3: Welle Säge → Sinus – weniger Obertöne“); **Punkt-Form → DX-Form mit Abweichung**
+   („OP 2: Hüllkurve frei → DX, Abweichung 1,8 dB“): eine aus der DX-Form umgewandelte, unveränderte Punkt-Form geht exakt zurück
+   (5/5 deep-equal); sonst 3 Haltepunkte vor dem Sustain + Release, Raten nach `FMH.stageTime` gesucht, Abweichung = RMS der dB-
+   Kurven (gehalten bis Sustain + 0,3 s, dann 1,5 s Release; Modell = msfa-Fall/-Anstieg, Skip mit der Rate des Folgesegments wie
+   `ptRelScale`; Selbsttest DX ↔ Punkt 0,05–0,14 dB). Tonhöhe ebenso in HT (PEG-Tabellen), feste OP ohne Tonhöhen-Hk., eine PEG
+   für alle Verhältnis-OP; Phase → 0, Phase-Modus einheitlich, Anschlag < 0 → 0, LFO AM auf 0/42/85/127, LFO FM einheitlich.
+- `FMX.dx` nennt zwei Feedback-Wege auf DX-Verbindungen jetzt als „Feedback an OP 2 und OP 6“ statt „Verbindungen: kein DX-
+  Algorithmus“ (der Badge-Text bleibt).
+
+**DX7-Bank exportieren (V4c-05, N7F-50; Spec §9.6).** Menü › Sounds › [DX7-Bank exportieren (.syx)]: bis 32 DX-taugliche
+FM-Sounds der eigenen Bibliothek als 32-Stimmen-Bank (F0 43 00 09 20 00 · 4096 · Prüfsumme · F7, gepacktes VMEM wie der Import),
+freie Plätze INIT VOICE. Nicht taugliche werden übersprungen und im Toast mit dem ersten Grund genannt („DX7-Bank gespeichert
+(ZIP) · 32 Stimmen · übersprungen: Welle drin (OP 3: Welle Dreieck), …“). Viewer: `….zip` mit `….syx` (N0a-03); Safari: die
+`.syx` selbst als `application/octet-stream`. Rückweg je Stimme: alle fm6-Felder inkl. PEG (A.4b Nr. 3), AMS/PMS/Osz.-Sync; der
+LFO aus den Klang-Werten zurückgerechnet (Rate → Geschwindigkeit, Einblenden → Verzögerung, Form, `lfo1→pitch`/`lfo1→amp` →
+PMD/AMD); Namen ASCII mit ä → ae (10 Zeichen). Ein FELD-Klang mit LFO FM schreibt PMD 99 (dort wirkt LFO 1 voll).
+- `fmxApply` behält die PEG einer Stimme mit nur festen Operatoren in fm6 (wirkungslos, aber der Export schreibt die Bank-Bytes
+  zurück; ROM1A REFS WHISL).
+
+**Import ins FELD (N7F-51).** Unverändert über `fmxFromFm6` (V4a), jetzt für 32/32 ROM1A-Stimmen geprüft: Plätze = `dxLayout`,
+PEG in jedem Verhältnis-OP, AMS/PMS/Osz.-Sync, Badge ✓, FELD ↔ DX deep-equal.
+
+**Test-API:** `fmxPredict(t, g?)`, `fmxPredictX(x)`, `fmxRaster(t, op)`, `fmxMakeDx(t, apply?)`, `exportSyx(ids?)`,
+`syxVoiceOf(sound)`, `buildSyx(voices)`, `parseSyx(bytes)`.
+
+### Abnahme (Chromium + CDP-Touch, Worklet-Shim; P1, L1, P2, P3, L2)
+
+| ID | Ergebnis | Beleg |
+|---|---|---|
+| V4c-01 | ✓ Etikett, 16 Balken, Periode bei jedem Zonenwechsel 20–39 ms nach der Bewegung; Rechenzeit 0,4–1,4 ms | `v3-v4c-accept.mjs` A (5 Größen) |
+| V4c-02 | ✓ 15/15 Raster-Klassen = FFT der echten Engine (Modulator-Index 2; 1 : 3,5 als 2 : 7, weil ×3,5 kein DX-Verhältnis ist) | `v3-v4c-node.mjs` |
+| V4c-03 | ✓ Gleiten ×1 → ×7: M-SP 573–723 Hz → 1017–1028 Hz (≥ ⅓ Okt., H-1), Loslassen setzt ×7, ein Undo, Undo stellt ×2 her; M-KLICK offline ≤ 5,7 dB | `v3-v4c-accept.mjs` B, `v3-v4c-glide.mjs` |
+| V4c-04 | ✓ dxMatch 32/32 (je 103 Nummerierungen, 3296/3296); Nicht-Treffer ≤ 0,8 ms | `v3-v4c-node.mjs` |
+| V4c-05 | ✓ Export → Import: 32/32 Stimmen deep-equal (Feld für Feld ohne Zeitstempel; der Import meldet alle 32 „schon vorhanden“); Viewer `.zip` mit `.syx` (4104 Byte), Toast „DX7-Bank gespeichert (ZIP) …“ mit den übersprungenen; Safari `.syx` als octet-stream | `v3-v4c-accept.mjs` D |
+| V4c-06 | ✓ Änderungsliste, danach Badge ✓, ein Undo (Stimme-Seite und gesperrte DX-Seite) | `v3-v4c-accept.mjs` C, `v3-v4c-node.mjs` |
+| V4c-07 | ✓ Regression wie V4f-fix (unten); Smoke ohne Fehler; DoD: Größe +50,8 KB (Budget 30, Begründung unten) | `v3-v4c-reg.sh`, `v3-v4c-reg2.sh` |
+| N7F-49 | ✓ 6-Op-Graph mit Wellen, Punkt-Hüllkurven (Lin, Schleife), zwei Feedback-Wegen (2 und 6): jede Abweichung mit Folge, danach „DX 1 ✓“, ein Undo | C |
+| N7F-50 | ✓ übersprungene Sounds im Toast je mit dem ersten Grund | D |
+| N7F-51 | ✓ 32/32 (ROM1A) | D |
+| N7F-52 | ✓ Median ≤ 0,9 ms, p95 ≤ 1,8 ms | A |
+
+- **Regression** `v3-v4c-reg.sh` (V4f-Liste, 84 Suiten + 15 allein, Versionskopien `v3-v4c-adapt-*` für 3.11.0) und
+  `v3-v4c-reg2.sh` (V0d-, V4a-, V4b-, V4b-fix-, V4f-Suiten, dann die V4c-Suiten): rot wie schon auf V4f-fix mit denselben FAIL-Zeilen
+  `node-fm`, `v3-v0b-adapt-wp3-browser`, `-wp3-ui`, `wp4-offline`, `wp3-adapt-func-build(-native)`, `wp5-mod` (fps unter Last),
+  `v3-v0d-ui-d` (V0d-2-11, auf V4f-fix gleich), `v3-v4bfix-big` (`.fxback`, gleich), `v3-v4c-adapt-qareg-v4a-fmxio`
+  (Echtzeit-Aufnahme ±1,4 dB, auf dem Snapshot ebenso rot). Unter Last rot, allein grün: `v3-v0a-drum` 19/0, `v3-v0b-adapt-wp6-extras`
+  P/L 20/0, `wp6-song-P` 27/0, `wp7-accept-fm4` 40/0, `wp3-adapt-func-build` (allein dieselben 2 FAIL wie V4f). Angepasst:
+  `v3-v4c-adapt-v4bfix-lcd` (prüft im Vorhersage-Modus beide LCD-Zeilen statt `.lk`) 109/0. Grün u. a.: alle DoD-Läufe (60 s),
+  `wp1-dod`/`wp7-adapt-wp1-perf` (Startzeit), V0d 10/10, `v3-v4a-node` 46/46, `v3-v4b-field` P 106/0, L 101/0, `-platz` 59/0,
+  `v3-v4f-node` 33/0, `-native` 7/0, `-ui` 417/0, Worklet-ASCII, Smoke.
+
+### Abweichungen
+
+1. **Vorhersage ohne ▶** (Spec §9.5 „▶ spielt die vorhergesagte Struktur kurz an“): KP legt die Vorhersage ins LCD während des
+   Ziehens; der Finger zieht noch, ein Knopf wäre nicht erreichbar. Nach dem Loslassen hört man das Ergebnis ohnehin.
+2. **Raster ohne Magnete** auf halben Werten: [◁] [▷] gehen in fine-Schritten (×1 %); halbe Werte wie ×1,5 = fine 50 sind exakt,
+   ×3,5 ist in DX-Schritten nicht darstellbar (3,51). Das Raster selbst bietet die ganzen Werte, ½ und 1,41.
+3. **V4c-02 Paar 1 : 3,5** als 2 : 7 geprüft (gleiches Linienmuster 2 5 9 …, „dünn“), weil ×3,5 kein DX-Verhältnis ist.
+4. **Rückweg Punkt-Form → DX** ist eine Näherung (A.5 Nr. 4): Schleifen, Lin, Frei und mehr als 3 Punkte vor dem Sustain gehen
+   verloren; das Blatt nennt die Abweichung in dB bzw. HT. Gestreckte Zeiten (×1,3) liegen bei ≤ 3,3 dB (Raster der DX-Raten).
+5. **.syx-Export: Bytes, die der Klang nicht trägt,** werden auf DX-Standard geschrieben (Breakpoint 39 ohne Skalierung,
+   flache PEG-Raten 99, LFO-Sync 1, PMS ohne PMD); der Rundlauf ist parametergleich (32/32), nicht bytegleich zur Ausgangsbank.
+   Eine Route `lfo1→amp` ohne AMS an einem Ausgang geht im Export verloren (DX kann das nicht).
+6. **L2-LCD / P3:** die Vorhersage überdeckt während des Ziehens die Unterreiter (L2) bzw. liegt unter dem Feld-Kopf (P3, ohne LCD).
+7. **Größe +50,8 KB** statt +30 KB (+69 %, über der 50-%-Regel): Vorhersage mit FFT und Etikett (≈ 9 KB), Hüllkurven-Rückweg mit
+   zwei Hüllkurven-Modellen und Abweichung (≈ 12 KB), DX-tauglich-Logik und Blatt (≈ 7 KB), .syx-Export (≈ 7 KB), Raster (≈ 6 KB),
+   CSS (≈ 3 KB), Worklet-Gleiten (0,5 KB), Kommentare. Gruppe 3 (V4a, V4b, V4f, V4c) zusammen +312 KB gegen +213 KB geplant;
+   die Datei hat 1,80 MB (Grenze 5,0 MB, EN2-28), die Startzeit-Abnahme §15.3 bleibt der Wächter (wp1-dod/-perf in der Regression).
+
+### Fach-Prüfung (Nachtrag 2 Teil J: FP-DSP Haupt-, FP-TOUCH Zweit-Blick; eigener Durchgang über Diff, Tests und Bilder)
+
+**9 Befunde, alle behoben:**
+1. FP-DSP: Raster-Stufen auf gehaltener Note sprangen im Verhältnis (M-KLICK am Modulator 7,2 dB) → 10-ms-Gleiten im Worklet.
+2. FP-DSP / FP-IPHONE: erste Vorhersage einer Sitzung 5–16 ms (Deopt durch JSON-Kopien des Graphen) → typisierte Rechenschleife,
+   Vorrechnen beim Öffnen; jetzt ≤ 1,4 ms ab dem ersten Ziehen.
+3. FP-DSP: `fmxApply` verwarf die PEG einer Stimme nur mit festen OP → FELD ↔ DX nicht deep-equal (ROM1A REFS WHISL) → bleibt in fm6.
+4. FP-DSP: Abweichungs-Modell der Punkt-Form ohne die Skip-Rate (`ptRelScale`) → 8,8 dB Selbstfehler → Modell ergänzt (≤ 0,14 dB).
+5. FP-TOUCH: Raster-Felder in P3 nur 31 px breit → 4 × 4 Felder (66 × 48).
+6. FP-TOUCH: [DX-tauglich machen] als 24-px-Knopf → ganze Zeile antippbar (132 × 44).
+7. FP-TOUCH: L2-LCD zu schmal für die Vorhersage → Überlagerung der Unterreiter während des Ziehens.
+8. FP-TOUCH: P3 blendet die LCD-Zeile aus – die Vorhersage war dort unsichtbar → Zeile unter dem Feld-Kopf.
+9. FP-TOUCH (L6): Vorhersage-Zeile endete mit „…“ (L1, P3) → Teile fallen nach Wichtigkeit weg, nie abgeschnitten.
+Ohne Befund geprüft: ein Undo je Geste (Gleiten, ◁ ▷, Anwenden), zweiter Finger auf dem Raster ignoriert (Pointer-Capture),
+`touch-action:none` auf dem Raster, Abbruch (pointercancel, Blur) beendet die gehaltene Vorhör-Note, Texte deutsch und ohne
+Gerätenamen (N2-4b-02), Worklet-Quelle ASCII, keine NaN, M-PLATZ der Blätter in P1/P2/P3/L1/L2.
+
+### iPhone-Prüfpunkte (Xander, N2-4c-01 nach KP §8 plus V4c)
+
+1. FM-Pluck öffnen → FELD: unten die Ausgänge, darüber die Modulatoren, rechts die Pegel-Seite in denselben Farben.
+2. Einen Modulator auf einen Ausgang ziehen und **noch nicht loslassen**: oben im LCD erscheinen eine Welle, 16 grüne Balken und
+   z. B. „alle Teiltöne · heller · ×2 auf ×1“; loslassen → verbunden; nochmal auf denselben → Plätze getauscht; ins Leere → fällt.
+3. Doppeltipp → stumm. Operator antippen → Basis/Amp/Mod/Tonh.; Amp → Punkte ziehen, [Sustain] mit [Skip], [Loop A]/[Loop B], [Loop weg].
+4. Basis › rechts neben „Verhältnis“ auf die grüne Zahl tippen → Raster. Finger auf „1“ legen und langsam bis „7“ gleiten:
+   der Ton wird heller; loslassen → bleibt; ↶ → zurück.
+5. Einen Klang mit Welle ≠ Sinus: Stimme › DX-Abgleich antippen → Liste → [Anwenden] → „DX 1 ✓“, Seite DX ist frei; ↶ → zurück.
+6. Menü › Sounds › [DX7-Bank exportieren (.syx)] → Teilen-Blatt bzw. Download der `.syx`; in Dexed laden.
+7. Querformat: Feld und Hüllkurve nebeneinander; beim Ziehen liegt die Vorhersage über den Unterreitern.
+8. Pegel-Seite: waagrecht ziehen ändert den Wert ohne Sprung, Tipp auf die Zahl öffnet den Ziffernblock. FM-Bass mit kurzer
+   Modulator-Hüllkurve bauen und tief spielen.
+
+### Bekannte Lücken
+
+- N2-4c-01: der Zwischenstand an Artifact-Adresse und Pages-Seite ist Sache des Orchestrators (kein Commit/Push hier).
+- Kein WebKit-/iPhone-Test (Chromium + CDP-Touch, Node-Shim); die Vorhersage-Zeit am iPhone ist unbekannt (Annahme 3–7 ms,
+  sonst greift die 15-Hz-Grenze).
+- Die Echtzeit-Aufnahme im Browser zeigt beim Gleiten M-KLICK 5,5–7,9 dB (Aufnahme-Jitter unter CDP); bindend ist die
+  Offline-Messung im Worklet-Shim.
