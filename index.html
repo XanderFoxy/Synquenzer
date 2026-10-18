@@ -6717,6 +6717,41 @@ const RecHelpers = (() => {
     if (H[3] === H[4]) PT[3] = 21.3 / G.DXN.PEG_RATE[e.r[3]];
     return {env: Object.assign({f: 'pt', y: H.map(h => htY(clamp(h, -R, R), R)), t: PT.map(ms1)}, base), pr};
   }
+  // G3-fix (A.5 Nr. 4, KP 4.11): what the point form shows. The points store the times the voice runs without Time/Key and MAKRO
+  // (the voice adds both to either form, ptDxF as the worklet's ptTf); the editor shows them as they sound at the reference note,
+  // as the DX form does, so a conversion keeps every readout and a drag to "X 100 ms" sounds 100 ms there.
+  // ptDispT(e, o, which, note, m) -> shown ms per segment; ptStoreT(e, j, ms, ...) -> the stored ms of segment j for shown ms (inverse)
+  function ptTfA(o, note, m) { const H = G.FMH, ofs0 = (H.scaleOL(clamp(Math.round(num(o && o.ol, 99)), 0, 99)) << 5) - 4256, q = m || {};
+    return [q.car ? 1 : 0, H.scaleRate(clamp(Math.round(num(note, 60)), 0, 127), (o && o.rs) | 0), ofs0, +q.atk || 0, +q.dec || 0, +q.rel || 0, +q.bite || 0, ofs0]; }
+  // the segment right after the sustain point (Skip on: a key off before it moves on from the level it has, at that segment's rate,
+  // worklet ptRelScale) shows the release from the body level, as the DX form's R does (FMH.stageFrom: from max(L2, L3)); with
+  // nothing to fall (all flat) and the DX rate still stored, the DX static phase (FMH.stageTime)
+  function ptSegShown(e, j, a) { const E = G.DXN.ptc(e, false, 'dx'); if (!(E && j + 1 <= E.k)) return num(e.t[j], 10);
+    let T = E.tm[j + 1] * G.DXN.ptDxF(E, j + 1, ...a);
+    if (E.sus >= 1 && j === E.sus && E.skip && !E.free) {
+      const H = G.FMH, lv = y => Math.max(16, ((H.scaleOL(y | 0) >> 1) << 6) + a[2]), s0 = lv(E.v[E.sus]), s1 = lv(E.v[E.sus + 1]);
+      const sp = E.r && E.k === 5 && E.sus >= 2 && E.r[E.sus] >= 0 && E.r[E.sus] === E.r[E.sus - 1];   // P(sus-1) splits a long DX stage (ptFromDx)
+      const bd = Math.max(s0, lv(E.v[E.sus - 1]), sp ? lv(E.v[E.sus - 2]) : 0);
+      if (bd > s0 && s1 < bd) T *= (bd - s1) / (s0 > s1 ? s0 - s1 : 256);
+      else if (bd === s0 && s0 === s1 && E.r && E.r[j + 1] >= 0) { const rr = E.r[j + 1];      // as ptFromDx stored it: 256 units at R4
+        if (Math.abs(Math.log(E.tm[j + 1] / Math.max(.5, H.segTime(rr, 512, 256) * 1000))) < .02) T = H.holdSec(Math.max(0, Math.min(99, Math.round(rr - a[5]))) + a[1], false) * 1000; }
+    }
+    return T; }
+  function ptDispT(e, o, which, note, m) {
+    if (!e || e.f !== 'pt' || !Array.isArray(e.t)) return [];
+    if (which === 'pit' || !G.DXN || !G.DXN.ptDxF || !G.FMH) return e.t.map(t => num(t, 10));
+    const a = ptTfA(o, note, m); return e.t.map((_, j) => ptSegShown(e, j, a));
+  }
+  function ptStoreT(e, j, ms, o, which, note, m) {
+    ms = clamp(num(ms, 10), .05, 1e6);
+    if (which === 'pit' || !G.DXN || !G.DXN.ptDxF || !G.FMH || !e || !Array.isArray(e.t) || !(j >= 0 && j < e.t.length)) return clamp(ms, .5, 20000);
+    const a = ptTfA(o, note, m), x = cp(e), f = t => { x.t[j] = t; return ptSegShown(x, j, a); }, t0 = num(e.t[j], 10);
+    if (Math.abs(f(t0) - ms) <= ms * 1e-3) return t0;                         // already there (a level-only drag keeps the time and a stored DX rate)
+    if (f(.5) >= ms) return .5; if (f(20000) <= ms) return 20000;
+    let lo = Math.log(.5), hi = Math.log(20000);
+    for (let n = 0; n < 44; n++) { const mid = (lo + hi) / 2; if (f(Math.exp(mid)) < ms) lo = mid; else hi = mid; }
+    return clamp(Math.exp(hi), .5, 20000);                                   // hi: on a stored DX rate's plateau when the target is its time
+  }
   const FLAT_PT = () => ({f: 'pt', y: [50, 50], t: [10], sus: -1, la: -1, lb: -1, skip: 0, crv: 'exp', run: 'retrig'});
   // the point form of OP k's envelope (converted when it is DX) -> {e, conv}; the op is changed in place
   function ptOf(o, which, prWant) {
@@ -6746,7 +6781,8 @@ const RecHelpers = (() => {
       if (n >= 6) { if (!conv) return {x: null, lcd: 'höchstens 6 Punkte', sel: i};   // V4f-fix: a conversion that needed 6 points stays converted
         if (which === 'amp') o.amp = normEnv(e, null); else o.pit = normEnv(e, null);
         return {x: X, lcd: 'Hüllkurve frei (Punkt-Form) – nicht mehr DX · höchstens 6 Punkte', sel: null}; }
-      if (i == null || i >= last) { const tt = 100; e.y.push(e.y[last]); e.t.push(tt); if (e.dxr) e.dxr.push(-1); sel = n; }
+      // a new end point 100 ms after the last one, as shown at the reference note when the editor passes it (a.note, a.m; G3-fix)
+      if (i == null || i >= last) { const tt = a.note != null ? Math.round(ptStoreT(Object.assign({}, e, {y: e.y.concat([e.y[last]]), t: e.t.concat([100]), dxr: null}), n - 1, 100, o, which, a.note, a.m) * 10) / 10 : 100; e.y.push(e.y[last]); e.t.push(tt); if (e.dxr) e.dxr.push(-1); sel = n; }
       else { const half = Math.max(.5, Math.round(e.t[i] * 5) / 10); e.y.splice(i + 1, 0, Math.round((e.y[i] + e.y[i + 1]) / 2)); e.t.splice(i, 1, half, Math.max(.5, Math.round((e.t[i] - half) * 10) / 10)); if (e.dxr) e.dxr.splice(i, 1, -1, -1);
         e.sus = sh(e.sus, i, 1); e.la = sh(e.la, i, 1); e.lb = sh(e.lb, i, 1); sel = i + 1; }
       lcd = 'Punkt ' + sel + ' dazu';
@@ -6947,43 +6983,51 @@ const RecHelpers = (() => {
     if (!X0 || !Array.isArray(X0.ops)) return {x: null, changes: [], alg: null, ok: false, rest: ['kein FM-Graph']};
     let X = cp(X0);
     // 1. structure: same edges with another numbering -> renumber; no DX form -> the nearest algorithm (fewest edges apart)
-    let m = edgeMatch(X), alg;
-    if (m) { alg = m.alg; if (!isId(m.perm)) { X = renumber(X, m.perm); C.push('Nummern angeglichen (wie DX ' + alg + ')'); } }
+    // G3-fix (KP 4.12, V4c-06): every line names operators and connections by the numbers the FELD shows now; an operator whose
+    // number changes gets "· wird OP 3" at the end of its line, and one line lists all new numbers
+    let m = edgeMatch(X), alg, perm = [0, 1, 2, 3, 4, 5];
+    const inv = [0, 1, 2, 3, 4, 5], fld = k => inv[k] + 1, opN = k => 'OP ' + fld(k), wird = k => (inv[k] !== k ? ' · wird OP ' + (k + 1) : '');
+    const mapLine = () => { const mv = perm.map((q, f) => (q !== f ? 'OP ' + (f + 1) + ' wird OP ' + (q + 1) : null)).filter(Boolean); if (mv.length) C.push('Neue Nummern: ' + mv.join(', ')); };
+    const setPerm = p => { perm = p.slice(); p.forEach((q, f) => { inv[q] = f; }); };
+    if (m) { alg = m.alg; if (!isId(m.perm)) { setPerm(m.perm); X = renumber(X, m.perm); C.push('Nummern angeglichen (wie DX ' + alg + ')'); mapLine(); } }
     else {
-      const best = approx0(X.edges); alg = best.a + 1;
-      const Y = renumber(X, best.p), mine = new Set(Y.edges.map(e => e.from + '>' + e.to)), theirs = ALGS[best.a].edges.map(([f, t]) => (f + 1) + '>' + (t + 1));
+      const best = approx0(X.edges); alg = best.a + 1; setPerm(best.p);
+      // the connections in FELD numbers: the graph's own edges against the DX algorithm's, mapped back to the FELD numbers
+      const mine = new Set(X.edges.map(e => e.from + '>' + e.to)), theirs = ALGS[best.a].edges.map(([f, t]) => fld(f) + '>' + fld(t));
       const gone = [...mine].filter(k => !theirs.includes(k)), add = theirs.filter(k => !mine.has(k));
+      const Y = renumber(X, best.p);
       X = applyAlg(Y, alg);
       // applyAlg moves the strongest feedback to the DX path; keep the original paths for step 2
       X.ops.forEach((o, k) => { o.fbSrc = Y.ops[k].fbSrc; o.fbAmt = Y.ops[k].fbAmt; });
       C.push('Verbindungen → DX ' + alg + (gone.length ? ' · ' + gone.map(k => k.replace('>', ' → ')).join(', ') + ' gelöst' : '') + (add.length ? ' · ' + add.map(k => k.replace('>', ' → ')).join(', ') + ' neu' : '') +
         (isId(best.p) ? '' : ' · Nummern angeglichen') + ' – klingt anders');
+      if (!isId(best.p)) mapLine();
     }
     // 2. feedback: one path, DX receiver / source, a whole number
     const A = ALGS[alg - 1], fb = fbPaths(X), keep = fb.find(q => q[0] === A.fbDst && q[1] === A.fbSrc);
     const amt0 = keep ? X.ops[keep[0]].fbAmt : fb.length ? Math.max(...fb.map(q => X.ops[q[0]].fbAmt)) : 0;
-    for (const q of fb) if (q !== keep) C.push('Feedback an OP ' + (q[0] + 1) + ' (← ' + (q[1] + 1) + ') entfernt' + (X.ops[q[0]].fbAmt > 0 ? ' – weniger rau' : ''));
+    for (const q of fb) if (q !== keep) C.push('Feedback an ' + opN(q[0]) + ' (← ' + fld(q[1]) + ') entfernt' + (X.ops[q[0]].fbAmt > 0 ? ' – weniger rau' : '') + wird(q[0]));
     X.ops.forEach(o => { o.fbSrc = 0; o.fbAmt = 0; });
     if (fb.length) {
       const amt = Math.round(amt0); X.ops[A.fbDst].fbSrc = A.fbSrc + 1; X.ops[A.fbDst].fbAmt = amt;
-      if (!keep && amt > 0) C.push('Feedback → OP ' + (A.fbDst + 1) + ' (← ' + (A.fbSrc + 1) + '), Stärke ' + amt);
+      if (!keep && amt > 0) C.push('Feedback → ' + opN(A.fbDst) + ' (← ' + fld(A.fbSrc) + '), Stärke ' + amt + wird(A.fbDst));
       else if (amt !== amt0) C.push('Feedback-Stärke ' + fmtD(amt0) + ' → ' + amt + ' (DX: ganze Zahl)');
     }
     // 3. per operator
     const ratioOps = X.ops.map((o, k) => k).filter(k => !X.ops[k].fixed);
     X.ops.forEach((o, k) => {
-      const n = 'OP ' + (k + 1) + ': ';
-      if (o.wave) { C.push(n + 'Welle ' + (WAVES[o.wave] || 'eigene ' + o.wave) + ' → Sinus – weniger Obertöne'); o.wave = 0; }
-      if (o.amp && o.amp.f === 'pt') { const d = ampToDx(o.amp, o.ol), dev = ampDev(o.amp, d, o.ol); C.push(n + 'Hüllkurve frei → DX, Abweichung ' + fmtD(dev) + ' dB'); o.amp = d; }
-      if (o.pit && o.fixed) { C.push(n + 'Tonhöhen-Hüllkurve entfernt (feste Frequenz)'); o.pit = null; o.pr = 'dx'; }
+      const n = 'OP ' + fld(k) + ': ', np = t => C.push(n + t + wird(k));   // FELD number first, the new one last
+      if (o.wave) { np('Welle ' + (WAVES[o.wave] || 'eigene ' + o.wave) + ' → Sinus – weniger Obertöne'); o.wave = 0; }
+      if (o.amp && o.amp.f === 'pt') { const d = ampToDx(o.amp, o.ol), dev = ampDev(o.amp, d, o.ol); np('Hüllkurve frei → DX, Abweichung ' + fmtD(dev) + ' dB'); o.amp = d; }
+      if (o.pit && o.fixed) { np('Tonhöhen-Hüllkurve entfernt (feste Frequenz)'); o.pit = null; o.pr = 'dx'; }
       else if (o.pit && o.pit.f === 'pt') {
         const flat = o.pit.y.every(y => y === 50);
-        if (flat) { o.pit = null; o.pr = 'dx'; C.push(n + 'flache Tonhöhen-Hüllkurve entfernt'); }
-        else { const d = pitToDx(o.pit, o.pr), dev = pitDev(o.pit, o.pr, d); C.push(n + 'Tonhöhen-Hüllkurve frei → DX, Abweichung ' + fmtD(dev) + ' HT'); o.pit = d; o.pr = 'dx'; }
+        if (flat) { o.pit = null; o.pr = 'dx'; np('flache Tonhöhen-Hüllkurve entfernt'); }
+        else { const d = pitToDx(o.pit, o.pr), dev = pitDev(o.pit, o.pr, d); np('Tonhöhen-Hüllkurve frei → DX, Abweichung ' + fmtD(dev) + ' HT'); o.pit = d; o.pr = 'dx'; }
       } else if (o.pit) o.pr = 'dx';
-      if (o.ph) { C.push(n + 'Phase ' + o.ph + ' → 0'); o.ph = 0; }
-      if (o.vs < 0) { C.push(n + 'Anschlag ' + o.vs + ' → 0 (DX: nur positiv)'); o.vs = 0; }
-      if (![0, 42, 85, 127].includes(o.lfoAm)) { const v = [0, 42, 85, 127].reduce((a, b) => (Math.abs(b - o.lfoAm) < Math.abs(a - o.lfoAm) ? b : a)); C.push(n + 'LFO AM ' + o.lfoAm + ' → ' + v); o.lfoAm = v; }
+      if (o.ph) { np('Phase ' + o.ph + ' → 0'); o.ph = 0; }
+      if (o.vs < 0) { np('Anschlag ' + o.vs + ' → 0 (DX: nur positiv)'); o.vs = 0; }
+      if (![0, 42, 85, 127].includes(o.lfoAm)) { const v = [0, 42, 85, 127].reduce((a, b) => (Math.abs(b - o.lfoAm) < Math.abs(a - o.lfoAm) ? b : a)); np('LFO AM ' + o.lfoAm + ' → ' + v); o.lfoAm = v; }
     });
     // all ratio operators share one pitch envelope (DX: one PEG per voice)
     const pits = ratioOps.map(k => JSON.stringify(X.ops[k].pit || null));
@@ -6991,7 +7035,7 @@ const RecHelpers = (() => {
       const cnt = {}; pits.forEach(s => { if (s !== 'null') cnt[s] = (cnt[s] || 0) + 1; });
       const ref = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0], src = ratioOps[pits.indexOf(ref)];
       ratioOps.forEach(k => { X.ops[k].pit = JSON.parse(ref); X.ops[k].pr = 'dx'; });
-      C.push('Tonhöhen-Hüllkurve von OP ' + (src + 1) + ' für alle Verhältnis-Operatoren (DX: eine je Stimme)');
+      C.push('Tonhöhen-Hüllkurve von ' + opN(src) + ' für alle Verhältnis-Operatoren (DX: eine je Stimme)' + wird(src));
     }
     const phm = new Set(X.ops.map(o => o.phm));
     if (phm.size > 1 || phm.has('rnd')) { const free = X.ops.filter(o => o.phm === 'free').length > X.ops.length / 2 ? 'free' : 'fix';
@@ -7002,7 +7046,7 @@ const RecHelpers = (() => {
     return {x: sameX(Y, norm(X0, false)) ? null : Y, changes: C, alg: dx(Y).match || alg, ok: !rest.length, rest};
   }
   G.FMX = {norm, check, fromFm6, dxLayout, dxMatch, dx, toFm6, approxFm6, WAVES, ALGS, normEnv, gesture, renumber, applyAlg, badge, upper: (X, k) => [...upper(X.edges, k)],
-    ptFromDx, envAct, dxTimes, yHt, htY, PR_HT, PR_UP,
+    ptFromDx, envAct, dxTimes, yHt, htY, PR_HT, PR_UP, ptDispT, ptStoreT,
     ratioClass, makeDx, ampToDx, pitToDx, ampDev, pitDev, edgeMatch, simDxAmp, simPtAmp};
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -9947,7 +9991,7 @@ const DXN = (() => {
       T = Math.max(T, (top - Math.max(l4, top - 2550)) / R); }                 // until -60 dB below the loudest stage (2550 units)
     return Math.min(T, 12);
   }
-  return {voice, releaseTime, opWave, fbHarmonics, ALGS, DX_ALGS, besselJ, envPlan, levelAt, holdSec, PEG_RATE, PEG_TAB, ptc, ptPlan};
+  return {voice, releaseTime, opWave, fbHarmonics, ALGS, DX_ALGS, besselJ, envPlan, levelAt, holdSec, PEG_RATE, PEG_TAB, ptc, ptPlan, ptDxF};
 })();
 
 // ---------- FMH: UI helpers (same maths as the worklet; from dx6-presets.js, without its ROM presets) ----------
@@ -18271,7 +18315,7 @@ function fxEnvBuild(ctx) {
   // ---- actions
   const sel = () => fxSelPt(fxEnvOf(fxX(i).ops[k], which));
   const act = (kind, a) => {
-    const r = FMX.envAct(fxX(i), k, which, Object.assign({kind, i: sel()}, a || {}));
+    const r = FMX.envAct(fxX(i), k, which, Object.assign({kind, i: sel()}, kind === 'add' ? {note: fmRefNote(i), m: macro(fxX(i))} : null, a || {}));
     if (!r.x) { if (r.lcd) lcdShow('Hüllkurve', r.lcd); return false; }
     const ok = fxCommitX(i, r.x, 'Hüllkurve OP ' + (k + 1) + ': ' + (FX_ACTN[kind] || kind));
     if (kind === 'del' || kind === 'add') FXF.envSel = r.sel; else if (r.sel != null) FXF.envSel = r.sel;
@@ -18398,10 +18442,12 @@ function fxEnvBuild(ctx) {
       xr: s => xRel + Math.log(clamp(s, rMin, rMax) / rMin) / LR * rw, tr: x => rMin * Math.exp((x - xRel) / rw * LR)}; };
   // point form (K2-55): one log time axis log(1 + t / 0,5 ms) over the total length (+25 %), pinch zoom ×1…×8 with an offset
   const T_MIN = .0005;
-  const geoPt = (e, span) => { const w = gw, h = graphH, x0 = 8, x1 = w - 8, tot = e.t.reduce((a, b) => a + b, 0) / 1000;
+  // G3-fix (A.5 Nr. 4): the shown point times = as they sound at the reference note (Time/Key, MAKRO), the same as the DX form shows
+  const segT = (e, X) => { const x = X || fxX(i); return FMX.ptDispT(e, x.ops[k], which, fmRefNote(i), macro(x)); };
+  const geoPt = (e, span, X) => { const w = gw, h = graphH, x0 = 8, x1 = w - 8, tot = segT(e, X).reduce((a, b) => a + b, 0) / 1000;
     const sp = span || Math.max(.05, tot * 1.25), U = Math.log1p(sp / T_MIN), z = FXF.envZoom || 1, off = clamp(FXF.envOff || 0, 0, 1 - 1 / z);
     return {dx: false, w, h, x0, x1, yT: 16, yB: h - 6, span: sp, tot, U, z, off, xc: c => x0 + (Math.log1p(Math.max(0, c) / T_MIN) / U - off) * z * (x1 - x0), cx: x => T_MIN * Math.expm1(((x - x0) / (z * (x1 - x0)) + off) * U)}; };
-  const cumOf = e => { const c = [0]; for (const t of e.t) c.push(c[c.length - 1] + t / 1000); return c; };
+  const cumOf = (e, X) => { const c = [0]; for (const t of segT(e, X)) c.push(c[c.length - 1] + t / 1000); return c; };
   const R_ = () => FMX.PR_HT[fxX(i).ops[k].pr] || 12;
   const draw = X => {
     if (!gEl.isConnected) return;
@@ -18417,7 +18463,7 @@ function fxEnvBuild(ctx) {
     }
     warn.hidden = !wtx; warn.textContent = wtx; warn.dataset.full = wfull; warn.title = wfull;
     if (!PT) { drawDx(X, o, e, sP); return; }
-    geo = geoPt(e, G && G.span); const A = geo, c = cumOf(e), xs = c.map(A.xc), ys = e.y.map(yOf);
+    geo = geoPt(e, G && G.span, X); const A = geo, c = cumOf(e, X), xs = c.map(A.xc), ys = e.y.map(yOf);
     let rh = `<line x1="${A.x0}" y1="12" x2="${A.x1}" y2="12" class="ra"/>`;
     for (const [s, lb] of [[.001, '1ms'], [.01, '10'], [.1, '100'], [1, '1s'], [10, '10s']]) { const x = A.xc(s); if (x < A.x0 - .5 || x > A.x1 + .5) continue; rh += `<line x1="${x.toFixed(1)}" y1="9" x2="${x.toFixed(1)}" y2="12" class="rt"/><text x="${x.toFixed(1)}" y="8" class="rl">${lb}</text>`; }
     if (pit) { const R = R_(); rh += `<line x1="${A.x0}" y1="${yOf(50).toFixed(1)}" x2="${A.x1}" y2="${yOf(50).toFixed(1)}" class="zero"/><text x="${A.x1}" y="${(A.yT + 7).toFixed(1)}" class="rl yl">+${R}</text><text x="${A.x1}" y="${A.yB.toFixed(1)}" class="rl yl">${MINUS}${R}</text>`; }
@@ -18439,7 +18485,10 @@ function fxEnvBuild(ctx) {
       c_.setAttribute('cx', xs[j].toFixed(1)); c_.setAttribute('cy', ys[j].toFixed(1)); c_.classList.toggle('on', sP === j); c_.classList.toggle('p0', j === 0);
       c_.style.stroke = j === 0 ? '#B8BDCC' : FXC[(j - 1) % 6] === '#1B1D25' ? '#8A90A8' : FXC[(j - 1) % 6]; });
     const zt = A.z > 1.01 ? ' · Zoom ×' + fmtDec(Math.round(A.z * 10) / 10, 1).replace(/,0$/, '') : '';
-    const ttxt = sP != null ? 'X ' + fmMs(c[sP]) + ' · Y ' + (pit ? htTxt(FMX.yHt(e.y[sP], R_())) + ' HT' : e.y[sP]) + zt : 'Gesamt ' + fmMs(A.tot) + zt;
+    // G3-fix: with a sustain point before the end the footer reads as the DX form: Gesamt = up to the sustain point, R = the rest
+    const sR = e.sus > 0 && e.sus < e.y.length - 1 && e.run !== 'free' && !(e.la >= 0 && e.lb > e.la);
+    const ttxt = sP != null ? 'X ' + fmMs(c[sP]) + ' · Y ' + (pit ? htTxt(FMX.yHt(e.y[sP], R_())) + ' HT' : e.y[sP]) + zt
+      : sR ? 'Gesamt ' + fmMs(c[e.sus]) + ' · R ' + fmMs(c[c.length - 1] - c[e.sus]) + zt : 'Gesamt ' + fmMs(A.tot) + zt;
     if (tl.textContent !== ttxt) tl.textContent = ttxt;
     info.textContent = '';
     LAY = {pts: xs.map((x, j) => ({x, y: ys[j]})), cum: c};
@@ -18526,10 +18575,12 @@ function fxEnvBuild(ctx) {
     const s = g.s, cap = (g.tot0 + 20) * 1.25;
     g.span = Math.min(cap, Math.max(g.spanT, g.span0 * Math.pow(2, g.over / 24)));
     const A = geoPt(fxEnvOf(fxX(i).ops[k], which), g.span), dy = (g.ly == null ? 0 : g.ly - g.y0), ny = LofY(g.py + dy * g.f);
-    const nt = s > 0 ? clamp(A.cx(clamp(g.rx, A.x0, A.x1)) - g.cum[s - 1], .0005, 20) * 1000 : null;
-    fxDragSet(i, x => { const e = fxEnvOf(x.ops[k], which); if (!e || e.f !== 'pt') return; e.y[s] = ny; if (nt != null) e.t[s - 1] = Math.round(nt * 10) / 10; });
+    // the finger gives the shown time; the point stores the time that sounds that long at the reference note (G3-fix)
+    const nt = s > 0 ? clamp(A.cx(clamp(g.rx, A.x0, A.x1)) - g.cum[s - 1], .0005, 20 * 8) * 1000 : null, note = fmRefNote(i);
+    fxDragSet(i, x => { const e = fxEnvOf(x.ops[k], which); if (!e || e.f !== 'pt') return; e.y[s] = ny;
+      if (nt != null) e.t[s - 1] = Math.round(clamp(FMX.ptStoreT(e, s - 1, nt, x.ops[k], which, note, macro(x)), .5, 20000) * 10) / 10; });
     draw(fxX(i));
-    const e = fxEnvOf(fxX(i).ops[k], which); lcdShow('P' + s + ' · OP ' + (k + 1), (pit ? htTxt(FMX.yHt(e.y[s], R_())) + ' HT' : 'Y ' + e.y[s]) + ' · X ' + fmMs(cumOf(e)[s]) + (s > 0 ? ' · Segment ' + fmMs(e.t[s - 1] / 1000) : '') + (g.f < 1 ? ' · FEIN ×¼' : ''));
+    const e = fxEnvOf(fxX(i).ops[k], which), c_ = cumOf(e); lcdShow('P' + s + ' · OP ' + (k + 1), (pit ? htTxt(FMX.yHt(e.y[s], R_())) + ' HT' : 'Y ' + e.y[s]) + ' · X ' + fmMs(c_[s]) + (s > 0 ? ' · Segment ' + fmMs(c_[s] - c_[s - 1]) : '') + (g.f < 1 ? ' · FEIN ×¼' : ''));
   };
   const ptEdgeStop = g => { if (g && g.tick) { clearInterval(g.tick); g.tick = null; } };
   const ptEdge = () => {

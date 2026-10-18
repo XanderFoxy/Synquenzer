@@ -1449,3 +1449,26 @@ AMD 99 / 20 / 3, Ausgangs-Tremolo 9,1 / 1,7 dB), `v3-rv-dxdip-scan.mjs`, `v3-rv-
 **Abweichung:** ältere Bibliotheks-Sounds aus einem .syx-Import (vor diesem Fix, ohne `fm6.pmd/amd`) bekommen beim ersten
 FELD-Schritt die Tiefe aus ihrer Route; ohne Route ist sie 0 (klingt wie vorher im DX-Pfad). Ein erneuter Import derselben Bank
 wird wegen der neuen Felder nicht als „schon vorhanden“ erkannt.
+
+## G3-FM-gruppe-fix — Punkt-Form zeigt die Zeiten der DX-Form; DX-tauglich-Blatt mit den FELD-Nummern · App 3.11.0
+
+1. **Punkt-Form: Anzeige = Klang am Bezugston** (Nachtrag 2 A.5 Nr. 4, KP §4.11). Die Punkte speichern weiter die Zeiten ohne
+   Time/Key und MAKRO (die Stimme rechnet beides zu, `ptDxF`, Klang unverändert). Achse, Fußzeile, X-Anzeigen, LCD und Ziehen zeigen
+   jetzt die Zeit, die am Bezugston klingt (`FMX.ptDispT`, gleiche Rechnung wie das Worklet); Ziehen auf „X 100 ms“ speichert die
+   Zeit, die dort 100 ms klingt (`FMX.ptStoreT`, Umkehrung). Das Segment nach dem Sustain-Punkt zeigt den Release wie die DX-Form
+   (vom Körperpegel max(L2, L3); alles flach: DX-Haltephase). Fußzeile mit Sustain vor dem Ende: „Gesamt ‹bis Sustain› · R ‹Rest›“
+   wie in der DX-Form; sonst „Gesamt ‹alles›“. Ein neuer End-Punkt [+] liegt 100 ms (angezeigt) hinter dem letzten.
+   Prüfung: alle 108 Werks-FM-Hüllkurven × Noten 36/60/84 zeigen nach der Umwandlung dieselben Zeiten wie die DX-Form (vorher 81/108
+   > 25 % daneben); Worklet: angezeigte = gehörte Zeit am C4 (rs 0/2/4), auch nach einem Zug auf „X 1,0 s“.
+2. **[DX-tauglich machen] nennt die Nummern aus dem FELD** (KP §4.12, V4c-06). Verbindungen („4 → 3 gelöst“, „… neu“), Wellen,
+   Hüllkurven, Feedback und die Tonhöhen-Quelle stehen mit der FELD-Nummer; ändert sich die Nummer, endet die Zeile mit
+   „· wird OP 3“, und eine Zeile „Neue Nummern: OP 2 wird OP 3, OP 3 wird OP 2“ listet alle neuen Nummern.
+
+**Abnahme (`dirigent-test/`):** `v3-g3fix-conv.mjs` (324/324), `v3-g3fix-audio.mjs` (18/18), `v3-g3fix-ui.mjs` P/L/P375 mit den
+echten Schriften (Barlow Semi Condensed, JetBrains Mono über http), `v3-g3fix-dxnum-node.mjs` (600 Zufallsgraphen, 318 mit neuen
+Nummern, 3838 Zeilen), `v3-rep-dxnum-ui.mjs`, `v3-grpG3-convui.mjs`, `v3-repro-ptconv-ui.mjs`; ohne Rückschritt: `v3-v4f-ui`
+(198/198), `v3-v4f-node`, `v3-v4f-native`, `v3-v4ffix-conv` (171/171), `v3-v4c-node`, `v3-v4c-accept`, `v3-qa4f-*`; Smoke ohne Fehler.
+
+**Bekannt, unverändert:** die DX-Fußzeile ist auf P1/P2/L1 breiter als ihr Feld und wird mit „…“ gekürzt (z. B. 326 > 236 px);
+eine flache DX-Stufe > 20 s bleibt in der Punkt-Form 20 s (längstes Segment); Lin rechnet Time/Key über die lineare Strecke, ein
+Angriff unter 1 ms kann nach [Exp] → Lin bis 0,5 ms anders lesen.
