@@ -8,7 +8,7 @@ capabilities: {
 }
 ```
 
-V0a, V0b, V0d und V4a fügen keine Fähigkeit hinzu. Die App läuft weiter ohne jede Fähigkeit (`use()` → `null`, EN-13).
+V0a, V0b, V0d, V4a und V4b fügen keine Fähigkeit hinzu. Die App läuft weiter ohne jede Fähigkeit (`use()` → `null`, EN-13).
 
 ---
 
@@ -800,3 +800,225 @@ V4a hat noch kein FM-Feld (kommt mit V4b); auf dem Gerät prüfbar ist nur, dass
 - Kein WebKit-/iPhone-Test (Chromium und Node); iPhone-Faktor der CPU unbelegt.
 - Chromium-Lastwerte (`engineInfo().perTrack[i].load`) schwanken von Lauf zu Lauf um ±40 %; der Vergleich vor/nach V4a
   stützt sich auf die Node-Messung (`v3-v4a-bench.mjs`, bester von 5 × 10 s).
+
+---
+
+## V4b — FELD und Wertefeld (FM-Feld nach EssenceFM) · App 3.9.0
+
+Grundlage: Nachtrag 2 Teil A (A.2, A.3, A.6 Zeile V4b, A.7 N2-4b-01 … 04, K2-01, K2-37 … K2-44, K2-61) mit `r7/kodamo-delta-pdf.md`
+(KP §4.1–4.9, 4.12, 4.13, §5, §6.4/6.5, §7, §9 N7F-13 … N7F-36); Nachtrag 1 A.7 (N4b-01 … N4b-04); Spec v3 §9.4/§17 V4b nur, wo KP
+nichts ändert (V4b-07b, -08, -09, -13). Gebaut auf `synq-snapshots/V4a-fix.html`. Die Fähigkeiten-Summe ändert sich nicht.
+
+### Gebaut
+
+**FM-Reiter-Unterseiten FELD · DX · OP n · MAKRO · STIMME** (N4b-01, KP §4.12). DX ist die bisherige ALGO-Seite. Neue Sounds,
+INIT FM und Klänge mit Graph öffnen FELD, Werks- und Bibliotheks-Sounds ohne Graph (auch .syx-Importe) DX; die letzte Wahl je
+Spur steht in `S.ui.fmv` (Ansichtsfeld, nicht im Sound; `syncUi` trägt es mit). Ist der Graph nicht DX-tauglich, sind DX und OP
+gesperrt: Überlagerung mit Badge, den Gründen aus `FMX.dx().reasons`, [Im FELD bearbeiten] und ggf. [Nummern angleichen].
+
+**FELD (KP §4.1–4.4, §5):** Raster 6 × 6, Reihe 0 = Ausgang, freie Plätze; Kachel mit Nummer, Frequenz (≤ 4 Zeichen: „×1“, „×3,5“,
+„14“, „62“, „437“, „9,8k“), zweiteiligem Pegelbalken (Fläche bis `ol` 45 %, 2-px-Marke, Live-Teil) und Feedback-Badge (Quellnummer,
+bei Stärke 0 blass); Farben nach KP §4.3 mit K2-01 (#5B6170), OP 6 mit Halo #3A3F52 und #8A90A8; Linien unten-Mitte → oben-Mitte
+#0AFFAD, vom stummen Modulator #3E435B; Linien-Animation nur beim Verbinden 200 ms (K2-41; Schalter, aus bei „Bewegung
+reduzieren“); Boden „AUSGANG“. Kopfzeile „STIMME · DX 5 ✓ · 6 Op · 8 St“ bzw. „OP 4 · MODULATOR → 3 · ×14“ (Tipp = DX-Abgleich
+im LCD). Geometrie P1 genau nach KP §5.1 (Kacheln 36 × 50 bei x = 40·c, y = 23 + 55·(5 − r); Wertefeld x 242–373, Zeilen
+y = 76 + 47·i), L1 nach §5.2 (48 × 31, Reihenabstand 34, 4 Reihen sichtbar, Rollen per Wischen im Leerraum und Randzug, Streifen
+„▲ n weitere“), P2/P3/L2/W nach §5.3 (P3: Werte als Blatt über den rechten 60 % des Felds, ✕ schließt).
+
+**Gesten (KP §4.5, rein in `FMX.gesture`, gleiche Logik für Touch und Test-API):** R1 Aufsetzen wählt sofort (aus dem Zustand
+Stimme → Basis; zwischen Operatoren bleibt die Seite, K2-61) · R2 Tipp ins Leere → Pegel-Seite · R3 Doppeltipp (≤ 300 ms, ≤ 8 px)
+stumm/an · R4 Ziehen ab 8 px mit Geist, gestrichelter alter Zelle, Landeplatz und Geisterlinien, LCD-Vorschau („3 → 1 verbinden“,
+„4 ↔ 3 tauschen“, „5 fällt → Ausgang“, „2 fällt auf 6 (moduliert 6)“, „geht nicht: …“, „kein Platz über 1“, „zurück“), Ziel =
+Zelle unter dem Geist-Mittelpunkt (KD §5.2 Nr. 1), 8 px Hysterese, `haptic('tick')` je Zielwechsel · R5 Tauschen (Kanten bleiben
+an den Plätzen) · R6 Verbinden (untere Verbindungen lösen, über das Ziel, nächste freie Spalte c+1, c−1 …, oberer Baum wandert mit,
+Abweisen nach (e)) · R7 Fallen (zum Boden oder auf den obersten Operator darunter) · R8 außerhalb / eigene Zelle = nichts ·
+R9 zwei Finger (Beginn ≤ 300 ms, je ≤ 8 px): verbinden, nochmal lösen (Z7), gleiche Reihe / letzte Verbindung mit LCD · R11 Wischen
+im Leerraum = nichts (L: rollt) · R12 Badge, Budget, LCD-Statuszeile; Strukturwechsel über die 30-ms-Stimmen-Überblendung aus V4a.
+R0: Eine Berührung im FELD, während ein Zug im Wertefeld oder Hüllkurven-Graph läuft (auch wenn der Finger schon vorher lag), ist
+nur FEIN ×¼. Halten wählt nur (R10 entfällt). Jede Geste ist genau ein Undo.
+
+**Wertefeld (KP §4.7, Schieber nach K2-38):** Reiterblock P 2 × 3 an fester Stelle: ohne Auswahl [Pegel] [Stimme] [⋯] / [Vorl. ▾]
+[Zufall] [A│B], mit Auswahl [Basis] [Amp] [M] / [Mod] [Tonh.] [⋯]; L in der Kopfzeile (Rolle + Reiter, ohne Auswahl Badge-Text).
+- Waagrechter Relativzug: 4 px Totzone, danach folgt die Füllkante genau dem Finger (Modulator-Pegel in der V0d-Kurve
+  p = (OL/99)^(1/0,45), Ausgänge linear), FEIN ×¼ (ruhender Finger im FELD oder FEIN-Chip), senkrecht ≥ 12 px = kein Wertzug,
+  Pointer-Capture, ein Undo je Zug; Tipp auf die Wertzone (30 px) = Ziffernblock (setzt exakt, ein Undo); Doppeltipp auf bipolare
+  Werte = Mitte.
+- **Pegel:** 6 zweizeilige Zeilen „×14 · I 1,6“ / „×1 · −3 dB“ (−∞ dB bei 0), Balken in OP-Farbe, Fahne 12 px mit Nummer.
+- **Stimme:** Transponieren · DX-Abgleich mit [Nummern angleichen] · Budget „6 Op · 8 Stimmen · Kanten n“ · ☑ Frequenzen in Kacheln ·
+  ☑ Linien-Animation · ⓘ Vorbild (einzige Stelle mit dem Gerätenamen und dem Pflichtsatz) und Hilfe.
+- **Basis:** Welle (8 px je Welle, Vorschau, Tipp = Liste mit Bildern) · Pegel · Verhältnis (oben [×│Hz] + fine, unten coarse;
+  Ziffernblock nimmt Verhältnis oder Hz) · Verstimmung · Phase (Chip Fest/Zuf./Frei + `ph`) · Feedback (Chip „← Quelle“ mit Liste
+  aus/1…6, Stärke 0…7 in 0,1).
+- **Mod:** Anschlag −7…+7 · LFO AM · LFO FM · Tasten-Skalierung als Kurve (links/rechts senkrecht = `ld`/`rd` mit Vorzeichen,
+  Mitte waagrecht = `bp` mit Notenname; lin/exp über ⋯).
+- **Amp / Tonh. (EK-13, DX-Form bis V4f):** P1/P2 Mini-Feld links (Kachel 20 × 42, nur Tipp/Doppeltipp/Tipp ins Leere), Vorlagen-
+  Zeile Snap/Pluck/Pad/Orgel bzw. Aus/Ruck/Fall/Anstieg + FEIN über dem Feld, rechts Graph (log. Zeitachse Halten ┊ Release, Punkte
+  ziehen: waagrecht = Zeit/Rate, senkrecht = Pegel, ein Undo), Zeiten-Zeile, Knöpfe [Alle Mod.] [Alle Ausg.] [Kopieren] [Einfügen] /
+  [Auf alle] [Init] [−1] [+1], DX-Zeilen R1–R4 / L1–L4 (Relativzug 2 px je Schritt, Tipp = Ziffernblock). L/W: im Wertefeld mit
+  [DX ▾] [FEIN] [Vorl. ▾]; P2/P3 kompakt ([DX ▾] tauscht Graph und DX-Zeilen). Tonh. bearbeitet `pit` dieses Operators
+  (50 50 50 50 = keine Hüllkurve); feste Operatoren ohne Tonhöhen-Hüllkurve (DX).
+- **M** = stumm (= R3). **⋯:** Solo (Laufzeit, nicht gespeichert) · Ziele … (Liste „→ 1 ✕“, [+ Ziel] + Tipp auf eine tiefere
+  Kachel; ✕ auf der letzten Kante → fällt nach R7) · Kopieren (Operator ohne Zelle/Kanten bzw. nur Hüllkurve) · Einfügen ·
+  ⤢ Hüllkurve groß (Amp/Tonh., K2-44) · Kurven lin/exp (Mod) · Modulieren mit … (Mod-Picker `op<k>`, Z13: Quelle wählen = Route
+  mit 50 %, Tiefe im Tab MOD) · Mehrere wählen (N4b-02: Pegel-Zug relativ auf alle gewählten, ein Undo) · Hilfe.
+- **Vorlagen ▾** (Algorithm Library): das WP7-Blatt mit 32 Bildern; Wahl ersetzt Kanten, Plätze (`dxLayout`) und Feedback-Weg
+  (stärkster bisheriger Wert wandert zum neuen Empfänger), alles andere bleibt, ein Undo.
+- **Zufall** (K2-59): ☑ Frequenzen ☑ Hüllkurven ☑ Tonhöhen-Hk. ☑ Algorithmus ☑ Pegel ☑ LFO ☑ Wellen (Z19, aus) + [Würfeln];
+  Ergebnis erfüllt I1–I4 und hat einen Ausgang mit `ol` ≥ 80; Häkchen werden gemerkt; ein Undo.
+- **A│B** (Z8, V4b-09): wechselt zwischen jetzt und dem Stand vor der letzten Geste (über die Stimmen-Überblendung, kein Undo).
+
+**⤢ Hüllkurve groß (K2-44):** öffnet den A.4b-Editor (OP › HÜLLK. bzw. HÜLLK. › TONHÖHE) für diesen Operator, [✕ FELD] führt
+zurück (Seite und Fokus wie vorher). Die DX-Seiten bearbeiten `p.fm6`; neu trägt `fmxAfterFm6Edit` geänderte Werte in den Graph
+zurück, solange der Algorithmus gleich bleibt (Zellen, Wellen, Phasen, Feedback-Wege und `pit` je Operator bleiben; ein genäherter
+fm6 trägt dazu seine Nummerierung `perm`). Tonh. schreibt nur `pit` dieses Operators.
+
+**Weiteres:** Live-Pegel der Kacheln mit ~30 Hz nur, solange das FELD sichtbar ist (Blatt offen, Seite sichtbar; `fmxLvWant`).
+LCD-Hinweis beim ersten Antippen von Feld, Pegel-Seite und Badge; Hilfe-Zeilen 1–7 (KP §4.6 + K2-43) im Menü › Hilfe.
+`FMX.dxMatch`/`approxFm6` merken sich die Struktur-Suche (der Fehlfall kostete 25 ms je Aufruf; jetzt einmal je neuer Struktur).
+
+**Test-API (KP §7):** `fmxView(t)` (Zustand, Fokus, Seite, Kacheln mit Box/Rahmen/Füllung/Balken/Text, Linien, Reiter, Wertzeilen,
+Badge), `fmxPreview(t, g)`, `fmxGesture(t, g)` (`drop`/`two`/`dtap`/`tap`, gleiche Logik wie Touch, ein Undo), dazu `fmxOpen(t, page,
+op)`, `fmxBadge(t)`. `setFmxOps` entfällt (K2-37).
+
+### Abnahme (V4b: N7F-13 … N7F-36 ohne N7F-30, N2-4b-01 … 04; Spec V4b-07b, -08, -09, -13 nach N7F-36)
+
+Tests (alle in `dirigent-test/`, Ausgaben in `dirigent-test/v3-v4b/`): `v3-v4b-logic.mjs` (Gesten-Logik in Node, 26/0),
+`v3-v4b-field.mjs P|L` (CDP-Touch in Chromium, P 106/0, L 101/0), `v3-v4b-node.mjs` (Worklet-Shim, M-KLICK/M-EINBRUCH, 15/15),
+`v3-v4b-platz.mjs` (M-PLATZ P1–P3, L1, L2, W, 59/0), `v3-v4b-view.mjs` (FELD/DX-Wahl, 3/0), `v3-v4b-perf.mjs` (4/0),
+`v3-v4b-shots.mjs` (Bildschirmfotos). Bildschirmfotos: `v3-v4b/field-P/`, `v3-v4b/field-L/` (Handbuch-Ablauf a1–a6, Farben,
+Vorlagen 1/5/16/22/32, DX gesperrt, ⤢ groß), `v3-v4b/platz/` (jede Seite in jeder Größe).
+
+| Punkt | Messung | Ergebnis |
+|---|---|---|
+| N7F-13 | P1: Feld 236, Wertefeld x 242–373, Kacheln 36 × 50 bei x = 40·c, y = 23 + 55·(5 − r), Wertzeilen y = 76 + 47·i; Reiterblock auf Pegel/Basis/Amp an derselben Stelle; Amp: Mini-Feld 20 × 42 in x 0–131, Hüllkurve ab x 138. L1: 48 × 31 bei y = 10 + 34·(3 − r), Wertefeld ab x 320; Kette über 6 Reihen: 4 sichtbar, „▲ 2 weitere“, Wischen rollt. M-PLATZ P1–P3, L1, L2, W: nichts außerhalb der Seite, kein abgeschnittener Text, kein Scrollen des Körpers | bestanden (±1 px) |
+| N7F-14 / V4b-01 | alle 32 Vorlagen (P und L): Badge „DX k ✓“, keine Überlappung, alles im Feld | 32/32 |
+| N7F-15 | alle coarse/fine-Kombinationen und festen Frequenzen ≤ 4 Zeichen, Textbreite ≤ Innenbreite (P1 28 px); „×1“ „×3,5“ „14“ „62“ „437“ „9,8k“; Schalter aus → keine Zahl | bestanden |
+| N7F-16 / N2-4b-01 | computed style: Pegel-Seite Rahmen = OP-Farbe; Stimme alle #5B6170; Auswahl #0A6E5B/#0ACA9F, andere #5B6170; stumm #3E435B; Linien #0AFFAD bzw. #3E435B; Kontraste Marke ≥ 3:1, Fahne ≥ 4,5:1. Pixelproben DPR 2 (P und L) ±8 | bestanden |
+| N7F-17 | Linien aller 32 Vorlagen: Anfang/Ende ±1 px; Animation 200 ms an, Schalter aus = keine | bestanden |
+| N7F-18 / K2-61 | Aufsetzen auf OP 4 → Fokus 4 vor dem Loslassen, Seite Basis; zwischen Operatoren bleibt Mod; Tipp ins Leere → Pegel, kein Undo | bestanden |
+| N7F-19 … N7F-21, N2-4b-03 | CDP-Touch ab INIT FM, P und L: 3 auf 1 (LCD vorher „3 → 1 verbinden“), 4 auf 3, 5 in (2,3) → „DX 5 ✓“, 2 fällt auf 6, Doppeltipp OP 1 stumm/an, Aufsetzen OP 4, Tipp ins Leere, Pegel-Zeile 2 +20 px; je ein Undo, Undo deep-equal | bestanden |
+| N7F-21b | Node: DX 3 in 2, Paare in 3, DX 32 in 4, DX 5 in 1 Geste(n), Zellen/Kanten deep-equal | bestanden |
+| N7F-22 | (a) 3 auf 6 abgewiesen „geht nicht: 6 moduliert schon 3 …“; (b) K2-42 5→2 + 4 in (2,0) → „geht nicht: 5 → 2 zeigt dann nicht mehr nach unten“; (c) außerhalb / eigene Zelle nichts; 400 Zufallszüge erfüllen I1–I4 | bestanden |
+| N7F-23 / V4b-07 | zwei Finger 6 + 1 → 6→1, nochmal gelöst, gleiche Reihe + LCD, 500 ms → nichts; ruhender Finger im Leerraum → FEIN ×¼ im Wertefeld, Feld unverändert; R0 Finger auf Kachel 3 (1 s) → Fokus bleibt, kein Picker, FEIN | bestanden |
+| N7F-24 | Doppeltipp und [M] je ein Undo; ⋯ › Solo Laufzeit, nicht gespeichert | bestanden |
+| N7F-25 / V4b-07b | Halten 1 s → nur Auswahl; 600 ms + 40 px → Zug mit Geist, kein Picker; ⋯ › „Modulieren mit …“ → Quellen für op4, LFO 1 → Route | bestanden |
+| N7F-26 | P1: +45 px → Füllkante +45 (±1), −45, FEIN 40 → +10, 3 px / 30 px senkrecht unverändert, 0 → 99 in einem Zug, OL nach der Anzeigekurve, Marke ±1 px, Ausgang linear, Extremwerte ohne Überlauf, Kontrast 7,9:1; L1 mit ±½ OL-Stufe (Abweichung 4) | bestanden |
+| N7F-27 / 27b | Welle 24 px → 3; fine oben / coarse unten getrennt; [×│Hz]; Ziffernblock ol 42, det −3, ph 64, fbAmt 2,5 (je ein Undo); Phase-Chip; Feedback-Quelle, Badge blass bei 0, weg bei „aus“ | bestanden |
+| N7F-28 | Anschlag bipolar, Doppeltipp = 0; Tasten-Skalierung links/rechts mit Vorzeichen, Mitte bp mit Notenname | bestanden |
+| N7F-29 | Ziele-Liste, [+ Ziel] + tiefere Kachel (Kante ohne `amt`), ✕, ✕ auf der letzten Kante → fällt zum Ausgang | bestanden |
+| N7F-31 | Kopieren/Einfügen ganzer OP; Vorlagen-Blatt (DX 5, Werte gleich); Zufall 50 Würfe mit/ohne ☑ Algorithmus | 50/50 · 50/50 |
+| N7F-32 | Modulator D1 fallend, gehaltene Note: Live-Teil 50 ms nach dem ersten Pegel ≥ 1,3 × bei 1 s (P 35 / 2,3 px, L 18,4 / 1,4 px); ≥ 10 Aktualisierungen je s; nur bei sichtbarem FELD | bestanden |
+| N7F-33 / N4b-01 | Badge „DX k ✓“ / „wie DX k – Nummern anders“ / „kein DX: Welle“ / „kein DX-Alg. · nächster: k“; [Nummern angleichen] → ✓, ein Undo; FELD ↔ DX ändert weder fm6 noch fmx; DX gesperrt bei nicht tauglichem Graph; INIT FM öffnet FELD, Werks-Sound DX, Wahl je Spur gemerkt | bestanden |
+| N7F-34 / V4b-11 | Worklet-Shim, eine gehaltene Note: Verbinden, Tauschen, Fallen, Zwei Finger, Doppeltipp (Modulator/Ausgang), Vorlage DX 1 → 5/32/16, jeweils auch A│B zurück: M-EINBRUCH −0,7 … 0,3 dB; M-KLICK 5,0 … 5,9 dB, Tauschen 14,1 / 12,2 dB (Abweichung 1) | 15/15 |
+| N7F-35 | Hilfe-Zeilen 1–7 im Menü; LCD-Hinweis beim ersten Antippen von Feld, Pegel-Seite, Badge | bestanden |
+| N7F-36 | V4b-07b, -08, -09 (A│B), -13 (WP7-Diagramm-Tests `wp7-accept ui/pr1` bestehen auf dem Vorlagen-Blatt); N4b-01 … 04 (N4b-02: 3 Modulatoren +Δ relativ, ein Undo stellt alle her); V1d-02 entfällt bis V1d (K2-03) | bestanden |
+| N2-4b-02 | weder „Kodamo“ noch „EssenceFM“ in LCD, Hilfe, Beschriftungen; nur im ⓘ mit Pflichtsatz | bestanden |
+| N2-4b-04 | P1, OP 4, Amp → ⋯ › ⤢ Hüllkurve groß → A.4b-Editor für OP 4; Punkt ziehen → `getFmx` OP 4 geändert, ein Undo; [✕ FELD] → Amp, Fokus 4, Mini-Feld | bestanden |
+
+**Regression:** `v3-v4b-reg.sh` (Liste von V4a, Versions-Kopien `v3-v4b-adapt-*` für 3.9.0; Ausgaben `v3-v4b-reg/run1`, Nachläufe
+`v3-v4b-reg/run2` mit `v3-v4b-reg2.sh`). Gescheitert sind nur die schon in V4a gleich scheiternden Prüfungen (`node-fm` 1,
+`v3-v0b-adapt-wp3-browser` 3, `v3-v0b-adapt-wp3-ui` 2, `wp3-adapt-func-build` und `-native` je 2 (C2, D5), `wp4-offline` 2) und drei
+beabsichtigte Änderungen mit neuen Anpassungen: `v3-v4b-adapt-v0b-ux` (V0b-09 „kein Etikett heißt Pegel“ gilt nicht für die
+FELD-Seite, KP §4.7), `v3-v4b-adapt-wp1-brand` (Kopf „SYNQUENZER 3.9“), `v3-v4b-adapt-wp3…wp7-dod` (Dateigrenze 5,0 MB nach EN2-28
+statt 1,5 MB aus v2) – alle bestanden. V0d-Suiten `eng1`, `eng2`, `sounds`, `fm-sound`, `migr`, `band`, `ui-a…d`,
+`v3-v0dfix-adapt-v0d-native` bestanden (V0d-2-09 L lief erst 2 px über: fünf Unterreiter ließen der LCD-Zeile weniger Platz →
+Unterreiter in L kompakter, danach 51/0). V4a: `v3-v4a-node` 4/4 (V4a-11 einzeln; im Parallel-Lauf Last ×2,25), `v3-v4a-ui` 23/0
+(einzeln; N7F-10 10,2 %), `v3-v4a-shot` 10/0. `v3-qareg-v4a-fmxio` (QA-Lauf der V4a-Prüfer, Version auf 3.9.0 angepasst) scheitert
+an „klingt wie vorher“ – genauso auf `V4a-fix.html` (der erste Mitschnitt nach dem Audio-Start ist 1,5 dB lauter); keine Folge von
+V4b. DoD bestanden. Smoke-Test: Titel SYNQUENZER, keine Fehler. Worklet-ASCII-Prüfung bestanden (116,7 KB, unverändert).
+Dateigröße 1 657 636 Byte (+117 KB gegenüber V4a-fix; Budget 95 KB, +23 %: Wertefeld mit fünf Seiten, Hüllkurven-Ansicht EK-13,
+Ziffernblock, Test-API).
+
+### Fach-Prüfung (Teil J: FP-TOUCH Haupt-Blick, FP-DSP Zweit-Blick; V4b ist blockierend ●)
+
+Kein eigener Prüf-Agent verfügbar: beide Checklisten (J.2) selbst über Diff, Testausgaben, M-PLATZ-Skript und Bilder abgearbeitet.
+12 Befunde, 10 behoben, 2 begründet:
+1. **FP-TOUCH · Touch-Anpassung (Chromium/Android) lenkte Züge auf Etikett oder Chip** (Balken waren keine Tipp-Ziele). Behoben:
+   Balken sind eigene Tipp-Ziele.
+2. **FP-TOUCH · R0 nur in einer Reihenfolge:** Ein Finger, der schon im Feld lag, bevor der Zug im Wertefeld begann, wirkte nicht als
+   FEIN (und hätte beim Heben „Tipp ins Leere“ ausgelöst). Behoben: er wird beim Zugbeginn zum FEIN-Finger.
+3. **FP-TOUCH · Wertefeld-Ebene lag über der Hüllkurve** (L1 und P1 rechts): Punkte und Knöpfe nicht erreichbar. Behoben.
+4. **FP-TOUCH · P2: 6. Wertzeile mit dem iOS-Schutz (touchstart preventDefault) nicht erreichbar.** Behoben: die Liste darf senkrecht
+   rollen (Abweichung 2).
+5. **FP-TOUCH · abgeschnittene Texte** („Stimme“, „Alle Mod.“, „×4,5“, „Anstieg“, Budget-Zeile, Tasten-Skalierung) in P1/P2/L.
+   Behoben (Schriftgrößen, zweizeilige Knöpfe, kürzere Anzeigen); das M-PLATZ-Skript prüft es jetzt in allen Größen.
+6. **FP-TOUCH · W (Tablet): Mini-Feld mit NaN-Geometrie.** Behoben: W zeigt die Hüllkurve im Wertefeld wie L (KP §5.3).
+7. **FP-TOUCH · P3: Frequenz in den Kacheln unsichtbar; ✕ verdrängte einen Reiter.** Behoben.
+8. **FP-TOUCH · fmxOpen setzte den Fokus ohne die DX-Seiten nachzuführen** („OP 1“ im Unterreiter bei Fokus 2). Behoben.
+9. **FP-DSP · Struktur-Suche bei jeder Wertbewegung** (`dxMatch`/`approxFm6` 25 ms im Fehlfall, über 720 Nummerierungen). Behoben:
+   gemerkt je Struktur; Wertzug jetzt Median 1,2–1,4 ms, Geste 4,5–5,1 ms (Spitze 10 ms, Xeon).
+10. **FP-DSP · Live-Pegel liefen weiter bei geschlossenem Blatt** (das FELD bleibt im DOM). Behoben: nur bei offenem Blatt und
+    sichtbarer Seite (N7F-09).
+11. **FP-DSP · Tauschen: M-KLICK 14,1 dB** (Abweichung 1). Begründet.
+12. **FP-TOUCH · [A│B] steht nur im Reiterblock ohne Auswahl** (KP §4.7): nach einer Geste ist der Operator gewählt, erst Tipp ins
+    Leere. Begründet (KP-Layout); Rückfrage beim Gerätetest.
+
+### Abweichungen von der Spec
+
+1. **N7F-34 Tauschen:** M-KLICK 14,1 dB (zurück 12,2 dB), M-EINBRUCH 0,3 dB. Der Tausch 4 ↔ 3 macht aus dem Klang einen um 15 dB
+   helleren (OP 3 mit OL 99 wird Modulator); die 2-ms-HF-Fenster steigen in der 30-ms-Blende. Eine ideale Überblendung der beiden
+   Klänge allein (offline, gleichleistungsgemäß) zeigt schon 11,4 / 11,6 dB: der Detektor sieht den Klangfarben-Sprung, keinen
+   Knack. Kriterium im Test: M-KLICK besteht oder liegt ≤ 3 dB über der idealen Überblendung. Alle anderen Gesten ≤ 5,9 dB.
+2. **P2 (375 × 667):** die 6. Wertzeile erreicht man durch senkrechtes Rollen der Liste statt über ‹ › (KP §5.3).
+3. **„Pegel“ als Etikett** auf der FELD-Seite (Reiter, Basis-Zeile) gegen V0b U-04 („kein Etikett heißt Pegel“): KP §4.7 (Nachtrag 2)
+   hat Vorrang.
+4. **N7F-26 in L1:** `ol` ist ganzzahlig; bei 200 px Balken ist eine OL-Stufe oben bis 3,3 px breit. Toleranz dort ±1 px + ½ Stufe.
+5. **N7F-32** wird ab dem ersten gemeldeten Pegel gezählt (Audio- und Nachrichten-Latenz im Headless-Chromium ≈ 100 ms).
+6. **Modulieren mit …** wählt die Quelle und legt die Route mit 50 % an; die Tiefe stellt man im Reiter MOD (kein Tiefen-Zug im FELD).
+7. **Mehrere wählen** wirkt auf den Pegel-Zug (N4b-02: relativ); Verhältnis-Raster (V4c) und Hüllkurve „absolut auf alle“ für die
+   Auswahl fehlen – Hüllkurven gehen über [Alle Mod.]/[Alle Ausg.]/[Auf alle].
+8. **L1 Randzug beim Ziehen** rollt eine Reihe je 350 ms statt 8 px je 50 ms (Reihen-Raster).
+9. **DX/OP gesperrt** für nicht DX-taugliche Graphen (KP §4.12); ⤢ Hüllkurve groß öffnet trotzdem den A.4b-Editor, dessen Werte
+   über die neue Rückführung `fmxAfterFm6Edit` (mit `perm`) in den Graph gehen.
+10. **Größe +117 KB** statt +95 KB (+23 %, unter der 50-%-Regel).
+11. **M-REKON:** `S.ui.fmv` ist ein Ansichtsfeld; `HIST.volatile` gibt es erst mit VC2a – VC2a trägt `fmv` dort ein.
+12. Die Spec-v3-Punkte V4b-02 … -06, -07, -10, -11, -12 (Zonen, Schiene, Parkplatz, [+], Anfasser) sind nach KP N7F-36 ersetzt.
+
+### iPhone-Prüfpunkte (Xander)
+
+1. FM-Spur, ⋯ → Init (INIT FM): FM öffnet FELD – unten die Ausgänge 1 und 3, darüber 2 und 4–5–6, rechts die Pegel-Seite in denselben Farben.
+2. OP 3 auf OP 1 ziehen → verbunden (das Feld zeigt es schon vor dem Loslassen); OP 4 auf OP 3 → Plätze getauscht; OP 5 ins Leere
+   rechts → fällt nach unten, oben „DX 5 ✓“.
+3. Doppeltipp auf einen Operator → stumm (grau), nochmal → an.
+4. Operator antippen → rechts Basis/Amp/Mod/Tonh.; Pegel waagrecht ziehen (kein Sprung), Tipp auf die grüne Zahl = Ziffernblock.
+5. Amp: links das kleine Feld, rechts die Hüllkurve; Punkte ziehen; ⋯ → „⤢ Hüllkurve groß“ und „✕ FELD“ zurück.
+6. Zwei Finger gleichzeitig auf OP 6 und OP 1 → zusätzliche Linie; nochmal → weg.
+7. Querformat: Feld links, Werte rechts; eine lange Kette rollt mit einem Wisch im leeren Feld.
+8. Kleines iPhone (375 × 667): die Werte-Liste rechts rollt senkrecht; waagrecht ziehen ändert den Wert.
+
+### Bekannte Lücken
+
+- Punkt-Form-Hüllkurven, Tonhöhen-Bereiche, Punkt-Knöpfe (V4f); Vorhersage, Raster, [DX-tauglich machen], .syx-Export (V4c).
+- Kein WebKit-/iPhone-Test (Chromium mit CDP-Touch, Node); iOS-Rollen der P2-Liste und Haptik nur im Code geprüft.
+- Feld-Gesten erscheinen erst mit VC2a im Verlauf (N2-C2a-01); PAD-R1 (N2-1d-01) und die Mod-Pfade `fmx.<k>.…` (N2-5d-01) kommen mit
+  V1d bzw. V5d.
+
+## V4b-fix — FELD: Ziehen, Rollen, FEIN, Rückweg, LCD, P3-Blatt, Sicht FELD/DX, Pegel 0 · App 3.9.0
+
+App: `dirigent-wt/index.html`, Snapshot `synq-snapshots/V4b-fix.html`. Neun bestätigte Befunde der V4b-Prüfung behoben;
+Tests mit echter Schrift (Seite über http, Barlow/JetBrains geladen: `dirigent-test/v3-v4bfix-lib.mjs`).
+
+- **Ziehen auf die Nachbarkachel (KD §5.2 Nr. 1, R4):** der Geist hängt am Aufsetzpunkt (kein 8–20-px-Nachlauf); die
+  8-px-Hysterese hält die alte Zelle nur noch, solange der Geist-Mittelpunkt nicht in der neuen Kachel liegt.
+  `v3-qa4b-dbg2.mjs`, `v3-repro-ghostlag.mjs`: 4↔3, 2↔1, 5↔4, 6↔5 in P1–P3, L1, L2 bei 1–18 px je Bewegung, ein Undo.
+- **P2/P3-Werteliste rollt per Finger:** `.fxv.scr` steht in der Ausnahme des Blatt-`touchstart`, Zeilen/Balken/Wertzone/Chip
+  dort `touch-action: pan-y`; waagrecht bleibt Wertzug. Rollstand bleibt bei Neuaufbau derselben Seite. Feedback, Quelle,
+  OP-6-Pegel, Hilfe erreichbar (`v3-v4bfix-p2row6.mjs`, `v3-v4bfix-scroll.mjs`).
+- **R0 FEIN mitten im Zug:** Hüllkurvenpunkte, DX-Zellen R/L und Tasten-Anfasser setzen bei Faktorwechsel an Wert und
+  Fingerort neu auf (wie die Wertbalken) – kein Sprung (`v3-qa4b-o.mjs`, `v3-repro-r0fine.mjs`).
+- **⤢ Hüllkurve groß:** „✕ FELD“ ist jetzt ein eigener Unterreiter (OSZ: statt „FELD“, HÜLLK.: vorn), kein Knopf über der
+  Seite; nichts verdeckt in P1–P3, L1, L2 (`v3-v4bfix-big.mjs`). Rückweg merkt FELD für die Spur.
+- **LCD und Feldkopf schneiden nicht mehr ab (L6):** zu langer Text läuft zweizeilig (Etikett + Text, UI-Schrift 10,5 px);
+  reicht auch das nicht, Laufschrift; Tipp aufs LCD zeigt den ganzen Text. Feldkopf ebenso zweizeilig
+  (`v3-v4bfix-lcd.mjs`, auch Erst-Hilfe und Status nach der Geste).
+- **P3:** Tipp (nach dem Doppeltipp-Fenster 300 ms) öffnet das Werte-Blatt, Aufsetzen nur wählt; ein Zug schließt das Blatt,
+  Landeplatz und Ergebnis bleiben sichtbar; Doppeltipp = M ohne Blatt (`v3-v4bfix-p3.mjs`).
+- **N4b-01 Sicht:** erste FM-Öffnung, Bibliothek, .syx und Spurwechsel zeigen die gemerkte Wahl der Spur, sonst deren Vorgabe
+  (Werks-FM ohne Graph/.syx = DX, INIT/Graph = FELD) – nie die FELD/DX-Seite der vorigen Spur (`v3-repro-n4b01-view.mjs`).
+- **Gesperrte DX/OP-Seite:** Gründe in L1/L2 in eigener Spalte rechts, in P3 bei Platzmangel zweispaltig; alle Gründe lesbar,
+  Knopf frei, auch mit 6 Gründen (`v3-v4bfix-lock.mjs`).
+- **Pegel 0 / [×│Hz] am gehaltenen Ton (L3):** Worklet: OL 0 eines fmx-Operators läuft über die 30-ms-Stummrampe statt harter
+  Abschaltung; ein Live-Pegelsprung blendet die Verstärkung in 30 ms über; [×│Hz] zählt als strukturell (30-ms-Überblendung).
+  Offline (gleiche Worklet-Quelle, App-Nachrichten): OP1 99→0 9,9 → 5,1 dB, OP2 78→0 15,2 → 5,1 dB, Chip Note 57 5,1 dB
+  (Kontrolle 4,9). Rest: Chip bei Note 45 10,6 dB (vorher 24), dort liegt schon der ruhige Klang bei 7,9 dB.
+  FM6-bitgleich unverändert (`v3-v4a-node.mjs` 46/46).

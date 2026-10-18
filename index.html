@@ -654,6 +654,13 @@ svg{display:block}
 .lcd{order:-1;flex:1 1 100%;height:28px;margin:4px 8px 0;padding:0 10px;display:flex;align-items:center;gap:8px;border-radius:5px;background:var(--lcd);box-shadow:inset 0 1px 5px rgba(0,0,0,.9);font:500 12px/1 var(--font-num);color:var(--text);white-space:nowrap;overflow:hidden;min-width:0}
 .lcd .lk{flex:none;font:700 11px/1 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--tc,var(--text-dim))}
 .lcd .lv{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.lcd.lng .lk{display:none}
+.lcd.lng .lv{flex:1 1 auto;white-space:normal;text-overflow:clip;font:500 10.5px/12px var(--font-ui);letter-spacing:.01em;max-height:24px;padding:0;margin:0;overflow:hidden;overflow-wrap:anywhere}
+.lcd.lng .lkin{font:700 9.5px/12px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--tc,var(--text-dim));margin-right:6px}
+.lcd.mq .lv{text-overflow:clip}
+.lcd.mq .mqi{display:inline-block;animation:lcdmq var(--mqd,6s) linear infinite alternate}
+@keyframes lcdmq{0%,14%{transform:translateX(0)}86%,100%{transform:translateX(var(--mq,0))}}
+.pop.lcdfull{max-width:min(420px,92vw)}.pop.lcdfull h4{margin:0 0 4px;font:700 11px/1.2 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}.pop.lcdfull p{margin:0;font:500 13px/1.35 var(--font-ui);color:var(--text);white-space:normal}
 .lcd .lx{flex:none;margin-left:auto;font:700 10px/1 var(--font-ui);color:var(--ink);background:var(--sel);padding:2px 4px;border-radius:3px}
 .sh-tabs{flex:1 1 100%;display:flex;gap:3px;padding:5px 8px 0;min-width:0;height:40px}
 .tab{flex:1 1 0;min-width:0;height:35px;padding:0 6px;border-radius:6px 6px 0 0;font:700 12px/1 var(--font-ui);letter-spacing:.08em;color:var(--text-dim);background:var(--chassis);border:1px solid var(--line);border-bottom:0;white-space:nowrap;overflow:hidden}
@@ -2683,6 +2690,9 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .fxpg .fxh .fxht{flex:1;min-width:0;height:18px;padding:0;border:0;background:transparent;text-align:left;pointer-events:auto;font:700 13px/18px system-ui;color:#E6E8F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0}
 .fxpg[data-mode="W"] .fxh .fxht{font-size:15px}
 .fxpg .fxh .fxht.mod{color:#0ACA9F}.fxpg .fxh .fxht.drag{color:#F7C948}
+.fxpg .fxh{align-items:flex-start}
+.fxpg .fxh .fxht.lng{white-space:normal;height:auto;max-height:26px;font-size:11px;line-height:13px;text-overflow:clip;overflow:hidden;background:rgba(10,10,10,.85);border-radius:0 0 4px 0;overflow-wrap:anywhere}
+.fxpg .fxh .fxht.mq{text-overflow:clip}.fxpg .fxh .fxht .mqi{display:inline-block;animation:lcdmq var(--mqd,6s) linear infinite alternate}
 .fxpg .fxh button{pointer-events:auto;height:18px;min-width:22px;padding:0 4px;border-radius:4px;border:1px solid #5B6170;background:#1A1C24;color:#F7C948;font:700 11px/16px system-ui}
 .fxpg .fxh .fxbg.ok{color:#47CA0A}
 .fxpg .fxh .fxp3{color:#E6E8F0}
@@ -2726,7 +2736,9 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 /* value panel */
 .fxpg .fxv{position:absolute;z-index:4}
 .fxpg .fxv.sheet3{background:#121317;box-shadow:-8px 0 16px rgba(0,0,0,.5);border-left:1px solid #5B6170}
-.fxpg .fxv.scr{overflow-y:auto;touch-action:pan-y}
+.fxpg .fxv.scr{overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain}
+/* P2/P3: the list rolls vertically by touch (6th row); a horizontal move on a bar stays a value drag (K2-38) */
+.fxpg .fxv.scr .fxr,.fxpg .fxv.scr .fxbw,.fxpg .fxv.scr .fxz,.fxpg .fxv.scr .fxchip{touch-action:pan-y}
 .fxpg .fxtabs{display:grid;grid-template-columns:repeat(3,42px);grid-auto-rows:34px;gap:4px 3px}
 .fxpg[data-mode="P2"] .fxtabs,.fxpg[data-mode="P3"] .fxtabs{grid-template-columns:repeat(3,1fr);grid-auto-rows:30px;gap:3px 3px}
 .fxpg[data-mode="P3"] .fxtabs{grid-template-columns:repeat(3,1fr) 26px}.fxpg[data-mode="P3"] .fxtab.fxx{grid-column:4;grid-row:1/3}
@@ -2820,10 +2832,24 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .pop.fxkp .kpg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.pop.fxkp .kpk{height:44px;font-size:18px}
 .pop.fxkp .kpk.ok{grid-column:span 1;background:#0A6E5B;color:#fff}
 /* DX / OP page locked for a graph that is not DX-tauglich (KP §4.12) */
-.fmlock{position:absolute;inset:0;z-index:20;background:rgba(10,11,14,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px;text-align:center;color:#E6E8F0;font:600 13px/1.35 system-ui}
-.fmlock ul{margin:0;padding:0;list-style:none;font-size:12px;color:#F7C948;max-height:50%;overflow:auto}
+.fmlock{position:absolute;inset:0;z-index:20;background:rgba(10,11,14,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 12px;text-align:center;color:#E6E8F0;font:600 13px/1.35 system-ui;overflow:hidden;box-sizing:border-box}
+.fmlock>*{flex:none}
+.fmlock ul{margin:0;padding:0;list-style:none;font-size:12px;line-height:16px;color:#F7C948}
+.fmlock .fmlbtn{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .fmlock button{min-height:44px;padding:0 14px}
-.fxback{position:absolute;right:6px;top:4px;z-index:21;min-height:36px;padding:0 10px;border-radius:6px;border:1px solid #0ACA9F;background:#0A6E5B;color:#fff;font:700 12px/1 system-ui}
+.fmlock.t1 ul{columns:2;column-gap:14px;font-size:11.5px;line-height:15px}
+.fmlock.t1>span{font-size:12px;line-height:15px}
+.fmlock.t2>span{display:none}
+/* landscape (L1, L2: the page is ~150 px tall): sentence and button left, the reasons in their own column right */
+@media (orientation:landscape){
+  .fmlock{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-rows:auto auto auto;align-content:center;justify-items:start;column-gap:18px;row-gap:5px;text-align:left;padding:8px 14px}
+  .fmlock>b{grid-column:1;grid-row:1}
+  .fmlock>span{grid-column:1;grid-row:2;font-size:12px;line-height:15px}
+  .fmlock>ul{grid-column:2;grid-row:1 / span 3;align-self:center;justify-self:stretch}
+  .fmlock>.fmlbtn{grid-column:1;grid-row:3;justify-content:flex-start}
+  .fmlock.t1 .fmlbtn button{min-height:40px}
+}
+#synthSheet .sh-subs .stab.fxbk{background:#0A6E5B;color:#fff;border-color:#0ACA9F;box-shadow:inset 0 0 0 1px #0ACA9F}
 </style>
 </head>
 <body>
@@ -3070,6 +3096,7 @@ const PMS_T = [0, 10, 20, 33, 55, 92, 153, 255];
 const LFOFM_HT = new Float64Array(128); for (let i = 0; i < 128; i++) { const x = i * 7 / 127, j = Math.min(6, x | 0); LFOFM_HT[i] = 12 * (PMS_T[j] + (PMS_T[j + 1] - PMS_T[j]) * (x - j)) / 255; }
 const LFOAM_DB = 24 / 127;
 const FMX_EDGE_CAP = 12;                              // V4a (K2-42, N7F-10 measured 15.7 % with 15 edges and a loop): > 12 edges -> 6 voices
+const OLX_N = Math.max(1, Math.round(.03 * SR / CR));  // V4b-fix (L3): a live level jump of an fmx operator blends old -> new gain in 30 ms
 const MUTE_STEP = CR / (.03 * SR);                     // V4a (N7F-06): [M] / on fades an operator in 30 ms (10 ms tripped M-KLICK on a bright modulator)
 
 // V4a (Nachtrag 2 Teil A, KP 6.1): p.fmx (format 2) -> {fm: an fm6-like patch for the envelope / level code (r, l = the DX
@@ -3080,10 +3107,11 @@ function fmxEdges(X) {
   for (const e of Array.isArray(X.edges) ? X.edges : []) { const a = ((e && e.from) | 0) - 1, b = ((e && e.to) | 0) - 1; if (a >= 0 && a < 6 && b >= 0 && b < 6 && a !== b) E.push([a, b]); }
   return E;
 }
-function fmxSig(P) {                                    // what makes a change structural: edges, waves, feedback sources
+function fmxSig(P) {                                    // what makes a change structural: edges, waves, feedback sources, [x|Hz] (V4b-fix: a jump
+                                                        // between ratio and fixed frequency is crossfaded like a new routing, L3)
   const X = P && P.x; if (!X || !Array.isArray(X.ops) || X.ops.length < 6) return 'a' + ((P && P.alg) | 0);
   let s = 'x' + fmxEdges(X).map(e => e[0] * 6 + e[1]).sort((a, b) => a - b).join(',') + '|';
-  for (let k = 0; k < 6; k++) { const o = X.ops[k] || {}; s += (o.wave | 0) + ':' + (o.fbSrc | 0) + ' '; }
+  for (let k = 0; k < 6; k++) { const o = X.ops[k] || {}; s += (o.wave | 0) + ':' + (o.fbSrc | 0) + (o.fixed ? ':h' : '') + ' '; }
   return s;
 }
 function envDx(e) {                                     // the DX form of an envelope; the point form (V4f) approximated
@@ -3132,7 +3160,8 @@ function fmxCompile(X) {
     fops.push({on: 1, fixed, coarse: o.coarse | 0, fine: +o.fine || 0, det: o.det | 0, ol: Math.max(0, Math.min(99, o.ol | 0)), r: A.r, l: A.l,
       vs: Math.max(-7, Math.min(7, o.vs | 0)), rs: o.rs | 0, ks: o.ks && typeof o.ks === 'object' ? o.ks : undefined});
     const w = o.wave | 0; gx.wave[k] = w > 0 && w < 12 ? w : 0;           // eigene Wellen 12..47 kommen mit V4e
-    gx.on[k] = o.on === 0 ? 0 : 1; gx.ph0[k] = (Math.max(0, Math.min(127, o.ph | 0)) * 33554432); gx.phm[k] = PHM[o.phm] || 0;
+    // V4b-fix (L3): level 0 fades out through the 30 ms mute ramp (xmu), no hard cut
+    gx.on[k] = o.on === 0 || !(o.ol > 0) ? 0 : 1; gx.ph0[k] = (Math.max(0, Math.min(127, o.ph | 0)) * 33554432); gx.phm[k] = PHM[o.phm] || 0;
     const P = o.pit;
     gx.pit.push(P && P.f === 'dx' && !fixed && (o.pr == null || o.pr === 'dx') && Array.isArray(P.l) && !P.l.every(x => (x | 0) === 50) ? envDx(P) : null);
     gx.am[k] = Math.max(0, Math.min(127, o.lfoAm | 0)) * LFOAM_DB; gx.fmS[k] = LFOFM_HT[Math.max(0, Math.min(127, o.lfoFm | 0))];
@@ -3229,6 +3258,7 @@ class Voice {
     // V4a (fmx graph): pitch EG per operator (octaves), mute ramp, wave mip level / weight (now, target), self-feedback history
     // per operator, foreign-feedback history (last sample of the previous / current block), per-sample outputs (now, previous)
     this.xpL = new Float64Array(6); this.xpT = new Float64Array(6); this.xpR = new Float64Array(6); this.xpIx = new Int8Array(6).fill(4); this.xpRise = new Uint8Array(6);
+    this.olG = new Float64Array(6); this.olN = new Int16Array(6);
     this.xmu = new Float64Array(6).fill(1); this.xwa = new Int8Array(6); this.xwb = new Int8Array(6); this.xww = new Float64Array(6); this.xwt = new Float64Array(6);
     this.xf0 = new Float64Array(6); this.xf1 = new Float64Array(6); this.fyl = new Float64Array(6); this.fyp = new Float64Array(6);
     this.xy = new Float64Array(6); this.xyp = new Float64Array(6); this.xnew = 0;
@@ -3914,7 +3944,7 @@ class AnalogCore extends AudioWorkletProcessor {
       if (m === 1) { let x = v.rng; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; v.rng = x >>> 0; v.fph[k] = v.rng; }
       else if (m === 2) { if (this.frF[k] >= 0) v.fph[k] = (this.frPh[k] + this.frInc[k] * (F - this.frF[k])) % 4294967296; else v.fph[k] = 0; }
       else v.fph[k] = X.ph0[k];
-      v.xmu[k] = X.on[k]; v.xf0[k] = v.xf1[k] = 0; v.fyl[k] = v.fyp[k] = 0; v.xy[k] = v.xyp[k] = 0; v.xwa[k] = -1;
+      v.xmu[k] = X.on[k]; v.olN[k] = 0; v.xf0[k] = v.xf1[k] = 0; v.fyl[k] = v.fyp[k] = 0; v.xy[k] = v.xyp[k] = 0; v.xwa[k] = -1;
       const E = X.pit[k]; v.xpL[k] = E ? PEG_TAB[E.l[3]] / 32 : 0; this.xpAdvance(v, k, E ? 0 : 4);
     }
     v.xnew = 1;                                                 // the free-run reference is taken after the first block
@@ -3953,10 +3983,11 @@ class AnalogCore extends AudioWorkletProcessor {
     const P = this.fm, lf = Math.log2(440 * Math.pow(2, (note - 69) / 12)), X = this.gx;
     for (let k = 0; k < 6; k++) {
       const op = P.ops[k];
-      v.fon[k] = (op.on !== 0 || X) && op.ol > 0 ? 1 : 0;          // V4a: an fmx operator mutes through its 10 ms ramp (xmu)
+      v.fon[k] = X ? 1 : op.on !== 0 && op.ol > 0 ? 1 : 0;           // V4a: an fmx operator mutes (and goes to level 0) through its ramp (xmu)
       let ol = scaleOL(op.ol | 0) + scaleLevel(note, op.ks);
       const vs = op.vs | 0;                                          // V4a (N7F-07): vs < 0 = the mirrored curve (soft = loud)
       ol = Math.max(0, (Math.min(127, ol) << 5) + (vs < 0 ? scaleVel(128 - vel127, -vs) : scaleVel(vel127, vs)));
+      if (live && X && v.foutLvl[k] !== ol && v.fg1[k] > 0) { v.olG[k] = v.fg1[k]; v.olN[k] = OLX_N; }   // V4b-fix: keypad jumps glide (no click)
       v.foutLvl[k] = ol; v.frs[k] = scaleRate(note, op.rs | 0);
       if (op.fixed) { v.ffixed[k] = Math.pow(10, (op.coarse & 3) + op.fine / 100) * Math.pow(2, (op.det > 0 ? op.det : 0) * 13457 / 16777216); v.fratio[k] = 0; }
       else {
@@ -4082,7 +4113,8 @@ class AnalogCore extends AudioWorkletProcessor {
       if (mu !== mt) { mu = mt > mu ? Math.min(mt, mu + MUTE_STEP) : Math.max(mt, mu - MUTE_STEP); v.xmu[k] = mu; }
       let db = (alg.car[k] ? 0 : br) + dst[D_OP1 + k] * 99 * .75;
       if (X.am[k]) db -= X.am[k] * (1 - l1) * .5;
-      const g = v.fon[k] && mu > 0 ? Math.pow(2, v.flvl[k] / 256 - 14) * (db ? Math.pow(10, db / 20) : 1) * mu : 0;
+      let g = v.fon[k] && mu > 0 ? Math.pow(2, v.flvl[k] / 256 - 14) * (db ? Math.pow(10, db / 20) : 1) * mu : 0;
+      if (v.olN[k] > 0) { g += (v.olG[k] - g) * (v.olN[k] / (OLX_N + 1)); v.olN[k]--; }
       v.fg1[k] = g;
       const fmv = X.fmS[k] ? X.fmS[k] * l1 : 0;
       let f;
@@ -14458,11 +14490,31 @@ function lcdShow(label, txt, extra, range, rc) {
   if (L.classList.contains('wia')) L.classList.remove('wia');
   const fest = range === FEST_HINT; L.classList.toggle('fest', fest);
   L.innerHTML = `<span class="lk">${esc(label)}</span><span class="lv">${esc(txt)}</span>` + (range ? `<span class="lm"${rc ? ` style="--mc:${rc}"` : ''}>${fest ? '' : '↕ '}${esc(range)}</span>` : '') + (fest ? '<span class="lx lfest">POSITION ▸</span>' : extra ? `<span class="lx">${esc(extra)}</span>` : '');
+  L._full = [label, txt]; lcdFit(L);
 }
 function lcdHint() {
   const L = ED.lcd; if (!L) return;
   L._s = null;
   L.innerHTML = '<span class="lk">Regler</span><span class="lv">ziehen = ändern · seitlich = fein · 2× tippen = Standard · halten = modulieren</span>';
+  L._full = ['Regler', 'ziehen = ändern · seitlich = fein · 2× tippen = Standard · halten = modulieren']; lcdFit(L);
+}
+// L6 „nichts abgeschnitten“ (V4b-fix): a text longer than the LCD line first flows over two lines (label + text, smaller UI
+// face); if even that is too short it runs as a slow marquee (LCD style, pauses at both ends). A tap on the LCD shows it whole.
+function lcdFit(L) {
+  L.classList.remove('lng', 'mq');
+  const v = L.querySelector('.lv'); if (!v || L.classList.contains('wia')) return;
+  if (!v.clientWidth || v.scrollWidth <= v.clientWidth + 1) return;
+  const k = L.querySelector('.lk'), kin = el('b', 'lkin'); kin.textContent = k ? k.textContent : '';
+  v.insertBefore(kin, v.firstChild); L.classList.add('lng');
+  if (v.scrollHeight <= v.clientHeight + 1 && v.scrollWidth <= v.clientWidth + 1) return;
+  kin.remove(); L.classList.remove('lng'); L.classList.add('mq');
+  const w = v.scrollWidth - v.clientWidth, mi = el('span', 'mqi'); while (v.firstChild) mi.appendChild(v.firstChild); v.appendChild(mi);
+  mi.style.setProperty('--mq', -Math.ceil(w + 4) + 'px'); mi.style.setProperty('--mqd', (2.6 + (w + 4) / 38).toFixed(1) + 's');
+}
+function lcdFull(L) {
+  const f = L._full; if (!f || !(L.classList.contains('lng') || L.classList.contains('mq'))) return false;
+  openPop(L, pop => { pop.classList.add('lcdfull'); pop.innerHTML = `<h4>${esc(f[0])}</h4><p>${esc(f[1])}</p>`; }, {name: 'lcdfull'});
+  return true;
 }
 // picker (§10.1 PICK, §9.3): marking menu above the control. Slide onto a chip and lift (expert), or lift in place -> it
 // stays open (sticky) -> tap a chip (novice); an outside tap closes it without touching what lies below.
@@ -15134,7 +15186,7 @@ function sheetFrame(sh, title, tabs, curTab, onTab, subs) {
   sh.append(head, bar, body);
   if (sh === EL.synthSheet || sh === EL.drumSheet) fitWatch(body);
   ED.lcd = lcd; lcdHint();
-  onTap(lcd, () => { if (lcd.classList.contains('fest')) kbVelPos(); });     // V0b K-15: tap on the FEST hint = POSITION
+  onTap(lcd, () => { if (lcd.classList.contains('fest')) kbVelPos(); else lcdFull(lcd); });     // V0b K-15: tap on the FEST hint = POSITION; a long text: whole
   renderEdChip();
   return {head, r1, r2, body};
 }
@@ -15654,18 +15706,25 @@ function buildSynthEd() {
   const eng = tr.sound.engine;
   if (!['osc', 'filter', 'env', 'lfo', 'mod', 'fx'].includes(ED.tab)) ED.tab = 'osc';
   let subs = subTabsFor(ED.tab, eng);
+  // N4b-01: the FM page coming back from another engine's sub-page (OSZ 1 …) opens the track's own view, not the first sub-tab
+  if (eng === 'fm6' && ED.tab === 'osc' && subs && !subs.some(x => x[0] === ED.sub.osc)) ED.sub.osc = fmViewFor(i);
   // V0d (A.4b 5): the FM envelope tab keeps its own sub-tab (ED.sub.envfm, default OPERATOREN), apart from the VA one
   const SK = ED.tab === 'env' && eng === 'fm6' ? 'envfm' : ED.tab;
   if (subs && !subs.some(x => x[0] === ED.sub[SK])) ED.sub[SK] = SK === 'envfm' ? 'ops' : subs[0][0];
+  // ⤢ Hüllkurve groß (K2-44, N2-4b-04): the way back is a sub-tab of its own („✕ FELD“) instead of a button over the page –
+  // nothing of the big editor is covered (M-PLATZ in P1–P3, L1)
+  const bigHere = !!(FXF.big && FXF.big.i === i && eng === 'fm6');
+  if (subs && bigHere) subs = SK === 'osc' ? subs.map(x => (x[0] === 'feld' ? ['feld', '✕ FELD'] : x)) : SK === 'envfm' ? [['fxback', '✕ FELD']].concat(subs) : subs;
   if (eng === 'fm6' && ED.fmT !== i) fmInitSel(i, false);
   if (UI.fmSolo && (UI.fmSolo.t !== i || eng !== 'fm6' || ED.tab !== 'osc' || ED.sub.osc !== 'op')) fmSoloOff();   // §6.5: Solo is monitor-only
   const F = sheetFrame(sh, tr.name, [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']], ED.tab,
     id => { ED.tab = id; FXF.big = null; safeRebuild(buildSynthEd); },
-    subs ? {list: subs, cur: ED.sub[SK], on: id => { ED.sub[SK] = id; FMEV.fine = false; FXF.big = null; if (eng === 'fm6' && SK === 'osc' && (id === 'feld' || id === 'algo')) fmViewSet(i, id); safeRebuild(buildSynthEd); }} : null);
+    subs ? {list: subs, cur: ED.sub[SK], on: id => { if (bigHere && (id === 'fxback' || (SK === 'osc' && id === 'feld'))) { fxBigBack(); return; } ED.sub[SK] = id; FMEV.fine = false; FXF.big = null; if (eng === 'fm6' && SK === 'osc' && (id === 'feld' || id === 'algo')) fmViewSet(i, id); safeRebuild(buildSynthEd); }} : null);
   // row 1: ● SYNTH n · [VA | FM | WT] · ⇅ chip · ECO-Klang badge (native fallback, §1.3) · ↶ ↷ · ✕
   const engSeg = makeSeg([['analog', 'VA', 'VA'], ['fm6', 'FM', 'FM'], ['wt', 'WT', 'WT']], () => (S.tracks[i].sound.engine === 'fm2' ? 'fm6' : S.tracks[i].sound.engine),
     v => setEngine(i, v), 'eng', {undo: soundUndo(i), label: 'Klangerzeugung'});
   F.r1.insertBefore(engSeg, F.r1.querySelector('.sh-title').nextSibling);
+  if (bigHere) { const bk = sh.querySelector('.sh-subs .stab[data-sub="' + (SK === 'osc' ? 'feld' : 'fxback') + '"]'); if (bk) { bk.classList.add('fxbk', 'fxback'); bk.setAttribute('aria-label', 'Zurück zum FELD'); } }
   const eco = el('span', 'ecob', 'ECO-Klang'); eco.hidden = true; eco.title = 'Vereinfachte Klangerzeugung: der Studio-Klang (AudioWorklet) ist hier nicht verfügbar';
   eco.setAttribute('role', 'note'); onTap(eco, () => lcdShow('ECO-Klang', ecoMsg(i)));
   F.r1.insertBefore(eco, engSeg.nextSibling); ED.eco = eco;
@@ -15773,7 +15832,7 @@ function fillSynthTab(body, i) {
     else if (S.tracks[i].sound.engine === 'wt') pageWt(pg, i);
     else pageFm2(pg, i);
   } else if (tab === 'filter') { if (sub === 'xy') pageXY(pg, i); else pageFilter(pg, i); }
-  else if (tab === 'env' && fmE) { pageFmEnv(pg, i, sub); if (FXF.big && FXF.big.i === i && sub === 'peg') fxBackBtn(pg); }
+  else if (tab === 'env' && fmE) pageFmEnv(pg, i, sub);
   else if (tab === 'env') pageEnv(pg, i, sub === 'flt' ? 'f' : sub === 'mod' ? 'm' : 'a');
   else if (tab === 'lfo') pageLfo(pg, i, sub === 'l2' ? 2 : 1);
   else if (tab === 'mod') pageMod(pg, i);
@@ -16459,12 +16518,21 @@ function fxRender(force) {
   V.floor.classList.toggle('thin', g.land);
   const b = FMX.badge(X);
   const headTxt = FXF.drag && FXF.drag.lcd ? FXF.drag.lcd : FXF.addTarget != null ? 'Ziel für OP ' + (FXF.addTarget + 1) + ': tiefere Kachel antippen' : sel == null ? 'STIMME · ' + b.txt + ' · 6 Op · ' + fxVoices(X) + ' St' : 'OP ' + (sel + 1) + ' · ' + fxRoleTxt(X, sel, g.mode !== 'P1' && g.mode !== 'W') + (fxEnvPage() ? ' · ' + (FXF.page === 'amp' ? 'AMP' : 'TONH.') : ' · ' + fxRatioShort(X.ops[sel]));
-  if (V.head.textContent !== headTxt) V.head.textContent = headTxt;
+  if (V.head._t !== headTxt || V.head._w !== fw) { V.head._t = headTxt; V.head._w = fw; fxHeadFit(V.head, headTxt); }
   V.head.classList.toggle('drag', !!(FXF.drag && FXF.drag.lcd)); V.head.classList.toggle('mod', sel != null && !fxIsOut(X, sel));
   V.p3b.hidden = g.mode !== 'P3';
   // panel
   const pkey = [g.mode, FXF.focus, FXF.page, !!FXF.multi, FXF.p3open, W, H].join('|');
-  if (force || V.panKey !== pkey) { V.panKey = pkey; fxPanel(V); } else fxPanelUpd(V);
+  if (force || V.panKey !== pkey) { const st = V.panKey === pkey ? V.pan.scrollTop : 0; V.panKey = pkey; fxPanel(V); if (st) V.pan.scrollTop = st; } else fxPanelUpd(V);   // a rebuild of the same page keeps the rolled list (P2/P3)
+}
+// L6 (V4b-fix): the field head never cuts its text – a long one (drag preview, reason) wraps to two smaller lines, and runs
+// as a marquee only if even that is too short
+function fxHeadFit(h, txt) {
+  h.classList.remove('lng', 'mq'); h.textContent = txt;
+  if (!h.clientWidth || h.scrollWidth <= h.clientWidth + 1) return;
+  h.classList.add('lng'); if (h.scrollHeight <= h.clientHeight + 1 && h.scrollWidth <= h.clientWidth + 1) return;
+  h.classList.remove('lng'); h.classList.add('mq'); const w = h.scrollWidth - h.clientWidth, mi = el('span', 'mqi'); mi.textContent = txt; h.textContent = ''; h.appendChild(mi);
+  mi.style.setProperty('--mq', -Math.ceil(w + 4) + 'px'); mi.style.setProperty('--mqd', (2.6 + (w + 4) / 38).toFixed(1) + 's');
 }
 // the mini field (EK-13, KP §5.1 d): cells 22 wide under the presets row; P1 22 × 46 from y 76
 function fxMiniGeo(g) {
@@ -16493,7 +16561,7 @@ function fxLiveDraw(V) {
   X.ops.forEach((o, k) => { const t = V.tiles[k], ul = t.querySelector('s .l'), bh = parseFloat(t.querySelector('s').style.height) || 0; ul.style.height = (clamp(lv[k] || 0, 0, 1) * bh).toFixed(1) + 'px'; });
 }
 // ---------- selection (R1, R2; K2-61: between operators the page stays)
-function fxSelect(i, k) {
+function fxSelect(i, k, noOpen) {
   if (k == null) { FXF.focus = null; FXF.page = 'pegel'; FXF.addTarget = null; if (FXF.view && FXF.view.g && FXF.view.g.mode === 'P3') FXF.p3open = false; }
   else {
     if (FXF.focus == null) FXF.page = 'basis';
@@ -16502,7 +16570,7 @@ function fxSelect(i, k) {
     const f = fmOf(i), q = f && f.perm ? f.perm[k] : k;                 // the DX pages follow (their numbering)
     ED.fmOp = q; if (!ED.fmOpT) ED.fmOpT = {}; ED.fmOpT[i] = q; ED.fmT = i;
     const st = EL.synthSheet.querySelector('.stab[data-sub="op"]'); if (st) st.textContent = 'OP ' + (q + 1);
-    if (FXF.view && FXF.view.g && FXF.view.g.mode === 'P3') FXF.p3open = true;
+    if (!noOpen && FXF.view && FXF.view.g && FXF.view.g.mode === 'P3') FXF.p3open = true;
   }
   if (UI.fmSolo && UI.fmSolo.t === i && k != null && UI.fmSolo.k !== k) { UI.fmSolo.k = k; wkFm6(i, true); }
 }
@@ -16542,7 +16610,10 @@ function fxFieldInput(V) {
     gestBegin(e.pointerId, abort);
     if (!FXF.seen.field) { FXF.seen.field = 1; lcdShow('FELD', FX_HELP[0]); }
     if (k >= 0 && FXF.multi) return;
-    if (k >= 0 && FXF.addTarget == null) { if (FXF.focus !== k || (FXF.view.g.mode === 'P3' && !FXF.p3open)) { fxSelect(i, k); fxRender(false); } }
+    // R1: touch-down selects at once. P3 (KP §5.3): the value sheet opens on a TAP (after the double-tap window), never on
+    // touch-down – a drag keeps the whole field with its targets and the landing preview visible
+    clearTimeout(FXF.p3t);
+    if (k >= 0 && FXF.addTarget == null) { if (FXF.focus !== k) { fxSelect(i, k, FXF.view.g.mode === 'P3'); fxRender(false); } }
   });
   on(fld, 'pointermove', e => {
     if (FXF.two && FXF.two.ids.has(e.pointerId)) { const p0 = FXF.two.x[e.pointerId]; if (Math.hypot(e.clientX - p0[0], e.clientY - p0[1]) > 8) FXF.two.bad = true; }
@@ -16556,7 +16627,9 @@ function fxFieldInput(V) {
         if (V.G.mini) { lcdShow('FELD', 'Ziehen auf der Seite Basis'); return; }
         const t = V.tiles[P.op], r = t.getBoundingClientRect(), gh = t.cloneNode(true);
         gh.classList.add('ghost'); gh.classList.remove('sel'); gh.removeAttribute('data-op'); fld.appendChild(gh); t.classList.add('lift');
-        FXF.drag = {op: P.op, ghost: gh, ox: e.clientX - r.left, oy: e.clientY - r.top, w: r.width, h: r.height, cell: undefined, lcd: '', g: null, scrollT: 0};
+        // R4 „Geist folgt dem Finger“: the grip offset is the touch-down point, so the ghost sits exactly under the finger (no 8 px lag)
+        FXF.drag = {op: P.op, ghost: gh, ox: P.x0 - r.left, oy: P.y0 - r.top, w: r.width, h: r.height, cell: undefined, lcd: '', g: null, scrollT: 0};
+        if (V.g.mode === 'P3' && FXF.p3open) { FXF.p3open = false; fxRender(false); }   // P3: the sheet gives way to the drag (targets, Z1 preview, result)
       } else if (P.op < 0) P.swipe = {y: e.clientY, s: FXF.scroll};
     }
     if (FXF.drag) {
@@ -16567,8 +16640,13 @@ function fxFieldInput(V) {
       if (G.land && performance.now() - D.scrollT > 350) { const maxR = Math.max(...fxX(i).ops.map(o => o.r)); if (e.clientY < fr.top + 10 && FXF.scroll + G.rowsVis <= maxR + 1) { FXF.scroll++; D.scrollT = performance.now(); fxRender(false); } else if (e.clientY > fr.bottom - 10 && FXF.scroll > 0) { FXF.scroll--; D.scrollT = performance.now(); fxRender(false); } }
       const inside = e.clientX >= fr.left && e.clientX <= fr.right && e.clientY >= fr.top && e.clientY <= fr.bottom;
       let cell = inside ? fxCellAt(G, cx, cy) : null;
-      // 8 px hysteresis at the zone edges: keep the old cell while the ghost centre is within 8 px of it
-      if (D.cell && cell && (cell[0] !== D.cell[0] || cell[1] !== D.cell[1])) { const b = fxTileBox(G, D.cell[0], D.cell[1]), m = (G.cw - G.tw) / 2 + 8; if (cx > b.x - m && cx < b.x + b.w + m && cy > b.y - 8 - (G.pitch - G.th) / 2 && cy < b.y + b.h + 8 + (G.pitch - G.th) / 2) cell = D.cell; }
+      // 8 px hysteresis at the zone edges: keep the old cell while the ghost centre is within 8 px of it –
+      // but never once the centre is inside the new cell's tile (KD §5.2 Nr. 1: the cell that contains the ghost centre wins)
+      if (D.cell && cell && (cell[0] !== D.cell[0] || cell[1] !== D.cell[1])) {
+        const nb = fxTileBox(G, cell[0], cell[1]), inNew = cx >= nb.x && cx <= nb.x + nb.w && cy >= nb.y && cy <= nb.y + nb.h;
+        const b = fxTileBox(G, D.cell[0], D.cell[1]), m = (G.cw - G.tw) / 2 + 8;
+        if (!inNew && cx > b.x - m && cx < b.x + b.w + m && cy > b.y - 8 - (G.pitch - G.th) / 2 && cy < b.y + b.h + 8 + (G.pitch - G.th) / 2) cell = D.cell;
+      }
       const ck = cell ? cell.join(',') : '-';
       if (ck !== (D.cell === undefined ? '?' : D.cell ? D.cell.join(',') : '-')) {
         D.cell = cell; const X = fxX(i);
@@ -16619,6 +16697,10 @@ function fxFieldInput(V) {
       FXF.lastTap = null; fxGestureApply(i, {kind: 'dtap', op: k + 1}); fxRender(false); return;
     }
     FXF.lastTap = {k, t0: P.t0, x: P.x0, y: P.y0};
+    if (V.g.mode === 'P3' && !FXF.p3open) {                              // P3: „Tipp auf Kachel öffnet das Werte-Blatt“ (after the R3 window)
+      clearTimeout(FXF.p3t);
+      FXF.p3t = setTimeout(() => { const L2 = FXF.lastTap; if (FXF.view === V && V.fld.isConnected && FXF.focus === k && !FXF.ptr && !FXF.drag && L2 && L2.k === k && L2.t0 === P.t0) { FXF.p3open = true; fxRender(false); } }, 300);
+    }
     void now;
   };
   on(fld, 'pointerup', e => up(e, true));
@@ -16917,18 +16999,22 @@ function fxKsRow(V, k) {
     r.dataset.ld = ks.ld; r.dataset.rd = ks.rd; r.dataset.bp = ks.bp;
   };
   let G = null;
+  // R0 / KP §4.5: FEIN switches the factor; the drag re-bases at the current value and finger position (nothing jumps)
+  const ksF = () => (FXF.fineChip || FXF.fineIds.size ? .25 : 1);
+  const ksReb = () => { if (!G) return; const f = ksF(); if (f === G.f) return; const ks = fxX(i).ops[k].ks;
+    G.v0 = G.which === 'l' ? sgn(ks.ld, ks.lc) : G.which === 'r' ? sgn(ks.rd, ks.rc) : ks.bp; if (G.lx != null) { G.x0 = G.lx; G.y0 = G.ly; } G.f = f; };
   on(svg, 'pointerdown', e => {
     if (e.button > 0 || G) return; e.preventDefault(); e.stopPropagation();
     const b = svg.getBoundingClientRect(), x = e.clientX - b.left, {W} = geo(), ks = fxX(i).ops[k].ks;
     const which = x < W * .3 ? 'l' : x > W * .7 ? 'r' : 'm';
     try { svg.setPointerCapture(e.pointerId); } catch (_) {}
-    G = {id: e.pointerId, which, x0: e.clientX, y0: e.clientY, v0: which === 'l' ? sgn(ks.ld, ks.lc) : which === 'r' ? sgn(ks.rd, ks.rc) : ks.bp, d: null, H: b.height, W: b.width};
-    FXF.valDrag = {fineOn: () => {}};
+    G = {id: e.pointerId, which, x0: e.clientX, y0: e.clientY, v0: which === 'l' ? sgn(ks.ld, ks.lc) : which === 'r' ? sgn(ks.rd, ks.rc) : ks.bp, d: null, H: b.height, W: b.width, f: ksF(), lx: null, ly: null};
+    FXF.valDrag = {fineOn: ksReb};
     gestBegin(e.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; if (g0 && g0.d) fxDragEnd(i, g0.d, 'Tasten-Skalierung'); });
   });
   on(svg, 'pointermove', e => {
     if (!G || e.pointerId !== G.id) return;
-    const f = FXF.fineChip || FXF.fineIds.size ? .25 : 1;
+    ksReb(); G.lx = e.clientX; G.ly = e.clientY; const f = G.f;
     if (!G.d) { if (Math.hypot(e.clientX - G.x0, e.clientY - G.y0) <= 4) return; G.d = fxDragBegin(i); }
     fxDragSet(i, x => {
       const ks = x.ops[k].ks;
@@ -17208,6 +17294,11 @@ function fxEnvPanel(V) {
   V.envUpd = draw;
   // ---- point drags (x = time of the stage, y = level; the first 6 px decide the axis); one undo per drag
   let G = null;
+  // R0 / KP §4.5: a FEIN finger only changes the factor – the drag re-bases at the point's current place (no jump back)
+  const envF = () => (FXF.fineChip || FXF.fineIds.size ? .25 : 1);
+  const envReb = () => { if (!G) return; const f = envF(); if (f === G.f) return;
+    if (G.lx != null) { const ev = view(fxX(i)); if (ev && geo) G.py = yOf(ev.l[G.s]); if (geo) G.px = clamp(G.px + (G.lx - G.x0) * G.f, geo.x0, geo.x1); G.x0 = G.lx; G.y0 = G.ly; }
+    G.f = f; };
   on(gEl, 'pointerdown', e => {
     if (e.button > 0 || G || !LAY) return; e.preventDefault();
     const r = gEl.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
@@ -17216,15 +17307,16 @@ function fxEnvPanel(V) {
     const X = fxX(i), o = X.ops[k]; if (which === 'pit' && o.fixed) return; if (which === 'amp' && o.amp.f !== 'dx') return;
     try { gEl.setPointerCapture(e.pointerId); } catch (_) {}
     FXF.envSel = best; FXF.envField = best;
-    G = {id: e.pointerId, s: best, x0: e.clientX, y0: e.clientY, axis: null, d: null, e0: deep(view(X)), t0: LAY.t.slice(), px: LAY.pts[best].x, py: LAY.pts[best].y};
-    FXF.valDrag = {fineOn: () => {}};
+    G = {id: e.pointerId, s: best, x0: e.clientX, y0: e.clientY, axis: null, d: null, e0: deep(view(X)), t0: LAY.t.slice(), px: LAY.pts[best].x, py: LAY.pts[best].y, f: envF(), lx: null, ly: null};
+    FXF.valDrag = {fineOn: envReb};
     gestBegin(e.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; if (g0 && g0.d) fxDragEnd(i, g0.d, 'Hüllkurve OP ' + (k + 1)); });
     draw(fxX(i));
     const s = best, T = LAY.t; lcdShow(FM_STG[s] + ' · OP ' + (k + 1), (which === 'pit' ? htTxt(pegHt(G.e0.l[s])) + ' HT' : 'L ' + G.e0.l[s]) + ' · ' + fmMs(T[s]) + ' · R ' + G.e0.r[s]);
   });
   on(gEl, 'pointermove', e => {
     if (!G || e.pointerId !== G.id) return;
-    const dx = e.clientX - G.x0, dy = e.clientY - G.y0, f = FXF.fineChip || FXF.fineIds.size ? .25 : 1;
+    envReb(); G.lx = e.clientX; G.ly = e.clientY;
+    const dx = e.clientX - G.x0, dy = e.clientY - G.y0, f = G.f;
     if (!G.axis) { if (Math.max(Math.abs(dx), Math.abs(dy)) < 6) return; G.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'; }
     if (!G.d) G.d = fxDragBegin(i);
     const s = G.s, X = fxX(i), mc = macro(X);
@@ -17252,11 +17344,14 @@ function fxDxCell(V, c, f, which) {
   const i = V.i, k = FXF.focus, w2 = f < 4 ? 'r' : 'l', st = f % 4, nm = (f < 4 ? 'R' : 'L') + (st + 1);
   let G = null;
   const get = X => { const e = fxEnvOf(X.ops[k], which) || FX_PIT0(); return e[w2][st]; };
-  on(c, 'pointerdown', e => { if (e.button > 0 || G) return; e.preventDefault(); try { c.setPointerCapture(e.pointerId); } catch (_) {} G = {id: e.pointerId, x0: e.clientX, v0: get(fxX(i)), d: null}; FXF.envField = f; FXF.valDrag = {fineOn: () => {}};
+  // R0: FEIN re-bases at the current value and finger position (no jump)
+  const cF = () => (FXF.fineChip || FXF.fineIds.size ? .25 : 1);
+  const cReb = () => { if (!G) return; const ff = cF(); if (ff === G.f) return; G.v0 = get(fxX(i)); if (G.lx != null) G.x0 = G.lx; G.f = ff; };
+  on(c, 'pointerdown', e => { if (e.button > 0 || G) return; e.preventDefault(); try { c.setPointerCapture(e.pointerId); } catch (_) {} G = {id: e.pointerId, x0: e.clientX, v0: get(fxX(i)), d: null, f: cF(), lx: null}; FXF.envField = f; FXF.valDrag = {fineOn: cReb};
     gestBegin(e.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; if (g0 && g0.d) fxDragEnd(i, g0.d, nm + ' OP ' + (k + 1)); }); });
   on(c, 'pointermove', e => {
-    if (!G || e.pointerId !== G.id) return; const dx = e.clientX - G.x0; if (!G.d && Math.abs(dx) <= 4) return;
-    const fF = FXF.fineChip || FXF.fineIds.size ? .25 : 1, v = clamp(Math.round(G.v0 + dx * fF / 2), 0, 99);
+    if (!G || e.pointerId !== G.id) return; cReb(); G.lx = e.clientX; const dx = e.clientX - G.x0; if (!G.d && Math.abs(dx) <= 4) return;
+    const fF = G.f, v = clamp(Math.round(G.v0 + dx * fF / 2), 0, 99);
     if (!G.d) G.d = fxDragBegin(i);
     fxDragSet(i, x => { const o = x.ops[k]; if (which === 'pit' && !o.pit) o.pit = FX_PIT0(); fxEnvOf(o, which)[w2][st] = v; fxPitClean(o, which); });
     fxRender(false); lcdShow(nm + ' · OP ' + (k + 1), String(v));
@@ -17279,17 +17374,19 @@ function fxBigEnv(i, k, which) {
   safeRebuild(buildSynthEd);
   lcdShow('Hüllkurve groß', 'OP ' + (k + 1) + ' · ✕ = zurück zum FELD');
 }
-function fxBackBtn(pg) { pg.style.position = 'relative'; const b = el('button', 'fxback rb', '✕ FELD'); b.setAttribute('aria-label', 'Zurück zum FELD'); onTap(b, () => fxBigBack()); pg.appendChild(b); }
 // KP §4.12: DX and OP show the nearest DX algorithm, locked, while the FELD graph is not DX-tauglich (⤢ Hüllkurve groß excepted)
 function fmLock(pg, i) {
-  if (FXF.big && FXF.big.i === i) { fxBackBtn(pg); return; }
+  if (FXF.big && FXF.big.i === i) return;                              // the way back is the sub-tab „✕ FELD“
   const snd = sndOf(i), x = snd && snd.p.fmx; if (!x) return;
   const d = FMX.dx(x); if (!d.reasons.length) return;
   pg.style.position = 'relative';
   const b = FMX.badge(x), L = el('div', 'fmlock');
   L.innerHTML = `<b>${esc(b.txt)}</b><span>Dieser Klang kommt aus dem FELD. Hier steht der nächste DX-Algorithmus – gesperrt, damit nichts verloren geht:</span><ul>${d.reasons.slice(0, 6).map(r => `<li>${esc(r)}</li>`).join('')}</ul>` +
-    `<button class="rb hb fxgo">Im FELD bearbeiten</button>` + (b.renum ? '<button class="rb hb fxrn">Nummern angleichen</button>' : '');
+    `<div class="fmlbtn"><button class="rb hb fxgo">Im FELD bearbeiten</button>` + (b.renum ? '<button class="rb hb fxrn">Nummern angleichen</button>' : '') + '</div>';
   guardTouch(L); pg.appendChild(L);
+  // L6 / M-PLATZ: the reasons never shrink away – if the page is too short, they go to two columns, then the sentence steps back
+  const fit = () => { if (!L.isConnected || !L.clientHeight) return; L.classList.remove('t1', 't2'); for (const c of ['t1', 't2']) { if (L.scrollHeight <= L.clientHeight + 1 && L.scrollWidth <= L.clientWidth + 1) return; L.classList.add(c); } };
+  fit(); requestAnimationFrame(fit);
   onTap(L, t => { if (t.classList.contains('fxrn')) { fxRenum(i); safeRebuild(buildSynthEd); return; } ED.sub.osc = 'feld'; fmViewSet(i, 'feld'); safeRebuild(buildSynthEd); }, 'button');
 }
 // N4b-01: FELD or DX per track in S.ui (a view field, not the sound): new sounds, INIT and graphs open FELD; factory and library
@@ -17303,7 +17400,7 @@ function fmViewFor(i) {
 function fmViewSet(i, v) { S.ui = Object.assign({}, S.ui); S.ui.fmv = Object.assign({}, S.ui.fmv, {[i]: v}); }
 function fxBigBack() {
   const B = FXF.big; if (!B) return; FXF.big = null;
-  ED.tab = 'osc'; ED.sub.osc = 'feld'; FXF.focus = B.focus; FXF.page = B.page; FXF.t = B.i;
+  ED.tab = 'osc'; ED.sub.osc = 'feld'; fmViewSet(B.i, 'feld'); FXF.focus = B.focus; FXF.page = B.page; FXF.t = B.i;
   safeRebuild(buildSynthEd);
 }
 /* ---------- V0d (A.4b 1, 4–7): FM envelope editor `fmEnvEditor` (OP › HÜLLK. and HÜLLK. › OPERATOREN) and the pitch EG
@@ -17330,6 +17427,7 @@ function fmDefaultOp(fm) {
 }
 const fmHasMod = fm => { const A = fmAlg(fm); return fm.ops.some((o, k) => !A.car[k] && o.on !== 0 && o.ol > 0); };
 // the selection when the editor opens / another sound lands on the track (ED.fmOpT[i] remembers the last choice per track)
+const FM_OSC_SUBS = ['feld', 'algo', 'op', 'makro', 'voice'];
 function fmInitSel(i, reset) {
   const fm = fmOf(i); if (!fm) return;
   if (!ED.fmOpT) ED.fmOpT = {};
@@ -17340,8 +17438,10 @@ function fmInitSel(i, reset) {
   if (!fmIsOut(fm, k)) ED.fmSub = 'env';
   ED.sub.envfm = 'ops';
   if (reset && S.ui && S.ui.fmv && S.ui.fmv[i]) { S.ui = Object.assign({}, S.ui); S.ui.fmv = Object.assign({}, S.ui.fmv); delete S.ui.fmv[i]; }
-  // a new sound opens its default view; a track switch the view remembered for that track (else the current one stays)
-  if (!ED.sub.osc || ED.sub.osc === 'feld' || ED.sub.osc === 'algo') { if (reset || (S.ui && S.ui.fmv && S.ui.fmv[i])) ED.sub.osc = fmViewFor(i); }
+  // N4b-01: a new sound, the first FM open of a session and a track switch show the track's own view – the one remembered
+  // for it (S.ui.fmv), else its default (graph / INIT / new = FELD, factory or library sound without a graph, .syx = DX);
+  // never the FELD/DX choice of the previous track. OP, MAKRO and STIMME stay as they are.
+  if (!FM_OSC_SUBS.includes(ED.sub.osc) || ED.sub.osc === 'feld' || ED.sub.osc === 'algo') ED.sub.osc = fmViewFor(i);
   if (FXF.t === i && reset) { FXF.focus = null; FXF.page = 'pegel'; FXF.multi = null; FXF.ab = null; }
 }
 // the reference note: the last note played on this track (else C4); it changes only between gestures (≥ 600 ms after the last)
@@ -21485,7 +21585,7 @@ function bindUI() {
   document.addEventListener('contextmenu', e => { if (!inField(e)) e.preventDefault(); });
   [EL.kb, EL.pads, EL.segTr, EL.drumSheet, EL.popLayer.querySelector('.bd')].forEach(n => { if (n) guardTouch(n); });
   // the synth sheet is guarded against the loupe too, except the label columns of its scrolling list (MOD matrix, §1.7.3)
-  EL.synthSheet.addEventListener('touchstart', e => { if (e.cancelable && !(e.target.closest && e.target.closest('.mxlist .ms, .mxlist .md, .mxlist .mempty, .pg-lfo-l1 .routes, .pg-lfo-l2 .routes'))) e.preventDefault(); }, {passive: false});
+  EL.synthSheet.addEventListener('touchstart', e => { if (e.cancelable && !(e.target.closest && e.target.closest('.mxlist .ms, .mxlist .md, .mxlist .mempty, .pg-lfo-l1 .routes, .pg-lfo-l2 .routes, .fxv.scr'))) e.preventDefault(); }, {passive: false});
   // transport
   // keyboard activation (Enter/Space on a focused button) only: clicks that follow a pointer interaction are ignored
   const kbdClick = (elx, fn) => {
