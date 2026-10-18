@@ -2673,6 +2673,157 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .fmpegh span{display:none}
 @media (orientation:portrait) and (min-width:380px) and (min-height:701px){.fmpegh span{display:inline}}
 /* ---------- end FM tab CSS ---------- */
+/* ===== V4b: FM-FELD (Nachtrag 2 Teil A, KP §4.3, §5; colours fixed, independent of the app theme) ===== */
+#synthSheet .pg.pg-osc-feld{padding:0;border:0;background:#121317;position:relative;overflow:hidden;display:block;border-radius:6px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
+@media (orientation:portrait){#synthSheet .sh-body:has(>.pg-osc-feld){padding-top:3px;padding-bottom:4px}}
+/* V4b: five FM sub-tabs (FELD · DX · OP · MAKRO · STIMME) leave the LCD line in L its former width */
+@media (orientation:landscape){#synthSheet .sh-bar .sh-subs:has(.stab[data-sub="feld"]) .stab{padding:0 3px;letter-spacing:.01em}}
+.fxpg .fxf{position:absolute;overflow:hidden;touch-action:none}
+.fxpg .fxh{position:absolute;left:0;top:0;right:0;height:18px;display:flex;align-items:center;gap:4px;z-index:3;pointer-events:none}
+.fxpg .fxh .fxht{flex:1;min-width:0;height:18px;padding:0;border:0;background:transparent;text-align:left;pointer-events:auto;font:700 13px/18px system-ui;color:#E6E8F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0}
+.fxpg[data-mode="W"] .fxh .fxht{font-size:15px}
+.fxpg .fxh .fxht.mod{color:#0ACA9F}.fxpg .fxh .fxht.drag{color:#F7C948}
+.fxpg .fxh button{pointer-events:auto;height:18px;min-width:22px;padding:0 4px;border-radius:4px;border:1px solid #5B6170;background:#1A1C24;color:#F7C948;font:700 11px/16px system-ui}
+.fxpg .fxh .fxbg.ok{color:#47CA0A}
+.fxpg .fxh .fxp3{color:#E6E8F0}
+.fxpg[data-mode="P2"] .fxh .fxht,.fxpg[data-mode="P3"] .fxh .fxht{font-size:12px}
+.fxpg.fxland .fxh{display:none}
+.fxpg .fxl{position:absolute;left:0;top:0;pointer-events:none;z-index:1}
+.fxpg .fxl line{stroke-width:2;stroke-linecap:round}
+.fxpg .fxl .gl line{stroke:#0AFFAD;stroke-dasharray:4 3;opacity:.75}
+.fxpg .fxt{position:absolute;box-sizing:border-box;border:2px solid #5B6170;border-radius:4px;background:#0A0A0A;color:#FFFFFF;z-index:2;overflow:hidden;touch-action:none}
+.fxpg .fxt.o6{box-shadow:0 0 0 1px #3A3F52}
+.fxpg .fxt b{position:absolute;left:5px;right:11px;top:2px;text-align:center;font:700 17px/19px system-ui;color:#FFFFFF}
+.fxpg .fxt i{position:absolute;left:4px;right:0;top:22px;text-align:center;font:600 10.5px/13px system-ui;letter-spacing:-.03em;font-style:normal;color:#47CA0A;white-space:nowrap;overflow:hidden}
+.fxpg .fxt.off b,.fxpg .fxt.off i{opacity:.4}
+.fxpg .fxt s{position:absolute;left:2px;bottom:4px;width:4px;text-decoration:none}
+.fxpg .fxt s u{position:absolute;left:0;width:4px;bottom:0;text-decoration:none}
+.fxpg .fxt s u.m{height:2px}
+.fxpg .fxt em{position:absolute;right:1px;top:1px;width:12px;height:12px;border-radius:2px;background:#3A3F52;color:#FFFFFF;font:700 9px/12px system-ui;font-style:normal;text-align:center}
+.fxpg .fxt em.z{opacity:.4}
+.fxpg .fxt.lift{border-style:dashed;opacity:.45}
+.fxpg .fxt.ghost{z-index:6;opacity:.9;transform:scale(1.08);box-shadow:0 6px 18px rgba(0,0,0,.6);pointer-events:none;border-color:#0ACA9F!important;background:#0A6E5B!important}
+.fxpg .fxland{position:absolute;z-index:1;border:2px dashed #0AFFAD;border-radius:4px;pointer-events:none;box-sizing:border-box}
+.fxpg .fxfloor{position:absolute;left:0;right:0;border-top:2px solid #5B6170;z-index:1;pointer-events:none;box-sizing:border-box}
+.fxpg .fxfloor span{display:block;text-align:center;font:600 8.5px/8px system-ui;color:#8A90A8;letter-spacing:.2em}
+.fxpg .fxfloor.thin span{display:none}
+.fxpg .fxs{position:absolute;left:0;right:0;height:10px;font:600 8.5px/10px system-ui;color:#8A90A8;text-align:center;z-index:3;pointer-events:none;background:rgba(18,19,23,.85)}
+.fxpg .fxs1{top:0}.fxpg .fxs2{bottom:2px}
+/* mini field (P, Amp / Tonh.) */
+.fxpg.fxmini .fxt b{font-size:11px;line-height:13px;top:3px;left:5px;right:0}
+.fxpg.fxmini .fxt s{width:3px}.fxpg.fxmini .fxt s u{width:3px}
+.fxpg.fxmini .fxt em{width:8px;height:8px;font-size:7px;line-height:8px}
+/* small sizes */
+.fxpg[data-mode="P2"] .fxt b,.fxpg[data-mode="L2"] .fxt b{font-size:13px;line-height:14px;top:1px}
+.fxpg[data-mode="P2"] .fxt i,.fxpg[data-mode="L2"] .fxt i{top:15px;font-size:9.5px;line-height:11px}
+.fxpg[data-mode="P3"] .fxt b,.fxpg[data-mode="L1"] .fxt b{font-size:13px;line-height:14px;top:1px;left:6px;right:auto;text-align:left}
+.fxpg[data-mode="P3"] .fxt i,.fxpg[data-mode="L1"] .fxt i{top:2px;left:20px;font-size:11px;text-align:left;right:14px}
+.fxpg[data-mode="P3"] .fxt i{top:13px;left:8px;right:1px;font-size:10px;line-height:11px}
+.fxpg[data-mode="L1"] .fxt i{top:13px;left:9px;right:2px;text-align:left}
+.fxpg[data-mode="L1"] .fxt b{left:9px}
+.fxpg .fxebtns.l .fxeb{font-size:10px;letter-spacing:-.02em}
+.fxpg[data-mode="W"] .fxt b{font-size:20px;line-height:22px;top:4px}.fxpg[data-mode="W"] .fxt i{top:28px;font-size:12px}
+/* value panel */
+.fxpg .fxv{position:absolute;z-index:4}
+.fxpg .fxv.sheet3{background:#121317;box-shadow:-8px 0 16px rgba(0,0,0,.5);border-left:1px solid #5B6170}
+.fxpg .fxv.scr{overflow-y:auto;touch-action:pan-y}
+.fxpg .fxtabs{display:grid;grid-template-columns:repeat(3,42px);grid-auto-rows:34px;gap:4px 3px}
+.fxpg[data-mode="P2"] .fxtabs,.fxpg[data-mode="P3"] .fxtabs{grid-template-columns:repeat(3,1fr);grid-auto-rows:30px;gap:3px 3px}
+.fxpg[data-mode="P3"] .fxtabs{grid-template-columns:repeat(3,1fr) 26px}.fxpg[data-mode="P3"] .fxtab.fxx{grid-column:4;grid-row:1/3}
+.fxpg .fxtabs.l .fxtab{font-size:11.5px}
+.fxpg[data-mode="W"] .fxtabs{grid-template-columns:repeat(3,1fr);grid-auto-rows:40px}
+.fxpg .fxtabs.l{display:flex;gap:4px;height:34px;align-items:stretch}
+.fxpg[data-mode="L2"] .fxtabs.l{height:30px}
+.fxpg .fxtab{min-width:0;padding:0;border-radius:5px;border:1px solid #5B6170;background:#1A1C24;color:#E6E8F0;font:700 10px/1 system-ui;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.fxpg .fxtabs.l .fxtab{flex:0 0 auto;padding:0 8px}
+.fxpg .fxtabs.l .fxtab[data-t="basis"]{width:56px}.fxpg .fxtabs.l .fxtab[data-t="amp"],.fxpg .fxtabs.l .fxtab[data-t="mod"]{width:44px}.fxpg .fxtabs.l .fxtab[data-t="tonh"]{width:52px}
+.fxpg .fxtabs.l .fxtab[data-t="m"],.fxpg .fxtabs.l .fxtab[data-t="more"]{width:36px}
+.fxpg[data-mode="L2"] .fxtabs.l .fxtab{padding:0 5px;font-size:11px}
+.fxpg .fxtab.on{background:#0A6E5B;border-color:#0ACA9F;color:#FFFFFF}
+.fxpg .fxtab.mute{background:#3E435B;color:#F7C948;border-color:#F7C948}
+.fxpg .fxrole{flex:0 1 150px;min-width:0;max-width:150px;font:700 12px/34px system-ui;color:#0ACA9F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fxpg .fxbadge{flex:1;min-width:0;text-align:right;font:600 11px/34px system-ui;color:#9AA0B4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fxpg .fxr{position:absolute;box-sizing:border-box;background:#1A1C24;border-radius:4px;overflow:hidden;touch-action:none}
+.fxpg .fxr1{position:absolute;left:4px;right:34px;top:2px;height:14px;display:flex;align-items:center;gap:4px;font:600 11px/14px system-ui;color:#FFFFFF;white-space:nowrap;overflow:hidden}
+.fxpg .fxr.hasflag .fxr1{right:46px}
+.fxpg .fxr1 .n{flex:0 0 auto}.fxpg .fxr1 .in{flex:1 1 auto;min-width:0;color:#B8BDCC;overflow:hidden;text-overflow:ellipsis}
+.fxpg .fxr1 .n:empty{display:none}
+.fxpg .fxr2{position:absolute;left:4px;right:34px;top:18px;bottom:4px;display:flex;align-items:stretch;gap:4px}
+.fxpg .fxr.hasflag .fxr2{right:46px}
+.fxpg .fxbw{position:relative;flex:1;min-width:0;background:#0F1015;border-radius:3px;overflow:hidden;touch-action:none}
+.fxpg .fxr1 .fxbw{height:12px;align-self:center}
+.fxpg .fxfill{position:absolute;top:0;bottom:0;background:#0A6E5B}
+.fxpg .fxbw .bt{position:absolute;left:4px;right:2px;top:0;bottom:0;display:flex;align-items:center;font:600 10.5px/1 system-ui;color:#E6E8F0;white-space:nowrap;overflow:hidden;pointer-events:none;text-shadow:0 0 3px #000}
+.fxpg .fxmid{position:absolute;top:0;bottom:0;left:50%;width:1px;background:#8A90A8}
+.fxpg .fxz{position:absolute;right:0;top:0;bottom:0;width:30px;padding:0;border:0;background:#1A1C24;color:#47CA0A;font:700 12.5px/1 system-ui;letter-spacing:-.04em;font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap;overflow:hidden}
+.fxpg .fxr.hasflag .fxz{right:12px}
+.fxpg .fxz:disabled{opacity:1;color:#47CA0A}
+.fxpg .fxflag{position:absolute;right:0;top:0;bottom:0;width:12px;font:800 9px/1 system-ui;display:flex;align-items:center;justify-content:center}
+.fxpg .fxr.off .fxbw{opacity:.45}
+.fxpg .fxchip{flex:0 0 40px;padding:0;border-radius:3px;border:1px solid #5B6170;background:#22252F;color:#E6E8F0;font:700 10.5px/1 system-ui;white-space:nowrap;overflow:hidden}
+.fxpg .fxr1 .fxchip{height:14px;font-size:10px}
+.fxpg .fxr.ratio .fxr1{right:34px}.fxpg .fxr.ratio .fxr1 .in{display:none}.fxpg .fxr.ratio .fxr1 .fxbw{flex:1 1 auto}
+.fxpg .fxwv{flex:0 0 34px;height:14px}.fxpg .fxwv path{fill:none;stroke:#47CA0A;stroke-width:1.4}
+.fxpg .fxv.fine .fxfill{background:#F7C948}
+.fxpg .fxks svg{position:absolute;left:4px;right:4px;top:18px;bottom:4px;width:calc(100% - 8px);height:calc(100% - 22px);touch-action:none}
+.fxpg .fxks .ax{stroke:#3E435B;stroke-width:1}.fxpg .fxks .cv{fill:none;stroke:#0AFFAD;stroke-width:2}
+.fxpg .fxks circle,.fxpg .fxks rect{fill:#0A6E5B;stroke:#0ACA9F;stroke-width:2}.fxpg .fxks text{fill:#B8BDCC;font:600 10px system-ui;text-anchor:middle}
+.fxpg .fxinfo .fxr2{right:4px;align-items:center;font:600 11.5px/1.2 system-ui;color:#E6E8F0}
+.fxpg .fxinfo .bt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fxpg .fxbtn{height:24px;padding:0 6px;border-radius:4px;border:1px solid #0ACA9F;background:#0A6E5B;color:#FFFFFF;font:700 11px/1 system-ui;white-space:nowrap}
+.fxpg .fxinfo.dxab .fxbtn{font-size:10px;padding:0 4px}
+.fxpg .fxinfo.about{display:flex;gap:6px;align-items:center;padding:0 4px}
+.fxpg .fxinfo.about .fxbtn{flex:1;height:34px;background:#22252F;border-color:#5B6170}
+.fxpg .fxinfo.chk{display:flex;align-items:center;padding:0 4px}
+.fxchk{display:flex;align-items:center;gap:8px;width:100%;height:34px;border:0;background:transparent;color:#E6E8F0;font:600 12px/1.1 system-ui;text-align:left;padding:0 4px}
+.fxchk i{flex:0 0 18px;height:18px;border-radius:4px;border:2px solid #5B6170;background:#0F1015;box-sizing:border-box}
+.fxchk.on i{background:#0A6E5B;border-color:#0ACA9F;box-shadow:inset 0 0 0 3px #0F1015}
+/* envelope (Amp / Tonh.) */
+.fxpg .fxpre{position:absolute;display:flex;gap:4px;z-index:5}
+.fxpg .fxpre .fxeb{flex:1;min-width:0}
+.fxpg .fxe{position:absolute;z-index:5}
+.fxpg .fxeg{position:absolute;touch-action:none}
+.fxpg .fxeg svg{position:absolute;left:0;top:0;overflow:visible}
+.fxpg .fxeg .ra{stroke:#5B6170;stroke-width:1}.fxpg .fxeg .rt{stroke:#5B6170}.fxpg .fxeg .rl{fill:#8A90A8;font:600 8.5px system-ui;text-anchor:middle}
+.fxpg .fxeg .gap{stroke:#3E435B;stroke-dasharray:2 3}.fxpg .fxeg .zero{stroke:#3E435B}
+.fxpg .fxeg .ln{fill:none;stroke:#0AFFAD;stroke-width:2;stroke-linejoin:round}.fxpg .fxeg .fl{fill:none}
+.fxpg .fxeg circle{fill:#0A6E5B;stroke:#0ACA9F;stroke-width:2}.fxpg .fxeg circle.on{fill:#F7C948;stroke:#FFFFFF}
+.fxpg .fxet{position:absolute;left:0;right:0;bottom:0;height:16px;font:600 9.5px/16px system-ui;color:#B8BDCC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.fxpg .fxeinfo{position:absolute;left:4px;right:4px;top:30px;font:600 11px/1.3 system-ui;color:#F7C948;text-align:center;pointer-events:none}
+.fxpg .fxebtns{position:absolute;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:34px;gap:2px 4px}
+.fxpg .fxpre .fxeb{height:100%}
+.fxpg .fxebtns.l{grid-template-columns:repeat(4,1fr);gap:3px 4px}
+.fxpg .fxeb{min-width:0;padding:0 1px;height:100%;border-radius:4px;border:1px solid #5B6170;background:#1A1C24;color:#E6E8F0;font:700 10px/1.05 system-ui;letter-spacing:-.02em;white-space:normal;overflow:hidden;overflow-wrap:normal}
+.fxpg .fxeb.on{background:#0A6E5B;border-color:#0ACA9F}
+.fxpg[data-mode="P2"] .fxtab,.fxpg[data-mode="P3"] .fxtab{font-size:9.5px;letter-spacing:-.03em}
+.fxpg[data-mode="P2"] .fxpre .fxeb{height:30px;font-size:9.5px;letter-spacing:-.04em}
+.fxpg[data-mode="P2"] .fxr1,.fxpg[data-mode="P3"] .fxr1{font-size:10.5px}
+.fxpg .fxedx{position:absolute;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:34px;gap:2px 4px}
+.fxpg .fxdf{min-width:0;height:100%;border-radius:4px;border:1px solid #5B6170;background:#1A1C24;color:#47CA0A;display:flex;align-items:center;justify-content:center;gap:5px;font:700 13px/1 system-ui;font-variant-numeric:tabular-nums;touch-action:none}
+.fxpg .fxdf small{color:#B8BDCC;font-size:10px}.fxpg .fxdf.on{border-color:#0ACA9F}
+/* popups */
+.pop.fxlist{min-width:200px;max-width:min(340px,calc(100vw - 16px));max-height:calc(100vh - 32px);overflow:auto}
+.pop.fxlist h4{margin:0 0 6px}
+.pop .fxmi{display:block;width:100%;min-height:44px;text-align:left;padding:0 12px;margin:2px 0}
+.pop .fxsrc{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.pop .fxsrc button{min-height:44px;padding:0 4px}
+.pop .fxsrc button.on{outline:2px solid #0ACA9F}
+.pop .fxsrc button i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c,#888);margin-right:4px}
+.pop .fxwl{display:grid;grid-template-columns:repeat(2,1fr);gap:4px}.pop .fxwi{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 6px;text-align:left}
+.pop .fxwi path{fill:none;stroke:#47CA0A;stroke-width:1.5}.pop .fxwi.on{outline:2px solid #0ACA9F}
+.pop .fxtg{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}.pop .fxtg button{min-width:44px;min-height:44px}
+.pop .fxbtn{min-height:44px;width:100%;margin-top:6px}
+.pop .fxrc{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}.pop .fxrc .fxchk{height:44px}
+.pop .fxhelp{margin:0;padding-left:18px;font-size:13px;line-height:1.35}.pop .fxhelp li{margin:4px 0}
+.pop.fxkp{width:236px}
+.pop.fxkp .kph{display:flex;justify-content:space-between;gap:8px;font-size:12px}.pop.fxkp .kpr{color:var(--dim,#9AA0B4)}
+.pop.fxkp .kpd{margin:6px 0;padding:6px 10px;border-radius:6px;background:#0F1015;color:#47CA0A;font:700 24px/1.2 system-ui;text-align:right;font-variant-numeric:tabular-nums}
+.pop.fxkp .kpg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.pop.fxkp .kpk{height:44px;font-size:18px}
+.pop.fxkp .kpk.ok{grid-column:span 1;background:#0A6E5B;color:#fff}
+/* DX / OP page locked for a graph that is not DX-tauglich (KP §4.12) */
+.fmlock{position:absolute;inset:0;z-index:20;background:rgba(10,11,14,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px;text-align:center;color:#E6E8F0;font:600 13px/1.35 system-ui}
+.fmlock ul{margin:0;padding:0;list-style:none;font-size:12px;color:#F7C948;max-height:50%;overflow:auto}
+.fmlock button{min-height:44px;padding:0 14px}
+.fxback{position:absolute;right:6px;top:4px;z-index:21;min-height:36px;padding:0 10px;border-radius:6px;border:1px solid #0ACA9F;background:#0A6E5B;color:#fff;font:700 12px/1 system-ui}
 </style>
 </head>
 <body>
@@ -5996,9 +6147,15 @@ const RecHelpers = (() => {
   const edgeKey = (E, perm) => E.map(e => perm[e.from - 1] * 6 + perm[e.to - 1]).sort((a, b) => a - b).join(',');
   // the feedback paths of a field: [receiver, source] 0-based (fbSrc > 0 counts, also with fbAmt 0: DX alg 2 vs 1)
   const fbPaths = X => X.ops.map((o, k) => [k, (o.fbSrc | 0) - 1]).filter(p => p[1] >= 0);
+  // V4b: memo (the field asks after every gesture and every value move; a miss costs ≈ 25 ms over all 720 numberings)
+  const MEMO = new Map(), memo = (k, f) => { if (MEMO.has(k)) return MEMO.get(k); const v = f(); if (MEMO.size > 200) MEMO.clear(); MEMO.set(k, v); return v; };
   function dxMatch(X) {
     if (!X || !Array.isArray(X.ops) || X.ops.length !== 6) return {match: null, perm: null};
     const fb = fbPaths(X), E = Array.isArray(X.edges) ? X.edges : [];
+    const r = memo('m' + JSON.stringify(E) + '|' + JSON.stringify(fb), () => dxMatch0(fb, E));
+    return {match: r.match, perm: r.perm ? r.perm.slice() : null};
+  }
+  function dxMatch0(fb, E) {
     const tryPerm = perm => {
       const key = edgeKey(E, perm); let best = null;
       for (let a = 0; a < 32; a++) {
@@ -6062,6 +6219,10 @@ const RecHelpers = (() => {
   // nearest DX algorithm: fewest differing edges (+ carriers) over all numberings; the operators are renumbered with it
   function approxFm6(X) {
     const E = Array.isArray(X.edges) ? X.edges : [];
+    const best = memo('a' + JSON.stringify(E), () => approx0(E));
+    return approxOut(X, best);
+  }
+  function approx0(E) {
     let best = null;
     for (const p of PERMS) {
       const mine = new Set(E.map(e => p[e.from - 1] * 6 + p[e.to - 1]));
@@ -6073,12 +6234,130 @@ const RecHelpers = (() => {
       }
       if (best && best.d === 0) break;
     }
+    return best;
+  }
+  function approxOut(X, best) {
     const inv = [0, 0, 0, 0, 0, 0]; best.p.forEach((q, i) => { inv[q] = i; });
     const fbAll = fbPaths(X), fbv = fbAll.length ? Math.round(Math.max(...fbAll.map(q => X.ops[q[0]].fbAmt))) : 0;
     const f = {alg: best.a + 1, fb: clamp(fbv, 0, 7), trans: X.trans, ops: inv.map(i => opFm6(X.ops[i])), approx: true};
+    if (best.p.some((q, i) => q !== i)) f.perm = best.p.slice();         // V4b: fm6 operator perm[k] = field operator k (edits on the DX pages map back)
     return fm6Extras(X, f, best.p);
   }
-  G.FMX = {norm, check, fromFm6, dxLayout, dxMatch, dx, toFm6, approxFm6, WAVES, ALGS, normEnv};
+  /* ----- V4b: the field gestures (KP §4.5 R3, R5–R9 with K2-42), pure: gesture(X, g) -> {x, ok, lcd, kind}
+     x = the new graph (a deep copy) or null when nothing changes. g: {kind:'drop', op, onOp?, cell?:[c, r]} · {kind:'two', a, b}
+     · {kind:'dtap', op} · {kind:'tap', op}. Operators 1-based. */
+  const cp = o => JSON.parse(JSON.stringify(o));
+  const ORD = c => { const o = [c]; for (let d = 1; d < 6; d++) o.push(c + d, c - d); return o.filter(x => x >= 0 && x < 6); };
+  const at = (X, c, r, skip) => X.ops.findIndex((o, k) => !(skip && skip.has(k)) && o.c === c && o.r === r);
+  // move X (0-based k) to the wish cell [c, r] (taken -> next free column of that row, c+1, c-1, c+2 …); its upper tree follows with
+  // the same offset (its cells count as free; taken cells -> next free column of the same row). -> {pos[6]} | {err}
+  function place(X, k, wish, E) {
+    const tree = upper(E, k), mov = new Set([k, ...tree]), busy = new Set();
+    X.ops.forEach((o, j) => { if (!mov.has(j)) busy.add(o.c + ',' + o.r); });
+    const pos = X.ops.map(o => [o.c, o.r]);
+    const put = (j, c, r) => {
+      if (r > 5 || r < 0) return false;
+      for (const cc of ORD(clamp(c, 0, 5))) if (!busy.has(cc + ',' + r)) { pos[j] = [cc, r]; busy.add(cc + ',' + r); return true; }
+      return false;
+    };
+    if (!put(k, wish[0], wish[1])) return {err: 'room'};
+    const dc = pos[k][0] - X.ops[k].c, dr = pos[k][1] - X.ops[k].r;
+    const order = [...tree].sort((a, b) => X.ops[a].r - X.ops[b].r || X.ops[a].c - X.ops[b].c || a - b);
+    for (const j of order) if (!put(j, X.ops[j].c + dc, X.ops[j].r + dr)) return {err: 'room'};
+    return {pos, mov};
+  }
+  // after a move: every edge must point down (I2); the first one that does not, for the LCD
+  const badEdge = (pos, E) => E.find(e => pos[e.from - 1][1] <= pos[e.to - 1][1]);
+  const sameX = (A, B) => JSON.stringify(A) === JSON.stringify(B);
+  function moveTo(X, k, wish, E, extra, lcd, kind) {
+    const P = place(X, k, wish, E);
+    if (P.err) return {x: null, ok: false, lcd: kind === 'fall' ? 'kein Platz in Spalte ' + (wish[0] + 1) : 'kein Platz über ' + extra.to, kind: 'reject'};
+    const E2 = E.filter(e => e.from !== k + 1).concat(extra ? [extra] : []);
+    const b = badEdge(P.pos, E2);
+    if (b) return {x: null, ok: false, lcd: 'geht nicht: ' + b.from + ' → ' + b.to + ' zeigt dann nicht mehr nach unten', kind: 'reject'};
+    const Y = cp(X); Y.ops.forEach((o, j) => { o.c = P.pos[j][0]; o.r = P.pos[j][1]; }); Y.edges = sortEdges(E2);
+    if (check(Y).length) return {x: null, ok: false, lcd: 'geht nicht: ' + check(Y)[0], kind: 'reject'};
+    return {x: sameX(Y, X) ? null : Y, ok: true, lcd, kind};
+  }
+  function gesture(X, g) {
+    if (!X || !g) return {x: null, ok: false, lcd: '', kind: 'none'};
+    const E = X.edges, n = X.ops.length;
+    if (g.kind === 'tap') return {x: null, ok: true, lcd: '', kind: 'tap'};
+    if (g.kind === 'dtap') {
+      const k = Math.round(num(g.op, 0)) - 1; if (!(k >= 0 && k < n)) return {x: null, ok: false, lcd: '', kind: 'none'};
+      const Y = cp(X); Y.ops[k].on = Y.ops[k].on ? 0 : 1;
+      return {x: Y, ok: true, lcd: 'OP ' + (k + 1) + (Y.ops[k].on ? ' an' : ' stumm'), kind: 'mute'};
+    }
+    if (g.kind === 'two') {
+      const a = Math.round(num(g.a, 0)) - 1, b = Math.round(num(g.b, 0)) - 1;
+      if (!(a >= 0 && a < n && b >= 0 && b < n) || a === b) return {x: null, ok: false, lcd: '', kind: 'none'};
+      if (X.ops[a].r === X.ops[b].r) return {x: null, ok: false, lcd: 'gleiche Reihe – erst einen nach oben ziehen', kind: 'reject'};
+      const [u, d] = X.ops[a].r > X.ops[b].r ? [a, b] : [b, a];
+      const has = E.some(e => e.from === u + 1 && e.to === d + 1);
+      if (has) {
+        if (E.filter(e => e.from === u + 1).length < 2) return {x: null, ok: false, lcd: 'letzte Verbindung – zum Lösen ziehen', kind: 'reject'};
+        const Y = cp(X); Y.edges = Y.edges.filter(e => !(e.from === u + 1 && e.to === d + 1));
+        return {x: Y, ok: true, lcd: (u + 1) + ' → ' + (d + 1) + ' gelöst', kind: 'unlink'};
+      }
+      const Y = cp(X); Y.edges = sortEdges(Y.edges.concat([{from: u + 1, to: d + 1}]));
+      return {x: Y, ok: true, lcd: (u + 1) + ' → ' + (d + 1) + ' verbunden', kind: 'link'};
+    }
+    if (g.kind !== 'drop') return {x: null, ok: false, lcd: '', kind: 'none'};
+    const k = Math.round(num(g.op, 0)) - 1; if (!(k >= 0 && k < n)) return {x: null, ok: false, lcd: '', kind: 'none'};
+    const back = {x: null, ok: true, lcd: 'zurück', kind: 'back'};
+    let y = g.onOp != null ? Math.round(num(g.onOp, 0)) - 1 : -1;
+    if (y < 0 && Array.isArray(g.cell)) {
+      const c = Math.round(num(g.cell[0], -1)), r = Math.round(num(g.cell[1], -1));
+      if (!(c >= 0 && c < 6 && r >= 0 && r < 6)) return back;                                   // R8: outside the field
+      y = at(X, c, r);
+      if (y === k && g.fall) y = -1;                                                              // ⋯ › Ziele ✕ on the last edge: fall from the own cell
+      if (y < 0) {                                                                                // R7: fall in column c from row r
+        const tree = upper(E, k), mov = new Set([k, ...tree]);
+        let z = -1; for (let rr = r - 1; rr >= 0 && z < 0; rr--) z = at(X, c, rr, mov);
+        if (z >= 0) return moveTo(X, k, [c, X.ops[z].r + 1], E, {from: k + 1, to: z + 1}, (k + 1) + ' fällt auf ' + (z + 1) + ' (moduliert ' + (z + 1) + ')', 'fall');
+        return moveTo(X, k, [c, 0], E, null, (k + 1) + ' fällt → Ausgang', 'fall');
+      }
+    }
+    if (y < 0 || y === k) return back;                                                            // R8: own cell
+    if (E.some(e => (e.from === k + 1 && e.to === y + 1) || (e.from === y + 1 && e.to === k + 1))) {   // R5: swap
+      const Y = cp(X), a = Y.ops[k], b = Y.ops[y];
+      [a.c, b.c] = [b.c, a.c]; [a.r, b.r] = [b.r, a.r];
+      const sw = v => (v === k + 1 ? y + 1 : v === y + 1 ? k + 1 : v);
+      Y.edges = sortEdges(Y.edges.map(e => ({from: sw(e.from), to: sw(e.to)})));
+      return {x: Y, ok: true, lcd: (k + 1) + ' ↔ ' + (y + 1) + ' tauschen', kind: 'swap'};
+    }
+    if (upper(E, k).has(y)) return {x: null, ok: false, lcd: 'geht nicht: ' + (y + 1) + ' moduliert schon ' + (k + 1) + ' – dafür Feedback-Quelle', kind: 'reject'};   // R6 (e)
+    return moveTo(X, k, [X.ops[y].c, X.ops[y].r + 1], E, {from: k + 1, to: y + 1}, (k + 1) + ' → ' + (y + 1) + ' verbinden', 'link');
+  }
+  // [Nummern angleichen] (KP §4.12): field operator i becomes number perm[i] + 1 (cells, values and edges travel with it)
+  function renumber(X, perm) {
+    const Y = cp(X), m = v => perm[v - 1] + 1;
+    Y.ops = []; X.ops.forEach((o, i) => { const q = cp(o); if (q.fbSrc > 0) q.fbSrc = m(q.fbSrc); Y.ops[perm[i]] = q; });
+    Y.edges = sortEdges(X.edges.map(e => ({from: m(e.from), to: m(e.to)})));
+    return Y;
+  }
+  // Vorlagen (Algorithm Library): edges and cells after dxLayout(alg), feedback receiver / source after the DX table; the strongest
+  // feedback amount moves to the new receiver; all other values stay
+  function applyAlg(X, alg) {
+    alg = clamp(Math.round(num(alg, 1)), 1, 32);
+    const Y = cp(X), L = dxLayout(alg), A = ALGS[alg - 1], amt = Math.max(0, ...X.ops.filter(o => o.fbSrc > 0).map(o => o.fbAmt));
+    Y.ops.forEach((o, k) => { o.c = L.pos[k + 1][0]; o.r = L.pos[k + 1][1]; o.fbSrc = 0; o.fbAmt = 0; });
+    Y.ops[A.fbDst].fbSrc = A.fbSrc + 1; Y.ops[A.fbDst].fbAmt = amt;
+    Y.edges = sortEdges(L.edges.map(([a, b]) => ({from: a, to: b})));
+    return Y;
+  }
+  // the badge (KP §4.6, §4.12, N4a-01): {txt, ok, match, near, perm, renum}
+  function badge(X) {
+    const d = dx(X), m = d.match;
+    if (m && d.perm.every((p, i) => p === i)) {
+      if (!d.reasons.length) return {txt: 'DX ' + m + ' ✓', ok: true, match: m, near: m, renum: false};
+      const r = d.reasons[0], s = /Hüllkurve/.test(r) ? 'Hüllkurve' : /Welle/.test(r) ? 'Welle' : /Feedback-Stärke/.test(r) ? 'FB ' + String(X.ops.find(o => o.fbSrc > 0).fbAmt).replace('.', ',') : /Feedback/.test(r) ? 'Feedback' : /Phase/.test(r) ? 'Phase' : /LFO/.test(r) ? 'LFO' : /Anschlag/.test(r) ? 'Anschlag' : r;
+      return {txt: 'kein DX: ' + s, ok: false, match: m, near: m, renum: false};
+    }
+    if (m) return {txt: 'wie DX ' + m + ' – Nummern anders', ok: false, match: m, near: m, perm: d.perm, renum: true};
+    return {txt: 'kein DX-Alg. · nächster: ' + approxFm6(X).alg, ok: false, match: null, near: approxFm6(X).alg, renum: false};
+  }
+  G.FMX = {norm, check, fromFm6, dxLayout, dxMatch, dx, toFm6, approxFm6, WAVES, ALGS, normEnv, gesture, renumber, applyAlg, badge, upper: (X, k) => [...upper(X.edges, k)]};
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
@@ -6226,6 +6505,7 @@ const RecHelpers = (() => {
     const pms = Math.round(clamp(num(p.pms, 0), 0, 7)); if (pms) o.pms = pms;
     if (p.osync === 0) o.osync = 0;
     if (p.approx === true) o.approx = true;
+    if (o.approx && Array.isArray(p.perm) && p.perm.length === 6 && [...p.perm].sort().join('') === '012345') o.perm = p.perm.map(x => +x);
     return o;
   }
   // V0d (A.4b 7): carriers per algorithm (DX_ALGS, first field) for the fmDec -> fmBite migration
@@ -9022,7 +9302,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '3.8.0';
+const VERSION = '3.9.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -14990,7 +15270,29 @@ function fmxApply(p, x) {
 // those pages for graphs that are not DX-tauglich, KP §4.12); the field keeps its cells while the algorithm stays the same
 function fmxAfterFm6Edit(p) {
   if (!p || !p.fmx || !p.fm6) return;
-  const old = p.fmx; delete p.fm6.approx;
+  const old = p.fmx, f = p.fm6, ref = SQStore.normFm6(FMX.toFm6(old) || FMX.approxFm6(old));
+  // V4b: the algorithm stays -> the changed values go back into the graph (perm: the numbering of an approximated fm6);
+  // cells, waves, phases, per-operator pitch envelopes and feedback paths of the field are kept
+  if (ref.alg === f.alg) {
+    const perm = ref.perm || [0, 1, 2, 3, 4, 5], x = deep(old), J = o => JSON.stringify(o == null ? null : o);
+    x.ops.forEach((o, k) => {
+      const a = f.ops[perm[k]], b = ref.ops[perm[k]]; if (!a || !b) return;
+      for (const key of ['on', 'fixed', 'coarse', 'fine', 'det', 'ol', 'rs']) if (a[key] !== b[key]) o[key] = a[key];
+      if ((a.vs | 0) !== (b.vs | 0)) o.vs = a.vs | 0;
+      if (J(a.ks) !== J(b.ks)) o.ks = Object.assign({bp: 39, ld: 0, rd: 0, lc: 0, rc: 0}, a.ks || {});
+      if (J(a.r) !== J(b.r) || J(a.l) !== J(b.l)) o.amp = {f: 'dx', r: a.r.slice(), l: a.l.slice()};
+    });
+    if (f.trans !== ref.trans) x.trans = f.trans;
+    if (f.fb !== ref.fb) x.ops.forEach(o => { if (o.fbSrc > 0) o.fbAmt = f.fb; });
+    const bigP = typeof FXF !== 'undefined' && FXF.big && FXF.big.which === 'pit' && sndOf(FXF.big.i) && sndOf(FXF.big.i).p === p ? FXF.big.k : -1;
+    if (J(f.peg) !== J(ref.peg)) x.ops.forEach((o, kk) => { if (!o.fixed && (bigP < 0 || kk === bigP)) { o.pit = f.peg ? {f: 'dx', r: f.peg.r.slice(), l: f.peg.l.slice()} : null; o.pr = 'dx'; } });
+    if (J(f.ams) !== J(ref.ams)) x.ops.forEach((o, k) => { o.lfoAm = Math.round(127 * ((f.ams || [])[perm[k]] | 0) / 3); });
+    if ((f.pms | 0) !== (ref.pms | 0)) x.ops.forEach(o => { o.lfoFm = Math.round(127 * (f.pms | 0) / 7); });
+    fmxApply(p, FMX.norm(x, false));
+    if (bigP >= 0) { const o = p.fmx.ops[bigP]; if (o.pit) p.fm6.peg = {r: o.pit.r.slice(), l: o.pit.l.slice()}; else delete p.fm6.peg; }   // the big Tonh. editor shows this operator
+    return;
+  }
+  delete p.fm6.approx; delete p.fm6.perm;
   const x = FMX.fromFm6(p.fm6), m = FMX.dxMatch(old);
   if (m.match === p.fm6.alg && m.perm.every((q, k) => q === k)) x.ops.forEach((o, k) => { o.c = old.ops[k].c; o.r = old.ops[k].r; });
   p.fmx = x;
@@ -15331,7 +15633,7 @@ function wiaTrick() {
 function wiaToggle() { UI.wia = !UI.wia; wiaPaint(); if (UI.wia) wiaTrick(); else lcdHint(); haptic('tick'); }
 function subTabsFor(tab, eng) {
   if (tab === 'osc') return eng === 'analog' ? [['o1', 'OSZ 1'], ['o2', 'OSZ 2'], ['o3', 'OSZ 3'], ['mix', 'MIX'], ['voice', 'STIMME']]
-    : eng === 'fm6' ? [['algo', 'ALGO'], ['op', 'OP ' + ((ED.fmOp | 0) + 1)], ['makro', 'MAKRO'], ['voice', 'STIMME']]      // §6.5 (WP7)
+    : eng === 'fm6' ? [['feld', 'FELD'], ['algo', 'DX'], ['op', 'OP ' + ((ED.fmOp | 0) + 1)], ['makro', 'MAKRO'], ['voice', 'STIMME']]      // §6.5 (WP7); V4b: FELD · DX (N4b-01)
     : [['eng', eng === 'wt' ? 'WT' : 'FM'], ['voice', 'STIMME']];
   if (tab === 'filter') return [['ctl', 'REGLER'], ['xy', 'XY']];
   // V0d (A.4b 5): FM = OPERATOREN · TONHÖHE · FILTER · MOD-HK, at fmAmp 1 LAUTST. (ADSR) in front (reached by a tap only)
@@ -15358,8 +15660,8 @@ function buildSynthEd() {
   if (eng === 'fm6' && ED.fmT !== i) fmInitSel(i, false);
   if (UI.fmSolo && (UI.fmSolo.t !== i || eng !== 'fm6' || ED.tab !== 'osc' || ED.sub.osc !== 'op')) fmSoloOff();   // §6.5: Solo is monitor-only
   const F = sheetFrame(sh, tr.name, [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']], ED.tab,
-    id => { ED.tab = id; safeRebuild(buildSynthEd); },
-    subs ? {list: subs, cur: ED.sub[SK], on: id => { ED.sub[SK] = id; FMEV.fine = false; safeRebuild(buildSynthEd); }} : null);
+    id => { ED.tab = id; FXF.big = null; safeRebuild(buildSynthEd); },
+    subs ? {list: subs, cur: ED.sub[SK], on: id => { ED.sub[SK] = id; FMEV.fine = false; FXF.big = null; if (eng === 'fm6' && SK === 'osc' && (id === 'feld' || id === 'algo')) fmViewSet(i, id); safeRebuild(buildSynthEd); }} : null);
   // row 1: ● SYNTH n · [VA | FM | WT] · ⇅ chip · ECO-Klang badge (native fallback, §1.3) · ↶ ↷ · ✕
   const engSeg = makeSeg([['analog', 'VA', 'VA'], ['fm6', 'FM', 'FM'], ['wt', 'WT', 'WT']], () => (S.tracks[i].sound.engine === 'fm2' ? 'fm6' : S.tracks[i].sound.engine),
     v => setEngine(i, v), 'eng', {undo: soundUndo(i), label: 'Klangerzeugung'});
@@ -15464,13 +15766,14 @@ function fillSynthTab(body, i) {
     if (sub === 'o1' || sub === 'o2' || sub === 'o3') pageOsc(pg, i, +sub[1]);
     else if (sub === 'mix') pageMix(pg, i);
     else if (sub === 'voice') pageVoice(pg, i);
-    else if (sub === 'algo') pageFmAlgo(pg, i);
-    else if (sub === 'op') pageFmOp(pg, i);
+    else if (sub === 'feld') pageFmField(pg, i);
+    else if (sub === 'algo') { pageFmAlgo(pg, i); fmLock(pg, i); }
+    else if (sub === 'op') { pageFmOp(pg, i); fmLock(pg, i); }
     else if (sub === 'makro') pageFmMakro(pg, i);
     else if (S.tracks[i].sound.engine === 'wt') pageWt(pg, i);
     else pageFm2(pg, i);
   } else if (tab === 'filter') { if (sub === 'xy') pageXY(pg, i); else pageFilter(pg, i); }
-  else if (tab === 'env' && fmE) pageFmEnv(pg, i, sub);
+  else if (tab === 'env' && fmE) { pageFmEnv(pg, i, sub); if (FXF.big && FXF.big.i === i && sub === 'peg') fxBackBtn(pg); }
   else if (tab === 'env') pageEnv(pg, i, sub === 'flt' ? 'f' : sub === 'mod' ? 'm' : 'a');
   else if (tab === 'lfo') pageLfo(pg, i, sub === 'l2' ? 2 : 1);
   else if (tab === 'mod') pageMod(pg, i);
@@ -15845,20 +16148,20 @@ function fmDiagram(i) {
   return box;
 }
 // the algorithm sheet (§6.5): 32 thumbnails, the 8 favourites first with their names; a list, so it may scroll
-function openAlgSheet(i) {
-  const fm = fmOf(i), sh = EL.synthSheet.querySelector('.sh-body'), r = sh ? sh.getBoundingClientRect() : null;
+function openAlgSheet(i, pick, cur) {
+  const fm = fmOf(i), curA = cur != null ? cur : pick ? null : fm.alg, sh = EL.synthSheet.querySelector('.sh-body'), r = sh ? sh.getBoundingClientRect() : null;
   const order = FM_FAV.map(x => x[0]).concat(range(1, 32).filter(a => !FM_ALG_NAME[a]));
   const p = openPop(null, pop => {
     pop.classList.add('algsheet'); pop.style.setProperty('--tc', `var(--t${i + 1})`);
-    pop.innerHTML = `<div class="ash"><h4>Algorithmus wählen</h4><button class="hb rb ashx" aria-label="Schließen">✕</button></div><div class="agrid">` + order.map(a => {
+    pop.innerHTML = `<div class="ash"><h4>${pick ? 'Vorlage (DX-Algorithmus)' : 'Algorithmus wählen'}</h4><button class="hb rb ashx" aria-label="Schließen">✕</button></div><div class="agrid">` + order.map(a => {
       const A = DXN.ALGS[a - 1];
-      return `<button class="acell${a === fm.alg ? ' on' : ''}${FM_ALG_NAME[a] ? ' fav' : ''}" data-a="${a}" aria-label="Algorithmus ${a}${FM_ALG_NAME[a] ? ' – ' + esc(FM_ALG_NAME[a]) : ''}">` +
+      return `<button class="acell${a === curA ? ' on' : ''}${FM_ALG_NAME[a] ? ' fav' : ''}" data-a="${a}" aria-label="Algorithmus ${a}${FM_ALG_NAME[a] ? ' – ' + esc(FM_ALG_NAME[a]) : ''}">` +
         `<span class="athumb">${algSvg(A, {box: 14, gx: 5, gy: 6, fb: 1, fit: true, noText: true, rx: 2})}</span><b>${a}</b>${FM_ALG_NAME[a] ? `<small>${esc(FM_ALG_NAME[a])}</small>` : ''}</button>`;
     }).join('') + '</div>';
   }, {name: 'algsheet'});
   if (r) { p.style.left = Math.round(Math.max(4, r.left + 4)) + 'px'; p.style.top = Math.round(Math.max(4, r.top + 2)) + 'px'; p.style.width = Math.round(Math.min(window.innerWidth - 8, r.width - 8)) + 'px'; p.style.height = Math.round(Math.max(200, Math.min(window.innerHeight - r.top - 6, r.height + 40))) + 'px'; }
   onTap(p.querySelector('.ashx'), () => closePop());
-  onTap(p, b => { const a = +b.dataset.a; closePop(); fmAlgSet(i, a); }, '.acell');
+  onTap(p, b => { const a = +b.dataset.a; closePop(); if (pick) pick(a); else fmAlgSet(i, a); }, '.acell');
   return p;
 }
 // one strip column: LED (AN) · ratio (tap = select) · level fader (long-press = modulation) · envelope sparkline
@@ -15934,6 +16237,1075 @@ function pageFmAlgo(pg, i) {
   fxLongLabels(pg);
   void fm;
 }
+/* ===================== V4b: FELD und WERTE (Nachtrag 2 Teil A; KP §4, §5; K2-01, K2-37 … K2-44, K2-61) =====================
+   The FM page FELD: the operators on a free 6 × 6 grid (row 0 = output), the gestures R0–R9, R11, R12 of KP §4.5 (pure logic in
+   FMX.gesture), the value panel on the right (Pegel · Stimme · ⋯ / Vorlagen · Zufall · A│B without a focus; Basis · Amp · M /
+   Mod · Tonh. · ⋯ with one). Everything edits p.fmx; p.fm6 follows (fmxApply). Focus and page are runtime (FX), never stored. */
+const FXC = ['#CB1317', '#FFFFFF', '#47CA0A', '#596084', '#0A6AFF', '#1B1D25'];       // KP §4.3, OP 1–6
+const FX_GREY = '#5B6170', FX_SELF = '#0A6E5B', FX_SELB = '#0ACA9F', FX_MUTE = '#3E435B', FX_LINE = '#0AFFAD', FX_BG = '#121317';
+const fxMix = (h, a) => { const n = parseInt(h.slice(1), 16), m = (c, s) => Math.round(((n >> s) & 255) * a + 10 * (1 - a)); return 'rgb(' + m(0, 16) + ',' + m(0, 8) + ',' + m(0, 0) + ')'; };
+const fxMark = k => (k === 5 ? '#8A90A8' : FXC[k]);                                       // mark, live part, flag edge (OP 6)
+const fxArea = k => (k === 5 ? '#3A3F52' : fxMix(FXC[k], .45));
+const fxFlagInk = k => (k === 1 || k === 2 ? '#0A0A0A' : '#FFFFFF');
+const FXF = {t: -1, focus: null, page: 'pegel', opPage: 'basis', multi: null, ab: null, fineIds: new Set(), fineChip: false, valDrag: null, ptr: null,
+  two: null, lastTap: null, ignore: new Set(), scroll: 0, clip: null, addTarget: null, seen: {}, cacheK: '', cacheX: null, newEdge: null,
+  view: null, envSel: null, envDx: false, big: null, p3open: false, lv: null};
+const FX_PAGES_V = ['pegel', 'stimme'], FX_PAGES_O = ['basis', 'amp', 'mod', 'tonh'];
+// ---------- data
+function fxX(i) {
+  const p = sndOf(i).p; if (p.fmx) return p.fmx;
+  const k = JSON.stringify(p.fm6); if (FXF.cacheK !== k) { FXF.cacheK = k; FXF.cacheX = FMX.fromFm6(p.fm6); }
+  return FXF.cacheX;
+}
+const fxState = i => { const p = sndOf(i).p; return {fmx: p.fmx ? deep(p.fmx) : null, fm6: deep(p.fm6)}; };
+// the first FELD edit of a sound without a graph creates it (V4a deviation 4: a .syx import with PMS has the route lfo1 → pitch;
+// the graph carries the PMS as lfoFm, so the route goes, else the vibrato doubles)
+function fxEnsure(i) {
+  const snd = sndOf(i), p = snd.p; if (p.fmx) return;
+  const x = FMX.fromFm6(p.fm6);
+  if (x.ops.some(o => o.lfoFm > 0)) { const n = snd.mods.length; snd.mods = snd.mods.filter(m => !(m.src === 'lfo1' && m.dst === 'pitch')); if (snd.mods.length !== n) modsChanged(i); }
+  p.fmx = x;
+}
+// write a new graph (x already normalized or raw); now: the worklet at once (structure); returns true when something changed
+function fxPut(i, x, now) {
+  const p = sndOf(i).p, nx = FMX.norm(x, false); if (!nx) return false;
+  if (p.fmx && JSON.stringify(nx) === JSON.stringify(p.fmx)) return false;
+  fxEnsure(i); fmxApply(p, nx); fmChanged(i, now, true);
+  return true;
+}
+// one change with one undo step; the state before it is the [A│B] partner (V4b-09)
+function fxCommitX(i, x, label, now) {
+  const before = soundSnapshot(i), st = fxState(i);
+  if (!fxPut(i, x, now !== false)) return false;
+  commitSound(i, before, label); FXF.ab = {t: i, prev: st, cur: null, side: 'jetzt'};
+  return true;
+}
+function fxMut(i, label, fn, now) { const x = deep(fxX(i)); fn(x); return fxCommitX(i, x, label, now); }
+// a value drag: begin (snapshot), set (no undo), end (one undo)
+function fxDragBegin(i) { return {before: soundSnapshot(i), st: fxState(i)}; }
+function fxDragSet(i, fn) { const x = deep(fxX(i)); fn(x); return fxPut(i, x, false); }
+function fxDragEnd(i, d, label) { if (commitSound(i, d.before, label)) { FXF.ab = {t: i, prev: d.st, cur: null, side: 'jetzt'}; return true; } return false; }
+// [A│B]: jetzt ↔ vor der letzten Geste (no undo step; the next edit continues from what is heard)
+function fxAB(i) {
+  const A = FXF.ab; if (!A || A.t !== i) { lcdShow('A│B', 'noch keine Geste zum Vergleichen'); return; }
+  const p = sndOf(i).p, put = s => { if (s.fmx) p.fmx = deep(s.fmx); else delete p.fmx; p.fm6 = deep(s.fm6); fmChanged(i, true, true); };
+  if (A.side === 'jetzt') { A.cur = fxState(i); put(A.prev); A.side = 'vorher'; lcdShow('A│B', 'vorher (vor der letzten Geste)'); }
+  else { put(A.cur); A.side = 'jetzt'; lcdShow('A│B', 'jetzt'); }
+  haptic('tick'); fxRefresh(i);
+}
+// ---------- texts
+// KP §4.2: at most 4 characters: „×1“, „×3,5“, „14“, „62“ (×61,69), fixed „440“, „9,8k“ (9772 Hz)
+function fxRatioShort(op) {
+  const v = FMH.ratioOf(op);
+  if (op.fixed) return v >= 9950 ? String(Math.round(v / 1000)) + 'k' : v >= 999.5 ? fmtDec(Math.round(v / 100) / 10, 1).replace(/,0$/, '') + 'k' : String(Math.round(v));
+  if (v >= 9.95) return String(Math.round(v));
+  return '×' + fmtDec(Math.round(v * 10) / 10, 1).replace(/,0$/, '');
+}
+const fxTargets = (X, k) => X.edges.filter(e => e.from === k + 1).map(e => e.to);
+const fxIsOut = (X, k) => X.ops[k].r === 0;
+function fxRoleTxt(X, k, short) {
+  const tg = fxTargets(X, k);
+  return fxIsOut(X, k) ? 'AUSGANG' : (short ? 'MOD. → ' : 'MODULATOR → ') + tg.join(' + ');
+}
+const fxOlTxt = (X, k) => { const o = X.ops[k]; return fxIsOut(X, k) ? (o.ol <= 0 ? MINUS + '∞ dB' : fmOlTxt(true, o.ol)) : 'I ' + fmIdxTxt(o.ol); };
+const fxVoices = X => (X.edges.length > FMX_EDGE_CAP_H ? 6 : 8);
+const FMX_EDGE_CAP_H = 12;
+const fxBudget = X => '6 Op · ' + fxVoices(X) + ' St · Kanten ' + X.edges.length;
+function fxStatus(X) { const b = FMX.badge(X); return b.txt + ' · ' + fxBudget(X); }
+// ---------- geometry (KP §5): the field and the value panel in the page box (W × H, the page has no padding)
+function fxGeo(W, H, land) {
+  const g = {W, H, land};
+  if (land) {
+    const big = W >= 780;
+    g.mode = big ? 'L1' : 'L2'; g.cw = big ? 52 : 44; g.tw = big ? 48 : 40; g.th = big ? 31 : 30; g.pitch = 34;
+    g.fw = g.cw * 6; g.rowsVis = 4; g.top = big ? 10 : 2; g.head = 0; g.floor = 2;
+    g.px = g.fw + 8; g.pw = W - g.px; g.hdr = big ? 34 : 30; g.cols = 2; g.colW = Math.floor((g.pw - 8) / 2); g.rowH = big ? 34 : 32; g.rowGap = big ? 3 : 2;
+    g.rowY = j => g.hdr + 4 + j * (g.rowH + g.rowGap);
+    return g;
+  }
+  if (W >= 700 && H >= 400) {                         // W (tablet) / desktop
+    g.mode = 'W'; g.cw = 64; g.tw = 60; g.th = 52; g.pitch = Math.min(60, Math.floor((H - 40) / 6)); g.th = Math.min(52, g.pitch - 6);
+    g.fw = 384; g.head = 22; g.floor = 12; g.top = Math.max(26, H - g.floor - 6 * g.pitch); g.rowsVis = 6; g.px = g.fw + 8; g.pw = Math.min(W - g.px, 436); g.tabH = 40; g.rowH = 44; g.rowGap = 4; g.cols = 1;
+    g.rowY = j => 2 * g.tabH + 8 + j * (g.rowH + g.rowGap); return g;
+  }
+  if (W >= 370 && H >= 330) {                         // P1: 374 × 365
+    g.mode = 'P1'; g.cw = 40; g.tw = 36; g.pitch = Math.floor((H - 35) / 6); g.th = g.pitch - 5; g.fw = 236; g.head = 18; g.top = 23; g.floor = 12; g.rowsVis = 6;
+    g.px = W - 132; g.pw = 132; g.tabH = 34; g.tabGap = 4; g.rowH = 44; g.rowGap = 3; g.cols = 1; g.rowY = j => 76 + j * 47; return g;
+  }
+  if (W >= 340) {                                     // P2: 359 × 245
+    g.mode = 'P2'; g.cw = 38; g.tw = 34; g.pitch = Math.max(28, Math.floor((H - 30) / 6)); g.th = g.pitch - 4; g.fw = 228; g.head = 18; g.top = 18; g.floor = 10; g.rowsVis = 6;
+    g.px = g.fw + 4; g.pw = W - g.px; g.tabH = 30; g.tabGap = 3; g.rowH = 34; g.rowGap = 2; g.cols = 1; g.rowY = j => 66 + j * 36; return g;
+  }
+  g.mode = 'P3'; g.cw = Math.floor(W / 6); g.tw = g.cw - 4; g.pitch = Math.max(26, Math.floor((H - 30) / 6)); g.th = g.pitch - 4; g.fw = W; g.head = 18; g.top = 18; g.floor = 10; g.rowsVis = 6;
+  g.pw = Math.round(W * .6); g.px = W - g.pw; g.tabH = 30; g.tabGap = 3; g.rowH = 34; g.rowGap = 2; g.cols = 1; g.rowY = j => 66 + j * 36; return g;
+}
+// cell -> tile box in field coordinates (L: scrolled by FXF.scroll rows)
+function fxTileBox(g, c, r) {
+  if (g.land) { const vr = r - FXF.scroll; return {x: g.cw * c + (g.cw - g.tw) / 2, y: g.top + g.pitch * (g.rowsVis - 1 - vr), w: g.tw, h: g.th, vis: vr >= 0 && vr < g.rowsVis}; }
+  return {x: g.cw * c + (g.mode === 'P1' ? 0 : (g.cw - g.tw) / 2), y: g.top + g.pitch * (5 - r), w: g.tw, h: g.th, vis: true};
+}
+// a field point -> cell (KD §5.2 Nr. 1: the cell that contains the point); null outside the grid
+function fxCellAt(g, x, y) {
+  if (x < 0 || x >= g.cw * 6) return null;
+  const c = Math.floor(x / g.cw);
+  if (g.land) { const vr = g.rowsVis - 1 - Math.floor((y - g.top + (g.pitch - g.th) / 2) / g.pitch); const r = vr + FXF.scroll; return r >= 0 && r < 6 && y >= 0 && y < g.H ? [c, r] : null; }
+  const r = 5 - Math.floor((y - g.top + (g.pitch - g.th) / 2) / g.pitch);
+  return r >= 0 && r < 6 && y >= g.head - 4 && y < g.H - 2 ? [c, r] : null;
+}
+// ---------- the wave previews (same partials as the worklet tables, 32 harmonics)
+const FX_WPATH = {};
+function fxWavePath(w, W, H) {
+  const key = w + ':' + W + 'x' + H; if (FX_WPATH[key]) return FX_WPATH[key];
+  const N = 48, PI = Math.PI, ys = [];
+  let rr = 0x9E3779B9; const ph = []; for (let n = 1; n < 33; n++) { rr ^= rr << 13; rr ^= rr >>> 17; rr ^= rr << 5; ph[n] = ((rr >>> 0) / 4294967296) * 2 * PI; }
+  for (let i = 0; i <= N; i++) {
+    const x = i / N; let v = 0;
+    if (w === 0) v = Math.sin(2 * PI * x);
+    else for (let n = 1; n < 33; n++) {
+      const odd = n & 1; let a = 0, b = 0;
+      if (w === 1) b = 1 / n; else if (w === 2) b = 1 / (n * n); else if (w === 3) b = odd ? ((n >> 1) & 1 ? -1 : 1) / (n * n) : 0; else if (w === 4) b = odd ? 1 / n : 0;
+      else if (w === 5) { if (n === 1) b = .5; else if (!odd) a = -2 / (PI * (n * n - 1)); } else if (w === 6) { a = Math.sin(PI * n / 2) / (PI * n); b = (1 - Math.cos(PI * n / 2)) / (PI * n); }
+      else if (w === 7) b = n === 1 ? 1 : n === 2 ? .5 : 0; else if (w === 8) b = n === 1 ? 1 : n === 3 ? .5 : 0;
+      else if (w === 9) b = 4 * n / PI * (1 / (4 * n * n - 1) - 1 / (4 * n * n - 9)); else if (w === 10) b = n === 1 ? 5 / 16 : n === 2 ? -.25 : n === 3 ? 1 / 16 : 0;
+      else if (w === 11) { a = Math.cos(ph[n]); b = Math.sin(ph[n]); }
+      v += b * Math.sin(2 * PI * n * x) + a * Math.cos(2 * PI * n * x);
+    }
+    ys.push(v);
+  }
+  const pk = Math.max(1e-9, ...ys.map(Math.abs));
+  const d = 'M' + ys.map((v, i) => (i / N * (W - 2) + 1).toFixed(1) + ' ' + (H / 2 - v / pk * (H / 2 - 2)).toFixed(1)).join('L');
+  return (FX_WPATH[key] = d);
+}
+const fxWaveName = w => (FMX.WAVES[w] || 'eigene ' + w);
+// ---------- the page
+const fxLand = () => window.matchMedia('(orientation: landscape)').matches;
+const fxEnvPage = () => FXF.focus != null && (FXF.page === 'amp' || FXF.page === 'tonh');
+const fxMini = g => (g.mode === 'P1' || g.mode === 'P2') && fxEnvPage();
+function pageFmField(pg, i) {
+  pg.classList.remove('rest'); pg.classList.add('fxpg');
+  // iOS loupe / scroll guard, except in the scrolling value list of P2 (a vertical move there scrolls, K2-38: no value drag)
+  pg.addEventListener('touchstart', e => { if (e.cancelable && !(e.target.closest && e.target.closest('.fxv.scr'))) e.preventDefault(); }, {passive: false});
+  if (FXF.t !== i) { FXF.t = i; FXF.focus = null; FXF.page = 'pegel'; FXF.multi = null; FXF.addTarget = null; FXF.scroll = 0; FXF.p3open = false; FXF.envSel = null; }
+  const fld = el('div', 'fxf'), pan = el('div', 'fxv'), env = el('div', 'fxe'), pre = el('div', 'fxpre');
+  fld.innerHTML = '<div class="fxh"><button class="fxht" aria-label="DX-Abgleich"></button><button class="fxp3 rb" aria-label="Werte">Werte ▸</button></div>' +
+    '<svg class="fxl" aria-hidden="true"><g class="ln"></g><g class="gl"></g></svg><div class="fxtiles"></div><div class="fxland" hidden></div>' +
+    '<div class="fxfloor"><span>AUSGANG</span></div><div class="fxs fxs1" hidden></div><div class="fxs fxs2" hidden></div>';
+  pg.append(fld, pre, env, pan);
+  const V = FXF.view = {i, pg, fld, pan, env, pre, g: null, tiles: [], ghost: null, key: '', panKey: '', rows: [], envUpd: null,
+    head: fld.querySelector('.fxht'), badge: fld.querySelector('.fxht'), p3b: fld.querySelector('.fxp3'), lnG: fld.querySelector('.ln'), glG: fld.querySelector('.gl'),
+    svg: fld.querySelector('svg'), tilesEl: fld.querySelector('.fxtiles'), land: fld.querySelector('.fxland'), floor: fld.querySelector('.fxfloor'),
+    s1: fld.querySelector('.fxs1'), s2: fld.querySelector('.fxs2')};
+  for (let k = 0; k < 6; k++) {
+    const t = el('div', 'fxt', `<b>${k + 1}</b><i></i><s class="fxbar"><u class="a"></u><u class="m"></u><u class="l"></u></s><em class="fxbd"></em>`);
+    t.dataset.op = k + 1; V.tilesEl.appendChild(t); V.tiles.push(t);
+  }
+  onTap(V.badge, () => { const X = fxX(i), b = FMX.badge(X); lcdShow('DX-Abgleich', b.ok ? b.txt + ' – klingt auch als DX-Algorithmus (Seite DX, .syx)' : b.renum ? b.txt + ' – Stimme › [Nummern angleichen]' : b.txt + ' – im ECO-Klang angenähert'); FXF.seen.badge = 1; });
+  onTap(V.p3b, () => { FXF.p3open = !FXF.p3open; fxRender(true); });
+  fxFieldInput(V);
+  ED.refreshers.push(() => { if (V.fld.isConnected) fxRender(false); });
+  const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { if (!pg.isConnected) { ro.disconnect(); return; } fxRender(true); }) : null;
+  if (ro) ro.observe(pg);
+  fxRender(true);
+  requestAnimationFrame(() => { fxRender(true); if (ED.lcd && ED.lcd._s == null && !FXF.drag) lcdShow('FELD', fxStatus(fxX(i))); });
+  fxLiveStart(i);
+}
+function fxRefresh(i) { const V = FXF.view; if (V && V.i === i && V.fld.isConnected) fxRender(true); else edRefresh(); }
+// one render: geometry, tiles, lines, head, panel (rebuilt only when focus / page / mode change)
+function fxRender(force) {
+  const V = FXF.view; if (!V || !V.pg.isConnected) return;
+  const i = V.i, W = V.pg.clientWidth, H = V.pg.clientHeight; if (W < 50 || H < 50) return;
+  const g = V.g = fxGeo(W, H, fxLand()), X = fxX(i), mini = fxMini(g);
+  V.pg.dataset.mode = g.mode; V.pg.classList.toggle('fxmini', mini); V.pg.classList.toggle('fxland', g.land);
+  // field box
+  const fw = g.fw;
+  Object.assign(V.fld.style, {left: '0px', top: '0px', width: fw + 'px', height: H + 'px'});
+  V.svg.setAttribute('width', fw); V.svg.setAttribute('height', H); V.svg.setAttribute('viewBox', `0 0 ${fw} ${H}`);
+  const G = mini ? fxMiniGeo(g) : g;
+  V.G = G;
+  // L: scroll range (KP §5.2: always 4 rows, rolls inside the field)
+  const maxR = Math.max(...X.ops.map(o => o.r));
+  if (g.land) { const need = Math.max(0, maxR + 1 - g.rowsVis); FXF.scroll = clamp(FXF.scroll, 0, need); V.s1.hidden = FXF.scroll + g.rowsVis > maxR; V.s1.textContent = '▲ ' + (maxR + 1 - g.rowsVis - FXF.scroll) + ' weitere';
+    V.s2.hidden = !FXF.scroll; V.s2.textContent = '▼ ' + FXF.scroll + ' weitere'; } else { V.s1.hidden = V.s2.hidden = true; FXF.scroll = 0; }
+  // tiles
+  const sel = FXF.focus, voicePeg = sel == null && FXF.page === 'pegel' && !FXF.multi, lv = FXF.lv || [0, 0, 0, 0, 0, 0], showF = uiPrefs().fxFreq !== false;
+  X.ops.forEach((o, k) => {
+    const t = V.tiles[k], b = mini ? fxMiniBox(G, o.c, o.r) : fxTileBox(G, o.c, o.r);
+    t.hidden = !b.vis; t.style.cssText = `left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px`;
+    const isSel = sel === k, muted = !o.on, inMulti = FXF.multi && FXF.multi.has(k);
+    const frame = muted ? FX_MUTE : isSel ? FX_SELB : voicePeg ? FXC[k] : FX_GREY;
+    t.style.borderColor = inMulti ? '#F7C948' : frame; t.style.background = isSel ? FX_SELF : '#0A0A0A';
+    t.classList.toggle('sel', isSel); t.classList.toggle('off', muted); t.classList.toggle('o6', voicePeg && k === 5 && !isSel && !muted);
+    const r = fxRatioShort(o); t.dataset.ratio = r; t.dataset.fb = o.fbSrc ? String(o.fbSrc) : '';
+    const it = t.querySelector('i'); const rt = showF && !mini ? r : ''; if (it.textContent !== rt) it.textContent = rt;
+    const bd = t.querySelector('em'); bd.hidden = !o.fbSrc; if (o.fbSrc) { bd.textContent = String(o.fbSrc); bd.classList.toggle('z', !(o.fbAmt > 0)); }
+    const colr = voicePeg ? fxMark(k) : '#FFFFFF', area = voicePeg ? fxArea(k) : fxMix('#FFFFFF', .45);
+    const bar = t.querySelector('s'), [ua, um, ul] = bar.children, bh = b.h - 4 - 6, lvl = o.on ? o.ol / 99 : 0;
+    bar.style.height = bh + 'px'; ua.style.cssText = `height:${(lvl * bh).toFixed(1)}px;background:${area}`;
+    um.style.cssText = `bottom:${Math.max(0, lvl * bh - 2).toFixed(1)}px;background:${colr}`; um.hidden = !o.on;
+    ul.style.cssText = `height:${(clamp(lv[k] || 0, 0, 1) * bh).toFixed(1)}px;background:${colr}`;
+    t.dataset.bar = (lvl * bh).toFixed(1); t.dataset.frame = frame; t.dataset.fill = isSel ? FX_SELF : '#0A0A0A';
+  });
+  // lines (KP §4.4): bottom-centre of the modulator -> top-centre of the target; grey from a muted modulator
+  const box = k => { const o = X.ops[k]; return mini ? fxMiniBox(G, o.c, o.r) : fxTileBox(G, o.c, o.r); };
+  let lh = '';
+  for (const e of X.edges) {
+    const a = box(e.from - 1), b = box(e.to - 1), x0 = a.x + a.w / 2, y0 = a.y + a.h, x1 = b.x + b.w / 2, y1 = b.y;
+    const grey = !X.ops[e.from - 1].on, nw = FXF.newEdge && FXF.newEdge.k === e.from + '>' + e.to && performance.now() - FXF.newEdge.t < 400 && uiPrefs().fxAnim !== false && !reducedMotion();
+    lh += `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="${grey ? FX_MUTE : FX_LINE}" data-e="${e.from}>${e.to}"${nw ? ' class="nw"' : ''}/>`;
+  }
+  if (V.lnG._h !== lh) { V.lnG._h = lh; V.lnG.innerHTML = lh; const n = V.lnG.querySelector('.nw'); if (n) { const L = Math.hypot(n.x2.baseVal.value - n.x1.baseVal.value, n.y2.baseVal.value - n.y1.baseVal.value); n.style.strokeDasharray = L + ' ' + L; n.style.strokeDashoffset = L; requestAnimationFrame(() => { n.style.transition = 'stroke-dashoffset .2s linear'; n.style.strokeDashoffset = '0'; }); } }
+  // floor and head
+  Object.assign(V.floor.style, mini ? {top: (G.top + G.pitch * 6 - 2) + 'px', height: '10px', width: '132px', right: 'auto'} : g.land ? {top: (H - 3) + 'px', height: '2px', width: '', right: '0px'} : {top: (H - g.floor) + 'px', height: g.floor + 'px', width: '', right: '0px'});
+  V.floor.classList.toggle('thin', g.land);
+  const b = FMX.badge(X);
+  const headTxt = FXF.drag && FXF.drag.lcd ? FXF.drag.lcd : FXF.addTarget != null ? 'Ziel für OP ' + (FXF.addTarget + 1) + ': tiefere Kachel antippen' : sel == null ? 'STIMME · ' + b.txt + ' · 6 Op · ' + fxVoices(X) + ' St' : 'OP ' + (sel + 1) + ' · ' + fxRoleTxt(X, sel, g.mode !== 'P1' && g.mode !== 'W') + (fxEnvPage() ? ' · ' + (FXF.page === 'amp' ? 'AMP' : 'TONH.') : ' · ' + fxRatioShort(X.ops[sel]));
+  if (V.head.textContent !== headTxt) V.head.textContent = headTxt;
+  V.head.classList.toggle('drag', !!(FXF.drag && FXF.drag.lcd)); V.head.classList.toggle('mod', sel != null && !fxIsOut(X, sel));
+  V.p3b.hidden = g.mode !== 'P3';
+  // panel
+  const pkey = [g.mode, FXF.focus, FXF.page, !!FXF.multi, FXF.p3open, W, H].join('|');
+  if (force || V.panKey !== pkey) { V.panKey = pkey; fxPanel(V); } else fxPanelUpd(V);
+}
+// the mini field (EK-13, KP §5.1 d): cells 22 wide under the presets row; P1 22 × 46 from y 76
+function fxMiniGeo(g) {
+  const top = g.mode === 'P1' ? 76 : g.mode === 'P2' ? 68 : 2 * g.tabH + 2 * g.tabGap + 30;
+  const pitch = Math.min(46, Math.floor((g.H - top - 12) / 6));
+  return {mini: true, cw: 22, tw: 20, th: pitch - 4, pitch, top, land: false, mode: 'mini', head: 18, H: g.H, fw: 132};
+}
+const fxMiniBox = (G, c, r) => ({x: G.cw * c + 1, y: G.top + G.pitch * (5 - r) + 2, w: G.tw, h: G.th, vis: true});
+const reducedMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+// live part of the bars (N7F-09/-32): ~30 Hz while the field is shown
+function fxLiveStart(i) {
+  let want = null;
+  const loop = () => {
+    const V = FXF.view; if (!V || V.i !== i || !V.fld.isConnected) { fxmxWant(i, false); FXF.lv = null; return; }
+    // N7F-09: levels only while the field is really shown (sheet open, page visible)
+    const w = EL.synthSheet.classList.contains('open') && !document.hidden; if (w !== want) { want = w; fxmxWant(i, w); }
+    const E = AU.synth[i], lv = E && E.lv ? E.lv : null;
+    if (lv) { const prev = FXF.lv; FXF.lv = Array.from(lv); if (!prev || prev.some((v, k) => Math.abs(v - FXF.lv[k]) > .004)) fxLiveDraw(V); }
+    setTimeout(() => requestAnimationFrame(loop), 30);
+  };
+  requestAnimationFrame(loop);
+}
+const fxmxWant = (i, on) => { try { fmxLvWant(i, on); } catch (e) { logErr(e); } };
+function fxLiveDraw(V) {
+  const X = fxX(V.i), lv = FXF.lv || [];
+  X.ops.forEach((o, k) => { const t = V.tiles[k], ul = t.querySelector('s .l'), bh = parseFloat(t.querySelector('s').style.height) || 0; ul.style.height = (clamp(lv[k] || 0, 0, 1) * bh).toFixed(1) + 'px'; });
+}
+// ---------- selection (R1, R2; K2-61: between operators the page stays)
+function fxSelect(i, k) {
+  if (k == null) { FXF.focus = null; FXF.page = 'pegel'; FXF.addTarget = null; if (FXF.view && FXF.view.g && FXF.view.g.mode === 'P3') FXF.p3open = false; }
+  else {
+    if (FXF.focus == null) FXF.page = 'basis';
+    else if (!FX_PAGES_O.includes(FXF.page)) FXF.page = FXF.opPage || 'basis';
+    FXF.focus = k; FXF.envSel = null;
+    const f = fmOf(i), q = f && f.perm ? f.perm[k] : k;                 // the DX pages follow (their numbering)
+    ED.fmOp = q; if (!ED.fmOpT) ED.fmOpT = {}; ED.fmOpT[i] = q; ED.fmT = i;
+    const st = EL.synthSheet.querySelector('.stab[data-sub="op"]'); if (st) st.textContent = 'OP ' + (q + 1);
+    if (FXF.view && FXF.view.g && FXF.view.g.mode === 'P3') FXF.p3open = true;
+  }
+  if (UI.fmSolo && UI.fmSolo.t === i && k != null && UI.fmSolo.k !== k) { UI.fmSolo.k = k; wkFm6(i, true); }
+}
+function fxGestureApply(i, g, label) {
+  const X = fxX(i), res = FMX.gesture(X, g);
+  if (res.x) {
+    if (res.kind === 'link' || res.kind === 'fall') { const e = res.x.edges.find(f => f.from === g.op && !X.edges.some(h => h.from === f.from && h.to === f.to)); FXF.newEdge = e ? {k: e.from + '>' + e.to, t: performance.now()} : null; }
+    else if (g.kind === 'two' && res.kind === 'link') FXF.newEdge = null;
+    fxCommitX(i, res.x, label || 'FELD: ' + res.lcd, true);
+    haptic('snap');
+    lcdShow(res.lcd, fxStatus(fxX(i)));
+  } else if (res.lcd) { lcdShow(res.ok ? 'FELD' : 'Geht nicht', res.lcd); haptic('tick'); }
+  return res;
+}
+// ---------- field input (R0–R9, R11)
+function fxFieldInput(V) {
+  const fld = V.fld, i = V.i;
+  const rel = (x, y) => { const r = fld.getBoundingClientRect(); return [x - r.left, y - r.top]; };
+  const hit = (x, y) => { for (let k = 0; k < 6; k++) { const t = V.tiles[k]; if (t.hidden) continue; const r = t.getBoundingClientRect(); if (x >= r.left - 2 && x <= r.right + 2 && y >= r.top - 2 && y <= r.bottom + 2) return k; } return -1; };
+  const dist = (P, e) => Math.hypot(e.clientX - P.x0, e.clientY - P.y0);
+  const endDrag = () => { const D = FXF.drag; FXF.drag = null; if (D && D.ghost) D.ghost.remove(); for (const t of V.tiles) t.classList.remove('lift'); V.land.hidden = true; V.glG.innerHTML = ''; };
+  const abort = () => { endDrag(); FXF.ptr = null; FXF.two = null; fxRender(false); };
+  on(fld, 'pointerdown', e => {
+    if (e.button > 0) return;
+    if (e.target.closest('.fxh button')) return;                        // head buttons (badge, P3 „Werte“) are taps of their own
+    e.preventDefault();
+    if (FXF.valDrag) { FXF.fineIds.add(e.pointerId); FXF.valDrag.fineOn && FXF.valDrag.fineOn(); return; }       // R0: only FEIN
+    try { fld.setPointerCapture(e.pointerId); } catch (_) {}
+    const now = performance.now(), k = hit(e.clientX, e.clientY);
+    if (FXF.ptr && FXF.ptr.id !== e.pointerId) {                          // a second finger (R9)
+      const P = FXF.ptr;
+      if (k >= 0 && P.op >= 0 && k !== P.op && now - P.t0 <= 300 && !FXF.drag && !V.G.mini) FXF.two = {a: P.op, b: k, ids: new Set([P.id, e.pointerId]), up: new Set(), x: {[P.id]: [P.x0, P.y0], [e.pointerId]: [e.clientX, e.clientY]}, bad: false};
+      else FXF.ignore.add(e.pointerId);                                   // L4: a late second finger does nothing
+      return;
+    }
+    FXF.ptr = {id: e.pointerId, op: k, x0: e.clientX, y0: e.clientY, t0: now, moved: false};
+    gestBegin(e.pointerId, abort);
+    if (!FXF.seen.field) { FXF.seen.field = 1; lcdShow('FELD', FX_HELP[0]); }
+    if (k >= 0 && FXF.multi) return;
+    if (k >= 0 && FXF.addTarget == null) { if (FXF.focus !== k || (FXF.view.g.mode === 'P3' && !FXF.p3open)) { fxSelect(i, k); fxRender(false); } }
+  });
+  on(fld, 'pointermove', e => {
+    if (FXF.two && FXF.two.ids.has(e.pointerId)) { const p0 = FXF.two.x[e.pointerId]; if (Math.hypot(e.clientX - p0[0], e.clientY - p0[1]) > 8) FXF.two.bad = true; }
+    const P = FXF.ptr; if (!P || P.id !== e.pointerId || P.fine) return;
+    const d = dist(P, e);
+    if (!P.moved && d <= 8) return;
+    if (!P.moved) {
+      P.moved = true;
+      if (FXF.two) FXF.two.bad = true;
+      if (P.op >= 0 && FXF.addTarget == null && !FXF.multi) {
+        if (V.G.mini) { lcdShow('FELD', 'Ziehen auf der Seite Basis'); return; }
+        const t = V.tiles[P.op], r = t.getBoundingClientRect(), gh = t.cloneNode(true);
+        gh.classList.add('ghost'); gh.classList.remove('sel'); gh.removeAttribute('data-op'); fld.appendChild(gh); t.classList.add('lift');
+        FXF.drag = {op: P.op, ghost: gh, ox: e.clientX - r.left, oy: e.clientY - r.top, w: r.width, h: r.height, cell: undefined, lcd: '', g: null, scrollT: 0};
+      } else if (P.op < 0) P.swipe = {y: e.clientY, s: FXF.scroll};
+    }
+    if (FXF.drag) {
+      const D = FXF.drag, [fx, fy] = rel(e.clientX - D.ox, e.clientY - D.oy);
+      D.ghost.style.left = fx + 'px'; D.ghost.style.top = fy + 'px';
+      const cx = fx + D.w / 2, cy = fy + D.h / 2, G = V.G, fr = fld.getBoundingClientRect();
+      // L: a drag at the top / bottom edge rolls the rows
+      if (G.land && performance.now() - D.scrollT > 350) { const maxR = Math.max(...fxX(i).ops.map(o => o.r)); if (e.clientY < fr.top + 10 && FXF.scroll + G.rowsVis <= maxR + 1) { FXF.scroll++; D.scrollT = performance.now(); fxRender(false); } else if (e.clientY > fr.bottom - 10 && FXF.scroll > 0) { FXF.scroll--; D.scrollT = performance.now(); fxRender(false); } }
+      const inside = e.clientX >= fr.left && e.clientX <= fr.right && e.clientY >= fr.top && e.clientY <= fr.bottom;
+      let cell = inside ? fxCellAt(G, cx, cy) : null;
+      // 8 px hysteresis at the zone edges: keep the old cell while the ghost centre is within 8 px of it
+      if (D.cell && cell && (cell[0] !== D.cell[0] || cell[1] !== D.cell[1])) { const b = fxTileBox(G, D.cell[0], D.cell[1]), m = (G.cw - G.tw) / 2 + 8; if (cx > b.x - m && cx < b.x + b.w + m && cy > b.y - 8 - (G.pitch - G.th) / 2 && cy < b.y + b.h + 8 + (G.pitch - G.th) / 2) cell = D.cell; }
+      const ck = cell ? cell.join(',') : '-';
+      if (ck !== (D.cell === undefined ? '?' : D.cell ? D.cell.join(',') : '-')) {
+        D.cell = cell; const X = fxX(i);
+        const y = cell ? X.ops.findIndex(o => o.c === cell[0] && o.r === cell[1]) : -1;
+        D.g = !cell ? {kind: 'drop', op: D.op + 1} : y >= 0 ? {kind: 'drop', op: D.op + 1, onOp: y + 1} : {kind: 'drop', op: D.op + 1, cell};
+        const pv = FMX.gesture(X, D.g); D.lcd = pv.lcd || 'zurück'; D.pv = pv;
+        fxPreviewDraw(V, X, pv, D.op);
+        lcdShow('Loslassen', D.lcd); haptic('tick'); fxRender(false);
+      }
+      return;
+    }
+    if (P.swipe && V.G.land) { const n = Math.round((e.clientY - P.swipe.y) / V.G.pitch); const s = P.swipe.s + n; if (s !== FXF.scroll) { FXF.scroll = s; fxRender(false); } }   // R11
+  });
+  const up = (e, ok) => {
+    FXF.ignore.delete(e.pointerId);
+    if (FXF.fineIds.has(e.pointerId)) { FXF.fineIds.delete(e.pointerId); if (FXF.ptr && FXF.ptr.id === e.pointerId) { gestEnd(e.pointerId); FXF.ptr = null; } if (FXF.valDrag && FXF.valDrag.fineOn) FXF.valDrag.fineOn(); return; }
+    if (FXF.two && FXF.two.ids.has(e.pointerId)) {
+      const T = FXF.two; T.up.add(e.pointerId);
+      if (T.up.size < 2) { if (FXF.ptr && FXF.ptr.id === e.pointerId) { gestEnd(e.pointerId); FXF.ptr = null; } return; }
+      FXF.two = null; if (FXF.ptr) { gestEnd(FXF.ptr.id); FXF.ptr = null; }
+      if (ok && !T.bad) fxGestureApply(i, {kind: 'two', a: T.a + 1, b: T.b + 1});
+      fxRender(false); return;
+    }
+    const P = FXF.ptr; if (!P || P.id !== e.pointerId) return;
+    FXF.ptr = null; gestEnd(e.pointerId);
+    if (FXF.drag) {
+      const D = FXF.drag; endDrag();
+      if (ok && D.g) fxGestureApply(i, D.g); else lcdShow('FELD', 'zurück');
+      fxRender(false); return;
+    }
+    if (!ok || P.moved) return;
+    const k = P.op, now = performance.now();
+    if (k < 0) {                                                        // R2: a tap into the empty field
+      FXF.lastTap = null;
+      if (FXF.addTarget != null) { FXF.addTarget = null; lcdShow('Ziel', 'abgebrochen'); fxRender(false); return; }
+      fxSelect(i, null); fxRender(false); return;
+    }
+    if (FXF.multi) { if (FXF.multi.has(k)) FXF.multi.delete(k); else FXF.multi.add(k); haptic('tick'); lcdShow('Mehrere', FXF.multi.size ? 'OP ' + [...FXF.multi].map(x => x + 1).join(', ') : 'Kacheln antippen'); fxRender(false); return; }
+    if (FXF.addTarget != null) {                                         // ⋯ › Ziele › [+ Ziel]: a lower tile
+      const a = FXF.addTarget, X = fxX(i); FXF.addTarget = null;
+      if (X.ops[k].r >= X.ops[a].r) { lcdShow('Ziel', 'nur eine tiefere Kachel'); fxRender(false); return; }
+      if (X.edges.some(e2 => e2.from === a + 1 && e2.to === k + 1)) { lcdShow('Ziel', (a + 1) + ' → ' + (k + 1) + ' gibt es schon'); fxRender(false); return; }
+      fxMut(i, 'Ziel ' + (a + 1) + ' → ' + (k + 1), x => { x.edges.push({from: a + 1, to: k + 1}); });
+      FXF.newEdge = {k: (a + 1) + '>' + (k + 1), t: performance.now()}; lcdShow('Ziel', (a + 1) + ' → ' + (k + 1) + ' verbunden'); fxRender(false); return;
+    }
+    const L = FXF.lastTap;
+    if (L && L.k === k && P.t0 - L.t0 <= 300 && Math.hypot(P.x0 - L.x, P.y0 - L.y) <= 8) {   // R3 double tap
+      FXF.lastTap = null; fxGestureApply(i, {kind: 'dtap', op: k + 1}); fxRender(false); return;
+    }
+    FXF.lastTap = {k, t0: P.t0, x: P.x0, y: P.y0};
+    void now;
+  };
+  on(fld, 'pointerup', e => up(e, true));
+  on(fld, 'pointercancel', e => up(e, false));
+  on(fld, 'lostpointercapture', e => { if ((FXF.ptr && FXF.ptr.id === e.pointerId) || (FXF.two && FXF.two.ids.has(e.pointerId))) up(e, false); });
+}
+// the ghost result (Z1): the landing cell of the dragged operator and the lines it will have (dashed)
+function fxPreviewDraw(V, X, pv, k) {
+  V.glG.innerHTML = ''; V.land.hidden = true;
+  if (!pv || !pv.x) return;
+  const G = V.G, Y = pv.x, o = Y.ops[k], b = fxTileBox(G, o.c, o.r);
+  if (b.vis) Object.assign(V.land.style, {left: b.x + 'px', top: b.y + 'px', width: b.w + 'px', height: b.h + 'px'});
+  V.land.hidden = !b.vis;
+  const mov = new Set([k, ...FMX.upper(Y, k)]);
+  let h = '';
+  for (const e of Y.edges) {
+    if (!mov.has(e.from - 1) && !mov.has(e.to - 1)) continue;
+    const a = Y.ops[e.from - 1], c = Y.ops[e.to - 1], A = fxTileBox(G, a.c, a.r), B = fxTileBox(G, c.c, c.r);
+    h += `<line x1="${(A.x + A.w / 2).toFixed(1)}" y1="${(A.y + A.h).toFixed(1)}" x2="${(B.x + B.w / 2).toFixed(1)}" y2="${B.y.toFixed(1)}"/>`;
+  }
+  V.glG.innerHTML = h;
+}
+// ---------- the value panel (KP §4.7)
+const FX_TABS = {
+  vP: [['pegel', 'Pegel'], ['stimme', 'Stimme'], ['more', '⋯'], ['vorl', 'Vorl. ▾'], ['zufall', 'Zufall'], ['ab', 'A│B']],
+  oP: [['basis', 'Basis'], ['amp', 'Amp'], ['m', 'M'], ['mod', 'Mod'], ['tonh', 'Tonh.'], ['more', '⋯']],
+  vL: [['pegel', 'Pegel'], ['stimme', 'Stimme'], ['vorl', 'Vorlagen ▾'], ['zufall', 'Zufall'], ['ab', 'A│B'], ['more', '⋯']],
+  oL: [['basis', 'Basis'], ['amp', 'Amp'], ['mod', 'Mod'], ['tonh', 'Tonh.'], ['m', 'M'], ['more', '⋯']],
+};
+function fxPanel(V) {
+  const g = V.g, i = V.i, pan = V.pan, X = fxX(i);
+  pan.innerHTML = ''; V.rows = []; V.envUpd = null; V.env.innerHTML = ''; V.pre.innerHTML = ''; V.env.hidden = V.pre.hidden = true;
+  const p3 = g.mode === 'P3';
+  pan.hidden = p3 && !FXF.p3open;
+  Object.assign(pan.style, {left: g.px + 'px', top: '0px', width: g.pw + 'px', height: g.H + 'px'});
+  pan.classList.toggle('sheet3', p3);
+  if (pan.hidden) return;
+  const opSt = FXF.focus != null, list = g.land ? (opSt ? FX_TABS.oL : FX_TABS.vL) : (opSt ? FX_TABS.oP : FX_TABS.vP);
+  const tb = el('div', 'fxtabs' + (g.land ? ' l' : ''));
+  if (g.land) {
+    const hd = el('span', 'fxrole'); hd.textContent = opSt ? 'OP ' + (FXF.focus + 1) + ' · ' + fxRoleTxt(X, FXF.focus, true) : ''; if (opSt) tb.appendChild(hd);
+    V.roleEl = hd;
+  }
+  for (const [id, lb] of list) {
+    const b = el('button', 'fxtab rb', esc(lb)); b.dataset.t = id;
+    if (id === FXF.page) b.classList.add('on');
+    if (id === 'm' && opSt) { b.classList.toggle('mute', !X.ops[FXF.focus].on); b.setAttribute('aria-pressed', String(!X.ops[FXF.focus].on)); b.setAttribute('aria-label', 'Stumm (M)'); }
+    if (id === 'ab') { b.classList.toggle('on', !!(FXF.ab && FXF.ab.t === i && FXF.ab.side === 'vorher')); b.setAttribute('aria-label', 'Vergleich: jetzt / vor der letzten Geste'); }
+    if (id === 'more') b.setAttribute('aria-label', 'Mehr');
+    tb.appendChild(b);
+  }
+  if (g.land && !opSt) { const bd = el('span', 'fxbadge'); V.badgeL = bd; tb.appendChild(bd); onTap(bd, () => V.badge.click()); }
+  if (p3) { const x = el('button', 'fxtab fxx rb', '✕'); x.setAttribute('aria-label', 'Werte schließen'); tb.appendChild(x); }
+  pan.appendChild(tb);
+  onTap(tb, b => fxTab(i, b.dataset.t, b), '.fxtab');
+  if (fxEnvPage()) { fxEnvPanel(V); fxPanelUpd(V); return; }
+  const rows = fxRowsFor(V, X);
+  rows.forEach((r, j) => {
+    const col = g.cols === 2 ? j % 2 : 0, line = g.cols === 2 ? j >> 1 : j;
+    const w = g.cols === 2 ? g.colW : g.pw, x = g.cols === 2 ? col * (g.colW + 8) : 0;
+    const tall = r.tall ? (g.cols === 2 ? Math.min(r.tall, 3 - line) : Math.max(1, Math.min(r.tall, Math.floor((g.H - g.rowY(line) + g.rowGap) / (g.rowH + g.rowGap))))) : 0;
+    Object.assign(r.el.style, {left: x + 'px', top: g.rowY(line) + 'px', width: w + 'px', height: (tall > 1 ? g.rowY(line + tall) - g.rowY(line) - g.rowGap : g.rowH) + 'px'});
+    pan.appendChild(r.el); V.rows.push(r);
+  });
+  if (!g.land && rows.length && g.rowY(rows.length - 1) + g.rowH > g.H) pan.classList.add('scr'); else pan.classList.remove('scr');
+  fxPanelUpd(V);
+}
+function fxPanelUpd(V) {
+  const X = fxX(V.i);
+  for (const r of V.rows) { try { r.upd(X); } catch (e) { logErr(e); } }
+  if (V.envUpd) V.envUpd(X);
+  if (V.badgeL) { const t = fxStatus(X); if (V.badgeL.textContent !== t) V.badgeL.textContent = t; }
+  if (V.roleEl && FXF.focus != null) { const t = 'OP ' + (FXF.focus + 1) + ' · ' + fxRoleTxt(X, FXF.focus, true); if (V.roleEl.textContent !== t) V.roleEl.textContent = t; }
+  const m = V.pan.querySelector('.fxtab[data-t="m"]'); if (m && FXF.focus != null) m.classList.toggle('mute', !X.ops[FXF.focus].on);
+}
+function fxTab(i, id, b) {
+  const X = fxX(i);
+  if (FX_PAGES_V.includes(id) || FX_PAGES_O.includes(id)) {
+    FXF.page = id; if (FX_PAGES_O.includes(id)) FXF.opPage = id;
+    if (id === 'pegel' && !FXF.seen.pegel) { FXF.seen.pegel = 1; lcdShow('Pegel-Seite', FX_HELP[4]); }
+    haptic('tick'); fxRender(true); return;
+  }
+  if (id === 'm') { fxGestureApply(i, {kind: 'dtap', op: FXF.focus + 1}, 'OP ' + (FXF.focus + 1) + (X.ops[FXF.focus].on ? ' stumm' : ' an')); fxRender(true); return; }
+  if (id === 'ab') { fxAB(i); return; }
+  if (id === 'vorl') { fxAlgSheet(i); return; }
+  if (id === 'zufall') { fxRandSheet(i, b); return; }
+  if (id === 'more') { fxMore(i, b); return; }
+  if (b && b.classList.contains('fxx')) { FXF.p3open = false; fxRender(true); }
+}
+// ---------- one value row: line 1 name + info, line 2 bar + value zone (30 px); Relativzug (K2-38)
+// spec: {key, name, info(X), parts: [{line: 1|2, get(X), put(x, v), min, max, step, pow, bip, chip}], zone(X), keypad, flag, tall}
+function fxRow(V, s) {
+  const i = V.i, r = el('div', 'fxr' + (s.flag != null ? ' hasflag' : '') + (s.cls ? ' ' + s.cls : '')); r.dataset.key = s.key;
+  r.innerHTML = '<div class="fxr1"><span class="n"></span><span class="in"></span></div><div class="fxr2"></div><button class="fxz rb"></button>' + (s.flag != null ? `<div class="fxflag" style="background:${FXC[s.flag]};color:${fxFlagInk(s.flag)}${s.flag === 5 ? ';box-shadow:inset 0 0 0 1px #8A90A8' : ''}">${s.flag + 1}</div>` : '');
+  const n = r.querySelector('.n'), inf = r.querySelector('.in'), z = r.querySelector('.fxz'), l1 = r.querySelector('.fxr1'), l2 = r.querySelector('.fxr2');
+  n.textContent = s.name;
+  const bars = (s.parts || []).map(P => {
+    const host = P.line === 1 ? l1 : l2, w = el('div', 'fxbw' + (P.bip != null ? ' bip' : '') + (P.chip ? ' chipd' : ''));
+    if (P.chip) { const c = el('button', 'fxchip rb'); c.dataset.c = '1'; host.appendChild(c); onTap(c, () => P.chip.tap(c)); P.chipEl = c; }
+    w.innerHTML = '<div class="fxfill"></div>' + (P.bip != null ? '<div class="fxmid"></div>' : '') + (P.txt ? '<span class="bt"></span>' : '');
+    host.appendChild(w); P.el = w; P.fill = w.firstChild; fxSlider(V, s, P, w);
+    w.addEventListener('click', () => {});          // a tap target of its own (touch adjustment must not snap to the name or the chip)
+    return P;
+  });
+  if (!bars.some(P => P.line === 1)) l1.classList.add('txt');
+  z.setAttribute('aria-label', s.name + ': Wert eingeben');
+  if (s.keypad) onTap(z, () => fxKeypad(z, i, s)); else z.disabled = true;
+  if (s.onName) onTap(n, () => s.onName(n));
+  const pOf = (P, v) => (P.pow ? Math.pow(clamp(v, 0, 99) / 99, 1 / .45) : (v - P.min) / (P.max - P.min));
+  const upd = X => {
+    const it = s.info ? s.info(X) : ''; if (inf.textContent !== it) inf.textContent = it;
+    const zt = s.zone(X); if (z.textContent !== zt) z.textContent = zt;
+    for (const P of bars) {
+      const v = P.get(X), p = clamp(pOf(P, v), 0, 1), w = P.el.clientWidth;
+      if (P.bip != null) { const c = clamp(pOf(P, P.bip), 0, 1), a = Math.min(p, c), b = Math.max(p, c); P.fill.style.left = (a * w).toFixed(1) + 'px'; P.fill.style.width = ((b - a) * w).toFixed(1) + 'px'; }
+      else { P.fill.style.left = '0px'; P.fill.style.width = (p * w).toFixed(1) + 'px'; }
+      P.el.dataset.edge = ((P.bip != null && p < clamp(pOf(P, P.bip), 0, 1) ? p : p) * w).toFixed(1);
+      if (P.chip) { const t = P.chip.txt(X); if (P.chipEl.textContent !== t) P.chipEl.textContent = t; }
+      if (P.txt) { const t = P.txt(X), e = P.el.querySelector('.bt'); if (e.textContent !== t) e.textContent = t; }
+      if (s.fillCol) P.fill.style.background = s.fillCol;
+    }
+    if (s.extra) s.extra(X, r);
+  };
+  return {el: r, upd, spec: s, tall: s.tall};
+}
+// the slider gesture: 4 px dead zone, then the fill edge follows the finger exactly (×¼ with FEIN); a vertical move ≥ 12 px before
+// any horizontal step is no value drag; double tap on a bipolar value = centre; one undo per drag
+function fxSlider(V, s, P, w) {
+  const i = V.i;
+  let G = null, lastTap = 0;
+  const pOf = v => (P.pow ? Math.pow(clamp(v, 0, 99) / 99, 1 / .45) : (v - P.min) / (P.max - P.min));
+  const vOf = p => { p = clamp(p, 0, 1); let v = P.pow ? 99 * Math.pow(p, .45) : P.min + p * (P.max - P.min); v = Math.round(v / P.step) * P.step; return clamp(+v.toFixed(3), P.min, P.max); };
+  const fineF = () => (FXF.fineChip || FXF.fineIds.size || RESTPTR.size ? .25 : 1);
+  on(w, 'pointerdown', e => {
+    if (e.button > 0 || G) return; e.preventDefault(); e.stopPropagation();
+    try { w.setPointerCapture(e.pointerId); } catch (_) {}
+    const X = fxX(i);
+    if (FXF.ptr && !FXF.ptr.moved) { FXF.fineIds.add(FXF.ptr.id); FXF.ptr.fine = true; }
+    G = {id: e.pointerId, x0: e.clientX, y0: e.clientY, p0: pOf(P.get(X)), v0: P.get(X), f: fineF(), axis: null, d: null, moved: false, bw: w.clientWidth || 1};
+    FXF.valDrag = {fineOn: () => { if (!G) return; const f = fineF(); if (f !== G.f) { G.p0 = pOf(P.get(fxX(i))); G.v0 = P.get(fxX(i)); G.x0 = G.lx != null ? G.lx : G.x0; G.f = f; } V.pan.classList.toggle('fine', f < 1); }};
+    gestBegin(e.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; if (g0 && g0.d) fxDragEnd(i, g0.d, s.name); });
+    if (s.flag != null && FXF.page === 'pegel' && !FXF.seen.pegel) { FXF.seen.pegel = 1; lcdShow('Pegel-Seite', FX_HELP[4]); }
+  });
+  on(w, 'pointermove', e => {
+    if (!G || e.pointerId !== G.id) return;
+    const f = fineF(); if (f !== G.f) { G.p0 = pOf(P.get(fxX(i))); G.v0 = P.get(fxX(i)); G.x0 = G.lx != null ? G.lx : G.x0; G.f = f; V.pan.classList.toggle('fine', f < 1); }
+    G.lx = e.clientX;
+    const dx = e.clientX - G.x0, dy = e.clientY - G.y0;
+    if (!G.axis) { if (Math.abs(dy) >= 12 && Math.abs(dx) <= 4) G.axis = 'y'; else if (Math.abs(dx) > 4) G.axis = 'x'; else return; }
+    if (G.axis !== 'x') return;
+    const v = P.pxPer ? clamp(Math.round(G.v0 + Math.trunc(dx * G.f / P.pxPer)), P.min, P.max) : vOf(G.p0 + dx * G.f / G.bw), X = fxX(i);
+    if (v === P.get(X) && !G.d) return;
+    if (!G.d) G.d = fxDragBegin(i);
+    if (fxDragSet(i, x => fxPutMulti(x, s, P, v))) { G.moved = true; if (P.step >= 1 && Math.abs(v - Math.round(v)) < 1e-9) haptic('tick'); }
+    fxRender(false);
+    lcdShow(s.name, s.zone(fxX(i)) + (G.f < 1 ? ' · FEIN ×¼' : ''));
+  });
+  const end = (e, ok) => {
+    if (!G || e.pointerId !== G.id) return;
+    const g0 = G; G = null; FXF.valDrag = null; gestEnd(e.pointerId); V.pan.classList.remove('fine');
+    if (g0.d) { fxDragEnd(i, g0.d, s.name); return; }
+    if (!ok || g0.axis) return;
+    const now = performance.now();                                       // a tap: double tap = centre (bipolar values)
+    if (P.bip != null && now - lastTap <= 300) { lastTap = 0; fxMut(i, s.name + ' Mitte', x => fxPutMulti(x, s, P, P.bip)); fxRender(false); haptic('snap'); return; }
+    lastTap = now;
+  };
+  on(w, 'pointerup', e => end(e, true)); on(w, 'pointercancel', e => end(e, false)); on(w, 'lostpointercapture', e => end(e, false));
+}
+// N4b-02 (Mehrere wählen): a level drag on a selected row moves all selected operators by the same Δ (clamped)
+function fxPutMulti(x, s, P, v) {
+  if (FXF.multi && FXF.multi.size > 1 && s.multiKey && FXF.multi.has(s.op)) {
+    const d = v - P.get(x);
+    for (const k of FXF.multi) x.ops[k][s.multiKey] = clamp(Math.round(x.ops[k][s.multiKey] + d), P.min, P.max);
+    return;
+  }
+  P.put(x, v);
+}
+// ---------- the keypad (Ziffernblock, Z12): sets a value exactly, one undo
+function fxKeypad(anchor, i, s) {
+  const K = s.keypad, X = fxX(i);
+  let txt = String(K.get ? K.get(X) : s.parts[0].get(X)).replace('.', ',');
+  const p = openPop(anchor, pop => {
+    pop.classList.add('fxkp');
+    pop.innerHTML = `<div class="kph"><b>${esc(s.name)}</b><span class="kpr">${esc(K.range || (K.min + ' … ' + K.max).replace(/-/g, MINUS))}</span></div><div class="kpd"></div><div class="kpg">` +
+      ['7', '8', '9', '4', '5', '6', '1', '2', '3', K.min < 0 ? '±' : '', '0', K.step < 1 || K.dec ? ',' : '', '⌫', '✕', 'OK'].map(c => `<button class="rb kpk${c === 'OK' ? ' ok' : ''}" data-k="${c}"${c ? '' : ' disabled'}>${c}</button>`).join('') + '</div>';
+  }, {above: true, name: 'fxkp'});
+  const d = p.querySelector('.kpd'), show = () => { d.textContent = txt || '0'; };
+  let fresh = true; show();
+  onTap(p, b => {
+    const c = b.dataset.k;
+    if (c === '✕') { closePop(); return; }
+    if (c === 'OK') {
+      const v = parseFloat((txt || '0').replace(',', '.').replace(MINUS, '-'));
+      closePop(); if (!isFinite(v)) return;
+      const nv = clamp(K.step ? Math.round(v / K.step) * K.step : v, K.min, K.max);
+      if (fxMut(i, s.name + ' = ' + String(+nv.toFixed(3)).replace('.', ','), x => (K.put ? K.put(x, nv) : s.parts[0].put(x, nv)))) haptic('snap');
+      lcdShow(s.name, s.zone(fxX(i))); fxRender(false); return;
+    }
+    if (c === '⌫') { txt = txt.slice(0, -1); fresh = false; show(); return; }
+    if (c === '±') { txt = txt.startsWith('-') ? txt.slice(1) : '-' + txt; fresh = false; show(); return; }
+    if (fresh) { txt = ''; fresh = false; }
+    if (txt.replace(/[-,]/g, '').length < 5) txt += c; show();
+  }, '.kpk');
+}
+// ---------- the rows of each page
+const FX_PHM = {fix: 'Fest', rnd: 'Zuf.', free: 'Frei'};
+function fxRowsFor(V, X) {
+  const i = V.i, k = FXF.focus, pg = FXF.page, R = [];
+  const op = x => x.ops[k];
+  if (k == null && pg === 'pegel') {
+    for (let j = 0; j < 6; j++) R.push(fxRow(V, {key: 'fmx.' + (j + 1) + '.ol', name: '', flag: j, op: j, multiKey: 'ol', fillCol: fxMark(j),
+      info: x => fxRatioShort(x.ops[j]) + ' · ' + fxOlTxt(x, j), zone: x => String(x.ops[j].ol),
+      parts: [{line: 2, get: x => x.ops[j].ol, put: (x, v) => { x.ops[j].ol = v; }, min: 0, max: 99, step: 1, get pow() { return !fxIsOut(fxX(i), j); }}],
+      keypad: {min: 0, max: 99, step: 1}, extra: (x, r) => r.classList.toggle('off', !x.ops[j].on)}));
+    return R;
+  }
+  if (k == null && pg === 'stimme') return fxStimme(V, X);
+  if (k == null) return R;
+  if (pg === 'basis') {
+    R.push(fxRow(V, {key: 'fmx.' + (k + 1) + '.wave', name: 'Welle', cls: 'wave', info: () => '', zone: x => String(op(x).wave),
+      parts: [{line: 2, get: x => op(x).wave, put: (x, v) => { op(x).wave = v; }, min: 0, max: 11, step: 1, pxPer: 8, txt: x => fxWaveName(op(x).wave)}], keypad: {min: 0, max: 11, step: 1},
+      onName: () => fxWaveList(i, k), extra: (x, r) => fxWavePrev(r, op(x).wave)}));
+    R.push(fxRow(V, {key: 'fmx.' + (k + 1) + '.ol', name: 'Pegel', info: x => fxOlTxt(x, k), zone: x => String(op(x).ol), op: k, multiKey: 'ol',
+      parts: [{line: 2, get: x => op(x).ol, put: (x, v) => { op(x).ol = v; }, min: 0, max: 99, step: 1, get pow() { return !fxIsOut(fxX(i), k); }}], keypad: {min: 0, max: 99, step: 1}}));
+    R.push(fxRow(V, {key: 'fmx.' + (k + 1) + '.ratio', name: '', cls: 'ratio', info: () => '', zone: x => fxRatioShort(op(x)),
+      parts: [{line: 1, get: x => op(x).fine, put: (x, v) => { op(x).fine = v; }, min: 0, max: 99, step: 1, txt: x => 'f ' + op(x).fine, chip: {txt: x => (op(x).fixed ? 'Hz' : '×'), tap: () => { fxMut(i, op(fxX(i)).fixed ? 'Verhältnis' : 'Feste Frequenz', x => { op(x).fixed = op(x).fixed ? 0 : 1; }); lcdShow('Frequenz', op(fxX(i)).fixed ? 'fest (Hz)' : 'Verhältnis (×)'); fxRender(false); }}},
+        {line: 2, get: x => op(x).coarse, put: (x, v) => { op(x).coarse = v; }, min: 0, max: 31, step: 1, txt: x => (op(x).fixed ? fmtVal('hz', FMH.ratioOf(op(x))) : '×' + fmtDec(FMH.ratioOf(op(x)), 2)).replace(/ Hz$/, ' Hz')}],
+      keypad: {min: 0, max: 9999, step: 0, dec: true, range: '× 0,5 … 61,7 · Hz 1 … 9772', get: x => +FMH.ratioOf(op(x)).toFixed(2), put: (x, v) => fxRatioSet(op(x), v)}}));
+    R.push(fxRow(V, {key: 'fmx.' + (k + 1) + '.det', name: 'Verstimmung', info: () => '', zone: x => fmSign(op(x).det),
+      parts: [{line: 2, get: x => op(x).det, put: (x, v) => { op(x).det = v; }, min: -7, max: 7, step: 1, bip: 0}], keypad: {min: -7, max: 7, step: 1}}));
+    R.push(fxRow(V, {key: 'fmx.' + (k + 1) + '.ph', name: 'Phase', info: () => '', zone: x => String(op(x).ph),
+      parts: [{line: 2, get: x => op(x).ph, put: (x, v) => { op(x).ph = v; }, min: 0, max: 127, step: 1,
+        chip: {txt: x => FX_PHM[op(x).phm], tap: () => { const nx = {fix: 'rnd', rnd: 'free', free: 'fix'}[op(fxX(i)).phm]; fxMut(i, 'Phase ' + FX_PHM[nx], x => { op(x).phm = nx; }); lcdShow('Phase', {fix: 'Fest: jede Note beginnt bei der Phase', rnd: 'Zufällig: jede Note anders', free: 'Frei: der Operator läuft weiter'}[nx]); fxRender(false); }}}],
+      keypad: {min: 0, max: 127, step: 1}}));
+    R.push(fxRow(V, {key: 'fmx.' + (k + 1) + '.fbAmt', name: 'Feedback', info: () => '', zone: x => fmtDec(op(x).fbAmt, 1),
+      parts: [{line: 2, get: x => op(x).fbAmt, put: (x, v) => { op(x).fbAmt = v; }, min: 0, max: 7, step: .1,
+        chip: {txt: x => '← ' + (op(x).fbSrc ? op(x).fbSrc : 'aus'), tap: c => fxFbSrc(i, k, c)}}], keypad: {min: 0, max: 7, step: .1, dec: true}}));
+    return R;
+  }
+  if (pg === 'mod') {
+    R.push(fxRow(V, {key: 'fmx.' + (k + 1) + '.vs', name: 'Anschlag', info: () => '', zone: x => fmSign(op(x).vs),
+      parts: [{line: 2, get: x => op(x).vs, put: (x, v) => { op(x).vs = v; }, min: -7, max: 7, step: 1, bip: 0}], keypad: {min: -7, max: 7, step: 1}}));
+    R.push(fxRow(V, {key: 'fmx.' + (k + 1) + '.lfoAm', name: 'LFO AM', info: () => 'Pegel', zone: x => String(op(x).lfoAm),
+      parts: [{line: 2, get: x => op(x).lfoAm, put: (x, v) => { op(x).lfoAm = v; }, min: 0, max: 127, step: 1}], keypad: {min: 0, max: 127, step: 1}}));
+    R.push(fxRow(V, {key: 'fmx.' + (k + 1) + '.lfoFm', name: 'LFO FM', info: () => 'Tonhöhe', zone: x => String(op(x).lfoFm),
+      parts: [{line: 2, get: x => op(x).lfoFm, put: (x, v) => { op(x).lfoFm = v; }, min: 0, max: 127, step: 1}], keypad: {min: 0, max: 127, step: 1}}));
+    R.push(fxKsRow(V, k));
+    return R;
+  }
+  return R;
+}
+// ratio from a typed number: ratio operators coarse/fine (×0,5 … ×61,69), fixed operators Hz (decade = coarse & 3, fine = log)
+function fxRatioSet(o, v) {
+  if (o.fixed) { const lg = Math.log10(clamp(v, 1, 9772)), c = clamp(Math.floor(lg), 0, 3); o.coarse = c; o.fine = clamp(Math.round((lg - c) * 100), 0, 99); return; }
+  let best = [1, 0], bd = Infinity;
+  for (let c = 0; c < 32; c++) for (let f = 0; f < 100; f++) { const r = (c || .5) * (1 + f / 100), d = Math.abs(r - v); if (d < bd - 1e-9) { bd = d; best = [c, f]; } }
+  o.coarse = best[0]; o.fine = best[1];
+}
+function fxWavePrev(r, w) {
+  let s = r.querySelector('.fxwv'); if (!s) { s = el('span', 'fxwv', '<svg width="34" height="14" aria-hidden="true"><path/></svg>'); r.querySelector('.fxr1').insertBefore(s, r.querySelector('.in')); onTap(s, () => fxWaveList(FXF.view.i, FXF.focus)); }
+  const p = s.querySelector('path'), d = fxWavePath(w, 34, 14); if (p.getAttribute('d') !== d) p.setAttribute('d', d);
+}
+function fxWaveList(i, k) {
+  const X = fxX(i), cur = X.ops[k].wave;
+  const p = openPop(null, pop => {
+    pop.classList.add('fxlist');
+    pop.innerHTML = `<h4>Welle OP ${k + 1}</h4><div class="fxwl">` + FMX.WAVES.map((n, w) => `<button class="rb fxwi${w === cur ? ' on' : ''}" data-w="${w}"><svg width="44" height="18" aria-hidden="true"><path d="${fxWavePath(w, 44, 18)}"/></svg><span>${w} · ${esc(n)}</span></button>`).join('') + '</div>' +
+      (cur ? '' : '<p class="small">Welle 0 (Sinus) klingt wie der DX7. Andere Wellen: Hinweis auf Aliasing in hohen Lagen.</p>');
+  }, {name: 'fxwave'});
+  onTap(p, b => { const w = +b.dataset.w; closePop(); fxMut(i, 'Welle ' + fxWaveName(w), x => { x.ops[k].wave = w; }); lcdShow('Welle OP ' + (k + 1), w + ' · ' + fxWaveName(w)); fxRender(false); }, '.fxwi');
+}
+function fxFbSrc(i, k, anchor) {
+  const X = fxX(i), cur = X.ops[k].fbSrc;
+  const p = openPop(anchor, pop => {
+    pop.classList.add('fxlist');
+    pop.innerHTML = `<h4>Feedback-Quelle für OP ${k + 1}</h4><div class="fxsrc">` + [0, 1, 2, 3, 4, 5, 6].map(s => `<button class="rb${s === cur ? ' on' : ''}" data-s="${s}">${s ? s + (s === k + 1 ? ' (selbst)' : '') : 'aus'}</button>`).join('') + '</div>';
+  }, {above: true, name: 'fxfb'});
+  onTap(p, b => { const s = +b.dataset.s; closePop(); fxMut(i, 'Feedback-Quelle ' + (s || 'aus'), x => { x.ops[k].fbSrc = s; if (s && !(x.ops[k].fbAmt > 0)) x.ops[k].fbAmt = 0; }); lcdShow('Feedback OP ' + (k + 1), s ? '← ' + s + (s === k + 1 ? ' (selbst)' : '') : 'aus'); fxRender(false); }, 'button');
+}
+// Mod rows 4–6: the key scaling as a curve with three handles (KP §4.7): left / right vertical = ld / rd (up = +, down = −),
+// middle horizontal = bp with the note name; lin / exp (lc, rc) under ⋯
+function fxKsRow(V, k) {
+  const i = V.i, r = el('div', 'fxr fxks'); r.dataset.key = 'fmx.' + (k + 1) + '.ks';
+  r.innerHTML = '<div class="fxr1"><span class="n">Tasten</span><span class="in"></span></div><svg class="kss" aria-hidden="true"><line class="ax"/><path class="cv"/><circle class="hl" r="7"/><circle class="hr" r="7"/><rect class="hm" width="14" height="14" rx="3"/><text class="bp"/></svg>';
+  const svg = r.querySelector('svg'), cv = svg.querySelector('.cv'), hl = svg.querySelector('.hl'), hr = svg.querySelector('.hr'), hm = svg.querySelector('.hm'), tx = svg.querySelector('.bp'), ax = svg.querySelector('.ax'), inf = r.querySelector('.in');
+  const sgn = (d, c) => (c === 2 || c === 3 ? d : -d), geo = () => ({W: svg.clientWidth || 120, H: svg.clientHeight || 80});
+  const bpX = (bp, W) => 10 + bp / 99 * (W - 20);
+  const upd = X => {
+    const ks = X.ops[k].ks, {W, H} = geo(), m = H / 2, sL = sgn(ks.ld, ks.lc), sR = sgn(ks.rd, ks.rc), yL = m - sL / 99 * (m - 8), yR = m - sR / 99 * (m - 8), xb = bpX(ks.bp, W);
+    const lin = c => c === 0 || c === 3, seg = (x0, y0, x1, isLin) => isLin ? `L${x1} ${m}` : `Q${((x0 + x1) / 2).toFixed(1)} ${(y0 + (m - y0) * .85).toFixed(1)} ${x1} ${m}`;
+    cv.setAttribute('d', `M10 ${yL.toFixed(1)}` + seg(10, yL, xb, lin(ks.lc)).replace(/^L/, 'L') + `M${xb} ${m}` + (lin(ks.rc) ? `L${W - 10} ${yR.toFixed(1)}` : `Q${((xb + W - 10) / 2).toFixed(1)} ${(m + (yR - m) * .15).toFixed(1)} ${W - 10} ${yR.toFixed(1)}`));
+    ax.setAttribute('x1', 4); ax.setAttribute('x2', W - 4); ax.setAttribute('y1', m); ax.setAttribute('y2', m);
+    hl.setAttribute('cx', 10); hl.setAttribute('cy', yL); hr.setAttribute('cx', W - 10); hr.setAttribute('cy', yR); hm.setAttribute('x', xb - 7); hm.setAttribute('y', m - 7);
+    tx.setAttribute('x', clamp(xb, 16, W - 16)); tx.setAttribute('y', H - 3); tx.textContent = fmBpTxt(ks.bp);
+    const t = 'L' + fmSign(sL) + ' R' + fmSign(sR) + ' ' + fmBpTxt(ks.bp); if (inf.textContent !== t) inf.textContent = t;
+    r.dataset.ld = ks.ld; r.dataset.rd = ks.rd; r.dataset.bp = ks.bp;
+  };
+  let G = null;
+  on(svg, 'pointerdown', e => {
+    if (e.button > 0 || G) return; e.preventDefault(); e.stopPropagation();
+    const b = svg.getBoundingClientRect(), x = e.clientX - b.left, {W} = geo(), ks = fxX(i).ops[k].ks;
+    const which = x < W * .3 ? 'l' : x > W * .7 ? 'r' : 'm';
+    try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+    G = {id: e.pointerId, which, x0: e.clientX, y0: e.clientY, v0: which === 'l' ? sgn(ks.ld, ks.lc) : which === 'r' ? sgn(ks.rd, ks.rc) : ks.bp, d: null, H: b.height, W: b.width};
+    FXF.valDrag = {fineOn: () => {}};
+    gestBegin(e.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; if (g0 && g0.d) fxDragEnd(i, g0.d, 'Tasten-Skalierung'); });
+  });
+  on(svg, 'pointermove', e => {
+    if (!G || e.pointerId !== G.id) return;
+    const f = FXF.fineChip || FXF.fineIds.size ? .25 : 1;
+    if (!G.d) { if (Math.hypot(e.clientX - G.x0, e.clientY - G.y0) <= 4) return; G.d = fxDragBegin(i); }
+    fxDragSet(i, x => {
+      const ks = x.ops[k].ks;
+      if (G.which === 'm') { ks.bp = clamp(Math.round(G.v0 + (e.clientX - G.x0) * f / (G.W - 20) * 99), 0, 99); return; }
+      const v = clamp(Math.round(G.v0 - (e.clientY - G.y0) * f / (G.H / 2 - 8) * 99), -99, 99), isL = G.which === 'l', c = isL ? ks.lc : ks.rc, lin = c === 0 || c === 3;
+      const nc = v >= 0 ? (lin ? 3 : 2) : (lin ? 0 : 1);
+      if (isL) { ks.ld = Math.abs(v); ks.lc = nc; } else { ks.rd = Math.abs(v); ks.rc = nc; }
+    });
+    fxRender(false); const ks = fxX(i).ops[k].ks;
+    lcdShow('Tasten-Skalierung', G.which === 'm' ? 'Mitte ' + fmBpTxt(ks.bp) : (G.which === 'l' ? 'links ' : 'rechts ') + fmSign(G.which === 'l' ? sgn(ks.ld, ks.lc) : sgn(ks.rd, ks.rc)));
+  });
+  const end = e => { if (!G || e.pointerId !== G.id) return; const g0 = G; G = null; FXF.valDrag = null; gestEnd(e.pointerId); if (g0.d) fxDragEnd(i, g0.d, 'Tasten-Skalierung'); };
+  on(svg, 'pointerup', end); on(svg, 'pointercancel', end); on(svg, 'lostpointercapture', end);
+  return {el: r, upd, tall: 3};
+}
+// ---------- Stimme (KP §4.7 without „Operatoren 6│7│8“, K2-37): Transponieren · DX-Abgleich · Budget · ☑ Frequenzen · ☑ Linien
+function fxStimme(V, X) {
+  const i = V.i, R = [];
+  R.push(fxRow(V, {key: 'fmx.trans', name: 'Transponieren', info: () => '', zone: x => fmtVal('semi', x.trans),
+    parts: [{line: 2, get: x => x.trans, put: (x, v) => { x.trans = v; }, min: -24, max: 24, step: 1, bip: 0}], keypad: {min: -24, max: 24, step: 1}}));
+  const mk = (cls, html, upd, tap) => { const r = el('div', 'fxr fxinfo ' + cls, html); if (tap) onTap(r, tap, 'button'); return {el: r, upd: X => upd(X, r)}; };
+  R.push(mk('dxab', '<div class="fxr1"><span class="n">DX-Abgleich</span></div><div class="fxr2"><span class="bt"></span><button class="rb fxbtn">Nummern angleichen</button></div>',
+    (x, r) => { const b = FMX.badge(x), t = r.querySelector('.bt'); if (t.textContent !== b.txt) t.textContent = b.txt; const bt = r.querySelector('button'); bt.hidden = !b.renum; },
+    () => fxRenum(i)));
+  R.push(mk('budget', '<div class="fxr1"><span class="n">Budget</span><span class="in"></span></div><div class="fxr2"><span class="bt"></span></div>', (x, r) => { const t = '6 Op · ' + fxVoices(x) + ' Stimmen', s = r.querySelector('.bt'), n = r.querySelector('.in'), k = 'Kanten ' + x.edges.length; if (s.textContent !== t) s.textContent = t; if (n.textContent !== k) n.textContent = k; }));
+  const chk = (key, name, def) => mk('chk', `<button class="rb fxchk" role="switch"><i></i><span>${esc(name)}</span></button>`, (x, r) => { const on_ = uiPrefs()[key] !== false; const b = r.querySelector('button'); b.classList.toggle('on', on_); b.setAttribute('aria-checked', String(on_)); },
+    () => { const on_ = uiPrefs()[key] === false; setUiPref(key, on_); haptic('tick'); fxRender(true); });
+  R.push(chk('fxFreq', 'Frequenzen in Kacheln'));
+  R.push(chk('fxAnim', 'Linien-Animation'));
+  R.push(mk('about', '<button class="rb fxbtn">ⓘ Vorbild</button><button class="rb fxbtn">Hilfe</button>', () => {}, b => (b.textContent === 'Hilfe' ? fxHelpPop() : fxAbout())));
+  return R;
+}
+function fxRenum(i) {
+  const X = fxX(i), b = FMX.badge(X); if (!b.renum) return;
+  fxCommitX(i, FMX.renumber(X, b.perm), 'Nummern angleichen', true);
+  if (FXF.focus != null) FXF.focus = b.perm[FXF.focus];
+  lcdShow('Nummern angeglichen', FMX.badge(fxX(i)).txt); haptic('snap'); fxRender(true);
+}
+const FX_HELP = ['Operator auf einen anderen ziehen: verbinden – oben moduliert unten. Schon verbunden: Plätze tauschen.',
+  'Ins Leere loslassen: Der Operator fällt nach unten – auf den Boden (Ausgang) oder auf den Operator darunter.',
+  'Zwei Finger gleichzeitig auf zwei Operatoren: zusätzliche Verbindung. Nochmal: lösen.',
+  'Doppeltipp: stumm/an. Unterste Reihe = Ausgang.',
+  'Nichts gewählt: Die Pegel-Seite stellt alle Operatoren; Farbe der Zeile = Farbe des Operators.',
+  'Kleine Zahl oben rechts in der Kachel: Feedback-Quelle.',
+  'Tipp: mit einem Operator anfangen, die anderen per Doppeltipp stumm schalten.'];
+function fxHelpPop() { openPop(null, p => { p.classList.add('fxlist'); p.innerHTML = '<h4>FM-FELD</h4><ol class="fxhelp">' + FX_HELP.map(t => `<li>${esc(t)}</li>`).join('') + '</ol>'; }, {name: 'fxhelp'}); }
+function fxAbout() { openPop(null, p => { p.classList.add('fxlist'); p.innerHTML = '<h4>ⓘ Vorbild</h4><p>Das FM-FELD folgt der Bedienung des EssenceFM von Kodamo (Handbuch V7.0): Operatoren auf einem Raster, unten die Ausgänge, ziehen = verbinden.</p><p class="small">Marken gehören ihren Inhabern, keine Verbindung.</p>'; }, {name: 'fxabout'}); }
+// ---------- Vorlagen (Algorithm Library): the WP7 sheet with 32 pictures; a choice replaces edges and cells, one undo
+function fxAlgSheet(i) {
+  const cur = FMX.badge(fxX(i)).match;
+  const p = openAlgSheet(i, a => { fxCommitX(i, FMX.applyAlg(fxX(i), a), 'Vorlage DX ' + a, true); FXF.newEdge = null; lcdShow('Vorlage DX ' + a, fxStatus(fxX(i))); haptic('snap'); fxRender(true); }, cur);
+  void p;
+}
+// ---------- Zufall (Handbuch S. 20, K2-59): ☑ Frequenzen ☑ Hüllkurven ☑ Tonhöhen-Hk. ☑ Algorithmus ☑ Pegel ☑ LFO ☑ Wellen (Z19, aus)
+const FX_RND = [['freq', 'Frequenzen', true], ['env', 'Hüllkurven', true], ['pit', 'Tonhöhen-Hk.', false], ['alg', 'Algorithmus', true], ['lvl', 'Pegel', true], ['lfo', 'LFO', false], ['wave', 'Wellen', false]];
+function fxRandSheet(i, anchor) {
+  const st = uiPrefs().fxRnd || {};
+  const p = openPop(anchor, pop => {
+    pop.classList.add('fxlist', 'fxrnd');
+    pop.innerHTML = '<h4>Zufall</h4><div class="fxrc">' + FX_RND.map(([k, n, d]) => `<button class="rb fxchk${(st[k] != null ? st[k] : d) ? ' on' : ''}" data-k="${k}" role="switch"><i></i><span>${esc(n)}</span></button>`).join('') +
+      '</div><p class="small">Wellen: Obertöne können in hohen Lagen spiegeln (Aliasing).</p><button class="rb fxbtn go">Würfeln</button>';
+  }, {name: 'fxrnd'});
+  onTap(p, b => {
+    if (b.classList.contains('go')) { const on_ = {}; p.querySelectorAll('.fxchk').forEach(c => { on_[c.dataset.k] = c.classList.contains('on'); }); setUiPref('fxRnd', on_); fxRandomize(i, on_); return; }
+    b.classList.toggle('on');
+  }, 'button');
+}
+function fxRandomize(i, on_) {
+  const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  let x = deep(fxX(i));
+  if (on_.alg) x = FMX.applyAlg(x, rnd(1, 32));
+  x.ops.forEach((o, k) => {
+    if (on_.freq) { o.fixed = 0; o.coarse = [1, 1, 1, 2, 2, 3, 4, 5, 7, 0, 14][rnd(0, 10)]; o.fine = Math.random() < .8 ? 0 : rnd(0, 99); o.det = rnd(-3, 3); }
+    if (on_.lvl) o.ol = o.r === 0 ? rnd(80, 99) : rnd(30, 92);
+    if (on_.env && o.amp && o.amp.f === 'dx') { o.amp.r = [rnd(60, 99), rnd(20, 90), rnd(15, 80), rnd(30, 85)]; o.amp.l = [99, rnd(50, 99), o.r === 0 ? rnd(40, 99) : rnd(0, 90), 0]; }
+    if (on_.pit && !o.fixed) o.pit = Math.random() < .5 ? null : {f: 'dx', r: [rnd(50, 99), 99, 99, rnd(40, 99)], l: [rnd(40, 64), 50, 50, 50]};
+    if (on_.wave) o.wave = Math.random() < .5 ? 0 : rnd(1, 10);
+    if (on_.lfo) o.lfoAm = Math.random() < .7 ? 0 : [42, 85][rnd(0, 1)];
+  });
+  if (on_.lfo) { const fm_ = [0, 0, 18, 36][rnd(0, 3)]; x.ops.forEach(o => { o.lfoFm = fm_; }); }
+  if (on_.lvl && !x.ops.some(o => o.r === 0 && o.ol >= 80)) { const o = x.ops.find(q => q.r === 0); if (o) o.ol = 99; }
+  if (on_.lvl) x.ops.forEach(o => { if (o.r === 0) o.on = 1; });
+  const before = soundSnapshot(i), st = fxState(i);
+  let ch = fxPut(i, x, true);
+  if (on_.lfo) { const P = sndOf(i).p, set = (k_, v) => { if (P[k_] !== v) { setP(i, k_, v); ch = true; } };
+    set('l1rate', [1, 2, 3, 4, 5, 5.5, 6, 7][rnd(0, 7)]); set('l1fade', [0, 0, .2, .5, 1][rnd(0, 4)]); set('l1shape', rnd(0, 2)); set('l1sync', 0); }
+  if (ch && commitSound(i, before, 'Zufall (FELD)')) FXF.ab = {t: i, prev: st, cur: null, side: 'jetzt'};
+  closePop(); lcdShow('Zufall', fxStatus(fxX(i))); haptic('snap'); fxRender(true);
+}
+// ---------- ⋯ (voice: Mehrere wählen · Hilfe; operator: Solo · Ziele · Kopieren · Einfügen · Mehrere wählen · Modulieren mit … ·
+// ⤢ Hüllkurve groß on Amp / Tonh. · Kurven lin/exp on Mod)
+function fxMore(i, anchor) {
+  const k = FXF.focus, X = fxX(i), items = [];
+  if (k != null) {
+    items.push(['solo', UI.fmSolo && UI.fmSolo.t === i ? 'Solo aus' : 'Solo (nur zum Hören)'], ['ziele', 'Ziele …'], ['copy', 'Kopieren (Operator)'], ['copyenv', 'Kopieren (nur Hüllkurve)']);
+    if (FXF.clip) items.push(['paste', FXF.clip.kind === 'env' ? 'Einfügen (Hüllkurve)' : 'Einfügen (Operator)']);
+    if (FXF.page === 'amp' || FXF.page === 'tonh') items.push(['big', '⤢ Hüllkurve groß']);
+    if (FXF.page === 'mod') items.push(['curve', 'Kurven: ' + (X.ops[k].ks.lc === 1 || X.ops[k].ks.lc === 2 ? 'exponentiell → linear' : 'linear → exponentiell')]);
+    items.push(['modu', 'Modulieren mit …']);
+  }
+  items.push(['multi', FXF.multi ? 'Mehrere wählen: aus' : 'Mehrere wählen'], ['help', 'Hilfe']);
+  const p = openPop(anchor, pop => { pop.classList.add('fxlist', 'fxmore'); pop.innerHTML = items.map(([a, l]) => `<button class="rb fxmi" data-a="${a}">${esc(l)}</button>`).join(''); }, {name: 'fxmore'});
+  onTap(p, b => { const a = b.dataset.a; closePop(); fxMoreAct(i, a, anchor); }, '.fxmi');
+}
+function fxMoreAct(i, a, anchor) {
+  const k = FXF.focus, X = fxX(i);
+  if (a === 'help') { fxHelpPop(); return; }
+  if (a === 'multi') { FXF.multi = FXF.multi ? null : new Set(k != null ? [k] : []); if (FXF.multi) { FXF.focus = null; FXF.page = 'pegel'; } lcdShow('Mehrere wählen', FXF.multi ? 'Kacheln antippen – ein Pegel-Zug wirkt auf alle gewählten' : 'aus'); fxRender(true); return; }
+  if (a === 'solo') {
+    if (UI.fmSolo && UI.fmSolo.t === i) { fmSoloOff(); lcdShow('Solo', 'aus'); }
+    else { fxEnsure(i); UI.fmSolo = {t: i, k}; wkFm6(i, true); lcdShow('Solo', 'OP ' + (k + 1) + ' allein (nur zum Hören, wird nicht gespeichert)'); }
+    fxRender(false); return;
+  }
+  if (a === 'ziele') { fxTargetsPop(i, k, anchor); return; }
+  if (a === 'copy') { FXF.clip = {kind: 'op', op: deep(X.ops[k])}; lcdShow('Kopiert', 'OP ' + (k + 1) + ' (alle Werte, ohne Platz und Verbindungen)'); return; }
+  if (a === 'copyenv') { FXF.clip = {kind: 'env', amp: deep(X.ops[k].amp), pit: deep(X.ops[k].pit)}; lcdShow('Kopiert', 'Hüllkurve OP ' + (k + 1)); return; }
+  if (a === 'paste' && FXF.clip) {
+    const C = FXF.clip;
+    fxMut(i, 'Einfügen OP ' + (k + 1), x => { const o = x.ops[k];
+      if (C.kind === 'env') { if (FXF.page === 'tonh') o.pit = deep(C.pit); else o.amp = deep(C.amp); }
+      else { const keep = {c: o.c, r: o.r}; Object.assign(o, deep(C.op), keep); } });
+    lcdShow('Eingefügt', 'OP ' + (k + 1)); fxRender(true); return;
+  }
+  if (a === 'curve') { fxMut(i, 'Tasten-Skalierung Kurve', x => { const ks = x.ops[k].ks, sw = c => [1, 0, 3, 2][c]; ks.lc = sw(ks.lc); ks.rc = sw(ks.rc); }); fxRender(true); return; }
+  if (a === 'modu') { fxModPick(i, k, anchor); return; }
+  if (a === 'big') { fxBigEnv(i, k, FXF.page === 'tonh' ? 'pit' : 'amp'); }
+}
+function fxTargetsPop(i, k, anchor) {
+  const X = fxX(i), tg = fxTargets(X, k);
+  const p = openPop(anchor, pop => {
+    pop.classList.add('fxlist');
+    pop.innerHTML = `<h4>Ziele von OP ${k + 1}</h4>` + (tg.length ? tg.map(t => `<div class="fxtg"><span>→ ${t}</span><button class="rb" data-x="${t}" aria-label="Verbindung zu ${t} lösen">✕</button></div>`).join('') : '<p class="small">Ausgang – keine Ziele</p>') +
+      (X.ops[k].r > 0 ? '<button class="rb fxbtn add">+ Ziel</button>' : '') + '<p class="small">Die Stärke ist der Pegel von OP ' + (k + 1) + '.</p>';
+  }, {name: 'fxtg'});
+  onTap(p, b => {
+    if (b.classList.contains('add')) { closePop(); FXF.addTarget = k; lcdShow('Ziel', 'eine tiefere Kachel antippen'); fxRender(false); return; }
+    const t = +b.dataset.x; closePop();
+    const Y = fxX(i);
+    if (fxTargets(Y, k).length > 1) { fxMut(i, 'Ziel ' + (k + 1) + ' → ' + t + ' gelöst', x => { x.edges = x.edges.filter(e => !(e.from === k + 1 && e.to === t)); }); lcdShow('Ziel', (k + 1) + ' → ' + t + ' gelöst'); }
+    else { // the last edge: the operator falls (R7) from its cell
+      const fall = fxFallFrom(Y, k);
+      if (fall.x) { fxCommitX(i, fall.x, 'Ziel gelöst: ' + fall.lcd, true); lcdShow('Ziel gelöst', fall.lcd); } else lcdShow(fall.ok ? 'Ziel' : 'Geht nicht', fall.lcd);
+    }
+    fxRender(true);
+  }, 'button');
+}
+// ✕ on the last edge: the operator falls from its own cell (R7)
+function fxFallFrom(X, k) { const o = X.ops[k], r = FMX.gesture(X, {kind: 'drop', op: k + 1, cell: [o.c, o.r], fall: true}); return {x: r.x, lcd: r.lcd, ok: r.ok}; }
+// ⋯ › Modulieren mit … (Z13): the sources for op<k> (the operator level); a choice adds the route at 50 % (MOD tab = depth)
+function fxModPick(i, k, anchor) {
+  const dst = 'op' + (k + 1), rs = modRoutes(i, dst), srcs = PICK_MAIN.concat(PICK_MORE).filter(s => MSRC[s]);
+  const p = openPop(anchor, pop => {
+    pop.classList.add('fxlist');
+    pop.innerHTML = `<h4>OP ${k + 1} Pegel modulieren mit …</h4><div class="fxsrc">` + srcs.map(s => { const r = rs.find(m => m.src === s); return `<button class="rb${r ? ' on' : ''}" data-s="${s}" style="--c:${MSRC[s].c}"><i></i>${esc(MSRC[s].l)}${r ? ' · ' + fmtVal('bip', toKnobAmt(dst, r.amt)) : ''}</button>`; }).join('') + '</div><p class="small">Tiefe: Tab MOD</p>';
+  }, {name: 'fxmod'});
+  onTap(p, b => {
+    const s = b.dataset.s; closePop();
+    const before = soundSnapshot(i), has = rs.some(m => m.src === s);
+    modSetK(i, s, dst, has ? 0 : .5);
+    commitSound(i, before, (has ? 'Modulation aus: ' : 'Modulation: ') + MSRC[s].l + ' → OP ' + (k + 1));
+    lcdShow('Modulation', MSRC[s].l + ' → OP ' + (k + 1) + ' Pegel' + (has ? ' entfernt' : ' · 50 % (Tiefe im Tab MOD)'));
+  }, 'button');
+}
+// ---------- Amp / Tonh. (EK-13, KP §5.1 d / §5.2 c): the DX-form envelope of the focused operator, until V4f without point
+// buttons. P: mini field left (x 0–131), envelope right (x 138–W); L: envelope in the value panel, the field stays.
+const fxEnvOf = (o, which) => (which === 'amp' ? o.amp : o.pit);
+const FX_PIT0 = () => ({f: 'dx', r: [99, 99, 99, 99], l: [50, 50, 50, 50]});
+function fxEnvPanel(V) {
+  const i = V.i, g = V.g, k = FXF.focus, which = FXF.page === 'tonh' ? 'pit' : 'amp', W = g.W, H = g.H, NS = 'http://www.w3.org/2000/svg';
+  const env = V.env; env.hidden = false; env.className = 'fxe ' + g.mode;
+  let box;
+  if (g.land) box = {x: g.px, y: g.hdr + 4, w: g.pw, h: H - g.hdr - 4};
+  else if (g.mode === 'P3') box = {x: g.px, y: 2 * g.tabH + g.tabGap + 4, w: g.pw, h: H - 2 * g.tabH - g.tabGap - 4};
+  else if (g.mode === 'W') box = {x: g.px, y: 2 * g.tabH + 8, w: g.pw, h: H - 2 * g.tabH - 8};
+  else { const t0 = fxMiniGeo(g).top; box = {x: 138, y: t0, w: W - 138, h: H - t0}; }
+  Object.assign(env.style, {left: box.x + 'px', top: box.y + 'px', width: box.w + 'px', height: box.h + 'px'});
+  // presets row (P1 / P2: over the field, y 38–71; L, W, P3: [Vorl. ▾] among the buttons)
+  const names = which === 'pit' ? ['Aus', 'Ruck', 'Fall', 'Anstieg'] : ['Snap', 'Pluck', 'Pad', 'Orgel'];
+  const fineB = () => { const b = el('button', 'rb fxeb fine' + (FXF.fineChip ? ' on' : ''), 'FEIN'); b.setAttribute('aria-pressed', String(FXF.fineChip)); onTap(b, () => { FXF.fineChip = !FXF.fineChip; b.classList.toggle('on', FXF.fineChip); b.setAttribute('aria-pressed', String(FXF.fineChip)); haptic('tick'); }); return b; };
+  const preset = n => {
+    fxMut(i, 'Vorlage ' + n + ' (OP ' + (k + 1) + ')', x => { const o = x.ops[k];
+      if (which === 'pit') { const p_ = FM_PEG_PRE[n]; o.pit = n === 'Aus' || o.fixed ? null : {f: 'dx', r: p_[0].slice(), l: p_[1].slice()}; o.pr = 'dx'; }
+      else { const T = FM_T2[n], out = fxIsOut(x, k); o.amp = {f: 'dx', r: (out ? T[2] : T[0]).slice(), l: (out ? T[3] : T[1]).slice()}; } });
+    lcdShow('Vorlage', n + ' · OP ' + (k + 1)); haptic('snap'); fxRender(false);
+  };
+  const preRow = g.mode === 'P1' || g.mode === 'P2';
+  if (preRow) {
+    V.pre.hidden = false; V.pre.innerHTML = ''; Object.assign(V.pre.style, {left: '0px', top: (g.mode === 'P1' ? 38 : 34) + 'px', width: (g.px - 6) + 'px', height: (g.mode === 'P1' ? 34 : 30) + 'px'});
+    for (const n of names) { const b = el('button', 'rb fxeb pre', n); onTap(b, () => preset(n)); V.pre.appendChild(b); }
+    V.pre.appendChild(fineB());
+  }
+  // layout inside the box: P1 / W = graph (ruler + curve 129), times 16, two button rows, DX rows R / L (KP §5.1 d: 289 px);
+  // L = graph left, 3 button rows right; P2 = graph, one button row ([DX ▾] swaps graph and DX rows); P3 = the same, 3 buttons
+  const L = g.land, compact = !L && box.h < 250, mini3 = g.mode === 'P3', bh = g.mode === 'L2' ? 32 : 34;
+  const gw = L ? Math.min(280, box.w - 228) : box.w, btnW = L ? box.w - gw - 8 : box.w;
+  const graphH = L ? box.h - 16 : compact ? Math.max(56, box.h - 16 - 2 - bh) : 129, showDx = !L && !compact;
+  env.innerHTML = '';
+  const gEl = el('div', 'fxeg'); guardTouch(gEl);
+  gEl.innerHTML = '<svg aria-hidden="true"><g class="rul"></g><path class="fl"/><path class="ln"/><g class="pts"></g></svg><div class="fxet"></div><div class="fxeinfo"></div>';
+  Object.assign(gEl.style, {left: '0px', top: '0px', width: gw + 'px', height: graphH + 16 + 'px'});
+  env.appendChild(gEl);
+  const svg = gEl.querySelector('svg'), rul = svg.querySelector('.rul'), pf = svg.querySelector('.fl'), pl = svg.querySelector('.ln'), ptsG = svg.querySelector('.pts'), tl = gEl.querySelector('.fxet'), info = gEl.querySelector('.fxeinfo');
+  const dots = [0, 1, 2, 3].map(() => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('r', '6'); ptsG.appendChild(c); return c; });
+  // buttons
+  const bw = el('div', 'fxebtns' + (L ? ' l' : ''));
+  Object.assign(bw.style, L ? {left: gw + 8 + 'px', top: '0px', width: btnW + 'px', gridAutoRows: bh + 'px'} : {left: '0px', top: graphH + 16 + 2 + 'px', width: btnW + 'px', gridTemplateColumns: mini3 ? 'repeat(3,1fr)' : ''});
+  env.appendChild(bw);
+  const mkB = (lb, fn, cls) => { const b = el('button', 'rb fxeb' + (cls ? ' ' + cls : ''), esc(lb)); onTap(b, fn); bw.appendChild(b); return b; };
+  const toAll = (sel, label) => {
+    const src = deep(fxEnvOf(fxX(i).ops[k], which) || FX_PIT0());
+    let n = 0; fxMut(i, label, x => x.ops.forEach((o, j) => { if (j === k || !sel(x, j)) return; if (which === 'pit') { if (o.fixed) return; o.pit = deep(src); } else o.amp = deep(src); n++; }));
+    lcdShow('Hüllkurve', label + (n ? ' (' + n + ')' : ' – keine passenden Operatoren')); fxRender(false);
+  };
+  const nudge = d => { const f = FXF.envField != null ? FXF.envField : (FXF.envSel != null ? FXF.envSel : 1), w2 = f < 4 ? 'r' : 'l', st = f % 4;
+    fxMut(i, (w2 === 'r' ? 'R' : 'L') + (st + 1) + (d > 0 ? ' +1' : ' ' + MINUS + '1'), x => { const o = x.ops[k]; if (which === 'pit' && !o.pit) o.pit = FX_PIT0(); const e = fxEnvOf(o, which); e[w2][st] = clamp(e[w2][st] + d, 0, 99); fxPitClean(o, which); });
+    FXF.envField = f; fxRender(false); };
+  const initEnv = () => { fxMut(i, which === 'pit' ? 'Tonhöhe Init' : 'Hüllkurve Init', x => { const o = x.ops[k]; if (which === 'pit') o.pit = null; else o.amp = {f: 'dx', r: [99, 99, 99, 80], l: [99, 99, 99, 0]}; }); fxRender(false); };
+  const copyEnv = () => { FXF.clip = {kind: 'env', amp: deep(fxX(i).ops[k].amp), pit: deep(fxX(i).ops[k].pit)}; lcdShow('Hüllkurve', 'kopiert (OP ' + (k + 1) + ')'); };
+  const pasteEnv = () => { const C = FXF.clip; if (!C || C.kind !== 'env') { lcdShow('Einfügen', 'erst eine Hüllkurve kopieren'); return; } fxMut(i, 'Hüllkurve eingefügt', x => { const o = x.ops[k]; if (which === 'pit') { if (!o.fixed) o.pit = deep(C.pit); } else o.amp = deep(C.amp); }); lcdShow('Hüllkurve', 'eingefügt (OP ' + (k + 1) + ')'); fxRender(false); };
+  const ACT = {mod: ['auf alle Modulatoren', () => toAll((x, j) => !fxIsOut(x, j), 'auf alle Modulatoren')], out: ['auf alle Ausgänge', () => toAll((x, j) => fxIsOut(x, j), 'auf alle Ausgänge')],
+    all: ['auf alle', () => toAll(() => true, 'auf alle')], init: ['Init', initEnv], copy: ['Kopieren', copyEnv], paste: ['Einfügen', pasteEnv]};
+  const menuB = (lb, keys) => { const b = mkB(lb, () => { const p = openPop(b, pop => { pop.classList.add('fxlist'); pop.innerHTML = keys.map(a_ => (ACT[a_] ? `<button class="rb fxmi" data-a="${a_}">${ACT[a_][0]}</button>` : `<button class="rb fxmi" data-n="${a_}">Vorlage ${a_}</button>`)).join(''); }, {name: 'fxauf'});
+    onTap(p, x => { closePop(); if (x.dataset.n) preset(x.dataset.n); else ACT[x.dataset.a][1](); }, '.fxmi'); }); return b; };
+  const dxB = () => mkB('DX ▾', () => { FXF.envDx = !FXF.envDx; fxRender(true); }, FXF.envDx ? 'on' : '');
+  const vorlB = () => { const pv = mkB('Vorl. ▾', () => { const p = openPop(pv, pop => { pop.classList.add('fxlist'); pop.innerHTML = names.map(n => `<button class="rb fxmi" data-n="${n}">${n}</button>`).join(''); }, {name: 'fxpre'}); onTap(p, b => { closePop(); preset(b.dataset.n); }, '.fxmi'); }); };
+  if (mini3) { menuB('Mehr ▾', ['mod', 'out', 'all', 'init', 'copy', 'paste'].concat(names)); dxB(); bw.appendChild(fineB()); }
+  else if (compact) { menuB('Auf … ▾', ['mod', 'out', 'all', 'init']); mkB('Kopieren', copyEnv); mkB('Einfügen', pasteEnv); dxB(); }
+  else {
+    mkB('Alle Mod.', ACT.mod[1]); mkB('Alle Ausg.', ACT.out[1]); mkB('Kopieren', copyEnv); mkB('Einfügen', pasteEnv);
+    mkB('Auf alle', ACT.all[1]); mkB('Init', initEnv); mkB(MINUS + '1', () => nudge(-1)); mkB('+1', () => nudge(1));
+    if (L) { dxB(); bw.appendChild(fineB()); vorlB(); }
+    else if (!preRow) { bw.appendChild(fineB()); vorlB(); }
+  }
+  // DX rows R1–R4 / L1–L4 (P1, W); the other sizes show them instead of the graph with [DX ▾]
+  const dxW = el('div', 'fxedx');
+  const nBtnRows = Math.ceil(bw.children.length / (mini3 ? 3 : 4)), dxTop = showDx ? graphH + 16 + 2 + nBtnRows * 36 : 0;
+  if (showDx || FXF.envDx) { Object.assign(dxW.style, {left: '0px', top: dxTop + 'px', width: (L ? gw : box.w) + 'px', gridAutoRows: bh + 'px'}); env.appendChild(dxW); if (FXF.envDx && !showDx) gEl.style.visibility = 'hidden'; }
+  const cells = [];
+  for (let f = 0; f < 8; f++) { const c = el('button', 'rb fxdf'); c.dataset.f = f; c.innerHTML = `<small>${f < 4 ? 'R' : 'L'}${(f % 4) + 1}</small><b></b>`; dxW.appendChild(c); cells.push(c); fxDxCell(V, c, f, which); }
+  // ---- drawing
+  let geo = null;
+  const view = x => { const o = x.ops[k]; return which === 'pit' ? (o.pit || FX_PIT0()) : {r: o.amp.r, l: o.amp.l, ol: o.ol, rs: o.rs}; };
+  const macro = x => { const p = sndOf(i).p; return {atk: +p.fmAtk || 0, dec: +p.fmDec || 0, rel: +p.fmRel || 0, bite: +p.fmBite || 0, car: fxIsOut(x, k)}; };
+  const times = x => (which === 'pit' ? pegTimes(view(x)) : FMH.envTimes(view(x), fmRefNote(i), macro(x)));
+  const mkGeo = () => {
+    const w = gw, h = graphH, x0 = 6, hw = Math.round((w - 14) * .68), gap = 8, rw = w - 14 - hw - gap, xRel = x0 + hw + gap;
+    const tMin = .0005, tMax = 10, rMin = .005, rMax = 12, LH = Math.log(tMax / tMin), LR = Math.log(rMax / rMin);
+    return {w, h, x0, hw, xGap: x0 + hw, xRel, x1: xRel + rw, rw, yT: 16, yB: h - 6, xh: s => x0 + Math.log(clamp(s, tMin, tMax) / tMin) / LH * hw, th: x => tMin * Math.exp((x - x0) / hw * LH),
+      xr: s => xRel + Math.log(clamp(s, rMin, rMax) / rMin) / LR * rw, tr: x => rMin * Math.exp((x - xRel) / rw * LR)};
+  };
+  const yOf = Lv => geo.yT + (1 - Lv / 99) * (geo.yB - geo.yT), LofY = y => clamp(Math.round((1 - (y - geo.yT) / (geo.yB - geo.yT)) * 99), 0, 99);
+  const lay = x => { const e = view(x), t = times(x), c0 = t[0], c1 = c0 + t[1], c2 = c1 + t[2]; const xs = [geo.xh(c0), geo.xh(c1), geo.xh(c2)];
+    for (let j = 1; j < 3; j++) if (xs[j] - xs[j - 1] < 12) xs[j] = xs[j - 1] + 12;
+    return {t, e, pts: [{x: xs[0], y: yOf(e.l[0])}, {x: xs[1], y: yOf(e.l[1])}, {x: xs[2], y: yOf(e.l[2])}, {x: geo.xr(t[3]), y: yOf(e.l[3])}], start: {x: geo.x0, y: yOf(e.l[3])}}; };
+  let LAY = null;
+  const draw = X => {
+    if (!gEl.isConnected) return;
+    geo = mkGeo(); svg.setAttribute('width', geo.w); svg.setAttribute('height', geo.h); svg.setAttribute('viewBox', `0 0 ${geo.w} ${geo.h}`);
+    const o = X.ops[k], e = fxEnvOf(o, which);
+    if (which === 'amp' && e && e.f !== 'dx') { info.textContent = 'Punkt-Form (EssenceFM) – Bearbeiten ab dem nächsten Paket'; return; }
+    if (which === 'pit' && o.fixed) info.textContent = 'feste Frequenz: keine Tonhöhen-Hüllkurve (DX)'; else info.textContent = '';
+    LAY = lay(X); const A = geo, P = LAY.pts;
+    let rh = `<line x1="${A.x0}" y1="12" x2="${A.xGap}" y2="12" class="ra"/><line x1="${A.xRel}" y1="12" x2="${A.x1}" y2="12" class="ra"/>`;
+    for (const [s, lb] of [[.001, '1ms'], [.01, '10'], [.1, '100'], [1, '1s'], [10, '10s']]) { const x = A.xh(s); rh += `<line x1="${x.toFixed(1)}" y1="9" x2="${x.toFixed(1)}" y2="12" class="rt"/><text x="${x.toFixed(1)}" y="8" class="rl">${lb}</text>`; }
+    for (const [s, lb] of [[1, '1s']]) { const x = A.xr(s); rh += `<text x="${x.toFixed(1)}" y="8" class="rl">${lb}</text>`; }
+    rh += `<line x1="${((A.xGap + A.xRel) / 2).toFixed(1)}" y1="14" x2="${((A.xGap + A.xRel) / 2).toFixed(1)}" y2="${A.h - 2}" class="gap"/>`;
+    if (which === 'pit') rh += `<line x1="${A.x0}" y1="${yOf(50).toFixed(1)}" x2="${A.x1}" y2="${yOf(50).toFixed(1)}" class="zero"/>`;
+    if (rul._h !== rh) { rul._h = rh; rul.innerHTML = rh; }
+    const d = `M${LAY.start.x.toFixed(1)} ${LAY.start.y.toFixed(1)}L${P[0].x.toFixed(1)} ${P[0].y.toFixed(1)}L${P[1].x.toFixed(1)} ${P[1].y.toFixed(1)}L${P[2].x.toFixed(1)} ${P[2].y.toFixed(1)}L${A.xGap} ${P[2].y.toFixed(1)}M${A.xRel} ${P[2].y.toFixed(1)}L${P[3].x.toFixed(1)} ${P[3].y.toFixed(1)}L${A.x1} ${P[3].y.toFixed(1)}`;
+    pl.setAttribute('d', d); pf.setAttribute('d', d.split('M').filter(Boolean).map(s => 'M' + s).join(''));
+    P.forEach((p, s) => { dots[s].setAttribute('cx', p.x.toFixed(1)); dots[s].setAttribute('cy', p.y.toFixed(1)); dots[s].classList.toggle('on', FXF.envSel === s); });
+    const T = LAY.t, ttxt = which === 'pit' ? 'Ziel ' + htTxt(pegHt(e ? e.l[2] : 50)) + ' HT · R ' + fmMs(T[3]) : 'A ' + fmMs(T[0]) + ' · D1 ' + fmMs(T[1]) + ' · D2 ' + fmMs(T[2]) + ' · R ' + fmMs(T[3]);
+    if (tl.textContent !== ttxt) tl.textContent = ttxt;
+    const ev = which === 'pit' ? (e || FX_PIT0()) : e;
+    cells.forEach((c, f) => { const v = f < 4 ? ev.r[f] : ev.l[f - 4], b = c.querySelector('b'); if (b.textContent !== String(v)) b.textContent = String(v); c.classList.toggle('on', FXF.envField === f); });
+  };
+  V.envUpd = draw;
+  // ---- point drags (x = time of the stage, y = level; the first 6 px decide the axis); one undo per drag
+  let G = null;
+  on(gEl, 'pointerdown', e => {
+    if (e.button > 0 || G || !LAY) return; e.preventDefault();
+    const r = gEl.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    let best = -1, bd = 22; LAY.pts.forEach((p, s) => { const d = Math.max(Math.abs(p.x - x), Math.abs(p.y - y)); if (d < bd) { bd = d; best = s; } });
+    if (best < 0) return;
+    const X = fxX(i), o = X.ops[k]; if (which === 'pit' && o.fixed) return; if (which === 'amp' && o.amp.f !== 'dx') return;
+    try { gEl.setPointerCapture(e.pointerId); } catch (_) {}
+    FXF.envSel = best; FXF.envField = best;
+    G = {id: e.pointerId, s: best, x0: e.clientX, y0: e.clientY, axis: null, d: null, e0: deep(view(X)), t0: LAY.t.slice(), px: LAY.pts[best].x, py: LAY.pts[best].y};
+    FXF.valDrag = {fineOn: () => {}};
+    gestBegin(e.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; if (g0 && g0.d) fxDragEnd(i, g0.d, 'Hüllkurve OP ' + (k + 1)); });
+    draw(fxX(i));
+    const s = best, T = LAY.t; lcdShow(FM_STG[s] + ' · OP ' + (k + 1), (which === 'pit' ? htTxt(pegHt(G.e0.l[s])) + ' HT' : 'L ' + G.e0.l[s]) + ' · ' + fmMs(T[s]) + ' · R ' + G.e0.r[s]);
+  });
+  on(gEl, 'pointermove', e => {
+    if (!G || e.pointerId !== G.id) return;
+    const dx = e.clientX - G.x0, dy = e.clientY - G.y0, f = FXF.fineChip || FXF.fineIds.size ? .25 : 1;
+    if (!G.axis) { if (Math.max(Math.abs(dx), Math.abs(dy)) < 6) return; G.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'; }
+    if (!G.d) G.d = fxDragBegin(i);
+    const s = G.s, X = fxX(i), mc = macro(X);
+    fxDragSet(i, x => {
+      const o = x.ops[k]; if (which === 'pit' && !o.pit) o.pit = FX_PIT0(); const en = fxEnvOf(o, which);
+      if (G.axis === 'y') { en.l[s] = LofY(G.py + dy * f); }
+      else {
+        const nx = G.px + dx * f;
+        if (s === 3) { const sec = geo.tr(clamp(nx, geo.xRel, geo.x1)); en.r[3] = which === 'pit' ? pegRateFor(en, 3, sec) : FMH.rateForTime({r: en.r, l: en.l, ol: o.ol, rs: o.rs}, 3, sec, fmRefNote(i), {m: mc, cur: en.r[3]}); }
+        else { const prev = s ? G.t0.slice(0, s).reduce((a, b) => a + b, 0) : 0, sec = Math.max(.0002, geo.th(clamp(nx, geo.x0, geo.xGap)) - prev);
+          en.r[s] = which === 'pit' ? pegRateFor(en, s, sec) : FMH.rateForTime({r: en.r, l: en.l, ol: o.ol, rs: o.rs}, s, sec, fmRefNote(i), {m: mc, cur: en.r[s]}); }
+      }
+      fxPitClean(o, which);
+    });
+    fxRender(false);
+    const ev = view(fxX(i)), T = times(fxX(i)); lcdShow(FM_STG[s] + ' · OP ' + (k + 1), (which === 'pit' ? htTxt(pegHt(ev.l[s])) + ' HT' : 'L ' + ev.l[s]) + ' · ' + fmMs(T[s]) + ' · R ' + ev.r[s] + (f < 1 ? ' · FEIN ×¼' : ''));
+  });
+  const end = e => { if (!G || e.pointerId !== G.id) return; const g0 = G; G = null; FXF.valDrag = null; gestEnd(e.pointerId); if (g0.d) fxDragEnd(i, g0.d, 'Hüllkurve OP ' + (k + 1)); draw(fxX(i)); };
+  on(gEl, 'pointerup', end); on(gEl, 'pointercancel', end); on(gEl, 'lostpointercapture', end);
+}
+// a pitch envelope at 50 50 50 50 is no envelope (null, DX: flat)
+function fxPitClean(o, which) { if (which === 'pit' && o.pit && o.pit.l.every(v => v === 50)) o.pit = null; }
+// one DX cell R1–R4 / L1–L4: horizontal Relativzug 2 px per step (×¼ FEIN), tap = keypad
+function fxDxCell(V, c, f, which) {
+  const i = V.i, k = FXF.focus, w2 = f < 4 ? 'r' : 'l', st = f % 4, nm = (f < 4 ? 'R' : 'L') + (st + 1);
+  let G = null;
+  const get = X => { const e = fxEnvOf(X.ops[k], which) || FX_PIT0(); return e[w2][st]; };
+  on(c, 'pointerdown', e => { if (e.button > 0 || G) return; e.preventDefault(); try { c.setPointerCapture(e.pointerId); } catch (_) {} G = {id: e.pointerId, x0: e.clientX, v0: get(fxX(i)), d: null}; FXF.envField = f; FXF.valDrag = {fineOn: () => {}};
+    gestBegin(e.pointerId, () => { const g0 = G; G = null; FXF.valDrag = null; if (g0 && g0.d) fxDragEnd(i, g0.d, nm + ' OP ' + (k + 1)); }); });
+  on(c, 'pointermove', e => {
+    if (!G || e.pointerId !== G.id) return; const dx = e.clientX - G.x0; if (!G.d && Math.abs(dx) <= 4) return;
+    const fF = FXF.fineChip || FXF.fineIds.size ? .25 : 1, v = clamp(Math.round(G.v0 + dx * fF / 2), 0, 99);
+    if (!G.d) G.d = fxDragBegin(i);
+    fxDragSet(i, x => { const o = x.ops[k]; if (which === 'pit' && !o.pit) o.pit = FX_PIT0(); fxEnvOf(o, which)[w2][st] = v; fxPitClean(o, which); });
+    fxRender(false); lcdShow(nm + ' · OP ' + (k + 1), String(v));
+  });
+  const end = (e, ok) => { if (!G || e.pointerId !== G.id) return; const g0 = G; G = null; FXF.valDrag = null; gestEnd(e.pointerId);
+    if (g0.d) { fxDragEnd(i, g0.d, nm + ' OP ' + (k + 1)); return; }
+    if (ok) fxKeypad(c, i, {name: nm + ' OP ' + (k + 1), zone: X => String(get(X)), keypad: {min: 0, max: 99, step: 1, get, put: (x, v) => { const o = x.ops[k]; if (which === 'pit' && !o.pit) o.pit = FX_PIT0(); fxEnvOf(o, which)[w2][st] = v; fxPitClean(o, which); }}, parts: []}); };
+  on(c, 'pointerup', e => end(e, true)); on(c, 'pointercancel', e => end(e, false)); on(c, 'lostpointercapture', e => end(e, false));
+}
+// ⤢ Hüllkurve groß (K2-44): the A.4b editor (OP › HÜLLK. resp. HÜLLK. › TONHÖHE) for this operator; [✕] returns to the FELD page.
+// The DX pages edit fm6; fmxAfterFm6Edit carries the values back into the graph (perm maps the numbering); Tonh. writes only this
+// operator's pitch envelope (FXF.big.pit)
+function fxBigEnv(i, k, which) {
+  fxEnsure(i);
+  const f = fmOf(i), q = f.perm ? f.perm[k] : k, o = fxX(i).ops[k];
+  FXF.big = {i, k, which, page: FXF.page, focus: k};
+  if (which === 'pit') { f.peg = o.pit ? {r: o.pit.r.slice(), l: o.pit.l.slice()} : undefined; if (!f.peg) delete f.peg; }
+  ED.fmOp = q; if (!ED.fmOpT) ED.fmOpT = {}; ED.fmOpT[i] = q;
+  if (which === 'pit') { ED.tab = 'env'; ED.sub.envfm = 'peg'; } else { ED.tab = 'osc'; ED.sub.osc = 'op'; ED.fmSub = 'env'; }
+  safeRebuild(buildSynthEd);
+  lcdShow('Hüllkurve groß', 'OP ' + (k + 1) + ' · ✕ = zurück zum FELD');
+}
+function fxBackBtn(pg) { pg.style.position = 'relative'; const b = el('button', 'fxback rb', '✕ FELD'); b.setAttribute('aria-label', 'Zurück zum FELD'); onTap(b, () => fxBigBack()); pg.appendChild(b); }
+// KP §4.12: DX and OP show the nearest DX algorithm, locked, while the FELD graph is not DX-tauglich (⤢ Hüllkurve groß excepted)
+function fmLock(pg, i) {
+  if (FXF.big && FXF.big.i === i) { fxBackBtn(pg); return; }
+  const snd = sndOf(i), x = snd && snd.p.fmx; if (!x) return;
+  const d = FMX.dx(x); if (!d.reasons.length) return;
+  pg.style.position = 'relative';
+  const b = FMX.badge(x), L = el('div', 'fmlock');
+  L.innerHTML = `<b>${esc(b.txt)}</b><span>Dieser Klang kommt aus dem FELD. Hier steht der nächste DX-Algorithmus – gesperrt, damit nichts verloren geht:</span><ul>${d.reasons.slice(0, 6).map(r => `<li>${esc(r)}</li>`).join('')}</ul>` +
+    `<button class="rb hb fxgo">Im FELD bearbeiten</button>` + (b.renum ? '<button class="rb hb fxrn">Nummern angleichen</button>' : '');
+  guardTouch(L); pg.appendChild(L);
+  onTap(L, t => { if (t.classList.contains('fxrn')) { fxRenum(i); safeRebuild(buildSynthEd); return; } ED.sub.osc = 'feld'; fmViewSet(i, 'feld'); safeRebuild(buildSynthEd); }, 'button');
+}
+// N4b-01: FELD or DX per track in S.ui (a view field, not the sound): new sounds, INIT and graphs open FELD; factory and library
+// sounds without a graph (.syx imports among them) open DX
+function fmViewFor(i) {
+  const v = S.ui && S.ui.fmv && S.ui.fmv[i]; if (v === 'feld' || v === 'algo') return v;
+  const snd = sndOf(i); if (!snd) return 'feld';
+  if (snd.p.fmx) return 'feld';
+  const rec = originRec(snd); return rec && rec.cat !== 'init' ? 'algo' : 'feld';
+}
+function fmViewSet(i, v) { S.ui = Object.assign({}, S.ui); S.ui.fmv = Object.assign({}, S.ui.fmv, {[i]: v}); }
+function fxBigBack() {
+  const B = FXF.big; if (!B) return; FXF.big = null;
+  ED.tab = 'osc'; ED.sub.osc = 'feld'; FXF.focus = B.focus; FXF.page = B.page; FXF.t = B.i;
+  safeRebuild(buildSynthEd);
+}
 /* ---------- V0d (A.4b 1, 4–7): FM envelope editor `fmEnvEditor` (OP › HÜLLK. and HÜLLK. › OPERATOREN) and the pitch EG
    editor (HÜLLK. › TONHÖHE). One log time axis (0,5 ms … 10 s „Halten“, a gap „Loslassen“, 5 ms … 12 s „Release“), no
    coarse grid, a fine mode (×¼: [FEIN] or a resting second finger), readings in ms AND DX rate, a click limit instead of
@@ -15967,6 +17339,10 @@ function fmInitSel(i, reset) {
   if (!fmIsOut(fm, k) || reset) ED.fmSub = fmIsOut(fm, k) ? (ED.fmSub || 'freq') : 'env';
   if (!fmIsOut(fm, k)) ED.fmSub = 'env';
   ED.sub.envfm = 'ops';
+  if (reset && S.ui && S.ui.fmv && S.ui.fmv[i]) { S.ui = Object.assign({}, S.ui); S.ui.fmv = Object.assign({}, S.ui.fmv); delete S.ui.fmv[i]; }
+  // a new sound opens its default view; a track switch the view remembered for that track (else the current one stays)
+  if (!ED.sub.osc || ED.sub.osc === 'feld' || ED.sub.osc === 'algo') { if (reset || (S.ui && S.ui.fmv && S.ui.fmv[i])) ED.sub.osc = fmViewFor(i); }
+  if (FXF.t === i && reset) { FXF.focus = null; FXF.page = 'pegel'; FXF.multi = null; FXF.ab = null; }
 }
 // the reference note: the last note played on this track (else C4); it changes only between gestures (≥ 600 ms after the last)
 function fmRefNote(i) {
@@ -19269,6 +20645,7 @@ function openMenu(goto) {
     'LAUF: Basslauf oder Sequenz Schritt für Schritt – Schritt antippen = an, hoch/runter ziehen = Ton in der Tonart.',
     'SONG: SONG ⇄ (Ecke oben links im Raster) zeigt den Song. ● SONG nimmt Szenenwechsel, Clip-Stopps, Träger und deine Melodie mit, ▶ SONG spielt alles ab. Eine Zelle antippen = anderer Clip in diesem Takt, wischen = blättern. Während der Song läuft: Clip starten = Spur übernehmen, ↩ SONG gibt sie zurück; ● MEL. spielt eine Melodie dazu. Unter MEL. ⋯: Melodie als Clip, Kette aus Szenen.',
     'DRUMS: 12 Pads – oben antippen = laut, unten = leise. KLANG öffnet den Drum-Editor: SOUND (Modell und Regler), TIEF (alle Schichten), SCHRITTE (Euklid, Muster), KIT (Gate, Raum, Akzent).',
+    ...FX_HELP.map(t => 'FM-FELD: ' + t),
     'FM: Klangerzeugung FM = 6 Operatoren wie beim DX7. ALGO zeigt, wer wen moduliert (farbig = Ausgang); Box antippen = Operator wählen, wischen = anderer Algorithmus. Die Regler unten sind die Pegel der Operatoren (Modulator: Helligkeit, Ausgang: Lautstärke). OP stellt Frequenz, Hüllkurve und Skalierung ein, MAKRO macht alles auf einmal heller, bissiger, härter oder länger. Menü → Sounds lädt DX7-Bänke (.syx).',
     'FM-HÜLLKURVEN (OP › HÜLLK. oder HÜLLK. › OPERATOREN): Punkt waagrecht ziehen = Zeit (Anzeige in ms und als DX-Rate R), senkrecht = Pegel L. Ein zweiter Finger oder [FEIN] = fein, Doppeltipp = Init-Wert. Ausgänge machen die Lautstärke, Modulatoren die Klangfarbe. Zu schnelle Stufen knacken: Der Zug hält an der Klick-Grenze, ein zweiter Zug geht darüber hinaus. Vorlagen [Snap] [Pluck] [Pad] [Orgel]; TONHÖHE = Tonhöhen-Hüllkurve ([Ruck], [Fall], [Anstieg]).',
     'FEEDBACK: Der Bogen im ALGO-Bild zeigt, welcher Operator sich selbst moduliert. Hörbar ab ≈ 3, wenn dieser Operator ein Ausgang ist, als Modulator ab ≈ 5 – und nur, wenn er klingt (sonst steht der Regler grau mit Grund).',
@@ -19380,7 +20757,7 @@ const BOOT = {done: false, gen: 0, dirty: false};
 let kv = null, autosave = null;
 const idle = window.requestIdleCallback ? (f => window.requestIdleCallback(f, {timeout: 2000})) : (f => setTimeout(f, 50));   // §1.7.7
 // the selection is saved with the project (§12.6 ui) and restored when the app starts or a project is opened
-function syncUi() { if (S) S.ui = Object.assign({selT: R.selT, selS: R.selS}, S.ui && S.ui.follow ? {follow: S.ui.follow} : null); }   // V0b: + follow (a view field)
+function syncUi() { if (S) S.ui = Object.assign({selT: R.selT, selS: R.selS}, S.ui && S.ui.follow ? {follow: S.ui.follow} : null, S.ui && S.ui.fmv ? {fmv: S.ui.fmv} : null); }   // V4b: + fmv (FELD / DX per track, a view field)   // V0b: + follow (a view field)
 function serializeProject() { syncUi(); return JSON.stringify(S, stripReplacer); }
 /* project file v3 (§12.1): {app:'SYNQUENZER', kind:'project', format:3, saved, appVersion, sum, project (compact notes),
    sounds:[the user library]}. lib = false for the parked projects of [Projekte] (stored without the library, §12.2) */
@@ -20631,11 +22008,41 @@ const SYNQUENZER = {
   dxLayout: alg => FMX.dxLayout(alg),
   fmxDx: t => { const snd = sndOf(t); const x = snd && snd.p.fmx; return x ? FMX.dx(x) : null; },
   fmxFromFm6: fm6 => FMX.fromFm6(fm6),
+  // V4b (KP §7): the field as it is drawn (coordinates in the page box), the gesture result before the drop, the gesture itself
+  fmxView: t => fxViewApi(t),
+  fmxPreview: (t, g) => { const snd = sndOf(t); if (!snd || snd.engine !== 'fm6') throw new Error('Keine FM-Spur: ' + t); const r = FMX.gesture(fxX(t), g); return {fmx: deep(r.x || fxX(t)), lcd: r.lcd, ok: r.ok}; },
+  fmxGesture: (t, g) => fxGestureApi(t, g),
+  fmxOpen: (t, page, op) => { const D = window.SYNQUENZER; D.selectTrack(t); D.openEditor(); ED.tab = 'osc'; ED.sub.osc = 'feld'; fmViewSet(t, 'feld'); FXF.t = t; FXF.focus = null; if (op != null) fxSelect(t, op - 1); FXF.page = page || (op != null ? 'basis' : 'pegel'); if (FX_PAGES_O.includes(FXF.page)) FXF.opPage = FXF.page; buildSynthEd(); return fxViewApi(t); },
+  fmxBadge: t => FMX.badge(fxX(t)),
 };
+function fxViewApi(t) {
+  const V = FXF.view; if (t == null) t = R.selT;
+  const live = !!(V && V.i === t && V.fld.isConnected && V.g);
+  const X = fxX(t), out = {state: FXF.focus == null ? 'voice' : 'op', focus: FXF.focus == null ? null : FXF.focus + 1, page: FXF.page, rows: 6, shown: live, lcd: ED.lcd ? ED.lcd.textContent : ''};
+  if (!live) return out;
+  const pr = V.pg.getBoundingClientRect(), R_ = e => { const r = e.getBoundingClientRect(); return {x: Math.round((r.left - pr.left) * 10) / 10, y: Math.round((r.top - pr.top) * 10) / 10, w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10}; };
+  out.mode = V.g.mode; out.page = FXF.page; out.field = R_(V.fld); out.panel = V.pan.hidden ? null : R_(V.pan); out.head = V.head.textContent; out.badge = FMX.badge(X).txt; out.scroll = FXF.scroll;
+  out.tiles = X.ops.map((o, k) => { const tl = V.tiles[k], b = R_(tl), cs = getComputedStyle(tl);
+    return Object.assign(b, {op: k + 1, c: o.c, r: o.r, on: o.on, vis: !tl.hidden, frame: cs.borderTopColor, fill: cs.backgroundColor, ratio: tl.dataset.ratio, text: tl.querySelector('i').textContent, fb: o.fbSrc || null,
+      bar: {ol: +tl.dataset.bar, live: parseFloat(tl.querySelector('s .l').style.height) || 0, h: parseFloat(tl.querySelector('s').style.height) || 0}}); });
+  out.lines = [...V.lnG.querySelectorAll('line')].map(l => { const [f, to] = l.dataset.e.split('>').map(Number); return {from: f, to, x0: +l.getAttribute('x1') + out.field.x, y0: +l.getAttribute('y1') + out.field.y, x1: +l.getAttribute('x2') + out.field.x, y1: +l.getAttribute('y2') + out.field.y, grey: l.getAttribute('stroke') === FX_MUTE, color: l.getAttribute('stroke')}; });
+  out.tabs = [...V.pan.querySelectorAll('.fxtab')].map(b => Object.assign(R_(b), {t: b.dataset.t, txt: b.textContent, on: b.classList.contains('on')}));
+  out.valueRows = V.rows.map(r => Object.assign(R_(r.el), {key: r.el.dataset.key}));
+  out.env = V.env.hidden ? null : R_(V.env);
+  return out;
+}
+function fxGestureApi(t, g) {
+  const snd = sndOf(t); if (!snd || snd.engine !== 'fm6') throw new Error('Keine FM-Spur: ' + t);
+  if (!g || !g.kind) throw new Error('fmxGesture: kind fehlt');
+  if (g.kind === 'tap') { if (FXF.t !== t) { FXF.t = t; } fxSelect(t, g.op == null ? null : g.op - 1); fxRender(true); return {ok: true, lcd: ''}; }
+  const r = fxGestureApply(t, g);
+  fxRender(true);
+  return {ok: r.ok, reason: r.ok ? undefined : r.lcd, lcd: r.lcd, changed: !!r.x};
+}
 // every state-changing API call leaves the UI rendered (no need to wait for the next animation frame)
 function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
 const NO_SYNC = new Set(['state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
-  'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited',
+  'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
   'fmDefaultOp', 'fmEnvView', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint', 'getFmx', 'fmxLevels', 'dxLayout', 'fmxDx', 'fmxFromFm6']);
