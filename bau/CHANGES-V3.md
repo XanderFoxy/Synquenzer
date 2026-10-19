@@ -2206,13 +2206,13 @@ noise      {floorDbfs, noiseDbfs, snrDb}
 drift      {sec, startMs, endMs, msPerMin, gaps, ok (|ms/min| ≤ 0,5), short (< 60 s)} | null
 capture    {how: "worklet"|"script", frames, gaps, sec}
 storage    {quotaMB, usageMB, persistedBefore, persist, write50: {ok, ms, mb: 50, readBack} | {ok:false, err, ms}}
-sound      {question, answer: "ja"|"nein"|null}
+sound      {question, answer: "ja"|"nein"|null, given: {at, phase: "drift"|"end", micLive: true, track: "live", session, afterSec} | null}   (VS0-fix)
 net        {fetch, xhr, beacon, ws, total}    (während der Prüfung)
 gate       {gum, spreadOk, soundOk, pass, why: [Texte]}
 phase      "done"|"error"|"stopped" · log: [Texte]
 ```
 **Tor für VS1 (N2-VS0-02):** VS1 beginnt nur mit Xanders JSON und `gate.pass = true` (= `getUserMedia` ok, `roundTrip.spreadMs ≤ 2`,
-`sound.answer = "ja"`). Bis dahin bleiben VS1, VS2 und VS3–VS6 nach E.5 Punkt 3 zurückgestellt.
+`sound.answer = "ja"` mit `sound.given.micLive = true`, VS0-fix). Bis dahin bleiben VS1, VS2 und VS3–VS6 nach E.5 Punkt 3 zurückgestellt.
 
 **Abweichungen (bewusst)**
 - **Klang-Frage umgedreht:** Nachtrag 1/§11 fragen „Wurde die Musik leiser/dumpfer?“, Nachtrag 2 (gilt) verlangt für das Tor „„Ja“ beim
@@ -2267,3 +2267,28 @@ Klassenzimmer-Projekt. **Für Xander im Dashboard:** nichts.
 3. Während „Drift-Probe: noch …“: [▶ Hörprobe] noch mal (oder ▶ oben) und die Frage mit **Ja/Nein** beantworten; dann warten bis „Fertig“
    (oder [Drift jetzt beenden]).
 4. **[Ergebnis kopieren]** und den Text im Chat einfügen. Steht oben „✗ Noch nicht bereit“, trotzdem schicken.
+
+## VS0-fix — Klang-Antwort zählt nur bei laufendem Mikrofon · App 3.11.4
+
+Befund (Abnahme-Blick): Ja/Nein ließ sich in jeder Phase setzen (vor dem Start, nach „Fertig“, nach einem Fehler) und wurde in die nächste
+Messung übernommen; das Tor N2-VS0-02 ging dann auf, obwohl der Klang nie mit laufendem Mikrofon beurteilt wurde (Risiko I6/C7), und das
+JSON zeigte das nicht.
+1. **Annahme nur mit laufendem Mikrofon:** `micAnswer` nimmt Ja/Nein nur in den Phasen `drift`/`end` mit lebender Spur (`readyState = live`)
+   an; sonst wird abgelehnt (auch `micCheckAnswer`). [Ja | Nein] sind außerhalb davon gesperrt (`disabled`, blass).
+2. **Beleg im JSON:** `sound.given = {at, phase, micLive: true, track: "live", session (z. B. "play-and-record"), afterSec}`.
+   `micGate` wertet „Ja“ nur mit `given.micLive = true`; Gründe „Klang-Frage offen (nur während der Drift-Probe zu beantworten – noch mal
+   messen)“ bzw. „Klang-Antwort ohne laufendes Mikrofon“.
+3. **Keine Übernahme:** jede Messung („Mikro starten“ / „Noch mal messen“) beginnt mit `answer = null`, `given = null`.
+4. **Hinweis unter der Frage** je Zustand: vor dem Start „Ja/Nein geht nur während der Drift-Probe … Hörprobe einmal ohne Mikrofon anhören –
+   zum Vergleich“; in der Drift-Probe „Jetzt antworten …“; nach dem Ende ohne Antwort „… „Noch mal messen“ und dann antworten“.
+   [▶ Hörprobe] bleibt zum Vergleich ohne Mikrofon frei.
+
+| Prüfung | Ergebnis | Skript |
+|---|---|---|
+| Befund-Fälle a, b, c (echte Tipps über ≡ → Info → Mikro-Check) | ✓ Tor bleibt zu, `answer = null`; Kontrolle (Ja in der Drift-Probe) ✓ mit `given` | `v3-repro-vs0-offmic-ja.mjs`, `v3-qa-vs0-late-ja.mjs`, `v3-qa-vs0-explore2.mjs` (errThenRetry) |
+| API/erzwungene Pointer-Events, Phase `end`, spätes Ja, neue Messung, Spur-Ende nach Ja | ✓ 8/8 | `v3-vs0fix-offmic.mjs` |
+| Abnahme (VS0-09 angepasst: spätes Nein nach „Fertig“ abgelehnt) | ✓ 25/25 | `v3-vs0fix-accept.mjs` |
+| Layout P1–L2 mit echter Schrift (Barlow Semi Condensed geladen, geprüft), Hinweis/Tor-Text nicht abgeschnitten | ✓ 20/20 | `v3-vs0fix-layout.mjs`, Bilder `v3-vs0fix-*.png` |
+| Smoke | ✓ ohne Fehler | `v3-vs0fix-smoke.png` |
+
+**Für Xander am iPhone:** wie oben; Ja/Nein lässt sich nur noch während „Drift-Probe: noch …“ tippen.

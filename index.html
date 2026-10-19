@@ -1139,6 +1139,7 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .mc-q{display:flex;flex-direction:column;gap:6px;padding:8px 0}
 #micChk .mc-yn{flex:1 1 130px;display:flex}
 #micChk .mc-yn button{flex:1 1 0;height:44px;min-height:44px;font-size:14px}
+#micChk .mc-yn button:disabled{opacity:.4;cursor:default}
 .mc-gate{padding:10px 12px;border-radius:8px;border:1px solid var(--line);font:600 14px/1.35 var(--font-ui)}
 .mc-gate.ok{border-color:var(--play);color:var(--play)}
 .mc-gate.no{border-color:var(--amber);color:var(--amber)}
@@ -26208,14 +26209,16 @@ function micBase() {
     constraints: {supported: sup, asked: Object.assign({}, MIC_ASK)},
     track: null, context: c ? {sampleRate: c.sampleRate, baseLatencyMs: micMs(c.baseLatency), outputLatencyMs: micMs(c.outputLatency), state: c.state} : null,
     session: {before: micAs(), during: null, after: null}, error: null, roundTrip: null, response: null, noise: null, drift: null, capture: null,
-    storage: null, sound: {question: MIC_Q, answer: MIC.res && MIC.res.sound ? MIC.res.sound.answer : null}, net: null, gate: null, phase: 'ready', log: []};
+    storage: null, sound: {question: MIC_Q, answer: null, given: null}, net: null, gate: null, phase: 'ready', log: []};
 }
 function micGate(r) {
   const gum = !!(r.track && !(r.error && r.error.step === 'getUserMedia'));
-  const spread = !!(r.roundTrip && r.roundTrip.ok), sound = r.sound.answer === 'ja';
+  const live = !!(r.sound.given && r.sound.given.micLive === true);   // Klang-Frage zählt nur mit laufendem Mikrofon (I6/R1)
+  const spread = !!(r.roundTrip && r.roundTrip.ok), sound = r.sound.answer === 'ja' && live;
   const why = []; if (!gum) why.push(r.error ? 'Mikrofon: ' + r.error.name : 'Mikrofon nicht gestartet');
   if (gum && !spread) why.push(r.roundTrip && r.roundTrip.spreadMs != null ? 'Rundlauf streut ' + micDe(r.roundTrip.spreadMs) + ' ms (> 2 ms)' : 'Piep-Töne nicht gehört');
-  if (r.sound.answer == null) why.push('Klang-Frage offen'); else if (!sound) why.push('Klang mit Mikrofon schlechter');
+  if (r.sound.answer == null) why.push('Klang-Frage offen (nur während der Drift-Probe zu beantworten – noch mal messen)');
+  else if (!live) why.push('Klang-Antwort ohne laufendes Mikrofon'); else if (!sound) why.push('Klang mit Mikrofon schlechter');
   return (r.gate = {gum, spreadOk: spread, soundOk: sound, pass: gum && spread && sound, why});
 }
 
@@ -26224,8 +26227,7 @@ function micStart(opts) {
   if (MIC.run || !micAvail()) return false;
   opts = opts || {};
   const c = ensureAudio();                                   // im selben Tipp: resume (I11)
-  const ans = MIC.res && MIC.res.sound ? MIC.res.sound.answer : null;
-  const r = MIC.res = micBase(); r.sound.answer = ans; r.at = new Date().toISOString(); r.phase = 'mic';
+  const r = MIC.res = micBase(); r.at = new Date().toISOString(); r.phase = 'mic';
   const run = MIC.run = {opts, driftSec: opts.driftSec != null ? Math.max(0, +opts.driftSec) : 120, blocks: [], keep: [], keepAll: false, srcs: [], nodes: [],
     stream: null, stopped: false, frames: 0, gaps: 0, lvl: -180, timers: [], t0: performance.now()};
   if (R.playing) { try { stop(); } catch (e) { logErr(e); } r.log.push('Musik für die Messung gestoppt'); }
@@ -26462,6 +26464,23 @@ function micProbe() {
   return true;
 }
 const micBusy = r => ['mic', 'quiet', 'chirp', 'noise', 'calc', 'end'].includes(r.phase);
+// Klang-Frage (N2-VS0-02, Risiko I6/C7): Ja/Nein zählt nur, solange das Mikrofon läuft (Drift-Probe, Sitzung play-and-record);
+// sonst wird die Antwort abgelehnt. „given“ im JSON zeigt, wann und unter welchen Bedingungen sie gegeben wurde.
+function micLiveNow() {
+  const run = MIC.run, r = MIC.res;
+  if (!run || run.stopped || run.released || !run.stream || !r || !(r.phase === 'drift' || r.phase === 'end')) return false;
+  try { const t = run.stream.getAudioTracks()[0]; return !!t && t.readyState === 'live'; } catch (e) { return false; }
+}
+function micAnswer(v) {
+  const r = MIC.res; if (!r) return null;
+  v = v === 'ja' || v === true ? 'ja' : v === 'nein' || v === false ? 'nein' : null;
+  if (v == null || !micLiveNow()) { micRender(); return null; }
+  const run = MIC.run, t = run.stream.getAudioTracks()[0];
+  r.sound.answer = v;
+  r.sound.given = {at: new Date().toISOString(), phase: r.phase, micLive: true, track: t.readyState, session: micAs(),
+    afterSec: AU.ctx && run.chirps ? micR(AU.ctx.currentTime - run.chirps[0], 1) : null};
+  micRender(); return v;
+}
 
 /* ---------- Blatt ---------- */
 function micOpen() {
@@ -26513,9 +26532,9 @@ function micBuild(d) {
   const qb = el('div', 'mc-q'), qh = el('p', 'cl-p'); qh.textContent = MIC_Q;
   const qr = el('div', 'mc-act'), bProbe = el('button', 'mbtn rb mc-probe', '▶ Hörprobe');
   on(bProbe, 'click', () => { if (!micBusy(MIC.res)) micProbe(); });
-  const seg = makeSeg([['ja', 'Ja'], ['nein', 'Nein']], () => MIC.res.sound.answer, v => { MIC.res.sound.answer = v; if (!MIC.run && MIC.res.phase !== 'ready') micGate(MIC.res); micRender(); }, 'mc-yn');
+  const seg = makeSeg([['ja', 'Ja'], ['nein', 'Nein']], () => MIC.res.sound.answer, v => micAnswer(v), 'mc-yn');
   qr.append(bProbe, seg);
-  const qs = el('p', 'cl-s'); qs.textContent = 'Am besten während der Drift-Probe: ▶ oben spielt deine Musik, oder „Hörprobe“ – einmal vor dem Start anhören, einmal mit Mikrofon.';
+  const qs = el('p', 'cl-s mc-qs');
   qb.append(qh, qr, qs);
   const gate = el('div', 'mc-gate'); gate.hidden = true;
   const ex = el('div', 'mc-act'), bCopy = el('button', 'mbtn rb go mc-copy', 'Ergebnis kopieren'), bFile = el('button', 'mbtn rb mc-file', 'Als Datei');
@@ -26524,7 +26543,7 @@ function micBuild(d) {
   const jbox = el('div', 'mc-jbox'); jbox.hidden = true;
   const top = el('div', 'mc-top'); top.append(status, act);
   b.append(intro, top, meter, gate, grid, qb, ex, jbox);
-  MIC.ui = {d, status, bGo, bDrift, meter: meter.firstChild, grid, seg, bProbe, gate, bCopy, bFile, jbox};
+  MIC.ui = {d, status, bGo, bDrift, meter: meter.firstChild, grid, seg, qs, bProbe, gate, bCopy, bFile, jbox};
   micRender();
 }
 function micRows(r) {
@@ -26556,7 +26575,13 @@ function micRender() {
   u.bGo.classList.toggle('arm', !!run); u.bGo.classList.toggle('go', !run);
   u.bDrift.hidden = !(run && r.phase === 'drift'); u.bDrift.disabled = !!(run && run.endFired);
   u.bProbe.disabled = busy;
-  u.seg.update();
+  const live = micLiveNow();
+  for (const b of u.seg.children) { b.disabled = !live; b.setAttribute('aria-disabled', String(!live)); }
+  u.seg.classList.toggle('off', !live); u.seg.update();
+  if (u.qs) u.qs.textContent = live ? 'Jetzt antworten: ▶ oben spielt deine Musik, oder „Hörprobe“. Ja/Nein zählt nur, solange das Mikrofon läuft.'
+    : r.phase === 'ready' ? 'Ja/Nein geht nur während der Drift-Probe (Mikrofon läuft). Vorher die „Hörprobe“ einmal ohne Mikrofon anhören – zum Vergleich.'
+    : r.sound.given ? 'Beantwortet bei laufendem Mikrofon. Neue Antwort nur mit „Noch mal messen“.'
+    : 'Ja/Nein geht nur während der Drift-Probe (Mikrofon läuft): „Noch mal messen“ und dann antworten.';
   u.grid.innerHTML = '';
   for (const [k, v, cls, resp] of micRows(r)) {
     const row = el('div', 'mc-row' + (cls ? ' ' + cls : '')), l = el('span', 'lbl'), val = el('span', 'val'); l.textContent = k;
@@ -26685,7 +26710,7 @@ const SYNQUENZER = {
   micCheckStart: o => micStart(o || {}),
   micCheckStop: () => micStop('Test-API'),
   micCheckDriftNow: () => micDriftNow(),
-  micCheckAnswer: v => { if (!MIC.res) MIC.res = micBase(); MIC.res.sound.answer = v === 'ja' || v === true ? 'ja' : v === 'nein' || v === false ? 'nein' : null; if (!MIC.run && MIC.res.phase !== 'ready') micGate(MIC.res); micRender(); return MIC.res.sound.answer; },
+  micCheckAnswer: v => { if (!MIC.res) MIC.res = micBase(); micAnswer(v); return MIC.res.sound.answer; },   // nur bei laufendem Mikrofon (sonst bleibt es, wie es war)
   micCheckJson: () => micJson(),
   micCheckCopy: () => micCopy(),
   micCheckSave: () => micSave(),
