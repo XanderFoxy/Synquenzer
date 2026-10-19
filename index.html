@@ -3106,6 +3106,70 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
   .fmlock.t1 .fmlbtn button{min-height:40px}
 }
 #synthSheet .sh-subs .stab.fxbk{background:#0A6E5B;color:#fff;border-color:#0ACA9F;box-shadow:inset 0 0 0 1px #0ACA9F}
+/* VS1 🎤 (Nachtrag 2 C.2 Punkt 1): im Hochformat das dritte Feld des Segments mit festen Breiten (Segment = Breite − 183 px,
+   drei Knöpfe; P1 3 × 67, P2 3 × 62, P3 3 × 44 nur Symbole); im Querformat ein eigener Knopf in der Kopfzeile, das Segment
+   bleibt zweiteilig. Ohne Mikrofon (Claude-App, kein getUserMedia) ist nichts davon sichtbar (N7V-05). */
+#modeSeg #segMic{display:none}
+#segMic .led{display:none}
+#app:not(.micok) #bMicT{display:none!important}
+.micb .led{width:8px;height:8px;border-radius:50%;background:var(--led-off);flex:none}
+#segMic.on{background:var(--rec-dim);color:#fff;box-shadow:inset 0 0 0 1px var(--rec)}
+#segMic.on .led{background:var(--rec);box-shadow:0 0 8px var(--rec)}
+#segMic.busy .led{animation:blink .5s infinite}
+#bMicT .ico{font-size:18px;line-height:1}
+#bMicT.on{background:var(--rec-dim);border-color:var(--rec);box-shadow:0 0 10px rgba(255,69,56,.45)}
+#bMicT.busy .ico{animation:blink .5s infinite}
+@media (orientation:portrait){
+  #app.micok #modeSeg #segMic{display:flex}
+  #modeSeg.three{justify-self:center;width:calc(3 * var(--segb, 60px) + 4px)}
+  #app.micok #modeSeg.three button{flex:0 0 var(--segb, 60px);width:var(--segb, 60px);gap:4px;padding:0 2px}
+  #modeSeg.three .trl .l2{display:none}
+  #modeSeg.three .trl .l2s{display:inline}
+  #modeSeg.sym .tx,#modeSeg.sym .trl .l2,#modeSeg.sym .trl .l2s,#modeSeg.sym #kbRef{display:none!important}
+  #modeSeg.sym .ico{display:inline!important;font-size:17px}
+  #modeSeg.sym button{gap:3px}
+}
+/* Mikro-Zeile: Überlagerung in fester Höhe (K2-63) – Clip-Ansicht in #top über TAKT (+ BPM im Hochformat), Song-Ansicht über
+   der Taktleiste (nur Anzeige); verschiebt nichts, liegt nie über den Teil-Tasten */
+.microw{position:absolute;z-index:4;display:flex;align-items:center;gap:6px;padding:0 8px;background:linear-gradient(#2c100e,#1b0807);border:1px solid var(--rec);border-radius:var(--r-s);color:#fff;overflow:hidden;text-align:left;min-width:0}
+.microw[hidden]{display:none}
+.microw .mr-dot{width:10px;height:10px;border-radius:50%;background:var(--rec);box-shadow:0 0 8px var(--rec);flex:none;animation:mrp 1.2s ease-in-out infinite}
+@keyframes mrp{50%{opacity:.45}}
+.microw .mr-c{display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0;flex:1 1 auto}
+.microw .mr-a{display:flex;align-items:center;gap:6px;min-width:0}
+.mr-m{position:relative;flex:1 1 auto;min-width:22px;height:8px;border-radius:4px;background:#000;box-shadow:inset 0 0 0 1px #3a3d44;overflow:hidden}
+.mr-m i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--play);border-radius:4px}
+.mr-m i.clip{background:var(--rec)}
+.microw .mr-db{font:700 11px/1 var(--font-num);white-space:nowrap;flex:none}
+.microw .mr-b{font:600 10px/1 var(--font-num);opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.microw.narrow{padding:0 5px;gap:4px}
+.microw.narrow .mr-db{font-size:10px}
+@media (orientation:landscape){.microw .mr-c{flex-direction:row;align-items:center;gap:8px}.microw .mr-a{flex:1 1 auto}.microw .mr-b{flex:none}}
+.microw.sv{pointer-events:none;top:0;left:0;width:min(250px,64%);border-radius:0 0 6px 0;border-width:0 1px 1px 0;padding:0 6px;gap:5px;z-index:2}
+.microw.sv .mr-m{max-width:80px}
+.pop.stpop{width:min(360px,calc(100vw - 16px))}
+.stpop h4 small{font-weight:600;letter-spacing:.02em;text-transform:none;margin-left:6px;color:var(--text)}
+.stpop .st-lvl{display:flex;align-items:center;gap:8px;margin:2px 0 8px}
+.stpop .st-lvl b{font:700 12px/1 var(--font-num);min-width:48px;text-align:right}
+.stpop .st-lbl{font-size:10px;color:var(--text-faint);letter-spacing:.06em;text-transform:uppercase;margin:6px 0 4px}
+.stpop .seg{display:flex;gap:4px}
+.stpop .seg button{min-height:44px;flex:1 1 0;min-width:0;padding:0 4px;font-size:12px}
+.stpop .st-lat{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 6px;font-size:13px}
+.stpop .st-lat small{display:block;color:var(--text-dim);font-size:10px;margin-top:2px}
+.stpop .st-nd{display:flex;gap:6px;flex:none}
+.stpop .st-nd button{width:44px;height:44px}
+.stpop .st-do{margin:6px 0 0;color:var(--amber)}
+.stpop .st-steps{margin:6px 0;padding-left:20px;font-size:12px;line-height:1.6}
+.stpop .st-steps li.now{color:var(--amber)}
+.stpop .st-steps li.ok{color:var(--play)}
+.stpop .st-res{font-size:12px;line-height:1.35;margin:6px 0}
+.stpop .st-res.ok{color:var(--play)}
+.stpop .st-res.warn,.stpop .st-warn{color:var(--amber)}
+.stpop .st-warn{font-size:11px;line-height:1.4;margin:6px 0}
+.stpop .st-btns{display:flex;gap:8px;margin-top:8px}
+.stpop .st-btns button{flex:1 1 0;min-height:44px}
+.stpop .st-go.off{border-color:var(--rec);background:var(--rec-dim);color:#fff}
+.stpop .st-hint{margin:8px 0 0;color:var(--text-dim)}
 </style>
 </head>
 <body>
@@ -3123,6 +3187,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
     <button id="chipQ" class="chipT rb lwonly" aria-label="Eingabe-Quantisierung">Q<b id="chipQv">1/16</b></button>
     <button id="chipLen" class="chipT rb lwonly" aria-label="Aufnahmelänge">LÄNGE<b id="chipLenv">AUTO</b></button>
     <button id="bFangT" class="chipT rb lwonly fangb" aria-label="FANG – Gespieltes einfangen">FANG ⤓</button>
+    <button id="bMicT" class="tb sq rb lwonly micb" aria-pressed="false" aria-label="Mikrofon an/aus (Singen)"><span class="ico">🎤</span></button>
     <div class="spacer lwonly"></div>
     <button id="bCpu" class="chipT rb lwonly" aria-label="CPU-Last hoch – Info" hidden>CPU</button>
     <button id="bMenu" class="tb sq rb" aria-label="Menü">≡</button>
@@ -3163,8 +3228,9 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
   <div id="modebar">
     <button id="octDn" class="oct rb" aria-label="Oktave tiefer">‹</button>
     <div id="modeSeg" role="radiogroup" aria-label="Tastatur-Modus">
-      <button id="segPlay" role="radio"><span class="led"></span><span class="spl"><span><span class="ico">♪ </span>SPIELEN</span><small id="kbRef"></small></span></button>
-      <button id="segTr" role="radio"><span class="trl"><span class="l1"><span class="ico">⇅ </span>TRANS</span><span class="l2">PONIEREN</span><span class="l2s">P.</span></span></button>
+      <button id="segPlay" role="radio"><span class="led"></span><span class="spl"><span><span class="ico">♪ </span><span class="tx">SPIELEN</span></span><small id="kbRef"></small></span></button>
+      <button id="segMic" class="micb" aria-pressed="false" aria-label="Mikrofon an/aus (Singen)"><span class="led"></span><span class="ico">🎤 </span><span class="tx">SINGEN</span></button>
+      <button id="segTr" role="radio"><span class="trl"><span class="l1"><span class="ico">⇅ </span><span class="tx">TRANS</span></span><span class="l2">PONIEREN</span><span class="l2s">P.</span></span></button>
     </div>
     <button id="octUp" class="oct rb" aria-label="Oktave höher">›</button>
     <div id="fangSlot" class="ponly"><button id="bFang" class="rb fangb" aria-label="FANG – Gespieltes einfangen">FANG<br>⤓</button></div>
@@ -10342,7 +10408,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '3.11.4';
+const VERSION = '3.11.5';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -13460,7 +13526,7 @@ async function wakeAcquire() {
     if (e && e.name === 'NotAllowedError' && document.visibilityState !== 'hidden') WAKE.blocked = true;
   } finally { WAKE.pending = false; }
 }
-function wakeReleaseLater() { clearTimeout(WAKE.relT); WAKE.relT = setTimeout(() => (MIC.run ? wakeReleaseLater() : wakeRelease()), 60000); }   // VS0: nicht während des Mikro-Checks
+function wakeReleaseLater() { clearTimeout(WAKE.relT); WAKE.relT = setTimeout(() => (MIC.run || ST.on ? wakeReleaseLater() : wakeRelease()), 60000); }   // VS0/VS1: nicht während Mikro-Check oder 🎤
 function wakeRelease() {
   clearTimeout(WAKE.relT); WAKE.relT = 0;
   const sn = WAKE.sentinel; WAKE.sentinel = null;
@@ -14592,6 +14658,7 @@ function setSongView(on) {
   folReset(['song']);
   if (on) { svLayout(); svAutoScroll(true); }
   UI.dirty.song = UI.dirty.grid = UI.dirty.all = true;
+  if (ST.on) stRowPlace();                                   // VS1: Mikro-Zeile wechselt zwischen #top und Taktleiste
   haptic('tick');
   return on;
 }
@@ -15515,11 +15582,12 @@ function fitModeLabels() {
   const seg = EL.modeSeg; if (!seg) return;
   const steps = ['', 'tight', 'tight t11', 'tight t105'], all = ['short', 'tight', 't11', 't105'];
   seg.classList.remove(...all);
+  stModeFit();                                               // VS1: drei Knöpfe mit festen Breiten (C.2 Punkt 1)
   if (!window.matchMedia('(orientation: portrait)').matches) return;
-  const over = b => b.scrollWidth > b.clientWidth + 1;
+  const over = b => b.scrollWidth > b.clientWidth + 1, three = seg.classList.contains('three');
   for (const st of steps) {
     seg.classList.remove(...all); if (st) seg.classList.add(...st.split(' '));
-    if (!over(EL.segTr) && !over(EL.segPlay)) return;
+    if (!over(EL.segTr) && !over(EL.segPlay) && !(three && over(EL.segMic))) return;
   }
   seg.classList.remove(...all); seg.classList.add('short');
 }
@@ -16119,6 +16187,7 @@ function uiFrame() {
   if (UI.songView) songFrame(bAud);
   else if (UI.dirty.grid) { UI.dirty.grid = false; renderGrid(bAud); }
   if ((R.songRec || (UI.recBan && !UI.recBan.hidden)) && performance.now() - (UI.last.recBan || 0) > 200) { UI.last.recBan = performance.now(); recBanTop(); }   // V0c K2-63
+  if ((ST.on || (ST.ui.row && !ST.ui.row.hidden) || (ST.ui.sv && !ST.ui.sv.hidden)) && performance.now() - (UI.last.stRow || 0) > 250) { UI.last.stRow = performance.now(); stRowPlace(); }   // VS1 K2-63
   if (!UI.songView) renderProgress(bAud);
   if (UI.dirty.strip) { UI.dirty.strip = false; renderStrip(); }
   const effE = T.targetAt(now);
@@ -25899,6 +25968,8 @@ function bindUI() {
   on(EL.hist, 'click', e => { const b = e.target.closest('button[data-k]'); if (!b) return; const t = T.history[+b.dataset.k]; if (t) recallCarrier(t); });
   // mode switch
   on(EL.segPlay, 'click', () => setKbMode('play'));
+  // VS1 🎤: Mikrofon an/aus (Hochformat im Segment, Querformat in der Kopfzeile); nur auf Tipp
+  for (const b of [EL.segMic, EL.bMicT]) if (b) { on(b, 'click', () => { haptic('tick'); stToggle(); }); on(b, 'contextmenu', e => e.preventDefault()); }
   on(EL.segTr, 'pointerdown', e => {
     e.preventDefault(); EL.segTr._ptrT = performance.now(); ensureAudio();
     if (R.kbMode === 'play') {
@@ -26182,23 +26253,33 @@ function micWorklet(c) {
   })();
   MIC.wk = {ctx: c, p}; return p;
 }
-// N7V-35: Zähler für fetch, XHR, sendBeacon und gesendete WebSocket-Frames, nur solange die Prüfung läuft
-function micNetCount(on) {
-  if (on) {
-    if (MIC.net) return;
-    const n = MIC.net = {fetch: 0, xhr: 0, beacon: 0, ws: 0, o: {}}, o = n.o;
-    try { o.fetch = window.fetch; if (o.fetch) window.fetch = function () { n.fetch++; return o.fetch.apply(this, arguments); }; } catch (e) {}
-    try { o.xhr = XMLHttpRequest.prototype.send; XMLHttpRequest.prototype.send = function () { n.xhr++; return o.xhr.apply(this, arguments); }; } catch (e) {}
-    try { if (navigator.sendBeacon) { o.beacon = navigator.sendBeacon; navigator.sendBeacon = function () { n.beacon++; return o.beacon.apply(navigator, arguments); }; } } catch (e) {}
-    try { o.ws = WebSocket.prototype.send; WebSocket.prototype.send = function () { n.ws++; return o.ws.apply(this, arguments); }; } catch (e) {}
-    return;
+// N7V-35: Zähler für fetch, XHR, sendBeacon und gesendete WebSocket-Frames, nur solange eine Prüfung/Aufnahme läuft.
+// VS1: mehrere Zähler gleichzeitig (Mikro-Check, stimmeQuiet); die Hüllen liegen nur einmal um die Originale.
+const NETW = {subs: [], o: null};
+function netWatch() {
+  const n = {fetch: 0, xhr: 0, beacon: 0, ws: 0}; NETW.subs.push(n);
+  if (!NETW.o) {
+    const o = NETW.o = {}, add = k => { for (const x of NETW.subs) x[k]++; };
+    try { o.fetch = window.fetch; if (o.fetch) window.fetch = function () { add('fetch'); return o.fetch.apply(this, arguments); }; } catch (e) {}
+    try { o.xhr = XMLHttpRequest.prototype.send; XMLHttpRequest.prototype.send = function () { add('xhr'); return o.xhr.apply(this, arguments); }; } catch (e) {}
+    try { if (navigator.sendBeacon) { o.beacon = navigator.sendBeacon; navigator.sendBeacon = function () { add('beacon'); return o.beacon.apply(navigator, arguments); }; } } catch (e) {}
+    try { o.ws = WebSocket.prototype.send; WebSocket.prototype.send = function () { add('ws'); return o.ws.apply(this, arguments); }; } catch (e) {}
   }
-  const n = MIC.net; if (!n) return null; MIC.net = null; const o = n.o;
-  try { if (o.fetch) window.fetch = o.fetch; } catch (e) {}
-  try { if (o.xhr) XMLHttpRequest.prototype.send = o.xhr; } catch (e) {}
-  try { if (o.beacon) navigator.sendBeacon = o.beacon; } catch (e) {}
-  try { if (o.ws) WebSocket.prototype.send = o.ws; } catch (e) {}
+  return n;
+}
+function netUnwatch(n) {
+  if (!n) return null;
+  const i = NETW.subs.indexOf(n); if (i >= 0) NETW.subs.splice(i, 1);
+  if (!NETW.subs.length && NETW.o) { const o = NETW.o; NETW.o = null;
+    try { if (o.fetch) window.fetch = o.fetch; } catch (e) {}
+    try { if (o.xhr) XMLHttpRequest.prototype.send = o.xhr; } catch (e) {}
+    try { if (o.beacon) navigator.sendBeacon = o.beacon; } catch (e) {}
+    try { if (o.ws) WebSocket.prototype.send = o.ws; } catch (e) {} }
   return {fetch: n.fetch, xhr: n.xhr, beacon: n.beacon, ws: n.ws, total: n.fetch + n.xhr + n.beacon + n.ws};
+}
+function micNetCount(on) {
+  if (on) { if (!MIC.net) MIC.net = netWatch(); return; }
+  const n = MIC.net; MIC.net = null; return netUnwatch(n);
 }
 function micBase() {
   const c = AU.ctx; let sup = {};
@@ -26226,6 +26307,7 @@ function micGate(r) {
 function micStart(opts) {
   if (MIC.run || !micAvail()) return false;
   opts = opts || {};
+  if (ST.run) stRelease(ST.run, 'check');                    // VS1: 🎤 aus, der Mikro-Check braucht das Mikrofon allein
   const c = ensureAudio();                                   // im selben Tipp: resume (I11)
   const r = MIC.res = micBase(); r.at = new Date().toISOString(); r.phase = 'mic';
   const run = MIC.run = {opts, driftSec: opts.driftSec != null ? Math.max(0, +opts.driftSec) : 120, blocks: [], keep: [], keepAll: false, srcs: [], nodes: [],
@@ -26451,6 +26533,10 @@ function micWrite50() {
 // Hörprobe: vier Akkorde durch den Master (zum Vergleich ohne / mit Mikrofon)
 function micProbe() {
   const c = ensureAudio(); if (!c) return false;
+  // Auswertung 19.10. Punkt 6: lieber der eigene Song (vertraut) – 4,5 s ab der jetzigen Stelle; sonst die vier Akkorde (mittig)
+  if (!R.playing && S.tracks.some(t => t.clips && t.clips.some(cl => cl && cl.notes && cl.notes.length))) {
+    play(); const tk = UI.probeT = setTimeout(() => { if (UI.probeT === tk && R.playing) stop(); UI.probeT = 0; }, 4500); return true;
+  }
   const t0 = c.currentTime + 0.05, dst = AU.masterSum || c.destination, lp = c.createBiquadFilter();
   lp.type = 'lowpass'; lp.frequency.value = 4200; lp.connect(dst);
   const seq = [[48, 60, 64, 67], [45, 57, 60, 64], [41, 57, 60, 65], [43, 55, 59, 62]];
@@ -26615,6 +26701,548 @@ function micSave() {
   return deliver('synquenzer-mikro-check-' + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes()), new TextEncoder().encode(micJson()), 'json', 'Mikro-Check');
 }
 
+/* =====================================================================
+   VS1 Mikro-Grundlage (Nachtrag 2 C.2 Punkte 1, 4–6, C.3 Zeile VS1, C.4 N2-VS1-01 … -03; r7/stimme.md §3, §6, §11 Skizzen 1–2,
+   §12 VS1, §13 N7V-03 … -07; r9/mikro-check-auswertung.md „Folgen für den Bau“ 2–5).
+   🎤 schaltet das Mikrofon an und aus – nur auf Tipp, nur im obersten Fenster mit getUserMedia (micAvail; in der Claude-App
+   gibt es weder 🎤 noch Mikro-Zeile noch einen Aufruf). Im selben Tipp ensureAudio() → resume; audioSession 'play-and-record'
+   nur, solange 🎤 an ist, danach sofort 'playback' und alle Spuren 'ended'.
+   Worklet 'synq-stimme' mit zwei Eingängen: 0 = Mikrofon, 1 = Referenz (alles, was die App spielt: Master AU.M.ceil und die
+   Mess-Pieptöne). Beide liegen im selben Block, also misst die App den Rundlauf Ausgang → Raum → Mikrofon unabhängig vom
+   Hauptfaden. Das Worklet wandelt in Int16, dezimiert das Mikrofon 3:1 (≈ 16 kHz, für die Tonhöhe in VS2) und liefert je
+   Render-Quantum Spitze und Effektivwert; Blöcke à 4096 Samples (≈ 85 ms) gehen per port (transfer) an den Hauptfaden.
+   Dort liegt ein Ringpuffer über 2 min (Mikro, Referenz, 16-kHz-Mikro; Int16, ≈ 27 MB bei 48 kHz).
+   Einmessen je Weg (Lautsprecher / Kabel-Kopfhörer / Bluetooth): Stille → 4 Pieptöne (erste Ankunft wie VS0) → 2 s Rauschen
+   (Kopplung Lautsprecher → Mikrofon). Danach bei jedem Start ein kurzer Dreifach-Piep (leise), nach ≥ 30 s am Ende ein
+   End-Piep: Zeitmarken je Messung, daraus Drift (linear) bzw. Puffer-Sprung (Vielfaches von 128 Samples, Xanders Gerät:
+   genau 384 Samples) → Warnung und Ausgleich (stimmeRead mit align = Mikro über die Zeitkarte nachgeführt = Resampling).
+   Aussetzer (digitale Stille oder Einbruch > 20 dB unter das Grundrauschen, ≥ 10 ms) werden markiert, nie als Pause gewertet.
+   Kein Netz-Halt beim bloßen Hören (C.2 Punkt 5); für Take-Aufnahme und Säubern (VS3/VS4) gibt es stimmeQuiet().
+   Gespeichert wird nur auf dem Gerät: Latenz-Profile je Weg in localStorage (keine Audiodaten).
+   ===================================================================== */
+const ST = {on: false, phase: 'off', gum: 0, run: null, ring: null, marks: [], drops: [], dropN: 0, dropAt: 0, lvl: -180, pk: -180,
+  latMs: null, latHow: null, route: 'speaker', routeHow: 'geraten', warn: [], lastDrift: null, err: null, floorDb: null, cal: null,
+  quiet: 0, net: null, netLast: null, prof: null, starts: 0, hinted: false, dropHinted: false, ui: {}};
+const ST_SEC = 120, ST_BLOCK = 4096, ST_KEY = 'synq-stimme-v1';
+const ST_ROUTES = {speaker: 'Lautsprecher', wired: 'Kabel-Kopfhörer', bt: 'Bluetooth'};
+const ST_RSHORT = {speaker: '🔈', wired: '🎧', bt: '🎧ᛒ'};
+const ST_CAL = {voll: {quiet: 0.5, n: 4, gap: 0.7, amp: 0.4, noise: 2}, kurz: {quiet: 0.3, n: 3, gap: 0.5, amp: 0.15, noise: 0}, ende: {quiet: 0.15, n: 1, gap: 0.6, amp: 0.15, noise: 0}};
+const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
+  constructor(o) {
+    super();
+    const p = (o && o.processorOptions) || {};
+    this.B = p.block || 4096; this.on = true; this.n = 0; this.f0 = 0; this.last = -1; this.gaps = 0; this.q = 0;
+    this.m = new Int16Array(this.B); this.r = new Int16Array(this.B); this.d = new Int16Array((this.B / 3 | 0) + 3); this.dn = 0; this.d0 = -1;
+    this.pk = new Float32Array(this.B / 128 + 2); this.rm = new Float32Array(this.B / 128 + 2); this.rp = 0;
+    const T = 47, h = new Float32Array(T), fc = 6800 / sampleRate; let s = 0;
+    for (let i = 0; i < T; i++) { const k = i - (T - 1) / 2, w = 0.42 - 0.5 * Math.cos(2 * Math.PI * i / (T - 1)) + 0.08 * Math.cos(4 * Math.PI * i / (T - 1));
+      h[i] = (k === 0 ? 2 * fc : Math.sin(2 * Math.PI * fc * k) / (Math.PI * k)) * w; s += h[i]; }
+    for (let i = 0; i < T; i++) h[i] /= s;
+    this.h = h; this.T = T; this.H = new Float32Array(2 * T); this.hp = 0;
+    this.port.onmessage = e => { if (e.data && e.data.stop) this.on = false; };
+  }
+  flush() {
+    if (!this.n) return;
+    const n = this.n, msg = {f0: this.f0, m: this.m.slice(0, n), r: this.r.slice(0, n), d: this.d.slice(0, this.dn), d0: this.d0,
+      pk: this.pk.slice(0, this.q), rm: this.rm.slice(0, this.q), rp: this.rp, gaps: this.gaps};
+    this.port.postMessage(msg, [msg.m.buffer, msg.r.buffer, msg.d.buffer, msg.pk.buffer, msg.rm.buffer]);
+    this.n = 0; this.q = 0; this.dn = 0; this.d0 = -1; this.rp = 0;
+  }
+  process(inputs) {
+    if (!this.on) return false;
+    const a = inputs[0] && inputs[0][0], b = inputs[1] && inputs[1][0], L = a ? a.length : b ? b.length : 128;
+    if (this.last >= 0 && currentFrame !== this.last && this.calls > 64) this.gaps++;
+    this.calls = (this.calls || 0) + 1; this.last = currentFrame + L;
+    if (this.n + L > this.B) this.flush();
+    if (this.n === 0) this.f0 = currentFrame;
+    const h = this.h, T = this.T, H = this.H, m = this.m, r = this.r, o = this.n;
+    let pk = 0, ss = 0, rp = this.rp;
+    for (let i = 0; i < L; i++) {
+      const x = a ? a[i] : 0, y = b ? b[i] : 0, ax = x < 0 ? -x : x, ay = y < 0 ? -y : y;
+      if (ax > pk) pk = ax; if (ay > rp) rp = ay; ss += x * x;
+      m[o + i] = x >= 1 ? 32767 : x <= -1 ? -32767 : Math.round(x * 32767);
+      r[o + i] = y >= 1 ? 32767 : y <= -1 ? -32767 : Math.round(y * 32767);
+      H[this.hp] = x; H[this.hp + T] = x; this.hp = this.hp + 1 === T ? 0 : this.hp + 1;
+      const F = currentFrame + i;
+      if (F % 3 === 2) {
+        let acc = 0; const base = this.hp; for (let k = 0; k < T; k++) acc += h[k] * H[base + k];
+        if (this.d0 < 0) this.d0 = (F - 2) / 3;
+        this.d[this.dn++] = acc >= 1 ? 32767 : acc <= -1 ? -32767 : Math.round(acc * 32767);
+      }
+    }
+    this.pk[this.q] = pk; this.rm[this.q] = Math.sqrt(ss / L); this.q++; this.rp = rp;
+    this.n += L;
+    if (this.n >= this.B) this.flush();
+    return true;
+  }
+}
+registerProcessor('synq-stimme', SynqStimme);`;
+function stWorklet(c) {
+  if (ST.wk && ST.wk.ctx === c) return ST.wk.p;
+  const p = (async () => {
+    if (!c.audioWorklet || typeof AudioWorkletNode !== 'function') return false;
+    const ways = [() => URL.createObjectURL(new Blob([ST_WK], {type: 'application/javascript'})), () => 'data:application/javascript;base64,' + btoa(ST_WK)];
+    for (const mk of ways) { let u = ''; try { u = mk(); await micTimeout(c.audioWorklet.addModule(u), 2500); return true; } catch (e) { /* nächster Weg */ } finally { if (u.startsWith('blob:')) { try { URL.revokeObjectURL(u); } catch (e) {} } } }
+    return false;
+  })();
+  ST.wk = {ctx: c, p}; return p;
+}
+
+/* ---------- Profile je Weg (nur auf diesem Gerät) ---------- */
+function stProf() {
+  if (ST.prof) return ST.prof;
+  let o = null; try { o = JSON.parse(localStorage.getItem(ST_KEY) || 'null'); } catch (e) { o = null; }
+  const out = {v: 1, prof: {}, route: null};
+  if (o && typeof o === 'object' && o.prof && typeof o.prof === 'object') {
+    for (const k of Object.keys(ST_ROUTES)) { const p = o.prof[k]; if (p && typeof p.ms === 'number' && isFinite(p.ms) && p.ms > 0 && p.ms < 1000)
+      out.prof[k] = {ms: p.ms, spread: +p.spread || 0, at: String(p.at || '').slice(0, 30), how: p.how === 'hand' ? 'hand' : 'gemessen', floorDb: isFinite(+p.floorDb) ? +p.floorDb : null, gainDb: isFinite(+p.gainDb) ? +p.gainDb : null, outMs: isFinite(+p.outMs) ? +p.outMs : null}; }
+    if (ST_ROUTES[o.route]) out.route = o.route;
+  }
+  return (ST.prof = out);
+}
+function stProfSave() { try { localStorage.setItem(ST_KEY, JSON.stringify(ST.prof)); } catch (e) {} }
+const stOutMs = () => { const c = AU.ctx; return c ? ((c.outputLatency || 0) + (c.baseLatency || 0)) * 1000 : null; };
+// Weg aus dem Namen der Eingangsspur (nach der Erlaubnis lesbar): AirPods/Bluetooth → bt, Headset/Kabel → wired, sonst Lautsprecher
+function stGuessRoute(label) {
+  const s = String(label || '').toLowerCase();
+  if (/airpods|bluetooth|beats|buds|hands-?free|\bbt\b/.test(s)) return 'bt';
+  if (/headset|kopfh|earpod|usb|lightning|wired|kabel|headphone/.test(s)) return 'wired';
+  return 'speaker';
+}
+// Latenz für einen Weg: gemessen bzw. von Hand, sonst geschätzt (Kabel = Lautsprecher-Wert ± Unterschied der Ausgangslatenz)
+function stLatFor(route) {
+  const P = stProf().prof, p = P[route]; if (p) return {ms: p.ms, how: p.how};
+  const sp = P.speaker, om = stOutMs();
+  if (route === 'wired') return {ms: sp ? Math.max(3, sp.ms + (om != null && sp.outMs != null ? om - sp.outMs : 0)) : (om || 15) + 12, how: 'geschätzt'};
+  if (route === 'bt') return {ms: Math.max(150, (om || 0) + 40), how: 'geschätzt'};
+  return {ms: (om || 15) + 25, how: 'geschätzt'};
+}
+function stSetRoute(route, how) {
+  if (!ST_ROUTES[route]) return false;
+  ST.route = route; ST.routeHow = how || 'gewählt';
+  if (how !== 'geraten') { stProf().route = route; stProfSave(); }
+  const l = stLatFor(route); ST.latMs = l.ms; ST.latHow = l.how;
+  if (ST.run && ST.ring) ST.marks.push({f: ST.ring.end, ms: l.ms, how: 'weg'});
+  stRender(); return true;
+}
+// Verzögerung von Hand (Bluetooth ohne Messung): ±, wird als Profil 'hand' gespeichert
+function stNudge(d) {
+  const v = clamp(Math.round(((ST.latMs || stLatFor(ST.route).ms) + d) * 10) / 10, 1, 800), P = stProf();
+  P.prof[ST.route] = Object.assign({}, P.prof[ST.route] || {}, {ms: v, how: 'hand', at: new Date().toISOString()}); stProfSave();
+  ST.latMs = v; ST.latHow = 'hand'; if (ST.run && ST.ring) ST.marks.push({f: ST.ring.end, ms: v, how: 'hand'});
+  stRender(); return v;
+}
+
+/* ---------- Ringpuffer (2 min, Kontext-Frames) ---------- */
+function stRing(sr) { const len = Math.round(ST_SEC * sr), dl = Math.ceil(len / 3); return {sr, len, dl, mic: new Int16Array(len), ref: new Int16Array(len), d: new Int16Array(dl), end: -1, start: -1}; }
+function stPut(dst, len, at, src) {
+  let i = ((at % len) + len) % len, n = src.length, o = 0;
+  while (n > 0) { const k = Math.min(n, len - i); dst.set(o === 0 && k === src.length ? src : src.subarray(o, o + k), i); o += k; n -= k; i = 0; }
+}
+function stRingWrite(G, m) {
+  if (G.end >= 0 && m.f0 > G.end) {                           // Lücke im Strom: alte Daten dort löschen (sonst läge Altes darin)
+    G.miss = (G.miss || 0) + (m.f0 - G.end);
+    const n = Math.min(G.len, m.f0 - G.end), z = new Int16Array(n); stPut(G.mic, G.len, G.end, z); stPut(G.ref, G.len, G.end, z);
+    stPut(G.d, G.dl, Math.floor(G.end / 3), z.subarray(0, Math.ceil(n / 3)));
+  }
+  if (G.start < 0) G.start = m.f0;
+  stPut(G.mic, G.len, m.f0, m.m); stPut(G.ref, G.len, m.f0, m.r);
+  if (m.d && m.d.length && m.d0 >= 0) stPut(G.d, G.dl, m.d0, m.d);
+  G.end = Math.max(G.end, m.f0 + m.m.length);
+}
+// Latenz (ms) am Kontext-Frame F: stückweise linear zwischen den Marken (Drift = Resampling), davor/danach konstant
+function stLatAt(F) {
+  const M = ST.marks; if (!M.length) return ST.latMs || 0;
+  if (F <= M[0].f) return M[0].ms;
+  for (let i = 1; i < M.length; i++) if (F <= M[i].f) { const a = M[i - 1], b = M[i]; if (b.how === 'hand' || b.how === 'weg' || b.f === a.f) return F < b.f ? a.ms : b.ms; return a.ms + (b.ms - a.ms) * (F - a.f) / (b.f - a.f); }
+  return M[M.length - 1].ms;
+}
+/* Ausschnitt [a, b) in Kontext-Frames (= Zeit der Referenz). align: das Mikrofon um die Latenz der Zeitkarte nachgeführt
+   (Bruchteil-Samples linear) – so liegt das Gesungene auf dem, was zu der Zeit gespielt wurde. d16: das 3:1-Signal. */
+function stRead(a, b, o) {
+  const G = ST.ring; if (!G || G.end < 0) return null;
+  o = o || {};
+  const lo = Math.max(G.start, G.end - G.len + 1); a = Math.max(Math.round(a), lo); b = Math.min(Math.round(b), G.end);
+  const n = Math.max(0, b - a), L = G.len, S = 1 / 32767, mic = new Float32Array(n), ref = new Float32Array(n);
+  for (let i = 0; i < n; i++) ref[i] = G.ref[(a + i) % L] * S;
+  if (o.align) {
+    const sr = G.sr / 1000;
+    for (let i = 0; i < n; i++) {
+      const F = a + i; let s = F + stLatAt(F) * sr;
+      if (s > G.end - 2) s = G.end - 2; if (s < lo) s = lo;      // Rand: letzter gültiger Wert, keine eingefügte Stille
+      const s0 = Math.floor(s), fr = s - s0; mic[i] = (G.mic[s0 % L] * (1 - fr) + G.mic[(s0 + 1) % L] * fr) * S;
+    }
+  } else for (let i = 0; i < n; i++) mic[i] = G.mic[(a + i) % L] * S;
+  const out = {a, b: a + n, sr: G.sr, mic, ref};
+  if (o.d16) { const d0 = Math.ceil(a / 3), d1 = Math.floor(b / 3), dn = Math.max(0, d1 - d0), d = new Float32Array(dn); for (let i = 0; i < dn; i++) d[i] = G.d[(d0 + i) % G.dl] * S; out.d16 = d; out.d0 = d0; }
+  return out;
+}
+
+/* ---------- Ablauf ---------- */
+function stToggle() { if (ST.run && ST.run.stopping) return false; return ST.on ? stStop('aus') : stStart(); }
+function stStart(opts) {
+  if (ST.on || ST.run || !micAvail()) return false;
+  if (MIC.run) { toast('Erst den Mikro-Check beenden'); return false; }
+  opts = opts || {};
+  const c = ensureAudio();                                    // im selben Tipp: resume (I11)
+  const run = ST.run = {opts, t0: performance.now(), nodes: [], srcs: [], timers: [], stream: null, stopped: false, frames: 0, gaps: 0, dz: null, dl: null, lv: [], cal: null};
+  ST.on = true; ST.phase = 'start'; ST.err = null; ST.warn = []; ST.starts++; ST.floorDb = null; ST.lastDrift = null;
+  try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}
+  stRender();
+  if (!c) { stFail(run, {name: 'NoAudioContext'}); return true; }
+  wakeAcquire();                                              // beim Singen bleibt der Bildschirm an
+  ST.gum++;
+  let p; try { p = navigator.mediaDevices.getUserMedia({audio: Object.assign({}, MIC_ASK)}); } catch (e) { p = Promise.reject(e); }
+  const wk = stWorklet(c);
+  p.then(s => stGot(run, s, wk).catch(e => stFail(run, e)), e => stFail(run, e));
+  run.vis = () => { if (document.hidden && ST.run === run && !run.stopped) stFail(run, {name: 'Hidden'}); };
+  document.addEventListener('visibilitychange', run.vis);
+  run.cst = () => { const st = c.state; if (ST.run === run && !run.stopped && (st === 'interrupted' || st === 'closed')) stFail(run, {name: 'Interrupted'}); };
+  try { c.addEventListener('statechange', run.cst); } catch (e) {}
+  return true;
+}
+async function stGot(run, stream, wkP) {
+  if (ST.run !== run || run.stopped) { stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} }); return; }
+  run.stream = stream;
+  const c = AU.ctx, sr = c.sampleRate;
+  try { const p = c.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+  const tr = stream.getAudioTracks()[0]; let st = {};
+  try { st = (tr && tr.getSettings && tr.getSettings()) || {}; } catch (e) {}
+  run.track = tr; run.trackRate = st.sampleRate || null; run.label = tr ? String(tr.label || '') : '';
+  if (tr) { tr.onended = () => { if (ST.run === run && !run.releasing) stFail(run, {name: 'TrackEnded'}); };
+    tr.onmute = () => { run.muteAt = ST.ring ? ST.ring.end : -1; }; tr.onunmute = () => { if (run.muteAt >= 0 && ST.ring) stDrop(run.muteAt, ST.ring.end - run.muteAt, 'stumm'); run.muteAt = -1; }; }
+  // Weg: der Name der Spur entscheidet, sonst die letzte eigene Wahl (Kopfhörer ohne Mikrofon ändern den Namen nicht)
+  const g = run.opts.route || stGuessRoute(run.label), P = stProf();
+  if (run.opts.route) stSetRoute(run.opts.route, 'gewählt'); else if (g !== 'speaker') stSetRoute(g, 'erkannt'); else stSetRoute(P.route || 'speaker', P.route ? 'gewählt' : 'geraten');
+  if (run.trackRate && run.trackRate !== sr) { ST.warn.push('rate'); toast('Mikrofon ' + micDe(run.trackRate / 1000, 1) + ' kHz, App ' + micDe(sr / 1000, 1) + ' kHz · die App misst nach und gleicht aus'); }
+  const ok = await wkP.catch(() => false);
+  if (ST.run !== run || run.stopped) return;
+  if (!ok) { stFail(run, {name: 'NoWorklet'}); return; }
+  const node = new AudioWorkletNode(c, 'synq-stimme', {numberOfInputs: 2, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 1, channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: {block: ST_BLOCK}});
+  const src = c.createMediaStreamSource(stream), bus = c.createGain(), sink = c.createGain(); sink.gain.value = 0;
+  src.connect(node, 0, 0); bus.connect(node, 0, 1); bus.connect(c.destination); node.connect(sink); sink.connect(c.destination);
+  if (AU.M && AU.M.ceil) AU.M.ceil.connect(node, 0, 1);       // Referenz = was die App spielt (nach dem Master)
+  node.port.onmessage = e => stBlock(run, e.data);
+  run.node = node; run.bus = bus; run.nodes = [src, node, bus, sink];
+  if (!ST.ring || ST.ring.sr !== sr) ST.ring = stRing(sr); else { ST.ring.end = -1; ST.ring.start = -1; ST.ring.miss = 0; }
+  ST.marks = []; ST.drops = []; ST.dropN = 0;
+  ST.phase = 'live';
+  const cal = run.opts.cal != null ? run.opts.cal : ST.route === 'speaker' ? (P.prof.speaker ? 'kurz' : 'voll') : null;
+  const go = () => {                                          // erst wenn ≥ 0,5 s Mikrofon da ist (der Weg schwingt ein)
+    if (ST.run !== run || run.stopped) return;
+    if (ST.ring.end < 0 || ST.ring.end - ST.ring.start < 0.5 * sr) { run.timers.push(setTimeout(go, 60)); return; }
+    if (cal) { stCal(cal); if (cal === 'voll') stSheet(); }
+    else if (ST.ring.end >= 0) ST.marks.push({f: ST.ring.end, ms: ST.latMs, how: ST.latHow === 'hand' ? 'hand' : 'weg'});
+    if (ST.route === 'speaker' && cal !== 'voll' && !ST.hinted) { ST.hinted = true; toast('Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber'); }
+  };
+  run.timers.push(setTimeout(go, 60));
+  try { navigator.mediaDevices.addEventListener('devicechange', run.dev = () => stDevChange(run)); } catch (e) {}
+  stRender();
+}
+// Gerät gewechselt (Kopfhörer ein/aus): Weg neu raten; ohne Profil für den neuen Weg ein Hinweis mit [Einmessen]
+async function stDevChange(run) {
+  if (ST.run !== run || run.stopped) return;
+  let lab = run.track ? String(run.track.label || '') : '';
+  try { const ds = await navigator.mediaDevices.enumerateDevices(); const d = ds.find(x => x.kind === 'audioinput' && x.deviceId === 'default') || ds.find(x => x.kind === 'audioinput'); if (d && d.label) lab = d.label; } catch (e) {}
+  const g = stGuessRoute(lab); if (g === ST.route) return;
+  stSetRoute(g, 'erkannt');
+  toast('Weg: ' + ST_ROUTES[g] + (stProf().prof[g] ? '' : ' · noch nicht eingemessen'), stProf().prof[g] ? null : {label: 'Einmessen', fn: () => { stSheet(); stCal('voll'); }});
+}
+function stFire(run, buf, t) {
+  const c = AU.ctx, s = c.createBufferSource(); s.buffer = buf; s.connect(run.bus); s.start(t); run.srcs.push(s);
+  s.onended = () => { try { s.disconnect(); } catch (e) {} const i = run.srcs.indexOf(s); if (i >= 0) run.srcs.splice(i, 1); };
+}
+function stBlock(run, m) {
+  if (ST.run !== run || run.stopped || !m || !m.m) return;
+  const G = ST.ring; if (!G) return;
+  if (G.end >= 0 && m.f0 > G.end && G.end - G.start > 0.3 * G.sr) stDrop(G.end, m.f0 - G.end, 'lücke');   // nicht beim Einschwingen
+  stRingWrite(G, m);
+  run.frames += m.m.length; run.gaps = m.gaps || 0;
+  let ss = 0, pk = 0; for (let i = 0; i < m.rm.length; i++) { ss += m.rm[i] * m.rm[i]; if (m.pk[i] > pk) pk = m.pk[i]; }
+  ST.lvl = micDb(Math.sqrt(ss / Math.max(1, m.rm.length))); ST.pk = micDb(pk); ST.refPk = micDb(m.rp || 0);
+  stDropScan(run, m);
+  stMeter();
+}
+/* Aussetzer (Auswertung 19.10. Punkt 5): ≥ 4 Quanten (≈ 10 ms) digitale Stille ('null') oder > 20 dB unter dem Grundrauschen
+   ('einbruch'). In den ersten 0,3 s nach dem Start nicht (das Mikrofon schwingt ein). Grundrauschen aus der Stille vor den
+   Pieptönen; ohne Messung das 20-%-Quantil der ersten Sekunde. */
+function stDropScan(run, m) {
+  const sr = ST.ring.sr, Q = 128, MIN = 4 * Q, GAP = 3 * Q;
+  if (run.f1st == null) run.f1st = m.f0;
+  const warm = run.f1st + 0.3 * sr;
+  if (ST.floorDb == null) { for (let j = 0; j < m.rm.length; j++) run.lv.push(micDb(m.rm[j])); if (run.lv.length >= Math.round(sr / Q)) { const s = run.lv.slice().sort((x, y) => x - y); ST.floorDb = s[Math.floor(s.length * 0.2)]; run.lv = []; } }
+  const fl = ST.floorDb, lowOk = fl != null && fl > -95;
+  // je Art ein offener Abschnitt; Lücken ≤ 3 Quanten dazwischen gehören dazu (ein einzelnes lauteres Quantum teilt ihn nicht)
+  const step = (key, kind, hit, f) => {
+    const o = run[key];
+    if (hit) { if (o && f - o.e <= GAP) o.e = f + Q; else { if (o && o.e - o.s >= MIN) stDrop(o.s, o.e - o.s, kind); run[key] = {s: f, e: f + Q}; } }
+    else if (o && f - o.e > GAP) { if (o.e - o.s >= MIN) stDrop(o.s, o.e - o.s, kind); run[key] = null; }
+  };
+  for (let j = 0; j < m.pk.length; j++) {
+    const f = m.f0 + j * Q;
+    if (f < warm) { run.dz = run.dl = null; continue; }
+    const z = m.pk[j] < 2e-5, low = !z && lowOk && micDb(m.rm[j]) < fl - 20;
+    step('dz', 'null', z, f); step('dl', 'einbruch', low, f);
+  }
+}
+function stDrop(f, len, kind) {
+  if (!(len > 0)) return;
+  ST.drops.push({f, len, kind}); ST.dropN++; ST.dropAt = performance.now();
+  const G = ST.ring; if (G) while (ST.drops.length && ST.drops[0].f + ST.drops[0].len < G.end - G.len) ST.drops.shift();
+  if (ST.drops.length > 500) ST.drops.shift();
+  if (!ST.dropHinted && kind !== 'lücke') { ST.dropHinted = true; toast('Mikro-Aussetzer erkannt · die Stelle ist markiert'); }
+}
+
+/* ---------- Einmessen und Zeitmarken ---------- */
+// Referenz-Spitze: der Piep ist digital und bekannt – globales Maximum ±5 ms um die geplante Stelle (auch mit Musik darunter)
+function stRefPeak(ref, tpl, exp) {
+  const W = 240, i0 = Math.max(0, exp - W), i1 = Math.min(ref.length, exp + W + tpl.length);
+  if (i1 - i0 < tpl.length + 2) return {ok: false, why: 'ref'};
+  const cr = micXcorr(ref.subarray(i0, i1), tpl); let rm = 0, ri = -1;
+  for (let i = 0; i < cr.length; i++) { const v = Math.abs(cr[i]); if (v > rm) { rm = v; ri = i; } }
+  return ri < 0 || !(rm > 1e-6) ? {ok: false, why: 'ref'} : {i: i0 + ri, p: i0 + ri + micPar(cr, ri)};
+}
+function stCal(kind, done) {
+  const run = ST.run; if (!run || run.stopped || run.cal || !ST_CAL[kind] || !ST.ring || (ST.phase !== 'live' && kind !== 'ende')) return false;
+  const c = AU.ctx, sr = c.sampleRate, K = ST_CAL[kind], t0 = c.currentTime + 0.15;
+  const tpl = run.tpl || (run.tpl = micChirp(sr)), cb = c.createBuffer(1, tpl.length, sr), cd = cb.getChannelData(0);
+  for (let i = 0; i < tpl.length; i++) cd[i] = tpl[i] * K.amp;
+  const cal = run.cal = ST.cal = {kind, t0, step: 'quiet', chirps: [], quiet: [t0, t0 + K.quiet], noise: null, res: null, done};
+  for (let k = 0; k < K.n; k++) { const t = t0 + K.quiet + 0.1 + k * K.gap; cal.chirps.push(t); stFire(run, cb, t); }
+  let tEnd = cal.chirps[K.n - 1] + MIC_CHIRP.dur + MIC_CHIRP.win + 0.1;
+  if (K.noise) { const tn = cal.chirps[K.n - 1] + K.gap, nb = c.createBuffer(1, Math.round(K.noise * sr), sr); nb.getChannelData(0).set(micPink(nb.length, sr, 0.1)); stFire(run, nb, tn); cal.noise = [tn, tn + K.noise]; tEnd = tn + K.noise + 0.35; }
+  cal.tEnd = tEnd; ST.phase = run.stopping ? 'stop' : 'cal';
+  const poll = () => {
+    if (ST.run !== run || run.stopped || run.cal !== cal) return;
+    const t = c.currentTime, step = t < cal.chirps[0] - 0.05 ? 'quiet' : !cal.noise || t < cal.noise[0] ? 'chirp' : 'noise';
+    if (step !== cal.step) { cal.step = step; stRender(); }
+    if (t >= tEnd && ST.ring.end >= Math.round(tEnd * sr)) { stCalEval(run, cal).catch(e => { logErr(e); stCalEnd(run, cal, {ok: false, why: 'fehler'}); }); return; }
+    run.timers.push(setTimeout(poll, 80));
+  };
+  poll(); stRender(); return true;
+}
+async function stCalEval(run, cal) {
+  const sr = ST.ring.sr, fr = t => Math.round(t * sr), K = ST_CAL[cal.kind], tpl = run.tpl, lat = [];
+  cal.step = 'calc'; stRender();
+  for (const t of cal.chirps) {
+    const a = fr(t - 0.05), s = stRead(a, fr(t + MIC_CHIRP.dur + MIC_CHIRP.win + 0.08));
+    const R0 = s ? stRefPeak(s.ref, tpl, fr(t) - s.a) : {ok: false}; await micYield();
+    lat.push(R0.ok === false ? R0 : Object.assign(await micDriveA(micMicPeak(s.mic, sr, tpl, R0)), {f: s.a + R0.i}));
+    await micYield(); if (ST.run !== run || run.cal !== cal) return;
+  }
+  const good = lat.filter(e => e.ok), ms = good.map(e => e.ms), med = ms.length ? micMed(ms) : null, spread = ms.length ? Math.max(...ms) - Math.min(...ms) : null;
+  const q = stRead(fr(cal.quiet[0] + 0.05), fr(cal.quiet[1])); const floorDb = q && q.mic.length ? micDb(micRms(q.mic)) : null;
+  if (floorDb != null && floorDb > -140) ST.floorDb = floorDb;
+  const res = {kind: cal.kind, ms: lat.map(e => (e.ok ? micR(e.ms, 3) : null)), q: lat.map(e => micR(e.q || 0, 1)), lvl: lat.map(e => (e.lvl != null ? e.lvl : null)), medianMs: micR(med, 3), spreadMs: micR(spread, 3), floorDb, heard: good.length, of: lat.length, route: ST.route};
+  if (cal.noise && med != null) {                             // Kopplung Lautsprecher → Mikrofon (für Säubern, VS4): Pegel Mikro/Referenz
+    const L = Math.round(med / 1000 * sr), n = stRead(fr(cal.noise[0] + 0.1), fr(cal.noise[1] - 0.1) + L);
+    if (n && n.mic.length > L + 100) res.gainDb = micR(micDb(micRms(n.mic.subarray(L))) - micDb(micRms(n.ref.subarray(0, n.ref.length - L))), 1);
+  }
+  res.ok = cal.kind === 'voll' ? good.length >= 3 && spread <= 2 : good.length >= 1;
+  if (cal.kind !== 'voll' && good.length > 1 && spread > 2) {   // kurz: streuen sie, gelten die späteren (der Weg schwingt noch ein)
+    const a = ms[ms.length - 2], b = ms[ms.length - 1]; res.medianMs = micR(ms.length > 2 && Math.abs(a - b) <= 2 ? (a + b) / 2 : b, 3); res.settle = true; }
+  res.why = good.length === 0 ? 'still' : !res.ok ? 'streut' : '';
+  stCalEnd(run, cal, res, good);
+}
+function stCalEnd(run, cal, res, good) {
+  if (run.cal !== cal) return;
+  run.cal = null; ST.cal = null; cal.res = res; ST.lastCal = res; ST.calN = (ST.calN || 0) + 1;
+  const P = stProf(), at = new Date().toISOString();
+  if (res.ok) {
+    const f = good && good.length ? good[0].f : ST.ring.end, m = res.medianMs;
+    if (cal.kind === 'voll') { P.prof[ST.route] = {ms: m, spread: res.spreadMs, at, how: 'gemessen', floorDb: res.floorDb, gainDb: res.gainDb != null ? res.gainDb : null, outMs: micR(stOutMs(), 1)}; stProfSave(); }
+    else if (cal.kind === 'kurz' && P.prof[ST.route] && Math.abs(m - P.prof[ST.route].ms) > 0.5) { P.prof[ST.route].ms = m; P.prof[ST.route].at = at; stProfSave(); }
+    ST.latMs = m; ST.latHow = 'gemessen';
+    const prev = ST.marks.length ? ST.marks[ST.marks.length - 1] : null;
+    ST.marks.push({f, ms: m, how: cal.kind});
+    if (cal.kind === 'ende' && prev) stDrift(prev, ST.marks[ST.marks.length - 1]);
+  } else if (cal.kind !== 'ende') {
+    if (!ST.marks.length && ST.ring.end >= 0) ST.marks.push({f: ST.ring.end, ms: ST.latMs, how: 'weg'});
+    if (res.why === 'still' && ST.route === 'speaker') ST.warn.push('still');
+  }
+  if (ST.phase === 'cal') ST.phase = 'live';
+  stRender();
+  if (cal.done) { try { cal.done(res); } catch (e) { logErr(e); } }
+}
+/* Drift oder Puffer-Sprung zwischen zwei Marken: Sprung = ≥ 2 ms und ein Vielfaches von 128 Samples (±6), sonst stetige
+   Drift (ms/min). Beides geht in die Zeitkarte (stLatAt), die Warnung nennt, was die App ausgleicht (N7V-07). */
+function stDrift(a, b) {
+  const sr = ST.ring.sr, sec = (b.f - a.f) / sr, d = b.ms - a.ms, smp = d * sr / 1000, k = Math.round(smp / 128);
+  const jump = Math.abs(d) >= 2 && k !== 0 && Math.abs(smp - k * 128) <= 6, per = sec > 0 ? d / (sec / 60) : 0;
+  const ok = !jump && Math.abs(per) <= 0.5;
+  ST.lastDrift = {sec: micR(sec, 1), startMs: micR(a.ms, 3), endMs: micR(b.ms, 3), deltaMs: micR(d, 3), msPerMin: micR(per, 3), kind: jump ? 'sprung' : 'drift', samples: Math.round(smp), ok};
+  if (jump) b.jump = true;
+  if (!ok) toast(jump ? 'Mikrofon-Zeit ist um ' + micDe(Math.abs(d), 1) + ' ms gesprungen · die App gleicht das aus' : 'Mikrofon läuft ' + micDe(Math.abs(per), 1) + ' ms/min auseinander · die App gleicht aus');
+  return ST.lastDrift;
+}
+function stStop(why) {
+  const run = ST.run; if (!run) return false;
+  if (run.stopping) return true;
+  run.stopping = true;
+  if (run.cal) { const cal = run.cal; run.cal = null; ST.cal = null; for (const s of run.srcs.slice()) { try { s.onended = null; s.stop(); } catch (e) {} } run.srcs = []; void cal; }
+  const long = performance.now() - run.t0 > 30000 || ST.warn.includes('rate');
+  const need = why === 'aus' && ST.route === 'speaker' && ST.marks.some(x => x.how === 'voll' || x.how === 'kurz') && long && run.node;
+  if (need) {
+    ST.phase = 'stop'; stRender();
+    const safe = setTimeout(() => stRelease(run, why), 3000); run.timers.push(safe);
+    if (!stCal('ende', () => stRelease(run, why))) stRelease(run, why);
+    return true;
+  }
+  stRelease(run, why); return true;
+}
+// räumt alles ab: Quellen, Knoten, Spuren (readyState 'ended'), Audio-Sitzung zurück auf 'playback' (N7V-06)
+function stRelease(run, why) {
+  if (run.released) return; run.released = true; run.releasing = true; run.stopped = true;
+  run.timers.forEach(t => clearTimeout(t)); run.timers = [];
+  for (const s of run.srcs.slice()) { try { s.onended = null; s.stop(); } catch (e) {} try { s.disconnect(); } catch (e) {} }
+  run.srcs = [];
+  if (run.node) { try { run.node.port.postMessage({stop: true}); run.node.port.onmessage = null; } catch (e) {} try { if (AU.M && AU.M.ceil) AU.M.ceil.disconnect(run.node); } catch (e) {} }
+  for (const n of run.nodes) { try { n.disconnect(); } catch (e) {} }
+  run.nodes = [];
+  if (run.stream) run.stream.getTracks().forEach(t => { t.onended = null; t.onmute = null; t.onunmute = null; try { t.stop(); } catch (e) {} });
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  if (run.vis) document.removeEventListener('visibilitychange', run.vis);
+  try { if (run.cst && AU.ctx) AU.ctx.removeEventListener('statechange', run.cst); } catch (e) {}
+  try { if (run.dev) navigator.mediaDevices.removeEventListener('devicechange', run.dev); } catch (e) {}
+  run.tracksAfter = run.stream ? run.stream.getTracks().map(t => t.readyState) : [];
+  ST.last = {why, tracks: run.tracksAfter, session: micAs(), frames: run.frames, gaps: run.gaps, sec: micR((performance.now() - run.t0) / 1000, 1)};
+  if (ST.run === run) ST.run = null;
+  ST.on = false; ST.phase = 'off'; ST.cal = null; ST.lvl = -180;
+  if (!R.playing) wakeReleaseLater();
+  stRender();
+}
+const ST_ERR = {
+  NotAllowedError: 'Mikrofon nicht erlaubt · in Safari unter „aA“ → Website-Einstellungen → Mikrofon „Erlauben“ wählen',
+  SecurityError: 'Mikrofon hier nicht erlaubt',
+  NotFoundError: 'Kein Mikrofon gefunden', OverconstrainedError: 'Kein passendes Mikrofon gefunden',
+  NotReadableError: 'Mikrofon ist belegt (Anruf oder andere App?) · kurz warten, dann noch mal', AbortError: 'Mikrofon ist belegt · kurz warten, dann noch mal',
+  TrackEnded: 'Mikrofon wurde beendet (Anruf oder andere App)', Hidden: 'Mikro aus · die Seite war im Hintergrund',
+  Interrupted: 'Audio unterbrochen · Mikro aus', NoWorklet: 'Das Mikrofon braucht hier AudioWorklet (ab iOS 14.5)', NoAudioContext: 'Kein Audio auf diesem Gerät'};
+function stFail(run, e) {
+  if (!run || run.released || (ST.run && ST.run !== run)) return;
+  const name = String((e && e.name) || 'Error');
+  ST.err = {name, message: String((e && e.message) || '').slice(0, 160), at: new Date().toISOString(), msg: ST_ERR[name] || 'Mikrofon-Fehler: ' + name};
+  stRelease(run, 'fehler');
+  if (name !== 'Hidden') { toast(ST.err.msg); return; }
+  const back = () => { if (document.hidden) return; document.removeEventListener('visibilitychange', back); setTimeout(() => toast(ST_ERR.Hidden), 300); };
+  document.addEventListener('visibilitychange', back);
+}
+// Netz-Halt für Take-Aufnahme und Säubern (VS3/VS4, N2-VS1-02): SYNC trennt Realtime, Aufrufe warten; Zähler fetch/XHR/Beacon/WS
+function stQuiet(on) {
+  if (on) { if (ST.quiet++ === 0) { cloudHold(true); ST.net = netWatch(); } return ST.quiet; }
+  if (!ST.quiet) return 0;
+  if (--ST.quiet === 0) { ST.netLast = netUnwatch(ST.net); ST.net = null; cloudHold(false); }
+  return ST.quiet;
+}
+
+/* ---------- Anzeige: 🎤, Mikro-Zeile (Überlagerung in #top bzw. über der Taktleiste), Blatt ---------- */
+function stRender() {
+  const lit = ST.on, busy = ST.phase === 'start' || ST.phase === 'cal' || ST.phase === 'stop';
+  for (const b of [EL.segMic, EL.bMicT]) { if (!b) continue; b.classList.toggle('on', lit); b.classList.toggle('busy', busy); b.setAttribute('aria-pressed', String(lit)); }
+  stRowPlace(); stMeter(true);
+  if (UI.pop && UI.pop.name === 'stimme') stSheetFill(UI.pop.el);
+}
+function stRowEl() {
+  let r = ST.ui.row;
+  if (!r) {
+    r = ST.ui.row = el('button', 'rb microw'); r.hidden = true; r.setAttribute('aria-label', 'Mikrofon – Einstellungen');
+    r.innerHTML = '<span class="mr-dot"></span><span class="mr-c"><span class="mr-a"><span class="mr-m"><i></i></span><b class="mr-db"></b></span><small class="mr-b"></small></span>';
+    ST.ui.bar = r.querySelector('.mr-m i'); ST.ui.db = r.querySelector('.mr-db'); ST.ui.sub = r.querySelector('.mr-b');
+    on(r, 'click', () => stSheet(r)); EL.top.appendChild(r);
+    const s = ST.ui.sv = el('div', 'microw sv'); s.hidden = true; s.innerHTML = '<span class="mr-dot"></span><span class="mr-m"><i></i></span><b class="mr-db"></b><small class="mr-b"></small>';
+    ST.ui.svBar = s.querySelector('.mr-m i'); ST.ui.svDb = s.querySelector('.mr-db'); ST.ui.svSub = s.querySelector('.mr-b');
+    (SV.wrap || EL.songView).appendChild(s);
+  }
+  return r;
+}
+// Clip-Ansicht: über TAKT (+ BPM im Hochformat) in #top, gleiche Höhe, verschiebt nichts (K2-63); nie über den Teil-Tasten.
+// Song-Ansicht: über der Taktleiste wie das Aufnahme-Banner (dann nur Anzeige; liegt dort das Banner, hat es Vorrang).
+function stRowPlace() {
+  if (!micAvail() || !EL.top) return;
+  const r = stRowEl(), s = ST.ui.sv, show = ST.on && !UI.songView;
+  if (!show) { if (!r.hidden) r.hidden = true; }
+  else {
+    const r0 = EL.top.getBoundingClientRect(), a = EL.takt.getBoundingClientRect(), port = !isLand();
+    const ban = UI.recBan && !UI.recBan.hidden, b = port && !ban ? EL.bBpm.getBoundingClientRect() : a;
+    const st = `left:${Math.round(a.left - r0.left)}px;width:${Math.round(b.right - a.left)}px;top:${Math.round(a.top - r0.top)}px;height:${Math.round(a.height)}px`;
+    if (r._st !== st) { r._st = st; r.style.cssText = st; }
+    r.classList.toggle('narrow', b.right - a.left < 120);
+    if (r.hidden) r.hidden = false;
+  }
+  if (s) { const sv = ST.on && !!UI.songView && !(SV.ban && !SV.ban.hidden);
+    if (sv) { const h = (SV.rulerH || 22) + 'px'; if (s.style.height !== h) s.style.height = h; }
+    if (s.hidden === sv) s.hidden = !sv; }
+}
+function stSubText(short) {
+  if (ST.phase === 'start') return 'startet …';
+  if (ST.phase === 'cal') return 'misst …';
+  if (ST.phase === 'stop') return 'Ende …';
+  const w = performance.now() - ST.dropAt < 3000 ? '⚠ Aussetzer · ' : ST.warn.includes('still') ? '🎧? · ' : '';
+  const l = ST.latMs != null ? '⏱' + Math.round(ST.latMs) + (short ? '' : ' ms') : '';
+  return w + l + ' ' + ST_RSHORT[ST.route];
+}
+function stMeter(force) {
+  const r = ST.ui.row, sp = UI.pop && UI.pop.name === 'stimme' ? UI.pop.el : null; if (!r || (r.hidden && (!ST.ui.sv || ST.ui.sv.hidden) && !sp)) return;
+  const now = performance.now(); if (!force && now - (ST.ui.mt || 0) < 66) return; ST.ui.mt = now;
+  const v = ST.on && ST.phase !== 'start' ? ST.lvl : -180, w = Math.max(0, Math.min(100, (v + 60) / 60 * 100)).toFixed(0) + '%';
+  if (sp) { const i = sp.querySelector('.st-lvl i'), b = sp.querySelector('.st-lvl b'); if (i && i.style.width !== w) i.style.width = w; const t = v > -100 ? '−' + Math.abs(Math.round(v)) + ' dB' : '–'; if (b && b.textContent !== t) b.textContent = t; }
+  const db = v > -100 ? (v >= 0 ? '' : '−') + Math.abs(Math.round(v)) + ' dB' : '–', sub = stSubText(r.classList.contains('narrow')), clip = ST.pk > -1;
+  for (const [bar, d, s] of [[ST.ui.bar, ST.ui.db, ST.ui.sub], [ST.ui.svBar, ST.ui.svDb, ST.ui.svSub]]) {
+    if (!bar) continue;
+    if (bar.style.width !== w) bar.style.width = w;
+    bar.classList.toggle('clip', clip);
+    if (d.textContent !== db) d.textContent = db;
+    if (s.textContent !== sub) s.textContent = sub;
+  }
+}
+function stSheet(anchor) {
+  if (!micAvail()) return false;
+  if (UI.pop && UI.pop.name === 'stimme') { stSheetFill(UI.pop.el); return true; }
+  const a = anchor || (ST.ui.row && !ST.ui.row.hidden ? ST.ui.row : isLand() ? EL.bMicT : EL.segMic);
+  openPop(a, p => { p.classList.add('stpop'); guardTouch(p); stSheetFill(p); bindStSheet(p); }, {name: 'stimme'});
+  popFit(UI.pop && UI.pop.el); return true;
+}
+function stSheetFill(p) {
+  const cal = ST.cal, lc = ST.lastCal, P = stProf().prof[ST.route], rt = ST.route;
+  const stat = !ST.on ? (ST.err ? '✗ ' + ST.err.msg : 'Mikrofon aus') : ST.phase === 'start' ? 'Mikrofon startet …' : ST.phase === 'cal' ? 'Einmessen …' : ST.phase === 'stop' ? 'Mikrofon geht aus …' : '● hört zu';
+  const steps = cal ? (cal.kind === 'voll' ? [['quiet', 'Stille'], ['chirp', '4 Pieptöne'], ['noise', 'Rauschen 2 s'], ['calc', 'Auswerten']] : [['quiet', 'Stille'], ['chirp', 'Pieptöne'], ['calc', 'Auswerten']]) : null;
+  const ord = steps ? steps.map(x => x[0]) : [], ci = cal ? ord.indexOf(cal.step) : -1;
+  let html = `<h4>Mikrofon <small class="st-on">${esc(stat)}</small></h4>`;
+  if (ST.on) html += `<div class="st-lvl"><span class="mr-m"><i style="width:${Math.max(0, Math.min(100, (ST.lvl + 60) / 60 * 100)).toFixed(0)}%"></i></span><b>${ST.lvl > -100 ? '−' + Math.abs(Math.round(ST.lvl)) + ' dB' : '–'}</b></div>`;
+  html += '<div class="st-lbl">Weg</div>' + segHTML('stRoute', [['speaker', '🔈 Lautsprecher'], ['wired', '🎧 Kabel'], ['bt', '🎧 Bluetooth']], rt);
+  const latTx = ST.latMs != null ? micDe(ST.latMs, 1) + ' ms' : stLatFor(rt).ms != null ? micDe(stLatFor(rt).ms, 1) + ' ms' : '–';
+  const how = P ? (P.how === 'hand' ? 'von Hand' : 'eingemessen ' + stDate(P.at)) : ST.latHow === 'gemessen' ? 'kurz geprüft · noch nicht eingemessen' : 'geschätzt';
+  html += `<div class="st-lat"><span>Verzögerung <b>${latTx}</b> <small>${esc(how)}</small></span><span class="st-nd"><button class="rb" data-nd="-1">−1</button><button class="rb" data-nd="1">+1</button></span></div>`;
+  if (steps) html += `<p class="small st-do">${cal.kind === 'voll' ? 'Handy hinlegen, leise sein – gleich piept es.' : 'Kurz leise sein …'}</p>` + '<ol class="st-steps">' + steps.map(([k, l], i) => `<li class="${i < ci ? 'ok' : i === ci ? 'now' : ''}">${i < ci ? '✓ ' : ''}${esc(l)}</li>`).join('') + '</ol>';
+  else if (lc) html += `<div class="st-res ${lc.ok ? 'ok' : 'warn'}">${lc.ok ? '✓ ' + (lc.kind === 'voll' ? 'Eingemessen: ' : 'Geprüft: ') + micDe(lc.medianMs, 1) + ' ms' + (lc.kind === 'voll' ? ' · Streuung ' + micDe(lc.spreadMs, 2) + ' ms' + (lc.gainDb != null ? ' · Lautsprecher im Mikro ' + micDe(lc.gainDb, 0) + ' dB' : '') : '')
+    : lc.why === 'still' ? '⚠ Kein Piep gehört · Kopfhörer? Dann den Weg wählen und zum Einmessen einen Ohrhörer ans Mikrofon halten.' : '⚠ Pieptöne ungleich (' + micDe(lc.spreadMs, 1) + ' ms) · leiser Raum, noch mal einmessen'}</div>`;
+  const W = [];
+  if (ST.warn.includes('rate')) W.push('Mikrofon und App laufen mit verschiedener Abtastrate · die App misst nach und gleicht aus');
+  if (ST.lastDrift && !ST.lastDrift.ok) W.push(ST.lastDrift.kind === 'sprung' ? 'Zeit gesprungen um ' + micDe(Math.abs(ST.lastDrift.deltaMs), 1) + ' ms · ausgeglichen' : 'Drift ' + micDe(ST.lastDrift.msPerMin, 2) + ' ms/min · ausgeglichen');
+  if (ST.dropN) W.push(ST.dropN + ' Aussetzer markiert');
+  if (W.length) html += '<div class="st-warn">' + W.map(x => '⚠ ' + esc(x)).join('<br>') + '</div>';
+  html += `<div class="st-btns"><button class="rb st-cal"${!ST.on || cal || ST.phase !== 'live' ? ' disabled' : ''}>Einmessen</button><button class="rb st-go ${ST.on ? 'off' : ''}">${ST.on ? '✕ Mikro aus' : '🎤 Mikro an'}</button></div>`;
+  html += `<p class="small st-hint">${rt === 'speaker' ? 'Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber.' : 'Zum Einmessen mit Kopfhörern einen Ohrhörer direkt ans Mikrofon halten.'}</p>`;
+  if (p._h !== html) { p._h = html; p.innerHTML = html; }
+}
+const stDate = s => { const d = new Date(s); if (!isFinite(d)) return ''; const z = n => String(n).padStart(2, '0'); return z(d.getDate()) + '.' + z(d.getMonth() + 1) + '. ' + z(d.getHours()) + ':' + z(d.getMinutes()); };
+function bindStSheet(p) {
+  onTap(p, b => {
+    if (b.closest('#stRoute')) { haptic('tick'); stSetRoute(b.dataset.v, 'gewählt'); return; }
+    if (b.dataset.nd) { stNudge(+b.dataset.nd); return; }
+    if (b.classList.contains('st-cal')) { if (stCal('voll')) haptic('tick'); return; }
+    if (b.classList.contains('st-go')) { if (ST.on) { stStop('aus'); closePop(); } else stStart(); }
+  }, 'button');
+}
+function stModeFit() {
+  const seg = EL.modeSeg; if (!seg || !EL.segMic) return;
+  const three = micAvail() && window.matchMedia('(orientation: portrait)').matches;
+  seg.classList.toggle('three', three);
+  if (!three) { seg.classList.remove('sym'); seg.style.removeProperty('--segb'); return; }
+  const W = EL.modebar.clientWidth - 16 - 44 - 44 - 64 - 15, bw = Math.max(36, Math.floor((W - 4) / 3));
+  seg.style.setProperty('--segb', bw + 'px'); seg.classList.toggle('sym', bw < 56);
+}
+
 /* ---------- test API ---------- */
 function runtimeInfo() {
   const c = AU.ctx, now = c ? c.currentTime : 0;
@@ -26716,6 +27344,19 @@ const SYNQUENZER = {
   micCheckSave: () => micSave(),
   micCheckProbe: () => micProbe(),
   micCheckEstimate: (mic, ref, sr) => micLatEst(Float32Array.from(mic), Float32Array.from(ref), sr || 48000),
+  // VS1 Mikro-Grundlage: Stand, an/aus, Einmessen, Weg, Ringpuffer lesen, Latenz an einer Stelle, Netz-Halt (VS3/VS4)
+  stimme: () => ({avail: micAvail(), on: ST.on, phase: ST.phase, gum: ST.gum, route: ST.route, routeHow: ST.routeHow, latMs: ST.latMs, latHow: ST.latHow,
+    lvl: ST.lvl, pk: ST.pk, floorDb: ST.floorDb, marks: ST.marks.map(m => Object.assign({}, m)), drops: ST.drops.map(d => Object.assign({}, d)), dropN: ST.dropN,
+    warn: ST.warn.slice(), calN: ST.calN || 0, drift: ST.lastDrift ? Object.assign({}, ST.lastDrift) : null, cal: ST.cal ? {kind: ST.cal.kind, step: ST.cal.step} : null, lastCal: ST.lastCal ? JSON.parse(JSON.stringify(ST.lastCal)) : null,
+    err: ST.err ? Object.assign({}, ST.err) : null, last: ST.last ? JSON.parse(JSON.stringify(ST.last)) : null, session: micAs(), quiet: ST.quiet, hold: SYNC.hold,
+    ring: ST.ring ? {sr: ST.ring.sr, sec: ST_SEC, start: ST.ring.start, end: ST.ring.end, miss: ST.ring.miss || 0, frames: ST.run ? ST.run.frames : 0, gaps: ST.run ? ST.run.gaps : 0} : null,
+    profiles: JSON.parse(JSON.stringify(stProf().prof)), row: !!(ST.ui.row && !ST.ui.row.hidden), rowSv: !!(ST.ui.sv && !ST.ui.sv.hidden), sheet: !!(UI.pop && UI.pop.name === 'stimme')}),
+  stimmeStart: o => stStart(o || {}), stimmeStop: why => stStop(why || 'aus'), stimmeToggle: () => stToggle(),
+  stimmeCal: kind => new Promise(res => { if (!stCal(kind || 'voll', res)) res(null); }),
+  stimmeRoute: r => stSetRoute(r, 'gewählt'), stimmeNudge: d => stNudge(+d || 0), stimmeSheet: v => (v === false ? (closePop(), false) : stSheet()),
+  stimmeRead: (a, b, o) => { const x = stRead(a, b, o); return x ? {a: x.a, b: x.b, sr: x.sr, mic: Array.from(x.mic), ref: Array.from(x.ref), d16: x.d16 ? Array.from(x.d16) : undefined, d0: x.d0} : null; },
+  stimmeLatAt: f => stLatAt(f), stimmeQuiet: v => stQuiet(!!v), stimmeNet: () => (ST.net ? Object.assign({}, ST.net) : ST.netLast),
+  stimmeForget: () => { ST.prof = {v: 1, prof: {}, route: null}; stProfSave(); return true; },
 
   // VO1 Online (online.md §7.6)
   cloud: () => ({state: SYNC.state, where: SYNC.where, live: !!(CLOUD.live || window.__synqFakeSupa), appCode: APP_CODE, user: SYNC.uid && SYNC.me ? {id: SYNC.uid, name: SYNC.me.name, code: SYNC.me.code, admin: !!SYNC.me.admin} : null,
@@ -27038,8 +27679,9 @@ function init() {
     'carLabel', 'carVal', 'carShift', 'carLock', 'bLatch', 'bOrig', 'hist', 'strip', 'stDot', 'stName', 'stSub', 'bKlang', 'bFolgt', 'stLock',
     'bMute', 'bUndo', 'modebar', 'octDn', 'octUp', 'segPlay', 'segTr', 'kbArea', 'kb', 'pads', 'kbLabel', 'synthSheet', 'drumSheet', 'clipSheet',
     'menu', 'popLayer', 'toast', 'banner', 'fileIn', 'sndIn', 'syxIn', 'sndSheet', 'topLogo', 'bub',
-    'bFangT', 'bFang', 'reclane', 'recLaneCv', 'recLaneTxt', 'bRecDone', 'bEdit', 'kbRef', 'rollSheet', 'qSheet', 'coach', 'ciTgt', 'modeSeg', 'bCpu', 'songView', 'carTgt'].forEach(id => { EL[id] = document.getElementById(id); });
+    'bFangT', 'bFang', 'reclane', 'recLaneCv', 'recLaneTxt', 'bRecDone', 'bEdit', 'kbRef', 'rollSheet', 'qSheet', 'coach', 'ciTgt', 'modeSeg', 'bCpu', 'songView', 'carTgt', 'segMic', 'bMicT'].forEach(id => { EL[id] = document.getElementById(id); });
   EL.grid = EL.clipGrid; EL.taktLbl = EL.takt.querySelector('.lbl');
+  if (micAvail()) EL.app.classList.add('micok');             // VS1: 🎤 nur im obersten Fenster mit getUserMedia (N7V-05)
   // AN10 (§5.7): ?engine=native keeps the synth worklet off (tests of the native fallback)
   try { if (/[?&]engine=native(&|$)/.test(location.search)) UI.forceNative = true; } catch (e) {}
   // research modules' CSS first, so the app's rules (later in the cascade) adapt them

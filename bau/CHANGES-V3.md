@@ -2292,3 +2292,160 @@ JSON zeigte das nicht.
 | Smoke | ✓ ohne Fehler | `v3-vs0fix-smoke.png` |
 
 **Für Xander am iPhone:** wie oben; Ja/Nein lässt sich nur noch während „Drift-Probe: noch …“ tippen.
+
+## VS1 — Mikro-Grundlage (🎤, Mikro-Zeile, Worklet „stimme“, Ringpuffer 2 min, Einmessen je Weg, Drift/Sprung, Aussetzer) · App 3.11.5
+
+Grundlage: Nachtrag 2 Teil C (C.2 Punkte 1, 4–6; C.3 Zeile VS1; C.4 N2-VS1-01 … -03; K2-32, K2-63), Teil E (Gruppe 6), Teil J
+(FP-DSP Haupt-, FP-IPHONE Zweitblick); `r7/stimme.md` §3, §6, §11 Skizzen 1–2, §12 VS1, §13 N7V-03 … -07; **`r9/mikro-check-auswertung.md`
+(Tor VS0 „bestanden mit Auflagen“, Pflicht-Punkte 2–6)**. Version **3.11.5** statt 4.11.0 (E.5 Punkt 3: nach VS0 = 3.11.4 die nächste
+Zwischennummer; V2-Gruppen und VL sind noch nicht gebaut, die Reihenfolge des Orchestrators gilt). `APP_CODE` = 3 011 005. Keine neue
+Fähigkeit (Mikrofon nur außerhalb der Claude-App, E.5 Nr. 4).
+
+**Tor N2-VS0-02:** Xanders JSON vom 19.10. (`r9/mikro-check-xander-20261019.json`): `getUserMedia` ok, Rundlauf 75,2 ms, Streuung 0,00 ms,
+Klang-Frage offen (iOS spielt in „play-and-record“ über den Hörer). Orchestrator-Entscheidung: **bestanden mit Auflagen**; die Auflagen
+2–5 sind in diesem Paket umgesetzt (unten „Auflagen“), Auflage 6 (Hörprobe) als kleine VS0-Änderung.
+
+**Was neu ist**
+1. **🎤** (nur wenn `getUserMedia` da ist **und** die Seite das oberste Fenster ist; Klasse `#app.micok`; in der Claude-App und ohne
+   `getUserMedia` unsichtbar, kein Aufruf, N7V-05):
+   - **Hochformat:** drittes Feld im Modus-Segment `[♪ SPIELEN │ 🎤 SINGEN │ ⇅ TRANSP.]` mit festen Breiten nach C.2 Punkt 1
+     (Breite = ⌊(Segmentplatz − 4) / 3⌋, Segmentplatz = Breite − 183): **P1 3 × 67 = 205, P2 3 × 62 = 190, P3 3 × 44 = 136 nur Symbole**;
+     FANG 64, ‹ › 44 unverändert. 🎤 ist ein **Schalter** (an/aus, `aria-pressed`), kein dritter Tastatur-Modus: SPIELEN/TRANSP. bleiben wählbar.
+   - **Querformat L1/L2:** Segment bleibt zweiteilig wie V0a; **🎤 ist ein eigener Knopf 44 × 44 in `#top`** (nach FANG ⤓, vor dem Abstand;
+     ≡ bleibt rechts). Auch bei offenem Blatt erreichbar.
+   - Tipp = Mikrofon an bzw. aus; nur auf Tipp, im selben Tipp `ensureAudio()` → `resume`; `audioSession.type = 'play-and-record'` vor
+     `getUserMedia`, beim Aus sofort `'playback'`, alle Spuren `stop()` → `ended` (N7V-06); Bildschirm bleibt an, solange 🎤 an ist.
+2. **Mikro-Zeile** (Überlagerung, verschiebt nichts, K2-32/K2-63): Clip-Ansicht in `#top` **über TAKT + BPM (Hochformat)** bzw. **über TAKT
+   (Querformat)** in gleicher Höhe (44 px), nie über den Teil-Tasten; liegt das Song-Aufnahme-Banner in `#top`, nur über TAKT. Inhalt: roter
+   Punkt (pulsiert), Pegelbalken + dB, `⏱ 75 ms`, Weg 🔈/🎧/🎧ᛒ, „⚠ Aussetzer“ 3 s lang, „🎧?“ wenn kein Piep gehört wurde. Tipp = Mikro-Blatt.
+   **Song-Ansicht:** über der Taktleiste wie das Aufnahme-Banner (Höhe = Taktleiste, nur Anzeige, Tipps gehen durch; das Banner hat Vorrang).
+   „Projekttitel“ (C.2) gibt es in `#top` nicht – der Platz der Anzeige TAKT ist die nächste reine Anzeige; dieselbe Stelle wie das
+   V0c-Banner (K2-63) hätte das Metronom ♩ verdeckt, das beim Einsingen gebraucht wird.
+3. **Mikro-Blatt** (Popover, ≥ 44-px-Knöpfe): Zustand, Pegel, **Weg [🔈 Lautsprecher │ 🎧 Kabel │ 🎧 Bluetooth]**, Verzögerung mit Herkunft
+   (eingemessen am …, kurz geprüft, geschätzt, von Hand) und **[−1] [+1] ms**, beim Einmessen „Handy hinlegen, leise sein“ und die Schritte
+   ① Stille ② 4 Pieptöne ③ Rauschen 2 s ④ Auswerten (Skizze 2), Ergebnis („✓ Eingemessen: 61,9 ms · Streuung 0,00 ms · Lautsprecher im
+   Mikro −9 dB“ bzw. „⚠ Kein Piep gehört · Kopfhörer? …“), Warnungen (Abtastrate, Sprung/Drift, Aussetzer), **[Einmessen] [✕ Mikro aus]**,
+   Hinweis **„Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber.“** (Lautsprecher) bzw. „Zum Einmessen mit Kopfhörern einen
+   Ohrhörer direkt ans Mikrofon halten.“
+4. **Worklet `synq-stimme`** (ASCII, Blob- bzw. data:-URL wie VS0): Eingang 0 = Mikrofon, Eingang 1 = **Referenz = was die App spielt**
+   (`AU.M.ceil` nach dem Master, dazu der eigene Piep-Bus; alles Hörbare der App läuft über den Master). Je Render-Quantum Spitze und
+   Effektivwert; Int16 für Mikro und Referenz; **3:1-Dezimierung** (47-Tap-Blackman-Tiefpass 6,8 kHz, Index d[k] ↔ Frame 3k+2, Laufzeit
+   23 Samples) für die Tonhöhe in VS2; Blöcke à 4096 Samples (≈ 85 ms) per `port` mit Übergabe (transfer, kein SharedArrayBuffer, I16).
+   Lücken im `currentFrame` werden gezählt (nach dem Einschwingen).
+5. **Ringpuffer 2 min** im Hauptfaden (Kontext-Frames als Zeitachse): Mikro, Referenz (je Int16) und 16-kHz-Mikro – 23,6 MB bei 44,1 kHz,
+   25,9 MB bei 48 kHz; einmal angelegt, bei jedem Start weiterverwendet. Lücken im Strom werden gelöscht und als `lücke` markiert.
+   `stimmeRead(a, b, {align, d16})` liest einen Ausschnitt; **`align`** führt das Mikrofon über die Zeitkarte nach (Bruchteil-Samples linear =
+   **Resampling** bei Drift), am Rand wird der letzte gültige Wert gehalten (keine eingefügte Stille).
+6. **Einmessen je Weg** (§6; Profile `speaker`/`wired`/`bt` nur im Gerät, `localStorage` `synq-stimme-v1`, nie im Projekt):
+   - **voll** (erstes Mal je Weg, oder [Einmessen]): 0,5 s Stille (Grundrauschen) → 4 Chirps 0,8–8 kHz, −8 dBFS, Abstand 0,7 s (Rundlauf
+     „erste Ankunft“ mit dem VS0-Schätzer, gleiche Zahlen bis 0,01 ms) → 2 s rosa Rauschen −20 dBFS (Kopplung Lautsprecher → Mikro für
+     VS4). Gilt mit ≥ 3 gehörten Chirps und Streuung ≤ 2 ms.
+   - **kurz** (jeder weitere Start auf dem Lautsprecher): 0,3 s Stille, 3 leise Chirps (−16,5 dBFS) im Abstand 0,5 s, auch mit laufender Musik
+     (die Referenz-Spitze wird ±5 ms um die geplante Stelle gesucht). Streuen sie > 2 ms, gelten die zwei späteren (der Weg schwingt ein).
+     Das Profil wird nachgeführt, wenn der Wert > 0,5 ms abweicht.
+   - **ende** (beim Aus nach ≥ 30 s auf dem Lautsprecher, und immer bei verschiedener Abtastrate): 1 leiser Chirp, danach erst Freigabe
+     (≤ 1 s, Sicherung 3 s).
+   - **Kopfhörer/Bluetooth:** keine Pieptöne beim Start (das Mikro hört sie nicht); Latenz aus dem Profil, sonst geschätzt (Kabel =
+     Lautsprecher-Wert ± Unterschied der Ausgangslatenz; Bluetooth ≥ 150 ms) – **[Einmessen] mit Ohrhörer am Mikro** oder **±1 ms von Hand**
+     (Profil „hand“). Hört das Einmessen auf dem Lautsprecher keinen Piep → „Kopfhörer?“-Hinweis.
+   - **Weg erkennen:** Name der Eingangsspur nach der Erlaubnis (AirPods/Bluetooth → bt, Headset/Kabel/USB → wired), sonst die letzte eigene
+     Wahl; `devicechange` → neu raten, ohne Profil Toast „Weg: … · noch nicht eingemessen“ [Einmessen].
+7. **Zeitkarte, Drift und Puffer-Sprung** (Auflage 4, N7V-07): jede Messung ist eine Marke {Frame, ms}; `stimmeLatAt(F)` ist stückweise
+   linear dazwischen. Unterschied ≥ 2 ms und ein Vielfaches von 128 Samples (±6) = **Sprung** (Xanders Gerät: genau 384 Samples), sonst
+   **Drift** (ms/min). Über 0,5 ms/min oder Sprung → Toast „Mikrofon-Zeit ist um 8,0 ms gesprungen · die App gleicht das aus“ bzw.
+   „Mikrofon läuft 4,0 ms/min auseinander · die App gleicht aus“. Abtastraten von Spur und Kontext verschieden (I9) → Toast „Mikrofon 44,1 kHz,
+   App 48,0 kHz · die App misst nach und gleicht aus“ und End-Piep erzwungen.
+8. **Aussetzer** (Auflage 5): je Quantum (2,7 ms) digitale Stille (`null`, Spitze < 2·10⁻⁵) oder > 20 dB unter dem Grundrauschen
+   (`einbruch`), ab 4 Quanten (≈ 10 ms), Lücken ≤ 3 Quanten gehören dazu; Spur `mute`/`unmute` → `stumm`. Markiert mit Frame und Länge
+   (`stimme().drops`), Toast einmal je Sitzung „Mikro-Aussetzer erkannt · die Stelle ist markiert“ – **nie als Pause gewertet** (VS2/VS3 lesen
+   die Marken). Erste 0,3 s nach dem Start ausgenommen.
+9. **Fehlerpfade** (deutsche Sätze statt Absturz, danach immer 🎤 aus, Spuren `ended`, Sitzung `playback`): `NotAllowedError` („Mikrofon
+   nicht erlaubt · in Safari unter „aA“ → Website-Einstellungen → Mikrofon „Erlauben“ wählen“), `NotReadableError`/`AbortError` („belegt“),
+   `NotFoundError`, Spur beendet (Anruf), Seite verlassen (sofort aus, Hinweis beim Zurückkommen), Kontext `interrupted`, kein AudioWorklet.
+10. **Netz (N2-VS1-02):** Beim bloßen 🎤-Hören laufen SYNC und Realtime weiter. Für Take-Aufnahme und Säubern (VS3/VS4) gibt es
+    **`stimmeQuiet(on)`** (gezählt): `cloudHold` (alle Kanäle weg, Aufrufe warten) + Zähler fetch/XHR/sendBeacon/WebSocket; der Zähler ist
+    jetzt mehrfach nutzbar (`netWatch`/`netUnwatch`, eine Hülle um die Originale; der Mikro-Check nutzt dasselbe). Jam-Hinweis (VC3b) folgt mit VC3b.
+11. **Mikro-Check (VS0) und 🎤:** Start des Mikro-Checks schaltet 🎤 aus; 🎤 während des Checks → „Erst den Mikro-Check beenden“.
+    **Hörprobe (Auflage 6):** hat das Projekt Noten, spielt [▶ Hörprobe] 4,5 s den eigenen Song ab der jetzigen Stelle (vertraut), sonst
+    wie bisher die vier Akkorde mittig.
+12. **Test-API:** `stimme()`, `stimmeStart({cal, route})`, `stimmeStop()`, `stimmeToggle()`, `stimmeCal(kind)` → Ergebnis, `stimmeRoute(r)`,
+    `stimmeNudge(ms)`, `stimmeSheet(v)`, `stimmeRead(a, b, {align, d16})`, `stimmeLatAt(f)`, `stimmeQuiet(v)`, `stimmeNet()`, `stimmeForget()`.
+
+**Auflagen aus der Mikro-Check-Auswertung (19.10.)**
+| # | Auflage | umgesetzt |
+|---|---|---|
+| 2 | Kopfhörer-Empfehlung, Kopfhörer erkennen (`devicechange`), Headset-Mikro = eigener Weg | Hinweis im Blatt und als Toast beim ersten Start auf dem Lautsprecher; Weg aus Spur-Namen + `devicechange`; Profil je Weg |
+| 3 | Latenz je Weg messen/speichern, Noten und Audio um sie verschieben | Profile `speaker`/`wired`/`bt`; Zeitkarte + `stimmeRead({align})`; das Verschieben der Noten/Takes selbst kommt mit VS2/VS3 |
+| 4 | Rundlauf Anfang UND Ende, Sprung ausrichten, Drift linear | Marken bei jedem Start (kurz) und Ende (≥ 30 s); Sprung/Drift erkannt, Drift linear ausgeglichen; **Sprungstelle innerhalb eines Takes finden: VS3** (braucht den Take-Inhalt) – bis dahin linear |
+| 5 | Pegel-Einbrüche markieren | `null`/`einbruch`/`stumm`/`lücke` mit Frame und Länge |
+| 6 | Hörprobe mittig, vorher zum Vergleich, eigener Song | eigener Song 4,5 s, sonst Akkorde (waren schon mittig; „weit links“ war der iPhone-Hörer in play-and-record) |
+
+**Abweichungen (bewusst)**
+- **Version 3.11.5** statt 4.11.0 (s. o.); VL und die Song-Gruppen sind noch nicht gebaut.
+- **Teil-Tasten:** Die Teil-Leiste (40 px) kommt mit V2a. Geprüft wurden die heutigen Szenen-Tasten ▶1–▶4 (sie starten am nächsten Takt):
+  frei (`elementFromPoint`) in P1–P3, L1, L2; Höhe P1/L1 44 px, **P2/P3 30 px, L2 32 px – genauso hoch wie in VS0-fix** (die Mikro-Zeile
+  verdeckt nichts, ≥ 36 px gilt erst mit der Teil-Leiste).
+- **Mikro-Zeile 44 statt 28 px hoch:** K2-63 verlangt „gleiche Höhe“ wie die Kopfzeilen-Knöpfe; so ist sie zugleich ein 44-px-Ziel (Blatt).
+- **🎤 = Schalter** statt drittem Tastatur-Modus (die Tastatur spielt weiter; „Stimme → Noten“ ist VS2). BEATBOX-Beschriftung auf der
+  Drum-Spur kommt mit VS6 (ohne Erkennung wäre sie irreführend).
+- **Kein Netz-Halt beim Einmessen** (C.2 Punkt 5 nennt nur Take-Aufnahme, Säubern und Mikro-Check; Einmessen speichert kein Audio).
+- **Ohne AudioWorklet** (vor iOS 14.5) kein 🎤-Betrieb, sondern der Satz „Das Mikrofon braucht hier AudioWorklet“ (VS0 hatte einen
+  ScriptProcessor-Rückfall für die Messung; für Dauerbetrieb im Hauptfaden zu teuer).
+- **Budget:** +25 KB geplant, gebaut **+49 KB roh / +17 KB gzip** (2 081 901 → 2 132 182 Byte; > 50 %, §15.3): Auflagen 2–6 der Auswertung
+  (Drift/Sprung, Aussetzer, Wege, Hörprobe) waren nicht im Plan; Mikro-Blatt mit Schritten; Netz-Zähler umgebaut; ausführliche deutsche
+  Kommentare. Weit unter 5,0 MB (EN2-28); Startzeit unverändert (das Modul tut beim Laden nichts, der Ringpuffer entsteht beim ersten 🎤).
+
+**Fach-Prüfung (Teil J; selbst durchgeführt, kein eigener Agent verfügbar):**
+- *FP-DSP (Haupt)* (`v3-vs1-dsp.mjs` 10/10, Worklet aus `index.html` in Node): ASCII ✓; Blöcke lückenlos, Mikro Int16 bitgenau zu
+  `Math.round(x·32767)`, Referenz auf ±32767 begrenzt; 16-kHz-Index d[k] ↔ Frame 3k+2 fortlaufend; **Befund 1** (meine erste Prüfgrenze
+  „≥ 60 dB ab sr/6“ war die falsche Regel; richtig: alles, was in 0–5 kHz falten würde, also ab sr/3 − 5 kHz) → Dezimierer: Welligkeit
+  0,24 dB bis 5 kHz, **75 dB** ab 11,0 kHz (48 kHz) bzw. 9,7 kHz (44,1 kHz); im Browser 1 kHz ±0,0 dB, 11 kHz unter dem Int16-Boden
+  (`v3-vs1-accept` G). Rechenzeit 22–25 µs je Quantum = **0,8 % Echtzeit** (Xeon, unter Last; iPhone-Faktor unbelegt). NaN/Inf im Eingang:
+  Int16 bleibt endlich, Dezimierer nach ≤ 47 Samples erholt. **Befund 2** (Aussetzer: ein einzelnes lauteres Quantum teilte einen Einbruch in
+  zwei Marken) **behoben** (Lücken ≤ 3 Quanten gehören dazu). **Befund 3** (Lücke beim Einschwingen des Graphen wurde als `lücke` und im
+  Worklet als `gap` gezählt) **behoben** (erste 0,3 s bzw. 64 Quanten ausgenommen). **Befund 4** (kurzer Piep direkt nach dem Start:
+  zwei Werte 10 ms auseinander, weil der Eingangsweg noch einschwingt) **behoben**: Messung erst ab 0,5 s Mikrofon, 3 statt 2 Chirps,
+  bei Streuung gelten die späteren. Schätzer = VS0 (N7V-02-geprüft): gleicher Ausschnitt → gleicher Rundlauf ±0,01 ms.
+- *FP-IPHONE (Zweit)*: 🎤 an + Musik 8 s: CPU ×1 0 longtasks, 60 fps; CPU ×4 (grobe Annahme) 0 longtasks, 54 fps (`v3-vs1-accept` K).
+  Hauptfaden je Block (≈ 12/s): zwei `set`-Kopien, 32 Pegelwerte, Balken höchstens 15/s. Speicher: Ringpuffer 23,6–25,9 MB, einmal angelegt
+  (nach der Erlaubnis, nicht beim Laden). Audio-Sitzung: `play-and-record` nur bei 🎤 an; Seite verlassen → sofort aus. Wake-Lock bei 🎤 an.
+  Profile in `localStorage` (Safari-7-Tage-Regel: dann nur neu einmessen). **Befund 5** (der Mikro-Check und 🎤 hätten sich das Mikrofon
+  geteilt) **behoben** (Check schaltet 🎤 aus). Geräte-Punkte für Xander unten, kurz.
+  5 Befunde, alle behoben.
+
+**Abnahme**
+| ID | Ergebnis | Beleg |
+|---|---|---|
+| N7V-03 | Gerät (Xander, VS0: 0,00 ms). Attrappe: 4 Chirps Streuung 0,00 ms | `v3-vs1-accept` A, I |
+| N7V-04 | ✓ nach ▶, ≡, Tasten: 0 Aufrufe (Attrappe und App); erster Tipp auf 🎤 → genau 1 | `v3-vs1-accept` A |
+| N7V-05 | ✓ Claude-App-Attrappe (iframe, sogar `allow=microphone`): kein 🎤, keine Zeile, `stimmeStart` → false, 0 Aufrufe, Modusleiste pixelgleich zu VS0-fix; oberstes Fenster ohne `getUserMedia`: P und L unsichtbar | `v3-vs1-accept` C |
+| N7V-06 | ✓ nach 🎤 aus, ✕ im Blatt, jedem Fehler, Mikro-Check-Start: Spuren `ended`, Sitzung `playback → play-and-record → playback` | A, D, I |
+| N7V-07 | ✓ Sprung 384 Samples erkannt + Toast, danach ausgerichtet Lag 0; Drift +1 ms gemessen = Δ/Zeit, Toast, mitten in der Drift ausgerichtet auf ±2 Samples des linearen Rests; Spur-Rate ≠ Kontext-Rate: Toast, End-Piep, Zeitkarte mit 2 Marken; ausgerichtetes Signal ohne Nullfolgen > 1 ms | E |
+| N2-VS1-01 | ✓ P1/P2/P3: Segment 205/190/136 (3 × 67/62/44), FANG 64, ‹ › 44, kein `scrollWidth > clientWidth`; P1–L2: 🎤 an → alle Bedienelemente 0,0 px Abweichung; L1/L2 zweiteilig, Höhen = VS0-fix, 🎤 44 × 44 auch mit offenem Klang-Blatt | B |
+| N2-VS1-02 | ✓ (1) beim Hören: Halt 0, `save_project` nach 2,1 s, Kanäle bleiben; (2)(3) `stimmeQuiet`: 0 Kanäle, 0 Aufrufe, Zähler 0; danach Realtime nach 116 ms, Postausgang nach 79 ms; Gegenprobe: beide Zähler zählen gleichzeitig | `v3-vs1-net.mjs` 7/7 |
+| N2-VS1-03 | ✓ P1–L2: Mikro-Zeile vollständig in `#top`, Text nicht abgeschnitten; Szenen-Tasten frei; Tipp startet am nächsten Takt; Höhe s. Abweichungen | A, B |
+| Wege/Profile | ✓ Kabel geschätzt aus Lautsprecher, eigenes Profil beim Einmessen, ±1 ms → „hand“, Neustart mit Kopfhörer ohne Piep, `devicechange` erkannt; Profil nach Neuladen, kurzer Dreifach-Piep ohne Blatt | A, H |
+| Aussetzer | ✓ 200 ms Stille → `null` (197 ms), −48 dB 120 ms → `einbruch` (119 ms), sonst keine Marke | F |
+| Hörbarkeit | ✓ Einmessen hebt den Mikro-Pegel um 18 dB (Pieptöne/Rauschen im Raum); Ton im Raum → Pegel +20 dB, Balken 69 %; Weg Kopfhörer → kein Piep (Pegel bleibt am Grundrauschen) | A, H |
+| Song-Ansicht | ✓ P1, L1: über der Taktleiste, Höhe = Taktleiste, Tipps gehen durch; zurück in `#top` | J |
+| VS0 | ✓ `v3-vs0fix-accept` 25/25, `-offmic` 8/8, `-layout` 20/20, `v3-vs0-net` 8/8, `v3-vs0-rtreal` 6/6 (Netz-Zähler umgebaut) | |
+| Regression | `v3-vs1-reg.sh` / `-reg2.sh` / `-reg3.sh` (= VS0-Liste; Versionskopien `v3-vs1-adapt-*` für 3.11.5; Ausgaben `dirigent-test/v3-vs1-reg/`, Vergleich `v3-vs1-regcmp.sh` gegen VS0): rot nur, was auf VS0 schon rot war (node-fm, wp6-extras, wp3-browser/-ui, wp4-offline, wp7-accept-fm4, func-build C2/D5, wp6-drums, wp1-perf, wp1-misc, rgq-old17, v0a-drum, V4a-11, v4bfix-big, v4b-platz, fp4f-loop, V0c-07); unter Last zusätzlich rot und **allein grün** (`v3-vs1-reg/solo/`): wp7-adapt-func2-build TOUCH (A3 ist auch auf VS0-fix allein rot), `v3-vs1-adapt-qareg-v4a-fmxio` 18/18 (die VS0-fix-Kopie ist allein ebenso schwankend 17/18), v0c-song-L 40/40, v0c-song-P nur V0c-07 (wie VS0). `v3-vo2-accept.mjs` **57/57** (Harness App-Code 3 011 005). Smoke ohne Fehler (`v3-vs1-smoke.png`). | `dirigent-test/v3-vs1-reg/` |
+| Fach-Prüfung | FP-DSP 10/10, FP-IPHONE s. o. | `v3-vs1-dsp.mjs`, `v3-vs1-accept` K |
+
+Abnahme gesamt: `v3-vs1-accept.mjs` **86/86** (Teile A–K; Ausgabe `dirigent-test/v3-vs1-accept.out`, Bilder `dirigent-test/v3-vs1-{P1,P2,P3,L1,L2}-an.png`,
+`-mikroblatt.png`, `-blatt.png`, `-song.png`, `v3-vs1-P1-einmessen.png`), `v3-vs1-net.mjs` 7/7, `v3-vs1-dsp.mjs` 10/10.
+Hinweis zur Prüf-Schleife: Jede `getUserMedia`-Brücke der Chromium-Attrappe hat ihren eigenen Puffer (Rundlauf je Laden ±2 ms, direkt nach
+dem Start auch 10-ms-Sprünge); deshalb vergleichen die Tests gleiche Ausschnitte bzw. Werte innerhalb einer Sitzung.
+
+**Rollout** (Supabase-MCP, ref `dbdnsryoivvezspgydpx`): 19.10. `list_migrations` (… vs0_max_app) → `apply_migration vs1_max_app`
+(`max_app = greatest(max_app, 3011005)`, Datei `synq-online/r7-vs1-max-app.sql`) → success; `execute_sql` (nur lesen) `max_app` 3011005,
+`max_format` 3. Kein Aufruf nennt das Klassenzimmer-Projekt. **Für Xander im Dashboard:** nichts.
+
+**Für Xander am iPhone (nach dem Ausliefern von 3.11.5, ≈ 3 min; Pages-Seite im Safari-Tab):**
+1. Unten in der Modusleiste **🎤 SINGEN** tippen (quer: 🎤 oben rechts) → Mikrofon erlauben → **Handy hinlegen, leise sein** (es piept 4 ×,
+   dann rauscht es 2 s). Oben steht danach z. B. „⏱ 75 ms 🔈“.
+2. Etwas singen: der Balken oben bewegt sich. ▶ drücken und einen anderen Teil (▶ 2) antippen – das muss beim Singen gehen.
+3. Klingt die Musik leise/„links“? Dann Kopfhörer einstecken: oben steht 🎧; im Mikro-Blatt (Tipp auf die rote Zeile) **[Einmessen]** mit einem
+   Ohrhörer direkt am Mikrofon.
+4. 🎤 wieder antippen = aus (nach > 30 s piept es einmal leise zum Nachmessen). Erscheint „Aussetzer“ oder „gesprungen“, bitte melden.
+
