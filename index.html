@@ -23785,7 +23785,7 @@ async function boot() {
    ===================================================================== */
 const APP_CODE = (() => { const v = VERSION.split('.').map(n => n | 0); return v[0] * 1e6 + (v[1] || 0) * 1e3 + (v[2] || 0); })();
 const CLOUD = Object.assign({
-  live: false,                       // Rollout R2–R7 (Migration vo_init, Auth, Turnstile, max_app) erst nach Xanders Okay (E.5 Nr. 3)
+  live: true,                        // Rollout R2–R7 (Migration vo_init, Auth, Turnstile, max_app) erst nach Xanders Okay (E.5 Nr. 3)
   ref: 'dbdnsryoivvezspgydpx', url: 'https://dbdnsryoivvezspgydpx.supabase.co', key: 'sb_publishable_6utuy3es2447DjAQvxdrUQ_F-6fE5_M',
   origin: 'https://xanderfoxy.github.io', path: '/Synquenzer/', storageKey: 'synq-auth',
   captcha: {provider: 'turnstile', siteKey: ''},                  // R3: Site Key von Cloudflare Turnstile
@@ -23796,7 +23796,7 @@ const CLOUD = Object.assign({
 const SYNC = {where: 'local', state: 'local', client: null, lib: null, libP: null, uid: null, me: null, prev: null, device: '', snap: null,
   quiet: 0, q: Promise.resolve(), pushT: 0, first: 0, lastPushAt: 0, lastOk: 0, retryT: 0, back: 0, err: '', outN: 0, conflicts: new Set(),
   outdated: null, foreign: null, recBusy: false, libT: 0, libSent: '', usage: null, captchaTok: '', tsId: null, tsP: null, calls: {lib: 0, ts: 0},
-  pausedAt: 0, note: ''};
+  pausedAt: 0, note: '', prevUid: null, libInit: null, libOwn: null, tickOff: false, kicking: false};
 const cloudHome = () => SYNC.where === 'home';
 function cloudWhere() {
   let framed = false; try { framed = window.top !== window.self; } catch (e) { framed = true; }
@@ -23823,6 +23823,7 @@ function cloudState(st, err) {
   const b = EL.bMenu; if (b) { const c = cloudDot(); if (c) b.dataset.cloud = c; else delete b.dataset.cloud; }
   if (UI.menuCloud && UI.menuCloud.isConnected) UI.menuCloud.textContent = cloudLine();
   if (UI.cloudLine && UI.cloudLine.isConnected) { UI.cloudLine.textContent = cloudLine(); UI.cloudLine.dataset.c = cloudDot() || 'none'; }
+  cloudTicker();
 }
 // §4.6: Punkt am ≡ – grün, blau (pulsiert), grau, orange; abgemeldet kein Punkt
 function cloudDot() {
@@ -23869,12 +23870,60 @@ async function cloudClient() {
   if (SYNC.client) return SYNC.client;
   let lib;
   try { lib = await cloudLoadLib(); } catch (e) { cloudState('error', 'lib'); throw e; }
-  SYNC.client = lib.createClient(CLOUD.url, CLOUD.key, {auth: {storageKey: CLOUD.storageKey, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false}});
-  try { SYNC.client.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT' && SYNC.uid) cloudSignedOut(); }); } catch (e) {}
+  SYNC.client = lib.createClient(CLOUD.url, CLOUD.key, {auth: {storageKey: CLOUD.storageKey, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false},
+    global: {fetch: (u, o) => cloudFetch(u, o)}});
+  try { SYNC.client.auth.onAuthStateChange((ev, s) => {
+    if (ev === 'SIGNED_OUT') { if (SYNC.uid) cloudSignedOut(); return; }
+    // Token nach einer Offline-Zeit erneuert: sofort weiter abgleichen (Rückruf ohne await, supabase-js hält hier seine Sperre)
+    const u = s && s.user && s.user.id;
+    if (ev === 'TOKEN_REFRESHED' && u && !SYNC.uid && SYNC.state === 'signedOut' && hasSession()) setTimeout(() => { if (!SYNC.uid && hasSession()) cloudSignedIn(s.user, false); }, 0);
+    else if ((ev === 'TOKEN_REFRESHED' || ev === 'SIGNED_IN') && u && u === SYNC.uid && (SYNC.state === 'offline' || SYNC.state === 'error')) setTimeout(() => cloudKick(), 0);
+  }); } catch (e) {}
   return SYNC.client;
 }
 const hasSession = () => { try { return localStorage.getItem(CLOUD.storageKey) != null; } catch (e) { return false; } };
+const cloudStored = () => { try { const o = JSON.parse(localStorage.getItem(CLOUD.storageKey)); return o && typeof o === 'object' ? o : null; } catch (e) { return null; } };
+function cloudStoredUser() {
+  const o = cloudStored(); if (o && o.user && o.user.id) return o.user;
+  try { const x = JSON.parse(localStorage.getItem(CLOUD.storageKey + '-user')); if (x && x.user && x.user.id) return x.user; } catch (e) {}
+  return o && SYNC.prev && SYNC.prev.uid ? {id: SYNC.prev.uid} : null;
+}
+// Zugangs-Token abgelaufen? (supabase-js erneuert ab 90 s vor Ablauf, gleiche Grenze)
+const cloudTokOld = () => { const o = cloudStored(); return !!(o && o.expires_at && o.expires_at * 1000 - Date.now() < 90000); };
 async function cloudToken() { try { const r = await SYNC.client.auth.getSession(); return r && r.data && r.data.session ? r.data.session.access_token : null; } catch (e) { return null; } }
+// Server erreichbar? (billige Anfrage, höchstens 5 s) – nur vor dem Erneuern eines abgelaufenen Tokens
+async function cloudReach() {
+  const ac = typeof AbortController === 'function' ? new AbortController() : null, t = ac ? setTimeout(() => { try { ac.abort(); } catch (e) {} }, 5000) : 0;
+  try { await fetch(CLOUD.url + '/auth/v1/health', {headers: {apikey: CLOUD.key}, cache: 'no-store', signal: ac ? ac.signal : undefined}); return true; }
+  catch (e) { return false; } finally { clearTimeout(t); }
+}
+// nach einem Offline-Fehlversuch sperrt supabase-js das Erneuern 60 s; ist der Server wieder erreichbar, sofort neu versuchen
+function cloudRefreshReset() { try { const a = SYNC.client && SYNC.client.auth; if (a && 'lastRefreshFailure' in a) a.lastRefreshFailure = null; } catch (e) {} }
+/* Token für eigene Aufrufe (§4.3, N8O-05): läuft es ohne Netz ab, bleibt die Sitzung gespeichert und es gilt „offline“ ('net');
+   'auth' (abmelden) nur, wenn supabase-js die Sitzung selbst verworfen hat (Refresh-Token ungültig). Ein abgelaufenes Token wird nur
+   erneuert, wenn der Server erreichbar ist: so hängt nach dem Wiederverbinden kein 25-s-Wiederholversuch von supabase-js davor. */
+async function cloudAuthTok() {
+  if (!hasSession()) return {err: 'auth'};
+  if (cloudTokOld()) { if (!(await cloudReach())) return {err: hasSession() ? 'net' : 'auth'}; cloudRefreshReset(); }
+  const t = await cloudToken(); if (t) return {tok: t};
+  return {err: hasSession() ? 'net' : 'auth'};
+}
+/* Mit gespeicherter Sitzung, aber ohne gültiges Token fiele supabase-js auf den öffentlichen Schlüssel zurück: Abfragen sähen dann
+   leere Listen statt „offline“ (Start-Abgleich würde Projekte als „Zugriff weg“ markieren). Solche Abfragen gelten als Netzfehler. */
+function cloudFetch(u, o) {
+  try {
+    const url = String(u && u.url || u), h = o && o.headers;
+    const a = !h ? '' : typeof h.get === 'function' ? h.get('Authorization') : (h.Authorization || h.authorization || '');
+    if (url.indexOf('/rest/v1/') > 0 && a === 'Bearer ' + CLOUD.key && hasSession()) return Promise.reject(new TypeError('Failed to fetch (Anmeldung wird erneuert)'));
+  } catch (e) {}
+  return fetch(u, o);
+}
+// supabase-js-Erneuerung ruht, solange offline (sonst läuft beim Wiederverbinden gerade ein 25-s-Versuch); online wieder an
+function cloudTicker() {
+  const a = SYNC.client && SYNC.client.auth; if (!a || typeof a.stopAutoRefresh !== 'function' || typeof a.startAutoRefresh !== 'function') return;
+  const off = SYNC.state === 'offline' && !!SYNC.uid; if (off === !!SYNC.tickOff) return;
+  SYNC.tickOff = off; try { (off ? a.stopAutoRefresh() : a.startAutoRefresh()).catch(() => {}); } catch (e) {}
+}
 // PostgREST-Fehler → Art (§4.3 errors)
 function cloudErrKind(status, j, net) {
   const c = j && j.code ? String(j.code) : '', m = j && (j.message || j.error) ? String(j.message || j.error) : '';
@@ -23892,7 +23941,8 @@ function cloudErrKind(status, j, net) {
 }
 // ein Stringify je Push (§4.2): der große Text geht fertig in den Körper, der Kopf ist klein
 async function cloudRpcText(fn, head, key, text, keepalive, again) {
-  const tok = await cloudToken(); if (!tok) return {err: 'auth'};
+  const at = await cloudAuthTok(); if (at.err) return {err: at.err};
+  const tok = at.tok;
   const body = JSON.stringify(head).slice(0, -1) + ',' + JSON.stringify(key) + ':' + text + '}';
   let res, j = null;
   try { res = await fetch(CLOUD.url + '/rest/v1/rpc/' + fn, {method: 'POST', body, keepalive: !!keepalive && body.length <= 60000,
@@ -23930,7 +23980,14 @@ async function cloudInit() {
   window.addEventListener('online', () => cloudKick());
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') cloudFlushNow(); else cloudKick(); });
   window.addEventListener('pagehide', () => cloudFlushNow());
-  if (hasSession()) { try { await cloudClient(); const r = await SYNC.client.auth.getSession(); const s = r && r.data && r.data.session; if (s) await cloudSignedIn(s.user, false); } catch (e) { if (SYNC.state !== 'error') logErr(e); } }
+  if (hasSession()) { try {
+    await cloudClient();
+    const su = cloudStoredUser();
+    // Token abgelaufen (App länger zu, evtl. ohne Netz): gleich mit dem gespeicherten Konto starten; ohne Netz grau, erneuert wird
+    // bei online/visible/Takt (§4.6, N8O-20b) – nicht auf getSession() warten (bis 25 s Wiederholversuche ohne Netz)
+    if (su && cloudTokOld()) await cloudSignedIn(su, false);
+    else { const r = await SYNC.client.auth.getSession(); const s = r && r.data && r.data.session; if (s) await cloudSignedIn(s.user, false); else if (su && hasSession()) await cloudSignedIn(su, false); }
+  } catch (e) { if (SYNC.state !== 'error') logErr(e); } }
 }
 // Manifest, lokale Schriften (K2-08) nur auf der eigenen Herkunft: kein Zugriff auf Google Fonts
 function cloudPagesExtras() {
@@ -23942,11 +23999,14 @@ function cloudPagesExtras() {
   } catch (e) {}
 }
 async function cloudSignedIn(user, fresh) {
-  SYNC.uid = user.id;
-  const pr = await cloudSel(SYNC.client.from('profiles').select('id,display_name,friend_code,findable,is_admin').eq('id', user.id).maybeSingle());
+  SYNC.uid = user.id; SYNC.libInit = null;
+  const at = await cloudAuthTok();     // abgelaufen und kein Netz → wie offline, die Sitzung bleibt (§4.3)
+  if (SYNC.uid !== user.id) return;
+  const pr = at.err ? {err: at.err} : await cloudSel(SYNC.client.from('profiles').select('id,display_name,friend_code,findable,is_admin').eq('id', user.id).maybeSingle());
   const old = SYNC.prev && SYNC.prev.uid === user.id ? SYNC.prev : null, p = pr.data || (old ? {display_name: old.name, friend_code: old.code, is_admin: old.admin, findable: old.findable} : {});
   SYNC.me = {uid: user.id, name: p.display_name || 'Ich', code: p.friend_code || '', admin: !!p.is_admin, findable: !!p.findable};
   SYNC.claim = !SYNC.prev || SYNC.prev.uid === user.id;     // §4.4: nur dann gehören Projekte ohne Meta-Eintrag diesem Konto
+  SYNC.prevUid = SYNC.prev && SYNC.prev.uid !== user.id ? SYNC.prev.uid : null;
   SYNC.prevName = SYNC.prev && SYNC.prev.uid !== user.id ? SYNC.prev.name : '';
   await cset('me', SYNC.me); SYNC.prev = SYNC.me;
   SYNC.outN = (await outGet(user.id)).length;
@@ -23958,7 +24018,7 @@ async function cloudSignedIn(user, fresh) {
   cloudLibSync();
 }
 function cloudSignedOut() {
-  SYNC.uid = null; SYNC.conflicts.clear(); SYNC.outdated = null; SYNC.foreign = null; clearTimeout(SYNC.pushT); clearTimeout(SYNC.retryT);
+  SYNC.uid = null; SYNC.libInit = null; SYNC.conflicts.clear(); SYNC.outdated = null; SYNC.foreign = null; clearTimeout(SYNC.pushT); clearTimeout(SYNC.retryT); clearTimeout(SYNC.libT);
   try { localStorage.removeItem(CLOUD.storageKey); } catch (e) {}
   cloudState('signedOut', '');
 }
@@ -24019,7 +24079,7 @@ async function cloudReconcile() {
 function cloudFail(k) {
   if (k === 'net') { cloudState('offline'); clearTimeout(SYNC.retryT); SYNC.retryT = setTimeout(() => cloudKick(), 15000); }
   else if (k === 'paused') { cloudState('paused'); clearTimeout(SYNC.retryT); SYNC.retryT = setTimeout(() => { cloudState('offline'); cloudKick(); }, 300000); }
-  else if (k === 'auth') cloudSignedOut();
+  else if (k === 'auth') { if (hasSession()) cloudFail('net'); else cloudSignedOut(); }   // Sitzung noch da: nie abmelden, nur warten
 }
 async function cloudBody(sid) {
   const r = await cloudSel(SYNC.client.from('project_data').select('version,body').eq('project_id', sid).maybeSingle());
@@ -24083,7 +24143,11 @@ function cloudKick() {
   if (!SYNC.uid || !['offline', 'online', 'error'].includes(SYNC.state)) return;
   SYNC.back = 0;
   if (SYNC.state === 'online') { cloudFlush(); return; }
-  cloudRpc('ping').then(r => { if (!r.err) { cloudState('online'); if (SYNC.recOk) cloudFlush(); else cloudReconcile().then(() => cloudLibSync()); } else if (r.err === 'net' || r.err === 'paused') cloudFail(r.err); });
+  if (SYNC.kicking) return;                       // online + visible + TOKEN_REFRESHED kommen oft zusammen: ein Versuch genügt
+  const uid = SYNC.uid; SYNC.kicking = true;
+  cloudAuthTok().then(a => a.err ? a : cloudRpc('ping')).then(r => { if (uid !== SYNC.uid) return;
+    if (!r.err) { cloudState('online'); if (SYNC.recOk) return cloudFlush(); return cloudReconcile().then(() => cloudLibSync()); }
+    if (r.err === 'net' || r.err === 'paused' || r.err === 'auth') cloudFail(r.err); }).catch(e => logErr(e)).then(() => { SYNC.kicking = false; });
 }
 function cloudFlushNow() { if (SYNC.uid) cloudFlush({keepalive: true}); }
 const cloudLock = fn => { try { if (navigator.locks && navigator.locks.request) return navigator.locks.request('synq-cloud', fn); } catch (e) {} return fn(); };
@@ -24155,6 +24219,7 @@ async function cloudPushErr(lid, k) {
   if (k === 'net') { cloudState('offline'); retry(SYNC.back < BACKOFF.length ? BACKOFF[SYNC.back++] : 300000); return 'stop'; }
   if (k === 'paused') { if (SYNC.state !== 'paused') SYNC.pausedAt = Date.now(); cloudState('paused'); retry(300000); cloudBackupOffer(); return 'stop'; }
   if (k === 'full' || k === 'quota') { cloudState('full', k); retry(3600000); return 'stop'; }
+  if (k === 'auth' && hasSession()) return cloudPushErr(lid, 'net');   // 401, aber Sitzung gespeichert (Erneuern scheiterte am Netz): warten, nie abmelden
   if (k === 'auth') { cloudSignedOut(); toast('Bitte neu anmelden – deine Songs sind auf diesem Gerät gesichert'); return 'stop'; }
   if (k === 'blocked') { cloudState('online', 'blocked'); toast('Dein Konto ist gesperrt. Deine Songs bleiben auf diesem Gerät.'); retry(3600000); return 'stop'; }
   await cq(async () => { const c = await metaGet(lid); if (!c) return;
@@ -24192,35 +24257,58 @@ async function importBackup(o) {
 }
 
 /* ---------- eigene Sounds (§4.1): eine Datei je Person, optimistische Sperre, Zusammenführen per Hash ---------- */
-const libSig = () => LIB.ok ? LIB.lib.all().map(s => SQStore.soundHash(s) + ':' + s.name).sort().join('|') : '';
+/* Konto-Trennung der eigenen Sounds auf einem Gerät (§4.4, FP-SICHER): die Bibliothek des Geräts ist eine, online hat jedes Konto
+   seine eigene. cloud:libown merkt je Sound (Hash:Name) die Konten, unter denen er entstand oder vom Server kam; save_library bekommt
+   nur die Sounds des angemeldeten Kontos. Sounds ohne Besitzer (entstanden abgemeldet) gehören wie Projekte ohne Meta dem bisherigen Konto. */
+const libOKey = s => SQStore.soundHash(s) + ':' + s.name;
+const libSigOf = list => list.map(libOKey).sort().join('|');
+async function libOwnLoad() { if (!SYNC.libOwn) { const o = await cget('libown'); SYNC.libOwn = o && typeof o === 'object' ? o : {}; } return SYNC.libOwn; }
+async function libOwnAdd(hashes, uid) {
+  const o = await libOwnLoad(); let ch = false;
+  for (const h of hashes) { const a = Array.isArray(o[h]) ? o[h] : (o[h] = []); if (!a.includes(uid)) { a.push(uid); ch = true; } }
+  if (ch) await cset('libown', o);
+}
+async function libOwnClaim(uid) { const o = await libOwnLoad(); await libOwnAdd(LIB.lib.all().map(libOKey).filter(k => !(Array.isArray(o[k]) && o[k].length)), uid); }
+const libMine = uid => { const o = SYNC.libOwn || {}; return LIB.ok ? LIB.lib.all().filter(s => (o[libOKey(s)] || []).includes(uid)) : []; };
 function cloudLibDirty() { if (!SYNC.uid || SYNC.quiet) return; clearTimeout(SYNC.libT); SYNC.libT = setTimeout(() => cloudLibPush(), 5000); }
 async function cloudLibSync() {
-  if (!SYNC.uid) return;
+  const uid = SYNC.uid; if (!uid) return;
   try { await libReady(); } catch (e) { return; }
-  const r = await cloudSel(SYNC.client.from('user_libraries').select('version,body').eq('owner_id', SYNC.uid).maybeSingle());
-  if (r.err) return;
-  const st = (await cget('lib:' + SYNC.uid)) || {base: 0};
-  if (r.data) { await cloudLibMerge(r.data.body); st.base = r.data.version; await cset('lib:' + SYNC.uid, st); }
-  const srvSig = r.data ? cloudLibSigOf(r.data.body) : '';
-  if (libSig() !== srvSig && LIB.lib.all().length) await cloudLibPush(); else SYNC.libSent = libSig();
+  if (SYNC.libInit !== uid) { const to = SYNC.claim ? uid : SYNC.prevUid; if (to) await libOwnClaim(to); if (uid !== SYNC.uid) return; SYNC.libInit = uid; }
+  const r = await cloudSel(SYNC.client.from('user_libraries').select('version,body').eq('owner_id', uid).maybeSingle());
+  if (r.err || uid !== SYNC.uid) return;
+  const st = (await cget('lib:' + uid)) || {base: 0};
+  if (r.data) { await cloudLibMerge(r.data.body, uid); st.base = r.data.version; await cset('lib:' + uid, st); }
+  const srvSig = r.data ? cloudLibSigOf(r.data.body) : '', mine = libSigOf(libMine(uid));
+  if (mine !== srvSig && mine) await cloudLibPush(); else SYNC.libSent = uid + '#' + mine;
 }
 function cloudLibSigOf(body) { let b = body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = null; } }
   return (b && Array.isArray(b.sounds) ? b.sounds : []).map(SQStore.normalizeSound).filter(Boolean).map(s => SQStore.soundHash(s) + ':' + s.name).sort().join('|'); }
-async function cloudLibMerge(body) {
+async function cloudLibMerge(body, uid) {
   let b = body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { return; } }
   const list = b && Array.isArray(b.sounds) ? b.sounds : []; if (!list.length) return;
   SYNC.quiet++; try { await LIB.lib.importMany(list); libChanged(); } finally { SYNC.quiet--; }
+  if (!uid) return;
+  // Server-Sounds gehören diesem Konto: gleicher Hash und Name, sonst die lokale Kopie mit gleichem Inhalt (importMany legt gleiche
+  // Inhalte nicht doppelt an und benennt bei Namensgleichheit um)
+  const loc = LIB.lib.all(), keys = new Set(loc.map(libOKey)), own = [];
+  for (const raw of list) { const x = SQStore.normalizeSound(raw); if (!x) continue; const k = libOKey(x);
+    if (keys.has(k)) own.push(k); else { const h = SQStore.soundHash(x); for (const y of loc) if (SQStore.soundHash(y) === h) own.push(libOKey(y)); } }
+  await libOwnAdd(own, uid);
 }
 async function cloudLibPush(again) {
-  if (!SYNC.uid || !LIB.ok) return 'no';
-  const sig = libSig(); if (sig === SYNC.libSent && !again) return 'same';
-  const key = 'lib:' + SYNC.uid, st = (await cget(key)) || {base: 0};
-  const text = JSON.stringify(SQStore.buildSoundsFile(LIB.lib.all()));
+  const uid = SYNC.uid;
+  if (!uid || !LIB.ok || SYNC.libInit !== uid) return 'no';       // erst nach der Zuordnung bei der Anmeldung (cloudLibSync)
+  await libOwnClaim(uid); if (uid !== SYNC.uid) return 'no';         // seit der Anmeldung neu → diesem Konto
+  const mine = libMine(uid), sig = uid + '#' + libSigOf(mine); if (sig === SYNC.libSent && !again) return 'same';
+  const key = 'lib:' + uid, st = (await cget(key)) || {base: 0};
+  const text = JSON.stringify(SQStore.buildSoundsFile(mine));
   const r = await cloudRpcText('save_library', {p_base: st.base || 0}, 'p_body', text);
+  if (uid !== SYNC.uid) return 'no';
   if (r.err) { if (r.err === 'net') { clearTimeout(SYNC.libT); SYNC.libT = setTimeout(() => cloudLibPush(), 60000); } return r.err; }
   const d = r.data || {};
   if (d.status === 'ok') { st.base = d.version; await cset(key, st); SYNC.libSent = sig; return 'ok'; }
-  if (d.status === 'conflict' && !again) { await cloudLibMerge(d.body); st.base = d.version || 0; await cset(key, st); return cloudLibPush(true); }
+  if (d.status === 'conflict' && !again) { await cloudLibMerge(d.body, uid); st.base = d.version || 0; await cset(key, st); return cloudLibPush(true); }
   return d.status || 'error';
 }
 

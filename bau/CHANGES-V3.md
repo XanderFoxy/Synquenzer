@@ -1893,3 +1893,34 @@ MCP-Aufrufe dieses Pakets: `get_project`, `get_project_url`, `get_publishable_ke
 (2) Etwas ändern, 5 s warten, Seite neu laden → alles da, Punkt grün. (3) Flugmodus an, neu laden → App startet, Punkt grau; Flugmodus
 aus → Punkt wird grün. (4) In der Claude-App Menü → Online → [In Safari öffnen und mitnehmen] – öffnet sich Safari mit dem Song?
 (5) Zweites Gerät (oder Home-Bildschirm-App) anmelden → dein Song ist da.
+
+## VO1-fix — Sitzung überlebt Offline-Zeiten, Neustart offline mit altem Token, eigene Sounds je Konto, `sw.js` ohne Voll-Download · App 3.11.2
+
+1. **Token läuft offline ab → kein Abmelden mehr** (§4.3, §4.6, N8O-05, N8O-12). `cloudRpcText` holt das Token über `cloudAuthTok()`:
+   liefert supabase-js wegen fehlenden Netzes (oder seiner 60-s-Sperre nach einem Fehlversuch) keine Sitzung, solange `synq-auth`
+   gespeichert ist, gilt das als `net` (grau, Warteschlange, Backoff), nicht als `auth`. `cloudPushErr`/`cloudFail` melden bei
+   `auth` nur noch ab, wenn supabase-js die Sitzung selbst verworfen hat (Refresh-Token ungültig) – sonst warten wie offline.
+   Ein abgelaufenes Token wird nur erneuert, wenn `/auth/v1/health` antwortet (≤ 5 s); dann hebt die App die 60-s-Sperre von
+   supabase-js auf. Solange offline, ruht der Auto-Refresh von supabase-js (`stopAutoRefresh`, online wieder `startAutoRefresh`),
+   damit nach dem Wiederverbinden kein 25-s-Wiederholversuch vor dem Hochladen hängt. Eigener `global.fetch`: Abfragen an
+   `/rest/v1/` mit dem öffentlichen Schlüssel als Bearer, obwohl eine Sitzung gespeichert ist, gelten als Netzfehler (sonst sähe der
+   Start-Abgleich leere Listen und markierte Projekte als „nur hier“).
+2. **Neustart ohne Netz mit Token älter als ≈ 1 h** (N8O-20b, §4.6). `cloudInit` startet bei abgelaufenem Token sofort mit dem
+   gespeicherten Konto (`synq-auth.user`, sonst `cloud:me`), ohne auf `getSession()` zu warten: Punkt grau, „Offline – auf diesem Gerät
+   gesichert“, Änderungen kommen in die Warteschlange. `online`, `visible`, der 15-s-Takt und `TOKEN_REFRESHED`/`SIGNED_IN` von
+   supabase-js stoßen den Abgleich an (`cloudKick`, gleichzeitige Anstöße zählen einmal); vorher reagierte die App nur auf `SIGNED_OUT`.
+3. **Eigene Sounds je Konto getrennt** (FP-SICHER, §4.4). `cloud:libown` merkt je Sound (Hash:Name) die Konten, unter denen er entstand
+   oder vom Server kam; `save_library` bekommt nur die Sounds des angemeldeten Kontos, `libSent` gilt je Konto. Sounds ohne Besitzer
+   (abgemeldet entstanden) gehören wie Projekte ohne Meta dem bisherigen Konto (`SYNC.claim`, sonst `SYNC.prevUid`). Die Geräte-
+   Bibliothek bleibt eine (alle Sounds bleiben lokal sichtbar), online geht nichts mehr über Konten hinweg.
+4. **`sw.js`** (`synq-pages/`, FP-IPHONE, §2.7): `index.html` weiter network-first, aber über den HTTP-Cache des Browsers (ETag →
+   304 mit 0 KB statt jedes Mal 611 KB); antwortet das Netz nach 3 s nicht und liegt eine Kopie im Cache, startet die App daraus und
+   die Antwort erneuert den Cache. Das Vorab-Laden bei der Installation nimmt den HTTP-Cache (kein zweiter Download).
+
+**Abnahme (`dirigent-test/`, echte supabase-js 2.117.2 gegen GoTrue/PostgREST-Emulation über PGlite):** `v3-qa-vo1-real-a.mjs` A 3/3,
+B 3/3, C 2/2 (`OFFLINE_MS=45000`); `v3-qa-vo1-real-e.mjs` E1/E2 ✓; `v3-fpvo1-offstart.mjs` (offline grau, danach online + Push),
+`v3-repro-offline-expired.mjs` „NOT REPRODUCED: app recovered“, `v3-indep-tokexp.mjs offline` (bleibt angemeldet, nach dem
+Wiederverbinden Server = lokal), `v3-repro-offstart-check.mjs`; `v3-fpvo1-sicher.mjs` 5/5, `v3-repro-libswitch.mjs` (René lädt
+nichts von Xander hoch); `v3-repro-swnet.mjs` (mit SW: Starts 2–9 ohne Anfrage bzw. 304/0 KB, 20-s-Hänger → 3,4 s aus dem Cache),
+`v3-fpvo1-swnet.mjs` mit `STALL=20000` (Starts 2–4 ≈ 0,5 s statt 20,5 s), `v3-vo1fix-swoff.mjs` (Neuladen ohne Netz aus dem SW-Cache);
+`v3-vo1-accept.mjs` 132/133 (rot nur die bekannte Größen-Abweichung N8O-19b, jetzt +85,3 KB), Smoke ohne Fehler.
