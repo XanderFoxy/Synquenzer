@@ -14929,7 +14929,18 @@ function svMomentum() {
 }
 function svRowAt(y) { if (y < SV.rulerH) return -1; return Math.min(SV_ROWS - 1, Math.floor((y - SV.rulerH) / SV.rowH)); }
 // the Träger chips of the visible area: [{k, x0, x1}] in canvas px (layout from the last draw)
-function svChipAt(x, y) { if (svRowAt(y) !== 5 || !SV.chips) return null; for (const c of SV.chips) if (x >= c.x0 - 4 && x <= c.x1 + 4) return c.k; return null; }
+// chips never overlap (each one ends where the next begins), so the chip under the finger wins; outside every chip the
+// nearest edge within 4 px counts (a later chip on a tie: it is the one drawn on top)
+function svChipAt(x, y) {
+  if (svRowAt(y) !== 5 || !SV.chips) return null;
+  let best = null, bd = 1e9;
+  for (const c of SV.chips) {
+    if (x >= c.x0 && x <= c.x1) return c.k;
+    const d = x < c.x0 ? c.x0 - x : x - c.x1;
+    if (d <= 4 && d <= bd) { bd = d; best = c.k; }
+  }
+  return best;
+}
 function svTap(x, y) {
   const song = S.song, row = svRowAt(y), bar = Math.floor((x + SV.x) / SV.cellW);
   if (row === -1) { svRulerTap(bar); return; }       // V0c N7-R7: the ruler selects (yellow) and sets the Positionsmarke, never jumps
@@ -14996,14 +15007,18 @@ function svDraw(force, sbIn) {
   if (song) {
     const y = ru + 5 * rh;
     g.textAlign = 'left';
-    song.carrier.forEach((c, k) => {
-      const x = c.beat / 4 * cw - SV.x; if (x > W || c.beat >= bars * 4) return;
-      const txt = c.target ? songChipName(c) : 'ORIG.', tw = Math.max(18, g.measureText(txt).width + 8);
+    // a chip ends where the next entry begins (an ORIGINAL at beat 0 and a late first chord at 0.4 must not draw on top of
+    // each other): the later chip keeps its full name, the earlier one shrinks to a sliver and its name is clipped away
+    const ord = song.carrier.map((c, k) => k).filter(k => song.carrier[k].beat < bars * 4).sort((a, b) => song.carrier[a].beat - song.carrier[b].beat || a - b);
+    ord.forEach((k, j) => {
+      const c = song.carrier[k], x = c.beat / 4 * cw - SV.x; if (x > W) return;
+      const txt = c.target ? songChipName(c) : 'ORIG.', nk = ord[j + 1], xn = nk != null ? song.carrier[nk].beat / 4 * cw - SV.x : Infinity;
+      const tw = Math.max(1, Math.min(Math.max(18, g.measureText(txt).width + 8), xn - x - 1));
       if (x + tw < 0) return;
       g.fillStyle = c.target ? 'rgba(255,170,40,.18)' : 'rgba(255,255,255,.06)'; g.strokeStyle = c.target ? '#ffaa28' : '#555';
-      g.fillRect(x + 1, y + 4, tw, rh - 8); g.strokeRect(x + 1.5, y + 4.5, tw - 1, rh - 9);
-      g.fillStyle = c.target ? '#ffcf7a' : '#8b919c'; g.fillText(txt, x + 5, y + rh / 2);
-      SV.chips.push({k, x0: x, x1: x + tw, txt});
+      g.fillRect(x + 1, y + 4, tw, rh - 8); if (tw > 2) g.strokeRect(x + 1.5, y + 4.5, tw - 1, rh - 9); else g.fillRect(x + 1, y + 4, 1, rh - 8);
+      if (tw >= 12) { g.save(); g.beginPath(); g.rect(x + 1, y, tw - 2, rh); g.clip(); g.fillStyle = c.target ? '#ffcf7a' : '#8b919c'; g.fillText(txt, x + 5, y + rh / 2); g.restore(); }
+      SV.chips.push({k, x0: x, x1: x + 1 + tw, txt});
     });
     g.textAlign = 'center';
     // MELODIE: the notes as small bars, pitch inside the lane
