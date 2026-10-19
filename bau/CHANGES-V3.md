@@ -2449,3 +2449,28 @@ dem Start auch 10-ms-Sprünge); deshalb vergleichen die Tests gleiche Ausschnitt
    Ohrhörer direkt am Mikrofon.
 4. 🎤 wieder antippen = aus (nach > 30 s piept es einmal leise zum Nachmessen). Erscheint „Aussetzer“ oder „gesprungen“, bitte melden.
 
+
+## VS1-fix — Grundrauschen nur aus echter Stille: Sing-Pausen sind keine Mikro-Aussetzer · App 3.11.5
+
+Befund (Abnahme-Blick, Auflage 5): Wer beim Tipp auf 🎤 schon sang, lieferte das „Grundrauschen“ selbst – beim kurzen Einmessen aus dem
+0,3-s-Fenster vor den Pieptönen (ungeprüft), auf dem Kopfhörer-Weg aus dem 20-%-Quantil der ersten Sekunde. `floorDb` lag dann bei der
+Stimme (−23 dB) statt beim Raum (−50 dB), und jede normale Pause wurde als „einbruch“ markiert, mit Hinweis „Mikro-Aussetzer erkannt“.
+1. **`stFloorOf`** (neu): ein Stück zählt nur als Grundrauschen, wenn der Pegel ruhig ist (≥ 70 % der 21-ms-Blöcke ≤ 6 dB über dem
+   20-%-Quantil), es nicht digital still ist (> −96 dBFS), über Lautsprecher/Bluetooth die App dort nichts spielt (Referenz < −60 dBFS) und
+   keine Stimme/kein Ton darin ist (**`stVoiced`**: normierte Autokorrelation nach dem ersten Abfall, 70–1200 Hz, > 0,7 in 2 von 3 Stücken).
+   Gemessen: weißes/rosa/braunes Rauschen und 50-Hz-Brumm 0 % als Stimme, Töne 85–600 Hz 100 % (`v3-vs1fix-voiced.mjs`).
+2. **Einmessen:** die Stille vor den Pieptönen setzt `floorDb` nur, wenn sie diese Prüfung besteht; `lastCal` trägt `floorOk`/`floorWhy`;
+   das Profil speichert `floorDb` nur aus geprüfter Stille.
+3. **Laufend nachgeschätzt** (`stDropScan`, statt der ersten Sekunde): alle ≈ 80 ms die letzten 0,3 s (bei Stimme alle 0,25 s). Solange kein
+   geprüftes Grundrauschen da ist, wird kein „einbruch“ gewertet („null“, „lücke“, „stumm“ wie bisher). Danach nur nach unten, höchstens
+   20 dB (tiefer wäre selbst ein Einbruch). Kosten: ≈ 2 ms je Prüfung mit Stimme (Desktop).
+
+| Prüfung | Ergebnis | Skript |
+|---|---|---|
+| Befund A (Lautsprecher, kurz) und B (Kabel) | ✓ `floorDb` −50,4/−50,5, keine Marke, kein Hinweis | `v3-qa-vs1-drop.mjs` 4/4 |
+| Unabhängige Wiederholung (5 Fälle, auch Gegenproben) | ✓ überall `floorDb` ≈ −50,5, `drops = []` | `v3-indep-vs1-floor.mjs` |
+| Echte Aussetzer nach gelerntem Grundrauschen (singt ab Tipp): Einbruch 150 ms, digitale Stille 200 ms | ✓ beide Wege: genau 2 Marken an der Stelle, Hinweis | `v3-vs1fix-drop2.mjs` 8/8 |
+| VS1-Abnahme | ✓ 86/86 (A C F 21, B D E H I J K 63, F G 5; G ist im Gesamtlauf unter Last einmal rot – Worklet-Lücke beim Einschwingen –, allein 2 × grün) | `v3-vs1-accept.mjs` |
+| Smoke | ✓ ohne Fehler | `v3-vs1fix-smoke.png` |
+
+**Für Xander im Dashboard:** nichts. Layout unverändert.

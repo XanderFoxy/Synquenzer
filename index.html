@@ -26885,7 +26885,7 @@ function stStart(opts) {
   if (MIC.run) { toast('Erst den Mikro-Check beenden'); return false; }
   opts = opts || {};
   const c = ensureAudio();                                    // im selben Tipp: resume (I11)
-  const run = ST.run = {opts, t0: performance.now(), nodes: [], srcs: [], timers: [], stream: null, stopped: false, frames: 0, gaps: 0, dz: null, dl: null, lv: [], cal: null};
+  const run = ST.run = {opts, t0: performance.now(), nodes: [], srcs: [], timers: [], stream: null, stopped: false, frames: 0, gaps: 0, dz: null, dl: null, flAt: null, flV: false, cal: null};
   ST.on = true; ST.phase = 'start'; ST.err = null; ST.warn = []; ST.starts++; ST.floorDb = null; ST.lastDrift = null;
   try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}
   stRender();
@@ -26963,14 +26963,52 @@ function stBlock(run, m) {
   stDropScan(run, m);
   stMeter();
 }
+/* Grundrauschen (Auflage 5): nur aus einem Stück, das wirklich Raum ist – ruhiger Pegel (≥ 70 % der 21-ms-Blöcke höchstens
+   6 dB über dem 20-%-Quantil), kein Gesang/Ton (normierte Autokorrelation nach dem ersten Abfall > 0,7 zwischen 70 und 1200 Hz in mind. 2 von 3 Stücken = Stimme),
+   und über Lautsprecher/Bluetooth spielt die App dort nichts (Referenz < −60 dBFS). Sonst bleibt es offen und 'einbruch' wird
+   nicht gewertet. Danach nur noch nach unten (der Raum wird leiser), nie um mehr als 20 dB (das wäre selbst ein Einbruch). */
+function stVoiced(x, i0, n, sr) {
+  const D = sr >= 32000 ? 2 : 1, N = Math.floor(n / D), y = new Float32Array(N);
+  for (let i = 0; i < N; i++) { let v = 0; for (let k = 0; k < D; k++) v += x[i0 + i * D + k]; y[i] = v / D; }
+  const s2 = sr / D, tMin = Math.max(2, Math.floor(s2 / 1200)), tMax = Math.min(Math.floor(N / 2), Math.ceil(s2 / 70));
+  let dip = false, best = 0;
+  for (let t = 1; t <= tMax; t++) {
+    let xy = 0, e = 0; for (let i = 0, L = N - t; i < L; i++) { const a = y[i], b = y[i + t]; xy += a * b; e += a * a + b * b; }
+    const r = e > 0 ? 2 * xy / e : 0;
+    if (!dip) { if (r < 0.25) dip = true; continue; }
+    if (t >= tMin && r > best) best = r;
+  }
+  return best;
+}
+function stFloorAcc(db) { const fl = ST.floorDb; return fl == null || (db < fl - 0.5 && db >= fl - 20); }
+function stFloorOf(s, sr, all) {
+  const x = s.mic, n = x.length, B = 1024, nb = Math.floor(n / B);
+  if (nb < 4) return {ok: false, db: null, why: 'kurz'};
+  const pw = [], db = [];
+  for (let b = 0; b < nb; b++) { let ss = 0; for (let i = b * B, e = i + B; i < e; i++) ss += x[i] * x[i]; pw.push(ss / B); db.push(ss > 0 ? 10 * Math.log10(ss / B) : -180); }
+  const q20 = db.slice().sort((a, b) => a - b)[Math.floor(nb * 0.2)];
+  let g = 0, gp = 0; for (let b = 0; b < nb; b++) if (db[b] <= q20 + 6) { g++; gp += pw[b]; }
+  const lev = micDb(Math.sqrt(gp / g));
+  if (g < Math.ceil(nb * 0.7)) return {ok: false, db: lev, why: 'unruhig'};
+  if (lev < -96) return {ok: false, db: lev, why: 'still'};
+  if (ST.route !== 'wired' && micDb(micRms(s.ref)) > -60) return {ok: false, db: lev, why: 'spielt'};
+  if (!all && !stFloorAcc(lev)) return {ok: false, db: lev, why: 'kein'};
+  const W = Math.min(2048, n);
+  let vc = 0, k = 0; for (const i0 of [0, n - W, Math.floor((n - W) / 2)]) { if (stVoiced(x, i0, W, sr) > 0.7) vc++; k++; if (vc >= 2 || k - vc >= 2) break; }   // 2 von 3 genügen
+  if (vc >= 2) return {ok: false, db: lev, why: 'stimme'};
+  return {ok: true, db: lev};
+}
 /* Aussetzer (Auswertung 19.10. Punkt 5): ≥ 4 Quanten (≈ 10 ms) digitale Stille ('null') oder > 20 dB unter dem Grundrauschen
    ('einbruch'). In den ersten 0,3 s nach dem Start nicht (das Mikrofon schwingt ein). Grundrauschen aus der Stille vor den
-   Pieptönen; ohne Messung das 20-%-Quantil der ersten Sekunde. */
+   Pieptönen, sonst laufend aus den letzten 0,3 s (stFloorOf); eine Sing-Pause fällt nur auf den Raum zurück, kein Aussetzer. */
 function stDropScan(run, m) {
-  const sr = ST.ring.sr, Q = 128, MIN = 4 * Q, GAP = 3 * Q;
+  const sr = ST.ring.sr, Q = 128, MIN = 4 * Q, GAP = 3 * Q, FW = Math.round(0.3 * sr);
   if (run.f1st == null) run.f1st = m.f0;
   const warm = run.f1st + 0.3 * sr;
-  if (ST.floorDb == null) { for (let j = 0; j < m.rm.length; j++) run.lv.push(micDb(m.rm[j])); if (run.lv.length >= Math.round(sr / Q)) { const s = run.lv.slice().sort((x, y) => x - y); ST.floorDb = s[Math.floor(s.length * 0.2)]; run.lv = []; } }
+  if (!run.cal && ST.ring.end - warm >= FW && !(run.flAt != null && m.f0 - run.flAt < (run.flV ? 0.25 : 0.08) * sr)) {
+    run.flAt = m.f0; const e = ST.ring.end, s = stRead(e - FW, e), r = s && s.mic.length >= FW - 1 ? stFloorOf(s, sr) : null;
+    run.flV = !!(r && r.why === 'stimme'); if (r && r.ok && stFloorAcc(r.db)) ST.floorDb = r.db;
+  }
   const fl = ST.floorDb, lowOk = fl != null && fl > -95;
   // je Art ein offener Abschnitt; Lücken ≤ 3 Quanten dazwischen gehören dazu (ein einzelnes lauteres Quantum teilt ihn nicht)
   const step = (key, kind, hit, f) => {
@@ -27031,9 +27069,11 @@ async function stCalEval(run, cal) {
     await micYield(); if (ST.run !== run || run.cal !== cal) return;
   }
   const good = lat.filter(e => e.ok), ms = good.map(e => e.ms), med = ms.length ? micMed(ms) : null, spread = ms.length ? Math.max(...ms) - Math.min(...ms) : null;
-  const q = stRead(fr(cal.quiet[0] + 0.05), fr(cal.quiet[1])); const floorDb = q && q.mic.length ? micDb(micRms(q.mic)) : null;
-  if (floorDb != null && floorDb > -140) ST.floorDb = floorDb;
-  const res = {kind: cal.kind, ms: lat.map(e => (e.ok ? micR(e.ms, 3) : null)), q: lat.map(e => micR(e.q || 0, 1)), lvl: lat.map(e => (e.lvl != null ? e.lvl : null)), medianMs: micR(med, 3), spreadMs: micR(spread, 3), floorDb, heard: good.length, of: lat.length, route: ST.route};
+  // Grundrauschen aus der Stille vor den Pieptönen – nur wenn sie wirklich still ist (wer schon singt, liefert kein Grundrauschen)
+  const q = stRead(fr(cal.quiet[0] + 0.05), fr(cal.quiet[1])), qf = q && q.mic.length ? stFloorOf(q, sr, true) : null;
+  const floorDb = qf && qf.db != null ? qf.db : null, floorOk = !!(qf && qf.ok);
+  if (floorOk && stFloorAcc(floorDb)) ST.floorDb = floorDb;
+  const res = {kind: cal.kind, ms: lat.map(e => (e.ok ? micR(e.ms, 3) : null)), q: lat.map(e => micR(e.q || 0, 1)), lvl: lat.map(e => (e.lvl != null ? e.lvl : null)), medianMs: micR(med, 3), spreadMs: micR(spread, 3), floorDb, floorOk, floorWhy: qf ? qf.why || '' : 'kurz', heard: good.length, of: lat.length, route: ST.route};
   if (cal.noise && med != null) {                             // Kopplung Lautsprecher → Mikrofon (für Säubern, VS4): Pegel Mikro/Referenz
     const L = Math.round(med / 1000 * sr), n = stRead(fr(cal.noise[0] + 0.1), fr(cal.noise[1] - 0.1) + L);
     if (n && n.mic.length > L + 100) res.gainDb = micR(micDb(micRms(n.mic.subarray(L))) - micDb(micRms(n.ref.subarray(0, n.ref.length - L))), 1);
@@ -27050,7 +27090,7 @@ function stCalEnd(run, cal, res, good) {
   const P = stProf(), at = new Date().toISOString();
   if (res.ok) {
     const f = good && good.length ? good[0].f : ST.ring.end, m = res.medianMs;
-    if (cal.kind === 'voll') { P.prof[ST.route] = {ms: m, spread: res.spreadMs, at, how: 'gemessen', floorDb: res.floorDb, gainDb: res.gainDb != null ? res.gainDb : null, outMs: micR(stOutMs(), 1)}; stProfSave(); }
+    if (cal.kind === 'voll') { P.prof[ST.route] = {ms: m, spread: res.spreadMs, at, how: 'gemessen', floorDb: res.floorOk ? res.floorDb : null, gainDb: res.gainDb != null ? res.gainDb : null, outMs: micR(stOutMs(), 1)}; stProfSave(); }
     else if (cal.kind === 'kurz' && P.prof[ST.route] && Math.abs(m - P.prof[ST.route].ms) > 0.5) { P.prof[ST.route].ms = m; P.prof[ST.route].at = at; stProfSave(); }
     ST.latMs = m; ST.latHow = 'gemessen';
     const prev = ST.marks.length ? ST.marks[ST.marks.length - 1] : null;
