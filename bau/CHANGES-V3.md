@@ -8,7 +8,7 @@ capabilities: {
 }
 ```
 
-V0a, V0b, V0d, V4a und V4b fügen keine Fähigkeit hinzu. Die App läuft weiter ohne jede Fähigkeit (`use()` → `null`, EN-13).
+V0a, V0b, V0d, V4a, V4b und VO1 fügen keine Fähigkeit hinzu (VO1: Online läuft nur auf der Pages-Seite, E.5 Nr. 4). Die App läuft weiter ohne jede Fähigkeit (`use()` → `null`, EN-13).
 
 ---
 
@@ -1713,3 +1713,183 @@ rot auf V0c-gruppe-fix.html. Gruppentest Phasen 1–3: die neuen Fehler weg; „
 Spur), die Änderungen dieses Pakets berühren keinen Ton. Smoke ohne Fehler. Bilder in `dirigent-test/v3-k0c-out/`.
 
 Für Xander im Dashboard: nichts.
+
+---
+
+## VO1 — Anmelden, Server-Autosave, eigene Adresse, Offline-Neuladen · App 3.11.2
+
+Grundlage: Nachtrag 2 Teil G (G.2, G.3, G.8, G.9 N2-VO1-01/-02, G.10 K2-46, K2-69), Teil J (FP-SICHER ●, FP-IPHONE), C.7 K2-08;
+`r7/online.md` §2–§9 (verbindlich nach K2-46) mit `r7/online-schema.sql` und `r7/online-test/` (fake-supa, rls-matrix).
+Gebaut nach V0c-klein-fix; Version **3.11.2** statt 3.5.0 (E.5 Punkt 3: die Versionen steigen streng, nachgeholte Pakete bekommen die
+nächste Zwischennummer). `APP_CODE` = 3 011 002.
+
+**Online ist gebaut, aber „aus“ (E.5 Nr. 3, G.8):** Für den Rollout (Migration `vo_init`, Auth-Einstellungen, Turnstile, `max_app`)
+liegt kein ausdrückliches Okay von Xander vor (`fragen-xander-9.md` nennt nur „Supabase als einen der ersten Punkte“ und „Projekt bleibt,
+wo es ist“). Deshalb steht `CLOUD.live = false`: Auf der Pages-Seite zeigt Menü → Online „Online wird gerade eingerichtet – deine
+Songs sind auf diesem Gerät gesichert.“, es lädt nichts nach. Alles andere (Service Worker, Manifest, lokale Schriften, Übergabe aus
+der Claude-App per `#import=`) wirkt schon jetzt. Alle Online-Abläufe sind gegen den Fake-Server (PGlite + echte Migration) geprüft.
+Einschalten = R2–R7 ausführen, dann `live: true` und `captcha.siteKey` setzen (eine Zeile, `CLOUD` in `index.html`).
+
+**Was neu ist**
+1. **SYNC-Kern** (online.md §4, §7.2): lokal zuerst; der Autosave meldet jedes Schreiben (`onWritten`) → Meta je Projekt
+   (`cloud:meta:<lid>`: Konto, Server-ID, `base`, Prüfsumme, `dirty`, Konflikt) und Postausgang **je Konto** (`cloud:outbox:<uid>`);
+   Geräte-Kennung `cloud:device`. **Server-Autosave 2 s nach dem letzten lokalen Schreiben** (spätestens 15 s), beim Spielen höchstens
+   alle 30 s (spätestens 60 s, `tickAhead` vor dem Text), sofort bei `hidden`/`pagehide` (≤ 60 KB mit `keepalive`). Ein Push =
+   **ein** `JSON.stringify` (Hülle per Textverkettung in der Schlüsselfolge von `buildProjectFile`, `fetch` an `rpc/save_project`),
+   unter der Web-Lock `synq-cloud`. Gleiche Prüfsumme → kein Aufruf. Antworten `created/ok/same/conflict/outdated/readonly`,
+   Fehler nach §4.3 (Netz: Backoff 2, 5, 15, 60 s, dann 5 min und bei `online`/`visible`; 540 Pause: alle 5 min; voll/Quote: stündlich;
+   `bad_version`, `too_large`, Zugriff weg = „nur hier“, gesperrt). Konflikt: weiter hochladen mit derselben `base` (der Server hält die
+   Konflikt-Fassung aktuell), Erinnerung höchstens alle 10 min.
+2. **Start-Abgleich** (§4.4, alle sechs Zeilen): nie hochgeladen → anlegen (gleiche `local_id` schon online → verknüpfen); unverändert →
+   nichts; geändert → hochladen; Server neuer + unverändert → still laden („Neuere Version geladen (anderes Gerät, 17:42)“), nach einer
+   Eingabe nur Toast [Laden]; beides neuer → Konflikt; Server-Projekt fehlt → lokal behalten, „nur hier“. Neues Gerät / gelöschter
+   Speicher: das zuletzt geänderte eigene Projekt öffnet sich, wenn das offene unberührt ist („Deine Songs sind da – …“), die übrigen
+   kommen unter [Projekte]; das Demo wird nie hochgeladen. **Anderes Konto auf demselben Gerät:** nichts wird hochgeladen, Karte „Auf
+   diesem Gerät liegen 3 Songs von Xander …“ mit Zwei-Schritt [Diese Songs in mein Konto übernehmen].
+3. **Versions-Wächter** (VO-R1): `outdated` → Hinweisband „Eine neuere SYNQUENZER-Version hat … gespeichert“ mit [Jetzt neu laden]
+   (`location.replace(pfad + '?v=' + Zeit + hash)`), Auto-Push für das Projekt ≤ 1 je 60 s; `bad_version` → „Diese App-Version ist
+   online noch nicht freigeschaltet – Xander/Claude Bescheid sagen“.
+4. **Versionen** (§6.7): Liste mit Zeit, Autor, Art; [Als Kopie öffnen], [Zurückholen] (erst `mark_version` „Vor Wiederherstellen“,
+   dann neue Version), [Diese Version merken]. **Konflikt zweier eigener Geräte**: Karte mit [Übernehmen] / [Beide behalten]
+   („Song X (Xanders Version)“) – die Partner-Fälle kommen mit VO2.
+5. **Eigene Sounds** über `save_library` mit optimistischer Sperre, 5 s nach einer Änderung; Konflikt → Zusammenführen per Hash, neu senden.
+6. **Anmelde-Blatt** (§6.2, §2.4b): echtes `<form>`, Segment Anmelden / Konto anlegen, E-Mail (`username`, `inputmode=email`,
+   `autocapitalize=off`), Passwort mit [zeigen] (`current-/new-password`), Name ≤ 24, „findbar“-Schalter (Vorgabe aus), Turnstile nur im
+   offenen Blatt und nur mit `CLOUD.captcha.siteKey` (`captchaToken` an `signUp` und `signInWithPassword`), alle Fehlertexte aus §6.2,
+   die Texte der Anmelde-Bremse wörtlich vom Server. Nach Erfolg verlässt das Formular das DOM (Safari bietet „Passwort sichern“ an).
+   [Name ✎] → Name, „findbar“, **[Passwort ändern]** (`auth.updateUser`); „Passwort vergessen? Sag Xander Bescheid.“; kein
+   `resetPasswordForEmail`.
+7. **Online-Blatt** unter dem Kopf (▶ bleibt bedienbar): Statuszeile (§4.6), Profil (Name · Code, [Code kopieren]), Karten (Konflikt,
+   neuere Version, fremde Songs, Pause mit [Supabase öffnen] für den Verwalter bzw. [Xander Bescheid sagen]), „Nur ich“-Liste vom
+   Server (öffnen, Versionen, Papierkorb), [Papierkorb] (zurückholen), **[Alles sichern]** (alle Projekte + Sounds in eine Datei; sie
+   lässt sich über [Datei öffnen] wieder einlesen), „Dein Platz: n %“ bzw. für den Verwalter „Speicher online“, [Abmelden] als
+   Zwei-Schritt („Noch 2 Änderungen nicht online – trotzdem abmelden?“; löscht `synq-auth`, lokale Projekte bleiben).
+   Querformat ab 700 px zweispaltig (links `clamp(220px, 35 %, 300px)`); Tastatur (§6.10): Blatt endet über der Tastatur, Erklärtexte
+   weichen, das Feld wird geholt, der Hauptknopf klebt unten. Löschen unter [Projekte] legt das Projekt online in den Papierkorb (weich).
+8. **Status-Punkt am ≡** (8 px, Overlay): grün gespeichert, blau pulsierend speichert, grau nur hier/offline, orange bitte ansehen;
+   abgemeldet kein Punkt. Menü → **Online** direkt unter „Projekt“; Info-Zeile „Online“; vier Hilfe-Zeilen.
+9. **Herkunft** (N2-VO1-01, K2-69): `CLOUD.origin` = `https://xanderfoxy.github.io`, `CLOUD.path` = `/Synquenzer/`; supabase-js
+   (vendor-Datei neben `index.html`, sonst jsDelivr, beide mit SRI `sha384-Rj26…3Ok`) lädt nur dort und nur mit Sitzung oder offenem
+   Anmelde-Blatt. `/synquenzer/` (andere Schreibweise) → `location.replace` auf `/Synquenzer/` vor dem Start, `#import=` bleibt.
+   Claude-Viewer: Zustand `viewer`, grauer Punkt, „Nur auf diesem Gerät – nicht online“, **[In Safari öffnen und mitnehmen]**
+   (`…/Synquenzer/#import=z<deflate-raw + base64url>`, Rückweg [Als Text kopieren] / [Aus Zwischenablage einfügen]), einmal je Sitzung
+   der Toast „Online-Speichern gibt es in der Safari-Version“. githack: Zustand `local`, nie supabase-js.
+10. **Service Worker, Manifest, lokale Schriften** (K2-08): `sw.js` (Bereich `/Synquenzer/`, `index.html` network-first mit Rückfall
+    auf den Cache, vendor/Schriften/Icons/Manifest cache-first); auf der eigenen Herkunft `manifest.webmanifest` und die Schriften aus
+    `fonts/` (keine Anfrage an Google Fonts); Claude-Viewer und githack wie bisher.
+11. Test-API (§7.6): `cloud()`, `cloudSignUp/In/Out`, `cloudSync`, `cloudProjects`, `cloudOpen`, `cloudVersions`, `cloudRestore`,
+    `cloudCopyVersion`, `cloudMark`, `cloudResolve`, `cloudHandoff`, `cloudBackup`, `cloudLibPush`, `cloudAdopt`, `cloudSheet`,
+    `cloudUseFake`; `runtime().cloud = {state, outbox}`. Test-Haken `window.__synqFakeSupa` / `window.__synqCloud` (nur vor dem Laden
+    setzbar). Projektformat unverändert (kein neues Feld, §7.3), Undo unberührt (§7.4).
+
+**Dateien für das Pages-Repo `XanderFoxy/Synquenzer`** (neben `index.html`, nicht im Zweig `dirigent-synth`, K2-46 (3)):
+`scratchpad/synq-pages/` = `sw.js`, `manifest.webmanifest`, `icon-192.png`, `icon-512.png`,
+`vendor/supabase-js-2.117.2.umd.js` (217 945 B, bytegleich aus dem npm-Paket, SRI geprüft), `fonts/*.woff2` (Barlow Semi Condensed
+500/600/700, JetBrains Mono 500/700, latin, @fontsource 5.2.7/5.2.8, OFL, Lizenzen dabei). Migration fertig in
+`scratchpad/synq-online/vo_init.sql` (= `online-schema.sql`, md5 c33142ed…) und `r7-vo1-max-app.sql` (`max_app = 3011002`).
+
+**Abweichungen**
+- **Online „aus“** ausgeliefert (s. oben). Das ist die Regel E.5 Nr. 3, keine Lücke im Bau.
+- **Größe:** `index.html` +77,8 KB (Budget 38 KB, +105 %). Begründung (§15.3): online.md §7.5 schätzte nur den SYNC-Kern; dazu kamen
+  Blatt-CSS für sechs Ansichten und alle Bildschirmgrößen, Tastatur-Regeln, Konflikt-Wahl für eigene Geräte, Kontowechsel-Karte mit
+  Übernahme, [Alles sichern] mit Wiedereinlesen, Zwischenablage-Rückweg und lange deutsche Texte. Gesamt 1,96 MB (Grenze 5,0 MB);
+  supabase-js liegt außerhalb. Startzeit +62 ms (Grenze +150 ms).
+- Push-Takt bei Dauer-Änderung: „2 s nach dem letzten lokalen Schreiben“ heißt bei laufender Bearbeitung alle ≈ 4 s (der lokale
+  Autosave schreibt spätestens alle 4 s); die Abnahme (≤ 15 s Abstand, ≤ 2 Aufrufe in 10 s) ist erfüllt.
+- Suche/`slow_down` der Suche (N8O-04b letzter Satz), Räume, Realtime, Mitmach-Link, Konten-Blatt: VO2 (Nicht-Umfang G.3).
+
+**Abnahme** (`dirigent-test/v3-vo1-accept.mjs`, Harness `v3-vo1-harness.mjs`: App unter ihrer Pages-Adresse über `context.route`,
+FakeSupa = PGlite 0.5.8 + echte Migration, `save_project`/`save_library` als echte `fetch` an die geroutete Supabase-Adresse;
+jede fremde Anfrage wird abgebrochen und gezählt): Gesamtlauf **131/133** (`v3-vo1-accept-all.txt`), danach N8O-18 korrigiert und 3 × grün;
+rot bleibt nur N8O-19b (Größe, begründete Abweichung):
+
+| ID | Ergebnis |
+|---|---|
+| N8O-01 | ✓ Viewer im Rahmen mit `claude.use`-Attrappe: `viewer`, grau, Zeile, Link `…#import=z…` (4,7 KB); 0 Anfragen an supabase/vendor/CDN; Safari-Version importiert deep-equal, Hash weg, Toast; nach dem Anmelden online angelegt |
+| N8O-02 | ✓ ohne Sitzung 0 Anfragen (vendor, CDN, supabase, Turnstile, Google Fonts); Start 574 ms gegen 512 ms (Median aus 5, Δ +62 ms) |
+| N8O-03 | ✓ veränderte vendor-Datei + kein CDN → `error`, „Online gerade nicht verfügbar …“, lokal speichert weiter; mit CDN übernimmt jsDelivr (SRI); echte Datei besteht SRI |
+| N8O-04 | ✓ ohne Name/kurzes Passwort kein Aufruf; Sitzung sofort, Name auf 24 gekürzt, `findable` aus/an, `display_name` übergeben; vorhandene E-Mail → Text + Segment „Anmelden“; 0 Räume/Anfragen; Formular-Anmeldung entfernt das Formular |
+| N8O-04b | ✓ `signup_open=false`, `max_accounts`, Tagesgrenze und 429: Texte wörtlich; Turnstile erst im Blatt, ohne Token kein Aufruf („Bitte kurz bestätigen …“), Token an signUp und signIn; `bad_name` → Text, Name bleibt. (Such-`slow_down`: VO2) |
+| N8O-04c | ✓ [Passwort ändern] → `updateUser({password})`, neues Passwort meldet an; Text im Blatt; kein `resetPasswordForEmail` (Spion + Quelltext) |
+| N8O-05 | ✓ Sitzung überlebt Neuladen; Abmelden mit 1 wartender Änderung → Zwei-Schritt-Text; danach deep-equal, `synq-auth` gelöscht, kein Punkt; githack-Attrappe mit Sitzung: nie supabase-js |
+| N8O-06 | ✓ 1 offenes + 2 geparkte → genau 3 Anlagen; zweites Anmelden 0; gleiche `local_id` → verknüpft; Demo 0 |
+| N8O-06b | ✓ Kontowechsel: 0 Aufrufe für X-Projekte, Karte „3 Songs von Xander“, kein `lost`; X wieder an → Wartendes und Neues geht hoch |
+| N8O-07 | ✓ 1 Änderung → 1 Aufruf nach 2,8 s; 20 in 10 s → 1; 40 s Dauer → Abstand ≤ 6 s; Spielen: 1 Aufruf in 95 s, Abstände ≥ 30 s, `tickAhead` vorher |
+| N8O-08 | ✓ je Push genau ein Stringify > 50 KB; großes Projekt (258 KB) 7,1 ms bis `fetch` (Median, Xeon) |
+| N8O-09 | ✓ Neuladen 300 ms nach der Änderung: deep-equal; Warteschlange geht hoch; Server-md5 = gesendeter Text, Inhalt = lokal |
+| N8O-10 | ✓ leerer Speicher: das neueste Server-Projekt offen, deep-equal, Toast, [Projekte] gefüllt, 0 Anlagen mit Demo |
+| N8O-11 | ✓ alle sechs Zeilen (zwei Kontexte = zwei Geräte), dazu Konfliktkarte und „Beide behalten“ |
+| N8O-12 | ✓ 60 s offline, 30 Änderungen, Projektwechsel: keine Fehler, grau, Warteschlange 2 (je Projekt 1); online → je Projekt genau 1 Push in 126 ms, Server = lokal |
+| N8O-13 | ✓ 540: Freund-Text + [Xander Bescheid sagen], Verwalter-Text + [Supabase öffnen] (Dashboard-Link); 1 Versuch, dann 5-min-Takt; [Alles sichern] angeboten, Datei liest sich wieder ein |
+| N8O-14 | ✓ Liste (Art, Autor, Zeit); Zurückholen → manual „Vor Wiederherstellen“ + neue Version; Kopie → neues Projekt; Merken |
+| N8O-15 | ✓ outdated → Band + Fassung aufgehoben, ≤ 1 Aufruf je 60 s; [Jetzt neu laden] → `…/Synquenzer/?v=<Zeit>#probe`; `bad_version` → Hinweis |
+| N8O-16 | ✓ Upload 5,0 s nach Änderung; A {s1,s2}, B {s1,s3} → Server {s1,s2,s3}, B hat alle drei |
+| N8O-17 | ✓ Push/Pull ändern `gestures().undo/redo` nicht |
+| N8O-18 | ✓ großes Projekt, 300 ms Latenz, Push alle 2 s beim Spielen: 60 fps, keine longtask, tick-p95 1,1–1,3 ms (3 Läufe) |
+| N8O-19 | vendor 217 945 B mit SRI ✓; `index.html` +77,8 KB statt ≤ 38 KB – **begründete Abweichung** (s. oben) |
+| N8O-20 | ✓ Anmelden, Konto anlegen, Online, Nur ich, Versionen und Menü in P1, P2 (375×667), P3 (320×568), L1, L2 (667×375), W (1280×800), Formulare auch mit Tastatur-Attrappe (`visualViewport`): kein Überlauf, Hauptknopf sichtbar, aktives Feld frei, Ziele ≥ 44 (P) / ≥ 40×36 (L), Felder 16 px, `autocomplete="username"`, echtes `<form>`, zweispaltig genau ab 700 px quer |
+| N8O-20b | ✓ `sw.js` mit Bereich `/Synquenzer/`; Netz ganz aus (auch die geroutete Seite), neu laden → App aus dem Service Worker mit dem letzten Projekt, Punkt grau |
+| N2-VO1-01 | ✓ Herkunft/Pfad im Code; githack- und Viewer-Attrappe mit Sitzung: 0 Anfragen; `/synquenzer/#import=…` → Umleitung, Hash bleibt, Projekt importiert, danach Anfragen an supabase |
+| N2-VO1-02 | Rollout-Protokoll unten; kein MCP-Aufruf nennt das Klassenzimmer-Projekt |
+| K2-08 | ✓ Manifest + Icons nur auf der eigenen Herkunft, Schriften lokal geladen (0 Anfragen an Google Fonts), githack unverändert |
+| T1 | ✓ `rls-matrix.mjs` gegen die unveränderte Migration: 135/135 |
+
+Korrekturen während der Abnahme: Blatt baute sich bei jedem Push neu auf (Zwei-Schritt fiel zurück) → nur noch die Statuszeile;
+Pause/Offline lösten bei jeder Änderung einen neuen Versuch aus → der Wiederholungs-Takt gilt; Profil beim Start ohne Netz verlor die
+Verwalter-Rolle → letzter bekannter Stand; Netzfehler von supabase-js („Failed to fetch“ / Safari „Load failed“) als offline erkannt;
+Ziele in P3/L (✕ 44×32, Segment 32 px), Zeilen wuchsen im Hochformat, Hauptknopf und Feld unter der Tastatur.
+
+**Fach-Prüfung (Teil J: FP-SICHER ● Haupt-, FP-IPHONE Zweit-Blick;** als zweiter Durchgang über Diff, Testausgaben und Bilder auf mich
+selbst angewandt – ein eigener Agent stand in diesem Bau nicht zur Verfügung). **8 Befunde, 6 behoben, 2 begründet:**
+1. FP-SICHER: Passwort blieb nach einem Fehlversuch im Speicher des Blatts → wird beim Schließen geleert (behoben).
+2. FP-SICHER: fremde Texte (Titel, Namen, Versions-Etiketten, Server-Meldungen) – alle über `textContent`/`esc`, Projekte nur über
+   `parseFile` + `normalizeProject` (geprüft, kein Befund im Code; Test „Text der Bremse wörtlich“).
+3. FP-SICHER: kein `sb_secret_`, kein `service_role`, kein `rolcktiryrvjzbwuvobb` im Build (Test); nur der Publishable Key.
+4. FP-SICHER: Token nur auf der eigenen Herkunft (`synq-auth`), Abmelden löscht ihn; githack/Viewer laden nie supabase-js (Tests).
+5. FP-SICHER (begründet): Test-Haken `__synqFakeSupa`/`__synqCloud` bleiben im Build – setzen kann sie nur, wer schon vor dem App-Code
+   Skript in der Seite ausführt; dann wäre ohnehin alles offen. Turnstile-Skript ohne SRI (Cloudflare liefert es dynamisch aus).
+6. FP-IPHONE: Safari-7-Tage-Regel → nach dem Anmelden `navigator.storage.persist()` (behoben).
+7. FP-IPHONE: PE1-Test zwang zuerst alle 2 s `saveNow()` des 258-KB-Projekts – die longtasks (50–75 ms) kamen aus dem lokalen Autosave
+   und treten auf V0c-klein-fix genauso auf (`v3-vo1-pe1base.mjs`); die Abnahme misst jetzt die Kosten des Push allein (behoben im Test,
+   App unverändert; begründet).
+8. FP-IPHONE: Hintergrund: `pagehide`/`hidden` → Push mit `keepalive` (≤ 60 KB), größere normal; Startzeit +62 ms, Datei 1,96 MB (< 4,5 MB,
+   keine Startzeit-Pflicht nach EN2-28) (geprüft).
+
+**Regression:** `v3-vo1-reg.sh` (= V0c-Liste mit den Versionskopien `v3-vo1-adapt-*` für 3.11.2), `v3-vo1-reg2.sh`, `v3-vo1-reg3.sh`;
+Ausgaben `dirigent-test/v3-vo1-reg/`, Vergleich mit V0c `v3-vo1-regcmp.sh`. Rot wie auf V0c (`node-fm`, `v3-v0b-adapt-wp3-browser`,
+`-wp3-ui`, `wp4-offline`, `wp3-adapt-func-build(-native)`, `v3-v4bfix-big`, `v3-v4b-node`, `fp4f-loop`, `v0c-song-P`, `rgq-old17`,
+`wp7-adapt-sqr6-persist`, `v3-v4a-ui` N7F-10 CPU). Unter Last neu rot, allein grün: `v3-v0a-drum`, `wp6-extras` P/L (P 3 × grün),
+`wp7-accept-fm4`, `wp7-adapt-func2-build-native`, `v3-v4c-accept-L`. Allein weiter rot und **auf V0c-klein-fix genauso**
+(`v3-vo1-reg/solo-snap/`): `wp6-drums` DR7 (7,3 % gegen 7,49 % auf dem Snapshot), `v3-v4a-node` V4a-11 (beide Fälle identisch),
+`v3-v4b-platz` L667-pegel. `v3-v0c-ui` V0c-05 ist die bekannte Textänderung aus V0c-klein-fix; seine Anpassung
+`v3-k0c-adapt-v0c-ui` ist in P, P375, P320, L, L667 grün. Angepasst: `v3-vo1-adapt-wp1-misc` (Menü-Abschnitt „Online“ zwischen
+„Projekt“ und „Sounds“, gewollt); dort bleibt nur die alte Info-Zeilen-Prüfung rot wie auf V0c. Smoke ohne Fehler.
+
+**Rollout-Protokoll (N2-VO1-02)** – Stand 19.10.2026, kein zustandsändernder Schritt ausgeführt:
+
+| # | Schritt | Datum | Xanders Okay | Stand |
+|---|---|---|---|---|
+| R0 | Entscheidungen | 17.10. | offene Registrierung ✓, Pages ✓, eu-central-1 ✓; Organisation: „Projekt bleibt, wo es ist“ (fragen-xander-9) | – |
+| R0b | Eigene Herkunft | – | – | Pages-Adresse von hier nicht erreichbar (Proxy 403); `sw.js` des Klassenzimmers und Schreibweise ungeprüft |
+| R1 | Projekt | 17.10. | – | angelegt; am 19.10. **nur gelesen** (`get_project`): ref `dbdnsryoivvezspgydpx` = Projekt „synquenzer“, eu-central-1, ACTIVE_HEALTHY, Postgres 17.11, Organisation `lcdkqquoidsvtitrmedi`; ref zweimal verglichen (Auftrag, `get_project`) |
+| R2 | Migration `vo_init` | – | **fehlt** | nicht eingespielt; `list_tables(public, private)` = leer; Advisor erst nach R2 |
+| R3–R5 | Auth, Verwalter, Realtime | – | fehlt | – |
+| R6 | Schlüssel | 19.10. | (nur lesen) | `get_project_url`, `get_publishable_keys` gelesen → `CLOUD.url`, `CLOUD.key` = `sb_publishable_…` im Build |
+| R7 | Ausliefern | – | fehlt | `r7-vo1-max-app.sql` liegt bereit; `live: false` |
+| R8 | Probe durch Xander | – | – | – |
+
+MCP-Aufrufe dieses Pakets: `get_project`, `get_project_url`, `get_publishable_keys`, `list_tables` – alle mit
+`dbdnsryoivvezspgydpx`, alle lesend.
+
+**Für Xander im Dashboard** (erst nach deinem Okay zum Einschalten; Reihenfolge wie G.8):
+1. Authentication → Sign In / Providers → Email: an; „Allow new users to sign up“: an; **„Confirm email“: aus**; Mindestlänge 8.
+2. Authentication → URL Configuration: Site URL und Redirect URL = `https://xanderfoxy.github.io/Synquenzer/`.
+3. Authentication → Hooks → „Before User Created“ → Postgres → `public.hook_before_user_created` (nach der Migration).
+4. Cloudflare (kostenlos) → Turnstile-Widget für `xanderfoxy.github.io` → Site Key an Claude geben; Authentication → Bot and Abuse
+   Protection → „Enable CAPTCHA protection“ → Turnstile + Secret Key – gleichzeitig mit der ersten Online-Version.
+5. Realtime → Settings → „Allow public access“: aus (spätestens vor VO3).
+
+**Für Xander am iPhone (T5, nach dem Einschalten):** (1) Pages-Seite öffnen, Konto anlegen – bietet Safari „Passwort sichern“ an?
+(2) Etwas ändern, 5 s warten, Seite neu laden → alles da, Punkt grün. (3) Flugmodus an, neu laden → App startet, Punkt grau; Flugmodus
+aus → Punkt wird grün. (4) In der Claude-App Menü → Online → [In Safari öffnen und mitnehmen] – öffnet sich Safari mit dem Song?
+(5) Zweites Gerät (oder Home-Bildschirm-App) anmelden → dein Song ist da.
