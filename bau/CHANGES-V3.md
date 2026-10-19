@@ -1687,3 +1687,29 @@ Für Xander im Dashboard: nichts.
 **Bekannte Lücken:** kein WebKit-/iPhone-Test (natives Wischen in einem Blatt mit Touch-Schutz am Gerät prüfen); `v3-qa0c-meltxt.mjs`
 (Start-Blatt sagt bei MELODIE „überschreibt“, die alten Noten bleiben – Overdub) ist schon auf V0c.html rot und nicht Teil dieses
 Pakets.
+
+## V0c-klein-fix — ● zeigt die Ziele der laufenden Aufnahme, Start-Blatt sagt „ergänzt Melodie“, Song-Ansicht nicht hinter dem Ende, `songSelect()` liest nur · App 3.11.1
+
+1. **Erste Aufnahme in leerem Song: ● zeigt „● ALLES“** (S-01). Neue Funktion `recTgNow()`: während einer Aufnahme die Ziele dieser
+   Aufnahme (leerer Song = Clips, Akkorde und Melodie), sonst die Ziele der nächsten. ●-Chip, aria-label und
+   `runtime().song.targets` nutzen sie (vorher fiel das Chip nach dem ersten Takt auf „● MEL“, weil der Song dann Inhalt hatte).
+2. **Start-Blatt und Banner stimmen mit dem Verhalten überein:** MELODIE ist in V0c ein Overdub (Spec v3 §4.8 „bestehende Noten
+   bleiben“; das Ersetzen je Takt/K2-21 gehört zu V2d′). Das Blatt sagt jetzt „überschreibt Akkorde ab Takt 3 · ergänzt Melodie“,
+   nur MELODIE: „ergänzt Melodie ab Takt 3“; die Modus-Zeile „**Melodie**: neue Noten kommen dazu, die alten bleiben“ bzw.
+   „**Melodie dazu** – …“. Das Banner einer reinen MELODIE-Aufnahme heißt „● Takt 3 · Melodie dazu · MEL“ statt „Überschreiben“.
+   [● START] ist aktiv, sobald irgendein Ziel gewählt ist. Testanpassung: `v3-k0c-adapt-v0c-ui.mjs` (V0c-05 erwartet die neuen Texte).
+3. **Song-Ansicht bleibt nicht auf einer leeren Seite hinter dem Song-Ende** (Hochformat, ● kurz nach dem Taktstrich): `svEndClamp()`
+   in `svDraw` setzt die Ansicht außerhalb einer Aufnahme auf die Seite mit dem letzten Takt, sobald kein Takt des Songs mehr zu
+   sehen ist (auch nach Undo auf einen kürzeren Song).
+4. **`songSelect()` ohne Argumente liefert die gelbe Auswahl und ändert nichts**; `songSelect(null)` hebt sie weiter auf.
+
+**Abnahme:** `v3-grp0c-run.mjs` Phase 1 P und L je 16/16 (vorher 14/2: S-01 und „Ansicht hinter dem Ende“, x 288 → 0);
+`v3-qa0c-meltxt.mjs` 1/1 (vorher rot); neu `v3-k0c-verify.mjs` 72/72 mit der echten Schrift (Barlow Semi Condensed per
+@font-face geladen und geprüft) in P, P320, L, L667: sechs Ziel-/Bereichs-Kombinationen, Text passt, Blatt im Bild, keine Überlappung,
+Banner, `songSelect()`, Rücksprung; `v3-k0c-adapt-v0c-ui.mjs` 41/41 in P, L, P320, L667; `v3-v0cfix-verify.mjs` 52/52;
+`v3-v0c-song.mjs` P/L 40/40; `v3-qa0c-fol/-takt/-undo/-mel` grün; `v3-qa0c-ui.mjs` (6 rot) und `v3-qa0c-ta9.mjs` (2 rot) genauso
+rot auf V0c-gruppe-fix.html. Gruppentest Phasen 1–3: die neuen Fehler weg; „[↩ SONG] nach Szenen-Übernahme“ und M-KLICK
+(Szene 2, −67 dBFS) bleiben wie auf V0c-gruppe-fix.html; der HF-Stoß-Test schwankt in P von Lauf zu Lauf (−67 … −38 dBFS, wechselnde
+Spur), die Änderungen dieses Pakets berühren keinen Ton. Smoke ohne Fehler. Bilder in `dirigent-test/v3-k0c-out/`.
+
+Für Xander im Dashboard: nichts.

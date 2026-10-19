@@ -12860,6 +12860,11 @@ function carrierRestoreIfIdle() {
    on); AKKORDE: bars with a newly played chord get it (in each bar the latest pass wins); MELODIE: overdub. Nothing else
    changes; one undo step (kind 'song') for the whole take, also over loop passes. */
 const REC_TG_KEYS = ['clips', 'chords', 'mel'];
+// the targets of the running take (a take of an empty song records all of them), else the next take's targets
+function recTgNow() {
+  const sr = R.songRec; if (!sr) return recTargets();
+  return sr.over ? Object.assign({}, sr.tg) : {clips: true, chords: true, mel: true};
+}
 function recTargets() {
   if (!songHasContent()) return {clips: true, chords: true, mel: true};
   return UI.recTg ? Object.assign({}, UI.recTg) : {clips: false, chords: false, mel: true};
@@ -13196,7 +13201,8 @@ function quantizeChords(o) {
 }
 // N7S-06 the yellow bar selection of the song ruler (0-based bars, b inclusive) and the Positionsmarke (no undo, view state)
 function songSelect(a, b) {
-  if (a === null || a === undefined || !S.song || !S.song.bars) { SV.sel = null; UI.dirty.song = true; return null; }
+  if (a === undefined) return SV.sel ? Object.assign({}, SV.sel) : null;       // V0c-klein: songSelect() only reads
+  if (a === null || !S.song || !S.song.bars) { SV.sel = null; UI.dirty.song = true; return null; }
   const n = S.song.bars; a = clamp(a | 0, 0, n - 1); b = isNum(b) ? clamp(b | 0, 0, n - 1) : a;
   SV.sel = {a: Math.min(a, b), b: Math.max(a, b)}; UI.dirty.song = true; svButtons();
   return Object.assign({}, SV.sel);
@@ -14581,7 +14587,7 @@ function svButtons() {
   const song = S.song, rec = !!R.songRec, play = !!R.songPlay;
   B.bRec.classList.toggle('on', rec); B.bRec.classList.toggle('arm', rec && R.songRec.pending);
   // V0c S-01: the ● names its targets („● AKK“, „● AKK+MEL“, „● ALLES“)
-  const tg = rec && R.songRec.over ? R.songRec.tg : recTargets(), rt = recTgShort(tg, EL.songView.classList.contains('side')), rtEl = B.bRec.lastChild;
+  const tg = recTgNow(), rt = recTgShort(tg, EL.songView.classList.contains('side')), rtEl = B.bRec.lastChild;
   if (rtEl.textContent !== rt) rtEl.textContent = rt;
   B.bRec.setAttribute('aria-label', rec ? 'Song-Aufnahme beenden' : 'Song aufnehmen: ' + recTgLong(tg).join(', ') + (songHasContent() ? ' (halten = Start-Blatt)' : ''));
   const pd = B.bPlay.firstChild; if (pd.textContent !== (play ? '■' : '▶')) pd.textContent = play ? '■' : '▶';
@@ -14612,7 +14618,7 @@ function recBannerText(narrow) {
   const sr = R.songRec; if (!sr) return '';
   if (!sr.over) return narrow ? '● Neuer Song · alles' : '● Neuer Song · Clips, Akkorde und Melodie';
   const keep = ['Clips', 'Akkorde', 'Melodie'].filter((x, k) => !sr.tg[REC_TG_KEYS[k]]);
-  return '● Takt ' + (sr.from + 1) + (sr.to != null ? '–' + sr.to : '') + (narrow ? '' : ' · Überschreiben') + ' · ' + recTgLong(sr.tg).map(x => x.slice(0, 3).toUpperCase()).join(' + ') + (keep.length ? ' · ' + keep.join(' und ') + ' bleiben' : '');
+  return '● Takt ' + (sr.from + 1) + (sr.to != null ? '–' + sr.to : '') + (narrow ? '' : sr.tg.clips || sr.tg.chords ? ' · Überschreiben' : ' · Melodie dazu') + ' · ' + recTgLong(sr.tg).map(x => x.slice(0, 3).toUpperCase()).join(' + ') + (keep.length ? ' · ' + keep.join(' und ') + ' bleiben' : '');
 }
 // K2-63: in the clip view the banner lies in the top bar (over BPM … ≡, same height), never over the part keys; tap = song view
 function recBanTop() {
@@ -14673,13 +14679,16 @@ function openRecStart(anchor) {
       p.classList.toggle('one', one);
       const to = sel && sel.b + 1 > from && !(one && span === 'ab') ? sel.b + 1 : null;
       const head = to != null && to - from > 1 ? 'AUFNAHME TAKTE ' + (from + 1) + '–' + to : to != null ? 'AUFNAHME TAKT ' + (from + 1) : 'AUFNAHME AB TAKT ' + (from + 1);
-      const over = recTgLong(tg), rng = to != null ? (to - from === 1 ? 'in Takt ' + (from + 1) : 'in Takt ' + (from + 1) + '–' + to) : 'ab Takt ' + (from + 1);
+      // V0c-klein: CLIPS / AKKORDE overwrite, MELODIE is an overdub (spec §4.8: the old notes stay) – the sheet says so
+      const over = recTgLong(Object.assign({}, tg, {mel: false})), any = over.length || tg.mel, rng = to != null ? (to - from === 1 ? 'in Takt ' + (from + 1) : 'in Takt ' + (from + 1) + '–' + to) : 'ab Takt ' + (from + 1);
+      const ovTx = !any ? 'kein Ziel gewählt' : over.length ? 'überschreibt ' + over.join(', ') + ' ' + rng + (tg.mel ? ' · ergänzt Melodie' : '') : 'ergänzt Melodie ' + rng;
+      const modeTx = (over.length ? `<b>Überschreiben</b> – was du änderst, ersetzt ${rng}; alles andere bleibt.` + (tg.mel ? ' <b>Melodie</b>: neue Noten kommen dazu, die alten bleiben.' : '') : `<b>Melodie dazu</b> – neue Noten kommen ${rng} dazu, die alten bleiben.`) + ' Szenen-Clips bleiben unberührt.';
       p.innerHTML = `<div class="rs-h"><b>${head}</b><button class="rb rs-x" data-a="x" aria-label="Schließen">✕</button></div>` +
         `<div class="rs-tg"><span class="lbl">Ziele</span>` + [['clips', 'CLIPS'], ['chords', 'AKKORDE'], ['mel', 'MELODIE']].map(([k, l]) => `<button class="rb rs-t${tg[k] ? ' on' : ''}" data-t="${k}" aria-pressed="${tg[k]}">${tg[k] ? '✓' : ''}${l}</button>`).join('') + `</div>` +
         (one ? `<div class="rs-span">${segHTML('rsSpan', [['ab', '<b>Ab Takt ' + (from + 1) + '</b><small>bis ●</small>'], ['nur', '<b>Nur Takt ' + (from + 1) + '</b><small>1 Takt</small>']], span)}</div>` : '') +
-        `<div class="rs-mode"><b>Überschreiben</b> – was du änderst, ersetzt ${rng}; alles andere bleibt. Szenen-Clips bleiben unberührt.</div>` +
-        `<div class="rs-pre"><span class="lbl">Vorlauf</span>${segHTML('rsPre', [['1', '1 Takt'], ['0', 'aus']], pre ? '1' : '0')}<span class="rs-ov">${over.length ? 'überschreibt ' + over.join(', ') + ' ' + rng : 'kein Ziel gewählt'}</span></div>` +
-        `<button class="rb rs-go" data-a="go"${over.length ? '' : ' disabled'}><span class="d">●</span> START</button>`;
+        `<div class="rs-mode">${modeTx}</div>` +
+        `<div class="rs-pre"><span class="lbl">Vorlauf</span>${segHTML('rsPre', [['1', '1 Takt'], ['0', 'aus']], pre ? '1' : '0')}<span class="rs-ov">${ovTx}</span></div>` +
+        `<button class="rb rs-go" data-a="go"${any ? '' : ' disabled'}><span class="d">●</span> START</button>`;
       bindSegTap(p, 'rsPre', v => { UI.recPre = v === '1'; paint(); popDock(p); });
       bindSegTap(p, 'rsSpan', v => { span = v === 'nur' ? 'nur' : 'ab'; paint(); popDock(p); });
     };
@@ -14963,9 +14972,18 @@ function songFrame(bAud) {
     UI.dirty.song = false; SV.ph = ph; svButtons(); svDraw(false, sb);
   }
 }
+// V0c-klein: the view never rests on an empty page behind the song's end (a take ended just after a bar line had already
+// paged on; a shorter song after undo): back to the page with the last bar
+function svEndClamp() {
+  const n = S.song ? S.song.bars : 0, cw = SV.cellW;
+  if (R.songRec || !cw || !(SV.x > 0)) return;
+  if (n && SV.x < n * cw - 1) return;
+  const pw = svPw(); SV.x = n ? Math.floor((n - 1) / pw) * pw * cw : 0; FOL.page.song = null;
+}
 function svDraw(force, sbIn) {
   const g = SV.g, song = S.song; if (!g || !SV.w) return;
   SV.lastDraw = performance.now();
+  svEndClamp();
   const dpr = SV.dpr, W = SV.w, H = SV.h, cw = SV.cellW, rh = SV.rowH, ru = SV.rulerH;
   const sb = sbIn !== undefined ? sbIn : svSongBeat(R.playing ? t2b(nowT() - AU.outLat) : 0);
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -24313,7 +24331,7 @@ function runtimeInfo() {
       startBeat: R.songRec ? R.songRec.startBeat : null, off: R.songPlay ? R.songPlay.off : null,
       // V0c: Positionsmarke (posBar, N0c), yellow selection, the take's targets and range, the loop
       posBar: songStartBar(), pos: SV.pos != null ? SV.pos : null, sel: SV.sel ? Object.assign({}, SV.sel) : null,
-      targets: R.songRec && R.songRec.over ? Object.assign({}, R.songRec.tg) : recTargets(),
+      targets: recTgNow(),
       recFrom: R.songRec && R.songRec.over ? R.songRec.from : null, recTo: R.songRec && R.songRec.over ? R.songRec.to : null,
       loop: S.song ? Object.assign({}, S.song.loop) : null, beat: R.songPlay && R.playing && AU.ctx ? songBeatOf(audBeat()) : null, carrierSaved: !!SONGCAR.saved},
     modSrc: UI.modSrc || null,
@@ -24393,7 +24411,7 @@ const SYNQUENZER = {
   songLoopRange: o => songLoopRange(o), songRecTargets: o => setRecTargets(o),
   songRecFrom: o => { o = o || {}; if (R.songRec) return false; if (o.mode && o.mode !== 'over') return false; if (!songHasContent()) return songRecStart();
     return songRecStartOver({from: o.from, to: o.to, preroll: o.preroll != null ? !!o.preroll : undefined, targets: o.targets}); },
-  songPos: n => songPos(n), songSelect: (a, b) => songSelect(a, b),
+  songPos: n => songPos(n), songSelect: (...a) => songSelect(a[0], a[1]),
   songSetChord: (bar, chord, o) => songSetChord(bar, chord, o), parseChord: (text, o) => { const t = parseChord(text, o); return t ? deep(t) : null; },
   quantizeChords: o => quantizeChords(o), openChordPick: o => openChordPick(o || {}), openRecStart: () => openRecStart(SV.btn && SV.btn.bRec),
   carrierRestoreState: () => (SONGCAR.saved ? deep(SONGCAR.saved) : null),
