@@ -2086,3 +2086,52 @@ Ziele, Überlauf, Schriftgrößen in allen Größen: `v3-vo2-platz` 36/36; alle 
 **Bekannte Lücken:** echte Realtime-Verbindung (WebSocket, Phoenix-Protokoll von supabase-js) ist nur gegen den Nachbau geprüft, nicht gegen
 das echte Projekt (Messung ZA-05 kommt mit VO4 und Xanders Okay); gelber Rand für geänderte Clips (P1) fehlt; Xander ist im echten Projekt
 noch nicht in `private.admins` (R4, Orchestrator nach seiner ersten Anmeldung).
+
+## VO2-fix — Herkunfts-Raum bleibt bei jeder Kopie, „✓ Verwalter“ nicht fälschbar, Übernehmen nach Änderung, privater Realtime-Kanal, Online-Blatt springt nicht · App 3.11.3
+
+Sechs bestätigte Befunde (zwei davon doppelt gemeldet), alle behoben. Version bleibt **3.11.3** (`APP_CODE` 3 011 003); `index.html` +9,9 KB.
+
+1. **VO-E7 / N8O-24 / O3 – Kopien eines Raum-Songs** (Befunde 1 und 5): `duplicateProject` ([Projekte] → Duplizieren), `cloudCopyVersion`
+   (Versionen → ⋯ → Als Kopie öffnen), `restoreHistory` (ältere Version eines anderen Projekts) und der „(vorher)“-Stand beim Datei-Import
+   legten ein neues Projekt **ohne** Herkunft an → `cloudMark` machte daraus ein „Nur ich“-Projekt mit `p_origin = null`, Teilen mit David ging durch.
+   Neu: `cloudInherit(src, neu, org)` schreibt vor dem Parken/Öffnen das Meta der Kopie mit `origin` = Raum (bzw. gemerkte Herkunft) der Quelle;
+   `cloudCopyVersion` liest den Raum des Songs der Version (`cloudOriginOf`: Kopfzeile → lokales Meta → `projects.space_id/origin_space_id`; nicht
+   lesbar → keine Kopie). Das Meta gehört dem Konto der Quelle (Kopie eines fremden Raum-Songs bleibt fremd); „In mein Konto übernehmen“ und der
+   Start-Abgleich übernehmen Raum-Kopien nie. Folge: Kopie hat `origin_space_id = XR`, „Mit David“ grau mit Hinweis, Server `mixed_origin`.
+2. **„✓ Verwalter“ fälschbar über den Namen** (§6.5b): das Abzeichen ist jetzt ein eigenes grünes Element (`.cl-adm`, nur aus `profiles.is_admin`) in
+   Anfrage-Karte, Treffer-Karte und Mitmach-Karte (`cloudWho`); Namen mit Haken-Zeichen (✓ ✔ ☑ ✅ √ …) oder „Verwalter“ (auch mit kyrillischen/
+   griechischen Doppelgängern) werden am Gerät abgelehnt („„✓“ und „Verwalter“ gehen nicht im Namen – nimm einen anderen.“) und vom Server
+   (`profiles_name_guard` in `vo2_fix`: beim Anlegen „Musiker“, beim Ändern `bad_name`); fremde Namen werden zur Anzeige davon befreit (`nmSafe`).
+3. **N8O-27 – [Übernehmen]/[Beide behalten] direkt nach einer Änderung**: `cloudResolve` schreibt zuerst die wartende Autospeicherung (`saveNow`,
+   auch beim Spielen) und lädt dann unter der Sync-Sperre hoch → die Konflikt-Version auf dem Server ist der letzte lokale Stand (Tempo 107).
+4. **FP-SICHER – Realtime-Kanal nicht privat**: „Allow public access“ ist aus, der Kanal `synq-db-<uid8>` war öffentlich und wurde abgewiesen
+   (PrivateOnly) → alle Live-Hinweise tot. Neu: Kanal `user:<uid>` mit `{config: {private: true}}` und Lese-Policy `user_channel_read` auf
+   `realtime.messages` (Migration **`vo2_fix`**, nur eigenes Thema, kein INSERT). Falls der Beitritt trotzdem scheitert: Ersatz-Takt alle 30 s
+   (Kopfzeilen neu holen, nur sichtbar), nach 5 Fehlern ruht der Kanal 5 min statt endlos neu beizutreten.
+5. **FP-TOUCH / M-ANSICHT – Online-Blatt springt**: Partner-Speichern/Presence bauen nur noch Ansichten neu, die davon abhängen (Start, Raum,
+   Teilen; Versionen nur bei einer neuen Version dieses Songs), im Querformat nur die linke Spalte. Vor jedem Neubau merkt sich das Blatt die
+   oberste sichtbare Zeile je Scroll-Bereich und stellt sie danach (auch nach Nachladen) wieder an dieselbe Stelle, bis der Finger selbst scrollt.
+   „Nur ich“, Papierkorb, Konten, Versionen und Platz-Anzeige kommen beim Neubau sofort aus dem Speicher statt „Lädt …“; ein Partner-Ereignis
+   ruft `project_list`, `admin_accounts`, `storage_report` nicht mehr neu ab.
+
+**Migration** `synq-online/vo2_fix.sql` (+ `vo2_fix_down.sql`): `private.topic_user_ok(text)` (SECURITY DEFINER, `search_path=''`, nur
+`authenticated`), Policy `user_channel_read`, neuer `profiles_name_guard`. PGlite: `v3-vo2fix-sql.mjs` 10/10 (eigenes Thema ja, fremdes/alte
+Themen nein, kein INSERT, Namen, Rücksicherung, zweimal angewandt); `synq-online/rls-matrix-vo2fix.mjs` 150/150.
+**Rollout** (Supabase-MCP, ref `dbdnsryoivvezspgydpx`): 19.10. 10:41 `apply_migration vo2_fix` → success; Prüfung nur lesend bzw. per
+zurückgerollter Probe: Policies `space_channel_read, space_channel_write, user_channel_read`, `topic_user_ok` eigenes Thema t / fremdes f / altes
+`synq-db-…` f, `anon` ohne Ausführrecht, Namen „Tom ✓ Verwalter“ und „Vеrwаlter“ → `bad_name`, „Oliver Walter“ erlaubt; Profil unverändert;
+Advisor unverändert (19 × WARN 0029 gewollt, Leaked Password). Kein Aufruf nennt das Klassenzimmer-Projekt.
+**Harness:** `v3-vo2-harness.mjs` prüft Beitritte jetzt wie das echte Realtime (private_only an; privater Beitritt nur mit Lese-Policy auf
+`realtime.messages`, `B.rtRead`) und lädt `vo2_fix.sql` (alt: `v3-vo2-harness.pre-fix.mjs`; `SYNQ_RT_PUBLIC=1` / `SYNQ_NO_VO2FIX=1`).
+
+**Nachweise** (vorher rot, jetzt grün): `v3-qa-vo2acc-b.mjs dup` 1/1, `v3-qa-vo2acc-a.mjs copyver` 1/1, `v3-fpvo2-origin.mjs` (A/B/C
+`mixed_origin`, David liest nichts), `v3-repro-origin-leak.mjs` 3/3; `v3-vo2fix-badge.mjs` 8/8; `v3-qa-vo2acc-a.mjs resolve` 1/1,
+`v3-qa-n8o27-indep.mjs` 3/3 (auch beim Spielen); `v3-vo2fix-rtwire.mjs privonly` (echtes supabase-js über WebSocket: Beitritt ok, Anfrage live
+nach 0,24 s, „angelegt“-Toast, v2 in den Kopfzeilen); `v3-fpvo2-scroll.mjs P/L` ohne Sprung, `v3-repro-fpvo2-scroll-b.mjs P/L` 468/321 bleiben,
+`v3-vo2fix-views.mjs P/L` 4/4 (Liste, Konten, Versionen ohne „Lädt …“ und ohne neue Abrufe). Smoke ohne Fehler (`v3-vo2fix-smoke.png`).
+**Regression** (Harness jetzt wie live: nur private Kanäle): `v3-vo2-accept.mjs` **57/57**, `v3-vo2-fpsicher.mjs` 6/6, `v3-vo2-platz.mjs` 36/36
+(P1–P3, L1, L2, W mit der App-Schrift aus `synq-pages/fonts`; das Abzeichen passt auch in P3), `v3-vo2-adapt-vo1-accept.mjs` 132/133 (rot nur
+N8O-19b Größe, bekannte Abweichung). Ausgaben `dirigent-test/v3-vo2fix-reg/`.
+Hinweis: `v3-qa-vo2acc-a.mjs badge` legt das Fälscher-Konto über die App an – das lehnt die App jetzt ab („badge“); der Fall ist in
+`v3-vo2fix-badge.mjs` (Alt-Konto mit solchem Namen per SQL) abgedeckt.
+**Für Xander im Dashboard:** nichts Neues („Allow public access“ bleibt aus; `vo2_fix` ist angewandt).

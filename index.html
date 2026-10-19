@@ -1177,6 +1177,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .cl-li.off .cl-row{opacity:.45}
 .cl-pres{min-height:24px}
 .cl-card.cl-hit,.cl-card.cl-req{border-color:var(--line);background:rgba(255,255,255,.03)}
+.cl-adm{display:inline-block;margin:0 2px;padding:1px 7px;border-radius:999px;background:var(--play);color:var(--ink);font:700 12px/18px var(--font-ui);white-space:nowrap;vertical-align:1px}
 .pacts .mbtn{min-height:44px}
 #cloud.kb .cl-intro,#cloud.kb .cl-hint,#cloud.kb .cl-act .cl-chk,#cloud.kb .cl-real{display:none}
 #cloud.kb .cl-in{scroll-margin-bottom:72px}   /* das Feld liegt nie unter dem Hauptknopf */
@@ -23622,6 +23623,7 @@ async function duplicateProject(id) {
   else { try { const fo = await kv.get('proj:' + id); src = fo && fo.project ? projFromFile(fo) : null; } catch (e) { src = null; } }
   if (!src) return false;
   const p = normalizeProject(src); p.id = newProjectId(); p.name = (src.name || 'Projekt').slice(0, 34) + ' Kopie';
+  await cloudInherit(id, p.id);            // VO-E7: die Kopie eines Raum-Songs merkt sich den Raum
   const okd = await parkFile(projectFileObj(p));
   if (okd) toast('Kopie „' + p.name + '“ liegt unter Projekte');
   return okd;
@@ -23639,7 +23641,7 @@ async function restoreHistory(key) {
   const raw = await autosave.loadHistory(key); if (!raw) { toast('Version nicht lesbar'); return false; }
   await autosave.snapshotNow();          // the current state first becomes a snapshot
   const p = normalizeProject(raw);
-  if (raw.id && raw.id !== S.id) { p.id = newProjectId(); p.name = (p.name || 'Projekt').slice(0, 26) + ' (ältere Version)'; await switchProject(p, {}); }
+  if (raw.id && raw.id !== S.id) { p.id = newProjectId(); p.name = (p.name || 'Projekt').slice(0, 26) + ' (ältere Version)'; await cloudInherit(raw.id, p.id); await switchProject(p, {}); }
   else { p.id = S.id; applyProject(p, {}); }
   await autosave.flush();
   toast('Ältere Version geladen (' + dayTime(+String(key).slice(String(key).lastIndexOf(':') + 1)) + ')');
@@ -23671,7 +23673,7 @@ function libImport(sounds) {
 function importProject(p, warnings) {
   if (p.id === S.id && BOOT.done && kv && kv.mode !== 'memory' && !isPristine(S)) {
     const prev = JSON.parse(JSON.stringify(S, stripReplacer)); prev.id = newProjectId(); prev.name = (prev.name || 'Projekt').slice(0, 32) + ' (vorher)';
-    parkFile(projectFileObj(prev));
+    cloudInherit(S.id, prev.id).then(() => parkFile(projectFileObj(prev)));
     applyProject(p, {}); if (autosave) autosave.flush();
   } else {
     if ((PROJ.index || []).some(e => e.id === p.id)) p.id = newProjectId();
@@ -23684,6 +23686,7 @@ async function importProjectUI(p, warnings) {
   let r;
   if (p.id === S.id && BOOT.done && kv && kv.mode !== 'memory' && !isPristine(S)) {
     const prev = JSON.parse(JSON.stringify(S, stripReplacer)); prev.id = newProjectId(); prev.name = (prev.name || 'Projekt').slice(0, 32) + ' (vorher)';
+    await cloudInherit(S.id, prev.id);
     r = await parkFile(projectFileObj(prev)).then(x => x === true, () => false);
   } else {
     if ((PROJ.index || []).some(e => e.id === p.id)) p.id = newProjectId();
@@ -24071,7 +24074,7 @@ async function cloudReconcile() {
         m = {uid, sid: r ? r.id : cuuid(), base: 0, space: null, dirty: true, mt: Date.now()};
         linked.add(m.sid); await metaSet(lid, m); await outAdd(uid, lid); continue;
       }
-      if (m.uid !== uid) { if (!m.space) foreign.push(lid); continue; }
+      if (m.uid !== uid) { if (!m.space && !m.origin) foreign.push(lid); continue; }   // Raum-Songs und Kopien daraus nie übernehmen (VO-E7)
       if (m.dirty) await outAdd(uid, lid);
       if (m.conflict) SYNC.conflicts.add(lid);
       if (!m.base) continue;
@@ -24349,11 +24352,26 @@ async function cloudLibPush(again) {
 }
 
 /* ---------- Anmelden (§2.4, §6.2) ---------- */
-const CL_MSG = {no_name: 'Bitte gib deinen Namen ein.', weak: 'Passwort: mindestens 8 Zeichen.', exists: 'Diese E-Mail hat schon ein Konto – tipp auf ‚Anmelden‘.',
+const CL_MSG = {no_name: 'Bitte gib deinen Namen ein.', badge: '„✓“ und „Verwalter“ gehen nicht im Namen – nimm einen anderen.', weak: 'Passwort: mindestens 8 Zeichen.', exists: 'Diese E-Mail hat schon ein Konto – tipp auf ‚Anmelden‘.',
   bad: 'E-Mail oder Passwort stimmt nicht.', error: 'Keine Verbindung – versuch es gleich noch mal.', captcha: 'Bitte kurz bestätigen, dass du kein Roboter bist.',
   slow: 'Heute wurden schon viele Konten angelegt. Bitte morgen noch mal.', nomail: 'Bitte gib deine E-Mail ein.',
   nosession: 'Konto angelegt, aber keine Anmeldung – sag Xander Bescheid („Confirm email“ steht noch auf an).'};
 const cleanDisplay = n => String(n || '').replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁤﻿]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24);
+// VO2-fix (online.md §6.5b): „✓ Verwalter“ kommt nur aus profiles.is_admin und steht als eigenes Abzeichen (.cl-adm) neben dem
+// Namen. Namen mit Haken-Zeichen oder „Verwalter“ (auch mit kyrillischen/griechischen Doppelgängern) sind verboten (Server:
+// profiles_name_guard in vo2_fix); fremde Namen werden zur Anzeige davon befreit, falls ein altes Konto so heißt.
+const BADGE_CH = /[\u2713\u2714\u2611\u2610\u2612\u2705\u221A\u2717\u2718\u{1F5F8}\u{1F5F9}]/gu;
+const HOMO_FROM = 'аеорсухіјѕԁӏνοαειρτκАВЕКМНОРСТХУІЈЅ', HOMO_TO = 'aeopcyxijsdlvoaeiptkabekmhopctxyijs';
+const nmFold = n => Array.from(String(n || '').toLowerCase(), ch => { const i = HOMO_FROM.indexOf(ch); return i >= 0 ? HOMO_TO[i] : ch; }).join('').replace(/[^a-z ]/g, '');
+const nameHasBadge = n => { BADGE_CH.lastIndex = 0; const b = BADGE_CH.test(String(n || '')); BADGE_CH.lastIndex = 0; return b || nmFold(n).includes('verwalter'); };
+const nmSafe = n => String(n || '').replace(BADGE_CH, '').replace(/verwalter/gi, '').replace(/\s+/g, ' ').trim().slice(0, 24) || 'Musiker';
+// Name + (nur wenn der Server es sagt) Abzeichen + Rest, alles als Text/Element (kein HTML)
+function cloudWho(p, name, admin, tail) {
+  p.textContent = ''; p.append(nmSafe(name));
+  if (admin) { const b = document.createElement('span'); b.className = 'cl-adm'; b.textContent = '✓ Verwalter'; b.title = 'Vom Server bestätigt'; p.append(' ', b); }
+  if (tail) p.append(tail);
+  return p;
+}
 const needCaptcha = () => !!(CLOUD.captcha && CLOUD.captcha.siteKey);
 function cloudCaptchaReset() { SYNC.captchaTok = ''; try { if (window.turnstile && SYNC.tsId != null) window.turnstile.reset(SYNC.tsId); } catch (e) {} }
 // Turnstile nur im geöffneten Anmelde-Blatt (N8O-04b)
@@ -24368,6 +24386,7 @@ async function cloudSignUp(email, pw, name, findable) {
   if (!email) return {r: 'nomail'};
   if (String(pw || '').length < 8) return {r: 'weak'};
   if (!name) return {r: 'no_name'};
+  if (nameHasBadge(name)) return {r: 'badge'};
   if (needCaptcha() && !SYNC.captchaTok) return {r: 'captcha'};
   try { await cloudClient(); } catch (e) { return {r: 'error'}; }
   let res; try { res = await SYNC.client.auth.signUp({email, password: String(pw), options: {data: {display_name: name}, captchaToken: SYNC.captchaTok || undefined}}); } catch (e) { res = {error: {message: 'net'}}; }
@@ -24414,6 +24433,7 @@ async function cloudSignOut(force) {
 }
 async function cloudSetName(name, findable) {
   name = cleanDisplay(name); if (!name) return 'no_name';
+  if (nameHasBadge(name)) return 'badge';
   const r = await cloudRpc('set_profile', {p_name: name, p_findable: findable == null ? null : !!findable});
   if (r.err) return /bad_name/.test(r.message || '') ? 'bad_name' : r.err;
   const d = r.data || {}; SYNC.me = Object.assign({}, SYNC.me, {name: d.display_name || name, findable: !!d.findable, code: d.friend_code || SYNC.me.code}); await cset('me', SYNC.me);
@@ -24451,9 +24471,27 @@ async function cloudVersions(sid) {
   return (r.data || []).map(v => ({id: v.id, kind: v.kind, label: v.label || '', version: v.version, by: cnm(v.created_by), at: v.created_at, here: v.client_id === SYNC.device}));
 }
 async function cloudVersionBody(id) {
-  const r = await cloudSel(SYNC.client.from('project_versions').select('body,created_at').eq('id', id).maybeSingle());
+  const r = await cloudSel(SYNC.client.from('project_versions').select('body,created_at,project_id').eq('id', id).maybeSingle());
   let b = r.data && r.data.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = null; } }
-  return b ? {fo: b, at: r.data.created_at} : null;
+  return b ? {fo: b, at: r.data.created_at, sid: r.data.project_id} : null;
+}
+// Herkunfts-Raum eines Server-Projekts (Raum oder gemerkte Herkunft), null = rein privat, false = nicht lesbar
+async function cloudOriginOf(sid) {
+  if (!sid) return false;
+  const h = SYNC.heads.get(sid); if (h && (h.space || h.origin)) return h.space || h.origin;
+  const lid = await cloudLidOf(sid), m = lid ? await metaGet(lid) : null; if (m && (m.space || m.origin)) return m.space || m.origin;
+  const r = await cloudSel(SYNC.client.from('projects').select('space_id,origin_space_id').eq('id', sid).maybeSingle());
+  if (r.err || !r.data) return false;
+  return r.data.space_id || r.data.origin_space_id || null;
+}
+// VO-E7: eine lokale Kopie (Duplizieren, ältere Version, „(vorher)“, Version als Kopie) eines Raum-Songs oder einer Kopie daraus
+// merkt sich den Herkunfts-Raum – sonst ginge sie als neues „Nur ich“-Projekt über „Kopie → Teilen“ in einen anderen Raum.
+// Das Meta gehört dem Konto der Quelle: die Kopie eines fremden Raum-Songs bleibt fremd und wird nie übernommen.
+async function cloudInherit(srcLid, newLid, org) {
+  let m = null; if (srcLid) { try { m = await metaGet(srcLid); } catch (e) { m = null; } }
+  const o = org || (m && (m.space || m.origin)) || null, uid = (m && m.uid) || SYNC.uid;
+  if (!o || !uid) return;
+  await cq(async () => { await metaSet(newLid, {uid, sid: cuuid(), base: 0, space: null, origin: o, dirty: true, mt: Date.now()}); });
 }
 // „Zurückholen“ = erst „Vor Wiederherstellen“ merken, dann den alten Stand als neue Version speichern (nichts verschwindet)
 async function cloudRestore(id) {
@@ -24471,7 +24509,10 @@ async function cloudRestore(id) {
 }
 async function cloudCopyVersion(id) {
   const v = await cloudVersionBody(id); const p = v && projFromFile(v.fo); if (!p) { toast('Version nicht lesbar'); return false; }
+  const org = await cloudOriginOf(v.sid);                              // VO-E7: Version eines Raum-Songs → Kopie merkt sich den Raum
+  if (org === false) { toast('Gerade nicht möglich'); return false; }
   p.id = newProjectId(); p.name = ((p.name || 'Projekt').slice(0, 24) + ' (' + dayTime(Date.parse(v.at)) + ')').slice(0, 40);
+  if (org) await cloudInherit(null, p.id, org);
   return switchProjectUI(normalizeProject(p), {}, 'Version als Kopie geöffnet');
 }
 async function cloudMarkVersion() {
@@ -24485,7 +24526,11 @@ async function cloudMarkVersion() {
 // Konflikt (zwei eigene Geräte, §4.5): Übernehmen = Server-Stand laden; Beide behalten = meine Version wird ein neues Projekt
 async function cloudResolve(how) {
   const lid = S.id, m = await metaGet(lid); if (!m || !m.conflict) return false;
-  const r0 = await cloudPush(lid);                                         // die Konflikt-Fassung entspricht sicher dem letzten lokalen Stand
+  // N8O-27 / §4.5: erst die wartende Autospeicherung schreiben (Entprellung 0,8 s, beim Spielen bis 20 s), damit SYNC.snap
+  // und damit die Konflikt-Fassung auf dem Server sicher der letzte lokale Stand ist; dann ein save_project unter der Sperre
+  if (autosave) { try { await saveNow(); } catch (e) { logErr(e); } }
+  await cq(async () => {});                                                // cloudMark aus dem Schreiben ist durch
+  const r0 = await cloudLock(() => cloudPush(lid));                        // die Konflikt-Fassung entspricht sicher dem letzten lokalen Stand
   if (r0 === 'stop') { toast('Erst online, damit deine Version sicher ist'); return false; }
   const row = (await cloudSel(SYNC.client.from('projects').select('id,version,title,updated_at,updated_by').eq('id', m.sid).maybeSingle())).data;
   const fo = await cloudBody(m.sid); const srv = fo && projFromFile(fo); if (!row || !srv) { toast('Server-Stand nicht lesbar'); return false; }
@@ -24512,7 +24557,7 @@ async function cloudResolve(how) {
 // Projekte eines anderen Kontos auf diesem Gerät übernehmen (Zwei-Schritt, §4.4); Kopien aus einem Raum nie
 async function cloudAdoptForeign() {
   const list = SYNC.foreign || []; let n = 0;
-  for (const lid of list) await cq(async () => { const m = await metaGet(lid); if (m && m.space) return;
+  for (const lid of list) await cq(async () => { const m = await metaGet(lid); if (m && (m.space || m.origin)) return;
     await metaSet(lid, {uid: SYNC.uid, sid: cuuid(), base: 0, space: null, dirty: true, mt: Date.now()}); await outAdd(SYNC.uid, lid); n++; });
   SYNC.foreign = null; SYNC.claim = true; await cloudFlush(); toast(n + (n === 1 ? ' Song' : ' Songs') + ' in dein Konto übernommen');
   return n;
@@ -24567,10 +24612,10 @@ async function cloudCollabLoad(diff) {
   const ids = new Set(); for (const s of sp.data || []) ids.add(s.partner_id); for (const r of rq.data || []) { ids.add(r.from_user); ids.add(r.to_user); }
   ids.delete(uid); ids.delete(null);
   if (ids.size) { const pr = await cloudSel(c.from('profiles').select('id,display_name,friend_code,is_admin').in('id', [...ids]));
-    for (const p of pr.data || []) SYNC.names.set(p.id, {name: p.display_name, code: p.friend_code, admin: !!p.is_admin}); }
+    for (const p of pr.data || []) SYNC.names.set(p.id, {name: nmSafe(p.display_name), code: p.friend_code, admin: !!p.is_admin}); }
   if (uid !== SYNC.uid) return false;
   const old = SYNC.spaces;
-  SYNC.spaces = (sp.data || []).map(s => ({id: s.space_id, status: s.status, partner: s.partner_id, name: s.partner_name || cnm(s.partner_id)}));
+  SYNC.spaces = (sp.data || []).map(s => ({id: s.space_id, status: s.status, partner: s.partner_id, name: s.partner_name ? nmSafe(s.partner_name) : cnm(s.partner_id)}));
   SYNC.reqs = (rq.data || []).map(r => ({id: r.id, mine: r.from_user === uid, user: r.from_user === uid ? r.to_user : r.from_user, note: r.note || '', at: r.created_at}));
   const seen = await cloudSeen(); let seenCh = false;
   for (const s of SYNC.spaces) if (!(s.id in seen)) { seen[s.id] = Date.now(); seenCh = true; }   // ein neuer Raum: nur Späteres zählt als neu
@@ -24579,7 +24624,7 @@ async function cloudCollabLoad(diff) {
     if (o && o.status === 'active' && s.status === 'ended') toast(s.name + ' hat die Zusammenarbeit beendet – eure Songs bleiben lesbar.');
     if (!o && s.status === 'active') toast(s.name + ' hat angenommen – Raum „Mit ' + s.name + '“ ist da'); }
   const nh = new Map();
-  for (const r of hd.data || []) { if (r.updated_by && r.updated_by_name && r.updated_by !== uid && !SYNC.names.has(r.updated_by)) SYNC.names.set(r.updated_by, {name: r.updated_by_name});
+  for (const r of hd.data || []) { if (r.updated_by && r.updated_by_name && r.updated_by !== uid && !SYNC.names.has(r.updated_by)) SYNC.names.set(r.updated_by, {name: nmSafe(r.updated_by_name)});
     nh.set(r.id, cloudHeadOf(r)); }
   const prev = SYNC.heads; SYNC.heads = nh;
   if (diff && SYNC.headsInit) for (const [id, h] of nh) { const p = prev.get(id);     // verpasste Ereignisse (§5): wie Realtime behandeln
@@ -24602,19 +24647,29 @@ async function cloudSeeSpace(id) { const s = await cloudSeen(); s[id] = Date.now
 const cloudSpaceHeads = id => [...SYNC.heads.entries()].filter(([, h]) => h.space === id && !h.deleted).sort((a, b) => String(b[1].at).localeCompare(String(a[1].at)));
 
 /* ---------- Realtime (§5): ein Kanal mit Postgres Changes auf den Kopf-Tabellen; RLS filtert je Empfänger ---------- */
+// VO2-fix (FP-SICHER): „Allow public access“ ist aus → der Kanal ist privat, Thema 'user:<uid>' (Policy user_channel_read,
+// Migration vo2_fix). Scheitert der Beitritt (Migration fehlt, Netz), holt ein Ersatz-Takt alle 30 s die Kopfzeilen,
+// solange die Seite sichtbar ist; nach 5 Fehlern in Folge ruht der Kanal 5 min statt endlos neu beizutreten.
 function cloudSubscribe() {
   const c = SYNC.client; if (SYNC.rt || !c || typeof c.channel !== 'function' || !SYNC.uid) return;
-  const uid = SYNC.uid, ch = c.channel('synq-db-' + uid.slice(0, 8));
+  const uid = SYNC.uid, ch = c.channel('user:' + uid, {config: {private: true}});
   for (const t of ['projects', 'collab_requests', 'spaces']) ch.on('postgres_changes', {event: '*', schema: 'public', table: t}, e => { try { cloudRtEvent(t, e); } catch (er) { logErr(er); } });
-  ch.subscribe(st => { if (uid !== SYNC.uid) return;
-    if (st === 'SUBSCRIBED') { if (SYNC.rtUp) cloudCollabLoad(true); SYNC.rtUp = true; }   // nach einer Wiederverbindung: Verpasstes holen
+  SYNC.rtErr = 0;
+  ch.subscribe(st => { if (uid !== SYNC.uid || SYNC.rt !== ch) return;
+    if (st === 'SUBSCRIBED') { SYNC.rtLive = true; SYNC.rtErr = 0; if (SYNC.rtUp) cloudCollabLoad(true); SYNC.rtUp = true; return; }   // nach einer Wiederverbindung: Verpasstes holen
+    SYNC.rtLive = false;
+    if ((st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') && ++SYNC.rtErr >= 5) {
+      SYNC.rt = null; try { c.removeChannel(ch); } catch (e) {}
+      clearTimeout(SYNC.rtRetryT); SYNC.rtRetryT = setTimeout(() => { if (uid === SYNC.uid) cloudSubscribe(); }, 300000);
+    }
   });
   SYNC.rt = ch;
+  if (!SYNC.pollT) SYNC.pollT = setInterval(() => { if (SYNC.uid && SYNC.headsInit && !SYNC.rtLive && document.visibilityState === 'visible' && SYNC.state !== 'off') cloudCollabLoad(true).catch(e => logErr(e)); }, 30000);
 }
 function cloudUnsubscribe() {
   const c = SYNC.client;
   for (const ch of [SYNC.rt].concat([...SYNC.pres.values()].map(x => x.ch))) if (ch) { try { c.removeChannel(ch); } catch (e) {} }
-  SYNC.rt = null; SYNC.rtUp = false; SYNC.pres.clear();
+  SYNC.rt = null; SYNC.rtUp = false; SYNC.rtLive = false; SYNC.pres.clear(); clearTimeout(SYNC.rtRetryT);
 }
 function cloudRtEvent(t, e) {
   const r = e && e.new; if (!SYNC.uid || !r || !r.id) return;
@@ -24675,7 +24730,7 @@ function cloudReqIn(r) {
   const uid = SYNC.uid, in_ = r.to_user === uid, other = in_ ? r.from_user : r.to_user;
   const go = async () => {
     if (!SYNC.names.has(other)) { const p = await cloudSel(SYNC.client.from('profiles').select('id,display_name,friend_code,is_admin').eq('id', other).maybeSingle());
-      if (p.data) SYNC.names.set(p.data.id, {name: p.data.display_name, code: p.data.friend_code, admin: !!p.data.is_admin}); }
+      if (p.data) SYNC.names.set(p.data.id, {name: nmSafe(p.data.display_name), code: p.data.friend_code, admin: !!p.data.is_admin}); }
     const nm = cnm(other);
     if (r.status === 'pending' && in_) toast(nm + ' möchte mit dir Musik machen' + (r.note === 'über deinen Link' ? ' · über deinen Link' : ''), {label: 'Ansehen', fn: () => cloudOpenSheet('home')});
     else if (r.status === 'declined' && !in_) toast(nm + ' hat abgelehnt – neue Anfrage morgen möglich');
@@ -24699,7 +24754,7 @@ function cloudPresJoin() {
     const x = {ch, others: [], sent: '', ok: false}; SYNC.pres.set(id, x);
     ch.on('presence', {event: 'sync'}, () => { try {
       const st = ch.presenceState() || {}, out = [];
-      for (const k of Object.keys(st)) { if (k.split(':')[0] === SYNC.uid) continue; const a = st[k] && st[k][0]; if (a) out.push({name: String(a.name || '').slice(0, 24), sid: a.sid || null, title: a.title ? String(a.title).slice(0, 40) : ''}); }
+      for (const k of Object.keys(st)) { if (k.split(':')[0] === SYNC.uid) continue; const a = st[k] && st[k][0]; if (a) out.push({name: a.name ? nmSafe(a.name) : '', sid: a.sid || null, title: a.title ? String(a.title).slice(0, 40) : ''}); }
       x.others = out; SYNC.crev++; cSoon();
     } catch (e) {} });
     ch.subscribe(st => { if (st === 'SUBSCRIBED') { x.ok = true; cloudPresSend(id); } });
@@ -24720,7 +24775,7 @@ async function cloudFind(q) {
   if (q.length < 2 || q.includes('@')) return {r: 'none', list: []};    // nie per E-Mail (VO-E15): kein Server-Aufruf
   const r = await cloudSel(SYNC.client.rpc('find_user', {p_query: q}));
   if (r.err) return {r: /slow_down/.test(r.message || '') ? 'slow' : r.err === 'net' ? 'net' : 'error', list: []};
-  const list = (r.data || []).map(x => ({id: x.user_id, name: x.display_name, code: x.friend_code, isAdmin: !!x.is_admin}));
+  const list = (r.data || []).map(x => ({id: x.user_id, name: x.user_id || x.display_name ? nmSafe(x.display_name) : '', code: x.friend_code, isAdmin: !!x.is_admin}));
   for (const x of list) if (x.id) SYNC.names.set(x.id, {name: x.name, code: x.code, admin: x.isAdmin});
   return {r: !list.length ? 'none' : list[0].id ? 'one' : 'many', list};
 }
@@ -24843,7 +24898,7 @@ async function cloudFork(sid, versionId, toRoom) {
 }
 
 /* ---------- Konten (§6.3b, nur Verwalter) ---------- */
-async function cloudAccounts() { const r = await cloudRpc('admin_accounts'); return r.err ? {err: r.err} : {list: Array.isArray(r.data) ? r.data : []}; }
+async function cloudAccounts() { const r = await cloudRpc('admin_accounts'); return r.err ? {err: r.err} : {list: Array.isArray(r.data) ? r.data.map(a => Object.assign({}, a, {name: nmSafe(a.name)})) : []}; }
 async function cloudAdminDo(fn, args) { const r = await cloudRpc(fn, args); return r.err ? {err: r.err, message: r.message} : r.data || {}; }   // Anfragen/Räume folgen per Realtime
 
 /* ---------- Viewer → Safari (§4.7): #import=<deflate + base64url> ---------- */
@@ -24937,16 +24992,64 @@ function cloudKb() {
   if (kbOn && a && d.contains(a)) requestAnimationFrame(() => { try { a.scrollIntoView({block: 'nearest'}); } catch (e) {} });   // der Hauptknopf klebt unten (.cl-act)
 }
 const KIND_DE = {auto: 'automatisch', handover: 'Übergabe', conflict: 'gleichzeitig', manual: 'gemerkt', import: 'erster Stand'};
+// VO2-fix (M-ANSICHT, FP-TOUCH „nichts springt“): Partner-Ereignisse (SYNC.crev) bauen nur Ansichten neu, die davon abhängen
+// (Start, Raum, Teilen; Versionen nur bei einer neuen Version dieses Songs); im Querformat nur die linke Spalte. Vor jedem
+// Neubau derselben Ansicht merkt sich das Blatt je Scroll-Bereich die oberste sichtbare Zeile (Anker) und stellt sie danach
+// wieder an dieselbe Stelle – auch wenn Inhalte später nachladen (cloudScrollRe), bis der Finger selbst scrollt.
+const cloudItems = sc => [...sc.querySelectorAll('.cl-col > *, .cl-list > *')].filter(e => !e.classList.contains('cl-list') && !e.classList.contains('cl-col'));
+const cloudItemKey = e => e.className + '|' + String(e.textContent || '').slice(0, 80);
+const cloudScrollers = d => { const b = d && d.querySelector('.cl-b'); return b ? [b, b.querySelector('.cl-col.l'), b.querySelector('.cl-col.r')] : []; };
+function cloudScrollSave(d) {
+  return cloudScrollers(d).map(sc => { if (!sc || sc.scrollTop <= 0) return null;
+    const top = sc.getBoundingClientRect().top; let a = null;
+    const its = cloudItems(sc);
+    for (const e of its) { const r = e.getBoundingClientRect(); if (r.height && r.bottom > top + 1) { const k = cloudItemKey(e);
+      a = {k, n: its.slice(0, its.indexOf(e)).filter(x => cloudItemKey(x) === k).length, off: r.top - top}; break; } }
+    return {top: sc.scrollTop, a}; });
+}
+function cloudScrollRe() {
+  const w = UI.cloudKeep, d = document.getElementById('cloud'); if (!w || !d || !UI.cloudOpen) return;
+  cloudScrollers(d).forEach((sc, i) => { const k = w[i]; if (!sc || !k) return;
+    const same = k.a ? cloudItems(sc).filter(e => cloudItemKey(e) === k.a.k) : [], m = same[Math.min(k.a ? k.a.n : 0, same.length - 1)];
+    if (m) sc.scrollTop += (m.getBoundingClientRect().top - sc.getBoundingClientRect().top) - k.a.off; else sc.scrollTop = k.top; });
+}
+// Ergebnisse der Listen-Aufrufe je Ansicht (Nur ich, Papierkorb, Konten, Versionen, Platz): beim Neubau sofort aus dem Speicher
+// statt „Lädt …“; bei einem weichen Neubau (Partner-Ereignis) kein neuer Aufruf, außer always (Versionen)
+function cloudCached(k, get, fill, list, always) {
+  const C = UI.cloudCache || (UI.cloudCache = new Map()), c = C.get(k), uid = SYNC.uid;
+  if (c && c.uid === uid) { fill(c.v); cloudScrollRe(); if (UI.cloudSoftNow && !always) return; }
+  else if (list) list.appendChild(el('p', 'cl-s', 'Lädt …'));
+  Promise.resolve(get()).then(v => { if (uid !== SYNC.uid || v == null) return; const js = JSON.stringify(v);
+    C.set(k, {uid, v, js}); if (c && c.uid === uid && c.js === js) return;
+    if (!list || list.isConnected) { fill(v); cloudScrollRe(); } }).catch(e => logErr(e));
+}
 function cloudRender(soft) {
   const d = document.getElementById('cloud'); if (!d || !UI.cloudOpen) return;
   const act = document.activeElement;
-  const key = [SYNC.uid, SYNC.conflicts.has(S.id), !!SYNC.outdated, SYNC.foreign ? SYNC.foreign.length : 0, SYNC.state === 'paused', cloudWide(), SYNC.crev, !!SYNC.join, SYNC.newer ? SYNC.newer.v : 0].join();
-  if (soft && (key === UI.cloudKey || (act && d.contains(act) && act.tagName === 'INPUT'))) { cloudState(); return; }   // nur die Statuszeile: nichts springt, Zwei-Schritt bleibt
-  if (soft && d.querySelector('.pacts:not([hidden]), .arm')) { cloudState(); clearTimeout(UI.cloudRetry); UI.cloudRetry = setTimeout(() => cloudRender(true), 3000); return; }   // VO2: offenes ⋯ oder Zwei-Schritt nie unter dem Finger neu bauen
-  UI.cloudKey = key;
   const view = UI.cloudView === 'auth' && SYNC.uid ? 'home' : !SYNC.uid && UI.cloudView !== 'auth' ? 'auth' : UI.cloudView;
-  UI.cloudView = view;
   const wide = cloudWide(), sub = view === 'home' ? null : view;
+  const depOf = v => ['home', 'room', 'share'].includes(v) ? SYNC.crev : v === 'vers' ? ((SYNC.heads.get(UI.cloudSid) || {}).v || 0) : 0;
+  const base = [SYNC.uid, SYNC.conflicts.has(S.id), !!SYNC.outdated, SYNC.foreign ? SYNC.foreign.length : 0, SYNC.state === 'paused', wide, !!SYNC.join, SYNC.newer ? SYNC.newer.v : 0, view, UI.cloudSpace, UI.cloudSid].join();
+  const keyL = base + '|' + (wide && view !== 'auth' ? SYNC.crev : depOf(view)), keyR = base + '|' + (wide ? depOf(sub || 'list') : '');
+  if (soft && ((keyL === UI.cloudKey && keyR === UI.cloudKeyR) || (act && d.contains(act) && act.tagName === 'INPUT'))) { cloudState(); return; }   // nur die Statuszeile: nichts springt, Zwei-Schritt bleibt
+  if (soft && d.querySelector('.pacts:not([hidden]), .arm')) { cloudState(); clearTimeout(UI.cloudRetry); UI.cloudRetry = setTimeout(() => cloudRender(true), 3000); return; }   // VO2: offenes ⋯ oder Zwei-Schritt nie unter dem Finger neu bauen
+  const skey = [view, view === 'room' ? UI.cloudSpace : view === 'vers' ? UI.cloudSid : '', wide].join('|');
+  // zwei Neubauten kurz nacheinander (Inhalt lädt noch nach): der erste gemerkte Stand gilt weiter, bis der Finger scrollt
+  if (skey !== UI.cloudSKey) UI.cloudKeep = null;
+  else if (!(UI.cloudKeep && Date.now() - UI.cloudKeepAt < 1500)) { UI.cloudKeep = cloudScrollSave(d); UI.cloudKeepAt = Date.now(); }
+  UI.cloudSKey = skey;
+  const oldL = d.querySelector('.cl-b.two .cl-col.l');
+  if (soft && wide && oldL && keyR === UI.cloudKeyR && view !== 'auth') {     // Querformat: nur die linke Spalte (Start) neu
+    UI.cloudKey = keyL; UI.cloudSoftNow = true;
+    try { oldL.innerHTML = ''; cloudHomeView(oldL); } finally { UI.cloudSoftNow = false; }
+    cloudScrollRe(); return;
+  }
+  UI.cloudKey = keyL; UI.cloudKeyR = keyR; UI.cloudSoftNow = !!soft;
+  try { cloudBuild(d, view, wide, sub); } finally { UI.cloudSoftNow = false; }
+  cloudScrollRe();
+}
+function cloudBuild(d, view, wide, sub) {
+  UI.cloudView = view;
   d.innerHTML = '';
   const h = el('div', 'cl-h');
   if (!wide && sub && view !== 'auth') { const bk = el('button', 'rb cl-back', '‹ Online'); on(bk, 'click', () => { UI.cloudView = 'home'; cloudRender(); }); h.appendChild(bk); }
@@ -24956,6 +25059,8 @@ function cloudRender(soft) {
   const x = el('button', 'sh-x rb', '✕'); x.setAttribute('aria-label', 'Online schließen'); on(x, 'click', cloudCloseSheet); h.appendChild(x);
   const b = el('div', 'cl-b' + (wide ? ' two' : '')), L = el('div', 'cl-col l'), Rc = el('div', 'cl-col r');
   b.append(L, Rc); d.append(h, b);
+  const mine = () => { UI.cloudKeep = null; };                         // der Finger scrollt selbst: kein Nachstellen mehr
+  for (const ev of ['touchstart', 'wheel', 'pointerdown', 'keydown']) on(b, ev, mine, {passive: true});
   if (view === 'auth') { cloudAuthView(L, Rc, wide); return; }
   if (wide) { cloudHomeView(L); cloudSubView(Rc, sub || 'list'); }
   else if (sub) cloudSubView(L, sub); else cloudHomeView(L);
@@ -25022,13 +25127,14 @@ function cloudHomeView(P) {
   if (SYNC.join) {                                                     // Mitmach-Link (§6.1): erst dieser Tipp schickt die Anfrage
     const c = card('Mitmach-Link wird geprüft …', []);
     cloudJoinLookup().then(h => { if (!c.isConnected || !h) return; const p = c.firstChild; c.querySelectorAll('.cl-btns,.cl-code').forEach(x => x.remove());
-      if (h.r === 'one') { p.textContent = h.x.name + (h.x.isAdmin ? ' ✓ Verwalter' : '') + ' möchte mit dir Musik machen.'; cloudCodeLine(c, h.x.code);
+      if (h.r === 'one') { cloudWho(p, h.x.name, h.x.isAdmin, ' möchte mit dir Musik machen.'); cloudCodeLine(c, h.x.code);
         const s = btn('Anfrage an ' + h.x.name + ' schicken', async () => { s.disabled = true; await cloudJoinSend(); cloudRender(); }, 'go'); const r = el('div', 'cl-btns'); r.appendChild(s); c.appendChild(r); }
       else { p.textContent = h.r === 'self' ? 'Das ist dein eigener Mitmach-Link.' : h.r === 'already' ? 'Ihr arbeitet schon zusammen.' : h.r === 'none' ? 'Dieser Link passt zu keinem Konto. Frag nach einem neuen Link.' : 'Keine Verbindung – versuch es gleich noch mal.';
         const r = el('div', 'cl-btns'); r.appendChild(btn('OK', () => { SYNC.join = null; SYNC.joinHit = null; cloudRender(); })); c.appendChild(r); } });
   }
   for (const q of SYNC.reqs.filter(x => !x.mine)) {                   // eingehende Anfrage (§6.5b)
-    const u = SYNC.names.get(q.user) || {}, c = card((u.name || 'Jemand') + (u.admin ? ' ✓ Verwalter' : '') + ' möchte mit dir Musik machen.' + (q.note === 'über deinen Link' ? ' (über deinen Link)' : ''), []);
+    const u = SYNC.names.get(q.user) || {}, c = card('', []);
+    cloudWho(c.firstChild, u.name || 'Jemand', u.admin, ' möchte mit dir Musik machen.' + (q.note === 'über deinen Link' ? ' (über deinen Link)' : ''));
     c.classList.add('cl-req');
     if (q.note && q.note !== 'über deinen Link') { const n = el('p', 'cl-s'); n.textContent = '„' + q.note + '“'; c.appendChild(n); }
     cloudCodeLine(c, u.code || '');
@@ -25046,7 +25152,8 @@ function cloudHomeView(P) {
     const sp = m.space && cspace(m.space);
     if (sp && sp.status === 'ended') card('Nur lesen – die Zusammenarbeit mit ' + sp.name + ' ist beendet. Deine Änderungen werden als Version aufgehoben.', [btn('Kopie in „Nur ich“', () => cloudCopyPrivate(m.sid).then(ok => { if (ok) cloudCloseSheet(); }))], slot);
     if (SYNC.newer && SYNC.newer.lid === S.id && !m.dirty && (m.base || 0) < SYNC.newer.v) { const h = SYNC.heads.get(m.sid) || {};
-      card(cnm(h.by) + ' hat „' + (S.name || 'Song') + '“ gespeichert' + (h.at ? ' (' + dayTime(Date.parse(h.at)) + ')' : '') + '.', [btn('Laden', () => cloudLoadNewer().then(() => cloudRender()), 'go')], slot); } });
+      card(cnm(h.by) + ' hat „' + (S.name || 'Song') + '“ gespeichert' + (h.at ? ' (' + dayTime(Date.parse(h.at)) + ')' : '') + '.', [btn('Laden', () => cloudLoadNewer().then(() => cloudRender()), 'go')], slot); }
+    cloudScrollRe(); });
   if (SYNC.foreign && SYNC.foreign.length) {
     const n = SYNC.foreign.length, ad = btn('Diese Songs in mein Konto übernehmen');
     twoStep(ad, 'Wirklich übernehmen?', () => cloudAdoptForeign().then(() => cloudRender()));
@@ -25060,8 +25167,8 @@ function cloudHomeView(P) {
   P.appendChild(el('h3', 'cl-h3', 'Räume'));
   const row = (title, right, fn, cls, at) => { const r = el('button', 'rb cl-row' + (cls ? ' ' + cls : '')); const t = el('b'); t.textContent = title; const s = el('span'); s.textContent = right; r.append(t, s); on(r, 'click', fn); if (at) P.insertBefore(r, at); else P.appendChild(r); return r; };
   const nr = row('Nur ich', '… ›', () => { UI.cloudView = 'list'; cloudRender(); }, UI.cloudView === 'list' ? 'on' : '');
-  cloudProjects(false).then(l => { const sp = nr.querySelector('span'); if (sp) sp.textContent = l.length + (narrow ? '' : l.length === 1 ? ' Song' : ' Songs') + ' ›'; });
-  metaGet(S.id).then(m => { if (m && m.base && m.uid === SYNC.uid && P.isConnected) { row('Versionen von „' + (S.name || 'Projekt') + '“', '›', () => { UI.cloudView = 'vers'; UI.cloudSid = m.sid; cloudRender(); }, UI.cloudView === 'vers' ? 'on' : '', nr.nextSibling); } });
+  cloudCached('p:list', () => cloudProjects(false), l => { const sp = nr.querySelector('span'); if (sp) sp.textContent = l.length + (narrow ? '' : l.length === 1 ? ' Song' : ' Songs') + ' ›'; }, null);
+  metaGet(S.id).then(m => { if (m && m.base && m.uid === SYNC.uid && P.isConnected) { row('Versionen von „' + (S.name || 'Projekt') + '“', '›', () => { UI.cloudView = 'vers'; UI.cloudSid = m.sid; cloudRender(); }, UI.cloudView === 'vers' ? 'on' : '', nr.nextSibling); cloudScrollRe(); } });
   for (const s of SYNC.spaces) {                                       // „Mit René · René ist online   3 · 1 neu ›“
     const n = cloudSpaceHeads(s.id).length, u = cloudUnseen(s.id), onl = cloudPresOf(s.id).length > 0;
     const r = row('Mit ' + s.name + (s.status === 'ended' ? ' · beendet' : onl ? (narrow ? ' · online' : ' · ' + s.name + ' ist online') : ''),
@@ -25079,8 +25186,8 @@ function cloudHomeView(P) {
   bt.append(lk, btn('Papierkorb', () => { UI.cloudView = 'trash'; cloudRender(); }), btn('Alles sichern', () => backupAll())); P.appendChild(bt);
   P.appendChild(el('p', 'cl-s', 'Wer deinen Link öffnet, kann dir eine Anfrage schicken. Du entscheidest, ob du annimmst.'));
   const us = el('p', 'cl-s'); P.appendChild(us);
-  cloudUsage().then(u => { if (!u) return; const pct = x => Math.max(0, Math.min(100, Math.round(x))) + ' %';
-    us.textContent = u.admin && u.db_bytes ? 'Speicher online: ' + pct(100 * u.db_bytes / u.limit_bytes) + (u.accounts != null ? ' · ' + u.accounts + ' Konten' : '') : 'Dein Platz: ' + pct(100 * (1 - Math.max(0, u.quota_left) / Math.max(1, u.quota_bytes))); });
+  cloudCached('usage', () => cloudUsage(), u => { if (!u) return; const pct = x => Math.max(0, Math.min(100, Math.round(x))) + ' %';
+    us.textContent = u.admin && u.db_bytes ? 'Speicher online: ' + pct(100 * u.db_bytes / u.limit_bytes) + (u.accounts != null ? ' · ' + u.accounts + ' Konten' : '') : 'Dein Platz: ' + pct(100 * (1 - Math.max(0, u.quota_left) / Math.max(1, u.quota_bytes))); }, null);
   if (me.admin) P.appendChild(btn('Konten', () => { UI.cloudView = 'accounts'; cloudRender(); }, 'cl-out' + (UI.cloudView === 'accounts' ? ' on' : '')));
   const so = btn('Abmelden', null, 'cl-out'); P.appendChild(so);
   const n = SYNC.outN;
@@ -25097,8 +25204,7 @@ function cloudSubView(P, sub) {
   const btn = (t, fn, cls) => { const b = el('button', 'mbtn rb' + (cls ? ' ' + cls : '')); b.textContent = t; if (fn) on(b, 'click', fn); return b; };
   const narrow = window.innerWidth < 360;
   if (sub === 'list' || sub === 'trash') {
-    list.appendChild(el('p', 'cl-s', 'Lädt …'));
-    cloudProjects(sub === 'trash').then(rows => {
+    cloudCached('p:' + sub, () => cloudProjects(sub === 'trash'), rows => {
       list.innerHTML = '';
       if (!rows.length) { list.appendChild(el('p', 'cl-s', sub === 'trash' ? 'Der Papierkorb ist leer.' : 'Noch nichts online. Sobald du etwas änderst, geht der Song hoch.')); return; }
       for (const r of rows) {
@@ -25111,7 +25217,7 @@ function cloudSubView(P, sub) {
           box.appendChild(tb);
         });
       }
-    });
+    }, list);
     if (sub === 'list') { const nb = el('p', 'cl-s'); nb.textContent = 'Tipp auf einen Song öffnet ihn. Was du hier änderst, geht 2 s später online.'; P.appendChild(nb); }
   } else if (sub === 'room') {                                         // §6.4 Projekte eines Raums
     const s = cspace(UI.cloudSpace); if (!s) { list.appendChild(el('p', 'cl-s', 'Diesen Raum gibt es nicht mehr.')); return; }
@@ -25145,7 +25251,7 @@ function cloudSubView(P, sub) {
         if (!mine) { sh.remove(); return; }
         if (m && m.origin && m.origin !== s.id) { why.textContent = 'Enthält Beiträge aus „' + cspName(m.origin) + '“ – kann nur dort geteilt werden.'; return; }
         if (isPristine(S)) { why.textContent = 'Das offene Projekt ist noch leer.'; return; }
-        sh.disabled = false; on(sh, 'click', () => { sh.disabled = true; cloudShareOpen(s.id).then(() => cloudRender()); }); });
+        sh.disabled = false; on(sh, 'click', () => { sh.disabled = true; cloudShareOpen(s.id).then(() => cloudRender()); }); }).then(() => cloudScrollRe());
       const end = btn('Zusammenarbeit beenden', null, 'cl-out'); P.appendChild(end);
       twoStep(end, 'Wirklich beenden? Songs bleiben lesbar', () => cloudEnd(s.id).then(() => cloudRender()));
     } else P.appendChild(btn('Neue Anfrage an ' + s.name, async () => { const r = await cloudRequest(s.partner, null); toast(r.msg); cloudRender(); }, 'cl-big'));
@@ -25162,7 +25268,7 @@ function cloudSubView(P, sub) {
       if (r.r === 'one') F.hit = r.list[0]; else F.msg = r.r === 'many' ? 'Mehrere heißen so – bitte Code oder Link' : r.r === 'slow' ? 'Bitte kurz warten.' : r.r === 'net' ? CL_MSG.error : REQ_MSG.unknown;
       cloudRender(); });
     if (F.hit) {
-      const x = F.hit, c = el('div', 'cl-card cl-hit'), p = el('p', 'cl-p'); p.textContent = x.name + (x.isAdmin ? ' ✓ Verwalter' : ''); c.appendChild(p); cloudCodeLine(c, x.code);
+      const x = F.hit, c = el('div', 'cl-card cl-hit'), p = el('p', 'cl-p'); cloudWho(p, x.name, x.isAdmin); c.appendChild(p); cloudCodeLine(c, x.code);
       const nl = el('label', 'cl-s'); nl.textContent = 'Nachricht (freiwillig)'; nl.htmlFor = 'clNote';
       const nt = el('input', 'cl-in'); Object.assign(nt, {type: 'text', id: 'clNote', maxLength: 140, value: F.note}); nt.placeholder = 'Lass uns Song X fertig machen!';
       const rq = btn('Anfragen', async () => { F.note = nt.value; rq.disabled = true; const r = await cloudRequest(x.id, nt.value); F.msg = r.msg; if (r.r === 'sent' || r.r === 'accepted' || r.r === 'already') { F.hit = null; F.note = ''; F.q = ''; } toast(r.msg); cloudRender(); }, 'go cl-go');
@@ -25179,8 +25285,10 @@ function cloudSubView(P, sub) {
     P.appendChild(el('p', 'cl-s', 'Nach dem Teilen arbeitet ihr beide daran. Das Projekt bleibt in diesem Raum; für dich allein geht jederzeit „Kopie in Nur ich“.'));
   } else if (sub === 'accounts') {                                     // §6.3b nur Verwalter
     const head = el('p', 'cl-s'); head.textContent = 'Lädt …'; P.insertBefore(head, list);
-    cloudAccounts().then(res => {
+    const extra = [], add = (...es) => { for (const e of es) { extra.push(e); P.appendChild(e); } };
+    cloudCached('accounts', () => cloudAccounts(), res => {
       if (!list.isConnected) return;
+      list.innerHTML = ''; extra.splice(0).forEach(e => e.remove());
       if (res.err) { head.textContent = res.err === 'lost' ? 'Nur für den Verwalter.' : CL_MSG.error; return; }
       const L = res.list, day = Date.now() - 86400000;
       head.textContent = 'Konten: ' + L.filter(a => !a.blocked).length + (L.some(a => a.blocked) ? ' (+ ' + L.filter(a => a.blocked).length + ' gesperrt)' : '') + ' · heute neu: ' + L.filter(a => Date.parse(a.created_at) > day).length;
@@ -25199,7 +25307,7 @@ function cloudSubView(P, sub) {
           box.appendChild(btn('Code kopieren', async () => { try { await navigator.clipboard.writeText(a.code); toast('Code kopiert'); } catch (e) { toast('Code: ' + a.code); } }));
         }, a.blocked ? 'off' : '');
       }
-      const cl = btn('Ungenutzte Konten aufräumen', null, 'cl-big cl-wide'), res2 = el('p', 'cl-s'); P.append(cl, res2);
+      const cl = btn('Ungenutzte Konten aufräumen', null, 'cl-big cl-wide'), res2 = el('p', 'cl-s'); add(cl, res2);
       on(cl, 'click', async () => {                                    // erst der Probelauf mit Namen, Löschen erst nach dem zweiten Tipp
         if (cl.dataset.n) return;
         const d = await cloudAdminDo('admin_cleanup', {p_days: 30, p_dry: true}); if (d.err) { res2.textContent = CL_MSG.error; return; }
@@ -25208,14 +25316,17 @@ function cloudSubView(P, sub) {
         const yes = btn('Ja, ' + d.count + (d.count === 1 ? ' Konto' : ' Konten') + ' löschen', null, 'cl-big'); cl.after(yes);
         twoStep(yes, 'Wirklich löschen?', async () => { const x = await cloudAdminDo('admin_cleanup', {p_days: 30, p_dry: false}); toast(x.err ? 'Gerade nicht möglich' : x.count + (x.count === 1 ? ' Konto gelöscht' : ' Konten gelöscht')); cloudRender(); });
       });
-      P.appendChild(el('p', 'cl-s', 'Sperren zieht Anfragen zurück und beendet Räume; das Konto liest nichts mehr.'));
-    });
+      add(el('p', 'cl-s', 'Sperren zieht Anfragen zurück und beendet Räume; das Konto liest nichts mehr.'));
+    }, null);
   } else if (sub === 'vers') {
-    const sid = UI.cloudSid; list.appendChild(el('p', 'cl-s', 'Lädt …'));
+    const sid = UI.cloudSid;
     const h = SYNC.heads.get(sid), fn = el('p', 'cl-s cl-fork'); P.insertBefore(fn, list);
-    metaGet(S.id).then(async m => {
-      const open = m && m.sid === sid, rows = await cloudVersions(sid);
-      const nt = (h && h.note) || (open && m.note) || ''; fn.textContent = nt; if (!nt) fn.remove();
+    const extra = [], add = e => { extra.push(e); P.appendChild(e); };
+    metaGet(S.id).then(m => cloudCached('v:' + sid, () => cloudVersions(sid), rows => {
+      if (!list.isConnected) return;
+      extra.splice(0).forEach(e => e.remove());
+      const open = m && m.sid === sid;
+      const nt = (h && h.note) || (open && m.note) || ''; fn.textContent = nt; if (!nt) fn.remove(); else if (!fn.isConnected) P.insertBefore(fn, list);
       const room = h && h.space && cspace(h.space), roomAct = room && room.status === 'active';
       list.innerHTML = '';
       if (!rows.length) list.appendChild(el('p', 'cl-s', 'Noch keine Versionen.'));
@@ -25225,16 +25336,16 @@ function cloudSubView(P, sub) {
         box.appendChild(btn('Abzweigen', () => cloudFork(sid, v.id, false).then(ok => { if (ok) cloudCloseSheet(); }), 'cl-forkb'));
         if (roomAct) box.appendChild(btn('Abzweigen in „Mit ' + room.name + '“', () => cloudFork(sid, v.id, true).then(ok => { if (ok) cloudCloseSheet(); })));
       });
-      if (open) { const mkv = btn('Diese Version merken', () => cloudMarkVersion().then(() => cloudRender()), 'cl-big'); P.appendChild(mkv); }
-      P.appendChild(el('p', 'cl-s', 'Abzweigen macht aus einer Version einen neuen Song (in „Nur ich“). Das Original bleibt, wie es ist.'));
-    });
+      if (open) { const mkv = btn('Diese Version merken', () => cloudMarkVersion().then(() => cloudRender()), 'cl-big'); add(mkv); }
+      add(el('p', 'cl-s', 'Abzweigen macht aus einer Version einen neuen Song (in „Nur ich“). Das Original bleibt, wie es ist.'));
+    }, list, true));
   } else if (sub === 'name') {
     const me = SYNC.me || {}, f = el('div', 'cl-f');
     const lab = t => { const l = el('label'); l.textContent = t; return l; };
     const nm = el('input', 'cl-in'); nm.type = 'text'; nm.maxLength = 24; nm.value = me.name || ''; nm.setAttribute('autocomplete', 'nickname');
     const ck = el('label', 'cl-chk'), fb = el('input'); fb.type = 'checkbox'; fb.checked = !!me.findable; const sp = el('span'); sp.textContent = 'Andere dürfen mich per Name finden'; ck.append(fb, sp);
     const sv = el('button', 'mbtn rb go cl-go', 'Name sichern'), msg = el('div', 'cl-err'); msg.setAttribute('role', 'alert');
-    on(sv, 'click', async () => { const r = await cloudSetName(nm.value, fb.checked); msg.textContent = r === 'ok' ? '' : r === 'bad_name' ? 'Diesen Namen gibt es schon – nimm einen anderen.' : r === 'no_name' ? CL_MSG.no_name : CL_MSG.error; if (r === 'ok') toast('Name gesichert'); });
+    on(sv, 'click', async () => { const r = await cloudSetName(nm.value, fb.checked); msg.textContent = r === 'ok' ? '' : r === 'bad_name' ? 'Diesen Namen gibt es schon – nimm einen anderen.' : r === 'no_name' ? CL_MSG.no_name : r === 'badge' ? CL_MSG.badge : CL_MSG.error; if (r === 'ok') toast('Name gesichert'); });
     const pf = el('form', 'cl-f'); const un = el('input'); un.type = 'email'; un.name = 'email'; un.value = ''; un.setAttribute('autocomplete', 'username'); un.hidden = true;
     const np = el('input', 'cl-in'); np.type = 'password'; np.name = 'new-password'; np.setAttribute('autocomplete', 'new-password'); np.minLength = 8;
     const pb = el('button', 'mbtn rb cl-go', 'Passwort ändern'); pb.type = 'submit';
