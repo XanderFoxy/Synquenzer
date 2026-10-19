@@ -1924,3 +1924,165 @@ Wiederverbinden Server = lokal), `v3-repro-offstart-check.mjs`; `v3-fpvo1-sicher
 nichts von Xander hoch); `v3-repro-swnet.mjs` (mit SW: Starts 2–9 ohne Anfrage bzw. 304/0 KB, 20-s-Hänger → 3,4 s aus dem Cache),
 `v3-fpvo1-swnet.mjs` mit `STALL=20000` (Starts 2–4 ≈ 0,5 s statt 20,5 s), `v3-vo1fix-swoff.mjs` (Neuladen ohne Netz aus dem SW-Cache);
 `v3-vo1-accept.mjs` 132/133 (rot nur die bekannte Größen-Abweichung N8O-19b, jetzt +85,3 KB), Smoke ohne Fehler.
+
+## VO2 — Anfragen, Paar-Räume, Realtime, Konflikt-Wahl mit dem Partner, Presence-light, Mitmach-Link, Konten, Abzweigen, Geräte-Werte lokal · App 3.11.3
+
+Grundlage: Nachtrag 2 Teil G (G.4, G.8, G.9 N2-VO2-01/-02, K2-46, K2-47), Teil J (FP-SICHER ●, FP-TOUCH); `r7/online.md` §3, §4.5, §5,
+§6.1–§6.10, §7.6, §7.8 (VO2); `r8/zusammenarbeit-modell.md` §8.1, §8.4 Nr. 4, §10. Version **3.11.3** statt 3.6.0 (E.5 Nr. 3: streng
+steigend nach VO1 = 3.11.2). `APP_CODE` = 3 011 003.
+
+**Online ist live** (Orchestrator-Vermerk `fragen-xander-9.md`, 19.10. 06:20: `vo_init` angewandt, `CLOUD.live = true`, „nicht
+zurückdrehen“) – `live: true` bleibt. VO2 braucht die Migration `vo2_fork` (unten), sonst bleibt die „Nur ich“-Liste leer; sie ist angewandt.
+
+**Was neu ist**
+1. **Räume und Anfragen** (§6.3–§6.5b): Online-Blatt mit Zeilen „Mit René · René ist online   3 Songs · 1 neu ›“ (Zähler „neu“ je Raum,
+   `cloud:seen:<uid>`, verschwindet beim Öffnen), [+ Zusammenarbeit anfragen] → Suche nur nach Freundes-Code oder genauem Namen (nur bei
+   „findbar“), ein „@“ geht nie an den Server; Treffer-Karte mit Name, „✓ Verwalter“ (nur aus `profiles.is_admin`), Code groß „(Code
+   vergleichen)“, Nachricht ≤ 140; alle Ergebnis-Texte aus §6.5 („Anfrage geschickt“, „Ihr arbeitet schon zusammen“, „Du hast schon
+   angefragt“, „… hat abgelehnt – neue Anfrage morgen möglich“, „Bitte morgen noch mal“, „Mehrere heißen so – bitte Code oder Link“,
+   „Niemand gefunden …“, „Bitte kurz warten.“). Eingehende Anfrage als Karte mit [Annehmen] [Ablehnen] (Punkt am ≡ orange), gesendete als
+   „Gesendet: <Name> antwortet noch · [Zurückziehen]“.
+2. **Raum-Blatt** (§6.4): Presence-Zeile („René ist da · in „Song X““ bzw. „Nur ihr beide seht diese Songs.“), Songs mit Autor und Zeit
+   („René · heute 17:42“, unter 360 px nur die Zeit), ⋯ = Öffnen · Versionen · Kopie in „Nur ich“ · In den Papierkorb (kein Teilen, kein
+   Verschieben zwischen Räumen), [+ Neues Projekt in „Mit René“], [Offenes Projekt hierher teilen] (nur eigenes „Nur ich“-Projekt; Kopie aus
+   einem anderen Raum → grau mit „Enthält Beiträge aus „Mit René“ – kann nur dort geteilt werden.“), [Zusammenarbeit beenden] (Zwei-Schritt
+   „Wirklich beenden? Songs bleiben lesbar“). Beendet: „Zusammenarbeit beendet – nur lesen …“, [Neue Anfrage an René].
+3. **Teilen** (§6.6): „Nur ich“-Liste ⋯ → [Teilen] → Blatt mit den aktiven Räumen; Herkunfts-Raum-Regel (VO-E7) im Blatt und auf dem Server.
+4. **Realtime** (§5): ein Kanal `synq-db-<uid>` mit Postgres Changes auf `projects`, `collab_requests`, `spaces` (RLS je Empfänger).
+   Partner speichert → „René hat „Song X“ gespeichert“ (höchstens 1 je Projekt und Minute, mehrere zusammengefasst „René hat 3 Songs
+   gespeichert“; neue Songs „… angelegt“, geteilte „… geteilt“; eigene nie). Offenes Projekt: sauber → Toast/Karte mit [Laden] (nie
+   automatisch, auch nicht beim Spielen); eigene ungesendete Änderungen → sofortiger Push, die Konflikt-Version liegt auf dem Server.
+   Geparkte lokale Kopien werden still erneuert. Anfrage → „David möchte mit dir Musik machen · [Ansehen]“ (+ „über deinen Link“);
+   angenommen → „René hat angenommen – Raum „Mit René“ ist da“; abgelehnt; beendet → „René hat die Zusammenarbeit beendet – eure Songs
+   bleiben lesbar.“ **Verpasstes** (`visible`, Wiederverbindung, Anmeldung): Kopfzeilen neu holen und wie Realtime behandeln.
+5. **Konflikt-Wahl mit dem Partner** (§4.5, §10): Toast „René hat „Song X“ geändert · [Übernehmen] [Beide behalten]“ und Karte „René hat
+   „Song X“ geändert (17:42). Deine Version bleibt in jedem Fall.“; das Hochladen läuft weiter (gleiche `base`), Erinnerung alle 10 min
+   („… eure Wahl wartet …“). [Beide behalten] legt „Song X (Xanders Version)“ **im selben Raum** an (Raum beendet: „Nur ich“ mit Herkunft).
+   Das Wort „Konflikt“ steht nirgends mehr in der Oberfläche.
+6. **Presence-light** (§4.5): privater Kanal `space:<id>` je aktivem Raum, `track({name, sid, title})` höchstens 1/s, `sid`/`title` nur für
+   einen Song **dieses** Raums (sonst null). Tippt man einen Song, den der Partner offen hat: Karte „René arbeitet gerade an „Song X“.
+   [Trotzdem öffnen] [Als Kopie öffnen]“.
+7. **Zusammenarbeit beenden** (§6.4, N8O-28): beide sehen „nur lesen“; Speichern wird als Version „Nach Ende der Zusammenarbeit“
+   aufgehoben (Hinweis höchstens alle 10 min); Karte „Nur lesen …“ mit [Kopie in „Nur ich“] (nimmt den **letzten eigenen** Stand, merkt den
+   Herkunfts-Raum).
+8. **Mitmach-Link** (§6.1): [Mein Link teilen] (alle) → `…/Synquenzer/#mitmachen=<Code>&von=<Name>` (ohne E-Mail) über das Teilen-Blatt.
+   Öffnen: Hash sofort entfernt; ohne Sitzung Blatt „Konto anlegen“ (früheres Konto auf dem Gerät: „Anmelden“) mit Kopfzeile „Xander möchte
+   mit dir Musik machen. Leg ein Konto an, dann schickst du Xander eine Anfrage.“ (`von` nur als Text, ≤ 24); danach Karte „Xander ✓ Verwalter
+   möchte mit dir Musik machen · Code … · [Anfrage an Xander schicken]“ – **erst dieser Tipp** schickt die Anfrage (`p_note` „über deinen
+   Link“). Mit Sitzung gleich die Karte. Ungültiger Code: „Dieser Link passt zu keinem Konto. Frag nach einem neuen Link.“, eigener Link:
+   „Das ist dein eigener Mitmach-Link.“
+9. **Konten-Blatt** (§6.3b, nur Verwalter): „Konten: n (+ k gesperrt) · heute neu: m“, Zeilen „René · QZ4H7T · 9 Songs · 2 MB · Probe 5 MB
+   · 41 T“ ohne E-Mail; ⋯ = Vertrauen/Vertrauen aufheben · Sperren · Sperren + Daten löschen (je Zwei-Schritt mit den Texten aus §6.3b) ·
+   Entsperren · Code kopieren; [Ungenutzte Konten aufräumen] = Probelauf „1 Konto: Musiker. Löschen?“, gelöscht erst nach dem zweiten Tipp.
+   Gesperrtes Konto: „Dein Konto ist gesperrt. Deine Songs bleiben auf diesem Gerät.“, Versuche nur noch stündlich.
+10. **Abzweigen** (G.4 Nr. 2, §8.1): Versionen → ⋯ → [Abzweigen] (Vorgabe „Nur ich“, O-7) bzw. [Abzweigen in „Mit René“] (nur derselbe,
+    aktive Raum) → RPC `fork_project` → neues Projekt „<Titel> – <Name>“, offen; Verweis vom Server „abgezweigt von Nachtlicht, Version 3
+    (René, 19.10.2026)“ im Verlauf des Zweigs; Original byte-gleich; anderer Raum → `mixed_origin`. Versionszeilen zeigen jetzt die Nummer
+    („Version 3 · heute 17:42“).
+11. **Geräte-Werte lokal** (G.4 Nr. 3, N2-VO2-02) – **`DEVICE_KEYS`**: `project.ui` (Auswahl `selT`/`selS`, Ansicht `follow`, `fmv`),
+    `settings.metroVol`, `settings.haptics`, `settings.quality`, `settings.buffer`, `settings.hintDismissed`, `tracks[].kbOct`
+    (Eingabe-Oktave). Sie fehlen im Server-Text (flache Kopie vor dem einen Stringify, Prüfsumme über genau diesen Text), lokal bleiben
+    sie gespeichert; kommt ein Server-Stand (Laden, Übernehmen, Zurückholen, still erneuern), behält das Gerät seine Werte (`devCarry`).
+    Projektformat unverändert. Ändert ein Gerät nur diese Werte, gibt es keinen `save_project`.
+12. Kleinkram: Löschen der lokalen Kopie eines Raum-Songs unter [Projekte] legt ihn **nicht** für beide in den Papierkorb (nur private);
+    Start-Abgleich kennt jetzt auch Raum-Projekte (vorher wären lokale Kopien als „nur hier“ markiert worden); Hilfe: zwei Zeilen neu.
+    Test-API (§7.6): `cloud().spaces/reqs/join`, `cloudSpaces`, `cloudReqs`, `cloudFind`, `cloudRequest`, `cloudRespond`, `cloudCancel`,
+    `cloudEnd`, `cloudShare(space, sid?)`, `cloudCopyPrivate`, `cloudNewInRoom`, `cloudFork`, `cloudLink`, `cloudJoin`, `cloudHeads`,
+    `cloudAdmin()`, `cloudRefresh`, `deviceKeys`, `cloudProjects(spaceId)`.
+
+**Migration** (`scratchpad/synq-online/`): `vo_fork.sql` (Spalten `forked_from_project`, `forked_from_version`, `fork_note`; View
+`project_list` + `origin_space_id`, `forked_from_project`, `fork_note`; RPC `fork_project` SECURITY DEFINER, `search_path = ''`, Lesen über
+`private.my_project_ids()`, Schreiben in den Raum nur über `private.my_active_space_ids()`, Quote/Tempo wie Anlegen; `anon` ohne Recht),
+`vo_fork_down.sql` (Rücksicherung, in PGlite hin und zurück geprüft: `v3-vo2-migdown.mjs`), `r7-vo2-max-app.sql`.
+**T1:** `synq-online/rls-matrix.mjs` (= r7-Matrix + `vo_fork.sql` + 15 neue `fork_project`-Fälle) → **150/150** (`rls-matrix.out`).
+
+**Rollout-Protokoll (Supabase-MCP, alle Aufrufe mit ref `dbdnsryoivvezspgydpx` – zweimal verglichen: Auftrag und `CLOUD.ref`)**
+| Zeit | Aufruf | Ergebnis |
+|---|---|---|
+| 19.10. 07:09 | `list_migrations`, `list_tables(public)` | vo_init, vo1_max_app, signup_limits_open; 9 Tabellen, RLS an (1 Profil, 3 Projekte) |
+| 07:10 | `apply_migration vo2_fork` (= `vo_fork.sql`, md5 95c7d105…) | success |
+| 07:10 | `apply_migration vo2_max_app` (`max_app = greatest(max_app, 3011003)`) | success |
+| 07:10 | `get_advisors(security)` | kein ERROR; WARN 0029 für 19 RPCs (gewollt, VO-E4, jetzt mit `fork_project`); WARN „Leaked Password Protection“ (Dashboard) |
+| 07:10 | `execute_sql` (nur lesen) | `max_app` 3011003, `project_list` mit den neuen Spalten, `fork_project` da, `anon` ohne Ausführrecht, Publikation `projects, collab_requests, spaces` |
+Kein Aufruf nennt das Klassenzimmer-Projekt.
+
+**Für Xander im Dashboard** (optional, nichts davon blockiert VO2):
+1. Authentication → Attack Protection → „Leaked password protection“ einschalten, falls im Free-Plan angeboten (Advisor-WARN).
+2. Authentication → Hooks → „Before User Created“ → `public.hook_before_user_created` (laut Runde 13 optional).
+3. (erledigt laut Runde 13) Realtime → Settings → „Allow public access“ aus – nötig für die privaten Kanäle `space:<id>` (Presence).
+
+**Für Xander am iPhone (T5, nach dem Ausliefern von 3.11.3):** (1) Menü → Online → [Mein Link teilen] → per WhatsApp an René; René tippt den
+Link, legt ein Konto an und tippt [Anfrage an Xander schicken] → bei dir Hinweis + Karte → [Annehmen] → „Mit René“ erscheint bei beiden.
+(2) Teile einen Song aus „Nur ich“ mit René (⋯ → Teilen); René ändert etwas → bei dir „René hat „…“ gespeichert · [Laden]“ (wenige
+Sekunden?). (3) Ihr ändert beide gleichzeitig denselben Song → Karte „… geändert“ mit [Übernehmen] [Beide behalten]. (4) Versionen → ⋯ →
+[Abzweigen] → neuer Song, Original unverändert. (5) Ansicht/Metronom-Lautstärke auf dem iPad ändern → am iPhone bleibt deine Einstellung.
+
+**Abweichungen**
+- **Größe:** `index.html` +47,5 KB gegen VO1-fix (Budget 40 KB, +19 %); gesamt 2,02 MB (Grenze 5,0 MB). Grund: acht neue Blatt-Ansichten mit
+  allen Texten aus §6, Realtime-/Presence-Logik, Konten-Werkzeuge, Abzweigen; keine neue Bibliothek.
+- `vo_fork` statt Änderung von `vo_init` (eigene, kleine Migration mit Rücksicherung; r7-Dateien bleiben unverändert, die erweiterte
+  Matrix liegt als Kopie in `synq-online/`).
+- `fork_project` hat die Signatur `(p_project, p_version, p_title, p_space, p_id, p_local_id, p_client)`; `p_version` = Zeilen-ID in
+  `project_versions` (null = aktueller Stand). Der Verweis-Text wird **auf dem Server** gebaut (`fork_note`), nicht vom Gerät.
+- Zähler „neu“: ein neu angenommener Raum startet bei 0 (nur Späteres zählt), sonst stünde beim ersten Anmelden alles auf „neu“.
+- Der Hinweis „angelegt“ eines neuen Partner-Songs zählt zur Minute je Projekt (eine gleich folgende Speicherung bekommt keinen zweiten Toast).
+- Gelber 10-s-Rand für geänderte Clips nach dem Laden (§5 „Was neu ist“, P1) **nicht gebaut** (optional, VO4b bringt das Leuchten).
+- Querformat unter 700 px (L2 667×375) bleibt einspaltig (§6.10), auch für „Zusammenarbeit anfragen“.
+
+**Abnahme** (`dirigent-test/v3-vo2-accept.mjs`, Harness `v3-vo2-harness.mjs` = VO1-Harness + `vo_fork` + Realtime-Nachbau: Postgres Changes
+mit RLS je Empfänger, Presence auf `space:<id>` nur mit `private.topic_space_ok`; drei bis sieben Browser-Kontexte = Personen/Geräte;
+nichts verlässt die Maschine) → **57/57** (`v3-vo2-accept-all.txt`):
+
+| ID | Ergebnis |
+|---|---|
+| N8O-21 | ✓ `rls-matrix.mjs` gegen vo_init + vo_fork 150/150, davon 15 `fork_project`-Fälle |
+| N8O-22 | ✓ Suche per Code (Karte), Name nur bei „findbar“, „@“ → „Niemand gefunden …“ ohne `find_user`, doppelter Name → „Mehrere heißen so …“, Anfrage → Toast + Karte (✓ Verwalter, Code, Nachricht) beim Empfänger in 0,5–0,75 s, [Annehmen] → beide den Raum in 0,8–0,9 s, [Ablehnen] → „Xander hat abgelehnt – neue Anfrage morgen möglich“, neue Anfrage `declined_recently`, 4. Anfrage am Tag → „Bitte morgen noch mal“, [Zurückziehen] |
+| N8O-23 | ✓ nach XR und XD: Davids DOM, alle RPC-/REST-Antworten und Realtime-Nachrichten ohne Titel/ID aus XR; nach DR sieht David DR, weiter nicht XR |
+| N8O-24 | ✓ Teilen „Nur ich → Mit René“ über das Blatt: René hat es in der Liste nach 0,08–0,26 s, Hinweis „… geteilt“ nach 0,6 s; Nicht-Eigentümer und Raum→Raum vom Server verweigert, ⋯ im Raum ohne Teilen; Kopie aus „Mit René“: David-Zeile grau mit Text, Server `mixed_origin` |
+| N8O-25 | ✓ Toast „René hat „Song X“ gespeichert“ 0,5 s nach `save_project`; 5 Speicherungen in 60 s → kein weiterer Toast, Liste 5-mal aktuell; eigene ohne Toast; zwei Songs kurz nacheinander → „René hat 2 Songs gespeichert“ |
+| N8O-26 | ✓ offen + sauber → Toast [Laden], Tempo erst nach dem Tipp; beim Spielen kein Laden, Wiedergabe läuft, Toast [Laden] |
+| N8O-27 | ✓ nur über Realtime erkannt → Konflikt-Version nach 0,25 s; Toast mit [Übernehmen] [Beide behalten] + Karte, Punkt orange; 4 weitere Pushes, Konflikt-Version = md5 des letzten gesendeten Texts (Tempo 105); Erinnerung nach 10 min; Übernehmen → lokal = Server; Beide behalten → „Song X (Xanders Version)“ im Raum mit dem letzten lokalen Stand, René sieht es; drei Stände; N8O-27b zwei Geräte → zwei Konflikt-Versionen (je `client_id`); N8O-27c Karte „René arbeitet gerade an „Song X“ …“; Presence nur Songs des eigenen Raums, ≤ 1/s |
+| N8O-28 | ✓ Zwei-Schritt beenden → beide „nur lesen“, Hinweis beim Partner; Speichern → Version „Nach Ende der Zusammenarbeit“, Kopf unverändert; [Kopie in „Nur ich“] → privates Projekt mit Herkunft und dem letzten eigenen Stand |
+| N8O-29 | ✓ während `hidden` 3 Ereignisse verworfen; nach `visible` stimmt die Liste in 0,1 s, „2 neu“ |
+| N8O-30 | ✓ Link ohne „@“; Blatt „Konto anlegen“ mit Kopfzeile; nach dem Anlegen Karte, 0 `request_collab` ohne Tipp; nach dem Tipp bei Xander Toast + Karte („über deinen Link“) in 0,4 s; [Annehmen] → beide Raum, Link-Zustand weg; ungültiger Code → Text; Gerät mit Sitzung → gleich die Karte; abgemeldetes Gerät mit früherem Konto → „Anmelden“ |
+| N8O-30b | ✓ René/David ohne [Konten], `admin_*` → 42501; Liste ohne „@“; [Sperren] Zwei-Schritt → Anfrage bei Xander weg in 0,3 s; gesperrt → Text, lokal nichts verloren, 1 Aufruf statt einem je Änderung; Aufräumen: Probelauf „1 Konto: Altkonto. Löschen?“, gelöscht erst nach dem zweiten Tipp; [Vertrauen] |
+| N2-VO2-01 | ✓ Version 3 von „Nachtlicht“ (Mit René) → [Abzweigen] → „Nachtlicht – Xander“ in „Nur ich“ (Inhalt = Version 3, Verweis, Herkunft); Original-Kopf und alle Versionen md5-gleich; anderer Raum → `mixed_origin`; René sieht es nicht (Liste, Realtime); Verweis im Verlauf |
+| N2-VO2-02 | ✓ Gerät A ändert nur Auswahl, Ansicht, Metronom-Lautstärke, Oktave → 0 `save_project`, Server-md5 gleich, lokal gespeichert; Server-Text ohne DEVICE_KEYS, Prüfsumme gültig; Gerät B lädt eine echte Änderung und behält seine eigenen Werte (Auswahl 2, Metronom 0,9, Oktave 5) |
+
+Weitere Prüfungen: `v3-vo2-platz.mjs` **36/36** (Online, Raum, Anfragen, Konten, Versionen, Teilen in P1, P2 375×667, P3 320×568, L1,
+L2 667×375, W 1280×800: kein Überlauf, Ziele ≥ 44 bzw. ≥ 40×36, keine abgeschnittenen Texte, Felder 16 px; Bilder `v3-vo2-<Größe>-<Ansicht>.png`);
+`v3-vo2-fpsicher.mjs` **6/6**; `v3-vo2-adapt-vo1-accept.mjs` (VO1-Abnahme mit 3.11.3 + vo_fork) **131/133** – rot nur N8O-19b (Größe,
+bekannte Abweichung) und N8O-18 unter Fremdlast (Lastmittel 11–19 durch andere Läufe auf der VM): allein 4 von 6 Läufen grün (60 fps, keine
+longtask, p95 1,9–2,5 ms), die roten mit einzelnen 58–79-ms-longtasks auch ohne Räume/Realtime; der Push-Pfad hat sich nur um eine flache
+Kopie (`devStrip`) verändert. Smoke ohne Fehler (`v3-vo2-smoke.png`).
+
+**Regression:** `v3-vo2-reg.sh` (= VO1-Liste mit den Versionskopien `v3-vo2-adapt-*` für 3.11.3; die VO1-Abnahme läuft als
+`v3-vo2-adapt-vo1-accept.mjs` mit `v3-vo2-adapt-vo1-harness.mjs` = App 3.11.3 + `vo_fork`), `v3-vo2-reg2.sh`, `v3-vo2-reg3.sh`; Ausgaben
+`dirigent-test/v3-vo2-reg/`, Vergleich mit VO1 `v3-vo2-regcmp.sh`. Der Lauf fiel in eine Zeit mit Lastmittel bis 19 (andere Läufe auf der
+VM); alle gegenüber VO1 neu roten Suiten (`wp1-shield`, `wp2-keys-P`, `wp2-quant-P`, `wp2-rec-P/L`, `wp6-song-L`, `wp6-steps-P375`,
+`wp6-extras-L`, `v0b-ux`, `vo2-adapt-wp3-store` PF7, `wp7-accept-fm4`, `v4c-accept-P/P320/P375`, `v0c-song-L`) sind allein wieder grün
+bzw. auf dem VO1-Stand (`v3-vo2-reg/solo/`, `v3-vo2-solo.sh`); `wp3-ui` F2, `wp6-extras-P` F1, `rgq-old17` F5, `v4a-node` V4a-11 (CPU-
+Messung des Worklets) wie auf VO1. VO2 berührt weder Audio noch Worklet. Smoke ohne Fehler.
+
+**Fach-Prüfung (Teil J: FP-SICHER ● Haupt-, FP-TOUCH Zweit-Blick;** als zweiter Durchgang über Diff, Testausgaben und Bilder auf mich
+selbst angewandt – kein eigener Agent verfügbar). **12 Befunde, 11 behoben, 1 begründet:**
+1. FP-SICHER: Löschen der lokalen Kopie eines Raum-Songs hätte ihn per `trash_project` für **beide** in den Papierkorb gelegt → nur noch private (behoben).
+2. FP-SICHER: Start-Abgleich las nur eigene Projekte → lokale Kopien von Partner-Songs wären „nur hier“ geworden (behoben, RLS liefert Räume mit).
+3. FP-SICHER: gesperrtes Konto versuchte bei jeder Änderung neu zu speichern → nur noch der Stunden-Takt (behoben, N8O-30b-d).
+4. FP-SICHER: fremde Texte – Namen, Notizen, Titel, Presence, `von` des Links – mit HTML-Nutzlast geprüft: nur Text, kein Element, kein Skript (`v3-vo2-fpsicher` 1).
+5. FP-SICHER: Presence nur mit `private.topic_space_ok` (David nicht in `space:<XR>`, gesperrt nicht in den eigenen Raum); Payload ohne Titel/ID anderer Räume (geprüft).
+6. FP-SICHER: Postgres Changes: David bekommt keine Zeile aus XR; Publikation weiter ohne DELETE (geprüft, auch im echten Projekt).
+7. FP-SICHER: Migration: SECURITY DEFINER + `search_path=''`, Rechte ausdrücklich, Rücksicherung, idempotent (zweimal angewandt in PGlite), Advisor ohne ERROR (geprüft).
+8. FP-SICHER (begründet): die Kopfzeile des Mitmach-Links zeigt `von` aus der Adresse (wie §6.1 verlangt, nur als Text); wer anfragt,
+   entscheidet erst an der Karte mit dem **Server**-Namen, „✓ Verwalter“ und dem Code.
+9. FP-SICHER: [Kopie in „Nur ich“] aus einem beendeten Raum nahm den Server-Stand und verlor die eigenen letzten Änderungen → offener Song: lokaler Stand (behoben, N8O-28c).
+10. FP-SICHER: Gerät mit nur geänderten Geräte-Werten bekam bei einer Partner-Speicherung kein [Laden] → erst Push-Abgleich, dann wie unverändert (behoben).
+11. FP-TOUCH: Realtime-/Presence-Ereignisse bauten das Blatt neu und schlossen ein offenes ⋯ bzw. einen gespannten Zwei-Schritt
+    (auch den Aufräum-Probelauf) → kein Neubau, solange ⋯ offen oder ein Zwei-Schritt gespannt ist; Verwalter-Aktionen laden nicht mehr neu (behoben).
+12. FP-TOUCH: P3 Konten-Zeile abgeschnitten („Prob…“) → kurze Form unter 360 px; Versionszeilen ohne Nummer, obwohl der Verweis „Version 3“ nennt → „Version n · Zeit“ (behoben).
+Ziele, Überlauf, Schriftgrößen in allen Größen: `v3-vo2-platz` 36/36; alle zerstörenden Aktionen Zwei-Schritt; keine Fachwörter
+(„Konflikt“ aus allen Texten entfernt).
+
+**Bekannte Lücken:** echte Realtime-Verbindung (WebSocket, Phoenix-Protokoll von supabase-js) ist nur gegen den Nachbau geprüft, nicht gegen
+das echte Projekt (Messung ZA-05 kommt mit VO4 und Xanders Okay); gelber Rand für geänderte Clips (P1) fehlt; Xander ist im echten Projekt
+noch nicht in `private.admins` (R4, Orchestrator nach seiner ersten Anmeldung).
