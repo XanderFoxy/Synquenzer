@@ -1115,6 +1115,38 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 #bMenu[data-cloud=busy]::after{background:#4c9bff;animation:clpulse .9s ease-in-out infinite alternate}
 #bMenu[data-cloud=warn]::after{background:var(--amber)}
 @keyframes clpulse{from{opacity:1}to{opacity:.3}}
+/* VS0 Mikro-Check (Skizze 7): Blatt unter der Kopfzeile wie #cloud; ▶ oben bleibt bedienbar (Klang-Frage mit eigener Musik) */
+#micChk{position:fixed;left:0;right:0;bottom:0;top:52px;z-index:45;display:none;flex-direction:column;background:var(--bg);border-top:1px solid var(--line);padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);max-width:100vw;overflow:hidden}
+#micChk.open{display:flex}
+#micChk .cl-h .sh-x{width:44px;height:44px}
+.mc-act{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mc-act .mbtn{flex:1 1 130px;min-height:48px;height:auto;padding:6px 12px;line-height:1.15}
+.mc-act .mbtn[hidden]{display:none}
+.mc-act .mbtn:disabled{opacity:.45}
+.mc-st{min-height:44px}
+.mc-meter{flex:none;height:8px;border-radius:4px;background:var(--chassis-3);overflow:hidden}
+.mc-meter i{display:block;height:100%;width:0;background:var(--play);transition:width .06s linear}
+.mc-grid{display:grid;grid-template-columns:minmax(0,1fr);column-gap:18px}
+.mc-row{display:grid;grid-template-columns:98px minmax(0,1fr);gap:8px;align-items:center;min-height:32px;padding:4px 0;border-bottom:1px solid var(--line);font:500 13px/1.3 var(--font-ui)}
+.mc-row .lbl{color:var(--text-dim);font-weight:700;letter-spacing:.03em}
+.mc-row .val{min-width:0;overflow-wrap:anywhere}
+.mc-row.ok .val{color:var(--text)}
+.mc-row.warn .val{color:var(--amber)}
+.mc-bars{display:flex;align-items:flex-end;gap:3px;height:42px}
+.mc-bars>span{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%}
+.mc-bars i{display:block;width:100%;max-width:18px;border-radius:2px 2px 0 0;background:var(--play)}
+.mc-bars b{font:600 9px/1 var(--font-ui);color:var(--text-dim)}
+.mc-q{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+#micChk .mc-yn{flex:1 1 130px;display:flex}
+#micChk .mc-yn button{flex:1 1 0;height:44px;min-height:44px;font-size:14px}
+.mc-gate{padding:10px 12px;border-radius:8px;border:1px solid var(--line);font:600 14px/1.35 var(--font-ui)}
+.mc-gate.ok{border-color:var(--play);color:var(--play)}
+.mc-gate.no{border-color:var(--amber);color:var(--amber)}
+.mc-gate[hidden],.mc-jbox[hidden]{display:none}
+.mc-json{width:100%;min-height:140px;font:12px/1.3 ui-monospace,Menlo,monospace;background:#0b0c0e;border:1px solid var(--line);border-radius:6px;padding:6px}
+.mc-top{display:flex;flex-direction:column;gap:8px}
+@media (orientation:landscape) and (min-width:600px){.mc-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.mc-b{padding-left:16px;padding-right:16px}
+  .mc-top{flex-direction:row;align-items:center;gap:12px}.mc-top .mc-st{flex:1 1 auto;min-width:0}.mc-top .mc-act{flex:0 0 min(380px,48%)}}
 #cloud{position:fixed;left:0;right:0;bottom:0;top:52px;z-index:45;display:none;flex-direction:column;background:var(--bg);border-top:1px solid var(--line);padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);max-width:100vw;overflow:hidden}
 #cloud.open{display:flex}
 #cloud input{-webkit-user-select:text;user-select:text}
@@ -10309,7 +10341,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '3.11.3';
+const VERSION = '3.11.4';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -13427,7 +13459,7 @@ async function wakeAcquire() {
     if (e && e.name === 'NotAllowedError' && document.visibilityState !== 'hidden') WAKE.blocked = true;
   } finally { WAKE.pending = false; }
 }
-function wakeReleaseLater() { clearTimeout(WAKE.relT); WAKE.relT = setTimeout(wakeRelease, 60000); }
+function wakeReleaseLater() { clearTimeout(WAKE.relT); WAKE.relT = setTimeout(() => (MIC.run ? wakeReleaseLater() : wakeRelease()), 60000); }   // VS0: nicht während des Mikro-Checks
 function wakeRelease() {
   clearTimeout(WAKE.relT); WAKE.relT = 0;
   const sn = WAKE.sentinel; WAKE.sentinel = null;
@@ -23320,6 +23352,8 @@ function openMenu(goto) {
   const s9 = sec('Info', colL, 10);
   const info = el('div', 'minfo'); s9.appendChild(info); UI.menuInfo = info;
   renderMenuInfo();
+  // VS0: verstecktes Testblatt, nur mit getUserMedia im obersten Fenster (in der Claude-App unsichtbar, N2-VS0-01)
+  if (micAvail()) { const bMic = btn('Mikro-Check'); bMic.classList.add('mmic'); on(bMic, 'click', () => micOpen()); row(s9, null, bMic).appendChild(el('span', 'small', 'Test fürs Einsingen: Mikrofon, Verzögerung, Speicher')); }
   m.classList.add('open');
   if (goto === 'info') requestAnimationFrame(() => { try { s9.scrollIntoView({block: 'start'}); } catch (e) {} });
   if (goto === 'online') requestAnimationFrame(() => { try { sOn.scrollIntoView({block: 'start'}); } catch (e) {} });
@@ -23811,7 +23845,7 @@ const SYNC = {where: 'local', state: 'local', client: null, lib: null, libP: nul
   outdated: null, foreign: null, recBusy: false, libT: 0, libSent: '', usage: null, captchaTok: '', tsId: null, tsP: null, calls: {lib: 0, ts: 0},
   pausedAt: 0, note: '', prevUid: null, libInit: null, libOwn: null, tickOff: false, kicking: false,
   spaces: [], reqs: [], heads: new Map(), names: new Map(), pres: new Map(), noteAt: new Map(), nq: [], nqT: 0, confInfo: new Map(), crev: 0,   // VO2
-  rt: null, rtUp: false, headsInit: false, join: null, joinHit: null, newer: null, seen: null, renT: 0, presT: 0, minT: 0, visAt: 0};
+  hold: 0, holdP: null, holdGo: null, holdRm: null, rt: null, rtUp: false, headsInit: false, join: null, joinHit: null, newer: null, seen: null, renT: 0, presT: 0, minT: 0, visAt: 0};
 const cloudHome = () => SYNC.where === 'home';
 function cloudWhere() {
   let framed = false; try { framed = window.top !== window.self; } catch (e) { framed = true; }
@@ -23908,6 +23942,7 @@ const cloudTokOld = () => { const o = cloudStored(); return !!(o && o.expires_at
 async function cloudToken() { try { const r = await SYNC.client.auth.getSession(); return r && r.data && r.data.session ? r.data.session.access_token : null; } catch (e) { return null; } }
 // Server erreichbar? (billige Anfrage, höchstens 5 s) – nur vor dem Erneuern eines abgelaufenen Tokens
 async function cloudReach() {
+  if (SYNC.holdP) await SYNC.holdP;
   const ac = typeof AbortController === 'function' ? new AbortController() : null, t = ac ? setTimeout(() => { try { ac.abort(); } catch (e) {} }, 5000) : 0;
   try { await fetch(CLOUD.url + '/auth/v1/health', {headers: {apikey: CLOUD.key}, cache: 'no-store', signal: ac ? ac.signal : undefined}); return true; }
   catch (e) { return false; } finally { clearTimeout(t); }
@@ -23926,6 +23961,7 @@ async function cloudAuthTok() {
 /* Mit gespeicherter Sitzung, aber ohne gültiges Token fiele supabase-js auf den öffentlichen Schlüssel zurück: Abfragen sähen dann
    leere Listen statt „offline“ (Start-Abgleich würde Projekte als „Zugriff weg“ markieren). Solche Abfragen gelten als Netzfehler. */
 function cloudFetch(u, o) {
+  if (SYNC.holdP) return SYNC.holdP.then(() => cloudFetch(u, o));   // VS0: Mikro-Check – warten, nicht senden
   try {
     const url = String(u && u.url || u), h = o && o.headers;
     const a = !h ? '' : typeof h.get === 'function' ? h.get('Authorization') : (h.Authorization || h.authorization || '');
@@ -23933,8 +23969,37 @@ function cloudFetch(u, o) {
   } catch (e) {}
   return fetch(u, o);
 }
+/* VS0 (C.2 Punkt 5, N7V-35, N2-VS1-02): Mikro-Check ohne Netz. cloudHold(true) trennt Realtime (alle Kanäle, Socket zu),
+   hält die Token-Erneuerung an und lässt jeden eigenen Aufruf (cloudFetch, cloudRpcText, cloudReach) warten, statt ihn zu
+   senden; Änderungen bleiben im Postausgang. cloudHold(false) baut Realtime und Presence wieder auf, holt Verpasstes und
+   schiebt den Postausgang hoch (sofort, ≤ 5 s). */
+function cloudHold(on) {
+  if (on) {
+    if (SYNC.hold++) return;
+    SYNC.holdP = new Promise(res => { SYNC.holdGo = res; });
+    clearTimeout(SYNC.pushT);
+    const c = SYNC.client, a = c && c.auth;
+    try { if (a && typeof a.stopAutoRefresh === 'function') { const p = a.stopAutoRefresh(); if (p && p.catch) p.catch(() => {}); } } catch (e) {}
+    SYNC.tickOff = true;
+    // supabase-js: removeAllChannels meldet jeden Kanal ab (leave), baut ihn ab und schließt danach den Socket (keine Herzschläge mehr)
+    if (c && typeof c.removeAllChannels === 'function') {
+      SYNC.rt = null; SYNC.rtUp = false; SYNC.rtLive = false; SYNC.pres.clear(); clearTimeout(SYNC.rtRetryT);
+      try { SYNC.holdRm = Promise.resolve(c.removeAllChannels()).catch(() => {}); } catch (e) { SYNC.holdRm = null; }
+    } else if (c) cloudUnsubscribe();
+    return;
+  }
+  if (!SYNC.hold || --SYNC.hold) return;
+  const go = SYNC.holdGo; SYNC.holdGo = null; SYNC.holdP = null; if (go) go();
+  cloudTicker();
+  // neu beitreten erst, wenn das Abmelden fertig ist (sonst gäbe channel() den alten Kanal zurück); Verpasstes holt cloudCollabLoad
+  const rm = SYNC.holdRm; SYNC.holdRm = null;
+  Promise.resolve(rm).then(() => { if (!SYNC.hold && SYNC.uid && SYNC.client) { cloudSubscribe(); cloudPresJoin(); } });
+  if (SYNC.uid && SYNC.client) cloudCollabLoad(true).catch(e => logErr(e));
+  cloudKick();
+}
 // supabase-js-Erneuerung ruht, solange offline (sonst läuft beim Wiederverbinden gerade ein 25-s-Versuch); online wieder an
 function cloudTicker() {
+  if (SYNC.hold) return;                          // VS0: während des Mikro-Checks bleibt die Erneuerung aus
   const a = SYNC.client && SYNC.client.auth; if (!a || typeof a.stopAutoRefresh !== 'function' || typeof a.startAutoRefresh !== 'function') return;
   const off = SYNC.state === 'offline' && !!SYNC.uid; if (off === !!SYNC.tickOff) return;
   SYNC.tickOff = off; try { (off ? a.stopAutoRefresh() : a.startAutoRefresh()).catch(() => {}); } catch (e) {}
@@ -23956,6 +24021,7 @@ function cloudErrKind(status, j, net) {
 }
 // ein Stringify je Push (§4.2): der große Text geht fertig in den Körper, der Kopf ist klein
 async function cloudRpcText(fn, head, key, text, keepalive, again) {
+  if (SYNC.holdP) await SYNC.holdP;
   const at = await cloudAuthTok(); if (at.err) return {err: at.err};
   const tok = at.tok;
   const body = JSON.stringify(head).slice(0, -1) + ',' + JSON.stringify(key) + ':' + text + '}';
@@ -23970,10 +24036,11 @@ async function cloudRpcText(fn, head, key, text, keepalive, again) {
   return {err: k, status: res.status, code: j && j.code, message: j && j.message};
 }
 async function cloudRpc(fn, args) {
+  if (SYNC.holdP) await SYNC.holdP;
   try { const r = await SYNC.client.rpc(fn, args || {}); if (r.error) return {err: cloudErrKind(r.status || r.error.status, r.error, /fetch|network/i.test(r.error.message || '') && !r.error.code), message: r.error.message}; return {data: r.data}; }
   catch (e) { return {err: 'net'}; }
 }
-async function cloudSel(q) { try { const r = await q; if (r.error) return {err: cloudErrKind(r.status || r.error.status, r.error), message: r.error.message}; return {data: r.data}; } catch (e) { return {err: 'net'}; } }
+async function cloudSel(q) { if (SYNC.holdP) await SYNC.holdP; try { const r = await q; if (r.error) return {err: cloudErrKind(r.status || r.error.status, r.error), message: r.error.message}; return {data: r.data}; } catch (e) { return {err: 'net'}; } }
 
 /* ---------- Start ---------- */
 async function cloudInit() {
@@ -24164,6 +24231,7 @@ function cloudMark(lid, mt) {
     if (document.visibilityState === 'hidden') cloudFlushNow(); else cloudSchedule(); });
 }
 function cloudSchedule() {
+  if (SYNC.hold) return;                          // VS0: der Postausgang geht nach dem Mikro-Check hoch (cloudHold)
   const pl = R.playing, d = pl ? 30000 : 2000, mx = pl ? 60000 : 15000, t = Date.now();
   if (!SYNC.first) SYNC.first = t;
   let wait = Math.max(0, Math.min(d, SYNC.first + mx - t));
@@ -24171,7 +24239,7 @@ function cloudSchedule() {
   clearTimeout(SYNC.pushT); SYNC.pushT = setTimeout(() => cloudFlush(), wait);
 }
 function cloudKick() {
-  if (!SYNC.uid || !['offline', 'online', 'error'].includes(SYNC.state)) return;
+  if (SYNC.hold || !SYNC.uid || !['offline', 'online', 'error'].includes(SYNC.state)) return;
   SYNC.back = 0;
   if (SYNC.state === 'online') { cloudFlush(); return; }
   if (SYNC.kicking) return;                       // online + visible + TOKEN_REFRESHED kommen oft zusammen: ein Versuch genügt
@@ -24651,7 +24719,7 @@ const cloudSpaceHeads = id => [...SYNC.heads.entries()].filter(([, h]) => h.spac
 // Migration vo2_fix). Scheitert der Beitritt (Migration fehlt, Netz), holt ein Ersatz-Takt alle 30 s die Kopfzeilen,
 // solange die Seite sichtbar ist; nach 5 Fehlern in Folge ruht der Kanal 5 min statt endlos neu beizutreten.
 function cloudSubscribe() {
-  const c = SYNC.client; if (SYNC.rt || !c || typeof c.channel !== 'function' || !SYNC.uid) return;
+  const c = SYNC.client; if (SYNC.hold || SYNC.rt || !c || typeof c.channel !== 'function' || !SYNC.uid) return;
   const uid = SYNC.uid, ch = c.channel('user:' + uid, {config: {private: true}});
   for (const t of ['projects', 'collab_requests', 'spaces']) ch.on('postgres_changes', {event: '*', schema: 'public', table: t}, e => { try { cloudRtEvent(t, e); } catch (er) { logErr(er); } });
   SYNC.rtErr = 0;
@@ -24664,7 +24732,7 @@ function cloudSubscribe() {
     }
   });
   SYNC.rt = ch;
-  if (!SYNC.pollT) SYNC.pollT = setInterval(() => { if (SYNC.uid && SYNC.headsInit && !SYNC.rtLive && document.visibilityState === 'visible' && SYNC.state !== 'off') cloudCollabLoad(true).catch(e => logErr(e)); }, 30000);
+  if (!SYNC.pollT) SYNC.pollT = setInterval(() => { if (SYNC.uid && !SYNC.hold && SYNC.headsInit && !SYNC.rtLive && document.visibilityState === 'visible' && SYNC.state !== 'off') cloudCollabLoad(true).catch(e => logErr(e)); }, 30000);
 }
 function cloudUnsubscribe() {
   const c = SYNC.client;
@@ -24745,7 +24813,7 @@ async function cloudPresPayload(spaceId) {
   return {name: (SYNC.me && SYNC.me.name) || '', sid: here ? m.sid : null, title: here ? String(S.name || '').slice(0, 40) : null};
 }
 function cloudPresJoin() {
-  const c = SYNC.client; if (!c || typeof c.channel !== 'function' || !SYNC.uid) return;
+  const c = SYNC.client; if (SYNC.hold || !c || typeof c.channel !== 'function' || !SYNC.uid) return;
   const act = new Set(SYNC.spaces.filter(s => s.status === 'active').map(s => s.id));
   for (const [id, x] of SYNC.pres) if (!act.has(id)) { try { c.removeChannel(x.ch); } catch (e) {} SYNC.pres.delete(id); }
   for (const id of act) {
@@ -24971,6 +25039,7 @@ async function cloudPaste() {
 }
 function cloudOpenSheet(view) {
   if (EL.menu.classList.contains('open')) closeMenu();
+  if (MIC.open) micClose();
   closePop();
   let d = document.getElementById('cloud');
   if (!d) { d = el('div', ''); d.id = 'cloud'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Online'); document.body.appendChild(d);
@@ -25907,6 +25976,7 @@ function onKeyDown(e) {
   if (e.repeat) return;
   const menuOpen = EL.menu.classList.contains('open');
   if (code === 'Escape') {
+    if (MIC.open) { micClose(); return; }
     if (UI.cloudOpen) { cloudCloseSheet(); return; }
     if (UI.pop) { closePop(); return; }
     if (menuOpen) { closeMenu(); return; }
@@ -25965,6 +26035,559 @@ function releaseEverything() {
   R.momSrc.clear(); if (R.momentary) { R.momentary = false; UI.dirty.all = true; }
   R.momCand = null;
   if (ED.hear) { ED.hear.release(nowT()); ED.hear = null; }
+}
+
+/* =====================================================================
+   VS0 Mikro-Check (Spec v3 Nachtrag 2 C.2/C.3, r7/stimme.md §1.3, §6, §11 Skizze 7, §12): ein verstecktes Testblatt
+   (Menü → Info → „Mikro-Check“). Es erscheint nur, wenn getUserMedia da ist UND die Seite das oberste Fenster ist – in der
+   Claude-App (iframe) gibt es weder den Eintrag noch einen getUserMedia-Aufruf (N2-VS0-01). Mikrofon nur auf Tipp, im selben
+   Tipp ctx.resume(); audioSession 'play-and-record' nur, solange es läuft, danach sofort 'playback' und alle Spuren 'ended'.
+   Während der ganzen Prüfung keine Netzaufrufe (C.2 Punkt 5, N7V-35): SYNC hält an (cloudHold), ein Zähler zählt fetch, XHR,
+   sendBeacon und WebSocket-Frames. Es wird nichts gespeichert außer dem 50-MB-Schreibtest in einer eigenen Datenbank, die gleich
+   danach gelöscht wird. Ergebnis: JSON (Schema 'synq-miccheck/1', in CHANGES-V3) zum Kopieren oder als Datei.
+   ===================================================================== */
+const MIC = {gum: 0, open: false, run: null, res: null, ui: null, wk: null, net: null};
+const MIC_CHIRP = {dur: 0.03, f0: 800, f1: 8000, amp: 0.4, gap: 0.7, win: 0.5};
+const MIC_Q = 'Klingt die Musik mit laufendem Mikrofon noch gut – nicht leiser, nicht dumpfer?';
+const MIC_ASK = {echoCancellation: false, noiseSuppression: false, autoGainControl: false};
+function micAvail() {
+  try { return !!(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') && window.top === window.self; } catch (e) { return false; }
+}
+function micWhere() { const o = location.origin; return o === CLOUD.origin ? 'pages' : o === 'https://raw.githack.com' ? 'githack' : location.protocol === 'file:' ? 'datei' : 'andere'; }
+const micAs = () => { try { return navigator.audioSession ? String(navigator.audioSession.type) : null; } catch (e) { return null; } };
+const micMs = v => (typeof v === 'number' && isFinite(v) ? Math.round(v * 10000) / 10 : null);
+const micR = (v, d) => (typeof v === 'number' && isFinite(v) ? Math.round(v * 10 ** d) / 10 ** d : null);
+const micDe = (v, d) => (v == null ? '–' : (+v).toFixed(d == null ? 1 : d).replace('.', ','));
+const micRms = x => { let s = 0; for (let i = 0; i < x.length; i++) s += x[i] * x[i]; return x.length ? Math.sqrt(s / x.length) : 0; };
+const micDb = v => (v > 1e-9 ? Math.round(20 * Math.log10(v) * 10) / 10 : -180);
+const micMed = a => { const s = a.slice().sort((x, y) => x - y), n = s.length; return n ? (n % 2 ? s[n >> 1] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; };
+// Messsignale (wie r7/stimme-proto/latency.mjs): Chirp 0,8–8 kHz, 30 ms, exponentiell, Sinus-Fenster
+function micChirp(sr) {
+  const L = Math.round(MIC_CHIRP.dur * sr), x = new Float32Array(L); let ph = 0;
+  for (let i = 0; i < L; i++) { const t = i / L, f = MIC_CHIRP.f0 * Math.pow(MIC_CHIRP.f1 / MIC_CHIRP.f0, t); ph += 2 * Math.PI * f / sr; x[i] = Math.sin(ph) * Math.sin(Math.PI * t); }
+  return x;
+}
+// rosa Rauschen (Paul Kellet), Effektivwert rms, 20 ms ein- und ausgeblendet
+function micPink(n, sr, rms) {
+  const x = new Float32Array(n); let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0, s = 0;
+  for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1;
+    b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759; b2 = 0.969 * b2 + w * 0.153852; b3 = 0.8665 * b3 + w * 0.3104856;
+    b4 = 0.55 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.016898; const y = b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362; b6 = w * 0.115926; x[i] = y; s += y * y; }
+  const g = rms / Math.sqrt(s / n), fd = Math.round(0.02 * sr);
+  for (let i = 0; i < n; i++) x[i] *= g * (i < fd ? i / fd : i > n - fd ? (n - i) / fd : 1);
+  return x;
+}
+// Kreuzkorrelation per FFT: cc[m] = Σ x[m + k]·t[k], m = 0 … len(x) − len(t)
+function micXcorr(x, t) {
+  const n = x.length + t.length; let N = 1; while (N < n) N <<= 1;
+  const re = new Float64Array(N), im = new Float64Array(N), tr = new Float64Array(N), ti = new Float64Array(N);
+  re.set(x); tr.set(t); fxFft(re, im); fxFft(tr, ti);
+  for (let i = 0; i < N; i++) { const a = re[i], b = im[i], c = tr[i], d = ti[i]; re[i] = a * c + b * d; im[i] = a * d - b * c; }   // konj(X·konj(T)) → Vorwärts-FFT = Rücktransformation
+  fxFft(re, im);
+  const L = Math.max(0, x.length - t.length + 1), out = new Float64Array(L);
+  for (let i = 0; i < L; i++) out[i] = re[i] / N;
+  return out;
+}
+/* Rundlauf aus einem Ausschnitt (N7V-02): ref = das gespielte Signal (digital, gleiche Zeitachse), mic = das Mikrofon.
+   Erste Ankunft (stimme.md §6, Pflicht – das globale Maximum gab bis 15 ms Fehler durch Reflexionen): frühestes Maximum
+   der |Korrelation|, das ≥ 50 % des größten erreicht, dann Parabel-Feinwert. Güte q = Spitze / Median(|cc|) im Fenster. */
+function micLatEst(mic, ref, sr, tpl, win) {
+  tpl = tpl || micChirp(sr);
+  const a = micRefPeak(ref, tpl); return a.ok === false ? a : micDrive(micMicPeak(mic, sr, tpl, a, win));
+}
+// Generator-Schritte: micDrive rechnet am Stück (Tests, Node), micDriveA gibt zwischen den Stücken den Hauptfaden frei (PE1)
+function micDrive(g) { let r; while (!(r = g.next()).done); return r.value; }
+async function micDriveA(g) { let r; while (!(r = g.next()).done) await micYield(); return r.value; }
+// Kreuzkorrelation in Stücken zu 8192 Verschiebungen (FFT 16384 statt 32768 am Stück)
+function* micXcorrG(x, t) {
+  const S = 8192, L = Math.max(0, x.length - t.length + 1), out = new Float64Array(L);
+  for (let s = 0; s < L; s += S) { const c = micXcorr(x.subarray(s, Math.min(x.length, s + S + t.length - 1)), t); out.set(c.subarray(0, Math.min(S, L - s)), s); if (s + S < L) yield; }
+  return out;
+}
+// Teil 1: wo beginnt der gespielte Chirp in ref (digital, sauber: globales Maximum)
+function micRefPeak(ref, tpl) {
+  const L = tpl.length;
+  let pk = 0; for (let i = 0; i < ref.length; i++) pk = Math.max(pk, Math.abs(ref[i]));
+  if (pk < 1e-6) return {ok: false, why: 'ref'};
+  let i0 = 0; while (i0 < ref.length && Math.abs(ref[i0]) < 0.05 * pk) i0++;
+  const r0 = Math.max(0, i0 - L), r1 = Math.min(ref.length, i0 + 2 * L);
+  const cr = micXcorr(ref.subarray(r0, r1), tpl); let rm = 0, ri = -1;
+  for (let i = 0; i < cr.length; i++) { const v = Math.abs(cr[i]); if (v > rm) { rm = v; ri = i; } }
+  if (ri < 0) return {ok: false, why: 'ref'};
+  return {i: r0 + ri, p: r0 + ri + micPar(cr, ri)};
+}
+const micPar = (c, j) => { const y0 = c[j - 1] || 0, y1 = c[j], y2 = c[j + 1] || 0, den = y0 - 2 * y1 + y2; return Math.abs(den) > 1e-12 ? 0.5 * (y0 - y2) / den : 0; };
+// Teil 2: erste Ankunft im Mikrofon ab dem Referenz-Beginn, Fenster win (0,5 s; reicht auch für Bluetooth)
+function* micMicPeak(mic, sr, tpl, R, win) {
+  const L = tpl.length, W = Math.round((win || MIC_CHIRP.win) * sr);
+  const m0 = Math.max(0, R.i - 4), m1 = Math.min(mic.length, R.i + W + L);
+  if (m1 - m0 < 2 * L) return {ok: false, why: 'kurz'};
+  const cm = yield* micXcorrG(mic.subarray(m0, m1), tpl), b = cm.length;
+  let gm = 0; for (let i = 0; i < b; i++) gm = Math.max(gm, Math.abs(cm[i]));
+  if (!(gm > 0)) return {ok: false, why: 'still', q: 0};
+  let j = 0; while (j < b && Math.abs(cm[j]) < 0.5 * gm) j++;
+  while (j + 1 < b && Math.abs(cm[j + 1]) > Math.abs(cm[j])) j++;
+  const pM = m0 + j + micPar(cm, j);
+  const st = Math.max(1, b >> 12), ab = new Float64Array(Math.ceil(b / st)); for (let i = 0, k = 0; i < b; i += st) ab[k++] = Math.abs(cm[i]);   // Median aus ≤ 4096 Stichproben
+  ab.sort(); const q = gm / Math.max(1e-12, ab[ab.length >> 1]);
+  const lv = micRms(mic.subarray(Math.max(0, Math.round(pM)), Math.min(mic.length, Math.round(pM) + L)));
+  return {ok: q >= 8, ms: (pM - R.p) / sr * 1000, q, lvl: micDb(lv), why: q >= 8 ? '' : 'leise'};
+}
+// Frequenzgang Lautsprecher → Raum → Mikrofon aus rosa Rauschen (Welch, Hann 4096): Oktavbänder, 1 kHz = 0 dB
+async function micBands(mic, ref, sr) {
+  const N = 4096, hop = 2048, w = new Float64Array(N);
+  for (let i = 0; i < N; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
+  const Pm = new Float64Array(N / 2), Pr = new Float64Array(N / 2), a = new Float64Array(N), ai = new Float64Array(N), c = new Float64Array(N), ci = new Float64Array(N);
+  let fr = 0;
+  for (let s = 0; s + N <= Math.min(mic.length, ref.length); s += hop) {
+    for (let i = 0; i < N; i++) { a[i] = mic[s + i] * w[i]; ai[i] = 0; c[i] = ref[s + i] * w[i]; ci[i] = 0; }
+    fxFft(a, ai); fxFft(c, ci);
+    for (let k = 0; k < N / 2; k++) { Pm[k] += a[k] * a[k] + ai[k] * ai[k]; Pr[k] += c[k] * c[k] + ci[k] * ci[k]; }
+    if (++fr % 3 === 0) await micYield();             // je 3 Fenster ein eigener Schritt (keine longtask)
+  }
+  const hz = [125, 250, 500, 1000, 2000, 4000, 8000, 16000].filter(f => f * Math.SQRT2 < sr / 2), raw = [];
+  for (const f of hz) { let sm = 0, sr_ = 0; const k0 = Math.max(1, Math.floor(f / Math.SQRT2 / sr * N)), k1 = Math.min(N / 2 - 1, Math.ceil(f * Math.SQRT2 / sr * N));
+    for (let k = k0; k <= k1; k++) { sm += Pm[k]; sr_ += Pr[k]; } raw.push(sr_ > 0 && sm > 0 ? 10 * Math.log10(sm / sr_) : -99); }
+  const i1 = hz.indexOf(1000), base = i1 >= 0 ? raw[i1] : Math.max(...raw);
+  return {hz, db: raw.map(v => micR(v - base, 1)), gain1k: micR(base, 1), frames: fr};
+}
+// Aufnahme-Worklet (ASCII): Kanal 0 = Mikrofon, Kanal 1 = Referenz (das gespielte Signal); Blöcke à 2048 mit currentFrame
+const MIC_WK = `class SynqMicCap extends AudioWorkletProcessor {
+  constructor() { super(); this.on = true; this.n = 0; this.f0 = 0; this.last = -1; this.gaps = 0; this.a = new Float32Array(2048); this.b = new Float32Array(2048);
+    this.port.onmessage = e => { if (e.data && e.data.stop) this.on = false; }; }
+  flush() { if (!this.n) return; this.port.postMessage({f0: this.f0, a: this.a.subarray(0, this.n).slice(), b: this.b.subarray(0, this.n).slice(), gaps: this.gaps}); this.n = 0; }
+  process(inputs) {
+    if (!this.on) return false;
+    const ch = inputs[0] || [], x = ch[0], y = ch[1], L = x ? x.length : 128;
+    if (this.last >= 0 && currentFrame !== this.last) this.gaps++;
+    this.last = currentFrame + L;
+    if (this.n + L > 2048) this.flush();
+    if (this.n === 0) this.f0 = currentFrame;
+    for (let i = 0; i < L; i++) { this.a[this.n + i] = x ? x[i] : 0; this.b[this.n + i] = y ? y[i] : 0; }
+    this.n += L;
+    if (this.n >= 2048) this.flush();
+    return true;
+  }
+}
+registerProcessor('synq-miccap', SynqMicCap);`;
+const micTimeout = (p, ms) => new Promise((res, rej) => { const t = setTimeout(() => rej(new Error('Zeit')), ms); p.then(v => { clearTimeout(t); res(v); }, e => { clearTimeout(t); rej(e); }); });
+function micWorklet(c) {
+  if (MIC.wk && MIC.wk.ctx === c) return MIC.wk.p;
+  const p = (async () => {
+    if (!c.audioWorklet || typeof AudioWorkletNode !== 'function') return false;
+    const ways = [() => URL.createObjectURL(new Blob([MIC_WK], {type: 'application/javascript'})), () => 'data:application/javascript;base64,' + btoa(MIC_WK)];
+    for (const mk of ways) { let u = ''; try { u = mk(); await micTimeout(c.audioWorklet.addModule(u), 2500); return true; } catch (e) { /* nächster Weg */ } finally { if (u.startsWith('blob:')) { try { URL.revokeObjectURL(u); } catch (e) {} } } }
+    return false;
+  })();
+  MIC.wk = {ctx: c, p}; return p;
+}
+// N7V-35: Zähler für fetch, XHR, sendBeacon und gesendete WebSocket-Frames, nur solange die Prüfung läuft
+function micNetCount(on) {
+  if (on) {
+    if (MIC.net) return;
+    const n = MIC.net = {fetch: 0, xhr: 0, beacon: 0, ws: 0, o: {}}, o = n.o;
+    try { o.fetch = window.fetch; if (o.fetch) window.fetch = function () { n.fetch++; return o.fetch.apply(this, arguments); }; } catch (e) {}
+    try { o.xhr = XMLHttpRequest.prototype.send; XMLHttpRequest.prototype.send = function () { n.xhr++; return o.xhr.apply(this, arguments); }; } catch (e) {}
+    try { if (navigator.sendBeacon) { o.beacon = navigator.sendBeacon; navigator.sendBeacon = function () { n.beacon++; return o.beacon.apply(navigator, arguments); }; } } catch (e) {}
+    try { o.ws = WebSocket.prototype.send; WebSocket.prototype.send = function () { n.ws++; return o.ws.apply(this, arguments); }; } catch (e) {}
+    return;
+  }
+  const n = MIC.net; if (!n) return null; MIC.net = null; const o = n.o;
+  try { if (o.fetch) window.fetch = o.fetch; } catch (e) {}
+  try { if (o.xhr) XMLHttpRequest.prototype.send = o.xhr; } catch (e) {}
+  try { if (o.beacon) navigator.sendBeacon = o.beacon; } catch (e) {}
+  try { if (o.ws) WebSocket.prototype.send = o.ws; } catch (e) {}
+  return {fetch: n.fetch, xhr: n.xhr, beacon: n.beacon, ws: n.ws, total: n.fetch + n.xhr + n.beacon + n.ws};
+}
+function micBase() {
+  const c = AU.ctx; let sup = {};
+  try { const s = navigator.mediaDevices.getSupportedConstraints() || {}; for (const k of ['echoCancellation', 'noiseSuppression', 'autoGainControl', 'channelCount', 'sampleRate', 'sampleSize', 'latency', 'deviceId', 'groupId']) sup[k] = !!s[k]; } catch (e) { sup = null; }
+  let sa = false; try { sa = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches); } catch (e) {}
+  return {schema: 'synq-miccheck/1', app: VERSION, at: null, ua: String(navigator.userAgent || '').slice(0, 200), where: micWhere(), standalone: !!sa,
+    env: {secure: window.isSecureContext !== false, top: true, audioSessionApi: !!navigator.audioSession, outputLatencyApi: !!(c && 'outputLatency' in c), worklet: typeof AudioWorkletNode === 'function'},
+    constraints: {supported: sup, asked: Object.assign({}, MIC_ASK)},
+    track: null, context: c ? {sampleRate: c.sampleRate, baseLatencyMs: micMs(c.baseLatency), outputLatencyMs: micMs(c.outputLatency), state: c.state} : null,
+    session: {before: micAs(), during: null, after: null}, error: null, roundTrip: null, response: null, noise: null, drift: null, capture: null,
+    storage: null, sound: {question: MIC_Q, answer: MIC.res && MIC.res.sound ? MIC.res.sound.answer : null}, net: null, gate: null, phase: 'ready', log: []};
+}
+function micGate(r) {
+  const gum = !!(r.track && !(r.error && r.error.step === 'getUserMedia'));
+  const spread = !!(r.roundTrip && r.roundTrip.ok), sound = r.sound.answer === 'ja';
+  const why = []; if (!gum) why.push(r.error ? 'Mikrofon: ' + r.error.name : 'Mikrofon nicht gestartet');
+  if (gum && !spread) why.push(r.roundTrip && r.roundTrip.spreadMs != null ? 'Rundlauf streut ' + micDe(r.roundTrip.spreadMs) + ' ms (> 2 ms)' : 'Piep-Töne nicht gehört');
+  if (r.sound.answer == null) why.push('Klang-Frage offen'); else if (!sound) why.push('Klang mit Mikrofon schlechter');
+  return (r.gate = {gum, spreadOk: spread, soundOk: sound, pass: gum && spread && sound, why});
+}
+
+/* ---------- Ablauf ---------- */
+function micStart(opts) {
+  if (MIC.run || !micAvail()) return false;
+  opts = opts || {};
+  const c = ensureAudio();                                   // im selben Tipp: resume (I11)
+  const ans = MIC.res && MIC.res.sound ? MIC.res.sound.answer : null;
+  const r = MIC.res = micBase(); r.sound.answer = ans; r.at = new Date().toISOString(); r.phase = 'mic';
+  const run = MIC.run = {opts, driftSec: opts.driftSec != null ? Math.max(0, +opts.driftSec) : 120, blocks: [], keep: [], keepAll: false, srcs: [], nodes: [],
+    stream: null, stopped: false, frames: 0, gaps: 0, lvl: -180, timers: [], t0: performance.now()};
+  if (R.playing) { try { stop(); } catch (e) { logErr(e); } r.log.push('Musik für die Messung gestoppt'); }
+  wakeAcquire();                                             // Bildschirm bleibt an (2½ min; Sperre = Seite verlassen = Abbruch)
+  cloudHold(true); micNetCount(true);                        // C.2 Punkt 5: ab hier kein Netz bis zum Ende
+  try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) { r.log.push('audioSession: ' + (e && e.name)); }
+  if (!c) { micFail(run, 'audio', {name: 'NoAudioContext', message: 'Web Audio fehlt'}); return true; }
+  MIC.gum++;
+  let p; try { p = navigator.mediaDevices.getUserMedia({audio: Object.assign({}, MIC_ASK)}); } catch (e) { p = Promise.reject(e); }
+  const wk = micWorklet(c);
+  p.then(stream => micGot(run, stream, wk).catch(e => micFail(run, 'aufbau', e)), e => micFail(run, 'getUserMedia', e));
+  run.vis = () => { if (document.hidden && MIC.run === run && !run.stopped && run.stream) micFail(run, 'unterbrochen', {name: 'Interrupted', message: 'Seite verlassen – Messung abgebrochen'}); };
+  document.addEventListener('visibilitychange', run.vis);
+  micRender(); return true;
+}
+async function micGot(run, stream, wkP) {
+  if (MIC.run !== run || run.stopped) { stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} }); return; }
+  run.stream = stream;
+  const r = MIC.res, c = AU.ctx, sr = c.sampleRate;
+  try { const p = c.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+  r.session.during = micAs();
+  const tr = stream.getAudioTracks()[0]; let st = {};
+  try { st = (tr && tr.getSettings && tr.getSettings()) || {}; } catch (e) {}
+  const pick = {}; for (const k of ['sampleRate', 'sampleSize', 'channelCount', 'echoCancellation', 'noiseSuppression', 'autoGainControl', 'latency']) if (st[k] !== undefined) pick[k] = st[k];
+  r.track = {settings: pick, readyState: tr ? tr.readyState : null, muted: tr ? !!tr.muted : null, readyStateAfter: null};
+  if (tr) { tr.onended = () => { if (MIC.run === run && !run.stopped && !run.releasing) micFail(run, 'unterbrochen', {name: 'TrackEnded', message: 'Mikrofon-Spur beendet (Anruf, andere App?)'}); };
+    tr.onmute = () => r.log.push('Spur stumm bei ' + Math.round(performance.now() - run.t0) + ' ms'); }
+  r.context = {sampleRate: sr, baseLatencyMs: micMs(c.baseLatency), outputLatencyMs: micMs(c.outputLatency), state: c.state,
+    rateMismatch: !!(pick.sampleRate && pick.sampleRate !== sr)};   // I9: Spur 44,1 kHz, Kontext 48 kHz → verlorene Samples (die Drift-Probe zeigt es)
+  if (r.context.rateMismatch) r.log.push('Abtastraten verschieden: Spur ' + pick.sampleRate + ' Hz, Kontext ' + sr + ' Hz');
+  const src = c.createMediaStreamSource(stream), mg = c.createChannelMerger(2), out = c.createGain(), ref = c.createGain(), sink = c.createGain();
+  sink.gain.value = 0; src.connect(mg, 0, 0); ref.connect(mg, 0, 1); out.connect(c.destination);
+  const ok = await wkP.catch(() => false);
+  if (MIC.run !== run || run.stopped) return;
+  let cap;
+  if (ok) {
+    cap = new AudioWorkletNode(c, 'synq-miccap', {numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'discrete'});
+    cap.port.onmessage = e => micBlock(run, e.data); r.capture = {how: 'worklet'};
+  } else {                                                   // ohne AudioWorklet: ScriptProcessor (Hauptfaden)
+    cap = c.createScriptProcessor(2048, 2, 1); cap.channelCountMode = 'explicit'; cap.channelInterpretation = 'discrete';
+    cap.onaudioprocess = e => { const ib = e.inputBuffer; micBlock(run, {f0: Math.round(e.playbackTime * sr), a: ib.getChannelData(0).slice(), b: ib.getChannelData(1).slice(), gaps: 0}); };
+    r.capture = {how: 'script'};
+  }
+  mg.connect(cap); cap.connect(sink); sink.connect(c.destination);
+  run.nodes = [src, mg, out, ref, cap, sink]; run.cap = cap; run.out = out; run.ref = ref;
+  micSchedule(run);
+}
+function micBlock(run, m) {
+  if (MIC.run !== run || !m || !m.a || run.stopped) return;
+  run.frames += m.a.length; run.gaps = m.gaps || run.gaps;
+  if (run.lastEnd != null && Math.abs(m.f0 - run.lastEnd) > 1) run.jumps = (run.jumps || 0) + 1;
+  run.lastEnd = m.f0 + m.a.length;
+  run.lvl = micDb(micRms(m.a));
+  const f1 = m.f0 + m.a.length;
+  if (run.keepAll || run.keep.some(([a, b]) => f1 > a && m.f0 < b)) run.blocks.push(m);
+  const u = MIC.ui; if (u && u.meter) { const now = performance.now(); if (!(now - (run.mt || 0) < 60)) { run.mt = now; u.meter.style.width = Math.max(0, Math.min(100, (run.lvl + 60) / 60 * 100)) + '%'; } }
+}
+function micExtract(run, a, b) {
+  const n = Math.max(0, b - a), x = new Float32Array(n), y = new Float32Array(n);
+  for (const m of run.blocks) { const s = Math.max(a, m.f0), e = Math.min(b, m.f0 + m.a.length); if (e <= s) continue;
+    x.set(m.a.subarray(s - m.f0, e - m.f0), s - a); y.set(m.b.subarray(s - m.f0, e - m.f0), s - a); }
+  return {mic: x, ref: y};
+}
+function micFire(run, buf, t) {
+  const c = AU.ctx, s = c.createBufferSource(); s.buffer = buf; s.connect(run.out); s.connect(run.ref); s.start(t); run.srcs.push(s);
+  s.onended = () => { try { s.disconnect(); } catch (e) {} const i = run.srcs.indexOf(s); if (i >= 0) run.srcs.splice(i, 1); };
+}
+function micSchedule(run) {
+  const c = AU.ctx, sr = c.sampleRate, r = MIC.res, g = MIC_CHIRP.gap;
+  run.keepAll = true;
+  const tS = c.currentTime + 0.35; run.tS = tS;
+  const tpl = micChirp(sr), cb = c.createBuffer(1, tpl.length, sr), cd = cb.getChannelData(0);
+  for (let i = 0; i < tpl.length; i++) cd[i] = tpl[i] * MIC_CHIRP.amp;
+  run.tpl = tpl; run.cb = cb;
+  run.quiet = [tS, tS + 0.5];                                 // 0,5 s Stille: Grundrauschen
+  run.chirps = [0, 1, 2, 3].map(k => tS + 0.6 + k * g);       // 4 Chirps (N7V-03)
+  run.chirps.forEach(t => micFire(run, cb, t));
+  const tN = tS + 0.6 + 4 * g + 0.1, nb = c.createBuffer(1, 2 * sr, sr);
+  nb.getChannelData(0).set(micPink(2 * sr, sr, 0.1)); micFire(run, nb, tN); run.noiseAt = [tN, tN + 2];   // rosa Rauschen −20 dBFS, 2 s
+  run.tA = tN + 2.35;
+  r.phase = 'quiet'; micRender();
+  for (let k = 1; k <= 4; k++) run.timers.push(setTimeout(() => { try { micXcorr(new Float32Array(1024 * k), tpl.subarray(0, 256)); } catch (e) {} }, 60 * k));   // FFT vorwärmen (JIT), damit die Auswertung später in kurzen Schritten läuft
+  const poll = () => {
+    if (MIC.run !== run || run.stopped) return;
+    const t = c.currentTime, ph = t < run.chirps[0] - 0.05 ? 'quiet' : t < tN ? 'chirp' : 'noise';
+    if (c.state !== 'running') { run.notRun = (run.notRun || 0) + 1; if (run.notRun === 10) { r.log.push('Audio ' + c.state + ' während der Messung'); try { c.resume(); } catch (e) {} } }
+    if (t >= run.tA) { micAnalyze(run).catch(e => micFail(run, 'auswertung', e)); return; }
+    if (ph !== r.phase) { r.phase = ph; micRender(); }
+    run.timers.push(setTimeout(poll, 100));
+  };
+  poll();
+}
+const micYield = () => new Promise(res => setTimeout(res, 0));
+// Lücken in der Aufnahme: das Worklet zählt Sprünge von currentFrame selbst, beim ScriptProcessor zählen die Blockanfänge
+const micGaps = run => (run.cap && run.cap.port ? run.gaps : run.jumps || 0);
+async function micChirps(run, times) {
+  const sr = AU.ctx.sampleRate, out = [];
+  for (const t of times) {
+    const s = micExtract(run, Math.round((t - 0.15) * sr), Math.round((t + MIC_CHIRP.dur + MIC_CHIRP.win + 0.15) * sr));
+    const R = micRefPeak(s.ref, run.tpl); await micYield();                // je Teil ein eigener Schritt (keine longtask, PE1)
+    out.push(R.ok === false ? R : await micDriveA(micMicPeak(s.mic, sr, run.tpl, R))); await micYield();
+    if (MIC.run !== run || run.stopped) return null;
+  }
+  return out;
+}
+async function micAnalyze(run) {
+  const c = AU.ctx, sr = c.sampleRate, r = MIC.res, fr = t => Math.round(t * sr);
+  run.keepAll = false; r.phase = 'calc'; micRender();
+  const q = micExtract(run, fr(run.quiet[0] + 0.05), fr(run.quiet[1]));
+  const lat = await micChirps(run, run.chirps); if (!lat) return;
+  const ms = lat.map(e => (e.ok ? micR(e.ms, 3) : null)), good = ms.filter(v => v != null);
+  const med = good.length ? micMed(good) : null, spread = good.length ? Math.max(...good) - Math.min(...good) : null;
+  r.roundTrip = {ms, medianMs: micR(med, 3), spreadMs: micR(spread, 3), q: lat.map(e => micR(e.q || 0, 1)), levelDbfs: lat.map(e => (e.lvl != null ? e.lvl : null)),
+    ok: good.length === 4 && spread <= 2, signal: 'Chirp 0,8–8 kHz, 30 ms, erste Ankunft', path: 'Ausgang → Lautsprecher → Raum → Mikrofon'};
+  if (good.length < 4) r.log.push('Chirps nicht gehört: ' + lat.map(e => e.why || 'ok').join(','));
+  const L = med != null ? Math.round(med / 1000 * sr) : 0, nz = micExtract(run, fr(run.noiseAt[0] + 0.1), fr(run.noiseAt[1] - 0.1) + L);
+  await micYield();
+  r.response = await micBands(nz.mic.subarray(L), nz.ref.subarray(0, nz.ref.length - L), sr);
+  const fl = micRms(q.mic), nl = micRms(nz.mic.subarray(L));
+  r.noise = {floorDbfs: micDb(fl), noiseDbfs: micDb(nl), snrDb: micR(micDb(nl) - micDb(fl), 1)};
+  run.blocks = []; run.startMs = med;
+  if (!(run.driftSec > 0) || MIC.run !== run) { micFinish(run); return; }
+  r.phase = 'drift'; run.tE = run.chirps[0] + run.driftSec; run.dt0 = c.currentTime; micRender();
+  const tick = () => {
+    if (MIC.run !== run || run.stopped) return;
+    const t = c.currentTime;
+    if (!run.endFired && t >= run.tE - 1.2) {                // die End-Chirps (Drift-Probe, §6 Punkt 4)
+      run.endFired = true; const tE = Math.max(run.tE, t + 0.4); run.tE = tE; run.ends = [tE, tE + MIC_CHIRP.gap];
+      run.keep.push([fr(tE - 0.3), fr(tE + MIC_CHIRP.gap + MIC_CHIRP.win + 0.3)]); run.ends.forEach(x => micFire(run, run.cb, x));
+      r.phase = 'end'; micRender();
+    }
+    if (run.endFired && t >= run.ends[1] + MIC_CHIRP.win + 0.4) { micDriftEnd(run).catch(e => micFail(run, 'drift', e)); return; }
+    if (r.phase === 'drift' && MIC.ui && MIC.ui.status) MIC.ui.status.textContent = micStatus(r);
+    run.timers.push(setTimeout(tick, 200));
+  };
+  tick();
+}
+// [Drift jetzt beenden]: die End-Chirps gleich (kürzere Probe; die Dauer steht im Ergebnis)
+function micDriftNow() { const run = MIC.run; if (!run || MIC.res.phase !== 'drift' || run.endFired) return false; run.tE = AU.ctx.currentTime + 0.4; return true; }
+async function micDriftEnd(run) {
+  const r = MIC.res, lat = await micChirps(run, run.ends); if (!lat) return;
+  const ms = lat.filter(e => e.ok).map(e => e.ms), end = ms.length ? micMed(ms) : null, sec = run.ends[0] - run.chirps[0];
+  const per = end != null && run.startMs != null && sec > 0 ? (end - run.startMs) / (sec / 60) : null;
+  r.drift = {sec: micR(sec, 1), startMs: micR(run.startMs, 3), endMs: micR(end, 3), msPerMin: micR(per, 3), gaps: micGaps(run),
+    ok: per != null && Math.abs(per) <= 0.5, short: sec < 60};   // Lücken stehen daneben (gaps), sie verschieben Mikro und Referenz gleich
+  micFinish(run);
+}
+async function micFinish(run) {
+  if (MIC.run !== run) return;
+  const r = MIC.res;
+  r.capture = Object.assign(r.capture || {}, {frames: run.frames, gaps: micGaps(run), sec: micR((performance.now() - run.t0) / 1000, 1)});
+  micRelease(run);
+  if (!run.opts.noStore) { r.phase = 'store'; micRender(); r.storage = await micStorage(); }
+  micDone(run, 'done');
+}
+function micFail(run, step, e) {
+  if (MIC.run !== run || run.stopped) return;
+  const r = MIC.res;
+  r.error = {step, name: String((e && e.name) || 'Error'), message: String((e && e.message) || e || '').slice(0, 200)};
+  micRelease(run);
+  if (step === 'getUserMedia' && !run.opts.noStore) { r.phase = 'store'; micRender(); micStorage().then(s => { r.storage = s; micDone(run, 'error'); }); return; }
+  micDone(run, 'error');
+}
+function micStop(why) { const run = MIC.run; if (!run) return false; MIC.res.log.push('abgebrochen (' + (why || 'Stopp') + ') in Phase ' + MIC.res.phase); micRelease(run); micDone(run, 'stopped'); return true; }
+// räumt alles ab: Quellen, Knoten, Spuren (readyState 'ended'), Audio-Sitzung zurück auf 'playback' (N7V-06)
+function micRelease(run) {
+  if (run.released) return; run.released = true; run.releasing = true;
+  const r = MIC.res;
+  run.timers.forEach(t => clearTimeout(t)); run.timers = [];
+  for (const s of run.srcs.slice()) { try { s.onended = null; s.stop(); } catch (e) {} try { s.disconnect(); } catch (e) {} }
+  run.srcs = [];
+  if (run.cap) { try { if (run.cap.port) run.cap.port.postMessage({stop: true}); else run.cap.onaudioprocess = null; } catch (e) {} }
+  for (const n of run.nodes) { try { n.disconnect(); } catch (e) {} }
+  run.nodes = []; run.blocks = [];
+  if (run.stream) { const ts = run.stream.getTracks(); ts.forEach(t => { t.onended = null; t.onmute = null; try { t.stop(); } catch (e) {} });
+    if (r.track) r.track.readyStateAfter = ts.map(t => t.readyState); }
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  r.session.after = micAs();
+  if (run.vis) document.removeEventListener('visibilitychange', run.vis);
+  const u = MIC.ui; if (u && u.meter) u.meter.style.width = '0%';
+}
+function micDone(run, phase) {
+  if (MIC.run !== run) return;
+  run.stopped = true;
+  const r = MIC.res; r.phase = phase; r.end = new Date().toISOString();
+  r.net = micNetCount(false); cloudHold(false);               // Netz erst nach dem Speicher-Test wieder an
+  MIC.run = null; micGate(r); micRender();
+  if (!R.playing) wakeReleaseLater();
+  if (phase === 'done') haptic('snap');
+}
+// Speicher: estimate, persisted/persist, 50-MB-Schreibtest in einer eigenen Datenbank (danach gelöscht)
+async function micStorage() {
+  const o = {}, sm = navigator.storage;
+  try { if (sm && sm.estimate) { const e = await sm.estimate(); o.quotaMB = Math.round((e.quota || 0) / 1048576); o.usageMB = Math.round((e.usage || 0) / 1048576 * 10) / 10; } } catch (e) { o.estimateErr = String(e && e.name); }
+  try { if (sm && sm.persisted) o.persistedBefore = await sm.persisted(); } catch (e) {}
+  try { if (sm && sm.persist) o.persist = await sm.persist(); } catch (e) { o.persistErr = String(e && e.name); }
+  o.write50 = await micWrite50();
+  return o;
+}
+function micWrite50() {
+  const NAME = 'synq-miccheck', t0 = performance.now();
+  const req = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const done = tx => new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error || new Error('abort')); });
+  const drop = () => new Promise(res => { try { const d = indexedDB.deleteDatabase(NAME); d.onsuccess = d.onerror = d.onblocked = () => res(); } catch (e) { res(); } });
+  return (async () => {
+    let db = null;
+    try {
+      if (!window.indexedDB) return {ok: false, err: 'kein IndexedDB'};
+      const op = indexedDB.open(NAME, 1); op.onupgradeneeded = () => { try { op.result.createObjectStore('b'); } catch (e) {} };
+      db = await micTimeout(req(op), 5000);
+      const chunk = new Uint8Array(1048576); for (let i = 0; i < chunk.length; i++) chunk[i] = (i * 7 + 3) & 255;
+      for (let k = 0; k < 25; k++) { const tx = db.transaction('b', 'readwrite'), s = tx.objectStore('b'); for (let j = 0; j < 2; j++) { chunk[0] = k * 2 + j; s.put(chunk, 'k' + (k * 2 + j)); } await micTimeout(done(tx), 30000); await micYield(); }   // 25 × 2 MB: kurze Schritte
+      const ms = Math.round(performance.now() - t0);
+      const tx = db.transaction('b', 'readonly'), back = await req(tx.objectStore('b').get('k49'));
+      const ok = !!back && back.byteLength === 1048576 && back[0] === 49 && back[1000] === ((1000 * 7 + 3) & 255);
+      return {ok, ms, mb: 50, readBack: ok};
+    } catch (e) { return {ok: false, err: String((e && e.name) || e), ms: Math.round(performance.now() - t0)}; }
+    finally { try { if (db) db.close(); } catch (e) {} await drop(); }
+  })();
+}
+// Hörprobe: vier Akkorde durch den Master (zum Vergleich ohne / mit Mikrofon)
+function micProbe() {
+  const c = ensureAudio(); if (!c) return false;
+  const t0 = c.currentTime + 0.05, dst = AU.masterSum || c.destination, lp = c.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = 4200; lp.connect(dst);
+  const seq = [[48, 60, 64, 67], [45, 57, 60, 64], [41, 57, 60, 65], [43, 55, 59, 62]];
+  seq.forEach((ch, k) => ch.forEach((n, j) => {
+    const o = c.createOscillator(), e = c.createGain(), ts = t0 + k * 0.6;
+    o.type = j ? 'triangle' : 'sawtooth'; o.frequency.value = 440 * Math.pow(2, (n - 69) / 12);
+    e.gain.setValueAtTime(0, ts); e.gain.linearRampToValueAtTime(j ? 0.11 : 0.08, ts + 0.012); e.gain.setTargetAtTime(0, ts + 0.48, 0.05);
+    o.connect(e); e.connect(lp); o.start(ts); o.stop(ts + 0.85); o.onended = () => { try { e.disconnect(); } catch (er) {} };
+  }));
+  setTimeout(() => { try { lp.disconnect(); } catch (e) {} }, 3600);
+  return true;
+}
+const micBusy = r => ['mic', 'quiet', 'chirp', 'noise', 'calc', 'end'].includes(r.phase);
+
+/* ---------- Blatt ---------- */
+function micOpen() {
+  if (!micAvail()) return false;
+  if (EL.menu.classList.contains('open')) closeMenu();
+  closePop(); if (UI.cloudOpen) cloudCloseSheet();
+  let d = document.getElementById('micChk');
+  if (!d) { d = el('div', ''); d.id = 'micChk'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Mikro-Check'); document.body.appendChild(d);
+    window.addEventListener('resize', () => { if (MIC.open) micPlace(); }); }
+  MIC.open = true; d.classList.add('open'); micPlace();
+  if (!MIC.res) MIC.res = micBase();
+  micBuild(d);
+  return true;
+}
+function micClose() {
+  if (MIC.run) micStop('Blatt geschlossen');
+  const d = document.getElementById('micChk'); if (d) { d.classList.remove('open'); d.innerHTML = ''; }
+  MIC.open = false; MIC.ui = null; shieldTap(); UI.dirty.all = true;
+}
+function micPlace() { const d = document.getElementById('micChk'); if (!d) return; try { d.style.top = Math.round(EL.top.getBoundingClientRect().bottom) + 'px'; } catch (e) {} }
+function micStatus(r) {
+  const run = MIC.run;
+  if (r.phase === 'drift' && run && AU.ctx) { const left = Math.max(0, Math.ceil(run.tE - AU.ctx.currentTime)); return 'Drift-Probe: noch ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0') + ' – jetzt die Klang-Frage beantworten'; }
+  return {ready: 'Bereit – Lautsprecher an, keine Kopfhörer, Lautstärke mittel', mic: 'Mikrofon wird geöffnet … (Erlaubnis geben)', quiet: 'Bitte kurz still sein …',
+    chirp: 'Piep-Töne: Rundlauf wird gemessen …', noise: 'Rauschen: Frequenzgang wird gemessen …', calc: 'Wird ausgewertet …', end: 'Letzte Piep-Töne (Drift) …',
+    store: 'Speicher-Test (50 MB) …', done: 'Fertig – Ergebnis kopieren und im Chat einfügen', stopped: 'Abgebrochen – „Mikro starten“ misst noch mal',
+    error: 'Fehler: ' + (r.error ? r.error.name : '?') + ' – ' + micErrText(r.error)}[r.phase] || r.phase;
+}
+function micErrText(e) {
+  if (!e) return '';
+  return {NotAllowedError: 'Mikrofon nicht erlaubt (Safari: aA → Website-Einstellungen → Mikrofon → Erlauben)', NotFoundError: 'kein Mikrofon gefunden',
+    NotReadableError: 'Mikrofon belegt (Telefonat oder andere App?)', OverconstrainedError: 'Einstellung nicht möglich', SecurityError: 'nicht erlaubt auf dieser Seite',
+    AbortError: 'Start abgebrochen', TypeError: 'nicht unterstützt', Interrupted: 'Seite verlassen – noch mal starten', TrackEnded: 'Mikrofon unterbrochen – noch mal starten'}[e.name] || e.message || '';
+}
+function micBuild(d) {
+  d.innerHTML = '';
+  const h = el('div', 'cl-h'), tt = el('b'); tt.textContent = 'Mikro-Check'; h.appendChild(tt);
+  const x = el('button', 'sh-x rb', '✕'); x.setAttribute('aria-label', 'Mikro-Check schließen'); on(x, 'click', micClose); h.appendChild(x);
+  const b = el('div', 'cl-b mc-b'); d.append(h, b);
+  const intro = el('p', 'cl-s'); intro.textContent = 'Prüft, ob Einsingen auf diesem Gerät klappen kann. Bitte im Safari-Tab (nicht vom Home-Bildschirm), Lautsprecher an, keine Kopfhörer. Dauer ≈ 2½ min. Während der Prüfung gibt es keine Netzaufrufe, und nichts wird aufgenommen oder gespeichert.';
+  const status = el('div', 'cl-line mc-st');
+  const act = el('div', 'mc-act');
+  const bGo = el('button', 'mbtn rb go mc-go'), bDrift = el('button', 'mbtn rb mc-drift', 'Drift jetzt beenden');
+  on(bGo, 'click', () => { if (MIC.run) micStop('Stopp'); else micStart(); });
+  on(bDrift, 'click', () => { if (micDriftNow()) micRender(); });
+  act.append(bGo, bDrift);
+  const meter = el('div', 'mc-meter', '<i></i>');
+  const grid = el('div', 'mc-grid');
+  const qb = el('div', 'mc-q'), qh = el('p', 'cl-p'); qh.textContent = MIC_Q;
+  const qr = el('div', 'mc-act'), bProbe = el('button', 'mbtn rb mc-probe', '▶ Hörprobe');
+  on(bProbe, 'click', () => { if (!micBusy(MIC.res)) micProbe(); });
+  const seg = makeSeg([['ja', 'Ja'], ['nein', 'Nein']], () => MIC.res.sound.answer, v => { MIC.res.sound.answer = v; if (!MIC.run && MIC.res.phase !== 'ready') micGate(MIC.res); micRender(); }, 'mc-yn');
+  qr.append(bProbe, seg);
+  const qs = el('p', 'cl-s'); qs.textContent = 'Am besten während der Drift-Probe: ▶ oben spielt deine Musik, oder „Hörprobe“ – einmal vor dem Start anhören, einmal mit Mikrofon.';
+  qb.append(qh, qr, qs);
+  const gate = el('div', 'mc-gate'); gate.hidden = true;
+  const ex = el('div', 'mc-act'), bCopy = el('button', 'mbtn rb go mc-copy', 'Ergebnis kopieren'), bFile = el('button', 'mbtn rb mc-file', 'Als Datei');
+  on(bCopy, 'click', () => micCopy()); on(bFile, 'click', () => micSave());
+  ex.append(bCopy, bFile);
+  const jbox = el('div', 'mc-jbox'); jbox.hidden = true;
+  const top = el('div', 'mc-top'); top.append(status, act);
+  b.append(intro, top, meter, gate, grid, qb, ex, jbox);
+  MIC.ui = {d, status, bGo, bDrift, meter: meter.firstChild, grid, seg, bProbe, gate, bCopy, bFile, jbox};
+  micRender();
+}
+function micRows(r) {
+  const c = r.context, t = r.track && r.track.settings, rt = r.roundTrip, rows = [];
+  const w = {pages: 'Pages-Seite', githack: 'githack-Spiegel', datei: 'Datei', andere: location.host || 'andere Adresse'}[r.where];
+  rows.push(['Sicher · Fenster', (r.env.secure ? 'sicher' : 'NICHT sicher') + ' · oberstes · ' + w + (r.standalone ? ' · Home-Bildschirm (bitte im Safari-Tab)' : ''), r.standalone ? 'warn' : '']);
+  rows.push(['Spur', t ? (t.sampleRate ? t.sampleRate + ' Hz' : 'Rate ?') + ' · ' + (t.channelCount || '?') + ' Kanal · Echo ' + (t.echoCancellation === false ? 'aus ✓' : t.echoCancellation === true ? 'an ✗' : '?')
+    + (t.autoGainControl === true ? ' · Pegel-Automatik an' : '') : '–', t && t.echoCancellation === true ? 'warn' : '']);
+  rows.push(['Kontext', c ? c.sampleRate + ' Hz · Grund ' + (c.baseLatencyMs != null ? micDe(c.baseLatencyMs) + ' ms' : '–') + ' · Ausgang ' + (c.outputLatencyMs != null ? micDe(c.outputLatencyMs) + ' ms' : '–') + (c.rateMismatch ? ' · ⚠ Raten verschieden' : '') : 'startet mit „Mikro starten“', c && c.rateMismatch ? 'warn' : '']);
+  rows.push(['Sitzung', r.env.audioSessionApi ? (r.session.before || '–') + ' → ' + (r.session.during || '…') + ' → ' + (r.session.after || '…') : 'nicht verfügbar (iOS < 16.4)', '']);
+  rows.push(['Rundlauf', rt ? rt.ms.map(v => (v == null ? '✗' : micDe(v))).join(' / ') + ' ms · Streuung ' + (rt.spreadMs != null ? micDe(rt.spreadMs, 2) + ' ms' : '–') + (rt.ok ? ' ✓' : ' ✗') : '–', rt ? (rt.ok ? 'ok' : 'warn') : '']);
+  rows.push(['Frequenzgang', r.response ? '' : '–', '', r.response]);
+  rows.push(['Rauschen', r.noise ? 'Grund ' + micDe(r.noise.floorDbfs) + ' dBFS · Abstand ' + micDe(r.noise.snrDb) + ' dB' : '–', '']);
+  const dr = r.drift;
+  rows.push(['Drift', dr ? micDe(dr.sec / 60, 1) + ' min · ' + (dr.msPerMin != null ? (dr.msPerMin >= 0 ? '+' : '') + micDe(dr.msPerMin, 3) + ' ms/min' : 'nicht messbar') + ' · ' + dr.gaps + ' Lücken' + (dr.ok ? ' ✓' : ' ⚠') + (dr.short ? ' (kurz)' : '') : '–', dr ? (dr.ok ? 'ok' : 'warn') : '']);
+  const s = r.storage, wr = s && s.write50;
+  rows.push(['Speicher', s ? (s.quotaMB != null ? (s.quotaMB >= 10240 ? micDe(s.quotaMB / 1024, 0) + ' GB' : s.quotaMB + ' MB') + ' Quote · ' : '') + 'dauerhaft: ' + (s.persist ? 'ja' : s.persist === false ? 'nein' : '?') + ' · 50 MB: ' + (wr && wr.ok ? micDe(wr.ms / 1000, 1) + ' s ✓' : '✗ ' + (wr && wr.err || '')) : '–', s ? (wr && wr.ok ? 'ok' : 'warn') : '']);
+  if (r.net) rows.push(['Netz', r.net.total + ' Aufrufe während der Prüfung' + (r.net.total ? ' ✗' : ' ✓'), r.net.total ? 'warn' : 'ok']);
+  if (r.capture && r.capture.how) rows.push(['Aufnahme', (r.capture.how === 'worklet' ? 'AudioWorklet' : 'ScriptProcessor') + (r.capture.gaps != null ? ' · ' + r.capture.gaps + ' Lücken' : ''), '']);
+  if (r.error) rows.push(['Fehler', r.error.name + ' – ' + micErrText(r.error), 'warn']);
+  return rows;
+}
+function micRender() {
+  const u = MIC.ui, r = MIC.res; if (!u || !r || !u.d.isConnected) return;
+  const run = MIC.run, busy = micBusy(r);
+  u.status.textContent = micStatus(r);
+  u.status.dataset.c = r.phase === 'done' ? (r.gate && r.gate.pass ? 'ok' : 'warn') : r.phase === 'error' ? 'warn' : run ? 'busy' : 'none';
+  u.bGo.textContent = run ? 'Stopp' : r.phase === 'ready' ? 'Mikro starten' : 'Noch mal messen';
+  u.bGo.classList.toggle('arm', !!run); u.bGo.classList.toggle('go', !run);
+  u.bDrift.hidden = !(run && r.phase === 'drift'); u.bDrift.disabled = !!(run && run.endFired);
+  u.bProbe.disabled = busy;
+  u.seg.update();
+  u.grid.innerHTML = '';
+  for (const [k, v, cls, resp] of micRows(r)) {
+    const row = el('div', 'mc-row' + (cls ? ' ' + cls : '')), l = el('span', 'lbl'), val = el('span', 'val'); l.textContent = k;
+    if (resp) {                                              // Balken je Oktave, 1 kHz = 0 dB, Bereich −30 … +10 dB
+      const bars = el('span', 'mc-bars');
+      resp.hz.forEach((f, i) => { const v2 = resp.db[i], hgt = Math.max(2, Math.min(28, (Math.max(-30, Math.min(10, v2)) + 30) / 40 * 28));
+        const bx = el('i'); bx.style.height = hgt + 'px'; bx.title = (f >= 1000 ? f / 1000 + ' kHz' : f + ' Hz') + ': ' + micDe(v2) + ' dB';
+        const lab = el('b'); lab.textContent = f >= 1000 ? f / 1000 + 'k' : String(f); const col = el('span'); col.append(bx, lab); bars.appendChild(col); });
+      val.appendChild(bars);
+    } else val.textContent = v;
+    row.append(l, val); u.grid.appendChild(row);
+  }
+  const fin = !run && r.phase !== 'ready';
+  u.gate.hidden = !fin;
+  if (fin) { const g = r.gate || micGate(r); u.gate.className = 'mc-gate ' + (g.pass ? 'ok' : 'no');
+    u.gate.textContent = g.pass ? '✓ Bereit fürs Einsingen: Mikrofon geht, Piep-Töne gleichmäßig (≤ 2 ms), Klang gut.' : '✗ Noch nicht bereit: ' + g.why.join(' · ') + '.'; }
+  u.bCopy.disabled = !!run; u.bFile.disabled = !!run;
+}
+function micJson() { const r = MIC.res || micBase(); if (!MIC.run && r.phase !== 'ready') micGate(r); const o = Object.assign({}, r); return JSON.stringify(o, null, 1); }
+async function micCopy() {
+  const txt = micJson();
+  try { await navigator.clipboard.writeText(txt); toast('Ergebnis kopiert – bitte im Chat einfügen'); return 'copied'; }
+  catch (e) {                                                // ohne Zwischenablage: Text zum Markieren zeigen
+    const u = MIC.ui; if (u) { u.jbox.hidden = false; u.jbox.innerHTML = ''; const ta = el('textarea', 'mc-json'); ta.readOnly = true; ta.value = txt; u.jbox.appendChild(ta);
+      try { ta.focus(); ta.select(); } catch (er) {} }
+    toast('Kopieren geht hier nicht – Text markieren und kopieren'); return 'shown';
+  }
+}
+function micSave() {
+  const d = new Date(), z = n => String(n).padStart(2, '0');
+  return deliver('synquenzer-mikro-check-' + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes()), new TextEncoder().encode(micJson()), 'json', 'Mikro-Check');
 }
 
 /* ---------- test API ---------- */
@@ -26055,6 +26678,20 @@ function voicesInfo() {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 function resolveDrum(v) { if (typeof v === 'number') return DRUM_BY_GM[v] || DRUM_VOICES[v]; return DRUM_BY_ID[v] || DRUM_VOICES.find(x => x.l === String(v).toUpperCase()); }
 const SYNQUENZER = {
+  // VS0 Mikro-Check: Stand, Öffnen/Schließen, Start (Tests: {driftSec, noStore}), Ergebnis-JSON, Schätzer (N7V-02)
+  micCheck: () => ({avail: micAvail(), gum: MIC.gum, open: MIC.open, running: !!MIC.run, phase: MIC.res ? MIC.res.phase : null, hold: SYNC.hold,
+    menu: !!document.querySelector('#menu .mmic'), result: MIC.res ? JSON.parse(JSON.stringify(MIC.res)) : null}),
+  micCheckOpen: v => (v === false ? (micClose(), false) : micOpen()),
+  micCheckStart: o => micStart(o || {}),
+  micCheckStop: () => micStop('Test-API'),
+  micCheckDriftNow: () => micDriftNow(),
+  micCheckAnswer: v => { if (!MIC.res) MIC.res = micBase(); MIC.res.sound.answer = v === 'ja' || v === true ? 'ja' : v === 'nein' || v === false ? 'nein' : null; if (!MIC.run && MIC.res.phase !== 'ready') micGate(MIC.res); micRender(); return MIC.res.sound.answer; },
+  micCheckJson: () => micJson(),
+  micCheckCopy: () => micCopy(),
+  micCheckSave: () => micSave(),
+  micCheckProbe: () => micProbe(),
+  micCheckEstimate: (mic, ref, sr) => micLatEst(Float32Array.from(mic), Float32Array.from(ref), sr || 48000),
+
   // VO1 Online (online.md §7.6)
   cloud: () => ({state: SYNC.state, where: SYNC.where, live: !!(CLOUD.live || window.__synqFakeSupa), appCode: APP_CODE, user: SYNC.uid && SYNC.me ? {id: SYNC.uid, name: SYNC.me.name, code: SYNC.me.code, admin: !!SYNC.me.admin} : null,
     outbox: SYNC.outN, conflict: Array.from(SYNC.conflicts), spaces: SYNC.spaces.map(x => ({id: x.id, partner: x.name, status: x.status, unseen: cloudUnseen(x.id)})), reqs: SYNC.reqs.length, join: SYNC.join ? SYNC.join.code : null, foreign: SYNC.foreign ? SYNC.foreign.length : 0, outdated: !!SYNC.outdated, err: SYNC.err,
@@ -26355,7 +26992,7 @@ function fxGestureApi(t, g) {
 }
 // every state-changing API call leaves the UI rendered (no need to wait for the next animation frame)
 function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
-const NO_SYNC = new Set(['cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+const NO_SYNC = new Set(['micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',

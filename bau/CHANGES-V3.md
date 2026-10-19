@@ -2135,3 +2135,135 @@ N8O-19b Größe, bekannte Abweichung). Ausgaben `dirigent-test/v3-vo2fix-reg/`.
 Hinweis: `v3-qa-vo2acc-a.mjs badge` legt das Fälscher-Konto über die App an – das lehnt die App jetzt ab („badge“); der Fall ist in
 `v3-vo2fix-badge.mjs` (Alt-Konto mit solchem Namen per SQL) abgedeckt.
 **Für Xander im Dashboard:** nichts Neues („Allow public access“ bleibt aus; `vo2_fix` ist angewandt).
+
+---
+
+## VS0 — Mikro-Check (verstecktes Testblatt, Ergebnis als JSON, Tor für VS1) · App 3.11.4
+
+Grundlage: Nachtrag 2 Teil C (C.1, C.2 Punkte 1, 2, 4, 5; C.3 Zeile VS0; C.4 N2-VS0-01 … -03; K2-08), Teil E (Gruppe 2), Teil J
+(FP-IPHONE Haupt-, FP-SICHER Zweitblick); Nachtrag 1 Teil B „VS0“; Spec v3 §13; `r7/stimme.md` §1.3, §6, §11 Skizze 7, §12, §13
+(N7V-01 … -03), Prototyp `r7/stimme-proto/latency.mjs`. Version **3.11.4** statt 3.7.0 (E.5 Punkt 3: Versionen steigen streng; nach
+VO2 = 3.11.3 kommt die nächste Zwischennummer). `APP_CODE` = 3 011 004. Keine neue Fähigkeit (Mikrofon nur außerhalb der Claude-App).
+
+**Was neu ist**
+1. **Eintrag:** Menü (≡) → Info → **[Mikro-Check]** (44 px) mit „Test fürs Einsingen: Mikrofon, Verzögerung, Speicher“. Er erscheint nur,
+   wenn `navigator.mediaDevices.getUserMedia` existiert **und** `window.top === window.self` (`micAvail()`); in der Claude-App (iframe)
+   gibt es weder Eintrag noch Blatt noch einen `getUserMedia`-Aufruf (N2-VS0-01). Auf der Pages-Seite und dem githack-Spiegel sichtbar.
+2. **Blatt** `#micChk` (wie das Online-Blatt unter der Kopfzeile; ▶ oben bleibt bedienbar, damit die Klang-Frage mit der eigenen Musik geht):
+   Erklärsatz, Statuszeile mit Punkt, [Mikro starten] / [Stopp] / [Noch mal messen], Pegelbalken, Ergebnis-Kasten (Tor), Wertetabelle
+   (Querformat zweispaltig), Klang-Frage mit [▶ Hörprobe] und [Ja | Nein], [Ergebnis kopieren] [Als Datei]. ✕ und Esc schließen (ein
+   laufender Check wird dabei sauber beendet).
+3. **Ablauf auf Tipp** (Mikrofon nur auf Tipp, im selben Tipp `ensureAudio()` → `resume`, I11): Musik stoppt, Bildschirm bleibt an
+   (`wakeAcquire`, auch über 60 s), **Netz-Halt** (Punkt 6), `audioSession.type = 'play-and-record'` **vor** `getUserMedia`
+   (I4), `getUserMedia({audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false}})`. Danach: Spur-Einstellungen
+   (`getSettings`), Kontext-Rate, `baseLatency`/`outputLatency`, Raten-Vergleich Spur ↔ Kontext (I9 „abfangen“: Warnung + Eintrag im Log;
+   die Drift-Probe zeigt, ob Samples verloren gehen), Zustand des Kontexts (läuft er 1 s nicht, Log + `resume`).
+   Messkette: Mikrofon → Kanal 0, das gespielte Signal (Referenz, digital) → Kanal 1 eines eigenen Aufnahme-Worklets `synq-miccap`
+   (ASCII, Blob- bzw. data:-URL wie das Synth-Worklet; ohne AudioWorklet ScriptProcessor). Weil Mikro und Referenz im selben Block
+   liegen, misst die App den **Rundlauf Ausgang → Lautsprecher → Raum → Mikrofon** unabhängig vom Hauptfaden.
+   - 0,5 s Stille → Grundrauschen (dBFS);
+   - **4 Chirps** 0,8–8 kHz, 30 ms, −8 dBFS, Abstand 0,7 s → je Chirp Rundlauf per Kreuzkorrelation (FFT) mit der Regel **„erste
+     Ankunft“** (frühestes Maximum ≥ 50 % des größten, Parabel-Feinwert; `stimme.md` §6), Suchfenster 0,5 s (reicht für Bluetooth),
+     Güte = Spitze/Median; Streuung max − min (N7V-03, Soll ≤ 2 ms);
+   - 2 s rosa Rauschen −20 dBFS → **Frequenzgang** Lautsprecher+Raum+Mikro in Oktavbändern 125 Hz … 16 kHz (Welch, Hann 4096,
+     um den gemessenen Rundlauf verschoben, 1 kHz = 0 dB), Balken im Blatt, Abstand Rauschen/Grundrauschen;
+   - **Drift-Probe 2 min** (Countdown, [Drift jetzt beenden] für eine kürzere Probe): 2 End-Chirps → ms/min (Warnung > 0,5 ms/min), dazu
+     Lücken im Aufnahme-Strom (`currentFrame`-Sprünge);
+   - Mikrofon aus: alle Spuren `stop()` → `readyState 'ended'`, `audioSession.type = 'playback'` (N7V-06 sinngemäß);
+   - **Speicher**: `storage.estimate()`, `persisted()`, `persist()`, **50-MB-Schreibtest** in einer eigenen Datenbank `synq-miccheck`
+     (25 × 2 MB, Rücklesen, danach gelöscht; die Projekt-Datenbank wird nicht berührt).
+   Fehler (`NotAllowedError`, `NotFoundError`, `NotReadableError`, …) erscheinen mit Namen und deutschem Satz statt eines Absturzes; der
+   Speicher-Test läuft trotzdem, das JSON bleibt gültig. Seite verlassen / Spur beendet (Anruf) = Abbruch mit Fehlername `Interrupted` /
+   `TrackEnded`. [Stopp] räumt jederzeit alles ab.
+4. **Klang-Frage** (Nachtrag 1 VS0, §11 Skizze 7): „Klingt die Musik mit laufendem Mikrofon noch gut – nicht leiser, nicht dumpfer?“
+   [Ja | Nein]; [▶ Hörprobe] = vier Akkorde durch den Master (einmal vor dem Start, einmal mit Mikro) oder ▶ oben mit der eigenen Musik.
+5. **Ergebnis-Kasten (Tor N2-VS0-02):** „✓ Bereit fürs Einsingen …“ nur, wenn `getUserMedia` ging, alle 4 Chirps gehört und Streuung
+   ≤ 2 ms, und „Ja“; sonst „✗ Noch nicht bereit: <Gründe>“. [Ergebnis kopieren] (`navigator.clipboard`; geht das nicht, erscheint der
+   JSON-Text zum Markieren) und [Als Datei] (`synquenzer-mikro-check-JJJJMMTT-hhmm.json` über `deliver`).
+6. **Datenschutz / kein Netz während der Prüfung** (C.2 Punkt 5, N7V-35; N2-VS1-02 schon hier umgesetzt): `cloudHold(true)` beim Tipp:
+   Realtime abmelden (supabase-js `removeAllChannels` → leave je Kanal, Socket zu), Token-Erneuerung aus, Postausgang wartet; jeder eigene
+   Aufruf (`cloudFetch`, `cloudRpcText`, `cloudRpc`, `cloudSel`, `cloudReach`) wartet auf die Freigabe statt zu senden; `cloudSchedule`,
+   `cloudKick`, Ersatz-Takt und Neu-Beitritte ruhen. `cloudHold(false)` nach dem Speicher-Test: Erneuerung an, Verpasstes holen, Postausgang
+   hoch, Realtime + Presence neu (erst nachdem das Abmelden fertig ist – sonst gäbe `channel()` den alten Kanal zurück). Ein Zähler für
+   `fetch`, XHR, `sendBeacon` und gesendete WebSocket-Frames läuft nur während der Prüfung und steht im JSON (`net`). Kein Audio wird
+   gespeichert oder gesendet; das JSON enthält keinen Gerätenamen (`label`) und geht nur auf Tipp in die Zwischenablage / Datei.
+7. **Test-API:** `micCheck()`, `micCheckOpen(v)`, `micCheckStart({driftSec, noStore})`, `micCheckStop()`, `micCheckDriftNow()`,
+   `micCheckAnswer(v)`, `micCheckJson()`, `micCheckCopy()`, `micCheckSave()`, `micCheckProbe()`, `micCheckEstimate(mic, ref, sr)`.
+
+**JSON-Schema `synq-miccheck/1`** (N2-VS0-01, Text mit Einzug 1):
+```
+schema "synq-miccheck/1" · app "3.11.4" · at, end (ISO-Zeit) · ua (≤ 200 Zeichen) · where "pages"|"githack"|"datei"|"andere" · standalone (Home-Bildschirm)
+env        {secure, top, audioSessionApi, outputLatencyApi, worklet}
+constraints{supported: {echoCancellation, noiseSuppression, autoGainControl, channelCount, sampleRate, sampleSize, latency, deviceId, groupId} | null,
+            asked: {echoCancellation:false, noiseSuppression:false, autoGainControl:false}}
+track      {settings: {sampleRate?, sampleSize?, channelCount?, echoCancellation?, noiseSuppression?, autoGainControl?, latency?}, readyState, muted, readyStateAfter: ["ended"]} | null
+context    {sampleRate, baseLatencyMs, outputLatencyMs|null, state, rateMismatch}
+session    {before, during, after}            (navigator.audioSession.type; null ohne API)
+error      {step: "getUserMedia"|"aufbau"|"auswertung"|"drift"|"unterbrochen"|"audio", name, message} | null
+roundTrip  {ms: [4 × Zahl|null], medianMs, spreadMs, q: [4], levelDbfs: [4], ok (4 gültig und Streuung ≤ 2 ms), signal, path}
+response   {hz: [125 … 16000], db: [… relativ zu 1 kHz], gain1k (dB Mikro/Referenz bei 1 kHz), frames}
+noise      {floorDbfs, noiseDbfs, snrDb}
+drift      {sec, startMs, endMs, msPerMin, gaps, ok (|ms/min| ≤ 0,5), short (< 60 s)} | null
+capture    {how: "worklet"|"script", frames, gaps, sec}
+storage    {quotaMB, usageMB, persistedBefore, persist, write50: {ok, ms, mb: 50, readBack} | {ok:false, err, ms}}
+sound      {question, answer: "ja"|"nein"|null}
+net        {fetch, xhr, beacon, ws, total}    (während der Prüfung)
+gate       {gum, spreadOk, soundOk, pass, why: [Texte]}
+phase      "done"|"error"|"stopped" · log: [Texte]
+```
+**Tor für VS1 (N2-VS0-02):** VS1 beginnt nur mit Xanders JSON und `gate.pass = true` (= `getUserMedia` ok, `roundTrip.spreadMs ≤ 2`,
+`sound.answer = "ja"`). Bis dahin bleiben VS1, VS2 und VS3–VS6 nach E.5 Punkt 3 zurückgestellt.
+
+**Abweichungen (bewusst)**
+- **Klang-Frage umgedreht:** Nachtrag 1/§11 fragen „Wurde die Musik leiser/dumpfer?“, Nachtrag 2 (gilt) verlangt für das Tor „„Ja“ beim
+  Klang“. Damit „Ja“ eindeutig gut heißt, lautet die Frage „Klingt die Musik mit laufendem Mikrofon noch gut – nicht leiser, nicht dumpfer?“.
+- **Ort des Eintrags:** „⚙ → Mikro-Check“ – die App hat kein ⚙, das Menü heißt ≡; der Eintrag steht dort im Abschnitt **Info** (versteckt, unten).
+- **Budget:** +15 KB geplant, gebaut **+50 KB** roh (+17 KB gzip; `index.html` 2 080 KB → weit unter 5,0 MB, EN2-28). Grund: Netz-Halt für
+  SYNC/Realtime (in der Planung erst VS1), Worklet-Quelle, Speicher-Test, Fehlertexte, ausführliche deutsche Kommentare. Startzeit
+  unverändert (das Modul tut beim Laden nichts).
+- **N2-VS1-02 (2)/(3) teilweise vorgezogen:** Halt/Freigabe von SYNC und Realtime samt Zähler gibt es schon für den Mikro-Check; Jam-Hinweis
+  (VC3b) und Take-Aufnahme/Säubern kommen mit ihren Paketen.
+
+**Fach-Prüfung (Teil J; selbst durchgeführt, kein eigener Agent verfügbar):**
+- *FP-IPHONE (Haupt):* Datei +50 KB (siehe oben), keine Arbeit beim Start. Longtasks/Bildrate während eines ganzen Checks (`v3-vs0-perf.mjs`):
+  CPU ×1 **0 longtasks**, 60 fps; CPU ×4 (grobe iPhone-Annahme, Faktor unbelegt) noch einzelne Schritte 52–175 ms beim Mikro-Start, in der
+  Auswertung und im Speicher-Test (Leerlauf ×4 zum Vergleich: 1 × 92–100 ms). **Befund 1** (Frequenzgang 54 ms am Stück, Chirp-Schätzung
+  am Stück, 50-MB-Test in 10-MB-Schritten → longtasks bis 265 ms bei ×4) **behoben**: Auswertung in Schritten (Referenz/Mikro getrennt,
+  Korrelation in Stücken zu 8192, Frequenzgang je 3 Fenster, FFT vorgewärmt), Speicher-Test 25 × 2 MB. Die Messung selbst hängt nicht am
+  Hauptfaden (Mikro und Referenz im selben Worklet-Block). **Befund 2** (Bildschirmsperre nach 60 s würde die 2-min-Probe abbrechen)
+  **behoben**: Wake-Lock während des Checks (`wakeReleaseLater` wartet). Speicher: ≈ 2,5 MB Blöcke in der ersten Phase, danach nur die
+  End-Chirp-Fenster. Hintergrund: Seite verlassen → Abbruch + Freigabe; Audio-Sitzung danach immer `playback`. Safari-7-Tage-Regel:
+  Test-Datenbank wird gelöscht; `persist()` wird angefragt (nutzt auch den Projekten).
+- *FP-SICHER (Zweit):* keine neuen Hosts/Geheimnisse; **Befund 3** (erste Fassung schloss den Realtime-Socket sofort von Hand → bei
+  schneller Freigabe hätte `channel()` den alten, nicht abgebauten Kanal zurückgegeben) **behoben** und mit dem echten supabase-js 2.117.2
+  + WebSocket-Attrappe geprüft (`v3-vs0-rtreal.mjs` 6/6, auch Freigabe nach 50 ms). **Befund 4** (Fake-Client-Aufrufe über `cloudSel`/
+  `cloudRpc` gingen am Halt vorbei) **behoben**. Alle fremden Texte über `textContent`; Fehlermeldungen gekürzt; JSON ohne Gerätenamen.
+  Versions-Wächter: `max_app` vor dem Ausliefern auf 3 011 004 angehoben (Rollout unten). Nie das Klassenzimmer-Projekt.
+  4 Befunde, alle behoben.
+
+**Abnahme**
+| ID | Ergebnis | Beleg |
+|---|---|---|
+| N7V-01 | ✓ alle Felder aus §12 VS0 (17 Prüfpunkte) im Blatt und JSON; Ablehnung `NotAllowedError`/`NotReadableError`: Fehlername + Satz, JSON gültig, kein Konsolenfehler, Sitzung `playback`, Halt aufgehoben | `v3-vs0-accept.mjs` 25/25 |
+| N7V-02 | ✓ App-eigener Schätzer (aus `index.html` geschnitten) im Prototyp-Raum, je 60 Versuche: 20–80 ms bei 20/10/0 dB → 95 %-Fehler **0,030 / 0,033 / 0,033 ms**; 150–350 ms (Bluetooth) 0,032 / 0,030 / 0,034 ms; 0 ungültig (Soll ≤ 0,1 ms) | `v3-vs0-n7v02.mjs` → `v3-vs0-n7v02.out` |
+| N7V-03 | Gerät (Xander). Attrappe: Schleife mit +0 / +0,5 / +1 / +1,5 ms je Chirp → gemessene Differenzen 0,000 / 0,500 / 1,000 / 1,500 ms | `v3-vs0-accept.mjs` |
+| N7V-06 (sinngem.) | ✓ nach Ende/Stopp: Spuren `ended`, Sitzung `playback → play-and-record → playback` | `v3-vs0-accept.mjs` |
+| N7V-35 / C.2-5 | ✓ zwei Konten im Paar-Raum (Fake-Server + Realtime-Nachbau), Änderung während der Prüfung: 0 Server-Aufrufe, 0 Kanäle, Zähler 0; nach dem Ende Realtime + Presence nach ≈ 50 ms, `save_project` nach ≈ 100 ms (Soll ≤ 5 s), Server hat den Stand | `v3-vs0-net.mjs` 8/8, `v3-vs0-rtreal.mjs` 6/6 |
+| N2-VS0-01 | ✓ Claude-App-Attrappe (iframe mit `window.claude`, sogar `allow="microphone"`): kein Eintrag, `micCheckOpen/Start` → false, Zähler 0; Pages und githack: Eintrag da, „Ergebnis kopieren“ = gültiges JSON (Zwischenablage gelesen), „Als Datei“ = gültige Datei; Schema oben | `v3-vs0-accept.mjs` |
+| N2-VS0-02 | offen – wartet auf Xanders JSON (Tor für VS1); Tor-Logik geprüft (Ja → ✓, Nein → ✗ mit Grund) | `v3-vs0-accept.mjs` VS0-09 |
+| N2-VS0-03 | ✓ Pages ohne `window.claude`, keine Viewer-Knöpfe; Demo-Projekt Claude-App → Datei → Pages `project()` deep-equal; **klingt bitgleich**: 4 Synth-Spuren mit dem echten Worklet offline je 1 s, Hash beider Seiten gleich | `v3-vs0-accept.mjs` |
+| Hörbarkeit | ✓ [▶ Hörprobe] Master −200 → −18 dB; Chirps im Mikro −20 dBFS | `v3-vs0-accept.mjs`, JSON `levelDbfs` |
+| Layout | ✓ P1, P2, P3, L1, L2: kein Überlauf, alle Knöpfe ≥ 44 px, nichts abgeschnitten, Blatt unter `#top`, ▶ bleibt erreichbar (`elementFromPoint`) | `v3-vs0-layout.mjs` 15/15, Bilder `v3-vs0-{P1,P2,P3,L1,L2}-{ready,run,done,done-end}.png` |
+| Regression | ✓ `v3-vs0-reg.sh` / `-reg2.sh` / `-reg3.sh` (= VO1-Liste, Versionskopien `v3-vs0-adapt-*` für 3.11.4; Ausgaben `dirigent-test/v3-vs0-reg/`, Vergleich `v3-vs0-regcmp.sh`): rot nur, was auf VO1 schon rot war, plus unter Last neu rot und **allein grün** (`v3-vs0-reg/solo/`: wp2-rec P/L, v0b-adapt-wp1-shield, v0b-follow, v0d-adapt-wp4-engine, v4c-adapt-v0b-ux, vs0-adapt-wp3-store, wp6-extras P, wp7-accept-fm4, v0c-song-L). Allein weiter rot und bekannt (CPU-/Zeitmessungen, kein Mikro-Bezug): `v3-v0a-drum` DR7 (8,0 % statt ≤ 7 %), `wp3-adapt-func-build` C2/D5 (VO1: F2), `v3-v4a-ui` N7F-10, `v3-v4a-node` V4a-11. `v3-vo2-accept.mjs` **57/57** (Harness jetzt App-Code 3 011 004, `SYNQ_APPCODE` überschreibt). Smoke ohne Fehler (`v3-vs0-smoke.png`). | `dirigent-test/v3-vs0-reg/` |
+
+**Rollout** (Supabase-MCP, ref `dbdnsryoivvezspgydpx`, verglichen mit `CLOUD.ref`): 19.10. `list_migrations` (vo_init, vo1_max_app,
+signup_limits_open, vo2_fork, vo2_max_app, vo2_fix) → `apply_migration vs0_max_app` (`max_app = greatest(max_app, 3011004)`,
+Datei `synq-online/r7-vs0-max-app.sql`) → success; `execute_sql` (nur lesen) `max_app` 3011004, `max_format` 3. Kein Aufruf nennt das
+Klassenzimmer-Projekt. **Für Xander im Dashboard:** nichts.
+
+**Für Xander am iPhone (N2-VS0-02, ≈ 3 min, nach dem Ausliefern von 3.11.4):**
+1. https://xanderfoxy.github.io/Synquenzer/ **im Safari-Tab** öffnen (nicht vom Home-Bildschirm), Kopfhörer ab, Lautstärke mittel.
+2. ≡ → ganz unten **Info** → **[Mikro-Check]** → [▶ Hörprobe] einmal anhören → **[Mikro starten]** → Mikrofon erlauben → still sein.
+3. Während „Drift-Probe: noch …“: [▶ Hörprobe] noch mal (oder ▶ oben) und die Frage mit **Ja/Nein** beantworten; dann warten bis „Fertig“
+   (oder [Drift jetzt beenden]).
+4. **[Ergebnis kopieren]** und den Text im Chat einfügen. Steht oben „✗ Noch nicht bereit“, trotzdem schicken.
