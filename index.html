@@ -3208,6 +3208,161 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .stpop .st-btns button{flex:1 1 0;min-height:44px}
 .stpop .st-go.off{border-color:var(--rec);background:var(--rec-dim);color:#fff}
 .stpop .st-hint{margin:8px 0 0;color:var(--text-dim)}
+/* ===== V2c (§4.4/§4.5): Teil-Leiste (statt Hinweis-Kasten), Matrix-Auswahl, Teil-Blatt, Akkord-Zeilen-Blatt, ↩ TEIL ===== */
+#partBar{flex:none;position:relative;display:flex;align-items:stretch;gap:4px;height:40px;margin:2px 8px 6px;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:none}
+#gridArea.song #partBar{display:none}                    /* EN7-02: no Teil-Leiste in the portrait song view */
+@media (orientation:portrait) and (max-height:700px){#partBar{margin:2px 6px 4px}}
+@media (orientation:portrait) and (max-width:340px){#partBar{height:36px;margin:1px 6px 2px}}   /* P3: the clip rows keep their V0a height (≥ 28 px) */
+#partBar .pk{flex:1 1 0;min-width:0;height:100%;position:relative;display:flex;align-items:center;justify-content:center;padding:0 5px;font:700 12px/1 var(--font-ui);letter-spacing:.04em;color:var(--text);
+  border-bottom:3px solid var(--pc);-webkit-touch-callout:none;transition:opacity .12s,transform .12s}
+#partBar .pk .pn{white-space:nowrap;overflow:hidden;min-width:0}
+#partBar .pk .led{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#2a2c31;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+#partBar .pk.on .led{background:var(--pc);box-shadow:0 0 7px var(--pc)}
+#partBar .pk.on{box-shadow:inset 0 0 0 1px var(--pc)}
+#partBar .pk.wait .led,#partBar .pk.wait2 .led{background:var(--pc);animation:blink .25s infinite}
+#partBar .pk.empty{color:var(--text-dim);border-style:dashed;border-bottom-width:1px;font-size:18px;letter-spacing:0}
+#partBar .pk.empty .led{display:none}
+#partBar .pk.lift{opacity:.4;transform:scale(.95)}
+#partBar .pb-pg{flex:0 0 44px;width:44px;min-width:44px;height:100%;padding:0;display:flex;align-items:center;justify-content:center;gap:6px}
+#partBar .pb-pg i{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--text-dim);box-sizing:border-box}
+#partBar .pb-pg i.on{background:var(--amber);border-color:var(--amber)}
+#partBar .pb-pg.hot i:not(.on){border-color:var(--amber);animation:blink .5s infinite}
+#partBar .pb-pick{position:absolute;inset:0;z-index:2;display:flex;align-items:center;gap:8px;padding:0 3px 0 12px;border-radius:var(--r-s);background:#15171b;border:2px solid var(--pc);font:700 12px/1.2 var(--font-ui);color:var(--text)}
+#partBar .pb-pick[hidden]{display:none}
+#partBar .pb-pick .pt{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#partBar .pb-done{flex:none;height:calc(100% - 6px);min-width:80px;font:700 12px/1 var(--font-ui);border-color:var(--pc);color:var(--text)}
+.pk-ghost{position:fixed;z-index:70;transform:translate(-50%,-100%);padding:9px 14px;border-radius:8px;background:rgba(21,23,27,.9);border:2px solid var(--pc);color:var(--text);font:700 12px/1 var(--font-ui);letter-spacing:.06em;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.6);white-space:nowrap}
+@media (orientation:landscape) and (max-height:560px){
+  #side>#partBar{order:2;height:38px;margin:auto 6px 4px;flex:none}
+  #side>#strip{order:3;margin-top:0}
+  #carrier{grid-template-rows:auto 40px 26px;gap:3px;padding:3px 6px}
+  #readout{height:40px;gap:1px}
+  #readout #carVal{font-size:24px}
+  #readout #carVal.orig{font-size:18px}
+  #readout #carShift{font-size:14px}
+  #bHMode,#bLatch,#bOrig{height:40px}
+  .hc{height:24px}
+}
+@media (orientation:landscape) and (max-height:370px){
+  #side>#partBar{height:36px;margin-bottom:3px}
+  #carrier{grid-template-rows:auto 40px 22px;gap:3px;padding:3px 6px}
+  #readout{height:38px}
+  #readout #carVal{font-size:22px}
+  .hc{height:22px}
+}
+/* Matrix-Auswahl: frames in the part's colour; the ■ column says aus / bleibt */
+#clipGrid.picking .slot.filled{opacity:.5}
+#clipGrid.picking .slot.pkon{opacity:1;outline:3px solid var(--pc);outline-offset:-3px}
+#clipGrid.picking .stp.pkl{font:700 10px/1 var(--font-ui);letter-spacing:.02em;color:var(--pc)}
+#clipGrid.picking .scn{opacity:.45}
+/* scene head: the chord row's short form under the key (§4.2) */
+.scn .sc{font:600 8px/1 var(--font-ui);color:var(--amber);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.scn .sc:empty{display:none}
+/* Träger readout: the running row; [↩ TEIL] after a hand change (TA1) */
+#readout{position:relative}
+#readout.hasback{padding-right:74px}
+#carLabel.row{color:var(--amber)}
+#carLabel.row.hand{color:#ff9a1f}
+#bRowBack{position:absolute;right:3px;top:3px;bottom:3px;width:68px;z-index:2;padding:0;font:700 11px/1.1 var(--font-ui);color:#1a1205;background:#ff9a1f;border:1px solid #ffb22e;border-radius:6px;box-shadow:0 0 8px rgba(255,154,31,.4)}
+#bRowBack[hidden]{display:none}
+/* popovers that let the keyboard through ([♪ greifen]) */
+#popLayer.pass{pointer-events:none}
+#popLayer.pass .bd{display:none}
+#popLayer.pass .pop{pointer-events:auto}
+/* Teil-Blatt */
+.pop.psheet.dock{padding:4px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+.psheet .ps-h{display:flex;align-items:center;gap:6px;height:40px;min-width:0}
+.psheet .ps-t{flex:1 1 auto;min-width:0;font:700 12px/1.1 var(--font-ui);letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:4px solid var(--pc);padding-left:7px}
+.psheet .ps-l,.psheet .ps-w{flex:none;font:600 10px/1 var(--font-ui);color:var(--text-dim)}
+@media (orientation:portrait){.psheet .ps-w,.psheet .ps-tl{display:none}}
+.psheet .seg{flex:none}
+.psheet .seg button{height:36px;padding:0 8px;font-size:11px}
+.psheet .ps-x{flex:none;width:40px;height:40px;padding:0}
+.psheet .cp-row{margin-top:2px;height:44px}
+.psheet .ps-col{height:42px}
+.ps-dots{display:flex;gap:6px;align-items:center;flex:1 1 auto;min-width:0}
+.ps-dot{flex:1 1 0;max-width:52px;min-width:34px;height:38px;padding:0;display:flex;align-items:center;justify-content:center}
+.ps-dot i{width:16px;height:16px;border-radius:50%;background:var(--pc)}
+.ps-dot.on{border-color:var(--pc);box-shadow:inset 0 0 0 1px var(--pc)}
+.cp-c.ps-t.b{color:var(--text-dim)}
+.cp-c.ps-t.a{color:#ff8a7a}
+.psheet .ps-mxb{flex:1 1 auto;height:40px;font:700 12px/1 var(--font-ui)}
+.psheet .ps-ch{flex:1 1 auto;min-width:0;height:40px;justify-content:flex-start;padding:0 10px;font:700 12px/1 var(--font-num);overflow:hidden;white-space:nowrap}
+.psheet .ps-ch span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.psheet .ps-or{flex:none;font-size:10px;color:var(--text-dim)}
+.psheet .ps-xp{flex:none;height:40px;min-width:72px;font:700 12px/1 var(--font-num)}
+.psheet .ps-in,.pnpop .pn-in{flex:1 1 auto;min-width:0;height:38px}
+.psheet .cp-ok,.pnpop .cp-ok{flex:none;width:44px;height:40px}
+.pnpop{max-width:min(360px,calc(100vw - 16px))}
+.pnpop .pn-sc{height:44px;margin:4px 0}
+.pnpop .pn-ed{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.cr-bot{display:flex;align-items:center;gap:4px;height:44px;min-width:0}
+.cr-bot .rb{flex:1 1 auto;min-width:40px;height:40px;padding:0 6px;font:700 11px/1 var(--font-ui);white-space:nowrap;overflow:hidden}
+.cr-bot .sh{display:none}
+.cr-bot .sx .lg{display:none}
+.cr-bot .sx .sh{display:inline}
+.ps-del,.cr-del{color:#ff8a7a}
+/* Akkord-Zeilen-Blatt (P 216 px: 40 + 44 + 44 + 36 + 44 + 8) */
+.pop.crsheet.dock{padding:3px 8px calc(4px + env(safe-area-inset-bottom,0px))}
+.crsheet .cr-h{display:flex;align-items:center;gap:4px;height:40px;min-width:0}
+.crsheet .cr-lab{flex:none;font:700 9px/1 var(--font-ui);letter-spacing:.12em;color:var(--text-dim)}
+.crsheet .cr-nv{flex:none;width:34px;height:36px;padding:0;font-size:18px}
+.crsheet .cr-t{flex:0 1 auto;min-width:0;font:700 12px/1.1 var(--font-ui);letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--amber)}
+.crsheet .cr-i{flex:1 1 auto;min-width:0;font:600 10px/1 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:2px}
+.crsheet .cr-pm,.crsheet .cr-x{flex:none;width:36px;height:36px;padding:0;font-size:17px}
+.crsheet .cr-bx{height:44px}
+.crsheet .cp-row{margin-top:0}
+.cr-b{flex:1 0 54px;min-width:54px;height:40px;flex-direction:column;gap:3px;padding:0 4px;font:700 13px/1 var(--font-num)}
+.cr-b.hf{flex:1 0 42px;min-width:42px}
+.cr-b small{font:600 8px/1 var(--font-ui);color:var(--text-dim)}
+.cr-b.em{color:var(--text-dim)}
+.cr-b.now{background:linear-gradient(#3b2b0f,#251a08);box-shadow:0 0 8px rgba(255,178,46,.45)}
+.cr-b.now.hand{opacity:.55}
+.cr-b.on{border-color:#ffaa28;box-shadow:inset 0 0 0 2px #ffaa28;color:#ffcf7a}
+.crsheet .cr-in{flex:1.6 1 0;min-width:0;height:38px}
+.crsheet .cp-ok{flex:none;width:44px}
+.crsheet .seg{flex:none}
+.crsheet .seg button{height:40px;padding:0 8px}
+.crsheet .cr-q .seg button{padding:0 7px}
+.crsheet .cr-qp{flex:1 1 auto;min-width:0;font:600 10px/1.2 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crsheet .cr-qg{flex:none;min-width:92px}
+.crsheet .cr-q .rb[data-a="qx"]{flex:none;width:40px}
+.pop.crsheet.grab{padding:4px 6px!important;border-radius:var(--r-s);border:1px solid var(--amber);display:flex;align-items:center;overflow:hidden}
+.cr-grab{display:flex;align-items:center;gap:8px;width:100%;height:100%;min-width:0}
+.cr-gt{flex:1 1 auto;min-width:0;font:600 12px/1.25 var(--font-ui);overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.cr-gt b{color:var(--amber)}
+.cr-gd{flex:none;height:40px;min-width:80px}
+@media (orientation:portrait) and (max-width:420px){
+  .crsheet .cr-lab{display:none}
+}
+@media (orientation:portrait) and (max-width:340px){
+  .crsheet .cr-i{display:none}
+  .cr-bot .rb{font-size:10px;padding:0 2px}
+  .crsheet .cr-nv{width:30px}
+  .crsheet .cr-pm,.crsheet .cr-x{width:34px}
+  .psheet .ps-w{display:none}
+  .psheet .seg button{padding:0 5px;font-size:10px}
+}
+@media (orientation:landscape){
+  .pop.psheet.dock{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:12px;align-items:center}
+  .psheet .ps-h{grid-column:1 / span 2}
+  .psheet .ps-nm{grid-column:1;grid-row:2}.psheet .ps-col{grid-column:1;grid-row:3}.psheet .ps-tr{grid-column:1;grid-row:4}
+  .psheet .ps-mx{grid-column:2;grid-row:2}.psheet .ps-ak{grid-column:2;grid-row:3}.psheet .ps-bot{grid-column:2;grid-row:4}
+  .psheet .cp-row,.psheet .cr-bot{height:42px;margin-top:0}
+  .pop.crsheet.dock:not(.grab){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:36px 42px 42px;column-gap:12px;row-gap:2px;align-items:center;padding:3px 8px}
+  .crsheet .cr-h{grid-column:1 / span 2;grid-row:1;height:36px}
+  .crsheet .cr-bx{grid-column:1;grid-row:2;height:42px}
+  .crsheet .cr-bot{grid-column:1;grid-row:3;height:42px}
+  .crsheet .cp-row:not(.cp-zu){grid-column:2;grid-row:2;height:42px}
+  .crsheet .cp-row.cp-zu{grid-column:2;grid-row:3;height:42px}
+  .crsheet .cp-c{height:36px}
+  .cr-b{height:38px}
+  .cr-bot .rb{height:38px}
+}
+@media (orientation:landscape) and (max-height:380px){
+  .pop.crsheet.dock:not(.grab){grid-template-rows:34px 42px 42px;padding:2px 8px}
+  .crsheet .cr-h{height:34px}
+}
 </style>
 </head>
 <body>
@@ -3235,6 +3390,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
     <div id="clipGrid" role="grid" aria-label="Clips"></div>
     <div id="songView" aria-label="Song" hidden></div>
     <div id="hint" hidden><span>▶ drücken, dann TRANSPONIEREN wählen und Töne oder Akkorde spielen.</span><button id="hintX" aria-label="Hinweis schließen">✕</button></div>
+    <div id="partBar" role="toolbar" aria-label="Teile"></div>
     <div id="countin" aria-hidden="true"><div class="n" id="ciNum">4</div><div class="lbl">EINZÄHLEN</div><div class="lbl ciT" id="ciTgt"></div></div>
     <div id="coach" hidden></div>
   </section>
@@ -10446,7 +10602,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.2.0';
+const VERSION = '4.3.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -11103,6 +11259,12 @@ function demoProjectRaw() {
   return p;
 }
 
+// V2c (§4.4): the parts (normalizeProject runs while the script loads: the demo)
+const N_PART = 8;
+const PART_NAMES = ['Intro', 'Strophe', 'Pre', 'Refrain', 'Bridge', 'Break', 'Outro'];
+const PART_SUGGEST = ['Strophe', 'Refrain', 'Bridge', 'Intro', 'Outro'];
+const PART_COLORS = ['amber', 't1', 't2', 't3', 't6', 't8'];
+const PART_NAME_RE = /^[\p{L}\p{N} '\-]{1,12}$/u;
 /* ---------- normalization (never throws) ---------- */
 const normBool = (v, d) => (typeof v === 'boolean' ? v : d);
 const normEnum = (v, vals, d) => (vals.includes(v) ? v : d);
@@ -11254,6 +11416,10 @@ function normalizeProject(obj) {
     const nt = p.tracks.length, ord = Array.isArray(ui.order) && ui.order.length === nt && ui.order[nt - 1] === DRUM_T && new Set(ui.order).size === nt && ui.order.every(x => Number.isInteger(x) && x >= 0 && x < nt) ? ui.order.slice() : orderFor(nt);
     p.ui = {selT: isNum(ui.selT) ? clamp(Math.round(ui.selT), 0, nt - 1) : 3, selS: isNum(ui.selS) ? clamp(Math.round(ui.selS), 0, N_SCN - 1) : 0,
       order: ord, sceneBank: ui.sceneBank === 1 ? 1 : 0, trackBank: ui.trackBank === 1 ? 1 : 0};
+    if (ui.partPage === 1) p.ui.partPage = 1;                       // V2c: page 5–8 of the Teil-Leiste (a view field)
+    // V2c (§4.4/§4.5): the parts and the chord rows of the scenes (lossless; a file without them has none)
+    p.parts = Array.from({length: N_PART}, (_, k) => normPart(Array.isArray(obj.parts) ? obj.parts[k] : null, k, nt));
+    if (Array.isArray(obj.scenes)) obj.scenes.slice(0, N_SCN).forEach((sc, i) => { const r = sc && normChordRow(sc.chords); if (r) p.scenes[i].chords = r; });
     // V0b FOLGEN: the editor kinds switched to AUS (only false entries are kept; missing = FOLGT)
     if (ui.follow && typeof ui.follow === 'object') { const f = {}; for (const k of ['roll', 'lauf', 'steps', 'song']) if (ui.follow[k] === false) f[k] = false; if (Object.keys(f).length) p.ui.follow = f; }
     return p;
@@ -12545,7 +12711,7 @@ const R = {
   songRec: null, songPlay: null, songOverride: new Array(8).fill(false), carrierLive: false, songApplying: false, songEndBeat: null, melRec: null,
 };
 const T = new Transposer(transposerOpts());
-T.onCommit = (entry, info) => { try { applyCarrierChange(entry, info); } catch (e) { logErr(e); } try { songCarrierHook(entry); } catch (e) { logErr(e); } try { if (typeof renderCarrierNow === 'function') renderCarrierNow(); } catch (e) { logErr(e); } };
+T.onCommit = (entry, info) => { try { applyCarrierChange(entry, info); } catch (e) { logErr(e); } try { songCarrierHook(entry); } catch (e) { logErr(e); } try { partCarrierHook(entry); } catch (e) { logErr(e); } try { if (typeof renderCarrierNow === 'function') renderCarrierNow(); } catch (e) { logErr(e); } };
 
 const spb = () => 60 / S.bpm;
 const t2b = t => (t - R.startTime) / spb();
@@ -12612,9 +12778,12 @@ function perfRetune(v, out, t) {
 
 /* ---------- carrier change -> sounding & scheduled voices ---------- */
 // +1 µs: a note exactly on a quantized carrier boundary must already use the new Träger (float rounding of b2t vs grid math)
+// V2c (§4.4): the Teil-Transposition R.xp is added AFTER the mapping, like S.shift — only tracks with ⇅ folgt (I-01)
 function outPitch(i, clipKey, note, time, entry) {
   const tr = S.tracks[i];
-  return T.mapEvent(note, time + 1e-6, {kind: tr.kind, follow: tr.follow}, {key: clipKey || S.key}, entry);
+  const o = T.mapEvent(note, time + 1e-6, {kind: tr.kind, follow: tr.follow}, {key: clipKey || S.key}, entry);
+  if ((XP.tl.length > 1 || XP.tl[0].semi) && tr.kind === 'synth' && tr.follow !== false) { const x = xpAt(time + 1e-6); if (x) return clamp(o + x, 0, 127); }
+  return o;
 }
 function applyCarrierChange(entry, info) {
   UI.dirty.carrier = UI.dirty.kb = UI.dirty.grid = true;
@@ -12691,6 +12860,7 @@ function tick(h) {
     } catch (e) { tickErr(e); }
     try { recTick(b0, b1); } catch (e) { tickErr(e); }
     if (R.songPlay) { try { songTick(b0, b1); } catch (e) { tickErr(e); } }   // §3.9 (Anhang D.7): the song's launches, Träger, melody
+    if (R.row || R.rowPend || R.partPend || XP.due != null) { try { partTick(b0, b1); } catch (e) { tickErr(e); } }   // V2c: parts, chord rows, R.xp
     if (R.songRecEndAt != null) { const te = R.songRecEndAt; R.songRecEndAt = null; try { if (R.songRec && R.songRec.over) songRecEnd(te); } catch (e) { tickErr(e); } }
     for (let i = 0; i < NT(); i++) {
       let from = Math.max(b0, 0);
@@ -12819,7 +12989,9 @@ function launch(i, slot, atT) {
 function launchScene(s) {
   ensureAudio(); if (!AU.ctx) return;
   s = clamp(s | 0, 0, NS() - 1);
+  const rb = R.playing ? nextBarFromAudible() : 0;                // V2c: the scene's chord row starts with the scene (§4.6)
   for (let i = 0; i < NT(); i++) launch(i, s);
+  try { sceneRowStart(s, rb); } catch (e) { logErr(e); }
   R.selS = s; UI.dirty.all = true;
   if (!R.playing) play();
 }
@@ -12985,6 +13157,7 @@ function songPlayStart(fromBar, o) {
   if (!song || !song.bars) { toast('Noch kein Song – erst ● SONG drücken und Szenen spielen'); return false; }
   if (rec.state !== 'off') { toast('Erst Aufnahme beenden'); return false; }
   if (R.songRec) songRecEnd();
+  try { partsOff(false); } catch (e) { logErr(e); }        // V2c: the song owns the Träger (TA1: Hand > Zeile > Song; a row ends)
   carrierSave();                                                  // TA9: the Träger state before the song comes back after it
   if (o.next && R.playing && !R.songPlay) return songPlayStartAt(fromBar, nextBarFromAudible());
   if (R.playing) stop();
@@ -13561,7 +13734,10 @@ function quantizeChordList(list, grid, a, b) {
 }
 function quantizeChords(o) {
   o = o || {};
-  if (o.src && o.src !== 'song') return {moved: 0, merged: 0};       // Akkord-Zeilen von Szene/Teil: V2c
+  if (o.src && o.src !== 'song') {                                   // V2c (N7S-09): the chord row of a scene / part
+    const g = [4, 2, 1].includes(+o.grid) ? +o.grid : 4, a = isNum(o.a) ? o.a | 0 : null, b = isNum(o.b) ? o.b | 0 : (a != null ? a : null);
+    return rowSrcParse(o.src) ? quantizeRow(o.src, g, a, b, !!o.dry) : {moved: 0, merged: 0};
+  }
   const song = S.song; if (!song || !song.carrier.length) return {moved: 0, merged: 0};
   const grid = [4, 2, 1].includes(+o.grid) ? +o.grid : 4;
   const a = isNum(o.a) ? o.a | 0 : null, b = isNum(o.b) ? o.b | 0 : (a != null ? a : null);
@@ -13680,6 +13856,7 @@ function stop() {
   tailWinSet(true);
   if (R.songRec) { try { songRecEnd(audBeat()); } catch (e) { logErr(e); } }      // §3.9: stopping the transport ends a song recording
   if (R.songPlay) { R.songPlay.stopping = true; songPlayEnd(false); }
+  try { partsOff(true); } catch (e) { logErr(e); }          // V2c: rows and parts end (▶ oben resumes them from bar 1)
   recOnStop();
   if (PV.on) previewStop();                                 // ■ also ends a browser preview phrase
   // release everything while the transport still counts beats, so the Mitschnitt (PERF) gets the real end beats
@@ -13743,7 +13920,7 @@ function tailWinSet(on) {
 function togglePlay() {
   if (R.playing) stop(); else if (tailWinOpen()) stop();
   else if (UI.songView && songHasContent()) { songPlayStart(songStartBar()); svButtons(); }
-  else play();
+  else { try { partResume(); } catch (e) { logErr(e); } play(); }
 }
 function setBpm(v) {
   v = clamp(Math.round(+v || 120), 40, 240);
@@ -13809,6 +13986,7 @@ function undoState(e) {
   if (e.kind === 'group') return null;                     // V2a: the items carry their own states
   if (e.kind === 'track') return trackSnapshot(e.track);
   if (e.kind === 'set') return JSON.stringify(S.settings[e.key]);
+  if (e.kind === 'part') return partSnap();                // V2c: S.parts + the chord rows of the scenes
   if (e.kind === 'clip') return cleanClip(S.tracks[e.track].clips[e.scene]);
   if (e.kind === 'sound') return soundSnapshot(e.track);
   if (e.kind === 'kit') return kitSnapshot();
@@ -13829,6 +14007,7 @@ function undoApply(e, val) {
   else if (e.kind === 'kit') restoreKit(JSON.parse(val));
   else if (e.kind === 'song') restoreSong(JSON.parse(val));
   else if (e.kind === 'set') settingApply(e.key, JSON.parse(val));
+  else if (e.kind === 'part') partRestore(JSON.parse(val));
   else restoreFx(JSON.parse(val));
   UI.dirty.all = true; markDirty();
   if (typeof edUndoBtns === 'function') edUndoBtns();
@@ -13912,14 +14091,16 @@ function removeTrack(i) {
   i = i == null ? removableTrack() : i | 0;
   if (i < 0 || i !== removableTrack()) { toast(i >= 0 && i < NT() ? 'Synth 1–4, MELODIE und DRUMS bleiben immer – einfach leer lassen' + (removableTrack() >= 0 ? ' (entfernen geht nur ' + S.tracks[removableTrack()].name + ')' : '') : 'Keine Zusatzspur da'); return false; }
   if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return false; }
-  const name = S.tracks[i].name, songBefore = songSnapshot(), trBefore = trackSnapshot(i);
+  const name = S.tracks[i].name, songBefore = songSnapshot(), trBefore = trackSnapshot(i), partBefore = partSnap();
   // the song first (its lane, the song melody when it sits on this track), then the track: undo restores the track before the song
   if (S.song) {
     delete S.song.mel[i]; if (S.song.melodyTrack === i) melChoose(S.song, MEL_T < NT() ? MEL_T : 3);
     S.song.lanes.splice(i, 1);
   }
+  for (const p of S.parts || []) if (p && p.slots) p.slots.length = Math.min(p.slots.length, i);    // V2c: its part slots go with it
   restoreTrack(i, null);
-  undoPush({kind: 'group', label: 'Spur entfernen: ' + name, items: [{kind: 'song', before: songBefore}, {kind: 'track', track: i, before: trBefore}]});
+  undoPush({kind: 'group', label: 'Spur entfernen: ' + name, items: [{kind: 'song', before: songBefore}, {kind: 'part', before: partBefore}, {kind: 'track', track: i, before: trBefore}]});
+  partsChanged();
   songChanged();
   toast(name + ' entfernt', [{label: 'Rückgängig', fn: () => undo()}]); haptic('snap');
   return true;
@@ -14293,7 +14474,7 @@ function commitRecNote(o, bOff) {
 // entry: the Träger the note was played under (captured at note-on; the timeline may have been pruned since)
 function clipNoteFor(track, clipKey, played, time, entry) {
   const tr = S.tracks[track], e = entry || T.targetAt(time + 1e-6);
-  if (!tr || tr.kind !== 'synth' || !tr.follow || !e.target) return played;
+  if (!tr || tr.kind !== 'synth' || !tr.follow || (!e.target && !xpAt(time + 1e-6))) return played;   // V2c: under a Teil-Transposition too
   let best = played, bestErr = Infinity;
   for (let d = 0; d <= 24; d++) {
     for (const n of d ? [played - d, played + d] : [played]) {
@@ -14571,9 +14752,11 @@ function inputDown(note, id, vel) {
   let route;
   if (R.kbMode === 'transpose' || R.momentary || (split != null && note < split)) route = 'carrier';
   else route = tr.kind === 'synth' ? 'play' : 'pad';
+  if (CR.grab) route = 'grab';                                  // V2c [♪ greifen]: the chord fills a box, the Träger stays
   const inp = {route, note, key: note, track: R.selT, voice: null};
   R.inputs[id] = inp;
-  if (route === 'carrier') {
+  if (route === 'grab') crGrabDown(note, id, vel);
+  else if (route === 'carrier') {
     if (R.momCand) R.momCand.keysPressed = true;
     T.keyDown(note, now);
     const g = (S.settings.harmony.gatherMs || 40) + 2;
@@ -14616,7 +14799,8 @@ function inputUp(id) {
   delete R.inputs[id];
   const c = AU.ctx; if (!c) return;
   const now = c.currentTime;
-  if (inp.route === 'carrier') T.keyUp(inp.note, now, grid());
+  if (inp.route === 'grab') crGrabUp(id);
+  else if (inp.route === 'carrier') T.keyUp(inp.note, now, grid());
   else if (inp.route === 'play') {
     if (inp.voice) inp.voice.release(now); recNoteOff(id); melNoteOff(id);
     const o = CAP.open.get(id);
@@ -14703,7 +14887,7 @@ function setLatch(on) {
   if (!on && T.held.size === 0 && T.current().target) T.reset(nowT(), grid());
   UI.dirty.carrier = UI.dirty.kb = true; markDirty();
 }
-function resetCarrier() { ensureAudio(); T.reset(nowT(), grid()); UI.dirty.carrier = UI.dirty.kb = true; }
+function resetCarrier() { ensureAudio(); T.reset(nowT(), grid()); if (R.row && !R.row.hand) { R.row.hand = true; R.row.handUntil = null; UI.dirty.parts = true; } UI.dirty.carrier = UI.dirty.kb = true; }   // V2c TA1: ORIGINAL bei laufender Zeile = Übernahme ohne Träger
 function recallCarrier(target) { ensureAudio(); T.recall(target, nowT(), grid()); UI.dirty.carrier = UI.dirty.kb = true; }
 function setHarmony(p) {
   const h = S.settings.harmony;
@@ -14894,9 +15078,9 @@ function buildGrid() {
   cnw.appendChild(szb);
   UI.scenes = [];
   for (let s = 0; s < N_SCN; s++) {
-    const b = el('button', 'scn rb', `<span class="st"><span class="tri">▶</span><span>${s + 1}</span></span><span class="sk"></span>`);
+    const b = el('button', 'scn rb', `<span class="st"><span class="tri">▶</span><span>${s + 1}</span></span><span class="sk"></span><span class="sc"></span>`);
     b.dataset.s = s; b.setAttribute('aria-label', 'Szene ' + (s + 1) + ' starten'); g.appendChild(b); UI.scenes.push(b);
-    b._sk = b.querySelector('.sk');
+    b._sk = b.querySelector('.sk'); b._sc = b.querySelector('.sc');
   }
   const saw = el('div', 'saw'); UI.saw = saw;
   const sa = el('button', 'stp all rb', '■'); sa.setAttribute('aria-label', 'Alle stoppen (2× = sofort)'); sa.title = 'Alle stoppen zum nächsten Takt (2× = sofort)'; saw.appendChild(sa); g.appendChild(saw); UI.stopAll = sa;
@@ -15029,6 +15213,17 @@ function renderGrid(bAud) {
     // scene key under the launcher (9 px): shown when the scene has following clips with notes
     const lab = SK[k] ? keyShort(SK[k]) : '';
     if (b._skT !== lab) { b._skT = lab; b._sk.textContent = lab; b.setAttribute('aria-label', 'Szene ' + (s + 1) + ' starten' + (lab ? ' · ' + keyName(SK[k]) : '')); }
+    const scl = rowShortText(rowOf('S' + (s + 1)));                // V2c (§4.2): „Am·F·C·G“ under the key when the scene has a chord row
+    if (b._scT !== scl) { b._scT = scl; b._sc.textContent = scl; }
+  }
+  // V2c Matrix-Auswahl: frames in the part's colour, the ■ column says aus / bleibt
+  const pk = UI.pick && S.parts && S.parts[UI.pick.i];
+  EL.grid.classList.toggle('picking', !!pk);
+  if (pk) EL.grid.style.setProperty('--pc', partColorVar(pk.color));
+  for (const i of MX.rows) {
+    const sl = pk ? pk.slots[i] : undefined, b = UI.stops[i], txt = !pk ? '■' : sl == null ? 'bleibt' : sl === -1 ? 'aus' : '■';
+    if (b && b.textContent !== txt) { b.textContent = txt; b.classList.toggle('pkl', txt !== '■'); }
+    for (const s2 of MX.scenes) { const C = UI.cells[i][s2]; setCls(C.el, C.st, 'pkon', !!(pk && sl && sl !== -1 && sl.s === s2)); }
   }
   // the bank switches: label + a dot when a clip of the hidden part plays (or is queued)
   if (MX.bankS) {
@@ -15098,7 +15293,7 @@ function setSongView(on) {
   if (on === !!UI.songView) return on;
   UI.songView = on;
   EL.gridArea.classList.toggle('song', on); EL.app.classList.toggle('songv', on);
-  EL.songView.hidden = !on; hintSideSync();
+  EL.songView.hidden = !on; hintSideSync(); if (on) pickCancel();
   folReset(['song']);
   if (on) { svLayout(); svAutoScroll(true); }
   UI.dirty.song = UI.dirty.grid = UI.dirty.all = true;
@@ -15294,6 +15489,853 @@ function openMelTrackPop(anchor) {
     onTap(p, b => { closePop(); const t = +b.dataset.t, was = S.song ? S.song.melodyTrack : null; setMelodyTrack(t, {move: !!UI.melMove}); UI.melMove = false; if (was !== t) melShareHint(); svButtons(); UI.dirty.song = true; }, 'button[data-t]');
   }, {name: 'meltrack'});
 }
+/* =====================================================================================================================
+   V2c (Spec v3 §4.4–§4.6, §17 V2c; Nachtrag 2 B.4, N7S-08 … N7S-10): Teile, Akkord-Zeilen von Szene und Teil, Teil-Leiste
+   (statt Hinweis-Kasten), Teil-Blatt, Matrix-Auswahl, Akkord-Zeilen-Blatt, Teil-Transposition (nach der Abbildung), ↩ TEIL.
+   Daten: S.parts = [Part|null × 8] (Part = {id, name, color, len, start:'bar'|'end', slots:[{s}|-1|null × NT], chords:
+   ChordRow|null, xp:null|{semi}|{tg}, src}); S.scenes[i].chords = ChordRow = {len 1..16, ch:[{b (Schlag relativ), tg|null}]}.
+   tg:null = ORIGINAL (N7S-08). Undo-Art 'part' (S.parts + Szenen-Akkord-Zeilen, TA8). Laufzeit: R.part {i, startBeat},
+   R.partPend {i (-1 = Ende), beat}, R.row {src:'S3'|'P1', startBeat, hand, handUntil}, R.rowPend {src|null, beat},
+   XP.tl (Teil-Transposition je Schlag, nur Spuren mit ⇅ folgt). Akkord-Zeilen rufen T.recall(tg, b2t(beat), null) – die
+   Schläge sind schon exakt (kein zweites Quantisieren durch „Wechsel: am Takt“, §4.5).
+   ===================================================================================================================== */
+const partColorVar = c => (c === 'amber' ? 'var(--amber)' : 'var(--' + c + ')');
+function normChordRow(r) {
+  if (!r || typeof r !== 'object') return null;
+  const len = isNum(r.len) ? clamp(Math.round(r.len), 1, 16) : 4, L = len * 4, ch = [];
+  for (const c of Array.isArray(r.ch) ? r.ch : []) {
+    if (!c || !isNum(c.b) || c.b < 0 || c.b >= L - 1e-9) continue;
+    const tg = c.tg === null ? null : normTarget(c.tg); if (c.tg !== null && !tg) continue;
+    const b = Math.round(c.b * 1e4) / 1e4, e = {b, tg: tg ? carrierCopy(tg) : null}, k = ch.findIndex(x => Math.abs(x.b - b) < 1e-6);
+    if (k >= 0) ch[k] = e; else ch.push(e);
+  }
+  ch.sort((a, b) => a.b - b.b);
+  return {len, ch};
+}
+function normPart(p, k, nt) {
+  if (!p || typeof p !== 'object') return null;
+  const nm = typeof p.name === 'string' ? p.name.trim().slice(0, 12) : '';
+  const slots = [];
+  for (let t = 0; t < nt; t++) {
+    const s = Array.isArray(p.slots) ? p.slots[t] : null;
+    slots.push(s === -1 ? -1 : s && typeof s === 'object' && isNum(s.s) ? {s: clamp(Math.round(s.s), 0, N_SCN - 1)} : null);
+  }
+  const chords = normChordRow(p.chords);
+  let xp = null;
+  if (!chords && p.xp && typeof p.xp === 'object') {
+    if (isNum(p.xp.semi) && Math.round(p.xp.semi)) xp = {semi: clamp(Math.round(p.xp.semi), -12, 12)};
+    else if (p.xp.tg) { const tg = normTarget(p.xp.tg); if (tg) xp = {tg: carrierCopy(tg)}; }
+  }
+  const o = {id: 'P' + (k + 1), name: nm || 'Teil ' + (k + 1), color: PART_COLORS.includes(p.color) ? p.color : PART_COLORS[k % PART_COLORS.length],
+    len: chords ? chords.len : isNum(p.len) ? clamp(Math.round(p.len), 1, 16) : 1, start: p.start === 'end' ? 'end' : 'bar', slots, chords, xp,
+    src: ['manual', 'fang', 'rec', 'song'].includes(p.src) ? p.src : 'manual'};
+  if (p.st && typeof p.st === 'object') o.st = deep(p.st);            // §6.5 Teil-Klang (V6b): kept as it is
+  return o;
+}
+// length of a part in bars: its chord row, else the longest clip it starts (≤ 16, §4.4)
+function partLen(p) {
+  if (!p) return 1;
+  if (p.chords) return p.chords.len;
+  let L = 1; p.slots.forEach((sl, t) => { const c = sl && sl !== -1 && S.tracks[t] ? S.tracks[t].clips[sl.s] : null; if (c) L = Math.max(L, c.len); });
+  return clamp(L, 1, 16);
+}
+const trackShort = t => (isDrum(t) ? 'DR' : S.tracks[t] && S.tracks[t].mel ? 'MEL' : 'S' + (t < DRUM_T ? t + 1 : t - 1));
+/* ---------- undo kind 'part' (TA8): S.parts + the chord rows of the scenes, one snapshot ---------- */
+function partSnap() { return JSON.stringify({p: S.parts || [], c: S.scenes.map(s => (s && s.chords) || null)}); }
+function partRestore(o) {
+  const nt = NT();
+  S.parts = Array.from({length: N_PART}, (_, k) => normPart(o && o.p ? o.p[k] : null, k, nt));
+  S.scenes.forEach((sc, i) => { const r = o && o.c ? normChordRow(o.c[i]) : null; if (r) sc.chords = r; else delete sc.chords; });
+  if (R.part && !S.parts[R.part.i]) R.part = null;
+  partsChanged();
+}
+function pushPartUndo(before, label) { if (partSnap() === before) return false; undoPush({kind: 'part', before, label}); return true; }
+function partsChanged() { UI.dirty.parts = UI.dirty.carrier = UI.dirty.grid = true; UI.partsVer = (UI.partsVer | 0) + 1; markDirty(); if (UI.crRepaint) { try { UI.crRepaint(); } catch (e) { logErr(e); } } if (UI.psRepaint) { try { UI.psRepaint(); } catch (e) { logErr(e); } } }
+function partsEnsure() { if (!Array.isArray(S.parts) || S.parts.length !== N_PART) S.parts = Array.from({length: N_PART}, (_, k) => (S.parts && S.parts[k]) || null); }
+
+/* ---------- chord rows: source ids 'S1'..'S8' (scenes), 'P1'..'P8' (parts) ---------- */
+function rowSrcParse(src) { const m = /^([SP])([1-8])$/.exec(String(src || '')); return m ? {kind: m[1], k: +m[2] - 1} : null; }
+function rowOf(src) {
+  const q = rowSrcParse(src); if (!q) return null;
+  if (q.kind === 'S') return (S.scenes[q.k] && S.scenes[q.k].chords) || null;
+  const p = S.parts && S.parts[q.k]; if (!p) return null;
+  if (p.chords) return p.chords;
+  if (p.xp && p.xp.tg) return {len: partLen(p), ch: [{b: 0, tg: p.xp.tg}]};   // a target chord = a one-line chord row (§4.4)
+  return null;
+}
+function rowName(src) {
+  const q = rowSrcParse(src); if (!q) return '';
+  if (q.kind === 'S') return 'Szene ' + (q.k + 1);
+  const p = S.parts && S.parts[q.k]; return p ? p.name : 'Teil ' + (q.k + 1);
+}
+function rowKey(src) {
+  const q = rowSrcParse(src); if (!q) return S.key;
+  if (q.kind === 'S') return sceneKeyOf(q.k) || S.key;
+  const p = S.parts && S.parts[q.k]; const sl = p && p.slots.find(x => x && x !== -1);
+  return (sl && sceneKeyOf(sl.s)) || S.key;
+}
+const tgShort = tg => (tg ? prettyTarget(tg) : 'ORIG.');
+// „Am·F·C·G“ (the chords of the row in order; the running one in [ ] when cur is given)
+function rowShortText(row, cur) {
+  if (!row || !row.ch.length) return '';
+  return row.ch.map((c, k) => (k === cur ? '[' + tgShort(c.tg) + ']' : tgShort(c.tg))).join('·');
+}
+// write a chord row (null = delete); one undo step 'part'
+function setChordRow(src, row, label) {
+  const q = rowSrcParse(src); if (!q) return false;
+  partsEnsure();
+  const before = partSnap(), r = row == null ? null : normChordRow(row);
+  if (q.kind === 'S') { if (!S.scenes[q.k]) return false; if (r) S.scenes[q.k].chords = r; else delete S.scenes[q.k].chords; }
+  else {
+    const p = S.parts[q.k]; if (!p) return false;
+    p.chords = r; if (r) { p.xp = null; p.len = r.len; } else p.len = partLen(p);
+  }
+  if (!pushPartUndo(before, label || ('Akkorde ' + rowName(src)))) return true;
+  partsChanged(); return true;
+}
+function rowEdit(src, fn, label) {
+  const cur = rowOf(src), q = rowSrcParse(src);
+  const row = cur && (q.kind === 'S' || (S.parts[q.k] && S.parts[q.k].chords)) ? deep(cur) : {len: rowDefaultLen(src), ch: []};
+  fn(row);
+  row.ch.sort((a, b) => a.b - b.b);
+  return setChordRow(src, row, label);
+}
+function rowDefaultLen(src) {
+  const q = rowSrcParse(src); if (!q) return 4;
+  let L = 1;
+  if (q.kind === 'S') { for (const tr of S.tracks) { const c = tr.clips[q.k]; if (c) L = Math.max(L, c.len); } }
+  else L = partLen(S.parts[q.k]);
+  return clamp(Math.max(4, L), 1, 16);
+}
+// N7-R11 for a scene / part row: grid 4|2|1 beats, a/b = bars (optional); one undo 'part' (N7S-09). An entry that rounds onto
+// the row end belongs to the next pass: it lands on beat 0 (the row runs in a circle)
+function quantizeRow(src, grid, a, b, dry) {
+  const row = rowOf(src); if (!row || !row.ch.length) return {moved: 0, merged: 0, n: 0};
+  const L = row.len * 4;
+  const list = row.ch.map(c => ({beat: c.b, target: c.tg}));
+  const r = quantizeChordList(list, grid, a, b);
+  let out = r.list.map(c => ({b: c.beat >= L - 1e-6 ? 0 : c.beat, tg: c.target, ob: c.beat}));
+  // a wrapped entry is the later-played one on beat 0
+  out.sort((x, y) => x.b - y.b || x.ob - y.ob);
+  const fin = []; let merged = r.merged;
+  for (const e of out) { const pv = fin[fin.length - 1]; if (pv && Math.abs(pv.b - e.b) < 1e-6) { fin[fin.length - 1] = e; merged++; continue; } fin.push(e); }
+  const n = row.ch.filter(c => a == null || (c.b >= a * 4 - 1e-6 && c.b < ((b != null ? b : a) + 1) * 4 - 1e-6)).length;
+  if (dry) return {moved: r.moved, merged, n};
+  if (r.moved || merged) {
+    setChordRow(src, {len: row.len, ch: fin.map(e => ({b: e.b, tg: e.tg}))}, 'Akkorde quantisiert · ' + rowName(src));
+    toast('Quantisiert · ' + r.moved + (r.moved === 1 ? ' rückt' : ' rücken') + ' · ' + merged + ' ' + (merged === 1 ? 'fällt' : 'fallen') + ' zusammen', {label: 'Rückgängig', fn: () => undo()});
+  } else toast('Alle Akkorde liegen schon im Raster');
+  return {moved: r.moved, merged, n};
+}
+
+/* ---------- runtime: part start, chord row playback, Teil-Transposition, hand (TA1) ---------- */
+const ROWAP = {on: 0};                          // > 0 while a chord row (not the hand) commits a Träger
+const PRT = {saved: undefined, resume: null};   // saved: the Träger before the first row (target|null); resume: after ■
+const XP = {tl: [{b: -Infinity, semi: 0}], due: null};
+function xpAt(time) {
+  const tl = XP.tl; if (tl.length === 1) return tl[0].semi;
+  const b = R.playing ? t2b(time) : Infinity; let v = 0;
+  for (const e of tl) { if (e.b <= b + 1e-6) v = e.semi; else break; }
+  return v;
+}
+function xpSet(beat, semi) {
+  const tl = XP.tl;
+  while (tl.length > 1 && tl[tl.length - 1].b >= beat - 1e-6) tl.pop();
+  if (tl[tl.length - 1].semi !== semi) tl.push({b: beat, semi});
+  // older steps are not needed any more (the last one before the newest stays)
+  while (tl.length > 3 && R.playing && AU.ctx && tl[2].b < t2b(AU.ctx.currentTime) - 8) tl.splice(1, 1);
+  XP.due = beat;
+}
+function xpReset() { XP.tl = [{b: -Infinity, semi: 0}]; XP.due = null; }
+const xpNow = () => xpAt(AU.ctx ? AU.ctx.currentTime : 0);
+function rowSaveCarrier() { if (PRT.saved !== undefined) return; const c = T.current(); PRT.saved = c.target ? carrierCopy(c.target, c.shift) : null; }
+function rowCommit(tg, t) {
+  ROWAP.on++;
+  try { if (tg) T.recall(tg, t, null); else if (T.pendingAt == null && !T.held.size) T.reset(t, null); else T.recall(null, t, null); }
+  finally { ROWAP.on--; }
+}
+// the recalls of the running row in the beats [from, to), in time order
+function rowRecalls(row, from, to) {
+  const rw = rowOf(row.src); if (!rw || !rw.ch.length) return;
+  const L = rw.len * 4, st = row.startBeat;
+  from = Math.max(from, st, row.handUntil != null ? row.handUntil : -Infinity); if (to <= from + 1e-9) return;
+  for (let k = Math.max(0, Math.floor((from - st) / L + 1e-9) - 1); st + k * L < to - 1e-9; k++) {
+    for (const c of rw.ch) {
+      if (c.b >= L - 1e-9) continue;
+      const B = st + k * L + c.b; if (B < from - 1e-9 || B >= to - 1e-9) continue;
+      rowCommit(c.tg, b2t(B));
+    }
+  }
+}
+// the index of the row entry heard at transport beat b (null = none yet)
+function rowCurIdx(row, b) {
+  const rw = row && rowOf(row.src); if (!rw || !rw.ch.length || b == null) return null;
+  const L = rw.len * 4, ph = (((b - row.startBeat) % L) + L) % L;
+  if (b < row.startBeat - 1e-6) return null;
+  let k = -1; for (let j = 0; j < rw.ch.length; j++) if (rw.ch[j].b <= ph + 1e-6) k = j;
+  return k >= 0 ? k : (b - row.startBeat >= L ? rw.ch.length - 1 : null);
+}
+function rowSwitch(src, beat) {
+  if (src) {
+    if (!R.row) rowSaveCarrier();
+    R.row = {src, startBeat: beat, hand: false, handUntil: null};
+  } else if (R.row) {
+    const sv = PRT.saved, hand = R.row.hand; R.row = null; PRT.saved = undefined;
+    if (!hand && sv !== undefined) rowCommit(sv, b2t(beat));
+  }
+  UI.dirty.carrier = UI.dirty.parts = true;
+}
+// tick(): before the tracks are scheduled — part / row changes due in [b0, b1), the row's recalls, a retune for R.xp
+function partTick(b0, b1) {
+  let from = b0;
+  const pp = R.partPend, rp = R.rowPend;
+  if (pp && pp.beat < b1 - 1e-9) { R.partPend = null; R.part = pp.i >= 0 && S.parts[pp.i] ? {i: pp.i, startBeat: pp.beat} : null; UI.dirty.parts = true; }
+  if (rp && rp.beat < b1 - 1e-9) {
+    R.rowPend = null;
+    if (R.row && !R.row.hand) rowRecalls(R.row, from, rp.beat);
+    rowSwitch(rp.src, rp.beat); from = Math.max(from, rp.beat);
+  }
+  if (R.row && !R.row.hand) rowRecalls(R.row, from, b1);
+  if (XP.due != null && XP.due < b1 - 1e-9) {
+    const d = XP.due; XP.due = null;
+    // voices that sound across the change (a „bleibt“ track) take the new transposition at its beat
+    try { applyCarrierChange({time: b2t(d)}, {retriggerFrom: -Infinity}); } catch (e) { logErr(e); }
+  }
+}
+// changes queued at a beat the scheduler has already passed (a tap just after the bar line): applied at once
+function partDue(beat) { if (R.playing && beat < R.schedBeat - 1e-9) partTick(beat, R.schedBeat); }
+// T.onCommit: a Träger change that is not the row itself is the hand (TA1): the row pauses until [↩ TEIL]
+function partCarrierHook() {
+  if (!R.row || ROWAP.on || R.songApplying || R.row.hand || !rowOf(R.row.src)) return;      // a row that was deleted has no hand to give back
+  R.row.hand = true; R.row.handUntil = null; UI.dirty.carrier = UI.dirty.parts = true;
+}
+// [↩ TEIL]: from the next bar line the row again (the chord in effect there)
+function rowBack() {
+  if (!R.row || !R.row.hand) return false;
+  ensureAudio(); if (!AU.ctx) return false;
+  if (!R.playing) { R.row.hand = false; UI.dirty.carrier = true; return true; }
+  const nb = nextBarFromAudible(), rw = rowOf(R.row.src);
+  R.row.hand = false; R.row.handUntil = nb;
+  const k = rowCurIdx(R.row, nb);
+  if (rw && k != null) rowCommit(rw.ch[k].tg, b2t(nb));
+  else if (PRT.saved !== undefined) rowCommit(PRT.saved, b2t(nb));
+  if (nb < R.schedBeat) rowRecalls(R.row, nb, R.schedBeat);
+  UI.dirty.carrier = UI.dirty.parts = true; haptic('pop');
+  return true;
+}
+// the bar a part tapped now starts at: the next bar line, or („am Teil-Ende“) the end of the running part
+function partStartBeat(i, atT) {
+  if (!R.playing) return 0;
+  const nb = nextBarFromAudible(atT != null ? pressTime(atT) : undefined), p = S.parts[i];
+  if (p && p.start === 'end' && R.part && S.parts[R.part.i]) {
+    const L = partLen(S.parts[R.part.i]) * 4, st = R.part.startBeat;
+    return st + Math.max(1, Math.ceil((nb - st) / L - 1e-9)) * L;
+  }
+  return nb;
+}
+// a tap on a part key: it starts at the next bar (E3-09): clips with phase 0, the chord row from the start (JAM K5);
+// „bleibt“ tracks go on as they are (TA4). A second tap on the running part restarts it at the next bar.
+function launchPart(i, atT) {
+  partsEnsure();
+  const p = S.parts[i]; if (!p) return false;
+  ensureAudio(); if (!AU.ctx) return false;
+  if (R.songRec && !R.songRec.over) { toast('Erst Aufnahme beenden'); return false; }
+  const beat = partStartBeat(i, atT);
+  for (let t = 0; t < NT(); t++) {
+    const sl = p.slots[t]; if (sl == null) continue;
+    const target = sl === -1 ? -1 : (S.tracks[t].clips[sl.s] ? sl.s : -1);
+    if (!R.playing) { R.slot[t] = target; R.pend[t] = null; R.cstart[t] = 0; R.prev[t] = null; continue; }
+    if (target === -1 && visualSlots(t, audBeat()).playing < 0 && !R.pend[t]) continue;      // already silent
+    switchTrackAt(t, target, beat, target >= 0 ? beat : null);
+  }
+  const src = rowOf(p.id) ? p.id : null;
+  if (src || R.row || R.rowPend) R.rowPend = {src, beat};
+  xpSet(beat, p.xp && p.xp.semi ? p.xp.semi : 0);
+  R.partPend = {i, beat};
+  R.lastScene = null;
+  UI.dirty.parts = UI.dirty.grid = UI.dirty.carrier = true;
+  haptic('tick');
+  if (!R.playing) { play(); return true; }
+  partDue(beat);
+  return true;
+}
+// ▶n: the scene's chord row starts at the scene's start beat (§4.6); the running part ends there; R.xp back to 0
+function sceneRowStart(s, beat) {
+  const src = 'S' + (s + 1), has = !!rowOf(src);
+  R.lastScene = s;
+  if (R.part || R.partPend) R.partPend = {i: -1, beat};
+  if (XP.tl.length > 1 || XP.tl[0].semi) xpSet(beat, 0);
+  if (R.row && R.row.src === src && !R.rowPend) {
+    if (R.row.hand) { R.row.hand = false; R.row.handUntil = R.playing ? beat : null; const rw = rowOf(src), k = rowCurIdx(R.row, beat); if (rw && k != null && R.playing) rowCommit(rw.ch[k].tg, b2t(beat)); }
+  } else if (has || R.row || R.rowPend) R.rowPend = {src: has ? src : null, beat};
+  UI.dirty.parts = UI.dirty.carrier = true;
+  partDue(beat);
+}
+// ■ / song start / another project: rows and parts end; the Träger from before the rows comes back (unless the hand took over)
+function partsOff(keepResume) {
+  if (keepResume) PRT.resume = R.part || R.row ? {part: R.part ? R.part.i : null, row: R.row ? R.row.src : null, xp: XP.tl[XP.tl.length - 1].semi} : null;
+  else PRT.resume = null;
+  if (R.row && !R.row.hand && PRT.saved !== undefined && AU.ctx) rowCommit(PRT.saved, AU.ctx.currentTime);
+  R.row = R.rowPend = R.part = R.partPend = null; PRT.saved = undefined; xpReset();
+  UI.dirty.parts = UI.dirty.carrier = true;
+}
+// ▶ oben after ■: the part / row that ran goes on from bar 1
+function partResume() {
+  const r = PRT.resume; PRT.resume = null; if (!r) return;
+  if (r.row && rowOf(r.row)) R.rowPend = {src: r.row, beat: 0};
+  if (r.part != null && S.parts[r.part]) R.partPend = {i: r.part, beat: 0};
+  if (r.xp) xpSet(0, r.xp);
+}
+// [＋]: what sounds now (clip per track, stopped tracks = aus), the running chord row or the Träger as a one-line row (§4.4)
+function partCapture() {
+  const b = R.playing && AU.ctx ? audBeat() : 0, slots = [];
+  for (let t = 0; t < NT(); t++) {
+    const s = R.playing ? visualSlots(t, b).playing : R.slot[t];
+    slots.push(s >= 0 && S.tracks[t].clips[s] ? {s} : -1);
+  }
+  let chords = null;
+  if (R.row && !R.row.hand && rowOf(R.row.src)) chords = deep(rowOf(R.row.src));
+  else { const e = T.targetAt(AU.ctx ? AU.ctx.currentTime + 1e-6 : 0); if (e.target) chords = {len: 1, ch: [{b: 0, tg: carrierCopy(e.target, e.shift)}]}; }
+  return {slots, chords};
+}
+function partNameFree(name, except) { return !(S.parts || []).some((p, k) => p && k !== except && p.name.toLowerCase() === String(name).toLowerCase()); }
+// N7-R2: the next free name Strophe → Refrain → Bridge → Intro → Outro → Teil n; a taken chip name gets a number („Strophe 2“)
+function partSuggest() {
+  for (const n of PART_SUGGEST) if (partNameFree(n)) return n;
+  for (let n = 1; ; n++) if (partNameFree('Teil ' + n)) return 'Teil ' + n;
+}
+function partUniq(name, except) {
+  if (partNameFree(name, except)) return name;
+  for (let n = 2; ; n++) { const x = (name.length > 9 ? name.slice(0, 9) : name) + ' ' + n; if (partNameFree(x, except)) return x; }
+}
+const partShort = (p, max) => { const n = p.name.toUpperCase(); return n.length <= max ? n : /\d$/.test(n) ? partShortForm(p.name) : n.slice(0, max).trim(); };
+// API partFromNow(i, name?): one undo
+function partFromNow(i, name) {
+  partsEnsure();
+  i = clamp(i | 0, 0, N_PART - 1);
+  const before = partSnap(), cap = partCapture();
+  const nm = name ? partUniq(String(name).trim().slice(0, 12) || partSuggest(), i) : partSuggest();
+  S.parts[i] = normPart({name: nm, color: PART_COLORS[i % PART_COLORS.length], slots: cap.slots, chords: cap.chords, src: 'manual'}, i, NT());
+  S.parts[i].len = partLen(S.parts[i]);
+  pushPartUndo(before, 'Teil ' + nm + ' gespeichert'); partsChanged(); haptic('pop');
+  return deep(S.parts[i]);
+}
+function partEdit(i, fn, label) {
+  const p = S.parts && S.parts[i]; if (!p) return false;
+  const before = partSnap(); fn(p); p.len = partLen(p);
+  if (pushPartUndo(before, label || ('Teil ' + p.name))) partsChanged();
+  return true;
+}
+function setPart(i, part) {
+  partsEnsure(); i = clamp(i | 0, 0, N_PART - 1);
+  const before = partSnap();
+  S.parts[i] = part == null ? null : normPart(part, i, NT());
+  if (S.parts[i]) S.parts[i].len = partLen(S.parts[i]);
+  if (!S.parts[i] && R.part && R.part.i === i) R.part = null;
+  if (pushPartUndo(before, part == null ? 'Teil gelöscht' : 'Teil ' + S.parts[i].name)) partsChanged();
+  return S.parts[i] ? deep(S.parts[i]) : null;
+}
+function partDelete(i) {
+  const p = S.parts && S.parts[i]; if (!p) return false;
+  setPart(i, null);
+  toast('Teil ' + p.name + ' gelöscht', {label: 'Rückgängig', fn: () => undo()}); haptic('snap');
+  return true;
+}
+function partCopy(i, noDrums) {
+  const p = S.parts && S.parts[i]; if (!p) return -1;
+  const k = S.parts.findIndex(x => !x); if (k < 0) { toast('Teil-Leiste voll – erst einen Teil löschen'); return -1; }
+  const c = deep(p); c.name = partUniq(p.name, -1); c.color = PART_COLORS[k % PART_COLORS.length];
+  if (noDrums) c.slots[DRUM_T] = -1;
+  setPart(k, c);
+  toast('Kopie: ' + S.parts[k].name + (noDrums ? ' (ohne Drums)' : ''), {label: 'Rückgängig', fn: () => undo()});
+  return k;
+}
+
+/* ---------- V2c Teil-Leiste (§4.4): 8 places, 4 per page + one [●○]; tap = start at the next bar, [＋] = keep what sounds
+   now (asks only the name), hold 450 ms = lift (haptic, N7-R3); release without moving = Teil-Blatt, a drag after the lift
+   never opens it (Nachtrag 2 B.4, N7S-10; dropping into the song comes with V2e′). P: under the clip grid (not in the song
+   view, EN7-02); L: in the side panel (both views, it never moves). ---------- */
+const PB = {keys: [], pg: null, pick: null, press: null, ghost: null, sig: ''}, PB_KEYS = 4;   // 4 part keys per page (+ ●○)
+const partPageOf = () => (UI.partPage === 1 ? 1 : 0);
+function setPartPage(n) { UI.partPage = n ? 1 : 0; PB.sig = ''; renderPartBar(); return UI.partPage; }
+function buildPartBar() {
+  const b = EL.partBar; if (!b) return;
+  b.textContent = ''; PB.keys = []; PB.sig = '';
+  for (let j = 0; j < PB_KEYS; j++) { const k = el('button', 'pk rb', '<span class="pn"></span><i class="led"></i>'); k.dataset.j = j; b.appendChild(k); PB.keys.push(k); }
+  const pg = el('button', 'pb-pg rb', '<i></i><i></i>'); pg.setAttribute('aria-label', 'Andere Teile zeigen'); b.appendChild(pg); PB.pg = pg;
+  const pk = el('div', 'pb-pick', '<span class="pt"></span><button class="rb pb-done">Fertig</button>'); pk.hidden = true; b.appendChild(pk); PB.pick = pk;
+}
+function partBarBind() {
+  const b = EL.partBar; if (!b) return;
+  guardTouch(b);
+  on(b, 'pointerdown', e => {
+    if (e.button > 0) return;
+    const k = e.target.closest('.pk'); if (!k || UI.pick) return;
+    ensureAudio();
+    const i = +k.dataset.i, st = {id: e.pointerId, i, k, x: e.clientX, y: e.clientY, tc: AU.ctx ? AU.ctx.currentTime : null, lift: false, moved: false, dead: false};
+    st.timer = setTimeout(() => { if (PB.press !== st || st.dead || !S.parts[i]) return; st.lift = true; k.classList.add('lift'); haptic('pop'); armLongPressGuard(); }, LP_MS);
+    PB.press = st;
+    try { k.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  on(b, 'pointermove', e => {
+    const st = PB.press; if (!st || st.id !== e.pointerId) return;
+    const d = Math.hypot(e.clientX - st.x, e.clientY - st.y);
+    if (!st.lift) { if (d > 8) { st.dead = true; clearTimeout(st.timer); } return; }
+    if (d > 8) st.moved = true;
+    if (st.moved) partGhost(st, e.clientX, e.clientY);
+  });
+  const end = e => {
+    const st = PB.press; if (!st || st.id !== e.pointerId) return;
+    PB.press = null; clearTimeout(st.timer);
+    st.k.classList.remove('lift'); partGhost(null);
+    if (st.lift) {
+      releaseLongPressGuard(); UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY, hard: true};
+      if (!st.moved && e.type === 'pointerup') openPartSheet(st.i);
+      return;
+    }
+    if (st.dead || e.type !== 'pointerup') return;
+    UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};
+    partTap(st.i, st.tc);
+  };
+  on(b, 'pointerup', end); on(b, 'pointercancel', end);
+  on(b, 'contextmenu', e => e.preventDefault());
+  onTap(PB.pg, () => { setPartPage(1 - partPageOf()); haptic('tick'); });
+  onTap(PB.pick.querySelector('.pb-done'), () => pickDone());
+}
+// the ghost of a lifted part key follows the finger (24 px above it); without a drop target yet it flies back on release
+function partGhost(st, x, y) {
+  if (!st) { if (PB.ghost) { PB.ghost.remove(); PB.ghost = null; } return; }
+  const p = S.parts[st.i]; if (!p) return;
+  if (!PB.ghost) { PB.ghost = el('div', 'pk-ghost', esc(p.name.toUpperCase()) + ' · ' + partLen(p) + ' T'); PB.ghost.style.setProperty('--pc', partColorVar(p.color)); document.body.appendChild(PB.ghost); }
+  PB.ghost.style.left = Math.round(x) + 'px'; PB.ghost.style.top = Math.round(y - 24) + 'px';
+}
+function partTap(i, tc) {
+  if (UI.pick) return;
+  partsEnsure();
+  if (!S.parts[i]) { partNewAt(i); return; }
+  launchPart(i, tc);
+}
+// [＋]: keep what sounds now, then only the name (chips; the name pick is part of the same undo step)
+function partNewAt(i) {
+  if (rec.state !== 'off' && rec.state !== 'armed') { toast('Erst Aufnahme beenden'); return; }
+  const p = partFromNow(i);
+  const anchor = PB.keys.find(k => +k.dataset.i === i) || EL.partBar;
+  toast('Teil ' + p.name + ' gespeichert · halten = bearbeiten', {label: 'Rückgängig', fn: () => { closePop(); undo(); }});
+  openPartNamePop(i, anchor);
+}
+function partRename(i, name) {
+  const p = S.parts && S.parts[i]; if (!p) return false;
+  const nm = partUniq(String(name).trim().slice(0, 12), i); if (!nm || p.name === nm) return false;
+  p.name = nm; partsChanged(); return true;
+}
+function openPartNamePop(i, anchor) {
+  const p0 = S.parts[i]; if (!p0) return;
+  openPop(anchor, p => {
+    p.classList.add('pnpop'); guardTouch(p);
+    const paint = edit => {
+      const pt = S.parts[i]; if (!pt) { closePop(); return; }
+      p.innerHTML = `<h4>Name für den Teil</h4><div class="cp-sc pn-sc">` + PART_NAMES.map(n => `<button class="rb cp-c${pt.name === n ? ' on' : ''}" data-n="${n}">${n}</button>`).join('') +
+        `<button class="rb cp-c" data-a="ed">✎</button></div>` + (edit ? `<div class="pn-ed"><input class="cp-in pn-in" type="text" maxlength="12" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(pt.name)}" aria-label="Name"><button class="rb cp-ok" data-a="ok">✓</button></div>` : '') +
+        `<div class="small">Jetzt: ${esc(pt.name)} · Tipp = starten, halten = Teil-Blatt</div>`;
+      if (edit) { const inp = p.querySelector('.pn-in'); inp.addEventListener('pointerdown', ev => ev.stopPropagation()); inp.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
+        on(inp, 'keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); takeTxt(); } }); setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 30); }
+      popFit(p);
+    };
+    const takeTxt = () => { const inp = p.querySelector('.pn-in'); const v = inp ? inp.value.trim() : ''; if (!PART_NAME_RE.test(v)) { if (inp) inp.classList.add('bad'); haptic('snap'); return; } partRename(i, v); closePop(); };
+    paint(false);
+    onTap(p, b => {
+      if (b.dataset.n) { partRename(i, b.dataset.n); haptic('tick'); closePop(); return; }
+      if (b.dataset.a === 'ed') { paint(true); return; }
+      if (b.dataset.a === 'ok') takeTxt();
+    }, 'button');
+  }, {name: 'partname', above: true});
+}
+function renderPartBar() {
+  const b = EL.partBar; if (!b || !PB.keys.length) return;
+  partsEnsure();
+  const pg = partPageOf(), run = R.playing && R.part ? R.part.i : -1, wait = R.playing && R.partPend && R.partPend.i >= 0 ? R.partPend.i : -1;
+  const narrow = b.clientWidth > 0 && b.clientWidth < 300, pick = UI.pick && S.parts[UI.pick.i] ? UI.pick : null;
+  const sig = [pg, run, wait, narrow, pick ? pick.i : -1, UI.partsVer | 0, (S.parts || []).map(p => (p ? p.name + p.color : '')).join(',')].join('|');
+  if (sig === PB.sig) return; PB.sig = sig;
+  b.classList.toggle('picking', !!pick);
+  PB.pick.hidden = !pick;
+  if (pick) {
+    const p = S.parts[pick.i];
+    PB.pick.querySelector('.pt').textContent = (narrow ? partShort(p, 8) : 'Teil ' + p.name) + ': Zellen antippen';
+    b.style.setProperty('--pc', partColorVar(p.color));
+  }
+  for (let j = 0; j < PB_KEYS; j++) {
+    const i = pg * PB_KEYS + j, p = S.parts[i], k = PB.keys[j];
+    k.dataset.i = i;
+    k.classList.toggle('empty', !p); k.classList.toggle('on', i === run); k.classList.toggle('wait', i === wait && i !== run);
+    k.classList.toggle('wait2', i === wait && i === run);           // the running part restarts at the next bar
+    k.style.setProperty('--pc', p ? partColorVar(p.color) : 'var(--text-dim)');
+    k.children[0].textContent = p ? partShort(p, narrow ? 6 : 8) : '＋';
+    if (p) partKeyFit(k.children[0], p);
+    k.setAttribute('aria-label', p ? 'Teil ' + p.name + ' starten (halten = Teil-Blatt)' : 'Teil speichern: was gerade klingt');
+  }
+  const other = pg ? [0, 1, 2, 3] : [4, 5, 6, 7];
+  PB.pg.children[0].className = pg ? '' : 'on'; PB.pg.children[1].className = pg ? 'on' : '';
+  PB.pg.classList.toggle('hot', other.includes(run) || other.includes(wait));
+  PB.pg.setAttribute('aria-label', 'Teile ' + (pg ? '1–4' : '5–8') + ' zeigen');
+}
+// the key name as long as it fits: ≤ 8 characters, else 6 (P3), else the short form of N7-R2 („STR“, „REF“ …)
+const PART_SHORT = {intro: 'INT', strophe: 'STR', pre: 'PRE', refrain: 'REF', bridge: 'BRI', break: 'BRK', outro: 'OUT'};
+function partShortForm(name) {
+  const m = /^(.*?)\s*(\d+)?$/.exec(String(name).trim()), base = (m && m[1]) || name, num = m && m[2] ? m[2] : '';
+  const k = base.toLowerCase(); if (k === 'teil' && num) return 'T' + num;
+  return (PART_SHORT[k] || base.replace(/\s+/g, '').slice(0, 3).toUpperCase()) + num;
+}
+function partKeyFit(n, p) {
+  if (!n.clientWidth) return;
+  const over = () => n.scrollWidth > n.clientWidth + .5;
+  if (!over()) return;
+  n.textContent = partShort(p, 6); if (!over()) return;
+  n.textContent = partShortForm(p.name);
+}
+// P: under the clip grid; short landscape: in the side panel between Träger and the track strip (§4.4)
+function partBarHome() {
+  const b = EL.partBar, side = document.getElementById('side'); if (!b || !side || !EL.gridArea) return;
+  const toSide = HINT_MQ && HINT_MQ.matches;
+  if (toSide) { if (b.parentNode !== side) side.insertBefore(b, EL.strip); }
+  else if (b.parentNode !== EL.gridArea) EL.gridArea.insertBefore(b, EL.hint || EL.countin || null);
+  PB.sig = ''; renderPartBar();
+}
+
+/* ---------- Matrix-Auswahl („In der Matrix wählen“, §4.4): cell = this clip for its track, again = aus, third = bleibt; no cell
+   starts a clip in this mode. The whole selection is one undo step ---------- */
+function pickStart(i) {
+  if (!S.parts[i]) return false;
+  closePop(); if (UI.songView) setSongView(false);
+  UI.pick = {i, before: partSnap(), last: null, pushed: false};
+  UI.dirty.grid = true; PB.sig = ''; renderPartBar();
+  return true;
+}
+function pickCell(t, s) {
+  const pk = UI.pick, p = pk && S.parts[pk.i]; if (!p || !S.tracks[t]) return null;
+  const cur = p.slots[t], clip = S.tracks[t].clips[s], key = t + ':' + s;
+  let nx;
+  if (cur && cur !== -1 && cur.s === s) nx = -1;
+  else if (cur === -1 && pk.last === key) nx = null;
+  else nx = clip ? {s} : -1;
+  p.slots[t] = nx; p.len = partLen(p); pk.last = key;
+  if (!pk.pushed) { pk.pushed = true; undoPush({kind: 'part', before: pk.before, label: 'Teil ' + p.name + ': Spuren gewählt'}); }
+  partsChanged(); haptic('tick');
+  return nx;
+}
+// the ■ column in the Matrix-Auswahl: this track aus ↔ bleibt (a chosen clip → aus)
+function pickTrack(t) {
+  const pk = UI.pick, p = pk && S.parts[pk.i]; if (!p || !S.tracks[t]) return null;
+  const cur = p.slots[t], nx = cur === -1 ? null : -1;
+  p.slots[t] = nx; p.len = partLen(p); pk.last = null;
+  if (!pk.pushed) { pk.pushed = true; undoPush({kind: 'part', before: pk.before, label: 'Teil ' + p.name + ': Spuren gewählt'}); }
+  partsChanged(); haptic('tick');
+  return nx;
+}
+function pickDone() {
+  const pk = UI.pick; if (!pk) return;
+  UI.pick = null; UI.dirty.grid = true; PB.sig = ''; renderPartBar();
+  if (S.parts[pk.i]) openPartSheet(pk.i);
+}
+function pickCancel() { if (UI.pick) { UI.pick = null; UI.dirty.grid = true; PB.sig = ''; } }
+
+/* ---------- Teil-Blatt (§4.4, ≈ 300 px in P; L two columns) ---------- */
+function slotLabel(sl) { return sl == null ? 'bleibt' : sl === -1 ? 'aus' : 'Sz' + (sl.s + 1); }
+function partSlotNext(t, cur) {
+  const tr = S.tracks[t], sc = []; for (let s = 0; s < NS(); s++) if (tr.clips[s]) sc.push(s);
+  const seq = [...sc.map(s => ({s})), -1, null];
+  const k = seq.findIndex(x => (x == null ? cur == null : x === -1 ? cur === -1 : cur && cur !== -1 && cur.s === x.s));
+  return seq[(k + 1) % seq.length];
+}
+const xpLabel = p => (p.xp && p.xp.semi ? (p.xp.semi > 0 ? '+' : '−') + Math.abs(p.xp.semi) + ' HT' : '±0') + ' ▾';
+function openPartSheet(i) {
+  if (!S.parts || !S.parts[i]) return;
+  const st = {xp: false, nm: false};
+  openPop(null, p => {
+    p.classList.add('psheet'); guardTouch(p);
+    const paint = () => {
+      const pt = S.parts[i]; if (!pt) { closePop(); return; }
+      const L = partLen(pt), N = esc(pt.name.toUpperCase());
+      let h = `<div class="ps-h"><b class="ps-t" style="--pc:${partColorVar(pt.color)}"><span class="ps-tl">TEIL · </span>${N}</b><span class="ps-l">${L} ${L === 1 ? 'Takt' : 'Takte'}</span><span class="ps-w">Wechsel</span>` +
+        segHTML('psStart', [['bar', 'am Takt'], ['end', 'Teil-Ende']], pt.start) + `<button class="rb ps-x" data-a="x" aria-label="Schließen">✕</button></div>`;
+      h += `<div class="cp-row ps-nm"><span class="lbl">Name</span>` + (st.nm ?
+        `<input class="cp-in ps-in" type="text" maxlength="12" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(pt.name)}" aria-label="Name"><button class="rb cp-ok" data-a="nmok">✓</button><button class="rb" data-a="nmx">‹</button>` :
+        `<div class="cp-sc">` + PART_NAMES.map(n => `<button class="rb cp-c${pt.name === n ? ' on' : ''}" data-n="${n}">${n}</button>`).join('') + `<button class="rb cp-c" data-a="nm">✎</button></div>`) + `</div>`;
+      h += `<div class="cp-row ps-col"><span class="lbl">Farbe</span><div class="ps-dots">` + PART_COLORS.map(c => `<button class="rb ps-dot${pt.color === c ? ' on' : ''}" data-c="${c}" style="--pc:${partColorVar(c)}" aria-label="Farbe ${c}"><i></i></button>`).join('') + `</div></div>`;
+      h += `<div class="cp-row ps-tr"><span class="lbl">Spuren</span><div class="cp-sc">` + trackOrder().map(t => { const sl = pt.slots[t];
+        return `<button class="rb cp-c ps-t${sl == null ? ' b' : sl === -1 ? ' a' : ''}" data-t="${t}" aria-label="${esc(S.tracks[t].name)}: ${slotLabel(sl)}"><small>${trackShort(t)}</small>${slotLabel(sl)}</button>`; }).join('') + `</div></div>`;
+      h += `<div class="cp-row ps-mx"><button class="rb ps-mxb" data-a="mx">▦ In der Matrix wählen</button></div>`;
+      if (st.xp) {
+        const cur = pt.xp && pt.xp.semi ? pt.xp.semi : 0, v = []; for (let s = -12; s <= 12; s++) v.push(s);
+        h += `<div class="cp-row ps-ak"><span class="lbl">Transp.</span><div class="cp-sc ps-xps">` + v.map(s => `<button class="rb cp-c${s === cur ? ' on' : ''}" data-x="${s}">${s > 0 ? '+' + s : s < 0 ? '−' + -s : '±0'}</button>`).join('') + `</div><button class="rb" data-a="xpx">‹</button></div>`;
+      } else {
+        const ch = pt.chords ? rowShortText(pt.chords) : pt.xp && pt.xp.tg ? tgShort(pt.xp.tg) : '';
+        h += `<div class="cp-row ps-ak"><span class="lbl">Akkorde</span><button class="rb ps-ch" data-a="ch"><span>${esc(ch || 'keine')}</span> ✎</button><span class="ps-or">oder</span><button class="rb ps-xp" data-a="xp">${xpLabel(pt)}</button></div>`;
+      }
+      h += `<div class="cr-bot ps-bot"><button class="rb" data-a="now"><span class="lg">= wie jetzt</span><span class="sh">= jetzt</span></button><button class="rb" data-a="cp">Kopie</button>` +
+        `<button class="rb" data-a="cpd" aria-label="Kopie ohne Drums"><span class="lg">ohne Drums</span><span class="sh">−Drums</span></button><button class="rb ps-del" data-a="del" aria-label="Löschen"><span class="lg">Löschen</span><span class="sh">✕</span></button></div>`;
+      p.innerHTML = h;
+      bindSegTap(p, 'psStart', v => partEdit(i, x => { x.start = v === 'end' ? 'end' : 'bar'; }, 'Teil ' + pt.name + ': Wechsel ' + (v === 'end' ? 'am Teil-Ende' : 'am Takt')));
+      const inp = p.querySelector('.ps-in');
+      if (inp) { inp.addEventListener('pointerdown', ev => ev.stopPropagation()); inp.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
+        on(inp, 'keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); nmTake(); } }); on(inp, 'focus', () => popDock(p, true)); on(inp, 'blur', () => setTimeout(() => { if (p.isConnected) popDock(p); }, 50)); }
+      popDock(p); rowFit(p);
+    };
+    const nmTake = () => { const inp = p.querySelector('.ps-in'), v = inp ? inp.value.trim() : ''; if (!PART_NAME_RE.test(v)) { if (inp) inp.classList.add('bad'); haptic('snap'); return; } const pt = S.parts[i], nm = partUniq(v, i); partEdit(i, x => { x.name = nm; }, 'Teil ' + pt.name + ' → ' + nm); st.nm = false; paint(); };
+    UI.psRepaint = () => { if (p.isConnected && !p.querySelector('.ps-in:focus')) paint(); };
+    paint();
+    onTap(p, b => {
+      const a = b.dataset.a, pt = S.parts[i]; if (!pt) return;
+      if (a === 'x') { closePop(); return; }
+      if (b.dataset.n) { const nm = partUniq(b.dataset.n, i); partEdit(i, x => { x.name = nm; }, 'Teil ' + pt.name + ' → ' + nm); haptic('tick'); return; }
+      if (a === 'nm') { st.nm = true; paint(); const inp = p.querySelector('.ps-in'); if (inp) setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 30); return; }
+      if (a === 'nmok') { nmTake(); return; }
+      if (a === 'nmx') { st.nm = false; paint(); return; }
+      if (b.dataset.c) { partEdit(i, x => { x.color = b.dataset.c; }, 'Teil ' + pt.name + ': Farbe'); haptic('tick'); return; }
+      if (b.dataset.t != null) { const t = +b.dataset.t, nx = partSlotNext(t, pt.slots[t]); partEdit(i, x => { x.slots[t] = nx; }, 'Teil ' + pt.name + ': ' + trackShort(t) + ' ' + slotLabel(nx)); haptic('tick'); return; }
+      if (a === 'mx') { pickStart(i); return; }
+      if (a === 'ch') { closePop(); openChordRowSheet(pt.id); return; }
+      if (a === 'xp') { st.xp = true; paint(); return; }
+      if (a === 'xpx') { st.xp = false; paint(); return; }
+      if (b.dataset.x != null) {
+        const s = +b.dataset.x, had = !!pt.chords;
+        partEdit(i, x => { x.xp = s ? {semi: s} : null; if (s) x.chords = null; }, 'Teil ' + pt.name + ': Transposition ' + (s > 0 ? '+' : '') + s);
+        st.xp = false; paint(); haptic('tick');
+        if (had && s) toast('Akkord-Zeile durch Transposition ersetzt', {label: 'Rückgängig', fn: () => undo()});
+        return;
+      }
+      if (a === 'now') {
+        const cap = partCapture();
+        partEdit(i, x => { x.slots = cap.slots; x.chords = cap.chords ? normChordRow(cap.chords) : null; x.xp = null; }, 'Teil ' + pt.name + ' = wie jetzt');
+        toast('Teil ' + pt.name + ' = was jetzt klingt', {label: 'Rückgängig', fn: () => undo()}); return;
+      }
+      if (a === 'cp' || a === 'cpd') { partCopy(i, a === 'cpd'); return; }
+      if (a === 'del') { closePop(); partDelete(i); }
+    }, 'button');
+  }, {name: 'partsheet', onClose: () => { UI.psRepaint = null; }});
+  popDock(UI.pop && UI.pop.el);
+  if (UI.pop && UI.pop.el) rowFit(UI.pop.el);
+}
+
+/* ---------- Akkord-Zeilen-Blatt (§4.5): one box per bar (the running one glows), Stufe, Zuletzt, [÷2] [– halten] [♪ greifen]
+   [Quant.] [Löschen] [Frei ▾]; ‹ › leafs through scenes 1–8 and the parts without starting them. Every change = one undo ---------- */
+const CR = {src: null, sel: null, frei: false, grab: false, quant: false, split: new Set(), st: {root: 0, q: 'maj', bass: null, tab: 'art'}, grid: 4, g: null};
+function crDefaultSrc() {
+  if (R.row) return R.row.src;
+  if (R.rowPend && R.rowPend.src) return R.rowPend.src;
+  if (R.part && S.parts[R.part.i]) return S.parts[R.part.i].id;
+  if (R.playing && R.lastScene != null) return 'S' + (R.lastScene + 1);
+  return 'S' + (clamp(R.selS | 0, 0, NS() - 1) + 1);
+}
+function crList() { const l = []; for (let s = 0; s < NS(); s++) l.push('S' + (s + 1)); (S.parts || []).forEach(p => { if (p) l.push(p.id); }); return l; }
+function crEntries(row, lo, hi) { return row ? row.ch.filter(c => c.b >= lo - 1e-6 && c.b < hi - 1e-6) : []; }
+function crBarSplit(row, k) { return CR.split.has(k) || crEntries(row, 4 * k, 4 * k + 4).some(c => Math.abs(c.b - 4 * k) > 1e-6); }
+// the boxes: [{bar, half|null, lo, hi, txt}] in order
+function crBoxes(row, len) {
+  const out = [];
+  for (let k = 0; k < len; k++) {
+    if (!crBarSplit(row, k)) { const e = crEntries(row, 4 * k, 4 * k + 4); out.push({bar: k, half: null, lo: 4 * k, hi: 4 * k + 4, txt: e.length ? tgShort(e[0].tg) : '–'}); continue; }
+    for (const h of [0, 1]) { const lo = 4 * k + 2 * h, e = crEntries(row, lo, lo + 2); out.push({bar: k, half: h, lo, hi: lo + 2, txt: e.length ? tgShort(e[0].tg) + (e.length > 1 ? '…' : '') : '–'}); }
+  }
+  return out;
+}
+function openChordRowSheet(src) {
+  src = rowSrcParse(src) ? src : crDefaultSrc();
+  CR.src = src; CR.frei = false; CR.grab = false; CR.quant = false; CR.split = new Set();
+  const row = rowOf(src); CR.sel = row && row.ch.length ? null : {bar: 0, half: null};
+  openPop(null, p => {
+    p.classList.add('crsheet', 'chpick'); guardTouch(p);
+    UI.crRepaint = () => { if (p.isConnected && !p.querySelector('.cr-in:focus')) crPaint(p); };
+    crPaint(p);
+    onTap(p, b => crAct(p, b), 'button');
+  }, {name: 'chordrow', onClose: () => { UI.crRepaint = null; crGrabEnd(true); }});
+  popDock(UI.pop && UI.pop.el);
+  if (UI.pop && UI.pop.el) { rowFit(UI.pop.el); crNowMark(UI.pop.el); }
+}
+function crPaint(p) {
+  const src = CR.src, rw = rowOf(src), q = rowSrcParse(src), key = rowKey(src), len = rw ? rw.len : rowDefaultLen(src), N = noteNames();
+  if (CR.sel && CR.sel.bar >= len) CR.sel = {bar: len - 1, half: null};
+  p.classList.toggle('grab', CR.grab); p.classList.toggle('frei', CR.frei);
+  if (CR.grab) {
+    const sel = CR.sel || {bar: 0, half: null};
+    p.innerHTML = `<div class="cr-grab"><span class="cr-gt">♪ Akkord auf der Tastatur greifen → <b>${esc(rowName(src))} · Takt ${sel.bar + 1}${sel.half === 1 ? ' (2. Hälfte)' : ''}</b></span><button class="rb cr-gd" data-a="gdone">Fertig</button></div>`;
+    crGrabPlace(p);
+    return;
+  }
+  const kname = keyName(key);
+  let h = `<div class="cr-h"><span class="cr-lab">AKKORDE</span><button class="rb cr-nv" data-a="prev" aria-label="Vorige Szene">‹</button><b class="cr-t">${esc(rowName(src).toUpperCase())}</b><button class="rb cr-nv" data-a="next" aria-label="Nächste Szene">›</button>` +
+    `<span class="cr-i">${len} ${len === 1 ? 'Takt' : 'Takte'} · ${esc(kname)}</span><button class="rb cr-pm" data-a="lm" aria-label="Ein Takt weniger">−</button><button class="rb cr-pm" data-a="lp" aria-label="Ein Takt mehr">+</button><button class="rb cr-x" data-a="x" aria-label="Schließen">✕</button></div>`;
+  h += `<div class="cr-bx cp-sc">` + crBoxes(rw, len).map(bx => {
+    const on = CR.sel && CR.sel.bar === bx.bar && (CR.sel.half == null ? bx.half == null : CR.sel.half === bx.half);
+    return `<button class="rb cr-b${bx.half != null ? ' hf' : ''}${on ? ' on' : ''}${bx.txt === '–' ? ' em' : ''}" data-bar="${bx.bar}" data-h="${bx.half == null ? '' : bx.half}" data-lo="${bx.lo}" data-hi="${bx.hi}"><small>${bx.bar + 1}${bx.half === 1 ? '½' : ''}</small>${esc(bx.txt)}</button>`;
+  }).join('') + `</div>`;
+  if (CR.frei) {
+    const st = CR.st;
+    h += `<div class="cp-row"><span class="lbl">Grund</span><div class="cp-sc">` + N.map((n, r) => `<button class="rb cp-c${st.root === r ? ' on' : ''}" data-r="${r}">${esc(n)}</button>`).join('') + `</div></div>`;
+    h += `<div class="cp-row cp-zu"><span class="lbl">${st.tab === 'art' ? 'Art' : 'Bass'}</span><div class="cp-sc">` + (st.tab === 'art' ? CP_ARTS.map(([qq, l]) => `<button class="rb cp-c${st.q === qq ? ' on' : ''}" data-q="${qq}">${l}</button>`).join('') :
+      `<button class="rb cp-c${st.bass == null ? ' on' : ''}" data-bs="-1">–</button>` + N.map((n, r) => `<button class="rb cp-c${st.bass === r ? ' on' : ''}" data-bs="${r}">/${esc(n)}</button>`).join('')) + `</div></div>`;
+    h += `<div class="cr-bot"><button class="rb" data-a="back">‹ zurück</button>${segHTML('crTab', [['art', 'Art'], ['bass', 'Bass']], st.tab)}<input class="cp-in cr-in" type="text" inputmode="text" enterkeyhint="done" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="⌨ z. B. Dm7" aria-label="Akkord eintippen"><button class="rb cp-ok" data-a="ok" aria-label="Übernehmen">✓</button></div>`;
+  } else {
+    const deg = degreeChords(key), hist = T.history.slice(0, 8), sel = CR.sel ? crEntries(rw, crSelLo(), crSelHi()) : [], cur = sel.length ? sel[0].tg : undefined;
+    h += `<div class="cp-row cp-st"><span class="lbl">Stufe</span><div class="cp-sc">` + deg.map((d, k) => `<button class="rb cp-c${cur && cur.kind === 'chord' && cur.root === d.root && cur.quality === d.q ? ' on' : ''}" data-d="${k}"><small>${d.deg}${d.dur ? ' (Dur)' : ''}</small>${esc(chordShort(d.root, d.q))}</button>`).join('') +
+      `<button class="rb cp-c${cur === null ? ' on' : ''}" data-o="1"><small>ohne</small>ORIG.</button></div></div>`;
+    h += `<div class="cp-row cp-zu"><span class="lbl">Zuletzt</span><div class="cp-sc">` + (hist.length ? hist.map((t, k) => `<button class="rb cp-c" data-hk="${k}">${esc(prettyTarget(t))}</button>`).join('') : '<span class="small">noch nichts gespielt</span>') + `</div></div>`;
+    if (CR.quant) {
+      const r = quantizeRow(src, CR.grid, null, null, true);
+      h += `<div class="cr-bot cr-q">${segHTML('crQ', [['4', 'Takt'], ['2', '½'], ['1', 'Schlag']], String(CR.grid))}<span class="cr-qp">${r.n} · ${r.moved} rücken · ${r.merged} zus.</span><button class="rb cr-qg" data-a="qgo"${r.moved || r.merged ? '' : ' disabled'}>Quantisieren</button><button class="rb" data-a="qx" aria-label="Zurück">‹</button></div>`;
+    } else {
+      h += `<div class="cr-bot"><button class="rb" data-a="half" aria-label="Takt teilen">÷2</button><button class="rb" data-a="hold" aria-label="Halten – kein Wechsel"><span class="lg">– halten</span><span class="sh">–</span></button><button class="rb" data-a="grab" aria-label="Akkord greifen"><span class="lg">♪ greifen</span><span class="sh">♪</span></button>` +
+        `<button class="rb" data-a="quant" aria-label="Quantisieren"><span class="lg">Quantisieren</span><span class="sh">Quant.</span></button><button class="rb cr-del" data-a="del" aria-label="Zeile löschen"${rw ? '' : ' disabled'}><span class="lg">Löschen</span><span class="sh">✕</span></button><button class="rb" data-a="frei">Frei ▾</button></div>`;
+    }
+  }
+  p.innerHTML = h;
+  if (CR.frei) {
+    bindSegTap(p, 'crTab', v => { CR.st.tab = v; crPaint(p); });
+    const inp = p.querySelector('.cr-in');
+    if (inp) {
+      inp.addEventListener('pointerdown', e => e.stopPropagation()); inp.addEventListener('touchstart', e => e.stopPropagation(), {passive: true});
+      on(inp, 'input', () => { const v = inp.value.trim(), t = v ? parseChord(v) : null; inp.classList.toggle('bad', !!v && !t); inp.classList.toggle('good', !!t); });
+      on(inp, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); crTakeText(p); } else if (e.key === 'Escape') { e.stopPropagation(); closePop(); } });
+      on(inp, 'focus', () => popDock(p, true)); on(inp, 'blur', () => setTimeout(() => { if (p.isConnected) popDock(p); }, 50));
+    }
+  }
+  if (CR.quant) bindSegTap(p, 'crQ', v => { CR.grid = +v; crPaint(p); });
+  rowFit(p);
+  crNowMark(p);
+  const bx = p.querySelector('.cr-b.on'); if (bx && bx.scrollIntoView) { try { const sc = bx.parentNode, l = bx.offsetLeft, w = bx.offsetWidth; if (l < sc.scrollLeft || l + w > sc.scrollLeft + sc.clientWidth) sc.scrollLeft = l - 8; } catch (e) {} }
+  popDock(p);
+}
+// a button row whose labels do not fit switches to the short labels (.sh), never cut text
+function rowFit(p) {
+  for (const r of p.querySelectorAll('.cr-bot')) {
+    const bs = [...r.querySelectorAll('.rb')], over = () => bs.some(x => x.scrollWidth > x.clientWidth + .5);
+    bs.forEach(x => x.classList.remove('sx'));
+    // the longest label first goes short, then the next, until everything fits
+    const cand = bs.filter(x => x.querySelector('.sh')).sort((a, b) => b.querySelector('.lg').textContent.length - a.querySelector('.lg').textContent.length);
+    for (const x of cand) { if (!over()) break; x.classList.add('sx'); }
+  }
+}
+const crSelLo = () => (CR.sel ? 4 * CR.sel.bar + (CR.sel.half === 1 ? 2 : 0) : 0);
+const crSelHi = () => (CR.sel ? (CR.sel.half == null ? 4 * CR.sel.bar + 4 : crSelLo() + 2) : 0);
+// the running box glows (this row runs, the hand did not take over)
+function crNowMark(p) {
+  p = p || (UI.pop && UI.pop.name === 'chordrow' ? UI.pop.el : null); if (!p || CR.grab) return;
+  const row = R.row && R.row.src === CR.src && R.playing ? R.row : null, rw = row && rowOf(row.src);
+  let b = null; if (row && AU.ctx) { const L = rw ? rw.len * 4 : 4, ab = audBeat(); if (ab >= row.startBeat) b = (((ab - row.startBeat) % L) + L) % L; }
+  for (const x of p.querySelectorAll('.cr-b')) { const lo = +x.dataset.lo, hi = +x.dataset.hi, on = b != null && b >= lo - 1e-6 && b < hi - 1e-6; x.classList.toggle('now', on); x.classList.toggle('hand', on && !!row.hand); }
+}
+function crSet(tg, advance) {
+  if (!CR.sel) { ensureAudio(); if (tg) recallCarrier(tg); else resetCarrier(); haptic('tick'); return; }   // no box chosen: play it now (like the Verlauf)
+  const lo = crSelLo(), hi = crSelHi(), bar = CR.sel.bar;
+  rowEdit(CR.src, row => { row.ch = row.ch.filter(c => !(c.b >= lo - 1e-6 && c.b < hi - 1e-6)); row.ch.push({b: lo, tg: tg ? carrierCopy(tg) : null}); },
+    'Akkord ' + tgShort(tg) + ' · ' + rowName(CR.src) + ' Takt ' + (bar + 1));
+  haptic('tick');
+  if (advance) crAdvance();
+  if (UI.crRepaint) UI.crRepaint();                         // the choice moved on: show it
+}
+function crAdvance() {
+  const rw = rowOf(CR.src), len = rw ? rw.len : rowDefaultLen(CR.src), sel = CR.sel; if (!sel) return;
+  if (sel.half === 0) { CR.sel = {bar: sel.bar, half: 1}; return; }
+  if (sel.bar + 1 < len) CR.sel = {bar: sel.bar + 1, half: crBarSplit(rw, sel.bar + 1) ? 0 : null};
+}
+function crTakeText(p) {
+  const inp = p.querySelector('.cr-in'), v = inp ? inp.value.trim() : '', t = v ? parseChord(v) : chordTarget(CR.st.root, CR.st.q, CR.st.bass);
+  if (!t) { if (inp) { inp.classList.add('bad'); inp.value = ''; inp.placeholder = 'z. B. Am7/G'; } haptic('snap'); return; }
+  crSet(t, false);
+}
+function crAct(p, b) {
+  const a = b.dataset.a, src = CR.src;
+  if (a === 'x') { closePop(); return; }
+  if (a === 'prev' || a === 'next') { const l = crList(), k = l.indexOf(src), n = l[(k + (a === 'next' ? 1 : -1) + l.length) % l.length]; CR.src = n; CR.split = new Set(); const rw = rowOf(n); CR.sel = rw && rw.ch.length ? null : {bar: 0, half: null}; CR.quant = false; haptic('tick'); crPaint(p); return; }
+  if (a === 'lm' || a === 'lp') { const rw = rowOf(src), L = rw ? rw.len : rowDefaultLen(src), nl = clamp(L + (a === 'lp' ? 1 : -1), 1, 16); if (nl !== L || !rw) rowEdit(src, row => { row.len = nl; row.ch = row.ch.filter(c => c.b < nl * 4 - 1e-6); }, rowName(src) + ': ' + nl + (nl === 1 ? ' Takt' : ' Takte')); haptic('tick'); return; }
+  if (b.dataset.bar != null) { const bar = +b.dataset.bar, half = b.dataset.h === '' ? null : +b.dataset.h; CR.sel = CR.sel && CR.sel.bar === bar && CR.sel.half === half ? null : {bar, half}; haptic('tick'); crPaint(p); return; }
+  if (b.dataset.d != null) { const d = degreeChords(rowKey(src))[+b.dataset.d]; if (d) crSet(chordTarget(d.root, d.q), true); return; }
+  if (b.dataset.o) { crSet(null, true); return; }
+  if (b.dataset.hk != null) { const t = T.history[+b.dataset.hk]; if (t) crSet(normTarget(t), true); return; }
+  if (a === 'half') {
+    if (!CR.sel) { toast('Erst ein Kästchen antippen'); return; }
+    const k = CR.sel.bar, rw = rowOf(src);
+    if (!crBarSplit(rw, k)) { CR.split.add(k); CR.sel = {bar: k, half: 0}; crPaint(p); }
+    else { CR.split.delete(k); CR.sel = {bar: k, half: null}; if (crEntries(rw, 4 * k + 2, 4 * k + 4).length || crEntries(rw, 4 * k, 4 * k + 4).some(c => c.b > 4 * k + 1e-6)) rowEdit(src, row => { row.ch = row.ch.filter(c => !(c.b > 4 * k + 1e-6 && c.b < 4 * k + 4 - 1e-6)); }, rowName(src) + ': Takt ' + (k + 1) + ' ganz'); else crPaint(p); }
+    haptic('tick'); return;
+  }
+  if (a === 'hold') {
+    if (!CR.sel) { toast('Erst ein Kästchen antippen'); return; }
+    const lo = crSelLo(), hi = crSelHi();
+    if (crEntries(rowOf(src), lo, hi).length) rowEdit(src, row => { row.ch = row.ch.filter(c => !(c.b >= lo - 1e-6 && c.b < hi - 1e-6)); }, rowName(src) + ': Takt ' + (CR.sel.bar + 1) + ' halten');
+    crAdvance(); crPaint(p); haptic('tick'); return;
+  }
+  if (a === 'grab') { if (!CR.sel) CR.sel = {bar: 0, half: crBarSplit(rowOf(src), 0) ? 0 : null}; crGrabStart(p); return; }
+  if (a === 'gdone') { crGrabEnd(); crPaint(p); return; }
+  if (a === 'quant') { if (!rowOf(src) || !rowOf(src).ch.length) { toast('Noch keine Akkorde in dieser Zeile'); return; } CR.quant = true; crPaint(p); return; }
+  if (a === 'qx') { CR.quant = false; crPaint(p); return; }
+  if (a === 'qgo') { CR.quant = false; quantizeRow(src, CR.grid); crPaint(p); return; }
+  if (a === 'del') { if (!rowOf(src)) return; setChordRow(src, null, 'Akkord-Zeile ' + rowName(src) + ' gelöscht'); toast('Akkord-Zeile ' + rowName(src) + ' gelöscht', {label: 'Rückgängig', fn: () => undo()}); CR.sel = {bar: 0, half: null}; crPaint(p); return; }
+  if (a === 'frei') { const cur = CR.sel ? crEntries(rowOf(src), crSelLo(), crSelHi())[0] : null, tg = cur && cur.tg; if (tg) CR.st = {root: tg.root, q: tg.kind === 'chord' && tg.quality ? tg.quality : 'maj', bass: tg.kind === 'chord' && tg.bass !== tg.root ? tg.bass : null, tab: CR.st.tab}; CR.frei = true; crPaint(p); return; }
+  if (a === 'back') { CR.frei = false; crPaint(p); return; }
+  if (a === 'ok') { crTakeText(p); return; }
+  if (b.dataset.r != null) { CR.st.root = +b.dataset.r; crSet(chordTarget(CR.st.root, CR.st.q, CR.st.bass), false); return; }
+  if (b.dataset.q != null) { CR.st.q = b.dataset.q; crSet(chordTarget(CR.st.root, CR.st.q, CR.st.bass), false); return; }
+  if (b.dataset.bs != null) { const v = +b.dataset.bs; CR.st.bass = v < 0 ? null : v; crSet(chordTarget(CR.st.root, CR.st.q, CR.st.bass), false); }
+}
+// [♪ greifen]: the sheet shrinks to one row (over the mode bar in P, over the track strip in L); the keyboard is free and a
+// gripped chord (collected 40 ms like TRANSPONIEREN) fills the box and moves on. The keys sound on the chosen synth track but
+// never change the Träger and are never recorded
+function crGrabStart(p) {
+  CR.grab = true; CR.g = {notes: new Set(), timer: 0, voices: new Map()};
+  releaseInputs();
+  EL.popLayer.classList.add('pass');
+  crPaint(p); haptic('pop');
+}
+function crGrabEnd(silent) {
+  if (!CR.grab) return;
+  CR.grab = false; EL.popLayer.classList.remove('pass');
+  if (CR.g) { clearTimeout(CR.g.timer); for (const v of CR.g.voices.values()) { try { v.release(nowT()); } catch (e) {} } CR.g = null; }
+  releaseInputs(r => r === 'grab');
+}
+function crGrabPlace(p) {
+  const land = isLand(), ref = land ? EL.strip : EL.modebar;
+  const r = ref && ref.getBoundingClientRect(); if (!r || !r.height) { popDock(p); return; }
+  p.classList.remove('dock'); p.classList.add('dock');
+  p.style.left = Math.round(r.left) + 'px'; p.style.width = Math.round(r.width) + 'px'; p.style.maxWidth = Math.round(r.width) + 'px';
+  p.style.top = Math.round(r.top) + 'px'; p.style.height = Math.round(r.height) + 'px';
+}
+function crGrabDown(note, id, vel) {
+  const g = CR.g; if (!g) return;
+  g.notes.add(note);
+  const t = R.selT, tr = S.tracks[t];
+  if (tr && tr.kind === 'synth' && AU.ctx) { const v = spawnVoice(t, note, vel, AU.ctx.currentTime + LIVE_LEAD, {src: 'live'}); if (v) g.voices.set(id, v); }
+  clearTimeout(g.timer);
+  g.timer = setTimeout(() => {
+    if (!CR.g || !CR.grab) return;
+    const keys = [...CR.g.notes].sort((a, b) => a - b); CR.g.notes.clear();
+    const det = keys.length ? Harmony.detectChord(keys) : null;
+    if (!det) { haptic('snap'); return; }
+    crSet(normTarget(det), true);
+    const p = UI.pop && UI.pop.name === 'chordrow' ? UI.pop.el : null; if (p) crPaint(p);
+  }, (S.settings.harmony.gatherMs || 40) + 2);
+}
+function crGrabUp(id) { const g = CR.g; if (!g) return; const v = g.voices.get(id); if (v) { g.voices.delete(id); try { v.release(nowT()); } catch (e) {} } }
+
+/* ---------- readout (Träger-Anzeige): the running row „SZENE 2 · Am·F·[C]·G ✎“; after a hand change [↩ TEIL] (TA1) ---------- */
+function v2cInit() {
+  EL.partBar = document.getElementById('partBar');
+  buildPartBar(); partBarBind(); partBarHome();
+  on(window, 'resize', partBarHome); on(window, 'orientationchange', partBarHome);
+  if (HINT_MQ && HINT_MQ.addEventListener) HINT_MQ.addEventListener('change', partBarHome);
+  const bb = el('button', 'rb', '↩ TEIL'); bb.id = 'bRowBack'; bb.hidden = true; bb.setAttribute('aria-label', 'Zurück zur Akkord-Zeile ab dem nächsten Takt');
+  EL.readout.appendChild(bb); EL.bRowBack = bb;
+  onTap(bb, () => { rowBack(); });
+}
+function rowReadout() {
+  const row = R.row || (R.rowPend && R.rowPend.src ? {src: R.rowPend.src, startBeat: R.rowPend.beat, pend: true} : null);
+  if (!row) return null;
+  const rw = rowOf(row.src); if (!rw) return null;
+  const k = row.pend || !R.playing ? null : rowCurIdx(row, audBeat());
+  const nm = rowName(row.src).toUpperCase();
+  return {txt: (row.hand ? 'HAND · ' : '') + nm + ' · ' + rowShortText(rw, row.hand ? null : k) + ' ✎', hand: !!row.hand};
+}
+
 /* ---------- V0c sheets of the song view: Start-Blatt, SCHLEIFE, Akkord-Auswahl (ChordPick), AKKORDE menu, quantize ---------- */
 // a popover docked as a bottom sheet over the keyboard (full width; the song stays visible above it)
 // a segment in a touch-guarded sheet (guardTouch stops the synthetic click on iOS): act on the pointer tap
@@ -15934,6 +16976,10 @@ function renderCarrier(now) {
     if (ownP && (lab === 'TRÄGER' || lab.startsWith('TRÄGER · '))) { lab = (lab === 'TRÄGER' ? '' : lab.slice(9) + ' · ') + own; cls = (cls ? cls + ' ' : '') + 'own'; }
     else lab += ' · ' + own;
   }
+  // V2c (§4.5): the running chord row „SZENE 2 · Am·F·[C]·G ✎“; after a hand change „HAND · …“ and [↩ TEIL] (TA1)
+  const rr = rowReadout();
+  if (rr && lab === 'TRÄGER') { lab = rr.txt; cls = 'row' + (rr.hand ? ' hand' : ''); }
+ if (EL.bRowBack) { const sh = !!(R.row && R.row.hand && R.playing && rowOf(R.row.src)); if (EL.bRowBack.hidden === sh) EL.bRowBack.hidden = !sh; EL.readout.classList.toggle('hasback', sh); }
   EL.carLabel.textContent = lab; EL.carLabel.className = cls;
   // V0a fix (K-08/L6): chord name first at its full size, then the target key where it fits whole: „· → C-Dur“ / „→ C“
   // next to the shift, else in the label line; re-measured on every render (chord change, width, font load)
@@ -16655,6 +17701,7 @@ function uiFrame() {
     // ● feedback once per beat (§3.1, R3): armed/count-in blinks, recording pulses 80 ms
     if (bi != null) { if (recActive()) EL.bRec.classList.toggle('pulse'); else if (rec.state === 'countin' || rec.state === 'armed') EL.bRec.classList.toggle('ba'); }
     const ok = ownKeyAudible(bAud); if (ok !== UI.last.ownKey) { UI.last.ownKey = ok; UI.dirty.carrier = true; }
+    if (R.row || R.rowPend) { UI.dirty.carrier = true; if (UI.crRepaint) crNowMark(); }      // V2c: the running chord of the row
   }
   if (rec.state === 'recording' && !rec.fixedLen && performance.now() - (UI.last.recGrid || 0) > 250) { UI.last.recGrid = performance.now(); UI.dirty.grid = true; }
   if (UI.songView) songFrame(bAud);
@@ -16662,6 +17709,7 @@ function uiFrame() {
   if ((R.songRec || (UI.recBan && !UI.recBan.hidden)) && performance.now() - (UI.last.recBan || 0) > 200) { UI.last.recBan = performance.now(); recBanTop(); }   // V0c K2-63
   if ((ST.on || (ST.ui.row && !ST.ui.row.hidden) || (ST.ui.sv && !ST.ui.sv.hidden)) && performance.now() - (UI.last.stRow || 0) > 250) { UI.last.stRow = performance.now(); stRowPlace(); }   // VS1 K2-63
   if (!UI.songView) renderProgress(bAud);
+  renderPartBar();                                           // V2c (cheap: a signature check)
   if (UI.dirty.strip) { UI.dirty.strip = false; renderStrip(); }
   const effE = T.targetAt(now);
   if (effE !== UI.last.eff || T.current() !== UI.last.cur) { UI.last.eff = effE; UI.last.cur = T.current(); UI.dirty.carrier = true; UI.dirty.kb = true; }
@@ -23861,7 +24909,9 @@ function openMenu(goto) {
   }
   // 8 Hilfe (one line per feature that exists in this build)
   const s8 = sec('Hilfe', colL, 9);
-  s8.appendChild(el('div', 'help', ['Spur wählen, leeren Platz antippen, ● drücken – nach dem Einzählen einspielen, ● nochmal = fertig. Die Aufnahme-Leiste zeigt, was gerade aufgenommen wird.',
+  s8.appendChild(el('div', 'help', ['▶ drücken, dann TRANSPONIEREN wählen und Töne oder Akkorde spielen.',
+    'TEILE (Leiste unter den Clips, quer im Seitenfeld): ＋ speichert, was gerade klingt (Clips je Spur, gestoppte Spuren = aus, dazu die Akkorde). Antippen = startet am nächsten Takt, Clips von vorn. Halten = Teil-Blatt: Name, Farbe, Spuren (Sz1 … aus … bleibt), „In der Matrix wählen“ (Zellen antippen: Clip → aus → bleibt), Akkorde oder Transposition, Wechsel am Takt oder am Teil-Ende. ●○ blättert zu den Teilen 5–8.',
+    'AKKORD-ZEILE: Tipp auf die Träger-Anzeige = Akkorde der laufenden Szene bzw. des Teils, ‹ › blättert durch alle Szenen und Teile, ohne sie zu starten. Kästchen antippen, dann Stufe, Zuletzt oder Frei (auch Text, z. B. „Dm7“). ÷2 = zwei Akkorde im Takt, – = kein Wechsel, ♪ greifen = Akkord auf der Tastatur greifen, Quantisieren = auf Takt, ½ Takt oder Schlag. Die Zeile läuft mit der Szene im Kreis; eine Hand-Taste übernimmt sofort, ↩ TEIL gibt am nächsten Takt zurück.','Spur wählen, leeren Platz antippen, ● drücken – nach dem Einzählen einspielen, ● nochmal = fertig. Die Aufnahme-Leiste zeigt, was gerade aufgenommen wird.',
     'Gespielt ohne Aufnahme? FANG macht daraus einen Clip, der im Takt weiterläuft.',
     '✎ öffnet den Editor: Zeichnen, Auswählen, Radieren; zwei Finger zoomen. Jede Geste lässt sich mit ↶ rückgängig machen.',
     'Clip-Länge: den hellen Griff ┃ am Ende des Lineals ziehen – die Ansicht bleibt dabei stehen, am Rand läuft sie langsam mit. Noten hinter dem neuen Ende werden gelöscht (↶ holt sie zurück). Taktnummern antippen + „Zuschneiden“ = nur diese Takte behalten.',
@@ -24007,7 +25057,7 @@ const BOOT = {done: false, gen: 0, dirty: false};
 let kv = null, autosave = null;
 const idle = window.requestIdleCallback ? (f => window.requestIdleCallback(f, {timeout: 2000})) : (f => setTimeout(f, 50));   // §1.7.7
 // the selection is saved with the project (§12.6 ui) and restored when the app starts or a project is opened
-function syncUi() { if (S) S.ui = Object.assign({selT: R.selT, selS: R.selS, order: trackOrder().slice(), sceneBank: sceneBankOf(), trackBank: trackBankOf()}, S.ui && S.ui.follow ? {follow: S.ui.follow} : null, S.ui && S.ui.fmv ? {fmv: S.ui.fmv} : null); }   // V4b: + fmv (FELD / DX per track, a view field)   // V0b: + follow (a view field)
+function syncUi() { if (S) S.ui = Object.assign({selT: R.selT, selS: R.selS, order: trackOrder().slice(), sceneBank: sceneBankOf(), trackBank: trackBankOf()}, S.ui && S.ui.follow ? {follow: S.ui.follow} : null, S.ui && S.ui.fmv ? {fmv: S.ui.fmv} : null, UI.partPage === 1 ? {partPage: 1} : null); }   // V4b: + fmv (FELD / DX per track, a view field)   // V0b: + follow (a view field)
 function serializeProject() { syncUi(); return JSON.stringify(S, stripReplacer); }
 /* project file v3 (§12.1): {app:'SYNQUENZER', kind:'project', format:3, saved, appVersion, sum, project (compact notes),
    sounds:[the user library]}. lib = false for the parked projects of [Projekte] (stored without the library, §12.2) */
@@ -24072,7 +25122,9 @@ function applyProject(p, opts) {
   syncTransposer();
   UNDO.length = 0; REDO.length = 0;
   UI.drumVer++; R.songRec = null; R.songPlay = null; R.songEndBeat = null; R.melRec = null; R.carrierLive = false; if (R.songOverride) R.songOverride.fill(false);
-  SV.pos = SV.sel = SV.lastStop = null; UI.recTg = null; SONGCAR.saved = null;      // V0c: view state of the song and the TA9 state
+  SV.pos = SV.sel = SV.lastStop = null; UI.recTg = null; SONGCAR.saved = null;
+  R.row = R.rowPend = R.part = R.partPend = null; R.lastScene = null; PRT.saved = undefined; PRT.resume = null; xpReset(); UI.pick = null;   // V2c
+  partsEnsure(); UI.partPage = S.ui && S.ui.partPage === 1 ? 1 : 0; UI.dirty.parts = true; PB.sig = '';      // V0c: view state of the song and the TA9 state
   if (AU.ctx) {
     // the old project's notes are still fading out through the track chains: swap the drive curves etc. only after
     // the fade (a curve swap on a sounding signal is a step = click)
@@ -24081,7 +25133,7 @@ function applyProject(p, opts) {
     const gen = ++UI.projGen;
     if (busy) setTimeout(() => { if (gen === UI.projGen) { try { applyAll(); } catch (e) { logErr(e); } } }, 140); else applyAll();
   }
-  EL.hint.hidden = !!(S.settings.hintDismissed || uiPrefs().hintDismissed);
+  EL.hint.hidden = true;                                   // V2c: the Teil-Leiste takes the hint's place; its text is in Menü → Hilfe
   // WP2 key model (§4.1.4): a project from before it switches one finger to "in the key" once and is analysed once
   const mig = p._mig; if (mig) { try { delete p._mig; } catch (e) {} }
   // WP6 (§7.4): „Drum-Kit „Lo-Fi“ wurde als „Rom Pop“ übernommen“
@@ -26410,6 +27462,11 @@ function bindUI() {
   on(EL.takt, 'click', () => { if (LIM.level >= 3 && !isLand()) openMenu('info'); });
   // grid
   on(EL.grid, 'pointerdown', e => {
+    if (UI.pick) {                                               // V2c: cells choose the part's clips; nothing starts
+      const sl = e.target.closest('.slot'); UI.pickPress = sl ? {id: e.pointerId, x: e.clientX, y: e.clientY, t: +sl.dataset.t, s: +sl.dataset.s} : null;
+      if (sl || e.target.closest('.scn')) e.preventDefault();
+      return;
+    }
     const scn = e.target.closest('.scn');
     if (scn) { e.preventDefault(); launchScene(+scn.dataset.s); return; }
     // V2a: hold a track head (450 ms, ≤ 8 px) = the track sheet (＋ Spur, Spur entfernen); the click after it is eaten
@@ -26448,6 +27505,8 @@ function bindUI() {
     if (!p.long && !p.dead && e.type === 'pointerup') { ensureAudio(); if (p.prov) selectSlot(p.t, p.s); else slotTap(p.t, p.s, p.tc); }
   };
   on(EL.grid, 'pointerup', slotEnd); on(EL.grid, 'pointercancel', slotEnd);
+  const pickEnd = e => { const q = UI.pickPress; if (!q || q.id !== e.pointerId) return; UI.pickPress = null; if (e.type === 'pointerup' && UI.pick && Math.abs(e.clientX - q.x) <= 12 && Math.abs(e.clientY - q.y) <= 12) pickCell(q.t, q.s); };
+  on(EL.grid, 'pointerup', pickEnd); on(EL.grid, 'pointercancel', pickEnd);
   on(EL.grid, 'contextmenu', e => e.preventDefault());
   onTap(EL.grid, () => setSongView(true), '.corner');
   on(EL.grid, 'click', e => {
@@ -26457,6 +27516,7 @@ function bindUI() {
     const th = e.target.closest('.th');
     if (th) { const i = +th.dataset.t; if (i === R.selT && R.editor !== 'synth' && R.editor !== 'drum') { selectTrack(i); openEditor(); } else selectTrack(i); return; }
     const stp = e.target.closest('.stp');
+    if (stp && UI.pick && !stp.classList.contains('all')) { pickTrack(+stp.dataset.t); return; }   // V2c Matrix-Auswahl: aus ↔ bleibt
     if (stp) {
       // ■ = stop at the next bar line; a second tap within 400 ms = stop now (§3.2); header ■ while stopped = panic()
       const key = stp.classList.contains('all') ? 'all' : stp.dataset.t, now = performance.now(), last = UI.stpTap;
@@ -26485,7 +27545,8 @@ function bindUI() {
   on(EL.bLatch, 'click', () => setLatch(!S.settings.harmony.latch));
   on(EL.bOrig, 'click', () => resetCarrier());
   // the history chips are shown under the readout in L/W; where they are not visible, a tap opens them as a popover
-  on(EL.readout, 'click', () => { if (window.matchMedia('(orientation: portrait)').matches || !EL.hist || !EL.hist.offsetParent || EL.hist.clientHeight < 18) popHistory(); });
+  // V2c (§4.5): a tap on the Träger readout opens the Akkord-Zeilen-Blatt (its row „Zuletzt“ replaces the WP7 popup popHistory)
+  on(EL.readout, 'click', e => { if (e.target && e.target.closest && e.target.closest('#bRowBack')) return; openChordRowSheet(); });
   on(EL.hist, 'click', e => { const b = e.target.closest('button[data-k]'); if (!b) return; const t = T.history[+b.dataset.k]; if (t) recallCarrier(t); });
   // mode switch
   on(EL.segPlay, 'click', () => setKbMode('play'));
@@ -27831,6 +28892,7 @@ function runtimeInfo() {
     voices: VOICES.filter(v => !v.dead).length + HITS.filter(x => !x.dead).length,
     editor: ['synth', 'drum', 'clip', 'menu', 'roll', 'browser'].includes(R.editor) ? R.editor : UI.songView ? 'song' : null,
     cloud: {state: SYNC.state, outbox: SYNC.outN},
+    part: R.part ? {i: R.part.i, id: 'P' + (R.part.i + 1), startBeat: R.part.startBeat} : null, row: R.row ? {src: R.row.src, startBeat: R.row.startBeat, hand: !!R.row.hand} : null, xp: xpNow(),   // V2c
     song: {rec: !!R.songRec, play: !!R.songPlay, override: R.songOverride.slice(0, NT()), carrierLive: !!R.carrierLive, mel: !!R.melRec, view: !!UI.songView,
       startBeat: R.songRec ? R.songRec.startBeat : null, off: R.songPlay ? R.songPlay.off : null,
       // V0c: Positionsmarke (posBar, N0c), yellow selection, the take's targets and range, the loop
@@ -27977,6 +29039,15 @@ const SYNQUENZER = {
     return songRecStartOver({from: o.from, to: o.to, preroll: o.preroll != null ? !!o.preroll : undefined, targets: o.targets}); },
   songPos: n => songPos(n), songSelect: (...a) => songSelect(a[0], a[1]),
   songSetChord: (bar, chord, o) => songSetChord(bar, chord, o), parseChord: (text, o) => { const t = parseChord(text, o); return t ? deep(t) : null; },
+  // V2c (§16): parts, chord rows of scenes / parts, the Teil-Leiste and its sheets
+  parts: () => { partsEnsure(); return deep(S.parts); }, setPart: (i, p) => setPart(i, p), partFromNow: (i, name) => partFromNow(i, name), launchPart: (i, atT) => launchPart(i | 0, atT),
+  chordRow: src => { const r = rowOf(src); return r ? deep(r) : null; }, setChordRow: (src, row) => setChordRow(src, row),
+  quantizeRow: (src, grid, a, b) => quantizeRow(src, [4, 2, 1].includes(+grid) ? +grid : 4, a, b),
+  openPartSheet: i => openPartSheet(i | 0), openChordRowSheet: src => openChordRowSheet(src), partPick: i => (i == null ? (pickDone(), true) : pickStart(i | 0)), pickCell: (t, s) => pickCell(t, s),
+  partPage: n => (n == null ? partPageOf() : setPartPage(n)), rowBack: () => rowBack(), partTap: (i, atT) => partTap(i | 0, atT), partRename: (i, n) => partRename(i, n),
+  partInfo: () => ({part: R.part ? Object.assign({}, R.part) : null, partPend: R.partPend ? Object.assign({}, R.partPend) : null, row: R.row ? Object.assign({}, R.row) : null,
+    rowPend: R.rowPend ? Object.assign({}, R.rowPend) : null, xp: XP.tl.map(e => Object.assign({}, e)), xpNow: xpNow(), saved: PRT.saved === undefined ? 'none' : PRT.saved ? deep(PRT.saved) : null, pick: UI.pick ? UI.pick.i : null,
+    cr: UI.pop && UI.pop.name === 'chordrow' ? {src: CR.src, sel: CR.sel ? Object.assign({}, CR.sel) : null, frei: CR.frei, grab: CR.grab, quant: CR.quant} : null}),
   quantizeChords: o => quantizeChords(o), openChordPick: o => openChordPick(o || {}), openRecStart: () => openRecStart(SV.btn && SV.btn.bRec),
   carrierRestoreState: () => (SONGCAR.saved ? deep(SONGCAR.saved) : null),
   songView: on => setSongView(on !== false), songCarrierDelete: k => songCarrierDelete(k), clearMelody: () => songClearMelody(),
@@ -28264,6 +29335,7 @@ function init() {
   UI.haptics = uiPrefs().haptics !== false;
   hapticInit();
   buildGrid(); buildPads(); buildSongView(); bindUI();
+  v2cInit();                                                   // V2c: Teil-Leiste, [↩ TEIL]
   // project: the demo layout shows at once; the stored project replaces it when the store has loaded (§12.5)
   applyProject(demoProject(), {first: true});
   BOOT.dirty = false;

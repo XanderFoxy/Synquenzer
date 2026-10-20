@@ -2714,3 +2714,157 @@ auf MELODIE weg (Regression gegenüber 4.0.0).
 (V2b-06 angepasst: Chip-Wahl bleibt, ohne Wahl MELODIE – beides geprüft); `v3-v2b-adapt-v2a-accept.mjs` 326/0; `v3-qareg-v2b-midi`,
 `v3-qa-v2b-06`, `v3-qa-v2b-move`, `v3-qareg-v2b-oldsong` grün; `v3-qareg-v2b-songrec` (2× 🎤 in L) und `v3-v2a-adapt-v0c-song` (1 Zeit-
 Prüfung) fallen gleich wie mit V2b.html; Smoke ohne Fehler.
+
+## V2c — Teile, Akkord-Zeilen, Teil-Leiste (+ Nachtrag 2: `tg:null`, Akkord-Zeilen quantisieren, Halten = anheben) · App 4.3.0
+
+Grundlage: Spezifikation v3 §4.4–§4.6, §17 V2c (V2c-01 … V2c-13), §16; Nachtrag 2 B.1 Nr. 1/4/10, B.4 (V2c: `ChordRow.tg:null`,
+[Quantisieren] im Akkord-Zeilen-Blatt, Teil-Taste: Halten = anheben, Teil-Blatt beim Loslassen; N7S-08 … N7S-10, K2-35), EN2-04 (keine
+Kette mehr), Teil E (Gruppe 4, 4.3.0, +64 KB) und Teil J (FP-SONG Haupt-, FP-TOUCH Zweit-Blick); `r7/song-delta.md` 8.2 (N7-R11),
+12.1/12.3, 14.3 (V2c-01 in P nur Clip-Ansicht); Nachtrag 1 C.5. V2a′ ist weiter nicht gebaut (wie bei V2b vermerkt).
+
+**Neu**
+1. **Teil-Leiste statt Hinweis-Kasten** (§4.4): 8 Plätze, 4 je Seite + **eine** Umschalt-Taste ●○ (44 px; der Punkt der anderen Seite
+   blinkt, wenn dort ein Teil läuft oder wartet). P: unter dem Clip-Raster (40 px, Tasten ≥ 72 px, P3 62 px), **nicht in der
+   Hochformat-Song-Ansicht** (Nachtrag 2 B.1 Nr. 4 / EN7-02, ersetzt V2c-01 „an derselben Stelle“ nach song-delta 14.3); L (≤ 560 px
+   hoch): im Seitenfeld zwischen Träger und Spurleiste, 38 px hoch, in Clip- und Song-Ansicht an derselben Stelle (Träger-Zeilen dafür
+   etwas flacher: 40/40/26 px statt 48/44/28, Akkordname 24 px). Name GROSS (≤ 8 Zeichen, sonst 6, sonst Kurzform nach N7-R2 „STR“,
+   „REF“, „STR2“), LED oben rechts: **blinkt** = wartet auf den Taktstrich, **leuchtet** = läuft; Farbe = Teil-Farbe (Unterstrich).
+   Der Hinweistext („▶ drücken, dann TRANSPONIEREN …“) steht jetzt in Menü → Hilfe, dazu zwei Hilfe-Zeilen zu Teilen und Akkord-Zeilen.
+2. **Teil-Taste:** Tipp = Start am nächsten Taktstrich (Wechsel „am Teil-Ende“ im Teil-Blatt umstellbar), Clips mit Phase 0, die
+   Akkord-Zeile von vorn, „bleibt“-Spuren laufen weiter, „aus“-Spuren stoppen am Taktstrich; ein zweiter Tipp startet ihn am nächsten
+   Takt neu. Ein Tipp kurz nach dem Taktstrich zählt noch (wie Clip-Tipps, rückwirkend). **[＋]** auf einem leeren Platz speichert, was
+   gerade klingt (Clip je Spur, gestoppte Spuren = aus, laufende Akkord-Zeile bzw. der Träger als einzeilige Zeile, ORIGINAL = keine
+   Akkorde) und fragt nur den Namen (Chips Intro · Strophe · Pre · Refrain · Bridge · Break · Outro · ✎, Vorschlag Strophe → Refrain →
+   Bridge → Intro → Outro → Teil n; ein vergebener Name bekommt eine Nummer) – alles ein Undo.
+   **Halten 450 ms** (≤ 8 px) = anheben (Haptik, Taste grau); Loslassen ohne Bewegung → **Teil-Blatt**; Bewegen nach dem Anheben →
+   ein Geist folgt dem Finger, beim Loslassen kein Blatt, nichts startet (Ablegen in den Song kommt mit V2e′).
+3. **Teil-Blatt** (P ≈ 319 px, L zwei Spalten 177 px): Name (Chips, ✎ Freitext 1–12 Zeichen), Farbe (6), Spuren-Chips (Tipp: Sz1 → Sz2
+   … nur Szenen mit Clip → aus → bleibt), **[▦ In der Matrix wählen]**, Akkorde [Am·F ✎] (öffnet das Akkord-Zeilen-Blatt des Teils)
+   **oder** Transposition [±0 ▾] (−12 … +12; setzt die Akkord-Zeile außer Kraft, Toast mit Rückgängig), Wechsel [am Takt │ Teil-Ende],
+   [= wie jetzt] [Kopie] [ohne Drums] [Löschen] (Toast mit Rückgängig). Jede Änderung ein Undo (`part`).
+4. **Matrix-Auswahl:** Das Blatt schrumpft auf eine Zeile an der Stelle der Teil-Leiste („Teil Strophe: Zellen antippen · [Fertig]“),
+   die Matrix zeigt Rahmen in Teil-Farbe. Zelle = dieser Clip für seine Spur, nochmal = aus, dritter Tipp = bleibt; die ■-Spalte zeigt
+   „aus“/„bleibt“ und schaltet zwischen beiden. In diesem Modus startet keine Zelle und kein ▶n. Die ganze Auswahl ist ein Undo;
+   [Fertig] öffnet das Teil-Blatt wieder.
+5. **Akkord-Zeilen** an Szene und Teil (`S.scenes[i].chords`, `Part.chords` = `{len 1–16, ch:[{b, tg|null}]}`): ▶n startet die Zeile der
+   Szene am Startschlag, ein Teil seine Zeile; sie läuft im Kreis und ruft an jedem Eintrag `T.recall(tg, b2t(beat), null)` – auch
+   bei „Wechsel: am Takt“ ohne zweites Quantisieren (halbe Takte bleiben auf Schlag 2). `tg:null` = ORIGINAL ab diesem Schlag
+   (N7S-08, über `T.reset`). Endet die Zeile (▶n einer Szene ohne Zeile, ■, ▶ SONG, anderes Projekt), kommt der Träger von vor der
+   Zeile zurück – außer die Hand hat übernommen. ▶ oben nach ■ setzt die zuletzt laufende Zeile/den Teil ab Takt 1 fort.
+   Unter ▶n steht die Kurzform der Zeile („Am·F·C·G“, amber, 8 px) unter der Szenen-Tonart.
+6. **TA1 Hand > Zeile:** Jede Träger-Änderung, die nicht von der Zeile kommt (Taste in TRANSPONIEREN, Momentan, Verlauf, ORIGINAL),
+   übernimmt sofort; die Anzeige sagt „HAND · SZENE 1 · …“ und zeigt **[↩ TEIL]** (orange, 68 × 42 px in der Träger-Anzeige). Tipp =
+   ab dem nächsten Taktstrich wieder die Zeile (mit dem dort gültigen Akkord). ▶n derselben Szene gibt ebenfalls zurück.
+7. **Teil-Transposition** `xp.semi` (§4.4, I-01): wird **nach** der Abbildung addiert (`outPitch`), nur für Spuren mit ⇅ folgt;
+   MELODIE (⇅ fest), Drums und Synth-Pads nie; kein Träger-Eintrag, der Verlauf bleibt unverändert. Stimmen, die über den Teil-Start
+   klingen („bleibt“), werden am Taktstrich mitgezogen; FANG/REC unter einer Transposition speichern „gehört − xp“.
+8. **Akkord-Zeilen-Blatt** (Tipp auf die Träger-Anzeige, ersetzt dort das Verlaufs-Popup; P 216 px über der Tastatur, L zwei Spalten
+   127–131 px): Kopf AKKORDE ‹ Szene 1 › · 4 Takte · C-Dur [−][+][✕] (‹ › blättert durch Szenen 1–8 und die Teile, **ohne** sie zu
+   starten); ein Kästchen je Takt (laufendes leuchtet; [÷2] teilt in zwei Hälften), Stufe (7 leitereigene Dreiklänge, in Moll zusätzlich
+   „V (Dur)“, dazu ORIG.), Zuletzt (Träger-Verlauf; mit gewähltem Kästchen = eintragen, ohne = jetzt abrufen wie früher das Popup),
+   [÷2] [– halten] [♪ greifen] [Quantisieren] [Löschen] [Frei ▾]. Ein Eintrag springt zum nächsten Kästchen. **[Frei ▾]** ersetzt die
+   unteren Zeilen in gleicher Höhe (Grund 12, Art 15 bzw. Bass, Text ⌨ mit `parseChord`). **[♪ greifen]**: das Blatt wird eine Zeile
+   über der Modusleiste (L über der Spurleiste), die Tastatur ist frei; ein gegriffener Akkord (40 ms sammeln) füllt das Kästchen, die
+   Tasten klingen auf der gewählten Spur, ändern aber nie den Träger. **[Quantisieren]** (N7-R11, N7S-09): Takt │ ½ │ Schlag, Vorschau
+   „6 · 5 rücken · 1 zus.“, ein Undo (`part`), Toast mit den Zahlen; ein Eintrag, der auf das Zeilenende rundet, landet auf Schlag 0.
+   Eine Knopfzeile, deren Texte nicht passen, schaltet einzeln auf Kurztexte („–“, „♪“, „Quant.“, „✕“) – nie abgeschnitten.
+9. **Daten/Undo:** `S.parts` (8 Plätze), Undo-Art `part` (Teile + Szenen-Zeilen in einem Schnappschuss), `normalizeProject` liest
+   beides verlustfrei, `ui.partPage` nur wenn Seite 2; [Spur entfernen] nimmt die Teil-Slots der Spur in seine Gruppe.
+10. **Test-API:** `parts()`, `setPart(i, p|null)`, `partFromNow(i, name?)`, `launchPart(i, atT?)`, `chordRow(src)`, `setChordRow(src, row|null)`,
+    `quantizeChords({src:'S1'..'P8', grid, a?, b?})`, `quantizeRow`, `openPartSheet(i)`, `openChordRowSheet(src?)`, `partPick(i|null)`,
+    `pickCell(t, s)`, `partPage(n?)`, `rowBack()`, `partTap(i)`, `partRename(i, name)`, `partInfo()`; `runtime()` + `part`, `row`, `xp`.
+
+**Abweichungen (begründet)**
+- **V2c-01:** Nach Nachtrag 2 B.1 Nr. 4 / EN7-02 und song-delta 14.3 gibt es im Hochformat **keine Teil-Leiste in der Song-Ansicht**;
+  „an derselben Stelle beim Wechsel CLIPS ⇄ SONG“ gilt nur quer (Seitenfeld). In P3 (320 px) ist die Leiste 36 statt 40 px hoch, damit
+  die Clip-Reihen ihre V0a-Höhe (≥ 28 px) behalten; quer 38 px (Träger-Zeilen dafür 40/40/26 px, Knöpfe AKKORD/LATCH/ORIGINAL 40 statt
+  44 px hoch). Quer zeigen die Tasten in 57/47 px Breite die Kurzform (STR, REF).
+- **N7S-10 / K2-35:** Die Song-Seite öffnet sich beim Halten erst mit V2e′. Bis dahin öffnet jedes Loslassen ohne Bewegung nach dem
+  Anheben das Teil-Blatt (auch nach mehr als 1 050 ms); eine Bewegung nach dem Anheben zeigt nur den Geist (kein Blatt, nichts startet).
+- **Kette entfällt** (EN2-04): Teil-Tipp bei laufender Kette/Song nach B.1 Nr. 17 ist V2d. Ein Teil-Tipp während ▶ SONG übernimmt die
+  Spuren wie ein Clip-Start, seine Akkord-Zeile übernimmt den Träger ([↩ SONG] erscheint, TA1 Zeile > Song).
+- **Ende einer Zeile:** Die Spezifikation sagt nicht, was nach einer Akkord-Zeile gilt. Gewählt (wie TA9 für den Song): der Träger
+  von vor der ersten Zeile kommt zurück (▶n ohne Zeile, ■, ▶ SONG), außer die Hand hat übernommen. ▶ oben nach ■ setzt Zeile/Teil ab
+  Takt 1 fort (sonst liefen die Clips der Szene ohne ihre Akkorde).
+- **[Löschen]** im Akkord-Zeilen-Blatt löscht die ganze Zeile (Toast mit Rückgängig); ein einzelnes Kästchen leert [– halten].
+  Ohne gewähltes Kästchen spielen Stufe- und Frei-Chips den Akkord sofort (wie „Zuletzt“), statt nichts zu tun. Eine neue Zeile
+  hat 4 Takte (oder den längsten Clip, wenn er länger ist).
+- **„Kopie ohne Drums“** setzt DRUMS auf „aus“ (Strophe ohne Schlagzeug), nicht auf „bleibt“.
+- **Klang-Zeile** des Teil-Blatts ([◆ eigener Teil-Klang]) fehlt bis V6b (nicht nur grau).
+- Tipp auf die Träger-Anzeige öffnet jetzt **immer** das Akkord-Zeilen-Blatt (vorher im Hochformat das Verlaufs-Popup, quer nichts);
+  `popHistory()` bleibt als Funktion.
+- **Fach-Prüfung** nach Teil J als eigener Prüf-Durchgang derselben Sitzung (kein getrennter Agent verfügbar), mit eigenem Skript.
+
+**Fach-Prüfung (Teil J: FP-SONG Haupt-, FP-TOUCH Zweit-Blick)** – `v3-v2c-fp.mjs` 8/8, dazu die Touch-Teile von `v3-v2c-accept.mjs` C
+- FP-SONG: M-ZEIT (Teil-Start ±0,002 Schlag, V2c-03), Zeilen-Recalls exakt auf den Schlägen auch mit „Wechsel: am Takt“, I-01 (ohne
+  Teil/Zeile ist `outPitch` bitgleich `T.mapEvent`; `harm-pure`, `v2a-band` M-BAND ≤ 0,02 dB, noteLog 172 identisch), Undo-Gruppen
+  ([Spur entfernen] = song + part + track), Rundweg Speichern/Laden/Undo/Redo deep-equal, `clips` unberührt, TA9-Rückkehr nach ■/▶ SONG.
+  **Befunde (behoben):** (1) FANG/REC unter einer Teil-Transposition speicherten den gehörten Ton (+2) statt des Clip-Tons –
+  `clipNoteFor` rechnet jetzt auch ohne Träger mit R.xp. (2) Wurde ein laufender Teil gelöscht/rückgängig gemacht, blieb die Zeile
+  „tot“ aktiv und eine Hand-Taste zeigte [↩ TEIL] für nichts – Hand-Erkennung und Knopf nur bei vorhandener Zeile. (3) Die Teil-Taste
+  gab beim Start aus dem Stand keine Haptik.
+- FP-TOUCH: L4/M-PLATZ der Leiste und beider Blätter in P, P375, P320, L, L667 (jeder Knopf im Bild und treffbar, kein abgeschnittener
+  Text), Halten vs. Tippen vs. Ziehen per CDP-Touch, ein Undo je Geste, Haptik, `user-select/touch-action none`, Texte ohne Fachwörter.
+  **Befunde (behoben):** (4) Namen und Knopftexte wurden abgeschnitten („STROPH…“, „♪ greifen“, „ohne Drums“) – Kurzform nach N7-R2
+  bzw. einzeln umschaltende Kurztexte. (5) Teil-Blatt-Kopf „TEIL ·…“ im Hochformat abgeschnitten – „TEIL ·“ und „Wechsel“ nur quer.
+  (6) Quer schnitt die flachere Träger-Anzeige die Zeile „SZENE 1 · …“ oben ab – Akkordname dort 24/22 px. (7) In der Matrix-Auswahl
+  hieß die ■-Spalte „aus/bleibt“, stoppte aber die Spur – sie schaltet jetzt aus ↔ bleibt. (8) Farbpunkte 34 px hoch → 38 px.
+  (9) Akkord-Zeilen-Blatt 217 px → 216 px. (10) „STROPHE 2“ wurde zu „STROPHE“ gekürzt (Nummer weg) → „STR2“.
+
+**Abnahme**
+
+| Punkt | Ergebnis | Skript |
+|---|---|---|
+| V2c-01 Teil-Leiste: P1/P2 40 px, ●○ 44 px, Tasten 78,5/75,8 px (P3 36 px hoch, 62 px breit), ≤ innerWidth; L/L667 38 px im Seitenfeld, CLIPS ⇄ SONG ±0 px; P: nicht in der Song-Ansicht | ✓ | `v3-v2c-accept.mjs` C |
+| V2c-02 [＋] bei Szene 1 + Am: slots = Spalte 1 (ohne Clip = aus), Zeile 1 Takt Am, Name Strophe, ein Undo | ✓ | A |
+| V2c-03 Start am nächsten Taktstrich (Schlag 8 ±0,002), Phase 0; LED `wait` → `on` | ✓ | A, C |
+| V2c-04 „am Teil-Ende“ → Schlag 16 (Teil 4 Takte), „am Takt“ → 8 | ✓ | A |
+| V2c-05 Matrix-Auswahl: 4 Tipps → slots wie erwartet, kein Clip-Start, 4 Rahmen; nochmal = aus, dritter = bleibt; [Fertig] = ein Undo | ✓ | C |
+| V2c-06 „bleibt“ ohne Neustart (2-Takt-Clip in Phase), „aus“ stoppt am Taktstrich | ✓ | A |
+| V2c-07 Szene 2 „Am F C G“: Recalls 0, 4, 8, 12, zwei Durchläufe | ✓ | A |
+| V2c-08 [÷2]: 0 und 2, auch mit „Wechsel: am Takt“ | ✓ | A |
+| V2c-09 [♪ greifen]: C-E-G auf der Tastatur (3 Finger) → „C“, Auswahl springt weiter, Träger bleibt ORIGINAL | ✓ | C |
+| V2c-10 Hand übernimmt sofort, [↩ TEIL] sichtbar; Tipp → ab Schlag 16 wieder die Zeile (Am) | ✓ | A, C |
+| V2c-11 +2 HT: Synth-Spuren mit ⇅ folgt exakt +2 (single key und parallel), MELODIE/Drums unverändert, kein Verlaufs-Eintrag; **hörbar**: A3 ±0 / B3 +2 im Ausgang (Goertzel −37/−104 dB bzw. −66/−38 dB) | ✓ | A, B |
+| V2c-11b ‹ › zu Szene 3 ohne Start; Akkord → `chordRow('S3')`; Zuletzt Dm · G7; ohne Kästchen = Abruf; „V (Dur)“ = E in a-Moll; [Frei ▾] gleiche Höhe; P1 216 px | ✓ | C |
+| V2c-12 Speichern/Laden, Clip-Kopie, Undo ×3/Redo ×3 deep-equal | ✓ | A |
+| V2c-13 M-PLATZ Leiste/Teil-Blatt/Akkord-Zeilen-Blatt (Grund + Frei) in 5 Ansichten; Regression, DoD | ✓ | C, unten |
+| N7S-08 `tg:null` → ORIGINAL ab dem Schlag (out = clip) | ✓ | A |
+| N7S-09 [Quantisieren] Szene 2 (Takt): Am 0 · F 4 · C 8 · G 12 · Am 16, {moved 5, merged 1}, ein Undo `part`, Toast | ✓ | A |
+| N7S-10 Tipp startet; Halten 450 ms → Blatt erst beim Loslassen; Halten + Ziehen → kein Blatt | ✓ | C |
+| Gesamt `v3-v2c-accept.mjs ABC` | ✓ 85/85 | `v3-v2c-accept.out` |
+| Fach-Prüfung | ✓ 8/8 | `v3-v2c-fp.mjs` |
+| Smoke | ✓ ohne Fehler | `v3-v2c-smoke.png` |
+
+**Regression** (`v3-v2c-reg.sh` → `v3-v2c-reg/run1`, `v3-v2c-reg2.sh` → `run2`, Vergleich `v3-v2c-regcmp.sh` gegen V2b run4/run5): gleich
+wie nach V2b bis auf die gewollten Änderungen mit Kopien `v3-v2c-adapt-*` (Version 4.3.0 / max_app 4003000 in wp1-brand/misc/store,
+wp3-api/store, n0a, vs0-/vs1-net; `v3-v2c-adapt-v2a-accept.mjs` V2a-04: Gruppe [song, part, track]); `v3-vo2-harness.mjs` APPCODE 4003000
+(Sicherung `*.pre-v2c.mjs`). Unter Last flatternd, allein grün: wp6-song P (SG6 Takt-Zeit 0,012), v0a-drum DR7 (CPU), wp5-mod, v2a-band,
+v2a-pe1 L (ein Long-Task 62 ms), v2a-accept P3. Schon vor V2c rot (auch mit V2b-fix.html heute): wp7-adapt-func2-build-native A3
+(Projektname aus IndexedDB), v2b-fp „MELODIE nicht im MIDI“ (seit V2b-fix absichtlich anders), v0c-ui L667 (2), node-fm (1) und die in
+V2b genannten.
+
+**Budget:** 2 258 860 B (+77,4 KB roh gegenüber V2b-fix, +21,7 KB gzip) – Rahmen +64 KB, also +21 % darüber (< 50 %): zwei Blätter mit
+Quer-Layouts, die Matrix-Auswahl und die Kurztext-Logik kamen dazu.
+
+**Rollout** (Supabase-MCP, ref `dbdnsryoivvezspgydpx`): 20.10. `list_migrations` (… v2b_max_app) → `apply_migration v2c_max_app`
+(`max_app = greatest(max_app, 4003000)`, Datei `synq-online/r7-v2c-max-app.sql`) **zweimal Zeitüberschreitung nach 60 s, nicht
+eingetragen** (wie bei V2b: Schreiben wartet auf eine Bestätigung); `execute_sql` (lesen) `max_app` 4002000, `max_format` 4. **Offen:
+vor dem Ausliefern von 4.3.0 einspielen**, sonst lehnt `save_project` das Online-Speichern ab (lokal speichert die App weiter). Kein
+Aufruf nennt das Klassenzimmer-Projekt.
+
+**Für Xander im Dashboard** (nur falls der Orchestrator die Migration nicht nachholt): SQL-Editor des Projekts **synquenzer**
+(`dbdnsryoivvezspgydpx`, nicht das Klassenzimmer!) → `update private.settings set max_app = greatest(max_app, 4003000);` → Run.
+
+**Bekannte Lücken**
+- Teil in den Song ziehen/ablegen (V2e′), FANG TEIL und Teil-Tipp im laufenden Song (V2d), Teil-Klang (V6b), „Eine Skala“ (V2c′).
+- Die Träger-Anzeige kürzt eine lange Zeile („SZENE 1 · [AM]·F·…“) in P3 mit „…“; das ganze Bild steht im Akkord-Zeilen-Blatt.
+- Am iPhone ungeprüft: Halten/Ziehen auf den Teil-Tasten (Kontextmenü), [♪ greifen] mit echten Fingern, Lesbarkeit der Kurzformen quer.
+
+**Für Xander am iPhone (nach dem Ausliefern von 4.3.0)**
+1. Unter den Clips steht die **Teil-Leiste** (quer im rechten Feld). Szene 1 starten, ein paar Akkorde in TRANSPONIEREN spielen, dann
+   **＋** tippen → Namen wählen (z. B. Strophe). Eine andere Szene starten, dann **STROPHE** tippen: am nächsten Takt klingt alles wie vorher.
+2. **STROPHE halten** und loslassen → Teil-Blatt. „In der Matrix wählen“ → Drums aus Szene 2, Bass aus Szene 1 antippen → Fertig.
+3. Auf die **Träger-Anzeige** tippen → Akkord-Zeile von Szene 1: vier Kästchen mit Am, F, C, G über die Stufen-Chips füllen, ▶1 tippen:
+   die Akkorde laufen im Kreis mit. Eine Taste in TRANSPONIEREN übernimmt sofort, **↩ TEIL** gibt die Zeile am nächsten Takt zurück.
+4. Im Teil-Blatt **Transposition +2** wählen: der Teil klingt zwei Halbtöne höher, MELODIE und Drums bleiben.
