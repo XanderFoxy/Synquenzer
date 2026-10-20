@@ -3319,6 +3319,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .cr-b.now{background:linear-gradient(#3b2b0f,#251a08);box-shadow:0 0 8px rgba(255,178,46,.45)}
 .cr-b.now.hand{opacity:.55}
 .cr-b.on{border-color:#ffaa28;box-shadow:inset 0 0 0 2px #ffaa28;color:#ffcf7a}
+.cr-b.on.au{border-style:dashed;box-shadow:none;color:inherit}
 .crsheet .cr-in{flex:1.6 1 0;min-width:0;height:38px}
 .crsheet .cp-ok{flex:none;width:44px}
 .crsheet .seg{flex:none}
@@ -15550,7 +15551,7 @@ function partRestore(o) {
   partsChanged();
 }
 function pushPartUndo(before, label) { if (partSnap() === before) return false; undoPush({kind: 'part', before, label}); return true; }
-function partsChanged() { UI.dirty.parts = UI.dirty.carrier = UI.dirty.grid = true; UI.partsVer = (UI.partsVer | 0) + 1; markDirty(); if (UI.crRepaint) { try { UI.crRepaint(); } catch (e) { logErr(e); } } if (UI.psRepaint) { try { UI.psRepaint(); } catch (e) { logErr(e); } } }
+function partsChanged() { UI.dirty.parts = UI.dirty.carrier = UI.dirty.grid = true; UI.partsVer = (UI.partsVer | 0) + 1; markDirty(); try { rowLiveCheck(); } catch (e) { logErr(e); } if (UI.crRepaint) { try { UI.crRepaint(); } catch (e) { logErr(e); } } if (UI.psRepaint) { try { UI.psRepaint(); } catch (e) { logErr(e); } } }
 function partsEnsure() { if (!Array.isArray(S.parts) || S.parts.length !== N_PART) S.parts = Array.from({length: N_PART}, (_, k) => (S.parts && S.parts[k]) || null); }
 
 /* ---------- chord rows: source ids 'S1'..'S8' (scenes), 'P1'..'P8' (parts) ---------- */
@@ -15762,6 +15763,7 @@ function launchPart(i, atT) {
 // ▶n: the scene's chord row starts at the scene's start beat (§4.6); the running part ends there; R.xp back to 0
 function sceneRowStart(s, beat) {
   const src = 'S' + (s + 1), has = !!rowOf(src);
+  if (R.lastScene !== s || R.lastSceneBeat == null || !R.playing) R.lastSceneBeat = beat;   // the scene's start (rowLiveCheck)
   R.lastScene = s;
   if (R.part || R.partPend) R.partPend = {i: -1, beat};
   if (XP.tl.length > 1 || XP.tl[0].semi) xpSet(beat, 0);
@@ -15771,12 +15773,41 @@ function sceneRowStart(s, beat) {
   UI.dirty.parts = UI.dirty.carrier = true;
   partDue(beat);
 }
+// §4.5 „im nächsten Durchlauf hörbar“: a chord row written for the scene / part that runs (or is queued) but had no row
+// when it started joins at once: queued → it starts with it; running → from the next bar line, in phase with the scene /
+// part start (the chord in effect there sounds at that bar, as with [↩ TEIL])
+function rowLiveCheck() {
+  if (!R.playing || !AU.ctx || R.songPlay) return;
+  const has = src => { const rw = rowOf(src); return !!(rw && rw.ch.length); };
+  const pp = R.partPend, rp = R.rowPend;
+  // what starts / runs: a queued part, the end of a part (a scene took over), the running part, the last scene
+  let src = null, st = null;
+  if (pp && pp.i >= 0 && S.parts[pp.i]) { src = S.parts[pp.i].id; st = pp.beat; }
+  else if (pp && pp.i < 0) { if (R.lastScene != null) { src = 'S' + (R.lastScene + 1); st = pp.beat; } }
+  else if (R.part && S.parts[R.part.i]) { src = S.parts[R.part.i].id; st = R.part.startBeat; }
+  else if (R.lastScene != null && R.lastSceneBeat != null) { src = 'S' + (R.lastScene + 1); st = R.lastSceneBeat; }
+  if (!src || st == null || !has(src)) return;
+  if (rp) { if (!rp.src && Math.abs(rp.beat - st) < 1e-6) { rp.src = src; UI.dirty.carrier = UI.dirty.parts = true; partDue(rp.beat); } return; }
+  if (R.row) return;                                           // a row runs (this one, or one the hand paused)
+  if (st >= R.schedBeat - 1e-9) { R.rowPend = {src, beat: st}; UI.dirty.carrier = UI.dirty.parts = true; return; }
+  const nb = nextBarFromAudible(), rw = rowOf(src), L = rw.len * 4;
+  rowSaveCarrier();
+  R.row = {src, startBeat: st, hand: false, handUntil: nb};
+  const ph = (((nb - st) % L) + L) % L;
+  if (!rw.ch.some(c => Math.abs(c.b - ph) < 1e-6)) { const k = rowCurIdx(R.row, nb); if (k != null) rowCommit(rw.ch[k].tg, b2t(nb)); }
+  if (nb < R.schedBeat - 1e-9) rowRecalls(R.row, nb, R.schedBeat);
+  // a part that had a fixed transposition and now has a row: the row replaces it (as at a part start)
+  if (src[0] === 'P' && XP.tl[XP.tl.length - 1].semi) xpSet(nb, 0);
+  UI.dirty.carrier = UI.dirty.parts = true;
+}
 // ■ / song start / another project: rows and parts end; the Träger from before the rows comes back (unless the hand took over)
 function partsOff(keepResume) {
   if (keepResume) PRT.resume = R.part || R.row ? {part: R.part ? R.part.i : null, row: R.row ? R.row.src : null, xp: XP.tl[XP.tl.length - 1].semi} : null;
   else PRT.resume = null;
   if (R.row && !R.row.hand && PRT.saved !== undefined && AU.ctx) rowCommit(PRT.saved, AU.ctx.currentTime);
   R.row = R.rowPend = R.part = R.partPend = null; PRT.saved = undefined; xpReset();
+  // ▶ oben after ■ plays the clips from bar 1 (the scene's phase = 0); the song start: no scene runs any more
+  if (keepResume) { if (R.lastScene != null) R.lastSceneBeat = 0; } else R.lastScene = R.lastSceneBeat = null;
   UI.dirty.parts = UI.dirty.carrier = true;
 }
 // ▶ oben after ■: the part / row that ran goes on from bar 1
@@ -16142,7 +16173,8 @@ function crBoxes(row, len) {
 function openChordRowSheet(src) {
   src = rowSrcParse(src) ? src : crDefaultSrc();
   CR.src = src; CR.frei = false; CR.grab = false; CR.quant = false; CR.split = new Set();
-  const row = rowOf(src); CR.sel = row && row.ch.length ? null : {bar: 0, half: null};
+  // an empty row: box 1 is offered (auto) for Stufe / Frei / ♪; „Zuletzt“ still recalls live until a box is tapped (I-11)
+  const row = rowOf(src); CR.sel = row && row.ch.length ? null : {bar: 0, half: null, auto: true};
   openPop(null, p => {
     p.classList.add('crsheet', 'chpick'); guardTouch(p);
     UI.crRepaint = () => { if (p.isConnected && !p.querySelector('.cr-in:focus')) crPaint(p); };
@@ -16154,7 +16186,7 @@ function openChordRowSheet(src) {
 }
 function crPaint(p) {
   const src = CR.src, rw = rowOf(src), q = rowSrcParse(src), key = rowKey(src), len = rw ? rw.len : rowDefaultLen(src), N = noteNames();
-  if (CR.sel && CR.sel.bar >= len) CR.sel = {bar: len - 1, half: null};
+  if (CR.sel && CR.sel.bar >= len) CR.sel = {bar: len - 1, half: null, auto: CR.sel.auto};
   p.classList.toggle('grab', CR.grab); p.classList.toggle('frei', CR.frei);
   if (CR.grab) {
     const sel = CR.sel || {bar: 0, half: null};
@@ -16167,7 +16199,7 @@ function crPaint(p) {
     `<span class="cr-i">${len} ${len === 1 ? 'Takt' : 'Takte'} · ${esc(kname)}</span><button class="rb cr-pm" data-a="lm" aria-label="Ein Takt weniger">−</button><button class="rb cr-pm" data-a="lp" aria-label="Ein Takt mehr">+</button><button class="rb cr-x" data-a="x" aria-label="Schließen">✕</button></div>`;
   h += `<div class="cr-bx cp-sc">` + crBoxes(rw, len).map(bx => {
     const on = CR.sel && CR.sel.bar === bx.bar && (CR.sel.half == null ? bx.half == null : CR.sel.half === bx.half);
-    return `<button class="rb cr-b${bx.half != null ? ' hf' : ''}${on ? ' on' : ''}${bx.txt === '–' ? ' em' : ''}" data-bar="${bx.bar}" data-h="${bx.half == null ? '' : bx.half}" data-lo="${bx.lo}" data-hi="${bx.hi}"><small>${bx.bar + 1}${bx.half === 1 ? '½' : ''}</small>${esc(bx.txt)}</button>`;
+    return `<button class="rb cr-b${bx.half != null ? ' hf' : ''}${on ? ' on' : ''}${on && CR.sel.auto ? ' au' : ''}${bx.txt === '–' ? ' em' : ''}" data-bar="${bx.bar}" data-h="${bx.half == null ? '' : bx.half}" data-lo="${bx.lo}" data-hi="${bx.hi}"><small>${bx.bar + 1}${bx.half === 1 ? '½' : ''}</small>${esc(bx.txt)}</button>`;
   }).join('') + `</div>`;
   if (CR.frei) {
     const st = CR.st;
@@ -16224,8 +16256,8 @@ function crNowMark(p) {
   let b = null; if (row && AU.ctx) { const L = rw ? rw.len * 4 : 4, ab = audBeat(); if (ab >= row.startBeat) b = (((ab - row.startBeat) % L) + L) % L; }
   for (const x of p.querySelectorAll('.cr-b')) { const lo = +x.dataset.lo, hi = +x.dataset.hi, on = b != null && b >= lo - 1e-6 && b < hi - 1e-6; x.classList.toggle('now', on); x.classList.toggle('hand', on && !!row.hand); }
 }
-function crSet(tg, advance) {
-  if (!CR.sel) { ensureAudio(); if (tg) recallCarrier(tg); else resetCarrier(); haptic('tick'); return; }   // no box chosen: play it now (like the Verlauf)
+function crSet(tg, advance, hist) {
+  if (!CR.sel || (hist && CR.sel.auto)) { ensureAudio(); if (tg) recallCarrier(tg); else resetCarrier(); haptic('tick'); return; }   // no box chosen: play it now (like the Verlauf)
   const lo = crSelLo(), hi = crSelHi(), bar = CR.sel.bar;
   rowEdit(CR.src, row => { row.ch = row.ch.filter(c => !(c.b >= lo - 1e-6 && c.b < hi - 1e-6)); row.ch.push({b: lo, tg: tg ? carrierCopy(tg) : null}); },
     'Akkord ' + tgShort(tg) + ' · ' + rowName(CR.src) + ' Takt ' + (bar + 1));
@@ -16246,12 +16278,12 @@ function crTakeText(p) {
 function crAct(p, b) {
   const a = b.dataset.a, src = CR.src;
   if (a === 'x') { closePop(); return; }
-  if (a === 'prev' || a === 'next') { const l = crList(), k = l.indexOf(src), n = l[(k + (a === 'next' ? 1 : -1) + l.length) % l.length]; CR.src = n; CR.split = new Set(); const rw = rowOf(n); CR.sel = rw && rw.ch.length ? null : {bar: 0, half: null}; CR.quant = false; haptic('tick'); crPaint(p); return; }
+  if (a === 'prev' || a === 'next') { const l = crList(), k = l.indexOf(src), n = l[(k + (a === 'next' ? 1 : -1) + l.length) % l.length]; CR.src = n; CR.split = new Set(); const rw = rowOf(n); CR.sel = rw && rw.ch.length ? null : {bar: 0, half: null, auto: true}; CR.quant = false; haptic('tick'); crPaint(p); return; }
   if (a === 'lm' || a === 'lp') { const rw = rowOf(src), L = rw ? rw.len : rowDefaultLen(src), nl = clamp(L + (a === 'lp' ? 1 : -1), 1, 16); if (nl !== L || !rw) rowEdit(src, row => { row.len = nl; row.ch = row.ch.filter(c => c.b < nl * 4 - 1e-6); }, rowName(src) + ': ' + nl + (nl === 1 ? ' Takt' : ' Takte')); haptic('tick'); return; }
-  if (b.dataset.bar != null) { const bar = +b.dataset.bar, half = b.dataset.h === '' ? null : +b.dataset.h; CR.sel = CR.sel && CR.sel.bar === bar && CR.sel.half === half ? null : {bar, half}; haptic('tick'); crPaint(p); return; }
+  if (b.dataset.bar != null) { const bar = +b.dataset.bar, half = b.dataset.h === '' ? null : +b.dataset.h; CR.sel = CR.sel && !CR.sel.auto && CR.sel.bar === bar && CR.sel.half === half ? null : {bar, half}; haptic('tick'); crPaint(p); return; }
   if (b.dataset.d != null) { const d = degreeChords(rowKey(src))[+b.dataset.d]; if (d) crSet(chordTarget(d.root, d.q), true); return; }
   if (b.dataset.o) { crSet(null, true); return; }
-  if (b.dataset.hk != null) { const t = T.history[+b.dataset.hk]; if (t) crSet(normTarget(t), true); return; }
+  if (b.dataset.hk != null) { const t = T.history[+b.dataset.hk]; if (t) crSet(normTarget(t), true, true); return; }
   if (a === 'half') {
     if (!CR.sel) { toast('Erst ein Kästchen antippen'); return; }
     const k = CR.sel.bar, rw = rowOf(src);
@@ -25123,7 +25155,7 @@ function applyProject(p, opts) {
   UNDO.length = 0; REDO.length = 0;
   UI.drumVer++; R.songRec = null; R.songPlay = null; R.songEndBeat = null; R.melRec = null; R.carrierLive = false; if (R.songOverride) R.songOverride.fill(false);
   SV.pos = SV.sel = SV.lastStop = null; UI.recTg = null; SONGCAR.saved = null;
-  R.row = R.rowPend = R.part = R.partPend = null; R.lastScene = null; PRT.saved = undefined; PRT.resume = null; xpReset(); UI.pick = null;   // V2c
+  R.row = R.rowPend = R.part = R.partPend = null; R.lastScene = R.lastSceneBeat = null; PRT.saved = undefined; PRT.resume = null; xpReset(); UI.pick = null;   // V2c
   partsEnsure(); UI.partPage = S.ui && S.ui.partPage === 1 ? 1 : 0; UI.dirty.parts = true; PB.sig = '';      // V0c: view state of the song and the TA9 state
   if (AU.ctx) {
     // the old project's notes are still fading out through the track chains: swap the drive curves etc. only after
