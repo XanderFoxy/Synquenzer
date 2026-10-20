@@ -12912,9 +12912,9 @@ function songRecStart(o) {
   if (songHasContent()) return songRecStartOver(o || {});
   if (R.songPlay) songPlayEnd(false);
   carrierSave();                                                  // TA9: the Träger in effect before the take comes back after it
-  const before = songSnapshot(), sel = melSuggest(true);
+  const picked = melPicked(), before = songSnapshot(), sel = picked != null ? picked : melSuggest(true);
   S.song = newSongRaw(sel);
-  if (S.tracks[sel].kind === 'synth' && R.selT !== sel) { selectTrack(sel); toast('Melodie auf ' + S.tracks[sel].name + ' (frei)'); }
+  if (S.tracks[sel].kind === 'synth' && R.selT !== sel) { selectTrack(sel); toast('Melodie auf ' + S.tracks[sel].name + (picked != null ? '' : ' (frei)')); }
   MEL.open.clear(); MEL.warned = false;
   // song bar 1 = the next bar line (stopped: the transport starts at 1.1, no count-in); tick() logs every track's slot and
   // the Träger in effect there as the song's first entries (songRecBegin)
@@ -13254,7 +13254,7 @@ function songRecStartOver(o) {
   const before = songSnapshot();
   carrierSave();
   // S-04: a melody take on a song without melody goes onto a free track (part of the take's undo step)
-  if (tg.mel && !curMel(song).notes.length) { const mt = melSuggest(false); if (mt !== song.melodyTrack) { melChoose(song, mt); toast('Melodie auf ' + S.tracks[mt].name + ' (frei)'); } }
+  if (tg.mel && !curMel(song).notes.length && melPicked(song) == null) { const mt = melSuggest(false); if (mt !== song.melodyTrack) { melChoose(song, mt); toast('Melodie auf ' + S.tracks[mt].name + ' (frei)'); } }
   const playFrom = preroll && from > 0 ? from - 1 : from;
   if (R.songPlay && R.playing) {
     // punch in while the song plays: from the bar that sounds now at the earliest (a melody starts at once; launches and
@@ -13430,6 +13430,7 @@ function melRecToggle() { return R.melRec ? melRecEnd() : melRecStart(); }
 // the notes stay on their tracks (every track plays its own). o.move: the chosen track's notes go along (one undo)
 function setMelodyTrack(t, o) {
   t = clamp(t | 0, 0, NT() - 1); if (!isSynthT(t)) t = 3;
+  MELPICK.id = S.id; MELPICK.t = t;                                // V2b-fix: the user's pick stays the target of ● SONG
   if (!S.song) { S.song = newSongRaw(t); songChanged(); return t; }
   const song = S.song, from = song.melodyTrack;
   if (from === t) return t;
@@ -13443,6 +13444,14 @@ function setMelodyTrack(t, o) {
   return t;
 }
 const songTrackPlays = t => !!S.song && S.song.lanes[t].some(e => e.slot >= 0);
+/* V2b-fix (§4.3 „● SONG / ● MEL. nehmen Live-Noten der gewählten Spur auf, Standard-Vorschlag ist MELODIE“): a track picked in
+   the [MEL ▾] chip (or by „Freie Spur nehmen“) stays the target; melSuggest only proposes when nothing was picked. Runtime
+   state of this project (undoing the pick = the song names another track = no pick any more) */
+const MELPICK = {id: null, t: null};
+function melPicked(song) {
+  song = song || S.song;
+  return !!song && MELPICK.id === S.id && MELPICK.t === song.melodyTrack && isSynthT(MELPICK.t) ? MELPICK.t : null;
+}
 // a cell tap: – → 1 → 2 → 3 → 4 → – over the slots that hold a clip; the following bars stay (RecHelpers.cycleCell);
 // taps on the same cell within 2 s are one undo step
 function songCycle(t, bar) {
@@ -23800,7 +23809,7 @@ function openMenu(goto) {
   const bExp = btn('Exportieren', 'go'); on(bExp, 'click', () => exportMidi({mode: UI.expMode, scene: R.selS, withCarrier: UI.expCarrier}));
   row(s2, null, bExp);
   // V2a: the export writes Synth 1–4 and DRUMS (N tracks: V2a′)
-  if (NT() > MIDI_T) s2.appendChild(el('div', 'small', 'MIDI enthält Synth 1–4 und DRUMS – MELODIE und weitere Spuren kommen in einer der nächsten Versionen dazu.'));
+  if (NT() > MIDI_T) s2.appendChild(el('div', 'small', 'MIDI enthält Synth 1–4 und DRUMS, bei „Song“ auch die Song-Melodie jeder Spur (z. B. MELODIE). Clips weiterer Spuren kommen in einer der nächsten Versionen dazu.'));
   UI.dlRowMidi = row(s2, null); UI.dlRowMidi.hidden = true;
   // 3 Harmonie
   const s3 = sec('Harmonie', colR, 4);
@@ -25989,22 +25998,25 @@ function mtrk(evs, name, endTk) {
   return out.a;
 }
 function trackMidiName(tr) { return tr.kind === 'drum' ? 'Drums (' + tr.sound.name + ')' : tr.name + ' (' + (ENGINE_LABEL[tr.sound.engine] || 'VA') + ' ' + tr.sound.name + ')'; }
-function assembleMidi(evs, marks, endTk, counts, beats, tempoMap) {
+function assembleMidi(evs, marks, endTk, counts, beats, tempoMap, idxs) {
   const PPQ = 480, tm = tempoMap && tempoMap.length ? tempoMap : [{beat: 0, bpm: S.bpm}];
   const tempo = tm.map(x => { const mpq = Math.round(6e7 / x.bpm); return {tk: Math.round(Math.max(0, x.beat) * PPQ), b: [0xFF, 0x51, 3, (mpq >> 16) & 255, (mpq >> 8) & 255, mpq & 255], o: -2}; });
   tempo.push({tk: 0, b: [0xFF, 0x58, 4, 4, 2, 24, 8], o: -2});
-  const out = new ByteBuf();
-  out.arr([0x4D, 0x54, 0x68, 0x64]).arr(u32(6)).push(0, 1, 0, 6, PPQ >> 8, PPQ & 255);
+  const out = new ByteBuf(), ix = idxs || midiBaseIdx(), ntrk = 1 + ix.length;
+  out.arr([0x4D, 0x54, 0x68, 0x64]).arr(u32(6)).push(0, 1, ntrk >> 8, ntrk & 255, PPQ >> 8, PPQ & 255);
   out.arr(mtrk(tempo.concat(marks), 'SYNQUENZER ' + tm[0].bpm + ' BPM', endTk));
-  S.tracks.slice(0, MIDI_T).forEach((tr, i) => {
-    const ev = evs[i].slice();
-    if (tr.kind === 'synth') ev.push({tk: 0, b: [0xC0 | i, GM_PROGRAM[tr.sound.cat] != null ? GM_PROGRAM[tr.sound.cat] : 81], o: -1});
+  for (const i of ix) {
+    const tr = S.tracks[i], ev = evs[i].slice();
+    if (tr.kind === 'synth') ev.push({tk: 0, b: [0xC0 | midiCh(i), GM_PROGRAM[tr.sound.cat] != null ? GM_PROGRAM[tr.sound.cat] : 81], o: -1});
     out.arr(mtrk(ev, trackMidiName(tr), endTk));
-  });
+  }
   return {bytes: new Uint8Array(out.a), counts, beats};
 }
 // V2a (Spec V2a Umfang): until V2a′ the MIDI file carries Synth 1–4 and DRUMS (the first 5 data indices, 6 MTrk chunks)
 const MIDI_T = 5;
+const midiBaseIdx = () => Array.from({length: Math.min(MIDI_T, NT())}, (_, i) => i);
+// a track's MIDI channel (index = channel; channel 10 = index 9 stays the drums')
+const midiCh = i => (S.tracks[i] && S.tracks[i].kind === 'drum' ? 9 : i < 9 ? i : Math.min(15, i + 1));
 const midiArrs = () => ({evs: Array.from({length: MAX_T}, () => []), counts: new Array(MAX_T).fill(0)});
 function buildMidi(opts) {
   opts = opts || {};
@@ -26099,8 +26111,19 @@ function buildMidiSong(withC) {
     if (song.mel[i]) for (const n of song.mel[i].notes) { if (n.t >= L - 1e-9) continue; dedAdd(i, ch, ded, n.t, Math.min(L, n.t + Math.max(n.d, 1 / 32)), clamp(n.n, 0, 127), n.v); }
     for (const x of ded.values()) { evs[i].push({tk: x.t0, b: [0x90 | x.ch, x.p, x.v], o: 1}, {tk: x.t1, b: [0x80 | x.ch, x.p, 0], o: 0}); counts[i]++; }
   });
+  // V2b-fix: the song melody of a track beyond Synth 1–4/DRUMS (MELODIE, the ● SONG default) comes along as its own MIDI track
+  // on that track's channel (its clips follow with V2a′)
+  const idxs = midiBaseIdx();
+  for (let i = MIDI_T; i < NT(); i++) {
+    const tr = S.tracks[i], m = song.mel[i]; if (!tr || tr.kind !== 'synth' || !m || !m.notes.length) continue;
+    const ded = new Map(), ch = midiCh(i);
+    for (const n of m.notes) { if (n.t >= L - 1e-9) continue; dedAdd(i, ch, ded, n.t, Math.min(L, n.t + Math.max(n.d, 1 / 32)), clamp(n.n, 0, 127), n.v); }
+    if (!ded.size) continue;
+    for (const x of ded.values()) { evs[i].push({tk: x.t0, b: [0x90 | x.ch, x.p, x.v], o: 1}, {tk: x.t1, b: [0x80 | x.ch, x.p, 0], o: 0}); counts[i]++; }
+    idxs.push(i);
+  }
   if (!counts.some(Boolean)) return null;
-  return assembleMidi(evs, [{tk: 0, b: metaText(6, 'Song'), o: -1}], L * PPQ, counts, L);
+  return assembleMidi(evs, [{tk: 0, b: metaText(6, 'Song'), o: -1}], L * PPQ, counts, L, null, idxs);
 }
 
 /* §3.9 P1 „Song als Audio“: plays the song once in real time and records the master (MediaStreamDestination + MediaRecorder,

@@ -2603,10 +2603,11 @@ Befunde behoben (unten).
    **ein** Undo-Schritt („Melodie-Spur: …“ bzw. „Melodie verschoben auf …“). In den Spur-Etiketten zeigt ♪ jede Spur mit Song-Melodie.
 4. **● SONG schlägt MELODIE vor** (V2b-06): MELODIE (frei, POLY) zuerst und wird gewählt (die Tastatur spielt ihren Klang); erst wenn
    MELODIE besetzt oder MONO ist, gilt die alte V0c-Regel (gewählte freie Spur, dann freie nicht-MONO-Spur). Live-Noten landen in
-   `song.mel[5]`. Über einem Song, dessen gewählte Spur keine Melodie hat, ebenfalls MELODIE.
+   `song.mel[5]`. Über einem Song, dessen gewählte Spur keine Melodie hat, ebenfalls MELODIE – nur solange im Chip nichts gewählt
+   wurde (V2b-fix: eine Wahl im Chip bleibt das Ziel).
 5. **Melodie → Clip** von jeder Melodie-Spur: Clip auf **dieser** Spur im ersten freien Platz (MELODIE → Spur 5), ein Undo.
 6. **Spur entfernen** nimmt `song.mel[t]` in dieselbe Undo-Gruppe; war es die gewählte Spur, fällt die Wahl auf MELODIE.
-   MIDI „Song“ schreibt jede Spur-Melodie auf den Kanal ihrer Spur (bis V2a′ nur Synth 1–4 + DRUMS, siehe Lücken).
+   MIDI „Song“ schreibt jede Spur-Melodie auf den Kanal ihrer Spur (V2b-fix: auch MELODIE als eigene MIDI-Spur, siehe unten).
 7. **Test-API:** `songMelNotes(t?)` (neu, Kopie der Noten; ohne `t` = gewählte Spur), `song()` liefert zusätzlich den Lese-Alias
    `melody` (= gewählte Spur, wie WP6), `songMel(on)` / `setMelodyTrack(t)` unverändert (I-04).
 8. Versions-Wächter: `max_app` → 4002000 (Rollout unten).
@@ -2664,7 +2665,8 @@ vs1-accept N2-VS1-03 (Szenen 5–8 verdeckt, seit V2a). Unter Last flatternd, al
 `apply_migration v2b_max_app` (`max_app = greatest(max_app, 4002000)`, Datei `synq-online/r7-v2b-max-app.sql`) **dreimal
 Zeitüberschreitung nach 60 s, nicht eingetragen**; derselbe Befehl über `execute_sql` ebenfalls Zeitüberschreitung. Lesen geht
 (`max_app` 4000000, `max_format` 4; keine laufende Sitzung, keine Sperre, kein Trigger auf `private.settings`) – Schreiben wartet
-offenbar auf eine Bestätigung, die es in diesem Lauf nicht gibt. **Offen:** vor dem Ausliefern von 4.2.0 einspielen (sonst lehnt
+offenbar auf eine Bestätigung, die es in diesem Lauf nicht gibt. **Nachtrag V2b-fix:** `v2b_max_app` steht jetzt in `list_migrations`,
+`max_app` = 4002000 (siehe V2b-fix). ~~Offen: vor dem Ausliefern von 4.2.0 einspielen~~ (sonst lehnt
 `save_project` das Online-Speichern mit `p_app 4002000` ab; lokal speichert die App weiter). Kein Aufruf nennt das Klassenzimmer-Projekt.
 
 **Für Xander im Dashboard** (nur falls der Orchestrator die Migration nicht nachholt): SQL-Editor des Projekts **synquenzer**
@@ -2679,8 +2681,7 @@ offenbar auf eine Bestätigung, die es in diesem Lauf nicht gibt. **Offen:** vor
 - Nicht gewählte Spur-Melodien sieht man in der MEL.-Zeile blass; bearbeiten lässt sich nur die gewählte (über den Chip umschalten).
 
 **Bekannte Lücken**
-- **MIDI-Export** enthält bis V2a′ nur Synth 1–4 und DRUMS: eine Song-Melodie auf MELODIE (jetzt der Standard) fehlt in der MIDI-Datei
-  (Hinweis im Export-Blatt steht schon da). Wird mit V2a′ (MIDI mit N Spuren) behoben.
+- ~~MIDI-Export ohne Song-Melodie auf MELODIE~~ – behoben in V2b-fix. Clips der Spuren 6–8 kommen weiter erst mit V2a′.
 - Teil-Blatt „Spur MEL“ (§4.3 „Erreichbar“) kommt mit V2c (Teile).
 - Am iPhone ungeprüft: Klang von Melodie-Lead neben MONO-Clips (gemessen nur in Chromium).
 
@@ -2690,3 +2691,26 @@ offenbar auf eine Bestätigung, die es in diesem Lauf nicht gibt. **Offen:** vor
 2. **MEL ▾** antippen → Liste (MELODIE zuerst, mit Notenzahl). Synth 2 wählen → MEL.-Zeile zeigt Synth 2; ↶ stellt es zurück.
 3. Mit „… mitnehmen“ wandert die Melodie auf die gewählte Spur (ein ↶).
 4. Ein alter Song (vor 4.2) klingt wie vorher: seine Melodie bleibt auf ihrer Spur (z. B. S4 ♪).
+
+## V2b-fix — ● SONG nimmt die im Chip gewählte Spur, MIDI „Song“ mit MELODIE, Versions-Wächter 4.2.0 · App 4.2.0
+
+Befunde (Abnahme/Regression): (1) ● SONG überschrieb die im Chip [MEL ▾] gewählte Spur mit MELODIE (erste Aufnahme und ● über dem
+Song), ● MEL. nicht; (2) `max_app` stand auf 4000000, 4.2.0 konnte nicht online speichern; (3) MIDI „Song“ ließ die Standard-Melodie
+auf MELODIE weg (Regression gegenüber 4.0.0).
+1. **Chip-Wahl bleibt Ziel** (§4.3 „Live-Noten der **gewählten** Spur, Standard-Vorschlag ist MELODIE“): `setMelodyTrack` merkt die Wahl
+   (`MELPICK`, Laufzeit, je Projekt-id; ein ↶ der Wahl = keine Wahl mehr). `songRecStart` (leerer Song) nimmt sie statt `melSuggest`,
+   `songRecStartOver` schlägt nur ohne Wahl um. Ohne Wahl unverändert: MELODIE (V2b-06). Toast dann „Melodie auf Synth 3“ ohne „(frei)“.
+   „Freie Spur nehmen“ (S-04) zählt auch als Wahl.
+2. **MIDI „Song“:** Spur-Melodien von Spuren hinter Synth 1–4/DRUMS (MELODIE) kommen als eigene MIDI-Spur („Melodie (VA Melodie-Lead)“,
+   Kanal 6 = Index 5, Programmwechsel nach Kategorie) dazu; Kopf-Spurzahl stimmt (`assembleMidi(…, idxs)`). Szene/Alle/Mitschnitt
+   unverändert (6 Spuren). Hinweis im Export-Blatt: „MIDI enthält Synth 1–4 und DRUMS, bei „Song“ auch die Song-Melodie jeder Spur
+   (z. B. MELODIE). Clips weiterer Spuren kommen in einer der nächsten Versionen dazu.“
+3. **Versions-Wächter:** `list_migrations` zeigt jetzt `v2b_max_app` (20261020052213); `execute_sql` (lesen) `max_app` 4002000,
+   `max_format` 4. Probe in einem zurückgerollten DO-Block: `save_project` mit `p_app` 4002000 kommt am Wächter vorbei (scheitert erst an
+   der erfundenen Raum-id: forbidden), 4003000 → bad_version. Nichts geschrieben. Kein Aufruf nennt das Klassenzimmer-Projekt.
+
+**Prüfungen:** `v3-qa-v2b-chip.mjs` 7/7 (vorher 3/4); `v3-qareg-v2b-songflow.mjs` P und L je 14/14 (vorher 13/1); `v3-v2bfix-midi.mjs`
+(Kopf 7 Spuren); `v3-v2bfix-lay.mjs` Export-Hinweis mit echter Barlow-Schrift in P/L/P2 ohne Überlauf; `v3-v2b-accept.mjs` 69/0
+(V2b-06 angepasst: Chip-Wahl bleibt, ohne Wahl MELODIE – beides geprüft); `v3-v2b-adapt-v2a-accept.mjs` 326/0; `v3-qareg-v2b-midi`,
+`v3-qa-v2b-06`, `v3-qa-v2b-move`, `v3-qareg-v2b-oldsong` grün; `v3-qareg-v2b-songrec` (2× 🎤 in L) und `v3-v2a-adapt-v0c-song` (1 Zeit-
+Prüfung) fallen gleich wie mit V2b.html; Smoke ohne Fehler.
