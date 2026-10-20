@@ -2578,3 +2578,115 @@ flatternd, allein grün: v0a-roll, wp2-rec, wp4-engine FX5, wp3-store PF7.
 4. Synth 6 halten → **Spur entfernen** → dann ↶: Spur und Clips sind wieder da.
 5. Speichern/Online: das Projekt wird als Format 4 gespeichert; ein Gerät, das noch die alte App (3.11.x) im Speicher hat, kann es
    nicht überschreiben (Server-Wächter) – dort die Seite einmal neu laden.
+
+## V2b — MELODIE-Spur und Song-Melodie je Spur · App 4.2.0
+
+Grundlage: Spezifikation v3 §4.3, §17 V2b (V2b-01 … V2b-08), E3-06, R26/I-04; Nachtrag 1 N2b-01; Nachtrag 2 Teil E (Gruppe 4, Version
+4.2.0, +25 KB) und Teil J (FP-SONG Haupt-, FP-TOUCH Zweit-Blick). **Hinweis:** V2a′ (Matrix-Gesten, MIDI mit N Spuren, 4.1.0) steht in
+Gruppe 4 vor V2b, ist aber noch nicht gebaut (kein Snapshot, kein CHANGES-Abschnitt); V2b braucht von V2a′ nichts. Die Versionsfolge
+bleibt streng steigend (4.0.0 → 4.2.0; V2a′ bekommt dann eine eigene Nummer zwischen beiden oder wird nachgezogen).
+
+Neustart-Hinweis: Ein früherer Durchgang hatte Daten, Wiedergabe, Aufnahme, UI, API und Tests schon gebaut (Abnahme 63/63, Regression
+gelaufen), aber weder CHANGES noch Snapshot geschrieben. Dieser Durchgang hat alles nachgeprüft, die Fach-Prüfung gemacht und drei
+Befunde behoben (unten).
+
+**Neu**
+1. **Song-Melodie je Spur** (E3-06): `song.mel = {[t]: {len, key, notes:[{t, d, n, v}]}}` statt `song.melody`. Jede Spur mit Noten spielt
+   ihre Song-Melodie mit **eigenem Klang und eigenen Stimmen** (`songTick`: Schleife über `song.mel`, `noteLog` `src:'melody'` je Spur),
+   immer „wie gespielt“ (nie umgerechnet, auch nicht unter ⇅ folgt). Stumme Spuren und Drums spielen keine.
+2. **Migration** (`normSong`): WP6-/V2a-Songs (`song.melody` + `melodyTrack`) → `song.mel[melodyTrack]` – die Melodie bleibt auf ihrer
+   Spur (gleicher Klang wie vorher, wandert nicht auf MELODIE). Ohne `melodyTrack` gilt die erste Spur mit Melodie, sonst MELODIE.
+   Gespeichert wird nur `song.mel`; Projektformat bleibt 4. `melodyTrack` bleibt lesbar und heißt jetzt „gewählte Melodie-Spur“.
+3. **Chip [MEL ▾] / [S2 ▾]** in der Song-Ansicht wählt die Melodie-Spur: ihre MEL.-Zeile (gewählte Spur hell, andere Spur-Melodien
+   blass dahinter), ihre Rolle (Titel „Melodie“ bzw. „Melodie · S2“), das Ziel von ● SONG / ● MEL. Das Blatt nennt MELODIE zuerst, je
+   Spur die Notenzahl und „spielt Clips / frei“, dazu der Schalter **„n Noten von … mitnehmen“** (verschiebt die Melodie mit). Wählen ist
+   **ein** Undo-Schritt („Melodie-Spur: …“ bzw. „Melodie verschoben auf …“). In den Spur-Etiketten zeigt ♪ jede Spur mit Song-Melodie.
+4. **● SONG schlägt MELODIE vor** (V2b-06): MELODIE (frei, POLY) zuerst und wird gewählt (die Tastatur spielt ihren Klang); erst wenn
+   MELODIE besetzt oder MONO ist, gilt die alte V0c-Regel (gewählte freie Spur, dann freie nicht-MONO-Spur). Live-Noten landen in
+   `song.mel[5]`. Über einem Song, dessen gewählte Spur keine Melodie hat, ebenfalls MELODIE.
+5. **Melodie → Clip** von jeder Melodie-Spur: Clip auf **dieser** Spur im ersten freien Platz (MELODIE → Spur 5), ein Undo.
+6. **Spur entfernen** nimmt `song.mel[t]` in dieselbe Undo-Gruppe; war es die gewählte Spur, fällt die Wahl auf MELODIE.
+   MIDI „Song“ schreibt jede Spur-Melodie auf den Kanal ihrer Spur (bis V2a′ nur Synth 1–4 + DRUMS, siehe Lücken).
+7. **Test-API:** `songMelNotes(t?)` (neu, Kopie der Noten; ohne `t` = gewählte Spur), `song()` liefert zusätzlich den Lese-Alias
+   `melody` (= gewählte Spur, wie WP6), `songMel(on)` / `setMelodyTrack(t)` unverändert (I-04).
+8. Versions-Wächter: `max_app` → 4002000 (Rollout unten).
+
+**Befunde dieses Durchgangs (behoben)**
+- **● SONG nahm im Demo-Projekt Synth 4 (Mini-Lead, MONO/LEGATO) statt MELODIE:** Beim Start ist Synth 4 gewählt; die Regel „gewählte
+  freie Spur zuerst“ (aus V0c, wegen WP6-SG) gewann vor MELODIE – genau der Audit-Fall „Melodie klingt eigenartig“. Die V2b-06-Abnahme
+  sah das nicht, weil sie vorher Synth 1 (spielt Clips) wählt. Jetzt MELODIE zuerst (`melSuggest`). Prüfung: `v3-v2b-fp.mjs` Nr. 3
+  (Demo, Standard-Auswahl → `sel 5`, Noten in `song.mel[5]`).
+- **Song-Kopfzeile sprang bei ● (N7S-02):** Der Chip wechselte von „S4 ▾“ auf das breitere „MEL ▾“ und schob ⏮ und SCHLEIFE um 4–6 px.
+  Der Chip ist jetzt immer so breit wie „MEL ▾“ (`min-width: 4.8em`): P 52,8 px, P375 48, P320 62, L/L667 76 (`v3-v2b-chipw.mjs`).
+- **Rollen-Titel in P320 „MELODIE …“** schnitt genau das Spur-Kürzel ab. Kürzel jetzt in eigenem Kasten: „MEL… · S2“ (Abnahme C prüft,
+  dass „· S2“ ganz sichtbar ist).
+
+**Fach-Prüfung (vor der Abnahme, Teil J: FP-SONG Haupt-, FP-TOUCH Zweit-Blick)** – `v3-v2b-fp.mjs` 8/8, `v3-v2b-chipw.mjs` 10/10
+- FP-SONG: M-ZEIT der migrierten WP6-Melodie (V2b-03, ±0,01 gegen 3.11.5); Daten-Invarianten (`clips` deep-equal nach Migration, V2a-02
+  adaptiert); Undo-Gruppen und Rundweg: Wahl, Mitnehmen, ● SONG-Aufnahme (ein Schritt zurück deep-equal, Redo wieder), Spur entfernen mit
+  fremder Spur-Melodie (Gruppe), Datei-Rundweg mit zwei Spur-Melodien und gewählter Synth 3, 4.0.0-Datei mit `song.melody` → `song.mel[3]`;
+  Harmonie-Kern unverändert (`harm-pure`, V2a-Band M-BAND); MIDI „Song“: Spur-Melodie Synth 2 auf Kanal 2 genau 60 64 67 unter Am (nicht
+  umgerechnet); FOLGEN der MELODIE-Rolle (N2b-01, unten). **Befund:** ● SONG-Vorschlag (oben).
+- FP-TOUCH: Chip ≥ 42 × 37 px in allen Ansichten, Blatt-Zeilen ≥ 44 px, Blatt ganz im Bild (P, P375, P320, L, L667), Tipp per CDP-Touch
+  wählt, ein Undo je Geste, MEL.-Zeile antippen öffnet die Rolle der gewählten Spur, ♪ im Etikett nicht abgeschnitten; Texte ohne
+  Fachwörter („Melodie-Spur“, „spielt Clips / frei“, „mitnehmen“). **Befunde:** Kopfzeile springt, Titel abgeschnitten (oben).
+
+**Abnahme**
+
+| Punkt | Ergebnis | Skript |
+|---|---|---|
+| V2b-01 MELODIE: Melodie-Lead (POLY, Poly 4, Glide 0), ⇅ fest | ✓ | `v3-v2b-accept.mjs` A |
+| V2b-02 Clip auf MELODIE unter Am, F, ORIGINAL → C E G C; ⇅ folgt → folgt (A C E A / F A C F) | ✓ | A |
+| V2b-03 WP6-Song (3.11.5, `melodyTrack 3`, 4 Noten) → `song.mel[3]` 4 Noten; Wiedergabe gleiche Tonhöhen/Schläge ±0,01, Spur 3 | ✓ | A |
+| V2b-04 gehaltenes G♯5 auf MELODIE + MONO-Clip auf Synth 4: Goertzel ≥ −40 dBFS über 2 s (min −31,0; Bezug auf Synth 4: −59,6) | ✓ | B |
+| V2b-05 Song-Melodie auf MELODIE und Synth 2: beide im `noteLog` (`src:'melody'`, Spuren 1 und 5) | ✓ | A |
+| V2b-06 ● SONG → MELODIE, Live-Noten in `songMelNotes(5)`, `songMel(true/false)` wie WP6 | ✓ (+ Demo-Standard, FP Nr. 3) | A, `v3-v2b-fp.mjs` |
+| V2b-07 Melodie → Clip von MELODIE → Spur 5, erster freier Platz (Clip 2) | ✓ | A |
+| V2b-08 Regression und DoD | ✓ (unten) | |
+| N2b-01 MELODIE-Rolle: M-SEITE (x0 Vielfache von 4, Wechsel am Taktstrich) und Tipp-Test N0b-07 (13 Tipps, x0 fest) | ✓ 52/52 | `v3-v2b-adapt-v0b-follow.mjs` |
+| UI-Teil (5 Ansichten): Chip, ♪, Blatt, Wahl per Touch, Rolle, Titel-Kürzel | ✓ | C |
+| Gesamt `v3-v2b-accept.mjs ABC` | ✓ 68/68 | |
+| Smoke | ✓ ohne Fehler | `v3-v2b-reg/run4/smoke-final.png` |
+
+**Regression** (Listen von V2a mit den V2b-Kopien, `v3-v2b-reg.sh` → `run4`, `v3-v2b-reg2.sh` → `run5`): gleich wie nach V2a bis auf die gewollten
+Änderungen, die angepasste Kopien bekommen (`v3-v2b-adapt-*`: Version 4.2.0 in wp1-brand/misc/store, wp3-api/store, n0a, vs0-/vs1-net;
+v2a-accept V2a-02/04 mit `song.mel`; v0b-follow (N2b-01) auf MELODIE; wp6-song SG4/SG6/SG7 wie unter Abweichungen). Grün u. a.:
+v2b-accept 68/68, v2b-fp 8/8, v2b-chipw 10/10, v2a-accept (adaptiert) 331/331, wp6-song P/L mit 6 und 8 Spuren je 27/27, v0c-song P/L 40/40,
+wp6-extras, wp2-clip (5 Ansichten), wp2-fang, wp3-store 55/55, v2a-band 6/6 (M-BAND), harm-pure, PE1 8/8, PE2 5/5, vo2-accept, vs1-dsp,
+rob5 18/18, v0b-follow 52/52, wp6-drums und v3-v0a-drum diesmal grün. Schon vor V2b rot und unverändert: node-fm, rgq-old17 C2/C3,
+wp3-browser PR2, wp3-ui (2), wp4-offline FX3, func-build C2/D5, sqr6-persist, wp1-perf (forced layout), v0c-ui V0c-05 (5 Ansichten),
+vs1-accept N2-VS1-03 (Szenen 5–8 verdeckt, seit V2a). Unter Last flatternd, allein grün: v0c-song V0c-01 (Takt-Zeit), wp6-song8-L SG7
+(vor der Anpassung).
+
+**Budget:** 2 179 459 B (+7,2 KB roh gegenüber V2a-fix, +2,4 KB gzip) – Rahmen +25 KB.
+
+**Rollout** (Supabase-MCP, ref `dbdnsryoivvezspgydpx`): 20.10. `list_migrations` (… v2a_max_format_4, v2a_max_app) →
+`apply_migration v2b_max_app` (`max_app = greatest(max_app, 4002000)`, Datei `synq-online/r7-v2b-max-app.sql`) **dreimal
+Zeitüberschreitung nach 60 s, nicht eingetragen**; derselbe Befehl über `execute_sql` ebenfalls Zeitüberschreitung. Lesen geht
+(`max_app` 4000000, `max_format` 4; keine laufende Sitzung, keine Sperre, kein Trigger auf `private.settings`) – Schreiben wartet
+offenbar auf eine Bestätigung, die es in diesem Lauf nicht gibt. **Offen:** vor dem Ausliefern von 4.2.0 einspielen (sonst lehnt
+`save_project` das Online-Speichern mit `p_app 4002000` ab; lokal speichert die App weiter). Kein Aufruf nennt das Klassenzimmer-Projekt.
+
+**Für Xander im Dashboard** (nur falls der Orchestrator die Migration nicht nachholt): SQL-Editor des Projekts **synquenzer**
+(`dbdnsryoivvezspgydpx`, nicht das Klassenzimmer!) → `update private.settings set max_app = greatest(max_app, 4002000);` → Run.
+
+**Abweichungen**
+- Der Chip heißt kurz **[MEL ▾] / [S2 ▾]** statt „[MEL: Melodie ▾]“ (passt in P320 und lässt ●/▶ ihre Breite; voller Name im Blatt).
+- ● SONG nimmt MELODIE auch dann, wenn vorher eine andere freie Spur gewählt war (Spezifikation „Standard-Vorschlag ist MELODIE“); die
+  alte WP6-Prüfung SG6 („Synth 4 gewählt → melodyTrack 3“) ist dafür angepasst (`v3-v2b-adapt-wp6-song.mjs`: SG4/SG6 erwarten Spur 5,
+  SG7 wählt vorher Synth 1, weil die Spurbank mit 8 Spuren der gewählten MELODIE auf Seite 2 folgt). Ist MELODIE MONO/LEGATO gestellt
+  oder spielt sie Clips, gilt die V0c-Regel wie bisher.
+- Nicht gewählte Spur-Melodien sieht man in der MEL.-Zeile blass; bearbeiten lässt sich nur die gewählte (über den Chip umschalten).
+
+**Bekannte Lücken**
+- **MIDI-Export** enthält bis V2a′ nur Synth 1–4 und DRUMS: eine Song-Melodie auf MELODIE (jetzt der Standard) fehlt in der MIDI-Datei
+  (Hinweis im Export-Blatt steht schon da). Wird mit V2a′ (MIDI mit N Spuren) behoben.
+- Teil-Blatt „Spur MEL“ (§4.3 „Erreichbar“) kommt mit V2c (Teile).
+- Am iPhone ungeprüft: Klang von Melodie-Lead neben MONO-Clips (gemessen nur in Chromium).
+
+**Für Xander am iPhone (nach dem Ausliefern von 4.2.0)**
+1. Demo öffnen → SONG ⇄ → **●**: Der Chip springt auf **MEL ▾**, die Tastatur spielt „Melodie-Lead“. Ein paar Töne spielen → ■.
+   Die Töne liegen in der Zeile MELODIE und klingen beim ▶ SONG voll, auch wenn Synth 4 Clips spielt.
+2. **MEL ▾** antippen → Liste (MELODIE zuerst, mit Notenzahl). Synth 2 wählen → MEL.-Zeile zeigt Synth 2; ↶ stellt es zurück.
+3. Mit „… mitnehmen“ wandert die Melodie auf die gewählte Spur (ein ↶).
+4. Ein alter Song (vor 4.2) klingt wie vorher: seine Melodie bleibt auf ihrer Spur (z. B. S4 ♪).

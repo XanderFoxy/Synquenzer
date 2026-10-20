@@ -453,7 +453,7 @@ svg{display:block}
 .sv-rec.arm{animation:blink .5s infinite}
 .sv-play{color:var(--play)}
 .sv-play.on{color:var(--text);border-color:var(--play-dim)}
-.sv-mt{flex:0 0 auto}
+.sv-mt{flex:0 0 auto;min-width:4.8em!important}  /* V2b: as wide as „MEL ▾“ for every label (S4 ▾ ⇄ MEL ▾ moves nothing, N7S-02) */
 .sv-back{flex:0 0 auto;background:linear-gradient(#ff9d2e,#e07b10);color:#1b1004;border-color:#ffb24f}
 /* V0c: ● / ▶ / ● MEL. / SCHLEIFE as two-line buttons (sign or word above, state below), [⏮] (N0c) */
 .sv-top > .sv-rec,.sv-top > .sv-play,.sv-top > .sv-mel{flex:1 1 0;flex-direction:column;gap:2px;padding:0 2px}
@@ -491,6 +491,7 @@ svg{display:block}
 .sv-tbb{position:absolute;inset:0;width:100%;height:100%;padding:0 4px;font:700 9px/1 var(--font-num);text-align:left;justify-content:flex-start;border-radius:3px;color:var(--text)}   /* V2a: Spurbank of the song view (V2e moves it into the transport) */
 .sv-l.blank{opacity:0}
 .sv-l{flex:0 0 var(--svh,30px);display:flex;align-items:center;gap:5px;padding:0 4px;font:700 10px/1 var(--font-ui);letter-spacing:.05em;color:var(--text-dim);min-width:0;overflow:hidden;white-space:nowrap;border-top:1px solid rgba(255,255,255,.05)}
+.sv-l.mcho>span{color:var(--text)}
 .sv-l i{width:3px;align-self:stretch;margin:4px 0;background:var(--tc);border-radius:2px;flex:none}
 .sv-lc{color:#ffcf7a}
 .sv-lm{background:none;border:0;border-top:1px solid rgba(255,255,255,.05);text-align:left;justify-content:space-between;color:var(--text);cursor:pointer;letter-spacing:.02em;gap:2px}
@@ -507,6 +508,8 @@ svg{display:block}
 .sv-hint{position:absolute;right:6px;top:2px;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,.75);font:600 10px/1.2 var(--font-num);color:var(--text);opacity:0;transition:opacity .2s;pointer-events:none}
 .sv-hint.on{opacity:1}
 .plist.mtl button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;height:auto;min-height:44px;padding:6px 10px}
+.pop .mtmove{display:block;width:100%;min-height:44px;margin-top:6px;padding:0 10px;text-align:left;font:700 13px/1.2 var(--font-ui);color:var(--text-dim);border:1px dashed var(--line,#3a3f4a);border-radius:8px;background:transparent}
+.pop .mtmove.on{color:var(--text);border-style:solid;border-color:var(--t6,#8cf)}
 #gridArea.song #hint{display:none}
 /* short grid areas (L, small P): the song transport becomes a column at the left, so the 7 lanes keep ≥ 26 px rows */
 #songView.side{flex-direction:row;gap:4px}
@@ -531,7 +534,7 @@ svg{display:block}
 .sv-lm .lns,#songView.side .sv-lm .lnl{display:none}
 #songView.side .sv-lm .lns{display:inline}
 @media (orientation:portrait) and (max-width:389px){.sv-lm .lnl{display:none}.sv-lm .lns{display:inline}}
-.plist.mtl small{font-size:10px;color:var(--text-dim)}
+.plist.mtl small{font-size:10px;color:var(--text-dim);text-align:left}
 @media (orientation:landscape){
   #songView{padding:3px 6px;gap:3px}
   .sv-top{height:34px}
@@ -699,6 +702,7 @@ svg{display:block}
 .sh-head .r2{height:40px;padding-bottom:2px;gap:4px}
 .sh-sp{flex:1 1 0;min-width:0}
 .sh-title{display:flex;align-items:center;gap:6px;min-width:0;flex:0 1 auto}
+.sh-title b.mtg{flex:none;overflow:visible;margin-left:-2px}
 .sh-title .dot{width:10px;height:10px;border-radius:50%;background:var(--tc);box-shadow:0 0 6px var(--tc);flex:none}
 .sh-title b{font:700 13px/1 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trchip{flex:0 1 auto;min-width:0;height:26px;padding:0 8px;border-radius:13px;display:inline-flex;align-items:center;font:700 12px/1 var(--font-ui);color:var(--amber);background:rgba(255,178,46,.12);border:1px solid #6b4c16;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
@@ -10442,7 +10446,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.0.0';
+const VERSION = '4.2.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -11255,8 +11259,9 @@ function normalizeProject(obj) {
     return p;
   } catch (e) { console.error(e); return newProjectRaw(); }
 }
-/* §3.9 Song (WP6): {bars, loop, melodyTrack, lanes: [[{bar, slot}] ×5] (slot −1 = stopped from that bar),
-   carrier: [{beat, target|null}], melody: {len (bars), key, notes: [{t (absolute song beat), d, n, v}]}} — never throws */
+/* §3.9 Song (WP6): {bars, loop, melodyTrack, lanes: [[{bar, slot}] ×NT] (slot −1 = stopped from that bar),
+   carrier: [{beat, target|null}], mel: {[t]: {len (bars), key, notes: [{t (absolute song beat), d, n, v}]}}} (V2b; WP6/V2a:
+   one `melody` on melodyTrack, migrated by normSong) — never throws */
 const SONG_MAX_BARS = 999;
 function normTarget(t) {
   if (!t || typeof t !== 'object' || !isNum(t.root)) return null;
@@ -11270,9 +11275,38 @@ function normTarget(t) {
   return o;
 }
 function newSongRaw(melTrack) {
-  const s = RecHelpers.newSong(NT());
-  return Object.assign(s, {bars: 0, loop: {on: false, a: 0, b: 0}, melodyTrack: melTrack, melody: {len: 1, key: {root: S.key.root, scale: S.key.scale, src: 'user'}, notes: []}},
-    songEmptyV4());
+  const s = RecHelpers.newSong(NT()); delete s.melody;
+  return Object.assign(s, {bars: 0, loop: {on: false, a: 0, b: 0}, melodyTrack: melTrack, mel: {[melTrack]: melEmpty()}}, songEmptyV4());
+}
+/* V2b (§4.3, E3-06): the song melody lives per track — song.mel = {[t]: {len (bars), key, notes: [{t (absolute song beat), d, n, v}]}}.
+   song.melodyTrack is the chosen melody track (the [MEL ▾] chip: its row in the song view, its roll, what ● SONG / ● MEL.
+   record); every track with notes plays them. Kept: the chosen track (also empty) and every track with notes */
+const melEmpty = () => ({len: 1, key: {root: S.key.root, scale: S.key.scale, src: 'user'}, notes: []});
+function melNorm(m, pk) {
+  m = m && typeof m === 'object' && !Array.isArray(m) ? m : {};
+  const notes = (Array.isArray(m.notes) ? m.notes : []).filter(n => n && isNum(n.t) && isNum(n.d) && isNum(n.n) && isNum(n.v) && n.t >= 0 && n.d > 0 && n.t < SONG_MAX_BARS * 4)
+    .map(n => ({t: +n.t, d: Math.min(+n.d, 64), n: clamp(Math.round(n.n), 0, 127), v: clamp(+n.v, .01, 1)})).sort((a, b) => a.t - b.t);
+  const len = Math.max(1, isNum(m.len) ? clamp(Math.round(m.len), 1, SONG_MAX_BARS) : 1, ...notes.map(n => Math.ceil((n.t + 1e-6) / 4)));
+  const key = normKey(m.key, pk || {root: 0, scale: 'ionian'}); key.src = 'user';
+  return {len: Math.min(len, SONG_MAX_BARS), key, notes};
+}
+// the chosen track's melody (made when missing; normSong / melChoose keep it there)
+function curMel(song) {
+  song = song || S.song; if (!song) return null;
+  if (!song.mel) song.mel = {};
+  let m = song.mel[song.melodyTrack];
+  if (!m) { m = song.mel[song.melodyTrack] = melEmpty(); m.len = clamp(song.bars || 1, 1, SONG_MAX_BARS); }     // the roll spans the song
+  return m;
+}
+// the tracks whose song melody has notes (ascending)
+const melTracks = song => (song && song.mel ? Object.keys(song.mel).map(Number).filter(t => song.mel[t] && song.mel[t].notes.length).sort((a, b) => a - b) : []);
+// choose the melody track t (the old choice's entry goes when it holds no notes); no undo here
+function melChoose(song, t) {
+  if (!song) return t;
+  const old = song.melodyTrack; song.melodyTrack = t;
+  if (old !== t && song.mel && song.mel[old] && !song.mel[old].notes.length) delete song.mel[old];
+  curMel(song);
+  return t;
 }
 // V2a (song-delta 12.1): the Format-4 song fields of the later packages, written empty (marks V2d/V2e, own V2d′, xp V2d)
 const songEmptyV4 = () => ({marks: [], own: {}, xp: [], src: 'rec'});
@@ -11312,19 +11346,24 @@ function normSong(o, pk, nt) {
     while (carrier.length && carrier[carrier.length - 1].beat >= beat - 1e-6) carrier.pop();
     carrier.push({beat, target: normTarget(c.target)});
   }
-  const m = o.melody && typeof o.melody === 'object' && !Array.isArray(o.melody) ? o.melody : {};
-  const notes = (Array.isArray(m.notes) ? m.notes : []).filter(n => n && isNum(n.t) && isNum(n.d) && isNum(n.n) && isNum(n.v) && n.t >= 0 && n.d > 0 && n.t < SONG_MAX_BARS * 4)
-    .map(n => ({t: +n.t, d: Math.min(+n.d, 64), n: clamp(Math.round(n.n), 0, 127), v: clamp(+n.v, .01, 1)})).sort((a, b) => a.t - b.t);
   const bars = isNum(o.bars) ? clamp(Math.round(o.bars), 0, SONG_MAX_BARS) : 0;
-  const len = Math.max(1, isNum(m.len) ? clamp(Math.round(m.len), 1, SONG_MAX_BARS) : 1, ...notes.map(n => Math.ceil((n.t + 1e-6) / 4)));
-  const key = normKey(m.key, pk || {root: 0, scale: 'ionian'}); key.src = 'user';
-  let mt = isNum(o.melodyTrack) ? clamp(Math.round(o.melodyTrack), 0, nt - 1) : 3; if (mt === DRUM_T) mt = 3;      // V2a: any synth track
+  // V2b: song.mel per track; a WP6/V2a song (song.melody + melodyTrack) keeps its melody on its track (same sound as before,
+  // it does not wander onto MELODIE)
+  const mel = {}, okT = t => Number.isInteger(t) && t >= 0 && t < nt && t !== DRUM_T;
+  const src = o.mel && typeof o.mel === 'object' && !Array.isArray(o.mel) ? o.mel : null;
+  const legacy = !src && o.melody && typeof o.melody === 'object' && !Array.isArray(o.melody);
+  let mt = isNum(o.melodyTrack) ? clamp(Math.round(o.melodyTrack), 0, nt - 1) : null; if (mt === DRUM_T) mt = 3;      // V2a: any synth track
+  if (src) for (const k of Object.keys(src)) { const t = +k; if (okT(t)) mel[t] = melNorm(src[k], pk); }
+  if (mt == null) mt = legacy ? 3 : (Object.keys(mel).map(Number).find(t => mel[t].notes.length) ?? (nt > MEL_T ? MEL_T : 3));     // alias: the first track with a melody
+  if (legacy) mel[mt] = melNorm(o.melody, pk);
+  for (const k of Object.keys(mel)) if (+k !== mt && !mel[k].notes.length) delete mel[k];
+  if (!mel[mt]) { mel[mt] = melNorm(null, pk); mel[mt].len = Math.max(1, Math.min(bars, SONG_MAX_BARS)); }
   const v4 = songEmptyV4();
   if (Array.isArray(o.marks)) v4.marks = o.marks.filter(m => m && typeof m === 'object' && isNum(m.a) && isNum(m.len)).slice(0, 256).map(m => deep(m));
   if (o.own && typeof o.own === 'object' && !Array.isArray(o.own)) for (const k of Object.keys(o.own).slice(0, 256)) if (o.own[k] && typeof o.own[k] === 'object') v4.own[k] = deep(o.own[k]);
   if (Array.isArray(o.xp)) v4.xp = o.xp.filter(x => x && isNum(x.beat) && isNum(x.semi)).map(x => ({beat: +x.beat, semi: clamp(Math.round(x.semi), -12, 12)}));
   if (o.src === 'plan') v4.src = 'plan';
-  return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, melody: {len: Math.min(len, SONG_MAX_BARS), key, notes}}, v4);
+  return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, mel}, v4);
 }
 function migrateV1(o) {
   const p = newProjectRaw();
@@ -12925,11 +12964,10 @@ function songRecEnd(atBeat) {
   songSetBars(song, clamp(Math.ceil((last - .25) / 4 - 1e-9), 1, SONG_MAX_BARS));
   for (const lane of song.lanes) for (let k = lane.length - 1; k >= 0; k--) if (lane[k].bar >= song.bars) lane.splice(k, 1);
   song.carrier = song.carrier.filter(c => c.beat < song.bars * 4 - 1e-6);
-  song.melody.notes = song.melody.notes.filter(n => n.t < song.bars * 4 - 1e-6).sort((a, b) => a.t - b.t);
-  song.melody.len = song.bars;
+  for (const k of Object.keys(song.mel)) { const m = song.mel[k]; m.notes = m.notes.filter(n => n.t < song.bars * 4 - 1e-6).sort((a, b) => a.t - b.t); m.len = song.bars; }
   pushSongUndo(sr.before, 'Song aufgenommen');
   songChanged();
-  const mn = song.melody.notes.length;
+  const mn = curMel(song).notes.length;
   const endMsg = 'Song: ' + song.bars + (song.bars === 1 ? ' Takt' : ' Takte') + (mn ? ' · Melodie: ' + mn + (mn === 1 ? ' Note' : ' Noten') : ''), playAct = {label: '▶ SONG', fn: () => songPlayStart()};
   // S-04: the melody sits on a MONO/LEGATO track that also plays clips in the song: the hint comes with the end message
   if (!(mn && melShareHint({prefix: endMsg, act: playAct}))) toast(endMsg, playAct);
@@ -13059,11 +13097,15 @@ function songTick(b0, b1) {
         // the logged beat is the time the change really happened (already quantized when it was played): recall it exactly there
         if (c.target) T.recall(c.target, b2t(bb), null); else T.reset(b2t(bb), null);
       }
-      const mi = song.melodyTrack, mel = song.melody;
-      if (mel && S.tracks[mi] && !S.tracks[mi].mute) for (const n of mel.notes) {
-        const bb = n.t + off; if (bb < b0 - 1e-9 || bb >= b1 - 1e-9 || n.t >= E - 1e-9) continue;
-        const t = Math.max(b2t(bb), AU.ctx.currentTime + .003), v = spawnVoice(mi, n.n, n.v, t, {src: 'melody'});
-        if (v) { const d = Math.max(n.d, 1 / 32) * spb(); v.release(t + d); v.log = logNote({track: mi, src: 'melody', clipNote: null, out: n.n, time: t, dur: d, vel: n.v}); }
+      // V2b: every track's song melody on its own track (voices, sound); as heard, never mapped (§v2-3.9, V2b-03)
+      for (const k in song.mel) {
+        const mi = +k, mel = song.mel[k];
+        if (!mel || !mel.notes.length || !S.tracks[mi] || S.tracks[mi].kind !== 'synth' || S.tracks[mi].mute) continue;
+        for (const n of mel.notes) {
+          const bb = n.t + off; if (bb < b0 - 1e-9 || bb >= b1 - 1e-9 || n.t >= E - 1e-9) continue;
+          const t = Math.max(b2t(bb), AU.ctx.currentTime + .003), v = spawnVoice(mi, n.n, n.v, t, {src: 'melody'});
+          if (v) { const d = Math.max(n.d, 1 / 32) * spb(); v.release(t + d); v.log = logNote({track: mi, src: 'melody', clipNote: null, out: n.n, time: t, dur: d, vel: n.v}); }
+        }
       }
       if (!wrap) break;
       const A = lp.a * 4;
@@ -13109,8 +13151,12 @@ function melTrackBusy(t) {
 function melSuggest(forNew) {
   const sel = isSynthT(R.selT) ? R.selT : (S.song ? S.song.melodyTrack : 3);
   const synth = synthTracks(), empty = !songHasContent();
-  const pick = list => (list.includes(sel) && !soundMono(sel) ? sel : list.find(t => !soundMono(t)) ?? (list.includes(sel) ? sel : list[0]));
+  // V2b-06 (§4.3 „Standard-Vorschlag ist MELODIE“): MELODIE first while it is free and POLY (its own voices; the selected
+  // track at start is Synth 4 = Mini-Lead MONO, the audit case); then a free selected track (WP6), then a free not-MONO one
+  const melOk = list => isSynthT(MEL_T) && S.tracks[MEL_T].mel && list.includes(MEL_T) && !soundMono(MEL_T);
+  const pick = list => (melOk(list) ? MEL_T : list.includes(sel) && !soundMono(sel) ? sel : list.find(t => !soundMono(t)) ?? (list.includes(sel) ? sel : list[0]));
   const free = synth.filter(t => !melTrackBusy(t) && !(empty && S.tracks[t].clips.some(Boolean)));
+  if (melOk(free)) return MEL_T;
   if (free.includes(sel)) return sel;
   if (free.length) return pick(free);
   const idle = synth.filter(t => !melTrackBusy(t));
@@ -13135,7 +13181,7 @@ function melShareHint(o) {
   const free = synthTracks().filter(x => x !== t && !plays(x))
     .sort((a, b) => (o.now ? hasClips(a) - hasClips(b) : 0) || soundMono(a) - soundMono(b) || a - b);
   const take = free.length ? {label: 'Freie Spur nehmen', fn: () => {
-    const to = free[0]; setMelodyTrack(to); if (R.songRec && R.selT !== to) selectTrack(to);
+    const to = free[0]; setMelodyTrack(to, {move: true}); if (R.songRec && R.selT !== to) selectTrack(to);
     toast('Melodie auf ' + S.tracks[to].name, songUndoAct()); svButtons(); UI.dirty.song = true; }} : null;
   toast((o.prefix ? o.prefix + ' · ' : '') + 'Melodie und Clips teilen sich eine Stimme – Melodie klingt abgehackt', [take, o.act].filter(Boolean));
   return true;
@@ -13208,7 +13254,7 @@ function songRecStartOver(o) {
   const before = songSnapshot();
   carrierSave();
   // S-04: a melody take on a song without melody goes onto a free track (part of the take's undo step)
-  if (tg.mel && !song.melody.notes.length) { const mt = melSuggest(false); if (mt !== song.melodyTrack) { song.melodyTrack = mt; toast('Melodie auf ' + S.tracks[mt].name + ' (frei)'); } }
+  if (tg.mel && !curMel(song).notes.length) { const mt = melSuggest(false); if (mt !== song.melodyTrack) { melChoose(song, mt); toast('Melodie auf ' + S.tracks[mt].name + ' (frei)'); } }
   const playFrom = preroll && from > 0 ? from - 1 : from;
   if (R.songPlay && R.playing) {
     // punch in while the song plays: from the bar that sounds now at the earliest (a melody starts at once; launches and
@@ -13299,15 +13345,15 @@ function songRecEndOver(sr, atBeat) {
   songCommitLanes(sr.ev, endBar);
   // the take ran past the song end („Bandmaschine“): the song grows when something was recorded there
   const past = sr.ev.some(ev => ev.some(e => e.bar >= oldBars)) || song.carrier.some(c => c.beat >= oldBars * 4 - 1e-6 && sr.mine.has(c)) ||
-    song.melody.notes.some(n => n.t >= oldBars * 4 - 1e-6);
+    curMel(song).notes.some(n => n.t >= oldBars * 4 - 1e-6);
   if (past && endBar > oldBars) songSetBars(song, Math.min(endBar, SONG_MAX_BARS));
-  song.melody.notes.sort((a, b) => a.t - b.t);
-  song.melody.len = Math.max(song.melody.len || 1, song.bars);
+  const cm = curMel(song); cm.notes.sort((a, b) => a.t - b.t);
+  cm.len = Math.max(cm.len || 1, song.bars);
   const recT = [...sr.recT];
   const changed = songSnapshot() !== sr.before;
   if (changed) pushSongUndo(sr.before, 'Song-Aufnahme');
   songChanged();
-  const nm = song.melody.notes.length - (JSON.parse(sr.before).melody.notes.length || 0);
+  const bm = (JSON.parse(sr.before).mel || {})[song.melodyTrack], nm = cm.notes.length - (bm ? bm.notes.length : 0);
   const parts = [];
   if (sr.tg.chords) parts.push(sr.nCh + (sr.nCh === 1 ? ' Akkord' : ' Akkorde'));
   if (sr.tg.mel) parts.push(nm + (nm === 1 ? ' Note' : ' Noten'));
@@ -13354,8 +13400,8 @@ function melCommit(id, o, atBeat) {
   if (!S.song) return;
   const endA = atBeat != null ? atBeat : AU.ctx && R.playing ? audBeat() : o.ab + .25;
   const note = {t: +o.b.toFixed(4), d: +Math.max(1 / 32, endA - o.ab).toFixed(4), n: o.n, v: +o.v.toFixed(3)};
-  S.song.melody.notes.push(note); S.song.melody.notes.sort((a, b) => a.t - b.t);
-  S.song.melody.len = Math.max(S.song.melody.len || 1, Math.ceil((note.t + 1e-6) / 4), S.song.bars || 1);
+  const m = curMel(S.song); m.notes.push(note); m.notes.sort((a, b) => a.t - b.t);
+  m.len = Math.max(m.len || 1, Math.ceil((note.t + 1e-6) / 4), S.song.bars || 1);
   if (R.melRec) R.melRec.n++;
   UI.dirty.song = true; markDirty();
 }
@@ -13380,12 +13426,20 @@ function melRecEnd() {
   return true;
 }
 function melRecToggle() { return R.melRec ? melRecEnd() : melRecStart(); }
-// [Mel: S4 ▾]: the melody voices share the track's sound and polyphony (one undo)
-function setMelodyTrack(t) {
+// [MEL: Melodie ▾] (V2b): chooses the melody track — its row in the song view, its roll, the target of ● SONG / ● MEL.;
+// the notes stay on their tracks (every track plays its own). o.move: the chosen track's notes go along (one undo)
+function setMelodyTrack(t, o) {
   t = clamp(t | 0, 0, NT() - 1); if (!isSynthT(t)) t = 3;
   if (!S.song) { S.song = newSongRaw(t); songChanged(); return t; }
-  if (S.song.melodyTrack === t) return t;
-  const b = songSnapshot(); S.song.melodyTrack = t; pushSongUndo(b, 'Melodie auf ' + S.tracks[t].name); songChanged();
+  const song = S.song, from = song.melodyTrack;
+  if (from === t) return t;
+  const b = songSnapshot(), fm = song.mel[from], move = !!(o && o.move && fm && fm.notes.length);
+  melChoose(song, t);
+  if (move) {
+    const to = curMel(song); to.notes = to.notes.concat(fm.notes).sort((a, c) => a.t - c.t); to.len = Math.max(to.len, fm.len);
+    delete song.mel[from];
+  }
+  pushSongUndo(b, (move ? 'Melodie verschoben auf ' : 'Melodie-Spur: ') + S.tracks[t].name); songChanged();
   return t;
 }
 const songTrackPlays = t => !!S.song && S.song.lanes[t].some(e => e.slot >= 0);
@@ -13398,7 +13452,7 @@ function songCycle(t, bar) {
   const has = S.tracks[t].clips.map((c, s) => (c ? s : -1)).filter(s => s >= 0);
   let next = RecHelpers.slotAt(song, t, bar), guard = 0;
   do { next = RecHelpers.cycleCell(song, t, bar, NS()); guard++; } while (next >= 0 && !has.includes(next) && guard < NS() + 2);
-  if (bar >= song.bars && next >= 0) { songSetBars(song, bar + 1); song.melody.len = Math.max(song.melody.len || 1, song.bars); }
+  if (bar >= song.bars && next >= 0) { songSetBars(song, bar + 1); const cm = curMel(song); cm.len = Math.max(cm.len || 1, song.bars); }
   pushSongUndo(before, 'Song: ' + S.tracks[t].name + ' Takt ' + (bar + 1), 'cell:' + t + ':' + bar);
   songChanged(); haptic('tick');
   // the song is playing: the change is heard from that bar on (a later bar of this pass, or the next pass)
@@ -13537,9 +13591,9 @@ function svRulerTap(bar) {
   UI.dirty.song = true; svButtons();
 }
 function songClearMelody() {
-  const song = S.song; if (!song || !song.melody.notes.length) return false;
-  const b = songSnapshot(); song.melody.notes = []; pushSongUndo(b, 'Melodie geleert'); songChanged();
-  toast('Melodie geleert', songUndoAct());
+  const song = S.song; if (!song || !curMel(song).notes.length) return false;
+  const b = songSnapshot(); curMel(song).notes = []; pushSongUndo(b, 'Melodie geleert'); songChanged();
+  toast('Melodie auf ' + S.tracks[song.melodyTrack].name + ' geleert', songUndoAct());
   return true;
 }
 // WP6 API (I-04): on/off, boolean back; the range stays as it is (V0c)
@@ -13572,7 +13626,7 @@ function songFromChain(chain) {
   const raw = RecHelpers.fromChain(chain, NT(), (t, sc) => !!(S.tracks[t] && S.tracks[t].clips[sc]));
   const before = songSnapshot(), old = S.song;
   S.song = normSong({bars: Math.min(raw.bars, SONG_MAX_BARS), loop: old ? (loopAll(old) ? {on: old.loop.on, a: 0, b: SONG_MAX_BARS} : old.loop) : false, melodyTrack: old ? old.melodyTrack : (isSynthT(R.selT) ? R.selT : 3),
-    lanes: raw.lanes, carrier: [{beat: 0, target: null}], melody: old ? old.melody : null}, S.key);
+    lanes: raw.lanes, carrier: [{beat: 0, target: null}], mel: old ? old.mel : null}, S.key);
   pushSongUndo(before, 'Kette → Song'); songChanged();
   return S.song.bars;
 }
@@ -13817,7 +13871,7 @@ function restoreTrack(i, val) {
     if (R.editor && R.selT === i) closeEditor();
     S.tracks.pop();
     if (S.song && S.song.lanes.length > NT()) S.song.lanes.length = NT();
-    if (S.song && S.song.melodyTrack >= NT()) S.song.melodyTrack = 3;
+    if (S.song) { for (const k of Object.keys(S.song.mel)) if (+k >= NT()) delete S.song.mel[k]; if (S.song.melodyTrack >= NT()) melChoose(S.song, MEL_T < NT() ? MEL_T : 3); }
     if (R.selT >= NT()) R.selT = 3;
   } else {
     if (i !== NT()) return;
@@ -13852,7 +13906,7 @@ function removeTrack(i) {
   const name = S.tracks[i].name, songBefore = songSnapshot(), trBefore = trackSnapshot(i);
   // the song first (its lane, the song melody when it sits on this track), then the track: undo restores the track before the song
   if (S.song) {
-    if (S.song.melodyTrack === i) { S.song.melodyTrack = 3; S.song.melody.notes = []; }
+    delete S.song.mel[i]; if (S.song.melodyTrack === i) melChoose(S.song, MEL_T < NT() ? MEL_T : 3);
     S.song.lanes.splice(i, 1);
   }
   restoreTrack(i, null);
@@ -15171,7 +15225,7 @@ function svButtons() {
   B.bPlay.classList.toggle('on', play); B.bPlay.setAttribute('aria-label', play ? 'Song anhalten' : 'Song abspielen');
   B.bPlay.disabled = !song || !song.bars;
   B.bMel.disabled = !play; B.bMel.classList.toggle('on', !!R.melRec);
-  const mt = song ? song.melodyTrack : (isSynthT(R.selT) ? R.selT : 3);
+  const mt = song ? song.melodyTrack : melSuggest(true);          // V2b: no song yet = what ● SONG would take
   B.bMt.textContent = trackTag(mt) + ' ▾'; B.bMt.setAttribute('aria-label', 'Melodie-Spur: ' + S.tracks[mt].name);
   // ↩ SONG not during a take: the recorded tracks are handed back at its end (V0c; nothing moves while ● runs, N7S-02)
   B.bBack.hidden = !(play && !rec && (R.songOverride.some(Boolean) || R.carrierLive));
@@ -15181,7 +15235,7 @@ function svButtons() {
   if (lv.textContent !== ll) { lv.textContent = ll; B.bLoop.setAttribute('aria-label', 'Schleife: ' + ll); }
   B.bLoop.classList.toggle('on', !!(song && song.loop.on));
   SV.empty.hidden = !!(song && (song.bars || rec));
-  if (SV.lm) { const sm = SV.lm.querySelector('small'), tx = trackTag(mt) + ' · ⇅ fest'; if (sm && sm.textContent !== tx) sm.textContent = tx; }
+  if (SV.lm) { const sm = SV.lm.querySelector('small'), tx = trackTag(mt) + ' ⇅ fest'; if (sm && sm.textContent !== tx) sm.textContent = tx; }
   // the take's banner over the ruler (N7S-02): an overlay, nothing moves
   if (SV.ban) {
     const sr = R.songRec, on = !!(sr && (sr.over || !sr.pending));
@@ -15218,12 +15272,17 @@ function recBanTop() {
 }
 function openMelTrackPop(anchor) {
   openPop(anchor, p => {
-    const mt = S.song ? S.song.melodyTrack : 3;
-    const list = synthTracks().map(t => ({t, plays: songTrackPlays(t)})).sort((a, b) => a.plays - b.plays || a.t - b.t);
-    p.innerHTML = '<h4>Melodie auf Spur</h4><div class="plist mtl">' + list.map(x => `<button class="rb${x.t === mt ? ' on' : ''}" data-t="${x.t}"><b>${esc(S.tracks[x.t].name)}</b><small>${x.plays ? 'spielt Clips' : 'frei'} · ${esc(S.tracks[x.t].sound.name)}</small></button>`).join('') + '</div>' +
-      '<p class="small">Die Melodie nutzt Klang und Stimmen der Spur – eine freie Spur schneidet ihr keine Töne ab.</p>';
+    UI.melMove = false;                                             // „mitnehmen“ starts off each time
+    const song = S.song, mt = song ? song.melodyTrack : MEL_T, nOf = t => (song && song.mel[t] ? song.mel[t].notes.length : 0);
+    // V2b: MELODIE first (its own voices), then the free tracks; a row names its song-melody notes
+    const list = synthTracks().map(t => ({t, plays: songTrackPlays(t)})).sort((a, b) => (b.t === MEL_T) - (a.t === MEL_T) || a.plays - b.plays || a.t - b.t);
+    const nm = nOf(mt);
+    p.innerHTML = '<h4>Melodie-Spur</h4><div class="plist mtl">' + list.map(x => { const n = nOf(x.t); return `<button class="rb${x.t === mt ? ' on' : ''}" data-t="${x.t}"><b>${esc(S.tracks[x.t].name)}${n ? ' ♪' : ''}</b><small>${n ? n + (n === 1 ? ' Note' : ' Noten') + ' · ' : ''}${x.plays ? 'spielt Clips' : 'frei'} · ${esc(S.tracks[x.t].sound.name)}</small></button>`; }).join('') + '</div>' +
+      (nm ? `<button class="rb mtmove${UI.melMove ? ' on' : ''}" data-mv="1" aria-pressed="${!!UI.melMove}">${UI.melMove ? '✓' : '○'} ${nm} ${nm === 1 ? 'Note' : 'Noten'} von ${esc(S.tracks[mt].name)} mitnehmen</button>` : '') +
+      '<p class="small">Jede Spur spielt ihre eigene Song-Melodie mit ihrem Klang. Gewählt wird, welche die MEL.-Zeile zeigt und ● aufnimmt.</p>';
     guardTouch(p);
-    onTap(p, b => { closePop(); const t = +b.dataset.t, was = S.song ? S.song.melodyTrack : null; setMelodyTrack(t); if (was !== t) melShareHint(); svButtons(); UI.dirty.song = true; }, 'button[data-t]');
+    onTap(p, b => { UI.melMove = !UI.melMove; b.classList.toggle('on', UI.melMove); b.setAttribute('aria-pressed', String(UI.melMove)); b.firstChild.textContent = (UI.melMove ? '✓' : '○') + b.firstChild.textContent.slice(1); haptic('tick'); }, 'button[data-mv]');
+    onTap(p, b => { closePop(); const t = +b.dataset.t, was = S.song ? S.song.melodyTrack : null; setMelodyTrack(t, {move: !!UI.melMove}); UI.melMove = false; if (was !== t) melShareHint(); svButtons(); UI.dirty.song = true; }, 'button[data-t]');
   }, {name: 'meltrack'});
 }
 /* ---------- V0c sheets of the song view: Start-Blatt, SCHLEIFE, Akkord-Auswahl (ChordPick), AKKORDE menu, quantize ---------- */
@@ -15419,8 +15478,8 @@ function openQuantChords(anchor) {
 }
 function openMelPop(anchor) {
   openPop(anchor, p => {
-    const n = S.song ? S.song.melody.notes.length : 0;
-    p.innerHTML = `<h4>Melodie · ${n} ${n === 1 ? 'Note' : 'Noten'}</h4><div class="plist"><button class="rb" data-a="edit">Bearbeiten</button><button class="rb" data-a="clip">Als Clip …</button><button class="rb" data-a="clear"${n ? '' : ' disabled'}>Melodie leeren</button></div>` +
+    const n = S.song ? curMel(S.song).notes.length : 0, mtn = S.song ? ' · ' + esc(S.tracks[S.song.melodyTrack].name) : '';
+    p.innerHTML = `<h4>Melodie${mtn} · ${n} ${n === 1 ? 'Note' : 'Noten'}</h4><div class="plist"><button class="rb" data-a="edit">Bearbeiten</button><button class="rb" data-a="clip">Als Clip …</button><button class="rb" data-a="clear"${n ? '' : ' disabled'}>Melodie leeren</button></div>` +
       `<h4>Song</h4><div class="plist"><button class="rb" data-a="kette">Kette aus Szenen …</button><button class="rb" data-a="del"${S.song ? '' : ' disabled'}>Song löschen</button></div>`;
     guardTouch(p);
     onTap(p, b => { const a = b.dataset.a; if (a === 'kette') { openKette(anchor); return; } closePop(); if (a === 'edit') openMelodyRoll(); else if (a === 'clip') openMelodyRoll(true); else if (a === 'clear') songClearMelody(); else if (a === 'del') songDelete(); }, 'button[data-a]');
@@ -15619,16 +15678,19 @@ function svDraw(force, sbIn) {
     });
     g.textAlign = 'center';
     // MELODIE: the notes as small bars, pitch inside the lane
-    const mel = song.melody, ns = mel.notes, ym = ru + svMelRow() * rh;
-    if (ns.length) {
-      let lo = 127, hi = 0; for (const n of ns) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
-      const span = Math.max(6, hi - lo), mc = SV.cols[song.melodyTrack] || '#fff';
-      g.fillStyle = mc;
-      for (const n of ns) {
+    // V2b: the chosen track's melody bright in its colour; the other tracks' song melodies faint behind it (they play too)
+    const ns = curMel(song).notes, ym = ru + svMelRow() * rh, others = melTracks(song).filter(t => t !== song.melodyTrack);
+    if (ns.length || others.length) {
+      let lo = 127, hi = 0;
+      for (const t of others.concat(ns.length ? [song.melodyTrack] : [])) for (const n of song.mel[t].notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
+      const span = Math.max(6, hi - lo);
+      const bars = (list, h) => { for (const n of list) {
         const x = n.t / 4 * cw - SV.x, w = Math.max(2, n.d / 4 * cw); if (x > W || x + w < 0) continue;
-        const yy = ym + 3 + (1 - (n.n - lo) / span) * (rh - 9);
-        g.fillRect(x, yy, w, 3);
-      }
+        g.fillRect(x, ym + 3 + (1 - (n.n - lo) / span) * (rh - 9), w, h);
+      } };
+      g.globalAlpha = .5; for (const t of others) { g.fillStyle = SV.cols[t] || '#fff'; bars(song.mel[t].notes, 2); } g.globalAlpha = 1;
+      g.fillStyle = SV.cols[song.melodyTrack] || '#fff'; bars(ns, 3);
+      if (!ns.length) { g.fillStyle = '#6b7080'; g.textAlign = 'left'; g.fillText(trackTag(song.melodyTrack) + ': leer', Math.max(4, 4 - SV.x), ym + rh / 2); g.textAlign = 'center'; }
     } else { g.fillStyle = '#4a4e57'; g.textAlign = 'left'; g.fillText(R.melRec || R.songRec ? 'spielen = Melodie' : 'antippen = Melodie bearbeiten', Math.max(4, 4 - SV.x), ym + rh / 2); g.textAlign = 'center'; }
     // song end
     const xe = X(bars); g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(xe, ru, 1, H - ru);
@@ -15671,13 +15733,18 @@ function svDraw(force, sbIn) {
     }
   }
   // labels: the track names and the melody track mark
-  const L = SV.labs; if (L) { for (const d of L.querySelectorAll('.sv-l.trk')) { const i = +d.dataset.t, sp = d.children[1]; if (i < 0 || !S.tracks[i]) continue; const nm = svShort(i) + (song && song.melodyTrack === i ? ' ♪' : ''); if (sp.textContent !== nm) sp.textContent = nm; } }
+  const L = SV.labs; if (L) { for (const d of L.querySelectorAll('.sv-l.trk')) { const i = +d.dataset.t, sp = d.children[1]; if (i < 0 || !S.tracks[i]) continue; 
+    // V2b: ♪ = the track has a song melody or is the chosen melody track (then in its colour); the short tag (as on the [MEL ▾]
+    // chip: S2, MEL) keeps the ♪ inside the narrow label column
+    const has = !!(song && song.mel[i] && song.mel[i].notes.length), cho = !!(song && song.melodyTrack === i), mk = has || cho ? (cho ? 'cho' : 'has') : '';
+    const nm = mk ? trackTag(i) + ' ♪' : svShort(i); if (sp.textContent !== nm) sp.textContent = nm;
+    if ((d.dataset.mel || '') !== mk) { d.dataset.mel = mk; d.classList.toggle('mcho', cho); } } }
 }
-/* melody lane → the piano roll on song.melody (§3.9): the clip editor with the melody as its clip; every gesture is one
+/* melody lane → the piano roll on the chosen track's song melody (§3.9, V2b: song.mel[melodyTrack]): the clip editor with the melody as its clip; every gesture is one
    undo step (kind 'song'); notes stay as heard (never mapped). [Als Clip] (P1 „Melodie → Clip“): the selected bar range
    (the ruler's Loop-Bereich) becomes a clip in the first free slot of the melody track, keyed like FANG */
 function openMelodyRoll(asClip) {
-  if (!S.song) { S.song = newSongRaw(isSynthT(R.selT) ? R.selT : 3); songChanged(); }
+  if (!S.song) { S.song = newSongRaw(melSuggest(true)); songChanged(); }     // V2b: the track the chip names (MELODIE first)
   const t = S.song.melodyTrack;
   if (!EL.rollSheet.classList.contains('open')) UI.shield = null;
   closeSheets(); R.editor = 'roll'; ED.rollAt = {t, s: -1, mel: true};
@@ -15688,12 +15755,12 @@ function openMelodyRoll(asClip) {
   if (asClip) toast('Takte im Lineal wählen, dann [Als Clip]');
 }
 function melodyModel(t) {
-  let snap = null; const cur = () => S.song && S.song.melody;
+  let snap = null; const cur = () => S.song && curMel(S.song);
   return {
     getClip: cur,
     begin() { snap = songSnapshot(); },
     end(changed, label) { if (changed && snap) { const m = cur(); m.notes.sort((a, b) => a.t - b.t); pushSongUndo(snap, 'Melodie: ' + (label || 'Bearbeiten')); songChanged(); folEdit('mel'); } snap = null; },
-    revert() { if (snap) { const o = JSON.parse(snap), m = cur(); if (o && m) { m.notes = o.melody.notes; m.len = o.melody.len; } } snap = null; },
+    revert() { if (snap) { const o = JSON.parse(snap), m = cur(), om = o && o.mel && o.mel[S.song.melodyTrack]; if (m) { m.notes = om ? om.notes : []; m.len = om ? om.len : 1; } } snap = null; },
     undo: () => { undo(); }, redo: () => { redo(); },
     canUndo: () => UNDO.length > 0, canRedo: () => REDO.length > 0,
     audition(n, v) { const vo = auditionStart(t, n, v == null ? .8 : v); if (vo) vo.release(AU.ctx.currentTime + .18); }
@@ -15705,7 +15772,7 @@ function melodyToClip() {
   const a = lp ? lp.a : 0, n = clamp(lp ? lp.b - lp.a + 1 : 1, 1, 16);
   const len = n <= 1 ? 1 : n <= 2 ? 2 : n <= 4 ? 4 : n <= 8 ? 8 : 16, t0 = a * 4, t1 = t0 + len * 4;
   const si = tr.clips.findIndex(c => !c); if (si < 0) { toast('Kein freier Platz auf ' + tr.name); return false; }
-  const ns = song.melody.notes.filter(x => x.t >= t0 - 1e-6 && x.t < t1 - 1e-6);
+  const ns = curMel(song).notes.filter(x => x.t >= t0 - 1e-6 && x.t < t1 - 1e-6);
   if (!ns.length) { toast('In diesen Takten ist keine Melodie'); return false; }
   // the key like FANG (§3.6): the Träger in effect at the range start → keyForRecording, src 'carrier'; none → auto
   let tg = null; for (const c of song.carrier) { if (c.beat > t0 + 1e-6) break; tg = c.target; }
@@ -22793,7 +22860,7 @@ function rollKbApply() {
 }
 function rollHeadUpdate() {
   if (!ED.rollInfo || !ED.rollAt) return;
-  if (ED.rollAt.mel) { const m = S.song && S.song.melody; if (!m) return; const txt = m.notes.length + (m.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + m.len + (m.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; ED.rollInfo.title = txt + ' · wie gespielt (nie umgerechnet)'; } return; }
+  if (ED.rollAt.mel) { const m = S.song && curMel(S.song); if (!m) return; const txt = m.notes.length + (m.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + m.len + (m.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; ED.rollInfo.title = txt + ' · wie gespielt (nie umgerechnet)'; } return; }
   const c = S.tracks[ED.rollAt.t].clips[ED.rollAt.s]; if (!c) return;
   if (ED.laufBtn) { const ok = laufCheck(c).ok; ED.laufBtn.classList.toggle('dis', !ok); ED.laufBtn.setAttribute('aria-disabled', String(!ok)); ED.laufBtn.title = ok ? 'LAUF: Schrittansicht für Basslauf und Sequenz' : LAUF_MSG; }
   const txt = (S.tracks[ED.rollAt.t].kind === 'synth' ? keyName(shownClipKey(ED.rollAt.s, c)) + ' · ' : '') + c.len + (c.len === 1 ? ' Takt' : ' Takte');
@@ -22816,7 +22883,8 @@ function buildMelodyRoll() {
   sh.innerHTML = ''; sh.style.setProperty('--tc', `var(--t${t + 1})`);
   const land = window.matchMedia('(orientation: landscape)').matches; ED.rollLand = land;
   const head = el('div', 'rhead'), ht = el('div', 'rht');
-  ht.appendChild(el('div', 'sh-title', `<span class="dot"></span><b>Melodie · ${esc(tr.name)}</b>`));
+  // V2b: the chosen melody track as its short tag (S2, S4 …; MELODIE alone) in its own box, so only „Melodie“ may be cut (P3)
+  const ttl = el('div', 'sh-title', `<span class="dot"></span><b>Melodie</b>${t === MEL_T ? '' : ' <b class="mtg">· ' + trackTag(t) + '</b>'}`); ttl.title = 'Song-Melodie auf ' + tr.name; ht.appendChild(ttl);
   const info = el('span', 'rinfo'); ht.appendChild(info); ED.rollInfo = info;
   const chip = el('span', 'trchip'); chip.hidden = true; ht.appendChild(chip); ED.trChip = chip;
   head.appendChild(ht); ED.rollHT = ht;
@@ -22850,7 +22918,7 @@ function closeRoll() {
 function rollFrame(bAud) {
   if (ED.rollAt.mel) {
     if (!S.song) { closeRoll(); return; }
-    const sb = svSongBeat(bAud), L = S.song.melody.len * 4, b = sb != null && sb >= 0 ? sb % Math.max(4, L) : -1;
+    const sb = svSongBeat(bAud), L = curMel(S.song).len * 4, b = sb != null && sb >= 0 ? sb % Math.max(4, L) : -1;
     folRoll('mel', b); ED.roll.playhead(b); return;
   }
   const {t, s} = ED.rollAt, c = S.tracks[t].clips[s];
@@ -26028,7 +26096,7 @@ function buildMidiSong(withC) {
         dedAdd(i, ch, ded, st, en, clamp(Math.round(p), 0, 127), nt.v);
       }
     }
-    if (i === song.melodyTrack) for (const n of song.melody.notes) { if (n.t >= L - 1e-9) continue; dedAdd(i, ch, ded, n.t, Math.min(L, n.t + Math.max(n.d, 1 / 32)), clamp(n.n, 0, 127), n.v); }
+    if (song.mel[i]) for (const n of song.mel[i].notes) { if (n.t >= L - 1e-9) continue; dedAdd(i, ch, ded, n.t, Math.min(L, n.t + Math.max(n.d, 1 / 32)), clamp(n.n, 0, 127), n.v); }
     for (const x of ded.values()) { evs[i].push({tk: x.t0, b: [0x90 | x.ch, x.p, x.v], o: 1}, {tk: x.t1, b: [0x80 | x.ch, x.p, 0], o: 0}); counts[i]++; }
   });
   if (!counts.some(Boolean)) return null;
@@ -27873,7 +27941,9 @@ const SYNQUENZER = {
   kits: () => kitList().map(k => ({id: k.id, name: k.name})), patterns: () => Object.keys(DRUM_PATTERNS),
   drumSlot: voice => { const sl = resolveDrum(voice); if (!sl) throw new Error('Unbekannte Drum-Stimme: ' + voice); return deep(slotParams(sl.id)); },
   // WP6 (§16, §3.9): song
-  song: () => (S.song ? deep(S.song) : null),
+  // V2b: + `melody` (read-only alias of the chosen track's song melody, like WP6; not stored)
+  song: () => { if (!S.song) return null; const o = deep(S.song); o.melody = deep(curMel(S.song)); return o; },
+  songMelNotes: t => { const s = S.song; if (!s) return []; const m = s.mel[t == null ? s.melodyTrack : t | 0]; return m ? deep(m.notes) : []; },
   songRec: on => (on === false ? songRecEnd() : on === true ? songRecStart() : songRecToggle()),
   songPlay: on => (on === false ? (songPlayEnd(true), false) : songPlayStart(isNum(on) ? on : 0)),
   songCycle: (t, bar) => songCycle(t, bar), backToSong: () => songBack(),
