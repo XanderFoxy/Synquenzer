@@ -2474,3 +2474,107 @@ Stimme (−23 dB) statt beim Raum (−50 dB), und jede normale Pause wurde als �
 | Smoke | ✓ ohne Fehler | `v3-vs1fix-smoke.png` |
 
 **Für Xander im Dashboard:** nichts. Layout unverändert.
+
+
+## V2a — Spuren und Szenen (Format 4, bis 8 Spuren, 8 Szenen, MELODIE, feste uid) · App 4.0.0
+
+Grundlage: Nachtrag 2 (N2-2a-01, K2-70, Paketliste: 4.0.0 / +47 KB), Nachtrag 1 und Spezifikation v3 §17 V2a.
+
+**Neu**
+1. **Projektformat 4.** Spuren ≤ 8 mit festem Datenindex: 0–3 Synth 1–4, **4 DRUMS** (bleibt, alte API-Aufrufe mit Index 4 treffen die
+   Drums), **5 MELODIE**, 6–7 Synth 5/6. 8 Szenen, je Spur `clips[8]`, Anzeige-Reihenfolge `ui.order` (Synth 1–4, MELODIE, Synth 5/6,
+   DRUMS unten), dazu `parts [null×8]`, `shift 0`, im Song `marks/own/xp/src` (für V2b+) und `song.lanes.length === NT`. `song.melody` und
+   `melodyTrack` bleiben (die Wanderung nach `song.mel` ist V2b). Format-3-Dateien (auch WP6/WP7, Demo, `#import`) werden beim Laden
+   umgebaut: MELODIE angehängt (Klang **Melodie-Lead** = Mini-Lead als POLY, Poly 4, Glide 0; ⇅ fest; Tastatur-Oktave 5; Farbe t6),
+   Szenen 5–8 leer, alles andere deep-equal. Gespeichert wird Format 4.
+2. **Feste `uid` (N2-2a-01, K2-70)** für jede Spur und Szene: 10 Zeichen `0-9a-v`. Neu: zufällig (`crypto.randomUUID`); beim Laden einer
+   Datei ohne uid deterministisch `hexToUid(fnv(pid|t|i|a)+fnv(pid|t|i|b))` (Szenen mit `|s|`); doppelte uids werden repariert
+   (Konsolenzeile `SYNQUENZER: doppelte uid … repariert → …`). Speichern/Laden, Undo/Redo und Projekt-Kopie behalten sie.
+3. **Undo-Gruppe** `{kind:'group', label, items}`: rückwärts zurück, vorwärts wieder, zählt als **ein** Schritt der 60 (Spur entfernen =
+   Gruppe [Song, Spur]).
+4. **Matrix-Banken.** Passen 8 Szenen-Spalten nicht (≥ 56 px je Spalte), zeigt die Matrix 4 und **[SZ 1–4 / 5–8]** schaltet (neben
+   SONG ⇄; in 320 px statt „■ alle“ – dort öffnet Halten das Stopp-Blatt). Läuft eine Szene der anderen Bank, trägt der Umschalter einen
+   Punkt. Passen die Spuren nicht in Reihen ≥ 40 px (P) / ≥ 30 px (L), blättert **[▲▼ 1/2]** im DRUMS-Kopf die Synth-Seiten;
+   DRUMS bleibt unten. Die Matrix scrollt nie.
+5. **[＋ Spur] / Spur entfernen**: Spur-Blatt durch **Halten eines Spurkopfs** (Klang öffnen, ＋ Spur, Spur entfernen, Hinweise) und im
+   Menü „Projekt“ die Zeile „Spuren n/8“. Höchstens 8 („Höchstens 8 Spuren – …“), entfernt wird nur die zuletzt angefügte Spur
+   (Synth 5/6; MELODIE und DRUMS nicht). Entfernen nimmt Clips, Song-Spur und eine Song-Melodie auf der Spur mit – ein Undo stellt alles her.
+6. **Song-Ansicht** mit NT Spurzeilen; reichen die Zeilen nicht (< 26 px), blättert ein Umschalter in der Zelle „Takt“ (V2e verlegt ihn).
+7. **CPU-Hinweis** (V2a-11): ≥ 3 spielende Spuren mit Poly ≥ 6 und Unison ≥ 5 → einmal „Viel Last – CPU-Begrenzer greift ggf.“
+8. **MIDI** bis V2a′: Synth 1–4 + DRUMS (`MIDI_T = 5`), alle 8 Szenen; Hinweis im Export-Menü „MIDI enthält Synth 1–4 und DRUMS – MELODIE
+   und weitere Spuren kommen in einer der nächsten Versionen dazu.“
+9. Farben `--t6/--t7/--t8` (+ `a`-Töne), Test-API: `tracks()`, `addTrack`, `removeTrack`, `canAddTrack`, `sceneBank(n)`, `trackBank(n)`,
+   `matrixInfo()`, `NT`, `NS`, `isDrum`, `cpuHeavy()`, `undoInfo()`.
+
+**V2a-08 (Literal-Stellen):** alle `< 5`/`< 4`-Schleifen über Spuren/Szenen, `tracks[4]`, `[null×4]`, `clamp(…,0,3|4)` ersetzt durch
+`NT()`/`NS()`/`DRUM_T`/`synthTracks()`; grep im App-Block: **0** Treffer. Begründete Ausnahmen (keine Spuren/Szenen, im Test ausgenommen):
+4er-Schleifen über FM-Hüllkurven-Stufen (`fmSetEnv`, `o_.r[…]`, `v.peg`), Byte-/Bit-Gruppen (`b[q…]`, `newProjectId`), Mikro-Messung
+(`chirp`, `micXcorr`), SVG (`createElementNS`), Beschriftungen (`lbls`), Akkord-Töne `T[0-3]`; die 4 Szenen je Bank (`[0,1,2,3]`) sind
+die Bankgröße. MIDI nutzt bewusst `MIDI_T = 5` (V2a′).
+
+**Abweichungen (begründet)**
+- SZ-Umschalter links neben SONG ⇄ (P1/P2/L); in P3 (320 px) ersetzt er „■ alle“, Halten = Stopp-Blatt (sonst wäre er 34 × 14 px).
+- Spur-Blatt per Halten des Spurkopfs (neu, die Spezifikation nennt nur die Knöpfe); dazu die Menüzeile.
+- V2a-02 M-BAND gegen 3.11.5 (VS1-fix, der direkte Vorgänger) statt WP7: Bänder ≤ 0,07 dB, noteLog 172 Noten identisch.
+- V2a-04 prüft `song.melody`/`melodyTrack` statt `song.mel[7]` (das Feld kommt mit V2b).
+- Melodie-Vorschlag: die freie MELODIE (POLY) wird jetzt vor einer MONO-Spur gewählt (V0c-10 erwartete Synth 4 MONO; Test angepasst).
+- Projekt-Kopie behält die uids (eine Spur-/Szenen-Kopie gibt es noch nicht; sie vergibt neue, sobald es sie gibt).
+- Test-Harness: `v3-vo1-harness` max_format 4, `v3-vo2-harness` APPCODE 4000000 (Sicherungen `*.pre-v2a.mjs`).
+
+**Fach-Prüfung (vor der Abnahme, Teil J: V2a ● FP-SONG, FP-TOUCH)**
+- FP-SONG: M-ZEIT (▶7 in Takt 2 → Start genau Taktstrich 8, ±0,002 Schlag), `clips` deep-equal nach Migration, Undo-Gruppe + Rundweg
+  Speichern/Laden (uids deep-equal), Taktstrich-Regel, Harmonie-Kern (noteLog 172 identisch, M-BAND), MIDI (Export enthält 5 Spuren, alle
+  8 Szenen), FOLGEN (MELODIE fest). **Befund 1:** neue Projekte bekamen zufällige uids → `isPristine` erkannte die unberührte Demo nicht
+  mehr und parkte sie bei „Neu“ als „Demo“-Projekt → uids im Vergleich ausgenommen. **Befund 2:** Szenen 5–8 einer Format-3-Datei
+  bekamen zufällige uids (nicht deterministisch) → alle Szenen-uids erst nach dem Lesen der Datei vergeben.
+- FP-TOUCH: L4 und M-PLATZ in P1–P3, L1, L2, W mit 6 und 8 Spuren und beiden Banken (288 Prüfungen), Halten vs. Tippen auf dem
+  Spurkopf, ein Undo je Aktion. **Befunde (behoben):** SZ in P3 gestapelt nur 34 × 14 px → ersetzt „■ alle“; „SONG ⇄“ in P2 (49 px) und
+  L2 (36 px, jetzt zweizeilig) abgeschnitten; „FEST“ der MELODIE überdeckte Name/Klangzeile (Kopf bekommt `hfix`, Platz für das Wort);
+  „DRUMS“ neben ▲▼ abgeschnitten (▲▼ 34 px, in P3/L2 27 px, 🔒 weicht in kleinen Köpfen); [＋ Spur] im Menü schließt das Menü, damit
+  man die neue Spur sieht. Offen (schon vor V2a so): in P3 berührt die Auslassung „SYNT…“ das ⇅.
+
+**Abnahme**
+
+| Punkt | Ergebnis | Skript |
+|---|---|---|
+| V2a-01 neues Projekt 6 Spuren, DRUMS = 4, MELODIE = 5, Format 4 | ✓ | `v3-v2a-accept.mjs` A |
+| V2a-02 Format-3-Demo: deep-equal, MELODIE angehängt, Szenen 5–8 leer, M-BAND ≤ 0,5 dB (gemessen ≤ 0,07), speichert Format 4 | ✓ | A, `v3-v2a-band.mjs` 6/6 |
+| V2a-03 Index 4 = Drums (`tapSlot(4,0)`, `pad()`, `setDrumParam`, `getSound(4).engine`) | ✓ | A |
+| V2a-04 ＋ Spur ×2, drittes abgewiesen; Entfernen Synth 6 → ein Undo (group), Redo, ein Schritt der 60 | ✓ | A |
+| V2a-05 Clip in Szene 7, ▶7 startet am Taktstrich (M-ZEIT) | ✓ | C |
+| V2a-06 Szenenbank P1 [5–8], Punkt bei laufender Szene der anderen Bank | ✓ | B |
+| V2a-07 Spurbank P2 Seiten, Reihen ≥ 40 px (P) / ≥ 30 px (L), Matrix scrollt nicht | ✓ | B |
+| V2a-08 keine Literal-Schleifen / `tracks[4]` (0 Treffer, Ausnahmen oben) | ✓ | A |
+| V2a-09 SG1–SG8 mit 8 Spuren, `song.lanes.length === NT` | ✓ 27/27 (P, L) | `v3-v2a-adapt-wp6-song.mjs P 8` |
+| V2a-10 `tracks()` mel nur Index 5, role null, alte Dateien nur über die Migration | ✓ | A |
+| V2a-11 CPU-Hinweis genau einmal | ✓ | D |
+| V2a-12 PE1 (P, L: 60 fps, Tick p95 ≤ 1 ms) und PE2 (300 s, 8 Spuren: max 27 Stimmen, kein Anstieg, Heap +1,3 MB) | ✓ | `v3-v2a-pe1.mjs` 8/8, `v3-v2a-pe2.mjs` |
+| V2a-13 M-PLATZ 6 + 8 Spuren, beide Banken, alle Viewports; Regression, DoD | ✓ | B; Regression unten |
+| N2-2a-01 uid 10 × `0-9a-v`, eindeutig, deterministisch (K2-70), Reparatur, Rundweg, Undo/Redo | ✓ | A |
+| Gesamt `v3-v2a-accept.mjs ABCDE` | ✓ 331/331 | |
+| Smoke | ✓ ohne Fehler | `v3-v2a-smoke.png` |
+
+**Regression** (alle Listen von VS1, Vergleich mit `v3-vs1-reg`, `v3-v2a-regcmp.sh`): gleich wie vor V2a bis auf die gewollten Änderungen,
+die angepasste Kopien bekommen (`v3-v2a-adapt-*`: Version 4.0.0 / Format 4, NT Song-Zeilen, 8 Clip-Plätze, Melodie-Lead in den
+Start-Klängen, Menü-Affe ohne ＋ Spur/Entfernen, VS1-Abnahme zählt nur sichtbare Szenen-Tasten, V0c-08 AKKORDE-Zeile = `svChordRow()`,
+V0c-10 MELODIE). Angepasst grün: wp1-brand/misc/store, wp2-clip (5 Viewports), wp2-fang, wp3-store 55/55, wp3-api, wp6-song (6 und 8
+Spuren), wp6-extras, n0a, qareg-fmxio, rob5 18/18, vs0-net 8/8, vs1-net 7/7, vs1-accept 86/86, vo2-accept 57/57, vs1-dsp 10/10. Schon vor
+V2a rot und unverändert: node-fm, wp3-browser PR2, wp3-ui, wp4-offline FX3, wp7-accept-fm4, func-build C2/D5, rgq-old17, wp6-drums DR7,
+wp1-perf, sqr6-persist, v4a-node V4a-11, v4bfix-big, fp4f-loop, v0c-ui V0c-05, v0c-song V0c-07 (Zeitflattern, allein grün). Unter Last
+flatternd, allein grün: v0a-roll, wp2-rec, wp4-engine FX5, wp3-store PF7.
+
+**Budget:** 2 172 290 B (+37,1 KB roh, +12,4 KB gzip) – Rahmen +47 KB.
+
+**Rollout** (Supabase-MCP, ref `dbdnsryoivvezspgydpx`): 20.10. `list_migrations` (… vs1_max_app, max_app_vorab_3_19, v2a_max_format_4 –
+`max_format` 4 war schon eingespielt) → `apply_migration v2a_max_app` (`max_app = greatest(max_app, 4000000)`, Datei
+`synq-online/r7-v2a-max-app.sql`; der erste Versuch lief in eine Zeitüberschreitung und wurde nicht eingetragen) → success;
+`execute_sql` (nur lesen) `max_app` 4000000, `max_format` 4. Kein Aufruf nennt das Klassenzimmer-Projekt.
+**Für Xander im Dashboard:** nichts.
+
+**Für Xander am iPhone (nach dem Ausliefern von 4.0.0):**
+1. Das letzte Projekt öffnet sich mit einer neuen Zeile **MELODIE** (über DRUMS, „fest“); alles andere klingt wie vorher.
+2. Oben links neben SONG ⇄ steht **SZ 1–4**: antippen → Szenen ▶5–▶8. Einen Clip in Szene 7 einspielen und ▶7 tippen: startet am Taktanfang.
+3. Einen Spurkopf **halten** → Spur-Blatt → **＋ Spur** (zweimal: Synth 5 und 6). Passt es nicht mehr, blättert **▲▼ 1/2** im DRUMS-Kopf.
+4. Synth 6 halten → **Spur entfernen** → dann ↶: Spur und Clips sind wieder da.
+5. Speichern/Online: das Projekt wird als Format 4 gespeichert; ein Gerät, das noch die alte App (3.11.x) im Speicher hat, kann es
+   nicht überschreiben (Server-Wächter) – dort die Seite einmal neu laden.

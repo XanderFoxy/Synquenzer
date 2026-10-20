@@ -24,6 +24,8 @@
   --amber:#ffb22e; --amber-dim:#4a3510; --amber-glow:rgba(255,178,46,.35);
   --t1:#4cc9f0; --t2:#8b9cff; --t3:#2dd4bf; --t4:#fb7185; --t5:#e879f9;
   --t1a:rgba(76,201,240,.22); --t2a:rgba(139,156,255,.22); --t3a:rgba(45,212,191,.22); --t4a:rgba(251,113,133,.22); --t5a:rgba(232,121,249,.22);
+  --t6:#a3e635; --t7:#4ade80; --t8:#c4a1ff;                                    /* V2a: MELODIE, Synth 5, Synth 6 */
+  --t6a:rgba(163,230,53,.22); --t7a:rgba(74,222,128,.22); --t8a:rgba(196,161,255,.22);
   --key-w:#ece6d8; --key-w-dn:#cfc6b2; --key-b:#1a1b1f; --key-b-dn:#3a3d45;
   --key-w-hi:#f7f3ea; --key-w-lo:#d8d0be; --key-b-hi:#33363d; --key-b-lo:#0e0f12;
   --key-w-tr:#f5dcab; --key-b-tr:#3b2a0e; --key-tr-on:#ffb22e; --key-w-tr-hi:#fbe9c8; --key-b-tr-hi:#5a4019;
@@ -165,13 +167,13 @@ svg{display:block}
 
 /* ---------- clip grid ---------- */
 #gridArea{position:relative;min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden;background:radial-gradient(120% 90% at 50% 0%,#14161a,var(--bg))}
-#clipGrid{flex:1 1 auto;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(84px,1.7fr) repeat(4,minmax(46px,1fr)) 40px;grid-template-rows:44px repeat(5,minmax(26px,1fr));gap:3px;padding:4px 8px}
-@media (orientation:landscape){#clipGrid{grid-template-rows:44px repeat(5,minmax(0,1fr));gap:2px 3px;padding:3px 6px}}
-@media (orientation:landscape) and (max-height:380px){#clipGrid{grid-template-rows:32px repeat(5,minmax(0,1fr))}}   /* 667×375: rows ≥ 30 px (§2.2) */
+#clipGrid{flex:1 1 auto;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(84px,1.7fr) repeat(var(--nsc,4),minmax(46px,1fr)) 40px;grid-template-rows:44px repeat(var(--ntr,5),minmax(26px,1fr));gap:3px;padding:4px 8px}
+@media (orientation:landscape){#clipGrid{grid-template-rows:44px repeat(var(--ntr,5),minmax(0,1fr));gap:2px 3px;padding:3px 6px}}
+@media (orientation:landscape) and (max-height:380px){#clipGrid{grid-template-rows:32px repeat(var(--ntr,5),minmax(0,1fr))}}   /* 667×375: rows ≥ 30 px (§2.2) */
 @media (orientation:landscape) and (max-width:759px) and (max-height:560px){
   #app{grid-template-columns:84px minmax(0,1fr) 260px}
   #chipQ,#chipLen{display:none!important}           /* [FANG] stays (§2.2: only Q and LÄNGE move to the popover) */
-  #clipGrid{grid-template-columns:minmax(60px,1.2fr) repeat(4,minmax(34px,1fr)) 40px;padding:3px 4px}   /* ■ per row ≥ 40 px wide */
+  #clipGrid{grid-template-columns:minmax(60px,1.2fr) repeat(var(--nsc,4),minmax(34px,1fr)) 40px;padding:3px 4px}   /* ■ per row ≥ 40 px wide */
   .chipT{height:34px;padding:0 6px;font-size:10px;letter-spacing:.02em}
   .chipT b{margin-left:3px}
   #strip{gap:4px;padding:3px 5px}
@@ -183,7 +185,36 @@ svg{display:block}
   #bFolgt .ck{display:none}
   #clipGrid .th .nm{font-size:11px;letter-spacing:0}
 }
-@media (orientation:landscape) and (min-height:561px){#clipGrid{grid-template-rows:44px repeat(5,minmax(30px,64px));gap:4px;padding:6px 10px;align-content:start}}
+@media (orientation:landscape) and (min-height:561px){#clipGrid{grid-template-rows:44px repeat(var(--ntr,5),minmax(30px,64px));gap:4px;padding:6px 10px;align-content:start}}
+/* V2a: matrix banks (§4.2): hidden bank / page = display:none; [SZ] next to SONG ⇄ (or under ■ at 320 px); [▲▼] left in the DRUMS head */
+.mxoff{display:none!important}
+.cnw{display:flex;gap:3px;min-width:0;min-height:0}
+.cnw .corner{flex:1 1 auto;min-width:0;height:100%}
+.saw{display:flex;flex-direction:column;gap:2px;min-width:0;min-height:0}
+.saw .stp.all{flex:1 1 0;height:auto;min-height:0}
+.szb,.tbb{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;min-width:0;min-height:0;color:var(--text)}
+.szb{flex:0 0 40px;height:100%}
+.szb small,.tbb small{font:700 9px/1 var(--font-ui);letter-spacing:.06em;color:var(--text-dim)}
+.szb b,.tbb b{font:700 11px/1 var(--font-num);letter-spacing:-.02em}
+.saw .szb{flex:1 1 0;height:auto;padding:0;white-space:nowrap}
+.saw .szb small{font-size:8px;letter-spacing:0}.saw .szb b{font-size:10px;letter-spacing:-.04em}
+.bdot{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--play);box-shadow:0 0 6px rgba(53,208,127,.6);display:none;pointer-events:none}
+.szb.hot .bdot,.tbb.hot .bdot{display:block}
+.th.wtb{padding-left:40px}
+.th.wtb .bar{left:0}
+/* V2a: „fest“ (MELODIE folgt nicht) is wider than ⇅ – the sound line / the name leave room for it; in compact heads the 🔒 of the
+   DRUMS head gives way to the ▲▼ page switch so the name stays readable */
+.th.hfix .sb{max-width:calc(100% - 26px)}
+@media (orientation:portrait) and (max-height:600px){.th.hfix .nm{max-width:calc(100% - 30px)}.th.hfix .fb{letter-spacing:0}.th.wtb .fb{display:none}#clipGrid .th.wtb .nm{font-size:10px;letter-spacing:0}}
+@media (orientation:landscape) and (max-height:560px){.th.hfix{padding-right:34px}.th.hfix .fb{letter-spacing:0}.th.wtb{padding-right:4px}.th.wtb .fb{display:none}#clipGrid .th.wtb .nm{font-size:10px;letter-spacing:0}}
+.tbb{position:absolute;left:3px;top:1px;bottom:1px;width:34px;z-index:2;border-radius:4px}
+@media (orientation:portrait) and (max-width:359px){.th.wtb{padding-left:33px}.tbb{width:27px;left:3px;top:1px;bottom:1px}.tbb small{font-size:8px}.tbb b{font-size:10px}}
+@media (orientation:landscape) and (max-width:700px) and (max-height:560px){.th.wtb{padding-left:33px}.tbb{width:27px;left:3px;top:1px;bottom:1px}.tbb small{font-size:8px}.tbb b{font-size:10px}}
+.mxfill{min-width:0;min-height:0}
+.cnw .corner.sw{padding:0 2px;overflow:hidden}
+.cnarrow .corner.sw .swl{font-size:10px;letter-spacing:0}
+.ctiny .corner.sw .swl{white-space:normal;font-size:9px;line-height:1.1;letter-spacing:0;text-align:center}   /* L2: „SONG“ over „⇄“ in ≈ 36 px */
+.th.wtb .nm{letter-spacing:0;font-size:11px}
 .corner{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:0 4px 5px 6px;min-width:0;min-height:0;overflow:hidden}
 .corner .lbl{font-size:9px;letter-spacing:.14em;color:var(--text-faint)}
 .corner .clogo{display:none;pointer-events:none}
@@ -456,6 +487,9 @@ svg{display:block}
 .sv-labs{flex:0 0 64px;display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
 .sv-lr{flex:0 0 var(--svr,20px);display:flex;align-items:center;padding-left:4px}
 .sv-lr .lbl{font-size:8px}
+.sv-lr{position:relative}
+.sv-tbb{position:absolute;inset:0;width:100%;height:100%;padding:0 4px;font:700 9px/1 var(--font-num);text-align:left;justify-content:flex-start;border-radius:3px;color:var(--text)}   /* V2a: Spurbank of the song view (V2e moves it into the transport) */
+.sv-l.blank{opacity:0}
 .sv-l{flex:0 0 var(--svh,30px);display:flex;align-items:center;gap:5px;padding:0 4px;font:700 10px/1 var(--font-ui);letter-spacing:.05em;color:var(--text-dim);min-width:0;overflow:hidden;white-space:nowrap;border-top:1px solid rgba(255,255,255,.05)}
 .sv-l i{width:3px;align-self:stretch;margin:4px 0;background:var(--tc);border-radius:2px;flex:none}
 .sv-lc{color:#ffcf7a}
@@ -7377,7 +7411,7 @@ const RecHelpers = (() => {
    - Files from a NEWER format are read best-effort with a warning, never silently "repaired" into nothing. */
 (function (G) {
   'use strict';
-  const APP = 'SYNQUENZER', PROJECT_FORMAT = 3, SOUNDS_FORMAT = 1, LS = 'synquenzer.';
+  const APP = 'SYNQUENZER', PROJECT_FORMAT = 4, SOUNDS_FORMAT = 1, LS = 'synquenzer.';   // V2a: Format 4 (8 tracks, 8 scenes, uid)
   const FACT = () => (typeof SQ_FACTORY !== 'undefined' ? SQ_FACTORY : G.SQ_FACTORY) || null;
   const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
   const num = (x, d) => (typeof x === 'number' && isFinite(x) ? x : (typeof x === 'string' && x.trim() !== '' && isFinite(+x) ? +x : d));
@@ -10408,7 +10442,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '3.11.5';
+const VERSION = '4.0.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -10732,6 +10766,13 @@ const INIT_KIT = {id: 'f-kit-init-drums', name: 'INIT Drums', cat: 'drums', engi
   p: initKitSlots(), fx: {drive: 0, chorus: {mode: 'off', mix: 1, rate: 1, depth: 1}, rev: 0, dly: 0, vol: .85, pan: 0}};
 const INIT_IDS = {analog: 'f-init-analog', fm6: 'f-init-fm', fm2: 'f-init-fm', wt: 'f-init-tabelle', drum: 'f-kit-init-drums'};
 const FACTORY_BY_ID = new Map(FACTORY.concat(DRUM_FACTORY, INIT_SYNTH, [INIT_KIT]).map(f => [f.id, f]));
+/* V2a (§4.3): „Melodie-Lead“ = Mini-Lead as POLY, 4 voices, no glide — the MELODIE track's sound. Not a browser entry (the
+   factory list stays as it is); FACTORY_BY_ID knows it so origin lookups (Init chip, A/B, native trim) work */
+const MEL_LEAD_ID = 'f-melodie-lead';
+(() => { const f = FACTORY_BY_ID.get('f-mini-lead'); if (!f) return;
+  FACTORY_BY_ID.set(MEL_LEAD_ID, Object.assign({}, f, {id: MEL_LEAD_ID, name: 'Melodie-Lead', ref: 'Klare Lead-Stimme · mehrstimmig',
+    tip: 'Klare Lead-Stimme, mehrstimmig, damit sich nichts abschneidet: wie Mini-Lead, aber POLY mit 4 Stimmen und ohne Glide.',
+    p: Object.assign({}, f.p, {mode: 0, poly: 4, glide: 0})})); })();
 /* V0b library roles (Nachtrag EN-04, EN-18, N0b point 2): the role chips work inside the track's engine. FM factory sounds
    take the role of their phrase kind; VA / WT keep their category as the role (§12.2), with the pluck and WT sounds one by
    one and the factory „Tropfen“ as Effekt (EN-16). „Glocke“ exists only in FM. */
@@ -10960,24 +11001,68 @@ function normFxBus(b) {
 }
 // §15.3: Synth 1 Moog-Bass (kbOct 2), Synth 2 FM-Pluck (FM6, from WP7), Synth 3 Rom-Fläche, Synth 4 Mini-Lead; drums: Rom Pop (WP6)
 const DEFAULT_SOUNDS = ['f-moog-bass', 'f-fm-pluck', 'f-rom-flaeche', 'f-mini-lead'], DEFAULT_KIT = 'f-kit-rom-pop';
+/* V2a (§4.2, E3-04, E3-05): up to 8 tracks with exactly one drum track, 8 scenes. The data index never moves: 0–3 Synth 1–4,
+   4 DRUMS, 5 MELODIE, 6–7 Synth 5–6 (added with [＋ Spur], removed last-first). NT() = number of tracks, NS() = number of
+   scenes, isDrum(i) / synthTracks(); the drum index is written only here (DRUM_T). Display order S.ui.order: DRUMS last. */
+const MAX_T = 8, BASE_T = 6, N_SCN = 8, DRUM_T = 4, MEL_T = 5;
+const DEF_ORDER = [0, 1, 2, 3, 5, 6, 7, DRUM_T];
+const NT = () => S.tracks.length;
+const NS = () => N_SCN;
+const isDrum = i => !!(S.tracks[i] && S.tracks[i].kind === 'drum');
+const isSynthT = i => !!(S.tracks[i] && S.tracks[i].kind === 'synth');
+function synthTracks() { const o = []; for (let i = 0; i < S.tracks.length; i++) if (S.tracks[i] && S.tracks[i].kind === 'synth') o.push(i); return o; }
+const trackNameOf = i => (i < DRUM_T ? 'Synth ' + (i + 1) : i === MEL_T ? 'Melodie' : 'Synth ' + (i - 1));
+const emptyClips = () => new Array(N_SCN).fill(null);
+const orderFor = n => DEF_ORDER.filter(i => i < n);
+function trackOrder() { const o = S.ui && Array.isArray(S.ui.order) ? S.ui.order : null, n = NT(); return o && o.length === n ? o : orderFor(n); }
+/* N2-2a-01 (K2-70): fixed ids for tracks and scenes (Format 4, the base of VO4a): 10 characters of base32hex (0-9a-v).
+   New ones are random (crypto.randomUUID, shortened); a Format-3 project gets deterministic ones from fnv (FNV-1a 32 bit):
+   fnv('<project id>|t|<index>|a') and fnv('…|b') joined to 64 bits, written as base32hex (13 digits, leading zeros kept)
+   and cut to the first 10 — two devices that load the same old file get the same uid */
+const UID_RE = /^[0-9a-v]{10}$/;
+function hexToUid(hex) {
+  let bits = ''; for (const ch of hex) bits += parseInt(ch, 16).toString(2).padStart(4, '0');
+  while (bits.length % 5) bits = '0' + bits;                        // 64 bits -> 65: the top base32hex digit holds 4 bits
+  let o = ''; for (let k = 0; k < 50; k += 5) o += '0123456789abcdefghijklmnopqrstuv'[parseInt(bits.slice(k, k + 5), 2)];
+  return o;
+}
+function newUid() {
+  let h = '';
+  try { if (typeof crypto !== 'undefined' && crypto.randomUUID) { const u = crypto.randomUUID().replace(/-/g, ''); h = u.slice(0, 12) + u.slice(13, 16) + u.slice(17); } } catch (e) {}
+  if (h.length < 15) { try { h = Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(16).padStart(2, '0')).join(''); } catch (e) { h = ''; for (let k = 0; k < 16; k++) h += ((Math.random() * 16) | 0).toString(16); } }
+  return hexToUid(h.slice(0, 16).padEnd(16, '0'));
+}
+const detUid = (pid, kind, i, extra) => hexToUid(SQStore.fnv(pid + '|' + kind + '|' + i + (extra || '') + '|a') + SQStore.fnv(pid + '|' + kind + '|' + i + (extra || '') + '|b'));
 function newSynthTrack(i, fid) {
-  return {kind: 'synth', name: 'Synth ' + (i + 1), color: 't' + (i + 1), follow: true, onChange: 'follow', mute: false, kbOct: i === 0 ? 2 : 4,
-    sound: factorySound(fid || DEFAULT_SOUNDS[i]), clips: [null, null, null, null]};
+  const mel = i === MEL_T;
+  // MELODIE (§4.3, data from V2a, behaviour V2b): own sound „Melodie-Lead“, ⇅ fest, keyboard octave 5; Synth 5/6 start with
+  // Poly 4 (CPU rule §4.2)
+  let snd = factorySound(fid || (mel ? MEL_LEAD_ID : i < DRUM_T ? DEFAULT_SOUNDS[i] : 'f-init-analog'));
+  if (i > DRUM_T && snd && snd.p && snd.engine !== 'fm6' && snd.p.poly > 4) snd.p.poly = 4;
+  if (i > DRUM_T && snd && snd.engine === 'fm6' && snd.common && snd.common.poly > 4) snd.common.poly = 4;
+  const t = {kind: 'synth', name: trackNameOf(i), color: 't' + (i + 1), follow: !mel, onChange: 'follow', mute: false, kbOct: i === 0 ? 2 : mel ? 5 : 4,
+    sound: snd, clips: emptyClips(), uid: newUid()};
+  if (mel) t.mel = true;
+  return t;
 }
 // §15.1 DrumTrack (WP6): {kind:'drum', name, color, mute, kbOct, sound (engine 'drum', §7.4), clips}
 function newDrumTrack(kid) {
-  return {kind: 'drum', name: 'Drums', color: 't5', mute: false, kbOct: 3, sound: factorySound(kid || DEFAULT_KIT), clips: [null, null, null, null]};
+  return {kind: 'drum', name: 'Drums', color: 't' + (DRUM_T + 1), mute: false, kbOct: 3, sound: factorySound(kid || DEFAULT_KIT), clips: emptyClips(), uid: newUid()};
 }
 // every project has a random id, created once (§12.2 Projekte)
 function newProjectId() { let r = ''; for (let i = 0; i < 4; i++) r += ((Math.random() * 36) | 0).toString(36); return 'p-' + Date.now().toString(36) + '-' + r; }
-// init (V0b U-05 „Leer (Init)“): INIT Analog ×4, INIT Drums (sends 0)
+const newScene = i => ({name: 'Szene ' + (i + 1), uid: newUid()});
+// init (V0b U-05 „Leer (Init)“): INIT Analog ×4 (+ MELODIE), INIT Drums (sends 0)
+// V2a: Format 4 — 6 tracks (Synth 1–4, DRUMS at 4, MELODIE at 5), 8 scenes, the empty fields of the later packages
+// (parts V2c, shift V2f; song: marks, own, xp, src — song-delta 12.1)
 function newProjectRaw(init) {
   const sy = i => newSynthTrack(i, init ? 'f-init-analog' : null);
   return {
-    format: 3, id: newProjectId(), name: 'Mein Projekt', bpm: 120, key: {root: 0, scale: 'ionian'}, settings: defaultSettings(),
-    scenes: [{name: 'Szene 1'}, {name: 'Szene 2'}, {name: 'Szene 3'}, {name: 'Szene 4'}],
-    tracks: [sy(0), sy(1), sy(2), sy(3), newDrumTrack(init ? INIT_KIT.id : null)],
-    fxBus: defaultFxBus(), song: null, ui: {selT: 3, selS: 0},
+    format: 4, id: newProjectId(), name: 'Mein Projekt', bpm: 120, key: {root: 0, scale: 'ionian'}, settings: defaultSettings(),
+    scenes: Array.from({length: N_SCN}, (_, i) => newScene(i)),
+    tracks: [sy(0), sy(1), sy(2), sy(3), newDrumTrack(init ? INIT_KIT.id : null), sy(MEL_T)],
+    parts: new Array(8).fill(null), shift: 0,
+    fxBus: defaultFxBus(), song: null, ui: {selT: 3, selS: 0, order: orderFor(BASE_T), sceneBank: 0, trackBank: 0},
   };
 }
 function demoProjectRaw() {
@@ -11005,12 +11090,12 @@ function demoProjectRaw() {
   D1.push(N(3.5, 46, .1, .55));
   [.25, 1.25, 2.25].forEach(t => D1.push(N(t, 42, .1, .35)));
   D1.sort((a, b) => a.t - b.t);
-  p.tracks[4].clips[0] = {len: 1, key: K(), notes: D1};
+  p.tracks[DRUM_T].clips[0] = {len: 1, key: K(), notes: D1};
   const D2 = [N(0, 36, .1, .9)];
   [.5, 1.5, 2.5, 3.5].forEach(t => D2.push(N(t, 42, .1, .55)));
   D2.push(N(2.75, 56, .1, .5));
   D2.sort((a, b) => a.t - b.t);
-  p.tracks[4].clips[1] = {len: 1, key: K(), notes: D2};
+  p.tracks[DRUM_T].clips[1] = {len: 1, key: K(), notes: D2};
   return p;
 }
 
@@ -11090,7 +11175,8 @@ function normTrack(t, def, pk, warns) {
     o.sound = drumSoundFix(snd || def.sound);
   }
   const cl = Array.isArray(t.clips) ? t.clips : [];
-  o.clips = [0, 1, 2, 3].map(s => normClip(cl[s], def.kind, pk));
+  o.clips = emptyClips().map((_, s) => normClip(cl[s], def.kind, pk));
+  if (typeof t.uid === 'string' && UID_RE.test(t.uid)) o.uid = t.uid;
   return o;
 }
 function normalizeProject(obj) {
@@ -11134,15 +11220,36 @@ function normalizeProject(obj) {
     hd.keyAware = normBool(h.keyAware, hd.keyAware);
     hd.split = (h.split === 48 || h.split === 60) ? h.split : null;
     hd.gatherMs = normNum(h.gatherMs, 0, 200, 40);
-    if (Array.isArray(obj.scenes)) obj.scenes.slice(0, 4).forEach((sc, i) => { if (sc && typeof sc.name === 'string') p.scenes[i].name = sc.name.slice(0, 24); });
+    p.scenes.forEach(sc => { sc.uid = null; });                    // N2-2a-01: missing scene uids are deterministic (below)
+    if (Array.isArray(obj.scenes)) obj.scenes.slice(0, N_SCN).forEach((sc, i) => { if (sc && typeof sc.name === 'string') p.scenes[i].name = sc.name.slice(0, 24); if (sc && typeof sc.uid === 'string' && UID_RE.test(sc.uid)) p.scenes[i].uid = sc.uid; });
     const warns = [];
-    if (Array.isArray(obj.tracks)) for (let i = 0; i < 5; i++) { const t = obj.tracks[i]; if (t && typeof t === 'object') p.tracks[i] = normTrack(t, p.tracks[i], p.key, warns); }
+    // V2a: Format 3 → 4 (§4.11): tracks 0–4 as before, MELODIE (5) is appended when missing, Synth 5/6 (6, 7) are kept;
+    // a track that is not where its kind belongs (a drum track away from DRUM_T, a synth track at DRUM_T) is left out
+    const ot = Array.isArray(obj.tracks) ? obj.tracks : [];
+    let n = BASE_T; for (let i = BASE_T; i < MAX_T; i++) if (ot[i] && typeof ot[i] === 'object' && ot[i].kind !== 'drum') n = i + 1; else break;
+    while (p.tracks.length < n) p.tracks.push(newSynthTrack(p.tracks.length));
+    for (let i = 0; i < n; i++) {
+      const t = ot[i], def = p.tracks[i];
+      if (t && typeof t === 'object' && (t.kind === 'drum') === (def.kind === 'drum')) p.tracks[i] = normTrack(t, def, p.key, warns);
+      p.tracks[i].uid = t && typeof t === 'object' && typeof t.uid === 'string' && UID_RE.test(t.uid) ? t.uid : null;
+      if (i === MEL_T) p.tracks[i].mel = true; else delete p.tracks[i].mel;      // V2a-10: mel only on index 5, only by the data model
+    }
+    // N2-2a-01: missing uids are deterministic for this file (K2-70), duplicates are repaired
+    const pk = typeof obj.id === 'string' && /^p-[a-z0-9-]{1,40}$/.test(obj.id) ? obj.id : 'x' + SQStore.fnv(JSON.stringify([obj.name || '', obj.bpm || 0, ot.length, ot.map(t => t && t.name)]));
+    const seen = new Set(), fix = (o, kind, i) => {
+      if (!o.uid) o.uid = detUid(pk, kind, i);
+      if (seen.has(o.uid)) { const was = o.uid; let k = 1; do o.uid = detUid(pk, kind, i, '|r|' + k++); while (seen.has(o.uid)); console.warn('SYNQUENZER: doppelte uid ' + was + ' (' + (kind === 't' ? 'Spur ' : 'Szene ') + (i + 1) + ') repariert → ' + o.uid); }
+      seen.add(o.uid);
+    };
+    p.tracks.forEach((t, i) => fix(t, 't', i)); p.scenes.forEach((sc, i) => fix(sc, 's', i));
     // WP6 (§7.4): kit substitutions of the drum migration are toasted once (applyProject)
     if (warns.length) Object.defineProperty(p, '_warn', {value: warns, enumerable: false, configurable: true});
     p.fxBus = normFxBus(obj.fxBus);
-    p.song = normSong(obj.song, p.key);               // §3.9 (WP6)
+    p.song = normSong(obj.song, p.key, p.tracks.length);   // §3.9 (WP6); V2a: NT lanes
     const ui = obj.ui && typeof obj.ui === 'object' ? obj.ui : {};
-    p.ui = {selT: isNum(ui.selT) ? clamp(Math.round(ui.selT), 0, 4) : 3, selS: isNum(ui.selS) ? clamp(Math.round(ui.selS), 0, 3) : 0};
+    const nt = p.tracks.length, ord = Array.isArray(ui.order) && ui.order.length === nt && ui.order[nt - 1] === DRUM_T && new Set(ui.order).size === nt && ui.order.every(x => Number.isInteger(x) && x >= 0 && x < nt) ? ui.order.slice() : orderFor(nt);
+    p.ui = {selT: isNum(ui.selT) ? clamp(Math.round(ui.selT), 0, nt - 1) : 3, selS: isNum(ui.selS) ? clamp(Math.round(ui.selS), 0, N_SCN - 1) : 0,
+      order: ord, sceneBank: ui.sceneBank === 1 ? 1 : 0, trackBank: ui.trackBank === 1 ? 1 : 0};
     // V0b FOLGEN: the editor kinds switched to AUS (only false entries are kept; missing = FOLGT)
     if (ui.follow && typeof ui.follow === 'object') { const f = {}; for (const k of ['roll', 'lauf', 'steps', 'song']) if (ui.follow[k] === false) f[k] = false; if (Object.keys(f).length) p.ui.follow = f; }
     return p;
@@ -11163,9 +11270,14 @@ function normTarget(t) {
   return o;
 }
 function newSongRaw(melTrack) {
-  const s = RecHelpers.newSong(5);
-  return Object.assign(s, {bars: 0, loop: {on: false, a: 0, b: 0}, melodyTrack: melTrack, melody: {len: 1, key: {root: S.key.root, scale: S.key.scale, src: 'user'}, notes: []}});
+  const s = RecHelpers.newSong(NT());
+  return Object.assign(s, {bars: 0, loop: {on: false, a: 0, b: 0}, melodyTrack: melTrack, melody: {len: 1, key: {root: S.key.root, scale: S.key.scale, src: 'user'}, notes: []}},
+    songEmptyV4());
 }
+// V2a (song-delta 12.1): the Format-4 song fields of the later packages, written empty (marks V2d/V2e, own V2d′, xp V2d)
+const songEmptyV4 = () => ({marks: [], own: {}, xp: [], src: 'rec'});
+// the track count while S may not exist yet (normalizeProject builds the first S)
+function curNT() { try { return S.tracks.length; } catch (e) { return BASE_T; } }
 /* V0c S-02: song.loop = {on, a, b} (bars; a inclusive, b exclusive). Migration WP6 loop:true|false → {on, a:0, b:bars}.
    „Song“ = the whole song (a 0, b = bars); a range that covered the whole song keeps covering it when the song grows */
 function normLoop(l, bars) {
@@ -11180,13 +11292,14 @@ function songSetBars(song, n) {
   const all = loopAll(song); song.bars = n;
   song.loop = all ? {on: song.loop.on, a: 0, b: n} : normLoop(song.loop, n);
 }
-function normSong(o, pk) {
+function normSong(o, pk, nt) {
   if (!o || typeof o !== 'object') return null;
-  const lanes = [0, 1, 2, 3, 4].map(i => {
+  nt = nt || curNT();
+  const lanes = Array.from({length: nt}, (_, i) => {
     const out = [];
     for (const e of Array.isArray(o.lanes) && Array.isArray(o.lanes[i]) ? o.lanes[i] : []) {
       if (!e || !isNum(e.bar) || !isNum(e.slot)) continue;
-      const bar = clamp(Math.round(e.bar), 0, SONG_MAX_BARS - 1), slot = clamp(Math.round(e.slot), -1, 3);
+      const bar = clamp(Math.round(e.bar), 0, SONG_MAX_BARS - 1), slot = clamp(Math.round(e.slot), -1, N_SCN - 1);
       const k = out.findIndex(x => x.bar === bar); if (k >= 0) out.splice(k, 1);      // one event per bar: the later wins
       out.push({bar, slot});
     }
@@ -11205,7 +11318,13 @@ function normSong(o, pk) {
   const bars = isNum(o.bars) ? clamp(Math.round(o.bars), 0, SONG_MAX_BARS) : 0;
   const len = Math.max(1, isNum(m.len) ? clamp(Math.round(m.len), 1, SONG_MAX_BARS) : 1, ...notes.map(n => Math.ceil((n.t + 1e-6) / 4)));
   const key = normKey(m.key, pk || {root: 0, scale: 'ionian'}); key.src = 'user';
-  return {bars, loop: normLoop(o.loop, bars), melodyTrack: isNum(o.melodyTrack) ? clamp(Math.round(o.melodyTrack), 0, 3) : 3, lanes, carrier, melody: {len: Math.min(len, SONG_MAX_BARS), key, notes}};
+  let mt = isNum(o.melodyTrack) ? clamp(Math.round(o.melodyTrack), 0, nt - 1) : 3; if (mt === DRUM_T) mt = 3;      // V2a: any synth track
+  const v4 = songEmptyV4();
+  if (Array.isArray(o.marks)) v4.marks = o.marks.filter(m => m && typeof m === 'object' && isNum(m.a) && isNum(m.len)).slice(0, 256).map(m => deep(m));
+  if (o.own && typeof o.own === 'object' && !Array.isArray(o.own)) for (const k of Object.keys(o.own).slice(0, 256)) if (o.own[k] && typeof o.own[k] === 'object') v4.own[k] = deep(o.own[k]);
+  if (Array.isArray(o.xp)) v4.xp = o.xp.filter(x => x && isNum(x.beat) && isNum(x.semi)).map(x => ({beat: +x.beat, semi: clamp(Math.round(x.semi), -12, 12)}));
+  if (o.src === 'plan') v4.src = 'plan';
+  return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, melody: {len: Math.min(len, SONG_MAX_BARS), key, notes}}, v4);
 }
 function migrateV1(o) {
   const p = newProjectRaw();
@@ -11222,8 +11341,8 @@ function migrateV1(o) {
       t.sound.p.cutoff = clamp(200 + (isNum(t1.tone) ? t1.tone : .5) * 6000, 30, 18000);
       t.sound.fx.vol = clamp(isNum(t1.vol) ? t1.vol : .7, 0, 1); t.follow = true;
     } else t.sound.fx.vol = clamp(isNum(t1.vol) ? t1.vol : .8, 0, 1);
-    t.clips = [0, 1, 2, 3].map(s => {
-      const c = t1.clips && t1.clips[s]; if (!c || !Array.isArray(c.notes)) return null;
+    t.clips = emptyClips().map((_, s) => {
+      const c = s < 4 && t1.clips && t1.clips[s]; if (!c || !Array.isArray(c.notes)) return null;      // v1 had 4 scenes
       const len = clamp(Math.round(c.bars) || 1, 1, 16);
       const notes = c.notes.filter(n => n && [n.t, n.d, n.n, n.v].every(Number.isFinite)).map(n => ({
         t: clamp(+n.t, 0, len * 4 - 1e-3), d: Math.max(1 / 32, +n.d), n: t.kind === 'drum' ? mapV1Drum(Math.round(n.n)) : clamp(Math.round(n.n), 0, 127), v: clamp(+n.v, .05, 1)}));
@@ -11271,7 +11390,7 @@ const stripReplacer = (k, v) => (k === 'born' || k === 'bornRun' ? undefined : v
    of outLat everywhere (TAKT, launch boundaries, recording). */
 const AU = {ctx: null, outLat: 0, devLat: 0, graphLat: .012, compLat: .006, loopExtra: 0, measured: false, hint: 'interactive',
   masterSum: null, analyser: null, M: null, hall: null, hallKind: 'convolver', hallPre: null, hallIn: null, hallRet: null, hallDuck: null,
-  echo: null, echoIn: null, synth: [null, null, null, null], tracks: [], noise: null, metal: null, dcBuf: null, timer: null};
+  echo: null, echoIn: null, synth: new Array(8).fill(null), tracks: [], noise: null, metal: null, dcBuf: null, timer: null};
 const VOICES = [];   // synth voices (live, clip, audition), removed on cleanup; worklet voices are proxies (v.wk)
 const HITS = [];     // drum hits, removed on cleanup
 let VSEQ = 0;
@@ -11298,8 +11417,8 @@ function ensureAudio() {
   setTimeout(() => idle(() => { try { void AU.waves; } catch (e) {} }), 1500);   // the WT tables in an idle moment
   try {
     buildBuffers(); buildFx();
-    for (let i = 0; i < 5; i++) buildTrack(i);
-    for (let i = 0; i < 4; i++) rebuildNativeLfos(i);
+    for (let i = 0; i < NT(); i++) buildTrack(i);
+    for (const i of synthTracks()) rebuildNativeLfos(i);
   } catch (e) { console.error(e); }
   updateOutLat();
   c.onstatechange = onCtxState;
@@ -11457,7 +11576,7 @@ function applyFxBus() { if (!AU.ctx) return; applyMaster(); applyHall(S.fxBus.ha
 // and the hall return by fxBus.hall.pump; sample-accurate gain automation, no compressor
 function onKickScheduled(t) {
   if (!AU.ctx) return;
-  for (let i = 0; i < 5; i++) {                     // WP6: the drum track's SPUR page has Pumpen too (§7.3 FX)
+  for (let i = 0; i < NT(); i++) {                  // WP6: the drum track's SPUR page has Pumpen too (§7.3 FX)
     const tr = S.tracks[i], A = AU.tracks[i], fx = tr && tr.sound ? tr.sound.fx : null;
     if (A && fx && fx.pump > 0) FX.pump(A.duck, t, fx.pump, FX.divSec(fx.pumpRel || '1/8', S.bpm) * .9);
   }
@@ -11491,6 +11610,14 @@ function buildChain(c) {
   N.revSend.connect(AU.hallIn); N.dlySend.connect(AU.echoIn);
   return N;
 }
+// V2a: one chain per existing track; a track that is gone (removed, other project) keeps its idle chain without an engine
+function syncTrackChains() {
+  if (!AU.ctx) return;
+  for (let i = 0; i < MAX_T; i++) {
+    if (i < NT()) { if (!AU.tracks[i] || AU.tracks[i].kindOf !== S.tracks[i].kind) { buildTrack(i); if (S.tracks[i].kind === 'synth') { syncEngine(i, true); } } }
+    else if (AU.synth[i]) retireEngine(i);
+  }
+}
 function buildTrack(i) {
   const c = AU.ctx, tr = S.tracks[i];
   const A = Object.assign(buildChain(c), {lastOut: null});
@@ -11500,6 +11627,7 @@ function buildTrack(i) {
     A.lfoPitch = c.createGain(); A.lfoCut = c.createGain(); A.lfoPitch.gain.value = 1; A.lfoCut.gain.value = 1;
     A.nl = {lfo: [null, null], key: ['', ''], routes: [], tremBase: 1};
   }
+  A.kindOf = tr.kind;
   AU.tracks[i] = A;
   if (tr.kind === 'drum') { AU.kit = null; if (AU.drumBufs) drumBusBuild(); }    // WP6: the kit bus feeds trackIn (§1.5)
   applyTrackParams(i, true);
@@ -11647,7 +11775,7 @@ function routeGain(m, ampK) {
 // transport (re)start or tempo change: tempo-locked native LFOs follow the new anchor; the worklet engines get the tempo
 function relockLfos() {
   if (!AU.ctx) return;
-  for (let i = 0; i < 4; i++) { const A = AU.tracks[i]; if (!A || !A.nl) continue; A.nl.key = ['', '']; A.nl.skey = ''; rebuildNativeLfos(i); }
+  for (const i of synthTracks()) { const A = AU.tracks[i]; if (!A || !A.nl) continue; A.nl.key = ['', '']; A.nl.skey = ''; rebuildNativeLfos(i); }
   try { const N = PV.chain; if (N && !N.gone) { N.nl.key = ['', '']; N.nl.skey = ''; syncLfoSet(N, N.E ? {p: N.sound.p, mods: N.sound.mods.filter(fxRoute)} : N.sound, 97); } } catch (e) {}
   wkTempoAll();
 }
@@ -11693,7 +11821,7 @@ function syncEngine(i, full) {
   } else if (AU.synth[i]) retireEngine(i);
   rebuildNativeLfos(i);
 }
-function syncEngines() { for (let i = 0; i < 4; i++) syncEngine(i, true); }
+function syncEngines() { for (const i of synthTracks()) syncEngine(i, true); }
 function retireEngine(i) { const E = AU.synth[i]; AU.synth[i] = null; WKSET[i] = null; retireE(E); }
 // an engine that is no longer needed (engine switch to WT / FM2, forceNative, preview end): its notes fade, then it goes
 function retireE(E, ms) {
@@ -11720,17 +11848,17 @@ function loadWorklet() {
   });
 }
 // knob turns -> E.set, coalesced to one message per animation frame and track (§5.4, §14.4.4); flushed before a note too
-const WKSET = [null, null, null, null];
+const WKSET = new Array(8).fill(null);
 let wkFlushT = 0;
 function wkSet(i, key, v) {
   if (!AU.synth[i]) return;
   (WKSET[i] || (WKSET[i] = {}))[key] = v;
   if (!wkFlushT) { wkFlushT = 1; requestAnimationFrame(wkFlushAll); setTimeout(wkFlushAll, 40); }
 }
-function wkFlushAll() { wkFlushT = 0; for (let i = 0; i < 4; i++) wkFlush(i); }
+function wkFlushAll() { wkFlushT = 0; for (let i = 0; i < WKSET.length; i++) wkFlush(i); }
 // §6.3.2 / §6.5: the FM operator block reaches the track's engine as one {fm6} message, at most 30 per second while a finger
 // edits (the worklet re-targets the running envelope stages of the sounding notes); now = at once (a whole sound, a note)
-const WKFM = [0, 0, 0, 0], WKFM_AT = [0, 0, 0, 0];
+const WKFM = new Array(8).fill(0), WKFM_AT = new Array(8).fill(0);
 function wkFm6Patch(i) {
   const snd = sndOf(i); if (!snd || snd.engine !== 'fm6' || !snd.p.fm6) return null;
   return UI.fmSolo && UI.fmSolo.t === i ? fmSoloPatch(snd.p.fm6, UI.fmSolo.k, snd.p.fmx) : wkFmOf(snd.p);
@@ -11763,6 +11891,7 @@ function cpuLoad() { let s = 0; for (const E of AU.synth) if (E) s += E.load || 
 function cpuTick() {
   const nowP = performance.now(); if (nowP - LIM.last < 1000) return;
   LIM.last = nowP;
+  try { cpuHeavyCheck(); } catch (e) { logErr(e); }               // V2a: the one-time hint for many heavy tracks
   if (UI.cpuInjectUntil && nowP > UI.cpuInjectUntil) { UI.cpuInject = 0; UI.cpuInjectUntil = 0; }
   const load = cpuLoad() + (UI.cpuInject || 0), q = S.settings.quality;
   LIM.load = load;
@@ -11783,7 +11912,7 @@ function limited(P) {
     xfLite: L >= 2 ? 1 : 0};                    // V4a (Spec V4a): the WP4 dip instead of the 30 ms voice crossfade
 }
 function applyLimiter() {
-  for (let i = 0; i < 4; i++) if (AU.synth[i]) AU.synth[i].set(limited(S.tracks[i].sound.p));
+  for (const i of synthTracks()) if (AU.synth[i]) AU.synth[i].set(limited(S.tracks[i].sound.p));
   try { const N = PV.chain; if (N && N.E && !N.gone) N.E.set(limited(N.sound.p)); } catch (e) {}
   UI.dirty.top = true; if (UI.menuInfo) renderMenuInfo();
 }
@@ -12213,7 +12342,7 @@ function drumBufsIdle() {
 function drumBufs() { return AU.drumBufs || drumBufsStep(true); }
 // the kit bus (shared ROOM 0.7 s and GATE convolvers) and one strip per pad; levels live in the return gains (§7.1)
 function drumBusBuild() {
-  const c = AU.ctx, A = AU.tracks[4]; if (!c || !A || !AU.drumBufs) return;
+  const c = AU.ctx, A = AU.tracks[DRUM_T]; if (!c || !A || !AU.drumBufs) return;
   if (AU.kit && AU.kit.dest === A.trackIn) return;
   AU.kit = DrumSynth.kitBus(c, AU.drumBufs, A.trackIn); AU.kit.dest = A.trackIn;
   AU.strips = {}; for (const s of DRUM_VOICES) AU.strips[s.id] = AU.kit.strip();
@@ -12229,7 +12358,7 @@ function drumBusApply(noGate) {
   for (const s of DRUM_VOICES) AU.strips[s.id].set(slotParams(s.id));
 }
 // the drum sound of the project (track 4) and its kit block
-const drumSnd = () => S.tracks[4].sound;
+const drumSnd = () => S.tracks[DRUM_T].sound;
 function drumKit() { const s = drumSnd(); return (s && s.p && s.p.kit) || KIT_DEF(); }
 // the full parameters of a pad (D.10): DEFAULTS + the slot's model and choke group + the stored diff. Cached per sound
 // object and drum version (UI.drumVer counts every drum edit); the objects are never mutated (locks make a new one)
@@ -12290,19 +12419,19 @@ const accentAmt = a => 1 - Math.pow(1 - clamp(+a || 0, 0, 1), 3);
 function drumHit(gm, vel, t, src, ex, o) {
   const c = AU.ctx; if (!c) return null;
   const sl = DRUM_BY_GM[gm] || DRUM_BY_GM[mapV1Drum(gm)];
-  if (!sl || !AU.tracks[4] || !drumBufs() || !AU.kit) return null;
+  if (!sl || !AU.tracks[DRUM_T] || !drumBufs() || !AU.kit) return null;
   const P0 = o && o.P ? o.P : slotParams(sl.id), P = ex && ex.lk ? DrumSeq.lockParams(P0, ex.lk) : P0;
   const chokes = chokeVoice(sl.id, t);
   if (P0.choke) for (const s of DRUM_VOICES) if (s.id !== sl.id && (o && o.Pof ? o.Pof(s.id) : slotParams(s.id)).choke === P0.choke) chokes.push(...chokeVoice(s.id, t));
   const dest = (o && o.strip) || AU.strips[sl.id];
   const r = DrumSynth.hit(c, AU.drumBufs, dest.in, P, vel, t, {accent: ex && ex.acc ? accentAmt(drumKit().accent) : 0});
-  const h = {id: ++VSEQ, voice: sl.id, gm: sl.gm, track: 4, src, start: t, stopAt: r.end, end: t + .1, srcs: r.srcs, nodes: r.nodes, out: r.out, dead: false, left: r.srcs.length, chokes};
+  const h = {id: ++VSEQ, voice: sl.id, gm: sl.gm, track: DRUM_T, src, start: t, stopAt: r.end, end: t + .1, srcs: r.srcs, nodes: r.nodes, out: r.out, dead: false, left: r.srcs.length, chokes};
   // Chromium fires 'ended' twice for a buffer source that ends on its own before an explicit stop() time (the 6 ms KLICK
   // layer): count each source once, or the hit is cleaned up (all nodes disconnected) while its tone layer still rings
   for (const s of h.srcs) s.onended = () => { if (s._ended) return; s._ended = true; if (--h.left <= 0) hitCleanup(h); };
   HITS.push(h);
-  if (src !== 'preview') h.perf = perfAdd(4, sl.gm, t, t + .1 * spb(), vel);
-  h.log = logNote({track: 4, src, clipNote: src === 'clip' ? sl.gm : null, out: sl.gm, time: t, dur: null, vel});
+  if (src !== 'preview') h.perf = perfAdd(DRUM_T, sl.gm, t, t + .1 * spb(), vel);
+  h.log = logNote({track: DRUM_T, src, clipNote: src === 'clip' ? sl.gm : null, out: sl.gm, time: t, dur: null, vel});
   padFlashAt(sl.idx, t);
   if (sl.gm === 36 && S.fxBus.pumpSrc === 'kick' && (src === 'clip' || src === 'pad')) onKickScheduled(t);     // Pumpen (§8.1, §7.5)
   return h;
@@ -12369,11 +12498,12 @@ const LIVE_LEAD = 0.01;   // live/audition notes start slightly ahead, so their 
 let S = demoProject();                       // replaced in init()
 const R = {
   playing: false, countIn: false, ciRun: false, lastClick: -Infinity, startTime: 0, schedBeat: 0, runId: 0,
-  slot: [-1, -1, -1, -1, -1], cstart: [0, 0, 0, 0, 0], pend: [null, null, null, null, null], prev: [null, null, null, null, null],
+  // V2a: per-track arrays have MAX_T places (tracks 6–8 exist only when added; their places stay -1 / null)
+  slot: new Array(8).fill(-1), cstart: new Array(8).fill(0), pend: new Array(8).fill(null), prev: new Array(8).fill(null),
   selT: 3, selS: 0, kbMode: 'play', momentary: false, momSrc: new Set(), momCand: null, trOct: 3,
-  inputs: {}, lastNote: [60, 60, 60, 60, 60], editor: null, keyPending: new Set(), ciBars: 0,
+  inputs: {}, lastNote: new Array(8).fill(60), editor: null, keyPending: new Set(), ciBars: 0,
   // §3.9 Song (WP6, §1.6): recording {startBeat}, playback {off}, take-over per track, live Träger, melody overdub pass
-  songRec: null, songPlay: null, songOverride: [false, false, false, false, false], carrierLive: false, songApplying: false, songEndBeat: null, melRec: null,
+  songRec: null, songPlay: null, songOverride: new Array(8).fill(false), carrierLive: false, songApplying: false, songEndBeat: null, melRec: null,
 };
 const T = new Transposer(transposerOpts());
 T.onCommit = (entry, info) => { try { applyCarrierChange(entry, info); } catch (e) { logErr(e); } try { songCarrierHook(entry); } catch (e) { logErr(e); } try { if (typeof renderCarrierNow === 'function') renderCarrierNow(); } catch (e) { logErr(e); } };
@@ -12523,7 +12653,7 @@ function tick(h) {
     try { recTick(b0, b1); } catch (e) { tickErr(e); }
     if (R.songPlay) { try { songTick(b0, b1); } catch (e) { tickErr(e); } }   // §3.9 (Anhang D.7): the song's launches, Träger, melody
     if (R.songRecEndAt != null) { const te = R.songRecEndAt; R.songRecEndAt = null; try { if (R.songRec && R.songRec.over) songRecEnd(te); } catch (e) { tickErr(e); } }
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < NT(); i++) {
       let from = Math.max(b0, 0);
       const p = R.pend[i];
       if (p && p.beat < b1) {
@@ -12649,8 +12779,8 @@ function launch(i, slot, atT) {
 }
 function launchScene(s) {
   ensureAudio(); if (!AU.ctx) return;
-  s = clamp(s | 0, 0, 3);
-  for (let i = 0; i < 5; i++) launch(i, s);
+  s = clamp(s | 0, 0, NS() - 1);
+  for (let i = 0; i < NT(); i++) launch(i, s);
   R.selS = s; UI.dirty.all = true;
   if (!R.playing) play();
 }
@@ -12662,11 +12792,11 @@ function launchClip(i, s) {
   if (!R.playing) play();
 }
 function stopTrack(i) { if (R.playing) launch(i, -1); else { R.slot[i] = -1; R.pend[i] = null; } UI.dirty.grid = true; }
-function stopAllClips() { for (let i = 0; i < 5; i++) stopTrack(i); }
+function stopAllClips() { for (let i = 0; i < NT(); i++) stopTrack(i); }
 // ■ tapped twice within 400 ms (§3.2, Anhang D.6): cancel the track's clip voices that have not started, release the
 // sounding ones with a 30 ms fade; the transport keeps running
 function stopTrackNow(i) {
-  i = clamp(i | 0, 0, 4);
+  i = clamp(i | 0, 0, NT() - 1);
   if (!R.playing || !AU.ctx) { stopTrack(i); return; }
   const now = AU.ctx.currentTime;
   if (rec.state === 'overdub' && rec.track === i) recEndOverdub(audBeat());
@@ -12759,7 +12889,7 @@ function songRecStart(o) {
 function songRecBegin() {
   const sr = R.songRec; if (!sr || !sr.pending || !S.song) return;
   sr.pending = false;
-  for (let i = 0; i < 5; i++) RecHelpers.logLaunch(S.song, i, slotAtBeat(i, sr.startBeat), 0);
+  for (let i = 0; i < NT(); i++) RecHelpers.logLaunch(S.song, i, slotAtBeat(i, sr.startBeat), 0);
   if (!sr.hinted) melShareHint({now: true});
   const ce = T.targetAt(b2t(sr.startBeat)), cur = ce.target;
   RecHelpers.logCarrier(S.song, 0, cur || null, ce.shift);
@@ -12824,7 +12954,7 @@ function songPlayStart(fromBar, o) {
   const bar0 = clamp(fromBar | 0, 0, song.bars - 1);
   R.songOverride.fill(false); R.carrierLive = false; R.songEndBeat = null; R.melRec = null;
   // every track starts as the song says at that bar (clips launched earlier keep their phase: cstart = their launch bar)
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < NT(); i++) {
     const sl = RecHelpers.slotAt(song, i, bar0), ok = sl >= 0 && S.tracks[i].clips[sl];
     R.slot[i] = ok ? sl : -1; R.pend[i] = null; R.prev[i] = null;
   }
@@ -12833,7 +12963,7 @@ function songPlayStart(fromBar, o) {
   if (has) { R.songApplying = true; try { if (ct) T.recall(ct, nowT(), null); else T.reset(nowT(), null); } finally { R.songApplying = false; } }
   // a clip launched before bar0 plays in phase with its launch bar (startTransport takes cs from here)
   const off = -bar0 * 4;
-  R.songPlay = {off, bar0, cs: [0, 1, 2, 3, 4].map(i => (R.slot[i] >= 0 ? RecHelpers.blockStart(song, i, bar0) * 4 + off : 0))};
+  R.songPlay = {off, bar0, cs: S.tracks.map((_, i) => (R.slot[i] >= 0 ? RecHelpers.blockStart(song, i, bar0) * 4 + off : 0))};
   if (o.countIn) startTransport(o.countIn); else play();
   UI.dirty.all = true; UI.dirty.song = true;
   return true;
@@ -12843,10 +12973,10 @@ function songPlayStartAt(bar0, nb) {
   const song = S.song; bar0 = clamp(bar0 | 0, 0, song.bars - 1);
   const off = nb - bar0 * 4;
   R.songOverride.fill(false); R.carrierLive = false; R.songEndBeat = null; R.melRec = null;
-  R.songPlay = {off, bar0, cs: [0, 0, 0, 0, 0]};
+  R.songPlay = {off, bar0, cs: new Array(8).fill(0)};
   R.songApplying = true;
   try {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < NT(); i++) {
       const sl = RecHelpers.slotAt(song, i, bar0), ok = sl >= 0 && S.tracks[i].clips[sl];
       switchTrackAt(i, ok ? sl : -1, nb, ok ? RecHelpers.blockStart(song, i, bar0) * 4 + off : null);
       if (R.pend[i]) R.pend[i].song = 1;
@@ -12880,7 +13010,7 @@ function songBack(only) {
   const nb = nextBarFromAudible(), off = R.songPlay.off, sb = nb - off;
   R.songApplying = true;
   try {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < NT(); i++) {
       if (!R.songOverride[i] || (only && !only.includes(i))) continue;
       const bar = Math.floor(sb / 4 + 1e-9), sl = RecHelpers.slotAt(S.song, i, bar), ok = sl >= 0 && S.tracks[i].clips[sl];
       const cs = RecHelpers.blockStart(S.song, i, bar) * 4 + off;
@@ -12918,11 +13048,11 @@ function songTick(b0, b1) {
       // V0c: a take with a range end (selection) punches out at its bar line (unless that is the loop end: passes go on)
       if (recOver && sr.to != null && !(looping && lp.b === sr.to)) { const te = sr.to * 4 + off; if (te >= b0 - 1e-9 && te < b1 - 1e-9 && te <= eb + 1e-9) R.songRecEndAt = te; }
       // the song got shorter behind the playhead (or a take ran past its end and nothing was kept): it ends now
-      if (!looping && !recOver && R.songEndBeat == null && b0 - off > E + 1e-6) { R.songEndBeat = b0; for (let i = 0; i < 5; i++) if (!R.songOverride[i]) R.pend[i] = {slot: -1, beat: b0, song: 1}; }
+      if (!looping && !recOver && R.songEndBeat == null && b0 - off > E + 1e-6) { R.songEndBeat = b0; for (let i = 0; i < NT(); i++) if (!R.songOverride[i]) R.pend[i] = {slot: -1, beat: b0, song: 1}; }
       if (eb >= b0 - 1e-9 && eb < b1 - 1e-9) {
         if (looping) wrap = true;
         // V0c: a recording over the song runs on past its end (the tracks keep what they play: the song grows, „Bandmaschine“)
-        else if (!recOver && R.songEndBeat == null) { R.songEndBeat = eb; for (let i = 0; i < 5; i++) if (!R.songOverride[i]) R.pend[i] = {slot: -1, beat: R.songEndBeat, song: 1}; }
+        else if (!recOver && R.songEndBeat == null) { R.songEndBeat = eb; for (let i = 0; i < NT(); i++) if (!R.songOverride[i]) R.pend[i] = {slot: -1, beat: R.songEndBeat, song: 1}; }
       }
       if (!R.carrierLive) for (const c of song.carrier) {
         const bb = c.beat + off; if (bb < b0 - 1e-9 || bb >= b1 - 1e-9 || c.beat >= E - 1e-9) continue;
@@ -12942,7 +13072,7 @@ function songTick(b0, b1) {
         // a range (or a take over the song): every track jumps to what the song plays at the loop start, in phase with its
         // launch bar there (a whole-song loop keeps the WP6 way: the bar-1 entries do it)
         if (recOver) songRecWrap(lp.b);
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < NT(); i++) {
           if (R.songOverride[i]) continue;
           const sl = RecHelpers.slotAt(song, i, lp.a), ok = sl >= 0 && S.tracks[i].clips[sl];
           R.pend[i] = ok ? {slot: sl, beat: eb, cs: RecHelpers.blockStart(song, i, lp.a) * 4 + sp.off, song: 1} : {slot: -1, beat: eb, song: 1};
@@ -12977,8 +13107,8 @@ function melTrackBusy(t) {
    nothing; WP6 SG tests); else a free not-MONO/LEGATO one, then a free MONO one; only when every synth track holds clips
    the old rule (no clip playing now, not MONO/LEGATO first) and last the selected one */
 function melSuggest(forNew) {
-  const sel = R.selT < 4 ? R.selT : (S.song ? S.song.melodyTrack : 3);
-  const synth = [0, 1, 2, 3].filter(t => S.tracks[t].kind === 'synth'), empty = !songHasContent();
+  const sel = isSynthT(R.selT) ? R.selT : (S.song ? S.song.melodyTrack : 3);
+  const synth = synthTracks(), empty = !songHasContent();
   const pick = list => (list.includes(sel) && !soundMono(sel) ? sel : list.find(t => !soundMono(t)) ?? (list.includes(sel) ? sel : list[0]));
   const free = synth.filter(t => !melTrackBusy(t) && !(empty && S.tracks[t].clips.some(Boolean)));
   if (free.includes(sel)) return sel;
@@ -13002,7 +13132,7 @@ function melShareHint(o) {
   if (!plays(t) || !soundMono(t)) return false;
   if (R.songRec) R.songRec.hinted = true;
   const hasClips = x => (S.tracks[x].clips.some(Boolean) ? 1 : 0);
-  const free = [0, 1, 2, 3].filter(x => x !== t && S.tracks[x].kind === 'synth' && !plays(x))
+  const free = synthTracks().filter(x => x !== t && !plays(x))
     .sort((a, b) => (o.now ? hasClips(a) - hasClips(b) : 0) || soundMono(a) - soundMono(b) || a - b);
   const take = free.length ? {label: 'Freie Spur nehmen', fn: () => {
     const to = free[0]; setMelodyTrack(to); if (R.songRec && R.selT !== to) selectTrack(to);
@@ -13089,7 +13219,7 @@ function songRecStartOver(o) {
   } else if (R.playing) songPlayStart(Math.min(playFrom, song.bars - 1), {next: true});
   else songPlayStart(Math.min(playFrom, song.bars - 1), {countIn: preroll && from === 0 ? 1 : 0});
   if (!R.songPlay) return false;
-  R.songRec = {over: true, before, pending: false, from, to, tg, ev: [[], [], [], [], []], mine: new Map(), pass: 0, nCh: 0, nMel: 0, nClip: 0, recT: new Set(),
+  R.songRec = {over: true, before, pending: false, from, to, tg, ev: Array.from({length: MAX_T}, () => []), mine: new Map(), pass: 0, nCh: 0, nMel: 0, nClip: 0, recT: new Set(),
     get startBeat() { return R.songPlay ? from * 4 + R.songPlay.off : null; }};
   MEL.open.clear(); MEL.warned = false;
   if (tg.mel && R.selT !== song.melodyTrack && S.tracks[song.melodyTrack].kind === 'synth') selectTrack(song.melodyTrack);
@@ -13133,7 +13263,7 @@ function songRecChord(entry) {
 // the recorded launches of a pass replace each touched lane from its first event up to endBar (old content after it)
 function songCommitLanes(evs, endBar) {
   const song = S.song;
-  for (let t = 0; t < 5; t++) {
+  for (let t = 0; t < NT(); t++) {
     const ev = evs[t]; if (!ev || !ev.length) continue;
     const m = new Map(); for (const e of ev) if (e.bar < endBar) m.set(e.bar, e.slot);       // a later decision for a bar wins
     const recd = [...m].map(([bar, slot]) => ({bar, slot})).sort((a, b) => a.bar - b.bar); if (!recd.length) continue;
@@ -13150,8 +13280,8 @@ function songCommitLanes(evs, endBar) {
 function songRecWrap(passEnd) {
   const sr = R.songRec; if (!sr || !sr.over) return;
   songCommitLanes(sr.ev, passEnd);
-  for (let t = 0; t < 5; t++) if (sr.ev[t].length) R.songOverride[t] = false;
-  sr.ev = [[], [], [], [], []]; sr.pass++;
+  for (let t = 0; t < NT(); t++) if (sr.ev[t].length) R.songOverride[t] = false;
+  sr.ev = Array.from({length: MAX_T}, () => []); sr.pass++;
   sr.from = Math.min(sr.from, S.song.loop.a);
   UI.dirty.song = UI.dirty.grid = true;
 }
@@ -13252,7 +13382,7 @@ function melRecEnd() {
 function melRecToggle() { return R.melRec ? melRecEnd() : melRecStart(); }
 // [Mel: S4 ▾]: the melody voices share the track's sound and polyphony (one undo)
 function setMelodyTrack(t) {
-  t = clamp(t | 0, 0, 3);
+  t = clamp(t | 0, 0, NT() - 1); if (!isSynthT(t)) t = 3;
   if (!S.song) { S.song = newSongRaw(t); songChanged(); return t; }
   if (S.song.melodyTrack === t) return t;
   const b = songSnapshot(); S.song.melodyTrack = t; pushSongUndo(b, 'Melodie auf ' + S.tracks[t].name); songChanged();
@@ -13263,11 +13393,11 @@ const songTrackPlays = t => !!S.song && S.song.lanes[t].some(e => e.slot >= 0);
 // taps on the same cell within 2 s are one undo step
 function songCycle(t, bar) {
   const song = S.song; if (!song) return null;
-  t = clamp(t | 0, 0, 4); bar = clamp(bar | 0, 0, song.bars);              // one bar beyond the end lengthens the song
+  t = clamp(t | 0, 0, NT() - 1); bar = clamp(bar | 0, 0, song.bars);       // one bar beyond the end lengthens the song
   const before = songSnapshot();
-  const has = [0, 1, 2, 3].filter(s => S.tracks[t].clips[s]);
+  const has = S.tracks[t].clips.map((c, s) => (c ? s : -1)).filter(s => s >= 0);
   let next = RecHelpers.slotAt(song, t, bar), guard = 0;
-  do { next = RecHelpers.cycleCell(song, t, bar, 4); guard++; } while (next >= 0 && !has.includes(next) && guard < 6);
+  do { next = RecHelpers.cycleCell(song, t, bar, NS()); guard++; } while (next >= 0 && !has.includes(next) && guard < NS() + 2);
   if (bar >= song.bars && next >= 0) { songSetBars(song, bar + 1); song.melody.len = Math.max(song.melody.len || 1, song.bars); }
   pushSongUndo(before, 'Song: ' + S.tracks[t].name + ' Takt ' + (bar + 1), 'cell:' + t + ':' + bar);
   songChanged(); haptic('tick');
@@ -13435,13 +13565,13 @@ const loopLabel = song => (!song || !song.loop.on ? 'aus' : loopAll(song) ? 'Son
 // clip in that scene pauses there). The melody lane and its track stay; the Träger starts at ORIGINAL. One undo step
 const KETTE = {chain: null};
 function songFromChain(chain) {
-  chain = (chain || []).filter(x => x && isNum(x.scene) && isNum(x.bars) && x.bars >= 1).map(x => ({scene: clamp(x.scene | 0, 0, 3), bars: clamp(x.bars | 0, 1, 64)}));
+  chain = (chain || []).filter(x => x && isNum(x.scene) && isNum(x.bars) && x.bars >= 1).map(x => ({scene: clamp(x.scene | 0, 0, NS() - 1), bars: clamp(x.bars | 0, 1, 64)}));
   if (!chain.length) return false;
   if (R.songRec) songRecEnd();
   if (R.songPlay) songPlayEnd(true);
-  const raw = RecHelpers.fromChain(chain, 5, (t, sc) => !!(S.tracks[t] && S.tracks[t].clips[sc]));
+  const raw = RecHelpers.fromChain(chain, NT(), (t, sc) => !!(S.tracks[t] && S.tracks[t].clips[sc]));
   const before = songSnapshot(), old = S.song;
-  S.song = normSong({bars: Math.min(raw.bars, SONG_MAX_BARS), loop: old ? (loopAll(old) ? {on: old.loop.on, a: 0, b: SONG_MAX_BARS} : old.loop) : false, melodyTrack: old ? old.melodyTrack : (R.selT < 4 ? R.selT : 3),
+  S.song = normSong({bars: Math.min(raw.bars, SONG_MAX_BARS), loop: old ? (loopAll(old) ? {on: old.loop.on, a: 0, b: SONG_MAX_BARS} : old.loop) : false, melodyTrack: old ? old.melodyTrack : (isSynthT(R.selT) ? R.selT : 3),
     lanes: raw.lanes, carrier: [{beat: 0, target: null}], melody: old ? old.melody : null}, S.key);
   pushSongUndo(before, 'Kette → Song'); songChanged();
   return S.song.bars;
@@ -13466,7 +13596,7 @@ function startTransport(countIn) {
   folReset();                                                  // V0b FOLGEN: a transport (re)start ends „von Hand“
   if (ci) { R.startTime = now + .1 + 4 * ci * spb(); R.schedBeat = -4 * ci; R.countIn = true; }
   else { R.startTime = now + (countIn == null ? .06 : .1); R.schedBeat = 0; R.countIn = false; }
-  for (let i = 0; i < 5; i++) { if (R.pend[i]) { R.slot[i] = R.pend[i].slot; R.pend[i] = null; } R.cstart[i] = R.songPlay && R.songPlay.cs ? R.songPlay.cs[i] : 0; R.prev[i] = null; }
+  for (let i = 0; i < NT(); i++) { if (R.pend[i]) { R.slot[i] = R.pend[i].slot; R.pend[i] = null; } R.cstart[i] = R.songPlay && R.songPlay.cs ? R.songPlay.cs[i] : 0; R.prev[i] = null; }
   flushQueuedCarrier(now);
   perfReset();
   relockLfos();                                   // tempo-locked native LFOs follow the new beat 0 (§5.5)
@@ -13494,7 +13624,7 @@ function stop() {
   releaseInputs(r => r === 'play' || r === 'pad');
   R.playing = false; R.countIn = false; R.ciRun = false;
   CAP.buf.length = 0; CAP.open.clear(); CAP.last.fill(-1e9); UI.dirty.fang = true;
-  for (let i = 0; i < 5; i++) { if (R.pend[i]) { R.slot[i] = R.pend[i].slot; if (R.pend[i].cs != null) R.cstart[i] = 0; R.pend[i] = null; } R.prev[i] = null; }
+  for (let i = 0; i < NT(); i++) { if (R.pend[i]) { R.slot[i] = R.pend[i].slot; if (R.pend[i].cs != null) R.cstart[i] = 0; R.pend[i] = null; } R.prev[i] = null; }
   flushQueuedCarrier(now);
   stripBorn();
   duckReset(now);
@@ -13598,12 +13728,23 @@ function setSetting(key, v, label) {
   const before = JSON.stringify(S.settings[key]); if (JSON.stringify(v) === before) return false;
   settingApply(key, v); undoPush({kind: 'set', key, before, label: label || key}); return true;
 }
+/* V2a (TA8, E3-33): a gesture that changes several kinds is ONE entry {kind:'group', label, items:[…]} — undo applies the
+   items backwards, redo forwards; it counts as one of the 60 steps. groupSwap applies every item's state and returns the
+   entry for the other stack (each item then holds the state it replaced) */
+function groupSwap(g, back) {
+  const items = g.items.slice(), out = new Array(items.length);
+  const order = back ? items.map((_, k) => items.length - 1 - k) : items.map((_, k) => k);
+  for (const k of order) { const it = items[k]; out[k] = Object.assign({}, it, {before: undoState(it)}); undoApply(it, it.before); }
+  return Object.assign({}, g, {items: out});
+}
 function pushUndo(track, scene, before, label, mergeKey) {
   const t = performance.now(), top = UNDO[UNDO.length - 1];
   if (mergeKey && top && top.kind === 'clip' && top.mergeKey === mergeKey && top.track === track && top.scene === scene && t - top.time < 2000) { top.time = t; REDO.length = 0; return; }
   undoPush({kind: 'clip', track, scene, before: before ? cleanClip(before) : null, label, mergeKey: mergeKey || null});
 }
 function undoState(e) {
+  if (e.kind === 'group') return null;                     // V2a: the items carry their own states
+  if (e.kind === 'track') return trackSnapshot(e.track);
   if (e.kind === 'set') return JSON.stringify(S.settings[e.key]);
   if (e.kind === 'clip') return cleanClip(S.tracks[e.track].clips[e.scene]);
   if (e.kind === 'sound') return soundSnapshot(e.track);
@@ -13619,7 +13760,8 @@ function clipRestored(t, s) {
   clipChanged(t, s);
 }
 function undoApply(e, val) {
-  if (e.kind === 'clip') { S.tracks[e.track].clips[e.scene] = val ? deep(val) : null; clipRestored(e.track, e.scene); }
+  if (e.kind === 'track') restoreTrack(e.track, val);
+  else if (e.kind === 'clip') { S.tracks[e.track].clips[e.scene] = val ? deep(val) : null; clipRestored(e.track, e.scene); }
   else if (e.kind === 'sound') restoreSoundSnapshot(e.track, JSON.parse(val));
   else if (e.kind === 'kit') restoreKit(JSON.parse(val));
   else if (e.kind === 'song') restoreSong(JSON.parse(val));
@@ -13628,7 +13770,7 @@ function undoApply(e, val) {
   UI.dirty.all = true; markDirty();
   if (typeof edUndoBtns === 'function') edUndoBtns();
   if (R.editor === 'clip' && ED.clip && e.kind === 'clip' && e.track === ED.clip.t && e.scene === ED.clip.s) { if (S.tracks[e.track].clips[e.scene]) openClipSheet(e.track, e.scene); else closeClipSheet(); }
-  if (e.kind === 'clip' && ED.rollAt && e.track === ED.rollAt.t && e.scene === ED.rollAt.s) {
+  if (e.kind === 'clip' && ED.rollAt && e.track === ED.rollAt.t && e.scene === ED.rollAt.s && S.tracks[e.track]) {
     if (S.tracks[e.track].clips[e.scene] && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); }
     else if (S.tracks[e.track].clips[e.scene] && ED.lauf) { laufPaint(); rollHeadUpdate(); }
     else closeRoll();
@@ -13639,8 +13781,8 @@ function undo() {
   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && UNDO.length && UNDO[UNDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
   const u = UNDO.pop();
   if (!u) { toast('Nichts rückgängig zu machen'); UI.dirty.strip = true; return false; }
-  REDO.push(Object.assign({}, u, {before: undoState(u)}));
-  undoApply(u, u.before);
+  if (u.kind === 'group') REDO.push(groupSwap(u, true));
+  else { REDO.push(Object.assign({}, u, {before: undoState(u)})); undoApply(u, u.before); }
   if (R.editor === 'roll' || R.editor === 'clip') toast('Rückgängig: ' + u.label);   // the editor and the clip sheet have ↶ ↷ themselves
   else toast('Rückgängig: ' + u.label, {label: '↷ Wiederholen', fn: () => redo()});
   return true;
@@ -13649,10 +13791,123 @@ function redo() {
   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && REDO.length && REDO[REDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
   const r = REDO.pop();
   if (!r) { toast('Nichts zu wiederholen'); UI.dirty.strip = true; return false; }
-  UNDO.push(Object.assign({}, r, {before: undoState(r), time: performance.now(), mergeKey: null}));
-  undoApply(r, r.before);
+  if (r.kind === 'group') UNDO.push(Object.assign(groupSwap(r, false), {time: performance.now(), mergeKey: null}));
+  else { UNDO.push(Object.assign({}, r, {before: undoState(r), time: performance.now(), mergeKey: null})); undoApply(r, r.before); }
   if (R.editor === 'roll' || R.editor === 'clip') toast('Wiederholt: ' + r.label);
   else toast('Wiederholt: ' + r.label, {label: '↶ Rückgängig', fn: () => undo()});
+  return true;
+}
+
+/* ---------- V2a (§4.2): [＋ Spur] / [Spur entfernen] — Synth 5 (index 6) and Synth 6 (index 7) only, removed last-first.
+   Synth 1–4, MELODIE and DRUMS always stay (leave them empty), so the data indices never have gaps. [＋ Spur] is one undo
+   step (kind 'track'); [Spur entfernen] is ONE group (song lane + the song melody of the track, then the track with its
+   clips and sound): undo restores all of it deep-equal, redo removes it again (TA8, E3-33). ---------- */
+function trackSnapshot(i) { const t = S.tracks[i]; return t ? JSON.stringify(t, stripReplacer) : null; }
+const canAddTrack = () => NT() < MAX_T;
+const removableTrack = () => (NT() > BASE_T ? NT() - 1 : -1);
+// val = a track snapshot (put it back at index i = append) or null (track i goes; it is always the last one)
+function restoreTrack(i, val) {
+  const c = AU.ctx, now = c ? c.currentTime : 0;
+  if (val == null) {
+    if (i !== NT() - 1 || i < BASE_T) return;
+    if (R.songOverride) R.songOverride[i] = false;
+    R.slot[i] = -1; R.pend[i] = null; R.prev[i] = null; R.cstart[i] = 0;
+    if (c) { try { cancelTrackFrom(i, now); } catch (e) {} for (const v of VOICES.slice()) if (v.track === i && !v.dead) { if (v.start > now) v.cancel(); else v.release(now); } if (AU.synth[i]) retireEngine(i); }
+    if ((ED.rollAt && ED.rollAt.t === i) || (ED.clip && ED.clip.t === i)) closeEditor();
+    if (R.editor && R.selT === i) closeEditor();
+    S.tracks.pop();
+    if (S.song && S.song.lanes.length > NT()) S.song.lanes.length = NT();
+    if (S.song && S.song.melodyTrack >= NT()) S.song.melodyTrack = 3;
+    if (R.selT >= NT()) R.selT = 3;
+  } else {
+    if (i !== NT()) return;
+    const raw = JSON.parse(val), def = newSynthTrack(i);
+    const t = normTrack(raw, def, S.key, []); t.uid = typeof raw.uid === 'string' && UID_RE.test(raw.uid) ? raw.uid : def.uid;
+    S.tracks.push(t);
+    if (S.song) while (S.song.lanes.length < NT()) S.song.lanes.push([]);
+    R.slot[i] = -1; R.pend[i] = null; R.prev[i] = null; R.cstart[i] = 0;
+    if (c) { if (!AU.tracks[i]) buildTrack(i); else { AU.tracks[i].driveAmt = -1; applyTrackParams(i, true); } syncEngine(i, true); }
+  }
+  S.ui = Object.assign({}, S.ui, {order: orderFor(NT())});
+  UI.sndVer++; KEYC.ver++; scheduleAutoKey();
+  UI.dirty.all = UI.dirty.grid = UI.dirty.song = true; UI.kbRelayout = true;
+  if (UI.heads && EL.grid) buildGrid();                               // the matrix (rows, banks) at once, before a selectTrack
+  if (UI.songView) svLayout();
+  markDirty();
+}
+function addTrack() {
+  if (!canAddTrack()) { toast('Höchstens 8 Spuren – leere Spuren lassen sich neu belegen'); haptic('err'); return -1; }
+  if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return -1; }
+  const i = NT(), t = newSynthTrack(i);
+  restoreTrack(i, JSON.stringify(t));
+  undoPush({kind: 'track', track: i, before: null, label: '＋ Spur ' + S.tracks[i].name});
+  selectTrack(i);
+  toast(S.tracks[i].name + ' hinzugefügt', [{label: 'Rückgängig', fn: () => undo()}]); haptic('pop');
+  return i;
+}
+function removeTrack(i) {
+  i = i == null ? removableTrack() : i | 0;
+  if (i < 0 || i !== removableTrack()) { toast(i >= 0 && i < NT() ? 'Synth 1–4, MELODIE und DRUMS bleiben immer – einfach leer lassen' + (removableTrack() >= 0 ? ' (entfernen geht nur ' + S.tracks[removableTrack()].name + ')' : '') : 'Keine Zusatzspur da'); return false; }
+  if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return false; }
+  const name = S.tracks[i].name, songBefore = songSnapshot(), trBefore = trackSnapshot(i);
+  // the song first (its lane, the song melody when it sits on this track), then the track: undo restores the track before the song
+  if (S.song) {
+    if (S.song.melodyTrack === i) { S.song.melodyTrack = 3; S.song.melody.notes = []; }
+    S.song.lanes.splice(i, 1);
+  }
+  restoreTrack(i, null);
+  undoPush({kind: 'group', label: 'Spur entfernen: ' + name, items: [{kind: 'song', before: songBefore}, {kind: 'track', track: i, before: trBefore}]});
+  songChanged();
+  toast(name + ' entfernt', [{label: 'Rückgängig', fn: () => undo()}]); haptic('snap');
+  return true;
+}
+// 320 px: the ■-alle place holds [SZ]; its hold opens these two (same actions as ■ / ■■ of the head row)
+function openStopSheet(anchor) {
+  openPop(anchor, p => {
+    p.innerHTML = '<h4>Alle Spuren</h4><div class="savrow"><button class="mbtn rb" data-a="bar">■ Stopp zum Takt</button><button class="mbtn rb warn" data-a="now">■■ Sofort</button></div>' +
+      '<div class="small">' + (R.playing ? 'Die Wiedergabe läuft weiter.' : 'Gestoppt: „Sofort“ schaltet alle Töne aus.') + '</div>';
+    guardTouch(p);
+    onTap(p, b => { closePop(); if (b.dataset.a === 'now') { if (!R.playing) { panic(); toast('Alle Töne aus'); } else { for (let i = 0; i < NT(); i++) stopTrackNow(i); haptic('snap'); } } else { if (!R.playing) { panic(); toast('Alle Töne aus'); } else { stopAllClips(); haptic('tick'); } } }, 'button[data-a]');
+  }, {name: 'stopall'});
+}
+// the track sheet (hold a track head): name, [＋ Spur], [Spur entfernen] for the last added one, [Klang öffnen]
+function openTrackSheet(i, anchor) {
+  const tr = S.tracks[i]; if (!tr) return;
+  openPop(anchor, p => {
+    p.classList.add('trksheet');
+    const rem = removableTrack() === i;
+    p.innerHTML = `<h4>${esc(tr.name)}${tr.mel ? ' · Melodie-Spur' : ''}</h4>` +
+      `<div class="small">${esc(soundLabel(tr))} · ${NT()} von ${MAX_T} Spuren</div>` +
+      '<div class="savrow">' +
+      `<button class="mbtn rb" data-a="ed">Klang öffnen</button>` +
+      `<button class="mbtn rb" data-a="add"${canAddTrack() ? '' : ' disabled'}>＋ Spur</button>` +
+      (rem ? `<button class="mbtn rb warn" data-a="rem">Spur entfernen</button>` : '') + '</div>' +
+      (rem ? '<div class="small">Clips und Song-Melodie dieser Spur gehen mit – ↶ holt alles zurück.</div>'
+        : '<div class="small">' + (i >= BASE_T ? 'Entfernen geht nur bei der zuletzt hinzugefügten Spur.' : 'Synth 1–4, MELODIE und DRUMS bleiben immer – einfach leer lassen.') + '</div>');
+    guardTouch(p);
+    onTap(p, b => {
+      const a = b.dataset.a; closePop();
+      if (a === 'ed') { selectTrack(i); openEditor(); }
+      else if (a === 'add') addTrack();
+      else if (a === 'rem') removeTrack(i);
+    }, 'button[data-a]');
+  }, {name: 'track'});
+}
+/* V2a CPU rule (§4.2): new tracks 6–8 start with Poly 4; ≥ 3 tracks playing with Poly ≥ 6 AND Unison ≥ 5 at the same time
+   → once a hint (per app start) */
+function cpuHeavyCheck() {
+  if (UI.cpuHeavyShown || !R.playing) return false;
+  let n = 0;
+  for (const i of synthTracks()) {
+    if (!(R.slot[i] >= 0) || S.tracks[i].mute) continue;
+    const s = S.tracks[i].sound, p = s && s.p; if (!p) continue;
+    const poly = s.engine === 'fm6' ? (s.common && s.common.poly) || p.poly || 0 : p.poly || 0;
+    const uni = Math.max(p.o1uni || 1, p.o2uni || 1, p.o3uni || 1);
+    if (poly >= 6 && uni >= 5) n++;
+  }
+  if (n < 3) return false;
+  UI.cpuHeavyShown = true; UI.cpuHeavyN = (UI.cpuHeavyN | 0) + 1;
+  toast('Viel Last – CPU-Begrenzer greift ggf.');
   return true;
 }
 
@@ -14036,8 +14291,8 @@ function recNoteOff(id) {
 }
 function recPad(gm, vel, atT) {
   if (!R.playing || !AU.ctx) return;
-  const tm = atT != null && atT <= AU.ctx.currentTime ? atT : AU.ctx.currentTime, b = t2b(tm - AU.outLat), k = recKindFor(4, b);
-  const o = {b, n: gm, v: vel, kind: null, track: 4, drum: true, tm};
+  const tm = atT != null && atT <= AU.ctx.currentTime ? atT : AU.ctx.currentTime, b = t2b(tm - AU.outLat), k = recKindFor(DRUM_T, b);
+  const o = {b, n: gm, v: vel, kind: null, track: DRUM_T, drum: true, tm};
   if (!k) { o.offB = b + .1; recRemember('pad' + (++VSEQ), o); return; }
   recOpenFor(o, k);
   if (o.kind === 'od' && rec.state !== 'overdub') { rec.open.set('pad' + (++VSEQ), o); return; }
@@ -14177,16 +14432,16 @@ function recResultToast(ti, si, n, od) {
   toast(msg, [{label: 'Bearbeiten', fn: () => openRoll(ti, si)}, {label: 'Rückgängig', fn: () => undo()}]);
 }
 // scene keys (OP-Z: one key per scene, the bass counts most) - cached per scene, invalidated by every clip change
-const KEYC = {ver: 0, cache: [null, null, null, null], timer: 0, pending: new Set()};
+const KEYC = {ver: 0, cache: new Array(8).fill(null), timer: 0, pending: new Set()};
 // V0a K-06: what a clip really plays: its notes before the clip end (a note behind it is ignored by the key detection too)
 function liveNotes(c) { const L = c.len * 4 - 1e-9; return c.notes.some(n => n.t >= L) ? c.notes.filter(n => n.t < L) : c.notes; }
 function scenePartsOf(si) {
   const parts = [];
-  for (let i = 0; i < 4; i++) { const tr = S.tracks[i], c = tr && tr.follow && tr.clips[si], ns = c ? liveNotes(c) : null; if (ns && ns.length) parts.push({i, c, ns, med: median(ns.map(n => n.n))}); }
+  for (const i of synthTracks()) { const tr = S.tracks[i], c = tr && tr.follow && tr.clips[si], ns = c ? liveNotes(c) : null; if (ns && ns.length) parts.push({i, c, ns, med: median(ns.map(n => n.n))}); }
   return parts;
 }
 function sceneKeyOf(si) {
-  if (si == null || si < 0 || si > 3) return null;
+  if (si == null || si < 0 || si > NS() - 1) return null;
   const pk = S.key.root + S.key.scale, hit = KEYC.cache[si];
   if (hit && hit.ver === KEYC.ver && hit.pk === pk && hit.S === S) return hit.key;
   const parts = scenePartsOf(si);
@@ -14201,14 +14456,14 @@ function sceneKeyOf(si) {
 }
 const traegerActive = () => !!(T.current().target || (AU.ctx && T.targetAt(AU.ctx.currentTime).target));
 function scheduleAutoKey(si) {
-  if (si == null) [0, 1, 2, 3].forEach(x => KEYC.pending.add(x)); else KEYC.pending.add(si);
+  if (si == null) for (let x = 0; x < NS(); x++) KEYC.pending.add(x); else KEYC.pending.add(si);
   clearTimeout(KEYC.timer);
   KEYC.timer = setTimeout(() => { const L = [...KEYC.pending]; KEYC.pending.clear(); L.forEach(x => applySceneKeys(x)); }, 400);   // UI-only timer
 }
 // every 'auto' clip gets the scene key if it fits it (>= 90 % of its weight), else its own key. Never under an active
 // Träger: then it runs after the next ORIGINAL (R.keyPending), where a key change is inaudible (identity)
 function applySceneKeys(si) {
-  if (si == null) { for (let x = 0; x < 4; x++) applySceneKeys(x); return; }
+  if (si == null) { for (let x = 0; x < NS(); x++) applySceneKeys(x); return; }
   if (traegerActive()) { R.keyPending.add(si); return; }
   R.keyPending.delete(si);
   const parts = scenePartsOf(si), sk = sceneKeyOf(si);
@@ -14229,12 +14484,12 @@ function applySceneKeys(si) {
 function padGmForNote(note) {
   if (DRUM_GMS.includes(note)) return note;
   // WP6: the 12 semitones of the drum track's octave play the 12 pads in order (MIDI keyboards, API keyOn)
-  const rel = note - 12 * (S.tracks[4].kbOct + 1);
+  const rel = note - 12 * (S.tracks[DRUM_T].kbOct + 1);
   if (rel >= 0 && rel < 12) return DRUM_VOICES[rel].gm;
   return mapV1Drum(note);
 }
 // FANG (§3.6): what was played live (transport running, REC off) is kept, so it can become a clip afterwards
-const CAP = {buf: [], open: new Map(), last: [-1e9, -1e9, -1e9, -1e9, -1e9]};
+const CAP = {buf: [], open: new Map(), last: new Array(8).fill(-1e9)};
 // step input (§3.3): keys pressed within 40 ms are one chord step
 const STEPQ = {notes: [], vel: .8, timer: 0};
 // "Tastatur: Tonart sperren" (§4.2): an out-of-key key plays the nearest in-key note below (heard = stored)
@@ -14328,7 +14583,7 @@ function padHit(gm, vel, viaInput) {
   const t0 = c.currentTime;
   drumHit(gm, vel == null ? .9 : vel, t0, 'pad');
   recPad(gm, vel == null ? .9 : vel, t0);
-  if (R.playing && rec.state === 'off' && !R.countIn) capPush({track: 4, n: gm, v: vel == null ? .9 : vel, b: t2b(t0 - AU.outLat), d: .1});
+  if (R.playing && rec.state === 'off' && !R.countIn) capPush({track: DRUM_T, n: gm, v: vel == null ? .9 : vel, b: t2b(t0 - AU.outLat), d: .1});
   if (!viaInput) UI.dirty.kb = true;
 }
 // FANG (§3.6, Anhang D.5): the last phrase of the selected track becomes a clip that keeps playing in phase
@@ -14479,38 +14734,133 @@ function padFlashAt(idx, t) { const q = PADQ[idx]; if (q.length < 16) q.push(t);
 /* ---------- grid ---------- */
 // cells too narrow for the length label and the live text side by side (unselected / selected cell insets differ)
 function cellFit() {
-  const g = EL.grid, c = g && g.querySelector('.slot'); if (!c) return;
+  const g = EL.grid, c = g && g.querySelector('.slot:not(.mxoff)'); if (!c) return;
   const w = c.getBoundingClientRect().width; if (!w) return;
   if (w !== UI.cellW) { UI.cellW = w; UI.dirty.grid = true; }
 }
+/* V2a (§4.2): the matrix shows NT tracks × 8 scenes without scrolling (E3-26).
+   Szenenbank: 8 columns where each is ≥ 56 px wide (L, W), else 4 columns + [SZ 1–4 │ 5–8] in the scene head row (next to
+   SONG ⇄; at 320 px stacked under ■). Spurbank: rows below P 40 / L 30 px → pages of the synth tracks (display order), DRUMS
+   stays visible as the last row of every page; [▲▼ 1/2] at the bottom of the head column (left of DRUMS). A clip running in
+   the hidden bank / page shows a dot on its switch. All cells exist; the hidden ones are display:none (no data change). */
+const MX = {cols: 4, scenes: [0, 1, 2, 3], rows: [0, 1, 2, 3, 5, 4], pages: null, bankS: true, bankT: false, szAt: 'left', key: '', lastFit: 8};
+const sceneBankOf = () => (UI.sceneBank === 1 ? 1 : 0);
+const trackBankOf = () => (UI.trackBank === 1 ? 1 : 0);
+function mxMinRow() { return window.innerWidth > window.innerHeight ? 30 : 40; }
+function mxApply() {
+  const g = EL.grid; if (!g) return;
+  const nt = NT(), ord = trackOrder(), synth = ord.filter(i => !isDrum(i));
+  // pages from an earlier layout (the grid was hidden while a track came or went): same page size, current tracks
+  if (MX.pages && MX.pages.flat().join() !== synth.join()) {
+    const per = MX.pages[0].length, pg = []; for (let k = 0; k < synth.length; k += per) pg.push(synth.slice(k, k + per));
+    MX.pages = pg.length > 1 ? pg : null; MX.bankT = !!MX.pages; if (!MX.bankT || UI.trackBank >= pg.length) UI.trackBank = 0;
+  }
+  if (!MX.pages && synth.length + 1 > MX.lastFit) {
+    const per = Math.max(4, MX.lastFit - 1), pg = []; for (let k = 0; k < synth.length; k += per) pg.push(synth.slice(k, k + per));
+    if (pg.length > 1) { MX.pages = pg; MX.bankT = true; }
+  }
+  MX.scenes = MX.bankS ? [0, 1, 2, 3].map(s => s + sceneBankOf() * 4) : [0, 1, 2, 3, 4, 5, 6, 7];
+  if (MX.bankT && MX.pages) { const pg = MX.pages[Math.min(trackBankOf(), MX.pages.length - 1)]; MX.rows = pg.concat([DRUM_T]); }
+  else MX.rows = ord.slice();
+  MX.nrows = MX.bankT && MX.pages ? MX.pages[0].length + 1 : nt;
+  g.style.setProperty('--nsc', MX.cols); g.style.setProperty('--ntr', MX.nrows);
+  g.classList.toggle('bankS', MX.bankS); g.classList.toggle('bankT', MX.bankT); g.classList.toggle('szr', MX.bankS && MX.szAt === 'right');
+  g.classList.toggle('cnarrow', MX.bankS && MX.szAt === 'left' && MX.cornerW < 64);       // SONG ⇄ next to [SZ] in ≈ 50 px (375 px)
+  g.classList.toggle('ctiny', MX.bankS && MX.szAt === 'left' && MX.cornerW < 46);         // ≈ 36 px (667×375): two lines
+  const vs = new Set(MX.scenes), vt = new Set(MX.rows);
+  // DOM order = display order (rows), so the grid's auto placement puts every row together; empty filler rows keep the
+  // row height of a shorter page (nothing jumps when [▲▼] turns the page)
+  for (const i of ord) {
+    const H = UI.heads[i]; if (!H) continue;
+    const on = vt.has(i);
+    H.el.classList.toggle('mxoff', !on); UI.stops[i].classList.toggle('mxoff', !on);
+    for (let s = 0; s < N_SCN; s++) UI.cells[i][s].el.classList.toggle('mxoff', !on || !vs.has(s));
+  }
+  for (let s = 0; s < N_SCN; s++) UI.scenes[s].classList.toggle('mxoff', !vs.has(s));
+  const pad = MX.nrows - MX.rows.length;
+  UI.fill.forEach((f, k) => f.classList.toggle('mxoff', k >= pad * (MX.cols + 2)));
+  // keep the order: page rows, filler, DRUMS last
+  const drumRow = [UI.heads[DRUM_T].el, ...UI.cells[DRUM_T].map(c => c.el), UI.stops[DRUM_T]];
+  for (const f of UI.fill) g.insertBefore(f, drumRow[0]);
+  // 320 px: [SZ] takes the ■ place; „Alle stoppen“ is then the hold of [SZ] (Halten = Blatt, §v2-10.3)
+  const szr = MX.szAt === 'right' && MX.bankS;
+  if (szr) UI.saw.appendChild(UI.szb); else UI.cnw.appendChild(UI.szb);
+  UI.stopAll.classList.toggle('mxoff', szr);
+  UI.szb.hidden = !MX.bankS; UI.tbb.hidden = !MX.bankT;
+  UI.heads[DRUM_T].el.classList.toggle('wtb', MX.bankT);
+  if (MX.bankT) UI.heads[DRUM_T].el.appendChild(UI.tbb);
+  UI.dirty.grid = true;
+  for (const i of ord) if (UI.heads[i]) { UI.heads[i].st = {}; UI.stops[i]._st = null; }
+}
+// measured layout (resize, sheet opened, track added/removed): which banks are needed
+function mxLayout() {
+  const g = EL.grid; if (!g || !UI.heads || !g.clientHeight) return;
+  const nt = NT(), key = nt + ':' + g.clientWidth + 'x' + g.clientHeight + ':' + trackOrder().join('');
+  if (key === MX.key) return; MX.key = key;
+  const cs = getComputedStyle(g), gapY = parseFloat(cs.rowGap) || 0, gapX = parseFloat(cs.columnGap) || 0;
+  const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0), padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const headH = parseFloat((cs.gridTemplateRows || '44px').split(' ')[0]) || 44;
+  const H = g.clientHeight - padY - headH, minR = mxMinRow();
+  // rows: all tracks when each gets ≥ minR, else pages of synth rows + DRUMS (at least 4 synth rows a page = today's 5 rows)
+  const fitRows = n => (H - n * gapY) / n;
+  const ord = trackOrder(), synth = ord.filter(i => !isDrum(i));
+  MX.lastFit = Math.max(5, Math.floor((H + gapY) / (minR + gapY)));      // rows that fit at the minimum height (≥ 5 = today)
+  if (fitRows(nt) >= minR - .5) { MX.bankT = false; MX.pages = null; MX.lastFit = Math.max(MX.lastFit, nt); }
+  else {
+    const per = Math.max(4, Math.floor((H + gapY) / (minR + gapY)) - 1);
+    const pages = []; for (let k = 0; k < synth.length; k += per) pages.push(synth.slice(k, k + per));
+    MX.bankT = pages.length > 1; MX.pages = MX.bankT ? pages : null;
+    if (!MX.bankT) UI.trackBank = 0; else if (UI.trackBank >= pages.length) UI.trackBank = 0;
+  }
+  // columns: 8 when each is ≥ 56 px next to the head column (minmax(≥ 60 / 84 px, 1.7 / 1.2 fr)) and the ■ column
+  const W = g.clientWidth - padX, colsOf = n => { const avail = W - 40 - (n + 1) * gapX, hmin = W < 330 ? 60 : 84, fr = avail / (1.7 + n); return 1.7 * fr >= hmin ? fr : (avail - hmin) / n; };
+  MX.cols = colsOf(8) >= 56 ? 8 : 4; MX.bankS = MX.cols === 4;
+  // SZ next to SONG ⇄ when the head column leaves ≥ 48 px for it, else under ■ (320 px)
+  const headW = W - 40 - 5 * gapX - 4 * colsOf(4); MX.szAt = headW - 40 - 3 >= 48 ? 'left' : 'right'; MX.cornerW = headW - 43;
+  mxApply();
+  // the label size from the real corner width (the landscape grid gives the head column less than the estimate)
+  const cn = g.querySelector('.corner.sw'); if (cn && MX.bankS && MX.szAt === 'left') { const cw = cn.getBoundingClientRect().width; if (cw > 0 && Math.abs(cw - MX.cornerW) > 1) { MX.cornerW = cw; g.classList.toggle('cnarrow', cw < 64); g.classList.toggle('ctiny', cw < 46); } }
+}
 function buildGrid() {
   const g = EL.grid; g.textContent = '';
+  const cnw = el('div', 'cnw'); UI.cnw = cnw;
   const cn = el('button', 'corner rb sw', '<span class="clogo">' + LOGO_SVG + '</span><span class="swl">SONG ⇄</span>');      // §2.1 / §3.9: the view switch
-  cn.setAttribute('aria-label', 'Song-Ansicht'); g.appendChild(cn); UI.corner = cn;
+  cn.setAttribute('aria-label', 'Song-Ansicht'); cnw.appendChild(cn); g.appendChild(cnw); UI.corner = cn;
+  // V2a: [SZ 1–4 │ 5–8] (scene bank) and [▲▼ 1/2] (track bank); a dot = a clip runs in the hidden part
+  const szb = el('button', 'szb rb', '<small>SZ</small><b>1–4</b><i class="bdot"></i>'); szb.setAttribute('aria-label', 'Szenen 5–8 zeigen'); UI.szb = szb;
+  cnw.appendChild(szb);
   UI.scenes = [];
-  for (let s = 0; s < 4; s++) {
+  for (let s = 0; s < N_SCN; s++) {
     const b = el('button', 'scn rb', `<span class="st"><span class="tri">▶</span><span>${s + 1}</span></span><span class="sk"></span>`);
     b.dataset.s = s; b.setAttribute('aria-label', 'Szene ' + (s + 1) + ' starten'); g.appendChild(b); UI.scenes.push(b);
     b._sk = b.querySelector('.sk');
   }
-  const sa = el('button', 'stp all rb', '■'); sa.setAttribute('aria-label', 'Alle stoppen (2× = sofort)'); sa.title = 'Alle stoppen zum nächsten Takt (2× = sofort)'; g.appendChild(sa); UI.stopAll = sa;
-  UI.cells = []; UI.heads = []; UI.stops = [];
-  for (let i = 0; i < 5; i++) {
+  const saw = el('div', 'saw'); UI.saw = saw;
+  const sa = el('button', 'stp all rb', '■'); sa.setAttribute('aria-label', 'Alle stoppen (2× = sofort)'); sa.title = 'Alle stoppen zum nächsten Takt (2× = sofort)'; saw.appendChild(sa); g.appendChild(saw); UI.stopAll = sa;
+  const tbb = el('button', 'tbb rb', '<b>▲▼</b><small>1/2</small><i class="bdot"></i>'); tbb.setAttribute('aria-label', 'Andere Spuren zeigen'); UI.tbb = tbb;
+  UI.cells = []; UI.heads = []; UI.stops = []; UI.fill = [];
+  for (const i of trackOrder()) {
     const h = el('button', 'th', '<span class="bar"></span><span class="nm"></span><span class="sb"></span><span class="fb"></span>');
     h.dataset.t = i; h.style.setProperty('--tc', `var(--t${i + 1})`); g.appendChild(h);
-    UI.heads.push({el: h, nm: h.children[1], sb: h.children[2], fb: h.children[3], st: {}});
+    UI.heads[i] = {el: h, nm: h.children[1], sb: h.children[2], fb: h.children[3], st: {}};
     UI.cells[i] = [];
-    for (let s = 0; s < 4; s++) {
+    for (let s = 0; s < N_SCN; s++) {
       const c = el('div', 'slot', '<span class="rfill"></span><span class="mini"></span><span class="gl"></span><span class="ln"></span><span class="kbg" hidden></span><span class="tx"></span><span class="pg"></span><span class="sq">■</span><span class="big"></span>');
       c.dataset.t = i; c.dataset.s = s; c.setAttribute('role', 'gridcell'); guardTouch(c);
       c.style.setProperty('--tc', `var(--t${i + 1})`); c.style.setProperty('--ta', `var(--t${i + 1}a)`);
       g.appendChild(c);
       const q = sel => c.querySelector(sel);
-      UI.cells[i].push({el: c, rfill: q('.rfill'), mini: q('.mini'), gl: q('.gl'), ln: q('.ln'), kbg: q('.kbg'), tx: q('.tx'), pg: q('.pg'), big: q('.big'), st: {}, sig: null, ph: -2, rph: -2});
+      UI.cells[i][s] = {el: c, rfill: q('.rfill'), mini: q('.mini'), gl: q('.gl'), ln: q('.ln'), kbg: q('.kbg'), tx: q('.tx'), pg: q('.pg'), big: q('.big'), st: {}, sig: null, ph: -2, rph: -2};
     }
-    const st = el('button', 'stp rb', '■'); st.dataset.t = i; st.setAttribute('aria-label', 'Spur stoppen (2× = sofort)'); st.title = 'Spur stoppen (2× = sofort)'; g.appendChild(st); UI.stops.push(st);
+    const st = el('button', 'stp rb', '■'); st.dataset.t = i; st.setAttribute('aria-label', 'Spur stoppen (2× = sofort)'); st.title = 'Spur stoppen (2× = sofort)'; g.appendChild(st); UI.stops[i] = st;
   }
+  // filler cells for a shorter last page (empty, inert): up to 3 rows of NS + 2
+  for (let k = 0; k < 3 * (N_SCN + 2); k++) { const f = el('div', 'mxfill mxoff'); f.setAttribute('aria-hidden', 'true'); UI.fill.push(f); g.appendChild(f); }
+  MX.key = ''; mxApply(); mxLayout();
 }
+// [SZ] / [▲▼]: turn the bank (view only: no data, no undo; the clips in the hidden part keep running)
+function setSceneBank(n) { UI.sceneBank = n ? 1 : 0; if (S.ui) S.ui.sceneBank = UI.sceneBank; mxApply(); return UI.sceneBank; }
+function setTrackBank(n) { UI.trackBank = n && MX.pages && MX.pages.length > 1 ? 1 : 0; if (S.ui) S.ui.trackBank = UI.trackBank; mxApply(); return UI.trackBank; }
 function setCls(e, cache, key, val) { if (cache[key] !== val) { cache[key] = val; e.classList.toggle(key, val); } }
 function setTxt(e, cache, key, val) { if (cache[key] !== val) { cache[key] = val; e.textContent = val; } }
 function clipSig(c) { let h = c.len * 7919; for (const n of c.notes) h = (h * 31 + Math.round(n.t * 960) * 7 + n.n * 13 + Math.round(n.d * 96)) % 1000000007; return c.notes.length + ':' + h; }
@@ -14527,9 +14877,10 @@ function miniSvg(c, drum) {
   return `<svg viewBox="0 0 100 100" preserveAspectRatio="none">${r}</svg>`;
 }
 function renderGrid(bAud) {
-  const VS = [0, 1, 2, 3, 4].map(i => visualSlots(i, bAud));
-  const SK = [0, 1, 2, 3].map(sceneKeyOf);
-  for (let i = 0; i < 5; i++) {
+  if (UI.heads.length !== NT() || UI.heads.some((h, i) => !h !== !S.tracks[i])) { buildGrid(); }
+  const nt = NT(), VS = S.tracks.map((_, i) => visualSlots(i, bAud));
+  const SK = MX.scenes.map(sceneKeyOf);
+  for (const i of MX.rows) {
     const tr = S.tracks[i], vs = VS[i], H = UI.heads[i];
     setTxt(H.nm, H.st, 'nm', tr.name);
     setTxt(H.sb, H.st, 'sb', soundLabel(tr));
@@ -14540,8 +14891,10 @@ function renderGrid(bAud) {
     setTxt(H.fb, H.st, 'fb', fb);
     if (H.st.fcls !== fcls) { H.st.fcls = fcls; H.fb.className = fcls; }
     setCls(H.el, H.st, 'sel', i === R.selT);
+    setCls(H.el, H.st, 'hfix', fcls === 'fb fix');
     setCls(H.el, H.st, 'muted', !!tr.mute);
-    for (let s = 0; s < 4; s++) {
+    for (let k = 0; k < MX.scenes.length; k++) {
+      const s = MX.scenes[k];
       const C = UI.cells[i][s], clip = tr.clips[s], st = C.st;
       const sel = i === R.selT && s === R.selS;
       const playing = vs.playing === s;
@@ -14570,7 +14923,7 @@ function renderGrid(bAud) {
       setCls(C.gl, st, 'rd', glr);
       setTxt(C.ln, st, 'ln', clip ? clip.len + 'T' : '');
       // key badge only where the clip's key differs from its scene key (§4.2)
-      const skey = SK[s] || S.key;
+      const skey = SK[k] || S.key;
       const kb = clip && tr.kind === 'synth' && clip.notes.length && !sameKey(clip.key, skey) ? keyShort(clip.key) : '';
       if (st.kb !== kb) { st.kb = kb; C.kbg.textContent = kb; C.kbg.hidden = !kb; }
       let tx = '', big = '';
@@ -14600,9 +14953,10 @@ function renderGrid(bAud) {
       if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = clip ? miniSvg(clip, tr.kind === 'drum') : ''; }
     }
   }
-  for (let s = 0; s < 4; s++) {
+  for (let k = 0; k < MX.scenes.length; k++) {
+    const s = MX.scenes[k];
     let any = false, all = true, q = false;
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < nt; i++) {
       if (S.tracks[i].clips[s]) { any = true; if (VS[i].playing !== s) all = false; }
       if (VS[i].queued === s) q = true;
     }
@@ -14610,14 +14964,27 @@ function renderGrid(bAud) {
     b.classList.toggle('full', any && all && R.playing);
     b.classList.toggle('q', q && R.playing);
     // scene key under the launcher (9 px): shown when the scene has following clips with notes
-    const lab = SK[s] ? keyShort(SK[s]) : '';
-    if (b._skT !== lab) { b._skT = lab; b._sk.textContent = lab; b.setAttribute('aria-label', 'Szene ' + (s + 1) + ' starten' + (lab ? ' · ' + keyName(SK[s]) : '')); }
+    const lab = SK[k] ? keyShort(SK[k]) : '';
+    if (b._skT !== lab) { b._skT = lab; b._sk.textContent = lab; b.setAttribute('aria-label', 'Szene ' + (s + 1) + ' starten' + (lab ? ' · ' + keyName(SK[k]) : '')); }
+  }
+  // the bank switches: label + a dot when a clip of the hidden part plays (or is queued)
+  if (MX.bankS) {
+    const other = sceneBankOf() ? [0, 1, 2, 3] : [4, 5, 6, 7], hot = R.playing && VS.some(v => other.includes(v.playing) || (v.queued != null && other.includes(v.queued)));
+    const lab = sceneBankOf() ? '5–8' : '1–4';
+    if (UI.szb._lab !== lab) { UI.szb._lab = lab; UI.szb.children[1].textContent = lab; UI.szb.setAttribute('aria-label', 'Szenen ' + (sceneBankOf() ? '1–4' : '5–8') + ' zeigen'); }
+    UI.szb.classList.toggle('hot', hot);
+  }
+  if (MX.bankT) {
+    const shown = new Set(MX.rows), hot = R.playing && S.tracks.some((_, i) => !shown.has(i) && VS[i].playing >= 0);
+    const lab = (trackBankOf() + 1) + '/' + MX.pages.length;
+    if (UI.tbb._lab !== lab) { UI.tbb._lab = lab; UI.tbb.children[1].textContent = lab; }
+    UI.tbb.classList.toggle('hot', hot);
   }
 }
 function renderProgress(bAud) {
-  for (let i = 0; i < 5; i++) {
+  for (const i of MX.rows) {
     const tr = S.tracks[i], vs = R.playing ? visualSlots(i, bAud) : null;
-    for (let s = 0; s < 4; s++) {
+    for (const s of MX.scenes) {
       const C = UI.cells[i][s], clip = tr.clips[s];
       let ph = -1;
       if (R.playing && clip && bAud >= 0) {
@@ -14646,8 +15013,22 @@ function renderProgress(bAud) {
 /* ---------- song view (§3.9): replaces the clip grid inside the grid area (not a sheet; the keyboard keeps its height).
    Transport row · bar ruler · 5 track lanes · TRÄGER · MELODIE. The bars scroll by their own code: a one-finger drag of
    more than 8 px scrolls (with momentum) and never edits; a cell changes only on a clean tap (≤ 8 px, ≤ 350 ms). ---------- */
-const SV = {x: 0, vx: 0, cellW: 36, rowH: 30, rulerH: 20, w: 0, h: 0, dpr: 1, g: null, lastUser: -1e9, mom: 0, lastDraw: 0, sig: '', cols: null, ph: -1};
-const SV_ROWS = 7;                                          // 5 tracks, TRÄGER, MELODIE
+const SV = {rows: [0, 1, 2, 3, 4], pages: null, x: 0, vx: 0, cellW: 36, rowH: 30, rulerH: 20, w: 0, h: 0, dpr: 1, g: null, lastUser: -1e9, mom: 0, lastDraw: 0, sig: '', cols: null, ph: -1};
+/* V2a: the rows are the visible tracks (display order, SV.rows), then AKKORDE, then MELODIE. Below 26 px a row the synth
+   tracks are paged like the matrix (same page, UI.trackBank; DRUMS stays); [▲▼] in the „Takt“ label cell turns it */
+const svNRows = () => (SV.rows ? SV.rows.length : 5) + 2;
+const svShort = i => (isDrum(i) ? 'DRUMS' : i === MEL_T ? 'MELOD.' : 'SYN ' + (i < DRUM_T ? i + 1 : i - 1));
+const trackTag = i => (isDrum(i) ? 'DR' : i === MEL_T ? 'MEL' : 'S' + (i < DRUM_T ? i + 1 : i - 1));      // V2a: S1–S4, MEL, S5, S6
+function svBuildRows() {
+  const L = SV.labs; if (!L) return;
+  const rows = SV.rows || trackOrder(), key = rows.join(',');
+  if (SV.rowsKey === key && L._n === rows.length) return;
+  SV.rowsKey = key; L._n = rows.length;
+  for (const d of [...L.querySelectorAll('.sv-l.trk')]) d.remove();
+  const before = SV.lc;
+  for (const i of rows) { const d = el('div', 'sv-l trk', '<i></i><span></span>'); if (i >= 0) d.style.setProperty('--tc', `var(--t${i + 1})`); else d.classList.add('blank'); d.dataset.t = i; L.insertBefore(d, before); }
+  SV.sig = ''; UI.dirty.song = true;
+}
 function songViewOn() { return !!UI.songView; }
 function setSongView(on) {
   on = !!on;
@@ -14689,15 +15070,17 @@ function buildSongView() {
   onTap(bLoop, () => { if (!songHasContent()) { toast('Noch kein Song'); return; } openLoopPop(bLoop); });
   const body = el('div', 'sv-body');
   const labs = el('div', 'sv-labs');
-  labs.appendChild(el('div', 'sv-lr', '<span class="lbl">Takt</span>'));
-  for (let i = 0; i < 5; i++) { const d = el('div', 'sv-l', '<i></i><span></span>'); d.style.setProperty('--tc', `var(--t${i + 1})`); labs.appendChild(d); }
+  const lr = el('div', 'sv-lr', '<span class="lbl">Takt</span>');
+  const stb = el('button', 'rb sv-tbb', '▲▼'); stb.hidden = true; stb.setAttribute('aria-label', 'Andere Spuren zeigen'); lr.appendChild(stb); SV.tbb = stb;
+  onTap(stb, () => { if (!SV.pages) return; setTrackBank((trackBankOf() + 1) % SV.pages.length); svLayout(); haptic('tick'); });
+  labs.appendChild(lr);
   // V0c (N7-R10): the Träger row is AKKORDE; its label opens [Akkorde quantisieren …] [Akkorde löschen]. S-04: the melody
   // row names its track and that it does not follow the Träger („⇅ fest“)
   const lc = el('button', 'sv-l sv-lc', '<span>AKKORDE</span>'), lm = el('button', 'sv-l sv-lm', '<span class="mlt"><b>MELODIE</b><small>S4 · ⇅ fest</small></span>');
   lc.setAttribute('aria-label', 'Akkorde: quantisieren, löschen'); onTap(lc, () => openChordMenu(lc));
   lm.setAttribute('aria-label', 'Melodie: bearbeiten, leeren');
   onTap(lm, () => openMelPop(lm));
-  labs.append(lc, lm);
+  labs.append(lc, lm); SV.lc = lc;
   const wrap = el('div', 'sv-cw'), cv = el('canvas', 'sv-cv'), empty = el('div', 'sv-empty');
   empty.innerHTML = 'Noch kein Song.<br><b>● SONG</b> drücken, Szenen starten, Träger wechseln, dazu spielen – alles wird mitgeschnitten.';
   const kb = el('button', 'rb mbtn kbtn', 'Kette aus Szenen …'); kb.setAttribute('aria-label', 'Song aus einer Kette von Szenen bauen');
@@ -14728,13 +15111,24 @@ function svLayout() {
   if (!r.width || !r.height) return;
   SV.w = r.width; SV.h = r.height; SV.dpr = dpr;
   SV.rulerH = r.height < 240 ? 16 : 20;
-  SV.rowH = Math.max(14, (r.height - SV.rulerH) / SV_ROWS);
+  // V2a: all tracks while each row gets ≥ 26 px (song-delta 6.5), else pages of the synth tracks (≥ 4 a page) + DRUMS
+  const ord = trackOrder(), synth = ord.filter(i => !isDrum(i)), avail = r.height - SV.rulerH;
+  if (avail / (ord.length + 2) >= 26 - .5) { SV.rows = ord.slice(); SV.pages = null; }
+  else {
+    const per = Math.max(4, Math.floor(avail / 26) - 3), pages = []; for (let k = 0; k < synth.length; k += per) pages.push(synth.slice(k, k + per));
+    if (pages.length < 2) { SV.rows = ord.slice(); SV.pages = null; }
+    else { SV.pages = pages; const pg = pages[Math.min(trackBankOf(), pages.length - 1)]; SV.rows = pg.concat(new Array(pages[0].length - pg.length).fill(-1), [DRUM_T]); }
+  }
+  SV.tbb.hidden = !SV.pages; if (SV.pages) SV.tbb.textContent = '▲▼ ' + (Math.min(trackBankOf(), SV.pages.length - 1) + 1) + '/' + SV.pages.length;
+  svBuildRows();
+  const nR = SV.rows.length + 2;                                    // a shorter page keeps its rows (empty ones): nothing moves
+  SV.rowH = Math.max(14, (r.height - SV.rulerH) / nR);
   SV.cv.width = Math.round(r.width * dpr); SV.cv.height = Math.round(r.height * dpr);
   SV.cv.style.width = r.width + 'px'; SV.cv.style.height = r.height + 'px';
   // the label column rows line up with the canvas rows
   SV.labs.style.setProperty('--svr', SV.rulerH + 'px'); SV.labs.style.setProperty('--svh', SV.rowH + 'px');
   const cs = getComputedStyle(document.documentElement);
-  SV.cols = [1, 2, 3, 4, 5].map(k => cs.getPropertyValue('--t' + k).trim() || '#888');
+  SV.cols = [1, 2, 3, 4, 5, 6, 7, 8].map(k => cs.getPropertyValue('--t' + k).trim() || '#888');
   SV.sig = ''; UI.dirty.song = true;
 }
 const svBars = () => (S.song ? Math.max(S.song.bars, 1) : 0);
@@ -14777,8 +15171,8 @@ function svButtons() {
   B.bPlay.classList.toggle('on', play); B.bPlay.setAttribute('aria-label', play ? 'Song anhalten' : 'Song abspielen');
   B.bPlay.disabled = !song || !song.bars;
   B.bMel.disabled = !play; B.bMel.classList.toggle('on', !!R.melRec);
-  const mt = song ? song.melodyTrack : (R.selT < 4 ? R.selT : 3);
-  B.bMt.textContent = 'S' + (mt + 1) + ' ▾'; B.bMt.setAttribute('aria-label', 'Melodie-Spur: ' + S.tracks[mt].name);
+  const mt = song ? song.melodyTrack : (isSynthT(R.selT) ? R.selT : 3);
+  B.bMt.textContent = trackTag(mt) + ' ▾'; B.bMt.setAttribute('aria-label', 'Melodie-Spur: ' + S.tracks[mt].name);
   // ↩ SONG not during a take: the recorded tracks are handed back at its end (V0c; nothing moves while ● runs, N7S-02)
   B.bBack.hidden = !(play && !rec && (R.songOverride.some(Boolean) || R.carrierLive));
   B.bHome.hidden = !B.bBack.hidden;
@@ -14787,7 +15181,7 @@ function svButtons() {
   if (lv.textContent !== ll) { lv.textContent = ll; B.bLoop.setAttribute('aria-label', 'Schleife: ' + ll); }
   B.bLoop.classList.toggle('on', !!(song && song.loop.on));
   SV.empty.hidden = !!(song && (song.bars || rec));
-  if (SV.lm) { const sm = SV.lm.querySelector('small'), tx = 'S' + (mt + 1) + ' · ⇅ fest'; if (sm && sm.textContent !== tx) sm.textContent = tx; }
+  if (SV.lm) { const sm = SV.lm.querySelector('small'), tx = trackTag(mt) + ' · ⇅ fest'; if (sm && sm.textContent !== tx) sm.textContent = tx; }
   // the take's banner over the ruler (N7S-02): an overlay, nothing moves
   if (SV.ban) {
     const sr = R.songRec, on = !!(sr && (sr.over || !sr.pending));
@@ -14825,7 +15219,7 @@ function recBanTop() {
 function openMelTrackPop(anchor) {
   openPop(anchor, p => {
     const mt = S.song ? S.song.melodyTrack : 3;
-    const list = [0, 1, 2, 3].map(t => ({t, plays: songTrackPlays(t)})).sort((a, b) => a.plays - b.plays || a.t - b.t);
+    const list = synthTracks().map(t => ({t, plays: songTrackPlays(t)})).sort((a, b) => a.plays - b.plays || a.t - b.t);
     p.innerHTML = '<h4>Melodie auf Spur</h4><div class="plist mtl">' + list.map(x => `<button class="rb${x.t === mt ? ' on' : ''}" data-t="${x.t}"><b>${esc(S.tracks[x.t].name)}</b><small>${x.plays ? 'spielt Clips' : 'frei'} · ${esc(S.tracks[x.t].sound.name)}</small></button>`).join('') + '</div>' +
       '<p class="small">Die Melodie nutzt Klang und Stimmen der Spur – eine freie Spur schneidet ihr keine Töne ab.</p>';
     guardTouch(p);
@@ -15036,13 +15430,13 @@ function openMelPop(anchor) {
 // ⌫ removes the last link; [Als Song] builds the song (one undo)
 function openKette(anchor) {
   const has = s => S.tracks.some(t => t.clips[s]);
-  if (!KETTE.chain || !KETTE.chain.length) { KETTE.chain = []; for (let s = 0; s < 4; s++) if (has(s)) KETTE.chain.push({scene: s, bars: 4}); }
+  if (!KETTE.chain || !KETTE.chain.length) { KETTE.chain = []; for (let s = 0; s < NS(); s++) if (has(s)) KETTE.chain.push({scene: s, bars: 4}); }
   openPop(anchor, p => {
     p.classList.add('kette');
     const paint = () => {
       const total = KETTE.chain.reduce((a, x) => a + x.bars, 0);
       p.innerHTML = '<h4>Kette – Szenen nacheinander</h4>' +
-        '<div class="kadd">' + [0, 1, 2, 3].map(s => `<button class="rb" data-add="${s}"${has(s) ? '' : ' disabled'}>+ ${s + 1}</button>`).join('') + '</div>' +
+        '<div class="kadd">' + Array.from({length: NS()}, (_, s) => s).map(s => `<button class="rb" data-add="${s}"${has(s) ? '' : ' disabled'}>+ ${s + 1}</button>`).join('') + '</div>' +
         '<div class="klist">' + (KETTE.chain.length ? KETTE.chain.map((x, k) => `<button class="rb kel" data-k="${k}" aria-label="Szene ${x.scene + 1}, ${x.bars} Takte – antippen ändert die Länge"><b>${x.scene + 1}</b>×${x.bars}</button>`).join('') : '<span class="small">leer – oben eine Szene antippen</span>') + '</div>' +
         `<div class="small">${total} ${total === 1 ? 'Takt' : 'Takte'} · Glied antippen = Länge 1 → 2 → 4 → 8 → 16 · ersetzt den Song (rückgängig)</div>` +
         `<div class="savrow"><button class="mbtn rb" data-a="del"${KETTE.chain.length ? '' : ' disabled'} aria-label="Letztes Glied entfernen">⌫</button><button class="mbtn rb go" data-a="ok"${KETTE.chain.length ? '' : ' disabled'}>Als Song</button></div>`;
@@ -15119,12 +15513,14 @@ function svMomentum() {
   };
   SV.mom = requestAnimationFrame(step);
 }
-function svRowAt(y) { if (y < SV.rulerH) return -1; return Math.min(SV_ROWS - 1, Math.floor((y - SV.rulerH) / SV.rowH)); }
+// V2a: a row index → 'track' rows 0 … n-1 (SV.rows), n = AKKORDE, n + 1 = MELODIE (the rows below a short page are AKK/MEL)
+function svRowAt(y) { if (y < SV.rulerH) return -1; const r = Math.floor((y - SV.rulerH) / SV.rowH), n = SV.rows.length; return Math.min(n + 1, r); }
+const svChordRow = () => SV.rows.length, svMelRow = () => SV.rows.length + 1;
 // the Träger chips of the visible area: [{k, x0, x1}] in canvas px (layout from the last draw)
 // chips never overlap (each one ends where the next begins), so the chip under the finger wins; outside every chip the
 // nearest edge within 4 px counts (a later chip on a tie: it is the one drawn on top)
 function svChipAt(x, y) {
-  if (svRowAt(y) !== 5 || !SV.chips) return null;
+  if (svRowAt(y) !== svChordRow() || !SV.chips) return null;
   let best = null, bd = 1e9;
   for (const c of SV.chips) {
     if (x >= c.x0 && x <= c.x1) return c.k;
@@ -15137,9 +15533,9 @@ function svTap(x, y) {
   const song = S.song, row = svRowAt(y), bar = Math.floor((x + SV.x) / SV.cellW);
   if (row === -1) { svRulerTap(bar); return; }       // V0c N7-R7: the ruler selects (yellow) and sets the Positionsmarke, never jumps
   if (!song) { toast('Noch kein Song – erst ● SONG'); return; }
-  if (row <= 4) { if (bar > song.bars) return; const r = songCycle(row, bar); folEdit('song'); lcdOrToast(S.tracks[row].name + ' · Takt ' + (bar + 1) + ': ' + (r >= 0 ? 'Clip ' + (r + 1) : 'stopp')); return; }
-  if (row === 5) { if (!song.bars || bar >= song.bars) return; const k = svChipAt(x, y); openChordPick(k != null ? {k} : {bar}); return; }   // N7-R10
-  if (row === 6) openMelodyRoll();
+  if (row < svChordRow()) { const t = SV.rows[row]; if (t < 0 || bar > song.bars) return; const r = songCycle(t, bar); folEdit('song'); lcdOrToast(S.tracks[t].name + ' · Takt ' + (bar + 1) + ': ' + (r >= 0 ? 'Clip ' + (r + 1) : 'stopp')); return; }
+  if (row === svChordRow()) { if (!song.bars || bar >= song.bars) return; const k = svChipAt(x, y); openChordPick(k != null ? {k} : {bar}); return; }   // N7-R10
+  if (row === svMelRow()) openMelodyRoll();
 }
 // a short status of the last cell tap (the LCD-like hint line of the song view)
 function lcdOrToast(txt) { const h = SV.hint; if (!h) return; h.textContent = txt; h.classList.add('on'); clearTimeout(SV.hintT); SV.hintT = setTimeout(() => h.classList.remove('on'), 1600); }
@@ -15191,8 +15587,8 @@ function svDraw(force, sbIn) {
     g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(x, ru, 1, H - ru);
   }
   // track lanes: the scene slot per bar (launch bars stronger), – = stopped there
-  for (let i = 0; i < 5; i++) {
-    const y = ru + i * rh, lane = song ? song.lanes[i] : [];
+  for (let r = 0; r < SV.rows.length; r++) {
+    const i = SV.rows[r], y = ru + r * rh, lane = song && song.lanes[i] ? song.lanes[i] : []; if (i < 0) continue;
     let s = -1; for (const e of lane) { if (e.bar >= b0) break; s = e.slot; }
     for (let b = b0; b < Math.min(b1, bars); b++) {
       const ev = lane.find(e => e.bar === b); if (ev) s = ev.slot;
@@ -15206,7 +15602,7 @@ function svDraw(force, sbIn) {
   // TRÄGER: chord chips at their beats (long-press = delete)
   SV.chips = [];
   if (song) {
-    const y = ru + 5 * rh;
+    const y = ru + svChordRow() * rh;
     g.textAlign = 'left';
     // a chip ends where the next entry begins (an ORIGINAL at beat 0 and a late first chord at 0.4 must not draw on top of
     // each other): the later chip keeps its full name, the earlier one shrinks to a sliver and its name is clipped away
@@ -15223,7 +15619,7 @@ function svDraw(force, sbIn) {
     });
     g.textAlign = 'center';
     // MELODIE: the notes as small bars, pitch inside the lane
-    const mel = song.melody, ns = mel.notes, ym = ru + 6 * rh;
+    const mel = song.melody, ns = mel.notes, ym = ru + svMelRow() * rh;
     if (ns.length) {
       let lo = 127, hi = 0; for (const n of ns) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
       const span = Math.max(6, hi - lo), mc = SV.cols[song.melodyTrack] || '#fff';
@@ -15238,7 +15634,7 @@ function svDraw(force, sbIn) {
     const xe = X(bars); g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(xe, ru, 1, H - ru);
   }
   // row separators
-  g.fillStyle = 'rgba(255,255,255,.05)'; for (let r = 0; r <= SV_ROWS; r++) g.fillRect(0, ru + r * rh, W, 1);
+  g.fillStyle = 'rgba(255,255,255,.05)'; for (let r = 0; r <= svNRows(); r++) g.fillRect(0, ru + r * rh, W, 1);
   // the take's range, red 12 % over everything (N7S-02)
   if (song && sr && sr.over && sb != null) {
     const ra = sr.from * 4, rb = sr.to != null ? sr.to * 4 : Math.max(ra, sb);
@@ -15247,9 +15643,9 @@ function svDraw(force, sbIn) {
   // §4.8: the rows a take writes are lined red
   if (song && sr && sr.over) {
     g.strokeStyle = 'rgba(255,69,56,.75)'; g.lineWidth = 1;
-    if (sr.tg.clips) g.strokeRect(.5, ru + .5, W - 1, 5 * rh - 1);
-    if (sr.tg.chords) g.strokeRect(.5, ru + 5 * rh + .5, W - 1, rh - 1);
-    if (sr.tg.mel) g.strokeRect(.5, ru + 6 * rh + .5, W - 1, rh - 1);
+    if (sr.tg.clips) g.strokeRect(.5, ru + .5, W - 1, svChordRow() * rh - 1);
+    if (sr.tg.chords) g.strokeRect(.5, ru + svChordRow() * rh + .5, W - 1, rh - 1);
+    if (sr.tg.mel) g.strokeRect(.5, ru + svMelRow() * rh + .5, W - 1, rh - 1);
   }
   // V0c N7S-07: the loop as a green 3-px line on the ruler's top edge with a grip ┃ at each end (never over the yellow chips)
   SV.grips = null;
@@ -15275,13 +15671,13 @@ function svDraw(force, sbIn) {
     }
   }
   // labels: the track names and the melody track mark
-  const L = SV.labs; if (L) { const kids = L.children; for (let i = 0; i < 5; i++) { const sp = kids[i + 1].children[1], nm = (S.tracks[i].kind === 'drum' ? 'DRUMS' : 'SYN ' + (i + 1)) + (song && song.melodyTrack === i ? ' ♪' : ''); if (sp.textContent !== nm) sp.textContent = nm; } }
+  const L = SV.labs; if (L) { for (const d of L.querySelectorAll('.sv-l.trk')) { const i = +d.dataset.t, sp = d.children[1]; if (i < 0 || !S.tracks[i]) continue; const nm = svShort(i) + (song && song.melodyTrack === i ? ' ♪' : ''); if (sp.textContent !== nm) sp.textContent = nm; } }
 }
 /* melody lane → the piano roll on song.melody (§3.9): the clip editor with the melody as its clip; every gesture is one
    undo step (kind 'song'); notes stay as heard (never mapped). [Als Clip] (P1 „Melodie → Clip“): the selected bar range
    (the ruler's Loop-Bereich) becomes a clip in the first free slot of the melody track, keyed like FANG */
 function openMelodyRoll(asClip) {
-  if (!S.song) { S.song = newSongRaw(R.selT < 4 ? R.selT : 3); songChanged(); }
+  if (!S.song) { S.song = newSongRaw(isSynthT(R.selT) ? R.selT : 3); songChanged(); }
   const t = S.song.melodyTrack;
   if (!EL.rollSheet.classList.contains('open')) UI.shield = null;
   closeSheets(); R.editor = 'roll'; ED.rollAt = {t, s: -1, mel: true};
@@ -15651,7 +16047,7 @@ function kbVelAt(note, y) {
 const HEARD = {S: null, key: null};
 function sceneRefKey() {
   const b = AU.ctx && R.playing ? audBeat() : 0;
-  for (let i = 0; i < 4; i++) {
+  for (const i of synthTracks()) {
     const tr = S.tracks[i]; if (!tr.follow) continue;
     const sl = R.playing ? visualSlots(i, b).playing : R.selS, c = sl >= 0 && tr.clips[sl];
     if (c && c.notes.length) { HEARD.S = S; HEARD.key = c.key; return c.key; }
@@ -15675,7 +16071,7 @@ function heardBaseKey(k) {
 // key heard at song bar `bar` (the first following lane's clip there), for the song melody → clip
 function songKeyAtBar(bar) {
   const song = S.song;
-  if (song) for (let i = 0; i < 4; i++) {
+  if (song) for (const i of synthTracks()) {
     const tr = S.tracks[i]; if (!tr.follow) continue;
     const sl = RecHelpers.slotAt(song, i, bar), c = sl >= 0 && tr.clips[sl];
     if (c && c.notes.length) return heardBaseKey(c.key);
@@ -15714,7 +16110,7 @@ function kbPaint() {
 function ownKeyAudible(bAud) {
   if (!R.playing) return 0;
   let n = 0;
-  for (let i = 0; i < 4; i++) {
+  for (const i of synthTracks()) {
     const tr = S.tracks[i]; if (!tr.follow) continue;
     const sl = visualSlots(i, bAud).playing, c = sl >= 0 && tr.clips[sl];
     if (!c || !c.notes.length) continue;
@@ -15760,7 +16156,7 @@ function buildPads() {
   UI.padVer = -1; padModels();
 }
 function padModels() {
-  if (UI.padVer === UI.drumVer || !S || !S.tracks[4] || !S.tracks[4].sound) return; UI.padVer = UI.drumVer;
+  if (UI.padVer === UI.drumVer || !S || !S.tracks[DRUM_T] || !S.tracks[DRUM_T].sound) return; UI.padVer = UI.drumVer;
   UI.padEls.forEach((b, i) => { const m = slotParams(DRUM_VOICES[i].id).model, t = DM[m] || m, e = b.children[1]; if (e && e.textContent !== t) e.textContent = t; });
 }
 const padVelAt = (b, y) => { if (drumKit().padVel === 'fix') return .8; const r = b.getBoundingClientRect(); return DrumSeq.padVel(y, r.top, r.height || 1); };
@@ -16103,12 +16499,13 @@ function showBanner(onB) { if (EL.banner) EL.banner.classList.toggle('show', !!o
 
 /* ---------- selection ---------- */
 function selectTrack(i) {
-  i = clamp(i | 0, 0, 4);
+  i = clamp(i | 0, 0, NT() - 1);
   if (i !== R.selT) { releaseInputs(r => r === 'play' || r === 'pad'); R.selT = i; UI.kbRelayout = true; }
+  if (MX.bankT && MX.pages && !isDrum(i)) { const pg = MX.pages.findIndex(p => p.includes(i)); if (pg >= 0 && pg !== trackBankOf()) setTrackBank(pg); }   // V2a: a selected track is visible
   UI.dirty.all = true;
   if (R.editor === 'synth' || R.editor === 'drum') openEditor();
 }
-function selectSlot(t, s) { selectTrack(t); R.selS = clamp(s | 0, 0, 3); UI.dirty.grid = true; }
+function selectSlot(t, s) { selectTrack(t); R.selS = clamp(s | 0, 0, NS() - 1); if (MX.bankS && (R.selS >= 4) !== (sceneBankOf() === 1)) setSceneBank(R.selS >= 4 ? 1 : 0); UI.dirty.grid = true; }   // V2a: … and its scene
 /* a tap on a clip cell (§3.2, GarageBand rule; Anhang D.6). Selection always follows the tap (REC / ✎ target).
    playing clip: stop at the next bar line · again: cancel the stop · queued clip: cancel the launch · other clip: launch */
 function slotTap(i, s, atT) {
@@ -16513,7 +16910,7 @@ function routeIdle(i, m) {
 }
 // set a route in knob units (§9.2: stored in engine units). keep = a finger is still on it: a route dragged through 0 stays
 // (and keeps its place in the list) until the finger lifts. Returns the depth in knob units, or null at the 8-route limit.
-const MODS_DIRTY = [0, 0, 0, 0]; let modsRaf = 0;
+const MODS_DIRTY = new Array(8).fill(0); let modsRaf = 0;
 function modSetK(i, src, dst, kAmt, keep) {
   const s = sndOf(i); if (!s) return null;
   const amt = toEngineAmt(dst, Math.round(clamp(+kAmt || 0, -1, 1) * 1000) / 1000);
@@ -16533,7 +16930,7 @@ function modsChanged(i) {
   UI.sndVer++; markDirty(); UI.dirty.strip = true;
   MODS_DIRTY[i] = 1;
   if (!modsRaf) {
-    const run = () => { modsRaf = 0; for (let k = 0; k < 4; k++) if (MODS_DIRTY[k]) { MODS_DIRTY[k] = 0; try { rebuildNativeLfos(k); } catch (e) { logErr(e); } } };
+    const run = () => { modsRaf = 0; for (let k = 0; k < MODS_DIRTY.length; k++) if (MODS_DIRTY[k]) { MODS_DIRTY[k] = 0; try { rebuildNativeLfos(k); } catch (e) { logErr(e); } } };
     modsRaf = requestAnimationFrame(run); setTimeout(() => { if (modsRaf) { cancelAnimationFrame(modsRaf); run(); } }, 60);
   }
   if (R.editor === 'synth' && i === R.selT) edParamChanged('mods');
@@ -16623,7 +17020,7 @@ function maybeModCoach() {
 const MLIVE = {track: -1, scope: null, at: 0, nv: 0, t: 0, last: 0, sv: {}, svN: {}, dst: null, lay: 0};
 function modScopeSync() {
   const want = R.editor === 'synth' && S.tracks[R.selT] && S.tracks[R.selT].kind === 'synth' ? R.selT : -1;
-  for (let k = 0; k < 4; k++) {
+  for (let k = 0; k < AU.synth.length; k++) {
     const E = AU.synth[k]; if (!E || E.dead) continue;
     const on_ = k === want;
     if (!!E.scopeOn !== on_) {
@@ -17275,7 +17672,7 @@ function setFmxApi(t, x) {
 // live operator levels (N7F-09): the worklet sends them only while UI.fmxLvT names the track (the FM field is shown, V4b)
 function fmxLvWant(t, on) {
   const prev = UI.fmxLvT; UI.fmxLvT = on ? t : (prev === t ? -1 : prev);
-  for (let i = 0; i < 4; i++) { const E = AU.synth[i]; if (E) E.fmxLv(UI.fmxLvT === i); }
+  for (let i = 0; i < AU.synth.length; i++) { const E = AU.synth[i]; if (E) E.fmxLv(UI.fmxLvT === i); }
 }
 // D.11: a whole sound (preset load, undo, engine switch, setSound, A/B). The track owns this copy.
 // Worklet -> worklet (§5.4, §11.5 PR5): E.set(full flat) + E.mods; sounding and queued notes continue with the new
@@ -17451,7 +17848,7 @@ function setParam(t, path, value) {
   const tr0 = S.tracks[t];
   if (tr0 && tr0.kind === 'drum') {                   // WP6: 'kick.tune' etc. on the drum track (setDrumParam), 'fx.vol', 'kit.accent'
     const [v, k] = String(path).split('.');
-    if (v === 'fx') return setTrackFx(4, k, value);
+    if (v === 'fx') return setTrackFx(DRUM_T, k, value);
     if (v === 'kit') return setKit(k, value);
     return setDrumParam(v, k, value);
   }
@@ -21144,7 +21541,7 @@ function pvChainRetire() { if (PV.chain) { PV_OLD.push(PV.chain); PV.chain = nul
 function previewStart(t, sound, demo, id) {
   previewStop();
   ensureAudio(); const c = AU.ctx; if (!c || !sound) return false;
-  if (sound.engine === 'drum') return drumPreviewStart(sound === S.tracks[4].sound ? null : sound, id);
+  if (sound.engine === 'drum') return drumPreviewStart(sound === S.tracks[DRUM_T].sound ? null : sound, id);
   pvChainRetire(); PV.drum = null;
   const tr = S.tracks[t]; PV.chain = tr && tr.kind === 'synth' && sound !== tr.sound ? pvChain(t, sound) : null;
   const ph = (SQF.PREVIEW && (SQF.PREVIEW[demo] || SQF.PREVIEW.lead)) || [];
@@ -21739,13 +22136,13 @@ function getDrumParam(voice, key) {
 }
 // the drum track's sound replaced as a whole (a kit, an own kit, undo): strips, kit bus, FX, the open editor / browser
 function applyDrumSound(snd) {
-  const tr = S.tracks[4]; if (!tr || tr.kind !== 'drum' || !snd) return;
+  const tr = S.tracks[DRUM_T]; if (!tr || tr.kind !== 'drum' || !snd) return;
   tr.sound = drumSoundFix(snd);
   UI.drumVer++; UI.sndVer++;
-  drumBusApply(); applyTrackParams(4, false);
+  drumBusApply(); applyTrackParams(DRUM_T, false);
   UI.dirty.strip = UI.dirty.grid = UI.dirty.edHead = true; markDirty();
   if (R.editor === 'drum') safeRebuild(buildDrumEd);
-  if (R.editor === 'browser' && BR.t === 4) brRefresh();
+  if (R.editor === 'browser' && isDrum(BR.t)) brRefresh();
 }
 // a kit by name (factory: 808 909 Rom Pop Gated 84 FM Labor Disko 85 Resonanz-Perc; v2 names Lo-Fi / Industrial), by
 // factory id, or an own kit (library id or name). The whole drum sound is replaced (one undo step at the call site)
@@ -21759,7 +22156,7 @@ function kitSound(q) {
 function loadKit(name) {
   const snd = kitSound(name); if (!snd) throw new Error('Unbekanntes Kit: ' + name);
   applyDrumSound(snd);
-  return S.tracks[4].sound.name;
+  return S.tracks[DRUM_T].sound.name;
 }
 // the kit block (§7.4 p.kit): gate length / level, room level, accent, pad velocity. Undo kind 'kit' (§10.4)
 const KIT_PD = {gate: {p: 'gate', l: 'Gate-Länge', min: .15, max: .6, c: 'lin', def: .34, fmt: 's'}, gateLvl: {p: 'gateLvl', l: 'Gate-Rückweg', min: 0, max: 8, c: 'pow', k: 2, def: 4, fmt: 'num1'},
@@ -21771,7 +22168,7 @@ const accentEng = accentAmt;
 const accentDb = a => 20 * Math.log10(1 + .6 * accentEng(a));
 function kitSnapshot() { return JSON.stringify(drumKit()); }
 function restoreKit(o) { const s = drumSnd(); if (!s || !o) return; s.p.kit = Object.assign(KIT_DEF(), o); drumChanged(); drumBusApply(); if (R.editor === 'drum') safeRebuild(buildDrumEd); }
-const kitUndo = {snap: kitSnapshot, commit: (before, label) => { drumBusApply(); if (before == null || kitSnapshot() === before) return false; undoPush({kind: 'kit', track: 4, before, label}); markDirty(); return true; }};
+const kitUndo = {snap: kitSnapshot, commit: (before, label) => { drumBusApply(); if (before == null || kitSnapshot() === before) return false; undoPush({kind: 'kit', track: DRUM_T, before, label}); markDirty(); return true; }};
 // live: gain targets only; the gate IR is rebuilt on commit (knob release, kitUndo.commit / setKit) — §7.1
 function kitSetLive(key, v) {
   const s = drumSnd(), d = KIT_PD[key]; if (!s || !d) return undefined;
@@ -21817,7 +22214,7 @@ function drumFxSet(key, v) {
   const s = drumSnd(); if (!s) return undefined;
   const nv = clampParam(key, v, sndGet(s, key));
   if (nv === sndGet(s, key)) return nv;
-  sndSet(s, key, nv); applyTrackParams(4, false);
+  sndSet(s, key, nv); applyTrackParams(DRUM_T, false);
   UI.sndVer++; UI.dirty.strip = true; markDirty();
   return nv;
 }
@@ -21833,16 +22230,16 @@ const DRUM_PATTERNS = {
 const patternToNotes = p => Object.entries(p).flatMap(([id, s]) => [...s].flatMap((ch, i) => ch === '.' ? [] :
   [Object.assign({t: i * .25, d: .1, n: DRUM_BY_ID[id].gm, v: ch === 'X' ? 1 : ch === 'x' ? .8 : .45}, ch === 'X' ? {a: 1} : {})])).sort((a, b) => a.t - b.t);
 // the selected drum slot's clip, created in phase when it is empty (§old-4.8)
-function drumClipFor(s) { return S.tracks[4].clips[s] || drumClipCreate(s); }
+function drumClipFor(s) { return S.tracks[DRUM_T].clips[s] || drumClipCreate(s); }
 // §16 applyPattern(name): the pattern replaces the bar `bar` (default: the shown page) of the selected drum slot; one undo
 function applyPattern(name, bar) {
   const key = Object.keys(DRUM_PATTERNS).find(k => k.toLowerCase() === String(name || '').trim().toLowerCase());
   if (!key) throw new Error('Unbekanntes Muster: ' + name);
-  const s = R.selS, tr = S.tracks[4], before = cleanClip(tr.clips[s]);
+  const s = R.selS, tr = S.tracks[DRUM_T], before = cleanClip(tr.clips[s]);
   const c = drumClipFor(s), b = clamp(bar == null ? ED.page | 0 : bar | 0, 0, c.len - 1), t0 = b * 4;
   c.notes = c.notes.filter(n => n.t < t0 - 1e-6 || n.t >= t0 + 4 - 1e-6).concat(patternToNotes(DRUM_PATTERNS[key]).map(n => Object.assign(n, {t: n.t + t0}))).sort((x, y) => x.t - y.t);
-  pushUndo(4, s, before, 'Muster ' + key);
-  afterClipEdit(4, s); paintSteps(); UI.dirty.grid = true;
+  pushUndo(DRUM_T, s, before, 'Muster ' + key);
+  afterClipEdit(DRUM_T, s); paintSteps(); UI.dirty.grid = true;
   if (R.editor === 'drum' && !before) safeRebuild(buildDrumEd);
   return key;
 }
@@ -21855,11 +22252,11 @@ function euclidWrite(c, gm, k, rot, b) {
 }
 function euclid(voice, k, rot, bar) {
   const sl = resolveDrum(voice); if (!sl) throw new Error('Unbekannte Drum-Stimme: ' + voice);
-  const s = R.selS, tr = S.tracks[4], before = cleanClip(tr.clips[s]);
+  const s = R.selS, tr = S.tracks[DRUM_T], before = cleanClip(tr.clips[s]);
   const c = drumClipFor(s), b = clamp(bar == null ? ED.page | 0 : bar | 0, 0, c.len - 1);
   euclidWrite(c, sl.gm, k, rot, b);
-  pushUndo(4, s, before, 'Euklid ' + sl.l);
-  afterClipEdit(4, s); paintSteps(); UI.dirty.grid = true;
+  pushUndo(DRUM_T, s, before, 'Euklid ' + sl.l);
+  afterClipEdit(DRUM_T, s); paintSteps(); UI.dirty.grid = true;
   return DrumSeq.euclid(clamp(k | 0, 0, 16), 16, rot | 0);
 }
 
@@ -21881,11 +22278,11 @@ function drumVoiceChips(onPick) {
 function drumAudition(idx, vel) { ensureAudio(); const c = AU.ctx; if (!c) return; const sl = DRUM_VOICES[idx]; if (sl) drumHit(sl.gm, vel || .9, c.currentTime + .005, 'audition'); }
 // a knob on one slot parameter (one undo entry per gesture, kind 'sound')
 function dKnob(id, d, o) {
-  return makeCtl(d, () => dSlotGet(id, d.p), v => drumSet(id, d.p, v), Object.assign({undo: soundUndo(4), label: d.l, key: d.p}, o));
+  return makeCtl(d, () => dSlotGet(id, d.p), v => drumSet(id, d.p, v), Object.assign({undo: soundUndo(DRUM_T), label: d.l, key: d.p}, o));
 }
 function dSeg(id, d, cls, label) {
   const nm = k => (d.names || [])[k] != null ? d.names[k] : String(d.vals[k]);
-  return makeSeg(d.vals.map((v, k) => [v, d.icons ? d.icons[k] : nm(k), nm(k)]), () => dSlotGet(id, d.p), v => drumSet(id, d.p, v), cls, {undo: soundUndo(4), label: label || d.l});
+  return makeSeg(d.vals.map((v, k) => [v, d.icons ? d.icons[k] : nm(k), nm(k)]), () => dSlotGet(id, d.p), v => drumSet(id, d.p, v), cls, {undo: soundUndo(DRUM_T), label: label || d.l});
 }
 // knob groups: P rows of 4 (each group starts a new row), L one row for all groups (§2.4)
 function dKnobs(pg, groups, cls) {
@@ -21898,7 +22295,7 @@ function kitList() { const own = LIB.ok ? LIB.lib.all().filter(s => s.engine ===
 function stepKit(dir) {
   const L = kitList(), cur = drumSnd().origin, k = L.findIndex(x => x.id === cur);
   const nx = L[((k < 0 ? (dir > 0 ? -1 : 0) : k) + dir + L.length) % L.length];
-  soundEdit(4, 'Kit ' + nx.name, () => loadKit(nx.id));
+  soundEdit(DRUM_T, 'Kit ' + nx.name, () => loadKit(nx.id));
 }
 function drumHeadRefresh() {
   const H = ED.dhdr; if (!H || !H.name.isConnected) return;
@@ -21908,7 +22305,7 @@ function drumHeadRefresh() {
   H.name.setAttribute('aria-label', 'Kit ' + snd.name + (edited ? ' (geändert)' : '') + ' – Kits öffnen');
 }
 function buildDrumEd() {
-  const sh = EL.drumSheet, tr = S.tracks[4];
+  const sh = EL.drumSheet, tr = S.tracks[DRUM_T];
   if (UI.modSrc) exitModMode();
   ED.refreshers = []; ED.stepEls = []; ED.ovEls = []; ED.lastStep = -2; ED.step = null; ED.ctls = []; ED.msrc = null; ED.mrows = null; ED.mbn = null; ED.dhdr = null;
   if (!DTABS.some(x => x[0] === ED.dTab)) ED.dTab = 'sound';
@@ -21926,15 +22323,15 @@ function buildDrumEd() {
   kPrev.setAttribute('aria-label', 'Voriges Kit'); kNext.setAttribute('aria-label', 'Nächstes Kit');
   kit.append(kPrev, kName, kNext);
   onTap(kPrev, () => stepKit(-1)); onTap(kNext, () => stepKit(1));
-  onTap(kName, () => openBrowser(4));
-  const save = el('button', 'hb rb sv', 'Sichern'); save.setAttribute('aria-label', 'Kit sichern'); onTap(save, () => openSavePop(save, 4));
+  onTap(kName, () => openBrowser(DRUM_T));
+  const save = el('button', 'hb rb sv', 'Sichern'); save.setAttribute('aria-label', 'Kit sichern'); onTap(save, () => openSavePop(save, DRUM_T));
   const dice = el('button', 'hb big rb', '🎲'); dice.title = 'Zufall (gewähltes Instrument)'; dice.setAttribute('aria-label', 'Zufall (gewähltes Instrument)');
-  onTap(dice, () => { const s2 = DRUM_VOICES[ED.dVoice]; soundEdit(4, 'Zufall ' + s2.l, () => randomizeDrumVoice(s2.id)); drumAudition(ED.dVoice); safeRebuild(buildDrumEd); });
+  onTap(dice, () => { const s2 = DRUM_VOICES[ED.dVoice]; soundEdit(DRUM_T, 'Zufall ' + s2.l, () => randomizeDrumVoice(s2.id)); drumAudition(ED.dVoice); safeRebuild(buildDrumEd); });
   const hear = el('button', 'hb rb', '▶<span class="ht"> ' + esc(sl.sl) + '</span>'); hear.setAttribute('aria-label', 'Hören: ' + sl.l);
   onTap(hear, () => drumAudition(ED.dVoice));
   F.r2.append(kit, save, dice, hear);
   sheetButtons(F.r1, F.r2, true);
-  const em = el('button', 'hb rb edm edmd', '⋯'); em.setAttribute('aria-label', 'Mehr: Init'); em.title = 'Mehr: Init (neutrales Kit)'; onTap(em, () => openEdMore(em, 4));
+  const em = el('button', 'hb rb edm edmd', '⋯'); em.setAttribute('aria-label', 'Mehr: Init'); em.title = 'Mehr: Init (neutrales Kit)'; onTap(em, () => openEdMore(em, DRUM_T));
   F.r1.insertBefore(em, F.r1.querySelector('.hb.ur'));
   if (ED.dTab === 'steps') F.r1.insertBefore(folChip('steps'), em);           // V0b FOLGEN (§5.1)
   ED.dhdr = {name: kName}; drumHeadRefresh();
@@ -21993,7 +22390,7 @@ function openModelPop(anchor, id) {
     const cur = dSlotGet(id, 'model');
     p.innerHTML = '<h4>Modell – nur die Regler-Auswahl</h4><div class="plist dmodels">' + Object.keys(DM).map(m => `<button class="rb${m === cur ? ' on' : ''}" data-m="${m}">${esc(DM[m])}</button>`).join('') + '</div>';
     guardTouch(p);
-    onTap(p, b => { closePop(); const m = b.dataset.m; if (m === dSlotGet(id, 'model')) return; soundEdit(4, 'Modell ' + DM[m], () => drumSet(id, 'model', m)); safeRebuild(buildDrumEd); }, 'button[data-m]');
+    onTap(p, b => { closePop(); const m = b.dataset.m; if (m === dSlotGet(id, 'model')) return; soundEdit(DRUM_T, 'Modell ' + DM[m], () => drumSet(id, 'model', m)); safeRebuild(buildDrumEd); }, 'button[data-m]');
   }, {name: 'dmodel'});
 }
 function openSlotLoad(anchor, id) {
@@ -22004,7 +22401,7 @@ function openSlotLoad(anchor, id) {
       guardTouch(p);
       onTap(p, b => {
         const x = L[+b.dataset.k]; if (!x) return;
-        soundEdit(4, x.name, () => loadSlotSound(id, x.P));
+        soundEdit(DRUM_T, x.name, () => loadSlotSound(id, x.P));
         drumAudition(DRUM_BY_ID[id].idx);
         for (const o of p.querySelectorAll('button[data-k]')) o.classList.toggle('on', o === b);
         edRefresh(); drumHeadRefresh();
@@ -22025,7 +22422,7 @@ function pageDrumTief(pg) {
     const led = el('button', 'tgl rb dled', `<i class="led"></i><span>${esc(lay[1])}</span>`);
     led.setAttribute('role', 'switch');
     const upd = () => { const onL = layerOn(slotParams(id), lay[0]); led.classList.toggle('on', onL); led.setAttribute('aria-checked', String(onL)); const t = document.querySelector('#drumSheet .stab.on .led'); if (t) t.classList.toggle('on', onL); };
-    onTap(led, () => { soundEdit(4, lay[1] + (layerOn(slotParams(id), lay[0]) ? ' aus' : ' an'), () => toggleLayer(id, lay[0])); upd(); edRefresh(); lcdShow(lay[1], layerOn(slotParams(id), lay[0]) ? 'an' : 'aus (Pegel gemerkt)'); });
+    onTap(led, () => { soundEdit(DRUM_T, lay[1] + (layerOn(slotParams(id), lay[0]) ? ' aus' : ' an'), () => toggleLayer(id, lay[0])); upd(); edRefresh(); lcdShow(lay[1], layerOn(slotParams(id), lay[0]) ? 'an' : 'aus (Pegel gemerkt)'); });
     upd(); ED.refreshers.push(upd);
     head.appendChild(led);
   }
@@ -22050,7 +22447,7 @@ function toggleLayer(id, lay) {
 // SCHRITTE (§3.4 with 12 instruments, lanes incl. TUNE / DECAY): chips · lane tabs · steps · lane strip · overview 12×16,
 // [Takt n], [Euklid…], [Muster ▾]
 function pageDrumSteps(pg) {
-  const tr = S.tracks[4], clip = tr.clips[R.selS], len = clip ? clip.len : 1;
+  const tr = S.tracks[DRUM_T], clip = tr.clips[R.selS], len = clip ? clip.len : 1;
   if (ED.page >= len) ED.page = 0;
   const se = el('div', 'se'), stabs = el('div', 'stabs');
   se.style.setProperty('--pc', `var(--p${ED.dVoice + 1})`); stabs.style.setProperty('--pc', `var(--p${ED.dVoice + 1})`);
@@ -22082,14 +22479,14 @@ function pageDrumSteps(pg) {
 }
 // [Euklid…] (§7.3): instrument, Schläge k 0–16, Drehung 0–15, live preview into the clip; Anwenden = one undo, Abbrechen
 function openEuclid(anchor) {
-  const s = R.selS, tr = S.tracks[4], bar0 = ED.page | 0;
+  const s = R.selS, tr = S.tracks[DRUM_T], bar0 = ED.page | 0;
   const bar = () => bar0, id0 = DRUM_VOICES[ED.dVoice].id, c0 = tr.clips[s];
   const have = c0 ? c0.notes.filter(n => n.n === DRUM_BY_ID[id0].gm && n.t >= bar() * 4 - 1e-6 && n.t < bar() * 4 + 4 - 1e-6).length : 0;
   const st = {id: id0, k: have || 4, rot: 0, before: cleanClip(c0), created: !c0, done: false};
-  const preview = () => { const c = drumClipFor(s); euclidWrite(c, DRUM_BY_ID[st.id].gm, st.k, st.rot, clamp(bar(), 0, c.len - 1)); afterClipEdit(4, s); paintSteps(); UI.dirty.grid = true; };
+  const preview = () => { const c = drumClipFor(s); euclidWrite(c, DRUM_BY_ID[st.id].gm, st.k, st.rot, clamp(bar(), 0, c.len - 1)); afterClipEdit(DRUM_T, s); paintSteps(); UI.dirty.grid = true; };
   const revert = () => {
     if (st.done) return; st.done = true;
-    if (st.created) { tr.clips[s] = null; clipRestored(4, s); } else if (tr.clips[s]) { const c = tr.clips[s], d = deep(st.before); Object.keys(c).forEach(k => { if (!(k in d)) delete c[k]; }); Object.assign(c, d); afterClipEdit(4, s, true); }
+    if (st.created) { tr.clips[s] = null; clipRestored(DRUM_T, s); } else if (tr.clips[s]) { const c = tr.clips[s], d = deep(st.before); Object.keys(c).forEach(k => { if (!(k in d)) delete c[k]; }); Object.assign(c, d); afterClipEdit(DRUM_T, s, true); }
     paintSteps(); UI.dirty.grid = true;
   };
   openPop(anchor, p => {
@@ -22111,7 +22508,7 @@ function openEuclid(anchor) {
       // switching the instrument: the old row goes back to its state before the popover
       const c = tr.clips[s]; if (c) { const t0 = bar() * 4, gm = DRUM_BY_ID[old].gm; c.notes = c.notes.filter(n => n.n !== gm || n.t < t0 - 1e-6 || n.t >= t0 + 4 - 1e-6).concat((st.before ? st.before.notes : []).filter(n => n.n === gm && n.t >= t0 - 1e-6 && n.t < t0 + 4 - 1e-6).map(n => Object.assign({}, n))).sort((x, y) => x.t - y.t); }
       preview(); }, 'button[data-id]');
-    onTap(ok, () => { st.done = true; const c = tr.clips[s]; pushUndo(4, s, st.before, 'Euklid ' + DRUM_BY_ID[st.id].l); if (c) afterClipEdit(4, s); closePop(); ED.dVoice = DRUM_BY_ID[st.id].idx; safeRebuild(buildDrumEd); });
+    onTap(ok, () => { st.done = true; const c = tr.clips[s]; pushUndo(DRUM_T, s, st.before, 'Euklid ' + DRUM_BY_ID[st.id].l); if (c) afterClipEdit(DRUM_T, s); closePop(); ED.dVoice = DRUM_BY_ID[st.id].idx; safeRebuild(buildDrumEd); });
     onTap(cancel, () => { revert(); closePop(); });
     paintV(); preview();
   }, {name: 'euklid', above: true, onClose: () => revert()});
@@ -22126,8 +22523,8 @@ function openPatterns(anchor) {
 function pageDrumKit(pg) {
   const head = el('div', 'drow rest');
   const kb = el('button', 'rb dsel dkit', `<span class="lbl">Kit</span><b>${esc(drumSnd().name)}</b><span class="car">▾</span>`);
-  onTap(kb, () => openBrowser(4));
-  const save = el('button', 'rb mbtn', 'Kit sichern'); onTap(save, () => openSavePop(save, 4));
+  onTap(kb, () => openBrowser(DRUM_T));
+  const save = el('button', 'rb mbtn', 'Kit sichern'); onTap(save, () => openSavePop(save, DRUM_T));
   head.append(kb, save);
   pg.appendChild(head);
   const kk = ['gate', 'gateLvl', 'room', 'accent'].map(k => makeCtl(KIT_PD[k], () => drumKit()[k], v => kitSetLive(k, v),
@@ -22146,8 +22543,8 @@ function pageDrumKit(pg) {
   lcdHint2('Kit ' + drumSnd().name, 'Gate und Raum wirken auf alle Instrumente · Swing gilt für das ganze Projekt');
 }
 // FX → SPUR (§8.3) for the drum track: Drive, Hall, Echo, Lautstärke, Panorama, Pumpen · Pump-Release
-function dfxKnob(key) { const d = PD[key], k = makeCtl(d, () => sndGet(drumSnd(), key), v => drumFxSet(key, v), {undo: soundUndo(4), label: d.l, fmt: key === 'fx.vol' ? v => volDbTxt(v, drumSnd().fx.drive) : v => fmtVal(d.fmt, v)}); return key === 'fx.vol' ? volKnob(k) : k; }
-function dfxSeg(key, opts, cls, label) { return makeSeg(opts, () => sndGet(drumSnd(), key), v => drumFxSet(key, v), cls, {undo: soundUndo(4), label}); }
+function dfxKnob(key) { const d = PD[key], k = makeCtl(d, () => sndGet(drumSnd(), key), v => drumFxSet(key, v), {undo: soundUndo(DRUM_T), label: d.l, fmt: key === 'fx.vol' ? v => volDbTxt(v, drumSnd().fx.drive) : v => fmtVal(d.fmt, v)}); return key === 'fx.vol' ? volKnob(k) : k; }
+function dfxSeg(key, opts, cls, label) { return makeSeg(opts, () => sndGet(drumSnd(), key), v => drumFxSet(key, v), cls, {undo: soundUndo(DRUM_T), label}); }
 function pageDrumSpur(pg) {
   const ks = ['fx.drive', 'fx.rev', 'fx.dly', 'fx.vol', 'fx.pan', 'fx.pump'].map(dfxKnob);
   const rel = dfxSeg('fx.pumpRel', [['1/16', '1/16'], ['1/8', '1/8'], ['1/4', '1/4']], null, 'Pump-Release');
@@ -22159,7 +22556,7 @@ function pageDrumChorus(pg) {
   const ch = () => drumSnd().fx.chorus || {mode: 'off', rate: 1, depth: 1, mix: 1};
   const mode = dfxSeg('fx.chorus.mode', [['off', 'AUS'], ['I', 'I'], ['II', 'II'], ['I+II', 'I+II'], ['ENS', 'ENS.', 'Ensemble'], ['BREIT', 'BREIT']], 'chm', 'Chorus');
   const inert = () => ch().mode === 'off';
-  const ks = ['fx.chorus.rate', 'fx.chorus.depth', 'fx.chorus.mix'].map(k => { const d = PD[k]; return makeCtl(d, () => sndGet(drumSnd(), k), v => drumFxSet(k, v), {undo: soundUndo(4), label: d.l, fmt: v => fmtVal(d.fmt, v), inert}); });
+  const ks = ['fx.chorus.rate', 'fx.chorus.depth', 'fx.chorus.mix'].map(k => { const d = PD[k]; return makeCtl(d, () => sndGet(drumSnd(), k), v => drumFxSet(k, v), {undo: soundUndo(DRUM_T), label: d.l, fmt: v => fmtVal(d.fmt, v), inert}); });
   const info = el('div', 'fxinfo');
   const upd = () => { const c = ch(), I = CHORUS_INFO[c.mode]; const t = I ? I[0] + ': ' + fmtDec(I[1] * (c.rate || 1), I[1] * (c.rate || 1) < 10 ? 2 : 1).replace(/0$/, '') + ' Hz' : 'Chorus aus – kein Rechenaufwand'; if (info.textContent !== t) info.textContent = t; };
   pg.append(lgrp('Chorus', mode, 'fxrow r0'));
@@ -22196,7 +22593,7 @@ function barPager(len) {
 }
 // show bar page p of the SCHRITTE grid (FOLGEN at the bar line, or by hand): repaint, no rebuild
 function drumSetPage(p) {
-  const clip = S.tracks[4].clips[R.selS], len = clip ? clip.len : 1;
+  const clip = S.tracks[DRUM_T].clips[R.selS], len = clip ? clip.len : 1;
   p = clamp(p | 0, 0, len - 1); if (p === ED.page) return;
   ED.page = p; ED.lastStep = -2; ED.runBar = -2;
   if (ED.step) paintSteps();
@@ -22205,7 +22602,7 @@ function drumSetPage(p) {
 // the step grid's model: 16 steps of one instrument on one bar page of the selected drum slot (notes edited in place)
 const STEP_LABEL = {tap: 'Schritt', paint: 'Schritte malen', value: 'Schritt-Wert', draw: 'Spur zeichnen'};
 function stepModel() {
-  const s = R.selS, tr = S.tracks[4], gm = () => DRUM_VOICES[ED.dVoice].gm, pg = () => ED.page | 0;   // V0b: the page is read live (FOLGEN)
+  const s = R.selS, tr = S.tracks[DRUM_T], gm = () => DRUM_VOICES[ED.dVoice].gm, pg = () => ED.page | 0;   // V0b: the page is read live (FOLGEN)
   const at = (c, i) => { const NS = Math.round(c.len * 16), si = pg() * 16 + i; return n => n.n === gm() && Math.round(n.t / .25) % NS === si; };
   const find = i => { const c = tr.clips[s]; if (!c || pg() >= c.len) return null; return c.notes.find(at(c, i)) || null; };
   let snap = null;
@@ -22223,13 +22620,13 @@ function stepModel() {
     begin() { snap = cleanClip(tr.clips[s]); },
     commit(label) {
       const created = !snap && !!tr.clips[s];
-      pushUndo(4, s, snap, STEP_LABEL[label] || 'Schritte'); snap = null; afterClipEdit(4, s); paintOverview(); folEdit('steps');
+      pushUndo(DRUM_T, s, snap, STEP_LABEL[label] || 'Schritte'); snap = null; afterClipEdit(DRUM_T, s); paintOverview(); folEdit('steps');
       if (created) safeRebuild(buildDrumEd);                         // a new clip: show its bar pager and info at once
     },
     revert() {
       const c = tr.clips[s];
-      if (!snap) { if (c) { tr.clips[s] = null; clipRestored(4, s); } }
-      else if (c) { const d = deep(snap); Object.keys(c).forEach(k => { if (!(k in d)) delete c[k]; }); Object.assign(c, d); afterClipEdit(4, s, true); }
+      if (!snap) { if (c) { tr.clips[s] = null; clipRestored(DRUM_T, s); } }
+      else if (c) { const d = deep(snap); Object.keys(c).forEach(k => { if (!(k in d)) delete c[k]; }); Object.assign(c, d); afterClipEdit(DRUM_T, s, true); }
       snap = null; paintOverview();
     },
     audition(i, v) { const n = find(i), lk = n && n.lk ? {lk: n.lk} : null; ensureAudio(); if (AU.ctx) drumHit(gm(), v || .8, AU.ctx.currentTime + .005, 'audition', lk); }
@@ -22238,19 +22635,19 @@ function stepModel() {
 // a new drum clip on the selected slot (len = LÄNGE if numeric, else 1 bar); while playing it starts in phase at the
 // start of the current bar, no waiting (§old-4.8)
 function drumClipCreate(s) {
-  const tr = S.tracks[4], len = S.settings.recLength === 'auto' ? 1 : +S.settings.recLength;
+  const tr = S.tracks[DRUM_T], len = S.settings.recLength === 'auto' ? 1 : +S.settings.recLength;
   const clip = {len, key: {root: S.key.root, scale: S.key.scale, src: 'auto'}, notes: [], seed: newSeed()}; tr.clips[s] = clip;
   if (R.playing && AU.ctx) {
     const now = AU.ctx.currentTime, b = audBeat(), barStart = Math.max(0, Math.floor(b / 4 + 1e-9) * 4);
-    cancelTrackFrom(4, now);
-    R.prev[4] = null; R.pend[4] = null; R.slot[4] = s; R.cstart[4] = barStart;
-    songLogNow(4, s, barStart);
-  } else { R.slot[4] = s; R.cstart[4] = 0; }
-  clipChanged(4, s);
+    cancelTrackFrom(DRUM_T, now);
+    R.prev[DRUM_T] = null; R.pend[DRUM_T] = null; R.slot[DRUM_T] = s; R.cstart[DRUM_T] = barStart;
+    songLogNow(DRUM_T, s, barStart);
+  } else { R.slot[DRUM_T] = s; R.cstart[DRUM_T] = 0; }
+  clipChanged(DRUM_T, s);
   return clip;
 }
 function paintOverview() {
-  const clip = S.tracks[4].clips[R.selS];
+  const clip = S.tracks[DRUM_T].clips[R.selS];
   ED.ovEls.forEach((d, k) => { const v = Math.floor(k / 16), st = k % 16; d.classList.toggle('on', stepState(clip, DRUM_VOICES[v].gm, ED.page * 4 + st * .25) > 0); });
 }
 function stepState(clip, gm, pos) {
@@ -22264,8 +22661,8 @@ function paintSteps() { if (ED.step && ED.dTab === 'steps') { try { ED.step.pain
 function drumEdFrame(bAud) {
   if (ED.dTab !== 'steps' || !ED.step) return;
   let st = -1, ph = -1;
-  const vs = R.playing ? visualSlots(4, bAud) : null, clip = S.tracks[4].clips[R.selS];
-  if (vs && clip && vs.playing === R.selS && bAud >= 0) { const L = clip.len * 4; ph = (((bAud - audCstart(4, bAud)) % L) + L) % L; }
+  const vs = R.playing ? visualSlots(DRUM_T, bAud) : null, clip = S.tracks[DRUM_T].clips[R.selS];
+  if (vs && clip && vs.playing === R.selS && bAud >= 0) { const L = clip.len * 4; ph = (((bAud - audCstart(DRUM_T, bAud)) % L) + L) % L; }
   // V0b FOLGEN: one bar per page; the page changes at the bar line
   if (clip && clip.len > 1) folStep('steps', ph, 4, (ED.page | 0) * 4, x => drumSetPage(Math.round(x / 4))); else FOL.st.steps = folState('steps');
   const run = ph >= 0 ? Math.floor(ph / 4) : -1;
@@ -22284,7 +22681,7 @@ function toggleStep(voice, step, bar) {
   const vd = resolveDrum(voice);
   if (!vd) throw new Error('Unbekannte Drum-Stimme: ' + voice);
   step = clamp(step | 0, 0, 15); bar = Math.max(0, bar | 0);
-  const tr = S.tracks[4], s = R.selS, before = cleanClip(tr.clips[s]);
+  const tr = S.tracks[DRUM_T], s = R.selS, before = cleanClip(tr.clips[s]);
   let clip = tr.clips[s];
   if (!clip) clip = drumClipCreate(s);
   if (bar >= clip.len) return;
@@ -22293,8 +22690,8 @@ function toggleStep(voice, step, bar) {
   if (idx < 0) clip.notes.push({t: pos, d: .1, n: vd.gm, v: .8});
   else clip.notes = clip.notes.filter(n => !(n.n === vd.gm && Math.round(n.t / .25) % NS === si));
   clip.notes.sort((a, b) => a.t - b.t);
-  pushUndo(4, s, before, 'Schritt');
-  afterClipEdit(4, s);
+  pushUndo(DRUM_T, s, before, 'Schritt');
+  afterClipEdit(DRUM_T, s);
   paintSteps(); UI.dirty.grid = true;
 }
 
@@ -22322,7 +22719,7 @@ function afterClipEdit(t, s, noKey) {
   clipChanged(t, s); markDirty();
 }
 function openRoll(t, s) {
-  t = clamp(t | 0, 0, 4); s = clamp(s | 0, 0, 3);
+  t = clamp(t | 0, 0, NT() - 1); s = clamp(s | 0, 0, NS() - 1);
   const tr = S.tracks[t];
   selectSlot(t, s);
   if (tr.kind === 'drum') { cancelTapStop(t, s); ED.dTab = 'steps'; openEditor(); return; }
@@ -23037,7 +23434,7 @@ function closeQuantSheet(apply, quiet) {
 /* ---------- clip sheet v3 (§3.7): long-press a clip; every action is one undo step ---------- */
 const CLIPBOARD = {clip: null, kind: null};
 function openClipSheet(t, s, opts) {
-  t = clamp(t | 0, 0, 4); s = clamp(s | 0, 0, 3);
+  t = clamp(t | 0, 0, NT() - 1); s = clamp(s | 0, 0, NS() - 1);
   const tr = S.tracks[t], clip = tr.clips[s];
   if (!clip && !CLIPBOARD.clip && !(opts && opts.empty)) return;
   if (!EL.clipSheet.classList.contains('open')) UI.shield = null;
@@ -23196,7 +23593,7 @@ function clearClip(t, s, viaUi) {
 }
 function clipChanged(t, s) {
   KEYC.ver++; UI.dirty.grid = true;
-  if (R.editor === 'drum' && t === 4 && ED.dTab === 'steps' && !(ED.step && ED.step.busy())) { try { paintSteps(); } catch (e) {} }
+  if (R.editor === 'drum' && isDrum(t) && ED.dTab === 'steps' && !(ED.step && ED.step.busy())) { try { paintSteps(); } catch (e) {} }
   if (ED.rollAt && ED.rollAt.t === t && ED.rollAt.s === s) {
     rollHeadUpdate(); if (ED.lauf && !ED.lauf.se.busy()) laufPaint();
     // notes added from outside the editor (recording, overdub, auto-quantize) are drawn at once (rAF-coalesced);
@@ -23293,6 +23690,12 @@ function openMenu(goto) {
   on(bSave, 'click', () => saveFile());
   on(bOpen, 'click', () => { EL.fileIn.value = ''; EL.fileIn.click(); });
   row(s1, null, bNew, bDemo); s1.appendChild(newBox); row(s1, null, bSave, bOpen);
+  // V2a (§4.2): [＋ Spur] (Synth 5, Synth 6) and [Spur entfernen] (the last added one); both one undo step
+  const bAddT = btn('＋ Spur'), bRemT = btn(removableTrack() >= 0 ? S.tracks[removableTrack()].name + ' entfernen' : 'Spur entfernen');
+  bAddT.disabled = !canAddTrack(); bRemT.disabled = removableTrack() < 0;
+  on(bAddT, 'click', () => { if (addTrack() >= 0) closeMenu(); });
+  on(bRemT, 'click', () => { if (removeTrack()) closeMenu(); });
+  row(s1, 'Spuren ' + NT() + '/' + MAX_T, bAddT, bRemT);
   UI.openConfirm = row(s1, null); UI.openConfirm.hidden = true;
   UI.dlRow = row(s1, null); UI.dlRow.hidden = true;
   const bProj = btn('Projekte ▾'), bHist = btn('Ältere Versionen ▾');
@@ -23328,6 +23731,8 @@ function openMenu(goto) {
   row(s2, 'Transposition', makeSeg([[true, 'mit Träger'], [false, 'Original']], () => UI.expCarrier, v => { UI.expCarrier = v; }));
   const bExp = btn('Exportieren', 'go'); on(bExp, 'click', () => exportMidi({mode: UI.expMode, scene: R.selS, withCarrier: UI.expCarrier}));
   row(s2, null, bExp);
+  // V2a: the export writes Synth 1–4 and DRUMS (N tracks: V2a′)
+  if (NT() > MIDI_T) s2.appendChild(el('div', 'small', 'MIDI enthält Synth 1–4 und DRUMS – MELODIE und weitere Spuren kommen in einer der nächsten Versionen dazu.'));
   UI.dlRowMidi = row(s2, null); UI.dlRowMidi.hidden = true;
   // 3 Harmonie
   const s3 = sec('Harmonie', colR, 4);
@@ -23525,7 +23930,7 @@ const BOOT = {done: false, gen: 0, dirty: false};
 let kv = null, autosave = null;
 const idle = window.requestIdleCallback ? (f => window.requestIdleCallback(f, {timeout: 2000})) : (f => setTimeout(f, 50));   // §1.7.7
 // the selection is saved with the project (§12.6 ui) and restored when the app starts or a project is opened
-function syncUi() { if (S) S.ui = Object.assign({selT: R.selT, selS: R.selS}, S.ui && S.ui.follow ? {follow: S.ui.follow} : null, S.ui && S.ui.fmv ? {fmv: S.ui.fmv} : null); }   // V4b: + fmv (FELD / DX per track, a view field)   // V0b: + follow (a view field)
+function syncUi() { if (S) S.ui = Object.assign({selT: R.selT, selS: R.selS, order: trackOrder().slice(), sceneBank: sceneBankOf(), trackBank: trackBankOf()}, S.ui && S.ui.follow ? {follow: S.ui.follow} : null, S.ui && S.ui.fmv ? {fmv: S.ui.fmv} : null); }   // V4b: + fmv (FELD / DX per track, a view field)   // V0b: + follow (a view field)
 function serializeProject() { syncUi(); return JSON.stringify(S, stripReplacer); }
 /* project file v3 (§12.1): {app:'SYNQUENZER', kind:'project', format:3, saved, appVersion, sum, project (compact notes),
    sounds:[the user library]}. lib = false for the parked projects of [Projekte] (stored without the library, §12.2) */
@@ -23580,8 +23985,10 @@ function applyProject(p, opts) {
   S = p;
   if (!S.id) S.id = newProjectId();
   BOOT.gen++;
-  for (let i = 0; i < 5; i++) { R.slot[i] = S.tracks[i].clips[0] ? 0 : -1; R.pend[i] = null; R.cstart[i] = 0; R.prev[i] = null; }
-  if (opts.first) { R.selT = 3; R.selS = 0; } else if (opts.ui && S.ui) { R.selT = clamp(S.ui.selT | 0, 0, 4); R.selS = clamp(S.ui.selS | 0, 0, 3); } else { R.selT = clamp(R.selT, 0, 4); R.selS = clamp(R.selS, 0, 3); }
+  for (let i = 0; i < MAX_T; i++) { R.slot[i] = S.tracks[i] && S.tracks[i].clips[0] ? 0 : -1; R.pend[i] = null; R.cstart[i] = 0; R.prev[i] = null; }
+  if (opts.first) { R.selT = 3; R.selS = 0; } else if (opts.ui && S.ui) { R.selT = clamp(S.ui.selT | 0, 0, NT() - 1); R.selS = clamp(S.ui.selS | 0, 0, NS() - 1); } else { R.selT = clamp(R.selT, 0, NT() - 1); R.selS = clamp(R.selS, 0, NS() - 1); }
+  UI.sceneBank = S.ui && S.ui.sceneBank === 1 ? 1 : R.selS >= 4 ? 1 : 0; UI.trackBank = S.ui && S.ui.trackBank === 1 ? 1 : 0;   // V2a: the banks (view)
+  if (AU.ctx) syncTrackChains();
   UI.ab = null; UI.busHint = null; previewStop();
   R.kbMode = opts.keepMode ? R.kbMode : 'play'; R.momSrc.clear(); R.momentary = false;
   T.timeline = [{time: -Infinity, target: null, shift: 0}]; T.history = []; T.held.clear(); T.gesture.clear(); T.pendingAt = null;
@@ -23593,7 +24000,7 @@ function applyProject(p, opts) {
     // the old project's notes are still fading out through the track chains: swap the drive curves etc. only after
     // the fade (a curve swap on a sounding signal is a step = click)
     const busy = VOICES.some(v => !v.dead) || HITS.some(h => !h.dead);
-    const applyAll = () => { for (let i = 0; i < 5; i++) { AU.tracks[i].driveAmt = -1; AU.tracks[i].lastOut = null; AU.tracks[i].prevOuts = AU.tracks[i].grpOuts = AU.tracks[i].grpT = null; applyTrackParams(i, false); } syncEngines(); applyFxBus(); applyTempoDependents(); drumBusApply(); };
+    const applyAll = () => { for (let i = 0; i < NT(); i++) { AU.tracks[i].driveAmt = -1; AU.tracks[i].lastOut = null; AU.tracks[i].prevOuts = AU.tracks[i].grpOuts = AU.tracks[i].grpT = null; applyTrackParams(i, false); } syncEngines(); applyFxBus(); applyTempoDependents(); drumBusApply(); };
     const gen = ++UI.projGen;
     if (busy) setTimeout(() => { if (gen === UI.projGen) { try { applyAll(); } catch (e) { logErr(e); } } }, 140); else applyAll();
   }
@@ -23602,7 +24009,7 @@ function applyProject(p, opts) {
   const mig = p._mig; if (mig) { try { delete p._mig; } catch (e) {} }
   // WP6 (§7.4): „Drum-Kit „Lo-Fi“ wurde als „Rom Pop“ übernommen“
   const dw = p._warn; if (dw) { try { delete p._warn; } catch (e) {} setTimeout(() => toast(dw.join(' · ')), mig && mig.single ? 4200 : 1500); }
-  KEYC.ver++; KEYC.cache = [null, null, null, null]; R.keyPending.clear(); CAP.buf.length = 0; CAP.open.clear(); CAP.last.fill(-1e9);
+  KEYC.ver++; KEYC.cache = new Array(8).fill(null); R.keyPending.clear(); CAP.buf.length = 0; CAP.open.clear(); CAP.last.fill(-1e9);
   if (UI.coach) { EL.coach.hidden = true; UI.coach = false; }
   scheduleAutoKey();
   if (mig && mig.single && !opts.first) setTimeout(() => toast('Transponieren: Ein Ton bleibt jetzt in der Tonart (wie OP-Z). Umstellen: Menü → Harmonie'), 1900);
@@ -23620,11 +24027,11 @@ async function projIndexLoad() {
   return PROJ.index;
 }
 async function projIndexSave() { if (!kv) return false; try { await kv.set('projIndex', PROJ.index || []); return true; } catch (e) { return false; } }
-function projBars(p) { let n = 0; for (let s = 0; s < 4; s++) { let L = 0; for (const tr of (p && p.tracks) || []) { const c = tr && tr.clips && tr.clips[s]; if (c && c.len) L = Math.max(L, c.len); } n += L; } return n; }
+function projBars(p) { let n = 0; for (let s = 0; s < N_SCN; s++) { let L = 0; for (const tr of (p && p.tracks) || []) { const c = tr && tr.clips && tr.clips[s]; if (c && c.len) L = Math.max(L, c.len); } n += L; } return n; }
 // a project nobody worked on (fresh "Neu" or untouched demo) is not worth a place in the list
 function isPristine(p) {
   try {
-    const strip = o => { const x = JSON.parse(JSON.stringify(o, stripReplacer)); delete x.id; delete x.ui; if (PROJ_STAMP.test(x.name) || x.name === 'Mein Projekt') x.name = ''; return JSON.stringify(x); };
+    const strip = o => { const x = JSON.parse(JSON.stringify(o, stripReplacer)); delete x.id; delete x.ui; for (const t of x.tracks || []) if (t) delete t.uid; for (const sc of x.scenes || []) if (sc) delete sc.uid;   /* V2a: fresh ids are random */ if (PROJ_STAMP.test(x.name) || x.name === 'Mein Projekt') x.name = ''; return JSON.stringify(x); };
     const me = strip(p), fresh = o => { const q = normalizeProject(newProjectRaw(o)); q.name = ''; return strip(q); };
     return me === fresh(false) || me === fresh(true) || me === strip(demoProject());
   } catch (e) { return false; }
@@ -25521,27 +25928,30 @@ function assembleMidi(evs, marks, endTk, counts, beats, tempoMap) {
   const out = new ByteBuf();
   out.arr([0x4D, 0x54, 0x68, 0x64]).arr(u32(6)).push(0, 1, 0, 6, PPQ >> 8, PPQ & 255);
   out.arr(mtrk(tempo.concat(marks), 'SYNQUENZER ' + tm[0].bpm + ' BPM', endTk));
-  S.tracks.forEach((tr, i) => {
+  S.tracks.slice(0, MIDI_T).forEach((tr, i) => {
     const ev = evs[i].slice();
     if (tr.kind === 'synth') ev.push({tk: 0, b: [0xC0 | i, GM_PROGRAM[tr.sound.cat] != null ? GM_PROGRAM[tr.sound.cat] : 81], o: -1});
     out.arr(mtrk(ev, trackMidiName(tr), endTk));
   });
   return {bytes: new Uint8Array(out.a), counts, beats};
 }
+// V2a (Spec V2a Umfang): until V2a′ the MIDI file carries Synth 1–4 and DRUMS (the first 5 data indices, 6 MTrk chunks)
+const MIDI_T = 5;
+const midiArrs = () => ({evs: Array.from({length: MAX_T}, () => []), counts: new Array(MAX_T).fill(0)});
 function buildMidi(opts) {
   opts = opts || {};
   const mode = opts.mode || 'scene', withC = opts.withCarrier !== false, PPQ = 480;
   if (mode === 'log') return buildMidiLog();
   if (mode === 'song') return buildMidiSong(withC);
-  const scenes = mode === 'all' ? [0, 1, 2, 3] : [clamp(opts.scene != null ? opts.scene | 0 : R.selS, 0, 3)];
-  const evs = [[], [], [], [], []], marks = [], counts = [0, 0, 0, 0, 0];
+  const scenes = mode === 'all' ? Array.from({length: NS()}, (_, s) => s) : [clamp(opts.scene != null ? opts.scene | 0 : R.selS, 0, NS() - 1)];
+  const {evs, counts} = midiArrs(), marks = [];
   let off = 0;
   for (const s of scenes) {
-    let L = 0; for (const tr of S.tracks) if (tr.clips[s]) L = Math.max(L, tr.clips[s].len * 4);
+    let L = 0; for (const tr of S.tracks.slice(0, MIDI_T)) if (tr.clips[s]) L = Math.max(L, tr.clips[s].len * 4);
     if (!L) continue;
     marks.push({tk: Math.round(off * PPQ), b: metaText(6, 'Szene ' + (s + 1)), o: -1});
     S.tracks.forEach((tr, i) => {
-      const c = tr.clips[s]; if (!c || !c.notes.length) return;
+      const c = tr.clips[s]; if (!c || !c.notes.length || i >= MIDI_T) return;
       const cL = c.len * 4, ch = tr.kind === 'drum' ? 9 : i, ded = new Map();
       for (let o = 0; o < L - 1e-9; o += cL) for (const nt of c.notes) {
         if (nt.t >= cL - 1e-9) continue;                         // V0a K-06: behind the clip end = never heard, never exported
@@ -25569,13 +25979,13 @@ function buildMidiLog() {
   const PPQ = 480, list = PERF.list.filter(e => !e.dead && isFinite(e.startBeat));
   if (!list.length) return null;
   const nowB = R.playing && AU.ctx ? t2b(AU.ctx.currentTime) : Math.max(...list.map(e => isFinite(e.endBeat) ? e.endBeat : e.startBeat + 1));
-  const evs = [[], [], [], [], []], counts = [0, 0, 0, 0, 0];
+  const {evs, counts} = midiArrs();
   let endB = 0;
   for (const e of list) {
     if (isFinite(e.endBeat) && e.endBeat <= 1e-6) continue;          // sounded completely before bar 1 (count-in)
     const sb = Math.max(0, e.startBeat); let eb = isFinite(e.endBeat) ? e.endBeat : Math.max(sb + .25, nowB);
     if (eb <= sb) eb = sb + 1 / 32;
-    const tr = S.tracks[e.track]; if (!tr) continue;
+    const tr = S.tracks[e.track]; if (!tr || e.track >= MIDI_T) continue;
     const ch = tr.kind === 'drum' ? 9 : e.track, p = clamp(Math.round(e.out), 0, 127), v = clamp(Math.round(e.vel * 127), 1, 127);
     const t0 = Math.round(sb * PPQ), t1 = Math.max(t0 + 1, Math.round(eb * PPQ));
     evs[e.track].push({tk: t0, b: [0x90 | ch, p, v], o: 1}, {tk: t1, b: [0x80 | ch, p, 0], o: 0});
@@ -25590,7 +26000,7 @@ function buildMidiLog() {
    the melody lane on the melody track's channel as played */
 function buildMidiSong(withC) {
   const song = S.song; if (!song || !song.bars) return null;
-  const PPQ = 480, L = song.bars * 4, evs = [[], [], [], [], []], counts = [0, 0, 0, 0, 0];
+  const PPQ = 480, L = song.bars * 4, {evs, counts} = midiArrs();
   // the Träger entries of the song with their shifts (as the Transposer computes them, §old-7)
   const pk = S.key, h = S.settings.harmony, ents = [];
   let prev = 0;
@@ -25603,7 +26013,7 @@ function buildMidiSong(withC) {
     const v = clamp(Math.round(vv * 127), 1, 127), t0 = Math.round(st * PPQ), t1 = Math.max(t0 + 1, Math.round(en * PPQ)), k = t0 + ':' + p, x = ded.get(k);
     if (x) { x.v = Math.max(x.v, v); x.t1 = Math.max(x.t1, t1); } else ded.set(k, {t0, t1, p, v, ch});
   };
-  S.tracks.forEach((tr, i) => {
+  S.tracks.slice(0, MIDI_T).forEach((tr, i) => {
     const ded = new Map(), ch = tr.kind === 'drum' ? 9 : i, lane = song.lanes[i];
     for (let k = 0; k < lane.length; k++) {
       const e = lane[k]; if (e.slot < 0) continue;
@@ -25774,7 +26184,7 @@ async function exportMidi(opts) {
   const mode = opts.mode || 'scene', scene = opts.scene != null ? opts.scene : R.selS;
   const m = buildMidi({mode, scene, withCarrier: opts.withCarrier !== false});
   if (!m) { toast('Keine Clips zum Exportieren'); return null; }
-  const base = mode === 'all' ? 'synquenzer-alle-szenen' : mode === 'log' ? 'synquenzer-mitschnitt' : mode === 'song' ? 'synquenzer-song' : 'synquenzer-szene-' + (clamp(scene | 0, 0, 3) + 1);
+  const base = mode === 'all' ? 'synquenzer-alle-szenen' : mode === 'log' ? 'synquenzer-mitschnitt' : mode === 'song' ? 'synquenzer-song' : 'synquenzer-szene-' + (clamp(scene | 0, 0, NS() - 1) + 1);
   return deliver(base, m.bytes, 'mid');
 }
 
@@ -25911,6 +26321,20 @@ function bindUI() {
   on(EL.grid, 'pointerdown', e => {
     const scn = e.target.closest('.scn');
     if (scn) { e.preventDefault(); launchScene(+scn.dataset.s); return; }
+    // V2a: hold a track head (450 ms, ≤ 8 px) = the track sheet (＋ Spur, Spur entfernen); the click after it is eaten
+    const th = e.target.closest('.th');
+    // V2a (320 px): hold [SZ] in the ■ place = the stop sheet [Alle stoppen] [Sofort]
+    const szh = e.target.closest('.saw .szb');
+    if (szh) {
+      const p = {id: e.pointerId, x: e.clientX, y: e.clientY, long: false};
+      p.timer = setTimeout(() => { if (UI.thPress !== p) return; p.long = true; armLongPressGuard(); openStopSheet(szh); haptic('pop'); }, 450);
+      UI.thPress = p; return;
+    }
+    if (th && !e.target.closest('.tbb')) {
+      const i = +th.dataset.t, p = {id: e.pointerId, x: e.clientX, y: e.clientY, long: false};
+      p.timer = setTimeout(() => { if (UI.thPress !== p) return; p.long = true; armLongPressGuard(); openTrackSheet(i, th); haptic('pop'); }, 450);
+      UI.thPress = p; return;
+    }
     const slot = e.target.closest('.slot');
     if (slot) {
       ensureAudio();
@@ -25921,6 +26345,9 @@ function bindUI() {
       slotProvLaunch(p);
     }
   });
+  on(EL.grid, 'pointermove', e => { const q = UI.thPress; if (q && q.id === e.pointerId && (Math.abs(e.clientX - q.x) > 8 || Math.abs(e.clientY - q.y) > 8)) { clearTimeout(q.timer); UI.thPress = null; } });
+  const thEnd = e => { const q = UI.thPress; if (!q || q.id !== e.pointerId) return; UI.thPress = null; clearTimeout(q.timer); if (q.long) releaseLongPressGuard(); };
+  on(EL.grid, 'pointerup', thEnd); on(EL.grid, 'pointercancel', thEnd);
   on(EL.grid, 'pointermove', e => { const p = UI.slotPress; if (p && p.id === e.pointerId && !p.dead && (Math.abs(e.clientX - p.x) > 8 || Math.abs(e.clientY - p.y) > 8)) { p.dead = true; clearTimeout(p.timer); slotProvRevert(p); } });
   const slotEnd = e => {
     const p = UI.slotPress; if (!p || p.id !== e.pointerId) return;
@@ -25933,6 +26360,9 @@ function bindUI() {
   on(EL.grid, 'contextmenu', e => e.preventDefault());
   onTap(EL.grid, () => setSongView(true), '.corner');
   on(EL.grid, 'click', e => {
+    // V2a: the bank switches (view only)
+    if (e.target.closest('.szb')) { setSceneBank(1 - sceneBankOf()); haptic('tick'); return; }
+    if (e.target.closest('.tbb')) { setTrackBank(MX.pages ? (trackBankOf() + 1) % MX.pages.length : 0); haptic('tick'); return; }
     const th = e.target.closest('.th');
     if (th) { const i = +th.dataset.t; if (i === R.selT && R.editor !== 'synth' && R.editor !== 'drum') { selectTrack(i); openEditor(); } else selectTrack(i); return; }
     const stp = e.target.closest('.stp');
@@ -25941,7 +26371,7 @@ function bindUI() {
       const key = stp.classList.contains('all') ? 'all' : stp.dataset.t, now = performance.now(), last = UI.stpTap;
       const dbl = !!(last && last.key === key && now - last.t < 400);
       UI.stpTap = dbl ? null : {key, t: now};
-      if (key === 'all') { if (!R.playing) { panic(); toast('Alle Töne aus'); } else if (dbl) { for (let i = 0; i < 5; i++) stopTrackNow(i); haptic('snap'); } else { stopAllClips(); haptic('tick'); } }
+      if (key === 'all') { if (!R.playing) { panic(); toast('Alle Töne aus'); } else if (dbl) { for (let i = 0; i < NT(); i++) stopTrackNow(i); haptic('snap'); } else { stopAllClips(); haptic('tick'); } }
       else if (dbl) { stopTrackNow(+key); haptic('snap'); }
       else { stopTrack(+key); if (R.playing) haptic('tick'); }
     }
@@ -26034,7 +26464,7 @@ function bindUI() {
 function setMute(t, m) {
   const tr = S.tracks[t]; if (!tr) return;
   tr.mute = !!m;
-  if (m && AU.ctx) { const now = AU.ctx.currentTime; for (const v of VOICES.slice()) if (v.track === t && v.src === 'clip') { if (v.start > now) v.cancel(); else v.release(now); } if (t === 4) cancelTrackFrom(4, now); }
+  if (m && AU.ctx) { const now = AU.ctx.currentTime; for (const v of VOICES.slice()) if (v.track === t && v.src === 'clip') { if (v.start > now) v.cancel(); else v.release(now); } if (isDrum(t)) cancelTrackFrom(t, now); }
   UI.dirty.all = true; markDirty();
 }
 
@@ -27298,11 +27728,11 @@ function runtimeInfo() {
   return {
     audio: audioState(), playing: R.playing, bpm: S.bpm,
     beat, bar: Math.floor(beat / 4) + 1, beatInBar: ((Math.floor(beat) % 4) + 4) % 4 + 1,
-    selected: {track: R.selT, scene: R.selS}, slots: R.slot.slice(), cstart: R.cstart.slice(),
-    queued: R.pend.map(p => (p ? {slot: p.slot, beat: p.beat} : null)),
+    selected: {track: R.selT, scene: R.selS}, slots: R.slot.slice(0, NT()), cstart: R.cstart.slice(0, NT()),           // V2a: one entry per existing track
+    queued: R.pend.slice(0, NT()).map(p => (p ? {slot: p.slot, beat: p.beat} : null)),
     rec: {state: rec.state, track: rec.state === 'off' ? null : rec.track, scene: rec.state === 'off' ? null : rec.scene, startBeat: rec.state === 'off' ? null : rec.startBeat, endBeat: rec.state === 'off' ? null : rec.endBeat, length: rl,
       notes: recNotesCount(), lane: rec.state !== 'off'},
-    stopQ: R.pend.map(p => (p && p.slot === -1 ? p.beat : null)),
+    stopQ: R.pend.slice(0, NT()).map(p => (p && p.slot === -1 ? p.beat : null)),
     kbMode: R.kbMode, momentary: R.momentary, latch: h.latch,
     harmony: {mode: h.mode, change: h.change, octaveMode: h.octaveMode, single: h.single, minor: h.minor, keyAware: h.keyAware, split: h.split},
     carrier, heldInputs: Object.keys(R.inputs),
@@ -27310,7 +27740,7 @@ function runtimeInfo() {
     voices: VOICES.filter(v => !v.dead).length + HITS.filter(x => !x.dead).length,
     editor: ['synth', 'drum', 'clip', 'menu', 'roll', 'browser'].includes(R.editor) ? R.editor : UI.songView ? 'song' : null,
     cloud: {state: SYNC.state, outbox: SYNC.outN},
-    song: {rec: !!R.songRec, play: !!R.songPlay, override: R.songOverride.slice(), carrierLive: !!R.carrierLive, mel: !!R.melRec, view: !!UI.songView,
+    song: {rec: !!R.songRec, play: !!R.songPlay, override: R.songOverride.slice(0, NT()), carrierLive: !!R.carrierLive, mel: !!R.melRec, view: !!UI.songView,
       startBeat: R.songRec ? R.songRec.startBeat : null, off: R.songPlay ? R.songPlay.off : null,
       // V0c: Positionsmarke (posBar, N0c), yellow selection, the take's targets and range, the loop
       posBar: songStartBar(), pos: SV.pos != null ? SV.pos : null, sel: SV.sel ? Object.assign({}, SV.sel) : null,
@@ -27329,7 +27759,7 @@ function engineInfo() {
   const synth = UI.forceNative ? 'native' : st === 'ready' ? 'worklet' : st === 'failed' ? 'native' : 'loading';
   return {synth, how: SynthHost.how || null, err: UI.forceNative ? 'abgeschaltet (forceNative)' : SynthHost.err || null, hall: AU.hallKind, load: +cpuLoad().toFixed(4),
     limiter: LIM.level, quality: S.settings.quality, loadMs: Math.round(SynthHost.ms || 0),
-    perTrack: [0, 1, 2, 3].map(i => { const E = AU.synth[i];
+    perTrack: S.tracks.map((_, i) => { const E = AU.synth[i];          // V2a: indexed by track (DRUMS: native-only)
       return E ? {voices: E.nv, load: E.load, path: 'worklet', poly: E.sent.poly, lq: E.sent.lq, uni: [E.sent.o1uni, E.sent.o2uni, E.sent.o3uni], voiceCap: fmxVoiceCap(i) ? 6 : 8}
         : {voices: VOICES.filter(v => !v.dead && !v.wk && v.track === i).length, load: 0, path: S.tracks[i].kind === 'synth' && isWkEngine(S.tracks[i].sound.engine) ? 'native' : 'native-only'}; }),
     loopExtra: AU.loopExtra, graphLat: AU.graphLat, compLat: AU.compLat, measured: AU.measured, outLat: AU.outLat, devLat: AU.devLat,
@@ -27340,7 +27770,7 @@ function engineInfo() {
 function forceNative(on) {
   UI.forceNative = !!on;
   if (AU.ctx) {
-    if (UI.forceNative) { for (let i = 0; i < 4; i++) if (AU.synth[i]) { retireEngine(i); rebuildNativeLfos(i); } }
+    if (UI.forceNative) { for (let i = 0; i < AU.synth.length; i++) if (AU.synth[i]) { retireEngine(i); rebuildNativeLfos(i); } }
     else if (SynthHost.state === 'ready') { try { upgradeHall(); } catch (e) { logErr(e); } syncEngines(); }
     else loadWorklet();
   }
@@ -27422,6 +27852,14 @@ const SYNQUENZER = {
   cloudRefresh: () => cloudCollabLoad(true), deviceKeys: () => JSON.parse(JSON.stringify(DEVICE_KEYS)),
   cloudUseFake: h => { window.__synqFakeSupa = h; SYNC.libP = null; SYNC.client = null; if (SYNC.where === 'home' && SYNC.state === 'off') cloudState('signedOut'); return true; },
   version: VERSION,
+  // V2a (§16): tracks and banks
+  tracks: () => trackOrder().map((i, k) => { const t = S.tracks[i]; return {i, name: t.name, kind: t.kind, mel: !!t.mel, role: (t.mix && t.mix.role) || null, order: k, uid: t.uid}; }).sort((a, b) => a.i - b.i),
+  addTrack: () => addTrack(), removeTrack: i => removeTrack(i), canAddTrack: () => canAddTrack(),
+  sceneBank: n => (n == null ? sceneBankOf() : setSceneBank(n)),
+  trackBank: n => (n == null ? trackBankOf() : setTrackBank(n)),
+  matrixInfo: () => ({cols: MX.cols, scenes: MX.scenes.slice(), rows: MX.rows.slice(), bankS: MX.bankS, bankT: MX.bankT, pages: MX.pages ? deep(MX.pages) : null, szAt: MX.szAt, nrows: MX.nrows}),
+  NT: () => NT(), NS: () => NS(), isDrum: i => isDrum(i), cpuHeavy: () => ({shown: !!UI.cpuHeavyShown, n: UI.cpuHeavyN | 0}),
+  undoInfo: () => ({n: UNDO.length, redo: REDO.length, top: UNDO.length ? {kind: UNDO[UNDO.length - 1].kind, label: UNDO[UNDO.length - 1].label, items: (UNDO[UNDO.length - 1].items || []).map(x => x.kind)} : null}),
   state: () => ({project: deep(JSON.parse(serializeProject())), runtime: runtimeInfo()}),
   project: () => JSON.parse(serializeProject()),
   runtime: runtimeInfo,
@@ -27457,7 +27895,7 @@ const SYNQUENZER = {
   selectSlot, selectTrack, launchScene, launchClip, stopTrack, stopAllClips,
   getClip: (t, s) => cleanClip(S.tracks[t] && S.tracks[t].clips[s]),
   setClip: (t, s, clip) => {
-    const tr = S.tracks[t]; if (!tr || s < 0 || s > 3) throw new Error('Ungültiger Slot');
+    const tr = S.tracks[t]; if (!tr || s < 0 || s > NS() - 1) throw new Error('Ungültiger Slot');
     const c = clip == null ? null : normClip(clip, tr.kind, S.key);
     pushUndo(t, s, tr.clips[s], 'Clip');
     tr.clips[s] = c;
@@ -27491,7 +27929,7 @@ const SYNQUENZER = {
   },
   importSyx: bytes => importSyx(bytes),
   fmUi: () => (R.editor === 'synth' ? {op: ED.fmOp | 0, sub: ED.fmSub || 'freq', page: ED.sub.osc, solo: UI.fmSolo ? Object.assign({}, UI.fmSolo) : null} : null),
-  loadKit: name => soundEdit(4, 'Kit ' + name, () => loadKit(name)),
+  loadKit: name => soundEdit(DRUM_T, 'Kit ' + name, () => loadKit(name)),
   // WP3 (§16): sounds, modulation, library
   getSound: t => { const tr = S.tracks[t]; if (!tr) throw new Error('Keine Spur: ' + t); return deep(tr.sound); },
   setSound: (t, sound) => {
@@ -27556,7 +27994,7 @@ const SYNQUENZER = {
   noteLog, clearLog, voices: voicesInfo, panic,
   meter, openEditor: () => openEditor(), closeEditor, openMenu, closeMenu, openClipSheet,
   // WP2 (§16): recording & editing
-  tapSlot: (t, s) => { ensureAudio(); slotTap(clamp(t | 0, 0, 4), clamp(s | 0, 0, 3)); },
+  tapSlot: (t, s) => { ensureAudio(); slotTap(clamp(t | 0, 0, NT() - 1), clamp(s | 0, 0, NS() - 1)); },
   stopTrackNow: t => { ensureAudio(); stopTrackNow(t); }, capture: () => capture(),
   quantizeClip: (t, s, o) => !!quantizeClip(t, s, o || {}), copyClip: (t, s) => copyClip(t, s), pasteClip: (t, s) => pasteClip(t, s), duplicateClip: (t, s) => duplicateClip(t, s),
   openRoll: (t, s) => openRoll(t, s), closeRoll: () => closeRoll(),
@@ -27564,8 +28002,8 @@ const SYNQUENZER = {
   rollApi: () => ED.roll,                        // test hook: the editor instance (gesture coordinates _xy, _ruler, _barNum, …)
   openQuant: (t, s) => openQuantSheet(t, s), closeQuant: apply => closeQuantSheet(!!apply),
   detectKey: notes => { const k = KeyDetect.detectKey(notes || [], {fallback: S.key}); return {root: k.root, scale: k.scale}; },
-  sceneKey: s => { const k = sceneKeyOf(clamp(s | 0, 0, 3)) || S.key; return {root: k.root, scale: k.scale}; },
-  analyseKeys: s => { applySceneKeys(s == null ? null : clamp(s | 0, 0, 3)); },
+  sceneKey: s => { const k = sceneKeyOf(clamp(s | 0, 0, NS() - 1)) || S.key; return {root: k.root, scale: k.scale}; },
+  analyseKeys: s => { applySceneKeys(s == null ? null : clamp(s | 0, 0, NS() - 1)); },
   setKbScale, coach: on => { if (on === false) hideCoach(); else showCoach(); },
   // WP5 (§9.3, §9.4, §3.10): mod mode, live values, LAUF
   modMode: src => (src ? enterModMode(src, null) : exitModMode()),
@@ -27584,7 +28022,7 @@ const SYNQUENZER = {
   laufApi: () => ED.lauf,                       // test hook: the StepEditor instance (cells, lanes)
   // v3 V0a (§16): scheduler faults, editor view, the Träger readout; test hooks __failTrack / deliverNow
   tickErrors: () => TICKERR.n,
-  __failTrack: i => { TICKERR.fail = i == null || +i < 0 ? -1 : clamp(i | 0, 0, 4); return TICKERR.fail; },
+  __failTrack: i => { TICKERR.fail = i == null || +i < 0 ? -1 : clamp(i | 0, 0, NT() - 1); return TICKERR.fail; },
   viewState: kind => viewState(kind),
   // V0b (§16): FOLGEN on (ends „von Hand“, jumps to the playhead) or off for an editor kind
   setFollow: (kind, on) => {
@@ -27760,8 +28198,9 @@ function init() {
   // a web font that arrives late changes every text width: refit the readout and re-measure the mode labels (§3.6)
   try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { UI.dirty.carrier = true; UI.kbRelayout = true; }); if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { UI.dirty.carrier = true; UI.kbRelayout = true; }); } catch (e) {}
   if (window.ResizeObserver) new ResizeObserver(() => { UI.kbRelayout = true; }).observe(EL.kb);
-  if (window.ResizeObserver) try { new ResizeObserver(() => cellFit()).observe(EL.grid); } catch (e) {}
-  cellFit();
+  if (window.ResizeObserver) try { new ResizeObserver(() => { mxLayout(); cellFit(); }).observe(EL.grid); } catch (e) {}
+  on(window, 'resize', () => { mxLayout(); });
+  mxLayout(); cellFit();
   // the readout is fitted to its width; while it is hidden (recording lane, sheets) that width is 0 -> refit when it returns
   if (window.ResizeObserver) try { new ResizeObserver(() => { UI.dirty.carrier = true; }).observe(EL.readout); } catch (e) {}
   document.addEventListener('dblclick', e => e.preventDefault(), {passive: false});
