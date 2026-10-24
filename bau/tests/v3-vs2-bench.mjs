@@ -19,7 +19,7 @@ for (const [cn, co] of Object.entries(COND)) {
     const mel = melody(seed * 31 + lo, lo, hi), sig = renderVoice(mel, {voice: v, seed: seed * 101 + lo, ...co});
     let mask = null;
     const hop = 80, nF = Math.floor((sig.x.length - 1) / hop) + 1;
-    if (co.mask) { mask = new Uint8Array(nF); for (const c of sig.clicks) { const a = Math.floor(c * 16000 / hop), b = Math.ceil((c + 0.035) * 16000 / hop); for (let i = a; i <= b && i < nF; i++) mask[i] = 1; } }
+    if (co.mask) { mask = new Uint8Array(nF); for (const c of sig.clicks) { const a = Math.floor((c + 0.012 - 0.023) * 16000 / hop), b = Math.ceil((c + 0.012 + 0.035) * 16000 / hop); for (let i = a; i <= b && i < nF; i++) mask[i] = 1; } }
     const t0 = Date.now();
     const tr = D.pyin(sig.x, {fs: 16000, mask});
     const sg = D.segment(tr, {snap: true, scale: AM, root: 0, tuning: 'auto'});
@@ -43,7 +43,7 @@ if (!only.length || only.includes('I')) {
       for (const nt of mel) { if (nt.on + nt.dur > 0.6 + 32 * sb) break; m8.push(nt); }
       const sig = renderSynth(m8, {sub, subAmp: 0.6});
       const tr = D.pyin(sig.x, {fs: 16000, octLock: lock, fmin: 40, fmax: 1600});
-      const sg = D.segment(tr, {snap: false, tuning: 'auto'});
+      const sg = D.segment(tr, {snap: false, tuning: 'auto', attack: true});
       const sc = score(tr, sg.notes, sig); F += sc.F; oct += sc.oct; k++;
       if (process.env.V) console.log('I', sub, lock, seed, sc);
       void t;
