@@ -29452,7 +29452,7 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
     this.rev = new Uint16Array(1024); this.cs = new Float64Array(512); this.sn = new Float64Array(512);
     for (let i = 0; i < 1024; i++) { let r = 0; for (let k = 0; k < 10; k++) r |= ((i >> k) & 1) << (9 - k); this.rev[i] = r; }
     for (let i = 0; i < 512; i++) { this.cs[i] = Math.cos(2 * Math.PI * i / 1024); this.sn[i] = -Math.sin(2 * Math.PI * i / 1024); }
-    this.lit = -1; this.cand = -1; this.cn = 0; this.off = 0; this.mt = 0; this.mcount = 0; this.hh = []; this.rh = []; this.cv = []; this.dv = []; this.age = 0; this.since = 0; this.cnt = 0; this.lv = 0; this.gp = false;
+    this.lit = -1; this.cand = -1; this.cn = 0; this.off = 0; this.mt = 0; this.mcount = 0; this.hh = []; this.rh = []; this.cv = []; this.dv = []; this.age = 0; this.since = 0; this.cnt = 0; this.lv = 0; this.gp = false; this.zr();
     // VS2-fix bleed gate (speaker): the reference (what the app plays) runs through the same 3:1 decimator into a ring;
     // a pitch counts as voice only if the mic has clearly more energy there than the bleed of the reference explains
     this.hw = new Float64Array(640); for (let j = 0; j < 640; j++) this.hw[j] = 0.5 - 0.5 * Math.cos(2 * Math.PI * j / 639);
@@ -29537,9 +29537,9 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
       const mm = 69 + 12 * Math.log2(f / 440), hh = this.hh, rh = this.rh, cv = this.cv, dv = this.dv; this.off = 0; this.gp = false;
       const en = pe ? this.pE / W : 0; this.lv = this.lit >= 0 ? 0.8 * this.lv + 0.2 * en : en;
       hh.push(mm); if (hh.length > 3) hh.shift();
-      const sm = hh.length === 3 ? this.med(hh) : mm; rh.push(sm); if (rh.length > 40) rh.shift();
+      const sm = hh.length === 3 ? this.med(hh) : mm; rh.push(sm); if (rh.length > 40) rh.shift(); this.zz(sm);
       const span = (A, n) => { let lo = 1e9, hi = -1e9; for (let i = A.length - n; i < A.length; i++) { if (A[i] < lo) lo = A[i]; if (A[i] > hi) hi = A[i]; } return hi - lo; };
-      const lite = (note, from, on) => { this.age = on ? 0 : 99; this.since = 0; this.cnt = 0; cv.length = 0; for (const v of from) cv.push(v); dv.length = 0;
+      const lite = (note, from, on) => { this.age = on ? 0 : 99; this.since = 0; this.cnt = 0; cv.length = 0; for (const v of from) cv.push(v); dv.length = 0; this.lh = this.hc;
         if (note !== this.lit) { this.lit = note; this.port.postMessage({lit: note, f: Math.max(F, currentFrame), c: Math.round(cl * 100) / 100}); } };
       this.age++; this.since++;
       if (this.lit < 0) {
@@ -29547,12 +29547,23 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
         if (dv.length >= 3 && span(dv, 3) <= 0.35 && Math.abs(dv[dv.length - 1] - dv[dv.length - 3]) <= 0.15) { const t = dv.slice(-3); lite(Math.round(this.med(t)), t, true); }
         else if (dv.length >= 8) { const t = dv.slice(-5); lite(Math.round(this.med(t)), t, true); }
       } else {
-        const c = this.med(cv), d = sm - c;
+        /* VS2b-fix (QA: Vibrato ±70–100 ct schon beim Einsatz – die Taste sprang zwischen den Nachbartasten, die gesungene
+           leuchtete oft nie): der Einsatz fällt auf einen Umkehrpunkt, die Mitte c lag dann am Rand des Vibratos. Aus den
+           letzten drei Umkehrpunkten (Halbwellen 40–150 ms, Ausschlag 0,5–3,2 Halbtöne, gleich groß, kein Stehen auf dem
+           Ton wie beim Triller) ergibt sich die Mitte des Vibratos; sie ist c, und liegt sie ≥ 60 ct neben der Taste, leuchtet
+           ihre Taste (erst mit einem Umkehrpunkt nach dem letzten Wechsel: kurz nach einem Tonwechsel gilt das alte Vibrato nicht). */
+        const vb = this.vib(sm);
+        if (vb && Math.round(vb.c) !== this.lit && Math.abs(vb.c - this.lit) > 0.6 && this.tp[this.tp.length - 1].i > this.lh) { const t = []; for (let i = Math.max(0, rh.length - 20); i < rh.length; i++) if (Math.abs(rh[i] - vb.c) <= 0.6) t.push(rh[i]); lite(Math.round(vb.c), t.length ? t : [vb.c], false); }
+        const c = vb ? vb.c : this.med(cv), d = sm - c;
         if (Math.abs(d) > 0.6) {
           if (dv.length && (dv[dv.length - 1] - c) * d < 0) dv.length = 0;
           dv.push(sm); if (dv.length > 30) dv.shift();
           const e0 = rh.length - dv.length; let osc = false;
           for (let i = Math.max(0, e0 - 15, rh.length - this.since); i < e0 && !osc; i++) if ((rh[i] - c) * d < -0.3 * Math.abs(d)) osc = true;
+          // schwingt: bleibt im Vibrato-Band, oder die Stimme kam eben (≤ 150 ms) von einem spitzen Umkehrpunkt ≥ 0,5 Halbtöne auf
+          // der Gegenseite (ein Triller oder Lauf steht auf seinen Tönen, ein Anschleifen kehrt nicht um)
+          if (!osc) { const mr = this.med(dv), T = this.tp; if ((vb && Math.abs(mr - vb.c) <= vb.amp / 2 + 0.25) || (this.va && this.hc - this.va.i <= 40 && Math.abs(mr - c) <= this.va.amp + 0.25)) osc = true;
+            for (let i = Math.max(0, T.length - 2); i < T.length && !osc; i++) if (this.hc - T[i].i <= 15 && T[i].dw <= 5 && (T[i].v - mr) * Math.sign(d) <= -0.5) osc = true; }
           const early = this.age < 10 && !osc, big = Math.abs(d) >= 2;
           const need = early ? 3 : big ? 4 : osc ? 12 : 7, st = early || big ? 3 : osc ? 6 : 5, tol = early ? 0.35 : big ? 0.4 : osc ? 0.8 : 0.5;
           if (dv.length >= 20) { const t = dv.slice(-8); lite(Math.round(this.med(t)), t, false); }
@@ -29570,10 +29581,39 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
     } else {
       // kurze Aussetzer ohne Pegel-Einbruch (Vibrato-Umkehrpunkte: weniger klar, gleich laut) halten die Taste und ihre Mitte
       // bis 50 ms; mit Einbruch >= 6 dB (Pause, Konsonant zwischen zwei Toenen) geht sie wie bisher nach 30 ms aus
-      this.cand = -1; this.cn = 0; if (this.lit < 0) { this.hh.length = 0; this.rh.length = 0; this.dv.length = 0; }
+      this.cand = -1; this.cn = 0; if (this.lit < 0) { this.hh.length = 0; this.rh.length = 0; this.dv.length = 0; this.zr(); }
       if ((pe ? this.pE / W : 0) < 0.25 * this.lv) this.gp = true;
-      if (++this.off >= (this.gp ? 3 : 5) && this.lit >= 0) { this.lit = -1; this.hh.length = 0; this.rh.length = 0; this.dv.length = 0; this.port.postMessage({lit: -1, f: Math.max(F, currentFrame)}); }
+      if (++this.off >= (this.gp ? 3 : 5) && this.lit >= 0) { this.lit = -1; this.hh.length = 0; this.rh.length = 0; this.dv.length = 0; this.zr(); this.port.postMessage({lit: -1, f: Math.max(F, currentFrame)}); }
     }
+  }
+  // Umkehrpunkte der geglätteten Tonhöhe (Zickzack mit 0,15 Halbtönen Hysterese) je stimmhaftem Hop: {v, i, dw = Hops ≤ 12 ct am Punkt}
+  zr() { this.zx = null; this.zd = 0; this.tp = []; this.hc = 0; this.va = null; this.lh = 0; }
+  zz(x) {
+    const hc = ++this.hc, H = 0.15; let z = this.zx; if (!this.tp) this.tp = [];
+    if (!z) { this.zx = {hi: x, hiI: hc, lo: x, loI: hc}; this.zd = 0; return; }
+    if (this.zd >= 0 && x > z.hi) { z.hi = x; z.hiI = hc; }
+    if (this.zd <= 0 && x < z.lo) { z.lo = x; z.loI = hc; }
+    if (this.zd >= 0 && z.hi - x >= H && (this.zd > 0 || z.hiI > z.loI)) { this.tpAdd(z.hi, z.hiI); this.zd = -1; z.lo = x; z.loI = hc; }
+    else if (this.zd <= 0 && x - z.lo >= H && (this.zd < 0 || z.loI > z.hiI)) { this.tpAdd(z.lo, z.loI); this.zd = 1; z.hi = x; z.hiI = hc; }
+  }
+  tpAdd(v, i) {
+    const rh = this.rh, j = i - (this.hc - rh.length + 1); let dw = 0;
+    if (j >= 0 && j < rh.length) { dw = 1; for (let k = j - 1; k >= 0 && Math.abs(rh[k] - v) <= 0.12; k--) dw++; for (let k = j + 1; k < rh.length && Math.abs(rh[k] - v) <= 0.12; k++) dw++; }
+    this.tp.push({v, i, dw}); if (this.tp.length > 4) this.tp.shift();
+  }
+  // Vibrato aus den letzten Umkehrpunkten: drei (zwei gleich große Halbwellen) oder, kurz nach einem Vibrato gleicher Weite,
+  // schon zwei (nach einem Tonwechsel im Legato); die Stimme muss im Band um die Mitte liegen (sonst ist sie schon woanders)
+  vib(x) {
+    const t = this.tp, hc = this.hc; if (!t || t.length < 2) return null;
+    const ok = (p, q) => { const d = q.i - p.i, A = Math.abs(q.v - p.v); return d >= 4 && d <= 15 && A >= 0.5 && A <= 3.2 && p.dw <= 5 && q.dw <= 5 ? A : 0; };
+    const c = t[t.length - 1], b = t[t.length - 2], a = t.length >= 3 ? t[t.length - 3] : null; if (hc - c.i > Math.min(20, c.i - b.i + 6)) return null;   // der nächste Umkehrpunkt ist überfällig
+    let r = null; const A2 = ok(b, c), A1 = a ? ok(a, b) : 0;
+    if (A1 && A2 && Math.min(A1, A2) >= 0.6 * Math.max(A1, A2)) r = {c: (a.v + 2 * b.v + c.v) / 4, amp: (A1 + A2) / 2};
+    else if (A2 && this.va && hc - this.va.i <= 60 && A2 >= 0.6 * this.va.amp && A2 <= this.va.amp / 0.6) r = {c: (b.v + c.v) / 2, amp: A2};
+    if (!r || Math.abs(x - r.c) > r.amp / 2 + 0.3) return null;
+    const rh = this.rh, n = Math.min(18, rh.length); let mu = 0; for (let k = rh.length - n; k < rh.length; k++) mu += rh[k];   // ≈ eine Periode: ihr Mittel ist die Mitte
+    if (Math.abs(mu / n - r.c) > 0.25 + 0.15 * r.amp) return null;
+    this.va = {amp: r.amp, i: hc}; return r;
   }
   med(a) { const b = a.slice().sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; }
   flush() {
@@ -30436,10 +30476,13 @@ function vsDspMake() {
            ≥ 70 ms, aber ≥ 10 dB unter dem Ton davor. Beim letzten Stück vor der Stille zählen Länge, Ruhe und Richtung nur im
            gesungenen Teil (Pegel höchstens 10 dB unter dem Ton davor); was danach nur noch nachklingt, ist kein Ton. */
         let act = n, pl = NaN;
-        if (pa && !(q && q.a === n.b)) { pl = lvl(Math.max(p.a, p.b - F(150)), p.b); let ae = n.b; while (ae - 1 > n.a && !(e[ae - 1] >= pl - 10)) ae--; act = {a: n.a, b: ae}; }
-        // reiner Nachhall gleich hinter einem Ton (≤ 60 ms Lücke, bis zur Stille): ≥ 12 dB unter dem Ton und ohne neuen Anstieg
+        const tailEnd = !(q && q.a === n.b && n.pe);                 // danach Stille oder ein neuer Anschlag (Pegel-Schnitt)
+        // (vor einem neuen Anschlag nur, wenn das Stück wirklich ≥ 40 ms nachklingt: ein kurzer echter Ton bleibt laut bis zum Schnitt)
+        if (pa && tailEnd) { pl = lvl(Math.max(p.a, p.b - F(150)), p.b); let ae = n.b; while (ae - 1 > n.a && !(e[ae - 1] >= pl - 10)) ae--;
+          if (!(q && q.a === n.b) || n.b - ae >= F(40)) act = {a: n.a, b: Math.min(n.b, ae + F(20))}; }   // + 20 ms: das Ausklingen eines echten Tons
+        // reiner Nachhall gleich hinter einem Ton (≤ 60 ms Lücke, bis zur Stille oder zum nächsten Anschlag): ≥ 12 dB unter dem Ton und ohne neuen Anstieg
         // (≥ 3 dB) ist kein Ton – anliegend gehört er zum Ton, sonst fällt er weg
-        if (p && !isNaN(p.m) && n.a >= p.b && n.a - p.b <= F(60) && !(q && q.a === n.b)) {
+        if (p && !isNaN(p.m) && n.a >= p.b && n.a - p.b <= F(60) && tailEnd) {
           const plv = lvl(Math.max(p.a, p.b - F(150)), p.b); let mx = -Infinity, mn = Infinity, up = false;
           for (let r = n.a; r < n.b; r++) { if (e[r] > mx) mx = e[r]; if (e[r] < mn) mn = e[r]; if (e[r] > mn + 3) up = true; }
           if (mx <= plv - 12 && !up) { if (p.b === n.a) { p.b = n.b; p.pe = n.pe; } notes.splice(k, 1); k = Math.max(-1, k - 2); continue; }
@@ -30450,8 +30493,7 @@ function vsDspMake() {
           continue;
         }
         // bewegt: ≥ 0,8 Halbtöne, oder ≥ 0,4 ohne 60 ms ruhige Stelle (ein kurzer echter Ton steht ≥ 60 ms, auch wenn er gleitet)
-        const tr = trend(act), fla = flat(act), mv = Math.abs(tr) >= 0.8 || (Math.abs(tr) >= 0.4 && fla < F(60));
-        if (o.dbg) { const v = []; for (let k = n.a; k < n.b; k++) v.push(+s3(k).toFixed(2)); o.dbg.push({a: n.a, b: n.b, m: n.m, pm: p && p.m, qm: q && q.m, pa, qa, pe: !!n.pe, tr, fl: flat(n), mv, v, qfirst: !!(q && q.a === n.b), pend: !!(p && p.b === n.a), e: Array.from(e.slice(n.a, n.b), x => +x.toFixed(1)), pl: p ? lvl(Math.max(p.a, p.b - F(150)), p.b) : null, nl: lvl(n.a, n.b), ea: Array.from(e.slice(Math.max(0, n.a - 6), n.a), x => +x.toFixed(1)), eb: Array.from(e.slice(n.b, Math.min(nF, n.b + 6)), x => +x.toFixed(1)), vb: (() => { const r = []; for (let k = n.b; k < Math.min(nF, n.b + 6); k++) r.push(voiced[k]); return r.join(''); })()}); }
+        const tr = trend(n), fla = flat(act), mv = Math.abs(tr) >= 0.8 || (Math.abs(tr) >= 0.4 && flat(n) < F(60));
         let toQ = (mv && qa && tr * (q.m - n.m) > 0) || (qa && !pa && scoopTo(n, q)), fromP = mv && pa && tr * (n.m - p.m) > 0;
         // Abfall am Phrasen-Ende: das letzte Stück vor der Stille, vom Ton weg (≥ 0,5 Halbtöne von Anfang bis Ende), ≥ 3 dB leiser
         // und nirgends 70 ms ruhig (ein kurzer Schlusston steht ≥ 70 ms: Hysterese-Regel)
@@ -30461,7 +30503,7 @@ function vsDspMake() {
           if ((fla < F(70) && tf * dir > 0 && Math.max(tf * dir, away) >= 0.5) || (flat(n) < F(70) && tn * dir >= 0.5)) fromP = true;
         }
         if (len >= shortF && !toQ && !fromP) continue;
-        if (!toQ && !fromP && fla >= stabF) {                    // steht ruhig: nur ein Vibrato-Wackler des Nachbarn geht
+        if (!toQ && !fromP && flat(n) >= stabF) {                    // steht ruhig: nur ein Vibrato-Wackler des Nachbarn geht
           if (pa && inVib(n, p, true)) { p.b = n.b; p.pe = n.pe; p.cb = n.b; }
           else if (qa && inVib(n, q, false)) { q.a = n.a; q.ca = n.a; }
           else continue;
