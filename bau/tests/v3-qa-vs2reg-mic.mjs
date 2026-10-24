@@ -13,7 +13,7 @@ const which = process.argv[2] || 'all';
 const route = process.argv[3] || 'speaker';
 const bleeds = (process.argv[4] || '0,1').split(',').map(Number);
 const out = {};
-for (const name of ['base', 'new']) for (const bleed of bleeds) {
+for (const name of (process.argv[6] || 'base,new').split(',')) for (const bleed of bleeds) {
   const br = await chromium.launch({executablePath: EXE, args: ['--autoplay-policy=no-user-gesture-required']});
   const ctx = await br.newContext({viewport: {width: 390, height: 844}}); const p = await ctx.newPage(); const errs = [];
   p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
@@ -23,14 +23,14 @@ for (const name of ['base', 'new']) for (const bleed of bleeds) {
   await p.waitForFunction(() => SYNQUENZER.stimme().phase === 'live', null, {timeout: 10000}).catch(() => {});
   await p.waitForTimeout(800);
   const st0 = await p.evaluate(() => { const s = SYNQUENZER.stimme(); return {on: s.on, phase: s.phase, route: s.route}; });
-  if (bleed) await p.evaluate(() => window.__bleed(0.5));
+  if (bleed) await p.evaluate(g => window.__bleed(g), +(process.argv[5] || 0.5));
   const r = {st0};
   const wb = (b, to = 40000) => p.waitForFunction(x => SYNQUENZER.runtime().beat > x, b, {timeout: to, polling: 10});
   // setup: synth clip + drums, scene 1 running, select empty slot on track 2 (Synth 3)
-  await p.evaluate(() => { const Q = SYNQUENZER; Q.newProject({init: true}); Q.setBpm(120); const K = {root: 9, scale: 'aeolian'};
+  await p.evaluate((NOSYN) => { const Q = SYNQUENZER; Q.newProject({init: true}); Q.setBpm(120); const K = {root: 9, scale: 'aeolian'};
     Q.setClip(4, 0, {len: 1, key: K, notes: [{t: 0, d: .1, n: 36, v: .9}, {t: 1, d: .1, n: 42, v: .7}, {t: 2, d: .1, n: 38, v: .9}, {t: 3, d: .1, n: 42, v: .7}]});
-    Q.setClip(1, 0, {len: 1, key: K, notes: [{t: 0, d: 1.5, n: 57, v: .7}]});
-    Q.selectSlot(2, 0); Q.clearLog(); Q.launchScene(0); });
+    if (!NOSYN) Q.setClip(1, 0, {len: 1, key: K, notes: [{t: 0, d: 1.5, n: 57, v: .7}]});
+    Q.selectSlot(2, 0); Q.clearLog(); Q.launchScene(0); }, process.argv[7] === 'nosynth');
   // FANG with keys
   await wb(3.8); const ns = [72, 74, 76, 79, 76, 74, 72, 71];
   for (let k = 0; k < 8; k++) { await wb(4 + k - .03); await p.evaluate(n => SYNQUENZER.tap(n, 300), ns[k]); }

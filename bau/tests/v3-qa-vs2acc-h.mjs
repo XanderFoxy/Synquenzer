@@ -10,7 +10,11 @@ const INIT = () => {
   const C0 = AudioNode.prototype.connect;
   AudioNode.prototype.connect = function (d, ...a) { const r = C0.call(this, d, ...a); try { const q = window.__q; if (q && q.spk && d === this.context.destination && this !== q.spk) C0.call(this, q.spk); } catch (e) {} return r; };
   window.webkitAudioContext = window.AudioContext;
-  const Q = window.__q = {gum: 0, srcs: [], label: 'Eingebautes Mikrofon'};
+  const Q = window.__q = {gum: 0, srcs: [], label: 'Eingebautes Mikrofon', late: [], lateOn: false};
+  const P0 = MessagePort.prototype.postMessage;
+  MessagePort.prototype.postMessage = function (m, ...a) { try { if (Q.lateOn && m && Array.isArray(m.ev) && window.__ctx) { const now = window.__ctx.currentTime; for (const e of m.ev) if (e[1] === 1 && e[0] > 0) { Q.onN = (Q.onN || 0) + 1; if (now - e[0] > 0.003) Q.late.push([+now.toFixed(3), +((now - e[0]) * 1000).toFixed(1), 'w']); } } } catch (e) {} return P0.call(this, m, ...a); };
+  const S0 = AudioScheduledSourceNode.prototype.start;
+  AudioScheduledSourceNode.prototype.start = function (when, ...a) { try { if (Q.lateOn && when > 0 && this.context === window.__ctx) { const d = this.context.currentTime - when; Q.stN = (Q.stN || 0) + 1; if (d > 0.003) Q.late.push([+this.context.currentTime.toFixed(3), +(d * 1000).toFixed(1), 's']); } } catch (e) {} return S0.call(this, when, ...a); };
   if (!navigator.mediaDevices) return;
   navigator.mediaDevices.getUserMedia = async () => {
     Q.gum++;
