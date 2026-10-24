@@ -1,0 +1,41 @@
+// T6: N2-VS2-01 Fall 8 (song-delta 4.2: DR Sz1, FL Sz2, SEQ Sz3 ab T3, BASS Sz4 aus T5–6, Am F C G ×2; Tipp T9 + 7 %) mit Gesang:
+// Stimme-FANG endet wie FANG TEIL (Taktstrich 9, struktur); MELODIE-Clip 8 Takte; hörbar nach der Übernahme.
+import {open, sleep, voice, playAtBeat, waitBeat, result, micOnApi} from './v3-qa-vs2acc-h.mjs';
+let fail = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) fail++; };
+const H = await open({vp: 'P1'}), p = H.p;
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.stop(); Q.newProject({init: true}); Q.setBpm(120); });
+await micOnApi(p, 'wired');
+await p.evaluate(() => { const Q = window.SYNQUENZER, N = (t, n, d) => ({t, d: d || .5, n, v: .8}), K = {root: 9, scale: 'aeolian'};
+  Q.setClip(0, 3, {len: 1, key: K, notes: [N(0, 45), N(2, 52)]});
+  Q.setClip(1, 1, {len: 2, key: K, notes: [N(0, 60, 2)]});
+  Q.setClip(2, 2, {len: 1, key: K, notes: [N(0, 72, .25), N(2, 76, .25)]});
+  Q.setClip(4, 0, {len: 1, key: K, notes: [{t: 0, d: .1, n: 36, v: .9}]});
+  const C = n => Q.parseChord(n), ch = ['Am', 'F', 'C', 'G', 'Am', 'F', 'C', 'G', 'Am', 'Am', 'Am', 'Am'];
+  Q.setSong({bars: 12, lanes: [[{bar: 0, slot: 3}, {bar: 4, slot: -1}, {bar: 6, slot: 3}], [{bar: 0, slot: 1}], [{bar: 2, slot: 2}], [], [{bar: 0, slot: 0}], []],
+    carrier: ch.map((n, k) => ({beat: k * 4, target: C(n)}))});
+  Q.songPlay(0); return 1; });
+await waitBeat(p, 0.5);
+const SB = await p.evaluate(() => SYNQUENZER.vsClock().spb);
+const MEL = []; for (let b = 4; b < 32; b += 2) MEL.push([b, 1.5, [57, 60, 64, 62, 65, 64, 60, 57][(b / 2) % 8]]);
+const LEAD = 0.05;
+const dt = await playAtBeat(p, voice(MEL.map(([b, d, m]) => ({on: LEAD + (b - 4) * SB, dur: d * SB, m})), {seed: 5, fs: 16000}), 4, LEAD, 16000);
+ok(dt > -0.003, 'Stimme geplant ' + (dt * 1000).toFixed(0) + ' ms');
+const tap = 32 + 4 * 0.07;
+await waitBeat(p, tap);
+const mode = await p.evaluate(() => SYNQUENZER.vsInfo().fangMode);
+ok(mode === 'stimme', 'FANG-Modus beim Singen im Song: ' + mode);
+const fc = await p.evaluate(b => SYNQUENZER.fangClose({beat: b}), tap);
+await p.evaluate(b => SYNQUENZER.vsFang({beat: b}), tap);
+const r = await result(p), lf = await p.evaluate(() => SYNQUENZER.vsInfo().lastFang);
+ok(fc.bar === 8 && fc.rule === 'struktur', `FANG TEIL Fall 8: Taktstrich ${fc.bar + 1} (${fc.rule}), Länge ${fc.len}`);
+ok(lf && lf.Eb === fc.bar && lf.rule === fc.rule, `Stimme-FANG Fall 8: Taktstrich ${lf && lf.Eb + 1} (${lf && lf.rule})`);
+ok(r && r.len === 8 && r.start === 0, `MELODIE-Clip ${r && r.len} Takte ab Takt ${r && r.start + 1}`);
+const hit = r ? MEL.filter(([b, , m]) => r.notes.some(n => n.n === m && Math.abs(n.t - b) <= 0.13)).length : 0;
+ok(hit >= 13, `Noten ${hit}/${MEL.length}`);
+await p.evaluate(() => SYNQUENZER.clearLog());
+await waitBeat(p, 44);
+const lg = await p.evaluate(() => SYNQUENZER.noteLog(4096).filter(e => e.track === 5).map(e => [e.beat, e.out]));
+ok(lg.length >= 3, 'MELODIE klingt im laufenden Song nach dem FANG: ' + JSON.stringify(lg.slice(0, 6)));
+ok(!H.errs.length, 'keine Konsolenfehler ' + JSON.stringify(H.errs.slice(0, 3)));
+await H.br.close();
+console.log(fail ? 'FAIL ' + fail : 'ALLE OK');

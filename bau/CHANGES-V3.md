@@ -2991,3 +2991,130 @@ weiter). Kein Aufruf nennt das Klassenzimmer-Projekt.
 2. Zwischendurch einen Clip aus- und wieder einschalten, dann FANG TEIL: die Zeile unter der Zeitleiste nennt „aus T…“.
 3. **ALS TEIL ✓** → Taste STROPHE in der Teil-Leiste; eine andere Szene starten, STROPHE tippen: alles klingt wie gefangen.
 4. Nochmal fangen, Chip **Strophe** wählen → „＋ Strophe 2“ oder „⟳ Strophe ersetzen“; **＋ Ans Song-Ende** legt den Teil in den Song.
+
+
+## VS2 — Stimme → Noten, Instrument einspielen (Live-Taste, pYIN-lite, Stimme-FANG, ● REC → MELODIE, Ergebnis-Blatt, Teilen/Verbinden) · App 4.5.1
+
+Grundlage: Nachtrag 2 Teil C (C.2, C.3 Zeile VS2, C.4 N2-VS2-01 … -03, K2-30, K2-33), Teil E, Teil J (FP-DSP ● Haupt-, FP-IPHONE
+Zweitblick); `r7/stimme.md` §4, §8 „Stimme-FANG“, §11 Skizze 3, §12 VS2, §13 N7V-08 … -15, N7V-33; `r7/song-delta.md` 4.2 (N7-R1);
+fragen-xander-9 (G-P1b: V2d, VS2). **Version 4.5.1** statt 4.12.0 (E.5 Punkt 3: nächste Zwischennummer nach V2d = 4.5.0; V2d′ … folgen
+mit ihren Nummern). `APP_CODE` = 4 005 001. Keine neue Fähigkeit (Mikrofon nur außerhalb der Claude-App), kein Projektfeld.
+
+**Was neu ist**
+1. **Live (Taste leuchtet, N7V-14/-15):** Das Worklet `synq-stimme` rechnet **MPM** (McLeod/Wyvill, NSDF über FFT 1024, Fenster 40 ms,
+   alle 10 ms, k = 0,9, Klarheit ≥ 0,8 Stimme / 0,85 Instrument) auf dem 16-kHz-Signal von VS1 und meldet nur **Wechsel** (`{lit}`:
+   2 gleiche Hops = an, 3 stimmlose = aus). Die gesungene Note leuchtet grün (Klasse `.vs`, MELODIE-Farbe), liegt sie außerhalb der
+   sichtbaren Tasten, dieselbe Tonklasse in der nächsten Oktave. Die FFT-Hälften laufen in zwei Render-Quanten (keine Spitze).
+2. **Klick-/Treffer-Maske (Fassung 2):** nur über den **Lautsprecher**: Metronom-Klicks (35 ms) und Drum-Treffer (40 ms) werden als
+   „unbekannt“ geführt – live hält die Taste ihren Zustand, offline bekommen die Frames eine flache Beobachtung (der Pfad läuft weiter)
+   und ein Einsatz direkt hinter einer Maske wird auf deren Anfang (= Schlag) gelegt. Aussetzer aus VS1 (`null`/`einbruch`/`lücke`/
+   `stumm`) gelten ebenso als unbekannt – nie als Pause.
+3. **Offline pYIN-lite** (Worker aus Blob, Rückfall Hauptfaden): YIN-Differenz über FFT, kumulativ normiert, 100 Schwellen mit
+   Beta(2, 18), 20-ct-Raster 55–1050 Hz (Instrument 40–1600), HMM (35,92 Okt./s, Wechsel 0,01), Viterbi; Hop 5 ms. Das Mikro wird
+   über die **Zeitkarte von VS1** auf das Gespielte gelegt (Schlag = `t2b(Referenz-Frame)`, Mikro-Frame minus Latenz, Laufzeit des
+   Dezimierers 23 Samples berücksichtigt).
+4. **Noten:** stimmhafte Strecken; Einbruch ≥ 6 dB (20-ms-Energie) = neuer Anschlag; Tonwechsel, wenn der 120-ms-Mittelwert der Note
+   > 0,6 HT vom Notenzentrum abweicht und das ≥ 50 ms bleibt (Grenze auf halbem Weg, rückwärts gesucht); Notenhöhe = Median des
+   Mittelteils; kürzeste Note 60 ms; **Stimmung** = gewichteter Kreis-Mittelwert, angezeigt („Stimmung −27 ct ausgeglichen“);
+   **Einrasten** (Standard an) auf die Tonart, die an der Stelle klingt (wie „Tonart sperren“: unter Träger die gehörte, sonst die
+   der Szene); Quelle Instrument zusätzlich: neuer Anschlag bei +6 dB in ≤ 20 ms. Einsatz-Versatz des zentrierten Fensters +12 ms
+   ausgeglichen (Korpus).
+5. **Stimme-FANG:** Mit 🎤 an und Gesang in den letzten 8 s (und keine Taste danach) heißt die FANG-Taste **FANG 🎤** (P: „FANG/🎤“,
+   L: „FANG 🎤“) und leuchtet. Tipp → `fangCompute` (**dieselbe Taktstrich-Regel N7-R1 wie FANG TEIL**, N2-VS2-01) liefert das Ende E;
+   ausgewertet wird die live gehörte Phrase (rückwärts bis ≥ 1 Takt Pause, höchstens 17 Takte), Noten bis zum Tipp (Regel 6), Phrase
+   ab dem ersten Einsatz nach ≥ 1 Takt Pause, Länge 1/2/4/8/16 bis E (ohne Auffüllen davor, wenn der Song kürzer ist). Ergebnis =
+   **MELODIE-Clip** (gewählte Szene, sonst erster freier Platz), läuft phasengleich weiter wie FANG, **ein Undo „Stimme“**.
+   In ⇅ TRANSPONIEREN bleibt die Taste FANG TEIL (Spec 4.7).
+6. **● REC mit 🎤:** Bereich der Aufnahme (auch Overdub und feste Länge) wird nach dem Ende ausgewertet → MELODIE in **derselben
+   Szene** (leer: neuer Clip in Aufnahme-Länge, startet phasengleich; belegt: Noten kommen dazu, phasenrichtig); ein Undo „Stimme“.
+   „Nichts aufgenommen“ erscheint nicht, solange die Stimme ausgewertet wird.
+7. **Ergebnis-Blatt** (Skizze 3; Platz wie das FANG-TEIL-Blatt: P über der Tastatur ≤ 255 px, L im Seitenfeld): Kopf „GESUNGEN ·
+   gefangen · T 1–2“ + Chip „MELODIE · n“, Zeile „6 Noten · Stimmung … · C eingerastet · Ende Taktstrich …“, **Mini-Rolle**,
+   **Oktave ‹ ±0 ›**, **✓ Einrasten │ Frei**, **Raster frei │ 1/16 │ 1/8** (Standard 1/16; `o` = roher Einsatz bleibt), **Verwerfen │
+   ✎ Bearbeiten │ OK ✓**. Jede Änderung klingt sofort und bleibt im selben Undo-Schritt.
+8. **Mikro-Blatt:** neuer Abschnitt „Stimme → Noten“: **[🎤 Stimme │ 🎸 Instrument]**, **✓ In Tonart einrasten**, bei Instrument
+   **Oktave sperren** (K2-33: fehlen die ungeraden Teiltöne 3/5/7 eines Kandidaten (< 10 % der geraden), ist es eine Unteroktave/ein
+   Sub-Oszillator → gespielte Oktave; live und offline gleich). Gespeichert nur im Gerät (Profil `synq-stimme-v1`, Feld `vs`).
+9. **Rolle:** **Teilen** (gewählte Noten in der Mitte, am Raster) und **Verbinden** (gewählte Noten → eine, Höhe der längsten, lautester
+   Anschlag) in der Aktionsleiste, je ein Undo; **+12/−12** gab es schon.
+10. **Test-API:** `vsSet`, `vsInfo`, `vsAnalyseSignal(x, o)` (Node-gleicher Kern), `vsAnalyseRange(a, b)`, `vsFang({beat})`, `vsResult`,
+    `vsResultSet({oct, snap, grid})`, `vsResultDrop`, `vsResultOk`, `vsClock`; Rolle `selectIdx`. Alle alten Namen unverändert.
+
+**Abweichungen (begründet)**
+- **Einrasten ohne 0,75-HT-Grenze:** N7V-11 verlangt „20 ct über Gis → A“ (0,8 HT von A); mit der Grenze aus `stimme.md` §4.2 bliebe
+  es Gis. Regel jetzt: ein leiterfremder Halbton geht zum näheren Skalenton, gemessen an der unausgeglichenen Höhe.
+- **Analyse-Bereich beim FANG** = live gehörte Phrase + 1 Takt (statt immer 17 Takte): spart am iPhone Sekunden; ohne Live-Meldungen
+  (sehr leise) gelten die 17 Takte.
+- **Notenzeit des E1-Falls:** Wird E1 (Taktstrich in der Zukunft) gewählt, zählen Noten bis zum Tipp (N7-R1 Nr. 6, „Zustand im
+  Moment des Tipps“); der Rest des Takts bleibt leer im Clip.
+- **Korpus neu gebaut:** `r7/stimme-proto/` ging verloren (fragen-xander-9). Nachbau nach der Beschreibung in §4.2 (3 Stimmlagen,
+  26 Noten a-Moll, Anschleifen, Legato-Glissando, Vibrato, Formanten, Hauch, Konsonant, Atem, rosa Rauschen, Klick über Raum).
+  Zahlen sind deshalb nicht 1:1 mit `bench.out` vergleichbar; die Schwellen aus N7V-09 gelten unverändert.
+- **Chromium-Pfad:** `/opt/pw-browsers/chromium-1194/…` gibt es auf dieser Maschine nicht; benutzt `chromium-1243/chrome-linux64/chrome`
+  (der einzige installierte, derselbe wie `smoke.mjs`).
+- **Budget:** +36 KB geplant, gebaut **+55,0 KB roh / +19,7 KB gzip** (2 336 756 → 2 393 105 B; > 50 %, §15.3): pYIN, Segmentierung,
+  MPM im Worklet (ASCII, eigene FFT), Ergebnis-Blatt, ● REC-Anschluss, Teilen/Verbinden, Klick-Maske und Instrument-Quelle
+  (K2-33 +6 KB) und deutsche Kommentare. Startzeit unverändert (378 ms gegen 363 ms V2d-fix; CPU ×4 1332 gegen 1346 ms).
+
+**Fach-Prüfung (Teil J: FP-DSP ● Haupt-, FP-IPHONE Zweit-Blick)** – eigener Prüf-Durchgang (kein getrennter Agent verfügbar).
+FP-DSP: (1) Live-Spitze je Render-Block bis 2,6 ms (FFT hin und zurück im selben Quantum + Array je Hop) → auf zwei Quanten verteilt,
+ohne Speicheranlage: p99,9 0,47 ms, max 0,87 ms (Budget 2,67 ms). (2) Gesang direkt nach ▶ lag im Analysefenster 0,5 s daneben – Befund
+im Test-Aufbau, nicht in der App (Signal lag vor dem Start). (3) Maskierte Frames ohne Stimme wurden nicht als „unbekannt“ geführt →
+Einsatz hinter einer Maske blieb 50 ms zu spät; behoben. (4) Ein Einbruch innerhalb einer Maske (gleicher Ton nach Klick) ging verloren
+→ Einbrüche werden auch in Masken erkannt (ein Klick fügt nur Energie hinzu). (5) Vibrato teilte Noten hinter einer Maske (Zentrum aus
+50 ms) → note-eigener 120-ms-Mittelwert, Zentrum aus geglätteten Werten. (6) Wiederholte Noten mit 35-ms-Verschluss verschmolzen
+(Energie im 46-ms-Fenster) → eigene 20-ms-Energie. (7) Instrument: Neuanschlag ohne Einbruch → Anschlag-Regel, robust gegen
+Wellen-Restwelligkeit tiefer Töne. (8) NaN/Inf im Eingang: keine Ausnahme, nach 60 ms wieder richtig. (9) Ergebnis-Sprung des
+Rasters: `analyseClip` quantisierte nach Eingabe-Q statt nach dem Blatt → Blatt-Raster, `c.q` passend.
+FP-IPHONE: (10) Beobachtungsmatrix nF × 256 (bei 60 s ≈ 14 MB) → je Frame dicht (−14 MB im Worker). (11) Blob-URL des Workers wurde
+sofort freigegeben (Safari lädt evtl. später) → nach 30 s. (12) Blatt nach ↶ bediente einen toten Clip → schließt sich. (13) FANG ohne
+freien MELODIE-Platz lief erst durch die Auswertung → Toast sofort. Speicher Worker ≈ 7 MB je Minute Gesang (Rückverfolgung, nur
+während der Auswertung). 60 fps, keine longtask > 50 ms bei 🎤 + Gesang + offener Rolle und während der Auswertung (Worker).
+13 Befunde, alle behoben.
+
+**Abnahme**
+
+| Punkt | Ergebnis | Skript |
+|---|---|---|
+| N7V-08 Oktavfehler-Frames A–F | ✓ 0 (Gm 12 Frames an Maskenrändern, nicht Teil von N7V-08) | `v3-vs2-bench.mjs` → `v3-vs2-bench.out` |
+| N7V-09 Noten-F (Stimmung + Skala) | ✓ A 1,000 · C 1,000 · D 0,991 · E 0,967 · Gm 0,997 (Soll 0,94/0,93/0,92/0,91/0,93); F 0,916, G 0,765 ohne Soll | bench |
+| N7V-10 Stimmung Bed. D | ✓ Mittel −31,7 ct (wahr −30, ±5) | bench |
+| N7V-11 Einrasten 20 ct über Gis | ✓ an → A (69), aus → Gis (68), im App-Weg (Gesang → FANG → Blatt) | `v3-vs2-accept.mjs` D |
+| N7V-12 Gerät (8 Takte, ≥ 80 %) | offen – Xander am iPhone (N2-VS2-03); Attrappe: 12/12, 6/6, 7/7 Noten | accept A, E, F |
+| N7V-13 (neu) Stimme-FANG 1/8 Takt nach dem Taktstrich, 4 Takte | ✓ Ende Taktstrich 5 (struktur) wie `fangClose`, MELODIE-Clip 4 Takte, ein Undo entfernt ihn, Redo stellt her | accept A |
+| N2-VS2-01 Fälle 1, 2, 3, 3b, 4, 5, 5b, 6, 6b, 7, 9 | ✓ 11/11 gleiche Enden und Regeln wie FANG TEIL (gesungen, Akkorde als Träger) | accept A, B |
+| N7V-14 Live-Leuchten | ✓ 110/220/440/660 Hz nach 41/31/20/20 ms (≤ 60), kein Flackern; aus nach 50 ms; Browser: Taste A3 leuchtet | `v3-vs2-live.mjs`, accept C |
+| N7V-15 Rechenzeit Live-Weg | ✓ 1,3–1,7 % Echtzeit (Dezimierung + MPM + Maske; ≤ 3 %); Gerät: 2 min mit 8 Stimmen → Xander | live |
+| N2-VS2-02 / N7V-33 Instrument | ✓ Säge 8 Takte Noten-F 0,947 (Sperre an 0,964); mit Sub −1 Okt. (Sinus/Rechteck) + Sperre 0 Oktavfehler, F 0,952/0,969; Browser 7/7 | bench, accept F |
+| Klick-Maske | ✓ Lautsprecher: 44 Stellen maskiert, 5/5 Noten ohne Zusatznoten (Kabel ohne Maske: 7 Noten) | accept G |
+| ● REC → MELODIE | ✓ 6/6 Noten, Szene 3, ein Undo | accept E |
+| Ergebnis-Blatt | ✓ Oktave, Einrasten, Raster (o bleibt), ein Undo, [Verwerfen] per Tipp | accept D |
+| Teilen/Verbinden | ✓ je ein Undo | accept H |
+| N7V-05 Claude-App (iframe) | ✓ kein 🎤, `vsFang` false, FANG-Modus nie „stimme“, 0 Aufrufe | `v3-vs2-reg.mjs` |
+| M-PLATZ P1–P3, L1, L2 | ✓ 38/38: FANG 🎤 passt (64 × 40 / L 73 × 36), Blatt im Bild ohne Rollen, 10 Knöpfe ≥ 36 px, Mikro-Blatt 44-px-Knöpfe (L rollt 396/372) | `v3-vs2-lay.mjs`, Bilder `v3-vs2-{P1,P2,P3,L1,L2}-{fang,blatt,mikroblatt}.png` |
+| Regression | ✓ FANG (Tasten), FANG TEIL, ● REC ohne Mikro, Demo-Projekt gleich zu V2d-fix (ohne Zufalls-IDs), PE1 60 fps, Startzeit | reg |
+| Smoke | ✓ ohne Fehler | `v3-vs2-smoke.png` |
+
+**Rollout:** `max_app` war beim Lesen **4 005 000**. `apply_migration vs2_max_app` (`greatest(max_app, 4005001)`, Datei
+`synq-online/r7-vs2-max-app.sql`) **wartete auf eine Bestätigung und lief nach 60 s ab – nicht eingetragen**. **Offen: vor dem Ausliefern
+von 4.5.1 einspielen**, sonst lehnt `save_project` das Online-Speichern ab (lokal speichert die App weiter). Kein Aufruf nennt das
+Klassenzimmer-Projekt.
+
+**Für Xander im Dashboard** (nur falls der Orchestrator die Migration nicht nachholt): SQL-Editor des Projekts **synquenzer**
+(`dbdnsryoivvezspgydpx`, nicht das Klassenzimmer!) → `update private.settings set max_app = greatest(max_app, 4005001);` → Run.
+
+**Bekannte Lücken**
+- Echte Stimmen sind schwerer als der Korpus (Literatur < 60 % Noten-F) – deshalb Gerätetest N7V-12 (Tor für VS3) und die Griffe.
+- Takes (Audio) gibt es erst mit VS3; die Take-Verknüpfung prüft N2-VS3-02.
+- Tick-p95 misst die App nicht selbst; PE1 über rAF und longtask belegt.
+- Die Auswertung braucht nach dem Tipp ≈ 0,7–0,9 s (Desktop, 10 s Gesang); am iPhone geschätzt 2–2,5 × (unbelegt).
+
+**Für Xander am iPhone (Pages-Seite, Kopfhörer, ≈ 5 min) – entscheidet N7V-12 / N2-VS2-03 und die Tausch-Regel E.1**
+1. 🎤 an, ▶ mit Metronom ♩, **8 Takte singen** (z. B. eine einfache Melodie, „da da“), danach **FANG 🎤** tippen (die Taste heißt so,
+   solange du gesungen hast). Beim Singen leuchtet die gesungene Taste grün.
+2. Im Blatt zählen: wie viele Noten stimmen **ohne Korrektur**? (Soll ≥ 80 %). Falsche reparieren: ✎ Bearbeiten → Note wählen (⬚) →
+   **Teilen**, **Verbinden**, **+12/−12**. Oktave im Blatt mit ‹ ›.
+3. Mikro-Blatt (Tipp auf die rote Zeile) → **🎸 Instrument**, **Oktave sperren** an, eine Melodie auf einem Instrument vorspielen, FANG 🎤:
+   Noten zählen (N2-VS2-02).
+4. Einmal mit ● (Aufnahme) auf einer leeren Szene singen: danach liegt ein MELODIE-Clip in derselben Szene.
+5. Bitte melden: Anzahl richtiger Noten (1. und 3.), ob Aussetzer/Knackser beim Singen mit vielen Spuren kamen (N7V-15 Gerät).
