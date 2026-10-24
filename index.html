@@ -5530,7 +5530,7 @@ class Transposer {
   keyUp(note, now, grid) {
     this.held.delete(note);
     if (!this.opts.latch && this.held.size === 0) {   // momentary: back to ORIGINAL when the hand leaves
-      this.pendingAt = null; this.gesture.clear(); this._schedule(null, now, now, grid);
+      this.pendingAt = null; this.gesture.clear(); this._schedule(null, now, now, grid, true);
     }
   }
   reset(now, grid) { this.pendingAt = null; this.gesture.clear(); this._schedule(null, now, now, grid); }
@@ -5545,10 +5545,11 @@ class Transposer {
     // first commit of a gesture is timed from the first key; a re-detect (key added while holding) from the added key
     const pressTime = this.gestureCommitted ? this.lastDown : this.gestureStart;
     this.gestureCommitted = true;
-    return this._schedule(det, pressTime, now, grid);
+    return this._schedule(det, pressTime, now, grid, true);
   }
   // pressTime = when the gesture began (decides quantize & grace); now = commit moment.
-  _schedule(det, pressTime, now, grid) {
+  // hand: a gesture on the keys (V2d-fix: info.press = its press time, so the song memory logs the beat it was played on)
+  _schedule(det, pressTime, now, grid, hand) {
     const cur = this.current().target;
     const same = (a, b) => (!a && !b) || (a && b && a.root === b.root && a.quality === b.quality && a.bass === b.bass);
     // Oktave 'Absolut (CV)': the same chord an octave higher/lower IS a change (+12 / −12)
@@ -5563,7 +5564,7 @@ class Transposer {
       if ((pressTime - prev) * 1000 <= this.opts.graceMs) { at = prev; retriggerFrom = prev; }   // grace: count it as on the boundary
       else { at = prev + unit; retriggerFrom = at; }
     }
-    return this._commit(det, at, {retriggerFrom, now});
+    return this._commit(det, at, hand ? {retriggerFrom, now, press: pressTime} : {retriggerFrom, now});
   }
   _commit(det, at, info) {
     while (this.timeline.length > 1 && this.current().time > at) this.timeline.pop();   // a newer change replaces a queued one
@@ -12773,7 +12774,7 @@ const R = {
   songRec: null, songPlay: null, songOverride: new Array(8).fill(false), carrierLive: false, songApplying: false, songEndBeat: null, melRec: null,
 };
 const T = new Transposer(transposerOpts());
-T.onCommit = (entry, info) => { try { applyCarrierChange(entry, info); } catch (e) { logErr(e); } try { songCarrierHook(entry); } catch (e) { logErr(e); } try { partCarrierHook(entry); } catch (e) { logErr(e); } try { memCarrier(entry); } catch (e) { logErr(e); } try { if (typeof renderCarrierNow === 'function') renderCarrierNow(); } catch (e) { logErr(e); } };
+T.onCommit = (entry, info) => { try { applyCarrierChange(entry, info); } catch (e) { logErr(e); } try { songCarrierHook(entry); } catch (e) { logErr(e); } try { partCarrierHook(entry); } catch (e) { logErr(e); } try { memCarrier(entry, info); } catch (e) { logErr(e); } try { if (typeof renderCarrierNow === 'function') renderCarrierNow(); } catch (e) { logErr(e); } };
 
 const spb = () => 60 / S.bpm;
 const t2b = t => (t - R.startTime) / spb();
@@ -13646,7 +13647,7 @@ function songCommitLanes(evs, endBar) {
     const out = lane.filter(e => e.bar < first);
     const push = e => { let prev = -1; for (const x of out) prev = x.slot; if (e.slot !== prev || e.re || e.ph != null || e.own) out.push(laneEntryNorm(e, e.bar, e.slot)); };
     for (const e of recd) push(e);
-    if (endBar < song.bars && !hasEnd) push(endPh > 1e-6 ? {bar: endBar, slot: oldEnd, ph: endPh} : {bar: endBar, slot: oldEnd});
+    if (endBar < song.bars && !hasEnd) push(endPh > 1e-6 ? {bar: endBar, slot: oldEnd, ph: endPh} : oldEnd >= 0 && out.length && out[out.length - 1].slot === oldEnd ? {bar: endBar, slot: oldEnd, re: 1} : {bar: endBar, slot: oldEnd});
     for (const e of lane) if (e.bar >= endBar) push(e);
     song.lanes[t] = out;
   }
@@ -16113,13 +16114,18 @@ function memSlot(t, beat, slot, cs, pa) {
   while (ev.length > 1 && ev[1].beat < beat - MEM_KEEP) ev.shift();
   UI.dirty.fang = true;
 }
-function memCarrier(entry) {
+/* V2d-fix (N7-R1, §4.7 Regel 2): a chord played by hand with Wechsel „sofort“ is logged at the beat it was HEARD played on
+   (press time, output latency subtracted), not at its commit (press + gather + tick), so a chord pressed on the bar line
+   counts on that bar; quantized changes (Takt/Schlag) and recalls keep their exact time */
+function memCarrier(entry, info) {
   if (!R.playing || !entry || !isFinite(entry.time)) return;
-  const beat = Math.max(0, +t2b(entry.time).toFixed(4)), c = MEM.capc;
+  const hand = !!(info && isFinite(info.press) && Math.abs(entry.time - info.now) < 1e-9);
+  const bt = hand ? Math.min(t2b(info.press - AU.outLat), t2b(entry.time)) : t2b(entry.time);
+  const beat = Math.max(0, +bt.toFixed(4)), c = MEM.capc;
   while (c.length && c[c.length - 1].beat >= beat - 1e-6 && !c[c.length - 1].init) c.pop();         // a newer change replaces a queued one
   const prev = c[c.length - 1], tg = entry.target ? carrierCopy(entry.target, entry.shift) : null;
   const byPart = !!(ROWAP.on && R.row && R.row.src[0] === 'P');
-  c.push({beat, target: tg, at: AU.ctx ? AU.ctx.currentTime : 0, pa: byPart ? 1 : 0});
+  c.push(Object.assign({beat, target: tg, at: AU.ctx ? AU.ctx.currentTime : 0, pa: byPart ? 1 : 0}, hand ? {h: 1} : null));
   if (!byPart && !sameTg(prev && prev.target, tg)) MEM.lastChange = Math.max(MEM.lastChange, beat);
   while (c.length > 1 && c[1].beat < beat - MEM_KEEP) c.shift();
   UI.dirty.fang = true;
@@ -16159,6 +16165,11 @@ function memoryInfo() {
    at every pass (phase ph), later entries start / stop / restart (re); tracks without entries „bleiben“ ---------- */
 const partObj = rp => (rp ? rp.tmp || (S.parts && S.parts[rp.i]) || null : null);
 function partTakeOver(i) { if (R.part && !R.partApplying && !R.songApplying) (R.part.own || (R.part.own = new Set())).add(i); }
+/* V2d-fix (§4.4 „Clips starten mit Phase 0, die Akkord-Zeile von vorn“, I-10): in a part made by hand ([＋], [= wie jetzt],
+   Teil-Blatt, V2c data, setPart) a track whose lane is only its bar-0 entry (no ph) starts its clip ONCE; later passes only
+   loop the chord row, the clip runs on (a 4-bar clip in a 1-bar part plays all 4 bars, as in V2c). A caught phrase (FANG
+   TEIL, „Als Teil“ from the song), an entry with ph or a lane with later entries restarts at every pass (song-delta 4.6) */
+const partLaneFree = (p, lane) => !!(p && p.src !== 'fang' && p.src !== 'song' && lane && lane.length === 1 && lane[0].bar === 0 && !(lane[0].ph > 1e-6));
 // apply the part's state at transport beat `at` (a bar line) as if it had started (phase) at st
 function partStateAt(p, st, at) {
   const L4 = partLen(p) * 4, pos = at - st, k = Math.floor(pos / L4 + 1e-9), P = st + k * L4, j = Math.round((pos - k * L4) / 4);
@@ -16167,9 +16178,10 @@ function partStateAt(p, st, at) {
     for (let t = 0; t < NT(); t++) {
       const lane = p.lanes && p.lanes[t]; if (!lane || !lane.length) continue;
       let slot = null, cs = 0;
+      const P0 = partLaneFree(p, lane) ? st : P;                         // V2d-fix: started once, runs on
       for (const e of lane) {
         if (e.bar > j) break;
-        if (e.bar === 0) { slot = e.slot; cs = P - (e.ph || 0); }
+        if (e.bar === 0) { slot = e.slot; cs = P0 - (e.ph || 0); }
         else if (e.slot < 0) slot = -1;
         else if (e.re || e.slot !== slot) { slot = e.slot; cs = P + e.bar * 4 - (e.ph || 0); }
       }
@@ -16193,6 +16205,7 @@ function partLaneTick(rp, b0, b1) {
         if (rp.own && rp.own.has(t)) continue;
         const lane = p.lanes[t]; if (!lane || !lane.length) continue;
         const e = lane.find(x => x.bar === j); if (!e) continue;
+        if (j === 0 && k > 0 && partLaneFree(p, lane)) continue;      // V2d-fix: the clip started once and runs on (§4.4)
         let target, cs = B;
         if (j === 0) { target = e.slot; cs = P - (e.ph || 0); }
         else {
@@ -16265,7 +16278,14 @@ function songCont(song, x, alt) {
     const al = alt.lanes[t], cu = now.lanes[t]; if (!al || l.some(e => e.bar === x)) return;
     if (al.slot < 0 && cu.slot < 0) return;
     if (al.slot === cu.slot && (al.own || null) === (cu.own || null) && Math.abs(al.ph - cu.ph) < 1e-6) return;
-    const e = {bar: x, slot: al.slot}; if (al.slot >= 0) { if (al.ph > 1e-6) e.ph = al.ph; if (al.own) e.own = al.own; }
+    const e = {bar: x, slot: al.slot};
+    if (al.slot >= 0) {
+      if (al.ph > 1e-6) e.ph = al.ph;
+      // V2d-fix: phase 0 while the same clip already plays here in another phase = a restart of that slot (re), else the
+      // entry would read as „goes on in phase“ and songTidy would drop it
+      else if (al.slot === cu.slot && (al.own || null) === (cu.own || null)) e.re = 1;
+      if (al.own) e.own = al.own;
+    }
     laneInsert(l, e);
   });
   if (!song.carrier.some(c => Math.abs(c.beat - x * 4) < 1e-6)) {
@@ -16559,12 +16579,26 @@ function rangeAsPart(a, e, arg) {
    aus welcher Szene, aus/an, Phase), Akkorde aus dem CAPC (auch ORIGINAL), Name N7-R2, Blatt „Teil gefangen“ ---------- */
 const FANG = {res: null, part: null, lastPart: null, live: false, name: null, dup: 'new', edit: false, full: false};
 const tgKey = tg => (tg ? tg.root + ':' + (tg.quality || '') + ':' + tg.bass : 'O');
-// a Träger change up to ¼ beat before a bar line counts on it (§4.7 Regel 2)
-const snapBeat = b => { const n = Math.round(b / 4) * 4; return n - b > 0 && n - b <= .25 + 1e-9 ? n : b; };
+// a Träger change up to ¼ beat before a bar line counts on it (§4.7 Regel 2); V2d-fix: a chord played by hand (h) also
+// up to the Transposer's grace (graceMs, 60 ms) after it — „on the bar line“ by ear, as Wechsel „am Takt“ counts it
+const fangGraceB = () => (60 / 1000) / spb();
+const snapBeat = (b, hand) => {
+  const n = Math.round(b / 4) * 4;
+  if (n - b > 0 && n - b <= .25 + 1e-9) return n;
+  if (hand && b - n > 0 && b - n <= Math.min(.25, fangGraceB()) + 1e-9) return n;
+  return b;
+};
 // per bar from..k: the state at its bar line (heard by the tap: tapAt), the Träger in effect there (tg0), the changes inside
 // (inner, snapped beats; in the tap bar only up to the tap), a key for the period and whether something changed there
 function fangBars(from, k, t, tapAt) {
-  const caps = MEM.capc.filter(e => tapAt == null || e.at <= tapAt + 1e-9).map(e => ({sb: snapBeat(e.beat), beat: e.beat, tg: e.target}));
+  // V2d-fix: a chord played by hand in the first beat after ▶ (nothing but the start state before it) counts on bar 1 — at the
+  // start nobody can press before the first bar line unless the chord was latched
+  const first = e => e.h && e.beat < 1 - 1e-9, pre = MEM.capc.length && MEM.capc[0].init;
+  let lead = !!pre;
+  const caps = MEM.capc.filter(e => tapAt == null || e.at <= tapAt + 1e-9).map(e => {
+    const sb = lead && first(e) ? 0 : snapBeat(e.beat, e.h); if (!e.init && !first(e)) lead = false;
+    return {sb, beat: e.beat, tg: e.target};
+  });
   const out = {}; let prev = null;
   for (let b = from; b <= k; b++) {
     const slots = [], cs = [];
