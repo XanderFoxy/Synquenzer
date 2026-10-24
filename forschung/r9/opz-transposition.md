@@ -10,3 +10,23 @@
 
 ## Folgerung für SYNQUENZER
 Unser Modus AKKORD + feste/erkannte Tonart + „Ein Ton = Stufe in der Tonart“ entspricht dem OP-Z-Prinzip; dazu kommt der Skala-Quantisierer (V2c′, vorgezogen nach VS2) für schräge Töne. Offener Punkt: Tonart-Erkennung mit Bass-Gewichtung wie beim OP-Z prüfen/ergänzen.
+
+# OP-XY „brain“ (Quellen: Sound On Sound Review, TE-Guide „auxiliary“/„how to“, Elektronauts, op-forums; 24.10.)
+- Brain = Transpositions-Spur (Hilfsspur 1): erkennt Tonart und Skala des Songs (oder gewählter Spuren); Schalter automatisch │ manuell.
+- Tastatur transponiert die ins Brain geführten Spuren **in Skalenstufen innerhalb der Tonart** (SOS: in C-Dur führt E zu E-Phrygisch = Töne von C-Dur ab E). Transponierte Töne werden **in die Skala gezwungen** (laut Nutzer anders als beim OP-Z).
+- Routing je Spur (M2-Seite): nicht geführte Spuren bleiben fest. „Link“ erlaubt über den Song zu spielen, während live transponiert wird.
+- Akkordwechsel als Schritte auf der Brain-Spur programmierbar (Geschwindigkeit z. B. 4 = langsame Folge).
+
+# Abgleich SYNQUENZER (Stand 4.5.0)
+| OP-Z / OP-XY | SYNQUENZER |
+|---|---|
+| Tonart/Modus automatisch erkennen, Bass zählt am meisten | vorhanden (detectKey, Bass ×2, Modus nach geringstem Rest) |
+| Spuren wählen, die mitgehen | vorhanden (FOLGEN je Spur, ⇅ fest) |
+| Brain: Stufen-Transposition in der Tonart (E in C → E-Phrygisch) | vorhanden als TONART |
+| OP-Z: Taste wechselt Tonart und Modus | vorhanden als AKKORD (+ „Ein Ton = Stufe“), folgt zusätzlich der Akkordqualität |
+| Akkordfolge auf Master-/Brain-Spur | vorhanden (Akkord-Zeile je Szene, V2c) |
+| Latch | vorhanden (LATCH) |
+| Töne zwangsweise in die Skala (Brain) | **fehlt → Skala-Quantisierer (V2c′, nach VS2)** |
+| Drums mittransponieren (Fills) | prüfen/klein ergänzen |
+| Tonart automatisch │ manuell sichtbar umschalten | prüfen |
+Folgerung: kein eigener OP-Z-Nachbau für die Transposition nötig; Lücken mit dem Skala-Quantisierer schließen.
