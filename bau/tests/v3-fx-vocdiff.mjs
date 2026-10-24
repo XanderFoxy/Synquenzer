@@ -1,0 +1,11 @@
+import fs from 'fs';
+import {loadDsp} from './v3-vs2-corpus.mjs';
+import {readWav, resample} from './v3-vs2b-real.mjs';
+const DIR = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/realvox/dl/';
+const A = loadDsp(process.argv[2]), B = loadDsp(process.argv[3]);
+const w = readWav(DIR + `vocadito_${process.argv[4] || 1}.wav`), x = resample(w.x, w.sr, 16000), tr = A.pyin(x, {fs: 16000});
+const na = A.segment(tr, {snap: false, tuning: 'auto'}).notes, nb = B.segment(tr, {snap: false, tuning: 'auto'}).notes;
+const key = n => `${n.t0.toFixed(3)}-${n.t1.toFixed(3)}:${n.n}`;
+const sa = new Set(na.map(key)), sb = new Set(nb.map(key));
+console.log('only A', na.filter(n => !sb.has(key(n))).map(key).join(' '));
+console.log('only B', nb.filter(n => !sa.has(key(n))).map(key).join(' '));

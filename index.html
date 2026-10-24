@@ -30457,6 +30457,7 @@ function vsDspMake() {
         for (let k = n.a; k < n.b; k++) { const x = unk[k] ? NaN : s3(k); v.push(isNaN(x) ? (v.length ? v[v.length - 1] : NaN) : x); }
         let f0 = 0; while (f0 < v.length && isNaN(v[f0])) f0++; for (let k = 0; k < f0; k++) v[k] = v[f0];
         // Einschwingen des Einsatzes (die ersten ≤ 30 ms, oft ein Ausreißer zur Gegenseite): ab dem Punkt am weitesten weg vom Ton
+        // (nicht länger: ein Absacken über 50 ms vor dem Anstieg ist bei echtem Gesang oft ein eigener kurzer Ton, vocadito_1 4,36 s)
         let i0 = 0; for (let k = 1; k <= Math.min(v.length - 1, F(30)); k++) if ((v[k] - v[i0]) * sg < 0) i0 = k;
         v.splice(0, i0);
         const L = v.length; if (L < 4 || isNaN(v[0]) || (v[L - 1] - v[0]) * sg < 0.4) return false;
@@ -30477,15 +30478,17 @@ function vsDspMake() {
            gesungenen Teil (Pegel höchstens 10 dB unter dem Ton davor); was danach nur noch nachklingt, ist kein Ton. */
         let act = n, pl = NaN;
         const tailEnd = !(q && q.a === n.b && n.pe);                 // danach Stille oder ein neuer Anschlag (Pegel-Schnitt)
-        // (vor einem neuen Anschlag nur, wenn das Stück wirklich ≥ 40 ms nachklingt: ein kurzer echter Ton bleibt laut bis zum Schnitt)
+        // (nur, wenn das Stück wirklich ≥ 40 ms nachklingt – der Pegel fällt dort um ≥ 8 dB und steigt nicht wieder über den Anfang;
+        // ein leiserer echter Ton bleibt gleich laut bis zur Pause oder zum Schnitt)
         if (pa && tailEnd) { pl = lvl(Math.max(p.a, p.b - F(150)), p.b); let ae = n.b; while (ae - 1 > n.a && !(e[ae - 1] >= pl - 10)) ae--;
-          if (!(q && q.a === n.b) || n.b - ae >= F(40)) act = {a: n.a, b: Math.min(n.b, ae + F(20))}; }   // + 20 ms: das Ausklingen eines echten Tons
-        // reiner Nachhall gleich hinter einem Ton (≤ 60 ms Lücke, bis zur Stille oder zum nächsten Anschlag): ≥ 12 dB unter dem Ton und ohne neuen Anstieg
-        // (≥ 3 dB) ist kein Ton – anliegend gehört er zum Ton, sonst fällt er weg
+          let dec = n.b - ae >= F(40) && e[n.b - 1] <= e[ae] - 8; for (let k = ae + 1; dec && k < n.b; k++) if (e[k] > e[ae] + 1) dec = false;
+          if (dec) act = {a: n.a, b: Math.min(n.b, ae + F(20)), ae}; }   // + 20 ms: das Ausklingen eines echten Tons
+        // reiner Nachhall gleich hinter einem Ton (≤ 60 ms Lücke, bis zur Stille oder zum nächsten Anschlag): ≥ 12 dB unter dem Ton,
+        // ohne neuen Anstieg (≥ 3 dB) und verklingend (≥ 5 dB) ist kein Ton – anliegend gehört er zum Ton, sonst fällt er weg
         if (p && !isNaN(p.m) && n.a >= p.b && n.a - p.b <= F(60) && tailEnd) {
           const plv = lvl(Math.max(p.a, p.b - F(150)), p.b); let mx = -Infinity, mn = Infinity, up = false;
           for (let r = n.a; r < n.b; r++) { if (e[r] > mx) mx = e[r]; if (e[r] < mn) mn = e[r]; if (e[r] > mn + 3) up = true; }
-          if (mx <= plv - 12 && !up) { if (p.b === n.a) { p.b = n.b; p.pe = n.pe; } notes.splice(k, 1); k = Math.max(-1, k - 2); continue; }
+          if (mx <= plv - 12 && !up && e[n.b - 1] <= mx - 5) { if (p.b === n.a) { p.b = n.b; p.pe = n.pe; } notes.splice(k, 1); k = Math.max(-1, k - 2); continue; }
         }
         const len = act.b - act.a; if (len >= moveF) continue;
         if (!pa && !qa) {                                            // allein: ein Rutscher ohne ruhige Stelle (≥ 1 Halbton) ist kein Ton
@@ -30500,7 +30503,10 @@ function vsDspMake() {
         // (Richtung: vom Anfang bis zum Ende des gesungenen Teils, oder dessen Ende ≥ 0,5 Halbtöne unter/über dem Ton davor)
         if (!fromP && act !== n && lvl(n.a, n.b) <= pl - 3) {
           const dir = Math.sign(n.m - p.m), x0 = s3(n.a), x1 = s3(act.b - 1), tf = x1 - x0, tn = s3(n.b - 1) - x0, away = (x1 - p.m) * dir;
-          if ((fla < F(70) && tf * dir > 0 && Math.max(tf * dir, away) >= 0.5) || (flat(n) < F(70) && tn * dir >= 0.5)) fromP = true;
+          // gesungener Teil: fällt bis zuletzt (≥ 15 ct in den letzten 30 ms vor dem Verklingen – ein echter kurzer Ton im Raum kommt
+          // an und steht, bevor er verklingt), danach Nachhall
+          const endMv = (s3(act.ae - 1) - s3(Math.max(n.a, act.ae - 1 - F(30)))) * dir;
+          if ((fla < F(70) && tf * dir > 0 && Math.max(tf * dir, away) >= 0.5 && endMv >= 0.15) || (flat(n) < F(70) && tn * dir >= 0.5)) fromP = true;
         }
         if (len >= shortF && !toQ && !fromP) continue;
         if (!toQ && !fromP && flat(n) >= stabF) {                    // steht ruhig: nur ein Vibrato-Wackler des Nachbarn geht

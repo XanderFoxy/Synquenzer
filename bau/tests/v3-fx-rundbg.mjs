@@ -1,0 +1,10 @@
+import {loadDsp} from './v3-vs2-corpus.mjs';
+import {sing} from './v3-qa-vs2b-acc-synth.mjs';
+const DN = loadDsp('v3-fx-dbg2.html');
+const [bpm, seed, voice] = [+process.argv[2], +process.argv[3], process.argv[4]]; const b = voice === 'male' ? 50 : 62;
+const up = b => { const sc = []; for (let m = b - 5; m <= b + 14; m++) if ([0, 2, 4, 5, 7, 9, 11].includes(((m % 12) + 12) % 12)) sc.push(m); return sc; };
+const sc = up(b), st = sc.findIndex(m => m >= b), d = 60 / bpm / 4, seq = [0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 0, 1];
+const notes = seq.map((q, k) => { const n = {on: 0.3 + k * d, dur: d, midi: sc[st + q]}; if (k) n.glide = 0.025; return n; });
+const s = sing(notes, {voice, seed, sigma: 6, snr: process.env.CLEAN ? 50 : undefined, rev: process.env.CLEAN ? false : undefined}), tr = DN.pyin(s.x, {fs: 16000});
+const dbg = []; DN.segment(tr, {snap: false, tuning: 'auto', dbg}); for (const x of dbg) console.log(JSON.stringify(x, (k, v) => typeof v === 'number' ? +v.toFixed(2) : v));
+const hop = 0.005; let l = ''; const [W0, W1] = (process.env.W || '0.55,0.95').split(',').map(Number); for (let i = Math.round(W0 / hop); i < Math.round(W1 / hop); i++) l += `${(i*hop).toFixed(3)}:${tr.f0[i] > 0 ? (69 + 12 * Math.log2(tr.f0[i] / 440)).toFixed(2) : '--'}/${tr.e10[i].toFixed(0)} `; console.log(l);
