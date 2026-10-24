@@ -29448,17 +29448,28 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
     for (let i = 0; i < 1024; i++) { let r = 0; for (let k = 0; k < 10; k++) r |= ((i >> k) & 1) << (9 - k); this.rev[i] = r; }
     for (let i = 0; i < 512; i++) { this.cs[i] = Math.cos(2 * Math.PI * i / 1024); this.sn[i] = -Math.sin(2 * Math.PI * i / 1024); }
     this.lit = -1; this.cand = -1; this.cn = 0; this.off = 0; this.mt = 0; this.mcount = 0;
-    // VS2-fix Übersprech-Sperre (Lautsprecher): die Referenz (was die App spielt) läuft durch denselben 3:1-Dezimierer in einen Ring;
-    // eine Tonhöhe zählt nur als Stimme, wenn das Mikro dort deutlich mehr Energie hat als das Übersprechen der Referenz erklärt
+    // VS2-fix bleed gate (speaker): the reference (what the app plays) runs through the same 3:1 decimator into a ring;
+    // a pitch counts as voice only if the mic has clearly more energy there than the bleed of the reference explains
     this.hw = new Float64Array(640); for (let j = 0; j < 640; j++) this.hw[j] = 0.5 - 0.5 * Math.cos(2 * Math.PI * j / 639);
-    this.HR = new Float32Array(2 * T); this.rb = new Float32Array(8192); this.rn = 0; this.pR = 0; this.bleedN = 0;
+    this.HR = new Float32Array(2 * T); this.rb = new Float32Array(8192); this.rn = 0; this.pR = 0; this.bleedN = 0; this.bkN = -1; this.bk = 0; this.bkV = false;
   }
   gh(x, o, msk, f) { const fs = sampleRate / 3; if (f >= fs / 2) return 0; const c = 2 * Math.cos(2 * Math.PI * f / fs), hw = this.hw; let s1 = 0, s2 = 0; for (let j = 0; j < 640; j++) { const v = x[(o + j) & msk] * hw[j] + c * s1 - s2; s2 = s1; s1 = v; } return s1 * s1 + s2 * s2 - c * s1 * s2; }
   bleed(f) {
-    const cf = this.cfg, L = Math.max(0, Math.min(7000, Math.round((cf.lat || 0) * sampleRate / 3000))); let pm = 0, pr = 0;
-    for (let h = 1; h <= 3; h++) pm += this.gh(this.xw, 0, 1023, h * f);
-    for (let k = -1; k <= 2; k++) { const d = L + 160 * k; if (d < 0) continue; const o = ((this.pR - 640 - d) % 8192 + 8192) % 8192; let q = 0; for (let h = 1; h <= 3; h++) q += this.gh(this.rb, o, 8191, h * f); if (q > pr) pr = q; }
-    return pm < cf.bl * pr;
+    // true = the pitch is only the app's own bleed. Shifts centre-out with early exit (any shift that explains it is enough).
+    const cf = this.cfg, L = Math.max(0, Math.min(7000, Math.round((cf.lat || 0) * sampleRate / 3000))), x = this.xw, rb = this.rb, bb = cf.bb || 0;
+    let eb = 0, pm = 0; for (let j = 0; j < 640; j++) eb += x[j] * x[j];
+    const U = Math.max(1, Math.min(6, Math.round((cf.unc || 10) / 10))), K = Math.max(2, U);
+    for (let i = 0; i <= 2 * K; i++) {
+      const k = i & 1 ? (i + 1) >> 1 : -(i >> 1); if (k < -U || k > K) continue;
+      const d = L + 160 * k; if (d < 0) continue; const o = ((this.pR - 640 - d) % 8192 + 8192) % 8192;
+      let qb = 0; for (let j = 0; j < 640; j++) { const v = rb[(o + j) & 8191]; qb += v * v; }
+      if (eb < bb * qb) return true;                          // overall no more than the bleed
+      if (!pm) for (let h = 1; h <= 3; h++) pm += this.gh(x, 0, 1023, h * f);
+      if (cf.bl * 1920 * qb <= pm) continue;                  // bound: a Hann-Goertzel bin <= 640 * sum(v^2), 3 harmonics
+      let q = 0; for (let h = 1; h <= 3; h++) q += this.gh(rb, o, 8191, h * f);
+      if (pm < cf.bl * q) return true;                        // explained at the pitch
+    }
+    return false;
   }
   fft(re, im, sg) {
     const N = 1024, rev = this.rev, cs = this.cs, sn = this.sn;
@@ -29502,7 +29513,11 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
       if (k > 0) { const a = n[k - 1], b = n[k], c = n[k + 1], den = a - 2 * b + c, sh = den < 0 ? 0.5 * (a - c) / den : 0; f = fs / (k + sh); cl = b - 0.25 * (a - c) * sh; }
       if (f && inst && cf.lock) for (let g = 0; g < 2 && 2 * f <= 1600; g++) { const od = this.ge(x, W, fs, 3 * f) + this.ge(x, W, fs, 5 * f) + this.ge(x, W, fs, 7 * f), ev = this.ge(x, W, fs, 2 * f) + this.ge(x, W, fs, 4 * f) + this.ge(x, W, fs, 6 * f); if (ev > 0 && od < 0.1 * ev && ev > 0.5 * this.ge(x, W, fs, f)) f *= 2; else break; }
     }
-    if (f > 0 && cl >= (inst ? 0.85 : 0.8) && cf.bl > 0 && this.bleed(f)) { f = 0; this.bleedN++; }   // nur Übersprechen der App
+    if (f > 0 && cl >= (inst ? 0.85 : 0.8) && cf.bl > 0) {   // only the app's own bleed? (same note: the decision holds for 2 more hops)
+      const nb = Math.round(69 + 12 * Math.log2(f / 440));
+      if (nb !== this.bkN || ++this.bk > 2) { this.bkN = nb; this.bk = 0; this.bkV = this.bleed(f); }
+      if (this.bkV) { f = 0; this.bleedN++; }
+    }
     if (f > 0 && cl >= (inst ? 0.85 : 0.8)) {
       const note = Math.round(69 + 12 * Math.log2(f / 440)); this.off = 0;
       if (note === this.cand) this.cn++; else { this.cand = note; this.cn = 1; }
@@ -29535,7 +29550,7 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
       const F = currentFrame + i;
       if (F % 3 === 2) {
         let acc = 0; const base = this.hp; for (let k = 0; k < T; k++) acc += h[k] * H[base + k];
-        if (this.cfg && this.cfg.bl > 0) { let ar = 0; const HR = this.HR; for (let k = 0; k < T; k++) ar += h[k] * HR[base + k]; this.rb[this.rn & 8191] = ar; this.rn++; }
+        if (this.cfg && this.cfg.bl > 0) { const HR = this.HR, c = base + (T >> 1); this.rb[this.rn & 8191] = (HR[c - 1] + HR[c] + HR[c + 1]) / 3; this.rn++; }   // ref: 3-tap mean at the FIR centre (same delay, cheap)
         if (this.d0 < 0) this.d0 = (F - 2) / 3;
         this.d[this.dn++] = acc >= 1 ? 32767 : acc <= -1 ? -32767 : Math.round(acc * 32767);
         if (this.cfg) { this.mb[this.mp] = acc; this.mp = this.mp + 1 === 640 ? 0 : this.mp + 1; if (++this.mc >= 640 && this.mc % 160 === 0) this.mpm(F); }
@@ -29552,7 +29567,7 @@ function stWorklet(c) {
   if (ST.wk && ST.wk.ctx === c) return ST.wk.p;
   const p = (async () => {
     if (!c.audioWorklet || typeof AudioWorkletNode !== 'function') return false;
-    const ways = [() => URL.createObjectURL(new Blob([ST_WK], {type: 'application/javascript'})), () => 'data:application/javascript;base64,' + btoa(ST_WK)];
+    const ways = [() => URL.createObjectURL(new Blob([ST_WK], {type: 'application/javascript'})), () => 'data:application/javascript;base64,' + btoa(unescape(encodeURIComponent(ST_WK)))];   // UTF-8 (Module sind immer UTF-8)
     for (const mk of ways) { let u = ''; try { u = mk(); await micTimeout(c.audioWorklet.addModule(u), 2500); return true; } catch (e) { /* nächster Weg */ } finally { if (u.startsWith('blob:')) { try { URL.revokeObjectURL(u); } catch (e) {} } } }
     return false;
   })();
@@ -30369,18 +30384,20 @@ function vsCfgSet(p) {
   if (UI.pop && UI.pop.name === 'stimme') stSheetFill(UI.pop.el);
   return Object.assign({}, c);
 }
-const vsLiveOpts = () => { const c = vsCfg(); return {src: c.src, lock: c.lock, bl: vsBleedPow(), lat: ST.latMs || 0}; };
+const vsLiveOpts = () => { const c = vsCfg(); return {src: c.src, lock: c.lock, bl: vsBleedPow(), bb: vsBleedPow(VS_BLEED_BB), lat: ST.latMs || 0, unc: vsLatUnc()}; };
+// Unsicherheit der Latenz (ms): eingemessen ±10, sonst (geschätzt) ±50 – so weit sucht die Sperre die Referenz ab
+const vsLatUnc = () => (ST.latHow === 'gemessen' ? 10 : 50);
 /* VS2-fix Übersprech-Sperre: über den Lautsprecher hört das Mikro die App selbst (Xanders iPhone −31/−32 dB). Eine erkannte
    Tonhöhe gilt nur als Stimme, wenn das Mikro an dieser Tonhöhe (Grundton + 2 Obertöne) mehr Energie hat als die Referenz
    × gemessene Kopplung × 10 dB Rand. Kopplung: Einmessen (gainDb), sonst −20 dB angenommen. Kopfhörer: aus (0). */
-const VS_BLEED_DB = 10, VS_BLEED_DEF = -20;
+const VS_BLEED_DB = 10, VS_BLEED_BB = 3, VS_BLEED_DEF = -20;   // Rand an der Tonhöhe 10 dB, gesamt 3 dB
 function vsBleedDb() {
   if (!ST.on || ST.route !== 'speaker') return null;
   const p = stProf().prof.speaker, lc = ST.lastCal;
   const g = p && p.gainDb != null ? p.gainDb : lc && lc.route === 'speaker' && lc.gainDb != null ? lc.gainDb : VS_BLEED_DEF;
   return clamp(+g || VS_BLEED_DEF, -70, 0);
 }
-function vsBleedPow() { const g = vsBleedDb(); return g == null ? 0 : Math.pow(10, (g + VS_BLEED_DB) / 10); }
+function vsBleedPow(m) { const g = vsBleedDb(); return g == null ? 0 : Math.pow(10, (g + (m == null ? VS_BLEED_DB : m)) / 10); }
 function vsLiveCfg() { const run = ST.run; if (run && run.node) { try { run.node.port.postMessage({cfg: vsLiveOpts()}); } catch (e) {} } }
 // Worklet-Meldung: erkannte Taste an/aus (nur Wechsel)
 function vsLitMsg(run, d) {
@@ -30469,27 +30486,31 @@ async function vsAnalyse(ta, tb, cfg) {
   // Frame-Zeit (s im Ausschnitt) → Schlag: Mikro-Frame → Referenz-Frame (minus Latenz der Zeitkarte) → t2b
   const beatOf = sec => { const M = 3 * (d0 + sec * fs) + 2 - 23, Fr = M - lat(M); return t2b(Fr / sr); };
   const bl = vsBleedPow();
-  return {tr, fs, hop, d0, sr, beatOf, inst, masked: nm, mic, x, bleed: bl > 0 ? n => vsBleedNote(x, d0, fs, sr, lat, n, bl) : null};
+  return {tr, fs, hop, d0, sr, beatOf, inst, masked: nm, mic, x, bleed: bl > 0 ? n => vsBleedNote(x, d0, fs, sr, lat, n, bl, vsBleedPow(VS_BLEED_BB), vsLatUnc()) : null};
 }
 /* VS2-fix: eine erkannte Note, die nur Übersprechen ist (Lautsprecher): Mikro-Energie an Grundton + 2 Obertönen über die Note
    (40-ms-Hann-Stücke) gegen die Referenz zur selben Zeit (Latenz der Zeitkarte, ±10/+20 ms) × Kopplung × Rand */
-function vsBleedNote(x, d0, fs, sr, lat, n, bl) {
+function vsBleedNote(x, d0, fs, sr, lat, n, bl, bb, unc) {
+  const U = Math.max(1, Math.round((unc || 10) / 10)), shs = []; for (let k = -U; k <= Math.max(2, U); k++) shs.push(k * 0.01);
   const G = ST.ring; if (!G || !(n.t1 > n.t0)) return false;
   const f0 = 440 * Math.pow(2, (n.m - 69) / 12), Wm = Math.round(0.04 * fs), Wr = Math.round(0.04 * sr), L = G.len, S = 1 / 32767;
   const lo = Math.max(G.start, G.end - L + 1);
   const ge = (get, W, rate, f) => { if (f >= rate / 2) return 0; const c = 2 * Math.cos(2 * Math.PI * f / rate); let s1 = 0, s2 = 0; for (let j = 0; j < W; j++) { const v = get(j) * (0.5 - 0.5 * Math.cos(2 * Math.PI * j / (W - 1))) + c * s1 - s2; s2 = s1; s1 = v; } return (s1 * s1 + s2 * s2 - c * s1 * s2) / (W * W); };
-  let pm = 0, pr = 0, k = 0;
+  let pm = 0, pr = 0, em = 0, er = 0, k = 0;
   for (let a = Math.round(n.t0 * fs); a + Wm <= Math.round(n.t1 * fs) || k === 0; a += Wm, k++) {
     if (a < 0 || a + Wm > x.length || k > 400) break;
     for (let h = 1; h <= 3; h++) pm += ge(j => x[a + j], Wm, fs, h * f0);
-    const M = 3 * (d0 + a) + 2 - 23, R0 = Math.round(M - lat(M)); let best = 0;
-    for (const sh of [-0.01, 0, 0.01, 0.02]) {
+    let e = 0; for (let j = 0; j < Wm; j++) e += x[a + j] * x[a + j]; em += e / Wm;
+    const M = 3 * (d0 + a) + 2 - 23, R0 = Math.round(M - lat(M)); let best = 0, bE = 0;
+    for (const sh of shs) {
       const r0 = R0 - Math.round(sh * sr); if (r0 < lo || r0 + Wr > G.end) continue;
-      let q = 0; for (let h = 1; h <= 3; h++) q += ge(j => G.ref[(r0 + j) % L] * S, Wr, sr, h * f0); if (q > best) best = q;
+      let q = 0, qe = 0; for (let h = 1; h <= 3; h++) q += ge(j => G.ref[(r0 + j) % L] * S, Wr, sr, h * f0);
+      for (let j = 0; j < Wr; j++) { const v = G.ref[(r0 + j) % L] * S; qe += v * v; }
+      if (q > best) best = q; if (qe / Wr > bE) bE = qe / Wr;
     }
-    pr += best;
+    pr += best; er += bE;
   }
-  return k > 0 && pm < bl * pr;
+  return k > 0 && (pm < bl * pr || em < bb * er);
 }
 // Noten (Schläge) aus einer Analyse: Segmentierung, Stimmung, Einrasten auf die Tonart, die an der Stelle klingt
 function vsNotesOf(A, o) {

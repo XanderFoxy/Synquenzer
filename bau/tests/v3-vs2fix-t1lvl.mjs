@@ -1,0 +1,64 @@
+// T1: N7V-13 über die echte Oberfläche (Tipp auf 🎤, Einmessen über Lautsprecher-Übersprechen −30 dB, Metronom an, Demo läuft,
+// Tipp auf FANG 1/8 Takt nach dem Taktstrich) → Ende = fangClose, MELODIE-Clip, hörbar phasengleich (noteLog out), ein Undo über ↶.
+import {open, sleep, voice, playAtBeat, waitBeat, result} from './v3-qa-vs2acc-h.mjs';
+const route = process.argv[2] || 'speaker';
+let fail = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) fail++; };
+const H = await open({vp: 'P1'}), p = H.p;
+await p.evaluate(() => { SYNQUENZER.setMetronome(true); });
+if (route === 'wired') await p.evaluate(() => { window.__q.label = 'Headset Microphone'; });
+await p.tap('#segMic');
+await p.waitForFunction(() => window.__q.bus, null, {timeout: 5000});
+if (route === 'speaker') await p.evaluate(d => window.__q.loop(d, 40), +(process.argv[3]||-30));
+await p.waitForFunction(() => { const s = SYNQUENZER.stimme(); return s.phase === 'live' && (s.lastCal || s.route !== 'speaker'); }, null, {timeout: 20000});
+const st = await p.evaluate(() => SYNQUENZER.stimme());
+console.log('route', st.route, 'lat', st.latMs, 'cal', st.lastCal && st.lastCal.ok);
+if (route === 'wired') { const {calib} = await import('./v3-qa-vs2acc-h.mjs'); console.log('D', JSON.stringify(await calib(p))); }
+await p.evaluate(() => SYNQUENZER.stimmeSheet(false)); await sleep(200);
+await p.tap('#bPlay'); await sleep(50);
+const bpm = await p.evaluate(() => SYNQUENZER.vsClock().spb);
+const SB = bpm;
+const MEL = [[4, 1, 60], [5, 1, 62], [6, 2, 64], [8, 1, 65], [9, 1, 64], [10, 2, 62], [12, 1, 60], [13, 1, 64], [14, 2, 67], [16, 1, 65], [17, 1, 64], [18, 1.5, 60]];
+const LEAD = 0.05;
+const x = voice(MEL.map(([b, d, m]) => ({on: LEAD + (b - 4) * SB, dur: d * SB, m})), {seed: 7});
+const dt = await playAtBeat(p, x, 4, LEAD); ok(dt > 0, 'Stimme rechtzeitig geplant (' + (dt * 1000).toFixed(0) + ' ms)');
+await waitBeat(p, 12);
+const lit = await p.evaluate(() => ({vi: SYNQUENZER.vsInfo(), keys: [...document.querySelectorAll('#kb .key.vs')].map(k => k.dataset.n || k.getAttribute('data-note') || k.className)}));
+ok(lit.vi.litN > 0, 'Live: Tasten leuchteten (' + lit.vi.litN + ' Meldungen), jetzt ' + lit.vi.lit + ' ' + JSON.stringify(lit.keys));
+await waitBeat(p, 20.45);
+const fb = await p.evaluate(() => { const b = document.getElementById('bFang'); return {tx: b.textContent, cls: b.className, mode: SYNQUENZER.vsInfo().fangMode, sw: b.scrollWidth, cw: b.clientWidth, w: b.getBoundingClientRect().width}; });
+ok(fb.mode === 'stimme', 'FANG-Taste im Stimme-Modus: „' + fb.tx + '“ ' + fb.cls + ' ' + fb.w + ' px');
+const u0 = await p.evaluate(() => SYNQUENZER.undoInfo().n);
+await p.tap('#bFang');
+const tapB = await p.evaluate(() => VS.job ? VS.job.res.t : null);
+const r = await result(p);
+const lf = await p.evaluate(() => SYNQUENZER.vsInfo().lastFang), fc = await p.evaluate(b => SYNQUENZER.fangClose({beat: b}), tapB);
+ok(lf && lf.Eb === fc.bar && lf.rule === fc.rule, `Tipp bei Schlag ${tapB && tapB.toFixed(3)}: fangClose Taktstrich ${fc.bar + 1} (${fc.rule}), Stimme-FANG ${lf && lf.Eb + 1} (${lf && lf.rule})`);
+ok(r && r.track === 5 && r.len === 4 && r.start === 1, `MELODIE-Clip Spur ${r && r.track} Szene ${r && r.scene + 1}, ${r && r.len} Takte ab Takt ${r && r.start + 1}`);
+const want = MEL.map(([b, , m]) => ({o: b - 4, m}));
+const hits = r ? want.filter(w => r.notes.some(n => n.n === w.m && Math.abs(n.t - w.o) <= 0.13)).length : 0;
+console.log('  Noten', JSON.stringify(r && r.notes.map(n => [n.t, n.n, n.d])));
+ok(hits >= 11, `Noten im Clip: ${hits}/${MEL.length} (Ton exakt, ±1/8 Schlag); erkannt ${r && r.notes.length}`);
+ok(await p.evaluate(() => !!document.querySelector('.pop.vsres')), 'Ergebnis-Blatt offen');
+// hörbar: noteLog Spur 5 über einen vollen Durchlauf nach der Übernahme
+await p.evaluate(() => SYNQUENZER.clearLog());
+await waitBeat(p, 41);
+const log = await p.evaluate(() => SYNQUENZER.noteLog(4096).filter(e => e.track === 5).map(e => [e.beat, e.out, e.clipNote]));
+console.log('  noteLog', JSON.stringify(log.slice(0, 20)));
+const heard = want.filter(w => log.some(([b, out]) => out === w.m && ((b - 4 - w.o) % 16 + 16) % 16 < 0.15)).length;
+ok(heard >= 11, `hörbar phasengleich (Schlag ≡ Takt 2 + o mod 16, Ton = gesungen): ${heard}/${MEL.length}`);
+const first = log.length ? Math.min(...log.map(e => e[0])) : null;
+ok(first != null && first >= 20 - 0.01 && first < 24.5, 'erste MELODIE-Note nach der Übernahme bei Schlag ' + first);
+// OK, dann ↶
+await p.tap('.pop.vsres [data-a="ok"]'); await sleep(200);
+const ui = await p.evaluate(() => SYNQUENZER.undoInfo());
+ok(ui.n === u0 + 1 && ui.top && ui.top.label === 'Stimme', `ein Undo-Schritt „${ui.top && ui.top.label}“ (${u0} → ${ui.n})`);
+await p.tap('#bUndo'); await sleep(250);
+ok(await p.evaluate(s => SYNQUENZER.getClip(5, s) === null, r.scene), 'Tipp ↶: MELODIE-Clip entfernt');
+await p.evaluate(() => SYNQUENZER.clearLog()); const b1 = await p.evaluate(() => (SYNQUENZER.vsClock().now - SYNQUENZER.vsClock().outLat - SYNQUENZER.vsClock().start) / SYNQUENZER.vsClock().spb);
+await waitBeat(p, b1 + 6);
+const after = await p.evaluate(() => SYNQUENZER.noteLog(4096).filter(e => e.track === 5).length);
+ok(after === 0, 'nach ↶ klingt MELODIE nicht mehr (' + after + ' Noten in 6 Schlägen)');
+ok(!H.errs.length, 'keine Konsolenfehler ' + JSON.stringify(H.errs.slice(0, 3)));
+await p.screenshot({path: 'v3-qa-vs2acc-t1-' + route + '.png'});
+await H.br.close();
+console.log(fail ? 'FAIL ' + fail : 'ALLE OK');

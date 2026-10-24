@@ -9,11 +9,11 @@ const BLEED = () => {
 const gain = +(process.argv[2] || 0.1);
 const br = await chromium.launch({executablePath: EXE, args: ['--autoplay-policy=no-user-gesture-required']});
 const p = await (await br.newContext({viewport: {width: 390, height: 844}})).newPage(); const errs = [];
-p.on('pageerror', e => errs.push(String(e)));
+p.on('pageerror', e => console.log('PAGEERR', String(e))); p.on('console', m => console.log('CON', m.type(), m.text().slice(0,300)));
 await p.addInitScript(INIT); await p.addInitScript(BLEED);
 await p.goto('file://' + FILE); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version); await p.waitForTimeout(500);
 await p.evaluate(() => { const Q = SYNQUENZER; Q.play(); Q.stop(); return Q.stimmeStart({route: 'speaker', cal: false}); });
-await p.waitForFunction(() => SYNQUENZER.stimme().phase === 'live'); await p.waitForTimeout(800);
+await p.waitForTimeout(3000); console.log(JSON.stringify(await p.evaluate(() => { const s = SYNQUENZER.stimme(); return {phase: s.phase, err: s.err, on: s.on}; })));
 await p.evaluate(g => window.__bleed(g), gain);
 const wb = (b, to = 40000) => p.waitForFunction(x => SYNQUENZER.runtime().beat > x, b, {timeout: to, polling: 10});
 await p.evaluate(() => { const Q = SYNQUENZER; Q.newProject({init: true}); Q.setBpm(120); const K = {root: 9, scale: 'aeolian'};
