@@ -1,0 +1,11 @@
+import fs from 'fs';
+import {sing} from './v3-qa-vs2b-acc-synth.mjs';
+const s0 = fs.readFileSync('../dirigent-wt/index.html', 'utf8'); const a = s0.indexOf('/* VSDSP-BEGIN */'), b = s0.indexOf('/* VSDSP-END */');
+let src = s0.slice(a, b);
+const hook = "const tr = trend(n), mv = Math.abs(tr) >= 0.8 || (Math.abs(tr) >= 0.4 && flat(n) < F(60));";
+if (!src.includes(hook)) throw 'hook';
+src = src.replace(hook, hook + " if (globalThis.DBG) console.log('cand', (n.a*hop).toFixed(3), (n.b*hop).toFixed(3), 'len', len, 'm', n.m.toFixed(2), 'tr', tr.toFixed(2), 'flat', flat(n), 'mv', mv, 'pa', pa, 'qa', qa, 'q.m', q && q.m.toFixed(2), 'n.pe', n.pe);");
+src = src.replace("if (len >= moveF || isNaN(n.m)) continue;", "if (globalThis.DBG && len < moveF + 10) console.log('piece', (n.a*hop).toFixed(3), (n.b*hop).toFixed(3), len, 'pe', n.pe, 'next.a', notes[k+1] && (notes[k+1].a*hop).toFixed(3)); if (len >= moveF || isNaN(n.m)) continue;");
+const D = new Function(src + ';return vsDspMake();')();
+const args = JSON.parse(process.argv[2]); const sg = sing(args.notes, args.o); const tr = D.pyin(sg.x, {fs: 16000}); globalThis.DBG = 1;
+const r = D.segment(tr, {snap: false, tuning: 'auto'}); console.log(r.notes.map(n => `[${n.t0.toFixed(3)}-${n.t1.toFixed(3)} ${n.n}]`).join(' '));

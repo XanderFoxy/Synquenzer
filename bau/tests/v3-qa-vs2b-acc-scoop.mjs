@@ -7,7 +7,7 @@ let TN = {extra: 0, miss: 0, sung: 0}, TO = {extra: 0, miss: 0, sung: 0};
 for (const st of [0.7, 1, 1.3, 1.6]) for (const ms of [100, 120, 140, 160]) {
   const R = {n: {extra: 0, miss: 0, sung: 0}, o: {extra: 0, miss: 0, sung: 0}}; let ex = null;
   for (const seed of [1, 2, 3]) for (const [voice, b] of [['male', 50], ['female', 62]]) {
-    const notes = [0, 2, 4, 1, 3].map((s, k) => ({on: 0.3 + k * 0.85, dur: 0.6, midi: b + s, scoop: [dir * st, ms / 1000], vib: {ct: 30, hz: 5.5, delay: 0.25}, vowel: 'aoeau'[k]}));
+    const notes = [0, 2, 4, 1, 3].map((s, k) => ({on: 0.3 + k * 0.85, dur: 0.6, midi: b + s, scoop: [dir * st, ms / 1000, process.env.SHAPE || 'cos'], vib: {ct: 30, hz: 5.5, delay: 0.25}, vowel: 'aoeau'[k]}));
     const s = sing(notes, {voice, seed, sigma: 6, rev: false, snr: 50}), tr = DN.pyin(s.x, {fs: 16000});
     for (const [k, D] of [['n', DN], ['o', DO]]) { const ns = D.segment(tr, {snap: false, tuning: 'auto'}).notes, sc = score(ns, s.truth, 0.1); R[k].extra += sc.extra; R[k].miss += sc.miss; R[k].sung += sc.sung; if (k === 'n' && sc.exEx.length && !ex) ex = [voice, seed, ...sc.exEx[0]]; }
   }

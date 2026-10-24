@@ -24,7 +24,7 @@ export function sing(notes, o = {}) {
     for (let i = i0; i < i1; i++) {
       const t = i / fs, tn = t - p.on; let m = p.tgt;
       if (p.glide && t < p.on + p.glide / 2) m = prv.tgt + (p.tgt - prv.tgt) * sm((t - p.s) / p.glide);
-      if (p.scoop) m -= p.scoop[0] * (1 - sm((t - p.s) / p.scoop[1]));
+      if (p.scoop) m -= p.scoop[2] === 'exp' ? p.scoop[0] * Math.exp(-3 * (t - p.s) / p.scoop[1]) : p.scoop[0] * (1 - sm((t - p.s) / p.scoop[1]));
       if (p.fall && !p.leg) m -= p.fall[0] * sm((t - (p.e - p.fall[1])) / p.fall[1]);
       if (p.vib && tn > p.vib.delay) { const v = p.vib, ramp = Math.min(1, (tn - v.delay) / 0.12), j = v.jit || 0;
         const rate = v.hz * (1 + j * 0.15 * Math.sin(2 * Math.PI * 0.7 * t + p.vp)), ext = v.ct * (1 + j * 0.3 * Math.sin(2 * Math.PI * 0.45 * t + 2 * p.vp));
