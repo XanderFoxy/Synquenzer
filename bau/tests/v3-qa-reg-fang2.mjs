@@ -14,16 +14,17 @@ for (const [name, file] of [['base', BASE], ['new', APP]]) {
   await waitBeat(p, 8.2);
   const lab = () => p.evaluate(() => { const b = document.getElementById('bFang'); const r = window.SYNQUENZER.runtime(); return b.textContent + ' | mode=' + (r.fangMode || '-') + ' lit=' + r.fang + ' part=' + JSON.stringify(r.part) + ' sheet=' + !!document.querySelector('.pop.fsheet'); });
   console.log(name, 'before FANG     :', await lab());
-  await p.tap ? await p.click('#bFang') : null;
+  await p.click('#bFang');
   await p.waitForTimeout(100);
   console.log(name, 'right after FANG:', await lab(), 'clip30', JSON.stringify((await p.evaluate(() => window.SYNQUENZER.getClip(3, 0))) ? 'yes' : 'no'));
-  await p.waitForTimeout(600);
+  await waitBeat(p, 12.3); console.log(name, 'beat 12.3 (FANG clip started, ~2 s after last note):', await lab());
   // second tap 0.7 s after the first (e.g. a double tap or "did it work?")
-  await p.click('#bFang');
+  { const r = await p.evaluate(() => { const q = document.getElementById('bFang').getBoundingClientRect(); return {x: q.left + q.width / 2, y: q.top + q.height / 2, vis: getComputedStyle(document.getElementById('bFang')).visibility}; });
+    console.log(name, 'FANG button visibility before 2nd tap:', r.vis); await p.mouse.click(r.x, r.y); }
   await p.waitForTimeout(300);
   const st = await p.evaluate(() => { const Q = window.SYNQUENZER, r = Q.runtime(); return {clips3: [0, 1, 2, 3].map(s => !!Q.getClip(3, s)), part: r.part, row: r.row, sheet: !!document.querySelector('.pop.fsheet'), toast: [...document.querySelectorAll('.toast, #toast')].map(x => x.textContent).join(' / ')}; });
   console.log(name, 'after 2nd tap   :', await lab(), JSON.stringify(st));
-  await waitBeat(p, 16.5);
+  await waitBeat(p, 20.5);
   const sl = await p.evaluate(() => ({slots: window.SYNQUENZER.runtime().slots, part: window.SYNQUENZER.runtime().part}));
   console.log(name, 'two bars later  :', JSON.stringify(sl), 'errs', JSON.stringify(errs));
   await b.close();
