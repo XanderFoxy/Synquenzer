@@ -2868,3 +2868,126 @@ Aufruf nennt das Klassenzimmer-Projekt.
 3. Auf die **Träger-Anzeige** tippen → Akkord-Zeile von Szene 1: vier Kästchen mit Am, F, C, G über die Stufen-Chips füllen, ▶1 tippen:
    die Akkorde laufen im Kreis mit. Eine Taste in TRANSPONIEREN übernimmt sofort, **↩ TEIL** gibt die Zeile am nächsten Takt zurück.
 4. Im Teil-Blatt **Transposition +2** wählen: der Teil klingt zwei Halbtöne höher, MELODIE und Drums bleiben.
+
+## V2d — FANG TEIL v2, Teil-Lanes, Zeitleiste und Marken (Daten, API), Teil-Tipp im Song · App 4.5.0
+
+Grundlage: Nachtrag 2 B.1 Nr. 1–3, 14, 17, B.4 (V2d), K2-28; `r7/song-delta.md` 4.1–4.6, 5.3–5.5, 12.1–12.3, 13 (N7S-11 … N7S-26,
+N7S-25b); Spec v3 §4.7, §17 V2d (V2d-01, -03…-05b, -08, -13, -15; V2d-05/-06/-07/-09/-10/-14 → N7S-19 … N7S-24 laut 14.3);
+Teil E/Nachtrag zur Reihenfolge (G-P1, 4.5.0); Teil J (FP-SONG ●, FP-TOUCH).
+
+**Neu**
+1. **Song-Gedächtnis** (4.1): je Spur, was an den Taktstrichen wirklich geschah (`slot`, Clip-Start `cs`, Zeitpunkt), 72 Takte;
+   CAPC = Träger-Log mit Schlag, auch ORIGINAL (`target:null`), unabhängig von `T.prune`; Grenzpunkte (Transportstart, ▶n,
+   Teil-Tipp, ORIGINAL, [↩ TEIL]/[↩ SONG], angenommener FANG TEIL). API `memory()`.
+2. **FANG TEIL** (FANG-Platz): in ⇅ TRANSPONIEREN (auch gehalten) heißt er „FANG TEIL“ und leuchtet nach Akkord-, Clip- oder
+   Szenenwechseln seit dem letzten Grenzpunkt; in ♪ SPIELEN, wenn 8 s keine Note kam, aber Clips/Szenen wechselten (EN7-09),
+   sonst „FANG“ wie bisher. Phrasenanfang = letzter Grenzpunkt bzw. der erste Wechsel nach ≥ 2 ruhigen Takten; **Taktstrich-Regel
+   N7-R1** (Periode p ∈ {1,2,3,4,6,8} vom Ende her, sonst 1/2/4/8/16; Struktur vor Zeit, 50 %); Lanes je Takt (Szene je Spur,
+   aus/an, Neustart `re`, Phase `ph` bei Takt 0), Akkord-Zeile aus dem CAPC (Wechsel bis ¼ Schlag vor dem Taktstrich zählen auf ihn,
+   im Tipp-Takt nur bis zum Tipp). Der Teil läuft ab dem nächsten Taktstrich **im Kreis, phasengleich als hätte man genau bei E
+   gedrückt** (später Tipp → dort Teil-Takt 2), beendet die Hand; war TRANSPONIEREN eingerastet: Modus bleibt, ♪ SPIELEN blinkt
+   2 s, Hinweis „Zum Drüberspielen ♪ SPIELEN“. Während ▶ SONG übernimmt der Kreis von Hand (orange [↩ SONG]).
+3. **Blatt „Teil gefangen“** (4.5, Mockup P-1): Kopf mit Teil-Chip [⠿ STROPHE · 8 T], Zeile Ende („Ende Taktstrich 9 · 7 % in
+   Takt 9 gedrückt (zu spät, zählt)“), Mini-Zeitleiste der letzten 16 Takte (Akkord-Kürzel, Punkte = Clip-Wechsel, Tipp = Anfang,
+   Länge dann exakt), Zeile Clips („S1 Sz4, aus T5–6 · S3 Sz3 ab T3 · DR Sz1“), Länge [1][2][4][8][16], Namens-Chips N7-R2
+   (Intro · Strophe · Pre · Refrain · Bridge · Break · Outro · ✎; Vorschlag Strophe → Refrain → …; vergebener Name → [＋ Strophe 2]
+   (Standard) │ [⟳ Strophe ersetzen] = Vorlage + alle Marken, Toast mit Stellenzahl; Freitext 1–12 Zeichen), [an Szene n hängen]
+   (nur wenn die Spuren genau einer Szene ohne Akkord-Zeile entsprechen), [Verwerfen] · [＋ Ans Song-Ende] · [ALS TEIL ✓]
+   (Teil-Leiste voll → „Platz … ersetzen“). Undo: ALS TEIL = `part`, Ans Song-Ende / ⟳ = `group` [part, song]. P: über der
+   Tastatur angedockt, 257 px (≤ 270); L: Seitenfeld rechts 299 px ab y 44, das Clip-Raster bleibt frei.
+4. **Teil-Wiedergabe mit Lanes** (4.6): Teil-Tasten spielen `Part.lanes` modulo Länge (Takt-0-Einträge bei jedem Durchlauf mit
+   Phase, spätere Einträge starten/stoppen/neu); leere Lane = „bleibt“; eine Spur, die man während des Teils von Hand startet, gehört
+   bis zum nächsten Teil-Start der Hand. Teil-Blatt/Matrix-Auswahl ändern den Takt-0-Eintrag (`slots` bleibt die Kurzform).
+5. **Song mit `re`/`ph`/`xp`** (`songTick`): ein Eintrag mit demselben Clip ohne `re`/`ph` läuft phasengleich weiter (kein
+   Schnitt); Einsatz mit Phase; `song.xp` (Teil-Transposition) im Song, beim Sprung und am Schleifen-Anfang; Song-Start, ↩ SONG,
+   Schleife und MIDI-Export rechnen die Phase aus den Einträgen (statt Block-Anfang). Gleicher Clip in gleicher Phase = nie ein
+   Neustart (auch beim Teil), also kein Knacks.
+6. **Zeitleisten-Operationen und Marken** (5.3/5.4, Daten + API): EINFÜGEN (Marke wird geteilt, Fortsetzung phasengleich),
+   ERSETZEN (komplett, auch Melodie und eigene Clips; Marken gekürzt/geteilt), LÖSCHEN, LEEREN; `placePart` (am/hinter dem Ende
+   = anhängen), `songMarks()` (Name, Kurzform, Teil′ berechnet), `markAction` (rep, move, copy, replaceBy, delete, unname, rename,
+   applyAll, swapL/R), `songRange` (insertEmpty, delete, clear, copy, asPart) – je ein Undo (`applyAll`/`asPart` = group).
+   `songFromChain` setzt je Glied eine Marke „Szene n“. Song-MIDI: Marker FF 06 je Marke. Szenen-Clips bleiben immer unberührt.
+7. **Teil-Tipp bei laufendem Song** (B.1 Nr. 17, K2-28): springt am nächsten Taktstrich zur nächsten Marke dieses Teils (zyklisch);
+   ohne Marke übernimmt die Hand wie bisher.
+8. **Test-API:** `memory`, `fangTeil({beat})`, `fangPart`, `fangClose({beat})`, `fangAccept('part'|'end', {slot})`, `fangDiscard`,
+   `fangLen`, `fangStart`, `fangName(n, dup)`, `fangToScene`, `openFangSheet`, `placePart`, `songMarks`, `markAction`, `songRange`,
+   `lastOpMs`, `setSong` (Tests); `runtime()` + `fangMode`, `fangTeil`; `part.id` „PF“ für den gefangenen Kreis.
+
+**Abweichungen (begründet)**
+- **Ziehen in den Song** (Chip halten, S9) ist V2e′: der Hinweis „⇢ Teil-Chip halten und in den Song ziehen“ fehlt bis dahin, der
+  Chip ist nur Anzeige. Marken werden erst mit V2e in der Taktleiste gezeichnet (hier nur Daten, API, MIDI).
+- **✕ / Tippen neben das Blatt** = Verwerfen (wie [Verwerfen]); dafür Toast „Teil verworfen“ mit **[Zurück]** (derselbe Fang läuft
+  wieder, Blatt offen) – ein Fehlgriff kostet so nichts.
+- **Länge 1 … 16** nimmt wie in der Spec die letzten n Takte bis E; „Länge 1“ nach Am F C G ist also G.
+- **Leere Einträge**: Zeitleisten-Operationen räumen Einträge weg, die nichts ändern (−1 nach −1, gleicher Clip in gleicher Phase);
+  die Fortsetzung wird nur geschrieben, wo sonst etwas anderes klänge. Darum steht in N7S-19 bei Sequenz/MELODIE kein `{bar:6,
+  slot:-1}` – hörbar identisch, geprüft über Zustände je Takt.
+- **Teil′/applyAll** vergleichen Zustände je Takt (Slot + Phase, Akkorde) statt roher Einträge. `applyAll` behält die Melodie der
+  Zielstellen (6.3), bei anderer Länge nur, was hineinpasst.
+- `ph` bei späteren Lane-Einträgen eines Teils wird (wie 12.1 „nur bar 0“) nicht gespeichert; ein FANG eines Clips, der mitten im
+  Teil phasenversetzt startet, startet beim Abspielen mit Phase 0.
+- Trefferflächen im Blatt: Länge- und Namens-Chips 36 px hoch, Mini-Zeitleiste 34 px (Mockup P-1: Zeilen 32/36 px); ✕ 40×40.
+- `songCommitLanes` (V0c ● über dem Song) behält jetzt `re`/`ph` und schreibt das Ende phasengleich (vorher Neustart mit Phase 0).
+
+**Fach-Prüfung (Teil J: FP-SONG ● Haupt-, FP-TOUCH Zweit-Blick)** – eigener Prüf-Durchgang derselben Sitzung (kein getrennter
+Agent verfügbar), mit eigenen Skripten. 9 Befunde, alle behoben:
+FP-SONG: (1) `songCommitLanes` warf `re`/`ph` weg; (2) ein Teil-Undo hätte den gefangenen Kreis beendet (`partRestore`);
+(3) unnötige Schnitte bei gleichem Clip in gleicher Phase (jetzt Vergleich modulo Clip-Länge); (4) Akkord-Zeilen-Blatt hätte mit
+der Quelle „PF“ geöffnet (`crDefaultSrc`, auch `rowPend`); Regression differenziell gegen V2c-fix: noteLog und MIDI-Notenzahlen
+identisch (Kette mit 3-Takt-Clip + Schleife, Teile mit „bleibt“/Neustart, Song ab Takt 3 mit Übernahme und ↩ SONG).
+FP-TOUCH: (5) Blatt wurde vor dem Einhängen platziert (stand mittig statt angedockt/Seitenfeld); (6) „＋ Ans Song-Ende“ im
+Hochformat abgeschnitten → Kurztext „＋ Song“; (7) Kopf „TEIL GEFANGEN · läuft ∞“ in L und P3 abgeschnitten → Zusatz dort weg;
+(8) Fehlgriff neben das Blatt verlor den Fang → [Zurück]; (9) Teil-Chip mit `-webkit-touch-callout:none`/`user-select:none`.
+
+**Abnahme**
+
+| Punkt | Ergebnis | Skript |
+|---|---|---|
+| N7S-11 `memory()` je Takt slots/cs/own/Träger, ORIGINAL als `target:null` | ✓ | `v3-v2d-fang.mjs` |
+| N7S-12 Xanders Fall: Lanes DR/FL/SEQ/BASS, Am F C G ×2, len 8, Ende {8, struktur} | ✓ | fang |
+| N7S-13 `ph` 4; Teil-Taste spielt die Drum-Noten an denselben Stellen (±0,002) | ✓ | fang |
+| N7S-14 Fälle 1, 2, 3, 3b, 4, 5, 5b, 6, 6b, 7, 9 (Ende, Grund, Länge, Akkorde je Takt) | ✓ 11/11 | fang |
+| N7S-15 ab Schlag 20 F (Teil-Takt 2), kein zweites Am | ✓ | fang |
+| N7S-16 E1 eingefroren: Clip-Start nach dem Tipp nicht in den Lanes; Zeile „zu früh, zählt“ | ✓ | fang |
+| N7S-17 Strophe → Refrain; [＋ Strophe 2] │ [⟳ Strophe ersetzen]; 13 → 12 Zeichen; leer → Vorschlag; „REF2“ | ✓ | fang |
+| N7S-18 nur Clip-Wechsel, 8 s keine Note → „FANG TEIL“, nach einer Note „FANG“ | ✓ | fang |
+| N7S-19 Einfügen bei T3 = Daten wie 5.5 (deep-equal), Bass schweigt in Schlag 24–28, REFRAIN-Bass ab 28 Phase 0, ein Undo | ✓ | `v3-v2d-data.mjs` |
+| N7S-20 Einfügen mitten im REFRAIN: geteilt T4 + T9–11, `{bar:8,slot:2,ph:4}`, ab T9 dieselben Bass-Noten (±0,002) | ✓ | data |
+| N7S-21 Ersetzen T3–6: Rest T7 Länge 1, `{bar:6,slot:2,ph:4}`, T7 klingt wie vorher, Melodie 7,75 ≤ t < 23,75 weg, ein Undo | ✓ | data |
+| N7S-22 Anhängen ohne Rückfrage, hinter dem Ende rastet ein | ✓ | data |
+| N7S-23 rep/move/copy/replaceBy/delete/unname/applyAll(3 Stellen)/swap, je ein Undo, Clips deep-equal | ✓ | data |
+| N7S-24 64 Marken / 256 Takte: `placePart` 0,2–0,4 ms (≤ 5) | ✓ | data |
+| N7S-25 Teil mit Lanes im Kreis: Bass stumm in T5–6 jedes Durchlaufs, Neustart T7 (noteLog; Pegel ≥ 30 dB) | ✓ | fang, `v3-v2d-audio.mjs` |
+| N7S-25b Song in T2 → Tipp → ab T3 die Marke; in T7 → ab T9; ohne Marke Hand-Übernahme; `project()` deep-equal | ✓ | fang |
+| N7S-26 Song-MIDI Marker FF 06 je Marke | ✓ | data |
+| V2d-01 / -05b / -08 / -13 (Beschriftung, Hand-Ende + Blinken, Verwerfen, CAPC > 10 s) | ✓ | fang |
+| Blatt-Knöpfe hörbar (Länge 1 ↔ 4, Bass-Töne/Träger), [Zurück], [an Szene hängen], Rundweg Speichern/Laden | ✓ 8/8 | `v3-v2d-extra.mjs` |
+| M-PLATZ Blatt + FANG-TEIL-Taste in P1, P2, P3, L1, L2 (im Bild, nichts abgeschnitten, P ≤ 270 px, L Seitenfeld) | ✓ 25/25 | `v3-v2d-lay.mjs` |
+| Regression gegen V2c-fix (noteLog, MIDI) | ✓ 9/9 | `v3-v2d-reg.mjs` |
+| Smoke | ✓ ohne Fehler | `v3-v2d-smoke.png` |
+
+**Budget:** 2 333 953 B (+75,0 KB roh, +21,1 KB gzip gegenüber V2c-fix) – Rahmen +40 KB, also +88 % roh darüber (gzip +53 %).
+Grund: V2d trägt drei Blöcke, die die Spec getrennt rechnet (FANG TEIL mit Blatt, Teil-Lanes, die vollständigen
+Zeitleisten-Operationen samt Marken-API für V2e/V2e′), dazu ausführliche Kommentare; Laufzeit unverändert (keine neuen
+Frame-Kosten außer einer Modus-Prüfung je Bild).
+
+**Rollout:** `apply_migration v2d_max_app` (`max_app = greatest(max_app, 4005000)`, Datei `synq-online/r7-v2d-max-app.sql`)
+**wartete auf eine Bestätigung und lief nach 60 s ab – nicht eingetragen**; gelesen: `max_app` 4003000, `max_format` 4.
+**Offen: vor dem Ausliefern von 4.5.0 einspielen**, sonst lehnt `save_project` das Online-Speichern ab (lokal speichert die App
+weiter). Kein Aufruf nennt das Klassenzimmer-Projekt.
+
+**Für Xander im Dashboard** (nur falls der Orchestrator die Migration nicht nachholt): SQL-Editor des Projekts **synquenzer**
+(`dbdnsryoivvezspgydpx`, nicht das Klassenzimmer!) → `update private.settings set max_app = greatest(max_app, 4005000);` → Run.
+
+**Bekannte Lücken**
+- Ziehen/Ablegen, Marken in der Taktleiste, Marken-Blatt, Bereich-Leiste (V2e, V2e′); Aufnahme ab Takt n / eigene Clips (V2d′):
+  die Daten-Felder `own` werden schon getragen, aber noch nicht abgespielt.
+- Am iPhone ungeprüft: Lesbarkeit der Mini-Zeitleiste (16 Kästchen à ≈ 22 px), Treffsicherheit der Namens-Chips.
+- Stummschalten (M) wird nicht eingefangen (4.1 *(P1)*, Frage 4).
+
+**Für Xander am iPhone (nach dem Ausliefern von 4.5.0)**
+1. Szene 1 starten, **TRANSPONIEREN**, zweimal Am – F – C – G je Takt spielen, kurz nach dem nächsten Taktstrich **FANG TEIL**
+   tippen: das Blatt sagt „Ende Taktstrich … (zu spät, zählt)“, der Teil läuft ohne Bruch im Kreis weiter.
+2. Zwischendurch einen Clip aus- und wieder einschalten, dann FANG TEIL: die Zeile unter der Zeitleiste nennt „aus T…“.
+3. **ALS TEIL ✓** → Taste STROPHE in der Teil-Leiste; eine andere Szene starten, STROPHE tippen: alles klingt wie gefangen.
+4. Nochmal fangen, Chip **Strophe** wählen → „＋ Strophe 2“ oder „⟳ Strophe ersetzen“; **＋ Ans Song-Ende** legt den Teil in den Song.
