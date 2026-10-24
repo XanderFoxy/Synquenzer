@@ -3171,3 +3171,97 @@ zusätzlich **mehr als die Hälfte der Grundton-Energie** tragen (Sub-Oszillator
 (Test −10 dB ohne Einmessen), kann noch kurze Übergangs-Schnipsel durchlassen – über den Lautsprecher misst die App beim ersten 🎤 ohnehin
 voll ein. Singt man über einen sehr lauten Lautsprecher (−15 dB) leiser als die Begleitung, gehen Noten verloren (VS2 vorher: 0/12, jetzt
 3/12) – dafür bleiben Kopfhörer bzw. die echte Echo-Unterdrückung in VS4.
+
+## VS2b — Gesangs-Erkennung nach dem Gerätetest: keine Zwischennoten bei Rutschern, Vibrato bleibt eine Note, die Taste wackelt nicht mehr · App 4.5.2
+
+Anlass: Xanders iPhone-Test von VS2 (fragen-xander-9, 24.10.): „ein paar falsche Zwischennoten“ und „es wackelt“. Grundlage Nachtrag 2,
+Nachtrag zur Reihenfolge („Paket VS2b“). Ausgangspunkt war G-P1b-gruppe-fix (4.5.1), das schon eine erste Übergangs-Regel enthielt;
+VS2b baut sie aus und bringt dieselbe Regel in die Live-Taste. Keine Bedienung, kein Aussehen geändert, keine Datenänderung.
+
+**Auswertung beim FANG / ● REC (pYIN-lite → Noten, `segment`)**
+- **Hysterese 70 ms / 60 ct:** eine neue Note beginnt erst, wenn die Stimme ≥ 70 ms am Stück ≥ 60 ct neben der Mitte der laufenden
+  Note liegt (vorher 50 ms über ein 120-ms-Mittel). Gemessen wird am 3-Frame-Median statt am 120-ms-Mittel – dadurch bleiben schnelle
+  Läufe getrennt (1/16 bei 120 BPM: vorher 11 von 192 Tönen verschluckt, jetzt 0). Bis zum Ende einer Stimm-Strecke reichen 45 ms.
+- **Vibrato-Toleranz:** eine Halbwelle unter 160 ms, nach der die Stimme direkt (≤ 45 ms durch die Mitte) auf die Gegenseite schwingt
+  (Ausschlag ≤ 1,6 Halbtöne, Gegenseite ≥ 35 % davon), ist Vibrato derselben Note. Triller und die Umkehr eines Laufs kehren nur zur
+  Mitte zurück und bleiben Noten. Die Tonhöhe einer Note ist der **Median ihres eigenen Kerns**; angehängte Übergänge zählen nicht mit.
+- **Übergänge statt Zwischennoten:** ein Stück bis 170 ms, das sich deutlich bewegt (≥ 0,8 Halbtöne, oder ≥ 0,4 ohne 60 ms ruhige
+  Stelle), gehört zum Nachbarn: Anschleifen von unten/oben → zum Ton (Einsatz bleibt der Beginn des Anschleifens), Rutscher zwischen
+  zwei Tönen → Grenze, wo die Stimme näher am Ziel ist, **Abfall am Ende bis 7 Halbtöne** → zum Ton davor (auch ohne Bewegungs-
+  Schwelle, wenn das letzte Stück vor der Stille ≥ 3 dB leiser ist und nirgends 70 ms ruhig steht). Ein einzelner Rutscher ohne ruhige
+  Stelle (≥ 1 Halbton, < 115 ms) zwischen zwei Pausen fällt weg. Mindestlänge bleibt 60 ms (70 ms nahm bei 150 BPM echte Töne weg).
+
+**Live-Taste (Worklet `synq-stimme`, Quelltext ASCII)**
+- Tonhöhe je 10-ms-Hop = Median der letzten 3 Hops. **Einsatz** nach 3 ruhigen Hops (Spanne ≤ 0,35, flach ≤ 0,15), sonst nach 8.
+- **Wechsel** erst nach ≥ 70 ms ≥ 60 ct neben der Mitte der leuchtenden Note und 50 ms Ruhe; während Vibrato 120 ms; Sprung ≥ 2 Halbtöne
+  40 ms; in den ersten 100 ms nach dem Einsatz korrigiert ein ruhig ankommendes Anschleifen sofort; die Mitte zieht nach einem langsamen
+  Gleiten nach (Median der Note bzw. der letzten 200 ms).
+- **Klarheit mit Hysterese** (0,8 zum Einschalten, 0,65 solange die Taste leuchtet) und kurze Aussetzer ohne Pegel-Einbruch halten die
+  Taste bis 50 ms (Vibrato-Umkehrpunkte); mit Einbruch ≥ 6 dB geht sie wie bisher nach 30 ms aus. Die Übersprech-Sperre (VS2-fix) prüft
+  bei derselben Schwelle (siehe Fach-Prüfung, Befund 1).
+
+**Abnahme VS2b** (eigene Punkte, das Paket hat in Nachtrag 2 nur die Kurzbeschreibung; Node direkt auf DSP und Worklet aus `index.html`,
+Vergleich „vorher“ = 4.5.1; Skript `v3-vs2b-accept.mjs`, Ausgabe `v3-vs2b-accept.out`: **ALLE OK**)
+
+| ID | Prüfung | jetzt | vorher (4.5.1) |
+|---|---|---|---|
+| VS2b-01 | Anschleifen von unten (1–3 Halbtöne, 40–120 ms), je 6 Stimmen × 20 Töne | 120/120, 0 zusätzlich | 1 zusätzlich |
+| VS2b-01 | Anschleifen von unten und oben | 120/120, 0 | 3 |
+| VS2b-01 | Rutscher 100–300 ms (legato) | 120/120, 0 | 0 |
+| VS2b-01 | Abfall am Ende (2–5 Halbtöne, 80–160 ms) | 120/120, 2 (≤ 2 %) | **61** |
+| VS2b-01 | Mischung (Vibrato bis ±110 ct, Drift, Anschleifen, Abfall, Rutscher, Rauschen 30 dB) | 144/144, 5 (≤ 4 %) | 18 |
+| VS2b-02 | Läufe 1/16 bei 120 BPM (legato) | 192/192 | 181/192 |
+| VS2b-02 | Läufe 1/16 bei 150 BPM | 188/192 (≥ 97 %) | 184/192 |
+| VS2b-02 | Halbton-Triller 1/16 bei 120 BPM | 144/144 | 135/144 |
+| VS2b-03 | +1 Halbton für 40/60 ms → 1 Note; für 100/150 ms → 3 Noten; +50 ct 300 ms → 1 Note | 1/1 · 3/3 · 1 | – |
+| VS2b-04 | breites Vibrato ±90–130 ct, 5–6,5 Hz: eine Note je Ton; Tonhöhe je Note | 96/96, 0; Median 5 ct, max 24 ct | 1 zusätzlich |
+| VS2b-05 | **echte Gesangsaufnahme** vocadito_1 (33 s, zwei Annotationen A1/A2, Einsatz ±100 ms, MIDI-Ton) | F 0,883 / 0,848, falsch 8 | F 0,852 / 0,819, falsch 11 (VS2-fix: 0,797) |
+| VS2b-05 | echte Aufnahmen vocadito_10 / _14 (ohne Noten-Wahrheit): Noten, davon < 100 ms | 28/5 · 28/1 | 33/7 · 37/7 (VS2-fix 37/11 · 45/13) |
+| VS2b-06 | Live: falsche Tasten über alle Übergangs-/Vibrato-Fälle | 141 | 1 846 |
+| VS2b-06 | Live: Wechsel mitten im Ton (Wackeln) | 309 · breites Vibrato 17 | 2 162 · 1 083 |
+| VS2b-06 | Live: Läufe/Triller leuchten | 346/352, 0 falsche | – |
+| VS2b-06 | Live echte Stimme vocadito_1: Tasten-Meldungen / falsche Tasten / leuchtende Noten / Latenz Median | 74 / 22 / 51 von 59 / 96 ms | 155 / 78 / 58 / 52 ms |
+| VS2b-06 | Rechenzeit Live-Weg | 1,59 % Echtzeit (≤ 3 %) | 1,27 % |
+| VS2b-07 | In der App (Mikro-Attrappe, `v3-vs2b-app.mjs`): 4 Takte mit Anschleifen, Rutschern, Abfall, Vibrato ±115 ct → Stimme-FANG | 12/12 Töne, 0 Zwischennoten, 15 Tasten-Meldungen | 2 Zwischennoten, 85 Meldungen |
+| VS2b-08 | Version 4.5.2, keine Konsolenfehler | ✓ | |
+
+Echte Aufnahmen: vocadito (Bittner u. a., CC BY 4.0) – `vocadito_1` mit Noten-Annotationen A1/A2 aus den Testdaten von mirdata
+(github.com/mir-dataset-loaders/mirdata), `vocadito_10/14` aus den Testdaten von basic-pitch (PyPI-Quellpaket). Liegen nur im
+Arbeitsordner `realvox/` (nicht in der App). Synthetischer Stress-Korpus `v3-vs2b-synth.mjs` (Tonhöhen-Kontur je Ton: Anschleifen,
+Abfall, Rutscher, Vibrato, Drift; Formant-Stimme männlich/weiblich).
+
+**Regression** (alle grün): VS2-Bench `v3-vs2b-bench.out` (N7V-08/09/10, N2-VS2-02; A 1,0 · C 0,997 · D 1,0 · E 0,997 · F 0,93 ·
+Gm 0,99, Instrument unverändert), Wackel-/Gleit-Korpus G-P1b `v3-gfix-wob-node.mjs` (bad 0), VS2-Abnahme `v3-vs2-accept.mjs` (ALLE OK),
+`v3-vs2-reg.mjs`, Live `v3-vs2-live.mjs` (N7V-14: 110 Hz 52 ms, 220 Hz 41 ms ≤ 60; Taste aus 60 ms ≤ 80; Render-Block max 2,1 ms ≤ 2,67),
+Übersprech-Sperre `v3-vs2fix-gate.mjs`, `v3-qa-vs2acc-t1 speaker`, `t3 -30`, `v3-vs2fix-keyafter`, Oktave sperren live
+(`v3-repro-octlock-live`, `t8b`), Smoke (`v3-vs2b-smoke.png`, ohne Fehler). Bilder P1/P3/L1/L2 mit leuchtender Taste bei Vibrato ±90 ct
+(`v3-vs2b-{P1,P3,L1,L2}.png`): eine Taste, kein waagrechtes Rollen; Layout unverändert.
+
+**Fach-Prüfung (Teil J: FP-DSP, Zweit-Blick FP-IPHONE; selbst durchgeführt, kein eigener Agent verfügbar) – 3 Befunde, 1 behoben, 2 begründet**
+1. *FP-DSP, behoben:* Die gesenkte Klarheits-Schwelle (0,65 bei leuchtender Taste) umging die Übersprech-Sperre, die nur ab 0,8 prüfte –
+   über den Lautsprecher leuchtete nach gesungenen Tönen die Begleit-Taste 44 (`v3-vs2fix-gate.mjs`: „62,44,65,69,44,…“). Die Sperre prüft
+   jetzt bei derselben Schwelle; Ausgabe wieder identisch zu 4.5.1. (Nebenbefund: dieser alte Test meldet „OK“ auch mit der Begleit-Taste –
+   seine Prüfung ist zu weich; VS2b vergleicht die Tastenfolge deshalb ausdrücklich.)
+2. *FP-DSP, begründet:* Die Live-Taste reagiert auf Legato-Wechsel später (echte Stimme: Median 52 → 96 ms; 7 von 59 sehr kurzen Tönen
+   leuchten nicht mehr). Das ist die verlangte Hysterese (≥ 70 ms stabil); die Noten beim FANG sind davon nicht betroffen. Ein Anschleifen
+   mit flachem Anfang lässt beim Einsatz die tiefere Taste noch 60–80 ms aufleuchten (dann sofortige Korrektur).
+3. *FP-IPHONE, begründet:* Rechenzeit live +0,3 % Echtzeit (1,59 %), Segmentierung +5 ms bei 33 s Gesang (pYIN 1,6 s unverändert), Datei
+   +8,6 KB (2 412 357 Byte); Start und Bild unverändert. iPhone-Faktor weiter unbelegt (Gerät).
+
+**Bekannte Grenzen:** Halbton-Wechsel legato bei 1/16 und 150 BPM (≈ 100 ms je Ton) liegen an der 70-ms-Grenze (188/192). Ein Abfall,
+der unten ≥ 60–70 ms ruhig stehen bleibt, gilt als eigener Ton (musikalisch ein „Fall auf einen Ton“). Wiederholte Silben auf derselben
+Tonhöhe bleiben getrennt (das sind echte Töne). Echte Stimmen sind weiterhin schwerer als der Korpus; Xanders Gerätetest entscheidet.
+
+**Rollout:** `max_app` war beim Lesen **4 005 001**. `apply_migration vs2b_max_app` (`greatest(max_app, 4005002)`, Datei
+`synq-online/r7-vs2b-max-app.sql`) **wartete auf eine Bestätigung und lief nach 60 s ab – nicht eingetragen. Offen: vor dem Ausliefern
+von 4.5.2 einspielen**, sonst lehnt `save_project` das Online-Speichern ab (lokal speichert die App weiter).
+
+**Für Xander im Dashboard** (nur falls der Orchestrator die Migration nicht nachholt): SQL-Editor des Projekts **synquenzer**
+(`dbdnsryoivvezspgydpx`, nicht das Klassenzimmer!) → `update private.settings set max_app = greatest(max_app, 4005002);` → Run.
+
+**Für Xander am iPhone (Pages-Seite, ≈ 3 min)**
+1. 🎤 an, ▶, eine Melodie mit **Rutschern** (von Ton zu Ton gleiten) und einem **lang gehaltenen Ton mit Vibrato** singen. Die grüne Taste
+   soll beim gehaltenen Ton ruhig auf **einer** Taste bleiben und bei Rutschern nicht über die Zwischentasten flackern.
+2. Danach **FANG 🎤**: im Blatt zählen, ob zwischen den gesungenen Tönen noch kurze falsche Noten stehen (Soll: keine) und ob alle
+   gesungenen Töne da sind.
+3. Bitte melden: Zahl der falschen Zwischennoten, ob die Taste noch wackelt, ob schnelle Töne fehlen.
