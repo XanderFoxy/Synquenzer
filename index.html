@@ -3208,6 +3208,20 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .stpop .st-btns button{flex:1 1 0;min-height:44px}
 .stpop .st-go.off{border-color:var(--rec);background:var(--rec-dim);color:#fff}
 .stpop .st-hint{margin:8px 0 0;color:var(--text-dim)}
+/* VS2: Stimme → Noten im Mikro-Blatt, leuchtende gesungene Taste, Ergebnis-Blatt */
+.stpop .st-vs{display:flex;gap:6px;margin-top:6px}
+.stpop .st-vs button{flex:1 1 0;min-width:0;min-height:44px;padding:0 6px;font-size:12px}
+.stpop .st-vs button.on{border-color:var(--t6);color:var(--t6);background:rgba(163,230,53,.12)}
+.key.vs{box-shadow:inset 0 0 0 3px var(--t6),0 0 12px var(--t6)!important}
+.key.w.vs{background:linear-gradient(180deg,#f4ffe0 0%,#d9f99d 70%)!important}
+.key.b.vs{background:linear-gradient(180deg,#5a7d1c,#36500f)!important}
+.fsheet.vsres .fs-t{color:var(--t6)}
+.fsheet.vsres .vs-chip{background:var(--t6)}
+.fsheet .vs-roll{display:block;width:100%;height:52px;margin-top:2px;border-radius:6px;background:rgba(0,0,0,.28)}
+.fsheet .vs-row .cp-c{flex:1 1 0;min-width:0;height:40px;padding:0 4px}
+.fsheet .vs-row .vs-oct{flex:none;width:30px;text-align:center;font:700 12px/1 var(--font-num)}
+.fsheet .vs-row .vs-snap{flex:2 1 0}
+.fsheet .vs-row .cp-c.on{border-color:var(--t6);color:var(--t6);background:rgba(163,230,53,.12)}
 /* ===== V2c (§4.4/§4.5): Teil-Leiste (statt Hinweis-Kasten), Matrix-Auswahl, Teil-Blatt, Akkord-Zeilen-Blatt, ↩ TEIL ===== */
 #partBar{flex:none;position:relative;display:flex;align-items:stretch;gap:4px;height:40px;margin:2px 8px 6px;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:none}
 #gridArea.song #partBar{display:none}                    /* EN7-02: no Teil-Leiste in the portrait song view */
@@ -6026,6 +6040,9 @@ const RecHelpers = (() => {
     btn(acts, '▼ Stufe', () => act('Transponieren', ns => transposeNotes(ns, -1, true)), 'In der Tonart eine Stufe tiefer');
     btn(acts, '+12', () => act('Oktave', ns => transposeNotes(ns, 12, false)), 'Oktave hoch');
     btn(acts, '−12', () => act('Oktave', ns => transposeNotes(ns, -12, false)), 'Oktave tiefer');
+    // VS2 Korrektur-Griffe (wie Tony, r7/stimme.md §11 Skizze 4): Teilen / Verbinden – nur mit Auswahl, je ein Undo
+    A.split = btn(acts, 'Teilen', () => { if (!E.sel.size) { say('Erst Noten wählen (⬚)'); return; } act('Teilen', ns => splitNotes(ns)); }, 'Gewählte Noten in der Mitte teilen (am Raster)');
+    A.join = btn(acts, 'Verbinden', () => { if (E.sel.size < 2) { say('Mindestens zwei Noten wählen (⬚)'); return; } act('Verbinden', ns => joinNotes(ns)); }, 'Gewählte Noten zu einer Note verbinden');
     sep(acts);
     btn(acts, 'Dupl.', () => duplicate(), 'Duplizieren (hinter die Auswahl / Clip verdoppeln)');
     btn(acts, 'Quant.', () => { const ns = scope(); if (!ns.length) return; if (opts.onQuant) opts.onQuant(E.sel.size ? ns : null); else act('Quantisieren', x => quantizeNotes(x)); }, 'Quantisieren');
@@ -6203,6 +6220,29 @@ const RecHelpers = (() => {
       if (out.some(n => n < 0 || n > 127)) return false;
       ns.forEach((nt, i) => { nt.n = out[i]; });
       if (ns.length) { model.audition && model.audition(ns[0].n, ns[0].v); centerIfHidden(ns[0].n); }
+      return true;
+    }
+    // VS2: a note becomes two at its middle (snapped to the grid when the note is longer than one step); both keep pitch/velocity
+    function splitNotes(ns) {
+      const g = GRID[E.grid] || 0, c = clip(), add = []; let ch = false;
+      for (const nt of ns) {
+        if (nt.d < 1 / 16 - 1e-9) continue;
+        let h = g && nt.d > g + 1e-9 ? Math.max(g, Math.round(nt.d / 2 / g) * g) : nt.d / 2;
+        if (h >= nt.d - 1e-6) h = nt.d / 2;
+        const n2 = Object.assign({}, nt, {t: +(nt.t + h).toFixed(6), d: +(nt.d - h).toFixed(6)});
+        if (nt.o != null) n2.o = +(nt.o + h).toFixed(4);
+        nt.d = +h.toFixed(6); add.push(n2); ch = true;
+      }
+      if (!ch) { say('Zu kurz zum Teilen'); return false; }
+      c.notes.push(...add); E.sel = new Set([...ns, ...add]); return true;
+    }
+    // VS2: the chosen notes become one: from the first start to the last end, pitch of the longest, loudest velocity
+    function joinNotes(ns) {
+      if (ns.length < 2) return false;
+      const s = ns.slice().sort((a, b) => a.t - b.t), first = s[0], end = Math.max(...s.map(n => n.t + n.d));
+      const lg = s.reduce((a, b) => (b.d > a.d + 1e-9 ? b : a), s[0]);
+      const keep = Object.assign({}, first, {d: +Math.min(end - first.t, L() - first.t).toFixed(6), n: lg.n, v: Math.max(...s.map(n => n.v))});
+      const c = clip(), drop = new Set(s); c.notes = c.notes.filter(n => !drop.has(n)); c.notes.push(keep); E.sel = new Set([keep]);
       return true;
     }
     function quantizeNotes(ns) { const g = GRID[E.grid]; if (!g) return false; for (const nt of ns) { let t = Math.round((nt.o != null ? nt.o : nt.t) / g) * g; if (t >= L() - 1e-9) t = ((t % L()) + L()) % L(); if (t >= L() - 1e-9) t = 0; nt.t = +t.toFixed(6); } return true; }
@@ -6552,6 +6592,7 @@ const RecHelpers = (() => {
       fol: () => ({x0: V.x0, ppb: V.ppb, W: V.W, L: clip() ? L() : 0, busy: P.size > 0 || !!gst || busyN > 0 || !!V.freeze, sel: E.sel.size > 0 || !!E.loop, tool: E.tool !== 'draw' || E.step != null}),
       setLoop: (a, b) => { const n = clip().len; if (a == null) E.loop = null; else { a = clamp(a | 0, 0, n - 1); b = clamp(b == null ? a : b | 0, 0, n - 1); E.loop = {a: Math.min(a, b), b: Math.max(a, b)}; } render(); },
       select: ns => { E.sel = new Set((ns || []).filter(n => clip().notes.includes(n))); render(); },
+      selectIdx: ix => { const ns = clip().notes; E.sel = new Set((ix || []).map(i => ns[i]).filter(Boolean)); render(); return E.sel.size; },   // VS2 tests
       setFold: on => { E.fold = !!on; buildRows(true); render(); },
       centerOn: n => { measure(); centerOn(n); clampView(); render(); },
       get state() { return {tool: E.tool, grid: E.grid, fold: E.fold, sel: E.sel.size, step: E.step, loop: E.loop ? {a: E.loop.a, b: E.loop.b} : null, ask: E.ask, pointers: P.size, gesture: gst && gst.kind, view: {...V, rows: V.rows.length}}; },
@@ -10636,7 +10677,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.5.0';
+const VERSION = '4.5.1';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -12701,6 +12742,7 @@ function drumHit(gm, vel, t, src, ex, o) {
   if (src !== 'preview') h.perf = perfAdd(DRUM_T, sl.gm, t, t + .1 * spb(), vel);
   h.log = logNote({track: DRUM_T, src, clipNote: src === 'clip' ? sl.gm : null, out: sl.gm, time: t, dur: null, vel});
   padFlashAt(sl.idx, t);
+  if (ST.on && src !== 'preview') vsMaskAdd(t, 0.04);         // VS2 Treffer-Maske (nur Lautsprecher)
   if (sl.gm === 36 && S.fxBus.pumpSrc === 'kick' && (src === 'clip' || src === 'pad')) onKickScheduled(t);     // Pumpen (§8.1, §7.5)
   return h;
 }
@@ -12717,6 +12759,7 @@ function click(t, accent) {
   o.onended = () => { k.dead = true; try { o.disconnect(); g.disconnect(); } catch (e) {} const x = CLICKS.indexOf(k); if (x >= 0) CLICKS.splice(x, 1); };
   k.log = logNote({track: -1, src: 'click', clipNote: null, out: accent ? 1 : 0, time: t, dur: null, vel: S.settings.metroVol});
   CLICKS.push(k); if (CLICKS.length > 32) CLICKS.shift();
+  if (ST.on) vsMaskAdd(t, 0.035);                             // VS2 Klick-Maske (nur Lautsprecher)
 }
 
 /* ---------- audition (KLANG ▶ Hören, API) ---------- */
@@ -14388,9 +14431,11 @@ function recBegin() {
     // pad hits and short notes caught in the early window (before the overdub began): commit now that the snapshot exists
     for (const [id, o] of [...rec.open]) if (o.kind === 'od' && (o.drum || o.offB != null)) { rec.open.delete(id); commitRecNote(o, o.drum ? o.b + .1 : o.offB); }
     recCatchRecent(rec.startBeat - rec.catchWin, 'od');
+    vsRecBegin();                                            // VS2: mit 🎤 wird das Gesungene ein MELODIE-Clip
     UI.dirty.all = true; return;
   }
   rec.state = 'recording';
+  vsRecBegin();
   if (rec.fixedLen) {
     const before = S.tracks[ti].clips[si];
     const clip = {len: rec.fixedLen, key: Object.assign({}, rec.key), notes: []};
@@ -14472,6 +14517,7 @@ function cancelRecClicks(fromBeat) {
   for (const k of CLICKS) if (!k.dead && k.t >= t0 && k.t > now) { k.dead = true; try { k.o.stop(); k.o.disconnect(); k.g.disconnect(); } catch (e) {} logDrop(k.log); }
 }
 function recEndFixed(atBeat, natural) {
+  vsRecEnd(Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat));     // VS2
   recCommitOpen(Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat));
   cancelRecClicks(Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat));
   if (rec.clip) rec.clip.notes.sort((a, b) => a.t - b.t);
@@ -14482,7 +14528,7 @@ function recEndFixed(atBeat, natural) {
     // nothing played: no clip is created (§4.3.6). A natural close happens a lookahead early, so a note played
     // right before the bar line still arrives as 'tail' -> decide when the tail window is over.
     if (natural && rec.tail) rec.tail.emptyCheck = true;
-    else { dropEmptyRecClip(rec.track, rec.scene, rec.clip); rec.clip = null; rec.tail = null; toast('Nichts aufgenommen'); }
+    else { dropEmptyRecClip(rec.track, rec.scene, rec.clip); rec.clip = null; rec.tail = null; if (!VS.busy) toast('Nichts aufgenommen'); }
   } else { analyseClip(rec.track, rec.scene, true, true); recResultToast(rec.track, rec.scene, n); }
   clipChanged(rec.track, rec.scene); markDirty();
   UI.dirty.all = true;                        // ● goes back to idle (also when the take closes by itself)
@@ -14530,6 +14576,7 @@ function clipSansOverdub(t, s) {
 }
 function recEndOverdub(atBeat) {
   if (atBeat == null) atBeat = recBeatNow();
+  vsRecEnd(atBeat);                                          // VS2
   for (const [id, o] of [...rec.open]) if (o.kind === 'od' && o.b >= atBeat - 1e-9 && rec.odEnd != null) rec.open.delete(id);   // played after the switch
   recCommitOpen(atBeat);
   rec.state = 'off'; rec.odEnd = null;
@@ -14541,12 +14588,13 @@ function recEndOverdub(atBeat) {
     pushUndo(rec.track, rec.scene, before, 'Overdub');
     analyseClip(rec.track, rec.scene, true, true, take); recResultToast(rec.track, rec.scene, rec.added, true); markDirty();
   }
-  else toast('Nichts hinzugefügt');
+  else if (!VS.busy) toast('Nichts hinzugefügt');
   rec.snapshot = null; clipChanged(rec.track, rec.scene);
   UI.dirty.all = true;
 }
 function recClose(bd) {
   if (rec.fixedLen) { recEndFixed(bd, true); return; }
+  vsRecEnd(bd);                                              // VS2
   // notes that began on/after the closing bar line (● pressed late) belong to the clip's next loop: keep them open as tail notes
   const late = [];
   for (const [id, o] of [...rec.open]) if (o.kind === 'new' && o.b >= bd - 1e-9) { rec.open.delete(id); late.push([id, o]); }
@@ -14564,7 +14612,7 @@ function recClose(bd) {
     notes.push(x);
   }
   rec.state = 'off'; rec.temp = [];
-  if (!notes.length && !late.length) { toast('Nichts aufgenommen'); UI.dirty.all = true; return; }
+  if (!notes.length && !late.length) { if (!VS.busy) toast('Nichts aufgenommen'); UI.dirty.all = true; return; }
   notes.sort((a, b) => a.t - b.t);
   const clip = {len, key: Object.assign({}, rec.key || {root: S.key.root, scale: S.key.scale, src: 'auto'}), notes};
   if (S.tracks[ti].kind === 'drum') clip.seed = newSeed();
@@ -15022,6 +15070,8 @@ function capture() {
   markDirty(); UI.dirty.all = true;
   return true;
 }
+// VS2: FANG 🎤 leuchtet, solange ▶ läuft, keine Aufnahme, MELODIE einen freien Platz hat und in den letzten 8 s gesungen wurde
+function vsFangLit() { const tr = S.tracks[MEL_T]; return R.playing && rec.state === 'off' && !R.countIn && !VS.busy && !!tr && tr.clips.some(c => !c) && vsVoiceRecent(); }
 // the FANG chip lights for 8 s after the last live note, only while the transport runs, REC is off and a slot is free
 function fangLit() {
   const tr = S.tracks[R.selT];
@@ -16670,13 +16720,15 @@ function fangSceneAlt(p) {
 // the FANG place: FANG TEIL in ⇅ TRANSPONIEREN (also held) and, in ♪ SPIELEN, after clip / scene changes without a note for 8 s (EN7-09)
 function fangMode() {
   if (R.kbMode === 'transpose' || R.momentary) return 'teil';
+  // VS2: mit 🎤 und Gesang in den letzten 8 s (und keine Taste danach) fängt FANG die Stimme
+  if (vsVoiceRecent() && !CAP.last.some(x => x > VS.lastVoice)) return 'stimme';
   const now = performance.now(), quiet = !CAP.last.some(x => now - x < 8000);
   return quiet && MEM.lastChange > MEM.lastBound + 1e-6 ? 'teil' : 'fang';
 }
 function fangTeilLit() {
   return R.playing && rec.state === 'off' && !R.countIn && !(UI.pop && UI.pop.name === 'fang') && MEM.lastChange > MEM.lastBound + 1e-6 && AU.ctx && MEM.lastChange > audBeat() - 64;
 }
-function fangTap() { return fangMode() === 'teil' ? fangTeil() : capture(); }
+function fangTap() { const m = fangMode(); return m === 'teil' ? fangTeil() : m === 'stimme' ? vsFang() : capture(); }
 // the tap (o.beat: tests – the audible beat of the tap)
 function fangTeil(o) {
   o = o || {};
@@ -18263,7 +18315,9 @@ function kbPaint() {
   const pl = !trm && lit, lk = pl && ks === 'lock';
   if (UI.last.kbPl !== pl) { UI.last.kbPl = pl; EL.kb.classList.toggle('pl', pl); }
   if (UI.last.kbLk !== lk) { UI.last.kbLk = lk; EL.kb.classList.toggle('locked', lk); }
+  const vk = vsLitKey();                                     // VS2: die gesungene Note leuchtet
   for (const [note, k] of KB.byNote) {
+    setCls(k.el, k.st, 'vs', note === vk);
     const deg = SC ? SC.indexOf(PCx(note - ref.root)) : -1;
     setCls(k.el, k.st, 'dn', held.has(note));
     setCls(k.el, k.st, 'lt', latched.has(note));
@@ -18769,11 +18823,11 @@ function uiFrame() {
   paintGhosts(tAud);
   padFlashes(tAud);
   recLaneFrame(bAud);
-  const fm = fangMode(), fl = fm === 'teil' ? fangTeilLit() : fangLit();     // V2d: FANG TEIL (§4.7 E3-08, EN7-09)
+  const fm = fangMode(), fl = fm === 'teil' ? fangTeilLit() : fm === 'stimme' ? vsFangLit() : fangLit();     // V2d: FANG TEIL (§4.7 E3-08, EN7-09); VS2: Stimme
   if (fm !== UI.last.fangM) {
-    UI.last.fangM = fm; const tl = fm === 'teil';
-    EL.bFang.innerHTML = tl ? 'FANG<br>TEIL' : 'FANG<br>⤓'; EL.bFangT.textContent = tl ? 'FANG TEIL' : 'FANG ⤓';
-    for (const b of [EL.bFang, EL.bFangT]) { b.classList.toggle('teil', tl); b.setAttribute('aria-label', tl ? 'FANG TEIL – Gespieltes als Song-Teil einfangen' : 'FANG – Gespieltes einfangen'); }
+    UI.last.fangM = fm; const tl = fm === 'teil', vs = fm === 'stimme';
+    EL.bFang.innerHTML = tl ? 'FANG<br>TEIL' : vs ? 'FANG<br>🎤' : 'FANG<br>⤓'; EL.bFangT.textContent = tl ? 'FANG TEIL' : vs ? 'FANG 🎤' : 'FANG ⤓';
+    for (const b of [EL.bFang, EL.bFangT]) { b.classList.toggle('teil', tl); b.classList.toggle('vsf', vs); b.setAttribute('aria-label', tl ? 'FANG TEIL – Gespieltes als Song-Teil einfangen' : vs ? 'FANG – Gesungenes als MELODIE-Clip einfangen' : 'FANG – Gespieltes einfangen'); }
   }
   if (fl !== UI.last.fang) { UI.last.fang = fl; EL.bFang.classList.toggle('lit', fl); EL.bFangT.classList.toggle('lit', fl); }
   if (R.keyPending.size && !traegerActive()) for (const x of [...R.keyPending]) applySceneKeys(x);   // after ORIGINAL (§4.1.3)
@@ -29386,7 +29440,62 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
       h[i] = (k === 0 ? 2 * fc : Math.sin(2 * Math.PI * fc * k) / (Math.PI * k)) * w; s += h[i]; }
     for (let i = 0; i < T; i++) h[i] /= s;
     this.h = h; this.T = T; this.H = new Float32Array(2 * T); this.hp = 0;
-    this.port.onmessage = e => { if (e.data && e.data.stop) this.on = false; };
+    this.port.onmessage = e => { const d = e.data; if (!d) return; if (d.stop) this.on = false; if (d.cfg) this.cfg = d.cfg; if (d.mask) { this.mk.push(d.mask); if (this.mk.length > 64) this.mk.shift(); } };
+    // VS2 live MPM (McLeod/Wyvill) on the 3:1 signal: window 640 (40 ms), hop 160 (10 ms), FFT 1024; key on after 2 equal hops
+    this.cfg = p.mpm || null; this.mk = []; this.mW = 640; this.mN = 1024; this.mHop = 160; this.mb = new Float32Array(640); this.mp = 0; this.mc = 0;
+    this.re = new Float64Array(1024); this.im = new Float64Array(1024); this.nn = new Float64Array(660); this.xw = new Float64Array(640);
+    this.rev = new Uint16Array(1024); this.cs = new Float64Array(512); this.sn = new Float64Array(512);
+    for (let i = 0; i < 1024; i++) { let r = 0; for (let k = 0; k < 10; k++) r |= ((i >> k) & 1) << (9 - k); this.rev[i] = r; }
+    for (let i = 0; i < 512; i++) { this.cs[i] = Math.cos(2 * Math.PI * i / 1024); this.sn[i] = -Math.sin(2 * Math.PI * i / 1024); }
+    this.lit = -1; this.cand = -1; this.cn = 0; this.off = 0; this.mt = 0; this.mcount = 0;
+  }
+  fft(re, im, sg) {
+    const N = 1024, rev = this.rev, cs = this.cs, sn = this.sn;
+    for (let i = 0; i < N; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+    for (let s = 2; s <= N; s <<= 1) { const hh = s >> 1, st = N / s;
+      for (let i = 0; i < N; i += s) for (let k = 0; k < hh; k++) { const wr = cs[k * st], wi = sg * sn[k * st], a = i + k, c = a + hh, xr = re[c] * wr - im[c] * wi, xi = re[c] * wi + im[c] * wr; re[c] = re[a] - xr; im[c] = im[a] - xi; re[a] += xr; im[a] += xi; } }
+  }
+  ge(x, W, fs, f) { if (f >= fs / 2) return 0; const c = 2 * Math.cos(2 * Math.PI * f / fs); let s1 = 0, s2 = 0; for (let j = 0; j < W; j++) { const v = x[j] * (0.5 - 0.5 * Math.cos(2 * Math.PI * j / (W - 1))) + c * s1 - s2; s2 = s1; s1 = v; } return s1 * s1 + s2 * s2 - c * s1 * s2; }
+  mpm(F) {
+    const W = this.mW, fs = sampleRate / 3, cf = this.cfg, inst = cf.src === 'inst', fmin = inst ? 40 : 55, fmax = inst ? 1600 : 1050;
+    for (let i = this.mk.length - 1; i >= 0; i--) { const m = this.mk[i]; if (m[1] < F - 3 * W - 48000) this.mk.splice(i, 1); else if (m[1] >= F - 3 * W && m[0] <= F) return; }
+    const re = this.re, im = this.im, x = this.xw; let e = 0;
+    for (let j = 0; j < W; j++) { const v = this.mb[(this.mp + j) % W]; x[j] = v; re[j] = v; im[j] = 0; e += v * v; }
+    for (let j = W; j < 1024; j++) { re[j] = 0; im[j] = 0; }
+    if (e / W > 1e-6) {
+      this.fft(re, im, 1);
+      for (let k = 0; k < 1024; k++) { re[k] = re[k] * re[k] + im[k] * im[k]; im[k] = 0; }
+      this.pend = true; this.pF = F; this.pE = e;             // the second half runs in the next render quantum (no spike)
+      return;
+    }
+    this.mpm2(F, 0, 0);
+  }
+  mpm2(F, f, cl) {
+    const W = this.mW, fs = sampleRate / 3, cf = this.cfg, inst = cf.src === 'inst', fmin = inst ? 40 : 55, fmax = inst ? 1600 : 1050;
+    const re = this.re, im = this.im, x = this.xw, pe = this.pend; this.pend = false;
+    if (pe) {
+      const e = this.pE;
+      this.fft(re, im, -1);
+      const tMax = Math.min(W - 2, Math.ceil(fs / fmin)), tMin = Math.max(2, Math.floor(fs / fmax)), n = this.nn;
+      let m = 2 * e;
+      for (let t = 0; t <= tMax + 1; t++) { n[t] = m > 0 ? 2 * (re[t] / 1024) / m : 0; m -= x[t] * x[t] + x[W - 1 - t] * x[W - 1 - t]; }
+      let pos = false, mx = -1, mi = -1, top = 0, k = -1, nk = 0; const keys = this.keys || (this.keys = new Int16Array(400));
+      for (let t = 1; t <= tMax; t++) {
+        if (!pos && n[t] > 0 && n[t - 1] <= 0) { pos = true; mx = -1; mi = -1; }
+        else if (pos && n[t] <= 0) { pos = false; if (mi > 0 && nk < 400) keys[nk++] = mi; }
+        if (pos && t >= tMin && n[t] > mx && n[t] >= n[t - 1] && n[t] >= n[t + 1]) { mx = n[t]; mi = t; }
+      }
+      if (pos && mi > 0 && nk < 400) keys[nk++] = mi;
+      for (let q = 0; q < nk; q++) if (n[keys[q]] > top) top = n[keys[q]];
+      for (let q = 0; q < nk; q++) if (n[keys[q]] >= 0.9 * top) { k = keys[q]; break; }
+      if (k > 0) { const a = n[k - 1], b = n[k], c = n[k + 1], den = a - 2 * b + c, sh = den < 0 ? 0.5 * (a - c) / den : 0; f = fs / (k + sh); cl = b - 0.25 * (a - c) * sh; }
+      if (f && inst && cf.lock) for (let g = 0; g < 2 && 2 * f <= 1600; g++) { const od = this.ge(x, W, fs, 3 * f) + this.ge(x, W, fs, 5 * f) + this.ge(x, W, fs, 7 * f), ev = this.ge(x, W, fs, 2 * f) + this.ge(x, W, fs, 4 * f) + this.ge(x, W, fs, 6 * f); if (ev > 0 && od < 0.1 * ev) f *= 2; else break; }
+    }
+    if (f > 0 && cl >= (inst ? 0.85 : 0.8)) {
+      const note = Math.round(69 + 12 * Math.log2(f / 440)); this.off = 0;
+      if (note === this.cand) this.cn++; else { this.cand = note; this.cn = 1; }
+      if (this.cn >= 2 && note !== this.lit) { this.lit = note; this.port.postMessage({lit: note, f: Math.max(F, currentFrame), c: Math.round(cl * 100) / 100}); }
+    } else { this.cand = -1; this.cn = 0; if (++this.off >= 3 && this.lit >= 0) { this.lit = -1; this.port.postMessage({lit: -1, f: Math.max(F, currentFrame)}); } }
   }
   flush() {
     if (!this.n) return;
@@ -29401,6 +29510,7 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
     if (this.last >= 0 && currentFrame !== this.last && this.calls > 64) this.gaps++;
     this.calls = (this.calls || 0) + 1; this.last = currentFrame + L;
     if (this.n + L > this.B) this.flush();
+    if (this.pend) this.mpm2(this.pF, 0, 0);
     if (this.n === 0) this.f0 = currentFrame;
     const h = this.h, T = this.T, H = this.H, m = this.m, r = this.r, o = this.n;
     let pk = 0, ss = 0, rp = this.rp;
@@ -29415,6 +29525,7 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
         let acc = 0; const base = this.hp; for (let k = 0; k < T; k++) acc += h[k] * H[base + k];
         if (this.d0 < 0) this.d0 = (F - 2) / 3;
         this.d[this.dn++] = acc >= 1 ? 32767 : acc <= -1 ? -32767 : Math.round(acc * 32767);
+        if (this.cfg) { this.mb[this.mp] = acc; this.mp = this.mp + 1 === 640 ? 0 : this.mp + 1; if (++this.mc >= 640 && this.mc % 160 === 0) this.mpm(F); }
       }
     }
     this.pk[this.q] = pk; this.rm[this.q] = Math.sqrt(ss / L); this.q++; this.rp = rp;
@@ -29444,6 +29555,7 @@ function stProf() {
     for (const k of Object.keys(ST_ROUTES)) { const p = o.prof[k]; if (p && typeof p.ms === 'number' && isFinite(p.ms) && p.ms > 0 && p.ms < 1000)
       out.prof[k] = {ms: p.ms, spread: +p.spread || 0, at: String(p.at || '').slice(0, 30), how: p.how === 'hand' ? 'hand' : 'gemessen', floorDb: isFinite(+p.floorDb) ? +p.floorDb : null, gainDb: isFinite(+p.gainDb) ? +p.gainDb : null, outMs: isFinite(+p.outMs) ? +p.outMs : null}; }
     if (ST_ROUTES[o.route]) out.route = o.route;
+    if (o.vs && typeof o.vs === 'object') out.vs = {src: o.vs.src === 'inst' ? 'inst' : 'voice', lock: !!o.vs.lock, snap: o.vs.snap !== false, grid: String(o.vs.grid || '1/16')};   // VS2
   }
   return (ST.prof = out);
 }
@@ -29565,11 +29677,11 @@ async function stGot(run, stream, wkP) {
   const ok = await wkP.catch(() => false);
   if (ST.run !== run || run.stopped) return;
   if (!ok) { stFail(run, {name: 'NoWorklet'}); return; }
-  const node = new AudioWorkletNode(c, 'synq-stimme', {numberOfInputs: 2, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 1, channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: {block: ST_BLOCK}});
+  const node = new AudioWorkletNode(c, 'synq-stimme', {numberOfInputs: 2, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 1, channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: {block: ST_BLOCK, mpm: vsLiveOpts()}});
   const src = c.createMediaStreamSource(stream), bus = c.createGain(), sink = c.createGain(); sink.gain.value = 0;
   src.connect(node, 0, 0); bus.connect(node, 0, 1); bus.connect(c.destination); node.connect(sink); sink.connect(c.destination);
   if (AU.M && AU.M.ceil) AU.M.ceil.connect(node, 0, 1);       // Referenz = was die App spielt (nach dem Master)
-  node.port.onmessage = e => stBlock(run, e.data);
+  node.port.onmessage = e => { const d = e.data; if (d && d.lit !== undefined) vsLitMsg(run, d); else stBlock(run, d); };   // VS2: Taste an/aus
   run.node = node; run.bus = bus; run.nodes = [src, node, bus, sink];
   if (!ST.ring || ST.ring.sr !== sr) ST.ring = stRing(sr); else { ST.ring.end = -1; ST.ring.start = -1; ST.ring.miss = 0; }
   ST.marks = []; ST.drops = []; ST.dropN = 0;
@@ -29795,6 +29907,7 @@ function stRelease(run, why) {
   ST.last = {why, tracks: run.tracksAfter, session: micAs(), frames: run.frames, gaps: run.gaps, sec: micR((performance.now() - run.t0) / 1000, 1)};
   if (ST.run === run) ST.run = null;
   ST.on = false; ST.phase = 'off'; ST.cal = null; ST.lvl = -180;
+  VS.lit = -1; VS.rec = null; VS.lastVoice = -1e9; VS.act = []; VS.actOpen = null; UI.dirty.kb = true;          // VS2
   if (!R.playing) wakeReleaseLater();
   stRender();
 }
@@ -29908,6 +30021,10 @@ function stSheetFill(p) {
   if (ST.lastDrift && !ST.lastDrift.ok) W.push(ST.lastDrift.kind === 'sprung' ? 'Zeit gesprungen um ' + micDe(Math.abs(ST.lastDrift.deltaMs), 1) + ' ms · ausgeglichen' : 'Drift ' + micDe(ST.lastDrift.msPerMin, 2) + ' ms/min · ausgeglichen');
   if (ST.dropN) W.push(ST.dropN + ' Aussetzer markiert');
   if (W.length) html += '<div class="st-warn">' + W.map(x => '⚠ ' + esc(x)).join('<br>') + '</div>';
+  const vc = vsCfg();                                          // VS2: Quelle, Einrasten, Oktave sperren (nur Instrument)
+  html += '<div class="st-lbl">Stimme → Noten</div>' + segHTML('vsSrc', [['voice', '🎤 Stimme'], ['inst', '🎸 Instrument']], vc.src) +
+    `<div class="st-vs"><button class="rb${vc.snap ? ' on' : ''}" data-vs="snap" aria-pressed="${vc.snap}">${vc.snap ? '✓ In Tonart einrasten' : 'Frei (nicht einrasten)'}</button>` +
+    (vc.src === 'inst' ? `<button class="rb${vc.lock ? ' on' : ''}" data-vs="lock" aria-pressed="${vc.lock}">${vc.lock ? '✓ ' : ''}Oktave sperren</button>` : '') + '</div>';
   html += `<div class="st-btns"><button class="rb st-cal"${!ST.on || cal || ST.phase !== 'live' ? ' disabled' : ''}>Einmessen</button><button class="rb st-go ${ST.on ? 'off' : ''}">${ST.on ? '✕ Mikro aus' : '🎤 Mikro an'}</button></div>`;
   html += `<p class="small st-hint">${rt === 'speaker' ? 'Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber.' : 'Zum Einmessen mit Kopfhörern einen Ohrhörer direkt ans Mikrofon halten.'}</p>`;
   if (p._h !== html) { p._h = html; p.innerHTML = html; }
@@ -29916,6 +30033,9 @@ const stDate = s => { const d = new Date(s); if (!isFinite(d)) return ''; const 
 function bindStSheet(p) {
   onTap(p, b => {
     if (b.closest('#stRoute')) { haptic('tick'); stSetRoute(b.dataset.v, 'gewählt'); return; }
+    if (b.closest('#vsSrc')) { haptic('tick'); vsCfgSet({src: b.dataset.v}); return; }      // VS2
+    if (b.dataset.vs === 'snap') { haptic('tick'); vsCfgSet({snap: !vsCfg().snap}); return; }
+    if (b.dataset.vs === 'lock') { haptic('tick'); vsCfgSet({lock: !vsCfg().lock}); return; }
     if (b.dataset.nd) { stNudge(+b.dataset.nd); return; }
     if (b.classList.contains('st-cal')) { if (stCal('voll')) haptic('tick'); return; }
     if (b.classList.contains('st-go')) { if (ST.on) { stStop('aus'); closePop(); } else stStart(); }
@@ -29928,6 +30048,600 @@ function stModeFit() {
   if (!three) { seg.classList.remove('sym'); seg.style.removeProperty('--segb'); return; }
   const W = EL.modebar.clientWidth - 16 - 44 - 44 - 64 - 15, bw = Math.max(36, Math.floor((W - 4) / 3));
   seg.style.setProperty('--segb', bw + 'px'); seg.classList.toggle('sym', bw < 56);
+}
+
+/* VSDSP-BEGIN */
+/* VS2 Stimme → Noten: DSP-Kern (r7/stimme.md §4, Nachtrag 2 C.3 VS2). Läuft im Hauptfaden (Tests, Rückfall) und als Worker
+   (Quelltext dieser Funktion als Blob). Keine DOM-Zugriffe, keine äußeren Namen.
+   pyin(x, o): pYIN-lite nach Mauch & Dixon 2014 / librosa: YIN-Differenz über FFT, kumulativ normiert, 100 Schwellen mit
+     Beta(2, 18)-Gewichten → Kandidaten je Frame, 20-ct-Raster 55–1050 Hz, HMM (Sprungrate 35,92 Okt./s, Stimmhaft-Wechsel 0,01),
+     Viterbi. fs 16 kHz, Hop 5 ms, Fenster 1024 (Integration 732 = 45,8 ms). o.mask: Frames „unbekannt“ (Klick-/Treffer-Maske,
+     Aussetzer) → flache Beobachtung, der Pfad läuft weiter. o.octLock (Quelle Instrument, „Oktave sperren“): ein Kandidat, dessen
+     ungerade Teiltöne 3/5/7 fehlen (< 10 % der geraden 2/4/6), ist ein Sub-Oszillator bzw. eine Unteroktave → eine Oktave höher.
+   segment(tr, o): Noten aus der Tonhöhenspur: stimmhafte Strecken, Energie-Einbruch ≥ 6 dB = neuer Anschlag, Tonwechsel wenn der
+     120-ms-Mittelwert > 0,6 HT vom Notenzentrum abweicht und das ≥ 50 ms bleibt (Grenze rückwärts auf halbem Weg), Notenhöhe =
+     Median des Mittelteils, kürzeste Note 60 ms, Stimmung = gewichteter Kreis-Mittelwert der Nachkommastellen, Einrasten auf die
+     Skala (nächster Skalenton, gemessen an der unausgeglichenen Höhe), Grenze hinter einem Maskenblock auf dessen Anfang.
+   Der Live-Weg (MPM nach McLeod & Wyvill 2005) steckt im Worklet „synq-stimme“ (ST_WK). */
+function vsDspMake() {
+  const FFTS = {};
+  function fftTab(N) {
+    if (FFTS[N]) return FFTS[N];
+    const rev = new Uint32Array(N), cs = new Float64Array(N / 2), sn = new Float64Array(N / 2); let b = 0; while ((1 << b) < N) b++;
+    for (let i = 0; i < N; i++) { let r = 0; for (let k = 0; k < b; k++) r |= ((i >> k) & 1) << (b - 1 - k); rev[i] = r; }
+    for (let i = 0; i < N / 2; i++) { cs[i] = Math.cos(2 * Math.PI * i / N); sn[i] = -Math.sin(2 * Math.PI * i / N); }
+    return (FFTS[N] = {rev, cs, sn});
+  }
+  // radix-2 in place; inv: conjugate twiddles, no scaling
+  function fft(re, im, inv) {
+    const N = re.length, T = fftTab(N), rev = T.rev, cs = T.cs, sn = T.sn, sg = inv ? -1 : 1;
+    for (let i = 0; i < N; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+    for (let s = 2; s <= N; s <<= 1) {
+      const h = s >> 1, st = N / s;
+      for (let i = 0; i < N; i += s) for (let k = 0; k < h; k++) {
+        const wr = cs[k * st], wi = sg * sn[k * st];
+        const a = i + k, c = a + h, xr = re[c] * wr - im[c] * wi, xi = re[c] * wi + im[c] * wr;
+        re[c] = re[a] - xr; im[c] = im[a] - xi; re[a] += xr; im[a] += xi;
+      }
+    }
+  }
+  // Beta(2, 18): F(x) = 1 − (1 − x)^18 (1 + 18 x)
+  const betaCdf = x => 1 - Math.pow(1 - x, 18) * (1 + 18 * x);
+  const NTH = 100, TH = new Float64Array(NTH), TP = new Float64Array(NTH);
+  for (let i = 0; i < NTH; i++) { TH[i] = (i + 1) / NTH; TP[i] = betaCdf(TH[i]) - betaCdf(i / NTH); }
+  const midiOf = f => 69 + 12 * Math.log2(f / 440);
+  // energy of harmonic h of f0 in frame x[s..s+W) (Goertzel with Hann)
+  function harmE(x, s, W, fs, f, win) {
+    if (f >= fs / 2) return 0;
+    const w = 2 * Math.PI * f / fs, c = 2 * Math.cos(w); let s1 = 0, s2 = 0;
+    for (let j = 0; j < W; j++) { const v = (x[s + j] || 0) * win[j] + c * s1 - s2; s2 = s1; s1 = v; }
+    return s1 * s1 + s2 * s2 - c * s1 * s2;
+  }
+  function octLockF(x, s, W, fs, f, win) {
+    for (let g = 0; g < 2; g++) {                           // höchstens zwei Oktaven hoch
+      if (2 * f > 1600) break;
+      const odd = harmE(x, s, W, fs, 3 * f, win) + harmE(x, s, W, fs, 5 * f, win) + harmE(x, s, W, fs, 7 * f, win);
+      const even = harmE(x, s, W, fs, 2 * f, win) + harmE(x, s, W, fs, 4 * f, win) + harmE(x, s, W, fs, 6 * f, win);
+      if (even > 0 && odd < 0.1 * even) f *= 2; else break;
+    }
+    return f;
+  }
+  /* pYIN-lite. x: Float32Array (fs), o: {fs, hop, fmin, fmax, mask (Uint8Array je Frame), octLock, from, to (Frames)} */
+  function pyin(x, o) {
+    o = o || {};
+    const fs = o.fs || 16000, hop = o.hop || Math.round(fs * 0.005), fmin = o.fmin || 55, fmax = o.fmax || 1050;
+    const N = 1024 * Math.max(1, Math.round(fs / 16000)), tauMax = Math.ceil(fs / fmin) + 1, W = N - tauMax - 1, tauMin = Math.max(2, Math.floor(fs / fmax));
+    const M = 2 * N, nF = Math.max(0, Math.floor((x.length - 1) / hop) + 1);
+    const BPS = 5, nB = Math.floor(12 * BPS * Math.log2(fmax / fmin)) + 1;
+    const re = new Float64Array(M), im = new Float64Array(M), d = new Float64Array(tauMax + 2), dn = new Float64Array(tauMax + 2), cum = new Float64Array(N + 1);
+    const vp = new Float32Array(nF), rms = new Float32Array(nF), e10 = new Float32Array(nF), cands = new Array(nF);
+    const h10 = Math.round(fs * 0.01);
+    const win = new Float64Array(W); for (let j = 0; j < W; j++) win[j] = 0.5 - 0.5 * Math.cos(2 * Math.PI * j / (W - 1));
+    const mask = o.mask || null;
+    for (let i = 0; i < nF; i++) {
+      const s = i * hop - (W >> 1);
+      re.fill(0); im.fill(0);
+      let e0 = 0;
+      for (let j = 0; j < N; j++) { const v = s + j >= 0 && s + j < x.length ? x[s + j] : 0; re[j] = v; if (j < W) { im[j] = v; e0 += v * v; } }
+      cum[0] = 0; for (let j = 0; j < N; j++) cum[j + 1] = cum[j] + re[j] * re[j];
+      rms[i] = e0 > 0 ? 10 * Math.log10(e0 / W) : -200;
+      { let q = 0; const c = i * hop; for (let j = c - h10; j < c + h10; j++) if (j >= 0 && j < x.length) q += x[j] * x[j]; e10[i] = q > 0 ? 10 * Math.log10(q / (2 * h10)) : -200; }
+      if ((mask && mask[i]) || e0 < 1e-10 * W) { cands[i] = null; continue; }
+      fft(re, im, false);
+      // z = a + i b → A = (Z_k + conj Z_-k)/2, B = (Z_k − conj Z_-k)/(2i); P = conj(B)·A
+      const Pr = new Float64Array(M), Pi = new Float64Array(M);
+      for (let k = 0; k < M; k++) {
+        const k2 = (M - k) % M, zr = re[k], zi = im[k], cr = re[k2], ci = -im[k2];
+        const ar = (zr + cr) / 2, ai = (zi + ci) / 2, br = (zi - ci) / 2, bi = -(zr - cr) / 2;
+        Pr[k] = br * ar + bi * ai; Pi[k] = br * ai - bi * ar;
+      }
+      fft(Pr, Pi, true);
+      for (let t = 0; t <= tauMax; t++) { const c = Pr[t] / M, et = cum[t + W] - cum[t]; d[t] = Math.max(0, e0 + et - 2 * c); }
+      dn[0] = 1; let run = 0;
+      for (let t = 1; t <= tauMax; t++) { run += d[t]; dn[t] = run > 0 ? d[t] * t / run : 1; }
+      // troughs (local minima) in [tauMin, tauMax-1]
+      const tr = [];
+      for (let t = tauMin; t < tauMax; t++) if (dn[t] < dn[t - 1] && dn[t] <= dn[t + 1]) {
+        const a = dn[t - 1], b = dn[t], c = dn[t + 1], den = a - 2 * b + c, sh = den > 0 ? 0.5 * (a - c) / den : 0;
+        tr.push({tau: t + Math.max(-1, Math.min(1, sh)), h: b, p: 0});
+      }
+      if (!tr.length) { cands[i] = null; continue; }
+      let gmin = 0; for (let j = 1; j < tr.length; j++) if (tr[j].h < tr[gmin].h) gmin = j;
+      // threshold k: the first trough (in lag order) below it gets its Beta weight; none below → the global minimum × 0.01
+      for (let k = 0; k < NTH; k++) {
+        let f = -1; for (let r = 0; r < tr.length; r++) if (tr[r].h < TH[k]) { f = r; break; }
+        if (f >= 0) tr[f].p += TP[k]; else tr[gmin].p += TP[k] * 0.01;
+      }
+      const cs = [];
+      let tot = 0;
+      for (const c of tr) {
+        if (!(c.p > 0)) continue;
+        let f = fs / c.tau;
+        if (o.octLock) f = octLockF(x, s, W, fs, f, win);
+        if (f < fmin || f > fmax) continue;
+        const b = Math.round(12 * BPS * Math.log2(f / fmin));
+        if (b < 0 || b >= nB) continue;
+        tot += c.p; cs.push({f, b, p: c.p});
+      }
+      vp[i] = Math.min(1, tot); cands[i] = cs;
+    }
+    // Viterbi: states 0..nB-1 stimmhaft, nB..2nB-1 stimmlos; Übergang Dreieck ±HW Bins, Wechsel 0,01
+    const msf = Math.round(35.92 * 12 * hop / fs), HW = msf * BPS, TW = 2 * HW + 1, tw = new Float64Array(TW);
+    for (let k = 0; k < TW; k++) tw[k] = 1 - Math.abs(k - HW) / (HW + 1);
+    const S2 = 2 * nB, ltr = new Float64Array(nB * TW);     // per bin normalised (edges renormalised)
+    for (let b = 0; b < nB; b++) { let s = 0; for (let k = 0; k < TW; k++) { const q = b + k - HW; if (q >= 0 && q < nB) s += tw[k]; } for (let k = 0; k < TW; k++) { const q = b + k - HW; ltr[b * TW + k] = q >= 0 && q < nB ? Math.log(tw[k] / s) : -Infinity; } }
+    const lst = Math.log(0.99), lsw = Math.log(0.01), TINY = 1e-30;
+    let V = new Float64Array(S2), V2 = new Float64Array(S2);
+    const bp = new Uint8Array(nF * S2);
+    // Beobachtung je Frame dicht nur für den laufenden Frame (statt nF × nB Werte: bei 60 s rund 14 MB weniger)
+    const ob = new Float64Array(nB); let obI = -1;
+    const lobs = (i, s) => {
+      if (!cands[i] && (!mask || !mask[i])) return s < nB ? Math.log(TINY) : Math.log(1 / nB);   // still: stimmlos
+      if (!cands[i]) return Math.log(1 / S2);                                                   // maskiert: unbekannt
+      if (obI !== i) { ob.fill(0); for (const c of cands[i]) ob[c.b] += c.p; obI = i; }
+      return s < nB ? Math.log(ob[s] + TINY) : Math.log((1 - vp[i]) / nB + TINY);
+    };
+    for (let s = 0; s < S2; s++) V[s] = Math.log(1 / S2) + (nF ? lobs(0, s) : 0);
+    for (let i = 1; i < nF; i++) {
+      for (let s = 0; s < S2; s++) {
+        const v = s < nB, b = v ? s : s - nB; let best = -Infinity, arg = 0;
+        for (let k = 0; k < TW; k++) {
+          const q = b - (k - HW); if (q < 0 || q >= nB) continue;   // from bin q to b: weight of offset b−q
+          const lt = ltr[q * TW + (b - q + HW)];
+          const a1 = V[v ? q : q + nB] + lt + lst, a2 = V[v ? q + nB : q] + lt + lsw;
+          if (a1 > best) { best = a1; arg = k; } if (a2 > best) { best = a2; arg = k + TW; }
+        }
+        V2[s] = best + lobs(i, s); bp[i * S2 + s] = arg;
+      }
+      const t = V; V = V2; V2 = t;
+    }
+    const st = new Int32Array(nF); let bs = 0; for (let s = 1; s < S2; s++) if (V[s] > V[bs]) bs = s;
+    if (nF) st[nF - 1] = bs;
+    for (let i = nF - 1; i > 0; i--) { const s = st[i], v = s < nB, b = v ? s : s - nB, a = bp[i * S2 + s], flip = a >= TW, k = flip ? a - TW : a, q = b - (k - HW); st[i - 1] = (v !== flip) ? q : q + nB; }
+    const f0 = new Float32Array(nF), unk = new Uint8Array(nF);
+    for (let i = 0; i < nF; i++) {
+      if (mask && mask[i]) unk[i] = 1;
+      const s = st[i]; if (s >= nB) continue;
+      if (!cands[i]) { if (mask && mask[i]) f0[i] = fmin * Math.pow(2, s / (12 * BPS)); continue; }
+      let best = null; for (const c of cands[i]) if (Math.abs(c.b - s) <= 2 && (!best || Math.abs(c.b - s) < Math.abs(best.b - s) || (Math.abs(c.b - s) === Math.abs(best.b - s) && c.p > best.p))) best = c;
+      f0[i] = best ? best.f : fmin * Math.pow(2, s / (12 * BPS));
+    }
+    return {fs, hop, n: nF, f0, vp, rms, e10, unk};
+  }
+  const median = a => { if (!a.length) return NaN; const b = Float64Array.from(a).sort(); const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+  /* Noten aus der Spur. o: {scale: [12 bools] relativ zu Tonart-Grundton root, root, snap, tuning ('auto' | Halbtöne), minMs} */
+  function segment(tr, o) {
+    o = o || {};
+    const hop = tr.hop / tr.fs, nF = tr.n, F = k => Math.max(1, Math.round(k / 1000 / hop));
+    const m = new Float64Array(nF), voiced = new Uint8Array(nF);
+    const unk = tr.unk || new Uint8Array(nF);
+    // masked frames: voiced as the HMM says (the stretch stays one), pitch unknown
+    for (let i = 0; i < nF; i++) { if (tr.f0[i] > 0) { m[i] = unk[i] ? NaN : midiOf(tr.f0[i]); voiced[i] = 1; } else m[i] = NaN; }
+    // Energie (dB) geglättet über 15 ms
+    const E0 = tr.e10 || tr.rms, e = new Float64Array(nF); for (let i = 0; i < nF; i++) { let s = 0, k = 0; for (let j = i - 1; j <= i + 1; j++) if (j >= 0 && j < nF) { s += E0[j]; k++; } e[i] = s / k; }
+    const notes = [];
+    // stimmhafte Strecken
+    let i = 0;
+    while (i < nF) {
+      if (!voiced[i]) { i++; continue; }
+      let j = i; while (j < nF && voiced[j]) j++;
+      // Energie-Einbrüche ≥ 6 dB → Schnitte
+      const cuts = [i];
+      const W = F(150);
+      for (let k = i + F(40); k < j - F(40); k++) {
+        // a click only adds energy: a dip is real even inside a mask (plateaus of silence count as one valley)
+        if (!(e[k] <= e[k - 1] && e[k] < e[k + 1])) continue;
+        let L = -Infinity, R = -Infinity; for (let q = Math.max(i, k - W); q < k; q++) L = Math.max(L, e[q]); for (let q = k + 1; q <= Math.min(j - 1, k + W); q++) R = Math.max(R, e[q]);
+        if (Math.min(L, R) - e[k] >= 6 && k - cuts[cuts.length - 1] >= F(60)) {
+          let r = k; while (r + 1 < j && e[r + 1] < e[k] + 3) r++;    // the rise after the dip
+          cuts.push(r);
+        }
+      }
+      // Instrument: ein neuer Anschlag (Pegel +6 dB in ≤ 20 ms) ohne Einbruch davor ist auch ein Schnitt
+      if (o.attack) for (let k = i + F(40); k < j - F(40); k++) {
+        const E1 = E0[k]; let lo = Infinity, at = k; for (let q = k - F(20); q < k; q++) if (E0[q] < lo) { lo = E0[q]; at = q; }
+        if (!(E1 - lo >= 6 && E1 >= E0[k + 1] - 0.5)) continue;
+        let sa = 0, na = 0, sb = 0, nb = 0; for (let q = k; q < Math.min(j, k + F(30)); q++) { sa += E0[q]; na++; } for (let q = Math.max(i, k - F(45)); q < k - F(10); q++) { sb += E0[q]; nb++; }
+        if (na && nb && sa / na - sb / nb >= 1.5 && cuts.every(c => Math.abs(c - at) >= F(60))) { cuts.push(at); k += F(40); }
+      }
+      cuts.sort((p, q) => p - q); cuts.push(j);
+      for (let c = 0; c + 1 < cuts.length; c++) splitPitch(cuts[c], cuts[c + 1]);
+      i = j;
+    }
+    function center(a, b) { const len = b - a, s = a + Math.min(F(60), Math.floor(len * 0.25)), t = b - Math.min(F(30), Math.floor(len * 0.15)), v = []; for (let k = s; k < Math.max(t, s + 1); k++) if (!isNaN(m[k]) && !unk[k]) v.push(m[k]); if (!v.length) for (let k = a; k < b; k++) if (!isNaN(m[k])) v.push(m[k]); return median(v); }
+    function splitPitch(a, b) {
+      // note-local centred 120-ms mean (masked frames: the HMM's continuation), from prefix sums
+      const H = F(60), n = b - a, ps = new Float64Array(n + 1), pc = new Float64Array(n + 1), sm = new Float64Array(n);
+      for (let k = 0; k < n; k++) { const v = m[a + k]; ps[k + 1] = ps[k] + (isNaN(v) ? 0 : v); pc[k + 1] = pc[k] + (isNaN(v) ? 0 : 1); }
+      for (let k = a; k < b; k++) { const v = []; for (let r = k - 1; r <= k + 1; r++) if (r >= a && r < b && !isNaN(m[r]) && !unk[r]) v.push(m[r]); sm[k - a] = v.length ? median(v) : NaN; }
+      const mean = (lo, hi) => { lo = Math.max(a, lo) - a; hi = Math.min(b, hi) - a; const c = pc[hi] - pc[lo]; return c > 0 ? (ps[hi] - ps[lo]) / c : NaN; };
+      const Ml = (k, s0) => mean(Math.max(s0, k - H), k + H + 1);
+      const hold = F(50), warm = F(80), step = F(25);
+      let s0 = a, k = s0 + warm, c = NaN, cAt = -1;
+      while (k < b) {
+        if (cAt < 0 || k - cAt >= step) { const v = []; for (let j = s0 + F(20); j < k; j++) { const x = Ml(j, s0); if (!isNaN(x)) v.push(x); } c = v.length ? median(v) : NaN; cAt = k; }
+        const Mk = Ml(k, s0);
+        if (isNaN(c) || isNaN(Mk) || Math.abs(Mk - c) <= 0.6) { k++; continue; }
+        const sg = Math.sign(Mk - c);
+        let q = k; while (q < b && (Ml(q, s0) - c) * sg > 0.6) q++;
+        if (q - k < hold) { if (q >= b) break; k = q + 1; continue; }
+        const nl = mean(k + F(20), Math.min(q, k + F(20) + F(150)));
+        if (isNaN(nl) || (nl - c) * sg < 0.6) { k = q; continue; }
+        const mid = (c + nl) / 2; let bd = Math.max(s0 + F(30), k - H);
+        while (bd < q && !((sm[bd - a] - mid) * sg > 0)) bd++;
+        if (bd - s0 < F(30) || b - bd < F(30)) { k = q; continue; }
+        push(s0, bd, 'p'); s0 = bd; k = s0 + warm; cAt = -1;
+      }
+      push(s0, b);
+    }
+    function medianRange(a, b) { const v = []; for (let k = a; k < b; k++) if (!isNaN(m[k]) && !unk[k]) v.push(m[k]); return v.length ? median(v) : NaN; }
+    function push(a, b, why) { if (b <= a) return; notes.push({a, b, m: center(a, b), pe: why === 'p'}); }
+    // kürzer als minMs: mit dem Nachbarn verbinden (gleiche Höhe oder anliegend), sonst weg
+    const minF = F(o.minMs || 60);
+    for (let k = 0; k < notes.length; k++) {
+      const n = notes[k]; if (n.b - n.a >= minF) continue;
+      const p = notes[k - 1], q = notes[k + 1], pa = p && p.b === n.a, qa = q && q.a === n.b;
+      if (pa && (!qa || Math.abs(p.m - n.m) <= Math.abs(q.m - n.m))) { p.b = n.b; notes.splice(k--, 1); }
+      else if (qa) { q.a = n.a; notes.splice(k--, 1); }
+      else notes.splice(k--, 1);
+    }
+    for (const n of notes) n.m = center(n.a, n.b);
+    for (let k = 0; k + 1 < notes.length; k++) { const p = notes[k], q = notes[k + 1]; if (p.pe && p.b === q.a && Math.abs(p.m - q.m) < 0.5) { p.b = q.b; p.pe = q.pe; notes.splice(k + 1, 1); p.m = center(p.a, p.b); k--; } }
+    for (let k = notes.length - 1; k >= 0; k--) { const n = notes[k]; let real = 0; for (let q = n.a; q < n.b; q++) if (!unk[q] && !isNaN(m[q])) real++; if (n.b <= n.a || real < F(30)) notes.splice(k, 1); }
+    // Grenze hinter einem Maskenblock → auf dessen Anfang (Fassung 2): ein Einsatz höchstens 25 ms hinter einer Maske
+    for (let k = 0; k < notes.length; k++) {
+      const n = notes[k]; let q = n.a - 1, g = 0; while (q >= 0 && !unk[q] && g < F(25)) { q--; g++; }
+      if (q < 0 || !unk[q]) { if (!unk[n.a]) continue; q = n.a; }
+      let s = q; while (s > 0 && unk[s - 1]) s--;
+      const prev = notes[k - 1], lo = prev ? prev.a + F(30) : 0;
+      if (s >= n.a || s < lo) continue;
+      if (prev && prev.b > s) { if (Math.abs(prev.m - n.m) < 0.5 && prev.b === n.a && !prev.cut) continue; prev.b = s; }
+      n.a = s; n.mk = true;
+    }
+    // Stimmung: gewichteter Kreis-Mittelwert der Nachkommastellen
+    let tune = 0;
+    if (o.tuning === 'auto' || o.tuning == null) {
+      let sx = 0, sy = 0; for (const n of notes) { if (isNaN(n.m)) continue; const w = n.b - n.a, ph = 2 * Math.PI * (n.m - Math.round(n.m)); sx += w * Math.cos(ph); sy += w * Math.sin(ph); }
+      tune = sx || sy ? Math.atan2(sy, sx) / (2 * Math.PI) : 0;
+    } else tune = +o.tuning || 0;
+    const out = [], bias = o.bias != null ? o.bias : 0.012;      // the centred 46-ms window turns voiced ≈ 12 ms before the onset (Korpus)
+    notes.forEach((n, k) => { const p = notes[k - 1]; n.ps = !!(p && p.pe && p.b === n.a); });
+    for (const n of notes) {
+      if (isNaN(n.m)) continue;
+      const mt = n.m - tune; let p = Math.round(mt);
+      if (o.snap && o.scale) {
+        const ins = q => !!o.scale[((q - (o.root || 0)) % 12 + 12) % 12];
+        if (!ins(p)) { let lo = p - 1, hi = p + 1; while (!ins(lo) && lo > p - 6) lo--; while (!ins(hi) && hi < p + 6) hi++; p = (mt - lo) < (hi - mt) ? lo : hi; }
+      }
+      out.push({t0: Math.max(0, n.a * hop + (n.ps || n.mk ? 0 : bias)), t1: n.b * hop, m: +n.m.toFixed(3), n: p, raw: Math.round(mt), by: n.mk ? 'maske' : n.ps ? 'ton' : 'einsatz'});
+    }
+    return {notes: out, tuneCt: Math.round(tune * 1000) / 10};
+  }
+  return {fft, pyin, segment, midiOf, median};
+}
+/* VSDSP-END */
+
+/* =====================================================================
+   VS2 Stimme → Noten, Instrument einspielen (Nachtrag 2 C.3 Zeile VS2, C.4 N2-VS2-01 … -03, K2-30, K2-33; r7/stimme.md §4,
+   §8 „Stimme-FANG“, §11 Skizze 3, §12 VS2, §13 N7V-08 … -15, N7V-33).
+   Live: das Worklet „synq-stimme“ rechnet MPM auf dem 16-kHz-Signal (Fenster 40 ms, alle 10 ms) und meldet nur Wechsel
+   {lit}; die erkannte Taste leuchtet (Klasse .vs, nächste sichtbare Oktave). Klick- und Treffer-Maske: über den Lautsprecher
+   kennt die App ihre Metronom-Klicks und Drum-Treffer; diese Stellen gelten als „unbekannt“ (live: Zustand halten).
+   Offline (FANG bzw. Ende von ● REC): pYIN-lite im Worker (Rückfall: Hauptfaden) über das 16-kHz-Mikro aus dem Ringpuffer,
+   um die Latenz der Zeitkarte versetzt (Schlag = t2b(Referenz-Frame), r7/stimme.md §6), Maske aus Klicks/Treffern und
+   Aussetzern (VS1), dann Noten-Segmentierung, Stimmung, Einrasten auf die Tonart (kbRefKey-Logik je Stelle).
+   Stimme-FANG nimmt das Ende von fangCompute (N7-R1, dieselbe Funktion wie FANG TEIL, N2-VS2-01), die Phrase beginnt am ersten
+   Einsatz nach ≥ 1 Takt Pause (höchstens 16 Takte), Länge 1/2/4/8/16 Takte bis zum Ende, Ergebnis = MELODIE-Clip (ein Undo).
+   ● REC mit 🎤: das Gesungene im Aufnahme-Bereich wird ein MELODIE-Clip in derselben Szene (leer: neu; belegt: dazu, ein Undo).
+   Ergebnis-Blatt (Skizze 3): Mini-Rolle, Stimmung, Oktave ‹ ›, Einrasten, Raster, Verwerfen / Bearbeiten / OK.
+   Quelle „Stimme │ Instrument“ mit „Oktave sperren“ (K2-33, nur Instrument: Unteroktave/Sub-Oszillator → gespielte Oktave).
+   Einstellungen nur auf dem Gerät (Profil `synq-stimme-v1`, Feld vs). Kein Netz-Halt (nur Noten, kein Audio wird gespeichert).
+   ===================================================================== */
+const VSD = vsDspMake();
+const VS = {lit: -1, litF: 0, lastVoice: -1e9, act: [], actOpen: null, masks: [], busy: 0, res: null, w: null, wq: new Map(), wid: 0, runs: 0, rec: null, cfg: null, last: null, err: null};
+const VS_GRIDS = {frei: 0, '1/16': 0.25, '1/8': 0.5};
+function vsCfg() {
+  if (VS.cfg) return VS.cfg;
+  const v = stProf().vs || {};
+  return (VS.cfg = {src: v.src === 'inst' ? 'inst' : 'voice', lock: !!v.lock, snap: v.snap !== false, grid: VS_GRIDS[v.grid] != null ? v.grid : '1/16'});
+}
+function vsCfgSet(p) {
+  const c = vsCfg(); p = p || {};
+  if (p.src != null) c.src = p.src === 'inst' ? 'inst' : 'voice';
+  if (p.lock != null) c.lock = !!p.lock;
+  if (p.snap != null) c.snap = !!p.snap;
+  if (p.grid != null && VS_GRIDS[p.grid] != null) c.grid = p.grid;
+  stProf().vs = Object.assign({}, c); stProfSave(); vsLiveCfg();
+  if (UI.pop && UI.pop.name === 'stimme') stSheetFill(UI.pop.el);
+  return Object.assign({}, c);
+}
+const vsLiveOpts = () => { const c = vsCfg(); return {src: c.src, lock: c.lock}; };
+function vsLiveCfg() { const run = ST.run; if (run && run.node) { try { run.node.port.postMessage({cfg: vsLiveOpts()}); } catch (e) {} } }
+// Worklet-Meldung: erkannte Taste an/aus (nur Wechsel)
+function vsLitMsg(run, d) {
+  if (ST.run !== run) return;
+  VS.lit = d.lit; VS.litF = d.f; VS.lastVoice = performance.now(); VS.litN = (VS.litN || 0) + (d.lit >= 0 ? 1 : 0);
+  // Stimm-Abschnitte (Mikro-Frames) für den Analyse-Bereich beim FANG: nur die Phrase wird ausgewertet, nicht 17 Takte
+  if (d.lit >= 0 && VS.actOpen == null) VS.actOpen = d.f;
+  else if (d.lit < 0 && VS.actOpen != null) { VS.act.push([VS.actOpen, d.f]); VS.actOpen = null; if (VS.act.length > 400) VS.act.shift(); }
+  UI.dirty.kb = true;
+}
+// Anfang der live gehörten Phrase (Schlag): rückwärts bis zu einer Pause ≥ 1 Takt; null = keine Live-Meldungen
+function vsLiveStart(until) {
+  const G = ST.ring; if (!G) return null;
+  const sr = G.sr, bt = F => t2b((F - stLatAt(F) * sr / 1000) / sr), segs = VS.act.map(([a, b]) => [bt(a) - 0.25, bt(b)]);
+  if (VS.actOpen != null) segs.push([bt(VS.actOpen) - 0.25, until]);
+  const s = segs.filter(x => x[0] < until).sort((x, y) => x[0] - y[0]); if (!s.length) return null;
+  let i = s.length - 1, st = s[i][0];
+  while (i > 0) { if (st - s[i - 1][1] >= 4) break; i--; st = Math.min(st, s[i][0]); }
+  return st;
+}
+// welche sichtbare Taste leuchtet: die Note selbst, sonst dieselbe Tonklasse in der nächsten sichtbaren Oktave
+function vsLitKey() {
+  if (!ST.on || VS.lit < 0) return -1;
+  if (KB.byNote.has(VS.lit)) return VS.lit;
+  let best = -1; for (const n of KB.byNote.keys()) if (PCx(n - VS.lit) === 0 && (best < 0 || Math.abs(n - VS.lit) < Math.abs(best - VS.lit))) best = n;
+  return best;
+}
+const vsVoiceRecent = () => ST.on && (VS.lit >= 0 || performance.now() - VS.lastVoice < 8000) && VS.lastVoice > -1e8;
+// Klick-/Treffer-Maske (Fassung 2): nur über den Lautsprecher; t = geplante Kontext-Zeit, dur in s
+function vsMaskAdd(t, dur) {
+  if (!ST.on || ST.route !== 'speaker' || !ST.ring) return;
+  VS.masks.push([t, t + dur]); while (VS.masks.length > 600 || (VS.masks.length && VS.masks[0][1] < t - 130)) VS.masks.shift();
+  const run = ST.run, sr = ST.ring.sr; if (!run || !run.node) return;
+  const L = (ST.latMs || 0) * sr / 1000;
+  try { run.node.port.postMessage({mask: [Math.round(t * sr + L - 0.005 * sr), Math.round((t + dur) * sr + L)]}); } catch (e) {}
+}
+
+/* ---------- pYIN im Worker (Blob), Rückfall Hauptfaden ---------- */
+function vsWorker() {
+  if (VS.w !== null) return VS.w;
+  try {
+    const src = vsDspMake.toString() + ';const D = vsDspMake();onmessage = e => { const m = e.data; try { const tr = D.pyin(m.x, m.o); postMessage({id: m.id, tr}, [tr.f0.buffer, tr.vp.buffer, tr.rms.buffer, tr.e10.buffer, tr.unk.buffer]); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
+    const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);   // Safari lädt den Worker evtl. erst später
+    w.onmessage = e => { const m = e.data, q = VS.wq.get(m.id); if (!q) return; VS.wq.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.tr); };
+    w.onerror = e => { for (const q of VS.wq.values()) { clearTimeout(q.to); q.no(new Error('worker')); } VS.wq.clear(); VS.w = false; try { e.preventDefault(); } catch (er) {} };
+    VS.w = w;
+  } catch (e) { VS.w = false; }
+  return VS.w;
+}
+function vsPyin(x, o) {
+  const w = vsWorker(), t0 = performance.now();
+  const local = () => { const tr = VSD.pyin(x, o); VS.last = {how: 'hauptfaden', ms: Math.round(performance.now() - t0), sec: +(x.length / o.fs).toFixed(2)}; return tr; };
+  if (!w) return Promise.resolve().then(local);
+  return new Promise((ok, no) => {
+    const id = ++VS.wid, xx = new Float32Array(x);
+    const to = setTimeout(() => { VS.wq.delete(id); try { ok(local()); } catch (e) { no(e); } }, 15000);
+    VS.wq.set(id, {ok: tr => { VS.last = {how: 'worker', ms: Math.round(performance.now() - t0), sec: +(x.length / o.fs).toFixed(2)}; ok(tr); }, no: e => { try { ok(local()); } catch (er) { no(e); } }, to});
+    try { w.postMessage({id, x: xx, o}, [xx.buffer]); } catch (e) { clearTimeout(to); VS.wq.delete(id); try { ok(local()); } catch (er) { no(er); } }
+  });
+}
+// wartet, bis das Mikro bis zur Kontext-Zeit t (Referenz) im Ringpuffer liegt (Latenz + 60 ms Rand + ein Block)
+function vsWhenData(t, fn, tries) {
+  const G = ST.ring; if (!G || !ST.on) { fn(false); return; }
+  const need = Math.round(t * G.sr + (stLatAt(Math.round(t * G.sr)) / 1000 + 0.07) * G.sr);
+  if (G.end >= need || (tries || 0) > 60) { fn(G.end >= need - 0.05 * G.sr); return; }
+  setTimeout(() => vsWhenData(t, fn, (tries || 0) + 1), 50);
+}
+/* Analyse über die Referenz-Zeit [ta, tb) (Kontext-Sekunden). Ergebnis: Spur + Umrechnung Frame → Schlag */
+async function vsAnalyse(ta, tb, cfg) {
+  const G = ST.ring; if (!G || G.end < 0) return null;
+  cfg = cfg || vsCfg();
+  const sr = G.sr, lat = F => stLatAt(F) * sr / 1000, Fa = Math.round(ta * sr), Fb = Math.round(tb * sr);
+  const Ma = Fa + lat(Fa), Mb = Fb + lat(Fb), pad = Math.round(0.06 * sr);
+  const s = stRead(Ma - pad, Mb + pad, {d16: true}); if (!s || !s.d16 || s.d16.length < 600) return null;
+  const x = s.d16, d0 = s.d0, fs = sr / 3, hop = Math.max(1, Math.round(fs * 0.005)), nF = Math.floor((x.length - 1) / hop) + 1;
+  const mic = i => 3 * (d0 + i * hop) + 2 - 23;               // Frame i ↔ Mikro-Frame (Mitte; Laufzeit des Dezimierers 23)
+  const half = 0.023 * sr, mask = new Uint8Array(nF), mark = (a, b) => { const i0 = Math.max(0, Math.ceil(((a - half - 2 - 3 * d0 + 23) / 3) / hop)), i1 = Math.min(nF - 1, Math.floor(((b + half - 2 - 3 * d0 + 23) / 3) / hop)); for (let i = i0; i <= i1; i++) mask[i] = 1; };
+  let nm = 0;
+  for (const [a, b] of VS.masks) { const A = a * sr + lat(a * sr), B = b * sr + lat(b * sr); if (B < Ma - pad || A > Mb + pad) continue; mark(A + half, B - half + 0.012 * sr); nm++; }
+  for (const d of ST.drops) { if (d.f + d.len < Ma - pad || d.f > Mb + pad) continue; mark(d.f, d.f + d.len); nm++; }
+  const inst = cfg.src === 'inst', o = {fs, hop, mask: nm ? mask : null, octLock: inst && cfg.lock, fmin: inst ? 40 : 55, fmax: inst ? 1600 : 1050};
+  const tr = await vsPyin(x, o);
+  VS.runs++;
+  // Frame-Zeit (s im Ausschnitt) → Schlag: Mikro-Frame → Referenz-Frame (minus Latenz der Zeitkarte) → t2b
+  const beatOf = sec => { const M = 3 * (d0 + sec * fs) + 2 - 23, Fr = M - lat(M); return t2b(Fr / sr); };
+  return {tr, fs, hop, d0, sr, beatOf, inst, masked: nm, mic};
+}
+// Noten (Schläge) aus einer Analyse: Segmentierung, Stimmung, Einrasten auf die Tonart, die an der Stelle klingt
+function vsNotesOf(A, o) {
+  o = o || {};
+  const mid = A.beatOf(A.tr.n * A.tr.hop / A.fs / 2), key = o.key || vsKeyAt(b2t(Math.max(0, mid)));
+  const SC = Harmony.SCALES[key.scale] || Harmony.SCALES.ionian, scale = Array.from({length: 12}, (_, k) => SC.indexOf(k) >= 0);
+  const sg = VSD.segment(A.tr, {snap: o.snap !== false, scale, root: key.root, tuning: 'auto', attack: A.inst});
+  const out = sg.notes.map(n => {
+    const b0 = A.beatOf(n.t0), b1 = A.beatOf(n.t1), i0 = Math.round(n.t0 / (A.hop / A.fs)), i1 = Math.round(n.t1 / (A.hop / A.fs));
+    const db = []; for (let i = i0; i < i1; i++) if (A.tr.rms[i] > -150) db.push(A.tr.rms[i]);
+    const lv = db.length ? VSD.median(db) : -30;
+    return {b: b0, d: Math.max(1 / 32, b1 - b0), n: clamp(n.n + 12 * (o.oct || 0), 0, 127), raw: n.raw, m: n.m, v: clamp(Math.round((0.5 + (lv + 26) / 40) * 1000) / 1000, 0.3, 1), by: n.by};
+  });
+  return {notes: out, tuneCt: sg.tuneCt, key};
+}
+// Tonart an einer Stelle (wie „Tonart sperren“): unter einem Träger die gehörte, sonst die der Szene
+function vsKeyAt(t) {
+  const tg = T.targetAt(t).target;
+  if (tg && R.kbMode !== 'transpose' && !R.momentary) { const h = S.settings.harmony; const k = Harmony.keyForRecording(tg, heardBaseKey(), h.mode, Object.assign(hopts(), {octaveMode: h.octaveMode})); return {root: k.root, scale: k.scale}; }
+  const k = sceneRefKey() || S.key; return {root: k.root, scale: k.scale};
+}
+const vsMelFree = () => { const tr = S.tracks[MEL_T]; if (!tr) return -1; if (!tr.clips[R.selS]) return R.selS; return tr.clips.findIndex(c => !c); };
+
+/* ---------- Stimme-FANG (N7-R1 über fangCompute) ---------- */
+function vsFang(o) {
+  o = o || {};
+  ensureAudio(); if (!AU.ctx) return false;
+  if (!ST.on || ST.phase === 'start') { toast('Erst 🎤 einschalten, dann singen und FANG'); return false; }
+  if (!R.playing) { toast('Erst ▶ – dann singen und FANG'); return false; }
+  if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return false; }
+  if (VS.busy) { toast('Stimme wird noch ausgewertet …'); return false; }
+  if (!S.tracks[MEL_T]) return false;
+  if (vsMelFree() < 0) { toast('Kein freier Platz in MELODIE'); return false; }
+  const tapAt = AU.ctx.currentTime, t = isNum(o.beat) ? Math.min(o.beat, audBeat()) : audBeat();
+  const res = fangCompute(Math.max(0, t), tapAt);            // dieselbe Taktstrich-Regel wie FANG TEIL (N2-VS2-01)
+  const E = res.E, until = Math.min(E, t), ls = vsLiveStart(until), from = Math.max(0, E - 68, ls != null ? ls - 4.5 : 0);   // die Phrase (live gehört) und 1 Takt davor
+  VS.busy = 1; haptic('pop');
+  const job = {kind: 'fang', res, E, until, from, tapAt, cfg: Object.assign({}, vsCfg()), o};
+  VS.job = job;
+  vsWhenData(b2t(until), ok => {
+    if (!ok) { VS.busy = 0; toast('Mikrofon liefert gerade nichts – noch mal FANG'); return; }
+    vsAnalyse(b2t(from), b2t(until), job.cfg).then(A => vsFangDone(job, A)).catch(e => { VS.busy = 0; VS.err = String(e && e.message || e); logErr(e); toast('Auswertung fehlgeschlagen'); });
+  });
+  return true;
+}
+function vsPhrase(ns, E, until) {
+  // die Phrase: zurück vom letzten Einsatz bis zu einer Pause ≥ 1 Takt (wie FANG für Tasten), höchstens 16 Takte
+  const s = ns.filter(n => n.b < until - 1e-6 && n.b >= E - 64 - 0.25).sort((a, b) => a.b - b.b);
+  if (!s.length) return null;
+  let i = s.length - 1;
+  while (i > 0) { let end = -1e9; for (let k = 0; k < i; k++) end = Math.max(end, s[k].b + s[k].d); if (s[i].b - end >= 4) break; i--; }
+  return s.slice(i);
+}
+function vsFangDone(job, A) {
+  VS.busy = 0;
+  if (!A) { toast('Nichts gesungen erkannt – erst singen, dann FANG'); return false; }
+  const cfg = job.cfg, nt = vsNotesOf(A, {snap: cfg.snap}), ph = vsPhrase(nt.notes, job.E, job.until);
+  if (!ph || !ph.length) { toast(cfg.src === 'inst' ? 'Nichts gespielt erkannt – erst spielen, dann FANG' : 'Nichts gesungen erkannt – erst singen, dann FANG'); VS.lastFang = {notes: 0}; return false; }
+  const Eb = job.res.Eb, sb = Math.max(0, Math.floor((ph[0].b + 0.25) / 4 + 1e-9)), span = Math.max(1, Eb - sb);
+  let len = 1; while (len < span) len *= 2; len = Math.min(16, len);
+  let start = Eb - len; if (start < 0) { start = 0; len = Math.max(1, Eb); }
+  const si = vsMelFree(); if (si < 0) { toast('Kein freier Platz in MELODIE'); return false; }
+  const res = {kind: 'fang', track: MEL_T, si, len, start, A, cfg, oct: 0, snap: cfg.snap, grid: cfg.grid, rule: job.res.rule, Eb, endText: fangEndText(job.res), until: job.until, E: job.E, from: start * 4 - 0.25, to: Math.min(job.E, job.until), first: true};
+  vsApply(res);
+  if (!res.count) { toast('Nichts gesungen erkannt – erst singen, dann FANG'); return false; }
+  const tr = S.tracks[MEL_T];
+  switchTrackAt(MEL_T, si, nextBarFromAudible(), start * 4);     // läuft phasengleich weiter (wie FANG)
+  selectSlot(MEL_T, si); CAP.last[MEL_T] = -1e9; VS.lastVoice = -1e9;
+  VS.res = res; VS.lastFang = {si, len, start, Eb, rule: job.res.rule, notes: tr.clips[si].notes.length};
+  markDirty(); UI.dirty.all = true;
+  vsResSheet();
+  return true;
+}
+/* ● REC mit 🎤: Bereich merken, am Ende auswerten → MELODIE-Clip in derselben Szene */
+function vsRecBegin() { if (!ST.on || ST.phase === 'off' || !S.tracks[MEL_T]) { VS.rec = null; return; } VS.rec = {start: rec.startBeat, scene: rec.scene, track: rec.track, mode: rec.mode, cfg: Object.assign({}, vsCfg())}; }
+function vsRecEnd(endBeat) {
+  const r = VS.rec; if (!r) return; VS.rec = null;
+  if (!ST.on || !(endBeat > r.start)) return;
+  r.end = endBeat; VS.busy = 1;
+  const until = Math.min(r.end, R.playing && AU.ctx ? audBeat() + 4 : r.end);
+  vsWhenData(b2t(until), ok => {
+    if (!ok) { VS.busy = 0; return; }
+    vsAnalyse(b2t(Math.max(0, r.start - 0.5)), b2t(until), r.cfg).then(A => vsRecDone(r, A, until)).catch(e => { VS.busy = 0; logErr(e); });
+  });
+}
+function vsRecDone(r, A, until) {
+  VS.busy = 0; if (!A) return false;
+  const si = r.scene, tr = S.tracks[MEL_T]; if (!tr) return false;
+  const base = tr.clips[si] ? deep(tr.clips[si]) : null;
+  const len = base ? base.len : clamp(Math.round((r.end - r.start) / 4), 1, 16);
+  const ph = base && R.slot[MEL_T] === si ? R.cstart[MEL_T] : r.start;
+  const res = {kind: 'rec', track: MEL_T, si, len, start: r.start / 4, phase: ph, A, cfg: r.cfg, oct: 0, snap: r.cfg.snap, grid: r.cfg.grid, base, from: r.start - 0.25, to: Math.min(r.end, until), first: true};
+  vsApply(res);
+  if (!res.count) { if (!base && tr.clips[si] && !tr.clips[si].notes.length) { /* nichts */ } toast(r.cfg.src === 'inst' ? 'Kein Instrument erkannt' : 'Kein Gesang erkannt'); return false; }
+  if (!base && R.playing && R.slot[MEL_T] !== si) switchTrackAt(MEL_T, si, nextBarFromAudible(), r.start);
+  VS.res = res; markDirty(); UI.dirty.all = true;
+  vsResSheet();
+  return true;
+}
+// schreibt die Noten des Ergebnisses in den Clip (erster Aufruf: ein Undo-Schritt „Stimme“; danach nur ändern)
+function vsApply(res) {
+  const nt = vsNotesOf(res.A, {snap: res.snap, oct: res.oct}), L = res.len * 4, g = VS_GRIDS[res.grid] || 0;
+  res.tuneCt = nt.tuneCt; res.key = nt.key;
+  const notes = [], sk = sceneKeyOf(res.si) || S.key, ckey = res.base ? res.base.key : {root: sk.root, scale: sk.scale, src: 'auto'};
+  for (const n of nt.notes) {
+    if (n.b < res.from - 1e-6 || n.b >= res.to - 1e-6) continue;
+    let o = res.kind === 'rec' && res.base ? ((n.b - res.phase) % L + L) % L : Math.max(0, n.b - res.start * 4);
+    if (res.kind !== 'rec' || !res.base) { if (o >= L) continue; }
+    o = +o.toFixed(4);
+    let t = g && GRID_STEP[res.grid] ? qPos(o, res.grid, 0.5, 1, L) : o; if (t >= L - 1e-9) t = res.kind === 'rec' && res.base ? 0 : Math.max(0, L - (g || 1 / 32)); t = +Math.max(0, t).toFixed(6);
+    const tm = b2t(Math.max(0, n.b)), en = T.targetAt(tm + 1e-6);
+    notes.push({t, o, d: rd4(Math.min(n.d, L - t)), n: clipNoteFor(MEL_T, ckey, n.n, tm, en), v: rv3(n.v)});
+  }
+  res.count = notes.length;
+  const tr = S.tracks[MEL_T];
+  if (res.first) {
+    res.first = false; if (!notes.length) return;
+    pushUndo(MEL_T, res.si, res.base, 'Stimme');
+    tr.clips[res.si] = res.base ? deep(res.base) : {len: res.len, key: Object.assign({}, ckey), notes: []};
+    res.clip = tr.clips[res.si];
+  }
+  const c = tr.clips[res.si]; if (!c || c !== res.clip) return;
+  c.notes = (res.base ? deep(res.base.notes) : []).concat(notes).sort((a, b) => a.t - b.t || a.n - b.n);
+  if (!res.base) { if (g && GRID_STEP[res.grid]) c.q = {grid: res.grid, swing: 0.5, strength: 1}; else delete c.q; }   // das Raster des Blatts (nicht Eingabe-Q)
+  analyseClip(MEL_T, res.si, false, true);
+  if (R.playing && R.slot[MEL_T] === res.si && !R.pend[MEL_T] && AU.ctx) { const at = AU.ctx.currentTime + .006; cancelTrackFrom(MEL_T, at); scheduleTrack(MEL_T, Math.max(R.cstart[MEL_T], t2b(at)), R.schedBeat, true); }   // klingt sofort neu
+}
+function vsResAlive() { const r = VS.res; return !!(r && S.tracks[MEL_T] && S.tracks[MEL_T].clips[r.si] && S.tracks[MEL_T].clips[r.si] === r.clip); }
+function vsResSet(p) {
+  const r = VS.res; if (!vsResAlive()) { VS.res = null; if (UI.pop && UI.pop.name === 'vsres') closePop(); return false; }   // z. B. nach ↶
+  p = p || {};
+  if (p.oct != null) r.oct = clamp(p.oct | 0, -3, 3);
+  if (p.snap != null) { r.snap = !!p.snap; vsCfgSet({snap: r.snap}); }
+  if (p.grid != null && VS_GRIDS[p.grid] != null) { r.grid = p.grid; vsCfgSet({grid: r.grid}); }
+  vsApply(r); markDirty(); UI.dirty.all = true;
+  if (UI.pop && UI.pop.name === 'vsres') vsResPaint(UI.pop.el);
+  return true;
+}
+function vsResDrop() {
+  const r = VS.res; VS.res = null; if (UI.pop && UI.pop.name === 'vsres') closePop();
+  if (!r || !r.clip) return false;
+  const u = UNDO[UNDO.length - 1];
+  if (u && u.kind === 'clip' && u.track === MEL_T && u.scene === r.si && u.label === 'Stimme' && S.tracks[MEL_T].clips[r.si] === r.clip) { undo(); return true; }
+  return false;
+}
+function vsResultInfo() {
+  const r = VS.res; if (!r) return null;
+  const c = S.tracks[MEL_T] && S.tracks[MEL_T].clips[r.si];
+  return {kind: r.kind, track: MEL_T, scene: r.si, len: r.len, start: r.start, endBar: r.Eb, rule: r.rule || null, tuneCt: r.tuneCt, key: r.key, oct: r.oct, snap: r.snap, grid: r.grid, src: r.cfg.src, lock: r.cfg.lock,
+    alive: vsResAlive(), notes: c ? c.notes.map(n => ({t: n.t, o: n.o, d: n.d, n: n.n, v: n.v})) : []};
+}
+
+/* ---------- Ergebnis-Blatt (Skizze 3; Platz wie das FANG-TEIL-Blatt: P über der Tastatur, L im Seitenfeld) ---------- */
+function vsResSheet() {
+  if (!VS.res) return;
+  openPop(null, p => { p.classList.add('fsheet', 'vsres'); guardTouch(p); vsResPaint(p);
+    onTap(p, b => {
+      const a = b.dataset.a;
+      if (a === 'x' || a === 'drop') { vsResDrop(); haptic('tick'); return; }
+      if (a === 'ok') { VS.res = null; closePop(); haptic('pop'); return; }
+      if (a === 'edit') { const r = VS.res; VS.res = null; closePop(); if (r) openRoll(MEL_T, r.si); return; }
+      if (a === 'om') { vsResSet({oct: VS.res.oct - 1}); haptic('tick'); return; }
+      if (a === 'op') { vsResSet({oct: VS.res.oct + 1}); haptic('tick'); return; }
+      if (a === 'snap') { vsResSet({snap: !VS.res.snap}); haptic('tick'); return; }
+      if (b.dataset.g) { vsResSet({grid: b.dataset.g}); haptic('tick'); }
+    }, 'button');
+  }, {name: 'vsres', onClose: () => { if (VS.res && !vsResAlive()) VS.res = null; }});
+  fangPlace(UI.pop && UI.pop.el);
+}
+function vsResPaint(p) {
+  const r = VS.res; if (!r || !vsResAlive()) { closePop(); return; }
+  const c = S.tracks[MEL_T].clips[r.si], inst = r.cfg.src === 'inst', n = c.notes.length - (r.base ? r.base.notes.length : 0);
+  const a = r.kind === 'fang' ? r.start + 1 : Math.floor(r.start) + 1, z = a + r.len - 1;
+  const what = (inst ? 'EINGESPIELT' : 'GESUNGEN') + `<span> · ${r.kind === 'fang' ? 'gefangen' : 'aufgenommen'}</span>`;
+  const tu = Math.round(r.tuneCt || 0), tuTx = Math.abs(tu) >= 3 ? (tu < 0 ? 'Stimmung ' + MINUS + Math.abs(tu) + ' ct ausgeglichen' : 'Stimmung +' + tu + ' ct ausgeglichen') : 'Stimmung passt';
+  let h = `<div class="fs-h"><b class="fs-t">${what} · T ${a}${z > a ? '–' + z : ''}</b><span class="fs-chip vs-chip">MELODIE · ${r.si + 1}</span><button class="rb fs-x" data-a="x" aria-label="Verwerfen und schließen">✕</button></div>`;
+  h += `<div class="fs-end">${n} ${n === 1 ? 'Note' : 'Noten'} · ${esc(tuTx)}${r.snap ? ' · ' + esc(keyLabel(r.key)) + ' eingerastet' : ' · frei'}${r.kind === 'fang' && r.endText ? ' · ' + esc(r.endText) : ''}</div>`;
+  h += `<canvas class="vs-roll" aria-label="Erkannte Noten"></canvas>`;
+  h += `<div class="fs-row vs-row"><span class="lbl">Oktave</span><button class="rb cp-c" data-a="om" aria-label="Oktave tiefer">‹</button><b class="vs-oct">${r.oct > 0 ? '+' + r.oct : r.oct < 0 ? MINUS + -r.oct : '±0'}</b><button class="rb cp-c" data-a="op" aria-label="Oktave höher">›</button><button class="rb cp-c vs-snap${r.snap ? ' on' : ''}" data-a="snap" aria-pressed="${r.snap}">${r.snap ? '✓ Einrasten' : 'Frei'}</button></div>`;
+  h += `<div class="fs-row vs-row"><span class="lbl">Raster</span>` + Object.keys(VS_GRIDS).map(g => `<button class="rb cp-c${r.grid === g ? ' on' : ''}" data-g="${g}">${g === 'frei' ? 'frei' : g}</button>`).join('') + `</div>`;
+  h += `<div class="cr-bot fs-bot"><button class="rb" data-a="drop"><span class="lg">Verwerfen</span><span class="sh">✕</span></button><button class="rb" data-a="edit"><span class="lg">✎ Bearbeiten</span><span class="sh">✎</span></button><button class="rb fs-ok" data-a="ok">OK ✓</button></div>`;
+  p.innerHTML = h;
+  fangPlace(p); vsRollPaint(p.querySelector('.vs-roll'), c, r);
+}
+function vsRollPaint(cv, c, r) {
+  if (!cv) return;
+  const w = Math.max(100, cv.clientWidth || 280), h = 52, dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  const g = cv.getContext('2d'); if (!g) return; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const L = c.len * 4, ns = c.notes; if (!ns.length) return;
+  const lo = Math.min(...ns.map(n => n.n)) - 1, hi = Math.max(...ns.map(n => n.n)) + 1, rh = (h - 4) / (hi - lo + 1);
+  g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 1;
+  for (let b = 0; b <= c.len; b++) { const x = Math.round(b / c.len * (w - 1)) + 0.5; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+  const col = getComputedStyle(document.documentElement).getPropertyValue('--t6').trim() || '#a3e635', old = r.base ? r.base.notes : [];
+  for (const n of ns) {
+    const x = n.t / L * w, ww = Math.max(2, n.d / L * w - 1), y = h - 2 - (n.n - lo + 1) * rh;
+    g.fillStyle = old.some(q => Math.abs(q.t - n.t) < 1e-6 && q.n === n.n) ? 'rgba(255,255,255,.35)' : col;
+    g.fillRect(x, Math.max(0, y), ww, Math.max(2, rh - 1));
+  }
 }
 
 /* ---------- test API ---------- */
@@ -30044,7 +30758,21 @@ const SYNQUENZER = {
   stimmeRoute: r => stSetRoute(r, 'gewählt'), stimmeNudge: d => stNudge(+d || 0), stimmeSheet: v => (v === false ? (closePop(), false) : stSheet()),
   stimmeRead: (a, b, o) => { const x = stRead(a, b, o); return x ? {a: x.a, b: x.b, sr: x.sr, mic: Array.from(x.mic), ref: Array.from(x.ref), d16: x.d16 ? Array.from(x.d16) : undefined, d0: x.d0} : null; },
   stimmeLatAt: f => stLatAt(f), stimmeQuiet: v => stQuiet(!!v), stimmeNet: () => (ST.net ? Object.assign({}, ST.net) : ST.netLast),
-  stimmeForget: () => { ST.prof = {v: 1, prof: {}, route: null}; stProfSave(); return true; },
+  stimmeForget: () => { ST.prof = {v: 1, prof: {}, route: null}; VS.cfg = null; stProfSave(); return true; },
+  // VS2 Stimme → Noten: Einstellungen, Live-Taste, Analyse eines Signals (Node-gleich), Stimme-FANG, Ergebnis-Blatt
+  vsSet: p => vsCfgSet(p || {}),
+  vsInfo: () => ({cfg: Object.assign({}, vsCfg()), lit: VS.lit, litKey: vsLitKey(), litN: VS.litN || 0, voiceRecent: vsVoiceRecent(), busy: VS.busy, runs: VS.runs, last: VS.last, lastFang: VS.lastFang || null,
+    masks: VS.masks.length, worker: VS.w ? 'worker' : VS.w === false ? 'hauptfaden' : 'noch nicht', err: VS.err, fangMode: fangMode()}),
+  vsAnalyseSignal: (x, o) => { o = o || {}; const fs = o.fs || 16000, tr = VSD.pyin(Float32Array.from(x), {fs, octLock: !!o.octLock, fmin: o.fmin, fmax: o.fmax, mask: o.mask ? Uint8Array.from(o.mask) : null});
+    const SC = o.scale || null, sg = VSD.segment(tr, {snap: !!o.snap, scale: SC, root: o.root || 0, tuning: o.tuning == null ? 'auto' : o.tuning, attack: !!o.attack});
+    return {notes: sg.notes, tuneCt: sg.tuneCt, frames: tr.n, f0: o.f0 ? Array.from(tr.f0) : undefined}; },
+  vsFang: o => vsFang(o || {}),
+  vsClock: () => ({now: AU.ctx ? AU.ctx.currentTime : 0, start: R.startTime, spb: spb(), outLat: AU.outLat, playing: R.playing, sr: AU.ctx ? AU.ctx.sampleRate : 0, ring: ST.ring ? {start: ST.ring.start, end: ST.ring.end} : null, lat: ST.latMs}),
+  vsResult: () => vsResultInfo(),
+  vsResultSet: p => vsResSet(p || {}),
+  vsResultDrop: () => vsResDrop(),
+  vsResultOk: () => { const ok = !!VS.res; VS.res = null; if (UI.pop && UI.pop.name === 'vsres') closePop(); return ok; },
+  vsAnalyseRange: (a, b) => vsAnalyse(b2t(a), b2t(b)).then(A => (A ? vsNotesOf(A, {snap: vsCfg().snap}) : null)),
 
   // VO1 Online (online.md §7.6)
   cloud: () => ({state: SYNC.state, where: SYNC.where, live: !!(CLOUD.live || window.__synqFakeSupa), appCode: APP_CODE, user: SYNC.uid && SYNC.me ? {id: SYNC.uid, name: SYNC.me.name, code: SYNC.me.code, admin: !!SYNC.me.admin} : null,
@@ -30380,7 +31108,7 @@ const NO_SYNC = new Set(['micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud'
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
   'fmDefaultOp', 'fmEnvView', 'fmxEnvAction', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint', 'getFmx', 'fmxLevels', 'dxLayout', 'fmxDx', 'fmxFromFm6',
-  'fmxPredict', 'fmxPredictX', 'fmxRaster', 'syxVoiceOf', 'buildSyx', 'parseSyx', 'memory', 'fangPart', 'fangClose', 'songMarks', 'lastOpMs']);
+  'fmxPredict', 'fmxPredictX', 'fmxRaster', 'syxVoiceOf', 'buildSyx', 'parseSyx', 'memory', 'fangPart', 'fangClose', 'songMarks', 'lastOpMs', 'vsInfo', 'vsResult', 'vsAnalyseSignal', 'vsClock']);
 for (const k of Object.keys(SYNQUENZER)) {
   const f = SYNQUENZER[k]; if (typeof f !== 'function' || NO_SYNC.has(k)) continue;
   SYNQUENZER[k] = function () { const r = f.apply(this, arguments); uiSync(); if (r && typeof r.then === 'function') return r.then(v => { uiSync(); return v; }); return r; };
