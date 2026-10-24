@@ -54,6 +54,15 @@ for (const f of [110, 220, 440, 660]) {
   const l1 = W1.msgs.find(m => m.lit >= 0), l0 = W0.msgs.find(m => m.lit >= 0);
   ok(l1 && l1.lit === 57, `Oktave sperren live: ${l1 && l1.lit} (soll 57); ohne: ${l0 && l0.lit} (Unteroktave 45 erwartet)`);
 }
+// FP-DSP: NaN/Inf im Eingang (20 ms) → keine Ausnahme, keine NaN-Meldung, die Taste kommt danach zurück
+{
+  const n = SR * 1.5, x = new Float32Array(n), A = SR * 0.6, B = A + SR * 0.02;
+  for (let i = 0; i < n; i++) { const t = i / SR; x[i] = 0.15 * Math.sin(2 * Math.PI * 220 * t) + 0.08 * Math.sin(2 * Math.PI * 440 * t); }
+  for (let i = A; i < B; i++) x[i] = i % 2 ? NaN : Infinity;
+  const W = make(SR, {src: 'voice'}); let ex = null; try { W.run(x); } catch (e) { ex = e; }
+  const after = W.msgs.filter(m => m.lit !== undefined && m.f > B), back = after.find(m => m.lit === 57);
+  ok(!ex && W.msgs.every(m => m.lit === undefined || Number.isFinite(m.lit)) && (W.msgs.filter(m => m.lit !== undefined).pop() || {}).lit === 57, `NaN/Inf 20 ms: keine Ausnahme, Meldungen endlich, am Ende wieder Taste 57${back ? ' (nach ' + ((back.f - B) / SR * 1000).toFixed(0) + ' ms)' : ''}`);
+}
 // N7V-15: CPU of the live path (decimation + MPM-FFT + mask) on 20 s of singing, vs. the VS1 worklet without MPM
 {
   const mel = melody(5, 57, 69), sig = renderVoice(mel, {voice: 'male', seed: 3}), x = up(sig.x), secs = x.length / SR;

@@ -6592,6 +6592,7 @@ const RecHelpers = (() => {
       fol: () => ({x0: V.x0, ppb: V.ppb, W: V.W, L: clip() ? L() : 0, busy: P.size > 0 || !!gst || busyN > 0 || !!V.freeze, sel: E.sel.size > 0 || !!E.loop, tool: E.tool !== 'draw' || E.step != null}),
       setLoop: (a, b) => { const n = clip().len; if (a == null) E.loop = null; else { a = clamp(a | 0, 0, n - 1); b = clamp(b == null ? a : b | 0, 0, n - 1); E.loop = {a: Math.min(a, b), b: Math.max(a, b)}; } render(); },
       select: ns => { E.sel = new Set((ns || []).filter(n => clip().notes.includes(n))); render(); },
+      selectIdx: ix => { const ns = clip().notes; E.sel = new Set((ix || []).map(i => ns[i]).filter(Boolean)); render(); return E.sel.size; },   // VS2 tests
       setFold: on => { E.fold = !!on; buildRows(true); render(); },
       centerOn: n => { measure(); centerOn(n); clampView(); render(); },
       get state() { return {tool: E.tool, grid: E.grid, fold: E.fold, sel: E.sel.size, step: E.step, loop: E.loop ? {a: E.loop.a, b: E.loop.b} : null, ask: E.ask, pointers: P.size, gesture: gst && gst.kind, view: {...V, rows: V.rows.length}}; },
@@ -29906,7 +29907,7 @@ function stRelease(run, why) {
   ST.last = {why, tracks: run.tracksAfter, session: micAs(), frames: run.frames, gaps: run.gaps, sec: micR((performance.now() - run.t0) / 1000, 1)};
   if (ST.run === run) ST.run = null;
   ST.on = false; ST.phase = 'off'; ST.cal = null; ST.lvl = -180;
-  VS.lit = -1; VS.rec = null; VS.lastVoice = -1e9; UI.dirty.kb = true;          // VS2
+  VS.lit = -1; VS.rec = null; VS.lastVoice = -1e9; VS.act = []; VS.actOpen = null; UI.dirty.kb = true;          // VS2
   if (!R.playing) wakeReleaseLater();
   stRender();
 }
@@ -30061,7 +30062,7 @@ function stModeFit() {
      120-ms-Mittelwert > 0,6 HT vom Notenzentrum abweicht und das ≥ 50 ms bleibt (Grenze rückwärts auf halbem Weg), Notenhöhe =
      Median des Mittelteils, kürzeste Note 60 ms, Stimmung = gewichteter Kreis-Mittelwert der Nachkommastellen, Einrasten auf die
      Skala (nächster Skalenton, gemessen an der unausgeglichenen Höhe), Grenze hinter einem Maskenblock auf dessen Anfang.
-   mpm(x, o): MPM nach McLeod & Wyvill 2005 (NSDF, Schlüssel-Maxima, k = 0,9) – Gegenprobe zum Live-Weg im Worklet. */
+   Der Live-Weg (MPM nach McLeod & Wyvill 2005) steckt im Worklet „synq-stimme“ (ST_WK). */
 function vsDspMake() {
   const FFTS = {};
   function fftTab(N) {
@@ -30113,7 +30114,7 @@ function vsDspMake() {
     const M = 2 * N, nF = Math.max(0, Math.floor((x.length - 1) / hop) + 1);
     const BPS = 5, nB = Math.floor(12 * BPS * Math.log2(fmax / fmin)) + 1;
     const re = new Float64Array(M), im = new Float64Array(M), d = new Float64Array(tauMax + 2), dn = new Float64Array(tauMax + 2), cum = new Float64Array(N + 1);
-    const obs = new Float32Array(nF * nB), vp = new Float32Array(nF), rms = new Float32Array(nF), e10 = new Float32Array(nF), cands = new Array(nF);
+    const vp = new Float32Array(nF), rms = new Float32Array(nF), e10 = new Float32Array(nF), cands = new Array(nF);
     const h10 = Math.round(fs * 0.01);
     const win = new Float64Array(W); for (let j = 0; j < W; j++) win[j] = 0.5 - 0.5 * Math.cos(2 * Math.PI * j / (W - 1));
     const mask = o.mask || null;
@@ -30160,7 +30161,7 @@ function vsDspMake() {
         if (f < fmin || f > fmax) continue;
         const b = Math.round(12 * BPS * Math.log2(f / fmin));
         if (b < 0 || b >= nB) continue;
-        obs[i * nB + b] += c.p; tot += c.p; cs.push({f, b, p: c.p});
+        tot += c.p; cs.push({f, b, p: c.p});
       }
       vp[i] = Math.min(1, tot); cands[i] = cs;
     }
@@ -30172,10 +30173,13 @@ function vsDspMake() {
     const lst = Math.log(0.99), lsw = Math.log(0.01), TINY = 1e-30;
     let V = new Float64Array(S2), V2 = new Float64Array(S2);
     const bp = new Uint8Array(nF * S2);
+    // Beobachtung je Frame dicht nur für den laufenden Frame (statt nF × nB Werte: bei 60 s rund 14 MB weniger)
+    const ob = new Float64Array(nB); let obI = -1;
     const lobs = (i, s) => {
       if (!cands[i] && (!mask || !mask[i])) return s < nB ? Math.log(TINY) : Math.log(1 / nB);   // still: stimmlos
       if (!cands[i]) return Math.log(1 / S2);                                                   // maskiert: unbekannt
-      return s < nB ? Math.log(obs[i * nB + s] + TINY) : Math.log((1 - vp[i]) / nB + TINY);
+      if (obI !== i) { ob.fill(0); for (const c of cands[i]) ob[c.b] += c.p; obI = i; }
+      return s < nB ? Math.log(ob[s] + TINY) : Math.log((1 - vp[i]) / nB + TINY);
     };
     for (let s = 0; s < S2; s++) V[s] = Math.log(1 / S2) + (nF ? lobs(0, s) : 0);
     for (let i = 1; i < nF; i++) {
@@ -30203,23 +30207,6 @@ function vsDspMake() {
       f0[i] = best ? best.f : fmin * Math.pow(2, s / (12 * BPS));
     }
     return {fs, hop, n: nF, f0, vp, rms, e10, unk};
-  }
-  /* MPM (McLeod/Wyvill): x[s..s+W), lags ≤ tauMax; returns {f, c (Klarheit)} or null */
-  function mpm(x, s, W, fs, fmin, fmax) {
-    const tauMax = Math.min(W - 2, Math.ceil(fs / fmin)), tauMin = Math.max(2, Math.floor(fs / fmax));
-    const n = new Float64Array(tauMax + 2);
-    for (let t = 0; t <= tauMax + 1; t++) { let r = 0, m = 0; for (let j = 0; j < W - t; j++) { const a = x[s + j], b = x[s + j + t]; r += a * b; m += a * a + b * b; } n[t] = m > 0 ? 2 * r / m : 0; }
-    let pos = false, mx = -1, mi = -1; const keys = [];
-    for (let t = 1; t <= tauMax; t++) {
-      if (!pos && n[t] > 0 && n[t - 1] <= 0) { pos = true; mx = -1; mi = -1; }
-      else if (pos && n[t] <= 0) { pos = false; if (mi > 0) keys.push(mi); }
-      if (pos && t >= tauMin && n[t] > mx && n[t] >= n[t - 1] && n[t] >= n[t + 1]) { mx = n[t]; mi = t; }
-    }
-    if (pos && mi > 0) keys.push(mi);
-    if (!keys.length) return null;
-    let top = 0; for (const k of keys) top = Math.max(top, n[k]);
-    const k = keys.find(q => n[q] >= 0.9 * top); const a = n[k - 1], b = n[k], c = n[k + 1], den = a - 2 * b + c, sh = den < 0 ? 0.5 * (a - c) / den : 0;
-    return {f: fs / (k + sh), c: b - 0.25 * (a - c) * sh};
   }
   const median = a => { if (!a.length) return NaN; const b = Float64Array.from(a).sort(); const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
   /* Noten aus der Spur. o: {scale: [12 bools] relativ zu Tonart-Grundton root, root, snap, tuning ('auto' | Halbtöne), minMs} */
@@ -30330,7 +30317,7 @@ function vsDspMake() {
     }
     return {notes: out, tuneCt: Math.round(tune * 1000) / 10};
   }
-  return {fft, pyin, segment, mpm, midiOf, median};
+  return {fft, pyin, segment, midiOf, median};
 }
 /* VSDSP-END */
 
@@ -30351,7 +30338,7 @@ function vsDspMake() {
    Einstellungen nur auf dem Gerät (Profil `synq-stimme-v1`, Feld vs). Kein Netz-Halt (nur Noten, kein Audio wird gespeichert).
    ===================================================================== */
 const VSD = vsDspMake();
-const VS = {lit: -1, litF: 0, lastVoice: -1e9, masks: [], busy: 0, res: null, w: null, wq: new Map(), wid: 0, runs: 0, rec: null, cfg: null, last: null, err: null};
+const VS = {lit: -1, litF: 0, lastVoice: -1e9, act: [], actOpen: null, masks: [], busy: 0, res: null, w: null, wq: new Map(), wid: 0, runs: 0, rec: null, cfg: null, last: null, err: null};
 const VS_GRIDS = {frei: 0, '1/16': 0.25, '1/8': 0.5};
 function vsCfg() {
   if (VS.cfg) return VS.cfg;
@@ -30374,7 +30361,20 @@ function vsLiveCfg() { const run = ST.run; if (run && run.node) { try { run.node
 function vsLitMsg(run, d) {
   if (ST.run !== run) return;
   VS.lit = d.lit; VS.litF = d.f; VS.lastVoice = performance.now(); VS.litN = (VS.litN || 0) + (d.lit >= 0 ? 1 : 0);
+  // Stimm-Abschnitte (Mikro-Frames) für den Analyse-Bereich beim FANG: nur die Phrase wird ausgewertet, nicht 17 Takte
+  if (d.lit >= 0 && VS.actOpen == null) VS.actOpen = d.f;
+  else if (d.lit < 0 && VS.actOpen != null) { VS.act.push([VS.actOpen, d.f]); VS.actOpen = null; if (VS.act.length > 400) VS.act.shift(); }
   UI.dirty.kb = true;
+}
+// Anfang der live gehörten Phrase (Schlag): rückwärts bis zu einer Pause ≥ 1 Takt; null = keine Live-Meldungen
+function vsLiveStart(until) {
+  const G = ST.ring; if (!G) return null;
+  const sr = G.sr, bt = F => t2b((F - stLatAt(F) * sr / 1000) / sr), segs = VS.act.map(([a, b]) => [bt(a) - 0.25, bt(b)]);
+  if (VS.actOpen != null) segs.push([bt(VS.actOpen) - 0.25, until]);
+  const s = segs.filter(x => x[0] < until).sort((x, y) => x[0] - y[0]); if (!s.length) return null;
+  let i = s.length - 1, st = s[i][0];
+  while (i > 0) { if (st - s[i - 1][1] >= 4) break; i--; st = Math.min(st, s[i][0]); }
+  return st;
 }
 // welche sichtbare Taste leuchtet: die Note selbst, sonst dieselbe Tonklasse in der nächsten sichtbaren Oktave
 function vsLitKey() {
@@ -30399,7 +30399,7 @@ function vsWorker() {
   try {
     const src = vsDspMake.toString() + ';const D = vsDspMake();onmessage = e => { const m = e.data; try { const tr = D.pyin(m.x, m.o); postMessage({id: m.id, tr}, [tr.f0.buffer, tr.vp.buffer, tr.rms.buffer, tr.e10.buffer, tr.unk.buffer]); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
-    const w = new Worker(u); try { URL.revokeObjectURL(u); } catch (e) {}
+    const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);   // Safari lädt den Worker evtl. erst später
     w.onmessage = e => { const m = e.data, q = VS.wq.get(m.id); if (!q) return; VS.wq.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.tr); };
     w.onerror = e => { for (const q of VS.wq.values()) { clearTimeout(q.to); q.no(new Error('worker')); } VS.wq.clear(); VS.w = false; try { e.preventDefault(); } catch (er) {} };
     VS.w = w;
@@ -30475,9 +30475,10 @@ function vsFang(o) {
   if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return false; }
   if (VS.busy) { toast('Stimme wird noch ausgewertet …'); return false; }
   if (!S.tracks[MEL_T]) return false;
+  if (vsMelFree() < 0) { toast('Kein freier Platz in MELODIE'); return false; }
   const tapAt = AU.ctx.currentTime, t = isNum(o.beat) ? Math.min(o.beat, audBeat()) : audBeat();
   const res = fangCompute(Math.max(0, t), tapAt);            // dieselbe Taktstrich-Regel wie FANG TEIL (N2-VS2-01)
-  const E = res.E, until = Math.min(E, t), from = Math.max(0, E - 68);
+  const E = res.E, until = Math.min(E, t), ls = vsLiveStart(until), from = Math.max(0, E - 68, ls != null ? ls - 4.5 : 0);   // die Phrase (live gehört) und 1 Takt davor
   VS.busy = 1; haptic('pop');
   const job = {kind: 'fang', res, E, until, from, tapAt, cfg: Object.assign({}, vsCfg()), o};
   VS.job = job;
@@ -30551,7 +30552,7 @@ function vsApply(res) {
     let o = res.kind === 'rec' && res.base ? ((n.b - res.phase) % L + L) % L : Math.max(0, n.b - res.start * 4);
     if (res.kind !== 'rec' || !res.base) { if (o >= L) continue; }
     o = +o.toFixed(4);
-    let t = g ? Math.round(o / g) * g : o; if (t >= L - 1e-9) t = res.kind === 'rec' && res.base ? 0 : L - g; t = +Math.max(0, t).toFixed(6);
+    let t = g && GRID_STEP[res.grid] ? qPos(o, res.grid, 0.5, 1, L) : o; if (t >= L - 1e-9) t = res.kind === 'rec' && res.base ? 0 : Math.max(0, L - (g || 1 / 32)); t = +Math.max(0, t).toFixed(6);
     const tm = b2t(Math.max(0, n.b)), en = T.targetAt(tm + 1e-6);
     notes.push({t, o, d: rd4(Math.min(n.d, L - t)), n: clipNoteFor(MEL_T, ckey, n.n, tm, en), v: rv3(n.v)});
   }
@@ -30565,11 +30566,14 @@ function vsApply(res) {
   }
   const c = tr.clips[res.si]; if (!c || c !== res.clip) return;
   c.notes = (res.base ? deep(res.base.notes) : []).concat(notes).sort((a, b) => a.t - b.t || a.n - b.n);
-  analyseClip(MEL_T, res.si, true, true); clipChanged(MEL_T, res.si);
+  if (!res.base) { if (g && GRID_STEP[res.grid]) c.q = {grid: res.grid, swing: 0.5, strength: 1}; else delete c.q; }   // das Raster des Blatts (nicht Eingabe-Q)
+  analyseClip(MEL_T, res.si, false, true);
+  if (R.playing && R.slot[MEL_T] === res.si && !R.pend[MEL_T] && AU.ctx) { const at = AU.ctx.currentTime + .006; cancelTrackFrom(MEL_T, at); scheduleTrack(MEL_T, Math.max(R.cstart[MEL_T], t2b(at)), R.schedBeat, true); }   // klingt sofort neu
 }
 function vsResAlive() { const r = VS.res; return !!(r && S.tracks[MEL_T] && S.tracks[MEL_T].clips[r.si] && S.tracks[MEL_T].clips[r.si] === r.clip); }
 function vsResSet(p) {
-  const r = VS.res; if (!vsResAlive()) return false; p = p || {};
+  const r = VS.res; if (!vsResAlive()) { VS.res = null; if (UI.pop && UI.pop.name === 'vsres') closePop(); return false; }   // z. B. nach ↶
+  p = p || {};
   if (p.oct != null) r.oct = clamp(p.oct | 0, -3, 3);
   if (p.snap != null) { r.snap = !!p.snap; vsCfgSet({snap: r.snap}); }
   if (p.grid != null && VS_GRIDS[p.grid] != null) { r.grid = p.grid; vsCfgSet({grid: r.grid}); }
@@ -30612,9 +30616,9 @@ function vsResPaint(p) {
   const r = VS.res; if (!r || !vsResAlive()) { closePop(); return; }
   const c = S.tracks[MEL_T].clips[r.si], inst = r.cfg.src === 'inst', n = c.notes.length - (r.base ? r.base.notes.length : 0);
   const a = r.kind === 'fang' ? r.start + 1 : Math.floor(r.start) + 1, z = a + r.len - 1;
-  const what = (inst ? 'EINGESPIELT' : 'GESUNGEN') + (r.kind === 'fang' ? ' · gefangen' : ' · aufgenommen');
+  const what = (inst ? 'EINGESPIELT' : 'GESUNGEN') + `<span> · ${r.kind === 'fang' ? 'gefangen' : 'aufgenommen'}</span>`;
   const tu = Math.round(r.tuneCt || 0), tuTx = Math.abs(tu) >= 3 ? (tu < 0 ? 'Stimmung ' + MINUS + Math.abs(tu) + ' ct ausgeglichen' : 'Stimmung +' + tu + ' ct ausgeglichen') : 'Stimmung passt';
-  let h = `<div class="fs-h"><b class="fs-t">${what} <span>· Takt ${a}${z > a ? '–' + z : ''}</span></b><span class="fs-chip vs-chip">MELODIE · ${r.si + 1}</span><button class="rb fs-x" data-a="x" aria-label="Verwerfen und schließen">✕</button></div>`;
+  let h = `<div class="fs-h"><b class="fs-t">${what} · T ${a}${z > a ? '–' + z : ''}</b><span class="fs-chip vs-chip">MELODIE · ${r.si + 1}</span><button class="rb fs-x" data-a="x" aria-label="Verwerfen und schließen">✕</button></div>`;
   h += `<div class="fs-end">${n} ${n === 1 ? 'Note' : 'Noten'} · ${esc(tuTx)}${r.snap ? ' · ' + esc(keyLabel(r.key)) + ' eingerastet' : ' · frei'}${r.kind === 'fang' && r.endText ? ' · ' + esc(r.endText) : ''}</div>`;
   h += `<canvas class="vs-roll" aria-label="Erkannte Noten"></canvas>`;
   h += `<div class="fs-row vs-row"><span class="lbl">Oktave</span><button class="rb cp-c" data-a="om" aria-label="Oktave tiefer">‹</button><b class="vs-oct">${r.oct > 0 ? '+' + r.oct : r.oct < 0 ? MINUS + -r.oct : '±0'}</b><button class="rb cp-c" data-a="op" aria-label="Oktave höher">›</button><button class="rb cp-c vs-snap${r.snap ? ' on' : ''}" data-a="snap" aria-pressed="${r.snap}">${r.snap ? '✓ Einrasten' : 'Frei'}</button></div>`;
@@ -30763,6 +30767,7 @@ const SYNQUENZER = {
     const SC = o.scale || null, sg = VSD.segment(tr, {snap: !!o.snap, scale: SC, root: o.root || 0, tuning: o.tuning == null ? 'auto' : o.tuning, attack: !!o.attack});
     return {notes: sg.notes, tuneCt: sg.tuneCt, frames: tr.n, f0: o.f0 ? Array.from(tr.f0) : undefined}; },
   vsFang: o => vsFang(o || {}),
+  vsClock: () => ({now: AU.ctx ? AU.ctx.currentTime : 0, start: R.startTime, spb: spb(), outLat: AU.outLat, playing: R.playing, sr: AU.ctx ? AU.ctx.sampleRate : 0, ring: ST.ring ? {start: ST.ring.start, end: ST.ring.end} : null, lat: ST.latMs}),
   vsResult: () => vsResultInfo(),
   vsResultSet: p => vsResSet(p || {}),
   vsResultDrop: () => vsResDrop(),
@@ -31103,7 +31108,7 @@ const NO_SYNC = new Set(['micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud'
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
   'fmDefaultOp', 'fmEnvView', 'fmxEnvAction', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint', 'getFmx', 'fmxLevels', 'dxLayout', 'fmxDx', 'fmxFromFm6',
-  'fmxPredict', 'fmxPredictX', 'fmxRaster', 'syxVoiceOf', 'buildSyx', 'parseSyx', 'memory', 'fangPart', 'fangClose', 'songMarks', 'lastOpMs', 'vsInfo', 'vsResult', 'vsAnalyseSignal']);
+  'fmxPredict', 'fmxPredictX', 'fmxRaster', 'syxVoiceOf', 'buildSyx', 'parseSyx', 'memory', 'fangPart', 'fangClose', 'songMarks', 'lastOpMs', 'vsInfo', 'vsResult', 'vsAnalyseSignal', 'vsClock']);
 for (const k of Object.keys(SYNQUENZER)) {
   const f = SYNQUENZER[k]; if (typeof f !== 'function' || NO_SYNC.has(k)) continue;
   SYNQUENZER[k] = function () { const r = f.apply(this, arguments); uiSync(); if (r && typeof r.then === 'function') return r.then(v => { uiSync(); return v; }); return r; };

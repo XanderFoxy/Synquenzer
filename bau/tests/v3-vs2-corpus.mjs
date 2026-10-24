@@ -90,7 +90,8 @@ export function renderVoice(notes, o = {}) {
     const sb = 60 / (o.bpm || 100), cl = Math.round(0.25 * fs), c = new Float32Array(cl);
     for (let j = 0; j < cl; j++) { const t = j / fs; c[j] = Math.sin(2 * Math.PI * 1500 * t) * Math.exp(-t / 0.003) + (r() * 2 - 1) * 0.15 * Math.exp(-t / 0.04) * (t > 0.012 ? 1 : 0); }
     const cr = rmsOf(c, 0, Math.round(0.02 * fs)), k = vr * Math.pow(10, o.click / 20) / cr;
-    for (let b = 0; b * sb < end; b++) { const a = Math.round((b * sb + 0.012) * fs); clicks.push(b * sb); for (let j = 0; j < cl && a + j < n; j++) x[a + j] += c[j] * k; }
+    const co = o.clickOff != null ? o.clickOff : 0.012;
+    for (let b = 0; b * sb < end; b++) { const a = Math.round((b * sb + co) * fs); clicks.push(b * sb); for (let j = 0; j < cl && a + j < n; j++) x[a + j] += c[j] * k; }
   }
   const truth = notes.map(nt => ({on: nt.on, off: nt.on + nt.dur, midi: nt.midi}));
   return {x, fs, f0t, truth, clicks, P};
