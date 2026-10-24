@@ -30407,23 +30407,61 @@ function vsDspMake() {
       const shortF = F(115), moveF = F(170), stabF = F(45);
       const lvl = (a, b) => { const v = []; for (let k = a; k < b; k++) if (e[k] > -150) v.push(e[k]); return v.length ? median(v) : -200; };
       const trend = n => { const L = n.b - n.a, i0 = n.a + Math.floor(L * 0.2), i1 = n.b - 1 - Math.floor(L * 0.2); return i1 > i0 ? s3(i1) - s3(i0) : NaN; };
+      /* VS2b-fix (QA: ein langsam beginnendes Anschleifen, 1–1,6 Halbtöne über 120–160 ms, wurde eine falsche 1/16 vor dem
+         Ton): der langsame Anfang eines Anschleifens liegt zwar ≥ 45 ms in 25 ct, steht aber nicht still – die Stimme bewegt
+         sich danach ≥ 60 ms stetig auf den Ton zu. Ein echter kurzer Ton steht still (≤ 4 st/s über 20 ms) und wechselt erst
+         im kurzen Übergang zum nächsten. Anschleifen = Einsatz-Stück (kein Ton davor), das stetig zum Ton dahinter läuft (nie
+         > 15 ct zurück, gesamt ≥ 0,4 Halbtöne), kürzer als 60 ms still steht und danach ≥ 60 ms (zu ≥ 75 % der Frames) weiterläuft. */
+      const scoopTo = (n, nb) => {
+        const sg = Math.sign(nb.m - n.m), v = []; if (!sg) return false;
+        for (let k = n.a; k < n.b; k++) { const x = unk[k] ? NaN : s3(k); v.push(isNaN(x) ? (v.length ? v[v.length - 1] : NaN) : x); }
+        let f0 = 0; while (f0 < v.length && isNaN(v[f0])) f0++; for (let k = 0; k < f0; k++) v[k] = v[f0];
+        // Einschwingen des Einsatzes (die ersten ≤ 30 ms, oft ein Ausreißer zur Gegenseite): ab dem Punkt am weitesten weg vom Ton
+        let i0 = 0; for (let k = 1; k <= Math.min(v.length - 1, F(30)); k++) if ((v[k] - v[i0]) * sg < 0) i0 = k;
+        v.splice(0, i0);
+        const L = v.length; if (L < 4 || isNaN(v[0]) || (v[L - 1] - v[0]) * sg < 0.4) return false;
+        let mx = -Infinity; for (const x of v) { const y = (x - v[0]) * sg; if (y > mx) mx = y; if (mx - y > 0.15) return false; }
+        let best = 0, cur = 0, be = -1; for (let k = 0; k < L; k++) { if (Math.abs(v[Math.min(L - 1, k + 2)] - v[Math.max(0, k - 2)]) <= 0.08) { if (++cur > best) { best = cur; be = k; } } else cur = 0; }
+        const tail = L - 1 - be; if (best >= F(60) || tail < F(45) || tail <= best) return false;
+        let mvn = 0, pk = 0; for (let k = be + 1; k < L; k++) { const d = (v[k] - v[k - 1]) * sg; if (d > 0.005) mvn++; if (d > pk) pk = d; }
+        // 45 … 60 ms Bewegung: nur ein gemächliches Anschleifen (≤ 20 Halbtöne/s); ein Übergang zum nächsten Ton ist schneller
+        return mvn >= 0.75 * tail && (tail >= F(60) || pk <= 0.1 * hop / 0.005);
+      };
       for (const n of notes) if (n.ca == null) { n.ca = n.a; n.cb = n.b; }
       const core = n => { n.m = center(n.ca, n.cb); if (isNaN(n.m)) n.m = center(n.a, n.b); };
       for (let k = 0; k < notes.length; k++) {
-        const n = notes[k], len = n.b - n.a; if (len >= moveF || isNaN(n.m)) continue;
+        const n = notes[k]; if (isNaN(n.m)) continue;
         const p = notes[k - 1], q = notes[k + 1], pa = !!(p && p.pe && p.b === n.a && !isNaN(p.m)), qa = !!(q && n.pe && q.a === n.b && !isNaN(q.m));
+        /* VS2b-fix (QA: im Raum blieb nach dem Abfall am Ende ein falscher tiefer Ton): der Nachhall hält die tiefste Tonhöhe
+           ≥ 70 ms, aber ≥ 10 dB unter dem Ton davor. Beim letzten Stück vor der Stille zählen Länge, Ruhe und Richtung nur im
+           gesungenen Teil (Pegel höchstens 10 dB unter dem Ton davor); was danach nur noch nachklingt, ist kein Ton. */
+        let act = n, pl = NaN;
+        if (pa && !(q && q.a === n.b)) { pl = lvl(Math.max(p.a, p.b - F(150)), p.b); let ae = n.b; while (ae - 1 > n.a && !(e[ae - 1] >= pl - 10)) ae--; act = {a: n.a, b: ae}; }
+        // reiner Nachhall gleich hinter einem Ton (≤ 60 ms Lücke, bis zur Stille): ≥ 12 dB unter dem Ton und ohne neuen Anstieg
+        // (≥ 3 dB) ist kein Ton – anliegend gehört er zum Ton, sonst fällt er weg
+        if (p && !isNaN(p.m) && n.a >= p.b && n.a - p.b <= F(60) && !(q && q.a === n.b)) {
+          const plv = lvl(Math.max(p.a, p.b - F(150)), p.b); let mx = -Infinity, mn = Infinity, up = false;
+          for (let r = n.a; r < n.b; r++) { if (e[r] > mx) mx = e[r]; if (e[r] < mn) mn = e[r]; if (e[r] > mn + 3) up = true; }
+          if (mx <= plv - 12 && !up) { if (p.b === n.a) { p.b = n.b; p.pe = n.pe; } notes.splice(k, 1); k = Math.max(-1, k - 2); continue; }
+        }
+        const len = act.b - act.a; if (len >= moveF) continue;
         if (!pa && !qa) {                                            // allein: ein Rutscher ohne ruhige Stelle (≥ 1 Halbton) ist kein Ton
           if (len < shortF && flat(n) < stabF && Math.abs(trend(n)) >= 1) { notes.splice(k, 1); k = Math.max(-1, k - 2); }
           continue;
         }
         // bewegt: ≥ 0,8 Halbtöne, oder ≥ 0,4 ohne 60 ms ruhige Stelle (ein kurzer echter Ton steht ≥ 60 ms, auch wenn er gleitet)
-        const tr = trend(n), mv = Math.abs(tr) >= 0.8 || (Math.abs(tr) >= 0.4 && flat(n) < F(60));
-        let toQ = mv && qa && tr * (q.m - n.m) > 0, fromP = mv && pa && tr * (n.m - p.m) > 0;
+        const tr = trend(act), fla = flat(act), mv = Math.abs(tr) >= 0.8 || (Math.abs(tr) >= 0.4 && fla < F(60));
+        if (o.dbg) { const v = []; for (let k = n.a; k < n.b; k++) v.push(+s3(k).toFixed(2)); o.dbg.push({a: n.a, b: n.b, m: n.m, pm: p && p.m, qm: q && q.m, pa, qa, pe: !!n.pe, tr, fl: flat(n), mv, v, qfirst: !!(q && q.a === n.b), pend: !!(p && p.b === n.a), e: Array.from(e.slice(n.a, n.b), x => +x.toFixed(1)), pl: p ? lvl(Math.max(p.a, p.b - F(150)), p.b) : null, nl: lvl(n.a, n.b), ea: Array.from(e.slice(Math.max(0, n.a - 6), n.a), x => +x.toFixed(1)), eb: Array.from(e.slice(n.b, Math.min(nF, n.b + 6)), x => +x.toFixed(1)), vb: (() => { const r = []; for (let k = n.b; k < Math.min(nF, n.b + 6); k++) r.push(voiced[k]); return r.join(''); })()}); }
+        let toQ = (mv && qa && tr * (q.m - n.m) > 0) || (qa && !pa && scoopTo(n, q)), fromP = mv && pa && tr * (n.m - p.m) > 0;
         // Abfall am Phrasen-Ende: das letzte Stück vor der Stille, vom Ton weg (≥ 0,5 Halbtöne von Anfang bis Ende), ≥ 3 dB leiser
         // und nirgends 70 ms ruhig (ein kurzer Schlusston steht ≥ 70 ms: Hysterese-Regel)
-        if (!fromP && pa && !(q && q.a === n.b) && flat(n) < F(70)) { const tf = s3(n.b - 1) - s3(n.a); if (tf * (n.m - p.m) > 0 && Math.abs(tf) >= 0.5 && lvl(n.a, n.b) <= lvl(Math.max(p.a, p.b - F(150)), p.b) - 3) fromP = true; }
+        // (Richtung: vom Anfang bis zum Ende des gesungenen Teils, oder dessen Ende ≥ 0,5 Halbtöne unter/über dem Ton davor)
+        if (!fromP && act !== n && lvl(n.a, n.b) <= pl - 3) {
+          const dir = Math.sign(n.m - p.m), x0 = s3(n.a), x1 = s3(act.b - 1), tf = x1 - x0, tn = s3(n.b - 1) - x0, away = (x1 - p.m) * dir;
+          if ((fla < F(70) && tf * dir > 0 && Math.max(tf * dir, away) >= 0.5) || (flat(n) < F(70) && tn * dir >= 0.5)) fromP = true;
+        }
         if (len >= shortF && !toQ && !fromP) continue;
-        if (!toQ && !fromP && flat(n) >= stabF) {                    // steht ruhig: nur ein Vibrato-Wackler des Nachbarn geht
+        if (!toQ && !fromP && fla >= stabF) {                    // steht ruhig: nur ein Vibrato-Wackler des Nachbarn geht
           if (pa && inVib(n, p, true)) { p.b = n.b; p.pe = n.pe; p.cb = n.b; }
           else if (qa && inVib(n, q, false)) { q.a = n.a; q.ca = n.a; }
           else continue;
