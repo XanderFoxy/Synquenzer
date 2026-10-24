@@ -30,7 +30,7 @@ export async function open(o = {}) {
   const p = await ctx.newPage(); const errs = [];
   p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await p.addInitScript(INIT);
-  await p.goto(FILE); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version);
+  await p.goto(o.file ? 'file://' + o.file : FILE); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version);
   await p.waitForTimeout(400);
   return {br, p, errs};
 }

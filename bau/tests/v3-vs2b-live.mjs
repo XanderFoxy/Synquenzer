@@ -5,9 +5,9 @@ import {CONDS, melFor, renderContour} from './v3-vs2b-synth.mjs';
 import {resample} from './v3-vs2b-real.mjs';
 const html = fs.readFileSync(process.argv[2] && process.argv[2].endsWith('.html') ? process.argv[2] : '../dirigent-wt/index.html', 'utf8');
 const only = process.argv.slice(3).filter(a => !a.startsWith('-')), V = process.argv.includes('-v');
-const a = html.indexOf('const ST_WK = `') + 'const ST_WK = `'.length, b = html.indexOf("registerProcessor('synq-stimme', SynqStimme);`;") + "registerProcessor('synq-stimme', SynqStimme);".length;
-const SRC = html.slice(a, b);
-export function make(sr, mpm) {
+export const srcOf = h => { const a = h.indexOf('const ST_WK = `') + 'const ST_WK = `'.length, b = h.indexOf("registerProcessor('synq-stimme', SynqStimme);`;") + "registerProcessor('synq-stimme', SynqStimme);".length; return h.slice(a, b); };
+const SRC0 = srcOf(html);
+export function make(sr, mpm, SRC = SRC0) {
   let Cls = null; const msgs = [];
   class AWP { constructor() { this.port = {postMessage: m => msgs.push(m), onmessage: null}; } }
   globalThis.currentFrame = 0;

@@ -10677,7 +10677,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.5.1';
+const VERSION = '4.5.2';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -29518,13 +29518,14 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
       if (k > 0) { const a = n[k - 1], b = n[k], c = n[k + 1], den = a - 2 * b + c, sh = den < 0 ? 0.5 * (a - c) / den : 0; f = fs / (k + sh); cl = b - 0.25 * (a - c) * sh; }
       if (f && inst && cf.lock) for (let g = 0; g < 2 && 2 * f <= 1600; g++) { const od = this.ge(x, W, fs, 3 * f) + this.ge(x, W, fs, 5 * f) + this.ge(x, W, fs, 7 * f), ev = this.ge(x, W, fs, 2 * f) + this.ge(x, W, fs, 4 * f) + this.ge(x, W, fs, 6 * f); if (ev > 0 && od < 0.1 * ev && ev > 0.5 * this.ge(x, W, fs, f)) f *= 2; else break; }
     }
-    if (f > 0 && cl >= (inst ? 0.85 : 0.8) && cf.bl > 0) {   // only the app's own bleed? (same note: the decision holds for 2 more hops)
+    // VS2b: Klarheit mit Hysterese (leuchtet schon: 0,65 statt 0,8 - schnelles Vibrato senkt sie an den Umkehrpunkten)
+    const clT = this.lit >= 0 ? (inst ? 0.75 : 0.65) : (inst ? 0.85 : 0.8);
+    if (f > 0 && cl >= clT && cf.bl > 0) {   // only the app's own bleed? (same note: the decision holds for 2 more hops)
       const nb = Math.round(69 + 12 * Math.log2(f / 440));
       if (nb !== this.bkN || ++this.bk > 2) { this.bkN = nb; this.bk = 0; this.bkV = this.bleed(f); }
       if (this.bkV) { f = 0; this.bleedN++; }
     }
-    // VS2b: Klarheit mit Hysterese (leuchtet schon: 0,65 statt 0,8 - schnelles Vibrato senkt sie an den Umkehrpunkten)
-    if (f > 0 && cl >= (this.lit >= 0 ? (inst ? 0.75 : 0.65) : (inst ? 0.85 : 0.8))) {
+    if (f > 0 && cl >= clT) {
       // VS2b (Xander am iPhone: es wackelt, falsche Zwischen-Tasten). Tonhoehe je Hop = Median der letzten 3 Hops (sm).
       // Einsatz, sobald 3 Hops ruhig sind (Spanne <= 0,35 Halbtoene; ein Anschleifen leuchtet nicht), spaetestens nach 8 Hops.
       // Mitte c = Median der Werte der leuchtenden Note (bis 300 ms, nur Werte <= 60 ct daneben). Eine andere Taste erst, wenn
@@ -30348,8 +30349,9 @@ function vsDspMake() {
         const sg = Math.sign(Mk - c);
         let q = k; while (q < b && (dv(q) - c) * sg > 0.6) q++;
         if (q - k < (q >= b ? F(45) : hold)) { if (q >= b) break; k = q + 1; continue; }   // bis zum Ende der Strecke: der Ton kehrt nicht zurück
-        // Vibrato-Toleranz: eine Halbwelle (< 160 ms), nach der die Stimme klar auf die andere Seite der Mitte schwingt
-        // (bzw. am Ende davor dort war), ist Vibrato um dieselbe Note, kein Wechsel (ein Triller kehrt nur zur Mitte zurück)
+        // Vibrato-Toleranz: eine Halbwelle (< 160 ms), nach der die Stimme klar auf die andere Seite der Mitte schwingt, ist
+        // Vibrato um dieselbe Note, kein Wechsel (ein Triller kehrt nur zur Mitte zurück); ein Wackler ganz am Ende entscheidet
+        // die Übergangs-Regel unten (inVib)
         // (Ausschlag ≤ 1,6 Halbtöne, Gegenseite 0,3 … 1,6 und ≥ 35 % davon; ein Lauf, der umkehrt, schwingt weiter oder größer)
         if (q - k < F(160)) {
           let pk = 0; for (let j = k; j < q; j++) { const v = (dv(j) - c) * sg; if (v > pk) pk = v; }
@@ -30359,7 +30361,6 @@ function vsDspMake() {
             for (; fin(j); j += dir) { const v = -(dv(j) - c) * sg; if (v > 0.3) break; if (v >= -0.3 && ++band > F(45)) return 0; }
             for (; fin(j); j += dir) { const v = -(dv(j) - c) * sg; if (v <= 0.3) break; if (v > d) d = v; } return d; };
           let od = depth(q, 1, Math.min(b, q + F(130)));
-          if (od <= 0.3 && b - q < F(130)) od = depth(k - 1, -1, Math.max(s0, k - F(130)));
           if (pk <= 1.6 && od > 0.3 && od <= 1.6 && od >= 0.35 * pk) { k = q + 1; continue; }
         }
         const nl = mean(k, Math.min(q, k + F(150)));
