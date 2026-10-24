@@ -1,0 +1,26 @@
+// independent repro: late (0.15 beat) hand chords -> FANG TEIL; compare live bass downbeats vs loop downbeats
+import {open, tapEl, tapText} from './v3-qa-grp-lib.mjs';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const off = +(process.argv[2] || 0.15);
+const {br, p, errs, E} = await open({mic: false});
+await E(() => { SYNQUENZER.setBpm(120); SYNQUENZER.setMetronome(false); });
+await tapText(p, 'button.scn', /^▶\s*1/);
+await p.waitForFunction(() => SYNQUENZER.runtime().playing);
+await tapEl(p, '#segTr');
+const seq = [57, 53, 48, 55, 57, 53, 48, 55, 57];
+await E(([seq, b0, off]) => new Promise(res => { let k = 0; const iv = setInterval(() => { const b = audBeat(); if (k < seq.length && b >= b0 + 4 * k + off) { SYNQUENZER.keyOn(seq[k], .8, 'c' + k); const kk = k; setTimeout(() => SYNQUENZER.keyOff(0, 'c' + kk), 100); k++; } if (k >= seq.length) { clearInterval(iv); res(); } }, 2); }), [seq, 8, off]);
+await p.waitForFunction(() => audBeat() >= 40.4, null, {polling: 5});
+const liveLog = await E(() => SYNQUENZER.noteLog(4000).filter(n => n.track === 0 && n.clipNote === 36 && n.beat >= 7.9 && n.beat < 40.5 && (n.beat % 4) < 0.35).map(n => [+n.beat.toFixed(2), n.out, n.src]));
+await tapEl(p, '#bFang'); await sleep(150);
+const fp = await E(() => { const f = SYNQUENZER.fangPart(); return {len: f.len, period: f.period, rule: f.end && f.end.rule, endText: f.endText, ch: f.chords.ch.map(c => +c.b.toFixed(2) + ':' + (c.tg ? c.tg.name : 'ORIG')).join(' ')}; });
+const sheetText = await E(() => { const s = document.querySelector('.pop.fsheet'); return s ? s.innerText.replace(/\s+/g, ' ').slice(0, 300) : null; });
+await tapText(p, '.pop.fsheet button', /ALS TEIL/); await sleep(150);
+await p.waitForFunction(() => audBeat() >= 110, null, {timeout: 120000, polling: 50});
+const pi = await E(() => SYNQUENZER.partInfo().part);
+const loopLog = await E(() => SYNQUENZER.noteLog(4000).filter(n => n.track === 0 && n.clipNote === 36 && n.beat >= 44 && (n.beat % 4) < 0.35).map(n => [+n.beat.toFixed(2), n.out, n.src]));
+console.log('sheet:', sheetText);
+console.log('part:', JSON.stringify(fp), 'R.part', JSON.stringify(pi));
+console.log('LIVE bass downbeats:', JSON.stringify(liveLog));
+console.log('LOOP bass downbeats:', JSON.stringify(loopLog));
+console.log('errs', errs);
+await E(() => SYNQUENZER.stop()); await br.close();

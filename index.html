@@ -16631,11 +16631,16 @@ const FANG = {res: null, part: null, lastPart: null, live: false, name: null, du
 const tgKey = tg => (tg ? tg.root + ':' + (tg.quality || '') + ':' + tg.bass : 'O');
 // a Träger change up to ¼ beat before a bar line counts on it (§4.7 Regel 2); V2d-fix: a chord played by hand (h) also
 // up to the Transposer's grace (graceMs, 60 ms) after it — „on the bar line“ by ear, as Wechsel „am Takt“ counts it
+// G-P1b-gruppe-fix: a hand chord pressed late after the bar line (human timing + touch latency on the iPhone: 75–150 ms are
+// normal) still means that bar line, as long as nothing else changed after the bar line before it: up to ⅜ beat, at most
+// 160 ms, at least the grace — otherwise the first pass keeps ORIGINAL on its downbeat, no period is found (8 bars instead of
+// 4) and every loop restart plays an ORIGINAL blip before the chord
 const fangGraceB = () => (60 / 1000) / spb();
-const snapBeat = (b, hand) => {
+const fangLateB = () => Math.max(fangGraceB(), Math.min(.375, (160 / 1000) / spb()));
+const snapBeat = (b, hand, prevBeat) => {
   const n = Math.round(b / 4) * 4;
   if (n - b > 0 && n - b <= .25 + 1e-9) return n;
-  if (hand && b - n > 0 && b - n <= Math.min(.25, fangGraceB()) + 1e-9) return n;
+  if (hand && b - n > 0 && b - n <= fangLateB() + 1e-9 && !(prevBeat > n + 1e-6)) return n;
   return b;
 };
 // per bar from..k: the state at its bar line (heard by the tap: tapAt), the Träger in effect there (tg0), the changes inside
@@ -16645,8 +16650,8 @@ function fangBars(from, k, t, tapAt) {
   // start nobody can press before the first bar line unless the chord was latched
   const first = e => e.h && e.beat < 1 - 1e-9, pre = MEM.capc.length && MEM.capc[0].init;
   let lead = !!pre;
-  const caps = MEM.capc.filter(e => tapAt == null || e.at <= tapAt + 1e-9).map(e => {
-    const sb = lead && first(e) ? 0 : snapBeat(e.beat, e.h); if (!e.init && !first(e)) lead = false;
+  const caps = MEM.capc.filter(e => tapAt == null || e.at <= tapAt + 1e-9).map((e, i, a) => {
+    const sb = lead && first(e) ? 0 : snapBeat(e.beat, e.h, i ? a[i - 1].beat : -Infinity); if (!e.init && !first(e)) lead = false;
     return {sb, beat: e.beat, tg: e.target};
   });
   const out = {}; let prev = null;
@@ -30315,6 +30320,43 @@ function vsDspMake() {
       else notes.splice(k--, 1);
     }
     for (const n of notes) n.m = center(n.a, n.b);
+    /* G-P1b-gruppe-fix (VS2b, fragen-xander-9 „falsche Zwischennoten“, „es wackelt“): Übergänge unterdrücken. Ein kurzes Stück
+       (< 115 ms, kürzer als eine 1/16 bei 130 BPM), das per Tonhöhe an einen Nachbarn grenzt (legato), ist kein eigener Ton,
+       (a) wenn es nie ≥ 45 ms ruhig steht (Spanne ≤ 25 ct): der Weg dahin – Gleiten zwischen zwei Tönen (geht an beide, Grenze
+           wo die Stimme näher am Ziel ist), Anschleifen von unten/oben vor einem Ton (gehört zum Ton, Einsatz bleibt) oder ein
+           Abfall am Ende (gehört zum Ton davor);
+       (b) wenn es innerhalb des Vibratos seines Nachbarn liegt (dessen Auslenkung in den angrenzenden 300 ms): ein Wackler. */
+    {
+      const s3 = k => { const v = []; for (let r = k - 1; r <= k + 1; r++) if (r >= 0 && r < nF && !isNaN(m[r]) && !unk[r]) v.push(m[r]); return v.length ? median(v) : NaN; };
+      const flat = n => {                                           // longest window (frames) with a pitch span ≤ 0.25 st
+        const v = []; for (let k = n.a; k < n.b; k++) { if (unk[k]) continue; const x = s3(k); if (!isNaN(x)) v.push([k, x]); }
+        let best = 0;
+        for (let i = 0; i < v.length; i++) { let lo = v[i][1], hi = lo; for (let j = i; j < v.length; j++) { lo = Math.min(lo, v[j][1]); hi = Math.max(hi, v[j][1]); if (hi - lo > 0.25) break; best = Math.max(best, v[j][0] - v[i][0] + 1); } }
+        return best;
+      };
+      const span = (a, b) => { let lo = Infinity, hi = -Infinity; for (let k = a; k < b; k++) { if (unk[k]) continue; const x = s3(k); if (!isNaN(x)) { lo = Math.min(lo, x); hi = Math.max(hi, x); } } return [lo, hi]; };
+      const inVib = (n, nb, end) => { if (Math.abs(n.m - nb.m) > 1.5 || nb.b - nb.a < F(200)) return false; const [lo, hi] = end ? span(Math.max(nb.a, nb.b - F(300)), nb.b) : span(nb.a, Math.min(nb.b, nb.a + F(300))); return n.m >= lo - 0.1 && n.m <= hi + 0.1; };
+      const shortF = F(115), stabF = F(45);
+      for (let k = 0; k < notes.length; k++) {
+        const n = notes[k]; if (n.b - n.a >= shortF || isNaN(n.m)) continue;
+        const p = notes[k - 1], q = notes[k + 1], pa = !!(p && p.pe && p.b === n.a && !isNaN(p.m)), qa = !!(q && n.pe && q.a === n.b && !isNaN(q.m));
+        if (!pa && !qa) continue;
+        if (flat(n) >= stabF) {                                     // steht ruhig: nur ein Vibrato-Wackler des Nachbarn geht
+          if (pa && inVib(n, p, true)) { p.b = n.b; p.pe = n.pe; }
+          else if (qa && inVib(n, q, false)) q.a = n.a;
+          else continue;
+        } else if (pa && qa) {
+          if ((n.m - p.m) * (q.m - n.m) > 0) {                       // dazwischen: Grenze, wo die Stimme näher am Ziel ist
+            let bd = n.a; while (bd < n.b) { const v = s3(bd); if (!isNaN(v) && Math.abs(v - q.m) < Math.abs(v - p.m)) break; bd++; }
+            p.b = bd; q.a = bd;
+          } else if (Math.abs(n.m - p.m) <= Math.abs(n.m - q.m)) { p.b = n.b; } else q.a = n.a;
+        } else if (qa) { if (Math.abs(n.m - q.m) > 3) continue; q.a = n.a; }
+        else { if (Math.abs(n.m - p.m) > 3) continue; p.b = n.b; p.pe = n.pe; }
+        notes.splice(k, 1);
+        if (pa) p.m = center(p.a, p.b); if (qa) q.m = center(q.a, q.b);
+        k = Math.max(-1, k - 2);
+      }
+    }
     for (let k = 0; k + 1 < notes.length; k++) { const p = notes[k], q = notes[k + 1]; if (p.pe && p.b === q.a && Math.abs(p.m - q.m) < 0.5) { p.b = q.b; p.pe = q.pe; notes.splice(k + 1, 1); p.m = center(p.a, p.b); k--; } }
     for (let k = notes.length - 1; k >= 0; k--) { const n = notes[k]; let real = 0; for (let q = n.a; q < n.b; q++) if (!unk[q] && !isNaN(m[q])) real++; if (n.b <= n.a || real < F(30)) notes.splice(k, 1); }
     // Grenze hinter einem Maskenblock → auf dessen Anfang (Fassung 2): ein Einsatz höchstens 25 ms hinter einer Maske

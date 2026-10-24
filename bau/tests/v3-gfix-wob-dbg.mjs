@@ -1,0 +1,15 @@
+import {loadDsp} from './v3-vs2-corpus.mjs';
+import {renderVoice} from './v3-qa-grp-corpus.mjs';
+const D = loadDsp('../dirigent-wt/index.html');
+const BPM = 100, SB = 60 / BPM, LEAD = 0.1;
+const MEL = [[0, 1, 57], [1, 1, 60], [2, 2, 64], [4, 1, 62], [5, 1, 60], [6, 2, 59], [8, 1, 57], [9, 1, 64], [10, 2, 67], [12, 1, 65], [13, 1, 64], [14, 2, 60]];
+const AM = Array.from({length: 12}, (_, k) => [0, 2, 3, 5, 7, 8, 10].includes(k));
+const [cond, voice, seed, t0, t1] = process.argv.slice(2);
+const C = {scoop: {legato: false, o: {scoopP: 1, scoopMin: 1, scoopRange: 1, scoopTau: 0.06}}, vib: {legato: false, o: {vib: [50, 80], vibDelay: 0.12}}, glide2: {legato: true, o: {gMin: .2, gRange: .1}}}[cond];
+const mel = MEL.map(([b, d, m], k) => ({on: LEAD + b * SB, dur: d * SB, midi: m + (voice === 'female' ? 12 : 0), legato: C.legato && k > 0, rest: 0}));
+const sig = renderVoice(mel, {voice, seed: +seed, sigma: 12, bpm: BPM, ...C.o, vib: C.o.vib || [20, 40]});
+const tr = D.pyin(Float32Array.from(sig.x), {fs: 16000});
+const r = D.segment(tr, {snap: true, scale: AM, root: 9, tuning: 'auto'});
+console.log(r.notes.map(n => [+((n.t0 - LEAD) / SB).toFixed(2), +(n.t1 - n.t0).toFixed(3), n.n, n.m, n.by]).map(x => JSON.stringify(x)).join('\n'));
+const a = Math.round((LEAD + (+t0) * SB) / 0.005), b = Math.round((LEAD + (+t1) * SB) / 0.005);
+let line = ''; for (let i = a; i < b; i += 2) line += (tr.f0[i] > 0 ? (12 * Math.log2(tr.f0[i] / 440) + 69).toFixed(2) : '-') + ' '; console.log(line);
