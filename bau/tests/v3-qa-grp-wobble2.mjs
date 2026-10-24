@@ -1,0 +1,25 @@
+// QA group (VS2): the app path – sing 4 bars with slides between the notes over the running song (wired), FANG 🎤 → MELODIE clip
+import {open, check, done} from './v3-qa-grp-lib.mjs';
+import {micOn, resample, b64} from './v3-vs2-h.mjs';
+import {renderVoice} from './v3-qa-grp-corpus.mjs';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const cond = process.argv[2] || 'glide';
+const {br, p, errs, E} = await open();
+await E(() => { SYNQUENZER.setBpm(100); SYNQUENZER.setMetronome(false); });
+const mic = await micOn(p, 'wired'); await E(() => SYNQUENZER.stop()); await sleep(1300);
+const SB = 0.6, LEAD = 0.04;
+const MEL = [[0, 1, 57], [1, 1, 60], [2, 2, 64], [4, 1, 62], [5, 1, 60], [6, 2, 59], [8, 1, 57], [9, 1, 64], [10, 2, 67], [12, 1, 65], [13, 1, 64], [14, 2, 60]];
+const o = cond === 'glide' ? {gMin: 0.15, gRange: 0.1} : cond === 'vib' ? {vib: [50, 80], vibDelay: 0.12} : {};
+const sig = renderVoice(MEL.map(([b, d, m], k) => ({on: LEAD + b * SB, dur: d * SB, midi: m, legato: cond === 'glide' && k > 0, rest: 0})), {voice: 'male', seed: 2, sigma: 12, bpm: 100, ...o, vib: o.vib || [20, 40]});
+await E(() => SYNQUENZER.launchScene(0)); await sleep(50);
+const y = b64(resample(sig.x, 16000, mic.sr));
+await E(([b, beat, lead]) => { const c = SYNQUENZER.vsClock(); window.__fake.play(b, c.start + beat * c.spb - lead); }, [y, 8, LEAD]);
+await p.waitForFunction(() => audBeat() >= 24.3, null, {polling: 5});
+await E(() => SYNQUENZER.vsFang()); await p.waitForFunction(() => !SYNQUENZER.vsInfo().busy && SYNQUENZER.vsResult(), null, {timeout: 20000}); await sleep(100);
+const r = await E(() => SYNQUENZER.vsResult());
+const notes = r.notes.map(n => [n.t, n.d, n.n]);
+console.log(cond, 'clip', r.len, 'bars,', notes.length, 'notes (sung 12):', JSON.stringify(notes));
+const truth = MEL.map(([b, d, m]) => [b, m]);
+const extra = notes.filter(([t, d, n]) => !truth.some(([b, m]) => m === n && Math.abs(b - t) <= 0.26));
+check(`${cond}: MELODIE clip has exactly the 12 sung notes (no intermediate notes)`, notes.length === 12 && !extra.length, {n: notes.length, extra});
+console.log('errs', errs); await E(() => SYNQUENZER.stop()); await br.close(); done();

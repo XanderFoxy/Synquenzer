@@ -1,0 +1,10 @@
+import {open, OUT} from './v3-qa-grp-lib.mjs';
+import fs from 'fs';
+const {br, p, errs, E} = await open({mic: false});
+const proj = JSON.parse(fs.readFileSync(OUT + 'flow4-project.json', 'utf8'));
+await E(pj => SYNQUENZER.importJSON(JSON.stringify({app: 'SYNQUENZER', kind: 'project', format: 4, project: pj})), proj);
+console.log(JSON.stringify(await E(() => SYNQUENZER.getBusFx()), null, 0));
+console.log(JSON.stringify(await E(() => S.tracks.map(t => ({n: t.name, fx: t.fx, sends: t.sends, mix: t.mix})))).slice(0, 1500));
+const n = await E(() => { const m = new Set(); for (const t of S.tracks) if (t.sound && t.sound.p) for (const k of Object.keys(t.sound.p)) if (/echo|delay|hall|rev|send/i.test(k)) m.add(k); return [...m]; });
+console.log('sound keys', JSON.stringify(n));
+await br.close();

@@ -13,22 +13,29 @@ const proj = JSON.parse(fs.readFileSync(OUT + 'flow4-project.json', 'utf8'));
 await E(pj => SYNQUENZER.importJSON(JSON.stringify({app: 'SYNQUENZER', kind: 'project', format: 4, project: pj})), proj);
 await sleep(400);
 await E(() => { SYNQUENZER.setBpm(120); SYNQUENZER.setMetronome(false); });
+if (process.argv[3] !== 'echo') { await E(() => SYNQUENZER.setBusFx('echo.ret', 0)); console.log('echo return 0 (measurement)', JSON.stringify(await E(() => SYNQUENZER.getBusFx().echo.ret))); }
+if (process.argv[4] === 'clean') {   // measurement variant: soft pads (40 ms attack, cutoff 1.5 kHz) on all synth tracks, drums muted
+  console.log('clean', JSON.stringify(await E(() => { const out = []; for (const t of [0, 1, 2, 3, 5]) { try { SYNQUENZER.loadPreset(t, 'f-juno-pad'); SYNQUENZER.setParam(t, 'aA', 0.04); SYNQUENZER.setParam(t, 'cutoff', 1500); out.push([t, SYNQUENZER.getParam(t, 'aA'), SYNQUENZER.getParam(t, 'cutoff')]); } catch (e) { out.push([t, String(e)]); } } SYNQUENZER.setMute(4, true); return out; })));
+}
 const mic = await micOn(p, 'wired');
 await E(() => SYNQUENZER.stop()); await sleep(1300);
 // recorder + monitors
 await E(async () => {
   const c = AU.ctx;
-  const src = `class R extends AudioWorkletProcessor{process(i){const x=i[0]&&i[0][0];if(x)this.port.postMessage({f:currentFrame,d:x.slice(0)});return true;}}registerProcessor('qa-rec2',R);`;
+  const src = `class R extends AudioWorkletProcessor{process(i){const x=i[0]&&i[0][0];this.port.postMessage({f:currentFrame,d:x?x.slice(0):null,nc:i[0]?i[0].length:-1});return true;}}registerProcessor('qa-rec3',R);`;
   try { await c.audioWorklet.addModule('data:application/javascript;base64,' + btoa(src)); } catch (e) { await c.audioWorklet.addModule(URL.createObjectURL(new Blob([src], {type: 'application/javascript'}))); }
-  const n = new AudioWorkletNode(c, 'qa-rec2'); const Q = window.__q = {buf: new Float32Array(c.sampleRate * 200), n: 0, f0: null, sr: c.sampleRate, node: n, notes: new Map(), acts: [], vc: [], lt: [], frames: 0};
-  n.port.onmessage = e => { const {f, d} = e.data; if (Q.f0 == null) Q.f0 = f; const i = f - Q.f0; if (i >= 0 && i + d.length <= Q.buf.length) { Q.buf.set(d, i); Q.n = Math.max(Q.n, i + d.length); } };
+  const n = new AudioWorkletNode(c, 'qa-rec3'); const Q = window.__q = {buf: new Float32Array(c.sampleRate * 200), n: 0, f0: null, sr: c.sampleRate, node: n, notes: new Map(), acts: [], vc: [], lt: [], frames: 0};
+  Q.nulls = []; Q.gaps = []; Q.lastF = null;
+  Q.k = 0; n.port.onmessage = e => { const {f, d, nc} = e.data; if (Q.f0 == null) Q.f0 = f; if (Q.lastF != null && f !== Q.lastF + 128) Q.gaps.push([Q.lastF, f]); Q.lastF = f; const i = (Q.k++) * 128;   // message order (currentFrame repeats now and then in Chromium)
+    if (!d) { Q.nulls.push({f, nc, t: +(f / c.sampleRate).toFixed(4)}); return; }
+    if (i >= 0 && i + d.length <= Q.buf.length) { Q.buf.set(d, i); Q.n = Math.max(Q.n, i + d.length); } };
   AU.M.ceil.connect(n); const g = c.createGain(); g.gain.value = 0; n.connect(g); g.connect(c.destination);
   Q.poll = setInterval(() => { for (const x of SYNQUENZER.noteLog(4096)) Q.notes.set(x.seq, x); Q.vc.push([+c.currentTime.toFixed(2), SYNQUENZER.voices().length]); }, 1000);
-  try { new PerformanceObserver(l => { for (const e of l.getEntries()) Q.lt.push(Math.round(e.duration)); }).observe({entryTypes: ['longtask']}); } catch (e) {}
+  try { new PerformanceObserver(l => { for (const e of l.getEntries()) Q.lt.push([Math.round(e.duration), Math.round(e.startTime)]); }).observe({entryTypes: ['longtask']}); } catch (e) {}
   const raf = () => { Q.frames++; Q.raf = requestAnimationFrame(raf); }; raf();
   return 1;
 });
-const act = async (name, fn) => { const t = await E(() => [AU.ctx.currentTime, audBeat()]); let r; try { r = await fn(); } catch (e) { r = 'ERR ' + e.message; } await E(([n, t, b, r]) => window.__q.acts.push({n, t, b, r}), [name, t[0], t[1], typeof r === 'object' ? JSON.stringify(r).slice(0, 80) : String(r)]); console.log(`[${t[1].toFixed(1)}] ${name} → ${typeof r === 'object' ? JSON.stringify(r).slice(0, 120) : r}`); return r; };
+const act = async (name, fn) => { const t = await E(() => (window.__pn = Math.round(performance.now()), [AU.ctx.currentTime, audBeat(), window.__pn])); let r; try { r = await fn(); } catch (e) { r = 'ERR ' + e.message; } await E(([n, t, b, r]) => window.__q.acts.push({n, t, b, r, pn: window.__pn}), [name, t[0], t[1], typeof r === 'object' ? JSON.stringify(r).slice(0, 80) : String(r)]); console.log(`[${t[1].toFixed(1)}] ${name} → ${typeof r === 'object' ? JSON.stringify(r).slice(0, 120) : r}`); return r; };
 const atBar = bar => p.waitForFunction(x => audBeat() >= x, bar * 4 + 0.3, {timeout: 400000, polling: 10});
 const marks = () => E(() => SYNQUENZER.songMarks());
 // singing material
@@ -99,12 +106,15 @@ const A = await E(tStop => {
   const zr = []; for (let i = 0; i < N; i++) { if (x[i] !== 0) continue; let j = i; while (j < N && x[j] === 0) j++; const L = j - i; if (L >= 32 && i > 441) { let s = 0; for (let k = i - 441; k < i; k++) s += x[k] * x[k]; const pre = 10 * Math.log10(s / 441 + 1e-20); if (pre > -45 && (t0 + i / sr) < tStop) zr.push({t: +(t0 + i / sr).toFixed(4), b: +t2b(t0 + i / sr).toFixed(2), len: L, fmod: (Q.f0 + i) % 128, pre: +pre.toFixed(1)}); } i = j; }
   Q.zr = zr;
   const secs = N / sr;
-  return {zr, secs: +secs.toFixed(1), nan, peakDb: +(20 * Math.log10(peak + 1e-12)).toFixed(1), flags, drops, notes: Q.notes.size, acts: Q.acts, vc: Q.vc, lt: Q.lt, fps: +(Q.frames / secs).toFixed(1)};
+  const gapsT = Q.gaps.map(([a, b]) => ({t: +(a / sr).toFixed(3), b: +t2b(a / sr).toFixed(2), q: (b - a) / 128 - 1})); return {gapsT, nulls: Q.nulls.length, nullEx: Q.nulls.slice(0, 5), gaps: Q.gaps.length, zr, secs: +secs.toFixed(1), nan, peakDb: +(20 * Math.log10(peak + 1e-12)).toFixed(1), flags, drops, notes: Q.notes.size, acts: Q.acts, vc: Q.vc, lt: Q.lt, fps: +(Q.frames / secs).toFixed(1)};
 }, tStop);
 console.log('recorded', A.secs, 's; notes', A.notes, '; peak', A.peakDb, 'dBFS; NaN', A.nan, '; fps', A.fps, '; longtasks', JSON.stringify(A.lt));
 console.log('voice counts', JSON.stringify(A.vc.filter((_, i) => i % 10 === 0)));
 console.log('click flags', A.flags.length, JSON.stringify(A.flags.slice(0, 40)));
 console.log('dropouts', A.drops.length, JSON.stringify(A.drops.slice(0, 20)));
+console.log('recorder: input without channels', A.nulls, JSON.stringify(A.nullEx), 'frame gaps', A.gaps);
+console.log('gaps', JSON.stringify(A.gapsT.slice(0, 60)));
+const gAct = {}; for (const g of A.gapsT) { const a = A.acts.filter(a => g.t >= a.t - .05).pop(); const k = a ? a.n + ' +' + Math.round(g.t - a.t) + 's' : '-'; gAct[k] = (gAct[k] || 0) + 1; } console.log('gaps after actions', JSON.stringify(gAct));
 console.log('zero runs', A.zr.length, JSON.stringify(A.zr.slice(0, 20)));
 // flags near actions
 const nearAct = A.flags.map(f => { const a = A.acts.filter(a => f.t >= a.t - .05 && f.t <= a.t + 8.5).pop(); return a ? a.n : '-'; });
@@ -116,7 +126,7 @@ check('no dropouts (digital silence between sound)', A.drops.length === 0, A.dro
 check('no stuck notes 4 s after ■', fin.voices.length === 0 && fin.live === 0, fin);
 check('tickErrors 0', fin.te === 0, fin.te);
 check('no console errors', errs.length === 0, errs.slice(0, 5));
-check('no longtask > 50 ms', !A.lt.some(x => x > 50), A.lt);
+check('no longtask > 50 ms', !A.lt.some(x => x[0] > 50), A.lt.map(([d, st]) => { const a = A.acts.filter(a => a.pn != null && a.pn <= st + 5).pop(); return d + ' ms after ' + (a ? a.n + ' +' + (st - a.pn) + 'ms' : '?'); }));
 fs.writeFileSync(OUT + 'long-result.json', JSON.stringify({A, fin, errs}, null, 1));
 fs.writeFileSync(OUT + 'long-project.json', JSON.stringify(await E(() => SYNQUENZER.project())));
 await br.close(); done();
