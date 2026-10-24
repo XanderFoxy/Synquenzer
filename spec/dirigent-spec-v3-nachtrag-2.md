@@ -1640,3 +1640,5 @@ G-P1 = VS1, V2a, V2b, V2c, V2d, VS2 · G-P2 = V2d′, V2e, V2e′, VS3 · danach
 Stand 24.10.: VS1 … V2c-fix ausgeliefert (App 4.3.0). Offen in G-P1: V2d, VS2. Tor N2-VS0-02: bestanden mit Auflagen (siehe fragen-xander-9.md); VS1 am Gerät bestanden.
 
 Korrektur 24.10. (Xander): microKORG kommt NICHT zuletzt, sondern direkt nach dem Kern: G-P1b (V2d, VS2) → G-P2 (V2d′, V2e, V2e′, VS3) → microKORG (Klangaufbau, wiedererkennbare Oberfläche ohne Korg-Name/Logo, Presets; DWGS-Wellen später aus Xanders Samples) → V2a′, V2c′, V2f, VL, V7a, VC2a, VS4 …
+
+Xander 24.10. (Transponieren): Skala-Quantisierer (V2c′ „Eine Skala“: Töne, die nach dem Transponieren nicht in die Tonleiter des Zielakkords passen, automatisch einrasten) wird vorgezogen: direkt nach VS2, vor G-P2. Einfache Methode bleibt AKKORD mit „Ein Ton = Stufe in der Tonart“ (A in C-Dur → Am). Wunsch für später: OP-Z-Nachbau (Transposition wie OP-Z Master-Track: Tonart aus Bass/Lead/Arp/Akkord erkennen, Spuren musikalisch transponieren); Vergleich OP-Z ↔ OP-XY Brain ↔ Improvisor mit Handbüchern belegen.
