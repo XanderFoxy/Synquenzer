@@ -1634,3 +1634,7 @@ Jeder Befund wurde vor der Übernahme an der Quelle geprüft (Datei, Zeile, V0a.
 **Abgelehnt (0).** Kein Befund war falsch; die Abweichungen oben betreffen nur Teilaussagen (Sixth June) oder die Form der Umsetzung.
 
 **Folgen für Summen:** 78 feste Pakete + 1 optionales (unverändert), ≈ 377–436 h (unverändert), **+3 201 KB → ≈ 4,59 MB** (V10f +3 KB), nach Gruppe 18 ≈ 4,42 MB; Gruppen-Reihenfolge unverändert (E.1). Kurzantwort `antwort-kurz-8.md` ist angeglichen (Online, Bibliothek, Vogue, Resynthese, „schon neu“, KI-Helfer, vierte Frage VC4).
+
+## Nachtrag zur Reihenfolge (Xander 19.10., 13:15–13:30, verbindlich, ersetzt Teil E dort, wo sie abweicht)
+G-P1 = VS1, V2a, V2b, V2c, V2d, VS2 · G-P2 = V2d′, V2e, V2e′, VS3 · danach V2a′, V2c′, V2f, VL, V7a, VC2a, VS4 …; microKORG (nur Original-microKORG) zuletzt.
+Stand 24.10.: VS1 … V2c-fix ausgeliefert (App 4.3.0). Offen in G-P1: V2d, VS2. Tor N2-VS0-02: bestanden mit Auflagen (siehe fragen-xander-9.md); VS1 am Gerät bestanden.
