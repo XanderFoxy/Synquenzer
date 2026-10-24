@@ -1,0 +1,31 @@
+// QA group: ● REC with 🎤 started by touch on ● (default options) – raw onset vs API REC with countIn 0
+import {open, check, done, tapEl} from './v3-qa-grp-lib.mjs';
+import {micOn, resample, b64} from './v3-vs2-h.mjs';
+import {renderVoice} from './v3-vs2-corpus.mjs';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const variant = process.argv[2] || 'touch';
+const {br, p, errs, E} = await open();
+await E(() => { SYNQUENZER.newProject({init: true}); }); await sleep(300);
+await E(() => { SYNQUENZER.setBpm(120); SYNQUENZER.setMetronome(false); });
+const mic = await micOn(p, 'wired');
+await E(() => SYNQUENZER.stop()); await sleep(1200);
+const LEAD = 0.04, SB = 0.5;
+const mel = [[0, 1, 62], [1, 1, 64], [2, 2, 65], [4, 1, 64], [5, 1, 62], [6, 2, 60]];
+const sig = renderVoice(mel.map(([b, d, m], k) => ({on: LEAD + b * SB, dur: d * SB, midi: m, legato: false, rest: k ? 0.1 : 0})), {voice: 'female', seed: 5, sigma: 10, vib: [20, 40], bpm: 120});
+const y = b64(resample(sig.x, 16000, mic.sr));
+const place = beat => E(([b, beat, lead]) => { const c = SYNQUENZER.vsClock(); window.__fake.play(b, c.start + beat * c.spb - lead); }, [y, beat, LEAD]);
+await E(() => SYNQUENZER.selectSlot(5, 2));
+console.log('rec opts', JSON.stringify(await E(() => S.settings.rec || S.settings.recLength)), JSON.stringify(await E(() => ({countIn: S.settings.countIn, recLength: S.settings.recLength}))));
+await E(() => SYNQUENZER.play()); await sleep(100);
+await p.waitForFunction(() => audBeat() >= 3.3, null, {polling: 5});
+if (variant === 'touch') await tapEl(p, '#bRec'); else await E(() => SYNQUENZER.rec());
+await sleep(30);
+const rs = await E(() => SYNQUENZER.runtime().rec); console.log('rec', JSON.stringify(rs));
+await place(rs.startBeat);
+for (const x of [4.2, 6]) { await p.waitForFunction(x => audBeat() >= x, x, {polling: 5}); console.log(x, JSON.stringify(await E(() => ({rec: SYNQUENZER.runtime().rec, vsrec: VS.rec && {start: VS.rec.start}, st: R.startTime})))); }
+await p.waitForFunction(x => audBeat() >= x, rs.startBeat + 8.2, {polling: 5});
+if (variant === 'touch') await tapEl(p, '#bRec'); else await E(() => SYNQUENZER.rec());
+await p.waitForFunction(() => SYNQUENZER.runtime().rec.state === 'off' && !SYNQUENZER.vsInfo().busy, null, {timeout: 20000}); await sleep(300);
+const r1 = await E(() => SYNQUENZER.vsResult());
+console.log('raw onsets', JSON.stringify(r1 && r1.notes.map(n => n.o)), 'len', r1 && r1.len);
+console.log('errs', errs); await E(() => SYNQUENZER.stop()); await br.close();

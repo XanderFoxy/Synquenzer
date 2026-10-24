@@ -3155,6 +3155,8 @@ zusätzlich **mehr als die Hälfte der Grundton-Energie** tragen (Sub-Oszillator
 | dasselbe Kabel / −20 dB Übersprechen | – | ALLE OK / ALLE OK (12/12) | `t1 wired`, `v3-vs2fix-t1lvl.mjs speaker -20` |
 | FANG mit Tasten, ● REC, Übersprechen −20/−31/−40 dB | „FANG🎤“, Clip aus eigener Musik, Zusatz-MELODIE | „FANG⤓“, Synth-3-Clip 8/8, ● REC nur Tasten-Clip | `v3-qa-vs2reg-mic.mjs all speaker 0,1 <g> new nosynth` |
 | FANG TEIL in ♪ SPIELEN mit Übersprechen | „stimme“, MELODIE aus Demo | „teil“, FANG-TEIL-Blatt | `v3-qa-vs2reg-teil.mjs`, `v3-repro-vsleak-teil.mjs` |
+| Singen, danach Tasten (Kabel) | – | erst „stimme“, nach den Tasten „fang“, FANG fängt die Tasten (Undo „Fang“) | `v3-vs2fix-keyafter.mjs` |
+| VS2-Regression (Claude-App-Attrappe, FANG/FANG TEIL/● REC ohne Mikro) | – | ALLE OK | `v3-vs2-reg.mjs` |
 | Tasten-Echo (−20/−31/−40 dB) | Tasten leuchten grün vom eigenen Klang | 0 Meldungen | `v3-repro-vsleak.mjs` |
 | Worklet allein: nur Übersprechen / Stimme + Übersprechen | 12 Begleit-Tasten | 0 / alle 5 gesungenen, keine Begleit-Taste | `v3-vs2fix-gate.mjs` |
 | Rechenzeit Live-Weg mit Sperre | 1,0 % | 1,7 % Echtzeit (Dauer-Ton, schlimmster Fall; ≤ 3 %) | `v3-vs2fix-cpu.mjs`, `v3-vs2-live.mjs` |
