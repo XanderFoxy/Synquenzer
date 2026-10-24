@@ -3118,3 +3118,56 @@ Klassenzimmer-Projekt.
    Noten zählen (N2-VS2-02).
 4. Einmal mit ● (Aufnahme) auf einer leeren Szene singen: danach liegt ein MELODIE-Clip in derselben Szene.
 5. Bitte melden: Anzahl richtiger Noten (1. und 3.), ob Aussetzer/Knackser beim Singen mit vielen Spuren kamen (N7V-15 Gerät).
+
+## VS2-fix — Über den Lautsprecher zählt die eigene Musik nicht mehr als Gesang; „Oktave sperren“ lässt reine Töne in Ruhe · App 4.5.1
+
+Drei Befunde aus der Prüfung von VS2 (zwei davon dieselbe Ursache), alle behoben. Version bleibt 4.5.1 (keine Datenänderung, keine Migration).
+
+**1 + 3. Übersprechen der App (🎤 über den Lautsprecher).** Xanders iPhone hört die eigene Musik mit −31/−32 dB im Mikro
+(`fragen-xander-9`). VS2 hielt diesen Bass für Gesang: Tasten 33/36/48 leuchteten, FANG blieb „FANG 🎤“ (63/63 Abfragen), ein Tipp machte
+einen MELODIE-Clip aus 38–76 Begleitnoten, gesungene Phrasen bekamen Bassnoten davor (5 statt 4 Takte), FANG mit Tasten / FANG TEIL
+waren nicht erreichbar, ● REC legte einen zusätzlichen MELODIE-Clip an.
+- **Übersprech-Sperre live (Worklet):** die Referenz (was die App spielt) läuft schon als zweiter Eingang ins Worklet; sie wird jetzt
+  ebenfalls 3:1 dezimiert (3-Tap-Mittel an der FIR-Mitte, gleiche Laufzeit) in einen 16-kHz-Ring geschrieben. Eine erkannte Tonhöhe
+  gilt nur als Stimme, wenn das Mikro **an dieser Tonhöhe** (Grundton + 2 Obertöne, Hann-Goertzel) mehr Energie hat als Referenz ×
+  Kopplung × 10 dB Rand **und** insgesamt mehr als Referenz × Kopplung × 3 dB. Die Referenz wird um die Latenz versetzt und ±10 ms
+  (eingemessen) bzw. ±50 ms (nur geschätzt) abgesucht. Kopplung = beim Einmessen gemessenes `gainDb` (Profil Lautsprecher), sonst
+  −20 dB angenommen. Kopfhörer/Bluetooth: Sperre aus. Gleiche Note: die Entscheidung gilt 2 weitere Hops (Rechenzeit).
+- **Übersprech-Sperre offline (FANG / ● REC):** jede segmentierte Note wird genauso gegen die Referenz im Ringpuffer geprüft
+  (40-ms-Stücke über die Note); reine Begleit-Noten fallen weg, bevor Phrase und Clip-Länge bestimmt werden.
+- **„keine Taste danach“ wieder wahr:** `VS.lastVoice` ist jetzt der letzte **Einsatz** (Taste an), nicht jede An/Aus-Meldung; die 8 s
+  zählen ab der letzten Meldung (`VS.voiceAt`). Eine Taste nach dem letzten Einsatz → normales FANG.
+- Neue Live-Optionen werden bei Weg-Wechsel, ± Latenz und nach jedem Einmessen ans Worklet geschickt. `vsInfo().bleedDb` zeigt die
+  benutzte Kopplung.
+- Nebenbei: Rückfall-Weg des Worklets (data:-URL) kodiert jetzt UTF-8 (`btoa` brach bei Zeichen über Latin-1 ab); Worklet-Quelltext ASCII.
+
+**2. „Oktave sperren“ (K2-33)** verdoppelte reine Töne (Sinus, Pfeifen, flötenartig) 1–2 Oktaven, offline und live, weil schon
+Fensterleck oder ein winziger 2. Oberton „gerade Teiltöne ohne ungerade“ erfüllte. Jetzt wird nur verdoppelt, wenn die geraden Teiltöne
+zusätzlich **mehr als die Hälfte der Grundton-Energie** tragen (Sub-Oszillator/Unisono). Gleich in `octLockF` (pYIN) und im Worklet.
+
+**Prüfungen** (Chromium 1243, echte App, Attrappen-Mikro)
+
+| Punkt | vorher | jetzt | Skript |
+|---|---|---|---|
+| Demo, niemand singt, Übersprechen −30/−40 dB (Vollband, 40 ms) | „stimme“ 63/63, Tasten 20/63, Phantom-Clip | „fang“ 0/63 „stimme“, 0 Tasten, kein Clip | `v3-qa-vs2acc-t3.mjs -30` / `-40` |
+| dasselbe mit Handy-Hochpass 300/500 Hz (−30 dB, −40 dB) | „stimme“ 63/63, 62–76 Phantom-Noten | 0/63, 0 Tasten | `v3-rep-vs2bleed.mjs` |
+| Gesungene Phrase über Lautsprecher (−30 dB) | 5 Takte ab Takt 1, Bassnoten davor (FAIL) | 4 Takte ab Takt 2, 12/12, ALLE OK | `v3-qa-vs2acc-t1.mjs speaker` |
+| dasselbe Kabel / −20 dB Übersprechen | – | ALLE OK / ALLE OK (12/12) | `t1 wired`, `v3-vs2fix-t1lvl.mjs speaker -20` |
+| FANG mit Tasten, ● REC, Übersprechen −20/−31/−40 dB | „FANG🎤“, Clip aus eigener Musik, Zusatz-MELODIE | „FANG⤓“, Synth-3-Clip 8/8, ● REC nur Tasten-Clip | `v3-qa-vs2reg-mic.mjs all speaker 0,1 <g> new nosynth` |
+| FANG TEIL in ♪ SPIELEN mit Übersprechen | „stimme“, MELODIE aus Demo | „teil“, FANG-TEIL-Blatt | `v3-qa-vs2reg-teil.mjs`, `v3-repro-vsleak-teil.mjs` |
+| Singen, danach Tasten (Kabel) | – | erst „stimme“, nach den Tasten „fang“, FANG fängt die Tasten (Undo „Fang“) | `v3-vs2fix-keyafter.mjs` |
+| VS2-Regression (Claude-App-Attrappe, FANG/FANG TEIL/● REC ohne Mikro) | – | ALLE OK | `v3-vs2-reg.mjs` |
+| Tasten-Echo (−20/−31/−40 dB) | Tasten leuchten grün vom eigenen Klang | 0 Meldungen | `v3-repro-vsleak.mjs` |
+| Worklet allein: nur Übersprechen / Stimme + Übersprechen | 12 Begleit-Tasten | 0 / alle 5 gesungenen, keine Begleit-Taste | `v3-vs2fix-gate.mjs` |
+| Rechenzeit Live-Weg mit Sperre | 1,0 % | 1,7 % Echtzeit (Dauer-Ton, schlimmster Fall; ≤ 3 %) | `v3-vs2fix-cpu.mjs`, `v3-vs2-live.mjs` |
+| Oktave sperren: Sinus/Pfeifen/Flöte, Säge, Rechteck, Dreieck, Puls, Säge+Sub | Sinus/Pfeifen/Flöte 0/11 | alle 11/11 (Säge+Sub weiter 11/11 mit Sperre) | `v3-repro-octlock-a.mjs`, `v3-qa-vs2acc-t8.mjs` |
+| dasselbe mit Rauschen 50–20 dB SNR, Vibrato | Pfeifen 0/11, Flöte 0/11 | alle 11/11 | `v3-repro-octlock-noise.mjs` |
+| live (Worklet) Sinus/Pfeifen/Flöte, 40/30 dB SNR | 57→81 usw. | richtig; Säge+Sub mit Sperre richtig | `v3-qa-vs2acc-t8b.mjs`, `v3-repro-octlock-live.mjs` |
+| VS2-Bench (N7V-08/09/10, N2-VS2-02) | – | identisch zu VS2 | `v3-vs2-bench.mjs` |
+| VS2-Abnahme | 49 ✓ | 49 ✓, ALLE OK | `v3-vs2-accept.mjs` |
+| Smoke | – | ohne Fehler | `v3-vs2fix-smoke.png` |
+
+**Bekannte Grenzen:** Ohne Einmessen nimmt die Sperre −20 dB Kopplung an; ein Lautsprecher, der lauter als −20 dB ins Mikro koppelt
+(Test −10 dB ohne Einmessen), kann noch kurze Übergangs-Schnipsel durchlassen – über den Lautsprecher misst die App beim ersten 🎤 ohnehin
+voll ein. Singt man über einen sehr lauten Lautsprecher (−15 dB) leiser als die Begleitung, gehen Noten verloren (VS2 vorher: 0/12, jetzt
+3/12) – dafür bleiben Kopfhörer bzw. die echte Echo-Unterdrückung in VS4.
