@@ -4765,6 +4765,8 @@ const MK_SM = 1 - Math.exp(-CR / (.005 * SR));  // 5 ms smoothing of the continu
 const MK_GUP = CR / (.001 * SR), MK_GDN = CR / (.003 * SR);  // HK | GATE: gate amp 1 ms up, 3 ms down
 const MK_RA = .52, MK_RD = Math.pow(10, -2.25);  // envCoefs curve 0.5: attack overshoot, decay / release undershoot
 const MK_BENDRET = .08;  // W-17: back to the centre in 80 ms
+const MK_OSN = 62;  // MK1-fix: Sync / Ring+Sync from D4 (294 Hz, the key + TRANSP. + TUNE at note on) run 2x (osc2x)
+const MK_HB = [0.07986642623635744, 0.28382934487410966, 0.5453236510711317, 0.8344118914807366];  // elliptic halfband, transition 0.1
 function mkT() {  // the neutral timbre (= INIT AM, Nachtrag 3 B.1)
   return {asg: 1, prio: 0, trig: 1, udet: 10, trans: 0, tune: 0, vib: 0, bend: 2, porta: 0,
     o1: {w: 0, c1: 0, c2: 0}, o2: {w: 0, mod: 0, semi: 0, tune: 0}, mix: {o1: 127, o2: 0, n: 0},
@@ -4802,12 +4804,23 @@ function mkLfoV(n, w, ph, sh) {  // phase 0 = an upward zero crossing (tempo syn
   if (n === 2) return SINE[(ph * SINE_N) | 0];
   return ph < .25 ? 4 * ph : ph < .75 ? 2 - 4 * ph : 4 * ph - 4;
 }
+// MK1-fix: the cross term of two polyBLEP steps in one sample (OSC 1 at xa, a slave step J at xj samples ago): before the step
+// (b_a b_j - b_first) dO J, after it (p_a p_j + p_later) dO J, with b = x^2 / 2, p = -(1 - x)^2 / 2; MK_XP / MK_XQ sum them
+let MK_XP = 0, MK_XQ = 0;
+function mkXt(xa, xj, J) {
+  const ba = .5 * xa * xa, pa = -.5 * (1 - xa) * (1 - xa), bj = .5 * xj * xj, pj = -.5 * (1 - xj) * (1 - xj);
+  if (xj >= xa) { MK_XP += ba * (1 - bj) * J; MK_XQ += pj * (1 + pa) * J; } else { MK_XP += bj * (1 - ba) * J; MK_XQ += pa * (1 + pj) * J; }
+}
 const mkW = (w, x) => (w === 0 ? 2 * x - 1 : w === 1 ? (x < .5 ? 1 : -1) : (x < .5 ? 4 * x - 1 : 3 - 4 * x));  // OSC 2 waves (sync slave)
 // W-23 tanh as the app's ladder evaluates it: T(v) = v (27 + v^2) / (27 + 9 v^2), exactly +-1 beyond |v| = 3 (tg in the ladder);
 // its antiderivative for ADAA: v^2 / 18 + 4/3 ln(27 + 9 v^2) (|v| < 3), |v| - 3 + F(3) beyond (one log per sample)
 const MK_F3 = 9 / 18 + 4 / 3 * Math.log(108);
 const mkLogCosh = x => { const a = x < 0 ? -x : x; return a < 3 ? a * a / 18 + 1.3333333333333333 * Math.log(27 + 9 * a * a) : a - 3 + MK_F3; };
 const MK_LC0 = mkLogCosh(0);
+/* MK1-fix (MK1-24): inside |u|, |x| < 3 the divided difference is (u + x) / 18 + 4/3 ln(A / B) / (u - x), A = 27 + 9 u^2, B = 27 + 9 x^2.
+   ln(A / B) = 2 atanh(s), s = (u^2 - x^2) / W, W = 6 + u^2 + x^2 (|s| <= 0.6), so the term is 8/3 (u + x) / W * atanh(s) / s: no
+   cancellation and no log. atanh(s) / s = (945 - 735 s^2 + 64 s^4) / (945 - 1050 s^2 + 225 s^4) (Pade 5/4, rel. error <= 3e-5 at
+   |s| = 0.6, < 1e-12 for the steps of a sounding note), s^2 = p / W^2 cleared with W^4: one division per sample. */
 const mkTh = x => (x >= 3 ? 1 : x <= -3 ? -1 : x * (27 + x * x) / (27 + 9 * x * x));
 let MK_MV = false;  // smStep: a value still moving
 function mkSmF(a, b) { const d = b - a; if (d < 1e-6 && d > -1e-6) return b; MK_MV = true; return a + d * MK_SM; }
@@ -4822,10 +4835,11 @@ class MkVoice {
     this.s1 = 0; this.s2 = 0; this.s3 = 0; this.s4 = 0; this.gA = -1; this.gB = 0; this.kA = 0; this.kB = 0;
     this.mA = -1; this.mB = 0; this.aA = -1; this.aB = 0; this.pl = 1; this.pr = 1; this.dx = 0; this.dg = 1;
     this.fade = 0; this.fadeN = 1; this.fin = 0; this.finN = 1; this.sxk = -1; this.sxo = null; this.sxE = [0, 0, 0]; this.sxA = 1; this.sxB = 0; this.sxBlk = -1; this.pol = 1;
-    this.cutHz = 0; this.isLine = false; this.xfo = false; this.noEnd = false; this.lv1 = 0; this.lv2 = 0; this.sr = 1; this.dF = MK_LC0; this.cutMax = 0; this.eA = -1;   // ADAA pair (dx, dF = F(dx)): F(0) is not 0
+    this.cutHz = 0; this.isLine = false; this.xfo = false; this.noEnd = false; this.lv1 = 0; this.lv2 = 0; this.sr = 1; this.dF = MK_LC0; this.cutMax = 0; this.eA = -1;   // ADAA: dx = the last input
+    this.os = false; this.o1p = 0; this.rsc = 0; this.dz = new Float64Array(8); this.ldb = NaN; this.lgn = 1;  // osc2x: 2x path, OSC 1 one sample late, ring carry, decimator state
   }
 }
-function mkClone(v) { const c = Object.assign(new MkVoice(v.i), v); c.sxE = [0, 0, 0]; c.sxo = null; c.sxA = 1; c.sxB = 0; c.sxBlk = -1; return c; }
+function mkClone(v) { const c = Object.assign(new MkVoice(v.i), v); c.dz = v.dz.slice(); c.sxE = [0, 0, 0]; c.sxo = null; c.sxA = 1; c.sxB = 0; c.sxBlk = -1; return c; }
 const MK_STRUCT = {'o1.w': 'w1', 'o2.w': 'w2', 'o2.mod': 'mod', 'f.type': 'ft', 'a.gate': 'gate'};
 const MK_REASSIGN = {asg: 1, prio: 1, trig: 1};
 
@@ -4837,9 +4851,10 @@ class MkCore {
     this.E1 = {}; this.E2 = {}; this.st = {w1: 0, w2: 0, mod: 0, ft: 0, gate: 0};
     this.sm = null; this.bend = 0; this.bendT = 0; this.bendR = 0; this.modw = 0; this.modT = 0; this.modLive = false;
     this.wr = new Float64Array(CR); this.ob = new Float64Array(CR); this.o2b = new Float64Array(CR);
+    this.wr2 = new Float64Array(2 * CR); this.ob2 = new Float64Array(2 * CR); this.o2b2 = new Float64Array(2 * CR); this.hs2 = new Float64Array(2 * CR); this.hq2 = new Float64Array(2 * CR);
     this.oL = new Float32Array(CR); this.oR = new Float32Array(CR); this.nL = new Float32Array(CR); this.nR = new Float32Array(CR);
     this.sxOn = false; this.sxN = 0; this.sxT = 0; this.sxPend = null; this.sxkN = 0; this.blk = 0;
-    this.scopeOn = false; this.scopeNext = 0; this.tap = ''; this.lim = 0; this.mw0 = 0;
+    this.scopeOn = false; this.scopeNext = 0; this.tap = ''; this.lim = 0; this.mw0 = 0; this.cutB = 0; this.resB = 0; this.lvlB = 0; this.plB = 1; this.prB = 0; this.kCut = NaN; this.kRes = NaN; this.kLvl = NaN; this.kPan = NaN; this.lfK = [NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, NaN, 0];
     this.load(init || null);
   }
   /* ---------------- parameters ---------------- */
@@ -4925,7 +4940,7 @@ class MkCore {
     const T = this.T, fresh = !v.on || v.ghost;
     if (fresh) {
       Object.assign(v, new MkVoice(v.i)); v.on = true; v.rng = mkHash(this.seed, 1, ++this.nctr); v.sr = (v.rng ^ 0x5bd1e995) >>> 0 || 7;
-      v.t1 = mkRnd(v); v.t2 = mkRnd(v); v.sh1 = mkRnd(v) * 2 - 1; v.sh2 = mkRnd(v) * 2 - 1;
+      v.t1 = mkRnd(v); v.t2 = mkRnd(v); v.sh1 = mkRnd(v) * 2 - 1; v.sh2 = mkRnd(v) * 2 - 1; v.os = k.note + T.trans + T.tune / 100 >= MK_OSN;
     } else if (retrig) {
       if (T.e1.rst >= .5) { v.e1 = 0; } if (T.e2.rst >= .5) { v.e2 = 0; v.aA = -1; }
     }
@@ -5038,7 +5053,8 @@ class MkCore {
     }
   }
   inherit(v, c) {
-    for (const k of ['t1', 't2', 'sp', 'e1', 'e1s', 'e2', 'e2s', 'gt', 'l1', 'l2', 'sh1', 'sh2', 's1', 's2', 's3', 's4', 'pitch', 'dx', 'dF', 'rng']) v[k] = c[k];
+    for (const k of ['t1', 't2', 'sp', 'e1', 'e1s', 'e2', 'e2s', 'gt', 'l1', 'l2', 'sh1', 'sh2', 's1', 's2', 's3', 's4', 'pitch', 'dx', 'dF', 'rng', 'os', 'o1p', 'rsc']) v[k] = c[k];
+    v.dz.set(c.dz);
     v.gA = -1; v.aA = -1; v.mA = -1;
   }
   /* ---------------- structural crossfade (SXF, 30 ms, power keeping like AnalogCore.sxMix) ---------------- */
@@ -5071,16 +5087,26 @@ class MkCore {
   // no voice: the free-running LFO phases go on (Key Sync OFF keeps its phase between notes, like the VA global LFOs)
   idle(n) { const T = this.T; this.g1 = (this.g1 + this.lfoRate(T.l1, T.l1.sync >= .5) * n * ISR) % 1; this.g2 = (this.g2 + this.lfoRate(T.l2, T.l2.sync >= .5) * n * ISR) % 1; }
   lfoRate(L, sync) { const spb = 60 / this.h.bpm; return sync ? 1 / (MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4 * spb) : MKW.lfoHz(L.f); }
+  lfoRateC(n, L) {  // MK1-fix (MK1-24): lfoRate, recomputed only when FREQ / Sync / NOTE / tempo change
+    const K = this.lfK, o = n * 5, sync = L.sync >= .5, b = this.h.bpm;
+    if (K[o] !== L.f || K[o + 1] !== +sync || K[o + 2] !== L.note || K[o + 3] !== b) { K[o] = L.f; K[o + 1] = +sync; K[o + 2] = L.note; K[o + 3] = b; K[o + 4] = this.lfoRate(L, sync); }
+    return K[o + 4];
+  }
   block(Lo, Ro, off, frame) {
     const T = this.T, h = this.h, step = CR * ISR;
     if (!this.sm) this.smInit();
     this.smStep(); this.blk++;
+    { const Sm = this.sm;  // MK1-fix (MK1-24): once per block for all voices, and only when the smoothed value moved
+      if (Sm.cut !== this.kCut) { this.kCut = Sm.cut; this.cutB = 69 + 12 * Math.log2(MKW.cutHz(Sm.cut) / 440); }
+      if (Sm.res !== this.kRes) { this.kRes = Sm.res; this.resB = MKW.resK(Math.max(0, Math.min(127, Sm.res))); }
+      if (Sm.lvl !== this.kLvl) { this.kLvl = Sm.lvl; this.lvlB = MKW.ampG(Math.max(0, Sm.lvl)); }
+      if (Sm.pan !== this.kPan) { this.kPan = Sm.pan; const px = (Math.max(-63, Math.min(63, Sm.pan)) + 63) / 126 * 1.5707963267948966; this.plB = Math.cos(px); this.prB = Math.sin(px); } }
     // wheels: bend smoothed (tau 5 ms), back to the centre in 80 ms after release; mod wheel live
     if (this.bendR > 0) { const d = this.bendT - this.bend; this.bend += Math.abs(d) <= this.bendR ? d : Math.sign(d) * this.bendR; if (this.bend === this.bendT) this.bendR = 0; }
     else this.bend += (this.bendT - this.bend) * MK_SM;
     this.modw += (this.modT - this.modw) * MK_SM;
     // global LFO phases: Key Sync OFF + Tempo Sync = locked to the song position; else free running (Timbre: reset at the first note)
-    const songT = frame * ISR - h.songStart, spb = 60 / h.bpm; this.lr1 = this.lfoRate(T.l1, T.l1.sync >= .5); this.lr2 = this.lfoRate(T.l2, T.l2.sync >= .5);
+    const songT = frame * ISR - h.songStart, spb = 60 / h.bpm; this.lr1 = this.lfoRateC(0, T.l1); this.lr2 = this.lfoRateC(1, T.l2);
     { const L = T.l1, sync = L.sync >= .5, o = this.g1;
       if (sync && L.ks < .5 && h.songStart >= 0) this.g1 = ((songT / spb / (MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4)) % 1 + 1) % 1;
       else this.g1 = (this.g1 + this.lr1 * step) % 1;
@@ -5110,7 +5136,7 @@ class MkCore {
     const T = this.T, Sm = this.sm, st = v.st || this.st, E1 = this.E1, E2 = this.E2, step = CR * ISR;
     // ---- control rate ----
     v.e1 = mkEnvB(E1, v.e1s, v.e1); v.e1s = MK_ST; v.e2 = mkEnvB(E2, v.e2s, v.e2); v.e2s = MK_ST;
-    let lv1, lv2;
+    let lv1 = 0, lv2 = 0;  // MK1-fix (MK1-24): numbers from the start (an undefined start boxes every double in optimized code)
     if (Math.round(T.l1.ks) === 2) { const o = v.l1; v.l1 = (v.l1 + this.lr1 * step) % 1; if (v.l1 < o) v.sh1 = mkRnd(v) * 2 - 1; lv1 = mkLfoV(1, Math.round(T.l1.w), v.l1, v.sh1); }
     else lv1 = mkLfoV(1, Math.round(T.l1.w), this.g1, this.gsh1);
     if (Math.round(T.l2.ks) === 2) { const o = v.l2; v.l2 = (v.l2 + this.lr2 * step) % 1; if (v.l2 < o) v.sh2 = mkRnd(v) * 2 - 1; lv2 = mkLfoV(2, Math.round(T.l2.w), v.l2, v.sh2); }
@@ -5122,24 +5148,90 @@ class MkCore {
     const p1 = kt + Sm.tune / 100 + vib + v.udet / 100;
     const dt1 = Math.min(lut(FREQ, p1) * ISR, .45), dt2 = Math.min(lut(FREQ, p1 + Sm.semi + Sm.fine / 100) * ISR, .45);
     const m = MKW.form(Sm.c1, lv1, Sm.c2), m0 = v.mA < 0 ? m : v.mB; v.mA = m0; v.mB = m;
-    const cutN = 69 + 12 * Math.log2(MKW.cutHz(Sm.cut) / 440) + MKW.kbdHt(kt, Sm.kbd) + v.e1 * MKW.egHt(Sm.eg) + MKW.velHt(Sm.fvel, v.vel);
-    v.cutHz = 440 * Math.pow(2, (cutN - 69) / 12); if (v.cutHz > v.cutMax) v.cutMax = v.cutHz;
-    const g = lut(GTAN, cutN < 0 ? 0 : cutN), k = MKW.resK(Math.max(0, Math.min(127, Sm.res))), fresh = v.gA < 0;
+    const cutN = this.cutB + MKW.kbdHt(kt, Sm.kbd) + v.e1 * MKW.egHt(Sm.eg) + MKW.velHt(Sm.fvel, v.vel);
+    if (this.scopeOn) { v.cutHz = 440 * Math.pow(2, (cutN - 69) / 12); if (v.cutHz > v.cutMax) v.cutMax = v.cutHz; }  // only the scope reads it
+    const g = lut(GTAN, cutN < 0 ? 0 : cutN), k = this.resB, fresh = v.gA < 0;
     v.gA = fresh ? g : v.gB; v.gB = g; v.kA = fresh ? k : v.kB; v.kB = k;
     // amp: EG2 or the gate, level, velocity and keyboard dB, pan, unison share
-    let env;
+    let env = 0;
     if (st.gate) { const to = v.gate ? 1 : 0; v.gt += to > v.gt ? Math.min(MK_GUP, to - v.gt) : -Math.min(MK_GDN, v.gt - to); env = v.gt; }
     else env = v.e2;
-    const lv = MKW.ampG(Math.max(0, Sm.lvl)) * Math.pow(10, (MKW.velDb(Sm.avel, v.vel) + MKW.kbdDb(Sm.akbd, kt)) / 20) * v.ug;
+    const ldb = MKW.velDb(Sm.avel, v.vel) + MKW.kbdDb(Sm.akbd, kt); if (ldb !== v.ldb) { v.ldb = ldb; v.lgn = Math.pow(10, ldb / 20); }
+    const lv = this.lvlB * v.lgn * v.ug;
     const a1 = env * lv / MK_INS, a0 = v.aA < 0 ? a1 : v.aB; v.aA = a0; v.aB = a1;
-    const px = (Math.max(-63, Math.min(63, Sm.pan)) + 63) / 126 * 1.5707963267948966, pl = Math.cos(px), pr = Math.sin(px), pl0 = v.pl, pr0 = v.pr; v.pl = pl; v.pr = pr;
+    const pl = this.plB, pr = this.prB, pl0 = v.pl, pr0 = v.pr; v.pl = pl; v.pr = pr;
     // ---- audio rate ----
-    const ob = this.ob, o2b = this.o2b, wr = this.wr, w1 = st.w1 > 2 ? 0 : st.w1, w2 = st.w2, mod = st.mod;
-    const g1 = Math.max(0, Sm.m1) / 127, g2 = Math.max(0, Sm.m2) / 127, gn = Math.max(0, Sm.mn) / 127;
-    let t = v.t1, mm = m0; const dm = (m - m0) / CR, sync = (mod & 2) !== 0;
+    const w1 = st.w1 > 2 ? 0 : st.w1, w2 = st.w2, mod = st.mod, sync = (mod & 2) !== 0, os = sync && v.os;
+    let g1 = Math.max(0, Sm.m1) / 127, g2 = Math.max(0, Sm.m2) / 127; const gn = Math.max(0, Sm.mn) / 127, ob = this.ob, o2b = this.o2b;
+    if (!os) {
+      this.osc1(v, CR, dt1, m0, m, w1, ob, this.wr);
+      // OSC 2: free or hard-synced to OSC 1 (the slave runs one sample late so the step before it can be corrected, as renderSlave)
+      if (g2 > 0 || sync) {
+        this.osc2(v, CR, dt2, w2, sync, o2b, this.wr, null, null);
+        if (mod & 1) for (let n = 0; n < CR; n++) o2b[n] *= ob[n];  // Ring: OSC 1 x OSC 2 as the OSC 2 output (with Sync the slave runs one sample late: its step and the master's
+        // step stay one sample apart, each with its own polyBLEP; aligning them leaves the r1 x r2 cross term and folds more, -30 dB)
+      }
+    } else { this.osc2x(v, dt1, dt2, m0, m, w1, w2, mod, g1, g2); g1 = 1; g2 = 0; }  // MK1-fix: the decimated mixer sum sits in ob
+    if (this.tap === 'amp') {  // test tap: the amp envelope (EG2 or gate) with the fades, per sample
+      const e0 = v.eA < 0 ? env : v.eA; v.eA = env; let fg = v.fadeG; const fd = v.fade > 0 ? 1 / v.fadeN : 0;
+      for (let n = 0; n < CR; n++) { if (fd) { fg -= fd; if (fg < 0) fg = 0; } const e = (e0 + (env - e0) * (n + 1) / CR) * (v.xfo ? Math.cos((1 - fg) * 1.5707963267948966) : fg); Lo[off + n] += e; Ro[off + n] += e; }
+      v.fadeG = fg; if (v.fade > 0) { v.fade -= CR; if (v.fade <= 0 || fg <= 0) this.vEnd(v); } else if (st.gate ? (!v.gate && v.gt <= 0) : v.e2s === 0) this.vEnd(v);
+      return;
+    }
+    if (this.tap === 'mix') {  // test tap: the mixer output, no filter / amp
+      for (let n = 0; n < CR; n++) { let x = ob[n] * g1 + (g2 > 0 ? o2b[n] * g2 : 0); if (gn > 0) x += (mkRnd(v) * 2 - 1) * gn; Lo[off + n] += x; Ro[off + n] += x; }
+      if (v.e2s === 0 && !st.gate) this.vEnd(v); else if (st.gate && !v.gate && v.gt <= 0) this.vEnd(v);
+      return;
+    }
+    // mixer -> ladder (taps 0 / 1 / 3 / 5) -> distortion (after the filter, ADAA) -> amp
+    const mx = FMIX[MK_FT[Math.max(0, Math.min(3, st.ft))]], c0 = mx[0], c1 = mx[1], c2 = mx[2], c3 = mx[3], c4 = mx[4];
+    let s1 = v.s1, s2 = v.s2, s3 = v.s3, s4 = v.s4, gg = v.gA, kk = v.kA; const dg = (v.gB - v.gA) / CR, dk = (v.kB - v.kA) / CR;
+    const dist = T.a.dist >= .5, dG = dist ? MKW.distG(Sm.m1, Sm.m2, Sm.mn) : 1, idt = dist ? 1 / mkTh(dG) : 1, dGi = dG / MK_INS;
+    const xc = v.xfo, pol = v.pol; let sr = v.sr | 0, nz = v.rng | 0;  // int32 loop values stay unboxed
+    let dx = v.dx, ga = a0, gb = (a1 - a0) / CR, fg = v.fadeG, fd = v.fade > 0 ? 1 / v.fadeN : 0, fi = v.fin, pa = pl0, pb = (pl - pl0) / CR, qa = pr0, qb = (pr - pr0) / CR;
     for (let n = 0; n < CR; n++) {
-      mm += dm; t += dt1; let wrap = -1; if (t >= 1) { t -= 1; wrap = t / dt1; } wr[n] = wrap;
-      let y;
+      gg += dg; kk += dk;
+      let x = ob[n] * g1; if (g2 > 0) x += o2b[n] * g2;
+      if (gn > 0) { nz ^= nz << 13; nz ^= nz >>> 17; nz ^= nz << 5; x += ((nz >>> 0) * 4.656612873077393e-10 - 1) * gn; }  // white noise (per note generator)
+      sr = (sr * 1664525 + 1013904223) | 0;  // the seed noise has its own generator (the oscillator noise stays the same with and without it); exact in doubles (< 2^53), = imul
+      const xin = x * MK_INS + ((sr >>> 0) * 2.3283064365386963e-10 - .5) * MK_SEED + 1e-20;
+      const b1 = tg(s1), b2 = tg(s2), b3 = tg(s3), b4 = tg(s4), A1 = tg(xin - kk * s4);
+      const d1 = 1 / (1 + gg * b1), d2 = 1 / (1 + gg * b2), d3 = 1 / (1 + gg * b3), d4 = 1 / (1 + gg * b4);
+      const G1 = gg * A1 * d1, G2 = gg * b1 * d2, G3 = gg * b2 * d3, G4 = gg * b3 * d4;
+      const S1 = s1 * d1, S2 = s2 * d2, S3 = s3 * d3, S4 = s4 * d4, G34 = G3 * G4, G234 = G2 * G34;
+      const y4 = (G1 * G234 * xin + G234 * S1 + G34 * S2 + G4 * S3 + S4) / (1 + kk * G1 * G234);
+      const x0 = xin - kk * y4, y1 = G1 * x0 + S1, y2 = G2 * y1 + S2, y3 = G3 * y2 + S3;
+      s1 = 2 * y1 - s1; s2 = 2 * y2 - s2; s3 = 2 * y3 - s3; s4 = 2 * y4 - s4;
+      ob[n] = c0 * A1 * x0 + c1 * y1 + c2 * y2 + c3 * y3 + c4 * y4;
+    }
+    if (dist) for (let n = 0; n < CR; n++) {  // W-23 tanh(g x) / tanh(g), ADAA 1st order (log cosh); MK1-fix: own pass (fewer live values per loop)
+        const u = ob[n] * dGi; let z = 0;
+        if (u < 3 && u > -3 && dx < 3 && dx > -3) {  // MK1-fix (MK1-24): (F(u) - F(x)) / (u - x) without a log, see mkAd
+          const sm = u + dx, W = 6 + u * u + dx * dx, w2 = W * W, w4 = w2 * w2, e = (u - dx) * sm, p = e * e;
+          z = sm * (.05555555555555555 + 2.6666666666666665 * (945 * w4 - 735 * p * w2 + 64 * p * p) / ((945 * w4 - 1050 * p * w2 + 225 * p * p) * W));
+        } else if (u >= 3 && dx >= 3) z = 1; else if (u <= -3 && dx <= -3) z = -1;  // both in the flat part: F is linear there
+        else { const d = u - dx; z = d > 1e-5 || d < -1e-5 ? (mkLogCosh(u) - mkLogCosh(dx)) / d : mkTh((u + dx) * .5); }
+        dx = u; ob[n] = z * idt * MK_INS;
+    }
+    for (let n = 0; n < CR; n++) {
+      const y = ob[n];
+      ga += gb; pa += pb; qa += qb;
+      if (fd) { fg -= fd; if (fg < 0) fg = 0; }
+      let e = ga * (xc ? Math.cos((1 - fg) * 1.5707963267948966) : fg) * pol;  // engine / reassign ghosts fade with cos, steals linearly
+      if (fi > 0) { fi -= 1; e *= Math.sin((1 - fi / v.finN) * 1.5707963267948966); }
+      const o = y * e;
+      Lo[off + n] += o * pa; Ro[off + n] += o * qa;
+    }
+    v.s1 = s1; v.s2 = s2; v.s3 = s3; v.s4 = s4; v.dx = dx; v.fadeG = fg; v.fin = fi; v.sr = sr >>> 0; v.rng = nz >>> 0;
+    if (Math.abs(s1) < 1e-15) v.s1 = 0; if (Math.abs(s4) < 1e-15) v.s4 = 0;
+    if (v.fade > 0) { v.fade -= CR; if (v.fade <= 0 || fg <= 0) this.vEnd(v); }
+    else if (st.gate ? (!v.gate && v.gt <= 0) : (v.e2s === 0 || (v.e2s === 3 && E2.s <= 0 && v.e2 < 1e-4))) this.vEnd(v);
+  }
+  osc1(v, N, dt1, m0, m, w1, ob, wr) {  // OSC 1, N samples at the phase step dt1 (wr[n]: the master wrapped wr[n] samples ago, else -1)
+    let t = v.t1; const dm = (m - m0) / N;  // MK1-fix (MK1-24): no loop value starts from a parameter (that boxed every step)
+    for (let n = 0; n < N; n++) {
+      const mm = m0 + dm * (n + 1); t += dt1; let wrap = -1; if (t >= 1) { t -= 1; wrap = t / dt1; } wr[n] = wrap;
+      let y = 0;
       if (w1 === 0) {  // W-24 saw (1 - m) saw(t) + m saw(2t), polyBLEP on both
         let a = 2 * t - 1; if (t < dt1) { const x = t / dt1; a -= x + x - x * x - 1; } else if (t > 1 - dt1) { const x = (t - 1) / dt1; a -= x * x + x + x + 1; }
         y = a;
@@ -5165,100 +5257,78 @@ class MkCore {
       ob[n] = y;
     }
     v.t1 = t;
-    // OSC 2: free or hard-synced to OSC 1 (the slave runs one sample late so the step before it can be corrected, as renderSlave)
-    if (g2 > 0 || sync) {
-      let t2 = v.t2;
-      if (!sync) {
-        for (let n = 0; n < CR; n++) {
-          t2 += dt2; if (t2 >= 1) t2 -= 1; let y;
-          if (w2 === 0) { y = 2 * t2 - 1; if (t2 < dt2) { const x = t2 / dt2; y -= x + x - x * x - 1; } else if (t2 > 1 - dt2) { const x = (t2 - 1) / dt2; y -= x * x + x + x + 1; } }
-          else if (w2 === 1) { y = t2 < .5 ? 1 : -1;
-            if (t2 < dt2) { const x = t2 / dt2; y += x + x - x * x - 1; } else if (t2 > 1 - dt2) { const x = (t2 - 1) / dt2; y += x * x + x + x + 1; }
-            let tp = t2 - .5; if (tp < 0) tp += 1; if (tp < dt2) { const x = tp / dt2; y -= x + x - x * x - 1; } else if (tp > 1 - dt2) { const x = (tp - 1) / dt2; y -= x * x + x + x + 1; } }
-          else { const c = 8 * dt2 / 6; y = t2 < .5 ? 4 * t2 - 1 : 3 - 4 * t2;
-            if (t2 < dt2) { const d = 1 - t2 / dt2; y += c * d * d * d; } else if (t2 > 1 - dt2) { const d = 1 - (1 - t2) / dt2; y += c * d * d * d; }
-            const e = t2 - .5, ae = e < 0 ? -e : e; if (ae < dt2) { const d = 1 - ae / dt2; y -= c * d * d * d; } }
-          o2b[n] = y;
-        }
-      } else {
-        const dt = dt2, jw = w2 === 0 ? -2 : w2 === 1 ? 2 : 0, sq = w2 === 1;
-        let prev = v.sp;
-        for (let n = 0; n < CR; n++) {
-          const t0 = t2, xm = wr[n]; let cP = 0, cN = 0, xs = 0;
-          if (xm >= 0) {  // the master wrapped xm samples ago: reset
-            let tb = t0 + (1 - xm) * dt;
-            if (tb >= 1) { const e1 = xm + (tb - 1) / dt;
-              if (sq && t0 < .5) { xs = e1 + .5 / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
-              cP += .5 * jw * e1 * e1; cN -= .5 * jw * (1 - e1) * (1 - e1); tb -= 1;
-              if (sq && tb >= .5) { xs = xm + (tb - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
-            } else if (sq && t0 < .5 && tb >= .5) { xs = xm + (tb - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
-            const hh = mkW(w2, 0) - mkW(w2, tb); cP += .5 * hh * xm * xm; cN -= .5 * hh * (1 - xm) * (1 - xm);
-            t2 = xm * dt;
+  }
+  osc2(v, N, dt2, w2, sync, o2b, wr, hs, hq) {  // OSC 2, free or the sync slave of OSC 1 (hs / hq: the cross-term weights of the master wrap, osc2x)
+    let t2 = v.t2;
+    if (!sync) {
+      for (let n = 0; n < N; n++) {
+        t2 += dt2; if (t2 >= 1) t2 -= 1; let y = 0;
+        if (w2 === 0) { y = 2 * t2 - 1; if (t2 < dt2) { const x = t2 / dt2; y -= x + x - x * x - 1; } else if (t2 > 1 - dt2) { const x = (t2 - 1) / dt2; y -= x * x + x + x + 1; } }
+        else if (w2 === 1) { y = t2 < .5 ? 1 : -1;
+          if (t2 < dt2) { const x = t2 / dt2; y += x + x - x * x - 1; } else if (t2 > 1 - dt2) { const x = (t2 - 1) / dt2; y += x * x + x + x + 1; }
+          let tp = t2 - .5; if (tp < 0) tp += 1; if (tp < dt2) { const x = tp / dt2; y -= x + x - x * x - 1; } else if (tp > 1 - dt2) { const x = (tp - 1) / dt2; y -= x * x + x + x + 1; } }
+        else { const c = 8 * dt2 / 6; y = t2 < .5 ? 4 * t2 - 1 : 3 - 4 * t2;
+          if (t2 < dt2) { const d = 1 - t2 / dt2; y += c * d * d * d; } else if (t2 > 1 - dt2) { const d = 1 - (1 - t2) / dt2; y += c * d * d * d; }
+          const e = t2 - .5, ae = e < 0 ? -e : e; if (ae < dt2) { const d = 1 - ae / dt2; y -= c * d * d * d; } }
+        o2b[n] = y;
+      }
+    } else {
+      const dt = dt2, jw = w2 === 0 ? -2 : w2 === 1 ? 2 : 0, sq = w2 === 1;
+      let prev = v.sp;
+      for (let n = 0; n < N; n++) {
+        const t0 = t2, xm = wr[n]; let cP = 0, cN = 0, xs = 0;
+        if (xm >= 0) {  // the master wrapped xm samples ago: reset
+          let tb = t0 + (1 - xm) * dt; MK_XP = 0; MK_XQ = 0;
+          if (tb >= 1) { const e1 = xm + (tb - 1) / dt;
+            if (sq && t0 < .5) { xs = e1 + .5 / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); if (hs) mkXt(xm, xs, -2); }
+            cP += .5 * jw * e1 * e1; cN -= .5 * jw * (1 - e1) * (1 - e1); tb -= 1; if (hs) mkXt(xm, e1, jw);
+            if (sq && tb >= .5) { xs = xm + (tb - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); if (hs) mkXt(xm, xs, -2); }
+          } else if (sq && t0 < .5 && tb >= .5) { xs = xm + (tb - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); if (hs) mkXt(xm, xs, -2); }
+          const hh = mkW(w2, 0) - mkW(w2, tb); cP += .5 * hh * xm * xm; cN -= .5 * hh * (1 - xm) * (1 - xm);
+          t2 = xm * dt;
+          if (sq && t2 >= .5) { xs = (t2 - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); if (hs) mkXt(xm, xs, -2); }
+          if (hs) { mkXt(xm, xm, hh); hs[n] = MK_XP; hq[n] = MK_XQ; }
+        } else if (t2 + dt < 1 && !(sq && t2 < .5 && t2 + dt >= .5)) t2 += dt;
+        else {
+          t2 += dt;
+          if (t2 >= 1) { const e = (t2 - 1) / dt;
+            if (sq && t0 < .5) { xs = e + .5 / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
+            cP += .5 * jw * e * e; cN -= .5 * jw * (1 - e) * (1 - e); t2 -= 1;
             if (sq && t2 >= .5) { xs = (t2 - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
-          } else if (t2 + dt < 1 && !(sq && t2 < .5 && t2 + dt >= .5)) t2 += dt;
-          else {
-            t2 += dt;
-            if (t2 >= 1) { const e = (t2 - 1) / dt;
-              if (sq && t0 < .5) { xs = e + .5 / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
-              cP += .5 * jw * e * e; cN -= .5 * jw * (1 - e) * (1 - e); t2 -= 1;
-              if (sq && t2 >= .5) { xs = (t2 - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
-            } else if (sq && t0 < .5 && t2 >= .5) { xs = (t2 - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
-          }
-          const y = mkW(w2, t2) + cN; prev += cP; o2b[n] = prev; prev = y;
+          } else if (sq && t0 < .5 && t2 >= .5) { xs = (t2 - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
         }
-        v.sp = prev;
+        const y = mkW(w2, t2) + cN; prev += cP; o2b[n] = prev; prev = y;
       }
-      v.t2 = t2;
-      if (mod & 1) for (let n = 0; n < CR; n++) o2b[n] *= ob[n];  // Ring: OSC 1 x OSC 2 as the OSC 2 output (with Sync the slave runs one sample late: its step and the master's
-      // step stay one sample apart, each with its own polyBLEP; aligning them leaves the r1 x r2 cross term and folds more, -30 dB)
+      v.sp = prev;
     }
-    if (this.tap === 'amp') {  // test tap: the amp envelope (EG2 or gate) with the fades, per sample
-      const e0 = v.eA < 0 ? env : v.eA; v.eA = env; let fg = v.fadeG; const fd = v.fade > 0 ? 1 / v.fadeN : 0;
-      for (let n = 0; n < CR; n++) { if (fd) { fg -= fd; if (fg < 0) fg = 0; } const e = (e0 + (env - e0) * (n + 1) / CR) * (v.xfo ? Math.cos((1 - fg) * 1.5707963267948966) : fg); Lo[off + n] += e; Ro[off + n] += e; }
-      v.fadeG = fg; if (v.fade > 0) { v.fade -= CR; if (v.fade <= 0 || fg <= 0) this.vEnd(v); } else if (st.gate ? (!v.gate && v.gt <= 0) : v.e2s === 0) this.vEnd(v);
-      return;
-    }
-    if (this.tap === 'mix') {  // test tap: the mixer output, no filter / amp
-      for (let n = 0; n < CR; n++) { let x = ob[n] * g1 + (g2 > 0 ? o2b[n] * g2 : 0); if (gn > 0) x += (mkRnd(v) * 2 - 1) * gn; Lo[off + n] += x; Ro[off + n] += x; }
-      if (v.e2s === 0 && !st.gate) this.vEnd(v); else if (st.gate && !v.gate && v.gt <= 0) this.vEnd(v);
-      return;
-    }
-    // mixer -> ladder (taps 0 / 1 / 3 / 5) -> distortion (after the filter, ADAA) -> amp
-    const mx = FMIX[MK_FT[Math.max(0, Math.min(3, st.ft))]], c0 = mx[0], c1 = mx[1], c2 = mx[2], c3 = mx[3], c4 = mx[4];
-    let s1 = v.s1, s2 = v.s2, s3 = v.s3, s4 = v.s4, gg = v.gA, kk = v.kA; const dg = (v.gB - v.gA) / CR, dk = (v.kB - v.kA) / CR;
-    const dist = T.a.dist >= .5, dG = dist ? MKW.distG(Sm.m1, Sm.m2, Sm.mn) : 1, idt = dist ? 1 / mkTh(dG) : 1;
-    const xc = v.xfo, pol = v.pol; let sr = v.sr, nz = v.rng | 0;
-    let dx = v.dx, dF = v.dF, ga = a0, gb = (a1 - a0) / CR, fg = v.fadeG, fd = v.fade > 0 ? 1 / v.fadeN : 0, fi = v.fin, pa = pl0, pb = (pl - pl0) / CR, qa = pr0, qb = (pr - pr0) / CR;
+    v.t2 = t2;
+  }
+  /* MK1-fix (MK1-09): Sync and Ring+Sync of a note from MK_OSN up run both oscillators at 2x. The ring product takes OSC 1 one sample
+     late like the slave, so both steps of the master wrap fall on the same sample, and removes the cross term of the two polyBLEPs
+     (mkXt: the polyBLEP pair of OSC 1 times that of each slave step in the same sample). A polyphase IIR halfband (4 allpasses: flat to 20 kHz, >= 72 dB from
+     30 kHz) takes the mixer sum back to 1x. Below MK_OSN the 1x path stays (there it folds below -52 dB). */
+  osc2x(v, dt1, dt2, m0, m, w1, w2, mod, g1, g2) {
+    const N = CR + CR, a = this.ob2, s = this.o2b2, wr = this.wr2, hs = this.hs2, hq = this.hq2, ob = this.ob;
+    this.osc1(v, N, dt1 * .5, m0, m, w1, a, wr);
+    this.osc2(v, N, dt2 * .5, w2, true, s, wr, hs, hq);
+    if (mod & 1) {
+      const dO = w1 === 0 ? -2 : w1 === 1 ? 2 : 0; let po = v.o1p, cc = v.rsc;
+      for (let n = 0; n < N; n++) {
+        const o = a[n], xm = wr[n]; let p = po * s[n] + cc; cc = 0;
+        if (xm >= 0 && dO !== 0) { p += dO * hs[n]; cc = -dO * hq[n]; }
+        s[n] = p; po = o;
+      }
+      v.o1p = po; v.rsc = cc;
+    } else { v.o1p = a[N - 1]; v.rsc = 0; }
+    const z = v.dz, c0 = MK_HB[0], c1 = MK_HB[1], c2 = MK_HB[2], c3 = MK_HB[3];
+    let x0 = z[0], x1 = z[1], x2 = z[2], x3 = z[3], y0 = z[4], y1 = z[5], y2 = z[6], y3 = z[7];
     for (let n = 0; n < CR; n++) {
-      gg += dg; kk += dk;
-      let x = ob[n] * g1; if (g2 > 0) x += o2b[n] * g2;
-      if (gn > 0) { nz ^= nz << 13; nz ^= nz >>> 17; nz ^= nz << 5; x += ((nz >>> 0) / 2147483648 - 1) * gn; }  // white noise (per note generator)
-      sr = (Math.imul(sr, 1664525) + 1013904223) >>> 0;  // the seed noise has its own generator (the oscillator noise stays the same with and without it)
-      const xin = x * MK_INS + (sr / 4294967296 - .5) * MK_SEED + 1e-20;
-      const b1 = tg(s1), b2 = tg(s2), b3 = tg(s3), b4 = tg(s4), A1 = tg(xin - kk * s4);
-      const d1 = 1 / (1 + gg * b1), d2 = 1 / (1 + gg * b2), d3 = 1 / (1 + gg * b3), d4 = 1 / (1 + gg * b4);
-      const G1 = gg * A1 * d1, G2 = gg * b1 * d2, G3 = gg * b2 * d3, G4 = gg * b3 * d4;
-      const S1 = s1 * d1, S2 = s2 * d2, S3 = s3 * d3, S4 = s4 * d4, G34 = G3 * G4, G234 = G2 * G34;
-      const y4 = (G1 * G234 * xin + G234 * S1 + G34 * S2 + G4 * S3 + S4) / (1 + kk * G1 * G234);
-      const x0 = xin - kk * y4, y1 = G1 * x0 + S1, y2 = G2 * y1 + S2, y3 = G3 * y2 + S3;
-      s1 = 2 * y1 - s1; s2 = 2 * y2 - s2; s3 = 2 * y3 - s3; s4 = 2 * y4 - s4;
-      let y = c0 * A1 * x0 + c1 * y1 + c2 * y2 + c3 * y3 + c4 * y4;
-      if (dist) {  // W-23 tanh(g x) / tanh(g), ADAA 1st order (log cosh)
-        const u = y / MK_INS * dG, d = u - dx, Fu = mkLogCosh(u);
-        const z = d > 1e-5 || d < -1e-5 ? (Fu - dF) / d : mkTh((u + dx) * .5);
-        dx = u; dF = Fu; y = z * idt * MK_INS;
-      }
-      ga += gb; pa += pb; qa += qb;
-      if (fd) { fg -= fd; if (fg < 0) fg = 0; }
-      let e = ga * (xc ? Math.cos((1 - fg) * 1.5707963267948966) : fg) * pol;  // engine / reassign ghosts fade with cos, steals linearly
-      if (fi > 0) { fi -= 1; e *= Math.sin((1 - fi / v.finN) * 1.5707963267948966); }
-      const o = y * e;
-      Lo[off + n] += o * pa; Ro[off + n] += o * qa;
+      const i = n + n; let e = a[i] * g1 + s[i] * g2, l = a[i + 1] * g1 + s[i + 1] * g2, t;  // e: the earlier, l: the later sample
+      t = l; l = (l - y0) * c0 + x0; x0 = t; y0 = l; t = l; l = (l - y2) * c2 + x2; x2 = t; y2 = l;
+      t = e; e = (e - y1) * c1 + x1; x1 = t; y1 = e; t = e; e = (e - y3) * c3 + x3; x3 = t; y3 = e;
+      ob[n] = .5 * (l + e);
     }
-    v.s1 = s1; v.s2 = s2; v.s3 = s3; v.s4 = s4; v.dx = dx; v.dF = dF; v.fadeG = fg; v.fin = fi; v.sr = sr; v.rng = nz >>> 0;
-    if (Math.abs(s1) < 1e-15) v.s1 = 0; if (Math.abs(s4) < 1e-15) v.s4 = 0;
-    if (v.fade > 0) { v.fade -= CR; if (v.fade <= 0 || fg <= 0) this.vEnd(v); }
-    else if (st.gate ? (!v.gate && v.gt <= 0) : (v.e2s === 0 || (v.e2s === 3 && E2.s <= 0 && v.e2 < 1e-4))) this.vEnd(v);
+    z[0] = x0; z[1] = x1; z[2] = x2; z[3] = x3; z[4] = y0; z[5] = y1; z[6] = y2; z[7] = y3;
   }
   vEnd(v) { if (!v.on) return; const id = v.id, ne = v.noEnd; v.on = false; v.id = -1; v.ghost = false; v.isLine = false; v.noEnd = false; v.xfo = false; if (!ne) this.endCheck(id); }
   scope() {
