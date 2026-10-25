@@ -555,6 +555,77 @@ svg{display:block}
   .sv-l{font-size:9px;gap:3px}
 }
 @media (orientation:portrait) and (max-width:359px) and (max-height:519px){.sv-sw .clogo svg{height:16px}}
+/* V2e (song-delta 6.5, K2-26): transport [CLIPS ⇄ 64][● ▾ 76][▶ SONG 76][⟲ Song ▾ 86][⏮ │ ↩ SONG 44] (+ [▲▼ 44] where the
+   Spurbank is needed); L and P3: the column CLIPS ⇄ · [●][▶] · ⟲ · [⏮│↩][▲▼] */
+.sv-top > .sv-rec,.sv-top > .sv-play{flex:0 0 76px}
+.sv-top > .sv-loop{flex:1 1 86px}
+.sv-top > .sv-home,.sv-top > .sv-back,.sv-top > .sv-bank{flex:0 0 44px;flex-direction:column;gap:2px;padding:0 2px;position:relative}
+.sv-back .d{font-size:14px;line-height:1}.sv-back .t{font:700 8px/1 var(--font-ui);letter-spacing:.04em}
+.sv-bank .d{font:700 11px/1 var(--font-num);letter-spacing:0}.sv-bank .t{font:600 8px/1 var(--font-num);color:var(--text-dim)}
+.sv-bank:disabled{opacity:.35}
+.sv-bank.dot::after{content:'';position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--play)}
+@media (orientation:portrait) and (max-width:389px){.sv-top > .sv-rec,.sv-top > .sv-play{flex-basis:64px}.sv-top > .sv-loop{flex-basis:56px}.sv-top > .sv-home{flex-basis:44px}}
+#songView.side .sv-top > .sv-home,#songView.side .sv-top > .sv-back,#songView.side .sv-top > .sv-bank{grid-column:span 1;padding:0}
+#songView.side .sv-top > .sv-loop .v{font-size:10px}
+/* V2e: the chosen track's label; the Bereich-Leiste (K2-25: P 56 px instead of the Träger bar, P1 6 × 58, P3 symbols 5 × 52;
+   L in place of the Träger panel); Marken-Blatt (P1/P2 32 + 4 × 44, P3 252, L 28 + 2 × 44); Ersetzen/Einfügen-Blatt (P-4) */
+.sv-l.trk{cursor:pointer}
+.sv-l.trk.sel{background:rgba(255,255,255,.07);color:var(--text)}
+.sv-l.trk.sel>span{color:var(--text)}
+.sv-hint.hold{opacity:1;background:rgba(80,56,10,.92);color:#ffcf7a;left:6px;right:auto;max-width:calc(100% - 12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sv-empty .kbrow{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.sv-empty .kbrow .kbtn{margin:0;height:44px}
+#rangeBar{display:none;min-width:0;min-height:0;background:var(--chassis);border-top:1px solid var(--panel-edge);gap:4px;padding:3px 8px;align-items:stretch}
+#app.rangebar #rangeBar{display:grid}
+#app.rangebar #carrier{display:none}
+#app.recording #rangeBar{display:none!important}
+#rangeBar .rg-b{min-width:0;height:auto;min-height:44px;flex-direction:column;gap:3px;padding:0 2px;border-color:#6b4c16;box-shadow:inset 0 0 0 1px rgba(255,178,46,.12)}
+#rangeBar .rg-b .d{font:700 15px/1 var(--font-ui);color:#ffcf7a}
+#rangeBar .rg-b[data-a="rec"] .d{color:var(--rec)}
+#rangeBar .rg-b[data-a="play"] .d{color:var(--play)}
+#rangeBar .rg-b .t{display:block;max-width:100%;font:700 9px/1.05 var(--font-ui);letter-spacing:.02em;color:var(--text);white-space:nowrap;overflow:hidden}
+@media (orientation:portrait){#rangeBar{grid-area:carrier;grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media (orientation:portrait) and (max-width:359px){#rangeBar{grid-template-columns:repeat(5,minmax(52px,1fr))}#rangeBar .rg-b[data-a="part"]{display:none}#rangeBar .rg-b .t{display:none}#rangeBar .rg-b .d{font-size:18px}}
+@media (orientation:landscape){#rangeBar{order:1;flex:none;border-top:0;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:44px;padding:6px 8px}#rangeBar .rg-b{min-height:0}}
+.pop.msheet.dock,.pop.plsheet.dock{padding:0 8px calc(env(safe-area-inset-bottom,0px));overflow:visible}
+.msheet .ms-h,.plsheet .ms-h{position:relative;display:flex;align-items:center;gap:6px;height:32px;padding-right:48px;font:600 12px/1 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:visible}
+.msheet .ms-h b,.plsheet .ms-h b{color:#ffcf7a;font-weight:800;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis}
+.msheet .ms-h span,.plsheet .ms-h span{overflow:hidden;text-overflow:ellipsis}
+.msheet .ms-x,.plsheet .ms-x{position:absolute;right:0;top:0;width:44px;height:32px;padding:0;font-size:15px}
+.msheet .ms-x::before,.plsheet .ms-x::before{content:'';position:absolute;left:0;right:0;top:-12px;bottom:0}
+.msheet .ms-r{display:flex;gap:4px;height:44px}
+.msheet .ms-b{flex:1 1 0;min-width:0;height:44px;padding:0 4px;font:700 12px/1.1 var(--font-ui);white-space:normal;text-align:center;overflow:hidden}
+.msheet .ms-b.tight{font-size:10.5px;letter-spacing:0}
+.msheet .ms-b i,.plpick i,.pcol i,.kpart i{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:-1px;margin-left:4px}
+.msheet .ms-rec{color:var(--text)}
+.msheet .ms-all{color:#ffcf7a;border-color:#6b4c16}
+@media (orientation:portrait) and (max-width:359px){.msheet .ms-r3{flex-wrap:wrap;height:88px}.msheet .ms-r3 .ms-b{flex:1 1 calc(50% - 2px)}}
+@media (orientation:landscape){
+  .msheet .ms-h{height:28px}
+  .msheet .ms-a,.msheet .ms-bb{display:flex;gap:4px;height:44px}
+  .msheet .ms-a .ms-r,.msheet .ms-bb .ms-r{display:contents}
+  .msheet .ms-b{font-size:11px}
+  .msheet .ms-rec{flex:1.4 1 0}
+}
+.plsheet .pl-o{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;width:100%;height:52px;margin:0 0 6px;padding:0 12px;text-align:left}
+.plsheet .pl-o b{font:700 14px/1 var(--font-ui);color:var(--text)}
+.plsheet .pl-o small{font:500 11px/1.1 var(--font-ui);color:var(--text-dim);white-space:normal}
+.plsheet .pl-c{display:block;width:100%;height:44px;margin-bottom:6px}
+@media (orientation:landscape){.plsheet .pl-o{display:inline-flex;width:calc(50% - 4px);margin-right:4px}.plsheet .pl-o + .pl-o{margin-right:0}}
+.pop.plpick .plp{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pop.plpick .plp button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;height:auto;padding:4px 2px}
+.pop.plpick .plp small{font-size:10px;color:var(--text-dim)}
+.pop.plpick .plp i{margin:0 0 2px}
+.pop.mname .mn-r{display:flex;gap:6px;margin:0 0 8px}
+.pop.mname .mn-in{flex:1 1 auto;min-width:0;height:44px;padding:0 10px;font:600 16px/1 var(--font-ui);color:var(--text);background:var(--lcd);border:1px solid var(--line);border-radius:8px}
+.pop.mname .mn-ok{width:52px;height:44px}
+.pop.mname .seg{flex:1 1 auto}.pop.mname .seg button{height:44px}
+.pop.mname .mn-sc{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.pop.mname .mn-sc .cp-c{height:44px;min-width:64px}
+.pop.pcol .pc-r{display:flex;gap:6px}.pop.pcol .pc-r button{width:48px;height:48px}.pop.pcol .pc-r i{width:22px;height:22px;margin:0}
+.pop.pcol .pc-r button.on{border-color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}
+.pop.kette .kparts button{flex:0 1 auto;padding:0 10px;font-size:12px}
+.pop .mtsel{color:#ffcf7a}
+.sv-lm{cursor:pointer}
 /* short phones (≤ 700 px): the SONG ⇄ corner cell is ~30 px high; logo + label must fit inside it (overflow:hidden) */
 @media (orientation:portrait) and (max-width:359px) and (max-height:700px){.corner.sw{gap:1px}.corner.sw .clogo svg{height:18px}.corner.sw .swl{line-height:1}}
 
@@ -1341,7 +1412,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
   .rstart .rs-span{grid-area:span;margin-top:0}.rstart.one .rs-pre{flex-wrap:nowrap}.rstart .rs-span .seg button{height:36px}
 }
 .plist.lpl small{font:600 10px/1 var(--font-num);color:var(--text-dim)}
-.cq .seg button{height:40px}
+.cq .seg button{height:44px}   /* V2e N7S-40: P ≥ 44 × 44 */
 .cq-pv{margin:10px 0 6px;font:600 12px/1.3 var(--font-ui);color:#ffcf7a}
 .cq-go{width:100%;height:44px;font:700 13px/1 var(--font-ui)}
 .bpmbig{font:700 54px/1 var(--font-num);text-align:center;margin:4px 0 10px}
@@ -10767,7 +10838,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.6.0';
+const VERSION = '4.7.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -15897,6 +15968,9 @@ function setSongView(on) {
   UI.songView = on;
   EL.gridArea.classList.toggle('song', on); EL.app.classList.toggle('songv', on);
   EL.songView.hidden = !on; hintSideSync(); if (on) pickCancel();
+  if (UI.pop && /^(mark|place|rangemore|aspart|partlist|markname|partcolor)$/.test(UI.pop.name || '')) closePop();   // V2e: song sheets end with the view
+  if (!on) { SV.mark = null; SV.copy = null; svHintFree(); }
+  rangeBarSync();
   folReset(['song']);
   if (on) { svLayout(); svAutoScroll(true); }
   UI.dirty.song = UI.dirty.grid = UI.dirty.all = true;
@@ -15912,13 +15986,16 @@ function buildSongView() {
   const bPlay = el('button', 'rb sv-b sv-play', '<span class="d">▶</span><span class="t">SONG</span>'); bPlay.setAttribute('aria-label', 'Song abspielen');
   const bMel = el('button', 'rb sv-b sv-mel', '<span class="d">●</span><span class="t">MEL.</span>'); bMel.setAttribute('aria-label', 'Melodie dazu aufnehmen (während der Song spielt)');
   const bMt = el('button', 'rb sv-b sv-mt', 'S4 ▾'); bMt.setAttribute('aria-label', 'Melodie-Spur wählen');
-  const bBack = el('button', 'rb sv-b sv-back', '↩ SONG'); bBack.setAttribute('aria-label', 'Spuren folgen wieder dem Song'); bBack.hidden = true;
+  const bBack = el('button', 'rb sv-b sv-back', '<span class="d">↩</span><span class="t">SONG</span>'); bBack.setAttribute('aria-label', 'Spuren folgen wieder dem Song'); bBack.hidden = true;
   // V0c: [⏮] sets the start to bar 1 (N0c); SCHLEIFE is a text button with its state (S-02)
   const bHome = el('button', 'rb sv-b sv-home', '⏮\uFE0E'); bHome.setAttribute('aria-label', 'Zum Anfang (Takt 1)');
-  const bLoop = el('button', 'rb sv-b sv-loop', '<span class="t">SCHLEIFE</span><span class="v">aus</span>'); bLoop.setAttribute('aria-label', 'Schleife: aus');
+  const bLoop = el('button', 'rb sv-b sv-loop', '<span class="t">SCHLEIFE</span><span class="v">⟲ aus ▾</span>'); bLoop.setAttribute('aria-label', 'Schleife: aus');
+  // V2e (song-delta 6.5): the Spurbank switch [▲▼] lives in the transport (P2: row, L/P3: column) — only in viewports that need it
+  const bBank = el('button', 'rb sv-b sv-bank', '<span class="d">▲▼</span><span class="t">1/2</span>'); bBank.setAttribute('aria-label', 'Andere Spuren zeigen'); bBank.hidden = true;
   // V0c: [● MEL.] leaves the row – ● with the target MELODIE does the same (overdub, punch-in while the song plays; the API
   // songMel stays); two „● MEL“ side by side would say two different things
-  top.append(sw, bRec, bPlay, bMt, bBack, bHome, bLoop);
+  // V2e (song-delta 6.5, K2-26): [CLIPS ⇄][● ▾][▶ SONG][⟲ Song ▾][⏮ │ ↩ SONG][▲▼]; [S4 ▾] lives in the MELODIE label (V2b chip)
+  top.append(sw, bRec, bPlay, bLoop, bBack, bHome, bBank);
   onTap(sw, () => setSongView(false));
   // ● (V0c, Nachtrag 2 B.1 Nr. 8): a song there → the Start-Blatt; while recording → stop; empty song → records at once.
   // Holding ● opens the Start-Blatt any time (450 ms, released without moving)
@@ -15932,8 +16009,8 @@ function buildSongView() {
   const body = el('div', 'sv-body');
   const labs = el('div', 'sv-labs');
   const lr = el('div', 'sv-lr', '<span class="lbl">Takt</span>');
-  const stb = el('button', 'rb sv-tbb', '▲▼'); stb.hidden = true; stb.setAttribute('aria-label', 'Andere Spuren zeigen'); lr.appendChild(stb); SV.tbb = stb;
-  onTap(stb, () => { if (!SV.pages) return; setTrackBank((trackBankOf() + 1) % SV.pages.length); svLayout(); haptic('tick'); });
+  SV.tbb = bBank;
+  onTap(bBank, () => { if (!SV.pages) return; setTrackBank((trackBankOf() + 1) % SV.pages.length); svLayout(); haptic('tick'); });
   labs.appendChild(lr);
   // V0c (N7-R10): the Träger row is AKKORDE; its label opens [Akkorde quantisieren …] [Akkorde löschen]. S-04: the melody
   // row names its track and that it does not follow the Träger („⇅ fest“)
@@ -15942,11 +16019,16 @@ function buildSongView() {
   lm.setAttribute('aria-label', 'Melodie: bearbeiten, leeren');
   onTap(lm, () => openMelPop(lm));
   labs.append(lc, lm); SV.lc = lc;
+  // V2e (N7S-39): a track label selects the track (the keyboard plays it, the NOTEN target shows it)
+  onTap(labs, d => { const t = +d.dataset.t; if (!(t >= 0) || !S.tracks[t]) return; selectTrack(t); haptic('tick'); lcdOrToast(S.tracks[t].name + ' gewählt'); UI.dirty.song = true; }, '.sv-l.trk');
   const wrap = el('div', 'sv-cw'), cv = el('canvas', 'sv-cv'), empty = el('div', 'sv-empty');
-  empty.innerHTML = 'Noch kein Song.<br><b>● SONG</b> drücken, Szenen starten, Träger wechseln, dazu spielen – alles wird mitgeschnitten.';
+  // V2e (6.4/6.5): the empty song names both ways in; [＋ Teil einsetzen ▾] also when the song is still empty (Xander 24.10. b)
+  empty.innerHTML = 'Noch kein Song.<br>FANG TEIL beim Spielen, dann den Teil in den Song ziehen – oder <b>● SONG</b>.';
+  const kr = el('div', 'kbrow');
   const kb = el('button', 'rb mbtn kbtn', 'Kette aus Szenen …'); kb.setAttribute('aria-label', 'Song aus einer Kette von Szenen bauen');
-  kb.addEventListener('pointerdown', e => e.stopPropagation());       // not a song-grid gesture
-  onTap(kb, () => openKette(kb)); empty.appendChild(kb);
+  const kt = el('button', 'rb mbtn kbtn', '＋ Teil einsetzen ▾'); kt.setAttribute('aria-label', 'Einen Teil oder eine Szene als Song-Anfang einsetzen');
+  for (const b of [kb, kt]) b.addEventListener('pointerdown', e => e.stopPropagation());       // not a song-grid gesture
+  onTap(kb, () => openKette(kb)); onTap(kt, () => openPlacePick(kt, 0)); kr.append(kb, kt); empty.appendChild(kr);
   const hint = el('div', 'sv-hint'); SV.hint = hint;
   const fol = el('button', 'rb sv-fol folc'); fol.hidden = true; fol._sig = ''; SV.fol = fol; folSizer(fol);
   fol.addEventListener('pointerdown', e => e.stopPropagation());       // not a song-grid gesture
@@ -15959,6 +16041,7 @@ function buildSongView() {
   SV.cv = cv; SV.g = cv.getContext('2d'); SV.wrap = wrap; SV.empty = empty; SV.labs = labs;
   SV.btn = {bRec, bPlay, bMel, bMt, bBack, bHome, bLoop}; SV.lm = lm;
   svBindGestures(wrap);
+  buildRangeBar();
   // the grid area changes height with sheets, toasts and rotation: keep the canvas in step (rAF: no observer loop)
   if (window.ResizeObserver) { let q = 0; new ResizeObserver(() => { if (!q && UI.songView) q = requestAnimationFrame(() => { q = 0; svLayout(); }); }).observe(wrap); }
   svLayout();
@@ -15980,7 +16063,10 @@ function svLayout() {
     if (pages.length < 2) { SV.rows = ord.slice(); SV.pages = null; }
     else { SV.pages = pages; const pg = pages[Math.min(trackBankOf(), pages.length - 1)]; SV.rows = pg.concat(new Array(pages[0].length - pg.length).fill(-1), [DRUM_T]); }
   }
-  SV.tbb.hidden = !SV.pages; if (SV.pages) SV.tbb.textContent = '▲▼ ' + (Math.min(trackBankOf(), SV.pages.length - 1) + 1) + '/' + SV.pages.length;
+  // V2e: [▲▼] stands in every viewport where 8 tracks would not fit (fixed per viewport, nothing moves when tracks come and go)
+  SV.bankVp = side || avail / (8 + 2) < 26 - .5;
+  if (SV.tbb.hidden === SV.bankVp) SV.tbb.hidden = !SV.bankVp;
+  SV.tbb.disabled = !SV.pages; SV.tbb.lastChild.textContent = SV.pages ? (Math.min(trackBankOf(), SV.pages.length - 1) + 1) + '/' + SV.pages.length : '1/1';
   svBuildRows();
   const nR = SV.rows.length + 2;                                    // a shorter page keeps its rows (empty ones): nothing moves
   SV.rowH = Math.max(14, (r.height - SV.rulerH) / nR);
@@ -15993,7 +16079,8 @@ function svLayout() {
   SV.sig = ''; UI.dirty.song = true;
 }
 const svBars = () => (S.song ? Math.max(S.song.bars, 1) : 0);
-const svMaxX = () => Math.max(0, (svBars() + 1) * SV.cellW - SV.w + 8);
+// V2e (Xander 24.10. a): the view rolls 4 bars past the end, so a part can be set behind empty bars there
+const svMaxX = () => Math.max(0, (svBars() + (S.song && S.song.bars ? 4 : 1)) * SV.cellW - SV.w + 8);
 function svSongBeat(bAud) {
   if (!R.playing || !S.song) return null;
   if (R.songPlay) return songBeatOf(bAud);                // V0c: right after a loop jump the old pass is still audible
@@ -16025,7 +16112,7 @@ function svButtons() {
   const song = S.song, rec = !!R.songRec, play = !!R.songPlay;
   B.bRec.classList.toggle('on', rec); B.bRec.classList.toggle('arm', rec && R.songRec.pending);
   // V0c S-01: the ● names its targets („● AKK“, „● AKK+MEL“, „● ALLES“)
-  const tg = recTgNow(), nt0 = R.songRec && !R.songRec.over ? (S.song ? S.song.melodyTrack : null) : recNtNow(), rt = recTgShort(tg, EL.songView.classList.contains('side'), nt0), rtEl = B.bRec.lastChild;
+  const sideV = EL.songView.classList.contains('side'), tg = recTgNow(), nt0 = R.songRec && !R.songRec.over ? (S.song ? S.song.melodyTrack : null) : recNtNow(), rt = recTgShort(tg, sideV, nt0) + (sideV || rec || !songHasContent() ? '' : ' ▾'), rtEl = B.bRec.lastChild;   // V2e: „● ▾“ = the Start-Blatt
   if (rtEl.textContent !== rt) rtEl.textContent = rt;
   B.bRec.setAttribute('aria-label', rec ? 'Song-Aufnahme beenden' : 'Song aufnehmen: ' + recTgLong(tg, nt0).join(', ') + (songHasContent() ? ' (halten = Start-Blatt)' : ''));
   const pd = B.bPlay.firstChild; if (pd.textContent !== (play ? '■' : '▶')) pd.textContent = play ? '■' : '▶';
@@ -16038,11 +16125,12 @@ function svButtons() {
   B.bBack.hidden = !(play && !rec && (R.songOverride.some(Boolean) || R.carrierLive));
   B.bHome.hidden = !B.bBack.hidden;
   EL.songView.classList.toggle('tight', !B.bBack.hidden);           // top row with ↩ SONG: the ● / ▶ / MEL. labels go two-line
-  const ll = loopLabel(song), lv = B.bLoop.lastChild;
-  if (lv.textContent !== ll) { lv.textContent = ll; B.bLoop.setAttribute('aria-label', 'Schleife: ' + ll); }
+  const ll = loopLabel(song), lv = B.bLoop.lastChild, lt = '⟲ ' + loopShortLabel(song, B.bLoop.clientWidth && B.bLoop.clientWidth < 80) + ' ▾';
+  if (lv.textContent !== lt) { lv.textContent = lt; B.bLoop.setAttribute('aria-label', 'Schleife: ' + ll); }
+  if (SV.tbb && !SV.tbb.hidden) { const hid = svBankHiddenPlays(); if (SV.tbb.classList.contains('dot') !== hid) SV.tbb.classList.toggle('dot', hid); }
   B.bLoop.classList.toggle('on', !!(song && song.loop.on));
   SV.empty.hidden = !!(song && (song.bars || rec));
-  if (SV.lm) { const sm = SV.lm.querySelector('small'), tx = trackTag(mt) + ' ⇅ fest'; if (sm && sm.textContent !== tx) sm.textContent = tx; }
+  if (SV.lm) { const sm = SV.lm.querySelector('small'), tx = trackTag(mt) + ' ▾ · ⇅ fest'; if (sm && sm.textContent !== tx) sm.textContent = tx; SV.lm.setAttribute('aria-label', 'Melodie (' + S.tracks[mt].name + '): Spur wählen, bearbeiten, leeren'); }
   // the take's banner over the ruler (N7S-02): an overlay, nothing moves
   if (SV.ban) {
     const sr = R.songRec, on = !!(sr && (sr.over || !sr.pending));
@@ -16050,6 +16138,22 @@ function svButtons() {
     if (on) { const tx = recBannerText(SV.w < 360); if (SV.ban.textContent !== tx) SV.ban.textContent = tx; SV.ban.style.height = SV.rulerH + 'px'; }
   }
   recBanTop();
+  rangeBarSync();
+}
+// V2e: the loop button's value — the mark it covers (its name), else „Song“ / „T3–6“ (narrow) / „Takt 3–6“
+function loopShortLabel(song, narrow) {
+  if (!song || !song.loop.on) return 'aus';
+  if (loopAll(song)) return 'Song';
+  const m = song.marks.find(x => x.a === song.loop.a && x.a + x.len === song.loop.b);
+  if (m) { const n = markLabel(m); return narrow || n.length > 8 ? partShortForm(n) : n; }
+  return narrow ? (song.loop.b - song.loop.a === 1 ? 'T' + (song.loop.a + 1) : 'T' + (song.loop.a + 1) + '–' + song.loop.b) : loopLabel(song);
+}
+// V2e (6.5): a clip plays on a Spurbank page that is not shown → a dot on [▲▼]
+function svBankHiddenPlays() {
+  if (!SV.pages || !R.playing) return false;
+  const shown = new Set(SV.rows);
+  for (let t = 0; t < NT(); t++) if (!shown.has(t) && R.slot[t] >= 0) return true;
+  return false;
 }
 // „● Takt 3 · Überschreiben · AKK + MEL“ (a new song: „● Neuer Song · alles“)
 function recBannerText(narrow) {
@@ -17000,11 +17104,13 @@ function partRef(x) {
 }
 const refChunk = r => (r.p ? partChunk(r.p) : sceneChunk(r.scene));
 // API placePart(part, bar, mode): the part unfolds at bar line `bar` (N7-R4/R6); at or behind the end = append, no question
-function placePart(part, bar, mode) {
+// o.gap (V2e, Xander 24.10. a): behind the end the part lands exactly at `bar`; the bars in between stay empty (else it snaps to the end)
+function placePart(part, bar, mode, o) {
   const r = partRef(part); if (!r) return null;
   let id = null;
   const ok = songEdit((r.p ? r.p.name : 'Szene ' + (r.scene + 1)) + (mode === 'replace' ? ' ersetzt Takte' : ' eingefügt'), song => {
     const ch = refChunk(r), n = clamp(Math.round(bar) || 0, 0, SONG_MAX_BARS - ch.len);
+    if (o && o.gap && n > song.bars) opInsert(song, song.bars, {len: n - song.bars, lanes: song.lanes.map(() => [{bar: 0, slot: -1}]), carrier: [{beat: 0, target: null}], xp: [], mel: {}, marks: []});
     const at = mode === 'replace' ? opReplace(song, n, ch) : opInsert(song, n, ch);
     song.marks.sort((a, b) => a.a - b.a);
     const m = song.marks.find(x => x.a === at && x.part === r.id); id = m ? m.id : null;
@@ -18032,15 +18138,20 @@ function openLoopPop(anchor) {
   openPop(anchor, p => {
     guardTouch(p);
     const sel = SV.sel, ra = sel ? sel.a : songStartBar(), rb = sel ? sel.b + 1 : ra + 1;
-    const cur = !song.loop.on ? 'off' : loopAll(song) ? 'song' : 'range';
+    // V2e (6.4): „Teil“ = the mark under the playhead (stopped: under the Positionsmarke)
+    const pb = R.songPlay && R.playing ? songBeatOf(audBeat()) : null, tm = svMarkAt(pb != null ? Math.floor(pb / 4 + 1e-9) : songStartBar());
+    const curM = song.loop.on && tm && song.loop.a === tm.a && song.loop.b === tm.a + tm.len;
+    const cur = !song.loop.on ? 'off' : loopAll(song) ? 'song' : curM ? 'part' : 'range';
     p.innerHTML = '<h4>Schleife</h4><div class="plist lpl">' +
       `<button class="rb${cur === 'off' ? ' on' : ''}" data-l="off">aus</button><button class="rb${cur === 'song' ? ' on' : ''}" data-l="song">Song</button>` +
+      `<button class="rb${cur === 'part' ? ' on' : ''}" data-l="part"${tm ? '' : ' disabled'}>Teil<small>${tm ? esc(markLabel(tm)) : 'keine Marke'}</small></button>` +
       `<button class="rb${cur === 'range' ? ' on' : ''}" data-l="range">Bereich<small>${cur === 'range' && !sel ? loopLabel(song) : (rb - ra === 1 ? 'Takt ' + (ra + 1) : 'Takt ' + (ra + 1) + '–' + rb)}</small></button></div>` +
       '<p class="small">Bereich = die gelb gewählten Takte (Taktleiste antippen). Die grünen Griffe ┃ ziehen ändert Anfang und Ende.</p>';
     onTap(p, b => {
       const l = b.dataset.l; closePop();
       if (l === 'off') songLoopRange({on: false});
       else if (l === 'song') songLoopRange({on: true, a: 0, b: song.bars});
+      else if (l === 'part') { if (tm) songLoopRange({on: true, a: tm.a, b: tm.a + tm.len}); }
       else if (cur === 'range' && !sel) songLoopRange({on: true});
       else songLoopRange({on: true, a: ra, b: rb});
       svButtons(); haptic('tick');
@@ -18070,7 +18181,8 @@ function openChordPick(o) {
   let cur = c ? c.target : null; if (!c) for (const e of song.carrier) { if (e.beat > beat + 1e-6) break; cur = e.target; }
   const key = songKeyAtBar(bar), N = noteNames();
   const st = {frei: false, tab: 'art', root: cur ? cur.root : key.root, q: cur && cur.kind === 'chord' && cur.quality ? cur.quality : 'maj', bass: cur && cur.kind === 'chord' && cur.bass !== cur.root ? cur.bass : null};
-  const apply = tg => { closePop(); if (k != null) songSetChord(0, tg, {k}); else songSetChord(bar, tg); svButtons(); };
+  // V2e (N7-R10 in marks): inside a part's mark the change counts only here; the toast offers [Für alle „Strophe“]
+  const apply = tg => { closePop(); const ok = k != null ? songSetChord(0, tg, {k}) : songSetChord(bar, tg); if (ok) chordMarkToast(beat, k != null, tg ? (typeof tg === 'string' ? parseChord(tg) : tg) : null); svButtons(); };
   openPop(null, p => {
     p.classList.add('chpick'); guardTouch(p);
     const chip = (attr, label, on, cls) => `<button class="rb cp-c${on ? ' on' : ''}${cls ? ' ' + cls : ''}" ${attr}>${label}</button>`;
@@ -18168,10 +18280,12 @@ function openQuantChords(anchor) {
 function openMelPop(anchor) {
   openPop(anchor, p => {
     const n = S.song ? curMel(S.song).notes.length : 0, mtn = S.song ? ' · ' + esc(S.tracks[S.song.melodyTrack].name) : '';
-    p.innerHTML = `<h4>Melodie${mtn} · ${n} ${n === 1 ? 'Note' : 'Noten'}</h4><div class="plist"><button class="rb" data-a="edit">Bearbeiten</button><button class="rb" data-a="clip">Als Clip …</button><button class="rb" data-a="clear"${n ? '' : ' disabled'}>Melodie leeren</button></div>` +
+    // V2e (6.5): the [MEL: … ▾] chip lives in this label now — first row = the melody track
+    const mtt = S.song ? S.song.melodyTrack : melSuggest(true);
+    p.innerHTML = `<h4>Melodie${mtn} · ${n} ${n === 1 ? 'Note' : 'Noten'}</h4><div class="plist"><button class="rb mtsel" data-a="mt">Spur: ${esc(S.tracks[mtt].name)} ▾</button><button class="rb" data-a="edit">Bearbeiten</button><button class="rb" data-a="clip">Als Clip …</button><button class="rb" data-a="clear"${n ? '' : ' disabled'}>Melodie leeren</button></div>` +
       `<h4>Song</h4><div class="plist"><button class="rb" data-a="kette">Kette aus Szenen …</button><button class="rb" data-a="del"${S.song ? '' : ' disabled'}>Song löschen</button></div>`;
     guardTouch(p);
-    onTap(p, b => { const a = b.dataset.a; if (a === 'kette') { openKette(anchor); return; } closePop(); if (a === 'edit') openMelodyRoll(); else if (a === 'clip') openMelodyRoll(true); else if (a === 'clear') songClearMelody(); else if (a === 'del') songDelete(); }, 'button[data-a]');
+    onTap(p, b => { const a = b.dataset.a; if (a === 'kette') { openKette(anchor); return; } if (a === 'mt') { openMelTrackPop(anchor); return; } closePop(); if (a === 'edit') openMelodyRoll(); else if (a === 'clip') openMelodyRoll(true); else if (a === 'clear') songClearMelody(); else if (a === 'del') songDelete(); }, 'button[data-a]');
   }, {name: 'melmenu'});
 }
 // the chain editor: [+ Szene n] appends that scene for 4 bars; a tap on a link cycles its length 1 → 2 → 4 → 8 → 16;
@@ -18183,7 +18297,9 @@ function openKette(anchor) {
     p.classList.add('kette');
     const paint = () => {
       const total = KETTE.chain.reduce((a, x) => a + x.bars, 0);
-      p.innerHTML = '<h4>Kette – Szenen nacheinander</h4>' +
+      // V2e (Xander 24.10. b): the song's parts are pickable here too, also while the song is still empty (they go to the end)
+      const pl = (S.parts || []).map((x, k) => (x ? `<button class="rb kpart" data-pt="${k}"><i style="background:${partColorVar(x.color)}"></i>${esc(partShort(x, 8))}</button>` : '')).join('');
+      p.innerHTML = (pl ? '<h4>Teil ans Song-Ende</h4><div class="kadd kparts">' + pl + '</div>' : '') + '<h4>Kette – Szenen nacheinander</h4>' +
         '<div class="kadd">' + Array.from({length: NS()}, (_, s) => s).map(s => `<button class="rb" data-add="${s}"${has(s) ? '' : ' disabled'}>+ ${s + 1}</button>`).join('') + '</div>' +
         '<div class="klist">' + (KETTE.chain.length ? KETTE.chain.map((x, k) => `<button class="rb kel" data-k="${k}" aria-label="Szene ${x.scene + 1}, ${x.bars} Takte – antippen ändert die Länge"><b>${x.scene + 1}</b>×${x.bars}</button>`).join('') : '<span class="small">leer – oben eine Szene antippen</span>') + '</div>' +
         `<div class="small">${total} ${total === 1 ? 'Takt' : 'Takte'} · Glied antippen = Länge 1 → 2 → 4 → 8 → 16 · ersetzt den Song (rückgängig)</div>` +
@@ -18191,6 +18307,7 @@ function openKette(anchor) {
     };
     paint(); guardTouch(p);
     onTap(p, b => {
+      if (b.dataset.pt != null) { closePop(); const at = S.song ? S.song.bars : 0; placeAt('P' + (+b.dataset.pt + 1), at); svButtons(); return; }
       if (b.dataset.add != null) { if (KETTE.chain.length < 32) KETTE.chain.push({scene: +b.dataset.add, bars: 4}); }
       else if (b.dataset.k != null) { const x = KETTE.chain[+b.dataset.k], L = [1, 2, 4, 8, 16]; if (x) x.bars = L[(L.indexOf(x.bars) + 1) % L.length]; }
       else if (b.dataset.a === 'del') KETTE.chain.pop();
@@ -18215,6 +18332,12 @@ function svBindGestures(w) {
     if (gr && p.y < Math.max(34, SV.rulerH + 4)) { const da = Math.abs(p.x - gr.a), db = Math.abs(p.x - gr.b); if (Math.min(da, db) <= 18) g.grip = da <= db ? 'a' : 'b'; }
     SV.gOn = true;
     if (g.chip != null) { const me = g; g.lp = setTimeout(() => { if (g === me && !me.mode) { me.mode = 'lp'; songCarrierDelete(me.chip); folEdit('song'); } }, 450); }
+    // V2e (6.2): holding a mark 450 ms lifts it (haptic „pop“, white frame); released without moving → the Marken-Blatt
+    // (V2e′ adds dragging = move / copy over ⧉)
+    else if (!g.grip && !SV.copy && p.y < SV.rulerH && S.song) {
+      const m = svMarkAt(Math.floor((p.x + SV.x) / SV.cellW));
+      if (m && !svMarkOpen(m)) { const me = g; g.mk = m.id; g.lp = setTimeout(() => { if (g === me && !me.mode) { me.mode = 'lift'; SV.mark = m.id; haptic('pop'); UI.dirty.song = true; } }, 450); }
+    }
     gestBegin(e.pointerId, () => { if (g && g.id === e.pointerId) { clearTimeout(g.lp); g = null; SV.gOn = false; } });
   });
   w.addEventListener('pointermove', e => {
@@ -18228,6 +18351,7 @@ function svBindGestures(w) {
       if (nl.a !== l.a || nl.b !== l.b || !l.on) { song.loop = normLoop(nl, song.bars); haptic('tick'); UI.dirty.song = true; svButtons(); lcdOrToast('Schleife ' + loopLabel(song)); }
       return;
     }
+    if (g.mode === 'lift') { if (Math.abs(dx) > 8 || Math.abs(dy) > 8) g.moved = true; return; }
     if (!g.mode && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) { g.mode = Math.abs(dx) >= Math.abs(dy) ? 'scroll' : 'v'; clearTimeout(g.lp); if (g.mode === 'scroll') folHand('song'); }
     if (g.mode === 'scroll') {
       const t = performance.now(), ddx = e.clientX - g.lastX, dt = Math.max(1, t - g.lastT);
@@ -18239,7 +18363,9 @@ function svBindGestures(w) {
     if (!g || e.pointerId !== g.id) return;
     const G = g; g = null; SV.gOn = false; clearTimeout(G.lp);
     if (GEST.has(e.pointerId)) gestEnd(e.pointerId);
+    if (G.mode === 'lift' && (e.type !== 'pointerup' || G.moved)) { if (!(UI.pop && UI.pop.name === 'mark')) SV.mark = null; UI.dirty.song = true; return; }
     if (e.type !== 'pointerup') return;
+    if (G.mode === 'lift') { openMarkSheet(G.mk); return; }
     if (G.mode === 'grip') { if (G.before && songSnapshot() !== G.before) { pushSongUndo(G.before, 'Schleife ' + loopLabel(S.song)); songChanged(); folEdit('song'); } return; }
     if (G.mode === 'scroll') { SV.lastUser = performance.now(); svMomentum(); return; }
     if (G.mode || performance.now() - G.t0 > 350) return;             // moved, or held: never an edit
@@ -18279,11 +18405,385 @@ function svChipAt(x, y) {
 }
 function svTap(x, y) {
   const song = S.song, row = svRowAt(y), bar = Math.floor((x + SV.x) / SV.cellW);
-  if (row === -1) { svRulerTap(bar); return; }       // V0c N7-R7: the ruler selects (yellow) and sets the Positionsmarke, never jumps
+  // V2e: ⧉ Kopie waits for a bar line (the nearest one, anywhere over the canvas)
+  if (SV.copy) {
+    const id = SV.copy; SV.copy = null; SV.mark = null; svHintFree();
+    if (svRecBusy()) { UI.dirty.song = true; return; }
+    const n = clamp(Math.round((x + SV.x) / SV.cellW), 0, song ? song.bars : 0), m = song && song.marks.find(z => z.id === id);
+    if (m && n > m.a && n < m.a + m.len) { lcdOrToast('Nicht in die Marke selbst – Kopie abgebrochen'); UI.dirty.song = true; return; }
+    if (m && markAction(id, 'copy', n)) { svShiftAnim(n, m.len); toast(markLabel(m) + ' kopiert → Takt ' + (n + 1), songUndoAct()); svButtons(); }
+    UI.dirty.song = true; return;
+  }
+  // the Marken-Blatt lets the song through: a tap anywhere but into the chosen mark only closes it (never edits underneath)
+  if (UI.pop && UI.pop.name === 'mark') { const m = row === -1 ? svMarkAt(bar) : null; if (!(m && !svMarkOpen(m))) { closePop(); return; } }   // another mark: its sheet
+  if (row === -1) { svRulerTapX(bar); return; }      // V0c N7-R7 + V2e marks: the ruler selects (yellow) and sets the Positionsmarke, never jumps
   if (!song) { toast('Noch kein Song – erst ● SONG'); return; }
   if (row < svChordRow()) { const t = SV.rows[row]; if (t < 0 || bar > song.bars) return; const r = songCycle(t, bar); folEdit('song'); lcdOrToast(S.tracks[t].name + ' · Takt ' + (bar + 1) + ': ' + (r >= 0 ? 'Clip ' + (r + 1) : 'stopp')); return; }
   if (row === svChordRow()) { if (!song.bars || bar >= song.bars) return; const k = svChipAt(x, y); openChordPick(k != null ? {k} : {bar}); return; }   // N7-R10
   if (row === svMelRow()) openMelodyRoll();
+}
+/* =====================================================================================================================
+   V2e (Nachtrag 2 B.1 Nr. 4/5/9, B.4; song-delta 6.1–6.5, 8.1, 12.2, 13 N7S-33 … N7S-40): die Song-Ansicht ohne neue Zeile.
+   Teil-Marken als gelbe Bänder in der Taktleiste (Name statt Nummern), Tipp → weißer Rand + Marken-Blatt, zweiter Tipp → Takte
+   in der Marke; Bereich-Leiste statt Träger-Leiste bei gelber Auswahl; Ersetzen/Einfügen-Blatt beim Einsetzen eines Teils;
+   Akkord in einer Marke + [Für alle „Strophe“]; Etikett = Spur. View state (no undo, HIST-volatile like songSel): SV.mark (the
+   chosen mark), SV.pv (the preview of a part about to be placed), SV.copy (⧉ Kopie: waits for a bar line)
+   ===================================================================================================================== */
+const svMarkAt = bar => { const s = S.song; if (!s) return null; for (const m of s.marks) if (bar >= m.a && bar < m.a + m.len) return m; return null; };
+// a mark is „open“ while the yellow selection lies inside it: it shows its bar numbers, the name moves to the left as short form
+const svMarkOpen = m => !!(m && SV.sel && SV.sel.a >= m.a && SV.sel.b < m.a + m.len);
+function svPartCol(c) {
+  const k = c === 'amber' ? '--amber' : '--' + c, cache = SV.pcol || (SV.pcol = {});
+  if (!cache[k]) cache[k] = getComputedStyle(document.documentElement).getPropertyValue(k).trim() || '#ffb22e';
+  return cache[k];
+}
+// Teil′ of every mark, computed once per song/parts change (markDev cuts the song; never per frame)
+function svMarkDevs() {
+  const v = (UI.songVer | 0) + ':' + (UI.partsVer | 0), c = SV.devC;
+  if (c && c.v === v) return c.m;
+  const m = {}; if (S.song) for (const x of S.song.marks) { try { m[x.id] = markDev(S.song, x); } catch (e) { m[x.id] = false; } }
+  SV.devC = {v, m}; return m;
+}
+// the marks of the ruler (6.1): a chip from x(a)+2 to x(a+len)−2, ruler − 4 high, radius 4, amber with the name (#111, bold,
+// left +6), a 6-px dot in the part colour from 60 px on, „′“ for Teil′; a 1-bar mark shows the short form; the running mark
+// „3/4“ at the right; the chosen mark a white 2-px frame and the rows below amber 7 %. An open mark: a lighter band, its
+// numbers stay, the short name at its left edge
+function svDrawMarks(g, song, X, W, H, ru, cur) {
+  SV.markGeo = [];
+  const devs = svMarkDevs(), cy = 2, chh = ru - 4, fs = ru < 20 ? 9 : 10, nf = SV.nf || (SV.nf = getComputedStyle(document.body).getPropertyValue('--font-num') || 'monospace');
+  g.save(); g.textBaseline = 'middle'; g.textAlign = 'left';
+  for (const m of song.marks) {
+    const x0 = X(m.a) + 2, x1 = X(m.a + m.len) - 2; if (x1 < 0 || x0 > W) continue;
+    const name = markLabel(m).toUpperCase() + (devs[m.id] ? '′' : ''), short = partShortForm(markLabel(m)).toUpperCase() + (devs[m.id] ? '′' : ''), open = svMarkOpen(m), w = x1 - x0;
+    const col = m.part && m.part[0] === 'P' && S.parts && S.parts[+m.part.slice(1) - 1] ? svPartCol(S.parts[+m.part.slice(1) - 1].color) : '#8b919c';
+    let label = name;
+    g.beginPath(); if (g.roundRect) g.roundRect(x0, cy, w, chh, 4); else g.rect(x0, cy, w, chh);
+    if (open) { g.fillStyle = 'rgba(255,178,46,.16)'; g.fill(); g.strokeStyle = 'rgba(255,178,46,.75)'; g.lineWidth = 1; g.stroke(); label = short; }
+    else {
+      g.fillStyle = '#ffb22e'; g.fill();
+      g.font = '700 ' + fs + 'px system-ui, -apple-system, "Segoe UI", sans-serif';
+      const dot = w >= 60, tx = x0 + 6 + (dot ? 10 : 0), room = x1 - 4 - tx;
+      if (g.measureText(label).width > room || m.len === 1) label = short;
+      // the running mark: „3/4“ at the right when there is room
+      let pos = '';
+      if (cur >= m.a && cur < m.a + m.len && m.len > 1) { pos = (cur - m.a + 1) + '/' + m.len; if (g.measureText(label).width + g.measureText(pos).width + 10 > room) pos = ''; }
+      if (dot) { g.fillStyle = col; g.beginPath(); g.arc(x0 + 9, cy + chh / 2, 3, 0, Math.PI * 2); g.fill(); if (col === '#ffb22e' || /ffb22e/i.test(col)) { g.strokeStyle = '#111'; g.lineWidth = 1; g.stroke(); } }
+      g.save(); g.beginPath(); g.rect(x0, 0, w, ru); g.clip();
+      g.fillStyle = '#111'; g.fillText(label, tx, cy + chh / 2 + .5);
+      if (pos) { g.textAlign = 'right'; g.font = '600 ' + (fs - 1) + 'px ' + nf; g.fillText(pos, x1 - 4, cy + chh / 2 + .5); g.textAlign = 'left'; }
+      g.restore();
+    }
+    if (open) { g.font = '700 8px system-ui, -apple-system, sans-serif'; const inFirst = SV.sel && SV.sel.a === m.a; g.fillStyle = inFirst ? '#111' : '#ffcf7a'; g.fillText(short, x0 + 3, cy + chh / 2 + .5); }
+    if (SV.mark === m.id) {
+      g.strokeStyle = '#f2f4f8'; g.lineWidth = 2; g.beginPath(); if (g.roundRect) g.roundRect(x0 + 1, cy + 1, w - 2, chh - 2, 3); else g.rect(x0 + 1, cy + 1, w - 2, chh - 2); g.stroke();
+      g.fillStyle = 'rgba(255,178,46,.07)'; g.fillRect(X(m.a), ru, X(m.a + m.len) - X(m.a), H - ru);
+    }
+    SV.markGeo.push({id: m.id, x0: Math.round(x0 * 10) / 10, x1: Math.round(x1 * 10) / 10, label});
+  }
+  // the preview of a part about to be placed (Ersetzen/Einfügen-Blatt; V2e′ draws the same while dragging): the amber 2-px
+  // insertion line at the bar line and the future mark dashed
+  const pv = SV.pv;
+  if (pv) {
+    const xa = X(pv.a), xb = X(pv.a + pv.len);
+    g.fillStyle = '#ffb22e'; g.fillRect(xa - 1, 0, 2, H);
+    g.setLineDash([4, 3]); g.strokeStyle = '#ffb22e'; g.lineWidth = 1.5; g.strokeRect(xa + 2.5, cy + .5, xb - xa - 5, chh - 1); g.setLineDash([]);
+    g.fillStyle = 'rgba(255,178,46,.10)'; g.fillRect(xa, ru, xb - xa, H - ru);
+    g.font = '700 ' + fs + 'px system-ui, -apple-system, sans-serif'; g.fillStyle = '#ffcf7a';
+    g.save(); g.beginPath(); g.rect(xa + 2, 0, xb - xa - 4, ru); g.clip(); g.fillText(pv.name.toUpperCase() + ' · ' + pv.len + ' T', xa + 7, cy + chh / 2 + .5); g.restore();
+  }
+  g.restore();
+}
+// API svLayoutInfo() (song-delta 12.2): the song view's geometry as drawn last (canvas px, SV.x = scroll)
+function svLayoutInfo() {
+  if (UI.songView && SV.w && (UI.dirty.song || !SV.markGeo)) svDraw(true);
+  const tag = i => (i < 0 ? '' : trackTag(i));
+  const rows = ['TAKT'].concat(SV.rows.map(tag), ['AKKORDE', 'MELODIE']);
+  const r = SV.cv ? SV.cv.getBoundingClientRect() : null;
+  return {rulerH: SV.rulerH, rowH: +SV.rowH.toFixed(3), cellW: SV.cellW, x0: SV.x, rows, bank: SV.pages ? Math.min(trackBankOf(), SV.pages.length - 1) : 0, banks: SV.pages ? SV.pages.length : 1,
+    marks: (SV.markGeo || []).map(m => Object.assign({}, m)), sel: SV.sel ? Object.assign({}, SV.sel) : null, pos: songStartBar(), mark: SV.mark || null,
+    canvas: r ? {x: +r.left.toFixed(1), y: +r.top.toFixed(1), w: +r.width.toFixed(1), h: +r.height.toFixed(1)} : null};
+}
+// the ruler tap (N7-R7 + 6.2): a mark → chosen + Marken-Blatt; a second tap into the chosen mark → that bar is selected (the mark
+// opens, numbers show); inside an open mark and outside marks: the V0c number tap; behind the end: „Teil einsetzen bei Takt n“
+function svRulerTapX(bar) {
+  const song = S.song;
+  if (!song || bar >= song.bars) { svMarkSheetClose(); if (!svRecBusy()) openPlacePick(null, Math.max(0, bar)); return; }
+  const m = svMarkAt(bar);
+  if (m && !svMarkOpen(m)) {
+    if (SV.mark === m.id) {
+      svMarkSheetClose(); SV.mark = null; SV.sel = {a: bar, b: bar}; SV.pos = bar;
+      haptic('tick'); folEdit('song'); lcdOrToast('Takt ' + (bar + 1) + ' in ' + markLabel(m) + ' gewählt'); UI.dirty.song = true; svButtons(); return;
+    }
+    SV.sel = null; openMarkSheet(m.id); return;
+  }
+  svMarkSheetClose(); SV.mark = null; svRulerTap(bar);
+}
+function svMarkSheetClose() { if (UI.pop && UI.pop.name === 'mark') closePop(); }
+// while ● SONG records, the song's arrangement is not edited from the song view (the take writes it at its end)
+function svRecBusy() { if (!R.songRec) return false; lcdOrToast('Erst die Aufnahme beenden (●)'); haptic('tick'); return true; }
+// ▶ Ab hier: stopped → the song starts there; playing → at the next bar line the song jumps there (wirksam am nächsten Taktstrich)
+function songPlayFrom(bar) {
+  const song = S.song; if (!song || !song.bars || svRecBusy()) return false;
+  bar = clamp(bar | 0, 0, song.bars - 1); SV.pos = bar;
+  const sp = R.songPlay;
+  if (sp && R.playing && !R.songRec) {
+    const nb = nextBarFromAudible();
+    sp.jump = {at: nb, bar};
+    if (nb < R.schedBeat - 1e-9) { const j = sp.jump; sp.jump = null; songJumpApply(j); }
+    haptic('tick'); UI.dirty.song = true; lcdOrToast('▶ ab Takt ' + (bar + 1) + ' am nächsten Taktstrich'); return true;
+  }
+  const ok = songPlayStart(bar); svButtons(); return ok;
+}
+
+/* ---------- Marken-Blatt (6.3, K2-25, Mockups P-7/L-3): P1/P2 32 + 4 × 44 = 208 px, P3 252 px (Zeile 3 bricht um), L 28 + 2 × 44.
+   The song stays usable above it (the layer lets taps through): a second tap into the mark selects a bar there ---------- */
+function openMarkSheet(id) {
+  const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || svRecBusy()) return;
+  SV.copy = null; svHintFree(); folEdit('song'); haptic('tick'); UI.dirty.song = true;
+  openPop(null, p => {
+    p.classList.add('msheet'); guardTouch(p);
+    const paint = () => {
+      const m = S.song && S.song.marks.find(x => x.id === id); if (!m) { closePop(); return; }
+      const nm = markLabel(m), isP = !!(m.part && m.part[0] === 'P' && S.parts[+m.part.slice(1) - 1]), ms = S.song.marks.slice().sort((a, b) => a.a - b.a), k = ms.indexOf(m);
+      const same = isP ? S.song.marks.filter(x => x.part === m.part).length : 0, narrow = window.innerWidth < 360, land = isLand();
+      let key = ''; try { key = keyName(songKeyAtBar(m.a)); } catch (e) {}
+      const B = (a, html, o) => `<button class="rb ms-b${o && o.cls ? ' ' + o.cls : ''}" data-a="${a}"${o && o.dis ? ' disabled' : ''}${o && o.aria ? ' aria-label="' + esc(o.aria) + '"' : ''}>${html}</button>`;
+      const pcol = isP ? partColorVar(S.parts[+m.part.slice(1) - 1].color) : 'var(--text-dim)';
+      p.innerHTML = `<div class="ms-h"><b>${esc(nm.toUpperCase())}</b><span>· Takt ${m.a + 1}${m.len > 1 ? '–' + (m.a + m.len) : ''}${key ? ' · ' + esc(key) : ''}</span><button class="rb ms-x" data-a="x" aria-label="Schließen">✕</button></div>` +
+        `<div class="ms-a"><div class="ms-r">` +
+          B('play', '▶ Ab hier') + B('rep2', '×2', {aria: nm + ' zweimal'}) + B('rep4', '×4', {aria: nm + ' viermal'}) +
+          B('swapL', '◀', {dis: k <= 0, aria: 'Mit dem Teil davor tauschen'}) + B('swapR', '▶', {dis: k < 0 || k >= ms.length - 1, aria: 'Mit dem Teil danach tauschen', cls: 'ms-sw'}) +
+        `</div><div class="ms-r">` +
+          B('copy', narrow ? '⧉ Kopie' : '⧉ Kopie …', {aria: 'Kopie – danach den Ablage-Taktstrich antippen'}) + B('repl', narrow || land ? '⇄ Ersetzen ▾' : '⇄ Ersetzen durch ▾') +
+          B('del', narrow ? '✕' : '✕ Löschen', {aria: 'Takte löschen, der Rest rückt'}) + B('unname', narrow ? 'Name weg' : 'Nur Name weg') +
+        `</div></div><div class="ms-bb"><div class="ms-r ms-r3">` +
+          B('name', '✎ Name') + B('color', `Farbe <i style="background:${pcol}"></i>`, {dis: !isP}) +
+          B('tpl', 'Teil-Vorlage ›', {dis: !isP}) + (same >= 2 ? B('all', land || narrow ? 'Auf alle übertragen' : `Auf alle ${same} „${esc(nm)}“ übertragen`, {cls: 'ms-all'}) : B('all', 'Auf alle übertragen', {dis: true})) +
+        `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + `</div></div>`;
+      for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
+    };
+    paint(); p._paint = paint;
+    onTap(p, b => {
+      const a = b.dataset.a, m = S.song && S.song.marks.find(x => x.id === id); if (!m) { closePop(); return; }
+      const nm = markLabel(m), done = (ok, msg) => { if (ok) { toast(msg, songUndoAct()); svButtons(); } };
+      if (a === 'x') { closePop(); return; }
+      if (a === 'play') { closePop(); songPlayFrom(m.a); return; }
+      if (a === 'rep2' || a === 'rep4') { const n = a === 'rep2' ? 2 : 4; done(markAction(id, 'rep', n), nm + ' ×' + n); paint(); popDock(p); return; }
+      if (a === 'swapL' || a === 'swapR') { done(markAction(id, a), nm + ' getauscht'); paint(); popDock(p); return; }
+      if (a === 'copy') { closePop(); SV.copy = id; SV.mark = id; svHintHold('⧉ ' + nm + ': Ablage-Taktstrich antippen'); UI.dirty.song = true; return; }
+      if (a === 'repl') { openPartList(b, 'Ersetzen durch …', ref => { const ok = markAction(id, 'replaceBy', ref); if (ok) { done(true, nm + ' ersetzt'); } }, m.part); return; }
+      if (a === 'del') { closePop(); done(markAction(id, 'delete'), nm + ' gelöscht · der Rest rückt'); return; }
+      if (a === 'unname') { closePop(); done(markAction(id, 'unname'), 'Name ' + nm + ' weg · der Inhalt bleibt'); return; }
+      if (a === 'name') { openMarkName(b, id); return; }
+      if (a === 'color') { openPartColor(b, +m.part.slice(1) - 1); return; }
+      if (a === 'tpl') { closePop(); openPartSheet(+m.part.slice(1) - 1); return; }
+      if (a === 'all') { closePop(); markAction(id, 'applyAll'); svButtons(); return; }
+      if (a === 'rec') { closePop(); SV.sel = {a: m.a, b: m.a + m.len - 1}; SV.pos = m.a; UI.dirty.song = true; openRecStart(SV.btn && SV.btn.bRec); }
+    }, 'button[data-a]');
+  }, {name: 'mark', onClose: () => { EL.popLayer.classList.remove('pass'); if (!SV.copy) SV.mark = null; UI.dirty.song = true; }});
+  SV.mark = id; EL.popLayer.classList.add('pass');
+  popDock(UI.pop && UI.pop.el);
+}
+// a persistent line in the song view's hint box (⧉ Kopie waits for the bar line); any other tap ends it
+function svHintHold(txt) { const h = SV.hint; if (!h) return; clearTimeout(SV.hintT); h.textContent = txt; h.classList.add('on', 'hold'); }
+function svHintFree() { const h = SV.hint; if (h && h.classList.contains('hold')) { h.classList.remove('on', 'hold'); } }
+// a list of all parts and scenes (Ersetzen durch ▾, Teil einsetzen ▾); cb(ref) with 'P1'…/'S1'…
+function openPartList(anchor, title, cb, cur) {
+  partsEnsure();
+  const parts = S.parts.map((p, k) => (p ? {ref: 'P' + (k + 1), name: p.name, len: partLen(p), col: partColorVar(p.color)} : null)).filter(Boolean);
+  const scenes = []; for (let s = 0; s < NS(); s++) if (S.tracks.some(t => t.clips[s])) { let L = 1; for (const t of S.tracks) if (t.clips[s]) L = Math.max(L, t.clips[s].len || 1); scenes.push({ref: 'S' + (s + 1), name: 'Szene ' + (s + 1), len: L}); }
+  if (!parts.length && !scenes.length) { toast('Noch keine Teile – FANG TEIL beim Spielen oder ＋ in der Teil-Leiste'); return; }
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('plpick');
+    const row = x => `<button class="rb${x.ref === cur ? ' on' : ''}" data-r="${x.ref}">${x.col ? `<i style="background:${x.col}"></i>` : ''}<b>${esc(x.name)}</b><small>${x.len} T</small></button>`;
+    p.innerHTML = `<h4>${esc(title)}</h4>` + (parts.length ? `<div class="plist plp">${parts.map(row).join('')}</div>` : '<p class="small">Noch keine Teile.</p>') +
+      (scenes.length ? `<h4>Szenen</h4><div class="plist plp">${scenes.map(row).join('')}</div>` : '');
+    onTap(p, b => { closePop(); cb(b.dataset.r); }, 'button[data-r]');
+  }, {name: 'partlist'});
+  popDock(UI.pop && UI.pop.el);
+}
+// ✎ Name: nur hier │ Teil überall (Standard überall; 12.3: „überall“ = Undo part, „nur hier“ = song)
+function openMarkName(anchor, id) {
+  const m = S.song && S.song.marks.find(x => x.id === id); if (!m) return;
+  const isP = !!(m.part && m.part[0] === 'P'); let all = isP;
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('mname');
+    p.innerHTML = `<h4>Name</h4><div class="mn-r"><input class="mn-in" type="text" maxlength="12" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(markLabel(m))}" aria-label="Name"><button class="rb mn-ok" data-a="ok" aria-label="Übernehmen">✓</button></div>` +
+      (isP ? `<div class="mn-r">${segHTML('mnAll', [['1', 'Teil überall'], ['0', 'nur hier']], all ? '1' : '0')}</div>` : '') +
+      '<div class="cp-sc mn-sc">' + PART_NAMES.map(n => `<button class="rb cp-c" data-n="${n}">${n}</button>`).join('') + '</div>';
+    bindSegTap(p, 'mnAll', v => { all = v === '1'; });
+    const inp = p.querySelector('.mn-in');
+    const go = v => { v = String(v || '').trim().slice(0, 12); closePop(); if (!v && all) return; const ok = markAction(id, 'rename', {name: v, all}); if (ok) toast(all ? 'Teil heißt jetzt ' + v : 'Name hier: ' + (v || '(Teil)'), {label: 'Rückgängig', fn: () => undo()}); svButtons(); UI.dirty.song = true; };
+    on(inp, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(inp.value); } });
+    inp.addEventListener('pointerdown', e => e.stopPropagation()); inp.addEventListener('touchstart', e => e.stopPropagation(), {passive: true});
+    on(inp, 'focus', () => popDock(p, true)); on(inp, 'blur', () => setTimeout(() => popDock(p), 50));
+    onTap(p, b => { if (b.dataset.n) go(b.dataset.n); else go(inp.value); }, 'button[data-n],button[data-a="ok"]');
+  }, {name: 'markname'});
+  popDock(UI.pop && UI.pop.el);
+}
+// Farbe ●: the part's colour (Undo part; every mark shows it)
+function openPartColor(anchor, i) {
+  const pt = S.parts && S.parts[i]; if (!pt) return;
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('pcol');
+    p.innerHTML = `<h4>Farbe · ${esc(pt.name)}</h4><div class="pc-r">` + PART_COLORS.map(c => `<button class="rb${pt.color === c ? ' on' : ''}" data-c="${c}" aria-label="Farbe ${c}"><i style="background:${partColorVar(c)}"></i></button>`).join('') + '</div>';
+    onTap(p, b => { const c = b.dataset.c; closePop(); partEdit(i, x => { x.color = c; }, 'Farbe ' + pt.name); UI.dirty.song = true; SV.devC = null; }, 'button[data-c]');
+  }, {name: 'partcolor'});
+  popDock(UI.pop && UI.pop.el);
+}
+
+/* ---------- Teil einsetzen (N7-R4, Mockup P-4; Xander 24.10. (a)–(c)): at or behind the song end → append without a question
+   (behind it the bars in between stay empty, „für Eigenes“); on content → [Takte n–m ersetzen] │ [Einfügen] │ [Abbrechen], no
+   choice preset; while the sheet is open the song shows the future mark dashed and the insertion line ---------- */
+function openPlacePick(anchor, bar) {
+  openPartList(anchor, 'Teil einsetzen bei Takt ' + (bar + 1), ref => placeAt(ref, bar));
+}
+function songHasFrom(song, n) {
+  if (!song || n >= song.bars) return false;
+  for (let t = 0; t < song.lanes.length; t++) for (let b = n; b < song.bars; b++) { const o = laneOriginAt(song.lanes[t], b); if (o.slot >= 0) return true; }
+  if (song.carrier.some(c => c.beat >= n * 4 - 1e-6 && c.target)) return true;
+  for (const k in song.mel) if (song.mel[k].notes.some(x => x.t >= n * 4 - .25)) return true;
+  return song.marks.some(m => m.a + m.len > n);
+}
+function placeAt(ref, bar, o) {
+  const r = partRef(ref); if (!r) return null;
+  const song = S.song, ch = refChunk(r), name = r.p ? r.p.name : 'Szene ' + (r.scene + 1);
+  if (!song || bar >= song.bars || !songHasFrom(song, bar)) {
+    const res = placePart(ref, bar, song && bar < song.bars ? 'replace' : 'insert', {gap: true});
+    if (res) { toast(name + ' bei Takt ' + (bar + 1) + ' · ' + ch.len + (ch.len === 1 ? ' Takt' : ' Takte'), songUndoAct()); SV.sel = null; SV.pos = bar; svButtons(); }
+    return res;
+  }
+  openPlaceSheet(ref, bar, o);
+  return 'ask';
+}
+function openPlaceSheet(ref, bar) {
+  const r = partRef(ref); if (!r) return;
+  const ch = refChunk(r), L = ch.len, name = r.p ? r.p.name : 'Szene ' + (r.scene + 1);
+  SV.pv = {a: bar, len: L, name}; UI.dirty.song = true;
+  openPop(null, p => {
+    p.classList.add('plsheet'); guardTouch(p);
+    p.innerHTML = `<div class="ms-h"><b>${esc(name.toUpperCase())}</b><span>(${L} ${L === 1 ? 'Takt' : 'Takte'}) bei Takt ${bar + 1}</span><button class="rb ms-x" data-a="x" aria-label="Schließen">✕</button></div>` +
+      `<button class="rb pl-o" data-a="replace"><b>Takte ${bar + 1}${L > 1 ? '–' + (bar + L) : ''} ersetzen</b><small>was dort ist, wird ersetzt – auch Melodie</small></button>` +
+      `<button class="rb pl-o" data-a="insert"><b>Einfügen</b><small>ab Takt ${bar + 1} rückt alles ${L} ${L === 1 ? 'Takt' : 'Takte'} nach hinten</small></button>` +
+      `<button class="rb pl-c" data-a="x">Abbrechen</button>`;
+    onTap(p, b => {
+      const a = b.dataset.a; closePop(); if (a === 'x') return;
+      const res = placePart(ref, bar, a);
+      if (res) { toast(a === 'insert' ? name + ' eingefügt · ab Takt ' + (bar + L + 1) + ' geht es weiter' : name + ' ersetzt Takte ' + (bar + 1) + (L > 1 ? '–' + (bar + L) : ''), songUndoAct()); SV.sel = null; SV.pos = bar; svShiftAnim(a === 'insert' ? bar : -1, L); svButtons(); }
+    }, 'button[data-a]');
+  }, {name: 'place', onClose: () => { SV.pv = null; UI.dirty.song = true; }});
+  popDock(UI.pop && UI.pop.el);
+}
+// Xander 24.10. (c): „alles rechts rückt sichtbar nach“ — after an insert the content from bar n slides in from where it was
+// (220 ms, ease-out); only the drawing moves, no control (M-ANSICHT)
+function svShiftAnim(n, L) {
+  if (n < 0 || !UI.songView) { SV.shift = null; return; }
+  SV.shift = {n: n + L, dx: L * SV.cellW, t0: performance.now(), dur: 220}; UI.dirty.song = true;
+}
+const svShiftNow = () => { const s = SV.shift; if (!s) return 0; const k = (performance.now() - s.t0) / s.dur; if (k >= 1) { SV.shift = null; return 0; } UI.dirty.song = true; return -s.dx * Math.pow(1 - k, 3); };
+
+/* ---------- Bereich-Leiste (6.3, K2-25): replaces the Träger bar in the same height (P 56 px) while bars are selected (outside a
+   mark or inside an open mark); in L it replaces the Träger panel in the side field ---------- */
+function buildRangeBar() {
+  const side = document.getElementById('side'); if (!side || document.getElementById('rangeBar')) return;
+  const rb = el('div', '', ''); rb.id = 'rangeBar'; rb.setAttribute('role', 'toolbar'); rb.setAttribute('aria-label', 'Gewählte Takte');
+  const B = (a, d, t, ts, aria) => `<button class="rb rg-b" data-a="${a}" aria-label="${esc(aria)}"><span class="d">${d}</span><span class="t" data-l="${esc(t)}" data-s="${esc(ts)}">${esc(t)}</span></button>`;
+  rb.innerHTML = B('play', '▶', 'Ab hier', 'Ab hier', 'Ab hier abspielen') + B('rec', '●', 'Aufnehmen …', 'Aufn.', 'Hier aufnehmen …') + B('part', '❖', 'Als Teil …', 'Teil', 'Als Teil …') +
+    B('copy', '⧉', 'Kopie →', 'Kopie', 'Kopie dahinter') + B('del', '✕', 'Takte löschen', 'Löschen', 'Takte löschen, der Rest rückt') + B('more', '⋯', 'Mehr', 'Mehr', 'Mehr: Leeren, Teil einsetzen, Akkorde quantisieren, Schleife');
+  side.insertBefore(rb, document.getElementById('carrier'));
+  guardTouch(rb);
+  onTap(rb, b => rangeAct(b.dataset.a, b), 'button[data-a]');
+  SV.rbar = rb;
+}
+function rangeBarSync() {
+  const rb = SV.rbar; if (!rb) return;
+  const on = !!(UI.songView && SV.sel && S.song && S.song.bars && !R.songRec);
+  if (EL.app.classList.contains('rangebar') !== on) { EL.app.classList.toggle('rangebar', on); if (on) requestAnimationFrame(rangeBarFit); }
+}
+// a label that does not fit (scrollWidth): the short text (K2-25)
+function rangeBarFit() {
+  const rb = SV.rbar; if (!rb) return;
+  for (const t of rb.querySelectorAll('.t')) { t.textContent = t.dataset.l; if (t.scrollWidth > t.clientWidth + .5) t.textContent = t.dataset.s; }
+}
+function rangeAct(a, btn) {
+  const song = S.song, sel = SV.sel; if (!song || !sel) return;
+  const A = sel.a, Bb = Math.min(sel.b, song.bars - 1), n = Bb - A + 1, rng = n === 1 ? 'Takt ' + (A + 1) : 'Takte ' + (A + 1) + '–' + (Bb + 1);
+  if (a === 'play') { songPlayFrom(A); return; }
+  if (a === 'rec') { openRecStart(btn); return; }
+  if (a === 'part') { openAsPart(btn, A, Bb); return; }
+  if (a === 'copy') { if (songRange('copy', A, Bb)) { SV.sel = {a: Bb + 1, b: Bb + n}; SV.pos = Bb + 1; svShiftAnim(Bb + 1, n); toast(rng + ' kopiert → ' + (n === 1 ? 'Takt ' + (Bb + 2) : 'Takte ' + (Bb + 2) + '–' + (Bb + 1 + n)), songUndoAct()); svButtons(); } return; }
+  if (a === 'del') { if (songRange('delete', A, Bb)) { SV.sel = null; SV.pos = Math.min(A, Math.max(0, S.song.bars - 1)); toast(rng + ' gelöscht · der Rest rückt', songUndoAct()); svButtons(); } return; }
+  if (a === 'more') openRangeMore(btn);
+}
+function openRangeMore(anchor) {
+  const sel = SV.sel; if (!sel || !S.song) return;
+  const A = sel.a, Bb = Math.min(sel.b, S.song.bars - 1), narrow = window.innerWidth < 360;
+  openPop(anchor, p => {
+    guardTouch(p);
+    p.innerHTML = `<h4>Takt ${A + 1}${Bb > A ? '–' + (Bb + 1) : ''}</h4><div class="plist">` +
+      (narrow ? '<button class="rb" data-a="part">❖ Als Teil …</button>' : '') +
+      '<button class="rb" data-a="clear">○ Leeren</button><button class="rb" data-a="ins">＋ Teil einsetzen ▾</button>' +
+      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button></div>';
+    onTap(p, b => {
+      const a = b.dataset.a; closePop();
+      if (a === 'part') openAsPart(anchor, A, Bb);
+      else if (a === 'clear') { if (songRange('clear', A, Bb)) toast('Takt ' + (A + 1) + (Bb > A ? '–' + (Bb + 1) : '') + ' geleert · die Länge bleibt', songUndoAct()); }
+      else if (a === 'ins') openPlacePick(anchor, A);
+      else if (a === 'quant') openQuantChords(anchor);
+      else if (a === 'loop') { songLoopRange({on: true, a: A, b: Bb + 1}); toast('Schleife ' + loopLabel(S.song)); }
+      svButtons();
+    }, 'button[data-a]');
+  }, {name: 'rangemore'});
+}
+// „Als Teil …“: the selected bars (≤ 16) become a part template + mark; names after N7-R2 (one undo group [part, song])
+function openAsPart(anchor, A, Bb) {
+  if (Bb - A + 1 > 16) { toast('Ein Teil hat höchstens 16 Takte'); return; }
+  const sug = partSuggest();
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('mname');
+    p.innerHTML = `<h4>Als Teil · Takt ${A + 1}${Bb > A ? '–' + (Bb + 1) : ''}</h4><div class="cp-sc mn-sc">` + PART_NAMES.map(n => `<button class="rb cp-c${partUniq(n, -1).toLowerCase() === sug.toLowerCase() ? ' on' : ''}" data-n="${n}">${n}</button>`).join('') + '</div>' +
+      `<div class="mn-r"><input class="mn-in" type="text" maxlength="12" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${esc(sug)}" aria-label="Eigener Name"><button class="rb mn-ok" data-a="ok" aria-label="Übernehmen">✓</button></div>`;
+    const inp = p.querySelector('.mn-in');
+    const go = v => { closePop(); const r = songRange('asPart', A, Bb, {name: String(v || '').trim() || sug}); if (r) { SV.sel = null; toast('Neuer Teil ' + r.name + ' · Takt ' + (A + 1) + (Bb > A ? '–' + (Bb + 1) : ''), {label: 'Rückgängig', fn: () => undo()}); } svButtons(); UI.dirty.song = true; };
+    on(inp, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(inp.value); } });
+    inp.addEventListener('pointerdown', e => e.stopPropagation()); inp.addEventListener('touchstart', e => e.stopPropagation(), {passive: true});
+    on(inp, 'focus', () => popDock(p, true)); on(inp, 'blur', () => setTimeout(() => popDock(p), 50));
+    onTap(p, b => { if (b.dataset.n) go(b.dataset.n); else go(inp.value); }, 'button[data-n],button[data-a="ok"]');
+  }, {name: 'aspart'});
+  popDock(UI.pop && UI.pop.el);
+}
+
+/* ---------- Akkord in einer Marke (N7-R10, N7S-38): the change counts only here; [Für alle „Strophe“] puts it at the same
+   relative place of every mark of the part and into the template (one undo group [part, song]) ---------- */
+function chordMarkToast(beat, exact, tg) {
+  const song = S.song, bar = Math.floor(beat / 4 + 1e-9), m = svMarkAt(bar);
+  const nm = tg ? prettyTarget(tg) : 'ORIGINAL', sb = +(beat - bar * 4 + 1).toFixed(2), msg = 'Takt ' + (bar + 1) + (sb !== 1 ? ', Schlag ' + String(sb).replace('.', ',') : '') + ': ' + nm;
+  if (!song || !m || !m.part || m.part[0] !== 'P' || !S.parts[+m.part.slice(1) - 1]) return false;
+  const pn = markLabel(m);
+  toast(msg, [{label: 'Für alle „' + pn + '“', fn: () => markChordAll(m.id, beat - m.a * 4, tg, exact)}, songUndoAct()]);
+  return true;
+}
+function markChordAll(id, rb, tg, exact) {
+  const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || !m0.part || m0.part[0] !== 'P') return false;
+  const i = +m0.part.slice(1) - 1, p = S.parts[i]; if (!p) return false;
+  const bp = partSnap(), bs = songSnapshot(), t = tg ? normTarget(tg) : null;
+  const cut = (list, at, key) => (exact ? list.filter(c => Math.abs(c[key] - at) > 1e-6) : list.filter(c => !(c[key] >= Math.floor(at / 4 + 1e-9) * 4 - 1e-6 && c[key] < Math.floor(at / 4 + 1e-9) * 4 + 4 - 1e-6)));
+  let n = 0;
+  for (const m of song.marks) {
+    if (m.part !== m0.part || rb >= m.len * 4 - 1e-9) continue;
+    const beat = m.a * 4 + rb; song.carrier = cut(song.carrier, beat, 'beat');
+    carrierPut(song, {beat, target: t ? carrierCopy(t) : null}); n++;
+  }
+  const L = partLen(p);
+  let row = p.chords ? JSON.parse(JSON.stringify(p.chords)) : {len: L, ch: [{b: 0, tg: null}]};
+  if (row.len < L) { const ch = []; for (let k = 0; k * row.len < L; k++) for (const c of row.ch) { const b = c.b + k * row.len * 4; if (b < L * 4 - 1e-9) ch.push({b, tg: c.tg}); } row = {len: L, ch}; }
+  if (rb < row.len * 4 - 1e-9) { row.ch = cut(row.ch, rb, 'b'); row.ch.push({b: rb, tg: t ? carrierCopy(t) : null}); row.ch.sort((a, b) => a.b - b.b); }
+  p.chords = normChordRow(row);
+  songTidy(song);
+  undoPush({kind: 'group', label: (t ? prettyTarget(t) : 'ORIGINAL') + ' für alle ' + p.name, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
+  partsChanged(); songChanged(); songResync(true); SV.devC = null;
+  toast((t ? prettyTarget(t) : 'ORIGINAL') + ' in allen ' + n + ' „' + p.name + '“ und in der Vorlage', {label: 'Rückgängig', fn: () => undo()});
+  return n;
 }
 // a short status of the last cell tap (the LCD-like hint line of the song view)
 function lcdOrToast(txt) { const h = SV.hint; if (!h) return; h.textContent = txt; h.classList.add('on'); clearTimeout(SV.hintT); SV.hintT = setTimeout(() => h.classList.remove('on'), 1600); }
@@ -18316,7 +18816,9 @@ function svDraw(force, sbIn) {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, W, H);
   const bars = svBars(), b0 = Math.max(0, Math.floor(SV.x / cw)), b1 = Math.min(bars + 1, Math.ceil((SV.x + W) / cw) + 1);
-  const X = b => b * cw - SV.x;
+  // V2e (Xander 24.10. c): after an insert the content from the insert point slides in from where it was (only the drawing)
+  const shN = SV.shift ? SV.shift.n : Infinity, shX = svShiftNow();
+  const X = b => b * cw - SV.x + (b >= shN ? shX : 0), XB = beat => beat / 4 * cw - SV.x + (beat >= shN * 4 - 1e-6 ? shX : 0);
   g.font = '600 10px ' + (getComputedStyle(document.body).getPropertyValue('--font-num') || 'monospace');
   g.textBaseline = 'middle'; g.textAlign = 'center';
   // ruler + the current bar tinted
@@ -18328,12 +18830,20 @@ function svDraw(force, sbIn) {
   for (let b = b0; b < b1; b++) {
     const x = X(b);
     if (b === cur) { g.fillStyle = 'rgba(53,208,127,.10)'; g.fillRect(x, 0, cw, H); }
-    const inSel = sel && b >= sel.a && b <= sel.b && b < bars;
+    // V2e (6.1): no numbers inside a (closed) mark — its name stands there; before, behind and between them the numbers stay
+    const mk = b < bars ? svMarkAt(b) : null, hide = !!(mk && !svMarkOpen(mk)), first = !!(mk && !hide && b === mk.a);
+    const inSel = sel && b >= sel.a && b <= sel.b && b < bars && !hide;
     if (inSel) { g.fillStyle = '#ffb22e'; g.beginPath(); if (g.roundRect) g.roundRect(x + (cw - 30) / 2, cy, 30, ch, 3); else g.rect(x + (cw - 30) / 2, cy, 30, ch); g.fill(); }
-    g.fillStyle = inSel ? '#111' : b < bars ? '#8b919c' : '#3a3e47';
-    g.fillText(b < bars ? String(b + 1) : '+', x + cw / 2, cy + ch / 2);
+    if (!hide) {
+      g.fillStyle = inSel ? '#111' : b < bars ? '#8b919c' : '#3a3e47';
+      if (first) { g.textAlign = 'right'; g.fillText(String(b + 1), x + cw - 4, cy + ch / 2); g.textAlign = 'center'; }      // the short name sits left of it
+      else g.fillText(b < bars ? String(b + 1) : '+', x + cw / 2, cy + ch / 2);
+    }
     g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(x, ru, 1, H - ru);
   }
+  // V2e (Xander 24.10. a): behind the end the bar numbers go on, dim — a tap there sets a part at that bar line (bars between stay empty)
+  if (song || !bars) { g.fillStyle = '#30343c'; for (let b = Math.max(b0, bars + 1), e = Math.ceil((SV.x + W) / cw) + 1; b < e && b < bars + 64; b++) g.fillText(String(b + 1), X(b) + cw / 2, cy + ch / 2); }
+  if (song) svDrawMarks(g, song, X, W, H, ru, cur);
   // track lanes: the scene slot per bar (launch bars stronger), – = stopped there
   for (let r = 0; r < SV.rows.length; r++) {
     const i = SV.rows[r], y = ru + r * rh, lane = song && song.lanes[i] ? song.lanes[i] : []; if (i < 0) continue;
@@ -18356,8 +18866,8 @@ function svDraw(force, sbIn) {
     // each other): the later chip keeps its full name, the earlier one shrinks to a sliver and its name is clipped away
     const ord = song.carrier.map((c, k) => k).filter(k => song.carrier[k].beat < bars * 4).sort((a, b) => song.carrier[a].beat - song.carrier[b].beat || a - b);
     ord.forEach((k, j) => {
-      const c = song.carrier[k], x = c.beat / 4 * cw - SV.x; if (x > W) return;
-      const txt = c.target ? songChipName(c) : 'ORIG.', nk = ord[j + 1], xn = nk != null ? song.carrier[nk].beat / 4 * cw - SV.x : Infinity;
+      const c = song.carrier[k], x = XB(c.beat); if (x > W) return;
+      const txt = c.target ? songChipName(c) : 'ORIG.', nk = ord[j + 1], xn = nk != null ? XB(song.carrier[nk].beat) : Infinity;
       const tw = Math.max(1, Math.min(Math.max(18, g.measureText(txt).width + 8), xn - x - 1));
       if (x + tw < 0) return;
       g.fillStyle = c.target ? 'rgba(255,170,40,.18)' : 'rgba(255,255,255,.06)'; g.strokeStyle = c.target ? '#ffaa28' : '#555';
@@ -18374,7 +18884,7 @@ function svDraw(force, sbIn) {
       for (const t of others.concat(ns.length ? [song.melodyTrack] : [])) for (const n of song.mel[t].notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
       const span = Math.max(6, hi - lo);
       const bars = (list, h) => { for (const n of list) {
-        const x = n.t / 4 * cw - SV.x, w = Math.max(2, n.d / 4 * cw); if (x > W || x + w < 0) continue;
+        const x = XB(n.t), w = Math.max(2, n.d / 4 * cw); if (x > W || x + w < 0) continue;
         g.fillRect(x, ym + 3 + (1 - (n.n - lo) / span) * (rh - 9), w, h);
       } };
       g.globalAlpha = .5; for (const t of others) { g.fillStyle = SV.cols[t] || '#fff'; bars(song.mel[t].notes, 2); } g.globalAlpha = 1;
@@ -18428,7 +18938,8 @@ function svDraw(force, sbIn) {
     // chip: S2, MEL) keeps the ♪ inside the narrow label column
     const has = !!(song && song.mel[i] && song.mel[i].notes.length), cho = !!(song && song.melodyTrack === i), mk = has || cho ? (cho ? 'cho' : 'has') : '';
     const nm = mk ? trackTag(i) + ' ♪' : svShort(i); if (sp.textContent !== nm) sp.textContent = nm;
-    if ((d.dataset.mel || '') !== mk) { d.dataset.mel = mk; d.classList.toggle('mcho', cho); } } }
+    if ((d.dataset.mel || '') !== mk) { d.dataset.mel = mk; d.classList.toggle('mcho', cho); }
+    const st = i === R.selT; if (d.classList.contains('sel') !== st) { d.classList.toggle('sel', st); d.setAttribute('aria-pressed', String(st)); } } }
 }
 /* melody lane → the piano roll on the chosen track's song melody (§3.9, V2b: song.mel[melodyTrack]): the clip editor with the melody as its clip; every gesture is one
    undo step (kind 'song'); notes stay as heard (never mapped). [Als Clip] (P1 „Melodie → Clip“): the selected bar range
@@ -19166,6 +19677,9 @@ function carDockRect(wide) {
     const r = R0(EL.readout), b = wide && vis(EL.bLatch) ? R0(EL.bLatch).bottom : r.bottom;
     return {left: r.left, top: r.top, width: r.width, height: b - r.top};
   }
+  // V2e: while the Bereich-Leiste stands in the Träger bar's place, an action toast never covers it (its next tool is wanted
+  // at once, e.g. ⧉ again): it docks on the track strip row instead (P and L; that row's ↶ is what [Rückgängig] offers anyway)
+  if (SV.rbar && vis(SV.rbar)) { const r = R0(vis(EL.strip) ? EL.strip : SV.rbar); return {left: r.left + 6, top: r.top + 4, width: Math.max(0, r.width - 12), height: Math.max(0, Math.min(r.height, 56) - 8)}; }
   if (vis(EL.reclane) && vis(EL.recLaneCv)) {
     const a = R0(EL.reclane), c = R0(EL.recLaneCv), top = port ? a.top + 3 : R0(EL.recLaneTxt).top;
     return {left: c.left, top, width: c.width, height: Math.max(0, c.bottom - top)};
@@ -25693,7 +26207,7 @@ function folReason(k) {
     if (f && f.tool) return 'tool';
   } else if (k === 'lauf') { if ((ED.lauf && ED.lauf.se.busy()) || folPtr(k)) return 'finger'; if (UI.pop) return 'sel'; }
   else if (k === 'steps') { if ((ED.step && ED.step.busy()) || folPtr(k)) return 'finger'; if (UI.pop) return 'sel'; }
-  else if (k === 'song') { if (SV.gOn) return 'finger'; if (UI.pop) return 'sel'; }
+  else if (k === 'song') { if (SV.gOn) return 'finger'; if (UI.pop || SV.sel || SV.mark || SV.copy) return 'sel'; }   // N2e-02 / 14.3: holds with a selection, a chosen mark
   if (FOL.hand[k]) return 'hand';
   if (performance.now() - (FOL.edit[k] == null ? -1e9 : FOL.edit[k]) < 3000) return 'edit';
   return null;
@@ -26618,7 +27132,10 @@ function openMenu(goto) {
     'SONG: SONG ⇄ (Ecke oben links im Raster) zeigt den Song. Beim ersten ● SONG wird alles mitgeschnitten: Szenenwechsel, Clip-Stopps, Akkorde und deine Melodie; ▶ SONG spielt alles ab. Eine Zelle antippen = anderer Clip in diesem Takt, wischen = blättern. Während der Song läuft: Clip starten = Spur übernehmen, ↩ SONG gibt sie zurück. Unter MELODIE: Melodie bearbeiten, als Clip, Kette aus Szenen.',
     'SONG-AUFNAHME (● bei vorhandenem Song): Das Start-Blatt fragt, was aufgenommen wird – CLIPS (Szenen- und Clip-Starts, Teil-Tasten setzen ihre Marke), AKKORDE, NOTEN auf der gewählten Spur (▾ wählt sie). Und wie: ab Takt n ÜBERSCHREIBEN (was du änderst, ersetzt; Noten: jeder Takt bis zum Ende neu, die alten sind stumm) oder EINFÜGEN (Neues kommt dazwischen, der Rest rückt nach hinten); in gelb gewählten Takten ERSETZEN oder OVERDUB (Neues kommt dazu). Ist genau ein Takt gewählt, gibt es alle vier. Noten auf einer Spur mit Clip werden ein eigener Clip an dieser Stelle – die Szenen bleiben, wie sie sind. ● beendet am letzten logischen Taktstrich (wie FANG TEIL: erst die Phrase, dann ob der neue Takt weniger als halb gespielt war). Halten auf ● öffnet das Blatt jederzeit. Ein Rückgängig nimmt die ganze Aufnahme zurück.',
     'TAKTLEISTE IM SONG: Tipp auf eine Taktnummer wählt den Takt (gelb) und setzt die Positionsmarke ▼ – nichts springt. Zweite Nummer = Bereich, Tipp in die Auswahl hebt sie auf. ▶ (oben oder ▶ SONG) startet an der Marke, sonst dort, wo du gestoppt hast; ⏮ = Takt 1.',
-    'SCHLEIFE: Taste SCHLEIFE → aus │ Song │ Bereich (= die gelb gewählten Takte). Die Schleife ist die grüne Linie oben auf der Taktleiste; ihre Griffe ┃ ziehen ändert Anfang und Ende. Am Ende springt der Song taktgenau an den Anfang.',
+    'TEIL-MARKEN IM SONG: Wo ein Teil liegt, steht sein Name gelb in der Taktleiste statt der Taktnummern (STROPHE′ = an dieser Stelle geändert). Antippen = Marken-Blatt: ▶ Ab hier, ×2/×4, ◀ ▶ tauschen, ⧉ Kopie (dann den Taktstrich antippen), ⇄ Ersetzen durch, ✕ Löschen (der Rest rückt), Nur Name weg, Name, Farbe, Teil-Vorlage, Auf alle übertragen, ● Neu aufnehmen. Nochmal antippen = einzelne Takte darin wählen. Hinter dem Song-Ende eine Nummer antippen = Teil dort einsetzen (die Takte davor bleiben leer).',
+    'GELBE TAKTE IM SONG: Statt der Träger-Leiste erscheint die Bereich-Leiste: ▶ Ab hier, ● Aufnehmen, Als Teil (die Takte werden ein Teil), ⧉ Kopie dahinter, ✕ Takte löschen, ⋯ (Leeren, Teil einsetzen, Akkorde quantisieren, Als Schleife). Liegt ab der Stelle schon etwas, fragt das Einsetzen: ersetzen oder einfügen (alles danach rückt nach hinten).',
+    'SPUR-NAMEN IM SONG antippen = Spur wählen (die Tastatur spielt sie, NOTEN nimmt sie auf). Passen nicht alle Spuren, blättert ▲▼ die Synth-Spuren; DRUMS, AKKORDE und MELODIE bleiben stehen.',
+    'SCHLEIFE: Taste SCHLEIFE → aus │ Song │ Teil (die Marke an der Abspielmarke) │ Bereich (= die gelb gewählten Takte). Die Schleife ist die grüne Linie oben auf der Taktleiste; ihre Griffe ┃ ziehen ändert Anfang und Ende. Am Ende springt der Song taktgenau an den Anfang.',
     'AKKORDE IM SONG: Akkord antippen = ändern (Stufe, Zuletzt, Frei oder Text eintippen, z. B. „Dm7“, „F/A“, „H7“) – der Schlag bleibt. Leere Stelle antippen = neuer Akkord am Taktanfang. AKKORDE (Etikett) → Akkorde quantisieren: Raster Takt, ½ Takt oder Schlag, bei zwei auf einem Punkt gewinnt der zuletzt gespielte.',
     'TRÄGER GEHÖREN DEM SONG: Endet ▶ SONG oder ● SONG, kommt der Träger von vorher zurück (z. B. ORIGINAL) – der Toast bietet [… behalten] an.',
     'MELODIE IM SONG: Die Melodie klingt immer genau wie gespielt und folgt späteren Akkordwechseln nicht („⇅ fest“). Sie nutzt die Stimmen ihrer Spur – teilt sie sich eine MONO-Spur mit Clips, klingt sie abgehackt: dann [Freie Spur nehmen].',
@@ -31740,6 +32257,8 @@ const SYNQUENZER = {
     cr: UI.pop && UI.pop.name === 'chordrow' ? {src: CR.src, sel: CR.sel ? Object.assign({}, CR.sel) : null, frei: CR.frei, grab: CR.grab, quant: CR.quant} : null}),
   quantizeChords: o => quantizeChords(o), openChordPick: o => openChordPick(o || {}), openRecStart: () => openRecStart(SV.btn && SV.btn.bRec),
   carrierRestoreState: () => (SONGCAR.saved ? deep(SONGCAR.saved) : null),
+  // V2e (song-delta 12.2): the song view's geometry; the Marken-Blatt / Teil einsetzen as UI entries for tests
+  svLayoutInfo: () => svLayoutInfo(), openMarkSheet: id => openMarkSheet(id), placeAt: (ref, bar) => placeAt(ref, bar), markChordAll: (id, rb, tg, exact) => markChordAll(id, rb, tg, exact !== false),
   songView: on => setSongView(on !== false), songCarrierDelete: k => songCarrierDelete(k), clearMelody: () => songClearMelody(),
   songFromChain: chain => songFromChain(chain), songDelete: () => songDelete(),
   // V2d (song-delta 12.2): Song-Gedächtnis, FANG TEIL, Zeitleiste und Marken (Daten)
