@@ -3768,3 +3768,14 @@ Kein Aufruf nennt das Klassenzimmer-Projekt.
    für eine unsichtbare Auswahl.
 
 Snapshot: `synq-snapshots/V2e-fix.html`. Keine Migration (App-Version unverändert 4.7.0).
+
+## V2e′ — Teile per Drag & Drop an jeden Taktstrich (auch leerer Song, hinter leere Takte), Einfügelinie, Rand-Scrollen, Ablegen/Abbrechen; Aufklapp-Animation, Glas-Ansicht mit Kacheln, Halte-Blatt für eigene Clips · App 4.8.0
+
+Orchestrator-Eintrag (25.10.): Der Bau-Agent hat seinen Abschnitt nach einem Neustart nicht mehr geschrieben; Inhalt aus der Aufgabenliste des Bau-Agenten und den Prüf-/Fix-Berichten.
+- Ziehen: Teil-Taste, FANG-Chip oder Teil-Marke halten → anheben (Geist), SONG öffnet sich von selbst, Einfügelinie am Taktstrich, Rand-Scrollen, Ablegen = Einfügen (rechts rückt nach), Abbrechen ohne Änderung.
+- Aufklapp-Animation, Glas-Ansicht (Umschalter, Kacheln), Halte-Blatt eigener Clip ([Bearbeiten] [Zurück zum Szenen-Clip] [Ganzer Block]).
+
+## V2e′-fix · App 4.8.0
+1. [Ganzer Block] im Halte-Blatt eines eigenen Clips fasst jetzt den ganzen Block (N7S-47), danach [Zurück zum Szenen-Clip] hinterlässt keinen Verweis auf einen gelöschten Clip.
+2. [Zurück zum Szenen-Clip] auf einem eigenen Clip setzt nur den gewählten Bereich zurück.
+3. ● im Song wieder in voller Breite (Ziel-Beschriftung und ▾-Hinweis nicht mehr abgeschnitten).
