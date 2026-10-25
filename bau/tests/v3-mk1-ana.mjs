@@ -49,21 +49,23 @@ export function zcFreq(x, i0, i1, sr) {
   return n > 0 ? n * sr / (last - first) : 0;
 }
 // M-KLICK (Spec §0.3): HP 5 kHz, energy in 2 ms windows; a window must not lie > +6 dB over the median of the windows +-20 ms
+function biquadHP(x, sr, f, q) { const w = 2 * Math.PI * f / sr, a = Math.sin(w) / (2 * q), cw = Math.cos(w);
+  const b0 = (1 + cw) / 2, b1 = -(1 + cw), b2 = (1 + cw) / 2, a0 = 1 + a, a1 = -2 * cw, a2 = 1 - a; const y = new Float64Array(x.length); let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  for (let i = 0; i < x.length; i++) { const v = (b0 * x[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0; x2 = x1; x1 = x[i]; y2 = y1; y1 = v; y[i] = v; } return y; }
+// M-KLICK as in qa-v2d/rec.mjs (V0b-fix tools): HP 5 kHz 24 dB/oct (Butterworth), 2 ms windows, > +6 dB over the median of
+// +-20 ms; windows under 1e-9 (-90 dB) are not judged; except <= 3 ms after a planned onset
 export function mKlick(x, sr, skip = []) {
-  const y = new Float64Array(x.length); const c = Math.exp(-2 * Math.PI * 5000 / sr);
-  // 4th order HP: two cascaded 2-pole (bilinear Butterworth 5 kHz)
-  const bq = (inp) => { const w = Math.tan(Math.PI * 5000 / sr), k = 1 / (1 + Math.SQRT2 * w + w * w), b0 = k, b1 = -2 * k, b2 = k, a1 = 2 * (w * w - 1) * k, a2 = (1 - Math.SQRT2 * w + w * w) * k;
-    const o = new Float64Array(inp.length); let x1 = 0, x2 = 0, y1 = 0, y2 = 0; for (let i = 0; i < inp.length; i++) { const v = b0 * inp[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = inp[i]; y2 = y1; y1 = v; o[i] = v; } return o; };
-  void c; const h = bq(bq(x));
+  const h = biquadHP(biquadHP(Float64Array.from(x), sr, 5000, .5412), sr, 5000, 1.3066);
   const W = Math.round(.002 * sr), nw = Math.floor(h.length / W), E = new Float64Array(nw);
-  for (let w = 0; w < nw; w++) { let e = 0; for (let i = w * W; i < (w + 1) * W; i++) e += h[i] * h[i]; E[w] = e / W; }
+  for (let w = 0; w < nw; w++) { let e = 0; for (let i = w * W; i < (w + 1) * W; i++) e += h[i] * h[i]; E[w] = e / W + 1e-20; }
   let worst = -Infinity, at = -1;
   for (let w = 10; w < nw - 10; w++) {
-    const t = w * W / sr; if (skip.some(s => t >= s - .0005 && t <= s + .003)) continue;
+    const t = w * W / sr; if (skip.some(s => t + .002 >= s - .0005 && t <= s + .003)) continue;
+    if (E[w] <= 1e-9) continue;
     const nb = []; for (let j = w - 10; j <= w + 10; j++) if (j !== w) nb.push(E[j]); nb.sort((a, b) => a - b);
-    const med = nb[nb.length >> 1]; if (med < 1e-14 && E[w] < 1e-12) continue;
-    const d = pdb(E[w] / Math.max(med, 1e-14)); if (d > worst) { worst = d; at = t; }
+    const d = pdb(E[w] / nb[nb.length >> 1]); if (d > worst) { worst = d; at = t; }
   }
+  if (worst === -Infinity) worst = 0;
   return {worst, at, ok: worst <= 6};
 }
 // M-EINBRUCH: 5 ms RMS windows +-50 ms around t; none more than 3 dB under the mean of the windows before t

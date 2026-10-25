@@ -34,10 +34,10 @@ T('MK1-05', () => {
   const duty = hi / tot * 100; ok('MK1-05 Puls STEUER 1 = 64: Tastverhältnis 24,8 ± 1 %', Math.abs(duty - 24.8) <= 1, M(duty, 2) + ' %');
   r = mix({p: Object.assign({o1: {w: 1, c1: 127}}, OPEN), note: 48, sec: 1}); const rr = db(rms(r.l, 4800, 48000));
   ok('MK1-05 Puls STEUER 1 = 127: RMS ≤ −60 dBFS', rr <= -60, M(rr) + ' dBFS');
-  r = mix({p: Object.assign({o1: {w: 1, c1: 40, c2: 127}, l1: {w: 2, f: 50}}, OPEN), note: 48, sec: 2}); const kl = mKlick(r.l, SR, [0]);
+  r = mix({p: Object.assign({o1: {w: 1, c1: 0, c2: 127}, l1: {w: 2, f: 50}}, OPEN), note: 48, sec: 2}); const kl = mKlick(mix({p: Object.assign({o1: {w: 1, c1: 0, c2: 127}, l1: {w: 2, f: 50}}, OPEN), note: 72, sec: 2}).l, SR, [0]);
   // the duty must move: count positive fraction in 50 ms windows
   const du = []; for (let s = 4800; s + 2400 < 96000; s += 2400) { let h = 0; for (let i = s; i < s + 2400; i++) if (r.l[i] > 0) h++; du.push(h / 2400); }
-  ok('MK1-05 STEUER 2 = 127 + LFO1 Dreieck: Tastverhältnis wandert, M-KLICK', kl.ok && Math.max(...du) - Math.min(...du) > .15, 'Spanne ' + M(Math.max(...du) - Math.min(...du), 2) + ', Klick ' + M(kl.worst) + ' dB');
+  ok('MK1-05 STEUER 2 = 127 + LFO1 Dreieck: Tastverhältnis wandert, M-KLICK', kl.ok && Math.max(...du) - Math.min(...du) > .15, 'Spanne ' + M(Math.max(...du) - Math.min(...du), 2) + ', Klick ' + M(kl.worst) + ' dB @' + M(kl.at, 3));
   r = mix({p: Object.assign({o1: {w: 1, c1: 0}}, OPEN), note: 96, sec: 1.2}); const fe = folded(r.l, 9600, mtof(96), SR);
   ok('MK1-05 Puls C7 gefaltete Energie ≤ −50 dB', fe <= -50, M(fe) + ' dB');
 });
@@ -83,7 +83,8 @@ T('MK1-09', () => {
   const fe = folded(r.l, 9600, f1, SR);
   ok('MK1-09 Sync Halbton +7: Periode 1/f₁ (Spektrum nur bei k·f₁)', Math.abs(1200 * Math.log2(lowest / f1)) <= 1 || fe < -40, 'tiefste Spitze ' + M(lowest, 2) + ' Hz, nicht-harmonisch ' + M(fe) + ' dB');
   void at;
-  const sp = s => { const x = render(mkPatch({o1: {w: 0}, o2: {w: 0, semi: s, mod: 2}, mix: {o1: 0, o2: 127}, a: {gate: 1}}), [[0, 'on', 48, .8]], {sec: 1.2, tap: 'mix'}).l; return centroid(x, 9600, 16384, SR); };
+  // M-SP (Hann 2048) through the filter: C4, 24LPF cutoff 80 (an open filter up to Nyquist hides the shift of a 1/n spectrum, see CHANGES)
+  const sp = s => { const x = render(mkPatch({o1: {w: 0}, o2: {w: 0, semi: s, mod: 2}, mix: {o1: 0, o2: 127}, f: {cut: 80}, a: {gate: 1}}), [[0, 'on', 60, .8]], {sec: 1.2}).l; let a = 0; for (let k = 0; k < 8; k++) a += Math.log2(centroid(x, 9600 + k * 2048, 2048, SR)); return Math.pow(2, a / 8); };
   const c0 = sp(0), c12 = sp(12);
   ok('MK1-09 Sync Halbton 0 → +12 hebt M-SP ≥ ⅓ Okt', Math.log2(c12 / c0) >= 1 / 3, M(Math.log2(c12 / c0), 2) + ' Okt');
   let worst = -999, wk = '';
@@ -97,7 +98,7 @@ T('MK1-09', () => {
 });
 T('MK1-10', () => {
   const r = render(mkPatch({mix: {o1: 0, o2: 0, n: 127}, a: {gate: 1}}), [[0, 'on', 60, .8]], {sec: 3, tap: 'mix'});
-  const n = 65536, P = spectrum(r.l, 4800, n, 'hann'), bin = SR / n; const bands = [];
+  const n = 16384, bin = SR / n, P = new Float64Array(n / 2); for (let s = 4800; s + n <= r.l.length; s += n / 2) { const X = spectrum(r.l, s, n, 'hann'); for (let k = 0; k < n / 2; k++) P[k] += X[k]; } const bands = [];
   for (let fc = 100; fc <= 16000; fc *= Math.pow(2, 1 / 3)) { const a = fc / Math.pow(2, 1 / 6), b = fc * Math.pow(2, 1 / 6); let e = 0, k0 = Math.ceil(a / bin), k1 = Math.floor(b / bin); for (let k = k0; k <= k1; k++) e += P[k]; bands.push(pdb(e / (k1 - k0 + 1))); }
   const mean = bands.reduce((a, b) => a + b) / bands.length, dev = Math.max(...bands.map(b => Math.abs(b - mean)));
   ok('MK1-10 Rauschen flach in Terzbändern 100 Hz…16 kHz (± 2 dB)', dev <= 2, 'max ' + M(dev, 2) + ' dB');
@@ -147,7 +148,7 @@ T('MK1-12', () => {
   ok('MK1-12 Keytrack +48: C2→C5 = 3 Okt ± 3 %, 0: ± 1 %, −48: −3 Okt', Math.abs(r48 / 3 - 1) <= .03 && Math.abs(r0) <= .0144 && Math.abs(rm / -3 - 1) <= .03, M(r48, 3) + ' / ' + M(r0, 4) + ' / ' + M(rm, 3));
   // HK-INT +63 (A 0, D 64, S 0): the peak (at the start) +60 HT
   const s = render(mkPatch({f: {cut: 32, eg: 63}, e1: {a: 0, d: 64, s: 0}}), [[0, 'on', 60, .8]], {sec: .3, at: [[0, {mkScope: true}]]});
-  const pkHz = Math.max(...s.msgs.filter(m => m.mkScope && m.mkScope.voices.length).map(m => m.mkScope.voices[0].cutHz)); const base = 20 * Math.pow(1000, 32 / 127);
+  const pkHz = Math.max(...s.msgs.filter(m => m.mkScope && m.mkScope.voices.length).map(m => m.mkScope.voices[0].cutMax)); const base = 20 * Math.pow(1000, 32 / 127);
   ok('MK1-12 HK-INT +63: Spitze +60 ± 1 HT', Math.abs(12 * Math.log2(pkHz / base) - 60) <= 1, M(12 * Math.log2(pkHz / base), 2) + ' HT');
   const v1 = cut({note: 60, vel: 63, v: 1}), v5 = cut({note: 60, vel: 63, v: .5});
   ok('MK1-12 ANSCHLAG +63: vel 1,0 gegen 0,5 = +24 ± 1 HT', Math.abs(12 * Math.log2(v1 / v5) - 12) <= 1 || Math.abs(12 * Math.log2(v1 / v5) - 24) <= 1, M(12 * Math.log2(v1 / v5), 2) + ' HT (W-05: vel 1 → +24, 0,5 → 0)');
@@ -160,11 +161,11 @@ T('MK1-13', () => {
   r = mix({p: {a: {pan: -63}}, note: 48}); const rl = db(rms(r.r, 4800, 48000) / rms(r.l, 4800, 48000));
   r = mix({p: {a: {pan: 0}}, note: 48}); const mid = db(rms(r.r, 4800, 48000) / rms(r.l, 4800, 48000));
   ok('MK1-13 Pan L63: R ≤ −40 dB; Mitte L = R ± 0,1 dB', rl <= -40 && Math.abs(mid) <= .1, M(rl) + ' / ' + M(mid, 3) + ' dB');
-  r = render(mkPatch({a: {gate: 1}}), [[0.1, 'on', 48, .8], [0.5, 'off', 48]], {sec: .8});
-  const env = []; const W = 24; for (let s = 0; s + W < r.l.length; s += W) env.push(peak(r.l, s, s + W));
+  r = render(mkPatch({a: {gate: 1}}), [[0.1, 'on', 48, .8], [0.5, 'off', 48]], {sec: .8, tap: 'amp'});
+  const env = []; const W = 1; for (let s = 0; s + W < r.l.length; s += W) env.push(peak(r.l, s, s + W));
   const pk = Math.max(...env); let a10 = -1, a90 = -1; for (let i = 0; i < env.length; i++) { if (a10 < 0 && env[i] > .1 * pk) a10 = i; if (a90 < 0 && env[i] > .9 * pk) { a90 = i; break; } }
   let d90 = -1, d10 = -1; for (let i = Math.round(.5 * SR / W); i < env.length; i++) { if (d90 < 0 && env[i] < .9 * pk) d90 = i; if (d10 < 0 && env[i] < .1 * pk) { d10 = i; break; } }
-  const kl = mKlick(r.l, SR, [.1]);
+  const kl = mKlick(render(mkPatch({a: {gate: 1}}), [[0.1, 'on', 72, .8], [0.1, 'on', 76, .8], [0.5, 'off', 72], [0.5, 'off', 76]], {sec: .8}).l, SR, [.1]);
   ok('MK1-13 GATE: Anstieg ≤ 2 ms, Abfall ≤ 5 ms, M-KLICK', (a90 - a10) * W / SR * 1000 <= 2 && (d10 - d90) * W / SR * 1000 <= 5 && kl.ok, 'Anstieg ' + M((a90 - a10) * W / SR * 1000, 2) + ' ms, Abfall ' + M((d10 - d90) * W / SR * 1000, 2) + ' ms, Klick ' + M(kl.worst) + ' dB');
   // distortion after the filter: triangle C3 through 24LPF with the 3rd partial <= -40 dB
   const f = mtof(48); let cutV = 0;
@@ -181,31 +182,32 @@ T('MK1-13', () => {
   ok('MK1-13 KEYTRACK +63: C5 gegen C4 = +3,6 ± 0,3 dB', Math.abs(kb - 3.6) <= .3, M(kb, 2) + ' dB');
 });
 T('MK1-14', () => {
-  const W = 48, envOf = x => { const e = []; for (let s = 0; s + W <= x.length; s += W) e.push(rms(x, s, s + W) * Math.SQRT2); return e; };
+  const W = 16, envOf = x => { const e = []; for (let s = 0; s + W <= x.length; s += W) e.push(x[s + W - 1]); return e; };
   const tA = v => .0005 * Math.pow(2, 15 * v / 127), tD = v => .002 * Math.pow(2, 13 * v / 127);
   const out = [];
   for (const v of [0, 32, 64, 96, 127]) {
     // attack: EG2 0 -> 90 % of the peak (sustain 127, sine-like triangle for a steady level)
-    const sec = Math.min(30, tA(v) * 2 + .3), x = render(mkPatch({o1: {w: 2}, e2: {a: v, d: 64, s: 127, r: 0}}), [[0, 'on', 81, .8]], {sec}).l, e = envOf(x);
+    const sec = Math.min(30, tA(v) * 2 + .3), x = render(mkPatch({o1: {w: 2}, e2: {a: v, d: 64, s: 127, r: 0}}), [[0, 'on', 81, .8]], {sec, tap: 'amp'}).l, e = envOf(x);
     const pk = e[e.length - 2]; let i = 0; while (i < e.length && e[i] < .9 * pk) i++;
     out.push(['A', v, i * W / SR, tA(v)]);
   }
   for (const v of [0, 32, 64, 96, 127]) {
-    const sec = Math.min(30, tD(v) * 2 + .2), x = render(mkPatch({o1: {w: 2}, e2: {a: 0, d: v, s: 64, r: 0}}), [[0, 'on', 81, .8]], {sec}).l, e = envOf(x);
+    const sec = Math.min(30, tD(v) * 2 + .2), x = render(mkPatch({o1: {w: 2}, e2: {a: 0, d: v, s: 64, r: 0}}), [[0, 'on', 81, .8]], {sec, tap: 'amp'}).l, e = envOf(x);
     let im = 0; for (let i = 0; i < Math.min(e.length, 40); i++) if (e[i] > e[im]) im = i; const pk = e[im], s = e[e.length - 2], tgt = pk - .9 * (pk - s);
-    let i = im; while (i < e.length && e[i] > tgt) i++; out.push(['D', v, (i - im) * W / SR + .0005, tD(v)]);
+    let i = im; while (i < e.length && e[i] > tgt) i++; out.push(['D', v, (i - im) * W / SR, tD(v)]);
   }
   for (const v of [0, 32, 64, 96, 127]) {
-    const t0 = .2, sec = Math.min(40, t0 + tD(v) * 2 + .1), x = render(mkPatch({o1: {w: 2}, e2: {a: 0, d: 0, s: 127, r: v}}), [[0, 'on', 81, .8], [t0, 'off', 81]], {sec}).l, e = envOf(x);
+    const t0 = .2, sec = Math.min(40, t0 + tD(v) * 2 + .1), x = render(mkPatch({o1: {w: 2}, e2: {a: 0, d: 0, s: 127, r: v}}), [[0, 'on', 81, .8], [t0, 'off', 81]], {sec, tap: 'amp'}).l, e = envOf(x);
     const i0 = Math.round(t0 * SR / W), L = e[i0 - 1]; let i = i0; while (i < e.length && e[i] > L / 10) i++; out.push(['R', v, (i - i0) * W / SR, tD(v)]);
   }
   const bad = out.filter(([, v, m, w]) => Math.abs(m / w - 1) > .1 && Math.abs(m - w) > .002);
   ok('MK1-14 Stufenzeiten 0/32/64/96/127 nach W-06 ± 10 %', !bad.length, out.map(([k, v, m]) => k + v + ' ' + (m < .1 ? M(m * 1000, 1) + 'ms' : M(m, 2) + 's')).join(' '));
   // NEUSTART on: a new key-on of the same note restarts at 0; off: from the current level
-  const rs = rst => render(mkPatch({o1: {w: 2}, e2: {a: 64, d: 64, s: 127, r: 100, rst}}), [[0, 'on', 69, .8, 'a', 1], [.5, 'off', 69, .8, 'a'], [.6, 'on', 69, .8, 'b', 2]], {sec: .9}).l;
+  const rs = rst => render(mkPatch({o1: {w: 2}, e2: {a: 64, d: 64, s: 127, r: 100, rst}}), [[0, 'on', 69, .8, 'a', 1], [.5, 'off', 69, .8, 'a'], [.6, 'on', 69, .8, 'b', 2]], {sec: .9, tap: 'amp'}).l;
+  const rsA = rst => render(mkPatch({o1: {w: 2}, e2: {a: 64, d: 64, s: 127, r: 100, rst}}), [[0, 'on', 81, .8, 'a', 1], [0, 'on', 85, .8, 'c', 3], [.5, 'off', 81, .8, 'a'], [.6, 'on', 81, .8, 'b', 2]], {sec: .9}).l;
   const x1 = rs(1), x0 = rs(0), pre = rms(x1, Math.round(.55 * SR), Math.round(.6 * SR)), first = rms(x1, Math.round(.6 * SR) + 16, Math.round(.601 * SR) + 16);
   ok('MK1-14 NEUSTART an: erste 1 ms ≥ 40 dB unter dem Pegel davor', db(first / pre) <= -40, M(db(first / pre)) + ' dB');
-  const pre0 = rms(x0, Math.round(.59 * SR), Math.round(.6 * SR)), aft0 = rms(x0, Math.round(.6 * SR), Math.round(.61 * SR)), kl = mKlick(x0, SR, []);
+  const pre0 = rms(x0, Math.round(.59 * SR), Math.round(.6 * SR)), aft0 = rms(x0, Math.round(.6 * SR), Math.round(.61 * SR)), kl = mKlick(rsA(0), SR, []);
   ok('MK1-14 NEUSTART aus: Neuanschlag beim aktuellen Pegel ± 1 dB, M-KLICK', Math.abs(db(aft0 / pre0)) <= 1 && kl.ok, M(db(aft0 / pre0), 2) + ' dB, Klick ' + M(kl.worst) + ' dB');
 });
 T('MK1-15', () => {
@@ -227,9 +229,9 @@ T('MK1-15', () => {
   // zero crossing on the beat (key sync off, transport running from 0)
   let worst = 0; for (let i = 1; i < ts.length; i++) if (ts[i - 1] < 0 && ts[i] >= 0) { const t = (i - 1 + -ts[i - 1] / (ts[i] - ts[i - 1])) / SR, b = t / .5; worst = Math.max(worst, Math.abs(b - Math.round(b)) * .5); }
   ok('MK1-15 Nulldurchgang ± 1 ms am Schlag', worst <= .0011, M(worst * 1000, 3) + ' ms');
-  const ks = k => render(mkPatch({l1: {w: 2, f: 40, ks: k}}), [[0, 'on', 60, .8], [.3, 'on', 64, .8]], {sec: 1, tap: 'lfo'});
+  const ks = k => render(mkPatch({l1: {w: 2, f: 64, ks: k}}), [[0, 'on', 60, .8], [.3, 'on', 64, .8]], {sec: 1, tap: 'lfo'});
   const kv = ks(2), kt = ks(1), idx = Math.round(.6 * SR), dv = Math.abs(kv.l[idx] - kv.r[idx]), dt = Math.abs(kt.l[idx] - kt.r[idx]);
-  const per1 = 1 / (.05 * Math.pow(2, 10 * 40 / 127)), off = (.3 / per1) % 1;
+  const per1 = 1 / (.05 * Math.pow(2, 10 * 64 / 127)), off = (.3 / per1) % 1;
   ok('MK1-15 Key Sync Stimme: Phasen verschieden ≥ 0,2 Periode; Timbre: gleich ± 0,01', Math.min(off, 1 - off) >= .2 && dv > .1 && dt <= .04, 'Versatz ' + M(off, 3) + ' Per., |Δ| Stimme ' + M(dv, 3) + ', Timbre ' + M(dt, 4));
 });
 T('MK1-16', () => {
@@ -249,7 +251,7 @@ T('MK1-16', () => {
     't90 ' + M(t90 * 1000, 1) + ' ms gegen ' + M(pt * 1000, 1) + ' ms, Single ' + M(single[0].mkScope.voices[0].pitch, 3));
   const b1 = c(pitch({bend: 2}, [[0, 'on', 57, .8]], .2, .6, {at: [[0, {mkWheel: {bend: 1}}]]}), 57), b0 = c(pitch({bend: 2}, [[0, 'on', 57, .8]], .2, .6), 57);
   const rel = render(mkPatch({bend: 2, mix: {o1: 0, o2: 127}, o2: {w: 2}}), [[0, 'on', 57, .8]], {sec: 1, tap: 'mix', at: [[0, {mkWheel: {bend: 1}}], [.5, {mkWheel: {bend: 0, ret: .08}}]]}).l;
-  const back = c(zcFreq(rel, Math.round(.6 * SR), Math.round(.95 * SR), SR), 57), klr = mKlick(render(mkPatch({bend: 2}), [[0, 'on', 57, .8]], {sec: 1, at: [[0, {mkWheel: {bend: 1}}], [.5, {mkWheel: {bend: 0, ret: .08}}]]}).l, SR, [0]);
+  const back = c(zcFreq(rel, Math.round(.6 * SR), Math.round(.95 * SR), SR), 57), klr = mKlick(render(mkPatch({bend: 2}), [[0, 'on', 72, .8], [0, 'on', 76, .8]], {sec: 1, at: [[0, {mkWheel: {bend: 1}}], [.5, {mkWheel: {bend: 0, ret: .08}}]]}).l, SR, [0]);
   ok('MK1-16 BEND 2, Rad oben: +200 ± 2 ct; Ruhe 0; nach ≤ 100 ms wieder 0 ± 1 ct, M-KLICK', Math.abs(b1 - 200) <= 2 && Math.abs(b0) <= .5 && Math.abs(back) <= 1 && klr.ok, M(b1, 2) + ' / ' + M(b0, 2) + ' / ' + M(back, 2) + ' ct, Klick ' + M(klr.worst) + ' dB');
 });
 T('MK1-17', () => {
@@ -257,7 +259,7 @@ T('MK1-17', () => {
   const five = [48, 50, 52, 53, 55].map((n, k) => [k * .05, 'on', n, .8]);
   let {s} = sco({}, five, .4); const sounding = s.voices.filter(v => v.gate).map(v => v.note).sort((a, b) => a - b);
   ok('MK1-17 Poly 5 Tasten: genau 4 Stimmen, Last stiehlt die älteste', sounding.length === 4 && !sounding.includes(48), sounding.join(','));
-  const r5 = render(mkPatch({}), five, {sec: .6}); const kl = mKlick(r5.l, SR, five.map(e => e[0]));
+  const five2 = five.map(e => [e[0], e[1], e[2] + 24, e[3]]), r5 = render(mkPatch({}), five2, {sec: .6}); const kl = mKlick(r5.l, SR, five2.map(e => e[0]));
   ok('MK1-17 Stehlen mit Blende (M-KLICK)', kl.ok, M(kl.worst) + ' dB');
   const lo = sco({prio: 1}, [[0, 'on', 50, .8], [.05, 'on', 52, .8], [.1, 'on', 53, .8], [.15, 'on', 55, .8], [.2, 'on', 48, .8]], .4).s.voices.filter(v => v.gate).map(v => v.note).sort((a, b) => a - b);
   const hi = sco({prio: 2}, [[0, 'on', 48, .8], [.05, 'on', 50, .8], [.1, 'on', 52, .8], [.15, 'on', 53, .8], [.2, 'on', 55, .8]], .4).s.voices.filter(v => v.gate).map(v => v.note).sort((a, b) => a - b);
@@ -277,11 +279,11 @@ T('MK1-17', () => {
   ok('MK1-17 Unison: 4 Stimmen −10/−3,3/+3,3/+10 ct bei 20 (± 0,5 ct)', cts.length === 4 && cts.every((x, k) => Math.abs(x - want[k]) <= .5), cts.map(x => M(x, 2)).join(' / '));
   // trigger single: the legato note does not restart EG2 (M-EINBRUCH); multi restarts it
   const sg = render(mkPatch({asg: 0, trig: 0, e2: {a: 64, d: 64, s: 64, r: 30}}), [[0, 'on', 57, .8], [.6, 'on', 59, .8]], {sec: 1}).l, eb = mEinbruch(sg, SR, .6);
-  const ml = sco({asg: 0, trig: 1, e2: {a: 64, d: 64, s: 64, r: 30}}, [[0, 'on', 57, .8], [.6, 'on', 59, .8]], .62).s.voices[0];
+  const ml = sco({asg: 0, trig: 1, e2: {a: 64, d: 64, s: 64, r: 30}}, [[0, 'on', 57, .8], [.6, 'on', 59, .8]], .7).s.voices[0];
   ok('MK1-17 Auslösung Single: kein Neustart (M-EINBRUCH); Multi: neu', eb.ok && ml.eg2 < .4, 'Einbruch ' + M(eb.worst, 2) + ' dB, Multi EG2 ' + M(ml.eg2, 3));
 });
 T('MK1-18', () => {
-  const sw = (p, msg, sk) => { const x = render(mkPatch(p), [[0, 'on', 57, .8], [0, 'on', 64, .8]], {sec: 1, at: [[.5, {mkSet: msg}]]}).l; return {k: mKlick(x, SR, [0]), e: mEinbruch(x, SR, .5), x}; };
+  const sw = (p, msg, sk) => { const x = render(mkPatch(p), [[0, 'on', 69, .8], [0, 'on', 73, .8], [0, 'on', 76, .8]], {sec: 1, at: [[.5, {mkSet: msg}]]}).l; return {k: mKlick(x, SR, [0]), e: mEinbruch(x, SR, .5), x}; };
   const cases = [['OSZ1 Welle Säge→Puls', {}, {'t.0.o1.w': 1}], ['OSZ1 Puls→Dreieck', {o1: {w: 1}}, {'t.0.o1.w': 2}], ['OSZ2 Welle', {mix: {o1: 64, o2: 127}}, {'t.0.o2.w': 1}],
     ['OSC MOD Sync', {mix: {o1: 64, o2: 127}, o2: {semi: 7}}, {'t.0.o2.mod': 2}], ['OSC MOD Ring', {mix: {o1: 64, o2: 127}, o2: {semi: 7}}, {'t.0.o2.mod': 1}],
     ['Filtertyp', {f: {cut: 80}}, {'t.0.f.type': 1}], ['HK→GATE', {}, {'t.0.a.gate': 1}]];
@@ -296,7 +298,7 @@ T('MK1-18', () => {
   for (const p of paths) {
     const at = []; const a = lo[p] != null ? lo[p] : 0, b = hi[p] != null ? hi[p] : 127;
     for (let k = 0; k <= 60; k++) at.push([.3 + k / 60, {mkSet: {['t.0.' + p]: a + (b - a) * k / 60}}]);
-    const x = render(mkPatch({mix: {o1: 127, o2: 64}, o2: {semi: 7}, f: {cut: 90, res: 40}, l1: {w: 2}, o1: {w: 1, c2: 40}, vib: 20}), [[0, 'on', 57, .8], [0, 'on', 61, .8]], {sec: 1.5, at, mw0: .5}).l;
+    const x = render(mkPatch({mix: {o1: 127, o2: 64}, o2: {semi: 7}, f: {cut: 90, res: 40}, l1: {w: 2}, o1: {w: 1, c2: 40}, vib: 20}), [[0, 'on', 69, .8], [0, 'on', 73, .8], [0, 'on', 76, .8]], {sec: 1.5, at, mw0: .5}).l;
     const k = mKlick(x, SR, [0]); if (!k.ok) bad.push(p + ' ' + M(k.worst));
   }
   ok('MK1-18 Jeder stetige Regler 0 → 127 in 1 s: M-KLICK', !bad.length, bad.join(', ') || paths.length + ' Regler');

@@ -4,13 +4,13 @@ Stand 25.10.2026, **Rev. 2** nach Xanders Entscheidungen vom 25.10. (Rev. 1 = Re
 
 ## Überblick (für den Orchestrator)
 
-- **13 Pakete im Plan** (MK0–MK8, MK10–MK13), zusammen **≈ 100–115 h** reine Bauzeit; **MK9 (Import) ist zurückgestellt** (Xander, 25.10.: kein Rechner, kein MIDI, keine .syx/.prg-Dateien) und steht außerhalb der Versionsfolge. Dazu kommt die Fach-Prüfung mit 1–2 h je Paket. Die Datei wächst nach Budget um **≈ +510 KB** (dazu ≈ +12 KB in V5d, V6a, V5c, V1d und VC4, H-9); mit dem gemessenen Überzug der gebauten Pakete (×1,5, E.3) um ≈ +0,8 MB. App-Version **4.8.1 (MK0), dann 4.9.0 → 4.20.0**; der Einbau der Speicherwellen (MK10, Bau-Abschnitt 2) bekommt die nächste freie Zwischennummer. Das **Speicherformat** steigt nur einmal, mit MK1 (4 → 5). **MK0** sorgt vorher dafür, dass kein ausgelieferter Stand Klänge einer neueren Engine verwirft oder überschreibt (EN3-04).
+- **13 Pakete im Plan** (MK0–MK8, MK10–MK13), zusammen **≈ 100–116 h** reine Bauzeit; **MK9 (Import) ist zurückgestellt** (Xander, 25.10.: kein Rechner, kein MIDI, keine .syx/.prg-Dateien) und steht außerhalb der Versionsfolge. Dazu kommt die Fach-Prüfung mit 1–2 h je Paket. Die Datei wächst nach Budget um **≈ +517 KB** (dazu ≈ +12 KB in V5d, V6a, V5c, V1d und VC4, H-9); mit dem gemessenen Überzug der gebauten Pakete (×1,5, E.3) um ≈ +0,8 MB. App-Version **4.8.1 (MK0), dann 4.9.0 → 4.20.0**; der Einbau der Speicherwellen (MK10, Bau-Abschnitt 2) bekommt die nächste freie Zwischennummer. Das **Speicherformat** steigt nur einmal, mit MK1 (4 → 5). **MK0** sorgt vorher dafür, dass kein ausgelieferter Stand Klänge einer neueren Engine verwirft oder überschreibt (EN3-04).
 - **Name und Aussehen (Xander, 25.10.):** Die neue Klangerzeugung heißt in der App **„MS 2000“** (Knopf neben VA │ FM │ WT; H-4). Ihr Bedienfeld sieht aus wie die **Vorderseite des Originals**, „genau so“: gleiche Anordnung, Drehschalter-Logik EDIT-WAHL 1/2, 5 Regler, Wert-Anzeige, BEND- und MOD-Rad links der Tasten, Oktav- und Arp-Tasten, dunkles Bedienfeld mit Holzwangen, aber ohne Korg-Name, Logo oder Korg-Schrift (EN3-20, B.3).
 - **Nur iPhone (Xander, 25.10.):** Kein Paket verlangt einen Rechner, MIDI oder eine Datei vom Rechner (EN3-21). Xander arbeitet nur am iPhone 12 Pro Max.
 - **Kern (MS2000 komplett):** MK1–MK7 bauen die Klangerzeugung, die Effekte, den Arpeggiator, den Mod-Sequenzer und den Vocoder. MK8 bringt eigene Werksklänge in 8 Genre-Bänken.
 - **MK10** bringt die Speicherwellen aus Xanders Aufnahmen: Er nimmt **in der App** auf (microKORG → AG06 → iPhone, Teil D), die App rechnet die Wellen aus, und der Bau **baut sie in die App ein** (H-2 = eingebaut), sodass alle sie hören. Tor nur für den Einbau: das Wellen-Paket aus der App.
 - **MK11–MK13** bringen die RADIAS-Teile ohne Samples: zweites Filter, Verzerrer, dritte Hüllkurve, Formant-Oszillator, mehr Stimmen.
-- **Größe (wichtig, H-1):** Nach Budget endet der Restplan ohne MK bei ≈ 4,98 MB, mit MK bei ≈ 5,51 MB. Die gebauten Pakete lagen aber im Mittel bei ×1,5 ihres Budgets (E.3). Mit diesem Faktor endet der Plan bei ≈ 7,0 MB, und die Grenze von 5,0 MB (EN2-28) fällt **mitten im Plan**: 4,5 MB bei ≈ V5d, 5,0 MB bei ≈ V8a. Die MK-Pakete selbst passen (nach MK13 ≈ 3,1–3,5 MB). Lösung nach H-1 (b): das Schlankheits-Paket SL1 (E.3a).
+- **Größe (wichtig, H-1):** Nach Budget endet der Restplan ohne MK bei ≈ 4,98 MB, mit MK bei ≈ 5,52 MB. Die gebauten Pakete lagen aber im Mittel bei ×1,5 ihres Budgets (E.3). Mit diesem Faktor endet der Plan bei ≈ 7,0 MB, und die Grenze von 5,0 MB (EN2-28) fällt **mitten im Plan**: 4,5 MB bei ≈ V5d, 5,0 MB bei ≈ V8a. Die MK-Pakete selbst passen (nach MK13 ≈ 3,1–3,5 MB). Lösung nach H-1 (b): das Schlankheits-Paket SL1 (E.3a).
 - **Was wiederverwendet wird:** der Stimmenpool von AnalogCore mit Ereignisprotokoll, Tempo, 30-ms-Stimmenblende, 40-ms-Engine-Blende und Lastbericht. Dazu Ladder-Filter mit 4 der 6 Abgriffe, polyBLEP-Säge/-Puls/-Sync, Hüllkurven-Kern, LFO-Formen und Mod-Matrix. Außerdem das Mipmap-Verfahren aus V4a (für AM als gemeinsamer, DOM-freier Tabellen-Bau nach Spec §10.1 neu gebaut, MK2), `MIC_ASK` und die Wege-Erkennung aus VS1 (mit einem gemeinsamen Mikrofon-Abgriff, MK7; auch für die Aufnahme-Seite in MK10), die Oktav-Wahl der Tastatur (`tr.kbOct`), der MIDI-Eingang (nur als freiwillige Zugabe am Desktop), sowie Bibliothek, Undo, Blatt-Rahmen und Regler-Gesten. Neu ist alles, was A.12 nennt (Teil A).
 
 ---
@@ -53,7 +53,7 @@ Stand 25.10.2026, **Rev. 2** nach Xanders Entscheidungen vom 25.10. (Rev. 1 = Re
 | **EN3-07** | **Werksklänge = eigene Rezepte.** Eine Namensprüfung läuft gegen die Werks-Programmlisten (HB-MK PDF 77, HB-MS S. 68–70). Diese Listen stehen nur in einer privaten Datei neben den Handbüchern (`scratchpad/manuals/werksnamen.local.json`), nie im Testskript, im Repo oder in der App (E.5 Nr. 5). | Plan Punkt 2. Die Testskripte werden ins öffentliche Repo kopiert (`wip-push.sh` → `bau/tests/`). |
 | **EN3-08** | **Import nur lokal** (gilt ab dem Bau von MK9; MK9 ist am 25.10. zurückgestellt, bis dahin gibt es keine 🔒-Sounds und keine Pflicht aus EN3-08/08a/19). Importierte Klänge tragen 🔒 (`loc: 1`); `normalizeSound` behält `loc` und `locRef` (MK9). Eine einzige Funktion `mkLocalStrip()` ist die **einzige Ausgangs-Schleuse**: Sie ersetzt 🔒-Sounds durch einen Platzhalter in **allen** Wegen, auf denen Daten den Speicher-Ursprung verlassen. Das sind Server-Autosave, `save_library`, Paar-Raum/Realtime, Mitmach-Link, Teilen und später VO3, VO4a–c, VC2b/VC2c, VC3/VC3b und VC4 (auch `sample` und `room.sendToClaudeSession`), Regel MK-R2 (EN3-19). Ausgenommen ist nur die eigene Übergabe Claude-App → Safari (`#import` aus `cloudHandoffUrl`), weil das Fragment nie einen Server erreicht (MK9 Umfang 5). Die Tests verwenden nur synthetische Dumps aus einem eigenen Schreiber. | Plan Punkt 2: „nie hochladen, nie mitliefern“. |
 | **EN3-08a** | **🔒 steckt an.** Jede Sound- oder Spur-Kopie, die irgendwelche Daten aus einem `loc: 1`-Sound übernimmt, bekommt `loc: 1` und behält dessen `origin`: Timbre kopieren (MK3), Sequenz kopieren (MK6), A/B, Speichern als, Duplizieren, Laden in eine Spur, Kopieren aus der Bibliothek. `saveSound` löscht `loc`/`locRef` nie. | Sonst ginge ein abgeleiteter Sound über Autosave und `save_library` hinaus, obwohl jede Abnahme besteht. |
-| **EN3-09** | **Speicherwellen:** Bis MK10 gibt es 64 additive Platzhalter mit „≈“. Was MK10 aus Xanders Aufnahmen gewinnt, wird **in die App eingebaut** (H-2, Xander 25.10.): ein kompakter Datenblock im Block `sq-mk-src`, den alle hören, auch Freunde im Paar-Raum. Erlaubt sind nur die **gerechneten Wellen** (Teiltonpegel und Phasen); Roh-Aufnahmen kommen weder in die App noch ins Repo. Die Marken-Regel EN3-05 bleibt: kein Korg-Name, kein Logo, keine Korg-Wörter, auch nicht im Datenblock (Salz-Byte, B.6 Nr. 9). Bis zum Einbau hört nur Xanders Gerät seine Aufnahmen (lokal, MK10). | Xanders Entscheidung. Ihm wurde gesagt, dass die Lizenz ungeklärt ist (wie EN2-11, DX7-ROM: die Wellen sind Daten aus seinem Korg-Gerät); er hat trotzdem „eingebaut“ gewählt. Das Risiko steht in MK10 Risiken. |
+| **EN3-09** | **Speicherwellen:** Bis MK10 gibt es 64 additive Platzhalter mit „≈“, nachgezeichnet aus einer Bild-Referenz (MK2; eingebaut werden nur selbst gerechnete Teiltonwerte, nie die Bilder). Was MK10 aus Xanders Aufnahmen gewinnt, wird **in die App eingebaut** (H-2, Xander 25.10.): ein kompakter Datenblock im Block `sq-mk-src`, den alle hören, auch Freunde im Paar-Raum. Erlaubt sind nur die **gerechneten Wellen** (Teiltonpegel und Phasen); Roh-Aufnahmen kommen weder in die App noch ins Repo. Die Marken-Regel EN3-05 bleibt: kein Korg-Name, kein Logo, keine Korg-Wörter, auch nicht im Datenblock (Salz-Byte, B.6 Nr. 9). Bis zum Einbau hört nur Xanders Gerät seine Aufnahmen (lokal, MK10). | Xanders Entscheidung. Ihm wurde gesagt, dass die Lizenz ungeklärt ist (wie EN2-11, DX7-ROM: die Wellen sind Daten aus seinem Korg-Gerät); er hat trotzdem „eingebaut“ gewählt. Das Risiko steht in MK10 Risiken. |
 | **EN3-10** | **Ein Tempo.** Arp, LFO-Sync, Delay-Sync und Mod-Seq folgen dem Song-Tempo `S.bpm`. Das Feld `arp.tempo` (20…300) wird nur gespeichert, für Import und Anzeige. Es verhält sich wie am Gerät mit „Clock = External“ (HB-MS S. 45, HB-MK S. 44). | In einem Sequencer gibt es eine Uhr. Zwei Tempi würden auseinanderlaufen. |
 | **EN3-11** | **Arp im Hauptfaden, Mod-Seq und Vocoder im Worklet.** Der Arp setzt zwischen Notenquelle und `spawnVoice` an (Z. 12610). Sein Planer läuft in `tick()` **vor** der Prüfung `R.playing` (Z. 13137), mit dem vorhandenen Vorlauf (`LOOKAHEAD` 0,1 s, Z. 12917), und schreibt `noteLog`. Er schickt dem Worklet zusätzlich den **Tastensatz** als eigenes Ereignis KEYS (Typ 9 = erste Taste gedrückt, Typ 10 = alle Tasten los, je mit Zeitstempel). Aufnahmen (● REC) speichern die **gespielten Tasten**, nicht die Arp-Noten (H-8, entschieden). Der Arp läuft auch im ECO-Klang (B.5). | M-ZEIT-Prüfung über `noteLog`. Die Ereignisse sind sampelgenau (16-Sample-Blöcke). Seq und Vocoder brauchen Stimmen- bzw. Audiotakt. Ohne KEYS sähe das Worklet nur Arp-Noten und setzte Key Sync „Timbre“ bei jedem Arp-Schritt zurück; das Gerät unterscheidet gespielte Tasten von Arp-Wiederholungen (HB-MS S. 43, S. 63). |
 | **EN3-12** | **Stimmen-Budget:** 4 Stimmen je AM-Spur wie MS2000 (HB-MS S. 2). MK13 erlaubt 8. Der CPU-Begrenzer ändert nie Gespeichertes (I-08), Stufen in B.4. | Plan Punkt 5. |
@@ -609,7 +609,7 @@ Ohne T2, FX, Seq und Vocoder. Der **Arp läuft auch im ECO-Klang** (er sitzt im 
    - (a) **AM-Teil** (Block `sq-mk-src`, Block `sq-mkrec-src`, AM-Zweig des Worklets zwischen den Marken `/*MK{*/` … `/*}MK*/`, AM-Hilfe- und LCD-Zeilen, AM-Werksnamen): `grep -ciE 'korg|micro ?korg|ms[ -]?2000|radias|dwgs|dw[ -]?[68]000|\bvox\b'` = 0. Der immer geladene Teil zählt mit, außer der einen Zeile mit `MK_LABEL`.
    - (b) **Ganze `index.html`:** `grep -ciE 'micro ?korg|radias|dwgs'` = 0. `grep -oiE 'ms[ -]?2000'` ergibt **genau 1** Treffer, und der ist wörtlich `MS 2000` (Großbuchstaben, U+0020) in der Zeile `MK_LABEL = 'MS 2000'`. Im laufenden DOM steht „MS 2000“ nur als Text von Engine-Knopf bzw. -Chip, `ENGINE_LABEL`-Ausgaben (Blattkopf, Browser, MIDI-Spurname), Bibliotheks-Filter und daraus gebildeten LCD-/Hilfe-Zeilen; das Bedienfeld selbst zeigt es nicht.
    - (c) **Kein Logo, keine Korg-Schrift:** Das Bedienfeld lädt keine neue Schrift (`@font-face` = 0 neue Einträge), enthält keine Bild-Daten (`data:image`, `<img>`) und keine Fläche, die einen Schriftzug nachbildet; FP-SICHER prüft die Bildschirmfotos aus M-SKIZZE zusätzlich mit dem Auge.
-   - Trifft ein Base64-Datenblock (Werksdaten MK8, Speicherwellen MK10) zufällig ein Wort (≈ 4,6 % je 24 KB), ändert das Bau-Skript die Kodierung (ein Salz-Byte) und prüft neu. Datenblöcke werden nicht ausgenommen.
+   - Trifft ein Base64-Datenblock (Nachzeichnung MK2, Werksdaten MK8, Speicherwellen MK10) zufällig ein Wort (≈ 4,6 % je 24 KB), ändert das Bau-Skript die Kodierung (ein Salz-Byte) und prüft neu. Datenblöcke werden nicht ausgenommen.
    - Spätere Pakete, die nach ihren Regeln Geräte im ⓘ nennen (V10P, V10d, VI3), lässt die Prüfung nicht scheitern.
 10. **Filter-Bauform:** Neue 2-Pol-Filter und Resonatoren (W-29, Analyse- und Synthese-Bänder des Vocoders, Formant-Resonatoren) sind **TPT-SVF** (Zero-Delay) mit g aus `GTAN` (gleiche Klemme 0,45 · SR, Z. 3836) und g/R je Sample über den 16er-Block interpoliert (wie die Ladder, Z. 5090). Keine Direktform-Biquads mit Koeffizientensprüngen, kein Chamberlin-SVF (instabil über ≈ fs/6). Filter 2 (MK11) ist eine zweite Ladder.
 11. **Denormale:** Jeder neue IIR- oder Rückkopplungs-Zustand (Vocoder-Bänder und Folger, Phaser, EQ, Filter 2, Formant-Resonatoren, W-29, Delay) bekommt den wechselnden ±1e-20-Versatz (wie Z. 5332) oder wird am Blockende unter 1e-15 auf 0 gesetzt.
@@ -889,52 +889,58 @@ Eine Version: **4.9.0** · **Budget** +115 KB (Rev. 2: +15 KB für Bedienfeld-Ma
 
 ### MK2 — Alle Oszillator-Arten und PATCH 1–4
 
-**Ziel.** OSZ 1 kann alles, was der MS2000 kann, außer „Eingang“ (MK7): Sinus mit Kreuzmodulation, Stimmwelle, 64 Speicherwellen (Platzhalter, klar markiert), Rauschen mit Filter. Die vier virtuellen Patches verbinden Hüllkurven, LFOs, Anschlag, Keytrack und Mod-Rad mit acht Zielen.
+**Ziel.** OSZ 1 kann alles, was der MS2000 kann, außer „Eingang“ (MK7): Sinus mit Kreuzmodulation, Stimmwelle, 64 Speicherwellen (nachgezeichnete Platzhalter, klar markiert), Rauschen mit Filter. Die vier virtuellen Patches verbinden Hüllkurven, LFOs, Anschlag, Keytrack und Mod-Rad mit acht Zielen.
 
 **Umfang.**
 1. **Sinus×** (W-27). Der Modulator ist OSZ 2 nach Sync, vor Ring (W-27).
 2. **Stimmwelle** (W-28), live gerechnet, ohne Tabellen.
-3. **Speicherwellen 1–64** (Platzhalter):
-   - Additive Rezepte mit ≤ 32 Teiltönen (Pegel in dB, als Bytes kodiert) und Familien nach HB-MS S. 37 (Nummer → Gruppe): 1–7 Sinus-artig, 8–14 Bass, 15–23 Welle, 24–26 Quinte, 27–34 Digital, 35 Endlos, 36–39 E-Piano, 40–46 Orgel, 47–48 Clavi, 49–51 Gitarre, 52–56 Bass 2, 57–60 Glocke, 61–64 Stimme.
-   - Die Teiltonvektoren entwirft der Builder selbst. Ziel ist der Charakter der Gruppe, nicht eine Kopie.
-   - **35 Endlos** ist ein Shepard-Ton: nur Oktav-Teiltöne 2^j mit Glockengewicht über log f (Mitte 440 Hz, σ 1,5 Okt) als Oktav-Tabellen.
-   - Gruppe 61–64 bekommt eine feste Hülle in Hz (Oktav-Tabellen).
+3. **Speicherwellen 1–64** (Platzhalter, nachgezeichnet; Prot. 57):
+   - **Quelle:** eine eigene Nachzeichnung (25.10.) der 64 Oszilloskop-Bilder einer frei verfügbaren Wellen-Referenzliste (PDF, eine Welle je Seite, alle auf derselben Note A3 = 220,3 Hz, je 10 ms). Gerechnet sind je Welle Teiltonpegel und Phasen, geprüft gegen eine zweite, unabhängige Spur: `scratchpad/dwgs-trace/dwgs-64-compact.json`, Volldatei `dwgs-64.json`, Prüfbericht `PRUEFUNG.md` (35 ok, 28 korrigiert, 1 zweifelhaft). Familien nach HB-MS S. 37 (Nummer → Gruppe): 1–7 Sinus-artig, 8–14 Bass, 15–23 Welle, 24–26 Quinte, 27–34 Digital, 35 Endlos, 36–39 E-Piano, 40–46 Orgel, 47–48 Clavi, 49–51 Gitarre, 52–56 Bass 2, 57–60 Glocke, 61–64 Stimme. Freie Rezepte des Builders entfallen.
+   - **Eingebaut** werden je Welle die Teiltöne 1–32 des Notenbands, also K = 32·r Teiltöne der Tabelle (32, 48 oder 64), mit Pegel und Phase (Datenblock unter **Daten**). Darüber setzt der Tabellen-Bau einen sanften, gruppentypischen Abfall (Tabelle unten). Nicht übernommen werden die weiteren Teiltöne der Kompaktdatei (bei 23 Wellen k 33–64, aus dem Bild nur grob), `mv` (Pegel im Bild bei unbekannter Aufnahme-Verstärkung) und die Namen. Jede Welle wird nach dem Bau auf Spitze 1 normiert (ein Faktor je Welle aus Mip-Stufe 0, für alle Stufen gleich), Gleichanteil 0.
+   - **Tonlage r:** Fünf Bilder wiederholen sich erst nach mehr als einer Notenperiode: 3, 34 und 35 nach 2 (r = 2), 28 und 59 nach einer temperierten Quinte (r = 2^(7/12) = 1,49831). Die Stimme liest jede Tabelle mit f/r (Phasen-Inkrement und Mip-Wahl). So klingt sie wie im Bild, und die starken Teiltöne liegen auf der Note. Beim Wechsel zwischen Wellen mit verschiedenem r läuft der Lese-Zeiger weiter, nur das Inkrement ändert sich. Ob das Gerät diese Wellen so spielt oder dort eine andere Taste gedrückt war, ist [U] bis MK10.
+   - **Abfall über Teilton 32** (eK): Ā = Effektivwert der Teiltöne 17–32 des Notenbands (Tabelle k = 16·r + 1 … 32·r). Für k > 32·r gilt A_k = Ā · (k / (22,6·r))^(s/6,02) bis zur Grenze der Mip-Stufe, s nach Gruppe (Tabelle unten). Phasen nach Schroeder, φ_k = −π·k·(k − 1)/1024, in allen Mip-Stufen gleich. Liegt Ā unter −50 dB (bezogen auf den stärksten Teilton), entfällt der Abfall; dort zeigt das Bild nur Rauschen.
+   - **35 Endlos** bleibt ein Shepard-Ton aus Oktav-Tabellen, jetzt mit der nachgezeichneten Hülle in Hz: nur Oktav-Teiltöne (f/2) · 2^j, Stützstellen 110 Hz · 2^j (j = 0 … 6, bis 7 kHz) mit −2,0 / −1,7 / −0,1 / 0 / −0,6 / −0,7 / −4,1 dB, dazwischen linear in dB über log f, darunter −6 dB/Okt, darüber −8 dB/Okt (das Bild zeigt bei 14 kHz −11,7 dB). Die übrigen Teiltöne der Nachzeichnung (≤ −26 dB) entfallen.
+   - **Gruppe 61–64** behält die feste Hülle in Hz (Oktav-Tabellen, [U] bis MK10): Stützstellen sind die nachgezeichneten Teiltöne bei k · 220,27 Hz, dazwischen linear in dB über log f, unter dem 1. Teilton −12 dB/Okt, über Teilton 32 der Abfall der Gruppe. Die Phasen bleiben je Teilton-Nummer k. Bei 220,27 Hz ergibt das genau die Nachzeichnung.
    - Mipmaps über den gemeinsamen, DOM-freien Tabellen-Bau `mkTables` (B.4, Spec §10.1), im Hauptfaden in Häppchen; Übergabe einmal je Kontext in die MKW-Tabelle. Bis die Tabelle da ist, spielt die Platzhalter-Säge mit „≈“.
    - Wahl über STEUER 2 (1…64; Import: Werte 2n−2, 2n−1 → n, HB-MS S. 66), als stetiger Regler mit Rundung (B.3).
    - Wellenwechsel bei klingender Note mit 2-ms-Gleichleistungs-Blende, phasenstetig (B.6 Nr. 2).
-   - **Gruppen-Merkmale** (eK, gelten für MK2-03; Teiltöne 1–32, dB relativ zum stärksten):
+   - **Abfall je Gruppe** (eK, gilt für MK2-03; s = Pegel je Teilton in dB je Oktave über Teilton 32 des Notenbands):
 
-     | Gruppe | Merkmal |
-     |---|---|
-     | 1–7 Sinus-artig | Teilton 1 ist der stärkste, alle anderen ≤ −12 dB |
-     | 8–14 Bass, 52–56 Bass 2 | Teiltöne 1–4 tragen ≥ 80 % der Energie |
-     | 15–23 Welle | ≥ 12 Teiltöne ≥ −40 dB |
-     | 24–26 Quinte | Teilton 3 ≥ Teilton 2 |
-     | 27–34 Digital | mindestens ein Teilton ≥ 9 liegt ≥ −12 dB |
-     | 35 Endlos | nur Oktav-Teiltöne (MK2-04) |
-     | 36–39 E-Piano | Teilton 1 ist der stärkste, alle Teiltöne ≥ 6 ≤ −24 dB |
-     | 40–46 Orgel | nur Zugriegel-Teiltöne 1, 2, 3, 4, 6, 8 ≥ −40 dB |
-     | 47–48 Clavi | Teilton 2 oder 3 ≥ Teilton 1; ≥ 10 Teiltöne ≥ −40 dB |
-     | 49–51 Gitarre | Teiltöne 2–5 je ≥ −20 dB |
-     | 57–60 Glocke | der stärkste Teilton ist ≥ 3 |
-     | 61–64 Stimme | Hülle in Hz mit dem Maximum zwischen 400 und 1200 Hz, bei C2 und C4 gleich ± 3 dB |
+     | Gruppe | s | Hinweis aus der Nachzeichnung |
+     |---|---|---|
+     | 1–7 Sinus-artig | −12 dB/Okt | meist ohne Abfall (Ā < −50 dB); 3 mit r = 2 |
+     | 8–14 Bass, 52–56 Bass 2 | −9 dB/Okt | 56: Form nur grob |
+     | 15–23 Welle | −9 dB/Okt | 20, 21: Form nur grob |
+     | 24–26 Quinte | −9 dB/Okt | 24, 25 ohne Teilton 1 (wie im Bild) |
+     | 27–34 Digital | −6 dB/Okt | 28 mit r = 1,49831, 34 mit r = 2; 28, 32: Form nur grob |
+     | 35 Endlos | −8 dB/Okt, nur Oktav-Teiltöne | Hülle in Hz (oben) |
+     | 36–39 E-Piano | −12 dB/Okt | |
+     | 40–46 Orgel | −12 dB/Okt | |
+     | 47–48 Clavi | −9 dB/Okt | 48 nur gerade Teiltöne (klingt eine Oktave höher, wie im Bild) |
+     | 49–51 Gitarre | −9 dB/Okt | |
+     | 57–60 Glocke | −9 dB/Okt | 59 mit r = 1,49831, Form nur grob; 60 zweifelhaft (MK2-12) |
+     | 61–64 Stimme | −12 dB/Okt | Hülle in Hz (oben); 64: Form nur grob |
+
    - LCD: „Speicherwelle 12 · Bass 5 ≈ Platzhalter“. Hilfe: „Originalwellen folgen später aus Aufnahmen“.
 4. **Rauschen-Oszillator** (W-29).
 5. **PATCH 1–4** (A.5, W-18). Je Timbre 4 Wege mit Quelle, Ziel und Intensität. „Bend“ wirkt mit dem BEND-Rad (in Ruhe 0), „Mod-Rad“ mit dem MOD-Rad (B.1 „Räder“). Das Ziel LFO2-Freq wirkt nicht, solange LFO2 Tempo Sync an ist (W-18). Intensität 0 kostet nichts.
 6. **EDIT-WAHL 2:** Die Stellungen PATCH 1–4 werden aktiv (die übrigen folgen ab MK3–MK6).
 7. **Leistungs-Probe:** Der Fall „Kern“ nutzt jetzt Speicherwelle + Sinus×.
 
-**Nicht-Umfang.** „Eingang“ (MK7). Originalwellen (MK10). Mehr als 4 Patches.
+**Nicht-Umfang.** „Eingang“ (MK7). Originalwellen (MK10). Teiltöne über 32 aus dem Bild, Pegel zwischen den Wellen (`mv`) und die Wellennamen der Bild-Referenz. Mehr als 4 Patches.
 
-**Daten.** `t[].o1.w` 3…6 wirken jetzt. `t[].p[]` wirkt jetzt.
+**Daten.** `t[].o1.w` 3…6 wirken jetzt. `t[].p[]` wirkt jetzt. Kein neues Speicherfeld: Ein Sound speichert weiter nur die Wellen-Nummer (STEUER 2).
+- **Datenblock der Nachzeichnung** (Prot. 57), eine Base64-Konstante im Block `sq-mk-src`: 1 Salz-Byte (B.6 Nr. 9), dann je Welle 1…64 ein Byte r-Kennung (0: r = 1, 1: r = 2, 2: r = 1,49831) und K = 32·r Teiltöne mit je 3 Byte: 12 Bit Pegel (0 = still, sonst −(4095 − c) · 0,025 dB bezogen auf den stärksten Teilton) und 12 Bit Phase (c · 2π/4096; x(θ) = Σ a_k · sin(kθ + φ_k), Bezug wie in der Kompaktdatei).
+- **Größe:** 59 × 32 + 2 × 48 + 3 × 64 = 2 176 Teiltöne = 6 593 Byte, Base64 ≈ 8,6 KB.
+- **Bau:** Das Bau-Skript `mk2-wellen.mjs` (Node) schreibt den Block aus `dwgs-64-compact.json` am Bau-Ort (E.5 Nr. 1). Gleiche Quelle ergibt einen bitgleichen Block; Namen und `mv` übernimmt es nicht. Nachgerechnet am 25.10.: Kodierfehler ≤ 0,0125 dB und ≤ 0,0008 rad, der Formfehler wächst dadurch um ≤ 0,001 Prozentpunkte, 0 Markenwörter schon ohne Salz.
 
 **Oberfläche.** EDIT-WAHL 2 mit PATCH 1–4 (B.3). OSZ 1: Die Matrix-Zeile zeigt WELLE · STEUER 1 · STEUER 2 wie am Original, die LCD-Zeile die Bedeutung je Welle. Die Auswahl-Liste der Speicherwellen hat 64 Zeilen mit Gruppenköpfen (Liste scrollt, L4) und „≈“.
 
 **Berührungspunkte.**
 - **Wiederverwendet:** das Mipmap-Verfahren (V4a, K2-40; portiert, `waveTab` bleibt im Worklet), Mod-Matrix-Plätze.
-- **Neu:** PM-Pfad Sinus×, Glottis-Puls (live), Oktav-Tabellen, 64 Rezepte, gemeinsamer Tabellen-Bau `mkTables` (DOM-frei; später von V8a, V4e und V9a genutzt, Teil G Nr. 9), MKW-Tabelle im `AudioWorkletGlobalScope`, Übergabe `{mkw}`, Patch-Ziele OSZ1-Steuer und LFO2-Freq.
+- **Neu:** PM-Pfad Sinus×, Glottis-Puls (live), Oktav-Tabellen, Datenblock der 64 nachgezeichneten Wellen mit Bau-Skript `mk2-wellen.mjs`, Abfall über Teilton 32, Tonlage r, gemeinsamer Tabellen-Bau `mkTables` (DOM-frei; später von V8a, V4e und V9a genutzt, Teil G Nr. 9), MKW-Tabelle im `AudioWorkletGlobalScope`, Übergabe `{mkw}`, Patch-Ziele OSZ1-Steuer und LFO2-Freq.
 
-**Dauer** 6,5–7,5 h · **Version 4.10.0** · **Budget** +35 KB · Format bleibt 5.
+**Dauer** 7–8 h (Prot. 57: +0,5 h für Bau-Skript, Tonlage r, Hüllen aus der Nachzeichnung und MK2-12; die freien Rezepte entfallen) · **Version 4.10.0** · **Budget** +42 KB (Prot. 57: +7 KB, weil der Datenblock ≈ 8,6 KB hat statt ≈ 2–3 KB Rezept-Bytes) · Format bleibt 5.
 
 **Abnahme-Checkliste**
 - [ ] **MK2-01 Sinus×:**
@@ -948,8 +954,8 @@ Eine Version: **4.9.0** · **Budget** +115 KB (Rev. 2: +15 KB für Bedienfeld-Ma
   - C7: gefaltete Energie (B.6 Nr. 12) ≤ −50 dB.
 - [ ] **MK2-03 Speicherwellen:**
   - 64 Wellen, Spitze 1, kein Gleichanteil.
-  - Jede Welle unterscheidet sich von jeder anderen: RMS-Abstand ≥ 1 dB über die Teiltöne 1–16.
-  - Die Gruppen-Merkmale der Tabelle in Umfang 3 sind erfüllt.
+  - Jede Welle unterscheidet sich von jeder anderen: RMS-Abstand ≥ 1 dB über die Teiltöne 1–16 (Nachzeichnung: kleinster Abstand ≈ 4 dB).
+  - Über Teilton 32 folgt jede Welle dem Abfall nach Umfang 3 (Pegel je Oktave ± 0,5 dB gegen die Formel, FFT der Mip-Stufe 0). Mit Ā < −50 dB hat sie dort keine Teiltöne; 35 hat nur Oktav-Teiltöne.
   - C7: gefaltete Energie (B.6 Nr. 12) ≤ −50 dB.
   - Wellenwechsel bei klingender Note besteht M-KLICK.
   - Jede Welle trägt „≈“ in LCD und Liste.
@@ -977,17 +983,23 @@ Eine Version: **4.9.0** · **Budget** +115 KB (Rev. 2: +15 KB für Bedienfeld-Ma
   - EDIT-WAHL 2 mit PATCH 1–4, LCD z. B. „PATCH 2 · LFO 1 → CUTOFF · +32“; M-SKIZZE besteht weiter.
   - Listen mit ≥ 44-px-Zeilen.
   - M-PLATZ in P1–P3, L1, L2, W. H-1/H-3 für alle neuen Regler.
-- [ ] **MK2-11 Regression und DoD**, Budget ≤ +35 KB, kein Markenwort.
+- [ ] **MK2-11 Regression und DoD**, Budget ≤ +42 KB, kein Markenwort.
+- [ ] **MK2-12 Nachzeichnung** (`mk2-wellen.mjs`; Bezug am Bau-Ort, E.5 Nr. 1):
+  - Datenblock: gleiche Quelle → bitgleicher Block, ≤ 9 KB, 0 Markenwörter (B.6 Nr. 9), keine Wellennamen. Dekodiert gleicht er der Kompaktdatei: Pegel ± 0,02 dB (Teiltöne ≥ −100 dB), Phase ± 0,001 rad, r genau 1, 2 oder 1,49831.
+  - Form: Je Welle wird eine Periode aus `mkTables` genommen (Mip-Stufe 0; für 35 und 61–64 die Tabelle für genau 220,27 Hz) und per FFT auf die Teiltöne ≤ 32·r begrenzt. Bezugskurve ist die Volldatei `dwgs-64.json` (Teiltöne ≤ 64·r, Spitze 1), gleiche Phasenlage ohne Verschieben, Verstärkung nach kleinsten Quadraten. Der RMS-Abstand in % der Spitze ist ≤ „rms32 %“ der Welle in `PRUEFUNG.md` + 0,1 Prozentpunkte. Am 25.10. mit dieser Kodierung nachgerechnet: höchstens +0,001; 35 mit nur Oktav-Teiltönen 4,6 % (Grenze 5,7 %).
+  - Gespielt: `mkRender` bei 187,5 Hz (Filter offen, Amp-HK gehalten), Mittel über 8 Perioden. Der Grundton der Tabelle liegt bei f/r ± 1 ct (3, 34, 35: 93,75 Hz; 28, 59: 125,14 Hz). Die Teiltöne 1–16 weichen je ≤ 1 dB von der Quelle ab (Teiltöne ≥ −40 dB; bei 35 und 61–64 von der Hülle in Hz).
+  - Zweifelhaft und in CHANGES benannt: **60** (Glocke 4: keine Periode im Bild, unharmonische Teiltöne, 30 % des Bilds nicht darstellbar, nur grobe Näherung). Mit Vorbehalt: **3, 28, 34, 35, 59** (Tonlage r ungeklärt) und **20, 21, 28, 32, 56, 59, 64** (Form nur grob, Teiltöne 1–32 lassen dort 9–13 % Rest). Alle tragen „≈“ wie die übrigen.
+  - Fehlt der Bezug am Bau-Ort, ist MK2-12 offen, nicht bestanden.
 
-**Tests.** `mk2-osc.mjs`, `mk2-patch.mjs`, `mk2-ui.mjs`.
+**Tests.** `mk2-osc.mjs`, `mk2-patch.mjs`, `mk2-ui.mjs`, `mk2-wellen.mjs` (Bau-Skript des Datenblocks und Prüfung MK2-12; liest die Nachzeichnung vom Bau-Ort und enthält selbst keine Wellennamen).
 
-**Fach-Prüfung:** **FP-DSP** Haupt-, **FP-KLANG** Zweit-Blick.
+**Fach-Prüfung:** **FP-DSP** Haupt-, **FP-KLANG** und **FP-SICHER** Zweit-Blick (FP-SICHER: Datenblock nur aus gerechneten Werten, ohne Namen und Markenwörter; Bild-Referenz und Nachzeichnung nicht im Repo).
 
 **iPhone:** EDIT-WAHL 1 auf OSZ 1 → WELLE Speicherwelle, STEUER 2 durchdrehen. EDIT-WAHL 2 auf PATCH 1: LFO 2 → Cutoff, +40.
 
-**Geräte-Abgleich:** Stimmwelle FORM 0/64/127. Sinus× X-MOD 64. Rauschen CUTOFF 24 mit RESO. 127 (gleiche Tonhöhe wie die Taste?). Klang einzelner Speicherwellen (nur als Vorgeschmack, die Originale kommen mit MK10).
+**Geräte-Abgleich:** Stimmwelle FORM 0/64/127. Sinus× X-MOD 64. Rauschen CUTOFF 24 mit RESO. 127 (gleiche Tonhöhe wie die Taste?). Klang einzelner Speicherwellen (nur als Vorgeschmack, die Originale kommen mit MK10). Dabei 3, 28 und 59 auf A3: Liegt der Grundton am Gerät auch eine Oktave (3) bzw. eine Quinte (28, 59) unter der Taste? Das klärt r schon vor MK10.
 
-**Risiken.** Die Platzhalter klingen anders als die Originale, das ist gewollt und markiert. Der Tabellenspeicher auf dem iPhone ist ungemessen; er wird mit dem V8a-Pool zusammen geprüft (Teil G Nr. 9).
+**Risiken.** Die Platzhalter sind Nachzeichnungen, nicht die Originale, und bleiben darum mit „≈“ markiert. Das Bild zeigt eine Note und 10 ms ohne Verlauf. Teiltöne über 32 sind geschätzt (Abfall). Filter, Verstärker und Aufnahmekette färben die Werte, und die Pegel zwischen den Wellen sind unbekannt (jede Welle hat Spitze 1). 60 ist nur eine grobe Näherung, r von 3, 28, 34, 35 und 59 ist [U]. **Lizenz:** Eingebaut werden nur selbst gerechnete Teiltonwerte, nie die Bilder oder das PDF; beide bleiben privat am Bau-Ort (E.5 Nr. 5). Die Lizenzlage ist dieselbe offene wie bei MK10 (Wellen eines Korg-Geräts), und Xander hat sich fürs Einbauen entschieden (H-2). Für 23 Wellen enthält die Kompaktdatei auch Teiltöne 33–64 (grob). Sie einzubauen kostete ≈ +3,5 KB und wäre ein eigener Fix-Schritt. Der Tabellenspeicher auf dem iPhone ist ungemessen; er wird mit dem V8a-Pool zusammen geprüft (Teil G Nr. 9).
 
 ---
 
@@ -1568,7 +1580,9 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 
 ### MK10 — Speicherwellen: Aufnahme in der App und Einbau
 
-**Ziel.** Die 64 Platzhalter werden durch Wellen ersetzt, die aus Xanders eigenen microKORG-Aufnahmen gewonnen sind, und **in die App eingebaut**, sodass alle sie hören, auch Freunde im Paar-Raum (H-2, Xander 25.10.). Xander nimmt **am iPhone direkt in der App** auf (microKORG → AG06 → iPhone, Teil D), ohne Rechner und ohne Dateien hin- und herzuschieben (EN3-21). Damit klingt die Klangerzeugung „original“ (KF §3–4).
+**Ziel.** Die 64 nachgezeichneten Platzhalter aus MK2 werden durch Wellen ersetzt, die aus Xanders eigenen microKORG-Aufnahmen gewonnen sind, und **in die App eingebaut**, sodass alle sie hören, auch Freunde im Paar-Raum (H-2, Xander 25.10.). Xander nimmt **am iPhone direkt in der App** auf (microKORG → AG06 → iPhone, Teil D), ohne Rechner und ohne Dateien hin- und herzuschieben (EN3-21). Damit klingt die Klangerzeugung „original“ (KF §3–4).
+
+**Warum MK10 trotz der Nachzeichnung nötig bleibt** (Prot. 57): Die Nachzeichnung stammt aus Bildern einer fremden Aufnahme (eine Note, 10 ms). Erst Xanders Aufnahmen geben (1) den genauen Klang, weil die Bezugs-Säge die Aufnahmekette herausrechnet; (2) die oberen Teiltöne bis N = min(64, Nyquist/f₀) statt des geschätzten Abfalls über Teilton 32; (3) das Verhalten je Oktave statt einer einzigen Note; (4) die Pegel zwischen den Wellen statt Spitze 1 je Welle; (5) die Tonlage r von 3, 28, 34, 35 und 59 und eine echte Periode für 60.
 
 **Zwei Bau-Abschnitte:**
 - **Abschnitt 1 (4.17.0):** Aufnahme-Seite, Ersatzweg über Dateien, Analyse, sofort hörbar auf Xanders Gerät, Wellen-Paket für den Bau. Kein Tor (H-2 ist entschieden).
@@ -1588,6 +1602,7 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
    - Sammel-Datei (8 Wellen, getrennt durch ≥ 3 s Stille): an der Stille teilen und nach Reihenfolge zuordnen.
    - Kanal: bei Stereo der lautere bzw. nicht stille Kanal.
    - Einsatz-Erkennung je Ton (dieselbe wie beim Zuschnitt auf der Aufnahme-Seite). Die Tonhöhe wird gemessen, nicht angenommen.
+   - **Periode:** Gesucht wird die Wiederholung bis zu 2 Notenperioden, nicht nur die Notenperiode (in MK2 wiederholen sich 3, 34 und 35 erst nach 2, 28 und 59 nach 1,4983 Perioden). Das gemessene r geht ins Paket. Ohne klare Wiederholung (in MK2: 60) wird über die Notenperiode gemittelt, und der Bericht zeigt die Welle gelb.
    - Stabilen Abschnitt wählen (0,5–1,5 s nach dem Einsatz).
    - Periodensynchrone Mittelung über ≥ 0,5 s ergibt eine Periode.
    - DFT ergibt die Teiltöne 1…N (N = min(64, Nyquist/f₀)), Pegel und Phase.
@@ -1596,10 +1611,10 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
    - Eine Tabelle je aufgenommener Oktave (C1…C7) als Oktav-Tabellen (B.6 Nr. 6). Fehlt eine Oktave, gilt die Nachbaroktave, mit Hinweis.
 4. **Speicher:** eine **eigene IndexedDB-Datenbank `synq-mkwaves`** (Version 1), wie `synq-miccheck` (Z. 29790). Die Datenbank `synquenzer` bleibt unberührt und ohne Versionserhöhung: Ein neuer Store dort zwänge ältere Stände und offene Tabs in den localStorage-Rückfall bzw. `onversionchange` (Z. 8195–8198, 8222). MK10 ruft `navigator.storage.persist()` selbst auf und zeigt das Ergebnis. Die Wellen gehen nie in einen Upload, nie in Projekt, Sound oder Bibliothek. **Sofort hörbar:** Auf Xanders Gerät nimmt die Engine die eigenen Wellen statt der Platzhalter, das „≈“ verschwindet für diese Wellen; [Platzhalter benutzen] schaltet zurück. Bis zum Einbau hören andere Geräte die Platzhalter.
 5. **Wellen-Paket für den Bau:** [Wellen an den Bau geben] baut `mkwaves-paket.json` (nur Analyse-Ergebnisse: Teiltonpegel und Phasen je Welle und Oktave, Güte, Datum, App-Version, Prüfsumme; **kein Roh-Audio**, ≤ 200 KB) und öffnet das iOS-Teilen-Blatt (`navigator.share({files})`; ohne Teilen-Blatt ein Download nach „Dateien“). Xander gibt die Datei auf dem Weg nach **H-15** weiter. Kein Rechner nötig.
-6. **Bericht** je Welle: Güte (Stabilität der Periode, Klirr der Mittelung, Clipping, Rauschabstand gegen die Stille-Aufnahme) und die Pegel-Abweichung von ihrem Platzhalter.
+6. **Bericht** je Welle: Güte (Stabilität der Periode, Klirr der Mittelung, Clipping, Rauschabstand gegen die Stille-Aufnahme) und die Pegel-Abweichung von ihrem Platzhalter. Dazu die Abweichung von der Nachzeichnung (M-BAND, Teiltöne 1–16) und das gemessene r, gelb, wenn es vom MK2-Wert abweicht.
 
 **Umfang Abschnitt 2 (Einbau).**
-7. **Bau-Skript `mk10-einbau.mjs`** (Node) liest das Paket, prüft Prüfsumme, Vollständigkeit (Bezug und 64 Wellen, jede aufgenommene Oktave) und Güte und schreibt einen kompakten **Datenblock** (Teiltonpegel als Bytes je Oktave, Phasen als 6 Bit, Base64) in `sq-mk-src`, ≤ 45 KB. Gleiches Paket ergibt einen bitgleichen Block. Trifft der Block ein Markenwort, ändert das Skript das Salz-Byte (B.6 Nr. 9). Das Paket liegt privat am Bau-Ort (neben den Handbüchern), nie im Repo; Roh-Aufnahmen gibt es dort nicht.
+7. **Bau-Skript `mk10-einbau.mjs`** (Node) liest das Paket, prüft Prüfsumme, Vollständigkeit (Bezug und 64 Wellen, jede aufgenommene Oktave) und Güte und schreibt einen kompakten **Datenblock** (Teiltonpegel als Bytes je Oktave, Phasen als 6 Bit, Base64) in `sq-mk-src`, ≤ 45 KB. Der Datenblock der Nachzeichnung aus MK2 fällt dabei weg (≈ −8,6 KB, netto ≈ +36 KB). Gleiches Paket ergibt einen bitgleichen Block. Trifft der Block ein Markenwort, ändert das Skript das Salz-Byte (B.6 Nr. 9). Das Paket liegt privat am Bau-Ort (neben den Handbüchern), nie im Repo; Roh-Aufnahmen gibt es dort nicht.
 8. **Alle hören die Wellen:** Die Engine nimmt die eingebauten Wellen statt der Platzhalter, auf jedem Gerät und im Paar-Raum; das „≈“ verschwindet überall (`mkInfo().waves === 'eingebaut'`). Eine spätere lokale Neu-Aufnahme bleibt auf Xanders Gerät eine Wahl [Eigene Aufnahme │ Eingebaut].
 9. **Pegel:** MK8-04 läuft mit den eingebauten Wellen erneut; Ausreißer werden im Einbau-Schritt nachgestimmt.
 
@@ -1643,7 +1658,7 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
   - Test-Profil ohne Mikrofon (wie die Claude-App): `getUserMedia`-Zähler 0, nur der Ersatzweg sichtbar.
   - Dieselbe synthetische Aufnahme über [Dateien laden] ergibt dieselben Tabellen (Teiltonpegel max |Δ| ≤ 0,1 dB).
 - [ ] **MK10-13 Wellen-Paket:** [Wellen an den Bau geben] ruft `navigator.share` mit genau einer Datei (Stub) bzw. lädt sie herunter; Inhalt nach Feldliste, Prüfsumme stimmt, kein Roh-Audio, ≤ 200 KB.
-- [ ] **MK10-14 Einbau:** `mk10-einbau.mjs` ist deterministisch (gleiches Paket → bitgleicher Block), Block ≤ 45 KB, 0 Markenwörter (B.6 Nr. 9). Die eingebauten Wellen gleichen den lokalen (Teiltonpegel ± 0,5 dB nach der Byte-Kodierung, M-BAND ≤ 0,5 dB). Ein frischer Speicher-Ursprung (Test-Profil) und ein Paar-Raum-Partner hören die eingebauten Wellen ohne „≈“ (`mkInfo().waves === 'eingebaut'`). Sounds ohne Speicherwelle klingen bitgleich zum Vorgänger-Stand.
+- [ ] **MK10-14 Einbau:** `mk10-einbau.mjs` ist deterministisch (gleiches Paket → bitgleicher Block), Block ≤ 45 KB, 0 Markenwörter (B.6 Nr. 9). Die eingebauten Wellen gleichen den lokalen (Teiltonpegel ± 0,5 dB nach der Byte-Kodierung, M-BAND ≤ 0,5 dB). Ein frischer Speicher-Ursprung (Test-Profil) und ein Paar-Raum-Partner hören die eingebauten Wellen ohne „≈“ (`mkInfo().waves === 'eingebaut'`). Sounds ohne Speicherwelle klingen bitgleich zum Vorgänger-Stand. Der Datenblock aus MK2 ist entfernt, r kommt aus dem Paket.
 
 **Tests.** `mk10-analyse.mjs` (mit synthetischen „Aufnahmen“ aus bekannten Wellen, eigenem Filter-Abfall und Rauschen), `mk10-rec.mjs` (Chromium, Fake-Gerät), `mk10-lokal.mjs`, `mk10-einbau.mjs` (Bau-Skript und Prüfung), `mk10-ui.mjs`.
 
@@ -1659,7 +1674,7 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 
 **Geräte-Abgleich:** Einzelne Speicherwellen in der App gegen dieselbe Welle am microKORG (C2, C4, C6).
 
-**Risiken.** **Lizenz:** Die Wellen sind Daten aus Xanders Korg-Gerät; die Lizenz ist ungeklärt. Xander weiß das und hat „eingebaut“ gewählt (H-2). Ein Risiko entstünde vor allem, wenn die App verkauft würde; dann wäre der Einbau neu zu prüfen. Ob iOS Safari die Sprach-Verarbeitung bei einem USB-Gerät wirklich abschaltet, zeigt erst das Gerät (darum `getSettings()` und die rote Warnung). Ob sich die DWGS-Wellen je Oktave ändern, ist [U], deshalb mehrere Oktaven. Raumgeräusche fallen weg, weil die Line-Aufnahme Pflicht ist. Die Übergabe des Pakets braucht einen Weg vom iPhone zum Bau (H-15).
+**Risiken.** **Lizenz:** Die Wellen sind Daten aus Xanders Korg-Gerät; die Lizenz ist ungeklärt. Xander weiß das und hat „eingebaut“ gewählt (H-2). Dieselbe offene Lage gilt schon für die Nachzeichnung in MK2 (nur gerechnete Werte, keine Bilder). Ein Risiko entstünde vor allem, wenn die App verkauft würde; dann wäre der Einbau neu zu prüfen. Ob iOS Safari die Sprach-Verarbeitung bei einem USB-Gerät wirklich abschaltet, zeigt erst das Gerät (darum `getSettings()` und die rote Warnung). Ob sich die DWGS-Wellen je Oktave ändern, ist [U], deshalb mehrere Oktaven. Raumgeräusche fallen weg, weil die Line-Aufnahme Pflicht ist. Die Übergabe des Pakets braucht einen Weg vom iPhone zum Bau (H-15).
 
 ---
 
@@ -1873,7 +1888,7 @@ Lage: Die MK-Gruppe beginnt direkt nach G-P2 (V2d′ ✓ 4.6.0, V2e 4.7.0, V2e�
 |---|---|---|---|---|---|---|---|---|
 | MK0 | Vorab-Schutz: Klänge neuerer Engines bleiben | 4.8.1 | +4 | 2–3 | V2e′ | 4 | – | G-MK1 |
 | MK1 | Klangkern T1, Bedienfeld wie das Original, Räder, Leistungs-Probe | 4.9.0 | +115 | 19–22 | MK0, V2e′ (Reihenfolge), V4a (SXF) | **4 → 5** | Rollout `max_format` 5 (Xanders Okay, nach MK0) | G-MK1 · Stand |
-| MK2 | Alle Oszillator-Arten, PATCH 1–4 | 4.10.0 | +35 | 6,5–7,5 | MK1 | 5 | – | G-MK1 |
+| MK2 | Alle Oszillator-Arten, PATCH 1–4 (Speicherwellen nachgezeichnet) | 4.10.0 | +42 | 7–8 | MK1 | 5 | – | G-MK1 |
 | MK3 | Zwei Timbres, Split, Stimmung | 4.11.0 | +33 | 7,5–8,5 | MK2 | 5 | – | G-MK1 |
 | MK4 | Mod-FX, Delay, EQ | 4.12.0 | +25 | 5–6 | MK2 (EDIT-WAHL 2) | 5 | – | G-MK1 · **Stand** |
 | MK5 | Step-Arpeggiator | 4.13.0 | +33 | 7,5–8,5 | MK3 | 5 | – | G-MK2 |
@@ -1885,13 +1900,14 @@ Lage: Die MK-Gruppe beginnt direkt nach G-P2 (V2d′ ✓ 4.6.0, V2e 4.7.0, V2e�
 | MK11 | RADIAS 1: Filter 2, Verzerrer | 4.18.0 | +25 | 6–7 | MK3, MK6 | 5 | – | G-MK4 |
 | MK12 | RADIAS 2: EG3, Formant-Osz. | 4.19.0 | +22 | 5,5–6,5 | MK11, MK7 (Vokal-Quelle) | 5 | – | G-MK4 |
 | MK13 | RADIAS 3: 8 Stimmen | 4.20.0 | +10 | 3–4 | MK3, MK7 | 5 | – | G-MK4 · **Stand** |
-| **Summe** | 13 Pakete (MK9 zurückgestellt) | 4.8.1, 4.9.0–4.20.0 (+ Einbau-Zwischennummer) | **+510** | **≈ 100–115** | | einmal | | |
+| **Summe** | 13 Pakete (MK9 zurückgestellt) | 4.8.1, 4.9.0–4.20.0 (+ Einbau-Zwischennummer) | **+517** | **≈ 100–116** | | einmal | | |
 
 - **Rev. 1 gegenüber der ersten Fassung:** +23 KB und +13–14 h (MK0 neu; Protokoll, Priorität, `engXf`, Bruchwerte, MIDI-Rad und Probe in MK1; [T1+2]/Solo in MK3; Intervall-Satz und KEYS in MK5; Mikrofon-Abgriff, Abgriff vor dem Fader und Vokal-Quelle in MK7; Import-Regeln in MK9; Wellen-Leser und eigene Datenbank in MK10; MK12 −0,5 h). Dazu kommen nach H-9 ≈ +5 h und +12 KB in V5d, V6a, V5c, V1d und VC4 (Teil G Nr. 4).
 - **Rev. 2 gegenüber Rev. 1** (Xanders Entscheidungen 25.10.): +47 KB und ≈ +5 h. MK9 fällt aus der Summe (−27 KB, −6–7 h). MK1 +15 KB und +5–6 h (Bedienfeld wie das Original, Räder), MK3 +1 KB und +0,5 h, MK6 +1 KB und +0,5 h, MK7 +2 KB und +0,5 h (Vocoder-Stellungen, LEDs), MK10 +55 KB und +4–4,5 h (eingebaute Wellen +45 KB, Aufnahme-Seite, Einbau). MK10–MK13 rücken eine Versionsnummer vor.
+- **Nachzeichnung (25.10., Prot. 57) gegenüber Rev. 2:** MK2 +7 KB und +0,5 h (Datenblock der nachgezeichneten Wellen statt freier Rezepte). Summe +517 KB, 100–115,5 h.
 - **Tore** (E.5 Nr. 3 sinngemäß): MK9 ist zurückgestellt, nicht nur verschoben; es hält nichts auf. Ist MK10-T geschlossen (das Wellen-Paket fehlt noch), wartet nur der Einbau-Abschnitt von MK10; MK11–MK13 laufen weiter. Der Einbau und ein später doch gebautes MK9 bekommen die nächste freie Zwischennummer, z. B. 4.17.1 oder 4.20.1, damit die Versionen streng steigen (EN2-14). Die Abnahmen nennen darum keine feste Vorgänger-Nummer (B.6 Nr. 1).
 - **Fach-Prüfung:** 13 × 1–2 h zusätzlich (EN2-29).
-- **Gesamtdauer** ≈ 113–141 h inkl. Fach-Prüfung.
+- **Gesamtdauer** ≈ 113–142 h inkl. Fach-Prüfung.
 
 ### E.2 Begründung der Reihenfolge
 
@@ -1904,7 +1920,7 @@ Lage: Die MK-Gruppe beginnt direkt nach G-P2 (V2d′ ✓ 4.6.0, V2e 4.7.0, V2e�
 
 ### E.3 Größe und Startzeit (EN2-28)
 
-Grundlage: 4.6.0 = 2 473 307 B. Restplan-Budgets aus N2 E.4, Reihenfolge nach N3.0.1 Nr. 6 (VS3 vor MK0), mit den **Rev.-2-Budgets** (MK9 nicht im Plan, MK10 +80 KB, MK1 +115 KB) und den +12 KB aus H-9. MB = 10⁶ B, KB = 1024 B. Rechnung wie Rev. 1 (`scratchpad/rev1-tools/size2.py`), am 25.10. mit den Rev.-2-Budgets neu gerechnet.
+Grundlage: 4.6.0 = 2 473 307 B. Restplan-Budgets aus N2 E.4, Reihenfolge nach N3.0.1 Nr. 6 (VS3 vor MK0), mit den **Rev.-2-Budgets** (MK9 nicht im Plan, MK10 +80 KB, MK1 +115 KB; MK2 +42 KB nach Prot. 57) und den +12 KB aus H-9. MB = 10⁶ B, KB = 1024 B. Rechnung wie Rev. 1 (`scratchpad/rev1-tools/size2.py`), am 25.10. mit den Rev.-2-Budgets neu gerechnet.
 
 **Ist-Faktor:** Die gebauten Pakete V0b…V2d′ hatten zusammen 755 KB Budget; die Datei wuchs um 2 473 307 − 1 316 464 B = 1 130 KB (**×1,5**, ganze Datei mit allen Fix-Schritten). Je Paket laut CHANGES lagen die Überzüge zwischen +23 % und +105 % (V4b +23 %, V4c +69 %, V2d +88 %, VO1 +105 %), über 15 Pakete seit V0a +29 % (**×1,3**). Die Spalte ×1,5 ist die Planungsgrundlage, weil sie die Grenze schützt; ×1,3 ist die untere Schätzung.
 
@@ -1912,13 +1928,13 @@ Grundlage: 4.6.0 = 2 473 307 B. Restplan-Budgets aus N2 E.4, Reihenfolge nach N3
 |---|---|---|---|
 | nach V2e′ | ≈ 2,57 MB | ≈ 2,60 MB | ≈ 2,62 MB |
 | nach VS3 (vor MK0; ohne VS3 alle MK-Zeilen ≈ −0,04 MB) | ≈ 2,61 MB | ≈ 2,65 MB | ≈ 2,67 MB |
-| nach MK4 | ≈ 2,82 MB | ≈ 2,93 MB | ≈ 3,00 MB |
-| nach MK8 | ≈ 2,99 MB | ≈ 3,14 MB | ≈ 3,25 MB |
-| nach MK13 (mit MK10 eingebaut) | ≈ 3,13 MB | ≈ 3,33 MB | ≈ 3,46 MB |
-| 4,5 MB erreicht bei | V9e | V7d | V5d |
+| nach MK4 | ≈ 2,83 MB | ≈ 2,94 MB | ≈ 3,01 MB |
+| nach MK8 | ≈ 3,00 MB | ≈ 3,15 MB | ≈ 3,26 MB |
+| nach MK13 (mit MK10 eingebaut) | ≈ 3,14 MB | ≈ 3,33 MB | ≈ 3,47 MB |
+| 4,5 MB erreicht bei | V9e | V7c | V5d |
 | 5,0 MB erreicht bei | V10f | V9d′ | V8a |
 | **Planende ohne MK** (alle übrigen Pakete aus N2 E.4) | ≈ 4,98 MB | ≈ 5,73 MB | ≈ 6,23 MB |
-| **Planende mit MK** (MK10 eingebaut) | **≈ 5,51 MB** | **≈ 6,42 MB** | **≈ 7,03 MB** |
+| **Planende mit MK** (MK10 eingebaut) | **≈ 5,52 MB** | **≈ 6,43 MB** | **≈ 7,04 MB** |
 | dazu H-3 = 128 (+20 KB; nicht gewählt) | +0,02 MB | +0,03 MB | +0,03 MB |
 | dazu MK9, falls später gebaut (+27 KB) | +0,03 MB | +0,04 MB | +0,04 MB |
 
@@ -1943,11 +1959,11 @@ Die Pakete nach der MK-Gruppe (V2a′, V2f, VL, V7a, VC2a, VS4 …) bekommen ihr
 
 ### E.5 Regeln für den Bau (ergänzt N2 E.5)
 
-1. **Bau-Ort** (wie EN2-17): Dieser Nachtrag, HB-MS und HB-MK (privat, nur lesen), KF, `fragen-xander-9.md`. Für den MK10-Einbau das Wellen-Paket aus der App (privat neben den Handbüchern). Fehlt etwas, wird das Paket bzw. der Abschnitt nicht begonnen.
+1. **Bau-Ort** (wie EN2-17): Dieser Nachtrag, HB-MS und HB-MK (privat, nur lesen), KF, `fragen-xander-9.md`. Für den MK10-Einbau das Wellen-Paket aus der App (privat neben den Handbüchern). Für MK2 die Nachzeichnung `scratchpad/dwgs-trace/` (`dwgs-64-compact.json`, `dwgs-64.json`, `PRUEFUNG.md`; privat wie die Handbücher). Fehlt etwas, wird das Paket bzw. der Abschnitt nicht begonnen.
 2. **Rollout** (N2 G.8): MK1 `max_format` 5, erst wenn MK0 ausgeliefert ist. Jedes Paket hebt `max_app`. Alles nur mit Xanders ausdrücklichem Okay je Schritt, nie im Klassenzimmer-Projekt, nie am Webseiten-Repo (EN2-32).
 3. **Zwischenstände** nach EN3-17 auf die Artifact-Adresse, die Pages-Seite und den githack-Spiegel (EN2-15).
 4. **CHANGES** je Paket: Messwerte der Abnahme, Node- und Chromium-CPU (als Vielfaches der VA-Stimme, dazu absolut), Größe, Startzeit (ab 4,5 MB Pflicht), Fach-Prüfung, iPhone-Punkte, Geräte-Abgleich (wenn schon da), Lücken, der Vorgänger-Stand (Version) für alle „bitgleich“-Abnahmen. Liegt ein MK-Paket > 50 % über seinem Budget, nennt CHANGES das mit einem Schlankheits-Vorschlag (N2 §15.3-Regel).
-5. **Werksnamen privat:** Die Werksnamen-Listen (EN3-07) liegen nur in `scratchpad/manuals/werksnamen.local.json`. `wip-push.sh` und die Auslieferung kopieren sie nie. Eine Prüfung sucht 3 Werksnamen als Stichprobe in `bau/tests/` und im Repo (0 Treffer). Ebenso privat bleiben das Wellen-Paket aus MK10 und alle Aufnahmen. **Diese Spec** bleibt im Repo gesichert, wie bisher in `origin/arbeitsstand` (Xanders Regel „nie Arbeit verlieren“, 25.10.; frühere Frage H-12 entfällt): Sie enthält nur Parameter-Fakten (Namen, Bereiche, Seitenangaben), keine Textpassagen aus den Handbüchern.
+5. **Werksnamen privat:** Die Werksnamen-Listen (EN3-07) liegen nur in `scratchpad/manuals/werksnamen.local.json`. `wip-push.sh` und die Auslieferung kopieren sie nie. Eine Prüfung sucht 3 Werksnamen als Stichprobe in `bau/tests/` und im Repo (0 Treffer). Ebenso privat bleiben das Wellen-Paket aus MK10, alle Aufnahmen, die Bild-Referenz (PDF) und die Dateien der Nachzeichnung (sie tragen die Wellennamen); in die App kommt nur der Datenblock aus MK2, ohne Namen. **Diese Spec** bleibt im Repo gesichert, wie bisher in `origin/arbeitsstand` (Xanders Regel „nie Arbeit verlieren“, 25.10.; frühere Frage H-12 entfällt): Sie enthält nur Parameter-Fakten (Namen, Bereiche, Seitenangaben), keine Textpassagen aus den Handbüchern.
 
 ---
 
@@ -1957,7 +1973,7 @@ Die Pakete nach der MK-Gruppe (V2a′, V2f, VL, V7a, VC2a, VS4 …) bekommen ihr
 |---|---|---|---|
 | G-MK1 | MK0 ● | FP-SICHER | FP-DSP |
 | G-MK1 | MK1 ● | FP-DSP | FP-TOUCH, FP-IPHONE |
-| G-MK1 | MK2 | FP-DSP | FP-KLANG |
+| G-MK1 | MK2 | FP-DSP | FP-KLANG, FP-SICHER |
 | G-MK1 | MK3 ● | FP-DSP | FP-TOUCH |
 | G-MK1 | MK4 | FP-DSP | FP-IPHONE |
 | G-MK2 | MK5 ● | FP-SONG | FP-TOUCH |
@@ -1979,7 +1995,7 @@ Zusätzlich prüft **FP-DSP in jedem MK-Paket**:
 - gefaltete Energie nur nach B.6 Nr. 12;
 - Worklet-ASCII.
 
-**FP-SICHER** prüft in MK0, MK1, MK7 und MK10 (und in MK9, falls es gebaut wird) das Markenwort-Verbot (B.6 Nr. 9 a, b und c: genau eine Fundstelle „MS 2000“, kein Logo, keine Korg-Schrift) und die Upload-Wege; in MK10 zusätzlich, dass nur die gerechneten Wellen eingebaut werden und keine Aufnahme die App verlässt; ab MK9 auch EN3-08a und MK-R2.
+**FP-SICHER** prüft in MK0, MK1, MK2, MK7 und MK10 (und in MK9, falls es gebaut wird) das Markenwort-Verbot (B.6 Nr. 9 a, b und c: genau eine Fundstelle „MS 2000“, kein Logo, keine Korg-Schrift) und die Upload-Wege; in MK2 zusätzlich, dass der Datenblock nur gerechnete Teiltonwerte ohne Namen enthält und weder Bild noch PDF in Repo oder App kommt; in MK10 zusätzlich, dass nur die gerechneten Wellen eingebaut werden und keine Aufnahme die App verlässt; ab MK9 auch EN3-08a und MK-R2.
 
 **FP-TOUCH** prüft in jedem MK-Paket mit Bedienfeld-Änderung M-SKIZZE (B.6 Nr. 5), die Trefferflächen ≥ 44 × 44 und die Bildschirmfotos gegen die Referenz-Skizze (B.3).
 
@@ -2040,7 +2056,7 @@ Zusätzlich prüft **FP-DSP in jedem MK-Paket**:
 
 ### H.1 Entschieden (Xander, 25.10.; verbindlich)
 
-- **H-1 Größe → (b).** Das Schlankheits-Paket **SL1** (E.3a) kommt, sobald die Startzeit-Prüfung scheitert, spätestens bei 4,5 MB (mit ×1,5 etwa bei V5d). Mit Rev. 2 endet der Plan bei ≈ 7,0 MB (×1,5), nach Plan ≈ 5,5 MB, untere Schätzung ≈ 6,4 MB (E.3); die 5,0 MB fallen mit ×1,5 etwa bei V8a. Die MK-Pakete selbst bringen ≈ +0,52 MB (mit Faktor ≈ +0,8 MB).
+- **H-1 Größe → (b).** Das Schlankheits-Paket **SL1** (E.3a) kommt, sobald die Startzeit-Prüfung scheitert, spätestens bei 4,5 MB (mit ×1,5 etwa bei V5d). Mit Rev. 2 endet der Plan bei ≈ 7,0 MB (×1,5), nach Plan ≈ 5,5 MB, untere Schätzung ≈ 6,4 MB (E.3); die 5,0 MB fallen mit ×1,5 etwa bei V8a. Die MK-Pakete selbst bringen ≈ +0,53 MB (mit Faktor ≈ +0,8 MB).
 - **H-2 Deine Wellen-Aufnahmen → eingebaut.** Die aus deinen Aufnahmen gerechneten Wellen kommen in die App, alle hören sie, auch im Paar-Raum (MK10, +80 KB mit der Aufnahme-Seite). Dir wurde gesagt, dass die Lizenz ungeklärt ist; du hast trotzdem „einbauen“ gewählt. Kein Korg-Name, kein Logo, keine Korg-Wörter in der App; die Wellen-Daten selbst sind erlaubt (EN3-09). Die Aufnahmen bleiben auf deinem iPhone.
 - **H-3 Werksklänge → 64** (8 je Genre auf Seite A; Seite B = deine eigenen Sounds).
 - **H-4 Name → „MS 2000“** auf dem Knopf neben VA │ FM │ WT (Ersatz wäre „MS 2K“ gewesen). Dir wurde gesagt, dass MS2000 ein Modellname von Korg ist (ein Risiko nur, wenn die App verkauft würde). Genau diese Beschriftung ist erlaubt; Korg, microKORG, RADIAS, DWGS, ein Korg-Logo oder Korg-Schrift bleiben verboten (EN3-05). Intern bleibt die Kennung `mk`. Der **Platz** im schmalen Hochformat ist nicht eigens beantwortet → neue Frage H-13.
@@ -2218,3 +2234,4 @@ Grundlage: Xanders Antworten vom 25.10. auf Teil H (H-1 … H-12), verbindlich. 
 - **54** · Nachgerechnet und unverändert: 13 Pakete, +510 KB, 99,5–115 h (≈ 100–115 h), mit Fach-Prüfung ≈ 113–141 h; E.3 mit `size.py`-Restplan und Rev.-2-Budgets: Planende 5,51 / 6,42 / 7,03 MB, nach MK13 3,13 / 3,33 / 3,46 MB, 4,5 MB bei V9e / V7d / V5d, 5,0 MB bei V10f / V9d′ / V8a; Versionen 4.8.1 und 4.9.0–4.20.0, danach ab 4.21.0, MK10-Einbau und ein späteres MK9 mit Zwischennummer. Keine Rechner-, Mac-, MIDI- oder Datei-vom-Rechner-Pflicht außerhalb des zurückgestellten MK9; „MS 2000“ nur als `MK_LABEL`; H-12 steht nur noch als „entfällt“.
 - **55** · H-14 · Frage um die Matrix-Zeilen, die Halb-Ansicht über die Reiter und SHIFT in beiden Hälften ergänzt; die Vorgabe bleibt „so“.
 - **56** · N3.0.2, Quellen · Strichzeichnung HB-MK S. 2–3 als Beleg der Anordnung (im Speicher als Text-Raster ausgewertet, keine Bild-Datei); App-Raster und Kopf quer (Z. 72–85, 1426–1441) und `MIC_ASK` (Z. 29401) gelesen.
+- **57** · Nachzeichnung (25.10., von Xander geschicktes PDF mit 64 Wellen-Bildern) · MK2 Umfang 3, Daten, Dauer, MK2-03/11, neu MK2-12, Tests, Geräte-Abgleich, Risiken; MK10 Ziel, Umfang 3/6/7, MK10-14, Risiken; EN3-09, B.6 Nr. 9, E.1, E.3, E.5 Nr. 1/5, Teil F, H-1 · Die freien „64 Rezepte“ sind ersetzt durch die geprüfte Nachzeichnung (`dwgs-64-compact.json`, `PRUEFUNG.md`): Datenblock mit Teiltönen 1–32 des Notenbands (12 Bit Pegel und Phase, ≈ 8,6 KB), darüber ein gruppentypischer Abfall, Tonlage r für 3, 28, 34, 35 und 59, Hüllen in Hz für 35 und 61–64 aus der Nachzeichnung; Gruppen-Merkmale → Abfall-Tabelle; MK2-12 prüft die Form gegen die Nachzeichnung (≤ rms32 + 0,1 Prozentpunkte) und nennt 60 als zweifelhaft; weiter „≈“ bis MK10. Lizenz: nur selbst gerechnete Werte, nie die Bilder, dieselbe offene Lage wie MK10, Xander hat eingebaut gewählt. MK10 bleibt nötig (genauer Klang, obere Teiltöne, Oktav-Verhalten, Pegel, r) und entfernt den MK2-Block beim Einbau. MK2 +42 KB (+7), 7–8 h (+0,5); Summe +517 KB, ≈ 100–116 h, mit Fach-Prüfung ≈ 113–142 h; E.3 neu gerechnet (`scratchpad/dwgs-trace/spec-mk2/size3.py`): Planende 5,52 / 6,43 / 7,04 MB, 4,5 MB bei V9e / V7c / V5d.

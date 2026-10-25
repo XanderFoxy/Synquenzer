@@ -4098,7 +4098,7 @@ class MkVoice {
     this.s1 = 0; this.s2 = 0; this.s3 = 0; this.s4 = 0; this.gA = -1; this.gB = 0; this.kA = 0; this.kB = 0;
     this.mA = -1; this.mB = 0; this.aA = -1; this.aB = 0; this.pl = 1; this.pr = 1; this.dx = 0; this.dg = 1;
     this.fade = 0; this.fadeN = 1; this.fin = 0; this.finN = 1; this.sxk = -1; this.sxo = null; this.sxE = [0, 0, 0]; this.sxA = 1; this.sxB = 0; this.sxBlk = -1; this.pol = 1;
-    this.cutHz = 0; this.isLine = false; this.xfo = false; this.noEnd = false; this.lv1 = 0; this.lv2 = 0;
+    this.cutHz = 0; this.isLine = false; this.xfo = false; this.noEnd = false; this.lv1 = 0; this.lv2 = 0; this.sr = 1; this.cutMax = 0; this.eA = -1;
   }
 }
 function mkClone(v) { const c = Object.assign(new MkVoice(v.i), v); c.sxE = [0, 0, 0]; c.sxo = null; c.sxA = 1; c.sxB = 0; c.sxBlk = -1; return c; }
@@ -4192,7 +4192,7 @@ class MkCore {
   start(v, k, from, retrig) {                             // a (re)start of voice v on key k
     const T = this.T, fresh = !v.on || v.ghost;
     if (fresh) {
-      Object.assign(v, new MkVoice(v.i)); v.on = true; v.rng = mkHash(this.seed, 1, ++this.nctr);
+      Object.assign(v, new MkVoice(v.i)); v.on = true; v.rng = mkHash(this.seed, 1, ++this.nctr); v.sr = (v.rng ^ 0x5bd1e995) >>> 0 || 7;
       v.t1 = mkRnd(v); v.t2 = mkRnd(v); v.sh1 = mkRnd(v) * 2 - 1; v.sh2 = mkRnd(v) * 2 - 1;
     } else if (retrig) {
       if (T.e1.rst >= .5) { v.e1 = 0; } if (T.e2.rst >= .5) { v.e2 = 0; v.aA = -1; }
@@ -4386,7 +4386,7 @@ class MkCore {
     const dt1 = Math.min(lut(FREQ, p1) * ISR, .45), dt2 = Math.min(lut(FREQ, p1 + Sm.semi + Sm.fine / 100) * ISR, .45);
     const m = MKW.form(Sm.c1, lv1, Sm.c2), m0 = v.mA < 0 ? m : v.mB; v.mA = m0; v.mB = m;
     const cutN = 69 + 12 * Math.log2(MKW.cutHz(Sm.cut) / 440) + MKW.kbdHt(kt, Sm.kbd) + v.e1 * MKW.egHt(Sm.eg) + MKW.velHt(Sm.fvel, v.vel);
-    v.cutHz = 440 * Math.pow(2, (cutN - 69) / 12);
+    v.cutHz = 440 * Math.pow(2, (cutN - 69) / 12); if (v.cutHz > v.cutMax) v.cutMax = v.cutHz;
     const g = lut(GTAN, cutN < 0 ? 0 : cutN), k = MKW.resK(Math.max(0, Math.min(127, Sm.res))), fresh = v.gA < 0;
     v.gA = fresh ? g : v.gB; v.gB = g; v.kA = fresh ? k : v.kB; v.kB = k;
     // amp: EG2 or the gate, level, velocity and keyboard dB, pan, unison share
@@ -4464,6 +4464,12 @@ class MkCore {
       v.t2 = t2;
       if (mod & 1) for (let n = 0; n < CR; n++) o2b[n] *= ob[n];     // Ring: OSC 1 x OSC 2 as the OSC 2 output
     }
+    if (this.tap === 'amp') {                              // test tap: the amp envelope (EG2 or gate) with the fades, per sample
+      const e0 = v.eA < 0 ? env : v.eA; v.eA = env; let fg = v.fadeG; const fd = v.fade > 0 ? 1 / v.fadeN : 0;
+      for (let n = 0; n < CR; n++) { if (fd) { fg -= fd; if (fg < 0) fg = 0; } const e = (e0 + (env - e0) * (n + 1) / CR) * (v.xfo ? Math.cos((1 - fg) * 1.5707963267948966) : fg); Lo[off + n] += e; Ro[off + n] += e; }
+      v.fadeG = fg; if (v.fade > 0) { v.fade -= CR; if (v.fade <= 0 || fg <= 0) this.vEnd(v); } else if (st.gate ? (!v.gate && v.gt <= 0) : v.e2s === 0) this.vEnd(v);
+      return;
+    }
     if (this.tap === 'mix') {                              // test tap: the mixer output, no filter / amp
       for (let n = 0; n < CR; n++) { let x = ob[n] * g1 + (g2 > 0 ? o2b[n] * g2 : 0); if (gn > 0) x += (mkRnd(v) * 2 - 1) * gn; Lo[off + n] += x; Ro[off + n] += x; }
       if (v.e2s === 0 && !st.gate) this.vEnd(v); else if (st.gate && !v.gate && v.gt <= 0) this.vEnd(v);
@@ -4478,7 +4484,8 @@ class MkCore {
     for (let n = 0; n < CR; n++) {
       gg += dg; kk += dk;
       let x = ob[n] * g1; if (g2 > 0) x += o2b[n] * g2; if (gn > 0) x += (mkRnd(v) * 2 - 1) * gn;
-      const xin = x * MK_INS + (mkRnd(v) - .5) * MK_SEED + 1e-20;
+      v.sr = (Math.imul(v.sr, 1664525) + 1013904223) >>> 0;     // the seed noise has its own generator (the oscillator noise stays the same with and without it)
+      const xin = x * MK_INS + (v.sr / 4294967296 - .5) * MK_SEED + 1e-20;
       const b1 = tg(s1), b2 = tg(s2), b3 = tg(s3), b4 = tg(s4), A1 = tg(xin - kk * s4);
       const d1 = 1 / (1 + gg * b1), d2 = 1 / (1 + gg * b2), d3 = 1 / (1 + gg * b3), d4 = 1 / (1 + gg * b4);
       const G1 = gg * A1 * d1, G2 = gg * b1 * d2, G3 = gg * b2 * d3, G4 = gg * b3 * d4;
@@ -4507,7 +4514,8 @@ class MkCore {
   vEnd(v) { if (!v.on) return; const id = v.id, ne = v.noEnd; v.on = false; v.id = -1; v.ghost = false; v.isLine = false; v.noEnd = false; v.xfo = false; if (!ne) this.endCheck(id); }
   scope() {
     const out = [];
-    for (const v of this.V) if (v.on && !v.ghost) out.push({note: v.note, t: v.age, eg1: v.e1, eg2: v.st && v.st.gate ? v.gt : v.e2, lfo1: v.lv1 || 0, lfo2: v.lv2 || 0, cutHz: v.cutHz, pitch: v.pitch, gate: v.gate, udet: v.udet});
+    for (const v of this.V) if (v.on && !v.ghost) out.push({note: v.note, t: v.age, eg1: v.e1, eg2: v.st && v.st.gate ? v.gt : v.e2, lfo1: v.lv1 || 0, lfo2: v.lv2 || 0, cutHz: v.cutHz, cutMax: v.cutMax, pitch: v.pitch, gate: v.gate, udet: v.udet});
+    for (const v of this.V) v.cutMax = 0;
     return out;
   }
 }
@@ -5802,7 +5810,7 @@ class AnalogCore extends AudioWorkletProcessor {
       if (this.gl2 < og2) this.gsh2 = Math.random() * 2 - 1;
     }
     const dcs = this.dcS;
-    if (any || dcs[0] !== 0 || dcs[1] !== 0 || dcs[2] !== 0 || dcs[3] !== 0) { this.dcOut(L, 0, N); if (R !== L) this.dcOut(R, 2, N); }
+    if (!this.mk.tap && (any || dcs[0] !== 0 || dcs[1] !== 0 || dcs[2] !== 0 || dcs[3] !== 0)) { this.dcOut(L, 0, N); if (R !== L) this.dcOut(R, 2, N); }
     if (this.ended.length) { this.port.postMessage({end: this.ended}); this.ended = []; }
     if (this.scopeOn && f0 >= this.scopeNext) {
       this.scopeNext = f0 + ((SR / 30) | 0);

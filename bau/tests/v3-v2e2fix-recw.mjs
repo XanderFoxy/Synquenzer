@@ -25,7 +25,7 @@ for (const [vp, [w, h]] of Object.entries(VP)) for (const sc of ['a', 'b', 'c'])
   else await p.evaluate(sc => { const Q = window.SYNQUENZER; Q.songView(true); if (sc === 'a') Q.songRecTargets({clips: true, chords: true, notes: true, mel: true}); else Q.songLoop && Q.songLoop(true); }, sc);
   await p.waitForTimeout(700);
   const m = await p.evaluate(() => {
-    const out = {}, inner = e => { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); return [r.left + parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft) - .01, r.right - parseFloat(cs.borderRightWidth) - parseFloat(cs.paddingRight) + .01]; };
+    const out = {}, inner = e => { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); return [r.left + parseFloat(cs.borderLeftWidth) - .01, r.right - parseFloat(cs.borderRightWidth) + .01]; };   // overflow:hidden clips at the padding box
     for (const q of ['.sv-rec .t', '.sv-play .t', '.sv-loop .v', '.sv-loop .t', '.sv-sw .swl']) {
       const t = document.querySelector('#songView ' + q); if (!t || !t.offsetParent) continue;
       const btn = t.closest('button'), [l, r] = inner(btn), rg = document.createRange(); rg.selectNodeContents(t); const gb = rg.getBoundingClientRect();
