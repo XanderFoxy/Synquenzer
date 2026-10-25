@@ -1,0 +1,20 @@
+// QA V2e′ t11: screenshots lift / drag over song / unfold mid-way
+import { openVp, T, SETUP55, sleep } from './v3-qa-v2e2-lib.mjs';
+const VP = process.argv[2] || 'P1';
+const {b, p, errs, cdp} = await openVp(VP);
+const t = T(p, cdp), E = t.E;
+await E(SETUP55(false)); await E(() => window.SYNQUENZER.songView(false)); await sleep(300);
+const k0 = await t.key(0);
+await t.down(k0.x, k0.y); await sleep(700);
+await p.screenshot({path: `v3-qa-v2e2-${VP}-lift.png`});
+await sleep(500);
+const inf = await t.info();
+await t.glide(k0.x, k0.y, inf.canvas.x + 7 * 36 + 4, inf.canvas.y + inf.canvas.h * .4, 10, 16);
+await sleep(100);
+await p.screenshot({path: `v3-qa-v2e2-${VP}-drag.png`});
+await t.up(); await sleep(60);
+await p.screenshot({path: `v3-qa-v2e2-${VP}-unfold.png`});
+await sleep(400);
+await p.screenshot({path: `v3-qa-v2e2-${VP}-after.png`});
+console.log('errs', errs);
+await b.close();

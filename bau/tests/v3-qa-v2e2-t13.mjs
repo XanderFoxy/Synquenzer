@@ -1,0 +1,42 @@
+// QA V2e′ t13: basic drag → drop → Einfügen on every viewport, layout stable, undo deep-equal
+import { openVp, T, SETUP55, sleep, mkCheck } from './v3-qa-v2e2-lib.mjs';
+const VP = process.argv[2] || 'P1';
+const {check, done} = mkCheck();
+const {b, p, errs, cdp} = await openVp(VP);
+const t = T(p, cdp), E = t.E;
+await E(SETUP55(false)); await E(() => window.SYNQUENZER.songView(true)); await sleep(300);
+const RECTS = () => E(() => { const out = {}, r = e => { const b = e.getBoundingClientRect(); return [b.x, b.y, b.width, b.height].map(v => Math.round(v)); };
+  document.querySelectorAll('.sv-top > *').forEach((e, k) => { if (!e.hidden && e.offsetWidth) out['top' + k] = r(e); });
+  document.querySelectorAll('.sv-labs > *').forEach((e, k) => { if (e.offsetWidth) out['lab' + k] = r(e); });
+  for (const q of ['.sv-cv', '#modebar', '#kbArea', '#carrier', '#side', '#topbar', '#transport']) { const e = document.querySelector(q); if (e && e.offsetWidth) out[q] = r(e); } return out; });
+const R0 = await RECTS(), rows0 = (await t.info()).rows;
+await E(() => window.SYNQUENZER.songView(false)); await sleep(300);
+const P0 = await t.full();
+const k0 = await t.key(0);
+check(`${VP} part key reachable in the clip view`, !!k0, k0);
+if (!k0) { await b.close(); process.exit(done()); }
+await t.down(k0.x, k0.y); await sleep(1120);
+check(`${VP} auto-open`, await t.songOn());
+let inf = await t.info();
+const tx = inf.canvas.x + 2 * 36 + 4 - inf.x0, ty = inf.canvas.y + inf.canvas.h * .5;
+await t.glide(k0.x, k0.y, tx, ty, 10, 16);
+const R1 = await RECTS(); const bad = []; for (const k of Object.keys(R0)) if (R1[k] && R0[k].some((v, j) => Math.abs(v - R1[k][j]) > 2)) bad.push(k + ' ' + R0[k] + '→' + R1[k]);
+check(`${VP} while dragging: controls ±2 px, rows same`, !bad.length && JSON.stringify((await t.info()).rows) === JSON.stringify(rows0), bad);
+const d = await t.drag();
+check(`${VP} n = 2`, d && d.n === 2, d);
+await t.up(); await sleep(300);
+const bt = await t.popBtns();
+check(`${VP} sheet with replace/insert`, bt.includes('replace') && bt.includes('insert'), bt);
+// sheet buttons reachable (≥ 44×44 P / ≥ 40×36 L) and inside the viewport
+const sz = await E(() => [...document.querySelectorAll('#popLayer .pop button[data-a]')].filter(b => b.offsetWidth).map(b => { const r = b.getBoundingClientRect(); return [b.dataset.a, Math.round(r.width), Math.round(r.height), Math.round(r.bottom), innerHeight]; }));
+console.log('sheet buttons', JSON.stringify(sz));
+await t.tapPop('Einfügen'); await sleep(500);
+const R2 = await RECTS(); const bad2 = []; for (const k of Object.keys(R0)) if (R2[k] && R0[k].some((v, j) => Math.abs(v - R2[k][j]) > 2)) bad2.push(k + ' ' + R0[k] + '→' + R2[k]);
+check(`${VP} after drop+unfold: controls ±2 px, rows same`, !bad2.length && JSON.stringify((await t.info()).rows) === JSON.stringify(rows0), bad2);
+const s = await E(() => window.SYNQUENZER.song());
+check(`${VP} Strophe at bar 2`, s.marks.some(m => m.a === 2 && m.len === 4), s.marks.map(m => m.part + '@' + m.a));
+await E(() => window.SYNQUENZER.undo()); await sleep(200);
+check(`${VP} undo → deep-equal`, (await t.full()) === P0);
+check('0 console errors', errs.length === 0, errs);
+await b.close();
+process.exit(done());

@@ -1,0 +1,20 @@
+// QA V2e′ t9: iOS CSS on part keys, FANG chip, song canvas, matrix cells; ghost geometry (24 px above the finger)
+import { openVp, T, SETUP55, sleep, mkCheck } from './v3-qa-v2e2-lib.mjs';
+const VP = process.argv[2] || 'P1';
+const {check, done} = mkCheck();
+const {b, p, errs, cdp} = await openVp(VP);
+const t = T(p, cdp), E = t.E;
+await E(SETUP55(false)); await E(() => window.SYNQUENZER.songView(false)); await sleep(300);
+const css = q => E(q => { const e = document.querySelector(q); if (!e) return null; const s = getComputedStyle(e); return {callout: s.webkitTouchCallout || s.getPropertyValue('-webkit-touch-callout'), us: s.userSelect || s.webkitUserSelect, wus: s.webkitUserSelect}; }, q);
+for (const q of ['#partBar .pk', '.slot', '.corner.sw']) console.log(q, JSON.stringify(await css(q)));
+const pk = await css('#partBar .pk'), sl = await css('.slot');
+check(`${VP} Teil-Taste user-select none`, pk && (pk.us === 'none' || pk.wus === 'none'), pk);
+check(`${VP} Teil-Taste -webkit-touch-callout none (declared)`, await E(() => { for (const ss of document.styleSheets) { try { for (const r of ss.cssRules) if (r.cssText && /touch-callout:\s*none/.test(r.cssText) && /\.pk|partBar|#app|body|\*/.test(r.selectorText || '')) return r.selectorText; } catch (e) {} } return false; }));
+await E(() => window.SYNQUENZER.songView(true)); await sleep(300);
+const cv = await css('.sv-cv'), wr = await css('.sv-wrap');
+console.log('.sv-cv', JSON.stringify(cv), '.sv-wrap', JSON.stringify(wr));
+check(`${VP} Zellen (song canvas) user-select none`, cv && (cv.us === 'none' || cv.wus === 'none'), cv);
+const callRules = await E(() => { const out = []; for (const ss of document.styleSheets) { try { for (const r of ss.cssRules) if (r.cssText && /touch-callout:\s*none/.test(r.cssText)) out.push(r.selectorText); } catch (e) {} } return out; });
+console.log('callout rules', callRules.slice(0, 20));
+await b.close();
+process.exit(done());

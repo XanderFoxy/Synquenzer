@@ -1,0 +1,51 @@
+// QA V2e′ t3: second finger on keyboard / matrix slot during lift, drag, guard, ready → nothing starts, no note
+import { openVp, T, SETUP55, PREP, RESET, sleep, mkCheck } from './v3-qa-v2e2-lib.mjs';
+const VP = process.argv[2] || 'P1';
+const {check, done} = mkCheck();
+const {b, p, errs, cdp} = await openVp(VP);
+const t = T(p, cdp), E = t.E;
+await E(SETUP55(false)); await E(() => window.SYNQUENZER.songView(false)); await sleep(300);
+await E(PREP);
+await E(() => { window.__pe = []; for (const ty of ['pointerdown', 'pointerup', 'pointercancel']) window.addEventListener(ty, e => window.__pe.push(ty + ':' + e.pointerId), {capture: false}); return 1; });
+const P0 = await t.full();
+const k0 = await t.key(0);
+const kb = await E(() => { const k = document.querySelector('#kbArea'); const r = k.getBoundingClientRect(); return {x: r.x + r.width * .3, y: r.y + r.height * .8}; });
+const slot = await E(() => { const s = [...document.querySelectorAll('.slot')].find(s => s.offsetWidth && s.classList.contains('filled')); if (!s) return null; const r = s.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; });
+console.log('kb', kb, 'slot', slot);
+const rtState = () => E(() => { const r = window.SYNQUENZER.runtime(); return JSON.stringify({playing: r.playing, slots: r.slots, q: r.queued}); });
+// second finger: press at pt while finger 1 stays at (x,y), then release only finger 2
+const second = async (x, y, pt) => { await t.send('touchStart', [{x, y, id: 1}, {x: pt.x, y: pt.y, id: 2}]); await sleep(80); await t.send('touchMove', [{x, y, id: 1}]); await sleep(40); };
+const R0 = await rtState();
+await E(() => window.SYNQUENZER.clearLog());
+for (const [tag, pt] of [['keyboard', kb], ['slot', slot]]) {
+  if (!pt) continue;
+  await t.down(k0.x, k0.y); await sleep(500);
+  const d0 = await t.drag();
+  await second(k0.x, k0.y, pt);
+  const d1a = await t.drag();
+  await t.glide(k0.x, k0.y, k0.x + 25, k0.y, 3, 10);
+  await second(k0.x + 25, k0.y, pt);
+  const d1 = await t.drag();
+  await sleep(650);
+  const d2 = await t.drag();
+  await second(k0.x + 25, k0.y, pt);
+  const inf = await t.info();
+  await t.glide(k0.x + 25, k0.y, inf.canvas.x + 100, inf.canvas.y + 80, 5, 16);
+  await second(inf.canvas.x + 100, inf.canvas.y + 80, pt);
+  const d3 = await t.drag();
+  const tr = await t.rect('.sv-play') || {cx: 10, cy: 10};
+  await t.glide(inf.canvas.x + 100, inf.canvas.y + 80, tr.cx, tr.cy, 4, 16);
+  await t.up(); await sleep(400);
+  const log = await E(() => window.SYNQUENZER.noteLog(200));
+  const R1 = await rtState();
+  const pe = await E(() => window.__pe.splice(0));
+  console.log(tag, JSON.stringify([d0 && d0.st, d1a && d1a.st, d1 && d1.st, d2 && d2.st, d3 && d3.st]), 'log', log.length, 'pe(bubble)', pe.join(' '));
+  check(`${VP} 2nd finger on ${tag}: drag continued through all states`, d0 && d1 && d2 && d3 && d1.st === 'drag' && d3.st === 'ready', [d0 && d0.st, d1a && d1a.st, d1 && d1.st, d2 && d2.st, d3 && d3.st]);
+  check(`${VP} 2nd finger on ${tag}: no note, nothing started`, log.length === 0 && R1 === R0, {n: log.length, R0, R1, first: log[0]});
+  check(`${VP} 2nd finger on ${tag}: data deep-equal, clip view back`, (await t.full()) === P0 && !(await t.songOn()) && !(await t.pop()));
+  await E(() => { window.SYNQUENZER.panic && window.SYNQUENZER.panic(); window.SYNQUENZER.clearLog(); });
+}
+console.log('errors', errs);
+check('0 console errors', errs.length === 0, errs);
+await b.close();
+process.exit(done());

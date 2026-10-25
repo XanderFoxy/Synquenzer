@@ -574,11 +574,17 @@ svg{display:block}
 .sv-gl span{width:19px;text-align:center;color:var(--text-faint)}
 .sv-gl span.on{color:var(--amber)}
 .sv-gl i{flex:none;width:1px;height:16px;background:rgba(255,255,255,.18)}
-@media (orientation:portrait) and (max-width:389px){.sv-top > .sv-rec,.sv-top > .sv-play{flex-basis:52px}.sv-top > .sv-loop{flex-basis:48px;padding:0 1px!important}.sv-top > .sv-loop .v{font-size:10px}.sv-top > .sv-home{flex-basis:40px}}
+@media (orientation:portrait) and (max-width:389px){.sv-top > .sv-rec,.sv-top > .sv-play{flex-basis:50px}.sv-top > .sv-loop{flex-basis:48px;padding:0 1px!important}.sv-top > .sv-loop .v{font-size:10px}.sv-top > .sv-home,.sv-top > .sv-back{flex-basis:44px}}
+/* L and P3: still four rows (6.5) so every field stays ≥ 44 px high: [CLIPS ⇄│⏮] · [● ▾│▶] · [⟲ Song ▾] · [▦│◧│▲▼] */
+#songView.side .sv-top > .sv-sw{grid-column:span 1;order:0;padding:0 1px}
+#songView.side .sv-sw .swl{white-space:normal;text-align:center;line-height:1.15;font-size:10px;letter-spacing:.02em}
+#songView.side .sv-top > .sv-home,#songView.side .sv-top > .sv-back{order:1;grid-column:span 1}
+#songView.side .sv-top > .sv-rec,#songView.side .sv-top > .sv-play{order:2}
+#songView.side .sv-top > .sv-loop{order:3}
 #songView.side .sv-top > .sv-gl{grid-column:span 1;order:4;padding:0}
 #songView.side .sv-top > .sv-bank{order:5}
-#songView.side .sv-top > .sv-home,#songView.side .sv-top > .sv-back{order:6;grid-column:span 2}
-#songView.side .sv-gl span{width:15px}
+#songView.side .sv-gl span{width:14px}
+@media (orientation:portrait){#songView.side .sv-top > .sv-sw{padding:0}#songView.side .sv-sw .clogo svg{height:19px}#songView.side .sv-sw .swl{font-size:8px;letter-spacing:0}#songView.side .sv-gl span{width:13px}}
 /* V2e′ drag (B.5): the spring field SONG ⇄, the ghost with its 600-ms ring, ⧉ at the place of CLIPS ⇄, the song's crossfade */
 .corner.sw.spring{background:rgba(255,178,46,.2)!important;border-color:var(--amber)!important;box-shadow:0 0 0 2px rgba(255,178,46,.6),0 0 16px rgba(255,178,46,.45);color:#ffcf7a}
 .corner.sw.spring .clogo{display:none!important}
@@ -591,7 +597,7 @@ svg{display:block}
 .sv-cw{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .fsheet .fs-chip.lift{opacity:.4}
 .fsheet .fs-chip{position:relative}
-.fsheet .fs-chip::before{content:'';position:absolute;left:-4px;right:-4px;top:-7px;bottom:-7px}   /* FP-TOUCH: 44 px to hold */
+.fsheet .fs-chip::before{content:'';position:absolute;left:0;right:0;top:-7px;bottom:-7px}   /* FP-TOUCH: 44 px to hold */
 .drg-ghost{position:fixed;z-index:80;left:0;top:0;transform:translate(-50%,-100%);min-width:96px;max-width:calc(100vw - 16px);box-sizing:border-box;padding:6px 8px 7px;border-radius:10px;background:rgba(40,30,12,.72);border:2px solid var(--amber);color:#ffcf7a;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.55);transition:width .12s ease-out}
 .drg-ghost .dg-h{display:flex;align-items:center;gap:8px;font:800 12px/1 var(--font-ui);letter-spacing:.05em;white-space:nowrap}
 .drg-ghost .dg-t{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -3371,7 +3377,6 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 #partBar .pb-pick[hidden]{display:none}
 #partBar .pb-pick .pt{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #partBar .pb-done{flex:none;height:calc(100% - 6px);min-width:80px;font:700 12px/1 var(--font-ui);border-color:var(--pc);color:var(--text)}
-.pk-ghost{position:fixed;z-index:70;transform:translate(-50%,-100%);padding:9px 14px;border-radius:8px;background:rgba(21,23,27,.9);border:2px solid var(--pc);color:var(--text);font:700 12px/1 var(--font-ui);letter-spacing:.06em;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.6);white-space:nowrap}
 @media (orientation:landscape) and (max-height:560px){
   #side>#partBar{order:2;height:38px;margin:auto 6px 4px;flex:none}
   #side>#strip{order:3;margin-top:0}
@@ -18833,7 +18838,9 @@ function drgSpring(on) {
   if (c.classList.contains('spring') === on) return;
   c.classList.toggle('spring', on);
   const l = c.querySelector('.swl'); if (!l) return;
-  if (on) { l._t = l.textContent; l.textContent = c.clientWidth < 60 || c.clientHeight < 34 ? '↖ SONG' : '↖ IN DEN SONG'; }   // L-2: narrow → „↖ SONG“ else if (l._t != null) { l.textContent = l._t; l._t = null; }
+  // the full words when they fit (P1 52 × 44: three short lines), else „↖ SONG“ (Mockup L-2); measured once at the lift
+  if (on) { l._t = l.textContent; l.textContent = '↖ IN DEN SONG'; if (c.scrollHeight > c.clientHeight + 1 || l.scrollWidth > c.clientWidth + 1) l.textContent = '↖ SONG'; }
+  else if (l._t != null) { l.textContent = l._t; l._t = null; }
 }
 function drgSpringHit(x, y) {
   const c = UI.corner; if (!c || !c.offsetWidth || UI.songView) return false;
@@ -19066,6 +19073,7 @@ window.addEventListener('pointermove', e => { if (!DRG) return; e.stopImmediateP
 window.addEventListener('pointerup', e => { if (!DRG) return; e.stopImmediatePropagation(); if (e.pointerId === DRG.id) drgUp(e.clientX, e.clientY); }, true);
 window.addEventListener('pointercancel', e => { if (!DRG) return; e.stopImmediatePropagation(); if (e.pointerId === DRG.id) drgCancel(); }, true);
 window.addEventListener('blur', () => { if (DRG) drgCancel(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && DRG) drgCancel(); });   // B.5 #15: call, app switch
 
 /* ---------- (b) FANG sheet: hold the part chip 450 ms → lift (released without moving = nothing) ---------- */
 function fangChipBind(p) {
@@ -27743,7 +27751,7 @@ function openMenu(goto) {
     'TASTATUR-ANSCHLAG (Menü → Bedienung): POSITION = oben auf der Taste leise, unten laut, jede Taste für sich; FEST = immer 0,8. Bei FEST tragen Anschlag-Regler und Anschlag-Modulationen einen grauen Hinweis – antippen schaltet POSITION ein.',
     'LAUF: Basslauf oder Sequenz Schritt für Schritt – Schritt antippen = an, hoch/runter ziehen = Ton in der Tonart.',
     'SONG: SONG ⇄ (Ecke oben links im Raster) zeigt den Song. Beim ersten ● SONG wird alles mitgeschnitten: Szenenwechsel, Clip-Stopps, Akkorde und deine Melodie; ▶ SONG spielt alles ab. Eine Zelle antippen = anderer Clip in diesem Takt, wischen = blättern. Während der Song läuft: Clip starten = Spur übernehmen, ↩ SONG gibt sie zurück. Unter MELODIE: Melodie bearbeiten, als Clip, Kette aus Szenen.',
-    'TEIL IN DEN SONG: Teil-Taste (oder den Teil-Chip im FANG-Blatt) halten, bis er sich hebt. Auf SONG ⇄ ziehen – oder einfach weiter halten: nach gut 1 s öffnet sich der Song von selbst. Dann an einen Taktstrich ziehen und loslassen; liegt dort schon etwas, fragt die App: ersetzen oder einfügen. Woanders loslassen = nichts passiert. ▦│◧ oben rechts: Kästchen oder Glas mit Noten. Eine Zelle im Song halten = eigener Clip nur für diese Stelle; antippen = bearbeiten.',
+    'TEIL IN DEN SONG: Teil-Taste (oder den Teil-Chip im FANG-Blatt) halten, bis er sich hebt. Auf SONG ⇄ ziehen – oder einfach weiter halten: nach gut 1 s öffnet sich der Song von selbst. Dann an einen Taktstrich ziehen und loslassen; liegt dort schon etwas, fragt die App: ersetzen oder einfügen. Woanders loslassen = nichts passiert. Eine gelbe Marke halten und ziehen = verschieben; kurz über ⧉ (wo sonst CLIPS ⇄ steht) = Kopie. ▦│◧ bei den Song-Tasten: Kästchen oder Glas mit Noten. Eine Zelle im Song halten = eigener Clip nur für diese Stelle; antippen = bearbeiten.',
     'SONG-AUFNAHME (● bei vorhandenem Song): Das Start-Blatt fragt, was aufgenommen wird – CLIPS (Szenen- und Clip-Starts, Teil-Tasten setzen ihre Marke), AKKORDE, NOTEN auf der gewählten Spur (▾ wählt sie). Und wie: ab Takt n ÜBERSCHREIBEN (was du änderst, ersetzt; Noten: jeder Takt bis zum Ende neu, die alten sind stumm) oder EINFÜGEN (Neues kommt dazwischen, der Rest rückt nach hinten); in gelb gewählten Takten ERSETZEN oder OVERDUB (Neues kommt dazu). Ist genau ein Takt gewählt, gibt es alle vier. Noten auf einer Spur mit Clip werden ein eigener Clip an dieser Stelle – die Szenen bleiben, wie sie sind. ● beendet am letzten logischen Taktstrich (wie FANG TEIL: erst die Phrase, dann ob der neue Takt weniger als halb gespielt war). Halten auf ● öffnet das Blatt jederzeit. Ein Rückgängig nimmt die ganze Aufnahme zurück.',
     'TAKTLEISTE IM SONG: Tipp auf eine Taktnummer wählt den Takt (gelb) und setzt die Positionsmarke ▼ – nichts springt. Zweite Nummer = Bereich, Tipp in die Auswahl hebt sie auf. ▶ (oben oder ▶ SONG) startet an der Marke, sonst dort, wo du gestoppt hast; ⏮ = Takt 1.',
     'TEIL-MARKEN IM SONG: Wo ein Teil liegt, steht sein Name gelb in der Taktleiste statt der Taktnummern (STROPHE′ = an dieser Stelle geändert). Antippen = Marken-Blatt: ▶ Ab hier, ×2/×4, ◀ ▶ tauschen, ⧉ Kopie (dann den Taktstrich antippen), ⇄ Ersetzen durch, ✕ Löschen (der Rest rückt), Nur Name weg, Name, Farbe, Teil-Vorlage, Auf alle übertragen, ● Neu aufnehmen. Nochmal antippen = einzelne Takte darin wählen. Hinter dem Song-Ende eine Nummer antippen = Teil dort einsetzen (die Takte davor bleiben leer).',

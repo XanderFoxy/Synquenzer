@@ -1,0 +1,54 @@
+// QA V2e′ t7: undo/redo of a key drop and of a FANG-chip drop (group), ghost cleanup, save/load of own clip
+import { openVp, T, SETUP55, PREP, sleep, mkCheck } from './v3-qa-v2e2-lib.mjs';
+const VP = process.argv[2] || 'P1';
+const {check, done} = mkCheck();
+const {b, p, errs, cdp} = await openVp(VP);
+const t = T(p, cdp), E = t.E;
+await E(SETUP55(false)); await E(() => window.SYNQUENZER.songView(false)); await sleep(300);
+const P0 = await t.full();
+const k0 = await t.key(0);
+// key drop at bar 2 → Einfügen
+await t.down(k0.x, k0.y); await sleep(1120);
+let inf = await t.info();
+await t.glide(k0.x, k0.y, inf.canvas.x + 2 * 36 + 4, inf.canvas.y + 100, 8, 16);
+await t.up(); await sleep(300);
+await t.tapPop('Einfügen'); await sleep(500);
+const P1 = await t.full();
+check(`${VP} drop changed data`, P1 !== P0);
+await E(() => window.SYNQUENZER.undo()); await sleep(150);
+check(`${VP} undo → P0`, (await t.full()) === P0);
+await E(() => window.SYNQUENZER.redo()); await sleep(150);
+check(`${VP} redo → after drop`, (await t.full()) === P1);
+await E(() => window.SYNQUENZER.undo()); await sleep(150);
+// FANG chip drop at the end (no question)
+await E(() => window.SYNQUENZER.songView(false)); await sleep(200);
+await E(() => { const Q = window.SYNQUENZER; Q.setBpm(240); Q.setMetronome && Q.setMetronome(false); Q.launchClip(4, 0); Q.launchClip(0, 0); Q.launchClip(1, 1); return 1; });
+await p.waitForFunction(() => window.SYNQUENZER.runtime().playing, null, {timeout: 5000});
+await p.waitForFunction(() => window.SYNQUENZER.runtime().beat >= 8.2, null, {timeout: 20000, polling: 5});
+await E(() => window.SYNQUENZER.fangTeil({beat: window.SYNQUENZER.runtime().beat}));
+await sleep(300);
+const PF = await t.full(), fp = await E(() => window.SYNQUENZER.fangPart());
+console.log('fang', fp && fp.len, await t.pop());
+const chip = await t.rect('.fsheet .fs-chip');
+await t.down(chip.cx, chip.cy); await sleep(1150);
+inf = await t.info();
+await t.glide(chip.cx, chip.cy, inf.canvas.x + 7 * 36 + 4 - inf.x0, inf.canvas.y + 100, 10, 16);
+const dn = await t.drag(); console.log('drag', dn);
+await t.up(); await sleep(500);
+const PG = await t.full(); const ui = await t.undo();
+console.log('undo top', JSON.stringify(ui.top).slice(0, 200), 'pop', await t.pop());
+check(`${VP} FANG drop: one group undo`, ui.top && ui.top.kind === 'group');
+await E(() => window.SYNQUENZER.undo()); await sleep(200);
+const PU = await t.full();
+check(`${VP} FANG drop undo → state before the drop (parts + song)`, PU === PF, PU === PF ? '' : 'differs');
+await E(() => window.SYNQUENZER.redo()); await sleep(200);
+const PR = await t.full();
+check(`${VP} FANG drop redo → part + song back`, PR === PG, PR === PG ? '' : 'differs');
+if (PR !== PG) { const a = JSON.parse(PR), bb = JSON.parse(PG); for (const k of Object.keys(bb)) if (JSON.stringify(a[k]) !== JSON.stringify(bb[k])) console.log('diff key', k, JSON.stringify(a[k]).slice(0, 200), '|', JSON.stringify(bb[k]).slice(0, 200)); }
+await E(() => window.SYNQUENZER.songPlay && window.SYNQUENZER.songPlay(false)); await E(() => { const Q = window.SYNQUENZER; Q.stopAll ? Q.stopAll() : 0; });
+const ghosts = await E(() => document.querySelectorAll('.drg-ghost').length);
+check(`${VP} no ghost left in the DOM`, ghosts === 0, ghosts);
+console.log('errors', errs);
+check('0 console errors', errs.length === 0, errs);
+await b.close();
+process.exit(done());
