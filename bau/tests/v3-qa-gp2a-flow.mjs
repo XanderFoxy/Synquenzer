@@ -78,7 +78,7 @@ await T.tapSel('.sv-play'); await sleep(100);
 await p.waitForFunction(() => { const s = SYNQUENZER.runtime().song; return s.beat != null && s.beat >= 47.6; }, null, {timeout: 60000, polling: 10});
 const log = await E(() => SYNQUENZER.noteLog(2000));
 const tl = await E(() => SYNQUENZER.timeline().filter(e => e.beat != null).map(e => [+e.beat.toFixed(2), e.name]));
-await T.tapSel('.sv-play'); await sleep(300);
+if (await E(() => SYNQUENZER.runtime().playing)) await T.tapSel('.sv-play'); await sleep(300);
 // expected per bar (song bar → part bar): S S | S S S S | S S | R R R R
 const exp = await E(() => { const s = SYNQUENZER.song(); const out = []; for (let b = 0; b < s.bars; b++) out.push(s.lanes.map(l => { let x = -1; for (const e of l) { if (e.bar > b) break; x = e.own ? 'o' : e.slot; } return x; })); return out; });
 const sb = log.length ? Math.min(...log.map(n => n.beat)) : 0;
@@ -168,7 +168,7 @@ await E(() => SYNQUENZER.clearLog());
 await T.tapSel('.sv-play'); await sleep(100);
 await waitSong(4 * 16 - .5);
 const log2 = await E(() => SYNQUENZER.noteLog(3000));
-await T.tapSel('.sv-play'); await sleep(300);
+if (await E(() => SYNQUENZER.runtime().playing)) await T.tapSel('.sv-play'); await sleep(300);
 const s2 = log2.filter(n => n.track === 1);
 const inBar = (b, f) => s2.filter(n => n.beat >= b * 4 - .01 && n.beat < b * 4 + 3.99 && f(n));
 const odub = s2.filter(n => (Math.abs(n.beat - 4.95) < .12 && n.out === 79) || (Math.abs(n.beat - 6.95) < .12 && n.out === 81));
