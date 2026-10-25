@@ -1,0 +1,13 @@
+import { open } from './v3-v2d-pw.mjs';
+import { SETUP } from './v3-v2d2-lib.mjs';
+const vps = {P1:[390,844],P2:[375,667],P3:[320,568],L1:[844,390],L2:[667,375]};
+const which = process.argv[2] || 'P1', tag = process.argv[3] || 'a';
+const [w,h] = vps[which];
+const {b, p, errs} = await open({width:w,height:h});
+await p.evaluate(SETUP(true));
+await p.evaluate(() => window.SYNQUENZER.songView(true));
+await p.waitForTimeout(400);
+await p.screenshot({path:`v3-v2e-look-${which}-${tag}.png`});
+console.log(JSON.stringify(await p.evaluate(() => { const r = q => { const e=document.querySelector(q); if(!e) return null; const b=e.getBoundingClientRect(); return [b.x,b.y,b.width,b.height].map(v=>Math.round(v*10)/10); }; return {cv:r('.sv-cv'), top:r('.sv-top'), labs:r('.sv-labs'), tray: r('#tray')||r('.tray'), btns:[...document.querySelectorAll('.sv-top button')].filter(x=>!x.hidden).map(x=>[x.className, x.textContent, ...(()=>{const b=x.getBoundingClientRect(); return [Math.round(b.x),Math.round(b.width),Math.round(b.height)];})()])}; })));
+console.log('errs', errs);
+await b.close();

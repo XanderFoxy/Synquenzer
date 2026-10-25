@@ -1,0 +1,24 @@
+import { open } from './v3-v2d-pw.mjs';
+import { SETUP } from './v3-v2d2-lib.mjs';
+const vps = {P1:[390,844],P2:[375,667],P3:[320,568],L1:[844,390],L2:[667,375]};
+const which = process.argv[2] || 'P1';
+const [w,h] = vps[which];
+const {b, p, errs} = await open({width:w,height:h}, undefined, true);
+await p.evaluate(SETUP(true));
+await p.evaluate(() => window.SYNQUENZER.songView(true));
+await p.waitForTimeout(300);
+const info = await p.evaluate(() => window.SYNQUENZER.svLayoutInfo());
+console.log(JSON.stringify(info));
+await p.screenshot({path:`v3-v2e-l2-${which}-a.png`});
+const cv = info.canvas;
+const tap = async (x,y) => { await p.touchscreen.tap(cv.x + x, cv.y + y); await p.waitForTimeout(250); };
+// tap on STROPHE mark (bar 3 → x = 3*36+10)
+await tap(3*36+10, 8);
+await p.screenshot({path:`v3-v2e-l2-${which}-b.png`});
+console.log('pop', await p.evaluate(() => { const e=document.querySelector('.pop'); if(!e) return null; const r=e.getBoundingClientRect(); return [e.className, r.y, r.height, [...e.querySelectorAll('button')].map(b=>{const q=b.getBoundingClientRect(); return b.textContent+':'+Math.round(q.width)+'x'+Math.round(q.height);}).join(' | ')]; }));
+await tap(4*36+10, 8);
+await p.screenshot({path:`v3-v2e-l2-${which}-c.png`});
+console.log(JSON.stringify(await p.evaluate(() => window.SYNQUENZER.svLayoutInfo())));
+console.log('rb', await p.evaluate(() => { const e=document.getElementById('rangeBar'); const r=e.getBoundingClientRect(); return [r.x,r.y,r.width,r.height, [...e.querySelectorAll('button')].filter(b=>b.offsetWidth).map(b=>{const q=b.getBoundingClientRect(); return b.textContent+':'+Math.round(q.width)+'x'+Math.round(q.height);}).join(' | ')]; }));
+console.log('errs', errs);
+await b.close();

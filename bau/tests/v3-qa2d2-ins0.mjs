@@ -1,0 +1,21 @@
+// QA: Einfügen ab T1 (n = 1, count-in), CLIPS: drums Sz1 during the take; end at T3 + 10 % → 2 bars; old T1 now T3, in phase
+import { openT, waitSong, projSong, clipsJSON, mk, SETUP, playLog } from './v3-qa2d2-lib.mjs';
+const {check, done} = mk();
+const {b, p, errs} = await openT({width: 390, height: 844}, false);
+await p.evaluate(() => ensureAudio()); await p.waitForTimeout(300);
+await p.evaluate(SETUP(false));
+const ref = (await playLog(p, 27.9)).filter(n => n.src !== 'click').map(n => [n.track, +n.beat.toFixed(2), n.clipNote]);
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.clearLog(); return Q.songRecFrom({from: 0, mode: 'insert', targets: {clips: true, chords: false, notes: false}, preroll: 1}); });
+await p.waitForFunction(() => R.schedBeat > -2 && window.SYNQUENZER.runtime().beat > -1.5, null, {timeout: 10000, polling: 5});
+await p.evaluate(() => window.SYNQUENZER.launchClip(4, 0));
+await waitSong(p, 8.4); await p.evaluate(() => window.SYNQUENZER.songRecEnd());
+const le = await p.evaluate(() => window.SYNQUENZER.runtime().song.lastEnd);
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.songPlay(false); Q.stop(); }); await p.waitForTimeout(300);
+const s = await p.evaluate(() => window.SYNQUENZER.song());
+check('Einfügen ab T1: 2 bars inserted', le && le.endBar === 2 && s.bars === 9, {le, bars: s.bars, lanes: s.lanes});
+const got = (await playLog(p, 35.9)).filter(n => n.src !== 'click').map(n => [n.track, +n.beat.toFixed(2), n.clipNote]);
+const A = ref.map(x => [x[0], +(x[1] + 8).toFixed(2), x[2]]).sort((a, c) => a[0] - c[0] || a[1] - c[1]).map(String), B = got.filter(x => x[1] >= 8 - .01).sort((a, c) => a[0] - c[0] || a[1] - c[1]).map(String);
+check('playback: new T3–9 = old T1–7 (incl. melody, shifted 8 beats)', A.join('|') === B.join('|'), {A: A.slice(0, 12), B: B.slice(0, 12), nA: A.length, nB: B.length, onlyA: A.filter(x => !B.includes(x)), onlyB: B.filter(x => !A.includes(x))});
+check('playback: new T1–2 = drums 36 only (nothing else from the old song)', got.filter(x => x[1] < 8 - .01).every(x => x[0] === 4 && x[2] === 36), got.filter(x => x[1] < 8 - .01));
+check('0 console errors', !errs.length, errs);
+await b.close(); process.exit(done() ? 1 : 0);
