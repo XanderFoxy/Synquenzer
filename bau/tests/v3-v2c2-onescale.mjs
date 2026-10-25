@@ -231,6 +231,30 @@ const dOff = await dr(false), dOn = await dr(true);
 const ratio = dOn.cent / dOff.cent, want = Math.pow(2, dOn.tune / 12);
 check('V2c′-12 Drums „Mittransponieren“ unter G: Pads um die Verschiebung gestimmt (Schwerpunkt 40–2000 Hz verschiebt sich wie 2^(Verschiebung/12), ±15 %); „Bleiben“: unverändert', dOn.tune !== 0 && Math.abs(ratio / want - 1) < .15 && dOff.tune === 0, {dOff, dOn, ratio: +ratio.toFixed(3), want: +want.toFixed(3)});
 
+// ---------- V2c′-17: Speichern/Laden (Rundweg) ----------
+r = await E(() => { const Q = window.SYNQUENZER; Q.newProject(); Q.setHarmony({osAmt: .4, osPass: true, osRef: 'auto', drums: true}); Q.setTrackScale(2, false);
+  const a = Q.project(); Q.importJSON(JSON.stringify(a)); const b2 = Q.project(); const h = b2.settings.harmony;
+  return {ok: h.oneScale === true && h.osAmt === .4 && h.osPass === true && h.osRef === 'auto' && h.drums === true && b2.tracks[2].os === false && b2.tracks[0].os === true}; });
+check('V2c′-17 Rundweg Speichern/Laden: Eine Skala, Stärke, Durchgangstöne, Skala nach, Drums, Spur-Schalter bleiben', r.ok, r);
+
+// ---------- V2c′-18: MIDI-Export „mit Träger“ klingt wie gehört ----------
+r = await E(async () => { const Q = window.SYNQUENZER; Q.newProject({init: true}); ensureAudio();
+  Q.setClip(0, 0, {len: 1, key: {root: 4, scale: 'aeolian'}, notes: [64, 66, 67, 69, 71, 72, 74].map((n, i) => ({t: i * .5, d: .4, n, v: .8}))});
+  recallCarrier(Q.harmony.detectChord([60, 64, 67])); await __sleep(50);
+  const notesOf = m => { const bytes = m && m.bytes ? m.bytes : m; const u = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes); const out = []; let i = 14;
+    while (i + 8 <= u.length) { const len = (u[i + 4] << 24) | (u[i + 5] << 16) | (u[i + 6] << 8) | u[i + 7]; let j = i + 8, end = j + len, rs = 0;
+      while (j < end) { let d = 0, c; do { c = u[j++]; d = (d << 7) | (c & 127); } while (c & 128);
+        let st = u[j]; if (st & 128) { j++; rs = st; } else st = rs;
+        if (st === 0xff) { const ty = u[j++]; let l = 0; do { c = u[j++]; l = (l << 7) | (c & 127); } while (c & 128); j += l; }
+        else if (st === 0xf0 || st === 0xf7) { let l = 0; do { c = u[j++]; l = (l << 7) | (c & 127); } while (c & 128); j += l; }
+        else { const hi = st & 0xf0, a = u[j++], b = (hi === 0xc0 || hi === 0xd0) ? 0 : u[j++]; if (hi === 0x90 && b > 0) out.push({ch: st & 15, n: a}); } }
+      i = end; }
+    return out; };
+  const on = notesOf(buildMidi({mode: 'scene', scene: 0, withCarrier: true})).filter(x => x.ch === 0).map(x => x.n);
+  Q.oneScale(false); const off = notesOf(buildMidi({mode: 'scene', scene: 0, withCarrier: true})).filter(x => x.ch === 0).map(x => x.n); Q.oneScale(true);
+  Q.resetCarrier(); return {on, off}; });
+check('V2c′-18 MIDI-Export mit Träger: an → alle Töne in C-Dur (kein F♯), aus → F♯ wie bisher', r.on.length === 7 && r.on.every(n => [0, 2, 4, 5, 7, 9, 11].includes(n % 12)) && r.off.some(n => n % 12 === 6), r);
+
 // ---------- V2c′-16: Menü → Harmonie ----------
 r = await E(async () => { const Q = window.SYNQUENZER; Q.newProject(); openMenu(); await __sleep(150);
   const rows = [...document.querySelectorAll('.msec .mrow')].map(x => x.textContent);

@@ -30,7 +30,7 @@ export async function open(o = {}) {
   const p = await ctx.newPage(); const errs = [], logs = [];
   p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); else if (o.log) logs.push(m.type() + ': ' + m.text()); });
   if (o.mic !== false) await p.addInitScript(INIT);
-  await p.goto('file://' + (o.file || APP)); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version, null, {timeout: 20000});
+  await p.goto('file://' + (o.file || process.env.SYNQ_APP || APP)); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version, null, {timeout: 20000});
   await p.waitForTimeout(600);
   const E = (f, a) => p.evaluate(f, a);
   return {br, ctx, p, errs, logs, E, waitBeat: (x, ms = 60000) => p.waitForFunction(x => window.SYNQUENZER.runtime().beat > x, x, {timeout: ms, polling: 20})};

@@ -12966,7 +12966,7 @@ function perfRetune(v, out, t) {
    the Träger built on the reference key (Projekt-Tonart, or „Automatisch“ = the detected key of the clip's scene). The rule
    works per clip on its distinct pitches (Harmony.oneScaleMap): direction from how the clip approaches a pitch, longest
    length for Stärke, passing tones; so a note sounds the same whether it is scheduled or retuned on a Träger change. */
-const OS = {tick: 0, cache: new WeakMap()};
+const OS = {tick: 0, cache: new WeakMap(), z: new WeakMap()};
 function osActive(tr) { const h = S.settings.harmony; return !!h.oneScale && h.mode !== 'chromatic' && !!tr && tr.kind === 'synth' && tr.follow !== false && tr.os !== false; }
 function osBase(si) {
   if (S.settings.harmony.osRef === 'auto' && si != null && si >= 0) { const k = sceneKeyOf(si); if (k && Harmony.SCALES[k.scale]) return k; }
@@ -13006,8 +13006,9 @@ function osClipOf(i, clipKey) {
 // q = the degree-mapped pitch of `note` under entry e; returns the pitch in the one scale
 function osApply(i, clipKey, note, q, e, time) {
   const h = S.settings.harmony, tr = S.tracks[i], cs = osClipOf(i, clipKey);
-  const base = osBase(cs ? cs.s : null), opts = hopts();
-  const Z = Harmony.oneScale(e.target, base, h.mode, opts); if (!Z) return q;
+  const base = osBase(cs ? cs.s : null), zk = base.root + base.scale + h.mode + h.single + h.minor + h.keyAware;
+  let zc = OS.z.get(e); if (!zc || zc.k !== zk) { zc = {k: zk, Z: Harmony.oneScale(e.target, base, h.mode, hopts())}; OS.z.set(e, zc); }
+  const Z = zc.Z; if (!Z) return q;
   if (!cs || !cs.c.notes.length) return Harmony.snapToScale(q, Z, 0);
   const st = osStats(cs.c), sk = Z.join(',') + '|' + (clipKey.root + clipKey.scale) + '|' + e.shift + '|' + h.osAmt + '|' + h.osPass + '|' + h.octaveMode + h.mode + h.single + h.minor + h.keyAware;
   let m = st.maps.get(e);
@@ -26191,7 +26192,7 @@ function openMenu(goto) {
     osT.appendChild(b);
   }
   row(s3, 'Drums', makeSeg([[false, 'Bleiben'], [true, 'Mittransponieren']], () => !!h.drums, v => setHarmony({drums: v})));
-  s3.appendChild(el('div', 'small', 'Eine Skala: unter einem Akkord (Träger) rückt jeder Ton in die Tonleiter dieses Akkords – jeder Ton behält seine Stufe, nur leiterfremde Töne rücken zum nächsten passenden Ton (bei Gleichstand in Spielrichtung). Zwei verschiedene Töne bleiben verschieden, aufwärts bleibt aufwärts. Stärke unter 100 %: kurze, verspielte Töne bleiben wie gespielt. Durchgangstöne erlauben: kurze Schritt-Töne zwischen zwei Tönen bleiben. Skala nach Projekt-Tonart oder automatisch nach der erkannten Tonart der Szene. Drums mittransponieren: alle Pads werden um die Verschiebung gestimmt (für Fills).'));
+  s3.appendChild(el('div', 'small', 'Eine Skala: unter einem Akkord klingen alle Spuren in seiner Tonleiter. Jeder Ton behält seine Stufe, nur unpassende Töne rücken zum nächsten passenden Ton – verschiedene Töne bleiben verschieden. Stärke unter 100 %: kurze Töne bleiben, wie gespielt. Drums mittransponieren: die Pads werden mitgestimmt (für Fills).'));
   const bCoach = btn('? So funktioniert’s'); on(bCoach, 'click', () => { closeMenu(); showCoach(); }); row(s3, null, bCoach);
   // 4 Aufnahme
   const s4 = sec('Aufnahme', colR, 5);
@@ -30982,7 +30983,7 @@ function vsNotesOf(A, o) {
 // Tonart an einer Stelle (wie „Tonart sperren“): unter einem Träger die gehörte, sonst die der Szene
 function vsKeyAt(t) {
   const tg = T.targetAt(t).target;
-  if (tg && R.kbMode !== 'transpose' && !R.momentary) { const h = S.settings.harmony; const k = Harmony.keyForRecording(tg, heardBaseKey(), h.mode, Object.assign(hopts(), {octaveMode: h.octaveMode})); return {root: k.root, scale: k.scale}; }
+  if (tg && R.kbMode !== 'transpose' && !R.momentary) { const h = S.settings.harmony; const k = Harmony.keyForRecording(tg, osShownBase() || heardBaseKey(), h.mode, Object.assign(hopts(), {octaveMode: h.octaveMode})); return {root: k.root, scale: k.scale}; }   // V2c′: wie die Tastatur
   const k = sceneRefKey() || S.key; return {root: k.root, scale: k.scale};
 }
 const vsMelFree = () => { const tr = S.tracks[MEL_T]; if (!tr) return -1; if (!tr.clips[R.selS]) return R.selS; return tr.clips.findIndex(c => !c); };
