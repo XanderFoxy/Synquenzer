@@ -3752,3 +3752,19 @@ Kein Aufruf nennt das Klassenzimmer-Projekt.
 2. Nochmal in den Teil tippen → ein Takt wird gelb, unten die Bereich-Leiste. [⧉] → der Takt ist verdoppelt, alles danach rückt nach.
 3. Hinter dem Song-Ende nach rechts wischen, auf eine graue Nummer tippen, einen Teil wählen → er steht dort, die Takte davor bleiben leer.
 4. Einen Akkord in einem Teil antippen und ändern → nur dort anders; im Toast [Für alle „Strophe“] → überall.
+
+## V2e-fix — Szene als Teil klingt, eigene Clips bleiben bei [Auf alle übertragen], ⧉ Kopie endet mit jedem anderen Tipp, Bereich-Leiste nie ohne Auswahl · App 4.7.0
+
+1. **Szene als Teil** (`Ersetzen durch ▾` / `＋ Teil einsetzen ▾` → „Szene n“): `sceneChunk()` gab seine Lanes an `partChunk()` weiter,
+   dessen `partLanesFix()` die Takt-0-Einträge an Ort und Stelle löschte – die Marke hieß „Szene 1“, klang aber nicht. Jetzt bekommt
+   `partChunk` eine Kopie mit passenden Slots (und die volle Szenenlänge für die Träger-Wiederholung). Geprüft: Takt 3 nach Ersetzen
+   klingt Bass 45,45 + Drums 36,36; leerer Song → Szene 1 → Bass und Drums.
+2. **[Auf alle übertragen]** (song-delta 6.3): eigene Clips mit gleichem Slot wie die Vorlage bleiben an den Zielstellen (Lane-Eintrag
+   mit `own`, danach geht die Vorlage in Phase weiter); bisher löschte `opReplace` sie. Geprüft: `o1` bleibt, noteLog zeigt `own`.
+3. **⧉ Kopie** wartet nur bis zum nächsten Tipp: jeder Tipp außerhalb der Song-Leinwand (Etikett, ⏮, Menü, Leisten) beendet das
+   Warten; ein kurzer Hinweis überschreibt die Warte-Zeile nur für 1,6 s. Ein späterer Zellen-Tipp wechselt wieder nur den Clip.
+4. **Bereich-Leiste**: die gelbe Auswahl wird an das Song-Ende geklemmt bzw. verworfen (Undo, kürzerer Song, Projektwechsel); beim
+   Projektwechsel enden auch gewählte Marke, ⧉ Kopie und Vorschau. Die Träger-Leiste kommt sofort zurück, FOLGEN hält nicht mehr
+   für eine unsichtbare Auswahl.
+
+Snapshot: `synq-snapshots/V2e-fix.html`. Keine Migration (App-Version unverändert 4.7.0).
