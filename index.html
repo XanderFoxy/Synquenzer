@@ -5528,43 +5528,50 @@ function snapToScale(q, Z, dir) {
 // to the nearest scale tone, a tie in its playing direction; Stärke < 100 % leaves short (verspielte) foreign tones as
 // played: they move only from a length of (1 − Stärke) × 2 beats on; (3) collision guard: if a moved tone would land on its
 // neighbour's pitch although the two were different, the moved one steps on to the next scale tone in its direction
-// (upper neighbour up, lower neighbour down); the order of the pitches never flips (contour); (4) timing is not touched.
+// (a chain of neighbours moves on one degree each when the next degree is taken too, so 7 different tones stay 7 – an in-scale
+// tone only when nothing else frees the collision); the order of the pitches never flips (contour); (4) timing is not touched.
+// Solved as one small shortest-path over the distinct pitches (≤ ±3 degrees per tone): cost = semitones a foreign tone moves
+// from where it was played (+ a hair against its playing direction), 1.5 per degree an in-scale tone moves, a collision 60;
+// on an equal choice two moved tones part as before (the upper one up), two doubled in-scale tones too (the lower one down).
 function oneScaleMap(items, Z, o = {}) {
-  const amt = o.amt == null ? 1 : Math.max(0, Math.min(1, o.amt)), thr = amt >= 1 ? 0 : (1 - amt) * 2;
+  const amt = o.amt == null ? 1 : Math.max(0, Math.min(1, o.amt)), thr = amt >= 1 ? 0 : (1 - amt) * 2, n = items.length;
   const inZ = x => Z.includes(PC(x));
-  const R = items.map(it => {
-    if (inZ(it.q) || amt <= 0 || (o.pass && it.pass) || it.dur < thr - 1e-9) return {v:it.q, mv:false};
-    return {v:snapToScale(it.q, Z, it.dir), mv:true};
-  });
+  if (!n) return [];
   const nextUp = x => { let y = x + 1; while (!inZ(y) && y < x + 12) y++; return y; };
   const nextDn = x => { let y = x - 1; while (!inZ(y) && y > x - 12) y--; return y; };
-  for (let k = 1; k < R.length; k++) {
-    const a = R[k - 1], b = R[k];
-    if (b.v < a.v) b.v = a.v;                                         // never flip the order of two source pitches
-    if (b.v !== a.v) continue;
-    if (b.mv) { b.v = nextUp(a.v); continue; }                       // the upper one was moved: on up
-    const d = nextDn(a.v), roomDn = k < 2 || d > R[k - 2].v;
-    if (a.mv) { if (roomDn) a.v = d; continue; }                       // the lower one was moved: on down (if there is room)
-    // neither moved, the degree mapping put two different tones on one (sus2/sus4, an accidental without room): the lower one
-    // goes down to the next scale tone, else the upper one up – both only into a free tone (no new collision)
-    if (roomDn) { a.v = d; continue; }
-    const u = nextUp(b.v); if (k + 1 >= R.length || u < items[k + 1].q) b.v = u;
-  }
-  // still two on one tone (no free neighbour): push a short chain of moved or doubled tones one scale step (≤ 3 tones)
-  const mov = R.map((r, k) => r.mv || (k > 0 && items[k].q === items[k - 1].q) || (k + 1 < items.length && items[k].q === items[k + 1].q));
-  const push = (k, dir) => {
-    const v = R.map(r => r.v); let j = k;
-    for (let n = 0; n < 3; n++) {
-      if (!mov[j]) return false;
-      v[j] = dir < 0 ? nextDn(v[j]) : nextUp(v[j]);
-      const nb = j + dir;
-      if (nb < 0 || nb >= v.length || (dir < 0 ? v[nb] < v[j] : v[nb] > v[j])) { R.forEach((r, i) => { r.v = v[i]; }); return true; }
-      j = nb;
+  const W = 3, EPS = .01, TIE = .001, KZ = 1.5, COLL = 60, FLIP = 1e6;
+  // candidates per tone: [pitch, cost]
+  const C = items.map(it => {
+    if (inZ(it.q)) {                                                   // (1) in the scale: stays, unless a collision needs it
+      const c = [[it.q, 0]]; let u = it.q, d = it.q;
+      for (let s = 1; s <= W; s++) { u = nextUp(u); d = nextDn(d); c.push([u, KZ * s + TIE], [d, KZ * s]); }   // tie: the lower goes down
+      return c;
     }
-    return false;
-  };
-  for (let k = 1; k < R.length; k++) if (R[k].v === R[k - 1].v) { if (!push(k - 1, -1)) push(k, 1); }
-  return R.map(r => r.v);
+    if (amt <= 0 || (o.pass && it.pass) || it.dur < thr - 1e-9) return [[it.q, 0]];   // left as played
+    const s0 = snapToScale(it.q, Z, it.dir), c = []; let u = s0, d = s0;      // (2) foreign: nearest, tie in its direction
+    const cost = v => Math.abs(v - it.q) + ((it.dir > 0 ? v < it.q : v > it.q) ? EPS : 0) + (v < s0 ? TIE : 0);   // tie: the upper goes up
+    c.push([s0, cost(s0)]);
+    for (let s = 1; s <= W; s++) { u = nextUp(u); d = nextDn(d); c.push([u, cost(u)], [d, cost(d)]); }
+    return c;
+  });
+  // DP over the ascending source pitches: strictly rising = no collision, equal = collision, falling never (contour)
+  let D = C[0].map(([, w]) => w); const B = [C[0].map(() => -1)];
+  for (let k = 1; k < n; k++) {
+    const P = C[k - 1], Q = C[k], nd = [], nb = [];
+    for (let j = 0; j < Q.length; j++) {
+      let best = Infinity, bi = -1;
+      for (let i = 0; i < P.length; i++) {
+        const dv = Q[j][0] - P[i][0], t = D[i] + (dv > 0 ? 0 : dv === 0 ? COLL : FLIP);
+        if (t < best - 1e-9) { best = t; bi = i; }
+      }
+      nd.push(best + Q[j][1]); nb.push(bi);
+    }
+    D = nd; B.push(nb);
+  }
+  let j = 0; for (let i = 1; i < D.length; i++) if (D[i] < D[j] - 1e-9) j = i;
+  const out = new Array(n);
+  for (let k = n - 1; k >= 0; k--) { out[k] = C[k][j][0]; j = B[k][j]; }
+  return out;
 }
 
 // Key stored on a clip recorded while a carrier is active, so that playback under the same carrier is identity.
