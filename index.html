@@ -13983,7 +13983,8 @@ function songCommitLanes(evs, endBar) {
     const lane = song.lanes[t], first = recd[0].bar, oldO = laneOriginAt(lane, endBar), oldEnd = laneClipOk(song, t, oldO) ? oldO.slot : -1, hasEnd = lane.some(e => e.bar === endBar);
     const endPh = oldEnd >= 0 ? songPhaseAt(song, t, endBar) : 0;          // V2d: the old part goes on in phase after the take
     const out = lane.filter(e => e.bar < first);
-    const push = e => { let prev = -1; for (const x of out) prev = x.slot; if (e.slot !== prev || e.re || e.ph != null || e.own) out.push(laneEntryNorm(e, e.bar, e.slot)); };
+    // V2d′-fix (N7-R9): an entry after an own clip that returns to the scene clip of the same slot is a switch, not a duplicate
+    const push = e => { const px = out.length ? out[out.length - 1] : null, prev = px ? px.slot : -1; if (e.slot !== prev || e.re || e.ph != null || e.own || (px && px.own)) out.push(laneEntryNorm(e, e.bar, e.slot)); };
     for (const e of recd) push(e);
     if (endBar < song.bars && !hasEnd) { const own = oldEnd >= 0 && oldO.own ? {own: oldO.own} : null; push(Object.assign(endPh > 1e-6 ? {bar: endBar, slot: oldEnd, ph: endPh} : oldEnd >= 0 && out.length && out[out.length - 1].slot === oldEnd ? {bar: endBar, slot: oldEnd, re: 1} : {bar: endBar, slot: oldEnd}, own)); }
     for (const e of lane) if (e.bar >= endBar) push(e);
