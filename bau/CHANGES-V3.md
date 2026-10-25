@@ -3331,3 +3331,115 @@ weiter erst nach der Hysterese (richtige Taste ≈ 75 % der gesungenen Zeit, der
 **Für Xander am iPhone (Pages-Seite, ≈ 2 min):** 🎤 an, ▶, eine kurze Phrase mit weichem Anschleifen in die Töne und einem kleinen
 Abfall am Ende jedes Tons singen, dann FANG 🎤 – Soll: keine kurzen Noten vor oder nach den Tönen. Einen langen Ton mit breitem Vibrato
 singen – Soll: die gesungene Taste leuchtet, nicht die Nachbartasten.
+
+## V2c′ — „Eine Skala“: Akkord-Skala-Quantisierer (Stufe bleibt, nur unpassende Töne rücken, Kollisionsschutz, Stärke, Durchgangstöne, Spur-Schalter, Projekt-Tonart │ Automatisch, Drums für Fills) · App 4.5.3
+
+Grundlage: Spec §17 V2c′ (E3-25, I-01), Nachtrag 2 B.4 („wirkt auch auf aufgelöste Teile und eigene Clips“) und – vorrangig – Nachtrag 2,
+Nachtrag zur Reihenfolge, Xander 24.10. (Skala-Quantisierer vorgezogen; Abgleich OP-Z/OP-XY `forschung/r9/opz-transposition.md`: Brain-Schalter,
+Drums für Fills, Tonart automatisch │ manuell; „beste Transposition“; „Präzisierung Akkord-Skala-Quantisierer“). Version 4.5.3 statt 4.4.0
+(EN2-14: Versionen streng steigend, das Paket kommt nach VS2b 4.5.2). Ausgangspunkt war VS2b-fix (keine halbfertige Arbeit vorgefunden).
+
+**Gebaut**
+- **Harmonie-Kern (einzige Öffnung von I-01, nur hinter dem Schalter):** `mapNote` bleibt unverändert. Neu `Harmony.oneScale(target, base, mode, opts)`
+  (die 7 Tonklassen der einen Skala: `targetScale` des Trägers auf der Bezugstonart; sus2/sus4 behalten 7 Töne, die doppelte Stufe nimmt den Ton
+  des Modus, z. B. C sus4 → C-Mixolydisch), `snapToScale` (nächster Skalenton, Gleichstand in Spielrichtung, ohne Richtung nach unten) und
+  `oneScaleMap` (die Regeln von Xander 24.10.): (1) jeder Ton wird zuerst wie bisher nach Stufen abgebildet und behält seine Stufe; (2) nur ein
+  Ton außerhalb der Skala rückt zum nächsten Skalenton, bei Gleichstand in Spielrichtung; (3) Kollisionsschutz: fiele er auf den Ton seines
+  Nachbarn, weicht er zur nächsten Stufe in seiner Richtung aus (oberer nach oben, unterer nach unten); auch zwei von der Stufen-Abbildung
+  zusammengelegte Töne (sus) werden wieder getrennt, notfalls über eine kurze Kette (≤ 3 Töne); die Reihenfolge der Tonhöhen kippt nie
+  (Kontur); (4) Rhythmus und Längen bleiben unberührt.
+- **Engine:** `mapOut` = Stufen-Abbildung + eine Skala; `outPitch` (Planung, Träger-Wechsel, Rückrechnung), MIDI-Export „mit Träger“ (Szene und
+  Song) nutzen es. Die Regel arbeitet je Clip auf seinen verschiedenen Tonhöhen (Richtung = wie der Clip, als Schleife, die Tonhöhe meist
+  erreicht; Länge = längster Einsatz; Durchgangston = immer kurz und schrittweise zwischen zwei Tönen) – so klingt eine Note gleich, ob sie
+  geplant oder bei einem Träger-Wechsel umgestimmt wird. Zwischenspeicher je Clip (WeakMap, Prüfsumme der Noten je Planungsschritt) und je
+  Träger-Eintrag; nichts wird in Projekt oder Clips geschrieben. Teil-Transposition `R.xp` und `S.shift` kommen wie bisher danach.
+- **Einstellungen** (`settings.harmony`): `oneScale` (fehlt = aus → gespeicherte Projekte, alte v1-Projekte und die Demo klingen gleich;
+  Neu und [Leer (Init)] = an), `osAmt` Stärke 0–1 (Standard 1; unter 100 % bleiben unpassende Töne, deren längster Einsatz kürzer als
+  (1 − Stärke) × 2 Schläge ist, wie gespielt), `osPass` Durchgangstöne erlauben (Standard aus), `osRef` Skala nach `proj` Projekt-Tonart
+  (Standard) │ `auto` erkannte Tonart der Szene des Clips (OP-XY-Brain „automatisch“), `drums` Drums mittransponieren (Standard aus).
+  Je Synth-Spur `tr.os` (Standard an). Alles im Rundweg Speichern/Laden.
+- **Menü → Harmonie** (unter „Tastatur beim Spielen“): Eine Skala [An│Aus] · Stärke (Regler, %) · Durchgangstöne [Einrasten│Erlauben] ·
+  Skala nach [Projekt-Tonart│Automatisch] · Spuren [S1][S2]… (aus = folgt nur der Stufen-Abbildung; MELODIE und Spuren mit ⇅ fest grau) ·
+  Drums [Bleiben│Mittransponieren] · kurzer Hilfetext; Hilfe-Liste: Zeile EINE SKALA, LATCH-Zeile ergänzt. Hauptansicht unverändert.
+- **Anzeige = dieselbe Funktion (V2c′-05):** leuchtende Tasten, „Tonart sperren“, Träger-Anzeige („→ C-Dur“), Tastatur-Tonart und die
+  Gesangs-Einrastung (`vsKeyAt`) nehmen unter einem Träger mit „Eine Skala“ dieselbe Skala (`kbOneZ`, `osShownBase`).
+- **Drums mittransponieren** (OP-Z-Tipp „für Fills“): Clip-Schläge bekommen die gehörte Verschiebung (Träger-`shift` + Teil-Transposition,
+  ±12) als TUNE wie ein Lock; bei einem Träger-Wechsel werden die schon geplanten Schläge neu geplant.
+- **Test-API:** `oneScale(on?)`, `setTrackScale(t, on)`, `oneScaleOf(target, base?)`, `kbScaleNow()`, `setHarmony({oneScale, osAmt, osPass,
+  osRef, drums})`, `harmony.oneScale/snapToScale/oneScaleMap`, `runtime().harmony` mit den neuen Feldern.
+
+**Abnahme** (`dirigent-test/v3-v2c2-onescale.mjs` → `v3-v2c2-onescale.out`: **26/26**; Chromium 1243 – der im Auftrag genannte Pfad
+`chromium-1194` existiert hier nicht)
+
+| ID | Prüfung | Ergebnis |
+|---|---|---|
+| V2c′-01 | e-Moll-Clip (7 Töne E F♯ G A H C D) unter C, an: kein F♯, alles in C-Dur; aus: A → F♯ (C-Lydisch); Spec-Clip E G H D F♯: alles C-Dur | ✓ (noteLog) |
+| V2c′-02 | Gleichstand ohne Richtung nach unten (C♯ → C); E F♯ A aufwärts → G, A F♯ E abwärts → F; kein Gleichstand → nächster Ton | ✓ |
+| V2c′-03 | leitereigene Clips (C-Dur, a-Moll, D-Dorisch, G-Mixolyd.) × 12 leitereigene Träger × AKKORD/TONART: 1 440 Tonhöhen identisch | ✓ |
+| V2c′-04 | aus = bitgleich zu 4.5.2: 1 134 000 Abbildungen (5 Harmonie-Einstellungen × 108 Träger × 84 Clip-Tonarten × 25 Töne) gegen `VS2b-fix.html`, 0 Abweichungen; Neu/Init an, Demo aus, gespeichertes Projekt ohne Feld aus | ✓ |
+| V2c′-05 | Tastatur zeigt unter 5 Trägern genau die eine Skala; 20 Clip-Töne klingen alle darin. Song-Tonart-Erkennung (V2f) noch nicht gebaut | ✓ |
+| V2c′-06 | Regression, Version 4.5.3, keine Konsolenfehler | ✓ (s. u.) |
+| V2c′-07 | 40 Melodien aus 7 verschiedenen Tönen × 108 Träger (inkl. sus2/sus4, aug, dim, dim7): immer 7 verschiedene Töne, Kontur gleich; Melodie mit einem verspielten Ton unter 8 Trägern ebenso | ✓ (vor dem Befund 1: 960 Fehler) |
+| V2c′-08 | Kollisionsschutz: A F♯ F abwärts unter C → A G F | ✓ |
+| V2c′-09 | Stärke 100 %: kurzes F♯ → F, langes C♯ → D; 50 %: nur das lange; 0 %: keins (noteLog) | ✓ |
+| V2c′-10 | Durchgangston E–F♯(1/16)–G: Einrasten → F, Erlauben → F♯ | ✓ |
+| V2c′-11 | Spur-Schalter S1 aus → wie ohne (A → F♯) | ✓ |
+| V2c′-12 | hörbar: Drums „Mittransponieren“ unter G (−5): Spektral-Schwerpunkt 40–2000 Hz 117,5 → 96,7 Hz (×0,82, Soll 0,75 ±15 %); „Bleiben“ unverändert | ✓ |
+| V2c′-13 | Skala nach „Automatisch“ (Szene e-Moll): C klingt C-Lydisch, Anzeige → C-Lydisch; „Projekt-Tonart“: → C-Dur | ✓ |
+| V2c′-14 | Einsätze im Takt mit und ohne „Eine Skala“ gleich | ✓ |
+| V2c′-15 | hörbar (FFT 32768): F♯4 unter C – an: Spitze 348,6 Hz, F 89 dB über F♯; aus: 370,1 Hz | ✓ |
+| V2c′-16 | Menü: alle Zeilen da; Tipp Aus/An und Spur-Knopf schalten | ✓ |
+| V2c′-17 | Rundweg Speichern/Laden aller neuen Felder | ✓ |
+| V2c′-18 | MIDI-Export mit Träger: an → C D E F G A H, aus → mit F♯ | ✓ |
+
+Weitere Prüfungen: `v3-v2c2-click.mjs` (Aufnahme am Master über AudioWorklet, 8 s Fläche + Arpeggio, Träger-Wechsel und Umschalten
+An/Aus/Stärke während der Wiedergabe): größte 2. Differenz 0,042 gegenüber 0,048 nur mit Träger-Wechseln, kein Einbruch (min −26 dB bei
+Median −21) – **M-KLICK/M-EINBRUCH ✓**. `v3-v2c2-perf.mjs` (6 Synth-Spuren × 64 Noten, Träger alle 0,5 s, 8 s): 60 fps an/aus, Planung je
+Spur 0,034 ms, Träger-Wechsel 1,65 ms (aus 0,87 ms), longtasks wie aus (1, beim Start) ✓. `v3-v2c2-lay.mjs` P1/P2/P3/L1/L2: Menü ohne
+Überlauf, kein waagrechtes Rollen, neue Knöpfe so hoch wie die Modus-Knöpfe (40/36/34/32/32 px), ≥ 40 px breit ✓; Bilder
+`v3-v2c2-{P1,P2,P3,L1,L2}-{main,menu}.png` angesehen (Hauptansicht unverändert, Träger „C −4 → C-Dur“, SPIELEN „C-Dur“). Smoke ohne Fehler
+(`v3-v2c2-smoke.png`). Regression: `v3-v2d-data` 51/51, `-audio` 2/2, `-fang` 39/39, `-extra` 8/8, `v3-qa-grp-flow3` 9/9, `-undo` 11/11,
+`-sheets` 16/16, `-flow4` 7/7 (ein Lauf mit Mikro-Attrappe vorher 6/7, zweimal wiederholt 7/7). `v3-qa-grp-flow1` (2 FAIL), `-flow2` (1),
+`-timing` (2) schlagen **gleich auch mit 4.5.2 (`VS2b-fix.html`) fehl** – alte Erwartungen der QA-Skripte, nicht von V2c′ (`v3-qa-grp-lib.mjs`
+nimmt dafür jetzt `SYNQ_APP` als andere App-Datei). Datei 2 442 158 Byte (+17 KB, Budget 20 KB).
+
+**Fach-Prüfung (Teil J: FP-SONG Haupt-, FP-TOUCH Zweit-Blick; selbst durchgeführt, kein eigener Agent verfügbar) – 8 Befunde, 2 behoben, 6 begründet**
+1. *FP-SONG, behoben:* sus2/sus4 legen in der Stufen-Abbildung zwei Stufen auf einen Ton – 7 verschiedene Töne wurden 6, die Kontur wurde
+   flach (V2c′-07: 960 von 4 320 Melodien). Neu: die eine Skala hat auch bei sus 7 Töne, zusammengelegte Töne werden getrennt, notfalls
+   über eine kurze Kette. Jetzt 0.
+2. *FP-SONG/FP-IPHONE, behoben:* die Skala wurde bei jedem Träger-Wechsel je Stimme neu gebaut (+1 ms je Wechsel); jetzt einmal je
+   Träger-Eintrag zwischengespeichert (2,0 → 1,65 ms am Rechner; iPhone-Faktor unbelegt).
+3. *FP-SONG, begründet:* Unter **sus**-Trägern klingen leitereigene Clips mit „Eine Skala“ jetzt anders als aus (die Terz-Stufe bleibt die
+   Terz statt auf die Quarte zu fallen) – Xanders Regel „verschiedene Töne bleiben verschieden“ (Nachtrag 2) geht V2c′-03 vor; für alle
+   übrigen leitereigenen Träger bleibt V2c′-03 bitgleich.
+4. *FP-SONG, begründet:* Drei chromatische Nachbarn (z. B. C C♯ D, alle lang) können nicht alle verschieden bleiben, ohne einen
+   leitereigenen Ton zu verschieben; dann fällt der verspielte Ton mit einem Nachbarn zusammen (Stärke < 100 % oder „Durchgangstöne
+   erlauben“ lassen ihn stehen).
+5. *FP-SONG, begründet:* Die Spielrichtung gilt je Tonhöhe im Clip (Mehrheit, wie der Clip sie erreicht), nicht je einzelnem Einsatz –
+   sonst klänge eine Note bei einem Träger-Wechsel anders als geplant.
+6. *FP-SONG, begründet:* Bezug „Projekt-Tonart“ ist Standard, weil V2c′-01 („alle Töne in C-Dur“) sonst bei einer e-Moll-Szene C-Lydisch
+   ergäbe; „Automatisch“ (Brain-Verhalten) ist ein Tipp entfernt. Im Song nimmt „Automatisch“ die Tonart der Szene, aus der der Clip kommt.
+   Aufnahmen unter einem Träger behalten ihren Bezug wie bisher (`keyForRecording`); mit „Eine Skala“ rasten beim Abspielen gespielte
+   unpassende Töne ein (gewollt: „damit kann nichts schräg klingen“; je Spur abschaltbar).
+7. *FP-TOUCH, begründet:* Die neuen Menü-Knöpfe sind im Querformat 32 px hoch – genau wie alle vorhandenen Menü-Segmente (V0a-Wert);
+   Breite ≥ 40 px. Umschalten im Menü ist wie die übrigen Harmonie-Einstellungen kein Undo-Schritt.
+8. *FP-SONG, begründet:* „Drums mittransponieren“ wirkt auf Clip-Schläge, nicht auf live gespielte Pads; der MIDI-Export lässt Drums
+   unverändert (GM-Noten würden sonst andere Instrumente).
+
+**Bekannte Lücken:** V2f (Song-Tonart-Erkennung) ist noch nicht gebaut – sie muss dieselbe Funktion `mapOut` nutzen. Eigene Clips (V2d′)
+gehen über denselben Weg, sobald es sie gibt. „Tonart automatisch │ manuell“ gibt es je Clip schon (Clip-Blatt: Auto/Fest); neu ist der
+Schalter für die eine Skala.
+
+**Rollout:** `max_app` war **4 005 002**. `apply_migration v2c2_max_app` (`greatest(max_app, 4005003)`, Datei
+`synq-online/r7-v2c2-max-app.sql`) **wartete auf eine Bestätigung und lief nach 60 s ab – nicht eingetragen. Offen: vor dem Ausliefern von
+4.5.3 einspielen**, sonst lehnt `save_project` das Online-Speichern ab (lokal speichert die App weiter).
+
+**Für Xander im Dashboard** (nur falls der Orchestrator die Migration nicht nachholt): SQL-Editor des Projekts **synquenzer**
+(`dbdnsryoivvezspgydpx`, nicht das Klassenzimmer!) → `update private.settings set max_app = greatest(max_app, 4005003);` → Run.
+
+**Für Xander am iPhone (Pages-Seite, ≈ 3 min)**
+1. Menü → Neu ▾ → Mit Startsounds. Einen Clip mit einer Melodie einspielen, die auch „schräge“ Töne hat (z. B. F♯ in C).
+2. TRANSPONIEREN, verschiedene Akkorde drücken (C, F, G, Am, E, D). Soll: nichts klingt schief, die Melodie bleibt erkennbar
+   (aufwärts bleibt aufwärts), zwei verschiedene Töne fallen nicht zusammen.
+3. Menü → Harmonie → Eine Skala „Aus“ und wieder „An“ – den Unterschied hören. Stärke auf 50 %: kurze verspielte Töne bleiben.
+4. Drums „Mittransponieren“, dann Akkorde drücken: die Drums gehen mit (für Fills). Bitte melden, ob das so gewollt ist.
