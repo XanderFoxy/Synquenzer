@@ -1,0 +1,11 @@
+import {open, sleep, OUT} from './v3-qa-gmk1-lib.mjs';
+const vp = process.argv[2] === 'L' ? {width: 926, height: 428} : {width: 428, height: 926};
+const T = await open({viewport: vp}); const {p, E, errs} = T;
+const r0 = await E(() => ({proj: SYNQUENZER.project().project ? 1 : 0, tracks: SYNQUENZER.project().tracks ? SYNQUENZER.project().tracks.map(t => [t.kind, t.sound && t.sound.engine, t.sound && t.sound.name]) : SYNQUENZER.project().project.tracks.map(t => [t.kind, t.sound && t.sound.engine, t.sound && t.sound.name])}));
+console.log(JSON.stringify(r0));
+await E(() => { SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await sleep(600);
+await p.screenshot({path: OUT + 'ex-ed-' + (process.argv[2] || 'P') + '.png'});
+const hb = await E(() => [...document.querySelectorAll('#sheet button, .sheet button')].filter(b => b.offsetWidth).slice(0, 40).map(b => { const r = b.getBoundingClientRect(); return [b.className, b.textContent.trim().slice(0, 20), Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)]; }));
+console.log(JSON.stringify(hb));
+console.log('errs', errs);
+await T.br.close();

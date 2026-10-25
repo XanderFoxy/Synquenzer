@@ -1,0 +1,16 @@
+import {open, sleep, OUT} from './v3-qa-gmk1-lib.mjs';
+import {open as openT} from './v3-qa-gp2a-lib.mjs';
+const L = process.argv[2] === 'L';
+const vp = L ? {width: 926, height: 428} : {width: 428, height: 926};
+const T = await openT({mic: false, file: '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk-wt/index.html', viewport: vp}); const {p, E, errs} = T;
+await E(() => { SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await sleep(600);
+const u0 = await T.undoN();
+const r = await T.tapTxt('button', /^MS 2000$/); await sleep(800);
+console.log('tapped', JSON.stringify(r), 'undo', u0, '->', await T.undoN(), 'engine', await E(() => SYNQUENZER.getSound(0).engine), 'info', JSON.stringify(await E(() => SYNQUENZER.mkInfo())));
+await p.screenshot({path: OUT + 'ex-mk-' + (L ? 'L' : 'P') + '.png'});
+const pi = await E(() => SYNQUENZER.mkPanel());
+console.log(JSON.stringify(pi));
+const els = await E(() => [...document.querySelectorAll('.mkp *')].filter(e => e.offsetWidth && (e.tagName === 'BUTTON' || e.getAttribute('role') || e.dataset.k)).slice(0, 80).map(b => { const r = b.getBoundingClientRect(); return [b.tagName, b.className, (b.dataset.k || ''), b.textContent.trim().slice(0, 14), Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)]; }));
+console.log(JSON.stringify(els));
+console.log('errs', errs);
+await T.br.close();

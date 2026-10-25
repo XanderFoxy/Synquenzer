@@ -1,0 +1,30 @@
+// QA G-MK1 (MK0 × MK1): Xander's phone shows the old cached 4.8.1 after 4.9.0 wrote an MS 2000 project — nothing is lost
+import {open, sleep, OUT, check, done, eq, diff} from './v3-qa-gmk1-tl.mjs';
+import {setupProject} from './v3-qa-gmk1-setup.mjs';
+const OLD = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/synq-snapshots/MK0-fix.html';
+const NEW = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk-wt/index.html';
+const T = await open(); const {p, E, errs} = T;
+const proj = () => E(() => { const pr = SYNQUENZER.project(); const P = JSON.parse(JSON.stringify(pr.project || pr)); delete P.ui; if (P.settings) delete P.settings.coach; return P; });
+const boot = async f => { await p.goto('file://' + f); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version, null, {timeout: 20000}); await sleep(1500); };
+console.log('setup', JSON.stringify(await setupProject(E)));
+await E(() => SYNQUENZER.save()); await sleep(1500);
+const P1 = await proj(); const L1 = await E(() => SYNQUENZER.library()); const st = await E(() => SYNQUENZER.storage());
+console.log('storage', JSON.stringify(st));
+await boot(OLD);
+const v = await E(() => SYNQUENZER.version);
+const nv = await E(() => SYNQUENZER.nvState && SYNQUENZER.nvState());
+const ban = await E(() => { const b = document.getElementById('nvBan'); return b && b.offsetWidth ? b.textContent.trim().replace(/\s+/g, ' ') : null; });
+const names = await E(() => [0, 1, 2, 3].map(t => SYNQUENZER.getSound(t).name + '/' + SYNQUENZER.getSound(t).engine));
+check('O1 4.8.1 opens the 4.9.0 project: lock + banner, MS 2000 tracks play INIT with the hint', v === '4.8.1' && nv && nv.lock && !!ban, {v, nv, ban, names});
+// Xander plays and edits in the old version
+await E(() => { SYNQUENZER.setBpm(128); const c = SYNQUENZER.getClip(1, 0); if (c) { c.notes.push({t: 3.75, d: .2, n: 72, v: .8}); SYNQUENZER.setClip(1, 0, c); } });
+await T.tapSel('#bPlay'); await sleep(3000); await T.tapSel('#bPlay'); await sleep(800);
+await E(() => { try { SYNQUENZER.save(); } catch (e) {} }); await sleep(5000);
+const errsOld = errs.slice();
+await boot(NEW);
+const P2 = await proj(); const L2 = await E(() => SYNQUENZER.library());
+const mkT = P2.tracks.map(t => t.sound.engine);
+check('O2 back on 4.9.0: project deep-equal to what 4.9.0 wrote (MS 2000 sounds intact, old edits not written)', eq(P2.tracks, P1.tracks), {eng: mkT, d: diff(P2.tracks, P1.tracks).slice(0, 5)});
+check('O3 back on 4.9.0: library deep-equal (Bass A, Lead Sync)', eq(L2, L1), {n: [L1.length, L2.length], d: diff(L2, L1).slice(0, 3)});
+check('O4 no console errors (old and new)', errs.length === 0, errs.slice(0, 5));
+await T.br.close(); done();
