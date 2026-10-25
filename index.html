@@ -13435,7 +13435,7 @@ const songTakeOpen = () => !!(R.songRec || R.melRec);
 // a toast's [Rückgängig] for a song edit — none while a take runs (the edit is part of the take's undo step)
 const songUndoAct = () => (songTakeOpen() ? null : {label: 'Rückgängig', fn: () => undo()});
 function songSnapshot() { return JSON.stringify(S.song); }
-function songChanged() { UI.dirty.song = true; UI.songVer = (UI.songVer | 0) + 1; markDirty(); }
+function songChanged() { UI.dirty.song = true; UI.songVer = (UI.songVer | 0) + 1; markDirty(); svSelFix(); }
 function restoreSong(o) {
   S.song = o ? normSong(o, S.key) : null;
   if (!S.song && (R.songPlay || R.songRec)) { R.songPlay = null; R.songRec = null; R.melRec = null; R.songEndBeat = null; }
@@ -14408,7 +14408,7 @@ function quantizeChords(o) {
 }
 // N7S-06 the yellow bar selection of the song ruler (0-based bars, b inclusive) and the Positionsmarke (no undo, view state)
 function songSelect(a, b) {
-  if (a === undefined) return SV.sel ? Object.assign({}, SV.sel) : null;       // V0c-klein: songSelect() only reads
+  if (a === undefined) { svSelFix(); return SV.sel ? Object.assign({}, SV.sel) : null; }       // V0c-klein: songSelect() only reads
   if (a === null || !S.song || !S.song.bars) { SV.sel = null; UI.dirty.song = true; return null; }
   const n = S.song.bars; a = clamp(a | 0, 0, n - 1); b = isNum(b) ? clamp(b | 0, 0, n - 1) : a;
   SV.sel = {a: Math.min(a, b), b: Math.max(a, b)}; UI.dirty.song = true; svButtons();
@@ -16990,8 +16990,8 @@ function makeOwn(t, x, whole) {
 }
 function dropOwn(t, x) { if (!S.song) return false; return !!songEdit('Zurück zum Szenen-Clip', song => { ownDrop(song, t | 0, x | 0); }); }
 // a part / a scene as a chunk (N7-R6)
-function partChunk(p) {
-  const L = partLen(p), lanes = [];
+function partChunk(p, Lf) {
+  const L = Lf || partLen(p), lanes = [];
   for (let t = 0; t < NT(); t++) {
     lanes.push(((p.lanes && p.lanes[t]) || []).filter(e => e.bar < L).map(e => {
       const x = {bar: e.bar, slot: e.slot}; if (e.slot >= 0) { x.re = 1; if (e.bar === 0 && e.ph) x.ph = e.ph; } return x;
@@ -17006,9 +17006,12 @@ function sceneChunk(s) {
   let L = 1; const lanes = [];
   for (let t = 0; t < NT(); t++) { const c = S.tracks[t].clips[s]; if (c) L = Math.max(L, c.len); lanes.push([c ? {bar: 0, slot: s, re: 1} : {bar: 0, slot: -1}]); }
   const row = S.scenes[s] && S.scenes[s].chords; if (row) L = Math.max(L, row.len);
-  const p = {id: 'S' + (s + 1), lanes, chords: row || null, xp: null};
-  const ch = partChunk(Object.assign({}, p, {slots: lanes.map(() => null)}));
-  return Object.assign(ch, {len: clamp(L, 1, 16), lanes, marks: [{a: 0, len: clamp(L, 1, 16), part: 'S' + (s + 1)}]});
+  // V2e-fix: partChunk gets its own copy of the lanes and the matching slots (with slots null, partLanesFix would empty
+  // the bar-0 entries in place and the scene would land without its clips)
+  L = clamp(L, 1, 16);
+  const p = {id: 'S' + (s + 1), lanes: lanes.map(l => l.map(e => Object.assign({}, e))), chords: row || null, xp: null, slots: lanes.map(l => (l[0].slot < 0 ? -1 : {s: l[0].slot}))};
+  const ch = partChunk(p, L);
+  return Object.assign(ch, {len: L, lanes, marks: [{a: 0, len: L, part: 'S' + (s + 1)}]});
 }
 // a copy of [a, b) as a chunk (its state at a written explicitly, so it sounds the same wherever it lands)
 function songCut(song, a, b) {
@@ -17200,14 +17203,31 @@ function markApplyAll(m) {
   toast(p.name + ': ' + (n + 1) + ' Stellen gleich', {label: 'Rückgängig', fn: () => undo()});
   return n + 1;
 }
-// every mark of part p (except skipId) unfolds again from the template; their melody stays where it fits
+// every mark of part p (except skipId) unfolds again from the template; their melody and their own clips with the same
+// slot stay where they fit (song-delta 6.3)
 function markReplaceAll(song, p, skipId) {
   let n = 0;
   for (const m of song.marks.filter(x => x.part === p.id && x.id !== skipId).sort((a, b) => b.a - a.a)) {
     const mel = {}; for (const k in song.mel) mel[k] = song.mel[k].notes.filter(x => x.t >= m.a * 4 - .25 - 1e-9 && x.t < (m.a + m.len) * 4 - .25 - 1e-9).map(x => Object.assign({}, x, {t: x.t - m.a * 4}));
+    // V2e-fix: the own clips inside the mark (relative bar, up to the next lane entry or the mark's end)
+    const owns = [];
+    song.lanes.forEach((l, t) => l.forEach((e, k) => {
+      if (!e.own || e.slot < 0 || e.bar < m.a || e.bar >= m.a + m.len || !(song.own && song.own[e.own])) return;
+      const nx = l[k + 1], end = Math.min(nx ? nx.bar : Infinity, m.a + m.len);
+      owns.push({t, rel: e.bar - m.a, relEnd: end - m.a, e: Object.assign({}, e)});
+    }));
     const ch = partChunk(p), a = m.a, id = m.id;
     if (ch.len === m.len) opReplace(song, a, ch); else { opDelete(song, a, a + m.len); opInsert(song, a, ch); }
     const nm = song.marks.find(x => x.a === a && x.part === p.id); if (nm && !song.marks.some(x => x.id === id)) nm.id = id;
+    for (const o of owns) {
+      if (o.rel >= ch.len) continue;
+      const x0 = a + o.rel, E = a + Math.min(o.relEnd, ch.len), lane = song.lanes[o.t];
+      if (!lane || songStateAt(song, x0).lanes[o.t].slot !== o.e.slot) continue;    // the template plays another slot there
+      const alt = E < song.bars ? songStateAt(song, E) : null;
+      for (let k = lane.length - 1; k >= 0; k--) if (lane[k].bar >= x0 && lane[k].bar < E) lane.splice(k, 1);
+      laneInsert(lane, Object.assign(o.e, {bar: x0}));
+      if (alt) songCont(song, E, alt);                                     // after the own clip the template goes on
+    }
     for (const k in mel) { const t = +k, mm = song.mel[t] || (song.mel[t] = melEmpty()); for (const x of mel[k]) if (x.t < ch.len * 4 - .25) mm.notes.push(Object.assign({}, x, {t: +(x.t + a * 4).toFixed(6)})); mm.notes.sort((u, v) => u.t - v.t); }
     n++;
   }
@@ -18585,8 +18605,11 @@ function openMarkSheet(id) {
   popDock(UI.pop && UI.pop.el);
 }
 // a persistent line in the song view's hint box (⧉ Kopie waits for the bar line); any other tap ends it
-function svHintHold(txt) { const h = SV.hint; if (!h) return; clearTimeout(SV.hintT); h.textContent = txt; h.classList.add('on', 'hold'); }
-function svHintFree() { const h = SV.hint; if (h && h.classList.contains('hold')) { h.classList.remove('on', 'hold'); } }
+function svHintHold(txt) { const h = SV.hint; if (!h) return; clearTimeout(SV.hintT); SV.holdTxt = txt; h.textContent = txt; h.classList.add('on', 'hold'); }
+function svHintFree() { SV.holdTxt = null; const h = SV.hint; if (h && h.classList.contains('hold')) { clearTimeout(SV.hintT); h.classList.remove('on', 'hold'); } }
+// V2e-fix: ⧉ Kopie ends with any tap that is not on the song canvas (track label, transport, menu, other panels)
+function svCopyCancel() { if (!SV.copy) return; SV.copy = null; SV.mark = null; svHintFree(); UI.dirty.song = true; }
+document.addEventListener('pointerdown', e => { if (SV.copy && !(SV.cv && e.target && SV.cv.contains(e.target))) svCopyCancel(); }, true);
 // a list of all parts and scenes (Ersetzen durch ▾, Teil einsetzen ▾); cb(ref) with 'P1'…/'S1'…
 function openPartList(anchor, title, cb, cur) {
   partsEnsure();
@@ -18695,8 +18718,23 @@ function buildRangeBar() {
   onTap(rb, b => rangeAct(b.dataset.a, b), 'button[data-a]');
   SV.rbar = rb;
 }
+// V2e-fix: SV.sel only inside the song (clamped; behind the end or without a song = gone); SV.mark / SV.copy only for a mark
+// that exists. True when something changed
+function svSelFix() {
+  const song = S.song, n = song ? song.bars | 0 : 0; let ch = false;
+  if (SV.sel) {
+    if (!n || SV.sel.a >= n) { SV.sel = null; ch = true; }
+    else if (SV.sel.b >= n) { SV.sel = {a: SV.sel.a, b: n - 1}; ch = true; }
+  }
+  const has = id => !!(song && song.marks && song.marks.some(m => m.id === id));
+  if (SV.copy && !has(SV.copy)) { SV.copy = null; svHintFree(); ch = true; }
+  if (SV.mark && !has(SV.mark)) { SV.mark = null; ch = true; }
+  if (ch) UI.dirty.song = true;
+  return ch;
+}
 function rangeBarSync() {
   const rb = SV.rbar; if (!rb) return;
+  svSelFix();
   const on = !!(UI.songView && SV.sel && S.song && S.song.bars && !R.songRec);
   if (EL.app.classList.contains('rangebar') !== on) { EL.app.classList.toggle('rangebar', on); if (on) requestAnimationFrame(rangeBarFit); }
 }
@@ -18786,11 +18824,16 @@ function markChordAll(id, rb, tg, exact) {
   return n;
 }
 // a short status of the last cell tap (the LCD-like hint line of the song view)
-function lcdOrToast(txt) { const h = SV.hint; if (!h) return; h.textContent = txt; h.classList.add('on'); clearTimeout(SV.hintT); SV.hintT = setTimeout(() => h.classList.remove('on'), 1600); }
+function lcdOrToast(txt) {
+  const h = SV.hint; if (!h) return; h.textContent = txt; h.classList.add('on'); clearTimeout(SV.hintT);
+  // V2e-fix: while ⧉ Kopie waits, its line comes back after the short message
+  SV.hintT = setTimeout(() => { if (SV.copy && SV.holdTxt && h.classList.contains('hold')) h.textContent = SV.holdTxt; else h.classList.remove('on'); }, 1600);
+}
 // frame: redraw when the song changed, the view scrolled, or the playhead moved (≤ 30 fps)
 function songFrame(bAud) {
   if (!UI.songView || !SV.g) return;
   if (!SV.w) svLayout();
+  if (SV.sel || SV.mark || SV.copy) svSelFix();                    // V2e-fix: undo / project switch / a shorter song
   const sb = svSongBeat(bAud);
   svAutoScroll(false);
   const t = performance.now(), ph = sb == null ? -1 : Math.round(sb * 16) / 16;
@@ -27326,6 +27369,7 @@ function applyProject(p, opts) {
   UNDO.length = 0; REDO.length = 0;
   UI.drumVer++; R.songRec = null; R.songPlay = null; R.songEndBeat = null; R.melRec = null; R.carrierLive = false; if (R.songOverride) R.songOverride.fill(false);
   SV.pos = SV.sel = SV.lastStop = null; UI.recTg = null; SONGCAR.saved = null;
+  SV.mark = SV.copy = SV.pv = null; svHintFree(); UI.dirty.song = true; rangeBarSync();   // V2e-fix: no Bereich-Leiste / mark of the old project
   R.row = R.rowPend = R.part = R.partPend = null; R.lastScene = R.lastSceneBeat = null; PRT.saved = undefined; PRT.resume = null; xpReset(); UI.pick = null;   // V2c
   partsEnsure(); UI.partPage = S.ui && S.ui.partPage === 1 ? 1 : 0; UI.dirty.parts = true; PB.sig = '';      // V0c: view state of the song and the TA9 state
   if (AU.ctx) {

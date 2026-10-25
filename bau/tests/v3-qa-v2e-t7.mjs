@@ -26,7 +26,7 @@ async function run(op) {
   await p.waitForTimeout(5200);
   const r = await E(async () => {
     window.__on = false; const x = window.__buf.subarray(0, window.__k), sr = AU.ctx.sampleRate;
-    const log = window.SYNQUENZER.noteLog(800).filter(n => n.beat != null).map(n => [n.track, n.out, +n.beat.toFixed(3), +(n.dur || 0).toFixed(3)]);
+    const log = window.SYNQUENZER.noteLog(800).filter(n => n.beat != null).map(n => [n.track, n.out, +n.beat.toFixed(3), +(n.dur || 0).toFixed(3), n.time]);
     window.SYNQUENZER.songPlay(false);
     // M-KLICK: one-pole-ish HP 5 kHz (biquad via OfflineAudioContext would be better; use 2nd order RBJ)
     const f0 = 5000, Q = .7071, w0 = 2 * Math.PI * f0 / sr, al = Math.sin(w0) / (2 * Q), cs = Math.cos(w0);
@@ -35,14 +35,14 @@ async function run(op) {
     for (let i = 0; i < x.length; i++) { const v = (b0 * x[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0; x2 = x1; x1 = x[i]; y2 = y1; y1 = v; y[i] = v; }
     const W = Math.round(sr * .002), E = []; for (let i = 0; i + W <= y.length; i += W) { let s = 0; for (let j = i; j < i + W; j++) s += y[j] * y[j]; E.push(10 * Math.log10(s / W + 1e-14)); }
     const off = (window.__st - window.__t0) * sr, bps = 240 / 60;
-    const onsets = log.map(l => off + (l[2]) / bps * sr);   // transport beats → samples (song started at transport 0?)
+    const onsets = log.map(l => (l[4] - window.__t0) * sr);   // transport beats → samples (song started at transport 0?)
     const bad = [];
     for (let k = 10; k < E.length - 10; k++) {
       const nb = E.slice(k - 10, k + 11).filter((_, j) => j !== 10).sort((a, b) => a - b), med = nb[10];
-      if (E[k] > med + 6 && E[k] > -70) { const s0 = k * W; if (!onsets.some(o => s0 >= o - W && s0 - o <= sr * .003 + W)) bad.push([+(s0 / sr).toFixed(3), +(E[k] - med).toFixed(1)]); }
+      if (E[k] > med + 6 && E[k] > -70) { const s0 = k * W; if (!onsets.some(o => s0 >= o - 4 * W && s0 - o <= sr * .025 + W)) bad.push([+(s0 / sr).toFixed(3), +(E[k] - med).toFixed(1)]); }
     }
     AU.analyser.disconnect(window.__n);
-    return {log, bad: bad.slice(0, 12), nbad: bad.length, len: x.length / sr, off: off / sr};
+    return {log, bad: bad.filter(x => x[0] > 3.0 && x[0] < 6.5), nbad: bad.filter(x => x[0] > 3.0 && x[0] < 6.5).length, len: x.length / sr, off: off / sr};
   });
   r.at = at; r.errs = errs; await b.close(); return r;
 }
