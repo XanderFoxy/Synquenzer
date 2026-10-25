@@ -1,0 +1,22 @@
+// QA MK1 (FP-TOUCH, B.6 Nr. 4): one gesture = one undo for VOLUME, TEMPO (SPIEL), a number key, OKT; undo restores
+import { chromium } from 'playwright';
+const FILE = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk-wt/index.html';
+const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const ctx = await browser.newContext({viewport: {width: 844, height: 390}, hasTouch: true, isMobile: true, deviceScaleFactor: 2});
+const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(String(e)));
+await page.goto('file://' + FILE); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+const cdp = await ctx.newCDPSession(page);
+const T = (type, pts) => cdp.send('Input.dispatchTouchEvent', {type, touchPoints: pts});
+await page.evaluate(() => { SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await sleep(800);
+const drag = async (k, dy) => { const p = await page.evaluate(k => { const r = document.querySelector('#synthSheet .mkx[data-k="' + k + '"]').getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; }, k);
+  await T('touchStart', [{x: p.x, y: p.y, id: 1}]); for (let s = 1; s <= 8; s++) { await T('touchMove', [{x: p.x, y: p.y - dy * s / 8, id: 1}]); await sleep(16); } await T('touchEnd', []); await sleep(300); };
+const st = () => page.evaluate(() => ({bpm: S.bpm, vol: S.tracks[0].vol != null ? S.tracks[0].vol : (S.tracks[0].fx && S.tracks[0].fx.vol), undo: SYNQUENZER.undoInfo().n, oct: S.tracks[0].kbOct}));
+const keys = await page.evaluate(() => [...document.querySelectorAll('#synthSheet .mkx')].map(e => e.dataset.k + ':' + (e.getAttribute('aria-label') || e.textContent.trim().slice(0, 8))).join(' '));
+console.log('panel keys', keys.slice(0, 400));
+let a = await st(); await drag('k4', -60); let b = await st(); await page.evaluate(() => SYNQUENZER.undo()); await sleep(200); let c = await st();
+console.log('TEMPO knob (SPIEL k4):', JSON.stringify(a), '->', JSON.stringify(b), '-> undo', JSON.stringify(c));
+a = await st(); await drag('vol', -60); b = await st(); await page.evaluate(() => SYNQUENZER.undo()); await sleep(200); c = await st();
+console.log('VOLUME knob:', JSON.stringify(a), '->', JSON.stringify(b), '-> undo', JSON.stringify(c));
+console.log('errors', errs);
+await browser.close();

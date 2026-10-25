@@ -1,0 +1,23 @@
+import { chromium } from 'playwright';
+const FILE = new URL('../mk-wt/index.html', import.meta.url).pathname;
+const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await browser.newContext({viewport: {width: 844, height: 390}, hasTouch: true, isMobile: true});
+const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(String(e)));
+await page.goto('file://' + FILE); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+await page.evaluate(() => { SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await page.waitForTimeout(500);
+const lcd = () => page.evaluate(() => { const e = document.querySelector('#synthSheet .sh-bar'); return e ? e.innerText.replace(/\n/g, ' / ').slice(0, 160) : null; });
+console.log('LCD line at open:', await lcd());
+await page.evaluate(() => SYNQUENZER.mkSet(0, 't.0.f.cut', 50));
+const b = await page.evaluate(() => { const r = document.querySelector('#synthSheet .mkx[data-k="k0"]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2 + 6]; });
+await page.touchscreen.tap(b[0], b[1]); await page.waitForTimeout(60); await page.touchscreen.tap(b[0], b[1]); await page.waitForTimeout(400);
+console.log('after double tap on CUTOFF (was 50, INIT 127):', await page.evaluate(() => SYNQUENZER.mkGet(0).t[0].f.cut), '| LCD:', await lcd());
+const cdp = await ctx.newCDPSession(page);
+await cdp.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x: b[0], y: b[1], id: 1}]}); await page.waitForTimeout(1200);
+const st = await page.evaluate(() => SYNQUENZER.modState());
+await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []}); await page.waitForTimeout(300);
+console.log('after 1.2 s hold on CUTOFF: modState', JSON.stringify(st), '| cut', await page.evaluate(() => SYNQUENZER.mkGet(0).t[0].f.cut), '| LCD:', await lcd());
+// VA panel for comparison: double tap resets?
+await page.evaluate(() => { SYNQUENZER.selectTrack(1); SYNQUENZER.openEditor(); }); await page.waitForTimeout(400);
+console.log('VA LCD line:', await lcd());
+console.log(errs);
+await browser.close();

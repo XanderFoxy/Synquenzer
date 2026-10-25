@@ -1,0 +1,21 @@
+import {open, sleep} from './v3-qa-gp2a-lib.mjs';
+const T = await open({mic: false}); const {p, E} = T;
+const keys = (tag) => E(t => { const pr = SYNQUENZER.project(); const P = pr.project || pr; return t + ' scene ' + JSON.stringify(P.tracks[0].clips[0].key) + ' own ' + JSON.stringify(Object.fromEntries(Object.entries(P.song.own || {}).map(([k, c]) => [k, c.key]))); }, tag);
+await E(() => {
+  const Q = SYNQUENZER; Q.newProject({init: true}); Q.setBpm(120); Q.setMetronome(false);
+  const K = {root: 0, scale: 'ionian'};
+  Q.setClip(0, 0, {len: 1, key: K, notes: [{t: 0, d: .4, n: 60, v: .8}, {t: .5, d: .4, n: 62, v: .8}, {t: 1, d: .4, n: 64, v: .8}, {t: 1.5, d: .4, n: 65, v: .8}, {t: 2, d: .9, n: 66, v: .8}, {t: 3, d: .4, n: 67, v: .8}, {t: 3.5, d: .4, n: 69, v: .8}]});
+  const nt = Q.tracks().length, L = s => Array.from({length: nt}, (_, t) => [{bar: 0, slot: s[t] == null ? -1 : s[t]}]);
+  const C = n => Q.parseChord(n);
+  Q.setPart(0, {name: 'Strophe', lanes: L([0]), len: 4, src: 'fang', chords: {len: 4, ch: [{b: 0, tg: C('C')}, {b: 4, tg: C('E')}, {b: 8, tg: C('Bb')}, {b: 12, tg: C('Dm')}]}});
+  Q.setSong({bars: 0, lanes: Array.from({length: nt}, () => []), carrier: [], marks: []});
+  Q.placePart(0, 0); Q.selectTrack(0); Q.setKbMode('play');
+});
+console.log(await keys('t0'));
+await E(() => { SYNQUENZER.makeOwn(0, 1); SYNQUENZER.makeOwn(0, 2); });
+console.log(await keys('after makeOwn'));
+await sleep(800); console.log(await keys('800ms'));
+await E(() => { SYNQUENZER.songPlay(0); }); await sleep(3000); console.log(await keys('playing'));
+await E(() => SYNQUENZER.songPlay(false)); await sleep(800); console.log(await keys('stopped'));
+await E(() => SYNQUENZER.dropOwn(0, 1)); await sleep(800); console.log(await keys('dropped'));
+process.exit(0);

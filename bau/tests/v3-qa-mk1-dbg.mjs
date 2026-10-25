@@ -1,0 +1,17 @@
+import { chromium } from 'playwright';
+const FILE = new URL('../mk-wt/index.html', import.meta.url).pathname;
+const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await browser.newContext({viewport: {width: 844, height: 390}, hasTouch: true, isMobile: true});
+const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errs.push(m.type() + ': ' + m.text()); });
+await page.goto('file://' + FILE); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+await page.evaluate(() => { SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await page.waitForTimeout(500);
+await page.evaluate(() => SYNQUENZER.keyOn(48, .8, 'k')); await page.waitForTimeout(400);
+const show = async tag => console.log(tag, JSON.stringify(await page.evaluate(() => ({selT: R.selT, log: SYNQUENZER.noteLog().slice(-2), pt: SYNQUENZER.engineInfo().perTrack.map(p => p.voices), scope: SYNQUENZER.mkScope(0), meter: SYNQUENZER.meter(), cut: SYNQUENZER.mkGet(0).t[0].f.cut, ctx: AU.ctx && AU.ctx.state}))));
+await show('held');
+await page.waitForTimeout(300); await show('held+300');
+await page.evaluate(() => SYNQUENZER.mkSet(0, 't.0.f.cut', 30)); await page.waitForTimeout(300); await show('cut 30 via mkSet');
+await page.evaluate(() => SYNQUENZER.keyOff(48, 'k')); await page.waitForTimeout(500);
+await page.evaluate(() => SYNQUENZER.keyOn(48, .8, 'k2')); await page.waitForTimeout(400); await show('new note at cut 30');
+await page.evaluate(() => SYNQUENZER.keyOff(48, 'k2'));
+console.log(errs.slice(0, 5));
+await browser.close();

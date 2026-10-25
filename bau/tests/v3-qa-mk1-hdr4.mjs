@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const FILE = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk-wt/index.html';
+const ctx = await browser.newContext({viewport: {width: 428, height: 926}, hasTouch: true, isMobile: true});
+const page = await ctx.newPage(); await page.goto('file://' + FILE); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+await page.evaluate(() => { const o = window.engChip; window.__w = []; window.engChip = function (i) { const sh = document.getElementById('synthSheet'); const tt = sh && sh.querySelector('.sh-title'); window.__w.push([tt ? tt.getBoundingClientRect().width : null, sh ? getComputedStyle(sh).display + '/' + sh.className : null]); return o.apply(this, arguments); }; });
+const row = () => page.evaluate(() => [...document.querySelector('#synthSheet .sh-row').children].map(c => (c.className || c.tagName) + ':' + Math.round(c.getBoundingClientRect().width)).join(' '));
+await page.evaluate(() => { SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await page.waitForTimeout(400);
+console.log('first open row1:', await row(), '\n engChip called with title width / sheet state:', JSON.stringify(await page.evaluate(() => window.__w)));
+await page.evaluate(() => safeRebuild(buildSynthEd)); await page.waitForTimeout(300);
+console.log('rebuilt row1:', await row());
+await browser.close();

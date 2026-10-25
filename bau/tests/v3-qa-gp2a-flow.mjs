@@ -4,7 +4,7 @@ import {open, OUT, sleep, check, done, eq, diff} from './v3-qa-gp2a-lib.mjs';
 import {fangRun} from './v3-qa-gp2a-parts.mjs';
 import fs from 'fs';
 const VP = process.argv[2] || 'P1';
-const VPS = {P1: [390, 844], P2: [375, 667], L1: [844, 390]};
+const VPS = {P1: [390, 844], P2: [375, 667], P3: [320, 568], L1: [844, 390], L2: [667, 375]};
 const T = await open({mic: false, viewport: {width: VPS[VP][0], height: VPS[VP][1]}}); const {p, E, errs} = T;
 await E(() => { SYNQUENZER.setBpm(160); SYNQUENZER.setMetronome(false); });
 const C00 = await T.clips();
@@ -99,7 +99,10 @@ await T.tapSel('.sv-gl'); await sleep(250);
 inf = await T.info();
 check(`${VP} 6 ◧ Glas: Ansicht glass, Kacheln, kein Undo, keine Daten`, inf.view === 'glass' && inf.tiles && inf.tiles.length >= 10 && (await T.undoN()) === uG && (await T.full()) === PG, {view: inf.view, tiles: inf.tiles && inf.tiles.length});
 // ---------- 7. hold SYN 2 in T6 → cell sheet → own clip; tap → ROLLE, draw a note ----------
-let c = await T.cell('S2', 5);
+// make T6 visible on small screens: swipe the song to the left like a finger would
+const ensureVis = async (row, bar) => { let c = await T.cell(row, bar), i = await T.info(); const right = i.canvas.x + i.canvas.w - 20; if (c.x > right) { const dx = c.x - right + 30, y = i.canvas.y + i.canvas.h - 30; await T.down(i.canvas.x + i.canvas.w - 10, y); await T.glide(i.canvas.x + i.canvas.w - 10, y, i.canvas.x + i.canvas.w - 10 - dx, y, 10, 16); await T.up(); await sleep(300); c = await T.cell(row, bar); } return c; };
+let c = await ensureVis('S2', 5);
+console.log('DBG cell', JSON.stringify(c), JSON.stringify((await T.info()).canvas), (await T.info()).x0, JSON.stringify((await T.info()).rows), await E(([x, y]) => { const e = document.elementFromPoint(x, y); return e ? e.tagName + '.' + e.className : null; }, [c.x, c.y]));
 await T.down(c.x, c.y); await sleep(520); await T.up(); await sleep(300);
 const cs = await T.popTexts();
 check(`${VP} 7 Halten → Zell-Blatt [Eigener Clip] [Ganzer Block] [Abbrechen]`, ((await T.pop()) || '').includes('csheet') && cs.some(t => /^Eigener Clip/.test(t)) && cs.some(t => /^Ganzer Block/.test(t)), cs);
@@ -112,7 +115,9 @@ check(`${VP} 7 Glas: Kachel Synth 2 T6 ist „eigen“`, tileOwn && tileOwn.own,
 await T.tap(c.x, c.y); await sleep(500);
 check(`${VP} 7 Tipp auf eigenen Clip → ROLLE offen („eigener Clip“)`, await E(() => { const r = document.querySelector('.sheet.ed.roll'); return !!(r && r.classList.contains('open') && /eigener Clip/.test(r.textContent)); }));
 const nOwn0 = await E(() => SYNQUENZER.ownClip(1, 5).notes.length);
-await T.tap(125, VP === 'P1' ? 380 : 300); await sleep(300);
+const rg = await E(() => { const cs = [...document.querySelectorAll('.sheet.ed.roll canvas')].filter(c => c.offsetWidth).map(c => c.getBoundingClientRect()).sort((a, b) => b.width * b.height - a.width * a.height)[0]; return cs && {x: cs.x, y: cs.y, w: cs.width, h: cs.height}; });
+console.log('DBG roll grid', JSON.stringify(rg));
+for (const [fx, fy] of [[.37, .55], [.30, .62], [.45, .48], [.52, .66]]) { await T.tap(rg.x + rg.w * fx + 3, rg.y + rg.h * fy); await sleep(300); const nn = await E(() => SYNQUENZER.ownClip(1, 5).notes.length); if (nn !== nOwn0) break; }
 const ownAfter = await E(() => SYNQUENZER.ownClip(1, 5).notes);
 const newNote = ownAfter.find(n => !(Math.abs(n.t * 4 - Math.round(n.t * 4)) < 1e-6 && [60, 64, 67, 72, 76].includes(n.n)));
 check(`${VP} 7 ROLLE: Note gezeichnet (+1)`, ownAfter.length === nOwn0 + 1, {n: ownAfter.length, newNote});
@@ -146,7 +151,6 @@ check(`${VP} 9 Start-Blatt: NOTEN · Synth 2, 4 Modi`, rsT && rsT.some(t => /NOT
 // targets: only NOTEN
 for (const nm of ['CLIPS', 'AKKORDE']) { const on = await E(n => { const b = [...document.querySelectorAll('.pop.rstart .rs-t')].find(b => b.textContent.trim().replace('✓', '') === n); return b && b.classList.contains('on'); }, nm); if (on) await T.tapTxt('.pop.rstart .rs-t', new RegExp(nm)); }
 await T.tapSel('.pop.rstart .rs-m[data-m="overdub"]'); await sleep(100);
-await T.tapSel('#segPlay').catch(() => 0);
 await T.tapSel('.pop.rstart .rs-go'); await sleep(100);
 // played notes in bar 2 (song beats 4..8): 79 and 81
 const waitSong = x => p.waitForFunction(v => { const s = SYNQUENZER.runtime().song; return s.beat != null && s.beat >= v; }, x, {timeout: 60000, polling: 5});

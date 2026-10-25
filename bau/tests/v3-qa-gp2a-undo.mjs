@@ -61,10 +61,11 @@ inf = await T.info(); console.log('marks before 7', JSON.stringify(inf.marks)); 
 let sx = inf.canvas.x + Math.max(m.x0, 4) + 20, sy = inf.canvas.y + 9;
 await T.down(sx, sy); await sleep(500); await T.glide(sx, sy, sx, sy + 30, 4, 16);
 const cp = await T.rect('.sv-sw'); await T.glide(sx, sy + 30, cp.cx, cp.cy, 8, 16); await sleep(320);
-inf = await T.info(); await T.glide(cp.cx, cp.cy, inf.canvas.x + 8 * 36 - inf.x0 + 3, inf.canvas.y + 120, 12, 16); await T.up(); await sleep(500);
+inf = await T.info(); await T.glide(cp.cx, cp.cy, inf.canvas.x + 4 * 36 - inf.x0 + 3, inf.canvas.y + 120, 12, 16); await T.up(); await sleep(500);
+if (/plsheet/.test(await T.pop() || '')) { await T.tapPop(/^Einfügen/); await sleep(300); }
 await step('7 Marke ⧉ kopieren', 'song');
 // 8–11 mark sheet ops via touch: tap mark → [◀] / [Nur Name weg] / [Farbe] ; ✎ Name nur hier via API
-const tapMark = async label => { await T.tapSel('.sv-home'); await sleep(150); const i = await T.info(); const mm = i.marks.find(x => x.label === label) || i.marks[1]; await T.tap(i.canvas.x + Math.max(mm.x0, 4) + 10, i.canvas.y + 9, 300); return mm; };
+const tapMark = async label => { await T.tapSel('.sv-home'); await sleep(150); const i = await T.info(); const mm = i.marks.find(x => x.label === label) || i.marks.find(x => x.label.startsWith(label.slice(0, 3))) || i.marks[1]; await T.tap(i.canvas.x + Math.max(mm.x0, 4) + 10, i.canvas.y + 9, 300); return mm; };
 await tapMark('STROPHE'); await T.tapPop(/^×4$/); await sleep(300); await T.tapTxt('#popLayer .pop button', /^✕$/); await sleep(200);
 await step('8 ×4', 'song');
 await tapMark('REFRAIN'); await T.tapPop(/^Nur Name weg/); await sleep(300); if (await T.pop()) { await T.tapTxt('#popLayer .pop button', /^✕$/); await sleep(200); }

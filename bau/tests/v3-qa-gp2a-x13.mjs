@@ -1,0 +1,21 @@
+import {open, OUT, sleep} from './v3-qa-gp2a-lib.mjs';
+import fs from 'fs';
+const [w, h] = (process.argv[2] || '375x667').split('x').map(Number);
+const T = await open({mic: false, viewport: {width: w, height: h}}); const {p, E, errs} = T;
+const pj = JSON.parse(fs.readFileSync(OUT + 'flow-P1-proj4.json'));
+await E(pj => SYNQUENZER.importJSON(JSON.stringify({app: 'SYNQUENZER', kind: 'project', format: 4, project: pj})), pj); await sleep(300);
+await E(() => SYNQUENZER.songView(true)); await sleep(300);
+const lab2 = await E(() => { const d = [...document.querySelectorAll('.sv-labs .sv-l.trk')].find(x => x.dataset.t === '1'); const r = d.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; });
+await T.tap(lab2.x, lab2.y);
+let inf = await T.info();
+await T.tap(inf.canvas.x + 1 * 36 + 18 - inf.x0, inf.canvas.y + 9); await sleep(300);
+if ((await T.info()).mark) { await T.tap(inf.canvas.x + 1 * 36 + 18 - inf.x0, inf.canvas.y + 9); await sleep(300); }
+console.log('sel', JSON.stringify((await T.info()).sel));
+await T.tapSel('.sv-rec'); await sleep(300);
+await T.shot('x13-rstart-' + w);
+const btns = await E(() => [...document.querySelectorAll('.pop.rstart button')].map(b => { const r = b.getBoundingClientRect(); const cx = r.x + r.width / 2, cy = r.y + r.height / 2; const hit = document.elementFromPoint(cx, cy); return {t: b.textContent.trim().replace(/\s+/g, ' '), m: b.dataset.m, x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), hit: hit === b || b.contains(hit) ? 'ok' : (hit ? hit.tagName + '.' + hit.className + ' ' + (hit.textContent || '').trim().slice(0, 20) : 'none')}; }));
+console.log(JSON.stringify(btns, null, 0));
+const r = await T.tapSel('.pop.rstart .rs-m[data-m="overdub"]'); await sleep(200);
+console.log('tapped', JSON.stringify(r), 'on:', await E(() => [...document.querySelectorAll('.pop.rstart .rs-m')].filter(b => b.classList.contains('on')).map(b => b.dataset.m)));
+await T.shot('x13-rstart2-' + w);
+await T.br.close();
