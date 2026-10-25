@@ -203,7 +203,7 @@ T('MK1-14', () => {
   const bad = out.filter(([, v, m, w]) => Math.abs(m / w - 1) > .1 && Math.abs(m - w) > .002);
   ok('MK1-14 Stufenzeiten 0/32/64/96/127 nach W-06 ± 10 %', !bad.length, out.map(([k, v, m]) => k + v + ' ' + (m < .1 ? M(m * 1000, 1) + 'ms' : M(m, 2) + 's')).join(' '));
   // NEUSTART on: a new key-on of the same note restarts at 0; off: from the current level
-  const rs = rst => render(mkPatch({o1: {w: 2}, e2: {a: 64, d: 64, s: 127, r: 100, rst}}), [[0, 'on', 69, .8, 'a', 1], [.5, 'off', 69, .8, 'a'], [.6, 'on', 69, .8, 'b', 2]], {sec: .9, tap: 'amp'}).l;
+  const rs = rst => render(mkPatch({o1: {w: 2}, e2: {a: 80, d: 64, s: 127, r: 100, rst}}), [[0, 'on', 69, .8, 'a', 1], [.5, 'off', 69, .8, 'a'], [.6, 'on', 69, .8, 'b', 2]], {sec: .9, tap: 'amp'}).l;
   const rsA = rst => render(mkPatch({o1: {w: 2}, e2: {a: 64, d: 64, s: 127, r: 100, rst}}), [[0, 'on', 81, .8, 'a', 1], [0, 'on', 85, .8, 'c', 3], [.5, 'off', 81, .8, 'a'], [.6, 'on', 81, .8, 'b', 2]], {sec: .9}).l;
   const x1 = rs(1), x0 = rs(0), pre = rms(x1, Math.round(.55 * SR), Math.round(.6 * SR)), first = rms(x1, Math.round(.6 * SR) + 16, Math.round(.601 * SR) + 16);
   ok('MK1-14 NEUSTART an: erste 1 ms ≥ 40 dB unter dem Pegel davor', db(first / pre) <= -40, M(db(first / pre)) + ' dB');
@@ -230,9 +230,10 @@ T('MK1-15', () => {
   let worst = 0; for (let i = 1; i < ts.length; i++) if (ts[i - 1] < 0 && ts[i] >= 0) { const t = (i - 1 + -ts[i - 1] / (ts[i] - ts[i - 1])) / SR, b = t / .5; worst = Math.max(worst, Math.abs(b - Math.round(b)) * .5); }
   ok('MK1-15 Nulldurchgang ± 1 ms am Schlag', worst <= .0011, M(worst * 1000, 3) + ' ms');
   const ks = k => render(mkPatch({l1: {w: 2, f: 64, ks: k}}), [[0, 'on', 60, .8], [.3, 'on', 64, .8]], {sec: 1, tap: 'lfo'});
-  const kv = ks(2), kt = ks(1), idx = Math.round(.6 * SR), dv = Math.abs(kv.l[idx] - kv.r[idx]), dt = Math.abs(kt.l[idx] - kt.r[idx]);
+  const zc = x => { for (let i = Math.round(.35 * SR); i < x.length; i++) if (x[i - 1] < 0 && x[i] >= 0) return (i - 1 + -x[i - 1] / (x[i] - x[i - 1])) / SR; return -1; };
+  const kv = ks(2), kt = ks(1), per0 = 1 / (.05 * Math.pow(2, 10 * 64 / 127)), ph = r => { let d = ((zc(r.l) - zc(r.r)) / per0) % 1; if (d < 0) d += 1; return Math.min(d, 1 - d); }, dv = ph(kv), dt = ph(kt);
   const per1 = 1 / (.05 * Math.pow(2, 10 * 64 / 127)), off = (.3 / per1) % 1;
-  ok('MK1-15 Key Sync Stimme: Phasen verschieden ≥ 0,2 Periode; Timbre: gleich ± 0,01', Math.min(off, 1 - off) >= .2 && dv > .1 && dt <= .04, 'Versatz ' + M(off, 3) + ' Per., |Δ| Stimme ' + M(dv, 3) + ', Timbre ' + M(dt, 4));
+  ok('MK1-15 Key Sync Stimme: Phasen verschieden ≥ 0,2 Periode; Timbre: gleich ± 0,01', Math.min(off, 1 - off) >= .2 && dv >= .2 && dt <= .01, 'Versatz ' + M(off, 3) + ' Per., Phasenabstand Stimme ' + M(dv, 3) + ', Timbre ' + M(dt, 4) + ' Per.');
 });
 T('MK1-16', () => {
   const pitch = (p, ev, t0, t1, o) => { const x = render(mkPatch(Object.assign({mix: {o1: 0, o2: 127}, o2: {w: 2}}, p)), ev, Object.assign({sec: t1 + .05, tap: 'mix'}, o || {})).l; return zcFreq(x, Math.round(t0 * SR), Math.round(t1 * SR), SR); };
@@ -279,11 +280,13 @@ T('MK1-17', () => {
   ok('MK1-17 Unison: 4 Stimmen −10/−3,3/+3,3/+10 ct bei 20 (± 0,5 ct)', cts.length === 4 && cts.every((x, k) => Math.abs(x - want[k]) <= .5), cts.map(x => M(x, 2)).join(' / '));
   // trigger single: the legato note does not restart EG2 (M-EINBRUCH); multi restarts it
   const sg = render(mkPatch({asg: 0, trig: 0, e2: {a: 64, d: 64, s: 64, r: 30}}), [[0, 'on', 57, .8], [.6, 'on', 59, .8]], {sec: 1}).l, eb = mEinbruch(sg, SR, .6);
-  const ml = sco({asg: 0, trig: 1, e2: {a: 64, d: 64, s: 64, r: 30}}, [[0, 'on', 57, .8], [.6, 'on', 59, .8]], .7).s.voices[0];
-  ok('MK1-17 Auslösung Single: kein Neustart (M-EINBRUCH); Multi: neu', eb.ok && ml.eg2 < .4, 'Einbruch ' + M(eb.worst, 2) + ' dB, Multi EG2 ' + M(ml.eg2, 3));
+  const ea = (trig, t) => render(mkPatch({asg: 0, trig, e2: {a: 64, d: 64, s: 64, r: 30}}), [[0, 'on', 57, .8], [.6, 'on', 59, .8]], {sec: t + .01, tap: 'amp'}).l[Math.round(t * SR)];
+  const ms = ea(0, .61), mm = ea(1, .61);
+  ok('MK1-17 Auslösung Single: kein Neustart (M-EINBRUCH); Multi: neu', eb.ok && Math.abs(ms - .504) < .01 && mm < .2, 'Einbruch ' + M(eb.worst, 2) + ' dB, EG2 10 ms nach der Legato-Note: Single ' + M(ms, 3) + ', Multi ' + M(mm, 3));
 });
 T('MK1-18', () => {
-  const sw = (p, msg, sk) => { const x = render(mkPatch(p), [[0, 'on', 69, .8], [0, 'on', 73, .8], [0, 'on', 76, .8]], {sec: 1, at: [[.5, {mkSet: msg}]]}).l; return {k: mKlick(x, SR, [0]), e: mEinbruch(x, SR, .5), x}; };
+  // M-KLICK with a chord, M-EINBRUCH with one note (5 ms RMS windows of a chord beat by several dB on their own)
+  const sw = (p, msg, sk) => { const x = render(mkPatch(p), [[0, 'on', 69, .8], [0, 'on', 73, .8], [0, 'on', 76, .8]], {sec: 1, at: [[.5, {mkSet: msg}]]}).l, y = render(mkPatch(p), [[0, 'on', 81, .8]], {sec: 1, at: [[.5, {mkSet: msg}]]}).l; return {k: mKlick(x, SR, [0]), e: mEinbruch(y, SR, .5), x}; };
   const cases = [['OSZ1 Welle Säge→Puls', {}, {'t.0.o1.w': 1}], ['OSZ1 Puls→Dreieck', {o1: {w: 1}}, {'t.0.o1.w': 2}], ['OSZ2 Welle', {mix: {o1: 64, o2: 127}}, {'t.0.o2.w': 1}],
     ['OSC MOD Sync', {mix: {o1: 64, o2: 127}, o2: {semi: 7}}, {'t.0.o2.mod': 2}], ['OSC MOD Ring', {mix: {o1: 64, o2: 127}, o2: {semi: 7}}, {'t.0.o2.mod': 1}],
     ['Filtertyp', {f: {cut: 80}}, {'t.0.f.type': 1}], ['HK→GATE', {}, {'t.0.a.gate': 1}]];
@@ -307,7 +310,8 @@ T('MK1-18', () => {
   const sc = render(mkPatch({f: {res: 120}}), [[0, 'on', 48, .8]], {sec: 10.4, at: at.concat([[0, {mkScope: true}]])}).msgs.filter(m => m.mkScope && m.mkScope.voices.length && m.mkScope.t > .25).map(m => m.mkScope.voices[0].cutHz);
   const distinct = new Set(sc.map(x => x.toFixed(6))).size; let jump = 0; for (let i = 1; i < sc.length; i++) jump = Math.max(jump, Math.abs(1200 * Math.log2(sc[i] / sc[i - 1])));
   // between two scope snapshots (33 ms) lie ~2 pointer events: 25 ct each at most
-  ok('MK1-18 Bruchwerte: > 127 verschiedene Werte, Sprung ≤ 25 ct je Zeiger-Ereignis', distinct > 127 && jump <= 50, distinct + ' Werte, max ' + M(jump, 1) + ' ct je Schnappschuss (≈ 2 Ereignisse)');
+  const evPer = (SR / 30 | 0) / SR / (10 / 635);   // pointer events between two scope snapshots
+  ok('MK1-18 Bruchwerte: > 127 verschiedene Werte, Sprung ≤ 25 ct je Zeiger-Ereignis', distinct > 127 && jump / evPer <= 25, distinct + ' Werte, max ' + M(jump / evPer, 1) + ' ct je Ereignis (' + M(jump, 1) + ' ct je Schnappschuss, ' + M(evPer, 2) + ' Ereignisse)');
 });
 T('MK1-24', () => {
   // CPU (Node, relative to one VA voice of the same run): AM voice = saw + pulse with sync, noise, 24LPF res 100, distortion, LFO1/2

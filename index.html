@@ -11834,13 +11834,13 @@ function ownNorm(c, pk, nt) {
   out.from = {t, s, bar};
   // what „Zurück zum Szenen-Clip“ restores: the lane entry that stood at the own clip's bar before, and whether its end entry was added
   if (c.from.e === null || (c.from.e && typeof c.from.e === 'object' && isNum(c.from.e.slot))) out.from.e = c.from.e ? laneEntryNorm(c.from.e, bar, clamp(Math.round(c.from.e.slot), -1, N_SCN - 1)) : null;
-  if (isNum(c.from.e1)) out.from.e1 = clamp(Math.round(c.from.e1), 0, SONG_MAX_BARS);
   // V2e′-fix: the origin that played there before (prev) and the scene clip's origin (cs, song beats)
   const pv = c.from.prev;
   if (pv && typeof pv === 'object' && isNum(pv.slot) && isNum(pv.cs)) {
     out.from.prev = {slot: clamp(Math.round(pv.slot), -1, N_SCN - 1), own: typeof pv.own === 'string' && pv.own ? pv.own.slice(0, 16) : null, cs: +(+pv.cs).toFixed(4)};
   }
   if (isNum(c.from.cs)) out.from.cs = +(+c.from.cs).toFixed(4);
+  if (isNum(c.from.e1)) out.from.e1 = clamp(Math.round(c.from.e1), 0, SONG_MAX_BARS);   // key order as ownEnsure / ownWhole write it
   return out;
 }
 /* V2d (song-delta 12.1): a lane entry {bar, slot, re?:1 (restart of the same slot), ph?: beats (the clip's phase at this bar),
@@ -17004,8 +17004,8 @@ function ownEnsure(song, t, x) {
   // V2e′-fix: besides the entry that stood here, the origin that played (prev) and the scene clip's origin (cs) — so that
   // „Zurück zum Szenen-Clip“ still finds the scene clip when the copy it came from is gone
   const pcs = o.own ? ownRefCs(song, song.own[o.own]) : o.cs;
-  c.from = {t, s: o.slot, bar: d0, e: prevE ? deep(prevE) : null, prev: {slot: o.slot, own: o.own || null, cs: o.cs}};
-  if (pcs != null) c.from.cs = pcs;
+  c.from = {t, s: o.slot, bar: d0, e: prevE ? deep(prevE) : null, prev: {slot: o.slot, own: o.own || null, cs: +o.cs.toFixed(4)}};
+  if (pcs != null) c.from.cs = +pcs.toFixed(4);
   for (const n of c.notes) { delete n.born; delete n.bornRun; }
   song.own[id] = c;
   const ent = {bar: d0, slot: o.slot, own: id}, ph = d0 * 4 - ds; if (ph > 1e-6) ent.ph = +ph.toFixed(4);
@@ -17110,7 +17110,7 @@ function ownWhole(song, t, x) {
   for (const pc of pieces) {
     const c = deep(base), id = ownNewId(song); delete c.from;
     c.len = pc.c1 - pc.c0; c.notes = pc.notes;
-    c.from = {t, s, bar: pc.c0, e: pc.c0 === bs && refE ? deep(refE) : null, prev: {slot: s, own: null, cs: o.cs}, cs: o.cs};
+    c.from = {t, s, bar: pc.c0, e: pc.c0 === bs && refE ? deep(refE) : null, prev: {slot: s, own: null, cs: +o.cs.toFixed(4)}, cs: +o.cs.toFixed(4)};
     if (pc.c1 < be) c.from.e1 = pc.c1;
     song.own[id] = c; laneInsert(lane, {bar: pc.c0, slot: s, own: id}); ids.push(id);
   }
@@ -17129,7 +17129,8 @@ function ownDropId(song, t, id) {
   let k = lane.findIndex(e => e.own === id && e.bar === f.bar); if (k < 0) k = lane.findIndex(e => e.own === id); if (k < 0) return false;
   const bar = lane[k].bar, s = isNum(f.s) ? f.s : lane[k].slot;
   lane.splice(k, 1);
-  const alive = v => !v || !v.own || (v.own !== id && !!song.own[v.own]);
+  // an own clip it came from still counts only while it exists and stands for the same track and scene clip (ids get reused)
+  const alive = v => { if (!v || !v.own) return true; const q = v.own !== id && song.own[v.own]; return !!q && (!q.from || ((q.from.t == null || q.from.t === t) && (q.from.s == null || q.from.s === s))); };
   const po = laneOriginAt(lane, bar), rcs = ownRefCs(song, c);
   const scene = {slot: s, own: null, cs: rcs != null ? rcs : (po.slot === s && !po.own ? po.cs : bar * 4)};
   if (f.e && alive(f.e)) laneInsert(lane, Object.assign(deep(f.e), {bar}));

@@ -3497,6 +3497,15 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
   .pop.crsheet.dock:not(.grab){grid-template-rows:34px 42px 42px;padding:2px 8px}
   .crsheet .cr-h{height:34px}
 }
+/* MK1 (B.3 Zeile 1): four engine keys - >= 36 px wide with 4 px gaps, the 44 px hit height over ::after; the AM label in two lines where narrow */
+#synthSheet .sh-head .seg.eng.eng4{gap:4px}
+#synthSheet .sh-head .seg.eng.eng4 button{min-width:36px;padding:0 5px}
+#synthSheet .sh-head .seg.eng.eng4 button.mkeb{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:10.5px;line-height:1;padding:0 4px}
+#synthSheet .sh-head .seg.eng.eng4 button::before{content:'';position:absolute;left:0;right:0;top:-5px;bottom:-5px}
+#synthSheet .sh-head .seg.eng.engchip button{min-width:64px;padding:0 8px}
+@media (orientation:landscape){#synthSheet .sh-head .seg.eng.eng4 button.mkeb{flex-direction:row;gap:3px;font-size:12px}
+  #synthSheet .sh-head:has(.seg.eng4) .sh-title{flex:none}
+  #synthSheet .sh-head:has(.seg.eng4) .preset .pv{min-width:72px}}
 </style>
 </head>
 <body>
@@ -3587,6 +3596,699 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 <input type="file" id="fileIn" accept=".json,application/json" hidden>
 <input type="file" id="sndIn" accept=".json,application/json" hidden>
 <input type="file" id="syxIn" hidden>
+<script type="text/plain" id="sq-mk-src">
+/* ===== MK1 (Nachtrag 3 B.3, B.4): block sq-mk-src, evaluated on first need (mkLoad). The panel of the AM engine as the front
+   of the original device without brand: zones Z1-Z13, wood cheeks, EDIT-WAHL 1/2 with the section matrix, 5 cap knobs, the
+   3-digit display, SHIFT levels, half views; the BEND / MOD wheels left of the keys; the performance probe (Menü → Info).
+   DOM + CSS only (EN3-13), no image data, no new font. Names are composed from MK_LABEL (EN3-05). ===== */
+(function () {
+'use strict';
+const W = () => SQMK.W();
+const P = {fmt: null, half: 'B', wahl: 0, pos: [0, 5, 4], last: [0, 5, 4], lastWahl: 1, shift: 0, lastKnob: null, dispT: 0, dispTxt: '', i: -1, orig: null, origKey: '', el: null, built: '', hint: {}, bank: 0, side: 1, prog: null};
+const ft = (v, d) => { const x = Math.round(v); return (d && x > 0 ? '+' : '') + x; };
+const z3 = v => { const x = Math.round(v); return (x < 0 ? '-' : '') + String(Math.abs(x)).padStart(x < 0 ? 2 : 3, '0'); };
+const hz = f => (f >= 1000 ? (f / 1000).toFixed(f >= 10000 ? 1 : 2).replace('.', ',') + ' kHz' : (f >= 100 ? Math.round(f) : f.toFixed(f >= 10 ? 1 : 2).replace('.', ',')) + ' Hz');
+const sec = t => (t >= 1 ? t.toFixed(t >= 10 ? 1 : 2).replace('.', ',') + ' s' : (t * 1000 >= 10 ? Math.round(t * 1000) : (t * 1000).toFixed(1).replace('.', ',')) + ' ms');
+// lists: [full names], [3-digit display codes]
+const L_ = {
+  o1w: [['Säge', 'Puls', 'Dreieck', 'Sinus×', 'Stimmwelle', 'Speicherwelle', 'Rauschen', 'Eingang'], ['SAG', 'PUL', 'trI', 'SIn', 'StI', 'SPE', 'rAU', 'InP']],
+  o2w: [['Säge', 'Rechteck', 'Dreieck'], ['SAG', 'rEC', 'trI']],
+  mod: [['aus', 'Ring', 'Sync', 'Ring+Sync'], ['OFF', 'rnG', 'SYn', 'r-S']],
+  ft: [['24LPF', '12LPF', '12BPF', '12HPF'], ['24L', '12L', '12b', '12H']],
+  asg: [['Mono', 'Poly', 'Unison'], ['nnO', 'POL', 'UnI']],
+  prio: [['Letzte', 'Tiefste', 'Höchste'], ['LSt', 'LO', 'HI']],
+  trig: [['Einzeln', 'Mehrfach'], ['SGL', 'nnL']],
+  onoff: [['aus', 'an'], ['OFF', 'On']],
+  gate: [['HK', 'Gate'], ['EG', 'GAt']],
+  l1w: [['Säge', 'Rechteck', 'Dreieck', 'S/H'], ['SAG', 'rEC', 'trI', 'S-H']],
+  l2w: [['Säge', 'Rechteck (+)', 'Sinus', 'S/H'], ['SAG', 'rC+', 'SIn', 'S-H']],
+  ks: [['aus', 'Timbre', 'Stimme'], ['OFF', 'tIn', 'UOI']],
+  mode: [['Synth', 'Vocoder'], ['SYn', 'UOC']],
+  lay: [['Einzeln', 'Schicht', 'Split'], ['SGL', 'LAY', 'SPL']],
+  tv: [['1+3', '2+2', '3+1'], ['1-3', '2-2', '3-1']],
+};
+// a knob definition: l label, p path of p.mk (t.0. is added for timbre keys), L list, f(v) -> [display, LCD text], dark: package
+const K = (l, p, o) => Object.assign({l, p: p && !/^(mode|lay|tv|split|vmax|mw|bpm|vol|pfA|pfR)$/.test(p) && !/^(mfx|dly|eq|arp|voc)\./.test(p) ? 't.0.' + p : p}, o || {});
+const fTime = (k, v) => [z3(v), sec(k === 'a' ? W().atk(v) : W().dec(v))];
+const fSig = (v, u) => [z3(v), ft(v, 1) + (u || '')];
+const KN = {
+  mode: K('SYNTH/VOC.', 'mode', {L: 'mode', lock: 'Vocoder ab MK7'}), lay: K('EINZELN', 'lay', {L: 'lay', lock: 'Schicht und Split ab MK3'}),
+  asg: K('ZUWEISUNG', 'asg', {L: 'asg'}), trig: K('AUSLÖSUNG', 'trig', {L: 'trig'}), udet: K('UNI-VERST.', 'udet', {f: v => [z3(v), Math.round(v) + ' ct']}),
+  prio: K('PRIORITÄT', 'prio', {L: 'prio'}), tv: K('STIMMEN', 'tv', {L: 'tv', dark: 'MK3'}), split: K('SPLIT', 'split', {dark: 'MK3'}), vmax: K('ST.-ZAHL', 'vmax', {dark: 'MK13'}),
+  trans: K('TRANSP.', 'trans', {f: v => fSig(v, ' HT')}), tune: K('FEIN', 'tune', {f: v => fSig(v, ' ct')}),
+  porta: K('PORTAM.', 'porta', {f: v => [z3(v), v <= 0 ? 'aus' : sec(W().porta(v))]}), bend: K('BEND', 'bend', {f: v => fSig(v, ' HT')}),
+  vib: K('VIBRATO', 'vib', {f: v => [z3(v), ft(v / 63 * 200, 1) + ' ct (× MOD-Rad)']}), mw: K('MOD-RAD', 'mw', {f: v => [z3(v), Math.round(v / 127 * 100) + ' % (Startwert)']}),
+  o1w: K('WELLE', 'o1.w', {L: 'o1w'}), c1: K('STEUER 1', 'o1.c1'), c2: K('STEUER 2', 'o1.c2'),
+  o2w: K('WELLE', 'o2.w', {L: 'o2w'}), o2m: K('MOD', 'o2.mod', {L: 'mod'}), semi: K('HALBTON', 'o2.semi', {f: v => fSig(v, ' HT')}),
+  o2t: K('FEIN', 'o2.tune', {f: v => [z3(v), ft(Math.round(W().fine2(v)), 1) + ' ct']}),
+  m1: K('OSZ 1', 'mix.o1'), m2: K('OSZ 2', 'mix.o2'), mn: K('RAUSCHEN', 'mix.n'),
+  ftp: K('TYP', 'f.type', {L: 'ft'}), cut: K('CUTOFF', 'f.cut', {f: v => [z3(v), hz(W().cutHz(v))]}), res: K('RESONANZ', 'f.res', {f: v => [z3(v), Math.round(v / 127 * 100) + ' %' + (v >= 116 ? ' · pfeift' : '')]}),
+  feg: K('HK-INT', 'f.eg', {f: v => [z3(v), ft(W().egHt(v), 1) + ' HT']}), fkb: K('KEYTRACK', 'f.kbd', {f: v => [z3(v), ft(v / 48 * 100, 1) + ' %']}), fvel: K('ANSCHLAG', 'f.vel', {f: v => [z3(v), ft(v / 63 * 24, 1) + ' HT']}),
+  lvl: K('PEGEL', 'a.lvl'), pan: K('PAN', 'a.pan', {f: v => [z3(v), v === 0 ? 'Mitte' : (v < 0 ? 'L' : 'R') + Math.abs(Math.round(v))]}), dist: K('VERZERR.', 'a.dist', {L: 'onoff'}),
+  akb: K('KEYTRACK', 'a.kbd', {f: v => [z3(v), ft(v / 63 * .3 * 12, 1).replace('.', ',') + ' dB/Okt']}), gate: K('HK │ GATE', 'a.gate', {L: 'gate'}), avel: K('ANSCHLAG', 'a.vel', {f: v => fSig(v)}),
+  e1a: K('ATTACK', 'e1.a', {f: v => fTime('a', v)}), e1d: K('DECAY', 'e1.d', {f: v => fTime('d', v)}), e1s: K('SUSTAIN', 'e1.s', {f: v => [z3(v), Math.round(v / 127 * 100) + ' %']}), e1r: K('RELEASE', 'e1.r', {f: v => fTime('r', v)}), e1x: K('NEUSTART', 'e1.rst', {L: 'onoff'}),
+  e2a: K('ATTACK', 'e2.a', {f: v => fTime('a', v)}), e2d: K('DECAY', 'e2.d', {f: v => fTime('d', v)}), e2s: K('SUSTAIN', 'e2.s', {f: v => [z3(v), Math.round(v / 127 * 100) + ' %']}), e2r: K('RELEASE', 'e2.r', {f: v => fTime('r', v)}), e2x: K('NEUSTART', 'e2.rst', {L: 'onoff'}),
+  pcut: K('CUTOFF', 'f.cut', {f: v => [z3(v), hz(W().cutHz(v))]}), pres: K('RESONANZ', 'f.res'), patk: K('ATTACK', 'pfA', {f: v => fTime('a', v)}), prel: K('RELEASE', 'pfR', {f: v => fTime('r', v)}),
+  bpm: K('TEMPO', 'bpm', {f: v => [z3(v), Math.round(v) + ' BPM (Song)']}), vol: K('VOLUME', 'vol', {f: v => [z3(v), Math.round(v / 127 * 100) + ' %']}),
+};
+for (const n of [1, 2]) Object.assign(KN, {['l' + n + 'w']: K('WELLE', 'l' + n + '.w', {L: 'l' + n + 'w'}), ['l' + n + 'k']: K('KEY SYNC', 'l' + n + '.ks', {L: 'ks'}), ['l' + n + 's']: K('TEMPO SYNC', 'l' + n + '.sync', {L: 'onoff'}),
+  ['l' + n + 'f']: K('FREQ', 'l' + n + '.f', {lfo: n, f: v => [z3(v), hz(W().lfoHz(v)).replace(' Hz', ' Hz')]}), ['l' + n + 'n']: K('NOTE', 'l' + n + '.note', {lfo: n})});
+const D = null;                                              // an empty place ("–" on the original)
+// EDIT-WAHL 1 (Synth | Vocoder name) with the 5 knobs of level 1 and level 2 (SHIFT); B.3 Regler-Belegung
+const SEC1 = [
+  ['STIMME', 'STIMME', ['mode', 'lay', 'asg', 'trig', 'udet'], ['prio', 'tv', 'split', 'vmax', D]],
+  ['TONH.', 'TONH.', ['trans', 'tune', 'porta', 'bend', 'vib'], ['mw', D, D, D, D]],
+  ['OSZ 1', 'OSZ 1', ['o1w', 'c1', 'c2', D, D], null],
+  ['OSZ 2', 'EING. 1', ['o2w', 'o2m', 'semi', 'o2t', D], null],
+  ['MIXER', 'MIXER', ['m1', 'm2', 'mn', D, D], [{l: 'DRIVE-TYP', dark: 'MK11'}, {l: 'DRIVE', dark: 'MK11'}, {l: 'ROUTING', dark: 'MK11'}, {l: 'F-BALANCE', dark: 'MK11'}, D]],
+  ['FILTER', 'FILTER', ['ftp', 'cut', 'res', 'feg', 'fkb'], ['fvel', {l: 'F2-TYP', dark: 'MK11'}, {l: 'F2-CUTOFF', dark: 'MK11'}, {l: 'F2-RESO.', dark: 'MK11'}, {l: 'F2-HK-INT', dark: 'MK11'}]],
+  ['F-HK', 'FC-MOD', ['e1a', 'e1d', 'e1s', 'e1r', 'e1x'], [{l: 'ATTACK', dark: 'MK12'}, {l: 'DECAY', dark: 'MK12'}, {l: 'SUSTAIN', dark: 'MK12'}, {l: 'RELEASE', dark: 'MK12'}, {l: 'NEUSTART', dark: 'MK12'}]],
+  ['AMP', 'AMP', ['lvl', 'pan', 'dist', 'akb', D], ['gate', 'avel', D, D, D]],
+  ['A-HK', 'A-HK', ['e2a', 'e2d', 'e2s', 'e2r', 'e2x'], null],
+  ['LFO 1', 'LFO 1', ['l1w', 'l1k', 'l1s', 'l1f', D], null],
+  ['LFO 2', 'LFO 2', ['l2w', 'l2k', 'l2s', 'l2f', D], null]];
+// EDIT-WAHL 2: dark until their packages (B.3; MK1 Umfang 3)
+const SEC2 = [['PATCH 1', 'K-PEGEL A', 'MK2', ['QUELLE', 'ZIEL', 'INTENS.']], ['PATCH 2', 'K-PEGEL B', 'MK2', ['QUELLE', 'ZIEL', 'INTENS.']], ['PATCH 3', 'K-PAN A', 'MK2', ['QUELLE', 'ZIEL', 'INTENS.']], ['PATCH 4', 'K-PAN B', 'MK2', ['QUELLE', 'ZIEL', 'INTENS.']],
+  ['MOD-FX', 'MOD-FX', 'MK4', ['TYP', 'TEMPO', 'TIEFE']], ['DELAY', 'DELAY', 'MK4', ['TYP', 'T-SYNC', 'ZEIT', 'TIEFE']], ['EQ', 'EQ', 'MK4', ['TIEF-FRQ', 'TIEF-GN', 'HOCH-FRQ', 'HOCH-GN']],
+  ['ARP A', 'ARP A', 'MK5', ['TEMPO', 'AUFLÖS.', 'GATE', 'TYP', 'OKTAVEN']], ['ARP B', 'ARP B', 'MK5', ['LATCH', 'SWING', 'KEY SYNC', 'LÄNGE', 'ZIEL']], ['STIMMUNG', 'STIMMUNG', 'MK3', ['STIMMUNG', 'GRUNDTON']], ['SEQ', '–', 'MK6', ['SEQ AN', 'SEQUENZ', 'ZIEL', 'BEWEGUNG', 'LÄNGE']]];
+const SPIEL = ['pcut', 'pres', 'patk', 'prel', 'bpm'];
+const KLAB = ['CUTOFF', 'RESO.', 'ATTACK', 'RELEASE', 'TEMPO'];          // the fixed print on the knobs (SPIEL)
+// short forms where a place is 44-56 px wide (B.3 Beschriftung)
+const SHORT = {'RESONANZ': 'RESO.', 'KEYTRACK': 'KEYTR.', 'AUSLÖSUNG': 'AUSLÖS.', 'ZUWEISUNG': 'ZUWEIS.', 'UNI-VERST.': 'UNI-V.', 'PRIORITÄT': 'PRIOR.', 'SYNTH/VOC.': 'SYN/VOC',
+  'RAUSCHEN': 'RAUSCH.', 'ANSCHLAG': 'ANSCHL.', 'NEUSTART': 'NEUST.', 'TEMPO SYNC': 'T-SYNC', 'KEY SYNC': 'K-SYNC', 'HK │ GATE': 'HK│GATE', 'VERZERR.': 'VERZ.', 'HALBTON': 'HALBT.',
+  'VIBRATO': 'VIBR.', 'PORTAM.': 'PORT.', 'TRANSP.': 'TRANSP', 'STEUER 1': 'STEU.1', 'STEUER 2': 'STEU.2', 'SUSTAIN': 'SUST.', 'DRIVE-TYP': 'DR-TYP', 'F-BALANCE': 'F-BAL.',
+  'ROUTING': 'ROUT.', 'F2-CUTOFF': 'F2-CUT', 'F2-RESO.': 'F2-RES', 'F2-HK-INT': 'F2-HK', 'INTENS.': 'INT.', 'TIEF-FRQ': 'T-FRQ', 'TIEF-GN': 'T-GN', 'HOCH-FRQ': 'H-FRQ', 'HOCH-GN': 'H-GN',
+  'AUFLÖS.': 'AUFL.', 'OKTAVEN': 'OKT.', 'STIMMUNG': 'STIMM.', 'GRUNDTON': 'GRDTON', 'BEWEGUNG': 'BEWEG.', 'SEQUENZ': 'SEQ.', 'ST.-ZAHL': 'ST-ZAHL', 'EINZELN': 'EINZ.', 'RELEASE': 'RELEAS.', 'ATTACK': 'ATTACK',
+  'PEGEL': 'PEGEL', 'QUELLE': 'QUELLE', 'MOD-RAD': 'MOD-RAD', 'STIMMEN': 'STIMM.', 'SEQ AN': 'SEQ AN', 'LÄNGE': 'LÄNGE', 'SWING': 'SWING', 'LATCH': 'LATCH', 'TEMPO': 'TEMPO', 'TIEFE': 'TIEFE'};
+const sh = n => SHORT[n] || n;
+const kOf = x => (x == null ? null : typeof x === 'string' ? KN[x] : x);
+// the 5 knob definitions of the current state (LFO FREQ | NOTE by TEMPO SYNC)
+function knobs() {
+  if (P.wahl === 0) return SPIEL.map(kOf);
+  if (P.wahl === 2) { const s = SEC2[P.pos[2]]; return [0, 1, 2, 3, 4].map(k => (s[3][k] ? {l: s[3][k], dark: s[2]} : null)); }
+  const s = SEC1[P.pos[1]], row = P.shift && s[3] ? s[3] : s[2];
+  return row.map(x => { const d = kOf(x); if (d && d.lfo) { const t = mk().t[0]['l' + d.lfo]; return t.sync ? KN['l' + d.lfo + 'n'] : KN['l' + d.lfo + 'f']; } return d; });
+}
+const snd = () => sndOf(P.i), mk = () => snd().p.mk;
+function get(d) {
+  const s_ = snd(); if (!d || !d.p || !s_ || !s_.p.mk) return 0;
+  if (d.p === 'mode') return s_.p.mk.mode === 3 ? 1 : 0;
+  if (d.p === 'lay') return s_.p.mk.mode === 1 ? 1 : s_.p.mk.mode === 2 ? 2 : 0;
+  if (d.p === 'mw') return Math.round((+s_.p.mw || 0) * 127);
+  if (d.p === 'bpm') return S.bpm;
+  if (d.p === 'vol') return Math.round(s_.fx.vol * 127);
+  if (d.p === 'pfA') return s_.p.mk.t[0].e2.a;
+  if (d.p === 'pfR') return s_.p.mk.t[0].e2.r;
+  const v = SQMK.mkPathGet(s_.p.mk, d.p); return typeof v === 'number' ? v : 0;
+}
+function range(d) {
+  if (!d || !d.p) return [0, 1];
+  if (d.L) return [0, L_[d.L][0].length - 1];
+  if (d.p === 'mw' || d.p === 'vol' || d.p === 'pfA' || d.p === 'pfR') return [0, 127];
+  if (d.p === 'bpm') return [40, 240];
+  const r = SQMK.mkRange(d.p); return r ? [r[0], r[1]] : [0, 127];
+}
+// one change (live = during a gesture: the fraction reaches the worklet, B.6 Nr. 2)
+function setv(d, v, live) {
+  const i = P.i, s_ = snd(); if (!d || !d.p || !s_) return;
+  if (d.p === 'mw') { setP(i, 'mw', clamp(v, 0, 127) / 127); mkWheelSync(i, true); return; }
+  if (d.p === 'bpm') { setBpm(Math.round(v)); return; }
+  if (d.p === 'vol') { setP(i, 'fx.vol', clamp(v, 0, 127) / 127); return; }
+  if (d.p === 'pfA' || d.p === 'pfR') {                     // SPIEL: Filter- and Amp-EG together, both moved by the same step
+    const k = d.p === 'pfA' ? 'a' : 'r', t0 = s_.p.mk.t[0], dv = v - t0.e2[k];
+    mkSetP(i, 't.0.e2.' + k, v, live); mkSetP(i, 't.0.e1.' + k, clamp(t0.e1[k] + dv, 0, 127), live); return;
+  }
+  mkSetP(i, d.p, v, live);
+}
+function fmtv(d, v) {
+  if (!d) return ['', ''];
+  if (d.L) { const L = L_[d.L], k = clamp(Math.round(v), 0, L[0].length - 1); return [L[1][k], L[0][k]]; }
+  if (d.f) return d.f(v);
+  if (d.lfo && /note/.test(d.p)) { const k = clamp(Math.round(v), 0, 14), t = W().LSYNC_T[k]; return [t.replace('/', '.'), t + ' (Song-Tempo)']; }
+  return [z3(v), String(Math.round(v))];
+}
+// what a value means for the current wave (OSZ 1 STEUER 1/2, B.3)
+const O1C = [['FORM', 'WFM'], ['BREITE', 'PWM'], ['FORM', 'WFM'], ['X-MOD', 'X-LFO'], ['FORM', 'WFM'], ['–', 'WELLE'], ['CUTOFF', 'RESO.'], ['BALANCE', 'BAL-LFO']];
+function lcdName(d) {
+  if (d && (d.p === 't.0.o1.c1' || d.p === 't.0.o1.c2')) return d.l + ' (' + O1C[mk().t[0].o1.w][d.p.endsWith('c1') ? 0 : 1] + ')';
+  return d ? d.l : '';
+}
+function secName() { return P.wahl === 0 ? 'SPIEL' : P.wahl === 1 ? SEC1[P.pos[1]][0] : SEC2[P.pos[2]][0]; }
+function lcdOf(d) {
+  const [, t] = fmtv(d, get(d)), v = get(d), unit = d.L ? '' : ' ' + z3(v);
+  let extra = '';
+  if (d.p === 't.0.o1.w' && mk().t[0].o1.w > 2) extra = 'klingt bis MK2 als Säge';
+  lcdShow(secName() + ' · ' + lcdName(d) + unit, t + (extra ? ' · ' + extra : ''));
+}
+/* ---------- display (3 digits, 7 segments, own drawing) ---------- */
+const SEG = {'0': 'abcdef', '1': 'bc', '2': 'abged', '3': 'abgcd', '4': 'fgbc', '5': 'afgcd', '6': 'afgedc', '7': 'abc', '8': 'abcdefg', '9': 'abcdfg', '-': 'g', 'A': 'abcefg', 'b': 'fgcde', 'C': 'afed', 'c': 'ged', 'd': 'bcdeg',
+  'E': 'afged', 'F': 'afge', 'G': 'afedc', 'H': 'fbgec', 'h': 'fgec', 'I': 'fe', 'i': 'c', 'J': 'bcd', 'L': 'fed', 'n': 'gec', 'O': 'abcdef', 'o': 'gcde', 'P': 'abfge', 'r': 'ge', 'S': 'afgcd', 't': 'fged', 'U': 'fedcb', 'u': 'edc', 'Y': 'fgbcd', '+': 'bc', ' ': ''};
+const SEGP = {a: 'M3 1h10l-2 2H5z', b: 'M14 2v10l-2-2V4z', c: 'M14 14v10l-2-2v-6z', d: 'M3 25h10l-2-2H5z', e: 'M2 14v10l2-2v-6z', f: 'M2 2v10l2-2V4z', g: 'M3 13h10l-1.5 1.5h-7z'};
+function segSvg(txt) {
+  const ch = []; for (const c of String(txt)) { if (c === '.' && ch.length) ch[ch.length - 1].dp = true; else ch.push({c, dp: false}); }
+  while (ch.length < 3) ch.unshift({c: ' ', dp: false});
+  let h = '';
+  ch.slice(-3).forEach((o, k) => { const s = SEG[o.c] != null ? SEG[o.c] : SEG[o.c.toUpperCase()] || '';
+    for (const sg of 'abcdefg') h += `<path transform="translate(${k * 18 + 2},2)" class="${s.includes(sg) ? 'on' : ''}" d="${SEGP[sg]}"/>`;
+    h += `<circle cx="${k * 18 + 17.5}" cy="27" r="1.3" class="${o.dp ? 'on' : ''}"/>`; });
+  return `<svg viewBox="0 0 56 30" aria-hidden="true">${h}</svg>`;
+}
+function dispShow(txt, hold) {
+  if (!P.el) return; const d = P.el.disp; if (!d) return;
+  if (d._t !== txt) { d._t = txt; d.innerHTML = segSvg(txt); d.setAttribute('aria-label', 'Anzeige ' + txt); }
+  clearTimeout(P.dispT); if (hold !== false) P.dispT = setTimeout(() => dispShow(progNum(), false), 1000);
+}
+/* ---------- programs: BANK (8), SEITE A│B, numbers 1-8 (A empty until MK8, B = own AM sounds A-Z) ---------- */
+function ownList() { return (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine === 'mk').sort((a, b) => a.name.localeCompare(b.name, 'de')); }
+function progAt(bank, num) { if (P.side === 0) return null; return ownList()[bank * 8 + num] || null; }
+function progNum() {
+  const s_ = snd(); if (!s_) return '---';
+  const L = ownList(), k = L.findIndex(x => x.id && (x.id === s_.origin || x.id === s_.id));
+  return k >= 0 && k < 64 ? 'b.' + (Math.floor(k / 8) + 1) + (k % 8 + 1) : '---';
+}
+function progLoad(num) {
+  const i = P.i, rec = progAt(P.bank, num);
+  if (!rec) { lcdShow('PROGRAMM', P.side === 0 ? 'Seite A: Werksklänge kommen mit MK8' : 'Platz leer – Sounds dieser Engine sichern füllt Seite B (A–Z)'); return; }
+  const cur = progNum(); if (cur === 'b.' + (P.bank + 1) + (num + 1)) { toSpiel(); return; }     // the lit key: back to SPIEL
+  UI.ab = null; soundEdit(i, 'Programm ' + rec.name, () => loadPreset(i, rec.id));
+  toast('Programm: ' + rec.name, {label: 'Rückgängig', fn: () => undo()});
+  P.orig = null; toSpiel();
+}
+/* ---------- state ---------- */
+function toSpiel() { P.wahl = 0; P.shift = 0; render(); }
+function setWahl(w, pos) {
+  if (w === 2 && pos != null) P.pos[2] = pos; if (w === 1 && pos != null) P.pos[1] = pos;
+  P.wahl = w; P.lastWahl = w; P.shift = 0; render();
+  const s = w === 1 ? SEC1[P.pos[1]] : SEC2[P.pos[2]];
+  if (w === 2) lcdShow('EDIT-WAHL 2 · ' + s[0], 'kommt mit ' + s[2] + ' – die Stellung bleibt frei');
+  else lcdShow('EDIT-WAHL 1 · ' + s[0], knobs().map(d => (d ? d.l : '–')).join(' · '));
+}
+/* ---------- formats (B.3 Maße): full L (720 x 136), full P (360 x 280), half views; scale up to x1.1 (W x1.13) ---------- */
+function pickFmt(w, h) {
+  const land = w > 500 && h < 300 || (w >= 700 && window.innerWidth > window.innerHeight);
+  if (w >= 720 && h >= 136 && (land || w >= 700)) return {k: 'L', s: Math.min(w / 720, h / 136, window.innerWidth > window.innerHeight ? 1.1 : 1.13)};
+  if (!land && w >= 352 && h >= 280) return {k: 'P', s: Math.min(w / 360, h / 280, 1.1)};
+  if (land || w > 500) return {k: 'LH', s: 1, w: Math.max(400, Math.min(w, 814)), wood: w >= 720 ? 10 : 6};
+  return {k: 'PH', s: 1, w: Math.max(270, Math.min(w, 360)), wood: 4};
+}
+// the rectangles of every element in panel pixels (design units); half 'A' | 'B' for the half views
+function layout(F) {
+  const E = {}, z = (k, x, y, w, h) => { E[k] = [x, y, w, h]; };
+  if (F.k === 'L') {
+    F.W = 720; F.H = 136;
+    z('HL', 0, 0, 10, 136); z('HR', 710, 0, 10, 136);
+    z('vol', 14, 0, 44, 44); z('arp', 62, 0, 44, 44); z('octd', 14, 46, 44, 44); z('octu', 62, 46, 44, 44);
+    z('bank', 112, 0, 52, 44); z('side', 176, 0, 44, 44); z('ein', 270, 0, 16, 44); z('disp', 294, 0, 92, 44);
+    z('write', 294, 46, 44, 44); z('shift', 342, 46, 44, 44); z('prog', 112, 46, 176, 44);
+    for (let k = 0; k < 8; k++) z('n' + k, 14 + 44 * k, 92, 44, 44);
+    z('timbre', 392, 0, 52, 44); z('w1', 392, 46, 64, 44); z('w2', 392, 92, 64, 44);
+    z('orig', 462, 0, 10, 44); for (let k = 0; k < 5; k++) z('k' + k, 474 + 46 * k, 0, 44, 44);
+    z('m1', 462, 46, 244, 44); z('m2', 462, 92, 244, 44);
+    F.zones = {Z1: ['vol'], Z2: ['arp'], Z3: ['octd', 'octu'], Z4: ['bank'], Z5: ['side'], Z6: ['ein'], Z7: ['disp'], Z8: ['write', 'shift'], Z9: ['prog'], Z10: ['n0', 'n7'], Z11: ['timbre', 'w2'], Z12: ['orig', 'k4'], Z13: ['m1', 'm2'], HL: ['HL'], HR: ['HR']};
+    return E;
+  }
+  if (F.k === 'P') {
+    F.W = 360; F.H = 280;
+    z('HL', 0, 0, 4, 280); z('HR', 356, 0, 4, 280); z('sep', 4, 136, 352, 8);
+    z('vol', 4, 0, 44, 44); z('arp', 52, 0, 44, 44); z('bank', 100, 0, 52, 44); z('side', 156, 0, 44, 44); z('ein', 204, 0, 16, 44); z('disp', 224, 0, 56, 44);
+    z('octd', 4, 46, 44, 44); z('octu', 52, 46, 44, 44); z('prog', 100, 46, 156, 44); z('write', 260, 46, 44, 44); z('shift', 308, 46, 44, 44);
+    for (let k = 0; k < 8; k++) z('n' + k, 4 + 44 * k, 92, 44, 44);
+    const y = 144; z('timbre', 4, y, 52, 44); z('w1', 4, y + 46, 62, 44); z('w2', 4, y + 92, 62, 44);
+    z('orig', 70, y, 10, 44); for (let k = 0; k < 5; k++) z('k' + k, 82 + 52 * k, y, 50, 44);
+    z('m1', 70, y + 46, 270, 44); z('m2', 70, y + 92, 270, 44);
+    F.zones = {Z1: ['vol'], Z2: ['arp'], Z3: ['octd', 'octu'], Z4: ['bank'], Z5: ['side'], Z6: ['ein'], Z7: ['disp'], Z8: ['write', 'shift'], Z9: ['prog'], Z10: ['n0', 'n7'], Z11: ['timbre', 'w2'], Z12: ['orig', 'k4'], Z13: ['m1', 'm2'], HL: ['HL'], HR: ['HR']};
+    return E;
+  }
+  if (F.k === 'LH') {                                       // two bands (90 px), LINKS | RECHTS (B.3 Halb-Ansicht quer)
+    const w = F.w, wd = F.wood, x0 = wd + 4; F.W = w; F.H = 90;
+    z('HL', 0, 0, wd, 90); z('HR', w - wd, 0, wd, 90);
+    if (P.half === 'A') {
+      let x = x0; const put = (k, ww) => { z(k, x, 0, ww, 44); x += ww + 4; };
+      put('vol', 44); put('arp', 44); put('bank', 52); put('side', 44); put('ein', 16); put('disp', 92); put('write', 44); put('shift', 44);
+      z('octd', x0, 46, 44, 44); z('octu', x0 + 48, 46, 44, 44);
+      for (let k = 0; k < 8; k++) z('n' + k, x0 + 96 + 44 * k, 46, 44, 44);
+      z('prog', x0 + 96 + 352 + 4, 46, Math.max(100, w - wd - 4 - (x0 + 96 + 352 + 4)), 44);
+      F.zones = {Z1: ['vol'], Z2: ['arp'], Z3: ['octd', 'octu'], Z4: ['bank'], Z5: ['side'], Z6: ['ein'], Z7: ['disp'], Z8: ['write', 'shift'], Z9: ['prog'], Z10: ['n0', 'n7'], HL: ['HL'], HR: ['HR']};
+    } else {
+      const kw = w >= 760 ? 56 : 48;
+      z('timbre', x0, 0, 44, 44); z('w1', x0 + 48, 0, 62, 44); z('orig', x0 + 114, 0, 10, 44);
+      for (let k = 0; k < 5; k++) z('k' + k, x0 + 128 + (kw + 4) * k, 0, kw, 44);
+      z('shift', x0, 46, 44, 44); z('w2', x0 + 48, 46, 62, 44); z('m1', x0 + 114, 46, 14 + 5 * kw + 16, 44);
+      F.zones = {Z11: ['timbre', 'w2'], Z12: ['orig', 'k4'], Z13: ['m1'], HL: ['HL'], HR: ['HR']};
+    }
+    return E;
+  }
+  // PH: four bands (182 px); P2 inner 337, P3 inner 282
+  const w = F.w, wd = 4, x0 = wd, iw = w - 2 * wd, narrow = iw < 320; F.W = w; F.H = 182;
+  z('HL', 0, 0, wd, 182); z('HR', w - wd, 0, wd, 182);
+  if (P.half === 'A') {
+    let x = x0; const put = (k, ww, g) => { z(k, x, 0, ww, 44); x += ww + (g == null ? 4 : g); };
+    put('vol', 44, narrow ? 2 : 4); put('arp', 44, narrow ? 2 : 4); put('bank', 48, narrow ? 2 : 4); put('side', 44, narrow ? 2 : 4); put('ein', narrow ? 10 : 16, narrow ? 2 : 4); put('disp', narrow ? 48 : 52);
+    z('octd', x0, 46, 44, 44); z('octu', x0 + 48, 46, 44, 44); z('write', x0 + iw - 92, 46, 44, 44); z('shift', x0 + iw - 44, 46, 44, 44);
+    z('prog', x0 + 96, 46, iw - 96 - 96, 44);
+    const nw = narrow ? 68 : 80, g = narrow ? 3 : 4;
+    for (let k = 0; k < 8; k++) z('n' + k, x0 + (k % 4) * (nw + g), 92 + Math.floor(k / 4) * 46, nw, 44);
+    F.zones = {Z1: ['vol'], Z2: ['arp'], Z3: ['octd', 'octu'], Z4: ['bank'], Z5: ['side'], Z6: ['ein'], Z7: ['disp'], Z8: ['write', 'shift'], Z9: ['prog'], Z10: ['n0', 'n7'], HL: ['HL'], HR: ['HR']};
+  } else {
+    const cw = narrow ? 52 : 62, kw = narrow ? 44 : 48, kg = narrow ? 0 : 2, xk = x0 + cw + 4;
+    z('timbre', x0, 0, 44, 44); z('w1', x0, 46, cw, 44); z('w2', x0, 92, cw, 44); z('shift', x0, 138, 44, 44);
+    z('orig', narrow ? x0 + 45 : xk, narrow ? 2 : 0, narrow ? 7 : 10, narrow ? 10 : 44);
+    const kx = narrow ? xk : xk + 14; for (let k = 0; k < 5; k++) z('k' + k, kx + (kw + kg) * k, 0, kw, 44);
+    z('m1', xk, 46, Math.min(iw - cw - 4, 5 * kw + 4 * kg + (narrow ? 0 : 14)), 44); z('m2', xk, 92, Math.min(iw - cw - 4, 5 * kw + 4 * kg + (narrow ? 0 : 14)), 44);
+    F.zones = {Z11: ['timbre', 'w2'], Z12: ['orig', 'k4'], Z13: ['m1', 'm2'], HL: ['HL'], HR: ['HR']};
+  }
+  return E;
+}
+/* ---------- building blocks ---------- */
+const CAP = '<svg class="mcap" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" class="cr"/><circle cx="16" cy="16" r="12.5" class="ci"/><line x1="16" y1="16" x2="16" y2="4" class="cp"/></svg>';
+function rotSvg(n) { let t = ''; for (let k = 0; k < n; k++) { const a = (-135 + 270 * k / (n - 1)) * Math.PI / 180, x = 18 + 16.5 * Math.sin(a), y = 18 - 16.5 * Math.cos(a), x2 = 18 + 14 * Math.sin(a), y2 = 18 - 14 * Math.cos(a); t += `<line class="mtk" data-k="${k}" x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`; }
+  return `<svg class="mrot" viewBox="0 0 36 36" aria-hidden="true">${t}<circle cx="18" cy="18" r="11.5" class="cr"/><line x1="18" y1="18" x2="18" y2="8.5" class="cp"/></svg>`; }
+function mkEl(k, cls, html) { const e = el('div', 'mkx ' + cls, html); e.dataset.k = k; return e; }
+function build(pg, i) {
+  P.i = i; const s_ = sndOf(i); if (!s_) return;
+  const okey = s_.origin + '|' + s_.name; if (P.origKey !== okey || !P.orig) { P.origKey = okey; const rec = originRec(s_); P.orig = deep(rec && rec.p && rec.p.mk ? SQMK.normMk(rec.p.mk) : s_.p.mk); }
+  pg.classList.add('mkpg'); pg.innerHTML = '';
+  const r = pg.getBoundingClientRect(), cs = getComputedStyle(pg);
+  const w = Math.floor(r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth));
+  const h = Math.floor(r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth));
+  const F = pickFmt(w, h); P.fmt = F;
+  // the tabs were chosen from the window size; the measured page decides (and asks once for the other frame)
+  const isHalf = F.k === 'LH' || F.k === 'PH', tabHalf = ED.tab === 'links' || ED.tab === 'rechts';
+  if (isHalf !== tabHalf && !P.reb) { UI.mkFmt = isHalf ? 'half' : 'full'; UI.mkFmtAt = window.innerWidth + 'x' + window.innerHeight; P.reb = 1; setTimeout(() => { P.reb = 0; safeRebuild(buildSynthEd); }, 0); }
+  if (!pg._mkRO && typeof ResizeObserver !== 'undefined') { let last = w + 'x' + h; pg._mkRO = new ResizeObserver(() => { if (!pg.isConnected) { pg._mkRO.disconnect(); return; } const r2 = pg.getBoundingClientRect(), k = Math.round(r2.width) + 'x' + Math.round(r2.height); if (k !== last && Math.abs(r2.width - r.width) + Math.abs(r2.height - r.height) > 2) { last = k; if (!GEST.size) safeRebuild(buildSynthEd); } }); pg._mkRO.observe(pg); }
+  const E = layout(F);
+  const body = el('div', 'mkbody mkf-' + F.k + (F.k === 'LH' || F.k === 'PH' ? ' mkhalf mkh-' + P.half : '')); body.style.width = F.W + 'px'; body.style.height = F.H + 'px';
+  if (F.s !== 1) body.style.transform = 'scale(' + F.s.toFixed(4) + ')';
+  const wrap = el('div', 'mkwrap'); wrap.style.width = Math.round(F.W * F.s) + 'px'; wrap.style.height = Math.round(F.H * F.s) + 'px'; wrap.appendChild(body); pg.appendChild(wrap);
+  const ui = {body, wrap, knobs: [], nums: [], E};
+  const add = (k, node) => { const b = E[k]; if (!b) return null; Object.assign(node.style, {left: b[0] + 'px', top: b[1] + 'px', width: b[2] + 'px', height: b[3] + 'px'}); body.appendChild(node); return node; };
+  for (const k of ['HL', 'HR']) add(k, mkEl(k, 'mwood'));
+  if (E.sep) add('sep', mkEl('sep', 'msep'));
+  const btn = (k, lab, cls) => { const b = mkEl(k, 'mkb ' + (cls || ''), `<span class="lg">${lab}</span><span class="mkey"><i class="mled"></i><b class="msh"></b></span>`); b.setAttribute('role', 'button'); b.tabIndex = 0; return add(k, b); };
+  // Z1 VOLUME (the track's volume = FX → SPUR, Vol)
+  if (E.vol) ui.vol = add('vol', knobEl('vol', 'VOLUME', () => KN.vol));
+  if (E.arp) { ui.arp = btn('arp', 'ARP', 'dark'); }
+  if (E.octd) { ui.octd = btn('octd', 'OKT ▼'); ui.octu = btn('octu', 'OKT ▲'); }
+  if (E.bank) { ui.bank = add('bank', rotEl('bank', 'BANK', 8)); }
+  if (E.side) ui.side = btn('side', 'SEITE');
+  if (E.ein) { ui.ein = add('ein', mkEl('ein', 'mein dark', '<i class="mled"></i><i class="mled"></i>')); ui.ein.title = 'Eingänge E1/E2 – ab MK7'; }
+  if (E.disp) { ui.disp = add('disp', mkEl('disp', 'mdisp', '')); ui.disp.setAttribute('role', 'status'); }
+  if (E.write) ui.write = btn('write', 'WRITE');
+  if (E.shift) ui.shift = btn('shift', 'SHIFT');
+  if (E.prog) ui.prog = add('prog', mkEl('prog', 'mprog', '<span class="mpb"></span><span class="mpn"></span>'));
+  for (let k = 0; k < 8; k++) if (E['n' + k]) ui.nums[k] = btn('n' + k, String(k + 1), 'mnum');
+  if (E.timbre) { ui.timbre = btn('timbre', 'TIMBRE', 'dark mtim'); ui.timbre.querySelector('.mkey').innerHTML = '<i class="mled"></i><i class="mled"></i><b class="msh"></b>'; }
+  const wl = E.w1 && E.w1[2] < 62 ? 'WAHL ' : 'EDIT-WAHL ';
+  if (E.w1) ui.w1 = add('w1', rotEl('w1', wl + '1', 11));
+  if (E.w2) ui.w2 = add('w2', rotEl('w2', wl + '2', 11));
+  if (E.orig) { ui.orig = add('orig', mkEl('orig', 'morig', '<i class="mled"></i>')); ui.orig.title = 'ORIGINAL: der Wert gleicht dem gespeicherten'; }
+  for (let k = 0; k < 5; k++) if (E['k' + k]) ui.knobs[k] = add('k' + k, knobEl('k' + k, KLAB[k], () => knobs()[k], k));
+  if (E.m1) ui.m1 = add('m1', mkEl('m1', 'mrow2', '<span class="mmn"></span><span class="mma"></span>'));
+  if (E.m2) ui.m2 = add('m2', mkEl('m2', 'mrow2', '<span class="mmn"></span><span class="mma"></span>'));
+  P.el = ui; P.built = F.k + P.half;
+  wire(ui);
+  render();
+  dispShow(progNum(), false);
+  try { const E_ = AU.synth[i]; if (E_) E_.mkScope(false); } catch (e) {}
+}
+function knobEl(k, lab, def, slot) {
+  const e = mkEl(k, 'mkk', `<span class="lg">${lab}</span>${CAP}`); e.setAttribute('role', 'slider'); e.tabIndex = 0; e._def = def; e._slot = slot; return e;
+}
+function rotEl(k, lab, n) { const e = mkEl(k, 'mkr', `<span class="lg">${lab}</span>${rotSvg(n)}<i class="mled"></i>`); e.setAttribute('role', 'slider'); e.tabIndex = 0; e._n = n; return e; }
+/* ---------- render (classes / text only, at most once per frame) ---------- */
+function render() {
+  const U = P.el; if (!U || !U.body.isConnected) return;
+  const s_ = snd(); if (!s_ || !s_.p.mk) return;
+  const ks = knobs(), lev = P.wahl === 1 && P.shift ? 'EB' + (P.shift + 1) + ' ' : '';
+  U.knobs.forEach((e, k) => { if (!e) return; const d = ks[k]; paintKnob(e, d); });
+  if (U.vol) paintKnob(U.vol, KN.vol);
+  const spiel = P.wahl === 0;
+  // rotaries: pointer at the position; LED = this selection is active (both = SPIEL); ◎ dots
+  const rp = (e, pos, n, lit, dark) => { if (!e) return; const a = -135 + 270 * pos / (n - 1); e.querySelector('.cp').setAttribute('transform', `rotate(${a} 18 18)`); e.querySelector('.cr').setAttribute('transform', `rotate(${a} 18 18)`);
+    e.classList.toggle('lit', lit); if (dark != null) e.classList.toggle('dimpos', dark); e.setAttribute('aria-valuenow', String(pos + 1)); };
+  rp(U.w1, P.pos[1], 11, spiel || P.wahl === 1); rp(U.w2, P.pos[2], 11, spiel || P.wahl === 2, true);
+  rp(U.bank, P.bank, 8, false);
+  if (UI.wia && U.w1) { const dif = wiaPos(); U.w1.querySelectorAll('.mtk').forEach((t, k) => t.classList.toggle('mwd', dif.has(k))); }
+  else if (U.w1) U.w1.querySelectorAll('.mtk.mwd').forEach(t => t.classList.remove('wd'));
+  // matrix rows: section name + 5 assignments; the row of the active selection bright
+  const row = (e, w) => { if (!e) return; const isW1 = w === 1, sct = isW1 ? SEC1[P.pos[1]] : SEC2[P.pos[2]], dk = !isW1;
+    const names = isW1 ? (P.wahl === 1 && P.shift && sct[3] ? sct[3] : sct[2]).map(x => { const d = kOf(x); return d ? (d.lfo ? (mk().t[0]['l' + d.lfo].sync ? 'NOTE' : 'FREQ') : sh(d.l)) : '–'; }) : [0, 1, 2, 3, 4].map(k => (sct[3][k] ? sh(sct[3][k]) : '–'));
+    e.querySelector('.mmn').innerHTML = (isW1 && P.wahl === 1 && P.shift ? '<b class="meb">EB' + (P.shift + 1) + '</b> ' : '') + esc(sct[0]) + (dk ? ' <small>' + sct[2] + '</small>' : '');
+    e.querySelector('.mma').innerHTML = names.map((n, k) => `<span class="${knobs()[k] && knobs()[k].dark && isW1 ? 'dk' : ''}">${esc(n)}</span>`).join('');
+    e.classList.toggle('on', P.wahl === w); e.classList.toggle('dark', dk); };
+  if (U.m1 && U.m2) { row(U.m1, 1); row(U.m2, 2); }
+  else if (U.m1) row(U.m1, P.wahl === 2 ? 2 : 1);           // half view: only the row of the active selection
+  if (U.shift) U.shift.classList.toggle('on', !!P.shift), U.shift.classList.toggle('blink', P.shift === 2);
+  if (U.side) U.side.classList.toggle('on', P.side === 1);
+  // OKT LEDs: the direction lights while shifted (4 = middle)
+  const oc = S.tracks[P.i].kbOct || 4; if (U.octd) { U.octd.classList.toggle('on', oc < 4); U.octu.classList.toggle('on', oc > 4); }
+  // number keys: with SHIFT their SHIFT names (dark where the app has none); else programs of the bank (lit = loaded)
+  const SH = ['TIMBRE KOP.', 'TIMBRE TAU.', 'INIT', 'TIMBRE NEU', 'SEQ ▸', '–', '–', '–'], cur = progNum();
+  U.nums.forEach((e, k) => { if (!e) return; const rec = P.side === 1 ? progAt(P.bank, k) : null;
+    e.classList.toggle('on', !P.shift && cur === 'b.' + (P.bank + 1) + (k + 1)); e.classList.toggle('mempty', !P.shift && !rec);
+    e.querySelector('.msh').textContent = P.shift ? SH[k] : ''; e.classList.toggle('mshd', !!P.shift && k !== 2); e.title = rec ? rec.name : ''; });
+  if (U.prog) { U.prog.querySelector('.mpb').textContent = P.shift ? 'SHIFT' : 'BANK ' + (P.bank + 1) + ' · ' + (P.side ? 'B' : 'A') + ' · ' + cur.toUpperCase();
+    U.prog.querySelector('.mpn').textContent = P.shift ? 'Taste wählen' : s_.name; }
+  if (U.write) U.write.querySelector('.msh').textContent = '';
+  if (U.side) U.side.querySelector('.msh').textContent = P.shift ? 'WAHL ⇄' : '';
+  if (U.octd) { U.octd.querySelector('.msh').textContent = P.shift ? 'WERT −' : ''; U.octu.querySelector('.msh').textContent = P.shift ? 'WERT +' : ''; }
+  paintOrig();
+}
+function paintKnob(e, d) {
+  const dark = !d || !!d.dark, v = d && !dark ? get(d) : 0, [lo, hi] = range(d), n = hi > lo ? (v - lo) / (hi - lo) : 0, a = -135 + 270 * clamp(n, 0, 1);
+  const key = (d ? d.l + d.p : '-') + '|' + a.toFixed(1) + '|' + dark;
+  if (e._key === key) return; e._key = key;
+  e.querySelector('.cp').setAttribute('transform', `rotate(${a.toFixed(1)} 16 16)`); e.classList.toggle('dark', dark);
+  e.setAttribute('aria-label', (d ? d.l : 'frei') + (dark && d && d.dark ? ' (ab ' + d.dark + ')' : '')); e.setAttribute('aria-valuetext', d && !dark ? fmtv(d, v)[1] : '–');
+}
+function paintOrig() {
+  const U = P.el; if (!U || !U.orig) return; const d = P.lastKnob;
+  let on = false;
+  if (d && P.wahl !== 0 && P.orig && d.p && d.p.startsWith('t.0.')) on = SQMK.mkPathGet(P.orig, d.p) === get(d);
+  U.orig.classList.toggle('on', on);
+}
+// ◎: positions of EDIT-WAHL 1 whose section differs from INIT AM
+function wiaPos() {
+  const I0 = SQMK.init(), out = new Set();
+  SEC1.forEach((s, k) => { for (const x of s[2].concat(s[3] || [])) { const d = kOf(x); if (d && d.p && d.p.startsWith('t.0.') && SQMK.mkPathGet(I0, d.p) !== get(d)) { out.add(k); break; } } });
+  return out;
+}
+/* ---------- gestures ---------- */
+function wire(U) {
+  for (const e of U.knobs.concat([U.vol])) if (e) knobGesture(e);
+  for (const k of ['w1', 'w2', 'bank']) if (U[k]) rotGesture(U[k], k);
+  const tap = (e, fn) => { if (e) { guardTouch(e); onTap(e, fn); } };
+  tap(U.shift, () => { P.shift = P.shift ? 0 : 1; haptic('tick'); render(); hint('shift', 'SHIFT', 'Regler auf Ebene 2, Tasten mit ihrer SHIFT-Funktion (zweite Zeile); nochmal tippen = aus'); });
+  tap(U.side, () => { if (P.shift) { P.shift = 0; const w = P.wahl === 2 ? 1 : 2; setWahl(w, P.last[w]); return; } P.side = P.side ? 0 : 1; haptic('tick'); render(); lcdShow('SEITE ' + (P.side ? 'B' : 'A'), P.side ? 'eigene Sounds dieser Engine (A–Z)' : 'Werksklänge – kommen mit MK8'); });
+  tap(U.write, () => { P.shift = 0; render(); openSavePop(U.write, P.i); hint('write', 'WRITE', 'sichert den Sound in der Bibliothek (wie „Sichern“ oben)'); });
+  tap(U.octd, () => octBtn(-1)); tap(U.octu, () => octBtn(1));
+  tap(U.arp, () => lcdShow('ARP', 'Arpeggiator kommt mit MK5'));
+  tap(U.timbre, () => lcdShow('TIMBRE', 'zwei Timbres, Edit Sync und Solo kommen mit MK3'));
+  tap(U.ein, () => lcdShow('E1 · E2', 'Eingänge (Instrument, Stimme) kommen mit MK7'));
+  tap(U.orig, () => lcdShow('ORIGINAL', 'leuchtet, wenn der zuletzt gedrehte Wert dem gespeicherten gleicht'));
+  tap(U.disp, () => lcdShow('ANZEIGE', 'Wert beim Drehen, danach die Programmnummer'));
+  tap(U.prog, () => openBrowser(P.i));
+  U.nums.forEach((e, k) => tap(e, () => numKey(k)));
+  for (const k of ['m1', 'm2']) tap(U[k], () => { const w = k === 'm1' ? (U.m2 ? 1 : P.wahl === 2 ? 2 : 1) : 2; lcdShow('MATRIX', (w === 1 ? SEC1[P.pos[1]][0] : SEC2[P.pos[2]][0]) + ': keine Zusatz-Ansicht in dieser Stellung'); });
+}
+function hint(k, a, b) { if (P.hint[k]) return; P.hint[k] = 1; lcdShow(a, b); }
+function octBtn(d) {
+  const i = P.i, tr = S.tracks[i];
+  if (P.shift) {                                            // SHIFT + OKT: the value of the last moved knob ±1 (one undo)
+    P.shift = 0; const dd = P.lastKnob; if (!dd || dd.dark || !dd.p) { render(); lcdShow('WERT ±1', 'erst einen Regler drehen'); return; }
+    const [lo, hi] = range(dd); soundEdit(i, MK_LABEL + ' ' + dd.l, () => setv(dd, clamp(Math.round(get(dd)) + d, lo, hi), false));
+    render(); dispShow(fmtv(dd, get(dd))[0]); lcdOf(dd); return;
+  }
+  tr.kbOct = clamp((tr.kbOct || 4) + d, 1, 7); markDirty(); UI.kbRelayout = true; UI.dirty.kb = true; haptic('tick'); render();
+  lcdShow('OKTAVE', (tr.kbOct - 4 > 0 ? '+' : '') + (tr.kbOct - 4) + ' · Tastatur C' + (tr.kbOct - 1));
+}
+function numKey(k) {
+  if (P.shift) {
+    P.shift = 0; render();
+    if (k === 2) { initSound(P.i); P.orig = null; P.wahl = 0; render(); return; }
+    lcdShow('SHIFT + ' + (k + 1), k === 0 || k === 1 || k === 3 ? 'Timbre-Werkzeuge kommen mit MK3' : k === 4 ? 'Sequenz-Werkzeuge kommen mit MK6' : 'gibt es in der App nicht');
+    return;
+  }
+  progLoad(k);
+}
+function knobGesture(e) {
+  guardTouch(e);
+  let g = null;
+  const def = () => (e._def ? e._def() : null);
+  on(e, 'pointerdown', ev => {
+    if (ev.button > 0 || g) return;                          // a second finger on the same knob is ignored
+    ev.preventDefault(); ev.stopPropagation();
+    const d = def(); try { e.setPointerCapture(ev.pointerId); } catch (_) {}
+    g = {id: ev.pointerId, y0: ev.clientY, x0: ev.clientX, y: ev.clientY, st: 'down', d, before: soundSnapshot(P.i), v: d ? get(d) : 0, f: 1};
+    gestBegin(ev.pointerId, () => end(null));
+    e.classList.add('press');
+    if (d && !d.dark && d.p) { lcdOf(d); dispShow(fmtv(d, get(d))[0]); }
+    else lcdShow(d ? d.l : 'frei', d && d.dark ? 'kommt mit ' + d.dark : 'diese Stelle ist am Original leer');
+  });
+  on(e, 'pointermove', ev => {
+    if (!g || ev.pointerId !== g.id) return;
+    const d = g.d; if (!d || d.dark || !d.p) return;
+    if (g.st === 'down') { if (Math.abs(ev.clientY - g.y0) < CTL_SLOP && Math.abs(ev.clientX - g.x0) < CTL_SLOP) return; g.st = 'drag'; g.y = ev.clientY; }
+    if (d.lock) { lcdShow(d.l, d.lock); return; }
+    const [lo, hi] = range(d), n = hi - lo, list = !!d.L && n <= 12, px = list ? n * clamp(PX_FULL / Math.max(1, n), 18, 40) : PX_FULL;
+    const f = ctlPrecision(Math.abs(ev.clientX - g.x0));
+    g.v = clamp(g.v + (g.y - ev.clientY) / px * n * f, lo, hi); g.y = ev.clientY;
+    const nv = list ? Math.round(g.v) : g.v, before = Math.round(get(d));
+    if (list && nv === before) return;
+    setv(d, nv, !list);
+    if (Math.round(get(d)) !== before) { if (list || n > 12 && d.L) haptic('tick'); }
+    P.lastKnob = d; paintKnob(e, d); dispShow(fmtv(d, get(d))[0]); lcdOf(d); paintOrig();
+  });
+  const end = ev => {
+    if (!g) return; const G = g; g = null; e.classList.remove('press');
+    if (ev) { try { e.releasePointerCapture(ev.pointerId); } catch (_) {} if (GEST.has(ev.pointerId)) gestEnd(ev.pointerId); }
+    const d = G.d;
+    if (d && !d.dark && d.p && G.st === 'drag' && !d.lock) {
+      if (!d.L && d.p !== 'bpm' && d.p !== 'vol' && d.p !== 'mw') setv(d, Math.round(G.v), false);   // rounded at the end (EN3-03)
+      commitSound(P.i, G.before, d.p === 'vol' ? 'Lautstärke' : MK_LABEL + ' ' + d.l);
+      P.lastKnob = d; render(); lcdOf(d);
+    } else if (d && !d.dark && d.p && G.st === 'down' && d.L && !d.lock) listPop(e, d);
+    else if (d && d.lock && G.st === 'down') lcdShow(d.l, d.lock);
+  };
+  on(e, 'pointerup', ev => { if (g && ev.pointerId === g.id) end(ev); });
+  on(e, 'pointercancel', ev => { if (g && ev.pointerId === g.id) end(ev); });
+}
+function listPop(anchor, d) {
+  const L = L_[d.L], cur = Math.round(get(d));
+  openPop(anchor, p => {
+    p.innerHTML = `<h4>${esc(secName() + ' · ' + d.l)}</h4><div class="plist mkl">` + L[0].map((n, k) => `<button class="rb${k === cur ? ' on' : ''}" data-v="${k}">${esc(n)}${d.p === 't.0.o1.w' && k > 2 ? '<small>klingt bis MK2 als Säge</small>' : ''}</button>`).join('') + '</div>';
+    guardTouch(p);
+    onTap(p, b => { closePop(); const v = +b.dataset.v; soundEdit(P.i, MK_LABEL + ' ' + d.l, () => setv(d, v, false)); P.lastKnob = d; render(); lcdOf(d); dispShow(fmtv(d, get(d))[0]); }, 'button[data-v]');
+  }, {name: 'mklist'});
+}
+function rotGesture(e, k) {
+  guardTouch(e); let g = null;
+  const n = e._n, posOf = () => (k === 'bank' ? P.bank : P.pos[k === 'w1' ? 1 : 2]);
+  const setPos = (x, quiet) => {
+    if (k === 'bank') { P.bank = x; render(); if (!quiet) lcdShow('BANK ' + (x + 1), P.side ? 'Seite B: eigene Sounds ' + (x * 8 + 1) + '–' + (x * 8 + 8) : 'Werksbänke kommen mit MK8'); return; }
+    const w = k === 'w1' ? 1 : 2; P.last[w] = x; setWahl(w, x);
+  };
+  on(e, 'pointerdown', ev => { if (ev.button > 0 || g) return; ev.preventDefault(); ev.stopPropagation(); try { e.setPointerCapture(ev.pointerId); } catch (_) {}
+    g = {id: ev.pointerId, y0: ev.clientY, x0: ev.clientX, acc: 0, st: 'down', p0: posOf()}; gestBegin(ev.pointerId, () => { g = null; }); e.classList.add('press'); });
+  on(e, 'pointermove', ev => { if (!g || ev.pointerId !== g.id) return;
+    const dy = g.y0 - ev.clientY; if (g.st === 'down' && Math.abs(dy) < CTL_SLOP && Math.abs(ev.clientX - g.x0) < CTL_SLOP) return; g.st = 'drag';
+    const x = clamp(g.p0 + Math.trunc(dy / 18), 0, n - 1);           // >= 18 px per position
+    if (x !== posOf() || (k !== 'bank' && P.wahl !== (k === 'w1' ? 1 : 2))) { setPos(x); haptic('tick'); } });
+  const end = ev => { if (!g) return; const G = g; g = null; e.classList.remove('press'); try { e.releasePointerCapture(ev.pointerId); } catch (_) {} if (GEST.has(ev.pointerId)) gestEnd(ev.pointerId);
+    if (G.st === 'down') rotList(e, k); };
+  on(e, 'pointerup', ev => { if (g && ev.pointerId === g.id) end(ev); });
+  on(e, 'pointercancel', ev => { if (g && ev.pointerId === g.id) { g = null; e.classList.remove('press'); if (GEST.has(ev.pointerId)) gestEnd(ev.pointerId); } });
+}
+// tap on a rotary: the list of its positions = the matrix of this selection (11 rows, Vocoder names green)
+function rotList(anchor, k) {
+  openPop(anchor, p => {
+    let h;
+    if (k === 'bank') h = '<h4>BANK</h4><div class="plist mkl">' + [0, 1, 2, 3, 4, 5, 6, 7].map(x => `<button class="rb${x === P.bank ? ' on' : ''}" data-v="${x}"><b>BANK ${x + 1}</b><small>${P.side ? 'eigene Sounds ' + (x * 8 + 1) + '–' + (x * 8 + 8) : 'Werksbank – MK8'}</small></button>`).join('') + '</div>';
+    else {
+      const w = k === 'w1' ? 1 : 2, dif = w === 1 ? wiaPos() : new Set();
+      h = `<h4>EDIT-WAHL ${w}</h4><div class="plist mkl mkmx">` + (w === 1 ? SEC1 : SEC2).map((s, x) => {
+        const a = w === 1 ? s[2].map(y => { const d = kOf(y); return d ? (d.lfo ? 'FREQ' : d.l) : '–'; }) : s[3];
+        return `<button class="rb${x === P.pos[w] && P.wahl === w ? ' on' : ''}${w === 2 ? ' dark' : ''}" data-v="${x}"><b>${x + 1} ${esc(s[0])}${UI.wia && dif.has(x) ? ' <i class="mwdot">●</i>' : ''} <em class="mvoc">${esc(s[1])}</em>${w === 2 ? ' <small>' + s[2] + '</small>' : ''}</b><small>${a.map(esc).join(' · ')}</small></button>`; }).join('') + '</div>';
+    }
+    p.innerHTML = h; guardTouch(p);
+    onTap(p, b => { closePop(); const x = +b.dataset.v; if (k === 'bank') { P.bank = x; render(); } else { const w = k === 'w1' ? 1 : 2; P.last[w] = x; setWahl(w, x); } }, 'button[data-v]');
+  }, {name: 'mkrot'});
+}
+/* ---------- the wheels left of the keys (H-5, B.3 Räder) ---------- */
+function wheels(show) {
+  const A = EL.kbArea; let wh = document.getElementById('mkWh');
+  if (!show) { if (wh) wh.hidden = true; A.classList.remove('mkw'); return; }
+  if (!wh) {
+    wh = el('div', '', '<div class="mkwheel" data-w="bend" role="slider" aria-label="BEND-Rad"><span class="lg">BEND</span><div class="mwell"><div class="mwhl"><i class="mrid"></i></div><i class="mmid"></i></div></div>' +
+      '<div class="mkwheel" data-w="mod" role="slider" aria-label="MOD-Rad"><span class="lg">MOD</span><div class="mwell"><div class="mwhl"><i class="mrid"></i></div></div></div>');
+    wh.id = 'mkWh'; A.insertBefore(wh, A.firstChild);
+    wh.querySelectorAll('.mkwheel').forEach(wheelGesture);
+  }
+  wh.hidden = false; A.classList.add('mkw'); wheelPaint(R.selT);
+}
+function wheelPaint(i) {
+  const wh = document.getElementById('mkWh'); if (!wh || wh.hidden || i !== R.selT) return;
+  for (const e of wh.querySelectorAll('.mkwheel')) { const w = e.dataset.w, v = mkWheelVal(i, w), n = w === 'bend' ? (v + 1) / 2 : v;
+    e.style.setProperty('--n', n.toFixed(4)); e.setAttribute('aria-valuenow', String(Math.round(w === 'bend' ? v * 63 : v * 127))); }
+}
+function wheelGesture(e) {
+  guardTouch(e); let g = null; const w = e.dataset.w;
+  on(e, 'pointerdown', ev => { if (ev.button > 0 || g) return; ev.preventDefault(); ev.stopPropagation(); try { e.setPointerCapture(ev.pointerId); } catch (_) {}
+    const r = e.querySelector('.mwell').getBoundingClientRect(); g = {id: ev.pointerId, y0: ev.clientY, v0: mkWheelVal(R.selT, w), span: Math.max(20, r.height - 8)};
+    e.classList.add('press'); cancelAnimationFrame(e._ra); });
+  on(e, 'pointermove', ev => { if (!g || ev.pointerId !== g.id) return;
+    const dy = (g.y0 - ev.clientY) / g.span; let v = w === 'bend' ? g.v0 + dy * 2 : g.v0 + dy;
+    if (w === 'bend' && Math.abs(v) < .02) v = 0;             // dead zone +-2 % around the centre (W-17)
+    mkWheelSet(R.selT, w, v, 0); wheelPaint(R.selT);
+    const x = mkWheelVal(R.selT, w); if (ED.lcd) lcdShow(w === 'bend' ? 'BEND' : 'MOD-RAD', w === 'bend' ? ft(Math.round(x * 63), 1) : String(Math.round(x * 127)));
+    if (P.el) dispShow(w === 'bend' ? z3(Math.round(x * 63)) : z3(Math.round(x * 127))); });
+  const end = ev => { if (!g || ev.pointerId !== g.id) return; g = null; e.classList.remove('press');
+    if (w === 'bend') {                                        // springs back to the centre in 80 ms (the worklet ramps the pitch)
+      const i = R.selT, v0 = mkWheelVal(i, 'bend'), t0 = performance.now(); mkWheelSet(i, 'bend', 0, .08);
+      const o = mkWheelOf(i); o.bend = v0; const st = () => { const x = Math.min(1, (performance.now() - t0) / 80); o.bend = v0 * (1 - x); wheelPaint(i); if (x < 1) e._ra = requestAnimationFrame(st); else { o.bend = 0; wheelPaint(i); } }; st();
+    } };
+  on(e, 'pointerup', end); on(e, 'pointercancel', end);
+}
+/* ---------- the performance probe (B.4; Menü → Info) ---------- */
+async function probe(cases, o) {
+  o = o || {}; cases = cases && cases.length ? cases : ['kern'];
+  if (!AU.ctx) ensureAudio();
+  const c = AU.ctx; if (!c || SynthHost.state !== 'ready') { await new Promise(r => setTimeout(r, 1500)); }
+  if (SynthHost.state !== 'ready') return {app: VERSION, err: 'Studio-Klang (AudioWorklet) nicht verfügbar'};
+  const sec_ = o.sec || 10, out = {app: VERSION, ua: navigator.userAgent, sr: c.sampleRate, baseLatency: c.baseLatency || 0, cases: []};
+  const net0 = (window.performance && performance.getEntriesByType) ? performance.getEntriesByType('resource').length : 0;
+  PROBE.stop = false;
+  for (const fall of cases) {
+    const sink = c.createGain(); sink.gain.value = 0; sink.connect(c.destination);       // computed, never heard (VS1 pattern)
+    const snd = factorySound(INIT_IDS.mk); snd.p.mk = SQMK.normMk(Object.assign(snd.p.mk, {t: [Object.assign(snd.p.mk.t[0], {o1: {w: 0, c1: 40, c2: 30}, o2: {w: 1, mod: 2, semi: 7, tune: 0},
+      mix: {o1: 127, o2: 90, n: 30}, f: {type: 0, cut: 80, res: 90, eg: 30, vel: 0, kbd: 24}, a: Object.assign(snd.p.mk.t[0].a, {dist: 1}), vib: 20}), snd.p.mk.t[1]]}));
+    const Es = []; for (let k = 0; k < 4; k++) { const E = SynthHost.track(c, sink, wkFlat(snd), [], null, snd.p.mk); E.mkWheel({mw0: .5}); E.tempo(S.bpm, null); Es.push(E); }
+    const rep = []; let fr = 0; const fps = []; let lastF = performance.now(), gaps = 0, lt = 0, po = null;
+    try { po = new PerformanceObserver(l => { for (const x of l.getEntries()) if (x.duration > 50) lt++; }); po.observe({entryTypes: ['longtask']}); } catch (e) { po = null; }
+    const onRep = () => { const L = Es.map(E => E.load || 0); rep.push({sum: L.reduce((a, b) => a + b, 0), per: L}); };
+    Es.forEach(E => { const f = E.node.port.onmessage; E.node.port.onmessage = ev => { f(ev); if (ev.data && ev.data.load != null && E === Es[0]) setTimeout(onRep, 30); }; });
+    const t0 = performance.now(); let id = 1e8;
+    const chord = [[48, 55, 60, 64], [45, 52, 57, 60], [41, 48, 53, 57], [43, 50, 55, 59]];
+    let k = 0;
+    const raf = () => { const n = performance.now(); fps.push(1000 / Math.max(1, n - lastF)); if (n - lastF > 50) gaps++; lastF = n; fr++; if (n - t0 < sec_ * 1000 && !PROBE.stop) requestAnimationFrame(raf); };
+    requestAnimationFrame(raf);
+    while (performance.now() - t0 < sec_ * 1000 && !PROBE.stop) {
+      const ch = chord[k++ % 4], tt = c.currentTime + .05;
+      for (const E of Es) for (const nt of ch) { const x = ++id; E.on(x, nt, .8, tt); E.off(x, tt + .45); }
+      for (const E of Es) E.flush();
+      if (o.onTick) o.onTick((performance.now() - t0) / 1000 / sec_);
+      await new Promise(r => setTimeout(r, 500));
+    }
+    if (po) try { po.disconnect(); } catch (e) {}
+    for (const E of Es) { E.panic(); E.flush(); }
+    await new Promise(r => setTimeout(r, 120));
+    for (const E of Es) E.dispose(); try { sink.disconnect(); } catch (e) {}
+    const sums = rep.map(x => x.sum).sort((a, b) => a - b), med = sums.length ? sums[sums.length >> 1] : 0, fm = fps.slice().sort((a, b) => a - b);
+    const ios = /iP(hone|ad|od)/.test(navigator.userAgent);
+    const r = {fall, voices: 4, load_med: +med.toFixed(4), load_max: +(sums.length ? sums[sums.length - 1] : 0).toFixed(4),
+      load_per_engine: rep.length ? rep[rep.length >> 1].per.map(x => +x.toFixed(4)) : [], frames_ok: rep.length > 0, quantum_max_ms: null,
+      fps_med: +(fm.length ? fm[fm.length >> 1] : 0).toFixed(1), reports: rep.length};
+    if (ios) { r.raf_gaps = gaps; r.raf_capped = r.fps_med < 35; } else r.longtasks = po ? lt : null;
+    out.cases.push(r);
+    if (PROBE.stop) { r.abgebrochen = true; break; }
+  }
+  const c0 = out.cases[0] || {}; Object.assign(out, {fall: c0.fall, voices: c0.voices, load_med: c0.load_med, load_per_engine: c0.load_per_engine, load_max: c0.load_max, frames_ok: c0.frames_ok,
+    quantum_max_ms: c0.quantum_max_ms, fps_med: c0.fps_med, longtasks: c0.longtasks, raf_gaps: c0.raf_gaps, raf_capped: c0.raf_capped,
+    net: (window.performance && performance.getEntriesByType ? performance.getEntriesByType('resource').length : 0) - net0});
+  PROBE.last = out; return out;
+}
+const PROBE = {stop: false, last: null};
+function probeSheet() {
+  openPop(null, p => {
+    p.innerHTML = `<h4>Leistungs-Probe · ${MK_LABEL}</h4><p class="small">4 unhörbare Klangerzeuger spielen je 4 Stimmen, 10 s. Gemessen wird, wie viel Rechenzeit sie brauchen. Kein Netz, kein Mikrofon.</p>` +
+      '<div class="plist"><button class="rb" data-a="go"><b>Probe starten</b><small>Fall „Kern“, 10 s</small></button></div><pre class="mkpr small"></pre>' +
+      '<div class="plist"><button class="rb" data-a="copy" disabled><b>Ergebnis kopieren</b></button><button class="rb" data-a="file" disabled><b>Als Datei</b></button><button class="rb" data-a="stop"><b>Abbrechen</b></button></div>';
+    guardTouch(p); const pre = p.querySelector('.mkpr');
+    onTap(p, async b => {
+      const a = b.dataset.a;
+      if (a === 'stop') { PROBE.stop = true; closePop(); return; }
+      if (a === 'copy') { try { await navigator.clipboard.writeText(JSON.stringify(PROBE.last, null, 1)); toast('Ergebnis kopiert'); } catch (e) { toast('Kopieren geht hier nicht – „Als Datei“'); } return; }
+      if (a === 'file') { try { deliverNow('synquenzer-leistungs-probe', new TextEncoder().encode(JSON.stringify(PROBE.last, null, 1)), 'json', 'Leistungs-Probe'); } catch (e) { logErr(e); } return; }
+      b.disabled = true; pre.textContent = 'läuft …';
+      const r = await probe(['kern'], {onTick: x => { pre.textContent = 'läuft … ' + Math.round(x * 100) + ' %'; }});
+      pre.textContent = JSON.stringify(r, null, 1); p.querySelectorAll('button[data-a="copy"],button[data-a="file"]').forEach(x => { x.disabled = false; }); b.disabled = false;
+    }, 'button[data-a]');
+  }, {name: 'mkprobe'});
+}
+/* ---------- 🎲 (B.3 Kopf-Knöpfe): the EDIT-WAHL-1 sections of T1 ---------- */
+function randomizeMk(i) {
+  const s_ = deep(sndOf(i)), t = s_.p.mk.t[0], R_ = Math.random, I = (a, b) => a + Math.floor(R_() * (b - a + 1)), pick = a => a[Math.floor(R_() * a.length)];
+  t.o1.w = pick([0, 1, 2]); t.o1.c1 = R_() < .5 ? 0 : I(0, 110); t.o1.c2 = R_() < .6 ? 0 : I(0, 80);
+  t.o2.w = I(0, 2); t.o2.mod = R_() < .7 ? 0 : I(1, 3); t.o2.semi = pick([0, 7, 12, -12]); t.o2.tune = R_() < .5 ? 0 : I(-8, 8);
+  t.mix.o1 = I(0, 127); t.mix.o2 = I(0, 127); t.mix.n = R_() < .7 ? 0 : I(0, 40);
+  if (Math.max(t.mix.o1, t.mix.o2) < 64) t[R_() < .5 ? 'mix' : 'mix'][R_() < .5 ? 'o1' : 'o2'] = I(64, 127);
+  t.f.type = R_() < .8 ? I(0, 1) : I(0, 3); t.f.cut = I(40, 120); t.f.res = I(0, 90); t.f.eg = I(-20, 63); t.f.kbd = I(0, 48);
+  for (const e of ['e1', 'e2']) { t[e].a = R_() < .7 ? I(0, 40) : I(40, 90); t[e].d = I(20, 100); t[e].s = I(0, 127); t[e].r = I(10, 90); }
+  if (t.e2.s < 20 && t.e2.d < 50) t.e2.d = I(50, 100);        // sustain + decay audible
+  s_.p.mk = SQMK.normMk(s_.p.mk); UI.ab = null; applySound(i, s_);
+}
+/* ---------- CSS (own drawing: dark panel, wood cheeks, black caps, LED buttons, red 7-segment display) ---------- */
+const css = `
+.pg.mkpg{display:flex;align-items:center;justify-content:center;overflow:hidden;padding:6px}
+.mkwrap{position:relative;flex:none}
+.mkbody{position:absolute;left:0;top:0;transform-origin:0 0;border-radius:6px;background:linear-gradient(180deg,#25272b 0%,#1c1d20 55%,#17181a 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 6px rgba(0,0,0,.6);color:#e9e7e1;font-family:inherit;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
+.mkx{position:absolute;box-sizing:border-box}
+.mkx .lg{position:absolute;left:0;right:0;top:1px;text-align:center;font-size:9px;line-height:10px;font-weight:700;letter-spacing:.02em;color:#ecebe6;white-space:nowrap;overflow:hidden}
+.mkx.mwood{border-radius:4px;background:repeating-linear-gradient(90deg,#6d3f1f 0,#7c4824 2px,#5f3519 4px,#734322 6px),linear-gradient(#7a4623,#5a3218);background-blend-mode:multiply}
+.mkx.msep{background:linear-gradient(#141516,#0e0f10);border-radius:2px}
+.mkk .mcap{position:absolute;left:50%;top:11px;width:32px;height:32px;margin-left:-16px}
+.mkk .cr{fill:#0b0b0c;stroke:#2a2b2e;stroke-width:1}.mkk .ci{fill:url(#none);fill:#121214}.mkk .cp{stroke:#f2efe6;stroke-width:2.4;stroke-linecap:round}
+.mkk.dark .cp{stroke:#5b5a57}.mkk.dark .lg{color:#8d8b86}
+.mkk.press .cr{stroke:#d9a441}
+.mkr .mrot{position:absolute;left:4px;top:9px;width:36px;height:36px}
+.mkr .mtk{stroke:#9b9890;stroke-width:1.2}.mkr .mtk.mwd{stroke:#ffd76a;stroke-width:2.6}.mkr .cr{fill:#0d0d0e;stroke:#3a3b3f}.mkr .cp{stroke:#f2efe6;stroke-width:2.6;stroke-linecap:round}
+.mkr .mled{position:absolute;right:2px;top:26px;width:8px;height:8px;border-radius:50%;background:#3a1810;box-shadow:inset 0 1px 1px rgba(0,0,0,.6)}
+.mkr.lit .mled{background:#ff4a24;box-shadow:0 0 6px #ff4a24}
+.mkr.dimpos .cp{stroke:#bdb9b0}
+.mkr .lg{right:auto;width:100%;text-align:left;padding-left:2px}
+.mkx[data-k="bank"] .mrot{left:8px}
+.mkb .mkey{position:absolute;left:2px;right:2px;top:12px;bottom:2px;border-radius:3px;background:linear-gradient(#2e3034,#232427);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center}
+.mkb .mled{position:absolute;left:50%;top:4px;width:8px;height:4px;margin-left:-4px;border-radius:2px;background:#3d1a10}
+.mkb.on .mled{background:#ff5a1f;box-shadow:0 0 6px #ff5a1f}
+.mkb.blink .mled{animation:mkbl .5s steps(1) infinite}@keyframes mkbl{50%{opacity:.2}}
+.mkb.mtim .mled:first-child{margin-left:-9px}.mkb.mtim .mled:nth-child(2){margin-left:1px}
+.mkb .msh{font-size:7.5px;line-height:9px;font-weight:700;color:#ffb36b;padding-bottom:1px;white-space:nowrap;overflow:hidden;max-width:100%}
+.mkb.dark .lg,.mkb.dark .mkey{opacity:.45}
+.mkb.mnum .lg{font-size:10px}.mkb.mnum.mempty .mkey{opacity:.5}.mkb.mnum.mshd .msh{color:#8d8b86}
+.mkb.press .mkey,.mkb:active .mkey{background:#1a1b1d}
+.mkx.mein{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}.mkx.mein .mled{width:8px;height:8px;border-radius:50%;background:#2c2622}
+.mkx.mdisp{background:#050404;border-radius:3px;box-shadow:inset 0 1px 3px #000;display:flex;align-items:center;justify-content:center;padding:4px}
+.mkx.mdisp svg{width:100%;height:100%}.mkx.mdisp path,.mkx.mdisp circle{fill:#2b0b07}.mkx.mdisp .on{fill:#ff3b1f;filter:drop-shadow(0 0 2px #ff3b1f)}
+.mkx.mprog{display:flex;flex-direction:column;justify-content:center;padding:0 4px;border-radius:3px;background:rgba(0,0,0,.25)}
+.mkx.mprog .mpb{font-size:9px;line-height:12px;font-weight:700;color:#ffb36b;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.mkx.mprog .mpn{font-size:12px;line-height:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.mkx.morig .mled{position:absolute;left:1px;top:18px;width:8px;height:8px;border-radius:50%;background:#3d1a10}.mkx.morig.on .mled{background:#ff5a1f;box-shadow:0 0 6px #ff5a1f}
+.mkx.mrow2{border-top:1px solid #4a4b4f;padding:2px 0 0;opacity:.45}
+.mkx.mrow2.on{opacity:1}
+.mkx.mrow2 .mmn{display:block;font-size:9px;line-height:12px;font-weight:700;color:#ecebe6;white-space:nowrap;overflow:hidden;padding-left:12px}
+.mkx.mrow2 .mmn small{font-size:8px;color:#a29f98}.mkx.mrow2 .mmn .meb{color:#ffb36b}
+.mkx.mrow2 .mma{display:flex;gap:2px;padding-left:12px}
+.mkx.mrow2 .mma span{flex:1 1 0;min-width:0;text-align:center;font-size:8.5px;line-height:22px;font-weight:600;color:#d6d3cc;white-space:nowrap;overflow:hidden}
+.mkx.mrow2 .mma span.dk{color:#77746e}
+.mkf-L .mkx.mrow2 .mma,.mkf-L .mkx.mrow2 .mmn{padding-left:12px}
+.mkf-PH .mkx.mrow2 .mma,.mkf-PH .mkx.mrow2 .mmn,.mkf-LH .mkx.mrow2 .mma,.mkf-LH .mkx.mrow2 .mmn{padding-left:12px}
+.mkf-PH .mkx.mrow2 .mma span{font-size:7.5px}
+.plist.mkl em.mvoc{font-style:normal;color:#53d27a;font-size:10px;margin-left:4px}
+.plist.mkl button.dark b{color:#a19e97}
+.plist.mkl .mwdot{color:#ffd76a;font-style:normal}
+#kbArea.mkw{flex-direction:row;gap:4px}
+#mkWh{flex:none;display:flex;gap:4px;width:92px;min-height:0}
+#mkWh[hidden]{display:none}
+.mkwheel{position:relative;flex:1 1 0;min-width:44px;display:flex;flex-direction:column;align-items:center;touch-action:none;user-select:none;-webkit-user-select:none}
+.mkwheel .lg{font-size:9px;line-height:12px;font-weight:700;color:#d6d3cc}
+.mkwheel .mwell{position:relative;flex:1 1 auto;width:44px;border-radius:6px;background:linear-gradient(90deg,#4f2c15,#7a4623 30%,#7a4623 70%,#4f2c15);padding:4px 6px;box-sizing:border-box}
+.mkwheel .mwhl{position:relative;width:32px;height:100%;border-radius:4px;overflow:hidden;background:linear-gradient(90deg,#0d0d0e,#2a2b2e 45%,#2a2b2e 55%,#0d0d0e);box-shadow:inset 0 2px 4px #000}
+.mkwheel .mrid{position:absolute;inset:-40px 0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.12) 0 2px,transparent 2px 7px);transform:translateY(calc((0.5 - var(--n, .5)) * 40px))}
+.mkwheel .mmid{position:absolute;left:2px;right:2px;top:50%;height:2px;margin-top:-1px;background:#ffb36b;opacity:.7}
+.mkwheel::after{content:'';position:absolute;left:0;right:0;bottom:4px;height:3px;background:#ff5a1f;transform-origin:left;transform:scaleX(var(--n,.5));opacity:.8}
+.mkwheel.press .mwhl{box-shadow:inset 0 2px 4px #000,0 0 0 1px #d9a441}
+pre.mkpr{max-height:40vh;overflow:auto;white-space:pre-wrap;font-size:10px}
+`;
+function ensureCss() { if (document.getElementById('mk-css')) return; const st = document.createElement('style'); st.id = 'mk-css'; st.textContent = css; document.head.appendChild(st); }
+ensureCss();
+// panel info for M-SKIZZE / tests (B.7 mkPanel)
+function panelInfo() {
+  const U = P.el; if (!U || !U.body.isConnected) return null;
+  const br = U.body.getBoundingClientRect(), s = P.fmt.s, F = P.fmt, zones = [];
+  const rr = k => { const e = U.body.querySelector('.mkx[data-k="' + k + '"]'); if (!e) return null; const r = e.getBoundingClientRect(); return [r.left - br.left, r.top - br.top, r.width, r.height]; };
+  for (const z in F.zones) { const ks = F.zones[z].map(rr).filter(Boolean); if (!ks.length) continue;
+    const x0 = Math.min(...ks.map(r => r[0])), y0 = Math.min(...ks.map(r => r[1])), x1 = Math.max(...ks.map(r => r[0] + r[2])), y1 = Math.max(...ks.map(r => r[1] + r[3]));
+    zones.push({id: z, x: +x0.toFixed(1), y: +y0.toFixed(1), w: +(x1 - x0).toFixed(1), h: +(y1 - y0).toFixed(1)}); }
+  const wh = document.getElementById('mkWh'); if (wh && !wh.hidden) { const r = wh.getBoundingClientRect(); zones.push({id: 'RAEDER', x: r.left - br.left, y: r.top - br.top, w: r.width, h: r.height}); }
+  return {fmt: F.k === 'L' ? 'voll-quer' : F.k === 'P' ? 'voll-hoch' : F.k === 'LH' ? 'halb-quer' : 'halb-hoch', half: F.k === 'LH' || F.k === 'PH' ? P.half : 'beide', scale: s,
+    body: {w: br.width, h: br.height}, sel: {wahl: P.wahl, pos: P.wahl === 0 ? -1 : P.pos[P.wahl]}, pos: P.pos.slice(1), shift: P.shift ? P.shift + 1 : 0, timbre: 1, zones,
+    knobs: knobs().map(d => (d ? {l: d.l, p: d.p || null, dark: d.dark || null} : null)), matrix: [P.el.m1 && P.el.m1.textContent, P.el.m2 && P.el.m2.textContent], disp: P.el.disp ? P.el.disp._t : null, orig: !!(U.orig && U.orig.classList.contains('on'))};
+}
+window.MKUI = {build, render, wheels, wheelPaint, panelInfo, probe, probeSheet, randomize: randomizeMk, P, SEC1, SEC2, KN, knobs, setWahl, toSpiel, fmtv, get, range, setv,
+  setHalf: h => { P.half = h === 'A' ? 'A' : 'B'; }, lcdOf};
+})();
+
+</script>
 <script type="text/plain" id="sq-worklet-src">
 /* SYNQUENZER synth worklet module (spec v2 1.1 block 1, 1.4, 5.4): processors 'dirigent-analog' and 'dirigent-hall'.
    Built by scratchpad/wp4work/tools/build-worklet.mjs from presetlib/analog-core-sync.js (hard sync) + the scope hunks of
@@ -4035,7 +4737,7 @@ const MKW = {
   fine2: v => { const a = Math.abs(v), s = v < 0 ? -1 : 1; return s * (a <= 48 ? 1200 * (a / 48) * (a / 48) : 1200 + 80 * (a - 48)); },   // W-14 ct
   uni: (d, n) => (n >= 4 ? [-d / 2, -d / 6, d / 6, d / 2] : n === 3 ? [-d / 2, 0, d / 2] : n === 2 ? [-d / 2, d / 2] : [0]),             // W-15 ct
   vibCt: (v, mw) => v / 63 * 200 * mw,                                        // W-16 peak deviation
-  ampK: .62,                                                                  // W-19 K (INIT MS 2000 = INIT Analog loudness, MK1-20)
+  ampK: .22,                                                                  // W-19 K (INIT AM = INIT Analog loudness, MK1-20)
   ampG: v => MKW.ampK * (v / 127) * (v / 127),                                // W-19
   panLR: v => { const x = (Math.max(-63, Math.min(63, v)) + 63) / 126 * Math.PI / 2; return [Math.cos(x), Math.sin(x)]; },   // W-20
   velDb: (v, vel) => (v >= 0 ? 24 * (v / 63) * (vel - 1) : 24 * (-v / 63) * (-vel)),   // W-21
@@ -4044,6 +4746,7 @@ const MKW = {
   form: (c1, l, c2) => Math.max(0, Math.min(1, (c1 + l * c2) / 127)),         // W-24 / W-26 m, W-25 (1 - width / 50 %)
 };
 /*}MKW*/
+const MK_FT = [0, 1, 3, 5];               // AM filter types 24LPF 12LPF 12BPF 12HPF -> ladder taps (FMIX)
 const MK_POOL = 12, MK_STEAL = Math.round(.005 * SR), MK_EXF = Math.round(.04 * SR), MK_SXF = Math.round(.03 * SR);
 const MK_INS = .25;                     // ladder input scale: the tanh stages stay near-linear for a full-scale oscillator
 const MK_SEED = 2e-5;                   // a tiny noise seed in the filter (self-oscillation starts by itself, W-02)
@@ -4051,7 +4754,7 @@ const MK_SM = 1 - Math.exp(-CR / (.005 * SR));   // 5 ms smoothing of the contin
 const MK_GUP = CR / (.001 * SR), MK_GDN = CR / (.003 * SR);   // HK | GATE: gate amp 1 ms up, 3 ms down
 const MK_RA = .52, MK_RD = Math.pow(10, -2.25);  // envCoefs curve 0.5: attack overshoot, decay / release undershoot
 const MK_BENDRET = .08;                 // W-17: back to the centre in 80 ms
-function mkT() {                        // the neutral timbre (= INIT MS 2000, Nachtrag 3 B.1)
+function mkT() {                        // the neutral timbre (= INIT AM, Nachtrag 3 B.1)
   return {asg: 1, prio: 0, trig: 1, udet: 10, trans: 0, tune: 0, vib: 0, bend: 2, porta: 0,
     o1: {w: 0, c1: 0, c2: 0}, o2: {w: 0, mod: 0, semi: 0, tune: 0}, mix: {o1: 127, o2: 0, n: 0},
     f: {type: 0, cut: 127, res: 0, eg: 0, vel: 0, kbd: 0}, a: {lvl: 127, pan: 0, gate: 0, dist: 0, vel: 0, kbd: 0},
@@ -4073,13 +4776,13 @@ function mkEnvC(E, a, d, s, r) {
   E.rC = tau(Math.max(1e-5, r) * SR / CR / -Math.log((.1 + MK_RD) / (1 + MK_RD))); E.rT = -MK_RD; E.s = s;
 }
 // one control block of an envelope: st 0 idle 1 attack 2 decay 3 sustain 4 release
-function mkEnvB(E, v, k) {
-  let st = v[k + 's'], o = v[k];
+let MK_ST = 0;
+function mkEnvB(E, st, o) {
   if (st === 1) { o = E.aT + (o - E.aT) * E.aC; if (o >= 1) { o = 1; st = 2; } }
   if (st === 2) { o = E.dT + (o - E.dT) * E.dC; if (o <= E.s) { o = E.s; st = 3; } }
   else if (st === 3) o += (E.s - o) * MK_SM;
   else if (st === 4) { o = E.rT + (o - E.rT) * E.rC; if (o <= 0) { o = 0; st = 0; } }
-  v[k + 's'] = st; v[k] = o;
+  MK_ST = st; return o;
 }
 function mkLfoV(n, w, ph, sh) {          // phase 0 = an upward zero crossing (tempo sync: on the beat); LFO2 w 1 = square(+)
   if (w === 3) return sh;
@@ -4088,7 +4791,12 @@ function mkLfoV(n, w, ph, sh) {          // phase 0 = an upward zero crossing (t
   if (n === 2) return SINE[(ph * SINE_N) | 0];
   return ph < .25 ? 4 * ph : ph < .75 ? 2 - 4 * ph : 4 * ph - 4;
 }
-const mkLogCosh = x => { const a = x < 0 ? -x : x; return a + Math.log1p(Math.exp(-2 * a)) - Math.LN2; };
+const mkW = (w, x) => (w === 0 ? 2 * x - 1 : w === 1 ? (x < .5 ? 1 : -1) : (x < .5 ? 4 * x - 1 : 3 - 4 * x));   // OSC 2 waves (sync slave)
+// W-23 tanh as the app's ladder evaluates it: T(v) = v (27 + v^2) / (27 + 9 v^2), exactly +-1 beyond |v| = 3 (tg in the ladder);
+// its antiderivative for ADAA: v^2 / 18 + 4/3 ln(27 + 9 v^2) (|v| < 3), |v| - 3 + F(3) beyond (one log per sample)
+const MK_F3 = 9 / 18 + 4 / 3 * Math.log(108);
+const mkLogCosh = x => { const a = x < 0 ? -x : x; return a < 3 ? a * a / 18 + 1.3333333333333333 * Math.log(27 + 9 * a * a) : a - 3 + MK_F3; };
+const mkTh = x => (x >= 3 ? 1 : x <= -3 ? -1 : x * (27 + x * x) / (27 + 9 * x * x));
 class MkVoice {
   constructor(i) {
     this.i = i; this.on = false; this.id = -1; this.gate = false; this.ghost = false; this.note = 60; this.vel = 0; this.ord = 0;
@@ -4098,7 +4806,7 @@ class MkVoice {
     this.s1 = 0; this.s2 = 0; this.s3 = 0; this.s4 = 0; this.gA = -1; this.gB = 0; this.kA = 0; this.kB = 0;
     this.mA = -1; this.mB = 0; this.aA = -1; this.aB = 0; this.pl = 1; this.pr = 1; this.dx = 0; this.dg = 1;
     this.fade = 0; this.fadeN = 1; this.fin = 0; this.finN = 1; this.sxk = -1; this.sxo = null; this.sxE = [0, 0, 0]; this.sxA = 1; this.sxB = 0; this.sxBlk = -1; this.pol = 1;
-    this.cutHz = 0; this.isLine = false; this.xfo = false; this.noEnd = false; this.lv1 = 0; this.lv2 = 0; this.sr = 1; this.cutMax = 0; this.eA = -1;
+    this.cutHz = 0; this.isLine = false; this.xfo = false; this.noEnd = false; this.lv1 = 0; this.lv2 = 0; this.sr = 1; this.dF = 0; this.cutMax = 0; this.eA = -1;
   }
 }
 function mkClone(v) { const c = Object.assign(new MkVoice(v.i), v); c.sxE = [0, 0, 0]; c.sxo = null; c.sxA = 1; c.sxB = 0; c.sxBlk = -1; return c; }
@@ -4108,7 +4816,7 @@ const MK_REASSIGN = {asg: 1, prio: 1, trig: 1};
 class MkCore {
   constructor(host, init) {
     this.h = host; this.p = null; this.T = mkT(); this.V = []; for (let i = 0; i < MK_POOL; i++) this.V.push(new MkVoice(i));
-    this.keys = []; this.ord = 0; this.lastPitch = -1; this.lineId = -1; this.seed = (Math.random() * 4294967295) >>> 0; this.nctr = 0; this.lctr = 0;
+    this.keys = []; this.ord = 0; this.lastPitch = -1; this.lineId = -1; this.seed = 0; this.nctr = 0;   // seed: set by {mkSeed} or drawn at the first note (VA never draws it: its Math.random sequence stays) this.lctr = 0;
     this.g1 = 0; this.g2 = 0; this.gsh1 = 0; this.gsh2 = 0; this.ag = 0;
     this.E1 = {}; this.E2 = {}; this.st = {w1: 0, w2: 0, mod: 0, ft: 0, gate: 0};
     this.sm = null; this.bend = 0; this.bendT = 0; this.bendR = 0; this.modw = 0; this.modT = 0; this.modLive = false;
@@ -4156,13 +4864,14 @@ class MkCore {
     const pt = W.porta(Math.round(T.porta));
     this.gc = pt > 0 ? 1 - Math.exp(-CR / (pt / Math.LN10 * SR)) : 1;
   }
-  smTarget() {
-    const T = this.T;
-    return {cut: T.f.cut, res: T.f.res, eg: T.f.eg, fvel: T.f.vel, kbd: T.f.kbd, c1: T.o1.c1, c2: T.o1.c2, m1: T.mix.o1, m2: T.mix.o2, mn: T.mix.n,
-      lvl: T.a.lvl, pan: T.a.pan, avel: T.a.vel, akbd: T.a.kbd, tune: T.tune, trans: T.trans, semi: T.o2.semi, fine: MKW.fine2(T.o2.tune), vib: T.vib};
+  smTarget(o) {                                          // the targets of the 5 ms smoothing (no allocation per block)
+    const T = this.T; o = o || {};
+    o.cut = T.f.cut; o.res = T.f.res; o.eg = T.f.eg; o.fvel = T.f.vel; o.kbd = T.f.kbd; o.c1 = T.o1.c1; o.c2 = T.o1.c2; o.m1 = T.mix.o1; o.m2 = T.mix.o2; o.mn = T.mix.n;
+    o.lvl = T.a.lvl; o.pan = T.a.pan; o.avel = T.a.vel; o.akbd = T.a.kbd; o.tune = T.tune; o.trans = T.trans; o.semi = T.o2.semi; o.fine = MKW.fine2(T.o2.tune); o.vib = T.vib;
+    return o;
   }
   smInit() { this.sm = this.smTarget(); }
-  smStep() { const t = this.smTarget(), s = this.sm; for (const k in t) { const d = t[k] - s[k]; s[k] = Math.abs(d) < 1e-6 ? t[k] : s[k] + d * MK_SM; } }
+  smStep() { const t = this.smTarget(this.smT || (this.smT = {})), s = this.sm; for (const k in t) { const d = t[k] - s[k]; s[k] = Math.abs(d) < 1e-6 ? t[k] : s[k] + d * MK_SM; } }
   wheel(o) {
     if (o.bend != null && isFinite(o.bend)) { this.bendT = Math.max(-1, Math.min(1, +o.bend)); this.bendR = o.ret > 0 ? Math.abs(this.bend) / Math.max(1, o.ret * SR / CR) : 0; }
     if (o.mod != null && isFinite(o.mod)) { this.modT = Math.max(0, Math.min(1, +o.mod)); this.modLive = true; }
@@ -4204,6 +4913,7 @@ class MkCore {
   }
   rank(a, b) { const pr = Math.round(this.T.prio); return pr === 1 ? a.note - b.note : pr === 2 ? b.note - a.note : b.ord - a.ord; }   // best first
   noteOn(id, note, vel) {
+    if (!this.seed) this.seed = ((Math.random() * 4294967295) >>> 0) || 1;
     if (!this.keys.length && !this.V.some(v => v.on && v.gate && !v.ghost)) {    // first note after all keys up: Key Sync "Timbre"
       if (this.T.l1.ks === 1) this.g1 = 0; if (this.T.l2.ks === 1) this.g2 = 0;
     }
@@ -4305,7 +5015,7 @@ class MkCore {
     }
   }
   inherit(v, c) {
-    for (const k of ['t1', 't2', 'sp', 'e1', 'e1s', 'e2', 'e2s', 'gt', 'l1', 'l2', 'sh1', 'sh2', 's1', 's2', 's3', 's4', 'pitch', 'dx', 'rng']) v[k] = c[k];
+    for (const k of ['t1', 't2', 'sp', 'e1', 'e1s', 'e2', 'e2s', 'gt', 'l1', 'l2', 'sh1', 'sh2', 's1', 's2', 's3', 's4', 'pitch', 'dx', 'dF', 'rng']) v[k] = c[k];
     v.gA = -1; v.aA = -1; v.mA = -1;
   }
   /* ---------------- structural crossfade (SXF, 30 ms, power keeping like AnalogCore.sxMix) ---------------- */
@@ -4315,7 +5025,7 @@ class MkCore {
     for (const v of this.V) if (v.on && !v.ghost) {
       const c = mkClone(v); c.st = v.st; v.sxo = c; v.sxk = this.sxkN; c.sxk = -2;
       // a wave change: the new wave starts with its fundamental in phase with the old one (saw / pulse are anti-correlated)
-      if (ns.w1 !== v.st.w1) { const d = wavePhi(Math.min(2, ns.w1 > 2 ? 0 : ns.w1), .25) - wavePhi(Math.min(2, v.st.w1 > 2 ? 0 : v.st.w1), .25); let t = v.t1 + d; t -= Math.floor(t); v.t1 = t; }
+      if (ns.w1 !== v.st.w1) { const pw = .5 * (1 - (v.mB || 0)), d = wavePhi(ns.w1 > 2 ? 0 : ns.w1, pw) - wavePhi(v.st.w1 > 2 ? 0 : v.st.w1, pw); let t = v.t1 + d; t -= Math.floor(t); v.t1 = t; }
       if (ns.w2 !== v.st.w2 && !(ns.mod & 2)) { const d = wavePhi(ns.w2, .5) - wavePhi(v.st.w2, .5); let t = v.t2 + d; t -= Math.floor(t); v.t2 = t; }
       v.st = ns;
     }
@@ -4335,6 +5045,8 @@ class MkCore {
     c.sxA = a1; c.sxB = b1;
   }
   /* ---------------- rendering ---------------- */
+  // no voice: the free-running LFO phases go on (Key Sync OFF keeps its phase between notes, like the VA global LFOs)
+  idle(n) { const T = this.T; this.g1 = (this.g1 + this.lfoRate(T.l1, T.l1.sync >= .5) * n * ISR) % 1; this.g2 = (this.g2 + this.lfoRate(T.l2, T.l2.sync >= .5) * n * ISR) % 1; }
   lfoRate(L, sync) { const spb = 60 / this.h.bpm; return sync ? 1 / (MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4 * spb) : MKW.lfoHz(L.f); }
   block(Lo, Ro, off, frame) {
     const T = this.T, h = this.h, step = CR * ISR;
@@ -4346,12 +5058,14 @@ class MkCore {
     this.modw += (this.modT - this.modw) * MK_SM;
     // global LFO phases: Key Sync OFF + Tempo Sync = locked to the song position; else free running (Timbre: reset at the first note)
     const songT = frame * ISR - h.songStart, spb = 60 / h.bpm;
-    for (const n of [1, 2]) {
-      const L = n === 1 ? T.l1 : T.l2, sync = L.sync >= .5, k = 'g' + n, o = this[k];
-      if (sync && Math.round(L.ks) === 0 && h.songStart >= 0) { const per = MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4; this[k] = ((songT / spb / per) % 1 + 1) % 1; }
-      else this[k] = (this[k] + this.lfoRate(L, sync) * step) % 1;
-      if (this[k] < o) this['gsh' + n] = (mkHash(this.seed, 7 + n, ++this.lctr) / 4294967296) * 2 - 1;
-    }
+    { const L = T.l1, sync = L.sync >= .5, o = this.g1;
+      if (sync && L.ks < .5 && h.songStart >= 0) this.g1 = ((songT / spb / (MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4)) % 1 + 1) % 1;
+      else this.g1 = (this.g1 + this.lfoRate(L, sync) * step) % 1;
+      if (this.g1 < o) this.gsh1 = (mkHash(this.seed, 8, ++this.lctr) / 4294967296) * 2 - 1; }
+    { const L = T.l2, sync = L.sync >= .5, o = this.g2;
+      if (sync && L.ks < .5 && h.songStart >= 0) this.g2 = ((songT / spb / (MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4)) % 1 + 1) % 1;
+      else this.g2 = (this.g2 + this.lfoRate(L, sync) * step) % 1;
+      if (this.g2 < o) this.gsh2 = (mkHash(this.seed, 9, ++this.lctr) / 4294967296) * 2 - 1; }
     const sx = this.sxOn, sk = this.sxkN;
     if (sx) { this.sxN++; this.sxT = Math.max(0, Math.min(1, (this.sxN - SX_M) * CR / MK_SXF)); }
     for (const v of this.V) {
@@ -4372,7 +5086,7 @@ class MkCore {
   voice(v, Lo, Ro, off) {
     const T = this.T, Sm = this.sm, st = v.st || this.st, E1 = this.E1, E2 = this.E2, step = CR * ISR;
     // ---- control rate ----
-    mkEnvB(E1, v, 'e1'); mkEnvB(E2, v, 'e2');
+    v.e1 = mkEnvB(E1, v.e1s, v.e1); v.e1s = MK_ST; v.e2 = mkEnvB(E2, v.e2s, v.e2); v.e2s = MK_ST;
     let lv1, lv2;
     if (Math.round(T.l1.ks) === 2) { const o = v.l1; v.l1 = (v.l1 + this.lfoRate(T.l1, T.l1.sync >= .5) * step) % 1; if (v.l1 < o) v.sh1 = mkRnd(v) * 2 - 1; lv1 = mkLfoV(1, Math.round(T.l1.w), v.l1, v.sh1); }
     else lv1 = mkLfoV(1, Math.round(T.l1.w), this.g1, this.gsh1);
@@ -4444,20 +5158,30 @@ class MkCore {
           o2b[n] = y;
         }
       } else {
-        const W = w2 === 0 ? (x => 2 * x - 1) : w2 === 1 ? (x => (x < .5 ? 1 : -1)) : (x => (x < .5 ? 4 * x - 1 : 3 - 4 * x)), dt = dt2;
-        let prev = v.sp, cP = 0, cN = 0;
-        const stp = (xs, hh) => { cP += .5 * hh * xs * xs; cN -= .5 * hh * (1 - xs) * (1 - xs); };
-        const seg = w2 === 1 ? (a, b, e) => { if (a < .5 && b >= .5) stp(e + (b - .5) / dt, -2); } : () => {};
-        const jw = w2 === 0 ? -2 : w2 === 1 ? 2 : 0;
+        const dt = dt2, jw = w2 === 0 ? -2 : w2 === 1 ? 2 : 0, sq = w2 === 1;
+        let prev = v.sp;
         for (let n = 0; n < CR; n++) {
-          const t0 = t2, xm = wr[n]; cP = 0; cN = 0;
-          if (xm >= 0) {
+          const t0 = t2, xm = wr[n]; let cP = 0, cN = 0, xs = 0;
+          if (xm >= 0) {                                  // the master wrapped xm samples ago: reset
             let tb = t0 + (1 - xm) * dt;
-            if (tb >= 1) { seg(t0, 1, xm + (tb - 1) / dt); stp(xm + (tb - 1) / dt, jw); tb -= 1; seg(0, tb, xm); } else seg(t0, tb, xm);
-            stp(xm, W(0) - W(tb)); t2 = xm * dt; seg(0, t2, 0);
-          } else if (t2 + dt < 1 && !(w2 === 1 && t2 < .5 && t2 + dt >= .5)) t2 += dt;
-          else { t2 += dt; if (t2 >= 1) { const e = (t2 - 1) / dt; seg(t0, 1, e); stp(e, jw); t2 -= 1; seg(0, t2, 0); } else seg(t0, t2, 0); }
-          const y = W(t2) + cN; prev += cP; o2b[n] = prev; prev = y;
+            if (tb >= 1) { const e1 = xm + (tb - 1) / dt;
+              if (sq && t0 < .5) { xs = e1 + .5 / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
+              cP += .5 * jw * e1 * e1; cN -= .5 * jw * (1 - e1) * (1 - e1); tb -= 1;
+              if (sq && tb >= .5) { xs = xm + (tb - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
+            } else if (sq && t0 < .5 && tb >= .5) { xs = xm + (tb - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
+            const hh = mkW(w2, 0) - mkW(w2, tb); cP += .5 * hh * xm * xm; cN -= .5 * hh * (1 - xm) * (1 - xm);
+            t2 = xm * dt;
+            if (sq && t2 >= .5) { xs = (t2 - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
+          } else if (t2 + dt < 1 && !(sq && t2 < .5 && t2 + dt >= .5)) t2 += dt;
+          else {
+            t2 += dt;
+            if (t2 >= 1) { const e = (t2 - 1) / dt;
+              if (sq && t0 < .5) { xs = e + .5 / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
+              cP += .5 * jw * e * e; cN -= .5 * jw * (1 - e) * (1 - e); t2 -= 1;
+              if (sq && t2 >= .5) { xs = (t2 - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
+            } else if (sq && t0 < .5 && t2 >= .5) { xs = (t2 - .5) / dt; cP -= xs * xs; cN += (1 - xs) * (1 - xs); }
+          }
+          const y = mkW(w2, t2) + cN; prev += cP; o2b[n] = prev; prev = y;
         }
         v.sp = prev;
       }
@@ -4476,16 +5200,17 @@ class MkCore {
       return;
     }
     // mixer -> ladder (taps 0 / 1 / 3 / 5) -> distortion (after the filter, ADAA) -> amp
-    const mx = FMIX[[0, 1, 3, 5][Math.max(0, Math.min(3, st.ft))]], c0 = mx[0], c1 = mx[1], c2 = mx[2], c3 = mx[3], c4 = mx[4];
+    const mx = FMIX[MK_FT[Math.max(0, Math.min(3, st.ft))]], c0 = mx[0], c1 = mx[1], c2 = mx[2], c3 = mx[3], c4 = mx[4];
     let s1 = v.s1, s2 = v.s2, s3 = v.s3, s4 = v.s4, gg = v.gA, kk = v.kA; const dg = (v.gB - v.gA) / CR, dk = (v.kB - v.kA) / CR;
-    const dist = T.a.dist >= .5, dG = dist ? MKW.distG(Sm.m1, Sm.m2, Sm.mn) : 1, idt = dist ? 1 / Math.tanh(dG) : 1;
-    const xc = v.xfo;
-    let dx = v.dx, ga = a0, gb = (a1 - a0) / CR, fg = v.fadeG, fd = v.fade > 0 ? 1 / v.fadeN : 0, fi = v.fin, pa = pl0, pb = (pl - pl0) / CR, qa = pr0, qb = (pr - pr0) / CR;
+    const dist = T.a.dist >= .5, dG = dist ? MKW.distG(Sm.m1, Sm.m2, Sm.mn) : 1, idt = dist ? 1 / mkTh(dG) : 1;
+    const xc = v.xfo, pol = v.pol; let sr = v.sr, nz = v.rng | 0;
+    let dx = v.dx, dF = v.dF, ga = a0, gb = (a1 - a0) / CR, fg = v.fadeG, fd = v.fade > 0 ? 1 / v.fadeN : 0, fi = v.fin, pa = pl0, pb = (pl - pl0) / CR, qa = pr0, qb = (pr - pr0) / CR;
     for (let n = 0; n < CR; n++) {
       gg += dg; kk += dk;
-      let x = ob[n] * g1; if (g2 > 0) x += o2b[n] * g2; if (gn > 0) x += (mkRnd(v) * 2 - 1) * gn;
-      v.sr = (Math.imul(v.sr, 1664525) + 1013904223) >>> 0;     // the seed noise has its own generator (the oscillator noise stays the same with and without it)
-      const xin = x * MK_INS + (v.sr / 4294967296 - .5) * MK_SEED + 1e-20;
+      let x = ob[n] * g1; if (g2 > 0) x += o2b[n] * g2;
+      if (gn > 0) { nz ^= nz << 13; nz ^= nz >>> 17; nz ^= nz << 5; x += ((nz >>> 0) / 2147483648 - 1) * gn; }   // white noise (per note generator)
+      sr = (Math.imul(sr, 1664525) + 1013904223) >>> 0;     // the seed noise has its own generator (the oscillator noise stays the same with and without it)
+      const xin = x * MK_INS + (sr / 4294967296 - .5) * MK_SEED + 1e-20;
       const b1 = tg(s1), b2 = tg(s2), b3 = tg(s3), b4 = tg(s4), A1 = tg(xin - kk * s4);
       const d1 = 1 / (1 + gg * b1), d2 = 1 / (1 + gg * b2), d3 = 1 / (1 + gg * b3), d4 = 1 / (1 + gg * b4);
       const G1 = gg * A1 * d1, G2 = gg * b1 * d2, G3 = gg * b2 * d3, G4 = gg * b3 * d4;
@@ -4495,18 +5220,18 @@ class MkCore {
       s1 = 2 * y1 - s1; s2 = 2 * y2 - s2; s3 = 2 * y3 - s3; s4 = 2 * y4 - s4;
       let y = c0 * A1 * x0 + c1 * y1 + c2 * y2 + c3 * y3 + c4 * y4;
       if (dist) {                                         // W-23 tanh(g x) / tanh(g), ADAA 1st order (log cosh)
-        const u = y / MK_INS * dG, w = dx, d = u - w;
-        const z = Math.abs(d) > 1e-5 ? (mkLogCosh(u) - mkLogCosh(w)) / d : Math.tanh((u + w) * .5);
-        dx = u; y = z * idt * MK_INS;
+        const u = y / MK_INS * dG, d = u - dx, Fu = mkLogCosh(u);
+        const z = d > 1e-5 || d < -1e-5 ? (Fu - dF) / d : mkTh((u + dx) * .5);
+        dx = u; dF = Fu; y = z * idt * MK_INS;
       }
       ga += gb; pa += pb; qa += qb;
       if (fd) { fg -= fd; if (fg < 0) fg = 0; }
-      let e = ga * (xc ? Math.cos((1 - fg) * 1.5707963267948966) : fg) * v.pol;   // engine / reassign ghosts fade with cos, steals linearly
+      let e = ga * (xc ? Math.cos((1 - fg) * 1.5707963267948966) : fg) * pol;   // engine / reassign ghosts fade with cos, steals linearly
       if (fi > 0) { fi -= 1; e *= Math.sin((1 - fi / v.finN) * 1.5707963267948966); }
       const o = y * e;
       Lo[off + n] += o * pa; Ro[off + n] += o * qa;
     }
-    v.s1 = s1; v.s2 = s2; v.s3 = s3; v.s4 = s4; v.dx = dx; v.fadeG = fg; v.fin = fi;
+    v.s1 = s1; v.s2 = s2; v.s3 = s3; v.s4 = s4; v.dx = dx; v.dF = dF; v.fadeG = fg; v.fin = fi; v.sr = sr; v.rng = nz >>> 0;
     if (Math.abs(s1) < 1e-15) v.s1 = 0; if (Math.abs(s4) < 1e-15) v.s4 = 0;
     if (v.fade > 0) { v.fade -= CR; if (v.fade <= 0 || fg <= 0) this.vEnd(v); }
     else if (st.gate ? (!v.gate && v.gt <= 0) : (v.e2s === 0 || (v.e2s === 3 && E2.s <= 0 && v.e2 < 1e-4))) this.vEnd(v);
@@ -5797,7 +6522,7 @@ class AnalogCore extends AudioWorkletProcessor {
           }
           if (Z && Z.ok) this.xfTry();
         }
-        if (this.mk.busy() || this.mk.tap === 'lfo') this.mk.block(L, R, off, f0 + off);   // MK1: eng 3 (and its fading voices after a change)
+        if (this.mk.busy() || this.mk.tap === 'lfo') this.mk.block(L, R, off, f0 + off); else if (this.P.eng === 3) this.mk.idle(CR);   // MK1: eng 3 (and its fading voices after a change)
       }
       for (let i = this.ghosts.length - 1; i >= 0; i--) { const g = this.ghosts[i]; if (g.xfState !== 4 || !g.V.some(v => v.on)) { this.ghosts.splice(i, 1); this.dropGhost(g); } }
       if (R === L) for (let n = 0; n < N; n++) L[n] *= .5;
@@ -5806,6 +6531,7 @@ class AnalogCore extends AudioWorkletProcessor {
       const P = this.P, spb = 60 / this.bpm, r1 = P.l1sync > 0 ? 1 / (P.l1sync * spb) : P.l1rate, r2 = P.l2sync > 0 ? 1 / (P.l2sync * spb) : P.l2rate;
       const og1 = this.gl1, og2 = this.gl2;
       this.gl1 = (this.gl1 + r1 * N * ISR) % 1; this.gl2 = (this.gl2 + r2 * N * ISR) % 1;
+      if (P.eng === 3) this.mk.idle(N);                          // MK1: the AM LFO phases run on between notes
       if (this.gl1 < og1) this.gsh1 = Math.random() * 2 - 1;
       if (this.gl2 < og2) this.gsh2 = Math.random() * 2 - 1;
     }
@@ -8316,6 +9042,113 @@ const RecHelpers = (() => {
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
+/* ===== MK1 (Nachtrag 3 B.1, EN3-14 (1)): the always-loaded part of the engine AM (internal id 'mk'):
+   MK_LABEL (EN3-05: the one allowed writing of the engine name), normMk (every field clamped to the device ranges, lists
+   integer, unknown keys dropped, missing ones = INIT), INIT, mkToFlat (timbre 1 as the flat patch of the ECO fallback, B.5).
+   Loaded before SQStore: a p.mk block survives every normalization at start and in every upload. The panel, the wheels and
+   the performance probe are the block sq-mk-src (evaluated on first use). ===== */
+const MK_LABEL = 'MS 2000';
+(function (G) {
+  'use strict';
+  const num = (x, d) => (typeof x === 'number' && isFinite(x) ? x : (typeof x === 'string' && x.trim() !== '' && isFinite(+x) ? +x : d));
+  const I = (x, lo, hi, d) => Math.round(Math.min(hi, Math.max(lo, num(x, d))));
+  // timbre ranges (Nachtrag 3 Teil A), [lo, hi, INIT]
+  const TR = {asg: [0, 2, 1], prio: [0, 2, 0], trig: [0, 1, 1], udet: [0, 99, 10], trans: [-24, 24, 0], tune: [-50, 50, 0], vib: [-63, 63, 0], bend: [-12, 12, 2], porta: [0, 127, 0],
+    o1: {w: [0, 7, 0], c1: [0, 127, 0], c2: [0, 127, 0]}, o2: {w: [0, 2, 0], mod: [0, 3, 0], semi: [-24, 24, 0], tune: [-63, 63, 0]},
+    mix: {o1: [0, 127, 127], o2: [0, 127, 0], n: [0, 127, 0]},
+    f: {type: [0, 3, 0], cut: [0, 127, 127], res: [0, 127, 0], eg: [-63, 63, 0], vel: [-63, 63, 0], kbd: [-63, 63, 0]},
+    a: {lvl: [0, 127, 127], pan: [-63, 63, 0], gate: [0, 1, 0], dist: [0, 1, 0], vel: [-63, 63, 0], kbd: [-63, 63, 0]},
+    e1: {a: [0, 127, 0], d: [0, 127, 64], s: [0, 127, 0], r: [0, 127, 0], rst: [0, 1, 1]},
+    e2: {a: [0, 127, 0], d: [0, 127, 64], s: [0, 127, 127], r: [0, 127, 8], rst: [0, 1, 1]},
+    l1: {w: [0, 3, 2], ks: [0, 2, 0], sync: [0, 1, 0], f: [0, 127, 64], note: [0, 14, 6]},
+    l2: {w: [0, 3, 2], ks: [0, 2, 0], sync: [0, 1, 0], f: [0, 127, 64], note: [0, 14, 6]}};
+  const PATCH0 = [[0, 0], [2, 4], [3, 0], [4, 5]];          // PATCH 1-4 sources / destinations (INIT, B.1); intensity 0
+  const SEQK = 40;                                          // SEQ knob targets (MK6 fills the list; stored now)
+  // program-level blocks (MK3 ... MK7 act on them; stored from MK1 with their neutral values)
+  const TOP = {mode: [0, 3, 0], tv: [0, 2, 1], split: [0, 127, 60], scale: [0, 9, 0], skey: [0, 11, 0]};
+  const MFX = {type: [0, 2, 0], spd: [0, 127, 64], dep: [0, 127, 0]}, DLY = {type: [0, 2, 0], sync: [0, 1, 0], time: [0, 127, 64], note: [0, 14, 8], dep: [0, 127, 0]};
+  const ARP = {on: [0, 1, 0], latch: [0, 1, 0], type: [0, 5, 0], range: [1, 4, 1], gate: [0, 100, 75], tgt: [0, 2, 0], ks: [0, 1, 0], res: [0, 5, 1], swing: [-100, 100, 0], last: [1, 8, 8], steps: [0, 255, 255], tempo: [20, 300, 120]};
+  const VOC = {gs: [0, 127, 0], th: [0, 127, 0], hpl: [0, 127, 0], hpg: [0, 1, 1], ins: [0, 127, 0], fs: [-2, 2, 0], cut: [-63, 63, 0], res: [0, 127, 0], msrc: [0, 7, 1], mint: [-63, 63, 0],
+    efs: [0, 127, 64], lvl: [0, 127, 127], dir: [0, 127, 0], dist: [0, 1, 0], vel: [-63, 63, 0], kbd: [-63, 63, 0]};
+  const flat = (R, o) => { const out = {}; o = o && typeof o === 'object' ? o : {}; for (const k in R) out[k] = I(o[k], R[k][0], R[k][1], R[k][2]); return out; };
+  const arr = (a, n, lo, hi, d) => { a = Array.isArray(a) ? a : []; const o = []; for (let i = 0; i < n; i++) o.push(I(a[i], lo, hi, d)); return o; };
+  function normT(t) {
+    t = t && typeof t === 'object' ? t : {}; const o = {};
+    for (const k in TR) { const R = TR[k]; o[k] = Array.isArray(R) ? I(t[k], R[0], R[1], R[2]) : flat(R, t[k]); }
+    const p = Array.isArray(t.p) ? t.p : [];
+    o.p = PATCH0.map(([s, d], k) => { const x = p[k] && typeof p[k] === 'object' ? p[k] : {}; return {s: I(x.s, 0, 7, s), d: I(x.d, 0, 7, d), i: I(x.i, -63, 63, 0)}; });
+    const sq = t.seq && typeof t.seq === 'object' ? t.seq : {}, q = Array.isArray(sq.q) ? sq.q : [];
+    o.seq = {on: I(sq.on, 0, 1, 0), last: I(sq.last, 1, 16, 16), type: I(sq.type, 0, 3, 0), run: I(sq.run, 0, 1, 1), ks: I(sq.ks, 0, 2, 1), res: I(sq.res, 0, 15, 3),
+      q: [0, 1, 2].map(k => { const x = q[k] && typeof q[k] === 'object' ? q[k] : {}; return {k: I(x.k, 0, SEQK, 0), m: I(x.m, 0, 1, 1), v: arr(x.v, 16, -63, 63, 0)}; })};
+    return o;
+  }
+  function normMk(p) {
+    p = p && typeof p === 'object' ? p : {};
+    const o = Object.assign({v: 1}, flat(TOP, p));
+    o.usc = o.scale === 9 && Array.isArray(p.usc) ? arr(p.usc, 12, -100, 100, 0) : null;
+    o.vmax = num(p.vmax, 4) >= 6 ? 8 : 4;
+    const t = Array.isArray(p.t) ? p.t : [];
+    o.t = [normT(t[0]), normT(t[1])];
+    o.mfx = flat(MFX, p.mfx); o.dly = flat(DLY, p.dly);
+    const e = p.eq && typeof p.eq === 'object' ? p.eq : {}, half = (x, d) => Math.round(Math.min(12, Math.max(-12, num(x, d))) * 2) / 2;
+    o.eq = {lf: I(e.lf, 40, 1000, 320), lg: half(e.lg, 0), hf: I(e.hf, 1000, 18000, 6000), hg: half(e.hg, 0)};
+    o.arp = flat(ARP, p.arp);
+    const vc = p.voc && typeof p.voc === 'object' ? p.voc : {};
+    o.voc = Object.assign(flat(VOC, vc), {hold: Array.isArray(vc.hold) ? arr(vc.hold, 16, 0, 127, 0) : null, chl: arr(vc.chl, 16, 0, 127, 127), chp: arr(vc.chp, 16, -63, 63, 0)});
+    // key order as INIT (stable files and hashes)
+    return {v: 1, mode: o.mode, tv: o.tv, split: o.split, scale: o.scale, skey: o.skey, usc: o.usc, vmax: o.vmax, t: o.t, mfx: o.mfx, dly: o.dly, eq: o.eq, arp: o.arp, voc: o.voc};
+  }
+  const init = () => normMk({});
+  const isInit = p => JSON.stringify(normMk(p)) === JSON.stringify(init());
+  // the W table (Nachtrag 3 B.2) exists once: in the worklet text between its MKW markers; the main thread evaluates that text
+  // (display, ECO fallback), so no curve has a second copy (FP-DSP)
+  function mkwEval() {
+    try {
+      const el = typeof document !== 'undefined' ? document.getElementById('sq-worklet-src') : null, s = el ? el.textContent : '';
+      const a = s.indexOf('/*MKW{*/'), b = s.indexOf('/*}MKW*/');
+      if (a >= 0 && b > a) return new Function(s.slice(a + 8, b) + '\n;return MKW;')();
+    } catch (e) {}
+    return null;
+  }
+  const Wf = () => G.MKW || (G.MKW = mkwEval());
+  const LF1 = [2, 3, 1, 4], LF2 = [2, 3, 0, 4];             // LFO1 saw sq tri s/h, LFO2 saw sq+ sin s/h -> VA shapes (0 sin 1 tri 2 saw 3 sq 4 s&h)
+  function splitCt(ct) { const oct = Math.max(-2, Math.min(2, Math.round(ct / 1200))); let r = ct - oct * 1200; const semi = Math.max(-12, Math.min(12, Math.round(r / 100))); r -= semi * 100; return [oct, semi, Math.max(-50, Math.min(50, r))]; }
+  function mkToFlat(pm, mw) {
+    const W = Wf(); if (!W) return {p: {}, mods: []};
+    const T = normMk(pm).t[0], o1w = T.o1.w <= 3 ? T.o1.w : 0, m = Math.min(1, T.o1.c1 / 127);
+    const [a1, b1, c1] = splitCt(T.trans * 100 + T.tune), [a2, b2, c2] = splitCt(T.trans * 100 + T.tune + T.o2.semi * 100 + W.fine2(T.o2.tune));
+    const p = {o1w, o1oct: a1, o1semi: b1, o1fine: c1, o1pw: o1w === 1 ? Math.max(.03, .5 * (1 - m)) : .5, o1lvl: T.mix.o1 / 127, o1uni: T.asg === 2 ? 3 : 1,
+      o2w: T.o2.w, o2oct: a2, o2semi: b2, o2fine: c2, o2pw: .5, o2lvl: T.mix.o2 / 127, o2uni: 1, o2sync: T.o2.mod & 2 ? 1 : 0, o3lvl: 0, subLvl: 0, noise: T.mix.n / 127,
+      uniDet: Math.min(1, T.udet / 99), analog: 0, spread: 0, ftype: [0, 1, 3, 5][T.f.type], cutoff: Math.max(20, Math.min(20000, W.cutHz(T.f.cut))), res: Math.min(1.1, 1.1 * T.f.res / 127),
+      drive: 0, kt: Math.max(0, Math.min(1, T.f.kbd / 48)), fenv: Math.max(-1, Math.min(1, T.f.eg / 63 * 60 / 72)), fvel: 0, bass: 0,
+      aA: T.a.gate ? .001 : W.atk(T.e2.a), aD: W.dec(T.e2.d), aS: T.a.gate ? 1 : T.e2.s / 127, aR: T.a.gate ? .003 : W.dec(T.e2.r), aCurve: .5, ampVel: Math.max(0, Math.min(1, T.a.vel / 63)),
+      fA: W.atk(T.e1.a), fD: W.dec(T.e1.d), fS: T.e1.s / 127, fR: W.dec(T.e1.r), fCurve: .5,
+      l1shape: LF1[T.l1.w], l1rate: Math.max(.01, Math.min(40, W.lfoHz(T.l1.f))), l1sync: T.l1.sync ? W.LSYNC[T.l1.note] * 4 : 0, l1retrig: T.l1.ks === 2 ? 1 : 0,
+      l2shape: LF2[T.l2.w], l2rate: Math.max(.01, Math.min(40, W.lfoHz(T.l2.f))), l2sync: T.l2.sync ? W.LSYNC[T.l2.note] * 4 : 0, l2retrig: T.l2.ks === 2 ? 1 : 0,
+      glide: Math.min(2, 3 * W.porta(T.porta) / Math.LN10), mode: T.asg === 1 ? 0 : 1, poly: T.asg === 1 ? 4 : 1, level: .457 * Math.pow(T.a.lvl / 127, 2), mw: 0};
+    // the fixed vibrato (LFO2 x VIBRATO x mod wheel) as the native LFO 2 -> pitch route (24 HT per 1.0)
+    const mods = [], vib = T.vib / 63 * 2 * Math.max(0, Math.min(1, +mw || 0)) / 24;
+    if (vib) mods.push({src: 'lfo2', dst: 'pitch', amt: Math.max(-1, Math.min(1, vib))});
+    return {p, mods};
+  }
+  // a value at a path ('t.0.f.cut', 'mfx.dep', 't.0.p.1.i') of p.mk; mkPathSet clamps through normMk
+  function mkPathGet(pm, path) { let o = pm; for (const k of String(path).split('.')) { if (o == null) return undefined; o = o[k]; } return o; }
+  function mkPathSet(pm, path, v) {
+    const ks = String(path).split('.'); let o = pm; for (let i = 0; i < ks.length - 1; i++) { if (o == null || typeof o !== 'object') return pm; o = o[ks[i]]; }
+    if (o == null || typeof o !== 'object' || !(ks[ks.length - 1] in o)) return pm;
+    o[ks[ks.length - 1]] = v; return normMk(pm);
+  }
+  // the range [lo, hi] of a timbre path ('f.cut') or a program path ('mfx.dep')
+  function mkRange(path) {
+    const ks = String(path).split('.'); let R = null;
+    if (ks[0] === 't') { R = TR[ks[2]]; if (R && !Array.isArray(R)) R = R[ks[3]]; }
+    else { const B = {mfx: MFX, dly: DLY, arp: ARP, voc: VOC}[ks[0]]; R = B ? B[ks[1]] : TOP[ks[0]]; }
+    return Array.isArray(R) ? [R[0], R[1], R[2]] : null;
+  }
+  G.SQMK = {LABEL: MK_LABEL, normMk, init, isInit, mkToFlat, mkPathGet, mkPathSet, mkRange, W: Wf};
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
 /* ===== SQStore — embedded from scratchpad/presetlib/preset-store.js (spec v2 §1.1 block 7, §12) =====
    WP1 changes against the research file: bornRun is a runtime key; compact notes keep extra fields as a 5th element;
    Autosave gained markDirtyPlaying (2 s / 20 s), unique history keys, snapshotNow(), lastOk/lastErr and a rescue write
@@ -8357,7 +9190,7 @@ const RecHelpers = (() => {
    - Files from a NEWER format are read best-effort with a warning, never silently "repaired" into nothing. */
 (function (G) {
   'use strict';
-  const APP = 'SYNQUENZER', PROJECT_FORMAT = 4, SOUNDS_FORMAT = 1, LS = 'synquenzer.';   // V2a: Format 4 (8 tracks, 8 scenes, uid)
+  const APP = 'SYNQUENZER', PROJECT_FORMAT = 5, SOUNDS_FORMAT = 2, LS = 'synquenzer.';   // V2a: Format 4 (8 tracks, 8 scenes, uid); MK1 (EN3-04): 5 / sounds 2
   const FACT = () => (typeof SQ_FACTORY !== 'undefined' ? SQ_FACTORY : G.SQ_FACTORY) || null;
   const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
   const num = (x, d) => (typeof x === 'number' && isFinite(x) ? x : (typeof x === 'string' && x.trim() !== '' && isFinite(+x) ? +x : d));
@@ -8414,7 +9247,7 @@ const RecHelpers = (() => {
     'fx.rev', 'fx.dly', 'fx.pan', 'fx.vol'];                    // §9.6 (P1, WP5): track-FX routes from LFO 1/2 (native, never sent to the worklet)
   const CHORUS = ['off', 'I', 'II', 'I+II', 'ENS', 'BREIT'];
   const CATS = ['bass', 'lead', 'poly', 'flaeche', 'pluck', 'sequenz', 'fm', 'glocke', 'wt', 'drums', 'eigene', 'init', 'effekt'];   // V0b: + init (§12.7); V0d: + effekt
-  const SYNTH_ENGINES = ['analog', 'fm6', 'wt', 'fm2'], ENGINES = SYNTH_ENGINES.concat(['drum']);
+  const SYNTH_ENGINES = ['analog', 'fm6', 'wt', 'fm2', 'mk'], ENGINES = SYNTH_ENGINES.concat(['drum']);   // MK1: + mk (AM)
   const WT_TABLES = ['digital', 'vocal', 'glas', 'orgel'], FM2_RATIOS = [.5, 1, 1.41, 2, 3, 3.5, 4, 5, 7];
   const PUMP_REL = ['1/16', '1/8', '1/4'];
   const ANALOG_BASE = () => (FACT() ? FACT().ANALOG_BASE : null);
@@ -8493,6 +9326,8 @@ const RecHelpers = (() => {
     if (p.fm6 || engine === 'fm6') { o.fm6 = normFm6(p.fm6 || (Array.isArray(p.ops) ? p : null)); migrateBite(flat, o.fm6); }
     // V4a: the FM graph (format 2); kept for every synth engine like the other engine blocks (lossless engine switch)
     if (p.fmx && typeof p.fmx === 'object' && G.FMX) { const x = G.FMX.norm(p.fmx); if (x) o.fmx = x; }
+    // MK1 (B.1): the AM block, kept for every synth engine (lossless engine switch); the sound's own block always exists
+    if ((p.mk && typeof p.mk === 'object') || engine === 'mk') o.mk = G.SQMK.normMk(p.mk);
     return o;
   }
   function normDrum(p) {        // flat per-slot params: keep finite numbers and short strings only (engine clamps the rest)
@@ -10025,9 +10860,10 @@ const RecHelpers = (() => {
       });
     return H.promise;
   };
-  H.track = function (ctx, dest, patch, mods, fm6) {
+  H.track = function (ctx, dest, patch, mods, fm6, mk) {
+    const po = fm6 ? {patch, mods: mods || [], fm6} : {patch, mods: mods || []}; if (mk) po.mk = mk;    // MK1: the AM block of the sound (B.1)
     const node = new AudioWorkletNode(ctx, 'dirigent-analog', {
-      numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: fm6 ? {patch, mods: mods || [], fm6} : {patch, mods: mods || []}});
+      numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: po});
     node.connect(dest);
     const E = {node, q: [], load: 0, nv: 0, onEnd: null, onScope: null, flushQueued: false, dead: false, sent: Object.assign({}, patch), proxies: new Map(), lv: null, lvN: 0, lvT: 0, lvOn: false};
     node.port.onmessage = e => {
@@ -10036,6 +10872,7 @@ const RecHelpers = (() => {
       if (m.load != null) { E.load = m.load; E.nv = m.voices; }
       if (m.scope && E.onScope) E.onScope(m);
       if (m.fmxLv) { E.lv = m.fmxLv; E.lvN++; E.lvT = m.t; }        // V4a (N7F-09): live operator levels
+      if (m.mkScope) { E.mks = m.mkScope; E.mksN = (E.mksN || 0) + 1; }  // MK1 (B.7 mkScope)
     };
     const post = m => { if (!E.dead) node.port.postMessage(m); };
     const push = ev => { if (E.dead) return; E.q.push(ev); if (!E.flushQueued) { E.flushQueued = true; queueMicrotask(E.flush); } };
@@ -10049,7 +10886,9 @@ const RecHelpers = (() => {
     E.allOff = t => push([t, 5, 0]);
     E.panic = () => push([0, 6, 0]);
     // queued note events first, then the params; xf: a whole sound -> the worklet fades sounding voices through the change
-    E.set = (diff, xf, fm6, mods) => { Object.assign(E.sent, diff); E.flush(); const m = xf ? {set: diff, xf: true} : {set: diff}; if (mods) m.mods = mods; if (fm6) m.fm6 = fm6; post(m); };
+    E.set = (diff, xf, fm6, mods, mk) => { Object.assign(E.sent, diff); E.flush(); const m = xf ? {set: diff, xf: true} : {set: diff}; if (mods) m.mods = mods; if (fm6) m.fm6 = fm6; if (mk) m.mk = mk; post(m); };
+    E.mkSet = o => { E.flush(); post({mkSet: o}); };              // MK1: gesture values (fractions during the gesture, EN3-03)
+    E.mkWheel = o => post({mkWheel: o}); E.mkScope = on => { on = !!on; if (on === !!E.mksOn) return; E.mksOn = on; post({mkScope: on}); };
     E.mods = list => { E.flush(); post({mods: list}); };
     E.fm6 = patch => { E.flush(); post({fm6: patch}); };     // WP7: the FM operators (structured clone = a snapshot)
     E.tempo = (bpm, start, at) => post({tempo: at == null ? {bpm, start} : {bpm, start, at}});
@@ -11413,7 +12252,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.8.1';
+const VERSION = '4.9.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -11710,6 +12549,10 @@ const INIT_SYNTH = [
     tip: 'Algorithmus 1, nur OP 1 klingt (Sinus, Pegel 99), alle anderen Operatoren auf 0, kein Feedback. Dreh einen Modulator (OP 2) auf und hör, wie Obertöne entstehen.',
     p: {trans: 0, alg: 1, fb: 0, ops: [0, 1, 2, 3, 4, 5].map(k => ({on: 1, fixed: 0, coarse: 1, fine: 0, det: 0, ol: k ? 0 : 99, r: [99, 99, 99, 60], l: [99, 99, 99, 0], vs: 0, rs: 0}))},
     common: {gain: -14.45, glide: 0, mode: 0, poly: 8, lfo: {wave: 'sine', rate: 5.5, delay: 0, pitch: 0, amp: 0}}, mods: [], fx: INIT_FX(), bus: null},
+  // MK1 (B.1): INIT AM = the neutral values of p.mk (saw, filter open, EG2 sustain 127, release 8); the flat VA block as INIT Analog
+  {id: 'f-init-am', name: 'INIT ' + MK_LABEL, cat: 'init', engine: 'mk', ev: 1, demo: 'lead', ref: 'Neutraler Startklang · Säge, Filter offen',
+    tip: 'Oszillator 1 Säge, Filter ganz offen, keine Hüllkurve auf dem Filter, keine Effekte. Von hier aus baust du auf dem Bedienfeld deinen eigenen Klang.',
+    p: Object.assign({}, INIT_VA_P, {level: .457, mk: SQMK.init()}), mods: [], fx: INIT_FX(), bus: null},
   {id: 'f-init-tabelle', name: 'INIT Tabelle', cat: 'init', engine: 'wt', ev: 2, demo: 'lead', ref: 'Neutraler Startklang · Tabelle 1',
     tip: 'Tabelle „Digital“ an Position 0, kein Scan, Filter offen, keine Modulation, keine Effekte. Position und Scan drehen = die Welle wandert durch die Tabelle.',
     p: Object.assign({}, INIT_VA_P, {level: .232, wt: {table: 'digital', pos: 0, scan: 0, scanTime: 1}}), mods: [], fx: INIT_FX(), bus: null},
@@ -11735,7 +12578,7 @@ function initKitSlots() {
 const INIT_KIT = {id: 'f-kit-init-drums', name: 'INIT Drums', cat: 'drums', engine: 'drum', ev: 1, base: null, demo: 'drums', ref: 'Neutrales Kit · jede Stimme ihre Grundschicht',
   tip: 'Jedes Pad spielt nur die Grundschicht seines Modells (Kick: Ton mit Pitch-Fall, Snare: Ton + Rauschen, Hats: Metall …), ohne Raum, Gate und Drive. Von hier aus baust du dein eigenes Kit.',
   p: initKitSlots(), fx: {drive: 0, chorus: {mode: 'off', mix: 1, rate: 1, depth: 1}, rev: 0, dly: 0, vol: .85, pan: 0}};
-const INIT_IDS = {analog: 'f-init-analog', fm6: 'f-init-fm', fm2: 'f-init-fm', wt: 'f-init-tabelle', drum: 'f-kit-init-drums'};
+const INIT_IDS = {analog: 'f-init-analog', fm6: 'f-init-fm', fm2: 'f-init-fm', wt: 'f-init-tabelle', mk: 'f-init-am', drum: 'f-kit-init-drums'};
 const FACTORY_BY_ID = new Map(FACTORY.concat(DRUM_FACTORY, INIT_SYNTH, [INIT_KIT]).map(f => [f.id, f]));
 /* V2a (§4.3): „Melodie-Lead“ = Mini-Lead as POLY, 4 voices, no glide — the MELODIE track's sound. Not a browser entry (the
    factory list stays as it is); FACTORY_BY_ID knows it so origin lookups (Init chip, A/B, native trim) work */
@@ -11812,8 +12655,8 @@ const GM_PROGRAM = {bass: 38, lead: 81, poly: 62, flaeche: 89, pluck: 45, sequen
 const OLD_PRESETS = {Bass: 'f-moog-bass', Pluck: 'f-pop-pluck', Pad: 'f-juno-pad', Lead: 'f-mini-lead', Brass: 'f-ob-brass', Glocke: 'f-wt-glas', Acid: 'f-acid-303', Arp: 'f-glas-pluck'};
 const PRESET_NAMES = Object.keys(OLD_PRESETS);
 // engines: API / UI name <-> stored Sound.engine (WP3–WP6: FM = the legacy 2-operator 'fm2'; WP7: FM = 'fm6', §6, §6.7)
-const ENG_OF = {va: 'analog', fm: 'fm6', wt: 'wt'}, ENG_API = {analog: 'va', fm2: 'fm', fm6: 'fm', wt: 'wt'};
-const ENGINE_LABEL = {va: 'VA', fm: 'FM', wt: 'WT', analog: 'VA', fm2: 'FM', fm6: 'FM', drum: 'KIT'};
+const ENG_OF = {va: 'analog', fm: 'fm6', wt: 'wt', mk: 'mk'}, ENG_API = {analog: 'va', fm2: 'fm', fm6: 'fm', wt: 'wt', mk: 'mk'};
+const ENGINE_LABEL = {va: 'VA', fm: 'FM', wt: 'WT', analog: 'VA', fm2: 'FM', fm6: 'FM', mk: MK_LABEL, drum: 'KIT'};
 const FM2_DEF = () => ({ratio: 2, index: 3, modDecay: .3, modSus: .2}), WT_DEF = () => ({table: 'digital', pos: .3, scan: .3, scanTime: .8});
 // §5.2: the FM block a sound gets when it is switched to FM without one (the v1 default pair through FMH.fromV1)
 const FM6_DEF = () => SQStore.normFm6(FMH.fromV1(FM2_DEF()));
@@ -12773,6 +13616,8 @@ function rebuildNativeLfos(i) {
   const E = AU.synth[i];
   if (E) E.mods(wkMods(tr.sound));
   // on the worklet the engine runs the voice routes; the track-FX routes of §9.6 stay native LFOs on every path
+  // MK1 (B.1): AM skips the stored VA routes (fx.* too); its ECO path plays the routes of mkToFlat
+  if (tr.sound.engine === 'mk') { syncLfoSet(A, E ? {p: tr.sound.p, mods: []} : mkEco(tr.sound, i), i * 7); return; }
   syncLfoSet(A, E ? {p: tr.sound.p, mods: tr.sound.mods.filter(fxRoute)} : tr.sound, i * 7);
 }
 // the LFO set of one chain: A = a track (AU.tracks[i]) or a browser preview chain (pvChain), both with
@@ -12865,7 +13710,7 @@ function applyTempoDependents() {
 }
 
 /* ---------- synth worklet engines (§1.4, §5.4, Anhang D.1, D.11) ---------- */
-const isWkEngine = e => e === 'analog' || e === 'fm6';
+const isWkEngine = e => e === 'analog' || e === 'fm6' || e === 'mk';     // MK1: AM = eng 3
 function wkReady() { return SynthHost.state === 'ready' && !UI.forceNative && !!AU.ctx; }
 function wkWanted(i) { const tr = S.tracks[i]; return !!(tr && tr.kind === 'synth' && isWkEngine(tr.sound.engine) && wkReady() && AU.tracks[i]); }
 // a VA/FM track that is not on the worklet (blocked, forced, still loading) runs the native fallback: „ECO-Klang“ (§1.3)
@@ -12874,15 +13719,17 @@ function trackEco(i) { const tr = S.tracks[i]; return !!(tr && tr.kind === 'synt
 // is never changed)
 function wkFlat(snd) {
   const o = {}; for (const k in snd.p) { const v = snd.p[k]; if (typeof v === 'number' && isFinite(v)) o[k] = v; }
-  o.eng = snd.engine === 'fm6' ? 1 : 0;
-  return Object.assign(o, limited(snd.p));
+  o.eng = snd.engine === 'fm6' ? 1 : snd.engine === 'mk' ? 3 : 0;
+  Object.assign(o, limited(snd.p)); if (o.eng === 3) o.mkLim = LIM.level;   // MK1: mkLim only with eng 3 (VA / FM messages stay byte-equal)
+  return o;
 }
 // string routes -> engine numbers (Anhang A.4, D.11); fx.* routes are native (§9.6) and never reach the worklet
 const toEngineMods = mods => SQF.toEngineMods((mods || []).filter(m => !String(m.dst).startsWith('fx.')));
-const wkMods = snd => toEngineMods(snd.mods);
+const wkMods = snd => (snd.engine === 'mk' ? [] : toEngineMods(snd.mods));   // MK1 (B.1): the flat VA state rests on AM
 function newEngine(dest, snd) {
-  const E = SynthHost.track(AU.ctx, dest, wkFlat(snd), wkMods(snd), snd.engine === 'fm6' && snd.p.fm6 ? wkFmOf(snd.p) : null);
+  const E = SynthHost.track(AU.ctx, dest, wkFlat(snd), wkMods(snd), snd.engine === 'fm6' && snd.p.fm6 ? wkFmOf(snd.p) : null, snd.engine === 'mk' ? snd.p.mk : null);
   E.onEnd = id => { const v = E.proxies.get(id); if (v) wkVoiceDead(v); };
+  if (snd.engine === 'mk') E.mkWheel({mw0: +snd.p.mw || 0, reset: true});
   E.tempo(S.bpm, R.playing ? R.startTime : null);
   return E;
 }
@@ -12893,12 +13740,129 @@ function syncEngine(i, full) {
     if (!AU.synth[i]) { AU.synth[i] = newEngine(A.trackIn, tr.sound); if (UI.fmxLvT === i) AU.synth[i].fmxLv(true); }
     else if (full) {          // V0b-fix: routes and FM patch ride in the same message (an engine change restarts held keys with them at once)
       WKSET[i] = null; const fp = tr.sound.engine === 'fm6' ? wkFm6Patch(i) : null;
-      AU.synth[i].set(wkFlat(tr.sound), true, fp, wkMods(tr.sound)); if (fp) { clearTimeout(WKFM[i]); WKFM[i] = 0; WKFM_AT[i] = performance.now(); }
+      AU.synth[i].set(wkFlat(tr.sound), true, fp, wkMods(tr.sound), tr.sound.engine === 'mk' ? tr.sound.p.mk : null); if (fp) { clearTimeout(WKFM[i]); WKFM[i] = 0; WKFM_AT[i] = performance.now(); }
+      if (tr.sound.engine === 'mk') mkWheelSync(i, true);
     }
   } else if (AU.synth[i]) retireEngine(i);
   rebuildNativeLfos(i);
 }
 function syncEngines() { for (const i of synthTracks()) syncEngine(i, true); }
+/* ---------- MK1 (Nachtrag 3): the AM engine on the main thread ----------
+   p.mk lives in the sound (device units, SQMK.normMk); the worklet gets it whole as {mk} (load, engine change) and gesture
+   values as {mkSet} (fractions while the finger moves, EN3-03; rounded at the end of the gesture and for undo). The wheels are
+   live values per track (R.mkWheel by uid), never stored. The panel, the wheels' DOM and the probe are block sq-mk-src. */
+const MKW_ = () => SQMK.W();
+// the release of a voice as the GC safety net of its proxy (W-06 release to -20 dB; the stage ends at ~2.3 x that)
+function mkRelSec(pm) { const W = MKW_(), t = pm && pm.t && pm.t[0]; if (!W || !t) return 40; return (t.a.gate ? .01 : W.dec(t.e2.r) * 2.4) + .2; }
+// B.5: the ECO image of an AM sound (cached per sound object and p.mk)
+const MKECO = new WeakMap();
+function mkEco(snd, i) {
+  const mw = mkWheelVal(i, 'mod', snd), sig = JSON.stringify(snd.p.mk) + '|' + mw;
+  const c = MKECO.get(snd); if (c && c.sig === sig) return c.eco;
+  const F = SQMK.mkToFlat(snd.p.mk, mw), p = Object.assign({}, snd.p, F.p); delete p.mk;
+  const eco = {engine: 'analog', name: snd.name, p, mods: F.mods, fx: snd.fx, origin: null, cat: snd.cat};
+  MKECO.set(snd, {sig, eco}); return eco;
+}
+// the wheels (H-5, B.1 "Raeder"): live per track, MOD starts on p.mw; BEND springs back
+const MKWH = {};
+function mkWheelOf(i) { const tr = S.tracks[i]; if (!tr) return null; const k = tr.uid || ('t' + i); return MKWH[k] || (MKWH[k] = {bend: 0, mod: null}); }
+function mkWheelVal(i, w, snd) { const o = i == null ? null : mkWheelOf(i); if (w === 'bend') return o ? o.bend : 0; const s_ = snd || sndOf(i); return o && o.mod != null ? o.mod : s_ ? (+s_.p.mw || 0) : 0; }
+// a sound load / track switch: MOD back on the sound's p.mw, BEND in the centre
+function mkWheelSync(i, reset) {
+  const o = mkWheelOf(i), E = AU.synth[i], s_ = sndOf(i); if (!o || !s_) return;
+  if (reset) { o.mod = null; o.bend = 0; }
+  if (E && s_.engine === 'mk') E.mkWheel({mw0: +s_.p.mw || 0, reset: o.mod == null, mod: o.mod == null ? undefined : o.mod, bend: o.bend});
+  if (typeof MKUI !== 'undefined' && MKUI.wheelPaint) MKUI.wheelPaint(i);
+}
+function mkWheelSet(i, w, v, ret) {
+  const o = mkWheelOf(i); if (!o) return 0;
+  if (w === 'bend') o.bend = clamp(+v || 0, -1, 1); else o.mod = clamp(+v || 0, 0, 1);
+  const E = AU.synth[i]; if (E && sndOf(i) && sndOf(i).engine === 'mk') E.mkWheel(w === 'bend' ? {bend: o.bend, ret: ret || 0} : {mod: o.mod});
+  if (w === 'mod') MKECO.delete(sndOf(i) || {});
+  return w === 'bend' ? o.bend : o.mod;
+}
+function mkWheelApi(t, w, v) { if (w !== 'bend' && w !== 'mod') throw new Error("mkWheel: 'bend' | 'mod'"); if (v != null) { mkWheelSet(t, w, v, 0); if (typeof MKUI !== 'undefined' && MKUI.wheelPaint) MKUI.wheelPaint(t); } return mkWheelVal(t, w); }
+// one value of p.mk (path 't.0.f.cut', 'mfx.dep' ...): stored rounded through normMk; the worklet gets the fraction while a
+// gesture runs (live), the stored value at its end
+function mkSetP(i, path, v, live) {
+  const s_ = sndOf(i); if (!s_ || !s_.p.mk) return undefined;
+  const rg = SQMK.mkRange(path); if (!rg) throw new Error('mkSet: unbekannter Pfad ' + path);
+  const x = clamp(+v, rg[0], rg[1]); if (!isFinite(x)) return SQMK.mkPathGet(s_.p.mk, path);
+  const before = SQMK.mkPathGet(s_.p.mk, path);
+  s_.p.mk = SQMK.mkPathSet(s_.p.mk, path, x);
+  const after = SQMK.mkPathGet(s_.p.mk, path);
+  const E = AU.synth[i]; if (E && s_.engine === 'mk') E.mkSet({[path]: live ? x : after});
+  if (after !== before) { if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') UI.ab = null; UI.sndVer++; UI.dirty.strip = true; markDirty(); MKECO.delete(s_); if (!E) rebuildNativeLfos(i); }
+  return after;
+}
+// B.7 mkScope: the worklet reports at 30 Hz while asked (the panel asks while it is shown, the test API on its first call)
+function mkScopeOf(t) { const E = AU.synth[t]; if (!E) return null; E.mkScope(true); return E.mks ? deep(E.mks) : null; }
+// sq-mk-src: evaluated on first need (AM sound in the project, engine key, library filter, probe), tickAhead first (EN3-14)
+const MKL = {loaded: false, ms: 0, err: null};
+function mkLoaded() { return MKL.loaded && typeof MKUI !== 'undefined'; }
+function mkLoad() {
+  if (mkLoaded()) return MKUI;
+  try { tickAhead(.3); } catch (e) {}
+  const t0 = performance.now(), el = document.getElementById('sq-mk-src');
+  try {
+    if (!el) throw new Error('sq-mk-src fehlt');
+    const sc = document.createElement('script'); sc.textContent = el.textContent; document.head.appendChild(sc); sc.remove();
+    if (typeof MKUI === 'undefined') throw new Error('MKUI nicht geladen');
+    MKL.loaded = true;
+  } catch (e) { MKL.err = String(e && e.message || e); logErr(e); }
+  MKL.ms = performance.now() - t0;
+  return typeof MKUI !== 'undefined' ? MKUI : null;
+}
+function mkInfo() { return {loaded: mkLoaded(), tables: 0, tableBytes: 0, blockMs: +MKL.ms.toFixed(2), waves: 'platzhalter', err: MKL.err}; }
+// B.7 mkRender: an AM sound offline through the app worklet (OfflineAudioContext); ev [t, 'on'|'off', note, vel]
+async function mkRender(sound, ev, o) {
+  o = o || {}; const sr = o.sr || 48000, sec = o.sec || 2;
+  const snd = SQStore.normalizeSound(sound); if (!snd) throw new Error('mkRender: kein Sound');
+  const el = document.getElementById('sq-worklet-src'), src = (o.seed != null ? '' : '') + el.textContent;
+  const oc = new OfflineAudioContext(2, Math.round(sec * sr), sr);
+  await oc.audioWorklet.addModule('data:application/javascript;base64,' + btoa(src));
+  const E = SynthHost.track(oc, oc.destination, wkFlat(snd), wkMods(snd), snd.engine === 'fm6' && snd.p.fm6 ? wkFmOf(snd.p) : null, snd.engine === 'mk' ? snd.p.mk : null);
+  E.node.port.postMessage({mkSeed: o.seed == null ? 1 : o.seed});
+  if (snd.engine === 'mk') E.mkWheel({mw0: +snd.p.mw || 0, reset: true});
+  if (o.tap) E.node.port.postMessage({mkTap: o.tap});
+  E.tempo(o.bpm || 120, o.songStart == null ? null : o.songStart);
+  const ids = {}; let id = 1;
+  for (const e of ev || []) { const k = e[4] != null ? e[4] : e[2]; if (e[1] === 'on') { ids[k] = id++; E.on(ids[k], e[2], e[3] == null ? .8 : e[3], e[0]); } else if (ids[k]) E.off(ids[k], e[0]); }
+  E.flush();
+  await new Promise(r => setTimeout(r, 20));
+  const b = await oc.startRendering();
+  return {l: b.getChannelData(0), r: b.getChannelData(1)};
+}
+// B.3 Halb-Ansicht: P2/P3 (portrait narrower than the full 360 px panel or lower than 280 px), L2 and landscape bodies
+// lower than 136 px (iPhone 12/13 with the home bar); the panel itself measures and asks for a rebuild when it differs
+function mkHalfWanted() {
+  const w = window.innerWidth, h = window.innerHeight, land = w > h;
+  if (UI.mkFmt && UI.mkFmtAt === w + 'x' + h) return UI.mkFmt === 'half';
+  return land ? (w < 760 || h < 380) : (w < 380 || h < 760);
+}
+// H-13 (Vorgabe): the engine keys where they fit, else one chip with the list (P2 / P3 portrait)
+function engChipWanted() { return window.innerWidth < 380 && window.innerHeight > window.innerWidth; }
+function engChip(i) {
+  const s = el('div', 'seg eng engchip'), b = el('button', 'on', ''); s.appendChild(b);
+  const lab = () => { const e = engKey(S.tracks[i].sound.engine); b.innerHTML = esc(ENGINE_LABEL[e] || 'VA') + ' ▾'; b.setAttribute('aria-label', 'Klangerzeugung ' + (ENGINE_LABEL[e] || 'VA') + ' – wählen'); };
+  lab(); s.update = lab;
+  onTap(b, () => openPop(b, p => {
+    const cur = engKey(S.tracks[i].sound.engine);
+    p.innerHTML = '<h4>Klangerzeugung</h4><div class="plist">' + [['analog', 'VA'], ['fm6', 'FM'], ['wt', 'WT'], ['mk', MK_LABEL]].map(([e, l]) => `<button class="rb${e === cur ? ' on' : ''}" data-e="${e}">${esc(l)}</button>`).join('') + '</div>';
+    guardTouch(p);
+    onTap(p, x => { closePop(); const e = x.dataset.e; if (e === engKey(S.tracks[i].sound.engine)) return; const bf = soundSnapshot(i); setEngine(i, e); commitSound(i, bf, 'Klangerzeugung'); if (ED.lcd) lcdShow('Klangerzeugung', ENGINE_LABEL[e]); }, 'button[data-e]');
+  }, {name: 'engchip'}));
+  return s;
+}
+// the wheels on AM tracks (B.3 Räder): shown only while the selected track is an AM track (the keyboard is unchanged otherwise)
+function mkWheelFrame() {
+  const tr = S.tracks[R.selT], want = !!(tr && tr.kind === 'synth' && tr.sound.engine === 'mk' && !EL.app.classList.contains('drumpads'));
+  if (want === !!UI.mkWh) return;
+  UI.mkWh = want;
+  if (want) { const M = mkLoad(); if (M) M.wheels(true); } else if (mkLoaded()) MKUI.wheels(false);
+  UI.kbRelayout = true;
+}
+
 function retireEngine(i) { const E = AU.synth[i]; AU.synth[i] = null; WKSET[i] = null; retireE(E); }
 // an engine that is no longer needed (engine switch to WT / FM2, forceNative, preview end): its notes fade, then it goes
 function retireE(E, ms) {
@@ -12989,7 +13953,7 @@ function limited(P) {
     xfLite: L >= 2 ? 1 : 0};                    // V4a (Spec V4a): the WP4 dip instead of the 30 ms voice crossfade
 }
 function applyLimiter() {
-  for (const i of synthTracks()) if (AU.synth[i]) AU.synth[i].set(limited(S.tracks[i].sound.p));
+  for (const i of synthTracks()) if (AU.synth[i]) AU.synth[i].set(S.tracks[i].sound.engine === 'mk' ? Object.assign(limited(S.tracks[i].sound.p), {mkLim: LIM.level}) : limited(S.tracks[i].sound.p));
   try { const N = PV.chain; if (N && N.E && !N.gone) N.E.set(limited(N.sound.p)); } catch (e) {}
   UI.dirty.top = true; if (UI.menuInfo) renderMenuInfo();
 }
@@ -13196,7 +14160,7 @@ const WkVoiceProto = Object.assign(Object.create(VoiceProto), {
     if (fastTau) this.E.fastOff(this.id, t, fastTau); else this.E.off(this.id, t);
     this.relT = Math.min(this.relT, t); if (t < this.end) this.end = t;
     const P = this.P;                                  // GC safety net only (the worklet reports {end}); MONO/LEGATO: normal release
-    this.stopAt = Math.min(this.stopAt, t + (fastTau && !(P.mode > 0) ? fastTau * 5 : Math.max(P.aR, .005) * 1.2 + (this.fm ? 12 : 0)) + .1);
+    this.stopAt = Math.min(this.stopAt, t + (fastTau && (this.mkRel || !(P.mode > 0)) ? fastTau * 5 : this.mkRel ? this.mkRel : Math.max(P.aR, .005) * 1.2 + (this.fm ? 12 : 0)) + .1);
     if (R.playing) perfCut(this.perfAll, t2b(t));
   },
   cancel() {                                           // KILL also purges this id's queued ON/OFF in the worklet
@@ -13218,10 +14182,10 @@ function spawnWkVoice(i, out, vel, t0, o, E, snd) {
   const P = snd.p, v = Object.create(WkVoiceProto), gs = o.gs || AU.tracks[i];
   Object.assign(v, {id: ++VSEQ, track: i, src: o.src, clipNote: o.clipNote == null ? null : o.clipNote, clipKey: o.clipKey || null,
     out, baseOut: out, vel, start: t0, end: Infinity, relT: Infinity, stopAt: Infinity, dead: false, stolen: false,
-    E, wk: true, fm: snd.engine === 'fm6', P, perf: null, perfAll: [], log: null});
+    E, wk: true, fm: snd.engine === 'fm6', P, perf: null, perfAll: [], log: null, mkRel: snd.engine === 'mk' && P.mk ? mkRelSec(P.mk) : 0});
   if (o.chain) v.chain = o.chain;
   let from = -1;
-  if (!o.noGlide) {                                    // the same grouping rule as the native voice (chords never glide among themselves)
+  if (!o.noGlide && snd.engine !== 'mk') {             // the same grouping rule as the native voice (chords never glide among themselves); MK1: AM glides in the worklet
     if (gs.grpT == null || Math.abs(t0 - gs.grpT) > .035) { if (gs.grpOuts && gs.grpOuts.length) gs.prevOuts = gs.grpOuts; gs.grpOuts = []; gs.grpT = t0; }
     if (P.glide > 0 && gs.prevOuts && gs.prevOuts.length) { from = gs.prevOuts[0]; for (const x of gs.prevOuts) if (Math.abs(x - out) < Math.abs(from - out)) from = x; if (from === out) from = -1; }
     gs.grpOuts.push(out); gs.lastOut = out;
@@ -13268,7 +14232,10 @@ function nativeTrim(snd, eng) {
 function spawnVoice(i, out, vel, t0, o) {
   const c = AU.ctx, tr = S.tracks[i], A = AU.tracks[i];
   if (!c || !A || !tr || tr.kind !== 'synth') return null;
-  const snd = o.sound || tr.sound, P = snd.p, eng = snd.engine === 'fm6' && !P.fm6 ? 'analog' : snd.engine;
+  const snd0 = o.sound || tr.sound;
+  // MK1 (B.5): AM on the worklet as eng 3; on the native path its timbre 1 as the flat VA patch (mkEco)
+  if (snd0.engine === 'mk') { const E = o.chain ? o.chain.E : snd0 === tr.sound ? AU.synth[i] : null; if (E && !E.dead && !E.retiring) return spawnWkVoice(i, clamp(Math.round(out), 0, 127), vel, t0, o, E, snd0); }
+  const snd = snd0.engine === 'mk' ? mkEco(snd0, i) : snd0, P = snd.p, eng = snd.engine === 'fm6' && !P.fm6 ? 'analog' : snd.engine;
   out = clamp(Math.round(out), 0, 127);
   if (o.src !== 'audition' && o.src !== 'preview' && !o.sound) FMEV.note[i] = out;   // V0d (A.4b 4a): the FM editor's reference note
   // §5.4: VA (and FM6 from WP7) play through the track's worklet engine; a browser preview of another sound through its own
@@ -20518,6 +21485,7 @@ function uiFrame() {
   if (UI.dirty.carrier) { UI.dirty.carrier = false; renderCarrier(now); }
   renderRing(now);
   if (UI.dirty.kb) { UI.dirty.kb = false; kbPaint(); padPaint(); }
+  mkWheelFrame();                                            // MK1: BEND / MOD wheels left of the keys on AM tracks
   paintGhosts(tAud);
   padFlashes(tAud);
   recLaneFrame(bAud);
@@ -21485,8 +22453,9 @@ const fxUndo = {snap: fxSnapshot, commit: (before, label) => { if (before == nul
 // block gets its default (WP3: FM = the legacy 2-operator block p.fm2)
 function setEngineOf(snd, eng) {
   if (eng === 'fm2') eng = 'fm6';                     // WP7: the legacy 2-operator FM is FM6 now (§6.7)
-  if (!['analog', 'wt', 'fm6'].includes(eng)) return snd;
+  if (!['analog', 'wt', 'fm6', 'mk'].includes(eng)) return snd;
   snd.engine = eng;
+  if (eng === 'mk' && !snd.p.mk) snd.p.mk = SQMK.init();             // MK1 (B.1): from INIT AM, no conversion VA -> AM
   if (eng === 'wt' && !snd.p.wt) snd.p.wt = WT_DEF();
   // a missing FM block: the sound's own v2 FM block (a migrated v2 preset kept it) through FMH.fromV1, else the default
   if (eng === 'fm6' && !snd.p.fm6) snd.p.fm6 = snd.p.fm2 ? SQStore.normFm6(FMH.fromV1(SQStore.normFm2(snd.p.fm2))) : FM6_DEF();
@@ -21494,7 +22463,7 @@ function setEngineOf(snd, eng) {
   // again: VA → FM → WT → VA with no change is the same sound, not „geändert“ (§5.2 lossless switch)
   let rec = null; try { rec = originRec(snd); } catch (e) {}
   const fmDef = () => (snd.p.fm2 ? SQStore.normFm6(FMH.fromV1(SQStore.normFm2(snd.p.fm2))) : FM6_DEF());
-  for (const [k, e, def] of [['wt', 'wt', WT_DEF], ['fm6', 'fm6', fmDef]]) {
+  for (const [k, e, def] of [['wt', 'wt', WT_DEF], ['fm6', 'fm6', fmDef], ['mk', 'mk', SQMK.init]]) {
     if (eng === e || !snd.p[k] || (rec && rec.p && rec.p[k])) continue;
     if (SQStore.canonical(snd.p[k]) === SQStore.canonical(def())) delete snd.p[k];
   }
@@ -21668,8 +22637,8 @@ function loadPreset(t, idOrName) {
 }
 function setEngine(t, eng) {
   const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth') throw new Error('Keine Synth-Spur: ' + t);
-  const e = ENG_OF[eng] || (eng === 'fm2' ? 'fm6' : ['analog', 'wt', 'fm6'].includes(eng) ? eng : null);
-  if (!e) throw new Error('Engine muss va, fm oder wt sein');
+  const e = ENG_OF[eng] || (eng === 'fm2' ? 'fm6' : ['analog', 'wt', 'fm6', 'mk'].includes(eng) ? eng : null);
+  if (!e) throw new Error('Engine muss va, fm, wt oder mk sein');
   if (nvTr(tr) || tr.sound.engine === e) return;
   const snd = deep(tr.sound); setEngineOf(snd, e);
   applySound(t, snd);
@@ -21681,6 +22650,7 @@ function randomize(t) {
   const tr = S.tracks[t]; if (!tr) throw new Error('Keine Spur: ' + t);
   if (nvTr(tr)) return;
   if (tr.kind === 'drum') { randomizeDrumVoice(DRUM_VOICES[ED.dVoice].id); return; }
+  if (tr.sound.engine === 'mk') { mkLoad().randomize(t); if (R.editor === 'synth' && t === R.selT) safeRebuild(buildSynthEd); return; }   // MK1 (B.3 🎲)
   const snd = deep(tr.sound), p = snd.p, R_ = Math.random, U = (a, b) => a + (b - a) * R_(), E = (a, b) => a * Math.pow(b / a, R_()), pick = a => a[Math.floor(R_() * a.length)];
   // G3-klein: a FELD graph the DX form cannot carry (free graph, other numbers, waves, point envelopes, phases, feedback paths …)
   // is rolled FELD-gerecht: frequencies, DX-form envelopes and levels; the graph, waves and point envelopes stay (nothing is lost
@@ -21943,7 +22913,7 @@ function wiaTrick() {
   lcdShow('Trick', tip || 'Eigener Sound ohne Trick-Text – die Punkte zeigen, was vom Grundklang abweicht');
   if (ED.lcd) ED.lcd.classList.add('wia');
 }
-function wiaToggle() { UI.wia = !UI.wia; wiaPaint(); if (UI.wia) wiaTrick(); else lcdHint(); haptic('tick'); }
+function wiaToggle() { UI.wia = !UI.wia; wiaPaint(); if (UI.wia) wiaTrick(); else lcdHint(); haptic('tick'); if (mkLoaded() && sndOf(R.selT) && sndOf(R.selT).engine === 'mk') MKUI.render(); }
 function subTabsFor(tab, eng) {
   if (tab === 'osc') return eng === 'analog' ? [['o1', 'OSZ 1'], ['o2', 'OSZ 2'], ['o3', 'OSZ 3'], ['mix', 'MIX'], ['voice', 'STIMME']]
     : eng === 'fm6' ? [['feld', 'FELD'], ['algo', 'DX'], ['op', 'OP ' + ((ED.fmOp | 0) + 1)], ['makro', 'MAKRO'], ['voice', 'STIMME']]      // §6.5 (WP7); V4b: FELD · DX (N4b-01)
@@ -21965,7 +22935,9 @@ function buildSynthEd() {
   ED.ctls = []; ED.msrc = null; ED.mrows = null; ED.mbn = null;
   sh.style.setProperty('--tc', `var(--t${i + 1})`);
   const eng = tr.sound.engine;
-  if (!['osc', 'filter', 'env', 'lfo', 'mod', 'fx'].includes(ED.tab)) ED.tab = 'osc';
+  const mkE = eng === 'mk', mkHalf = mkE && mkHalfWanted();      // MK1 (B.3 Rahmen): [GERÄT] [FX] or, in the half view, [LINKS] [RECHTS] [FX]
+  if (mkE) { mkLoad(); if (!['geraet', 'links', 'rechts', 'fx'].includes(ED.tab)) ED.tab = mkHalf ? 'rechts' : 'geraet'; else if (mkHalf && ED.tab === 'geraet') ED.tab = MKUI.P.half === 'A' ? 'links' : 'rechts'; else if (!mkHalf && (ED.tab === 'links' || ED.tab === 'rechts')) ED.tab = 'geraet'; }
+  else if (!['osc', 'filter', 'env', 'lfo', 'mod', 'fx'].includes(ED.tab)) ED.tab = 'osc';
   let subs = subTabsFor(ED.tab, eng);
   // N4b-01: the FM page coming back from another engine's sub-page (OSZ 1 …) opens the track's own view, not the first sub-tab
   if (eng === 'fm6' && ED.tab === 'osc' && subs && !subs.some(x => x[0] === ED.sub.osc)) ED.sub.osc = fmViewFor(i);
@@ -21978,11 +22950,12 @@ function buildSynthEd() {
   if (subs && bigHere) subs = SK === 'osc' ? subs.map(x => (x[0] === 'feld' ? ['feld', '✕ FELD'] : x)) : SK === 'envfm' ? [['fxback', '✕ FELD']].concat(subs) : subs;
   if (eng === 'fm6' && ED.fmT !== i) fmInitSel(i, false);
   if (UI.fmSolo && (UI.fmSolo.t !== i || eng !== 'fm6' || ED.tab !== 'osc' || ED.sub.osc !== 'op')) fmSoloOff();   // §6.5: Solo is monitor-only
-  const F = sheetFrame(sh, tr.name, [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']], ED.tab,
+  const F = sheetFrame(sh, tr.name, mkE ? (mkHalf ? [['links', 'LINKS'], ['rechts', 'RECHTS'], ['fx', 'FX']] : [['geraet', 'GERÄT'], ['fx', 'FX']]) : [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']], ED.tab,
     id => { ED.tab = id; FXF.big = null; safeRebuild(buildSynthEd); },
     subs ? {list: subs, cur: ED.sub[SK], on: id => { if (bigHere && (id === 'fxback' || (SK === 'osc' && id === 'feld'))) { fxBigBack(); return; } ED.sub[SK] = id; FMEV.fine = false; FXF.big = null; if (eng === 'fm6' && SK === 'osc' && (id === 'feld' || id === 'algo')) fmViewSet(i, id); safeRebuild(buildSynthEd); }} : null);
   // row 1: ● SYNTH n · [VA | FM | WT] · ⇅ chip · ECO-Klang badge (native fallback, §1.3) · ↶ ↷ · ✕
-  const engSeg = makeSeg([['analog', 'VA', 'VA'], ['fm6', 'FM', 'FM'], ['wt', 'WT', 'WT']], () => (S.tracks[i].sound.engine === 'fm2' ? 'fm6' : S.tracks[i].sound.engine),
+  // MK1 (B.3 Zeile 1, H-13): a 4th key with MK_LABEL (two lines where it is narrow); P2/P3: one engine chip with a list
+  const engSeg = engChipWanted() ? engChip(i) : makeSeg([['analog', 'VA', 'VA'], ['fm6', 'FM', 'FM'], ['wt', 'WT', 'WT'], ['mk', '<span>' + MK_LABEL.replace(' ', '</span> <span>') + '</span>', MK_LABEL]], () => (S.tracks[i].sound.engine === 'fm2' ? 'fm6' : S.tracks[i].sound.engine),
     v => setEngine(i, v), 'eng', {undo: soundUndo(i), label: 'Klangerzeugung'});
   F.r1.insertBefore(engSeg, F.r1.querySelector('.sh-title').nextSibling);
   if (bigHere) { const bk = sh.querySelector('.sh-subs .stab[data-sub="' + (SK === 'osc' ? 'feld' : 'fxback') + '"]'); if (bk) { bk.classList.add('fxbk', 'fxback'); bk.setAttribute('aria-label', 'Zurück zum FELD'); } }
@@ -22027,6 +23000,9 @@ function buildSynthEd() {
   F.r2.append(pre, ab, save, dice, wia, em2, hear);
   sheetButtons(F.r1, F.r2, true);
   F.r1.insertBefore(em1, F.r1.querySelector('.hb.ur'));
+  // MK1 (B.3 Zeile 1): the track name stays visible - where the four engine keys squeeze it, one chip takes their place (H-13)
+  if (!engSeg.classList.contains('engchip')) { engSeg.classList.add('eng4'); if (engSeg.lastChild) engSeg.lastChild.classList.add('mkeb');
+    const tt = F.r1.querySelector('.sh-title .stt b') || F.r1.querySelector('.sh-title'); if (tt && window.innerHeight > window.innerWidth && (tt.scrollWidth > tt.clientWidth + 1 || tt.getBoundingClientRect().width < 40)) { const ch = engChip(i); engSeg.replaceWith(ch); ED.ecoB = ch.firstChild; } }
   ED.hdr = {pName, ab, save};
   edHeadRefresh();
   // the mod-mode banner (§9.3): over the LCD line (P), its place in the tab row (L), header row 2 where the LCD is hidden
@@ -22084,6 +23060,7 @@ function nvPage(pg, i) {
 function fillSynthTab(body, i) {
   const pg = el('div', 'pg rest'); body.appendChild(pg);
   if (S.tracks[i].sound._nv && !(ED.tab === 'fx' && GLOBAL_SUBS.has(ED.sub.fx))) { nvPage(pg, i); return; }
+  if (S.tracks[i].sound.engine === 'mk' && ED.tab !== 'fx') { if (mkLoad()) { if (ED.tab === 'links' || ED.tab === 'rechts') MKUI.setHalf(ED.tab === 'links' ? 'A' : 'B'); MKUI.build(pg, i); } return; }   // MK1: the panel (B.3)
   const fmE = ED.tab === 'env' && S.tracks[i].sound.engine === 'fm6';
   const tab = ED.tab, sub = ED.sub[fmE ? 'envfm' : tab];
   pg.classList.add('pg-' + tab + (sub ? '-' + sub : ''));
@@ -22525,7 +23502,7 @@ function fmStripCol(i, k) {
 const fmxVoiceCap = i => { const s_ = sndOf(i), x = s_ && s_.engine === 'fm6' && s_.p.fmx; return !!(x && x.edges.length > 12); };
 const FMX_CAP_TXT = '6 Stimmen · mehr als 12 Verbindungen';
 // V4a (Spec 9.3, V4a-07): a FM graph that is not DX-tauglich plays natively as its nearest DX algorithm
-function ecoMsg(i) { const s_ = sndOf(i), f = s_ && s_.engine === 'fm6' && s_.p.fm6; return f && f.approx ? fmxEcoTxt(f) : 'Studio-Klang nicht verfügbar – vereinfachte Klangerzeugung'; }
+function ecoMsg(i) { const s_ = sndOf(i), f = s_ && s_.engine === 'fm6' && s_.p.fm6; if (s_ && s_.engine === 'mk') return MK_LABEL + ' im ECO-Klang: nur Grundklang'; return f && f.approx ? fmxEcoTxt(f) : 'Studio-Klang nicht verfügbar – vereinfachte Klangerzeugung'; }
 const fmxEcoTxt = f => 'ECO: angenähert (nächster DX-Alg. ' + (f.alg | 0) + ')';
 function fmNativeHint(i) {
   const h = el('div', 'fmhint small');
@@ -25459,8 +26436,8 @@ function pvChain(t, snd) {
   const c = AU.ctx, A = AU.tracks[t]; if (!c || !A) return null;
   const N = Object.assign(buildChain(c), {sound: snd, t, gone: false, E: null,
     lfoPitch: c.createGain(), lfoCut: c.createGain(), nl: {lfo: [null, null], key: ['', ''], routes: [], tremBase: 1}});
-  if (isWkEngine(snd.engine) && wkReady()) { N.E = newEngine(N.trackIn, snd); syncLfoSet(N, {p: snd.p, mods: snd.mods.filter(fxRoute)}, 97); }   // the worklet runs the voice routes itself
-  else syncLfoSet(N, snd, 97);
+  if (isWkEngine(snd.engine) && wkReady()) { N.E = newEngine(N.trackIn, snd); syncLfoSet(N, {p: snd.p, mods: snd.engine === 'mk' ? [] : snd.mods.filter(fxRoute)}, 97); }   // the worklet runs the voice routes itself
+  else syncLfoSet(N, snd.engine === 'mk' ? mkEco(snd) : snd, 97);
   applyChainFx(N, fxOfSound(snd), true);
   return N;
 }
@@ -25560,7 +26537,7 @@ const DCATS2 = [['kits', 'Kits', 'Kits'], ['ekits', 'Eigene', 'Eigene Kits'], ['
 // the records of scope {all, eng, role} on track t: 'alle' = factory + own, 'eigene' = own, else that role's factory sounds
 function brPool(t, sc) {
   const tr = S.tracks[t], own = (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine !== 'drum');
-  const e0 = engKey(tr.sound.engine), engs = sc.all ? [e0].concat(['analog', 'fm6', 'wt'].filter(e => e !== e0)) : [sc.eng || e0];
+  const e0 = engKey(tr.sound.engine), engs = sc.all ? [e0].concat(['analog', 'fm6', 'wt', 'mk'].filter(e => e !== e0)) : [sc.eng || e0];
   const fac = [], mine = [];
   for (const e of engs) { for (const f of SYNTH_LIB) if (engKey(f.engine) === e) fac.push(f); for (const u of own) if (engKey(u.engine) === e) mine.push(u); }
   for (const u of own) if (SQStore.isForeign(u)) mine.push(u);        // MK0: in every scope
@@ -25661,7 +26638,7 @@ function brScope(sc, anchor) {
   else if (BR.all || (BR.eng && BR.eng !== e0)) { BR.all = false; BR.eng = null; BR.role = brDefaultRole(BR.t, e0); }
   else {
     openPop(anchor, p => {
-      p.innerHTML = '<h4>Andere Engine ansehen</h4><div class="plist breng">' + [['analog', 'VA'], ['fm6', 'FM'], ['wt', 'WT']].map(([e, l]) =>
+      p.innerHTML = '<h4>Andere Engine ansehen</h4><div class="plist breng">' + [['analog', 'VA'], ['fm6', 'FM'], ['wt', 'WT'], ['mk', MK_LABEL]].map(([e, l]) =>
         `<button class="rb${e === (BR.eng || e0) ? ' on' : ''}" data-e="${e}">${l}${e === e0 ? ' · Spur' : ''}</button>`).join('') + '</div><p class="small">Laden aus einer anderen Engine wechselt die Klangerzeugung der Spur (mit Rückgängig).</p>';
       guardTouch(p);
       onTap(p, b => { closePop(); const e = b.dataset.e; BR.eng = e === e0 ? null : e; BR.role = 'alle'; BR.more = BR.ren = null; brRefresh(); }, 'button[data-e]');
@@ -27769,6 +28746,12 @@ function openMenu(goto) {
     'NAMEN: ANTEIL = wie viel ein Oszillator oder eine Schicht zum Klang beiträgt, KLANG-PEGEL = Lautstärke des Sounds, LAUTSTÄRKE (FX › SPUR) = die Spur, mit dem hörbaren dB-Wert, MASTER-AUSGANG = alles zusammen. Das amberfarbene Band „GLOBAL“ (HALL, ECHO, MASTER) heißt: wirkt auf alle Spuren. Harmonie-Modus HALBTON = Verschieben in Halbtönen.',
     'INIT: Menü → Neu ▾ → „Leer (Init)“ = neutrale INIT-Sounds, keine Clips, kein Song, 120 BPM. Im Klang-Editor ⋯ → Init setzt den Sound auf den neutralen Startklang seiner Engine (Drums: INIT Drums); ↶ holt den alten zurück. Neue Projekte heißen nach ihrer Zeit („Projekt · Mi 14.10. 21:40“), „Ältere Versionen“ zeigt nur die des offenen Projekts.',
     'NEUERE VERSION: Sounds und Projekte einer neueren SYNQUENZER-Version bleiben unverändert; so ein Sound spielt hier INIT, so ein Projekt wird hier nicht gespeichert – neu laden.',
+    MK_LABEL + ': die vierte Klangerzeugung (Knopf neben VA │ FM │ WT). Ihr Bedienfeld ist wie ein Hardware-Synthesizer gebaut: links Lautstärke, Oktave und Programme, rechts zwei Drehschalter und fünf Regler.',
+    MK_LABEL + ' · EDIT-WAHL 1 und 2: drehen (ziehen) wählt eine Sektion, die fünf Regler bearbeiten sie; was sie gerade tun, steht in der Zeile darunter. Tippen = Liste aller Stellungen. Leuchten beide Lämpchen, spielen die Regler CUTOFF, RESONANZ, ATTACK, RELEASE und TEMPO.',
+    MK_LABEL + ' · SHIFT: Regler auf Ebene 2 (z. B. FILTER → ANSCHLAG); SHIFT + 3 = Init, SHIFT + SEITE = andere EDIT-WAHL, SHIFT + OKT = Wert ±1. ORIGINAL leuchtet, wenn ein Wert dem gespeicherten gleicht.',
+    MK_LABEL + ' · Programme: BANK 1–8 und SEITE A│B, dann eine Nummerntaste. Seite B = deine eigenen Sounds dieser Engine (A–Z); die leuchtende Taste noch einmal = zurück zum Spielen. WRITE = Sichern.',
+    MK_LABEL + ' · BEND und MOD: die Räder links der Tasten. BEND federt zur Mitte zurück, MOD bleibt stehen (Vibrato mit TONH. → VIBRATO). Beides wird nicht gespeichert.',
+    MK_LABEL + ' · Leistungs-Probe (Menü → Info): misst 10 s lang, wie viel Rechenzeit vier Klangerzeuger mit je vier Stimmen brauchen – das Ergebnis kopieren und schicken.',
     'TASTATUR-ANSCHLAG (Menü → Bedienung): POSITION = oben auf der Taste leise, unten laut, jede Taste für sich; FEST = immer 0,8. Bei FEST tragen Anschlag-Regler und Anschlag-Modulationen einen grauen Hinweis – antippen schaltet POSITION ein.',
     'LAUF: Basslauf oder Sequenz Schritt für Schritt – Schritt antippen = an, hoch/runter ziehen = Ton in der Tonart.',
     'SONG: SONG ⇄ (Ecke oben links im Raster) zeigt den Song. Beim ersten ● SONG wird alles mitgeschnitten: Szenenwechsel, Clip-Stopps, Akkorde und deine Melodie; ▶ SONG spielt alles ab. Eine Zelle antippen = anderer Clip in diesem Takt, wischen = blättern. Während der Song läuft: Clip starten = Spur übernehmen, ↩ SONG gibt sie zurück. Unter MELODIE: Melodie bearbeiten, als Clip, Kette aus Szenen.',
@@ -27801,6 +28784,7 @@ function openMenu(goto) {
   renderMenuInfo();
   // VS0: verstecktes Testblatt, nur mit getUserMedia im obersten Fenster (in der Claude-App unsichtbar, N2-VS0-01)
   if (micAvail()) { const bMic = btn('Mikro-Check'); bMic.classList.add('mmic'); on(bMic, 'click', () => micOpen()); row(s9, null, bMic).appendChild(el('span', 'small', 'Test fürs Einsingen: Mikrofon, Verzögerung, Speicher')); }
+  { const bPr = btn('Leistungs-Probe'); bPr.classList.add('mprobe'); on(bPr, 'click', () => { closeMenu(); mkLoad().probeSheet(); }); row(s9, null, bPr).appendChild(el('span', 'small', MK_LABEL + ': misst 10 s die Rechenzeit (ohne Netz)')); }
   m.classList.add('open');
   if (goto === 'info') requestAnimationFrame(() => { try { s9.scrollIntoView({block: 'start'}); } catch (e) {} });
   if (goto === 'online') requestAnimationFrame(() => { try { sOn.scrollIntoView({block: 'start'}); } catch (e) {} });
@@ -27995,6 +28979,7 @@ function applyProject(p, opts) {
   S = p;
   if (!S.id) S.id = newProjectId();
   BOOT.gen++;
+  if (S.tracks.some(t => t && t.kind === 'synth' && t.sound && t.sound.engine === 'mk')) mkLoad();   // MK1 (EN3-14): an AM project loads sq-mk-src now, before the transport can start
   for (let i = 0; i < MAX_T; i++) { R.slot[i] = S.tracks[i] && S.tracks[i].clips[0] ? 0 : -1; R.own[i] = null; R.pend[i] = null; R.cstart[i] = 0; R.prev[i] = null; }
   if (opts.first) { R.selT = 3; R.selS = 0; } else if (opts.ui && S.ui) { R.selT = clamp(S.ui.selT | 0, 0, NT() - 1); R.selS = clamp(S.ui.selS | 0, 0, NS() - 1); } else { R.selT = clamp(R.selT, 0, NT() - 1); R.selS = clamp(R.selS, 0, NS() - 1); }
   UI.sceneBank = S.ui && S.ui.sceneBank === 1 ? 1 : R.selS >= 4 ? 1 : 0; UI.trackBank = S.ui && S.ui.trackBank === 1 ? 1 : 0;   // V2a: the banks (view)
@@ -33092,6 +34077,12 @@ const SYNQUENZER = {
   exportProject: () => saveFile(), history: () => projHistory(), restoreHistory,
   projects: () => projectsList(), openProject, deleteProject, renameProject, duplicateProject,
   nvState: () => ({lock: NV.lock && deep(NV.lock), libNewer: NV.libNewer}),   // MK0
+  // MK1 (Nachtrag 3 B.7): the AM engine
+  mkGet: t => { const s_ = sndOf(t); return s_ && s_.p.mk ? deep(s_.p.mk) : null; },
+  mkSet: (t, path, v) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'mk') throw new Error('Keine ' + MK_LABEL + '-Spur: ' + t); return soundEdit(t, MK_LABEL + ' ' + path, () => mkSetP(t, path, v, false)); },
+  mkRender: (sound, ev, o) => mkRender(sound, ev, o), mkScope: t => mkScopeOf(t), mkInfo: () => mkInfo(),
+  mkWheel: (t, w, v) => mkWheelApi(t, w, v), mkPanel: () => (mkLoaded() ? MKUI.panelInfo() : null), perfProbe: cases => mkLoad().probe(cases),
+
   storage: () => ({mode: kv ? kv.mode : null, booted: BOOT.done, dirty: !!(autosave && autosave.dirty), lastOk: autosave ? autosave.lastOk : 0, lastErr: autosave ? autosave.lastErr : null, persist: UI.persist || null}),
   // WP4 (§16): engine and effects
   engineInfo: () => engineInfo(),
@@ -33252,7 +34243,7 @@ const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
   'fmDefaultOp', 'fmEnvView', 'fmxEnvAction', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint', 'getFmx', 'fmxLevels', 'dxLayout', 'fmxDx', 'fmxFromFm6',
-  'fmxPredict', 'fmxPredictX', 'fmxRaster', 'syxVoiceOf', 'buildSyx', 'parseSyx', 'memory', 'fangPart', 'fangClose', 'songMarks', 'lastOpMs', 'vsInfo', 'vsResult', 'vsAnalyseSignal', 'vsClock']);
+  'fmxPredict', 'fmxPredictX', 'fmxRaster', 'syxVoiceOf', 'buildSyx', 'parseSyx', 'mkGet', 'mkScope', 'mkInfo', 'mkRender', 'perfProbe', 'memory', 'fangPart', 'fangClose', 'songMarks', 'lastOpMs', 'vsInfo', 'vsResult', 'vsAnalyseSignal', 'vsClock']);
 for (const k of Object.keys(SYNQUENZER)) {
   const f = SYNQUENZER[k]; if (typeof f !== 'function' || NO_SYNC.has(k)) continue;
   SYNQUENZER[k] = function () { const r = f.apply(this, arguments); uiSync(); if (r && typeof r.then === 'function') return r.then(v => { uiSync(); return v; }); return r; };

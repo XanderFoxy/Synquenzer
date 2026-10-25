@@ -1,0 +1,24 @@
+import {open, OUT, sleep} from './v3-qa-gp2a-lib.mjs';
+import fs from 'fs';
+const T = await open({mic: false}); const {p, E, errs} = T;
+const pj = JSON.parse(fs.readFileSync(OUT + 'flow-P1-proj4.json'));
+await E(pj => SYNQUENZER.importJSON(JSON.stringify({app: 'SYNQUENZER', kind: 'project', format: 4, project: pj})), pj); await sleep(400);
+await E(() => SYNQUENZER.songView(true)); await sleep(300);
+await T.tapSel('.sv-gl'); await sleep(300);
+let inf = await T.info(); console.log('view', inf.view, 'tiles', inf.tiles && inf.tiles.length, JSON.stringify(inf.tiles && inf.tiles.slice(0, 3)));
+await T.shot('x5-glass');
+// hold SYN 2 in T10 (index 9)
+const c = await T.cell('S2', 5);
+await T.down(c.x, c.y); await sleep(520); console.log('cell', JSON.stringify((await T.info()).cell)); await T.up(); await sleep(300);
+console.log('pop', await T.pop(), JSON.stringify(await T.popTexts()));
+await T.shot('x5-csheet');
+await T.tapPop(/Eigener Clip/); await sleep(300);
+console.log('toast', await T.toast(), 'undo', JSON.stringify(await T.undoTop()));
+console.log('own', JSON.stringify(await E(() => SYNQUENZER.ownClip(1, 5))));
+await T.shot('x5-own');
+await T.tap(c.x, c.y); await sleep(500);
+console.log('pop', await T.pop(), 'roll?', await E(() => { const r = document.querySelector('#roll, .roll, #rollSheet'); return r ? r.className + ' ' + r.offsetWidth : null; }));
+console.log('rollApi', JSON.stringify(await E(() => { try { return Object.keys(SYNQUENZER.rollApi()); } catch (e) { return String(e); } })));
+await T.shot('x5-roll');
+console.log('errs', errs);
+await T.br.close();

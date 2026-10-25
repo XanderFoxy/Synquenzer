@@ -1,0 +1,22 @@
+import { chromium } from 'playwright';
+const FILE = process.argv[2] || new URL('../mk-wt/index.html', import.meta.url).pathname;
+const b = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const p = await b.newPage({viewport: {width: 390, height: 844}});
+const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('file://' + FILE); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+const r = await p.evaluate(async () => {
+  const D = SYNQUENZER, out = {};
+  out.version = D.version;
+  D.play(); D.stop();
+  await new Promise(r => setTimeout(r, 1500));
+  D.setEngine(0, 'mk'); out.eng = D.getSound(0).engine; out.mk = !!D.mkGet(0);
+  D.selectTrack(0); D.keyOn(60); await new Promise(r => setTimeout(r, 400)); out.info = D.engineInfo().perTrack[0]; D.keyOff(60);
+  out.scope = D.mkScope(0); await new Promise(r => setTimeout(r, 300)); out.scope2 = D.mkScope(0);
+  const lufs = x => { let e = 0; for (const v of x) e += v * v; return 10 * Math.log10(e / x.length); };
+  const ia = (await D.mkRender(factorySound('f-init-analog'), [[0, 'on', 48, .8], [2, 'off', 48]], {sec: 2})); out.va = lufs(ia.l) + 0 ; out.vaR = lufs(ia.r);
+  const im = (await D.mkRender(factorySound('f-init-am'), [[0, 'on', 48, .8], [2, 'off', 48]], {sec: 2})); out.am = lufs(im.l); out.amR = lufs(im.r);
+  out.label = SYNQUENZER.getSound(0).name;
+  return out;
+});
+console.log(JSON.stringify(r, null, 1)); console.log('errors', JSON.stringify(errs));
+await b.close();

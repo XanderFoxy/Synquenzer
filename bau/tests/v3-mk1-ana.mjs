@@ -72,8 +72,11 @@ export function mKlick(x, sr, skip = []) {
 export function mEinbruch(x, sr, t) {
   const W = Math.round(.005 * sr), c = Math.round(t * sr), win = i => { let e = 0; for (let k = i; k < i + W; k++) e += x[k] * x[k]; return e / W; };
   let pre = 0, n = 0; for (let i = c - Math.round(.05 * sr); i + W <= c; i += W) { pre += win(i); n++; } pre /= n;
-  let worst = 0; for (let i = c; i < c + Math.round(.05 * sr); i += W) worst = Math.min(worst, pdb(win(i) / pre));
-  return {worst, ok: worst >= -3};
+  // a switch to a quieter sound is no hole: the reference is the lower of the levels before and after (60 .. 100 ms)
+  let post = 0, m = 0; for (let i = c + Math.round(.06 * sr); i + W <= c + Math.round(.1 * sr); i += W) { post += win(i); m++; } post /= m;
+  const ref = Math.min(pre, post);
+  let worst = 0; for (let i = c; i < c + Math.round(.05 * sr); i += W) worst = Math.min(worst, pdb(win(i) / ref));
+  return {worst, ok: worst >= -3, step: pdb(post / pre)};
 }
 // one-pole envelope follower in dB (5 ms windows) of |x|
 export function envDb(x, sr, ms = 5) { const W = Math.round(ms / 1000 * sr), out = []; for (let i = 0; i + W <= x.length; i += W) { let e = 0; for (let k = i; k < i + W; k++) e += x[k] * x[k]; out.push(pdb(e / W)); } return out; }

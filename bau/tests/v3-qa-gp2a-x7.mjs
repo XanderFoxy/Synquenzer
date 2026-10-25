@@ -1,0 +1,24 @@
+import {open, OUT, sleep} from './v3-qa-gp2a-lib.mjs';
+import fs from 'fs';
+const T = await open({mic: false}); const {p, E, errs} = T;
+const pj = JSON.parse(fs.readFileSync(OUT + 'flow-P1-proj4.json'));
+await E(pj => SYNQUENZER.importJSON(JSON.stringify({app: 'SYNQUENZER', kind: 'project', format: 4, project: pj})), pj); await sleep(400);
+await E(() => SYNQUENZER.songView(true)); await sleep(300);
+const c = await T.cell('S2', 5);
+await T.down(c.x, c.y); await sleep(520); await T.up(); await sleep(300);
+await T.tapPop(/Eigener Clip/); await sleep(300);
+await T.tap(c.x, c.y); await sleep(500);
+
+const n0 = await E(() => SYNQUENZER.ownClip(1, 5).notes.length), u0 = await T.undoN();
+await T.tap(125, 380); await sleep(300);
+console.log('notes', n0, '→', await E(() => SYNQUENZER.ownClip(1, 5).notes.length), 'undo', u0, '→', await T.undoN(), JSON.stringify(await T.undoTop()));
+console.log('scene clip notes', await E(() => SYNQUENZER.getClip(1, 0).notes.length));
+const added = await E(() => SYNQUENZER.ownClip(1, 5).notes.filter(n => ![0,.25,.5,.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3,3.25,3.5,3.75].includes(n.t) || true).slice(-3));
+console.log('last notes', JSON.stringify(added));
+await T.shot('x7-roll-drawn');
+const x = await T.rectText('button', /^✕$/); console.log('close btn', JSON.stringify(x));
+await T.tap(x.cx, x.cy); await sleep(400);
+console.log('roll open?', await E(() => document.querySelector('.sheet.ed.roll') && document.querySelector('.sheet.ed.roll').classList.contains('open')), 'songOn', await T.songOn());
+await T.shot('x7-after-roll');
+console.log('errs', errs);
+await T.br.close();
