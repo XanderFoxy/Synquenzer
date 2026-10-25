@@ -89,8 +89,8 @@ T('MK1-09', () => {
   ok('MK1-09 Sync Halbton 0 → +12 hebt M-SP ≥ ⅓ Okt', Math.log2(c12 / c0) >= 1 / 3, M(Math.log2(c12 / c0), 2) + ' Okt');
   let worst = -999, wk = '';
   for (const md of [2, 3]) for (let s = 1; s <= 19; s += 2) { const x = render(mkPatch({o1: {w: 0}, o2: {w: 0, semi: s, mod: md}, mix: {o1: 0, o2: 127}, f: {cut: 127}, a: {gate: 1}}), [[0, 'on', 84, .8]], {sec: 1.2}).l;
-    const e = folded(x, 9600, mtof(84), SR); if (e > worst) { worst = e; wk = (md === 2 ? 'Sync' : 'Ring+Sync') + ' +' + s; } }
-  ok('MK1-09 C6 gefaltete Energie ≤ −50 dB (Sync, Ring+Sync, +1…+19)', worst <= -50, 'schlechtester ' + wk + ': ' + M(worst) + ' dB');
+    const e = folded(x, 9600, mtof(84), SR); (globalThis.FOLD = globalThis.FOLD || []).push((md === 2 ? 'S' : 'RS') + s + ' ' + M(e)); if (e > worst) { worst = e; wk = (md === 2 ? 'Sync' : 'Ring+Sync') + ' +' + s; } }
+  ok('MK1-09 C6 gefaltete Energie ≤ −50 dB (Sync, Ring+Sync, +1…+19)', worst <= -50, 'schlechtester ' + wk + ': ' + M(worst) + ' dB · ' + globalThis.FOLD.join(', '));
   // Ring+Sync = (Sync output) x (OSC 1) from separate renders (mixer taps)
   const P = (o1, o2, m) => render(mkPatch({o1: {w: 0}, o2: {w: 0, semi: 5, mod: m}, mix: {o1, o2}, a: {gate: 1}}), [[0, 'on', 57, .8]], {sec: .5, tap: 'mix'}).l;
   const rs = P(0, 127, 3), sy = P(0, 127, 2), o1 = P(127, 0, 0); let md = 0; for (let i = 0; i < rs.length; i++) md = Math.max(md, Math.abs(rs[i] - sy[i] * o1[i]));
@@ -314,16 +314,20 @@ T('MK1-18', () => {
   ok('MK1-18 Bruchwerte: > 127 verschiedene Werte, Sprung ≤ 25 ct je Zeiger-Ereignis', distinct > 127 && jump / evPer <= 25, distinct + ' Werte, max ' + M(jump / evPer, 1) + ' ct je Ereignis (' + M(jump, 1) + ' ct je Schnappschuss, ' + M(evPer, 2) + ' Ereignisse)');
 });
 T('MK1-24', () => {
-  // CPU (Node, relative to one VA voice of the same run): AM voice = saw + pulse with sync, noise, 24LPF res 100, distortion, LFO1/2
-  const one = (fn) => { const ms = []; for (let k = 0; k < 5; k++) { const r = fn(); const q = r.qms.slice(50).sort((a, b) => a - b); ms.push(q.reduce((a, b) => a + b, 0) / q.length); } ms.sort((a, b) => a - b); return ms[2]; };
+  // CPU (Node, relative to one VA voice of the same run): AM voice = saw + pulse with sync, noise, 24LPF res 100, distortion, LFO1/2.
+  // Interleaved runs (9 each), steady state (the first 2 s of every render are JIT warm-up: each render compiles the worklet anew),
+  // mean quantum time per render, median over the renders
   const AMP = mkPatch({o1: {w: 0, c1: 30, c2: 40}, o2: {w: 1, mod: 2, semi: 7}, mix: {o1: 127, o2: 100, n: 40}, f: {type: 0, cut: 70, res: 100, eg: 30}, a: {dist: 1}, vib: 20});
   const VA = {o1w: 0, o2w: 1, o3w: 0, o1lvl: 1, o2lvl: .8, o3lvl: .6, cutoff: 900, res: .6, poly: 8};
   const ev = n => [36, 43, 48, 52].slice(0, n).map(x => [0, 'on', x, .8]);
-  const silent = one(() => render(AMP, [], {sec: 2, quantumMs: true}));
-  const am1 = one(() => render(AMP, ev(1), {sec: 2, quantumMs: true, mw0: .5})) - silent, am4 = one(() => render(AMP, ev(4), {sec: 2, quantumMs: true, mw0: .5})) - silent;
-  const vs = one(() => render(null, [], {sec: 2, quantumMs: true, eng: 0, flat: VA})), va1 = one(() => render(null, ev(1), {sec: 2, quantumMs: true, eng: 0, flat: VA})) - vs;
+  const cfg = {amS: () => render(AMP, [], {sec: 8, quantumMs: true}), am1: () => render(AMP, ev(1), {sec: 8, quantumMs: true, mw0: .5}), am4: () => render(AMP, ev(4), {sec: 8, quantumMs: true, mw0: .5}),
+    vaS: () => render(null, [], {sec: 8, quantumMs: true, eng: 0, flat: VA}), va1: () => render(null, ev(1), {sec: 8, quantumMs: true, eng: 0, flat: VA})};
+  const R_ = {}; for (const k in cfg) R_[k] = [];
+  for (let r = 0; r < 9; r++) for (const k in cfg) { const q = cfg[k]().qms.slice(750); R_[k].push(q.reduce((a, b) => a + b, 0) / q.length); }
+  const med = a => a.slice().sort((x, y) => x - y)[a.length >> 1];
+  const am1 = med(R_.am1) - med(R_.amS), am4 = med(R_.am4) - med(R_.amS), va1 = med(R_.va1) - med(R_.vaS);
   const qms = 128 / SR * 1000;
-  ok('MK1-24 eine AM-Stimme ≤ 1,2 × VA-Stimme; 4 Stimmen ≤ 4,8 ×', am1 / va1 <= 1.2 && am4 / va1 <= 4.8, 'AM ' + M(am1 / va1, 2) + ' ×, 4 St. ' + M(am4 / va1, 2) + ' × (VA-Stimme ' + M(va1 / qms * 100, 2) + ' % Echtzeit, AM ' + M(am1 / qms * 100, 2) + ' %)');
+  ok('MK1-24 eine AM-Stimme ≤ 1,2 × VA-Stimme; 4 Stimmen ≤ 4,8 ×', am1 / va1 <= 1.2 && am4 / va1 <= 4.8, 'AM ' + M(am1 / va1, 2) + ' ×, 4 St. ' + M(am4 / va1, 2) + ' × (VA-Stimme ' + M(va1 / qms * 100, 2) + ' % Echtzeit, AM ' + M(am1 / qms * 100, 2) + ' %, 4 AM ' + M(am4 / qms * 100, 2) + ' %; Ruhe AM ' + M(med(R_.amS) / qms * 100, 2) + ' %, VA ' + M(med(R_.vaS) / qms * 100, 2) + ' %)');
 });
 console.log('\n' + (fails ? fails + ' FEHLER' : 'alles bestanden') + ' (' + res.length + ' Prüfungen)');
 process.exit(fails ? 1 : 0);

@@ -1,7 +1,7 @@
 // MK1 panel / wheels / header acceptance in Chromium (Nachtrag 3 MK1-16 wheels, MK1-20, MK1-21, MK1-22, MK1-31, MK1-33, MK1-34).
 // Usage: node v3-mk1-ui.mjs <index.html>
 import { chromium } from 'playwright';
-const FILE = process.argv[2] || new URL('../mk-wt/index.html', import.meta.url).pathname, ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
+const FILE = process.argv[2] ? (await import('path')).resolve(process.argv[2]) : new URL('../mk-wt/index.html', import.meta.url).pathname, ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
 const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
 let fails = 0; const ok = (id, c, info) => { if (!c) fails++; console.log((c ? 'PASS ' : 'FAIL ') + id + (info ? ' — ' + info : '')); };
 const FMT = {P1: [390, 844], P2: [375, 667], P3: [320, 568], L1: [844, 390], L2: [667, 375], W: [844, 1180]};
@@ -50,7 +50,7 @@ await T('MK1-34', async () => {
   await tap(page, 'shift'); pi = await page.evaluate(() => SYNQUENZER.mkPanel());
   ok('MK1-34 SHIFT: Ebene 2 (FILTER → ANSCHLAG), leuchtet, Matrix „EB2“; zweiter Tipp: aus', sh1 && lit && pi.shift === 0 && pi.knobs[0].l === 'TYP');
   // a knob gesture, then SHIFT + OKT ▲ = +1 (one undo)
-  await drag(page, 'k1', 30, 8);
+  await drag(page, 'k1', -30, 8);
   const v1 = await page.evaluate(() => SYNQUENZER.mkGet(0).t[0].f.cut), u1 = await page.evaluate(() => SYNQUENZER.undoInfo().n);
   await tap(page, 'shift'); await tap(page, 'octu');
   const v2 = await page.evaluate(() => SYNQUENZER.mkGet(0).t[0].f.cut), u2 = await page.evaluate(() => SYNQUENZER.undoInfo().n);
@@ -134,8 +134,8 @@ await T('MK1-31', async () => {
     const res = []; let mix = 0;
     for (let k = 0; k < 100; k++) { SYNQUENZER.randomize(0); const t = SYNQUENZER.mkGet(0).t[0]; if (Math.max(t.mix.o1, t.mix.o2) >= 64) mix++; res.push(JSON.parse(JSON.stringify(SYNQUENZER.getSound(0)))); }
     // audible (H-1 vs INIT): level / centroid / decay by an offline render of every 10th roll (100 renders are slow)
-    const meas = async s => { const x = (await SYNQUENZER.mkRender(s, [[0, 'on', 48, .8], [1, 'off', 48]], {sec: 1.6})).l; let e = 0; for (let i = 0; i < 14400; i++) e += x[i] * x[i]; return 10 * Math.log10(e / 14400 + 1e-20); };
-    const silent = []; for (let k = 0; k < 100; k += 1) { const lv = await meas(res[k]); if (lv < -60) silent.push(k); }
+    const meas = async s => { const x = (await SYNQUENZER.mkRender(s, [[0, 'on', 48, .8], [1, 'off', 48]], {sec: 1.6})).l; let e = 0; for (let i = 0; i < x.length; i++) e += x[i] * x[i]; return 10 * Math.log10(e / x.length + 1e-20); };
+    const silent = []; for (let k = 0; k < 100; k += 1) { const lv = await meas(res[k]); if (lv < -60) silent.push([k, Math.round(lv), JSON.stringify(res[k].p.mk.t[0])]); }
     // ◎: the positions whose section differs from INIT
     SYNQUENZER.loadPreset(0, 'f-init-am'); SYNQUENZER.mkSet(0, 't.0.f.cut', 30); SYNQUENZER.mkSet(0, 't.0.e2.r', 60);
     UI.wia = false; wiaToggle(); MKUI.render();
@@ -148,7 +148,7 @@ await T('MK1-31', async () => {
     const titles = [...document.querySelectorAll('#synthSheet .mkx.mnum')].map(e => e.title).filter(Boolean);
     return {mix, silent, dots, titles, sorted};
   });
-  ok('MK1-31 🎲 100 Würfe: jeder hörbar, Mixer OSZ 1 oder OSZ 2 ≥ 64', r.mix === 100 && r.silent.length === 0, r.mix + ' / stumm ' + r.silent.length);
+  ok('MK1-31 🎲 100 Würfe: jeder hörbar, Mixer OSZ 1 oder OSZ 2 ≥ 64', r.mix === 100 && r.silent.length === 0, r.mix + ' / stumm ' + r.silent.length + (r.silent.length ? ' ' + JSON.stringify(r.silent).slice(0, 900) : ''));
   ok('MK1-31 ◎ markiert genau die abweichenden Stellungen (FILTER, A-HK)', JSON.stringify(r.dots) === '[5,8]', JSON.stringify(r.dots));
   ok('MK1-31 Seite B ist A–Z sortiert', JSON.stringify(r.titles) === JSON.stringify(r.sorted.slice(0, r.titles.length)), r.titles.join(','));
   ok('MK1-31 keine Konsolenfehler', errs.length === 0, errs.join(' | ').slice(0, 300));

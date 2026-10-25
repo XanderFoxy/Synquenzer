@@ -14,7 +14,7 @@ export async function fangRun(T, scene, seq, {ok = true, chipName} = {}) {
   let b0 = playing ? Math.ceil((await beat()) / 4) * 4 : 0;
   for (let k = 0; k < seq.length; k++) { if (k || playing) await waitB(b0 + k * 4 - 0.12); const isE = seq[k] === 'E'; await E(([n, maj]) => SYNQUENZER.keyOn(n, .8, 'ch'), [ROOT[seq[k]], isE]); await sleep(90); await E(() => SYNQUENZER.keyOff(0, 'ch')); }
   await waitB(b0 + seq.length * 4 + 0.2);
-  await T.tapSel('#bFang'); await sleep(200);
+  if (!(await T.tapSel('#bFang'))) await T.tapSel('#bFangT'); await sleep(200);
   const fp = await E(() => { const f = SYNQUENZER.fangPart(); return f && {len: f.len, name: f.suggest && f.suggest.name, ch: f.chords && f.chords.ch.map(c => c.b + ':' + (c.tg && c.tg.name)), clips: f.clips, end: f.endText}; });
   if (chipName) { await T.tapTxt('.fsheet button', new RegExp('^' + chipName)); await sleep(120); }
   if (ok) { await T.tapSel('.fsheet .fs-ok'); await sleep(250); }

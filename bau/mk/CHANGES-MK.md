@@ -141,3 +141,174 @@ weiter, und `applyProject` legt es als `NV.raw` ab. `projectFileObj(S)`, `nvPark
 
 ### Am Server offen
 - Nichts. Kein Supabase-Aufruf, keine Datenbank-Änderung.
+
+## MK1 — Kern-Engine „MS 2000“ (eng 3), Bedienfeld, Räder · App 4.9.0 (`APP_CODE` 4 009 000) · Format 4 → 5 · `SOUNDS_FORMAT` 1 → 2
+
+**Vorgänger-Stand** für alle Gleichheits-Abnahmen: **4.8.1** (MK0-fix = `synq-snapshots/MK0-fix.html`, 2 534 778 B).
+Parallel-Bau in `mk-wt` (nicht `dirigent-wt`); kein Song-/Drag-&-Drop-Code berührt. Neu bzw. geändert: Worklet `dirigent-analog`
+(neue Klasse `MkCore` zwischen `/*MK{*/ … /*}MK*/`, W-Tabelle `MKW` zwischen `/*MKW{*/ … /*}MKW*/`, Weiche in `AnalogCore`),
+`SQMK` (Daten, immer geladen), Haupt-Faden-Helfer (Räder, ECO-Bild, `mkRender`, Laden des Blocks), Block `sq-mk-src` (Bedienfeld,
+Leistungs-Probe; erst bei Bedarf ausgewertet), Synth-Blatt (Reiter, Kopf), Hilfe, Test-API. Quellen der Bausteine:
+`scratchpad/mk1work/{mkcore,sqmk,mkmain,mkui}.js`, Einbau `build.sh` (`integrate1.py`, `patch-main.py`, `patch-ui.py`).
+
+### Gebaut
+1. **Daten (B.1):** Engine `mk`, `p.mk` mit `SQMK.normMk` (klemmt, rundet, feste Schlüssel-Reihenfolge, EQ in 0,5er-Stufen, `usc` nur
+   bei Stimmung 9, `vmax` 4│8), Format 5, `SOUNDS_FORMAT` 2, **INIT MS 2000** (`f-init-am`, Pegel wie INIT Analog), `setEngineOf`
+   (Engine-Wechsel behält `p.mk`; ein unberührtes INIT-`p.mk` wird beim Wechsel weg aufgeräumt), `ENGINE_LABEL.mk = MK_LABEL`,
+   Engine-Listen im Browser, MIDI-Spurname. `MK_LABEL = 'MS 2000'` ist die **einzige** Fundstelle in der Datei.
+2. **Klangerzeugung `eng 3` (Worklet, B.2/B.4, W-01 … W-26):** 2 Oszillatoren (Säge mit Form `saw(2φ)`, Puls mit Breite/PWM, Dreieck
+   mit Form `tri(3φ)`; polyBLEP/polyBLAMP), OSZ 2 Säge/Rechteck/Dreieck mit Halbton und Fein-Kurve W-14, OSC MOD aus/Ring/Sync/
+   Ring+Sync (Sync über den vorhandenen Slave-Weg mit einem Takt Versatz), Rauschen (eigener Generator je Note), Mixer, Ladder
+   (Abgriffe 24LPF/12LPF/12BPF/12HPF, Eingang × 0,25, winziger Rausch-Keim für die Selbstoszillation), Verzerrung nach dem Filter
+   mit ADAA (Stammfunktion der App-eigenen tanh-Näherung), Verstärker mit HK │ GATE (1 ms / 3 ms), Pegel/Pan/Anschlag/Keytrack,
+   EG1/EG2 mit NEUSTART, LFO1/LFO2 (Säge, Rechteck bzw. Rechteck(+), Dreieck/Sinus, S/H; Key Sync aus/Timbre/Stimme; Tempo Sync an
+   der Song-Position), Vibrato × MOD-Rad, BEND, Portamento (t90 = W-13), Stimmen: Poly 4 (Begrenzer-Stufe 2: 2), Mono, Unison 4
+   (W-15), Priorität Last/Low/High mit zurückgestellten Tasten, Auslösung Single/Multi, Stehlen mit 5-ms-Blende.
+   Umschalten: stetige Werte 5 ms geglättet und als **Bruchwerte** während der Geste (EN3-03); Struktur-Schlüssel (Wellen, OSC MOD,
+   Filtertyp, HK │ GATE) per 30-ms-Überblendung mit Pegelausgleich (Port von `sxMix`); Zuweisung/Priorität/Auslösung per
+   `engXf`-artiger Neuverteilung; Engine-Wechsel zu/von eng 3 mit Übergabe gehaltener Tasten (`mkEng`, `handOver`/`adopt`).
+   Zufall je Note = Hash(Seed, Timbre, Zähler); der Seed wird erst bei der ersten AM-Note gezogen (VA bleibt bitgleich).
+   Protokoll `{mk}`, `{mkSet}`, `{mkWheel}`, `{mkSeed}`, `{mkScope}`, `{mkTap}` (Test), `processorOptions.mk`; VA-/FM-Nachrichten unverändert.
+3. **ECO (B.5):** `SQMK.mkToFlat` bildet einen AM-Sound auf die flache VA-Fassung ab (NativeVoice); Badge wie bisher.
+4. **Bedienfeld (B.3, Block `sq-mk-src`):** Zonen Z1–Z13 nach der Referenz-Skizze, Holzwangen (CSS), Kappen-Regler, Drehschalter
+   EDIT-WAHL 1/2 (11 Stellungen, Ziehen rastet je 18 px, Tipp = Matrix-Liste), Matrix-Zeilen, LED-Tasten, 3-stellige 7-Segment-Anzeige
+   (eigene SVG-Zeichnung), SHIFT-Ebene 2, SHIFT-Funktionen (OKT ±1 Wert, SEITE = andere Wahl, 3 = Init), OKT ▼/▲ (`tr.kbOct`),
+   ORIGINAL-LED, Nummerntasten (Programme der Seite B = eigene AM-Sounds A–Z), WRITE = Sichern, 🎲 (hörbar, Mixer ≥ 64), ◎.
+   EDIT-WAHL 2 und die Ebene-2-Plätze späterer Pakete sind dunkel mit Paketnamen. Formate: L1 ganz (720 × 136, ×1,0 … ×1,1, W ×1,13),
+   P1 zwei Hälften (360 × 280), Halb-Ansicht quer (L2, iPhone 12/13 mit Home-Balken) und hoch (P2, P3) mit Reitern [LINKS] [RECHTS] [FX].
+5. **Räder (B.3, H-5):** BEND (federt in 80 ms zurück) und MOD links in `#kbArea`, nur bei AM-Spuren, eigener Zeiger je Rad,
+   nichts gespeichert, kein Undo.
+6. **Kopf (B.3 Zeile 1, H-4, H-13 Vorgabe):** vierter Knopf „MS 2000“ (einzeilig wo Platz, sonst zweizeilig), 36 px breit, 4 px
+   Abstand, Treffer 44 px senkrecht über `::before`; wo der Spurname sonst unter 40 px fiele (P1, P2, P3), der Engine-Chip
+   „VA ▾“/„MS 2000 ▾“ mit Liste (4 Zeilen à 44 px). Querformat: wenn die 40-px-Kopfzeile nicht reicht, erst „MS 2000“ zweizeilig,
+   dann (Safe-Area am iPhone) „▶ Hören“ ohne Wort – wie die schon bestehende Regel unter 760 px.
+7. **Leistungs-Probe (B.4):** Menü → Info → [Leistungs-Probe]: 4 Probe-Engines × 4 Stimmen hinter einem 0-Gain-Anschluss, 10 s, JSON
+   (Kopieren / Als Datei über `deliverNow`), [Abbrechen]. Test-API `perfProbe`.
+8. **Start (EN3-14):** `sq-mk-src` wird erst bei Bedarf ausgewertet (AM-Sound im Projekt beim Laden, Engine-Knopf, Probe), vorher
+   `tickAhead(.3)`.
+9. **Hilfe** (6 Zeilen), **Test-API** `mkGet`, `mkSet`, `mkRender`, `mkScope`, `mkInfo`, `mkWheel`, `mkPanel`, `perfProbe`.
+
+### Fach-Prüfung (N3 Teil F: FP-DSP ● Haupt, FP-TOUCH und FP-IPHONE Zweit; selbst vor der Abnahme)
+- **FP-DSP** (`v3-mk1-fpdsp.mjs`, `v3-mk1-dsp.mjs`, `v3-mk1-gleich.mjs`): W-Tabelle eine Quelle (nur im Worklet-Text, der
+  Hauptfaden wertet genau diesen Text aus); „Aus = bitgleich“: alle 65 VA/FM/WT-Werks-Sounds offline bitgleich zu 4.8.1;
+  Extremwerte (alle Regler max bzw. min, je Filtertyp, 4-Stimmen-Akkord C8 bzw. Unison, Räder bewegt) 20 s ohne NaN/Inf;
+  Denormale: 60 s Stille nach Vollaussteuerung je Filterweg (gehaltene Note, Mixer 0) – Fensterlast nicht über der ersten Sekunde;
+  Worklet-ASCII; M-KLICK/M-EINBRUCH bei allen Umschaltungen (MK1-18); CPU je Stimme (MK1-24); nativer Rückfall (MK1-23).
+  **Befunde: 4, alle behoben:** (1) **ADAA-Startwert**: `dF` begann bei 0 statt F(0) → beim ersten Sample mancher Noten mit
+  VERZERR. ein Spike bis +68 dBFS (nur bei starkem Eingang im ersten Sample, z. B. 12HPF/12BPF) → Startpaar (0, F(0));
+  (2) **S/H-Zähler** stand versehentlich in einem Kommentar (`lctr` undefiniert → S/H lieferte immer denselben Wert) → behoben, MK1-15
+  1280 Werte; (3) Glättung `smStep` lief jeden Block über alle Werte (for…in, Allokation) → feste Felder, ruht, sobald alle Werte am
+  Ziel sind; LFO-Raten einmal je Block → AM-Stimme von ≈ 1,4–2,0 × auf ≈ 1,0–1,2 × der VA-Stimme; (4) Ring+Sync-Ausrichtung
+  geprüft (Gleichtakt der Master- und Slave-Sprünge verschlechtert die Faltung auf −30 dB, deshalb bleibt der Versatz; Rest siehe Lücken).
+- **FP-TOUCH** (`v3-mk1-look.mjs`, `v3-mk1-ui.mjs`): M-SKIZZE (IoU je Zone = 1,000 in L1 mit Safe-Area 844 × 390 und 926 × 428),
+  M-PLATZ und M-ANSICHT in 9 Formaten × 45 Zuständen, Trefferflächen, Kontrast 12,6 : 1, ein Undo je Geste, zweiter Finger, Zoom/
+  Pinch/Textauswahl aus, Haptik `tick` beim Rasten. **Befunde: 7, alle behoben:** Klassen-Kollision `.dk` (globale App-Klasse,
+  Matrix-Zellen 336 px breit) → `mdk`; SHIFT-Kurznamen auf den Nummerntasten liefen über („TIMBRE KOP.“) → „T-KOPIE“, „T-TAUSCH“,
+  „T-NEU“; Beschriftung „EDIT-WAHL 2“ ragte in P/Halb-Ansicht 1–2 px aus dem Drehschalter → `box-sizing`; Kopfzeile quer mit
+  Safe-Area lief über (✕ außerhalb, Namensfeld < 72 px) → zweistufige Verdichtung (s. Gebaut 6); Engine-Knöpfe quer nur 42 px
+  Treffer (die obere Leiste liegt darüber) → Trefferfläche reicht 2 px in den Rand der LCD-Leiste; Holzwangen zu dunkel (L 9 %) →
+  Holzton L 35–37 %, S 43–45 %, 24°; der Chip-Treffer (z-index) nahm Zeile 2 die oberen Pixel → Zeile 2 behält ihre Fläche.
+- **FP-IPHONE** (`v3-mk1-perf.mjs`, `v3-mk1-probe.mjs`): Start, Dateigröße, PE1 mit offenem Bedienfeld, Probe ohne Netz und unhörbar,
+  Abbrechen ohne hängende Stimme. **Befunde: 1, begründet:** Budget überschritten (s. Abweichungen). iPhone-CPU unbekannt → Probe.
+
+### Abnahme (Node 22 Offline-Worklet bzw. Playwright/Chromium 1243)
+Skripte in `dirigent-test/`: `v3-mk1-dsp.mjs` (MK1-04 … 18, 24) **63/64**, `v3-mk1-hear.mjs` (MK1-19) **53/53**,
+`v3-mk1-format.mjs` (MK1-01, 01b, 02, 02b, 03, 28, 29, 30) **21/21**, `v3-mk1-ui.mjs` (MK1-20, 22, 31, 33, 34) **33/33**,
+`v3-mk1-look.mjs` (MK1-21, 32) **88/88**, `v3-mk1-eco.mjs` (MK1-23) **6/6**, `v3-mk1-probe.mjs` (MK1-25) **7/7**,
+`v3-mk1-perf.mjs` (MK1-26, 27) **6/7 (rot nur das Budget)**, `v3-mk1-proto.mjs` (MK1-18 Protokoll) **2/2**, `v3-mk1-fpdsp.mjs` (FP-DSP) **14/14**,
+`v3-mk1-gleich.mjs` (MK0-03 gegen 4.8.1, Vergleich je Sound-ID) – Klänge bitgleich, Unterschiede nur durch Format 5 / `p.mk` / INIT AM.
+
+| ID | Ergebnis |
+|---|---|
+| MK1-01 | ✓ normMk: 1000 Zufalls-Patches geklemmt/ganzzahlig, Fremdschlüssel weg; Speichern → Laden deep-equal, `soundHash` stabil; VA → AM → VA: Hash gleich, VA bitgleich, ein Undo; „MS 2000“ in Blattkopf, Label, Browser, MIDI-Spurname |
+| MK1-01b | ✓ Kalt-Start: `p.mk` deep-equal, Block nicht ausgewertet (`mkInfo().loaded` false) |
+| MK1-02 | ✓ neue Projekte Format 5; Format 3/4 laden deep-equal; 64 Demo-/Werks-Sounds offline bitgleich (max \|Δ\| 0) |
+| MK1-02b | ✓ Engine „xyz“ in Projekt, Bibliothek, Cloud-Bibliothek deep-equal (MK0-Schutz bleibt) |
+| MK1-03 | ✓ AM-Teil 0 Markenwörter; ganze Datei `micro ?korg\|radias\|dwgs` 0, `ms[ -]?2000` genau 1 (`MK_LABEL`); keine neue Schrift, keine Bild-Daten |
+| MK1-04 | ✓ Säge Teiltöne 1–20 ± 0,11 dB; C7 gefaltet −50,9 dB; STEUER 1 = 127: ungerade −121 dB; = 64: 1. Teilton −6,09 dB |
+| MK1-05 | ✓ Puls: gerade −122 dB; 64 → 25,1 %; 127 → −111 dBFS; PWM wandert (Klick 2,7 dB); C7 −50,9 dB |
+| MK1-06 | ✓ Dreieck: 3. Teilton −19,08 dB; 127 → stärkster bei 3·f; C7 −68,6 / −63 dB |
+| MK1-07 | ✓ +12 HT = 1200,03 ct; Fein +1/+24/+48/+63 = 0,59/299,95/1200,03/2399,98 ct; Wellen OSZ 2 |
+| MK1-08 | ✓ Ring: Spitzen 182,3 / 1062,3 Hz; 440 Hz und f₂ ≤ −137 dB |
+| MK1-09 | ✓ Sync-Periode 1/f₁ (nicht-harmonisch −59,6 dB); M-SP +0,46 Okt; Ring+Sync = Sync × OSZ 1 (6,9e-8). **✗ C6 gefaltet:** Sync −48,1 … −53,2 dB (schlechtester +17), Ring+Sync −38,6 … −51,9 dB (schlechtester +19) – siehe Lücken |
+| MK1-10 | ✓ Rauschen flach ± 0,8 dB (Terzen 100 Hz…16 kHz) |
+| MK1-11 | ✓ Steilheit 24,4 / 12,2 / 11,4 / 5,8–5,9 dB/Okt; an W-01 −12,0/−6,1/−6,1 dB; Resonanzspitze 36,5 dB; Selbstoszillation 638,5 Hz (W-01 649,9), −23,4 dBFS ab 200 ms; Keytrack 2,4/4,6 ct; 20 s ohne NaN, ≤ 0 dBFS |
+| MK1-12 | ✓ Keytrack 3/0/−3 Okt; HK-INT +59,8 HT; ANSCHLAG 24 HT; TRANSP. +12 HT |
+| MK1-13 | ✓ Pegel 0 stumm; Pan −93 dB; GATE 0,9/2,4 ms; VERZERR. −17,6/−37,7 dB, Alias −50,9 dB; ANSCHLAG −12 dB; KEYTRACK +3,59 dB |
+| MK1-14 | ✓ Stufenzeiten 0…127 nach W-06 ± 10 % (A127 16,4 s, D127 16,0 s); NEUSTART an −48,6 dB, aus ± 0,03 dB |
+| MK1-15 | ✓ LFO-Frequenzen; Rechteck(+) Mittel 0,57 (174 Werte, Toleranz nach Stichprobe); S/H 1280 Werte, Mittel −0,008; Tempo Sync 2,000 Hz, Nulldurchgang 0 ms; Key Sync Stimme/Timbre |
+| MK1-16 | ✓ TRANSP./FEIN; Vibrato ±200 ct; Portamento t90 150,7 ms (W-13 132 ms ± 10 % nach t90-Lesart, s. Abweichungen); BEND +200 ct, zurück in ≤ 100 ms; Räder per Zeiger: MK1-33 |
+| MK1-17 | ✓ Poly 4, Stehlen (Klick 2,6 dB), Low/High, Rückgabe, Mono-Folgen, Unison −10/−3,3/+3,3/+10 ct, Single/Multi |
+| MK1-18 | ✓ Struktur-Wechsel (SXF) M-KLICK ≤ 4,8 dB, M-EINBRUCH ≥ −0,37 dB; Zuweisung/Priorität/Auslösung; 23 Regler je 1 s; Bruchwerte 289 Werte, ≤ 23,9 ct je Ereignis; **Protokoll**: Geste wirkt im nächsten Steuerblock; VA/FM-Nachrichten byte-gleich zu 4.8.1 (inkl. `processorOptions`) |
+| MK1-19 | ✓ H-1/H-3 für jeden Regler von SPIEL und jeder EDIT-WAHL-1-Sektion (Ebene 1, 2) und VOLUME; Ausnahmen im Skript benannt (gesperrt/dunkel bis MK3/MK7/MK11–13; BEND über das Rad) |
+| MK1-20 | ✓ INIT MS 2000 −18,77 LUFS gegen INIT Analog −18,75; ⋯ → Init und SHIFT + 3: je ein Undo |
+| MK1-21 | ✓ M-PLATZ und M-ANSICHT (0,00 px) in P1, P2, P3, L1, L2, W, 844 × 390 und 926 × 428 mit 47-px-Safe-Area, 844 × 390 mit Safe-Area + 21-px-Home-Balken (→ Halb-Ansicht quer), je SPIEL + 44 Stellungen/Ebenen, Halb-Ansicht LINKS und RECHTS, offene Liste (11 × 44 px); Treffer ≥ 44 × 44, keine Überlappung, keine Beschriftung läuft über, keine Seite scrollt; L1: Körper 720 × 136 (Regler 44 × 44, Drehschalter 52 bzw. 64 × 44, Matrix-Zeile 244 × 44); Kopfzeile quer: nichts läuft über, Namensfeld ≥ 72 px, Engine-Knöpfe 36 px, 4 px, Treffer 44 px; hoch: Chip (s. Breiten-Budget); Zoom/Pinch/Textauswahl aus |
+| MK1-22 | ✓ LCD für alle 70 Regler: Sektion · Name · Gerätewert · Klartext; 7 Hilfe-Zeilen |
+| MK1-23 | ✓ ECO (NativeVoice): INIT +1,1 dB/+0,10 Okt, Puls+Säge +0,9/+0,11, Dreieck +1,4/0,00, Sync-Säge +1,2/+0,01; Badge da |
+| MK1-24 | ✓ eine AM-Stimme 1,02 × VA-Stimme, 4 Stimmen 2,85 × (Xeon, Node, Mediane aus 9 verschachtelten Läufen, je 2 s Aufwärmen verworfen; VA-Stimme 1,07 % Echtzeit, AM 1,09 %, 4 AM 3,04 %). Die Maschine wird mit anderen Läufen geteilt: einzelne Läufe streuen 0,9–1,5 ×. Chromium (Probe): Σ 4 Engines × 4 Stimmen `load_med` 0,147, je Engine 0,035–0,048 |
+| MK1-25 | ✓ JSON mit allen Feldern; Σ-Last 0,147; 0-Gain: −∞ dBFS; 0 Netzaufrufe; [Abbrechen] → alle 4 Engines entsorgt nach 0,6 s; `quantum_max_ms` null (s. Lücken) |
+| MK1-26 | ✓ ohne AM: Median aus 5 −20 ms gegen 4.8.1 (ein früherer Lauf +28 ms; Einzelwerte 297–360 ms, die Maschine ist geteilt); mit AM-Sound: +38 ms bzw. −5 ms gegen ohne AM, Block beim Laden ausgewertet (1,1–2,3 ms); erste Auswertung 3,1 ms, bei CPU ×4 14,6–18,8 ms, keine longtask; Engine-Knopf während der Demo: späteste Note 16,7 ms *vor* Plan, 14 Schläge je Takt durchgehend |
+| MK1-27 | ✓ PE1 L1 und P1 mit offenem Bedienfeld, BEND- und Drehschalter-Zug: 59,9 fps, 0 longtasks, tick-p95 0,6–0,7 ms, tickErrors 0. **✗ Budget +130,3 KB** (s. Abweichungen). Keine Konsolenfehler; Smoke-Test ohne Fehler; Worklet-ASCII |
+| MK1-28 | ✓ `APP_CODE` 4 009 000; `save_project` mit Format 5 / App 4009000 (Fake-Server); kein Klassenzimmer-Projekt |
+| MK1-29 | ✓ 4.8.1 öffnet Format 5 gesperrt, KV/Server/Bibliothek unverändert; zurück auf 4.9.0 deep-equal |
+| MK1-30 | ✓ VA-Zustand ruht (kein `fx.rev`-LFO, keine VA-Mods, kein `glideFrom`), zurück auf VA wirkt die Route |
+| MK1-31 | ✓ 🎲 100 Würfe hörbar (4 × 100 im Lauf geprüft), Mixer ≥ 64; ◎ genau FILTER/A-HK; Seite B A–Z |
+| MK1-32 | ✓ M-SKIZZE: IoU aller Zonen und Holzwangen 1,000 (844 × 390 und 926 × 428 mit Safe-Area); Räder links der ersten Taste in `#kbArea`; Anordnung in allen 9 Formaten (Bänder, Spalte TIMBRE/EDIT-WAHL 1/2, Z13 2 px unter Z12, Matrix-Zeile auf Höhe ihres Drehschalters, Holzwangen, Hälften A/B); Material aus dem Bildschirmfoto: Feld L* 15,3, Holz 24°/44 %/36 %, Kappe L* 5,5, Kontrast 12,6 : 1, Vocoder-Grün 138°, LED 10°; Matrix Ebene 1 = Belegungs-Tabelle B.3 (11 Stellungen) |
+| MK1-33 | ✓ P1 und L1: Räder links der ersten Taste (44 × 146 bzw. 44 × 86 px), BEND oben = +1, zweiter Finger ignoriert, Feder 62–70 ms, 3 Tasten bei gehaltenem Rad, MOD bleibt, nichts gespeichert, VA ohne Räder |
+| MK1-34 | ✓ LEDs, Rasten je 18 px, Liste 11 × 44 px, keine Sound-Änderung/kein Undo durch die Wahl, SHIFT (EB2), SHIFT + OKT ▲ = +1 (ein Undo), SHIFT + SEITE, OKT 1…7, ORIGINAL-LED, Nummerntaste lädt (ein Undo, Toast) und zurück zu SPIEL |
+
+**Filter, −3-dB-Punkte** (Res 0, Rauschen; MK1-11): Cutoff 32 (W-01 114 Hz): 24LPF 49 Hz · 12LPF 72 Hz · 12BPF 48–273 Hz · 12HPF 181 Hz;
+Cutoff 64 (650 Hz): 277 · 410 · 270–1554 · 1032 Hz; Cutoff 96 (3705 Hz): 1609 · 2374 · 1562–8180 · 5712 Hz.
+
+**Breiten-Budget Kopfzeile** (B.3 Zeile 1, mit Spur-Chip „Synth 1“): P1 390 px: Chip 83 × 34 px (Treffer 43 px = ganze Zeile 1),
+Spurname 60 px; P2 375 px: Chip 83 px (Treffer 40 px), Spurname 53 px; P3 320 px: Chip 77 px (Treffer 34 px), Spurname 53 px; vier
+Knöpfe hätten dort 36/36/36/40 px + 3 × 4 px gebraucht und den Spurnamen unter 40 px gedrückt. L1 844 px: 36/36/36/65 px (einzeilig),
+Namensfeld 120 px; L2 667 px: 36/36/36/38 (zweizeilig), Namensfeld 78 px; L1 mit Safe-Area (750 px): zweizeilig + „▶“ ohne Wort,
+Namensfeld 95 px; 926 × 428 mit Safe-Area: einzeilig, Namensfeld 108 px; W: 36/36/36/38 px, Treffer 46 px.
+
+**Bildschirmfotos:** `dirigent-test/v3-mk1-shots/mk1-look-<Format>[-A|-B]-{spiel,filter}.png` für P1, P2, P3, L1, L2, W, L1-SA,
+L0-SA (926 × 428), L1-HB (Halb-Ansicht mit Home-Balken); dazu `mk1-{spiel,filter}-<Format>.png` (DPR 2). Ein Vocoder-FILTER-Foto
+gibt es erst mit MK7 (SYNTH/VOC. ist bis dahin gesperrt).
+
+### Abweichungen
+- **Budget +130,3 KB statt +115 KB** (2 534 778 → 2 668 186 B). Davon ≈ 19 KB Kommentare (Bezüge auf W-/B-/EN3-Nummern, Begründungen
+  der DSP-Stellen); ohne sie ≈ +111 KB. Ich habe sie nicht entfernt, weil die nächsten Pakete direkt in dieser Datei weiterbauen.
+  Gespart wurde: Ausrichtungs-Leerzeichen, doppelte Zonen-Listen. Vorschlag: SL1 packt den Block `sq-mk-src` (≈ 62 KB, erst bei Bedarf
+  ausgewertet), oder Kommentare im Block kürzen (≈ 4 KB).
+- **P1 zeigt den Engine-Chip** statt vier Knöpfen (H-13-Vorgabe „Chip nur dort, wo nicht“: der Spurname fiele unter 40 px). Der Chip
+  ändert VA/FM/WT sichtbar – der Orchestrator wollte ihn Xander vorher zeigen. Treffer-Höhe des Chips = Zeile 1 (P1 43, P2 40, P3 34 px;
+  oben liegt die Kopfleiste, unten Zeile 2; die alten VA/FM/WT-Knöpfe hatten 34 px).
+- **Querformat mit Safe-Area:** „▶ Hören“ verliert sein Wort, wenn die 40-px-Kopfzeile sonst überläuft (gleiche Regel wie schon unter 760 px).
+- **ECO-Badge** sitzt auf dem VA-Knopf (vorhandener Mechanismus: ECO = VA-Fassung des Sounds).
+- **Prüf-Lesarten:** W-13 als Zeit bis 90 % (t90); M-EINBRUCH gegen min(vorher, nachher); M-SP-Bedingung „C4, Cutoff 80“ für Sync
+  (ein offenes Filter bis Nyquist verdeckt die Verschiebung); CPU im eingeschwungenen Zustand (je Render 2 s JIT-Aufwärmen verworfen,
+  verschachtelte Mediane); Denormal-Fenster aus dem Median der Quanten (geteilte Maschine).
+- **🎲:** Amp-Attack ≤ 72, 12HPF/12BPF mit Cutoff 35–80 (sonst bei C3 unter −60 dB → nicht hörbar).
+- **Ebene 3 (SHIFT zweimal)** wird erst mit MK11/MK12 belegt; in MK1 schaltet der zweite Tipp SHIFT aus.
+
+### Lücken
+- **Faltung Ring+Sync / Sync bei C6** (MK1-09): Ring+Sync bis −38,6 dB (+19 HT), Sync bis −48,1 dB (+17 HT); Ziel −50 dB (gerechnet
+  −52 … −55). Das Produkt zweier polyBLEP-Signale bei 1× Abtastrate faltet; ein 2×-Überabtasten nur des Ring-Wegs widerspräche der
+  Gleichheit „Ring+Sync = Sync × OSZ 1 (≤ 1e-4)“ derselben Abnahme. Vorschlag MK1-fix: beide Oszillatoren in den Ring-Modi 2× rechnen
+  und die Gleichheits-Regel auf „gleiche Teiltöne ± 0,5 dB“ ändern, oder den Wert wie bei Ring/Sinus× als Charakter führen (B.6 Nr. 12).
+- `quantum_max_ms` der Probe ist `null` (das Worklet meldet nur die Mittellast je Sekunde); `frames_ok` = Berichte kamen an.
+- MIDI-Bend/CC1 (freiwillig) nicht gebaut. Die Aufnahme ● zeichnet die Räder nicht auf (laut Spec).
+- Zusatz-Ansichten (SCHRITTE, 16 BÄNDER, EIGENE) und Vocoder-Beschriftung im Feld kommen mit MK3/MK6/MK7 (in MK1 nur die Plätze).
+
+### Datenbank
+Keine Änderung. Laut Orchestrator gilt am Server `max_app` 4 021 000 und `max_format` 5 – 4.9.0 mit Format 5 ist damit zugelassen.
+**Am Server offen:** nichts (keine Supabase-Abfrage in diesem Lauf; Format-5-Speichern nur gegen den Fake-Server geprüft).
+
+### iPhone-Prüfpunkte (Xander, ≈ 7 min)
+1. Synth-Spur → Kopf: „MS 2000“ (hochkant über den Chip „VA ▾“). Quer halten: Sieht das Bedienfeld aus wie dein Gerät? Hochkant:
+   sind die zwei Hälften klar? Abweichungen kurz nennen.
+2. Akkord spielen, CUTOFF und RESO. drehen. Mit dem linken Daumen BEND ziehen, mit der anderen Hand weiterspielen; MOD hochschieben
+   (Vibrato, wenn TONH. → VIBRATO gesetzt ist).
+3. EDIT-WAHL 1 auf OSZ 2 → Regler 2 (MOD) auf „Sync“, dann Regler 3 (HALBT.) drehen.
+4. EDIT-WAHL 1 auf AMP → Regler 3 (VERZ.) an, dann MIXER hochdrehen.
+5. Menü → Info → **Leistungs-Probe**, Ergebnis kopieren und schicken.
+
+### Geräte-Abgleich (nach Gehör, an deinem Gerät)
+Säge STEUER 1 0 → 127 („Oktave dazu“?); Puls STEUER 1 = 64; Dreieck STEUER 1 = 127; Resonanz 127 (Einsatz und Pegel des Pfeifens);
+Attack 64 / Release 64; LFO-Frequenz 64; **Bedienfeld (nur Sicht):** Lage der Zonen, LEDs und Räder – Abweichungen ändern die
+Referenz-Skizze in einem `MK1-fix`.
