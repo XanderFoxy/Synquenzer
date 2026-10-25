@@ -5498,6 +5498,75 @@ function mapNote(note, ref, target, mode = 'chord', opts = {}) {
   return out;
 }
 
+// ===== V2c′ „Eine Skala“ (Spec E3-25; Nachtrag 2, Xander 24.10.: Akkord-Skala-Quantisierer) — the only opening of I-01.
+// It runs AFTER mapNote (the degree mapping stays untouched, so every note keeps its degree) and only behind a switch.
+// oneScale(target, base, mode, opts) -> the 7 pitch classes of the ONE target scale (index 0 = target root), built on the
+// reference key `base` exactly like targetScale builds it for a clip in that key; null for HALBTON / no Träger.
+function oneScale(target, base, mode, opts = {}) {
+  if (!target || mode === 'chromatic' || !base || !SCALES[base.scale]) return null;
+  const S = SCALES[base.scale]; let t = target;
+  if (mode === 'scale' && !S.includes(PC(t.root - base.root))) { let d = 1; while (d < 12 && !S.includes(PC(t.root - d - base.root))) d++; t = {...t, root:PC(t.root - d)}; }
+  const T = targetScale(t, base, mode, opts);
+  // sus2 / sus4 put two degrees on one tone (6 tones): the one scale keeps 7, the doubled slot takes the tone of the mode
+  // the chord stands on (C sus4 → C-Mixolydisch with E), so seven different tones can stay seven (Kollisionsschutz)
+  if (new Set(T).size < 7) {
+    const c = t.quality && BY_Q[t.quality], M = keyModeAt(base, t.root) || SCALES[(c && c.scale) || 'ionian'] || SCALES.ionian;
+    for (let i = 0; i < 7; i++) for (let j = i + 1; j < 7; j++) if (T[i] === T[j]) { if (T[i] !== M[i] && !T.includes(M[i])) T[i] = M[i]; else if (T[j] !== M[j] && !T.includes(M[j])) T[j] = M[j]; }
+  }
+  return T.map(x => PC(t.root + x));
+}
+// one MIDI note into the scale Z: nearest scale tone; a tie goes in the playing direction (dir > 0 up), else down
+function snapToScale(q, Z, dir) {
+  if (Z.includes(PC(q))) return q;
+  let dn = 1; while (dn < 12 && !Z.includes(PC(q - dn))) dn++;
+  let up = 1; while (up < 12 && !Z.includes(PC(q + up))) up++;
+  return dn < up ? q - dn : up < dn ? q + up : dir > 0 ? q + up : q - dn;
+}
+// items: the distinct source pitches of a clip, ascending: {p, q (= mapNote result), dir (approach direction), dur (longest,
+// beats), pass (only ever a short stepwise passing tone)}. o: {amt 0..1 (Stärke), pass (Durchgangstöne erlauben)}.
+// Returns q' per item. Rules (Xander 24.10.): (1) a tone in Z keeps its degree-mapped pitch; (2) only a foreign tone moves,
+// to the nearest scale tone, a tie in its playing direction; Stärke < 100 % leaves short (verspielte) foreign tones as
+// played: they move only from a length of (1 − Stärke) × 2 beats on; (3) collision guard: if a moved tone would land on its
+// neighbour's pitch although the two were different, the moved one steps on to the next scale tone in its direction
+// (upper neighbour up, lower neighbour down); the order of the pitches never flips (contour); (4) timing is not touched.
+function oneScaleMap(items, Z, o = {}) {
+  const amt = o.amt == null ? 1 : Math.max(0, Math.min(1, o.amt)), thr = amt >= 1 ? 0 : (1 - amt) * 2;
+  const inZ = x => Z.includes(PC(x));
+  const R = items.map(it => {
+    if (inZ(it.q) || amt <= 0 || (o.pass && it.pass) || it.dur < thr - 1e-9) return {v:it.q, mv:false};
+    return {v:snapToScale(it.q, Z, it.dir), mv:true};
+  });
+  const nextUp = x => { let y = x + 1; while (!inZ(y) && y < x + 12) y++; return y; };
+  const nextDn = x => { let y = x - 1; while (!inZ(y) && y > x - 12) y--; return y; };
+  for (let k = 1; k < R.length; k++) {
+    const a = R[k - 1], b = R[k];
+    if (b.v < a.v) b.v = a.v;                                         // never flip the order of two source pitches
+    if (b.v !== a.v) continue;
+    if (b.mv) { b.v = nextUp(a.v); continue; }                       // the upper one was moved: on up
+    const d = nextDn(a.v), roomDn = k < 2 || d > R[k - 2].v;
+    if (a.mv) { if (roomDn) a.v = d; continue; }                       // the lower one was moved: on down (if there is room)
+    // neither moved, the degree mapping put two different tones on one (sus2/sus4, an accidental without room): the lower one
+    // goes down to the next scale tone, else the upper one up – both only into a free tone (no new collision)
+    if (roomDn) { a.v = d; continue; }
+    const u = nextUp(b.v); if (k + 1 >= R.length || u < items[k + 1].q) b.v = u;
+  }
+  // still two on one tone (no free neighbour): push a short chain of moved or doubled tones one scale step (≤ 3 tones)
+  const mov = R.map((r, k) => r.mv || (k > 0 && items[k].q === items[k - 1].q) || (k + 1 < items.length && items[k].q === items[k + 1].q));
+  const push = (k, dir) => {
+    const v = R.map(r => r.v); let j = k;
+    for (let n = 0; n < 3; n++) {
+      if (!mov[j]) return false;
+      v[j] = dir < 0 ? nextDn(v[j]) : nextUp(v[j]);
+      const nb = j + dir;
+      if (nb < 0 || nb >= v.length || (dir < 0 ? v[nb] < v[j] : v[nb] > v[j])) { R.forEach((r, i) => { r.v = v[i]; }); return true; }
+      j = nb;
+    }
+    return false;
+  };
+  for (let k = 1; k < R.length; k++) if (R[k].v === R[k - 1].v) { if (!push(k - 1, -1)) push(k, 1); }
+  return R.map(r => r.v);
+}
+
 // Key stored on a clip recorded while a carrier is active, so that playback under the same carrier is identity.
 const SCALE_ORDER = ['ionian','dorian','phrygian','lydian','mixolydian','aeolian','locrian'];
 function keyForRecording(target, projectKey, mode, opts = {}) {
@@ -5516,7 +5585,7 @@ function keyForRecording(target, projectKey, mode, opts = {}) {
   return withRef({root:t.root, scale:fb});
 }
 
-return {PC, NAMES, PRETTY, PRETTY_DE, SCALES, CHORDS, SUFFIX, BY_Q, chordName, detectChord, targetScale, mapInterval, nearestShift, refNote, resolveShift, mapNote, keyForRecording, keyModeAt, hasThird, SCALE_ORDER};
+return {PC, NAMES, PRETTY, PRETTY_DE, SCALES, CHORDS, SUFFIX, BY_Q, chordName, detectChord, targetScale, mapInterval, nearestShift, refNote, resolveShift, mapNote, keyForRecording, keyModeAt, hasThird, SCALE_ORDER, oneScale, snapToScale, oneScaleMap};
 })();
 window.DirigentHarmony = Harmony;
 /* ===== Transposer (verbatim port of transposer.js v2) ===== */
@@ -10677,7 +10746,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.5.2';
+const VERSION = '4.5.3';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -11201,7 +11270,8 @@ function defaultSettings() {
   return {
     metro: false, metroVol: 0.6, metroInRec: true, countIn: 1,
     recLength: 'auto', inQuant: 'auto', swing: 0, noteNames: 'intl',
-    harmony: {mode: 'chord', latch: true, change: 'now', octaveMode: 'nearest', single: 'key', minor: 'aeolian', keyAware: true, split: null, gatherMs: 40},
+    harmony: {mode: 'chord', latch: true, change: 'now', octaveMode: 'nearest', single: 'key', minor: 'aeolian', keyAware: true, split: null, gatherMs: 40,
+      oneScale: false, osAmt: 1, osPass: false, osRef: 'proj', drums: false},   // V2c′: fehlt oneScale = aus (gespeicherte Projekte, Demo); newProjectRaw schaltet an
     kbScale: 'show', haptics: true, quality: 'auto', buffer: 'interactive', coach: {trans: false, mod: false, fang: false}, keyModel: 2,
     hintDismissed: false,
     kbVel: 'pos', padSel: true,          // V0b: Tastatur-Anschlag POSITION | FEST (E3-29, U-06); Pad wählt Instrument (U-03)
@@ -11290,7 +11360,7 @@ const newScene = i => ({name: 'Szene ' + (i + 1), uid: newUid()});
 // init (V0b U-05 „Leer (Init)“): INIT Analog ×4 (+ MELODIE), INIT Drums (sends 0)
 // V2a: Format 4 — 6 tracks (Synth 1–4, DRUMS at 4, MELODIE at 5), 8 scenes, the empty fields of the later packages
 // (parts V2c, shift V2f; song: marks, own, xp, src — song-delta 12.1)
-function newProjectRaw(init) {
+function newProjectRaw0(init) {
   const sy = i => newSynthTrack(i, init ? 'f-init-analog' : null);
   return {
     format: 4, id: newProjectId(), name: 'Mein Projekt', bpm: 120, key: {root: 0, scale: 'ionian'}, settings: defaultSettings(),
@@ -11300,8 +11370,10 @@ function newProjectRaw(init) {
     fxBus: defaultFxBus(), song: null, ui: {selT: 3, selS: 0, order: orderFor(BASE_T), sceneBank: 0, trackBank: 0},
   };
 }
+// V2c′ (E3-25): „Eine Skala“ ist für neue Projekte an (Neu, [Leer (Init)]); die Demo bleibt aus (alte Harmonie-Tests, I-09)
+function newProjectRaw(init) { const p = newProjectRaw0(init); p.settings.harmony.oneScale = true; return p; }
 function demoProjectRaw() {
-  const p = newProjectRaw();
+  const p = newProjectRaw0();
   p.name = 'Demo'; p.bpm = 112;
   p.scenes[0].name = 'Groove'; p.scenes[1].name = 'Break';
   const K = () => ({root: 0, scale: 'ionian', src: 'auto'});
@@ -11399,6 +11471,7 @@ function normTrack(t, def, pk, warns) {
   if (def.kind === 'synth') {
     o.follow = normBool(t.follow, true);
     o.onChange = normEnum(t.onChange, ['follow', 'hold'], 'follow');
+    o.os = normBool(t.os, true);                                  // V2c′: „Eine Skala“ je Spur (Standard an)
     // v3: the track owns a full Sound (§15.2); a v2 patch (format 2) is migrated (§5.6)
     let snd = t.sound && typeof t.sound === 'object' ? SQStore.normalizeSound(t.sound) : null;
     if (!snd && t.patch && typeof t.patch === 'object') snd = SQStore.migratePatchV2(t.patch, t.preset, t.poly);
@@ -11461,6 +11534,9 @@ function normalizeProject(obj) {
     hd.keyAware = normBool(h.keyAware, hd.keyAware);
     hd.split = (h.split === 48 || h.split === 60) ? h.split : null;
     hd.gatherMs = normNum(h.gatherMs, 0, 200, 40);
+    hd.oneScale = normBool(h.oneScale, false);                     // V2c′ (E3-25, I-10): ein gespeichertes Projekt ohne das Feld klingt wie bisher
+    hd.osAmt = normNum(h.osAmt, 0, 1, 1); hd.osPass = normBool(h.osPass, false);
+    hd.osRef = normEnum(h.osRef, ['proj', 'auto'], 'proj'); hd.drums = normBool(h.drums, false);
     p.scenes.forEach(sc => { sc.uid = null; });                    // N2-2a-01: missing scene uids are deterministic (below)
     if (Array.isArray(obj.scenes)) obj.scenes.slice(0, N_SCN).forEach((sc, i) => { if (sc && typeof sc.name === 'string') p.scenes[i].name = sc.name.slice(0, 24); if (sc && typeof sc.uid === 'string' && UID_RE.test(sc.uid)) p.scenes[i].uid = sc.uid; });
     const warns = [];
@@ -11636,7 +11712,7 @@ function marksNorm(list, bars) {
   return out;
 }
 function migrateV1(o) {
-  const p = newProjectRaw();
+  const p = newProjectRaw0();                                    // V2c′: ein altes Projekt bekommt „Eine Skala“ nicht
   if (!o || typeof o !== 'object') return normalizeProject(p);
   p.bpm = clamp(+o.bpm || 120, 40, 240); p.settings.metro = !!o.metro;
   p.settings.inQuant = ({off: 'off', '1/8': '1/8', '1/16': '1/16', '1/32': '1/16'})[o.quant] || '1/16';
@@ -12885,14 +12961,88 @@ function perfRetune(v, out, t) {
 /* ---------- carrier change -> sounding & scheduled voices ---------- */
 // +1 µs: a note exactly on a quantized carrier boundary must already use the new Träger (float rounding of b2t vs grid math)
 // V2c (§4.4): the Teil-Transposition R.xp is added AFTER the mapping, like S.shift — only tracks with ⇅ folgt (I-01)
-function outPitch(i, clipKey, note, time, entry) {
+/* ---------- V2c′ „Eine Skala“ (E3-25; Nachtrag 2, Xander 24.10.: Akkord-Skala-Quantisierer) ----------
+   After the degree mapping (T.mapEvent, unchanged) every note of a following synth track goes into ONE scale: the scale of
+   the Träger built on the reference key (Projekt-Tonart, or „Automatisch“ = the detected key of the clip's scene). The rule
+   works per clip on its distinct pitches (Harmony.oneScaleMap): direction from how the clip approaches a pitch, longest
+   length for Stärke, passing tones; so a note sounds the same whether it is scheduled or retuned on a Träger change. */
+const OS = {tick: 0, cache: new WeakMap()};
+function osActive(tr) { const h = S.settings.harmony; return !!h.oneScale && h.mode !== 'chromatic' && !!tr && tr.kind === 'synth' && tr.follow !== false && tr.os !== false; }
+function osBase(si) {
+  if (S.settings.harmony.osRef === 'auto' && si != null && si >= 0) { const k = sceneKeyOf(si); if (k && Harmony.SCALES[k.scale]) return k; }
+  return S.key;
+}
+// what the clip does with each of its pitches (cached per scheduler tick and note content)
+function osStats(c) {
+  let rec = OS.cache.get(c);
+  if (rec && rec.tick === OS.tick) return rec;
+  const ns = c.notes, L = c.len * 4;
+  let sig = ns.length * 7 + L;
+  for (let k = 0; k < ns.length; k++) { const n = ns[k]; sig = (sig * 31 + n.n * 1009 + Math.round(n.t * 960) * 7 + Math.round(n.d * 96)) % 2147483647; }
+  if (rec && rec.sig === sig && rec.n === ns) { rec.tick = OS.tick; return rec; }
+  const live = ns.filter(n => n.t < L - 1e-9).slice().sort((a, b) => a.t - b.t || a.n - b.n);
+  // groups of notes starting together; the top note of a group carries the line (melody)
+  const G = []; for (const n of live) { const g = G[G.length - 1]; if (g && Math.abs(g.t - n.t) < 1e-6) g.ns.push(n); else G.push({t: n.t, ns: [n]}); }
+  const top = g => g.ns[g.ns.length - 1].n, info = new Map();
+  G.forEach((g, gi) => {
+    const pv = G.length > 1 ? top(G[(gi - 1 + G.length) % G.length]) : null, nx = G.length > 1 ? top(G[(gi + 1) % G.length]) : null;   // a clip loops
+    for (const n of g.ns) {
+      let r = info.get(n.n); if (!r) info.set(n.n, r = {up: 0, dn: 0, dur: 0, pass: true});
+      if (pv != null && pv < n.n) r.up++; else if (pv != null && pv > n.n) r.dn++;
+      r.dur = Math.max(r.dur, n.d);
+      const ps = pv != null && nx != null && n.d <= .5 + 1e-9 && ((pv < n.n && n.n < nx) || (pv > n.n && n.n > nx)) && Math.abs(n.n - pv) <= 2 && Math.abs(nx - n.n) <= 2;
+      if (!ps) r.pass = false;
+    }
+  });
+  const P = [...info.keys()].sort((a, b) => a - b);
+  rec = {tick: OS.tick, sig, n: ns, P, info, maps: new Map()};
+  OS.cache.set(c, rec); return rec;
+}
+function osClipOf(i, clipKey) {
+  const tr = S.tracks[i]; if (!tr || !clipKey) return null;
+  for (let s = 0; s < tr.clips.length; s++) { const c = tr.clips[s]; if (c && c.key === clipKey) return {c, s}; }
+  return null;
+}
+// q = the degree-mapped pitch of `note` under entry e; returns the pitch in the one scale
+function osApply(i, clipKey, note, q, e, time) {
+  const h = S.settings.harmony, tr = S.tracks[i], cs = osClipOf(i, clipKey);
+  const base = osBase(cs ? cs.s : null), opts = hopts();
+  const Z = Harmony.oneScale(e.target, base, h.mode, opts); if (!Z) return q;
+  if (!cs || !cs.c.notes.length) return Harmony.snapToScale(q, Z, 0);
+  const st = osStats(cs.c), sk = Z.join(',') + '|' + (clipKey.root + clipKey.scale) + '|' + e.shift + '|' + h.osAmt + '|' + h.osPass + '|' + h.octaveMode + h.mode + h.single + h.minor + h.keyAware;
+  let m = st.maps.get(e);
+  if (!m || m.sk !== sk) {
+    const trk = {kind: tr.kind, follow: tr.follow}, ref = {key: clipKey};
+    const items = st.P.map(p => { const r = st.info.get(p); return {p, q: T.mapEvent(p, time + 1e-6, trk, ref, e), dir: r.up > r.dn ? 1 : r.dn > r.up ? -1 : 0, dur: r.dur, pass: r.pass}; });
+    const out = Harmony.oneScaleMap(items, Z, {amt: h.osAmt, pass: h.osPass}), mp = new Map();
+    items.forEach((it, k) => mp.set(it.p, out[k]));
+    m = {sk, mp}; st.maps.set(e, m);
+  }
+  const v = m.mp.get(note);
+  return v != null ? clamp(v, 0, 127) : Harmony.snapToScale(q, Z, 0);
+}
+// degree mapping + one scale (no Teil-Transposition): the pitch a clip note of track i is heard at under entry e
+function mapOut(i, clipKey, note, time, entry) {
   const tr = S.tracks[i];
   const o = T.mapEvent(note, time + 1e-6, {kind: tr.kind, follow: tr.follow}, {key: clipKey || S.key}, entry);
+  if (osActive(tr)) { const e = entry || T.targetAt(time + 1e-6); if (e && e.target) return osApply(i, clipKey || S.key, note, o, e, time); }
+  return o;
+}
+// V2c′ (OP-Z-Tipp „Drums transponieren für Fills“): Drums mittransponieren = alle Pads um die gehörte Verschiebung gestimmt
+function drumTune(t) {
+  const h = S.settings.harmony; if (!h.drums) return 0;
+  const e = T.targetAt(t + 1e-6), x = xpAt(t + 1e-6) || 0;
+  const sh = (e && e.target ? e.shift || 0 : 0) + x;
+  return clamp(sh, -12, 12);
+}
+function outPitch(i, clipKey, note, time, entry) {
+  const tr = S.tracks[i];
+  const o = mapOut(i, clipKey, note, time, entry);
   if ((XP.tl.length > 1 || XP.tl[0].semi) && tr.kind === 'synth' && tr.follow !== false) { const x = xpAt(time + 1e-6); if (x) return clamp(o + x, 0, 127); }
   return o;
 }
 function applyCarrierChange(entry, info) {
-  UI.dirty.carrier = UI.dirty.kb = UI.dirty.grid = true;
+  UI.dirty.carrier = UI.dirty.kb = UI.dirty.grid = true; OS.tick++;
   const c = AU.ctx; if (!c || !entry) return;
   const now = c.currentTime, eff = Math.max(entry.time, now + .005);
   if (R.playing && isFinite(entry.time)) entry.beat = t2b(entry.time);
@@ -12920,6 +13070,10 @@ function applyCarrierChange(entry, info) {
       have.add(k); have.add(K(v.track, v.start, newOut));
       if (oldEnd - eff > .06) spawnClipVoice(v.track, newOut, v.vel, eff, oldEnd - eff, v.clipNote, v.clipKey);
     } else if (tr.onChange !== 'hold') v.retune(newOut, eff);
+  }
+  // V2c′: with „Drums mittransponieren“ the drum hits already scheduled behind the change are planned again with the new tune
+  if (S.settings.harmony.drums && R.playing && R.slot[DRUM_T] >= 0 && !S.tracks[DRUM_T].mute) {
+    const b = t2b(eff); if (b < R.schedBeat) { cancelTrackFrom(DRUM_T, eff); scheduleTrack(DRUM_T, Math.max(0, b), R.schedBeat, true); }
   }
 }
 // re-map sounding and scheduled clip voices after a mapping input changed (FOLGT, Bezug, Projekt-Tonart, harmony options)
@@ -12993,6 +13147,7 @@ function tick(h) {
 function tickAhead(h) { if (AU.ctx && R.playing) tick(h || .3); }
 function scheduleTrack(i, from, to, late) {
   if (to <= from) return;
+  OS.tick++;                                                     // V2c′: clip content may have changed since the last look
   const s = R.slot[i]; if (s < 0) return;
   const tr = S.tracks[i], clip = tr.clips[s];
   if (!clip || tr.mute || !clip.notes.length) return;
@@ -13047,7 +13202,12 @@ function scheduleDrums(i, clip, from, to, late) {
     }
   }
   // in time order: a pad is monophonic, so a later hit must see (and choke) every earlier one of the window
-  for (const e of [...ev.values()].sort((x, y) => x.t - y.t)) drumHit(e.n, e.v, e.t, 'clip', e.ex);
+  const dt = S.settings.harmony.drums;                           // V2c′: Drums mittransponieren (TUNE wie ein Lock)
+  for (const e of [...ev.values()].sort((x, y) => x.t - y.t)) {
+    let ex = e.ex; const tu = dt ? drumTune(e.t) : 0;
+    if (tu) ex = Object.assign({}, ex, {lk: Object.assign({}, ex && ex.lk, {tune: ((ex && ex.lk && ex.lk.tune) || 0) + tu})});
+    drumHit(e.n, e.v, e.t, 'clip', ex);
+  }
 }
 function cutTrackAt(i, t) {
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip' && v.start < t && v.end > t) v.release(t);
@@ -14947,6 +15107,8 @@ const STEPQ = {notes: [], vel: .8, timer: 0};
 // "Tastatur: Tonart sperren" (§4.2): an out-of-key key plays the nearest in-key note below (heard = stored)
 function kbLockNote(note) {
   if (S.settings.kbScale !== 'lock') return note;
+  const Z = kbOneZ();                                             // V2c′: under a Träger with „Eine Skala“ the one scale itself
+  if (Z) { let n = note; for (let g = 0; g < 12 && !Z.includes(PCx(n)); g++) n--; return n; }
   const ref = kbRefKey(), SC = Harmony.SCALES[ref.scale] || Harmony.SCALES.ionian;
   let n = note; for (let g = 0; g < 12 && SC.indexOf(PCx(n - ref.root)) < 0; g++) n--;
   return n;
@@ -15110,6 +15272,12 @@ function setHarmony(p) {
   if (p.split !== undefined) h.split = (p.split === 48 || p.split === 60) ? p.split : null;
   if (p.latch !== undefined) { setLatch(p.latch); }
   if (p.gatherMs !== undefined && isNum(p.gatherMs)) h.gatherMs = clamp(p.gatherMs, 0, 200);
+  // V2c′ „Eine Skala“: Schalter, Stärke 0–1, Durchgangstöne erlauben, Bezug Projekt-Tonart │ automatisch, Drums mittransponieren
+  if (p.oneScale !== undefined) h.oneScale = !!p.oneScale;
+  if (p.osAmt !== undefined && isNum(p.osAmt)) h.osAmt = clamp(p.osAmt, 0, 1);
+  if (p.osPass !== undefined) h.osPass = !!p.osPass;
+  if (p.osRef !== undefined) h.osRef = normEnum(p.osRef, ['proj', 'auto'], h.osRef);
+  if (p.drums !== undefined) h.drums = !!p.drums;
   syncTransposer();
   if (p.octaveMode !== undefined) T.rekey();
   if (AU.ctx) remapNow();
@@ -18104,6 +18272,18 @@ function renderCarrier(now) {
 // shift that is really heard (V0a K-08): the scene's key (heardBaseKey = sceneRefKey) through the real mapping — the root
 // of that key, mapped by the Transposer exactly as a clip note, minus itself. TONART snaps an out-of-key root down to the next
 // degree of that key (snap). key / target: the key the scene's music is mapped onto („→ C-Dur“)
+// V2c′: the reference key of the one scale that is heard now (null = „Eine Skala“ aus): readout, lit keys, „Tonart sperren“
+function osShownBase() {
+  const h = S.settings.harmony; if (!h.oneScale || h.mode === 'chromatic') return null;
+  if (h.osRef !== 'auto') return S.key;
+  const b = AU.ctx && R.playing ? audBeat() : 0;
+  for (const i of synthTracks()) {
+    const tr = S.tracks[i]; if (!osActive(tr)) continue;
+    const sl = R.playing ? visualSlots(i, b).playing : R.selS;
+    if (sl >= 0 && tr.clips[sl] && tr.clips[sl].notes.length) return osBase(sl);
+  }
+  return osBase(R.selS);
+}
 function shownShift(e) {
   const t = e && e.target; if (!t) return {shift: 0, snap: null, key: null, target: ''};
   const ref = heardBaseKey(), h = S.settings.harmony, n = 60 + ref.root;
@@ -18113,7 +18293,7 @@ function shownShift(e) {
     const Sc = Harmony.SCALES[ref.scale];
     if (Sc && !Sc.includes(PCx(t.root - ref.root))) { let d = 1; while (d < 12 && !Sc.includes(PCx(t.root - d - ref.root))) d++; snap = PCx(t.root - d); }
   }
-  try { key = Harmony.keyForRecording(t, ref, h.mode, Object.assign(hopts(), {octaveMode: h.octaveMode})); } catch (err) { key = null; }
+  try { key = Harmony.keyForRecording(t, osShownBase() || ref, h.mode, Object.assign(hopts(), {octaveMode: h.octaveMode})); } catch (err) { key = null; }
   return {shift, snap, key, target: key ? keyName(key) : ''};
 }
 // §16 carrierShown(): what the readout shows (V0a-10): the heard shift and the target key
@@ -18287,8 +18467,13 @@ function sceneRefKey() {
 }
 function kbRefKey() {
   const tg = T.targetAt(nowT()).target;
-  if (tg && R.kbMode !== 'transpose' && !R.momentary) { const h = S.settings.harmony; return Harmony.keyForRecording(tg, heardBaseKey(), h.mode, Object.assign(hopts(), {octaveMode: h.octaveMode})); }
+  if (tg && R.kbMode !== 'transpose' && !R.momentary) { const h = S.settings.harmony; return Harmony.keyForRecording(tg, osShownBase() || heardBaseKey(), h.mode, Object.assign(hopts(), {octaveMode: h.octaveMode})); }
   return sceneRefKey();
+}
+// V2c′: the scale the keyboard shows and locks to while playing under a Träger with „Eine Skala“ (= the engine's one scale)
+function kbOneZ() {
+  const tg = T.targetAt(nowT()).target; if (!tg || R.kbMode === 'transpose' || R.momentary) return null;
+  const ob = osShownBase(); return ob ? Harmony.oneScale(tg, ob, S.settings.harmony.mode, hopts()) : null;
 }
 /* the key the music is in (the playing scene's key, §4.1): the base every Träger result is built on — the engine maps each
    clip against its own (scene) key, so the lit keys, „Tonart sperren“, the TONART readout and the Bezug of a take under a
@@ -18317,13 +18502,13 @@ function kbPaint() {
   const ks = S.settings.kbScale, drum = S.tracks[R.selT].kind === 'drum';
   const lit = trm || (ks !== 'off' && !drum);
   const ref = lit ? (trm ? sceneRefKey() : kbRefKey()) : null, SC = ref ? (Harmony.SCALES[ref.scale] || Harmony.SCALES.ionian) : null;
-  const pl = !trm && lit, lk = pl && ks === 'lock';
+  const pl = !trm && lit, lk = pl && ks === 'lock', OZ = pl ? kbOneZ() : null;
   if (UI.last.kbPl !== pl) { UI.last.kbPl = pl; EL.kb.classList.toggle('pl', pl); }
   if (UI.last.kbLk !== lk) { UI.last.kbLk = lk; EL.kb.classList.toggle('locked', lk); }
   const vk = vsLitKey();                                     // VS2: die gesungene Note leuchtet
   for (const [note, k] of KB.byNote) {
     setCls(k.el, k.st, 'vs', note === vk);
-    const deg = SC ? SC.indexOf(PCx(note - ref.root)) : -1;
+    const deg = OZ ? OZ.indexOf(PCx(note)) : SC ? SC.indexOf(PCx(note - ref.root)) : -1;
     setCls(k.el, k.st, 'dn', held.has(note));
     setCls(k.el, k.st, 'lt', latched.has(note));
     setCls(k.el, k.st, 'inkey', !!SC && deg >= 0);
@@ -20157,6 +20342,12 @@ function soundEdited(snd) {
   return SQStore.soundHash(snd) !== OHASH.h;
 }
 
+// V2c′: „Eine Skala“ je Spur (Menü → Harmonie → Spuren)
+function setTrackScale(t, onF) {
+  const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth') return;
+  tr.os = !!onF; if (AU.ctx) remapNow();
+  UI.dirty.all = true; markDirty();
+}
 function setTrackFollow(t, onF) {
   const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth') return;
   tr.follow = !!onF; if (AU.ctx) remapNow();
@@ -25986,6 +26177,21 @@ function openMenu(goto) {
   row(s3, 'Split', makeSeg([[null, 'Aus'], [48, 'C3'], [60, 'C4']], () => h.split, v => setHarmony({split: v})));
   row(s3, 'Tastatur beim Spielen', makeSeg([['show', 'Tonart zeigen'], ['lock', 'Tonart sperren'], ['off', 'Aus']], () => st.kbScale, v => setKbScale(v)));
   s3.appendChild(el('div', 'small', 'Tonart zeigen: passende Töne leuchten. Tonart sperren: eine unpassende Taste spielt den nächsten passenden Ton darunter.'));
+  // V2c′ „Eine Skala“ (E3-25; Nachtrag 2, Xander 24.10.: Akkord-Skala-Quantisierer, Brain-Schalter, Drums für Fills)
+  row(s3, 'Eine Skala', makeSeg([[true, 'An'], [false, 'Aus']], () => !!h.oneScale, v => setHarmony({oneScale: v}))).classList.add('mos');
+  const osA = slider(0, 1, .05, () => h.osAmt, v => setHarmony({osAmt: v}), v => Math.round(v * 100) + ' %'); osA.prepend(el('span', 'lbl', 'Stärke')); osA.classList.add('mos-amt'); s3.appendChild(osA);
+  row(s3, 'Durchgangstöne', makeSeg([[false, 'Einrasten'], [true, 'Erlauben']], () => !!h.osPass, v => setHarmony({osPass: v})));
+  row(s3, 'Skala nach', makeSeg([['proj', 'Projekt-Tonart'], ['auto', 'Automatisch']], () => h.osRef, v => setHarmony({osRef: v})));
+  const osT = row(s3, 'Spuren'); osT.classList.add('mos-tr');
+  for (const i of synthTracks()) {
+    const tr = S.tracks[i], b = btn(trackTag(i), tr.os !== false && tr.follow ? 'on' : '');
+    b.disabled = !tr.follow; b.title = tr.follow ? tr.name + ': Eine Skala ' + (tr.os !== false ? 'an' : 'aus') : tr.name + ' folgt nicht (⇅ fest)';
+    b.setAttribute('aria-pressed', String(tr.os !== false && !!tr.follow));
+    on(b, 'click', () => { setTrackScale(i, tr.os === false); b.classList.toggle('on', tr.os !== false); b.setAttribute('aria-pressed', String(tr.os !== false)); b.title = tr.name + ': Eine Skala ' + (tr.os !== false ? 'an' : 'aus'); });
+    osT.appendChild(b);
+  }
+  row(s3, 'Drums', makeSeg([[false, 'Bleiben'], [true, 'Mittransponieren']], () => !!h.drums, v => setHarmony({drums: v})));
+  s3.appendChild(el('div', 'small', 'Eine Skala: unter einem Akkord (Träger) rückt jeder Ton in die Tonleiter dieses Akkords – jeder Ton behält seine Stufe, nur leiterfremde Töne rücken zum nächsten passenden Ton (bei Gleichstand in Spielrichtung). Zwei verschiedene Töne bleiben verschieden, aufwärts bleibt aufwärts. Stärke unter 100 %: kurze, verspielte Töne bleiben wie gespielt. Durchgangstöne erlauben: kurze Schritt-Töne zwischen zwei Tönen bleiben. Skala nach Projekt-Tonart oder automatisch nach der erkannten Tonart der Szene. Drums mittransponieren: alle Pads werden um die Verschiebung gestimmt (für Fills).'));
   const bCoach = btn('? So funktioniert’s'); on(bCoach, 'click', () => { closeMenu(); showCoach(); }); row(s3, null, bCoach);
   // 4 Aufnahme
   const s4 = sec('Aufnahme', colR, 5);
@@ -26031,7 +26237,8 @@ function openMenu(goto) {
     'Clip-Länge: den hellen Griff ┃ am Ende des Lineals ziehen – die Ansicht bleibt dabei stehen, am Rand läuft sie langsam mit. Noten hinter dem neuen Ende werden gelöscht (↶ holt sie zurück). Taktnummern antippen + „Zuschneiden“ = nur diese Takte behalten.',
     'Szene starten: ▶ 1–4. Laufenden Clip antippen = stoppt zum nächsten Takt. ■ zweimal = sofort. Clip lange drücken = Clip-Menü.',
     'TRANSPONIEREN: Die Tastatur ist stumm. Leuchtende Taste = Stufe in der Tonart (wie OP-Z), dunkle Taste = neue Tonart, Akkord = alle Spuren folgen (wie Improvisor). Die Tonart jedes Clips wird automatisch erkannt.',
-    'LATCH: Träger bleibt nach dem Loslassen. ORIGINAL = zurück. Drums bleiben immer gleich.',
+    'LATCH: Träger bleibt nach dem Loslassen. ORIGINAL = zurück. Drums bleiben gleich (außer Menü → Harmonie → Drums: Mittransponieren).',
+    'EINE SKALA (Menü → Harmonie, für neue Projekte an): unter einem Träger klingen alle folgenden Spuren in einer Tonleiter – der Tonleiter des Akkords. Jeder Ton behält seine Stufe; nur leiterfremde Töne rücken zum nächsten passenden Ton. Stärke, Durchgangstöne, Projekt-Tonart │ automatisch und ein Schalter je Spur stehen dort.',
     'Träger-Anzeige: die Zahl ist die Verschiebung, die du hörst, dahinter die Ziel-Tonart – z. B. „C +3 · → C-Dur“ über einer a-Moll-Szene.',
     'KLANG: Regler ziehen = ändern, seitlich wegziehen = fein, doppelt tippen = Standard, gedrückt halten = modulieren (LFO 1, LFO 2 …).',
     'MODULATION: Regler halten, Quelle wählen (oder im Tab MOD oben eine Quelle antippen) – dann ziehen die Regler die Tiefe. Der farbige Ring zeigt den Bereich, der Punkt den Wert jetzt. „Fertig“ beendet.',
@@ -28204,7 +28411,7 @@ function buildMidi(opts) {
         const st = o + nt.t; if (st >= L - 1e-9) continue;
         const en = Math.min(L, st + Math.max(nt.d, 1 / 32));
         let p = nt.n;
-        if (tr.kind === 'synth' && withC) p = T.mapEvent(nt.n, Infinity, {kind: tr.kind, follow: tr.follow}, {key: c.key || S.key});
+        if (tr.kind === 'synth' && withC) p = mapOut(i, c.key || S.key, nt.n, Infinity);          // V2c′: mit „Eine Skala“ wie gehört
         p = clamp(Math.round(p), 0, 127);
         const v = clamp(Math.round(nt.v * 127), 1, 127), t0 = Math.round((off + st) * PPQ), t1 = Math.max(t0 + 1, Math.round((off + en) * PPQ));
         // identical (time, pitch) pairs sound once (like the scheduler): degrees that merge under sus/6 Träger, double notes
@@ -28277,7 +28484,7 @@ function buildMidiSong(withC) {
         const st = o + nt.t; if (st >= b1 - 1e-9 || st < b0 - 1e-9) continue;
         const en = Math.min(b1, st + Math.max(nt.d, 1 / 32));
         let p = nt.n;
-        if (tr.kind === 'synth' && withC) { const en2 = entAt(st); if (en2 && en2.target) p = T.mapEvent(nt.n, 0, {kind: tr.kind, follow: tr.follow}, {key: c.key || S.key}, en2); }
+        if (tr.kind === 'synth' && withC) { const en2 = entAt(st); if (en2 && en2.target) p = mapOut(i, c.key || S.key, nt.n, 0, en2); }
         if (tr.kind === 'synth' && tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; }   // V2d: song.xp
         dedAdd(i, ch, ded, st, en, clamp(Math.round(p), 0, 127), nt.v);
       }
@@ -29547,10 +29754,10 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
         if (dv.length >= 3 && span(dv, 3) <= 0.35 && Math.abs(dv[dv.length - 1] - dv[dv.length - 3]) <= 0.15) { const t = dv.slice(-3); lite(Math.round(this.med(t)), t, true); }
         else if (dv.length >= 8) { const t = dv.slice(-5); lite(Math.round(this.med(t)), t, true); }
       } else {
-        /* VS2b-fix (QA: Vibrato ±70–100 ct schon beim Einsatz – die Taste sprang zwischen den Nachbartasten, die gesungene
-           leuchtete oft nie): der Einsatz fällt auf einen Umkehrpunkt, die Mitte c lag dann am Rand des Vibratos. Aus den
-           letzten drei Umkehrpunkten (Halbwellen 40–150 ms, Ausschlag 0,5–3,2 Halbtöne, gleich groß, kein Stehen auf dem
-           Ton wie beim Triller) ergibt sich die Mitte des Vibratos; sie ist c, und liegt sie ≥ 60 ct neben der Taste, leuchtet
+        /* VS2b-fix (QA: Vibrato +/-70-100 ct schon beim Einsatz - die Taste sprang zwischen den Nachbartasten, die gesungene
+           leuchtete oft nie): der Einsatz faellt auf einen Umkehrpunkt, die Mitte c lag dann am Rand des Vibratos. Aus den
+           letzten drei Umkehrpunkten (Halbwellen 40-150 ms, Ausschlag 0,5-3,2 Halbtoene, gleich gross, kein Stehen auf dem
+           Ton wie beim Triller) ergibt sich die Mitte des Vibratos; sie ist c, und liegt sie >= 60 ct neben der Taste, leuchtet
            ihre Taste (erst mit einem Umkehrpunkt nach dem letzten Wechsel: kurz nach einem Tonwechsel gilt das alte Vibrato nicht). */
         const vb = this.vib(sm);
         if (vb && Math.round(vb.c) !== this.lit && Math.abs(vb.c - this.lit) > 0.6 && this.tp[this.tp.length - 1].i > this.lh) { const t = []; for (let i = Math.max(0, rh.length - 20); i < rh.length; i++) if (Math.abs(rh[i] - vb.c) <= 0.6) t.push(rh[i]); lite(Math.round(vb.c), t.length ? t : [vb.c], false); }
@@ -29560,8 +29767,8 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
           dv.push(sm); if (dv.length > 30) dv.shift();
           const e0 = rh.length - dv.length; let osc = false;
           for (let i = Math.max(0, e0 - 15, rh.length - this.since); i < e0 && !osc; i++) if ((rh[i] - c) * d < -0.3 * Math.abs(d)) osc = true;
-          // schwingt: bleibt im Vibrato-Band, oder die Stimme kam eben (≤ 150 ms) von einem spitzen Umkehrpunkt ≥ 0,5 Halbtöne auf
-          // der Gegenseite (ein Triller oder Lauf steht auf seinen Tönen, ein Anschleifen kehrt nicht um)
+          // schwingt: bleibt im Vibrato-Band, oder die Stimme kam eben (<= 150 ms) von einem spitzen Umkehrpunkt >= 0,5 Halbtoene auf
+          // der Gegenseite (ein Triller oder Lauf steht auf seinen Toenen, ein Anschleifen kehrt nicht um)
           if (!osc) { const mr = this.med(dv), T = this.tp; if ((vb && Math.abs(mr - vb.c) <= vb.amp / 2 + 0.25) || (this.va && this.hc - this.va.i <= 40 && Math.abs(mr - c) <= this.va.amp + 0.25)) osc = true;
             for (let i = Math.max(0, T.length - 2); i < T.length && !osc; i++) if (this.hc - T[i].i <= 15 && T[i].dw <= 5 && (T[i].v - mr) * Math.sign(d) <= -0.5) osc = true; }
           const early = this.age < 10 && !osc, big = Math.abs(d) >= 2;
@@ -29586,7 +29793,7 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
       if (++this.off >= (this.gp ? 3 : 5) && this.lit >= 0) { this.lit = -1; this.hh.length = 0; this.rh.length = 0; this.dv.length = 0; this.zr(); this.port.postMessage({lit: -1, f: Math.max(F, currentFrame)}); }
     }
   }
-  // Umkehrpunkte der geglätteten Tonhöhe (Zickzack mit 0,15 Halbtönen Hysterese) je stimmhaftem Hop: {v, i, dw = Hops ≤ 12 ct am Punkt}
+  // Umkehrpunkte der geglaetteten Tonhoehe (Zickzack mit 0,15 Halbtoenen Hysterese) je stimmhaftem Hop: {v, i, dw = Hops <= 12 ct am Punkt}
   zr() { this.zx = null; this.zd = 0; this.tp = []; this.hc = 0; this.va = null; this.lh = 0; }
   zz(x) {
     const hc = ++this.hc, H = 0.15; let z = this.zx; if (!this.tp) this.tp = [];
@@ -29601,17 +29808,17 @@ const ST_WK = `class SynqStimme extends AudioWorkletProcessor {
     if (j >= 0 && j < rh.length) { dw = 1; for (let k = j - 1; k >= 0 && Math.abs(rh[k] - v) <= 0.12; k--) dw++; for (let k = j + 1; k < rh.length && Math.abs(rh[k] - v) <= 0.12; k++) dw++; }
     this.tp.push({v, i, dw}); if (this.tp.length > 4) this.tp.shift();
   }
-  // Vibrato aus den letzten Umkehrpunkten: drei (zwei gleich große Halbwellen) oder, kurz nach einem Vibrato gleicher Weite,
+  // Vibrato aus den letzten Umkehrpunkten: drei (zwei gleich grosse Halbwellen) oder, kurz nach einem Vibrato gleicher Weite,
   // schon zwei (nach einem Tonwechsel im Legato); die Stimme muss im Band um die Mitte liegen (sonst ist sie schon woanders)
   vib(x) {
     const t = this.tp, hc = this.hc; if (!t || t.length < 2) return null;
     const ok = (p, q) => { const d = q.i - p.i, A = Math.abs(q.v - p.v); return d >= 4 && d <= 15 && A >= 0.5 && A <= 3.2 && p.dw <= 5 && q.dw <= 5 ? A : 0; };
-    const c = t[t.length - 1], b = t[t.length - 2], a = t.length >= 3 ? t[t.length - 3] : null; if (hc - c.i > Math.min(20, c.i - b.i + 6)) return null;   // der nächste Umkehrpunkt ist überfällig
+    const c = t[t.length - 1], b = t[t.length - 2], a = t.length >= 3 ? t[t.length - 3] : null; if (hc - c.i > Math.min(20, c.i - b.i + 6)) return null;   // der naechste Umkehrpunkt ist ueberfaellig
     let r = null; const A2 = ok(b, c), A1 = a ? ok(a, b) : 0;
     if (A1 && A2 && Math.min(A1, A2) >= 0.6 * Math.max(A1, A2)) r = {c: (a.v + 2 * b.v + c.v) / 4, amp: (A1 + A2) / 2};
     else if (A2 && this.va && hc - this.va.i <= 60 && A2 >= 0.6 * this.va.amp && A2 <= this.va.amp / 0.6) r = {c: (b.v + c.v) / 2, amp: A2};
     if (!r || Math.abs(x - r.c) > r.amp / 2 + 0.3) return null;
-    const rh = this.rh, n = Math.min(18, rh.length); let mu = 0; for (let k = rh.length - n; k < rh.length; k++) mu += rh[k];   // ≈ eine Periode: ihr Mittel ist die Mitte
+    const rh = this.rh, n = Math.min(18, rh.length); let mu = 0; for (let k = rh.length - n; k < rh.length; k++) mu += rh[k];   // ~ eine Periode: ihr Mittel ist die Mitte
     if (Math.abs(mu / n - r.c) > 0.25 + 0.15 * r.amp) return null;
     this.va = {amp: r.amp, i: hc}; return r;
   }
@@ -30979,7 +31186,8 @@ function runtimeInfo() {
       notes: recNotesCount(), lane: rec.state !== 'off'},
     stopQ: R.pend.slice(0, NT()).map(p => (p && p.slot === -1 ? p.beat : null)),
     kbMode: R.kbMode, momentary: R.momentary, latch: h.latch,
-    harmony: {mode: h.mode, change: h.change, octaveMode: h.octaveMode, single: h.single, minor: h.minor, keyAware: h.keyAware, split: h.split},
+    harmony: {mode: h.mode, change: h.change, octaveMode: h.octaveMode, single: h.single, minor: h.minor, keyAware: h.keyAware, split: h.split,
+      oneScale: h.oneScale, osAmt: h.osAmt, osPass: h.osPass, osRef: h.osRef, drums: h.drums},
     carrier, heldInputs: Object.keys(R.inputs),
     liveVoices: VOICES.filter(v => { if (v.dead || v.src !== 'live') return false; const st = v.state(now); return st === 'on' || st === 'pending'; }).length,
     voices: VOICES.filter(v => !v.dead).length + HITS.filter(x => !x.dead).length,
@@ -31187,6 +31395,11 @@ const SYNQUENZER = {
   clearClip: (t, s) => clearClip(t, s), undo, redo,
   toggleStep: (voice, step, bar) => toggleStep(voice, step, bar || 0),
   setTrackFollow, setMute,
+  // V2c′ (§16): oneScale(on?) -> boolean; Spur-Schalter; die eine Skala unter einem Träger (Tonklassen, Index 0 = Grundton)
+  oneScale: on => { if (on !== undefined) setHarmony({oneScale: !!on}); return !!S.settings.harmony.oneScale; },
+  setTrackScale,
+  oneScaleOf: (target, base) => Harmony.oneScale(target, base || S.key, S.settings.harmony.mode, hopts()),
+  kbScaleNow: () => { const Z = kbOneZ(); if (Z) return {root: Z[0], pcs: Z.slice(), one: true}; const r = kbRefKey(), SC = Harmony.SCALES[r.scale] || Harmony.SCALES.ionian; return {root: r.root, pcs: SC.map(x => PCx(x + r.root)), one: false}; },
   setEngine, loadPreset, setParam, getParam, randomize, setDrumParam,
   // WP7 (§16): FM6 — patch keys alg / fb / trans, operator keys (Anhang A.2: on fixed coarse fine det ol vs rs, bp ld rd lc rc,
   // r / l = arrays of 4 or 'r1'…'r4' / 'l1'…'l4'); one undo step per call; importSyx(bytes) -> {added, skipped, names}
@@ -31247,7 +31460,8 @@ const SYNQUENZER = {
     if (v) v.release(nowT());
   },
   harmony: {detectChord: Harmony.detectChord, mapNote: Harmony.mapNote, targetScale: Harmony.targetScale, mapInterval: Harmony.mapInterval,
-    nearestShift: Harmony.nearestShift, refNote: Harmony.refNote, keyForRecording: Harmony.keyForRecording, chordName: Harmony.chordName, SCALES: Harmony.SCALES, CHORDS: Harmony.CHORDS},
+    nearestShift: Harmony.nearestShift, refNote: Harmony.refNote, keyForRecording: Harmony.keyForRecording, chordName: Harmony.chordName, SCALES: Harmony.SCALES, CHORDS: Harmony.CHORDS,
+    oneScale: Harmony.oneScale, snapToScale: Harmony.snapToScale, oneScaleMap: Harmony.oneScaleMap},
   outPitch: (track, note, time, clipKey) => {
     const tr = S.tracks[track]; if (!tr) throw new Error('Keine Spur: ' + track);
     let key = clipKey;
@@ -31417,7 +31631,7 @@ function fxGestureApi(t, g) {
 }
 // every state-changing API call leaves the UI rendered (no need to wait for the next animation frame)
 function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
-const NO_SYNC = new Set(['micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',

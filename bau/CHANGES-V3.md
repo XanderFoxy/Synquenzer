@@ -3265,3 +3265,69 @@ von 4.5.2 einspielen**, sonst lehnt `save_project` das Online-Speichern ab (loka
 2. Danach **FANG 🎤**: im Blatt zählen, ob zwischen den gesungenen Tönen noch kurze falsche Noten stehen (Soll: keine) und ob alle
    gesungenen Töne da sind.
 3. Bitte melden: Zahl der falschen Zwischennoten, ob die Taste noch wackelt, ob schnelle Töne fehlen.
+
+## VS2b-fix — Anschleifen und Abfall auch langsam und im Raum ohne falsche Zwischennote; breites Vibrato schon beim Einsatz zeigt die gesungene Taste · App 4.5.2
+
+Drei Befunde aus der Prüfung von VS2b, alle behoben. Version bleibt 4.5.2 (keine Datenänderung, keine Migration, Bedienung und Aussehen
+unverändert).
+
+**1. FANG: langsam beginnendes Anschleifen wurde eine falsche 1/16 vor dem Ton.** Ein Anschleifen von 1–1,6 Halbtönen über 120–160 ms
+(weicher Anfang) lag am Anfang ≥ 45 ms in 25 ct und galt als „ruhig stehender“ kurzer Ton (12 gesungene Töne → 20 Noten).
+- Neu (`segment`, Übergangs-Schritt): ein Einsatz-Stück (kein Ton davor), das **stetig zum Ton dahinter läuft** (nie > 15 ct zurück,
+  gesamt ≥ 0,4 Halbtöne), **kürzer als 60 ms still steht** (≤ 8 ct über 25 ms) und danach ≥ 60 ms zu ≥ 75 % weiterläuft, ist Anschleifen
+  und gehört zum Ton; der Ton beginnt, wo das Anschleifen beginnt. Das Einschwingen der ersten ≤ 30 ms zählt nicht mit.
+- Ein Absacken, das vor dem Anstieg ≥ 50 ms ruhig steht, bleibt ein eigener kurzer Ton (vocadito_1 bei 4,36 s: beide Annotationen
+  markieren dort einen eigenen Ton).
+
+**2. FANG: Abfall am Tonende ließ im Raum einen falschen tiefen Ton stehen.** Der Nachhall hält die tiefste Höhe ≥ 70 ms; die Regel
+„nirgends 70 ms ruhig“ griff nur trocken.
+- Beim letzten Stück vor der Stille zählen Länge, Ruhe und Richtung **nur im gesungenen Teil** (bis der Pegel 10 dB unter den Ton davor
+  fällt, + 20 ms); was danach nur nachklingt, ist kein Ton. Ein langsamer Abfall, der unten langsamer wird, gilt auch, wenn die Stimme
+  ihre letzte Höhe erst **< 50 ms vor dem Verklingen** erreicht; ohne Pegel-Abfall, wenn sie stetig ≥ 1 Halbton vom Ton weg läuft. Diese
+  neuen Fälle nur hinter einem Ton ≥ 200 ms (der letzte Ton eines schnellen Laufs vor kurzem Absetzen bleibt ein Ton).
+- Reißt die Tonhöhe mitten im schnellen Abfall ≤ 40 ms ab, gehört der Rest dahinter zum Ton (leiser, vom Ton weg, nirgends 45 ms ruhig).
+- Reiner Nachhall hinter einem Ton: ≥ 12 dB darunter, ohne neuen Anstieg und verklingend fällt weg; **≥ 24 dB darunter** auch ohne
+  Verklingen und bis 150 ms Lücke (Raum oder Rauschen). Pegel des Tons davor = höherer Wert aus seinem Ende und seinem ganzen Median.
+- Mindestlänge: ein Rest ≥ 10 dB unter dem folgenden Ton vor dessen Pegel-Schnitt wird nicht mehr dessen Einsatz (zog den Einsatz bis
+  250 ms nach vorn), sondern Nachklang des Tons davor.
+
+**3. Live-Taste bei breitem Vibrato schon ab dem Einsatz (±70–100 ct, legato durchlaufend).** 4.5.2 sprang zwischen den Nachbartasten,
+die gesungene leuchtete oft nie (Einsatz = Median am Umkehrpunkt, die Mitte lag am Rand des Vibratos).
+- Worklet `synq-stimme`: Umkehrpunkte der geglätteten Tonhöhe (Zickzack, 15 ct Hysterese); aus den letzten drei (Halbwellen 40–150 ms,
+  Ausschlag 0,5–3,2 Halbtöne, gleich groß, kein Stehen wie beim Triller) bzw. kurz nach einem gleich weiten Vibrato aus zweien folgt die
+  **Mitte des Vibratos**. Sie ist die Mitte der Taste; liegt sie ≥ 60 ct neben der leuchtenden Taste, leuchtet ihre Taste (erst nach einem
+  Umkehrpunkt nach dem letzten Wechsel). Eine Abweichung, die im Vibrato-Band bleibt oder von einem spitzen Umkehrpunkt der Gegenseite
+  kommt, ist Schwingen, kein Wechsel. Worklet-Quelltext bleibt ASCII.
+
+**Prüfungen** (Node direkt auf DSP/Worklet aus `index.html`; Chromium 1243 echte App, Attrappen-Mikro, Kabel-Weg)
+
+| Punkt | 4.5.2 | jetzt | Skript |
+|---|---|---|---|
+| App: 12 Töne mit Anschleifen 1,3 Ht/140 ms, Stimme-FANG | 20–21 Noten (8–9 falsch) | 12/12, 0 falsch in 23 von 26 Läufen (3 Läufe mit je einer kurzen Note, 2 davon unter Rechenlast, 1 am Fensteranfang; zuletzt 10/10 sauber im Wechsel mit dem Zwischenstand, der 15/15 hatte) | `v3-qa-vs2b-acc-app.mjs gentle` |
+| App: dasselbe ohne Anschleifen / trockener Abfall | 12/12 | 12/12 | `… plain`, `… dryfall` |
+| App: Abfall 2,5 Ht/140 ms im Raum (Nachhall −18 dB, RT60 0,4 s) | 19 Noten (7 falsch) | 12/12, 0 falsch | `… roomfall` |
+| Anschleifen von unten / oben, 0,7–1,6 Ht × 100–160 ms, je 30 Töne | 107 / 45 falsch | 0 / 0 falsch, 0 fehlen (480/480) | `v3-qa-vs2b-acc-scoop.mjs 1` / `-1` |
+| unabhängiger Synth, Anschleifen cos/linear 1–1,6 Ht, 120–160 ms | bis 60 falsch je 30 | 0 falsch in allen 7 Reihen | `v3-repro-indep-scoop.mjs` |
+| Abfall im Raum 2/4/6 Ht × 80–220 ms (je 16) | 12/12 Reihen FAIL | 11/12 PASS; 2 Ht/220 ms: 6 (trocken 7) | `v3-qa-vs2b-acc-off.mjs FALL` |
+| dasselbe trocken | – | 11/12 PASS (2 Ht/220 ms: 7) | `CLEAN=1 … FALL` |
+| unabhängiger Synth, 72 Töne, trocken/Raum 18/10 dB, Abfälle 1,5–4 Ht | 70 falsch (Raum 18 dB) | 0 in allen 8 Fällen | `v3-rv-fallroom-indep.mjs` |
+| Live: legato C–D–E–F–G–F–E–D, Vibrato ±70/80/100 ct 5,5 Hz (144 Töne) | richtige Taste 30/26/23 %, nie richtig 79/90/103 | 75/75/76 %, nie richtig 0/0/0 | `v3-qa-vs2breg-livevib4.mjs` |
+| Live: gehaltene Töne, Vibrato ±80 ct ab Einsatz (32) | 4–9 %, nie richtig 16–26 | 83 %, nie richtig 0; ±50 ct und verzögertes Vibrato 97–100 % | `v3-qa-vs2breg-livevib2.mjs` |
+| App live: ±80 ct, 4 Phasen × 8 Töne | 37 % richtig, 11/32 nie | 76 % richtig, 0/32 nie, `.vs` = `litKey` 1:1 | `v3-repro-vibonset-app.mjs`, `v3-qa-vs2breg-livevibapp.mjs` |
+| VS2b-Abnahme gegen 4.5.1 | ALLE OK | ALLE OK (Abfall 0 statt 2 falsch, Lauf 150 BPM 189/192 statt 188, Mischung 5) | `v3-vs2b-accept.mjs` |
+| QA-Gesamtkatalog (160 Fälle, Raum / trocken), FAIL-Zeilen | Zwischenstand vor diesem Durchgang 51 / 31 | 45 / 28, keine Zeile schlechter | `v3-qa-vs2b-acc-off.mjs` |
+| echte Aufnahmen vocadito_1/10/14 | F 0,883 / 0,848 | gleich (Noten identisch) | `v3-vs2b-real.mjs` |
+| Läufe 1/16 120/132 BPM (QA-Synth, Raum und trocken) | – | identisch zu 4.5.2 | `v3-fx-rundiff.mjs` |
+| Smoke | – | ohne Fehler | `v3-vs2bfix-smoke.png` |
+
+Rechenzeit: Segmentierung von 33 s Gesang unverändert (≈ 1,6 s mit pYIN), Live-Weg 1,65 % Echtzeit (≤ 3 %). Datei 2 425 160 Byte.
+
+**Bekannte Grenzen:** Ein Abfall, der unten ≥ 70 ms ruhig stehen bleibt (z. B. 2 Halbtöne über 220 ms mit weichem Ende, ohne hörbar
+leiser zu werden), bleibt nach der 70-ms-Regel ein eigener Ton – trocken wie im Raum gleich. vocadito_1 bei 26,74 s (QA-Fall c) bleibt
+zwei Noten: die Stimme liegt dort ≈ 80 ms ruhig 1,6–2 Halbtöne unter dem Ziel; die gleich gebaute Stelle bei 4,36 s ist laut beiden
+Annotationen ein eigener Ton, beides zugleich trennt die Tonhöhe allein nicht. Die Live-Taste wechselt bei Legato mit breitem Vibrato
+weiter erst nach der Hysterese (richtige Taste ≈ 75 % der gesungenen Zeit, der Rest ist die Verzögerung nach jedem Tonwechsel).
+
+**Für Xander am iPhone (Pages-Seite, ≈ 2 min):** 🎤 an, ▶, eine kurze Phrase mit weichem Anschleifen in die Töne und einem kleinen
+Abfall am Ende jedes Tons singen, dann FANG 🎤 – Soll: keine kurzen Noten vor oder nach den Tönen. Einen langen Ton mit breitem Vibrato
+singen – Soll: die gesungene Taste leuchtet, nicht die Nachbartasten.
