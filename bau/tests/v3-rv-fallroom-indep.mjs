@@ -1,6 +1,6 @@
 // independent check: additive voice, detached notes with end falls, exp-noise room IR at given DRR; app DSP pyin+segment
 import {loadDsp} from './v3-vs2-corpus.mjs';
-const D = loadDsp('../dirigent-wt/index.html');
+const D = loadDsp(process.env.NEWF || '../dirigent-wt/index.html');
 function rng(s){return()=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>=0;return s/4294967296;};}
 function make({fall, drr, rt=0.4, seed=3, base=50, snr=40}) {
   const fs=16000, r=rng(seed*7919+1), steps=[0,3,1,5,2,4,0,3,7,5,2,0], notes=steps.map((s,k)=>({on:0.3+k*0.6, dur:0.42, midi:base+s}));

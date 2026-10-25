@@ -30416,12 +30416,15 @@ function vsDspMake() {
     function push(a, b, why) { if (b <= a) return; notes.push({a, b, m: center(a, b), pe: why === 'p'}); }
     // kürzer als minMs: mit dem Nachbarn verbinden (gleiche Höhe oder anliegend), sonst weg
     const minF = F(o.minMs || 60);
+    const lvE = (a, b) => { const v = []; for (let k = a; k < b; k++) if (e[k] > -150) v.push(e[k]); return v.length ? median(v) : -200; };
     for (let k = 0; k < notes.length; k++) {
       const n = notes[k]; if (n.b - n.a >= minF) continue;
-      // (VS2b-fix: nicht über einen Pegel-Schnitt nach vorn – ein Rest vor einem neuen Anschlag ist Nachklang des Tons davor, kein
-      // früherer Einsatz; QA Raum: der Nachhall-Rest zog den Einsatz des nächsten Tons 50 ms und mehr nach vorn)
-      const p = notes[k - 1], q = notes[k + 1], pa = p && p.b === n.a, qa = q && q.a === n.b && n.pe;
-      if (pa && (!qa || Math.abs(p.m - n.m) <= Math.abs(q.m - n.m))) { p.b = n.b; p.pe = n.pe; notes.splice(k--, 1); }   // (die Grenze dahinter ist jetzt die des Rests)
+      // (VS2b-fix: ein Rest ≥ 10 dB unter dem folgenden Ton vor dessen Pegel-Schnitt ist Nachklang des Tons davor, kein früherer
+      // Einsatz – QA Raum: der Nachhall-Rest zog den Einsatz des nächsten Tons 50 ms und mehr nach vorn; hängt er am Ton davor,
+      // endet dieser jetzt am Schnitt)
+      const p = notes[k - 1], q = notes[k + 1], pa = p && p.b === n.a;
+      const tl = !!(q && q.a === n.b && !n.pe && lvE(n.a, n.b) <= lvE(q.a, Math.min(q.b, q.a + F(150))) - 10), qa = q && q.a === n.b && !tl;
+      if (pa && (!qa || Math.abs(p.m - n.m) <= Math.abs(q.m - n.m))) { p.b = n.b; if (tl) p.pe = false; notes.splice(k--, 1); }
       else if (qa) { q.a = n.a; notes.splice(k--, 1); }
       else notes.splice(k--, 1);
     }
@@ -30485,7 +30488,7 @@ function vsDspMake() {
         if (pa && tailEnd) { pl = lvl(Math.max(p.a, p.b - F(150)), p.b); let ae = n.b; while (ae - 1 > n.a && !(e[ae - 1] >= pl - 10)) ae--;
           let dec = n.b - ae >= F(40) && e[n.b - 1] <= e[ae] - 8; for (let k = ae + 1; dec && k < n.b; k++) if (e[k] > e[ae] + 1) dec = false;
           if (dec) act = {a: n.a, b: Math.min(n.b, ae + F(20)), ae};   // + 20 ms: das Ausklingen eines echten Tons
-          if (ae - n.a >= F(20)) aeS = ae; }                          // Ende des gesungenen Teils (−10 dB), auch bei kurzem Ausklingen
+          if (dec || ae - n.a >= F(20)) aeS = ae; }                          // Ende des gesungenen Teils (−10 dB), auch bei kurzem Ausklingen
         // reiner Nachhall gleich hinter einem Ton (≤ 60 ms Lücke, bis zur Stille oder zum nächsten Anschlag): ≥ 12 dB unter dem Ton,
         // ohne neuen Anstieg (≥ 3 dB) und verklingend (≥ 5 dB) ist kein Ton – anliegend gehört er zum Ton, sonst fällt er weg
         if (p && !isNaN(p.m) && n.a >= p.b && n.a - p.b <= F(150) && tailEnd) {
@@ -30527,10 +30530,10 @@ function vsDspMake() {
              Verklingen (−10 dB), und es genügt auch, dass die Stimme ihre letzte Höhe erst < 50 ms vor dem Verklingen erreicht
              (ein echter kurzer Schlusston steht dort ≥ 50 ms und ändert sich am Ende nicht mehr) */
           let ar = aeS - 1; const xe = s3(aeS - 1); while (ar - 1 >= n.a && Math.abs(s3(ar - 1) - xe) <= 0.15) ar--;
-          // (die neuen Fälle nur am echten Phrasen-Ende hinter einem längeren Ton: ≥ 200 ms davor, danach ≥ 100 ms nichts – das letzte
-          // Stück eines schnellen Laufs mit kurzem Absetzen kommt ebenso spät an und bleibt ein Ton)
-          const longP = p.b - p.a >= F(200), endS = !q || q.a - n.b > F(100);
-          const flS = aeS < n.b ? flat({a: n.a, b: aeS}) : fla, late = longP && endS && !isNaN(xe) && aeS - ar < F(50);
+          // (die neuen Fälle nur hinter einem längeren Ton, ≥ 200 ms: der letzte Ton eines schnellen Laufs vor kurzem Absetzen kommt
+          // ebenso spät an und bleibt ein Ton)
+          const longP = p.b - p.a >= F(200);
+          const flS = aeS < n.b ? flat({a: n.a, b: aeS}) : fla, late = longP && !isNaN(xe) && aeS - ar < F(50);
           if (quiet && (act !== n || longP) && ((Math.min(fla, flS) < F(70) && tf * dir > 0 && Math.max(tf * dir, away) >= 0.5 && (endMv >= 0.15 || late)) || (act !== n && flat(n) < F(70) && tn * dir >= 0.5))) fromP = true;
           // (ohne Pegel-Abfall – manche Stimme wird beim Abfall kaum leiser: stetig ≥ 0,5 Halbtöne weiter und ≥ 1 Halbton vom Ton
           // weg, nie 15 ct zurück, keine 70 ms ruhig und erst kurz vor dem Verklingen unten)
