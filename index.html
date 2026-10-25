@@ -13160,29 +13160,73 @@ function osStats(c) {
   rec = {tick: OS.tick, sig, n: ns, P, info, maps: new Map()};
   OS.cache.set(c, rec); return rec;
 }
+// G-P2a-fix: own clips (song.own, V2d′) go the same way — an unchanged own clip sounds exactly like its scene clip
+// (collision protection, Stärke, Durchgangstöne; „Automatisch“ uses the scene of the copy's slot, from.s)
 function osClipOf(i, clipKey) {
   const tr = S.tracks[i]; if (!tr || !clipKey) return null;
   for (let s = 0; s < tr.clips.length; s++) { const c = tr.clips[s]; if (c && c.key === clipKey) return {c, s}; }
+  const oc = ownPlaying(i); if (oc && oc.key === clipKey) return {c: oc, s: oc.from ? oc.from.s : -1};
+  const own = S.song && S.song.own;
+  if (own) for (const id in own) { const c = own[id]; if (c && c.key === clipKey && (!c.from || c.from.t == null || c.from.t === i)) return {c, s: c.from ? c.from.s : -1}; }
   return null;
+}
+// the one scale Z of entry e for the clip found by osClipOf (cached per entry)
+function osZOf(cs, e) {
+  const h = S.settings.harmony, base = osBase(cs ? cs.s : null), zk = base.root + base.scale + h.mode + h.single + h.minor + h.keyAware;
+  let zc = OS.z.get(e); if (!zc || zc.k !== zk) { zc = {k: zk, Z: Harmony.oneScale(e.target, base, h.mode, hopts())}; OS.z.set(e, zc); }
+  return zc.Z;
+}
+// the one-scale map (source pitch -> pitch) of a clip's distinct pitches P under entry e; `extra` = one more source pitch
+// (clipNoteFor: how a note would sound once it is in the clip)
+function osBuildMap(tr, st, clipKey, e, time, Z, extra) {
+  const h = S.settings.harmony, trk = {kind: tr.kind, follow: tr.follow}, ref = {key: clipKey};
+  const P = extra == null || st.info.has(extra) ? st.P : st.P.concat(extra).sort((a, b) => a - b);
+  const items = P.map(p => { const r = st.info.get(p) || {up: 0, dn: 0, dur: .25, pass: false}; return {p, q: T.mapEvent(p, time + 1e-6, trk, ref, e), dir: r.up > r.dn ? 1 : r.dn > r.up ? -1 : 0, dur: r.dur, pass: r.pass}; });
+  const out = Harmony.oneScaleMap(items, Z, {amt: h.osAmt, pass: h.osPass}), mp = new Map();
+  items.forEach((it, k) => mp.set(it.p, out[k]));
+  return mp;
+}
+function osMapOf(i, cs, clipKey, e, time, Z) {
+  const h = S.settings.harmony, st = osStats(cs.c), sk = Z.join(',') + '|' + (clipKey.root + clipKey.scale) + '|' + e.shift + '|' + h.osAmt + '|' + h.osPass + '|' + h.octaveMode + h.mode + h.single + h.minor + h.keyAware;
+  let m = st.maps.get(e);
+  if (!m || m.sk !== sk) { m = {sk, mp: osBuildMap(S.tracks[i], st, clipKey, e, time, Z)}; st.maps.set(e, m); }
+  return m.mp;
 }
 // q = the degree-mapped pitch of `note` under entry e; returns the pitch in the one scale
 function osApply(i, clipKey, note, q, e, time) {
-  const h = S.settings.harmony, tr = S.tracks[i], cs = osClipOf(i, clipKey);
-  const base = osBase(cs ? cs.s : null), zk = base.root + base.scale + h.mode + h.single + h.minor + h.keyAware;
-  let zc = OS.z.get(e); if (!zc || zc.k !== zk) { zc = {k: zk, Z: Harmony.oneScale(e.target, base, h.mode, hopts())}; OS.z.set(e, zc); }
-  const Z = zc.Z; if (!Z) return q;
+  const cs = osClipOf(i, clipKey), Z = osZOf(cs, e); if (!Z) return q;
   if (!cs || !cs.c.notes.length) return Harmony.snapToScale(q, Z, 0);
-  const st = osStats(cs.c), sk = Z.join(',') + '|' + (clipKey.root + clipKey.scale) + '|' + e.shift + '|' + h.osAmt + '|' + h.osPass + '|' + h.octaveMode + h.mode + h.single + h.minor + h.keyAware;
-  let m = st.maps.get(e);
-  if (!m || m.sk !== sk) {
-    const trk = {kind: tr.kind, follow: tr.follow}, ref = {key: clipKey};
-    const items = st.P.map(p => { const r = st.info.get(p); return {p, q: T.mapEvent(p, time + 1e-6, trk, ref, e), dir: r.up > r.dn ? 1 : r.dn > r.up ? -1 : 0, dur: r.dur, pass: r.pass}; });
-    const out = Harmony.oneScaleMap(items, Z, {amt: h.osAmt, pass: h.osPass}), mp = new Map();
-    items.forEach((it, k) => mp.set(it.p, out[k]));
-    m = {sk, mp}; st.maps.set(e, m);
-  }
-  const v = m.mp.get(note);
+  const v = osMapOf(i, cs, clipKey, e, time, Z).get(note);
   return v != null ? clamp(v, 0, 127) : Harmony.snapToScale(q, Z, 0);
+}
+/* G-P2a-fix: the clip note that sounds as `played` under „Eine Skala“ (the inverse for clipNoteFor). The map works on the
+   clip's distinct pitches together (collision protection), so a new pitch can sound differently once it is in the clip.
+   Order: (1) a pitch the clip already has (the map stays as it is), (2) a new pitch that sounds as played once it is in
+   the clip and moves no other note; a foreign played tone (one scale only) goes to its nearest scale tone the same way.
+   null = no such note (the caller searches as before) */
+function osNoteFor(i, clipKey, played, time, e) {
+  const tr = S.tracks[i], cs = osClipOf(i, clipKey); if (!cs || !cs.c.notes.length) return null;
+  const Z = osZOf(cs, e); if (!Z) return null;
+  const st = osStats(cs.c), cur = osMapOf(i, cs, clipKey, e, time, Z), h = S.settings.harmony;
+  const x = (XP.tl.length > 1 || XP.tl[0].semi) && tr.kind === 'synth' && tr.follow !== false ? xpAt(time + 1e-6) || 0 : 0;
+  const goals = [played]; if (!Z.includes(Harmony.PC(played - x))) goals.push(Harmony.snapToScale(played - x, Z, 0) + x);
+  for (const g of goals) {
+    let best = null;
+    for (const p of st.P) { const v = cur.get(p); if (v != null && clamp(v, 0, 127) + x === g && (best == null || Math.abs(p - played) < Math.abs(best - played))) best = p; }
+    if (best != null) return best;
+    // a new pitch: first one whose degree mapping already is the goal (it stays), then any (a foreign one that moves to it)
+    const trk = {kind: tr.kind, follow: tr.follow}, ref = {key: clipKey};
+    for (const pure of [true, false]) for (let d = 0; d <= 24; d++) for (const n of d ? [g - x - d, g - x + d] : [g - x]) {
+      if (n < 0 || n > 127 || st.info.has(n)) continue;
+      if (pure && T.mapEvent(n, time + 1e-6, trk, ref, e) + x !== g) continue;
+      const mp = osBuildMap(tr, st, clipKey, e, time, Z, n), v = mp.get(n);
+      if (v == null || clamp(v, 0, 127) + x !== g) continue;
+      let same = true; for (const p of st.P) if (mp.get(p) !== cur.get(p)) { same = false; break; }
+      if (same) return n;
+    }
+    if (h.osAmt <= 0) break;
+  }
+  return null;
 }
 // degree mapping + one scale (no Teil-Transposition): the pitch a clip note of track i is heard at under entry e
 function mapOut(i, clipKey, note, time, entry) {
@@ -15210,6 +15254,7 @@ function commitRecNote(o, bOff) {
 function clipNoteFor(track, clipKey, played, time, entry) {
   const tr = S.tracks[track], e = entry || T.targetAt(time + 1e-6);
   if (!tr || tr.kind !== 'synth' || !tr.follow || (!e.target && !xpAt(time + 1e-6))) return played;   // V2c: under a Teil-Transposition too
+  if (e.target && osActive(tr)) { const n = osNoteFor(track, clipKey || S.key, played, time, e); if (n != null) return n; }   // G-P2a-fix
   let best = played, bestErr = Infinity;
   for (let d = 0; d <= 24; d++) {
     for (const n of d ? [played - d, played + d] : [played]) {
@@ -15455,9 +15500,29 @@ function applySceneKeys(si) {
     for (const v of VOICES) if (v.clipKey === old) v.clipKey = p.c.key;          // sounding/scheduled notes keep the clip's Bezug
     changed = true;
   }
+  if (ownKeySync(si)) changed = true;
   if (changed) { KEYC.ver++; markDirty(); }
   UI.dirty.grid = UI.dirty.kb = UI.dirty.carrier = true;
   if (typeof rollHeadUpdate === 'function') rollHeadUpdate();
+}
+/* G-P2a-fix: an own clip that is still an unchanged copy of its scene clip (same notes, Bezug 'auto') takes the scene clip's
+   Bezug, so it sounds exactly like the scene clip also when the key detection ran after the copy was made (400-ms timer, or
+   after the next ORIGINAL). An edited or recorded own clip keeps its Bezug (its notes were stored for it) */
+const noteSig = c => JSON.stringify([c.len, liveNotes(c).map(n => [n.t, n.d, n.n, n.v])]);
+function ownKeySync(si) {
+  const own = S.song && S.song.own; if (!own) return false;
+  let changed = false; const sig = new Map();
+  for (const id in own) {
+    const c = own[id], f = c && c.from; if (!f || f.s !== si || !c.key || (c.key.src || 'auto') !== 'auto') continue;
+    const tr = S.tracks[f.t], sc = tr && tr.kind === 'synth' && tr.clips[si]; if (!sc || !sc.key || sameKey(c.key, sc.key) && c.key.ref == sc.key.ref) continue;
+    if ((sc.key.src || 'auto') !== 'auto') continue;
+    if (!sig.has(f.t)) sig.set(f.t, noteSig(sc));
+    if (noteSig(c) !== sig.get(f.t)) continue;
+    const old = c.key; c.key = deep(sc.key);
+    for (const v of VOICES) if (v.clipKey === old) v.clipKey = c.key;
+    changed = true;
+  }
+  return changed;
 }
 /* ---------- live input routing (keys, computer keyboard, MIDI, API) ---------- */
 function padGmForNote(note) {

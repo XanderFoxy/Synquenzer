@@ -3779,3 +3779,42 @@ Orchestrator-Eintrag (25.10.): Der Bau-Agent hat seinen Abschnitt nach einem Neu
 1. [Ganzer Block] im Halte-Blatt eines eigenen Clips fasst jetzt den ganzen Block (N7S-47), danach [Zurück zum Szenen-Clip] hinterlässt keinen Verweis auf einen gelöschten Clip.
 2. [Zurück zum Szenen-Clip] auf einem eigenen Clip setzt nur den gewählten Bereich zurück.
 3. ● im Song wieder in voller Breite (Ziel-Beschriftung und ▾-Hinweis nicht mehr abgeschnitten).
+
+## G-P2a-gruppe-fix — „Eine Skala“ behandelt eigene Clips wie Szenen-Clips · App 4.8.0
+
+Befund der Gruppen-QA G-P2a: Ein unveränderter eigener Clip ([Eigener Clip (dieser Durchlauf)], oder NOTEN in den Song) klang anders als
+der Szenen-Clip, aus dem er kopiert war: `C D E F F♯ G A` unter C → Szene `60 62 64 65 67 69 71`, eigener Clip `60 62 64 65 65 67 69`
+(F und F♯ fielen zusammen), Stärke 0 % und Durchgangstöne „Erlauben“ wirkten im eigenen Clip nicht. Ursache: `osClipOf` suchte den Clip
+nur in `S.tracks[i].clips`; für eigene Clips (`song.own`) fiel jede Note auf `snapToScale` ohne Kollisionsschutz zurück, „Automatisch“
+nahm die Projekt-Tonart statt der Szenen-Tonart.
+
+**Geändert**
+- `osClipOf` findet auch eigene Clips (der gerade spielende, sonst alle in `song.own` derselben Spur) und gibt ihre Szene (`from.s`)
+  zurück → eigene Clips gehen über denselben Weg (`oneScaleMap`: Kollisionsschutz, Richtung, Stärke, Durchgangstöne, „Automatisch“ =
+  Tonart der Szene). Gilt für Wiedergabe, Träger-Wechsel (Umstimmen) und MIDI-Export „Song“.
+- `osApply` aufgeteilt in `osZOf` / `osBuildMap` / `osMapOf` (gleiche Rechnung, gleicher Cache).
+- Neu `osNoteFor` (in `clipNoteFor`, nur bei „Eine Skala“ und vorhandenem Clip): welche Clip-Note beim Abspielen wie die gespielte klingt,
+  obwohl die Abbildung auf alle Tonhöhen des Clips zusammen wirkt. Reihenfolge: eine Tonhöhe, die der Clip schon hat → eine neue, deren
+  Stufen-Abbildung schon der gespielte Ton ist → irgendeine neue, die so klingt; eine neue Tonhöhe darf keinen anderen Ton des Clips
+  verrücken. Ein leiterfremder gespielter Ton landet auf dem nächsten Skalenton. Sonst wie bisher. (Ohne das hätte NOTEN in einen
+  eigenen Clip nach der Umstellung leitereigene Töne verschoben, z. B. gespielt E gespeichert als C♯.)
+- Neu `ownKeySync` (in `applySceneKeys`): ein eigener Clip, der noch eine unveränderte Kopie ist (gleiche Noten, Bezug „auto“), übernimmt
+  den Bezug seines Szenen-Clips, wenn die Tonart-Erkennung erst nach dem Kopieren lief (400-ms-Timer oder nach dem nächsten ORIGINAL).
+  Bearbeitete oder eingespielte eigene Clips behalten ihren Bezug.
+
+**Nachweis** (Chromium 1243)
+- `v3-qa-gp2a-osown.mjs` **6/6** (vorher 1/6): C, E, Stärke 0 %, Durchgangstöne — eigener Clip = Szenen-Clip, 7 Töne bleiben 7.
+- `v3-qa-gp2a-os.mjs` OS1 7/7/7/7 verschiedene Töne (vorher 7/6/6/7). OS2/OS3 dort schlagen weiter fehl, aber wegen des Skripts: OS2
+  misst den eigenen Clip vor und den Szenen-Clip nach der Tonart-Erkennung (C ionisch → C lydisch, die Erkennung ist zwischen den Läufen
+  passiert), OS3 ordnet ursprüngliche Clip-Noten als „Aufnahme“ zu. Mit ausgeschwungener Erkennung und genauer Zuordnung
+  (`v3-gp2afix-os-exact.mjs`) **10/10**: alle 12 eingespielten Töne klingen wie gespielt bzw. ≤ 1 Halbton auf der Skala.
+- `v3-qa-gp2a-osrec.mjs` R1/R2: 5 von 8 Tönen passen in den 1-Takt-Take, und diese 5 klingen wie gespielt, mit und ohne „Eine Skala“
+  (`v3-gp2afix-osrec.mjs` 3/3, vergleicht nur, was in den Take passt).
+- Gleich wie vorher (Vergleich mit der Fassung ohne Fix): `v3-qa-v2c2-a/-f/-g` (2 880 Melodien, 0 verloren), `v3-qa-v2c2reg-os`,
+  `v3-v2e2fix-own`; `-b/-c/-d/-e`, `v3-repro-osguard`, `v3-v2d2-regcore` unterscheiden sich nur in Zeitstempeln/Logzählung.
+  `v3-v2c2-onescale` 26/27 (nur der alte Versions-Check 4.5.3), `v3-v2d2-rec` 65/65, `v3-qa-gp2a-flow` 47/47, Smoke ohne Fehler
+  (`dirigent-test/v3-gp2afix-smoke.png`).
+- Server: keine Änderung (App bleibt 4.8.0 ≤ max_app 4 021 000).
+
+## G-P2a-gruppe-fix · App 4.8.0
+Gruppen-Prüfung G-P2a (VS2b, V2c′, V2d′, V2e, V2e′): „Eine Skala“ behandelt eigene Clips jetzt wie Szenen-Clips. Ein unveränderter eigener Clip klingt genau wie sein Szenen-Clip; Kollisionsschutz, Stärke, Durchgangstöne und „Automatisch“ gelten auch dort (vorher fielen z. B. F und F♯ auf denselben Ton).
