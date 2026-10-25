@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome'});
+const p = await b.newPage({viewport:{width:390,height:844}});
+const errs=[]; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type()==='error') errs.push(m.text()); });
+await p.goto('file://' + process.argv[2]); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted);
+const X = {$:'snd',v:1,id:null,name:'Z',cat:'lead',engine:'xyz',ev:3,p:{a:1},mods:[],fx:{},origin:null,ct:1,mt:2};
+const r = await p.evaluate(x => { SYNQUENZER.setSound(0, x); const n = UNDO.length; soundEdit(0, 'x', () => loadPreset(0, 'f-moog-bass')); const n2 = UNDO.length, last = UNDO[UNDO.length-1];
+  const e1 = SYNQUENZER.getSound(0).engine; undo(); return {n, n2, kind: last.kind, before: String(last.before).slice(0,200), e1, after: SYNQUENZER.getSound(0)}; }, X);
+console.log(JSON.stringify(r));
+const r2 = await p.evaluate(() => { R.selT = 0; openEditor(); return {ed: R.editor, nvp: !!document.querySelector('.nvp'), tab: ED.tab, open: EL.synthSheet.classList.contains('open'), html: EL.synthSheet.querySelector('.pg') ? EL.synthSheet.querySelector('.pg').outerHTML.slice(0,300) : null}; });
+console.log(JSON.stringify(r2)); console.log(errs);
+await b.close();

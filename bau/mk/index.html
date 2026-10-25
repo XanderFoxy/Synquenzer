@@ -1329,9 +1329,11 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 @media (orientation:landscape){.cl-row{min-height:44px}#cloud .cl-seg button{height:40px}.cl-in,.cl-pw button{height:44px}.cl-go{height:44px}.cl-btns .mbtn{height:44px}
   .cl-b.two .cl-nm{flex-direction:row;align-items:center;gap:8px}.cl-b.two .cl-nm label{margin:0;flex:none}
   .cl-b.two .cl-act{flex-direction:row;align-items:center;gap:8px}.cl-b.two .cl-act .cl-chk{flex:none}.cl-b.two .cl-act .cl-go{flex:1 1 auto;width:auto}}
-#cloudBan{position:fixed;left:0;right:0;top:52px;z-index:44;display:flex;align-items:center;gap:8px;padding:6px 8px;background:#3a2a0c;border-bottom:1px solid var(--amber);color:#ffe2a8;font:600 12px/1.3 var(--font-ui)}
-#cloudBan .cb-t{flex:1;min-width:0}
+#cloudBan,#nvBan{position:fixed;left:0;right:0;top:52px;z-index:44;display:flex;align-items:center;gap:8px;padding:6px 8px;background:#3a2a0c;border-bottom:1px solid var(--amber);color:#ffe2a8;font:600 12px/1.3 var(--font-ui)}
+#cloudBan .cb-t,#nvBan .cb-t{flex:1;min-width:0}
 #cloudBan .mbtn{height:40px;flex:none;padding:0 10px}
+#nvBan .mbtn{flex:none;min-width:44px;padding:0 10px}
+.nvp{padding:12px;font:13px/1.4 var(--font-ui);color:var(--text)}.nvp b{color:var(--amber)}
 #popLayer{position:fixed;inset:0;z-index:60;display:none}
 #popLayer.open{display:block}
 #popLayer .bd{position:absolute;inset:0;background:var(--backdrop)}
@@ -7833,7 +7835,8 @@ const RecHelpers = (() => {
   }
   function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(16).padStart(8, '0'); }
   // identity of the SOUND (not of the record): same hash = same sound, whatever the name or id
-  const soundHash = s => fnv(canonical({e: s.engine, ev: s.ev, p: s.p, m: s.mods || [], fx: s.fx || {}, c: s.common || null}));
+  const nvOf = o => (o && typeof o.toJSON === 'function' && o._nv) || null;     // MK0: original in a track wrapper (nvWrap)
+  const soundHash = s => { s = nvOf(s) || s; return fnv(canonical({e: s.engine, ev: s.ev, p: s.p, m: s.mods || [], fx: s.fx || {}, c: s.common || null})); };
 
   /* ---------- descriptors for normalization (ranges = what the engine accepts) ---------- */
   // analog: [min, max, integer?]. Keys missing here are dropped from stored patches.
@@ -7984,8 +7987,21 @@ const RecHelpers = (() => {
     return Object.keys(o).length ? o : null;
   }
   // WP3 (§12.3.1): engines analog | fm6 | wt | fm2 | drum; synth sounds carry the full flat patch, ev 2; mods for every synth engine
+  // MK0 (EN3-04): a sound of an unknown (newer) engine stays as it came
+  const NV_NAME = 'Klang aus neuerer Version';
+  const isForeign = o => !!o && typeof o === 'object' && (!!nvOf(o) || (typeof o.engine === 'string' && !ENGINES.includes(o.engine) && /^[a-z][a-z0-9_-]{0,23}$/.test(o.engine)));
+  function opaqueSound(o) {
+    let s; try { const j = JSON.stringify(o); if (j.length > 262144) return null; s = JSON.parse(j); } catch (e) { return null; }
+    delete s._nv; delete s.toJSON;
+    if (s.id != null && !(typeof s.id === 'string' && /^[fu]-[a-z0-9-]{1,40}$/.test(s.id))) s.id = null;
+    const n = cleanName(s.name); if (s.name !== n) s.name = n;
+    return s;
+  }
+  const verCode = v => { const m = /^(\d+)\.(\d+)\.(\d+)/.exec(String(v || '')); return m ? m[1] * 1e6 + m[2] * 1e3 + +m[3] : 0; };
   function normalizeSound(o) {
+    o = nvOf(o) || o;
     if (!o || typeof o !== 'object') return null;
+    if (isForeign(o)) return opaqueSound(o);
     const engine = ENGINES.includes(o.engine) ? o.engine : null; if (!engine) return null;
     const synth = engine !== 'drum';
     const s = {$: 'snd', v: 1, id: typeof o.id === 'string' && /^[fu]-[a-z0-9-]{1,40}$/.test(o.id) ? o.id : null, name: cleanName(o.name),
@@ -8236,6 +8252,8 @@ const RecHelpers = (() => {
         let p = mapClips(deep(o.project), unpackClipNotes);
         if (p.v === 1 && L.migrateV1) p = L.migrateV1(p);
         else if (f < 3) p = migrateProject2to3(p, warnings);
+        if (f > PROJECT_FORMAT && !(p.format > f)) p.format = f;       // MK0 (normalizeProject: _newer)
+        Object.defineProperty(p, '_newer', {value: {f: 0, w: verCode(o.appVersion)}, configurable: true});
         return {ok: true, kind: 'project', project: norm(p), sounds: (Array.isArray(o.sounds) ? o.sounds : []).map(normalizeSound).filter(Boolean), warnings};
       }
       // a single exported sound (checked before the legacy detection: a Sound also carries v: 1)
@@ -8363,8 +8381,10 @@ const RecHelpers = (() => {
     const histKey = () => { let k = Math.max(now(), lastKey + 1); lastKey = k; const id = histPid(); return 'hist:' + (id ? id + ':' : '') + k; };   // unique: every explicit save is its own entry
     const histParse = k => { const r = String(k).slice(5), i = r.lastIndexOf(':'); return {key: k, pid: i >= 0 ? r.slice(0, i) : null, mt: +r.slice(i + 1)}; };
     const warn = m => { if (!warned) { warned = true; opts.onWarn && opts.onWarn(m); } };
-    const snapshot = () => ({mt, project: mapClips(JSON.parse(JSON.stringify(opts.getProject(), stripRuntime)), packClipNotes)});
+    const snapshot = () => ({mt, app: opts.app, project: mapClips(JSON.parse(JSON.stringify(opts.getProject(), stripRuntime)), packClipNotes)});
+    const held = () => !!(opts.hold && opts.hold());       // MK0: the stored copy is a newer version's
     async function doWrite() {
+      if (held()) { dirty = false; return false; }
       const snap = snapshot(); dirty = false;
       // the rescue copy is dropped only when the primary store took the write; an IndexedDB write that fell back to
       // localStorage keeps it (both copies are read back by load(), the newest by mt wins)
@@ -8405,6 +8425,7 @@ const RecHelpers = (() => {
       flush: () => write(),
       flushSync() {                                          // call from pagehide / visibilitychange(hidden)
         if (!dirty && !timer && !running) return true;     // WP1: a write still in flight may be killed by the unload
+        if (held()) return false;
         const ok = kv.setSync('rescue', JSON.stringify(snapshot())); write(); return ok;
       },
       // newest of {KV project (IndexedDB or its localStorage fallback copy), rescue} by mt (§12.4/§12.5)
@@ -8413,7 +8434,9 @@ const RecHelpers = (() => {
         try { const r = kv.getSync('rescue'); b = r ? JSON.parse(r) : null; } catch (e) {}
         const pick = a && b ? (b.mt > a.mt ? b : a) : a || b; if (!pick || !pick.project) return null;
         loadedFallback = pick === a && from !== kv.mode && kv.mode !== 'memory';
-        mt = pick.mt || 0; return mapClips(pick.project, unpackClipNotes);
+        mt = pick.mt || 0; const pr = mapClips(pick.project, unpackClipNotes);
+        if (pick.app) Object.defineProperty(pr, '_newer', {value: {f: 0, w: +pick.app || 0}, configurable: true});
+        return pr;
       },
       get loadedFallback() { return loadedFallback; },     // read back from a fallback copy: write it to the primary store again
       get where() { return where; },                        // backend that took the last write
@@ -8448,7 +8471,7 @@ const RecHelpers = (() => {
   const SQStore = {APP, PROJECT_FORMAT, SOUNDS_FORMAT, uid, cleanName, uniqueName, canonical, fnv, soundHash, normalizeSound, soundFromFactory,
     migratePatchV2, migrateDrumsV2, migrateProject2to3, buildProjectFile, serializeProjectFile, buildSoundsFile, parseFile, packClipNotes, unpackClipNotes,
     KV, Library, Autosave, requestPersist, fileName, ANALOG_RANGES: AN, MOD_SRC: SRC, MOD_DST: DST,
-    SYNTH_ENGINES, CATS, normFx, normMods, normWt, normFm2, normSynthP, normFm6, FM_BASE, migrateFm2, FM2_LEVEL};
+    SYNTH_ENGINES, CATS, normFx, normMods, normWt, normFm2, normSynthP, normFm6, FM_BASE, migrateFm2, FM2_LEVEL, NV_NAME, isForeign, nvOf, verCode};
   G.SQStore = SQStore;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -10838,7 +10861,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.7.0';
+const VERSION = '4.8.1';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -11218,6 +11241,14 @@ function factorySound(id) {
   }
   return deep(FCACHE.get(id));
 }
+// MK0: a track plays INIT for it; its JSON (save, undo, upload) is the original
+function nvWrap(o, drum) {
+  if (!o || !SQStore.isForeign(o) || SQStore.nvOf(o)) return o;
+  const w = factorySound(drum ? INIT_KIT.id : INIT_IDS.analog); w.name = SQStore.NV_NAME; w.origin = o.origin || null;
+  Object.defineProperty(w, '_nv', {value: o}); Object.defineProperty(w, 'toJSON', {value: () => o});
+  return w;
+}
+const nvTr = tr => !!tr.sound._nv && (toast(SQStore.NV_NAME), true);
 // browser categories (§11.1/11.2): chip label (P), column label (L)
 const BCATS = [['alle', 'Alle', 'Alle'], ['bass', 'Bass', 'Bass'], ['lead', 'Lead', 'Lead'], ['poly', 'Poly', 'Poly & Brass'], ['flaeche', 'Fläche', 'Fläche'],
   ['pluck', 'Pluck', 'Pluck & Keys'], ['sequenz', 'Seq', 'Sequenz'], ['fm', 'FM', 'FM'], ['glocke', 'Glocken', 'Glocken'], ['wt', 'WT', 'WT (klassisch)'], ['effekt', 'Effekt', 'Effekte'], ['eigene', 'Eigene', 'Eigene']];
@@ -11568,17 +11599,18 @@ function normTrack(t, def, pk, warns) {
     let snd = t.sound && typeof t.sound === 'object' ? SQStore.normalizeSound(t.sound) : null;
     if (!snd && t.patch && typeof t.patch === 'object') snd = SQStore.migratePatchV2(t.patch, t.preset, t.poly);
     if (snd && snd.engine === 'drum') snd = null;
-    o.sound = snd || def.sound;
+    o.sound = nvWrap(snd) || def.sound;
   } else {
     // WP6 (§7.4): the drum track owns a drum Sound; a v2 drum track (kit, voices, fx) is migrated (SQStore.migrateDrumsV2:
     // 808 → 808, 909 → 909, Lo-Fi → Rom Pop, Industrial → FM Labor; only what the user changed is carried over)
     let snd = t.sound && typeof t.sound === 'object' ? SQStore.normalizeSound(t.sound) : null;
-    if (snd && snd.engine !== 'drum') snd = null;
+    if (snd && SQStore.isForeign(snd)) snd = nvWrap(snd, 1);
+    else if (snd && snd.engine !== 'drum') snd = null;
     if (!snd && (t.voices || t.kit)) {
       const r = SQStore.migrateDrumsV2({kit: t.kit, voices: t.voices || {}, fx: t.fx || {}}, v2KitRef(t.kit));
       snd = r.sound; if (r.warning && warns) warns.push(r.warning);
     }
-    o.sound = drumSoundFix(snd || def.sound);
+    o.sound = snd && snd._nv ? snd : drumSoundFix(snd || def.sound);
   }
   const cl = Array.isArray(t.clips) ? t.clips : [];
   o.clips = emptyClips().map((_, s) => normClip(cl[s], def.kind, pk));
@@ -11590,6 +11622,7 @@ function normalizeProject(obj) {
     if (!obj || typeof obj !== 'object') return newProjectRaw();
     // a format-2 project (DIRIGENT files, the WP1/WP2 autosave) is migrated first (§12.6)
     if (!(obj.format >= 3) || (Array.isArray(obj.tracks) && obj.tracks.some(t => t && t.kind !== 'drum' && t.patch && !t.sound))) obj = SQStore.migrateProject2to3(obj, []);
+    const nv0 = obj._newer || {}, nvF = Math.max(isNum(obj.format) ? obj.format : 0, nv0.f || 0);   // MK0
     const p = newProjectRaw();
     if (typeof obj.id === 'string' && /^p-[a-z0-9-]{1,40}$/.test(obj.id)) p.id = obj.id;
     if (typeof obj.name === 'string') p.name = obj.name.slice(0, 40);
@@ -11665,6 +11698,8 @@ function normalizeProject(obj) {
     if (Array.isArray(obj.scenes)) obj.scenes.slice(0, N_SCN).forEach((sc, i) => { const r = sc && normChordRow(sc.chords); if (r) p.scenes[i].chords = r; });
     // V0b FOLGEN: the editor kinds switched to AUS (only false entries are kept; missing = FOLGT)
     if (ui.follow && typeof ui.follow === 'object') { const f = {}; for (const k of ['roll', 'lauf', 'steps', 'song']) if (ui.follow[k] === false) f[k] = false; if (Object.keys(f).length) p.ui.follow = f; }
+    const nvE = p.tracks.filter(t => t.sound && t.sound._nv).map(t => t.sound._nv.engine);
+    if (nvF > SQStore.PROJECT_FORMAT || nvE.length) Object.defineProperty(p, '_newer', {value: {f: nvF, e: nvE, w: nv0.w || 0}, configurable: true});
     return p;
   } catch (e) { console.error(e); return newProjectRaw(); }
 }
@@ -21027,6 +21062,7 @@ function fmxLvWant(t, on) {
 function applySound(i, snd, opts) {
   opts = opts || {};
   const T = S.tracks[i]; if (!T || T.kind !== 'synth' || !snd) return;
+  snd = nvWrap(snd);
   const old = T.sound, other = !old || old.name !== snd.name || old.origin !== snd.origin || old.engine !== snd.engine;
   T.sound = snd; markDirty(); UI.dirty.strip = UI.dirty.grid = UI.dirty.edHead = true; UI.sndVer++;
   if (other && snd.engine === 'fm6') { try { fmInitSel(i, true); } catch (e) { logErr(e); } }   // V0d (A.4b 1): a newly loaded sound resets the choice
@@ -21082,7 +21118,7 @@ function setEngine(t, eng) {
   const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth') throw new Error('Keine Synth-Spur: ' + t);
   const e = ENG_OF[eng] || (eng === 'fm2' ? 'fm6' : ['analog', 'wt', 'fm6'].includes(eng) ? eng : null);
   if (!e) throw new Error('Engine muss va, fm oder wt sein');
-  if (tr.sound.engine === e) return;
+  if (nvTr(tr) || tr.sound.engine === e) return;
   const snd = deep(tr.sound); setEngineOf(snd, e);
   applySound(t, snd);
   if (R.editor === 'synth' && t === R.selT) safeRebuild(buildSynthEd);
@@ -21091,6 +21127,7 @@ function setEngine(t, eng) {
    Afterwards at least one oscillator level >= .5, and aS + aD audible */
 function randomize(t) {
   const tr = S.tracks[t]; if (!tr) throw new Error('Keine Spur: ' + t);
+  if (nvTr(tr)) return;
   if (tr.kind === 'drum') { randomizeDrumVoice(DRUM_VOICES[ED.dVoice].id); return; }
   const snd = deep(tr.sound), p = snd.p, R_ = Math.random, U = (a, b) => a + (b - a) * R_(), E = (a, b) => a * Math.pow(b / a, R_()), pick = a => a[Math.floor(R_() * a.length)];
   // G3-klein: a FELD graph the DX form cannot carry (free graph, other numbers, waves, point envelopes, phases, feedback paths …)
@@ -21488,8 +21525,13 @@ function edHeadRefresh() {
   H.ab.classList.toggle('on', abOn && UI.ab.side === 'B');
   H.ab.textContent = abOn && UI.ab.side === 'B' ? 'B · Orig.' : 'A/B';
 }
+function nvPage(pg, i) {
+  pg.innerHTML = `<div class="nvp"><b>${SQStore.NV_NAME}</b><p>„${esc(S.tracks[i].sound._nv.name)}“ spielt hier als INIT und bleibt, wie er ist.</p><button class="mbtn rb go" data-a="1">Anderer Sound</button> <button class="mbtn rb">Neu laden</button></div>`;
+  onTap(pg, b => (b.dataset.a ? openBrowser(i) : cloudReload()), 'button');
+}
 function fillSynthTab(body, i) {
   const pg = el('div', 'pg rest'); body.appendChild(pg);
+  if (S.tracks[i].sound._nv && !(ED.tab === 'fx' && GLOBAL_SUBS.has(ED.sub.fx))) { nvPage(pg, i); return; }
   const fmE = ED.tab === 'env' && S.tracks[i].sound.engine === 'fm6';
   const tab = ED.tab, sub = ED.sub[fmE ? 'envfm' : tab];
   pg.classList.add('pg-' + tab + (sub ? '-' + sub : ''));
@@ -24845,6 +24887,7 @@ function libReady() {
 function libChanged() { LIB.ver++; OHASH.key = ''; UI.sndVer++; UI.dirty.edHead = true; cloudLibDirty(); }
 async function deleteSound(id) {
   await libReady();
+  if (SQStore.isForeign(LIB.lib.get(id))) { toast(SQStore.NV_NAME); return false; }   // MK0
   const s = await LIB.lib.remove(id); if (!s) return false;
   libChanged();
   toast('„' + s.name + '“ gelöscht', {label: 'Rückgängig', fn: () => restoreSound(s).then(() => toast('„' + s.name + '“ ist wieder da'))});
@@ -24892,6 +24935,7 @@ function pvChainRetire() { if (PV.chain) { PV_OLD.push(PV.chain); PV.chain = nul
 function previewStart(t, sound, demo, id) {
   previewStop();
   ensureAudio(); const c = AU.ctx; if (!c || !sound) return false;
+  sound = nvWrap(sound);
   if (sound.engine === 'drum') return drumPreviewStart(sound === S.tracks[DRUM_T].sound ? null : sound, id);
   pvChainRetire(); PV.drum = null;
   const tr = S.tracks[t]; PV.chain = tr && tr.kind === 'synth' && sound !== tr.sound ? pvChain(t, sound) : null;
@@ -24967,6 +25011,7 @@ function brPool(t, sc) {
   const e0 = engKey(tr.sound.engine), engs = sc.all ? [e0].concat(['analog', 'fm6', 'wt'].filter(e => e !== e0)) : [sc.eng || e0];
   const fac = [], mine = [];
   for (const e of engs) { for (const f of SYNTH_LIB) if (engKey(f.engine) === e) fac.push(f); for (const u of own) if (engKey(u.engine) === e) mine.push(u); }
+  for (const u of own) if (SQStore.isForeign(u)) mine.push(u);        // MK0: in every scope
   return {fac, own: mine};
 }
 function brList(t, sc) {
@@ -25106,11 +25151,11 @@ function brRefresh() {
     : '<div class="mempty">Keine Sounds.</div>';
   for (const f of items) {
     const own = f.id && f.id.startsWith('u-'), loaded = snd.origin === f.id, open = BR.open === f.id, playing = PV.on && PV.id === f.id;
-    const ref = own ? (f.engine === 'drum' ? 'Eigenes Kit' + (f.p && f.p.base ? ' · aus ' + f.p.base : '') : ROLE_LABEL[soundRole(f)] || CAT_LABEL[f.cat] || 'Eigene') : (f.ref || '');
+    const nv = SQStore.isForeign(f), ref = nv ? SQStore.NV_NAME : own ? (f.engine === 'drum' ? 'Eigenes Kit' + (f.p && f.p.base ? ' · aus ' + f.p.base : '') : ROLE_LABEL[soundRole(f)] || CAT_LABEL[f.cat] || 'Eigene') : (f.ref || '');
     h += `<div class="brow${loaded ? ' cur' : ''}${open ? ' open' : ''}" data-id="${esc(f.id)}" data-engine="${esc(engKey(f.engine))}">` +
       `<button class="bpv rb${playing ? ' on' : ''}" data-act="pv" aria-label="${playing ? 'Vorhören beenden' : 'Vorhören'} ${esc(f.name)}">${playing ? '■' : '▶'}</button>` +
       `<button class="bmain" data-act="load" aria-label="${esc(f.name)} laden"><b>${esc(f.name)}</b><span>${esc(ref)}</span></button>` +
-      `<span class="beng">${ENGINE_LABEL[f.engine] || 'VA'}</span>` +
+      `<span class="beng">${nv ? 'NEU' : ENGINE_LABEL[f.engine] || 'VA'}</span>` +
       `<button class="binfo" data-act="info" aria-label="Trick zu ${esc(f.name)}">ⓘ</button>` +
       (own ? `<button class="bmore rb" data-act="more" aria-label="Mehr zu ${esc(f.name)}">⋯</button>` : '') + '</div>';
     if (open && f.tip) h += `<div class="btip" data-id="${esc(f.id)}">ⓘ ${esc(f.tip)}</div>`;
@@ -25128,7 +25173,7 @@ function brLoad(rec) {
   const t = BR.t, tr = S.tracks[t]; if (!rec || !tr) return false;
   const drum = tr.kind === 'drum';
   if (!(PV.on && PV.id === rec.id)) previewStop();
-  const e0 = drum ? null : engKey(tr.sound.engine), cross = !drum && engKey(rec.engine) !== e0;
+  const e0 = drum ? null : engKey(tr.sound.engine), cross = !drum && !SQStore.isForeign(rec) && engKey(rec.engine) !== e0;
   if (drum) soundEdit(t, 'Kit ' + rec.name, () => loadKit(rec.id));
   else soundEdit(t, 'Sound ' + rec.name, () => loadPreset(t, rec.id));
   BR.open = rec.id; BR.more = BR.ren = null;
@@ -25488,7 +25533,7 @@ function getDrumParam(voice, key) {
 // the drum track's sound replaced as a whole (a kit, an own kit, undo): strips, kit bus, FX, the open editor / browser
 function applyDrumSound(snd) {
   const tr = S.tracks[DRUM_T]; if (!tr || tr.kind !== 'drum' || !snd) return;
-  tr.sound = drumSoundFix(snd);
+  tr.sound = SQStore.isForeign(snd) ? nvWrap(snd, 1) : drumSoundFix(snd);
   UI.drumVer++; UI.sndVer++;
   drumBusApply(); applyTrackParams(DRUM_T, false);
   UI.dirty.strip = UI.dirty.grid = UI.dirty.edHead = true; markDirty();
@@ -25688,7 +25733,8 @@ function buildDrumEd() {
   ED.dhdr = {name: kName}; drumHeadRefresh();
   if (ED.dTab === 'fx' && GLOBAL_SUBS.has(ED.dFx)) globalBand(F);
   const pg = el('div', 'pg rest pg-d' + ED.dTab + (ED.dTab === 'fx' ? ' pg-fxg pg-fx-' + ED.dFx : ED.dTab === 'tief' ? ' pg-dl-' + ED.dLayer : '')); F.body.appendChild(pg);
-  if (ED.dTab === 'sound') pageDrumSound(pg);
+  if (tr.sound._nv && ED.dTab !== 'steps' && !(ED.dTab === 'fx' && GLOBAL_SUBS.has(ED.dFx))) nvPage(pg, DRUM_T);
+  else if (ED.dTab === 'sound') pageDrumSound(pg);
   else if (ED.dTab === 'tief') pageDrumTief(pg);
   else if (ED.dTab === 'steps') pageDrumSteps(pg);
   else if (ED.dTab === 'kit') pageDrumKit(pg);
@@ -27170,6 +27216,7 @@ function openMenu(goto) {
     'DRUM-EDITOR: Ein Pad antippen wählt das Instrument (SOUND, TIEF und SCHRITTE springen dorthin) – nicht während ● aufnimmt und nicht beim schnellen Trommeln auf zwei Pads. Abschalten: KIT → „Pad wählt Instrument“.',
     'NAMEN: ANTEIL = wie viel ein Oszillator oder eine Schicht zum Klang beiträgt, KLANG-PEGEL = Lautstärke des Sounds, LAUTSTÄRKE (FX › SPUR) = die Spur, mit dem hörbaren dB-Wert, MASTER-AUSGANG = alles zusammen. Das amberfarbene Band „GLOBAL“ (HALL, ECHO, MASTER) heißt: wirkt auf alle Spuren. Harmonie-Modus HALBTON = Verschieben in Halbtönen.',
     'INIT: Menü → Neu ▾ → „Leer (Init)“ = neutrale INIT-Sounds, keine Clips, kein Song, 120 BPM. Im Klang-Editor ⋯ → Init setzt den Sound auf den neutralen Startklang seiner Engine (Drums: INIT Drums); ↶ holt den alten zurück. Neue Projekte heißen nach ihrer Zeit („Projekt · Mi 14.10. 21:40“), „Ältere Versionen“ zeigt nur die des offenen Projekts.',
+    'NEUERE VERSION: Sounds und Projekte einer neueren SYNQUENZER-Version bleiben unverändert; so ein Sound spielt hier INIT, so ein Projekt wird hier nicht gespeichert – neu laden.',
     'TASTATUR-ANSCHLAG (Menü → Bedienung): POSITION = oben auf der Taste leise, unten laut, jede Taste für sich; FEST = immer 0,8. Bei FEST tragen Anschlag-Regler und Anschlag-Modulationen einen grauen Hinweis – antippen schaltet POSITION ein.',
     'LAUF: Basslauf oder Sequenz Schritt für Schritt – Schritt antippen = an, hoch/runter ziehen = Ton in der Tonart.',
     'SONG: SONG ⇄ (Ecke oben links im Raster) zeigt den Song. Beim ersten ● SONG wird alles mitgeschnitten: Szenenwechsel, Clip-Stopps, Akkorde und deine Melodie; ▶ SONG spielt alles ab. Eine Zelle antippen = anderer Clip in diesem Takt, wischen = blättern. Während der Song läuft: Clip starten = Spur übernehmen, ↩ SONG gibt sie zurück. Unter MELODIE: Melodie bearbeiten, als Clip, Kette aus Szenen.',
@@ -27301,6 +27348,18 @@ async function menuHistRefresh() {
 const UI_KEY = 'synquenzer.ui', OLD_UI_KEY = 'dirigent.v2.ui';
 const BOOT = {done: false, gen: 0, dirty: false};
 let kv = null, autosave = null;
+// MK0 (EN3-04): lock = the open project is a newer version's: nothing writes over its stored copy; lib/libNewer guard save_library
+const NV = {lock: null, lib: null, libNewer: null}, NV_MSG = 'Aus einer neueren SYNQUENZER-Version';
+const nvOld = w => w > 0 && w <= SQStore.verCode(VERSION);
+function nvLockOf(p) { const N = p && p._newer; return N && (N.f > SQStore.PROJECT_FORMAT || (N.e.length && !nvOld(N.w))) ? N : null; }
+const nvNewer = (pj, w) => !!pj && (+pj.format > SQStore.PROJECT_FORMAT || (!nvOld(w) && (pj.tracks || []).some(t => t && SQStore.isForeign(t.sound))));
+function nvBanner() {
+  let b = document.getElementById('nvBan'); if (b) b.remove(); if (!NV.lock) return;
+  b = el('div', '', `<span class="cb-t">${NV_MSG}: Damit nichts verloren geht, speichert diese Version das Projekt nicht.</span><button class="mbtn rb go">Neu laden</button><button class="mbtn rb" aria-label="Schließen">✕</button>`);
+  b.id = 'nvBan'; onTap(b, x => (x.classList.contains('go') ? cloudReload() : b.remove()), 'button'); document.body.appendChild(b);
+  try { b.style.top = Math.round(EL.top.getBoundingClientRect().bottom) + 'px'; } catch (e) {}
+}
+const nvRefuse = () => { if (!NV.lock) return false; toast(NV_MSG + ' – erst neu laden'); return true; };
 const idle = window.requestIdleCallback ? (f => window.requestIdleCallback(f, {timeout: 2000})) : (f => setTimeout(f, 50));   // §1.7.7
 // the selection is saved with the project (§12.6 ui) and restored when the app starts or a project is opened
 function syncUi() { if (S) S.ui = Object.assign({selT: R.selT, selS: R.selS, order: trackOrder().slice(), sceneBank: sceneBankOf(), trackBank: trackBankOf()}, S.ui && S.ui.follow ? {follow: S.ui.follow} : null, S.ui && S.ui.fmv ? {fmv: S.ui.fmv} : null, UI.partPage === 1 ? {partPage: 1} : null); }   // V4b: + fmv (FELD / DX per track, a view field)   // V0b: + follow (a view field)
@@ -27332,7 +27391,7 @@ function saveNow() {
 async function loadSaved() {
   if (!autosave || !kv || kv.mode === 'memory') return false;
   const p = await autosave.load(); if (!p) return false;
-  applyProject(normalizeProject(p), {}); return true;
+  applyProject(normalizeProject(p), {nvKv: true}); return true;
 }
 let UIP = null;
 function uiPrefs() {
@@ -27392,6 +27451,7 @@ function applyProject(p, opts) {
   UI.dirty.all = true; UI.kbRelayout = true;
   if (!opts.clean || mig) markDirty();
   try { if (SYNC.pres.size) cloudPresSoon(); if (SYNC.newer && SYNC.newer.lid !== S.id) SYNC.newer = null; } catch (e) {}   // VO2 Presence-light: anderes Projekt offen
+  const nl = nvLockOf(p); NV.lock = nl ? Object.assign({}, nl, {id: S.id, kv: !!opts.nvKv}) : null; nvBanner();
 }
 
 /* ---------- projects (§12.2): the open project lives in the autosave; parked ones under proj:<id>, index in projIndex ---------- */
@@ -27430,12 +27490,19 @@ async function parkFile(fo) {
 // the open project as a file object worth parking (a synchronous snapshot; tickAhead first while playing), or null when
 // there is no browser storage or nobody worked on it
 function parkSnapshot() {
-  if (!kv || kv.mode === 'memory' || !BOOT.done || isPristine(S)) return null;
+  if (!kv || kv.mode === 'memory' || !BOOT.done || NV.lock || isPristine(S)) return null;
   if (R.playing) tickAhead(.3);
   return projectFileObj(S);
 }
 // park the open project: resolves true (parked), 'skip' (nothing worth parking) or false (the write failed: storage full)
-function parkCurrent() { const fo = parkSnapshot(); return fo ? parkFile(fo).then(r => r === true, () => false) : Promise.resolve('skip'); }
+function parkCurrent() { if (NV.lock) return nvPark(); const fo = parkSnapshot(); return fo ? parkFile(fo).then(r => r === true, () => false) : Promise.resolve('skip'); }
+// MK0: leaving a locked project parks the autosave's copy as it is
+async function nvPark() {
+  const L = NV.lock; let v = null;
+  if (L.kv && kv) { try { v = await kv.get('project'); } catch (e) {} }
+  if (!v || !v.project || v.project.id !== L.id) return 'skip';
+  return parkFile({app: SQStore.APP, kind: 'project', format: Math.max(+v.project.format || 0, SQStore.PROJECT_FORMAT), saved: new Date(v.mt || 0).toISOString(), appVersion: '', project: v.project}).then(r => r === true, () => false);
+}
 const SWITCH_FULL = 'Speicher voll – das offene Projekt ließ sich nicht sichern. Erst „Als Datei sichern“, dann wechseln.';
 const switchRefused = () => { toast(SWITCH_FULL, {label: 'Als Datei sichern', fn: () => saveFile()}); return false; };
 // [Neu], [Demo laden], [Datei öffnen], open from [Projekte] (the UI): switching never loses work (§12.2) — the open project
@@ -27451,7 +27518,7 @@ async function switchProjectUI(p, opts, msg) {
 // the API (newProject, loadDemo, importJSON …): the new project is applied at once (callers see it synchronously); the
 // park write runs in the background — if it fails, the previous project stays in memory behind [Zurück]
 function switchProject(p, opts) {
-  const keep = parkSnapshot(), parked = keep ? parkFile(keep).then(r => r === true, () => false) : Promise.resolve(false);
+  const keep = parkSnapshot(), parked = NV.lock ? nvPark().then(r => r === true) : keep ? parkFile(keep).then(r => r === true, () => false) : Promise.resolve(false);
   applyProject(p, opts);
   return parked.then(r => {
     if (!r && keep) toast('Speicher voll – das vorige Projekt ist nicht gesichert', {label: 'Zurück', fn: () => { const q = projFromFile(keep); if (q) { applyProject(q, {}); if (autosave) autosave.flush(); } }});
@@ -27472,7 +27539,7 @@ async function openProject(id) {
   const ok = autosave ? await autosave.flush() : false;
   // its home is now the autosave: it is the open project (move, not copy) — but only once the autosave really holds it;
   // with full storage the parked copy stays (it is the only stored one)
-  if (ok !== true) { toast('Projekt „' + p.name + '“ geöffnet – Speicher voll: die gesicherte Kopie bleibt unter Projekte, bitte als Datei sichern'); return true; }
+  if (ok !== true) { toast('Projekt „' + p.name + '“ geöffnet – ' + (NV.lock ? 'aus einer neueren Version: die Kopie bleibt unter Projekte' : 'Speicher voll: die gesicherte Kopie bleibt unter Projekte, bitte als Datei sichern')); return true; }
   try { await kv.del('proj:' + id); } catch (e) {}
   PROJ.index = (await projIndexLoad()).filter(x => x.id !== id); await projIndexSave();
   toast('Projekt „' + p.name + '“ geöffnet');
@@ -27525,6 +27592,7 @@ async function exportProjectById(id) {
 }
 async function restoreHistory(key) {
   if (!autosave) return false;
+  if (nvRefuse()) return false;
   const raw = await autosave.loadHistory(key); if (!raw) { toast('Version nicht lesbar'); return false; }
   await autosave.snapshotNow();          // the current state first becomes a snapshot
   const p = normalizeProject(raw);
@@ -27652,6 +27720,7 @@ async function boot() {
   try {
     kv = SQStore.KV();
     autosave = SQStore.Autosave({kv, getProject: () => { if (R.playing) tickAhead(.3); syncUi(); return S; }, getId: () => (S ? S.id : ''), onWarn: m => toast(m), onWritten: snap => cloudOnWrite(snap),
+      hold: () => !!NV.lock, app: SQStore.verCode(VERSION),
       debounceMs: 800, maxWaitMs: 4000, debouncePlayMs: 2000, maxWaitPlayMs: 20000, historyEvery: 600000, historyMax: 12});
     autosave.install();
   } catch (e) { logErr(e); }
@@ -27667,7 +27736,7 @@ async function boot() {
   EL.app.classList.remove('loading');
   const take = !!p && gen === BOOT.gen;                     // a project changed through the API meanwhile is never overwritten
   // a project read back unchanged from the store is not written again; a rescue copy or a takeover is
-  if (take) applyProject(normalizeProject(p), {first: !!msg && /Version 1/.test(msg), ui: fromStore, clean: fromStore && !hadRescue && !(autosave && autosave.loadedFallback)});
+  if (take) applyProject(normalizeProject(p), {first: !!msg && /Version 1/.test(msg), ui: fromStore, nvKv: fromStore, clean: fromStore && !hadRescue && !(autosave && autosave.loadedFallback)});
   else if (BOOT.dirty) markDirty();                         // changed (API, UI) while the store was loading
   if (msg && take) toast(msg);
   if (kv && kv.mode === 'memory') setTimeout(() => toast('Speichern im Browser nicht möglich – bitte „Als Datei sichern“ benutzen'), msg ? 1800 : 0);
@@ -28015,7 +28084,7 @@ async function cloudReconcile() {
       p.id = lid;
       await metaSet(lid, {uid, sid: r.id, base: r.version, space: null, dirty: false, sum: fo.sum || '', mt: Date.now()}); SYNC.pulled = (SYNC.pulled || 0) + 1;
       if (!opened && isPristine(S) && quietOk()) { opened = r; await cloudApply(p); }
-      else { SYNC.quiet++; try { await parkFile(projectFileObj(p)); } finally { SYNC.quiet--; } }
+      else { SYNC.quiet++; try { await parkFile(nvFo(fo, p)); } finally { SYNC.quiet--; } }
     }
     if (opened) toast('Deine Songs sind da – „' + (opened.title || 'Projekt') + '“ geladen');
     SYNC.foreign = foreign.length ? foreign : null;
@@ -28031,6 +28100,7 @@ function cloudFail(k) {
   else if (k === 'paused') { cloudState('paused'); clearTimeout(SYNC.retryT); SYNC.retryT = setTimeout(() => { cloudState('offline'); cloudKick(); }, 300000); }
   else if (k === 'auth') { if (hasSession()) cloudFail('net'); else cloudSignedOut(); }   // Sitzung noch da: nie abmelden, nur warten
 }
+function nvFo(fo, p) { if (!nvNewer(fo.project, SQStore.verCode(fo.appVersion))) return projectFileObj(p); const o = deep(fo); o.project.id = p.id; return o; }
 async function cloudBody(sid) {
   const r = await cloudSel(SYNC.client.from('project_data').select('version,body').eq('project_id', sid).maybeSingle());
   if (r.err || !r.data) return null;
@@ -28044,7 +28114,7 @@ async function cloudPull(lid, r, silent) {
   p.id = lid; devCarry(p, await devFrom(lid));                        // VO2: Ansicht, Auswahl, Metronom, Oktave bleiben je Gerät
   const done = async () => cq(async () => { SYNC.pulled = (SYNC.pulled || 0) + 1; const m = await metaGet(lid); if (!m) return; m.base = r.version; m.sum = fo.sum || ''; m.dirty = false; delete m.conflict; await metaSet(lid, m); await outDel(m.uid, lid); });
   const who = r.updated_by && r.updated_by !== SYNC.uid ? cnm(r.updated_by) : 'anderes Gerät', at = r.updated_at ? dayTime(Date.parse(r.updated_at)) : '';
-  if (lid !== S.id) { SYNC.quiet++; try { await parkFile(projectFileObj(p)); } finally { SYNC.quiet--; } await done(); return true; }
+  if (lid !== S.id) { SYNC.quiet++; try { await parkFile(nvFo(fo, p)); } finally { SYNC.quiet--; } await done(); return true; }
   if (SYNC.newer && SYNC.newer.lid === lid) SYNC.newer = null;
   if (silent) { await cloudApply(p); await done(); toast('Neuere Version geladen (' + who + (at ? ', ' + at : '') + ')'); return true; }
   toast('„' + (r.title || 'Projekt') + '“ wurde ' + (who === 'anderes Gerät' ? 'auf einem anderen Gerät' : 'von ' + who) + ' geändert', {label: 'Laden', fn: async () => {
@@ -28122,12 +28192,12 @@ async function cloudFileText(lid) {
   if (lid === S.id) {
     let snap = SYNC.snap && SYNC.snap.project && SYNC.snap.project.id === lid ? SYNC.snap : null;
     if (!snap && kv) { try { const v = await kv.get('project'); if (v && v.project && v.project.id === lid) snap = v; } catch (e) {} }
-    if (!snap) return null;
+    if (!snap || NV.lock || nvNewer(snap.project, snap.app)) return null;     // MK0
     if (R.playing) tickAhead(.3);
     return cloudEnvText(snap.project, snap.mt);
   }
   let fo = null; try { fo = kv ? await kv.get('proj:' + lid) : null; } catch (e) { fo = null; }
-  if (!fo || !fo.project) return null;
+  if (!fo || !fo.project || nvNewer(fo.project, SQStore.verCode(fo.appVersion))) return null;
   return cloudEnvText(fo.project, Date.parse(fo.saved) || Date.now());
 }
 // VO2 (N2-VO2-02): der Server-Text ohne Geräte-Werte (DEVICE_KEYS); Prüfsumme über genau diesen Text
@@ -28246,7 +28316,11 @@ function cloudLibSigOf(body) { let b = body; if (typeof b === 'string') { try { 
   return (b && Array.isArray(b.sounds) ? b.sounds : []).map(SQStore.normalizeSound).filter(Boolean).map(s => SQStore.soundHash(s) + ':' + s.name).sort().join('|'); }
 async function cloudLibMerge(body, uid) {
   let b = body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { return; } }
-  const list = b && Array.isArray(b.sounds) ? b.sounds : []; if (!list.length) return;
+  const list = b && Array.isArray(b.sounds) ? b.sounds : [];
+  if (uid && b) { if (+b.format > SQStore.SOUNDS_FORMAT) NV.libNewer = uid;
+    if (!NV.lib || NV.lib.uid !== uid) NV.lib = {uid, h: new Set()};
+    for (const x of list) if (SQStore.isForeign(x)) NV.lib.h.add(SQStore.soundHash(x)); }
+  if (!list.length) return;
   SYNC.quiet++; try { await LIB.lib.importMany(list); libChanged(); } finally { SYNC.quiet--; }
   if (!uid) return;
   // Server-Sounds gehören diesem Konto: gleicher Hash und Name, sonst die lokale Kopie mit gleichem Inhalt (importMany legt gleiche
@@ -28261,6 +28335,11 @@ async function cloudLibPush(again) {
   if (!uid || !LIB.ok || SYNC.libInit !== uid) return 'no';       // erst nach der Zuordnung bei der Anmeldung (cloudLibSync)
   await libOwnClaim(uid); if (uid !== SYNC.uid) return 'no';         // seit der Anmeldung neu → diesem Konto
   const mine = libMine(uid), sig = uid + '#' + libSigOf(mine); if (sig === SYNC.libSent && !again) return 'same';
+  const hs = new Set(mine.map(SQStore.soundHash));           // MK0
+  if (NV.libNewer === uid || (NV.lib && NV.lib.uid === uid && [...NV.lib.h].some(h => !hs.has(h)))) {
+    if (SYNC.libNv !== sig) { SYNC.libNv = sig; toast('Eigene Sounds: ' + NV_MSG); }
+    return 'newer';
+  }
   const key = 'lib:' + uid, st = (await cget(key)) || {base: 0};
   const text = JSON.stringify(SQStore.buildSoundsFile(mine));
   const r = await cloudRpcText('save_library', {p_base: st.base || 0}, 'p_body', text);
@@ -28416,6 +28495,7 @@ async function cloudInherit(srcLid, newLid, org) {
 }
 // „Zurückholen“ = erst „Vor Wiederherstellen“ merken, dann den alten Stand als neue Version speichern (nichts verschwindet)
 async function cloudRestore(id) {
+  if (nvRefuse()) return false;
   const m = await metaGet(S.id); if (!m || !m.sid) return false;
   const v = await cloudVersionBody(id); const p = v && projFromFile(v.fo); if (!p) { toast('Version nicht lesbar'); return false; }
   await cloudFlush();
@@ -28462,7 +28542,7 @@ async function cloudResolve(how) {
   else {
     const mine = JSON.parse(JSON.stringify(S, stripReplacer)), nm = (SYNC.me && SYNC.me.name) || 'Meine';
     mine.id = newProjectId(); mine.name = ((S.name || 'Projekt').slice(0, 24) + ' (' + nm + (/[sxzß]$/i.test(nm) ? '’' : 's') + ' Version)').slice(0, 40);
-    srv.id = lid; devCarry(srv, mine); SYNC.quiet++; try { await parkFile(projectFileObj(normalizeProject(srv))); } finally { SYNC.quiet--; }
+    srv.id = lid; devCarry(srv, mine); SYNC.quiet++; try { await parkFile(nvFo(fo, normalizeProject(srv))); } finally { SYNC.quiet--; }
     await fin();
     const sp = m.space ? cspace(m.space) : null;                      // VO2: „Beide behalten“ bleibt im selben Raum (§4.5)
     await metaSet(mine.id, {uid: SYNC.uid, sid: cuuid(), base: 0, space: sp && sp.status === 'active' ? m.space : null, origin: m.space && !(sp && sp.status === 'active') ? m.space : (m.origin || null), dirty: true, force: true, mt: Date.now()});
@@ -32414,6 +32494,7 @@ const SYNQUENZER = {
   // storage (§16)
   exportProject: () => saveFile(), history: () => projHistory(), restoreHistory,
   projects: () => projectsList(), openProject, deleteProject, renameProject, duplicateProject,
+  nvState: () => ({lock: NV.lock && deep(NV.lock), libNewer: NV.libNewer}),   // MK0
   storage: () => ({mode: kv ? kv.mode : null, booted: BOOT.done, dirty: !!(autosave && autosave.dirty), lastOk: autosave ? autosave.lastOk : 0, lastErr: autosave ? autosave.lastErr : null, persist: UI.persist || null}),
   // WP4 (§16): engine and effects
   engineInfo: () => engineInfo(),

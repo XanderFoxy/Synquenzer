@@ -1,0 +1,11 @@
+import { openVp, mk2, SETUP, sleep } from './v3-v2e2-lib.mjs';
+const {b, p, errs, cdp} = await openVp('L1');
+const T = mk2(p, cdp), {E} = T;
+await E(SETUP(true)); await E(() => window.SYNQUENZER.songView(true)); await sleep(250);
+const st = () => E(() => ({rows: SV.rows, pages: SV.pages, tb: trackBankOf(), ui: S.ui.trackBank, nt: NT()}));
+console.log(JSON.stringify(await st()));
+await E(() => { const Q = window.SYNQUENZER; Q.addTrack(); Q.addTrack(); }); await sleep(200);
+console.log(JSON.stringify(await st()));
+await E(SETUP(true)); await sleep(300);
+console.log(JSON.stringify(await st()), JSON.stringify((await T.info()).rows));
+await b.close();

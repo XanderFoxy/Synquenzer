@@ -1,0 +1,17 @@
+import { openVp, mk2, SETUP, sleep } from './v3-v2e2-lib.mjs';
+const {b, p, errs, cdp} = await openVp('P1');
+const T = mk2(p, cdp), {E} = T;
+await E(SETUP(true)); await E(() => window.SYNQUENZER.songView(true)); await sleep(250);
+await E(() => window.SYNQUENZER.makeOwn(0, 4)); await sleep(200);
+let inf = await T.info();
+await p.screenshot({path: 'v3-v2e2-dbg-own.png', clip: {x: inf.canvas.x + 100, y: inf.canvas.y + 15, width: 120, height: 50}});
+console.log(await T.px(4 * 36 + 2.8, inf.rulerH + inf.rowH / 2), await T.px(4 * 36 + 3, inf.rulerH + 4.2));
+const r = inf.rows.indexOf('S1') - 1; const c = {x: inf.canvas.x + 4 * 36 + 18, y: inf.canvas.y + inf.rulerH + r * inf.rowH + inf.rowH / 2};
+await T.tap(c.x, c.y); await sleep(700);
+await p.screenshot({path: 'v3-v2e2-dbg-roll.png'});
+const st = await E(() => ({roll: window.SYNQUENZER.roll(), xy: window.SYNQUENZER.rollApi()._xy(1, 57)}));
+console.log(JSON.stringify(st));
+await T.tap(st.xy.x, st.xy.y, 400);
+console.log(JSON.stringify(await E(() => window.SYNQUENZER.ownClip(0, 4).notes)), await E(() => window.SYNQUENZER.undoInfo().top));
+await p.screenshot({path: 'v3-v2e2-dbg-roll2.png'});
+console.log(errs); await b.close();

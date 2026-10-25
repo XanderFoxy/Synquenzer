@@ -1,12 +1,12 @@
 import { openVp, mk, SETUP } from './v3-v2e-lib.mjs';
-const vp = process.argv[2] || 'P1', tag = process.argv[3] || 'peek';
+const vp = process.argv[2] || 'P1', tag = process.argv[3] || 'peek', glass = process.argv[4] === 'g';
 const {b, p, errs, cdp} = await openVp(vp);
 const T = mk(p, cdp), {E} = T;
 await E(SETUP(true));
+await E(() => window.SYNQUENZER.makeOwn(0, 4));
 await p.waitForTimeout(300);
-await p.screenshot({path: `v3-v2e2-${tag}-${vp}-clips.png`});
-await E(() => window.SYNQUENZER.songView(true)); await p.waitForTimeout(300);
-await p.screenshot({path: `v3-v2e2-${tag}-${vp}-song.png`});
-const r = await E(() => { const q = s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [b.x, b.y, b.width, b.height].map(v => Math.round(v)); }; return {top: [...document.querySelectorAll('.sv-top > *')].map(e => e.className + ' ' + (e.hidden ? 'H' : JSON.stringify(q('.sv-top > .' + e.className.split(' ').filter(c => c.startsWith('sv-'))[0])))) }; });
-console.log(JSON.stringify(r, null, 1)); console.log(errs);
+await E(() => window.SYNQUENZER.songView(true)); if (glass) await E(() => window.SYNQUENZER.songViewMode('glass')); await p.waitForTimeout(300);
+await p.screenshot({path: `v3-v2e2-${tag}-${vp}-song${glass ? 'G' : ''}.png`});
+const r = await E(() => [...document.querySelectorAll('.sv-top > *')].filter(e => !e.hidden).map(e => { const b = e.getBoundingClientRect(); return e.className.replace('rb sv-b ', '') + ' ' + [b.x, b.y, b.width, b.height].map(v => Math.round(v)).join(','); }));
+console.log(vp, r.join(' | ')); const i = await T.info(); console.log(i.rowH, i.canvas, i.tiles && i.tiles.slice(0, 6)); console.log(errs);
 await b.close();
