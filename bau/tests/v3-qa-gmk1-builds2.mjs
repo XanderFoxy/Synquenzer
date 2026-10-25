@@ -1,0 +1,11 @@
+import {open, sleep, OUT} from './v3-qa-gmk1-tl.mjs';
+const T = await open(); const {p, E, errs} = T;
+await E(() => { SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); }); await sleep(300);
+console.log('loaded', JSON.stringify(await E(() => SYNQUENZER.mkInfo())));
+await E(() => { window.__nb = 0; window.__ns = 0; window.__tb = 0; const b = MKUI.build; MKUI.build = function () { const t = performance.now(); window.__nb++; const r = b.apply(this, arguments); window.__tb += performance.now() - t; return r; };
+  const sh = document.getElementById('synthSheet'); new MutationObserver(() => { window.__ns++; }).observe(sh, {childList: true}); });
+const t = await E(() => { const t = performance.now(); SYNQUENZER.openEditor(); return performance.now() - t; }); await sleep(800);
+console.log('first open: sync ms', t.toFixed(1), 'panel builds', await E(() => window.__nb), 'ms', await E(() => window.__tb.toFixed(1)), 'sheet child mutations', await E(() => window.__ns), 'class', await E(() => document.getElementById('synthSheet').className));
+await E(() => { window.__nb = 0; window.__tb = 0; window.__ns = 0; SYNQUENZER.closeEditor(); }); await sleep(800);
+console.log('close: panel builds', await E(() => window.__nb), 'ms', await E(() => window.__tb.toFixed(1)), 'mutations', await E(() => window.__ns), 'class', await E(() => document.getElementById('synthSheet').className), 'editor', await E(() => SYNQUENZER.runtime().editor));
+await T.br.close();

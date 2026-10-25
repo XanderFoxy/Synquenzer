@@ -1,0 +1,12 @@
+import {open, sleep, OUT} from './v3-qa-gmk1-tl.mjs';
+const T = await open(); const {p, E, errs} = T;
+await E(() => { SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await sleep(1000);
+await E(() => { window.__nb = 0; const b = MKUI.build; MKUI.build = function () { window.__nb++; return b.apply(this, arguments); }; });
+await sleep(3000); console.log('idle 3 s, editor open: builds', await E(() => window.__nb));
+await E(() => { window.__nb = 0; SYNQUENZER.togglePlay(); }); await sleep(5000); console.log('playing 5 s: builds', await E(() => window.__nb));
+await E(() => { window.__nb = 0; }); await T.dragMk('k0', 60, 12); await sleep(500); console.log('one knob drag: builds', await E(() => window.__nb));
+await E(() => { window.__nb = 0; }); await T.tapMk('w1', 300); await T.tapPop(/^6 FILTER/); await sleep(500); console.log('EDIT-WAHL list choice: builds', await E(() => window.__nb));
+await E(() => { window.__nb = 0; }); await E(() => SYNQUENZER.selectTrack(2)); await sleep(800); console.log('track switch to VA track while open: builds', await E(() => window.__nb), 'class', await E(() => document.getElementById('synthSheet').className), 'editor', await E(() => SYNQUENZER.runtime().editor));
+await E(() => { window.__nb = 0; }); const x = await T.rectText('button', /^✕$/); await T.tap(x.cx, x.cy, 800); console.log('✕ on the VA track: builds', await E(() => window.__nb), 'class', await E(() => document.getElementById('synthSheet').className));
+await E(() => SYNQUENZER.togglePlay());
+await T.br.close();

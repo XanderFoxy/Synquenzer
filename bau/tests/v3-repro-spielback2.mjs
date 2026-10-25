@@ -1,0 +1,23 @@
+import {open, sleep} from './v3-qa-gmk1-tl.mjs';
+const T = await open(); const {E, errs} = T;
+const sel = async () => (await T.panel()).sel;
+await E(() => { SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await sleep(500);
+await T.tapTxt('button', /^MS ?2000$/); await sleep(700);
+await T.tapMk('w1', 300); await T.tapPop(/^6 FILTER/); await sleep(250);
+await E(() => SYNQUENZER.mkSet(0, 't.0.f.cut', 33));
+await T.tapMk('write', 400);
+console.log('pop html', await E(() => { const p = document.querySelector('#popLayer .pop'); return p ? p.innerText.replace(/\s+/g, ' ').slice(0, 300) : null; }));
+await E(() => { const i = document.querySelector('#popLayer .pop input'); if (i) { i.value = 'Repro Eins'; i.dispatchEvent(new Event('input', {bubbles: true})); } });
+const r = await T.tapTxt('#popLayer .pop button', /^Sichern$/, 800); console.log('tapped Sichern', !!r);
+console.log('lib mk', await E(() => (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine === 'mk').map(s => s.name + ':' + s.id)));
+console.log('sound', await E(() => { const s = SYNQUENZER.getSound(0); return {name: s.name, origin: s.origin, id: s.id}; }));
+console.log('P.side', await E(() => MKUI.P.side), 'bank', await E(() => MKUI.P.bank));
+const disp = await E(() => { const d = document.querySelector('.mkx[data-k="disp"]'); return d && d.getAttribute('aria-label'); });
+const keys = await E(() => [...document.querySelectorAll('.mkx[data-k^="n"]')].filter(e => e.getClientRects().length).map(e => e.dataset.k + ':' + e.className));
+console.log('disp', disp, keys.join(' | '));
+const m = /b\.(\d)(\d)/.exec(disp || '');
+await sleep(1500); console.log('after 1.5s disp', await E(() => document.querySelector('.mkx[data-k="disp"]').getAttribute('aria-label')), await E(() => document.querySelector('.mkx[data-k="n0"]').className));
+await T.tapMk('n0', 400); console.log('tap key 1 ->', JSON.stringify(await sel()), 'cut', await E(() => SYNQUENZER.mkGet(0).t[0].f.cut), (await T.panel()).knobs.map(k => k && k.l).join('|'), 'name', await E(() => SYNQUENZER.getSound(0).name));
+if (m) { await T.tapMk('n' + (+m[2] - 1), 300); console.log('tap lit key ->', JSON.stringify(await sel()), 'cut', await E(() => SYNQUENZER.mkGet(0).t[0].f.cut), (await T.panel()).knobs.map(k => k && k.l).join('|')); }
+console.log('errs', JSON.stringify(errs));
+await T.br.close();

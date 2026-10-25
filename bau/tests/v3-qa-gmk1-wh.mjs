@@ -1,0 +1,12 @@
+import {open, sleep} from './v3-qa-gmk1-tl.mjs';
+const T = await open(); const {p, E, errs} = T;
+const wh = () => E(() => { const w = document.getElementById('mkWh'); return {wheels: !!(w && !w.hidden && w.getClientRects().length), kb: Math.round(document.getElementById('kb').getBoundingClientRect().width)}; });
+console.log('start (VA)', JSON.stringify(await wh()));
+await E(() => { SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); }); await sleep(400); console.log('MS 2000 track selected', JSON.stringify(await wh()));
+await E(() => SYNQUENZER.selectTrack(2)); await sleep(400); console.log('VA track selected', JSON.stringify(await wh()));
+await E(() => SYNQUENZER.selectTrack(4)); await sleep(400); console.log('drum track selected', JSON.stringify(await wh()));
+await E(() => SYNQUENZER.selectTrack(0)); await sleep(400); console.log('MS 2000 again', JSON.stringify(await wh()));
+await E(() => SYNQUENZER.setEngine(0, 'va')); await sleep(400); console.log('MS 2000 → VA (same track)', JSON.stringify(await wh()));
+await E(() => SYNQUENZER.undo()); await sleep(400); console.log('undo → MS 2000', JSON.stringify(await wh()));
+console.log('errs', errs);
+await T.br.close();

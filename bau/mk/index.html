@@ -567,6 +567,57 @@ svg{display:block}
 @media (orientation:portrait) and (max-width:389px){.sv-top > .sv-rec,.sv-top > .sv-play{flex-basis:64px}.sv-top > .sv-loop{flex-basis:56px}.sv-top > .sv-home{flex-basis:44px}}
 #songView.side .sv-top > .sv-home,#songView.side .sv-top > .sv-back,#songView.side .sv-top > .sv-bank{grid-column:span 1;padding:0}
 #songView.side .sv-top > .sv-loop .v{font-size:10px}
+/* V2e′ (song-delta 6.5/9.1, K2-26): [▦│◧] 44 × 40 at the right of the transport row. P1: [CLIPS 64][● 64][▶ 64][⟲ fills][⏮ 44]
+   [▦│◧ 44]; P2 (+ ▲▼): ● ▶ 52; L and P3: a fifth row [▦│◧][▲▼] in the transport column, ⏮ │ ↩ SONG below it */
+/* V2e′-fix: ● keeps its 76 px (6.5) so „CLIPS+AKK+S2 ▾“ fits; below 414 px (P1) ▶ SONG gives the 24 px for [▦│◧] instead.
+   P2 (< 390 px): ● ▶ 50, the ● label goes two-line in its short form (.rt2) and keeps ▾ */
+.sv-top > .sv-rec,.sv-top > .sv-play{flex-basis:76px}
+@media (orientation:portrait) and (max-width:413px){.sv-top > .sv-play{flex-basis:52px}}
+.sv-top > .sv-rec.rt2 .t{white-space:normal;font-size:7.5px;letter-spacing:0;line-height:1.05;text-align:center;max-width:100%}
+.sv-top > .sv-gl{flex:0 0 44px;flex-direction:row;align-items:center;justify-content:center;gap:0;padding:0!important;font:700 15px/1 var(--font-ui)}
+.sv-gl span{width:19px;text-align:center;color:var(--text-faint)}
+.sv-gl span.on{color:var(--amber)}
+.sv-gl i{flex:none;width:1px;height:16px;background:rgba(255,255,255,.18)}
+@media (orientation:portrait) and (max-width:389px){.sv-top > .sv-rec,.sv-top > .sv-play{flex-basis:50px}.sv-top > .sv-loop{flex-basis:48px;padding:0 1px!important}.sv-top > .sv-loop .v{font-size:10px}.sv-top > .sv-home,.sv-top > .sv-back{flex-basis:44px}}
+/* L and P3: still four rows (6.5) so every field stays ≥ 44 px high: [CLIPS ⇄│⏮] · [● ▾│▶] · [⟲ Song ▾] · [▦│◧│▲▼] */
+#songView.side .sv-top > .sv-sw{grid-column:span 1;order:0;padding:0 1px}
+#songView.side .sv-sw .swl{white-space:normal;text-align:center;line-height:1.15;font-size:10px;letter-spacing:.02em}
+#songView.side .sv-top > .sv-home,#songView.side .sv-top > .sv-back{order:1;grid-column:span 1}
+#songView.side .sv-top > .sv-rec,#songView.side .sv-top > .sv-play{order:2}
+#songView.side .sv-top > .sv-loop{order:3}
+#songView.side .sv-top > .sv-gl{grid-column:span 1;order:4;padding:0}
+#songView.side .sv-top > .sv-bank{order:5}
+#songView.side .sv-gl span{width:14px}
+@media (orientation:portrait){#songView.side .sv-top > .sv-sw{padding:0}#songView.side .sv-sw .clogo svg{height:19px}#songView.side .sv-sw .swl{font-size:8px;letter-spacing:0}#songView.side .sv-gl span{width:13px}}
+/* V2e′ drag (B.5): the spring field SONG ⇄, the ghost with its 600-ms ring, ⧉ at the place of CLIPS ⇄, the song's crossfade */
+.corner.sw.spring{background:rgba(255,178,46,.2)!important;border-color:var(--amber)!important;box-shadow:0 0 0 2px rgba(255,178,46,.6),0 0 16px rgba(255,178,46,.45);color:#ffcf7a}
+.corner.sw.spring .clogo{display:none!important}
+.corner.sw.spring .swl{white-space:normal;text-align:center;line-height:1.1;font-size:10px;letter-spacing:.02em}
+.sv-sw.copyz{border-color:var(--amber);color:#ffcf7a;background:rgba(255,178,46,.12)}
+.sv-sw.copyz.on{background:rgba(255,178,46,.4);color:#111}
+.sv-sw.copyz .clogo{display:none!important}
+#songView.svfade{animation:svFade .15s ease-out}
+@keyframes svFade{from{opacity:.35}to{opacity:1}}
+.sv-cw{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.fsheet .fs-chip.lift{opacity:.4}
+.fsheet .fs-chip{position:relative}
+.fsheet .fs-chip::before{content:'';position:absolute;left:0;right:0;top:-7px;bottom:-7px}   /* FP-TOUCH: 44 px to hold */
+.drg-ghost{position:fixed;z-index:80;left:0;top:0;transform:translate(-50%,-100%);min-width:96px;max-width:calc(100vw - 16px);box-sizing:border-box;padding:6px 8px 7px;border-radius:10px;background:rgba(40,30,12,.72);border:2px solid var(--amber);color:#ffcf7a;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.55);transition:width .12s ease-out}
+.drg-ghost .dg-h{display:flex;align-items:center;gap:8px;font:800 12px/1 var(--font-ui);letter-spacing:.05em;white-space:nowrap}
+.drg-ghost .dg-t{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.drg-ghost .dg-r{flex:none;width:18px;height:18px;transform:rotate(-90deg)}
+.drg-ghost .dg-r circle{fill:none;stroke:rgba(255,178,46,.25);stroke-width:3}
+.drg-ghost .dg-r circle.p{stroke:var(--amber);stroke-dasharray:44;stroke-dashoffset:44;animation:dgRing .6s linear forwards}
+.drg-ghost.open .dg-r{display:none}
+@keyframes dgRing{to{stroke-dashoffset:0}}
+.drg-ghost .dg-m{display:flex;flex-direction:column;gap:2px;margin-top:5px}
+.drg-ghost .dg-m i{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:2px;height:3px}
+.drg-ghost .dg-m b{background:var(--c);border-radius:1px}
+.drg-ghost .dg-m b.o{background:transparent}
+.drg-ghost.copy{border-style:dashed}
+.drg-ghost.fly{transition:left .2s ease-in,top .2s ease-in,opacity .2s ease-in,transform .2s ease-in;opacity:.15;transform:translate(-50%,-50%) scale(.6)}
+.drg-ghost.gone{transition:opacity .15s;opacity:0}
+.drg-ghost.shrink{transition:left .15s ease-out,top .15s ease-out,width .15s ease-out,opacity .15s ease-out;opacity:.2;transform:translate(-50%,-100%) scaleY(.5)}
 /* V2e: the chosen track's label; the Bereich-Leiste (K2-25: P 56 px instead of the Träger bar, P1 6 × 58, P3 symbols 5 × 52;
    L in place of the Träger panel); Marken-Blatt (P1/P2 32 + 4 × 44, P3 252, L 28 + 2 × 44); Ersetzen/Einfügen-Blatt (P-4) */
 .sv-l.trk{cursor:pointer}
@@ -3332,7 +3383,6 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 #partBar .pb-pick[hidden]{display:none}
 #partBar .pb-pick .pt{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #partBar .pb-done{flex:none;height:calc(100% - 6px);min-width:80px;font:700 12px/1 var(--font-ui);border-color:var(--pc);color:var(--text)}
-.pk-ghost{position:fixed;z-index:70;transform:translate(-50%,-100%);padding:9px 14px;border-radius:8px;background:rgba(21,23,27,.9);border:2px solid var(--pc);color:var(--text);font:700 12px/1 var(--font-ui);letter-spacing:.06em;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.6);white-space:nowrap}
 @media (orientation:landscape) and (max-height:560px){
   #side>#partBar{order:2;height:38px;margin:auto 6px 4px;flex:none}
   #side>#strip{order:3;margin-top:0}
@@ -3790,7 +3840,10 @@ function progNum() {
 }
 function progLoad(num) {
   const i = P.i, rec = progAt(P.bank, num);
-  if (!rec) { lcdShow('PROGRAMM', P.side === 0 ? 'Seite A: Werksklänge kommen mit MK8' : 'Platz leer – Sounds dieser Engine sichern füllt Seite B (A–Z)'); return; }
+  // G-MK1-fix: a sound that is no program (INIT after the engine switch, 🎲, a VA/demo base) has no lit key – there an empty
+  // key leads back to SPIEL, keeping the sound (the lit key of a program does the same)
+  if (!rec) { const back = P.wahl !== 0 || P.shift; if (back) toSpiel();
+    lcdShow(back ? 'SPIEL' : 'PROGRAMM', (back ? 'Regler: CUTOFF · RESONANZ · ATTACK · RELEASE · TEMPO · ' : '') + (P.side === 0 ? 'Seite A: Werksklänge kommen mit MK8' : 'Platz leer – Sounds dieser Engine sichern füllt Seite B (A–Z)')); return; }
   const cur = progNum(); if (cur === 'b.' + (P.bank + 1) + (num + 1)) { toSpiel(); return; }  // the lit key: back to SPIEL
   UI.ab = null; soundEdit(i, 'Programm ' + rec.name, () => loadPreset(i, rec.id));
   toast('Programm: ' + rec.name, {label: 'Rückgängig', fn: () => undo()});
@@ -3890,18 +3943,43 @@ const CAP = '<svg class="mcap" viewBox="0 0 32 32" aria-hidden="true"><circle cx
 function rotSvg(n) { let t = ''; for (let k = 0; k < n; k++) { const a = (-135 + 270 * k / (n - 1)) * Math.PI / 180, x = 18 + 16.5 * Math.sin(a), y = 18 - 16.5 * Math.cos(a), x2 = 18 + 14 * Math.sin(a), y2 = 18 - 14 * Math.cos(a); t += `<line class="mtk" data-k="${k}" x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`; }
   return `<svg class="mrot" viewBox="0 0 36 36" aria-hidden="true">${t}<circle cx="18" cy="18" r="11.5" class="cr"/><line x1="18" y1="18" x2="18" y2="8.5" class="cp"/></svg>`; }
 function mkEl(k, cls, html) { const e = el('div', 'mkx ' + cls, html); e.dataset.k = k; return e; }
-function build(pg, i) {
-  P.i = i; const s_ = sndOf(i); if (!s_) return;
-  const okey = s_.origin + '|' + s_.name; if (P.origKey !== okey || !P.orig) { P.origKey = okey; const rec = originRec(s_); P.orig = deep(rec && rec.p && rec.p.mk ? SQMK.normMk(rec.p.mk) : s_.p.mk); }
-  pg.classList.add('mkpg'); pg.innerHTML = '';
+// G-MK1-fix: the page while the sheet is opening – the app grid animates its rows (.15 s); the panel is laid out for the
+// size the page will have when the animation ends (seek it to its end, measure, seek back – nothing is painted in between)
+function settledRect(pg) {
+  const A = [];
+  try { const app = EL.app; if (app && app.getAnimations) for (const a of app.getAnimations()) { if (a.playState !== 'running' || !a.effect) continue;
+    const t = a.effect.getComputedTiming(); if (!isFinite(t.endTime)) continue; A.push([a, a.currentTime]); a.currentTime = t.endTime; } } catch (e) {}
   const r = pg.getBoundingClientRect(), cs = getComputedStyle(pg);
-  const w = Math.floor(r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth));
-  const h = Math.floor(r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth));
+  const o = {r: {width: r.width, height: r.height}, pl: parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth),
+    pt: parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth)};
+  for (const [a, t] of A) try { a.currentTime = t; } catch (e) {}
+  return o;
+}
+// G-MK1-fix: a deferred rebuild only while this very panel is still on screen (✕, the browser or another track end it)
+function panelLive(pg, i) { return pg.isConnected && R.editor === 'synth' && R.selT === i && EL.synthSheet.classList.contains('open') && S.tracks[i] && S.tracks[i].sound.engine === 'mk'; }
+// the ORIGINAL reference = the stored state of the sound (when loaded or written)
+function origSync(s_) { const okey = s_.origin + '|' + s_.name; if (P.origKey !== okey || !P.orig) { P.origKey = okey; const rec = originRec(s_); P.orig = deep(rec && rec.p && rec.p.mk ? SQMK.normMk(rec.p.mk) : s_.p.mk); } }
+function build(pg, i) {
+  if (P.i !== i) { P.wahl = 0; P.shift = 0; }          // G-MK1-fix: another track = another sound → SPIEL (as after loading)
+  P.i = i; const s_ = sndOf(i); if (!s_) return;
+  const okey = s_.origin + '|' + s_.name; if (P.origKey && P.origKey !== okey) { P.wahl = 0; P.shift = 0; }   // G-MK1-fix (MK1-34): another sound loaded (library, ‹ ›, undo) → SPIEL
+  origSync(s_);
+  pg.classList.add('mkpg'); pg.innerHTML = '';
+  const M = settledRect(pg), r = M.r;
+  const w = Math.floor(r.width - M.pl), h = Math.floor(r.height - M.pt);
+  pg._mkSz = [r.width, r.height];
   const F = pickFmt(w, h); P.fmt = F;
   // the tabs were chosen from the window size; the measured page decides (and asks once for the other frame)
   const isHalf = F.k === 'LH' || F.k === 'PH', tabHalf = ED.tab === 'links' || ED.tab === 'rechts';
-  if (isHalf !== tabHalf && !P.reb) { UI.mkFmt = isHalf ? 'half' : 'full'; UI.mkFmtAt = window.innerWidth + 'x' + window.innerHeight; P.reb = 1; setTimeout(() => { P.reb = 0; safeRebuild(buildSynthEd); }, 0); }
-  if (!pg._mkRO && typeof ResizeObserver !== 'undefined') { let last = w + 'x' + h; pg._mkRO = new ResizeObserver(() => { if (!pg.isConnected) { pg._mkRO.disconnect(); return; } const r2 = pg.getBoundingClientRect(), k = Math.round(r2.width) + 'x' + Math.round(r2.height); if (k !== last && Math.abs(r2.width - r.width) + Math.abs(r2.height - r.height) > 2) { last = k; if (!GEST.size) safeRebuild(buildSynthEd); } }); pg._mkRO.observe(pg); }
+  // (a hidden page measures 0 × 0 and decides nothing)
+  if (r.width > 0 && r.height > 0 && isHalf !== tabHalf && !P.reb) { UI.mkFmt = isHalf ? 'half' : 'full'; UI.mkFmtAt = window.innerWidth + 'x' + window.innerHeight; P.reb = 1; setTimeout(() => { P.reb = 0; if (panelLive(pg, i)) safeRebuild(buildSynthEd); }, 0); }
+  // G-MK1-fix: size changes are collected (the opening animation, rotation, the home bar) and rebuilt once, 90 ms after the
+  // last one, only if the panel is still shown and its page really has another size than the one it was built for
+  if (!pg._mkRO && typeof ResizeObserver !== 'undefined') { pg._mkRO = new ResizeObserver(() => {
+    if (!pg.isConnected) { pg._mkRO.disconnect(); clearTimeout(pg._mkRT); return; }
+    clearTimeout(pg._mkRT); pg._mkRT = setTimeout(() => {
+      if (!panelLive(pg, i)) return; const r2 = pg.getBoundingClientRect(), b = pg._mkSz || [0, 0];
+      if (r2.width > 0 && r2.height > 0 && Math.abs(r2.width - b[0]) + Math.abs(r2.height - b[1]) > 2) safeRebuild(buildSynthEd); }, 90); }); pg._mkRO.observe(pg); }
   const E = layout(F);
   const body = el('div', 'mkbody mkf-' + F.k + (F.k === 'LH' || F.k === 'PH' ? ' mkhalf mkh-' + P.half : '')); body.style.width = F.W + 'px'; body.style.height = F.H + 'px';
   if (F.s !== 1) body.style.transform = 'scale(' + F.s.toFixed(4) + ')';
@@ -4012,7 +4090,8 @@ function wire(U) {
   tap(U.timbre, () => lcdShow('TIMBRE', 'zwei Timbres, Edit Sync und Solo kommen mit MK3'));
   tap(U.ein, () => lcdShow('E1 · E2', 'Eingänge (Instrument, Stimme) kommen mit MK7'));
   tap(U.orig, () => lcdShow('ORIGINAL', 'leuchtet, wenn der zuletzt gedrehte Wert dem gespeicherten gleicht'));
-  tap(U.disp, () => lcdShow('ANZEIGE', 'Wert beim Drehen, danach die Programmnummer'));
+  // G-MK1-fix: the display shows the program number – a tap on it leads back to SPIEL like the lit number key
+  tap(U.disp, () => { if (P.wahl !== 0 || P.shift) { toSpiel(); dispShow(progNum(), false); lcdShow('SPIEL', 'Regler: CUTOFF · RESONANZ · ATTACK · RELEASE · TEMPO (Tipp auf die Anzeige)'); return; } lcdShow('ANZEIGE', 'Wert beim Drehen, danach die Programmnummer · Tipp = zurück zu SPIEL'); });
   tap(U.prog, () => openBrowser(P.i));
   U.nums.forEach((e, k) => tap(e, () => numKey(k)));
   for (const k of ['m1', 'm2']) tap(U[k], () => { const w = k === 'm1' ? (U.m2 ? 1 : P.wahl === 2 ? 2 : 1) : 2; lcdShow('MATRIX', (w === 1 ? SEC1[P.pos[1]][0] : SEC2[P.pos[2]][0]) + ': keine Zusatz-Ansicht in dieser Stellung'); });
@@ -4320,7 +4399,8 @@ function panelInfo() {
     knobs: knobs().map(d => (d ? {l: d.l, p: d.p || null, dark: d.dark || null} : null)), matrix: [P.el.m1 && P.el.m1.textContent, P.el.m2 && P.el.m2.textContent], disp: P.el.disp ? P.el.disp._t : null, orig: !!(U.orig && U.orig.classList.contains('on'))};
 }
 window.MKUI = {build, render, wheels, wheelPaint, panelInfo, probe, probeSheet, randomize: randomizeMk, P, SEC1, SEC2, KN, knobs, setWahl, toSpiel, fmtv, get, range, setv,
-  setHalf: h => { P.half = h === 'A' ? 'A' : 'B'; }, lcdOf};
+  setHalf: h => { P.half = h === 'A' ? 'A' : 'B'; }, lcdOf,
+  progRefresh: () => { if (!P.el || !P.el.body.isConnected) return; const s_ = sndOf(P.i); if (s_) origSync(s_); render(); dispShow(progNum(), false); }};   // G-MK1-fix: after WRITE
 })();
 
 </script>
@@ -13334,7 +13414,13 @@ function ownNorm(c, pk, nt) {
   out.from = {t, s, bar};
   // what „Zurück zum Szenen-Clip“ restores: the lane entry that stood at the own clip's bar before, and whether its end entry was added
   if (c.from.e === null || (c.from.e && typeof c.from.e === 'object' && isNum(c.from.e.slot))) out.from.e = c.from.e ? laneEntryNorm(c.from.e, bar, clamp(Math.round(c.from.e.slot), -1, N_SCN - 1)) : null;
-  if (isNum(c.from.e1)) out.from.e1 = clamp(Math.round(c.from.e1), 0, SONG_MAX_BARS);
+  // V2e′-fix: the origin that played there before (prev) and the scene clip's origin (cs, song beats)
+  const pv = c.from.prev;
+  if (pv && typeof pv === 'object' && isNum(pv.slot) && isNum(pv.cs)) {
+    out.from.prev = {slot: clamp(Math.round(pv.slot), -1, N_SCN - 1), own: typeof pv.own === 'string' && pv.own ? pv.own.slice(0, 16) : null, cs: +(+pv.cs).toFixed(4)};
+  }
+  if (isNum(c.from.cs)) out.from.cs = +(+c.from.cs).toFixed(4);
+  if (isNum(c.from.e1)) out.from.e1 = clamp(Math.round(c.from.e1), 0, SONG_MAX_BARS);   // key order as ownEnsure / ownWhole write it
   return out;
 }
 /* V2d (song-delta 12.1): a lane entry {bar, slot, re?:1 (restart of the same slot), ph?: beats (the clip's phase at this bar),
@@ -14778,29 +14864,73 @@ function osStats(c) {
   rec = {tick: OS.tick, sig, n: ns, P, info, maps: new Map()};
   OS.cache.set(c, rec); return rec;
 }
+// G-P2a-fix: own clips (song.own, V2d′) go the same way — an unchanged own clip sounds exactly like its scene clip
+// (collision protection, Stärke, Durchgangstöne; „Automatisch“ uses the scene of the copy's slot, from.s)
 function osClipOf(i, clipKey) {
   const tr = S.tracks[i]; if (!tr || !clipKey) return null;
   for (let s = 0; s < tr.clips.length; s++) { const c = tr.clips[s]; if (c && c.key === clipKey) return {c, s}; }
+  const oc = ownPlaying(i); if (oc && oc.key === clipKey) return {c: oc, s: oc.from ? oc.from.s : -1};
+  const own = S.song && S.song.own;
+  if (own) for (const id in own) { const c = own[id]; if (c && c.key === clipKey && (!c.from || c.from.t == null || c.from.t === i)) return {c, s: c.from ? c.from.s : -1}; }
   return null;
+}
+// the one scale Z of entry e for the clip found by osClipOf (cached per entry)
+function osZOf(cs, e) {
+  const h = S.settings.harmony, base = osBase(cs ? cs.s : null), zk = base.root + base.scale + h.mode + h.single + h.minor + h.keyAware;
+  let zc = OS.z.get(e); if (!zc || zc.k !== zk) { zc = {k: zk, Z: Harmony.oneScale(e.target, base, h.mode, hopts())}; OS.z.set(e, zc); }
+  return zc.Z;
+}
+// the one-scale map (source pitch -> pitch) of a clip's distinct pitches P under entry e; `extra` = one more source pitch
+// (clipNoteFor: how a note would sound once it is in the clip)
+function osBuildMap(tr, st, clipKey, e, time, Z, extra) {
+  const h = S.settings.harmony, trk = {kind: tr.kind, follow: tr.follow}, ref = {key: clipKey};
+  const P = extra == null || st.info.has(extra) ? st.P : st.P.concat(extra).sort((a, b) => a - b);
+  const items = P.map(p => { const r = st.info.get(p) || {up: 0, dn: 0, dur: .25, pass: false}; return {p, q: T.mapEvent(p, time + 1e-6, trk, ref, e), dir: r.up > r.dn ? 1 : r.dn > r.up ? -1 : 0, dur: r.dur, pass: r.pass}; });
+  const out = Harmony.oneScaleMap(items, Z, {amt: h.osAmt, pass: h.osPass}), mp = new Map();
+  items.forEach((it, k) => mp.set(it.p, out[k]));
+  return mp;
+}
+function osMapOf(i, cs, clipKey, e, time, Z) {
+  const h = S.settings.harmony, st = osStats(cs.c), sk = Z.join(',') + '|' + (clipKey.root + clipKey.scale) + '|' + e.shift + '|' + h.osAmt + '|' + h.osPass + '|' + h.octaveMode + h.mode + h.single + h.minor + h.keyAware;
+  let m = st.maps.get(e);
+  if (!m || m.sk !== sk) { m = {sk, mp: osBuildMap(S.tracks[i], st, clipKey, e, time, Z)}; st.maps.set(e, m); }
+  return m.mp;
 }
 // q = the degree-mapped pitch of `note` under entry e; returns the pitch in the one scale
 function osApply(i, clipKey, note, q, e, time) {
-  const h = S.settings.harmony, tr = S.tracks[i], cs = osClipOf(i, clipKey);
-  const base = osBase(cs ? cs.s : null), zk = base.root + base.scale + h.mode + h.single + h.minor + h.keyAware;
-  let zc = OS.z.get(e); if (!zc || zc.k !== zk) { zc = {k: zk, Z: Harmony.oneScale(e.target, base, h.mode, hopts())}; OS.z.set(e, zc); }
-  const Z = zc.Z; if (!Z) return q;
+  const cs = osClipOf(i, clipKey), Z = osZOf(cs, e); if (!Z) return q;
   if (!cs || !cs.c.notes.length) return Harmony.snapToScale(q, Z, 0);
-  const st = osStats(cs.c), sk = Z.join(',') + '|' + (clipKey.root + clipKey.scale) + '|' + e.shift + '|' + h.osAmt + '|' + h.osPass + '|' + h.octaveMode + h.mode + h.single + h.minor + h.keyAware;
-  let m = st.maps.get(e);
-  if (!m || m.sk !== sk) {
-    const trk = {kind: tr.kind, follow: tr.follow}, ref = {key: clipKey};
-    const items = st.P.map(p => { const r = st.info.get(p); return {p, q: T.mapEvent(p, time + 1e-6, trk, ref, e), dir: r.up > r.dn ? 1 : r.dn > r.up ? -1 : 0, dur: r.dur, pass: r.pass}; });
-    const out = Harmony.oneScaleMap(items, Z, {amt: h.osAmt, pass: h.osPass}), mp = new Map();
-    items.forEach((it, k) => mp.set(it.p, out[k]));
-    m = {sk, mp}; st.maps.set(e, m);
-  }
-  const v = m.mp.get(note);
+  const v = osMapOf(i, cs, clipKey, e, time, Z).get(note);
   return v != null ? clamp(v, 0, 127) : Harmony.snapToScale(q, Z, 0);
+}
+/* G-P2a-fix: the clip note that sounds as `played` under „Eine Skala“ (the inverse for clipNoteFor). The map works on the
+   clip's distinct pitches together (collision protection), so a new pitch can sound differently once it is in the clip.
+   Order: (1) a pitch the clip already has (the map stays as it is), (2) a new pitch that sounds as played once it is in
+   the clip and moves no other note; a foreign played tone (one scale only) goes to its nearest scale tone the same way.
+   null = no such note (the caller searches as before) */
+function osNoteFor(i, clipKey, played, time, e) {
+  const tr = S.tracks[i], cs = osClipOf(i, clipKey); if (!cs || !cs.c.notes.length) return null;
+  const Z = osZOf(cs, e); if (!Z) return null;
+  const st = osStats(cs.c), cur = osMapOf(i, cs, clipKey, e, time, Z), h = S.settings.harmony;
+  const x = (XP.tl.length > 1 || XP.tl[0].semi) && tr.kind === 'synth' && tr.follow !== false ? xpAt(time + 1e-6) || 0 : 0;
+  const goals = [played]; if (!Z.includes(Harmony.PC(played - x))) goals.push(Harmony.snapToScale(played - x, Z, 0) + x);
+  for (const g of goals) {
+    let best = null;
+    for (const p of st.P) { const v = cur.get(p); if (v != null && clamp(v, 0, 127) + x === g && (best == null || Math.abs(p - played) < Math.abs(best - played))) best = p; }
+    if (best != null) return best;
+    // a new pitch: first one whose degree mapping already is the goal (it stays), then any (a foreign one that moves to it)
+    const trk = {kind: tr.kind, follow: tr.follow}, ref = {key: clipKey};
+    for (const pure of [true, false]) for (let d = 0; d <= 24; d++) for (const n of d ? [g - x - d, g - x + d] : [g - x]) {
+      if (n < 0 || n > 127 || st.info.has(n)) continue;
+      if (pure && T.mapEvent(n, time + 1e-6, trk, ref, e) + x !== g) continue;
+      const mp = osBuildMap(tr, st, clipKey, e, time, Z, n), v = mp.get(n);
+      if (v == null || clamp(v, 0, 127) + x !== g) continue;
+      let same = true; for (const p of st.P) if (mp.get(p) !== cur.get(p)) { same = false; break; }
+      if (same) return n;
+    }
+    if (h.osAmt <= 0) break;
+  }
+  return null;
 }
 // degree mapping + one scale (no Teil-Transposition): the pitch a clip note of track i is heard at under entry e
 function mapOut(i, clipKey, note, time, entry) {
@@ -15110,11 +15240,24 @@ const songTakeOpen = () => !!(R.songRec || R.melRec);
 const songUndoAct = () => (songTakeOpen() ? null : {label: 'Rückgängig', fn: () => undo()});
 function songSnapshot() { return JSON.stringify(S.song); }
 function songChanged() { UI.dirty.song = true; UI.songVer = (UI.songVer | 0) + 1; markDirty(); svSelFix(); }
+// V2e′: an own clip back to a state (in place: an open ROLLE keeps its reference); null = the clip is gone
+function ownRestore(id, val) {
+  const song = S.song; if (!song) return;
+  song.own = song.own || {};
+  const c = song.own[id];
+  if (!val) delete song.own[id];
+  else if (c) { const d = JSON.parse(val); Object.keys(c).forEach(k => { if (!(k in d)) delete c[k]; }); Object.assign(c, d); }
+  else song.own[id] = JSON.parse(val);
+  let t = -1; song.lanes.forEach((l, k) => { if (l.some(e => e.own === id)) t = k; });
+  if (t >= 0) afterOwnEdit(t, id); else songChanged();
+  if (R.editor === 'roll' && ED.rollAt && ED.rollAt.own === id) { if (song.own[id] && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); } else closeRoll(); }
+}
 function restoreSong(o) {
   S.song = o ? normSong(o, S.key) : null;
   if (!S.song && (R.songPlay || R.songRec)) { R.songPlay = null; R.songRec = null; R.melRec = null; R.songEndBeat = null; }
   songChanged();
   if (R.editor === 'roll' && ED.rollAt && ED.rollAt.mel) { if (S.song && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); } else closeRoll(); }
+  if (R.editor === 'roll' && ED.rollAt && ED.rollAt.own) { const c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (c && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); } else closeRoll(); }   // V2e′
 }
 function pushSongUndo(before, label, mergeKey) {
   // V0c-fix (S-01, TA8): an edit of the song while a take (● SONG) or a [● MEL.] pass runs belongs to that take's one undo
@@ -16324,6 +16467,7 @@ function undoState(e) {
   if (e.kind === 'sound') return soundSnapshot(e.track);
   if (e.kind === 'kit') return kitSnapshot();
   if (e.kind === 'song') return songSnapshot();
+  if (e.kind === 'own') return S.song && S.song.own && S.song.own[e.id] ? JSON.stringify(S.song.own[e.id]) : null;   // V2e′
   return fxSnapshot();
 }
 // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
@@ -16339,6 +16483,7 @@ function undoApply(e, val) {
   else if (e.kind === 'sound') restoreSoundSnapshot(e.track, JSON.parse(val));
   else if (e.kind === 'kit') restoreKit(JSON.parse(val));
   else if (e.kind === 'song') restoreSong(JSON.parse(val));
+  else if (e.kind === 'own') ownRestore(e.id, val);
   else if (e.kind === 'set') settingApply(e.key, JSON.parse(val));
   else if (e.kind === 'part') partRestore(JSON.parse(val));
   else restoreFx(JSON.parse(val));
@@ -16813,6 +16958,7 @@ function commitRecNote(o, bOff) {
 function clipNoteFor(track, clipKey, played, time, entry) {
   const tr = S.tracks[track], e = entry || T.targetAt(time + 1e-6);
   if (!tr || tr.kind !== 'synth' || !tr.follow || (!e.target && !xpAt(time + 1e-6))) return played;   // V2c: under a Teil-Transposition too
+  if (e.target && osActive(tr)) { const n = osNoteFor(track, clipKey || S.key, played, time, e); if (n != null) return n; }   // G-P2a-fix
   let best = played, bestErr = Infinity;
   for (let d = 0; d <= 24; d++) {
     for (const n of d ? [played - d, played + d] : [played]) {
@@ -17058,9 +17204,29 @@ function applySceneKeys(si) {
     for (const v of VOICES) if (v.clipKey === old) v.clipKey = p.c.key;          // sounding/scheduled notes keep the clip's Bezug
     changed = true;
   }
+  if (ownKeySync(si)) changed = true;
   if (changed) { KEYC.ver++; markDirty(); }
   UI.dirty.grid = UI.dirty.kb = UI.dirty.carrier = true;
   if (typeof rollHeadUpdate === 'function') rollHeadUpdate();
+}
+/* G-P2a-fix: an own clip that is still an unchanged copy of its scene clip (same notes, Bezug 'auto') takes the scene clip's
+   Bezug, so it sounds exactly like the scene clip also when the key detection ran after the copy was made (400-ms timer, or
+   after the next ORIGINAL). An edited or recorded own clip keeps its Bezug (its notes were stored for it) */
+const noteSig = c => JSON.stringify([c.len, liveNotes(c).map(n => [n.t, n.d, n.n, n.v])]);
+function ownKeySync(si) {
+  const own = S.song && S.song.own; if (!own) return false;
+  let changed = false; const sig = new Map();
+  for (const id in own) {
+    const c = own[id], f = c && c.from; if (!f || f.s !== si || !c.key || (c.key.src || 'auto') !== 'auto') continue;
+    const tr = S.tracks[f.t], sc = tr && tr.kind === 'synth' && tr.clips[si]; if (!sc || !sc.key || sameKey(c.key, sc.key) && c.key.ref == sc.key.ref) continue;
+    if ((sc.key.src || 'auto') !== 'auto') continue;
+    if (!sig.has(f.t)) sig.set(f.t, noteSig(sc));
+    if (noteSig(c) !== sig.get(f.t)) continue;
+    const old = c.key; c.key = deep(sc.key);
+    for (const v of VOICES) if (v.clipKey === old) v.clipKey = c.key;
+    changed = true;
+  }
+  return changed;
 }
 /* ---------- live input routing (keys, computer keyboard, MIDI, API) ---------- */
 function padGmForNote(note) {
@@ -17129,6 +17295,7 @@ function inputDown(note, id, vel) {
 function stepFlush() {
   const ns = STEPQ.notes.splice(0); if (!ns.length || !ED.roll || !ED.rollAt) return;
   if (ED.rollAt.mel) { ED.roll.stepInput([...new Set(ns)], STEPQ.vel); return; }      // the melody stores what is heard (§3.9)
+  if (ED.rollAt.own) { const c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (c) ED.roll.stepInput([...new Set(ns.map(n => clipNoteFor(ED.rollAt.t, c.key, n, nowT())))], STEPQ.vel); return; }
   const {t, s} = ED.rollAt, c = S.tracks[t].clips[s]; if (!c) return;
   // heard = stored: under a Träger the clip note that sounds as the played one
   const stored = [...new Set(ns.map(n => clipNoteFor(t, c.key, n, nowT())))];
@@ -17642,8 +17809,8 @@ function setSongView(on) {
   UI.songView = on;
   EL.gridArea.classList.toggle('song', on); EL.app.classList.toggle('songv', on);
   EL.songView.hidden = !on; hintSideSync(); if (on) pickCancel();
-  if (UI.pop && /^(mark|place|rangemore|aspart|partlist|markname|partcolor)$/.test(UI.pop.name || '')) closePop();   // V2e: song sheets end with the view
-  if (!on) { SV.mark = null; SV.copy = null; svHintFree(); }
+  if (UI.pop && /^(mark|place|rangemore|aspart|partlist|markname|partcolor|cell)$/.test(UI.pop.name || '')) closePop();   // V2e: song sheets end with the view
+  if (!on) { SV.mark = null; SV.copy = null; SV.cell = null; svHintFree(); }
   rangeBarSync();
   folReset(['song']);
   if (on) { svLayout(); svAutoScroll(true); }
@@ -17666,11 +17833,14 @@ function buildSongView() {
   const bLoop = el('button', 'rb sv-b sv-loop', '<span class="t">SCHLEIFE</span><span class="v">⟲ aus ▾</span>'); bLoop.setAttribute('aria-label', 'Schleife: aus');
   // V2e (song-delta 6.5): the Spurbank switch [▲▼] lives in the transport (P2: row, L/P3: column) — only in viewports that need it
   const bBank = el('button', 'rb sv-b sv-bank', '<span class="d">▲▼</span><span class="t">1/2</span>'); bBank.setAttribute('aria-label', 'Andere Spuren zeigen'); bBank.hidden = true;
+  // V2e′ (N7-R12, 6.5): [▦│◧] Kästchen │ Glas, 44 × 40 at the right of the row (L / P3: in the transport column)
+  const bGl = el('button', 'rb sv-b sv-gl', '<span class="on">▦</span><i></i><span>◧</span>'); bGl.setAttribute('aria-label', 'Ansicht: Kästchen (antippen: Glas)'); bGl.setAttribute('aria-pressed', 'false');
   // V0c: [● MEL.] leaves the row – ● with the target MELODIE does the same (overdub, punch-in while the song plays; the API
   // songMel stays); two „● MEL“ side by side would say two different things
   // V2e (song-delta 6.5, K2-26): [CLIPS ⇄][● ▾][▶ SONG][⟲ Song ▾][⏮ │ ↩ SONG][▲▼]; [S4 ▾] lives in the MELODIE label (V2b chip)
-  top.append(sw, bRec, bPlay, bLoop, bBack, bHome, bBank);
+  top.append(sw, bRec, bPlay, bLoop, bBack, bHome, bGl, bBank);
   onTap(sw, () => setSongView(false));
+  onTap(bGl, () => { songViewMode(UI.svGlass ? 'squares' : 'glass'); haptic('tick'); lcdOrToast(UI.svGlass ? '◧ Glas: Clips mit Noten' : '▦ Kästchen'); });
   // ● (V0c, Nachtrag 2 B.1 Nr. 8): a song there → the Start-Blatt; while recording → stop; empty song → records at once.
   // Holding ● opens the Start-Blatt any time (450 ms, released without moving)
   bindHoldTap(bRec, () => { if (R.songRec || !songHasContent()) songRecToggle(bRec._pressT); else openRecStart(bRec); svButtons(); }, () => { if (!R.songRec) openRecStart(bRec); });
@@ -17713,7 +17883,7 @@ function buildSongView() {
   v.append(top, body);
   guardTouch(top); guardTouch(wrap); guardTouch(labs);
   SV.cv = cv; SV.g = cv.getContext('2d'); SV.wrap = wrap; SV.empty = empty; SV.labs = labs;
-  SV.btn = {bRec, bPlay, bMel, bMt, bBack, bHome, bLoop}; SV.lm = lm;
+  SV.btn = {bRec, bPlay, bMel, bMt, bBack, bHome, bLoop, bGl, sw}; SV.lm = lm; songViewMode();
   svBindGestures(wrap);
   buildRangeBar();
   // the grid area changes height with sheets, toasts and rotation: keep the canvas in step (rAF: no observer loop)
@@ -17787,7 +17957,15 @@ function svButtons() {
   B.bRec.classList.toggle('on', rec); B.bRec.classList.toggle('arm', rec && R.songRec.pending);
   // V0c S-01: the ● names its targets („● AKK“, „● AKK+MEL“, „● ALLES“)
   const sideV = EL.songView.classList.contains('side'), tg = recTgNow(), nt0 = R.songRec && !R.songRec.over ? (S.song ? S.song.melodyTrack : null) : recNtNow(), rt = recTgShort(tg, sideV, nt0) + (sideV || rec || !songHasContent() ? '' : ' ▾'), rtEl = B.bRec.lastChild;   // V2e: „● ▾“ = the Start-Blatt
-  if (rtEl.textContent !== rt) rtEl.textContent = rt;
+  // V2e′-fix: the label never clips — where it does not fit on one line (P2, a fallback font) the short form goes two-line
+  // and keeps its ▾ (measured once per text and button width, no layout read on every frame)
+  const rk = rt + '|' + (sideV ? 's' : B.bRec.clientWidth) + '|' + (SV.fontGen | 0);
+  if (SV.rtKey !== rk) {
+    SV.rtKey = rk; B.bRec.classList.remove('rt2'); if (rtEl.textContent !== rt) rtEl.textContent = rt;
+    if (!sideV && B.bRec.clientWidth && rtEl.scrollWidth > B.bRec.clientWidth - 2) {
+      rtEl.textContent = recTgShort(tg, true, nt0) + (rec || !songHasContent() ? '' : ' ▾'); B.bRec.classList.add('rt2');
+    }
+  }
   B.bRec.setAttribute('aria-label', rec ? 'Song-Aufnahme beenden' : 'Song aufnehmen: ' + recTgLong(tg, nt0).join(', ') + (songHasContent() ? ' (halten = Start-Blatt)' : ''));
   const pd = B.bPlay.firstChild; if (pd.textContent !== (play ? '■' : '▶')) pd.textContent = play ? '■' : '▶';
   B.bPlay.classList.toggle('on', play); B.bPlay.setAttribute('aria-label', play ? 'Song anhalten' : 'Song abspielen');
@@ -17803,7 +17981,7 @@ function svButtons() {
   if (lv.textContent !== lt) { lv.textContent = lt; B.bLoop.setAttribute('aria-label', 'Schleife: ' + ll); }
   if (SV.tbb && !SV.tbb.hidden) { const hid = svBankHiddenPlays(); if (SV.tbb.classList.contains('dot') !== hid) SV.tbb.classList.toggle('dot', hid); }
   B.bLoop.classList.toggle('on', !!(song && song.loop.on));
-  SV.empty.hidden = !!(song && (song.bars || rec));
+  SV.empty.hidden = !!(song && (song.bars || rec)) || !!SV.pv;          // V2e′: a part on its way in shows its preview
   if (SV.lm) { const sm = SV.lm.querySelector('small'), tx = trackTag(mt) + ' ▾ · ⇅ fest'; if (sm && sm.textContent !== tx) sm.textContent = tx; SV.lm.setAttribute('aria-label', 'Melodie (' + S.tracks[mt].name + '): Spur wählen, bearbeiten, leeren'); }
   // the take's banner over the ruler (N7S-02): an overlay, nothing moves
   if (SV.ban) {
@@ -18540,6 +18718,8 @@ function songWrite(song, n, ch, keepIds) {
 }
 // drop entries that change nothing (-1 after -1, the same clip in the same phase), keep the marks tidy, melody lengths
 function songTidy(song) {
+  // V2e′-fix: a lane never names an own clip that is gone (it plays its scene clip, as laneClipOk does)
+  for (const l of song.lanes) for (const e of l) if (e.own && !(song.own && song.own[e.own])) delete e.own;
   song.lanes.forEach((l, t) => {
     l.sort((a, b) => a.bar - b.bar);
     let slot = -1, cs = 0, own = null;
@@ -18590,7 +18770,11 @@ function ownEnsure(song, t, x) {
   if (ownCount(song) >= OWN_MAX) { if (!UI.ownFullWarned) { UI.ownFullWarned = true; toast('Höchstens ' + OWN_MAX + ' eigene Clips je Song'); } return null; }
   const src = o.own ? song.own[o.own] : S.tracks[t].clips[o.slot]; if (!src) return null;
   const id = ownNewId(song), c = deep(src), prevE = lane.find(e => e.bar === d0);
-  c.from = {t, s: o.slot, bar: d0, e: prevE ? deep(prevE) : null};
+  // V2e′-fix: besides the entry that stood here, the origin that played (prev) and the scene clip's origin (cs) — so that
+  // „Zurück zum Szenen-Clip“ still finds the scene clip when the copy it came from is gone
+  const pcs = o.own ? ownRefCs(song, song.own[o.own]) : o.cs;
+  c.from = {t, s: o.slot, bar: d0, e: prevE ? deep(prevE) : null, prev: {slot: o.slot, own: o.own || null, cs: +o.cs.toFixed(4)}};
+  if (pcs != null) c.from.cs = +pcs.toFixed(4);
   for (const n of c.notes) { delete n.born; delete n.bornRun; }
   song.own[id] = c;
   const ent = {bar: d0, slot: o.slot, own: id}, ph = d0 * 4 - ds; if (ph > 1e-6) ent.ph = +ph.toFixed(4);
@@ -18618,35 +18802,118 @@ function ownAddNote(w, n) {
   w.c.notes.push({t: +tt.toFixed(4), d: +Math.min(n.d, 64).toFixed(4), n: clamp(Math.round(drum ? n.n : n.nc != null ? n.nc : n.n), 0, 127), v: n.v});
   w.c.notes.sort((a, b) => a.t - b.t);
 }
-// [Ganzer Block] (9.2): every Durchlauf of the block becomes one own clip (pieces of ≤ 16 bars)
+// the scene clip's origin (song beat of its time 0) an own clip stands for — null when an old copy does not know it
+function ownRefCs(song, c) {
+  const f = c && c.from; if (!f) return null;
+  if (isNum(f.cs)) return f.cs;
+  if (f.e && !f.e.own && f.e.slot === f.s) return f.bar * 4 - (f.e.ph || 0);
+  if (f.prev && !f.prev.own && f.prev.slot === f.s && isNum(f.prev.cs)) return f.prev.cs;
+  return null;
+}
+// origin o plays target tg {slot, own, cs} in phase (the same clip, its origin a whole number of clip lengths away)
+function ownSame(song, t, o, tg) {
+  if (!o || !tg || o.slot !== tg.slot || (o.own || null) !== (tg.own || null)) return false;
+  const L = songClipBeats(song, t, tg), d = (((o.cs - tg.cs) % L) + L) % L;
+  return d < 1e-6 || L - d < 1e-6;
+}
+// bar b of lane t plays tg from now on (an entry only when the music before does not go on as tg anyway)
+function ownPlayAs(song, t, b, tg) {
+  const lane = song.lanes[t], po = laneOriginAt(lane, b);
+  if (b > 0 && ownSame(song, t, po, tg)) return;
+  const L = songClipBeats(song, t, tg), ph = (((b * 4 - tg.cs) % L) + L) % L, e = {bar: b, slot: tg.slot};
+  if (ph > 1e-6 && L - ph > 1e-6) e.ph = +ph.toFixed(4); else if (po.slot === tg.slot && (po.own || null) === (tg.own || null)) e.re = 1;
+  if (tg.own) e.own = tg.own;
+  laneInsert(lane, e);
+}
+// the entry at bar b is gone when the music before it already goes on like it (an entry only the copy needed)
+function ownTidyAt(song, t, b) {
+  const lane = song.lanes[t], j = lane.findIndex(e => e.bar === b); if (j < 0 || b <= 0) return;
+  const n = lane[j]; if (n.slot < 0 || n.re) return;
+  if (ownSame(song, t, laneOriginAt(lane, b - 1), {slot: n.slot, own: n.own || null, cs: n.bar * 4 - (n.ph || 0)})) lane.splice(j, 1);
+}
+/* lane t as it is without any own clip (each one back to what it stood for) — on a copy of the song; [Ganzer Block] takes its
+   block from here, so that a hold on an own clip covers the whole scene-clip block and not only that copy (V2e′-fix) */
+function ownRefSong(song, t) {
+  const sim = Object.assign({}, song, {lanes: song.lanes.slice(), own: deep(song.own || {})});
+  sim.lanes[t] = deep(song.lanes[t] || []);
+  for (let g = 0; g < 2 * OWN_MAX + 8; g++) {
+    const e = sim.lanes[t].find(x => x.own); if (!e) break;
+    if (!sim.own[e.own] || !ownDropId(sim, t, e.own)) delete e.own;
+  }
+  return sim;
+}
+const ownRefRun = (song, t, x) => ownRun(ownRefSong(song, t), t, x);
+// [Ganzer Block] (9.2): every Durchlauf of the block becomes one own clip (pieces of ≤ 16 bars). The block is the scene clip's
+// block (own clips in it are taken over as they sound); what plays in each bar goes into the copy
 function ownWhole(song, t, x) {
-  const r = ownRun(song, t, x); if (!r) return null;
-  const {o, L, bs, be} = r, lane = song.lanes[t], src = o.own ? song.own[o.own] : S.tracks[t].clips[o.slot]; if (!src) return null;
+  const ref = ownRefSong(song, t), rr = ownRun(ref, t, x); if (!rr) return null;
+  const {o, bs, be} = rr, s = o.slot, lane = song.lanes[t], cur = laneOriginAt(lane, x);
+  const base = cur.own && song.own && song.own[cur.own] ? song.own[cur.own] : S.tracks[t].clips[s]; if (!base) return null;
   song.own = song.own || {};
-  const ids = [];
+  // room for the pieces (the own clips inside the block go away with it)
+  const n = Math.ceil((be - bs) / 16), inner = new Set(), outer = new Set();
+  for (const e of lane) if (e.own) (e.bar >= bs && e.bar < be ? inner : outer).add(e.own);
+  let freed = 0; for (const id of inner) if (!outer.has(id) && song.own[id]) freed++;
+  if (ownCount(song) - freed + n > OWN_MAX) { if (!UI.ownFullWarned) { UI.ownFullWarned = true; toast('Höchstens ' + OWN_MAX + ' eigene Clips je Song'); } return null; }
+  // the notes as they sound now, bar by bar (scene clip or own clip), from c0 on
+  const pieces = [];
   for (let c0 = bs; c0 < be; c0 += 16) {
-    if (ownCount(song) >= OWN_MAX) break;
-    const c1 = Math.min(be, c0 + 16), c = deep(src), prevE = lane.find(e => e.bar === c0);
-    c.len = c1 - c0; c.notes = [];
-    for (let m = Math.floor((c0 * 4 - o.cs) / L) - 1; o.cs + m * L < c1 * 4; m++) for (const n of src.notes) {
-      if (n.t >= L - 1e-9) continue;
-      const st = o.cs + m * L + n.t; if (st < c0 * 4 - 1e-9 || st >= c1 * 4 - 1e-9) continue;
-      const x2 = Object.assign({}, n, {t: +(st - c0 * 4).toFixed(4)}); delete x2.born; delete x2.bornRun; c.notes.push(x2);
+    const c1 = Math.min(be, c0 + 16), notes = [];
+    for (let b = c0; b < c1; b++) {
+      const ob = laneOriginAt(lane, b); if (!laneClipOk(song, t, ob)) continue;
+      const own = ob.own && song.own[ob.own], src = own || S.tracks[t].clips[ob.slot]; if (!src) continue;
+      const Lb = songClipBeats(song, t, own ? ob : {slot: ob.slot}), ocs = ob.cs;
+      for (let m = Math.floor((b * 4 - ocs) / Lb) - 1; ocs + m * Lb < b * 4 + 4; m++) for (const nt of src.notes) {
+        if (nt.t >= Lb - 1e-9) continue;
+        const st = ocs + m * Lb + nt.t; if (st < b * 4 - 1e-9 || st >= b * 4 + 4 - 1e-9) continue;
+        const x2 = Object.assign({}, nt, {t: +(st - c0 * 4).toFixed(4)}); delete x2.born; delete x2.bornRun; notes.push(x2);
+      }
     }
-    c.notes.sort((a, b) => a.t - b.t);
-    const id = ownNewId(song); c.from = {t, s: o.slot, bar: c0, e: prevE ? deep(prevE) : null};
-    song.own[id] = c; laneInsert(lane, {bar: c0, slot: o.slot, own: id}); ids.push(id);
+    notes.sort((a, b) => a.t - b.t);
+    pieces.push({c0, c1, notes});
+  }
+  const refE = ref.lanes[t].find(e => e.bar === bs);
+  for (let j = lane.length - 1; j >= 0; j--) if (lane[j].bar >= bs && lane[j].bar < be) lane.splice(j, 1);
+  for (const id of inner) if (!outer.has(id)) delete song.own[id];
+  const ids = [];
+  for (const pc of pieces) {
+    const c = deep(base), id = ownNewId(song); delete c.from;
+    c.len = pc.c1 - pc.c0; c.notes = pc.notes;
+    c.from = {t, s, bar: pc.c0, e: pc.c0 === bs && refE ? deep(refE) : null, prev: {slot: s, own: null, cs: +o.cs.toFixed(4)}, cs: +o.cs.toFixed(4)};
+    if (pc.c1 < be) c.from.e1 = pc.c1;
+    song.own[id] = c; laneInsert(lane, {bar: pc.c0, slot: s, own: id}); ids.push(id);
   }
   return ids[0] || null;
 }
-// [Zurück zum Szenen-Clip] (9.2): the reference comes back exactly as it was
+/* [Zurück zum Szenen-Clip] (9.2): the reference comes back exactly as it was — the entry that stood there, else the origin that
+   played before; when that was an own clip that is gone by now, the scene clip in its phase. A lane entry never keeps naming
+   a copy that no longer exists (V2e′-fix) */
 function ownDrop(song, t, x) {
   const lane = song.lanes[t], o = laneOriginAt(lane, x); if (!o.own || !song.own || !song.own[o.own]) return false;
-  const id = o.own, c = song.own[id], f = c.from || {};
-  const k = lane.findIndex(e => e.own === id && e.bar === f.bar); if (k < 0) return false;
+  return ownDropId(song, t, o.own);
+}
+function ownDropId(song, t, id) {
+  const lane = song.lanes[t], c = song.own && song.own[id]; if (!lane || !c) return false;
+  const f = c.from || {};
+  let k = lane.findIndex(e => e.own === id && e.bar === f.bar); if (k < 0) k = lane.findIndex(e => e.own === id); if (k < 0) return false;
+  const bar = lane[k].bar, s = isNum(f.s) ? f.s : lane[k].slot;
   lane.splice(k, 1);
-  if (f.e) laneInsert(lane, Object.assign(deep(f.e), {bar: f.bar}));
-  if (f.e1 != null) { const j = lane.findIndex(e => e.bar === f.e1 && e.slot === f.s && !e.re); if (j >= 0) lane.splice(j, 1); }
+  // an own clip it came from still counts only while it exists and stands for the same track and scene clip (ids get reused)
+  const alive = v => { if (!v || !v.own) return true; const q = v.own !== id && song.own[v.own]; return !!q && (!q.from || ((q.from.t == null || q.from.t === t) && (q.from.s == null || q.from.s === s))); };
+  const po = laneOriginAt(lane, bar), rcs = ownRefCs(song, c);
+  const scene = {slot: s, own: null, cs: rcs != null ? rcs : (po.slot === s && !po.own ? po.cs : bar * 4)};
+  if (f.e && alive(f.e)) laneInsert(lane, Object.assign(deep(f.e), {bar}));
+  else if (f.e || (f.prev && !alive(f.prev))) ownPlayAs(song, t, bar, scene);
+  else if (f.prev) ownPlayAs(song, t, bar, {slot: f.prev.slot, own: f.prev.own || null, cs: f.prev.cs});
+  else if (!(po.slot === s && !po.own)) ownPlayAs(song, t, bar, scene);         // an old copy without prev
+  // other entries that still name this copy (where a looping copy went on) or a copy that is gone: the scene clip there
+  for (const e of lane) if (e.own && (e.own === id || !song.own[e.own])) {
+    delete e.own; delete e.re;
+    const L = songClipBeats(song, t, {slot: e.slot}), ph = (((e.bar * 4 - scene.cs) % L) + L) % L;
+    if (e.slot === s && ph > 1e-6 && L - ph > 1e-6) e.ph = +ph.toFixed(4); else delete e.ph;
+  }
+  // the entry at the end of the copy (added with it) goes when the music before it already goes on like it
+  if (f.e1 != null) ownTidyAt(song, t, f.e1);
   if (!ownRefs(song, id)) delete song.own[id];
   return true;
 }
@@ -19232,7 +19499,7 @@ function openFangSheet() {
     };
     const nmTake = () => { const inp = p.querySelector('.fs-in'); if (fangSetName(inp ? inp.value : '') === false) { if (inp) inp.classList.add('bad'); haptic('snap'); } };
     UI.fangRepaint = () => { if (p.isConnected && !p.querySelector('.fs-in:focus')) paint(); };
-    paint();
+    paint(); fangChipBind(p);                                   // V2e′: hold the part chip and drag it into the song
     onTap(p, b => {
       const a = b.dataset.a;
       if (a === 'x' || a === 'disc') { fangDiscard(); UI.fangKeep = true; closePop(); fangGoneToast(); return; }
@@ -19271,9 +19538,9 @@ function fangPlace(p) {
 
 /* ---------- V2c Teil-Leiste (§4.4): 8 places, 4 per page + one [●○]; tap = start at the next bar, [＋] = keep what sounds
    now (asks only the name), hold 450 ms = lift (haptic, N7-R3); release without moving = Teil-Blatt, a drag after the lift
-   never opens it (Nachtrag 2 B.4, N7S-10; dropping into the song comes with V2e′). P: under the clip grid (not in the song
+   never opens it (Nachtrag 2 B.4, N7S-10); V2e′: the lifted key goes to the drag engine (B.5: SONG ⇄, Selbstöffner, Ablegen). P: under the clip grid (not in the song
    view, EN7-02); L: in the side panel (both views, it never moves). ---------- */
-const PB = {keys: [], pg: null, pick: null, press: null, ghost: null, sig: ''}, PB_KEYS = 4;   // 4 part keys per page (+ ●○)
+const PB = {keys: [], pg: null, pick: null, press: null, sig: ''}, PB_KEYS = 4;   // 4 part keys per page (+ ●○)
 const partPageOf = () => (UI.partPage === 1 ? 1 : 0);
 function setPartPage(n) { UI.partPage = n ? 1 : 0; PB.sig = ''; renderPartBar(); return UI.partPage; }
 function buildPartBar() {
@@ -19291,26 +19558,26 @@ function partBarBind() {
     const k = e.target.closest('.pk'); if (!k || UI.pick) return;
     ensureAudio();
     const i = +k.dataset.i, st = {id: e.pointerId, i, k, x: e.clientX, y: e.clientY, tc: AU.ctx ? AU.ctx.currentTime : null, lift: false, moved: false, dead: false};
-    st.timer = setTimeout(() => { if (PB.press !== st || st.dead || !S.parts[i]) return; st.lift = true; k.classList.add('lift'); haptic('pop'); armLongPressGuard(); }, LP_MS);
+    // V2e′ (B.5): 450 ms still = angehoben → the drag engine takes the finger (ghost, SONG ⇄, Selbstöffner, Ablegen)
+    st.timer = setTimeout(() => {
+      if (PB.press !== st || st.dead || !S.parts[i]) return;
+      st.lift = true; haptic('pop'); armLongPressGuard(); PB.press = null;
+      const p = S.parts[i], L = partLen(p);
+      drgStart({src: 'key', i, id: st.id, x: st.lx != null ? st.lx : st.x, y: st.ly != null ? st.ly : st.y, x0: st.x, y0: st.y, srcEl: k, name: p.name, len: L, cells: drgCells(partChunk(p).lanes, L), pc: partColorVar(p.color)});
+    }, LP_MS);
     PB.press = st;
     try { k.setPointerCapture(e.pointerId); } catch (_) {}
   });
   on(b, 'pointermove', e => {
     const st = PB.press; if (!st || st.id !== e.pointerId) return;
     const d = Math.hypot(e.clientX - st.x, e.clientY - st.y);
-    if (!st.lift) { if (d > 8) { st.dead = true; clearTimeout(st.timer); } return; }
-    if (d > 8) st.moved = true;
-    if (st.moved) partGhost(st, e.clientX, e.clientY);
+    st.lx = e.clientX; st.ly = e.clientY;
+    if (!st.lift && d > 8) { st.dead = true; clearTimeout(st.timer); }
   });
   const end = e => {
     const st = PB.press; if (!st || st.id !== e.pointerId) return;
     PB.press = null; clearTimeout(st.timer);
-    st.k.classList.remove('lift'); partGhost(null);
-    if (st.lift) {
-      releaseLongPressGuard(); UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY, hard: true};
-      if (!st.moved && e.type === 'pointerup') openPartSheet(st.i);
-      return;
-    }
+    if (st.lift) return;                                        // V2e′: the drag engine has it
     if (st.dead || e.type !== 'pointerup') return;
     UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};
     partTap(st.i, st.tc);
@@ -19319,13 +19586,6 @@ function partBarBind() {
   on(b, 'contextmenu', e => e.preventDefault());
   onTap(PB.pg, () => { setPartPage(1 - partPageOf()); haptic('tick'); });
   onTap(PB.pick.querySelector('.pb-done'), () => pickDone());
-}
-// the ghost of a lifted part key follows the finger (24 px above it); without a drop target yet it flies back on release
-function partGhost(st, x, y) {
-  if (!st) { if (PB.ghost) { PB.ghost.remove(); PB.ghost = null; } return; }
-  const p = S.parts[st.i]; if (!p) return;
-  if (!PB.ghost) { PB.ghost = el('div', 'pk-ghost', esc(p.name.toUpperCase()) + ' · ' + partLen(p) + ' T'); PB.ghost.style.setProperty('--pc', partColorVar(p.color)); document.body.appendChild(PB.ghost); }
-  PB.ghost.style.left = Math.round(x) + 'px'; PB.ghost.style.top = Math.round(y - 24) + 'px';
 }
 function partTap(i, tc) {
   if (UI.pick) return;
@@ -20032,6 +20292,11 @@ function svBindGestures(w) {
       const m = svMarkAt(Math.floor((p.x + SV.x) / SV.cellW));
       if (m && !svMarkOpen(m)) { const me = g; g.mk = m.id; g.lp = setTimeout(() => { if (g === me && !me.mode) { me.mode = 'lift'; SV.mark = m.id; haptic('pop'); UI.dirty.song = true; } }, 450); }
     }
+    // V2e′ (K2-24): holding a Verweis-Zelle (or an own clip) 450 ms lifts it; released without moving → the Zell-Blatt
+    else if (!g.grip && !SV.copy && S.song && p.y >= SV.rulerH) {
+      const row = svRowAt(p.y), bar = Math.floor((p.x + SV.x) / SV.cellW), t = row >= 0 && row < svChordRow() ? SV.rows[row] : -1;
+      if (t >= 0 && svCellRef(t, bar)) { const me = g; g.cell = {t, bar}; g.lp = setTimeout(() => { if (g === me && !me.mode && !R.songRec && svCellRef(t, bar)) { me.mode = 'clift'; const run = ownRun(S.song, t, bar); SV.cell = {t, a: run ? run.d0 : bar, b: run ? run.d1 : bar + 1}; haptic('pop'); UI.dirty.song = true; } }, 450); }
+    }
     gestBegin(e.pointerId, () => { if (g && g.id === e.pointerId) { clearTimeout(g.lp); g = null; SV.gOn = false; } });
   });
   w.addEventListener('pointermove', e => {
@@ -20045,7 +20310,19 @@ function svBindGestures(w) {
       if (nl.a !== l.a || nl.b !== l.b || !l.on) { song.loop = normLoop(nl, song.bars); haptic('tick'); UI.dirty.song = true; svButtons(); lcdOrToast('Schleife ' + loopLabel(song)); }
       return;
     }
-    if (g.mode === 'lift') { if (Math.abs(dx) > 8 || Math.abs(dy) > 8) g.moved = true; return; }
+    // V2e′ (B.5 Quelle c): a lifted mark moved ≥ 12 px → the drag engine (insertion line, ⧉ = copy, release = move)
+    if (g.mode === 'lift') {
+      const dd = Math.hypot(dx, dy); if (dd > 8) g.moved = true;
+      if (dd >= DRG_GUARD && !R.songRec && S.song) {
+        const G = g, m = S.song.marks.find(x => x.id === G.mk);
+        g = null; SV.gOn = false; clearTimeout(G.lp); if (GEST.has(e.pointerId)) gestEnd(e.pointerId);
+        if (m) { const ch = songCut(S.song, m.a, m.a + m.len); drgStart({src: 'mark', mark: m.id, id: e.pointerId, x: e.clientX, y: e.clientY, x0: G.x0, y0: G.y0, open: true, name: markLabel(m), len: m.len, cells: drgCells(ch.lanes, m.len), pc: 'var(--amber)'}); }
+        else { SV.mark = null; UI.dirty.song = true; }
+      }
+      return;
+    }
+    // K2-24: a lifted cell that moves > 8 px scrolls, never an own clip
+    if (g.mode === 'clift') { if (Math.abs(dx) > 8 || Math.abs(dy) > 8) { g.mode = null; SV.cell = null; UI.dirty.song = true; } else return; }
     if (!g.mode && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) { g.mode = Math.abs(dx) >= Math.abs(dy) ? 'scroll' : 'v'; clearTimeout(g.lp); if (g.mode === 'scroll') folHand('song'); }
     if (g.mode === 'scroll') {
       const t = performance.now(), ddx = e.clientX - g.lastX, dt = Math.max(1, t - g.lastT);
@@ -20058,8 +20335,10 @@ function svBindGestures(w) {
     const G = g; g = null; SV.gOn = false; clearTimeout(G.lp);
     if (GEST.has(e.pointerId)) gestEnd(e.pointerId);
     if (G.mode === 'lift' && (e.type !== 'pointerup' || G.moved)) { if (!(UI.pop && UI.pop.name === 'mark')) SV.mark = null; UI.dirty.song = true; return; }
+    if (G.mode === 'clift' && e.type !== 'pointerup') { SV.cell = null; UI.dirty.song = true; return; }
     if (e.type !== 'pointerup') return;
     if (G.mode === 'lift') { openMarkSheet(G.mk); return; }
+    if (G.mode === 'clift') { openCellSheet(G.cell.t, G.cell.bar); return; }
     if (G.mode === 'grip') { if (G.before && songSnapshot() !== G.before) { pushSongUndo(G.before, 'Schleife ' + loopLabel(S.song)); songChanged(); folEdit('song'); } return; }
     if (G.mode === 'scroll') { SV.lastUser = performance.now(); svMomentum(); return; }
     if (G.mode || performance.now() - G.t0 > 350) return;             // moved, or held: never an edit
@@ -20112,7 +20391,8 @@ function svTap(x, y) {
   if (UI.pop && UI.pop.name === 'mark') { const m = row === -1 ? svMarkAt(bar) : null; if (!(m && !svMarkOpen(m))) { closePop(); return; } }   // another mark: its sheet
   if (row === -1) { svRulerTapX(bar); return; }      // V0c N7-R7 + V2e marks: the ruler selects (yellow) and sets the Positionsmarke, never jumps
   if (!song) { toast('Noch kein Song – erst ● SONG'); return; }
-  if (row < svChordRow()) { const t = SV.rows[row]; if (t < 0 || bar > song.bars) return; const r = songCycle(t, bar); folEdit('song'); lcdOrToast(S.tracks[t].name + ' · Takt ' + (bar + 1) + ': ' + (r >= 0 ? 'Clip ' + (r + 1) : 'stopp')); return; }
+  if (row < svChordRow()) { const t = SV.rows[row]; if (t < 0 || bar > song.bars) return; if (bar < song.bars && svCellOwnAt(t, bar)) { openOwnRoll(t, bar); return; }   // V2e′ (9.2): a tap on an own clip = ROLLE on it
+    const r = songCycle(t, bar); folEdit('song'); lcdOrToast(S.tracks[t].name + ' · Takt ' + (bar + 1) + ': ' + (r >= 0 ? 'Clip ' + (r + 1) : 'stopp')); return; }
   if (row === svChordRow()) { if (!song.bars || bar >= song.bars) return; const k = svChipAt(x, y); openChordPick(k != null ? {k} : {bar}); return; }   // N7-R10
   if (row === svMelRow()) openMelodyRoll();
 }
@@ -20179,6 +20459,7 @@ function svDrawMarks(g, song, X, W, H, ru, cur) {
   const pv = SV.pv;
   if (pv) {
     const xa = X(pv.a), xb = X(pv.a + pv.len);
+    g.fillStyle = 'rgba(11,12,15,.94)'; g.fillRect(xa, 0, xb - xa, ru);          // V2e′: the old marks under the future one step back
     g.fillStyle = '#ffb22e'; g.fillRect(xa - 1, 0, 2, H);
     g.setLineDash([4, 3]); g.strokeStyle = '#ffb22e'; g.lineWidth = 1.5; g.strokeRect(xa + 2.5, cy + .5, xb - xa - 5, chh - 1); g.setLineDash([]);
     g.fillStyle = 'rgba(255,178,46,.10)'; g.fillRect(xa, ru, xb - xa, H - ru);
@@ -20195,6 +20476,9 @@ function svLayoutInfo() {
   const r = SV.cv ? SV.cv.getBoundingClientRect() : null;
   return {rulerH: SV.rulerH, rowH: +SV.rowH.toFixed(3), cellW: SV.cellW, x0: SV.x, rows, bank: SV.pages ? Math.min(trackBankOf(), SV.pages.length - 1) : 0, banks: SV.pages ? SV.pages.length : 1,
     marks: (SV.markGeo || []).map(m => Object.assign({}, m)), sel: SV.sel ? Object.assign({}, SV.sel) : null, pos: songStartBar(), mark: SV.mark || null,
+    view: UI.svGlass ? 'glass' : 'squares', tiles: SV.tileGeo ? SV.tileGeo.map(x => Object.assign({}, x)) : null,                 // V2e′
+    pv: SV.pv ? {a: SV.pv.a, len: SV.pv.len, drag: !!SV.pv.drag} : null, unfold: SV.unfold ? {a: SV.unfold.a, len: SV.unfold.len, dur: SV.unfold.dur} : null,
+    drag: DRG ? {src: DRG.src, st: DRG.st, n: DRG.n, over: DRG.over, copy: DRG.copy, why: DRG.why || null, lag: DRG.lag != null ? +DRG.lag.toFixed(1) : null, evLag: DRG.evLag != null ? +DRG.evLag.toFixed(1) : null} : null, cell: SV.cell ? Object.assign({}, SV.cell) : null,
     canvas: r ? {x: +r.left.toFixed(1), y: +r.top.toFixed(1), w: +r.width.toFixed(1), h: +r.height.toFixed(1)} : null};
 }
 // the ruler tap (N7-R7 + 6.2): a mark → chosen + Marken-Blatt; a second tap into the chosen mark → that bar is selected (the mark
@@ -20347,16 +20631,21 @@ function placeAt(ref, bar, o) {
   const song = S.song, ch = refChunk(r), name = r.p ? r.p.name : 'Szene ' + (r.scene + 1);
   if (!song || bar >= song.bars || !songHasFrom(song, bar)) {
     const res = placePart(ref, bar, song && bar < song.bars ? 'replace' : 'insert', {gap: true});
-    if (res) { toast(name + ' bei Takt ' + (bar + 1) + ' · ' + ch.len + (ch.len === 1 ? ' Takt' : ' Takte'), songUndoAct()); SV.sel = null; SV.pos = bar; svButtons(); }
+    if (res) { toast(name + ' bei Takt ' + (bar + 1) + ' · ' + ch.len + (ch.len === 1 ? ' Takt' : ' Takte'), songUndoAct()); SV.sel = null; SV.pos = bar; svUnfold(bar, ch.len, o && o.ghost); svButtons(); }   // V2e′: entfalten
     return res;
   }
-  openPlaceSheet(ref, bar, o);
+  // V2e′: a drag that ends in the question: [Abbrechen] goes back to where the drag began
+  const d = o && o.drag;
+  openPlaceSheet(ref, bar, d ? {cancel: () => { if (!d.from && UI.songView) setSongView(false); }} : null);
   return 'ask';
 }
-function openPlaceSheet(ref, bar) {
-  const r = partRef(ref); if (!r) return;
-  const ch = refChunk(r), L = ch.len, name = r.p ? r.p.name : 'Szene ' + (r.scene + 1);
-  SV.pv = {a: bar, len: L, name}; UI.dirty.song = true;
+// o (V2e′): {name, len, cells, run(mode) → result|null, cancel()} — the FANG chip places a part that does not exist yet
+function openPlaceSheet(ref, bar, o) {
+  o = o || {};
+  const r = ref ? partRef(ref) : null; if (!r && !o.run) return;
+  const ch = r ? refChunk(r) : null, L = o.len || ch.len, name = o.name || (r.p ? r.p.name : 'Szene ' + (r.scene + 1));
+  SV.pv = {a: bar, len: L, name, cells: o.cells || drgCells(ch.lanes, L)}; UI.dirty.song = true;
+  let chosen = false;
   openPop(null, p => {
     p.classList.add('plsheet'); guardTouch(p);
     p.innerHTML = `<div class="ms-h"><b>${esc(name.toUpperCase())}</b><span>(${L} ${L === 1 ? 'Takt' : 'Takte'}) bei Takt ${bar + 1}</span><button class="rb ms-x" data-a="x" aria-label="Schließen">✕</button></div>` +
@@ -20364,11 +20653,14 @@ function openPlaceSheet(ref, bar) {
       `<button class="rb pl-o" data-a="insert"><b>Einfügen</b><small>ab Takt ${bar + 1} rückt alles ${L} ${L === 1 ? 'Takt' : 'Takte'} nach hinten</small></button>` +
       `<button class="rb pl-c" data-a="x">Abbrechen</button>`;
     onTap(p, b => {
-      const a = b.dataset.a; closePop(); if (a === 'x') return;
-      const res = placePart(ref, bar, a);
-      if (res) { toast(a === 'insert' ? name + ' eingefügt · ab Takt ' + (bar + L + 1) + ' geht es weiter' : name + ' ersetzt Takte ' + (bar + 1) + (L > 1 ? '–' + (bar + L) : ''), songUndoAct()); SV.sel = null; SV.pos = bar; svShiftAnim(a === 'insert' ? bar : -1, L); svButtons(); }
+      const a = b.dataset.a; chosen = a !== 'x'; closePop(); if (a === 'x') return;
+      const res = o.run ? o.run(a) : placePart(ref, bar, a);
+      if (res) {
+        if (!o.run) toast(a === 'insert' ? name + ' eingefügt · ab Takt ' + (bar + L + 1) + ' geht es weiter' : name + ' ersetzt Takte ' + (bar + 1) + (L > 1 ? '–' + (bar + L) : ''), songUndoAct());
+        SV.sel = null; SV.pos = bar; svShiftAnim(a === 'insert' ? bar : -1, L); svUnfold(bar, L); svButtons();
+      } else if (o.cancel) o.cancel();
     }, 'button[data-a]');
-  }, {name: 'place', onClose: () => { SV.pv = null; UI.dirty.song = true; }});
+  }, {name: 'place', onClose: () => { SV.pv = null; UI.dirty.song = true; if (!chosen && o.cancel) { const f = o.cancel; o.cancel = null; f(); } }});
   popDock(UI.pop && UI.pop.el);
 }
 // Xander 24.10. (c): „alles rechts rückt sichtbar nach“ — after an insert the content from bar n slides in from where it was
@@ -20378,6 +20670,469 @@ function svShiftAnim(n, L) {
   SV.shift = {n: n + L, dx: L * SV.cellW, t0: performance.now(), dur: 220}; UI.dirty.song = true;
 }
 const svShiftNow = () => { const s = SV.shift; if (!s) return 0; const k = (performance.now() - s.t0) / s.dur; if (k >= 1) { SV.shift = null; return 0; } UI.dirty.song = true; return -s.dx * Math.pow(1 - k, 3); };
+
+/* =====================================================================================================================
+   V2e′ (Nachtrag 2 B.5, K2-24, K2-26, K2-35; song-delta 5.1, 5.2, 5.4, 9.1, 9.2; N7S-41 … N7S-48, N2-2e′-01 … 03): Ziehen,
+   Glas, eigener Clip. One drag engine for three sources: (a) a part key (Teil-Leiste), (b) the part chip of the FANG sheet,
+   (c) a mark in the song ruler. States: lift (angehoben, finger still) → drag (moved > 8 px) → the song opens (finger on
+   SONG ⇄ = Federtaste, +8 px hit zone; or 600 ms after the lift, still or not, S9) → guard (a drop counts only after ≥ 12 px
+   since the opening) → ready (insertion line at the nearest bar line n = round(x/36), dashed future mark, future cells 30 %,
+   edge scrolling 2 → 6 bars/s). Release: on the song canvas = drop (N7-R4), anywhere else, pointercancel, blur = abort
+   (the ghost flies back in 200 ms, the start view comes back, the data stay). A second finger is ignored (L4); nothing
+   starts and no cell changes while dragging; FOLGEN holds („Finger“). Nothing here is stored as view state in the project.
+   ===================================================================================================================== */
+const DRG_OPEN_MS = 600, DRG_GUARD = 12, DRG_EDGE = 24, DRG_COPY_MS = 250, DRG_SLOP = 8;
+let DRG = null;
+// the future cells of a chunk (per track: per bar the slot, -1 = aus, null = „bleibt“): drawn 30 % while dragging / asking
+function drgCells(lanes, L) {
+  return (lanes || []).map(l => {
+    if (!l || !l.length) return null;
+    const out = []; for (let j = 0; j < L; j++) { const o = laneOriginAt(l, j); out.push(l[0].bar <= j ? o.slot : null); }
+    return out;
+  });
+}
+function drgStart(o) {
+  if (DRG) drgFinish();
+  const now = performance.now();
+  const d = DRG = Object.assign({st: 'lift', t0: now, n: -1, nT: 0, copy: false, copyT: 0, edgeT: 0, edgeDir: 0, over: false, from: !!UI.songView, ghost: null}, o);
+  d.x = o.x; d.y = o.y; d.x0 = o.x0 != null ? o.x0 : o.x; d.y0 = o.y0 != null ? o.y0 : o.y;
+  try { EL.app.setPointerCapture(o.id); } catch (_) {}
+  if (d.srcEl) d.srcEl.classList.add('lift');
+  drgGhostMake(d);
+  if (d.open) { d.st = 'ready'; d.ox = d.x; d.oy = d.y; }
+  else if (!d.from) { drgSpring(true); d.timer = setTimeout(() => drgOpen('auto'), DRG_OPEN_MS); }
+  if (d.src === 'mark' && SV.btn) { const sw = SV.btn.sw; if (sw) { sw.classList.add('copyz'); sw._lbl = sw.lastChild.textContent; sw.lastChild.textContent = '⧉ KOPIE'; } }
+  SV.gOn = !!UI.songView;
+  gestBegin(o.id, () => drgCancel());
+  d.lastF = now; d.raf = requestAnimationFrame(drgFrame);
+  drgGhostPos(d);
+  return d;
+}
+// the spring field SONG ⇄ (top left of the clip grid; in L the same place): amber with „↖ IN DEN SONG“ while a part is lifted
+function drgSpring(on) {
+  const c = UI.corner; if (!c) return;
+  if (c.classList.contains('spring') === on) return;
+  c.classList.toggle('spring', on);
+  const l = c.querySelector('.swl'); if (!l) return;
+  // the full words when they fit (P1 52 × 44: three short lines), else „↖ SONG“ (Mockup L-2); measured once at the lift
+  if (on) { l._t = l.textContent; l.textContent = '↖ IN DEN SONG'; if (c.scrollHeight > c.clientHeight + 1 || l.scrollWidth > c.clientWidth + 1) l.textContent = '↖ SONG'; }
+  else if (l._t != null) { l.textContent = l._t; l._t = null; }
+}
+function drgSpringHit(x, y) {
+  const c = UI.corner; if (!c || !c.offsetWidth || UI.songView) return false;
+  const r = c.getBoundingClientRect();
+  return x >= r.left - 8 && x <= r.right + 8 && y >= r.top - 8 && y <= r.bottom + 8;
+}
+// open the song (Federtaste or the 600-ms Selbstöffner): crossfade 150 ms, nothing jumps (the song view replaces the grid)
+function drgOpen(why) {
+  const d = DRG; if (!d || (d.st !== 'lift' && d.st !== 'drag')) return;
+  clearTimeout(d.timer); d.timer = null;
+  drgSpring(false);
+  if (!UI.songView) {
+    setSongView(true);
+    const v = EL.songView; v.classList.remove('svfade'); void v.offsetWidth; v.classList.add('svfade');
+    clearTimeout(SV.fadeT); SV.fadeT = setTimeout(() => v.classList.remove('svfade'), 200);
+  }
+  d.st = 'guard'; d.ox = d.x; d.oy = d.y; d.openT = performance.now(); d.why = why; d.lag = why === 'spring' && d.hT != null ? Math.max(0, performance.now() - d.hT) : null; d.evLag = why === 'spring' && d.evT != null ? Math.max(0, d.hT - d.evT) : null;
+  SV.gOn = true; UI.dirty.song = true;
+  if (d.ghost) d.ghost.classList.add('open');
+}
+function drgMove(x, y, ts) {
+  const d = DRG; if (!d) return;
+  d.x = x; d.y = y; d.evT = ts; d.hT = performance.now();
+  if (d.st === 'lift' && Math.hypot(x - d.x0, y - d.y0) > DRG_SLOP) d.st = d.from ? 'ready' : 'drag';
+  if ((d.st === 'lift' || d.st === 'drag') && !d.from && drgSpringHit(x, y)) drgOpen('spring');
+  if (d.st === 'guard' && Math.hypot(x - d.ox, y - d.oy) >= DRG_GUARD) d.st = 'ready';
+  if (d.st === 'ready') drgTarget(x, y);
+  if (d.src === 'mark') drgCopyZone(x, y);
+  drgGhostPos(d);
+}
+// ⧉ (mark source, K2-26): the field at the place of CLIPS ⇄; ≥ 250 ms over it turns the move into a copy
+function drgCopyZone(x, y) {
+  const d = DRG, sw = SV.btn && SV.btn.sw; if (!sw || d.copy) return;
+  const r = sw.getBoundingClientRect(), inZ = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  if (!inZ) { d.copyT = 0; return; }
+  if (!d.copyT) d.copyT = performance.now();
+  else if (performance.now() - d.copyT >= DRG_COPY_MS) { d.copy = true; haptic('tick'); sw.classList.add('on'); if (d.ghost) { d.ghost.classList.add('copy'); drgGhostText(d); } }
+}
+// the insertion line over the song canvas (only in „ready“): n = round(x / 36), 0 … song end + 4; haptic „tick“ per new n (≤ 10/s)
+function drgTarget(x, y) {
+  const d = DRG, w = SV.wrap; if (!d || !w || !UI.songView) return;
+  const r = w.getBoundingClientRect(), inCv = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  d.over = inCv;
+  if (!inCv) { if (SV.pv && SV.pv.drag) { SV.pv = null; UI.dirty.song = true; } d.n = -1; drgGhostText(d); return; }
+  const bars = S.song ? S.song.bars : 0, n = clamp(Math.round((x - r.left + SV.x) / SV.cellW), 0, bars + 4);
+  if (n !== d.n || !SV.pv) {
+    const t = performance.now();
+    if (n !== d.n && d.n >= 0 && t - d.nT >= 100) { haptic('tick'); d.nT = t; }
+    else if (d.n < 0) { haptic('tick'); d.nT = t; }
+    d.n = n; SV.pv = {a: n, len: d.len, name: d.name, cells: d.cells, drag: true}; UI.dirty.song = true;
+    drgGhostText(d);
+  }
+}
+function drgFrame() {
+  const d = DRG; if (!d) return;
+  const t = performance.now(), dt = Math.min(50, t - d.lastF); d.lastF = t;
+  // Rand-Rollen (5.1 Schritt 6): ≤ 24 px from the canvas edge → 2 bars/s, after 1 s 6 bars/s; never before bar 1 / past end + 4
+  if (d.st === 'ready' && d.over && SV.wrap) {
+    const r = SV.wrap.getBoundingClientRect(), dir = d.x - r.left <= DRG_EDGE ? -1 : r.right - d.x <= DRG_EDGE ? 1 : 0;
+    if (dir !== d.edgeDir) { d.edgeDir = dir; d.edgeT = t; }
+    if (dir) {
+      const v = (t - d.edgeT >= 1000 ? 6 : 2) * SV.cellW / 1000, nx = clamp(SV.x + dir * v * dt, 0, svMaxX());
+      if (nx !== SV.x) { SV.x = nx; FOL.page.song = null; UI.dirty.song = true; drgTarget(d.x, d.y); }
+    }
+  } else d.edgeDir = 0;
+  if (d.src === 'mark' && !d.copy && d.copyT) drgCopyZone(d.x, d.y);
+  d.raf = requestAnimationFrame(drgFrame);
+}
+function drgUp(x, y) {
+  const d = DRG; if (!d) return;
+  drgMove(x, y);
+  if (d.st === 'lift') {                                      // released without moving, before the song opened
+    drgFinish();
+    if (d.src === 'key' && S.parts[d.i]) openPartSheet(d.i);   // (a) Teil-Blatt; (b) nothing; (c) the Marken-Blatt
+    else if (d.src === 'mark') openMarkSheet(d.mark);
+    return;
+  }
+  if (d.st === 'drag') { drgCancel(); return; }                 // not open yet: abort
+  if (d.st === 'guard') { drgCancel('guard'); return; }         // Schutz: < 12 px since the song opened
+  if (!d.over || d.n < 0) { drgCancel(); return; }
+  drgDrop(d, d.n);
+}
+// the ghost: 24 px above the finger, translucent amber with name, length, mini lanes and the 600-ms ring (CSS animation)
+function drgGhostMake(d) {
+  const g = el('div', 'drg-ghost');
+  const L = Math.max(1, d.len | 0), rows = (d.cells || []).map((c, t) => (c && c.some(s => s >= 0) ? {t, c} : null)).filter(Boolean).slice(0, 6);
+  const mini = rows.map(r => '<i style="--c:var(--t' + (r.t + 1) + ')">' + r.c.map(s => '<b' + (s >= 0 ? '' : ' class="o"') + '></b>').join('') + '</i>').join('');
+  g.innerHTML = '<div class="dg-h"><span class="dg-t"></span>' + (d.from || d.open ? '' : '<svg class="dg-r" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><circle class="p" cx="10" cy="10" r="7"/></svg>') + '</div>' +
+    (mini ? '<div class="dg-m" style="--n:' + L + '">' + mini + '</div>' : '');
+  if (d.pc) g.style.setProperty('--pc', d.pc);
+  document.body.appendChild(g); d.ghost = g; drgGhostText(d);
+}
+function drgGhostText(d) {
+  const g = d.ghost; if (!g) return;
+  const tt = g.querySelector('.dg-t'), txt = (d.copy ? '⧉ ' : '') + String(d.name || '').toUpperCase() + ' · ' + d.len + ' T';
+  if (tt.textContent !== txt) tt.textContent = txt;
+  // over the canvas the ghost grows to the length it will take (song-delta 5.2)
+  const w = d.st === 'ready' && d.over ? Math.min(window.innerWidth - 16, Math.max(96, d.len * SV.cellW)) : 0;
+  const ws = w ? w + 'px' : '';
+  if (g.style.width !== ws) { g.style.width = ws; drgGhostPos(d); }
+}
+function drgGhostPos(d) {
+  const g = d.ghost; if (!g) return;
+  const hw = (g.offsetWidth || 96) / 2, vw = window.innerWidth;           // never off the screen
+  g.style.left = Math.round(clamp(d.x, Math.min(vw / 2, hw + 4), Math.max(vw / 2, vw - hw - 4))) + 'px'; g.style.top = Math.round(Math.max(g.offsetHeight + 4, d.y - 24)) + 'px';
+}
+// abort: the ghost flies back to its source in 200 ms, the start view comes back, the data stay (deep-equal)
+function drgCancel(why) {
+  const d = DRG; if (!d) return;
+  const g = d.ghost; d.ghost = null;
+  drgFinish();
+  if (!d.from && UI.songView) setSongView(false);
+  if (d.src === 'mark') SV.mark = null;
+  if (why === 'guard') { const msg = 'Zum Ablegen den Teil an einen Taktstrich ziehen'; if (UI.songView) lcdOrToast(msg); else toast(msg); }
+  if (g) drgFly(g, d.srcEl && d.srcEl.isConnected && d.srcEl.offsetWidth ? d.srcEl.getBoundingClientRect() : null);
+}
+function drgFly(g, r) {
+  if (!r) { g.classList.add('gone'); setTimeout(() => g.remove(), 160); return; }
+  g.classList.add('fly'); g.style.left = Math.round(r.left + r.width / 2) + 'px'; g.style.top = Math.round(r.top + r.height / 2 + 12) + 'px'; g.style.width = '';
+  setTimeout(() => g.remove(), 220);
+}
+function drgFinish() {
+  const d = DRG; if (!d) return;
+  DRG = null;
+  clearTimeout(d.timer); cancelAnimationFrame(d.raf);
+  drgSpring(false);
+  if (d.srcEl) d.srcEl.classList.remove('lift');
+  if (SV.pv && SV.pv.drag) SV.pv = null;
+  SV.gOn = false; UI.dirty.song = true;
+  const sw = SV.btn && SV.btn.sw; if (sw && sw.classList.contains('copyz')) { sw.classList.remove('copyz', 'on'); if (sw._lbl != null) sw.lastChild.textContent = sw._lbl; }
+  if (GEST.has(d.id)) gestEnd(d.id);
+  try { if (EL.app.hasPointerCapture && EL.app.hasPointerCapture(d.id)) EL.app.releasePointerCapture(d.id); } catch (_) {}
+  if (d.src === 'key') releaseLongPressGuard();
+  UI.ghost = {t: performance.now(), x: d.x, y: d.y, hard: true};
+  if (d.ghost) { const g = d.ghost; d.ghost = null; g.classList.add('gone'); setTimeout(() => g.remove(), 160); }
+}
+// drop at bar line n: (a) a part key → Ablegen (N7-R4: at/behind the end without a question, on content the sheet);
+// (b) the FANG chip → the part is made and placed in ONE undo group; (c) a mark → move, or copy after ⧉
+function drgDrop(d, n) {
+  // FP-SONG: while ● SONG records, the arrangement is not rebuilt under the take (like the Marken-Blatt, V2e)
+  if (R.songRec) { svRecBusy(); drgCancel(); return; }
+  const g = d.ghost; d.ghost = null;
+  drgFinish();
+  const done = (a, len) => { svUnfold(a, len, g); return true; };
+  let ok = false;
+  if (d.src === 'key') {
+    const r = placeAt('P' + (d.i + 1), n, {drag: d, ghost: g});
+    if (r === 'ask') { if (g) drgFly(g, null); return; }
+    ok = !!r;                                                  // placeAt unfolds (and takes the ghost into the mark)
+  } else if (d.src === 'fang') {
+    const r = drgFangDrop(n, d);
+    if (r === 'ask') { if (g) drgFly(g, null); return; }
+    ok = !!r; if (ok) done(n, d.len);
+  } else if (d.src === 'mark') {
+    const song = S.song, m = song && song.marks.find(x => x.id === d.mark);
+    if (m && !svRecBusy()) {
+      const nn = clamp(n, 0, song.bars);
+      if (!d.copy && nn >= m.a && nn <= m.a + m.len) { lcdOrToast('Gleiche Stelle – nichts verschoben'); }
+      else if (d.copy && nn > m.a && nn < m.a + m.len) { lcdOrToast('Nicht in die Marke selbst – Kopie abgebrochen'); }
+      else {
+        const nm = markLabel(m), len = m.len;
+        ok = markAction(d.mark, d.copy ? 'copy' : 'move', nn);
+        if (ok) {
+          const ms = S.song.marks, nm2 = d.copy ? ms.find(x => x.a === nn && x.len === len && x.id !== d.mark) : ms.find(x => x.id === d.mark);
+          const a = nm2 ? nm2.a : nn; SV.mark = null; SV.sel = null; SV.pos = a;
+          if (d.copy) svShiftAnim(a, len);
+          done(a, len);
+          toast(nm + (d.copy ? ' kopiert → Takt ' : ' verschoben → Takt ') + (a + 1), songUndoAct()); svButtons();
+        }
+      }
+    }
+  }
+  if (!ok) {
+    if (!d.from && UI.songView && d.src !== 'mark') setSongView(false);
+    if (g) drgFly(g, d.srcEl && d.srcEl.isConnected && d.srcEl.offsetWidth ? d.srcEl.getBoundingClientRect() : null);
+  }
+}
+// (b) the FANG chip: the part is made (like [ALS TEIL ✓]) and placed — one undo group [part, song] (N7S-44, 12.3)
+function drgFangDrop(n, d) {
+  if (!FANG.part || !FANG.res) return null;
+  if (FANG.dup !== 'replace' && S.parts.findIndex(x => !x) < 0) { toast('Alle 8 Teil-Plätze belegt – im Blatt einen Platz wählen'); FANG.full = true; if (UI.fangRepaint) UI.fangRepaint(); return null; }
+  const song = S.song, nm = fangName(), L = FANG.part.len;
+  const go = mode => {
+    const u0 = UNDO[UNDO.length - 1], r = fangAccept('part'); if (!r || !(r.part >= 0)) return null;
+    const res = placePart('P' + (r.part + 1), n, mode, {gap: true});
+    undoMergeSince(u0, 'FANG TEIL ' + nm + ' in den Song');
+    if (res) { SV.sel = null; SV.pos = n; toast('Teil ' + nm + ' bei Takt ' + (n + 1) + ' · ' + L + (L === 1 ? ' Takt' : ' Takte'), {label: 'Rückgängig', fn: () => undo()}); svButtons(); }
+    return res;
+  };
+  if (!(song && n < song.bars && songHasFrom(song, n))) return go(song && n < song.bars ? 'replace' : 'insert');
+  UI.fangKeep = true; closePop();                       // the sheet steps aside; the catch keeps running (FANG.live)
+  openPlaceSheet(null, n, {name: nm, len: L, cells: drgCells(FANG.part.lanes, L), run: go,
+    cancel: () => { if (!d.from && UI.songView) setSongView(false); if (FANG.res && FANG.part) openFangSheet(); }});
+  return 'ask';
+}
+// the undo entries pushed after u0 become ONE group (TA8: a gesture is one step)
+function undoMergeSince(u0, label) {
+  const k = u0 ? UNDO.lastIndexOf(u0) : -1, es = UNDO.slice(k + 1);
+  if (es.length < 2) return;
+  UNDO.splice(k + 1); const items = [];
+  for (const e of es) { if (e.kind === 'group') items.push(...e.items); else items.push(e); }
+  undoPush({kind: 'group', label, items});
+}
+// „Entfalten wie von Zauberhand“ (N7-R6, N7S-45): the ghost shrinks into the mark (150 ms); the cells appear left to right
+// (15 ms a bar, ≤ 300 ms in all) and turn from amber into the track colour; haptic „snap“ once; no control moves
+function svUnfold(a, len, ghost) {
+  len = Math.max(1, len | 0);
+  const step = Math.min(15, 150 / len);
+  SV.unfold = {a, len, t0: performance.now(), step, dur: Math.round((len - 1) * step + 150)};
+  UI.dirty.song = true; haptic('snap');
+  if (ghost && ghost.isConnected) {
+    const w = SV.wrap, r = w ? w.getBoundingClientRect() : null;
+    if (r && UI.songView) {
+      const x0 = r.left + a * SV.cellW - SV.x, x1 = x0 + len * SV.cellW;
+      ghost.classList.add('shrink'); ghost.style.width = Math.max(12, x1 - x0) + 'px';
+      ghost.style.left = Math.round((x0 + x1) / 2) + 'px'; ghost.style.top = Math.round(r.top + SV.rulerH) + 'px';
+      setTimeout(() => ghost.remove(), 170);
+    } else ghost.remove();
+  }
+}
+const svUnfoldK = (b, now) => { const u = SV.unfold; if (!u || b < u.a || b >= u.a + u.len) return 1; return clamp((now - u.t0 - (b - u.a) * u.step) / 150, 0, 1); };
+// amber → track colour (k 0 … 1)
+const SVRGB = {};
+function svRgb(c) { if (SVRGB[c]) return SVRGB[c]; const m = /^#?([0-9a-f]{6})$/i.exec(String(c).trim()); const v = m ? parseInt(m[1], 16) : 0xffb22e; return (SVRGB[c] = [v >> 16 & 255, v >> 8 & 255, v & 255]); }
+function svMix(c, k) { const a = svRgb('#ffb22e'), b = svRgb(c); return 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * k) + ',' + Math.round(a[1] + (b[1] - a[1]) * k) + ',' + Math.round(a[2] + (b[2] - a[2]) * k) + ')'; }
+
+// the window listeners of the engine: the drag pointer goes to the engine only; every other finger is ignored (L4)
+window.addEventListener('pointerdown', e => { if (DRG && e.pointerId !== DRG.id) { e.stopImmediatePropagation(); if (e.cancelable) e.preventDefault(); } }, true);
+window.addEventListener('pointermove', e => { if (!DRG) return; e.stopImmediatePropagation(); if (e.pointerId === DRG.id) drgMove(e.clientX, e.clientY, e.timeStamp); }, true);
+window.addEventListener('pointerup', e => { if (!DRG) return; e.stopImmediatePropagation(); if (e.pointerId === DRG.id) drgUp(e.clientX, e.clientY); }, true);
+window.addEventListener('pointercancel', e => { if (!DRG) return; e.stopImmediatePropagation(); if (e.pointerId === DRG.id) drgCancel(); }, true);
+window.addEventListener('blur', () => { if (DRG) drgCancel(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && DRG) drgCancel(); });   // B.5 #15: call, app switch
+
+/* ---------- (b) FANG sheet: hold the part chip 450 ms → lift (released without moving = nothing) ---------- */
+function fangChipBind(p) {
+  let st = null;
+  p.addEventListener('pointerdown', e => {
+    const c = e.target.closest && e.target.closest('.fs-chip'); if (!c || e.button > 0 || DRG) return;
+    st = {id: e.pointerId, x: e.clientX, y: e.clientY, c};
+    try { p.setPointerCapture(e.pointerId); } catch (_) {}
+    st.timer = setTimeout(() => {
+      const s = st; st = null; if (!s || !FANG.part || !FANG.res) return;
+      haptic('pop');
+      const L = FANG.part.len;
+      drgStart({src: 'fang', id: s.id, x: s.lx != null ? s.lx : s.x, y: s.ly != null ? s.ly : s.y, x0: s.x, y0: s.y, srcEl: s.c, name: fangName(), len: L, cells: drgCells(FANG.part.lanes, L), pc: 'var(--amber)'});
+    }, LP_MS);
+  });
+  p.addEventListener('pointermove', e => { if (!st || st.id !== e.pointerId) return; st.lx = e.clientX; st.ly = e.clientY; if (Math.hypot(e.clientX - st.x, e.clientY - st.y) > DRG_SLOP) { clearTimeout(st.timer); st = null; } });
+  const end = e => { if (st && st.id === e.pointerId) { clearTimeout(st.timer); st = null; } };
+  p.addEventListener('pointerup', end); p.addEventListener('pointercancel', end);
+}
+
+/* ---------- Ansicht ▦ Kästchen │ ◧ Glas (N7-R12, song-delta 9.1): a view switch (no undo, no data); same row height and bar
+   width. Glas: one tile per Durchlauf (x(b)+2 … x(b+n)−1, row − 6, radius 6), track colour 22 %, mini notes (≤ 160, 0,6),
+   scene number 9 px; the running tile has a 2-px progress line; own clips a 2-px frame in the track colour and „eigen“ ---------- */
+function songViewMode(m) {
+  if (m === 'glass' || m === 'squares') {
+    const g = m === 'glass';
+    if (!!UI.svGlass !== g) { UI.svGlass = g; SV.tileC = null; UI.dirty.song = true; }
+    const b = SV.btn && SV.btn.bGl;
+    if (b) { b.children[0].classList.toggle('on', !g); b.children[2].classList.toggle('on', g); b.setAttribute('aria-pressed', String(g)); b.setAttribute('aria-label', g ? 'Ansicht: Glas (antippen: Kästchen)' : 'Ansicht: Kästchen (antippen: Glas)'); }
+  }
+  return UI.svGlass ? 'glass' : 'squares';
+}
+// the note geometry of one Durchlauf (cached per clip content: KEYC.ver for scene clips, UI.songVer for own clips)
+function svTileNotes(song, t, run) {
+  const v = KEYC.ver + ':' + (UI.songVer | 0);
+  if (!SV.tileC || SV.tileC.v !== v) SV.tileC = {v, m: new Map()};
+  const o = run.o, key = t + '|' + (o.own || o.slot) + '|' + (+(run.ds - run.d0 * 4).toFixed(4)) + '|' + (run.d1 - run.d0) + '|' + run.L;
+  let r = SV.tileC.m.get(key); if (r) return r;
+  const clip = o.own ? song.own[o.own] : S.tracks[t].clips[o.slot], drum = isDrum(t), list = [];
+  if (clip) {
+    let lo = 127, hi = 0; for (const n of clip.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
+    const span = Math.max(hi - lo, 6), a = run.d0 * 4, b = run.d1 * 4;
+    for (const n of clip.notes) {
+      if (n.t >= run.L - 1e-9) continue;
+      const st = run.ds + n.t; if (st < a - 1e-9 || st >= b - 1e-9) continue;
+      const y = drum ? (DRUM_BY_GM[n.n] ? DRUM_BY_GM[n.n].idx : 0) / 12 : 1 - (n.n - lo) / span;
+      list.push(st - a, drum ? .12 : Math.max(.06, Math.min(n.d, run.L - n.t)), y);
+      if (list.length >= 160 * 3) break;
+    }
+  }
+  r = {p: list, n: list.length / 3}; SV.tileC.m.set(key, r); return r;
+}
+function svDrawGlass(g, song, X, b0, b1, bars, ru, rh, sb, now) {
+  SV.tileGeo = [];
+  const cw = SV.cellW, cur = sb != null && sb >= 0 && R.playing ? sb / 4 : -1;
+  for (let r = 0; r < SV.rows.length; r++) {
+    const t = SV.rows[r]; if (t < 0 || !song.lanes[t]) continue;
+    const y = ru + r * rh, col = SV.cols[t], th = Math.max(4, rh - 6), rad = Math.min(6, th / 2);
+    let b = b0;
+    while (b < Math.min(b1, bars)) {
+      const run = ownRun(song, t, b);
+      if (!run) { b++; continue; }
+      const d0 = run.d0, d1 = Math.max(d0 + 1, Math.min(run.d1, bars)), x0 = X(d0) + 2, x1 = X(d1) - 1, w = x1 - x0, own = !!run.o.own;
+      const k = Math.min(svUnfoldK(d0, now), 1);
+      if (k > 0) {
+        g.globalAlpha = k;
+        g.beginPath(); if (g.roundRect) g.roundRect(x0, y + 3, w, th, rad); else g.rect(x0, y + 3, w, th);
+        g.fillStyle = k < 1 ? svMix(col, k) : col; g.globalAlpha = .22 * k; g.fill();
+        g.globalAlpha = k; g.lineWidth = own ? 2 : 1; g.strokeStyle = own ? col : 'rgba(255,255,255,.05)'; g.stroke();
+        const tn = svTileNotes(song, t, run), P = tn.p, nh = Math.max(1.5, th * .12), top = y + 3 + 2, hh = th - 4 - nh;
+        g.fillStyle = col; g.globalAlpha = .6 * k;
+        g.save(); g.beginPath(); g.rect(x0, y + 3, w, th); g.clip();
+        for (let j = 0; j < P.length; j += 3) g.fillRect(X(d0) + P[j] / 4 * cw, top + P[j + 2] * hh, Math.max(1.5, P[j + 1] / 4 * cw - .5), nh);
+        g.restore(); g.globalAlpha = k;
+        if (w >= 16 && th >= 14) {
+          g.save(); g.textAlign = 'left'; g.textBaseline = 'top';
+          if (own) { g.font = '700 8px system-ui, -apple-system, sans-serif'; g.fillStyle = '#f2f4f8'; g.fillText('eigen', x0 + 4, y + 5); }
+          else { g.font = '700 9px system-ui, -apple-system, sans-serif'; g.fillStyle = 'rgba(242,244,248,.75)'; g.fillText(String(run.o.slot + 1), x0 + 4, y + 5); }
+          g.restore();
+        }
+        if (cur >= d0 && cur < d1 && R.songPlay) { g.fillStyle = col; g.globalAlpha = .9; g.fillRect(x0, y + 3 + th - 2, Math.max(1, (cur - d0) / (d1 - d0) * w), 2); }
+        g.globalAlpha = 1;
+      }
+      SV.tileGeo.push({t, a: d0, b: d1, n: svTileNotes(song, t, run).n, own, slot: run.o.slot, x0: Math.round(x0 * 10) / 10, x1: Math.round(x1 * 10) / 10});
+      b = Math.max(d1, b + 1);
+    }
+  }
+}
+
+/* ---------- eigener Clip (N7-R9, K2-24; song-delta 9.2): hold 450 ms on a Verweis-Zelle → at release (no movement) the
+   Zell-Blatt [Eigener Clip (dieser Durchlauf)] [Ganzer Block] [Abbrechen]; only the tap changes data (one undo). Hold on an own
+   clip → [Bearbeiten] [Zurück zum Szenen-Clip] [Ganzer Block]. A tap on a Verweis-Zelle still changes the clip (WP6); a tap on an
+   own clip opens ROLLE on it ---------- */
+function svCellOwnAt(t, bar) { const s = S.song; if (!s || !s.lanes[t]) return null; const o = laneOriginAt(s.lanes[t], bar); return o.own && s.own && s.own[o.own] ? o.own : null; }
+function svCellRef(t, bar) { const s = S.song; if (!s || !s.lanes[t] || bar >= s.bars) return false; const o = laneOriginAt(s.lanes[t], bar); return o.slot >= 0 && laneClipOk(s, t, o); }
+function openCellSheet(t, bar) {
+  const song = S.song; if (!song || !svCellRef(t, bar) || svRecBusy()) return;
+  const own = svCellOwnAt(t, bar), run = ownRun(song, t, bar); if (!run) return;
+  const blk = ownRefRun(song, t, bar) || run;          // [Ganzer Block] covers the scene clip's block (V2e′-fix)
+  const tr = S.tracks[t], sc = run.o.slot + 1, rng = run.d1 - run.d0 > 1 ? 'Takt ' + (run.d0 + 1) + '–' + run.d1 : 'Takt ' + (run.d0 + 1);
+  SV.cell = {t, a: run.d0, b: run.d1}; UI.dirty.song = true; folEdit('song');
+  openPop(null, p => {
+    p.classList.add('plsheet', 'csheet'); guardTouch(p);
+    p.innerHTML = `<div class="ms-h"><b>${esc(tr.name.toUpperCase())}</b><span>· ${rng} · ${own ? 'eigener Clip' : 'Szene ' + sc}</span><button class="rb ms-x" data-a="x" aria-label="Schließen">✕</button></div>` +
+      (own ? `<button class="rb pl-o" data-a="edit"><b>Bearbeiten</b><small>ROLLE auf diesem eigenen Clip</small></button>` +
+             `<button class="rb pl-o" data-a="back"><b>Zurück zum Szenen-Clip</b><small>die Kopie fällt weg, hier spielt wieder Szene ${sc}</small></button>`
+           : `<button class="rb pl-o" data-a="own"><b>Eigener Clip (dieser Durchlauf)</b><small>${rng} wird eine Kopie, die nur hier gilt</small></button>`) +
+      `<button class="rb pl-o" data-a="whole"><b>Ganzer Block</b><small>${Math.min(blk.be, song.bars) - blk.bs > 1 ? 'Takt ' + (blk.bs + 1) + '–' + Math.min(blk.be, song.bars) : 'Takt ' + (blk.bs + 1)} wird ein eigener Clip</small></button>` +
+      `<button class="rb pl-c" data-a="x">Abbrechen</button>`;
+    onTap(p, b => {
+      const a = b.dataset.a; closePop(); if (a === 'x') return;
+      if (a === 'edit') { openOwnRoll(t, bar); return; }
+      if (a === 'back') { if (dropOwn(t, bar)) { toast(tr.name + ' · ' + rng + ': wieder Szene ' + sc, songUndoAct()); svButtons(); } return; }
+      const id = makeOwn(t, bar, a === 'whole'), oc = id ? ownClipAt(t, bar) : null;
+      if (!id || !oc) { toast('Hier ist kein Clip'); return; }
+      const f = oc.from || {}, r2 = f.bar != null ? f.bar : run.d0, e2 = r2 + Math.max(1, oc.len | 0);
+      toast((e2 - r2 > 1 ? 'Takt ' + (r2 + 1) + '–' + e2 : 'Takt ' + (r2 + 1)) + ': eigener Clip (aus Szene ' + sc + ')', [{label: 'Bearbeiten', fn: () => openOwnRoll(t, r2)}, songUndoAct()]);
+      haptic('snap'); svButtons(); UI.dirty.song = true;
+    }, 'button[data-a]');
+  }, {name: 'cell', onClose: () => { SV.cell = null; UI.dirty.song = true; }});
+  popDock(UI.pop && UI.pop.el);
+}
+// ROLLE on an own clip (song-delta 9.2): head „Synth 2 · Song Takt 5–6 · eigener Clip“; every gesture is one undo `own`
+function openOwnRoll(t, bar) {
+  const id = svCellOwnAt(t, bar); if (!id) { toast('Kein eigener Clip an dieser Stelle'); return false; }
+  if (!EL.rollSheet.classList.contains('open')) UI.shield = null;
+  closeSheets(); R.editor = 'roll'; ED.rollAt = {t, s: -1, own: id};
+  if (UI.toastActs) hideToast();
+  buildRoll(); setSheetOpen(true); UI.dirty.all = true;
+  return true;
+}
+function ownModel(t, id) {
+  let snap = null; const cur = () => (S.song && S.song.own ? S.song.own[id] : null);
+  return {
+    getClip: cur,
+    begin() { const c = cur(); snap = c ? JSON.stringify(c) : null; },
+    end(changed, label) { if (changed && snap) { undoPush({kind: 'own', id, before: snap, label: 'Eigener Clip: ' + (label || 'Bearbeiten')}); afterOwnEdit(t, id); folEdit('roll'); } snap = null; },
+    revert() { const c = cur(); if (snap && c) { const d = JSON.parse(snap); Object.keys(c).forEach(k => { if (!(k in d)) delete c[k]; }); Object.assign(c, d); afterOwnEdit(t, id); } snap = null; },
+    undo: () => { undo(); }, redo: () => { redo(); },
+    canUndo: () => UNDO.length > 0, canRedo: () => REDO.length > 0,
+    audition(n, v) { const vo = auditionStart(t, n, v == null ? .8 : v); if (vo) vo.release(AU.ctx.currentTime + .18); }
+  };
+}
+// an edit of an own clip that plays now is heard in the same pass (like afterClipEdit)
+function afterOwnEdit(t, id) {
+  const c = S.song && S.song.own && S.song.own[id]; if (!c) return;
+  c.notes.sort((a, b) => a.t - b.t);
+  if (R.playing && R.own[t] === id && !R.pend[t] && AU.ctx) { const now = AU.ctx.currentTime + .006; cancelTrackFrom(t, now); scheduleTrack(t, Math.max(R.cstart[t], t2b(now)), R.schedBeat, true); }
+  UI.songVer = (UI.songVer | 0) + 1; UI.dirty.song = true; markDirty();
+}
+function ownRollRange(id) {
+  const song = S.song; if (!song) return '';
+  for (const l of song.lanes) for (const e of l) if (e.own === id) { const c = song.own[id], a = e.bar + 1, z = e.bar + Math.max(1, c.len | 0); return z > a ? 'Song Takt ' + a + '–' + z : 'Song Takt ' + a; }
+  return 'Song';
+}
+function buildOwnRoll() {
+  const {t, own: id} = ED.rollAt, tr = S.tracks[t], sh = EL.rollSheet, c = S.song && S.song.own && S.song.own[id];
+  if (!c) { closeRoll(); return; }
+  ED.lauf = null; ED.laufBtn = null;
+  if (ED.roll) { try { ED.roll.destroy(); } catch (e) {} ED.roll = null; }
+  sh.innerHTML = ''; sh.style.setProperty('--tc', `var(--t${t + 1})`);
+  const land = window.matchMedia('(orientation: landscape)').matches; ED.rollLand = land;
+  const head = el('div', 'rhead'), ht = el('div', 'rht');
+  const ttl = el('div', 'sh-title', `<span class="dot"></span><b>${esc(tr.name)} · ${esc(ownRollRange(id))}</b>`); ttl.title = tr.name + ' · ' + ownRollRange(id) + ' · eigener Clip (gilt nur an dieser Song-Stelle)'; ht.appendChild(ttl);
+  const info = el('span', 'rinfo'); ht.appendChild(info); ED.rollInfo = info;
+  const chip = el('span', 'trchip'); chip.hidden = true; ht.appendChild(chip); ED.trChip = chip;
+  head.appendChild(ht); ED.rollHT = ht;
+  const x = el('button', 'sh-x rb', '✕'); x.setAttribute('aria-label', 'Editor schließen'); onTap(x, closeRoll);
+  const body = el('div', 'rbody');
+  sh.append(head, body); sh.classList.add('open');
+  const col = getComputedStyle(document.documentElement).getPropertyValue('--t' + (t + 1)).trim();
+  const extra = land ? [{id: 'kb', label: '⌨', title: 'Tastatur zeigen / verbergen', fn: b => { ROLLP.kb = !ROLLP.kb; rollKbApply(); b.classList.toggle('on', ROLLP.kb); }}] : [];
+  ED.roll = PianoRoll.create(body, ownModel(t, id), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, toolbarHost: land ? head : null,
+    extraTools: extra, center: isDrum(t) ? 42 : 12 * ((tr.kbOct || 4) + 1) + 7,
+    tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
+    reg: folReg('roll'), onHand: () => folHand('roll'),
+    onPrefs: p => { ROLLP.grid = p.grid; ROLLP.fold = p.fold; },
+    onStep: () => { STEPQ.notes.length = 0; },
+    onTick: () => haptic('tick')});
+  head.append(folChip('roll'), x);
+  rollKbApply(); rollHeadUpdate(); renderEdChip();
+  sh.classList.add('open');
+}
 
 /* ---------- Bereich-Leiste (6.3, K2-25): replaces the Träger bar in the same height (P 56 px) while bars are selected (outside a
    mark or inside an open mark); in L it replaces the Träger panel in the side field ---------- */
@@ -20507,6 +21262,8 @@ function lcdOrToast(txt) {
 function songFrame(bAud) {
   if (!UI.songView || !SV.g) return;
   if (!SV.w) svLayout();
+  // V2e′ (FP-SONG): another project / track count / order / bank → the rows and the Spurbank pages are laid out again (never stale rows)
+  { const o = trackOrder(), k = o.join() + '|' + trackBankOf(); if (SV.ordK !== k) { SV.ordK = k; svLayout(); } }
   if (SV.sel || SV.mark || SV.copy) svSelFix();                    // V2e-fix: undo / project switch / a shorter song
   const sb = svSongBeat(bAud);
   svAutoScroll(false);
@@ -20560,20 +21317,37 @@ function svDraw(force, sbIn) {
   }
   // V2e (Xander 24.10. a): behind the end the bar numbers go on, dim — a tap there sets a part at that bar line (bars between stay empty)
   if (song || !bars) { g.fillStyle = '#30343c'; for (let b = Math.max(b0, bars + 1), e = Math.ceil((SV.x + W) / cw) + 1; b < e && b < bars + 64; b++) g.fillText(String(b + 1), X(b) + cw / 2, cy + ch / 2); }
-  if (song) svDrawMarks(g, song, X, W, H, ru, cur);
-  // track lanes: the scene slot per bar (launch bars stronger), – = stopped there
-  for (let r = 0; r < SV.rows.length; r++) {
+  if (song || SV.pv) svDrawMarks(g, song || {marks: []}, X, W, H, ru, cur);
+  // track lanes: the scene slot per bar (launch bars stronger), – = stopped there. V2e′: own clips with a white 1,5-px frame and
+  // a dot (song-delta 9.1); the cells of a part just placed unfold left to right from amber (N7-R6); ◧ = the glass tiles
+  const now = performance.now(), uf = SV.unfold; if (uf && now - uf.t0 > uf.dur) SV.unfold = null; else if (uf) UI.dirty.song = true;
+  if (song && UI.svGlass) svDrawGlass(g, song, X, b0, b1, bars, ru, rh, sb, now);
+  else for (let r = 0; r < SV.rows.length; r++) {
     const i = SV.rows[r], y = ru + r * rh, lane = song && song.lanes[i] ? song.lanes[i] : []; if (i < 0) continue;
-    let s = -1; for (const e of lane) { if (e.bar >= b0) break; s = e.slot; }
+    let s = -1, ow = null; for (const e of lane) { if (e.bar >= b0) break; s = e.slot; ow = e.own || null; }
     for (let b = b0; b < Math.min(b1, bars); b++) {
-      const ev = lane.find(e => e.bar === b); if (ev) s = ev.slot;
-      const x = X(b) + 2;
+      const ev = lane.find(e => e.bar === b); if (ev) { s = ev.slot; ow = ev.own || null; }
+      const x = X(b) + 2, k = SV.unfold ? svUnfoldK(b, now) : 1; if (k <= 0) continue;
       if (s >= 0) {
-        g.globalAlpha = ev ? .95 : .45; g.fillStyle = SV.cols[i]; g.fillRect(x, y + 3, cw - 3, rh - 6); g.globalAlpha = 1;
+        g.globalAlpha = (ev ? .95 : .45) * k; g.fillStyle = k < 1 ? svMix(SV.cols[i], k) : SV.cols[i]; g.fillRect(x, y + 3, cw - 3, rh - 6); g.globalAlpha = k;
         g.fillStyle = '#0b0c0f'; g.fillText(String(s + 1), x + (cw - 3) / 2, y + rh / 2);
-      } else { g.fillStyle = ev ? '#8b919c' : '#3c4049'; g.fillText('–', x + (cw - 3) / 2, y + rh / 2); }
+        if (ow) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.strokeRect(x - .25, y + 2.75, cw - 2.5, rh - 5.5); g.fillStyle = '#f2f4f8'; g.beginPath(); g.arc(x + cw - 8, y + 7.5, 2, 0, Math.PI * 2); g.fill(); }
+        g.globalAlpha = 1;
+      } else { g.globalAlpha = k; g.fillStyle = ev ? '#8b919c' : '#3c4049'; g.fillText('–', x + (cw - 3) / 2, y + rh / 2); g.globalAlpha = 1; }
     }
   }
+  if (!(song && UI.svGlass)) SV.tileGeo = null;
+  // V2e′: the future cells of a part being placed (dragging or the Ersetzen/Einfügen-Blatt), 30 % over the old content (P-3)
+  const pv = SV.pv;
+  if (pv && pv.cells) for (let r = 0; r < SV.rows.length; r++) {
+    const t = SV.rows[r], c = t >= 0 ? pv.cells[t] : null; if (!c) continue;
+    const y = ru + r * rh;
+    for (let j = 0; j < pv.len; j++) { const sl = c[j]; if (sl == null) continue; const x = X(pv.a + j) + 2; if (x > W || x + cw < 0) continue; g.globalAlpha = .3; g.fillStyle = sl >= 0 ? SV.cols[t] : '#0b0c0f'; g.fillRect(x, y + 3, cw - 3, rh - 6); }
+    g.globalAlpha = 1;
+  }
+  // V2e′: the lifted cell / the Durchlauf of the open Zell-Blatt: amber 7 % and a white 2-px frame
+  const sc = SV.cell, scr = sc ? SV.rows.indexOf(sc.t) : -1;
+  if (scr >= 0) { const y = ru + scr * rh, xa = X(sc.a) + 1, xb = X(sc.b) - 1; g.fillStyle = 'rgba(255,178,46,.07)'; g.fillRect(xa, y + 1, xb - xa, rh - 2); g.strokeStyle = '#f2f4f8'; g.lineWidth = 2; g.strokeRect(xa + 1, y + 2, xb - xa - 2, rh - 4); }
   // TRÄGER: chord chips at their beats (long-press = delete)
   SV.chips = [];
   if (song) {
@@ -22751,6 +23525,7 @@ function loadPreset(t, idOrName) {
   UI.ab = null;
   applySound(t, snd);
   UI.busHint = snd.bus ? {t, bus: snd.bus, name: snd.name} : null;
+  if (snd.engine === 'mk' && mkLoaded() && MKUI.P.i === t) { MKUI.P.wahl = 0; MKUI.P.shift = 0; }   // G-MK1-fix (MK1-34): a loaded program starts in SPIEL
   if (R.editor === 'synth' && t === R.selT) safeRebuild(buildSynthEd);
   if (R.editor === 'browser' && t === BR.t) brRefresh();
   return snd.name;
@@ -23050,6 +23825,7 @@ function subTabsFor(tab, eng) {
 function buildSynthEd() {
   const sh = EL.synthSheet, i = R.selT, tr = S.tracks[i];
   if (tr.kind !== 'synth') return;
+  if (R.editor !== 'synth') return;                       // G-MK1-fix: a late rebuild (timer, ResizeObserver, gesture end) never reopens a closed editor
   if (UI.modSrc && UI.modT !== i) exitModMode();          // mod mode belongs to one sound: a track switch ends it
   ED.refreshers = []; ED.graph = null; ED.xy = null; ED.env = null; ED.lfoPrev = null; ED.hdr = null;
   ED.ctls = []; ED.msrc = null; ED.mrows = null; ED.mbn = null;
@@ -23130,6 +23906,8 @@ function buildSynthEd() {
   onTap(mbn.querySelector('.mbf'), () => exitModMode());
   ED.mbn = {el: mbn, t1: mbn.querySelector('b'), t2: mbn.querySelector('small'), css: ''};
   if (ED.tab === 'fx' && GLOBAL_SUBS.has(ED.sub.fx)) globalBand(F);
+  // G-MK1-fix: the AM panel measures its page – on screen already, in the frame it opens into (one build per open)
+  if (mkE && ED.tab !== 'fx' && !sh.classList.contains('open')) { sh.classList.add('open'); setSheetOpen(true); }
   fillSynthTab(F.body, i);
   sh.classList.add('open');
   edHeadFit(sh, i, engSeg);
@@ -26554,7 +27332,7 @@ async function saveSound(t, name, mode) {
   libChanged();
   // the track's copy now points to the saved record (not „geändert“ any more)
   tr.sound.origin = saved.id; tr.sound.name = saved.name; UI.ab = null; UI.sndVer++; markDirty(); UI.dirty.strip = UI.dirty.grid = true;
-  if (R.editor === 'synth' && t === R.selT) { UI.dirty.edHead = true; if (ED.hdr) ED.hdr.key = null; }
+  if (R.editor === 'synth' && t === R.selT) { UI.dirty.edHead = true; if (ED.hdr) ED.hdr.key = null; if (tr.sound.engine === 'mk' && mkLoaded()) MKUI.progRefresh(); }   // G-MK1-fix: lit key + „b.11“ right after WRITE
   if (R.editor === 'drum' && ED.dhdr) { ED.dhdr.key = null; drumHeadRefresh(); }
   if (R.editor === 'browser') brRefresh();
   return deep(saved);
@@ -27830,6 +28608,7 @@ function openRoll(t, s) {
 const ROLLP = {grid: '1/16', fold: false, kb: false, view: 'roll'};   // editor preferences that survive closing (the tool does not)
 function buildRoll() {
   if (ED.rollAt && ED.rollAt.mel) return buildMelodyRoll();
+  if (ED.rollAt && ED.rollAt.own) return buildOwnRoll();             // V2e′: ROLLE on an own clip of the song
   const {t, s} = ED.rollAt, tr = S.tracks[t], sh = EL.rollSheet;
   // WP5: LAUF (§3.10) when chosen and the clip is one note per step; otherwise the piano roll
   if (ROLLP.view === 'lauf') { const chk = tr.kind === 'synth' ? laufCheck(tr.clips[s]) : {ok: false}; if (chk.ok) { LAUF.grid = chk.grid; return buildLauf(); } ROLLP.view = 'roll'; }
@@ -27878,6 +28657,7 @@ function rollKbApply() {
 }
 function rollHeadUpdate() {
   if (!ED.rollInfo || !ED.rollAt) return;
+  if (ED.rollAt.own) { const c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (!c) return; const txt = 'eigener Clip · ' + c.notes.length + (c.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + c.len + (c.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; } return; }
   if (ED.rollAt.mel) { const m = S.song && curMel(S.song); if (!m) return; const txt = m.notes.length + (m.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + m.len + (m.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; ED.rollInfo.title = txt + ' · wie gespielt (nie umgerechnet)'; } return; }
   const c = S.tracks[ED.rollAt.t].clips[ED.rollAt.s]; if (!c) return;
   if (ED.laufBtn) { const ok = laufCheck(c).ok; ED.laufBtn.classList.toggle('dis', !ok); ED.laufBtn.setAttribute('aria-disabled', String(!ok)); ED.laufBtn.title = ok ? 'LAUF: Schrittansicht für Basslauf und Sequenz' : LAUF_MSG; }
@@ -27934,6 +28714,11 @@ function closeRoll() {
 }
 // the playhead follows in clip coordinates while the clip plays (transform only)
 function rollFrame(bAud) {
+  if (ED.rollAt.own) {                                                   // V2e′: the playhead while this own clip plays
+    const t = ED.rollAt.t, c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (!c) { closeRoll(); return; }
+    const L = c.len * 4, b = R.playing && R.own[t] === ED.rollAt.own && bAud >= 0 ? ((((bAud - audCstart(t, bAud)) % L) + L) % L) : -1;
+    folRoll('roll', b); ED.roll.playhead(b); return;
+  }
   if (ED.rollAt.mel) {
     if (!S.song) { closeRoll(); return; }
     const sb = svSongBeat(bAud), L = curMel(S.song).len * 4, b = sb != null && sb >= 0 ? sb % Math.max(4, L) : -1;
@@ -28678,7 +29463,7 @@ function clearClip(t, s, viaUi) {
   if (!viaUi && R.editor === 'clip') closeClipSheet();
 }
 function clipChanged(t, s) {
-  KEYC.ver++; UI.dirty.grid = true;
+  KEYC.ver++; UI.dirty.grid = true; if (UI.svGlass) UI.dirty.song = true;      // V2e′: the glass tiles show the notes
   if (R.editor === 'drum' && isDrum(t) && ED.dTab === 'steps' && !(ED.step && ED.step.busy())) { try { paintSteps(); } catch (e) {} }
   if (ED.rollAt && ED.rollAt.t === t && ED.rollAt.s === s) {
     rollHeadUpdate(); if (ED.lauf && !ED.lauf.se.busy()) laufPaint();
@@ -28914,6 +29699,7 @@ function openMenu(goto) {
     'TASTATUR-ANSCHLAG (Menü → Bedienung): POSITION = oben auf der Taste leise, unten laut, jede Taste für sich; FEST = immer 0,8. Bei FEST tragen Anschlag-Regler und Anschlag-Modulationen einen grauen Hinweis – antippen schaltet POSITION ein.',
     'LAUF: Basslauf oder Sequenz Schritt für Schritt – Schritt antippen = an, hoch/runter ziehen = Ton in der Tonart.',
     'SONG: SONG ⇄ (Ecke oben links im Raster) zeigt den Song. Beim ersten ● SONG wird alles mitgeschnitten: Szenenwechsel, Clip-Stopps, Akkorde und deine Melodie; ▶ SONG spielt alles ab. Eine Zelle antippen = anderer Clip in diesem Takt, wischen = blättern. Während der Song läuft: Clip starten = Spur übernehmen, ↩ SONG gibt sie zurück. Unter MELODIE: Melodie bearbeiten, als Clip, Kette aus Szenen.',
+    'TEIL IN DEN SONG: Teil-Taste (oder den Teil-Chip im FANG-Blatt) halten, bis er sich hebt. Auf SONG ⇄ ziehen – oder einfach weiter halten: nach gut 1 s öffnet sich der Song von selbst. Dann an einen Taktstrich ziehen und loslassen; liegt dort schon etwas, fragt die App: ersetzen oder einfügen. Woanders loslassen = nichts passiert. Eine gelbe Marke halten und ziehen = verschieben; kurz über ⧉ (wo sonst CLIPS ⇄ steht) = Kopie. ▦│◧ bei den Song-Tasten: Kästchen oder Glas mit Noten. Eine Zelle im Song halten = eigener Clip nur für diese Stelle; antippen = bearbeiten.',
     'SONG-AUFNAHME (● bei vorhandenem Song): Das Start-Blatt fragt, was aufgenommen wird – CLIPS (Szenen- und Clip-Starts, Teil-Tasten setzen ihre Marke), AKKORDE, NOTEN auf der gewählten Spur (▾ wählt sie). Und wie: ab Takt n ÜBERSCHREIBEN (was du änderst, ersetzt; Noten: jeder Takt bis zum Ende neu, die alten sind stumm) oder EINFÜGEN (Neues kommt dazwischen, der Rest rückt nach hinten); in gelb gewählten Takten ERSETZEN oder OVERDUB (Neues kommt dazu). Ist genau ein Takt gewählt, gibt es alle vier. Noten auf einer Spur mit Clip werden ein eigener Clip an dieser Stelle – die Szenen bleiben, wie sie sind. ● beendet am letzten logischen Taktstrich (wie FANG TEIL: erst die Phrase, dann ob der neue Takt weniger als halb gespielt war). Halten auf ● öffnet das Blatt jederzeit. Ein Rückgängig nimmt die ganze Aufnahme zurück.',
     'TAKTLEISTE IM SONG: Tipp auf eine Taktnummer wählt den Takt (gelb) und setzt die Positionsmarke ▼ – nichts springt. Zweite Nummer = Bereich, Tipp in die Auswahl hebt sie auf. ▶ (oben oder ▶ SONG) startet an der Marke, sonst dort, wo du gestoppt hast; ⏮ = Takt 1.',
     'TEIL-MARKEN IM SONG: Wo ein Teil liegt, steht sein Name gelb in der Taktleiste statt der Taktnummern (STROPHE′ = an dieser Stelle geändert). Antippen = Marken-Blatt: ▶ Ab hier, ×2/×4, ◀ ▶ tauschen, ⧉ Kopie (dann den Taktstrich antippen), ⇄ Ersetzen durch, ✕ Löschen (der Rest rückt), Nur Name weg, Name, Farbe, Teil-Vorlage, Auf alle übertragen, ● Neu aufnehmen. Nochmal antippen = einzelne Takte darin wählen. Hinter dem Song-Ende eine Nummer antippen = Teil dort einsetzen (die Takte davor bleiben leer).',
@@ -34127,7 +34913,7 @@ const SYNQUENZER = {
   quantizeChords: o => quantizeChords(o), openChordPick: o => openChordPick(o || {}), openRecStart: () => openRecStart(SV.btn && SV.btn.bRec),
   carrierRestoreState: () => (SONGCAR.saved ? deep(SONGCAR.saved) : null),
   // V2e (song-delta 12.2): the song view's geometry; the Marken-Blatt / Teil einsetzen as UI entries for tests
-  svLayoutInfo: () => svLayoutInfo(), openMarkSheet: id => openMarkSheet(id), placeAt: (ref, bar) => placeAt(ref, bar), markChordAll: (id, rb, tg, exact) => markChordAll(id, rb, tg, exact !== false),
+  svLayoutInfo: () => svLayoutInfo(), songViewMode: m => songViewMode(m), openMarkSheet: id => openMarkSheet(id), placeAt: (ref, bar) => placeAt(ref, bar), markChordAll: (id, rb, tg, exact) => markChordAll(id, rb, tg, exact !== false),
   songView: on => setSongView(on !== false), songCarrierDelete: k => songCarrierDelete(k), clearMelody: () => songClearMelody(),
   songFromChain: chain => songFromChain(chain), songDelete: () => songDelete(),
   // V2d (song-delta 12.2): Song-Gedächtnis, FANG TEIL, Zeitleiste und Marken (Daten)
@@ -34263,7 +35049,7 @@ const SYNQUENZER = {
   stopTrackNow: t => { ensureAudio(); stopTrackNow(t); }, capture: () => capture(),
   quantizeClip: (t, s, o) => !!quantizeClip(t, s, o || {}), copyClip: (t, s) => copyClip(t, s), pasteClip: (t, s) => pasteClip(t, s), duplicateClip: (t, s) => duplicateClip(t, s),
   openRoll: (t, s) => openRoll(t, s), closeRoll: () => closeRoll(),
-  roll: () => (ED.roll && ED.rollAt ? Object.assign({t: ED.rollAt.t, s: ED.rollAt.s}, (({tool, grid, step, fold, sel, loop}) => ({tool, grid, step, fold, sel, loop}))(ED.roll.state)) : null),
+  roll: () => (ED.roll && ED.rollAt ? Object.assign({t: ED.rollAt.t, s: ED.rollAt.s, own: ED.rollAt.own || null}, (({tool, grid, step, fold, sel, loop}) => ({tool, grid, step, fold, sel, loop}))(ED.roll.state)) : null),
   rollApi: () => ED.roll,                        // test hook: the editor instance (gesture coordinates _xy, _ruler, _barNum, …)
   openQuant: (t, s) => openQuantSheet(t, s), closeQuant: apply => closeQuantSheet(!!apply),
   detectKey: notes => { const k = KeyDetect.detectKey(notes || [], {fallback: S.key}); return {root: k.root, scale: k.scale}; },
@@ -34462,7 +35248,7 @@ function init() {
   window.addEventListener('resize', () => { UI.kbRelayout = true; UI.dirty.carrier = true; MLIVE.lay++; if (UI.modSrc) requestAnimationFrame(modBannerPlace); if (UI.pop && !(document.activeElement && UI.pop.el.contains(document.activeElement) && document.activeElement.tagName === 'INPUT')) closePop(); });
   window.addEventListener('orientationchange', () => { UI.kbRelayout = true; UI.dirty.carrier = true; });
   // a web font that arrives late changes every text width: refit the readout and re-measure the mode labels (§3.6)
-  try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { UI.dirty.carrier = true; UI.kbRelayout = true; }); if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { UI.dirty.carrier = true; UI.kbRelayout = true; }); } catch (e) {}
+  try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { UI.dirty.carrier = true; UI.kbRelayout = true; }); if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { UI.dirty.carrier = true; UI.kbRelayout = true; SV.fontGen = (SV.fontGen | 0) + 1; try { svButtons(); } catch (e) {} }); } catch (e) {}
   if (window.ResizeObserver) new ResizeObserver(() => { UI.kbRelayout = true; }).observe(EL.kb);
   if (window.ResizeObserver) try { new ResizeObserver(() => { mxLayout(); cellFit(); }).observe(EL.grid); } catch (e) {}
   on(window, 'resize', () => { mxLayout(); });

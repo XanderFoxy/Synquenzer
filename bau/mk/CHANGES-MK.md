@@ -414,3 +414,55 @@ Referenz-Skizze in einem `MK1-fix`.
 2. Hochkant auf deinem 12 Pro Max: Engine-Wahl zeigt beim Öffnen immer die vier Knöpfe VA │ FM │ WT │ MS 2000 (kein Chip mehr).
 3. MS 2000: OSZ 2 auf Sync oder Ring+Sync, hohe Töne (C5–C6) mit Halbton-Fahrt: kein „Kratzen“ mehr zwischen den Tönen.
 4. Menü → Info → Leistungs-Probe: `frames_ok` und `quantum_max_ms` haben jetzt echte Werte – Ergebnis bitte schicken.
+
+## G-MK1-gruppe-fix — MS-2000-Editor schließt wieder, Weg zurück zu SPIEL · App bleibt 4.9.0 · Format bleibt 5
+
+### Behoben (2 bestätigte Befunde der Gruppen-QA G-MK1)
+1. **critical – ✕ schloss den Editor einer MS-2000-Spur nicht.** `closeSheets()` nahm `open` weg, die Bedienfeld-Seite maß
+   0 × 0, und der ResizeObserver des Bedienfelds sowie der Halb/Voll-Abgleich (`setTimeout`) riefen `buildSynthEd` auf, das
+   `open` wieder setzte, obwohl `R.editor` schon `null` war. Das Blatt blieb stehen; Tipps auf ▶1–▶4 trafen FM, MS 2000, ↶, ↷
+   (im 3-Minuten-Lauf: ▶4 → „Wiederholt: Init“). Derselbe Kreis baute das Bedienfeld beim Öffnen 9-mal und beim Schließen
+   10-mal (51-ms-longtask beim Öffnen während der Wiedergabe). Nicht erst seit MK1-fix: `MK1.html` hat denselben Fehler, nur
+   ohne Kopf-Taste „MS 2000“.
+   - `buildSynthEd` baut nur bei offenem Synth-Editor (`R.editor === 'synth'`): kein späterer Neubau (Timer, Observer,
+     Gesten-Ende) öffnet ein geschlossenes Blatt wieder – das galt auch für den Sound-Browser über einem MS-2000-Editor.
+   - Bedienfeld (`MKUI.build`): späte Neubauten nur, solange genau dieses Bedienfeld zu sehen ist (`panelLive`); eine
+     verborgene Seite (0 × 0) entscheidet nichts; Größenänderungen werden gesammelt und 90 ms nach der letzten einmal
+     umgebaut, nur wenn die Seite wirklich eine andere Größe hat.
+   - Ein Bau je Öffnen: Für das AM-Bedienfeld ist das Blatt beim Bau schon sichtbar, und gemessen wird die Größe am Ende der
+     Öffnungs-Animation des App-Rasters (`grid-template-rows` .15 s: Animation auf ihr Ende gesetzt, gemessen, zurückgesetzt –
+     nichts wird dazwischen gezeichnet; die Animation läuft unverändert).
+2. **major – kein Weg zurück zu SPIEL ohne eigenes Seite-B-Programm.** Am Gerät führt die leuchtende Nummerntaste zurück; ein
+   noch nicht gesicherter Sound (INIT nach dem Engine-Wechsel, 🎲, ⋯ Init, VA/Demo-Grundlage) hat keine.
+   - Tipp auf eine **leere Nummerntaste** oder auf die **Anzeige** = zurück zu SPIEL, der Sound bleibt (kein Undo-Schritt);
+     in SPIEL zeigt die leere Taste wie bisher nur den Hinweis „Platz leer“. Aussehen unverändert.
+   - Eine **andere Spur** (anderer Sound) beginnt in SPIEL; Schließen und Wieder-Öffnen derselben Spur behält die Sektion.
+   - **Laden eines Programms** (Bibliothek, ‹ ›, `loadPreset`, auch derselbe Name) → SPIEL, beide LEDs (MK1-34).
+   - **Nach WRITE** sofort Programmnummer „b.11“ in der Anzeige, die Taste leuchtet, ORIGINAL-Bezug = geschriebener Stand.
+
+### Proben (Chromium 1243, echte Schrift Barlow Semi Condensed aus `dirigent-wt/fonts`, CDP-Touch)
+- `v3-fixgmk1-verify.mjs` P **13/13**, L **13/13** (VA/FM/WT ✕ wie vorher; MS 2000: ✕, zweites ✕, `closeEditor()`,
+  Wieder-Öffnen-✕ schließen; 150 ms und 2 s danach ▶1–▶4 frei; Tipp ▶4 startet Szene 4 ohne Undo/Redo; 1 Bau beim Öffnen
+  während der Wiedergabe, keine longtask; Bau für die Endgröße; Browser hält das Blatt zu; Drehen 1 Neubau). Gleiches
+  Skript auf dem Stand davor: D1c–D1g rot.
+- `v3-fixgmk1-spiel.mjs` P **11/11**, L **11/11** (vorher 3/11); `v3-fixgmk1-half.mjs` **5/5** (375 × 667, 320 × 568,
+  667 × 375, 844 × 390, 390 × 844: je 1 Bau); `v3-fixgmk1-anim.mjs` Öffnungs-Animation läuft wie vorher.
+- QA-Repros: `v3-qa-gmk1-close.mjs` P/L **1/1** (vorher 0/1), `v3-qa-gmk1-hitthru.mjs mk` alle „scene“, `v3-qa-gmk1-builds2.mjs`
+  1 Bau beim Öffnen / 0 beim Schließen (vorher 9 / 10), `v3-qa-gmk1-spiel.mjs` **3/3** (vorher 0/3; P2/P3 mit behoben),
+  `v3-qa-gmk1-long3.mjs` keine longtask (vorher 51 ms), `v3-qa-gmk1-long2.mjs` Takt 46: ▶4 ohne „Wiederholt“.
+- Regression: `v3-mk1-look.mjs` 88/88, `v3-mk1fix-hdr.mjs` 48/48, `v3-mk1fix-rot-eco.mjs` 15/15, `v3-mk1-ui.mjs` 33/33,
+  `v3-mk1-format.mjs` alles, `v3-mk1-eco.mjs` 6/6, `v3-mk1-perf.mjs` 6/7 (rot wie bisher nur das Budget, +147 KB),
+  `v3-qa-gmk1-flow.mjs` 20/20, Smoke ohne Fehler.
+
+### Abweichungen / offen
+- M-KLICK in `long2`/`long3` bleibt rot wie vor diesem Fix (auch im Lauf `base` ohne Bearbeitung) – Detektor gegen
+  AM-Klang, nicht Teil dieses Pakets.
+- `v3-qa-gmk1-undo.mjs`: U1/U3/S1 rot wie vorher. U4 jetzt rot nur beim Schritt „Synth 3 → MS 2000 → WT“ (2 Undo-Schritte für
+  zwei Engine-Wechsel – richtig). Vorher stand dort 1, weil der Schritt davor („SPIEL TEMPO“, Tipp auf leere Taste 8) die
+  EDIT-WAHL-Liste offen ließ und den ersten Tipp verschluckte; jetzt führt die leere Taste zurück zu SPIEL.
+- Kein Datenbank-Bedarf.
+
+### iPhone-Prüfpunkt (Xander, ≈ 1 min)
+1. Synth 1 → „MS 2000“ → ✕: der Editor geht zu, ▶1–▶4 reagieren normal.
+2. EDIT-WAHL 1 auf FILTER, dann auf die Anzeige oder eine leere Nummerntaste tippen: die Regler sind wieder CUTOFF · RESONANZ ·
+   ATTACK · RELEASE · TEMPO, dein Sound bleibt.

@@ -1,0 +1,24 @@
+import {chromium} from 'playwright';
+const EXE = '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome';
+const file = process.argv[2];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const br = await chromium.launch({executablePath: EXE, args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await br.newContext({viewport: {width: 428, height: 926}, hasTouch: true, isMobile: true, deviceScaleFactor: 1});
+const p = await ctx.newPage();
+await p.goto('file://' + file);
+await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version, null, {timeout: 20000});
+await sleep(800);
+const E = (f, a) => p.evaluate(f, a);
+const scn = await E(() => [...document.querySelectorAll('button.scn')].filter(b => b.getClientRects().length).slice(0, 4).map(b => { const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+const eng = () => E(() => { const pr = SYNQUENZER.project(); const P = pr.project || pr; const t = P.tracks[0]; return JSON.stringify({eng: t.eng || t.engine || (t.synth && t.synth.eng) || (t.sound && t.sound.eng), keys: Object.keys(t).join(',')}); });
+const btn = re => E(([src]) => { const rx = new RegExp(src); const e = [...document.querySelectorAll('button')].filter(b => b.getClientRects().length && rx.test(b.textContent.trim()))[0]; const r = e.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; }, [re.source]);
+await E(() => { SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await sleep(600);
+let b = await btn(/^MS ?2000$/); await p.touchscreen.tap(b.x, b.y); await sleep(800);
+console.log('after MS2000 key', await eng(), 'undo top', JSON.stringify(await E(() => { const u = SYNQUENZER.undoInfo(); return u.top && u.top.label; })));
+b = await btn(/^✕$/); await p.touchscreen.tap(b.x, b.y); await sleep(1000);
+console.log('editor after ✕', await E(() => !!SYNQUENZER.runtime().editor), 'scene before', await E(() => JSON.stringify(SYNQUENZER.runtime().scene ?? SYNQUENZER.runtime().curScene)));
+// user taps where scene key ▶1 is
+await p.touchscreen.tap(scn[0][0], scn[0][1]); await sleep(800);
+console.log('after tap on ▶1 spot:', await eng(), 'sheet', await E(() => document.getElementById('synthSheet').className), 'toast', await E(() => { const t = document.getElementById('toast'); return t && t.textContent.trim(); }));
+await p.screenshot({path: '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/dirigent-test/v3-verify-mkclose-tap1.png'});
+await br.close();

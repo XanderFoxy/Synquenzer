@@ -1,0 +1,17 @@
+import {chromium} from 'playwright';
+const EXE = '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome';
+const file = process.argv[2];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const br = await chromium.launch({executablePath: EXE, args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await br.newContext({viewport: {width: 428, height: 926}, hasTouch: true, isMobile: true, deviceScaleFactor: 1});
+const p = await ctx.newPage();
+await p.goto('file://' + file);
+await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version, null, {timeout: 20000});
+await sleep(800);
+const E = (f, a) => p.evaluate(f, a);
+await E(() => { SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await sleep(800);
+await E(() => { const sh = document.getElementById('synthSheet'); window.__tr = []; const orig = DOMTokenList.prototype.add; DOMTokenList.prototype.add = function (...a) { if (a.includes('open') && this === sh.classList) window.__tr.push(new Error().stack.split('\n').slice(2, 9).map(s => s.trim().replace(/\(file:.*?:(\d+):\d+\)/, ':$1')).join(' < ')); return orig.apply(this, a); }; const oset = Object.getOwnPropertyDescriptor(Element.prototype, 'className').set; Object.defineProperty(sh, 'className', {set(v) { if (/open/.test(v)) window.__tr.push('className=' + v + ' ' + new Error().stack.split('\n').slice(2, 6).map(s => s.trim()).join(' < ')); oset.call(this, v); }, get() { return this.getAttribute('class'); }}); });
+await E(() => SYNQUENZER.closeEditor()); await sleep(800);
+const tr = await E(() => window.__tr);
+console.log('re-open count', tr.length); console.log(tr.slice(0, 3).join('\n\n'));
+await br.close();
