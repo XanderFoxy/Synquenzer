@@ -1,0 +1,26 @@
+// QA V2d′ own clips survive a real save → page reload → load (IndexedDB/localStorage autosave path) and still play as `own`;
+// export JSON → importJSON deep-equal; song MIDI export contains the own-clip note at its place
+import { openT, waitSong, note, mk, SETUP, playLog } from './v3-qa2d2-lib.mjs';
+const {check, done} = mk();
+const {b, p, errs} = await openT({width: 390, height: 844}, false);
+await p.evaluate(SETUP(true));
+await p.evaluate(() => ensureAudio()); await p.waitForTimeout(300);
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.selectTrack(1); return Q.songRecRange(3, 3, 'replace', {clips: false, chords: false, notes: true}, {preroll: 1}); });
+await waitSong(p, 13); await note(p, 84, 150);
+await waitSong(p, 16.6);
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.songPlay(false); Q.stop(); }); await p.waitForTimeout(300);
+const s1 = await p.evaluate(() => JSON.stringify({own: window.SYNQUENZER.song().own, lanes: window.SYNQUENZER.song().lanes}));
+check('own clip made by the take', Object.keys(JSON.parse(s1).own).length === 1, s1.slice(0, 300));
+const ref = (await playLog(p, 19.9, 1)).map(n => [+n.beat.toFixed(2), n.src, n.out]);
+await p.evaluate(() => window.SYNQUENZER.save()); await p.waitForTimeout(800);
+await p.reload(); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.runtime, null, {timeout: 20000}); await p.waitForTimeout(1500);
+const s2 = await p.evaluate(() => { const s = window.SYNQUENZER.song(); return s ? JSON.stringify({own: s.own, lanes: s.lanes}) : null; });
+check('after reload: song.own + lanes identical', s2 === s1, {s2: s2 && s2.slice(0, 300)});
+await p.evaluate(() => ensureAudio()); await p.waitForTimeout(300);
+const got = (await playLog(p, 19.9, 1)).map(n => [+n.beat.toFixed(2), n.src, n.out]);
+check('after reload: playback of Synth 2 identical (src own, pitches, beats ±0.02)', ref.length === got.length && ref.every((x, k) => Math.abs(x[0] - got[k][0]) < .02 && x[1] === got[k][1] && x[2] === got[k][2]), {ref, got});
+const ex = await p.evaluate(() => { const Q = window.SYNQUENZER; const j = Q.serialize ? Q.serialize() : JSON.stringify(Q.project()); const a = JSON.stringify(Q.song().own); Q.importJSON(j); return {a, b: JSON.stringify(Q.song().own)}; });
+check('export → importJSON keeps song.own', ex.a === ex.b && ex.a !== '{}', ex);
+check('0 console errors', !errs.length, errs);
+await b.close();
+process.exit(done() ? 1 : 0);

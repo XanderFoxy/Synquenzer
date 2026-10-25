@@ -3476,3 +3476,145 @@ Xanders Abnahme (Nachtrag 2, „7 verschiedene Töne bleiben 7, dieselbe Kontur�
   Fremdschlüssel des erfundenen Kontos), 4 005 004 → `bad_version`.
 
 **Für Xander im Dashboard:** nichts mehr offen für 4.5.3.
+
+## V2d′ — Aufnahme ab Takt n / im Bereich mit Modi, NOTEN-Ziel, eigene Clips (Daten, Wiedergabe), Ende nach N7-R1 · App 4.6.0
+
+Grundlage: Nachtrag 2 B.1 Nr. 8, 12, 13, B.4 (V2d′), K2-21, K2-27, B.6 (N2-2d′-01), Teil J (FP-SONG ●, FP-TOUCH); `r7/song-delta.md`
+4.2 (N7-R1), 7.1–7.4 (N7-R8), 9.2 (N7-R9), 12.1–12.3, 13 (N7S-27 … N7S-32), 14.3 (V2d′-01 … -04 → N7S-27 … -31); Spec v3 §4.8, §17 V2d′
+(V2d′-05 … -07 sinngemäß). Gebaut nach V2c′-fix (Reihenfolge G-P2, Nachtrag zur Reihenfolge 24.10.).
+
+**Was neu ist**
+1. **Start-Blatt mit Modi (K2-27, Mockup P-8).** ● bei vorhandenem Song (oder Halten auf ●) öffnet das Blatt: Kopf „AUFNAHME AB TAKT n“ /
+   „TAKT n“ / „TAKTE a–b“, Ziele **[CLIPS] [AKKORDE] [NOTEN · Synth 2]** (NOTEN = die gewählte Spur, darunter klein ihr Name; **[▾]**
+   daneben zeigt die Synth-Spuren zur Wahl und wählt die Spur auch für die Tastatur). Modi: nur Positionsmarke → **[Überschreiben │
+   Einfügen] ab Takt n**; **ein** gelber Takt → alle vier, 2 × 2: [Überschreiben · ab Takt n] [Einfügen · ab Takt n] [Ersetzen · nur Takt n]
+   [Overdub · nur Takt n]; ab 2 Takten → **[Ersetzen │ Overdub]**; liegt hinter der Startstelle nichts → keine Modus-Zeile. Eine Zeile sagt,
+   was passiert („Was du änderst, ersetzt ab Takt 4 … Noten S2: jeder Takt neu bis zum Ende, die alten sind stumm. Noten → eigener Clip.
+   Szenen bleiben unberührt.“; in P3 und bei 4 Modi in P2 nur die Kurzzeile rechts neben dem Vorlauf), Vorlauf, [● START].
+2. **Die vier Modi (7.2):**
+   - **Überschreiben ab n** (offenes Ende): CLIPS/AKKORDE wie V0c (nur was du änderst; danach spielt der alte Song weiter).
+     **NOTEN nach K2-21:** auf der Ziel-Spur wird **jeder Takt n … E−1 ersetzt, auch leer gelassene**; ab n ist sie während der Aufnahme stumm.
+   - **Einfügen ab n:** ab Takt n hält die Aufnahme den Song an – der Zustand von Takt n−1 läuft weiter (Clips in Phase, letzter Akkord),
+     keine Schleife, kein Song-Ende; was du spielst, kommt in den neuen Abschnitt [n, E); am Ende EINFÜGEN um E − n (N7-R5: Marken
+     geteilt, Fortsetzung phasengleich) – der alte Takt n ist danach Takt E und ab dem nächsten Taktstrich zu hören.
+   - **Ersetzen im Bereich:** CLIPS/AKKORDE wie bisher „Nur Takt n“; NOTEN: alle alten Noten der Spur im Bereich weg (während der Aufnahme
+     stumm), neue rein. Aussteigen am Bereichsende von selbst (7.3).
+   - **Overdub im Bereich:** Noten kommen dazu (alt + neu hörbar); CLIPS/AKKORDE wie Ersetzen.
+   - **SCHLEIFE Bereich** (7.3): jeder Durchgang gehört zur Aufnahme; stumm nur im ersten Durchgang, danach gewinnt je Takt der jüngste
+     Durchgang (Ersetzen/Überschreiben), Overdub sammelt. **Eine Aufnahme = ein Undo `song`**, auch über Durchgänge.
+3. **NOTEN-Ziel und eigene Clips (N7-R9, 9.2; EN7-04).** Gespielte Noten der gewählten Spur landen
+   - auf der **MELODIE-Spur des Songs** (`song.melodyTrack`) in `song.mel` (wie gehört, wie V2b),
+   - in Takten, in denen die Spur einen **Szenen-Clip** spielt, in einem **eigenen Clip je berührtem Durchlauf** (`song.own[id]`, Kopie
+     des Clips bzw. des schon eigenen Clips, Lane-Eintrag `{bar, slot, own, ph}`, danach läuft der Verweis phasengleich weiter); die
+     Tonhöhe wird so gespeichert, dass sie unter dem Träger so klingt wie gespielt (`clipNoteFor`),
+   - sonst (Spur ohne Clip dort) in `song.mel` dieser Spur.
+   `S.tracks[].clips` bleiben immer deep-equal. Ein eigener Clip wird nur angelegt, wenn dort wirklich etwas wegfällt oder dazukommt.
+4. **Wiedergabe eigener Clips:** `R.own[t]`; `scheduleTrack`/`scheduleDrums` spielen `song.own[id]` statt des Szenen-Clips (nur solange
+   dessen Slot läuft), `noteLog`-Quelle **`own`**; Song-Start, Sprung, Schleife, ↩ SONG, Resync, `laneSwitch` (gleicher eigener Clip in
+   gleicher Phase = kein Schnitt), Song-MIDI und Song-Gedächtnis (`memory().bars[].own`) kennen sie. Laden normalisiert eigene Clips wie
+   Clips (`ownNorm`), Lanes ohne vorhandenen eigenen Clip verlieren den Verweis.
+5. **Ende nach N7-R1 für jede Song-Aufnahme (7.4):** ● (per Finger zählt das **Aufsetzen**, nicht das Anheben) und ■ beenden offene
+   Aufnahmen am letzten logischen Taktstrich mit S = Aufnahmestart – erst die Struktur (Periode bzw. 1/2/4/8/16 Takte), bei Gleichstand
+   die Zeit (< 50 % → voriger Taktstrich). Das ersetzt das ¼-Schlag-Fenster, auch bei der **ersten** Aufnahme eines leeren Songs.
+   Gemeinsamer Kern `n7r1()` mit FANG TEIL (Ergebnis von `fangCompute` unverändert).
+6. **Teil-Tasten während einer Aufnahme mit CLIPS (7.2)** schreiben ihre Lanes ab dem nächsten Taktstrich (als Clip-Starts) und setzen je
+   Teil-Durchlauf eine **Teil-Marke** (auch bei Einfügen).
+7. **Akkorde in der Aufnahme** zählen wie bei FANG am gehörten Druckzeitpunkt (Ausgangslatenz abgezogen) und rasten bis ⅜ Schlag/160 ms
+   nach dem Taktstrich auf ihn (V2d-fix-Regel); vorher landete ein auf den Taktstrich gespielter Akkord bei 240 BPM erst bei Schlag 12,28.
+8. **Banner/●:** „● Takt 4 · Einfügen · AKK + NOTEN S2 · Szenen bleiben“ (schmal „● T4 · Einfügen · AKK + NOTEN S2“); ● zeigt „● AKK+S2“ /
+   „● MEL“; in der Clip-Ansicht (Kopfzeile, K2-63) „● SONG · Einfügen T4“. Die beschriebene Zeile ist rot gesäumt – bei NOTEN die Zeile
+   der Ziel-Spur. Hilfe-Text SONG-AUFNAHME neu.
+9. **Test-API:** `songRecFrom({from, to, mode, targets:{clips, chords, notes|mel}, track, preroll})`, `songRecRange(a, b, mode, targets,
+   {track, preroll})`, `songRecEnd({beat, tapAt})`, `ownClip(t, bar)`, `makeOwn(t, bar, whole)` ([Ganzer Block]: ein eigener Clip je ≤ 16
+   Takte), `dropOwn(t, bar)` ([Zurück zum Szenen-Clip], deep-equal), `recModes(from, to, one)`; `runtime().song` + `recMode`, `recTrack`,
+   `mute`, `own`, `lastEnd` (`{endBar, rule, f, period}`).
+
+**Abnahme** (`dirigent-test/`, Chromium 1243 + CDP-Touch, 240 BPM; Skripte `v3-v2d2-rec.mjs` 65/65, `v3-v2d2-ui.mjs` 63/63 in P1, P2, P3,
+L1, L2, `v3-v2d2-audio.mjs` 6/6; Helfer `v3-v2d2-lib.mjs` = Song aus 5.5, Fläche mit einer Note je Takt, damit jeder Takt hörbar ist)
+
+| ID | Ergebnis | Messung |
+|---|---|---|
+| N7S-27 | ✓ ab T3 Überschreiben, CLIPS: Sz4 auf der Fläche ab T3, ● bei T5 + 20 % → Ende Taktstrich 5 (`struktur`); Lane 1 = `[{2,3},{4,1,ph:4}]`, alle anderen Lanes/Träger/Melodie deep-equal, Szenen-Clips deep-equal; hörbar 67 in T3–4, ab T5 der alte Pad in Phase (62 bei 16, 64 bei 20); ein Undo → deep-equal | rec |
+| N7S-28 | ✓ ab T3 Einfügen, Dm in T4, ● bei T7 + 30 % → 4 Takte (7 → 11); Lanes, Träger (+16), Melodie (+16), Marken (+4) verschoben; Dm bei Schlag 12; hörbar: neue T7–11 = alte T3–7 (30 Noten, Spur/Schlag ±0,01/Note/Tonhöhe gleich); ein Undo | rec |
+| N7S-29 | ✓ Bereich T3–6 Ersetzen, NOTEN Synth 2: Stummschaltung 7,75–23,75, während der Aufnahme keine alte Note, T7 wieder da; eigener Clip `o1` (Durchlauf T4–7, Bar 3) mit nur den neuen Noten + T7 alt; `S.tracks[1].clips` deep-equal; Wiedergabe 72 bei 12,5 und 74 bei 20,5 (`own`, wie gespielt – unter F gespeichert als 75); ein Undo | rec, audio |
+| N7S-30 | ✓ Overdub: keine Stummschaltung, alte 60/62/64 + neue 72/74 klingen; Szenen-Clip deep-equal | rec, audio |
+| N7S-31 | ✓ NOTEN auf MELODIE, ab T3 Überschreiben, nur T4 gespielt, Ende Taktstrich 5: `songMelNotes(5)` = 2, 13, 24 (7,8 und 10 in T3 weg, auch der leere Takt, K2-21) | rec |
+| N7S-32 | ✓ `makeOwn(0, T5)` → nur T5 (1-Takt-Durchlauf); Szenen-Clip auf 47 geändert → eigener bleibt 45; Wiedergabe T5 `own` 45, T3/T4/T6 `clip` 47; Song-MIDI (ohne Träger) 2 × 45, 6 × 47; Speichern/Laden verlustfrei; `dropOwn` → Lanes und `own` deep-equal; [Ganzer Block] T8–11 → ein 4-Takt-Clip | rec |
+| N2-2d′-01 | ✓ Song nach „Einfügen“, ab T4 Überschreiben, NOTEN Synth 2, nur T4 gespielt, ● bei T6 + 9 % → Ende Taktstrich 6; in T5 keine Note von Synth 2, T4 nur die neue (76), ab T6 der alte Inhalt (65); Clips deep-equal; ein Undo | rec |
+| K2-27 | ✓ Modi: 1 Takt alle vier, Bereich Ersetzen/Overdub, ohne Auswahl Überschreiben/Einfügen, am Ende keine; [Nur Takt 4: Ersetzen] → nur T4 neu (77), T5 alt (Clip-Note 64), Aufnahme stanzt aus | rec, ui |
+| 7.4 / N7-R1 | ✓ erste Aufnahme Am F C + 20 % → 4 Takte (`struktur`), Am F C G + 30 % → 4, gleiche Takte + 30 % → 2 / + 70 % → 3 (`zeit`); per Finger auf ● bei T6 + 10 % → Taktstrich 6 (P1–P3, L1, L2) | rec, ui |
+| 7.2 Teil-Taste | ✓ STROPHE während der Aufnahme → Marke T3–6 (P1), Bass-Lane Sz1 ab T3, ein Undo | rec |
+| 7.3 Schleife | ✓ Bereich T3–4 als Schleife, Ersetzen: stumm nur im 1. Durchgang, im 2. klingt die Note des 1. (`melody` 70); Ergebnis T3 = 70 (Melodie-Weg, dort spielt Synth 2 keinen Clip), T4 = 71 im eigenen Clip, alte T4-Note weg; ein Undo über alle Durchgänge | rec |
+| Einfügen + NOTEN/CLIPS | ✓ ab T5, Note in T5, Synth 4 ab T6, Ende T7 + 5 % → 2 Takte; während der Aufnahme läuft T4 weiter (Bass 45, kein Spurwechsel); 79 im eigenen Clip des Synth-2-Durchlaufs, alter T5 jetzt T7 | rec |
+| hörbar (Audio-Mitschnitt am Master) | ✓ Ersetzen T2–3: −120 dB statt −23 dB (≥ 30 dB), T1/T4 ±0 dB; Overdub ±0 dB; Überschreiben ab T2 stumm bis zum Ende; M-KLICK (2. Differenz) 0,132/0,117 ≤ 1,5 × 0,134 | audio |
+| Start-Blatt M-PLATZ | ✓ P1–P3, L1, L2 je Positionsmarke / 1 Takt / Bereich / Spurwahl: im Bild, nichts abgeschnitten, Treffer ≥ 44 × 44 (P) bzw. ≥ 40 × 36 (L), kein waagrechtes Rollen; Banner passt und verschiebt nichts (±2 px) | ui |
+
+**Regression** (`v3-v2d2-reg.sh` → `dirigent-test/v3-v2d2-reg/`): `v3-v2d-fang` 39/39, `-extra` 8/8, `-audio` 2/2, `-reg` 9/9 (noteLog/MIDI
+gleich V2c-fix), `-lay` 25/25; `v3-qa-reg-song`, `-loop`, `-midi2`, `-part`, `-part2`, `-part3`, `-fang2`, `-ui`, `-lay`, `-perf` gleich;
+`v3-qa-reg-core` gegen V2c′-fix nur Zeit-Streuung live gespielter Noten (≤ 0,08 Schlag, wie zwischen zwei Läufen derselben Datei);
+`v3-qa-reg-song` ein Akkord 18,56 statt 18,52 (gleiche Streuung); `v3-v2c2-click` 3/3, `v3-qa-grp-undo` 11/11; rot nur erwartbar:
+`v3-v2c2-onescale` V2c′-06 (erwartet Version 4.5.3) und `v3-vs2-reg` „Projekt gleich V2d-fix“ (Demo-Projekt ist zu V2c′-fix gleich –
+`v3-v2d2-projeq.mjs` SAME, der Unterschied kommt aus V2c′). Smoke ohne Fehler (`v3-v2d2-smoke.png`).
+
+**Fach-Prüfung (Teil J: FP-SONG ● Haupt-, FP-TOUCH Zweit-Blick)** – zweiter Durchgang über Diff, Testausgaben und Bilder auf mich selbst
+angewandt (kein getrennter Agent verfügbar). **8 Befunde, alle behoben:**
+1. FP-SONG: Akkorde in einer Aufnahme zählten am Commit-Zeitpunkt (Sammelzeit + Ausgangslatenz) – ein auf den Taktstrich gespielter Akkord
+   landete bei 12,28 statt 12 → Druckzeit und späte Rast wie bei FANG (V2d-fix).
+2. FP-SONG: Nach Einfügen liefen die Spuren bis zum nächsten eigenen Lane-Ereignis mit dem Zustand von n−1 weiter → ab dem nächsten
+   Taktstrich folgen alle Spuren, Träger und Teil-Transposition dem Song (`songResync(true)`), aufgenommene Spuren werden zurückgegeben.
+3. FP-SONG: Mit der Stummschaltung ausgelassene, schon geplante Noten hinter dem Ende fehlten bis zu 0,3 s → werden am Ende neu geplant.
+4. FP-SONG: Einfügen an/hinter dem Song-Ende (API) hätte angehängt → wird Überschreiben.
+5. FP-SONG: `songResync` kannte keine eigenen Clips (spielte den Szenen-Clip) → `laneClipOk` + `own` überall (Start, Sprung, Schleife, ↩ SONG).
+6. FP-TOUCH: [▾] 32 px breit, ✕ und Vorlauf 40 px hoch im Hochformat → 44 × 44.
+7. FP-TOUCH: Start-Blatt in P3 352 px hoch (verdeckte den Song) → Erklärzeile in P3 (und bei 4 Modi in P2) weg, Kurzzeile bleibt; Texte gekürzt.
+8. FP-TOUCH: Banner in schmalen Ansichten ohne Modus („● Takt 4–6 · NOTEN S3“) → „● T4–6 · Overdub · NOTEN S3“; die rot gesäumte Zeile
+   war bei NOTEN auf einer Synth-Spur die MELODIE-Zeile → die Zeile der Ziel-Spur.
+Geprüft ohne Befund: `S.tracks[].clips` deep-equal in jedem Test; ein Undo je Aufnahme/`makeOwn`/`dropOwn`; Speichern/Laden; Harmonie-Kern
+unverändert (I-01, `Harmony` nicht angefasst, Tonhöhe der eigenen Clips über die vorhandene `clipNoteFor`); M-ZEIT (eigene Clips ±0,002 wie
+Szenen-Clips, N7S-28 ±0,01); Song-MIDI; FOLGEN unberührt.
+
+**Abweichungen (begründet)**
+1. **NOTEN ohne Clip an der Stelle** (Spur spielt dort keinen Szenen-Clip, und sie ist nicht die Melodie-Spur): die Noten gehen in
+   `song.mel` dieser Spur (V2b: jede Spur hat ihre Song-Melodie) statt in einen „eigenen Clip aus nichts“ – ein Lane-Eintrag braucht einen
+   Slot. Sie klingen und stehen im MIDI; in der Song-Ansicht zeigt bis V2e nur die MELODIE-Zeile Noten.
+2. **NOTEN-Spur = gewählte Spur** (7.1 „NOTEN · Synth 2“, N7S-39); die Spurwahl im Blatt ([▾]) wählt sie auch für die Tastatur. Drums sind
+   kein NOTEN-Ziel (die Pads schreiben nicht in den Song); ist DRUMS gewählt, nimmt NOTEN die Melodie-Spur.
+3. **V0c-Verhalten geändert, wie Nachtrag 2 es will:** MELODIE war in V0c immer Overdub; jetzt ersetzt Überschreiben/Ersetzen (K2-21), nur
+   Overdub ergänzt. „Nur Takt n“ heißt jetzt [Ersetzen · nur Takt n]. Vorgewählt: Überschreiben bzw. Ersetzen.
+4. **Einfügen** kennt keine Schleife und kein Song-Ende während der Aufnahme (es gibt dort noch kein „danach“); was gespielt wird, sieht man
+   erst nach dem Ende in der Song-Ansicht (Akkorde/Noten werden für den neuen Abschnitt zurückgehalten).
+5. **V2d′-06** (Spec v3: „live ohne Kette → Akkord-Zeile der laufenden Szene“) entfällt mit EN7-01: ● auf leerem Song nimmt einen Song auf
+   (V0c-04); Akkord-Zeilen entstehen über FANG TEIL und das Akkord-Zeilen-Blatt ([♪ greifen]). V2d′-01 … -04 sind nach 14.3 durch
+   N7S-27 … -31 ersetzt; V2d′-05 (ein Undo für alle Ziele) und -07 (Regression) gelten und sind oben geprüft.
+6. **Gesten für eigene Clips** (Halten auf eine Zelle, Zell-Blatt, ROLLE auf dem eigenen Clip, weißer Rand/Glas) sind V2e′; hier Daten,
+   Wiedergabe und API (`makeOwn`, `dropOwn`, [Ganzer Block]).
+7. Chromium-Pfad: `/opt/pw-browsers/chromium-1194/…` gibt es in dieser Umgebung nicht; alle Tests laufen mit
+   `/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` (wie die V2d-Tests).
+
+**Budget:** 2 473 307 B (+30,6 KB roh, +9,7 KB gzip gegenüber V2c′-fix) – Rahmen +35 KB eingehalten. Startzeit unverändert (keine neue
+Arbeit beim Laden; `ownNorm` nur, wenn ein Song eigene Clips hat).
+
+**Rollout:** `apply_migration v2d2_max_app` (`max_app = greatest(max_app, 4006000)`) **wartete auf eine Bestätigung und lief nach 60 s ab –
+nicht eingetragen**; gelesen: `max_app` 4 005 003, `max_format` 4 (das Projekt-Format bleibt 4). **Offen: vor dem Ausliefern von 4.6.0
+einspielen**, sonst lehnt `save_project` das Online-Speichern ab (lokal speichert die App weiter). Kein Aufruf nennt das Klassenzimmer-Projekt.
+
+**Für Xander im Dashboard** (nur falls der Orchestrator die Migration nicht nachholt): SQL-Editor des Projekts **synquenzer**
+(`dbdnsryoivvezspgydpx`, nicht das Klassenzimmer!) → `update private.settings set max_app = greatest(max_app, 4006000);` → Run.
+
+Fähigkeiten-Summe unverändert (V2d′ deklariert keine Fähigkeit).
+
+**Bekannte Lücken**
+- Kein WebKit-/iPhone-Test (Chromium + CDP-Touch); die Druckzeit von ● (N7-R1) am Gerät prüfen.
+- Eigene Clips sind in der Song-Ansicht noch nicht gekennzeichnet (weißer Rand / „eigen“ = V2e′); Noten einer Nicht-Melodie-Spur ohne Clip
+  sind nur hörbar, nicht sichtbar (V2e).
+- Teil-Tasten in einer Aufnahme schreiben ihre Lanes als Clip-Starts (gleicher Klang, aber ohne `re`-Neustart-Einträge bei gleichem Clip
+  in gleicher Phase); Stummschalten (M) wird weiter nicht eingefangen.
+- Eine Note, die über einen Schleifenpunkt gehalten wird, landet im nächsten Durchgang (Anfang im alten).
+
+**Für Xander am iPhone (nach dem Ausliefern von 4.6.0, ≈ 3 min)**
+1. Song mit Inhalt öffnen, auf Taktnummer 4 tippen (gelb), ● → das Blatt zeigt **Überschreiben │ Einfügen │ Ersetzen │ Overdub**.
+2. [Einfügen], nur AKKORDE an, START, in Takt 4 einen anderen Akkord spielen, ● zwei Takte später kurz nach dem Taktstrich → der Song ist
+   2 Takte länger, ab Takt 6 klingt, was vorher in Takt 4 war.
+3. Spur „Synth 2“ wählen (▾ im Blatt), Takte 4–5 gelb, [Ersetzen], NOTEN an, START, ein paar Töne spielen → die alten Synth-2-Noten
+   schweigen, danach klingen nur deine; in der Clip-Ansicht ist der Szenen-Clip unverändert. [Overdub] → alt und neu zusammen.
+4. ↶ nimmt jede Aufnahme mit einem Tipp zurück.

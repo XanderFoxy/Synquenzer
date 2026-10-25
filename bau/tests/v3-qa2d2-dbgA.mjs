@@ -1,0 +1,13 @@
+import { openT, waitSong, SETUP } from './v3-qa2d2-lib.mjs';
+const {b, p, errs} = await openT({width: 390, height: 844}, false);
+await p.evaluate(SETUP(true));
+await p.evaluate(() => { window.SYNQUENZER.selectTrack(1); });
+const r0 = await p.evaluate(() => { window.SYNQUENZER.clearLog(); window.SYNQUENZER.songRecFrom({from: 3, mode: 'over', targets: {clips: false, chords: false, notes: true}, preroll: 0});
+  window.__snap = () => VOICES.filter(v => v.track === 1).map(v => ({st: +(v.start - R.startTime).toFixed(3), src: v.src, dead: !!v.dead, n: v.note, keys: Object.keys(v).filter(k => /canc|stop|end|rel/i.test(k)).map(k => k + '=' + (typeof v[k] === 'function' ? 'f' : v[k]))}));
+  return {ctx: AU.ctx && AU.ctx.state, s0: window.__snap(), rec: !!R.songRec, mute: R.songRec && R.songRec.mute, schedBeat: R.schedBeat, playing: R.playing}; });
+console.log(JSON.stringify(r0));
+await waitSong(p, 12.4);
+const r1 = await p.evaluate(() => ({s1: window.__snap(), log: window.SYNQUENZER.noteLog(50).filter(n => n.track === 1).map(n => [n.beat, n.src, n.clipNote]), ctx: AU.ctx.state}));
+console.log(JSON.stringify(r1));
+console.log(errs);
+await b.close();

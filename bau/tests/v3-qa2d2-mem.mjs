@@ -1,0 +1,14 @@
+import { openT, waitSong, mk, SETUP } from './v3-qa2d2-lib.mjs';
+const {check, done} = mk();
+const {b, p, errs} = await openT({width: 390, height: 844}, false);
+await p.evaluate(() => ensureAudio()); await p.waitForTimeout(300);
+await p.evaluate(SETUP(true));
+const id = await p.evaluate(() => window.SYNQUENZER.makeOwn(1, 3));
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.clearLog(); Q.songPlay(0); });
+await waitSong(p, 22.5);
+const m = await p.evaluate(() => window.SYNQUENZER.memory().bars.map(x => [x.bar, x.slots && x.slots[1], x.own && x.own[1]]));
+const rt = await p.evaluate(() => window.SYNQUENZER.runtime().song.own);
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.songPlay(false); Q.stop(); });
+check('memory() own[1] = own id in the bars where it plays (T3–T6)', m.filter(x => x[2] === id).length >= 3, {id, m, rt});
+check('0 console errors', !errs.length, errs);
+await b.close(); process.exit(done() ? 1 : 0);
