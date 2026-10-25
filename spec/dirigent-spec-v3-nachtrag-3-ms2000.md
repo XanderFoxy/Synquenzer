@@ -1654,7 +1654,7 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 - Am Interface: Phantomspeisung (+48 V) aus, Kompressor, EQ und Effekte aus. Schickt das Interface stereo an den Rechner, ist das in Ordnung: Die App nimmt den Kanal mit Signal.
 - Die App liest WAV (16 Bit, 24 Bit oder 32 Bit Float) und AIFF, mit 44,1 oder 48 kHz, mono oder stereo. M4A (zum Beispiel aus Sprachmemos) liest sie nicht.
 
-*Für den Orchestrator: Interface-Modell und Rechner bei Xander bestätigen (vermutlich das weiße Yamaha AG06). Erst danach einen kleinen Gerätekasten mit den genauen Schaltern ergänzen.*
+*Bekannt (Xander, Okt. 2026): weißes Yamaha AG06 (erste Version, class compliant); iPhone 12 Pro Max und iPad Pro 12,9″ (1. Gen.). Ein Rechner ist nicht bestätigt. Vor der Übergabe an Xander (MK10) die Schritte D.2 ff. zusätzlich für GarageBand auf iPhone/iPad (AG06 über Lightning-auf-USB-3-Kamera-Adapter mit Strom) beschreiben und den Gerätekasten mit den AG06-Schaltern ergänzen (TO PC: DRY CH 1-2, COMP/EQ und EFFECT aus, +48 V aus, PAD nur, wenn PEAK leuchtet) – Schalterlage vorher im AG06-Handbuch prüfen.*
 
 **D.2 Gerät einmal vorbereiten**
 1. **GLOBAL** (HB-MK S. 47):
