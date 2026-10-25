@@ -3443,3 +3443,36 @@ Schalter für die eine Skala.
    (aufwärts bleibt aufwärts), zwei verschiedene Töne fallen nicht zusammen.
 3. Menü → Harmonie → Eine Skala „Aus“ und wieder „An“ – den Unterschied hören. Stärke auf 50 %: kurze verspielte Töne bleiben.
 4. Drums „Mittransponieren“, dann Akkorde drücken: die Drums gehen mit (für Fills). Bitte melden, ob das so gewollt ist.
+
+## V2c′-fix — Kollisionsschutz auch, wenn beide Nachbarn des verspielten Tons im Clip sind; Versions-Wächter 4.5.3 · App 4.5.3
+
+Befunde der QA (Abnahme-Blick): (1) Mit den Standardwerten (Eine Skala an, Stärke 100 %, Durchgangstöne Einrasten) fiel ein verspielter
+Ton mit einem Nachbarn zusammen, wenn **beide** Skalen-Nachbarn im Clip waren – `C D E F F♯ G A` unter C klang `… F G G A`, ebenso unter
+F/G/Am/Dm, `C D D♯ E F G A` und `G F♯ F E D C H`; im Raster 1 201 von 2 880 Melodie-Träger-Paaren (6 leitereigene + 1 verspielter Ton).
+Xanders Abnahme (Nachtrag 2, „7 verschiedene Töne bleiben 7, dieselbe Kontur“) war damit nicht erfüllt; Fach-Prüfung V2c′ #4 ist damit
+**behoben statt begründet**. (2) `max_app` stand noch auf 4 005 002 → Online-Speichern von 4.5.3 abgelehnt (`bad_version`).
+
+**Geändert**
+- `Harmony.oneScaleMap` (nur hinter „Eine Skala“): Regel (3) löst jetzt jede Kollision als kleinster Weg über die verschiedenen Tonhöhen des
+  Clips (je Ton höchstens ±3 Stufen): ein verspielter Ton kostet die Halbtöne, die er vom Gespielten wegrückt (+ ein Hauch gegen die
+  Spielrichtung), ein leitereigener Ton 1,5 je Stufe, eine Kollision 60, eine Umkehr der Reihenfolge nie. Ist die nächste Stufe auch
+  belegt, rückt eine kurze Kette von Nachbarn je eine Stufe weiter (unter C: `C D E F F♯ G A` → `C D E F G A H`; `C D D♯ E F G A` →
+  `H C D E F G A`). Leitereigene Töne bewegen sich nur, wenn sonst nichts die Kollision löst. Bei gleich guter Wahl teilen sich zwei
+  gerückte Töne wie bisher (der obere nach oben), zwei von sus zusammengelegte Töne ebenso (der untere nach unten). Rhythmus unberührt.
+- Supabase `dbdnsryoivvezspgydpx`: Migration `v2c_strich_max_app` (`greatest(max_app, 4005003)`) steht in `list_migrations`,
+  `private.settings.max_app` = **4 005 003**, `max_format` 4.
+
+**Nachweis**
+- Wiedergabe (noteLog, `v3-repro-osguard.mjs` → `v3-osfix-repro.out`): alle 20 Fälle (4 Melodien × C/F/G/Am/Dm) 7 verschiedene Töne,
+  Kontur gleich (vorher 15 von 15 chromatischen Fällen zusammengefallen bis auf `G F♯ F…` unter F). QA-Skripte: `v3-qa-v2c2-a` (2 880
+  zufällige 7-Ton-chromatische Melodien: 0 verloren, 0 Kontur), `-g` (2 880 × 6+1: 0 / 0, vorher 1 201 / 310), `-b` B6
+  `66->67 67->69 69->71`.
+- `v3-v2c2-onescale.mjs` **27/27** (neu: V2c′-07 chromatische Nachbarn, 3 024 Melodie-Träger-Paare, 0 Fehler; V2c′-03/-04/-08/-10
+  unverändert grün). Vergleich alt/neu (`v3-osfix-cmp.mjs`, 20 000 zufällige Tonmengen × 96 Skalen, Stärke/Durchgang gemischt):
+  wo 4.5.3 vorher keine Kollision hatte **0 Abweichungen**, Kollisionen 7 515 → 278 (nur sehr dichte Clips, > 7 Töne auf engem Raum),
+  nie mehr als vorher, nie Umkehr. Rechenzeit: 48 Tonhöhen 0,08 ms; `v3-v2c2-perf` 60 fps, Träger-Wechsel 1,71 ms (aus 0,83) ✓;
+  `v3-v2c2-click` M-KLICK/M-EINBRUCH ✓; `v3-qa-v2c2reg-os` gleich wie vorher; Smoke ohne Fehler (`v3-osfix-smoke.png`).
+- Versions-Wächter (nichts geschrieben, Probe im DO-Block mit Fremd-`sub`): `p_app` 4 005 003 kommt am Wächter vorbei (scheitert erst am
+  Fremdschlüssel des erfundenen Kontos), 4 005 004 → `bad_version`.
+
+**Für Xander im Dashboard:** nichts mehr offen für 4.5.3.

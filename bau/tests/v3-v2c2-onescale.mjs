@@ -137,6 +137,21 @@ r = await E(() => { const Q = window.SYNQUENZER, H = Q.harmony; ensureAudio();
   Q.resetCarrier(); return {n, bad, ex}; });
 check('V2c′-07 Melodie mit einem verspielten Ton (C D E F♯ G A C) unter 8 Trägern: 7 verschiedene, Kontur gleich, alle in der Skala', r.bad === 0, r);
 
+// V2c′-fix: chromatic tone with BOTH scale neighbours in the clip (C D E F F♯ G A …) – a chain moves on, nothing collapses
+r = await E(() => { const Q = window.SYNQUENZER, H = Q.harmony; ensureAudio();
+  const tg = []; for (let r0 = 0; r0 < 12; r0++) for (const q of [[0, 4, 7], [0, 3, 7], [0, 4, 7, 10], [0, 3, 7, 10]]) tg.push(H.detectChord(q.map(x => 60 + r0 + x)));
+  const mels = [[60, 62, 64, 65, 66, 67, 69], [60, 62, 63, 64, 65, 67, 69], [67, 66, 65, 64, 62, 60, 59]];
+  let seed = 5; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  for (let m = 0; m < 40; m++) { const d = [60, 62, 64, 65, 67, 69, 71, 72].sort(() => rnd() - .5).slice(0, 6); mels.push(d.concat([[61, 63, 66, 68, 70][(rnd() * 5) | 0]]).sort(() => rnd() - .5)); }
+  for (let m = 0; m < 20; m++) { const s = new Set(); while (s.size < 7) s.add(60 + ((rnd() * 13) | 0)); mels.push([...s].sort(() => rnd() - .5)); }
+  let n = 0, bad = 0, badC = 0; const ex = [];
+  for (const mel of mels) { Q.setClip(0, 0, {len: 1, key: {root: 0, scale: 'ionian', src: 'user'}, notes: mel.map((x, i) => ({t: i * .5, d: .45, n: x, v: .8}))});
+    for (const t of tg) { recallCarrier(t); const outs = __outs(0, 0, mel); n++; const Z = Q.oneScaleOf(t);
+      if (new Set(outs).size !== 7 || !outs.every(x => Z.includes(((x % 12) + 12) % 12))) { bad++; if (ex.length < 4) ex.push([t.name, mel, outs]); }
+      if (outs.some((x, k) => k && Math.sign(x - outs[k - 1]) !== Math.sign(mel[k] - mel[k - 1]))) { badC++; if (ex.length < 4) ex.push(['c', t.name, mel, outs]); } } }
+  Q.resetCarrier(); return {n, bad, badC, ex}; });
+check('V2c′-07 chromatische Nachbarn (C D E F F♯ G A, C D D♯ E F G A, G F♯ F E D C H, 40 × 6+1, 20 × 7 chromatisch) × 48 Träger: 7 verschiedene, alle in der Skala, Kontur gleich', r.n >= 3000 && r.bad === 0 && r.badC === 0, r);
+
 // ---------- V2c′-08: Kollisionsschutz ----------
 r = await E(() => { const Q = window.SYNQUENZER, H = Q.harmony; ensureAudio();
   const notes = [69, 66, 65].map((n, i) => ({t: i, d: .9, n, v: .8}));          // A F♯ F abwärts: F♯ fiele auf F
