@@ -617,7 +617,7 @@ svg{display:block}
 .pop.plpick .plp small{font-size:10px;color:var(--text-dim)}
 .pop.plpick .plp i{margin:0 0 2px}
 .pop.mname .mn-r{display:flex;gap:6px;margin:0 0 8px}
-.pop.mname .mn-in{flex:1 1 auto;min-width:0;height:44px;padding:0 10px;font:600 15px/1 var(--font-ui);color:var(--text);background:var(--lcd);border:1px solid var(--line);border-radius:8px}
+.pop.mname .mn-in{flex:1 1 auto;min-width:0;height:44px;padding:0 10px;font:600 16px/1 var(--font-ui);color:var(--text);background:var(--lcd);border:1px solid var(--line);border-radius:8px}
 .pop.mname .mn-ok{width:52px;height:44px}
 .pop.mname .seg{flex:1 1 auto}.pop.mname .seg button{height:44px}
 .pop.mname .mn-sc{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.pop.mname .mn-sc .cp-c{height:44px;min-width:64px}
@@ -1412,7 +1412,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
   .rstart .rs-span{grid-area:span;margin-top:0}.rstart.one .rs-pre{flex-wrap:nowrap}.rstart .rs-span .seg button{height:36px}
 }
 .plist.lpl small{font:600 10px/1 var(--font-num);color:var(--text-dim)}
-.cq .seg button{height:40px}
+.cq .seg button{height:44px}   /* V2e N7S-40: P ≥ 44 × 44 */
 .cq-pv{margin:10px 0 6px;font:600 12px/1.3 var(--font-ui);color:#ffcf7a}
 .cq-go{width:100%;height:44px;font:700 13px/1 var(--font-ui)}
 .bpmbig{font:700 54px/1 var(--font-num);text-align:center;margin:4px 0 10px}
@@ -16079,7 +16079,8 @@ function svLayout() {
   SV.sig = ''; UI.dirty.song = true;
 }
 const svBars = () => (S.song ? Math.max(S.song.bars, 1) : 0);
-const svMaxX = () => Math.max(0, (svBars() + 1) * SV.cellW - SV.w + 8);
+// V2e (Xander 24.10. a): the view rolls 4 bars past the end, so a part can be set behind empty bars there
+const svMaxX = () => Math.max(0, (svBars() + (S.song && S.song.bars ? 4 : 1)) * SV.cellW - SV.w + 8);
 function svSongBeat(bAud) {
   if (!R.playing || !S.song) return null;
   if (R.songPlay) return songBeatOf(bAud);                // V0c: right after a loop jump the old pass is still audible
@@ -18407,6 +18408,7 @@ function svTap(x, y) {
   // V2e: ⧉ Kopie waits for a bar line (the nearest one, anywhere over the canvas)
   if (SV.copy) {
     const id = SV.copy; SV.copy = null; SV.mark = null; svHintFree();
+    if (svRecBusy()) { UI.dirty.song = true; return; }
     const n = clamp(Math.round((x + SV.x) / SV.cellW), 0, song ? song.bars : 0), m = song && song.marks.find(z => z.id === id);
     if (m && n > m.a && n < m.a + m.len) { lcdOrToast('Nicht in die Marke selbst – Kopie abgebrochen'); UI.dirty.song = true; return; }
     if (m && markAction(id, 'copy', n)) { svShiftAnim(n, m.len); toast(markLabel(m) + ' kopiert → Takt ' + (n + 1), songUndoAct()); svButtons(); }
@@ -18448,7 +18450,7 @@ function svMarkDevs() {
 // numbers stay, the short name at its left edge
 function svDrawMarks(g, song, X, W, H, ru, cur) {
   SV.markGeo = [];
-  const devs = svMarkDevs(), cy = 2, chh = ru - 4, fs = ru < 20 ? 9 : 10, nf = getComputedStyle(document.body).getPropertyValue('--font-num') || 'monospace';
+  const devs = svMarkDevs(), cy = 2, chh = ru - 4, fs = ru < 20 ? 9 : 10, nf = SV.nf || (SV.nf = getComputedStyle(document.body).getPropertyValue('--font-num') || 'monospace');
   g.save(); g.textBaseline = 'middle'; g.textAlign = 'left';
   for (const m of song.marks) {
     const x0 = X(m.a) + 2, x1 = X(m.a + m.len) - 2; if (x1 < 0 || x0 > W) continue;
@@ -18505,7 +18507,7 @@ function svLayoutInfo() {
 // opens, numbers show); inside an open mark and outside marks: the V0c number tap; behind the end: „Teil einsetzen bei Takt n“
 function svRulerTapX(bar) {
   const song = S.song;
-  if (!song || bar >= song.bars) { svMarkSheetClose(); openPlacePick(null, Math.max(0, bar)); return; }
+  if (!song || bar >= song.bars) { svMarkSheetClose(); if (!svRecBusy()) openPlacePick(null, Math.max(0, bar)); return; }
   const m = svMarkAt(bar);
   if (m && !svMarkOpen(m)) {
     if (SV.mark === m.id) {
@@ -18517,9 +18519,11 @@ function svRulerTapX(bar) {
   svMarkSheetClose(); SV.mark = null; svRulerTap(bar);
 }
 function svMarkSheetClose() { if (UI.pop && UI.pop.name === 'mark') closePop(); }
+// while ● SONG records, the song's arrangement is not edited from the song view (the take writes it at its end)
+function svRecBusy() { if (!R.songRec) return false; lcdOrToast('Erst die Aufnahme beenden (●)'); haptic('tick'); return true; }
 // ▶ Ab hier: stopped → the song starts there; playing → at the next bar line the song jumps there (wirksam am nächsten Taktstrich)
 function songPlayFrom(bar) {
-  const song = S.song; if (!song || !song.bars) return false;
+  const song = S.song; if (!song || !song.bars || svRecBusy()) return false;
   bar = clamp(bar | 0, 0, song.bars - 1); SV.pos = bar;
   const sp = R.songPlay;
   if (sp && R.playing && !R.songRec) {
@@ -18534,7 +18538,7 @@ function songPlayFrom(bar) {
 /* ---------- Marken-Blatt (6.3, K2-25, Mockups P-7/L-3): P1/P2 32 + 4 × 44 = 208 px, P3 252 px (Zeile 3 bricht um), L 28 + 2 × 44.
    The song stays usable above it (the layer lets taps through): a second tap into the mark selects a bar there ---------- */
 function openMarkSheet(id) {
-  const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0) return;
+  const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || svRecBusy()) return;
   SV.copy = null; svHintFree(); folEdit('song'); haptic('tick'); UI.dirty.song = true;
   openPop(null, p => {
     p.classList.add('msheet'); guardTouch(p);
@@ -19673,7 +19677,9 @@ function carDockRect(wide) {
     const r = R0(EL.readout), b = wide && vis(EL.bLatch) ? R0(EL.bLatch).bottom : r.bottom;
     return {left: r.left, top: r.top, width: r.width, height: b - r.top};
   }
-  if (SV.rbar && vis(SV.rbar)) { const r = R0(SV.rbar); return {left: r.left + 6, top: r.top + 4, width: Math.max(0, r.width - 12), height: Math.max(0, Math.min(r.height, 56) - 8)}; }   // V2e: the Bereich-Leiste in its place
+  // V2e: while the Bereich-Leiste stands in the Träger bar's place, an action toast never covers it (its next tool is wanted
+  // at once, e.g. ⧉ again): it docks on the track strip row instead (P and L; that row's ↶ is what [Rückgängig] offers anyway)
+  if (SV.rbar && vis(SV.rbar)) { const r = R0(vis(EL.strip) ? EL.strip : SV.rbar); return {left: r.left + 6, top: r.top + 4, width: Math.max(0, r.width - 12), height: Math.max(0, Math.min(r.height, 56) - 8)}; }
   if (vis(EL.reclane) && vis(EL.recLaneCv)) {
     const a = R0(EL.reclane), c = R0(EL.recLaneCv), top = port ? a.top + 3 : R0(EL.recLaneTxt).top;
     return {left: c.left, top, width: c.width, height: Math.max(0, c.bottom - top)};
@@ -27126,7 +27132,10 @@ function openMenu(goto) {
     'SONG: SONG ⇄ (Ecke oben links im Raster) zeigt den Song. Beim ersten ● SONG wird alles mitgeschnitten: Szenenwechsel, Clip-Stopps, Akkorde und deine Melodie; ▶ SONG spielt alles ab. Eine Zelle antippen = anderer Clip in diesem Takt, wischen = blättern. Während der Song läuft: Clip starten = Spur übernehmen, ↩ SONG gibt sie zurück. Unter MELODIE: Melodie bearbeiten, als Clip, Kette aus Szenen.',
     'SONG-AUFNAHME (● bei vorhandenem Song): Das Start-Blatt fragt, was aufgenommen wird – CLIPS (Szenen- und Clip-Starts, Teil-Tasten setzen ihre Marke), AKKORDE, NOTEN auf der gewählten Spur (▾ wählt sie). Und wie: ab Takt n ÜBERSCHREIBEN (was du änderst, ersetzt; Noten: jeder Takt bis zum Ende neu, die alten sind stumm) oder EINFÜGEN (Neues kommt dazwischen, der Rest rückt nach hinten); in gelb gewählten Takten ERSETZEN oder OVERDUB (Neues kommt dazu). Ist genau ein Takt gewählt, gibt es alle vier. Noten auf einer Spur mit Clip werden ein eigener Clip an dieser Stelle – die Szenen bleiben, wie sie sind. ● beendet am letzten logischen Taktstrich (wie FANG TEIL: erst die Phrase, dann ob der neue Takt weniger als halb gespielt war). Halten auf ● öffnet das Blatt jederzeit. Ein Rückgängig nimmt die ganze Aufnahme zurück.',
     'TAKTLEISTE IM SONG: Tipp auf eine Taktnummer wählt den Takt (gelb) und setzt die Positionsmarke ▼ – nichts springt. Zweite Nummer = Bereich, Tipp in die Auswahl hebt sie auf. ▶ (oben oder ▶ SONG) startet an der Marke, sonst dort, wo du gestoppt hast; ⏮ = Takt 1.',
-    'SCHLEIFE: Taste SCHLEIFE → aus │ Song │ Bereich (= die gelb gewählten Takte). Die Schleife ist die grüne Linie oben auf der Taktleiste; ihre Griffe ┃ ziehen ändert Anfang und Ende. Am Ende springt der Song taktgenau an den Anfang.',
+    'TEIL-MARKEN IM SONG: Wo ein Teil liegt, steht sein Name gelb in der Taktleiste statt der Taktnummern (STROPHE′ = an dieser Stelle geändert). Antippen = Marken-Blatt: ▶ Ab hier, ×2/×4, ◀ ▶ tauschen, ⧉ Kopie (dann den Taktstrich antippen), ⇄ Ersetzen durch, ✕ Löschen (der Rest rückt), Nur Name weg, Name, Farbe, Teil-Vorlage, Auf alle übertragen, ● Neu aufnehmen. Nochmal antippen = einzelne Takte darin wählen. Hinter dem Song-Ende eine Nummer antippen = Teil dort einsetzen (die Takte davor bleiben leer).',
+    'GELBE TAKTE IM SONG: Statt der Träger-Leiste erscheint die Bereich-Leiste: ▶ Ab hier, ● Aufnehmen, Als Teil (die Takte werden ein Teil), ⧉ Kopie dahinter, ✕ Takte löschen, ⋯ (Leeren, Teil einsetzen, Akkorde quantisieren, Als Schleife). Liegt ab der Stelle schon etwas, fragt das Einsetzen: ersetzen oder einfügen (alles danach rückt nach hinten).',
+    'SPUR-NAMEN IM SONG antippen = Spur wählen (die Tastatur spielt sie, NOTEN nimmt sie auf). Passen nicht alle Spuren, blättert ▲▼ die Synth-Spuren; DRUMS, AKKORDE und MELODIE bleiben stehen.',
+    'SCHLEIFE: Taste SCHLEIFE → aus │ Song │ Teil (die Marke an der Abspielmarke) │ Bereich (= die gelb gewählten Takte). Die Schleife ist die grüne Linie oben auf der Taktleiste; ihre Griffe ┃ ziehen ändert Anfang und Ende. Am Ende springt der Song taktgenau an den Anfang.',
     'AKKORDE IM SONG: Akkord antippen = ändern (Stufe, Zuletzt, Frei oder Text eintippen, z. B. „Dm7“, „F/A“, „H7“) – der Schlag bleibt. Leere Stelle antippen = neuer Akkord am Taktanfang. AKKORDE (Etikett) → Akkorde quantisieren: Raster Takt, ½ Takt oder Schlag, bei zwei auf einem Punkt gewinnt der zuletzt gespielte.',
     'TRÄGER GEHÖREN DEM SONG: Endet ▶ SONG oder ● SONG, kommt der Träger von vorher zurück (z. B. ORIGINAL) – der Toast bietet [… behalten] an.',
     'MELODIE IM SONG: Die Melodie klingt immer genau wie gespielt und folgt späteren Akkordwechseln nicht („⇅ fest“). Sie nutzt die Stimmen ihrer Spur – teilt sie sich eine MONO-Spur mit Clips, klingt sie abgehackt: dann [Freie Spur nehmen].',

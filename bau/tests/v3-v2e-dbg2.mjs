@@ -1,0 +1,13 @@
+import { openVp, mk, SETUP } from './v3-v2e-lib.mjs';
+const {b, p, errs, cdp} = await openVp(process.argv[2] || 'P1');
+const T = mk(p, cdp), {E} = T;
+await E(SETUP(true)); await E(() => window.SYNQUENZER.songView(true)); await p.waitForTimeout(300);
+await E(() => { const Q = window.SYNQUENZER; Q.setSong({bars: 0, lanes: [], carrier: []}); });
+await p.waitForTimeout(300);
+const i = await T.info(); console.log(JSON.stringify(i));
+console.log(await E(([x,y]) => { const e = document.elementFromPoint(x,y); return e.tagName + '.' + e.className; }, [i.canvas.x + 3*36+18, i.canvas.y + 9]));
+console.log(await E(() => { const e = document.querySelector('.sv-empty'); const r = e.getBoundingClientRect(); return [r.x, r.y, r.width, r.height, getComputedStyle(e).pointerEvents]; }));
+await p.screenshot({path: 'v3-v2e-empty-' + (process.argv[2] || 'P1') + '.png'});
+await T.tapCv(3 * 36 + 18, 9);
+console.log(await T.pop());
+console.log(errs); await b.close();

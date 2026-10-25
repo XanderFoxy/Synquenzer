@@ -1,16 +1,17 @@
 # SYNQUENZER v3 — Nachtrag 3 zur Bau-Spezifikation: MS2000-Klangerzeuger (Pakete MK1–MK13)
 
-Stand 25.10.2026, **Rev. 1** nach dem Review (Protokoll am Ende) · Status: **Entwurf zur Freigabe.** Er gilt für den Bau, sobald der Orchestrator ihn Xander gezeigt hat. Bis Xander die offenen Fragen (Teil H) beantwortet, gilt jeweils die genannte **Vorgabe**. Builder und Tester lesen Spec v3, Nachtrag 1, Nachtrag 2 **und** diesen Nachtrag. **Vorrang für die MK-Pakete: Nachtrag 3 vor Nachtrag 2 vor Nachtrag 1 vor Spec v3.** Alles, was hier nicht geändert wird, bleibt gültig: L1–L10, M-Messverfahren und DoD der Spec, Teil J (Fach-Prüfung), EN2-28 (Größe), E.5 (Bau-Regeln).
+Stand 25.10.2026, **Rev. 2** nach Xanders Entscheidungen vom 25.10. (Rev. 1 = Review; beide Protokolle am Ende) · Status: **Entwurf zur Freigabe.** Er gilt für den Bau, sobald der Orchestrator ihn Xander gezeigt hat. Xanders Entscheidungen zu H-1 … H-11 stehen in Teil H und sind verbindlich; für die neuen Fragen H-13 … H-15 gilt bis zu seiner Antwort die genannte **Vorgabe**. Builder und Tester lesen Spec v3, Nachtrag 1, Nachtrag 2 **und** diesen Nachtrag. **Vorrang für die MK-Pakete: Nachtrag 3 vor Nachtrag 2 vor Nachtrag 1 vor Spec v3.** Alles, was hier nicht geändert wird, bleibt gültig: L1–L10, M-Messverfahren und DoD der Spec, Teil J (Fach-Prüfung), EN2-28 (Größe), E.5 (Bau-Regeln).
 
 ## Überblick (für den Orchestrator)
 
-- **14 Pakete** MK0–MK13, zusammen **≈ 95–110 h** reine Bauzeit. Dazu kommt die Fach-Prüfung mit 1–2 h je Paket. Die Datei wächst nach Budget um **≈ +463 KB** (dazu ≈ +12 KB in V5d, V6a, V5c, V1d und VC4, H-9); mit dem gemessenen Überzug der gebauten Pakete (×1,5, E.3) um ≈ +0,7 MB. App-Version **4.8.1 (MK0), dann 4.9.0 → 4.21.0**. Das **Speicherformat** steigt nur einmal, mit MK1 (4 → 5). **MK0** sorgt vorher dafür, dass kein ausgelieferter Stand Klänge einer neueren Engine verwirft oder überschreibt (EN3-04).
+- **13 Pakete im Plan** (MK0–MK8, MK10–MK13), zusammen **≈ 100–115 h** reine Bauzeit; **MK9 (Import) ist zurückgestellt** (Xander, 25.10.: kein Rechner, kein MIDI, keine .syx/.prg-Dateien) und steht außerhalb der Versionsfolge. Dazu kommt die Fach-Prüfung mit 1–2 h je Paket. Die Datei wächst nach Budget um **≈ +510 KB** (dazu ≈ +12 KB in V5d, V6a, V5c, V1d und VC4, H-9); mit dem gemessenen Überzug der gebauten Pakete (×1,5, E.3) um ≈ +0,8 MB. App-Version **4.8.1 (MK0), dann 4.9.0 → 4.20.0**; der Einbau der Speicherwellen (MK10, Bau-Abschnitt 2) bekommt die nächste freie Zwischennummer. Das **Speicherformat** steigt nur einmal, mit MK1 (4 → 5). **MK0** sorgt vorher dafür, dass kein ausgelieferter Stand Klänge einer neueren Engine verwirft oder überschreibt (EN3-04).
+- **Name und Aussehen (Xander, 25.10.):** Die neue Klangerzeugung heißt in der App **„MS 2000“** (Knopf neben VA │ FM │ WT; H-4). Ihr Bedienfeld sieht aus wie die **Vorderseite des Originals**, „genau so“: gleiche Anordnung, Drehschalter-Logik EDIT-WAHL 1/2, 5 Regler, Wert-Anzeige, BEND- und MOD-Rad links der Tasten, Oktav- und Arp-Tasten, dunkles Bedienfeld mit Holzwangen, aber ohne Korg-Name, Logo oder Korg-Schrift (EN3-20, B.3).
+- **Nur iPhone (Xander, 25.10.):** Kein Paket verlangt einen Rechner, MIDI oder eine Datei vom Rechner (EN3-21). Xander arbeitet nur am iPhone 12 Pro Max.
 - **Kern (MS2000 komplett):** MK1–MK7 bauen die Klangerzeugung, die Effekte, den Arpeggiator, den Mod-Sequenzer und den Vocoder. MK8 bringt eigene Werksklänge in 8 Genre-Bänken.
-- **MK9** importiert eigene .syx/.prg-Dateien, nur lokal. Tor: ein Formatbeleg.
-- **MK10** baut die Speicherwellen aus Xanders Aufnahmen. Tor: die Aufnahmen nach Teil D.
+- **MK10** bringt die Speicherwellen aus Xanders Aufnahmen: Er nimmt **in der App** auf (microKORG → AG06 → iPhone, Teil D), die App rechnet die Wellen aus, und der Bau **baut sie in die App ein** (H-2 = eingebaut), sodass alle sie hören. Tor nur für den Einbau: das Wellen-Paket aus der App.
 - **MK11–MK13** bringen die RADIAS-Teile ohne Samples: zweites Filter, Verzerrer, dritte Hüllkurve, Formant-Oszillator, mehr Stimmen.
-- **Größe (wichtig, H-1):** Nach Budget endet der Restplan ohne MK bei ≈ 4,98 MB, mit MK bei ≈ 5,46 MB. Die gebauten Pakete lagen aber im Mittel bei ×1,5 ihres Budgets (E.3). Mit diesem Faktor endet der Plan bei ≈ 7,0 MB, und die Grenze von 5,0 MB (EN2-28) fällt **mitten im Plan**: 4,5 MB bei ≈ V6a, 5,0 MB bei ≈ V8b. Die MK-Pakete selbst passen (nach MK13 ≈ 3,1–3,4 MB). Lösungswege stehen in H-1, das Schlankheits-Paket SL1 in E.3a.
-- **Was wiederverwendet wird:** der Stimmenpool von AnalogCore mit Ereignisprotokoll, Tempo, 30-ms-Stimmenblende, 40-ms-Engine-Blende und Lastbericht. Dazu Ladder-Filter mit 4 der 6 Abgriffe, polyBLEP-Säge/-Puls/-Sync, Hüllkurven-Kern, LFO-Formen und Mod-Matrix. Außerdem das Mipmap-Verfahren aus V4a (für AM als gemeinsamer, DOM-freier Tabellen-Bau nach Spec §10.1 neu gebaut, MK2), `MIC_ASK` und die Wege-Erkennung aus VS1 (mit einem gemeinsamen Mikrofon-Abgriff, MK7), der MIDI-Eingang, der .syx-Dateiweg, sowie Bibliothek, Undo, Blatt-Rahmen und Regler. Neu ist alles, was A.12 nennt (Teil A).
+- **Größe (wichtig, H-1):** Nach Budget endet der Restplan ohne MK bei ≈ 4,98 MB, mit MK bei ≈ 5,51 MB. Die gebauten Pakete lagen aber im Mittel bei ×1,5 ihres Budgets (E.3). Mit diesem Faktor endet der Plan bei ≈ 7,0 MB, und die Grenze von 5,0 MB (EN2-28) fällt **mitten im Plan**: 4,5 MB bei ≈ V5d, 5,0 MB bei ≈ V8a. Die MK-Pakete selbst passen (nach MK13 ≈ 3,1–3,5 MB). Lösung nach H-1 (b): das Schlankheits-Paket SL1 (E.3a).
+- **Was wiederverwendet wird:** der Stimmenpool von AnalogCore mit Ereignisprotokoll, Tempo, 30-ms-Stimmenblende, 40-ms-Engine-Blende und Lastbericht. Dazu Ladder-Filter mit 4 der 6 Abgriffe, polyBLEP-Säge/-Puls/-Sync, Hüllkurven-Kern, LFO-Formen und Mod-Matrix. Außerdem das Mipmap-Verfahren aus V4a (für AM als gemeinsamer, DOM-freier Tabellen-Bau nach Spec §10.1 neu gebaut, MK2), `MIC_ASK` und die Wege-Erkennung aus VS1 (mit einem gemeinsamen Mikrofon-Abgriff, MK7; auch für die Aufnahme-Seite in MK10), die Oktav-Wahl der Tastatur (`tr.kbOct`), der MIDI-Eingang (nur als freiwillige Zugabe am Desktop), sowie Bibliothek, Undo, Blatt-Rahmen und Regler-Gesten. Neu ist alles, was A.12 nennt (Teil A).
 
 ---
 
@@ -19,8 +20,8 @@ Stand 25.10.2026, **Rev. 1** nach dem Review (Protokoll am Ende) · Status: **En
 ### N3.0.1 Xanders Plan (24.10.2026, verbindlich, Kurzfassung des Auftrags)
 
 1. **Kern = kompletter MS2000-Klangerzeuger.** Dazu gehört die microKORG-Engine: 2 Oszillatoren mit allen Wellenformen und Modi inkl. Ring/Sync, Rauschen, Mixer, Filter mit allen Typen, 2 Hüllkurven, 2 LFOs, 4 virtuelle Patches, Timbres/Layer/Split, Stimmen-Modi, Mod-FX, Delay, EQ. Dazu kommen Mod-Sequenzer 3×16, 16-Band-Vocoder und Step-Arpeggiator.
-2. **Oberfläche wiedererkennbar wie microKORG:** Bedien-Logik, Regler-Gruppen, Preset-Bänke nach Genres. **Kein Korg-Name, kein Logo, keine Werksdaten von Korg im Werk.** Die Presets sind eigene Klänge nach Kategorien. Eigene .prg/.syx-Dateien werden nur lokal im Browser importiert: nie hochladen, nie mitliefern.
-3. **DWGS-Wellen kommen später aus Xanders eigenen microKORG-Aufnahmen** (Filter offen, OSC2 aus, Effekte aus, mehrere Oktaven). Das ist ein eigenes, späteres Paket mit Aufnahme-Anleitung. Bis dahin gibt es additiv nachgebildete Platzhalter, klar als Platzhalter markiert.
+2. **Oberfläche wiedererkennbar wie microKORG:** Bedien-Logik, Regler-Gruppen, Preset-Bänke nach Genres. **Kein Korg-Name, kein Logo, keine Werksdaten von Korg im Werk.** Die Presets sind eigene Klänge nach Kategorien. Eigene .prg/.syx-Dateien werden nur lokal im Browser importiert: nie hochladen, nie mitliefern (MK9, **zurückgestellt** am 25.10., EN3-21). **Präzisiert am 25.10. (Xander):** Das Bedienfeld sieht aus wie die Vorderseite des Originals, „genau so“ (EN3-20, B.3); die Engine heißt sichtbar „MS 2000“ (H-4); die aus seinen eigenen Aufnahmen gerechneten Speicherwellen dürfen eingebaut werden (H-2, Ausnahme von „keine Werksdaten“, nur für diese Wellen).
+3. **DWGS-Wellen kommen später aus Xanders eigenen microKORG-Aufnahmen** (Filter offen, OSC2 aus, Effekte aus, mehrere Oktaven). Das ist ein eigenes, späteres Paket mit Aufnahme-Anleitung. Bis dahin gibt es additiv nachgebildete Platzhalter, klar als Platzhalter markiert. **25.10.:** Aufgenommen wird am iPhone direkt in der App (Teil D); die Wellen werden danach eingebaut (H-2).
 4. **Danach die RADIAS-Teile ohne Samples:** 2. Filter (seriell/parallel/individuell), Verzerrer/Drive, 3. Hüllkurve, Formant-Oszillator, mehr Stimmen. Kein 1:1-RADIAS.
 5. **Muss auf dem iPhone 12 Pro Max flüssig laufen.** Dazu gehören ein Stimmen-Budget, CPU-Messung und AudioWorklet, wo nötig. WebGL nur, wo es wirklich etwas bringt. Dateigrenze 5,0 MB gesamt (EN2-28).
 6. **Reihenfolge** (Nachtrag 2, „Korrektur 24.10.“): G-P1b → G-P2 (V2d′ ✓, V2e, V2e′, VS3) → **microKORG** → V2a′, V2c′ ✓, V2f, VL, V7a, VC2a, VS4 …
@@ -37,7 +38,7 @@ Stand 25.10.2026, **Rev. 1** nach dem Review (Protokoll am Ende) · Status: **En
 
 - **Urheberrecht:** Aus den Handbüchern sind nur Fakten übernommen: Parameternamen, Wertebereiche, Tabellenwerte, Reihenfolgen. Es gibt keine Textpassagen. Die Handbücher bleiben privat: nicht im Repo, nicht in der App, nicht in Hilfe-Texten.
 - **Kennzeichen:** **[B]** belegt (Handbuch mit Seite) · **[W]** wahrscheinlich · **[U]** unbelegt · **eK** eigene Festlegung. Jede eK-Kurve steht genau einmal in der W-Tabelle (B.2). Ein späterer Abgleich ändert dann nur diese Tabelle.
-- **Nicht möglich:** Es gibt kein RADIAS-Handbuch (Xander: „nicht nötig“, `fragen-xander-9.md`). Es gibt keinen Korg-Formatbeleg für SysEx-Programmdaten: HB-MS S. 64 verweist auf eine eigene „MIDI Implementation“, die nicht im Handbuch steht. Daraus folgt das Tor für MK9. Kein Klang wurde angehört, nichts wurde am iPhone gemessen.
+- **Nicht möglich:** Es gibt kein RADIAS-Handbuch (Xander: „nicht nötig“, `fragen-xander-9.md`). Es gibt keinen Korg-Formatbeleg für SysEx-Programmdaten: HB-MS S. 64 verweist auf eine eigene „MIDI Implementation“, die nicht im Handbuch steht. Daraus folgt das Tor für MK9 (zurückgestellt). Kein Klang wurde angehört, nichts wurde am iPhone gemessen. Es gibt kein Foto der Vorderseite: Die Referenz-Skizze in B.3 ist eine eigene Zeichnung nach den Bezeichnungen und der Zuordnung in HB-MK S. 2–3, S. 8–14 und der Parameter-Liste (PDF 78); die genaue Lage gleicht Xander an seinem Gerät ab.
 
 ### N3.0.3 Neue Entscheidungen
 
@@ -47,22 +48,24 @@ Stand 25.10.2026, **Rev. 1** nach dem Review (Protokoll am Ende) · Status: **En
 | **EN3-02** | **Eigene Engine `mk` als Zweig `eng 3` in AnalogCore**, nicht als Erweiterung der VA-Engine. `eng 2` ist schon für die Tabellen-Engine von V8a vergeben (Spec §10.1, V8a); AM nimmt deshalb die nächste freie Nummer. Der Stimmenpool (`POOL` 12), das Ereignisprotokoll, das Tempo, die Stimmenblende (SXF, V4a), die Engine-Blende (`engXf`), die Last-Berichte und der Ladder werden mitbenutzt. Die VA-Klänge bleiben bitgleich. | Die MS2000-Logik weicht von VA ab: zwei Timbres, Wellen-Algorithmen mit CONTROL 1/2, Ganzzahl-Einheiten, Unison als Stimmenstapel. Ein Umbau von VA würde gespeicherte Klänge gefährden (I-10, L7). |
 | **EN3-03** | **Daten in Geräte-Einheiten.** `p.mk` speichert Ganzzahlen genau in den Bereichen der Handbücher (000…127, ±63, Listen-Indizes). Die Umrechnung in Hz, s und ct macht nur die W-Tabelle (B.2). **Während einer Geste** geht der ungerundete Reglerwert (Bruchteil einer Geräte-Einheit) an das Worklet; gerundet wird erst beim Abschluss der Geste und für Undo (B.6 Nr. 2). | Import 1:1 (MK9), prüfbare Bereiche, ein Ort für Kurven-Abgleich. Ganzzahlen allein gäben beim Drehen Stufen von ≈ 0,94 HT (Cutoff), die bei hoher Resonanz als Tonleiter hörbar sind. |
 | **EN3-04** | **Speicherformat 5 mit MK1, Vorab-Schutz mit MK0.** `PROJECT_FORMAT` 4 → 5 und `SOUNDS_FORMAT` 1 → 2 kommen mit MK1. Heute verwirft `normalizeSound` (Z. 7918, `if (!engine) return null`) eine unbekannte Engine. Ein 4.x-Stand (Paar-Raum-Partner, alter `sw.js`-Cache, Rückfall) ersetzt AM-Sounds deshalb stillschweigend und speichert danach per Autosave Format 4 über das Projekt, lokal und online. Die Meldung „Projekt aus einer neueren Version“ (Z. 8163) kommt nur beim Datei-Import von Hand. **MK0** (4.8.1, vor MK1) behebt das: Ein Sound mit unbekannter Engine bleibt **undurchsichtig erhalten** (`engine`, `p`, `mods`, `fx` unverändert), die Spur spielt INIT mit Hinweis „Klang aus neuerer Version“. Enthält das KV-Projekt, die Bibliothek oder die Cloud-Bibliothek eine unbekannte Engine oder ein Format über `PROJECT_FORMAT`, überschreibt Autosave die KV-Kopie nicht, und die App schickt kein `cloudLibPush` einer Liste ohne diese Sounds. Damit brauchen auch die später geplanten Engines (`mask`, `add`, `body`, `resyn`; V8a, V9a, V9b, V9d′) **keinen weiteren Formatsprung**. Neue Schlüssel sind neutral (I-10). `save_project` bleibt unverändert (VO-R1 lehnt ein kleineres `p_format` schon ab: `outdated` + `keep_conflict`); `save_library` hat keinen solchen Wächter und ist durch MK0 geschützt. Online braucht es `max_format` 5 und `max_app` je Version, jeweils nur mit Xanders Okay (N2 G.8), und erst nach MK0. | Daten-Sicherheit (L7) und Versions-Wächter VO-R1. Der Server-Wächter `max_app` ist nur eine Obergrenze (`greatest(max_app, 4005002)`) und hält ältere Stände nicht auf. Restrisiko: Stände vor 4.8.1 verwerfen weiter; darum der Rollout erst nach MK0 (E.5 Nr. 2). |
-| **EN3-05** | **Keine Marken im AM-Teil.** Der AM-Teil der ausgelieferten Datei (Block `sq-mk-src`, AM-Zweig des Worklets zwischen festen Marken, AM-Hilfe- und LCD-Zeilen, AM-Werksnamen) enthält keines dieser Wörter: Korg, microKORG, MS2000, MS 2000, MS-2000, RADIAS, DWGS, DW-6000, DW-8000, VOX. Das gilt auch für Kommentare. In der **ganzen** Datei gilt das für die Gerätenamen dieses Plans (microKORG, MS2000, RADIAS, DWGS). Andere Pakete dürfen nach ihren eigenen Regeln Geräte im ⓘ nennen (N2 D.1 Nr. 4; V10P, V10d, VI3). Die Engine heißt sichtbar nach **H-4** (Vorgabe „DUO“). Dieser Nachtrag nennt sie weiter **AM** (Arbeitsname, intern `mk`); wo hier sichtbare Texte „AM“ zeigen, steht in der App der Name nach H-4. Wellen, Sektionen und Funktionen tragen eigene deutsche Namen, zum Beispiel „Speicherwelle“, „Stimmwelle“, „Formant halten“ und „Bewegung aufnehmen“. Genre-Namen der Bänke sind allgemeine Stilwörter. | Xanders Plan Punkt 2. Die App enthält heute 0 Treffer (geprüft). Eine Sperre aller Wörter über die ganze Datei würde spätere Pakete mit Geräte-ⓘ scheitern lassen. |
+| **EN3-05** | **Keine Marken im AM-Teil, eine erlaubte Beschriftung.** Die Engine heißt sichtbar **„MS 2000“** (H-4, Xander 25.10.; Ersatz wäre „MS 2K“ gewesen). Genau diese Zeichenfolge (Großbuchstaben, ein normales Leerzeichen) steht **einmal** als Konstante `MK_LABEL = 'MS 2000'` im immer geladenen Teil (EN3-14); Engine-Knopf, `ENGINE_LABEL.mk`, Bibliotheks-Filter, LCD- und Hilfe-Zeilen setzen sie daraus zusammen. Sonst enthält der AM-Teil der ausgelieferten Datei (Block `sq-mk-src`, Block `sq-mkrec-src` aus MK10, AM-Zweig des Worklets zwischen festen Marken, AM-Hilfe- und LCD-Zeilen, AM-Werksnamen) keines dieser Wörter: Korg, microKORG, MS2000, MS-2000 und jede andere Schreibung von „MS 2000“, RADIAS, DWGS, DW-6000, DW-8000, VOX. Das gilt auch für Kommentare. In der **ganzen** Datei gilt das für die Gerätenamen dieses Plans (microKORG, RADIAS, DWGS; „MS 2000“ nur als die eine Konstante). **Kein Logo, keine Korg-Schrift** (B.3, B.6 Nr. 9 c). Andere Pakete dürfen nach ihren eigenen Regeln Geräte im ⓘ nennen (N2 D.1 Nr. 4; V10P, V10d, VI3). Dieser Nachtrag nennt die Engine im Fließtext weiter **AM** (Arbeitsname, intern bleibt die Kennung `mk`); überall, wo ein sichtbarer Text, eine Beschriftung oder ein Prüf-Erwartungswert den Namen zeigt, steht **„MS 2000“**. Wellen, Sektionen und Funktionen tragen eigene deutsche Namen, zum Beispiel „Speicherwelle“, „Stimmwelle“, „Formant halten“ und „Bewegung aufnehmen“. Genre-Namen der Bänke sind allgemeine Stilwörter. | Xanders Plan Punkt 2 und seine Wahl vom 25.10. Ihm wurde gesagt, dass MS2000 ein Modellname von Korg ist; ein Risiko entstünde erst, wenn die App verkauft würde. Die App enthält heute 0 Treffer (geprüft). Eine Sperre aller Wörter über die ganze Datei würde spätere Pakete mit Geräte-ⓘ scheitern lassen. Eine einzige Fundstelle macht die Ausnahme prüfbar. |
 | **EN3-06** | **Handbuch-Fakten nur in der Spec, nicht in der App.** Hilfe-Zeilen (L10) und ⓘ-Texte sind eigene Sätze. | Urheberrecht. |
 | **EN3-07** | **Werksklänge = eigene Rezepte.** Eine Namensprüfung läuft gegen die Werks-Programmlisten (HB-MK PDF 77, HB-MS S. 68–70). Diese Listen stehen nur in einer privaten Datei neben den Handbüchern (`scratchpad/manuals/werksnamen.local.json`), nie im Testskript, im Repo oder in der App (E.5 Nr. 5). | Plan Punkt 2. Die Testskripte werden ins öffentliche Repo kopiert (`wip-push.sh` → `bau/tests/`). |
-| **EN3-08** | **Import nur lokal.** Importierte Klänge tragen 🔒 (`loc: 1`); `normalizeSound` behält `loc` und `locRef` (MK9). Eine einzige Funktion `mkLocalStrip()` ist die **einzige Ausgangs-Schleuse**: Sie ersetzt 🔒-Sounds durch einen Platzhalter in **allen** Wegen, auf denen Daten den Speicher-Ursprung verlassen. Das sind Server-Autosave, `save_library`, Paar-Raum/Realtime, Mitmach-Link, Teilen und später VO3, VO4a–c, VC2b/VC2c, VC3/VC3b und VC4 (auch `sample` und `room.sendToClaudeSession`), Regel MK-R2 (EN3-19). Ausgenommen ist nur die eigene Übergabe Claude-App → Safari (`#import` aus `cloudHandoffUrl`), weil das Fragment nie einen Server erreicht (MK9 Umfang 5). Die Tests verwenden nur synthetische Dumps aus einem eigenen Schreiber. | Plan Punkt 2: „nie hochladen, nie mitliefern“. |
+| **EN3-08** | **Import nur lokal** (gilt ab dem Bau von MK9; MK9 ist am 25.10. zurückgestellt, bis dahin gibt es keine 🔒-Sounds und keine Pflicht aus EN3-08/08a/19). Importierte Klänge tragen 🔒 (`loc: 1`); `normalizeSound` behält `loc` und `locRef` (MK9). Eine einzige Funktion `mkLocalStrip()` ist die **einzige Ausgangs-Schleuse**: Sie ersetzt 🔒-Sounds durch einen Platzhalter in **allen** Wegen, auf denen Daten den Speicher-Ursprung verlassen. Das sind Server-Autosave, `save_library`, Paar-Raum/Realtime, Mitmach-Link, Teilen und später VO3, VO4a–c, VC2b/VC2c, VC3/VC3b und VC4 (auch `sample` und `room.sendToClaudeSession`), Regel MK-R2 (EN3-19). Ausgenommen ist nur die eigene Übergabe Claude-App → Safari (`#import` aus `cloudHandoffUrl`), weil das Fragment nie einen Server erreicht (MK9 Umfang 5). Die Tests verwenden nur synthetische Dumps aus einem eigenen Schreiber. | Plan Punkt 2: „nie hochladen, nie mitliefern“. |
 | **EN3-08a** | **🔒 steckt an.** Jede Sound- oder Spur-Kopie, die irgendwelche Daten aus einem `loc: 1`-Sound übernimmt, bekommt `loc: 1` und behält dessen `origin`: Timbre kopieren (MK3), Sequenz kopieren (MK6), A/B, Speichern als, Duplizieren, Laden in eine Spur, Kopieren aus der Bibliothek. `saveSound` löscht `loc`/`locRef` nie. | Sonst ginge ein abgeleiteter Sound über Autosave und `save_library` hinaus, obwohl jede Abnahme besteht. |
-| **EN3-09** | **Speicherwellen:** Bis MK10 gibt es 64 additive Platzhalter mit „≈“. Was MK10 aus Xanders Aufnahmen gewinnt, bleibt **lokal auf seinem Gerät**, bis Xander anders entscheidet. Andere Geräte hören die Platzhalter. | Wie EN2-11 (DX7-ROM): Die Wellen sind Korg-Daten aus seinem Gerät, die Lizenz ist ungeklärt → H-2. |
+| **EN3-09** | **Speicherwellen:** Bis MK10 gibt es 64 additive Platzhalter mit „≈“. Was MK10 aus Xanders Aufnahmen gewinnt, wird **in die App eingebaut** (H-2, Xander 25.10.): ein kompakter Datenblock im Block `sq-mk-src`, den alle hören, auch Freunde im Paar-Raum. Erlaubt sind nur die **gerechneten Wellen** (Teiltonpegel und Phasen); Roh-Aufnahmen kommen weder in die App noch ins Repo. Die Marken-Regel EN3-05 bleibt: kein Korg-Name, kein Logo, keine Korg-Wörter, auch nicht im Datenblock (Salz-Byte, B.6 Nr. 9). Bis zum Einbau hört nur Xanders Gerät seine Aufnahmen (lokal, MK10). | Xanders Entscheidung. Ihm wurde gesagt, dass die Lizenz ungeklärt ist (wie EN2-11, DX7-ROM: die Wellen sind Daten aus seinem Korg-Gerät); er hat trotzdem „eingebaut“ gewählt. Das Risiko steht in MK10 Risiken. |
 | **EN3-10** | **Ein Tempo.** Arp, LFO-Sync, Delay-Sync und Mod-Seq folgen dem Song-Tempo `S.bpm`. Das Feld `arp.tempo` (20…300) wird nur gespeichert, für Import und Anzeige. Es verhält sich wie am Gerät mit „Clock = External“ (HB-MS S. 45, HB-MK S. 44). | In einem Sequencer gibt es eine Uhr. Zwei Tempi würden auseinanderlaufen. |
-| **EN3-11** | **Arp im Hauptfaden, Mod-Seq und Vocoder im Worklet.** Der Arp setzt zwischen Notenquelle und `spawnVoice` an (Z. 12610). Sein Planer läuft in `tick()` **vor** der Prüfung `R.playing` (Z. 13137), mit dem vorhandenen Vorlauf (`LOOKAHEAD` 0,1 s, Z. 12917), und schreibt `noteLog`. Er schickt dem Worklet zusätzlich den **Tastensatz** als eigenes Ereignis KEYS (Typ 9 = erste Taste gedrückt, Typ 10 = alle Tasten los, je mit Zeitstempel). Aufnahmen (● REC) speichern die **gespielten Tasten**, nicht die Arp-Noten (Vorgabe, H-8). Der Arp läuft auch im ECO-Klang (B.5). | M-ZEIT-Prüfung über `noteLog`. Die Ereignisse sind sampelgenau (16-Sample-Blöcke). Seq und Vocoder brauchen Stimmen- bzw. Audiotakt. Ohne KEYS sähe das Worklet nur Arp-Noten und setzte Key Sync „Timbre“ bei jedem Arp-Schritt zurück; das Gerät unterscheidet gespielte Tasten von Arp-Wiederholungen (HB-MS S. 43, S. 63). |
+| **EN3-11** | **Arp im Hauptfaden, Mod-Seq und Vocoder im Worklet.** Der Arp setzt zwischen Notenquelle und `spawnVoice` an (Z. 12610). Sein Planer läuft in `tick()` **vor** der Prüfung `R.playing` (Z. 13137), mit dem vorhandenen Vorlauf (`LOOKAHEAD` 0,1 s, Z. 12917), und schreibt `noteLog`. Er schickt dem Worklet zusätzlich den **Tastensatz** als eigenes Ereignis KEYS (Typ 9 = erste Taste gedrückt, Typ 10 = alle Tasten los, je mit Zeitstempel). Aufnahmen (● REC) speichern die **gespielten Tasten**, nicht die Arp-Noten (H-8, entschieden). Der Arp läuft auch im ECO-Klang (B.5). | M-ZEIT-Prüfung über `noteLog`. Die Ereignisse sind sampelgenau (16-Sample-Blöcke). Seq und Vocoder brauchen Stimmen- bzw. Audiotakt. Ohne KEYS sähe das Worklet nur Arp-Noten und setzte Key Sync „Timbre“ bei jedem Arp-Schritt zurück; das Gerät unterscheidet gespielte Tasten von Arp-Wiederholungen (HB-MS S. 43, S. 63). |
 | **EN3-12** | **Stimmen-Budget:** 4 Stimmen je AM-Spur wie MS2000 (HB-MS S. 2). MK13 erlaubt 8. Der CPU-Begrenzer ändert nie Gespeichertes (I-08), Stufen in B.4. | Plan Punkt 5. |
-| **EN3-13** | **Kein WebGL im AM-Bedienfeld.** Die Regler bleiben DOM. Schritt- und Bandanzeigen (≤ 16 Säulen, ≤ 30 Hz, nur sichtbar) zeichnet Canvas 2D. | WebGL lohnt erst bei Tausenden Elementen. Ein zusätzlicher GL-Kontext kostet Speicher und Startzeit auf dem iPhone. PE1 (rAF ≥ 55 fps) ist die Prüfung. |
-| **EN3-14** | **AM-Code nachladen, Kern immer da.** Der Worklet-Teil steht im vorhandenen Worklet-Quelltext (ASCII). Im Hauptfaden gibt es zwei Teile. **(1) Immer geladen, klein, im oder vor `SQStore`** (wie FMX, CHANGES-V3): Engine-Eintrag `mk`, `normMk`, INIT AM, `mkToFlat`, `mkLocalStrip`, die `loc`/`locRef`-Behandlung und EN3-08a. **(2) Nachgeladen** als `<script type="text/plain" id="sq-mk-src">`: Bedienfeld, Arp, Import-Parser, Werksdaten, Tabellen-Bau (`mkTables`, B.4). Ausgewertet wird (2) beim ersten Bedarf: AM-Sound im geöffneten Projekt (dann **schon während des Ladens**, bevor der Transport starten kann), Engine-Knopf AM, Bibliothek mit AM-Filter oder Leistungs-Probe. Vor der Auswertung und vor jedem Entpack-Schub ruft die App `tickAhead(.3)` (Z. 13125); zwischen zwei Tabellen-Häppchen ≤ 8 ms liegt mindestens ein Scheduler-Tick. | Ladezeiten haben Vorrang (CLAUDE.md, Punkt 2). Projekte ohne AM starten wie bisher. Teil (1) muss beim Start und in jedem Upload wirken: Ein Engine-Block überlebt nur, wenn sein Modul da ist (Z. 7873), und `Library.load`/`Autosave.load` normalisieren jeden Sound beim Start (Z. 8247, 8340). Der Scheduler plant nur 100 ms voraus (Z. 12917): Ein Stillstand > 75 ms macht Noten auf allen Spuren spät, > 200 ms fallen sie aus. Block (2) lässt sich später als Ganzes packen (H-1). |
+| **EN3-13** | **Kein WebGL im AM-Bedienfeld.** Die Regler, Drehschalter, Tasten, LEDs, die Anzeige, die Räder und die Holzwangen sind DOM mit CSS (Verläufe, Schatten, eigene kleine SVG-Formen), **ohne Bild-Dateien** (B.3). Schritt- und Bandanzeigen sowie die Pegelanzeige der Aufnahme-Seite (≤ 16 Säulen, ≤ 30 Hz, nur sichtbar) zeichnet Canvas 2D. | WebGL lohnt erst bei Tausenden Elementen. Ein zusätzlicher GL-Kontext kostet Speicher und Startzeit auf dem iPhone. PE1 (rAF ≥ 55 fps) ist die Prüfung. |
+| **EN3-14** | **AM-Code nachladen, Kern immer da.** Der Worklet-Teil steht im vorhandenen Worklet-Quelltext (ASCII). Im Hauptfaden gibt es zwei Teile. **(1) Immer geladen, klein, im oder vor `SQStore`** (wie FMX, CHANGES-V3): Engine-Eintrag `mk`, `MK_LABEL` (EN3-05), `normMk`, INIT AM, `mkToFlat`, ab MK9 `mkLocalStrip`, die `loc`/`locRef`-Behandlung und EN3-08a. **(2) Nachgeladen** als `<script type="text/plain" id="sq-mk-src">`: Bedienfeld, Räder, Arp, Werksdaten, eingebaute Speicherwellen (MK10), Tabellen-Bau (`mkTables`, B.4), später der Import-Parser (MK9). **(3) Nachgeladen** als `<script type="text/plain" id="sq-mkrec-src">` (MK10): Aufnahme-Seite, WAV/AIFF-Leser und Wellen-Analyse; ausgewertet nur beim Öffnen von „Wellen aufnehmen“. Ausgewertet wird (2) beim ersten Bedarf: AM-Sound im geöffneten Projekt (dann **schon während des Ladens**, bevor der Transport starten kann), Engine-Knopf „MS 2000“, Bibliothek mit dem Filter „MS 2000“ oder Leistungs-Probe. Vor der Auswertung und vor jedem Entpack-Schub ruft die App `tickAhead(.3)` (Z. 13125); zwischen zwei Tabellen-Häppchen ≤ 8 ms liegt mindestens ein Scheduler-Tick. | Ladezeiten haben Vorrang (CLAUDE.md, Punkt 2). Projekte ohne AM starten wie bisher. Teil (1) muss beim Start und in jedem Upload wirken: Ein Engine-Block überlebt nur, wenn sein Modul da ist (Z. 7873), und `Library.load`/`Autosave.load` normalisieren jeden Sound beim Start (Z. 8247, 8340). Der Scheduler plant nur 100 ms voraus (Z. 12917): Ein Stillstand > 75 ms macht Noten auf allen Spuren spät, > 200 ms fallen sie aus. Block (2) lässt sich später als Ganzes packen (H-1). |
 | **EN3-15** | **Zwei Eingänge je AM-Spur.** **E1** heißt „Instrument“ (MS2000 AUDIO IN 1), **E2** heißt „Stimme“ (AUDIO IN 2, Vocoder-Modulator). Der microKORG nummeriert seine Buchsen andersherum (dort IN 1 = Mikrofon ≙ E2, IN 2 = Line ≙ E1; A.11 Nr. 5). Jeder Eingang ist wählbar: Mikrofon (nur auf der Pages-Seite, über den gemeinsamen Mikrofon-Abgriff aus MK7, Start nur auf Tipp), eine andere Spur (Abgriff **vor** ihrem Fader, MK7) oder aus. Die Wahl gehört zur Spur (`tr.mkIn`), nicht zum Sound. | HB-MS S. 4, S. 38, S. 49; HB-MK S. 31, S. 33. Das Mikrofon geht nur außerhalb der Claude-App (EN2-06). |
 | **EN3-16** | **Geräte-Abgleich.** Xander besitzt einen microKORG. Jedes Paket nennt Punkte, die er nach Gehör am Gerät vergleicht. Das blockiert nicht. Ergebnisse ändern nur die W-Tabelle, mit Wert und Grund in CHANGES. | Viele Kurven sind eK. Das Gerät ist die beste Referenz, die wir haben. |
-| **EN3-17** | **Zwischenstände.** Artifact und Pages bekommen je einen Stand nach MK1, MK4, MK7, MK8, MK10 und MK13 (EN2-15 sinngemäß; die Untergruppen stehen in E.1). | Xander will früh hören. Der Vocoder mit Mikrofon geht nur auf Pages. |
-| **EN3-18** | **Regel MK-R1:** Jeder neue stetige AM-Regler ist automatisch ein Ziel des Mod-Sequenzers (ab MK6) und ein Patch-Ziel, wenn A.5 es nennt. In das App-Mod-System (Halten → Mod-Picker, `MODT`) kommen AM-Regler erst mit V5d (MOD-R1). Als Pad-Quelle kommt AM erst mit V1d (PAD-R1). Weil MK jetzt **vor** V5d, V6a, V5b/c und V1d gebaut wird, werden die AM-Regler (2 Timbres mit je ≈ 60 stetigen Werten, dazu Seq und Vocoder) dort Pflicht-Ziele. Vorgabe **H-9 = ja** (Xanders Wunsch I4 „jeder Regler modulierbar“): Umfang, Abnahme, Stunden und KB dieser Pakete steigen (Teil G Nr. 4). | Die MS2000-Modulation (PATCH, SEQ) ist Teil des Plans. Das App-Mod-System ist es noch nicht (N1 EN-21). Die Pakete V5d ff. wurden ohne AM geplant. |
-| **EN3-19** | **Regel MK-R2:** Jedes spätere Paket mit einem Weg vom Gerät weg (VO3, VO4a–c, VC2b/VC2c, VC3, VC3b, VC4 inkl. `sample` und `room.sendToClaudeSession`) ruft `mkLocalStrip` auf. Seine FP-SICHER-Prüfung prüft das (Teil G Nr. 10). | Die Liste in EN3-08 wäre sonst nur für heute vollständig. |
+| **EN3-17** | **Zwischenstände.** Artifact und Pages bekommen je einen Stand nach MK1, MK4, MK7, MK8, MK10 (Bau-Abschnitt 1: Aufnahme-Seite, damit Xander aufnehmen kann), nach dem MK10-Einbau und nach MK13 (EN2-15 sinngemäß; die Untergruppen stehen in E.1). | Xander will früh hören. Vocoder mit Mikrofon und Aufnahme-Seite gehen nur auf Pages (Safari), nicht in der Claude-App. |
+| **EN3-18** | **Regel MK-R1:** Jeder neue stetige AM-Regler ist automatisch ein Ziel des Mod-Sequenzers (ab MK6) und ein Patch-Ziel, wenn A.5 es nennt. In das App-Mod-System (Halten → Mod-Picker, `MODT`) kommen AM-Regler erst mit V5d (MOD-R1). Als Pad-Quelle kommt AM erst mit V1d (PAD-R1). Weil MK jetzt **vor** V5d, V6a, V5b/c und V1d gebaut wird, werden die AM-Regler (2 Timbres mit je ≈ 60 stetigen Werten, dazu Seq und Vocoder) dort Pflicht-Ziele. **H-9 = ja** (entschieden 25.10.; Xanders Wunsch I4 „jeder Regler modulierbar“): Umfang, Abnahme, Stunden und KB dieser Pakete steigen (Teil G Nr. 4). | Die MS2000-Modulation (PATCH, SEQ) ist Teil des Plans. Das App-Mod-System ist es noch nicht (N1 EN-21). Die Pakete V5d ff. wurden ohne AM geplant. |
+| **EN3-19** | **Regel MK-R2** (gilt erst, wenn MK9 gebaut ist): Jedes Paket, das **nach** MK9 einen Weg vom Gerät weg baut (VO3, VO4a–c, VC2b/VC2c, VC3, VC3b, VC4 inkl. `sample` und `room.sendToClaudeSession`), ruft `mkLocalStrip` auf. Seine FP-SICHER-Prüfung prüft das (Teil G Nr. 10). Wird MK9 später gebaut, rüstet MK9 selbst alle dann vorhandenen Wege nach (MK9 Umfang 5). | Die Liste in EN3-08 wäre sonst nur für heute vollständig. Solange MK9 zurückgestellt ist, gibt es keine 🔒-Sounds, also nichts zu strippen. |
+| **EN3-20** | **Bedienfeld wie die Vorderseite des Originals** (Xander, 25.10.: „genau so“). Anordnung der Sektionen und Regler, die Drehschalter-Logik EDIT-WAHL 1/2 mit der Sektions-Matrix, die 5 Regler, die Wert-Anzeige, BEND- und MOD-Rad links der Tasten, Oktav-Tasten, Arp-Taste, Nummerntasten, Farben und Material (dunkles Bedienfeld, Holzwangen) folgen dem Original (B.3, Referenz-Skizze). Nicht übernommen werden Name, Logo und Schrift von Korg. Ebene 1 der Regler ist genau die Belegung des Originals (Parameter-Liste HB-MK PDF 78); was der MS2000 oder die RADIAS-Teile zusätzlich haben, liegt auf der SHIFT-Ebene 2 (bzw. 3) und an den zwei Stellungen, die am Original GLOBAL und MIDI heißen (beide entfallen in der App, A.10). Alle Trefferflächen ≥ 44 × 44 px. | Xanders Wunsch. Die Zusatz-Ebenen lassen Ebene 1 unverändert und brauchen keinen 6. Regler. Ob die Zusätze so liegen dürfen, ist Frage H-14 (sichtbar, CLAUDE.md Nr. 3). |
+| **EN3-21** | **Nur iPhone, kein Rechner, kein MIDI.** Xander arbeitet nur am iPhone 12 Pro Max und kennt MIDI nicht; iOS Safari hat kein Web MIDI. Kein Paket darf einen Rechner, MIDI oder eine Datei vom Rechner verlangen. Darum ist **MK9 (Import .syx/.prg) zurückgestellt** (außerhalb der Versionsfolge, E.1), und Teil D beschreibt nur iPhone-Schritte. Der MIDI-Eingang für Bend/Mod-Rad bleibt eine **freiwillige Zugabe für Desktop-Browser**, nie nötig (MK1 Umfang 8); BEND und MOD sind Touch-Räder (H-5). | Xander, 25.10. Auch die Bau- und Prüfschritte, die Xander selbst macht (iPhone-Prüfpunkte, Geräte-Abgleich, Aufnahmen), gehen am iPhone. |
 
 ### N3.0.4 Was die App schon hat (Wiederverwendung)
 
@@ -76,15 +79,16 @@ Stand 25.10.2026, **Rev. 1** nach dem Review (Protokoll am Ende) · Status: **En
 | Hüllkurven-Kern `envCoefs`/`envBlock` | Z. 3866–3886 | EG1, EG2 (MK12: EG3) |
 | LFO-Formen `lfoVal` (Sinus, Dreieck, Säge, Rechteck, S&H), globale/je Stimme-Phase | Z. 4338 | LFO1/LFO2. Neu: Squ(+) unipolar, Key Sync „Timbre“ |
 | Mod-Matrix (8 Plätze, Quellen/Ziele) | Z. 3559–3562 | PATCH 1–4 mit AM-eigenen Zielen |
-| Tabellen-Wellen mit einer Mipmap je Oktave, Überblendung je Steuerblock (V4a, K2-40) | Worklet „Wave 0 … 11“ (Z. 3631–3673; beim Laden des Moduls gebaut) | Nur das **Verfahren**: AM bekommt einen eigenen, DOM-freien Bau `mkTables` im Hauptfaden (MK2, B.4), der zugleich der gemeinsame Tabellen-Bau nach Spec §10.1 ist. `waveTab` von V4a bleibt unverändert im Worklet. Nutzung: Speicherwellen, Endlos, MK10 (die Stimmwelle wird live gerechnet, W-28) |
+| Tabellen-Wellen mit einer Mipmap je Oktave, Überblendung je Steuerblock (V4a, K2-40) | Worklet „Wave 0 … 11“ (Z. 3631–3673; beim Laden des Moduls gebaut) | Nur das **Verfahren**: AM bekommt einen eigenen, DOM-freien Bau `mkTables` im Hauptfaden (MK2, B.4), der zugleich der gemeinsame Tabellen-Bau nach Spec §10.1 ist. `waveTab` von V4a bleibt unverändert im Worklet. Nutzung: Speicherwellen, Endlos, MK10 (lokal und eingebaut; die Stimmwelle wird live gerechnet, W-28) |
 | Spur-Kette (Drive, Chorus, Trem, Duck, Vol, Pan, Hall-/Echo-Send) | `buildChain` Z. 12013 | unverändert **hinter** dem AM-Ausgang (Reiter FX). Abgriff für AM-Eingänge vor Vol/Pan (MK7) |
 | ECO-Rückfall (NativeVoice), Badge | `trackEco`, Z. 12215 | AM → VA-Näherung (B.5) |
 | Klang-Datenmodell, `normalizeSound`, `soundHash`, Bibliothek, INIT je Engine; Engine-Listen `ENGINE_LABEL`, Browser, `setEngineOf` | Z. 7739–8000, Z. 11060 ff.; Z. 11162, 24409, 24509, 20343 | Engine `mk`, `normMk`, INIT AM; `mk` in allen Engine-Listen (MK1); Feld-Listen für `bank`/`slot` (MK8), `loc`/`locRef` (MK9), `tr.mkIn` (MK7) |
 | Undo je Geste `soundEdit`/`commitSound` | Z. 20327 | jede AM-Geste |
-| Blatt-Rahmen `sheetFrame`, `sKnob`, `knobRow` mit Klasse `k5`, `lcdShow`, `openPop`, fit-Klassen | Z. 20260, 20725, 20175, 19579 | AM-Bedienfeld |
-| Mikrofon-Zugang (VS1: `MIC_ASK`, `getUserMedia` nur auf Tipp, play-and-record, Wege-Erkennung) | Z. 29401, Z. 29500 ff., Z. 30007 ff. | Eingang „Mikrofon“ über einen gemeinsamen, referenzgezählten Mikrofon-Abgriff ohne Stimm-Analyse (MK7). Die VS1-Sitzung (`stStart`, MPM, Ringpuffer) wird nicht mitbenutzt |
-| MIDI-Eingang `connectMidi`/`onMidiMsg` (nur Note an/aus → `inputDown`/`inputUp`) | Z. 26587, Z. 29030–29047 | Notenquelle des Arp (MK5); Bend (0xE0) und CC1 nach H-5 (c) (MK1) |
-| .syx-Dateiwahl ohne `accept` (iOS), lokale Verarbeitung | `importSyx` Z. 24724, Z. 26513 | MK9 |
+| Blatt-Rahmen `sheetFrame` (Kopf, LCD-Zeile, Reiter), Regler-Geste `sKnob`, `lcdShow`, `openPop`, fit-Klassen | Z. 20260, 20725, 20175, 19579 | Rahmen um das AM-Bedienfeld; die Bedienfeld-Bausteine (Kappen-Regler, Drehschalter, LED-Tasten, Anzeige, Holzwangen) sind neu (B.3), die Ziehgeste der Regler kommt aus `sKnob` |
+| Tastatur-Bereich `#kbArea`, Oktav-Wahl je Spur `tr.kbOct` (1…7) | Z. 3494, Z. 11491, Z. 18917 | OKT ▼/▲ des Bedienfelds ändern `tr.kbOct`; BEND- und MOD-Rad sitzen bei AM-Spuren links im `#kbArea` (MK1) |
+| Mikrofon-Zugang (VS1: `MIC_ASK`, `getUserMedia` nur auf Tipp, play-and-record, Wege-Erkennung) | Z. 29401, Z. 29500 ff., Z. 30007 ff. | Eingang „Mikrofon“ über einen gemeinsamen, referenzgezählten Mikrofon-Abgriff ohne Stimm-Analyse (MK7); derselbe Abgriff speist die Aufnahme-Seite „Wellen aufnehmen“ (MK10, Eingang = AG06). Die VS1-Sitzung (`stStart`, MPM, Ringpuffer) wird nicht mitbenutzt |
+| MIDI-Eingang `connectMidi`/`onMidiMsg` (nur Note an/aus → `inputDown`/`inputUp`) | Z. 26587, Z. 29030–29047 | Notenquelle des Arp (MK5); Bend (0xE0) und CC1 nur als freiwillige Zugabe am Desktop (MK1 Umfang 8, EN3-21) |
+| .syx-Dateiwahl ohne `accept` (iOS), lokale Verarbeitung | `importSyx` Z. 24724, Z. 26513 | MK9 (zurückgestellt) |
 | Verstecktes Testblatt mit JSON-Ergebnis (VS0 Mikro-Check) | CHANGES VS0 | Leistungs-Probe (MK1) |
 | Test-API `engineInfo().perTrack[i].load`, `noteLog`, `viewState` | Z. 31579 | Abnahmen |
 
@@ -121,7 +125,7 @@ Spalten: Parameter wie im Handbuch · Wertebereich · Seite HB-MS · Seite HB-MK
 | Transpose | −24…+24 HT | S. 36 | S. 17 | Fußlage/HT je Oszillator | ≈ | MK1 |
 | Tune | −50…+50 ct | S. 36 | S. 17 | `o*fine` | ✓ | MK1 |
 | Vibrato Int | −63…+63 (LFO2, Mod-Rad) | S. 36 | S. 17 | Route `mw` → pitch | ≈ | MK1 |
-| Bend Range | −12…+12 HT | S. 36 | S. 17 | kein Bend-Rad; MIDI-Bend nur nach H-5 (c) | ✗ (gespeichert; wirkt nur mit MIDI-Bend, H-5) | MK1 |
+| Bend Range | −12…+12 HT | S. 36 | S. 17 | kein Bend-Rad | ✗ (MK1 bringt das Touch-Rad BEND, H-5; MIDI-Bend nur freiwillig am Desktop) | MK1 |
 | Portamento | 0…127 | S. 36 | S. 17 | `glide` 0–2 s | ✓ (Kurve W-13) | MK1 |
 
 ### A.3 Oszillatoren und Mixer
@@ -233,7 +237,7 @@ Spalten: Parameter wie im Handbuch · Wertebereich · Seite HB-MS · Seite HB-MK
 
 ### A.10 Nicht übernommen (mit Grund)
 
-- **Global** (Mst.Tune 430–450 Hz, Transpose, Vel.Curve, Position, AudioInThru, Protect, MIDI-Kanal, MIDI1/MIDI2-Zuweisung, Local, Clock, Filter, Dump, Pedal/Switch; HB-MS S. 53–57, HB-MK S. 47–51): Das regelt die App auf Projekt- und Geräte-Ebene (Tempo, Tastatur FEST/POSITION). Die App hat einen MIDI-Eingang, der heute nur Note an/aus verarbeitet (Z. 29030–29047); Bend und CC1 kommen nur nach H-5 (c) dazu. MIDI 1/MIDI 2 gelten fest als Bend/Mod-Rad (Werksbelegung, A.5).
+- **Global** (Mst.Tune 430–450 Hz, Transpose, Vel.Curve, Position, AudioInThru, Protect, MIDI-Kanal, MIDI1/MIDI2-Zuweisung, Local, Clock, Filter, Dump, Pedal/Switch; HB-MS S. 53–57, HB-MK S. 47–51): Das regelt die App auf Projekt- und Geräte-Ebene (Tempo, Tastatur FEST/POSITION). Die App hat einen MIDI-Eingang, der heute nur Note an/aus verarbeitet (Z. 29030–29047); BEND- und MOD-Rad kommen als Touch-Räder (MK1, H-5), Bend und CC1 vom MIDI-Eingang nur als freiwillige Zugabe am Desktop (EN3-21). MIDI 1/MIDI 2 gelten fest als Bend/Mod-Rad (Werksbelegung, A.5). Die Stellungen GLOBAL und MIDI der EDIT-WAHL 2 tragen in der App die MS2000-Teile STIMMUNG und SEQ (B.3).
 - **CC/NRPN-Tabellen** (HB-MS S. 60–65): Sie dienen nur als Hilfe beim Import (Wertzuordnung), nicht als Funktion.
 - **Demos, Write/Protect, Program-Banks A–H mit je 16** (HB-MS S. 2): Das übernimmt die Bibliothek. Die Bänke folgen dem microKORG-Muster (A.11).
 
@@ -242,11 +246,11 @@ Spalten: Parameter wie im Handbuch · Wertebereich · Seite HB-MS · Seite HB-MK
 1. Layer (microKORG) = Dual (MS2000). Split gibt es nur beim MS2000 → übernommen.
 2. Vocoder: microKORG 8 Kanäle (16 Filter paarweise, S. 35), MS2000 16 Kanäle → 16. Der Import ordnet Kanal k den Bändern 2k−1 und 2k zu.
 3. Step-Arp (Last Step 1–8, Schritt-Tasten) gibt es nur beim microKORG → übernommen.
-4. Mod-Seq, Scale, Priority, Filter/Amp Vel Sense, Amp Sw und Split gibt es nur beim MS2000 → übernommen, als 6. Regler bzw. eigene Sektion (B.3).
+4. Mod-Seq, Scale, Priority, Filter/Amp Vel Sense, Amp Sw und Split gibt es nur beim MS2000 → übernommen, auf der SHIFT-Ebene 2 der passenden Sektion bzw. an den Stellungen STIMMUNG und SEQ der EDIT-WAHL 2 (am Original GLOBAL und MIDI; B.3, EN3-20).
 5. Audio-In-Balance: Nach Funktion haben beide Geräte dieselbe Richtung (127 = nur der Mikrofon-Eingang). MS2000: 0 = nur IN 1 (Instrument, Träger), 127 = nur IN 2 (Mikrofon, Modulator) (HB-MS S. 38, S. 4, S. 17, S. 49). microKORG: 127 = nur AUDIO IN 1, 0 = nur AUDIO IN 2 (HB-MK S. 21); dort ist IN 1 die Mikrofon-Buchse (Modulator) und IN 2 LINE (Träger, INST LEVEL) (HB-MK S. 4, 10, 31, 33, 34). Der Import ordnet deshalb nach Funktion zu: **microKORG IN 1 → E2, IN 2 → E1; der Balance-Wert wird unverändert übernommen.**
 6. Die Patch-Quellen heißen am microKORG FILTER EG, AMP EG, …, Pitch Bend, MOD.Wheel (S. 30). Das entspricht EG 1, EG 2, …, MIDI 1, MIDI 2 beim MS2000 (S. 42). FC-Mod-Quellen hat der microKORG ohne EG 1: 7 Einträge ab AMP EG (HB-MK S. 36 gegen HB-MS S. 50); der Import bildet sie nach Namen ab (MK9).
-7. **Programme:** Der microKORG hat 8 Genre-Bänke × 2 Seiten × 8 Nummern = 128 (S. 8). Die Bänke heißen TRANCE, TECHNO/HOUSE, ELECTRONICA, D&B/BREAKS, HIPHOP/VINTAGE, RETRO, S.E./HIT und VOCODER (PDF 77). Das wird **übernommen als Bedien-Logik**: Genre-Bank ▾, Seite A│B, Tasten 1–8, Anzeige „A.24“.
-8. **Performance Edit** (S. 8–9): Ist keine Sektion gewählt, steuern die Regler 1–5 Cutoff, Resonance, EG Attack (Filter- + Amp-EG), EG Release (Filter- + Amp-EG) und Tempo → Seite **SPIEL**. Im Vocoder-Programm wirken Regler 1/2 auf die Bandpässe des Trägers und 3/4 nur auf die Amp-EG (S. 10; B.3 SPIEL).
+7. **Programme:** Der microKORG hat 8 Genre-Bänke × 2 Seiten × 8 Nummern = 128 (S. 8). Die Bänke heißen TRANCE, TECHNO/HOUSE, ELECTRONICA, D&B/BREAKS, HIPHOP/VINTAGE, RETRO, S.E./HIT und VOCODER (PDF 77). Das wird **übernommen als Bedien-Logik und Aussehen**: BANK-Drehschalter (8 Genres), Taste SEITE (A│B), Nummerntasten 1–8, Anzeige „A.24“ (B.3).
+8. **Performance Edit** (S. 8–9): Ist keine Sektion gewählt (beide LEDs an den Drehschaltern leuchten), steuern die Regler 1–5 Cutoff, Resonance, EG Attack (Filter- + Amp-EG), EG Release (Filter- + Amp-EG) und Tempo → Zustand **SPIEL**. Im Vocoder-Programm wirken Regler 1/2 auf die Bandpässe des Trägers und 3/4 nur auf die Amp-EG (S. 10; B.3 SPIEL).
 9. **Oktavlage:** Der microKORG speichert den Zustand OCTAVE SHIFT im Programm (HB-MK S. 58), der MS2000 nicht (HB-MS S. 36) → der Import rechnet ihn in Transpose um (MK9).
 
 ### A.12 Zusammenfassung — was dem SYNQUENZER-Synth fehlt
@@ -260,7 +264,7 @@ Spalten: Parameter wie im Handbuch · Wertebereich · Seite HB-MS · Seite HB-MK
 7. **Effekte:** Cho/Flg, Ensemble, Phaser, 3 Delay-Typen und 2-Band-EQ, je Klang und mit Tempo.
 8. **Spielhilfen:** Step-Arpeggiator.
 9. **Vocoder:** 16 Bänder, Halten, Kanal-Pegel und -Pan.
-10. **Bedienung/Bibliothek:** Bedienfeld nach microKORG-Logik, Genre-Bänke, Import, Speicherwellen aus Aufnahmen.
+10. **Bedienung/Bibliothek:** Bedienfeld wie die Vorderseite des Originals (ohne Marke), BEND- und MOD-Rad, Genre-Bänke, Speicherwellen aus Aufnahmen in der App (eingebaut); Import (zurückgestellt).
 11. **RADIAS-Teile:** Filter 2 mit Routing, Verzerrer, EG3, Formant-Oszillator, 8 Stimmen.
 
 ---
@@ -316,13 +320,13 @@ T = {
 }
 ```
 
-- **Mod-Rad:** Für AM gilt der vorhandene flache Wert `p.mw` (0…1, „Mod-Rad“, Z. 11203). Er ist die Quelle „Mod-Rad“ (MIDI 2) und skaliert das Vibrato. Ein CC1 vom MIDI-Eingang überschreibt ihn live, solange er anliegt (H-5 (c)); das wird nicht gespeichert und macht keinen Undo-Schritt. Ebenso ein MIDI-Bend für die Quelle „Bend“ (MIDI 1).
+- **Räder (H-5, entschieden 25.10.):** BEND- und MOD-Rad sind Touch-Räder links der Tasten (B.3, MK1). Ihre Stellung ist ein **Live-Wert je Spur** (`R.mkWheel[uid] = {bend: −1…+1, mod: 0…1}`), wird **nicht gespeichert** und macht keinen Undo-Schritt, wie am Gerät. Das MOD-Rad startet beim Laden des Sounds und beim Spurwechsel auf dem vorhandenen flachen Wert `p.mw` (0…1, „Mod-Rad“, Z. 11203; in der App der Regler MOD-RAD, TONH. Ebene 2) und ersetzt ihn live, sobald es bewegt wird. Es ist die Quelle „Mod-Rad“ (MIDI 2) und skaliert das Vibrato. Das BEND-Rad federt beim Loslassen zur Mitte und ist die Quelle „Bend“ (MIDI 1). Freiwillig am Desktop: Bend (0xE0) und CC1 vom MIDI-Eingang setzen dieselben Live-Werte (EN3-21).
 - **Eingänge** (EN3-15) gehören zur Spur: `tr.mkIn = {e1: null | 'mic' | 't:<uid>', e2: …, e1Dry: 1, e2Dry: 1}`. `eDry` 0 = „Quelle nur als Eingang“ (H-10, MK7). Das Format bleibt 5, die Felder sind neutral. `normTrack`/`normalizeProject` behalten `tr.mkIn` (Z. 11490–11500).
 - **`normMk(p)`** klemmt jedes Feld auf die Bereiche aus Teil A (Listen: Index 0…n−1, auf ganze Zahlen gerundet). Fehlende Felder bekommen die INIT-Werte, unbekannte Felder fallen weg. `normSynthP` ruft `normMk` auf, wenn `p.mk` existiert oder `engine === 'mk'`. Der Block bleibt bei jedem Engine-Wechsel erhalten (wie `p.fmx`, Z. 7872). `normMk` gehört zum immer geladenen Teil (EN3-14), sonst fiele `p.mk` beim ersten Laden der Bibliothek weg.
-- **Feld-Listen:** `normalizeSound` behält nur aufgezählte Felder (Z. 7920–7928). Neu aufgenommen werden `bank`/`slot` (MK8) und `loc`/`locRef` (MK9). `ENGINE_LABEL` bekommt `mk` (Z. 11162; sonst zeigen `soundLabel`, Browser und MIDI-Spurname „VA“), die Engine-Listen des Browsers (Z. 24409, 24509) und die `setEngineOf`-Liste mit Aufräumen (Z. 20343, 20352) nehmen `mk` auf (MK1).
+- **Feld-Listen:** `normalizeSound` behält nur aufgezählte Felder (Z. 7920–7928). Neu aufgenommen werden `bank`/`slot` (MK8) und `loc`/`locRef` (MK9). `ENGINE_LABEL` bekommt `mk: MK_LABEL`, also „MS 2000“ (Z. 11162; sonst zeigen `soundLabel`, Browser und MIDI-Spurname „VA“), die Engine-Listen des Browsers (Z. 24409, 24509) und die `setEngineOf`-Liste mit Aufräumen (Z. 20343, 20352) nehmen `mk` auf (MK1).
 - **`soundHash`** bleibt (Z. 7765). `p.mk` ist Teil von `p` und zählt also mit.
 - **Format 5** (EN3-04): `PROJECT_FORMAT` 5, `SOUNDS_FORMAT` 2. Format 3 und 4 laden unverändert. Die Meldung „Projekt aus einer neueren Version“ (Z. 8163) erscheint nur beim Datei-Import von Hand (`parseFile`, Z. 24623). `projFromFile` (Z. 26988; Wege Cloud und Projektwechsel), `Autosave.load` (Z. 8340), `Library.load` (Z. 8247) und `cloudLibMerge` verwerfen ohne Meldung; den Schutz bringt MK0. Online: `p_format` 5 wird erst nach dem Rollout `max_format` 5 angenommen. Bis dahin speichert die App lokal und meldet `bad_version` wie bisher.
-- **INIT AM** (`f-init-am`, cat `init`, `INIT_IDS.mk`): genau die Vorgaben oben (Säge, Filter offen, EG2 Sustain 127, Release 8). Pegel wie MK1-20. Im Vocoder-Modus lädt ⋯ → Init INIT AM mit `mode` 3 und den Vocoder-Vorgaben (HB-MS S. 51).
+- **INIT AM** (`f-init-am`, cat `init`, `INIT_IDS.mk`; sichtbarer Name **„INIT MS 2000“**, aus `MK_LABEL` gebildet): genau die Vorgaben oben (Säge, Filter offen, EG2 Sustain 127, Release 8). Pegel wie MK1-20. Im Vocoder-Modus lädt ⋯ → Init bzw. SHIFT + 3 INIT AM mit `mode` 3 und den Vocoder-Vorgaben (HB-MS S. 51).
 
 ### B.2 Werte-Kurven (W-Tabelle; alle eK, außer wo [B] steht)
 
@@ -346,8 +350,8 @@ Notation: v = gespeicherter Wert. Note = MIDI-Note (C4 = 60). vel = Anschlag 0�
 | **W-14** | OSZ2-Fein | ct = sign(v) · 1200 · (|v|/48)² für |v| ≤ 48, sonst sign(v) · (1200 + 80 · (|v| − 48)) | Eckwerte [B] S. 38, Verlauf eK |
 | **W-15** | Unison-Verstimmung (d ct) | 4 Stimmen: −d/2, −d/6, +d/6, +d/2 · 3: −d/2, 0, +d/2 · 2: ±d/2 · 8 (MK13): gleichmäßig über ±d/2 | eK |
 | **W-16** | Vibrato | Spitzenhub = v/63 · 200 ct · Mod-Rad (0…1), Quelle LFO2 | eK; Verdrahtung [B] S. 36 |
-| **W-17** | Bend | Bereich v HT. Die App hat kein Rad → Wert 0. Kommt ein MIDI-Bend (0xE0) über den Eingang, wirkt er live über ± v HT (H-5 (c)) | [B] S. 36 |
-| **W-18** | Patch-Intensität i | Ziel = i/63 · volle Spanne: Tonhöhe ±24 HT · OSZ2-Tonhöhe ±63 Fein-Einheiten (über W-14) · OSZ1-Steuer 1 ±127 · Rauschen ±127 · Cutoff ±127 Cutoff-Einheiten · Amp ±127 Pegel-Einheiten · Pan voller Weg L63↔R63 · LFO2-Freq ±127 (über W-08). **LFO2-Freq wirkt nicht, solange `l2.sync` = 1.** Quellen: EG 0…1, LFO −1…+1 (LFO2 Rechteck(+) 0…1), Anschlag vel, Keytrack (KT − 60)/60, Bend (MIDI-Bend −1…+1, sonst 0), Mod-Rad `p.mw` (bzw. live CC1). Rechnung in Bruchwerten (B.6 Nr. 2) | eK; Liste [B] S. 42; Tempo-Sync-Regel [B] HB-MS S. 41/42, HB-MK S. 29/30; MIDI 1/2 = Werksbelegung (A.5) |
+| **W-17** | Bend | Bereich v HT. Das Touch-Rad BEND (MK1, B.3) wirkt live über ± v HT: Tonhöhe = Rad (−1…+1) · v HT, linear, Totzone ± 2 % um die Mitte, beim Loslassen zurück zur Mitte in 80 ms (geglättet, τ 5 ms). Ein MIDI-Bend (0xE0, freiwillig am Desktop) setzt denselben Wert | [B] S. 36; Verlauf und Totzone eK |
+| **W-18** | Patch-Intensität i | Ziel = i/63 · volle Spanne: Tonhöhe ±24 HT · OSZ2-Tonhöhe ±63 Fein-Einheiten (über W-14) · OSZ1-Steuer 1 ±127 · Rauschen ±127 · Cutoff ±127 Cutoff-Einheiten · Amp ±127 Pegel-Einheiten · Pan voller Weg L63↔R63 · LFO2-Freq ±127 (über W-08). **LFO2-Freq wirkt nicht, solange `l2.sync` = 1.** Quellen: EG 0…1, LFO −1…+1 (LFO2 Rechteck(+) 0…1), Anschlag vel, Keytrack (KT − 60)/60, Bend (BEND-Rad −1…+1, in Ruhe 0), Mod-Rad (MOD-Rad 0…1, Startwert `p.mw`; B.1 „Räder“). Rechnung in Bruchwerten (B.6 Nr. 2) | eK; Liste [B] S. 42; Tempo-Sync-Regel [B] HB-MS S. 41/42, HB-MK S. 29/30; MIDI 1/2 = Werksbelegung (A.5) |
 | **W-19** | Amp-Pegel | Gain = K · (v/127)². K so gewählt, dass INIT AM bei C3, vel 0,8 so laut ist wie INIT Analog (±1 dB, MK1-20) | eK |
 | **W-20** | Pan | Equal-Power, −63…+63 | eK |
 | **W-21** | Amp-Anschlag | v ≥ 0: dB = 24 · (v/63) · (vel − 1). v < 0: dB = 24 · (|v|/63) · (−vel) | eK |
@@ -377,96 +381,174 @@ Notation: v = gespeicherter Wert. Note = MIDI-Note (C4 = 60). vel = Anschlag 0�
 | **W-44** | Formant-Oszillator (MK12) | Glottis-Puls + 4 parallele Resonatoren F1–F4. Vokale (Hz): a 730/1090/2440/3400 · e 530/1840/2480/3500 · i 270/2290/3010/3700 · o 570/840/2410/3300 · u 300/870/2240/3300. C1 morpht a → e → i → o → u über 0…127, C2 = LFO1-Tiefe. Glottis wie W-28, Resonatoren als TPT-SVF (B.6 Nr. 10). Die **Vokal-Quelle** (Glottis + F1–F4) baut MK7 (Probe-Modulator, `hold`-Spektren der MK8-Bank); MK12 macht daraus OSZ 1 Welle 8 | Werte nach Peterson & Barney (1952, Männer, gerundet), eK |
 | **W-45** | Verzerrer (MK11) | Typ 1 weich: tanh(g·x)/tanh(g). Typ 2 hart: Klemme ±1/g' mit Pegelausgleich. Typ 3 Falter: Sinus-Falter sin(g·x). g = 1 + 15 · amt/127. 2× Überabtastung **und** ADAA 1. Ordnung (Stammfunktionen: log cosh, die der Klemme, −cos(g·x)/g) | eK |
 
-### B.3 Bedienfeld („wiedererkennbar wie microKORG“, ohne Marke)
+### B.3 Bedienfeld: die Vorderseite des Originals, ohne Marke (EN3-20)
 
-**Logik** (HB-MK S. 8–9, S. 13–15): Man wählt eine Sektion und dreht die Regler. Ohne Sektion greift die Spiel-Belegung (SPIEL). Programme wählt man über Genre-Bank, Seite A/B und Nummer 1–8. Beim Arpeggiator werden die Nummerntasten zu Schritt-Tasten.
+**Grundsatz** (Xander, 25.10.: „genau so“): Das AM-Bedienfeld sieht aus und funktioniert wie die Vorderseite des microKORG: dieselbe Anordnung der Sektionen und Bedienelemente, die Drehschalter EDIT-WAHL 1 und 2 mit der Sektions-Matrix, die 5 Regler, die Wert-Anzeige, BEND- und MOD-Rad links der Tasten, Oktav-Tasten, Arp-Taste und Nummerntasten, dazu das dunkle Bedienfeld mit Holzwangen links und rechts. **Nicht übernommen:** der Name Korg bzw. microKORG, das Logo und die Schrift von Korg. Die Beschriftungen sind eigene deutsche Wörter in der App-Schrift (Großbuchstaben); die Vocoder-Beschriftungen sind grün wie am Original. Wo am Gerät Marke und Modellname stehen, bleibt die Fläche frei (auch ohne „MS 2000“). Quelle der Zuordnung: HB-MK S. 2–3 (Bedienelemente), S. 8–15 (Bedien-Logik), Parameter-Liste und SHIFT-Liste (PDF 78). Es gibt kein Foto. Die **Referenz-Skizze** unten ist eine eigene Zeichnung und für Bau und Abnahme verbindlich; ihre Lage im Einzelnen ist [W]. Xander gleicht sie an seinem Gerät ab (Geräte-Abgleich MK1); eine Abweichung ändert nur Skizze und Bedienfeld, als eigener Schritt `MK1-fix`.
 
-**Maße:** Alle Breiten gelten für den Inhalt des Seitenrahmens `.pg` der Synth-Blätter (`.sh-body` 8 px, `.pg` 6 px + 1 px Rand je Seite; Z. 1981–1982, 2201–2202), nicht für den Bildschirm: **P1 360 px, P2 345, P3 290, L1 814, L2 637.** Im Querformat nimmt die Safe-Area am iPhone noch ≈ 47 px je Seite (`viewport-fit=cover`, Z. 5, 58–59): L1 hat am iPhone 12/13 real ≈ 720 px, am 12 Pro Max (926 × 428) ≈ 802 px. Die Querformat-Maße unten passen in 720 px.
+**Logik** (HB-MK S. 8–15): Nach dem Laden eines Programms leuchten beide LEDs an den Drehschaltern, die Regler haben die Spiel-Belegung (**SPIEL**). Dreht man EDIT-WAHL 1 oder 2, wählt man eine Sektion; die Regler 1–5 bearbeiten sie, ihre Belegung steht in der Matrix-Zeile unter den Reglern. Programme wählt man über BANK, SEITE und die Nummerntasten 1–8. Bei ARP A/B werden die Nummerntasten zu Schritt-Tasten.
 
 **Rahmen:** Der vorhandene Synth-Blattkopf bleibt (`sheetFrame`):
-- Zeile 1: Spurname, **Engine-Wahl VA │ FM │ WT │ AM** (Name nach H-4), ECO-Badge, ↶ ↷ ✕. **Breiten-Budget je Format** (MK1 misst es bei 320/375/390 px mit Spur-Chip und trägt die Werte hier und in CHANGES ein): Die Engine-Knöpfe bekommen ihre 44-px-Trefferhöhe senkrecht über `::after` (wie `.hb.edmL`, Z. 1006), nicht in der Breite. Sie müssen das dichte Raster erfüllen (≥ 36 px breit, 4 px Abstand), und der Spurname bleibt sichtbar. Heute sind sie je nach Breite und Spur-Chip schon 28–40 px breit und 34 px hoch (Z. 715, 721, 2290, 2342, 2350), und das ECO-Badge sitzt in P schon im VA-Knopf (Z. 20845). Passt ein 4. Knopf in P2/P3 nicht, gilt dort die Vorgabe zu H-4: **ein Engine-Chip** „VA ▾“ (zeigt die aktive Engine) mit `openPop` (4 Zeilen ≥ 44 px). Das ändert auch VA/FM/WT sichtbar und kommt nur mit Xanders Okay (CLAUDE.md Nr. 3).
+- Zeile 1: Spurname, **Engine-Wahl VA │ FM │ WT │ MS 2000** (H-4, Beschriftung aus `MK_LABEL`), ECO-Badge, ↶ ↷ ✕. **Breiten-Budget je Format** (MK1 misst es bei 320/375/390 px mit Spur-Chip und trägt die Werte hier und in CHANGES ein): Die Engine-Knöpfe bekommen ihre 44-px-Trefferhöhe senkrecht über `::after` (wie `.hb.edmL`, Z. 1006), nicht in der Breite. Sie müssen das dichte Raster erfüllen (≥ 36 px breit, 4 px Abstand), und der Spurname bleibt sichtbar. Heute sind sie je nach Breite und Spur-Chip schon 28–40 px breit und 34 px hoch (Z. 715, 721, 2290, 2342, 2350), und das ECO-Badge sitzt in P schon im VA-Knopf (Z. 20845). „MS 2000“ steht einzeilig, wo ≥ 52 px frei sind, sonst zweizeilig „MS“ │ „2000“ (Umbruch an der Leerstelle per CSS, kein `<br>`; der Text bleibt genau „MS 2000“). Passt auch das nicht (P2/P3), gilt die Vorgabe zu **H-13**: **ein Engine-Chip** mit der aktiven Engine („VA ▾“ bzw. „MS 2000 ▾“) und `openPop` (4 Zeilen ≥ 44 px). Das ändert auch VA/FM/WT sichtbar und kommt nur mit Xanders Okay (CLAUDE.md Nr. 3).
 - Zeile 2: ‹ Name ›, A/B, Sichern, 🎲, ◎, ⋯, ▶ Hören.
-- LCD-Zeile.
+- LCD-Zeile mit dem Klartext (z. B. „FILTER · CUTOFF 064 · 652 Hz“).
+- Reiter **[GERÄT] [FX]**: GERÄT ist das Bedienfeld; FX ist die vorhandene App-Seite (SPUR, CHORUS, HALL, ECHO, MASTER) und bleibt unverändert. Die Reiter SPIEL, EDIT 1, EDIT 2 und SEQ der Rev. 1 entfallen; ihre Inhalte liegen auf dem Bedienfeld.
 
-Für AM sind die Reiter **[SPIEL] [EDIT 1] [EDIT 2] [SEQ] [FX]**:
-- EDIT 2 kommt mit MK2, SEQ kommt mit MK6. Bis dahin sind diese Reiter ausgeblendet.
-- FX ist die vorhandene App-Seite (SPUR, CHORUS, HALL, ECHO, MASTER) und bleibt unverändert.
+**Referenz-Skizze** (Querformat, ein Stück; eigene Zeichnung, Lage [W]):
 
-**SPIEL** (P1, Körper ≤ 305 px):
-1. Programmzeile a (44 px): [Bank ▾ ≤ 96 px] [A] [B] [Anzeige „A.24“ 56 px] [T1] [T2], zusammen 348 px. T1/T2 werden mit MK3 aktiv.
-2. Nummern 1–8 (8 × 41 × 44, dichtes Raster mit 4 px Abstand, 356 px).
-3. 5 Regler 72 × 92: CUTOFF, RESONANZ, ATTACK, RELEASE, TEMPO. ATTACK und RELEASE verschieben EG1 und EG2 gemeinsam um dasselbe Δ und klemmen jeweils. TEMPO = Song-Tempo, ein Undo, LCD „Tempo 120 · Song“. **Im Vocoder-Modus** (HB-MK S. 10): CUTOFF → `voc.cut` (−63…+63), RESONANZ → `voc.res`, ATTACK und RELEASE nur EG2; die LCD zeigt die Vocoder-Werte.
-4. Schalterzeile (44 px): [ARP ●] [LATCH ●] (MK5), [SEQ ●] (MK6), [HALTEN ●] (nur Vocoder, MK7), [T1+2] [◐ SOLO] (MK3, nach H-11); 6 × 44 + 5 · 4 = 284 px. Die Plätze sind reserviert, nichts rückt nach.
+```
+┌──┬──────────────────────────────────────────────────────────────────────────────────┬──┐
+│  │ Z1      Z2      Z3                Z4                                    Z5       │  │
+│H │                                   CUTOFF RESO.  ATTACK RELEAS TEMPO              │ H│
+│O │ (O)     (@)     (@) *1 (@)          (O)    (O)    (O)    (O)    (O)  *  [8.8.8]  │ O│
+│L │ VOLUME  BANK    WAHL1 *2 WAHL2                                   ORIG [WRT][SFT] │ L│
+│Z │         TRANCE  FILTER              TYP    CUTOFF RESO.  HK-INT KEYTR.  EB2      │ Z│
+│  │ [ARP*][OKT-][OKT+] [SEITE*][TIMBRE**] [1][2][3][4][5][6][7][8]   *E1 *E2         │  │
+│  │ Z7                 Z8                 Z9                         Z10             │  │
+└──┴──────────────────────────────────────────────────────────────────────────────────┴──┘
+┌──────┬──────┬─────────────────────── Tastatur der App (#kbArea) ───────────────────────┐
+│ BEND │ MOD  │                                                                          │
+│ (Rad)│ (Rad)│                                                                          │
+└──────┴──────┴──────────────────────────────────────────────────────────────────────────┘
+(O) Regler · (@) Drehschalter · [ ] Taste · * LED · Z6 = Matrix-Zeile (Bank, Sektion, 5 Belegungen, Ebene)
+```
 
-Summe ≈ 244 px.
+**Zonen** (Bezug L1: Körper 720 × 146 px, Ursprung oben links; die Abnahme rechnet in Anteilen dieses Rechtecks, MK1-32):
 
-**EDIT 1 / EDIT 2** (P1): Sektionsraster **2 × 7 Zellen à 48 × 44** (7 · 48 + 6 · 4 = 360 px). Die Zellen bleiben an festen Plätzen, leere Zellen sind unsichtbar, aber reserviert (M-ANSICHT). Darunter liegt die Reglerzeile der gewählten Sektion:
-- 1–5 Regler: 72 × 92, Klasse `k5`.
-- 6 Regler: neue Klasse `k6` = `repeat(6, minmax(0, 60px))` mit `space-between` wie `k5` (P1 6 × 60, P2 je 57,5, P3 6 × 48).
+| Zone | Inhalt | x | y | Breite | Höhe |
+|---|---|---|---|---|---|
+| Z0, Z11 | Holzwange links, rechts | 0 bzw. 710 | 0 | 10 | 146 |
+| Z1 | VOLUME (Regler) | 14 | 6 | 44 | 62 |
+| Z2 | BANK (Drehschalter, 8 Stellungen) | 64 | 6 | 56 | 62 |
+| Z3 | EDIT-WAHL 1, LEDs ●1/●2, EDIT-WAHL 2 (je 52, LEDs 14) | 128 | 6 | 128 | 62 |
+| Z4 | Regler 1–5 (je 50, Abstand 4) mit fester Aufschrift der Spiel-Belegung, ORIGINAL-LED | 264 | 6 | 276 | 62 |
+| Z5 | Anzeige (60 × 40), WRITE, SHIFT (je 44) | 546 | 6 | 160 | 62 |
+| Z6 | Matrix-Zeile: Bankname unter Z2, Sektionsname unter Z3, 5 Belegungen unter Z4, Ebene „EB2“/„EB3“ unter Z5 | 64 | 72 | 642 | 18 |
+| Z7 | ARP (mit Tempo-LED), OKT ▼, OKT ▲ (je 44, Abstand 4) | 14 | 96 | 140 | 44 |
+| Z8 | SEITE (LED), TIMBRE (LEDs 1, 2) | 162 | 96 | 92 | 44 |
+| Z9 | Nummerntasten 1–8 (je 44, Abstand 4) | 264 | 96 | 380 | 44 |
+| Z10 | Eingangs-LEDs E1, E2 (ab MK7) | 652 | 96 | 52 | 44 |
+| Räder | BEND, MOD links in `#kbArea` (je ≥ 44 breit, Abstand 4), volle Höhe der Tastatur-Zeile | links | – | 92 | Tastatur |
 
-Bei ARP A/B kommt die Schritt-Zeile dazu (8 × 41 × 44). Summe ≤ 244 px.
+**Bedienelemente:**
 
-**Beschriftung:** In Zellen < 48 px (P3, L2) stehen Kurzformen (FLT 2, K-PEG, K-PAN) oder die 9-px-Klasse `.lg`. An Reglern ≤ 60 px (k6, P3) gilt dasselbe bzw. zwei Zeilen (`.mixk`, Z. 2012). M-PLATZ prüft für jede Zelle und jedes `.kl`: scrollWidth ≤ clientWidth (L6, nichts abgeschnitten).
+| Am Original | In der App | Verhalten | ab |
+|---|---|---|---|
+| VOLUME | VOLUME | Spur-Lautstärke (derselbe Wert wie FX → SPUR, Vol); eine Geste = ein Undo | MK1 |
+| BANK SELECT (8 Stellungen) | BANK | 8 Genre-Bänke (Namen nach MK8). Ziehen rastet je Stellung, Tipp öffnet die Liste (Zeilen ≥ 44 px) | MK1 (Bänke leer bis MK8) |
+| BANK SIDE mit LED | SEITE | A (LED aus) │ B (LED an); SHIFT + SEITE wechselt zur zuletzt gewählten Sektion der anderen EDIT-WAHL | MK1 |
+| PROGRAM NUMBER 1–8 mit LEDs | 1 … 8 | Tipp lädt Bank/Seite/Nummer in die Spur (ein Undo, Toast [Rückgängig]); Tipp auf die leuchtende Taste = zurück zu SPIEL. Bei EDIT-WAHL 2 auf ARP A/B Schritt-Tasten (MK5). Mit SHIFT Werkzeuge (Tabelle unten) | MK1 |
+| EDIT SELECT 1, EDIT SELECT 2 (je 11 Stellungen) | EDIT-WAHL 1, EDIT-WAHL 2 | Ziehen (≥ 18 px je Stellung, `haptic('tick')`) oder Tipp → **Auswahl-Liste = die Matrix dieser Wahl** (11 Zeilen ≥ 44 px, je Zeile Sektionsname und die 5 Belegungen, Vocoder grün). Die zuletzt bewegte Wahl ist aktiv | MK1 |
+| SYNTH/VOCODER-LEDs 1, 2 | ●1, ●2 | leuchtet = diese Wahl ist aktiv, beide = SPIEL; Synth-Programm rot, Vocoder-Programm grün (eK) | MK1 |
+| EDIT CONTROLS 1–5 | Regler 1–5 | Kappen-Regler, senkrecht ziehen (Geste aus `sKnob`); feste Aufschrift = Spiel-Belegung, Belegung je Sektion in der Matrix-Zeile | MK1 |
+| ORIGINAL VALUE LED | ORIG | leuchtet, wenn der Wert des zuletzt bewegten Reglers dem gespeicherten Wert des Sounds gleicht (Stand beim Laden bzw. Sichern); in SPIEL aus (HB-MK S. 3) | MK1 |
+| Display (3 Stellen) | Anzeige | 3 Stellen 7-Segment (eigene Zeichnung): Wert (−63…127, Listen als Kurzwort ≤ 3 Zeichen), 1 s nach der Geste wieder die Programmnummer „A.24“ | MK1 |
+| WRITE | WRITE | = Sichern (vorhandener Weg) | MK1 |
+| SHIFT | SHIFT | Tipp: leuchtet; die Regler 1–5 stehen auf **Ebene 2** (zweiter Tipp: Ebene 3, SHIFT blinkt, nur wo es sie gibt), die Nummern- und anderen Tasten haben ihre SHIFT-Funktion. Nächster Tipp, Sektionswechsel oder ausgeführte Tasten-Funktion: aus | MK1 |
+| TIMBRE SELECT / FORMANT HOLD mit LEDs 1, 2 | TIMBRE | Synth: Tipp T1 → T2 → beide (Edit Sync, beide LEDs) → T1; SHIFT + TIMBRE = Solo des gewählten Timbres (LED blinkt), Tipp beendet Solo (HB-MK S. 14; das Halten 2 s des Originals ersetzt der dritte Tipp, L4). Vocoder: Formant halten (LED 1) | MK3, MK7 |
+| ARPEGGIATOR ON/OFF, TEMPO-LED | ARP | Arp an/aus (LED); die Tempo-LED blinkt im Song-Tempo | MK5 |
+| OCTAVE SHIFT DOWN/UP mit LEDs | OKT ▼, OKT ▲ | `tr.kbOct` ±1 (1…7; 4 = Mitte, also ±3 wie am Gerät); die LED der Richtung leuchtet, solange verschoben. SHIFT + OKT ▲/▼ = Wert des zuletzt bewegten Reglers ±1 | MK1 |
+| AUDIO IN 1/2-LEDs | E1, E2 | leuchten bei Signal am Eingang, rot bei Übersteuerung | MK7 |
+| PITCH-Rad, MOD-Rad | BEND, MOD | Touch-Räder links der Tasten (unten) | MK1 |
+| Holzseiten | Holzwangen | CSS-Verlauf, keine Bild-Datei | MK1 |
 
-| Raster | Zellen (Reihe 1 │ Reihe 2) |
-|---|---|
-| EDIT 1, Synth | PROG · STIMME · TONH. · OSZ 1 · OSZ 2 · MIXER · FILTER │ F-HK · AMP · A-HK · LFO 1 · LFO 2 · (FILTER 2, MK11) · (DRIVE, MK11) |
-| EDIT 2, Synth | PATCH 1 · PATCH 2 · PATCH 3 · PATCH 4 · MOD-FX · DELAY · EQ │ ARP A · ARP B · (HK 3, MK12) |
-| EDIT 1, Vocoder | PROG · STIMME · TONH. · OSZ 1 · EING. · MIXER · FILTER │ FC-MOD · AMP · F-HK · A-HK · LFO 1 · LFO 2 |
-| EDIT 2, Vocoder | K-PEGEL · K-PAN · MOD-FX · DELAY · EQ │ ARP A · ARP B |
+**Drehschalter-Stellungen** (Reihenfolge wie am Original; Synth │ *Vocoder*; Stellungen, deren Paket noch fehlt, sind dunkel mit „–“, ihre Plätze bleiben):
 
-**Regler je Sektion** (Reihenfolge nach HB-MK „knob 1–5“; die MS2000-Werte kommen immer **nach** den microKORG-Reglern, als 6. Regler oder als eigene Sektion):
-
-| Sektion | Regler (Beschriftung) | Quelle |
+| Stellung | EDIT-WAHL 1 | EDIT-WAHL 2 |
 |---|---|---|
-| PROG | MODUS · STIMMEN (1+3 │ 2+2 │ 3+1) · SPLIT · STIMMUNG · GRUNDTON | HB-MS S. 34–35 |
-| STIMME | ZUWEISUNG (Mono │ Poly │ Unison) · AUSLÖSUNG (Single │ Multi) · UNI-VERST. · PRIORITÄT | S. 35–36; HB-MK S. 16 |
-| TONH. | TRANSP. · FEIN · PORTAM. · BEND · VIBRATO · MOD-RAD (k6) | S. 36; HB-MK S. 17 |
-| OSZ 1 | WELLE · STEUER 1 · STEUER 2. Die Beschriftung folgt der Welle: Säge FORM/WFM · Puls BREITE/PWM · Dreieck FORM/WFM · Sinus× X-MOD/X-LFO · Stimmwelle FORM/WFM · Speicherwelle –/WELLE · Rauschen CUTOFF/RESO. · Eingang BALANCE/BAL-LFO. Im Vocoder-Modus: Sinus FORM/WFM (W-27b) | S. 36–38, S. 49; HB-MK S. 18–21 |
-| OSZ 2 | WELLE · MOD (aus │ Ring │ Sync │ Ring+Sync) · HALBTON · FEIN | S. 38; HB-MK S. 22 |
-| MIXER | OSZ 1 · OSZ 2 · RAUSCHEN (Vocoder: OSZ 1 · EINGANG 1 · RAUSCHEN · QUELLE 1 ▾) | S. 38, S. 50 |
-| FILTER | TYP · CUTOFF · RESONANZ · HK-INT · KEYTRACK · ANSCHLAG (k6) | S. 39; HB-MK S. 24–25 |
-| F-HK, A-HK | ATTACK · DECAY · SUSTAIN · RELEASE · NEUSTART | S. 40–41; HB-MK S. 26, S. 28 |
-| AMP | PEGEL · PAN · VERZERR. · KEYTRACK · HK │ GATE · ANSCHLAG (k6) | S. 40; HB-MK S. 27 |
-| LFO 1, LFO 2 | WELLE · KEY SYNC (aus │ Timbre │ Stimme) · TEMPO SYNC · FREQ │ NOTE | S. 41; HB-MK S. 29 |
-| PATCH n | QUELLE · ZIEL · INTENSITÄT | S. 42; HB-MK S. 30 |
-| MOD-FX | TYP · TEMPO · TIEFE | S. 44; HB-MK S. 40 |
-| DELAY | TYP · TEMPO SYNC · ZEIT │ NOTE · TIEFE | S. 44; HB-MK S. 41 |
-| EQ | TIEF-FREQ · TIEF-GAIN · HOCH-FREQ · HOCH-GAIN | S. 44–45; HB-MK S. 42 |
-| ARP A | TEMPO (Song) · AUFLÖSUNG · GATE · TYP · OKTAVEN | S. 45–46; HB-MK S. 44 |
-| ARP B | LATCH · SWING · KEY SYNC · LÄNGE (letzter Schritt) · ZIEL | HB-MK S. 45 |
-| EING. (Vocoder) | GATE · SCHWELLE · HPF-PEGEL · HPF-GATE · QUELLE 2 ▾ | S. 49; HB-MK S. 33 |
-| FILTER (Vocoder) | FORMANT · CUTOFF · RESONANZ · FOLGER (127 = HALTEN) | S. 50; HB-MK S. 35 |
-| FC-MOD | QUELLE · INTENSITÄT | S. 50; HB-MK S. 36 |
-| AMP (Vocoder) | PEGEL · DIREKT · VERZERR. · KEYTRACK · ANSCHLAG | S. 50–51; HB-MK S. 37 |
-| K-PEGEL, K-PAN | 16 Säulen mit Live-Bandpegel: P1 2 × 8 à 41 × 88 (4 px), P2 2 × 8 à 39 × 88, P3 2 × 8 à 36 × 88 als ein Canvas-Feld ohne Zwischenraum (288 px), L1 16 × 41 × 92 (3 px, 701 px), L2 16 × 36 × 92 (3 px, 621 px) | S. 51; HB-MK S. 38 |
-| FILTER 2, DRIVE (MK11) · HK 3 (MK12) | siehe Pakete | KF [B] |
+| 1 | STIMME │ *STIMME* | PATCH 1 │ *K-PEGEL A* |
+| 2 | TONH. │ *TONH.* | PATCH 2 │ *K-PEGEL B* |
+| 3 | OSZ 1 │ *OSZ 1* | PATCH 3 │ *K-PAN A* |
+| 4 | OSZ 2 │ *EING. 1* | PATCH 4 │ *K-PAN B* |
+| 5 | MIXER │ *MIXER* | MOD-FX │ *MOD-FX* |
+| 6 | FILTER │ *FILTER* | DELAY │ *DELAY* |
+| 7 | F-HK │ *FC-MOD* | EQ │ *EQ* |
+| 8 | AMP │ *AMP* | ARP A │ *ARP A* |
+| 9 | A-HK │ *A-HK* | ARP B │ *ARP B* |
+| 10 | LFO 1 │ *LFO 1* | STIMMUNG │ *STIMMUNG* (am Original GLOBAL) |
+| 11 | LFO 2 │ *LFO 2* | SEQ │ *–* (am Original MIDI; im Vocoder kein Seq, HB-MS S. 49–52) |
+
+**Regler-Belegung.** Ebene 1 ist genau die Belegung des Originals (Parameter-Liste HB-MK PDF 78; „–“ = am Original leer). Was der MS2000 und die RADIAS-Teile zusätzlich haben, liegt auf **Ebene 2** (SHIFT) bzw. **Ebene 3** (SHIFT zweimal). Die Reihenfolge der MS2000-Werte folgt HB-MS.
+
+| Sektion | Ebene 1: Regler 1 · 2 · 3 · 4 · 5 | Ebene 2 (bzw. 3) | Quelle |
+|---|---|---|---|
+| SPIEL | CUTOFF · RESONANZ · ATTACK · RELEASE · TEMPO (Vocoder: CUTOFF/RESONANZ der Träger-Bänder, ATTACK/RELEASE nur EG2) | – | HB-MK S. 8–10 |
+| STIMME | SYNTH/VOC. (Synth │ Vocoder, MK7) · EINZELN/SCHICHT (Single │ Layer │ Split; Layer und Split ab MK3) · ZUWEISUNG · AUSLÖSUNG · UNI-VERST. | PRIORITÄT · STIMMEN (1+3 │ 2+2 │ 3+1, MK3) · SPLIT (MK3; dazu [Split ← nächste Note] in der LCD-Zeile) · STIMMEN-ZAHL (MK13) · – | HB-MS S. 34–36; HB-MK S. 16 |
+| TONH. | TRANSP. · FEIN · PORTAM. · BEND · VIBRATO | MOD-RAD (Startwert `p.mw`) · – | S. 36; HB-MK S. 17 |
+| OSZ 1 | WELLE · STEUER 1 · STEUER 2 · – · – (die LCD-Zeile nennt die Bedeutung je Welle: Säge FORM/WFM · Puls BREITE/PWM · Dreieck FORM/WFM · Sinus× X-MOD/X-LFO · Stimmwelle FORM/WFM · Speicherwelle –/WELLE · Rauschen CUTOFF/RESO. · Eingang BALANCE/BAL-LFO; im Vocoder Sinus FORM/WFM, W-27b) | – | S. 36–38, S. 49; HB-MK S. 18–21 |
+| OSZ 2 | WELLE · MOD (aus │ Ring │ Sync │ Ring+Sync) · HALBTON · FEIN · – | – | S. 38; HB-MK S. 22 |
+| EING. 1 (Vocoder) | GATE · SCHWELLE · HPF-PEGEL · HPF-GATE · – | QUELLE 2 ▾ (MK7) | S. 49; HB-MK S. 33 |
+| MIXER | OSZ 1 · OSZ 2 · RAUSCHEN · – · – (Vocoder: OSZ 1 · EINGANG 1 · RAUSCHEN) | Synth: DRIVE-TYP · DRIVE · ROUTING · F-BALANCE · – (MK11); Vocoder: QUELLE 1 ▾ (MK7) | S. 38, S. 50; HB-MK S. 23, S. 34 |
+| FILTER | TYP · CUTOFF · RESONANZ · HK-INT · KEYTRACK (Vocoder: FORMANT · CUTOFF · RESONANZ · FOLGER (127 = HALTEN) · –) | Synth: ANSCHLAG · F2-TYP · F2-CUTOFF · F2-RESO. · F2-HK-INT (F2 ab MK11); **Ebene 3** (MK11/MK12): F2-KEYTR. · F2-ANSCHL. · F2-HK (EG1 │ EG3) · – · – | S. 39, S. 50; HB-MK S. 24–25, S. 35 |
+| F-HK | ATTACK · DECAY · SUSTAIN · RELEASE · NEUSTART | HK 3: ATTACK · DECAY · SUSTAIN · RELEASE · NEUSTART (MK12) | S. 40–41; HB-MK S. 26 |
+| FC-MOD (Vocoder) | QUELLE · INTENSITÄT · – · – · – | F-HK (MS2000-EG1): ATTACK · DECAY · SUSTAIN · RELEASE · NEUSTART | S. 50; HB-MK S. 36 |
+| AMP | PEGEL · PAN · VERZERR. · KEYTRACK · – (Vocoder: PEGEL · DIREKT · VERZERR. · KEYTRACK) | HK │ GATE · ANSCHLAG (Vocoder: ANSCHLAG) | S. 40, S. 50–51; HB-MK S. 27, S. 37 |
+| A-HK | ATTACK · DECAY · SUSTAIN · RELEASE · NEUSTART | – | S. 40–41; HB-MK S. 28 |
+| LFO 1, LFO 2 | WELLE · KEY SYNC (aus │ Timbre │ Stimme) · TEMPO SYNC · FREQ │ NOTE · – | – | S. 41; HB-MK S. 29 |
+| PATCH 1–4 | QUELLE · ZIEL · INTENSITÄT · – · – | – | S. 42; HB-MK S. 30 |
+| K-PEGEL A/B, K-PAN A/B (Vocoder) | Kanal 1–4 bzw. 5–8 · – (Kanal k = Bänder 2k−1 und 2k; ein Zug verschiebt beide Bänder um dasselbe Δ, je geklemmt, wie ATTACK/RELEASE in SPIEL) | Zusatz-Ansicht „16 BÄNDER ▸“ | S. 51; HB-MK S. 38 |
+| MOD-FX | TYP · TEMPO · TIEFE · – · – | – | S. 44; HB-MK S. 40 |
+| DELAY | TYP · TEMPO SYNC · ZEIT │ NOTE · TIEFE · – | – | S. 44; HB-MK S. 41 |
+| EQ | TIEF-FREQ · TIEF-GAIN · HOCH-FREQ · HOCH-GAIN · – | – | S. 44–45; HB-MK S. 42 |
+| ARP A | TEMPO (Song) · AUFLÖSUNG · GATE · TYP · OKTAVEN | – | S. 45–46; HB-MK S. 44 |
+| ARP B | LATCH · SWING · KEY SYNC · LÄNGE (letzter Schritt) · ZIEL | – | HB-MK S. 45 |
+| STIMMUNG | STIMMUNG · GRUNDTON · – · – · – | Zusatz-Ansicht „EIGENE ▸“ (bei STIMMUNG = Eigene) | HB-MS S. 34–35 |
+| SEQ | SEQ AN · SEQUENZ (1 │ 2 │ 3) · ZIEL · BEWEGUNG (Glatt │ Stufe) · LÄNGE | TYP · LAUF · KEY SYNC · AUFLÖSUNG · –; Zusatz-Ansicht „SCHRITTE ▸“ | HB-MS S. 42–44 |
+
+**SHIFT-Funktionen der Tasten** (wie am Original, HB-MK PDF 78; was es in der App nicht gibt, bleibt dunkel). Solange SHIFT leuchtet, zeigt die Matrix-Zeile über den Tasten ihre Kurznamen:
+
+| Taste | Synth | Vocoder | am Original |
+|---|---|---|---|
+| SHIFT + 1 | Timbre kopieren ▸ (Quelle aus der Bibliothek, MK3) | Pegel zurücksetzen (MK7) | COPY TIMBRE │ INIT LEVEL |
+| SHIFT + 2 | Timbre tauschen (MK3) | Pan zurücksetzen (MK7) | SWAP TIMBRE │ INIT PAN |
+| SHIFT + 3 | Init (INIT MS 2000) | Init, behält den Vocoder (`mode` 3) | INIT PROGRAM |
+| SHIFT + 4 | Timbre neu (MK3; MS2000 InitTimbre) | – | MIDI FILTER (entfällt) |
+| SHIFT + 5 | Sequenz-Werkzeuge ▸ (MK6) | – | CONTROL CHANGE (entfällt) |
+| SHIFT + 6 … 8 | – | – | DUMP, PRELOAD, WRITE PROTECT (entfallen) |
+| SHIFT + TIMBRE | Solo (MK3) | – | TIMBRE SOLO |
+| SHIFT + SEITE | andere EDIT-WAHL | ebenso | SWITCH EDIT SELECT |
+| SHIFT + OKT ▲/▼ | Wert ±1 | ebenso | INC/DEC PARAM VALUE |
+| SHIFT + ARP | – | – | DEMO (entfällt) |
+
+**Zusatz-Ansichten** (MS2000-Teile ohne Platz am Original): **SCHRITTE** (SEQ, MK6), **16 BÄNDER** (K-PEGEL/K-PAN, MK7), **EIGENE** (Stimmung, MK3). Sie öffnen über ihren Chip in der Matrix-Zeile (≥ 44 × 44) und ersetzen den Bedienfeld-Körper; Rahmen und Räder bleiben, oben steht [◂ GERÄT] (44 px). Säulen: P1 2 × 8 à 41 × 88 (4 px), P2 2 × 8 à 39 × 88, P3 2 × 8 à 36 × 88 als ein Canvas-Feld ohne Zwischenraum (288 px), L1 16 × 41 × 92 (3 px, 701 px), L2 16 × 36 × 92 (3 px, 621 px). EIGENE: 12 Regler (P1 2 × 6 à 60, L1 12 × 56 mit 3 px = 705 px).
+
+**Räder** (H-5, entschieden; B.1 „Räder“, W-17, W-18):
+- **Platz:** links in der Tastatur-Zeile (`#kbArea`), BEND links, MOD rechts daneben, je ≥ 44 px breit (sichtbares Rad 32 px in einer Mulde), 4 px Abstand, volle Höhe der Tastatur-Zeile. Nur solange die gewählte Spur eine AM-Spur ist; bei allen anderen Engines bleibt die Tastatur unverändert (Layout deep-equal). Die Tastatur wird bei AM um ≈ 96 px schmaler.
+- **Bedienung:** senkrecht ziehen, voller Weg = Radhöhe − 8 px. BEND federt beim Loslassen in 80 ms zur Mitte, die Mittel-Rast ist sichtbar; MOD bleibt stehen. Jedes Rad hat seinen eigenen Zeiger (`setPointerCapture`), Rad und Tasten gehen gleichzeitig; ein zweiter Finger auf demselben Rad wird ignoriert.
+- **Wirkung** live, nicht gespeichert, kein Undo. Während des Zugs zeigt die Anzeige den Wert (BEND −63…+63, MOD 0…127). Die Rillen-Optik (CSS) wandert mit dem Wert. Die Aufnahme ● zeichnet die Räder nicht auf (Lücke in CHANGES).
+
+**Aussehen und Material** (eK, geprüft in MK1-32):
+- Bedienfeld dunkles Anthrazit mit feinem Verlauf (mittlere Helligkeit L* ≤ 20), matt.
+- Holzwangen warmes Braun mit Maserung aus wiederholten Verläufen (Farbton 15–40°, Sättigung 35–75 %, Helligkeit 20–45 %), in L1 10 px breit, in P 4–6 px; der Rahmen der Räder nimmt den Holzton auf.
+- Regler: schwarze Kappen (L* ≤ 15) mit heller Zeigerlinie. Drehschalter mit einem Skalenstrich je Stellung und Zeiger; ◎ setzt einen Punkt an jede Stellung, deren Werte von INIT abweichen.
+- Tasten: dunkle, flache Rechtecke mit LED (an Rot/Orange, Farbton 0–35°; aus dunkel).
+- Beschriftung hell (Kontrast ≥ 4,5 : 1 zum Feld), Großbuchstaben in der App-Schrift; Vocoder-Beschriftung grün (Farbton 100–150°).
+- Anzeige: 3 Stellen 7-Segment, Rot auf Schwarz (eigene Zeichnung, CSS/SVG).
+- Keine neue Schrift (`@font-face`), keine Bild-Daten (`data:image`, `<img>`) im Bedienfeld, keine Logo-Fläche (B.6 Nr. 9 c).
+
+**Maße und Formate.** Alle Breiten gelten für den Inhalt des Seitenrahmens `.pg` der Synth-Blätter (`.sh-body` 8 px, `.pg` 6 px + 1 px Rand je Seite; Z. 1981–1982, 2201–2202), nicht für den Bildschirm: **P1 360 px, P2 345, P3 290, L1 814, L2 637.** Im Querformat nimmt die Safe-Area am iPhone noch ≈ 47 px je Seite (`viewport-fit=cover`, Z. 5, 58–59): L1 hat am iPhone 12/13 (844 × 390) real ≈ 720 px, am 12 Pro Max (926 × 428) ≈ 802 px.
+- **L1 (Bezug 844 × 390):** das ganze Bedienfeld in einem Stück nach der Zonen-Tabelle (Körper 720 × 146 px). Breiter (12 Pro Max ≈ 802 px): gleichmäßig skaliert bis × 1,1 (Trefferflächen wachsen mit), Rest zentriert.
+- **L2 (667 × 375, 637 px):** dieselben Zonen, Regler 44, Drehschalter 50, Anzeige 54 breit, Abstände 4 px (Summe ≤ 634 px), Höhe ≤ 146 px.
+- **P1 (Bezug 390 × 844, 360 px): zwei Hälften übereinander.** Hälfte A = linker Teil des Geräts: Z1, Z2, Z3, darunter Bank- und Sektionsname, darunter Z7 und Z8. Hälfte B = rechter Teil: Z4 mit 5 Reglern à 44 (Abstand 4) und daneben Z5 als Spalte (Anzeige oben, WRITE und SHIFT darunter, E1/E2 neben der Anzeige), darunter die 5 Belegungen, darunter Z9 mit 8 Tasten à 44 (Bild 40, die Lücke gehört je zur Hälfte zur Trefferfläche). Jede Hälfte hat Holzwangen (4 px). Höhe A ≈ 130, B ≈ 152, Trenner 8: ≈ 290 px (der Körper hat in P1 ≈ 305 px).
+- **P2 (345 px):** wie P1, Regler-Abstand 2 px, Nummerntasten 2 Reihen × 4 à 80 × 44.
+- **Halb-Ansicht** (P3 immer; P1/P2, wenn der Körper niedriger ist als die zwei Hälften, z. B. iPhone SE und mini): eine Hälfte auf einmal, oben der Umschalter [◂ LINKS │ RECHTS ▸] (44 px). RECHTS hat links den Chip „Sektion ▾“ (≥ 44 × 44, öffnet die Auswahl-Liste der aktiven Wahl); nach einer Wahl am Drehschalter springt die Ansicht nach RECHTS. P3: Z5 als eigene Reihe über den Reglern (Anzeige · WRITE · SHIFT), Regler 5 × 44 mit 3 px, Tasten 2 × 4 à 68 × 44.
+- **W (844 × 1180):** das ganze Bedienfeld in einem Stück wie L1 (× ≤ 1,15).
+- Kein Zoom (Doppeltipp-Zoom und Pinch bleiben aus), keine Seite scrollt. **Trefferflächen ≥ 44 × 44 px in allen Formaten** (Regler, Drehschalter, Tasten, Räder, Chips, Listenzeilen); die Trefferfläche darf größer sein als das Bild (`::after`), Trefferflächen überlappen nicht.
+- **Beschriftung:** In Plätzen < 48 px (P, L2) stehen Kurzformen (RESO., KEYTR., F2-RESO., K-PEG) oder die 9-px-Klasse `.lg` bzw. zwei Zeilen (`.mixk`, Z. 2012). M-PLATZ prüft für jedes Element scrollWidth ≤ clientWidth (L6, nichts abgeschnitten).
+- Drehschalter-Stellungen, SHIFT-Ebene und Halb-Ansicht sind Ansichtszustand (`viewState`), nicht Teil des Sounds.
 
 **Regler-Verhalten:**
-- Jeder Platz ist ein `sKnob` (senkrecht ziehen). Stufenwerte rasten ein. **Listen mit mehr als 12 Einträgen** (64 Speicherwellen, ≈ 30 SEQ-Ziele) sind stetige Regler mit Rundung (200 px Weg, `haptic('tick')` und LCD je Stufe), dazu die Tipp-Liste; die App verlangt sonst je Stufe ≥ 18 px Weg (Z. 19979), bei 64 Wellen 1134 px.
-- **Tipp auf einen Listen-Regler** öffnet eine Auswahl (`openPop`, Zeilen ≥ 44 px). Das gilt für WELLE, TYP, MODUS, QUELLE, ZIEL und STIMMUNG.
-- Die LCD-Zeile zeigt Sektion, Name, Geräte-Wert und Klartext, z. B. „FILTER · CUTOFF 064 · 652 Hz“ oder „OSZ 1 · WELLE Speicherwelle 12 ≈“.
+- Jeder Regler zieht senkrecht (Geste aus `sKnob`). Stufenwerte rasten ein. **Listen mit mehr als 12 Einträgen** (64 Speicherwellen, ≈ 30 SEQ-Ziele) sind stetige Regler mit Rundung (200 px Weg, `haptic('tick')` und LCD je Stufe), dazu die Tipp-Liste; die App verlangt sonst je Stufe ≥ 18 px Weg (Z. 19979), bei 64 Wellen 1134 px.
+- **Tipp auf einen Listen-Regler** öffnet eine Auswahl (`openPop`, Zeilen ≥ 44 px). Das gilt für WELLE, TYP, SYNTH/VOC., EINZELN/SCHICHT, QUELLE, ZIEL und STIMMUNG.
+- Die LCD-Zeile zeigt Sektion, Name, Geräte-Wert und Klartext, z. B. „FILTER · CUTOFF 064 · 652 Hz“ oder „OSZ 1 · STEUER 2 (WELLE) Speicherwelle 12 ≈“; die Anzeige zeigt den Geräte-Wert.
 - Eine Geste = ein Undo. Während der Geste geht der ungerundete Wert an das Worklet, gerundet wird beim Abschluss (EN3-03). Halten hat im AM-Bedienfeld keine eigene Bedeutung bis V5d (EN3-18, L4).
-- Bearbeitet wird immer das gewählte Timbre. Die LCD zeigt „T2“, wenn T2 gewählt ist. Mit [T1+2] (MK3, H-11) gehen Gesten an beide Timbres; Anzeige und Startwert kommen von T1.
+- Bearbeitet wird immer das gewählte Timbre. Die LCD zeigt „T2“, wenn T2 gewählt ist. Mit Edit Sync (TIMBRE, beide LEDs; MK3, H-11) gehen Gesten an beide Timbres; Anzeige und Startwert kommen von T1.
 
 **Kopf-Knöpfe:**
-- 🎲 würfelt die EDIT-1-Werte von T1 (Wellen, C1/C2, OSZ2-Halbton aus {0, +7, +12, −12}, Mixer, Filter, Hüllkurven). Danach gilt: Mixer OSZ 1 oder OSZ 2 ≥ 64 und Sustain + Decay hörbar. FX, Arp, Seq und Vocoder werden nicht gewürfelt.
-- ◎ setzt einen Punkt in jede Sektions-Zelle, deren Werte von INIT AM abweichen.
-- ⋯ → Init lädt INIT AM; im Vocoder-Modus INIT AM mit `mode` 3 (Vocoder-Vorgaben, HB-MS S. 51).
+- 🎲 würfelt die Werte der EDIT-WAHL-1-Sektionen von T1 (Wellen, STEUER 1/2, OSZ2-Halbton aus {0, +7, +12, −12}, Mixer, Filter, Hüllkurven). Danach gilt: Mixer OSZ 1 oder OSZ 2 ≥ 64 und Sustain + Decay hörbar. FX, Arp, Seq und Vocoder werden nicht gewürfelt.
+- ◎ setzt einen Punkt an jede Drehschalter-Stellung und in jede Zeile der Auswahl-Liste, deren Werte von INIT AM abweichen.
+- ⋯ → Init (wie SHIFT + 3) lädt INIT AM; im Vocoder-Modus INIT AM mit `mode` 3 (Vocoder-Vorgaben, HB-MS S. 51).
 
-**Querformat L1 (844 × 390, Körper ≤ 140 px, Breite ≤ 720 px nach Safe-Area):**
-- Reihe 1: die 14 Zellen in einer Reihe à 48 × 36 (14 · 48 + 13 · 3 = 711).
-- Reihe 2: Regler links (≤ 360 px: 5 × 72 bzw. 6 × 60, Höhe wie die VA-Seiten in L), rechts Programmblock (SPIEL) bzw. Schritt-Tasten (ARP, 8 × 40 × 36 mit 3 px = 341). Zusammen ≤ 711 px.
-- Summe ≤ 132 px Höhe.
-
-**Weitere Formate:**
-- **L2 (667 × 375):** Zellen 41 × 36 mit 4 px Abstand (14 · 41 + 13 · 4 = 626). Die Nummern- bzw. Schritt-Tasten stehen nur im SPIEL- bzw. ARP-Körper unter den Reglern (fit-Klassen wie `#drumSheet`).
-- **P2:** Programmzeile einzeilig (Bank ▾ · A │ B · Anzeige). Zellen 7 × 46 × 44 mit 3 px (340 px), Nummern- und Schritt-Tasten 8 × 39 mit 4 px (340 px).
-- **P3:** Programmzeile einzeilig. Die 8 Tasten erscheinen nur in den ARP-Sektionen, als Schritt-Tasten in 2 Reihen × 4 (68 × 36, 4 px). Die Programmwahl geht dort über ‹ › und die Bibliothek. Zellen 7 × 38 × 44 mit 4 px (290 px, dichtes Raster), k6 = 6 × 48.
-- **W (844 × 1180):** wie P1, nur M-PLATZ.
-- **M-PLATZ mit Safe-Area:** Die AM-Durchgänge laufen in L1 zusätzlich mit 47 px Innenabstand links und rechts (Test-Stil für das `#app`-Padding), bei 844 × 390 und bei 926 × 428 (12 Pro Max). L2 läuft ohne Rand.
-
-Jede neue Bedienfläche bekommt eine Hilfe-Zeile (Menü → Hilfe) und beim ersten Antippen einen LCD-Hinweis (L10). Die Texte sind eigene Sätze ohne Marken.
+Jede neue Bedienfläche bekommt eine Hilfe-Zeile (Menü → Hilfe) und beim ersten Antippen einen LCD-Hinweis (L10). Die Texte sind eigene Sätze ohne Marken; den Engine-Namen setzen sie aus `MK_LABEL` ein.
 
 ### B.4 Leistung: Stimmen-Budget, CPU-Messung, Begrenzer, WebGL
 
@@ -485,7 +567,7 @@ Jede neue Bedienfläche bekommt eine Hilfe-Zeile (Menü → Hilfe) und beim erst
   - Stufe 1 (> 0,45): AM-Vocoder-Bänder auf 2. Ordnung, umgeschaltet mit 30-ms-Überblendung zwischen beiden Bänken und Pegelausgleich (Bandenergie ± 1 dB zur 4. Ordnung); AM-Unison ≤ 2 Stimmen für neue Noten; MK13 `vmax` 8 → 4 für neue Noten.
   - Stufe 2 (> 0,60): AM-Spuren ≤ 2 Stimmen für neue Noten (Dual/Split: 1 + 1; Unison: 2 gestapelte); Mod-FX Ensemble → 1 Abgriff. Ab Stufe 2 ersetzt der vorhandene Begrenzer die 30-ms-SXF durch die WP4-Senke (`xfLite`, Z. 12331). Die M-EINBRUCH-Zusagen der MK-Abnahmen gelten deshalb nur bis Stufe 1.
   - Stufe 3 wie v2.
-- **WebGL:** keiner (EN3-13). Canvas 2D für Seq-Säulen und Band-Pegel, gezeichnet ≤ 30 Hz und nur bei sichtbarer Seite. PE1 prüft das.
+- **WebGL:** keiner (EN3-13). Canvas 2D für Seq-Säulen, Band-Pegel und die Pegelanzeige der Aufnahme-Seite, gezeichnet ≤ 30 Hz und nur bei sichtbarer Seite. Das Bedienfeld (B.3) ist DOM mit CSS ohne Bild-Dateien; LEDs und Anzeige ändern nur Klassen bzw. Text, höchstens einmal je Bild; die Tempo-LED schaltet per CSS-Klasse im Takt, nicht per Zeichnen. PE1 prüft das.
 - **Tabellen (gemeinsamer Bau nach Spec §10.1):** Ein **DOM-freier** Bau `mkTables(spec) → Float32Array[]` (kein `window`/`document`; die Häppchen steuert der Aufrufer) ist der Tabellen-Bau, den §10.1 für V8a plant und den V4e mitnutzt. Er portiert das Verfahren von V4a (Mip-Kette je Oktave); `waveTab` bleibt unverändert im Worklet. Weicht MK2 bei den Größen von §10.1 ab, gilt die MK2-Festlegung als neue gemeinsame Definition (Teil G Nr. 9). Die App wertet ihn bei Bedarf aus; `mk-node.mjs` lädt denselben Text.
   - **Hauptfaden:** Häppchen ≤ 8 ms (`requestIdleCallback`, Rückfall `setTimeout`), vorher `tickAhead(.3)`, zwischen zwei Häppchen mindestens ein Scheduler-Tick.
   - **Worklet:** eine **MKW-Tabelle auf Modul-Ebene** im `AudioWorkletGlobalScope`, die alle Prozessoren eines Kontexts teilen. Der Hauptfaden schickt jede Tabelle **einmal je Kontext** an irgendeinen AM-Knoten (`{mkw}`, Transfer); die Stimmen greifen über die Tabellen-Nummer zu. Zeigt sich, dass ein Kontext die Tabelle nicht teilt, wird je Knoten kopiert (wie §10.1).
@@ -499,22 +581,23 @@ Jede neue Bedienfläche bekommt eine Hilfe-Zeile (Menü → Hilfe) und beim erst
 - Halbton/Fein → `o2semi`/`o2fine`, Sync → `o2sync`. Mixer → Pegel/127.
 - Filtertyp → 0/1/3/5. Cutoff, Res, EG1 Int, Keytrack, Hüllkurven und LFOs über die W-Tabelle.
 
-Ohne T2, FX, Seq und Vocoder. Der **Arp läuft auch im ECO-Klang** (er sitzt im Hauptfaden; nur T1-Noten, derselbe Planer). Ein **Vocoder-Programm** (`mode` 3) spielt im ECO-Klang nicht den rohen Träger, sondern bleibt stumm mit LCD „Vocoder braucht den Worklet-Klang“. Die Selbstoszillation (W-02) nutzt das vorhandene Ersatz-Pfeifen des ECO-Klangs. Badge „ECO-Klang“. Hinweis im LCD „AM im ECO-Klang: nur Grundklang“.
+Ohne T2, FX, Seq und Vocoder. Der **Arp läuft auch im ECO-Klang** (er sitzt im Hauptfaden; nur T1-Noten, derselbe Planer). Ein **Vocoder-Programm** (`mode` 3) spielt im ECO-Klang nicht den rohen Träger, sondern bleibt stumm mit LCD „Vocoder braucht den Worklet-Klang“. Die Selbstoszillation (W-02) nutzt das vorhandene Ersatz-Pfeifen des ECO-Klangs. Badge „ECO-Klang“. Hinweis im LCD „MS 2000 im ECO-Klang: nur Grundklang“ (Name aus `MK_LABEL`).
 
 ### B.6 Gemeinsame Regeln und Prüfverfahren
 
 1. **Neutral und bitgleich (I-10):** Jedes neue Feld hat einen neutralen Wert. Vorhandene Klänge aller Engines und die AM-Klänge des Vorgänger-Pakets rendern bitgleich (Node-Offline, max |Δ| ≤ 1e-6), außer ein Paket nennt es anders. **„Vorgänger“** heißt in allen Abnahmen: der zuletzt ausgelieferte Stand, dessen Version CHANGES nennt, keine feste Nummer (Pakete können nach E.1/E.2 Nr. 4 rücken).
 2. **Glätten und Blenden (L3):** Stetige Werte werden mit τ ≥ 5 ms geglättet. **Bruchwerte:** Während einer Geste geht der ungerundete Reglerwert an das Worklet (EN3-03); das Worklet rechnet Bruchteile über die W-Tabelle, SEQ „Glatt“ und die Patches ebenso. Strukturwechsel bei klingender Note gehen über die vorhandene **30-ms-Stimmenblende (SXF)**: Welle, OSC MOD, Filtertyp, HK │ GATE, ROUTING. **Umverteilende Wechsel** (Zuweisung, Priorität, Auslösung, MODUS, STIMMEN, `vmax`) gehen über die **Engine-Blende `engXf`** (Z. 4104): alte Stimmen 40 ms als Geister ausblenden, gehaltene Tasten unter der neuen Regel neu verteilen, Einblendung über den Attack (≤ 0,5 s); SXF kann keine Stimmen neu verteilen (Z. 4046). **Abweichungen von L3** (ausdrücklich): (a) Mono ↔ Poly ist hier ein umverteilender Wechsel über `engXf`; L3 behandelt ihn sonst als Grundklang-Einstellung, die gehaltene Stimmen loslässt. (b) SEQ-Stufen: „Stufe“ = lineare 1-ms-Rampe ab der Blockgrenze (Amplitude, Pan, Cutoff). (c) Tabellen-Wellen wechseln mit 2-ms-Gleichleistungs-Blende bei phasenstetigem Lesen statt 30–50 ms. Jede Abnahme mit Umschalten prüft **M-KLICK und M-EINBRUCH** (bis Begrenzer-Stufe 1, B.4).
-3. **Hörbarkeit:** Jeder Regler einer AM-Sektion erfüllt H-1 und H-3 (Spec §0.3). Die Ausnahmen sind benannt: Bend ohne Rad, TEMPO nur mit Sync/Arp/Seq, NEUSTART nur bei Neuanschlag, Werte ohne Wirkung in der gerade gewählten Welle.
+3. **Hörbarkeit:** Jeder Regler einer AM-Sektion erfüllt H-1 und H-3 (Spec §0.3). Die Ausnahmen sind benannt: BEND nur mit bewegtem BEND-Rad, TEMPO nur mit Sync/Arp/Seq, NEUSTART nur bei Neuanschlag, Werte ohne Wirkung in der gerade gewählten Welle.
 4. **Undo:** eine Geste = ein Undo (`soundEdit`/`commitSound`). Laden eines Programms = ein Undo mit Toast [Rückgängig].
-5. **Layout:** M-PLATZ in P1, P2, P3, L1, L2, W für jeden neuen Zustand, mit den Maßen vom `.pg`-Inhalt (B.3), dem Safe-Area-Durchgang für L1 und scrollWidth ≤ clientWidth für jede Beschriftung. M-ANSICHT: Ein Sektions- oder Zustandswechsel verschiebt kein Bedienelement um mehr als 2 px. Treffer nach L4: Hochformat ≥ 44 × 44, dichte Raster ≥ 36 × 34 mit 4 px; Querformat ≥ 40 × 36.
+5. **Layout:** M-PLATZ in P1, P2, P3, L1, L2, W für jeden neuen Zustand (auch Halb-Ansicht, SHIFT-Ebenen und Zusatz-Ansichten), mit den Maßen vom `.pg`-Inhalt (B.3), dem Safe-Area-Durchgang für L1 und scrollWidth ≤ clientWidth für jede Beschriftung. M-ANSICHT: Ein Sektions-, Ebenen- oder Zustandswechsel verschiebt kein Bedienelement um mehr als 2 px. Treffer im AM-Bedienfeld und an den Rädern: **≥ 44 × 44 px in allen Formaten** (EN3-20; strenger als L4), ohne Überlappung. **M-SKIZZE** (neu, für jedes Paket mit Bedienfeld-Änderung): Die Zonen Z0–Z11 und die Räder werden über `mkPanel().zones` (Rechtecke im Bedienfeld-Körper) gegen die Zonen-Tabelle in B.3 geprüft: in L1 (844 × 390 und 926 × 428) je Zone Überdeckung (IoU) ≥ 0,7 der Anteile; in allen Formaten die Reihenfolge links → rechts und oben → unten wie in der Skizze (in P je Hälfte), die Räder links der ersten Taste. Die Bildschirmfotos aller Formate kommen in CHANGES (für Xanders Sicht-Abgleich).
 6. **Oktav-Tabellen:** Für Wellen, deren Spektrum in Hz fest sein soll (Endlos, Gruppe 61–64, Aufnahmen aus MK10; die Stimmwelle wird live gerechnet, W-28), gibt es je Oktave (C1…C8) eine eigene Tabelle mit eigenen Mipmaps. Die Stimme blendet zwischen den zwei Nachbaroktaven nach der gespielten Tonhöhe (je Steuerblock, wie K2-40). Speicher je Welle ≤ 8 × Mipmap-Satz. Gebaut wird nur, was ein geladener Sound braucht.
 7. **Worklet-ASCII** und Quelltext-Grenzen wie bisher (`check-worklet`).
 8. **Geräte-Abgleich (EN3-16):** Jedes Paket nennt 3–6 Punkte, die Xander am eigenen microKORG nach Gehör vergleicht. Sein Ergebnis kommt mit Datum in CHANGES. Eine Änderung der W-Tabelle ist ein eigener kleiner Fix-Schritt (`MKn-fix`) mit Messwert vorher und nachher.
-9. **Kein Markenwort** (EN3-05), in jedem MK-Paket:
-   - (a) **AM-Teil** (Block `sq-mk-src`, AM-Zweig des Worklets zwischen den Marken `/*MK{*/` … `/*}MK*/`, AM-Hilfe- und LCD-Zeilen, AM-Werksnamen): `grep -ciE 'korg|micro ?korg|ms[ -]?2000|radias|dwgs|dw[ -]?[68]000|\bvox\b'` = 0.
-   - (b) **Ganze `index.html`:** `grep -ciE 'micro ?korg|ms[ -]?2000|radias|dwgs'` = 0.
-   - Trifft ein Base64-Datenblock zufällig ein Wort (≈ 4,6 % je 24 KB), ändert das Bau-Skript die Kodierung (ein Salz-Byte) und prüft neu. Datenblöcke werden nicht ausgenommen.
+9. **Kein Markenwort, genau eine erlaubte Beschriftung** (EN3-05), in jedem MK-Paket:
+   - (a) **AM-Teil** (Block `sq-mk-src`, Block `sq-mkrec-src`, AM-Zweig des Worklets zwischen den Marken `/*MK{*/` … `/*}MK*/`, AM-Hilfe- und LCD-Zeilen, AM-Werksnamen): `grep -ciE 'korg|micro ?korg|ms[ -]?2000|radias|dwgs|dw[ -]?[68]000|\bvox\b'` = 0. Der immer geladene Teil zählt mit, außer der einen Zeile mit `MK_LABEL`.
+   - (b) **Ganze `index.html`:** `grep -ciE 'micro ?korg|radias|dwgs'` = 0. `grep -oiE 'ms[ -]?2000'` ergibt **genau 1** Treffer, und der ist wörtlich `MS 2000` (Großbuchstaben, U+0020) in der Zeile `MK_LABEL = 'MS 2000'`. Im laufenden DOM steht „MS 2000“ nur als Text von Engine-Knopf bzw. -Chip, `ENGINE_LABEL`-Ausgaben (Blattkopf, Browser, MIDI-Spurname), Bibliotheks-Filter und daraus gebildeten LCD-/Hilfe-Zeilen; das Bedienfeld selbst zeigt es nicht.
+   - (c) **Kein Logo, keine Korg-Schrift:** Das Bedienfeld lädt keine neue Schrift (`@font-face` = 0 neue Einträge), enthält keine Bild-Daten (`data:image`, `<img>`) und keine Fläche, die einen Schriftzug nachbildet; FP-SICHER prüft die Bildschirmfotos aus M-SKIZZE zusätzlich mit dem Auge.
+   - Trifft ein Base64-Datenblock (Werksdaten MK8, Speicherwellen MK10) zufällig ein Wort (≈ 4,6 % je 24 KB), ändert das Bau-Skript die Kodierung (ein Salz-Byte) und prüft neu. Datenblöcke werden nicht ausgenommen.
    - Spätere Pakete, die nach ihren Regeln Geräte im ⓘ nennen (V10P, V10d, VI3), lässt die Prüfung nicht scheitern.
 10. **Filter-Bauform:** Neue 2-Pol-Filter und Resonatoren (W-29, Analyse- und Synthese-Bänder des Vocoders, Formant-Resonatoren) sind **TPT-SVF** (Zero-Delay) mit g aus `GTAN` (gleiche Klemme 0,45 · SR, Z. 3836) und g/R je Sample über den 16er-Block interpoliert (wie die Ladder, Z. 5090). Keine Direktform-Biquads mit Koeffizientensprüngen, kein Chamberlin-SVF (instabil über ≈ fs/6). Filter 2 (MK11) ist eine zweite Ladder.
 11. **Denormale:** Jeder neue IIR- oder Rückkopplungs-Zustand (Vocoder-Bänder und Folger, Phaser, EQ, Filter 2, Formant-Resonatoren, W-29, Delay) bekommt den wechselnden ±1e-20-Versatz (wie Z. 5332) oder wird am Blockende unter 1e-15 auf 0 gesetzt.
@@ -529,9 +612,14 @@ mkRender(sound: Sound, ev: [t: number, typ: 'on'|'off', note: number, vel: numbe
          seed?: number, bpm?: number, inputs?: {e1?: Float32Array, e2?: Float32Array}}): Promise<{l: Float32Array, r: Float32Array}>
                                                             // seed = Zufall je Note (B.4 Nr. 3)
 mkScope(t: number): {voices: {note, t, eg1, eg2, lfo1, lfo2, cutHz, seqStep?: number[]}[], seq?, vocBands?: number[]}
-mkInfo(): {loaded: boolean, tables: number, tableBytes: number, blockMs: number}
+mkInfo(): {loaded: boolean, tables: number, tableBytes: number, blockMs: number, waves: 'platzhalter'|'lokal'|'eingebaut'}
+mkWheel(t: number, w: 'bend'|'mod', v?: number): number   // setzt (Test) bzw. liest den Live-Wert des Rads; nicht gespeichert, kein Undo
+mkPanel(): {fmt: string, half?: 'A'|'B'|'beide', sel: {wahl: 0|1|2, pos: number}, shift: 0|2|3, timbre: 1|2|'beide', solo?: 1|2,
+            zones: {id: string, x: number, y: number, w: number, h: number}[]}   // Rechtecke relativ zum Bedienfeld-Körper (M-SKIZZE)
 arpLog(t: number): {t: number, note: number, vel: number, dur: number, step: number}[]   // ab MK5
 perfProbe(cases?: string[]): Promise<object>                                              // die Leistungs-Probe
+mkRecInfo(): {step: number, steps: number, input: {label: string, ec: boolean, ns: boolean, agc: boolean, ch: number, sr: number},
+             peakDb: number, rmsDb: number, notes: number, ok: boolean[]}                // Aufnahme-Seite, ab MK10
 ```
 
 ---
@@ -573,12 +661,12 @@ Testskripte liegen in `dirigent-test/` (Chromium-Pfad wie in CHANGES V2d′: `ch
 
 ---
 
-### MK1 — Klangkern (Timbre 1), Bedienfeld SPIEL/EDIT 1, Leistungs-Probe
+### MK1 — Klangkern (Timbre 1), Bedienfeld wie das Original, Räder, Leistungs-Probe
 
-**Ziel.** Xander wählt auf einer Synth-Spur die neue Klangerzeugung AM und spielt einen vollständigen MS2000-Grundklang. Dazu gehören Säge, Puls und Dreieck mit ihren Form-Reglern, OSZ 2 mit Ring/Sync/Ring+Sync, Mixer, alle vier Filtertypen, Verstärker mit Verzerrung und Gate, zwei Hüllkurven, zwei LFOs, Tonhöhe sowie Mono/Poly/Unison. Er bedient das wie am microKORG und kann am iPhone messen, ob es flüssig läuft.
+**Ziel.** Xander wählt auf einer Synth-Spur die neue Klangerzeugung **„MS 2000“** und spielt einen vollständigen MS2000-Grundklang. Dazu gehören Säge, Puls und Dreieck mit ihren Form-Reglern, OSZ 2 mit Ring/Sync/Ring+Sync, Mixer, alle vier Filtertypen, Verstärker mit Verzerrung und Gate, zwei Hüllkurven, zwei LFOs, Tonhöhe sowie Mono/Poly/Unison. Er bedient das auf einem Bedienfeld, das aussieht wie die Vorderseite seines microKORG (ohne Marke, B.3), spielt BEND- und MOD-Rad links der Tasten und kann am iPhone messen, ob es flüssig läuft.
 
 **Umfang.**
-1. **Daten und Format:** Engine `mk`, `p.mk` mit `normMk` (B.1), Format 5 (EN3-04; der Schutz für unbekannte Engines kommt aus MK0), INIT AM, `setEngineOf` für `mk` (Liste und Aufräumen eines unberührten INIT-`p.mk`), `ENGINE_LABEL.mk`, Engine-Listen des Browsers, Engine-Wahl im Kopf (B.3 Zeile 1; Name und Chip nach H-4).
+1. **Daten und Format:** Engine `mk`, `p.mk` mit `normMk` (B.1), Format 5 (EN3-04; der Schutz für unbekannte Engines kommt aus MK0), INIT AM, `setEngineOf` für `mk` (Liste und Aufräumen eines unberührten INIT-`p.mk`), `ENGINE_LABEL.mk`, Engine-Listen des Browsers, Engine-Wahl im Kopf mit „MS 2000“ (B.3 Zeile 1; `MK_LABEL`, EN3-05; Chip nach H-13).
 2. **Worklet `eng 3`:** Es rechnet nur Timbre 1 (`mode` 0; Dual/Split ab MK3).
    - **Weg dorthin:** `{mk}`, `processorOptions.mk` und `{mkSet}` (N3.0.4, B.1). Der flache VA-Zustand ruht: `wkMods = []`, `glideFrom = −1`, keine nativen `fx.*`-LFO-Routen (B.1).
    - **OSZ 1:** Säge (W-24, polyBLEP für beide Sägen), Puls (W-25, polyBLEP), Dreieck (W-26, polyBLAMP). LFO1 wirkt über STEUER 2 (WFM/PWM). Die Wellen 3–7 klingen bis MK2 bzw. MK7 als Säge, das LCD sagt „ab MK2“. Die Werte werden trotzdem gespeichert.
@@ -590,7 +678,7 @@ Testskripte liegen in `dirigent-test/` (Chromium-Pfad wie in CHANGES V2d′: `ch
    - **Hüllkurven:** EG1, EG2 (W-06, W-07). NEUSTART aus = Neuanschlag ab dem aktuellen Pegel. Das gilt bei Poly und bei Mono/Unison mit Multi (HB-MS S. 41).
    - **LFOs:** LFO1/LFO2 mit allen Wellen; Rechteck(+) unipolar. Key Sync aus / Timbre (Phase setzt bei der ersten Note nach „alle los“ zurück; mit Arp gilt der Tastensatz aus KEYS, MK5) / Stimme. Tempo Sync W-09.
    - **Feste Wege:** LFO1 → OSZ1-Steuer, LFO2 → Tonhöhe über VIBRATO × Mod-Rad, EG1 → Cutoff, EG2 → Amp.
-   - **Tonhöhe:** Transponieren, Fein, Portamento W-13, Bend W-17 (MIDI-Bend nach H-5 (c)).
+   - **Tonhöhe:** Transponieren, Fein, Portamento W-13, Bend W-17 über das BEND-Rad.
    - **Stimmen:** höchstens 4.
      - **Priorität gilt für jede Zuweisung**, sobald mehr Tasten gehalten werden, als das Timbre Stimmen hat (Poly 4 bzw. `tv`-Anteil; Mono/Unison 1 Note): Last = die älteste wird gestohlen, Low = die n tiefsten klingen, High = die n höchsten klingen. Frei werdende Stimmen gehen an zurückgestellte Tasten zurück [U] (HB-MS S. 35; der microKORG kennt nur Last, HB-MK S. 16).
      - Mono hat einen Notenstapel nach dieser Priorität.
@@ -598,16 +686,17 @@ Testskripte liegen in `dirigent-test/` (Chromium-Pfad wie in CHANGES V2d′: `ch
      - Auslösung Single: Legato startet Hüllkurven und LFO nicht neu. Portamento wirkt bei Mono/Unison + Single nicht auf die erste Note (HB-MS S. 36).
    - **Strukturwechsel** (Welle, OSC MOD, Filtertyp, HK │ GATE) bei klingender Note laufen über die SXF-Blende; Zuweisung, Priorität und Auslösung über `engXf` (B.6 Nr. 2).
    - **Zufall** je Note aus eigenem Generator (B.4 Nr. 3). **Denormale** und **gefaltete Energie** nach B.6 Nr. 11 und Nr. 12.
-3. **Bedienfeld** (B.3): Reiter SPIEL, EDIT 1, FX.
-   - SPIEL hat die 5 Spiel-Regler und die Programmzeile mit Bank ▾ (8 Genre-Bänke, Namen nach MK8). Seite A bleibt bis MK8 leer (Tasten grau „–“). Seite B listet die eigenen AM-Sounds der Bibliothek, sortiert A–Z, B.11 … B.88. Die Schalterzeile ist reserviert.
-   - EDIT 1 hat das 2 × 7-Raster. PROG zeigt bis MK3 nur „Single“ (gesperrt). Die anderen Sektionen sind voll bedienbar.
-   - Kopfzeile 1 nach B.3 (Breiten-Budget je Format; Chip in P2/P3 nach H-4).
+3. **Bedienfeld** (B.3, Referenz-Skizze): Reiter [GERÄT] [FX]. Das ganze Bedienfeld wird gebaut, mit allen Zonen Z0–Z11, Holzwangen und Material; was erst spätere Pakete füllen, ist dunkel mit „–“ (die Plätze bleiben, M-ANSICHT).
+   - **Aktiv ab MK1:** VOLUME; BANK und SEITE (Seite A bleibt bis MK8 leer, Tasten dunkel „–“; Seite B listet die eigenen AM-Sounds der Bibliothek, sortiert A–Z, B.11 … B.88); Nummerntasten 1–8; SPIEL (beide LEDs); EDIT-WAHL 1 mit allen 11 Stellungen (STIMME bis MK3 nur Synth/Einzeln, die übrigen Werte gesperrt mit Hinweis); Regler 1–5 mit Ebene 2 über SHIFT; Matrix-Zeile; Anzeige; ORIGINAL-LED; WRITE; SHIFT mit SHIFT + 3 (Init), SHIFT + SEITE und SHIFT + OKT ▲/▼; OKT ▼/▲ an `tr.kbOct`.
+   - **Dunkel bis zu ihrem Paket:** EDIT-WAHL 2 (PATCH ab MK2, MOD-FX/DELAY/EQ ab MK4, ARP A/B ab MK5, STIMMUNG ab MK3, SEQ ab MK6), TIMBRE (MK3), ARP (MK5), E1/E2 (MK7), SHIFT + 1/2/4/5.
+   - **Hochformat** in zwei Hälften, auf kleinen iPhones Halb-Ansicht (B.3 Maße).
+   - Kopfzeile 1 nach B.3 (Breiten-Budget je Format, „MS 2000“ ein- oder zweizeilig; Chip in P2/P3 nach H-13).
    - Dazu LCD-Texte, Hilfe-Zeilen, 🎲, ◎ und ⋯ Init.
 4. **ECO-Rückfall** (B.5).
 5. **Leistungs-Probe** (B.4), Fall „Kern“, mit 0-Gain-Anschluss und Σ-Messung.
 6. **Code-Ort** nach EN3-14: immer geladener Teil (`normMk`, INIT AM, `mkToFlat`, `loc`-Behandlung; `mkLocalStrip` kommt mit MK9 dazu) im oder vor `SQStore`; `sq-mk-src` bei Bedarf, beim Öffnen eines AM-Projekts schon während des Ladens, vorher `tickAhead(.3)`.
 7. **Test-API** `mkGet`, `mkSet`, `mkRender`, `mkScope`, `mkInfo`, `perfProbe`.
-8. **MIDI-Rad** (Vorgabe H-5 (c)): `onMidiMsg` bildet 0xE0 auf einen Live-Bend (± `bend` HT) und CC1 auf einen Live-Mod-Rad-Wert ab, der `p.mw` überschreibt, solange er anliegt. Nichts davon wird gespeichert, kein Undo-Eintrag. Nur Desktop-Chrome/Android; iOS Safari hat kein Web MIDI.
+8. **Räder** (H-5, entschieden): BEND- und MOD-Rad als Touch-Räder links in `#kbArea`, nur bei AM-Spuren (B.3 „Räder“, B.1 „Räder“, W-17). Live-Werte je Spur, nicht gespeichert, kein Undo; Rad und Tasten gleichzeitig. **Freiwillige Zugabe, nie nötig** (EN3-21): Am Desktop setzt `onMidiMsg` mit 0xE0 und CC1 dieselben Live-Werte; iOS Safari hat kein Web MIDI. Fehlt die Zugabe, fehlt nichts.
 
 **Nicht-Umfang.**
 - Sinus×, Stimmwelle, Speicherwellen, Rauschen-Oszillator und Patches (MK2).
@@ -617,25 +706,26 @@ Testskripte liegen in `dirigent-test/` (Chromium-Pfad wie in CHANGES V2d′: `ch
 
 **Daten.** Siehe B.1 (alle Felder werden ab MK1 gespeichert). Spur: kein neues Feld (`mkIn` erst mit MK7).
 
-**Oberfläche.** Siehe B.3. Neu sind die Klasse `k6`, das Sektionsraster und die Programmzeile. Der Kopf bleibt; die Engine-Wahl bekommt AM (4. Knopf bzw. Chip nach H-4). Alle Maße gelten vom `.pg`-Inhalt aus (B.3).
+**Oberfläche.** Siehe B.3. Neu sind das Bedienfeld nach der Referenz-Skizze (Drehschalter, Kappen-Regler, LED-Tasten, Anzeige, Holzwangen, SHIFT-Ebenen, Halb-Ansicht) und die Räder an der Tastatur. Der Kopf bleibt; die Engine-Wahl bekommt „MS 2000“ (4. Knopf bzw. Chip nach H-13). Alle Maße gelten vom `.pg`-Inhalt aus (B.3).
 
 **Berührungspunkte.**
 - **Wiederverwendet:** AnalogCore mit Pool, Ereignissen, Tempo, SXF und Lastbericht; `envCoefs`, `lfoVal`, Ladder `FMIX`, polyBLEP/Sync; `normalizeSound`, `soundHash`, Bibliothek, `INIT_IDS`; `sheetFrame`, `sKnob`, `knobRow`, `lcdShow`, `openPop`, fit-Klassen; `soundEdit`/`commitSound`; NativeVoice; Muster des VS0-Testblatts; `engineInfo`.
-- **Neu:** `eng 3` mit Form-Säge, Form-Dreieck, Ring/Ring+Sync, Gate, Neustart, Priorität für alle Zuweisungen, Stapel-Unison, Rechteck(+), Key Sync Timbre, Selbstoszillation, ADAA-Verzerrung, Zufall je Note; Protokoll `{mk}`/`{mkSet}`; `normMk`, `mkToFlat`, W-Tabelle als eine Datenstruktur, Bedienfeld, Leistungs-Probe, Klasse `k6`, Block `sq-mk-src`, MIDI-Rad.
-- **Anzupassen:** `ENGINE_LABEL` (Z. 11162; sonst zeigen `soundLabel` Z. 20359, Browser Z. 24555 und MIDI-Spurname Z. 28737 „VA“), Browser-Engine-Listen (Z. 24409, 24509; sonst fehlt AM unter „Alle Engines“), `setEngineOf` (Z. 20343) mit Aufräumen (Z. 20352), `rebuildNativeLfos` (Z. 12113), `spawnWkVoice` (Glide Z. 12568, Flush Z. 12571), `SynthHost.track` (Z. 9384), `onMidiMsg` (Z. 29030).
+- **Neu:** `eng 3` mit Form-Säge, Form-Dreieck, Ring/Ring+Sync, Gate, Neustart, Priorität für alle Zuweisungen, Stapel-Unison, Rechteck(+), Key Sync Timbre, Selbstoszillation, ADAA-Verzerrung, Zufall je Note; Protokoll `{mk}`/`{mkSet}`; `normMk`, `mkToFlat`, `MK_LABEL`, W-Tabelle als eine Datenstruktur, Bedienfeld-Bausteine (Kappen-Regler, Drehschalter mit Auswahl-Liste, LED-Tasten, 7-Segment-Anzeige, Holzwangen), SHIFT-Ebenen, Räder, Leistungs-Probe, Block `sq-mk-src`, freiwillig MIDI-Bend/CC1.
+- **Anzupassen:** `ENGINE_LABEL` (Z. 11162; sonst zeigen `soundLabel` Z. 20359, Browser Z. 24555 und MIDI-Spurname Z. 28737 „VA“), Browser-Engine-Listen (Z. 24409, 24509; sonst fehlt AM unter „Alle Engines“), `setEngineOf` (Z. 20343) mit Aufräumen (Z. 20352), `rebuildNativeLfos` (Z. 12113), `spawnWkVoice` (Glide Z. 12568, Flush Z. 12571), `SynthHost.track` (Z. 9384), `#kbArea` (Räder links, nur bei AM-Spuren; Z. 3494), Oktav-Wahl `tr.kbOct` (Z. 18917), freiwillig `onMidiMsg` (Z. 29030).
 
-**Dauer** 14–16 h in zwei Bau-Abschnitten (Rev. 1: +3 h für Protokoll, Priorität, `engXf`, Bruchwerte, MIDI-Rad, Probe-Messung, Engine-Listen und Kopfzeile):
+**Dauer** 19–22 h in drei Bau-Abschnitten (Rev. 1: +3 h für Protokoll, Priorität, `engXf`, Bruchwerte, MIDI-Rad, Probe-Messung, Engine-Listen und Kopfzeile; Rev. 2: +4–5 h für das Bedienfeld wie das Original mit Halb-Ansicht und M-SKIZZE, +1–1,5 h für die Räder):
 1. Daten, Format, Protokoll, Worklet, DSP-Tests.
-2. Bedienfeld, ECO, Probe, MIDI-Rad, UI-Tests.
+2. Bedienfeld nach der Referenz-Skizze, Räder, UI- und Aussehens-Tests.
+3. ECO, Probe, freiwillig MIDI-Bend/CC1, Regression.
 
-Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `max_format` 5 und `max_app` 4 009 000 nur mit Xanders Okay (N2 G.8) und erst nach MK0. Vorher speichert die App lokal.
+Eine Version: **4.9.0** · **Budget** +115 KB (Rev. 2: +15 KB für Bedienfeld-Material und Räder) · **Format 4 → 5.** Rollout `max_format` 5 und `max_app` 4 009 000 nur mit Xanders Okay (N2 G.8) und erst nach MK0. Vorher speichert die App lokal.
 
 **Abnahme-Checkliste**
-- [ ] **MK1-01 Daten:** Ein Prüfskript setzt 1000 Zufalls-Patches mit Werten außerhalb der Bereiche. `normMk` klemmt jeden Wert auf Teil A, Listenwerte sind ganzzahlig. Unbekannte Schlüssel fallen weg. Speichern → Laden ist deep-equal, `soundHash` ist stabil. VA → AM → VA stellt den VA-Klang bitgleich her; ohne Geste dazwischen ist der `soundHash` gleich und der Sound nicht „geändert“. Ein Undo nach dem Wechsel stellt den Sound deep-equal her. AM-Sounds heißen in Blattkopf, Browser und MIDI-Spurname „AM“ (Name nach H-4) und stehen im Browser unter „Alle Engines“.
+- [ ] **MK1-01 Daten:** Ein Prüfskript setzt 1000 Zufalls-Patches mit Werten außerhalb der Bereiche. `normMk` klemmt jeden Wert auf Teil A, Listenwerte sind ganzzahlig. Unbekannte Schlüssel fallen weg. Speichern → Laden ist deep-equal, `soundHash` ist stabil. VA → AM → VA stellt den VA-Klang bitgleich her; ohne Geste dazwischen ist der `soundHash` gleich und der Sound nicht „geändert“. Ein Undo nach dem Wechsel stellt den Sound deep-equal her. AM-Sounds heißen in Blattkopf, Browser und MIDI-Spurname „MS 2000“ (`MK_LABEL`) und stehen im Browser unter „Alle Engines“.
 - [ ] **MK1-01b Kalt-Start:** Bibliothek mit AM-Sound, Kalt-Start, ohne AM zu öffnen, dann Neuladen: `p.mk` deep-equal, `mkInfo().loaded === false`.
 - [ ] **MK1-02 Format:** Neue Projekte haben `format` 5. Projekte mit Format 3 und 4 laden deep-equal (nach `normalize`). Demo und alle Werks-Sounds (VA, FM, WT, Kits) klingen offline bitgleich zum Vorgänger-Stand (B.6 Nr. 1; max |Δ| ≤ 1e-6).
 - [ ] **MK1-02b Fremde Engine:** Ein Sound mit Engine `'xyz'` übersteht Laden → Speichern → Laden deep-equal, auch in der Bibliothek und der Cloud-Bibliothek (MK0 bleibt erfüllt).
-- [ ] **MK1-03 Kein Markenwort** (B.6 Nr. 9 a und b): 0 Treffer.
+- [ ] **MK1-03 Kein Markenwort** (B.6 Nr. 9 a, b und c): 0 Treffer; „MS 2000“ genau einmal (`MK_LABEL`); keine neue Schrift, keine Bild-Daten im Bedienfeld.
 - [ ] **MK1-04 Säge** (24LPF Cutoff 127, Gate, C3):
   - Teiltöne 1–20 liegen innerhalb ±0,5 dB von 1/n.
   - C7: gefaltete Energie (B.6 Nr. 12) ≤ −50 dB (gerechnet mit dem polyBLEP der App: −53,2 dB).
@@ -696,7 +786,9 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
   - Transponieren +12 ergibt +1200 ± 1 ct. Fein +50 ergibt +50 ± 0,5 ct.
   - VIBRATO +63 bei Mod-Rad 1 ergibt einen Hub ±200 ± 10 ct mit der LFO2-Frequenz. Bei Mod-Rad 0 ergibt es 0.
   - Portamento 64 (Mono, Multi): C3 → C4 erreicht 90 % in W-13 ± 10 %. Bei Mono + Single gleitet die erste Note nicht.
-  - BEND 2 mit MIDI-Bend 8191 (Test ruft `onMidiMsg` direkt): +200 ± 2 ct; ohne MIDI 0. CC1 127 ersetzt `p.mw` live; nach dem Loslassen gilt wieder `p.mw`, nichts gespeichert, kein Undo.
+  - BEND 2 mit BEND-Rad oben (`mkWheel(t, 'bend', 1)` und als Zeiger-Zug am Rad): +200 ± 2 ct; Rad in Ruhe 0 ct. Nach dem Loslassen ist die Tonhöhe nach ≤ 100 ms wieder 0 ± 1 ct, ohne Knacken (M-KLICK).
+  - MOD-Rad: Beim Laden steht es auf `p.mw`; ein Zug auf 127 ersetzt `p.mw` live (Vibrato nach W-16), nichts gespeichert (`soundHash` unverändert), kein Undo.
+  - Nur wenn die freiwillige MIDI-Zugabe gebaut ist (Test ruft `onMidiMsg` direkt): 0xE0 8191 = Rad oben, CC1 127 = MOD 127.
 - [ ] **MK1-17 Stimmen:**
   - Poly mit 5 Tasten: genau 4 Stimmen klingen. Last: die älteste wird mit Blende gestohlen (M-KLICK). Low: die 4 tiefsten klingen, High: die 4 höchsten (je eine Folge mit der tiefsten bzw. höchsten Taste zuletzt). Lässt man eine klingende Taste los, bekommt die zurückgestellte Taste die Stimme zurück.
   - Mono Last/Low/High: Die Tastenfolgen aus der Testtabelle ergeben die erwarteten Tonhöhen.
@@ -708,16 +800,16 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
   - Jeder stetige Regler, in 1 s von 0 → 127 gedreht, besteht M-KLICK.
   - **Bruchwerte:** Ein CUTOFF-Zug 0 → 127 über 10 s (≈ 0,2 Einheiten je Zeiger-Ereignis) bei RESONANZ 120 erreicht das Worklet mit > 127 verschiedenen Werten; die verfolgte Resonanzspitze springt zwischen zwei Zeiger-Ereignissen um ≤ 25 ct (keine Stufen von 0,94 HT).
   - **Protokoll:** Eine Geste während einer klingenden Note kommt im nächsten Steuerblock an. VA- und FM-Nachrichten bleiben byte-gleich.
-- [ ] **MK1-19 Hörbar:** H-1 und H-3 für jeden Regler von SPIEL und EDIT 1 (Ausnahmen B.6 Nr. 3, im Skript benannt).
-- [ ] **MK1-20 INIT AM:** C3, vel 0,8, 2 s: M-LUFS ± 1 dB gegen INIT Analog. ⋯ → Init lädt INIT AM, ein Undo (der Vocoder-Fall mit `mode` 3 wird in MK7-07 geprüft).
+- [ ] **MK1-19 Hörbar:** H-1 und H-3 für jeden Regler von SPIEL und jeder EDIT-WAHL-1-Sektion, Ebene 1 und 2, und für VOLUME (Ausnahmen B.6 Nr. 3, im Skript benannt).
+- [ ] **MK1-20 INIT AM:** C3, vel 0,8, 2 s: M-LUFS ± 1 dB gegen INIT Analog. ⋯ → Init und SHIFT + 3 laden INIT AM (Name „INIT MS 2000“), je ein Undo (der Vocoder-Fall mit `mode` 3 wird in MK7-07 geprüft).
 - [ ] **MK1-21 Bedienfeld:**
-  - M-PLATZ in P1, P2, P3, L1, L2, W für SPIEL, für EDIT 1 mit jeder Sektion und für die offene Auswahl-Liste.
-  - Ein Sektionswechsel bewegt kein Element > 2 px (M-ANSICHT).
-  - Trefferflächen P1: Zellen 48 × 44, Regler 72 × 92 bzw. 60 × 92, Nummern 41 × 44. L1: Zellen 48 × 36.
+  - M-PLATZ in P1, P2, P3, L1, L2, W für SPIEL, für jede Stellung beider EDIT-WAHL (Ebene 1 und 2), für die offene Auswahl-Liste und für die Halb-Ansicht (LINKS und RECHTS).
+  - Ein Sektions- oder Ebenenwechsel bewegt kein Element > 2 px (M-ANSICHT).
+  - **Trefferflächen ≥ 44 × 44 px** für jedes Bedienelement in allen Formaten (Regler, Drehschalter, Tasten, Chips, Listenzeilen, Räder), ohne Überlappung; L1: Regler 50 × 62, Drehschalter ≥ 52 × 62, Tasten 44 × 44.
   - M-PLATZ zusätzlich mit 47 px Safe-Area-Rand links und rechts bei 844 × 390 und 926 × 428. Jede Beschriftung: scrollWidth ≤ clientWidth.
-  - Kopfzeile 1 in P1, P2 und P3 mit Spur-Chip: Engine-Trefferflächen ≥ 36 × 44 (senkrecht über `::after`) mit 4 px Abstand, der Spurname bleibt sichtbar; sonst der Chip nach H-4 mit Zeilen ≥ 44 px.
-  - Keine Seite scrollt senkrecht. Eine Geste = ein Undo. Ein zweiter Finger wird ignoriert.
-  - Doppeltipp-Zoom und Textauswahl sind in der iOS-Emulation aus.
+  - Kopfzeile 1 in P1, P2 und P3 mit Spur-Chip: Engine-Trefferflächen ≥ 36 × 44 (senkrecht über `::after`) mit 4 px Abstand, „MS 2000“ ganz lesbar (ein- oder zweizeilig), der Spurname bleibt sichtbar; sonst der Chip nach H-13 mit Zeilen ≥ 44 px.
+  - Keine Seite scrollt. Eine Geste = ein Undo. Ein zweiter Finger auf demselben Bedienelement wird ignoriert.
+  - Doppeltipp-Zoom, Pinch und Textauswahl sind in der iOS-Emulation aus.
 - [ ] **MK1-22 Anzeige:** Die LCD zeigt bei jedem Zug Sektion, Name, Geräte-Wert (000…127, ±63 oder Listenname) und Klartext (Hz, ms, ct), laut Prüfliste für alle Regler. Die Hilfe-Zeilen sind da (L10).
 - [ ] **MK1-23 ECO:** Mit `forceNative` spielt ein AM-Sound über NativeVoice. Das Badge erscheint. Pegel ± 3 dB und M-SP ± ½ Okt gegen das Worklet für INIT und 3 Prüfklänge. Keine Konsolenfehler.
 - [ ] **MK1-24 CPU** (Node-Offline, Xeon):
@@ -733,24 +825,41 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
   - Projekt ohne AM: Zuwachs ≤ +20 ms gegen den Vorgänger-Stand (Median aus 5).
   - Projekt mit AM-Sound: ≤ +150 ms (§15.3); der Block wird beim Laden ausgewertet, bevor der Transport starten kann.
   - Erste Auswertung des Blocks ≤ 150 ms bei CPU-Drosselung ×4, ohne Drosselung keine `longtask` > 50 ms.
-  - **Bei laufender Demo:** Engine-Knopf AM während der Demo-Wiedergabe (Block noch nicht ausgewertet): In `noteLog` startet keine Note > 5 ms nach ihrem Plan, kein Schlag fällt aus.
+  - **Bei laufender Demo:** Engine-Knopf „MS 2000“ während der Demo-Wiedergabe (Block noch nicht ausgewertet): In `noteLog` startet keine Note > 5 ms nach ihrem Plan, kein Schlag fällt aus.
 - [ ] **MK1-27 Regression und DoD:**
-  - PE1 mit offenem AM-Bedienfeld während 10 s Demo: rAF ≥ 55 fps, keine `longtask` > 50 ms, `tick`-p95 ≤ 4 ms.
-  - Budget ≤ +95 KB.
+  - PE1 mit offenem AM-Bedienfeld (L1 und P1) während 10 s Demo, dabei ein BEND-Zug und ein Drehschalter-Zug: rAF ≥ 55 fps, keine `longtask` > 50 ms, `tick`-p95 ≤ 4 ms.
+  - Budget ≤ +115 KB.
 - [ ] **MK1-28 Versions-Wächter:** `APP_CODE` 4 009 000. Online-Speichern mit Format 5 erst nach dem Rollout, vorher `bad_version`-Hinweis und lokales Speichern. Kein Aufruf nennt das Klassenzimmer-Projekt.
 - [ ] **MK1-29 Älterer Stand:** 4.8.1 (MK0) öffnet ein Format-5-Projekt bzw. eine Bibliothek mit AM-Sounds aus KV, Cloud und Paar-Raum: Nichts wird überschrieben, die Server-Bibliothek enthält die AM-Sounds weiter. Nach der Rückkehr zu 4.9.0 sind sie deep-equal.
 - [ ] **MK1-30 VA-Zustand ruht:** Ein VA-Sound mit LFO1 → `fx.rev` wird auf AM geschaltet: Der Hall-Send bleibt unmoduliert, das Worklet bekommt keine VA-Mods und kein `glideFrom`. Zurück auf VA wirkt die Route wieder.
-- [ ] **MK1-31 Kopf-Knöpfe:** 🎲 100 Würfe: jeder hörbar (H-1), Mixer OSZ 1 oder OSZ 2 ≥ 64. ◎ markiert genau die Sektionen, die von INIT AM abweichen. Seite B ist A–Z sortiert.
+- [ ] **MK1-31 Kopf-Knöpfe:** 🎲 100 Würfe: jeder hörbar (H-1), Mixer OSZ 1 oder OSZ 2 ≥ 64. ◎ markiert genau die Stellungen und Listenzeilen, deren Sektion von INIT AM abweicht. Seite B ist A–Z sortiert.
+- [ ] **MK1-32 Aussehen wie die Referenz-Skizze** (M-SKIZZE, B.6 Nr. 5):
+  - L1 bei 844 × 390 und 926 × 428 (mit Safe-Area-Rand): jede Zone Z0–Z11 hat IoU ≥ 0,7 mit ihrem Rechteck aus der Zonen-Tabelle (in Anteilen des Körpers); die Räder liegen links der ersten Taste in `#kbArea`.
+  - Alle Formate: Reihenfolge links → rechts Z1 < Z2 < Z3 < Z4 < Z5 (in P je Hälfte: A = Z1–Z3, Z7, Z8; B = Z4, Z5, Z6, Z9, Z10), Z6 direkt unter Z4 (≤ 6 px), Holzwangen an beiden Rändern.
+  - Material (aus dem Bildschirmfoto gemessen): Feld L* ≤ 20, Holzwangen Farbton 15–40°, Sättigung 35–75 %, Helligkeit 20–45 %; Kappen L* ≤ 15; Beschriftung Kontrast ≥ 4,5 : 1; Vocoder-Beschriftung Farbton 100–150°; LED an Farbton 0–35°.
+  - Matrix: Ebene 1 jeder Stellung gleicht der Belegungs-Tabelle in B.3 (Prüfskript gegen die Tabelle; die Tabelle steht nur in Spec und Test, nicht als Handbuch-Text in der App).
+  - Bildschirmfotos aller Formate (SPIEL, FILTER, Vocoder-FILTER, Halb-Ansicht) stehen in CHANGES.
+- [ ] **MK1-33 Räder:**
+  - Sichtbar nur bei AM-Spuren; bei VA/FM/WT/KIT ist das Layout von `#kbArea` deep-equal zum Vorgänger-Stand.
+  - BEND ganz oben/unten = ± `bend` HT ± 2 ct; Loslassen → Mitte in ≤ 100 ms. MOD ganz oben = 1,0, bleibt stehen.
+  - Zwei Finger: Rad ziehen und gleichzeitig 3 Tasten spielen: alle 3 Noten klingen, das Rad wirkt (`noteLog`, Spektrum). Ein zweiter Finger auf dem Rad ändert nichts.
+  - Nichts gespeichert (`soundHash`, Projekt deep-equal), kein Undo-Eintrag; Trefferflächen ≥ 44 × 44.
+- [ ] **MK1-34 Bedien-Logik wie am Original:**
+  - Nach dem Laden eines Programms: beide LEDs an, Regler = SPIEL. EDIT-WAHL 1 auf FILTER: LED 1 an, LED 2 aus, Regler 1–5 = TYP · CUTOFF · RESONANZ · HK-INT · KEYTRACK. Tipp auf die leuchtende Nummerntaste: wieder SPIEL.
+  - Ziehen am Drehschalter rastet je Stellung (≥ 18 px), Tipp öffnet die Matrix-Liste mit 11 Zeilen ≥ 44 px; die Wahl ändert den Sound nicht (`soundHash` gleich) und macht kein Undo.
+  - SHIFT: Regler auf Ebene 2 (FILTER: ANSCHLAG), Matrix-Zeile und Anzeige „EB2“; zweiter Tipp ohne Ebene 3 bzw. Sektionswechsel: aus. SHIFT + OKT ▲ hebt den zuletzt bewegten Wert um 1 (ein Undo). SHIFT + SEITE springt zur letzten Sektion der anderen Wahl.
+  - OKT ▼/▲ ändern `tr.kbOct` im Bereich 1…7, LED wie in B.3. ORIGINAL-LED: an, wenn der Wert gleich dem gespeicherten ist (Zug weg und zurück).
 
-**Tests.** `mk1-dsp.mjs` (Node-Offline: 04–18, 24, 30), `mk1-format.mjs` (01, 01b, 02, 02b, 03, 28, 29), `mk1-ui.mjs` (Playwright: 19–22, 26, 31), `mk1-eco.mjs`, `mk1-probe.mjs`.
+**Tests.** `mk1-dsp.mjs` (Node-Offline: 04–18, 24, 30), `mk1-format.mjs` (01, 01b, 02, 02b, 03, 28, 29), `mk1-ui.mjs` (Playwright: 16 Räder, 19–22, 26, 31, 33, 34), `mk1-look.mjs` (Playwright: 32, Bildschirmfotos, Farbmessung), `mk1-eco.mjs`, `mk1-probe.mjs`.
 
-**Fach-Prüfung** (Teil J): **FP-DSP ●** Haupt-, **FP-TOUCH** und **FP-IPHONE** Zweit-Blick.
+**Fach-Prüfung** (Teil J): **FP-DSP ●** Haupt-, **FP-TOUCH** (auch Aussehen gegen die Referenz-Skizze) und **FP-IPHONE** Zweit-Blick.
 
-**iPhone-Prüfpunkte (Xander, ≈ 5 min):**
-1. Synth-Spur → Engine **AM** → SPIEL: Akkord spielen, CUTOFF und RESONANZ drehen.
-2. EDIT 1 → OSZ 2 → MOD „Sync“, dann HALBTON drehen.
-3. AMP → VERZERR. an, MIXER hochdrehen.
-4. Menü → Info → **Leistungs-Probe**, Ergebnis kopieren und schicken.
+**iPhone-Prüfpunkte (Xander, ≈ 7 min):**
+1. Synth-Spur → Engine **MS 2000**. iPhone quer halten: Sieht das Bedienfeld aus wie dein microKORG? Dann hochkant: Sind die zwei Hälften klar? Abweichungen kurz nennen.
+2. Akkord spielen, CUTOFF und RESONANZ drehen. Mit dem linken Daumen das BEND-Rad ziehen, mit der anderen Hand weiterspielen; das MOD-Rad hochschieben (Vibrato, wenn TONH. → VIBRATO gesetzt ist).
+3. EDIT-WAHL 1 auf OSZ 2 drehen → Regler 2 (MOD) „Sync“, dann Regler 3 (HALBTON) drehen.
+4. EDIT-WAHL 1 auf AMP → Regler 3 (VERZERR.) an, dann MIXER hochdrehen.
+5. Menü → Info → **Leistungs-Probe**, Ergebnis kopieren und schicken.
 
 **Geräte-Abgleich (microKORG, nach Gehör):**
 - Säge STEUER 1 von 0 → 127 (klingt es wie „Oktave dazu“?).
@@ -759,8 +868,9 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 - Resonanz 127: Einsatzpunkt und Pegel des Pfeifens gegen die App (W-02; dass das Filter pfeift, ist belegt, HB-MK S. 25).
 - Attack 64 und Release 64 im Vergleich zur App.
 - LFO Frequenz 64.
+- **Bedienfeld (nur Sicht):** Lage der Zonen, der LEDs und der Räder gegen dein Gerät; Abweichungen ändern die Referenz-Skizze in einem `MK1-fix` (B.3).
 
-**Risiken.** Die Kurven sind eK. Die iPhone-CPU ist unbekannt. Das Paket ist groß, deshalb gibt es zwei Bau-Abschnitte. Der Rollout (Format 5) braucht Xanders Okay.
+**Risiken.** Die Kurven sind eK. Die iPhone-CPU ist unbekannt. Die Lage der Zonen ist [W], bis Xander sie am Gerät bestätigt. Die Räder machen die Tastatur bei AM-Spuren ≈ 96 px schmaler. Das Paket ist groß, deshalb gibt es drei Bau-Abschnitte. Der Rollout (Format 5) braucht Xanders Okay.
 
 ---
 
@@ -797,15 +907,15 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
      | 61–64 Stimme | Hülle in Hz mit dem Maximum zwischen 400 und 1200 Hz, bei C2 und C4 gleich ± 3 dB |
    - LCD: „Speicherwelle 12 · Bass 5 ≈ Platzhalter“. Hilfe: „Originalwellen folgen später aus Aufnahmen“.
 4. **Rauschen-Oszillator** (W-29).
-5. **PATCH 1–4** (A.5, W-18). Je Timbre 4 Wege mit Quelle, Ziel und Intensität. „Bend“ wirkt nur mit MIDI-Bend (H-5 (c)), sonst LCD „kein Bend-Rad“. Das Ziel LFO2-Freq wirkt nicht, solange LFO2 Tempo Sync an ist (W-18). Intensität 0 kostet nichts.
-6. **Reiter EDIT 2** mit PATCH 1–4 (die übrigen Zellen folgen ab MK4/MK5).
+5. **PATCH 1–4** (A.5, W-18). Je Timbre 4 Wege mit Quelle, Ziel und Intensität. „Bend“ wirkt mit dem BEND-Rad (in Ruhe 0), „Mod-Rad“ mit dem MOD-Rad (B.1 „Räder“). Das Ziel LFO2-Freq wirkt nicht, solange LFO2 Tempo Sync an ist (W-18). Intensität 0 kostet nichts.
+6. **EDIT-WAHL 2:** Die Stellungen PATCH 1–4 werden aktiv (die übrigen folgen ab MK3–MK6).
 7. **Leistungs-Probe:** Der Fall „Kern“ nutzt jetzt Speicherwelle + Sinus×.
 
 **Nicht-Umfang.** „Eingang“ (MK7). Originalwellen (MK10). Mehr als 4 Patches.
 
 **Daten.** `t[].o1.w` 3…6 wirken jetzt. `t[].p[]` wirkt jetzt.
 
-**Oberfläche.** EDIT 2 (Raster wie B.3). OSZ 1 mit Beschriftung je Welle. Die Auswahl-Liste der Speicherwellen hat 64 Zeilen mit Gruppenköpfen (Liste scrollt, L4) und „≈“.
+**Oberfläche.** EDIT-WAHL 2 mit PATCH 1–4 (B.3). OSZ 1: Die Matrix-Zeile zeigt WELLE · STEUER 1 · STEUER 2 wie am Original, die LCD-Zeile die Bedeutung je Welle. Die Auswahl-Liste der Speicherwellen hat 64 Zeilen mit Gruppenköpfen (Liste scrollt, L4) und „≈“.
 
 **Berührungspunkte.**
 - **Wiederverwendet:** das Mipmap-Verfahren (V4a, K2-40; portiert, `waveTab` bleibt im Worklet), Mod-Matrix-Plätze.
@@ -851,7 +961,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
   - `mk-node.mjs` baut mit demselben `mkTables` bitgleiche Tabellen.
 - [ ] **MK2-09 CPU** (Node-Offline): Speicherwelle ≤ 1,1 × Säge, Stimmwelle (live, mit polyBLAMP und Hüllen-IIR) ≤ 1,3 ×, Sinus× ≤ 1,2 ×, 4 aktive Patches ≤ +5 %.
 - [ ] **MK2-10 Oberfläche:**
-  - EDIT 2 mit PATCH 1–4, LCD z. B. „PATCH 2 · LFO 1 → CUTOFF · +32“.
+  - EDIT-WAHL 2 mit PATCH 1–4, LCD z. B. „PATCH 2 · LFO 1 → CUTOFF · +32“; M-SKIZZE besteht weiter.
   - Listen mit ≥ 44-px-Zeilen.
   - M-PLATZ in P1–P3, L1, L2, W. H-1/H-3 für alle neuen Regler.
 - [ ] **MK2-11 Regression und DoD**, Budget ≤ +35 KB, kein Markenwort.
@@ -860,7 +970,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 
 **Fach-Prüfung:** **FP-DSP** Haupt-, **FP-KLANG** Zweit-Blick.
 
-**iPhone:** OSZ 1 → Speicherwelle, STEUER 2 durchdrehen. PATCH 1 LFO 2 → Cutoff, +40.
+**iPhone:** EDIT-WAHL 1 auf OSZ 1 → WELLE Speicherwelle, STEUER 2 durchdrehen. EDIT-WAHL 2 auf PATCH 1: LFO 2 → Cutoff, +40.
 
 **Geräte-Abgleich:** Stimmwelle FORM 0/64/127. Sinus× X-MOD 64. Rauschen CUTOFF 24 mit RESO. 127 (gleiche Tonhöhe wie die Taste?). Klang einzelner Speicherwellen (nur als Vorgeschmack, die Originale kommen mit MK10).
 
@@ -873,7 +983,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 **Ziel.** Ein AM-Sound spielt zwei Timbres übereinander (Dual = Layer) oder geteilt (Split). Die Stimmen werden wie am MS2000 aufgeteilt. Die zehn Stimmungen mit Grundton sind wählbar.
 
 **Umfang.**
-1. **PROG-Sektion:** MODUS Single │ Dual │ Split (Vocoder ab MK7), STIMMEN 1+3 │ 2+2 │ 3+1, SPLIT (C-1…G9), STIMMUNG, GRUNDTON. Am Gerät setzt man den Split per Halten + Taste (HB-MS S. 34). Hier gibt es dafür die Taste [Split ← nächste Note] in der LCD-Zeile, weil Halten im Editor keine neue Bedeutung bekommt (L4).
+1. **STIMME und STIMMUNG** (B.3): STIMME Regler 2 EINZELN/SCHICHT = Single │ Layer (= Dual) │ Split (Regler 1 SYNTH/VOC. Vocoder ab MK7); Ebene 2: STIMMEN 1+3 │ 2+2 │ 3+1, SPLIT (C-1…G9). EDIT-WAHL 2 Stellung STIMMUNG (am Original GLOBAL): STIMMUNG, GRUNDTON, Zusatz-Ansicht EIGENE. Am Gerät setzt man den Split per Halten + Taste (HB-MS S. 34). Hier gibt es dafür die Taste [Split ← nächste Note] in der LCD-Zeile, weil Halten im Editor keine neue Bedeutung bekommt (L4).
 2. **Worklet:** Je Note spielen die Timbres nach Modus:
    - Dual: beide.
    - Split: Note < `split` → T1, sonst T2 [W].
@@ -883,26 +993,26 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
    - Unison in Dual/Split nutzt die Stimmenzahl des Timbres.
    - Mono bei T1 und Poly bei T2 ist erlaubt.
    - AMP PEGEL/PAN je Timbre wirken als Balance (S. 40).
-3. **TIMBRE-Wahl** T1 │ T2 in der SPIEL-Programmzeile. Alle Sektionen bearbeiten das gewählte Timbre. Die LCD zeigt „T2“. Bei Single ist T2 gesperrt.
-   - Nach **H-11** (Vorgabe ja): [T1+2] bearbeitet beide Timbres zugleich (Anzeige und Startwert von T1; nicht gespeichert), [◐ SOLO] spielt nur das gewählte Timbre (nicht gespeichert); HB-MK S. 14, S. 64. Chips statt Halten, weil Halten hier keine Bedeutung bekommt (L4). Plätze in der Schalterzeile (B.3).
-4. **Werkzeuge** (⋯ im Blatt):
-   - Timbre neu (INIT), Timbre tauschen.
-   - Timbre kopieren aus einem beliebigen AM-Sound der Bibliothek (Timbre 1 oder 2 als Quelle; 🔒 steckt an, EN3-08a).
+3. **TIMBRE-Taste** wie am Original (B.3, Zone Z8; HB-MK S. 14): Tipp T1 → T2 → beide → T1, die LEDs 1/2 zeigen die Wahl. Alle Sektionen bearbeiten das gewählte Timbre. Die LCD zeigt „T2“. Bei Single ist T2 gesperrt (Hinweis), die Taste bleibt auf T1.
+   - Nach **H-11** (entschieden: ja): **Edit Sync** = dritter Tipp (beide LEDs): Gesten gehen an beide Timbres (Anzeige und Startwert von T1; nicht gespeichert). Am Original hält man die Taste 2 s; der dritte Tipp ersetzt das Halten, weil Halten hier keine Bedeutung bekommt (L4). **Solo** = SHIFT + TIMBRE: nur das gewählte Timbre klingt, seine LED blinkt; ein Tipp auf TIMBRE beendet Solo (nicht gespeichert; HB-MK S. 14, PDF 78). Eigene Chips [T1+2]/[◐ SOLO] der Rev. 1 entfallen.
+4. **Werkzeuge** über SHIFT + Nummerntaste wie am Original (B.3; auch unter ⋯ im Blatt):
+   - SHIFT + 4 Timbre neu (INIT), SHIFT + 2 Timbre tauschen.
+   - SHIFT + 1 Timbre kopieren aus einem beliebigen AM-Sound der Bibliothek (Timbre 1 oder 2 als Quelle; ab MK9 steckt 🔒 an, EN3-08a).
    - Je ein Undo (HB-MS S. 46–47).
-5. **Stimmung** (W-43): je Note und Timbre, vor der Tonhöhenrechnung. Eigene Stimmung mit 12 Werten (Blatt mit 12 Reglern −100…+100 ct). Keytrack rechnet mit der gestimmten Tonhöhe (KT, B.2; HB-MS S. 39).
+5. **Stimmung** (W-43): je Note und Timbre, vor der Tonhöhenrechnung. Eigene Stimmung mit 12 Werten (Zusatz-Ansicht EIGENE mit 12 Reglern −100…+100 ct). Keytrack rechnet mit der gestimmten Tonhöhe (KT, B.2; HB-MS S. 39).
 6. **Umschalten** von MODUS und STIMMEN bei klingenden Noten über `engXf` (B.6 Nr. 2).
 
 **Nicht-Umfang.** Mehr als 2 Timbres. Globale Stimmung (die Abweichung steht in B.1). Arp-Ziel (MK5).
 
 **Daten.** `mode` 0–2, `tv`, `split`, `scale`, `skey`, `usc`, `t[1]` wirken jetzt.
 
-**Oberfläche.** PROG ist offen. T1/T2 in SPIEL aktiv, dazu [T1+2] und [◐ SOLO] nach H-11. Zusätzlich das Blatt „Eigene Stimmung“ (12 Regler, P1: 2 × 6 nach `k6`; L1: 12 × 56 mit 3 px = 705 px).
+**Oberfläche.** STIMME (Ebene 1 und 2) und die Stellung STIMMUNG sind offen. Die TIMBRE-Taste ist aktiv (T1 │ T2 │ beide, Solo mit SHIFT). SHIFT + 1/2/4 sind aktiv. Zusätzlich die Zusatz-Ansicht EIGENE (12 Regler, P1: 2 × 6 à 60; L1: 12 × 56 mit 3 px = 705 px).
 
 **Berührungspunkte.**
 - **Wiederverwendet:** Stimmenpool, Notenstapel aus MK1, Bibliothek für die Quellwahl.
-- **Neu:** Timbre-Verteilung (mit der Mono-Regel), Stimmungs-Tabellen, Timbre-Werkzeuge, [T1+2] und Solo.
+- **Neu:** Timbre-Verteilung (mit der Mono-Regel), Stimmungs-Tabellen, Timbre-Werkzeuge über SHIFT, TIMBRE-Taste mit Edit Sync und Solo.
 
-**Dauer** 7–8 h (Rev. 1: +1 h für [T1+2] und Solo) · **Version 4.11.0** · **Budget** +32 KB · Format bleibt 5.
+**Dauer** 7,5–8,5 h (Rev. 1: +1 h für Edit Sync und Solo; Rev. 2: +0,5 h für TIMBRE-Taste, SHIFT-Werkzeuge und Zusatz-Ansicht) · **Version 4.11.0** · **Budget** +33 KB · Format bleibt 5.
 
 **Abnahme-Checkliste**
 - [ ] **MK3-01 Dual:** Der Render ist die Summe der einzeln gerenderten Timbres (max |Δ| ≤ 1e-4, gleicher Seed; Zufall je Note nach B.4 Nr. 3, auch mit Rauschen und S&H).
@@ -914,8 +1024,8 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
   - `tv` 2+2, T1 Mono, T2 Poly, 4 Tasten: T2 spielt 3 Noten.
   - T1 Unison, T2 Mono: T1 spielt 2 gestapelte Stimmen, T2 eine.
 - [ ] **MK3-03 Split** bei C4: C3 nur T1, C4 nur T2 (die jeweils anderen ≤ −60 dB). Die Taste „Split ← nächste Note“ setzt `split` auf die nächste gespielte Note, ein Undo.
-- [ ] **MK3-04 Timbre-Wahl:** Eine Bearbeitung mit T2 lässt T1 deep-equal. Bei Single ist T2 gesperrt (Hinweis im LCD).
-- [ ] **MK3-05 Werkzeuge:**
+- [ ] **MK3-04 Timbre-Wahl:** Tipps auf TIMBRE ergeben T1 → T2 → beide → T1 (LEDs nach B.3). Eine Bearbeitung mit T2 lässt T1 deep-equal. Bei Single ist T2 gesperrt (Hinweis im LCD).
+- [ ] **MK3-05 Werkzeuge** (SHIFT + 1, 2, 4 und ⋯):
   - Kopieren aus einem anderen Sound ergibt das Ziel-Timbre deep-equal zur Quelle.
   - Tauschen zweimal = Ausgang.
   - INIT-Timbre = INIT-Werte.
@@ -927,16 +1037,16 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 - [ ] **MK3-07 Bitgleich:** Single-Klänge aus MK1/MK2 klingen bitgleich zum Vorgänger-Stand (MK2).
 - [ ] **MK3-08 CPU:** Dual 2+2 kostet ≤ 1,05 × Single mit 4 Stimmen (Node-Offline). Es klingen nie mehr als 4 Stimmen.
 - [ ] **MK3-09 Umschalten** von MODUS und STIMMEN bei klingenden Noten: M-KLICK immer, M-EINBRUCH nach der `engXf`-Regel (B.6 Nr. 2); gilt bis Begrenzer-Stufe 1.
-- [ ] **MK3-10 Oberfläche:** PROG, T1/T2, [T1+2], [◐ SOLO], Blatt „Eigene Stimmung“: M-PLATZ in P1–P3, L1, L2, W. M-ANSICHT beim Timbre-Wechsel (nichts springt).
+- [ ] **MK3-10 Oberfläche:** STIMME (Ebene 1 und 2), STIMMUNG, TIMBRE-Taste mit LEDs, SHIFT-Funktionen, Zusatz-Ansicht EIGENE: M-PLATZ in P1–P3, L1, L2, W, M-SKIZZE besteht weiter. M-ANSICHT beim Timbre-Wechsel (nichts springt). Trefferflächen ≥ 44 × 44.
 - [ ] **MK3-11 Regression und DoD**, Budget ≤ +32 KB.
 - [ ] **MK3-12 Balance und Stimmung:** AMP PEGEL/PAN je Timbre stellen die Balance (PEGEL T1 = 0 → T1-Anteil ≤ −60 dB; PAN T1 L63 / T2 R63 → Trennung ≥ 30 dB). KEYTRACK +48 mit Werckmeister III folgt der gestimmten Tonhöhe (Cutoff-Abweichung = W-43-Wert ± 2 ct).
-- [ ] **MK3-13 Beide und Solo** (nach H-11): [T1+2]: ein CUTOFF-Zug ändert T1 und T2 um dasselbe Δ, ein Undo; nach dem Ausschalten ist nichts gespeichert (`soundHash` unverändert durch den Schalter). [◐ SOLO]: nur das gewählte Timbre klingt (das andere ≤ −90 dB), nicht gespeichert.
+- [ ] **MK3-13 Beide und Solo** (H-11): TIMBRE auf „beide“: ein CUTOFF-Zug ändert T1 und T2 um dasselbe Δ, ein Undo; nach dem Weiterschalten ist nichts gespeichert (`soundHash` unverändert durch die Taste). SHIFT + TIMBRE: nur das gewählte Timbre klingt (das andere ≤ −90 dB), seine LED blinkt; Tipp auf TIMBRE beendet Solo; nicht gespeichert.
 
 **Tests.** `mk3-timbre.mjs`, `mk3-scale.mjs`, `mk3-ui.mjs`.
 
 **Fach-Prüfung:** **FP-DSP ●** Haupt-, **FP-TOUCH** Zweit-Blick. Blockierend, weil MK5–MK8 auf der Timbre-Struktur aufbauen.
 
-**iPhone:** PROG → MODUS Split, SPLIT C4. Unten Bass (T1), oben Fläche (T2) bauen. STIMMUNG „Werckmeister III“ mit Akkorden.
+**iPhone:** EDIT-WAHL 1 auf STIMME → Regler 2 „Split“, SHIFT → SPLIT C4. Mit der TIMBRE-Taste unten Bass (T1), oben Fläche (T2) bauen. EDIT-WAHL 2 auf STIMMUNG: „Werckmeister III“ mit Akkorden.
 
 **Geräte-Abgleich:** Layer am microKORG mit 2 Stimmen je Timbre (HB-MK S. 16) gegen Dual 2+2. Das Verhalten bei mehr Tasten als Stimmen. Mono/Poly-Layer (1/3). Edit Sync und Solo (HB-MK S. 14).
 
@@ -951,7 +1061,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 **Umfang.**
 1. **Im Worklet nach der Stimmensumme** (stereo, je Spur): Mod-FX Cho/Flg │ Ensemble │ Phaser (W-31), Delay Stereo │ Cross │ L/R (W-32, Puffer 6 s, angelegt beim ersten Einschalten) mit Tempo Sync (W-12, Song-Tempo, jede Note im ganzen Tempobereich), EQ (W-33). TIEFE 0 ist jeweils bitgleich trocken. Alle Rückkopplungs- und IIR-Zustände nach B.6 Nr. 11.
 2. **Zeitwechsel** des Delays bei laufendem Echo: Lesekopf gleitet (≤ 50 ms), kein Sprung. Tempo-Wechsel: Sync-Zeit folgt am nächsten Block mit Gleiten.
-3. **Sektionen** MOD-FX, DELAY, EQ in EDIT 2. ZEIT │ NOTE wechselt mit TEMPO SYNC.
+3. **Stellungen** MOD-FX, DELAY, EQ der EDIT-WAHL 2 (5–7, wie am Original). ZEIT │ NOTE wechselt mit TEMPO SYNC.
 4. Die **Spur-Kette bleibt unverändert dahinter** (Drive, Chorus, Hall-/Echo-Send, Pump, Vol, Pan).
 5. **Leistungs-Probe:** Fall „+FX“.
 
@@ -959,7 +1069,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 
 **Daten.** `mfx`, `dly`, `eq` wirken jetzt.
 
-**Oberfläche.** Drei Sektionen in EDIT 2. LCD z. B. „DELAY · NOTE 1/8 · 250 ms“.
+**Oberfläche.** Drei Stellungen der EDIT-WAHL 2. LCD z. B. „DELAY · NOTE 1/8 · 250 ms“, Anzeige „1.8“ wie am Original.
 
 **Berührungspunkte.**
 - **Wiederverwendet:** Worklet-Tempo (`{tempo}` mit `at`), Glättung.
@@ -994,7 +1104,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 
 **Zwischenstand** nach MK4 (EN3-17): Artifact + Pages.
 
-**iPhone:** DELAY Sync 1/8, TIEFE 60, mit laufendem Song. MOD-FX Ensemble auf einer Fläche.
+**iPhone:** EDIT-WAHL 2 auf DELAY: TEMPO SYNC an, NOTE 1/8, TIEFE 60, mit laufendem Song. MOD-FX Ensemble auf einer Fläche.
 
 **Geräte-Abgleich:** Cho/Flg TIEFE 40 und 100. Ensemble. Phaser TEMPO 30. Delay TIEFE 64 (wie viele Wiederholungen?).
 
@@ -1030,12 +1140,12 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 4. **Step-Arp** (HB-MK S. 11, S. 45): LETZTER SCHRITT 1–8 und Schritt-Maske `steps`. Ein ausgeschalteter Schritt ist eine Pause. Der Notenzeiger rückt trotzdem weiter (eK, Geräte-Abgleich).
 5. **Latch:** Loslassen hält den Satz. Neue Tasten nach „alle los“ ersetzen ihn, eine weitere Taste beim Halten ergänzt. Latch aus → Stopp ≤ 1 Schritt.
 6. **Ziel** (Dual/Split): Both │ T1 │ T2. Das nicht arpeggierte Timbre spielt die gehaltenen Noten normal. Die Arp-Noten tragen beim ON die Timbre-Maske `d` (N3.0.4), die gehaltenen Noten des anderen Timbres die Gegenmaske. **In Split bestimmt die gehaltene Taste das Timbre, nicht die Arp-Note**, auch wenn OKTAVEN die Note über `split` hebt.
-7. **Aufnahme** (● REC, FANG, Overdub): Aufgezeichnet werden die **gespielten Tasten**. Der Arp entsteht beim Abspielen neu (Vorgabe, H-8). Song-MIDI-Export: wie bisher die Clip-Noten, ohne Arp-Noten (Lücke in CHANGES). Der **MIDI-Mitschnitt** (`PERF`, `buildMidiLog`) enthält dagegen bewusst die klingenden Arp-Noten, wie bei der Clip-Wiedergabe (`spawnWkVoice` schreibt `perfAdd`, Z. 12574).
+7. **Aufnahme** (● REC, FANG, Overdub): Aufgezeichnet werden die **gespielten Tasten**. Der Arp entsteht beim Abspielen neu (H-8, entschieden). Song-MIDI-Export: wie bisher die Clip-Noten, ohne Arp-Noten (Lücke in CHANGES). Der **MIDI-Mitschnitt** (`PERF`, `buildMidiLog`) enthält dagegen bewusst die klingenden Arp-Noten, wie bei der Clip-Wiedergabe (`spawnWkVoice` schreibt `perfAdd`, Z. 12574).
 8. **Aufräumen:** Stopp, Panik, Szenen- oder Teilwechsel, Engine-Wechsel, Arp aus und Spur stumm beenden alle Arp-Noten ≤ 1 Schritt. Keine hängende Note.
-9. **Oberfläche:**
-   - SPIEL: [ARP ●] und [LATCH ●].
-   - EDIT 2: ARP A (TEMPO zeigt das Song-Tempo, AUFLÖSUNG, GATE, TYP, OKTAVEN) und ARP B (LATCH, SWING, KEY SYNC, LÄNGE = letzter Schritt, ZIEL).
-   - Bei ARP A/B werden die Nummerntasten zu **Schritt-Tasten** 1–8. Leuchtend = an. Der laufende Schritt ist markiert (≤ 1 Bild Verzug). Schritte über LÄNGE sind dunkel.
+9. **Oberfläche** (wie am Original, B.3):
+   - ARP-Taste (Zone Z7) schaltet den Arp; ihre LED zeigt an/aus, die Tempo-LED blinkt im Song-Tempo. LATCH ist ARP B Regler 1 (keine eigene Taste, wie am Original).
+   - EDIT-WAHL 2: ARP A (TEMPO zeigt das Song-Tempo, AUFLÖSUNG, GATE, TYP, OKTAVEN) und ARP B (LATCH, SWING, KEY SYNC, LÄNGE = letzter Schritt, ZIEL).
+   - Bei ARP A/B werden die Nummerntasten zu **Schritt-Tasten** 1–8 (HB-MK S. 11): leuchtend = an, blinkend (1 Hz) = Pause, dunkel = über LÄNGE. Der laufende Schritt ist zusätzlich hell markiert (≤ 1 Bild Verzug).
 10. **Leistungs-Probe:** Fall „+Arp“ (4 Spuren, 1/24).
 11. **Key Sync mit Arp:** Solange `arp.on`, setzen LFO1/2 und SEQ mit Key Sync „Timbre“ nur bei KEYS Typ 9 zurück (erste Taste nach „alle Tasten los“ = Akkordwechsel; HB-MS S. 41, S. 43, S. 63). Key Sync „Stimme“ setzt je Arp-Note zurück. Auslösung Single und die Portamento-Regel für die erste Note bleiben auf Stimmen-Ebene; ihre Wirkung mit Arp ist [U] (Geräte-Abgleich).
 
@@ -1047,7 +1157,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 - **Wiederverwendet:** `tick`/`LOOKAHEAD`, `spawnWkVoice`, `noteLog`, `outPitch`, `applyCarrierChange`, `swingOffset`, `inputDown`, FANG/REC-Wege (unverändert für Nicht-AM-Spuren), `silenceAll`.
 - **Neu:** Arp-Kern mit Intervall-Satz, KEYS-Ereignisse, Timbre-Maske `d`, Schritt-Tasten, Muster-Tabelle, Seed.
 
-**Dauer** 7,5–8,5 h (Rev. 1: +1,5 h für Intervall-Satz, Abbildung je Schritt, KEYS, Timbre-Maske und ECO) · **Version 4.13.0** · **Budget** +33 KB · Format bleibt 5.
+**Dauer** 7,5–8,5 h (Rev. 1: +1,5 h für Intervall-Satz, Abbildung je Schritt, KEYS, Timbre-Maske und ECO; Rev. 2: ARP-Taste und Schritt-Tasten nach dem Original ohne Mehraufwand, die Schalterzeile entfällt) · **Version 4.13.0** · **Budget** +33 KB · Format bleibt 5.
 
 **Abnahme-Checkliste**
 - [ ] **MK5-01 Muster:** C-E-G gehalten. Die Folgen Up, Down, Alt 1, Alt 2 und Trigger für Range 1–4 sind in `arpLog` deep-equal zur Testtabelle (Beispiel Range 1: Alt 1 = C E G E, Alt 2 = C E G G E C).
@@ -1069,8 +1179,9 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 - [ ] **MK5-15 Aufräumen:** Für jede Aktion aus Umfang 8 gilt: nach ≤ 1 Schritt plus Release 0 klingende Stimmen (`voicesInfo`).
 - [ ] **MK5-16 Leistung:** 4 Arp-Spuren mit 1/24 kosten ≤ 0,3 ms je `tick` (p95, Xeon). PE1 besteht. Die Leistungs-Probe läuft mit „+Arp“.
 - [ ] **MK5-17 Oberfläche:**
-  - P1: [ARP ●]/[LATCH ●] 44 × 44, Schritt-Tasten 41 × 44. P3: Schritt-Tasten 2 × 4 à 68 × 36. L1: ≥ 40 × 36.
-  - M-PLATZ in P1–P3, L1, L2, W. Die Schritt-Tasten ersetzen die Nummern ohne Sprung (M-ANSICHT).
+  - ARP-Taste und Schritt-Tasten ≥ 44 × 44 in allen Formaten (P1 8 × 44, P2 2 × 4 à 80 × 44, P3 2 × 4 à 68 × 44, L1 44 × 44).
+  - M-PLATZ in P1–P3, L1, L2, W, M-SKIZZE besteht weiter. Die Schritt-Tasten sind die Nummerntasten am selben Platz (M-ANSICHT, kein Sprung).
+  - LED-Zustände an │ Pause (blinkt) │ über LÄNGE (dunkel) laut `arpLog`; die Tempo-LED blinkt im Song-Tempo (± 1 Bild).
   - Die Anzeige des laufenden Schritts ≤ 30 Hz.
 - [ ] **MK5-18 Regression:** FANG, ● REC, MELODIE, Song-Ablauf und Teile sind für Nicht-AM-Spuren und für AM mit Arp aus unverändert (die Abnahmen von V2b–V2d′ bestehen). Budget ≤ +33 KB.
 - [ ] **MK5-19 Akkordwechsel:** 4-Takt-Akkord-Clip mit Träger-Wechsel in Takt 3: Ab Takt 3 gehört jede Arp-Note zum neuen Akkord (`noteLog`, ± 0 HT), keine hängende Note. Ebenso mit „Eine Skala“ und ⇅ FOLGT.
@@ -1082,7 +1193,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 
 **Fach-Prüfung:** **FP-SONG ●** Haupt-, **FP-TOUCH** Zweit-Blick.
 
-**iPhone:** [ARP ●], Akkord halten, ARP A TYP Alt 2, OKTAVEN 2. ARP B LÄNGE 6, zwei Schritt-Tasten aus. Mit laufendem Song spielen.
+**iPhone:** ARP-Taste an, Akkord halten. EDIT-WAHL 2 auf ARP A: TYP (Regler 4) Alt 2, OKTAVEN (Regler 5) 2. ARP B: LÄNGE (Regler 4) 6, zwei Nummerntasten antippen (blinken = Pause). Mit laufendem Song spielen.
 
 **Geräte-Abgleich:** Step-Arp „Schritt aus“ (rückt die Note weiter?). Swing +50. Gate 0. Key Sync aus bei laufendem Takt (microKORG ohne MIDI-Clock: nur Muster-Neustart vergleichen). Arp 1/16, Gate 50 %, LFO1 Key Sync Timbre: Startet der LFO je Akkord oder je Schritt neu? Auslösung Single mit Arp.
 
@@ -1108,20 +1219,18 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
    - Ziel LFO1/2-Freq bei Tempo Sync an: ohne Wirkung [U] (wie der Patch, W-18; kein Geräte-Abgleich möglich, der microKORG hat keinen Seq; eK).
 3. **Vorrang:** Zielen zwei Sequenzen auf denselben Regler, gilt SEQ 3 vor SEQ 2 vor SEQ 1. Die LCD zeigt „*“ (HB-MS S. 43).
 4. **Bewegung aufnehmen** (HB-MS S. 26):
-   - [● AUFN.] bei gewählter Sequenz. Die Aufnahme beginnt mit dem ersten bewegten Regler einer EDIT-Sektion.
+   - [● AUFN.] (Zusatz-Ansicht SCHRITTE) bei gewählter Sequenz; danach springt die Ansicht zu GERÄT, und die Matrix-Zeile zeigt „● AUFN.“ blinkend. Die Aufnahme beginnt mit dem ersten bewegten Regler einer Sektion der EDIT-WAHL 1 bzw. der PATCH-Stellungen.
    - Das Ziel der Sequenz wird dieser Regler. Werte werden ab dem laufenden Schritt bis LETZTER SCHRITT geschrieben, dann endet die Aufnahme selbst.
    - Nur der zuerst bewegte Regler zählt. ARP- und Effekt-Regler nehmen nicht auf.
    - Ein Undo für die ganze Aufnahme.
    - Während der Aufnahme läuft die Sequenz immer vorwärts und als Schleife (S. 42–43).
-5. **Werkzeuge:** Sequenz neu (eine oder alle), kopieren (aus einem anderen AM-Sound, Timbre und Sequenz wählbar; 🔒 steckt an, EN3-08a), alles kopieren, tauschen. Je ein Undo (HB-MS S. 47–48).
-6. **Reiter SEQ** (B.3):
-   - Reihe 1: [SEQ 1][SEQ 2][SEQ 3] [ZIEL ▾] [● AUFN.] (ZIEL: Tipp-Liste; als Regler stetig mit Rundung, B.3)
-   - Reihe 2: [SCHRITTE │ ALLGEMEIN] [GLATT │ STUFE] [SEQ ●]
-   - SCHRITTE: 16 Säulen. P1 2 × 8 à 41 × 88 (4 px), P2 2 × 8 à 39 × 88, P3 2 × 8 à 36 × 88 als ein Canvas-Feld ohne Zwischenraum, L1 16 × 41 × 92 (3 px, 701 px), L2 16 × 36 × 92 (3 px). Senkrecht ziehen ändert den Wert über die **volle Säulenhöhe** in Ziel-Einheiten (±6/±24/±63), ohne Feinmodus über den Waagrecht-Abstand. Ein Tipp über bzw. unter dem Balken ändert ±1 (je ein Undo). Waagrecht > 8 px malt über mehrere Säulen. Eine Geste = ein Undo, ein zweiter Finger wird ignoriert. Der laufende Schritt ist hell (Canvas 2D, ≤ 30 Hz, nur sichtbar).
-   - ALLGEMEIN: 5 Regler LÄNGE (letzter Schritt), TYP, LAUF, KEY SYNC, AUFLÖSUNG.
-   - L1: Die beiden Kopfreihen stehen in einer Reihe (36 px), darunter die 16 Säulen (Summe 132 px).
-   - P1: 44 + 4 + 44 + 8 + 2 × 88 + 4 = 280 px.
-   - SPIEL: [SEQ ●].
+5. **Werkzeuge:** Sequenz neu (eine oder alle), kopieren (aus einem anderen AM-Sound, Timbre und Sequenz wählbar; ab MK9 steckt 🔒 an, EN3-08a), alles kopieren, tauschen. Je ein Undo (HB-MS S. 47–48).
+6. **Stellung SEQ** der EDIT-WAHL 2 (am Original MIDI; B.3):
+   - Ebene 1: SEQ AN · SEQUENZ (1 │ 2 │ 3) · ZIEL (Tipp-Liste; als Regler stetig mit Rundung, B.3) · BEWEGUNG (Glatt │ Stufe) · LÄNGE. Ebene 2 (SHIFT): TYP · LAUF · KEY SYNC · AUFLÖSUNG. In der Matrix-Zeile zeigt „●“ hinter SEQ, dass die Sequenz läuft.
+   - SHIFT + 5: Sequenz-Werkzeuge (Umfang 5).
+   - **Zusatz-Ansicht SCHRITTE** (Chip „SCHRITTE ▸“ in der Matrix-Zeile; oben [◂ GERÄT] [SEQ 1][SEQ 2][SEQ 3] [● AUFN.], je ≥ 44 × 44): 16 Säulen. P1 2 × 8 à 41 × 88 (4 px), P2 2 × 8 à 39 × 88, P3 2 × 8 à 36 × 88 als ein Canvas-Feld ohne Zwischenraum, L1 16 × 41 × 92 (3 px, 701 px), L2 16 × 36 × 92 (3 px). Senkrecht ziehen ändert den Wert über die **volle Säulenhöhe** in Ziel-Einheiten (±6/±24/±63), ohne Feinmodus über den Waagrecht-Abstand. Ein Tipp über bzw. unter dem Balken ändert ±1 (je ein Undo). Waagrecht > 8 px malt über mehrere Säulen. Eine Geste = ein Undo, ein zweiter Finger wird ignoriert. Der laufende Schritt ist hell (Canvas 2D, ≤ 30 Hz, nur sichtbar).
+   - L1: Die Kopfreihe der Ansicht (44 px), darunter die 16 Säulen (Summe ≤ 146 px).
+   - P1: 44 + 8 + 2 × 88 + 4 = 232 px.
 7. **Leistungs-Probe:** Fall „+Seq“.
 
 **Nicht-Umfang.** Seq im Vocoder-Modus (HB-MS hat dort keine Seq, S. 49–52). Mehr als 16 Schritte.
@@ -1132,7 +1241,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 - **Wiederverwendet:** Worklet-Tempo und Phase (`songStart`), Stimmen-Zustand, Undo, Canvas-Muster der vorhandenen Anzeigen.
 - **Neu:** Seq-Kern (mit der Song-Raster-Regel), Säulen-Editor mit Tipp ±1, Aufnahme-Logik.
 
-**Dauer** 7,5–8,5 h (Rev. 1: +0,5 h) · **Version 4.14.0** · **Budget** +35 KB · Format bleibt 5.
+**Dauer** 8–9 h (Rev. 1: +0,5 h; Rev. 2: +0,5 h für Stellung SEQ mit Ebene 2 und die Zusatz-Ansicht) · **Version 4.14.0** · **Budget** +36 KB · Format bleibt 5.
 
 **Abnahme-Checkliste**
 - [ ] **MK6-01 Zeit:** Auflösung 1/16, 120 BPM, Ziel Amp-Pegel, Stufe: Beginn der 1-ms-Rampe alle 125 ms ± 1 Steuerblock (16 Samples), am Pegel gemessen. Alle 16 Auflösungen nach W-10. Amp-Pegel-Stufe ±63 besteht M-KLICK.
@@ -1161,7 +1270,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 - [ ] **MK6-11 Säulen-Editor:**
   - Ziehen ändert einen Schritt, waagrecht malen ändert mehrere, je ein Undo. Ein zweiter Finger ändert nichts.
   - Werte in Ziel-Einheiten (±6/±24/±63) über die volle Säulenhöhe; Tipp über/unter dem Balken ±1, je ein Undo. Alle ≈ 30 ZIEL-Einträge sind mit ≤ 200 px Zug erreichbar.
-  - M-PLATZ in P1–P3, L1, L2, W. M-ANSICHT bei SCHRITTE ↔ ALLGEMEIN.
+  - M-PLATZ in P1–P3, L1, L2, W für die Stellung SEQ (Ebene 1 und 2) und die Zusatz-Ansicht; M-SKIZZE besteht weiter. M-ANSICHT bei GERÄT ↔ SCHRITTE (Rahmen und Räder bleiben stehen). Kopf-Tasten der Ansicht ≥ 44 × 44.
 - [ ] **MK6-12 Leistung:** 3 Sequenzen je Timbre mit 4 Stimmen bei Key Sync „Stimme“ kosten ≤ +0,5 × VA-Stimme (Node-Offline, gleicher Lauf). Die Anzeige hat keine `longtask`, rAF ≥ 55 fps. Die Leistungs-Probe läuft mit „+Seq“.
 - [ ] **MK6-13 Werkzeuge:** Kopieren, Tauschen und Neu ergeben deep-equal-Ergebnisse, je ein Undo. Regression und DoD, Budget ≤ +35 KB.
 - [ ] **MK6-14 Keytrack und Aufnahme:** Seq-Tonhöhe +12 mit KEYTRACK +48 hebt den Cutoff um +12 HT ± 1 %. Während [● AUFN.] läuft die Sequenz vorwärts als Schleife, auch bei TYP Rückwärts und LAUF Einmal.
@@ -1170,7 +1279,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 
 **Fach-Prüfung:** **FP-DSP** Haupt-, **FP-SONG** Zweit-Blick (Taktgenauigkeit).
 
-**iPhone:** SEQ → SEQ 1 ZIEL Cutoff, Säulen malen, Song starten. [● AUFN.] und Cutoff-Regler drehen.
+**iPhone:** EDIT-WAHL 2 auf SEQ: SEQ AN, ZIEL Cutoff; SCHRITTE ▸ Säulen malen, Song starten. [● AUFN.], zurück zu GERÄT und den CUTOFF-Regler drehen.
 
 **Geräte-Abgleich:** entfällt, der microKORG hat keinen Mod-Sequenzer. Die Kurven bleiben eK.
 
@@ -1184,7 +1293,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 
 **Umfang.**
 1. **Eingänge** (EN3-15):
-   - `tr.mkIn.e1/e2` = Mikrofon (nur Pages und nur auf Tipp, über den gemeinsamen Mikrofon-Abgriff) │ Spur k (Abgriff vor ihrem Fader) │ aus.
+   - `tr.mkIn.e1/e2` = Mikrofon (nur Pages und nur auf Tipp, über den gemeinsamen Mikrofon-Abgriff) │ Spur k (Abgriff vor ihrem Fader) │ aus. Gewählt wird über QUELLE 1 ▾ (MIXER, Ebene 2) bzw. QUELLE 2 ▾ (EING. 1, Ebene 2); die LEDs E1/E2 (Zone Z10) leuchten bei Signal, rot bei Übersteuerung (≥ −1 dBFS).
    - **Gemeinsamer Mikrofon-Abgriff** (neu, referenzgezählt): ein Strom mit `MIC_ASK` (Echo-Unterdrückung, Rauschunterdrückung und AGC aus, Z. 29401; so bleibt es), play-and-record, ein GainNode zum Anschließen, Freigabe, wenn der letzte Nutzer stoppt. **Ohne Stimm-Analyse:** Kalibrierung, 2-min-Ringpuffer und MPM-Worklet der VS1-Sitzung (`stStart`, Z. 30333) laufen für den Vocoder nicht an. 🎤-Stimme und Vocoder nutzen den Abgriff gemeinsam; das Stoppen des einen schneidet den anderen nicht ab. Die Wege-Erkennung (`route`, Z. 30255) wird nur gelesen: Kopfhörer-Hinweis, bei `bt` LCD „Kabel-Kopfhörer empfohlen“.
    - **Spur k:** Abgriff **vor dem Fader** (nach Drive/Chorus/Trem, vor Vol/Pan; `buildChain` Z. 12026). Je Eingang ein Schalter **„Quelle nur als Eingang“** (`eDry` 0, H-10): Solange er an ist und die Quelle einen AM-Eingang speist, trennt die App den `post` der Quelle von `masterSum` und beiden Sends; die Quelle wird weiter geplant und gerechnet. `tr.mute` wird dafür nicht benutzt; Stummschalten der Quelle bleibt wie bisher (dann schweigt auch der Eingang).
    - Der Worklet-Knoten **jeder Synth-Spur** hat ab MK7 **1 Eingang mit 2 Kanälen** (E1, E2; `channelCountMode 'explicit'`, `interpretation 'discrete'`). Das gilt auch bei VA/FM, damit der Engine-Wechsel ohne neuen Knoten geht (Kosten: MK7-12). Dazu kommt ein `ChannelMergerNode` je Spur, das nur bei einer gewählten Quelle verbunden ist.
@@ -1200,14 +1309,14 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
    - 16 Analyse-Bänder (feste Mitten W-36), Hüllkurvenfolger (W-38), 16 Synthese-Bänder (Verschiebung FORMANT, CUTOFF, FC-MOD), Resonanz W-37, Gate/Schwelle W-39, HPF W-40, Direkt W-41, Verzerrer, Anschlag, Keytrack, Kanal-Pegel und -Pan W-42.
    - EG/LFO wie Synth, Effekte und Arp wie Synth.
 4. **Formant halten:**
-   - FOLGER = 127 oder [HALTEN ●] (SPIEL) friert die 16 Folgerwerte ein und speichert sie als `voc.hold` im Sound (HB-MK S. 35).
+   - FOLGER = 127 oder die Taste **TIMBRE/HALTEN** (im Vocoder-Programm, wie am Original; LED 1 leuchtet) friert die 16 Folgerwerte ein und speichert sie als `voc.hold` im Sound (HB-MK S. 3, S. 35).
    - Ein Sound mit `hold` klingt ohne Quelle.
-   - [HALTEN ●] aus = Folger läuft wieder (der Wert vor Halten wird zurückgesetzt).
-5. **Oberfläche:**
-   - EDIT 1 und EDIT 2 mit den Vocoder-Rastern (B.3), EING. mit [QUELLE 2 ▾], MIXER mit [QUELLE 1 ▾]; in beiden Listen der Schalter „Quelle nur als Eingang“ (H-10).
-   - K-PEGEL/K-PAN mit 16 Säulen und Live-Bandpegeln (Canvas 2D, ≤ 30 Hz, nur sichtbar).
-   - Zwei Werkzeuge: [Pegel zurücksetzen] (alle 127) und [Pan zurücksetzen] (alle Mitte), je ein Undo (HB-MS S. 52, HB-MK S. 60).
-   - SPIEL im Vocoder-Modus nach B.3 (CUTOFF/RESONANZ → Vocoder-Filter, ATTACK/RELEASE nur EG2). ⋯ → Init behält `mode` 3 (HB-MS S. 51).
+   - Erneuter Tipp auf TIMBRE/HALTEN = Folger läuft wieder (der Wert vor Halten wird zurückgesetzt).
+5. **Oberfläche** (wie am Original, B.3):
+   - STIMME Regler 1 SYNTH/VOC. schaltet auf Vocoder; die Drehschalter tragen dann die grünen Vocoder-Stellungen (EDIT-WAHL 1: EING. 1, FC-MOD; EDIT-WAHL 2: K-PEGEL A/B, K-PAN A/B), die LEDs ●1/●2 werden grün. EING. 1 und MIXER haben auf Ebene 2 [QUELLE 2 ▾] bzw. [QUELLE 1 ▾]; in beiden Listen der Schalter „Quelle nur als Eingang“ (H-10).
+   - K-PEGEL A/B, K-PAN A/B: Regler 1–4 = Kanäle (je 2 Bänder, B.3). Zusatz-Ansicht **16 BÄNDER** mit 16 Säulen und Live-Bandpegeln (Canvas 2D, ≤ 30 Hz, nur sichtbar) für jedes Band einzeln.
+   - Zwei Werkzeuge wie am Original: SHIFT + 1 Pegel zurücksetzen (alle 127), SHIFT + 2 Pan zurücksetzen (alle Mitte), je ein Undo (HB-MS S. 52, HB-MK S. 60, PDF 78).
+   - SPIEL im Vocoder-Modus nach B.3 (CUTOFF/RESONANZ → Vocoder-Filter, ATTACK/RELEASE nur EG2). ⋯ → Init und SHIFT + 3 behalten `mode` 3 (HB-MS S. 51).
 6. **Datenschutz:** Der Vocoder nimmt nichts auf. Das Mikrofon im Vocoder zählt wie 🎤-Hören (N2-VS1-02 (1)): SYNC und Realtime laufen weiter, das Audio verlässt das Gerät nie. Stopp gibt das Mikrofon frei.
 7. **Leistungs-Probe:** Fall „Vocoder“ (synthetischer Modulator: Vokal-Folge aus der Vokal-Quelle, Umfang 8).
 8. **Vokal-Quelle** (W-44: Glottis wie W-28 + F1–F4 als TPT-Resonatoren, Vokale a e i o u) als App-Code. MK8 rechnet daraus die `hold`-Spektren, MK12 macht daraus OSZ 1 Welle 8.
@@ -1223,7 +1332,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 - **Neu:** gemeinsamer Mikrofon-Abgriff, Worklet-Eingang, Filterbank (TPT, eine Bank je Timbre), Folger, Halten, Kanal-Seiten, Kreis-Schutz, Schalter „Quelle nur als Eingang“, Vokal-Quelle.
 - **Anzupassen:** `normTrack`/`normalizeProject` behalten `tr.mkIn` (Z. 11490–11500).
 
-**Dauer** 10,5–11,5 h (Rev. 1: +2,5 h für Mikrofon-Abgriff, Abgriff vor dem Fader mit Schalter, Vokal-Quelle, Vocoder-Regeln aus dem Handbuch) · **Version 4.15.0** · **Budget** +50 KB · Format bleibt 5.
+**Dauer** 11–12 h (Rev. 1: +2,5 h für Mikrofon-Abgriff, Abgriff vor dem Fader mit Schalter, Vokal-Quelle, Vocoder-Regeln aus dem Handbuch; Rev. 2: +0,5 h für die Vocoder-Stellungen der Drehschalter, Kanal-Paare, E1/E2-LEDs und HALTEN über TIMBRE) · **Version 4.15.0** · **Budget** +52 KB · Format bleibt 5.
 
 **Abnahme-Checkliste**
 - [ ] **MK7-01 Bandtrennung:** Modulator = Sinus in der Mitte von Band k (k = 1…16). Träger = Rauschen (Mixer Rauschen 127), FORMANT 0, CUTOFF 0, RESONANZ 64. Die Ausgangsenergie im Band k liegt ≥ 12 dB über k ± 1 und ≥ 30 dB über k ± 3.
@@ -1235,14 +1344,14 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
   - SPIEL-CUTOFF im Vocoder-Modus verschiebt die Synthese-Bänder wie EDIT-CUTOFF; SPIEL-ATTACK lässt EG1 deep-equal.
 - [ ] **MK7-03 Folger und Halten:**
   - FOLGER 0/64/126: Abfallzeit (−20 dB) nach W-38 ± 10 %.
-  - 127 bzw. [HALTEN ●]: Verstummt der Modulator, bleibt der Ausgang über 5 s ± 0,5 dB.
+  - 127 bzw. TIMBRE/HALTEN (LED 1 an): Verstummt der Modulator, bleibt der Ausgang über 5 s ± 0,5 dB.
   - `hold` wird gespeichert und geladen (deep-equal). Ein Sound mit `hold` klingt ohne jede Quelle (Claude-App-Test).
 - [ ] **MK7-04 Gate:** SCHWELLE 64 und Modulator darunter: Ausgang ≤ −60 dB nach der Gate-Zeit (W-39) ± 10 %. SCHWELLE 0: Der Ausgang folgt dem Modulator bis −90 dB, keine Gate-Schließung, bitgleich zu Gate aus.
 - [ ] **MK7-05 HPF:**
   - HPF-PEGEL 127: Modulator-Anteile > 6 kHz erscheinen im Ausgang (≥ −20 dB relativ zum Modulator-HF).
   - HPF-GATE ENA: nur bei klingender Trägerstimme. DIS: immer.
 - [ ] **MK7-06 Direkt:** DIREKT 127 bei stummem Träger (keine klingende Stimme): Ausgang korreliert ≥ 0,95 mit dem Modulator. DIREKT 0 = nichts.
-- [ ] **MK7-07 Kanäle und Init:** K-PEGEL k = 0 ergibt Band k ≤ −40 dB. K-PAN k = L63 ergibt rechts ≤ −30 dB. [Pegel zurücksetzen] setzt alle Pegel auf 127 und lässt Pan deep-equal; [Pan zurücksetzen] setzt alle Pan auf Mitte und lässt die Pegel deep-equal; je ein Undo. ⋯ → Init auf einem Vocoder-Sound behält `mode` 3.
+- [ ] **MK7-07 Kanäle und Init:** K-PEGEL k = 0 ergibt Band k ≤ −40 dB. K-PAN k = L63 ergibt rechts ≤ −30 dB. SHIFT + 1 (Pegel zurücksetzen) setzt alle Pegel auf 127 und lässt Pan deep-equal; SHIFT + 2 (Pan zurücksetzen) setzt alle Pan auf Mitte und lässt die Pegel deep-equal; je ein Undo. K-PEGEL A Regler 1 verschiebt die Bänder 1 und 2 um dasselbe Δ. ⋯ → Init und SHIFT + 3 auf einem Vocoder-Sound behalten `mode` 3.
 - [ ] **MK7-08 Träger:**
   - Jede OSZ-1-Welle (Säge, Puls, Dreieck, Sinus, Stimmwelle, Speicherwelle, Rauschen, Eingang) ist als Träger hörbar.
   - Akkord C-E-G-H ergibt 4 Tonhöhen im Ausgang (Spektrum).
@@ -1265,7 +1374,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
   - Begrenzer Stufe 1 halbiert die Filterordnung, die Nachbarband-Dämpfung bleibt dann ≥ 8 dB. Das Umschalten besteht M-KLICK und M-PEGEL (± 1 dB).
   - Die Leistungs-Probe läuft mit „Vocoder“.
 - [ ] **MK7-12 Bitgleich:** Synth-Programme ohne Eingang klingen bitgleich zum Vorgänger-Stand. Der unverbundene Eingang kostet ≤ +0,16 × VA-Stimme.
-- [ ] **MK7-13 Oberfläche:** M-PLATZ der Vocoder-Raster und Kanal-Seiten in P1–P3, L1, L2, W. Der Wechsel Synth ↔ Vocoder lässt die Zellen an festen Plätzen (2 × 7). Bandpegel ≤ 30 Hz, rAF ≥ 55 fps.
+- [ ] **MK7-13 Oberfläche:** M-PLATZ der Vocoder-Stellungen (Ebene 1 und 2) und der Zusatz-Ansicht 16 BÄNDER in P1–P3, L1, L2, W; M-SKIZZE besteht im Vocoder-Modus (grüne Beschriftung Farbton 100–150°). Der Wechsel Synth ↔ Vocoder lässt alle Bedienelemente an festen Plätzen (M-ANSICHT). LEDs E1/E2 folgen dem Eingangspegel (an ab −50 dBFS, rot ab −1 dBFS, ± 1 Bild). Bandpegel ≤ 30 Hz, rAF ≥ 55 fps.
 - [ ] **MK7-14 Regression:** Die Abnahmen von VS0, VS1, VS2 und (wenn gebaut) VS3 bestehen, die Mikro-Wege sind unverändert bzw. laufen über den gemeinsamen Abgriff. Budget ≤ +50 KB.
 - [ ] **MK7-15 ECO:** Mit `forceNative` bleibt ein `hold`-Sound der Vocoder-Bank stumm mit LCD-Hinweis (Pegel ≤ Worklet-Render), keine Konsolenfehler.
 - [ ] **MK7-16 Vokal-Quelle:** Für C2 und C3 und alle 5 Vokale liegen F1/F2 der Spektralhülle bei W-44 ± 7 %. `tr.mkIn` übersteht Speichern → Laden deep-equal.
@@ -1277,8 +1386,8 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 **Zwischenstand** nach MK7 (EN3-17) auf Pages, wegen des Mikrofons.
 
 **iPhone** (Pages, mit Kopfhörer):
-1. AM → PROG MODUS Vocoder → EING. QUELLE 2 Mikrofon. Sprechen und Akkord spielen.
-2. [HALTEN ●], Mikrofon aus, weiterspielen.
+1. MS 2000 → EDIT-WAHL 1 auf STIMME → Regler 1 „Vocoder“. EDIT-WAHL 1 auf EING. 1 → SHIFT → QUELLE 2 = Mikrofon. Sprechen und Akkord spielen.
+2. Taste TIMBRE/HALTEN (LED 1 leuchtet), Mikrofon aus, weiterspielen.
 3. In der Claude-App den gehaltenen Sound öffnen und spielen.
 4. Für CHANGES: `ST.latMs` je Weg (Lautsprecher, Kabel, Bluetooth) ablesen und übernehmen.
 
@@ -1293,7 +1402,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 **Ziel.** Xander findet seine Klänge wie am microKORG nach Genre: acht Bänke mit je acht eigenen Klängen. Jeder Klang zeigt, was die Klangerzeugung kann (Arp, Seq, Vocoder, Split, Speicherwellen).
 
 **Umfang.**
-1. **64 Klänge** (Vorgabe H-3) auf Seite A, A.11…A.88. Bänke:
+1. **64 Klänge** (H-3, entschieden: 64) auf Seite A, A.11…A.88. Bänke:
    1. Trance
    2. Techno/House
    3. Electronica
@@ -1308,8 +1417,8 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
    - Die Vocoder-Bank hat 8 Klänge mit `hold`-Spektren aus **eigenen** synthetischen Vokalen (Vokal-Quelle aus MK7, W-44, als Modulator; offline beim Bau oder zur Laufzeit gerechnet). Sie klingen ohne Mikrofon. Alle haben DIREKT 0 und HPF-PEGEL ≤ 40 (Latenz, MK7 Risiken).
    - Jeder Klang hat `role`, `bank` (1…8), `slot` (1…8) und ⓘ (eigene Worte, keine Marken, keine Geräte, keine Künstler).
 3. **Kompakt kodiert:** Ganzzahl-Bytes je Feld in fester Reihenfolge, Base64, im Block `sq-mk-src`. Entpackt wird erst bei Bedarf, vorher `tickAhead(.3)`. Trifft die Kodierung zufällig ein Markenwort, ändert das Bau-Skript das Salz-Byte (B.6 Nr. 9).
-4. **Programm-Wähler** (SPIEL): Bank ▾ (8 Namen), A │ B, Anzeige „A.24“, Tasten 1–8. Ein Tipp lädt in die Spur, ein Undo, Toast [Rückgängig]. ‹ › im Kopf blättert in der Bank.
-5. **Bibliothek:** Engine-Filter „AM“ plus Chip „Bank ▾“, ▶ Vorhören mit der vorhandenen Vorhör-Stimme, INIT AM unter „Init“.
+4. **Programm-Wahl wie am Original** (B.3): BANK-Drehschalter (8 Genres), SEITE (A │ B), Nummerntasten 1–8, Anzeige „A.24“. Ein Tipp lädt in die Spur, ein Undo, Toast [Rückgängig], danach SPIEL. ‹ › im Kopf blättert in der Bank.
+5. **Bibliothek:** Engine-Filter „MS 2000“ plus Chip „Bank ▾“, ▶ Vorhören mit der vorhandenen Vorhör-Stimme, „INIT MS 2000“ unter „Init“.
 
 **Nicht-Umfang.** Hörproben nach EN2-09 (das gilt für Vorbild-Sounds, V10P). Vorbild-Tags. Seite B mit Werksklängen (nur bei H-3 = 128).
 
@@ -1338,7 +1447,7 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
   - Ergebnis −18 ± 3 LUFS, True Peak ≤ −1 dBTP.
   - Bässe: M-HANDYrel bei C2 ≥ −20 dB (wie V10P-07).
   - Wer eine Grenze verfehlt, wird nachgestimmt, nicht die Grenze.
-  - Gemessen wird mit den Platzhalter-Wellen. Nach MK10 zeigt der Bericht die Pegel-Abweichung der eingelesenen Wellen (MK10-11); MK8-04 läuft nur bei Variante „eingebaut“ erneut.
+  - Gemessen wird mit den Platzhalter-Wellen. Mit dem MK10-Einbau (H-2 = eingebaut) läuft MK8-04 mit den eingebauten Wellen erneut; wer dann eine Grenze verfehlt, wird im Einbau-Schritt nachgestimmt (MK10-11).
 - [ ] **MK8-05 Merkmale** (Prüfskript zählt):
   - ≥ 8 Klänge mit Arp an (Bänke 1, 2, 3, 6 zusammen).
   - ≥ 4 mit Mod-Seq.
@@ -1347,9 +1456,9 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
   - ≥ 4 mit Dual oder Split.
   - ≥ 4 mit Delay-Sync.
 - [ ] **MK8-06 Keine Doppel:** Innerhalb jeder Bank unterscheiden sich alle Paare um ≥ 3 dB in mindestens einem relevanten M-BAND.
-- [ ] **MK8-07 Bibliothek:** Der Filter „AM“ + Bank n liefert genau die 8 Klänge. N0b-01 bleibt erfüllt. ▶ Vorhören funktioniert.
+- [ ] **MK8-07 Bibliothek:** Der Filter „MS 2000“ + Bank n liefert genau die 8 Klänge. N0b-01 bleibt erfüllt. ▶ Vorhören funktioniert.
 - [ ] **MK8-08 Größe und Zeit:** Die Werksdaten im Block sind ≤ 24 KB. Alle 64 entpacken in ≤ 20 ms (Xeon). Ein Tipp lädt in ≤ 50 ms ohne `longtask`. Die Startzeit ohne AM bleibt unverändert.
-- [ ] **MK8-09 Oberfläche:** Programmzeile und Bank-Liste: M-PLATZ in P1–P3, L1, L2, W.
+- [ ] **MK8-09 Oberfläche:** BANK-Drehschalter, SEITE, Nummerntasten und Bank-Liste: M-PLATZ in P1–P3, L1, L2, W, M-SKIZZE; die Nummerntaste des geladenen Programms leuchtet, Seite B lässt die LED von SEITE leuchten.
 - [ ] **MK8-10 Regression und DoD**, Budget ≤ +40 KB.
 
 **Tests.** `mk8-daten.mjs` (Namen, Herkunft, Merkmale), `mk8-pegel.mjs`, `mk8-ui.mjs`.
@@ -1358,20 +1467,22 @@ Eine Version: **4.9.0** · **Budget** +100 KB · **Format 4 → 5.** Rollout `ma
 
 **Zwischenstand** nach MK8 (EN3-17).
 
-**iPhone:** Jede Bank einmal durchtippen, einmal über den Lautsprecher, einmal mit Kopfhörer. Ausreißer melden (zu leise, zu laut, langweilig).
+**iPhone:** BANK durchdrehen und jede Bank einmal mit den Nummerntasten durchtippen, einmal über den Lautsprecher, einmal mit Kopfhörer. Ausreißer melden (zu leise, zu laut, langweilig).
 
 **Geräte-Abgleich:** Xander sagt je Bank, ob die Klangwelt zur Bank seines microKORG passt. Das ist ein Urteil über das Genre, kein Kopie-Vergleich.
 
 **Risiken.** Nichts ist angehört. 64 Klänge sind viel Klangarbeit, deshalb zwei Bau-Abschnitte.
 
 ---
-### MK9 — Import eigener .syx/.prg-Dateien (nur lokal)
+### MK9 — Import eigener .syx/.prg-Dateien (nur lokal) — zurückgestellt
+
+**Status (25.10., Xander; EN3-21): zurückgestellt.** Xander hat keinen Rechner, kein Editor-Programm und keine .syx/.prg-Dateien; er arbeitet nur am iPhone und kennt MIDI nicht, und iOS Safari hat kein Web MIDI. Ohne Rechner und MIDI-Interface entstehen keine Dumps. MK9 steht deshalb **außerhalb der Versionsfolge** (E.1), wird nicht gebaut und hält kein anderes Paket auf. Der Text bleibt als Vorlage stehen. Wird MK9 später doch gebaut (nur auf Xanders Wunsch), bekommt es die nächste freie Zwischennummer, rüstet `mkLocalStrip` in alle dann vorhandenen Wege vom Gerät weg nach (EN3-08, EN3-19) und braucht vorher den Nachweis, dass der Weg ohne Rechner geht (zum Beispiel Dateien, die Xander am iPhone bekommt).
 
 **Ziel.** Xander holt seine eigenen microKORG- und MS2000-Programme in die App. Sie bleiben auf seinem Gerät und gehen nie ins Netz.
 
 **Tor MK9-T** (vor dem ersten Bau-Schritt in CHANGES protokolliert). Es gilt eines von beiden:
-- (a) Am Bau-Ort liegt ein Formatbeleg für die Programmdaten von MS2000 und microKORG. Das ist das Korg-Dokument „MIDI Implementation“ mit der Program-Data-Tabelle und der 7-Bit-Paketierung. Es ist nicht Teil der Handbücher (HB-MS S. 64). **Vorgabe (H-7):** Der Orchestrator holt das öffentliche Dokument und legt es privat neben die Handbücher (nur Fakten übernehmen, wie bei den Handbüchern).
-- (b) Xander liefert **drei Test-Dumps** mit notierten Werten nach dem Blatt in Teil D.7 (freiwillig; braucht USB-MIDI und ein Editor- oder Librarian-Programm). Dann wird die Zuordnung daran erarbeitet und geprüft. (b) reicht nur für die Felder, die die Test-Dumps abdecken. Die übrigen Felder bleiben bis (a) auf INIT, mit Hinweis.
+- (a) Am Bau-Ort liegt ein Formatbeleg für die Programmdaten von MS2000 und microKORG. Das ist das Korg-Dokument „MIDI Implementation“ mit der Program-Data-Tabelle und der 7-Bit-Paketierung. Es ist nicht Teil der Handbücher (HB-MS S. 64). Vorgabe der Rev. 1 (ruht mit dem Paket): Der Orchestrator holt das öffentliche Dokument und legt es privat neben die Handbücher (nur Fakten übernehmen, wie bei den Handbüchern).
+- (b) Xander liefert **drei Test-Dumps** mit notierten Werten (Blatt D.7 der Rev. 1; entfällt in Rev. 2, weil es USB-MIDI und einen Rechner bräuchte, EN3-21). Dann wird die Zuordnung daran erarbeitet und geprüft. (b) reicht nur für die Felder, die die Test-Dumps abdecken. Die übrigen Felder bleiben bis (a) auf INIT, mit Hinweis.
 
 Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3).
 
@@ -1405,7 +1516,7 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 - **Wiederverwendet:** `importSyx`-Dateiweg, Bibliothek, `normalizeSound`, SYNC-Postausgang (Strip davor), `cloudHandoffUrl`, Fake-Supabase-Testgerüst (`online.md` §7.7, `__synqFakeSupa`, WebSocket-Mitschnitt).
 - **Neu:** Parser, Zuordnung (mit Oktavlage und FC-MOD-Namen), Strip-Funktion im immer geladenen Teil (EN3-14), Ansteck-Regel EN3-08a, Wiederherstellung über `locRef`.
 
-**Dauer** 6–7 h (Rev. 1: +1 h) · **Version 4.17.0** · **Budget** +27 KB · Format bleibt 5.
+**Dauer** 6–7 h (Rev. 1: +1 h; nicht in den Summen) · **Version** – (zurückgestellt; bei späterem Bau die nächste freie Zwischennummer) · **Budget** +27 KB (nicht in den Summen) · Format bleibt 5.
 
 **Abnahme-Checkliste**
 - [ ] **MK9-01 Tor:** Das Protokoll MK9-T steht in CHANGES (Beleg mit Datum oder die 3 Dumps mit Werteblatt).
@@ -1442,68 +1553,99 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 
 ---
 
-### MK10 — Speicherwellen aus Xanders Aufnahmen
+### MK10 — Speicherwellen: Aufnahme in der App und Einbau
 
-**Ziel.** Die 64 Platzhalter werden durch Wellen ersetzt, die aus Xanders eigenen microKORG-Aufnahmen gewonnen sind. Damit klingt die Klangerzeugung „original“ (KF §3–4).
+**Ziel.** Die 64 Platzhalter werden durch Wellen ersetzt, die aus Xanders eigenen microKORG-Aufnahmen gewonnen sind, und **in die App eingebaut**, sodass alle sie hören, auch Freunde im Paar-Raum (H-2, Xander 25.10.). Xander nimmt **am iPhone direkt in der App** auf (microKORG → AG06 → iPhone, Teil D), ohne Rechner und ohne Dateien hin- und herzuschieben (EN3-21). Damit klingt die Klangerzeugung „original“ (KF §3–4).
 
-**Tor MK10-T:** Die Aufnahmen nach Teil D liegen vor (Prüfliste D.4 erfüllt). Die Antwort auf H-2 liegt vor (Vorgabe: lokal).
+**Zwei Bau-Abschnitte:**
+- **Abschnitt 1 (4.17.0):** Aufnahme-Seite, Ersatzweg über Dateien, Analyse, sofort hörbar auf Xanders Gerät, Wellen-Paket für den Bau. Kein Tor (H-2 ist entschieden).
+- **Abschnitt 2 (Einbau):** Das Wellen-Paket wird ein Datenblock in der App. Version: die nächste freie Zwischennummer beim Bau (z. B. 4.17.1, sonst nach dem zuletzt gebauten Paket; EN2-14). **Tor MK10-T:** Das Wellen-Paket aus Abschnitt 1 liegt am Bau-Ort, sein Güte-Bericht hat keine rote Zeile.
 
-**Umfang (Vorgabe „lokal“).**
-1. **Blatt „Wellen einlesen“** (Menü → Sounds): zuerst **[Testdatei prüfen]** mit `test.wav` (Pegel, Stille, Kanal; klare Meldung). Dann mehrere WAV- oder AIFF-Dateien wählen (`ref-saege.wav`, `sw-01.wav` … `sw-64.wav` oder die Sammel-Dateien `sw-01-08.wav` … `sw-57-64.wav`, `stille.wav`), Fortschritt anzeigen, [Abbrechen].
-2. **Analyse im Browser**, in Häppchen ≤ 8 ms bzw. im Worker, wenn vorhanden:
+**Umfang Abschnitt 1.**
+1. **Seite „Wellen aufnehmen“** (Menü → Sounds; Block `sq-mkrec-src`, EN3-14). Nur auf Pages in Safari: In der Claude-App gibt es kein Mikrofon (EN2-06); dort zeigt die Seite nur den Ersatzweg [Dateien laden] und den Hinweis „Aufnehmen geht in Safari“.
+   - **Eingang:** über den gemeinsamen Mikrofon-Abgriff aus MK7 mit `getUserMedia({audio: {deviceId, echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2}})`, nur nach Tipp. Ist ein USB-Gerät angeschlossen, nimmt iOS es als Eingang; die Seite zeigt den Gerätenamen aus `enumerateDevices` (nach der Freigabe; das AG06 meldet sich als USB-Audiogerät) und die Werte aus `getSettings()`. Meldet `getSettings()` eine der drei Verarbeitungen als an, zeigt die Seite rot „Sprach-Filter aktiv – so nicht aufnehmen“ und nimmt nicht auf.
+   - **Kanal:** Kommen 2 Kanäle, nimmt die Seite den Kanal mit Signal (AG06 mit TO PC = DRY CH 1-2: Kanal 1 links, Kanal 2 rechts); kommt 1 Kanal, diesen.
+   - **Die Seite spielt nichts:** Solange sie offen ist, steht der Transport, alle Spuren schweigen, und am Ausgang hängt nur ein 0-Gain-Halter (kein Echo, keine Rückkopplung). Mithören geht über den Kopfhörer am AG06 (Teil D).
+   - **Geführter Ablauf, 67 Schritte in fester Reihenfolge** (Liste in Teil D.3): Pegel-Test (C4, 2 s), Bezugs-Säge, Speicherwelle 1 … 64, Stille (10 s). Je Schritt zeigt die Seite in großer Schrift, was am microKORG einzustellen ist (z. B. „OSC1 CONTROL 2 auf 12“, „OCTAVE SHIFT −2“), und [● Aufnehmen] (≥ 88 × 44). Sie erkennt die 7 Töne selbst (Einsatz-Erkennung), stoppt 1 s nach dem 7. Ton von selbst ([■] jederzeit), schneidet die Stille vorn und hinten ab, teilt in die 7 Töne, analysiert sofort und zeigt ✓ oder den Grund („zu leise“, „übersteuert“, „nur 6 Töne erkannt“, „Ton zu kurz“) mit [Nochmal]. [Weiter] geht zum nächsten Schritt; die Schritt-Liste erlaubt jede Wiederholung.
+   - **Pegel-Anzeige** live (Canvas 2D, ≤ 30 Hz): Spitze und RMS in dBFS, Zielbereich −12 … −6 dBFS grün, ab −1 dBFS rot.
+   - **Fortschritt** bleibt in der Datenbank `synq-mkwaves` (Umfang 4): Xander kann aufhören und später weitermachen.
+   - **Roh-Audio** liegt nur für den laufenden Schritt im Speicher (für [Nochmal]); nach ✓ bleibt nur das Analyse-Ergebnis. Nichts wird hochgeladen.
+2. **Ersatzweg Dateien** (Teil D.4, GarageBand am iPhone): [Dateien laden] wählt WAV- oder AIFF-Dateien aus „Dateien“ (ohne `accept`-Attribut, wie Z. 26513) mit den Namen aus Teil D.4 (`ref-saege`, `sw-01` … `sw-64` oder die Sammel-Dateien `sw-01-08` … `sw-57-64`, `stille`; Endung .wav, .aif oder .aiff); bei falschem Namen ist die Zuordnung von Hand wählbar. Zuerst [Testdatei prüfen] mit `test` (Pegel, Stille, Kanal; klare Meldung). Fortschritt sichtbar, [Abbrechen].
+3. **Analyse im Browser** (für beide Wege gleich), in Häppchen ≤ 8 ms bzw. im Worker, wenn vorhanden:
    - Sammel-Datei (8 Wellen, getrennt durch ≥ 3 s Stille): an der Stille teilen und nach Reihenfolge zuordnen.
    - Kanal: bei Stereo der lautere bzw. nicht stille Kanal.
-   - Einsatz-Erkennung je Ton. Die Tonhöhe wird gemessen, nicht angenommen.
+   - Einsatz-Erkennung je Ton (dieselbe wie beim Zuschnitt auf der Aufnahme-Seite). Die Tonhöhe wird gemessen, nicht angenommen.
    - Stabilen Abschnitt wählen (0,5–1,5 s nach dem Einsatz).
    - Periodensynchrone Mittelung über ≥ 0,5 s ergibt eine Periode.
    - DFT ergibt die Teiltöne 1…N (N = min(64, Nyquist/f₀)), Pegel und Phase.
    - **Korrektur** mit der Bezugs-Säge: H(f) = gemessene Säge / ideale 1/n, über Frequenz geglättet. Alle Wellen werden durch H geteilt.
    - **Pegel-Eichung:** Der RMS der Bezugs-Säge entspricht der AM-Säge bei Mixer 127.
    - Eine Tabelle je aufgenommener Oktave (C1…C7) als Oktav-Tabellen (B.6 Nr. 6). Fehlt eine Oktave, gilt die Nachbaroktave, mit Hinweis.
-3. **Speicher:** eine **eigene IndexedDB-Datenbank `synq-mkwaves`** (Version 1), wie `synq-miccheck` (Z. 29790). Die Datenbank `synquenzer` bleibt unberührt und ohne Versionserhöhung: Ein neuer Store dort zwänge ältere Stände und offene Tabs in den localStorage-Rückfall bzw. `onversionchange` (Z. 8195–8198, 8222). MK10 ruft `navigator.storage.persist()` selbst auf und zeigt das Ergebnis. Die Wellen gehen nie in einen Upload, nie in Projekt, Sound oder Bibliothek. Die Engine nimmt eingelesene Wellen statt der Platzhalter. Das „≈“ verschwindet nur für diese Wellen. [Platzhalter benutzen] schaltet zurück. [Wellen exportieren] und [Wellen importieren] als lokale Datei, für einen anderen Speicher-Ursprung (MK9 Umfang 5).
-4. **Bericht** je Welle: Güte (Stabilität der Periode, Klirr der Mittelung, Clipping, Rauschabstand gegen `stille.wav`) und die Pegel-Abweichung von ihrem Platzhalter.
+4. **Speicher:** eine **eigene IndexedDB-Datenbank `synq-mkwaves`** (Version 1), wie `synq-miccheck` (Z. 29790). Die Datenbank `synquenzer` bleibt unberührt und ohne Versionserhöhung: Ein neuer Store dort zwänge ältere Stände und offene Tabs in den localStorage-Rückfall bzw. `onversionchange` (Z. 8195–8198, 8222). MK10 ruft `navigator.storage.persist()` selbst auf und zeigt das Ergebnis. Die Wellen gehen nie in einen Upload, nie in Projekt, Sound oder Bibliothek. **Sofort hörbar:** Auf Xanders Gerät nimmt die Engine die eigenen Wellen statt der Platzhalter, das „≈“ verschwindet für diese Wellen; [Platzhalter benutzen] schaltet zurück. Bis zum Einbau hören andere Geräte die Platzhalter.
+5. **Wellen-Paket für den Bau:** [Wellen an den Bau geben] baut `mkwaves-paket.json` (nur Analyse-Ergebnisse: Teiltonpegel und Phasen je Welle und Oktave, Güte, Datum, App-Version, Prüfsumme; **kein Roh-Audio**, ≤ 200 KB) und öffnet das iOS-Teilen-Blatt (`navigator.share({files})`; ohne Teilen-Blatt ein Download nach „Dateien“). Xander gibt die Datei auf dem Weg nach **H-15** weiter. Kein Rechner nötig.
+6. **Bericht** je Welle: Güte (Stabilität der Periode, Klirr der Mittelung, Clipping, Rauschabstand gegen die Stille-Aufnahme) und die Pegel-Abweichung von ihrem Platzhalter.
 
-**Variante „eingebaut“ (nur wenn H-2 = ja).** Dieselbe Analyse läuft offline (Node) beim Bau. Das Ergebnis ist ein kompakter Datenblock (Teiltonpegel als Bytes je Oktave, Phasen als 6 Bit) in der App, ≤ 45 KB. Das Blatt „Wellen einlesen“ entfällt. Die Rohdateien kommen nicht ins Repo.
+**Umfang Abschnitt 2 (Einbau).**
+7. **Bau-Skript `mk10-einbau.mjs`** (Node) liest das Paket, prüft Prüfsumme, Vollständigkeit (Bezug und 64 Wellen, jede aufgenommene Oktave) und Güte und schreibt einen kompakten **Datenblock** (Teiltonpegel als Bytes je Oktave, Phasen als 6 Bit, Base64) in `sq-mk-src`, ≤ 45 KB. Gleiches Paket ergibt einen bitgleichen Block. Trifft der Block ein Markenwort, ändert das Skript das Salz-Byte (B.6 Nr. 9). Das Paket liegt privat am Bau-Ort (neben den Handbüchern), nie im Repo; Roh-Aufnahmen gibt es dort nicht.
+8. **Alle hören die Wellen:** Die Engine nimmt die eingebauten Wellen statt der Platzhalter, auf jedem Gerät und im Paar-Raum; das „≈“ verschwindet überall (`mkInfo().waves === 'eingebaut'`). Eine spätere lokale Neu-Aufnahme bleibt auf Xanders Gerät eine Wahl [Eigene Aufnahme │ Eingebaut].
+9. **Pegel:** MK8-04 läuft mit den eingebauten Wellen erneut; Ausreißer werden im Einbau-Schritt nachgestimmt.
 
-**Nicht-Umfang.** Aufnahmen anderer Gerätewellen. Eich-Kurven für Filter und Hüllkurven (nur bei H-6 = ja, dann +2 h; Kurven nach D.6).
+**Nicht-Umfang.** Aufnahmen anderer Gerätewellen. Eich-Kurven für Filter und Hüllkurven (H-6 = nein). Ein eigener Upload-Weg der App für das Paket (die Übergabe läuft über das iOS-Teilen-Blatt). [Wellen exportieren]/[Wellen importieren] zwischen Speicher-Ursprüngen (Rev. 1; entfällt, weil die Wellen eingebaut werden).
 
 **Berührungspunkte.**
-- **Wiederverwendet:** Oktav-Tabellen und Mipmaps (MK2, `mkTables`), Datei-Wahl, eigene IndexedDB-Datenbank nach dem Muster `synq-miccheck`, Fake-Supabase-Gerüst (`online.md` §7.7, `__synqFakeSupa`, WebSocket-Mitschnitt).
-- **Neu:** WAV-Lesen (PCM 16/24 Bit und 32-Bit-Float, 44,1/48 kHz, mono/stereo), AIFF-Lesen, Kanalwahl, Teilen an der Stille, Testdatei-Prüfung, Analyse, Datenbank `synq-mkwaves`, Export/Import der Wellen. V9d nutzt WAV-Leser und lokalen Speicher später mit (Teil G Nr. 12).
+- **Wiederverwendet:** gemeinsamer Mikrofon-Abgriff aus MK7 mit `MIC_ASK`, Oktav-Tabellen und Mipmaps (MK2, `mkTables`), Datei-Wahl, eigene IndexedDB-Datenbank nach dem Muster `synq-miccheck`, Fake-Supabase-Gerüst (`online.md` §7.7, `__synqFakeSupa`, WebSocket-Mitschnitt), Salz-Byte-Regel (MK8).
+- **Neu:** Aufnahme-Seite mit geführtem Ablauf, Einsatz-Erkennung und Zuschnitt, Pegel-Anzeige, WAV-Lesen (PCM 16/24 Bit und 32-Bit-Float, 44,1/48 kHz, mono/stereo), AIFF-Lesen, Kanalwahl, Teilen an der Stille, Testdatei-Prüfung, Analyse, Datenbank `synq-mkwaves`, Wellen-Paket mit Teilen-Blatt, Einbau-Skript, Datenblock. V9d nutzt WAV-Leser und lokalen Speicher später mit (Teil G Nr. 12).
 
-**Dauer** 6,5–7,5 h (Rev. 1: +1,5 h) · **Version 4.18.0** · **Budget** +25 KB (Variante eingebaut: +65 KB, ohne Wellen-Leser) · Format bleibt 5.
+**Dauer** 10,5–12 h (Rev. 1: 6,5–7,5 h für Einlesen und Analyse; Rev. 2: +3–3,5 h Aufnahme-Seite, +1,5–2 h Einbau mit Pegel-Nachlauf, −0,5 h ohne Export/Import zwischen Ursprüngen) · **Version** Abschnitt 1 **4.17.0**, Abschnitt 2 die nächste freie Zwischennummer · **Budget** +80 KB (Abschnitt 1: +35 KB Code, Abschnitt 2: +45 KB Datenblock) · Format bleibt 5.
 
 **Abnahme-Checkliste**
-- [ ] **MK10-01 Tor:** Dateiliste und Prüfsummen (lokal) in CHANGES. Keine Aufnahme-Datei im Repo.
+- [ ] **MK10-01 Tor (Abschnitt 2):** Prüfsumme, Datum und Güte-Bericht des Pakets stehen in CHANGES. Kein Paket und keine Aufnahme im Repo oder in der Auslieferung (Prüfung über die Dateiliste).
 - [ ] **MK10-02 Nachbau:** Für jede eingelesene Welle und jede aufgenommene Oktave wird die Neu-Synthese (Speicherwelle, Filter offen) mit der Aufnahme verglichen:
   - M-BAND-Abstand ≤ 1,5 dB je relevantem Band.
   - Teiltöne 1–16 ≤ 2 dB, Median ≤ 1 dB.
 - [ ] **MK10-03 Bezug:** Die Säge-Aufnahme liegt nach der Korrektur bei 1/n ± 0,5 dB (Teiltöne 1–20).
 - [ ] **MK10-04 Zwischen den Oktaven:** Eine Tonleiter C2–C6 hat keinen Pegelsprung > 1,5 dB (M-PEGEL) und keinen M-SP-Sprung > ⅙ Okt.
 - [ ] **MK10-05 Endlos:** Welle 35 erfüllt MK2-04 auch mit den Aufnahmen.
-- [ ] **MK10-06 Lokal:** Beim Einlesen gibt es 0 Netzaufrufe. Die Tabellen fehlen in jedem Upload (Fake-Supabase-Gerüst `online.md` §7.7 mit WebSocket-Mitschnitt; hängt nicht an MK9). Ein anderer Speicher-Ursprung hört Platzhalter mit „≈“, bis die Wellen dort importiert sind.
-- [ ] **MK10-07 Analyse-Zeit:** 66 Dateien à ≈ 25 s in ≤ 60 s (Xeon), keine `longtask` > 50 ms, Fortschritt sichtbar, abbrechbar ohne halbe Daten (atomar je Welle).
+- [ ] **MK10-06 Lokal bis zum Einbau:** Beim Aufnehmen, Einlesen und Analysieren gibt es 0 Netzaufrufe. Inhalte von `synq-mkwaves` fehlen in jedem Upload (Fake-Supabase-Gerüst `online.md` §7.7 mit WebSocket-Mitschnitt). Vor dem Einbau hört ein anderer Speicher-Ursprung Platzhalter mit „≈“. Das Wellen-Paket enthält nur die Felder der Liste im Test, kein Roh-Audio, ≤ 200 KB.
+- [ ] **MK10-07 Analyse-Zeit:** Ersatzweg: 66 Dateien à ≈ 25 s in ≤ 60 s (Xeon), keine `longtask` > 50 ms, Fortschritt sichtbar, abbrechbar ohne halbe Daten (atomar je Welle). Aufnahme-Seite: Analyse eines Schritts ≤ 1 s nach dem Stopp (Xeon; der iPhone-Wert steht in CHANGES).
 - [ ] **MK10-08 Fehlerpfade:**
   - 44,1 kHz wird umgerechnet. Bei Stereo wird der lautere bzw. nicht stille Kanal genutzt (ein Kabel in Kanal 2 ergibt keine stille Welle).
-  - 32-Bit-Float-WAV und AIFF werden gelesen. Andere Formate (z. B. M4A) bekommen eine klare Meldung mit dem Export-Weg aus Teil D.
+  - 32-Bit-Float-WAV und AIFF werden gelesen. Andere Formate (z. B. M4A aus Sprachmemos oder AAC aus GarageBand) bekommen eine klare Meldung mit dem Export-Weg aus Teil D.4.
   - [Testdatei prüfen] meldet „zu leise“ (Spitze < −30 dBFS), „übersteuert“ (≥ −1 dBFS) und „stille Datei“.
   - Eine Sammel-Datei mit 8 Wellen wird richtig geteilt und zugeordnet.
   - Clipping wird erkannt („bitte neu aufnehmen“).
   - Eine fehlende Oktave nimmt den Nachbarn, mit Hinweis.
   - Falscher Dateiname: Die Zuordnung ist von Hand wählbar.
-- [ ] **MK10-09 Oberfläche und Budget:** M-PLATZ des Blatts in P1–P3, L1, L2, W. Budget ≤ +25 KB (bzw. +65 KB).
-- [ ] **MK10-10 Datenbank getrennt:** Nach dem Einlesen öffnet ein Tab des Vorgänger-Stands (4.17.0 oder der zuletzt ausgelieferte) Projekt und Bibliothek aus IndexedDB: kein localStorage-Rückfall, kein `versionchange`, alles intakt.
-- [ ] **MK10-11 Pegel-Bericht:** Der Bericht zeigt je eingelesener Welle die Pegel-Abweichung vom Platzhalter. MK8-04 läuft nur bei Variante „eingebaut“ erneut.
+- [ ] **MK10-09 Oberfläche und Budget:** M-PLATZ der Aufnahme-Seite und des Datei-Blatts in P1–P3, L1, L2, W; Trefferflächen ≥ 44 × 44; die Geräte-Hinweise je Schritt sind ganz lesbar (scrollWidth ≤ clientWidth). Budget Abschnitt 1 ≤ +35 KB, Abschnitt 2 ≤ +45 KB.
+- [ ] **MK10-10 Datenbank getrennt:** Nach dem Einlesen öffnet ein Tab des Vorgänger-Stands (4.16.0 oder der zuletzt ausgelieferte) Projekt und Bibliothek aus IndexedDB: kein localStorage-Rückfall, kein `versionchange`, alles intakt.
+- [ ] **MK10-11 Pegel-Bericht:** Der Bericht zeigt je Welle die Pegel-Abweichung vom Platzhalter. Nach dem Einbau besteht MK8-04 mit den eingebauten Wellen.
+- [ ] **MK10-12 Aufnahme-Seite** (Chromium mit Fake-Gerät: `--use-fake-device-for-media-stream --use-file-for-fake-audio-capture=` mit einer synthetischen Aufnahme):
+  - `getUserMedia` erst nach Tipp; `getSettings()` meldet `echoCancellation`, `noiseSuppression` und `autoGainControl` = false. Ist eine an (Test-Stub), nimmt die Seite nicht auf und zeigt die rote Warnung.
+  - Solange die Seite offen ist: Ausgang ≤ −120 dBFS, am Ausgang nur der 0-Gain-Halter, der Transport steht.
+  - Je Schritt werden die 7 Töne erkannt (Zahl genau, Einsatz ± 10 ms); Auto-Stopp 1 s nach dem 7. Ton; nach dem Zuschnitt ≤ 50 ms Stille vorn und hinten.
+  - Pegel-Anzeige ± 0,5 dB gegen das bekannte Signal; grün und rot nach den Grenzen.
+  - Reihenfolge der 67 Schritte und die Geräte-Hinweise gleichen der Liste in Teil D.3; [Nochmal] ersetzt nur diesen Schritt.
+  - Neuladen mitten im Ablauf: Fortschritt deep-equal, weiter beim nächsten offenen Schritt.
+  - Test-Profil ohne Mikrofon (wie die Claude-App): `getUserMedia`-Zähler 0, nur der Ersatzweg sichtbar.
+  - Dieselbe synthetische Aufnahme über [Dateien laden] ergibt dieselben Tabellen (Teiltonpegel max |Δ| ≤ 0,1 dB).
+- [ ] **MK10-13 Wellen-Paket:** [Wellen an den Bau geben] ruft `navigator.share` mit genau einer Datei (Stub) bzw. lädt sie herunter; Inhalt nach Feldliste, Prüfsumme stimmt, kein Roh-Audio, ≤ 200 KB.
+- [ ] **MK10-14 Einbau:** `mk10-einbau.mjs` ist deterministisch (gleiches Paket → bitgleicher Block), Block ≤ 45 KB, 0 Markenwörter (B.6 Nr. 9). Die eingebauten Wellen gleichen den lokalen (Teiltonpegel ± 0,5 dB nach der Byte-Kodierung, M-BAND ≤ 0,5 dB). Ein frischer Speicher-Ursprung (Test-Profil) und ein Paar-Raum-Partner hören die eingebauten Wellen ohne „≈“ (`mkInfo().waves === 'eingebaut'`). Sounds ohne Speicherwelle klingen bitgleich zum Vorgänger-Stand.
 
-**Tests.** `mk10-analyse.mjs` (mit synthetischen „Aufnahmen“ aus bekannten Wellen, eigenem Filter-Abfall und Rauschen), `mk10-lokal.mjs`, `mk10-ui.mjs`.
+**Tests.** `mk10-analyse.mjs` (mit synthetischen „Aufnahmen“ aus bekannten Wellen, eigenem Filter-Abfall und Rauschen), `mk10-rec.mjs` (Chromium, Fake-Gerät), `mk10-lokal.mjs`, `mk10-einbau.mjs` (Bau-Skript und Prüfung), `mk10-ui.mjs`.
 
-**Fach-Prüfung:** **FP-DSP** Haupt-, **FP-SICHER** Zweit-Blick (lokal).
+**Fach-Prüfung:** **FP-DSP** Haupt-, **FP-IPHONE** und **FP-SICHER** Zweit-Blick (Aufnahme-Weg am iPhone; nichts verlässt das Gerät außer dem Paket über das Teilen-Blatt).
 
-**Zwischenstand** nach MK10 (EN3-17).
+**Zwischenstand** nach Abschnitt 1 (damit Xander aufnehmen kann) und nach dem Einbau (EN3-17).
 
-**iPhone:** Wellen einlesen (Dateien aus „Dateien“ oder iCloud), dann OSZ 1 → Speicherwelle und mit dem Gerät vergleichen.
+**iPhone (Xander):**
+1. Aufbau nach Teil D.1. In Safari: Menü → Sounds → **Wellen aufnehmen**. Zeigt die Seite das AG06 und keine rote Warnung?
+2. Pegel-Test: C4 halten, am AG06 den Regler von Kanal 1 drehen, bis die Anzeige grün ist.
+3. Die Schritte nacheinander aufnehmen (≈ 75 min, Pausen erlaubt). Bei ✗ einfach [Nochmal].
+4. OSZ 1 → Speicherwelle in der App mit dem Gerät vergleichen, dann [Wellen an den Bau geben] und die Datei schicken.
 
-**Risiken.** Die Lizenzfrage ist offen (H-2). Ob sich die DWGS-Wellen je Oktave ändern, ist [U], deshalb mehrere Oktaven. Raumgeräusche fallen weg, weil Line-Aufnahme Pflicht ist. Die eingelesenen Wellen gelten je Speicher-Ursprung; für einen anderen dient Export/Import.
+**Geräte-Abgleich:** Einzelne Speicherwellen in der App gegen dieselbe Welle am microKORG (C2, C4, C6).
+
+**Risiken.** **Lizenz:** Die Wellen sind Daten aus Xanders Korg-Gerät; die Lizenz ist ungeklärt. Xander weiß das und hat „eingebaut“ gewählt (H-2). Ein Risiko entstünde vor allem, wenn die App verkauft würde; dann wäre der Einbau neu zu prüfen. Ob iOS Safari die Sprach-Verarbeitung bei einem USB-Gerät wirklich abschaltet, zeigt erst das Gerät (darum `getSettings()` und die rote Warnung). Ob sich die DWGS-Wellen je Oktave ändern, ist [U], deshalb mehrere Oktaven. Raumgeräusche fallen weg, weil die Line-Aufnahme Pflicht ist. Die Übergabe des Pakets braucht einen Weg vom iPhone zum Bau (H-15).
 
 ---
 
@@ -1522,7 +1664,7 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
    - 3 individuell (OSZ 1 → F1, OSZ 2 + Rauschen → F2) [eK]
 3. **Verzerrer** `drv` {TYP aus │ weich │ hart │ Falter, STÄRKE 0…127} zwischen Mixer und Filter 1 [W] (W-45, 2× Überabtastung + ADAA). Die MS2000-Verzerrung im AMP bleibt.
 4. **Neue Patch-Ziele** „Cutoff 2“ (d 8) und „Verzerrer“ (d 9). Die neuen Regler sind Seq-Ziele (MK-R1).
-5. **Sektionen** FILTER 2 und DRIVE (EDIT 1, Reihe 2, Plätze 6 und 7).
+5. **Bedienfeld** (B.3, ohne neue Stellung): MIXER Ebene 2 = DRIVE-TYP · DRIVE · ROUTING · F-BALANCE; FILTER Ebene 2 = ANSCHLAG · F2-TYP · F2-CUTOFF · F2-RESO. · F2-HK-INT, Ebene 3 (SHIFT zweimal) = F2-KEYTR. · F2-ANSCHL. · F2-HK.
 6. **Leistungs-Probe:** Fall „+Filter 2/Drive“.
 
 **Nicht-Umfang.** Kammfilter, Filter-Morph, 11 Verzerrer-Typen (RADIAS), Effekt-Typen des RADIAS.
@@ -1531,7 +1673,7 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 
 **Berührungspunkte.** Ladder-Kern (zweite Instanz je Stimme), Patch- und Seq-Ziellisten.
 
-**Dauer** 6–7 h · **Version 4.19.0** · **Budget** +25 KB · Format bleibt 5.
+**Dauer** 6–7 h · **Version 4.18.0** · **Budget** +25 KB · Format bleibt 5.
 
 **Abnahme-Checkliste**
 - [ ] **MK11-01 Aus = bitgleich:** TYP aus und `drv` aus sind bitgleich zum Vorgänger-Stand.
@@ -1549,13 +1691,13 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 - [ ] **MK11-07 Ziele:** Patch → Cutoff 2 und → Verzerrer wirken nach W-18. Seq → FILTER-2-Cutoff wirkt.
 - [ ] **MK11-08 Umschalten:** ROUTING und TYP bei klingender Note bestehen M-KLICK und M-EINBRUCH.
 - [ ] **MK11-09 CPU:** Filter 2 an kostet ≤ +40 % je Stimme, Verzerrer ≤ +10 % (Node-Offline). Die Leistungs-Probe läuft mit dem neuen Fall.
-- [ ] **MK11-10 Oberfläche:** M-PLATZ in P1–P3, L1, L2, W. Das Raster ist jetzt voll (14), nichts rückt. H-1/H-3. Regression, Budget ≤ +25 KB.
+- [ ] **MK11-10 Oberfläche:** M-PLATZ in P1–P3, L1, L2, W für MIXER Ebene 2 und FILTER Ebene 2/3; SHIFT schaltet bei FILTER Ebene 2 → 3 → aus (Matrix-Zeile und Anzeige „EB2“/„EB3“, SHIFT blinkt bei Ebene 3); M-SKIZZE besteht weiter, nichts rückt. H-1/H-3. Regression, Budget ≤ +25 KB.
 
 **Tests.** `mk11-filter2.mjs`, `mk11-drive.mjs`, `mk11-ui.mjs`.
 
 **Fach-Prüfung:** **FP-DSP** Haupt-, **FP-IPHONE** Zweit-Blick.
 
-**iPhone:** FILTER 2 seriell als Hochpass hinter einer Säge, DRIVE „Falter“ langsam aufdrehen.
+**iPhone:** EDIT-WAHL 1 auf MIXER, SHIFT: ROUTING seriell, DRIVE-TYP „Falter“, DRIVE langsam aufdrehen. FILTER, SHIFT: F2-TYP Hochpass hinter einer Säge.
 
 **Geräte-Abgleich:** entfällt (kein RADIAS vorhanden).
 
@@ -1568,7 +1710,7 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 **Ziel.** Eine frei verwendbare dritte Hüllkurve und ein Vokal-Oszillator, bei dem man die Mundform regelt (KF [B]).
 
 **Umfang.**
-1. **EG3** `e3` je Timbre (ADSR + NEUSTART, W-06). Patch-Quelle „EG 3“ (s 8), Seq-Ziele (MK-R1). Als Hüllkurve für Filter 2 wählbar (`f2.egs` 1 │ 3). Sektion HK 3 in EDIT 2.
+1. **EG3** `e3` je Timbre (ADSR + NEUSTART, W-06). Patch-Quelle „EG 3“ (s 8), Seq-Ziele (MK-R1). Als Hüllkurve für Filter 2 wählbar (`f2.egs` 1 │ 3; FILTER Ebene 3). Bedienung: F-HK Ebene 2 (SHIFT) = HK 3 (B.3).
 2. **Formant-Oszillator** (OSZ 1 Welle 8, W-44):
    - Er nutzt die Vokal-Quelle aus MK7: bandbegrenzter Glottis-Puls (W-28) in die Resonatoren F1–F4 (TPT-SVF, parallel, Bandbreiten 80/90/120/150 Hz). Neu ist hier die Welle 8 mit Morph und LFO.
    - STEUER 1 = Vokal-Morph a → e → i → o → u, stetig, Frequenzen logarithmisch interpoliert. STEUER 2 = LFO1-Tiefe.
@@ -1581,7 +1723,7 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 
 **Berührungspunkte.** Hüllkurven-Kern, Patch-Quellen, Vokal-Quelle aus MK7, Oktav-Tabellen (nicht nötig: die Resonatoren arbeiten in Hz).
 
-**Dauer** 5,5–6,5 h (Rev. 1: −0,5 h, die Vokal-Quelle kommt aus MK7) · **Version 4.20.0** · **Budget** +22 KB · Format bleibt 5.
+**Dauer** 5,5–6,5 h (Rev. 1: −0,5 h, die Vokal-Quelle kommt aus MK7) · **Version 4.19.0** · **Budget** +22 KB · Format bleibt 5.
 
 **Abnahme-Checkliste**
 - [ ] **MK12-01 Neutral:** EG3 ohne Route und ohne Wahl als Filter-2-Hüllkurve ist bitgleich zum Vorgänger-Stand.
@@ -1591,13 +1733,13 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 - [ ] **MK12-05 Alias:** C6 hat gefaltete Energie (B.6 Nr. 12) ≤ −50 dB.
 - [ ] **MK12-06 Träger:** Der Formant-Oszillator als Vocoder-Träger besteht MK7-08.
 - [ ] **MK12-07 CPU:** Formant ≤ 1,5 × Säge. EG3 ≤ +2 % (Node-Offline).
-- [ ] **MK12-08 Oberfläche:** HK 3 in EDIT 2. M-PLATZ in P1–P3, L1, L2, W. H-1/H-3. Regression, Budget ≤ +22 KB.
+- [ ] **MK12-08 Oberfläche:** HK 3 auf F-HK Ebene 2, F2-HK auf FILTER Ebene 3. M-PLATZ in P1–P3, L1, L2, W, M-SKIZZE. H-1/H-3. Regression, Budget ≤ +22 KB.
 
 **Tests.** `mk12-eg3.mjs`, `mk12-formant.mjs`, `mk12-ui.mjs`.
 
 **Fach-Prüfung:** **FP-DSP** Haupt-, **FP-KLANG** Zweit-Blick.
 
-**iPhone:** OSZ 1 → Formant, STEUER 1 langsam von 0 nach 127 („a-e-i-o-u“). PATCH: EG 3 → OSZ1-Steuer.
+**iPhone:** OSZ 1 → WELLE Formant, STEUER 1 langsam von 0 nach 127 („a-e-i-o-u“). PATCH 1: EG 3 → OSZ1-Steuer; HK 3 unter F-HK mit SHIFT einstellen.
 
 **Risiken.** Die Vokal-Tabelle stammt aus der Sprachforschung, nicht vom RADIAS.
 
@@ -1608,7 +1750,7 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 **Ziel.** Bis zu 8 Stimmen je AM-Spur, wo das iPhone es trägt (KF [B]: RADIAS 24 statt 4 Stimmen; hier begrenzt durch Plan Punkt 5).
 
 **Umfang.**
-1. **STIMMEN-ZAHL** `vmax` 4 │ 8 in PROG (Vorgabe 4 = MS2000).
+1. **STIMMEN-ZAHL** `vmax` 4 │ 8 auf STIMME Ebene 2, Regler 4 (Vorgabe 4 = MS2000).
 2. Bei 8 ist die Timbre-Teilung 2+6 │ 4+4 │ 6+2. Unison bei 8 nach W-15. Der Vocoder ist bei 8 erlaubt.
 3. **Begrenzer** (B.4): Stufe 1 setzt `vmax` 8 → 4 für neue Noten.
 4. **Kopf-Anzeige** (L9): „8 St“ bzw. „4 St (Begrenzer)“.
@@ -1620,7 +1762,7 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 
 **Berührungspunkte.** `POOL` bleibt 12 (8 Stimmen + 4 Stehl-Blenden). Begrenzer.
 
-**Dauer** 3–4 h · **Version 4.21.0** · **Budget** +10 KB · Format bleibt 5.
+**Dauer** 3–4 h · **Version 4.20.0** · **Budget** +10 KB · Format bleibt 5.
 
 **Abnahme-Checkliste**
 - [ ] **MK13-01 Stimmen:** 8 Tasten ergeben 8 Stimmen, die 9. stiehlt (M-KLICK). `vmax` 4 ist bitgleich zum Vorgänger-Stand. Umschalten von `vmax` bei klingenden Noten über `engXf` (B.6 Nr. 2).
@@ -1628,7 +1770,7 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 - [ ] **MK13-03 CPU:** 8 Stimmen ≤ 2,1 × 4 Stimmen (Node-Offline).
 - [ ] **MK13-04 Begrenzer:** Bei simulierter Last > 0,45 bekommen neue Noten höchstens 4 Stimmen. Gespeichertes bleibt deep-equal (I-08). Die Anzeige erscheint.
 - [ ] **MK13-05 iPhone-Grenze:** Xanders Probe „8 Stimmen“ steht in CHANGES. Liegt `load_med` (Σ der 4 Probe-Engines, B.4) > 0,40 oder ist `frames_ok` falsch, gilt ab dann: `vmax` 8 klingt nur auf höchstens 2 AM-Spuren gleichzeitig, weitere fallen auf 4 (Regel und Wert in CHANGES). Die Schwelle lässt wie beim Fall „Kern“ Platz für den Rest des Projekts.
-- [ ] **MK13-06 Oberfläche:** PROG mit STIMMEN-ZAHL, M-PLATZ in P1–P3, L1, L2, W. Regression, Budget ≤ +10 KB.
+- [ ] **MK13-06 Oberfläche:** STIMME Ebene 2 mit STIMMEN-ZAHL, M-PLATZ in P1–P3, L1, L2, W, M-SKIZZE. Regression, Budget ≤ +10 KB.
 
 **Tests.** `mk13-voices.mjs`, `mk13-limit.mjs`.
 
@@ -1642,21 +1784,24 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 
 ---
 
-## Teil D — Aufnahme-Anleitung für die Speicherwellen (für MK10; an Xander weitergeben)
+## Teil D — Aufnahme-Anleitung für die Speicherwellen (für MK10; an Xander weitergeben; nur iPhone)
 
-**Wozu:** Die App bildet die 64 gespeicherten Wellen deines microKORG bisher nur nach. Mit diesen Aufnahmen rechnet sie die echten Wellen aus. Die Dateien bleiben bei dir. Die App liest sie auf deinem Gerät ein, nichts wird hochgeladen (Vorgabe H-2).
+**Wozu:** Die App bildet die 64 gespeicherten Wellen deines microKORG bisher nur nach. Du nimmst sie einmal auf, **direkt in der App auf deinem iPhone**. Die App rechnet daraus die echten Wellen. Danach werden sie in die App eingebaut, und alle hören sie (du hast „einbauen“ gewählt, H-2). Deine Aufnahmen selbst bleiben auf deinem iPhone; weiter geht nur ein kleines Wellen-Paket. Du brauchst keinen Rechner und kein MIDI.
 
-**D.1 Was du brauchst (≈ 75 min)**
-- microKORG mit Netzteil
-- dein Audio-Interface am Mac. Das Interface nimmt nicht selbst auf; das macht ein Programm am Rechner. Hier beschrieben: **GarageBand**.
-- Kabel vom Ausgang **L/MONO** des microKORG in den **Kanal 1** des Interfaces (Line-Eingang; kein Mikrofon!)
-- Kopfhörer zum Mithören
-- Am Interface: Phantomspeisung (+48 V) aus, Kompressor, EQ und Effekte aus. Schickt das Interface stereo an den Rechner, ist das in Ordnung: Die App nimmt den Kanal mit Signal.
-- Die App liest WAV (16 Bit, 24 Bit oder 32 Bit Float) und AIFF, mit 44,1 oder 48 kHz, mono oder stereo. M4A (zum Beispiel aus Sprachmemos) liest sie nicht.
+**D.1 Was du brauchst (≈ 75 min, Pausen gehen)**
+- microKORG mit Netzteil.
+- Dein weißes **Yamaha AG06** (erste Version).
+- Ein **Klinkenkabel** 6,3 mm (wie ein Gitarrenkabel): vom Ausgang **L/MONO** hinten am microKORG in die **Line-Buchse von Kanal 1** am AG06 (den runden Klinken-Teil der Kombi-Buchse). Kein Mikrofon.
+- Das **USB-Kabel** des AG06 in den **Apple Lightning-auf-USB-3-Kamera-Adapter**, den Adapter ans iPhone, und das **iPhone-Ladekabel** in die Lightning-Buchse am Adapter (Strom; ohne Strom schaltet das iPhone das AG06 oft ab).
+- **Kopfhörer am AG06** (PHONES) zum Mithören. Die App spielt während der Aufnahme nichts.
+- **Am AG06** (Schalterlage am Gerät prüfen):
+  - **TO PC** auf **DRY CH 1-2**.
+  - **COMP/EQ** aus, **EFFECT** aus.
+  - **+48V** (Phantomspeisung) aus.
+  - **PAD** nur drücken, wenn die **PEAK**-Lampe von Kanal 1 beim Spielen aufleuchtet.
+- Am iPhone: die App in **Safari** (Pages-Seite), nicht in der Claude-App (dort gibt es kein Mikrofon). Mitteilungen stumm (Fokus „Nicht stören“).
 
-*Bekannt (Xander, Okt. 2026): weißes Yamaha AG06 (erste Version, class compliant); iPhone 12 Pro Max und iPad Pro 12,9″ (1. Gen.). Ein Rechner ist nicht bestätigt. Vor der Übergabe an Xander (MK10) die Schritte D.2 ff. zusätzlich für GarageBand auf iPhone/iPad (AG06 über Lightning-auf-USB-3-Kamera-Adapter mit Strom) beschreiben und den Gerätekasten mit den AG06-Schaltern ergänzen (TO PC: DRY CH 1-2, COMP/EQ und EFFECT aus, +48 V aus, PAD nur, wenn PEAK leuchtet) – Schalterlage vorher im AG06-Handbuch prüfen.*
-
-**D.2 Gerät einmal vorbereiten**
+**D.2 microKORG einmal vorbereiten**
 1. **GLOBAL** (HB-MK S. 47):
    - MASTER TUNE 440,0 (Anzeige „40.0“)
    - MASTER TRANSPOSE 0
@@ -1673,88 +1818,79 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
    - **MOD FX:** EFFECT DEPTH 0. **DELAY:** DELAY DEPTH 0. **EQ:** LOW EQ GAIN 0, HI EQ GAIN 0.
    - **Arpeggiator** aus, **MOD-Rad** ganz zu, **PITCH-Rad** in der Mitte.
 3. Mit **WRITE** auf diesen Platz speichern. Dann geht nichts verloren, wenn du versehentlich umschaltest.
-4. **Pegel:** C4 halten und den Eingang so stellen, dass die Spitze bei −12 bis −6 dBFS liegt. Danach nichts mehr am Pegel und an AMP LEVEL ändern. Der Pegel muss für alle Dateien gleich bleiben. Übersteuert eine Welle trotzdem, senke AMP LEVEL einmal für alles und fange neu an.
 
-**D.2b GarageBand einrichten (einmal)**
-1. Neues Projekt → **Audio** („Mikrofon oder Line-Eingang“). Eingang: der Kanal mit dem Kabel (Kanal 1), **mono**. Mithören über Kopfhörer an.
-2. Je Datei: Aufnahme starten, die Töne nach D.3 spielen, stoppen.
-3. Exportieren: Menü **Teilen** (ältere Versionen: **Bereitstellen**) → **Song auf Festplatte exportieren …** → Format **WAVE**, 24 Bit, Name genau wie unten. 44,1 oder 48 kHz sind beide gut.
-4. Danach die Aufnahme löschen (oder ein neues Projekt anlegen) und mit der nächsten Datei weitermachen.
-5. **Erst eine Testdatei:** `test.wav` mit C4, 2 s gehalten. In der App (ab MK10) prüft **[Testdatei prüfen]** Pegel, Kanal und Stille, bevor du alles aufnimmst.
+**D.3 In der App aufnehmen (so ist es gedacht)**
+1. In Safari: Menü → Sounds → **Wellen aufnehmen** → Mikrofon erlauben. Die Seite zeigt das AG06 als Eingang. Steht dort rot „Sprach-Filter aktiv“: nicht aufnehmen, Bescheid sagen.
+2. **Pegel-Test:** C4 halten und den **GAIN**-Regler von Kanal 1 am AG06 drehen, bis die Anzeige in der App **grün** ist. Danach nichts mehr am Pegel und an AMP LEVEL ändern. Wird eine spätere Welle rot (übersteuert): AMP LEVEL einmal für alles senken und von vorn anfangen.
+3. Die App führt dich Schritt für Schritt. Bei jedem Schritt steht groß da, was du am microKORG einstellst. Dann [● Aufnehmen] und spielen: die sieben C von C1 bis C7, jedes **2 s halten, 1 s Pause**.
+   - Zuerst **OCTAVE SHIFT −2** (Tastatur C1–C4): C1, C2, C3, C4.
+   - Dann **OCTAVE SHIFT +1** (dreimal UP, Tastatur C4–C7): C5, C6, C7. Die Pause beim Umschalten darf länger sein.
+   - Die App hört nach dem 7. Ton selbst auf, schneidet zu und zeigt ✓. Bei ✗ steht der Grund da: [Nochmal].
+4. **Die Schritte** (die App zeigt sie in dieser Reihenfolge):
+   - Schritt 1, Pegel-Test: C4, 2 s.
+   - Schritt 2, Bezug: OSC1 WAVE **Saw**, CONTROL 1 = 0, CONTROL 2 = 0.
+   - Schritte 3–66, Speicherwellen: OSC1 WAVE **DWGS**, CONTROL 2 = **1 … 64** (eine Welle je Schritt).
+   - Schritt 67, Stille: 10 s, keine Taste drücken (das Grundrauschen).
+5. Aufhören und später weitermachen geht; die App merkt sich, wo du warst.
 
-**D.3 Aufnehmen** (je Datei die sieben C von C1 bis C7, jedes **2 s halten, 1 s Pause**; die App misst die Tonhöhe selbst):
-- Zuerst **OCTAVE SHIFT −2** (Tastatur C1–C4): C1, C2, C3, C4 spielen.
-- Dann **OCTAVE SHIFT +1** (Tastatur C4–C7, dreimal UP): C5, C6, C7. Die Pause beim Umschalten darf länger sein.
+**D.4 Ersatzweg: GarageBand auf dem iPhone** (nur, wenn D.3 nicht geht; Bezeichnungen können je nach GarageBand-Version abweichen)
+1. GarageBand → neuer Song → **Audio-Recorder**. Eingang: Kanal 1 des AG06, mono. Mithören in GarageBand aus (du hörst am AG06).
+2. Je Datei: Aufnahme starten, die Töne wie in D.3 spielen, stoppen.
+3. Teilen → **Song** → Format **AIFF** (oder WAV, wenn angeboten; nicht AAC/M4A) → **In Dateien sichern**. Namen genau so (Endung .wav oder .aif): `test` (C4, 2 s), `ref-saege`, `sw-01` … `sw-64`, `stille` (10 s). Kürzer: eine Datei je 8 Wellen (`sw-01-08` … `sw-57-64`) mit mindestens 3 s Stille zwischen zwei Wellen.
+4. In der App: Menü → Sounds → Wellen aufnehmen → **[Dateien laden]**: zuerst `test`, dann alle anderen.
 
-1. `ref-saege.wav`: OSC1 WAVE **Saw**, CONTROL 1 = 0, CONTROL 2 = 0. Das ist der Bezug.
-2. `sw-01.wav` … `sw-64.wav`: OSC1 WAVE **DWGS**, CONTROL 2 = Nummer der Welle (1 … 64).
-   - **Kürzer (Variante B):** eine Datei je 8 Wellen, `sw-01-08.wav` … `sw-57-64.wav` (8 Dateien). Zwischen zwei Wellen **mindestens 3 s Stille** lassen, in der Reihenfolge der Nummern. Die App teilt an der Stille.
-3. `stille.wav`: 10 s, ohne eine Taste zu drücken. Das ist das Grundrauschen.
+**D.5 Prüfen und abgeben**
+- In der Liste der App haben alle 67 Schritte ein ✓ (beim Ersatzweg: alle Dateien geladen, keine rote Zeile).
+- Deine Wellen klingen jetzt schon in der App auf deinem iPhone: OSZ 1 → WELLE Speicherwelle, mit dem microKORG vergleichen.
+- [**Wellen an den Bau geben**] → im Teilen-Blatt die Datei an den Orchestrator schicken (Weg nach H-15). Die Datei enthält nur die gerechneten Wellen, keine Aufnahme.
 
-**D.4 Prüfen, bevor du fertig bist**
-- 67 Dateien (`test.wav`, `ref-saege.wav`, 64 Wellen, `stille.wav`) bzw. bei Variante B 11 Dateien, Namen genau wie oben.
-- Keine Datei übersteuert (Spitze unter −1 dBFS).
-- In jeder Datei sind 7 Töne (Variante B: 8 × 7).
+**D.6 Eich-Aufnahmen:** entfällt (H-6: nein, Abgleich nach Gehör).
 
-**D.5 Abgeben**
-- Vorgabe: Die Dateien bleiben auf deinem iPhone, deinem Mac oder in iCloud. Ab MK10: Menü → Sounds → **Wellen einlesen** → erst [Testdatei prüfen], dann alle Dateien wählen. Die Wellen gelten dann in diesem Browser-Speicher; für die Claude-App bzw. Safari gibt es [Wellen exportieren]/[Wellen importieren].
-- Nur wenn du bei H-2 „einbauen“ sagst: Gib die Dateien dem Bau-Lauf direkt. Sie kommen nicht ins Repo.
-
-**D.6 Nur wenn H-6 = ja: Eich-Aufnahmen (+ ≈ 15 min)** mit derselben Einstellung, OSC1 Saw:
-- `eich-cutoff.wav`: C3 halten, CUTOFF 0, 16, 32, … 127, je 1 s (RESONANCE 0).
-- `eich-attack.wav`: AMP EG ATTACK 32, 64, 96, je ein Ton mit 4 s Pause.
-- `eich-release.wav`: RELEASE 32, 64, 96 (SUSTAIN 127), je ein Ton, 1 s halten, 6 s Pause.
-- `eich-lfo.wav`: PATCH 1 LFO 1 → Pitch, MOD INT 20, LFO 1 FREQUENCY 32, 64, 96, je 4 s.
-
-**D.7 Für MK9 (Tor b, freiwillig): drei Test-Programme**
-
-Nur nötig, wenn das Formatdokument fehlt (Tor a ist die Vorgabe, H-7). Dafür brauchst du ein **USB-MIDI-Interface** (der microKORG hat nur 5-polige MIDI-Buchsen) und am Rechner ein **Editor- oder Librarian-Programm**, das .syx-Dumps empfängt bzw. .prg speichert. Das Audio-Interface hat kein MIDI, und am iPhone gibt es im Browser kein Web MIDI.
-1. Lege drei Programme an, die sich in möglichst vielen Werten unterscheiden (Werte frei wählen).
-2. Schreibe je Programm diese Werte auf: alle Regler von VOICE, PITCH, OSC1, OSC2, MIXER, FILTER, FILTER EG, AMP, AMP EG, LFO1, LFO2, PATCH 1–4, MOD FX, DELAY, EQ, ARPEG A, ARPEG B. Bei einem Vocoder-Programm zusätzlich AUDIO IN, FILTER, FC MOD, CH LEVEL und CH PAN.
-3. Sende die Programme als Dump (.syx) bzw. speichere sie mit dem Editor (.prg), und gib die Dateien mit dem Werteblatt ab.
+**D.7 Test-Programme für den Import:** entfällt (MK9 zurückgestellt, EN3-21).
 
 ---
 ## Teil E — Reihenfolge, Versionen, Budgets, Größe
 
 ### E.1 Pakete (verbindlich; ergänzt N2 Teil E und den „Nachtrag zur Reihenfolge“)
 
-Lage: Die MK-Gruppe beginnt direkt nach G-P2 (V2d′ ✓ 4.6.0, V2e 4.7.0, V2e′ 4.8.0, VS3). VS3 wartet auf das Tor N7V-12, das noch nicht erreicht ist (`fragen-xander-9.md`). Darum beginnt die Gruppe nach V2e′ mit **MK0 (4.8.1)**, und MK1 bekommt **4.9.0**.
+Lage: Die MK-Gruppe beginnt direkt nach G-P2 (V2d′ ✓ 4.6.0, V2e 4.7.0, V2e′ 4.8.0, VS3). VS3 wartet auf das Tor N7V-12, das noch nicht erreicht ist (`fragen-xander-9.md`). Darum beginnt die Gruppe nach V2e′ mit **MK0 (4.8.1)**, und MK1 bekommt **4.9.0**. **Rev. 2:** MK9 ist zurückgestellt und steht außerhalb der Folge; MK10 bis MK13 rücken je eine Nummer vor.
 
 | Paket | Titel | Version | KB | h | braucht | Format | Tor | Untergruppe / Zwischenstand |
 |---|---|---|---|---|---|---|---|---|
 | MK0 | Vorab-Schutz: Klänge neuerer Engines bleiben | 4.8.1 | +4 | 2–3 | V2e′ | 4 | – | G-MK1 |
-| MK1 | Klangkern T1, SPIEL/EDIT 1, Leistungs-Probe | 4.9.0 | +100 | 14–16 | MK0, V2e′ (Reihenfolge), V4a (SXF) | **4 → 5** | Rollout `max_format` 5 (Xanders Okay, nach MK0) | G-MK1 · Stand |
+| MK1 | Klangkern T1, Bedienfeld wie das Original, Räder, Leistungs-Probe | 4.9.0 | +115 | 19–22 | MK0, V2e′ (Reihenfolge), V4a (SXF) | **4 → 5** | Rollout `max_format` 5 (Xanders Okay, nach MK0) | G-MK1 · Stand |
 | MK2 | Alle Oszillator-Arten, PATCH 1–4 | 4.10.0 | +35 | 6,5–7,5 | MK1 | 5 | – | G-MK1 |
-| MK3 | Zwei Timbres, Split, Stimmung | 4.11.0 | +32 | 7–8 | MK2 | 5 | – | G-MK1 |
-| MK4 | Mod-FX, Delay, EQ | 4.12.0 | +25 | 5–6 | MK2 (EDIT 2) | 5 | – | G-MK1 · **Stand** |
+| MK3 | Zwei Timbres, Split, Stimmung | 4.11.0 | +33 | 7,5–8,5 | MK2 | 5 | – | G-MK1 |
+| MK4 | Mod-FX, Delay, EQ | 4.12.0 | +25 | 5–6 | MK2 (EDIT-WAHL 2) | 5 | – | G-MK1 · **Stand** |
 | MK5 | Step-Arpeggiator | 4.13.0 | +33 | 7,5–8,5 | MK3 | 5 | – | G-MK2 |
-| MK6 | Mod-Sequenzer 3×16 | 4.14.0 | +35 | 7,5–8,5 | MK2, MK3 | 5 | – | G-MK2 |
-| MK7 | Vocoder 16 Bänder, Eingänge | 4.15.0 | +50 | 10,5–11,5 | MK2, MK3, MK4, VS1 ✓ | 5 | – | G-MK2 · **Stand (Pages)** |
+| MK6 | Mod-Sequenzer 3×16 | 4.14.0 | +36 | 8–9 | MK2, MK3 | 5 | – | G-MK2 |
+| MK7 | Vocoder 16 Bänder, Eingänge | 4.15.0 | +52 | 11–12 | MK2, MK3, MK4, VS1 ✓ | 5 | – | G-MK2 · **Stand (Pages)** |
 | MK8 | Werksklänge, 8 Genre-Bänke | 4.16.0 | +40 | 8–9 | MK2–MK7 | 5 | – | G-MK2 · **Stand** |
-| MK9 | Import .syx/.prg (lokal) | 4.17.0 | +27 | 6–7 | MK7 | 5 | **MK9-T** | G-MK3 |
-| MK10 | Speicherwellen aus Aufnahmen | 4.18.0 | +25 (+65) | 6,5–7,5 | MK2 | 5 | **MK10-T**, H-2 | G-MK3 · **Stand** |
-| MK11 | RADIAS 1: Filter 2, Verzerrer | 4.19.0 | +25 | 6–7 | MK3, MK6 | 5 | – | G-MK4 |
-| MK12 | RADIAS 2: EG3, Formant-Osz. | 4.20.0 | +22 | 5,5–6,5 | MK11, MK7 (Vokal-Quelle) | 5 | – | G-MK4 |
-| MK13 | RADIAS 3: 8 Stimmen | 4.21.0 | +10 | 3–4 | MK3, MK7 | 5 | – | G-MK4 · **Stand** |
-| **Summe** | 14 Pakete | 4.8.1, 4.9.0–4.21.0 | **+463** | **95–110** | | einmal | | |
+| ~~MK9~~ | Import .syx/.prg (lokal) — **zurückgestellt** (EN3-21) | – | (+27) | (6–7) | MK7 | 5 | MK9-T | außerhalb der Folge, nicht in der Summe |
+| MK10 | Speicherwellen: Aufnahme in der App, Einbau | 4.17.0; Einbau nächste freie Zwischennummer | +80 | 10,5–12 | MK2, MK7 (Mikrofon-Abgriff); Einbau: MK8 (Pegel-Nachlauf) | 5 | Einbau: **MK10-T** (Wellen-Paket) | G-MK3 · **Stand** (Aufnahme-Seite) und **Stand** (Einbau) |
+| MK11 | RADIAS 1: Filter 2, Verzerrer | 4.18.0 | +25 | 6–7 | MK3, MK6 | 5 | – | G-MK4 |
+| MK12 | RADIAS 2: EG3, Formant-Osz. | 4.19.0 | +22 | 5,5–6,5 | MK11, MK7 (Vokal-Quelle) | 5 | – | G-MK4 |
+| MK13 | RADIAS 3: 8 Stimmen | 4.20.0 | +10 | 3–4 | MK3, MK7 | 5 | – | G-MK4 · **Stand** |
+| **Summe** | 13 Pakete (MK9 zurückgestellt) | 4.8.1, 4.9.0–4.20.0 (+ Einbau-Zwischennummer) | **+510** | **≈ 100–115** | | einmal | | |
 
 - **Rev. 1 gegenüber der ersten Fassung:** +23 KB und +13–14 h (MK0 neu; Protokoll, Priorität, `engXf`, Bruchwerte, MIDI-Rad und Probe in MK1; [T1+2]/Solo in MK3; Intervall-Satz und KEYS in MK5; Mikrofon-Abgriff, Abgriff vor dem Fader und Vokal-Quelle in MK7; Import-Regeln in MK9; Wellen-Leser und eigene Datenbank in MK10; MK12 −0,5 h). Dazu kommen nach H-9 ≈ +5 h und +12 KB in V5d, V6a, V5c, V1d und VC4 (Teil G Nr. 4).
-- **Tore** (E.5 Nr. 3 sinngemäß): Ist MK9-T oder MK10-T geschlossen, rücken nur MK9 bzw. MK10. MK11–MK13 laufen weiter. Ein verschobenes Paket bekommt beim späteren Bau die nächste freie Zwischennummer, z. B. 4.21.1, damit die Versionen streng steigen (EN2-14). Die Abnahmen nennen darum keine feste Vorgänger-Nummer (B.6 Nr. 1).
-- **Fach-Prüfung:** 14 × 1–2 h zusätzlich (EN2-29).
-- **Gesamtdauer** ≈ 109–138 h inkl. Fach-Prüfung.
+- **Rev. 2 gegenüber Rev. 1** (Xanders Entscheidungen 25.10.): +47 KB und ≈ +5 h. MK9 fällt aus der Summe (−27 KB, −6–7 h). MK1 +15 KB und +5–6 h (Bedienfeld wie das Original, Räder), MK3 +1 KB und +0,5 h, MK6 +1 KB und +0,5 h, MK7 +2 KB und +0,5 h (Vocoder-Stellungen, LEDs), MK10 +55 KB und +4–4,5 h (eingebaute Wellen +45 KB, Aufnahme-Seite, Einbau). MK10–MK13 rücken eine Versionsnummer vor.
+- **Tore** (E.5 Nr. 3 sinngemäß): MK9 ist zurückgestellt, nicht nur verschoben; es hält nichts auf. Ist MK10-T geschlossen (das Wellen-Paket fehlt noch), wartet nur der Einbau-Abschnitt von MK10; MK11–MK13 laufen weiter. Der Einbau und ein später doch gebautes MK9 bekommen die nächste freie Zwischennummer, z. B. 4.17.1 oder 4.20.1, damit die Versionen streng steigen (EN2-14). Die Abnahmen nennen darum keine feste Vorgänger-Nummer (B.6 Nr. 1).
+- **Fach-Prüfung:** 13 × 1–2 h zusätzlich (EN2-29).
+- **Gesamtdauer** ≈ 113–141 h inkl. Fach-Prüfung.
 
 ### E.2 Begründung der Reihenfolge
 
 1. Ab MK1 ist etwas hörbar. MK1–MK4 ergeben den kompletten Klang eines MS2000-Timbres mit Effekten, das ist der erste Stand für Xander.
 2. MK3 (Timbres) kommt vor Arp, Seq und Vocoder, weil Arp-Ziel, Seq je Timbre und Vocoder-Modus darauf aufsetzen.
 3. MK8 (Werksklänge) steht nach allen Bausteinen, damit kein Werksklang eine „Annäherung“ braucht. Gleiches Prinzip wie V10P (N2 EN2-10).
-4. Import und Speicherwellen hängen an Toren (Beleg bzw. Aufnahmen) und stehen deshalb hinter dem Kern. Liegt ein Tor früher offen, darf MK9 bzw. MK10 vorgezogen werden (nach MK7 bzw. MK2). Die Versionsnummer folgt dann der Bau-Reihenfolge.
+4. Der Import (MK9) ist zurückgestellt: Xander hat keinen Rechner, kein MIDI und keine .syx/.prg-Dateien (EN3-21). Die Speicherwellen (MK10) stehen hinter dem Kern, weil die Aufnahme-Seite den Mikrofon-Abgriff aus MK7 nutzt und der Einbau die Werksklänge aus MK8 nachstimmt. MK10 Abschnitt 1 darf direkt nach MK7 vorgezogen werden, damit Xander früher aufnehmen kann; der Einbau folgt, sobald das Wellen-Paket da ist. Die Versionsnummer folgt dann der Bau-Reihenfolge.
 5. Die RADIAS-Teile kommen zuletzt, wie im Plan Punkt 4 („danach“).
 6. MK0 kommt vor MK1, damit beim ersten Format-5-Speichern schon jeder neuere ausgelieferte Stand AM-Sounds unverändert lässt.
 
 ### E.3 Größe und Startzeit (EN2-28)
 
-Grundlage: 4.6.0 = 2 473 307 B. Restplan-Budgets aus N2 E.4, Reihenfolge nach N3.0.1 Nr. 6 (VS3 vor MK0), mit den Rev.-1-Budgets und den +12 KB aus H-9. MB = 10⁶ B, KB = 1024 B. Rechnung: `scratchpad/rev1-tools/size2.py`.
+Grundlage: 4.6.0 = 2 473 307 B. Restplan-Budgets aus N2 E.4, Reihenfolge nach N3.0.1 Nr. 6 (VS3 vor MK0), mit den **Rev.-2-Budgets** (MK9 nicht im Plan, MK10 +80 KB, MK1 +115 KB) und den +12 KB aus H-9. MB = 10⁶ B, KB = 1024 B. Rechnung wie Rev. 1 (`scratchpad/rev1-tools/size2.py`), am 25.10. mit den Rev.-2-Budgets neu gerechnet.
 
 **Ist-Faktor:** Die gebauten Pakete V0b…V2d′ hatten zusammen 755 KB Budget; die Datei wuchs um 2 473 307 − 1 316 464 B = 1 130 KB (**×1,5**, ganze Datei mit allen Fix-Schritten). Je Paket laut CHANGES lagen die Überzüge zwischen +23 % und +105 % (V4b +23 %, V4c +69 %, V2d +88 %, VO1 +105 %), über 15 Pakete seit V0a +29 % (**×1,3**). Die Spalte ×1,5 ist die Planungsgrundlage, weil sie die Grenze schützt; ×1,3 ist die untere Schätzung.
 
@@ -1762,30 +1898,30 @@ Grundlage: 4.6.0 = 2 473 307 B. Restplan-Budgets aus N2 E.4, Reihenfolge nach N3
 |---|---|---|---|
 | nach V2e′ | ≈ 2,57 MB | ≈ 2,60 MB | ≈ 2,62 MB |
 | nach VS3 (vor MK0; ohne VS3 alle MK-Zeilen ≈ −0,04 MB) | ≈ 2,61 MB | ≈ 2,65 MB | ≈ 2,67 MB |
-| nach MK4 | ≈ 2,81 MB | ≈ 2,91 MB | ≈ 2,97 MB |
-| nach MK8 | ≈ 2,97 MB | ≈ 3,12 MB | ≈ 3,22 MB |
-| nach MK13 | ≈ 3,08 MB | ≈ 3,26 MB | ≈ 3,38 MB |
-| 4,5 MB erreicht bei | V10P | VK | V6a |
-| 5,0 MB erreicht bei | V10e | V9e | V8b |
+| nach MK4 | ≈ 2,82 MB | ≈ 2,93 MB | ≈ 3,00 MB |
+| nach MK8 | ≈ 2,99 MB | ≈ 3,14 MB | ≈ 3,25 MB |
+| nach MK13 (mit MK10 eingebaut) | ≈ 3,13 MB | ≈ 3,33 MB | ≈ 3,46 MB |
+| 4,5 MB erreicht bei | V9e | V7d | V5d |
+| 5,0 MB erreicht bei | V10f | V9d′ | V8a |
 | **Planende ohne MK** (alle übrigen Pakete aus N2 E.4) | ≈ 4,98 MB | ≈ 5,73 MB | ≈ 6,23 MB |
-| **Planende mit MK** | **≈ 5,46 MB** | **≈ 6,36 MB** | **≈ 6,96 MB** |
-| dazu MK10 „eingebaut“ (+45 KB) | +0,05 MB | +0,06 MB | +0,07 MB |
-| dazu H-3 = 128 (+20 KB) | +0,02 MB | +0,03 MB | +0,03 MB |
+| **Planende mit MK** (MK10 eingebaut) | **≈ 5,51 MB** | **≈ 6,42 MB** | **≈ 7,03 MB** |
+| dazu H-3 = 128 (+20 KB; nicht gewählt) | +0,02 MB | +0,03 MB | +0,03 MB |
+| dazu MK9, falls später gebaut (+27 KB) | +0,03 MB | +0,04 MB | +0,04 MB |
 
-- Die MK-Pakete selbst bleiben unter der Grenze (nach MK13 ≈ 3,1–3,4 MB). Die Grenze von 5,0 MB fällt aber **mitten im Plan**, nicht erst am Ende: nach Budget bei V10e, mit Ist-Faktor schon bei V9e (×1,3) bzw. V8b (×1,5). Laut Plan wären nach Gruppe 5 ≈ 2,18 MB erreicht gewesen, tatsächlich sind es heute 2,47 MB.
+- Die MK-Pakete selbst bleiben unter der Grenze (nach MK13 ≈ 3,1–3,5 MB; die eingebauten Wellen sind mitgerechnet). Die Grenze von 5,0 MB fällt aber **mitten im Plan**, nicht erst am Ende: nach Budget bei V10f, mit Ist-Faktor schon bei V9d′ (×1,3) bzw. V8a (×1,5). Laut Plan wären nach Gruppe 5 ≈ 2,18 MB erreicht gewesen, tatsächlich sind es heute 2,47 MB.
 - **Startzeit:** Projekte ohne AM bleiben bei ≤ +20 ms (EN3-14, MK1-26). Je MK-Paket gilt §15.3 (≤ +150 ms gegen das Vorgänger-Paket, absolut ≤ 1,5 s ohne bzw. ≤ 4 s mit Drosselung ×4).
-- **Ab 4,5 MB** nennt jedes Paket Größe und Startzeit (EN2-28); mit ×1,5 ist das ab ≈ V6a. Lösung → **H-1**, Vorgabe (b) = SL1 (E.3a).
+- **Ab 4,5 MB** nennt jedes Paket Größe und Startzeit (EN2-28); mit ×1,5 ist das ab ≈ V5d. Lösung nach **H-1** (entschieden: b) = SL1 (E.3a).
 
-### E.3a SL1 — Schlankheits-Paket (Vorgabe zu H-1 (b); kein MK-Paket, gehört in N2 E.4)
+### E.3a SL1 — Schlankheits-Paket (H-1 (b), entschieden 25.10.; kein MK-Paket, gehört in N2 E.4)
 
-- **Auslöser:** wie EN2-28 die gescheiterte Startzeit-Abnahme, zusätzlich spätestens, wenn ein Stand 4,5 MB erreicht (mit ×1,5 ≈ V6a, nach Budget ≈ V10P). Der Orchestrator trägt das in N2 (EN2-28, E.5 Nr. 8) nach.
-- **Umfang:** Das Sparziel wird an der dann aktuellen Datei gemessen und in CHANGES festgelegt. Die `text/plain`-Blöcke (Worklet, `sq-mk-src`, Werksdaten) gepackt ausliefern und bei Bedarf entpacken; das Worklet spart so heute ≈ 78 KB. Für ≥ −1 MB braucht es den Haupt-Skriptteil als gzip + Base64 mit kleinem Start-Lader (`DecompressionStream`, dann `eval`).
+- **Auslöser:** wie EN2-28 die gescheiterte Startzeit-Abnahme, zusätzlich spätestens, wenn ein Stand 4,5 MB erreicht (mit ×1,5 ≈ V5d, nach Budget ≈ V9e). Der Orchestrator trägt das in N2 (EN2-28, E.5 Nr. 8) nach.
+- **Umfang:** Das Sparziel wird an der dann aktuellen Datei gemessen und in CHANGES festgelegt. Die `text/plain`-Blöcke (Worklet, `sq-mk-src` mit Werksdaten und eingebauten Wellen, `sq-mkrec-src`) gepackt ausliefern und bei Bedarf entpacken; das Worklet spart so heute ≈ 78 KB. Für ≥ −1 MB braucht es den Haupt-Skriptteil als gzip + Base64 mit kleinem Start-Lader (`DecompressionStream`, dann `eval`).
 - **Abnahme:** Verhalten bitgleich (alle Regressionen der gebauten Pakete), Startzeit nach §15.3 am iPhone gemessen (Median aus 5) nicht schlechter als vorher, Dateigröße ≤ Sparziel, keine Konsolenfehler, Worklet-ASCII.
 - **Dauer** 5–7 h · **Version** die nächste freie Nummer beim Bau · **Budget** negativ (Sparziel).
 
 ### E.4 Versionsnummern der Pakete danach
 
-Die Pakete nach der MK-Gruppe (V2a′, V2f, VL, V7a, VC2a, VS4 …) bekommen ihre Nummern **nach 4.21.0**, also ab 4.22.0, in Bau-Reihenfolge. Die Tabelle N2 E.4 wird dort vom Orchestrator fortgeschrieben, das ist keine Änderung des Umfangs.
+Die Pakete nach der MK-Gruppe (V2a′, V2f, VL, V7a, VC2a, VS4 …) bekommen ihre Nummern **nach 4.20.0**, also ab 4.21.0, in Bau-Reihenfolge (Rev. 2: eine Nummer früher, weil MK9 zurückgestellt ist). Der MK10-Einbau und ein später doch gebautes MK9 nehmen Zwischennummern (E.1). Die Tabelle N2 E.4 wird dort vom Orchestrator fortgeschrieben, das ist keine Änderung des Umfangs.
 
 **VS3** (Tor N7V-12):
 - Wird VS3 nach MK0 und vor MK1 gebaut, bekommt es **4.8.5**. Wird es vor MK0 gebaut, bekommt es 4.8.5 und MK0 die nächste freie Zwischennummer (4.8.6).
@@ -1793,11 +1929,11 @@ Die Pakete nach der MK-Gruppe (V2a′, V2f, VL, V7a, VC2a, VS4 …) bekommen ihr
 
 ### E.5 Regeln für den Bau (ergänzt N2 E.5)
 
-1. **Bau-Ort** (wie EN2-17): Dieser Nachtrag, HB-MS und HB-MK (privat, nur lesen), KF, `fragen-xander-9.md`. Für MK9 der Beleg bzw. die Test-Dumps, für MK10 die Aufnahmen. Fehlt etwas, wird das Paket nicht begonnen.
+1. **Bau-Ort** (wie EN2-17): Dieser Nachtrag, HB-MS und HB-MK (privat, nur lesen), KF, `fragen-xander-9.md`. Für den MK10-Einbau das Wellen-Paket aus der App (privat neben den Handbüchern). Fehlt etwas, wird das Paket bzw. der Abschnitt nicht begonnen.
 2. **Rollout** (N2 G.8): MK1 `max_format` 5, erst wenn MK0 ausgeliefert ist. Jedes Paket hebt `max_app`. Alles nur mit Xanders ausdrücklichem Okay je Schritt, nie im Klassenzimmer-Projekt, nie am Webseiten-Repo (EN2-32).
 3. **Zwischenstände** nach EN3-17 auf die Artifact-Adresse, die Pages-Seite und den githack-Spiegel (EN2-15).
 4. **CHANGES** je Paket: Messwerte der Abnahme, Node- und Chromium-CPU (als Vielfaches der VA-Stimme, dazu absolut), Größe, Startzeit (ab 4,5 MB Pflicht), Fach-Prüfung, iPhone-Punkte, Geräte-Abgleich (wenn schon da), Lücken, der Vorgänger-Stand (Version) für alle „bitgleich“-Abnahmen. Liegt ein MK-Paket > 50 % über seinem Budget, nennt CHANGES das mit einem Schlankheits-Vorschlag (N2 §15.3-Regel).
-5. **Werksnamen privat:** Die Werksnamen-Listen (EN3-07) liegen nur in `scratchpad/manuals/werksnamen.local.json`. `wip-push.sh` und die Auslieferung kopieren sie nie. Eine Prüfung sucht 3 Werksnamen als Stichprobe in `bau/tests/` und im Repo (0 Treffer). Ob diese Spec selbst (mit Tabellen aus den Handbüchern) im öffentlichen Repo liegen darf, entscheidet **H-12**; sie liegt schon in `origin/arbeitsstand` (Commit e8e8fa1). Bis zur Antwort wird sie nicht neu ins öffentliche Repo kopiert.
+5. **Werksnamen privat:** Die Werksnamen-Listen (EN3-07) liegen nur in `scratchpad/manuals/werksnamen.local.json`. `wip-push.sh` und die Auslieferung kopieren sie nie. Eine Prüfung sucht 3 Werksnamen als Stichprobe in `bau/tests/` und im Repo (0 Treffer). Ebenso privat bleiben das Wellen-Paket aus MK10 und alle Aufnahmen. **Diese Spec** bleibt im Repo gesichert, wie bisher in `origin/arbeitsstand` (Xanders Regel „nie Arbeit verlieren“, 25.10.; frühere Frage H-12 entfällt): Sie enthält nur Parameter-Fakten (Namen, Bereiche, Seitenangaben), keine Textpassagen aus den Handbüchern.
 
 ---
 
@@ -1814,8 +1950,8 @@ Die Pakete nach der MK-Gruppe (V2a′, V2f, VL, V7a, VC2a, VS4 …) bekommen ihr
 | G-MK2 | MK6 | FP-DSP | FP-SONG |
 | G-MK2 | MK7 ● | FP-DSP | FP-IPHONE, FP-SICHER |
 | G-MK2 | MK8 ● | FP-KLANG | FP-TOUCH |
-| G-MK3 | MK9 ● | FP-SICHER | FP-DSP |
-| G-MK3 | MK10 | FP-DSP | FP-SICHER |
+| – | MK9 ● (zurückgestellt; erst beim Bau) | FP-SICHER | FP-DSP |
+| G-MK3 | MK10 | FP-DSP | FP-IPHONE, FP-SICHER |
 | G-MK4 | MK11 | FP-DSP | FP-IPHONE |
 | G-MK4 | MK12 | FP-DSP | FP-KLANG |
 | G-MK4 | MK13 ● | FP-IPHONE | FP-DSP |
@@ -1829,7 +1965,9 @@ Zusätzlich prüft **FP-DSP in jedem MK-Paket**:
 - gefaltete Energie nur nach B.6 Nr. 12;
 - Worklet-ASCII.
 
-**FP-SICHER** prüft in MK0, MK1, MK7, MK9 und MK10 das Markenwort-Verbot (B.6 Nr. 9 a und b) und die Upload-Wege, ab MK9 auch EN3-08a und MK-R2.
+**FP-SICHER** prüft in MK0, MK1, MK7 und MK10 (und in MK9, falls es gebaut wird) das Markenwort-Verbot (B.6 Nr. 9 a, b und c: genau eine Fundstelle „MS 2000“, kein Logo, keine Korg-Schrift) und die Upload-Wege; in MK10 zusätzlich, dass nur die gerechneten Wellen eingebaut werden und keine Aufnahme die App verlässt; ab MK9 auch EN3-08a und MK-R2.
+
+**FP-TOUCH** prüft in jedem MK-Paket mit Bedienfeld-Änderung M-SKIZZE (B.6 Nr. 5), die Trefferflächen ≥ 44 × 44 und die Bildschirmfotos gegen die Referenz-Skizze (B.3).
 
 ---
 
@@ -1838,18 +1976,20 @@ Zusätzlich prüft **FP-DSP in jedem MK-Paket**:
 1. **VK** (N1 A.10), Punkte 5–6 (Osz.-FM, Ringmod): dürfen den AM-Code (PM-Pfad aus MK2, Ringmodulator aus MK1) mitbenutzen, statt neu zu bauen. Die Abnahmen VK-06, VK-07 bleiben.
 2. **VK2** (N2 D.6.4), Punkte 1–2 (Phaser, Flanger als Spur-Effekt): dürfen die Formeln (W-31) und die Prüfskripte aus MK4 mitnutzen. Der Effektkern von MK4 sitzt aber im AM-Zweig des Worklets. VK2 braucht einen eigenen nativen oder Spur-Worklet-Einschub (`fx.phaser`, `fx.flanger`, `fx.crush`), der auch für Drums und ohne AudioWorklet geht (FX-Block „native Web Audio nodes only“, Z. 9423; `buildChain` Z. 12013). Die Abnahme bleibt.
 3. **VI2a** („Arp mit ZUFALL“): Der Arp-Kern aus MK5 ist engine-frei gebaut. VI2a entscheidet, ob es ihn für andere Engines nutzt.
-4. **MOD-R1/PAD-R1: V5d, V5b/c, V6a, V1d, VC4** (Vorgabe H-9 = ja, EN3-18). **Umfang und Abnahme ändern sich:** V5d-01 deckt auch die `mk`-Pfade beider Timbres mit neuen DST-Nummern ab (heute fest bis `NDST` 22, Z. 3560–3561); V5b/c nehmen die AM-Pfade in Stränge und LOCK auf; V6a interpoliert Ganzzahl-Pfade und schaltet Listen am Ende des Bereichs (Nr. 5); V1d-02 nimmt AM als Pad-Quelle auf; VC4-02 nimmt das AM-Schema auf (Eingabe „Pfade aus MODT“). Mehrbedarf in N2 E.4 (Schätzung): V5d +2 h/+6 KB, V6a +1 h/+2 KB, V5b/c +0,5 h/+1 KB, V1d +1 h/+2 KB, VC4 +0,5 h/+1 KB, zusammen ≈ +5 h und +12 KB. Sagt Xander nein, bleibt AM eine benannte Ausnahme zu MOD-R1/PAD-R1 (I4) und moduliert nur über PATCH und SEQ; dann entfällt der Mehrbedarf.
-5. **V6a** (Klangzustände/Morph, nur bei H-9 = ja): AM-Werte werden als Ganzzahlen interpoliert. Listen und Schalter wechseln am Ende des Bereichs (KZ3).
+4. **MOD-R1/PAD-R1: V5d, V5b/c, V6a, V1d, VC4** (H-9 = ja, entschieden 25.10.; EN3-18). **Umfang und Abnahme ändern sich:** V5d-01 deckt auch die `mk`-Pfade beider Timbres mit neuen DST-Nummern ab (heute fest bis `NDST` 22, Z. 3560–3561); V5b/c nehmen die AM-Pfade in Stränge und LOCK auf; V6a interpoliert Ganzzahl-Pfade und schaltet Listen am Ende des Bereichs (Nr. 5); V1d-02 nimmt AM als Pad-Quelle auf; VC4-02 nimmt das AM-Schema auf (Eingabe „Pfade aus MODT“). Mehrbedarf in N2 E.4 (Schätzung): V5d +2 h/+6 KB, V6a +1 h/+2 KB, V5b/c +0,5 h/+1 KB, V1d +1 h/+2 KB, VC4 +0,5 h/+1 KB, zusammen ≈ +5 h und +12 KB. (Die Rev.-1-Ausnahme für den Fall „nein“ entfällt, weil Xander ja gesagt hat.)
+5. **V6a** (Klangzustände/Morph; H-9 = ja): AM-Werte werden als Ganzzahlen interpoliert. Listen und Schalter wechseln am Ende des Bereichs (KZ3).
 6. **V7a** (Mix): Der Eingangs-Abgriff der AM-Spuren (vor Vol/Pan, MK7) behält nach dem Umzug des Faders in `track.mix` seine Bedeutung; „Quelle nur als Eingang“ trennt weiter `post` von Master und Sends.
-7. **VS3, VS4**: Version nach E.4. Der Vocoder (MK7) speichert keine Takes. VS3 und VS4 nutzen den gemeinsamen Mikrofon-Abgriff aus MK7; ist VS3 vorher gebaut, stellt MK7 es darauf um (MK7-14). Mit VS3 kann der Modulator später ein Take sein, das ist nicht im Plan.
-8. **N2 E.4**: MK0 = 4.8.1; die Versionen nach MK13 ab 4.22.0 (E.4 oben). Die Größen-Prognose ändert sich nach E.3 → H-1; SL1 (E.3a) kommt als Paket dazu.
+7. **VS3, VS4**: Version nach E.4. Der Vocoder (MK7) speichert keine Takes. VS3 und VS4 nutzen den gemeinsamen Mikrofon-Abgriff aus MK7 (wie die Aufnahme-Seite aus MK10); ist VS3 vorher gebaut, stellt MK7 es darauf um (MK7-14). Mit VS3 kann der Modulator später ein Take sein, das ist nicht im Plan.
+8. **N2 E.4**: MK0 = 4.8.1; die Versionen nach MK13 ab 4.21.0 (E.4 oben; MK9 zurückgestellt). Die Größen-Prognose ändert sich nach E.3 → H-1; SL1 (E.3a) kommt als Paket dazu (H-1 = b).
 9. **Tabellen-Bau (Spec §10.1; V8a, V4e, V9a):** Der gemeinsame, DOM-freie Tabellen-Bau `mkTables` aus MK2 (Häppchen ≤ 8 ms, MKW-Tabelle im `AudioWorkletGlobalScope`, Kopie je Knoten als Rückfall) ist der Bau nach §10.1. V8a, V4e (statt „aus dem Tabellen-Bau von V8a“, N2 K2-40) und V9a nutzen ihn. Der Tabellenspeicher wird zusammen geprüft: MK2-08 ≤ 16 MB plus der V8a-Pool ≈ 8 MB. `eng 2` bleibt die Tabellen-Engine von V8a; AM ist `eng 3`.
-10. **MK-R2 (EN3-19): VO3, VO4a–c, VC2b, VC2c, VC3, VC3b, VC4** (auch `sample` und `room.sendToClaudeSession`): rufen in jedem Weg vom Gerät weg `mkLocalStrip` auf. **Neue Abnahme-Zeile je Paket** (FP-SICHER): Ein 🔒-Sound mit Marker-Werten ergibt 0 Treffer im Mitschnitt aller Requests und Frames.
+10. **MK-R2 (EN3-19): VO3, VO4a–c, VC2b, VC2c, VC3, VC3b, VC4** (auch `sample` und `room.sendToClaudeSession`): **nur, wenn sie nach einem gebauten MK9 kommen** (MK9 ist zurückgestellt), rufen sie in jedem Weg vom Gerät weg `mkLocalStrip` auf, mit der Abnahme-Zeile (FP-SICHER): Ein 🔒-Sound mit Marker-Werten ergibt 0 Treffer im Mitschnitt aller Requests und Frames. Vor MK9 gibt es keine 🔒-Sounds und keine Pflicht; ein später gebautes MK9 rüstet die dann vorhandenen Wege selbst nach.
 11. **Vocoder und Formant (Spec §18, N2 EN2-26, D.9):** MK7 liefert den Vocoder der VI-Stufe E; §18 behält nur „Vocoder für andere Engines“. Der Formant VOKAL aus §18 und der FM-FORMANT-Operator nutzen W-44 (Vokal-Quelle aus MK7, Oszillator aus MK12).
 12. **V9d** (Resynthese, Quellen DATEI, Original lokal): nutzt den WAV/AIFF-Leser und den lokalen Speicher (eigene IndexedDB-Datenbank) aus MK10, statt sie neu zu bauen.
-13. **VI1a** (Instrument-Vorlagen, Front-Rahmen): baut auf dem Sektionsraster und `k6` aus MK1 auf, keine zweite Rasterform.
+13. **VI1a** (Instrument-Vorlagen, Front-Rahmen): nutzt die Bedienfeld-Bausteine aus MK1 (Kappen-Regler, Drehschalter mit Auswahl-Liste, LED-Tasten, 7-Segment-Anzeige, Holzwangen; B.3), keine zweite Bauart derselben Elemente. Das Sektionsraster und `k6` der Rev. 1 gibt es nicht mehr.
 14. **V8a, V9a, V9b, V9d′** (Engines `mask`, `add`, `body`, `resyn`): brauchen keinen Formatsprung; MK0 hält unbekannte Engines undurchsichtig (EN3-04).
-15. **V10P, V10d, VI3** (Geräte im ⓘ nach N2 D.1 Nr. 4): Die Markenwort-Prüfung B.6 Nr. 9 (a) gilt nur im AM-Teil, (b) über die ganze Datei nur für microKORG, MS2000, RADIAS, DWGS. Diese Pakete scheitern daran nicht.
+15. **V10P, V10d, VI3** (Geräte im ⓘ nach N2 D.1 Nr. 4): Die Markenwort-Prüfung B.6 Nr. 9 (a) gilt nur im AM-Teil, (b) über die ganze Datei nur für microKORG, RADIAS, DWGS und jede Schreibung von „MS 2000“ außer der einen Konstante `MK_LABEL`. Diese Pakete scheitern daran nicht, dürfen aber den Modellnamen MS2000 nicht im ⓘ nennen.
+16. **Tastatur und Spielfeld (`#kbArea`):** Bei AM-Spuren sitzen BEND- und MOD-Rad links in der Tastatur-Zeile (MK1). Jedes spätere Paket, das `#kbArea` umbaut (z. B. Pads, Akkord-Tasten, Instrument-Vorlagen), behält diesen Platz und die Regel „nur bei AM-Spuren“; seine M-PLATZ-Prüfung läuft auch mit einer AM-Spur.
+17. **Engine-Kopf (alle Pakete mit Blattkopf):** Die Engine-Wahl zeigt „MS 2000“ aus `MK_LABEL`; wer den Kopf ändert, prüft das Breiten-Budget aus B.3 Zeile 1 mit dieser Beschriftung.
 
 ---
 
@@ -1874,45 +2014,36 @@ Zusätzlich prüft **FP-DSP in jedem MK-Paket**:
   - `importProject`-Warnungen, `APP_CODE`, `spawnVoice`, `LOOKAHEAD`, `importSyx`, Mikrofon-Worklets
   - Suche nach Markenwörtern (0 Treffer)
 
+**Zusätzlich gelesen für Rev. 2 (25.10.2026):** HB-MK S. 2–3 (Vorderseite, Bedienelemente), S. 8–14 (Programme, Performance Edit, Step-Arp, Edit Sync, Solo), Parameter-Liste und SHIFT-Funktionsliste (PDF 78). App 4.6.0: Raster `#app` je Ausrichtung (Z. 57–90), `#kbArea` (Z. 3494), `tr.kbOct` (Z. 11491, 18917), `ENGINE_LABEL` (Z. 11162), `sheetFrame` (Z. 20260).
+
 **Eigene Rechnungen:** Größen-Prognose E.3 (Python über die Budgets aus N2 E.4 und die Dateigröße 4.6.0; Rev. 1 neu mit Reihenfolge N3.0.1 Nr. 6 und den Faktoren ×1,3/×1,5, `scratchpad/rev1-tools/size2.py`). Seitenzuordnung der Handbuch-Texte (Seitenumbrüche im Text gezählt, gedruckte Seite = PDF − 6; Hilfsdateien danach gelöscht).
 
-**Nicht möglich:** RADIAS-Handbuch (Xander: nicht nötig). Korg „MIDI Implementation“ (nicht im Handbuch; Tor MK9-T). Kein Klang angehört, nichts am iPhone gemessen, kein Web-Abruf. Im Supabase-Projekt und auf GitHub wurde nichts gelesen oder geändert.
+**Nicht möglich:** RADIAS-Handbuch (Xander: nicht nötig). Korg „MIDI Implementation“ (nicht im Handbuch; Tor MK9-T). Kein Foto der Vorderseite (die Referenz-Skizze ist eine eigene Zeichnung, Lage [W]). Kein AG06-Handbuch (Schalterlage am Gerät prüfen) und keine Prüfung der GarageBand-Menünamen. Kein Klang angehört, nichts am iPhone gemessen, kein Web-Abruf. Im Supabase-Projekt und auf GitHub wurde nichts gelesen oder geändert.
 
 ---
 
-## Teil H — Offene Fragen an Xander (nur echte Entscheidungen; die Vorgabe gilt, bis du antwortest)
+## Teil H — Fragen an Xander: Entscheidungen vom 25.10. und neue Fragen
 
-- **H-1 Größe.** Die gebauten Pakete waren im Mittel 1,5-mal so groß wie geplant. Rechnet man so weiter, wird die App mit dem microKORG-Teil am Ende ≈ 7,0 MB groß (nach Plan ≈ 5,5 MB, untere Schätzung ≈ 6,4 MB; E.3). Die Grenze von 5,0 MB kommt dann nicht erst am Ende, sondern **mitten im Plan**, etwa bei V8b; 4,5 MB schon etwa bei V6a. Die MK-Pakete selbst bringen ≈ +0,46 MB (mit Faktor ≈ +0,7 MB). Zwei Wege:
-  - (a) Die Grenze heben, dann auf mindestens 7,1 MB (bei der unteren Schätzung 6,5 MB). Die Startzeit bleibt der Wächter.
-  - (b) Das Schlankheits-Paket **SL1** einschieben (E.3a, 5–7 h), sobald die Startzeit-Prüfung scheitert, spätestens bei 4,5 MB (etwa bei V6a). Es liefert selten Gebrauchtes gepackt und entpackt es erst bei Bedarf; für mehr als 1 MB Ersparnis wird auch der Haupt-Code gepackt.
+### H.1 Entschieden (Xander, 25.10.; verbindlich)
 
-  *Vorgabe: (b).*
-- **H-2 Deine Wellen-Aufnahmen.** Sollen die daraus gerechneten Wellen nur auf deinem Gerät bleiben, oder in die App eingebaut werden, sodass alle (auch Freunde im Paar-Raum) sie hören? Eingebaut wären es Korg-Daten in einer öffentlichen App, die Lizenz ist ungeklärt (wie bei den DX7-Werksklängen, EN2-11). *Vorgabe: nur auf deinem Gerät.*
-- **H-3 Wie viele Werksklänge?**
-  - 64 (8 je Genre auf Seite A; Seite B = deine eigenen Sounds), oder
-  - 128 wie am microKORG (16 je Genre). Das kostet +8–9 h und +20 KB.
+- **H-1 Größe → (b).** Das Schlankheits-Paket **SL1** (E.3a) kommt, sobald die Startzeit-Prüfung scheitert, spätestens bei 4,5 MB (mit ×1,5 etwa bei V5d). Mit Rev. 2 endet der Plan bei ≈ 7,0 MB (×1,5), nach Plan ≈ 5,5 MB, untere Schätzung ≈ 6,4 MB (E.3); die 5,0 MB fallen mit ×1,5 etwa bei V8a. Die MK-Pakete selbst bringen ≈ +0,52 MB (mit Faktor ≈ +0,8 MB).
+- **H-2 Deine Wellen-Aufnahmen → eingebaut.** Die aus deinen Aufnahmen gerechneten Wellen kommen in die App, alle hören sie, auch im Paar-Raum (MK10, +80 KB mit der Aufnahme-Seite). Dir wurde gesagt, dass die Lizenz ungeklärt ist; du hast trotzdem „einbauen“ gewählt. Kein Korg-Name, kein Logo, keine Korg-Wörter in der App; die Wellen-Daten selbst sind erlaubt (EN3-09). Die Aufnahmen bleiben auf deinem iPhone.
+- **H-3 Werksklänge → 64** (8 je Genre auf Seite A; Seite B = deine eigenen Sounds).
+- **H-4 Name → „MS 2000“** auf dem Knopf neben VA │ FM │ WT (Ersatz wäre „MS 2K“ gewesen). Dir wurde gesagt, dass MS2000 ein Modellname von Korg ist (ein Risiko nur, wenn die App verkauft würde). Genau diese Beschriftung ist erlaubt; Korg, microKORG, RADIAS, DWGS, ein Korg-Logo oder Korg-Schrift bleiben verboten (EN3-05). Intern bleibt die Kennung `mk`. Der **Platz** im schmalen Hochformat ist nicht eigens beantwortet → neue Frage H-13.
+- **H-5 Bend- und Mod-Rad → sichtbare Räder.** BEND und MOD sitzen links der Tasten, sichtbar und mit dem Finger spielbar, wie am Original (B.3, MK1). Bend und Mod-Rad über MIDI gibt es nur als freiwillige Zugabe am Desktop, nie nötig (EN3-21).
+- **H-6 Eich-Aufnahmen → nein.** Abgleich nach Gehör.
+- **H-7 Import → zurückgestellt.** Du hast keinen Rechner, kein Editor-Programm, keine .syx/.prg-Dateien und arbeitest nur am iPhone; MIDI kennst du nicht, und Safari auf dem iPhone hat kein Web MIDI. MK9 ist zurückgestellt und steht außerhalb der Versionsfolge; kein Paket verlangt einen Rechner, MIDI oder eine Datei vom Rechner (EN3-21). Teil D ist nur fürs iPhone geschrieben.
+- **H-8 Aufnehmen mit Arpeggiator → gedrückte Tasten.** Der Arp spielt beim Abspielen neu; der MIDI-Mitschnitt enthält die klingenden Arp-Noten (MK5 Umfang 7).
+- **H-9 microKORG-Regler im App-Mod-System → ja** (≈ +5 h und +12 KB in V5d, V6a, V5c, V1d und VC4; Teil G Nr. 4).
+- **H-10 Spur als Vocoder-Quelle, ohne sie zu hören → mit Schalter** „Quelle nur als Eingang“ (MK7).
+- **H-11 Beide Timbres zugleich bearbeiten, Solo → ja.** Bedient wird beides jetzt wie am Original über die TIMBRE-Taste (Tipp T1 → T2 → beide; SHIFT + TIMBRE = Solo), statt über eigene Knöpfe (MK3); nichts davon wird gespeichert.
+- **Frühere Frage H-12 entfällt:** Die Spec bleibt im Repo gesichert, nach deiner Regel „nie Arbeit verlieren“; sie enthält nur Parameter-Fakten (E.5 Nr. 5).
 
-  *Vorgabe: 64.*
-- **H-4 Name und Platz der neuen Klangerzeugung.**
-  - **Name** in der Leiste VA │ FM │ WT │ ?. Er darf nicht nach Korg klingen. „AM“ wäre missverständlich: AM heißt sonst Amplitudenmodulation, die App zeigt schon „LFO AM“ beim DX-Import (Z. 7674), und die Engine hat selbst eine Ringmodulation. Vorschläge: „DUO“ (zwei Timbres), „XA“, „ANA“; „AM“ bleibt eine der Möglichkeiten. *Vorgabe: „DUO“.* Oder dein Wunsch.
-  - **Platz:** Im schmalen Hochformat (P2/P3) passt ein 4. Knopf nicht mehr neben den Spurnamen (die Knöpfe sind dort schon 28–34 px schmal). Vorschlag: dort ein Engine-Chip „VA ▾“ mit Auswahl-Liste statt der Knöpfe; P1 und Querformat behalten die Knöpfe, wo sie passen. Das ändert auch VA/FM/WT sichtbar. *Vorgabe: Chip nur dort, wo die Knöpfe nicht passen.*
-- **H-5 Bend- und Mod-Rad.** Die App hat keine Räder. Möglichkeiten:
-  - (a) zwei schmale Rad-Streifen neben der Tastatur (sichtbare Änderung am Spielfeld),
-  - (b) der Regler MOD-RAD im Feld; BEND wirkt ohne Rad nicht,
-  - (c) zusätzlich zu (b): Bend und Mod-Rad über den vorhandenen MIDI-Eingang, zum Beispiel von deinem microKORG (+0,5 h). Das geht in Chrome am Rechner und auf Android, nicht in Safari auf dem iPhone (dort gibt es kein Web MIDI). Nichts davon wird gespeichert.
+### H.2 Neu aus Rev. 2 (die Vorgabe gilt, bis du antwortest)
 
-  *Vorgabe: (b) + (c).*
-- **H-6 Eich-Aufnahmen (freiwillig).** Bei der Wellen-Aufnahme 15 min zusätzlich Filter-, Hüllkurven- und LFO-Töne aufnehmen (Teil D.6)? Dann richten sich diese Kurven nach deinem Gerät statt nach eigenen Annahmen (+2 h Bau). *Vorgabe: nein, Abgleich nach Gehör.*
-- **H-7 Import (für MK9).** Für den Bau brauchen wir Korgs Formatbeschreibung („MIDI Implementation“, öffentliches PDF von korg.com) oder drei Test-Programme von dir mit aufgeschriebenen Werten (Teil D.7). *Vorgabe: Der Orchestrator holt die Formatbeschreibung und hält sie privat wie die Handbücher.* Zum Benutzen des Imports brauchst du in jedem Fall .syx- oder .prg-Dateien. Dafür braucht es ein USB-MIDI-Interface und ein Editor- oder Librarian-Programm am Rechner (der microKORG hat nur 5-polige MIDI-Buchsen; das iPhone kann im Browser kein MIDI). Hast du das, oder schon solche Dateien?
-- **H-8 Aufnehmen mit Arpeggiator.**
-  - ● nimmt die **gedrückten Tasten** auf, und der Arp spielt beim Abspielen neu. Dann lassen sich Arp-Einstellungen später ändern.
-  - Oder ● nimmt die **Arp-Noten** fest auf, als einzeln bearbeitbare Noten.
-
-  Der MIDI-Mitschnitt enthält in jedem Fall, was klang, also auch die Arp-Noten (MK5 Umfang 7). *Vorgabe: gedrückte Tasten.*
-- **H-9 microKORG-Regler im App-Mod-System.** Später (V5d, V1d) kann man in der App jeden Regler modulieren und jede Engine als Drum-Stimme nutzen (dein Wunsch „jeder Regler modulierbar“). Sollen die ≈ 120 Regler der neuen Klangerzeugung dazugehören? Ja kostet ≈ +5 h und +12 KB in V5d, V6a, V5c, V1d und VC4. Nein: Sie moduliert nur über ihre eigenen PATCH- und SEQ-Wege. *Vorgabe: ja.*
-- **H-10 Spur als Vocoder-Quelle, ohne sie zu hören.** Steuert eine Spur (zum Beispiel ein Drum-Loop) den Vocoder, hört man sie sonst auch direkt. Vorschlag: im Eingangs-Menü ein neuer Schalter „Quelle nur als Eingang“ (sichtbar neu). Ohne Schalter geht es auch, indem du den Fader der Quelle auf 0 ziehst, weil der Abgriff vor dem Fader liegt. *Vorgabe: mit Schalter.*
-- **H-11 Beide Timbres zugleich bearbeiten, Solo.** Am microKORG bearbeitest du beide Timbres zugleich (TIMBRE SELECT halten) und hörst eins allein (Solo, HB-MK S. 14). Vorschlag: zwei neue Knöpfe in der SPIEL-Schalterzeile, [T1+2] und [◐ SOLO] (sichtbar neu, +1 h). Beides wird nicht gespeichert. *Vorgabe: ja.* Bei Nein fallen beide weg (dann in A.10).
-- **H-12 Diese Spec im öffentlichen Repo?** Die Spec enthält Fakten aus den Handbüchern (Parameterlisten, Wertebereiche, Seitenangaben, keine Textpassagen) und liegt schon im öffentlichen Repo (Zweig `arbeitsstand`). Soll sie dort bleiben oder künftig nur privat liegen? *Vorgabe: künftig nur privat; die vorhandene Kopie entfernt der Orchestrator nur mit deinem Okay.*
+- **H-13 Engine-Wahl im schmalen Hochformat.** Mit „MS 2000“ passen vier Knöpfe auf schmalen iPhones (P2/P3) und vielleicht schon auf deinem nicht mehr neben den Spurnamen. Vorschlag: dort ein Engine-Chip „MS 2000 ▾“ bzw. „VA ▾“ mit Auswahl-Liste statt der vier Knöpfe. Das ändert auch VA/FM/WT sichtbar. *Vorgabe: Knöpfe, wo sie passen („MS 2000“ notfalls zweizeilig); der Chip nur dort, wo nicht. Der Orchestrator zeigt dir den Chip vor dem Bau.*
+- **H-14 Was der microKORG nicht hat, wohin damit?** Das Bedienfeld zeigt genau die Vorderseite des Originals. Der MS2000 hat aber mehr (Priorität, Split, Stimmungen, Mod-Sequenzer, Filter-Anschlag, Gate). Vorschlag (B.3, EN3-20): Diese Werte liegen auf einer zweiten Ebene der 5 Regler, die man mit **SHIFT** einschaltet (wie die SHIFT-Taste am Gerät); STIMMUNG und SEQ kommen an die zwei Stellungen der EDIT-WAHL 2, die am Original GLOBAL und MIDI heißen (beides braucht die App nicht). VOLUME regelt die Lautstärke der Spur. Auf kleinen iPhones zeigt das Hochformat eine Hälfte des Bedienfelds auf einmal. *Vorgabe: so.*
+- **H-15 Wie kommt das Wellen-Paket zum Bau?** Nach der Aufnahme teilt die App eine kleine Datei (nur die gerechneten Wellen, ≤ 200 KB) über das Teilen-Blatt des iPhones. *Vorgabe: Du schickst sie als Datei im Chat mit dem Orchestrator in der Claude-App; geht das nicht, „In Dateien sichern“ (iCloud Drive), und du sagst Bescheid.*
 
 ---
 
@@ -2007,3 +2138,52 @@ Zusätzlich prüft **FP-DSP in jedem MK-Paket**:
 - **85** · build/minor · B.4 Tabellen, MK2, MK2-08: `mkTables` DOM-frei als eine Quelle für App und `mk-node.mjs`; portiert das V4a-Verfahren, teilt keinen Code mit `waveTab`.
 - **86** · build/minor · MK1-31, MK3-12, MK6-14, W-18, MK2-06, MK2 Umfang 3 (Gruppen-Tabelle), W-06 (Messung), MK1-14, MK10-11, MK8-04: fehlende Abnahmen ergänzt; Kriterien stehen jetzt in der Spec statt beim Builder.
 - **87** · build/minor · EN3-05, H-4: Namenskonflikt „AM“ benannt; Vorgabe „DUO“, Möglichkeiten „XA“, „ANA“, „AM“; „AM“ bleibt Arbeitsname im Text.
+
+---
+
+## Review-Protokoll (Rev. 2, 25.10., Xanders Entscheidungen)
+
+Grundlage: Xanders Antworten vom 25.10. auf Teil H (H-1 … H-12), verbindlich. Ausgangsstand ist die saubere Rev. 1 (`scratchpad/rev1-tools/n3-ms2000-vor-rev2.md.bak`, unverändert). Das Rev.-1-Protokoll oben bleibt als Geschichte stehen; wo es H-12, Variante „lokal“, `k6`, das Sektionsraster oder die Chips [T1+2]/[◐ SOLO] nennt, gilt jetzt diese Rev. 2. Summen: 13 Pakete im Plan (MK9 zurückgestellt), +510 KB, ≈ 100–115 h, Versionen 4.8.1 und 4.9.0–4.20.0 (MK10-Einbau mit Zwischennummer).
+
+- **1** · Kopf · Rev. 2; die Entscheidungen zu H-1 … H-11 sind verbindlich, für H-13 … H-15 gilt die Vorgabe.
+- **2** · Überblick · 13 Pakete + MK9 zurückgestellt, +510 KB, ≈ 100–115 h, Versionen bis 4.20.0; neue Punkte „Name und Aussehen“, „Nur iPhone“; MK10 mit Aufnahme in der App und Einbau; Größen nach E.3 neu.
+- **3** · N3.0.1 Nr. 2 und 3 · Präzisierung 25.10.: Bedienfeld „genau so“ wie das Original, Name „MS 2000“, eingebaute Wellen als Ausnahme von „keine Werksdaten“, Aufnahme am iPhone in der App.
+- **4** · N3.0.2 · kein Foto der Vorderseite; die Referenz-Skizze ist eine eigene Zeichnung nach HB-MK S. 2–3, S. 8–14 und PDF 78, Lage [W].
+- **5** · EN3-05 (Entscheidung 5, H-4) · „MS 2000“ als einzige erlaubte Beschriftung, genau einmal als `MK_LABEL`; Korg, microKORG, RADIAS, DWGS, jede andere Schreibung von MS 2000, Logo und Korg-Schrift verboten; interne Kennung bleibt `mk`; Hinweis auf den Korg-Modellnamen (Risiko nur bei Verkauf).
+- **6** · EN3-08, EN3-19 (Entscheidung 2) · gelten erst ab dem Bau von MK9; ein später gebautes MK9 rüstet alle dann vorhandenen Wege nach.
+- **7** · EN3-09 (Entscheidung 1, H-2) · Speicherwellen werden eingebaut; nur gerechnete Wellen, nie Roh-Aufnahmen; Lizenz ungeklärt, Xander entschied trotzdem.
+- **8** · EN3-13 · Bedienfeld als DOM/CSS ohne Bild-Dateien; Canvas 2D auch für die Pegelanzeige der Aufnahme-Seite.
+- **9** · EN3-14 · `MK_LABEL` im immer geladenen Teil; eingebaute Wellen in `sq-mk-src`; neuer Block `sq-mkrec-src` (Aufnahme-Seite, Leser, Analyse); Engine-Knopf und Filter heißen „MS 2000“.
+- **10** · EN3-17 · Zwischenstände nach MK10 Abschnitt 1 (damit Xander aufnehmen kann) und nach dem Einbau.
+- **11** · EN3-20 neu (Entscheidung 4) · Bedienfeld wie die Vorderseite des Originals; Ebene 1 = Belegung des Originals, Zusätze auf SHIFT-Ebene 2/3 und an den Stellungen GLOBAL/MIDI; Trefferflächen ≥ 44 × 44.
+- **12** · EN3-21 neu (Entscheidung 2, H-7) · nur iPhone, kein Rechner, kein MIDI, keine Datei vom Rechner; MK9 zurückgestellt; MIDI-Bend/CC1 nur freiwillig am Desktop.
+- **13** · EN3-11, EN3-18 (Entscheidung 6) · H-8 und H-9 von „Vorgabe“ auf „entschieden“.
+- **14** · N3.0.4 · Zeile Blatt-Rahmen (Bedienfeld-Bausteine neu), neue Zeile `#kbArea`/`tr.kbOct`, Mikrofon-Abgriff auch für MK10, MIDI-Eingang freiwillig, .syx-Weg zurückgestellt.
+- **15** · A.2, A.10, A.11 Nr. 4/7/8, A.12 Nr. 10 · Touch-Rad BEND, Räder statt MIDI, MS2000-Werte auf Ebene 2 bzw. STIMMUNG/SEQ, Programm-Wahl und SPIEL wie am Original, Import zurückgestellt.
+- **16** · B.1 (Entscheidung 4, H-5) · neuer Punkt „Räder“: Live-Werte je Spur, nicht gespeichert, MOD startet bei `p.mw`; `ENGINE_LABEL.mk = MK_LABEL`; INIT-Name „INIT MS 2000“; SHIFT + 3 = Init.
+- **17** · W-17, W-18 · Bend über das Touch-Rad (linear, Totzone ± 2 %, Rückfederung 80 ms), Mod-Rad als Rad-Wert mit Startwert `p.mw`.
+- **18** · B.3 neu geschrieben (Entscheidung 4) · Grundsatz, Logik, Rahmen mit Reitern [GERÄT] [FX], Referenz-Skizze, Zonen-Tabelle (L1 720 × 146 px), Bedienelemente-Tabelle, Drehschalter-Stellungen (11 + 11, Synth/Vocoder), Regler-Belegung Ebene 1 nach PDF 78 mit Ebene 2/3, SHIFT-Funktionen wie am Original, Zusatz-Ansichten (SCHRITTE, 16 BÄNDER, EIGENE), Räder, Material und Farben, Maße je Format (L1 ein Stück, P1 zwei Hälften, Halb-Ansicht auf kleinen iPhones), „MS 2000“ ein- oder zweizeilig, Chip nach H-13.
+- **19** · B.4 · Bedienfeld ohne Bilder, LEDs per Klasse, Tempo-LED ohne Zeichnen; Canvas für die Pegelanzeige.
+- **20** · B.5 · LCD-Hinweis mit „MS 2000“ aus `MK_LABEL`.
+- **21** · B.6 Nr. 3, Nr. 5, Nr. 9 · BEND-Ausnahme nur ohne bewegtes Rad; Trefferflächen ≥ 44 × 44 überall; neue Prüfung M-SKIZZE (Zonen-IoU ≥ 0,7, Reihenfolge, Bildschirmfotos); Markenprüfung (a) mit `sq-mkrec-src`, (b) genau 1 Treffer „MS 2000“, (c) kein Logo, keine neue Schrift, keine Bild-Daten.
+- **22** · B.7 · neue Test-Aufrufe `mkWheel`, `mkPanel`, `mkRecInfo`; `mkInfo().waves`.
+- **23** · MK1 (Entscheidungen 2, 4, 5) · Titel und Ziel mit „MS 2000“ und Bedienfeld wie das Original; Umfang 3 neu (alle Zonen, aktiv bzw. dunkel je Paket, Hochformat-Hälften); Umfang 8 Touch-Räder, MIDI freiwillig; Dauer 19–22 h in drei Abschnitten; +115 KB; MK1-01/03/16/19/20/21/26/27/31 angepasst; neu MK1-32 (Aussehen gegen die Referenz-Skizze), MK1-33 (Räder), MK1-34 (Bedien-Logik); Test `mk1-look.mjs`; iPhone-Punkte mit Sicht-Abgleich; Geräte-Abgleich des Bedienfelds; Risiken.
+- **24** · MK2 · Bend/Mod über die Räder; Stellungen PATCH 1–4 der EDIT-WAHL 2; OSZ-1-Matrix STEUER 1/2 wie am Original, Bedeutung in der LCD; MK2-10; iPhone.
+- **25** · MK3 (Entscheidungen 4, 6, H-11) · STIMME/STIMMUNG statt PROG; TIMBRE-Taste T1 → T2 → beide, SHIFT + TIMBRE = Solo, statt eigener Chips; Werkzeuge über SHIFT + 1/2/4; Zusatz-Ansicht EIGENE; 7,5–8,5 h, +33 KB; MK3-04/05/10/13; iPhone.
+- **26** · MK4 · Stellungen 5–7 der EDIT-WAHL 2; Anzeige wie am Original; iPhone.
+- **27** · MK5 · ARP-Taste mit Tempo-LED, LATCH als ARP-B-Regler, Schritt-Tasten an/blinkend/dunkel wie am Original; Schalterzeile entfällt; MK5-17; iPhone.
+- **28** · MK6 · Stellung SEQ (am Original MIDI) mit Ebene 2, Zusatz-Ansicht SCHRITTE, Ablauf von [● AUFN.]; 8–9 h, +36 KB; MK6-11; iPhone; 🔒 erst ab MK9.
+- **29** · MK7 · Quellen auf Ebene 2, LEDs E1/E2, Formant halten über TIMBRE/HALTEN, grüne Vocoder-Stellungen, Kanal-Paare und Zusatz-Ansicht 16 BÄNDER, SHIFT + 1/2 zum Zurücksetzen; 11–12 h, +52 KB; MK7-03/07/13; iPhone.
+- **30** · MK8 · Programm-Wahl über BANK, SEITE und Nummerntasten; Filter „MS 2000“; MK8-04 läuft nach dem Einbau neu; MK8-07/09; iPhone.
+- **31** · MK9 (Entscheidung 2, H-7) · zurückgestellt, außerhalb der Versionsfolge, nicht in den Summen; Status-Absatz; Tor (b) und Blatt D.7 entfallen.
+- **32** · MK10 neu geschrieben (Entscheidungen 1, 3) · Aufnahme-Seite in der App (AG06 über `getUserMedia`, Echo-/Rauschunterdrückung und AGC aus, spielt nichts, 67 geführte Schritte, Pegel-Anzeige, Auto-Stopp, Zuschnitt, Fortschritt gespeichert), Ersatzweg GarageBand-Dateien, sofort lokal hörbar, Wellen-Paket über das Teilen-Blatt, Einbau-Skript mit Datenblock ≤ 45 KB, zwei Bau-Abschnitte, Tor nur für den Einbau; 10,5–12 h, +80 KB; MK10-01/06/07/09/10/11 angepasst, neu MK10-12 (Aufnahme-Seite), MK10-13 (Paket), MK10-14 (Einbau); Export/Import zwischen Ursprüngen entfällt; Lizenz-Risiko benannt.
+- **33** · MK11, MK12, MK13 · Bedienung über MIXER/FILTER/F-HK/STIMME-Ebenen statt Rasterplätzen; Versionen 4.18.0, 4.19.0, 4.20.0; MK11-10, MK12-08, MK13-06; iPhone-Punkte.
+- **34** · Teil D neu (Entscheidung 3) · nur iPhone: microKORG L/MONO → AG06 Kanal 1 (Line) → USB → Kamera-Adapter mit Strom → iPhone; AG06-Schalter mit „Schalterlage am Gerät prüfen“; Aufnahme in der App als Vorgabe, GarageBand am iPhone als Ersatz; Abgabe über das Teilen-Blatt; alle Mac-/Rechner-Schritte gestrichen; D.6 und D.7 entfallen.
+- **35** · E.1 · Tabelle neu (MK9 zurückgestellt, MK10–MK13 vorgerückt, neue Stunden und KB), Summe 13 Pakete, +510 KB, ≈ 100–115 h; Zeile „Rev. 2 gegenüber Rev. 1“; Tore; Fach-Prüfung 13 ×; Gesamt ≈ 113–141 h.
+- **36** · E.2 Nr. 4 · Import zurückgestellt; MK10 Abschnitt 1 darf direkt nach MK7 vorgezogen werden.
+- **37** · E.3 · neu gerechnet: Planende 5,51 / 6,42 / 7,03 MB, nach MK13 3,13 / 3,33 / 3,46 MB, 4,5 MB bei V9e / V7d / V5d, 5,0 MB bei V10f / V9d′ / V8a; MK10 eingebaut mitgerechnet; Zeile „MK9, falls später“.
+- **38** · E.3a, E.4, E.5 (Entscheidung 6) · SL1 entschieden (H-1 = b), Auslöser ≈ V5d; Versionen nach der MK-Gruppe ab 4.21.0; Bau-Ort mit Wellen-Paket; die Spec bleibt im Repo gesichert, H-12 entfällt; Paket und Aufnahmen bleiben privat.
+- **39** · Teil F · MK9 nur, falls gebaut; MK10 mit FP-IPHONE; FP-SICHER mit „MS 2000“-Regel und Wellen-Einbau; FP-TOUCH prüft M-SKIZZE.
+- **40** · Teil G · Nr. 4/5 entschieden, Nr. 7 (Aufnahme-Seite nutzt den Abgriff), Nr. 8 (ab 4.21.0), Nr. 10 (MK-R2 erst nach MK9), Nr. 13 (VI1a nutzt die Bedienfeld-Bausteine), Nr. 15 (Markenprüfung mit „MS 2000“), neu Nr. 16 (Räder in `#kbArea`) und Nr. 17 (Engine-Kopf mit „MS 2000“).
+- **41** · Quellen · Rev.-2-Lektüre (HB-MK S. 2–3, S. 8–14, PDF 78; App-Raster, `#kbArea`, `tr.kbOct`) und Grenzen (kein Foto, kein AG06-Handbuch, GarageBand-Namen ungeprüft).
+- **42** · Teil H · H.1 mit den Entscheidungen H-1 … H-11 und dem Wegfall von H-12; H.2 neue Fragen H-13 (Engine-Chip im Hochformat), H-14 (wohin mit den MS2000-Zusätzen: SHIFT-Ebenen, Stellungen GLOBAL/MIDI, VOLUME, Halb-Ansicht), H-15 (Übergabeweg des Wellen-Pakets).

@@ -1,0 +1,12 @@
+import { openVp, mk, SETUP } from './v3-v2e-lib.mjs';
+const {b, p, errs, cdp} = await openVp('P1');
+const T = mk(p, cdp), {E} = T;
+await E(SETUP(true)); await E(() => window.SYNQUENZER.songView(true)); await p.waitForTimeout(300);
+await T.tapCv(6 * 36 + 10, 9);
+console.log(JSON.stringify(await T.info()));
+const r = await T.rect('#rangeBar [data-a="play"]'); console.log(r);
+console.log(await E(([x,y]) => { const e = document.elementFromPoint(x,y); return e.tagName + '.' + e.className + ' / ' + (e.closest('button')||{}).outerHTML; }, [r.x+r.w/2, r.y+r.h/2]));
+await T.tapSel('#rangeBar [data-a="play"]'); await p.waitForTimeout(400);
+console.log(JSON.stringify(await E(() => window.SYNQUENZER.runtime().song)));
+console.log(errs);
+await b.close();

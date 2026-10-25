@@ -63,7 +63,7 @@ await T.hold(i.canvas.x + 7 * 36 + 10, i.canvas.y + 9, 600, [i.canvas.x + 7 * 36
 check('Halten + Ziehen (V2e: noch kein Ablegen) → kein Blatt, nichts geändert', !(await T.pop()) && (await T.clips()) === clips0);
 
 // ---------- Marken-Blatt actions (each one undo, clips deep-equal, audible via the song)
-const openSheet = async bar => { await T.tapCv(bar * 36 + 10, 9); };
+const openSheet = async bar => { if ((await T.pop() || '').includes('msheet')) await T.tapSel('.msheet .ms-x'); await T.tapCv(bar * 36 + 10, 9); };
 let before = await T.proj(), n0 = (await E(() => window.SYNQUENZER.undoInfo())).n;
 await openSheet(3); await T.tapPop('×2');
 let s = await E(() => window.SYNQUENZER.song());
@@ -182,6 +182,8 @@ await p.fill('.pop.chpick .cp-in', 'Dm7'); await p.keyboard.press('Enter'); awai
 s = await E(() => window.SYNQUENZER.song());
 const at = bt => { let c = null; for (const x of s.carrier) { if (x.beat > bt + 1e-6) break; c = x.target; } return c ? c.name : 'O'; };
 check('N7S-38 Dm7 nur an dieser Stelle (T4), T13/T17 bleiben F', at(12) === 'Dm7' && at(48) === 'F' && at(64) === 'F', [at(12), at(48), at(64)]);
+i = await T.info(); const smk = await E(() => window.SYNQUENZER.songMarks().filter(m => m.part === 'P1').map(m => m.dev));
+check('N7S-38 die geänderte Stelle zeigt „STROPHE′“, die anderen nicht', i.marks.some(m => m.label === 'STROPHE′') && smk.join() === 'true,false,false', [i.marks.map(m => m.label), smk]);
 const tb = await T.toastBtn('Für alle');
 check('Toast [Für alle „Strophe“]', !!tb);
 const nB = (await E(() => window.SYNQUENZER.undoInfo())).n, projB = await T.proj();
@@ -238,6 +240,8 @@ await T.tapSel('#rangeBar [data-a="copy"]');
 s = await E(() => window.SYNQUENZER.song());
 check('⧉ Kopie →: T7 doppelt (bars 12), REFRAIN ab T9, Auswahl auf der Kopie', s.bars === 12 && s.marks.some(m => m.part === 'P2' && m.a === 8) && eq((await T.info()).sel, {a: 7, b: 7}), [s.bars, s.marks]);
 await E(() => window.SYNQUENZER.undo());
+check('Undo → deep-equal (Kopie)', (await T.proj()) === before);
+await E(() => window.SYNQUENZER.songSelect(6, 6));
 await T.tapSel('#rangeBar [data-a="del"]');
 s = await E(() => window.SYNQUENZER.song());
 check('✕ Takte löschen: T7 weg, REFRAIN ab T7, Leiste weg', s.bars === 10 && s.marks.some(m => m.part === 'P2' && m.a === 6) && !(await T.rect('#rangeBar')), s.marks);
@@ -278,18 +282,19 @@ s = await E(() => window.SYNQUENZER.song());
 check('Ersetzen: T7–10 = STROPHE, bars 11', s.bars === 11 && s.marks.some(m => m.part === 'P1' && m.a === 6), [s.bars, s.marks]);
 await E(() => window.SYNQUENZER.undo());
 // Abbrechen → nothing
-await T.tapCv(6 * 36 + 10, 9);
+await E(() => window.SYNQUENZER.songSelect(6, 6));
 await T.tapSel('#rangeBar [data-a="more"]'); await T.tapPop('Teil einsetzen'); await T.tapPop('Strophe');
 await T.tapPop('Abbrechen');
 check('Abbrechen → deep-equal, Vorschau weg', (await T.proj()) === before && (await T.grey(0, 0, 1, 1)) >= 0);
 // ⋯ → Leeren, Als Schleife
-await T.tapCv(6 * 36 + 10, 9);
+await E(() => window.SYNQUENZER.songSelect(6, 6));
 await T.tapSel('#rangeBar [data-a="more"]'); await T.tapPop('Als Schleife');
 s = await E(() => window.SYNQUENZER.song());
 check('⋯ Als Schleife → Schleife T7', s.loop.on && s.loop.a === 6 && s.loop.b === 7, s.loop);
 const lt = await E(() => document.querySelector('.sv-loop .v').textContent);
 check('SCHLEIFE-Taste zeigt „⟲ Takt 7 ▾“', lt === '⟲ Takt 7 ▾', lt);
 await E(() => window.SYNQUENZER.undo());
+await E(() => window.SYNQUENZER.songSelect(6, 6));
 await T.tapSel('#rangeBar [data-a="more"]'); await T.tapPop('Leeren');
 s = await E(() => window.SYNQUENZER.song());
 const stL = await E(STATES);
@@ -310,6 +315,7 @@ await p.waitForTimeout(200);
 const emp = await E(() => { const e = document.querySelector('.sv-empty'); return e && !e.hidden ? e.innerText : null; });
 check('Leerer Song: Hinweis „FANG TEIL … ziehen – oder ● SONG“ + [Kette aus Szenen …] + [＋ Teil einsetzen ▾]', emp && emp.includes('FANG TEIL') && emp.includes('Kette aus Szenen') && emp.includes('Teil einsetzen'), emp);
 const nE = (await E(() => window.SYNQUENZER.undoInfo())).n, pE = await T.proj();
+await T.info();
 await T.tapCv(3 * 36 + 18, 9);                     // bar 4 of the empty song
 pc = await T.pop();
 check('(a) Tipp auf Takt 4 im leeren Song → „Teil einsetzen bei Takt 4“', (pc || '').includes('plpick') && (await E(() => document.querySelector('.pop.plpick h4').textContent)) === 'Teil einsetzen bei Takt 4', pc);
@@ -323,7 +329,11 @@ lg = await E(() => window.SYNQUENZER.noteLog(300).filter(n => n.track === 0 || n
 await E(() => window.SYNQUENZER.songPlay(false)); await p.waitForTimeout(150);
 check('(a) hörbar: erste Noten bei Schlag 12, keine davor', lg.length && Math.min(...lg) >= 12 - .01 && lg.some(x => Math.abs(x - 12) < .01), lg);
 // behind the end with a gap: tap on the bar beyond the end (bar 9: T7 = end → gap of 2)
-await T.tapCv(9 * 36 + 18, 9);
+{ const i0 = await T.info(); const cx = i0.canvas.x + 200, cy = i0.canvas.y + 150;      // swipe left ~120 px (scroll, never an edit)
+  await T.touch('touchStart', cx, cy); for (let k = 1; k <= 8; k++) { await T.touch('touchMove', cx - k * 15, cy); await p.waitForTimeout(16); } await T.touch('touchEnd', cx - 120, cy); await p.waitForTimeout(900); }
+i = await T.info();
+check('Wischen rollt (V2e-02: kein Undo, nichts geändert)', i.x0 > 60 && (await E(() => window.SYNQUENZER.undoInfo())).n === nE + 1, i.x0);
+await T.tapCv(9 * 36 + 18 - i.x0, 9);
 await T.tapPop('Strophe');
 s = await E(() => window.SYNQUENZER.song());
 check('(a) hinter dem Ende bei Takt 10 → Lücke T8–9 leer, STROPHE T10–13', s.bars === 13 && s.marks.some(m => m.a === 9) && (await E(STATES)).slice(7, 9).every(r => r.every(x => x === -1)), [s.bars, s.marks]);

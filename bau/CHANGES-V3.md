@@ -3618,3 +3618,137 @@ Fähigkeiten-Summe unverändert (V2d′ deklariert keine Fähigkeit).
 3. Spur „Synth 2“ wählen (▾ im Blatt), Takte 4–5 gelb, [Ersetzen], NOTEN an, START, ein paar Töne spielen → die alten Synth-2-Noten
    schweigen, danach klingen nur deine; in der Clip-Ansicht ist der Szenen-Clip unverändert. [Overdub] → alt und neu zusammen.
 4. ↶ nimmt jede Aufnahme mit einem Tipp zurück.
+
+## V2e — Song-Ansicht: Teil-Marken in der Taktleiste, Marken-Blatt, Bereich-Leiste, Ersetzen/Einfügen-Blatt, Spurbank, Etikett = Spur · App 4.7.0
+
+Grundlage: Nachtrag 2 B.1 Nr. 4/5/7/9, B.4 (V2e), K2-25, K2-26, K2-28; `r7/song-delta.md` 5.2, 5.3, 6.1–6.5, 8.1, 12.2, 13
+(N7S-33 … N7S-40, N7S-26); Spec v3 V2e-02, V2e-07, V2e-11; Nachtrag 1 N2e-01/02; Xander 24.10. (a)–(c) aus `fragen-xander-9.md`.
+Neustart-Hinweis: Der Bau wurde unterbrochen; der halbe Stand im Arbeitsordner war vollständig (Marken, Blätter, Leiste,
+Transport) und wurde fertig geprüft, korrigiert und abgenommen – nichts neu gebaut.
+
+**Was gebaut ist**
+- **Keine neue Zeile** (B.1 Nr. 4): Song-Ansicht = Taktleiste, je Spur eine Zeile, AKKORDE, MELODIE. Keine TEIL-Zeile, kein ⊙, kein
+  „Spuren ▸“, keine Teil-Leiste im Hochformat (quer bleibt sie im Seitenfeld). Canvas wie V0a (P1 306 × 330,8, L1 392 × 207,4).
+- **Teil-Marken** (6.1): amber Band `#ffb22e` von x(a)+2 bis x(a+len)−2 mit dem Namen (fett, #111), ab 60 px ein Punkt in der
+  Teil-Farbe, „′“ für eine an dieser Stelle geänderte Marke, 1-Takt-Marke in Kurzform („STR“), in der laufenden Marke rechts „3/4“.
+  Die Taktnummern stehen davor, dahinter und dazwischen, nicht in der Marke. Gewählte Marke: weißer Rand 2 px, Spuren amber 7 %.
+- **Gesten** (6.2): Tipp auf eine Marke → gewählt + **Marken-Blatt**; zweiter Tipp → Takt-Auswahl in der Marke (die Marke zeigt
+  dann ihre Nummern, der Name rückt als Kurzform nach links); Halten 450 ms → angehoben (Haptik), Loslassen ohne Bewegung →
+  Marken-Blatt (Ziehen = V2e′); waagrechter Zug = Rollen, nie eine Änderung (V2e-02).
+- **Marken-Blatt** (6.3, K2-25; P1/P2 32 + 4 × 44 = 208 px, P3 252 px ab y 316 mit umbrechender Zeile 3, quer 116 px):
+  Kopf Name · Takte · Tonart · ✕; [▶ Ab hier] [×2] [×4] [◀] [▶]; [⧉ Kopie …] (danach den Ablage-Taktstrich antippen)
+  [⇄ Ersetzen durch ▾] (alle Teile und Szenen) [✕ Löschen] (der Rest rückt) [Nur Name weg]; [✎ Name] (Teil überall │ nur hier)
+  [Farbe ●] [Teil-Vorlage ›] [Auf alle n „Strophe“ übertragen] (nur bei ≥ 2 Marken); [● Neu aufnehmen …] (Start-Blatt mit dem
+  Bereich der Marke). Das Blatt lässt den Song darüber bedienbar. Undo-Arten nach 12.3 (`song`; Name überall/Farbe `part`;
+  Auf alle übertragen `group`).
+- **Bereich-Leiste** (6.3, K2-25): bei gelber Auswahl statt der Träger-Leiste in gleicher Höhe (P1 56 px; quer statt der
+  Träger-Anzeige im Seitenfeld): [▶ Ab hier] [● Aufnehmen …] [Als Teil …] [⧉ Kopie →] [✕ Takte löschen] [⋯]; ⋯ = Leeren, Teil
+  einsetzen ▾, Akkorde quantisieren …, Als Schleife. P3 nur Symbole, „Als Teil …“ unter ⋯. Passt ein Text nicht → Kurztext.
+  „Als Teil …“ (≤ 16 Takte) = Teil-Vorlage + Marke in einem Undo (`group`), Namens-Chips nach N7-R2. [▶ Ab hier] bei laufendem
+  Song springt am nächsten Taktstrich.
+- **Teil einsetzen / Ersetzen-Einfügen-Blatt** (5.2, Mockup P-4): Rückfrage nur, wenn ab der Stelle Inhalt liegt: [Takte n–m
+  ersetzen · „was dort ist, wird ersetzt – auch Melodie“] │ [Einfügen · „ab Takt n rückt alles L Takte nach hinten“] │ [Abbrechen],
+  nichts vorbelegt; solange es offen ist: amber Einfüge-Strich + künftige Marke gestrichelt. Wege: ⋯ › Teil einsetzen, Tipp hinter
+  dem Song-Ende, [＋ Teil einsetzen ▾] im leeren Song, Teil-Liste im Kette-Menü.
+- **Xander 24.10.** (a) Tipp auf eine Taktnummer hinter dem Ende (die Ansicht rollt jetzt 4 Takte über das Ende hinaus, die Nummern
+  laufen dort grau weiter) setzt den Teil genau dort; die Takte dazwischen bleiben leer (auch im leeren Song: „Strophe auf Takt 4,
+  Takte 1–3 leer“). (b) Das Kette-Menü (Szenen-Menü des Songs) listet die Teile, auch bei leerem Song (Tipp = ans Ende). (c) Nach
+  „Einfügen“/„Kopie“ gleitet alles rechts der Stelle sichtbar nach (220 ms, nur die Zeichnung, kein Bedienelement bewegt sich).
+- **Akkord in einer Marke** (8.1, N7-R10): gilt nur an dieser Stelle (die Marke zeigt „′“), Toast [Für alle „Strophe“] [↶] setzt ihn an
+  dieselbe Stelle aller Marken des Teils und in die Vorlage – ein Undo (`group`).
+- **Transport** (6.5, K2-26): [CLIPS ⇄][● ▾][▶ SONG][⟲ Song ▾][⏮ │ ↩ SONG] (+ [▲▼] wo nötig); [S4 ▾] wandert ins MELODIE-Etikett
+  (Melodie-Menü, erste Zeile „Spur: … ▾“). SCHLEIFE ▾ kennt **Teil** (Marke an der Abspielmarke, V2e-07), die Taste zeigt den
+  Marken-Namen bzw. „T3–6“.
+- **Spurbank** (6.5): [▲▼] 44 × 40 in der Transportzeile (P2) bzw. -spalte (P3, quer), fest je Viewport, mit Punkt, wenn auf der
+  verdeckten Seite ein Clip läuft; DRUMS, AKKORDE, MELODIE bleiben immer stehen.
+- **Etikett = Spur** (N7S-39): Spur-Etikett antippen wählt die Spur (Tastatur, NOTEN-Ziel im Start-Blatt), sie ist markiert.
+- Leerer Song: „Noch kein Song. FANG TEIL beim Spielen, dann den Teil in den Song ziehen – oder ● SONG.“ + [Kette aus Szenen …]
+  + [＋ Teil einsetzen ▾]. FOLGEN hält bei gelber Auswahl, gewählter Marke und offenem Blatt (N2e-02, 14.3).
+- Test-API: `svLayoutInfo()` (12.2, mit `marks`, `sel`, `pos`, `mark`, `canvas`), `openMarkSheet`, `placeAt`, `markChordAll`.
+- Hilfe (Menü › Hilfe): neue Zeilen TEIL-MARKEN, GELBE TAKTE, SPUR-NAMEN; SCHLEIFE nennt „Teil“.
+
+**Abnahme** (Chromium + CDP-Touch; Skripte in `dirigent-test/`)
+
+| ID | Ergebnis | Test |
+|---|---|---|
+| N7S-33 | ✓ Zeilen TAKT/Spuren/AKKORDE/MELODIE, kein TEIL/⊙/Spuren ▸/Teil-Leiste in P; Canvas P1 306 × 330,8; P1 8 × 38,9, P2 8 × 28,1, P3/L1/L2 Spurbank 7 × 28,7/27,3/25,9; Seite 1 = S1–S4, DR, AKK, MEL; 8 Spuren: P1 10 × 31,1 ohne Blättern, P2 Spurbank | acc, lay, extra |
+| N7S-34 | ✓ Marke a = 8, len 4 bei SV.x = 0: x0 290, x1 430; Mitte #ffb22e; Nummern 9–12 nicht gezeichnet, 8 und 13 schon; 1-Takt-Marke „STR“ | extra (W) |
+| N7S-35 | ✓ Tipp → weißer Rand (#f2f4f8) + Marken-Blatt; zweiter Tipp → Takt 5 gewählt, Nummern sichtbar | acc |
+| N7S-36 | ✓ Bereich-Leiste P1 56 px an y 482,8 = Träger-Leiste; P2/P3 gleich hoch wie dort die Träger-Leiste (52); M-ANSICHT ±0 px | acc, lay |
+| N7S-37 | ✓ Zellen-Tipp in der Marke ändert nur T4, Marke „STROPHE′“; [Auf alle 2 „Strophe“ übertragen] → kein ′, beide Stellen gleich, Undo `group`, Clips deep-equal | acc |
+| N7S-38 | ✓ Dm7 in T4 nur dort (T13/T17 bleiben F), nur diese Marke ′; [Für alle „Strophe“] → alle 3 Stellen + Vorlage (Am F→Dm7 C G), ein Undo `group`; hörbar: Träger bei T17 = Dm7 | acc |
+| N7S-39 | ✓ Etikett SYN 2 → `runtime().selected.track` = 1, markiert; Start-Blatt NOTEN zeigt Synth 2 | acc |
+| N7S-40 | ✓ M-PLATZ P1, P2, P3, L1, L2, W: Marken-Blatt, Bereich-Leiste, ⋯-Menü, Akkord-Quantisieren-Blatt, Start-Blatt, Ersetzen/Einfügen-Blatt im Bild, nichts abgeschnitten, kein waagrechtes Rollen, Treffer ≥ 44 × 44 (P) / ≥ 40 × 36 (L) | lay (82/82) |
+| N7S-26 | ✓ MIDI-Marker FF 06 = Name der Marke (auch eigener Name „Outro“) | extra, v2d-data |
+| V2e-02 | ✓ Wischen rollt (kein Undo, nichts geändert); Halten + Ziehen → nichts (V2e: noch kein Ablegen) | acc |
+| V2e-07 | ✓ SCHLEIFE ▾ [Teil] → Schleife = Marke STROPHE T3–6, Taste „⟲ Strophe ▾“; ⋯ Als Schleife → T7 | acc |
+| N2e-01/02 | ✓ ▶ oben zeigt SONG; FOLGEN hält bei gelber Auswahl (`viewState('song')` hold/sel) | acc |
+| Marken-Blatt | ✓ ×2 (bars 11 → 15, hörbar Bass 45 in der Kopie), ◀ tauscht mit INTRO, Löschen (Rest rückt), Nur Name weg (Inhalt deep-equal), Name Teil überall (`part`) / nur hier (`song`), Farbe (`part`), Teil-Vorlage ›, ● Neu aufnehmen → „AUFNAHME TAKTE 3–6“, ⧉ Kopie am Taktstrich 6; je ein Undo, Undo deep-equal | acc |
+| Bereich-Leiste | ✓ ▶ Ab hier (gestoppt: ab T7; laufend: Sprung am nächsten Taktstrich), ⧉ Kopie →, ✕ Takte löschen, Als Teil „Break“ (Undo `group`, Kurzform „BRK“), ⋯ Teil einsetzen → Blatt → Einfügen/Ersetzen/Abbrechen, Leeren, Als Schleife | acc, extra |
+| Xander (a)–(c) | ✓ leerer Song: Takt 4 → STROPHE T4–7, T1–3 leer, hörbar erste Noten bei Schlag 12; hinter dem Ende Takt 10 → T8–9 leer; Kette-Menü listet Teile, REFRAIN in den leeren Song; Einfügen über das Blatt = Daten wie `placePart(STROPHE, 2, 'insert')` (N7S-19) | acc |
+| hörbar | ✓ Master-Mitschnitt (AudioWorklet): [Leeren] T3–4 → −120 dB statt −23 dB, übrige Takte ±0,3 dB; [Löschen] → ab T3 klingt, was vorher ab T7 klang (±3 dB); [×2] → T7–10 wie T3–6; [Nur Name weg] ±1 dB; M-KLICK 2. Differenz 1,04/0,88/0,80 ≤ 1,5 × 0,90 | audio (7/7) |
+| Aufnahme | ✓ Während ● SONG öffnet ein Tipp auf eine Marke kein Blatt (Hinweis „Erst die Aufnahme beenden“) | extra |
+| Rundweg | ✓ Speichern/Laden: Marken samt eigenem Namen deep-equal; Auswahl/Marke erzeugen keinen Undo-Eintrag | extra |
+
+Ergebnis: `v3-v2e-acc` 90/90, `v3-v2e-lay` 82/82, `v3-v2e-extra` 14/14, `v3-v2e-audio` 7/7; Smoke ohne Fehler (`v3-v2e-smoke.png`).
+Bilder: `v3-v2e-lay-{P1,P2,P3,L1,L2,W}-{a…f}.png` (a Song, b Marken-Blatt, c Bereich-Leiste, d Quantisieren, e Start-Blatt,
+f Ersetzen/Einfügen-Blatt), `v3-v2e-demo-{P1,L1}.png` (leerer Song).
+
+**Regression** (`v3-v2e-reg.sh` → `dirigent-test/v3-v2e-reg/`): `v3-v2d2-rec` 65/65, `-audio` 6/6, `v3-v2d-data` 51/51, `-fang` 39/39,
+`-extra` 8/8, `-audio` 2/2, `-reg` 9/9, `-lay` 25/25, `v3-v2c2-click` 3/3, `v3-qa-grp-undo` 11/11; `v3-qa-reg-song`, `-loop`, `-midi2`,
+`-part`, `-part2`, `-part3`, `-fang2`, `-ui`, `-core` wie beim V2d′-Lauf; `-lay` nur die gewollten Änderungen der Song-Transportzeile
+(SCHLEIFE-Wert, ● ▾, [▲▼], [S4 ▾] im MELODIE-Etikett) und Spielstand-Zufall eines laufenden 2-Takt-Clips; `-perf` 59,9 fps, 0 longtasks;
+rot nur wie bisher erwartbar: `v3-v2c2-onescale` V2c′-06 (Version) und `v3-vs2-reg` „Demo gleich V2d-fix“ (Unterschied aus V2c′).
+
+**Fach-Prüfung (Teil J: FP-SONG Haupt-, FP-TOUCH Zweit-Blick)** – zweiter Durchgang über Diff, Testausgaben und Bilder auf mich selbst
+angewandt (kein getrennter Agent verfügbar). **7 Befunde, alle behoben:**
+1. FP-TOUCH: Ein Toast mit [Rückgängig] dockte 5 s **über der Bereich-Leiste** (nach ⧉ Kopie konnte man 5 s nicht weitertippen) →
+   bei sichtbarer Bereich-Leiste dockt er auf der Spur-Zeile (deren ↶ dasselbe tut).
+2. FP-TOUCH: Akkord-Quantisieren-Blatt: Raster-/Bereich-Chips 40 px hoch (P verlangt 44) → 44 px.
+3. FP-TOUCH: Namensfeld (✎ Name, Als Teil) 15 px Schrift → 16 px (kein iOS-Zoom beim Fokus, wie `.cp-in`).
+4. FP-SONG: Marken-Blatt, ⧉ Kopie, ▶ Ab hier und „Teil einsetzen hinter dem Ende“ waren **während ● SONG** möglich und hätten den
+   Song unter der laufenden Aufnahme umgebaut → gesperrt mit Hinweis „Erst die Aufnahme beenden (●)“ (Taktnummern wählen weiter).
+5. FP-SONG: Hinter dem Song-Ende ließ sich nur bis 1 Takt rollen – Xanders (a) „auf Takt 10, dazwischen leer“ war nicht erreichbar →
+   die Ansicht rollt 4 Takte über das Ende.
+6. FP-SONG (Test): ✕ Takte löschen nach Undo einer Kopie arbeitete auf der alten Auswahl (die Kopie) – richtig so (Auswahl ist
+   Ansicht, kein Undo); Test setzt die Auswahl neu. Kein App-Fehler, notiert.
+7. FP-IPHONE-Nebenblick: `getComputedStyle` je Bild für die Zahlen-Schrift der Marken → einmal gemerkt.
+Geprüft ohne Befund: `S.tracks[].clips` deep-equal nach jeder Aktion; ein Undo je Geste und Art nach 12.3; Speichern/Laden; Harmonie-Kern
+unverändert (nur Song-Daten, `Harmony` nicht angefasst); MIDI-Marker; FOLGEN; Teil′ wird je Song-/Teil-Version einmal gerechnet, nie
+je Bild; Zeichnen der Marken O(sichtbare Takte × Marken).
+
+**Abweichungen (begründet)**
+1. **Transport-Feld ▦│◧** (Glas-Umschalter) ist V2e′; an seiner Stelle steht wie bisher [⏮ │ ↩ SONG] (44 px). SCHLEIFE füllt den
+   Rest der Zeile (P1 98 statt 86 px, P2 72 statt 56 px), damit rechts keine Lücke bleibt.
+2. **Transport-Spalte P3/quer:** [● ▾][▶] und [⏮][▲▼] teilen sich wie in 6.5 eine Zeile → je 29,5 (P3) bzw. 36,5 px (L) breit, dafür
+   52 bzw. 47–50 px hoch (vorher 41/39); unter 44 px breit, weil die Spalte durch den V0a-Canvas fest ist (bestand für ●/▶ schon seit V0c).
+3. **Bereich-Leiste P2/P3** 52 px hoch, weil die Träger-Leiste dort 52 px hoch ist („gleiche Höhe“); P3-Knöpfe 57,6 statt 52 px breit
+   (füllen die Zeile). W-Transportzeile 34 px hoch (wie bisher).
+4. **Halten auf eine Marke + Ziehen** (verschieben, ⧉-Feld ≥ 250 ms = Kopie), Ziehen von Teilen in den Song, Federtaste und Glas sind
+   V2e′; in V2e hebt Halten die Marke nur an (Loslassen = Blatt).
+5. **Spurbank-Seiten**: Seite 1 nimmt so viele Synth-Spuren, wie ≥ 26 px erlauben (P2: 5 inkl. MELODIE-Spur) statt fest „Synth 1–4“;
+   in L1/L2/P3 ist das genau Synth 1–4.
+6. **[Teile erkennen]** (P1-Option aus 6.4) ist nicht gebaut.
+
+**Budget:** 2 520 150 B (+46,7 KB roh, +13,6 KB gzip gegenüber V2d′-fix) – Rahmen +55 KB eingehalten. Startzeit unverändert (nichts
+Neues beim Laden; Rangeleiste wird einmal gebaut).
+
+**Rollout:** gelesen `private.settings`: `max_app` 4 006 000, `max_format` 4 (die V2d′-Migration ist inzwischen eingetragen).
+`apply_migration v2e_max_app` (`max_app = greatest(max_app, 4007000)`) **wartete auf eine Bestätigung und lief nach 60 s ab – nicht
+eingetragen. Offen: vor dem Ausliefern von 4.7.0 einspielen**, sonst lehnt das Online-Speichern ab (lokal speichert die App weiter).
+Kein Aufruf nennt das Klassenzimmer-Projekt.
+
+**Für Xander im Dashboard** (nur falls der Orchestrator die Migration nicht nachholt): SQL-Editor des Projekts **synquenzer**
+(`dbdnsryoivvezspgydpx`, nicht das Klassenzimmer!) → `update private.settings set max_app = greatest(max_app, 4007000);` → Run.
+
+**Bekannte Lücken**
+- Kein WebKit-/iPhone-Test (Chromium + CDP-Touch).
+- Die Gleit-Animation nach Einfügen (Xander c) ist nur als Zeichnung geprüft (Daten-Gleichheit), nicht per Bildvergleich.
+- Eigene Clips machen eine Marke nicht zu „′“ (sonst bliebe ′ nach [Auf alle übertragen] stehen, N7S-37); weißer Rand für eigene
+  Clips kommt mit V2e′.
+
+**Für Xander am iPhone (nach dem Ausliefern von 4.7.0, ≈ 3 min)**
+1. Song öffnen, auf den gelben Namen eines Teils in der Taktleiste tippen → unten das Marken-Blatt. [×2] → der Teil steht zweimal da.
+2. Nochmal in den Teil tippen → ein Takt wird gelb, unten die Bereich-Leiste. [⧉] → der Takt ist verdoppelt, alles danach rückt nach.
+3. Hinter dem Song-Ende nach rechts wischen, auf eine graue Nummer tippen, einen Teil wählen → er steht dort, die Takte davor bleiben leer.
+4. Einen Akkord in einem Teil antippen und ändern → nur dort anders; im Toast [Für alle „Strophe“] → überall.
