@@ -1,0 +1,16 @@
+import { openVp, mk, SETUP, mkCheck } from './v3-qa-v2e-lib.mjs';
+const {b, p, errs, cdp} = await openVp('P1');
+const T = mk(p, cdp), {E} = T;
+await E(SETUP(true));
+console.log(JSON.stringify(await E(() => window.SYNQUENZER.song().lanes)));
+await E(() => window.SYNQUENZER.markAction('M3', 'replaceBy', 'S1'));
+console.log(JSON.stringify(await E(() => window.SYNQUENZER.song().lanes)));
+console.log(JSON.stringify(await E(() => refChunk(partRef('S1')))));
+await E(() => window.SYNQUENZER.undo());
+await E(() => window.SYNQUENZER.markAction('M3', 'replaceBy', 'S2'));
+console.log('S2', JSON.stringify(await E(() => window.SYNQUENZER.song().lanes)), JSON.stringify(await E(() => window.SYNQUENZER.song().marks)));
+await E(() => window.SYNQUENZER.undo());
+console.log('placePart S1 at 2 replace');
+await E(() => window.SYNQUENZER.placePart('S1', 2, 'replace'));
+console.log(JSON.stringify(await E(() => window.SYNQUENZER.song().lanes)), JSON.stringify(await E(() => window.SYNQUENZER.song().marks)));
+await b.close();

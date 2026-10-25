@@ -1,0 +1,26 @@
+// QA V2e t6: performance of the song view with 64 marks / 256 bars while playing (PE1: rAF ≥ 55 fps, no longtask > 50 ms);
+// edits (×2, Löschen, Auf alle übertragen) timing
+import { openVp, mk, SETUP, mkCheck } from './v3-qa-v2e-lib.mjs';
+const {check, done} = mkCheck();
+const {b, p, errs, cdp} = await openVp('P1');
+const T = mk(p, cdp), {E} = T;
+await E(SETUP(true));
+await E(() => { const Q = window.SYNQUENZER; for (let k = 0; k < 6; k++) Q.markAction('M3', 'rep', 2); });
+const s = await E(() => ({bars: window.SYNQUENZER.song().bars, marks: window.SYNQUENZER.song().marks.length}));
+console.log('song', JSON.stringify(s));
+await E(() => window.SYNQUENZER.songView(true)); await p.waitForTimeout(300);
+await E(() => { window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push(Math.round(e.duration)); }).observe({entryTypes: ['longtask']}); } catch (e) {} });
+await E(() => { const Q = window.SYNQUENZER; Q.setBpm(140); Q.songPlay(0); });
+await p.waitForTimeout(800);
+const fps = await E(() => new Promise(r => { let n = 0; const t0 = performance.now(); const f = () => { n++; if (performance.now() - t0 < 4000) requestAnimationFrame(f); else r(n / ((performance.now() - t0) / 1000)); }; requestAnimationFrame(f); }));
+const tm = await E(() => { const t = []; for (let k = 0; k < 20; k++) { const a = performance.now(); svDraw(true); t.push(performance.now() - a); } t.sort((x, y) => x - y); return [t[10], t[19]]; });
+const ed = await E(() => { const Q = window.SYNQUENZER, t = []; let a = performance.now(); Q.markAction('M3', 'rep', 2); t.push(performance.now() - a); a = performance.now(); Q.markAction('M3', 'applyAll'); t.push(performance.now() - a); a = performance.now(); Q.undo(); t.push(performance.now() - a); a = performance.now(); svMarkDevs(); t.push(performance.now() - a); return t.map(x => +x.toFixed(1)); });
+await p.waitForTimeout(1500);
+const lt = await E(() => window.__lt);
+await E(() => window.SYNQUENZER.songPlay(false));
+console.log('fps', fps, 'svDraw median/max ms', tm, 'edits ms [rep, applyAll, undo, devs]', ed, 'longtasks', lt);
+check('PE1 Song-Ansicht mit vielen Marken beim Abspielen ≥ 55 fps', fps >= 55, fps);
+check('svDraw ≤ 8 ms (Median)', tm[0] <= 8, tm);
+check('0 Konsolenfehler', !errs.length, errs);
+await b.close();
+process.exit(done() ? 1 : 0);

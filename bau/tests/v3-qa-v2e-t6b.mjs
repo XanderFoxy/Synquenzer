@@ -1,0 +1,33 @@
+// QA V2e t6b: 64 marks / 256 bars: cost of one edit incl. the redraw (svMarkDevs → markDev per mark), longtasks while playing
+import { openVp, mk, SETUP, mkCheck } from './v3-qa-v2e-lib.mjs';
+const {check, done} = mkCheck();
+const {b, p, errs, cdp} = await openVp('P1');
+const T = mk(p, cdp), {E} = T;
+await E(SETUP(false));
+await E(() => { const Q = window.SYNQUENZER; Q.setSong({bars: 0, lanes: [[], [], [], [], [], []], carrier: [], mel: {}, marks: []}); for (let k = 0; k < 64; k++) Q.placePart(k % 2, k * 4, 'insert'); });
+const s = await E(() => ({bars: window.SYNQUENZER.song().bars, marks: window.SYNQUENZER.song().marks.length}));
+console.log('song', JSON.stringify(s));
+await E(() => window.SYNQUENZER.songView(true)); await p.waitForTimeout(300);
+await E(() => { window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push(Math.round(e.duration)); }).observe({entryTypes: ['longtask']}); } catch (e) {} });
+await E(() => { const Q = window.SYNQUENZER; Q.setBpm(140); Q.songPlay(0); });
+await p.waitForTimeout(1500);
+await E(() => { window.__lt = []; });
+const t = await E(() => { const out = {}; let a = performance.now(); svMarkDevs(); out.devsCached = performance.now() - a; SV.devC = null; a = performance.now(); svMarkDevs(); out.devsCold = performance.now() - a;
+  const id = window.SYNQUENZER.song().marks[10].id; a = performance.now(); window.SYNQUENZER.markAction(id, 'rep', 2); out.rep = performance.now() - a; a = performance.now(); svDraw(true); out.drawAfter = performance.now() - a;
+  a = performance.now(); window.SYNQUENZER.markAction(id, 'applyAll'); out.applyAll = performance.now() - a; a = performance.now(); svDraw(true); out.draw2 = performance.now() - a;
+  a = performance.now(); window.SYNQUENZER.songSelect(20, 20); svDraw(true); out.sel = performance.now() - a; return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, +v.toFixed(1)])); });
+await p.waitForTimeout(500);
+// a cell tap via touch (one edit like Xander would do while playing)
+await E(() => { window.__lt = []; });
+const i = await T.info();
+await T.tapCv(1 * 36 + 18, i.rulerH + i.rowH * .5, 400);
+const lt2 = await E(() => window.__lt);
+const fps = await E(() => new Promise(r => { let n = 0; const t0 = performance.now(); const f = () => { n++; if (performance.now() - t0 < 3000) requestAnimationFrame(f); else r(n / ((performance.now() - t0) / 1000)); }; requestAnimationFrame(f); }));
+await E(() => window.SYNQUENZER.songPlay(false));
+console.log('timings ms', JSON.stringify(t), 'longtasks after cell tap', lt2, 'fps', fps.toFixed(1));
+check('64 Marken/256 Takte: markDev aller Marken (kalt) ≤ 50 ms', t.devsCold <= 50, t);
+check('Zellen-Tipp bei laufendem Song: keine longtask > 50 ms', !lt2.some(x => x > 50), lt2);
+check('≥ 55 fps', fps >= 55, fps);
+check('0 Konsolenfehler', !errs.length, errs);
+await b.close();
+process.exit(done() ? 1 : 0);

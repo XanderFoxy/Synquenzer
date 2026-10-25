@@ -1,0 +1,14 @@
+import { openVp, mk, SETUP, mkCheck } from './v3-qa-v2e-lib.mjs';
+const {b, p, errs, cdp} = await openVp('P1');
+const T = mk(p, cdp), {E} = T;
+await E(SETUP(true)); await E(() => window.SYNQUENZER.songView(true)); await p.waitForTimeout(400);
+await E(() => { window.__log = []; const o = window.svTap; window.svTap = function (x, y) { window.__log.push('svTap ' + x + ',' + y); return o.apply(this, arguments); };
+  for (const ev of ['pointerdown', 'pointerup', 'pointercancel', 'lostpointercapture', 'touchstart', 'touchend']) SV.wrap.addEventListener(ev, e => window.__log.push(ev + ' ' + (e.target.className || e.target.tagName) + ' t=' + Math.round(performance.now())), true);
+  document.addEventListener('pointerdown', e => window.__log.push('doc pd ' + (e.target.className || e.target.tagName) + ' ' + e.clientX + ',' + e.clientY), true); });
+await E(() => { const Q = window.SYNQUENZER; Q.setBpm(120); Q.songPlay(0); }); await p.waitForTimeout(800);
+await T.tapCv(6 * 36 + 10, 9, 300);
+await E(() => window.__log.push('---'));
+await T.tapCv(8 * 36 + 10, 9, 300);
+console.log(JSON.stringify(await E(() => window.__log), null, 1));
+console.log(await E(() => { const e = document.elementFromPoint(76 + 8 * 36 + 10, 109); return e.className + ' ' + e.tagName + ' ' + e.id; }));
+await b.close();
