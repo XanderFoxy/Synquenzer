@@ -3511,7 +3511,23 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
   #synthSheet .sh-head .seg.eng.eng4 button.mkeb.mk2z{flex-direction:column;gap:1px;font-size:10.5px;padding:0 4px}
   #synthSheet .sh-head:has(.seg.eng4) .preset{min-width:72px}
   #synthSheet .sh-head.mkht .hb.hold .ht{display:none}
-  #synthSheet .sh-head:has(.seg.eng4) .preset .pv{min-width:0}}
+  #synthSheet .sh-head:has(.seg.eng4) .preset .pv,#synthSheet .sh-head:has(.engchip) .preset .pv{min-width:72px}   /* MK1-fix: the name field keeps 72 px (as 4.8.1), the fit moves the rest */
+  #synthSheet .sh-head:has(.seg.eng4) .preset,#synthSheet .sh-head:has(.engchip) .preset{flex-shrink:1000}   /* MK1-fix: ‹ name › gives way first, down to its minimum */
+  #synthSheet .sh-head.mkts:has(.seg.eng4) .sh-title{flex:0 1 auto}   /* MK1-fix step 3: then the track name (ellipsis, >= 40 px) */
+  #synthSheet.mkem .hb.edm1{display:none}   /* MK1-fix step 4: ⋯ into the LCD line, left of ◎ */
+  #synthSheet.mkem .hb.edmL{display:inline-flex;align-items:center;justify-content:center;top:auto;bottom:6px;height:22px;right:54px}
+  #synthSheet.mkem .lcd{padding-right:94px}
+  #synthSheet .sh-head.mkts:has(.seg.eng) .preset .pv{min-width:72px}
+  #synthSheet .sh-head:has(.engchip) .preset{min-width:72px}
+  #synthSheet .sh-head:has(.seg.eng4) .preset .pa,#synthSheet .sh-head:has(.engchip) .preset .pa{flex-shrink:0}   /* MK1-fix: ‹ › keep their width (edHeadFit sets the group's minimum) */
+  #synthSheet .sh-head.mkpa .preset .pa{flex-shrink:1}
+  #synthSheet .sh-head .seg.eng.engchip button::before{top:-4px;bottom:-8px}}   /* MK1-fix step 4: the chip in the 40 px head row */
+/* MK1-fix (MK1-23): the ECO badge on the engine key - the same ::before keeps the 44 px hit area (the text sits 3 px above the key's
+   lower edge as in 4.8.1); in landscape the ECO-Klang pill shows it, the ::before is only the hit area */
+#synthSheet .sh-head .seg.eng.eng4 button.eco::before,#synthSheet .sh-head .seg.eng.engchip button.eco::before{content:"ECO";display:flex;align-items:flex-end;justify-content:center;padding-bottom:9px;box-sizing:border-box;font:700 7.5px/1 var(--font-ui);letter-spacing:.1em;color:var(--amber)}
+#synthSheet .sh-head .seg.eng.eng4 button.eco,#synthSheet .sh-head .seg.eng.engchip button.eco{padding-bottom:7px}
+@media (orientation:landscape){#synthSheet .sh-head .seg.eng.eng4 button.eco::before,#synthSheet .sh-head .seg.eng.engchip button.eco::before{content:''}
+  #synthSheet .sh-head .seg.eng.eng4 button.eco,#synthSheet .sh-head .seg.eng.engchip button.eco{padding-bottom:0}}
 </style>
 </head>
 <body>
@@ -4157,6 +4173,12 @@ async function probe(cases, o) {
     try { po = new PerformanceObserver(l => { for (const x of l.getEntries()) if (x.duration > 50) lt++; }); po.observe({entryTypes: ['longtask']}); } catch (e) { po = null; }
     const onRep = () => { const L = Es.map(E => E.load || 0); rep.push({sum: L.reduce((a, b) => a + b, 0), per: L}); };
     Es.forEach(E => { const f = E.node.port.onmessage; E.node.port.onmessage = ev => { f(ev); if (ev.data && ev.data.load != null && E === Es[0]) setTimeout(onRep, 30); }; });
+    // MK1-fix (B.4): per report of each engine the computed frames against Date.now. frames_ok = false as soon as an engine is behind
+    // 0.995 x sampleRate since its first report (slack: one 2048-frame device buffer), or its reports stop (> 1.6 s gap)
+    const FR = Es.map(() => ({w0: 0, n: 0, last: 0, bad: false})); let qmax = 0;
+    Es.forEach((E, i) => { E.onRep = m => { const F = FR[i]; if (m.qmax > qmax) qmax = m.qmax;
+      if (!F.w0) { F.w0 = m.wall; F.last = m.wall; return; }
+      F.n += m.fr; if (m.wall - F.last > 1600 || F.n < .995 * c.sampleRate * (m.wall - F.w0) / 1000 - 2048) F.bad = true; F.last = m.wall; }; });
     const t0 = performance.now(); let id = 1e8;
     const chord = [[48, 55, 60, 64], [45, 52, 57, 60], [41, 48, 53, 57], [43, 50, 55, 59]];
     let k = 0;
@@ -4170,13 +4192,14 @@ async function probe(cases, o) {
       await new Promise(r => setTimeout(r, 500));
     }
     if (po) try { po.disconnect(); } catch (e) {}
-    for (const E of Es) { E.panic(); E.flush(); }
+    const tEnd = Date.now(), framesOk = !PROBE.stop ? FR.every(F => F.w0 && !F.bad && tEnd - F.last <= 1600) : FR.every(F => !F.bad);
+    for (const E of Es) { E.panic(); E.flush(); E.onRep = null; }
     await new Promise(r => setTimeout(r, 120));
     for (const E of Es) E.dispose(); try { sink.disconnect(); } catch (e) {}
     const sums = rep.map(x => x.sum).sort((a, b) => a - b), med = sums.length ? sums[sums.length >> 1] : 0, fm = fps.slice().sort((a, b) => a - b);
     const ios = /iP(hone|ad|od)/.test(navigator.userAgent);
     const r = {fall, voices: 4, load_med: +med.toFixed(4), load_max: +(sums.length ? sums[sums.length - 1] : 0).toFixed(4),
-      load_per_engine: rep.length ? rep[rep.length >> 1].per.map(x => +x.toFixed(4)) : [], frames_ok: rep.length > 0, quantum_max_ms: null,
+      load_per_engine: rep.length ? rep[rep.length >> 1].per.map(x => +x.toFixed(4)) : [], frames_ok: framesOk, quantum_max_ms: +qmax.toFixed(2),
       fps_med: +(fm.length ? fm[fm.length >> 1] : 0).toFixed(1), reports: rep.length};
     if (ios) { r.raf_gaps = gaps; r.raf_capped = r.fps_med < 35; } else r.longtasks = po ? lt : null;
     out.cases.push(r);
@@ -4209,6 +4232,7 @@ function probeSheet() {
 function randomizeMk(i) {
   const s_ = deep(sndOf(i)), t = s_.p.mk.t[0], R_ = Math.random, I = (a, b) => a + Math.floor(R_() * (b - a + 1)), pick = a => a[Math.floor(R_() * a.length)];
   t.o1.w = pick([0, 1, 2]); t.o1.c1 = R_() < .5 ? 0 : I(0, 110); t.o1.c2 = R_() < .6 ? 0 : I(0, 80);
+  if (t.o1.w === 1 && t.o1.c1 + t.o1.c2 > 100) { t.o1.c1 = Math.min(t.o1.c1, 100); t.o1.c2 = 100 - t.o1.c1; }  // MK1-fix: the pulse stays >= 10 % wide (with Ring a thinner one was silent)
   t.o2.w = I(0, 2); t.o2.mod = R_() < .7 ? 0 : I(1, 3); t.o2.semi = pick([0, 7, 12, -12]); t.o2.tune = R_() < .5 ? 0 : I(-8, 8);
   t.mix.o1 = I(0, 127); t.mix.o2 = I(0, 127); t.mix.n = R_() < .7 ? 0 : I(0, 40);
   if (Math.max(t.mix.o1, t.mix.o2) < 64) t[R_() < .5 ? 'mix' : 'mix'][R_() < .5 ? 'o1' : 'o2'] = I(64, 127);
@@ -5356,7 +5380,7 @@ class AnalogCore extends AudioWorkletProcessor {
     this.gl1 = 0; this.gl2 = 0;         // global (free-running) LFO phases
     this.gsh1 = Math.random() * 2 - 1; this.gsh2 = Math.random() * 2 - 1;   // global S&H values (new one at every global phase wrap)
     this.bpm = 120; this.songStart = -1; this.ended = []; this.ageCtr = 0; this.stereo = false;
-    this.busy = 0; this.busyN = 0; this.lastRep = 0; this.alive = true;
+    this.busy = 0; this.busyN = 0; this.lastRep = 0; this.alive = true; this.qMax = 0;
     // mod scope for the UI: source values of the focus voice (newest gated, else newest sounding), ~30 Hz, only on request
     this.scopeOn = false; this.scopeNext = 0; this.sc = new Float64Array(NSRC); this.scHas = false; this.focus = null;
     this.scopeDst = false; this.scD = new Float64Array(NDST);   // WP5 debug: the focus voice's modulation sums (MO47)
@@ -6656,10 +6680,12 @@ class AnalogCore extends AudioWorkletProcessor {
       this.port.postMessage({fmxLv: lv, t: f0 * ISR});
     }
     // CPU estimate: sum of (quantised) durations is unbiased; report once per second of audio
-    this.busy += (this.hasPerf ? performance.now() : Date.now()) - t0; this.busyN += N;
+    const dq = (this.hasPerf ? performance.now() : Date.now()) - t0; this.busy += dq; this.busyN += N; if (dq > this.qMax) this.qMax = dq;
     if (this.busyN >= SR) {
       let nv = this.mk.count(); for (const v of this.V) if (v.on) nv++;
-      this.port.postMessage({load: this.busy / (this.busyN * ISR * 1000), voices: nv}); this.busy = 0; this.busyN = 0;
+      // MK1-fix (B.4, MK1-25): the frames of this report and the wall clock (Date.now, the same clock as the main thread) for frames_ok,
+      // and the longest single quantum (quantum_max_ms)
+      this.port.postMessage({load: this.busy / (this.busyN * ISR * 1000), voices: nv, fr: this.busyN, wall: Date.now(), qmax: this.qMax}); this.busy = 0; this.busyN = 0; this.qMax = 0;
     }
     return this.alive;
   }
@@ -10963,7 +10989,7 @@ const MK_LABEL = 'MS 2000';
     node.port.onmessage = e => {
       const m = e.data; if (!m) return;
       if (m.end && E.onEnd) for (const id of m.end) E.onEnd(id);
-      if (m.load != null) { E.load = m.load; E.nv = m.voices; }
+      if (m.load != null) { E.load = m.load; E.nv = m.voices; if (m.fr != null && E.onRep) E.onRep(m); }
       if (m.scope && E.onScope) E.onScope(m);
       if (m.fmxLv) { E.lv = m.fmxLv; E.lvN++; E.lvT = m.t; }        // V4a (N7F-09): live operator levels
       if (m.mkScope) { E.mks = m.mkScope; E.mksN = (E.mksN || 0) + 1; }  // MK1 (B.7 mkScope)
@@ -23059,6 +23085,7 @@ function buildSynthEd() {
   // P has no room for the badge in row 1 (the track name would vanish): there the VA button carries a small „ECO“ line
   // (CSS ::before of the class 'eco', so the button text stays „VA“)
   ED.ecoB = engSeg.children[0];
+  if (mkE && !engSeg.classList.contains('engchip') && engSeg.children[3]) ED.ecoB = engSeg.children[3];   // MK1-fix: an AM track marks its own key
   onTap(ED.ecoB, b => { if (b.classList.contains('eco')) lcdShow('ECO-Klang', ecoMsg(i)); });
   // row 2: ‹ name • › · [A/B] · Sichern · 🎲 · ▶ Hören
   const pre = el('div', 'preset');
@@ -23094,13 +23121,7 @@ function buildSynthEd() {
   F.r2.append(pre, ab, save, dice, wia, em2, hear);
   sheetButtons(F.r1, F.r2, true);
   F.r1.insertBefore(em1, F.r1.querySelector('.hb.ur'));
-  // MK1 (B.3 Zeile 1): the track name stays visible - where the four engine keys squeeze it, one chip takes their place (H-13)
-  if (!engSeg.classList.contains('engchip')) { engSeg.classList.add('eng4'); if (engSeg.lastChild) engSeg.lastChild.classList.add('mkeb');
-    const tt = F.r1.querySelector('.sh-title .stt b') || F.r1.querySelector('.sh-title'); if (tt && window.innerHeight > window.innerWidth && (tt.scrollWidth > tt.clientWidth + 1 || tt.getBoundingClientRect().width < 40)) { const ch = engChip(i); engSeg.replaceWith(ch); ED.ecoB = ch.firstChild; }
-    // landscape (one 40 px head row): the name field may shrink to 72 px; if even that does not fit, the AM key goes into two lines
-    else if (window.innerWidth > window.innerHeight && engSeg.lastChild) { const hd = sh.querySelector('.sh-head'), over = () => { const hr = hd.getBoundingClientRect().right; return hd.scrollWidth > hd.clientWidth + 1 || [...hd.querySelectorAll('button')].some(b => b.getBoundingClientRect().right > hr + .5); };
-      // step 2 (the safe area of the iPhone takes 2 x 47 px): the play key without its word, as below 760 px (Z. 1545)
-      if (hd && over()) { engSeg.lastChild.classList.add('mk2z'); if (over()) hd.classList.add('mkht'); } } }
+  if (!engSeg.classList.contains('engchip')) { engSeg.classList.add('eng4'); if (engSeg.lastChild) engSeg.lastChild.classList.add('mkeb'); }
   ED.hdr = {pName, ab, save};
   edHeadRefresh();
   // the mod-mode banner (§9.3): over the LCD line (P), its place in the tab row (L), header row 2 where the LCD is hidden
@@ -23111,6 +23132,7 @@ function buildSynthEd() {
   if (ED.tab === 'fx' && GLOBAL_SUBS.has(ED.sub.fx)) globalBand(F);
   fillSynthTab(F.body, i);
   sh.classList.add('open');
+  edHeadFit(sh, i, engSeg);
   if (UI.lcdNext) { lcdShow(UI.lcdNext[0], UI.lcdNext[1]); UI.lcdNext = null; }
   if (UI.modSrc) requestAnimationFrame(() => modModeRefresh());
   if (UI.wia) { wiaPaint(); wiaTrick(); }
@@ -23135,6 +23157,45 @@ function openEdMore(anchor, t) {
     guardTouch(p);
     onTap(p, b => { closePop(); if (b.dataset.a === 'init') initSound(t); else if (b.dataset.a === 'wia') wiaToggle(); else if (b.dataset.a === 'kbpos') kbVelPos(); }, 'button[data-a]');
   }, {name: 'edmore'});
+}
+/* MK1 (B.3 Zeile 1, MK1-21, H-13): the track name stays visible - where the four engine keys squeeze it, one chip takes their place;
+   landscape (one 40 px head row): the name field may shrink to 72 px, then the AM key goes into two lines, then ▶ loses its word.
+   MK1-fix: measured with the sheet open (a closed sheet is display:none: every width read 0) and in the widest state of row 2 (A/B
+   and the „geändert“ dot shown), so the head is the same before and after the first edit and on every open (M-ANSICHT).
+   ED.headFmt keeps the format it was fitted for; a resize to another format rebuilds the editor. */
+function edHeadFit(sh, i, engSeg) {
+  const hd = sh.querySelector('.sh-head'), H = ED.hdr; ED.headFmt = window.innerWidth + 'x' + window.innerHeight; sh.classList.remove('mkem');
+  if (!hd || !H || !engSeg || !engSeg.isConnected || !engSeg.classList.contains('eng4')) return;
+  // the widest row 2: A/B shown, a sound name longer than the field (the fit does not depend on the sound) with the dot; and the app
+  // already in its sheet layout (openEditor sets it right after the build)
+  const abH = H.ab.hidden, nm = H.pName.innerHTML, so = EL.app.classList.contains('sheet-open');
+  H.ab.hidden = false; H.pName.innerHTML = '<span class="pn">MMMMMMMMMMMMMMMMMMMM</span><i class="chg"></i>'; if (!so) EL.app.classList.add('sheet-open');
+  try {
+    if (window.innerHeight > window.innerWidth) {
+      const tt = hd.querySelector('.sh-title .stt b') || hd.querySelector('.sh-title');
+      if (tt && (tt.scrollWidth > tt.clientWidth + 1 || tt.getBoundingClientRect().width < 40)) { const ch = engChip(i); engSeg.replaceWith(ch); ED.ecoB = ch.firstChild; }
+    } else if (engSeg.lastChild) {
+      // ‹ name › never narrower than ‹ + 72 px + › (it overflowed into its neighbours before); last resort ‹ › down to 15 px as in 4.8.1
+      const pre = H.pName.parentElement, preMin = () => { let m = 72; for (const a of pre.querySelectorAll('.pa')) m += hd.classList.contains('mkpa') ? 15 : a.getBoundingClientRect().width;
+        pre.style.minWidth = (m + 2 * (parseFloat(getComputedStyle(pre).columnGap) || 0)) + 'px'; };
+      preMin();
+      const over = () => { const hr = hd.getBoundingClientRect().right, pv = H.pName.getBoundingClientRect().width;
+        return hd.scrollWidth > hd.clientWidth + 1 || pre.scrollWidth > pre.clientWidth + 1 || pv < 72 - .5 || [...hd.querySelectorAll('button')].some(b => b.offsetParent && b.getBoundingClientRect().right > hr + .5); };
+      // step 2 (the safe area of the iPhone takes 2 x 47 px): the play key without its word, as below 760 px (Z. 1545); step 3: ⋯ moves
+      // into the LCD line next to ◎ (its place in portrait); step 4 (H-13: keys where they fit): the engine chip, then steps 2 and 3
+      // again; last resorts: the track name gives way (ellipsis, >= 40 px), ‹ › down to 15 px. The track name is never cut while a
+      // step is left (its own CSS max-width aside)
+      const tb = hd.querySelector('.sh-title .stt b') || hd.querySelector('.sh-title b:not(.mtg)'), tw = () => { const t = hd.querySelector('.sh-title'); return t ? t.getBoundingClientRect().width : 99; };
+      const st_ = hd.querySelector('.sh-title'), cut = () => !!st_ && (st_.scrollWidth > st_.clientWidth + 1 || (!!tb && tb.scrollWidth > tb.clientWidth + 1 && tb.clientWidth < (parseFloat(getComputedStyle(tb).maxWidth) || 1e9) - 1));
+      const bad = () => over() || (hd.classList.contains('mkts') ? tw() < 40 : cut());
+      const put = c => (c === 'mk2z' ? engSeg.lastChild.classList.add(c) : c === 'mkem' ? sh.classList.add(c) : hd.classList.add(c));
+      for (const c of ['mk2z', 'mkht', 'mkem']) { if (!bad()) break; put(c); }
+      if (bad()) { hd.classList.remove('mkht'); sh.classList.remove('mkem'); const ch = engChip(i); engSeg.replaceWith(ch); ED.ecoB = ch.firstChild;
+        for (const c of ['mkht', 'mkem', 'mkts']) { if (!bad()) break; put(c); }
+        if (over()) { hd.classList.add('mkpa'); preMin(); } }
+    }
+  } finally { H.ab.hidden = abH; H.pName.innerHTML = nm; if (!so) EL.app.classList.remove('sheet-open'); }
+  if (ED.eco && ED.ecoB) ED.ecoB.classList.toggle('eco', !ED.eco.hidden);
 }
 // header row 2: sound name, „geändert“ dot, [A/B] (§11.3)
 function edHeadRefresh() {
@@ -31553,6 +31614,10 @@ function bindUI() {
   eatUpClick(EL.bRecDone);
   kbdClick(EL.bRecDone, () => { if (rec.state !== 'off') recPress(); });
   on(window, 'resize', () => { if (UI.songView) requestAnimationFrame(() => svLayout()); });
+  // MK1-fix (MK1-21): the synth head is fitted for one format (edHeadFit); a new width or orientation with the editor open fits it anew
+  on(window, 'resize', () => { if (R.editor !== 'synth' || !ED.headFmt || UI.headRb) return; UI.headRb = 1; requestAnimationFrame(() => { UI.headRb = 0;
+    const [w, h] = ED.headFmt.split('x').map(Number), W = window.innerWidth, Hh = window.innerHeight;
+    if (R.editor === 'synth' && (w !== W || (h > w) !== (Hh > W))) safeRebuild(buildSynthEd); }); });
   on(window, 'resize', () => { if (R.editor === 'drum' && ED.dTab === 'steps' && window.matchMedia('(orientation: landscape)').matches !== ED.dLand) safeRebuild(buildDrumEd); if (R.editor === 'roll' && ED.rollAt) { const land = window.matchMedia('(orientation: landscape)').matches; if (land !== ED.rollLand) { ED.rollLand = land; safeRebuild(buildRoll); } rollKbApply(); } });
   on(EL.bFolgt, 'click', () => { const tr = S.tracks[R.selT]; if (tr.kind === 'synth') setTrackFollow(R.selT, !tr.follow); });
   on(EL.bMute, 'click', () => setMute(R.selT, !S.tracks[R.selT].mute));

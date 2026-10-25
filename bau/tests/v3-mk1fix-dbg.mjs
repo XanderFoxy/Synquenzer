@@ -1,0 +1,14 @@
+import {chromium} from 'playwright';
+const SP = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad';
+const b = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome'});
+const ctx = await b.newContext({viewport: {width: 844, height: 390}, hasTouch: true, isMobile: true}); const p = await ctx.newPage();
+await p.goto('file://' + SP + '/mk-wt/exp-dbg.html'); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted);
+await p.evaluate(async F => { const f = [['Barlow Semi Condensed', 'barlow-semi-condensed', [500, 600, 700]], ['JetBrains Mono', 'jetbrains-mono', [500, 700]]];
+  const st = document.createElement('style'); st.textContent = f.map(([fam, file, ws]) => ws.map(w => `@font-face{font-family:"${fam}";font-weight:${w};src:url(${F}${file}-latin-${w}-normal.woff2) format("woff2")}`).join('')).join(''); document.head.appendChild(st);
+  await Promise.all(['500 10px "Barlow Semi Condensed"', '700 10px "Barlow Semi Condensed"'].map(s => document.fonts.load(s))); }, 'file://' + SP + '/dirigent-wt/fonts/');
+await p.addStyleTag({content: '#app{padding-left:47px!important;padding-right:47px!important}'});
+const r = await p.evaluate(() => { const f = SYNQUENZER.factory().filter(x => x.engine === 'analog'); SYNQUENZER.loadPreset(0, f[2].id); SYNQUENZER.selectTrack(0); SYNQUENZER.setParam(0, 'fx.vol', .5);
+  window.__fl = []; SYNQUENZER.openEditor();
+  const hd = document.querySelector('#synthSheet .sh-head'); const row = x => [...x.children].map(c => c.className + ':' + Math.round(c.getBoundingClientRect().width) + '@' + Math.round(c.getBoundingClientRect().left)).join(' ');
+  return {cls: hd.className, hdw: hd.getBoundingClientRect().width, kids: row(hd), r1: row(hd.querySelector('.r1')), r2: row(hd.querySelector('.r2')), fl: window.__fl, titleCS: getComputedStyle(hd.querySelector('.sh-title')).flex}; });
+console.log(JSON.stringify(r, null, 1)); await b.close();

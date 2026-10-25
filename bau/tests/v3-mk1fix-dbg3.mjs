@@ -1,0 +1,11 @@
+import {chromium} from 'playwright';
+const SP = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad';
+const b = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome'});
+const ctx = await b.newContext({viewport: {width: 568, height: 320}, hasTouch: true, isMobile: true}); const p = await ctx.newPage();
+await p.goto('file://' + SP + '/mk-wt/index.html'); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted);
+await p.evaluate(async F => { const f = [['Barlow Semi Condensed', 'barlow-semi-condensed', [500, 600, 700]]];
+  const st = document.createElement('style'); st.textContent = f.map(([fam, file, ws]) => ws.map(w => `@font-face{font-family:"${fam}";font-weight:${w};src:url(${F}${file}-latin-${w}-normal.woff2) format("woff2")}`).join('')).join(''); document.head.appendChild(st);
+  await Promise.all(['500 10px "Barlow Semi Condensed"', '700 10px "Barlow Semi Condensed"', '600 10px "Barlow Semi Condensed"'].map(s => document.fonts.load(s))); }, 'file://' + SP + '/dirigent-wt/fonts/');
+const r = await p.evaluate(async () => { const f = SYNQUENZER.factory().filter(x => x.engine === 'analog'); SYNQUENZER.loadPreset(0, f[2].id); SYNQUENZER.selectTrack(0); SYNQUENZER.setParam(0, 'fx.vol', .5); SYNQUENZER.openEditor(); const a = (() => { const tb = document.querySelector('#synthSheet .sh-title .stt b'); return [tb.scrollWidth, tb.clientWidth, document.querySelector('#synthSheet .sh-title').getBoundingClientRect().width]; })(); await new Promise(r => setTimeout(r, 400)); const t = document.querySelector('#synthSheet .sh-title'); const tb = t.querySelector('.stt b') || t.querySelector('b:not(.mtg)');
+  return {html: t.outerHTML.slice(0, 400), tb: tb && [tb.scrollWidth, tb.clientWidth, getComputedStyle(tb).maxWidth, getComputedStyle(tb).display], cls: document.querySelector('#synthSheet .sh-head').className, a, appcls: EL.app.className}; });
+console.log(JSON.stringify(r, null, 1)); await b.close();

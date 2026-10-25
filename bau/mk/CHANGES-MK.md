@@ -312,3 +312,105 @@ Keine Änderung. Laut Orchestrator gilt am Server `max_app` 4 021 000 und `max_f
 Säge STEUER 1 0 → 127 („Oktave dazu“?); Puls STEUER 1 = 64; Dreieck STEUER 1 = 127; Resonanz 127 (Einsatz und Pegel des Pfeifens);
 Attack 64 / Release 64; LFO-Frequenz 64; **Bedienfeld (nur Sicht):** Lage der Zonen, LEDs und Räder – Abweichungen ändern die
 Referenz-Skizze in einem `MK1-fix`.
+
+## MK1-fix — Kopf, ECO-Badge, Sync-Faltung, CPU, Leistungs-Probe · App bleibt 4.9.0 · Format bleibt 5
+
+### Behoben (9 bestätigte Befunde aus Abnahme, Fach-Prüfung und Regression, 6 Ursachen; dazu Nr. 8 aus dem eigenen Lauf)
+1. **Kopf: ✕ ↶ ↷ aus dem Bild (L1 mit Safe-Area, L2, 812 × 375) nach der ersten Änderung** (MK1-21). Die Verdichtung lief vor
+   `edHeadRefresh()`, also ohne [A/B] und ohne ●. Neu misst `edHeadFit()` im **breitesten Zustand** von Zeile 2: [A/B] sichtbar, ein
+   Sound-Name länger als das Feld, ● dazu, und mit dem App-Layout `sheet-open`. Der Kopf ist darum vor und nach der ersten Änderung,
+   beim Öffnen, nach jedem Reiter-Wechsel und bei jedem Sound gleich (M-ANSICHT). Das Namensfeld behält in L wieder seine 72 px wie in
+   4.8.1, ‹ › behalten ihre Breite (28–32 px statt 13–15 px), und der Gruppe ‹ Name › gibt `edHeadFit` ihr Minimum. Die Schritte im
+   Querformat: (1) „MS 2000“ zweizeilig, (2) ▶ ohne Wort (wie unter 760 px), (3) **⋯ wandert in die LCD-Zeile links neben ◎** (sein Platz im
+   Hochformat), (4) erst dann der Engine-Chip (H-13), danach wieder 2/3; der Spurname wird nur als letzter Ausweg gekürzt (≥ 40 px), ‹ ›
+   gehen nur als letzter Ausweg bis 15 px. Ergebnis (echte Schrift Barlow Semi Condensed): L1 844 × 390 und 926 × 428 + Safe-Area vier
+   Knöpfe einzeilig; L1 mit Safe-Area 844 × 390 und L2 667 × 375 vier Knöpfe, Schritte 1–3; 812 × 375 mit Safe-Area (iPhone mini quer) und
+   568 × 320 der Chip; überall ✕ im Bild und antippbar, nichts läuft über, Namensfeld ≥ 72 px, Spurname ganz. Weil gemessen wird, passt
+   sich der Kopf auch an eine Ersatzschrift an (Claude-App ohne `fonts/`): mit ihr zeigen L2 und L1 + Safe-Area den Chip, ohne Überlauf.
+2. **Kopf im Hochformat 414/428 px (Xanders 12 Pro Max) und W: Chip nur beim ersten Öffnen** (H-13, M-ANSICHT). Die Messung lief, solange
+   das Blatt noch `display:none` war (Breite 0 → immer Chip). `edHeadFit()` läuft jetzt nach `sh.classList.add('open')`. 414/428 px und W
+   zeigen die vier Knöpfe bei jedem Öffnen, 320–390 px den Chip bei jedem Öffnen. **Drehen** bei offenem Editor passt den Kopf neu an
+   (neue Breite oder Ausrichtung → Neuaufbau).
+3. **Querformat-Verdichtung beim ersten Öffnen übersprungen** (L2, 844 × 390 mit Safe-Area: ‹ › 13–15 px, Name „Mi…“, Sprung beim ersten
+   Reiter-Tipp bis 27 px): dieselbe Ursache wie Nr. 2, mit Nr. 1 behoben (Lage aller Kopf-Elemente in allen Zuständen gleich, ≤ 0,1 px).
+4. **ECO-Badge im Hochformat weg** (MK1-23, Regression): Die Trefferflächen-Regel `::before` der Engine-Knöpfe hatte den Inhalt „ECO“
+   überschrieben. Das Badge sitzt jetzt im selben `::before` (Text 3 px über der Unterkante wie 4.8.1, Trefferfläche bleibt 44–46 px);
+   quer zeigt weiter die Pille „ECO-Klang“. Bei einer AM-Spur trägt der aktive Knopf „MS 2000“ das Badge (vorher der VA-Knopf), beim Chip
+   der Chip.
+5. **MK1-09 Faltung Sync / Ring+Sync bei C6** (bis −38,6 dB): Ab Taste + TRANSP. + TUNE ≥ D4 (`MK_OSN` 62, 294 Hz; entschieden beim
+   Notenstart, kein Umschalten mitten in der Note) rechnen Sync und Ring+Sync **beide Oszillatoren 2×** (`osc2x`) und gehen über ein
+   polyphasiges IIR-Halbband (4 Allpässe, eben bis 20 kHz, ≥ 72 dB ab 30 kHz) zurück. Für Ring+Sync nimmt der Ring OSZ 1 einen Takt später
+   (wie den Slave), so liegen beide Sprünge des Master-Wraps im selben Sample, und der Kreuzterm der zwei polyBLEPs wird abgezogen
+   (`mkXt`: je Slave-Sprung im selben Sample, auch Wrap und Rechteck-Flanken). Unterhalb D4 bleibt der 1×-Weg bitgleich (dort faltet
+   es ≤ −52 dB, und „Ring+Sync = Sync × OSZ 1“ gilt exakt: 6,9e-8). Ergebnis C6, Halbton +1 … +19 (alle, auch die geraden): **Sync
+   −59,6 … −63,8 dB, Ring+Sync −58,5 … −66,0 dB** (vorher −46,9 bzw. −38,6). Andere Wellen (Puls/Dreieck als OSZ 1 oder 2) ebenfalls
+   deutlich besser (z. B. Dreieck-Slave +19: −41,8 → −54,5 dB).
+6. **MK1-24 CPU** (eine AM-Stimme 1,5–1,7 × VA, 4 Stimmen 5,1–5,9 ×): (a) Die ADAA-Verzerrung rechnet die geteilte Differenz von F
+   innerhalb |u|, |x| < 3 geschlossen ohne Logarithmus (ln(A/B) = 2 atanh(s), Padé 5/4, eine Division je Sample, Fehler ≤ 1,5e-5) und im
+   flachen Teil (beide ≥ 3 bzw. ≤ −3) gar nicht; (b) **Boxen von Zahlen** in V8 abgestellt: eine Schleifen-Variable, die bei einem
+   Parameter beginnt (`mm`), und der Seed-Zähler als uint32 boxten **jedes Sample** (80 MB Speicher je 10 s Klang, Müllabfuhr) – jetzt
+   ohne Allokation in den Sample-Schleifen; (c) Cutoff-Grundwert, Resonanz, Pegel und Pan einmal je Block für alle Stimmen und nur, wenn
+   sich der geglättete Wert bewegt; LFO-Raten nur bei Änderung; `cutHz` nur für den Scope; (d) Verzerrung als eigener Durchlauf.
+   Klänge dabei bitgleich (alle 66 Synth-Sounds gegen MK1.html, inkl. INIT MS 2000).
+7. **MK1-25 Leistungs-Probe: `frames_ok` immer wahr, `quantum_max_ms` immer null** (B.4): Das Worklet meldet je Bericht die gerechneten
+   Frames, `Date.now()` (dieselbe Uhr wie der Hauptfaden) und die längste Einzel-Quantum-Zeit. Die Probe setzt `frames_ok` falsch, sobald
+   eine Probe-Engine seit ihrem ersten Bericht unter 0,995 · sampleRate liegt (Spielraum ein 2048-Frame-Gerätepuffer) oder ihre Berichte
+   > 1,6 s ausbleiben; `quantum_max_ms` = Maximum über alle Engines (in Chromium ohne `performance` im Worklet auf 1 ms gerastert).
+8. **🎲 (MK1-31) konnte stumm würfeln:** Puls mit STEUER 1 + 2 > 100 und Ring/Ring+Sync gab −61 dB. Der Puls bleibt jetzt ≥ 10 % breit
+   (STEUER 1 + STEUER 2 ≤ 100). Vorher und nachher gleich laut gerendert (−61,0 dB), also kein Fehler dieses Fixes, nur ein Loch im Würfel.
+
+### Proben (Node 22 bzw. Chromium 1243; der Pfad chromium-1194 aus dem Auftrag existiert hier nicht)
+- **Neu, mit der echten App-Schrift** (Barlow Semi Condensed / JetBrains Mono aus `dirigent-wt/fonts`, geprüft `document.fonts`):
+  `v3-mk1fix-hdr.mjs` **48/48** (12 Formate × VA/MS 2000/FM/WT; echte Tipps: Öffnen, Ändern, Reiter, ✕, wieder Öffnen; kein Element über
+  dem Rand, keine Beschriftung läuft über, ✕ getroffen und schließt, Namensfeld ≥ 72 px quer, Spurname ganz, Lage gleich ≤ 2 px),
+  `v3-mk1fix-hdr60.mjs` **4/4** (alle 60 VA/FM/WT-Werks-Sounds + INIT MS 2000 nach einer Änderung in 844 × 390 + SA, 812 × 375 + SA,
+  667 × 375, 926 × 428 + SA: 0 von 61 über dem Rand; vorher 60 von 60), `v3-mk1fix-rot-eco.mjs` **15/15** (Drehen P1 ↔ L1, 428 ↔ 926;
+  ECO-Badge P1/P2/P3/W/428 für VA und MS 2000, Farbe Bernstein, Treffer ≥ 44 px; L1 Pille).
+- **QA-Repros erneut** (dort mit Ersatzschrift): `v3-repro-mk1-hdrx.mjs` – L1 + SA, L2, 812 + SA, L1: ✕ nach der Änderung im Kopf,
+  Tipp schließt (`R.editor` null); `v3-qa-mk1-hdr9.mjs` 0 von 60 über dem Rand (vorher 60); `v3-rp-mk1-chipfirst.mjs` – 428/414 px vier
+  Knöpfe in allen vier Zuständen, ≤ 390 px Chip in allen; `v3-repro-hdrflip.mjs`/`-rot.mjs` – gleiche Lage in allen Zuständen, Drehen
+  P1 → L1 ergibt die Knöpfe; `v3-rp-mk1-ecobadge.mjs`/`v3-qareg-mk1-eco2.mjs` – „ECO“ in P1/P2/P3/W, bei AM auf „MS 2000“;
+  `v3-rp2-mk109-alias.mjs`/`v3-sp-mk1-alias.mjs` – kein Halbton +1…+19 über −50 dB; `v3-sp-mk1-probe.mjs` – `frames_ok` false.
+- `v3-mk1-look.mjs` lädt jetzt die echte Schrift (wie Pages; `NOFONT=1` misst mit der Ersatzschrift; alte Fassung
+  `v3-mk1-look.pre-mk1fix.mjs`): **88/88**. Mit Ersatzschrift fällt nur „L2 ohne Chip“ (dort zeigt der Kopf den Chip, nichts läuft über).
+- `v3-mk1-dsp.mjs` **64/64** (MK1-09 jetzt grün: schlechtester Ring+Sync +1 −58,5 dB; MK1-24 in zwei Läufen 1,05 × / 2,94 × und
+  0,79 × / 2,60 ×), eigene Sweeps
+  `v3-mkfix-alias-probe.mjs` (C4/D4/C5/C6/C7), `v3-mkfix-alias-var.mjs` (Wellen-Kombinationen alt/neu).
+- **CPU robust gemessen:** `v3-qa2-mk1-cpu-shared.mjs` (eine Scope, verschachtelt, 60 s): 1 AM-Stimme **0,99–1,11 ×**, 4 Stimmen
+  **3,45–3,70 ×** VA; `v3-rp-mk1-cpu-node.mjs` (echtes `Math`, 5 Prozesse, Mediane): **1,08 × / 3,81 ×** (ohne VERZERR. 0,99 × / 3,46 ×);
+  `v3-rp-mk1-cpu-chromium.mjs` (App-Worklet im OfflineAudioContext, 5 Runden): Median **1,03 × / 3,45 ×**. Information: hohe Noten mit
+  dem 2×-Weg (Sync bzw. Ring+Sync, C5–C6, 4 Stimmen) 1,23–1,30 × / 4,2–4,5 ×. Speicher: 0 Allokationen in den Sample-Schleifen
+  (`v3-mkfix-alloc2.mjs`, Heap-Sampling).
+- `v3-mk1-probe.mjs` 7/7 (`frames_ok` true, `quantum_max_ms` 5); QA-Repro `v3-sp-mk1-probe.mjs` mit 2,5 s angehaltenem Audio:
+  `frames_ok` **false** (vorher true).
+- Regression: `v3-mk1-hear.mjs` 53/53, `v3-mk1-format.mjs` alles, `v3-mk1-proto.mjs` alles (VA/FM-Nachrichten byte-gleich),
+  `v3-mk1-eco.mjs` alles, `v3-mk1-gleich.mjs` gegen MK1.html: alle Daten deep-equal, **alle 66 Synth-Sounds bitgleich** (die zwei
+  MK0-Regeln „Worklet unverändert“ / „≤ +4 KB“ gelten für MK0, nicht hier); `v3-mk1-ui.mjs` alles (MK1-31 mit dem 🎲-Schutz),
+  `v3-mk1-fpdsp.mjs` alles (Denormale, NaN, Extremwerte), `v3-mk1-perf.mjs` 6/7 (rot nur das Budget, s. Abweichungen); Worklet-ASCII;
+  Smoke ohne Fehler (`v3-mk1fix-smoke.png`).
+
+### Abweichungen
+- **812 × 375 mit Safe-Area** (iPhone mini quer) und 568 × 320 zeigen quer den Engine-Chip: vier Knöpfe fehlen dort 1–40 px, auch mit
+  allen drei Schritten (der Spurname bliebe sonst nicht ganz). Das ist die H-13-Regel („Chip nur dort, wo die Knöpfe nicht passen“) und
+  kein Format der MK1-21-Liste.
+- **⋯ in der LCD-Zeile** (Schritt 3, L1 mit Safe-Area und L2): sichtbar anders als in 4.8.1, aber nur dort, wo der vierte Knopf sonst
+  den Kopf sprengt; es ist der Platz, den ⋯ im Hochformat schon hat. Bitte beim iPhone-Test ansehen (Punkt 1 unten).
+- **2×-Weg ab D4** nur für Sync und Ring+Sync: Ring+Sync oberhalb D4 ist nicht mehr exakt „Sync × OSZ 1 aus getrennten Renders“ (die
+  entfernte Faltung fehlt); die Abnahme MK1-09 prüft die Gleichheit bei A3 und hält dort exakt.
+- **Größe +13,8 KB** gegenüber MK1 (2 668 186 → 2 681 936 B; davon ≈ 6 KB Kommentare); MK1 insgesamt damit +143,7 KB statt +115 KB
+  (Vorschlag aus MK1 bleibt: SL1 packt `sq-mk-src`).
+
+### Lücken
+- Puls als OSZ 1 mit Ring+Sync bei Halbton +12 faltet bei C6 noch −46,7 dB (die Puls-Flanke von OSZ 1 fällt dort auf den Slave-Wrap; der
+  Kreuzterm dafür ist nicht abgezogen). Nicht Teil von MK1-09 (Säge/Säge), vorher −40,4 dB.
+- MIDI-Bend/CC1 (freiwillig) weiter nicht gebaut.
+
+### Datenbank / Am Server offen
+- Nichts. Kein Supabase-Aufruf, keine Datenbank-Änderung.
+
+### iPhone-Prüfpunkte (Xander, ≈ 3 min)
+1. iPhone quer, Synth-Editor öffnen, einen Regler drehen: ✕, ↶, ↷ bleiben sichtbar, „MS 2000“ zweizeilig, ⋯ jetzt rechts in der
+   LCD-Zeile neben ◎. Passt das so?
+2. Hochkant auf deinem 12 Pro Max: Engine-Wahl zeigt beim Öffnen immer die vier Knöpfe VA │ FM │ WT │ MS 2000 (kein Chip mehr).
+3. MS 2000: OSZ 2 auf Sync oder Ring+Sync, hohe Töne (C5–C6) mit Halbton-Fahrt: kein „Kratzen“ mehr zwischen den Tönen.
+4. Menü → Info → Leistungs-Probe: `frames_ok` und `quantum_max_ms` haben jetzt echte Werte – Ergebnis bitte schicken.
