@@ -2,7 +2,7 @@
 // node v3-qa-vs2b-acc-off.mjs [case…]
 import {loadDsp} from './v3-vs2-corpus.mjs';
 import {sing, score, rng} from './v3-qa-vs2b-acc-synth.mjs';
-const DN = loadDsp('../dirigent-wt/index.html'), DO = loadDsp('v3-vs2b-base.html');
+const DN = loadDsp(process.env.NEWF || '../dirigent-wt/index.html'), DO = loadDsp('v3-vs2b-base.html');
 const only = process.argv.slice(2);
 const VO = [['male', 50], ['female', 62]];
 function run(notesFn, o = {}) {

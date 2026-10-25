@@ -1,0 +1,10 @@
+import {loadDsp} from './v3-vs2-corpus.mjs';
+import {CONDS, melFor, renderContour} from './v3-vs2b-synth.mjs';
+const [fa, fb, voice, seed, W0, W1] = process.argv.slice(2), name = process.env.C || 'run150', c = CONDS[name];
+const A = loadDsp(fa), B = loadDsp(fb);
+const base = voice === 'male' ? 52 : 64, notes = melFor(+seed * 131 + base + name.length, base, c), sig = renderContour(notes, {voice, seed: +seed, snr: c.snr});
+const tr = A.pyin(sig.x, {fs: 16000});
+const f = D => D.segment(tr, {snap: false, tuning: 'auto'}).notes.filter(n => n.t1 > +W0 && n.t0 < +W1).map(n => `${n.t0.toFixed(3)}-${n.t1.toFixed(3)}:${n.n}`).join(' ');
+console.log('truth', sig.truth.filter(t => t.on > +W0 - 0.2 && t.on < +W1).map(t => `${t.on.toFixed(3)}:${t.midi}`).join(' '));
+console.log('A', f(A)); console.log('B', f(B));
+let l = ''; for (let i = Math.round(+W0 / 0.005); i < Math.round(+W1 / 0.005); i++) l += `${i}:${tr.f0[i] > 0 ? (69 + 12 * Math.log2(tr.f0[i] / 440)).toFixed(2) : '--'}/${tr.e10[i].toFixed(0)} `; console.log(l);
