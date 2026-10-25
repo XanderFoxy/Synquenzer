@@ -1,0 +1,27 @@
+// QA V2e′ t28: N7S-47 (b) by touch, then the own clip's hold sheet → [Ganzer Block] → [Zurück zum Szenen-Clip]
+import { openVp, T, SETUP55, sleep, mkCheck } from './v3-qa-v2e2-lib.mjs';
+const {check, done} = mkCheck();
+const {b, p, errs, cdp} = await openVp('P1');
+const t = T(p, cdp), E = t.E;
+await E(SETUP55(true)); await E(() => window.SYNQUENZER.songView(true)); await sleep(300);
+await E(() => { SV.x = 4 * 36; UI.dirty.song = true; return 1; }); await sleep(200);
+const S0 = await E(() => JSON.stringify(window.SYNQUENZER.song()));
+const cellXY = (tr, bar) => E(([tr, bar]) => { const I = window.SYNQUENZER.svLayoutInfo(); const r = SV.rows.indexOf(tr); return {x: I.canvas.x + bar * I.cellW - I.x0 + I.cellW / 2, y: I.canvas.y + I.rulerH + r * I.rowH + I.rowH / 2}; }, [tr, bar]);
+const hold = async (x, y) => { await t.down(x, y); await sleep(560); await t.up(); await sleep(300); };
+let c = await cellXY(0, 8); await hold(c.x, c.y); await t.tapPop('Eigener Clip'); await sleep(300);
+console.log('after (b)', JSON.stringify(await E(() => window.SYNQUENZER.song().lanes[0])));
+c = await cellXY(0, 8); await hold(c.x, c.y);
+const sub = await E(() => (document.querySelector('#popLayer .pop [data-a="whole"] small') || {}).textContent);
+console.log('own sheet', await t.popBtns(), '| whole:', sub);
+await t.tapPop('Ganzer Block'); await sleep(300);
+const oc = await E(() => window.SYNQUENZER.ownClip(0, 8));
+console.log('after whole', JSON.stringify(await E(() => window.SYNQUENZER.song().lanes[0])), 'len', oc && oc.len);
+check('N7S-47: [Ganzer Block] at (b) (from the own clip\'s sheet) → own clip T8–11', oc && oc.len === 4, oc && oc.len);
+c = await cellXY(0, 8); await hold(c.x, c.y); await t.tapPop('Zurück zum Szenen-Clip'); await sleep(300);
+const s = await E(() => window.SYNQUENZER.song());
+console.log('after back', JSON.stringify(s.lanes[0]), 'own', JSON.stringify(Object.keys(s.own || {})));
+check('[Zurück zum Szenen-Clip] → back to the reference (deep-equal to before N7S-47)', JSON.stringify(s) === S0);
+check('no lane entry references a missing own clip', !s.lanes.some(l => l.some(e => e.own && !(s.own && s.own[e.own]))));
+check('0 console errors', errs.length === 0, errs);
+await b.close();
+process.exit(done());

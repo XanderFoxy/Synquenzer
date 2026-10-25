@@ -1,0 +1,35 @@
+// QA V2e′ t26: mouse (W, no touch): hold a part key, auto-open, drop at bar 3 → sheet → Einfügen; release over ▶ SONG = abort
+import { chromium } from 'playwright';
+import { APP, SETUP55, sleep, mkCheck } from './v3-qa-v2e2-lib.mjs';
+const {check, done} = mkCheck();
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required'] });
+const ctx = await b.newContext({viewport: {width: 1280, height: 800}, deviceScaleFactor: 1});
+const p = await ctx.newPage(); const errs = [];
+p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('file://' + APP); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.runtime); await p.waitForTimeout(800);
+const E = (f, a) => p.evaluate(f, a);
+await E(SETUP55(false)); await E(() => window.SYNQUENZER.songView(false)); await sleep(300);
+const P0 = await E(() => JSON.stringify(window.SYNQUENZER.project()));
+const k = await E(() => { const e = document.querySelector('#partBar .pk'); const r = e.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; });
+await p.mouse.move(k.x, k.y); await p.mouse.down(); await sleep(1150);
+const on = await E(() => document.getElementById('gridArea').classList.contains('song'));
+check('W mouse: auto-open', on);
+const inf = await E(() => window.SYNQUENZER.svLayoutInfo());
+await p.mouse.move(inf.canvas.x + 3 * 36 + 10, inf.canvas.y + 100, {steps: 10});
+const d = await E(() => window.SYNQUENZER.svLayoutInfo().drag);
+check('W mouse: n = 3', d && d.n === 3, d);
+await p.mouse.up(); await sleep(300);
+const bt = await E(() => [...document.querySelectorAll('#popLayer .pop button[data-a]')].map(b => b.dataset.a));
+check('W mouse: sheet', bt.includes('insert'), bt);
+const ib = await E(() => { const b = document.querySelector('#popLayer .pop button[data-a="insert"]'); const r = b.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; });
+await p.mouse.click(ib.x, ib.y); await sleep(400);
+check('W mouse: inserted', await E(() => window.SYNQUENZER.song().marks.some(m => m.a === 3 && m.len === 4)));
+await E(() => window.SYNQUENZER.undo()); await E(() => window.SYNQUENZER.songView(false)); await sleep(300);
+// release over ▶ SONG
+await p.mouse.move(k.x, k.y); await p.mouse.down(); await sleep(1150);
+const pl = await E(() => { const e = document.querySelector('.sv-play'); const r = e.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; });
+await p.mouse.move(k.x + 40, k.y - 40, {steps: 4}); await p.mouse.move(pl.x, pl.y, {steps: 6}); await p.mouse.up(); await sleep(400);
+check('W mouse: release over ▶ SONG → abort, not playing, deep-equal', !(await E(() => window.SYNQUENZER.runtime().playing)) && (await E(() => JSON.stringify(window.SYNQUENZER.project()))) === P0);
+check('0 console errors', errs.length === 0, errs);
+await b.close();
+process.exit(done());

@@ -1,0 +1,36 @@
+// Independent repro: own clip → [Ganzer Block] → [Zurück] leaves dangling own ref; then a new own clip on Synth 3 (slot 2) takes id o1
+import { openVp, T, SETUP55, sleep, mkCheck } from './v3-qa-v2e2-lib.mjs';
+const {check, done} = mkCheck();
+const {b, p, errs, cdp} = await openVp('P1');
+const t = T(p, cdp), E = t.E;
+await E(SETUP55(true)); await E(() => window.SYNQUENZER.songView(true)); await sleep(300);
+await E(() => { SV.x = 4 * 36; UI.dirty.song = true; return 1; }); await sleep(200);
+const S0 = await E(() => JSON.stringify(window.SYNQUENZER.song()));
+console.log('start lanes', JSON.stringify(JSON.parse(S0).lanes));
+const cellXY = (tr, bar) => E(([tr, bar]) => { const I = window.SYNQUENZER.svLayoutInfo(); const r = SV.rows.indexOf(tr); return {x: I.canvas.x + bar * I.cellW - I.x0 + I.cellW / 2, y: I.canvas.y + I.rulerH + r * I.rowH + I.rowH / 2}; }, [tr, bar]);
+const hold = async (x, y) => { await t.down(x, y); await sleep(560); await t.up(); await sleep(300); };
+const bassLog = async () => { await E(() => { const Q = window.SYNQUENZER; Q.setBpm(480); Q.clearLog(); Q.songPlay(0); return 1; });
+  await p.waitForFunction(() => window.SYNQUENZER.runtime().song.beat >= 40, null, {timeout: 30000, polling: 5});
+  return E(() => { const Q = window.SYNQUENZER; Q.songPlay(false); return Q.noteLog(400).filter(x => x.track === 0 && x.beat >= 28 && x.beat < 36).map(x => +x.beat.toFixed(2) + ':' + x.out + ':' + x.src); }); };
+const L0 = await bassLog(); console.log('bass T8–9 before', L0.join(' '));
+let c = await cellXY(0, 8); await hold(c.x, c.y); await t.tapPop('Eigener Clip'); await sleep(300);
+c = await cellXY(0, 8); await hold(c.x, c.y); console.log('own sheet', await t.popBtns());
+await t.tapPop('Ganzer Block'); await sleep(300);
+c = await cellXY(0, 8); await hold(c.x, c.y); await t.tapPop('Zurück zum Szenen-Clip'); await sleep(300);
+let s = await E(() => window.SYNQUENZER.song());
+console.log('after back lane0', JSON.stringify(s.lanes[0]), 'own', Object.keys(s.own || {}));
+check('no dangling ref after back', !s.lanes.some(l => l.some(e => e.own && !(s.own && s.own[e.own]))));
+console.log('lane2', JSON.stringify(s.lanes[2]));
+// find a Synth 3 bar playing slot 2
+const bar2 = await E(() => { const s = S.song; for (let x = 0; x < s.bars; x++) { const o = laneOriginAt(s.lanes[2], x); if (o.slot === 2) return x; } return -1; });
+console.log('synth3 slot2 at bar', bar2);
+await E(() => { SV.x = 0; UI.dirty.song = true; return 1; }); await sleep(200);
+c = await cellXY(2, bar2); await hold(c.x, c.y); console.log('synth3 sheet', await t.popBtns()); await t.tapPop('Eigener Clip'); await sleep(300);
+s = await E(() => window.SYNQUENZER.song());
+console.log('own now', JSON.stringify(s.own), 'lane0', JSON.stringify(s.lanes[0]), 'lane2', JSON.stringify(s.lanes[2]));
+const L1 = await bassLog(); console.log('bass T8–9 after Synth 3 own clip', L1.join(' '));
+check('bass T8–9 sound unchanged by a new own clip on Synth 3', JSON.stringify(L1) === JSON.stringify(L0), {L0, L1});
+const oa = await E(() => ({cellOwn: svCellOwnAt(0, 8), own: window.SYNQUENZER.ownClip(0, 8)}));
+console.log('Synth1 T9 own?', JSON.stringify(oa));
+check('0 console errors', errs.length === 0, errs);
+await b.close(); process.exit(done());

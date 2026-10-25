@@ -251,7 +251,8 @@ if (!ONLY || 'MK0-02k'.startsWith(ONLY) || ONLY === 'MK0-02') {
   const st3 = await page.evaluate(() => SYNQUENZER.nvState());
   await page.evaluate(() => { S.name = 'Nochmal'; markDirty(); }); await page.waitForTimeout(1200); await page.evaluate(() => SYNQUENZER.save());
   const parked2 = await idb(page, 'get', 'proj:p-zukunft-1'), kv2 = await idb(page, 'get', 'project');
-  ok('MK0-02k reopened from Projekte: locked, parked copy kept', st3.lock && !st3.lock.kv && parked2 && deq(parked2.project, snap.project) && kv2.project.id !== 'p-zukunft-1', JSON.stringify(st3.lock));
+  // MK0-fix: the open locked project's original also goes into the autosave slot (unchanged), so it survives a restart
+  ok('MK0-02k reopened from Projekte: locked, parked copy kept', st3.lock && parked2 && deq(parked2.project, snap.project) && kv2.project.id === 'p-zukunft-1' && deq(kv2.project, snap.project), JSON.stringify(st3.lock));
   ok('MK0-02k no console errors', errs.length === 0, errs.join(' | ').slice(0, 300));
   await ctx.close();
 }
@@ -287,14 +288,15 @@ if (!ONLY || 'MK0-02c2'.startsWith(ONLY) || ONLY === 'MK0-02') {
   await page.waitForFunction(() => SYNQUENZER.cloud().state === 'online' && S.id === 'p-wolke-a', null, {timeout: 15000}).catch(() => {});
   await page.waitForTimeout(800);
   const st = await page.evaluate(() => ({nv: SYNQUENZER.nvState(), id: S.id, ban: !!document.getElementById('nvBan')}));
-  ok('MK0-02c2 cloud project of a newer version opened: locked + banner', st.id === 'p-wolke-a' && st.nv.lock && !st.nv.lock.kv && st.ban, JSON.stringify(st));
+  ok('MK0-02c2 cloud project of a newer version opened: locked + banner', st.id === 'p-wolke-a' && st.nv.lock && st.ban, JSON.stringify(st));
   const pb = await idb(page, 'get', 'proj:p-wolke-b');
   ok('MK0-02c2 the other server project is parked as it came', pb && pb.format === 5 && pb.project.mkNeu === 1 && pb.project.format === 5, pb ? JSON.stringify({f: pb.format, m: pb.project.mkNeu}) : 'none');
   const sp0 = srv.calls.filter(c => c.fn === 'save_project').length;
   await page.evaluate(() => { S.name = 'Hier geändert'; markDirty(); }); await page.waitForTimeout(1500);
   await page.evaluate(() => SYNQUENZER.save()); await page.evaluate(() => SYNQUENZER.cloudSync()); await page.waitForTimeout(2500);
   const kvp = await idb(page, 'get', 'project');
-  ok('MK0-02c2 no save_project, KV not written with it', srv.calls.filter(c => c.fn === 'save_project').length === sp0 && !(kvp && kvp.project && kvp.project.id === 'p-wolke-a'),
+  // MK0-fix: the KV slot holds the server original unchanged (the meta names this version), never this version's edit
+  ok('MK0-02c2 no save_project, KV holds the server original unchanged', srv.calls.filter(c => c.fn === 'save_project').length === sp0 && kvp && kvp.project && deq(kvp.project, A.project),
     'save_project=' + (srv.calls.filter(c => c.fn === 'save_project').length - sp0) + ' kv=' + (kvp && kvp.project && kvp.project.id));
   ok('MK0-02c2 server copies unchanged', deq(srv.projects.get('sid-a').body, A) && deq(srv.projects.get('sid-b').body, B));
   ok('MK0-02c2 no console errors', errs.length === 0, errs.join(' | ').slice(0, 300));
@@ -323,8 +325,10 @@ if (!ONLY || 'MK0-02r'.startsWith(ONLY) || ONLY === 'MK0-02') {
   const sp0 = srv.calls.filter(c => c.fn === 'save_project').length;
   await page.evaluate(() => { S.bpm = 77; markDirty(); }); await page.waitForTimeout(1500); await page.evaluate(() => SYNQUENZER.save()); await page.evaluate(() => SYNQUENZER.cloudSync()); await page.waitForTimeout(2500);
   const after = await idb(page, 'get', 'project');
-  ok('MK0-02r no save_project, KV copy not written over', srv.calls.filter(c => c.fn === 'save_project').length === sp0 && deq(after, before) && deq(srv.projects.get('sid-r').body, R2),
-    'sp=' + (srv.calls.filter(c => c.fn === 'save_project').length - sp0) + ' kvSame=' + deq(after, before));
+  // MK0-fix: the KV slot now holds the partner's version unchanged (meta base 2 names it), never this version's edit
+  const m2 = await page.evaluate(() => metaGet('p-raum-1'));
+  ok('MK0-02r no save_project, KV = the partner state as delivered (meta base 2)', srv.calls.filter(c => c.fn === 'save_project').length === sp0 && after && deq(after.project, R2.project) && after.app === 4009000 && m2.base === 2 && deq(srv.projects.get('sid-r').body, R2),
+    'sp=' + (srv.calls.filter(c => c.fn === 'save_project').length - sp0) + ' kvPartner=' + (after && deq(after.project, R2.project)) + ' base=' + (m2 && m2.base));
   ok('MK0-02r no console errors', errs.length === 0, errs.join(' | ').slice(0, 300));
   await ctx.close();
 }

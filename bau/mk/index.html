@@ -3932,6 +3932,7 @@ function defaults() {
     eng: 0,                                                      // engine: 0 analog (VA), 1 fm6 (WP7)
     fmAmp: 0, fmBright: 0, fmAtk: 0, fmDec: 0, fmRel: 0, fmBite: 0,         // FM6 (6.2): DX envelopes = volume | ADSR; brightness dB; rate offsets
     xfLite: 0,                                                   // V4a: 1 = limiter level >= 2: structural changes use the WP4 dip
+    mkLim: 0,                                                    // MK1: the limiter level for eng 3 (B.4; only sent with eng 3)
   };
 }
 
@@ -4010,6 +4011,508 @@ function cloneVoice(v) {
   return c;
 }
 
+/*MK{*/
+/* ---- eng 3 (Nachtrag 3, MK1): the two-oscillator engine with the device units of p.mk. Timbre 1 only (Dual / Split MK3).
+   One MkCore per AnalogCore (this.mk); AnalogCore routes the note events to it while P.eng === 3 and mixes its output.
+   Messages (main -> worklet): {mk: p.mk} whole block, {mkSet: {path: value}} gesture values (fractions allowed),
+   {mkWheel: {bend, mod, ret}} live wheel values, {mkSeed}, {mkScope: bool}, {mkTap: name} (test taps).
+   Worklet -> main: {mkScope: {voices, t}} at ~30 Hz while asked.
+   The value curves (W table) sit between the MKW markers; the main thread evaluates the same text for its display. ---- */
+/*MKW{*/
+const MKW = {
+  cutHz: v => 20 * Math.pow(1000, v / 127),                                   // W-01 pole frequency of the ladder stages
+  resK: v => 4 * 1.1 * v / 127,                                               // W-02 ladder feedback (res 1.1 * v/127, k = 4 res)
+  kbdHt: (kt, v) => (kt - 60) * v / 48,                                       // W-03
+  egHt: v => v / 63 * 60,                                                     // W-04 (x EG1 0..1)
+  velHt: (v, vel) => v / 63 * 24 * (2 * vel - 1),                             // W-05
+  atk: v => .0005 * Math.pow(2, 15 * v / 127),                                // W-06 attack (0 -> 90 %)
+  dec: v => .002 * Math.pow(2, 13 * v / 127),                                 // W-06 decay (90 % of the way) / release (-20 dB)
+  sus: v => v / 127,                                                          // W-07
+  lfoHz: v => .05 * Math.pow(2, 10 * v / 127),                                // W-08
+  LSYNC: [1, .75, 2 / 3, .5, .375, 1 / 3, .25, .1875, 1 / 6, .125, .09375, 1 / 12, .0625, 1 / 24, 1 / 32],   // W-09 (x 4 beats)
+  LSYNC_T: ['1/1', '3/4', '2/3', '1/2', '3/8', '1/3', '1/4', '3/16', '1/6', '1/8', '3/32', '1/12', '1/16', '1/24', '1/32'],
+  porta: v => (v <= 0 ? 0 : .002 * Math.pow(2, 12 * v / 127)),                // W-13 (time to 90 % of the interval)
+  fine2: v => { const a = Math.abs(v), s = v < 0 ? -1 : 1; return s * (a <= 48 ? 1200 * (a / 48) * (a / 48) : 1200 + 80 * (a - 48)); },   // W-14 ct
+  uni: (d, n) => (n >= 4 ? [-d / 2, -d / 6, d / 6, d / 2] : n === 3 ? [-d / 2, 0, d / 2] : n === 2 ? [-d / 2, d / 2] : [0]),             // W-15 ct
+  vibCt: (v, mw) => v / 63 * 200 * mw,                                        // W-16 peak deviation
+  ampK: .62,                                                                  // W-19 K (INIT MS 2000 = INIT Analog loudness, MK1-20)
+  ampG: v => MKW.ampK * (v / 127) * (v / 127),                                // W-19
+  panLR: v => { const x = (Math.max(-63, Math.min(63, v)) + 63) / 126 * Math.PI / 2; return [Math.cos(x), Math.sin(x)]; },   // W-20
+  velDb: (v, vel) => (v >= 0 ? 24 * (v / 63) * (vel - 1) : 24 * (-v / 63) * (-vel)),   // W-21
+  kbdDb: (v, kt) => v / 63 * .3 * (kt - 60),                                  // W-22
+  distG: (o1, o2, n) => 1 + 8 * (o1 + o2 + n) / 381,                          // W-23
+  form: (c1, l, c2) => Math.max(0, Math.min(1, (c1 + l * c2) / 127)),         // W-24 / W-26 m, W-25 (1 - width / 50 %)
+};
+/*}MKW*/
+const MK_POOL = 12, MK_STEAL = Math.round(.005 * SR), MK_EXF = Math.round(.04 * SR), MK_SXF = Math.round(.03 * SR);
+const MK_INS = .25;                     // ladder input scale: the tanh stages stay near-linear for a full-scale oscillator
+const MK_SEED = 2e-5;                   // a tiny noise seed in the filter (self-oscillation starts by itself, W-02)
+const MK_SM = 1 - Math.exp(-CR / (.005 * SR));   // 5 ms smoothing of the continuous values (B.6 Nr. 2)
+const MK_GUP = CR / (.001 * SR), MK_GDN = CR / (.003 * SR);   // HK | GATE: gate amp 1 ms up, 3 ms down
+const MK_RA = .52, MK_RD = Math.pow(10, -2.25);  // envCoefs curve 0.5: attack overshoot, decay / release undershoot
+const MK_BENDRET = .08;                 // W-17: back to the centre in 80 ms
+function mkT() {                        // the neutral timbre (= INIT MS 2000, Nachtrag 3 B.1)
+  return {asg: 1, prio: 0, trig: 1, udet: 10, trans: 0, tune: 0, vib: 0, bend: 2, porta: 0,
+    o1: {w: 0, c1: 0, c2: 0}, o2: {w: 0, mod: 0, semi: 0, tune: 0}, mix: {o1: 127, o2: 0, n: 0},
+    f: {type: 0, cut: 127, res: 0, eg: 0, vel: 0, kbd: 0}, a: {lvl: 127, pan: 0, gate: 0, dist: 0, vel: 0, kbd: 0},
+    e1: {a: 0, d: 64, s: 0, r: 0, rst: 1}, e2: {a: 0, d: 64, s: 127, r: 8, rst: 1},
+    l1: {w: 2, ks: 0, sync: 0, f: 64, note: 6}, l2: {w: 2, ks: 0, sync: 0, f: 64, note: 6}};
+}
+function mkHash(a, b, c) {              // B.4 Nr. 3: a random generator per note = hash(seed, timbre, note counter)
+  let h = (a >>> 0) ^ 0x9E3779B9; h = Math.imul(h ^ (h >>> 16), 0x85ebca6b) >>> 0; h ^= (b + 0x632be5ab) >>> 0;
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35) >>> 0; h ^= (c * 0x27d4eb2f) >>> 0; h = Math.imul(h ^ (h >>> 16), 0x165667b1) >>> 0;
+  return (h ^ (h >>> 15)) >>> 0 || 0x1234567;
+}
+function mkRnd(v) { let x = v.rng; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; v.rng = x >>> 0; return (x >>> 0) / 4294967296; }
+// an exponential stage that lands exactly on the measuring points of W-06
+function mkEnvC(E, a, d, s, r) {
+  const T = 1 + MK_RA, ta = Math.max(1e-5, a) * SR / CR, tau = n => (n > 0 ? Math.exp(-1 / n) : 0);
+  E.aC = tau(ta / -Math.log(1 - .9 / T)); E.aT = T;
+  const td = Math.max(1e-5, d) * SR / CR, sp = 1 - s;
+  E.dC = sp > 1e-6 ? tau(td / -Math.log((.1 * sp + MK_RD) / (sp + MK_RD))) : 0; E.dT = s - MK_RD;
+  E.rC = tau(Math.max(1e-5, r) * SR / CR / -Math.log((.1 + MK_RD) / (1 + MK_RD))); E.rT = -MK_RD; E.s = s;
+}
+// one control block of an envelope: st 0 idle 1 attack 2 decay 3 sustain 4 release
+function mkEnvB(E, v, k) {
+  let st = v[k + 's'], o = v[k];
+  if (st === 1) { o = E.aT + (o - E.aT) * E.aC; if (o >= 1) { o = 1; st = 2; } }
+  if (st === 2) { o = E.dT + (o - E.dT) * E.dC; if (o <= E.s) { o = E.s; st = 3; } }
+  else if (st === 3) o += (E.s - o) * MK_SM;
+  else if (st === 4) { o = E.rT + (o - E.rT) * E.rC; if (o <= 0) { o = 0; st = 0; } }
+  v[k + 's'] = st; v[k] = o;
+}
+function mkLfoV(n, w, ph, sh) {          // phase 0 = an upward zero crossing (tempo sync: on the beat); LFO2 w 1 = square(+)
+  if (w === 3) return sh;
+  if (w === 0) return ph < .5 ? 2 * ph : 2 * ph - 2;
+  if (w === 1) return n === 2 ? (ph < .5 ? 1 : 0) : (ph < .5 ? 1 : -1);
+  if (n === 2) return SINE[(ph * SINE_N) | 0];
+  return ph < .25 ? 4 * ph : ph < .75 ? 2 - 4 * ph : 4 * ph - 4;
+}
+const mkLogCosh = x => { const a = x < 0 ? -x : x; return a + Math.log1p(Math.exp(-2 * a)) - Math.LN2; };
+class MkVoice {
+  constructor(i) {
+    this.i = i; this.on = false; this.id = -1; this.gate = false; this.ghost = false; this.note = 60; this.vel = 0; this.ord = 0;
+    this.pitch = 60; this.target = 60; this.gc = 1; this.udet = 0; this.ug = 1; this.st = null; this.age = 0;
+    this.t1 = 0; this.t2 = 0; this.sp = 0; this.e1 = 0; this.e1s = 0; this.e2 = 0; this.e2s = 0; this.gt = 0;
+    this.l1 = 0; this.l2 = 0; this.sh1 = 0; this.sh2 = 0; this.rng = 1;
+    this.s1 = 0; this.s2 = 0; this.s3 = 0; this.s4 = 0; this.gA = -1; this.gB = 0; this.kA = 0; this.kB = 0;
+    this.mA = -1; this.mB = 0; this.aA = -1; this.aB = 0; this.pl = 1; this.pr = 1; this.dx = 0; this.dg = 1;
+    this.fade = 0; this.fadeN = 1; this.fin = 0; this.finN = 1; this.sxk = -1; this.sxo = null; this.sxE = [0, 0, 0]; this.sxA = 1; this.sxB = 0; this.sxBlk = -1; this.pol = 1;
+    this.cutHz = 0; this.isLine = false; this.xfo = false; this.noEnd = false; this.lv1 = 0; this.lv2 = 0;
+  }
+}
+function mkClone(v) { const c = Object.assign(new MkVoice(v.i), v); c.sxE = [0, 0, 0]; c.sxo = null; c.sxA = 1; c.sxB = 0; c.sxBlk = -1; return c; }
+const MK_STRUCT = {'o1.w': 'w1', 'o2.w': 'w2', 'o2.mod': 'mod', 'f.type': 'ft', 'a.gate': 'gate'};
+const MK_REASSIGN = {asg: 1, prio: 1, trig: 1};
+
+class MkCore {
+  constructor(host, init) {
+    this.h = host; this.p = null; this.T = mkT(); this.V = []; for (let i = 0; i < MK_POOL; i++) this.V.push(new MkVoice(i));
+    this.keys = []; this.ord = 0; this.lastPitch = -1; this.lineId = -1; this.seed = (Math.random() * 4294967295) >>> 0; this.nctr = 0; this.lctr = 0;
+    this.g1 = 0; this.g2 = 0; this.gsh1 = 0; this.gsh2 = 0; this.ag = 0;
+    this.E1 = {}; this.E2 = {}; this.st = {w1: 0, w2: 0, mod: 0, ft: 0, gate: 0};
+    this.sm = null; this.bend = 0; this.bendT = 0; this.bendR = 0; this.modw = 0; this.modT = 0; this.modLive = false;
+    this.wr = new Float64Array(CR); this.ob = new Float64Array(CR); this.o2b = new Float64Array(CR);
+    this.oL = new Float32Array(CR); this.oR = new Float32Array(CR); this.nL = new Float32Array(CR); this.nR = new Float32Array(CR);
+    this.sxOn = false; this.sxN = 0; this.sxT = 0; this.sxPend = null; this.sxkN = 0; this.blk = 0;
+    this.scopeOn = false; this.scopeNext = 0; this.tap = ''; this.lim = 0; this.mw0 = 0;
+    this.load(init || null);
+  }
+  /* ---------------- parameters ---------------- */
+  load(pm) {                                             // a whole p.mk (sound load / engine change)
+    this.p = pm && typeof pm === 'object' ? pm : null;
+    const t = this.p && Array.isArray(this.p.t) && this.p.t[0] ? this.p.t[0] : null, T = mkT();
+    if (t) for (const k in T) { const x = t[k]; if (x == null) continue; if (typeof T[k] === 'object') { for (const j in T[k]) if (typeof x[j] === 'number' && isFinite(x[j])) T[k][j] = x[j]; } else if (typeof x === 'number' && isFinite(x)) T[k] = x; }
+    const sounding = this.V.some(v => v.on && !v.ghost), oldSt = this.st, re = MK_REASSIGN, T0 = this.T;
+    const reas = sounding && (T.asg !== T0.asg || T.prio !== T0.prio || T.trig !== T0.trig);
+    this.T = T; this.derive();
+    const ns = this.structOf();
+    if (sounding && !reas && (ns.w1 !== oldSt.w1 || ns.w2 !== oldSt.w2 || ns.mod !== oldSt.mod || ns.ft !== oldSt.ft || ns.gate !== oldSt.gate)) this.structXf(ns);
+    else this.setStruct(ns);
+    if (reas) this.reassign();
+    if (!this.sm) this.smInit();
+    void re;
+  }
+  set(o) {                                               // {path: value} from a gesture (fractions allowed during the gesture)
+    const T = this.T; let st = false, reas = false, env = false;
+    for (const path in o) {
+      const v = +o[path]; if (!isFinite(v)) continue;
+      const q = path.split('.'); if (q[0] !== 't' || q[1] !== '0') continue;
+      const k1 = q[2], k2 = q[3];
+      if (k2 != null) { if (!T[k1] || typeof T[k1] !== 'object') continue; T[k1][k2] = v; } else { if (!(k1 in T) || typeof T[k1] === 'object') continue; T[k1] = v; }
+      const key = k2 != null ? k1 + '.' + k2 : k1;
+      if (MK_STRUCT[key]) st = true; if (MK_REASSIGN[key]) reas = true; if (k1 === 'e1' || k1 === 'e2' || k1 === 'l1' || k1 === 'l2' || k1 === 'porta') env = true;
+    }
+    if (env || reas) this.derive();
+    if (st) { const ns = this.structOf(), s0 = this.st; if (ns.w1 !== s0.w1 || ns.w2 !== s0.w2 || ns.mod !== s0.mod || ns.ft !== s0.ft || ns.gate !== s0.gate) { if (this.V.some(v => v.on && !v.ghost)) this.structXf(ns); else this.setStruct(ns); } }
+    if (reas && this.V.some(v => v.on && !v.ghost)) this.reassign();
+  }
+  structOf() { const T = this.T, r = x => Math.round(x); return {w1: r(T.o1.w), w2: r(T.o2.w), mod: r(T.o2.mod), ft: r(T.f.type), gate: r(T.a.gate)}; }
+  setStruct(ns) { this.st = ns; for (const v of this.V) if (v.on && !v.ghost && !(this.sxOn && v.sxo)) v.st = ns; }
+  derive() {
+    const T = this.T, W = MKW;
+    mkEnvC(this.E1, W.atk(T.e1.a), W.dec(T.e1.d), W.sus(T.e1.s), W.dec(T.e1.r));
+    mkEnvC(this.E2, W.atk(T.e2.a), W.dec(T.e2.d), W.sus(T.e2.s), W.dec(T.e2.r));
+    const pt = W.porta(Math.round(T.porta));
+    this.gc = pt > 0 ? 1 - Math.exp(-CR / (pt / Math.LN10 * SR)) : 1;
+  }
+  smTarget() {
+    const T = this.T;
+    return {cut: T.f.cut, res: T.f.res, eg: T.f.eg, fvel: T.f.vel, kbd: T.f.kbd, c1: T.o1.c1, c2: T.o1.c2, m1: T.mix.o1, m2: T.mix.o2, mn: T.mix.n,
+      lvl: T.a.lvl, pan: T.a.pan, avel: T.a.vel, akbd: T.a.kbd, tune: T.tune, trans: T.trans, semi: T.o2.semi, fine: MKW.fine2(T.o2.tune), vib: T.vib};
+  }
+  smInit() { this.sm = this.smTarget(); }
+  smStep() { const t = this.smTarget(), s = this.sm; for (const k in t) { const d = t[k] - s[k]; s[k] = Math.abs(d) < 1e-6 ? t[k] : s[k] + d * MK_SM; } }
+  wheel(o) {
+    if (o.bend != null && isFinite(o.bend)) { this.bendT = Math.max(-1, Math.min(1, +o.bend)); this.bendR = o.ret > 0 ? Math.abs(this.bend) / Math.max(1, o.ret * SR / CR) : 0; }
+    if (o.mod != null && isFinite(o.mod)) { this.modT = Math.max(0, Math.min(1, +o.mod)); this.modLive = true; }
+    if (o.mw0 != null && isFinite(o.mw0)) { this.mw0 = Math.max(0, Math.min(1, +o.mw0)); if (!this.modLive) { this.modT = this.mw0; } }
+    if (o.reset) { this.modLive = false; this.modT = this.mw0; }
+  }
+  /* ---------------- notes ---------------- */
+  busy() { if (this.keys.length) return true; for (const v of this.V) if (v.on) return true; return false; }
+  count() { let n = 0; for (const v of this.V) if (v.on && !v.ghost) n++; return n; }
+  maxV() { return this.lim >= 2 ? 2 : 4; }
+  uniN() { return this.lim >= 1 ? 2 : 4; }
+  free() {
+    for (const v of this.V) if (!v.on && !v.sxo) return v;
+    for (const v of this.V) if (!v.on) return v;
+    let b = null; for (const v of this.V) if (v.fade > 0 && (!b || v.fadeG < b.fadeG)) b = v;
+    if (!b) { b = this.V[0]; for (const v of this.V) if (v.age < b.age) b = v; }
+    this.kill(b); return b;
+  }
+  kill(v) { v.on = false; const id = v.id; v.id = -1; this.endCheck(id); }
+  endCheck(id) {                                          // a host id is done when no key holds it and no voice plays it
+    if (id < 0 || this.keys.some(k => k.id === id)) return;
+    for (const v of this.V) if (v.on && v.id === id) return;
+    this.h.ended.push(id);
+  }
+  fadeOut(v, n) { if (v.fade > 0 && v.fade <= n) return; v.fade = n; v.fadeN = n / CR * (v.fadeG > 0 ? 1 / v.fadeG : 1) * CR; }
+  steal(v) { this.fadeOut(v, MK_STEAL); v.gate = false; }
+  start(v, k, from, retrig) {                             // a (re)start of voice v on key k
+    const T = this.T, fresh = !v.on || v.ghost;
+    if (fresh) {
+      Object.assign(v, new MkVoice(v.i)); v.on = true; v.rng = mkHash(this.seed, 1, ++this.nctr);
+      v.t1 = mkRnd(v); v.t2 = mkRnd(v); v.sh1 = mkRnd(v) * 2 - 1; v.sh2 = mkRnd(v) * 2 - 1;
+    } else if (retrig) {
+      if (T.e1.rst >= .5) { v.e1 = 0; } if (T.e2.rst >= .5) { v.e2 = 0; v.aA = -1; }
+    }
+    v.id = k.id; v.note = k.note; v.vel = k.vel; v.ord = k.ord; v.gate = true; v.age = ++this.ag; v.st = this.st; v.fade = 0; v.fadeG = 1;
+    if (fresh || retrig) { v.e1s = 1; v.e2s = 1; if (T.l1.ks === 2) v.l1 = 0; if (T.l2.ks === 2) v.l2 = 0; }
+    v.target = k.note; v.pitch = from >= 0 ? from : k.note; v.gc = from >= 0 ? this.gc : 1;
+    this.lastPitch = k.note;
+  }
+  rank(a, b) { const pr = Math.round(this.T.prio); return pr === 1 ? a.note - b.note : pr === 2 ? b.note - a.note : b.ord - a.ord; }   // best first
+  noteOn(id, note, vel) {
+    if (!this.keys.length && !this.V.some(v => v.on && v.gate && !v.ghost)) {    // first note after all keys up: Key Sync "Timbre"
+      if (this.T.l1.ks === 1) this.g1 = 0; if (this.T.l2.ks === 1) this.g2 = 0;
+    }
+    const k = {id, note, vel, ord: ++this.ord};
+    this.keys.push(k);
+    if (Math.round(this.T.asg) === 1) this.polyOn(k, 0); else this.monoSel(true);
+  }
+  gated() { return this.V.filter(v => v.on && v.gate && !v.ghost && v.fade === 0); }
+  polyOn(k, finN) {
+    const cap = this.maxV(), G = this.gated(), pr = Math.round(this.T.prio);
+    if (G.length >= cap) {
+      let victim = null;
+      if (pr === 0) { for (const v of G) if (!victim || v.ord < victim.ord) victim = v; }
+      else if (pr === 1) { for (const v of G) if (!victim || v.note > victim.note) victim = v; if (victim && k.note >= victim.note) victim = null; }
+      else { for (const v of G) if (!victim || v.note < victim.note) victim = v; if (victim && k.note <= victim.note) victim = null; }
+      if (!victim) return null;                           // the key waits (zurueckgestellt)
+      this.steal(victim);
+    }
+    // the same note releasing: the voice restarts (EG reset); else room among the sounding voices (oldest quietest tail goes)
+    let v = null; for (const x of this.V) if (x.on && !x.ghost && x.fade === 0 && !x.gate && x.note === k.note) v = x;
+    if (v) { const from = this.gc < 1 && this.lastPitch >= 0 ? this.lastPitch : -1; this.start(v, k, from === k.note ? -1 : from, true); v.fin = finN; v.finN = finN || 1; return v; }
+    const live = this.V.filter(x => x.on && !x.ghost && x.fade === 0);
+    if (live.length >= cap) { let q = null; for (const x of live) if (!x.gate && (!q || x.e2 < q.e2)) q = x; if (q) this.steal(q); }
+    v = this.free(); const from = this.gc < 1 && this.lastPitch >= 0 && this.lastPitch !== k.note ? this.lastPitch : -1;
+    this.start(v, k, from, false); v.fin = finN; v.finN = finN || 1;
+    return v;
+  }
+  // mono / unison: one line of voices (1 or 2..4 stacked) on the key the priority picks
+  line() { return this.V.filter(v => v.on && !v.ghost && v.fade === 0 && v.isLine); }
+  monoSel(isNew) {
+    const T = this.T, L = this.line();
+    if (!this.keys.length) { for (const v of L) this.release(v); return; }
+    const best = this.keys.slice().sort((a, b) => this.rank(a, b))[0], gatedLine = L.length && L[0].gate;
+    if (gatedLine && L[0].id === best.id) return;
+    const multi = Math.round(T.trig) === 1, oldId = L.length ? L[0].id : -1;
+    if (gatedLine) {                                      // legato move to another key: glide; Multi retriggers on a new key
+      const retrig = multi && isNew && best.ord === this.ord;
+      for (const v of L) { v.id = best.id; v.note = best.note; v.vel = retrig ? best.vel : v.vel; v.ord = best.ord; v.target = best.note; v.gc = this.gc;
+        if (retrig) { if (T.e1.rst >= .5) v.e1 = 0; if (T.e2.rst >= .5) { v.e2 = 0; v.aA = -1; } v.e1s = 1; v.e2s = 1; if (T.l1.ks === 2) v.l1 = 0; if (T.l2.ks === 2) v.l2 = 0; } }
+      this.lastPitch = best.note; this.endCheck(oldId); return;
+    }
+    // a first note (nothing held before): Single never glides into it (HB-MS S. 36), Multi glides from the last note
+    const from = multi && this.gc < 1 && this.lastPitch >= 0 && this.lastPitch !== best.note ? this.lastPitch : -1;
+    const n = Math.round(T.asg) === 2 ? this.uniN() : 1, off = MKW.uni(T.udet, n);
+    if (L.length === n) { for (let u = 0; u < n; u++) { this.start(L[u], best, from, true); L[u].isLine = true; L[u].udet = off[u]; } }
+    else {
+      for (const v of L) this.steal(v);
+      for (let u = 0; u < n; u++) { const v = this.free(); this.start(v, best, from, false); v.isLine = true; v.udet = off[u]; v.ug = n > 1 ? .5 : 1; }
+    }
+    this.endCheck(oldId);
+  }
+  release(v) { v.gate = false; if (v.e1s) v.e1s = 4; if (v.e2s) v.e2s = 4; }
+  noteOff(id) {
+    const i = this.keys.findIndex(k => k.id === id);
+    if (i >= 0) this.keys.splice(i, 1);
+    if (Math.round(this.T.asg) !== 1) { this.monoSel(false); this.endCheck(id); return; }
+    let had = false; for (const v of this.V) if (v.on && !v.ghost && v.id === id && v.gate) { this.release(v); had = true; }
+    if (!had) { this.endCheck(id); return; }
+    // a waiting key gets the voice back (HB-MS S. 35)
+    const G = this.gated(); if (G.length >= this.maxV()) return;
+    const wait = this.keys.filter(k => !G.some(v => v.id === k.id)).sort((a, b) => this.rank(a, b));
+    if (wait.length) this.polyOn(wait[0], 0);
+  }
+  fastOff(id, tau) { for (const v of this.V) if (v.on && v.id === id) this.fadeOut(v, Math.max(64, Math.round(tau * 5 * SR))); const i = this.keys.findIndex(k => k.id === id); if (i >= 0) { this.keys.splice(i, 1); } this.endCheck(id); }
+  killId(id) { const i = this.keys.findIndex(k => k.id === id); if (i >= 0) this.keys.splice(i, 1); for (const v of this.V) if (v.on && v.id === id) this.fadeOut(v, 96); this.endCheck(id); }
+  retune(id, note, tau) {
+    const k = this.keys.find(x => x.id === id); if (k) k.note = note;
+    for (const v of this.V) if (v.on && !v.ghost && v.id === id) { v.note = note; v.target = note; v.gc = tau > 0 ? 1 - Math.exp(-CR / (tau * SR)) : 1; }
+  }
+  allOff() { const ids = this.keys.map(k => k.id); this.keys.length = 0; for (const v of this.V) if (v.on && v.gate) this.release(v); for (const id of ids) this.endCheck(id); }
+  panic() { const ids = this.keys.map(k => k.id); this.keys.length = 0; for (const v of this.V) if (v.on) this.fadeOut(v, 64); for (const id of ids) this.endCheck(id); }
+  // the held keys for an engine change away from eng 3: the voices fade out as ghosts, the keys go to the other engine
+  handOver(n) {
+    const held = this.keys.slice().sort((a, b) => a.ord - b.ord).map(k => ({id: k.id, note: k.note, vel: k.vel}));
+    this.keys.length = 0;
+    const hs = new Set(held.map(x => x.id));
+    for (const v of this.V) if (v.on) { v.ghost = true; v.gate = false; v.xfo = true; v.noEnd = hs.has(v.id); this.fadeOut(v, n); }
+    return held;
+  }
+  // keys from another engine (engine change to eng 3 at held keys): they start here with a sin fade-in
+  adopt(held, n) {
+    for (const h of held) this.noteOn(h.id, h.note, h.vel);
+    for (const v of this.V) if (v.on && !v.ghost) { v.fin = n; v.finN = n; }
+  }
+  // B.6 Nr. 2: Zuweisung / Prioritaet / Ausloesung at held keys: the old voices fade out (40 ms .. the attack, at most 0.5 s),
+  // the held keys are distributed again under the new rule and fade in; a key keeps its phases and envelopes where it can
+  reassign() {
+    const old = this.V.filter(v => v.on && !v.ghost), byId = new Map();
+    const att = MKW.atk(this.T.e2.a), n = Math.round(Math.max(.04, Math.min(.5, att)) * SR);
+    for (const v of old) { if (!byId.has(v.id)) byId.set(v.id, mkClone(v)); v.ghost = true; v.xfo = true; v.gate = false; this.fadeOut(v, n); }
+    const keys = this.keys.slice().sort((a, b) => a.ord - b.ord); this.keys = [];
+    for (const k of keys) {
+      this.keys.push(k);
+      if (Math.round(this.T.asg) === 1) { const v = this.polyOn(k, MK_EXF); if (v && byId.has(k.id)) this.inherit(v, byId.get(k.id)); }
+    }
+    if (Math.round(this.T.asg) !== 1 && this.keys.length) {
+      this.monoSel(false);
+      for (const v of this.line()) { const c = byId.get(v.id); if (c) this.inherit(v, c); v.fin = MK_EXF; v.finN = MK_EXF; }
+    }
+  }
+  inherit(v, c) {
+    for (const k of ['t1', 't2', 'sp', 'e1', 'e1s', 'e2', 'e2s', 'gt', 'l1', 'l2', 'sh1', 'sh2', 's1', 's2', 's3', 's4', 'pitch', 'dx', 'rng']) v[k] = c[k];
+    v.gA = -1; v.aA = -1; v.mA = -1;
+  }
+  /* ---------------- structural crossfade (SXF, 30 ms, power keeping like AnalogCore.sxMix) ---------------- */
+  structXf(ns) {
+    if (this.sxOn) { this.sxPend = ns; return; }
+    this.sxkN++;
+    for (const v of this.V) if (v.on && !v.ghost) {
+      const c = mkClone(v); c.st = v.st; v.sxo = c; v.sxk = this.sxkN; c.sxk = -2;
+      // a wave change: the new wave starts with its fundamental in phase with the old one (saw / pulse are anti-correlated)
+      if (ns.w1 !== v.st.w1) { const d = wavePhi(Math.min(2, ns.w1 > 2 ? 0 : ns.w1), .25) - wavePhi(Math.min(2, v.st.w1 > 2 ? 0 : v.st.w1), .25); let t = v.t1 + d; t -= Math.floor(t); v.t1 = t; }
+      if (ns.w2 !== v.st.w2 && !(ns.mod & 2)) { const d = wavePhi(ns.w2, .5) - wavePhi(v.st.w2, .5); let t = v.t2 + d; t -= Math.floor(t); v.t2 = t; }
+      v.st = ns;
+    }
+    this.st = ns; this.sxOn = true; this.sxT = 0; this.sxN = 0;
+  }
+  sxMix(c, v, L, R, off) {
+    const oL = this.oL, oR = this.oR, nL = this.nL, nR = this.nR, E = c.sxE, n = CR;
+    let oo = 0, nn = 0, on = 0;
+    for (let i = 0; i < n; i++) { const a = oL[i], b = oR[i], p = nL[i], d = nR[i]; oo += a * a + b * b; nn += p * p + d * d; on += a * p + b * d; }
+    E[0] = E[0] * SX_EMA + oo; E[1] = E[1] * SX_EMA + nn; E[2] = E[2] * SX_EMA + on;
+    if (v && this.sxN === SX_M && E[2] < 0) { v.pol = -v.pol; E[2] = -E[2]; }
+    const t = this.sxT, u = 1 - t, Po = E[0], Pn = E[1], den = u * u * Po + t * t * Pn + 2 * u * t * E[2], tg_ = u * Po + t * Pn;
+    const sc = tg_ > 1e-24 ? (den > tg_ / (SX_MAX * SX_MAX) ? Math.sqrt(tg_ / den) : SX_MAX) : 1;
+    const a1 = u * sc, b1 = t * sc, a0 = c.sxA, b0 = c.sxB, da = (a1 - a0) / n, db = (b1 - b0) / n;
+    let ga = a0, gb = b0;
+    for (let i = 0; i < n; i++) { ga += da; gb += db; L[off + i] += oL[i] * ga + nL[i] * gb; R[off + i] += oR[i] * ga + nR[i] * gb; }
+    c.sxA = a1; c.sxB = b1;
+  }
+  /* ---------------- rendering ---------------- */
+  lfoRate(L, sync) { const spb = 60 / this.h.bpm; return sync ? 1 / (MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4 * spb) : MKW.lfoHz(L.f); }
+  block(Lo, Ro, off, frame) {
+    const T = this.T, h = this.h, step = CR * ISR;
+    if (!this.sm) this.smInit();
+    this.smStep(); this.blk++;
+    // wheels: bend smoothed (tau 5 ms), back to the centre in 80 ms after release; mod wheel live
+    if (this.bendR > 0) { const d = this.bendT - this.bend; this.bend += Math.abs(d) <= this.bendR ? d : Math.sign(d) * this.bendR; if (this.bend === this.bendT) this.bendR = 0; }
+    else this.bend += (this.bendT - this.bend) * MK_SM;
+    this.modw += (this.modT - this.modw) * MK_SM;
+    // global LFO phases: Key Sync OFF + Tempo Sync = locked to the song position; else free running (Timbre: reset at the first note)
+    const songT = frame * ISR - h.songStart, spb = 60 / h.bpm;
+    for (const n of [1, 2]) {
+      const L = n === 1 ? T.l1 : T.l2, sync = L.sync >= .5, k = 'g' + n, o = this[k];
+      if (sync && Math.round(L.ks) === 0 && h.songStart >= 0) { const per = MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4; this[k] = ((songT / spb / per) % 1 + 1) % 1; }
+      else this[k] = (this[k] + this.lfoRate(L, sync) * step) % 1;
+      if (this[k] < o) this['gsh' + n] = (mkHash(this.seed, 7 + n, ++this.lctr) / 4294967296) * 2 - 1;
+    }
+    const sx = this.sxOn, sk = this.sxkN;
+    if (sx) { this.sxN++; this.sxT = Math.max(0, Math.min(1, (this.sxN - SX_M) * CR / MK_SXF)); }
+    for (const v of this.V) {
+      if (!v.on) continue;
+      if (!sx || v.sxk !== sk || !v.sxo) { this.voice(v, Lo, Ro, off); continue; }
+      const c = v.sxo, nL = this.nL, nR = this.nR, oL = this.oL, oR = this.oR;
+      nL.fill(0); nR.fill(0); oL.fill(0); oR.fill(0);
+      this.voice(v, nL, nR, 0); if (c.on) this.voice(c, oL, oR, 0); c.sxBlk = this.blk;
+      this.sxMix(c, v.on ? v : null, Lo, Ro, off);
+    }
+    if (sx && this.sxT >= 1) {
+      for (const v of this.V) { v.sxo = null; v.sxk = -1; }
+      this.sxOn = false; const q = this.sxPend; this.sxPend = null;
+      if (q) { if (this.V.some(v => v.on && !v.ghost)) this.structXf(q); else this.setStruct(q); }
+    }
+    if (this.tap === 'lfo') { const a = this.V.filter(v => v.on && !v.ghost).sort((x, y) => x.age - y.age); for (let i = 0; i < CR; i++) { Lo[off + i] = a[0] ? a[0].lv1 : 0; Ro[off + i] = a[1] ? a[1].lv1 : 0; } }
+  }
+  voice(v, Lo, Ro, off) {
+    const T = this.T, Sm = this.sm, st = v.st || this.st, E1 = this.E1, E2 = this.E2, step = CR * ISR;
+    // ---- control rate ----
+    mkEnvB(E1, v, 'e1'); mkEnvB(E2, v, 'e2');
+    let lv1, lv2;
+    if (Math.round(T.l1.ks) === 2) { const o = v.l1; v.l1 = (v.l1 + this.lfoRate(T.l1, T.l1.sync >= .5) * step) % 1; if (v.l1 < o) v.sh1 = mkRnd(v) * 2 - 1; lv1 = mkLfoV(1, Math.round(T.l1.w), v.l1, v.sh1); }
+    else lv1 = mkLfoV(1, Math.round(T.l1.w), this.g1, this.gsh1);
+    if (Math.round(T.l2.ks) === 2) { const o = v.l2; v.l2 = (v.l2 + this.lfoRate(T.l2, T.l2.sync >= .5) * step) % 1; if (v.l2 < o) v.sh2 = mkRnd(v) * 2 - 1; lv2 = mkLfoV(2, Math.round(T.l2.w), v.l2, v.sh2); }
+    else lv2 = mkLfoV(2, Math.round(T.l2.w), this.g2, this.gsh2);
+    v.lv1 = lv1; v.lv2 = lv2;
+    v.pitch += (v.target - v.pitch) * v.gc;
+    const bendHt = this.bend * T.bend, kt = v.pitch + Sm.trans + bendHt;
+    const vib = lv2 * MKW.vibCt(Sm.vib, this.modw) / 100;
+    const p1 = kt + Sm.tune / 100 + vib + v.udet / 100;
+    const dt1 = Math.min(lut(FREQ, p1) * ISR, .45), dt2 = Math.min(lut(FREQ, p1 + Sm.semi + Sm.fine / 100) * ISR, .45);
+    const m = MKW.form(Sm.c1, lv1, Sm.c2), m0 = v.mA < 0 ? m : v.mB; v.mA = m0; v.mB = m;
+    const cutN = 69 + 12 * Math.log2(MKW.cutHz(Sm.cut) / 440) + MKW.kbdHt(kt, Sm.kbd) + v.e1 * MKW.egHt(Sm.eg) + MKW.velHt(Sm.fvel, v.vel);
+    v.cutHz = 440 * Math.pow(2, (cutN - 69) / 12);
+    const g = lut(GTAN, cutN < 0 ? 0 : cutN), k = MKW.resK(Math.max(0, Math.min(127, Sm.res))), fresh = v.gA < 0;
+    v.gA = fresh ? g : v.gB; v.gB = g; v.kA = fresh ? k : v.kB; v.kB = k;
+    // amp: EG2 or the gate, level, velocity and keyboard dB, pan, unison share
+    let env;
+    if (st.gate) { const to = v.gate ? 1 : 0; v.gt += to > v.gt ? Math.min(MK_GUP, to - v.gt) : -Math.min(MK_GDN, v.gt - to); env = v.gt; }
+    else env = v.e2;
+    const lv = MKW.ampG(Math.max(0, Sm.lvl)) * Math.pow(10, (MKW.velDb(Sm.avel, v.vel) + MKW.kbdDb(Sm.akbd, kt)) / 20) * v.ug;
+    const a1 = env * lv / MK_INS, a0 = v.aA < 0 ? a1 : v.aB; v.aA = a0; v.aB = a1;
+    const px = (Math.max(-63, Math.min(63, Sm.pan)) + 63) / 126 * 1.5707963267948966, pl = Math.cos(px), pr = Math.sin(px), pl0 = v.pl, pr0 = v.pr; v.pl = pl; v.pr = pr;
+    // ---- audio rate ----
+    const ob = this.ob, o2b = this.o2b, wr = this.wr, w1 = st.w1 > 2 ? 0 : st.w1, w2 = st.w2, mod = st.mod;
+    const g1 = Math.max(0, Sm.m1) / 127, g2 = Math.max(0, Sm.m2) / 127, gn = Math.max(0, Sm.mn) / 127;
+    let t = v.t1, mm = m0; const dm = (m - m0) / CR, sync = (mod & 2) !== 0;
+    for (let n = 0; n < CR; n++) {
+      mm += dm; t += dt1; let wrap = -1; if (t >= 1) { t -= 1; wrap = t / dt1; } wr[n] = wrap;
+      let y;
+      if (w1 === 0) {                                   // W-24 saw (1 - m) saw(t) + m saw(2t), polyBLEP on both
+        let a = 2 * t - 1; if (t < dt1) { const x = t / dt1; a -= x + x - x * x - 1; } else if (t > 1 - dt1) { const x = (t - 1) / dt1; a -= x * x + x + x + 1; }
+        y = a;
+        if (mm > 0) { const d2 = dt1 * 2, t2 = t < .5 ? 2 * t : 2 * t - 1; let b = 2 * t2 - 1;
+          if (t2 < d2) { const x = t2 / d2; b -= x + x - x * x - 1; } else if (t2 > 1 - d2) { const x = (t2 - 1) / d2; b -= x * x + x + x + 1; }
+          y = (1 - mm) * a + mm * b; }
+      } else if (w1 === 1) {                            // W-25 pulse, width 50 % (1 - m), DC removed
+        const pw = .5 * (1 - mm); y = t < pw ? 1 : -1;
+        if (t < dt1) { const x = t / dt1; y += x + x - x * x - 1; } else if (t > 1 - dt1) { const x = (t - 1) / dt1; y += x * x + x + x + 1; }
+        let tp = t - pw; if (tp < 0) tp += 1;
+        if (tp < dt1) { const x = tp / dt1; y -= x + x - x * x - 1; } else if (tp > 1 - dt1) { const x = (tp - 1) / dt1; y -= x * x + x + x + 1; }
+        y -= 2 * pw - 1;
+      } else {                                          // W-26 triangle (1 - m) tri(t) + m tri(3t), polyBLAMP on the corners
+        const c = 8 * dt1 / 6; let a = t < .5 ? 4 * t - 1 : 3 - 4 * t;
+        if (t < dt1) { const d = 1 - t / dt1; a += c * d * d * d; } else if (t > 1 - dt1) { const d = 1 - (1 - t) / dt1; a += c * d * d * d; }
+        { const e = t - .5, ae = e < 0 ? -e : e; if (ae < dt1) { const d = 1 - ae / dt1; a -= c * d * d * d; } }
+        y = a;
+        if (mm > 0) { const d3 = dt1 * 3, t3 = (t * 3) % 1, c3 = 8 * d3 / 6; let b = t3 < .5 ? 4 * t3 - 1 : 3 - 4 * t3;
+          if (d3 < .5) { if (t3 < d3) { const d = 1 - t3 / d3; b += c3 * d * d * d; } else if (t3 > 1 - d3) { const d = 1 - (1 - t3) / d3; b += c3 * d * d * d; }
+            const e = t3 - .5, ae = e < 0 ? -e : e; if (ae < d3) { const d = 1 - ae / d3; b -= c3 * d * d * d; } }
+          y = (1 - mm) * a + mm * b; }
+      }
+      ob[n] = y;
+    }
+    v.t1 = t;
+    // OSC 2: free or hard-synced to OSC 1 (the slave runs one sample late so the step before it can be corrected, as renderSlave)
+    if (g2 > 0 || sync) {
+      let t2 = v.t2;
+      if (!sync) {
+        for (let n = 0; n < CR; n++) {
+          t2 += dt2; if (t2 >= 1) t2 -= 1; let y;
+          if (w2 === 0) { y = 2 * t2 - 1; if (t2 < dt2) { const x = t2 / dt2; y -= x + x - x * x - 1; } else if (t2 > 1 - dt2) { const x = (t2 - 1) / dt2; y -= x * x + x + x + 1; } }
+          else if (w2 === 1) { y = t2 < .5 ? 1 : -1;
+            if (t2 < dt2) { const x = t2 / dt2; y += x + x - x * x - 1; } else if (t2 > 1 - dt2) { const x = (t2 - 1) / dt2; y += x * x + x + x + 1; }
+            let tp = t2 - .5; if (tp < 0) tp += 1; if (tp < dt2) { const x = tp / dt2; y -= x + x - x * x - 1; } else if (tp > 1 - dt2) { const x = (tp - 1) / dt2; y -= x * x + x + x + 1; } }
+          else { const c = 8 * dt2 / 6; y = t2 < .5 ? 4 * t2 - 1 : 3 - 4 * t2;
+            if (t2 < dt2) { const d = 1 - t2 / dt2; y += c * d * d * d; } else if (t2 > 1 - dt2) { const d = 1 - (1 - t2) / dt2; y += c * d * d * d; }
+            const e = t2 - .5, ae = e < 0 ? -e : e; if (ae < dt2) { const d = 1 - ae / dt2; y -= c * d * d * d; } }
+          o2b[n] = y;
+        }
+      } else {
+        const W = w2 === 0 ? (x => 2 * x - 1) : w2 === 1 ? (x => (x < .5 ? 1 : -1)) : (x => (x < .5 ? 4 * x - 1 : 3 - 4 * x)), dt = dt2;
+        let prev = v.sp, cP = 0, cN = 0;
+        const stp = (xs, hh) => { cP += .5 * hh * xs * xs; cN -= .5 * hh * (1 - xs) * (1 - xs); };
+        const seg = w2 === 1 ? (a, b, e) => { if (a < .5 && b >= .5) stp(e + (b - .5) / dt, -2); } : () => {};
+        const jw = w2 === 0 ? -2 : w2 === 1 ? 2 : 0;
+        for (let n = 0; n < CR; n++) {
+          const t0 = t2, xm = wr[n]; cP = 0; cN = 0;
+          if (xm >= 0) {
+            let tb = t0 + (1 - xm) * dt;
+            if (tb >= 1) { seg(t0, 1, xm + (tb - 1) / dt); stp(xm + (tb - 1) / dt, jw); tb -= 1; seg(0, tb, xm); } else seg(t0, tb, xm);
+            stp(xm, W(0) - W(tb)); t2 = xm * dt; seg(0, t2, 0);
+          } else if (t2 + dt < 1 && !(w2 === 1 && t2 < .5 && t2 + dt >= .5)) t2 += dt;
+          else { t2 += dt; if (t2 >= 1) { const e = (t2 - 1) / dt; seg(t0, 1, e); stp(e, jw); t2 -= 1; seg(0, t2, 0); } else seg(t0, t2, 0); }
+          const y = W(t2) + cN; prev += cP; o2b[n] = prev; prev = y;
+        }
+        v.sp = prev;
+      }
+      v.t2 = t2;
+      if (mod & 1) for (let n = 0; n < CR; n++) o2b[n] *= ob[n];     // Ring: OSC 1 x OSC 2 as the OSC 2 output
+    }
+    if (this.tap === 'mix') {                              // test tap: the mixer output, no filter / amp
+      for (let n = 0; n < CR; n++) { let x = ob[n] * g1 + (g2 > 0 ? o2b[n] * g2 : 0); if (gn > 0) x += (mkRnd(v) * 2 - 1) * gn; Lo[off + n] += x; Ro[off + n] += x; }
+      if (v.e2s === 0 && !st.gate) this.vEnd(v); else if (st.gate && !v.gate && v.gt <= 0) this.vEnd(v);
+      return;
+    }
+    // mixer -> ladder (taps 0 / 1 / 3 / 5) -> distortion (after the filter, ADAA) -> amp
+    const mx = FMIX[[0, 1, 3, 5][Math.max(0, Math.min(3, st.ft))]], c0 = mx[0], c1 = mx[1], c2 = mx[2], c3 = mx[3], c4 = mx[4];
+    let s1 = v.s1, s2 = v.s2, s3 = v.s3, s4 = v.s4, gg = v.gA, kk = v.kA; const dg = (v.gB - v.gA) / CR, dk = (v.kB - v.kA) / CR;
+    const dist = T.a.dist >= .5, dG = dist ? MKW.distG(Sm.m1, Sm.m2, Sm.mn) : 1, idt = dist ? 1 / Math.tanh(dG) : 1;
+    const xc = v.xfo;
+    let dx = v.dx, ga = a0, gb = (a1 - a0) / CR, fg = v.fadeG, fd = v.fade > 0 ? 1 / v.fadeN : 0, fi = v.fin, pa = pl0, pb = (pl - pl0) / CR, qa = pr0, qb = (pr - pr0) / CR;
+    for (let n = 0; n < CR; n++) {
+      gg += dg; kk += dk;
+      let x = ob[n] * g1; if (g2 > 0) x += o2b[n] * g2; if (gn > 0) x += (mkRnd(v) * 2 - 1) * gn;
+      const xin = x * MK_INS + (mkRnd(v) - .5) * MK_SEED + 1e-20;
+      const b1 = tg(s1), b2 = tg(s2), b3 = tg(s3), b4 = tg(s4), A1 = tg(xin - kk * s4);
+      const d1 = 1 / (1 + gg * b1), d2 = 1 / (1 + gg * b2), d3 = 1 / (1 + gg * b3), d4 = 1 / (1 + gg * b4);
+      const G1 = gg * A1 * d1, G2 = gg * b1 * d2, G3 = gg * b2 * d3, G4 = gg * b3 * d4;
+      const S1 = s1 * d1, S2 = s2 * d2, S3 = s3 * d3, S4 = s4 * d4, G34 = G3 * G4, G234 = G2 * G34;
+      const y4 = (G1 * G234 * xin + G234 * S1 + G34 * S2 + G4 * S3 + S4) / (1 + kk * G1 * G234);
+      const x0 = xin - kk * y4, y1 = G1 * x0 + S1, y2 = G2 * y1 + S2, y3 = G3 * y2 + S3;
+      s1 = 2 * y1 - s1; s2 = 2 * y2 - s2; s3 = 2 * y3 - s3; s4 = 2 * y4 - s4;
+      let y = c0 * A1 * x0 + c1 * y1 + c2 * y2 + c3 * y3 + c4 * y4;
+      if (dist) {                                         // W-23 tanh(g x) / tanh(g), ADAA 1st order (log cosh)
+        const u = y / MK_INS * dG, w = dx, d = u - w;
+        const z = Math.abs(d) > 1e-5 ? (mkLogCosh(u) - mkLogCosh(w)) / d : Math.tanh((u + w) * .5);
+        dx = u; y = z * idt * MK_INS;
+      }
+      ga += gb; pa += pb; qa += qb;
+      if (fd) { fg -= fd; if (fg < 0) fg = 0; }
+      let e = ga * (xc ? Math.cos((1 - fg) * 1.5707963267948966) : fg) * v.pol;   // engine / reassign ghosts fade with cos, steals linearly
+      if (fi > 0) { fi -= 1; e *= Math.sin((1 - fi / v.finN) * 1.5707963267948966); }
+      const o = y * e;
+      Lo[off + n] += o * pa; Ro[off + n] += o * qa;
+    }
+    v.s1 = s1; v.s2 = s2; v.s3 = s3; v.s4 = s4; v.dx = dx; v.fadeG = fg; v.fin = fi;
+    if (Math.abs(s1) < 1e-15) v.s1 = 0; if (Math.abs(s4) < 1e-15) v.s4 = 0;
+    if (v.fade > 0) { v.fade -= CR; if (v.fade <= 0 || fg <= 0) this.vEnd(v); }
+    else if (st.gate ? (!v.gate && v.gt <= 0) : (v.e2s === 0 || (v.e2s === 3 && E2.s <= 0 && v.e2 < 1e-4))) this.vEnd(v);
+  }
+  vEnd(v) { if (!v.on) return; const id = v.id, ne = v.noEnd; v.on = false; v.id = -1; v.ghost = false; v.isLine = false; v.noEnd = false; v.xfo = false; if (!ne) this.endCheck(id); }
+  scope() {
+    const out = [];
+    for (const v of this.V) if (v.on && !v.ghost) out.push({note: v.note, t: v.age, eg1: v.e1, eg2: v.st && v.st.gate ? v.gt : v.e2, lfo1: v.lv1 || 0, lfo2: v.lv2 || 0, cutHz: v.cutHz, pitch: v.pitch, gate: v.gate, udet: v.udet});
+    return out;
+  }
+}
+/*}MK*/
+
 class AnalogCore extends AudioWorkletProcessor {
   constructor(opt) {
     super();
@@ -4054,6 +4557,7 @@ class AnalogCore extends AudioWorkletProcessor {
       ord: new Int8Array(6), fk: new Int8Array(6), ms: new Int8Array(36), mn: new Uint8Array(6), ca: new Uint8Array(6), tw: new Uint8Array(6)};
     this.hasPerf = typeof performance !== 'undefined' && typeof performance.now === 'function';
     const po = opt && opt.processorOptions;
+    this.mk = new MkCore(this, po && po.mk);                           // MK1: eng 3
     if (po && po.patch) this.setParams(po.patch); else this.derive();
     if (po && po.mods) this.setMods(po.mods);
     if (po && po.fm6) this.setFm(po.fm6, false);
@@ -4062,6 +4566,12 @@ class AnalogCore extends AudioWorkletProcessor {
 
   onMsg(m) {
     if (m.ev) { for (const e of m.ev) this.enqueue(e); }
+    if (m.mk) this.mk.load(m.mk);                                // MK1 (B.1): before a set that switches to eng 3
+    if (m.mkSet) this.mk.set(m.mkSet);
+    if (m.mkWheel) this.mk.wheel(m.mkWheel);
+    if (m.mkSeed != null) this.mk.seed = (m.mkSeed >>> 0) || 1;
+    if (m.mkScope != null) { this.mk.scopeOn = !!m.mkScope; this.mk.scopeNext = 0; }
+    if (m.mkTap != null) this.mk.tap = String(m.mkTap);
     if (m.set) this.setReq(m.set, !!m.xf, m.fm6 || null);      // V4a: a whole sound = params + FM patch in one crossfade
     if (m.mods) this.setMods(m.mods);
     if (m.fm6 && !m.set) this.fmMsg(m.fm6);
@@ -4079,6 +4589,7 @@ class AnalogCore extends AudioWorkletProcessor {
     const q = this.q;
     if (e[1] === 4) {   // kill: also drop everything still queued for this id (cancel of a voice that has not started yet)
       for (let i = q.length - 1; i >= 0; i--) if (q[i][2] === e[2] && q[i][1] !== 5 && q[i][1] !== 6) q.splice(i, 1);
+      this.mk.killId(e[2]);
       const v = this.findId(e[2]); if (v) this.fadeOut(v, 96); this.dropStack(e[2]); this.heldDrop(e[2]);
       return;
     }
@@ -4093,6 +4604,7 @@ class AnalogCore extends AudioWorkletProcessor {
   // limiter level >= 2 (xfLite) and for a poly <-> mono change (that releases the held voices anyway). fm: the FM patch of
   // the same message (a whole sound: params and operators go through one crossfade)
   setReq(o, force, fm) {
+    if (typeof o.eng === 'number' && o.eng !== this.P.eng && (o.eng === 3 || this.P.eng === 3)) { this.mkEng(o, fm); return; }
     let active = false; for (const v of this.V) if (v.on) { active = true; break; }
     if (active && typeof o.eng === 'number' && o.eng !== this.P.eng) {   // V0b-fix: never the WP4 dip / cut for an engine change
       const m = this.pend ? Object.assign({}, this.pend, o) : o; this.pend = null; this.engXf(m); if (fm) this.fmMsg(fm); return;
@@ -4198,6 +4710,9 @@ class AnalogCore extends AudioWorkletProcessor {
     for (const v of V) { v.on = false; v.id = -1; v.fade = 0; v.gate = false; }
     this.V = V; this.stack = [];
     const fmWas = this.pendFm; this.setParams(o); this.fmPendApply();
+    if (this.P.eng === 3) {                       // MK1: to eng 3 - the held keys start in MkCore and fade in, the old voices fade out
+      this.xfState = 0; this.xg = this.xg1 = 1; g.xfN = Math.round(clamp(MKW.atk(this.mk.T.e2.a), EXF_N / SR, .5) * SR); this.mk.adopt(held, EXF_N); return;
+    }
     this.xfState = 3; this.xfT = 0; this.xg = this.xg1 = 0;
     // the old sound fades out in 40 ms (cos), or - when the new sound swells in slower (pad attack) - over its attack time
     // (at most 0.5 s): the held keys never fall into a hole between the old sound and the new one
@@ -4210,6 +4725,23 @@ class AnalogCore extends AudioWorkletProcessor {
     const gv = one ? (g.P.mode > 0 ? g.monoVoice() : g.findId(held[0].id)) : null;
     this.xfHeld = held; this.xfWait = 2; this.xfNeedFm = this.P.eng === 1 && !fmWas;
     this.xfZC = this.P.eng === 1 && gv ? {g, v: gv, prev: 0, left: Math.round(SR / 25), ok: false} : null;
+    this.xfTry();
+  }
+  // MK1 (B.6 Nr. 2): an engine change to or from eng 3. To eng 3 at sounding VA / FM voices: engXf (ghost + restart in MkCore);
+  // from eng 3: MkCore fades its voices out (40 ms, cos) and hands the held keys to the new engine, which fades them in
+  mkEng(o, fm) {
+    const m = this.pend ? Object.assign({}, this.pend, o) : o; this.pend = null;
+    if (o.eng === 3) {
+      let active = false; for (const v of this.V) if (v.on) { active = true; break; }
+      if (active || this.xfHeld) { this.engXf(m); return; }
+      this.setParams(m); if (fm) this.fmMsg(fm); return;
+    }
+    const held = this.mk.busy() ? this.mk.handOver(EXF_N) : [];
+    if (this.sxfOn || this.pendS) { this.sxfOn = false; this.pendS = null; this.sxfG = null; }
+    this.setParams(m); if (fm) this.fmMsg(fm);
+    if (!held.length) { this.xfState = 0; this.xg = this.xg1 = 1; return; }
+    this.xfState = 3; this.xfT = 0; this.xg = this.xg1 = 0; this.xfLen = EXF_N;
+    this.xfHeld = held; this.xfWait = 2; this.xfNeedFm = this.P.eng === 1 && !fm; this.xfZC = null;
     this.xfTry();
   }
   xfTry() {
@@ -4246,6 +4778,7 @@ class AnalogCore extends AudioWorkletProcessor {
   setParams(o) {
     const P = this.P, mono0 = P.mode > 0, eng0 = P.eng;
     for (const k in o) if (k in P && typeof o[k] === 'number' && isFinite(o[k])) P[k] = o[k];
+    if ('mkLim' in o) this.mk.lim = P.mkLim | 0;
     if (P.eng !== eng0) {                // 6.3.3: changing the engine while voices sound fades them out (crossfade) and ends them
       for (const s of this.stack) if (!this.findId(s.id)) this.ended.push(s.id);
       this.stack.length = 0;
@@ -4355,6 +4888,9 @@ class AnalogCore extends AudioWorkletProcessor {
     const q = this.q;
     while (q.length && q[0][0] < endFrame) {
       const e = q.shift(), type = e[1], id = e[2];
+      if (type === 1 && this.P.eng === 3) { this.mk.noteOn(id, e[3], e[4]); continue; }      // MK1: eng 3 plays in MkCore
+      if ((type === 2 || type === 3 || type === 7) && this.mkHas(id)) { if (type === 2) this.mk.noteOff(id); else if (type === 3) this.mk.retune(id, e[3], e[4]); else this.mk.fastOff(id, e[3]); continue; }
+      if (type === 5) this.mk.allOff(); else if (type === 6) this.mk.panic();
       if (type === 1) this.noteOn(id, e[3], e[4], e[5] == null ? -1 : e[5]);
       else if (type === 2) this.noteOff(id);
       else if (type === 3) this.retune(id, e[3], e[4]);
@@ -4363,6 +4899,7 @@ class AnalogCore extends AudioWorkletProcessor {
       else if (type === 6) { for (const v of this.V) if (v.on) this.fadeOut(v, 64); this.stack.length = 0; this.heldAllEnd(); for (const g of this.ghosts) for (const v of g.V) if (v.on) g.fadeOut(v, 64); }
     }
   }
+  mkHas(id) { const M = this.mk; if (M.keys.some(k => k.id === id)) return true; for (const v of M.V) if (v.on && !v.ghost && v.id === id) return true; return false; }
   noteOn(id, note, vel, from) {
     if (this.P.mode > 0) return this.monoOn(id, note, vel, from);
     this.stealIfFull();
@@ -5214,6 +5751,7 @@ class AnalogCore extends AudioWorkletProcessor {
     L.fill(0); if (R !== L) R.fill(0);
     if (this.xfHeld && this.xfNeedFm && --this.xfWait <= 0) { this.xfNeedFm = false; this.xfTry(); }   // the FM patch did not come: start with the current one
     let any = this.q.length > 0 || this.ghosts.length > 0; for (const v of this.V) if (v.on) { any = true; break; }
+    if (!any && this.mk.busy()) any = true;
     if (this.pend && !any) { const o = this.pend; this.pend = null; this.setParams(o); this.fmPendApply(); this.xfState = 0; this.xg = this.xg1 = 1; }
     if (!any && !this.xfHeld && (this.xfState === 3 || this.pendS || this.sxfOn)) {
       this.xfState = 0; this.xg = this.xg1 = 1; this.sxfFin = false; if (this.sxfG) { this.sxfG.xfState = 5; this.sxfG = null; } this.sxfEnd();
@@ -5251,6 +5789,7 @@ class AnalogCore extends AudioWorkletProcessor {
           }
           if (Z && Z.ok) this.xfTry();
         }
+        if (this.mk.busy() || this.mk.tap === 'lfo') this.mk.block(L, R, off, f0 + off);   // MK1: eng 3 (and its fading voices after a change)
       }
       for (let i = this.ghosts.length - 1; i >= 0; i--) { const g = this.ghosts[i]; if (g.xfState !== 4 || !g.V.some(v => v.on)) { this.ghosts.splice(i, 1); this.dropGhost(g); } }
       if (R === L) for (let n = 0; n < N; n++) L[n] *= .5;
@@ -5275,6 +5814,7 @@ class AnalogCore extends AudioWorkletProcessor {
       else this.port.postMessage({scope: Array.from(sc), t: f0 * ISR, nv});
       this.scHas = false;
     }
+    if (this.mk.scopeOn && f0 >= this.mk.scopeNext) { this.mk.scopeNext = f0 + ((SR / 30) | 0); this.port.postMessage({mkScope: {voices: this.mk.scope(), t: f0 * ISR, g1: this.mk.g1, g2: this.mk.g2}}); }   // MK1 (B.7 mkScope)
     // V4a (N7F-09): live operator levels (level x envelope of every operator, max over the voices, on the OL scale 0..1 of the
     // field's bar) at ~30 Hz, only while the host asks (the FM field is shown)
     if (this.lvOn && f0 >= this.lvNext) {
@@ -5290,7 +5830,7 @@ class AnalogCore extends AudioWorkletProcessor {
     // CPU estimate: sum of (quantised) durations is unbiased; report once per second of audio
     this.busy += (this.hasPerf ? performance.now() : Date.now()) - t0; this.busyN += N;
     if (this.busyN >= SR) {
-      let nv = 0; for (const v of this.V) if (v.on) nv++;
+      let nv = this.mk.count(); for (const v of this.V) if (v.on) nv++;
       this.port.postMessage({load: this.busy / (this.busyN * ISR * 1000), voices: nv}); this.busy = 0; this.busyN = 0;
     }
     return this.alive;
@@ -7998,6 +8538,8 @@ const RecHelpers = (() => {
     return s;
   }
   const verCode = v => { const m = /^(\d+)\.(\d+)\.(\d+)/.exec(String(v || '')); return m ? m[1] * 1e6 + m[2] * 1e3 + +m[3] : 0; };
+  // MK0-fix: the autosave entry {mt, app, project} as a project file (as stored: format, fields and notes unchanged)
+  const kvFile = v => ({app: APP, kind: 'project', format: Math.max(+v.project.format || 0, PROJECT_FORMAT), saved: new Date(v.mt || 0).toISOString(), appVersion: '', project: v.project});
   function normalizeSound(o) {
     o = nvOf(o) || o;
     if (!o || typeof o !== 'object') return null;
@@ -8253,7 +8795,7 @@ const RecHelpers = (() => {
         if (p.v === 1 && L.migrateV1) p = L.migrateV1(p);
         else if (f < 3) p = migrateProject2to3(p, warnings);
         if (f > PROJECT_FORMAT && !(p.format > f)) p.format = f;       // MK0 (normalizeProject: _newer)
-        Object.defineProperty(p, '_newer', {value: {f: 0, w: verCode(o.appVersion)}, configurable: true});
+        Object.defineProperty(p, '_newer', {value: Object.defineProperty({f: 0, w: verCode(o.appVersion)}, 'fo', {value: o}), configurable: true});   // MK0-fix: fo = the file as delivered (not enumerable)
         return {ok: true, kind: 'project', project: norm(p), sounds: (Array.isArray(o.sounds) ? o.sounds : []).map(normalizeSound).filter(Boolean), warnings};
       }
       // a single exported sound (checked before the legacy detection: a Sound also carries v: 1)
@@ -8434,8 +8976,10 @@ const RecHelpers = (() => {
         try { const r = kv.getSync('rescue'); b = r ? JSON.parse(r) : null; } catch (e) {}
         const pick = a && b ? (b.mt > a.mt ? b : a) : a || b; if (!pick || !pick.project) return null;
         loadedFallback = pick === a && from !== kv.mode && kv.mode !== 'memory';
+        // MK0-fix: a copy another version wrote is kept as stored (fo), so a newer one leaves every write path unchanged
+        const raw = pick.app !== opts.app || +pick.project.format > PROJECT_FORMAT ? deep(pick) : null;
         mt = pick.mt || 0; const pr = mapClips(pick.project, unpackClipNotes);
-        if (pick.app) Object.defineProperty(pr, '_newer', {value: {f: 0, w: +pick.app || 0}, configurable: true});
+        if (pick.app || raw) Object.defineProperty(pr, '_newer', {value: Object.defineProperty({f: 0, w: +pick.app || 0}, 'fo', {value: raw ? kvFile(raw) : null}), configurable: true});
         return pr;
       },
       get loadedFallback() { return loadedFallback; },     // read back from a fallback copy: write it to the primary store again
@@ -8471,7 +9015,7 @@ const RecHelpers = (() => {
   const SQStore = {APP, PROJECT_FORMAT, SOUNDS_FORMAT, uid, cleanName, uniqueName, canonical, fnv, soundHash, normalizeSound, soundFromFactory,
     migratePatchV2, migrateDrumsV2, migrateProject2to3, buildProjectFile, serializeProjectFile, buildSoundsFile, parseFile, packClipNotes, unpackClipNotes,
     KV, Library, Autosave, requestPersist, fileName, ANALOG_RANGES: AN, MOD_SRC: SRC, MOD_DST: DST,
-    SYNTH_ENGINES, CATS, normFx, normMods, normWt, normFm2, normSynthP, normFm6, FM_BASE, migrateFm2, FM2_LEVEL, NV_NAME, isForeign, nvOf, verCode};
+    SYNTH_ENGINES, CATS, normFx, normMods, normWt, normFm2, normSynthP, normFm6, FM_BASE, migrateFm2, FM2_LEVEL, NV_NAME, isForeign, nvOf, verCode, kvFile};
   G.SQStore = SQStore;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -11699,7 +12243,7 @@ function normalizeProject(obj) {
     // V0b FOLGEN: the editor kinds switched to AUS (only false entries are kept; missing = FOLGT)
     if (ui.follow && typeof ui.follow === 'object') { const f = {}; for (const k of ['roll', 'lauf', 'steps', 'song']) if (ui.follow[k] === false) f[k] = false; if (Object.keys(f).length) p.ui.follow = f; }
     const nvE = p.tracks.filter(t => t.sound && t.sound._nv).map(t => t.sound._nv.engine);
-    if (nvF > SQStore.PROJECT_FORMAT || nvE.length) Object.defineProperty(p, '_newer', {value: {f: nvF, e: nvE, w: nv0.w || 0}, configurable: true});
+    if (nvF > SQStore.PROJECT_FORMAT || nvE.length) Object.defineProperty(p, '_newer', {value: Object.defineProperty({f: nvF, e: nvE, w: nv0.w || 0}, 'fo', {value: nv0.fo || null}), configurable: true});   // MK0-fix: + fo (as delivered)
     return p;
   } catch (e) { console.error(e); return newProjectRaw(); }
 }
@@ -27349,7 +27893,7 @@ const UI_KEY = 'synquenzer.ui', OLD_UI_KEY = 'dirigent.v2.ui';
 const BOOT = {done: false, gen: 0, dirty: false};
 let kv = null, autosave = null;
 // MK0 (EN3-04): lock = the open project is a newer version's: nothing writes over its stored copy; lib/libNewer guard save_library
-const NV = {lock: null, lib: null, libNewer: null}, NV_MSG = 'Aus einer neueren SYNQUENZER-Version';
+const NV = {lock: null, lib: null, libNewer: null, raw: null, store: null}, NV_MSG = 'Aus einer neueren SYNQUENZER-Version';
 const nvOld = w => w > 0 && w <= SQStore.verCode(VERSION);
 function nvLockOf(p) { const N = p && p._newer; return N && (N.f > SQStore.PROJECT_FORMAT || (N.e.length && !nvOld(N.w))) ? N : null; }
 const nvNewer = (pj, w) => !!pj && (+pj.format > SQStore.PROJECT_FORMAT || (!nvOld(w) && (pj.tracks || []).some(t => t && SQStore.isForeign(t.sound))));
@@ -27360,6 +27904,31 @@ function nvBanner() {
   try { b.style.top = Math.round(EL.top.getBoundingClientRect().bottom) + 'px'; } catch (e) {}
 }
 const nvRefuse = () => { if (!NV.lock) return false; toast(NV_MSG + ' – erst neu laden'); return true; };
+/* MK0-fix: NV.raw = the locked open project as it was delivered (file, cloud body, autosave entry, parked copy). Every write
+   path of this version (autosave slot, Projekte, Als Datei sichern, Alles sichern, Kopie) passes it on unchanged instead of
+   re-serializing the lossy format-4 view; only id and name may change (the sum follows). */
+function nvFileOf(fo, id, name) {
+  const o = deep(fo); if (!o || !o.project || typeof o.project !== 'object') return null;
+  let ch = false;
+  if (id && o.project.id !== id) { o.project.id = id; ch = true; }
+  if (name != null && name !== String(o.project.name || '').slice(0, 40)) { o.project.name = name; ch = true; }
+  if (ch && o.sum) o.sum = SQStore.fnv(JSON.stringify(o.project));
+  return o;
+}
+const nvFileNewer = fo => !!(fo && fo.project) && nvNewer(fo.project, SQStore.verCode(fo.appVersion));
+// a newer project file with the user library added (like projectFileObj(p, …, lib)), when it carries none of its own
+function nvWithLib(o, lib) { if (lib && o && !Array.isArray(o.sounds) && LIB.ok) o.sounds = SQStore.buildProjectFile({}, LIB.lib.all(), VERSION).sounds || []; return o; }
+// the open locked project's original goes into the autosave slot (it is the open project, like every other one): after a
+// restart it opens again locked, and a cloud meta that names this server version matches what the device stores
+async function nvStoreKv() {
+  const L = NV.lock, fo = NV.raw; if (!L || !fo || !kv || kv.mode === 'memory') return false;
+  const pj = deep(fo.project); pj.id = L.id;
+  if (+fo.format > SQStore.PROJECT_FORMAT && !(+pj.format >= +fo.format)) pj.format = +fo.format;
+  try { await kv.set('project', {mt: Date.now(), app: SQStore.verCode(fo.appVersion), project: pj}); } catch (e) { return false; }
+  if (NV.lock !== L) { if (!NV.lock && autosave) autosave.flush(); return false; }   // switched meanwhile: the open project's own state goes in again
+  try { kv.delSync('rescue'); } catch (e) {}
+  L.kv = true; return true;
+}
 const idle = window.requestIdleCallback ? (f => window.requestIdleCallback(f, {timeout: 2000})) : (f => setTimeout(f, 50));   // §1.7.7
 // the selection is saved with the project (§12.6 ui) and restored when the app starts or a project is opened
 function syncUi() { if (S) S.ui = Object.assign({selT: R.selT, selS: R.selS, order: trackOrder().slice(), sceneBank: sceneBankOf(), trackBank: trackBankOf()}, S.ui && S.ui.follow ? {follow: S.ui.follow} : null, S.ui && S.ui.fmv ? {fmv: S.ui.fmv} : null, UI.partPage === 1 ? {partPage: 1} : null); }   // V4b: + fmv (FELD / DX per track, a view field)   // V0b: + follow (a view field)
@@ -27367,6 +27936,7 @@ function serializeProject() { syncUi(); return JSON.stringify(S, stripReplacer);
 /* project file v3 (§12.1): {app:'SYNQUENZER', kind:'project', format:3, saved, appVersion, sum, project (compact notes),
    sounds:[the user library]}. lib = false for the parked projects of [Projekte] (stored without the library, §12.2) */
 function projectFileObj(p, noTime, lib) {
+  if (p === S && NV.lock && NV.raw) { const o = nvWithLib(nvFileOf(NV.raw, S.id), lib); if (o) { if (noTime) delete o.saved; return o; } }   // MK0-fix
   if (p === S) syncUi();
   const o = SQStore.buildProjectFile(p, lib ? (LIB.ok ? LIB.lib.all() : []) : null, VERSION);
   if (noTime) delete o.saved;
@@ -27452,6 +28022,8 @@ function applyProject(p, opts) {
   if (!opts.clean || mig) markDirty();
   try { if (SYNC.pres.size) cloudPresSoon(); if (SYNC.newer && SYNC.newer.lid !== S.id) SYNC.newer = null; } catch (e) {}   // VO2 Presence-light: anderes Projekt offen
   const nl = nvLockOf(p); NV.lock = nl ? Object.assign({}, nl, {id: S.id, kv: !!opts.nvKv}) : null; nvBanner();
+  NV.raw = nl && nl.fo && nl.fo.project ? nvFileOf(nl.fo, S.id, S.name) : null;   // MK0-fix: the original; stored at once as the open project
+  NV.store = NV.lock && NV.raw && !NV.lock.kv ? nvStoreKv() : Promise.resolve(!!(NV.lock && NV.lock.kv));
 }
 
 /* ---------- projects (§12.2): the open project lives in the autosave; parked ones under proj:<id>, index in projIndex ---------- */
@@ -27484,7 +28056,7 @@ async function parkFile(fo) {
   const ix = await projIndexLoad(), e = {id, name: fo.project.name || 'Projekt', mt: Date.now(), bars: projBars(fo.project), size};
   const i = ix.findIndex(x => x.id === id); if (i >= 0) ix[i] = e; else ix.push(e);
   await projIndexSave();
-  cloudOnPark(fo);                         // VO1: der geparkte Stand geht online, wenn er sich geändert hat
+  if (!nvFileNewer(fo)) cloudOnPark(fo);   // VO1: der geparkte Stand geht online, wenn er sich geändert hat (MK0-fix: ein neuerer nie)
   return true;
 }
 // the open project as a file object worth parking (a synchronous snapshot; tickAhead first while playing), or null when
@@ -27499,9 +28071,11 @@ function parkCurrent() { if (NV.lock) return nvPark(); const fo = parkSnapshot()
 // MK0: leaving a locked project parks the autosave's copy as it is
 async function nvPark() {
   const L = NV.lock; let v = null;
+  try { await NV.store; } catch (e) {}
+  if (NV.raw) return parkFile(nvFileOf(NV.raw, L.id)).then(r => r === true, () => false);   // MK0-fix: the original, also when no autosave copy exists
   if (L.kv && kv) { try { v = await kv.get('project'); } catch (e) {} }
   if (!v || !v.project || v.project.id !== L.id) return 'skip';
-  return parkFile({app: SQStore.APP, kind: 'project', format: Math.max(+v.project.format || 0, SQStore.PROJECT_FORMAT), saved: new Date(v.mt || 0).toISOString(), appVersion: '', project: v.project}).then(r => r === true, () => false);
+  return parkFile(SQStore.kvFile(v)).then(r => r === true, () => false);
 }
 const SWITCH_FULL = 'Speicher voll – das offene Projekt ließ sich nicht sichern. Erst „Als Datei sichern“, dann wechseln.';
 const switchRefused = () => { toast(SWITCH_FULL, {label: 'Als Datei sichern', fn: () => saveFile()}); return false; };
@@ -27566,13 +28140,25 @@ async function deleteProject(id) {
 }
 async function renameProject(id, name) {
   name = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 40); if (!name) return false;
-  if (id === S.id) { S.name = name; markDirty(); UI.dirty.all = true; return true; }
+  if (id === S.id) {
+    if (NV.lock && NV.raw) { S.name = name; NV.raw = nvFileOf(NV.raw, S.id, name); NV.store = nvStoreKv(); UI.dirty.all = true; return true; }   // MK0-fix: only the name changes
+    S.name = name; markDirty(); UI.dirty.all = true; return true;
+  }
   let fo = null; try { fo = await kv.get('proj:' + id); } catch (e) { fo = null; }
+  if (nvFileNewer(fo)) return parkFile(nvFileOf(fo, id, name));   // MK0-fix: a newer version's copy keeps everything but the name
   const pr = fo && fo.project ? projFromFile(fo) : null; if (!pr) return false;
   pr.id = id; pr.name = name; return parkFile(projectFileObj(pr));
 }
 async function duplicateProject(id) {
-  let src = null;
+  let src = null, raw = id === S.id && NV.lock && NV.raw ? NV.raw : null;
+  if (!raw && id !== S.id) { try { const fo = await kv.get('proj:' + id); if (nvFileNewer(fo)) raw = fo; } catch (e) {} }
+  if (raw) {                               // MK0-fix: the copy of a newer version's project stays as delivered (and locked)
+    const nid = newProjectId(), nm = String(raw.project.name || 'Projekt').slice(0, 34) + ' Kopie';
+    await cloudInherit(id, nid);
+    const okr = await parkFile(nvFileOf(raw, nid, nm));
+    if (okr) toast('Kopie „' + nm + '“ liegt unter Projekte');
+    return okr;
+  }
   if (id === S.id) src = JSON.parse(JSON.stringify(S, stripReplacer));
   else { try { const fo = await kv.get('proj:' + id); src = fo && fo.project ? projFromFile(fo) : null; } catch (e) { src = null; } }
   if (!src) return false;
@@ -27587,7 +28173,7 @@ async function exportProjectById(id) {
   let fo = null; try { fo = await kv.get('proj:' + id); } catch (e) { fo = null; }
   const pr = fo && fo.project ? projFromFile(fo) : null;
   if (!pr) { toast('Projekt nicht gefunden'); return null; }
-  const text = JSON.stringify(projectFileObj(pr, false, true));
+  const text = JSON.stringify(nvFileNewer(fo) ? nvWithLib(nvFileOf(fo, id), true) : projectFileObj(pr, false, true));   // MK0-fix: a newer one as delivered
   return deliver(SQStore.fileName('project', fo.project.name).replace(/\.json$/, ''), new TextEncoder().encode(text), 'json');
 }
 async function restoreHistory(key) {
@@ -28083,7 +28669,7 @@ async function cloudReconcile() {
       if (lid === S.id || (PROJ.index || []).some(e => e.id === lid)) lid = newProjectId();
       p.id = lid;
       await metaSet(lid, {uid, sid: r.id, base: r.version, space: null, dirty: false, sum: fo.sum || '', mt: Date.now()}); SYNC.pulled = (SYNC.pulled || 0) + 1;
-      if (!opened && isPristine(S) && quietOk()) { opened = r; await cloudApply(p); }
+      if (!opened && isPristine(S) && quietOk()) { opened = r; if (!(await cloudApply(p))) await cdel('meta:' + lid); }   // MK0-fix: not stored → stays „missing“, fetched again
       else { SYNC.quiet++; try { await parkFile(nvFo(fo, p)); } finally { SYNC.quiet--; } }
     }
     if (opened) toast('Deine Songs sind da – „' + (opened.title || 'Projekt') + '“ geladen');
@@ -28100,7 +28686,7 @@ function cloudFail(k) {
   else if (k === 'paused') { cloudState('paused'); clearTimeout(SYNC.retryT); SYNC.retryT = setTimeout(() => { cloudState('offline'); cloudKick(); }, 300000); }
   else if (k === 'auth') { if (hasSession()) cloudFail('net'); else cloudSignedOut(); }   // Sitzung noch da: nie abmelden, nur warten
 }
-function nvFo(fo, p) { if (!nvNewer(fo.project, SQStore.verCode(fo.appVersion))) return projectFileObj(p); const o = deep(fo); o.project.id = p.id; return o; }
+function nvFo(fo, p) { return nvFileNewer(fo) ? nvFileOf(fo, p.id) : projectFileObj(p); }
 async function cloudBody(sid) {
   const r = await cloudSel(SYNC.client.from('project_data').select('version,body').eq('project_id', sid).maybeSingle());
   if (r.err || !r.data) return null;
@@ -28116,10 +28702,10 @@ async function cloudPull(lid, r, silent) {
   const who = r.updated_by && r.updated_by !== SYNC.uid ? cnm(r.updated_by) : 'anderes Gerät', at = r.updated_at ? dayTime(Date.parse(r.updated_at)) : '';
   if (lid !== S.id) { SYNC.quiet++; try { await parkFile(nvFo(fo, p)); } finally { SYNC.quiet--; } await done(); return true; }
   if (SYNC.newer && SYNC.newer.lid === lid) SYNC.newer = null;
-  if (silent) { await cloudApply(p); await done(); toast('Neuere Version geladen (' + who + (at ? ', ' + at : '') + ')'); return true; }
+  if (silent) { if (await cloudApply(p)) await done(); toast('Neuere Version geladen (' + who + (at ? ', ' + at : '') + ')'); return true; }
   toast('„' + (r.title || 'Projekt') + '“ wurde ' + (who === 'anderes Gerät' ? 'auf einem anderen Gerät' : 'von ' + who) + ' geändert', {label: 'Laden', fn: async () => {
     const m = await metaGet(lid); if (m && m.dirty) { cloudFlush(); return; }   // inzwischen geändert: der Push meldet den Konflikt
-    await cloudApply(p); await done(); toast('Neuere Version geladen');
+    if (await cloudApply(p)) await done(); toast('Neuere Version geladen');
   }});
   return 'asked';
 }
@@ -28129,6 +28715,9 @@ async function cloudApply(p) {
   SYNC.quiet++;
   try { applyProject(normalizeProject(p), {ui: true, clean: true}); if (autosave) await autosave.flush(); }
   finally { SYNC.quiet--; }
+  // MK0-fix: true = the device now stores this server state (a newer version's: its original in the autosave slot, nvStoreKv).
+  // false = it is only shown (locked, not stored): the cloud meta must not move on, or the old copy would count as this version
+  return NV.lock ? !!(await NV.store) : true;
 }
 
 /* ---------- §4.3 Speichern ---------- */
@@ -28279,7 +28868,7 @@ async function importBackup(o) {
   for (const fo of Array.isArray(o.projects) ? o.projects : []) {
     const p = projFromFile(fo); if (!p) continue;
     if (p.id === S.id || (PROJ.index || []).some(e => e.id === p.id)) p.id = newProjectId();
-    if (await parkFile(projectFileObj(p))) n++;
+    if (await parkFile(nvFo(fo, p))) n++;  // MK0-fix: a newer version's project is parked as delivered
   }
   if (Array.isArray(o.sounds) && o.sounds.length) await libImport(o.sounds);
   toast(n + (n === 1 ? ' Projekt' : ' Projekte') + ' aus der Sicherung liegen unter Projekte');
@@ -28538,7 +29127,7 @@ async function cloudResolve(how) {
   const fin = async () => cq(async () => { const c = await metaGet(lid); if (!c) return; c.base = row.version; c.sum = fo.sum || ''; c.dirty = false; delete c.conflict; await metaSet(lid, c); await outDel(c.uid, lid); });
   SYNC.conflicts.delete(lid);
   const who = row.updated_by && row.updated_by !== SYNC.uid ? cnm(row.updated_by) : '';
-  if (how === 'take') { srv.id = lid; devCarry(srv, (syncUi(), S)); await cloudApply(srv); await fin(); toast((who ? 'Version von ' + who : 'Server-Stand') + ' übernommen – deine Version liegt unter Versionen'); }
+  if (how === 'take') { srv.id = lid; devCarry(srv, (syncUi(), S)); if (await cloudApply(srv)) await fin(); toast((who ? 'Version von ' + who : 'Server-Stand') + ' übernommen – deine Version liegt unter Versionen'); }
   else {
     const mine = JSON.parse(JSON.stringify(S, stripReplacer)), nm = (SYNC.me && SYNC.me.name) || 'Meine';
     mine.id = newProjectId(); mine.name = ((S.name || 'Projekt').slice(0, 24) + ' (' + nm + (/[sxzß]$/i.test(nm) ? '’' : 's') + ' Version)').slice(0, 40);

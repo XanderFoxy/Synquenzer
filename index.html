@@ -569,7 +569,11 @@ svg{display:block}
 #songView.side .sv-top > .sv-loop .v{font-size:10px}
 /* V2e′ (song-delta 6.5/9.1, K2-26): [▦│◧] 44 × 40 at the right of the transport row. P1: [CLIPS 64][● 64][▶ 64][⟲ fills][⏮ 44]
    [▦│◧ 44]; P2 (+ ▲▼): ● ▶ 52; L and P3: a fifth row [▦│◧][▲▼] in the transport column, ⏮ │ ↩ SONG below it */
-.sv-top > .sv-rec,.sv-top > .sv-play{flex-basis:64px}
+/* V2e′-fix: ● keeps its 76 px (6.5) so „CLIPS+AKK+S2 ▾“ fits; below 414 px (P1) ▶ SONG gives the 24 px for [▦│◧] instead.
+   P2 (< 390 px): ● ▶ 50, the ● label goes two-line in its short form (.rt2) and keeps ▾ */
+.sv-top > .sv-rec,.sv-top > .sv-play{flex-basis:76px}
+@media (orientation:portrait) and (max-width:413px){.sv-top > .sv-play{flex-basis:52px}}
+.sv-top > .sv-rec.rt2 .t{white-space:normal;font-size:7.5px;letter-spacing:0;line-height:1.05;text-align:center;max-width:100%}
 .sv-top > .sv-gl{flex:0 0 44px;flex-direction:row;align-items:center;justify-content:center;gap:0;padding:0!important;font:700 15px/1 var(--font-ui)}
 .sv-gl span{width:19px;text-align:center;color:var(--text-faint)}
 .sv-gl span.on{color:var(--amber)}
@@ -11831,6 +11835,12 @@ function ownNorm(c, pk, nt) {
   // what „Zurück zum Szenen-Clip“ restores: the lane entry that stood at the own clip's bar before, and whether its end entry was added
   if (c.from.e === null || (c.from.e && typeof c.from.e === 'object' && isNum(c.from.e.slot))) out.from.e = c.from.e ? laneEntryNorm(c.from.e, bar, clamp(Math.round(c.from.e.slot), -1, N_SCN - 1)) : null;
   if (isNum(c.from.e1)) out.from.e1 = clamp(Math.round(c.from.e1), 0, SONG_MAX_BARS);
+  // V2e′-fix: the origin that played there before (prev) and the scene clip's origin (cs, song beats)
+  const pv = c.from.prev;
+  if (pv && typeof pv === 'object' && isNum(pv.slot) && isNum(pv.cs)) {
+    out.from.prev = {slot: clamp(Math.round(pv.slot), -1, N_SCN - 1), own: typeof pv.own === 'string' && pv.own ? pv.own.slice(0, 16) : null, cs: +(+pv.cs).toFixed(4)};
+  }
+  if (isNum(c.from.cs)) out.from.cs = +(+c.from.cs).toFixed(4);
   return out;
 }
 /* V2d (song-delta 12.1): a lane entry {bar, slot, re?:1 (restart of the same slot), ph?: beats (the clip's phase at this bar),
@@ -16178,7 +16188,15 @@ function svButtons() {
   B.bRec.classList.toggle('on', rec); B.bRec.classList.toggle('arm', rec && R.songRec.pending);
   // V0c S-01: the ● names its targets („● AKK“, „● AKK+MEL“, „● ALLES“)
   const sideV = EL.songView.classList.contains('side'), tg = recTgNow(), nt0 = R.songRec && !R.songRec.over ? (S.song ? S.song.melodyTrack : null) : recNtNow(), rt = recTgShort(tg, sideV, nt0) + (sideV || rec || !songHasContent() ? '' : ' ▾'), rtEl = B.bRec.lastChild;   // V2e: „● ▾“ = the Start-Blatt
-  if (rtEl.textContent !== rt) rtEl.textContent = rt;
+  // V2e′-fix: the label never clips — where it does not fit on one line (P2, a fallback font) the short form goes two-line
+  // and keeps its ▾ (measured once per text and button width, no layout read on every frame)
+  const rk = rt + '|' + (sideV ? 's' : B.bRec.clientWidth) + '|' + (SV.fontGen | 0);
+  if (SV.rtKey !== rk) {
+    SV.rtKey = rk; B.bRec.classList.remove('rt2'); if (rtEl.textContent !== rt) rtEl.textContent = rt;
+    if (!sideV && B.bRec.clientWidth && rtEl.scrollWidth > B.bRec.clientWidth - 2) {
+      rtEl.textContent = recTgShort(tg, true, nt0) + (rec || !songHasContent() ? '' : ' ▾'); B.bRec.classList.add('rt2');
+    }
+  }
   B.bRec.setAttribute('aria-label', rec ? 'Song-Aufnahme beenden' : 'Song aufnehmen: ' + recTgLong(tg, nt0).join(', ') + (songHasContent() ? ' (halten = Start-Blatt)' : ''));
   const pd = B.bPlay.firstChild; if (pd.textContent !== (play ? '■' : '▶')) pd.textContent = play ? '■' : '▶';
   B.bPlay.classList.toggle('on', play); B.bPlay.setAttribute('aria-label', play ? 'Song anhalten' : 'Song abspielen');
@@ -16931,6 +16949,8 @@ function songWrite(song, n, ch, keepIds) {
 }
 // drop entries that change nothing (-1 after -1, the same clip in the same phase), keep the marks tidy, melody lengths
 function songTidy(song) {
+  // V2e′-fix: a lane never names an own clip that is gone (it plays its scene clip, as laneClipOk does)
+  for (const l of song.lanes) for (const e of l) if (e.own && !(song.own && song.own[e.own])) delete e.own;
   song.lanes.forEach((l, t) => {
     l.sort((a, b) => a.bar - b.bar);
     let slot = -1, cs = 0, own = null;
@@ -16981,7 +17001,11 @@ function ownEnsure(song, t, x) {
   if (ownCount(song) >= OWN_MAX) { if (!UI.ownFullWarned) { UI.ownFullWarned = true; toast('Höchstens ' + OWN_MAX + ' eigene Clips je Song'); } return null; }
   const src = o.own ? song.own[o.own] : S.tracks[t].clips[o.slot]; if (!src) return null;
   const id = ownNewId(song), c = deep(src), prevE = lane.find(e => e.bar === d0);
-  c.from = {t, s: o.slot, bar: d0, e: prevE ? deep(prevE) : null};
+  // V2e′-fix: besides the entry that stood here, the origin that played (prev) and the scene clip's origin (cs) — so that
+  // „Zurück zum Szenen-Clip“ still finds the scene clip when the copy it came from is gone
+  const pcs = o.own ? ownRefCs(song, song.own[o.own]) : o.cs;
+  c.from = {t, s: o.slot, bar: d0, e: prevE ? deep(prevE) : null, prev: {slot: o.slot, own: o.own || null, cs: o.cs}};
+  if (pcs != null) c.from.cs = pcs;
   for (const n of c.notes) { delete n.born; delete n.bornRun; }
   song.own[id] = c;
   const ent = {bar: d0, slot: o.slot, own: id}, ph = d0 * 4 - ds; if (ph > 1e-6) ent.ph = +ph.toFixed(4);
@@ -17009,35 +17033,117 @@ function ownAddNote(w, n) {
   w.c.notes.push({t: +tt.toFixed(4), d: +Math.min(n.d, 64).toFixed(4), n: clamp(Math.round(drum ? n.n : n.nc != null ? n.nc : n.n), 0, 127), v: n.v});
   w.c.notes.sort((a, b) => a.t - b.t);
 }
-// [Ganzer Block] (9.2): every Durchlauf of the block becomes one own clip (pieces of ≤ 16 bars)
+// the scene clip's origin (song beat of its time 0) an own clip stands for — null when an old copy does not know it
+function ownRefCs(song, c) {
+  const f = c && c.from; if (!f) return null;
+  if (isNum(f.cs)) return f.cs;
+  if (f.e && !f.e.own && f.e.slot === f.s) return f.bar * 4 - (f.e.ph || 0);
+  if (f.prev && !f.prev.own && f.prev.slot === f.s && isNum(f.prev.cs)) return f.prev.cs;
+  return null;
+}
+// origin o plays target tg {slot, own, cs} in phase (the same clip, its origin a whole number of clip lengths away)
+function ownSame(song, t, o, tg) {
+  if (!o || !tg || o.slot !== tg.slot || (o.own || null) !== (tg.own || null)) return false;
+  const L = songClipBeats(song, t, tg), d = (((o.cs - tg.cs) % L) + L) % L;
+  return d < 1e-6 || L - d < 1e-6;
+}
+// bar b of lane t plays tg from now on (an entry only when the music before does not go on as tg anyway)
+function ownPlayAs(song, t, b, tg) {
+  const lane = song.lanes[t], po = laneOriginAt(lane, b);
+  if (b > 0 && ownSame(song, t, po, tg)) return;
+  const L = songClipBeats(song, t, tg), ph = (((b * 4 - tg.cs) % L) + L) % L, e = {bar: b, slot: tg.slot};
+  if (ph > 1e-6 && L - ph > 1e-6) e.ph = +ph.toFixed(4); else if (po.slot === tg.slot && (po.own || null) === (tg.own || null)) e.re = 1;
+  if (tg.own) e.own = tg.own;
+  laneInsert(lane, e);
+}
+// the entry at bar b is gone when the music before it already goes on like it (an entry only the copy needed)
+function ownTidyAt(song, t, b) {
+  const lane = song.lanes[t], j = lane.findIndex(e => e.bar === b); if (j < 0 || b <= 0) return;
+  const n = lane[j]; if (n.slot < 0 || n.re) return;
+  if (ownSame(song, t, laneOriginAt(lane, b - 1), {slot: n.slot, own: n.own || null, cs: n.bar * 4 - (n.ph || 0)})) lane.splice(j, 1);
+}
+/* lane t as it is without any own clip (each one back to what it stood for) — on a copy of the song; [Ganzer Block] takes its
+   block from here, so that a hold on an own clip covers the whole scene-clip block and not only that copy (V2e′-fix) */
+function ownRefSong(song, t) {
+  const sim = Object.assign({}, song, {lanes: song.lanes.slice(), own: deep(song.own || {})});
+  sim.lanes[t] = deep(song.lanes[t] || []);
+  for (let g = 0; g < 2 * OWN_MAX + 8; g++) {
+    const e = sim.lanes[t].find(x => x.own); if (!e) break;
+    if (!sim.own[e.own] || !ownDropId(sim, t, e.own)) delete e.own;
+  }
+  return sim;
+}
+const ownRefRun = (song, t, x) => ownRun(ownRefSong(song, t), t, x);
+// [Ganzer Block] (9.2): every Durchlauf of the block becomes one own clip (pieces of ≤ 16 bars). The block is the scene clip's
+// block (own clips in it are taken over as they sound); what plays in each bar goes into the copy
 function ownWhole(song, t, x) {
-  const r = ownRun(song, t, x); if (!r) return null;
-  const {o, L, bs, be} = r, lane = song.lanes[t], src = o.own ? song.own[o.own] : S.tracks[t].clips[o.slot]; if (!src) return null;
+  const ref = ownRefSong(song, t), rr = ownRun(ref, t, x); if (!rr) return null;
+  const {o, bs, be} = rr, s = o.slot, lane = song.lanes[t], cur = laneOriginAt(lane, x);
+  const base = cur.own && song.own && song.own[cur.own] ? song.own[cur.own] : S.tracks[t].clips[s]; if (!base) return null;
   song.own = song.own || {};
-  const ids = [];
+  // room for the pieces (the own clips inside the block go away with it)
+  const n = Math.ceil((be - bs) / 16), inner = new Set(), outer = new Set();
+  for (const e of lane) if (e.own) (e.bar >= bs && e.bar < be ? inner : outer).add(e.own);
+  let freed = 0; for (const id of inner) if (!outer.has(id) && song.own[id]) freed++;
+  if (ownCount(song) - freed + n > OWN_MAX) { if (!UI.ownFullWarned) { UI.ownFullWarned = true; toast('Höchstens ' + OWN_MAX + ' eigene Clips je Song'); } return null; }
+  // the notes as they sound now, bar by bar (scene clip or own clip), from c0 on
+  const pieces = [];
   for (let c0 = bs; c0 < be; c0 += 16) {
-    if (ownCount(song) >= OWN_MAX) break;
-    const c1 = Math.min(be, c0 + 16), c = deep(src), prevE = lane.find(e => e.bar === c0);
-    c.len = c1 - c0; c.notes = [];
-    for (let m = Math.floor((c0 * 4 - o.cs) / L) - 1; o.cs + m * L < c1 * 4; m++) for (const n of src.notes) {
-      if (n.t >= L - 1e-9) continue;
-      const st = o.cs + m * L + n.t; if (st < c0 * 4 - 1e-9 || st >= c1 * 4 - 1e-9) continue;
-      const x2 = Object.assign({}, n, {t: +(st - c0 * 4).toFixed(4)}); delete x2.born; delete x2.bornRun; c.notes.push(x2);
+    const c1 = Math.min(be, c0 + 16), notes = [];
+    for (let b = c0; b < c1; b++) {
+      const ob = laneOriginAt(lane, b); if (!laneClipOk(song, t, ob)) continue;
+      const own = ob.own && song.own[ob.own], src = own || S.tracks[t].clips[ob.slot]; if (!src) continue;
+      const Lb = songClipBeats(song, t, own ? ob : {slot: ob.slot}), ocs = ob.cs;
+      for (let m = Math.floor((b * 4 - ocs) / Lb) - 1; ocs + m * Lb < b * 4 + 4; m++) for (const nt of src.notes) {
+        if (nt.t >= Lb - 1e-9) continue;
+        const st = ocs + m * Lb + nt.t; if (st < b * 4 - 1e-9 || st >= b * 4 + 4 - 1e-9) continue;
+        const x2 = Object.assign({}, nt, {t: +(st - c0 * 4).toFixed(4)}); delete x2.born; delete x2.bornRun; notes.push(x2);
+      }
     }
-    c.notes.sort((a, b) => a.t - b.t);
-    const id = ownNewId(song); c.from = {t, s: o.slot, bar: c0, e: prevE ? deep(prevE) : null};
-    song.own[id] = c; laneInsert(lane, {bar: c0, slot: o.slot, own: id}); ids.push(id);
+    notes.sort((a, b) => a.t - b.t);
+    pieces.push({c0, c1, notes});
+  }
+  const refE = ref.lanes[t].find(e => e.bar === bs);
+  for (let j = lane.length - 1; j >= 0; j--) if (lane[j].bar >= bs && lane[j].bar < be) lane.splice(j, 1);
+  for (const id of inner) if (!outer.has(id)) delete song.own[id];
+  const ids = [];
+  for (const pc of pieces) {
+    const c = deep(base), id = ownNewId(song); delete c.from;
+    c.len = pc.c1 - pc.c0; c.notes = pc.notes;
+    c.from = {t, s, bar: pc.c0, e: pc.c0 === bs && refE ? deep(refE) : null, prev: {slot: s, own: null, cs: o.cs}, cs: o.cs};
+    if (pc.c1 < be) c.from.e1 = pc.c1;
+    song.own[id] = c; laneInsert(lane, {bar: pc.c0, slot: s, own: id}); ids.push(id);
   }
   return ids[0] || null;
 }
-// [Zurück zum Szenen-Clip] (9.2): the reference comes back exactly as it was
+/* [Zurück zum Szenen-Clip] (9.2): the reference comes back exactly as it was — the entry that stood there, else the origin that
+   played before; when that was an own clip that is gone by now, the scene clip in its phase. A lane entry never keeps naming
+   a copy that no longer exists (V2e′-fix) */
 function ownDrop(song, t, x) {
   const lane = song.lanes[t], o = laneOriginAt(lane, x); if (!o.own || !song.own || !song.own[o.own]) return false;
-  const id = o.own, c = song.own[id], f = c.from || {};
-  const k = lane.findIndex(e => e.own === id && e.bar === f.bar); if (k < 0) return false;
+  return ownDropId(song, t, o.own);
+}
+function ownDropId(song, t, id) {
+  const lane = song.lanes[t], c = song.own && song.own[id]; if (!lane || !c) return false;
+  const f = c.from || {};
+  let k = lane.findIndex(e => e.own === id && e.bar === f.bar); if (k < 0) k = lane.findIndex(e => e.own === id); if (k < 0) return false;
+  const bar = lane[k].bar, s = isNum(f.s) ? f.s : lane[k].slot;
   lane.splice(k, 1);
-  if (f.e) laneInsert(lane, Object.assign(deep(f.e), {bar: f.bar}));
-  if (f.e1 != null) { const j = lane.findIndex(e => e.bar === f.e1 && e.slot === f.s && !e.re); if (j >= 0) lane.splice(j, 1); }
+  const alive = v => !v || !v.own || (v.own !== id && !!song.own[v.own]);
+  const po = laneOriginAt(lane, bar), rcs = ownRefCs(song, c);
+  const scene = {slot: s, own: null, cs: rcs != null ? rcs : (po.slot === s && !po.own ? po.cs : bar * 4)};
+  if (f.e && alive(f.e)) laneInsert(lane, Object.assign(deep(f.e), {bar}));
+  else if (f.e || (f.prev && !alive(f.prev))) ownPlayAs(song, t, bar, scene);
+  else if (f.prev) ownPlayAs(song, t, bar, {slot: f.prev.slot, own: f.prev.own || null, cs: f.prev.cs});
+  else if (!(po.slot === s && !po.own)) ownPlayAs(song, t, bar, scene);         // an old copy without prev
+  // other entries that still name this copy (where a looping copy went on) or a copy that is gone: the scene clip there
+  for (const e of lane) if (e.own && (e.own === id || !song.own[e.own])) {
+    delete e.own; delete e.re;
+    const L = songClipBeats(song, t, {slot: e.slot}), ph = (((e.bar * 4 - scene.cs) % L) + L) % L;
+    if (e.slot === s && ph > 1e-6 && L - ph > 1e-6) e.ph = +ph.toFixed(4); else delete e.ph;
+  }
+  // the entry at the end of the copy (added with it) goes when the music before it already goes on like it
+  if (f.e1 != null) ownTidyAt(song, t, f.e1);
   if (!ownRefs(song, id)) delete song.own[id];
   return true;
 }
@@ -19172,6 +19278,7 @@ function svCellRef(t, bar) { const s = S.song; if (!s || !s.lanes[t] || bar >= s
 function openCellSheet(t, bar) {
   const song = S.song; if (!song || !svCellRef(t, bar) || svRecBusy()) return;
   const own = svCellOwnAt(t, bar), run = ownRun(song, t, bar); if (!run) return;
+  const blk = ownRefRun(song, t, bar) || run;          // [Ganzer Block] covers the scene clip's block (V2e′-fix)
   const tr = S.tracks[t], sc = run.o.slot + 1, rng = run.d1 - run.d0 > 1 ? 'Takt ' + (run.d0 + 1) + '–' + run.d1 : 'Takt ' + (run.d0 + 1);
   SV.cell = {t, a: run.d0, b: run.d1}; UI.dirty.song = true; folEdit('song');
   openPop(null, p => {
@@ -19180,7 +19287,7 @@ function openCellSheet(t, bar) {
       (own ? `<button class="rb pl-o" data-a="edit"><b>Bearbeiten</b><small>ROLLE auf diesem eigenen Clip</small></button>` +
              `<button class="rb pl-o" data-a="back"><b>Zurück zum Szenen-Clip</b><small>die Kopie fällt weg, hier spielt wieder Szene ${sc}</small></button>`
            : `<button class="rb pl-o" data-a="own"><b>Eigener Clip (dieser Durchlauf)</b><small>${rng} wird eine Kopie, die nur hier gilt</small></button>`) +
-      `<button class="rb pl-o" data-a="whole"><b>Ganzer Block</b><small>${run.be - run.bs > 1 ? 'Takt ' + (run.bs + 1) + '–' + Math.min(run.be, song.bars) : 'Takt ' + (run.bs + 1)} wird ein eigener Clip</small></button>` +
+      `<button class="rb pl-o" data-a="whole"><b>Ganzer Block</b><small>${Math.min(blk.be, song.bars) - blk.bs > 1 ? 'Takt ' + (blk.bs + 1) + '–' + Math.min(blk.be, song.bars) : 'Takt ' + (blk.bs + 1)} wird ein eigener Clip</small></button>` +
       `<button class="rb pl-c" data-a="x">Abbrechen</button>`;
     onTap(p, b => {
       const a = b.dataset.a; closePop(); if (a === 'x') return;
@@ -33209,7 +33316,7 @@ function init() {
   window.addEventListener('resize', () => { UI.kbRelayout = true; UI.dirty.carrier = true; MLIVE.lay++; if (UI.modSrc) requestAnimationFrame(modBannerPlace); if (UI.pop && !(document.activeElement && UI.pop.el.contains(document.activeElement) && document.activeElement.tagName === 'INPUT')) closePop(); });
   window.addEventListener('orientationchange', () => { UI.kbRelayout = true; UI.dirty.carrier = true; });
   // a web font that arrives late changes every text width: refit the readout and re-measure the mode labels (§3.6)
-  try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { UI.dirty.carrier = true; UI.kbRelayout = true; }); if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { UI.dirty.carrier = true; UI.kbRelayout = true; }); } catch (e) {}
+  try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { UI.dirty.carrier = true; UI.kbRelayout = true; }); if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { UI.dirty.carrier = true; UI.kbRelayout = true; SV.fontGen = (SV.fontGen | 0) + 1; try { svButtons(); } catch (e) {} }); } catch (e) {}
   if (window.ResizeObserver) new ResizeObserver(() => { UI.kbRelayout = true; }).observe(EL.kb);
   if (window.ResizeObserver) try { new ResizeObserver(() => { mxLayout(); cellFit(); }).observe(EL.grid); } catch (e) {}
   on(window, 'resize', () => { mxLayout(); });

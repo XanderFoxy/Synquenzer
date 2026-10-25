@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+const APP = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/dirigent-wt/index.html';
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome' });
+const ctx = await b.newContext({viewport: {width: 390, height: 844}, deviceScaleFactor: 2, hasTouch: true, isMobile: true});
+const p = await ctx.newPage();
+await p.goto('file://' + APP); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.runtime);
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.newProject({init: true}); Q.setClip(0, 0, {len: 1, notes: [{t: 0, d: 1, n: 57, v: .8}]}); Q.selectTrack(0); Q.songFromChain([{scene: 0, bars: 4}]); Q.selectTrack(1); Q.songView(true); Q.songRecTargets({clips: true, chords: true, notes: true, mel: true}); });
+await p.waitForTimeout(800);
+console.log(await p.evaluate(() => { const r = document.querySelector('#songView .sv-rec'), t = r.lastChild; const cs = getComputedStyle(t); const rg = document.createRange(); rg.selectNodeContents(t); const gb = rg.getBoundingClientRect(), rb = r.getBoundingClientRect(), tb = t.getBoundingClientRect(); return {rg: [gb.left - rb.left, gb.width], tb: [tb.left - rb.left, tb.width], rbw: rb.width, key: SV.rtKey, cls: r.className, cw: r.clientWidth, sw: t.scrollWidth, tcw: t.clientWidth, disp: cs.display, ff: cs.fontFamily.slice(0, 40), pad: getComputedStyle(r).padding, ai: getComputedStyle(r).alignItems, txt: t.textContent}; }));
+await b.close();

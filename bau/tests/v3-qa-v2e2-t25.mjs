@@ -1,0 +1,22 @@
+// QA V2e′ t25: glass tiles follow scene-clip changes made elsewhere (paste, undo, redo, clear, quantize, live overdub)
+import { openVp, T, SETUP55, sleep, mkCheck } from './v3-qa-v2e2-lib.mjs';
+const VP = process.argv[2] || 'P1';
+const {check, done} = mkCheck();
+const {b, p, errs, cdp} = await openVp(VP);
+const t = T(p, cdp), E = t.E;
+await E(SETUP55(true)); await E(() => window.SYNQUENZER.songView(true)); await sleep(200);
+await E(() => window.SYNQUENZER.songViewMode('glass')); await sleep(250);
+const tileN = () => E(() => { const ti = window.SYNQUENZER.svLayoutInfo().tiles.find(x => x.t === 0 && x.a === 2); return ti ? ti.n : null; });
+const clipN = () => E(() => { const c = window.SYNQUENZER.getClip(0, 0); return c ? c.notes.length : 0; });
+const cmp = async (tag) => { await sleep(120); const a = await tileN(), c = await clipN(); check(`${VP} glass tile after ${tag} = clip notes (${c})`, a === Math.min(c, 160), [a, c]); };
+await cmp('start');
+await E(() => { const Q = window.SYNQUENZER; Q.copyClip(0, 2); Q.pasteClip(0, 0); return 1; }); await cmp('paste');
+await E(() => window.SYNQUENZER.undo()); await cmp('undo');
+await E(() => window.SYNQUENZER.redo()); await cmp('redo');
+await E(() => window.SYNQUENZER.undo()); await cmp('undo 2');
+await E(() => window.SYNQUENZER.quantizeClip(0, 0, {grid: 1, strength: 1})); await cmp('quantize');
+await E(() => window.SYNQUENZER.clearClip(0, 0)); await cmp('clear');
+await E(() => window.SYNQUENZER.undo()); await cmp('undo clear');
+check('0 console errors', errs.length === 0, errs);
+await b.close();
+process.exit(done());

@@ -1,0 +1,23 @@
+// QA V2e′ t20: tap on a reference cell still cycles the clip (WP6), one undo; tap on own clip → ROLLE, no data change
+import { openVp, T, SETUP55, sleep, mkCheck } from './v3-qa-v2e2-lib.mjs';
+const VP = process.argv[2] || 'P1';
+const {check, done} = mkCheck();
+const {b, p, errs, cdp} = await openVp(VP);
+const t = T(p, cdp), E = t.E;
+await E(SETUP55(true)); await E(() => window.SYNQUENZER.songView(true)); await sleep(300);
+const cellXY = (tr, bar) => E(([tr, bar]) => { const I = window.SYNQUENZER.svLayoutInfo(); const r = SV.rows.indexOf(tr); return {x: I.canvas.x + bar * I.cellW - I.x0 + I.cellW / 2, y: I.canvas.y + I.rulerH + r * I.rowH + I.rowH / 2}; }, [tr, bar]);
+const S0 = await E(() => JSON.stringify(window.SYNQUENZER.song())), U0 = (await t.undo()).n;
+let c = await cellXY(2, 3);
+await t.tap(c.x, c.y, 400);
+const S1 = await E(() => JSON.stringify(window.SYNQUENZER.song())), U1 = (await t.undo()).n;
+check(`${VP} WP6 tap on a cell changes the clip, one undo`, S1 !== S0 && U1 === U0 + 1, [U0, U1]);
+await E(() => window.SYNQUENZER.undo()); await sleep(200);
+await E(() => window.SYNQUENZER.makeOwn(0, 4, false));
+const S2 = await E(() => JSON.stringify(window.SYNQUENZER.song())), U2 = (await t.undo()).n;
+c = await cellXY(0, 4);
+await t.tap(c.x, c.y, 500);
+const ro = await E(() => window.SYNQUENZER.roll());
+check(`${VP} tap on own clip → ROLLE on it, no data change`, ro && ro.own && (await E(() => JSON.stringify(window.SYNQUENZER.song()))) === S2 && (await t.undo()).n === U2, ro);
+check('0 console errors', errs.length === 0, errs);
+await b.close();
+process.exit(done());

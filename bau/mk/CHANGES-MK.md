@@ -101,3 +101,43 @@ Keine Änderung nötig (Wächter `max_app` 4 021 000 / `max_format` 5 laut Orche
 
 ### Geräte-Abgleich
 Entfällt (kein Klang).
+
+## MK0-fix — Überschreib-Sperre auf allen Wegen · App bleibt 4.8.1 · Format bleibt 4
+
+### Behoben (5 bestätigte Fehler aus der Abnahme/Fach-Prüfung)
+1. **Kritisch – Partner-/Server-Stand ins offene Projekt (cloudPull, Paar-Raum „Laden“, Realtime, cloudResolve „Übernehmen“):**
+   Bisher wurde gesperrt angezeigt, aber nichts gespeichert, und trotzdem rückte `meta.base` vor. Nach einem Neustart ging dann
+   die alte Kopie entsperrt auf, und 4.9.0 (nach [Neu laden]) überschrieb mit `p_base 2` den neueren Stand. Jetzt landet das
+   Original des neueren Stands unverändert im Autosave-Platz (`nvStoreKv`). KV und Meta nennen also dieselbe Version, und nach
+   einem Neustart ist das Projekt wieder gesperrt, mit Leiste. `cloudApply` meldet, ob gespeichert wurde. Nur dann ziehen
+   `done()`/`fin()` die Meta nach; sonst bleibt `base` stehen und der Stand wird später neu geholt.
+2. **Neueres Cloud-Projekt auf einem frischen Gerät:** Das Projekt liegt jetzt im Autosave (Sperre `kv:true`). [Neu], [Neu laden]
+   und Neustart verlieren es nicht mehr: Beim Verlassen wird es unverändert unter Projekte geparkt. Lässt es sich nicht
+   speichern, wird seine Meta gelöscht, damit der Abgleich es als „fehlt“ wieder holt.
+3. **Projekte → Umbenennen** eines geparkten neueren Projekts ändert nur noch den Namen im gespeicherten Original (Format 5, neue
+   Felder und Sperre bleiben). Beim offenen gesperrten Projekt geht der Name ebenfalls nur ins Original.
+4. **Datei-/Sicherungswege:** Als Datei sichern, `serialize`, Alles sichern, Sicherung öffnen, Export aus Projekte, Kopie (Projekte),
+   „Kopie in Nur ich“ und Viewer→Safari geben ein neueres Projekt **so weiter, wie es kam**: eigenes Format, Felder und
+   Versionsstempel, nur id/Name angepasst, Prüfsumme neu berechnet. Wieder geöffnet ist es gesperrt, mit Leiste.
+5. Geparkte neuere Projekte lösen kein `cloudOnPark` mehr aus (keine Hochlade-Markierung, die nie hochgehen darf).
+
+Technik: `SQStore.parseFile` und `Autosave.load` hängen das Original nicht aufzählbar an `_newer.fo`. `normalizeProject` reicht es
+weiter, und `applyProject` legt es als `NV.raw` ab. `projectFileObj(S)`, `nvPark`, `nvFo`, `renameProject`, `duplicateProject`,
+`exportProjectById` und `importBackup` benutzen es. Eigene Projekte (nicht neuer) laufen unverändert über den alten Weg.
+
+### Proben
+- `v3-qa-mk0-acc.mjs` 20/20, `v3-mk0-schutz.mjs` 47/47. Drei Prüfungen dort beschrieben die alte, fehlerhafte Erwartung
+  („KV nicht geschrieben“, `kv:false`); sie prüfen jetzt „KV = Original unverändert, Meta nennt diese Version“. Die alte Datei
+  liegt als `v3-mk0-schutz.pre-fix.mjs` daneben.
+- `v3-mk0qa/t1-pull.mjs` mit `emu490-fix.html` (aus diesem Stand: nur VERSION 4.9.0 und Format 5): T1a, T1d, T1e und T1f PASS.
+  T1b/T1c prüfen die verworfene Variante „Meta bleibt stehen“. Hier gilt die andere erlaubte Variante: KV hält den Stand,
+  den die Meta nennt (bpm 133, base 2).
+- `t2-missing` 3/3, `t4-paths` T4b/T4b2 PASS (T4a = eigener Befund Verlauf, offen), `t5-backup` 1/1, `t6-drum` 5/5;
+  `t3-crafted` gleich wie vorher (eigene Befunde).
+- `v3-repro-mk0base` (A/B), `v3-repro-nvcloud-indep` (T3/T7/Reload), `v3-repro-nvrename-indep`, `v3-verify-t1-direct` 2/2,
+  `v3-mk0repro-nvpaths` 8/8; neu `v3-mk0qa/v3-mk0fix-take.mjs` 9/9 (Übernehmen + misslungenes Speichern → base bleibt).
+- Regression `v3-mk0rg2-cloud/store/nostore/legacy/files/flow`: gleich wie vorher (nur zufällige ids und Zeitrauschen). Smoke ohne Fehler.
+- Größe +4,7 KB gegenüber MK0.
+
+### Am Server offen
+- Nichts. Kein Supabase-Aufruf, keine Datenbank-Änderung.

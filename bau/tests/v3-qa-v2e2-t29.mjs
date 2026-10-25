@@ -1,0 +1,22 @@
+// QA V2e′ t29: drag a part from page 2 of the part bar (P6)
+import { openVp, T, SETUP55, sleep, mkCheck } from './v3-qa-v2e2-lib.mjs';
+const {check, done} = mkCheck();
+const {b, p, errs, cdp} = await openVp(process.argv[2] || 'P1');
+const t = T(p, cdp), E = t.E;
+await E(SETUP55(false));
+await E(() => { const Q = window.SYNQUENZER, C = n => Q.parseChord(n); Q.setPart(5, {name: 'Bridge', lanes: [[{bar: 0, slot: 2}], [{bar: 0, slot: -1}], [{bar: 0, slot: 2}], [{bar: 0, slot: -1}], [{bar: 0, slot: 1}], [{bar: 0, slot: -1}]], chords: {len: 2, ch: [{b: 0, tg: C('Dm')}, {b: 4, tg: C('E')}]}, src: 'fang', len: 2}); Q.partPage(1); return 1; });
+await E(() => window.SYNQUENZER.songView(false)); await sleep(300);
+const keys = await E(() => [...document.querySelectorAll('#partBar .pk')].map(k => ({txt: k.textContent, i: k.dataset.i, vis: !!k.offsetWidth})));
+console.log('keys', JSON.stringify(keys));
+const j = keys.findIndex(k => /BRI/.test(k.txt));
+const k = await t.key(j);
+await t.down(k.x, k.y); await sleep(1120);
+const inf = await t.info();
+await t.glide(k.x, k.y, inf.canvas.x + 7 * 36 + 3 - inf.x0, inf.canvas.y + 100, 8, 16);
+await t.up(); await sleep(500);
+const s = await E(() => window.SYNQUENZER.song());
+console.log('marks', JSON.stringify(s.marks), 'bars', s.bars);
+check('page-2 part (P6 Bridge) appended at 7, length 2', s.marks.some(m => m.part === 'P6' && m.a === 7 && m.len === 2) && s.bars === 9);
+check('0 console errors', errs.length === 0, errs);
+await b.close();
+process.exit(done());
