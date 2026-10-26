@@ -48,19 +48,22 @@ log('playing', playing, JSON.stringify(await E(() => ({slot: R.slot, pend: R.pen
 // the new clip (2 bars) plays at once (rec finish launches it) → wait 2 passes
 let cs = await E(t => R.cstart[t], TR);
 log('cstart', cs, 'beat', await beatNow());
-if (cs < await beatNow() - 1) { const bn = await beatNow(); cs = cs + Math.ceil((bn - cs) / 8) * 8; }
+const CL = clip.len * 4;
+if (cs < await beatNow() - 1) { const bn = await beatNow(); cs = cs + Math.ceil((bn - cs) / CL) * CL; }
 log('pass start', cs);
-await waitBeat(cs + 16.3);
-const pass = k => E(([cs, k]) => SYNQUENZER.noteLog(800).filter(e => e.track === 2 && e.src === 'arp' && e.beat >= cs + k * 8 - .01 && e.beat < cs + (k + 1) * 8 - .01).map(e => [+(e.beat - cs - k * 8).toFixed(3), e.out]), [cs, k]);
-const p0 = await pass(0), p1 = await pass(1);
+await waitBeat(cs + 3 * CL + .3);
+const pass = k => E(([cs, k, CL]) => SYNQUENZER.noteLog(800).filter(e => e.track === 2 && e.src === 'arp' && e.beat >= cs + k * CL - .01 && e.beat < cs + (k + 1) * CL - .01).map(e => [+(e.beat - cs - k * CL).toFixed(3), e.out]), [cs, k, CL]);
+const p0 = await pass(1), p1 = await pass(2);
 log('pass0', JSON.stringify(p0)); log('pass1', JSON.stringify(p1));
+log('all t2', JSON.stringify(await E(() => SYNQUENZER.noteLog(900).filter(e => e.track === 2 && e.beat > 7).map(e => [+e.beat.toFixed(2), e.src, e.out]))));
+log('cstart now', await E(t => [R.cstart[t], R.slot[t], audBeat()], TR), 'scene', JSON.stringify(await E(() => SYNQUENZER.runtime().scene)));
 const len = clip ? clip.len * 4 : 8;
-check('R2 the recorded clip loops: pass 1 = pass 2 (Zufall, same seed)', p0.length > 20 && JSON.stringify(p0) === JSON.stringify(p1), {n: [p0.length, p1.length]});
+check('R2 the recorded clip loops: full pass 2 = pass 3 (Zufall, same seed)', p0.length > 20 && JSON.stringify(p0) === JSON.stringify(p1), {n: [p0.length, p1.length]});
 // compare with the take (ignore the first 'late' step and the last step of each chord: chords released at .9)
-const norm = a => a.filter(x => x[0] >= .2).map(x => x.join(':'));
+const norm = a => a.filter(x => ![0, 2, 4].some(b => x[0] > b - .3 && x[0] < b + .3)).map(x => x.join(':'));   // chord changes excluded (live latency)
 const tk = norm(takeArp), pb = norm(p0);
 const same = tk.filter(x => pb.includes(x)).length;
-check('R3 playback = what was heard while recording (≥ 90 % of the steps after the first)', same >= .9 * tk.length && tk.length > 15, {take: tk.length, play: pb.length, same, diff: tk.filter(x => !pb.includes(x)).slice(0, 8), diff2: pb.filter(x => !tk.includes(x)).slice(0, 8)});
+check('R3 playback = what was heard while recording (all steps away from the chord changes)', same === tk.length && tk.length > 15, {take: tk.length, play: pb.length, same, diff: tk.filter(x => !pb.includes(x)).slice(0, 8), diff2: pb.filter(x => !tk.includes(x)).slice(0, 8)});
 // scene switch by touch: scene 1 then scene 3 again; then ■ → no stuck notes
 await T.tapTxt('button.scn', /^▶\s*1/); await sleep(2500);
 await T.tapTxt('button.scn', /^▶\s*3/); await sleep(2500);

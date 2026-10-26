@@ -227,3 +227,64 @@ Entfällt (der microKORG hat keinen Mod-Sequenzer); die Kurven bleiben eK.
 - Neue Hilfen in `dirigent-test/`: `v3-mk6fix-cpu.mjs`, `v3-mk6fix-alloc.mjs`, `v3-mk6fix-font.mjs`, `v3-mk6fix-ui-font.mjs`,
   `v3-mk6fix-indep-dbg.mjs`, `v3-mk6fix-q6.mjs`.
 - Schnappschuss: `synq-snapshots/MK6-fix.html`.
+
+## G-MK6-gruppe-fix (4.14.0, Befunde der Gruppen-QA G-MK6, 26.10.)
+
+Version bleibt 4.14.0 (Fix im Paket MK6), Format 5, keine Server-Änderung. Nur der Seq-Kern im AM-Zweig des Worklets
+(`MkSqP`, `MkTim.sqPrep/sqAdv/sqVal/recMsg/recStep`, die zwei `recStep`-Aufrufe in `idle`/`block`) ist geändert. Größe +2,4 KB
+(2 923 384 B), Worklet weiter ASCII, Markenwort-Prüfung unverändert (1 × `MS 2000`).
+
+### Behoben
+1. **● AUFN. endete nach 1–3 Schritten bei abgesetzten Noten (KEY SYNC Timbre/Stimme).** Eine neue Note nach „alle los“ setzte
+   die Position auf Schritt 1 zurück, `recStep` las das als Ende der Aufnahme.
+   - Neu: Bei KEY SYNC Timbre und Stimme hat die Aufnahme eine eigene Position. Sie startet beim laufenden Schritt (Index wie bisher,
+     in der Vorwärts-Folge) und läuft vorwärts als Schleife bis LETZTER SCHRITT, unabhängig von Key-Sync-Neustarts (Umfang 4,
+     MK6-09/-14). KEY SYNC aus bleibt auf Timbre- bzw. Song-Raster-Position.
+   - Damit ist auch der offene Punkt `v3-fp6q-rec2.mjs` behoben (jüngste Stimme endet mitten in der Aufnahme: jetzt keine Lücken).
+   - Nachweis: `v3-qa-gmk6-rec2.mjs` 3/3 (Timbre und Stimme staccato: Schritte 2–16), `v3-qa-gmk6-rec.mjs` 4/4 im Song (Bass
+     Timbre/Stimme: 1–16, keine Lücken), `v3-repro-mk6-recks.mjs` (staccato Timbre/Stimme 1–16 in ≈ 2 s statt 1–2 in 0,18 s),
+     `v3-repro-mk6-recks2.mjs` (Touch: nach 1 s läuft die Aufnahme noch, Ende „Schritte 1–16“), `v3-fp6q-rec2.mjs` (keine Lücke).
+2. **Glatt sprang ohne Rampe bei TYP, LÄNGE, KEY SYNC, AUFLÖSUNG während einer Note.**
+   - Neu: Springt die Glatt-Linie (Positionssprung durch eine Einstellung, Key-Sync-Neustart bei klingenden Stimmen, Song-Sprung bei
+     KEY SYNC aus), gleitet der Wert vom letzten Wert mit τ = 5 ms zur neuen Linie (B.6 Nr. 2). Ohne Sprung bleibt die Linie exakt
+     linear (MK6-02, MK6-10 bitgleich).
+   - KEY SYNC Timbre ↔ Stimme bei klingender Note: Die Stimmen laufen an ihrer bisherigen Position (und mit ihren Werten) weiter,
+     kein Sprung. (Bei Stimme → Timbre übernimmt die Timbre-Position die der jüngsten Stimme.)
+   - Gain-Tap (`v3-qa-gmk6-gain.mjs`): TYP 6,2 ms, LÄNGE 5,7 ms, AUFLÖSUNG 6,4 ms (vorher je 0,3 ms), KEY SYNC → Stimme ohne Sprung
+     (vorher 0,53 → 0,06 in 0,3 ms). Bezug Regler-Änderung 5,8 ms.
+3. **Undo/Redo und Malen des laufenden Schritts in Glatt sprangen hart.** Dieselbe Gleit-Regel greift bei jeder Wert-Änderung
+   (`sqPrep` zählt Änderungen, `sqVal` gleitet ab dem letzten Wert).
+   - Gain-Tap: ↶ 7,1 ms, ↷ 5,7 ms, Malen 6,6 ms (vorher je 0,32 ms); Bezug Regler-↶ 7,1 ms.
+   - Spur-Ausgang, HF-Burst gegen den lauteren stehenden Pegel (`v3-repro-gmk6-undoglatt.mjs`, Cutoff 64, Touch): ↶ +2,7 dB, ↷ +0,9 dB
+     (vorher +32,6 / +36,2), Malen über den laufenden Schritt +2,5–2,7 dB (vorher +31), Ziehen 4,4–4,7 dB (vorher 14); Bezug Regler-↶ 2,0 dB.
+   - Damit ist auch der offene Punkt `v3-fp6q-t3.mjs` behoben: Glatt CUTOFF −4,7…−5,5 dB, Glatt A-PEGEL −1,1 dB (vorher 24–27 / 6,3 dB).
+   - Ein Wechsel BEWEGUNG Glatt → Stufe rampt ab dem Glatt-Wert (1 ms) statt zu springen.
+
+### Messhinweis (für die Abnahme)
+- `v3-qa-gmk6-click.mjs` misst M-KLICK gegen den Median ±20 ms. Ein großer CUTOFF-Wechsel öffnet die Höhen in wenigen ms; das wertet
+  dieses Maß auch beim gewöhnlichen Regler (5-ms-Glättung) als Knack: „Stored knob change under a seq (CUTOFF 40 → 90)“ 27–29 dB.
+  Glatt-CUTOFF-Fälle (TYP 38,8 dB) liegen deshalb dort weiter über 6 dB, obwohl sie jetzt wie der Regler gleiten.
+- `dirigent-test/v3-gmk6g-click.mjs` (Kopie mit HF-Burst gegen den lauteren stehenden Pegel, wie im Befund 3): alle Glatt-Fälle
+  ≤ 6 dB (TYP CUTOFF 10,8 dB bei 11,1 dB Eigen-Schwankung der laufenden CUTOFF-Rampe ohne Änderung). Die verbleibenden Ausfälle
+  dort sind Stufe (1-ms-Rampe nach B.6 Nr. 2 b, gewollt) und M-EINBRUCH bei echten Pegel-Änderungen (LÄNGE 16 → 4 macht die
+  Sequenz leiser; ebenso der Bezug „AMP PEGEL 127 → 60“).
+
+### Regression (alle auf `mk-br-MK6/index.html`)
+- Node: `v3-mk6-seq.mjs` 36/36 (MK6-09 Start bei Schritt 3, MK6-10 bitgleich gegen MK4-fix), `v3-mk6-fp.mjs` 16/16,
+  `v3-qa6-acc.mjs` 14/15 (Q6 wie bisher, siehe oben), `v3-fp6q-ks.mjs` alle 0 dB (vorher Stufe Timbre → Stimme −5,1 dB),
+  `v3-fp6q-rec.mjs` unverändert, `v3-fp6q-bit.mjs` gleich wie MK6-fix.
+- Neu `dirigent-test/v3-gmk6g-bit.mjs`: 26 Seq-Läufe (KEY SYNC 0/1/2 × Glatt/Stufe × 4 TYPEN, Einmal, Schrittlänge, Akkord + Pause)
+  bitgleich zu MK6-fix (`dirigent-test/v3-gmk6g-base.html`).
+- `v3-mk6-cpu.mjs` (MK6-12) besteht: 0,26–0,36 / 0,14–0,21 / 0,42–0,46 × VA-Stimme (MK6-fix im selben Lauf 0,35 / 0,14 / 0,46).
+- Chromium: `v3-fp6q-song.mjs` (FP-SONG) wie vorher; `v3-mk6fix-ui-font.mjs` mit den echten Schriften (`mk6fix-fonttest/`)
+  28/28 inkl. M-PLATZ/M-ANSICHT und Probe „+Seq“ (fps 60,2, 0 longtasks); `v3-qa6-ui.mjs` bestanden; `v3-qa-gmk6-undo.mjs` 7/7;
+  Smoke ohne Fehler (`dirigent-test/v3-gmk6g-smoke.png`).
+- Hinweis Testumgebung: `/opt/pw-browsers/chromium-1194` gibt es auf dieser Maschine nicht; alle Läufe nutzen wie bisher
+  `chromium-1243`.
+
+### Offen (nicht behoben, für den Orchestrator)
+- KEY SYNC Stimme → Timbre bei mehreren klingenden Stimmen an verschiedenen Positionen: die älteren Stimmen springen auf die Position
+  der jüngsten (eine geteilte Position kann nicht je Stimme gleiten). Selten (Einstellung während eines Akkords).
+- Stufe-Sprünge (Malen, Undo, TYP) bleiben bei 1-ms-Rampe nach B.6 Nr. 2 b; bei CUTOFF/AMP großer Hub hörbar hart, aber so verlangt.
+- `v3-fp6q-bit.mjs` „patch 5/7“ und die Hauptstrang-Punkte (MK1) wie oben.
+- Schnappschuss: `synq-snapshots/G-MK6-gruppe-fix.html`.

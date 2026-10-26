@@ -6192,7 +6192,7 @@ class MkTim {
     this.sqN = n; this.sqLoop = !!r || S.run >= .5; this.sqKs = mkCl(Math.round(S.ks), 0, 2);
     const on = S.on >= .5 || !!r, wasV = this.sqV; this.sqV = this.sqKs === 2; this.sqEv++;   // G-MK6: every edit (values, TYP, LAENGE, AUFL., undo) = a Glatt glide point
     // G-MK6: KEY SYNC Timbre <-> Stimme at a sounding note: the voices go on from the position (and values) they had, no jump
-    if (this.sqV !== wasV && this.sounding()) {
+    if (this.sqV !== wasV && this.sqSig != null && this.sounding()) {   // (not at the first prep of a timbre: nothing ran before)
       if (this.sqV) { for (const v of this.V) if (v.on) { v.sq = v.sq ? v.sq.take(this.sq) : this.sq.copy(); const c = v.sxo; if (c && c.on) c.sq = c.sq ? c.sq.take(this.sq) : this.sq.copy(); } }
       else { let vo = null; for (const v of this.V) if (v.on && !v.ghost && v.sq && (!vo || v.age > vo.age)) vo = v; if (vo) this.sq.take(vo.sq); }
     }
@@ -6301,7 +6301,7 @@ class MkTim {
     // G-MK6 (MK6-09, Umfang 4): with KEY SYNC Timbre / Stimme the take runs on its own forward loop from the step that sounds now, so a
     // key-sync restart by a new (detached) note neither ends nor shortens it; KEY SYNC aus stays on the timbre / song grid position
     const H0 = this.sqHold(); let H = this.sq;
-    if (Math.round(this.T.seq.ks) !== 0) { H = new MkSqP(); H.j = H0.j < this.sqN ? this.sqO[H0.j] : 0; H.u = H0.u; }
+    if (Math.round(this.T.seq.ks) !== 0) { H = new MkSqP(); H.j = H0.j < this.sqN ? H0.j : 0; H.u = H0.u; }   // the index goes on in the forward order (as the timbre position does)
     this.rec = {k: mkCl(m.k | 0, 0, 2), tg, base: +m.base || 0, H, own: H !== this.sq, cur: -1, s0: -1, w: 0, v: this.T.seq.q[mkCl(m.k | 0, 0, 2)].v.slice(), R: MKW.sqR(tg)};
     this.sq.done = false; for (const v of this.V) if (v.sq) v.sq.done = false;   // MK6-fix (MK6-14): an Einmal run-out loops on during AUFN.
     this.sqDirty = true;
