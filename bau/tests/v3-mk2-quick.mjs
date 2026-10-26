@@ -1,0 +1,26 @@
+import { chromium } from 'playwright';
+const FILE = process.argv[2];
+const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await browser.newContext({viewport: {width: 844, height: 390}, hasTouch: true, isMobile: true});
+const page = await ctx.newPage(); const errs = [];
+page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await page.goto('file://' + FILE); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+const r = await page.evaluate(async () => {
+  SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor();
+  await new Promise(r => setTimeout(r, 400));
+  SYNQUENZER.mkSet(0, 't.0.o1.w', 5); SYNQUENZER.mkSet(0, 't.0.o1.c2', 22);
+  await SYNQUENZER.audition(0, 60, 300);
+  await new Promise(r => setTimeout(r, 1500));
+  const i1 = SYNQUENZER.mkInfo();
+  SYNQUENZER.setEngine(1, 'mk'); SYNQUENZER.setSound(1, SYNQUENZER.getSound(0));
+  await new Promise(r => setTimeout(r, 600));
+  const i2 = SYNQUENZER.mkInfo();
+  const snd = SYNQUENZER.getSound(0);
+  const out = await SYNQUENZER.mkRender(snd, [[0, 'on', 57, .8]], {sec: 1});
+  let e = 0; for (let i = 24000; i < 48000; i++) e += out.l[i] * out.l[i];
+  MKUI.setWahl(2, 1); const pi = SYNQUENZER.mkPanel();
+  return {i1, i2, rms: Math.sqrt(e / 24000), knobs: pi.knobs, matrix: pi.matrix, lcd: document.querySelector('#synthSheet .lcd') ? document.querySelector('#synthSheet .lcd').textContent : null};
+});
+console.log(JSON.stringify(r, null, 1).slice(0, 2500)); console.log('errors', errs);
+await page.screenshot({path: '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk2work/q-L1.png'});
+await browser.close();
