@@ -2009,3 +2009,592 @@ Größe 3 017 704 B (+142 962 B gegen 4.12.0; Summe der Zweige +142 450 B, Rest 
      4,71–4,73 × VA (B.4 ≤ 8); MK7-12 PASS. `v3-mk7-voc.mjs`: alles PASS (inkl. MK7-12 bitgleich gegen G-MK34-merge).
    - Info: der Begrenzer Stufe 1 (2. Ordnung, unverändert) misst jetzt 1,95 × und ist damit nicht mehr billiger als die volle Bank.
 3. Smoke-Test ohne Fehler. Schnappschuss `synq-snapshots/G-MK567-merge-fix.html`.
+
+
+# CHANGES – MS 2000, Paket MK-P (Zweig-Kopie `mk-br-MKP`)
+
+## MK-P — Bedienfeld wie der MS2000: Platte, Gesamtansicht, Zoom-Halte, Lauflicht · App **4.16.0** (`APP_CODE` 4 016 000) · Format bleibt 5
+
+**Vorgänger-Stand** für alle „bitgleich / unverändert“-Abnahmen und das Budget: **4.15.0** (MK0–MK7 zusammengeführt,
+3 017 704 B, Kopie `dirigent-test/v3-mkp-vorg.html`). Gebaut nach Nachtrag 3 Rev. 3 („reiner MS 2000“, kein microKORG-
+Bedienfeld, keine RADIAS-Teile), Teil MK-P, B.3, B.6, B.7, EN3-05/13/14/20, H-16/H-17/H-18 (Vorgaben gebaut, nicht gewartet).
+MK8 entsteht parallel in `mk-br-MK8`; der Orchestrator führt zusammen und setzt die VERSION-Zeile. Kein Supabase-Aufruf
+(nicht nötig: Format 5, App 4 016 000 ≤ `max_app` 4 021 000). Nichts committet.
+
+Dieser Lauf hat einen unterbrochenen Bau-Versuch übernommen (Platte, Ansichten, Gesten und Tests standen, Abnahme,
+Changelog und Snapshot fehlten), ihn geprüft, die Befunde unten behoben und die ganze Abnahme neu gefahren.
+
+### Gebaut
+
+1. **Die Platte** (`sq-mk-src`, Abschnitt „MK-P“): Vorderseite nach HB-MS S. 5 als Daten (Lage-Tabelle `SEC`, `EL_`, `HALTE`
+   in % der Platte, Seitenverhältnis 1,95 : 1, 16-Spalten-Raster xₙ = 14,1 + (n − 1)·5,52), gebaut als DOM + CSS + **ein**
+   SVG für die gedruckten Linien und **ein** gemeinsames Skalen-Symbol (`<use>`), ohne Bild-Daten, ohne `@font-face`, ohne
+   WebGL (EN3-13). Hell blau-silbernes gebürstetes Metall (nur Verläufe), dunkler Druck, inverse weiße Vocoder-Namen auf
+   Schwarz genau an den Tabellenstellen, schwarze Kappen mit weißem Zeiger, Mittelmarke nur an EG 1 INT / KBD TRACK /
+   SEMITONE / TUNE / PAN, AUDIO IN 1 ohne Skala, VOLUME 0…10, hellgraue Tasten mit LED-Fenster, runde rote LEDs (OCTAVE
+   grün/rot/rot blinkend), Anzeige 2 × 16 dunkel auf gelbgrün aus `--mkp-lcd-fg/-bg`. Namensfeld = nur `MK_LABEL`.
+   Englischer Aufdruck wie am Gerät (H-16), VOX WAVE → STIMMWELLE, DWGS → SPEICHERWELLE.
+2. **Bindung aller Elemente** (Synth-Spalte und Vocoder-Spalte, „grau“ mit Grund in der LCD-Zeile), 16 Regler mit
+   SEQ EDIT (Regler n = Schritt n der gewählten Sequenz, Kappen zeigen Schrittwerte, ORIGINAL VALUE am gespeicherten
+   Schrittwert) und CH PARAM (Kanal-Pegel/-Pan im Vocoder), MOD/DELAY für Regler 11/12, PATCH SELECT/SOURCE/DESTINATION,
+   TIMBRE SELECT nur T1 ↔ T2 (Single gesperrt mit Grund), KBD TRACK │ E.F.SENSE 127 = HOLD.
+3. **Anzeige mit Modi** SPIEL („A01:Name“/„---:Name“, Modus, ♩=Tempo, beim Drehen 1 s Name + Geräte-Wert), **EDIT**
+   (Seitenplan 01–26 Synth bzw. 01–20 Vocoder, Schritt-Taste n = Seite, PAGE −/+, CURSOR, −/NO +/YES je eine Stufe mit
+   Klemmen, Seiten-Sprung, Tipp auf die Anzeige = Liste bzw. Zusatz-Ansicht ▸), **GLOBAL** (1A/1B Eingänge, 1C Oktave,
+   1D Seiten-Sprung), **COMPARE** (EDIT halten + EXIT), UTILITY-Werkzeuge (ersetzen die SHIFT-Werkzeuge).
+4. **Fester Rahmen** (`.mkfr`, `contain: strict`, `overflow: hidden`): Gesamtansicht (quer ganze Platte, hochkant Hälften),
+   13 Halte im Signalfluss, Tipp-Zoom 250 ms (nur `transform`, `prefers-reduced-motion` ohne Animation), ◀ ▶, Wischen mit
+   Federn an den Enden, Karte (Canvas 2D einmal je Format, Rechteck per `transform`; Tipp = Gesamtansicht, hochkant
+   Kartenhälfte = Hälfte). Treffer = nächstes aktives Element über ein beim Aufbau gerechnetes Raster (Radius 1,8 %),
+   `setPointerCapture`, zweiter Finger auf demselben Element ignoriert, Fein ×¼ / ×1⁄16 / ruhender zweiter Finger.
+   Quer: das Blatt über den ganzen Bildschirm mit **einer 44-px-Kopfzeile** (✕ ↶ ↷ ▶/■ ‹ Name › Reiter ◀ Karte ▶ ⋯; H-17).
+5. **Lauflicht** auf SELECT 1–16 aus dem Worklet-Takt (Scope mit Rest-Zeit und Folgeschritt), um die Ausgabe-Latenz
+   versetzt, im rAF, nur Klassenwechsel; dasselbe in der Spiel-Ansicht (Hälften-Zeiger mit Punkt für die andere Hälfte).
+6. **Spiel-Ansicht** (Reiter SPIEL): Band 1/Band 2 nach Rahmenbreite, Schritt-Tasten 16 / 8 / 2 × 8 / 2 × 4, Aufdruck nur
+   der Zeile des Modus, Räder PITCH/MOD im Metallton; quer Tastatur und Räder im Rahmen.
+7. **E1/E2-Pegel** (AUDIO IN 1/2) als Live-Wert `R.mkInTrim[uid]` (0 = stumm, 100 = 0 dB, 127 = +6 dB), je ein GainNode vor
+   dem Worklet-Eingang (`mkInLink`, `mkTrimF`, `mkInTrimApply`), nicht gespeichert, kein Undo, bei 100 Faktor genau 1.
+8. **Abbau** des alten Bedienfelds aus MK1–MK7 (Drehschalter, 7-Segment, Matrix, Holzwangen, Halb-Ansicht/`mkHalfWanted`,
+   Zonen, Nummerntasten, SHIFT-Ebenen-Oberfläche, Edit-Sync-/Solo-/Step-Arp-Bedienwege nach H-18; die Engine-Funktionen
+   bleiben). Hilfe-Zeilen neu geschrieben (19 MS-2000-Zeilen, eigene Sätze, Name aus `MK_LABEL`).
+9. **Test-API** `mkPanel()` (Elemente mit Rechteck in %, Bild-Rechteck, Trefferzone, `bind`, Wert, LED; Halte, Sektionen,
+   Modus/Seite/Cursor/LCD, Lauflicht, Spiel-Ansicht) und `mkView(o)` (`MKUI.view`), Leistungs-Probe Fall **„Bedienfeld“**.
+10. **Naht zu MK8 (Teil G Nr. 18)**: eine Dispatch-Funktion `mkPanelProg(action, arg)` für BANK ▼ ▲, SELECT 1–16 (SPIEL),
+    −/NO +/YES (SPIEL), WRITE, WERKSKLANG ZURÜCK, LCD-Zeile 1 und die Programm-LED. Sie nimmt **beide** Formen:
+    `window.mkProg` als Funktion oder als das **Objekt von MK8** (`select(bank, slot)`, `step(dir)`, `bank(dir)`,
+    `restore(bank, slot)`, `current()`; so in CHANGES-MK-MK8 beschrieben). Ohne `mkProg` gilt der alte Weg (eigene Sounds der
+    Engine je Bank à 16, ‹ › bzw. `stepSound`, Sichern). Geprüft mit einem MK8-Attrappen-Objekt (`v3-mkp-prog.mjs`).
+    Beim Zusammenführen ist damit nichts mehr zu verdrahten; nur die MK8-Wahl-Tests (‹ ›) auf die Platte umstellen.
+
+### In diesem Lauf behoben (Prüfung des übernommenen Stands, Fach-Prüfung)
+
+| # | Blick | Befund | Behebung |
+|---|---|---|---|
+| 1 | FP-TOUCH | Die AUDIO-IN-LEDs leuchteten nie: `paintEin` las `P.el.led` (gibt es nicht), die LEDs liegen in `PL.ui.led` | über `setLed('ain.l.k', on/red)`; an ab −50 dBFS, rot ab −1 dBFS (MK7-13-LED-Test über die Platte grün) |
+| 2 | FP-IPHONE | Reiter GERÄT ↔ SPIEL baute das ganze Blatt neu (Long-Task, die Platte mit ≈ 1000 Knoten neu eingehängt) | `MKUI.tabFast`: nur der Inhalt des festen Rahmens wechselt; die Platte bleibt gelegt und wird per `transform` aus dem Rahmen geschoben, die Spiel-Leiste bleibt gebaut und wird nur gezeigt/versteckt. FX und alle anderen Wege bauen wie bisher neu |
+| 3 | FP-IPHONE | `spielSteps` las `clientWidth` je Taste nach einem Schreiben (16 erzwungene Layouts) | eine Messung für alle Tasten (gleich breite Spalten), danach nur Schreiben |
+| 4 | FP-IPHONE | Die Platte wurde mit einem Häppchen je Bild gebaut (fertig erst nach ≥ 20 Bildern) | ein Task je Häppchen ≤ 6 ms (`setTimeout`), Scheduler-Tick davor (EN3-14): fertig nach 74–107 ms (×1) |
+| 5 | FP-IPHONE | `render()` fragte die Programm-LED 16 × je Bild ab (`ownList()` = Bibliothek filtern + sortieren) | einmal je Zeichnen (`litOf`) |
+| 6 | FP-IPHONE | `wiaPaint` baute je Bild `SQMK.init()` neu, auch ohne ◎ | nur bei ◎ (und einmal beim Ausschalten) |
+| 7 | FP-IPHONE | Platte und Anzeige ohne Eingrenzung (jede Textänderung prüfte das Layout der Platte) | `.mkplate`/Anzeige `contain: strict`, Regler `contain: size layout style` (Spec „Leistung“) |
+| 8 | FP-TOUCH | Kappen L* bis 16,5 am Glanzpunkt (Grenze 15) | dunklerer Verlauf (`#2f3236 → #111214 → #050506`): L* ≤ 11,1 |
+| 9 | FP-SICHER | Der Bildvergleich (liest die Handbuch-Zeichnung) lag in `dirigent-test/`, das `wip-push.sh` ins öffentliche Repo kopiert | verschoben nach `scratchpad/mkp-tools/mkp-bildvergleich.mjs` (privat, E.5 Nr. 5); Überlagerungsbild bleibt in `scratchpad/ms2000-panel/` |
+| 10 | MK8-Naht | `mkPanelProg` erwartete `window.mkProg` als Funktion, MK8 liefert ein Objekt | beide Formen (Punkt 10 oben) |
+| 11 | Test | Lauflicht-Test verglich mit einer eigenen, späteren Uhr-Ablesung (1-Bild-Versatz an Schrittgrenzen, 97,9–98,5 %) | die App legt die Audio-Zeit ihres Bildes ab (`P.runTA`), der Test vergleicht damit und meldet den Uhr-Abstand (≤ 11,6 ms < 1 Bild) und „über 1 Bild daneben“ (0) |
+
+Fach-Prüfung: **FP-TOUCH ●** (Haupt-), **FP-IPHONE**, **FP-SICHER** (Zweit-Blick) selbst gefahren, 11 Befunde, alle behoben
+bzw. (Größe, ×4-Leistung) unten begründet. Ein eigener Agent ohne Builder-Kontext hat nicht geprüft (J.1 Nr. 2) — das ist
+offen für den Orchestrator.
+
+### Abnahme MK-P-01 … MK-P-15 (Chromium 1243, Playwright, CDP-Touch; Skripte `dirigent-test/v3-mkp-*.mjs`)
+
+| ID | Ergebnis |
+|---|---|
+| MK-P-01 Vorlage | ✓ 205 Prüfungen (`v3-mkp-funk.mjs`): jede ID da, größte Mitten-Abweichung 0,003 %, Paare/Viererreihen 4,30 (RANGE→TYPE 4,40 = Tabellenwert 69,4/73,8), 16-Spalten-Regel ± 0,3, IoU ≥ 0,9, 1,95 ± 0,01, Reihenfolge je Zeile, reine Skalierung (≤ 0,02 px) |
+| MK-P-02 Bildvergleich | ✓ privat (`scratchpad/mkp-tools/mkp-bildvergleich.mjs`): alle 21 Sektionsrahmen je Kante ≤ 0,8 % / 1,2 % (größte 0,42 %), kein fehlender/zusätzlicher Rahmen; Überlagerung `scratchpad/ms2000-panel/mkp-overlay.png` (nur Scratchpad) |
+| MK-P-03 Jedes Element wirkt | ✓ 297 Prüfungen: CDP-Geste je gebundenem Element im Halt und quer in der Gesamtansicht, Wert ändert sich, ein Undo, Undo deep-equal, Klangwerte hörbar (Spektral-Differenz; ARP GATE ohne laufenden Arp = −240 dB, nach B.6 Nr. 3 ausgenommen). E1/E2 64 → 127: **+20,6 dB** am Worklet-Eingang (`v3-mkp-trim.mjs`), 0 = stumm, 100 = Faktor 1. Ausnahmen: BANK/Programm-Tasten ohne MK8 (alter Weg), COMPARE nur mit geändertem Sound |
+| MK-P-04 Vocoder | ✓ 20: inverse Namen = `voc.*`-Pfad, graue Elemente 0 dB Unterschied + Grund, CH PARAM Regler n = Band n, E.F.SENSE 127 = HOLD |
+| MK-P-05 Seiten | ✓ 43: jeder `normMk`-Pfad erreichbar (123; `arp.tempo` nur gespeichert, EN3-10), Tasten 1–16 Synth/Vocoder = Seitenplan, PAGE, CURSOR klemmt, ±1, Seiten-Sprung, Anzeige-Tipp, EXIT, WRITE, COMPARE, UTILITY (= alte SHIFT-Werkzeuge), GLOBAL 1A/1B (MK7-Eingangs-Tests über GLOBAL 1B **24/24**, `v3-mkp-mk7inputs.mjs`), 1C ändert `tr.kbOct` |
+| MK-P-06 Marke | ✓ Datei: microKORG/RADIAS/DWGS 0, „MS 2000“ genau 1 (`v3-mk2-marke.mjs` alles PASS); Bedienfeld-Text „MS 2000“ genau 1 (Namensfeld aus `MK_LABEL`), kein `<img>`/`data:image`/`@font-face`, Namensfeld App-Schrift 600, normal, unverzerrt |
+| MK-P-07 Treffer und Platz | ✓ (`v3-mkp-platz.mjs`) P1, P2, P3, L1, L2, W, 428 × 926, 926 × 428: alle Zustände ohne Abschneiden, keine waagrechte Seite; z = Regel; Treffer-Prüfpunkte alle 4 px = nächstes Element (Abweichung ≤ 5 von 21 836 Punkten, Rundung der px-Rechtecke auf 0,01 an der 1,8-%-Grenze); quer 926 × 428 Regler-Zonen **41 px**, Tastenpaare **30 px**; außerhalb der Platte ≥ 44 × 44 |
+| MK-P-08 Gesten | ✓ (`v3-mkp-gesten.mjs`): senkrecht = Wert, Fein ×¼ ab 64 px / ×1⁄16 ab 140 px / ruhender Finger, Doppeltipp = Standard im Halt, Tipp-Zoom auf Regler/Titel/Fläche, Taste schaltet ohne Zoom, ◀ ▶ und Wischen genau ein Halt, Federn an den Enden, Wischen ab Regler verschiebt nie, > 8 px verwirft den Tipp, Zoom bleibt bei 12 Wechseln (EDIT, GLOBAL, EXIT, SEQ EDIT, Vocoder, Synth, Reiter ×3, Programm, zu/auf, Spurwechsel) und beim Drehen, Karte → Gesamtansicht, zwei Regler = zwei Undos |
+| MK-P-09 Leistung | **teilweise** – siehe „Leistung“ unten (×1 alles grün; Referenz ×4 im Test-Container nicht erreicht) |
+| MK-P-10 Daten | ✓ (`v3-mkp-daten.mjs` gegen 4.15.0): 12 Klänge (INIT, 6 × Zufall, Arp+Seq, Dual, Split, Vocoder mit Eingang, FX) **bitgleich** (max \|Δ\| 0); `normalizeSound`, `normMk`, `normSynthP`, `normMkIn`, `PROJECT_FORMAT` 5, `SOUNDS_FORMAT` 2 im Quelltext gleich; 95 Werte über Platte + Seiten = `mkSet` im Vorgänger deep-equal; Projekt des Vorgängers lädt deep-equal; Ansichtswechsel: `soundHash` gleich, 0 Autosave; E1/E2 nicht gespeichert |
+| MK-P-11 Aussehen | ✓ (`v3-mkp-aussehen.mjs`, Pixel): Platte H 208°, S 26 %, L 78–79 %, Bürstung 2,25 %; Druck L 16,7 %, Kontrast 8,7 : 1; 60 inverse Felder (= Tabelle: 52 Elemente + CH PARAM, HOLD, +1/+2/−1/−2, LEVEL, PAN) 19,2 : 1; Kappen L* ≤ 11,1, Zeiger weiß; Tasten L 82–83 %; LEDs rund, an 12°, OCTAVE grün; Anzeige Grund 78°/58 %, Zeichen 14 %, 7,8 : 1, 2 × 16 ohne Umbruch, Farben nur aus den Variablen; keine Holzwangen |
+| MK-P-12 Abbau | ✓ kein Knoten/Quelltext des alten Bedienfelds (Klassennamen), Hilfe-Zeilen vollständig; **Budget überschritten** (unten); umgestellte Tests: Tabelle unten |
+| MK-P-13 Fester Rahmen | ✓ in allen Formaten über 32 Zustandswechsel (Halte 1–13, Karte, Hälften, Reiter GERÄT/SPIEL/FX, EDIT, GLOBAL, COMPARE an/aus, SEQ EDIT, Vocoder, Programm, SCHRITTE/EIGENE/16 BÄNDER, Lauflicht an/aus, Spur 2 ↔ 1): Rahmen- und Blatt-Rechteck ± 0 px, `scrollHeight`/`scrollWidth` gleich, **0 `layout-shift`**, nichts außerhalb des Rahmens, hochkant Tastatur/Räder 0 px |
+| MK-P-14 Lauflicht / SEQ EDIT | ✓ (`v3-mkp-lauf.mjs`, 3 Läufe): vorwärts 1 → 16, LAST STEP 8, Rückwärts, Alt 1, Alt 2, REC bereit, KEY SYNC Stimme, Dual T2, Spiel-Ansicht: je **100 %** der Bilder gleich dem Worklet-Schritt zur Audio-Zeit des Bildes, 0 Bilder über 1 Bild daneben, nie zwei LEDs; SEQ EDIT Regler n = Schritt n in der Gesamtansicht und den Halten 6, 7, 8, 10, 11, 12, ein Undo je Geste, ORIGINAL VALUE am Schrittwert, LCD „SEQ1 S05 +21“; `soundHash` und Zoom unverändert |
+| MK-P-15 Rein MS 2000 | ✓ TIMBRE SELECT nur T1 ↔ T2 (Single gesperrt), kein Edit Sync/Solo/Step-Arp auf Platte und Seiten, Seitenplan/Tasten/Aufdruck = Tabellen, keine alten Bezeichnungen (EDIT-WAHL, SHIFT als Wort, SEITE, Matrix, Nummerntaste) in DOM, Hilfe, LCD; Klänge mit `arp.last/steps` bitgleich (MK-P-10) |
+
+Zusätzlich: TEMPO-LED blinkt in Vierteln (120 BPM: Abstand 500 ± 1 ms), Leistungs-Probe „Bedienfeld“ läuft
+(`v3-mkp-extra.mjs`); Reiter-Schnellweg behält Zoom, Platten-DOM und Rahmen; quer SPIEL-Tastatur endet auf jedem Weg
+(✕, andere Spur, GERÄT, FX; `v3-mkp-close.mjs`); Räder quer im Reiter SPIEL (MK1-33 P1/L1 alle grün, `v3-mkp-mk1ui.mjs`).
+Rauchtest ohne Fehler (`dirigent-test/v3-mkp-smoke.png`).
+
+### Leistung (MK-P-09)
+
+Chromium im Test-Container (4 Kerne, SwiftShader), Projekt mit 4 Spuren, 2 MS-2000-Spuren mit Arp und Seq, Skript-Sitzung
+10 s (`panelScript`: 4 Regler, Tipp-Zoom, 13 Halte, Karte, 6 EDIT-Seiten, EXIT, Spiel-Ansicht), `v3-mkp-perf.mjs`:
+
+| | ×1 P1 / L1 | ×4, DPR 3 P1 / L1 | Vorgänger 4.15.0 ×4 (nur Abspielen, Editor offen) |
+|---|---|---|---|
+| (a) Aufbau: Häppchen max / Arbeit / fertig | 6,7 / 19,9 / **107 ms** · 6,3 / 23,3 / **74 ms**, kein longtask | 10 / 75 / 500 ms · 8,4 / 83 / 529 ms | – (das Öffnen des Blatts selbst ist ein Long-Task von ≈ 305 ms ×4, im Vorgänger ≈ 322 ms) |
+| (b) rAF p95 / > 50 ms | 16,8 ms / 0 · 16,8 ms / 0 | 33,4 / 4 · 49,9 / 11 | 16,8 / 1 · 16,8 / 0 |
+| (f) Scheduler-Abstand max / > 50 ms | 31,6 / 0 · 33,5 / 0 | 79 / 31 · 125 / 45 | 73 / 4 · 53 / 2 |
+| Noten gegen das Raster | 0 ms (beide) | 0 ms (beide) | 0 ms |
+| (e) Layer | 1 eigener (Karten-Rechteck 0,7–1,3 MB), keiner für die Platte außerhalb von Übergängen | gleich | – |
+
+- ×1: alle Grenzen eingehalten, auch (a) „fertig ≤ 150 ms“ und „kein Scheduler-Abstand > 50 ms“ (der Vorgänger hatte im
+  selben Lauf ohne Sitzung 2 Abstände > 50 ms).
+- ×4: **nicht erreicht.** Der Vergleich mit dem Vorgänger ist nicht gleich (dort keine Sitzung möglich). Gleiche Last in beiden
+  Ständen (`v3-mkp-phase.mjs`, je 3 s): Ruhe mit offenem Bedienfeld neu 0–1 / alt 0 Abstände > 50 ms; **Regler drehen**
+  (derselbe Weg `mkSetP` → `soundEdited` → `soundHash` je Bild) neu rAF p95 33,3, 4–6 Abstände, alt rAF p95 33,3, 3–8 — gleich
+  teuer. Zoom/Halte/Seiten/Spiel-Ansicht ×4 nach den Behebungen 0–2 Abstände > 50 ms je 3 s. Größter Einzelposten in der
+  Sitzung ist das Neuzeichnen beim Drehen (Hash des ganzen Sounds je Bild im Hauptstrang-Code, siehe „Für den Hauptstrang“).
+- Der Trace-Zähler (b „Hauptfaden-Arbeit je Bild“) liefert im Container nur 11–24 Bilder je 10 s (Trace-Ereignisse fehlen) und
+  ist deshalb nicht aussagekräftig; gewertet sind rAF-Abstände, Long-Tasks und Scheduler-Abstände.
+- (c) 0 Layouts während Gleiten/Wischen; beim Drehen ≤ 1 Layout je Bild (LCD-Zeile des Blatts, `lcdFit`). (d) 0 `layout-shift`.
+- (g) iPhone: **am Gerät offen** — Leistungs-Probe Fall „Bedienfeld“ (Menü → Info) über dem Fall „Kern“; im Test-Browser
+  frames_ok wackelt bei „Kern“ und „Bedienfeld“ gleich (je 1 von 3), wie schon in MK7 beschrieben.
+
+### Formate (gemessen, Test-Browser ohne Safe-Area; z der Gesamtansicht · Halte)
+
+| Format | Rahmen | z ganz | Halte z | kleinste Zone (ganz) |
+|---|---|---|---|---|
+| P1 390 × 844 | 372 × 386 | 669 (Hälfte) | 669–1320 | 27 px (Hälfte rechts), 33 px links |
+| P2 375 × 667 | 357 × 265 | 517 (Hälfte) | 642–1320 | 8 px (am Rahmenrand angeschnittenes Element; Treffer = Zoom) |
+| P3 320 × 568 | 302 × 233 | 454 (Hälfte) | 543–1245 | 16 px |
+| L1 844 × 390 | 842 × 344 | 671 (ganz) | 1009–1320 | 26–27 px, Regler 37 px, Paare 27 px |
+| L2 667 × 375 | 665 × 329 | 642 (ganz) | 965–1320 | 26 px, Regler 35 px |
+| W 844 × 1180 | 826 × 722 | 826 (ganz) | 1320 | 33 px, Regler 45 px |
+| 926 × 428 | 924 × 382 | 745 (ganz) | 1120–1320 | 30 px, **Regler 41 px, Paare 30 px** |
+| 428 × 926 | 410 × 468 | 737 (Hälfte) | 737–1320 | 30–37 px |
+
+Safe-Area-Durchgang (`SAFE=47,0` und `SAFE=47,21`, 926 × 428 und L1, alle Zustände, 0 Befunde): 926 × 428 mit
+Notch und Home-Balken → Rahmen **830 × 361, z 704** (Spec ≈ 832 × 363, z 707); L1 → 748 × 323, z 630.
+
+### Größe (MK-P-12)
+
+3 058 080 B = **+40 376 B** gegen 4.15.0 (Budget +28 KB = 28 672 B, **×1,40**; die Spec erwartet unter „Risiken“ +34 bis
++42 KB). `sq-mk-src` +39 336 B (neue Platte, Lage-Tabelle, Seitenplan, Ansichten, Gesten, Spiel-Ansicht; alter Teil
+entfernt), Worklet +233 B (nur `sqInfo` meldet Rest-Zeit und Folgeschritt für das Lauflicht; Klang bitgleich), Hauptteil
+≈ +700 B (E1/E2-Pegel, Reiter-Haken, Hilfe-Zeilen neu). Projekte ohne MS-2000-Spur laden nichts davon (EN3-14).
+Entscheidung beim Orchestrator (5,0-MB-Grenze weit entfernt; SL1 ist geplant).
+
+### Umgestellte Oberflächen-Tests aus MK1–MK7 (alter Weg → neuer Weg)
+
+| Test (alt) | prüfte | neuer Weg / Abdeckung |
+|---|---|---|
+| `v3-mk1-look.mjs` (MK1-21, MK1-32 Skizze) | altes Bedienfeld gegen die alte Skizze | entfällt; M-VORLAGE `v3-mkp-funk.mjs` (MK-P-01), `mkp-bildvergleich` (MK-P-02), `v3-mkp-aussehen.mjs` (MK-P-11) |
+| `v3-mk1-ui.mjs` MK1-20/21/22/31/34 | EDIT-WAHL, Regler 1–5, ◎ an Stellungen, LED/LCD | `v3-mkp-funk.mjs` (Bindung, ◎ über `wiaPaint` an Reglern und Seiten), `v3-mkp-gesten.mjs`; Programm lädt in SPIEL: `P.mode = 'spiel'` |
+| `v3-mk1-ui.mjs` MK1-33 (Räder) | Räder quer im GERÄT-Reiter | quer liegen Räder und Tastatur im Reiter SPIEL (H-17): `v3-mkp-mk1ui.mjs` (Kopie, quer erst SPIEL) — P1 und L1 alle grün |
+| `v3-mk2-ui.mjs` MK2-03-UI / MK2-10 | „≈“ und Fläche über EDIT-WAHL | LCD „≈“ über OSC 1 WAVE / CONTROL 2 (`lcdOf`), Fläche M-PLATZ `v3-mkp-platz.mjs` |
+| `v3-mk3-ui.mjs` MK3-03/04/05/10/11/13 | Split ← nächste Note, TIMBRE-Taste T1→T2→beide, SHIFT-Werkzeuge, Fläche, Hilfe, Solo | Split ← nächste Note über Tipp auf die Anzeige (01 COMMON SPLIT); TIMBRE SELECT T1 ↔ T2 (MK-P-15); UTILITY-Werkzeuge (MK-P-05 „05-utility“); Edit Sync und Solo nicht auf dem Bedienfeld (H-18); Hilfe neu |
+| `v3-mk4-ui.mjs` MK4-12-PLATZ/-BED | EDIT-WAHL 2 MOD-FX/DELAY/EQ | MOD/DELAY + Regler 11/12, Seiten 22–24 (MK-P-03/05); die übrigen 8 MK4-Prüfungen (mkRender, Puffer, Speichern, Probe „+FX“) bestehen unverändert |
+| `v3-mk5-ui.mjs` MK5-17-PLATZ/-BED/-LED, Hilfe | ARP-Taste, ARP A/B, Nummerntasten als Schritte | ARPEGGIATOR ON/OFF, LATCH, RANGE, TYPE, TEMPO, GATE (MK-P-03), TEMPO-LED (`v3-mkp-extra.mjs`), Step-Arp-Schritte nach H-18 nicht auf dem Bedienfeld; Probe „+Arp“ besteht |
+| `v3-mk6-ui.mjs` MK6-09/11/13 | SEQ-Stellung, SCHRITTE, AUFN., SHIFT + 5 | SEQ EDIT + 16 Regler (MK-P-14), SCHRITTE ▸ über Seite 19–21, REC-Taste, UTILITY SEQ-Werkzeuge (MK-P-05); die übrigen 5 MK6-Prüfungen bestehen |
+| `v3-mk7-ui.mjs` MK7-13-PLATZ/MK7-BED | Vocoder-Stellungen, grüne Namen, SHIFT + 1/2, HALTEN-Taste | Vocoder-Spalte der Platte (MK-P-04), weiße Namen auf Schwarz, UTILITY Pegel/Pan zurück, E.F.SENSE 127 = HOLD |
+| `v3-mk7-ui.mjs` MK7-13-LIVE, MK7-15 | Bandpegel, ECO | `v3-mkp-mk7ui.mjs` (Kopie; Vocoder über 01 COMMON MODUS statt SYNTH/VOC.): beide grün |
+| `v3-mk7-inputs.mjs` MK7-10/13 | QUELLE 2 über EDIT-WAHL 1 + SHIFT, E1/E2-LEDs neben der Anzeige | `v3-mkp-mk7inputs.mjs` (Kopie; GLOBAL 1B + Tipp auf die Anzeige, AUDIO-IN-LEDs der Platte): **24/24** |
+
+Die alten Skripte bleiben unverändert liegen (typische Fehler Nr. 26); ihre Fehlschläge auf 4.16.0 sind genau die oben
+umgestellten Oberflächen-Teile (`MKUI.setWahl`/`toSpiel`/`knobs` gibt es nicht mehr).
+
+### Regression (nicht Oberfläche, unverändert bestanden)
+
+`v3-mk7-voc.mjs` 37/37 (gegen 4.15.0), `v3-mk6-seq.mjs` alle, `v3-mk3-timbre.mjs` alle, `v3-mk3-scale.mjs` alle,
+`v3-mk2-marke.mjs` alle, `v3-mk1-probe.mjs` 7/7, `v3-mk4-ui.mjs` nicht-Oberfläche 8/8. Gleich auf 4.15.0 (nicht MK-P):
+`v3-mk5-arp.mjs` MK5-02 „live zweimal“ (wackelt auch im Vorgänger), `v3-mk2-ui.mjs` MK2-08 Oktav-Welle 36–55 ms > 30 ms
+(Vorgänger 38–40 ms), `v3-mk4-fx.mjs` FP-DSP-Denormale (Last-Zeitmessung in Node, Worklet-DSP unverändert),
+`v3-mk1-format.mjs` 3 Prüfungen gegen 4.8.1 (überholt, wie in CHANGES-MK-MK8).
+
+### Abweichungen von der Spec
+
+- MK-P-09 (×4) und Budget: siehe oben.
+- Trefferzonen am Rahmenrand: ein angeschnittenes Element hat eine kleine sichtbare Zone (P2 8 px); die Regel „nächstes
+  Element“ gilt trotzdem, und der Zoom ist dort der Arbeitsweg (Spec „Risiken“).
+- COMPARE schaltet über den vorhandenen A/B-Weg; ohne gespeicherten MS-2000-Stand bzw. ohne Änderung nennt die LCD den Grund.
+- Ohne MK8 zeigen BANK/SELECT die eigenen Sounds der Engine in Gruppen à 16 (LCD „---:Name“); mit MK8 die Programme A01–H16.
+
+### Für den Hauptstrang / Zusammenführen
+
+- Berührt außerhalb von `sq-mk-src`: Worklet `sqInfo` (Felder `rem`, `nx`), `mkInRoute`/`mkInLink` (+ `mkTrimF`,
+  `mkInTrimApply`), Entfernen von `mkHalfWanted`, `buildSynthEd` (Reiter GERÄT/SPIEL/FX, `MKUI.chrome`, Reiter-Haken
+  `MKUI.tabFast`, `edHeadFit` nur hochkant), `fillSynthTab`, `closeEditor`/Spurwechsel (`mkq`, `mkqkb`), `lcdShow`
+  (`_onShow`), LCD-Ziel quer (`.mkqh .preset`), Programm lädt in SPIEL, ⋯-Texte UTILITY, Hilfe-Zeilen, VERSION.
+- **Vorschlag (Leistung, nicht in diesem Zweig geändert):** `mkSetP` setzt bei jeder Live-Geste `UI.dirty.edHead`;
+  `edHeadRefresh` → `soundEdited` rechnet dann je Bild `soundHash` des ganzen Sounds (≈ 1,3 ms je Bild bei ×4, der größte
+  JS-Posten beim Drehen, alt wie neu). Bei Live-Werten reicht ein Neuberechnen, solange der Punkt noch „unverändert“ zeigt.
+- MK8: `window.mkProg`-Objekt wird direkt genutzt (Punkt 10); `v3-mk8-ui.mjs` Wahl-Tests auf die Platte umstellen.
+- Defekte aus MK7 oder früher: keine neuen gefunden (die Wackel-Tests oben bestehen auch auf 4.15.0 nicht stabil).
+
+### iPhone (Xander, 12 Pro Max) — wie in der Spec
+
+1. MS-2000-Spur öffnen, quer halten: Ist das dein Gerät? Ohne Zoom CUTOFF drehen, ARP ON/OFF tippen.
+2. Titel FILTER antippen → Zoom bleibt; ▶/Wischen bis VIRTUAL PATCH; Karte oben = ganze Platte. Springt etwas?
+3. Hochkant: Hälften wechseln (Wischen/Karte), CUTOFF fein (seitlich wegziehen).
+4. Reiter SPIEL: PITCH, MOD, Tastatur, OCTAVE, ARP, LATCH.
+5. EDIT, SELECT 6 (FILTER): PAGE, CURSOR, −/+ und EXIT.
+6. MOD SEQUENCE ON/OFF, eine Taste halten: laufen die SELECT-Tasten mit? SEQ EDIT SELECT: die 16 Regler setzen die Schritte.
+7. Menü → Info → Leistungs-Probe „Bedienfeld“ schicken (FP-IPHONE, am Gerät offen).
+
+Snapshot: `synq-snapshots/MK-P.html`.
+
+
+# CHANGES MK8: Programm-Speicher A–H × 16 mit eigenen Werksklängen (App 4.17.0)
+
+Zweig-Kopie `scratchpad/mk-br-MK8/index.html`, gebaut auf 4.15.0 (MK0–MK7, 3 017 704 B). Vorgänger für alle
+„bitgleich/unverändert“-Prüfungen: **4.15.0** (`dirigent-test/v3-mk8-base-4150.html`). Snapshot `synq-snapshots/MK8.html`.
+Weg nach Teil G Nr. 18 **„Kommt MK8 zuerst“**: Programm-Wahl über Bibliothek (Bank ▾) und ‹ › im Blattkopf, das alte Bedienfeld
+bekam keine neuen Teile. Für MK-P gibt es das API-Objekt `window.mkProg`.
+
+## Gebaut
+
+- **128 Plätze A01–H16** (Umfang 1–3): 127 eigene Programme + H16 = INIT MS 2000 (derselbe Eintrag `f-init-am`). Ordnung je
+  Platz nach der Rollen-Tabelle (A–G: 01 hart, 02 Arp, 03 Fläche, 04 Bass, 05 Lead, 06 Sequenz, 07 Glocke/Perkussion,
+  08 Tasten, 09 Bass, 10 Bewegung, 11 Streicher/Chor, 12 Lead, 13 Bläser/weich, 14 Wellen-Sequenz, 15 Bass, 16 Effekt;
+  H01–H08 nach den Rollen, H02/H07 Effekt, H09–H14 Vocoder, H15 Eingang, H16 INIT). Bänke mit eigenem Charakter:
+  A klassisch warm, B hell/gläsern (Ring, Sync, Sinus×), C dunkel/resonant, D Wellen (Speicherwellen, Stimmwelle),
+  E Bewegung (LFO, Mod-Seq), F Schichten (Dual/Split), G Raum (Phaser, Echo, Ensemble), H gemischt + Vocoder.
+- **Vocoder H09–H14** mit `hold`-Spektren aus den eigenen Vokalen a/e/i/o/u (Vokal-Quelle W-44 aus MK7 als Modulator,
+  gemessen von der Analyse des App-Worklets über `E.mkHoldGet` im OfflineAudioContext, `dirigent-test/v3-mk8-hold.mjs`).
+  Alle DIREKT 0, HPF-PEGEL 0. Sie klingen ohne Mikrofon (live geprüft).
+- **Daten** (Umfang 4, EN3-14): Block `/*MKF{*/ SQ_MK_FACTORY /*}MKF*/` im nachgeladenen `sq-mk-src`; je Programm nur die
+  geänderten Felder gegen INIT (Lücke + Zickzack-Wert als Varint, feste Feld-Reihenfolge = INIT-Baum), je Bank ein
+  Base64-Teil mit Salz-Byte (Bau-Skript prüft die Markenwort-Regel B.6 Nr. 9 und wechselt das Salz). Namen und ⓘ-Texte als
+  Klartext. Entpackt wird je Bank beim ersten Bedarf, vorher `tickAhead(.3)`. Bau: `dirigent-test/v3-mk8-bau.mjs`
+  (Rezepte `v3-mk8-rezepte.mjs` + Kalibrierung `v3-mk8-cal.json` → Block).
+- **Felder `bank`/`slot`** (1…8, 1…16): `normalizeSound` behält sie nur bei Engine `mk` mit gültigen Werten; nicht im
+  `soundHash`. Nur Bibliotheks-Einträge tragen einen Platz (Spur-Kopien nicht: `soundCopy` und `saveSound` entfernen ihn).
+  `Library.save(overwrite)` behält den Platz, `duplicate` nimmt ihn nicht mit, `importMany`/`restore` lassen ihn weg,
+  wenn der Platz inzwischen belegt ist; neu `Library.put(id, rec|null)` für das Undo. Kein neues Format.
+- **Programm-Speicher** (Umfang 5–6, Modul `MKF` im Block): Platz = eigener Klang mit diesem `bank`/`slot`, sonst
+  Werksklang. Laden = ein Undo + Toast [Rückgängig] + LCD „A01:Name“; ‹ › im Blattkopf einer MS-2000-Spur = Programm −/+
+  (A01 … H16, bleibt an den Enden stehen, LCD „Anfang · A01“ / „Ende · H16“). H15 zeigt „Eingang wählen: GLOBAL 1A“.
+- **Sichern = WRITE** bei MS-2000-Spuren: Platzwahl (Bank A–H, Platz 1–16; Vorgabe = zuletzt geladenes Programm), Infozeile
+  („Werksklang „X“ wird überdeckt“ bzw. „trägt „Y“ – er bleibt in Eigene“), Name, [Auf A01 schreiben], [Ohne Platz]
+  (wie bisher Eigene), [Überschreiben] (eigener Klang), [Werksklang zurück] (wenn der Platz einen eigenen Klang trägt).
+  Ein älterer eigener Klang auf dem Platz verliert nur `bank`/`slot`. WRITE und WERKSKLANG ZURÜCK sind je **ein** Undo
+  (Gruppe aus Bibliotheks-Einträgen `mkslot` + Spur-Klang), Undo/Redo deep-equal.
+- **Bibliothek** (Umfang 7): im Filter „MS 2000“ der Chip **„Bank ▾“** (A–H, „Alle MS 2000“). Bank X = genau die 16 Plätze
+  in Reihenfolge (eigener Klang statt Werksklang, Zeile „B05 · eigener Klang“), Werkszeilen „C04 · Bass“. Eine Spur mit
+  einem Programm öffnet ihre Bank. Rollen-Chips wie bisher (Rollen nach EN-18 je Platz). ⋯ eines eigenen Platz-Klangs:
+  „Werksklang zurück“. ▶ Vorhören: Arp-Programme spielen einen gehaltenen Akkord durch das Arp-Muster des Programms
+  (der Arp-Kern läuft sonst nur für Spuren), Sequenz-Programme gehaltene Akkorde (damit KEY SYNC die Folge laufen lässt).
+  Filter „MS 2000“ und „Alle Engines“ werten den Block aus (EN3-14).
+- **API für MK-P:** `window.mkProg = {select(bank, slot), step(dir), bank(dir), write(bank, slot, name?), restore(bank, slot),
+  current()}` auf die gewählte Spur (`R.selT`); `current()` → `{bank, slot, label: 'A01', name, text: 'A01:Name', own, edited}`.
+  `bank(dir)` stellt nur die Bank (LCD; `bank(0)` liest sie), SELECT n lädt dann über `select(bank, n)` (wie am Gerät, HB-MS S. 13).
+- Hilfe-Zeile „Programm-Speicher“, Version **4.17.0**. `mkRender`-Ereignisse nehmen als 6. Element die Timbre-Maske (Test-API,
+  für den Arp-Ziel-Timbre im Pegel-Lauf).
+
+## Abnahme MK8 (Chromium 1243, `dirigent-test/`)
+
+| ID | Ergebnis |
+|---|---|
+| MK8-01 | ✓ 128 Plätze je Name ≤ 12, Rolle, Bank, Platz, ⓘ; Entpacken = Rezept deep-equal (128); jedes Programm lädt über `mkProg.select` und über die Bibliothek mit je einem Undo, Undo deep-equal; `bank`/`slot` überstehen Speichern → Laden (Projektdatei in eine frische Seite importiert) |
+| MK8-02 | ✓ E9/A.4/A.13-Liste auf ganzen Wörtern (Namen und ⓘ) 0; Levenshtein gegen 256 Werksnamen beider Handbücher (nur aus `manuals/werksnamen.local.json`, erzeugt von `v3-mk8-namen.mjs`), kleinster Abstand 3; Stichprobe 3 Werksnamen in `dirigent-test/`, `synquenzer/bau`, Repo-`index.html` und App: 0; Markenwörter Block 0, „MS 2000“ genau 1×. Umbenannt im Bau (Abstand ≤ 2): drei Namen |
+| MK8-03 | ✓ jedes Programm „eigenes Rezept“ (Tabelle unten); das Prüfskript liest aus der privaten Datei nur Kategorie und Modus je Platz |
+| MK8-04 | ✓ alle −20,9 … −17,5 LUFS, True Peak ≤ −2,2 dBTP, Bässe M-HANDYrel bei C2 −19,0 … −7,2 dB (22 Bässe); H15 (Eingang, ohne Quelle stumm) und H16 (INIT, −18,9) ausgenommen. Prüfphrasen: Bass 8 Achtel C2, Lead C4–C5, Fläche/Chor 4 Takte Akkord, Arp/Seq/Bewegung/Wellen-Seq Akkord 2 Takte (Arp-Schritte aus dem Arp-Muster), Vocoder gehaltene Akkorde; nicht vorgegebene Rollen: hart/Tasten/Bläser Akkord-Viertel, Glocke Melodie C5–C6, Effekt eine lange Note |
+| MK8-05 | ✓ Rollen A–G 112/112; Arp 11 (≥ 10), Mod-Seq 24 (≥ 14), Speicherwellen 20 (≥ 10), Dual/Split 23 (≥ 12), Delay-Sync 60 (≥ 8); H09–H14 `mode` 3 mit `hold`, DIREKT 0, HPF 0; H15 OSZ 1 = Eingang; H16 = INIT deep-equal |
+| MK8-06 | ✓ 1386 Paare (in jeder Bank, gleiche Plätze über Bänke), kleinster Unterschied 3,9 dB in einem relevanten M-BAND |
+| MK8-07 | ✓ Bank A–H je genau 16 Plätze in Reihenfolge, eigener Klang statt Werksklang; N0b-01 über alle 10 Rollen-Chips; VA-Spur nur VA, ohne Bank-Chip; ▶ Arp-Programm 32 Arp-Noten, Fläche 5 Noten, Stimmen klingen |
+| MK8-08 | ✓ Werksdaten im Block 22,4 KB (≤ 44; Parameter-Base64 9,4 KB); eine Bank 1,2–2,8 ms (≤ 5); alle 128 in 8 Häppchen 0,7–1,9 ms mit 30-ms-Pause; Laden 1,3–5,7 ms, 0 longtask; Block wird ohne AM-Projekt nicht ausgewertet (bei Bedarf 16,6 ms); Startzeit ohne AM 381 → 383 ms (Median aus 5) |
+| MK8-09 | ✓ ‹ › mit Enden; Sichern → D07 schreibt, D07 lädt danach den eigenen Klang, 0 andere Plätze geändert; Undo deep-equal, Redo; zweites WRITE: älterer Klang verliert nur den Platz; WERKSKLANG ZURÜCK (Bibliothek ⋯) stellt `f-mk-d07` her, Undo deep-equal; M-PLATZ Platzwahl und Bank ▾ in P1, P2, P3, L1, L2, W: alle Tasten ≥ 44 × 44, im Bild, nichts abgeschnitten, keine Überlappung, Zeilen 45–49 px |
+| MK8-10 | ✓ Regression (unten), keine Konsolenfehler, Budget **+44 996 B** (≤ +60 KB = 61 440 B), Worklet unverändert (bytegleich) |
+
+Zusätzlich live (Echtzeit-Kontext): A04, A07, A03, H09 (Vocoder ohne Mikrofon), A02 (Arp 5 Schritte) klingen
+(−31 … −21 dB RMS im Analyser) und unterscheiden sich im Schwerpunkt (269 … 1237 Hz).
+
+Skripte: `v3-mk8-daten.mjs` (MK8-01/02/03/05/08), `v3-mk8-pegel.mjs` (MK8-04, `--bands` MK8-06, `--cal N` Kalibrierung),
+`v3-mk8-ui.mjs` (MK8-01/07/08/09, live), `v3-mk8-mess.js` (LUFS BS.1770, True Peak 4×, M-HANDYrel, M-BAND, Phrasen),
+`v3-mk8-hold.mjs`, `v3-mk8-bau.mjs`, `v3-mk8-namen.mjs` (schreibt nur die private Datei). Ausgaben `v3-mk8-*.out`,
+Bilder `v3-mk8-shots/` (P1, P2, P3, L1, L2, W: `*-sichern.png`, `*-bank.png`; dazu Blatt und Bibliothek in P1/P3/L2).
+
+## Regression
+
+- Rauchtest ohne Fehler (`dirigent-test/v3-mk8-smoke.png`; `smoke.mjs` startet das Standard-Chromium, das hier fehlt –
+  gleiche Prüfung als `v3-mk8-smoke.mjs` mit Chromium 1243).
+- `v3-mk2-marke.mjs` alles PASS; `v3-mk1-look.mjs` 88/88; `v3-mk7-ui.mjs` 102/102.
+- `v3-mk1-format.mjs` gegen 4.15.0: VA/FM/WT-Werks-Sounds und Demo **bitgleich (64, max |Δ| 0)**, Format 3/4 deep-equal,
+  normMk, Speichern → Laden, VA → AM → VA, Kalt-Start ✓. Die drei Fehlschläge vergleichen mit 4.8.1 (Format 4 → 5,
+  APP_CODE 4 009 000, Sperre in 4.8.1) und sind durch den Vorgänger 4.15.0 überholt (gleich auf 4.15.0).
+- `v3-mk0-schutz.mjs` 33/47 – genau wie auf 4.15.0 (der Test nimmt Format 5 als „neuere Version“; überholt seit MK1).
+
+## Fach-Prüfung (selbst, vor der Abnahme; Teil F: FP-KLANG ● Haupt-, FP-TOUCH Zweit-Blick)
+
+7 Befunde, alle behoben:
+1. FP-KLANG: 108 von 126 Programmen erreichen −18 LUFS mit AMP LEVEL 127 nicht (die AM-Engine ist auf INIT = INIT Analog
+   kalibriert, ein gefilterter Klang liegt 5–15 dB darunter). Lösung: Pegel-Ausgleich im Programm über den EQ – LOW- und
+   HIGH-Kuhschwanz beide bei 1000 Hz mit gleichem Gewinn (= flache Anhebung, W-33), höchstens +12 dB (Median +7,3 dB,
+   20 Programme am Anschlag). Unter 0 dB regelt AMP LEVEL. Wer auch mit +12 dB zu leise war, wurde im Rezept nachgestimmt
+   (heller, mehr Sustain/Gate, zweiter Oszillator: C06, C15, D06, D07, D16, E02, E06, G02, G06, G16, H07).
+2. FP-KLANG: Bässe A09, C04, C15 unter M-HANDYrel −20 dB → Cutoff/Resonanz angehoben.
+3. FP-KLANG: Die Vokal-Quelle (MK7) fällt oberhalb F1 mit ≈ 20 dB/Okt; F2/F3 lagen unter der Halte-Untergrenze. Für die
+   `hold`-Spektren wird der Vokal vor der Analyse dreimal entzerrt (+18 dB/Okt ab ≈ 400 Hz), danach zeigen a/e/i/o/u ihre
+   Formanten (z. B. „i“ F2/F3 in Band 13/14).
+4. FP-KLANG: ⓘ von H09/H14 nannten einen zweiten Oszillator, den der Vocoder-Träger nicht hat → Rezepte und Texte bereinigt.
+5. FP-KLANG: Vorhören der Sequenz-Programme lief mit 16tel-Noten, KEY SYNC startete die Folge bei jeder Note neu →
+   Rollen 06/10/14 hören mit gehaltenen Akkorden; Arp-Programme mit dem Arp-Muster.
+6. FP-TOUCH: Der Lade-Toast lag in L1/L2 über den Platz-Tasten 1–8 der Platzwahl → Platzwahl und Bank ▾ schließen den Toast.
+7. FP-TOUCH: LCD/Undo hießen „WRITE“ → deutsch „Gesichert auf Platz“ / „Sichern auf A01“ (außerhalb der Platte deutsch, H-16).
+
+## Abweichungen und Lücken
+
+- **Pegel-Ausgleich über den EQ** (Befund 1): Auf der EQ-Seite sieht man bei vielen Programmen LOW/HIGH 1000 Hz +x dB.
+  Alternative für später: ein Ausgangs-Pegel je Programm (neues Feld, nicht in HB-MS) oder ein höheres `ampK` (ändert INIT
+  und MK1-20) – Entscheidung Xander/Orchestrator.
+- Messung über `mkRender` (Engine mit Programm-Effekten, ohne Spurkette/Hall); `fx.vol` der Werksprogramme 0,8 wie INIT.
+- Die Rollen-Kennung der Bibliothek folgt EN-18 (z. B. 01 hart → Akkord, 07 Glocke/Perkussion → Keys, weil „Glocke“ nur FM).
+- MK8-09 „Mit MK-P“-Teil (BANK ▼ ▲, SELECT, LED, LCD „A01:Name“ auf der Platte) folgt mit MK-P über `window.mkProg`;
+  WERKSKLANG ZURÜCK auf den Seiten 26/20 UTILITY ebenfalls (heute: Bibliothek ⋯ und Platzwahl).
+- Das alte Bedienfeld zeigt weiter seine eigene BANK/SEITE-Wahl (Seite A leer, Seite B eigene Klänge) – laut Auftrag
+  unverändert, MK-P ersetzt es.
+- Lade-Hinweis H15 nennt „GLOBAL 1A“ (MK-P); bis dahin wählt man den Eingang im alten Bedienfeld.
+- Vorhören eines Arp-Programms: eigene Arp-Ausspielung (Typ, Oktaven, Auflösung, Gate; ohne Swing/Latch).
+- Kein Gerät, kein Hören durch einen Menschen: alle Klänge sind gemessen, nicht angehört (EN3-16) → iPhone-Punkte.
+- Chromium-Pfad: `/opt/pw-browsers/chromium-1194/…` gibt es in diesem Container nicht; benutzt wurde `chromium-1243/chrome-linux64/chrome` (wie die MK-Tests seit V2d′).
+
+## Fehler früherer Pakete (nur gemeldet, nicht in diesem Zweig behoben)
+
+- MK7: Vokal-Quelle W-44 fällt oberhalb F1 sehr steil (Glottis-Tiefpass + vier Tiefpass-Resonatoren in Reihe; „a“ bei
+  2 kHz −60 dB unter F1). Als Probe-Modulator klingt sie dumpf.
+- MK1/MK7: `mkRender` lieferte im Serien-Lauf einmal einen stillen Render (bekannt aus MK7, `v3-qa7-pegel`); der
+  Pegel-Lauf rendert dann einmal neu.
+- `smoke.mjs` ruft `chromium.launch()` ohne Pfad (fehlt im Container).
+
+## Für das Zusammenführen (Teil G Nr. 18)
+
+- Berührt im Hauptteil: `normalizeSound` (bank/slot), `Library.save/duplicate/put/restore/importMany`, `soundCopy`,
+  `saveSound`, `originRec` (lädt den Block bei `f-mk-*`), `undoState/undoApply` (`mkslot`), `stepSound`, `openSavePop`,
+  `factoryNames`, Browser (`BR.bank`, `brList`, `openBrowser`, `brScope`, `brChipsHTML`, `brRefresh`, `brTap`),
+  `previewStart`, `mkRender` (Maske), neue Helfer `mkSlotSnap`/`mkSlotPut`/`window.mkProg` vor `mkWaveOf`, CSS `.pop.mk8w`,
+  eine Hilfe-Zeile, VERSION. Im Block `sq-mk-src` nur ein eigener Abschnitt am Ende (`/*MKF{*/ … */` + IIFE `window.MKF`).
+  Worklet unverändert.
+- MK-P bindet: BANK ▼ ▲ → `mkProg.bank(±1)`, SELECT n → `mkProg.select(mkProg.bank(0), n)` (`bank(0)` liest die gewählte Bank),
+  −/NO +/YES → `mkProg.step(∓1)`, WRITE → `MKF.savePop(anker, spur)` oder `mkProg.write(b, s)`, LCD-Zeile 1 aus
+  `mkProg.current().text`, LED aus `current().slot`; WERKSKLANG ZURÜCK auf 26/20 UTILITY → `mkProg.restore(b, s)`.
+  Die Wahl-Tests von `v3-mk8-ui.mjs` (‹ ›) dann auf die Platte umstellen (≈ 0,5–1 h laut Teil G).
+- Kein Supabase-Schritt (Format 5, App 4 017 000 ≤ max_app 4 021 000).
+
+## iPhone (Xander)
+
+1. Spur auf MS 2000, Bibliothek → Bank ▾ → jede Bank einmal durchtippen (Lautsprecher und Kopfhörer); Ausreißer melden
+   (zu leise, zu laut, langweilig). Mit ‹ › im Klang-Kopf geht es Programm für Programm weiter.
+2. Einen Klang ändern, Sichern → Bank und Platz wählen → „Auf … schreiben“; den Platz wieder laden; dann in der
+   Bibliothek ⋯ → „Werksklang zurück“.
+3. H09–H14 ohne Mikrofon: halten, hören, ob die Vokale a/o/e/i/u erkennbar sind.
+
+## Herkunft je Programm (MK8-03)
+
+| Platz | Name | Rolle | Modus | Merkmale | Herkunft |
+|---|---|---|---|---|---|
+| A01 | Sägeblock | hart | Single |  | eigenes Rezept |
+| A02 | Kiesel-Arp | arp | Single | Arp, Delay-Sync | eigenes Rezept |
+| A03 | Weiches Feld | flaeche | Single |  | eigenes Rezept |
+| A04 | Rundbass | bass | Single |  | eigenes Rezept |
+| A05 | Klarer Ruf | lead | Single |  | eigenes Rezept |
+| A06 | Pulsfolge | seq | Single | Seq, Delay-Sync | eigenes Rezept |
+| A07 | Glasglocke | perk | Single | Delay-Sync | eigenes Rezept |
+| A08 | Orgelreihe | tasten | Single |  | eigenes Rezept |
+| A09 | Tiefgang | bass | Single |  | eigenes Rezept |
+| A10 | Wanderfilter | bewegung | Single | Seq | eigenes Rezept |
+| A11 | Streichsatz | chor | Single |  | eigenes Rezept |
+| A12 | Sync-Sturz | lead | Single | Delay-Sync | eigenes Rezept |
+| A13 | Blechsatz | blaeser | Single |  | eigenes Rezept |
+| A14 | Wellenband | wseq | Single | Seq, ≈ Welle, Delay-Sync | eigenes Rezept |
+| A15 | Knackbass | bass | Single |  | eigenes Rezept |
+| A16 | Sturmwind | effekt | Single |  | eigenes Rezept |
+| B01 | Ringkante | hart | Single |  | eigenes Rezept |
+| B02 | Funkenarp | arp | Single | Arp, Delay-Sync | eigenes Rezept |
+| B03 | Eisfläche | flaeche | Single |  | eigenes Rezept |
+| B04 | Gummibass | bass | Single |  | eigenes Rezept |
+| B05 | Doppelglanz | lead | Dual | Delay-Sync | eigenes Rezept |
+| B06 | Stufenglas | seq | Single | Seq, Delay-Sync | eigenes Rezept |
+| B07 | Kristallton | perk | Single |  | eigenes Rezept |
+| B08 | Zupfklavier | tasten | Single |  | eigenes Rezept |
+| B09 | Ringknurrer | bass | Single |  | eigenes Rezept |
+| B10 | Funkregen | bewegung | Single | Seq, Delay-Sync | eigenes Rezept |
+| B11 | Lichtchor | chor | Single |  | eigenes Rezept |
+| B12 | Pfeifkante | lead | Single | Delay-Sync | eigenes Rezept |
+| B13 | Glashauch | blaeser | Single |  | eigenes Rezept |
+| B14 | Wellenfunk | wseq | Single | Seq, ≈ Welle, Delay-Sync | eigenes Rezept |
+| B15 | Glanzbass | bass | Single |  | eigenes Rezept |
+| B16 | Funkzirpen | effekt | Single | Delay-Sync | eigenes Rezept |
+| C01 | Tiefschlag | hart | Single |  | eigenes Rezept |
+| C02 | Nachtarp | arp | Single | Arp, Delay-Sync | eigenes Rezept |
+| C03 | Nebelbank | flaeche | Single |  | eigenes Rezept |
+| C04 | Brummbass | bass | Single |  | eigenes Rezept |
+| C05 | Dunkelruf | lead | Single | Delay-Sync | eigenes Rezept |
+| C06 | Kellertakt | seq | Single | Arp, Delay-Sync | eigenes Rezept |
+| C07 | Holzschlag | perk | Single | Delay-Sync | eigenes Rezept |
+| C08 | Stubenpiano | tasten | Single |  | eigenes Rezept |
+| C09 | Grollbass | bass | Single |  | eigenes Rezept |
+| C10 | Tropfnacht | bewegung | Single | Seq, Delay-Sync | eigenes Rezept |
+| C11 | Mönchschor | chor | Dual |  | eigenes Rezept |
+| C12 | Schwerlead | lead | Single | Delay-Sync | eigenes Rezept |
+| C13 | Hornsatz | blaeser | Dual |  | eigenes Rezept |
+| C14 | Schattenzug | wseq | Single | Seq, ≈ Welle, Delay-Sync | eigenes Rezept |
+| C15 | Kellerbass | bass | Single |  | eigenes Rezept |
+| C16 | Tiefseeruf | effekt | Single |  | eigenes Rezept |
+| D01 | Wellenstoß | hart | Single | ≈ Welle | eigenes Rezept |
+| D02 | Wellenarp | arp | Single | Arp, ≈ Welle, Delay-Sync | eigenes Rezept |
+| D03 | Wellenmeer | flaeche | Dual | ≈ Welle | eigenes Rezept |
+| D04 | Wellenbass | bass | Single | ≈ Welle | eigenes Rezept |
+| D05 | Hauchlead | lead | Single | Delay-Sync | eigenes Rezept |
+| D06 | Wellenkette | seq | Single | Seq, ≈ Welle, Delay-Sync | eigenes Rezept |
+| D07 | Blechtrommel | perk | Single | ≈ Welle, Delay-Sync | eigenes Rezept |
+| D08 | Röhrenorgel | tasten | Single | ≈ Welle | eigenes Rezept |
+| D09 | Stimmbass | bass | Single |  | eigenes Rezept |
+| D10 | Formwandel | bewegung | Single | Seq | eigenes Rezept |
+| D11 | Wellenchor | chor | Dual | ≈ Welle | eigenes Rezept |
+| D12 | Wellenlead | lead | Single | ≈ Welle, Delay-Sync | eigenes Rezept |
+| D13 | Flötenwelle | blaeser | Single | ≈ Welle | eigenes Rezept |
+| D14 | Wellenzug | wseq | Single | Seq, ≈ Welle | eigenes Rezept |
+| D15 | Wellenpunch | bass | Single | ≈ Welle | eigenes Rezept |
+| D16 | Wellenspuk | effekt | Single | ≈ Welle, Delay-Sync | eigenes Rezept |
+| E01 | Pumpakkord | hart | Single | Seq | eigenes Rezept |
+| E02 | Laufarp | arp | Single | Arp, Delay-Sync | eigenes Rezept |
+| E03 | Atemfläche | flaeche | Single |  | eigenes Rezept |
+| E04 | Hüpfbass | bass | Single | Seq | eigenes Rezept |
+| E05 | Pedalruf | lead | Single | Delay-Sync | eigenes Rezept |
+| E06 | Zahnradfolge | seq | Single | Seq, Delay-Sync | eigenes Rezept |
+| E07 | Pingtropfen | perk | Single | Delay-Sync | eigenes Rezept |
+| E08 | Wackelpiano | tasten | Single |  | eigenes Rezept |
+| E09 | Schiebebass | bass | Single |  | eigenes Rezept |
+| E10 | Laufband | bewegung | Single | Seq, Delay-Sync | eigenes Rezept |
+| E11 | Wogenchor | chor | Single |  | eigenes Rezept |
+| E12 | Kurvenlead | lead | Single | Seq, Delay-Sync | eigenes Rezept |
+| E13 | Schwellblech | blaeser | Single |  | eigenes Rezept |
+| E14 | Wellenrad | wseq | Single | Seq, ≈ Welle, Delay-Sync | eigenes Rezept |
+| E15 | Pendelbass | bass | Single |  | eigenes Rezept |
+| E16 | Ufo-Landung | effekt | Single | Delay-Sync | eigenes Rezept |
+| F01 | Doppelstab | hart | Dual |  | eigenes Rezept |
+| F02 | Zwillingsarp | arp | Dual | Arp, Delay-Sync | eigenes Rezept |
+| F03 | Schichtfeld | flaeche | Dual |  | eigenes Rezept |
+| F04 | Splitbass | bass | Split |  | eigenes Rezept |
+| F05 | Zweiklang | lead | Dual | Delay-Sync | eigenes Rezept |
+| F06 | Kreuzfolge | seq | Dual | Arp, Seq, Delay-Sync | eigenes Rezept |
+| F07 | Spieluhr | perk | Dual | Delay-Sync | eigenes Rezept |
+| F08 | Splitpiano | tasten | Split |  | eigenes Rezept |
+| F09 | Schichtbass | bass | Dual |  | eigenes Rezept |
+| F10 | Splitfolge | bewegung | Split | Seq, Delay-Sync | eigenes Rezept |
+| F11 | Doppelchor | chor | Dual |  | eigenes Rezept |
+| F12 | Splitlead | lead | Split | Delay-Sync | eigenes Rezept |
+| F13 | Bläserpaar | blaeser | Dual |  | eigenes Rezept |
+| F14 | Wellenpaar | wseq | Dual | Seq, ≈ Welle, Delay-Sync | eigenes Rezept |
+| F15 | Splitkeller | bass | Split |  | eigenes Rezept |
+| F16 | Doppelsirene | effekt | Dual | Delay-Sync | eigenes Rezept |
+| G01 | Echostab | hart | Single | Delay-Sync | eigenes Rezept |
+| G02 | Phasenarp | arp | Single | Arp, Delay-Sync | eigenes Rezept |
+| G03 | Raumdecke | flaeche | Single |  | eigenes Rezept |
+| G04 | Hallbass | bass | Single |  | eigenes Rezept |
+| G05 | Echolead | lead | Single | Delay-Sync | eigenes Rezept |
+| G06 | Echofolge | seq | Single | Seq, Delay-Sync | eigenes Rezept |
+| G07 | Glockenwurf | perk | Single | Arp, Delay-Sync | eigenes Rezept |
+| G08 | Phaserorgel | tasten | Single |  | eigenes Rezept |
+| G09 | Tiefzirkel | bass | Single |  | eigenes Rezept |
+| G10 | Raumpuls | bewegung | Single | Seq, Delay-Sync | eigenes Rezept |
+| G11 | Hallchor | chor | Single |  | eigenes Rezept |
+| G12 | Flangerlead | lead | Single | Delay-Sync | eigenes Rezept |
+| G13 | Weichwolke | blaeser | Single | Delay-Sync | eigenes Rezept |
+| G14 | Wellenhall | wseq | Single | Seq, ≈ Welle, Delay-Sync | eigenes Rezept |
+| G15 | Echobass | bass | Single | Delay-Sync | eigenes Rezept |
+| G16 | Laserschuss | effekt | Single | Delay-Sync | eigenes Rezept |
+| H01 | Polyfarbe | hart | Single |  | eigenes Rezept |
+| H02 | Datenstrom | effekt | Dual | Delay-Sync | eigenes Rezept |
+| H03 | Sternfläche | flaeche | Single |  | eigenes Rezept |
+| H04 | Bassquinte | bass | Split | Delay-Sync | eigenes Rezept |
+| H05 | Holzflöte | lead | Single | Delay-Sync | eigenes Rezept |
+| H06 | Filterwerk | seq | Single | Seq, Delay-Sync | eigenes Rezept |
+| H07 | Zeitsprung | effekt | Single | ≈ Welle, Delay-Sync | eigenes Rezept |
+| H08 | Kammerpuls | tasten | Single |  | eigenes Rezept |
+| H09 | Vokalchor | vocoder | Vocoder | Halten | eigenes Rezept |
+| H10 | Vokal O | vocoder | Vocoder | Halten | eigenes Rezept |
+| H11 | Vokalwah | vocoder | Vocoder | Delay-Sync, Halten | eigenes Rezept |
+| H12 | Vokalpuls | vocoder | Vocoder | Arp, Halten | eigenes Rezept |
+| H13 | Stimmwandel | vocoder | Vocoder | Halten | eigenes Rezept |
+| H14 | Robotergruß | vocoder | Vocoder | Delay-Sync, Halten | eigenes Rezept |
+| H15 | Eingang | eingang | Single | Delay-Sync | eigenes Rezept |
+| H16 | INIT MS 2000 | effekt | Single |  | INIT |
+
+## MK8-fix (26.10.) – Namensfeld im Sichern-Fenster per Finger
+
+- Fehler (QA, major): Im MS 2000 „Sichern · Platz wählen“ (`.pop.mk8w`) fing ein Tipp auf das Namensfeld nicht den Fokus –
+  `MKF.savePop` hatte `guardTouch(p)` auf dem ganzen Fenster, dessen touchstart-`preventDefault` auch das Eingabefeld traf.
+  Auf dem iPhone kam keine Tastatur, der Name blieb „Klarer Ruf“ und das Programm wurde als „A05:Klarer Ruf 2“ geschrieben.
+  Nachgestellt mit Touch (page.tap und CDP Input.dispatchTouchEvent) in P1, P3, L1, L2 an MK8.html: 8/8 kein Fokus.
+- Behoben: `guardTouch` entfernt (wie beim VA-Sichern-Fenster); Tasten handeln weiter über `onTap` (pointerup), der
+  Tap-Schutz von `closePop`/`UI.ghost` schluckt den Folge-Klick nach „Auf … schreiben“. Der erste Fokus markiert den
+  vorgegebenen Namen (Tippen ersetzt ihn, wie im VA-Fenster). Nebenbei scrollt das Fenster in P3/L2 jetzt per Finger.
+- Nachweis: `dirigent-test/v3-mk8fix-name.mjs` (P1, P3, L1, L2 × page.tap/CDP, echte Schrift Barlow Semi Condensed,
+  Feld 16 px = kein iOS-Zoom): Fokus ja, Wert „Mein Lead“, geschrieben als „A05:Mein Lead“, Platz-Tasten per Finger,
+  kein Durchklick, 0 Konsolenfehler – 8/8 OK. `v3-qa8-inp.mjs`/`v3-qa8-inp2.mjs` grün, `v3-mk8-ui.mjs` 43 PASS / 0 FAIL,
+  Smoke ohne Fehler. Keine Datenbankänderung. Snapshot: `synq-snapshots/MK8-fix.html`.
+
+
+## G-MKP8-merge — Zusammenführung · App **4.17.0** (`APP_CODE` 4 017 000) · Format 5 · keine Server-Änderung
+
+**Zusammengeführt** (echter 3-Wege-Merge, `git merge-file`, Basis `mk-base-D.html` = 4.15.0): Hauptlinie (4.15.0 mit
+G-MK567-merge-fix) ← **MK-P** (`mkp-snap-1627.html`, 4.16.0) ← **MK8** (`mk-br-MK8/index.html`, 4.17.0, mit MK8-fix).
+Sicherung vorher: `mk-wt/index.html.vor-merge-G-MKP8-merge.html`. Größe 3 109 877 B (+92 173 B gegen 4.15.0: MK-P +40 376,
+MK8 +45 659, G-MK567-fix +2 128, Naht und Vocoder-Behebung ≈ +4 KB). Der Weg ist Teil G Nr. 18 **„Kommt MK-P zuerst“**:
+das Ergebnis ist das reine MS-2000-Bedienfeld (kein Knoten, keine Funktion, kein Text des alten Bedienfelds; MK-P-15).
+
+### Konflikte und wie sie gelöst sind
+1. **`setv` (MK-P × G-MK567-fix):** MK-P hat `setv` als `switch` neu geschrieben (MODUS = `mode4` auf Seite 01), die
+   Hauptlinie hatte im alten Zweig `mode` „Wechsel auf Vocoder bricht eine laufende AUFN. ab“. Gelöst: MK-P-Fassung,
+   der AUFN.-Abbruch steckt jetzt in `case 'mode4'` (vor `mkSetP`).
+2. **Altes Bedienfeld (MK-P × G-MK567-fix):** MK-P entfernt `rotGesture`/`rotList`/`soloSet`/`timReset`/`leave`/`timbreKey`
+   des alten Bedienfelds, die Hauptlinie hatte in `rotList` die dunkle Zeile „SEQ – nicht im Vocoder“. Gelöst: MK-P-Seite
+   (Abbau, H-18). Das Verhalten bleibt erhalten: auf der Platte ist im Vocoder SEQ EDIT = CH PARAM, die SEQ-LED aus, und die
+   Worklet-Teile des G-MK567-fix (`sqPrep` mode ≠ 3, `sqMode`, keine AUFN. im Vocoder, fusionierte Vocoder-Bänder) sind
+   ohne Konflikt übernommen (Worklet = Hauptlinie + nur MK-P `sqInfo`; `vg567-vocbit` max |Δ| 0).
+3. **`VERSION` (MK-P × MK8):** 4.16.0 / 4.17.0 → **4.17.0** (die höchste).
+4. **Hilfe-Zeilen (MK-P × MK8):** MK-P hat die MS-2000-Hilfe neu geschrieben (19 Zeilen ohne altes Bedienfeld), MK8 hatte
+   die alten Zeilen + „Programm-Speicher“. Gelöst: alle MK-P-Zeilen, dazu MK8s Zeile „Programm-Speicher“ auf die Platte
+   umgeschrieben (BANK ▼ ▲, SELECT 1–16, −/NO +/YES, ‹ ›, Bank ▾, WRITE, WERKSKLANG ZURÜCK (UTILITY)).
+
+### Naht MK-P ↔ MK8 (Teil G Nr. 18, MK8 Umfang 5/6, MK8-09 mit MK-P)
+- `mkPanelProg` (MK-P) nutzt das Objekt `window.mkProg` (MK8): **BANK ▼ ▲** → `mkProg.bank(±1)` (bleibt an A/H stehen,
+  Anzeige Zeile 2 „BANK      B“ für 1,2 s), **SELECT 1–16** im Spielen → `mkProg.select(bank, n)`, **−/NO +/YES** im
+  Spielen → `mkProg.step(∓1)` (bleibt an A01/H16 stehen, „Anfang · A01“/„Ende · H16“), **WRITE** → `MKF.savePop` (Platzwahl,
+  Vorgabe = geladenes Programm), **WERKSKLANG ZURÜCK** auf Seite 26 (Synth) bzw. 20 (Vocoder) UTILITY → `mkProg.restore`.
+  Anzeige Zeile 1 „A01:Name“ aus `current().label`, LED der SELECT-Taste des geladenen Programms (nur wenn die gewählte Bank
+  die des Programms ist; das Lauflicht hat Vorrang). Je Laden/WRITE/WERKSKLANG ZURÜCK genau ein Undo (wie MK8).
+- Ein von außen geladenes Programm (Bibliothek, ‹ ›, Undo) stellt die BANK der Platte auf seine Bank (wie am Gerät).
+- `MKF.cur` rechnet `edited` erst beim Lesen (Getter): die Platte fragt `current()` je Zeichnen, ohne `soundHash` je Bild
+  (Leistung). `window.mkProg.mk8 = true` kennzeichnet das echte Objekt (Attrappen in `v3-mkp-prog.mjs` bleiben möglich).
+- Nach WRITE/WERKSKLANG ZURÜCK zeichnet die Platte sofort neu (`MKUI.progRefresh` in `headRefresh`; vorher stand die LED
+  bis zur nächsten Geste auf dem alten Platz – im neuen Test gefunden).
+
+### Behoben: „man hört nichts“ im Vocoder (Xander 26.10., Gerätetest 4.15.0)
+- Ursache: Umschalten auf Vocoder ließ E2 leer → kein Modulator → stumm, ohne Hinweis.
+- Jetzt wie am Gerät (AUDIO IN 2 = Mikrofon ist der Modulator): `mkVocAutoMic(i)` – wird ein Klang zum Vocoder (01 COMMON
+  MODUS über −/NO +/YES oder Liste, oder ein Vocoder-Programm H09–H14 bzw. eine Vocoder-Bibliothekszeile wird geladen) und E2
+  ist leer, wird **E2 = Mikrofon** gesetzt und `vocMicStart()` gestartet. Der Eingang gehört zum **selben Undo-Schritt**
+  wie der Moduswechsel/das Laden (`commitSound` nimmt `UI.mkInJoin` als Gruppe `sound` + `mkin`; WERKSKLANG ZURÜCK ebenso).
+- Ohne Mikrofon (`micAvail()` falsch, z. B. Claude-Vorschau im iframe): kein stilles Umschalten mehr, sondern LCD
+  „VOCODER · Mikrofon nur auf der GitHub-Seite“ und auf der Platte „MIKRO NUR GITHUB“ (4 s). Startet das Mikrofon nicht
+  (Erlaubnis verweigert), sagt die LCD „Mikrofon nicht verfügbar · E2 in GLOBAL 1B wählen“.
+- Nebenbei (MK-P): MODUS über −/NO +/YES war kein Sound-Undo (`mode4` stand in `VIEWP`); jetzt ein Undo wie über die Liste.
+- Hilfe-Zeile Vocoder ergänzt („ist E2 leer, wird beim Umschalten das Mikrofon E2“).
+
+### Abnahme (Chromium 1243; der Pfad 1194 fehlt hier; Ausgaben `scratchpad/gm8out/`)
+- Rauchtest ohne Fehler (`dirigent-test/g-mkp8-smoke.png`), keine Konfliktmarken, „MS 2000“ genau 1×, kein Korg-Name.
+- **MK-P** (alle nach den letzten Änderungen neu gefahren): `v3-mkp-funk` 0 Fehler, `v3-mkp-gesten` 0, `v3-mkp-lauf` 0,
+  `v3-mkp-platz` 0, `v3-mkp-aussehen` 0, `v3-mkp-extra` 0, `v3-mkp-close` 0, `v3-mkp-trim` 0, `v3-mkp-prog` 0 (Attrappe),
+  `v3-mkp-mk7inputs` 24/24, `v3-mkp-daten` 1 Fehler = **überholt**: „Quelltext `normalizeSound` gleich 4.15.0“ – MK8 nimmt
+  absichtlich `bank`/`slot` auf (alle 12 Klänge bitgleich, 95 Plattenwerte gleich, Projekt deep-equal).
+  `v3-mkp-mk1ui` (MK1-20/22/31/34) und `v3-mkp-mk7ui` (MK7-13-PLATZ, MK7-BED) scheitern genau wie auf dem MK-P-Zweig selbst
+  (alte Bedienfeld-Wege `setWahl`/`toSpiel`; im MK-P-Changelog als umgestellt beschrieben).
+- **MK8:** `v3-mk8-daten` 0 Fehler; `v3-mk8-pegel` MK8-04 bestanden, LUFS/True Peak aller 128 Programme **identisch** zum
+  MK8-Zweig (`v3-mk8-pegel.json` danach wiederhergestellt); `v3-mk8-ui` 36 PASS / 2 FAIL = **überholt**: M-PLATZ L1/L2 tippt
+  „Sichern“ im Blattkopf, den es quer mit MK-P nicht mehr gibt (44-px-Kopfzeile, H-17) → neu `gmkp8-mk8-platz-quer.mjs`
+  (WRITE der Platte, Bibliothek über die Anzeige, L1/L2/926×428) **9/9**; `v3-mk8fix-name` aus demselben Grund in L1/L2
+  → Kopie `gmkp8-mk8fix-name.mjs` (quer über WRITE der Platte) **8/8 OK**.
+- **ABNAHME MK8-09 mit der Platte** (`gmkp8-mk8-09-platte.mjs`, CDP-Touch auf der Gesamtansicht L1): **27/27** – Anzeige
+  „A01:Name“, LED, BANK ▲ ▼ mit Enden, SELECT lädt mit einem Undo + Toast [Rückgängig], Undo deep-equal, −/NO +/YES mit
+  Enden, WRITE von der Platte (Vorgabe C02 → D07, andere 127 Plätze gleich, ein Undo, Undo deep-equal, D07 lädt danach den
+  eigenen Klang), WERKSKLANG ZURÜCK auf Seite 26 und (Vocoder) 20 UTILITY mit einem Undo und deep-equal, EXIT → „H09:Name“.
+- **Vocoder mit Mikrofon** (`gmkp8-voc-mic.mjs`, `--use-fake-device-for-media-stream --use-fake-ui-for-media-stream`):
+  **8/8** – INIT → EDIT, SELECT 1, Anzeige, „Vocoder“ → Taste halten: **hörbar (bis −17 dBFS)**, E2 = mic, Mikrofon läuft,
+  ein Undo (Gruppe sound + mkin), Undo deep-equal (Synth, kein Eingang, Mikrofon aus); H09 bekommt E2 = mic mit einem Undo
+  und klingt; im iframe Hinweis statt Stille. Gegenprobe MK-P 4.16.0: derselbe Weg bleibt stumm (−∞ dBFS, E2 leer).
+- **Hauptlinie / frühere Pakete:** `v3-mk7-voc` 37/37, `v3-mk6-seq` 36/36, `v3-mk4-fx` 61/61, `v3-mk3-scale` 6/6,
+  `v3-mk2-marke` alles PASS, `v3-mk1-probe` bestanden, `vg567-seqvoc` max |Δ| 0, `vg567-seqvoc2` SEQ im Vocoder aus,
+  `vg567-seqvoc3` Synth ↔ Vocoder (die Listen-Zeile des alten Bedienfelds gibt es nicht mehr – überholt), `vg567-vocbit` gegen
+  die Hauptlinie max |Δ| 0, `gmk567-keysync` 4/4; `v3-mk5-arp` 78/79 (MK5-02 „live zweimal“, bekannt wackelig);
+  `v3-mk3-timbre` 29/30 (MK3-07 gegen 4.10.0 – identisch auf 4.15.0 und der Hauptlinie, kein Merge-Effekt);
+  `v3-mk1-format` 18/21 (die drei 4.8.1-Prüfungen, überholt wie in MK8 beschrieben). `v3-mk7-cpu` nicht gefahren: das
+  Worklet unterscheidet sich von der Hauptlinie nur in `sqInfo` (Lauflicht-Felder), die DSP ist bytegleich.
+
+### Offen
+- MK-P-09 Leistung ×4 und das Budget von MK-P (siehe MK-P); iPhone-Punkte von MK-P und MK8 (am Gerät).
+- Am Gerät prüfen: Umschalten auf Vocoder fragt jetzt nach dem Mikrofon (Safari-Erlaubnis); Kabel-Kopfhörer gegen Rückkopplung.
+- Ohne MK8 gebliebener Rückfallweg in `mkPanelProg` (eigene Sounds in Gruppen à 16) bleibt nur für Attrappen-Tests.
+
+### Datenbank / Am Server offen
+- Nichts (Format 5, `APP_CODE` 4 017 000 ≤ Wächter 4 021 000). Kein Supabase-Aufruf.
+
+Snapshot: `synq-snapshots/G-MKP8-merge.html`.

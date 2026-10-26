@@ -1503,6 +1503,9 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #toast.dock .tp{white-space:nowrap}
 #toast.dock.dk2 .tmsg,#toast.dock.dk3 .tmsg{white-space:normal;text-overflow:clip;align-self:center}
 #toast.dock.dk2 .tmsg{font-size:12px;line-height:1.15;max-height:28px}
+#toast.dock.lcdk.mkw{padding-left:6px;gap:4px}
+#toast.dock.mkw .tp{white-space:normal;overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}
+#toast.dock.mkw .tmsg{overflow:hidden}
 #toast.dock.dk3 .tmsg{font-size:11px;line-height:1.1;max-height:37px}
 #toast.band.t3 .tmsg{font-size:12px;line-height:1.15}
 #toast.dock{transform:none;max-width:none;background:#f4f1ea;justify-content:space-between;gap:6px;padding:0 4px 0 10px;pointer-events:auto}
@@ -4530,6 +4533,7 @@ function lcdLines() {
   const pg = curPage(), d = curItem(), L = curItems(), letter = String.fromCharCode(65 + P.cur);
   const l1 = pad16(pg[0] + (L.length > 1 ? letter : '') + ' ' + pg[1] + (P.mode === 'edit' && dualOn() && P.tim === 2 ? ' T2' : ''));
   if (cmp) return [l1, pad16('== COMPARE ==')];
+  if (P.splitArm) return [l1, pad16('SPLIT ← TASTE ?')];   // armed: the next played note sets the split point
   if (P.l2 && P.l2.until > now && P.l2.edit) return [l1, pad16(P.l2.t)];
   if (!d) return [l1, pad16('')];
   if (d.act) return [l1, lcdPair(d.l.replace(' ▸', ''), d.l.endsWith('▸') ? '▸' : 'YES?')];
@@ -4632,11 +4636,16 @@ function timCopyPop(anchor, t) {   // MK3-fix: t = the track whose editor is ope
 // Split ← nächste Note (MK3 Umfang 1): armed by the LCD key or a tap on SPLIT; the next played note becomes the split point (one undo)
 function splitArm() {
   if (mk().mode !== 2) { lcdShow('SPLIT', 'erst 01 COMMON → MODUS auf Split'); return; }
-  P.splitArm = true; UI.mkSplitArm = splitNote; haptic('tick');
-  lcdShow('SPLIT', 'eine Taste spielen = Split-Punkt (darunter T1, ab ihr T2)');
+  P.splitArm = true; UI.mkSplitArm = splitNote; UI.mkSplitOff = splitOff; haptic('tick');
+  lcdShow('SPLIT', 'eine Taste spielen = Split-Punkt (darunter T1, ab ihr T2) · jeder andere Tipp oder ■ = aus'); renderSoon();
+}
+// typische Fehler 6/10: the armed split ends with any other tap on the plate, a key, a knob, Stop and a scene change
+function splitOff(quiet) {
+  if (!P.splitArm) return false; P.splitArm = false; UI.mkSplitArm = null; UI.mkSplitOff = null;
+  if (!quiet) lcdShow('SPLIT', 'Split ← nächste Note aus'); renderSoon(); return true;
 }
 function splitNote(note) {
-  if (!P.splitArm) return false; P.splitArm = false; UI.mkSplitArm = null; const i = P.i, s_ = sndOf(i); if (!s_ || !s_.p.mk) return false;
+  if (!P.splitArm) return false; P.splitArm = false; UI.mkSplitArm = null; UI.mkSplitOff = null; const i = P.i, s_ = sndOf(i); if (!s_ || !s_.p.mk) return false;
   if (R.editor !== 'synth' || R.selT !== i || !EL.synthSheet.classList.contains('open')) return false;   // MK3-fix: armed only while this editor is open
   note = clamp(Math.round(note), 0, 127); soundEdit(i, MK_LABEL + ' SPLIT', () => mkSetP(i, 'split', note, false));
   renderSoon(); lcdShow('SPLIT', noteLabel(note) + ' · darunter T1, ab hier T2'); dispShow(z3(note)); return true;
@@ -4939,6 +4948,7 @@ function cycle(d, label) {
 }
 function press(id) {
   const i = P.i; if (i < 0 || !sndOf(i) || !sndOf(i).p.mk) return;
+  if (P.splitArm) splitOff();
   firstHint(id);
   if (grau(id)) lcdShow('VOCODER', GRAU[id]);
   if (/^s\d+$/.test(id)) { stepKey(+id.slice(1)); renderSoon(); return; }
@@ -5001,6 +5011,7 @@ function util(a) {
   }
 }
 function lcdTap() {
+  if (splitOff()) return;                                   // a second tap on the display ends Split ← nächste Note
   const i = P.i, anchor = PL.ui && PL.ui.lcd && PL.ui.lcd.isConnected ? PL.ui.lcd : P.sp && P.sp.lcd;
   if (P.mode === 'spiel') { openBrowser(i); return; }
   const d = curItem(); if (!d) return;
@@ -5161,6 +5172,7 @@ function frDown(ev) {
   const r = U.fr.getBoundingClientRect(), fx = ev.clientX - r.left, fy = ev.clientY - r.top, [x, y] = toPlate(fx, fy);
   const e = hitAt(x, y, visRect()); P.lastHit = (e ? e.id : 'frei') + (P.ansicht === 'zoom' ? '@' + P.halt : '');
   const st = {id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, t0: performance.now(), e, px: x, py: y, kind: !e ? 'free' : e.art === 'k' ? 'knob' : e.art === 'lcd' ? 'lcd' : 'key'};
+  if (P.splitArm && st.kind !== 'lcd') splitOff();          // typische Fehler 10: an armed mode ends with any other tap
   for (const o of PT.values()) if (e && o.e === e) st.kind = 'ign';   // a second finger on the same element is ignored
   try { U.fr.setPointerCapture(ev.pointerId); } catch (_) {}
   PT.set(ev.pointerId, st); gestBegin(ev.pointerId, () => { if (PT.get(ev.pointerId) === st) frEnd(st, null, true); });
@@ -5199,7 +5211,8 @@ function frEnd(st, ev, cancel) {
 }
 function knobStart(st, ev) {
   const d = defOf(st.e.id); st.d = d; firstHint(st.e.id); if (!d) return;
-  st.before = isSnd(d) ? soundSnapshot(P.i) : null; st.v = get(d); st.v0 = st.v; st.y = ev.clientY; st.st = 'down';
+  st.before = isSnd(d) ? soundSnapshot(P.i) : null; st.v = get(d); st.v0 = st.v; st.y = ev.clientY; st.st = 'down'; st.path = tp(d.p);
+  for (const o of PT.values()) if (o !== st && o.kind === 'knob') { o.multi = 1; st.multi = 1; }   // MK-P-08: two knobs at once
   if (d.ch != null) P.ch0 = null;
   if (d.p === 'voc.efs') P.efs0 = st.v;
   if (grau(st.e.id)) lcdShow('VOCODER', GRAU[st.e.id]); else lcdOf(d);
@@ -5233,7 +5246,7 @@ function knobEnd(st, cancel) {
     if (!d.L && d.p !== 'bpm' && d.p !== 'vol' && d.p !== 'mw' && !/^trim/.test(d.p)) setv(d, d.step ? Math.round(st.v / d.step) * d.step : Math.round(st.v), false);
     else if (d.L && d.nu) setv(d, Math.round(st.v), false);
     if (recOwns(st)) { recGestEnd(st); P.lastKnob = d; renderSoon(); return; }
-    if (st.before != null) commitSound(P.i, st.before, d.p === 'vol' ? 'Lautstärke' : MK_LABEL + ' ' + d.l);
+    if (st.before != null) commitSound(P.i, gestBefore(st), d.p === 'vol' ? 'Lautstärke' : MK_LABEL + ' ' + d.l);
     P.lastKnob = d; renderSoon(); lcdOf(d); return;
   }
   if (cancel) return;
@@ -5242,6 +5255,24 @@ function knobEnd(st, cancel) {
   const t = performance.now();
   if (LASTTAP && LASTTAP.id === st.e.id && t - LASTTAP.t < DBL_MS + 100) { LASTTAP = null; knobDefault(d); return; }
   LASTTAP = {id: st.e.id, t}; P.lastKnob = d; showVal(d); paintOrig();
+}
+/* MK-P-08 (typische Fehler 8): two knobs turned with two fingers = two independent undos. The 'before' of a gesture that ran
+   together with another one is the sound as it is now, with this gesture's value and the values of the knob gestures still
+   running put back to where they started (each gesture's start value comes from its own snapshot); one gesture alone keeps
+   its start snapshot unchanged */
+function gestLeaf(path) { return path === 'mw' ? ['p', 'mw'] : path === 'vol' ? ['fx', 'vol'] : ['p', 'mk'].concat(String(path).split('.')); }
+function gestBefore(st) {
+  const run = [...PT.values()].filter(o => o !== st && o.kind === 'knob' && o.before != null && o.d && isSnd(o.d) && o.path);
+  if (!st.multi && !run.length) return st.before;
+  let cur; try { cur = JSON.parse(soundSnapshot(P.i)); } catch (_) { return st.before; }
+  const sc = cur.$ === 'trk' ? cur.sound : cur;
+  for (const g of [st].concat(run)) {
+    if (!g.path || g.before == null) continue;
+    try { const B = JSON.parse(g.before), sb = B.$ === 'trk' ? B.sound : B, ks = gestLeaf(g.path); let a = sb, b = sc;
+      for (let k = 0; k < ks.length - 1 && a && b; k++) { a = a[ks[k]]; b = b[ks[k]]; }
+      const last = ks[ks.length - 1]; if (a && b && typeof a === 'object' && typeof b === 'object' && last in a) b[last] = a[last]; } catch (_) {}
+  }
+  return JSON.stringify(cur);
 }
 function knobDefault(d) {
   let v = null;
@@ -5429,7 +5460,7 @@ function morePop(anchor, i, o) {
 }
 // the editor closes or another sheet opens: T1, no armed split, no running take (all view state, never stored); the zoom stays
 function leave() {
-  einOn(false); P.tim = 1; P.splitArm = false; UI.mkSplitArm = null; P.view = null; P.xv = null; P.ch0 = null; P.editHeld = 0;
+  einOn(false); P.tim = 1; P.splitArm = false; UI.mkSplitArm = null; UI.mkSplitOff = null; P.view = null; P.xv = null; P.ch0 = null; P.editHeld = 0;
   if (P.rec) recCancel('abgebrochen (anderer Sound oder Editor zu)');
   try { const E = AU.synth[P.i]; if (E && E.mkScope) E.mkScope(false); } catch (e) {}
 }
@@ -6080,7 +6111,7 @@ pre.mkpr{max-height:40vh;overflow:auto;white-space:pre-wrap;font-size:10px}
 function ensureCss() { if (document.getElementById('mk-css')) return; const st = document.createElement('style'); st.id = 'mk-css'; st.textContent = css; document.head.appendChild(st); }
 ensureCss();
 window.MKUI = {mkVowel, build, render, renderSoon, wheels, wheelPaint, panelInfo, probe, probeSheet, arpFrame: frame, arp: ARPC, randomize: randomizeMk, P, KN, fmtv, get, range, setv, wv, MKTAB,
-  lcdOf, seqInit, seqSwap, seqCopy, seqToolsPop, recArm, recCancel, recDone, knobSim, stepsInfo, stepsPaint, timCopy, timSwap, timInit, timCopyPop, leave, splitArm, viewOpen, viewClose, splitNote, ownInfo,
+  lcdOf, seqInit, seqSwap, seqCopy, seqToolsPop, recArm, recCancel, recDone, knobSim, stepsInfo, stepsPaint, timCopy, timSwap, timInit, timCopyPop, leave, splitArm, splitOff, viewOpen, viewClose, splitNote, ownInfo,
   press, view, chrome, tabFast, lcdLines, lcdTap, pages, curItem, pageOf, defOf, bindOf, hitAt, haltAt, visRect, panelScript, ELS, SEC, HALTE, PL, mkPanelProg, zoomTo, toOverview, step, compare,
   progRefresh: () => { if (!P.el || !P.el.fr || !P.el.fr.isConnected) return; const s_ = sndOf(P.i); if (s_) { P.orig = null; P.origKey = ''; origSync(s_); } renderSoon(); }};
 })();
@@ -18310,6 +18341,7 @@ function launch(i, slot, atT) {
 function launchScene(s) {
   ensureAudio(); if (!AU.ctx) return;
   s = clamp(s | 0, 0, NS() - 1);
+  if (UI.mkSplitOff) { try { UI.mkSplitOff(); } catch (e) { logErr(e); } }   // MK-P: a scene change ends Split ← nächste Note
   const rb = R.playing ? nextBarFromAudible() : 0;                // V2c: the scene's chord row starts with the scene (§4.6)
   for (let i = 0; i < NT(); i++) launch(i, s);
   try { sceneRowStart(s, rb); } catch (e) { logErr(e); }
@@ -19461,6 +19493,7 @@ function startTransport(countIn) {
 function play() { startTransport(null); }
 function stop() {
   const c = AU.ctx;
+  if (UI.mkSplitOff) { try { UI.mkSplitOff(); } catch (e) { logErr(e); } }   // MK-P: ■ ends Split ← nächste Note
   if (!R.playing) {                                          // ■ twice within 1 s: tails off (§8.1)
     if (c && tailWinOpen()) { tailKill(); tailWinSet(false); haptic('snap'); toast('Hall und Echo aus'); }
     return;
@@ -25290,7 +25323,7 @@ function hintSideSync() {
 function toastHome() {
   if ((R.editor === 'synth' || R.editor === 'drum') && (EL.synthSheet.classList.contains('open') || EL.drumSheet.classList.contains('open'))) {
     const l = ED.lcd, q = EL.synthSheet.classList.contains('mkq') && EL.synthSheet.querySelector('.mkqh .preset');   // MK-P
-    if (q && vis(q)) return {kind: 'lcd', ref: q};
+    if (q && vis(q)) return {kind: 'lcd', ref: q, mk: true};
     if (l && l.isConnected && l.offsetHeight >= 18 && lcdDockRect(l).width >= 160) return {kind: 'lcd', ref: l};
     return {kind: 'kb', ref: EL.kbArea};
   }
@@ -25338,13 +25371,13 @@ function toastPlace() {
 function toastPlace1(t) {
   if (!UI.toastActs) {
     if (t.parentNode !== document.body) document.body.appendChild(t);
-    if (UI.toastPos !== 'top') { UI.toastPos = 'top'; t.classList.remove('band', 'dock', 'lcdk', 'cark', 'tcomp', 't3', 'tpw', 'dk2', 'dk3'); t.style.cssText = ''; }
+    if (UI.toastPos !== 'top') { UI.toastPos = 'top'; t.classList.remove('band', 'dock', 'lcdk', 'cark', 'tcomp', 't3', 'tpw', 'dk2', 'dk3', 'mkw'); t.style.cssText = ''; }
     return;
   }
   const h = toastHome();
   if (h.kind === 'band') {
     if (t.parentNode !== h.ref) h.ref.appendChild(t);
-    if (UI.toastPos !== 'band') { UI.toastPos = 'band'; t.classList.remove('dock', 'lcdk', 'cark', 'dk2', 'dk3'); t.classList.add('band'); t.style.cssText = ''; toastFit(t); }
+    if (UI.toastPos !== 'band') { UI.toastPos = 'band'; t.classList.remove('dock', 'lcdk', 'cark', 'dk2', 'dk3', 'mkw'); t.classList.add('band'); t.style.cssText = ''; toastFit(t); }
     return;
   }
   if (t.parentNode !== document.body) document.body.appendChild(t);
@@ -25352,7 +25385,7 @@ function toastPlace1(t) {
     const px = r => `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;
     let css = px(h.r);
     if (UI.toastPos === css || UI.toastPos === 'w:' + css) return;
-    UI.toastPos = css; t.classList.remove('band', 'tcomp', 't3', 'tpw', 'lcdk'); t.classList.add('dock', 'cark'); t.style.cssText = css;
+    UI.toastPos = css; t.classList.remove('band', 'tcomp', 't3', 'tpw', 'lcdk', 'mkw'); t.classList.add('dock', 'cark'); t.style.cssText = css;
     if (!toastDockFit(t, 'car') && !(window.matchMedia && window.matchMedia('(orientation: portrait)').matches)) {
       t.style.cssText = px(carDockRect(true)); toastDockFit(t, 'car'); UI.toastPos = 'w:' + css;   // L: the readout + the mode row
     }
@@ -25363,9 +25396,12 @@ function toastPlace1(t) {
   const css = h.kind === 'lcd' ? `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`
     : `left:${r.left + 8}px;top:${r.top + 6}px;width:${Math.max(0, r.width - 16)}px;height:44px`;
   if (UI.toastPos !== css) {
-    UI.toastPos = css; t.classList.remove('band', 'tcomp', 't3', 'tpw'); t.classList.add('dock'); t.classList.toggle('lcdk', h.kind === 'lcd'); t.style.cssText = css;
+    UI.toastPos = css; t.classList.remove('band', 'tcomp', 't3', 'tpw', 'mkw'); t.classList.add('dock'); t.classList.toggle('lcdk', h.kind === 'lcd'); t.style.cssText = css;
+    // MK-P (landscape head, 44 px): the plate under it stays playable, so a long message never leaves the head: two small
+    // lines beside the symbols (✎ ↶ ↷), the rest cut off
+    if (h.mk && !toastDockFit(t, 'lcd')) { t.classList.add('mkw', 'dk2'); const m = t.querySelector('.tmsg'); if (m && m.scrollHeight > m.clientHeight + 1) t.classList.replace('dk2', 'dk3'); }
     // the LCD line holds one line only: a message that does not fit there even beside ✎ ↶ docks on the keyboard top
-    if (!toastDockFit(t, h.kind) && h.kind === 'lcd') {
+    else if (!h.mk && !toastDockFit(t, h.kind) && h.kind === 'lcd') {
       const k = EL.kbArea.getBoundingClientRect();
       t.classList.remove('lcdk'); t.style.cssText = `left:${k.left + 8}px;top:${k.top + 6}px;width:${Math.max(0, k.width - 16)}px;height:44px`;
       toastDockFit(t, 'kb');

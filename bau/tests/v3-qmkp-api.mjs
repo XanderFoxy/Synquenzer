@@ -1,0 +1,2 @@
+import {launch, open, openMk} from './v3-qmkp-lib.mjs';
+const b = await launch(); for (const f of ['P1', 'X']) { const page = await open(b, f); await openMk(page); console.log(f, 'typeof SYNQUENZER.mkView =', await page.evaluate(() => typeof SYNQUENZER.mkView), '| DIRIGENT.mkView =', await page.evaluate(() => typeof DIRIGENT.mkView), '| mkPanel =', await page.evaluate(() => typeof SYNQUENZER.mkPanel)); await page.ctx.close(); } await b.close();

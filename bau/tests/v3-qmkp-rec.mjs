@@ -1,0 +1,20 @@
+// typische Fehler 7/8: Bewegung aufnehmen (REC on the plate): one undo, the dot right after, undo deep-equal
+import {launch, open, openMk, touch, tap, line, panel, ctr} from './v3-qmkp-lib.mjs';
+const f = process.argv[2] || 'X';
+const b = await launch(); const page = await open(b, f); await openMk(page); await page.waitForTimeout(300);
+await page.evaluate(() => { SYNQUENZER.initSound(0); }); await page.waitForTimeout(500);
+await page.evaluate(() => { SYNQUENZER.setBpm(120); ensureAudio(); MKUI.view({ansicht: 'ganz', haelfte: 'links'}); }); await page.waitForTimeout(400);
+const before = await page.evaluate(() => ({snd: JSON.stringify(S.tracks[0].sound), u: SYNQUENZER.undoInfo().n, dot: !!document.querySelector('#synthSheet .chg')}));
+const E = async id => (await panel(page)).elements.find(e => e.id === id);
+await tap(page, ...ctr(await E('seq.rec'))); await page.waitForTimeout(200);
+const armed = await page.evaluate(() => MKUI.P.rec && {k: MKUI.P.rec.k, started: MKUI.P.rec.started});
+await page.evaluate(() => SYNQUENZER.keyOn(48, .8, 'h')); await page.waitForTimeout(200);
+const k = await E('f.cut'); const [x, y] = ctr(k); const pts = []; for (let i = 0; i <= 160; i++) pts.push([x, y + 40 * Math.sin(i / 10)]);
+await touch(page, pts, 16); await page.waitForTimeout(2600);
+await page.evaluate(() => SYNQUENZER.keyOff(48, 'h')); await page.waitForTimeout(300);
+const after = await page.evaluate(() => ({u: SYNQUENZER.undoInfo().n, top: SYNQUENZER.undoInfo().top, rec: !!MKUI.P.rec, q0: SYNQUENZER.mkGet(0).t[0].seq.q[0], on: SYNQUENZER.mkGet(0).t[0].seq.on, dot: !!document.querySelector('#synthSheet .chg')}));
+console.log(f, 'armed', JSON.stringify(armed), '\n after: undo +' + (after.u - before.u), JSON.stringify(after.top), 'rec open', after.rec, 'seq on', after.on, 'target', after.q0.k, 'vals', JSON.stringify(after.q0.v), 'dot', before.dot, '->', after.dot);
+await page.evaluate(() => SYNQUENZER.undo()); await page.waitForTimeout(300);
+const u = await page.evaluate(() => JSON.stringify(S.tracks[0].sound));
+console.log('undo deep-equal', u === before.snd, 'errs', JSON.stringify(page.errs).slice(0, 200));
+await b.close();

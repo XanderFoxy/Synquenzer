@@ -1,7 +1,7 @@
 // prints of the plate that overlap each other, an element, or cross a section frame line
 import {launch, open, openMk, OUT, panel} from './v3-qmkp-lib.mjs';
 const b = await launch();
-const page = await open(b, 'W');
+const page = await open(b, process.argv[2] || 'W');
 await openMk(page); await page.waitForTimeout(400);
 const res = await page.evaluate(() => {
   const pl = MKUI.PL.el, pr = pl.getBoundingClientRect(), W = pr.width, H = pr.height;
