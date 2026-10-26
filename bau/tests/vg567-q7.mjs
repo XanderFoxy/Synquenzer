@@ -1,0 +1,20 @@
+// vgmk567: Q7 repro. Added track 7 (lead clips) as E2 of the pad vocoder, remove track 7, undo: levels of t7 and pad. Usage: SYNQ_APP=<file> node vg567-q7.mjs [novoc]
+import {open, sleep} from './vg567-gmk7-tl.mjs';
+import {setupProject} from './vg567-gmk7-setup.mjs';
+const NOVOC = process.argv[2] === 'novoc';
+const T = await open({viewport: {width: 390, height: 844}}); const {p, E, errs} = T;
+const PAD = 2, LEAD = 3;
+await setupProject(E);
+const nodeLvl = (expr, ms = 1200) => E(([expr, ms]) => new Promise(r => { const n = eval(expr); if (!n) return r(null); const c = AU.ctx, a = c.createAnalyser(); a.fftSize = 2048; n.connect(a); const b = new Float32Array(2048); let pk = 0; const iv = setInterval(() => { a.getFloatTimeDomainData(b); for (const v of b) pk = Math.max(pk, Math.abs(v)); }, 40); setTimeout(() => { clearInterval(iv); try { n.disconnect(a); } catch (e) {} r(Math.round(20 * Math.log10(pk + 1e-15))); }, ms); }), [expr, ms]);
+await E(() => { SYNQUENZER.launchScene(0); SYNQUENZER.play(); }); await sleep(800);
+const t7 = await E(() => SYNQUENZER.addTrack());
+await E(([t7]) => { const Q = SYNQUENZER; Q.setClip(t7, 0, Q.getClip(3, 0)); Q.setClip(t7, 1, Q.getClip(3, 1)); }, [t7]);
+if (!NOVOC) await E(([a, b]) => { SYNQUENZER.setEngine(a, 'mk'); SYNQUENZER.mkSet(a, 'mode', 3); SYNQUENZER.mkIn(a, 'e2', b); SYNQUENZER.mkIn(a, 'e2', undefined, 0); }, [PAD, t7]);
+await E(() => SYNQUENZER.launchScene(0)); await sleep(2500);
+const st = async tag => { const r = {t7node: await nodeLvl('AU.synth[' + t7 + '] && AU.synth[' + t7 + '].node'), pad: await nodeLvl('AU.synth[2].node'), playing: await E(() => SYNQUENZER.runtime().playing), clips: await E(t => { const R = SYNQUENZER.runtime(); return R.tracks ? R.tracks[t] : (R.playingClips ? R.playingClips[t] : null); }, t7), mkIn: NOVOC ? null : await E(t => SYNQUENZER.mkIn(t), PAD), info: NOVOC ? null : (await E(() => SYNQUENZER.mkInInfo())).tracks.map(x => (x.e1 ? 1 : '-') + (x.e2 ? 2 : '-') + (x.dryCut ? 'c' : '-')).join(' '), ntracks: await E(() => SYNQUENZER.tracks().length)}; console.log(tag.padEnd(14), JSON.stringify(r)); return r; };
+await st('before rm');
+await E(t => SYNQUENZER.removeTrack(t), t7); await sleep(1500); await st('after rm');
+await E(() => SYNQUENZER.undo()); await sleep(2500); await st('after undo');
+await E(() => SYNQUENZER.launchScene(0)); await sleep(2500); await st('relaunch sc 0');
+console.log('errs', JSON.stringify(errs));
+await T.br.close();
