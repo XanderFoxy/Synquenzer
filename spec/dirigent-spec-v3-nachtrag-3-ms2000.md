@@ -1,11 +1,12 @@
 # SYNQUENZER v3 — Nachtrag 3 zur Bau-Spezifikation: MS2000-Klangerzeuger (Pakete MK1–MK13)
 
-Stand 25.10.2026, **Rev. 2** nach Xanders Entscheidungen vom 25.10. (Rev. 1 = Review; beide Protokolle am Ende) · Status: **Entwurf zur Freigabe.** Er gilt für den Bau, sobald der Orchestrator ihn Xander gezeigt hat. Xanders Entscheidungen zu H-1 … H-11 stehen in Teil H und sind verbindlich; für die neuen Fragen H-13 … H-15 gilt bis zu seiner Antwort die genannte **Vorgabe**. Builder und Tester lesen Spec v3, Nachtrag 1, Nachtrag 2 **und** diesen Nachtrag. **Vorrang für die MK-Pakete: Nachtrag 3 vor Nachtrag 2 vor Nachtrag 1 vor Spec v3.** Alles, was hier nicht geändert wird, bleibt gültig: L1–L10, M-Messverfahren und DoD der Spec, Teil J (Fach-Prüfung), EN2-28 (Größe), E.5 (Bau-Regeln).
+Stand 25.10.2026, **Rev. 2** nach Xanders Entscheidungen vom 25.10. (Rev. 1 = Review; beide Protokolle am Ende) · **26.10.2026: Paket MK-P (Bedienfeld wie der MS2000) ergänzt; es ersetzt B.3; danach unabhängig gegen die Zeichnung geprüft (Prot. 60–68)** · Status: **Entwurf zur Freigabe.** Er gilt für den Bau, sobald der Orchestrator ihn Xander gezeigt hat. Xanders Entscheidungen zu H-1 … H-11 stehen in Teil H und sind verbindlich; für die neuen Fragen H-13 … H-16 gilt bis zu seiner Antwort die genannte **Vorgabe**. Builder und Tester lesen Spec v3, Nachtrag 1, Nachtrag 2 **und** diesen Nachtrag. **Vorrang für die MK-Pakete: Nachtrag 3 vor Nachtrag 2 vor Nachtrag 1 vor Spec v3.** Alles, was hier nicht geändert wird, bleibt gültig: L1–L10, M-Messverfahren und DoD der Spec, Teil J (Fach-Prüfung), EN2-28 (Größe), E.5 (Bau-Regeln).
 
 ## Überblick (für den Orchestrator)
 
 - **13 Pakete im Plan** (MK0–MK8, MK10–MK13), zusammen **≈ 100–116 h** reine Bauzeit; **MK9 (Import) ist zurückgestellt** (Xander, 25.10.: kein Rechner, kein MIDI, keine .syx/.prg-Dateien) und steht außerhalb der Versionsfolge. Dazu kommt die Fach-Prüfung mit 1–2 h je Paket. Die Datei wächst nach Budget um **≈ +517 KB** (dazu ≈ +12 KB in V5d, V6a, V5c, V1d und VC4, H-9); mit dem gemessenen Überzug der gebauten Pakete (×1,5, E.3) um ≈ +0,8 MB. App-Version **4.8.1 (MK0), dann 4.9.0 → 4.20.0**; der Einbau der Speicherwellen (MK10, Bau-Abschnitt 2) bekommt die nächste freie Zwischennummer. Das **Speicherformat** steigt nur einmal, mit MK1 (4 → 5). **MK0** sorgt vorher dafür, dass kein ausgelieferter Stand Klänge einer neueren Engine verwirft oder überschreibt (EN3-04).
-- **Name und Aussehen (Xander, 25.10.):** Die neue Klangerzeugung heißt in der App **„MS 2000“** (Knopf neben VA │ FM │ WT; H-4). Ihr Bedienfeld sieht aus wie die **Vorderseite des Originals**, „genau so“: gleiche Anordnung, Drehschalter-Logik EDIT-WAHL 1/2, 5 Regler, Wert-Anzeige, BEND- und MOD-Rad links der Tasten, Oktav- und Arp-Tasten, dunkles Bedienfeld mit Holzwangen, aber ohne Korg-Name, Logo oder Korg-Schrift (EN3-20, B.3).
+- **Name und Aussehen (Xander, 25.10.):** Die neue Klangerzeugung heißt in der App **„MS 2000“** (Knopf neben VA │ FM │ WT; H-4). Ihr Bedienfeld sieht aus wie die **Vorderseite des Originals**, „genau so“: gleiche Anordnung, Drehschalter-Logik EDIT-WAHL 1/2, 5 Regler, Wert-Anzeige, BEND- und MOD-Rad links der Tasten, Oktav- und Arp-Tasten, dunkles Bedienfeld mit Holzwangen, aber ohne Korg-Name, Logo oder Korg-Schrift (EN3-20, B.3). **Ersetzt am 26.10. durch MK-P:** Vorlage ist jetzt die Vorderseite des **MS2000** (HB-MS S. 5): hell blau-silbernes Metall, jeder Wert mit eigenem Regler bzw. eigener Taste wie am Gerät, am iPhone Übersicht, Zoom-Ansicht und Spiel-Ansicht.
+- **MK-P (Xander, 26.10.):** Das Bedienfeld wird nach der Zeichnung des MS2000 neu gebaut (Lage-Tabelle aus HB-MS S. 5 vermessen). Es ist ein reines Oberflächen-Paket: Klang, Daten und Format bleiben gleich. Dauer 19–22,5 h, +25 KB, Version 4.21.0, bei früherer Auslieferung die nächste freie Zwischennummer (z. B. 4.15.1; E.1 „Tore“). Es kommt nach dem Zusammenführen von MK5–MK7 (4.15.0) und darf parallel zu MK8 und MK10–MK13 laufen. Mit MK-P sind es 14 Pakete, ≈ 119–138,5 h und ≈ +542 KB; die Pakete nach der MK-Gruppe beginnen in jedem Fall bei 4.22.0.
 - **Nur iPhone (Xander, 25.10.):** Kein Paket verlangt einen Rechner, MIDI oder eine Datei vom Rechner (EN3-21). Xander arbeitet nur am iPhone 12 Pro Max.
 - **Kern (MS2000 komplett):** MK1–MK7 bauen die Klangerzeugung, die Effekte, den Arpeggiator, den Mod-Sequenzer und den Vocoder. MK8 bringt eigene Werksklänge in 8 Genre-Bänken.
 - **MK10** bringt die Speicherwellen aus Xanders Aufnahmen: Er nimmt **in der App** auf (microKORG → AG06 → iPhone, Teil D), die App rechnet die Wellen aus, und der Bau **baut sie in die App ein** (H-2 = eingebaut), sodass alle sie hören. Tor nur für den Einbau: das Wellen-Paket aus der App.
@@ -38,7 +39,7 @@ Stand 25.10.2026, **Rev. 2** nach Xanders Entscheidungen vom 25.10. (Rev. 1 = Re
 
 - **Urheberrecht:** Aus den Handbüchern sind nur Fakten übernommen: Parameternamen, Wertebereiche, Tabellenwerte, Reihenfolgen. Es gibt keine Textpassagen. Die Handbücher bleiben privat: nicht im Repo, nicht in der App, nicht in Hilfe-Texten.
 - **Kennzeichen:** **[B]** belegt (Handbuch mit Seite) · **[W]** wahrscheinlich · **[U]** unbelegt · **eK** eigene Festlegung. Jede eK-Kurve steht genau einmal in der W-Tabelle (B.2). Ein späterer Abgleich ändert dann nur diese Tabelle.
-- **Nicht möglich:** Es gibt kein RADIAS-Handbuch (Xander: „nicht nötig“, `fragen-xander-9.md`). Es gibt keinen Korg-Formatbeleg für SysEx-Programmdaten: HB-MS S. 64 verweist auf eine eigene „MIDI Implementation“, die nicht im Handbuch steht. Daraus folgt das Tor für MK9 (zurückgestellt). Kein Klang wurde angehört, nichts wurde am iPhone gemessen. Es gibt kein Foto der Vorderseite: Die Referenz-Skizze in B.3 ist eine eigene Zeichnung. Die Anordnung der Gruppen folgt der Strichzeichnung in HB-MK S. 2–3 (PDF 8–9), die Belegung HB-MK S. 8–14 und der Parameter-Liste (PDF 78); Maße und genaue Lage gleicht Xander an seinem Gerät ab.
+- **Nicht möglich:** Es gibt kein RADIAS-Handbuch (Xander: „nicht nötig“, `fragen-xander-9.md`). Es gibt keinen Korg-Formatbeleg für SysEx-Programmdaten: HB-MS S. 64 verweist auf eine eigene „MIDI Implementation“, die nicht im Handbuch steht. Daraus folgt das Tor für MK9 (zurückgestellt). Kein Klang wurde angehört, nichts wurde am iPhone gemessen. Es gibt kein Foto der Vorderseite: Die Referenz-Skizze in B.3 ist eine eigene Zeichnung. Die Anordnung der Gruppen folgt der Strichzeichnung in HB-MK S. 2–3 (PDF 8–9), die Belegung HB-MK S. 8–14 und der Parameter-Liste (PDF 78); Maße und genaue Lage gleicht Xander an seinem Gerät ab. **Nachtrag 26.10.:** HB-MS S. 5 (PDF 11) enthält die Strichzeichnung der MS2000-Vorderseite, S. 6–9 erklären die Elemente; sie ist die Vorlage von MK-P, das B.3 ersetzt.
 
 ### N3.0.3 Neue Entscheidungen
 
@@ -64,7 +65,7 @@ Stand 25.10.2026, **Rev. 2** nach Xanders Entscheidungen vom 25.10. (Rev. 1 = Re
 | **EN3-17** | **Zwischenstände.** Artifact und Pages bekommen je einen Stand nach MK1, MK4, MK7, MK8, MK10 (Bau-Abschnitt 1: Aufnahme-Seite, damit Xander aufnehmen kann), nach dem MK10-Einbau und nach MK13 (EN2-15 sinngemäß; die Untergruppen stehen in E.1). | Xander will früh hören. Vocoder mit Mikrofon und Aufnahme-Seite gehen nur auf Pages (Safari), nicht in der Claude-App. |
 | **EN3-18** | **Regel MK-R1:** Jeder neue stetige AM-Regler ist automatisch ein Ziel des Mod-Sequenzers (ab MK6) und ein Patch-Ziel, wenn A.5 es nennt. In das App-Mod-System (Halten → Mod-Picker, `MODT`) kommen AM-Regler erst mit V5d (MOD-R1). Als Pad-Quelle kommt AM erst mit V1d (PAD-R1). Weil MK jetzt **vor** V5d, V6a, V5b/c und V1d gebaut wird, werden die AM-Regler (2 Timbres mit je ≈ 60 stetigen Werten, dazu Seq und Vocoder) dort Pflicht-Ziele. **H-9 = ja** (entschieden 25.10.; Xanders Wunsch I4 „jeder Regler modulierbar“): Umfang, Abnahme, Stunden und KB dieser Pakete steigen (Teil G Nr. 4). | Die MS2000-Modulation (PATCH, SEQ) ist Teil des Plans. Das App-Mod-System ist es noch nicht (N1 EN-21). Die Pakete V5d ff. wurden ohne AM geplant. |
 | **EN3-19** | **Regel MK-R2** (gilt erst, wenn MK9 gebaut ist): Jedes Paket, das **nach** MK9 einen Weg vom Gerät weg baut (VO3, VO4a–c, VC2b/VC2c, VC3, VC3b, VC4 inkl. `sample` und `room.sendToClaudeSession`), ruft `mkLocalStrip` auf. Seine FP-SICHER-Prüfung prüft das (Teil G Nr. 10). Wird MK9 später gebaut, rüstet MK9 selbst alle dann vorhandenen Wege nach (MK9 Umfang 5). | Die Liste in EN3-08 wäre sonst nur für heute vollständig. Solange MK9 zurückgestellt ist, gibt es keine 🔒-Sounds, also nichts zu strippen. |
-| **EN3-20** | **Bedienfeld wie die Vorderseite des Originals** (Xander, 25.10.: „genau so“). Anordnung der Sektionen und Regler, die Drehschalter-Logik EDIT-WAHL 1/2 mit der Sektions-Matrix, die 5 Regler, die Wert-Anzeige, BEND- und MOD-Rad links der Tasten, Oktav-Tasten, Arp-Taste, Nummerntasten, Farben und Material (dunkles Bedienfeld, Holzwangen) folgen dem Original (B.3, Referenz-Skizze). Nicht übernommen werden Name, Logo und Schrift von Korg. Ebene 1 der Regler ist genau die Belegung des Originals (Parameter-Liste HB-MK PDF 78); was der MS2000 oder die RADIAS-Teile zusätzlich haben, liegt auf der SHIFT-Ebene 2 (bzw. 3) und an den zwei Stellungen, die am Original GLOBAL und MIDI heißen (beide entfallen in der App, A.10). Alle Trefferflächen ≥ 44 × 44 px. | Xanders Wunsch. Die Zusatz-Ebenen lassen Ebene 1 unverändert und brauchen keinen 6. Regler. Ob die Zusätze so liegen dürfen, ist Frage H-14 (sichtbar, CLAUDE.md Nr. 3). |
+| **EN3-20** | **Bedienfeld wie die Vorderseite des Originals** (Xander, 25.10.: „genau so“). Anordnung der Sektionen und Regler, die Drehschalter-Logik EDIT-WAHL 1/2 mit der Sektions-Matrix, die 5 Regler, die Wert-Anzeige, BEND- und MOD-Rad links der Tasten, Oktav-Tasten, Arp-Taste, Nummerntasten, Farben und Material (dunkles Bedienfeld, Holzwangen) folgen dem Original (B.3, Referenz-Skizze). Nicht übernommen werden Name, Logo und Schrift von Korg. Ebene 1 der Regler ist genau die Belegung des Originals (Parameter-Liste HB-MK PDF 78); was der MS2000 oder die RADIAS-Teile zusätzlich haben, liegt auf der SHIFT-Ebene 2 (bzw. 3) und an den zwei Stellungen, die am Original GLOBAL und MIDI heißen (beide entfallen in der App, A.10). Alle Trefferflächen ≥ 44 × 44 px. **Ab MK-P (26.10.)** ist die Vorlage die Vorderseite des MS2000 (HB-MS S. 5). Jeder Wert hat seinen eigenen Regler bzw. seine Taste wie am MS2000, die Zusätze liegen auf den LCD-Seiten (EDIT, Seitenplan). Die Platte ist hell blau-silbernes Metall ohne Holzwangen; Trefferflächen ≥ 44 × 44 gibt es über die Zoom-Ansicht. | Xanders Wunsch. Die Zusatz-Ebenen lassen Ebene 1 unverändert und brauchen keinen 6. Regler. Ob die Zusätze so liegen dürfen, ist Frage H-14 (sichtbar, CLAUDE.md Nr. 3). |
 | **EN3-21** | **Nur iPhone, kein Rechner, kein MIDI.** Xander arbeitet nur am iPhone 12 Pro Max und kennt MIDI nicht; iOS Safari hat kein Web MIDI. Kein Paket darf einen Rechner, MIDI oder eine Datei vom Rechner verlangen. Darum ist **MK9 (Import .syx/.prg) zurückgestellt** (außerhalb der Versionsfolge, E.1), und Teil D beschreibt nur iPhone-Schritte. Der MIDI-Eingang für Bend/Mod-Rad bleibt eine **freiwillige Zugabe für Desktop-Browser**, nie nötig (MK1 Umfang 8); BEND und MOD sind Touch-Räder (H-5). | Xander, 25.10. Auch die Bau- und Prüfschritte, die Xander selbst macht (iPhone-Prüfpunkte, Geräte-Abgleich, Aufnahmen), gehen am iPhone. |
 
 ### N3.0.4 Was die App schon hat (Wiederverwendung)
@@ -243,6 +244,8 @@ Spalten: Parameter wie im Handbuch · Wertebereich · Seite HB-MS · Seite HB-MK
 
 ### A.11 microKORG ↔ MS2000 (die Oberfläche zeigt den microKORG; die Fähigkeiten folgen dem MS2000)
 
+Ab MK-P zeigt die Oberfläche den MS2000. Nr. 4, 7 und 8 beschreiben die Bedienung bis dahin; den Umzug regelt MK-P Umfang 5.
+
 1. Layer (microKORG) = Dual (MS2000). Split gibt es nur beim MS2000 → übernommen.
 2. Vocoder: microKORG 8 Kanäle (16 Filter paarweise, S. 35), MS2000 16 Kanäle → 16. Der Import ordnet Kanal k den Bändern 2k−1 und 2k zu.
 3. Step-Arp (Last Step 1–8, Schritt-Tasten) gibt es nur beim microKORG → übernommen.
@@ -381,7 +384,9 @@ Notation: v = gespeicherter Wert. Note = MIDI-Note (C4 = 60). vel = Anschlag 0�
 | **W-44** | Formant-Oszillator (MK12) | Glottis-Puls + 4 parallele Resonatoren F1–F4. Vokale (Hz): a 730/1090/2440/3400 · e 530/1840/2480/3500 · i 270/2290/3010/3700 · o 570/840/2410/3300 · u 300/870/2240/3300. C1 morpht a → e → i → o → u über 0…127, C2 = LFO1-Tiefe. Glottis wie W-28, Resonatoren als TPT-SVF (B.6 Nr. 10). Die **Vokal-Quelle** (Glottis + F1–F4) baut MK7 (Probe-Modulator, `hold`-Spektren der MK8-Bank); MK12 macht daraus OSZ 1 Welle 8 | Werte nach Peterson & Barney (1952, Männer, gerundet), eK |
 | **W-45** | Verzerrer (MK11) | Typ 1 weich: tanh(g·x)/tanh(g). Typ 2 hart: Klemme ±1/g' mit Pegelausgleich. Typ 3 Falter: Sinus-Falter sin(g·x). g = 1 + 15 · amt/127. 2× Überabtastung **und** ADAA 1. Ordnung (Stammfunktionen: log cosh, die der Klemme, −cos(g·x)/g) | eK |
 
-### B.3 Bedienfeld: die Vorderseite des Originals, ohne Marke (EN3-20)
+### B.3 Bedienfeld: die Vorderseite des Originals, ohne Marke (EN3-20) — ersetzt durch MK-P
+
+> **Ersetzt durch MK-P (26.10.2026).** B.3 beschreibt das Bedienfeld nach der **microKORG**-Vorlage (HB-MK S. 2–3), wie MK1–MK7 es gebaut haben. Es gilt bis zur Auslieferung von MK-P und für Pakete, die vorher zusammengeführt werden; danach gilt MK-P (Vorlage HB-MS S. 5, Vorderseite des MS2000). Aus B.3 bleiben gültig: Rahmen (Zeile 1 und 2, LCD-Zeile; Reiter neu [GERÄT] [SPIEL] [FX]), Räder (Rahmen im Metallton), Regler-Verhalten, Kopf-Knöpfe (◎ nach MK-P Umfang 5), Zusatz-Ansichten (Einstieg über die Anzeige) und die Maße des `.pg`-Körpers.
 
 **Grundsatz** (Xander, 25.10.: „genau so“): Das AM-Bedienfeld sieht aus und funktioniert wie die Vorderseite des microKORG: dieselbe Anordnung der Sektionen und Bedienelemente, die Drehschalter EDIT-WAHL 1 und 2 mit der Sektions-Matrix, die 5 Regler, die Wert-Anzeige, BEND- und MOD-Rad links der Tasten, Oktav-Tasten, Arp-Taste und Nummerntasten, dazu das dunkle Bedienfeld mit Holzwangen links und rechts. **Nicht übernommen:** der Name Korg bzw. microKORG, das Logo und die Schrift von Korg. Die Beschriftungen sind eigene deutsche Wörter in der App-Schrift (Großbuchstaben); die Vocoder-Beschriftungen sind grün wie am Original. Marke und Modellname des Originals werden nicht nachgebildet; an ihrer Stelle steht nichts, auch nicht „MS 2000“. Quelle der Zuordnung: HB-MK S. 2–3 (Bedienelemente; dort steht eine Strichzeichnung der Vorderseite über beide Seiten, PDF 8–9), S. 8–15 (Bedien-Logik), Parameter-Liste und SHIFT-Liste (PDF 78). Es gibt kein Foto. Aus der Strichzeichnung ist die **Anordnung der Gruppen** übernommen [B]: links VOLUME, darunter ARPEGGIATOR ON/OFF mit TEMPO-LED und OCTAVE SHIFT, unter ihnen die Räder links der Tasten; in der Mitte BANK SELECT, BANK SIDE, die AUDIO-IN-LEDs und die Anzeige, darunter WRITE und SHIFT, ganz unten die Nummerntasten 1–8; rechts eine Spalte mit TIMBRE SELECT über EDIT SELECT 1 über EDIT SELECT 2 (mit den SYNTH/VOCODER-LEDs), daneben ORIGINAL VALUE und die 5 Regler, unter den Reglern die Parameter-Matrix (oberer Block zu EDIT SELECT 1, unterer zu EDIT SELECT 2). Die Reihenfolge innerhalb der Gruppen ist [W], Maße und genaue Lage sind eK, weil jede Trefferfläche ≥ 44 px groß sein muss. Die **Referenz-Skizze** unten ist eine eigene Zeichnung und für Bau und Abnahme verbindlich. Xander gleicht sie an seinem Gerät ab (Geräte-Abgleich MK1); eine Abweichung ändert nur Skizze und Bedienfeld, als eigener Schritt `MK1-fix`.
 
@@ -601,14 +606,14 @@ Ohne T2, FX, Seq und Vocoder. Der **Arp läuft auch im ECO-Klang** (er sitzt im 
 2. **Glätten und Blenden (L3):** Stetige Werte werden mit τ ≥ 5 ms geglättet. **Bruchwerte:** Während einer Geste geht der ungerundete Reglerwert an das Worklet (EN3-03); das Worklet rechnet Bruchteile über die W-Tabelle, SEQ „Glatt“ und die Patches ebenso. Strukturwechsel bei klingender Note gehen über die vorhandene **30-ms-Stimmenblende (SXF)**: Welle, OSC MOD, Filtertyp, HK │ GATE, ROUTING. **Umverteilende Wechsel** (Zuweisung, Priorität, Auslösung, MODUS, STIMMEN, `vmax`) gehen über die **Engine-Blende `engXf`** (Z. 4104): alte Stimmen 40 ms als Geister ausblenden, gehaltene Tasten unter der neuen Regel neu verteilen, Einblendung über den Attack (≤ 0,5 s); SXF kann keine Stimmen neu verteilen (Z. 4046). **Abweichungen von L3** (ausdrücklich): (a) Mono ↔ Poly ist hier ein umverteilender Wechsel über `engXf`; L3 behandelt ihn sonst als Grundklang-Einstellung, die gehaltene Stimmen loslässt. (b) SEQ-Stufen: „Stufe“ = lineare 1-ms-Rampe ab der Blockgrenze (Amplitude, Pan, Cutoff). (c) Tabellen-Wellen wechseln mit 2-ms-Gleichleistungs-Blende bei phasenstetigem Lesen statt 30–50 ms. Jede Abnahme mit Umschalten prüft **M-KLICK und M-EINBRUCH** (bis Begrenzer-Stufe 1, B.4).
 3. **Hörbarkeit:** Jeder Regler einer AM-Sektion erfüllt H-1 und H-3 (Spec §0.3). Die Ausnahmen sind benannt: BEND nur mit bewegtem BEND-Rad, TEMPO nur mit Sync/Arp/Seq, NEUSTART nur bei Neuanschlag, Werte ohne Wirkung in der gerade gewählten Welle.
 4. **Undo:** eine Geste = ein Undo (`soundEdit`/`commitSound`). Laden eines Programms = ein Undo mit Toast [Rückgängig].
-5. **Layout:** M-PLATZ in P1, P2, P3, L1, L2, W für jeden neuen Zustand (auch Halb-Ansicht, SHIFT-Ebenen und Zusatz-Ansichten), mit den Maßen vom `.pg`-Inhalt (B.3), dem Safe-Area-Durchgang für L1 (47 px links und rechts; dazu ein Durchgang 844 × 390 mit 21 px unterem Rand für den Home-Balken, in dem die Halb-Ansicht quer greift) und scrollWidth ≤ clientWidth für jede Beschriftung. M-ANSICHT: Ein Sektions-, Ebenen- oder Zustandswechsel verschiebt kein Bedienelement um mehr als 2 px. Treffer im AM-Bedienfeld und an den Rädern: **≥ 44 × 44 px in allen Formaten** (EN3-20; strenger als L4), ohne Überlappung. **M-SKIZZE** (neu, für jedes Paket mit Bedienfeld-Änderung): Die Zonen Z1–Z13, die Holzwangen HL/HR und die Räder werden über `mkPanel().zones` (Rechtecke im Bedienfeld-Körper) gegen die Zonen-Tabelle in B.3 geprüft: in L1 (844 × 390 und 926 × 428) je Zone Überdeckung (IoU) ≥ 0,7 der Anteile; in allen Formaten die Reihenfolge links → rechts und oben → unten wie in der Skizze (in P und in der Halb-Ansicht je Hälfte), die Räder links der ersten Taste. Die Bildschirmfotos aller Formate kommen in CHANGES (für Xanders Sicht-Abgleich).
+5. **Layout:** M-PLATZ in P1, P2, P3, L1, L2, W für jeden neuen Zustand (auch Halb-Ansicht, SHIFT-Ebenen und Zusatz-Ansichten), mit den Maßen vom `.pg`-Inhalt (B.3), dem Safe-Area-Durchgang für L1 (47 px links und rechts; dazu ein Durchgang 844 × 390 mit 21 px unterem Rand für den Home-Balken, in dem die Halb-Ansicht quer greift) und scrollWidth ≤ clientWidth für jede Beschriftung. M-ANSICHT: Ein Sektions-, Ebenen- oder Zustandswechsel verschiebt kein Bedienelement um mehr als 2 px. Treffer im AM-Bedienfeld und an den Rädern: **≥ 44 × 44 px in allen Formaten** (EN3-20; strenger als L4), ohne Überlappung. **M-SKIZZE** (neu, für jedes Paket mit Bedienfeld-Änderung): Die Zonen Z1–Z13, die Holzwangen HL/HR und die Räder werden über `mkPanel().zones` (Rechtecke im Bedienfeld-Körper) gegen die Zonen-Tabelle in B.3 geprüft: in L1 (844 × 390 und 926 × 428) je Zone Überdeckung (IoU) ≥ 0,7 der Anteile; in allen Formaten die Reihenfolge links → rechts und oben → unten wie in der Skizze (in P und in der Halb-Ansicht je Hälfte), die Räder links der ersten Taste. Die Bildschirmfotos aller Formate kommen in CHANGES (für Xanders Sicht-Abgleich). **Ab MK-P** ersetzt M-VORLAGE (MK-P-01, gegen die Lage-Tabelle aus HB-MS S. 5) die Zonen-Prüfung M-SKIZZE. Die Halb-Ansicht entfällt; an ihre Stelle treten Übersicht, Zoom-Felder und Spiel-Ansicht (MK-P-07).
 6. **Oktav-Tabellen:** Für Wellen, deren Spektrum in Hz fest sein soll (Endlos, Gruppe 61–64, Aufnahmen aus MK10; die Stimmwelle wird live gerechnet, W-28), gibt es je Oktave (C1…C8) eine eigene Tabelle mit eigenen Mipmaps. Die Stimme blendet zwischen den zwei Nachbaroktaven nach der gespielten Tonhöhe (je Steuerblock, wie K2-40). Speicher je Welle ≤ 8 × Mipmap-Satz. Gebaut wird nur, was ein geladener Sound braucht.
 7. **Worklet-ASCII** und Quelltext-Grenzen wie bisher (`check-worklet`).
 8. **Geräte-Abgleich (EN3-16):** Jedes Paket nennt 3–6 Punkte, die Xander am eigenen microKORG nach Gehör vergleicht. Sein Ergebnis kommt mit Datum in CHANGES. Eine Änderung der W-Tabelle ist ein eigener kleiner Fix-Schritt (`MKn-fix`) mit Messwert vorher und nachher.
 9. **Kein Markenwort, genau eine erlaubte Beschriftung** (EN3-05), in jedem MK-Paket:
    - (a) **AM-Teil** (Block `sq-mk-src`, Block `sq-mkrec-src`, AM-Zweig des Worklets zwischen den Marken `/*MK{*/` … `/*}MK*/`, AM-Hilfe- und LCD-Zeilen, AM-Werksnamen): `grep -ciE 'korg|micro ?korg|ms[ -]?2000|radias|dwgs|dw[ -]?[68]000|\bvox\b'` = 0. Der immer geladene Teil zählt mit, außer der einen Zeile mit `MK_LABEL`.
-   - (b) **Ganze `index.html`:** `grep -ciE 'micro ?korg|radias|dwgs'` = 0. `grep -oiE 'ms[ -]?2000'` ergibt **genau 1** Treffer, und der ist wörtlich `MS 2000` (Großbuchstaben, U+0020) in der Zeile `MK_LABEL = 'MS 2000'`. Im laufenden DOM steht „MS 2000“ nur als Text von Engine-Knopf bzw. -Chip, `ENGINE_LABEL`-Ausgaben (Blattkopf, Browser, MIDI-Spurname), Bibliotheks-Filter und daraus gebildeten LCD-/Hilfe-Zeilen; das Bedienfeld selbst zeigt es nicht.
-   - (c) **Kein Logo, keine Korg-Schrift:** Das Bedienfeld lädt keine neue Schrift (`@font-face` = 0 neue Einträge), enthält keine Bild-Daten (`data:image`, `<img>`) und keine Fläche, die einen Schriftzug nachbildet; FP-SICHER prüft die Bildschirmfotos aus M-SKIZZE zusätzlich mit dem Auge.
+   - (b) **Ganze `index.html`:** `grep -ciE 'micro ?korg|radias|dwgs'` = 0. `grep -oiE 'ms[ -]?2000'` ergibt **genau 1** Treffer, und der ist wörtlich `MS 2000` (Großbuchstaben, U+0020) in der Zeile `MK_LABEL = 'MS 2000'`. Im laufenden DOM steht „MS 2000“ nur als Text von Engine-Knopf bzw. -Chip, `ENGINE_LABEL`-Ausgaben (Blattkopf, Browser, MIDI-Spurname), Bibliotheks-Filter und daraus gebildeten LCD-/Hilfe-Zeilen; das Bedienfeld selbst zeigt es bis MK-P nicht, ab MK-P genau einmal im Namensfeld (Text aus `MK_LABEL`, App-Schrift).
+   - (c) **Kein Logo, keine Korg-Schrift:** Das Bedienfeld lädt keine neue Schrift (`@font-face` = 0 neue Einträge), enthält keine Bild-Daten (`data:image`, `<img>`) und keine Fläche, die einen Schriftzug nachbildet; FP-SICHER prüft die Bildschirmfotos aus M-SKIZZE (ab MK-P aus MK-P-02 und MK-P-07) zusätzlich mit dem Auge.
    - Trifft ein Base64-Datenblock (Nachzeichnung MK2, Werksdaten MK8, Speicherwellen MK10) zufällig ein Wort (≈ 4,6 % je 24 KB), ändert das Bau-Skript die Kodierung (ein Salz-Byte) und prüft neu. Datenblöcke werden nicht ausgenommen.
    - Spätere Pakete, die nach ihren Regeln Geräte im ⓘ nennen (V10P, V10d, VI3), lässt die Prüfung nicht scheitern.
 10. **Filter-Bauform:** Neue 2-Pol-Filter und Resonatoren (W-29, Analyse- und Synthese-Bänder des Vocoders, Formant-Resonatoren) sind **TPT-SVF** (Zero-Delay) mit g aus `GTAN` (gleiche Klemme 0,45 · SR, Z. 3836) und g/R je Sample über den 16er-Block interpoliert (wie die Ladder, Z. 5090). Keine Direktform-Biquads mit Koeffizientensprüngen, kein Chamberlin-SVF (instabil über ≈ fs/6). Filter 2 (MK11) ist eine zweite Ladder.
@@ -633,6 +638,8 @@ perfProbe(cases?: string[]): Promise<object>                                    
 mkRecInfo(): {step: number, steps: number, input: {label: string, ec: boolean, ns: boolean, agc: boolean, ch: number, sr: number},
              peakDb: number, rmsDb: number, notes: number, ok: boolean[]}                // Aufnahme-Seite, ab MK10
 ```
+
+Ab MK-P liefert `mkPanel()` Ansicht, Felder, Modus, Seite und Elemente statt Zonen; dazu kommt `mkView(o)` (MK-P Umfang 6).
 
 ---
 ## Teil C — Pakete
@@ -1813,6 +1820,382 @@ Ohne Tor wird das Paket nicht gebaut. MK10–MK13 laufen dann weiter (E.5 Nr. 3)
 
 ---
 
+### MK-P — Bedienfeld wie der MS2000 (ersetzt B.3)
+
+**Anlass** (Xander, 26.10.2026, sinngemäß): Das MS 2000 in der App soll aussehen wie das echte Gerät: die hell blau-silberne Metallplatte und alle Elemente in derselben Anordnung von oben nach unten. Für ihn war das von Anfang an klar. Bisher (B.3, MK1) folgte das Bedienfeld der Strichzeichnung des **microKORG** (HB-MK S. 2–3), weil Rev. 2 annahm, es gebe keine Vorlage für den MS2000. Die gibt es: **HB-MS S. 5 (PDF 11)** zeigt die Vorderseite des MS2000 als Strichzeichnung, S. 6–9 (PDF 12–15) erklären jedes Element. MK-P baut das Bedienfeld danach neu. Die Lage-Tabelle unten ist aus dieser Zeichnung **vermessen**, nicht aus der Erinnerung genommen: Rahmenlinien per Linien-Suche, Element-Mitten über ein Prozent-Raster, Ausschnitt `scratchpad/ms2000-panel/ms2000-front.png`, Skripte `scratchpad/mkp-tools/lines.py` und `grid.py` (privat wie die Handbücher, E.5 Nr. 5). Die Zeichnung ist schwarz-weiß. Farben und Material kommen deshalb aus Xanders Beschreibung („blau, Metalloberfläche“) und sind eK.
+
+**Ziel.** Xander öffnet eine MS-2000-Spur und sieht die Vorderseite des MS2000: hell blau-silbernes, gebürstetes Metall, dieselben Sektionen in derselben Reihenfolge, jeder Regler und jede Taste an ihrem Platz, die 16 Regler über den 16 Schritt-Tasten und die weißen Vocoder-Namen auf Schwarz. Am iPhone sieht er zuerst die **Übersicht**. Tippt er eine Sektion an, erscheint die **Zoom-Ansicht** mit Trefferflächen ≥ 44 px, und mit Wischen kommt er zur Nachbar-Sektion. Zum Spielen gibt es die **Spiel-Ansicht** (PITCH- und MOD-Rad, Tastatur, Schritt-Tasten). Klang, Daten und Speicherformat bleiben unverändert; das Paket ändert nur die Oberfläche.
+
+**Umfang.**
+
+**1. Vorlage, Platte und Raster.**
+- Die Platte ist das Rechteck innerhalb des äußeren Rahmens der Zeichnung, Seitenverhältnis **1,95 : 1** (1400 × 718 px in der Vorlage). Alle Lagen stehen in **% der Plattenbreite (x)** und **% der Plattenhöhe (y)**, Ursprung oben links, Werte = Mitte des Elements.
+- **16-Spalten-Raster** [B, gemessen]: Die 16 Regler der unteren Reihe, die 16 Schritt-Tasten und fast alle Elemente darüber stehen auf denselben Spalten **xₙ = 14,1 + (n − 1) · 5,52** (n = 1…16; Abweichung ≤ 0,3). Beispiele: CONTROL 1 = Spalte 1, SEMITONE = 3, MIXER = 5, CUTOFF = 6, RESONANCE = 7, AMP = 8, TEMPO = 9, GATE = 10, VIRTUAL-PATCH-Tasten = 13–15. Die Sektionsgrenzen liegen zwischen zwei Spalten. Links davor liegt die **Randspalte** x 0,5–11,1 (AUDIO IN, POWER/VOLUME, OCTAVE, SEQ EDIT, BANK).
+- Zwischen zwei Spalten stehen: WAVE (OSZ 1), TIMBRE SELECT, MOD SEQUENCE ON/OFF und REC, der PORTAMENTO-Regler und MOD/DELAY. Die Viererreihen im Arpeggiator und im Anzeige-Feld und die Paare OCTAVE und BANK haben ihr eigenes Raster mit 4,3 % Abstand (die Zeichnung streut 4,2–4,4 %; gebaut wird genau der Tabellenwert, nicht enger). Das ist der kleinste Abstand zwischen zwei Bedienelementen auf der Platte, er bestimmt den Zoom (Oberfläche, Zoom-Ansicht).
+- Die Kreisziffern ①–⑳ der Zeichnung, ihre Hinweislinien und die Klammer unter den Schritt-Tasten sind Handbuch-Hinweise und werden nicht gebaut; der Bildvergleich (MK-P-02) wertet sie nicht.
+- **Aufdruck wie am Gerät** (H-16, Vorgabe): englische Großbuchstaben in der App-Schrift, darunter die weißen Vocoder-Namen auf schwarzem Feld, genau dort, wo die Zeichnung sie zeigt. Zwei Aufdrucke verbietet die Marken-Regel (EN3-05): **VOX WAVE → STIMMWELLE**, **DWGS → SPEICHERWELLE**. Die Marke wird nicht nachgebildet: Im Namensfeld steht nur `MK_LABEL`. Anzeige, LCD-Zeile des Blattrahmens und Hilfe bleiben deutsch (L5).
+
+**2. Lage-Tabelle: Sektionen** (Rahmen x von–bis · y von–bis; Titel = Mitte des Sektionsnamens über dem Rahmen).
+
+| Zeile | Sektion | Titel x / y | Rahmen x | Rahmen y | Inhalt (oben → unten) |
+|---|---|---|---|---|---|
+| A | AUDIO IN | 5,8 / 1,8 | 0,5–11,1 | 3,3–18,5 | 2 LEDs, 2 Regler |
+| A | POWER/VOLUME | 5,8 / 20,3 | 0,5–11,1 | 22,0–32,9 | 1 Regler mit Skala |
+| A | Legende „■ : VOCODER PARAMETER“ | – | 0,5–11,0 | 48,3 (Zeile) | Aufdruck |
+| A | OSCILLATOR 1 | 16,9 / 1,8 | 11,6–22,1 | 3,3–50,0 | 8 Wellen-LEDs, WAVE, CONTROL 1/2 |
+| A | OSCILLATOR 2 | 27,8 / 1,8 | 22,6–33,1 | 3,3–50,0 | 3 Wellen-LEDs, RING/SYNC, WAVE, OSC MOD, „OSC 2 PITCH“, SEMITONE, TUNE |
+| A | MIXER | 36,2 / 1,8 | 33,6–38,7 | 3,3–50,0 | OSC 1, OSC 2, NOISE |
+| A | FILTER | 44,5 / 1,8 | 39,1–49,8 | 3,3–50,0 | CUTOFF, RESONANCE, EG 1 INT, KBD TRACK, FILTER TYPE + 4 LEDs |
+| A–B | AMP | 52,8 / 1,8 | 50,2–55,3 | 3,3–66,6 | LEVEL, PAN, EG 2/GATE, DISTORTION |
+| A | Namensfeld (am Gerät die Marke) | – | 55,8–67,0 | 3,4–14,0, kein Rahmen | nur `MK_LABEL` |
+| A | ORIGINAL VALUE | Aufdruck im Kasten 75,6 / 10,2 | 73,8–77,4 | 7,8–14,8 | 1 LED |
+| A | ARPEGGIATOR | 66,4 / 17,4 | 55,8–77,4 | 19,1–45,5 | TEMPO-Kasten 55,8–60,8 · 19,1–34,3; Listen-Kasten 67,4–75,9 · 25,9–36,9 (Trennstrich x 71,6); 4 Tasten |
+| A | Anzeige-Feld | – | 77,9–99,4 | 1,0–45,5 | LCD 80,9–96,4 · 7,2–15,7; 10 Tasten in 3 Reihen |
+| B | OCTAVE | 5,8 / 51,7 | 0,5–11,1 | 53,3–66,6 | DOWN, UP |
+| B | TIMBRE SELECT | 16,9 / 51,7 | 11,6–22,1 | 53,3–66,6 | SELECT, LEDs 1, 2 |
+| B | MOD SEQUENCE | 30,6 / 51,7 | 22,6–38,7 | 53,3–66,6 | ON/OFF, REC |
+| B | PORTAMENTO | 44,5 / 51,7 | 39,1–49,8 | 53,3–66,6 | TIME |
+| B–C | LFO 1 | 58,3 / 47,3 | 55,8–60,8 | 48,9–77,3 | 4 LEDs, SELECT, FREQUENCY (Regler 9) |
+| B–C | LFO 2 | 63,8 / 47,3 | 61,3–66,3 | 48,9–77,3 | 4 LEDs, SELECT, FREQUENCY (Regler 10) |
+| B–C | EFFECTS | 72,1 / 47,3 | 66,8–77,4 | 48,9–77,3 | LED-Legende, MOD/DELAY, Regler 11, 12 |
+| B–C | VIRTUAL PATCH | 88,6 / 47,3 | 77,9–99,5 | 48,9–77,3 | Quellen-Kasten 78,1–88,4 · 49,3–61,1 (Fuß 83,4–88,4 bis 68,9), Ziel-Kasten 89,0–99,3 · 49,3–61,1 (Fuß 89,0–93,9 bis 68,9), 3 Tasten, 4 PATCH-LEDs, Regler 13–16 |
+| C | SEQ EDIT / CH PARAM (CH PARAM invers) | 5,8 / 68,5 | 0,5–11,1 | 70,1–82,7 | SELECT, LEDs SEQ 1–3 |
+| C | EG 1 (FILTER) | 22,4 / 68,5 | 11,6–32,4 | 70,1–77,7 | Regler 1–4 |
+| C | EG 2 (AMP) | 44,5 / 68,5 | 34,9–55,3 | 70,1–77,7 | Regler 5–8 |
+| C | Reglerleiste | – | 0,5–99,5 | Unterkante 82,7 | die Rahmen darüber enden in Höhe der Reglermitten (77,3–77,7) |
+| D | BANK | 5,8 / 84,7 | 0,5–11,1 | 86,2–99,0 | DOWN, UP |
+| D | Schritt-Tasten 1–16 | Nummern y 84,7 | 12,2–98,9 | Tasten 87,5–94,6 | 16 Tasten mit LED, zwei Aufdruck-Zeilen |
+| – | PITCH- und MOD-Rad | – | links der Tastatur | – | HB-MS S. 9; in der App in `#kbArea` (MK1) |
+
+Reihenfolge links → rechts, wie sie M-VORLAGE prüft: **Zeile A** AUDIO IN/POWER/VOLUME │ OSCILLATOR 1 │ OSCILLATOR 2 │ MIXER │ FILTER │ AMP │ Namensfeld über ARPEGGIATOR, ORIGINAL VALUE rechts im Namensband │ Anzeige-Feld. **Zeile B** OCTAVE │ TIMBRE SELECT │ MOD SEQUENCE │ PORTAMENTO │ (AMP: DISTORTION) │ LFO 1 │ LFO 2 │ EFFECTS │ VIRTUAL PATCH. **Zeile C** SEQ EDIT │ Regler 1–16. **Zeile D** BANK │ Schritt-Tasten 1–16.
+
+**3. Lage-Tabelle: Elemente und Belegung.** `t.T.` = gewähltes Timbre (TIMBRE SELECT; bei „beide“ gehen Gesten an beide, MK3). Vocoder-Pfade gelten bei `mode` 3 (MK7); „grau“ = im Vocoder ohne Wirkung, bedienbar mit Grund in der LCD-Zeile (L2). Aufdruck „oben │ invers“. Alle Pfade gibt es schon (Paket in der letzten Spalte), außer den zwei Eingangs-Pegeln, die MK-P als Live-Wert hinzufügt.
+
+| ID | Element | Art | x | y | Aufdruck | Synth | Vocoder | ab |
+|---|---|---|---|---|---|---|---|---|
+| `ain.l` | 2 Eingangs-LEDs | LED | 3,0 · 8,6 | 6,1 | – | Signal an E1 bzw. E2, rot ab −1 dBFS | gleich | MK7 |
+| `ain.1` | Regler 1 (ohne Skala wie in der Zeichnung) | Regler | 3,0 | 12,9 | 1 / │ INST | **E1-Pegel** (Live-Wert, siehe Daten) | gleich | MK-P |
+| `ain.2` | Regler 2 | Regler | 8,6 | 12,9 | 2 / │ VOICE | **E2-Pegel** (Live-Wert) | gleich | MK-P |
+| `vol` | POWER/VOLUME | Regler, Skala | 5,8 | 28,4 | Skala 1…10; „0“ an der Stelle von POWER OFF | Spur-Lautstärke (derselbe Wert wie FX → SPUR, Vol) | gleich | MK1 |
+| `o1.led` | 8 Wellen-LEDs mit Wellensymbol | LED | links 12,5, rechts 18,0 | je 11,7 · 14,1 · 16,6 · 19,1 | links Säge, Puls „PWM“, Dreieck, Sinus „CROSS“; rechts STIMMWELLE, SPEICHERWELLE, NOISE, AUDIO IN | `t.T.o1.w` 0…7 (Formant, Welle 8 ab MK12: alle dunkel, die LCD nennt sie) | Trägerwelle, gleich | MK1/2/7 |
+| `o1.wave` | WAVE | Taste | 16,9 | 28,9 | WAVE │ WAVE | Welle +1 im Kreis 0…7 | gleich | MK1 |
+| `o1.c1` | CONTROL 1 | Regler | 14,1 | 44,0 | CONTROL 1 │ CONTROL 1 | `o1.c1` | gleich | MK1 |
+| `o1.c2` | CONTROL 2 | Regler | 19,6 | 44,0 | CONTROL 2 │ CONTROL 2 | `o1.c2` (Speicherwelle: Welle 1…64, gerundet, B.3 Listen > 12) | gleich | MK1 |
+| `o2.led` | 3 Wellen-LEDs | LED | 23,5 | 11,7 · 14,1 · 16,6 | Säge, Rechteck, Dreieck | `o2.w` | dunkel | MK1 |
+| `o2.ms` | RING, SYNC | LED | 29,0 | 11,7 · 14,1 | RING, SYNC | `o2.mod`: aus = beide dunkel, Ring+Sync = beide | dunkel | MK1 |
+| `o2.wave` | WAVE | Taste | 25,1 | 28,9 | WAVE | `o2.w` +1 im Kreis | grau | MK1 |
+| `o2.mod` | OSC MOD | Taste | 30,6 | 28,9 | OSC MOD | `o2.mod` +1 im Kreis | grau | MK1 |
+| – | „OSC 2 PITCH“ | Aufdruck | 27,8 | 36,1 | – | – | – | – |
+| `o2.semi` | SEMITONE | Regler, Mittelmarke | 25,1 | 44,0 | SEMITONE │ HPF LEVEL | `o2.semi` | `voc.hpl` | MK1/7 |
+| `o2.tune` | TUNE | Regler, Mittelmarke | 30,6 | 44,0 | TUNE │ THRESHOLD | `o2.tune` | `voc.th` | MK1/7 |
+| `mix.o1` | OSC 1 | Regler | 36,2 | 12,9 | OSC 1 │ OSC 1 | `mix.o1` | `t.0.mix.o1` | MK1 |
+| `mix.o2` | OSC 2 | Regler | 36,2 | 28,4 | OSC 2 │ INST | `mix.o2` | `voc.ins` | MK1/7 |
+| `mix.n` | NOISE | Regler | 36,2 | 44,0 | NOISE │ NOISE | `mix.n` | `t.0.mix.n` | MK1 |
+| `f.cut` | CUTOFF | Regler | 41,7 | 12,9 | CUTOFF │ CUTOFF | `f.cut` | `voc.cut` | MK1/7 |
+| `f.res` | RESONANCE | Regler | 47,3 | 12,9 | RESONANCE │ RESONANCE | `f.res` | `voc.res` | MK1/7 |
+| `f.eg` | EG 1 INT | Regler, Mittelmarke | 41,7 | 28,4 | EG 1 INT │ FC MOD INT | `f.eg` | `voc.mint` | MK1/7 |
+| `f.kbd` | KBD TRACK | Regler, Mittelmarke | 47,3 | 28,4 | KBD TRACK │ E.F.SENSE; rechts darunter │HOLD│ bei 48,2 / 32,3 | `f.kbd` | `voc.efs` (127 = HALTEN, friert `voc.hold` ein wie MK7) | MK1/7 |
+| `f.type` | FILTER TYPE | Taste | 41,7 | 44,4 | FILTER TYPE │ FORMANT SHIFT | `f.type` +1 im Kreis | `voc.fs` 0 → +1 → +2 → −1 → −2 → 0 | MK1/7 |
+| `f.led` | 4 LEDs | LED | 45,6 | 36,2 · 38,6 · 41,1 · 43,6 | 24LPF │+1│, 12LPF │+2│, 12BPF │−1│, 12HPF │−2│ (invers bei x 49,0) | Typ 0…3 | Formant +1, +2, −1, −2; 0 = alle dunkel | MK1/7 |
+| `a.lvl` | LEVEL | Regler | 52,8 | 12,9 | LEVEL │ LEVEL | `a.lvl` | `voc.lvl` | MK1/7 |
+| `a.pan` | PAN | Regler, Mittelmarke | 52,8 | 28,4 | PAN │ DIRECT LEVEL | `a.pan` | `voc.dir` | MK1/7 |
+| `a.gate` | EG 2/GATE mit LED; Legende ○ 51,7 / ☀ 53,7 bei y 39,3 | Taste | 52,8 | 44,6 | EG 2 / GATE | `a.gate` (LED aus = EG 2, an = Gate) | grau | MK1 |
+| `a.dist` | DISTORTION mit LED | Taste | 52,8 | 61,4 | DISTORTION │ DISTORTION | `a.dist` | `voc.dist` | MK1/7 |
+| `name` | Namensfeld | Text | ab 56,4 linksbündig | 8,5 | `MK_LABEL` | – | – | MK-P |
+| `orig` | ORIGINAL VALUE | LED | 75,6 | 13,2 | ORIGINAL VALUE | wie bisher (B.3 ORIG; bei SEQ-Schritten der aufgenommene Wert, HB-MS S. 16) | gleich | MK1 |
+| `arp.led` | TEMPO-LED | LED | 58,3 | 21,7 | – | blinkt in Vierteln des Song-Tempos | gleich | MK5 |
+| `arp.tempo` | TEMPO | Regler | 58,3 | 28,6 | TEMPO | Song-Tempo `S.bpm` (EN3-10, wie bisher ARP A TEMPO) | gleich | MK5 |
+| `arp.gate` | GATE | Regler | 63,8 | 28,6 | GATE | `arp.gate` | gleich | MK5 |
+| – | Listen-Kasten | Aufdruck | 67,4–75,9 | 25,9–36,9 | 1 OCTAVE … 4 OCTAVE │ UP, DOWN, ALT 1, ALT 2, RANDOM, TRIGGER | – | – | – |
+| `arp.on` | ON/OFF mit LED | Taste | 60,8 | 42,2 | ON / OFF | `arp.on` | gleich | MK5 |
+| `arp.latch` | LATCH mit LED | Taste | 65,1 | 42,2 | LATCH | `arp.latch` | gleich | MK5 |
+| `arp.range` | RANGE | Taste | 69,4 | 42,2 | RANGE | `arp.range` 1 → 2 → 3 → 4 → 1, LCD zeigt den Wert (HB-MS S. 15) | gleich | MK5 |
+| `arp.type` | TYPE | Taste | 73,8 | 42,2 | TYPE | `arp.type` +1 im Kreis | gleich | MK5 |
+| `lcd` | Anzeige 2 × 16 Zeichen | LCD | 80,9–96,4 | 7,2–15,7 | – | Umfang 4 | gleich | MK-P |
+| `cur.l`, `cur.r` | CURSOR ◀ ▶ | Taste | 82,1 · 86,4 | 24,5 | CURSOR ◀ ▶ | Wert auf der Seite wählen | gleich | MK-P |
+| `no`, `yes` | −/NO, +/YES | Taste | 90,7 · 95,0 | 24,5 | – / NO, + / YES | SPIEL: Programm −1/+1 (ab MK8); EDIT/GLOBAL: Wert −1/+1 | gleich | MK-P |
+| `pg.m`, `pg.p` | PAGE −, + | Taste | 82,1 · 86,4 | 33,3 | PAGE – + | Seite zurück/vor | gleich | MK-P |
+| `write` | WRITE | Taste | 95,0 | 33,3 | WRITE | Sichern (vorhandener Weg) | gleich | MK1 |
+| – | Klammer COMPARE, „DEMO“ | Aufdruck | 82,3–95,0 | 37,0 · 40,1 | – | – | – | – |
+| `edit` | EDIT | Taste | 82,1 | 42,2 | EDIT | EDIT-Modus | gleich | MK-P |
+| `global` | GLOBAL | Taste | 86,4 | 42,2 | GLOBAL | GLOBAL-Seiten | gleich | MK-P |
+| `exit` | EXIT | Taste | 95,0 | 42,2 | EXIT | zurück zu SPIEL; bei gehaltenem EDIT: COMPARE | gleich | MK-P |
+| `oct.d`, `oct.u` | OCTAVE DOWN, UP mit LED | Taste | 3,6 · 7,9 | 61,4 | DOWN, UP | `tr.kbOct` −1/+1; LED grün = ±1, rot = ±2 (HB-MS S. 13), rot blinkend = ±3 | gleich | MK1 |
+| `tim` | TIMBRE SELECT | Taste | 16,8 | 61,4 | SELECT ─ (Linie zur LED 1) | T1 → T2 → beide → T1 (MK3) | grau | MK3 |
+| `tim.led` | LEDs 1, 2 | LED | 20,4 | 57,9 · 60,4 | 1, 2 | gewähltes Timbre; beide = Edit Sync | dunkel | MK3 |
+| `seq.on` | MOD SEQUENCE ON/OFF mit LED | Taste | 27,9 | 61,4 | ON / OFF | `t.T.seq.on` | grau | MK6 |
+| `seq.rec` | REC mit LED | Taste | 33,4 | 61,4 | REC | Bewegung aufnehmen (MK6): blinkt = bereit, an = nimmt auf | grau | MK6 |
+| `porta` | TIME | Regler | 44,5 | 61,0 | TIME │ TIME | `porta` | `t.0.porta` | MK1 |
+| `l1.led` | 4 LEDs | LED | 56,7 | 51,6 · 54,0 · 56,5 · 58,9 | Säge, Rechteck, Dreieck, S / H | `l1.w` | gleich | MK1 |
+| `l1.sel` | SELECT | Taste | 58,3 | 66,1 | SELECT │ SELECT | `l1.w` +1 im Kreis | gleich | MK1 |
+| `l2.led` | 4 LEDs | LED | 62,2 | wie LFO 1 | Säge, Rechteck(+), Sinus, S / H | `l2.w` | gleich | MK1 |
+| `l2.sel` | SELECT | Taste | 63,8 | 66,1 | SELECT │ SELECT | `l2.w` +1 im Kreis | gleich | MK1 |
+| `fx.sel` | MOD/DELAY mit LED; Legende ○ 70,8 / ☀ 73,2 bei y 59,1 | Taste | 72,1 | 66,1 | MOD / DELAY │ MOD / DELAY | wählt, was Regler 11 und 12 bearbeiten: LED aus = Mod-FX, an = Delay (Ansicht, HB-MS S. 7) | gleich | MK4 |
+| `vp.src` | 8 Quellen-LEDs | LED | 78,8 · 84,3 | je 51,6 · 54,0 · 56,5 · 58,9 | EG 1, EG 2, LFO 1, LFO 2 │ VELOCITY, KBD TRACK, MIDI 1, MIDI 2 | `p[P].s` des gewählten Patch P (EG 3 ab MK12: alle dunkel) | `voc.msrc` | MK2/7 |
+| `vp.dst` | 8 Ziel-LEDs | LED | 89,8 · 95,4 | wie Quellen | PITCH, OSC 2 PITCH, OSC 1 CTRL 1, NOISE LEVEL │ CUTOFF, AMP, PAN, LFO 2 FREQ | `p[P].d` (Ziele 8/9 ab MK11: alle dunkel) | dunkel | MK2 |
+| – | Pfeil ▷ | Aufdruck | 88,6 | 57,7 | – | – | – | – |
+| `vp.sel` | SELECT | Taste | 80,4 | 66,1 | SELECT (Strich zur PATCH-1-LED) | P = 1 → 2 → 3 → 4 → 1 (Ansicht) | grau | MK2 |
+| `vp.s` | SOURCE | Taste | 85,9 | 66,1 | SOURCE │ FC MOD SOURCE | `p[P].s` +1 im Kreis 0…7 | `voc.msrc` +1 | MK2/7 |
+| `vp.d` | DESTINATION | Taste | 91,5 | 66,1 | DESTINATION | `p[P].d` +1 im Kreis 0…7 | grau | MK2 |
+| `vp.led` | PATCH-LEDs 1–4, durch eine Linie verbunden | LED | 80,4 · 85,9 · 91,5 · 97,0 | 71,4 | – | gewählter Patch P | dunkel | MK2 |
+| `sq.sel` | SEQ EDIT / CH PARAM: SELECT | Taste | 3,6 | 76,9 | SELECT │ SELECT | aus → SEQ 1 → SEQ 2 → SEQ 3 → aus (Ansicht; LCD „SEQ1:Cutoff“, HB-MS S. 16) | aus → LEVEL → PAN → aus | MK6/7 |
+| `sq.led` | 3 LEDs mit Klammer | LED | 7,1 | 74,4 · 77,0 · 79,4 | SEQ 1 │LEVEL│, SEQ 2 │PAN│, SEQ 3 | gewählte Sequenz | LEVEL, PAN | MK6/7 |
+| `k1`…`k16` | 16 Regler | Regler | xₙ | 77,7 | Tabelle unten | | | |
+| `bank.d`, `bank.u` | BANK DOWN, UP | Taste | 3,6 · 7,9 | 92,3 | DOWN, UP | Bank A…H = Genre-Bank 1…8 (vor MK8 dunkel) | gleich | MK8 |
+| `s1`…`s16` | 16 Schritt-Tasten mit LED | Taste | xₙ | 91,0; Nummer 84,7; Aufdruck 96,5 │ 98,7 | Liste unten | SPIEL: Programm n (ab MK8); EDIT: Seite n; Lauflicht bei laufender Sequenz; Seite ARP-SCHRITTE: Schritt n an/aus | gleich | MK-P |
+
+**Die 16 Regler** (y 77,7; Aufdruck darüber bei 71,5 │ 73,3, bei PATCH 1–4 nur eine Zeile bei 73,5 unter den PATCH-LEDs). Ist eine Sequenz gewählt (SEQ EDIT), bearbeitet Regler n den Schritt n dieser Sequenz `t.T.seq.q[s].v[n−1]` (Bereich nach Ziel, A.6). Bei CH PARAM bearbeitet er Kanal n mit `voc.chl[n−1]` bzw. `voc.chp[n−1]` (HB-MS S. 8). Die Aufschrift bleibt dabei stehen, die LCD nennt Schritt bzw. Kanal.
+
+| n | x | Aufdruck | Synth | Vocoder |
+|---|---|---|---|---|
+| 1–4 | 14,1 · 19,6 · 25,1 · 30,6 | ATTACK · DECAY · SUSTAIN · RELEASE (EG 1), oben wie invers | `e1.a` · `e1.d` · `e1.s` · `e1.r` | gleich |
+| 5–8 | 36,2 · 41,7 · 47,3 · 52,8 | ATTACK · DECAY · SUSTAIN · RELEASE (EG 2) | `e2.a` · `e2.d` · `e2.s` · `e2.r` | gleich |
+| 9, 10 | 58,3 · 63,8 | FREQUENCY │ FREQUENCY (LFO 1, LFO 2) | `l1.f` bzw. `l1.note` bei TEMPO SYNC; `l2.f`/`l2.note` | gleich |
+| 11 | 69,4 | SPEED / TIME │ SPEED / TIME | Mod-FX `mfx.spd` bzw. Delay `dly.time`/`dly.note` (nach MOD/DELAY) | gleich |
+| 12 | 74,9 | DEPTH / FEEDBACK │ DEPTH / FEEDBACK | `mfx.dep` bzw. `dly.dep` | gleich |
+| 13–16 | 80,4 · 85,9 · 91,5 · 97,0 | PATCH 1 … PATCH 4 (nur oben) | `p[0…3].i` | grau |
+
+**Schritt-Tasten** (oben │ invers): 1 COMMON │ COMMON · 2 VOICE │ VOICE · 3 PITCH │ PITCH · 4 OSC 1 │ OSC 1 · 5 OSC 2 │ AUDIO IN 2 · 6 FILTER │ FILTER · 7 AMP │ AMP · 8 EG │ EG · 9 LFO │ LFO · 10 PATCH │ CH LEVEL · 11 SEQ │ CH PAN · 12 MOD FX │ MOD FX · 13 DELAY FX │ DELAY FX · 14 EQ │ EQ · 15 ARPEGGIO │ ARPEGGIO · 16 UTILITY │ UTILITY. Programm-Wahl ab MK8: Bank A…H = Genre-Bank 1…8, Taste 1–8 = Werksklang Platz 1–8 (Seite A), Taste 9–16 = eigener Klang Platz 1–8 (Seite B). `bank`/`slot` bleiben, wie MK8 sie festlegt.
+
+**Räder:** PITCH (links) und MOD links der Tastatur in `#kbArea`, Funktion unverändert (MK1, W-17, W-18). Mulde und Rahmen bekommen den Metallton statt Holz, Aufschrift PITCH und MOD (HB-MS S. 9).
+
+**4. Anzeige, Modi und Seiten** (wie HB-MS S. 2, S. 13, S. 18–19; Modi, Seite, Cursor und Auswahl sind Ansichtszustand, nicht Teil des Sounds).
+- **SPIEL** (am Gerät Program Play): Zeile 1 „A01:Name“ (Bank A…H, Nummer 01…16, die ersten 12 Zeichen des Namens; ohne Programmplatz „---:Name“). Zeile 2 Modus (EINZELN, DUAL, SPLIT, VOCODER) und rechts „♩=120“ (Song-Tempo). Ist T2 gewählt, steht „T2“ in Zeile 2; ist eine Sequenz gewählt, steht dort „SEQ1:Cutoff“. Beim Drehen zeigt Zeile 2 eine Sekunde lang Name und Geräte-Wert („CUTOFF      064“). Die LCD-Zeile des Blattrahmens zeigt weiter den Klartext mit Einheit (B.3 Rahmen).
+- **EDIT** (Taste EDIT; am Gerät LCD Edit):
+  - Zeile 1 zeigt Seitennummer und -name („08A FILTER“), Zeile 2 Name und Wert; der Cursor blinkt am Wert.
+  - Schritt-Taste n springt auf die Seite aus dem Seitenplan, ihre LED leuchtet. PAGE −/+ blättert durch alle Seiten, auch durch die ohne eigene Taste. CURSOR ◀ ▶ wählt den Wert auf der Seite, −/NO und +/YES ändern ihn um eine Stufe (ersetzt SHIFT + OKT ▲/▼).
+  - Die Regler der Platte wirken weiter, und die Anzeige springt zu ihrem Wert (am Gerät „Page Jump“, Vorgabe an).
+  - Ein Tipp auf die Anzeige (Trefferfläche = LCD) öffnet die Auswahl-Liste des Werts unter dem Cursor (`openPop`, Zeilen ≥ 44 px). Trägt Zeile 2 „▸“, öffnet er die Zusatz-Ansicht (SCHRITTE, 16 BÄNDER, EIGENE; B.3, unverändert).
+  - EXIT führt zurück zu SPIEL.
+- **GLOBAL** (Taste GLOBAL): Spur-Einstellungen, die nicht zum Sound gehören. 1A EINGANG 1 ▾ und 1B EINGANG 2 ▾ (`tr.mkIn` mit „Quelle nur als Eingang“, MK7), 1C OKTAVE (`tr.kbOct`), 1D SEITEN-SPRUNG an/aus. EXIT führt zurück zu SPIEL.
+- **COMPARE:** EDIT halten und EXIT tippen (zwei Finger, HB-MS S. 19). Das schaltet zwischen bearbeitetem und gespeichertem Stand wie der vorhandene A/B-Weg im Blattkopf; Zeile 2 zeigt „== COMPARE ==“, EXIT beendet. Es gibt keinen Lang-Druck (L4).
+- **Seitenplan** (Nummern und Reihenfolge wie am Gerät, HB-MS S. 18, S. 34–52; App-Zusätze mit Paket; die Seiten ohne eigene Taste erreicht man mit PAGE):
+
+| Taste | Synth-Seite: Werte | Vocoder-Seite: Werte |
+|---|---|---|
+| 1 | 01 COMMON: MODUS `mode`; bei Dual/Split STIMMEN `tv`, SPLIT `split`; STIMMUNG `scale`, GRUNDTON `skey`, EIGENE ▸ (`usc`, MK3) | 01 COMMON: MODUS, STIMMUNG, GRUNDTON |
+| – | 02 NAME: Name (vorhandenes Umbenennen) | 02 NAME |
+| 2 | 03 VOICE: ZUWEISUNG `asg`, PRIORITÄT `prio`, AUSLÖSUNG `trig`, UNI-VERST. `udet`; *STIMMEN-ZAHL `vmax` (MK13)* | 03 VOICE |
+| 3 | 04 PITCH: TRANSP. `trans`, FEIN `tune`, BEND `bend`, VIBRATO `vib`, PORTAM. `porta`, MOD-RAD `p.mw` | 04 PITCH |
+| 4 | 05 OSC 1: WELLE `o1.w` (*Formant, MK12*), STEUER 1, STEUER 2 | 05 OSC 1 |
+| 5 | 06 OSC 2: WELLE `o2.w`, MOD `o2.mod`, HALBTON `o2.semi`, FEIN `o2.tune` | 06 AUDIO IN 2: GATE `voc.gs`, SCHWELLE `voc.th`, HPF-PEGEL `voc.hpl`, HPF-GATE `voc.hpg` |
+| – | 07 MIXER: OSZ 1, OSZ 2, RAUSCHEN; *DRIVE-TYP, DRIVE, ROUTING, F-BALANCE (MK11)* | 07 MIXER: OSZ 1, EINGANG 1 `voc.ins`, RAUSCHEN |
+| 6 | 08 FILTER: TYP, CUTOFF, RESONANZ, HK-INT, ANSCHLAG `f.vel`, KEYTRACK; *F2-TYP, F2-CUTOFF, F2-RESO., F2-HK-INT, F2-KEYTR., F2-ANSCHL. (MK11), F2-HK (MK12)* | 08 FILTER: FORMANT `voc.fs`, CUTOFF, RESONANZ, FC-QUELLE `voc.msrc`, FC-INT `voc.mint`, FOLGER `voc.efs` (127 = HALTEN) |
+| 7 | 09 AMP: PEGEL, PAN, HK │ GATE `a.gate`, VERZERR. `a.dist`, ANSCHLAG `a.vel`, KEYTRACK `a.kbd` | 09 AMP: PEGEL `voc.lvl`, DIREKT `voc.dir`, VERZERR. `voc.dist`, ANSCHLAG `voc.vel`, KEYTRACK `voc.kbd` |
+| 8 | 10 EG 1: ATTACK, DECAY, SUSTAIN, RELEASE, NEUSTART `e1.*`; dahinter 11 EG 2 `e2.*` und *11+ HK 3 `e3.*` (MK12)* | gleich |
+| 9 | 12 LFO 1: WELLE, KEY SYNC, TEMPO SYNC, FREQ │ NOTE `l1.*`; dahinter 13 LFO 2 `l2.*` | gleich |
+| 10 | 14–17 PATCH 1–4: QUELLE `p[k].s` (*EG 3, MK12*), ZIEL `p[k].d` (*Cutoff 2, Verzerrer, MK11*), INTENSITÄT `p[k].i` | 14 CH LEVEL: Kanal 1–16 `voc.chl`, 16 BÄNDER ▸ |
+| 11 | 18 SEQ COMMON: AN, LÄNGE, TYP, LAUF, KEY SYNC, AUFLÖSUNG `seq.*`; dahinter 19–21 SEQ 1–3: ZIEL `q[s].k`, BEWEGUNG `q[s].m`, SCHRITTE ▸ (MK6) | 15 CH PAN: `voc.chp`, 16 BÄNDER ▸ |
+| 12 | 22 MOD FX: TYP, TEMPO, TIEFE `mfx.*` | 16 MOD FX |
+| 13 | 23 DELAY FX: TYP, TEMPO SYNC, ZEIT │ NOTE, TIEFE `dly.*` | 17 DELAY FX |
+| 14 | 24 EQ: TIEF-FREQ, TIEF-GAIN, HOCH-FREQ, HOCH-GAIN `eq.*` | 18 EQ |
+| 15 | 25 ARPEGGIO: AN, LATCH, TYP, OKTAVEN, GATE, ZIEL `tgt`, KEY SYNC, AUFLÖSUNG, SWING, LÄNGE `last`; letzte Unterseite **SCHRITTE**: Solange sie angezeigt wird, schalten die Schritt-Tasten 1–8 die Arp-Schritte (`arp.steps`, LED an = Schritt an, Tasten über `last` gedimmt, 9–16 dunkel); TEMPO = Song (EN3-10) | 19 ARPEGGIO |
+| 16 | 26 UTILITY: INIT, TIMBRE NEU, TIMBRE KOPIEREN ▸, TIMBRE TAUSCHEN (MK3), SEQ-INIT, SEQ KOPIEREN ▸, SEQ TAUSCHEN (MK6), SOLO aus │ T1 │ T2 (MK3, nicht gespeichert). Jede Ausführung mit +/YES, je ein Undo | 20 UTILITY: INIT (behält den Vocoder), PEGEL ZURÜCK, PAN ZURÜCK (MK7) |
+
+Jeder Pfad, den `normMk` kennt (außer `v`), ist entweder über ein Element der Platte oder über eine Seite erreichbar (MK-P-05).
+
+**5. Umzug der bisherigen Bedienung** (B.3 → MK-P; die Funktionen bleiben, nur der Weg ändert sich):
+
+| bisher (B.3, microKORG-Vorlage) | ab MK-P (MS2000-Vorlage) |
+|---|---|
+| EDIT-WAHL 1/2, Regler 1–5, Matrix, SPIEL-Belegung | ein eigener Regler bzw. eine eigene Taste je Wert (Lage-Tabelle); alles andere auf den Seiten |
+| SHIFT-Ebene 2/3 (MS2000- und RADIAS-Zusätze) | Seiten nach dem Seitenplan |
+| SHIFT + 1 … 5, Vocoder SHIFT + 1/2 | 26 UTILITY bzw. 20 UTILITY |
+| SHIFT + TIMBRE (Solo) | 26 UTILITY „SOLO“ |
+| SHIFT + OKT ▲/▼ (Wert ±1) | +/YES, −/NO |
+| SHIFT + SEITE | entfällt |
+| BANK-Drehschalter, SEITE, Nummerntasten 1–8, Anzeige „A.24“ | BANK ▼ ▲, Schritt-Tasten 1–16, LCD „A01:“ |
+| ARP-Taste mit Tempo-LED | ARPEGGIATOR ON/OFF, TEMPO-LED, LATCH, RANGE, TYPE, TEMPO, GATE |
+| ARP B: Nummerntasten als Schritt-Tasten | 25 ARPEGGIO, Unterseite SCHRITTE |
+| TIMBRE/HALTEN im Vocoder | KBD TRACK │ E.F.SENSE auf 127 = HOLD (wie am MS2000) bzw. 08 FILTER FOLGER |
+| Tipp auf die Matrix-Zeile (SCHRITTE, 16 BÄNDER, EIGENE) | Tipp auf die Anzeige, wenn Zeile 2 „▸“ trägt |
+| E1/E2-LEDs neben der Anzeige | AUDIO-IN-LEDs links oben |
+| Quellen QUELLE 1/2 auf MIXER/EING. 1 Ebene 2 | GLOBAL 1A/1B |
+| ◎ Punkte an Drehschalter-Stellungen | ◎ Punkt auf jeder Schritt-Taste, deren Seite von INIT abweicht (EDIT), und an jedem Regler, dessen Wert abweicht |
+| 🎲 würfelt die EDIT-WAHL-1-Sektionen von T1 | 🎲 würfelt dieselben Werte (OSZ, Mixer, Filter, Hüllkurven von T1), unverändert |
+| Reiter [GERÄT] [FX] bzw. [LINKS] [RECHTS] [FX] | Reiter **[GERÄT] [SPIEL] [FX]** (Oberfläche) |
+
+**6. Abbau, Test-API, Hilfe.**
+- Das microKORG-Bedienfeld aus MK1–MK7 wird entfernt: Drehschalter, 7-Segment-Anzeige, Matrix, Holzwangen, Halb-Ansicht, Zonen Z1–Z13 und SHIFT-Ebenen-Oberfläche. Seine Funktionen sitzen jetzt nach Umfang 5. Kein toter Code bleibt im Block `sq-mk-src` (Ladezeit).
+- `mkPanel()` gibt ab MK-P zurück: `{fmt, z, ansicht: 'uebersicht'|'zoom'|'spiel', feld, felder: [{id, x, y, w, h}], modus: 'spiel'|'edit'|'global', seite, cursor, timbre, fxSel, patchSel, seqSel, elements: [{id, art, x, y, w, h, hit?: {x, y, w, h}, bind?, grau, led?}]}`. Element-Rechtecke stehen in % der Platte, `hit` in px im Bild (nur aktive Elemente), `bind` ist der Pfad (`'t.0.f.cut'`) bzw. `'view:fxSel'`. Neu ist `mkView(o)` (setzt Ansicht, Feld, Modus und Seite; nur für Tests, kein Undo). Die Bedienfeld-Tests aus MK1–MK7 werden auf die neue Bedienung umgestellt; Klang-, Daten- und Leistungs-Tests bleiben unverändert.
+- Jedes neue Element bekommt eine Hilfe-Zeile und beim ersten Antippen einen LCD-Hinweis (L10): eigene Sätze ohne Marke, den Namen aus `MK_LABEL`.
+
+**Oberfläche.**
+
+**Aussehen** (eK; die Zeichnung belegt nur Lage und Aufdruck):
+- **Platte:** hell blau-silbern gebürstetes Metall, nur aus CSS-Verläufen. Grund ist ein senkrechter Verlauf hsl(208 30 % 82 %) → hsl(210 26 % 72 %). Darüber liegt ein `repeating-linear-gradient` mit waagrechten 1-px-Linien (±3 % Helligkeit) und ein schwacher schräger Glanz. Gemessener Mittelwert: Farbton 195–225°, Sättigung 10–35 %, Helligkeit 65–85 %. Außen eine dunkelgraue Kante (0,6 % der Breite). Keine Holzwangen, keine Bild-Dateien, keine Bitmaps aus Korg-Material.
+- **Druck:** Sektionsrahmen und Beschriftung dunkelgrau (Helligkeit ≤ 30 %, Kontrast zur Platte ≥ 4,5 : 1), Rahmenlinien max(1 px, 0,1 % der Breite), Titel über dem Rahmen wie in der Zeichnung. Inverse Felder sind weiße Schrift auf Schwarz (Kontrast ≥ 7 : 1), genau dort, wo die Tabelle sie nennt. App-Schrift in Großbuchstaben, Gewicht 600–700. Schriftgrößen in % der Plattenbreite: Titel 1,1, Beschriftung 0,9, kleine Listen 0,82; bei z = 1100 also ≥ 9 px.
+- **Regler:** schwarze Kappen (L* ≤ 15, `radial-gradient`) mit weißer Zeigerlinie. Darum eine aufgedruckte Skala, ein gemeinsames SVG-Symbol, das jeder Regler mit `<use>` nutzt (eigene Form, EN3-13). Die Mittelmarke oben tragen genau die Regler, an denen die Zeichnung sie zeigt: EG 1 INT, KBD TRACK, SEMITONE, TUNE und PAN. PATCH 1–4 sind auch bipolar, haben in der Zeichnung aber keine Marke und bekommen keine (die Mitte nennt die LCD). AUDIO IN 1 hat in der Zeichnung keine Skala und bekommt keine. Kappe 2,1 %, Skala 3,3 % der Breite. VOLUME bekommt die Ziffern 0…10.
+- **Tasten:** hellgraue Rechtecke (Helligkeit 75–90 %) mit dunklerer Kante und innerer Doppellinie wie in der Zeichnung. Tasten mit LED zeigen oben in der Mitte das LED-Fenster. Gedrückt wird die Taste dunkler, ohne Versatz.
+- **LEDs:** klein und rund (0,75 % der Breite). Aus = dunkelrot, an = rot bis orange (Farbton 0–35°) mit kleinem Schein (≤ 4 px, nur an). OCTAVE grün (±1) bzw. rot (±2).
+- **Anzeige:** 2 × 16 Zeichen in `ui-monospace`, ohne Umbruch und mit fester Breite. Farbe nach Auftrag grün auf dunkel, aus einem Variablenpaar `--mkp-lcd-fg/-bg` [U]: Am Gerät könnte es umgekehrt sein (dunkle Zeichen auf beleuchtetem Grün); ein Blick auf ein Foto ändert nur diese zwei Werte.
+- **Namensfeld:** nur der Text aus `MK_LABEL` in der App-Schrift, Gewicht ≤ 600, normale Breite, Größe 3 % der Plattenbreite, Druckfarbe, linksbündig ab x 56,4. Ohne Unterzeile; „ANALOG MODELING SYNTHESIZER“ ist Teil der Herstellerbeschriftung und entfällt. Kein Logo, keine nachgebildete Schriftform (EN3-05, B.6 Nr. 9 c).
+
+**Ansichten** (Reiter **[GERÄT] [SPIEL] [FX]**; FX unverändert). Ansicht, Feld und Modus sind Ansichtszustand. Beim ersten Öffnen erscheint die Übersicht, danach die zuletzt gewählte Ansicht der Sitzung.
+- **Übersicht:** die ganze Platte, eingepasst (contain) und zentriert, Seitenverhältnis 1,95. Sie ist erkennbar, aber nicht zum Drehen gedacht: Regler und Tasten reagieren hier nicht. Ein Tipp öffnet die Zoom-Ansicht des **Feldes unter dem Finger**; liegt die Stelle näher als 6 px an einer Feldgrenze, gilt das Feld mit dem näheren Mittelpunkt. Die getippte Sektion blinkt 300 ms auf. Die Übersicht ist eine einzige Trefferfläche.
+- **Zoom-Ansicht:** dieselbe Platte, vergrößert auf die Plattenbreite **z**, verschoben auf ein **Feld**. Felder sind Rechtecke der Platte, die kein Bedienelement und keine Beschriftung schneiden. Einzige Ausnahme ist der Sektionstitel EG 1 (FILTER) (x 19,6–25,1): Er steht über den Reglern 1–4 und reicht bei schmalen Spalten über H1 und H2; dort erscheint er in beiden Feldern angeschnitten wie ein Rahmen. Jedes Element liegt in mindestens einem Feld ganz.
+  - **Spaltengruppen:** **breit** G-L (x 0–55,6) │ G-R (55,5–100), wenn der Körper ≥ 570 px breit ist; sonst **schmal** H1 (0–22,4) │ H2 (22,3–50,1) │ H3 (50,0–77,7) │ H4 (77,6–100).
+  - **Zeilengruppen:** **Hälften** O (y 0–50,5) │ U (46,5–100), wenn der Körper ≥ 281 px hoch ist; sonst **Drittel** D1 (0–37,5) │ D2 (35,0–68,5) │ D3 (67,5–100), wenn ≥ 197 px; sonst **Zeilen** Z1 (0–20,5) │ Z2 (19,0–37,5) │ Z3 (35,0–50,5) │ Z4 (46,5–68,5) │ Z5 (67,5–83,5) │ Z6 (83,0–100).
+  - **Maßstab:** z = 1100 px · k mit k = min(1,2; Körperbreite ÷ breitestes Feld; Körperhöhe ÷ höchstes Feld), Feldmaße bei z = 1100 gerechnet. Die Gruppenwahl hält k ≥ 0,931, also z ≥ 1024 px; die Schwellen 570, 281 und 197 px sind daraus gerechnet (bei k = 0,93 läge der Tastenabstand bei 43,99 px). Dann liegt der kleinste Tastenabstand (4,3 %) bei ≥ 44 px, und jede Trefferfläche ist ≥ 44 × 44 ohne Überlappung (Regler-Treffer 44 × 44 um die Kappe, Tasten mindestens Tastengröße).
+  - **Trefferflächen am Feldrand:** Reicht die 44-px-Trefferfläche eines Elements über sein Feld hinaus (z. B. die Tasten bei y 66,1: LFO SELECT, MOD/DELAY und VIRTUAL PATCH in Z4 und D2), wird sie ins Feld verschoben, nie verkleinert, und deckt das Element weiter ganz ab.
+  - **Kleinere Körper** (kein Format der Liste; Zeilen brauchen ≥ 116 px Höhe, schmal ≥ 285 px Breite): z bleibt 1024, das Feld lässt sich innerhalb seiner Grenzen wie beim Wischen verschieben, und CHANGES nennt das Format.
+  - **Nachbarn:** Was außerhalb des Feldes im Bild liegt, ist zu 70 % mit der Plattenfarbe abgedeckt und reagiert nicht. Ein Tipp darauf wechselt in dieses Nachbarfeld.
+  - **Lagekarte:** rechts in der Reiter-Zeile, 44 × 34 px Bild, 44 × 44 Treffer. Sie zeigt das Feldraster mit dem aktuellen Feld; ein Tipp darauf (oder auf den aktiven Reiter GERÄT) führt zur Übersicht.
+- **Spiel-Ansicht** (Reiter SPIEL; Räder und Tastatur darunter wie bisher in `#kbArea`). Eine Metall-Leiste aus denselben Bausteinen, Reihenfolge wie am Gerät von links nach rechts:
+  - **Band 1 (44 px)** ab 604 px Körperbreite (quer und W) in einer Reihe: OCTAVE ▼ ▲ · BANK ▼ ▲ · TIMBRE SELECT mit LEDs · MOD SEQ ON/OFF · REC · ARP ON/OFF mit TEMPO-LED · LATCH · Anzeige (2 × 16, ≥ 160 px breit). **Schmaler (hochkant)** ist Band 1 = OCTAVE ▼ ▲ · BANK ▼ ▲ · Anzeige (≥ 160 px, in P3 106 px), und die fünf Tasten TIMBRE SELECT · MOD SEQ ON/OFF · REC · ARP ON/OFF · LATCH stehen als Band 2 darunter; in P3 entfällt Band 2 (§0.4, P3 darf vereinfachen; die Tasten bleiben in der Zoom-Ansicht).
+  - **Schritt-Tasten** mit Nummer und Aufdruck: eine Reihe à 16, wenn der Körper ≥ 704 px breit ist (L1, W); sonst quer eine Hälfte à 8 (L2), hochkant 2 × 8 bei ≥ 352 px Breite (P1, 12 Pro Max) bzw. eine Hälfte 2 × 4 (P2, P3). Die Hälften 1–8 │ 9–16 wechseln mit Wischen; ein Hälften-Zeiger zeigt auch das Lauflicht der anderen Hälfte als Punkt.
+  - **Aufdruck der Schritt-Tasten in der Spiel-Ansicht:** nur die Zeile des aktiven Modus (Synth: obere Zeile, Vocoder: inverse Zeile), in der 9-px-Klasse `.lg`, höchstens zwei Zeilen (22 px), umbrochen nur an Leerzeichen (AUDIO IN 2, DELAY FX). Ein Wort, das auch dann nicht in die Tastenbreite passt (ARPEGGIO bei 44–45 px), bekommt 8 px. So halten L1 und P1 (je 45 px pro Taste) scrollWidth ≤ clientWidth. Die Platte selbst zeigt beide Zeilen wie die Zeichnung.
+- **Formate** (`.pg`-Körper nach B.3 Maße; MK-P misst die echten Werte und trägt sie hier und in CHANGES ein):
+
+| Format | Körper (px) | Übersicht (px) | Felder | z (px) | Spiel-Ansicht |
+|---|---|---|---|---|---|
+| P1 390 × 844 | 360 × ≈ 300 | 360 × 185 | H1–H4 × O/U = 8 | 1092 | Band 1, Band 2, Schritt-Tasten 2 × 8 (224 px hoch) |
+| 12 Pro Max hoch 428 × 926 | ≈ 398 × 380 | 398 × 204 | 8 | 1320 | wie P1, bis × 1,1 |
+| L1 844 × 390 | ≈ 720 × 136 | 265 × 136 | G-L/G-R × Z1–Z6 = 12 | 1206 | Band 1 + 16 Schritt-Tasten in einer Reihe (110 px hoch) |
+| L1 mit Home-Balken | ≈ 720 × 120 | 234 × 120 | 12 | 1064 | wie L1 |
+| 12 Pro Max quer 926 × 428 | ≈ 802 × 158 | 308 × 158 | 12 | 1320 | wie L1, bis × 1,1 |
+| P2 375 × 667 | 345 × ≈ 231 | 345 × 177 | H1–H4 × D1–D3 = 12 | 1201 | Band 1, Band 2, Hälfte 2 × 4 |
+| P3 320 × 568 | 290 × ≈ 203 | 290 × 149 | 12 | 1043 | Band 1, Hälfte 2 × 4 |
+| L2 667 × 375 | 637 × ≈ 126 | 246 × 126 | G-L/G-R × Z1–Z6 = 12 | 1117 | Band 1, Hälfte 1 × 8 |
+| W 844 × 1180 | 814 × Körper | eingepasst | G-L/G-R × O/U = 4 (bei Körper ≥ 362 px) | ≤ 1320 | wie L1 |
+
+- **Drehen des iPhones:** Das neue Raster wählt das Feld, das die zuletzt bediente Sektion enthält. Nichts wird abgeschnitten: Jede Beschriftung erfüllt scrollWidth ≤ clientWidth, und die Seite scrollt nie waagrecht.
+
+**Gesten** (L4; Regler-Geste aus `sKnob`, Fein-Regel `ctlPrecision`):
+- **Regler:** senkrecht ziehen = Wert. **Fein:** seitlich ≥ 64 px vom Aufsetzpunkt = × ¼, ≥ 140 px = × 1⁄16, oder ein ruhender zweiter Finger auf freier Fläche = × ¼ (LCD „FEIN ×¼“). Doppeltipp = Standard, wie überall. Eine Geste ergibt ein Undo; während der Geste geht der Bruchwert an das Worklet (EN3-03).
+- **Tasten:** Tipp. Bewegt sich der Finger mehr als 8 px, wird der Tipp verworfen.
+- **Wischen** (Zoom-Ansicht): ein Finger, Start auf freier Fläche, Beschriftung oder einer Taste, **nie auf einem Regler** (dort bleibt seitlich = fein). Die Platte folgt dem Finger 1 : 1 (am Plattenrand gefedert). Beim Loslassen ab 40 px oder 0,3 px/ms rastet sie ins Nachbarfeld in Wischrichtung ein (≤ 250 ms), sonst zurück.
+- **Zwei Regler zugleich** mit zwei Fingern ergeben zwei Gesten und zwei Undos. Räder, Tasten und Regler gehen gleichzeitig (MK1-33).
+- **Pinch (optional, eK):** nur in der Übersicht und nur, wenn beide Finger auf der Platte beginnen; Spreizen öffnet das Feld unter der Mitte. Der Browser-Zoom bleibt aus (`touch-action`). Wird Pinch nicht gebaut, steht das als Lücke in CHANGES.
+- **Bewegungen:** Übergänge dauern 200 ms; bei `prefers-reduced-motion` gibt es keine Animation.
+
+**Leistung** (CLAUDE.md: schnelle Seite und stabile Verbindung zuerst):
+- **Feste Geometrie:** Die Platte ist ein Baum mit absoluten Lagen in Platten-Einheiten (`--u` = z ÷ 1000 px) und hat `contain: strict`. Kein Text ändert die Größe seines Kastens (LCD feste 16 Zeichen).
+- **Ansichtswechsel nur über `transform`:** Übersicht ↔ Zoom ↔ Feld und Wischen ändern nur `transform` eines Hüllelements und lösen kein Layout aus. Die Platte wird in Zoom-Größe aufgebaut und für die Übersicht verkleinert, damit die Schrift scharf bleibt. `will-change: transform` gilt nur während Übergang und Wischen; danach zeichnet Safari scharf neu, und kein dauerhafter großer Layer belegt Speicher.
+- **Aktualisieren:** Regler drehen per `transform: rotate()` nur die Kappe. LEDs und Tasten wechseln nur Klassen, höchstens einmal je Bild und gesammelt in einem rAF. Lauflicht und TEMPO-LED folgen der Audio-Uhr im rAF, ohne `setInterval`. In Gesten wird nach dem Aufsetzen kein Layout gelesen.
+- **Aufbau:** Der Baum entsteht beim ersten Öffnen aus der Lage-Tabelle als Datenblock in `sq-mk-src`, in Häppchen ≤ 8 ms, das sichtbare Feld zuerst. Vorher läuft `tickAhead(.3)`, zwischen zwei Häppchen mindestens ein Scheduler-Tick (EN3-14). Projekte ohne MS-2000-Spur laden nichts davon.
+- **Kein WebGL** (EN3-13 bleibt): Bei ≈ 400 Elementen ist DOM mit Compositor-Transform die schnellste Lösung. Canvas oder WebGL lohnt erst bei Tausenden bewegter Elemente und müsste Text, Treffer und Bedienhilfen neu bauen. Keine `filter`, kein `backdrop-filter`, keine weichen Schatten auf mehr als 10 Elementen.
+
+**Nicht-Umfang.**
+- Neue Klang-Werte und DSP-Änderungen; einzige Ausnahme sind die zwei Eingangs-Pegel als Live-Wert. Kein neues Speicherformat.
+- MS2000R (Rack: KEYBOARD-Taste, PHONES), DEMO (EXIT + GLOBAL), Global-Werte des Geräts (A.10).
+- Fotorealistische Texturen und Bild-Dateien, der Herstellername, die Gerätebezeichnung als Schriftzug.
+
+**Daten.**
+- Kein neues Feld in Sound oder Projekt; Format bleibt 5 (`PROJECT_FORMAT` 5, `SOUNDS_FORMAT` 2).
+- **Ansichtszustand** (nur Sitzung): `{ansicht, feld, modus, seite, cursor, fxSel, patchSel, seqSel, spielHaelfte, seitenSprung}` (`seitenSprung` = GLOBAL 1D, Vorgabe an).
+- **Live-Wert** wie die Räder (B.1): `R.mkInTrim[uid] = {e1, e2}` 0…127; 0 = stumm, 1…100 = −40…0 dB, 100…127 = 0…+6 dB (je linear in dB), Vorgabe 100. Nicht gespeichert, kein Undo. Umgesetzt als je ein GainNode vor dem Worklet-Eingang; bei 0 dB (Faktor genau 1) bitgleich.
+
+**Berührungspunkte und Reihenfolge.**
+- **Wiederverwendet:** `sKnob`/`ctlPrecision`, `openPop`, `sheetFrame` mit Reitern und LCD-Zeile, die Zusatz-Ansichten (SCHRITTE MK6, 16 BÄNDER MK7, EIGENE MK3), die Räder (MK1), die ORIGINAL-Logik, alle Bindungen von MK1–MK7, `MK_LABEL`.
+- **Neu:** Platte, Lage-Tabelle als Datenblock, LCD 2 × 16 mit Modi und Seiten, Übersicht, Zoom-Felder, Lagekarte, Spiel-Ansicht, E1/E2-Pegel.
+- **Entfernt:** das microKORG-Bedienfeld (Umfang 6).
+- **Braucht** MK5–MK7 zusammengeführt (4.15.0), weil Arp-, Seq- und Vocoder-Elemente gebunden und ihre Oberflächen-Tests umgestellt werden.
+- **Darf parallel** zu MK8 und MK10–MK13 gebaut werden. Wer später zusammenführt, passt an (Teil G Nr. 18): Programm-Wahl von MK8, Seiten-Einträge von MK11–MK13. MK10 berührt das Bedienfeld nicht (Aufnahme-Seite unter Menü → Sounds).
+
+**Dauer** 19–22,5 h in drei Bau-Abschnitten:
+1. Platte, Lage-Tabelle, Aussehen, Bindung aller Elemente samt Vocoder (8–9,5 h).
+2. Anzeige mit Modi und Seitenplan, Umzug der Funktionen, Abbau und Umstellung der Tests (6–7 h).
+3. Übersicht, Zoom, Spiel-Ansicht, Gesten, Formate, Leistung, Abnahme (5–6 h).
+
+Dazu 1–2 h Fach-Prüfung. **Version 4.21.0**, wenn MK-P nach MK13 ausgeliefert wird. Kommt es früher (wie E.2 Nr. 7 empfiehlt), bekommt es nach der Regel „Tore“ (E.1) die nächste freie Zwischennummer nach dem zuletzt ausgelieferten Paket, z. B. 4.15.1 direkt nach MK7 oder 4.16.1 nach MK8. Die Nummern der anderen Pakete ändern sich dadurch nicht, 4.21.0 bleibt dann frei, und die Pakete nach der MK-Gruppe beginnen weiter bei 4.22.0 (E.4; EN2-14 verlangt nur streng steigende Nummern). **Budget** +25 KB netto (neu ≈ +50 KB, entfernt ≈ −25 KB) · Format bleibt 5.
+
+**Abnahme-Checkliste**
+- [ ] **MK-P-01 Vorlage (M-VORLAGE**, ersetzt M-SKIZZE für das MS-2000-Bedienfeld, B.6 Nr. 5): `mkPanel().elements` gegen die Lage-Tabelle.
+  - Jede ID ist da; jede Mitte liegt innerhalb ± 0,8 % der Breite und ± 1,2 % der Höhe. Die Abstände in den Paaren OCTAVE, BANK, PAGE und in den Viererreihen (Arpeggiator, Anzeige-Feld) sind 4,3 % ± 0,05.
+  - Jeder Sektionsrahmen erreicht IoU ≥ 0,9; die 16-Spalten-Regel hält ± 0,3 %; das Seitenverhältnis ist 1,95 ± 0,01.
+  - Je Zeile A–D stimmt die Reihenfolge links → rechts, je Sektion oben → unten.
+  - Übersicht und Zoom zeigen in allen Formaten dieselben relativen Lagen (± 1 px; reine Skalierung).
+- [ ] **MK-P-02 Bildvergleich:**
+  - Bildschirmfoto der ganzen Platte, gerendert in 1400 × 718 px. Dasselbe Linien-Verfahren wie bei der Vermessung findet die Sektionsrahmen in Foto und Zeichnung. Jeder Rahmen liegt ≤ 0,8 % der Breite bzw. ≤ 1,2 % der Höhe neben seinem Gegenstück; ein fehlender oder zusätzlicher Rahmen ist ein Fehler.
+  - Dazu ein Überlagerungsbild (Zeichnung zu 50 % über dem Foto) für FP-TOUCH und Xanders Blick. Es bleibt **privat** im Scratchpad bzw. im Chat, nie im Repo oder in CHANGES (Handbuch-Bild, E.5 Nr. 5).
+- [ ] **MK-P-03 Jedes Element wirkt:** Für jedes Element mit `bind` gibt es eine CDP-Touch-Geste in der Zoom-Ansicht (Ziehen 60 px bzw. Tipp).
+  - Der gebundene Wert in `mkGet` bzw. `mkPanel()` ändert sich. Klang-Werte ändern den Klang messbar (H-1, H-3; Ausnahmen nach B.6 Nr. 3).
+  - Eine Geste ergibt ein Undo, und Undo stellt deep-equal her.
+  - Die E1/E2-Pegel ändern den Eingangspegel (Spur als Quelle wie in MK7, gemessen am Worklet-Eingang) zwischen 64 und 127 um ≥ 6 dB.
+  - Ausnahmen mit Grund in CHANGES: BANK und Programm-Tasten vor MK8; COMPARE nur mit geändertem Sound.
+- [ ] **MK-P-04 Vocoder:** Bei `mode` 3 wirkt jedes Element nach der Vocoder-Spalte.
+  - Inverse Namen = gebundener `voc.*`-Pfad.
+  - Graue Elemente ändern hörbar nichts und nennen den Grund (L2).
+  - CH PARAM LEVEL/PAN: Regler n ändert genau Band n (`voc.chl`/`voc.chp`; Bandpegel ± nach W-42, andere Bänder ± 0,1 dB).
+  - KBD TRACK │ E.F.SENSE auf 127 hält den Formant wie MK7-03 (Folger und Halten).
+- [ ] **MK-P-05 Seiten:**
+  - Jeder `normMk`-Pfad (außer `v`) ist über Platte oder Seite erreichbar (Liste aus INIT AM).
+  - EDIT + Taste n öffnet die Seite des Seitenplans, für Synth und Vocoder. PAGE läuft alle Seiten vor und zurück. CURSOR wählt, −/+ ändern um eine Geräte-Stufe und klemmen. Seiten-Sprung, Tipp auf die Anzeige (Liste bzw. Zusatz-Ansicht), EXIT und WRITE wirken.
+  - COMPARE (EDIT + EXIT) zeigt den gespeicherten Stand und kehrt zurück.
+  - Die UTILITY-Werkzeuge liefern dieselben Ergebnisse wie die alten SHIFT-Werkzeuge: Die Tests aus MK3, MK6 und MK7 laufen über den neuen Weg.
+  - GLOBAL 1A/1B bestehen die MK7-Eingangs-Tests, 1C ändert `tr.kbOct`.
+  - Seite ARP-SCHRITTE schaltet `arp.steps` wie MK5.
+- [ ] **MK-P-06 Marke** (EN3-05, B.6 Nr. 9):
+  - Die Datei-Prüfungen sind unverändert (genau 1 × „MS 2000“ in der Datei).
+  - Im Text des Bedienfelds steht „MS 2000“ genau einmal, im Namensfeld, gebildet aus `MK_LABEL` (ein Test-Build mit anderer Konstante ändert das Feld).
+  - Kein Korg, microKORG, RADIAS, DWGS, VOX, „ANALOG MODELING“ in Aufdruck, `aria-label`, Hilfe- und LCD-Zeilen.
+  - 0 neue `@font-face`, kein `data:image`, kein `<img>`.
+  - Namensfeld: berechnete Schrift = App-Schrift, Gewicht ≤ 600, `font-stretch` normal, keine Verzerrung.
+  - FP-SICHER prüft die Bildschirmfotos mit dem Auge.
+- [ ] **MK-P-07 Trefferflächen und Platz:** M-PLATZ (B.6 Nr. 5, mit Safe-Area- und Home-Balken-Durchgang) in P1, P2, P3, L1, L2, W, 428 × 926 und 926 × 428, für Übersicht, jedes Zoom-Feld, die Spiel-Ansicht (beide Hälften), EDIT, GLOBAL und den Vocoder.
+  - Jede aktive Trefferfläche ist ≥ 44 × 44, ohne Überlappung, ganz im sichtbaren Körper und deckt ihr Element ganz ab (auch am Feldrand, Oberfläche „Trefferflächen am Feldrand“).
+  - Elemente außerhalb des Feldes sind abgedeckt und reagieren nicht (`elementFromPoint` trifft die Abdeckung).
+  - Jedes Element liegt in mindestens einem Feld ganz.
+  - Jede Beschriftung erfüllt scrollWidth ≤ clientWidth; die Seite scrollt nicht waagrecht.
+  - Reiter und Lagekarte sind ≥ 44 × 44.
+- [ ] **MK-P-08 Gesten** (CDP-Touch):
+  - Regler: senkrecht = Wert; Fein × ¼ ab 64 px, × 1⁄16 ab 140 px, × ¼ mit ruhendem zweiten Finger; Doppeltipp = Standard.
+  - Wischen von freier Fläche oder Taste wechselt genau ein Feld in Wischrichtung (Einrasten ≤ 250 ms); Wischen ab einem Regler verschiebt nie. Ein Tasten-Tipp mit > 8 px Bewegung wird verworfen.
+  - Ein Tipp auf einen Nachbarn wechselt in dessen Feld. Ein Tipp in der Übersicht öffnet das Feld unter dem Finger. Lagekarte bzw. Reiter GERÄT führen zur Übersicht.
+  - Drehen behält die zuletzt bediente Sektion. Zwei Regler mit zwei Fingern geben zwei Undos. Räder, Tastatur und ein Regler gehen gleichzeitig.
+  - Kein Lang-Druck mit Bedeutung; bei `prefers-reduced-motion` keine Animation. Pinch, falls gebaut, nur aus der Übersicht.
+- [ ] **MK-P-09 Leistung.** Referenz = Chromium mit CPU-Drosselung × 4, DPR 3, 390 × 844 und 844 × 390, ein Projekt mit 4 Spuren spielt (2 MS-2000-Spuren mit Arp und Seq).
+  - (a) **Aufbau** beim ersten Öffnen: Häppchen ≤ 16 ms, fertig ≤ 150 ms, kein `longtask` > 50 ms.
+  - (b) **Bilder:** Eine Skript-Sitzung von 10 s (Übersicht → Zoom → alle Felder wischen → 4 Regler drehen → EDIT-Seiten → Spiel-Ansicht) braucht laut Trace ≤ 16 ms Hauptfaden-Arbeit je Bild in ≥ 99 % der Bilder, keines > 33 ms; rAF-Intervall p95 ≤ 17,5 ms.
+  - (c) **Layout:** 0 Layout-Ereignisse während Übergängen und Wischen; beim Drehen höchstens 1 Layout je Bild, begrenzt auf die Anzeige.
+  - (d) **Kein Layout-Sprung:** 0 `layout-shift`-Einträge über alle Zustandswechsel; M-ANSICHT ≤ 2 px für Rahmen, Reiter, Räder und Tastatur.
+  - (e) **Speicher:** Bedienfeld-Layer (CDP LayerTree) ≤ 48 MB; außerhalb von Übergängen ≤ 2 eigene Layer.
+  - (f) **Ton und Verbindung:** Keine Note später als beim Vorgänger-Stand (`noteLog`, M-ZEIT), `frames_ok`, kein Scheduler-Abstand > 50 ms; Paar-Raum-Ereignisse kommen während der Sitzung ohne zusätzliche Verzögerung an (Mitschnitt, ± 20 ms zum Vorgänger).
+  - (g) **iPhone:** neuer Fall „Bedienfeld“ der Leistungs-Probe (dieselbe Skript-Sitzung über dem Fall „Kern“): rAF-Median ≥ 58 fps, 0 Lücken > 50 ms, `frames_ok`; Werte in CHANGES (FP-IPHONE).
+  - Startzeit: Projekte ohne MS-2000-Spur ≤ +20 ms (EN3-14), mit MS-2000-Spur §15.3.
+- [ ] **MK-P-10 Daten unverändert:**
+  - Dieselben Änderungen über die Platte und über `mkSet` im Vorgänger-Stand ergeben deep-equal Sounds und Projekte.
+  - `normalizeSound`, `normMk` und die Formate sind unverändert (Quelltext-Vergleich dieser Funktionen = 0).
+  - Projekte und Bibliotheken des Vorgängers laden deep-equal. Alle Klang- und DSP-Tests aus MK1–MK7 bestehen unverändert, alle Klänge rendern bitgleich (B.6 Nr. 1).
+  - Reine Ansichtswechsel ändern weder `soundHash` noch lösen sie Autosave aus. E1/E2-Pegel und Räder werden nicht gespeichert; bei 0 dB bitgleich.
+- [ ] **MK-P-11 Aussehen** (gemessen am Bildschirmfoto):
+  - Platte: Mittelwert Farbton 195–225°, Sättigung 10–35 %, Helligkeit 65–85 %. Bürstung sichtbar: Zeilen-Helligkeit streut 0,5–3 %.
+  - Druck: Helligkeit ≤ 30 %, Kontrast ≥ 4,5 : 1. Inverse Felder weiß auf schwarz mit ≥ 7 : 1, an jeder Stelle der Tabelle und sonst nirgends.
+  - Regler: Kappen L* ≤ 15 mit weißer Zeigerlinie und Skala (außer AUDIO IN 1); Mittelmarke genau an EG 1 INT, KBD TRACK, SEMITONE, TUNE und PAN.
+  - Tasten hellgrau. LEDs rund, an im Farbton 0–35° (OCTAVE ±1 grün).
+  - Anzeige 2 × 16 ohne Umbruch. Keine Holzwangen.
+- [ ] **MK-P-12 Abbau und Umstellung:**
+  - Kein DOM-Knoten und kein Quelltext des microKORG-Bedienfelds bleibt übrig (Drehschalter, 7-Segment, Matrix, Holzwangen, Halb-Ansicht; Prüfung über Klassennamen).
+  - CHANGES nennt jeden umgestellten Oberflächen-Test aus MK1–MK7 mit altem und neuem Weg. Alle Abnahmen aus MK1–MK7, die nicht die Oberfläche betreffen, bestehen unverändert.
+  - B.6 Nr. 5 nutzt für das MS-2000-Bedienfeld M-VORLAGE. Hilfe-Zeilen (L10) sind vollständig. Budget ≤ +25 KB netto.
+
+**Tests.** `mkp-vorlage.mjs`, `mkp-bindung.mjs`, `mkp-seiten.mjs`, `mkp-ansicht.mjs`, `mkp-leistung.mjs`, `mkp-daten.mjs`, `mkp-marke.mjs`. Privat, nur im Scratchpad und nie in `bau/tests/` oder im Repo: der Bildvergleich `mkp-bildvergleich.py`, weil er die Zeichnung aus dem Handbuch liest (E.5 Nr. 5). Die Lage-Tabelle selbst enthält nur Lagen und Aufdruck-Wörter (Fakten) und darf in die öffentlichen Tests.
+
+**Fach-Prüfung:** **FP-TOUCH ●** Haupt-, **FP-IPHONE** und **FP-SICHER** Zweit-Blick.
+
+**Zwischenstand** nach MK-P (Artifact und Pages, EN3-17 sinngemäß), damit Xander das Gerät sieht.
+
+**iPhone** (Xander, 12 Pro Max):
+1. Eine MS-2000-Spur öffnen und die Übersicht hochkant und quer ansehen: Ist das dein Gerät (Anordnung von oben nach unten, Farbe)?
+2. FILTER antippen → Zoom. CUTOFF drehen, dabei seitlich wegziehen (fein). Nach rechts zu AMP und ARPEGGIATOR wischen, nach unten zur Reglerreihe.
+3. Reiter SPIEL: PITCH- und MOD-Rad und Tastatur spielen, OCTAVE, ARP ON/OFF, LATCH; ab MK8 mit BANK und den Schritt-Tasten Programme wählen.
+4. EDIT, dann Schritt-Taste 6 (FILTER): mit PAGE, CURSOR und −/+ durch die Seiten, EXIT.
+5. MOD SEQUENCE ON/OFF, dann SEQ EDIT SELECT: Die 16 Regler bewegen die Schritte, die Schritt-Tasten laufen mit.
+6. Leistungs-Probe „Bedienfeld“ schicken.
+
+**Geräte-Abgleich:** entfällt, weil kein MS2000 vorhanden ist (Xander hat einen microKORG). Lage und Aufdruck sind durch die Zeichnung HB-MS S. 5 belegt. Farben, Material und Anzeige-Farbe gleicht Xander nach Blick oder Foto ab; das ändert nur die Farb-Variablen (ein Ort, `MK-P-fix`).
+
+**Risiken.**
+- **Farben ohne Beleg:** Die Zeichnung ist schwarz-weiß. Farben und Anzeige-Farbe sind [U] und liegen deshalb gesammelt in Variablen.
+- **Kleine Übersicht quer** (L1 ≈ 265 × 136 px): erkennbar, aber nicht lesbar. Gearbeitet wird in Zoom- und Spiel-Ansicht; quer gibt es 12 Felder und damit mehr Wischen als hochkant.
+- **iOS-Safari:** Verkleinerte Schrift kann unscharf werden, und große Layer kosten Speicher. Abhilfe: Aufbau in Zoom-Größe, `will-change` nur im Übergang (MK-P-09 e).
+- **Paralleler Bau:** MK8 und MK11–MK13 ändern dieselbe Bedienung. Die Regel in Teil G Nr. 18 legt fest, wer anpasst; Zusammenführen kostet dort je ≈ 0,5–1 h.
+- **Umstellung der Tests:** Die Oberflächen-Tests aus MK1–MK7 werden umgestellt; eingeplant sind 2,5–3 h im Bau-Abschnitt 2.
+- **Größe:** Mit dem üblichen Überzug (× 1,5) kostet das Paket ≈ +37 KB.
+
+---
+
 ## Teil D — Aufnahme-Anleitung für die Speicherwellen (für MK10; an Xander weitergeben; nur iPhone)
 
 **Wozu:** Die App bildet die 64 gespeicherten Wellen deines microKORG bisher nur nach. Du nimmst sie einmal auf, **direkt in der App auf deinem iPhone**. Die App rechnet daraus die echten Wellen. Danach werden sie in die App eingebaut, und alle hören sie (du hast „einbauen“ gewählt, H-2). Deine Aufnahmen selbst bleiben auf deinem iPhone; weiter geht nur ein kleines Wellen-Paket. Du brauchst keinen Rechner und kein MIDI.
@@ -1900,14 +2283,16 @@ Lage: Die MK-Gruppe beginnt direkt nach G-P2 (V2d′ ✓ 4.6.0, V2e 4.7.0, V2e�
 | MK11 | RADIAS 1: Filter 2, Verzerrer | 4.18.0 | +25 | 6–7 | MK3, MK6 | 5 | – | G-MK4 |
 | MK12 | RADIAS 2: EG3, Formant-Osz. | 4.19.0 | +22 | 5,5–6,5 | MK11, MK7 (Vokal-Quelle) | 5 | – | G-MK4 |
 | MK13 | RADIAS 3: 8 Stimmen | 4.20.0 | +10 | 3–4 | MK3, MK7 | 5 | – | G-MK4 · **Stand** |
-| **Summe** | 13 Pakete (MK9 zurückgestellt) | 4.8.1, 4.9.0–4.20.0 (+ Einbau-Zwischennummer) | **+517** | **≈ 100–116** | | einmal | | |
+| **MK-P** | Bedienfeld wie der MS2000 (ersetzt B.3; nur Oberfläche) | 4.21.0; bei früherer Auslieferung die nächste freie Zwischennummer (Regel „Tore“) | +25 | 19–22,5 | MK5–MK7 zusammengeführt (4.15.0); parallel zu MK8, MK10–MK13 | 5 | – | G-MKP · **Stand** |
+| **Summe** | 14 Pakete (MK9 zurückgestellt) | 4.8.1, 4.9.0–4.20.0, MK-P 4.21.0 oder Zwischennummer (+ Einbau-Zwischennummer) | **+542** | **≈ 119–138,5** | | einmal | | |
 
 - **Rev. 1 gegenüber der ersten Fassung:** +23 KB und +13–14 h (MK0 neu; Protokoll, Priorität, `engXf`, Bruchwerte, MIDI-Rad und Probe in MK1; [T1+2]/Solo in MK3; Intervall-Satz und KEYS in MK5; Mikrofon-Abgriff, Abgriff vor dem Fader und Vokal-Quelle in MK7; Import-Regeln in MK9; Wellen-Leser und eigene Datenbank in MK10; MK12 −0,5 h). Dazu kommen nach H-9 ≈ +5 h und +12 KB in V5d, V6a, V5c, V1d und VC4 (Teil G Nr. 4).
 - **Rev. 2 gegenüber Rev. 1** (Xanders Entscheidungen 25.10.): +47 KB und ≈ +5 h. MK9 fällt aus der Summe (−27 KB, −6–7 h). MK1 +15 KB und +5–6 h (Bedienfeld wie das Original, Räder), MK3 +1 KB und +0,5 h, MK6 +1 KB und +0,5 h, MK7 +2 KB und +0,5 h (Vocoder-Stellungen, LEDs), MK10 +55 KB und +4–4,5 h (eingebaute Wellen +45 KB, Aufnahme-Seite, Einbau). MK10–MK13 rücken eine Versionsnummer vor.
 - **Nachzeichnung (25.10., Prot. 57) gegenüber Rev. 2:** MK2 +7 KB und +0,5 h (Datenblock der nachgezeichneten Wellen statt freier Rezepte). Summe +517 KB, 100–115,5 h.
-- **Tore** (E.5 Nr. 3 sinngemäß): MK9 ist zurückgestellt, nicht nur verschoben; es hält nichts auf. Ist MK10-T geschlossen (das Wellen-Paket fehlt noch), wartet nur der Einbau-Abschnitt von MK10; MK11–MK13 laufen weiter. Der Einbau und ein später doch gebautes MK9 bekommen die nächste freie Zwischennummer, z. B. 4.17.1 oder 4.20.1, damit die Versionen streng steigen (EN2-14). Die Abnahmen nennen darum keine feste Vorgänger-Nummer (B.6 Nr. 1).
-- **Fach-Prüfung:** 13 × 1–2 h zusätzlich (EN2-29).
-- **Gesamtdauer** ≈ 113–142 h inkl. Fach-Prüfung.
+- **MK-P (26.10., Xander: „genauso wie der MS 2000“):** +25 KB und +19–22,5 h, Version 4.21.0; die Pakete nach der MK-Gruppe rücken auf ab 4.22.0 (E.4). MK-P braucht MK5–MK7 zusammengeführt (4.15.0) und darf parallel zu MK8 und MK10–MK13 gebaut werden. Die Bedienung von MK11–MK13, die der MS2000 nicht hat, liegt auf den LCD-Seiten nach dem Seitenplan von MK-P, nicht mehr auf SHIFT-Ebenen (Teil G Nr. 18). Wird MK-P vor MK13 ausgeliefert, bekommt es nach der Regel „Tore“ die nächste freie Zwischennummer nach dem zuletzt ausgelieferten Paket (z. B. 4.15.1 oder 4.16.1); alle anderen Nummern bleiben, 4.21.0 bleibt frei, und der Orchestrator trägt die vergebene Nummer hier ein. Summe +542 KB, 119–138,5 h.
+- **Tore** (E.5 Nr. 3 sinngemäß): MK9 ist zurückgestellt, nicht nur verschoben; es hält nichts auf. Ist MK10-T geschlossen (das Wellen-Paket fehlt noch), wartet nur der Einbau-Abschnitt von MK10; MK11–MK13 laufen weiter. Der Einbau, ein vor MK13 ausgeliefertes MK-P und ein später doch gebautes MK9 bekommen die nächste freie Zwischennummer, z. B. 4.15.1, 4.17.1 oder 4.20.1, damit die Versionen streng steigen (EN2-14). Die Abnahmen nennen darum keine feste Vorgänger-Nummer (B.6 Nr. 1).
+- **Fach-Prüfung:** 14 × 1–2 h zusätzlich (EN2-29).
+- **Gesamtdauer** ≈ 133–167 h inkl. Fach-Prüfung (mit MK-P; ohne ≈ 113–142 h).
 
 ### E.2 Begründung der Reihenfolge
 
@@ -1917,6 +2302,7 @@ Lage: Die MK-Gruppe beginnt direkt nach G-P2 (V2d′ ✓ 4.6.0, V2e 4.7.0, V2e�
 4. Der Import (MK9) ist zurückgestellt: Xander hat keinen Rechner, kein MIDI und keine .syx/.prg-Dateien (EN3-21). Die Speicherwellen (MK10) stehen hinter dem Kern, weil die Aufnahme-Seite den Mikrofon-Abgriff aus MK7 nutzt und der Einbau die Werksklänge aus MK8 nachstimmt. MK10 Abschnitt 1 darf direkt nach MK7 vorgezogen werden, damit Xander früher aufnehmen kann; der Einbau folgt, sobald das Wellen-Paket da ist. Die Versionsnummer folgt dann der Bau-Reihenfolge.
 5. Die RADIAS-Teile kommen zuletzt, wie im Plan Punkt 4 („danach“).
 6. MK0 kommt vor MK1, damit beim ersten Format-5-Speichern schon jeder neuere ausgelieferte Stand AM-Sounds unverändert lässt.
+7. **MK-P** (26.10.) kommt nach dem Zusammenführen von MK5–MK7 (4.15.0), weil es deren Elemente (Arp, Mod-Seq, Vocoder mit den weißen Namen) bindet und ihre Oberflächen-Tests umstellt. Es berührt keinen Klang und darf darum parallel zu MK8 und MK10–MK13 laufen; wer später zusammenführt, passt nach Teil G Nr. 18 an. Weil Xander das Gerät früh sehen will, sollte MK-P möglichst bald nach 4.15.0 ausgeliefert werden; es bekommt dann die nächste freie Zwischennummer (E.1 „Tore“).
 
 ### E.3 Größe und Startzeit (EN2-28)
 
@@ -1941,6 +2327,7 @@ Grundlage: 4.6.0 = 2 473 307 B. Restplan-Budgets aus N2 E.4, Reihenfolge nach N3
 - Die MK-Pakete selbst bleiben unter der Grenze (nach MK13 ≈ 3,1–3,5 MB; die eingebauten Wellen sind mitgerechnet). Die Grenze von 5,0 MB fällt aber **mitten im Plan**, nicht erst am Ende: nach Budget bei V10f, mit Ist-Faktor schon bei V9d′ (×1,3) bzw. V8a (×1,5). Laut Plan wären nach Gruppe 5 ≈ 2,18 MB erreicht gewesen, tatsächlich sind es heute 2,47 MB.
 - **Startzeit:** Projekte ohne AM bleiben bei ≤ +20 ms (EN3-14, MK1-26). Je MK-Paket gilt §15.3 (≤ +150 ms gegen das Vorgänger-Paket, absolut ≤ 1,5 s ohne bzw. ≤ 4 s mit Drosselung ×4).
 - **Ab 4,5 MB** nennt jedes Paket Größe und Startzeit (EN2-28); mit ×1,5 ist das ab ≈ V5d. Lösung nach **H-1** (entschieden: b) = SL1 (E.3a).
+- **MK-P** (+25 KB, 26.10.) ist in der Tabelle noch nicht enthalten. Ab der Zeile „nach MK8“ kommen +0,03 MB nach Budget bzw. +0,04 MB mit ×1,5 dazu. Die Schwellen 4,5 und 5,0 MB können dadurch höchstens ein Paket früher fallen; der Orchestrator rechnet beim nächsten Größen-Stand mit `size2.py` nach.
 
 ### E.3a SL1 — Schlankheits-Paket (H-1 (b), entschieden 25.10.; kein MK-Paket, gehört in N2 E.4)
 
@@ -1951,7 +2338,7 @@ Grundlage: 4.6.0 = 2 473 307 B. Restplan-Budgets aus N2 E.4, Reihenfolge nach N3
 
 ### E.4 Versionsnummern der Pakete danach
 
-Die Pakete nach der MK-Gruppe (V2a′, V2f, VL, V7a, VC2a, VS4 …) bekommen ihre Nummern **nach 4.20.0**, also ab 4.21.0, in Bau-Reihenfolge (Rev. 2: eine Nummer früher, weil MK9 zurückgestellt ist). Der MK10-Einbau und ein später doch gebautes MK9 nehmen Zwischennummern (E.1). Die Tabelle N2 E.4 wird dort vom Orchestrator fortgeschrieben, das ist keine Änderung des Umfangs.
+Die Pakete nach der MK-Gruppe (V2a′, V2f, VL, V7a, VC2a, VS4 …) bekommen ihre Nummern **nach 4.21.0** (MK-P), also ab 4.22.0, in Bau-Reihenfolge (Rev. 2: eine Nummer früher, weil MK9 zurückgestellt ist; 26.10.: eine Nummer später wegen MK-P). Der MK10-Einbau, ein vor MK13 ausgeliefertes MK-P und ein später doch gebautes MK9 nehmen Zwischennummern (E.1); 4.21.0 bleibt dann frei, und es bleibt bei „ab 4.22.0“. Die Tabelle N2 E.4 wird dort vom Orchestrator fortgeschrieben, das ist keine Änderung des Umfangs.
 
 **VS3** (Tor N7V-12):
 - Wird VS3 nach MK0 und vor MK1 gebaut, bekommt es **4.8.5**. Wird es vor MK0 gebaut, bekommt es 4.8.5 und MK0 die nächste freie Zwischennummer (4.8.6).
@@ -1985,6 +2372,7 @@ Die Pakete nach der MK-Gruppe (V2a′, V2f, VL, V7a, VC2a, VS4 …) bekommen ihr
 | G-MK4 | MK11 | FP-DSP | FP-IPHONE |
 | G-MK4 | MK12 | FP-DSP | FP-KLANG |
 | G-MK4 | MK13 ● | FP-IPHONE | FP-DSP |
+| G-MKP | MK-P ● | FP-TOUCH | FP-IPHONE, FP-SICHER |
 
 Zusätzlich prüft **FP-DSP in jedem MK-Paket**:
 - die W-Tabelle gegen den Code (eine Quelle, keine Schatten-Kurven);
@@ -1995,9 +2383,9 @@ Zusätzlich prüft **FP-DSP in jedem MK-Paket**:
 - gefaltete Energie nur nach B.6 Nr. 12;
 - Worklet-ASCII.
 
-**FP-SICHER** prüft in MK0, MK1, MK2, MK7 und MK10 (und in MK9, falls es gebaut wird) das Markenwort-Verbot (B.6 Nr. 9 a, b und c: genau eine Fundstelle „MS 2000“, kein Logo, keine Korg-Schrift) und die Upload-Wege; in MK2 zusätzlich, dass der Datenblock nur gerechnete Teiltonwerte ohne Namen enthält und weder Bild noch PDF in Repo oder App kommt; in MK10 zusätzlich, dass nur die gerechneten Wellen eingebaut werden und keine Aufnahme die App verlässt; ab MK9 auch EN3-08a und MK-R2.
+**FP-SICHER** prüft in MK0, MK1, MK2, MK7, MK10 und MK-P (und in MK9, falls es gebaut wird) das Markenwort-Verbot (B.6 Nr. 9 a, b und c: genau eine Fundstelle „MS 2000“, kein Logo, keine Korg-Schrift) und die Upload-Wege; in MK2 zusätzlich, dass der Datenblock nur gerechnete Teiltonwerte ohne Namen enthält und weder Bild noch PDF in Repo oder App kommt; in MK10 zusätzlich, dass nur die gerechneten Wellen eingebaut werden und keine Aufnahme die App verlässt; ab MK9 auch EN3-08a und MK-R2.
 
-**FP-TOUCH** prüft in jedem MK-Paket mit Bedienfeld-Änderung M-SKIZZE (B.6 Nr. 5), die Trefferflächen ≥ 44 × 44 und die Bildschirmfotos gegen die Referenz-Skizze (B.3).
+**FP-TOUCH** prüft in jedem MK-Paket mit Bedienfeld-Änderung M-SKIZZE (B.6 Nr. 5), die Trefferflächen ≥ 44 × 44 und die Bildschirmfotos gegen die Referenz-Skizze (B.3). Ab MK-P prüft es stattdessen M-VORLAGE gegen die Lage-Tabelle, die Zoom-Felder und den Bildvergleich MK-P-02.
 
 ---
 
@@ -2010,16 +2398,20 @@ Zusätzlich prüft **FP-DSP in jedem MK-Paket**:
 5. **V6a** (Klangzustände/Morph; H-9 = ja): AM-Werte werden als Ganzzahlen interpoliert. Listen und Schalter wechseln am Ende des Bereichs (KZ3).
 6. **V7a** (Mix): Der Eingangs-Abgriff der AM-Spuren (vor Vol/Pan, MK7) behält nach dem Umzug des Faders in `track.mix` seine Bedeutung; „Quelle nur als Eingang“ trennt weiter `post` von Master und Sends.
 7. **VS3, VS4**: Version nach E.4. Der Vocoder (MK7) speichert keine Takes. VS3 und VS4 nutzen den gemeinsamen Mikrofon-Abgriff aus MK7 (wie die Aufnahme-Seite aus MK10); ist VS3 vorher gebaut, stellt MK7 es darauf um (MK7-14). Mit VS3 kann der Modulator später ein Take sein, das ist nicht im Plan.
-8. **N2 E.4**: MK0 = 4.8.1; die Versionen nach MK13 ab 4.21.0 (E.4 oben; MK9 zurückgestellt). Die Größen-Prognose ändert sich nach E.3 → H-1; SL1 (E.3a) kommt als Paket dazu (H-1 = b).
+8. **N2 E.4**: MK0 = 4.8.1; MK-P = 4.21.0 (bei Auslieferung vor MK13 die nächste freie Zwischennummer, E.1); die Versionen nach der MK-Gruppe ab 4.22.0 (E.4 oben; MK9 zurückgestellt). Die Größen-Prognose ändert sich nach E.3 → H-1; SL1 (E.3a) kommt als Paket dazu (H-1 = b).
 9. **Tabellen-Bau (Spec §10.1; V8a, V4e, V9a):** Der gemeinsame, DOM-freie Tabellen-Bau `mkTables` aus MK2 (Häppchen ≤ 8 ms, MKW-Tabelle im `AudioWorkletGlobalScope`, Kopie je Knoten als Rückfall) ist der Bau nach §10.1. V8a, V4e (statt „aus dem Tabellen-Bau von V8a“, N2 K2-40) und V9a nutzen ihn. Der Tabellenspeicher wird zusammen geprüft: MK2-08 ≤ 16 MB plus der V8a-Pool ≈ 8 MB. `eng 2` bleibt die Tabellen-Engine von V8a; AM ist `eng 3`.
 10. **MK-R2 (EN3-19): VO3, VO4a–c, VC2b, VC2c, VC3, VC3b, VC4** (auch `sample` und `room.sendToClaudeSession`): **nur, wenn sie nach einem gebauten MK9 kommen** (MK9 ist zurückgestellt), rufen sie in jedem Weg vom Gerät weg `mkLocalStrip` auf, mit der Abnahme-Zeile (FP-SICHER): Ein 🔒-Sound mit Marker-Werten ergibt 0 Treffer im Mitschnitt aller Requests und Frames. Vor MK9 gibt es keine 🔒-Sounds und keine Pflicht; ein später gebautes MK9 rüstet die dann vorhandenen Wege selbst nach.
 11. **Vocoder und Formant (Spec §18, N2 EN2-26, D.9):** MK7 liefert den Vocoder der VI-Stufe E; §18 behält nur „Vocoder für andere Engines“. Der Formant VOKAL aus §18 und der FM-FORMANT-Operator nutzen W-44 (Vokal-Quelle aus MK7, Oszillator aus MK12).
 12. **V9d** (Resynthese, Quellen DATEI, Original lokal): nutzt den WAV/AIFF-Leser und den lokalen Speicher (eigene IndexedDB-Datenbank) aus MK10, statt sie neu zu bauen.
-13. **VI1a** (Instrument-Vorlagen, Front-Rahmen): nutzt die Bedienfeld-Bausteine aus MK1 (Kappen-Regler, Drehschalter mit Auswahl-Liste, LED-Tasten, 7-Segment-Anzeige, Holzwangen; B.3), keine zweite Bauart derselben Elemente. Das Sektionsraster und `k6` der Rev. 1 gibt es nicht mehr.
+13. **VI1a** (Instrument-Vorlagen, Front-Rahmen): nutzt die Bedienfeld-Bausteine aus MK1 (Kappen-Regler, Drehschalter mit Auswahl-Liste, LED-Tasten, 7-Segment-Anzeige, Holzwangen; B.3), keine zweite Bauart derselben Elemente. Das Sektionsraster und `k6` der Rev. 1 gibt es nicht mehr. **Ab MK-P** gibt es Drehschalter, 7-Segment-Anzeige und Holzwangen nicht mehr: VI1a nutzt die MK-P-Bausteine (Metallplatte, Kappen-Regler mit Skala, LED-Tasten, LCD 2 × 16, Übersicht und Zoom) und baut fehlende Elemente selbst.
 14. **V8a, V9a, V9b, V9d′** (Engines `mask`, `add`, `body`, `resyn`): brauchen keinen Formatsprung; MK0 hält unbekannte Engines undurchsichtig (EN3-04).
 15. **V10P, V10d, VI3** (Geräte im ⓘ nach N2 D.1 Nr. 4): Die Markenwort-Prüfung B.6 Nr. 9 (a) gilt nur im AM-Teil, (b) über die ganze Datei nur für microKORG, RADIAS, DWGS und jede Schreibung von „MS 2000“ außer der einen Konstante `MK_LABEL`. Diese Pakete scheitern daran nicht, dürfen aber den Modellnamen MS2000 nicht im ⓘ nennen.
 16. **Tastatur und Spielfeld (`#kbArea`):** Bei AM-Spuren sitzen BEND- und MOD-Rad links in der Tastatur-Zeile (MK1). Jedes spätere Paket, das `#kbArea` umbaut (z. B. Pads, Akkord-Tasten, Instrument-Vorlagen), behält diesen Platz und die Regel „nur bei AM-Spuren“; seine M-PLATZ-Prüfung läuft auch mit einer AM-Spur.
 17. **Engine-Kopf (alle Pakete mit Blattkopf):** Die Engine-Wahl zeigt „MS 2000“ aus `MK_LABEL`; wer den Kopf ändert, prüft das Breiten-Budget aus B.3 Zeile 1 mit dieser Beschriftung.
+18. **MK-P und parallele Pakete (MK8, MK10, MK11–MK13):** Wer nach dem anderen zusammenführt, passt an.
+    - **MK8:** Kommt MK8 zuerst, baut es die Programm-Wahl nach B.3 (BANK-Drehschalter, SEITE, Nummerntasten 1–8, „A.24“), und MK-P verlegt sie auf BANK ▼ ▲ und die Schritt-Tasten. Dabei gilt Bank A…H = Genre-Bank 1…8, Taste 1–8 = Seite A, Taste 9–16 = Seite B, LCD „A01:Name“; die Wahl-Tests von MK8 werden umgestellt. Kommt MK-P zuerst, baut MK8 direkt so. `bank`/`slot` bleiben unverändert.
+    - **MK11–MK13:** Ihre Bedienung (B.3 Ebene 2/3 von MIXER, FILTER, F-HK und STIMME) liegt ab MK-P auf den LCD-Seiten nach dem Seitenplan: 07 MIXER (DRIVE-TYP, DRIVE, ROUTING, F-BALANCE), 08 FILTER (F2-Werte, F2-HK), 11+ HK 3, 03 VOICE (STIMMEN-ZAHL). Neue Patch-Quellen und -Ziele gibt es nur auf den Seiten 14–17; ist ein solcher Wert gewählt, bleiben die LEDs der Platte dunkel. Ihre Oberflächen-Abnahmen (MK11-10, MK12-08, MK13-06) prüfen dann M-VORLAGE und MK-P-07 statt M-SKIZZE.
+    - **MK10:** Die Aufnahme-Seite (Menü → Sounds) berührt das Bedienfeld nicht; auf der Platte steht nur der Wellenname SPEICHERWELLE.
 
 ---
 
@@ -2048,6 +2440,8 @@ Zusätzlich prüft **FP-DSP in jedem MK-Paket**:
 
 **Eigene Rechnungen:** Größen-Prognose E.3 (Python über die Budgets aus N2 E.4 und die Dateigröße 4.6.0; Rev. 1 neu mit Reihenfolge N3.0.1 Nr. 6 und den Faktoren ×1,3/×1,5, `scratchpad/rev1-tools/size2.py`). Seitenzuordnung der Handbuch-Texte (Seitenumbrüche im Text gezählt, gedruckte Seite = PDF − 6; Hilfsdateien danach gelöscht).
 
+**Gelesen für MK-P (26.10.2026):** HB-MS S. 5 (PDF 11, Strichzeichnung der Vorderseite, vermessen mit `scratchpad/mkp-tools/lines.py` und `grid.py` am Ausschnitt `scratchpad/ms2000-panel/ms2000-front.png`), S. 6–9 (PDF 12–15, Bedienelemente, Räder), S. 13 (Programm-Wahl, OCTAVE-LEDs), S. 15 (Arp-Tasten), S. 16 (SEQ EDIT und die 16 Regler), S. 18–19 (LCD Edit, Seiten zu den Tasten 1–16, Compare). App-Hauptlinie `scratchpad/mk-wt/index.html` (4.12.0): Block `sq-mk-src` (Bedienfeld-Code MK1–MK4), `MKUI.panelInfo`, `MK_LABEL`, `ctlPrecision` (Fein-Regel).
+
 **Nicht möglich:** RADIAS-Handbuch (Xander: nicht nötig). Korg „MIDI Implementation“ (nicht im Handbuch; Tor MK9-T). Kein Foto der Vorderseite (die Referenz-Skizze ist eine eigene Zeichnung; Anordnung der Gruppen nach der Strichzeichnung HB-MK S. 2–3, Maße eK). Kein AG06-Handbuch (Schalterlage am Gerät prüfen) und keine Prüfung der GarageBand-Menünamen. Kein Klang angehört, nichts am iPhone gemessen, kein Web-Abruf. Im Supabase-Projekt und auf GitHub wurde nichts gelesen oder geändert.
 
 ---
@@ -2072,8 +2466,12 @@ Zusätzlich prüft **FP-DSP in jedem MK-Paket**:
 ### H.2 Neu aus Rev. 2 (die Vorgabe gilt, bis du antwortest)
 
 - **H-13 Engine-Wahl im schmalen Hochformat.** Mit „MS 2000“ passen vier Knöpfe auf schmalen iPhones (P2/P3) und vielleicht schon auf deinem nicht mehr neben den Spurnamen. Vorschlag: dort ein Engine-Chip „MS 2000 ▾“ bzw. „VA ▾“ mit Auswahl-Liste statt der vier Knöpfe. Das ändert auch VA/FM/WT sichtbar. *Vorgabe: Knöpfe, wo sie passen („MS 2000“ notfalls zweizeilig); der Chip nur dort, wo nicht. Der Orchestrator zeigt dir den Chip vor dem Bau.*
-- **H-14 Was der microKORG nicht hat, wohin damit?** Das Bedienfeld zeigt genau die Vorderseite des Originals. Der MS2000 hat aber mehr (Priorität, Split, Stimmungen, Mod-Sequenzer, Filter-Anschlag, Gate). Vorschlag (B.3, EN3-20): Diese Werte liegen auf einer zweiten Ebene der 5 Regler, die man mit **SHIFT** einschaltet (wie die SHIFT-Taste am Gerät); STIMMUNG und SEQ kommen an die zwei Stellungen der EDIT-WAHL 2, die am Original GLOBAL und MIDI heißen (beides braucht die App nicht). VOLUME regelt die Lautstärke der Spur. Was am Original nur aufgedruckt ist (Matrix), zeigt die App als zwei Zeilen unter den Reglern; ein Tipp auf die Zeile öffnet bei SEQ, Kanal-Pegel/-Pan und eigener Stimmung eine Zusatz-Ansicht. Wo das ganze Bedienfeld nicht hinpasst (Hochformat auf kleineren iPhones, iPhone SE quer, iPhone 12/13 quer mit dem Home-Balken), zeigt die App eine Hälfte auf einmal: Die Reiter oben heißen dann [LINKS] [RECHTS] [FX], und SHIFT ist in beiden Hälften da. Auf deinem 12 Pro Max passt das ganze Bedienfeld in beiden Richtungen (hochkant als zwei Hälften übereinander). *Vorgabe: so.*
+- **H-14 Was der microKORG nicht hat, wohin damit?** *(Mit MK-P gegenstandslos: Am MS2000 hat jeder Wert seinen Regler oder seine Taste, der Rest liegt auf den LCD-Seiten wie am Gerät.)* Das Bedienfeld zeigt genau die Vorderseite des Originals. Der MS2000 hat aber mehr (Priorität, Split, Stimmungen, Mod-Sequenzer, Filter-Anschlag, Gate). Vorschlag (B.3, EN3-20): Diese Werte liegen auf einer zweiten Ebene der 5 Regler, die man mit **SHIFT** einschaltet (wie die SHIFT-Taste am Gerät); STIMMUNG und SEQ kommen an die zwei Stellungen der EDIT-WAHL 2, die am Original GLOBAL und MIDI heißen (beides braucht die App nicht). VOLUME regelt die Lautstärke der Spur. Was am Original nur aufgedruckt ist (Matrix), zeigt die App als zwei Zeilen unter den Reglern; ein Tipp auf die Zeile öffnet bei SEQ, Kanal-Pegel/-Pan und eigener Stimmung eine Zusatz-Ansicht. Wo das ganze Bedienfeld nicht hinpasst (Hochformat auf kleineren iPhones, iPhone SE quer, iPhone 12/13 quer mit dem Home-Balken), zeigt die App eine Hälfte auf einmal: Die Reiter oben heißen dann [LINKS] [RECHTS] [FX], und SHIFT ist in beiden Hälften da. Auf deinem 12 Pro Max passt das ganze Bedienfeld in beiden Richtungen (hochkant als zwei Hälften übereinander). *Vorgabe: so.*
 - **H-15 Wie kommt das Wellen-Paket zum Bau?** Nach der Aufnahme teilt die App eine kleine Datei (nur die gerechneten Wellen, ≤ 200 KB) über das Teilen-Blatt des iPhones. *Vorgabe: Du schickst sie als Datei im Chat mit dem Orchestrator in der Claude-App; geht das nicht, „In Dateien sichern“ (iCloud Drive), und du sagst Bescheid.*
+
+### H.3 Neu mit MK-P (26.10.; die Vorgabe gilt, bis du antwortest)
+
+- **H-16 Beschriftung des Bedienfelds.** Am MS2000 ist alles englisch beschriftet (CUTOFF, RESONANCE, EG 1 INT, KBD TRACK …), darunter die weißen Vocoder-Namen. Die App-Regel L5 sagt „alles deutsch“. Vorschlag: Das Bedienfeld trägt die Beschriftung wie am Gerät; die Anzeige, die Textzeile darüber und die Hilfe bleiben deutsch. Zwei Wörter dürfen nicht hinein (Marken-Regel): VOX WAVE heißt STIMMWELLE, DWGS heißt SPEICHERWELLE. *Vorgabe: englisch wie am Gerät.*
 
 ---
 
@@ -2236,3 +2634,19 @@ Grundlage: Xanders Antworten vom 25.10. auf Teil H (H-1 … H-12), verbindlich. 
 - **56** · N3.0.2, Quellen · Strichzeichnung HB-MK S. 2–3 als Beleg der Anordnung (im Speicher als Text-Raster ausgewertet, keine Bild-Datei); App-Raster und Kopf quer (Z. 72–85, 1426–1441) und `MIC_ASK` (Z. 29401) gelesen.
 - **57** · Nachzeichnung (25.10., von Xander geschicktes PDF mit 64 Wellen-Bildern) · MK2 Umfang 3, Daten, Dauer, MK2-03/11, neu MK2-12, Tests, Geräte-Abgleich, Risiken; MK10 Ziel, Umfang 3/6/7, MK10-14, Risiken; EN3-09, B.6 Nr. 9, E.1, E.3, E.5 Nr. 1/5, Teil F, H-1 · Die freien „64 Rezepte“ sind ersetzt durch die geprüfte Nachzeichnung (`dwgs-64-compact.json`, `PRUEFUNG.md`): Datenblock mit Teiltönen 1–32 des Notenbands (12 Bit Pegel und Phase, ≈ 8,6 KB), darüber ein gruppentypischer Abfall, Tonlage r für 3, 28, 34, 35 und 59, Hüllen in Hz für 35 und 61–64 aus der Nachzeichnung; Gruppen-Merkmale → Abfall-Tabelle; MK2-12 prüft die Form gegen die Nachzeichnung (≤ rms32 + 0,1 Prozentpunkte) und nennt 60 als zweifelhaft; weiter „≈“ bis MK10. Lizenz: nur selbst gerechnete Werte, nie die Bilder, dieselbe offene Lage wie MK10, Xander hat eingebaut gewählt. MK10 bleibt nötig (genauer Klang, obere Teiltöne, Oktav-Verhalten, Pegel, r) und entfernt den MK2-Block beim Einbau. MK2 +42 KB (+7), 7–8 h (+0,5); Summe +517 KB, ≈ 100–116 h, mit Fach-Prüfung ≈ 113–142 h; E.3 neu gerechnet (`scratchpad/dwgs-trace/spec-mk2/size3.py`): Planende 5,52 / 6,43 / 7,04 MB, 4,5 MB bei V9e / V7c / V5d.
 - **58** · Orchestrator 25.10. · MK2 Umfang 3 · Alle Teiltöne der geprüften Kompaktdatei werden eingebaut (nicht nur 1–32), weil sie den Formfehler der obertonreichen Wellen stark senken; MK2 ≈ +45 KB statt +42.
+- **59** · Xander 26.10. („der MS 2000 soll genauso aussehen“) · Überblick, N3.0.2, EN3-20, A.11, B.3 (ersetzt), B.6 Nr. 5 und 9 b, B.7, neues Paket **MK-P** (Lage-Tabelle aus HB-MS S. 5 vermessen, Belegung Synth/Vocoder, Seitenplan, Umzug der SHIFT-Funktionen, Übersicht/Zoom/Spiel-Ansicht, MK-P-01…12), E.1–E.4, Teil F, Teil G Nr. 8, 13, 18, Quellen, H-14, neue Frage H-16 · 14 Pakete, +542 KB, ≈ 119–138,5 h; MK-P = 4.21.0, danach ab 4.22.0.
+
+**Prüfung MK-P (unabhängig, 26.10.):** MK-P Element für Element gegen die Zeichnung HB-MS S. 5 geprüft (Ausschnitt `ms2000-front.png`; Linien-Suche, Text- und Tastenkanten neu gemessen), dazu gegen HB-MS S. 6–9, 13 und 18–19, gegen `normMk` der App-Hauptlinie und gegen Teil E. Bestätigt: Alle Sektionen und Elemente der Zeichnung sind da, jeweils in der richtigen Sektion und Reihenfolge, und die Element-Mitten treffen. Aufdruck und Vocoder-Namen stimmen. Jeder Regler und jede Taste hat einen vorhandenen Pfad (`normMk`, `S.bpm`, `tr.kbOct`, Spur-Lautstärke) oder den neuen Live-Wert E1/E2. Seitenplan und Tasten 1–16 entsprechen HB-MS S. 18. Die Summen sind nachgerechnet. Die folgenden Befunde sind eingearbeitet.
+
+- **60** · MK-P Umfang 3 (Lage) · Der Aufdruck über den 16 Reglern lag 1,3–1,4 % der Höhe zu tief: 72,9 │ 74,6 statt gemessen 71,5 │ 73,3; die untere Zeile hätte die Skala berührt. PATCH 1–4 haben nur eine Zeile (73,5). Weitere Korrekturen: die inverse Zeile unter den Schritt-Tasten 98,3 → 98,7, HOLD 47,8 / 32,4 → 48,2 / 32,3. Vier Sektionstitel waren aus der Rahmenmitte statt aus der Schrift genommen: EG 1 (FILTER) 22,0 → 22,4, EG 2 (AMP) 45,1 → 44,5, LFO 1 58,0 → 58,3, LFO 2 63,4 → 63,8.
+- **61** · MK-P Aussehen, MK-P-11 · Die Mittelmarke zeigt die Zeichnung an EG 1 INT, KBD TRACK, SEMITONE, TUNE und PAN, nicht an PATCH 1–4. AUDIO IN 1 ist ohne Skala gezeichnet. Spec und Abnahme folgen jetzt der Zeichnung.
+- **62** · MK-P Umfang 1 · „Tasten zwischen zwei Spalten“ nannte den PORTAMENTO-Regler eine Taste und ließ REC aus; korrigiert. Die Tastenabstände der Paare und Viererreihen messen 4,2–4,4 %. Gebaut wird der Tabellenwert 4,3 %, MK-P-01 prüft ihn (± 0,05). Kreisziffern, Hinweislinien und die Klammer der Zeichnung werden ausdrücklich nicht gebaut.
+- **63** · MK-P Zoom-Ansicht, MK-P-07 · Mit k ≥ 0,93 kam der 4,3-%-Abstand auf 43,99 px. Neu gilt k ≥ 0,931 (z ≥ 1024 px); daraus ergeben sich die vorhandenen Schwellen 570, 281 und 197 px. Die Tasten bei y 66,1 (LFO SELECT, MOD/DELAY, VIRTUAL PATCH) passen mit 44-px-Treffer nicht ganz in Z4 bzw. D2, in P3 ragen sie bis 9 px über den Rand. Neu werden Trefferflächen am Feldrand ins Feld verschoben, nie verkleinert. Ergänzt ist auch ein Rückfall für Körper unter den Mindestmaßen der Gruppen.
+- **64** · MK-P Zoom-Felder · Der Titel EG 1 (FILTER) (x 19,6–25,1) liegt bei schmalen Spalten in keinem Feld ganz. Er ist jetzt als einzige Ausnahme der Regel „Felder schneiden keine Beschriftung“ benannt. Alle anderen Element- und Beschriftungsgrenzen sind gegen H1–H4, G-L/G-R, O/U, D1–D3 und Z1–Z6 nachgerechnet; es gibt keinen weiteren Schnitt.
+- **65** · MK-P Spiel-Ansicht:
+  - **Reihenfolge:** Band 1 hieß „Reihenfolge wie am Gerät“, stand aber nicht so (Anzeige an 2. Stelle, ARP vor MOD SEQ). Quer gilt jetzt OCTAVE · BANK · TIMBRE · MOD SEQ ON/OFF · REC · ARP ON/OFF · LATCH · Anzeige. Hochkant ist Band 1 OCTAVE · BANK · Anzeige (P1 344 ≤ 360 px, P3 290 px), und die fünf Tasten bilden Band 2.
+  - **Schritt-Tasten:** Die Regel nennt jetzt je Format, was gilt; die alte Fassung ließ offen, ob L2 (637 px, quer) 2 × 8 bekommt. Band 1 steht ab 604 px Körperbreite in einer Reihe (L1, L2, W).
+  - **Aufdruck:** Zwei Zeilen à 9 px passten bei 45 px je Taste (L1, P1) nicht (ARPEGGIO, AUDIO IN 2). Die Spiel-Ansicht zeigt darum nur die Zeile des aktiven Modus, mit Umbruch an Leerzeichen; ARPEGGIO bekommt 8 px.
+- **66** · Überblick, MK-P, E.1, E.2 Nr. 7, E.4, Teil G Nr. 8 · Versionen: Die Spec empfahl die Auslieferung bald nach 4.15.0, gab MK-P aber 4.21.0 und verlangte bei früherer Auslieferung eine „Verschiebung“ der übrigen Nummern. Neu bekommt MK-P bei Auslieferung vor MK13 die nächste freie Zwischennummer (z. B. 4.15.1). Alle anderen Nummern bleiben, 4.21.0 bleibt dann frei, und die Folge ab 4.22.0 ändert sich nicht (EN2-14 verlangt nur streng steigende Nummern). Damit ist die offene Versionsfrage aus dem Paket-Entwurf erledigt.
+- **67** · Überblick, MK-P, E.1, E.2 Nr. 7, Risiken · In der Liste der parallelen Pakete fehlte MK12, obwohl Teil G Nr. 18 und der Seitenplan es abdecken (11+ HK 3, F2-HK, Welle 8, Quelle EG 3). Jetzt heißt es überall „MK8 und MK10–MK13“.
+- **68** · MK-P Daten, B.6 Nr. 9 (c) · `seitenSprung` (GLOBAL 1D) hatte keinen Ort und gehört jetzt zum Ansichtszustand. FP-SICHER prüft ab MK-P die Bildschirmfotos aus MK-P-02 und MK-P-07 statt aus M-SKIZZE. Unverändert und bestätigt: Es braucht kein Korg-Wort, kein Logo und keine Korg-Schrift, und das Namensfeld zeigt nur `MK_LABEL`. Paketzeile MK-P: 4.21.0 (bzw. Zwischennummer), 19–22,5 h, +25 KB. Summe: 14 Pakete, +542 KB, ≈ 119–138,5 h.
