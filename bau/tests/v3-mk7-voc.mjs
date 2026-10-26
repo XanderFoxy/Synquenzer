@@ -195,7 +195,7 @@ await T('MK7-16', () => {
         for (let k = 2; k < N / 2 - 2; k++) { const lm = Math.max(Q[k - 2], Q[k - 1], Q[k], Q[k + 1], Q[k + 2]); if (Q[k] < lm * .5 || Q[k] < 1e-12) continue; const h = 10 * Math.log10(P[k] / Q[k]); if (h > env[k]) env[k] = h; }
       }
       const sm = new Float64Array(N / 2); for (let k = 3; k < N / 2 - 3; k++) { let m = -200; for (let j = k - 3; j <= k + 3; j++) m = Math.max(m, env[j]); sm[k] = m; }
-      const F = W.VOX[v], est = t => { let bk = 0, bd = 1e9; for (let k = Math.floor(t * .7 / df); k <= Math.ceil(t * 1.3 / df); k++) { if (sm[k] < sm[k - 1] || sm[k] < sm[k + 1]) continue; const f = k * df; if (Math.abs(f - t) < bd) { bd = Math.abs(f - t); bk = k; } } return bk * df; };
+      const F = W.VOW[v], est = t => { let bk = 0, bd = 1e9; for (let k = Math.floor(t * .7 / df); k <= Math.ceil(t * 1.3 / df); k++) { if (sm[k] < sm[k - 1] || sm[k] < sm[k + 1]) continue; const f = k * df; if (Math.abs(f - t) < bd) { bd = Math.abs(f - t); bk = k; } } return bk * df; };
       const e1 = est(F[0]) / F[0] - 1, e2 = est(F[1]) / F[1] - 1; worst = Math.max(worst, Math.abs(e1), Math.abs(e2));
       info.push(v + '@' + (f0 < 100 ? 'C2' : 'C3') + ' ' + Math.round(est(F[0])) + '/' + Math.round(est(F[1])));
     }

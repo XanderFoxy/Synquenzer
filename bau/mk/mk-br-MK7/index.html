@@ -3844,25 +3844,21 @@ const MKTAB = (function () {
 })();
 /*}MKT*/
 /*MKV{*/
-/* ---- MK7 (W-44): the vowel source, DOM-free (the probe's synthetic modulator; MK8 computes the hold spectra from it, MK12
-   makes OSZ 1 wave 8 of it). Glottis as W-28 (Rosenberg pulse, OQ voxOQ, polyBLAMP-free at these levels, DC removed, two
-   1-pole lowpasses at 300 Hz) -> F1-F4 in cascade (TPT-SVF resonators, bandwidths voxB, gains voxG) -> lip radiation
-   (first difference, +6 dB/oct: the formants stand out of the glottal slope as in a voice).
-   mkVowel({f0, v: 'a' | ['a', 'e', ...], seg (s per vowel, formants glide 60 ms), sec, sr, rms (dBFS), vib (ct), vibHz, raw: the source alone}, W) ---- */
+/* MK7 W-44: glottis -> F1-F4 -> radiation */
 function mkVowel(o, W) {
   o = o || {}; W = W || (typeof SQMK !== 'undefined' ? SQMK.W() : null); if (!W) return new Float32Array(0);
   const sr = o.sr || 48000, n = Math.round((o.sec || 1) * sr), f0 = o.f0 || 110, seq = Array.isArray(o.v) ? o.v : [o.v || 'a'], seg = o.seg || 1e9;
-  const out = new Float32Array(n), oq = W.voxOQ, tp = .714 * oq, tn = .286 * oq, lp = 1 - Math.exp(-2 * Math.PI * 300 / sr), B = W.voxB, G = W.voxG;
-  const S = [0, 0, 0, 0, 0, 0, 0, 0]; let ph = 0, z1 = 0, z2 = 0, dc = 0, xp = 0, F = W.VOX[seq[0]] || W.VOX.a, Fs = F.slice();
-  const gl = 1 - Math.exp(-1 / (.012 * sr));   // the formants glide (tau 12 ms) at a vowel change
+  const out = new Float32Array(n), oq = W.vowOQ, tp = .714 * oq, tn = .286 * oq, lp = 1 - Math.exp(-2 * Math.PI * 300 / sr), B = W.vowB, G = W.vowG;
+  const S = [0, 0, 0, 0, 0, 0, 0, 0]; let ph = 0, z1 = 0, z2 = 0, dc = 0, xp = 0, F = W.VOW[seq[0]] || W.VOW.a, Fs = F.slice();
+  const gl = 1 - Math.exp(-1 / (.012 * sr));
   for (let i = 0; i < n; i++) {
-    const v = seq[Math.min(seq.length - 1, Math.floor(i / sr / seg)) % seq.length]; F = W.VOX[v] || F;
+    const v = seq[Math.min(seq.length - 1, Math.floor(i / sr / seg)) % seq.length]; F = W.VOW[v] || F;
     const f = f0 * Math.pow(2, (o.vib || 0) / 1200 * Math.sin(2 * Math.PI * (o.vibHz || 5.5) * i / sr));
     ph += f / sr; if (ph >= 1) ph -= 1;
     let y = ph < tp ? .5 - .5 * Math.cos(Math.PI * ph / tp) : ph < oq ? Math.cos(.5 * Math.PI * (ph - tp) / tn) : 0;
     dc += (y - dc) * .0005; y -= dc; z1 += lp * (y - z1); z2 += lp * (z1 - z2);
     let x = z2;
-    if (!o.raw) for (let k = 0; k < 4; k++) {   // F1-F4 in cascade (each a resonant TPT-SVF low pass, unity at DC: the formant levels follow by themselves)
+    if (!o.raw) for (let k = 0; k < 4; k++) {
       Fs[k] += (F[k] - Fs[k]) * gl;
       const g = Math.tan(Math.PI * Math.min(Fs[k], .45 * sr) / sr), q = Fs[k] / B[k], kk = 1 / q, a1 = 1 / (1 + g * (g + kk)), a2 = g * a1, a3 = g * a2, j = 2 * k;
       const v3 = x - S[j + 1], v1 = a1 * S[j] + a2 * v3, v2 = S[j + 1] + a2 * S[j] + a3 * v3; S[j] = 2 * v1 - S[j]; S[j + 1] = 2 * v2 - S[j + 1]; x = v2 * G[k];
@@ -3908,11 +3904,11 @@ const L_ = {
   // MK4 effects (A.7)
   mfx: [['Chorus/Flanger', 'Ensemble', 'Phaser'], ['CHO', 'EnS', 'PHA']],
   dly: [['Stereo', 'Kreuz', 'L/R'], ['StE', 'CrO', 'L-r']],
-  hpg: [['immer (DIS)', 'nur mit Ton (ENA)'], ['dIS', 'EnA']],   // MK7
+  hpg: [['immer (DIS)', 'nur mit Ton (ENA)'], ['dIS', 'EnA']],
   dnote: [['1/32', '1/24', '1/16', '1/12', '3/32', '1/8', '1/6', '3/16', '1/4', '1/3', '3/8', '1/2', '2/3', '3/4', '1/1'], ['1.32', '1.24', '1.16', '1.12', '3.32', '1.8', '1.6', '3.16', '1.4', '1.3', '3.8', '1.2', '2.3', '3.4', '1.1']],
 };
 // a knob definition: l label, p path of p.mk (t.0. is added for timbre keys), L list, f(v) -> [display, LCD text], dark: package
-const K = (l, p, o) => Object.assign({l, p: p && !/^(mode|lay|tv|split|vmax|mw|bpm|vol|pfA|pfR|scale|skey)$/.test(p) && !/^(mfx|dly|eq|arp|voc|usc)\./.test(p) ? 't.0.' + p : p}, o || {});
+const K = (l, p, o) => Object.assign({l, p: p && !/^(mode|lay|tv|split|vmax|mw|bpm|vol|pfA|pfR|pvA|pvR|scale|skey|in\.e[12])$/.test(p) && !/^(mfx|dly|eq|arp|voc|usc)\./.test(p) ? 't.0.' + p : p}, o || {});
 const fTime = (k, v) => [z3(v), sec(k === 'a' ? W().atk(v) : W().dec(v))];
 const fSig = (v, u) => [z3(v), ft(v, 1) + (u || '')];
 const KN = {
@@ -3960,10 +3956,9 @@ Object.assign(KN, {
   eqLf: K('TIEF-FREQ', 'eq.lf', {log: 1, f: v => [kHz3(v), hz(v)]}), eqLg: K('TIEF-GAIN', 'eq.lg', {step: .5, f: v => [db3(v), dbT(v)]}),
   eqHf: K('HOCH-FREQ', 'eq.hf', {log: 1, f: v => [kHz3(v), hz(v)]}), eqHg: K('HOCH-GAIN', 'eq.hg', {step: .5, f: v => [db3(v), dbT(v)]}),
 });
-// MK7: the vocoder (B.3: EING. 1, MIXER, FILTER, FC-MOD, AMP, K-PEGEL / K-PAN; SPIEL: CUTOFF / RESONANZ of the carrier bands, ATTACK / RELEASE EG2)
 const qTxt = v => 'Güte ' + W().vocQ(v).toFixed(1).replace('.', ',');
 Object.assign(KN, {
-  vgs: K('GATE', 'voc.gs', {f: v => [z3(v), 'Schließzeit ' + sec(W().vocGate(v)) + (mk().voc.th ? '' : ' (wirkt mit SCHWELLE)')]}),
+  vgs: K('GATE', 'voc.gs', {f: v => [z3(v), 'Schließzeit ' + sec(W().vocGate(v))]}),
   vth: K('SCHWELLE', 'voc.th', {f: v => [z3(v), v <= 0 ? 'aus (kein Gate)' : Math.round(W().vocThDb(v)) + ' dBFS']}),
   vhpl: K('HPF-PEGEL', 'voc.hpl', {f: v => [z3(v), v <= 0 ? 'aus' : Math.round(v / 127 * 100) + ' % Zischlaute über 6 kHz']}), vhpg: K('HPF-GATE', 'voc.hpg', {L: 'hpg'}),
   vins: K('EINGANG 1', 'voc.ins', {f: v => [z3(v), v <= 0 ? 'aus' : 'E1 im Träger ' + Math.round(v / 127 * 100) + ' %']}),
@@ -3971,7 +3966,7 @@ Object.assign(KN, {
   vres: K('RESONANZ', 'voc.res', {f: v => [z3(v), qTxt(v)]}),
   vefs: K('FOLGER', 'voc.efs', {f: v => (v >= 127 ? ['HLd', '127 = HALTEN (Formant eingefroren)'] : [z3(v), 'Abfall ' + sec(W().vocTau(v)) + ' · Anstieg ' + sec(Math.max(.001, W().vocTau(v) / 4))])}),
   vmsrc: K('QUELLE', 'voc.msrc', {L: 'psrc'}), vmint: K('INTENSITÄT', 'voc.mint', {f: v => fSig(v)}),
-  vlvl: K('PEGEL', 'voc.lvl'), vdir: K('DIREKT', 'voc.dir', {f: v => [z3(v), v <= 0 ? 'aus' : 'Stimme direkt ' + Math.round(v / 127 * 100) + ' % (hörbares Echo der eigenen Stimme)']}),
+  vlvl: K('PEGEL', 'voc.lvl'), vdir: K('DIREKT', 'voc.dir', {f: v => [z3(v), v <= 0 ? 'aus' : 'Stimme direkt ' + Math.round(v / 127 * 100) + ' %']}),
   vdist: K('VERZERR.', 'voc.dist', {L: 'onoff'}), vkbd: K('KEYTRACK', 'voc.kbd', {f: v => [z3(v), ft(v / 63 * .3 * 12, 1).replace('.', ',') + ' dB/Okt']}), vvel: K('ANSCHLAG', 'voc.vel', {f: v => fSig(v)}),
   q1: K('QUELLE 1 ▾', 'in.e1', {src: 'e1'}), q2: K('QUELLE 2 ▾', 'in.e2', {src: 'e2'}),
   pvcut: K('CUTOFF', 'voc.cut', {f: v => [z3(v), ft(v, 1) + ' · Träger-Bänder']}), pvres: K('RESONANZ', 'voc.res', {f: v => [z3(v), qTxt(v)]}),
@@ -3983,7 +3978,6 @@ for (const n of [1, 2]) Object.assign(KN, {['l' + n + 'w']: K('WELLE', 'l' + n +
   ['l' + n + 'f']: K('FREQ', 'l' + n + '.f', {lfo: n, f: v => [z3(v), hz(W().lfoHz(v)).replace(' Hz', ' Hz')]}), ['l' + n + 'n']: K('NOTE', 'l' + n + '.note', {lfo: n})});
 const D = null;  // an empty place ("–" on the original)
 // EDIT-WAHL 1 (Synth | Vocoder name) with the 5 knobs of level 1 and level 2 (SHIFT); B.3 Regler-Belegung
-// MK7: [4] / [5] = the vocoder rows (level 1 / 2) where they differ (B.3 Regler-Belegung, Vocoder in brackets)
 const VLAY = K('EINZELN', 'lay', {L: 'lay', lock: 'im Vocoder gibt es nur Timbre 1'});
 const SEC1 = [
   ['STIMME', 'STIMME', ['mode', 'lay', 'asg', 'trig', 'udet'], ['prio', 'tv', 'split', 'vmax', D], ['mode', VLAY, 'asg', 'trig', 'udet'], ['prio', D, D, 'vmax', D]],
@@ -3999,11 +3993,11 @@ const SEC1 = [
   ['LFO 2', 'LFO 2', ['l2w', 'l2k', 'l2s', 'l2f', D], null]];
 // EDIT-WAHL 2: dark until their packages (B.3; MK1 Umfang 3)
 const SEC2 = [['PATCH 1', 'K-PEGEL A', '', ['QUELLE', 'ZIEL', 'INTENS.'], ['ps0', 'pd0', 'pi0', D, D], ['cl0', 'cl1', 'cl2', 'cl3', D]], ['PATCH 2', 'K-PEGEL B', '', ['QUELLE', 'ZIEL', 'INTENS.'], ['ps1', 'pd1', 'pi1', D, D], ['cl4', 'cl5', 'cl6', 'cl7', D]],
-  ['PATCH 3', 'K-PAN A', '', ['QUELLE', 'ZIEL', 'INTENS.'], ['ps2', 'pd2', 'pi2', D, D], ['cp0', 'cp1', 'cp2', 'cp3', D]], ['PATCH 4', 'K-PAN B', '', ['QUELLE', 'ZIEL', 'INTENS.'], ['ps3', 'pd3', 'pi3', D, D], ['cp4', 'cp5', 'cp6', 'cp7', D]],   // MK2: active; MK7: [5] = the vocoder channels
+  ['PATCH 3', 'K-PAN A', '', ['QUELLE', 'ZIEL', 'INTENS.'], ['ps2', 'pd2', 'pi2', D, D], ['cp0', 'cp1', 'cp2', 'cp3', D]], ['PATCH 4', 'K-PAN B', '', ['QUELLE', 'ZIEL', 'INTENS.'], ['ps3', 'pd3', 'pi3', D, D], ['cp4', 'cp5', 'cp6', 'cp7', D]],
   ['MOD-FX', 'MOD-FX', '', ['TYP', 'TEMPO', 'TIEFE'], ['mfxT', 'mfxS', 'mfxD', D, D]], ['DELAY', 'DELAY', '', ['TYP', 'T-SYNC', 'ZEIT', 'TIEFE'], ['dlyT', 'dlyS', 'dlyZ', 'dlyD', D]],   // MK4: active
   ['EQ', 'EQ', '', ['TIEF-FRQ', 'TIEF-GN', 'HOCH-FRQ', 'HOCH-GN'], ['eqLf', 'eqLg', 'eqHf', 'eqHg', D]],
   ['ARP A', 'ARP A', 'MK5', ['TEMPO', 'AUFLÖS.', 'GATE', 'TYP', 'OKTAVEN']], ['ARP B', 'ARP B', 'MK5', ['LATCH', 'SWING', 'KEY SYNC', 'LÄNGE', 'ZIEL']], ['STIMMUNG', 'STIMMUNG', '', ['STIMMUNG', 'GRUNDTON'], ['scl', 'skey', D, D, D]], ['SEQ', '–', 'MK6', ['SEQ AN', 'SEQUENZ', 'ZIEL', 'BEWEGUNG', 'LÄNGE']]];
-const SPIEL = ['pcut', 'pres', 'patk', 'prel', 'bpm'], SPIELV = ['pvcut', 'pvres', 'pvatk', 'pvrel', 'bpm'];   // MK7: SPIEL in the vocoder (HB-MK S. 10)
+const SPIEL = ['pcut', 'pres', 'patk', 'prel', 'bpm'], SPIELV = ['pvcut', 'pvres', 'pvatk', 'pvrel', 'bpm'];
 const KLAB = ['CUTOFF', 'RESO.', 'ATTACK', 'RELEASE', 'TEMPO'];  // the fixed print on the knobs (SPIEL)
 // short forms where a place is 44-56 px wide (B.3 Beschriftung)
 const SHORT = {'RESONANZ': 'RESO.', 'KEYTRACK': 'KEYTR.', 'AUSLÖSUNG': 'AUSLÖS.', 'ZUWEISUNG': 'ZUWEIS.', 'UNI-VERST.': 'UNI-V.', 'PRIORITÄT': 'PRIOR.', 'SYNTH/VOC.': 'SYN/VOC',
@@ -4016,12 +4010,12 @@ const SHORT = {'RESONANZ': 'RESO.', 'KEYTRACK': 'KEYTR.', 'AUSLÖSUNG': 'AUSLÖS
 const sh = n => SHORT[n] || n;
 const kOf = x => (x == null ? null : typeof x === 'string' ? KN[x] : x);
 // the 5 knob definitions of the current state (LFO FREQ | NOTE by TEMPO SYNC)
-const voc = () => mk().mode === 3;   // MK7: a vocoder program
+const voc = () => mk().mode === 3;
 function knobs() {
   if (P.wahl === 0) return (voc() ? SPIELV : SPIEL).map(kOf);
   if (P.wahl === 2) { const s = SEC2[P.pos[2]]; if (voc() && P.pos[2] === 10) return [0, 1, 2, 3, 4].map(() => null); if (voc() && s[5]) return s[5].map(kOf); if (s[4]) return s[4].map(x => { const d = kOf(x); return d && d.dsw ? (mk().dly.sync ? KN.dlyN : KN.dlyZ) : d; }); return [0, 1, 2, 3, 4].map(k => (s[3][k] ? {l: s[3][k], dark: s[2]} : null)); }
   const s = SEC1[P.pos[1]], v_ = voc() && s[4], row = v_ ? (P.shift && s[5] ? s[5] : s[4]) : P.shift && s[3] ? s[3] : s[2];
-  if (!v_ && P.pos[1] === 2 && !P.shift && ct().o1.w === 7) return ['o1w', 'c1', 'c2', 'q1', 'q2'].map(kOf);   // MK7: Welle „Eingang“ – QUELLE 1 / 2 at the empty places 4 / 5
+  if (!v_ && P.pos[1] === 2 && !P.shift && ct().o1.w === 7) return ['o1w', 'c1', 'c2', 'q1', 'q2'].map(kOf);
   return row.map(x => { if (x === 'c2' && ct().o1.w === 5) return KN.c2w; const d = kOf(x); if (d && d.lfo) { const t = ct()['l' + d.lfo]; return t.sync ? KN['l' + d.lfo + 'n'] : KN['l' + d.lfo + 'f']; } return d; });
 }
 const snd = () => sndOf(P.i), mk = () => snd().p.mk;
@@ -4040,7 +4034,7 @@ function get(d) {
   if (d.p === 'vol') return Math.round(s_.fx.vol * 127);
   if (d.p === 'pfA') return s_.p.mk.t[ti()].e2.a;
   if (d.p === 'pfR') return s_.p.mk.t[ti()].e2.r;
-  if (d.p === 'pvA') return s_.p.mk.t[0].e2.a;   // MK7: SPIEL in the vocoder (EG2 only)
+  if (d.p === 'pvA') return s_.p.mk.t[0].e2.a;
   if (d.p === 'pvR') return s_.p.mk.t[0].e2.r;
   if (d.src) return srcIdx(d.src);
   if (d.wv) return Math.floor(s_.p.mk.t[ti()].o1.c2 / 2) + 1;   // MK2: STEUER 2 values 2n - 2, 2n - 1 = wave n
@@ -4062,9 +4056,9 @@ function setv(d, v, live) {
   if (d.p === 'bpm') { setBpm(Math.round(v)); return; }
   if (d.p === 'vol') { setP(i, 'fx.vol', clamp(v, 0, 127) / 127); return; }
   if (d.p === 'lay') { const m = [0, 1, 2][clamp(Math.round(v), 0, 2)]; mkSetP(i, 'mode', m, false); if (m === 0) { P.tim = 1; soloSet(0); } return; }   // MK3: EINZELN │ SCHICHT │ SPLIT
-  if (d.p === 'mode') { const m = Math.round(v) >= 1 ? 3 : 0; if ((s_.p.mk.mode === 3) !== (m === 3)) { mkSetP(i, 'mode', m, false); P.tim = 1; soloSet(0); P.view = null; } return; }   // MK7: SYNTH │ VOCODER
-  if (d.p === 'pvA' || d.p === 'pvR') { mkSetP(i, 't.0.e2.' + (d.p === 'pvA' ? 'a' : 'r'), v, live); return; }   // MK7: SPIEL in the vocoder: EG2 only
-  if (d.src) return;   // MK7: QUELLE ▾ is a list (srcPop)
+  if (d.p === 'mode') { const m = Math.round(v) >= 1 ? 3 : 0; if ((s_.p.mk.mode === 3) !== (m === 3)) { mkSetP(i, 'mode', m, false); P.tim = 1; soloSet(0); P.view = null; } return; }
+  if (d.p === 'pvA' || d.p === 'pvR') { mkSetP(i, 't.0.e2.' + (d.p === 'pvA' ? 'a' : 'r'), v, live); return; }
+  if (d.src) return;
   if (d.ch != null) {   // MK7: K-PEGEL / K-PAN: channel c = bands 2c, 2c + 1, both moved by the same step (from the gesture's start)
     const a = d.p.indexOf('.chl.') > 0 ? 'chl' : 'chp', base = (P.ch0 && P.ch0[a]) || s_.p.mk.voc[a], [lo, hi] = range(d), dv = v - base[2 * d.ch];
     for (const j of [2 * d.ch, 2 * d.ch + 1]) mkSetP(i, 'voc.' + a + '.' + j, clamp(base[j] + dv, lo, hi), live);
@@ -4087,7 +4081,7 @@ function setv(d, v, live) {
 }
 function fmtv(d, v) {
   if (!d) return ['', ''];
-  if (d.src) { const L = srcList(), x = L[clamp(Math.round(v), 0, L.length - 1)] || L[0]; return [x.code, x.name]; }   // MK7
+  if (d.src) { const L = srcList(), x = L[clamp(Math.round(v), 0, L.length - 1)] || L[0]; return [x.code, x.name]; }
   if (d.L && !d.f) { const L = L_[d.L], k = clamp(Math.round(v), 0, L[0].length - 1); return [L[1][k], L[0][k]]; }
   if (d.wv) { const n = clamp(Math.round(v), 1, 64); return [z3(n), wvName(n) + ' ≈ Platzhalter']; }
   if (d.f) return d.f(v);
@@ -4097,10 +4091,10 @@ function fmtv(d, v) {
 // what a value means for the current wave (OSZ 1 STEUER 1/2, B.3)
 const O1C = [['FORM', 'WFM'], ['BREITE', 'PWM'], ['FORM', 'WFM'], ['X-MOD', 'X-LFO'], ['FORM', 'WFM'], ['–', 'WELLE'], ['CUTOFF', 'RESO.'], ['BALANCE', 'BAL-LFO']];
 function lcdName(d) {
-  if (d && (d.p === 't.0.o1.c1' || d.p === 't.0.o1.c2')) return d.l + ' (' + (voc() && ct().o1.w === 3 ? ['FORM', 'WFM'] : O1C[clamp(ct().o1.w, 0, 7)])[d.p.endsWith('c1') ? 0 : 1] + ')';   // MK7: Sinus in the vocoder = FORM / WFM (W-27b)
+  if (d && (d.p === 't.0.o1.c1' || d.p === 't.0.o1.c2')) return d.l + ' (' + (voc() && ct().o1.w === 3 ? ['FORM', 'WFM'] : O1C[clamp(ct().o1.w, 0, 7)])[d.p.endsWith('c1') ? 0 : 1] + ')';
   return d ? d.l : '';
 }
-function secName() { const k = voc() ? 1 : 0; return P.wahl === 0 ? 'SPIEL' : P.wahl === 1 ? SEC1[P.pos[1]][k] : SEC2[P.pos[2]][k]; }   // MK7: the vocoder names
+function secName() { const k = voc() ? 1 : 0; return P.wahl === 0 ? 'SPIEL' : P.wahl === 1 ? SEC1[P.pos[1]][k] : SEC2[P.pos[2]][k]; }
 // MK2: the name of a stored wave: number, own group name and place in the group, always "≈" (placeholders until MK10)
 function wvName(n) { const g = MKTAB.group(n); return 'Speicherwelle ' + n + ' · ' + g[0] + (MKTAB.GRP.find(x => x[3] === g[0])[1] > MKTAB.GRP.find(x => x[3] === g[0])[0] ? ' ' + g[1] : ''); }
 // MK4: one line per effect section (LCD at the selection, matrix title)
@@ -4110,8 +4104,7 @@ function fxTxt(pos) {
   if (pos === 5) return m.dly.dep ? L_.dly[0][m.dly.type] + ' · ' + (m.dly.sync ? 'NOTE ' + L_.dnote[0][m.dly.note] + ' · ' : 'ZEIT ') + msS(dlySec()) + ' · TIEFE ' + m.dly.dep : L_.dly[0][m.dly.type] + ' · aus (TIEFE 0)';
   return 'TIEF ' + hz(m.eq.lf) + ' ' + f('eqLg', m.eq.lg) + ' · HOCH ' + hz(m.eq.hf) + ' ' + f('eqHg', m.eq.hg);
 }
-/* ---------- MK7: the inputs (QUELLE 1 / 2 ▾), Formant halten, the channel tools ---------- */
-// the choices of a source list: aus, Mikrofon (only where getUserMedia exists), every other track (a circle is not selectable)
+/* MK7: QUELLE, HALTEN */
 function srcList() {
   const i = P.i, L = [{v: null, code: 'OFF', name: 'aus'}];
   if (micAvail()) L.push({v: 'mic', code: 'nIC', name: 'Mikrofon' + (vocMicOn() ? '' : ' (Tipp startet)')});
@@ -4124,11 +4117,11 @@ function srcPop(anchor, d) {
   const w = d.src, tr = S.tracks[P.i], m = (tr && tr.mkIn) || {}, cur = m[w] || null, dry = m[w + 'Dry'] === 0;
   openPop(anchor, p => {
     let h = `<h4>${esc((w === 'e1' ? 'QUELLE 1 · E1 Instrument' : 'QUELLE 2 · E2 Stimme'))}</h4><div class="plist mkl mksrc">`;
-    for (const x of srcList()) h += `<button class="rb${x.v === cur ? ' on' : ''}"${x.cyc ? ' disabled' : ''} data-v="${esc(x.v || '')}"><b>${esc(x.name)}</b>${x.cyc ? '<small>nicht möglich: diese Spur hört schon auf diese hier (Kreis)</small>' : x.v === 'mic' ? '<small>' + (vocMicOn() ? 'läuft · nichts wird aufgenommen' : 'nur auf Tipp · nichts wird aufgenommen') + '</small>' : x.j != null ? '<small>vor ihrem Lautstärke-Regler</small>' : ''}</button>`;
-    if (vocMicOn()) h += '<button class="rb" data-a="micoff"><b>Mikrofon stoppen</b><small>gibt das Mikrofon frei</small></button>';
-    h += `<button class="rb${dry ? ' on' : ''}" data-a="dry"><b>Quelle nur als Eingang: ${dry ? 'an' : 'aus'}</b><small>an = die Quell-Spur ist nur noch hier zu hören (nicht im Master, nicht im Hall/Echo)</small></button></div>`;
+    for (const x of srcList()) h += `<button class="rb${x.v === cur ? ' on' : ''}"${x.cyc ? ' disabled' : ''} data-v="${esc(x.v || '')}"><b>${esc(x.name)}</b>${x.cyc ? '<small>nicht möglich (Kreis)</small>' : x.v === 'mic' ? '<small>' + (vocMicOn() ? 'läuft' : 'startet mit dem Tipp') + ' · nichts wird aufgenommen' + '</small>' : x.j != null ? '<small>vor dem Regler</small>' : ''}</button>`;
+    if (vocMicOn()) h += '<button class="rb" data-a="micoff"><b>Mikrofon stoppen</b></button>';
+    h += `<button class="rb${dry ? ' on' : ''}" data-a="dry"><b>Quelle nur als Eingang: ${dry ? 'an' : 'aus'}</b><small>an = die Quelle nur noch hier hören</small></button></div>`;
     p.innerHTML = h; guardTouch(p);
-    const Ls = p.querySelector('.plist.mksrc'); if (Ls) Ls.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});   // the list scrolls natively (as wavePop)
+    const Ls = p.querySelector('.plist.mksrc'); if (Ls) Ls.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
     onTap(p, b => {
       closePop(); const i = P.i;
       if (b.dataset.a === 'micoff') { vocMicStop(); render(); lcdShow('MIKROFON', 'aus – freigegeben'); return; }
@@ -4137,11 +4130,10 @@ function srcPop(anchor, d) {
       if (!mkInSet(i, w, v)) { lcdShow(d.l, 'nicht wählbar'); return; }
       if (v === 'mic' && !vocMicOn()) vocMicStart().then(ok => { render(); lcdShow(d.l, ok ? 'Mikrofon läuft · Stopp in dieser Liste' : 'Mikrofon nicht verfügbar'); });
       render(); lcdShow(secName() + ' · ' + d.l, srcTxt(w)); dispShow(fmtv(d, get(d))[0]);
-      hint('in', 'EINGÄNGE', 'E1 = Instrument (Träger), E2 = Stimme (formt den Klang). Mikrofon ≈ 70–75 ms bis ins Ohr: Kabel-Kopfhörer, DIREKT leise');
+      hint('in', 'EINGÄNGE', 'E1 Instrument (Träger), E2 Stimme · Mikrofon ≈ 70 ms: Kabel-Kopfhörer');
     }, 'button[data-v],button[data-a]');
   }, {name: 'mksrc'});
 }
-// TIMBRE / HALTEN (vocoder): freeze the 16 followers into voc.hold (one undo); again = the follower runs (FOLGER back from 127)
 function holdGrab(i) { const E = AU.synth[i]; if (!E || E.dead || !E.mkHoldGet) return Promise.resolve(null); return Promise.race([E.mkHoldGet(), new Promise(r => setTimeout(() => r(null), 600))]); }
 const holdOn = () => { const v = mk().voc; return !!v.hold || v.efs >= 127; };
 async function holdToggle(before) {
@@ -4152,16 +4144,14 @@ async function holdToggle(before) {
   }
   const b = before || soundSnapshot(i), vals = await holdGrab(i);
   if (P.i !== i || !sndOf(i) || !sndOf(i).p.mk) return;
-  if (!vals) { if (before) commitSound(i, b, MK_LABEL + ' FOLGER'); render(); lcdShow('FORMANT HALTEN', 'geht nur mit dem Studio-Klang (Worklet)'); return; }
+  if (!vals) { if (before) commitSound(i, b, MK_LABEL + ' FOLGER'); render(); lcdShow('FORMANT HALTEN', 'nur mit Studio-Klang'); return; }
   mkSetP(i, 'voc.hold', vals); commitSound(i, b, MK_LABEL + ' Formant halten'); haptic('tick'); render();
-  lcdShow('FORMANT HALTEN', vals.some(x => x > 0) ? 'an – der Vokal bleibt, auch ohne Mikrofon (gespeichert im Sound)' : 'an – aber gerade kam nichts an E2: der Vocoder bleibt still');
+  lcdShow('FORMANT HALTEN', vals.some(x => x > 0) ? 'an – der Vokal bleibt, auch ohne Mikrofon' : 'an – aber an E2 kam nichts: still');
 }
-// SHIFT + 1 / + 2 in the vocoder: all channel levels 127 / all pans to the centre (one undo; HB-MS S. 52)
 function chReset(a) {
   const i = P.i; soundEdit(i, MK_LABEL + (a === 'chl' ? ' Pegel zurücksetzen' : ' Pan zurücksetzen'), () => { for (let j = 0; j < 16; j++) mkSetP(i, 'voc.' + a + '.' + j, a === 'chl' ? 127 : 0, false); });
   render(); lcdShow(a === 'chl' ? 'SHIFT + 1 · PEGEL ZURÜCKSETZEN' : 'SHIFT + 2 · PAN ZURÜCKSETZEN', (a === 'chl' ? 'alle 16 Kanal-Pegel auf 127' : 'alle 16 Kanäle in die Mitte') + ' · ↶ = zurück');
 }
-// the LEDs E1 / E2 (Zone Z6): lit from -50 dBFS, red from -1 dBFS (worklet peaks at ~30 Hz while the panel is shown)
 function paintEin(m) {
   const U = P.el; if (!U || !U.ein || !U.ein.isConnected) return; const L = U.ein.querySelectorAll('.mled');
   for (let k = 0; k < 2; k++) { const a = m && m.i ? m.i[k] : 0; L[k].classList.toggle('lon', a >= .003162); L[k].classList.toggle('lred', a >= .8913); }
@@ -4171,7 +4161,7 @@ function einOn(on) { const E = AU.synth[P.i]; try { if (E && E.mkLed) { E.onLv =
 function patchTxt(k) { const p = ct().p[k], i = Math.round(p.i), l2s = p.d === 7 && ct().l2.sync;
   return 'PATCH ' + (k + 1) + ' · ' + L_.psrc[0][p.s] + ' → ' + L_.pdst[0][p.d] + ' · ' + (i > 0 ? '+' : '') + i + (i === 0 ? ' (aus)' : l2s ? ' · wirkt nicht: LFO 2 TEMPO SYNC an' : ''); }
 function lcdOf(d) {
-  const [, t] = fmtv(d, get(d)), v = get(d), unit = d.nu ? ' ' + t.split(' · ')[0] : d.L || d.src || /^eq\./.test(d.p) ? '' : ' ' + z3(v), w = ct().o1.w;   // MK4: EQ in Hz / dB only
+  const [, t] = fmtv(d, get(d)), v = get(d), unit = d.nu ? ' ' + t.split(' · ')[0] : d.L || d.src || /^eq\./.test(d.p) ? '' : ' ' + z3(v), w = ct().o1.w;
   if (d.pt != null) { lcdShow(tLab() + patchTxt(d.pt), d.l + ' ' + (d.L ? t : (Math.round(v) > 0 ? '+' : '') + Math.round(v))); return; }
   let extra = '';
   if (d.p === 't.0.o1.w' && w === 7) extra = voc() ? 'Träger = E1/E2 nach BALANCE (QUELLE: MIXER bzw. EING. 1, SHIFT)' : 'E1/E2 nach BALANCE · QUELLE 1/2 an Regler 4/5';
@@ -4231,13 +4221,13 @@ function setWahl(w, pos) {
   if (w === 2 && pos != null) P.pos[2] = pos; if (w === 1 && pos != null) P.pos[1] = pos;
   P.wahl = w; P.lastWahl = w; P.shift = 0; render();
   const s = w === 1 ? SEC1[P.pos[1]] : SEC2[P.pos[2]];
-  if (w === 2 && voc() && P.pos[2] < 4) { lcdShow('EDIT-WAHL 2 · ' + s[1], 'Regler 1–4 = Kanäle ' + (P.pos[2] % 2 ? '5–8' : '1–4') + ' (je 2 Bänder) · Tipp auf die Zeile = 16 BÄNDER'); hint('ch', s[1], 'Vocoder-Kanäle: ein Regler bewegt zwei Bänder · SHIFT + 1 / + 2 setzt alle zurück'); }
+  if (w === 2 && voc() && P.pos[2] < 4) { lcdShow('EDIT-WAHL 2 · ' + s[1], 'Kanäle ' + (P.pos[2] % 2 ? '5–8' : '1–4') + ' (je 2 Bänder) · Zeile = 16 BÄNDER'); hint('ch', s[1], 'ein Regler = zwei Bänder · SHIFT + 1 / + 2 = alle zurück'); }
   else if (w === 2 && voc() && P.pos[2] === 10) lcdShow('EDIT-WAHL 2 · –', 'im Vocoder gibt es keinen Mod-Sequenzer');
   else if (w === 2 && s[4] && P.pos[2] >= 4 && P.pos[2] <= 6) { lcdShow('EDIT-WAHL 2 · ' + s[0], fxTxt(P.pos[2])); hint('fx', 'MOD-FX · DELAY · EQ', 'die Effekte dieses Sounds, in dieser Reihenfolge; TIEFE 0 bzw. GAIN 0 = aus'); }
   else if (w === 2 && s[4] && P.pos[2] < 4) { lcdShow('EDIT-WAHL 2 · ' + s[0], patchTxt(P.pos[2]).replace(/^PATCH \d · /, '')); hint('patch', 'PATCH 1–4', 'Vier Wege: QUELLE (z. B. LFO 1) moduliert ein ZIEL (z. B. CUTOFF), INTENSITÄT −63…+63; 0 = aus'); }
   else if (w === 2 && s[4]) { lcdShow('EDIT-WAHL 2 · ' + s[0], L_.scl[0][mk().scale] + ' · Grundton ' + keyName(mk().skey) + (mk().scale === 9 ? ' · Tipp auf die Matrix-Zeile = EIGENE ▸' : '')); hint('scale', 'STIMMUNG', 'Zehn Stimmungen mit Grundton für beide Timbres; „Eigene“: 12 Werte in ct über die Matrix-Zeile'); }
   else if (w === 2) lcdShow('EDIT-WAHL 2 · ' + s[0], 'kommt mit ' + s[2] + ' – die Stellung bleibt frei');
-  else { lcdShow('EDIT-WAHL 1 · ' + s[voc() ? 1 : 0], knobs().map(d => (d ? d.l : '–')).join(' · ')); if (voc()) hint('voc1', 'VOCODER', 'die grünen Namen gelten: EING. 1 (Gate, HPF), FILTER (FORMANT … FOLGER), FC-MOD; TIMBRE = Formant halten'); }
+  else { lcdShow('EDIT-WAHL 1 · ' + s[voc() ? 1 : 0], knobs().map(d => (d ? d.l : '–')).join(' · ')); if (voc()) hint('voc1', 'VOCODER', 'die grünen Namen gelten; TIMBRE = Formant halten'); }
 }
 /* ---------- formats (B.3 Maße): full L (720 x 136), full P (360 x 280), half views; scale up to x1.1 (W x1.13) ---------- */
 function pickFmt(w, h) {
@@ -4346,7 +4336,7 @@ function build(pg, i) {
   const okey = s_.origin + '|' + s_.name; if (P.origKey && P.origKey !== okey) { P.wahl = 0; P.shift = 0; timReset(); }   // G-MK1-fix (MK1-34): another sound loaded (library, ‹ ›, undo) → SPIEL
   if (!dualOn()) { if (P.tim !== 1) P.tim = 1; if (P.solo) soloSet(0); }
   if (P.view === 'eigene' && s_.p.mk.scale !== 9) P.view = null;
-  if (P.view === 'baender' && s_.p.mk.mode !== 3) P.view = null;   // MK7
+  if (P.view === 'baender' && s_.p.mk.mode !== 3) P.view = null;
   origSync(s_);
   pg.classList.add('mkpg'); pg.innerHTML = '';
   const M = settledRect(pg), r = M.r;
@@ -4365,7 +4355,7 @@ function build(pg, i) {
       if (!panelLive(pg, i)) return; const r2 = pg.getBoundingClientRect(), b = pg._mkSz || [0, 0];
       if (r2.width > 0 && r2.height > 0 && Math.abs(r2.width - b[0]) + Math.abs(r2.height - b[1]) > 2) safeRebuild(buildSynthEd); }, 90); }); pg._mkRO.observe(pg); }
   if (P.view === 'eigene') { buildOwn(pg, F, w, h); return; }   // MK3: Zusatz-Ansicht EIGENE instead of the panel body
-  if (P.view === 'baender') { buildBands(pg, F, w, h); return; }   // MK7: Zusatz-Ansicht 16 BÄNDER
+  if (P.view === 'baender') { buildBands(pg, F, w, h); return; }
   const E = layout(F);
   const body = el('div', 'mkbody mkf-' + F.k + (F.k === 'LH' || F.k === 'PH' ? ' mkhalf mkh-' + P.half : '')); body.style.width = F.W + 'px'; body.style.height = F.H + 'px';
   if (F.s !== 1) body.style.transform = 'scale(' + F.s.toFixed(4) + ')';
@@ -4381,7 +4371,7 @@ function build(pg, i) {
   if (E.octd) { ui.octd = btn('octd', 'OKT ▼'); ui.octu = btn('octu', 'OKT ▲'); }
   if (E.bank) { ui.bank = add('bank', rotEl('bank', 'BANK', 8)); }
   if (E.side) ui.side = btn('side', 'SEITE');
-  if (E.ein) { ui.ein = add('ein', mkEl('ein', 'mein', '<i class="mled"></i><i class="mled"></i>')); ui.ein.title = 'Eingänge E1 (Instrument) / E2 (Stimme): leuchten bei Signal, rot bei Übersteuerung'; }   // MK7
+  if (E.ein) { ui.ein = add('ein', mkEl('ein', 'mein', '<i class="mled"></i><i class="mled"></i>')); ui.ein.title = 'E1 / E2: Signal, rot = zu laut'; }
   if (E.disp) { ui.disp = add('disp', mkEl('disp', 'mdisp', '')); ui.disp.setAttribute('role', 'status'); }
   if (E.write) ui.write = btn('write', 'WRITE');
   if (E.shift) ui.shift = btn('shift', 'SHIFT');
@@ -4400,7 +4390,7 @@ function build(pg, i) {
   render();
   dispShow(progNum(), false);
   try { const E_ = AU.synth[i]; if (E_) E_.mkScope(false); } catch (e) {}
-  einOn(true);   // MK7: LEDs E1 / E2
+  einOn(true);
 }
 function knobEl(k, lab, def, slot) {
   const e = mkEl(k, 'mkk', `<span class="lg">${lab}</span>${CAP}`); e.setAttribute('role', 'slider'); e.tabIndex = 0; e._def = def; e._slot = slot; return e;
@@ -4409,8 +4399,9 @@ function rotEl(k, lab, n) { const e = mkEl(k, 'mkr', `<span class="lg">${lab}</s
 /* ---------- render (classes / text only, at most once per frame) ---------- */
 function render() {
   const U = P.el; if (!U || !U.body.isConnected) return;
+  einOn(true);
   const s_ = snd(); if (!s_ || !s_.p.mk) return;
-  if (U.bands) { bandsDraw(); return; }   // MK7: Zusatz-Ansicht 16 BÄNDER
+  if (U.bands) { bandsDraw(); return; }
   if (U.own) { U.knobs.forEach((e, k) => paintKnob(e, uscK(k))); return; }   // MK3: Zusatz-Ansicht EIGENE
   const ks = knobs(), lev = P.wahl === 1 && P.shift ? 'EB' + (P.shift + 1) + ' ' : '';
   U.knobs.forEach((e, k) => { if (!e) return; const d = ks[k]; paintKnob(e, d); });
@@ -4426,12 +4417,12 @@ function render() {
   if (UI.wia && U.w2) { const dif = wiaPos2(); U.w2.querySelectorAll('.mtk').forEach((t, k) => t.classList.toggle('mwd', dif.has(k))); }
   else if (U.w2) U.w2.querySelectorAll('.mtk.mwd').forEach(t => t.classList.remove('mwd'));
   // matrix rows: section name + 5 assignments; the row of the active selection bright
-  const vc = voc(); U.body.classList.toggle('mvoc', vc);   // MK7: the vocoder names are green
+  const vc = voc(); U.body.classList.toggle('mvoc', vc);
   const row = (e, w) => { if (!e) return; const isW1 = w === 1, sct = isW1 ? SEC1[P.pos[1]] : SEC2[P.pos[2]], dk = !isW1 && (vc ? P.pos[2] === 10 : !sct[4]);
-    const sv = P.wahl, ss = P.shift; if (P.wahl !== w) { P.wahl = w; P.shift = 0; } const kd = knobs(); P.wahl = sv; P.shift = ss;   // MK7: the assignments of this row (vocoder, wave Eingang) = knobs() of its selection
+    const sv = P.wahl, ss = P.shift; if (P.wahl !== w) { P.wahl = w; P.shift = 0; } const kd = knobs(); P.wahl = sv; P.shift = ss;
     const names = isW1 ? kd.map(d => (d ? (d.lfo ? (ct()['l' + d.lfo].sync ? 'NOTE' : 'FREQ') : sh(d.l)) : '–')) : vc && (sct[5] || P.pos[2] === 10) ? kd.map(d => (d ? sh(d.l) : '–'))
       : [0, 1, 2, 3, 4].map(k => (sct[4] && sct[4][k] && kOf(sct[4][k]).dsw ? (mk().dly.sync ? 'NOTE' : 'ZEIT') : sct[3][k] ? sh(sct[3][k]) : '–'));
-    const own = !isW1 && P.pos[2] === 9 && mk().scale === 9, bnd = !isW1 && vc && P.pos[2] < 4;   // MK3: "EIGENE ▸"; MK7: "16 BÄNDER ▸"
+    const own = !isW1 && P.pos[2] === 9 && mk().scale === 9, bnd = !isW1 && vc && P.pos[2] < 4;   // MK3: "EIGENE ▸"
     e.querySelector('.mmn').innerHTML = (isW1 && P.wahl === 1 && P.shift ? '<b class="meb">EB' + (P.shift + 1) + '</b> ' : '') + esc(sct[vc ? 1 : 0]) + (dk ? ' <small>' + (vc && P.pos[2] === 10 ? 'nicht im Vocoder' : sct[2]) + '</small>' : '') + (own ? ' <b class="meb">EIGENE ▸</b>' : '') + (bnd ? ' <b class="meb">16 BÄNDER ▸</b>' : '');
     if (!isW1 && vc && P.pos[2] < 4) e.title = 'Kanäle 1–8 (je 2 Bänder) · Tipp = 16 BÄNDER'; else if (!isW1 && sct[4] && P.pos[2] < 4) e.title = patchTxt(P.pos[2]); else if (!isW1 && sct[4] && P.pos[2] <= 6) e.title = fxTxt(P.pos[2]); else e.title = '';
     e.querySelector('.mma').innerHTML = names.map((n, k) => `<span class="${kd[k] && kd[k].dark && isW1 ? 'mdk' : ''}">${esc(n)}</span>`).join('');
@@ -4440,7 +4431,7 @@ function render() {
   else if (U.m1) row(U.m1, P.wahl === 2 ? 2 : 1);  // half view: only the row of the active selection
   if (U.shift) U.shift.classList.toggle('on', !!P.shift), U.shift.classList.toggle('blink', P.shift === 2);
   if (U.timbre) { const L = U.timbre.querySelectorAll('.mled'), du = dualOn(), t = du ? P.tim : 1;   // MK3: LEDs 1 / 2 (both = Edit Sync), the soloed one blinks
-    if (vc) { L[0].classList.toggle('lon', holdOn()); L[1].classList.remove('lon'); L[0].classList.remove('lbl'); L[1].classList.remove('lbl'); U.timbre.querySelector('.msh').textContent = P.shift ? '–' : 'HALTEN'; }   // MK7: FORMANT HALTEN (LED 1)
+    if (vc) { L[0].classList.toggle('lon', holdOn()); L[1].classList.remove('lon'); L[0].classList.remove('lbl'); L[1].classList.remove('lbl'); U.timbre.querySelector('.msh').textContent = P.shift ? '–' : 'HALTEN'; }
     else { L[0].classList.toggle('lon', t === 1 || t === 3); L[1].classList.toggle('lon', du && (t === 2 || t === 3));
     L[0].classList.toggle('lbl', P.solo === 1); L[1].classList.toggle('lbl', P.solo === 2); U.timbre.querySelector('.msh').textContent = P.shift ? 'SOLO' : ''; } }
   if (U.side) U.side.classList.toggle('on', P.side === 1);
@@ -4450,7 +4441,7 @@ function render() {
   const SH = vc ? ['PEG INIT', 'PAN INIT', 'INIT', '–', '–', '–', '–', '–'] : ['T-KOPIE', 'T-TAUSCH', 'INIT', 'T-NEU', 'SEQ ▸', '–', '–', '–'], cur = progNum();   // MK7: the vocoder's SHIFT tools
   U.nums.forEach((e, k) => { if (!e) return; const rec = P.side === 1 ? progAt(P.bank, k) : null;
     e.classList.toggle('on', !P.shift && cur === 'b.' + (P.bank + 1) + (k + 1)); e.classList.toggle('mempty', !P.shift && !rec);
-    e.querySelector('.msh').textContent = P.shift ? SH[k] : ''; e.classList.toggle('mshd', !!P.shift && (vc ? k > 2 : k > 3)); e.title = rec ? rec.name : ''; });   // MK3: SHIFT + 1 / 2 / 4 work
+    e.querySelector('.msh').textContent = P.shift ? SH[k] : ''; e.classList.toggle('mshd', !!P.shift && (vc ? k > 2 : k > 3)); e.title = rec ? rec.name : ''; });
   if (U.prog) { U.prog.querySelector('.mpb').textContent = P.shift ? 'SHIFT' : 'BANK ' + (P.bank + 1) + ' · ' + (P.side ? 'B' : 'A') + ' · ' + cur.toUpperCase();
     U.prog.querySelector('.mpn').textContent = P.shift ? 'Taste wählen' : s_.name; }
   if (U.write) U.write.querySelector('.msh').textContent = '';
@@ -4473,7 +4464,7 @@ function paintOrig() {
 }
 // ◎: positions of EDIT-WAHL 1 whose section differs from INIT AM
 function wiaPos2() { const I_ = SQMK.init(), I0 = I_.t[0].p, P_ = ct().p, out = new Set(); if (voc()) { const V = mk().voc; [['chl', 0], ['chl', 8], ['chp', 0], ['chp', 8]].forEach(([a, o], k) => { for (let j = o; j < o + 8; j++) if (V[a][j] !== I_.voc[a][j]) { out.add(k); break; } }); }
-  else for (let k = 0; k < 4; k++) if (P_[k].s !== I0[k].s || P_[k].d !== I0[k].d || P_[k].i !== I0[k].i) out.add(k);   // MK7: the channels in the vocoder
+  else for (let k = 0; k < 4; k++) if (P_[k].s !== I0[k].s || P_[k].d !== I0[k].d || P_[k].i !== I0[k].i) out.add(k);
   ['mfx', 'dly', 'eq'].forEach((b, k) => { if (JSON.stringify(mk()[b]) !== JSON.stringify(I_[b])) out.add(4 + k); }); if (mk().scale || mk().skey) out.add(9); return out; }   // MK4: MOD-FX, DELAY, EQ; MK3: STIMMUNG
 function wiaPos() {
   const I0 = SQMK.init(), out = new Set();
@@ -4491,7 +4482,7 @@ function wire(U) {
   tap(U.octd, () => octBtn(-1)); tap(U.octu, () => octBtn(1));
   tap(U.arp, () => lcdShow('ARP', 'Arpeggiator kommt mit MK5'));
   tap(U.timbre, timbreKey);
-  tap(U.ein, () => lcdShow('E1 · E2', srcTxt('e1') + ' · ' + srcTxt('e2')));   // MK7
+  tap(U.ein, () => lcdShow('E1 · E2', srcTxt('e1') + ' · ' + srcTxt('e2')));
   tap(U.orig, () => lcdShow('ORIGINAL', 'leuchtet, wenn der zuletzt gedrehte Wert dem gespeicherten gleicht'));
   // G-MK1-fix: the display shows the program number – a tap on it leads back to SPIEL like the lit number key
   tap(U.disp, () => { if (P.wahl !== 0 || P.shift) { toSpiel(); dispShow(progNum(), false); lcdShow('SPIEL', 'Regler: CUTOFF · RESONANZ · ATTACK · RELEASE · TEMPO (Tipp auf die Anzeige)'); return; } lcdShow('ANZEIGE', 'Wert beim Drehen, danach die Programmnummer · Tipp = zurück zu SPIEL'); });
@@ -4499,7 +4490,7 @@ function wire(U) {
   U.nums.forEach((e, k) => tap(e, () => numKey(k)));
   for (const k of ['m1', 'm2']) tap(U[k], () => { const w = k === 'm1' ? (U.m2 ? 1 : P.wahl === 2 ? 2 : 1) : 2;
     if (w === 2 && P.pos[2] === 9) { if (mk().scale === 9) { viewOpen('eigene'); return; } lcdShow('MATRIX', 'STIMMUNG: die Zusatz-Ansicht EIGENE gibt es bei STIMMUNG = Eigene'); return; }   // MK3
-    if (w === 2 && voc() && P.pos[2] < 4) { P.bA = P.pos[2] < 2 ? 'chl' : 'chp'; viewOpen('baender'); return; }   // MK7: 16 BÄNDER
+    if (w === 2 && voc() && P.pos[2] < 4) { P.bA = P.pos[2] < 2 ? 'chl' : 'chp'; viewOpen('baender'); return; }
     lcdShow('MATRIX', (w === 1 ? SEC1[P.pos[1]][0] : SEC2[P.pos[2]][0]) + ': keine Zusatz-Ansicht in dieser Stellung'); });
 }
 function hint(k, a, b) { if (P.hint[k]) return; P.hint[k] = 1; lcdShow(a, b); }
@@ -4517,7 +4508,7 @@ function numKey(k) {
   if (P.shift) {
     P.shift = 0; render();
     if (k === 2) { initSound(P.i); P.orig = null; P.wahl = 0; render(); return; }
-    if (voc()) { if (k === 0) chReset('chl'); else if (k === 1) chReset('chp'); else lcdShow('SHIFT + ' + (k + 1), 'im Vocoder ohne Funktion'); return; }   // MK7: SHIFT + 1 / + 2 = Pegel / Pan zurücksetzen
+    if (voc()) { if (k === 0) chReset('chl'); else if (k === 1) chReset('chp'); else lcdShow('SHIFT + ' + (k + 1), 'im Vocoder ohne Funktion'); return; }
     if (k === 0) { timCopyPop(P.el.nums[0] || null); return; }   // MK3: SHIFT + 1 Timbre kopieren ▸, + 2 tauschen, + 4 neu (HB-MS S. 46–47)
     if (k === 1) { timSwap(P.i); return; }
     if (k === 3) { timInit(P.i); return; }
@@ -4536,7 +4527,7 @@ function knobGesture(e) {
     const d = def(); try { e.setPointerCapture(ev.pointerId); } catch (_) {}
     g = {id: ev.pointerId, y0: ev.clientY, x0: ev.clientX, y: ev.clientY, st: 'down', d, before: soundSnapshot(P.i), v: d ? get(d) : 0, f: 1};
     P.sync0 = d && P.tim === 3 && dualOn() ? {d, v1: get(d), t: deep(mk().t)} : null;   // MK3 Edit Sync: the start values of both timbres
-    P.ch0 = d && d.ch != null ? {chl: mk().voc.chl.slice(), chp: mk().voc.chp.slice()} : null;   // MK7: a channel = 2 bands, both from their start
+    P.ch0 = d && d.ch != null ? {chl: mk().voc.chl.slice(), chp: mk().voc.chp.slice()} : null;
     if (d && d.p === 'voc.efs') P.efs0 = get(d);
     gestBegin(ev.pointerId, () => end(null));
     e.classList.add('press');
@@ -4548,7 +4539,7 @@ function knobGesture(e) {
     const d = g.d; if (!d || d.dark || !d.p) return;
     if (g.st === 'down') { if (Math.abs(ev.clientY - g.y0) < CTL_SLOP && Math.abs(ev.clientX - g.x0) < CTL_SLOP) return; g.st = 'drag'; g.y = ev.clientY; }
     if (d.lock) { lcdShow(d.l, d.lock); return; }
-    if (d.src) { lcdShow(d.l, 'Tipp = Liste der Quellen'); return; }   // MK7: a list only
+    if (d.src) { lcdShow(d.l, 'Tipp = Liste der Quellen'); return; }
     const [lo, hi] = range(d), n = hi - lo, list = !!d.L && n <= 12, px = list ? n * clamp(PX_FULL / Math.max(1, n), 18, 40) : PX_FULL;
     const f = ctlPrecision(Math.abs(ev.clientX - g.x0));
     if (d.log) { const r = Math.log(hi / lo); g.v = clamp(lo * Math.exp(clamp(Math.log(Math.max(lo, g.v) / lo) + (g.y - ev.clientY) / px * r * f, 0, r)), lo, hi); }   // MK4: frequencies move in octaves
@@ -4564,8 +4555,8 @@ function knobGesture(e) {
     if (ev) { try { e.releasePointerCapture(ev.pointerId); } catch (_) {} if (GEST.has(ev.pointerId)) gestEnd(ev.pointerId); }
     const d = G.d;
     if (d && d.p === 'split' && G.st === 'down') { P.sync0 = null; splitArm(); return; }   // MK3: a tap on SPLIT = Split ← nächste Note
-    if (d && d.src) { if (G.st === 'down') srcPop(e, d); return; }   // MK7: QUELLE 1 / 2 ▾
-    if (d && d.p === 'voc.efs' && G.st === 'drag') {   // MK7: FOLGER 127 = HALTEN (the followers freeze into voc.hold), away from 127 = the follower runs
+    if (d && d.src) { if (G.st === 'down') srcPop(e, d); return; }
+    if (d && d.p === 'voc.efs' && G.st === 'drag') {
       setv(d, Math.round(G.v), false); P.lastKnob = d; const v = get(d), was = P.efs0;
       if (v >= 127 && !mk().voc.hold) { P.efsPrev = was; holdToggle(G.before); return; }
       if (v < 127 && mk().voc.hold) mkSetP(P.i, 'voc.hold', null);
@@ -4647,7 +4638,7 @@ function timReset() { if (P.solo) soloSet(0); P.tim = 1; P.splitArm = false; UI.
 // the editor closes (✕, another sheet): solo ends, T1, nothing armed (all view state, never stored)
 function leave() { einOn(false); if (P.i >= 0 && sndOf(P.i)) timReset(); else { P.solo = 0; P.tim = 1; P.splitArm = false; UI.mkSplitArm = null; P.view = null; } }
 function timbreKey() {
-  if (voc()) { if (P.shift) { P.shift = 0; render(); lcdShow('SHIFT + TIMBRE', 'im Vocoder ohne Funktion'); return; } holdToggle(); return; }   // MK7: TIMBRE = FORMANT HALTEN
+  if (voc()) { if (P.shift) { P.shift = 0; render(); lcdShow('SHIFT + TIMBRE', 'im Vocoder ohne Funktion'); return; } holdToggle(); return; }
   const du = dualOn();
   if (P.shift) {   // SHIFT + TIMBRE = Solo of the selected timbre; again = the other one (it becomes the edited one, HB-MK S. 14)
     P.shift = 0;
@@ -4725,10 +4716,7 @@ function buildOwn(pg, F, w, h) {
   guardTouch(ui.back); onTap(ui.back, viewClose);
   render(); hint('own', 'EIGENE STIMMUNG', '12 Regler: jede Stufe ab dem Grundton −100…+100 ct; ◂ GERÄT = zurück');
 }
-/* MK7: Zusatz-Ansicht 16 BÄNDER (B.3): the 16 channel levels (K-PEGEL) or pans (K-PAN) one by one, with the live band levels
-   (Canvas 2D, redrawn only on a level message (~30 Hz) or a change, only while shown). Columns: P1 2 x 8 à 41 x 88 (4 px), P2 39,
-   P3 36 without gaps; L1 16 x 41 x 90 (3 px), L2 / half view 16 x 36 x 74 (3 px); [◂ GERÄT] and PEGEL │ PAN on top (44 px).
-   A column is a vertical slider (one gesture = one undo); a tap shows its value. */
+/* MK7: 16 BÄNDER (B.3) */
 const BAND_HZ = () => W().VR.slice(4, 20);
 function buildBands(pg, F, w, h) {
   const land = F.k === 'L' || F.k === 'LH', a = P.bA === 'chp' ? 'chp' : 'chl', cols = land ? 16 : 8, rows = land ? 1 : 2;
@@ -4739,11 +4727,11 @@ function buildBands(pg, F, w, h) {
   const wrap = el('div', 'mkwrap'); wrap.style.width = Wd + 'px'; wrap.style.height = Hd + 'px'; wrap.appendChild(body); pg.appendChild(wrap);
   const ui = {body, wrap, knobs: [], nums: [], own: true, bands: true, E: {}, cols: []};
   const place = (node, x, y, ww, hh) => { Object.assign(node.style, {left: x + 'px', top: y + 'px', width: ww + 'px', height: hh + 'px'}); body.appendChild(node); ui.E[node.dataset.k] = [x, y, ww, hh]; return node; };
-  ui.back = place(mkEl('back', 'mkb mback', '<span class="mkey">◂ GERÄT</span>'), 0, 0, 96, 44); ui.back.setAttribute('role', 'button'); ui.back.tabIndex = 0;
-  const sw = Math.min(96, Math.max(60, Wd - 100 - 4 - 100));
-  ui.ttl = place(mkEl('ttl', 'mprog', '<span class="mpb"></span><span class="mpn"></span>'), 100, 0, Math.max(44, Wd - 100 - sw - 4), 44);
+  const bw = Wd < 320 ? 72 : 96; ui.back = place(mkEl('back', 'mkb mback', '<span class="mkey">◂ GERÄT</span>'), 0, 0, bw, 44); ui.back.setAttribute('role', 'button'); ui.back.tabIndex = 0;
+  const sw = Wd < 320 ? 72 : Math.min(96, Math.max(60, Wd - 100 - 4 - 100));
+  ui.ttl = place(mkEl('ttl', 'mprog', '<span class="mpb"></span><span class="mpn"></span>'), bw + 4, 0, Math.max(44, Wd - bw - 4 - sw - 4), 44);
   ui.bsw = place(mkEl('bsw', 'mkb mback', '<span class="mkey"></span>'), Wd - sw, 0, sw, 44); ui.bsw.setAttribute('role', 'button'); ui.bsw.tabIndex = 0;
-  ui.ttl.querySelector('.mpb').textContent = (a === 'chl' ? 'K-PEGEL' : 'K-PAN') + ' · 16 BÄNDER'; ui.ttl.querySelector('.mpn').textContent = a === 'chl' ? 'Pegel je Band · grün = live' : 'Pan je Band · grün = live';
+  ui.ttl.querySelector('.mpb').textContent = (a === 'chl' ? 'K-PEGEL' : 'K-PAN') + ' · 16 BÄNDER'; ui.ttl.querySelector('.mpn').textContent = 'grün = live';
   ui.bsw.querySelector('.mkey').textContent = a === 'chl' ? 'PAN ▸' : 'PEGEL ▸';
   const cv = el('canvas', 'mkbcv'); cv.width = Math.round(Wd * (window.devicePixelRatio || 1)); cv.height = Math.round((Hd - 46) * (window.devicePixelRatio || 1));
   Object.assign(cv.style, {position: 'absolute', left: '0px', top: '46px', width: Wd + 'px', height: (Hd - 46) + 'px', pointerEvents: 'none'}); body.appendChild(cv); ui.cv = cv;
@@ -4751,7 +4739,7 @@ function buildBands(pg, F, w, h) {
   ui.geo = {cols, cw, ch, gap, a};
   P.el = ui; P.built = 'bands' + F.k; P.bLv = null;
   guardTouch(ui.back); onTap(ui.back, viewClose); guardTouch(ui.bsw); onTap(ui.bsw, () => { P.bA = a === 'chl' ? 'chp' : 'chl'; viewOpen('baender'); });
-  bandsDraw(); hint('bands', '16 BÄNDER', 'jede Säule ein Band: hoch/runter ziehen = ' + (a === 'chl' ? 'Pegel' : 'Pan') + '; grün = was gerade ankommt; ◂ GERÄT = zurück');
+  bandsDraw(); hint('bands', '16 BÄNDER', 'Säule ziehen = ' + (a === 'chl' ? 'Pegel' : 'Pan') + ' des Bands; grün = live');
 }
 const bandTxt = (a, b, v) => 'Band ' + (b + 1) + ' · ' + hz(BAND_HZ()[b]) + ' · ' + (a === 'chl' ? (v <= 0 ? 'aus' : dbT(20 * Math.log10(W().vocChl(v)))) + ' (' + Math.round(v) + ')' : Math.round(v) === 0 ? 'Mitte' : (v < 0 ? 'L' : 'R') + Math.abs(Math.round(v)));
 function colGesture(e, b, a, ch) {
@@ -4901,7 +4889,6 @@ async function probe(cases, o) {
     const SN = [mkSnd({w: 5, c1: 0, c2: 44}, {w: 1, mod: 2, semi: 7, tune: 0}), mkSnd({w: 3, c1: 64, c2: 30}, {w: 1, mod: 2, semi: 7, tune: 0})];
     // MK4: "+FX" = "Kern" with all three effects
     if (fall === 'fx') SN.forEach((snd, k) => { snd.p.mk = SQMK.normMk(Object.assign(snd.p.mk, {mfx: {type: k ? 0 : 2, spd: 40, dep: 100}, dly: {type: 0, sync: 1, time: 64, note: 5, dep: 64}, eq: {lf: 200, lg: 6, hf: 8000, hg: -4}})); });
-    // MK7: "Vocoder" = 16 bands on 4 saw voices, FC-MOD from LFO 1, the modulator a vowel sequence (synthetic, W-44) on E2
     if (fall === 'voc') SN.forEach(snd => { const t = snd.p.mk.t[0]; t.o1 = {w: 0, c1: 0, c2: 0}; t.mix = {o1: 127, o2: 0, n: 20};
       snd.p.mk = SQMK.normMk(Object.assign(snd.p.mk, {mode: 3, voc: Object.assign(snd.p.mk.voc, {res: 64, msrc: 2, mint: 20, efs: 40, hpl: 30})})); });
     let vsrc = null, vmx = null;
@@ -4954,7 +4941,7 @@ const PROBE = {stop: false, last: null};
 function probeSheet() {
   openPop(null, p => {
     p.innerHTML = `<h4>Leistungs-Probe · ${MK_LABEL}</h4><p class="small">4 unhörbare Klangerzeuger spielen je 4 Stimmen, 10 s. Gemessen wird, wie viel Rechenzeit sie brauchen. Kein Netz, kein Mikrofon.</p>` +
-      '<div class="plist"><button class="rb" data-a="go"><b>Probe starten</b><small>Fälle „Kern“ (Speicherwelle, Sinus×), „+FX“ (dazu MOD-FX, DELAY, EQ) und „Vocoder“ (16 Bänder, künstliche Stimme), je 10 s</small></button></div><pre class="mkpr small"></pre>' +
+      '<div class="plist"><button class="rb" data-a="go"><b>Probe starten</b><small>„Kern“, „+FX“ und „Vocoder“, je 10 s</small></button></div><pre class="mkpr small"></pre>' +
       '<div class="plist"><button class="rb" data-a="copy" disabled><b>Ergebnis kopieren</b></button><button class="rb" data-a="file" disabled><b>Als Datei</b></button><button class="rb" data-a="stop"><b>Abbrechen</b></button></div>';
     guardTouch(p); const pre = p.querySelector('.mkpr');
     onTap(p, async b => {
@@ -5561,25 +5548,23 @@ const MKW = {
   dlyFb: .8,  // W-32 level dep/127, feedback 0.8 x dep/127
   DSYNC: [1 / 32, 1 / 24, 1 / 16, 1 / 12, .09375, .125, 1 / 6, .1875, .25, 1 / 3, .375, .5, 2 / 3, .75, 1],  // W-12 (x 4 beats)
   eqQ: Math.SQRT1_2,  // W-33 shelves of 2nd order, Q 0.707
-  // MK7 vocoder (W-27b, W-30, W-36 ... W-42)
-  sinFold: (x, m) => (m > 0 ? (1 - m) * x + m * Math.sin(1.5707963267948966 * (1 + 4 * m) * x) : x),  // W-27b sine in the vocoder: STEUER 1 folds it (m as W-24)
-  VR: [39, 50, 65, 80, 125, 185, 270, 350, 430, 530, 630, 780, 950, 1150, 1380, 1680, 2070, 2780, 3800, 5000, 6400, 8100, 10510, 12600],  // W-36 raster R[0..23]
-  vocPos: (k, fs, cut) => Math.max(0, Math.min(23, k + 4 + fs + 2 * cut / 63)),  // W-36 band k (0..15) on the raster; cut = CUTOFF + INTENS. x source
-  vocQ: r => 3 + 9 * r / 127,  // W-37 synthesis band Q (2 TPT-SVF band passes in cascade; limiter stage 1: one of Q x 2)
-  vocC2: .91,  // limiter stage 1: the gain of the 2nd-order path per bank (band energy vs the 4th order: noise -1 dB, saw chord + vowel +1 dB, measured)
-  vocQA: 10,  // W-37 analysis band Q (fixed, eK; the 2nd-order path of limiter stage 1 uses Q x 2)
-  vocTau: e => .005 * Math.pow(2, 9 * Math.min(126, e) / 126),  // W-38 decay tau; attack tau / 4 (>= 1 ms); 127 = hold
-  vocThDb: t => -72 + t / 127 * 60,  // W-39 threshold dBFS (t >= 1; 0 = no gate)
-  vocGate: g => .002 * Math.pow(2, 10 * g / 127),  // W-39 closing time (to -60 dB)
-  vocHpf: 6000,  // W-40 4th-order high pass of the modulator, level hpl / 127
-  vocDir: d => (d / 127) * (d / 127),  // W-41
-  vocChl: c => (c / 127) * (c / 127),  // W-42 channel level (pan equal power as W-20)
-  vocK: 140,  // the output scale of the synthesis bank (eK: a vowel at -20 dBFS RMS on 4 saw voices ~ the synth level)
-  holdQ: a => (a > 0 ? Math.max(0, Math.min(127, Math.round(127 + 40 * Math.log10(a)))) : 0),  // a follower value -> voc.hold 0..127 (0.5 dB steps)
+  sinFold: (x, m) => (m > 0 ? (1 - m) * x + m * Math.sin(1.5707963267948966 * (1 + 4 * m) * x) : x),
+  VR: [39, 50, 65, 80, 125, 185, 270, 350, 430, 530, 630, 780, 950, 1150, 1380, 1680, 2070, 2780, 3800, 5000, 6400, 8100, 10510, 12600],
+  vocPos: (k, fs, cut) => Math.max(0, Math.min(23, k + 4 + fs + 2 * cut / 63)),
+  vocQ: r => 3 + 9 * r / 127,
+  vocC2: .91,
+  vocQA: 10,
+  vocTau: e => .005 * Math.pow(2, 9 * Math.min(126, e) / 126),
+  vocThDb: t => -72 + t / 127 * 60,
+  vocGate: g => .002 * Math.pow(2, 10 * g / 127),
+  vocHpf: 6000,
+  vocDir: d => (d / 127) * (d / 127),
+  vocChl: c => (c / 127) * (c / 127),
+  vocK: 140,
+  holdQ: a => (a > 0 ? Math.max(0, Math.min(127, Math.round(127 + 40 * Math.log10(a)))) : 0),
   holdA: h => (h > 0 ? Math.pow(10, (h - 127) / 40) : 0),
-  // W-44 vowel source (MK7: probe modulator, MK8: hold spectra, MK12: OSZ 1 wave 8): F1-F4 in Hz, bandwidths and gains (eK)
-  VOX: {a: [730, 1090, 2440, 3400], e: [530, 1840, 2480, 3500], i: [270, 2290, 3010, 3700], o: [570, 840, 2410, 3300], u: [300, 870, 2240, 3300]},
-  voxB: [70, 80, 120, 150], voxG: [1, 1, 1, 1], voxOQ: .6,
+  VOW: {a: [730, 1090, 2440, 3400], e: [530, 1840, 2480, 3500], i: [270, 2290, 3010, 3700], o: [570, 840, 2410, 3300], u: [300, 870, 2240, 3300]},
+  vowB: [70, 80, 120, 150], vowG: [1, 1, 1, 1], vowOQ: .6,
 };
 /*}MKW*/
 const MK_FT = [0, 1, 3, 5];  // AM filter types 24LPF 12LPF 12BPF 12HPF -> ladder taps (FMIX)
@@ -6029,7 +6014,7 @@ class MkVoice {
     this.ntOk = false; this.ntP0 = 0; this.ntP1 = 0; this.ntP2 = 0; this.ntP3 = 0;   // ntOk: its own table alone, for these pitch inputs
     this.rn = 1; this.ns1 = 0; this.ns2 = 0; this.ngA = -1; this.ngB = 0; this.nkA = 0; this.nkB = 0; this.nnA = 0; this.nnB = 0;
     this.xL2 = 0; this.pPan = 0;
-    this.vm = 0; this.vaA = -1; this.vaB = 0;   // MK7: 1 = a vocoder carrier voice (renders OSC 1 + noise x EG2 into the carrier), its amp ramp
+    this.vm = 0; this.vaA = -1; this.vaB = 0;
   }
 }
 function mkClone(v) { const c = Object.assign(new MkVoice(v.i), v); c.dz = v.dz.slice(); c.sxE = [0, 0, 0]; c.sxo = null; c.sxA = 1; c.sxB = 0; c.sxBlk = -1; return c; }
@@ -6074,7 +6059,6 @@ class MkTim {
     const f = currentFrame, q = this.wReq[n]; if (q != null && f - q < SR) return; this.wReq[n] = f;
     try { this.h.port.postMessage({mkwNeed: n}); } catch (e) {}
   }
-  /* ---------------- parameters ---------------- */
   load(tt) {  // the timbre of a whole p.mk (sound load / engine change); returns: a re-distribution is due (MK3: the parent recomputes the voices first)
     const t = tt && typeof tt === 'object' ? tt : null, T = mkT();
     if (t) for (const k in T) { const x = t[k]; if (x == null) continue;
@@ -6161,7 +6145,7 @@ class MkTim {
     } else if (retrig) {
       if (T.e1.rst >= .5) { v.e1 = 0; } if (T.e2.rst >= .5) { v.e2 = 0; v.aA = -1; }
     }
-    if (fresh) v.vm = this.ti === 0 && this.par.mode === 3 ? 1 : 0;   // MK7: a voice keeps its kind (old synth voices fade as they were)
+    if (fresh) v.vm = this.ti === 0 && this.par.mode === 3 ? 1 : 0;
     v.id = k.id; v.note = k.note; v.vel = k.vel; v.ord = k.ord; v.gate = true; v.age = ++this.ag; v.st = this.st; v.fade = 0; v.fadeG = 1;
     if (fresh || retrig) { v.e1s = 1; v.e2s = 1; if (T.l1.ks === 2) v.l1 = 0; if (T.l2.ks === 2) v.l2 = 0; }
     v.target = k.tp; v.pitch = from >= 0 ? from : k.tp; v.gc = from >= 0 ? this.gc : 1;   // MK3: tp = the tuned pitch (W-43; = note in equal temperament)
@@ -6348,7 +6332,7 @@ class MkTim {
       if (this.g2 < o) this.gsh2 = (mkHash(this.par.seed, 9 + 10 * this.ti, ++this.lctr) / 4294967296) * 2 - 1; }
     const sx = this.sxOn, sk = this.sxkN;
     if (sx) { this.sxN++; this.sxT = Math.max(0, Math.min(1, (this.sxN - SX_M) * CR / MK_SXF)); }
-    const VC = this.ti === 0 ? this.par.vc : null;   // MK7: a vocoder carrier voice renders into the carrier sum
+    const VC = this.ti === 0 ? this.par.vc : null;
     for (const v of this.V) {
       if (!v.on) continue;
       const vL = v.vm ? VC.car : Lo, vR = v.vm ? VC.carR : Ro, vo = v.vm ? 0 : off;
@@ -6381,7 +6365,7 @@ class MkTim {
     const bendHt = this.bend * T.bend, kt = v.pitch + Sm.trans + bendHt;
     // MK2 (W-18): PATCH 1-4. Sources EG 0..1, LFO -1..1 (LFO2 square(+) 0..1), velocity, keytrack (KT - 60) / 60, bend -1..1,
     // mod wheel 0..1; destination = i / 63 x its full span, summed (4 ways on one destination add up)
-    let xP = 0, xO2 = 0, xC1 = 0, xN = 0, xCut = 0, xAmp = 0, xPan = 0, xL2 = 0; const PA = this.pAct, np = v.vm ? 0 : PA.length;   // MK7: no PATCH in the vocoder (its EDIT-WAHL 2 holds K-PEGEL / K-PAN)
+    let xP = 0, xO2 = 0, xC1 = 0, xN = 0, xCut = 0, xAmp = 0, xPan = 0, xL2 = 0; const PA = this.pAct, np = v.vm ? 0 : PA.length;
     for (let j = 0; j < np; j++) {
       const c = this.pc[PA[j]], s = c.s;
       const x = s === 0 ? v.e1 : s === 1 ? v.e2 : s === 2 ? lv1 : s === 3 ? lv2 : s === 4 ? v.vel : s === 5 ? (kt - 60) / 60 : s === 6 ? this.bend : this.modw;
@@ -6409,15 +6393,15 @@ class MkTim {
     if (xPan) { const x = (Math.max(-63, Math.min(63, Sm.pan + xPan)) + 63) / 126 * 1024, i = x | 0, f = x - i; pr = SINE[i] + (SINE[i + 1] - SINE[i]) * f; pl = SINE[i + 1024] + (SINE[i + 1025] - SINE[i + 1024]) * f; }   // W-20 equal power (sine table)
     v.pl = pl; v.pr = pr;
     // ---- audio rate ----
-    const w1 = st.w1, w2 = st.w2, mod = st.mod, sync = (mod & 2) !== 0, os = sync && v.os && w1 <= 2;   // MK7: 7 = Eingang (W-30)
+    const w1 = st.w1, w2 = st.w2, mod = st.mod, sync = (mod & 2) !== 0, os = sync && v.os && w1 <= 2;
     let g1 = Math.max(0, Sm.m1) / 127, g2 = Math.max(0, Sm.m2) / 127; const gn = (xN ? Math.max(0, Math.min(127, Sm.mn + xN)) : Math.max(0, Sm.mn)) / 127, ob = this.ob, o2b = this.o2b;
     if (w1 > 3 && w1 < 7) this.prep(v, w1, dt1, m, p1, xC1);
-    if (v.vm) { this.vocAudio(v, Lo, off, w1, dt1, m0, m, kt, gn); return; }   // MK7: a vocoder carrier voice
+    if (v.vm) { this.vocAudio(v, Lo, off, w1, dt1, m0, m, kt, gn); return; }
     this.wrUse = sync;   // OSC 1's wrap positions are read only by a synced OSC 2
-    if (w1 === 7) {   // MK7 (W-30): the input as OSC 1, (1 - b) E1 + b E2; pitch has no effect; OSC 2 runs free (no wrap)
+    if (w1 === 7) {
       this.oscIn(CR, m0, m, ob, this.wr);
       if (g2 > 0 || sync) { this.osc2(v, CR, dt2, w2, sync, o2b, this.wr, null, null); if (mod & 1) for (let n = 0; n < CR; n++) o2b[n] *= ob[n]; }
-    } else if (w1 === 3) {  // W-27 Sinus x: phase modulation by OSC 2 after Sync, before Ring (index 4 m rad)
+    } else if (w1 === 3) {
       this.osc1x(v, CR, dt1, m0, m, 3, ob, this.wr);
       const pm = m > 0 || m0 > 0;
       if (g2 > 0 || sync || pm) this.osc2(v, CR, dt2, w2, sync, o2b, this.wr, null, null);
@@ -6495,14 +6479,11 @@ class MkTim {
     if (v.fade > 0) { v.fade -= CR; if (v.fade <= 0 || fg <= 0) this.vEnd(v); }
     else if (st.gate ? (!v.gate && v.gt <= 0) : (v.e2s === 0 || (v.e2s === 3 && E2.s <= 0 && v.e2 < 1e-4))) this.vEnd(v);
   }
-  /* ---------------- MK7: the input as OSC 1 (W-30) and the vocoder carrier voice ---------------- */
-  oscIn(N, m0, m, ob, wr) {   // (1 - b) E1 + b E2, b = BALANCE + LFO1 x BAL-LFO (m), ramped over the block
+  oscIn(N, m0, m, ob, wr) {
     const P = this.par, A = P.inE1, B = P.inE2, o = P.io, dm = (m - m0) / N;
     if (!A && !B) { for (let n = 0; n < N; n++) { ob[n] = 0; wr[n] = -1; } return; }
     for (let n = 0; n < N; n++) { const b = m0 + dm * (n + 1), a = A ? A[o + n] : 0, c = B ? B[o + n] : 0; ob[n] = a + (c - a) * b; wr[n] = -1; }
   }
-  // the carrier of one voice (mode 3): OSC 1 (every wave; Sinus without cross modulation, W-27b) + noise, x EG2 x AMP PEGEL /
-  // ANSCHLAG / KEYTRACK of the vocoder (voc.lvl, voc.vel, voc.kbd); mono into the carrier sum Lo (the synthesis bank follows)
   vocAudio(v, Lo, off, w1, dt1, m0, m, kt, gn) {
     const ob = this.ob, VC = this.par.vc, E2 = this.E2;
     this.wrUse = false;
@@ -6790,20 +6771,12 @@ class MkTim {
     return out;
   }
 }
-/* ---- MK7 (Nachtrag 3 MK7; W-36 ... W-42): the vocoder of timbre 1 (mode 3). The carrier voices sum into car (mono); the 16
-   synthesis bands run once per timbre on the summed carrier + E1 (EINGANG 1), stereo over K-PAN. The modulator E2 -> 16
-   analysis bands -> envelope followers (W-38) -> the gains of the synthesis bands; gate (W-39), HPF (W-40), direct (W-41).
-   Every band = TPT-SVF band pass (unity peak, B.6 Nr. 10), 2 in cascade (4th order); limiter stage 1: one stage of twice the
-   Q per band (2nd order; the same noise bandwidth = the same band energy, no extra gain), switched with 30 ms run-in of the
-   new path, then a 30 ms blend.
-   Hold: the 16 follower values frozen (voc.hold, FOLGER 127). Synthesis coefficients only when FORMANT / CUTOFF / FC-MOD /
-   RESONANZ moved, g and a1 interpolated per sample over the 16-sample block. Runs in every block while an input is connected
-   (also without a sounding voice). ---- */
-const MK_VN = 16, MK_VXF = Math.max(1, Math.round(.03 * SR / CR));   // 30 ms in control blocks
-const MK_VRN = MKW.VR.map(f => 69 + 12 * Math.log2(f / 440));      // the raster in notes (log interpolation = linear in notes)
-const MK_VGW = Math.max(1, Math.ceil(.003 * SR / CR));              // gate detector: the peak over the last 3 ms
-const MK_HK = [2 * Math.cos(Math.PI / 8), 2 * Math.cos(3 * Math.PI / 8)];   // W-40: 4th-order Butterworth high pass (2 SVF stages, k = 1 / Q)
-const MK_VQ = .0001;   // tail: synthesis states below -80 dB of a full band = silent
+/* MK7 W-36..W-42: vocoder of T1 (mode 3) */
+const MK_VN = 16, MK_VXF = Math.max(1, Math.round(.03 * SR / CR));
+const MK_VRN = MKW.VR.map(f => 69 + 12 * Math.log2(f / 440));
+const MK_VGW = Math.max(1, Math.ceil(.003 * SR / CR));
+const MK_HK = [2 * Math.cos(Math.PI / 8), 2 * Math.cos(3 * Math.PI / 8)];
+const MK_VQ = .0001;
 function mkVg(pos) { const i = Math.min(22, Math.max(0, Math.floor(pos))), t = Math.min(1, pos - i), n = MK_VRN[i] + (MK_VRN[i + 1] - MK_VRN[i]) * t; return lut(GTAN, n); }
 class MkVoc {
   constructor(core) {
@@ -6811,24 +6784,23 @@ class MkVoc {
     this.car = new Float64Array(CR); this.carR = new Float64Array(CR); this.gb = new Float64Array(CR);
     this.P = {gs: 0, th: 0, hpl: 0, hpg: 1, ins: 0, fs: 0, cut: 0, res: 0, msrc: 1, mint: 0, efs: 64, lvl: 127, dir: 0, dist: 0, vel: 0, kbd: 0};
     this.chl = new Float64Array(N).fill(127); this.chp = new Float64Array(N);
-    this.hold = null; this.hq = null;   // the frozen follower values (exact) and their stored form 0..127
+    this.hold = null; this.hq = null;
     this.ak = 1 / MKW.vocQA; this.ag = new Float64Array(N); this.aa = new Float64Array(N);
-    for (let b = 0; b < N; b++) { const g = mkVg(b + 4); this.ag[b] = g; this.aa[b] = 1 / (1 + g * (g + this.ak)); }   // W-36: analysis band k = R[k + 3] (k 1..16)
-    this.ak2 = this.ak / 2; this.aa2 = new Float64Array(N); for (let b = 0; b < N; b++) { const g = this.ag[b]; this.aa2[b] = 1 / (1 + g * (g + this.ak2)); }   // the 2nd-order path: Q x 2
+    for (let b = 0; b < N; b++) { const g = mkVg(b + 4); this.ag[b] = g; this.aa[b] = 1 / (1 + g * (g + this.ak)); }
+    this.ak2 = this.ak / 2; this.aa2 = new Float64Array(N); for (let b = 0; b < N; b++) { const g = this.ag[b]; this.aa2[b] = 1 / (1 + g * (g + this.ak2)); }
     this.az = new Float64Array(6 * N); this.sz = new Float64Array(6 * N);
     this.env = new Float64Array(N); this.eL = new Float64Array(N); this.eR = new Float64Array(N);
     this.gA = new Float64Array(N); this.gB = new Float64Array(N); this.aA = new Float64Array(N); this.aB = new Float64Array(N); this.sk = 1 / 3; this.coefOk = false;
-    this.bA = new Float64Array(N); this.bB = new Float64Array(N);   // a1 of the 2nd-order path (Q x 2)
+    this.bA = new Float64Array(N); this.bB = new Float64Array(N);
     this.cL = new Float64Array(N); this.cR = new Float64Array(N); this.cRun = true;
     this.sSh = 0; this.sRes = 0; this.sIns = 0; this.sDir = 0; this.sHpl = 0; this.sLvl = 127; this.sVel = 0; this.sKbd = 0; this.lvG = MKW.ampG(127); this.shK = NaN; this.resK = NaN;
     this.src = 0; this.efsK = NaN; this.fA = 0; this.fR = 0; this.fRb = 1;
     this.gg = 1; this.gw = new Float64Array(MK_VGW); this.gwi = 0; this.thK = NaN; this.thL = 0; this.gsK = NaN; this.gC = 1;
     this.hg = 0; this.hz = new Float64Array(4); this.hpG = Math.tan(Math.PI * Math.min(MKW.vocHpf, .45 * SR) * ISR);
-    this.p4 = true; this.p2 = false; this.w4 = 1; this.wv = 0; this.warm = 0;   // the 4th / 2nd-order paths computed, the weight of the 4th, the blend step, run-in blocks
-    this.stail = 0; this.htail = 0; this.dsx = 0; this.lvOn = false; this.lvPk = [0, 0]; this.lvB = new Float64Array(N);
+    this.p4 = true; this.p2 = false; this.w4 = 1; this.wv = 0; this.warm = 0;
+    this.stail = 0; this.htail = 0; this.lvOn = false; this.lvPk = [0, 0];
     this.first = true;
   }
-  /* ---------------- parameters ---------------- */
   load(vc) {
     const o = vc && typeof vc === 'object' ? vc : {};
     for (const k in this.P) if (typeof o[k] === 'number' && isFinite(o[k])) this.P[k] = o[k];
@@ -6840,7 +6812,6 @@ class MkVoc {
     if (k === 'chl' || k === 'chp') { const b = +j; if (b >= 0 && b < MK_VN) { this[k][b] = v; this.cRun = true; } return; }
     if (k in this.P) this.P[k] = v;
   }
-  // a stored hold (16 x 0..127) or null; the values this processor reported itself stay exact (no 0.25 dB step)
   setHold(h) {
     if (!h) { this.hold = null; this.hq = null; return; }
     const q = []; for (let b = 0; b < MK_VN; b++) q.push(Math.max(0, Math.min(127, Math.round(+h[b] || 0))));
@@ -6848,9 +6819,8 @@ class MkVoc {
     this.hq = q; this.hold = Float64Array.from(q, x => MKW.holdA(x)); this.env.set(this.hold);
   }
   holding() { return !!this.hold || this.P.efs >= 126.5; }
-  // TIMBRE / HALTEN (or FOLGER 127): freeze the followers now and report their stored form
   capture() { if (!this.hold) { this.hold = Float64Array.from(this.env); this.hq = Array.from(this.hold, a => MKW.holdQ(a)); } return this.hq.slice(); }
-  settle() {   // the smoothed values at their targets (first use, a load while nothing sounds)
+  settle() {
     const P = this.P; this.sSh = P.fs + 2 * P.cut / 63; this.sRes = P.res; this.sIns = P.ins; this.sDir = P.dir; this.sHpl = P.hpl; this.sLvl = P.lvl; this.sVel = P.vel; this.sKbd = P.kbd;
     this.chTarget(true); this.first = false;
   }
@@ -6866,12 +6836,9 @@ class MkVoc {
     this.cRun = mv;
   }
   hot() { return !!(this.c.inE1 || this.c.inE2) || this.stail > 0 || this.htail > 0; }
-  /* ---------------- one control block (16 samples): carrier in car, output added to Lo / Ro at off ---------------- */
   block(Lo, Ro, off) {
     const c = this.c, P = this.P, W = MKW, N = MK_VN, E1 = c.inE1, E2 = c.inE2, io = c.io, car = this.car, T1 = c.tm[0], TT = T1.T, Sm = T1.sm;
-    // smoothing (5 ms)
     const sm = (a, b) => { const d = b - a; return d < 1e-6 && d > -1e-6 ? b : a + d * MK_SM; };
-    // FC-MOD source: the newest gated voice of T1 (else the newest sounding one, else held); LFOs: the global timbre phase
     { const s = Math.round(P.msrc); let v = null;
       for (const x of T1.V) if (x.on && !x.ghost && x.vm && (!v || (x.gate && !v.gate) || (x.gate === v.gate && x.age > v.age))) v = x;
       if (s === 2) this.src = mkLfoV(1, Math.round(TT.l1.w), T1.g1, T1.gsh1);
@@ -6883,15 +6850,13 @@ class MkVoc {
     this.sIns = sm(this.sIns, P.ins); this.sDir = sm(this.sDir, P.dir); this.sHpl = sm(this.sHpl, P.hpl); this.sLvl = sm(this.sLvl, P.lvl); this.sVel = sm(this.sVel, P.vel); this.sKbd = sm(this.sKbd, P.kbd);
     this.lvG = W.ampG(Math.max(0, Math.min(127, this.sLvl)));
     if (this.cRun) this.chTarget(false);
-    // the band order (limiter stage 1: 2nd order)
     const want4 = c.lim_ < 1;
     if (want4 && !this.p4) { this.p4 = true; this.warm = MK_VXF; this.wv = 1 / MK_VXF; for (let i = 0; i < 6 * N; i += 6) { this.az.fill(0, i, i + 4); this.sz.fill(0, i, i + 4); } }
     else if (!want4 && !this.p2) { this.p2 = true; this.warm = MK_VXF; this.wv = -1 / MK_VXF; for (let i = 0; i < 6 * N; i += 6) { this.az.fill(0, i + 4, i + 6); this.sz.fill(0, i + 4, i + 6); } }
-    else if (this.p4 && this.p2) this.wv = want4 ? 1 / MK_VXF : -1 / MK_VXF;   // reversed during a switch
+    else if (this.p4 && this.p2) this.wv = want4 ? 1 / MK_VXF : -1 / MK_VXF;
     if (this.warm > 0) this.warm--;
     else if (this.wv) { this.w4 = Math.max(0, Math.min(1, this.w4 + this.wv)); if (this.w4 >= 1) { this.wv = 0; this.p2 = false; } else if (this.w4 <= 0) { this.wv = 0; this.p4 = false; } }
     const p4 = this.p4, p2 = this.p2, w4 = this.w4, w2 = 1 - w4;
-    // ---- modulator: gate (W-39) per sample into gb
     const gb = this.gb; let pk = 0;
     if (E2) for (let n = 0; n < CR; n++) { const x = E2[io + n], a = x < 0 ? -x : x; if (a > pk) pk = a; }
     const th = Math.round(P.th);
@@ -6905,11 +6870,10 @@ class MkVoc {
       this.gg = g;
     }
     const gg = this.gg;
-    // ---- analysis + followers (frozen while holding)
     const env = this.env, hold = this.holding();
     if (P.efs !== this.efsK) { this.efsK = P.efs; const tau = W.vocTau(Math.max(0, P.efs)); this.fR = 1 - Math.exp(-1 / (tau * SR)); this.fA = 1 - Math.exp(-1 / (Math.max(.001, tau / 4) * SR)); this.fRb = Math.pow(1 - this.fR, CR); }
     if (this.hold) env.set(this.hold);
-    else if (!hold && E2 && !(pk === 0 && this.aQuiet)) {   // a silent modulator with settled bands: only the followers fall (below)
+    else if (!hold && E2 && !(pk === 0 && this.aQuiet)) {
       const az = this.az, ag = this.ag, aa = this.aa, ab = this.aa2, k = this.ak, k2 = this.ak2, C2 = W.vocC2, fA = this.fA, fR = this.fR;
       for (let b = 0; b < N; b++) {
         const g = ag[b], a1 = aa[b], a2 = g * a1, a3 = g * a2, c1 = ab[b], c2 = g * c1, c3 = g * c2, o = 6 * b; let s1 = az[o], s2 = az[o + 1], s3 = az[o + 2], s4 = az[o + 3], s5 = az[o + 4], s6 = az[o + 5], e = env[b];
@@ -6924,12 +6888,10 @@ class MkVoc {
       }
       if (pk === 0) { let m = 0; for (let i = 0; i < 6 * N; i++) { const v = az[i] < 0 ? -az[i] : az[i]; if (v > m) m = v; } if (m < 1e-9) { az.fill(0); this.aQuiet = true; } } else this.aQuiet = false;
     } else if (!hold) { const d = this.fRb; for (let b = 0; b < N; b++) { const e = env[b] * d; env[b] = e < 1e-12 ? 0 : e; } }
-    // ---- carrier: the voices (car) + E1 x EINGANG 1 (W-19 curve), distortion (W-23 with OSZ 1 + EINGANG 1 + RAUSCHEN)
     const ig = this.sIns > 0 && E1 ? W.ampG(Math.min(127, this.sIns)) : 0;
     if (ig) for (let n = 0; n < CR; n++) car[n] += E1[io + n] * ig;
     let cm = 0; for (let n = 0; n < CR; n++) { const a = car[n] < 0 ? -car[n] : car[n]; if (a > cm) cm = a; }
     if (P.dist >= .5 && cm > 0) { const dg = W.distG(TT.mix.o1, P.ins, TT.mix.n), it = 1 / mkTh(dg); for (let n = 0; n < CR; n++) car[n] = mkTh(car[n] * dg / MK_INS) * it * MK_INS; }
-    // ---- synthesis bank
     if (cm > 0 || this.stail > 0) {
       const sh = this.sSh, rs = this.sRes;
       if (sh !== this.shK || rs !== this.resK || !this.coefOk) {
@@ -6945,7 +6907,7 @@ class MkVoc {
         const eg = env[b] * gg * K, l1 = eg * cL[b], r1 = eg * cR[b], l0 = eLs[b], r0 = eRs[b], dl = (l1 - l0) / CR, dr = (r1 - r0) / CR; eLs[b] = l1; eRs[b] = r1;
         if (l1 === 0 && r1 === 0 && l0 === 0 && r0 === 0 && s1 === 0 && s2 === 0 && s3 === 0 && s4 === 0 && s5 === 0 && s6 === 0 && cm === 0) continue;
         let g = gA[b], a1 = aA[b], c1 = bA[b], el = l0, er = r0; const dg = (gB[b] - g) / CR, da = (aB[b] - a1) / CR, dc = (bB[b] - c1) / CR;
-        if (p4 && !p2) for (let n = 0; n < CR; n++) {   // the usual case: 4th order
+        if (p4 && !p2) for (let n = 0; n < CR; n++) {
           g += dg; a1 += da; el += dl; er += dr;
           const a2 = g * a1, a3 = g * a2, x = car[n]; let v3 = x - s2, v1 = a1 * s1 + a2 * v3, v2 = s2 + a2 * s1 + a3 * v3; s1 = 2 * v1 - s1; s2 = 2 * v2 - s2; const z = k * v1;
           v3 = z - s4; v1 = a1 * s3 + a2 * v3; v2 = s4 + a2 * s3 + a3 * v3; s3 = 2 * v1 - s3; s4 = 2 * v2 - s4; const y = k * v1;
@@ -6963,7 +6925,6 @@ class MkVoc {
       }
       if (tail < MK_VQ * 1e-3 && cm === 0) { sz.fill(0); this.stail = 0; } else this.stail = tail || (cm > 0 ? 1 : 0);
     }
-    // ---- direct (W-41) and the modulator's high pass (W-40; ENA: only while a carrier voice sounds), centre
     let hgT = 1; if (P.hpg >= .5) { hgT = 0; for (const v of T1.V) if (v.on && !v.ghost && v.vm) { hgT = 1; break; } }
     const hg0 = this.hg; this.hg = sm(this.hg, hgT); const hgd = (this.hg - hg0) / CR;
     const dG = W.vocDir(Math.max(0, Math.min(127, this.sDir))) * Math.SQRT1_2, hG = Math.max(0, Math.min(127, this.sHpl)) / 127 * Math.SQRT1_2;
@@ -6980,11 +6941,10 @@ class MkVoc {
       }
       z[0] = mkFl(s1); z[1] = mkFl(s2); z[2] = mkFl(s3); z[3] = mkFl(s4); this.htail = 1;
     } else if (this.htail) { this.hz.fill(0); this.htail = 0; }
-    for (let n = off; n < off + CR; n++) { const a = Lo[n], b = Ro[n];   // a soft knee above full scale (never over +6 dBFS); below it nothing changes
+    for (let n = off; n < off + CR; n++) { const a = Lo[n], b = Ro[n];
       if (a > 1 || a < -1) { const d = (a < 0 ? -a : a) - 1; Lo[n] = (a < 0 ? -1 : 1) * (1 + d / (1 + d)); }
       if (b > 1 || b < -1) { const d = (b < 0 ? -b : b) - 1; Ro[n] = (b < 0 ? -1 : 1) * (1 + d / (1 + d)); } }
   }
-  // live values for the panel (LEDs E1 / E2, the 16 BÄNDER view) and mkScope
   bands() { const o = []; for (let b = 0; b < MK_VN; b++) o.push(+(this.env[b] * this.gg).toFixed(6)); return o; }
 }
 /* ---- MK3 (Nachtrag 3 MK3): the program. Mode 0 Single (T1 only; bit-equal to MK2), 1 Dual (both timbres per note), 2 Split
@@ -6998,7 +6958,7 @@ class MkCore {
     this.h = host; this.seed = 0; this.keys = []; this.ord = 0; this.phm = new Map(); this.mode = 0; this.tv = 1; this.split = 60; this.scl = 0; this.skey = 0; this.usc = null;
     this.sc = new Float64Array(12); this.scOn = false; this.lim_ = 0; this.solo_ = 0; this.sg = [1, 1]; this.tap_ = '';
     this.bL = new Float32Array(CR); this.bR = new Float32Array(CR);
-    this.inE1 = null; this.inE2 = null; this.io = 0; this.vc = new MkVoc(this);   // MK7: the inputs of this quantum (E1, E2), the vocoder
+    this.inE1 = null; this.inE2 = null; this.io = 0; this.vc = new MkVoc(this);
     const pm = init && typeof init === 'object' ? init : null, tt = pm && Array.isArray(pm.t) ? pm.t : [];
     this.top(pm || {}); this.vc.load(pm && pm.voc);
     this.tm = [new MkTim(host, tt[0] || null, 0, this), new MkTim(host, tt[1] || null, 1, this)];
@@ -7064,7 +7024,7 @@ class MkCore {
   load(pm) {  // a whole p.mk (sound load / engine change)
     pm = pm && typeof pm === 'object' ? pm : {}; const tt = Array.isArray(pm.t) ? pm.t : [];
     const fa = this.fx.active(); this.fx.load(pm); this.fxSettle(fa);   // MK4
-    const m0 = this.mode; this.vc.load(pm.voc); if (!this.busy()) this.vc.settle();   // MK7
+    const m0 = this.mode; this.vc.load(pm.voc); if (!this.busy()) this.vc.settle();
     const [route, scl] = this.top(pm), ra = this.tm[0].load(tt[0] || null), rb = this.tm[1].load(tt[1] || null);
     if (scl) { this.tm[0].rescale(); this.tm[1].rescale(); }
     const ch = this.recap(); if ((m0 === 3) !== (this.mode === 3)) ch[0] = true; this.after(route, [ra, rb], ch);   // MK7: Synth <-> Vocoder re-starts T1's keys in the other kind
@@ -7074,10 +7034,10 @@ class MkCore {
     for (const path in o) {
       if (path.startsWith('t.0.')) (a || (a = {}))[path] = o[path];
       else if (path.startsWith('t.1.')) (b || (b = {}))[path] = o[path];
-      else if (path === 'voc.hold') this.vc.setHold(Array.isArray(o[path]) ? o[path] : null);   // MK7: 16 x 0..127 or null
+      else if (path === 'voc.hold') this.vc.setHold(Array.isArray(o[path]) ? o[path] : null);
       else { const v = +o[path]; if (!isFinite(v)) continue; const q = path.split('.');
-        if (q[0] === 'voc') this.vc.set(q[1], q[2], v);   // MK7
-        else if (q[0] === 'mfx' || q[0] === 'dly' || q[0] === 'eq') { this.fx.set(q[0], q[1], v); fx = true; }   // MK4
+        if (q[0] === 'voc') this.vc.set(q[1], q[2], v);
+        else if (q[0] === 'mfx' || q[0] === 'dly' || q[0] === 'eq') { this.fx.set(q[0], q[1], v); fx = true; }
         else if (q[0] === 'usc') { const u = this.usc ? this.usc.slice() : new Array(12).fill(0), j = +q[1]; if (j >= 0 && j < 12) { u[j] = v; tp.usc = u; } }
         else if (q.length === 1 && (q[0] === 'mode' || q[0] === 'tv' || q[0] === 'split' || q[0] === 'scale' || q[0] === 'skey')) tp[q[0]] = v; }
     }
@@ -7090,7 +7050,6 @@ class MkCore {
   // notes
   busy() { return this.keys.length > 0 || this.tm[0].busy() || this.tm[1].busy(); }
   fxHot() { return this.fx.hot(); }   // MK4: an echo / effect tail still sounds without a voice
-  // MK7: the inputs of this quantum (null = not connected) and whether the vocoder has to run without a voice
   inSet(inp) { const n = inp ? inp.length : 0; this.inE1 = n > 0 ? inp[0] : null; this.inE2 = n > 1 ? inp[1] : null; }
   vocHot() { return this.mode === 3 && this.h.P.eng === 3 && this.vc.hot(); }
   vmOn() { for (const v of this.tm[0].V) if (v.on && v.vm) return true; return false; }
@@ -7137,7 +7096,7 @@ class MkCore {
     // the output (as before) (test tap 'fx': the effects without the DC blocker of the output)
     const FX = this.fx, fxa = (!this.tap_ || this.tap_ === 'fx') && FX.active(), VL = fxa ? FX.bL : Lo, VR = fxa ? FX.bR : Ro, vo = off;
     if (fxa) { if (FX.qf !== frame - off) { FX.qf = frame - off; VL.fill(0); VR.fill(0); } FX.pend = true; }   // the effects run at the end of the quantum (fxEnd)
-    const voc = this.mode === 3 || this.vmOn();   // MK7: the vocoder (and its carrier voices fading after a change to Synth)
+    const voc = this.mode === 3 || this.vmOn();
     if (voc) { this.vc.car.fill(0); this.vc.carR.fill(0); } this.io = off;
     for (let k = 0; k < 2; k++) {
       const t = this.tm[k], a = k ? g1 : g0, b = this.sg[k];
@@ -7214,8 +7173,8 @@ class AnalogCore extends AudioWorkletProcessor {
     if (m.mkScope != null) { this.mk.scopeOn = !!m.mkScope; this.mk.scopeNext = 0; }
     if (m.mkTap != null) this.mk.tap = String(m.mkTap);
     if (m.mkSolo != null) this.mk.solo = m.mkSolo | 0;                // MK3: SHIFT + TIMBRE (not stored)
-    if (m.mkHoldGet) this.port.postMessage({mkHold: this.mk.vc.capture()});   // MK7: TIMBRE / HALTEN freezes the followers, the main thread stores them
-    if (m.mkLed != null) { this.mk.vc.lvOn = !!m.mkLed; this.mk.vc.lvPk[0] = this.mk.vc.lvPk[1] = 0; }   // MK7: LEDs E1 / E2, band levels
+    if (m.mkHoldGet) this.port.postMessage({mkHold: this.mk.vc.capture()});
+    if (m.mkLed != null) { this.mk.vc.lvOn = !!m.mkLed; this.mk.vc.lvPk[0] = this.mk.vc.lvPk[1] = 0; }
     if (m.mkFxIn) this.mk.fx.tin = m.mkFxIn.l && m.mkFxIn.r ? {l: m.mkFxIn.l, r: m.mkFxIn.r} : null, this.mk.fx.tinP = 0;   // MK4 test: a signal into the effect input
     if (m.mkFxKill) this.mk.fx.kill();                           // MK4-fix: tail kill (double stop): echo repeats and Mod-FX tail out
     if (m.mkFxFrz != null) this.mk.fx.frz = m.mkFxFrz >= 0 ? m.mkFxFrz % 1 : -1;            // MK4 test: Mod-FX LFO frozen at a phase (-1 = runs)
@@ -8399,7 +8358,7 @@ class AnalogCore extends AudioWorkletProcessor {
     L.fill(0); if (R !== L) R.fill(0);
     if (this.xfHeld && this.xfNeedFm && --this.xfWait <= 0) { this.xfNeedFm = false; this.xfTry(); }   // the FM patch did not come: start with the current one
     let any = this.q.length > 0 || this.ghosts.length > 0; for (const v of this.V) if (v.on) { any = true; break; }
-    if (this.P.eng === 3) this.mk.inSet(inputs && inputs[0]); else if (this.mk.inE1 || this.mk.inE2) this.mk.inSet(null);   // MK7: E1 / E2 (1 input, 2 channels)
+    if (this.P.eng === 3) this.mk.inSet(inputs && inputs[0]); else if (this.mk.inE1 || this.mk.inE2) this.mk.inSet(null);
     if (!any && (this.mk.busy() || this.mk.fxHot() || this.mk.vocHot())) any = true;
     if (this.pend && !any) { const o = this.pend; this.pend = null; this.setParams(o); this.fmPendApply(); this.xfState = 0; this.xg = this.xg1 = 1; }
     if (!any && !this.xfHeld && (this.xfState === 3 || this.pendS || this.sxfOn)) {
@@ -8438,7 +8397,7 @@ class AnalogCore extends AudioWorkletProcessor {
           }
           if (Z && Z.ok) this.xfTry();
         }
-        if (this.mk.busy() || this.mk.fxHot() || this.mk.vocHot() || this.mk.tap === 'lfo') this.mk.block(L, R, off, f0 + off); else if (this.P.eng === 3) this.mk.idle(CR);   // MK1: eng 3 (and its fading voices after a change)
+        if (this.mk.busy() || this.mk.fxHot() || this.mk.vocHot() || this.mk.tap === 'lfo') this.mk.block(L, R, off, f0 + off); else if (this.P.eng === 3) this.mk.idle(CR);
       }
       this.mk.fxEnd(L, R);   // MK4: the program effects of the AM sound, once per quantum
       for (let i = this.ghosts.length - 1; i >= 0; i--) { const g = this.ghosts[i]; if (g.xfState !== 4 || !g.V.some(v => v.on)) { this.ghosts.splice(i, 1); this.dropGhost(g); } }
@@ -8465,8 +8424,8 @@ class AnalogCore extends AudioWorkletProcessor {
       else this.port.postMessage({scope: Array.from(sc), t: f0 * ISR, nv});
       this.scHas = false;
     }
-    if (this.mk.scopeOn && f0 >= this.mk.scopeNext) { this.mk.scopeNext = f0 + ((SR / 30) | 0); this.port.postMessage({mkScope: {voices: this.mk.scope(), t: f0 * ISR, g1: this.mk.g1, g2: this.mk.g2, vocBands: this.mk.mode === 3 ? this.mk.vc.bands() : undefined}}); }   // MK1 (B.7 mkScope)
-    { const V = this.mk.vc; if (V.lvOn) {   // MK7: input peaks (LEDs E1 / E2) and the band levels (16 BAENDER) at ~30 Hz while the panel asks
+    if (this.mk.scopeOn && f0 >= this.mk.scopeNext) { this.mk.scopeNext = f0 + ((SR / 30) | 0); this.port.postMessage({mkScope: {voices: this.mk.scope(), t: f0 * ISR, g1: this.mk.g1, g2: this.mk.g2, vocBands: this.mk.mode === 3 ? this.mk.vc.bands() : undefined}}); }
+    { const V = this.mk.vc; if (V.lvOn) {
       if (this.P.eng === 3) { const A = this.mk.inE1, B = this.mk.inE2; for (let n = 0; n < N; n++) { const a = A ? Math.abs(A[n]) : 0, b = B ? Math.abs(B[n]) : 0; if (a > V.lvPk[0]) V.lvPk[0] = a; if (b > V.lvPk[1]) V.lvPk[1] = b; } }
       if (f0 >= (V.lvNext || 0)) { V.lvNext = f0 + ((SR / 30) | 0); this.port.postMessage({mkLv: {i: V.lvPk.slice(), b: this.mk.mode === 3 ? V.bands() : null, h: V.hold ? 1 : 0}}); V.lvPk[0] = V.lvPk[1] = 0; } } }
     // V4a (N7F-09): live operator levels (level x envelope of every operator, max over the voices, on the OL scale 0..1 of the
@@ -11067,7 +11026,7 @@ const MK_LABEL = 'MS 2000';
     if (ks[0] === 't' && ks[2] === 'p') { const P = {s: [0, 7, 0], d: [0, 7, 0], i: [-63, 63, 0]}; R = /^[0-3]$/.test(ks[3] || '') ? P[ks[4]] : null; }   // MK2: 't.0.p.1.i'
     else if (ks[0] === 't') { R = TR[ks[2]]; if (R && !Array.isArray(R)) R = R[ks[3]]; }
     else if (ks[0] === 'usc') R = /^([0-9]|1[01])$/.test(ks[1] || '') ? [-100, 100, 0] : null;   // MK3: own scale 12 x -100..+100 ct
-    else if (ks[0] === 'voc' && (ks[1] === 'chl' || ks[1] === 'chp')) R = /^([0-9]|1[0-5])$/.test(ks[2] || '') ? (ks[1] === 'chl' ? [0, 127, 127] : [-63, 63, 0]) : null;   // MK7: 16 channel levels / pans
+    else if (ks[0] === 'voc' && (ks[1] === 'chl' || ks[1] === 'chp')) R = /^([0-9]|1[0-5])$/.test(ks[2] || '') ? (ks[1] === 'chl' ? [0, 127, 127] : [-63, 63, 0]) : null;
     else { const B = {mfx: MFX, dly: DLY, arp: ARP, voc: VOC, eq: EQR}[ks[0]]; R = B ? B[ks[1]] : TOP[ks[0]]; }
     return Array.isArray(R) ? [R[0], R[1], R[2]] : null;
   }
@@ -12788,7 +12747,7 @@ const MK_LABEL = 'MS 2000';
   };
   H.track = function (ctx, dest, patch, mods, fm6, mk) {
     const po = fm6 ? {patch, mods: mods || [], fm6} : {patch, mods: mods || []}; if (mk) po.mk = mk;    // MK1: the AM block of the sound (B.1)
-    const node = new AudioWorkletNode(ctx, 'dirigent-analog', {   // MK7: 1 input with 2 discrete channels (E1, E2) on every synth track
+    const node = new AudioWorkletNode(ctx, 'dirigent-analog', {
       numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'discrete', processorOptions: po});
     node.connect(dest);
     const E = {node, q: [], load: 0, nv: 0, onEnd: null, onScope: null, flushQueued: false, dead: false, sent: Object.assign({}, patch), proxies: new Map(), lv: null, lvN: 0, lvT: 0, lvOn: false};
@@ -12801,8 +12760,8 @@ const MK_LABEL = 'MS 2000';
       if (m.mkScope) { E.mks = m.mkScope; E.mksN = (E.mksN || 0) + 1; }  // MK1 (B.7 mkScope)
       if (m.mkwNeed != null && typeof mkwPull === 'function') mkwPull(E, m.mkwNeed);   // MK2: a processor asks for a stored wave
       if (m.mkFxMem != null) E.mkFxB = m.mkFxMem;   // MK4: the delay buffer of this engine (bytes)
-      if (m.mkLv) { E.mkLv = m.mkLv; E.mkLvN = (E.mkLvN || 0) + 1; if (E.onLv) E.onLv(m.mkLv); }   // MK7: input peaks, band levels
-      if (m.mkHold) { const f = E.holdQ; E.holdQ = []; for (const cb of f || []) cb(m.mkHold); }   // MK7: the frozen followers
+      if (m.mkLv) { E.mkLv = m.mkLv; E.mkLvN = (E.mkLvN || 0) + 1; if (E.onLv) E.onLv(m.mkLv); }
+      if (m.mkHold) { const f = E.holdQ; E.holdQ = []; for (const cb of f || []) cb(m.mkHold); }
     };
     const post = m => { if (!E.dead) node.port.postMessage(m); };
     const push = ev => { if (E.dead) return; E.q.push(ev); if (!E.flushQueued) { E.flushQueued = true; queueMicrotask(E.flush); } };
@@ -12819,8 +12778,8 @@ const MK_LABEL = 'MS 2000';
     E.set = (diff, xf, fm6, mods, mk) => { Object.assign(E.sent, diff); E.flush(); const m = xf ? {set: diff, xf: true} : {set: diff}; if (mods) m.mods = mods; if (fm6) m.fm6 = fm6; if (mk) m.mk = mk; post(m); };
     E.mkSet = o => { E.flush(); post({mkSet: o}); };              // MK1: gesture values (fractions during the gesture, EN3-03)
     E.mkFxKill = () => { E.flush(); post({mkFxKill: 1}); };       // MK4-fix: the AM effect tails out (tailKill)
-    E.mkLed = on => { on = !!on; if (on === !!E.mkLedOn) return; E.mkLedOn = on; post({mkLed: on}); };   // MK7: LEDs E1 / E2 + band levels while shown
-    E.mkHoldGet = () => new Promise(res => { (E.holdQ || (E.holdQ = [])).push(res); E.flush(); post({mkHoldGet: 1}); });   // MK7: TIMBRE / HALTEN
+    E.mkLed = on => { on = !!on; if (on === !!E.mkLedOn) return; E.mkLedOn = on; post({mkLed: on}); };
+    E.mkHoldGet = () => new Promise(res => { (E.holdQ || (E.holdQ = [])).push(res); E.flush(); post({mkHoldGet: 1}); });
     E.mkWheel = o => post({mkWheel: o}); E.mkScope = on => { on = !!on; if (on === !!E.mksOn) return; E.mksOn = on; post({mkScope: on}); };
     E.mods = list => { E.flush(); post({mods: list}); };
     E.fm6 = patch => { E.flush(); post({fm6: patch}); };     // WP7: the FM operators (structured clone = a snapshot)
@@ -14185,7 +14144,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.12.0';
+const VERSION = '4.15.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -14919,7 +14878,7 @@ function normTrack(t, def, pk, warns) {
   if (typeof t.name === 'string' && t.name.trim()) o.name = t.name.slice(0, 24);
   o.mute = normBool(t.mute, def.mute);
   o.kbOct = isNum(t.kbOct) ? clamp(Math.round(t.kbOct), 1, 7) : def.kbOct;
-  if (def.kind === 'synth') { const mi = normMkIn(t.mkIn); if (mi) o.mkIn = mi; }   // MK7 (EN3-15): the inputs of an AM track
+  if (def.kind === 'synth') { const mi = normMkIn(t.mkIn); if (mi) o.mkIn = mi; }
   if (def.kind === 'synth') {
     o.follow = normBool(t.follow, true);
     o.onChange = normEnum(t.onChange, ['follow', 'hold'], 'follow');
@@ -15466,7 +15425,7 @@ function buildChain(c) {
   N.trem.connect(N.duck); N.duck.connect(N.vol);
   let post = N.vol; if (N.pan) { N.vol.connect(N.pan); post = N.pan; }
   N.post = post;
-  N.cut = c.createGain(); post.connect(N.cut); N.dryCut = false;   // MK7 (H-10): „Quelle nur als Eingang“ takes the track out of master and sends here (the AM input taps before the fader)
+  N.cut = c.createGain(); post.connect(N.cut); N.dryCut = false;
   N.cut.connect(AU.masterSum); N.cut.connect(N.revSend); N.cut.connect(N.dlySend);
   N.revSend.connect(AU.hallIn); N.dlySend.connect(AU.echoIn);
   return N;
@@ -15686,7 +15645,7 @@ function syncEngine(i, full) {
     }
   } else if (AU.synth[i]) retireEngine(i);
   rebuildNativeLfos(i);
-  mkInRoute();   // MK7: the inputs follow the engine (a new node, an engine change)
+  mkInRoute();
 }
 function syncEngines() { for (const i of synthTracks()) syncEngine(i, true); }
 /* ---------- MK1 (Nachtrag 3): the AM engine on the main thread ----------
@@ -15702,7 +15661,7 @@ function mkEco(snd, i) {
   const mw = mkWheelVal(i, 'mod', snd), sig = JSON.stringify(snd.p.mk) + '|' + mw;
   const c = MKECO.get(snd); if (c && c.sig === sig) return c.eco;
   const F = SQMK.mkToFlat(snd.p.mk, mw), p = Object.assign({}, snd.p, F.p); delete p.mk;
-  if (snd.p.mk && snd.p.mk.mode === 3) { p.level = 0; p.o1lvl = 0; p.o2lvl = 0; p.noise = 0; F.mods = []; }   // MK7 (B.5): a vocoder program stays silent in the ECO sound
+  if (snd.p.mk && snd.p.mk.mode === 3) { p.level = 0; p.o1lvl = 0; p.o2lvl = 0; p.noise = 0; F.mods = []; }
   const eco = {engine: 'analog', name: snd.name, p, mods: F.mods, fx: snd.fx, origin: null, cat: snd.cat};
   MKECO.set(snd, {sig, eco}); return eco;
 }
@@ -15729,7 +15688,7 @@ function mkWheelApi(t, w, v) { if (w !== 'bend' && w !== 'mod') throw new Error(
 // gesture runs (live), the stored value at its end
 function mkSetP(i, path, v, live) {
   const s_ = sndOf(i); if (!s_ || !s_.p.mk) return undefined;
-  if (path === 'voc.hold') {   // MK7: the frozen followers (16 x 0..127) or null
+  if (path === 'voc.hold') {
     const before = JSON.stringify(s_.p.mk.voc.hold), pm = deep(s_.p.mk); pm.voc.hold = Array.isArray(v) ? v.slice(0, 16) : null; s_.p.mk = SQMK.normMk(pm);
     const after = s_.p.mk.voc.hold, E = AU.synth[i]; if (E && s_.engine === 'mk') E.mkSet({'voc.hold': after});
     if (JSON.stringify(after) !== before) { UI.sndVer++; UI.dirty.strip = UI.dirty.edHead = true; markDirty(); MKECO.delete(s_); }
@@ -15746,28 +15705,20 @@ function mkSetP(i, path, v, live) {
 }
 // B.7 mkScope: the worklet reports at 30 Hz while asked (the panel asks while it is shown, the test API on its first call)
 function mkScopeOf(t) { const E = AU.synth[t]; if (!E) return null; E.mkScope(true); return E.mks ? deep(E.mks) : null; }
-/* ---------- MK7 (EN3-15): the inputs E1 „Instrument“ / E2 „Stimme“ of an AM track (tr.mkIn, stored with the track) ----------
-   Source = the microphone (only with getUserMedia in the top window, started only by a tap, through the shared tap) | another
-   track (its signal before the fader: after drive / chorus / trem, before vol / pan) | off. Per track one ChannelMerger
-   (E1 -> channel 0, E2 -> 1) into the worklet node's input, connected only while a source is chosen. A circle (the own track,
-   a track that takes this one as input, directly or further on) is never connected. „Quelle nur als Eingang“ (eDry 0, H-10):
-   while the source feeds an AM input, its output leaves master and sends (20 ms ramp); it is still scheduled and computed. */
+/* MK7 EN3-15: tr.mkIn E1/E2 = mic | track (pre-fader) | off */
 function normMkIn(x) {
   if (!x || typeof x !== 'object') return null;
   const e = s => (s === 'mic' ? 'mic' : typeof s === 'string' && s.startsWith('t:') && UID_RE.test(s.slice(2)) ? s : null);
   const o = {e1: e(x.e1), e2: e(x.e2), e1Dry: x.e1Dry === 0 ? 0 : 1, e2Dry: x.e2Dry === 0 ? 0 : 1};
   return o.e1 || o.e2 || !o.e1Dry || !o.e2Dry ? o : null;
 }
-// the tracks track i takes as input (indices), and whether choosing track j for track i would close a circle
 function mkInSrcs(i) { const tr = S.tracks[i], m = tr && tr.mkIn, out = []; if (!m) return out; for (const k of ['e1', 'e2']) { const s = m[k]; if (s && s !== 'mic') { const j = S.tracks.findIndex(t => t && t.uid === s.slice(2)); if (j >= 0) out.push(j); } } return out; }
 function mkInCycle(i, j) {
   if (i === j) return true;
-  const seen = new Set(), st = [j];   // does j reach i over the inputs?
+  const seen = new Set(), st = [j];
   while (st.length) { const x = st.pop(); if (x === i) return true; if (seen.has(x)) continue; seen.add(x); for (const y of mkInSrcs(x)) st.push(y); }
   return false;
 }
-// the shared microphone tap (MK7; VS1's 🎤 Stimme uses it too): one stream with MIC_ASK, reference-counted users; the last one
-// to stop releases it (readyState 'ended', audio session back to 'playback'). No voice analysis here.
 const MICTAP = {stream: null, p: null, src: null, out: null, users: new Set(), gum: 0, label: '', err: null, at: 0};
 function micTapGet(user) {
   if (!micAvail()) return Promise.resolve(false);
@@ -15796,22 +15747,20 @@ function micTapPut(user) {
   try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
   if (st) mkInRoute();
 }
-function micTapLost() { const had = MICTAP.users.has('voc'); for (const u of [...MICTAP.users]) if (u !== 'st') micTapPut(u); if (had) toast('Mikrofon beendet (Anruf oder andere App) · zum Weitermachen in QUELLE neu starten'); }
-// the vocoder's use of the tap: only from a tap in the QUELLE list (N7V-05); the page in the background ends it
+function micTapLost() { const had = MICTAP.users.has('voc'); for (const u of [...MICTAP.users]) if (u !== 'st') micTapPut(u); if (had) toast('Mikrofon beendet · in QUELLE neu starten'); }
 function vocMicStart() {
   if (!micAvail()) return Promise.resolve(false);
   if (!UI.vocVis) { UI.vocVis = () => { if (document.hidden && MICTAP.users.has('voc')) { micTapPut('voc'); UI.dirty.edHead = true; } }; document.addEventListener('visibilitychange', UI.vocVis); }
   return micTapGet('voc').then(ok => {
     if (!ok) { const n = MICTAP.err && MICTAP.err.name; toast(ST_ERR[n] || 'Mikrofon nicht verfügbar'); return false; }
     const r = stGuessRoute(MICTAP.label);
-    if (r === 'bt') lcdShow('MIKROFON · BLUETOOTH', 'Kabel-Kopfhörer empfohlen (Bluetooth wird mit Mikrofon schmal und mono)');
-    else if (r === 'speaker') toast('Mit Kopfhörer: sonst hört das Mikrofon den Lautsprecher mit');
+    if (r === 'bt') lcdShow('MIKROFON · BLUETOOTH', 'Kabel-Kopfhörer empfohlen');
+    else if (r === 'speaker') toast('Mit Kopfhörer klingt es sauberer');
     return true;
   });
 }
 function vocMicStop() { micTapPut('voc'); }
 const vocMicOn = () => !!MICTAP.stream && MICTAP.users.has('voc');
-// bring the merger connections and the dry cuts in line with tr.mkIn (cheap when nothing changed: a key per track)
 function mkInRoute() {
   if (!AU.ctx) return;
   const cut = new Set(); let micWanted = false;
@@ -15844,7 +15793,6 @@ function mkDryCut(B, on) {
   if (!!B.dryCut === on) return; B.dryCut = on; const g = B.cut.gain, t = AU.ctx.currentTime;
   try { g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(on ? 0 : 1, t + .02); } catch (e) { g.value = on ? 0 : 1; }
 }
-// one change of tr.mkIn (one undo step); src null | 'mic' | 't:<uid>'
 function mkInSet(i, which, src, dry) {
   const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || (which !== 'e1' && which !== 'e2')) return false;
   if (src && src !== 'mic') { const j = S.tracks.findIndex(t => t && t.uid === String(src).slice(2)); if (j < 0 || mkInCycle(i, j)) return false; }
@@ -15897,7 +15845,7 @@ async function mkRender(sound, ev, o) {
     const n = Math.round(sec * sr), b = oc.createBuffer(2, n, sr), I = o.inputs; for (const [k, ch] of [['e1', 0], ['e2', 1]]) if (I[k]) b.getChannelData(ch).set(Float32Array.from(I[k]).subarray(0, n));
     const src = oc.createBufferSource(); src.buffer = b; src.connect(E.node); src.start(0);
   }
-  if (o.at) for (const [t, m] of o.at) oc.suspend(Math.round(t * sr / 128) * 128 / sr).then(() => { E.node.port.postMessage(m); oc.resume(); }).catch(() => {});   // MK7 test: messages at render times
+  if (o.at) for (const [t, m] of o.at) oc.suspend(Math.round(t * sr / 128) * 128 / sr).then(() => { E.node.port.postMessage(m); oc.resume(); }).catch(() => {});
   E.tempo(o.bpm || 120, o.songStart == null ? null : o.songStart);
   const ids = {}; let id = 1;
   for (const e of ev || []) { const k = e[4] != null ? e[4] : e[2]; if (e[1] === 'on') { ids[k] = id++; E.on(ids[k], e[2], e[3] == null ? .8 : e[3], e[0]); } else if (ids[k]) E.off(ids[k], e[0]); }
@@ -16006,7 +15954,7 @@ function cpuTick() {
   const nowP = performance.now(); if (nowP - LIM.last < 1000) return;
   LIM.last = nowP;
   try { cpuHeavyCheck(); } catch (e) { logErr(e); }               // V2a: the one-time hint for many heavy tracks
-  try { mkInRoute(); } catch (e) { logErr(e); }                   // MK7: the inputs after track changes (add, remove, reorder)
+  try { mkInRoute(); } catch (e) { logErr(e); }
   if (UI.cpuInjectUntil && nowP > UI.cpuInjectUntil) { UI.cpuInject = 0; UI.cpuInjectUntil = 0; }
   const load = cpuLoad() + (UI.cpuInject || 0), q = S.settings.quality;
   LIM.load = load;
@@ -16309,6 +16257,7 @@ function spawnVoice(i, out, vel, t0, o) {
   const snd0 = o.sound || tr.sound;
   // MK1 (B.5): AM on the worklet as eng 3; on the native path its timbre 1 as the flat VA patch (mkEco)
   if (snd0.engine === 'mk') { const E = o.chain ? o.chain.E : snd0 === tr.sound ? AU.synth[i] : null; if (E && !E.dead && !E.retiring) return spawnWkVoice(i, clamp(Math.round(out), 0, 127), vel, t0, o, E, snd0); }
+  if (snd0.engine === 'mk' && snd0.p.mk && snd0.p.mk.mode === 3) return null;
   const snd = snd0.engine === 'mk' ? mkEco(snd0, i) : snd0, P = snd.p, eng = snd.engine === 'fm6' && !P.fm6 ? 'analog' : snd.engine;
   out = clamp(Math.round(out), 0, 127);
   if (o.src !== 'audition' && o.src !== 'preview' && !o.sound) FMEV.note[i] = out;   // V0d (A.4b 4a): the FM editor's reference note
@@ -18336,7 +18285,7 @@ function undoState(e) {
   if (e.kind === 'kit') return kitSnapshot();
   if (e.kind === 'song') return songSnapshot();
   if (e.kind === 'own') return S.song && S.song.own && S.song.own[e.id] ? JSON.stringify(S.song.own[e.id]) : null;   // V2e′
-  if (e.kind === 'mkin') return S.tracks[e.track] ? JSON.stringify(S.tracks[e.track].mkIn || null) : 'null';   // MK7
+  if (e.kind === 'mkin') return S.tracks[e.track] ? JSON.stringify(S.tracks[e.track].mkIn || null) : 'null';
   return fxSnapshot();
 }
 // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
@@ -18353,7 +18302,7 @@ function undoApply(e, val) {
   else if (e.kind === 'kit') restoreKit(JSON.parse(val));
   else if (e.kind === 'song') restoreSong(JSON.parse(val));
   else if (e.kind === 'own') ownRestore(e.id, val);
-  else if (e.kind === 'mkin') { const tr = S.tracks[e.track]; if (tr) { const n = normMkIn(JSON.parse(val)); if (n) tr.mkIn = n; else delete tr.mkIn; mkInRoute(); if (R.editor === 'synth' && R.selT === e.track && typeof MKUI !== 'undefined') MKUI.render(); } }   // MK7
+  else if (e.kind === 'mkin') { const tr = S.tracks[e.track]; if (tr) { const n = normMkIn(JSON.parse(val)); if (n) tr.mkIn = n; else delete tr.mkIn; mkInRoute(); if (R.editor === 'synth' && R.selT === e.track && typeof MKUI !== 'undefined') MKUI.render(); } }
   else if (e.kind === 'set') settingApply(e.key, JSON.parse(val));
   else if (e.kind === 'part') partRestore(JSON.parse(val));
   else restoreFx(JSON.parse(val));
@@ -25799,7 +25748,7 @@ function buildSynthEd() {
 function initSound(t) {
   const tr = S.tracks[t]; if (!tr) throw new Error('Keine Spur: ' + t);
   if (tr.kind === 'drum') soundEdit(t, 'Init', () => loadKit(INIT_KIT.id));
-  else if (tr.sound.engine === 'mk' && tr.sound.p.mk && tr.sound.p.mk.mode === 3) { UI.ab = null; soundEdit(t, 'Init', () => { loadPreset(t, INIT_IDS.mk); const s_ = deep(sndOf(t)); s_.p.mk.mode = 3; s_.p.mk = SQMK.normMk(s_.p.mk); applySound(t, s_); }); }   // MK7: Init on a vocoder program keeps the vocoder
+  else if (tr.sound.engine === 'mk' && tr.sound.p.mk && tr.sound.p.mk.mode === 3) { UI.ab = null; soundEdit(t, 'Init', () => { loadPreset(t, INIT_IDS.mk); const s_ = deep(sndOf(t)); s_.p.mk.mode = 3; s_.p.mk = SQMK.normMk(s_.p.mk); applySound(t, s_); }); }
   else { UI.ab = null; soundEdit(t, 'Init', () => loadPreset(t, INIT_IDS[engKey(tr.sound.engine)] || INIT_IDS.analog)); }
   toast('Init: ' + S.tracks[t].sound.name, {label: 'Rückgängig', fn: () => undo()});
   return S.tracks[t].sound.name;
@@ -31587,9 +31536,9 @@ function openMenu(goto) {
     MK_LABEL + ' · STIMMUNG (EDIT-WAHL 2): zehn Stimmungen (z. B. Werckmeister III, Pelog) mit Grundton für beide Timbres; „Eigene“: Tipp auf die Matrix-Zeile öffnet 12 Regler, je Stufe −100…+100 ct.',
     MK_LABEL + ' · MOD-FX, DELAY, EQ (EDIT-WAHL 2): die Effekte gehören zum Sound und laufen in dieser Reihenfolge, vor den Spur-Effekten (Reiter FX). MOD-FX: Chorus/Flanger, Ensemble oder Phaser, TEMPO = wie schnell er schwingt. TIEFE 0 = aus.',
     MK_LABEL + ' · DELAY: Stereo, Kreuz (Echo springt links ↔ rechts) oder L/R (abwechselnd). TEMPO SYNC an = NOTE im Song-Tempo (1/32 … 1/1), aus = ZEIT 1 ms … 1,4 s. TIEFE = Echo-Lautstärke und wie oft es wiederkommt. EQ: Tiefen und Höhen je ±12 dB.',
-    MK_LABEL + ' · Vocoder: STIMME → SYNTH/VOC. auf Vocoder. Deine Stimme (E2) formt in 16 Bändern einen Akkord aus OSZ 1, Rauschen und E1. Die Wahlschalter tragen dann die grünen Namen: EING. 1 (Gate, HPF für Zischlaute), FILTER (FORMANT, CUTOFF, FOLGER), FC-MOD, K-PEGEL und K-PAN (Tipp auf die Zeile = 16 BÄNDER).',
-    MK_LABEL + ' · Formant halten: im Vocoder die TIMBRE-Taste (Lämpchen 1) oder FOLGER ganz auf. Der Klang behält den Vokal, auch ohne Mikrofon, und der Sound speichert ihn. Noch ein Tipp = der Folger läuft wieder. SHIFT + 1 setzt alle Kanal-Pegel zurück, SHIFT + 2 alle Pans.',
-    MK_LABEL + ' · Eingänge: E1 „Instrument“, E2 „Stimme“ – QUELLE 1 (MIXER, SHIFT) bzw. QUELLE 2 (EING. 1, SHIFT); bei der Welle „Eingang“ Regler 4 und 5 von OSZ 1. Quelle: Mikrofon (nur in Safari, mit Tipp, nichts wird aufgenommen), eine andere Spur (vor ihrem Lautstärke-Regler) oder aus. „Quelle nur als Eingang“: die Spur ist dann nur im Vocoder zu hören. Mikrofon bis Ohr ≈ 70–75 ms: Kabel-Kopfhörer nehmen, DIREKT leise.',
+    MK_LABEL + ' · Vocoder: STIMME → SYNTH/VOC. Deine Stimme (E2) formt in 16 Bändern OSZ 1, Rauschen und E1; die grünen Namen gelten. K-PEGEL/K-PAN: Tipp auf die Zeile = 16 BÄNDER.',
+    MK_LABEL + ' · Formant halten: TIMBRE-Taste (Lämpchen 1) oder FOLGER ganz auf – der Vokal bleibt, auch ohne Mikrofon, und wird gespeichert. SHIFT + 1/2 = alle Pegel/Pans zurück.',
+    MK_LABEL + ' · Eingänge E1 (Instrument), E2 (Stimme): QUELLE 1 (MIXER) / 2 (EING. 1) mit SHIFT, bei Welle „Eingang“ Regler 4/5. Mikrofon nur in Safari, nichts wird aufgenommen; ≈ 70–75 ms Verzögerung: Kabel-Kopfhörer, DIREKT leise.',
     'TASTATUR-ANSCHLAG (Menü → Bedienung): POSITION = oben auf der Taste leise, unten laut, jede Taste für sich; FEST = immer 0,8. Bei FEST tragen Anschlag-Regler und Anschlag-Modulationen einen grauen Hinweis – antippen schaltet POSITION ein.',
     'LAUF: Basslauf oder Sequenz Schritt für Schritt – Schritt antippen = an, hoch/runter ziehen = Ton in der Tonart.',
     'SONG: SONG ⇄ (Ecke oben links im Raster) zeigt den Song. Beim ersten ● SONG wird alles mitgeschnitten: Szenenwechsel, Clip-Stopps, Akkorde und deine Melodie; ▶ SONG spielt alles ab. Eine Zelle antippen = anderer Clip in diesem Takt, wischen = blättern. Während der Song läuft: Clip starten = Spur übernehmen, ↩ SONG gibt sie zurück. Unter MELODIE: Melodie bearbeiten, als Clip, Kette aus Szenen.',
@@ -35409,7 +35358,6 @@ function stStart(opts) {
   if (!c) { stFail(run, {name: 'NoAudioContext'}); return true; }
   wakeAcquire();                                              // beim Singen bleibt der Bildschirm an
   ST.gum++;
-  // MK7: through the shared microphone tap (the vocoder may hold it too; stopping one leaves the other running)
   const p = micTapGet('st').then(ok => (ok && MICTAP.stream ? MICTAP.stream : Promise.reject(MICTAP.err || {name: 'NotAllowedError'})));
   const wk = stWorklet(c);
   p.then(s => stGot(run, s, wk).catch(e => stFail(run, e)), e => stFail(run, e));
@@ -35420,7 +35368,7 @@ function stStart(opts) {
   return true;
 }
 async function stGot(run, stream, wkP) {
-  if (ST.run !== run || run.stopped) { micTapPut('st'); return; }   // MK7: the shared tap
+  if (ST.run !== run || run.stopped) { micTapPut('st'); return; }
   run.stream = stream;
   const c = AU.ctx, sr = c.sampleRate;
   try { const p = c.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
@@ -36926,11 +36874,9 @@ const SYNQUENZER = {
   mkSet: (t, path, v) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'mk') throw new Error('Keine ' + MK_LABEL + '-Spur: ' + t); return soundEdit(t, MK_LABEL + ' ' + path, () => mkSetP(t, path, v, false)); },
   mkRender: (sound, ev, o) => mkRender(sound, ev, o), mkScope: t => mkScopeOf(t), mkInfo: () => mkInfo(),
   mkWheel: (t, w, v) => mkWheelApi(t, w, v), mkPanel: () => (mkLoaded() ? MKUI.panelInfo() : null), perfProbe: cases => mkLoad().probe(cases),
-  // MK7: the inputs of an AM track (src null | 'mic' | 't:<uid>' | a track index), their routing and the shared microphone tap
   mkIn: (t, which, src, dry) => { if (which != null) { const s_ = typeof src === 'number' ? (S.tracks[src] ? 't:' + S.tracks[src].uid : null) : src; if (!mkInSet(t, which, s_, dry)) throw new Error('mkIn: nicht wählbar'); } return deep(S.tracks[t].mkIn || null); },
-  mkInInfo: () => ({tracks: AU.tracks.map((A, i) => (A ? {i, linked: !!(A.mkL && A.mkL.k), e1: !!(A.mkL && A.mkL.k && A.mkL.k[1]), e2: !!(A.mkL && A.mkL.k && A.mkL.k[2]), dryCut: !!A.dryCut} : null)),
-    mic: {avail: micAvail(), on: !!MICTAP.stream, users: [...MICTAP.users], gum: MICTAP.gum, ready: MICTAP.stream ? MICTAP.stream.getTracks().map(t => t.readyState) : [], ec: (() => { try { const t = MICTAP.stream && MICTAP.stream.getAudioTracks()[0]; return t ? t.getSettings().echoCancellation : null; } catch (e) { return null; } })()},
-    cycle: (i, j) => mkInCycle(i, j)}),
+  mkInInfo: () => ({tracks: AU.tracks.map(A => { const k = A && A.mkL && A.mkL.k; return A ? {e1: !!(k && k[1]), e2: !!(k && k[2]), dryCut: !!A.dryCut} : null; }),
+    mic: {on: !!MICTAP.stream, users: [...MICTAP.users], gum: MICTAP.gum, ready: MICTAP.stream ? MICTAP.stream.getTracks().map(t => t.readyState) : []}}),
   mkVocMic: on => (on ? vocMicStart() : (vocMicStop(), Promise.resolve(false))),
   mkHold: t => { const E = AU.synth[t]; return E ? E.mkHoldGet() : Promise.resolve(null); },
   mkVowel: o => { const M = mkLoad(); return M ? Array.from(M.mkVowel(o)) : []; },

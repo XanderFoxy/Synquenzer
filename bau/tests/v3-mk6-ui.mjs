@@ -181,6 +181,19 @@ await T('MK6-09 App', async () => {
   await ctx.close();
 });
 
+// ---------------- MK6-09 iPhone path: [● AUFN.] -> GERÄT in SPIEL, the CUTOFF knob there records (KEY SYNC Stimme, SEQ 2) ----------------
+await T('MK6-09 SPIEL', async () => {
+  const {ctx, page, errs} = await open('L1');
+  await page.evaluate(() => { const Q = SYNQUENZER; Q.setBpm(120); Q.mkSet(0, 't.0.f.cut', 50); Q.mkSet(0, 't.0.seq.ks', 2); Q.keyOn(64); MKUI.setWahl(2, 10); MKUI.P.sq = 1; MKUI.viewOpen('schritte'); });
+  await page.waitForTimeout(300); await tap(page, 'rec');
+  const pn = await page.evaluate(() => SYNQUENZER.mkPanel()); await drag(page, 'k0', 90, 70, 0, 40);
+  await page.waitForFunction(() => { const E = AU.synth[0]; return E && E.mkRecN >= 1; }, null, {timeout: 8000}); await page.waitForTimeout(150);
+  const m = await page.evaluate(() => SYNQUENZER.mkGet(0).t[0]), q = m.seq.q[1];
+  ok('MK6-09 SPIEL-CUTOFF (KEY SYNC Stimme)', pn.sel.wahl === 0 && q.k === 11 && m.seq.on === 1 && m.f.cut === 50 && q.v.some(x => x > 0), 'nach ● AUFN. SPIEL (Wahl ' + pn.sel.wahl + '), SEQ 2 → CUTOFF: ' + q.v.join(','));
+  ok('MK6-09 SPIEL Konsole', !errs.length, errs.join(' / '));
+  await page.evaluate(() => SYNQUENZER.keyOff(64)); await ctx.close();
+});
+
 // ---------------- MK6-13 tools ----------------
 await T('MK6-13 Werkzeuge', async () => {
   const {ctx, page, errs} = await open('P1');

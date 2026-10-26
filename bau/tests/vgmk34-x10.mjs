@@ -1,0 +1,21 @@
+import {open, sleep, check, done} from './vgmk34-tl3.mjs';
+const L = process.argv[2] === 'L';
+const T = await open(Object.assign({viewport: L ? {width: 844, height: 390} : {width: 390, height: 844}}, process.env.SYNQ_APP ? {file: process.env.SYNQ_APP} : {})); const {p, E, errs} = T;
+console.log('APP', await E(() => SYNQUENZER.version));
+await E(() => SYNQUENZER.setMetronome(false));
+await E(() => { SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await sleep(500);
+const b = await T.rectText('button', /^MS ?2000$/); if (b) await T.tap(b.cx, b.cy, 900); else { const c = await T.rectText('button', /^(VA|FM|WT) ▾$/); await T.tap(c.cx, c.cy, 400); await T.tapPop(/MS ?2000/); await sleep(900); }
+await E(() => SYNQUENZER.mkSet(0, 'mode', 1)); await E(() => SYNQUENZER.saveSound(0, 'Hdr Clean', 'new')); await sleep(300);
+await E(() => SYNQUENZER.selectTrack(1)); await sleep(300); await E(() => SYNQUENZER.selectTrack(0)); await sleep(500);
+const h = () => E(() => ({pn: ED.hdr.pName.innerHTML, ab: !ED.hdr.ab.hidden, ed: SYNQUENZER.soundEdited(0)}));
+const live = async (k, dy) => { const r = await T.mk(k); await T.down(r.cx, r.cy); await sleep(30); await T.glide(r.cx, r.cy, r.cx, r.cy + dy, 10, 20); await sleep(100); const mid = await h(); await T.up(); await sleep(300); return mid; };
+const h0 = await h(); console.log('h0', JSON.stringify(h0));
+check('clean after WRITE', !h0.ab && !/chg/.test(h0.pn), h0);
+await T.tapMk('timbre', 300);
+await T.w('w1', /^6 FILTER/); const m1 = await live('k1', 60); const h1 = await h();
+check('T2 CUTOFF drag: header dot + A/B during the gesture', /chg/.test(m1.pn) && m1.ab, {mid: m1, after: h1});
+await E(() => SYNQUENZER.undo()); await sleep(400); const h2 = await h(); console.log('after undo', JSON.stringify(h2));
+await T.w('w2', /^6 /); const m2 = await live('k3', -60);
+check('T2 chosen, DELAY TIEFE drag: header dot + A/B during the gesture', /chg/.test(m2.pn) && m2.ab, {mid: m2, after: await h()});
+check('no console errors', errs.length === 0, errs.slice(0, 4));
+await T.br.close(); done();

@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const APP = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk-br-MK6/index.html';
+const b = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await b.newContext({viewport: {width: 390, height: 844}, hasTouch: true, isMobile: true}); const p = await ctx.newPage();
+await p.goto('file://' + APP); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.storage().booted, null, {timeout: 30000});
+console.log(await p.evaluate(async () => { const Q = SYNQUENZER, sl = ms => new Promise(r => setTimeout(r, ms));
+  await Q.loadDemo(); Q.setBpm(120); Q.launchScene(0); await sl(1000); Q.setEngine(3, 'mk'); await sl(50);
+  Q.mkSet(3, 't.0.seq.on', 1); Q.mkSet(3, 't.0.seq.ks', 2); Q.mkSet(3, 't.0.seq.q.0.k', 11);
+  Q.selectSlot(3, 0); Q.openEditor(); await sl(200); MKUI.setWahl(2, 10); MKUI.viewOpen('schritte'); await sl(1500);
+  const E = AU.synth[MKUI.P.i]; return JSON.stringify({pi: MKUI.P.i, selT: R.selT, mksOn: E && E.mksOn, mksN: E && E.mksN, seq: E && E.mks && E.mks.seq, cur: MKUI.stepsInfo() && MKUI.stepsInfo().cur}); }));
+await b.close();

@@ -3942,7 +3942,8 @@ const ARPC = (function () {
   }
   function step(i, s, m, t, idx, silent) {
     const A = m.arp, latch = !!A.latch, q = query(s, t, latch), r = {idx, t, tn: nomT(s, idx), pc: s.pc, pg: s.pg, pk: s.kOn, vs: [], le: [], s: -1};
-    if (!q || !q.mem.length) { if (s.kOn) keys(i, s, 10, t); s.pg = null; rec(s, r); return r; }
+    r.q = q && q.mem.length ? 1 : 0;
+    if (!r.q) { if (s.kOn) keys(i, s, 10, t); s.pg = null; rec(s, r); return r; }
     const ng = q.g !== s.pg;
     if (ng) keys(i, s, 9, t);                                     // KEYS 9: a new chord after all keys up (LFO / SEQ key sync "Timbre")
     const c = A.ks ? (ng ? 0 : s.pc + 1) : idx;                   // KEY SYNC on: the pattern starts with step 1; off: it runs with the grid
@@ -3994,10 +3995,9 @@ const ARPC = (function () {
       if (t >= now + h) break;
       s.next = idx + 1;
       if (t < now - .02) { step(i, s, m, t, idx, true); continue; }     // fell behind (throttled timer): never burst
-      step(i, s, m, Math.max(t, now), idx, false);
+      const r = step(i, s, m, Math.max(t, now), idx, false);
       // idle: nothing held, nothing coming, no latch -> the state goes (a new key starts afresh)
-      const q = query(s, t, !!m.arp.latch);
-      if (!q && !future(s, t)) { if (s.kOn) keys(i, s, 10, t); ST.delete(i); return; }
+      if (!r.q && !future(s, t)) { if (s.kOn) keys(i, s, 10, t); ST.delete(i); return; }
     }
   }
   // cancel the steps planned from t on (a carrier change, a cut, a new key, a tempo change) and plan them again
@@ -4569,8 +4569,8 @@ function render() {
     e.removeAttribute('aria-label');
     e.classList.toggle('on', !P.shift && cur === 'b.' + (P.bank + 1) + (k + 1)); e.classList.toggle('mempty', !P.shift && !rec);
     e.querySelector('.msh').textContent = P.shift ? SH[k] : ''; e.classList.toggle('mshd', !!P.shift && k > 3); e.title = rec ? rec.name : ''; });   // MK3: SHIFT + 1 / 2 / 4 work
-  if (U.prog) { U.prog.querySelector('.mpb').textContent = P.shift ? 'SHIFT' : av ? 'SCHRITTE · LÄNGE ' + aL : 'BANK ' + (P.bank + 1) + ' · ' + (P.side ? 'B' : 'A') + ' · ' + cur.toUpperCase();
-    U.prog.querySelector('.mpn').textContent = P.shift ? 'Taste wählen' : av ? 'Tasten 1–' + aL + ': an │ Pause' : s_.name; }
+  if (U.prog) { U.prog.querySelector('.mpb').textContent = P.shift ? 'SHIFT' : av ? 'SCHRITTE · ' + aL : 'BANK ' + (P.bank + 1) + ' · ' + (P.side ? 'B' : 'A') + ' · ' + cur.toUpperCase();
+    U.prog.querySelector('.mpn').textContent = P.shift ? 'Taste wählen' : av ? 'an │ Pause' : s_.name; }
   if (U.arp) { U.arp.classList.toggle('on', !!A_.on); U.arp.setAttribute('aria-pressed', A_.on ? 'true' : 'false'); U.arp.querySelector('.msh').textContent = P.shift ? '–' : ''; }   // MK5
   if (U.write) U.write.querySelector('.msh').textContent = '';
   if (U.side) U.side.querySelector('.msh').textContent = P.shift ? 'WAHL ⇄' : '';
@@ -4635,8 +4635,9 @@ function octBtn(d) {
 function arpKey() {
   const i = P.i; if (P.shift) { P.shift = 0; render(); lcdShow('SHIFT + ARP', 'gibt es in der App nicht'); return; }
   const v = mk().arp.on ? 0 : 1; soundEdit(i, MK_LABEL + ' ARP ' + (v ? 'an' : 'aus'), () => mkSetP(i, 'arp.on', v, false));
-  haptic('tick'); render(); lcdShow('ARP ' + (v ? 'AN' : 'AUS'), v ? arpTxt(7).replace(/^ARP an · /, '') + ' · Akkord halten' : 'die Tasten spielen wieder direkt');
-  if (v) hint('arp', 'ARPEGGIATOR', 'Akkord halten – die Töne kommen nacheinander im Song-Tempo. Einstellen: EDIT-WAHL 2 auf ARP A bzw. ARP B');
+  haptic('tick'); render();
+  if (v && !P.hint.arp) { P.hint.arp = 1; lcdShow('ARP AN', 'Akkord halten – die Töne kommen nacheinander im Song-Tempo · einstellen: EDIT-WAHL 2 auf ARP A bzw. ARP B'); }
+  else lcdShow('ARP ' + (v ? 'AN' : 'AUS'), v ? arpTxt(7).replace(/^ARP an · /, '') + ' · Akkord halten' : 'die Tasten spielen wieder direkt');
 }
 // MK5: a step key (ARP A/B shown): step k on │ rest, one undo; a key over LÄNGE stays dark
 function stepKey(k) {
