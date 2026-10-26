@@ -197,3 +197,30 @@ Neustart-Prüfung: kein `synq-snapshots/MK5-fix.html` → alle drei Befunde neu 
   `v3-mk5-perf.mjs` (Arp-Anteil p95 0,2–0,3 ms, PE1), `v3-qa-mk5-stress.mjs` (0 Fehler, keine hängende Stimme), Smoke ohne Fehler.
 - Bekannt wackelig, auch im Stand vor dem Fix (nicht Teil der Befunde): MK5-02 „live zweimal“ (Akkord-Fenster bei der 10-ms-Uhr von
   Headless-Chromium; vorher 3/6, jetzt 1/6 Fehlläufe) und MK5-16 `frames_ok` der Leistungs-Probe (Quantum-Spitzen der Testumgebung).
+
+## G-MK5-Fix (Gruppe): Akkord auf dem Schlag mit normaler Finger-Spreizung verlor Schritt 1 (4.13.0, Version unverändert)
+
+**Befund (major):** Drei Tasten 15–20 ms auseinander (30–40 ms erste bis letzte, typisch für drei Finger auf dem Bildschirm) auf dem
+gehörten Taktstrich: der `late`-Schritt 1 (C) fiel weg, der Schlag blieb stumm, der erste Arp-Ton war E auf B + 0,25 (KEY SYNC an: C eine
+Sechzehntel zu spät, ganzes Muster verschoben; 1/8: erste Achtel stumm). Live ≠ ● Aufnahme. Ursache (`ARPC.plan`): Der späte Schritt
+galt nur, solange die **erste** Taste des Akkords jünger als 20 ms war (`s.late.x.on >= now − .02`); jede weitere Taste plant ihn neu,
+die dritte kam 30–40 ms nach der ersten → der Neuplan verwarf ihn und Schritt 0 lief stumm. Das 30-ms-Akkordfenster wurde nur von der
+ersten Taste aus gemessen (`lx.on + CHW`).
+
+**Behebung (nur `ARPC.plan`, eine Stelle):** Die übrigen Tasten eines gespreizten Akkords schließen sich als **Kette** an (jede höchstens
+`CHW` = 30 ms nach der vorigen, vor dem nächsten Schritt); der späte Schritt bleibt gültig, solange die **letzte** Taste dieser Kette frisch
+ist. Er klingt wie bisher `LATEW` (20 ms) nach der letzten Taste, spätestens 10 ms vor dem nächsten Schritt, und liest den Akkord mit allen
+Tasten der Kette. Ein bereits klingender Schritt wird nie geschnitten (unverändert); keine anderen Wege berührt.
+
+**Belege** (Chromium 1243, `mk-br-MK5/index.html`):
+- `v3-qa-gmk5-x8.mjs` (Spreizung 12–40 ms, −10/0 ms): vorher 9/16, jetzt **16/16** PASS (C als `late`-Schritt vor der 2. Sechzehntel).
+- `v3-qa-gmk5-x8b.mjs` (KEY SYNC an / 1/8): **6/6** PASS. `v3-qa-gmk5-x6.mjs` (CDP-Touch, 3 Finger): **10/10** PASS.
+- Neu `dirigent-test/v3-gfix-mk5-x6r.mjs` (CDP-Touch, Wiederholungen, Fenster-bewusst, Stimmen geplant/abgesagt protokolliert):
+  1/16 16/16, 1/8 8/8, KEY SYNC an 8/8 PASS.
+- Klang (nicht noteLog): `v3-verify-mk5-spread.mjs` (AudioWorklet-Abgriff, Tonhöhe per Autokorrelation): **0/15** verlorene C
+  (vorher 9/15); C klingt bei B + 94–110 ms, E auf der 2. Sechzehntel – wie das Abspielen der Aufnahme (C auf B, E auf B + 0,25).
+- Regression: `v3-mk5-arp.mjs` 78/79 (einziger Fehler MK5-02 „live zweimal“, bekannt wackelig, transport-gestoppt/freies Raster, vom Fix
+  nicht berührt; derselbe Test schlägt auch auf `synq-snapshots/MK5-fix.html` 1 von 3 Läufen fehl), `v3-mk5-fix.mjs` 17/17,
+  `v3-mk5-arp-audio.mjs` 11/11, `v3-qa-mk5-a.mjs` 3/3, `v3-verify-mk5-ks0.mjs` 6/6, `v3-qa-mk5-rectake.mjs` Spielen = Abspielen (4 Fälle),
+  `v3-qa-mk5-onbeat.mjs` erster Ton C mit dem Zähler des gehörten Schlags, `v3-qa-mk5-stress.mjs` 0 Fehler, Smoke ohne Fehler.
+- Keine Layout-/Aussehens-Änderung, keine Datenbank-Änderung.

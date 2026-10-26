@@ -4017,9 +4017,12 @@ const ARPC = (function () {
       const idx = s.next, t = timeOf(s, m, idx);
       if (t >= now + h) break;
       s.next = idx + 1;
-      const lx = s.late && s.late.idx === idx && s.late.x.on > t + E_ && s.late.x.on >= now - .02 ? s.late.x : null;
+      /* G-MK5 fix: the rest of a spread chord joins as a chain (each key within CHW of the one before, before the next step) –
+         three fingers on a touch screen are 15–20 ms apart per key, 30–40 ms first to last. The late step stays alive while the
+         chord's LAST key is fresh (the first key alone went stale after 20 ms, so a 3rd key 30–40 ms later dropped step 1). */
+      let lx = null, tl = 0, tn = 0;
+      if (s.late && s.late.idx === idx && s.late.x.on > t + E_) { tl = s.late.x.on; tn = timeOf(s, m, idx + 1); for (const x of s.iv) if (x.on > tl && x.on <= tl + CHW && x.on < tn - E_) tl = x.on; if (tl >= now - .02) lx = s.late.x; }
       if (lx) { const q = query(s, t, !!m.arp.latch); if (!(q && q.mem.length)) {
-        let tl = lx.on; const tn = timeOf(s, m, idx + 1); for (const x of s.iv) if (x.on > tl && x.on <= lx.on + CHW && x.on < tn - E_) tl = x.on;   // the rest of a spread chord joins
         if (lx.ref != null && t >= now + .003) { for (const x of s.iv) if (x.on > t && x.on <= tl) x.on = t; step(i, s, m, t, idx, false); }   // a live key just before a grid point that is still ahead: on the grid
         else step(i, s, m, Math.max(lx.ref != null ? Math.max(tl, Math.min(tl + LATEW, tn - .01)) : tl, now), idx, false, tl);   // else at once (live: LATEW for the other keys of the chord; a clip note never before its own time); its gate ends by the next step
         continue; } }   // MK5-fix: the late first step of a chord on the beat
