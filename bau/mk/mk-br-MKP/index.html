@@ -4852,12 +4852,12 @@ function buildPlate(zb) {
   plateSlice();
   return pl;
 }
-// the plate is built in slices of <= 4 ms (MK-P-09 a: <= 16 ms on the phone), one per frame, the scheduler kept ahead (EN3-14)
+// the plate is built in slices of <= 6 ms (MK-P-09 a: <= 16 ms on the phone), one task each, the scheduler kept ahead (EN3-14)
 function plateSlice() {
   const t0 = performance.now(); try { tickAhead(.3); } catch (e) {}
-  while (PL.jobs.length && performance.now() - t0 < 4) PL.jobs.shift()();
+  while (PL.jobs.length && performance.now() - t0 < 6) PL.jobs.shift()();
   PL.slices.push(+(performance.now() - t0).toFixed(2)); PL.ms += performance.now() - t0;
-  if (PL.jobs.length) { requestAnimationFrame(plateSlice); return; }
+  if (PL.jobs.length) { setTimeout(plateSlice, 0); return; }   // a task per slice (not a frame per slice): the event loop and the scheduler run between two slices, the plate is done in a few frames
   PL.ready = true; PL.done = performance.now() - PL.t0; renderSoon();
 }
 /* ---------- MK-P Umfang 3: what every element of the plate does (synth column / vocoder column) ---------- */
@@ -5022,11 +5022,9 @@ function paintKnob(id) {
   if (K_.a !== a) { K_.a = a; K_.cap.style.transform = 'rotate(' + a + 'deg)'; }
   const g = grau(id); if (K_.g !== g) { K_.g = g; K_.n.classList.toggle('grau', g); }
 }
-function stepBase(k) {
-  if (P.mode === 'edit') return keyOfPage() === k ? 'on' : '';
-  if (P.mode === 'spiel') return mkPanelProg('lit') === k ? 'on' : '';
-  return '';
-}
+// the LED of SELECT k without the running light: EDIT = the key of the page, SPIEL = the program's place; asked once per paint (lit)
+const litOf = () => (P.mode === 'edit' ? keyOfPage() : P.mode === 'spiel' ? mkPanelProg('lit') : 0);
+const stepBase = (k, lit) => (lit === k && k ? 'on' : '');
 function leds() {
   const vc = voc(), t = ct(), m = mk();
   for (let k = 0; k < 8; k++) setLed('o1.led.' + k, t.o1.w === k ? 'on' : '');
@@ -5046,7 +5044,7 @@ function leds() {
   for (let k = 0; k < 8; k++) { setLed('vp.src.' + k, (vc ? m.voc.msrc === k : pp.s === k) ? 'on' : ''); setLed('vp.dst.' + k, !vc && pp.d === k ? 'on' : ''); }
   for (let k = 0; k < 4; k++) setLed('vp.led.' + k, !vc && P.patchSel === k ? 'on' : '');
   for (let k = 0; k < 3; k++) setLed('sq.led.' + k, (vc ? P.chSel === k + 1 : P.seqSel === k + 1) ? 'on' : '');
-  for (let k = 1; k <= 16; k++) setLed('s' + k, P.run ? (P.run === k ? 'on run' : '') : stepBase(k));
+  const lit = P.run ? 0 : litOf(); for (let k = 1; k <= 16; k++) setLed('s' + k, P.run ? (P.run === k ? 'on run' : '') : stepBase(k, lit));
   for (const id of ['o2.wave', 'o2.mod', 'a.gate', 'tim', 'seq.on', 'seq.rec', 'vp.sel', 'vp.d']) { const b = PL.ui.key[id]; if (b) b.classList.toggle('grau', grau(id)); }
 }
 function paintOrig() {
@@ -5056,7 +5054,7 @@ function paintOrig() {
   setLed('orig', on ? 'on' : '');
 }
 function wiaPaint() {
-  const on = !!UI.wia, I0 = SQMK.init();
+  const on = !!UI.wia; if (!on && !P.wiaAny) return; P.wiaAny = on; const I0 = on ? SQMK.init() : null;
   for (const id in PL.ui.knob) { const d = on ? defOf(id) : null, dif = !!(d && d.p && !VIEWP.test(d.p) && d.p !== 'bpm' && d.p !== 'vol' && d.p !== 'mw' && SQMK.mkPathGet(I0, d.sst != null ? d.p : d.p) !== get(d) && SQMK.mkPathGet(I0, d.p) != null);
     const n = PL.ui.knob[id].n; if (n._d !== dif) { n._d = dif; n.classList.toggle('dif', dif); } }
   for (let k = 1; k <= 16; k++) { const b = PL.ui.key['s' + k], dif = on && P.mode === 'edit' && pageDiff(k); if (b && b._d !== dif) { b._d = dif; b.classList.toggle('dif', dif); } }
@@ -5315,15 +5313,18 @@ function buildSpiel() {
   if (half) { const hp = el('button', 'mkhp', '<span>1–' + n + '</span><span>' + (n + 1) + '–16</span>'); sp.appendChild(hp); S_.hp = hp; onTap(hp, () => { P.spielHaelfte ^= 1; spielSteps(); });
     let sw = null; grid.addEventListener('pointerdown', ev => { sw = {x: ev.clientX, id: ev.pointerId}; });
     grid.addEventListener('pointerup', ev => { if (sw && sw.id === ev.pointerId && Math.abs(ev.clientX - sw.x) >= 40) { P.spielHaelfte = ev.clientX < sw.x ? 1 : 0; spielSteps(); } sw = null; }); }
-  spielSteps();
-  // landscape: the keys and the wheels fill the rest of the frame (H-17)
-  if (P.land) requestAnimationFrame(() => { if (!sp.isConnected) return; const fr = U.fr.getBoundingClientRect(), b = sp.getBoundingClientRect(), y = Math.round(b.bottom + 4);
+  spielSteps(); U.spKeep = S_; spielKb(U, sp);
+}
+// landscape: the keys and the wheels fill the rest of the frame (H-17)
+function spielKb(U, sp) {
+  if (P.land) requestAnimationFrame(() => { if (!sp.isConnected || sp.hidden) return; const fr = U.fr.getBoundingClientRect(), b = sp.getBoundingClientRect(), y = Math.round(b.bottom + 4);
     const st = EL.app.style; st.setProperty('--mkkb-x', Math.round(fr.left) + 'px'); st.setProperty('--mkkb-y', y + 'px'); st.setProperty('--mkkb-w', Math.round(fr.width) + 'px'); st.setProperty('--mkkb-h', Math.max(60, Math.round(fr.bottom - y)) + 'px');
     if (!EL.app.classList.contains('mkqkb')) { releaseInputs(r => r === 'play' || r === 'pad'); EL.app.classList.add('mkqkb'); UI.kbRelayout = true; } });
 }
 function spielSteps() {
   const S_ = P.sp; if (!S_) return; const off = S_.half ? P.spielHaelfte * S_.n : 0, vc = voc();
-  S_.steps.forEach((b, j) => { const k = off + j + 1; if (+b.dataset.n === k && b._v === vc) return; b.dataset.n = k; b._v = vc; b.querySelector('b').textContent = k; const pr = b.querySelector('.mkpr'), tx = STEPP[k - 1][vc ? 1 : 0], room = b.clientWidth - 7, wd = Math.max(...tx.split(' ').map(x => measure(x, 9, 700))); pr.textContent = tx; pr.style.fontSize = wd <= room ? '' : Math.max(6.5, Math.floor(9 * room / wd * 2) / 2) + 'px'; b.setAttribute('aria-label', 'SELECT ' + k); });
+  const cw = S_.cw || (S_.cw = S_.steps.length ? S_.steps[0].clientWidth : 0);   // one layout read for all keys (all columns are equal), then only writes
+  S_.steps.forEach((b, j) => { const k = off + j + 1; if (+b.dataset.n === k && b._v === vc) return; b.dataset.n = k; b._v = vc; b.querySelector('b').textContent = k; const pr = b.querySelector('.mkpr'), tx = STEPP[k - 1][vc ? 1 : 0], room = cw - 7, wd = Math.max(...tx.split(' ').map(x => measure(x, 9, 700))); pr.textContent = tx; pr.style.fontSize = wd <= room ? '' : Math.max(6.5, Math.floor(9 * room / wd * 2) / 2) + 'px'; b.setAttribute('aria-label', 'SELECT ' + k); });
   if (S_.hp) S_.hp.classList.toggle('r', P.spielHaelfte === 1);
   spielPaint();
 }
@@ -5332,7 +5333,7 @@ function spielPaint() {
   for (const id in S_.keys) { const L = S_.keys[id].querySelector('.led'), src = PL.ui && PL.ui.led[id]; const st = id === 'tim' ? (!voc() && ti() === 0 ? 'on' : '') : src ? src._s || '' : '';
     if (L._s !== st) { L._s = st; L.className = 'led' + (st ? ' ' + st : ''); } }
   const t2 = S_.keys.tim && S_.keys.tim.querySelector('.l2'); if (t2) { const st = !voc() && ti() === 1 ? 'on' : ''; if (t2._s !== st) { t2._s = st; t2.className = 'led l2' + (st ? ' ' + st : ''); } }
-  for (const b of S_.steps) { const k = +b.dataset.n, L = b.querySelector('.led'), st = P.run ? (P.run === k ? 'on run' : '') : stepBase(k); if (L._s !== st) { L._s = st; L.className = 'led' + (st ? ' ' + st : ''); } }
+  const lit = P.run ? 0 : litOf(); for (const b of S_.steps) { const k = +b.dataset.n, L = b.querySelector('.led'), st = P.run ? (P.run === k ? 'on run' : '') : stepBase(k, lit); if (L._s !== st) { L._s = st; L.className = 'led' + (st ? ' ' + st : ''); } }
   if (S_.hp) { const other = P.run && (P.spielHaelfte ? P.run <= S_.n : P.run > S_.n); S_.hp.classList.toggle('dot', !!other); }
 }
 /* ---------- the map of the whole plate and ◀ ▶ (MK-P "Karte"): drawn once per format, the rectangle moves by transform ---------- */
@@ -5365,7 +5366,20 @@ function navPaint() {
   if (NAV.r._t !== tr) { NAV.r._t = tr; NAV.r.style.transform = tr; }
   NAV.r.hidden = !plate;
 }
-function tabTo(t) { ED.tab = t; FXF.big = null; safeRebuild(buildSynthEd); }
+function tabTo(t) { if (tabFast(t)) return; ED.tab = t; FXF.big = null; safeRebuild(buildSynthEd); }
+// GERÄT ↔ SPIEL (MK-P-09 b): both live in the same fixed frame, so only the frame's content is swapped (the plate DOM is kept);
+// the sheet is not rebuilt (that costs a long task on the phone). FX and every other way keep the full rebuild.
+function tabFast(t) {
+  const a = ED.tab, ok = x => x === 'geraet' || x === 'spiel', pg = P.pg;
+  if (a === t || !ok(a) || !ok(t) || !pg || P.i < 0 || !panelLive(pg, P.i) || FXF.big) return false;
+  const U = P.el; if (!U || !U.fr || !U.fr.isConnected || !U.T || P.view || U.hull.hidden) return false;
+  ED.tab = t; P.tab = t;
+  for (const b of EL.synthSheet.querySelectorAll('.sh-tabs .tab')) b.classList.toggle('on', b.dataset.tab === t);
+  // the plate stays laid out, only moved out of the frame (one transform, no style pass over its ~1000 nodes): coming back costs no style or layout pass
+  if (t === 'spiel') { U.hull._tr = 'translate(-100000px,0px)'; U.hull.style.transition = ''; U.hull.style.transform = U.hull._tr; const K_ = U.spKeep; if (K_ && K_.root.isConnected) { K_.root.hidden = false; P.sp = K_; spielSteps(); spielKb(U, K_.root); } else buildSpiel(); }
+  else { if (P.sp) { P.sp.root.hidden = true; P.sp = null; } if (EL.app.classList.contains('mkqkb')) { releaseInputs(r => r === 'play' || r === 'pad'); EL.app.classList.remove('mkqkb'); UI.kbRelayout = true; } applyView(false); }
+  render(); return true;
+}
 /* ---------- the sheet head (B.3 Rahmen): portrait = ◀ Karte ▶ beside the tabs; landscape = the whole screen with one 44 px head (H-17) ---------- */
 function chrome(sh, i, o) {
   const q = window.innerWidth > window.innerHeight; P.land = q; ED.headFmt = window.innerWidth + 'x' + window.innerHeight;   // a turn rebuilds the sheet (the head of the other format)
@@ -5428,7 +5442,7 @@ function frame(now, bAud) {
   if (P.sp && P.sp.keys['arp.on']) { const L = P.sp.keys['arp.on'].querySelector('.tl'); if (L && L._on !== led) { L._on = led; L.classList.toggle('on', led); } }
   const want = !voc() && (ct().seq.on || !!P.rec); try { const E = AU.synth[P.i]; if (E && want && !E.mksOn) E.mkScope(true); } catch (e) {}
   const k = want ? runStep(tA) : 0;
-  if (k !== P.run) { P.run = k; P.runN = (P.runN || 0) + 1; if (PL.ui) for (let j = 1; j <= 16; j++) setLed('s' + j, k ? (k === j ? 'on run' : '') : stepBase(j)); spielPaint(); }
+  if (k !== P.run) { P.run = k; P.runN = (P.runN || 0) + 1; const lit = k ? 0 : litOf(); if (PL.ui) for (let j = 1; j <= 16; j++) setLed('s' + j, k ? (k === j ? 'on run' : '') : stepBase(j, lit)); spielPaint(); }
 }
 /* ---------- test API (B.7): mkPanel(), mkView(o) ---------- */
 function panelInfo() {
@@ -5921,8 +5935,8 @@ const css = `
 .mkfr{position:absolute;inset:0;overflow:hidden;contain:strict;touch-action:none;background:#15181c;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   --mkp-lcd-fg:hsl(85 45% 14%);--mkp-lcd-bg:hsl(78 60% 58%);--mkp-ink:#262a2f;--mkp-key:hsl(210 10% 85%)}
 .mkhull{position:absolute;left:0;top:0;transform-origin:0 0}
-.mkhull[hidden]{display:none}
-.mkplate{position:absolute;left:0;top:0;overflow:hidden;color:var(--mkp-ink);font-family:var(--font-ui);border-radius:calc(var(--u) * 4);
+.mkhull[hidden],.mksp[hidden]{display:none}
+.mkplate{position:absolute;left:0;top:0;overflow:hidden;contain:strict;color:var(--mkp-ink);font-family:var(--font-ui);border-radius:calc(var(--u) * 4);
   background:linear-gradient(115deg,rgba(255,255,255,.15),rgba(255,255,255,0) 30%,rgba(255,255,255,.07) 56%,rgba(255,255,255,0) 78%),
     repeating-linear-gradient(180deg,rgba(255,255,255,.045) 0 1px,rgba(0,0,0,.035) 1px 2px),linear-gradient(180deg,hsl(208 30% 82%),hsl(210 26% 72%));
   box-shadow:inset 0 0 0 calc(var(--u) * 6) #3a4047}
@@ -5958,6 +5972,7 @@ const css = `
   background:radial-gradient(ellipse at 50% 45%,var(--mkp-lcd-bg) 60%,color-mix(in srgb,var(--mkp-lcd-bg) 82%,#000)),var(--mkp-lcd-bg);color:var(--mkp-lcd-fg);
   border:calc(var(--u) * 2.2) solid #24272b;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-weight:600;white-space:pre}
 .mkplcd .ln{white-space:pre;overflow:hidden}
+.mkplate .mkplcd{contain:strict}.mkpk{contain:size layout style}.mksplcd.mkplcd{contain:layout paint style}
 .mkplcd .cu{animation:mkpcu 1s steps(1) infinite}@keyframes mkpcu{50%{opacity:.3}}
 .mkpname{position:absolute;white-space:nowrap;font-weight:600;letter-spacing:.03em;color:var(--mkp-ink)}
 .mkxv{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#15181c}
@@ -6056,7 +6071,7 @@ function ensureCss() { if (document.getElementById('mk-css')) return; const st =
 ensureCss();
 window.MKUI = {mkVowel, build, render, renderSoon, wheels, wheelPaint, panelInfo, probe, probeSheet, arpFrame: frame, arp: ARPC, randomize: randomizeMk, P, KN, fmtv, get, range, setv, wv, MKTAB,
   lcdOf, seqInit, seqSwap, seqCopy, seqToolsPop, recArm, recCancel, recDone, knobSim, stepsInfo, stepsPaint, timCopy, timSwap, timInit, timCopyPop, leave, splitArm, viewOpen, viewClose, splitNote, ownInfo,
-  press, view, chrome, lcdLines, lcdTap, pages, curItem, pageOf, defOf, bindOf, hitAt, haltAt, visRect, panelScript, ELS, SEC, HALTE, PL, mkPanelProg, zoomTo, toOverview, step, compare,
+  press, view, chrome, tabFast, lcdLines, lcdTap, pages, curItem, pageOf, defOf, bindOf, hitAt, haltAt, visRect, panelScript, ELS, SEC, HALTE, PL, mkPanelProg, zoomTo, toOverview, step, compare,
   progRefresh: () => { if (!P.el || !P.el.fr || !P.el.fr.isConnected) return; const s_ = sndOf(P.i); if (s_) { P.orig = null; P.origKey = ''; origSync(s_); } renderSoon(); }};
 })();
 
@@ -26987,7 +27002,7 @@ function buildSynthEd() {
   if (eng === 'fm6' && ED.fmT !== i) fmInitSel(i, false);
   if (UI.fmSolo && (UI.fmSolo.t !== i || eng !== 'fm6' || ED.tab !== 'osc' || ED.sub.osc !== 'op')) fmSoloOff();   // §6.5: Solo is monitor-only
   const F = sheetFrame(sh, tr.name, mkE ? [['geraet', 'GERÄT'], ['spiel', 'SPIEL'], ['fx', 'FX']] : [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']], ED.tab,
-    id => { ED.tab = id; FXF.big = null; safeRebuild(buildSynthEd); },
+    id => { if (mkE && mkLoaded() && MKUI.tabFast(id)) return; ED.tab = id; FXF.big = null; safeRebuild(buildSynthEd); },   // MK-P-09: GERÄT ↔ SPIEL only swaps the frame's content
     subs ? {list: subs, cur: ED.sub[SK], on: id => { if (bigHere && (id === 'fxback' || (SK === 'osc' && id === 'feld'))) { fxBigBack(); return; } ED.sub[SK] = id; FMEV.fine = false; FXF.big = null; if (eng === 'fm6' && SK === 'osc' && (id === 'feld' || id === 'algo')) fmViewSet(i, id); safeRebuild(buildSynthEd); }} : null);
   // row 1: ● SYNTH n · [VA | FM | WT] · ⇅ chip · ECO-Klang badge (native fallback, §1.3) · ↶ ↷ · ✕
   // MK1 (B.3 Zeile 1, H-13): a 4th key with MK_LABEL (two lines where it is narrow); P2/P3: one engine chip with a list

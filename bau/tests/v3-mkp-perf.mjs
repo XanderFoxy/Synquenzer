@@ -10,9 +10,9 @@ const FM = {P1: [390, 844], L1: [844, 390]}; const fail = [], R = {}; const ok =
 const q = (a, p) => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[Math.min(s.length - 1, Math.floor(s.length * p))] : 0; };
 const b = await launch();
 async function run(file, f, isNew) {
-  const [w, h] = FM[f]; const ctx = await b.newContext({viewport: {width: w, height: h}, hasTouch: true, isMobile: true, deviceScaleFactor: 3});
-  const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  await page.addInitScript(() => { window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push([e.startTime, e.duration]); }).observe({entryTypes: ['longtask']}); } catch (e) {} });
+  const [w, h] = FM[f]; const ctx = await b.newContext({viewport: {width: w, height: h}, hasTouch: true, isMobile: true, deviceScaleFactor: +process.env.DPR || 3});
+  const page = await ctx.newPage(); const errs = []; page.on('crash', () => console.error('CRASH', file)); page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  await page.addInitScript((ns) => { window.__ns = ns; window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push([e.startTime, e.duration]); }).observe({entryTypes: ['longtask']}); } catch (e) {} }, !!process.env.NOSCRIPT);
   await page.goto('file://' + path.resolve(file)); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 30000});
   const cdp = await ctx.newCDPSession(page);
   await page.evaluate(async () => { const Q = SYNQUENZER, sl = ms => new Promise(r => setTimeout(r, ms)); await Q.loadDemo(); Q.setBpm(120); ensureAudio(); await sl(1200);
@@ -24,25 +24,25 @@ async function run(file, f, isNew) {
   await cdp.send('Emulation.setCPUThrottlingRate', {rate: THR});
   // (a) the first opening builds the plate
   const a = await page.evaluate(async () => { const t0 = performance.now(); SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor();
-    await new Promise(r => { const f = () => (window.MKUI && MKUI.PL && MKUI.PL.ready ? r() : setTimeout(f, 10)); f(); }); await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => { let n = 0; const f = () => (window.MKUI && MKUI.PL && MKUI.PL.ready || ++n > 150 ? r() : setTimeout(f, 10)); f(); }); await new Promise(r => setTimeout(r, 300));
     const lt = window.__lt.filter(x => x[0] >= t0 - 5).map(x => Math.round(x[1]));
     return MKUI.PL ? {slices: MKUI.PL.slices ? MKUI.PL.slices.length : null, sliceMax: MKUI.PL.slices ? Math.max(...MKUI.PL.slices) : null, done: MKUI.PL.done != null ? +MKUI.PL.done.toFixed(1) : null, ms: MKUI.PL.ms != null ? +MKUI.PL.ms.toFixed(1) : null, open: +(performance.now() - t0).toFixed(0), lt} : {lt}; });
   await page.evaluate(() => { SYNQUENZER.clearLog(); SYNQUENZER.launchScene(0); }); await page.waitForTimeout(900);
   // tracing (new: the panel session; old: the same scene with the editor open)
   const evs = []; cdp.on('Tracing.dataCollected', d => { for (const e of d.value) evs.push(e); });
   await cdp.send('Tracing.start', {categories: 'toplevel,devtools.timeline,disabled-by-default-devtools.timeline.frame,blink.user_timing', transferMode: 'ReportEvents'});
-  const s = await page.evaluate(async (isNew) => {
+  console.error('phase session', file); const s = await page.evaluate(async (isNew) => {
     const sl = ms => new Promise(r => setTimeout(r, ms)), out = {};
-    const tk = []; let lastTk = 0; clearInterval(AU.timer); AU.timer = setInterval(() => { const n = performance.now(); if (lastTk) tk.push(n - lastTk); lastTk = n; tick(); }, TICK_MS);
+    const tk = [], gaps = []; let lastTk = 0; clearInterval(AU.timer); AU.timer = setInterval(() => { const n = performance.now(); if (lastTk) { tk.push(n - lastTk); if (n - lastTk > 50) gaps.push([+((lastTk - t0g) / 1000).toFixed(2), Math.round(n - lastTk)]); } lastTk = n; tick(); }, TICK_MS); const t0g = performance.now();
     const raf = [], lag = []; let on = true, lastF = 0; const rf = n => { if (lastF) raf.push(n - lastF); lastF = n; if (on) requestAnimationFrame(rf); }; requestAnimationFrame(rf);
     let exp = performance.now() + 50; const lp = () => { const n = performance.now(); lag.push(Math.max(0, n - exp)); exp = n + 50; if (on) setTimeout(lp, 50); }; setTimeout(lp, 50);
-    console.timeStamp('mkp-start'); const t0 = performance.now(); const PS = isNew ? MKUI.panelScript(10000) : null;
+    console.timeStamp('mkp-start'); const t0 = performance.now(); const PS = isNew && !window.__ns ? MKUI.panelScript(10000) : null;
     await sl(10300); on = false; if (PS) { PS.stop(); out.panel = PS.res; }
     const L = SYNQUENZER.noteLog(4000).filter(e => e.track < 2 || e.track >= 0), spb = 60 / S.bpm;
     // notes of the clips (src clip) against the 1/16 grid of the song: the scheduler never set a note late
     const t0a = AU.ctx.currentTime; out.notes = L.length;
     out.gridDev = L.filter(e => e.beat != null && e.src !== 'arp').map(e => Math.abs(e.beat * 4 - Math.round(e.beat * 4)) * spb / 4 * 1000);
-    out.tick = {max: Math.max(...tk), p99: 0, n: tk.length}; out.tk = tk; out.raf = raf; out.lag = lag; out.lt = window.__lt.filter(x => x[0] >= t0).map(x => Math.round(x[1]));
+    out.tick = {max: Math.max(...tk), p99: 0, n: tk.length}; out.gaps = gaps; out.tk = tk; out.raf = raf; out.lag = lag; out.lt = window.__lt.filter(x => x[0] >= t0).map(x => Math.round(x[1]));
     return out; }, isNew);
   const done = new Promise(r => { cdp.once('Tracing.tracingComplete', r); }); await cdp.send('Tracing.end'); await Promise.race([done, new Promise(r => setTimeout(r, 20000))]);
   // (e) layers outside transitions: the overview and a halt (z = 1320)
@@ -74,11 +74,11 @@ async function run(file, f, isNew) {
       layouts: lays.length, layoutsGleiten: inG.length, layoutsDrehen: inK.length, framesDrehen: kFrames};
   }
   const o = {a: isNew ? a : undefined, panel: s.panel, rafP95: +q(s.raf, .95).toFixed(2), rafMed: +q(s.raf, .5).toFixed(2), rafGt50: s.raf.filter(x => x > 50).length, lagMax: +Math.max(0, ...s.lag).toFixed(1), lagP95: +q(s.lag, .95).toFixed(1),
-    tickMax: +Math.max(...s.tk).toFixed(1), tickGt50: s.tk.filter(x => x > 50).length, notes: s.notes, gridMax: +Math.max(0, ...s.gridDev).toFixed(3), lt: s.lt, trace: tr, layers: isNew ? lay : undefined, errs: errs.slice(0, 3)};
+    tickMax: +Math.max(...s.tk).toFixed(1), tickGt50: s.tk.filter(x => x > 50).length, notes: s.notes, gridMax: +Math.max(0, ...s.gridDev).toFixed(3), lt: s.lt, gaps: s.gaps, trace: tr, layers: isNew ? lay : undefined, errs: errs.slice(0, 3)};
   await ctx.close(); return o;
 }
 for (const f of ONLY) {
-  const n = await run(NEW, f, true), o = OLD ? await run(OLD, f, false) : null; R[f] = {neu: n, vorg: o};
+  const o = OLD ? await run(OLD, f, false) : null; const n = await run(NEW, f, true); R[f] = {neu: n, vorg: o};
   ok('MK-P-09a', n.a && n.a.sliceMax <= 16 && n.a.done <= 150 && !n.a.lt.some(x => x > 50), f + ' Aufbau ' + JSON.stringify(n.a));
   ok('MK-P-09b', n.trace && n.trace.le16 >= 99 && n.trace.gt33 === 0, f + ' Bilder ' + JSON.stringify(n.trace));
   ok('MK-P-09b', n.rafP95 <= 17.5, f + ' rAF p95 ' + n.rafP95);
