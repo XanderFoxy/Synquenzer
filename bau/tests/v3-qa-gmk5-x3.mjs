@@ -1,0 +1,28 @@
+// take start / take end with arp on vs off: first pass of the new clip, first step of the take
+import {open, sleep, OUT, check, done} from './v3-qa-gmk5-tl.mjs';
+const ARP = process.argv[2] !== 'off';
+const T = await open({viewport: {width: 390, height: 844}}); const {p, E, errs} = T;
+const log = (...a) => console.log(...a);
+const TR = 2;
+await E(() => { SYNQUENZER.setMetronome && SYNQUENZER.setMetronome(false); });
+await E(t => { SYNQUENZER.setEngine(t, 'mk'); }, TR); await sleep(800);
+await E(([t, a]) => { const Q = SYNQUENZER; Q.selectTrack(t); Q.mkSet(t, 'arp.on', a ? 1 : 0); Q.mkSet(t, 'arp.res', 1); }, [TR, ARP]);
+await E(t => SYNQUENZER.tapSlot(t, 2), TR); await sleep(300);
+const waitBeat = b => p.waitForFunction(b => audBeat() >= b, b, {timeout: 20000, polling: 2});
+await T.tapSel('#bRec', 50);
+await p.waitForFunction(() => SYNQUENZER.runtime().rec.state === 'recording', null, {timeout: 8000, polling: 5});
+await waitBeat(-0.03); await T.holdKeys([0, 4, 7]); await waitBeat(1.85); await T.releaseKeys();
+await waitBeat(2 - 0.03); await T.holdKeys([2, 5, 9]); await waitBeat(3.85); await T.releaseKeys();
+await waitBeat(4 - 0.03); await T.holdKeys([4, 7, 11]); await waitBeat(7.85); await T.releaseKeys();
+await waitBeat(8.15); await T.tapSel('#bRec', 50);
+const endB = await E(() => audBeat());
+await p.waitForFunction(() => SYNQUENZER.runtime().rec.state === 'off', null, {timeout: 12000, polling: 20});
+log('● at', endB.toFixed(3), 'off at', (await E(() => audBeat())).toFixed(3), 'cstart', await E(t => R.cstart[t], TR));
+await waitBeat(18.2);
+const nl = await E(() => SYNQUENZER.noteLog(800).filter(e => e.track === 2).map(e => [e.beat == null ? null : +e.beat.toFixed(3), e.src, e.out, e.late ? 'L' : '']));
+log(ARP ? 'ARP on' : 'ARP off', JSON.stringify(nl.filter(x => x[0] == null || (x[0] > -1 && x[0] < 1) || (x[0] > 7.5 && x[0] < 18.2))));
+const voices = await E(() => SYNQUENZER.voices().filter(v => v.track === 2).map(v => [v.src, v.out, v.state]));
+log('voices now', JSON.stringify(voices));
+await E(() => SYNQUENZER.stop());
+log('errs', JSON.stringify(errs));
+await T.br.close();

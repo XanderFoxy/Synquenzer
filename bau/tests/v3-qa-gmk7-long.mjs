@@ -1,0 +1,90 @@
+// QA G-MK7: 3 minutes playback (P 390x844, CDP touch): pad = MS 2000 vocoder (E2 = lead, „nur als Eingang“), bass = MS 2000 Welle „Eingang“
+// (E1 = drums), scene switches and vocoder/input edits while playing. Recorded: master + raw worklet outputs of t0, t2, t3. argv: minutes, 'base'
+import {open, sleep, OUT, check, done} from './v3-qa-gmk7-tl.mjs';
+import {setupProject} from './v3-qa-gmk7-setup.mjs';
+import {recStart, recAnalyse7} from './v3-qa-gmk7-rec.mjs';
+import fs from 'fs';
+const MIN = +(process.argv[2] || 3), BASE = process.argv[3] === 'base', TAG = BASE ? 'base' : 'long';
+const T = await open({viewport: {width: 390, height: 844}}); const {p, E, errs} = T;
+const PAD = 2, LEAD = 3, BASS = 0, DR = 4;
+T.knobList = async (k, re, scroll = true) => { await T.tapMk(k, 300); if (scroll) { await E(src => { const rx = new RegExp(src); const b = [...document.querySelectorAll('#popLayer .pop button')].find(b => rx.test(b.textContent.trim())); b && b.scrollIntoView({block: 'center'}); }, re.source); await sleep(150); } const r = await T.tapPop(re); await sleep(650); return r ? 'ok' : 'no list item ' + re + ' ' + JSON.stringify(await T.popTexts()); };
+T.shiftTo = async on => { const pn = await T.panel(); if (!!(pn && pn.shift) !== !!on) await T.tapMk('shift', 300); };
+T.src = async (re, w = 2) => { await T.closePop(); if (w === 2) { await T.w1(/EING\. ?1/); await sleep(300); } else { await T.w1(/MIXER/); await sleep(300); } await T.shiftTo(true); const r = await T.knobList('k0', re); await T.shiftTo(false); return r; };
+const vs = () => E(t => { const m = SYNQUENZER.mkGet(t), i = SYNQUENZER.mkIn(t); return m ? `mode${m.mode} fs${m.voc.fs} cut${m.voc.cut} efs${m.voc.efs} hold${m.voc.hold ? 1 : 0} chl${m.voc.chl.join('')==='127'.repeat(16) ? '=' : '*'} chp${m.voc.chp.every(v => !v) ? '=' : '*'} in:${i ? (i.e2 || '-') + '/' + i.e2Dry : '-'}` : SYNQUENZER.getSound(t).engine; }, PAD);
+const setup = await setupProject(E);
+await E(([P, L, B, D]) => { const Q = SYNQUENZER; Q.setEngine(P, 'mk'); Q.mkSet(P, 'mode', 3); Q.mkIn(P, 'e2', L); Q.mkIn(P, 'e2', undefined, 0);
+  Q.setEngine(B, 'mk'); Q.mkSet(B, 't.0.o1.w', 7); Q.mkIn(B, 'e1', D); Q.mkSet(B, 't.0.f.cut', 70); Q.mkSet(B, 't.0.f.res', 40); }, [PAD, LEAD, BASS, DR]);
+console.log('setup', JSON.stringify(setup), await vs());
+await E(() => { SYNQUENZER.selectTrack(0); });
+await E(() => { SYNQUENZER.launchScene(0); if (!SYNQUENZER.runtime().playing) SYNQUENZER.play(); });
+await sleep(300);
+console.log('rec', JSON.stringify(await recStart(E, MIN * 60 + 40, [BASS, PAD, LEAD])));
+const res = {};
+const act = async (name, fn) => { const t = await E(() => (window.__pn = Math.round(performance.now()), [AU.ctx.currentTime, audBeat(), window.__pn])); let r; try { r = await fn(); } catch (e) { r = 'ERR ' + e.message; } res[name] = r; await E(([n, t, b, r]) => window.__q.acts.push({n, t, b, r, pn: window.__pn, t1: AU.ctx.currentTime}), [name, t[0], t[1], typeof r === 'object' ? JSON.stringify(r).slice(0, 80) : String(r)]); const nm = await E(() => SYNQUENZER.undoInfo().n + ' bpm ' + SYNQUENZER.runtime().bpm); console.log(`[${(t[1] / 4).toFixed(1)}] ${name} → ${typeof r === 'object' ? JSON.stringify(r).slice(0, 220) : r}   ## u${nm} | ${await vs()}`); return r; };
+const atBar = bar => p.waitForFunction(x => audBeat() >= x, bar * 4 + 0.3, {timeout: 400000, polling: 10});
+if (!BASE) {
+await atBar(2); await act('open pad editor → EDIT-WAHL 1 list (vocoder names) → FILTER', async () => { await T.openEd(PAD); await T.closePop(); await T.tapMk('w1', 300); const L = await T.popTexts(); const r = await T.tapPop(/FILTER/); await sleep(300); const pn = await T.panel(); return [L && L.join('|').slice(0, 200), !!r, pn.knobs.map(k => k && k.l).join(',')]; });
+await atBar(3); await act('FORMANT drag up 60 px slowly, then down 120 px', async () => [await T.sweep('k0', -60, 40, 30), await T.sweep('k0', 120, 60, 30), (await T.pm(PAD)).voc.fs]);
+await atBar(6); await act('CUTOFF (vocoder) drag up then down', async () => [await T.sweep('k1', -70, 40, 30), await T.sweep('k1', 70, 40, 30), (await T.pm(PAD)).voc.cut]);
+await atBar(8); await act('FOLGER drag all the way up (127 = HALTEN), then back down', async () => { const a = await T.sweep('k3', -200, 40, 25); await sleep(1200); const h = (await T.pm(PAD)).voc; const b = await T.sweep('k3', 80, 30, 25); return [a, h.efs, !!h.hold, b, (await T.pm(PAD)).voc.efs, !!(await T.pm(PAD)).voc.hold]; });
+await atBar(10); await act('scene 2 (API, editor open)', () => E(() => { SYNQUENZER.launchScene(1); return 1; }));
+await atBar(11); await act('TIMBRE → HALTEN (tap)', async () => { await T.shiftTo(false); await T.tapMk('timbre', 700); return [!!(await T.pm(PAD)).voc.hold, await T.lcd2()]; });
+await atBar(13); await act('QUELLE 2 → aus (held formant keeps sounding)', async () => T.src(/^aus$/));
+await atBar(15); await act('QUELLE 2 → Spur 4 again, TIMBRE (HALTEN off)', async () => { const a = await T.src(/^Spur 4/); await T.tapMk('timbre', 700); return [a, !!(await T.pm(PAD)).voc.hold, JSON.stringify(await E(t => SYNQUENZER.mkIn(t), PAD))]; });
+await atBar(17); await act('EDIT-WAHL 2 → K-PEGEL A, matrix row → 16 BÄNDER, drag bands 5, 8, 12', async () => { await T.w2(/K-PEGEL A/); await sleep(300); await T.tapMk('m2', 600); const cols = await E(() => [...document.querySelectorAll('#synthSheet .mkcol')].map(e => { const r = e.getBoundingClientRect(); return {x: r.x, y: r.y, w: r.width, h: r.height}; })); if (cols.length !== 16) return 'no bands view'; for (const b of [4, 7, 11]) { const c = cols[b]; await T.down(c.x + c.w / 2, c.y + 10); await sleep(30); await T.glide(c.x + c.w / 2, c.y + 10, c.x + c.w / 2, c.y + c.h - 5, 25, 25); await T.up(); await sleep(200); } return (await T.pm(PAD)).voc.chl.join(','); });
+await atBar(20); await act('PAN ▸ → drag bands 1–4 left/right', async () => { await T.tapMk('bsw', 500); const cols = await E(() => [...document.querySelectorAll('#synthSheet .mkcol')].map(e => { const r = e.getBoundingClientRect(); return {x: r.x, y: r.y, w: r.width, h: r.height}; })); for (const b of [0, 1, 2, 3]) { const c = cols[b], dy = b % 2 ? 35 : -35; await T.down(c.x + c.w / 2, c.y + c.h / 2); await sleep(30); await T.glide(c.x + c.w / 2, c.y + c.h / 2, c.x + c.w / 2, c.y + c.h / 2 + dy, 15, 25); await T.up(); await sleep(150); } return (await T.pm(PAD)).voc.chp.join(','); });
+await atBar(22); await act('◂ GERÄT, SHIFT + 1 (Pegel zurück), SHIFT + 2 (Pan zurück)', async () => { await T.tapMk('back', 500); await T.shiftTo(true); await T.tapMk('n0', 500); await T.shiftTo(true); await T.tapMk('n1', 500); await T.shiftTo(false); const v = (await T.pm(PAD)).voc; return [v.chl.every(x => x === 127), v.chp.every(x => x === 0)]; });
+await atBar(24); await act('QUELLE 2 list → „Quelle nur als Eingang“ aus (lead audible again)', async () => T.src(/^Quelle nur als Eingang/));
+await atBar(26); await act('„Quelle nur als Eingang“ an again', async () => T.src(/^Quelle nur als Eingang/));
+await atBar(27); await act('QUELLE 2 → Drums while playing', async () => T.src(/^Spur 5/));
+await atBar(29); await act('QUELLE 2 → Spur 4 (lead) while playing', async () => T.src(/^Spur 4/));
+await atBar(30); await act('STIMME → SYNTH/VOC. → Synth (list) while playing', async () => { await T.w1(/STIMME/); await sleep(300); return [await T.knobList('k0', /^Synth$/), (await T.pm(PAD)).mode]; });
+await atBar(32); await act('SYNTH/VOC. → Vocoder (list)', async () => [await T.knobList('k0', /^Vocoder$/), (await T.pm(PAD)).mode]);
+await atBar(34); await act('engine MS 2000 → VA (header list), then ↶ back', async () => { await T.closePop(); const c = await T.rectText('#synthSheet button', /^MS ?2000 ▾$/); if (!c) return 'no engine button'; await T.tap(c.cx, c.cy, 400); const a = await T.tapPop(/^VA/); await sleep(2000); const e1 = await E(t => SYNQUENZER.getSound(t).engine, PAD); await T.tapTxt('#synthSheet .hb.ur', /^↶$/, 600); await sleep(500); return [!!a, e1, await E(t => SYNQUENZER.getSound(t).engine, PAD), JSON.stringify(await E(() => SYNQUENZER.mkInInfo().tracks.slice(0, 4)))]; });
+await atBar(36); await act('ECO on (forceNative)', async () => { await E(() => SYNQUENZER.forceNative(true)); await sleep(800); return await T.lcd2(); });
+await atBar(38); await act('ECO off', () => E(() => { SYNQUENZER.forceNative(false); return 1; }));
+await atBar(40); await act('CPU limiter: cpuInject 0.9 for 6 s (stage 1+)', () => E(() => { SYNQUENZER.cpuInject(0.9, 6); return 1; }));
+await atBar(43); await act('scene 3 (API) + bass editor: OSZ 1 → Säge (list)', async () => { await E(() => SYNQUENZER.launchScene(2)); await T.closePop(); await E(() => SYNQUENZER.closeEditor && SYNQUENZER.closeEditor()); await sleep(300); await T.openEd(BASS); await T.w1(/OSZ 1/); await sleep(300); return [await T.knobList('k0', /^Säge$/), (await T.pm(BASS)).t[0].o1.w]; });
+await atBar(45); await act('bass: OSZ 1 → Eingang (list), QUELLE 1 (Regler 4) → Drums', async () => { const a = await T.knobList('k0', /^Eingang/); const b = await T.knobList('k3', /^Spur 5/); return [a, b, (await T.pm(BASS)).t[0].o1.w, JSON.stringify(await E(t => SYNQUENZER.mkIn(t), BASS))]; });
+await atBar(47); await act('bass: QUELLE 1 → Spur 2 (FM pluck) while playing', async () => [await T.knobList('k3', /^Spur 2/), JSON.stringify(await E(t => SYNQUENZER.mkIn(t), BASS))]);
+await atBar(49); await act('undo ×3 / redo ×3 (header)', async () => { for (let k = 0; k < 3; k++) await T.tapTxt('#synthSheet .hb.ur', /^↶$/, 250); for (let k = 0; k < 3; k++) await T.tapTxt('#synthSheet .hb.ur', /^↷$/, 250); return [await E(() => SYNQUENZER.undoInfo().n), JSON.stringify(await E(t => SYNQUENZER.mkIn(t), BASS))]; });
+await atBar(51); await act('BPM 112 → 124 (setBpm)', () => E(() => { SYNQUENZER.setBpm(124); return SYNQUENZER.runtime().bpm; }));
+await atBar(53); await act('mute pad (vocoder) 1 bar, unmute', async () => { await E(t => setMute(t, true), PAD); await sleep(1900); await E(t => setMute(t, false), PAD); return 1; });
+await atBar(55); await act('close editor (✕), scene 1 by touch', async () => { await T.closePop(); await T.tapTxt('#synthSheet button', /^✕$/); await sleep(500); return !!(await T.tapTxt('button.scn', /^▶\s*1/)); });
+await atBar(57); await act('scene 2 by touch', async () => !!(await T.tapTxt('button.scn', /^▶\s*2/)));
+await atBar(59); await act('pad editor: AMP → DIREKT drag up a bit, then down to 0', async () => { await T.openEd(PAD); await T.w1(/^.*AMP/); await sleep(300); const pn = await T.panel(); const a = await T.sweep('k1', -30, 20, 30); const v1 = (await T.pm(PAD)).voc.dir; await sleep(1500); const b = await T.sweep('k1', 120, 30, 25); return [pn.knobs.map(k => k && k.l).join(','), a, v1, b, (await T.pm(PAD)).voc.dir]; });
+await atBar(62); await act('pad: VERZERR. an (list), 1 bar later aus', async () => { const a = await T.knobList('k2', /^an$/); await sleep(2000); const b = await T.knobList('k2', /^aus$/); return [a, b, (await T.pm(PAD)).voc.dist]; });
+await atBar(65); await act('pad: EING. 1 → SCHWELLE drag up (gate), then back to 0', async () => { await T.w1(/EING\. ?1/); await sleep(300); const a = await T.sweep('k1', -50, 25, 30); const v = (await T.pm(PAD)).voc.th; await sleep(1500); const b = await T.sweep('k1', 150, 30, 25); return [a, v, b, (await T.pm(PAD)).voc.th]; });
+await atBar(68); await act('close editor, scene 4 by touch', async () => { await T.closePop(); await T.tapTxt('#synthSheet button', /^✕$/); await sleep(500); return !!(await T.tapTxt('button.scn', /^▶\s*4/)); });
+await atBar(71); await act('scene 1 by touch', async () => !!(await T.tapTxt('button.scn', /^▶\s*1/)));
+}
+await atBar(Math.min(76, MIN * 25)); const tStop = await E(() => AU.ctx.currentTime);
+await act('■ stop', async () => { await T.closePop(); await E(() => SYNQUENZER.closeEditor && SYNQUENZER.closeEditor()); await sleep(200); return T.tapSel('#bPlay').then(b => !!b); });
+await sleep(4500);
+const fin = await E(() => ({voices: SYNQUENZER.voices().filter(v => v.state !== 'off'), live: SYNQUENZER.runtime().liveVoices, te: SYNQUENZER.tickErrors(), playing: SYNQUENZER.runtime().playing, inInfo: SYNQUENZER.mkInInfo()}));
+const A = await recAnalyse7(E, tStop, {t2: [LEAD, DR], t0: [DR, 1], master: []});
+const tail = await E(() => new Promise(r => { const a = AU.ctx.createAnalyser(); a.fftSize = 2048; AU.M.ceil.connect(a); const b = new Float32Array(2048); let pk = 0; const iv = setInterval(() => { a.getFloatTimeDomainData(b); for (const v of b) pk = Math.max(pk, Math.abs(v)); }, 20); setTimeout(() => { clearInterval(iv); r(+(20 * Math.log10(pk + 1e-9)).toFixed(1)); }, 1500); }));
+console.log('recorded', A.secs, 's; notes', A.notes, '; fps', A.fps, '; longtasks', JSON.stringify(A.lt), '; stalls', JSON.stringify(A.stall), '; late notes', A.late.length, JSON.stringify(A.late.slice(0, 20)), 'gaps', A.gaps);
+const byAct = f => { const a = A.acts.filter(a => f.t >= a.t - .05).pop(); return a ? a.n.slice(0, 60) + ' +' + (f.t - a.t).toFixed(2) : '-'; };
+for (const tap in A.taps) { const X = A.taps[tap];
+  console.log(tap, 'peak', X.peakDb, 'NaN', X.nan, 'flags', X.flags.length, '| sflags', X.sflags.length, '| d2f', X.d2f.length, '| drops', X.drops.length, JSON.stringify(X.drops.slice(0, 6)));
+  const g = {}; for (const f of X.flags.concat(X.sflags.map(x => Object.assign({k: 's'}, x)), X.d2f.map(x => Object.assign({k: 'd'}, x)))) { const k = byAct(f).replace(/ \+[\d.]+$/, ''); (g[k] = g[k] || []).push([f.k || 'f', f.t, f.db, byAct(f).match(/\+([\d.]+)$/)?.[1]]); } for (const k in g) console.log('   ', k.padEnd(62), g[k].length, JSON.stringify(g[k].slice(0, 6))); }
+// per action: t2 (vocoder) RMS of the 2 s after the action (from the 1-s RMS list)
+const t0r = A.t0; for (const a of A.acts) { const s = Math.floor(a.t1 - t0r); const r = (A.taps.t2.rms1 || []).slice(s + 1, s + 3); console.log('   t2 rms after', a.n.slice(0, 50).padEnd(52), JSON.stringify(r), ' master', JSON.stringify((A.taps.master.rms1 || []).slice(s + 1, s + 3))); }
+check('recorded ≥ ' + Math.round(MIN * 56 - 5) + ' s', A.secs >= MIN * 56 - 5, A.secs);
+check('no NaN, master peak < 0 dBFS', Object.values(A.taps).every(x => x.nan === 0) && A.taps.master.peakDb < 0, Object.fromEntries(Object.entries(A.taps).map(([k, x]) => [k, [x.nan, x.peakDb]])));
+check('no dropouts', Object.values(A.taps).every(x => x.drops.length === 0), Object.fromEntries(Object.entries(A.taps).map(([k, x]) => [k, x.drops.length])));
+check('no stuck notes 4.5 s after ■ (voices, master tail)', fin.voices.length === 0 && !fin.live && tail < -60, {fin, tail});
+check('tickErrors 0', !fin.te, fin.te);
+check('no late notes (scheduled ≥ 3 ms ahead)', A.late.length === 0, A.late.slice(0, 10));
+check('no console errors', errs.length === 0, errs.slice(0, 5));
+check('no longtask > 50 ms / main-thread stall > 60 ms', !A.lt.some(x => x[0] > 50) && !A.stall.length, {lt: A.lt.map(([d, st]) => { const a = A.acts.filter(a => a.pn != null && a.pn <= st + 5).pop(); return d + ' ms after ' + (a ? a.n.slice(0, 40) + ' +' + (st - a.pn) + 'ms' : '?'); }), stall: A.stall});
+check('all actions ran (no ERR / missing item)', !Object.values(res).some(r => /ERR|no /.test(JSON.stringify(r))), Object.entries(res).filter(([k, r]) => /ERR|no /.test(JSON.stringify(r))));
+check('M-KLICK: master flags', A.taps.master.flags.length === 0, A.taps.master.flags.slice(0, 10));
+check('raw taps: flags / sustained-zone / discontinuity', ['t0', 't2', 't3'].every(k => A.taps[k].flags.length === 0 && A.taps[k].sflags.length === 0 && A.taps[k].d2f.length === 0), Object.fromEntries(['t0', 't2', 't3'].map(k => [k, [A.taps[k].flags.length, A.taps[k].sflags.length, A.taps[k].d2f.length]])));
+fs.writeFileSync(OUT + TAG + '-result.json', JSON.stringify({A: Object.assign({}, A, {taps: Object.fromEntries(Object.entries(A.taps).map(([k, x]) => [k, Object.assign({}, x)]))}), fin, errs, res}, null, 1));
+fs.writeFileSync(OUT + TAG + '-project.json', await E(() => SYNQUENZER.serialize()));
+const NS = await E(() => window.__q.n); const CH = 1 << 20;
+for (let j = 0; j < 4; j++) { const parts = []; for (let o = 0; o < NS; o += CH) parts.push(Buffer.from(await E(([o, CH, j]) => { const x = window.__q.bufs[j].subarray(o, Math.min(o + CH, window.__q.n)); let s = ''; const u = new Uint8Array(x.buffer, x.byteOffset, x.byteLength); for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return btoa(s); }, [o, CH, j]), 'base64')); fs.writeFileSync(OUT + TAG + '-tap' + j + '.f32', Buffer.concat(parts)); }
+fs.writeFileSync(OUT + TAG + '-meta.json', JSON.stringify(await E(() => { const Q = window.__q; return {sr: Q.sr, f0: Q.f0, n: Q.n, taps: Q.taps, notes: [...Q.notes.values()].map(n => [n.time, n.track, n.src, n.out, n.dur]), acts: Q.acts}; })));
+await T.br.close(); done();

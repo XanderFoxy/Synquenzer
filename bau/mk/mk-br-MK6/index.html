@@ -6051,7 +6051,7 @@ function mkClone(v) { const c = Object.assign(new MkVoice(v.i), v); c.dz = v.dz.
 const MK_STRUCT = {'o1.w': 'w1', 'o2.w': 'w2', 'o2.mod': 'mod', 'f.type': 'ft', 'a.gate': 'gate'};
 const MK_REASSIGN = {asg: 1, prio: 1, trig: 1};
 /* ---- MK6 mod sequencer: 3 x 16 steps per timbre, one position per timbre (per voice at KEY SYNC Stimme); offsets in H.o by target ---- */
-const MK_SQN = 31, MK_SQR = CR / (.001 * SR), MK_SQF = CR / (.005 * SR);
+const MK_SQN = 31, MK_SQR = CR / (.001 * SR), MK_SQF = CR / (.005 * SR), MK_SQD = Math.exp(-CR / (.005 * SR));   // MK_SQD: G-MK6 Glatt jump glide (tau 5 ms)
 const MK_SQP = MKW.SQT.map(s => (s ? s.split('.') : null));
 function mkSqQ() { return {k: 0, m: 1, v: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}; }
 function mkSqT() { return {on: 0, last: 16, type: 0, run: 1, ks: 1, res: 3, q: [mkSqQ(), mkSqQ(), mkSqQ()]}; }
@@ -6069,10 +6069,13 @@ function mkSqSet(S, ks, v) {
 }
 class MkSqP {
   constructor() { this.j = 0; this.u = 0; this.done = false; this.st = -1; this.jj = -1; this.cy = 0; this.wr = 0; this.fresh = false; this.gen = -1; this.h = [];
-    this.fo = new Float64Array(MK_SQN + 1); this.fx = 0; this.o = new Float64Array(MK_SQN + 1); this.f = new Float64Array(3); this.g = new Float64Array(3); this.r = new Float64Array(3); this.a = new Float64Array(3); }
-  reset() { this.j = 0; this.u = 0; this.done = false; this.st = -1; }
+    this.fo = new Float64Array(MK_SQN + 1); this.fx = 0; this.o = new Float64Array(MK_SQN + 1); this.f = new Float64Array(3); this.g = new Float64Array(3); this.r = new Float64Array(3); this.a = new Float64Array(3);
+    this.d = new Float64Array(3); this.yv = 0; this.ev = -1; this.jmp = false; this.b = NaN; }   // G-MK6: Glatt glide offset, valid slots, edit count seen, position jump, last song beat
+  reset() { this.j = 0; this.u = 0; this.done = false; this.st = -1; this.jmp = true; }
   init() { this.reset(); this.fresh = true; }
-  copy() { const c = new MkSqP(); c.j = this.j; c.u = this.u; c.done = this.done; c.st = this.st; c.wr = this.wr; c.fresh = this.fresh; c.gen = this.gen; c.o.set(this.o); c.fo.set(this.fo); c.fx = this.fx; c.f.set(this.f); c.g.set(this.g); c.r.set(this.r); c.a.set(this.a); return c; }
+  take(c) { this.j = c.j; this.u = c.u; this.done = c.done; this.st = c.st; this.wr = c.wr; this.fresh = c.fresh; this.gen = c.gen; this.o.set(c.o); this.fo.set(c.fo); this.fx = c.fx; this.f.set(c.f); this.g.set(c.g); this.r.set(c.r); this.a.set(c.a);
+    this.d.set(c.d); this.yv = c.yv; this.ev = c.ev; this.jmp = c.jmp; this.b = c.b; return this; }
+  copy() { return new MkSqP().take(this); }
 }
 const mkCl = (x, lo, hi) => (x < lo ? lo : x > hi ? hi : x);
 
@@ -6093,7 +6096,7 @@ class MkTim {
     this.pc = [0, 1, 2, 3].map(() => ({s: 0, d: 0, si: 0})); this.pAct = []; this.pRun = true; this.xL2g = 0; this.wReq = [];  // MK2: PATCH 1-4 as they act, active ones, LFO2-Freq of the newest voice, wave requests
     // MK6: position, order / step beats / cycle, acting sequences, flags, recording
     this.sq = new MkSqP(); this.sqO = new Int8Array(32); this.sqN = 16; this.sqD = new Float64Array(16); this.sqC = 4; this.sqE = []; this.sqGen = 0; this.sqDirty = true;
-    this.sqSig = null; this.sqFi = 1; this.sqFo = 0; this.sqEo = null; this.sqOn = false; this.sqV = false; this.sqPt = false; this.sqEg = 0; this.sqL = 0; this.sqPm = 0; this.sqLoop = true; this.sqKs = 1; this.rec = null; this.vc1 = 0; this.vc2 = 0; this.vw2 = 0;
+    this.sqSig = null; this.sqEv = 0; this.sqFi = 1; this.sqFo = 0; this.sqEo = null; this.sqOn = false; this.sqV = false; this.sqPt = false; this.sqEg = 0; this.sqL = 0; this.sqPm = 0; this.sqLoop = true; this.sqKs = 1; this.rec = null; this.vc1 = 0; this.vc2 = 0; this.vw2 = 0;
     this.load(init || null);
     this.pInit();
   }
@@ -6187,7 +6190,12 @@ class MkTim {
     for (let s = 0; s < L; s++) O[n++] = ty === 1 ? L - 1 - s : s;
     if (ty === 2) for (let s = L - 2; s >= 1; s--) O[n++] = s; else if (ty === 3) for (let s = L - 1; s >= 0; s--) O[n++] = s;
     this.sqN = n; this.sqLoop = !!r || S.run >= .5; this.sqKs = mkCl(Math.round(S.ks), 0, 2);
-    const on = S.on >= .5 || !!r; this.sqV = this.sqKs === 2;
+    const on = S.on >= .5 || !!r, wasV = this.sqV; this.sqV = this.sqKs === 2; this.sqEv++;   // G-MK6: every edit (values, TYP, LAENGE, AUFL., undo) = a Glatt glide point
+    // G-MK6: KEY SYNC Timbre <-> Stimme at a sounding note: the voices go on from the position (and values) they had, no jump
+    if (this.sqV !== wasV && this.sounding()) {
+      if (this.sqV) { for (const v of this.V) if (v.on) { v.sq = v.sq ? v.sq.take(this.sq) : this.sq.copy(); const c = v.sxo; if (c && c.on) c.sq = c.sq ? c.sq.take(this.sq) : this.sq.copy(); } }
+      else { let vo = null; for (const v of this.V) if (v.on && !v.ghost && v.sq && (!vo || v.age > vo.age)) vo = v; if (vo) this.sq.take(vo.sq); }
+    }
     // SEQ 3 > SEQ 2 > SEQ 1 on one target; step length (2) = timing only
     const E = [], seen = new Set(); let sl = null, sig = on ? 'on' : 'off';
     for (let k = 2; k >= 0; k--) {
@@ -6220,6 +6228,7 @@ class MkTim {
       if (!this.sqLoop && b >= this.sqC) { H.j = n - 1; H.u = D[O[n - 1]]; H.done = true; }
       else if (!this.sqLoop && b < 0) { H.j = 0; H.u = 0; H.done = false; }   // MK6-fix: Einmal waits for song beat 0
       else { let x = ((b % this.sqC) + this.sqC) % this.sqC, j = 0; while (j < n - 1 && x >= D[O[j]]) { x -= D[O[j]]; j++; } H.j = j; H.u = x; H.done = false; }
+      if (H.b === H.b && Math.abs(b - H.b - nb) > 1e-3) H.jmp = true; H.b = b;   // G-MK6: a song jump (seek, loop) = a Glatt glide point
       const cy = Math.floor(b / this.sqC); if (H.st >= 0 && (H.j !== H.jj || cy !== H.cy)) this.sqHist(H, O[H.j]); if (cy !== H.cy) H.wr++; H.cy = cy;   // MK6-fix: wr = passes (AUFN. end)
     } else if (!H.done) {
       H.u += nb;
@@ -6231,14 +6240,22 @@ class MkTim {
   sqVal(H) {
     if (H.gen !== this.sqGen) {
       if (this.sqFo > 0 && H.gen >= 0) { H.fo.set(H.o); H.fx = 1; } else H.fx = 0;
-      H.o.fill(0); H.gen = this.sqGen; H.a.fill(0); H.f.fill(0); H.g.fill(0); H.r.fill(1);
+      H.o.fill(0); H.gen = this.sqGen; H.a.fill(0); H.f.fill(0); H.g.fill(0); H.r.fill(1); H.d.fill(0); H.yv = 0;
     }
     if (H.fx > 0) { const fo = H.fo; for (let i = 0; i <= MK_SQN; i++) if (fo[i] !== 0) H.o[i] = 0; }
     const O = this.sqO, n = this.sqN, E = this.sqE, s = O[H.j], end = H.done || (!this.sqLoop && H.j === n - 1), fi = this.sqFi;
-    const s2 = O[H.j + 1 < n ? H.j + 1 : 0], fr = H.u / this.sqD[s], fresh = H.fresh; H.fresh = false;
+    const s2 = O[H.j + 1 < n ? H.j + 1 : 0], fr = H.u / this.sqD[s], fresh = H.fresh, jp = H.jmp || H.ev !== this.sqEv; H.fresh = false; H.jmp = false; H.ev = this.sqEv;
     for (let e = 0; e < E.length; e++) {
       const q = E[e], k = q.k, c = q.c, a = c[s]; let x;
-      if (q.m === 0) x = end ? a : a + (c[s2] - a) * (fr > 1 ? 1 : fr);
+      if (q.m === 0) {
+        x = end ? a : a + (c[s2] - a) * (fr > 1 ? 1 : fr);
+        // G-MK6 (B.6 Nr. 2): a jump of the Glatt line (position jump: TYP, LAENGE, AUFL., KEY SYNC restart, song seek; value edit:
+        // painting, undo / redo) glides from the last value with tau 5 ms; the plain run stays exactly linear (MK6-02, MK6-10)
+        const bit = 1 << k; let dd = H.d[k];
+        if (fresh || !(H.yv & bit)) dd = 0; else if (jp) dd = H.a[k] - x;
+        if (dd !== 0) { x += dd; dd *= MK_SQD; if (dd < 1e-7 && dd > -1e-7) dd = 0; }
+        H.d[k] = dd; H.yv |= bit; H.g[k] = NaN;   // NaN: a later switch to Stufe ramps from here (1 ms)
+      }
       else if (fresh) { x = a; H.f[k] = a; H.g[k] = a; H.r[k] = 1; }
       else {
         if (a !== H.g[k]) { H.f[k] = H.a[k]; H.g[k] = a; H.r[k] = 0; }
@@ -6280,15 +6297,19 @@ class MkTim {
   recMsg(m) {
     if (!m || m.cancel) { if (this.rec) { this.rec = null; this.sqDirty = true; } return; }
     const tg = m.tg | 0; if (!(tg >= 1 && tg < MK_SQN) || tg === 2) return;
-    let vo = null; if (this.sqV) for (const v of this.V) if (v.on && !v.ghost && v.sq && (!vo || v.age > vo.age)) vo = v;
-    this.rec = {k: mkCl(m.k | 0, 0, 2), tg, base: +m.base || 0, H: vo ? vo.sq : this.sq, vo, cur: -1, s0: -1, w: 0, v: this.T.seq.q[mkCl(m.k | 0, 0, 2)].v.slice(), R: MKW.sqR(tg)};
+    if (this.sqDirty) this.sqPrep();
+    // G-MK6 (MK6-09, Umfang 4): with KEY SYNC Timbre / Stimme the take runs on its own forward loop from the step that sounds now, so a
+    // key-sync restart by a new (detached) note neither ends nor shortens it; KEY SYNC aus stays on the timbre / song grid position
+    const H0 = this.sqHold(); let H = this.sq;
+    if (Math.round(this.T.seq.ks) !== 0) { H = new MkSqP(); H.j = H0.j < this.sqN ? this.sqO[H0.j] : 0; H.u = H0.u; }
+    this.rec = {k: mkCl(m.k | 0, 0, 2), tg, base: +m.base || 0, H, own: H !== this.sq, cur: -1, s0: -1, w: 0, v: this.T.seq.q[mkCl(m.k | 0, 0, 2)].v.slice(), R: MKW.sqR(tg)};
     this.sq.done = false; for (const v of this.V) if (v.sq) v.sq.done = false;   // MK6-fix (MK6-14): an Einmal run-out loops on during AUFN.
     this.sqDirty = true;
   }
-  recStep() {
+  recStep(nb) {
     const r = this.rec; if (this.sqDirty) this.sqPrep();
-    if (r.vo && (!r.vo.on || r.vo.ghost || r.vo.sq !== r.H)) { r.vo = null; r.H = this.sq; r.w = this.sq.wr; }
-    const s = this.sqO[r.H.j];
+    if (r.own) this.sqAdv(r.H, nb, false, 0);   // G-MK6: the take's own forward loop (sqO is forward and sqLoop on while rec)
+    const s = this.sqO[r.H.j < this.sqN ? r.H.j : 0];
     // MK6-fix (MK6-09): ends after LETZTER SCHRITT = the next pass began (also at LAENGE 1, where the step never gets smaller)
     if (r.cur >= 0 && (s < r.cur || r.H.wr !== r.w)) {
       this.rec = null; this.sqDirty = true;
@@ -6484,7 +6505,7 @@ class MkTim {
   // no voice: the free-running LFO phases go on (Key Sync OFF keeps its phase between notes, like the VA global LFOs)
   idle(n, fr) { const T = this.T; this.g1 = (this.g1 + this.lfoRate(T.l1, T.l1.sync >= .5) * n * ISR) % 1; this.g2 = (this.g2 + this.lfoRate(T.l2, T.l2.sync >= .5) * n * ISR) % 1;
     const ab = this.sqKs === 0 && this.h.songStart >= 0 && fr >= 0;   // MK6-fix (FP-SONG): the song grid runs on between notes (fr = frame of this block)
-    if (this.rec || (this.sqKs === 0 && this.h.songStart < 0) || ab) { this.sqTick(ab ? fr + n : -1, n * ISR * this.h.bpm / 60); if (this.rec) this.recStep(); } }   // MK6
+    if (this.rec || (this.sqKs === 0 && this.h.songStart < 0) || ab) { this.sqTick(ab ? fr + n : -1, n * ISR * this.h.bpm / 60); if (this.rec) this.recStep(n * ISR * this.h.bpm / 60); } }   // MK6
   lfoRate(L, sync) { const spb = 60 / this.h.bpm; return sync ? 1 / (MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4 * spb) : MKW.lfoHz(L.f); }
   lfoRateC(n, L) {  // MK1-fix (MK1-24): lfoRate, recomputed only when FREQ / Sync / NOTE / tempo change
     const K = this.lfK, o = n * 5, sync = L.sync >= .5, b = this.h.bpm;
@@ -6536,7 +6557,7 @@ class MkTim {
       this.sxOn = false; const q = this.sxPend; this.sxPend = null;
       if (q) { if (this.V.some(v => v.on && !v.ghost)) this.structXf(q); else this.setStruct(q); }
     }
-    if (this.rec) this.recStep();   // MK6
+    if (this.rec) this.recStep(CR * ISR * h.bpm / 60);   // MK6
     if (this.tap === 'lfo') { const a = this.V.filter(v => v.on && !v.ghost).sort((x, y) => x.age - y.age); for (let i = 0; i < CR; i++) { Lo[off + i] = a[0] ? a[0].lv1 : 0; Ro[off + i] = a[1] ? a[1].lv1 : 0; } }
     if (this.tap === 'lfo2') { const a = this.V.filter(v => v.on && !v.ghost).sort((x, y) => x.age - y.age); for (let i = 0; i < CR; i++) { Lo[off + i] = a[0] ? a[0].lv2 : 0; Ro[off + i] = a[1] ? a[1].lv2 : 0; } }   // MK2 test tap
   }

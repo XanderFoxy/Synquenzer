@@ -1,0 +1,12 @@
+import {open, sleep} from './v3-qa-gmk5-tl.mjs';
+const T = await open({viewport: {width: 390, height: 844}}); const {p, E, errs} = T;
+console.log(await E(() => ({v: SYNQUENZER.version, tracks: SYNQUENZER.tracks ? SYNQUENZER.tracks().map(t => [t.name, t.kind, t.engine]) : null, clips: S.tracks.map(t => t.clips.map(c => c ? c.notes.length : 0)), bpm: S.bpm})));
+console.log(await T.openEd(2));
+await p.screenshot({path: '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/dirigent-test/v3-qa-gmk5/probe-ed.png'});
+console.log(await E(() => [...document.querySelectorAll('#synthSheet button')].filter(b => b.offsetWidth).map(b => b.textContent.trim()).slice(0, 30)));
+console.log('toMk', await T.toMk());
+await p.screenshot({path: '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/dirigent-test/v3-qa-gmk5/probe-mk.png'});
+console.log(await E(() => SYNQUENZER.getSound(2).engine), await T.panel());
+console.log(await E(() => [...document.querySelectorAll('#kb .key')].length));
+console.log('errs', errs);
+await T.br.close();

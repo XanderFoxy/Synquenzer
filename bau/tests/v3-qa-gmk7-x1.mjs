@@ -1,0 +1,13 @@
+import {open, sleep, OUT} from './v3-qa-gmk7-tl.mjs';
+const T = await open({viewport: {width: 390, height: 844}}); const {p, E, errs} = T;
+const r = await E(async () => { const Q = SYNQUENZER; await Q.loadDemo(); return Q.tracks().map((t, i) => [i, t.name, t.kind, t.sound && t.sound.engine, t.uid]); });
+console.log(JSON.stringify(r));
+console.log(JSON.stringify(await E(() => Object.keys(SYNQUENZER.runtime()))));
+await E(() => { SYNQUENZER.selectTrack(2); SYNQUENZER.openEditor(); }); await sleep(800);
+await p.screenshot({path: OUT + 'x1-ed.png'});
+console.log(await T.rectText('#synthSheet button', /^(VA|FM|WT|MS ?2000)/));
+await T.toMk(); await sleep(500);
+await p.screenshot({path: OUT + 'x1-mk.png'});
+console.log(JSON.stringify(await T.panel()).slice(0, 1500));
+console.log('errs', errs);
+await T.br.close();

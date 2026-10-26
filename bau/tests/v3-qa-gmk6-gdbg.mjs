@@ -1,0 +1,12 @@
+import {open, sleep} from './v3-qa-gmk6-tl.mjs';
+const T = await open({viewport: {width: 390, height: 844}}); const {p, E, errs} = T;
+const TR = 2;
+await E(t => { SYNQUENZER.setEngine(t, 'mk'); SYNQUENZER.selectTrack(t); SYNQUENZER.openEditor(); }, TR); await sleep(700);
+await E(async t => { SYNQUENZER.keyOn(60, .1, 'w'); await new Promise(r => setTimeout(r, 300)); SYNQUENZER.keyOff(0, 'w'); }, TR); await p.waitForFunction(t => AU.synth[t] && AU.synth[t].node, TR); await sleep(500);
+const tap = process.argv[2] || 'gain';
+if (tap !== 'none') await E(([t, tap]) => AU.synth[t].node.port.postMessage({mkTap: tap}), [TR, tap]);
+await E(t => { const Q = SYNQUENZER; const o = {'t.0.o1.w': 0, 't.0.f.cut': 127, 't.0.e2.a': 0, 't.0.e2.s': 127, 't.0.a.lvl': 100, 't.0.seq.on': 1, 't.0.seq.ks': 1, 't.0.seq.q.0.k': 15, 't.0.seq.q.0.m': 0}; for (const k in o) Q.mkSet(t, k, o[k]); for (let s = 0; s < 16; s++) Q.mkSet(t, 't.0.seq.q.0.v.' + s, s * 8 - 60); }, TR);
+console.log(JSON.stringify(await E(t => SYNQUENZER.mkGet(t).t[0].seq, TR)));
+const cap = T.capT(TR, 1500); await sleep(50); await E(() => SYNQUENZER.keyOn(60, .8, 'q')); await sleep(1200); await E(() => SYNQUENZER.keyOff(0, 'q'));
+const c = await cap; const x = c.l; const out = []; for (let i = 0; i < x.length; i += 2205) { let m = 0; for (let k = i; k < i + 2205 && k < x.length; k++) m = Math.max(m, Math.abs(x[k])); out.push(m.toFixed(3)); } console.log(out.join(' '));
+await T.br.close();

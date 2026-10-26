@@ -1,0 +1,22 @@
+// latch + clip interaction: what does the arp play when a latched live chord meets the track's own clip
+import {open, sleep, OUT, check, done} from './v3-qa-gmk5-tl.mjs';
+const T = await open({viewport: {width: 390, height: 844}}); const {p, E, errs} = T;
+const TR = 2;
+await E(() => { SYNQUENZER.setMetronome && SYNQUENZER.setMetronome(false); });
+console.log('clip t2 s0', JSON.stringify(await E(() => SYNQUENZER.getClip(2, 0))));
+console.log('clip t2 s1', JSON.stringify(await E(() => SYNQUENZER.getClip(2, 1))));
+await T.openEd(TR); await T.toMk();
+await E(t => { const Q = SYNQUENZER; Q.mkSet(t, 'arp.on', 1); Q.mkSet(t, 'arp.latch', 1); Q.mkSet(t, 'arp.res', 3); }, TR);
+await E(() => ARPC.clearLog());
+const t1 = await E(() => AU.ctx.currentTime);
+await T.holdKeys([2, 5, 9]); await sleep(150); await T.releaseKeys();
+await sleep(1000);
+const pb = await T.rect('#bPlay'); await T.tap(pb.cx, pb.cy, 100);
+const tPlay = await E(() => AU.ctx.currentTime);
+await sleep(6000);
+const nl = await E(() => SYNQUENZER.noteLog(400).filter(e => e.track === 2).map(e => [e.beat == null ? null : +e.beat.toFixed(2), e.src, e.out, e.step]));
+console.log('noteLog t2', JSON.stringify(nl.slice(-40)));
+console.log('runtime', JSON.stringify(await E(() => { const r = SYNQUENZER.runtime(); return {playing: r.playing, scene: r.scene, queued: r.queued}; })));
+console.log('arpInfo', JSON.stringify(await E(() => SYNQUENZER.arpInfo ? SYNQUENZER.arpInfo(2) : (window.ARPC && ARPC.info ? ARPC.info(2) : null))));
+console.log('errs', JSON.stringify(errs));
+await T.br.close();

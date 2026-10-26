@@ -24,7 +24,8 @@ Neustart-Prüfung: kein `synq-snapshots/MK5.html`, keine MK5-Spuren in der Kopie
    - **Muster** (`arpPattern`, engine-frei für VI2a): Auf, Ab, Wechsel 1 (U + U rückwärts ohne Ränder), Wechsel 2 (U + U rückwärts), Zufall
      (Startwert aus Projekt-`id` + Spur-`uid` + Schritt-Zähler, 32-bit-Hash), Akkord (alle gehaltenen; mehr Tasten als Stimmen → die tiefsten;
      Stimmenzahl nach Timbre Voice / Mono-Regel aus MK3). OKTAVEN 1–4.
-   - **KEY SYNC** an: Zähler 0 beim ersten Schritt eines neuen Akkords; aus: Zähler = Rasterschritt (Song: seit Schlag 0).
+   - **KEY SYNC** an: Zähler 0 beim ersten Schritt eines neuen Akkords; aus: Zähler = Rasterschritt, gezählt ab dem Taktstrich, in dem der
+     Akkord begann (MK5-fix; Transport steht: Rasterschritt ab der ersten Taste).
    - **Step-Arp:** LÄNGE 1–8 und Maske `steps`; ein aus-geschalteter Schritt ist eine Pause, der Notenzeiger rückt trotzdem weiter.
    - **GATE** W-34: max(3 ms, gate/100 · Schritt); 100 % = bis zum nächsten Einsatz (mit Swing). **SWING** W-35 auf die geraden Schritte;
      W-35 = 0 → der Song-Swing wie bei den Clip-16teln (`swingOffset`), W-35 ≠ 0 ersetzt ihn (kein doppelter Swing).
@@ -102,7 +103,7 @@ FP-TOUCH ohne Befund: Treffer ≥ 44, keine Überlappung, M-ANSICHT 0 px, ein Un
 
 ### Abweichungen / Entscheidungen (eK)
 - **Chromium:** Die Tests starten `/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` (der vorgegebene Pfad `chromium-1194` existiert in diesem Container nicht; wie alle MK-Tests).
-- **KEY SYNC aus + Clip-Schleife:** Der Zähler folgt dem Song-Raster; zwei Durchläufe einer 4-Takt-Schleife sind gleich, wenn die Musterlänge die 64 Schritte teilt (sonst wandert das Muster, wie am Gerät mit externem Takt). MK5-13 ist darum mit KEY SYNC an und mit KEY SYNC aus + Musterlänge 4 geprüft.
+- **KEY SYNC aus + Clip-Schleife** (ersetzt durch MK5-fix, s. u.): Der Zähler zählt ab dem Taktstrich, in dem der Akkord begann; jede Schleife aus ganzen Takten und jede Aufnahme klingt bei jedem Durchlauf gleich, auch mit Zufall.
 - **KEYS 9** kommt zum Zeitpunkt der ersten Arp-Note des Akkords (bei stehendem Transport = Tastendruck + 10 ms, bei laufendem der nächste Rasterpunkt), damit die LFO-Phase genau mit dem ersten Ton beginnt. KEYS 10 beim ersten leeren Schritt.
 - **Akkord-Fenster 30 ms** (s. o.): Kommt eine Taste erst, nachdem der erste Schritt schon klingt (> ≈ 8 ms auseinander auf dem iPhone, ≈ 10 ms im Test-Chromium), ist dieser erste Schritt unvollständig; danach stimmt das Muster.
 - **Split + Ziel:** Ob eine Taste arpeggiert oder normal spielt, entscheidet ihre Höhe beim Anschlag (nicht neu bei einem späteren Träger-Wechsel).
@@ -153,3 +154,46 @@ Arp 1/16, Gate 50 %, LFO 1 Key Sync Timbre: startet der LFO je Akkord oder je Sc
 `dirigent-test/v3-mk5-arp.mjs` (+ `.out`), `v3-mk5-arp-audio.mjs` (+ `.out`), `v3-mk5-ui.mjs` (+ `.out`), `v3-mk5-perf.mjs` (+ `v3-mk5-perf4.out`),
 `v3-mk5-fp.mjs`, `v3-mk5-shot.mjs` → `dirigent-test/v3-mk5-shots/` (P1, P2 L/R, P3 L/R, L1, L2 L/R, W; ARP B, Schritte 2/5 Pause, LÄNGE 6,
 laufender Schritt), `v3-mk5-look-shots/` (M-SKIZZE), Regression `dirigent-test/v3-mk5-reg/`, `v3-mk5-smoke.png`.
+
+## MK5-fix — Befunde der Abnahme (App bleibt 4.13.0, Format 5; nur `ARPC` im MK-Block plus ein Feld in `noteLog`)
+
+Neustart-Prüfung: kein `synq-snapshots/MK5-fix.html` → alle drei Befunde neu behoben.
+
+1. **KEY SYNC aus (INIT) – Schleife und Aufnahme klangen bei jedem Durchlauf anders** (zwei Befunde, acceptance + specialist).
+   Ursache: Mit KEY SYNC aus war der Muster-Zähler der absolute Song-Rasterschritt (`c = idx`). Ein Dreiklang in einem Takt (16 Schritte)
+   wanderte je Durchlauf um eine Note; bei Zufall stand der absolute Schritt im Startwert, so wiederholte sich nie etwas.
+   Behebung: Mit KEY SYNC aus zählt der Zähler auf dem Song-Raster **ab dem Taktstrich, in dem der Akkord begann** (`s.gb`, beim Zurückspulen
+   wiederhergestellt) und läuft über gehaltene Takte weiter. Damit gilt MK5-07 weiter (zwei Anschläge im selben Takt = dasselbe Muster ab dem
+   Takt), und MK5-13/MK5-14 gelten auch mit den INIT-Werten; Zufall bleibt innerhalb eines gehaltenen Akkords zufällig (keine 1-Takt-Wiederholung).
+   **Entscheidung (eK, Spec-Konflikt Umfang 3 / MK5-07 gegen MK5-13/-14):** Am Gerät läuft der Zähler mit KEY SYNC aus frei weiter; hier richtet
+   er sich nach dem Takt, in dem der Akkord begann, damit Schleifen und Aufnahmen gleich klingen (Umfang 2 „damit Wiederholungen gleich bleiben“).
+   Sichtbar ändert sich nichts (LCD-Text „aus · das Muster läuft mit dem Takt“ bleibt richtig). Wenn Xander lieber den frei laufenden Zähler
+   des Geräts will, ist das eine Zeile (Vorschlag für den Funk, nicht umgesetzt).
+2. **FP-SONG: Akkord auf dem gehörten Schlag startete den Arp einen ganzen Schritt zu spät** (bei 1/4 ein ganzer Schlag), während ● REC/FANG
+   die Taste auf dem Schlag speichern → Aufnahme und Abspielen wichen ab.
+   Ursache: Der erste Schritt war der erste Rasterpunkt nach Tastendruck + `LIVE_LEAD` (Audio-Zeit); REC/FANG speichern `t2b(Druck − outLat)`.
+   Behebung (`lateIdx`, `s.late`): Jede Live-Taste trägt `ref` = Druck wie gehört (`now − outLat`, genau wie REC/FANG). Liegt ein Rasterpunkt
+   bis `LATE` = min(60 ms, 0,4 Schritt) vor (oder nach) diesem gehörten Druck und würde der normale Weg ihn verpassen, ist er **Schritt 1 des
+   neuen Akkords** (Zähler dieses Rasterpunkts, KEYS 9 dort). Er klingt sofort: liegt der Rasterpunkt noch vor „jetzt“, genau auf dem Raster,
+   sonst 20 ms (`LATEW`, damit die übrigen Tasten eines Akkords aus mehreren Berührungen dazukommen) nach dem Klang der Taste, spätestens
+   10 ms vor dem nächsten Schritt; seine Länge endet spätestens beim nächsten Schritt. Ab Schritt 2 liegt alles wieder auf dem Raster.
+   Nur für einen **neuen** Akkord (nichts gehalten, auch kein gelatchter Akkord) und nie, wenn dort schon ein Schritt klingt.
+   Clip-Noten bekommen dieselbe Regel mit `ref = an`: eine ungequantelte Aufnahme (Note 1.012) beginnt beim Abspielen ebenfalls auf Schlag 1
+   (klingt zur Notenzeit, nie früher) – so sind Spielen, ● REC mit Q AUTO und mit Q aus gleich.
+   `arpLog`/`noteLog` markieren diesen ersten Schritt mit `late` (Test-API; MK5-03/-05 messen das Raster ohne ihn).
+   **Abweichung (eK):** Dieser eine erste Schritt liegt nicht auf dem Raster (M-ZEIT ± 0,002 Schlag gilt ab Schritt 2); er kann nicht in der
+   Vergangenheit klingen. Vorher kam stattdessen ein ganzer Schritt Verspätung und eine verschobene Folge.
+   Grenzfall: Ein Akkord, der vor dem ersten Schlag einer ● Aufnahme ohne Einzähler gedrückt wird, startet live auf dem gehörten Schritt
+   davor, während die Aufnahme ihn auf ihren Anfang legt (dort ein Schritt Versatz, unverändert vom Aufnahme-Weg).
+
+**Belege** (Chromium 1243, `mk-br-MK5/index.html`):
+- Neu `dirigent-test/v3-mk5-fix.mjs`: 17/17 PASS – MK5-13 INIT (KEY SYNC 0) 1 und 4 Takte, Auf und Zufall, drei Durchläufe gleich; MK5-07 aus;
+  MK5-14 KEY SYNC 0/1 × Q auto/aus × Auf/Zufall (Abspielen = Spielen, erste Note sofort und `late`, zweite auf B + 0,25 ± 0,002);
+  FP-SONG 1/16 und 1/4 bei −20/0/+20 ms zum gehörten Schlag: Zähler 0,1,2, C zuerst, Schritt 2 auf dem Raster.
+- Repro-Skripte der Abnahme: `v3-qa-mk5-a.mjs` 3/3 PASS (MK5-13 INIT Auf/Zufall, MK5-14 Zufall INIT); `v3-repro-mk5-ks0loop.mjs` alle
+  `same12/same23: true`; `v3-verify-mk5-ks0.mjs` 6/6 PASS; `v3-qa-mk5-rectake.mjs` Spielen = Abspielen in allen 4 Fällen;
+  `v3-qa-mk5-onbeat.mjs`/`v3-repro-mk5-14onbeat.mjs`: erster Arp-Ton mit dem Zähler des gehörten Schlags (vorher immer ein Schritt danach).
+- `v3-mk5-arp.mjs` 79/79 (MK5-03/-05 messen das Raster ohne den `late`-Schritt), `v3-mk5-arp-audio.mjs` alle, `v3-mk5-ui.mjs` 80/80,
+  `v3-mk5-perf.mjs` (Arp-Anteil p95 0,2–0,3 ms, PE1), `v3-qa-mk5-stress.mjs` (0 Fehler, keine hängende Stimme), Smoke ohne Fehler.
+- Bekannt wackelig, auch im Stand vor dem Fix (nicht Teil der Befunde): MK5-02 „live zweimal“ (Akkord-Fenster bei der 10-ms-Uhr von
+  Headless-Chromium; vorher 3/6, jetzt 1/6 Fehlläufe) und MK5-16 `frames_ok` der Leistungs-Probe (Quantum-Spitzen der Testumgebung).
