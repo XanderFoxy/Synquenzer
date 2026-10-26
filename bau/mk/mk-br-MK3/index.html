@@ -4452,7 +4452,7 @@ function timbreKey() {
     haptic('tick'); render(); lcdShow('SOLO · T' + P.solo, 'nur Timbre ' + P.solo + ' klingt · Tipp auf TIMBRE beendet Solo'); return;
   }
   if (P.solo) { soloSet(0); haptic('tick'); render(); lcdShow('SOLO', 'aus – beide Timbres klingen'); return; }
-  if (!du) { lcdShow('TIMBRE', 'T2 gesperrt bei EINZELN – erst STIMME → EINZELN/SCHICHT auf Schicht oder Split'); dispShow('t 1'); return; }
+  if (!du) { P.tim = 1; render(); lcdShow('TIMBRE', 'T2 gesperrt bei EINZELN – erst STIMME → EINZELN/SCHICHT auf Schicht oder Split'); dispShow('t 1'); return; }
   P.tim = P.tim === 1 ? 2 : P.tim === 2 ? 3 : 1; P.lastKnob = null; haptic('tick'); render();
   dispShow(P.tim === 3 ? '1-2' : 't ' + P.tim);
   lcdShow('TIMBRE · ' + (P.tim === 3 ? 'T1 + T2' : 'T' + P.tim), P.tim === 3 ? 'Edit Sync: jede Geste ändert beide Timbres um denselben Schritt (Anzeige T1)' : 'die Regler bearbeiten Timbre ' + P.tim + ' · SHIFT + TIMBRE = Solo');
@@ -4795,7 +4795,7 @@ function panelInfo() {
     zones.push({id: z, x: +x0.toFixed(1), y: +y0.toFixed(1), w: +(x1 - x0).toFixed(1), h: +(y1 - y0).toFixed(1)}); }
   const wh = document.getElementById('mkWh'); if (wh && !wh.hidden) { const r = wh.getBoundingClientRect(); zones.push({id: 'RAEDER', x: r.left - br.left, y: r.top - br.top, w: r.width, h: r.height}); }
   return {fmt: F.k === 'L' ? 'voll-quer' : F.k === 'P' ? 'voll-hoch' : F.k === 'LH' ? 'halb-quer' : 'halb-hoch', half: F.k === 'LH' || F.k === 'PH' ? P.half : 'beide', scale: s,
-    body: {w: br.width, h: br.height}, sel: {wahl: P.wahl, pos: P.wahl === 0 ? -1 : P.pos[P.wahl]}, pos: P.pos.slice(1), shift: P.shift ? P.shift + 1 : 0, timbre: P.tim === 3 ? 'beide' : P.tim, solo: P.solo || undefined, view: P.view || undefined, splitArm: P.splitArm || undefined, zones,
+    body: {w: br.width, h: br.height}, sel: {wahl: P.wahl, pos: P.wahl === 0 ? -1 : P.pos[P.wahl]}, pos: P.pos.slice(1), shift: P.shift ? P.shift + 1 : 0, timbre: !dualOn() ? 1 : P.tim === 3 ? 'beide' : P.tim, solo: P.solo || undefined, view: P.view || undefined, splitArm: P.splitArm || undefined, zones,
     knobs: knobs().map(d => (d ? {l: d.l, p: d.p || null, dark: d.dark || null} : null)), matrix: [P.el.m1 && P.el.m1.textContent, P.el.m2 && P.el.m2.textContent], disp: P.el.disp ? P.el.disp._t : null, orig: !!(U.orig && U.orig.classList.contains('on'))};
 }
 window.MKUI = {build, render, wheels, wheelPaint, panelInfo, probe, probeSheet, randomize: randomizeMk, P, SEC1, SEC2, KN, knobs, setWahl, toSpiel, fmtv, get, range, setv, wv, MKTAB,
@@ -6076,7 +6076,7 @@ class MkCore {
   get lim() { return this.lim_; }
   set lim(x) { if (x === this.lim_) return; this.lim_ = x; this.recap(true); }   // the limiter: new notes only
   get solo() { return this.solo_; }
-  set solo(x) { this.solo_ = x === 1 || x === 2 ? x : 0; }
+  set solo(x) { this.solo_ = x === 1 || x === 2 ? x : 0; this.soloStep(); }   // a silent timbre takes its solo gain at once
   // the program values of p.mk (lists rounded; usc fractions during a gesture); returns [routing changed, scale changed]
   top(pm) {
     const r = (x, lo, hi, d) => (typeof x === 'number' && isFinite(x) ? Math.max(lo, Math.min(hi, Math.round(x))) : d);
@@ -6159,7 +6159,7 @@ class MkCore {
     for (const t of this.tm) for (const v of t.V) if (v.on && !v.ghost) { v.fin = n; v.finN = n; }
   }
   idle(n) { this.tm[0].idle(n); this.tm[1].idle(n); this.soloStep(); }
-  soloStep() { const s = this.solo_, g = this.sg; let mv = false; for (let k = 0; k < 2; k++) { const tg = s === 0 || s === k + 1 ? 1 : 0; if (g[k] !== tg) { g[k] = tg > g[k] ? Math.min(tg, g[k] + MK_SOLOS) : Math.max(tg, g[k] - MK_SOLOS); mv = true; } } return mv; }
+  soloStep() { const s = this.solo_, g = this.sg; let mv = false; for (let k = 0; k < 2; k++) { const tg = s === 0 || s === k + 1 ? 1 : 0; if (g[k] !== tg && !this.tm[k].busy()) { g[k] = tg; continue; } if (g[k] !== tg) { g[k] = tg > g[k] ? Math.min(tg, g[k] + MK_SOLOS) : Math.max(tg, g[k] - MK_SOLOS); mv = true; } } return mv; }
   block(Lo, Ro, off, frame) {
     const g0 = this.sg[0], g1 = this.sg[1]; this.soloStep();
     for (let k = 0; k < 2; k++) {
@@ -24032,7 +24032,7 @@ function sheetFrame(sh, title, tabs, curTab, onTab, subs) {
   sh.append(head, bar, body);
   if (sh === EL.synthSheet || sh === EL.drumSheet) fitWatch(body);
   ED.lcd = lcd; lcdHint();
-  onTap(lcd, (t, e) => { if (e && e.target && e.target.closest && e.target.closest('.lsplit') && UI.mkSplitTap) { UI.mkSplitTap(); return; } if (lcd.classList.contains('fest')) kbVelPos(); else lcdFull(lcd); });   // MK3: [Split ← nächste Note]     // V0b K-15: tap on the FEST hint = POSITION; a long text: whole
+  onTap(lcd, () => { if (lcd.querySelector('.lsplit') && UI.mkSplitTap) { UI.mkSplitTap(); return; } if (lcd.classList.contains('fest')) kbVelPos(); else lcdFull(lcd); });   // MK3: [Split ← nächste Note] (the whole line, like FEST)     // V0b K-15: tap on the FEST hint = POSITION; a long text: whole
   renderEdChip();
   return {head, r1, r2, body};
 }

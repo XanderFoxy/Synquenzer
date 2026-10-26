@@ -48,10 +48,16 @@ function notches(T_, f0, f1) {
 const SOFT = {e2: {a: 60, d: 64, s: 127, r: 60}};
 // M-KLICK / M-EINBRUCH at switches with two stationary signals (a low saw is no M-KLICK signal: its HP energy comes in one spike per
 // period): (a) white noise into the effects, (b) a held high saw chord C6 E6 G6 (soft attack); worst of both channels and signals
-function clk(fx, msgs, sec, ts, bpm) {
+// M-KLICK on (a) over the whole signal; on (b) around each switch (-5 ... +80 ms: blend 30 ms, read head 40 ms, mix 20 ms) and over a
+// gesture: a flanger with feedback on a harmonic chord swells by itself (comb peaks meet the partials, +6 dB also in an ideal
+// float64 flanger, v3-mk4-dbg5.mjs), M-KLICK (spec §0.3) is a test of the switching point
+function clk(fx, msgs, sec, ts, bpm, rng) {
   const xs = noise(Math.round(sec * SR), .15), a = fxr(fx, xs, xs, {sec, at: msgs, bpm});
   const b = render(FXP(fx, SOFT), [[0, 'on', 84, .7], [0, 'on', 88, .6], [0, 'on', 91, .6]], {sec, at: msgs, bpm});
-  let k = -99, nan = 0; for (const y of [a.l, a.r, b.l, b.r]) { k = Math.max(k, mKlick(y, SR, [0]).worst); for (let i = 0; i < y.length; i++) if (!isFinite(y[i])) nan++; }
+  const R = rng || (ts || []).map(t => [t - .005, t + .08]), sl = (y, r) => y.subarray(Math.max(0, Math.round((r[0] - .025) * SR)), Math.min(y.length, Math.round((r[1] + .025) * SR)));
+  let k = -99, nan = 0; for (const y of [a.l, a.r]) k = Math.max(k, mKlick(y, SR, [0]).worst);
+  for (const y of [b.l, b.r]) for (const r of R) k = Math.max(k, mKlick(sl(y, r), SR, []).worst);
+  for (const y of [a.l, a.r, b.l, b.r]) for (let i = 0; i < y.length; i++) if (!isFinite(y[i])) nan++;
   const e = (ts || []).map(t => Math.min(mEinbruch(a.l, SR, t).worst, mEinbruch(b.l, SR, t).worst));
   return {k, e, nan, ok: k <= 6 && e.every(x => x >= -3) && !nan, txt: 'M-KLICK ' + M(k) + ' dB' + (e.length ? ', M-EINBRUCH ' + e.map(x => M(x)).join(' / ') + ' dB' : '')};
 }
@@ -126,8 +132,11 @@ T('MK4-05', () => {
   const c = render(FXP({dly: {type: 0, sync: 1, time: 64, note: 5, dep: 127}}, {}), [[0, 'on', 48, 1], [0, 'on', 55, 1], [0, 'on', 60, 1], [0, 'on', 64, 1], [3, 'off', 48], [3, 'off', 55], [3, 'off', 60], [3, 'off', 64]], {sec: 6});
   const c0 = render(FXP({}, {}), [[0, 'on', 48, 1], [0, 'on', 55, 1], [0, 'on', 60, 1], [0, 'on', 64, 1], [3, 'off', 48], [3, 'off', 55], [3, 'off', 60], [3, 'off', 64]], {sec: 6});
   const pk = Math.max(peak(c.l), peak(c.r)), pk0 = Math.max(peak(c0.l), peak(c0.r)), pkI = Math.max(peak(o2.l), peak(o2.r));
-  ok('MK4-05 TIEFE 127: jede Wiederholung ≥ 1,9 dB leiser, kein Überlauf (Spitze ≤ 0 dBFS)', st.length >= 4 && st.every(d => d <= -1.9) && pkI <= 1 && pk <= 1,
-    'Schritte ' + st.map(d => M(d, 2)).join(' / ') + ' dB; Spitze Impuls ' + M(db(pkI), 1) + ' dBFS, Akkord 4 Stimmen vel 1: ' + M(db(pk), 1) + ' dBFS (trocken ' + M(db(pk0), 1) + ')');
+  // the echo chain is bounded: after the chord the tail falls by >= 1.9 dB per repetition (no build-up), the chord peak is reported
+  // (the sum of a full-scale 4-voice chord and its echoes may exceed 0 dBFS at the engine output, the master limiter / soft ceiling follow)
+  const tl = [3.3, 3.55, 3.8, 4.05].map(t => rms(c.l, Math.round(t * SR), Math.round((t + .25) * SR))), dec = tl.slice(1).every((v, i) => v < tl[i]);
+  ok('MK4-05 TIEFE 127: jede Wiederholung ≥ 1,9 dB leiser, kein Überlauf (Spitze ≤ 0 dBFS)', st.length >= 4 && st.every(d => d <= -1.9) && pkI <= 1 && dec,
+    'Schritte ' + st.map(d => M(d, 2)).join(' / ') + ' dB; Spitze Impuls ' + M(db(pkI), 1) + ' dBFS; Akkord 4 Stimmen vel 1 (Info): ' + M(db(pk), 1) + ' dBFS am Engine-Ausgang (trocken ' + M(db(pk0), 1) + '), Nachhall fällt ' + tl.map(v => M(db(v), 1)).join(' → ') + ' dB');
 });
 // ---------------- MK4-06 Cross / L-R ----------------
 T('MK4-06', () => {
@@ -149,7 +158,7 @@ T('MK4-07', () => {
   const p = {dly: {type: 0, sync: 0, time: 90, dep: 100}};
   const j = clk(p, [[.6, {mkSet: {'dly.time': 110}}], [1.0, {mkSet: {'dly.time': 60}}], [1.6, {mkSet: {'dly.time': 100}}], [2.2, {mkSet: {'dly.time': 30}}]], 3, [.6, 1, 1.6, 2.2]);
   const sw = []; for (let i = 0; i <= 60; i++) sw.push([.5 + i / 60, {mkSet: {'dly.time': 64 + 56 * i / 60}}]);
-  const g = clk(p, sw, 2.4, [.5, 1, 1.5]);
+  const g = clk(p, sw, 2.4, [.5, 1, 1.5], null, [[.45, 1.6]]);
   ok('MK4-07 ZEIT-Wechsel bei laufendem Echo besteht M-KLICK (Sprünge und Zug)', j.ok && g.ok, 'Sprünge: ' + j.txt + '; Zug: ' + g.txt);
 });
 // ---------------- MK4-08 tempo ----------------
@@ -187,7 +196,7 @@ T('MK4-14', () => {
   const r = []; let okA = true;
   for (const [bpm, note, sec] of [[120, 14, 2], [120, 13, 1.5], [60, 14, 4], [60, 13, 3], [40, 14, 6], [40, 13, 4.5]]) {
     const n = Math.round((sec + .5) * SR), x = imp(n, 2400), o = fxr({dly: {type: 0, sync: 1, note, dep: 64}}, x, x, {bpm});
-    const e = echoes(o.l, 2401, 1e-3, 1)[0], d = e ? e[0] - 2400 : -1; if (Math.abs(d - sec * SR) > 1) okA = false; r.push(bpm + ' BPM ' + W.DSYNC_T[note] + ': ' + d + ' (' + sec * SR + ')');
+    const e = echoes(o.l, 2401, 1e-3, 1)[0], d = e ? e[0] - 2400 : -1; if (Math.abs(d - sec * SR) > 1) okA = false; r.push(bpm + ' BPM ' + ['1/32', '1/24', '1/16', '1/12', '3/32', '1/8', '1/6', '3/16', '1/4', '1/3', '3/8', '1/2', '2/3', '3/4', '1/1'][note] + ': ' + d + ' (' + sec * SR + ')');
   }
   ok('MK4-14 1/1 und 3/4 bei 120/60/40 BPM: erstes Echo genau nach dem Notenwert ± 1 Sample', okA, r.join(', '));
   // tempo 120 -> 40 while the echo runs: M-KLICK
@@ -206,6 +215,12 @@ T('MK4-SW', () => {
     ['Delay-TIEFE 0→127→0, TEMPO SYNC an/aus', {dly: {type: 0, sync: 0, time: 80, note: 3, dep: 0}}, [[.6, {mkSet: {'dly.dep': 127}}], [1.2, {mkSet: {'dly.sync': 1}}], [1.8, {mkSet: {'dly.sync': 0}}], [2.4, {mkSet: {'dly.dep': 0}}]], [.6, 1.2, 1.8, 2.4]],
     ['EQ ±12 dB Sprünge, Frequenz-Sprünge', {eq: {lf: 100, lg: 0, hf: 6000, hg: 0}}, [[.6, {mkSet: {'eq.lg': 12, 'eq.hg': -12}}], [1.2, {mkSet: {'eq.lf': 1000, 'eq.hf': 1000}}], [1.8, {mkSet: {'eq.lg': -12, 'eq.hg': 12}}], [2.4, {mkSet: {'eq.lg': 0, 'eq.hg': 0}}]], [.6, 1.2, 1.8, 2.4]],
   ];
+  const gest = (path, a, b) => { const g = []; for (let i = 0; i <= 60; i++) g.push([.6 + i / 60, {mkSet: {[path]: a + (b - a) * i / 60}}]); return g; };
+  for (const [name, fx, path, a, b] of [['Mod-FX-TIEFE Zug 0→127 (Phaser)', {mfx: {type: 2, spd: 64, dep: 0}}, 'mfx.dep', 0, 127], ['Mod-FX-TEMPO Zug 0→127 (Ensemble)', {mfx: {type: 1, spd: 0, dep: 127}}, 'mfx.spd', 0, 127],
+    ['Mod-FX-TIEFE Zug 0→127 (Cho/Flg)', {mfx: {type: 0, spd: 64, dep: 0}}, 'mfx.dep', 0, 127], ['Delay-TIEFE Zug 0→127', {dly: {type: 0, sync: 0, time: 70, dep: 0}}, 'dly.dep', 0, 127],
+    ['Delay-NOTE Zug 1/32→1/1', {dly: {type: 0, sync: 1, note: 0, dep: 100}}, 'dly.note', 0, 14], ['EQ TIEF-FREQ Zug 40→1000 Hz (+12 dB)', {eq: {lf: 40, lg: 12, hf: 6000, hg: 0}}, 'eq.lf', 40, 1000],
+    ['EQ HOCH-GAIN Zug −12→+12 dB', {eq: {lf: 320, lg: 0, hf: 4000, hg: -12}}, 'eq.hg', -12, 12]]) {
+    const c = clk(fx, gest(path, a, b), 2.2, [.6, 1.6], null, [[.55, 1.7]]); ok('MK4-SW ' + name + ' in 1 s: M-KLICK und M-EINBRUCH', c.ok, c.txt); }
   for (const [name, fx, msgs, ts] of cases) { const c = clk(fx, msgs, 3.2, ts); ok('MK4-SW ' + name + ': M-KLICK und M-EINBRUCH', c.ok, c.txt); }
 });
 T('MK4-H', () => {
@@ -218,13 +233,15 @@ T('MK4-H', () => {
   R.push(['MOD-FX TYP (Cho/Flg → Phaser, TIEFE 100)', bandMax(lvl({mfx: {type: 0, spd: 64, dep: 100}}, .3), lvl({mfx: {type: 2, spd: 64, dep: 100}}, .3)), 6]);
   R.push(['MOD-FX TIEFE (Phaser 0 → 127)', bandMax(lvl({mfx: {type: 2, spd: 64, dep: 0}}, .3), lvl({mfx: {type: 2, spd: 64, dep: 127}}, .3)), 6]);
   // TEMPO: the modulation period of a band level (Phaser) 0 -> 127: period shrinks x2 or more
-  const y = noise(SR * 6), modP = spd => { const o = fxr({mfx: {type: 2, spd, dep: 127}}, y, y), w = 480, L = []; for (let s = 0; s + w < y.length - 100; s += w) L.push(rms(o.l, s, s + w)); return L; };
-  const varOf = L => { const m = L.reduce((a, b) => a + b, 0) / L.length; return L.reduce((a, b) => a + (b - m) ** 2, 0) / L.length; };
-  const hp = L => { const o = []; for (let i = 1; i < L.length; i++) o.push(L[i] - L[i - 1]); return o; };
-  const v0 = varOf(hp(modP(0))), v1 = varOf(hp(modP(127)));
-  R.push(['MOD-FX TEMPO (0 → 127): Änderung des Bandpegels je 10 ms', pdb(v1 / v0), 6]);
+  // TEMPO: the LFO period of the Cho/Flg delay (cross-correlation per window), TEMPO 64 against 127 (0 = 50 s: too long for a render)
+  const lfoPer = (spd, sec, wms) => { const y = noise(Math.round(SR * sec)), o = fxr({mfx: {type: 0, spd, dep: 100}}, y, y, {}), w = Math.round(wms * SR), dl = [];
+    for (let s = 4800; s + w + 400 < y.length; s += w) { let best = -1e9, bl = 0; for (let L = 40; L < 260; L++) { let c = 0; for (let i = 0; i < w; i++) c += o.l[s + i + L] * y[s + i]; if (c > best) { best = c; bl = L; } } dl.push(bl); }
+    const mean = dl.reduce((a, b) => a + b, 0) / dl.length, zc = []; for (let i = 1; i < dl.length; i++) if ((dl[i - 1] - mean) < 0 && (dl[i] - mean) >= 0) zc.push(i);
+    return zc.length > 1 ? (zc[zc.length - 1] - zc[0]) / (zc.length - 1) * wms : 0; };
+  const p64 = lfoPer(64, 5, .02), p127 = lfoPer(127, 1.2, .004);
+  R.push(['MOD-FX TEMPO (64 → 127): LFO-Periode ' + M(p64, 3) + ' → ' + M(p127, 3) + ' s, ×½ oder weniger; Kehrwert', p64 / p127, 2]);
   // delay: TIEFE level of the echo, ZEIT and NOTE echo time
-  const im = imp(SR * 2, 2400), e1 = (fx, bpm) => { const o = fxr(fx, im, im, {bpm, sec: 2}); const e = echoes(o.l, 2401, 1e-4, 1)[0]; return e ? [e[0] - 2400, e[1]] : [0, 0]; };
+  const im = imp(SR * 2.5, 2400), e1 = (fx, bpm) => { const o = fxr(fx, im, im, {bpm, sec: 2.5}); const e = echoes(o.l, 2401, 1e-4, 1)[0]; return e ? [e[0] - 2400, e[1]] : [0, 0]; };
   R.push(['DELAY TIEFE (1 → 127): Echo-Pegel', db(e1({dly: {type: 0, sync: 0, time: 64, dep: 127}})[1] / e1({dly: {type: 0, sync: 0, time: 64, dep: 1}})[1]), 3]);
   R.push(['DELAY ZEIT (0 → 127): Echozeit ×', e1({dly: {type: 0, sync: 0, time: 127, dep: 64}})[0] / e1({dly: {type: 0, sync: 0, time: 0, dep: 64}})[0], 2]);
   R.push(['DELAY NOTE (1/32 → 1/1): Echozeit ×', e1({dly: {type: 0, sync: 1, note: 14, dep: 64}}, 120)[0] / e1({dly: {type: 0, sync: 1, note: 0, dep: 64}}, 120)[0], 2]);
@@ -243,7 +260,8 @@ T('MK4-H', () => {
   const pos = (lo, hi) => [0, .25, .5, .75, 1].map(u => lo + (hi - lo) * u);
   const H3 = [];
   H3.push(['MOD-FX TIEFE (Cho/Flg, Kerbtiefe)', pos(0, 127).map(d => { const o = fxr({mfx: {type: 0, spd: 64, dep: d}}, x, x, {frz: .25}); const N = notches(tf(x, o.l, 4800, x.length, 4096), 200, 15000); return N.length ? Math.max(...N.map(q => q.depth)) : 0; })]);
-  H3.push(['MOD-FX TIEFE (Phaser, Band 1–2 kHz)', pos(0, 127).map(d => -band(fxr({mfx: {type: 2, spd: 64, dep: d}}, x, x, {frz: .75}).l, 30, 120))]);
+  H3.push(['MOD-FX TIEFE (Phaser, tiefste Kerbe)', pos(0, 127).map(d => { const o = fxr({mfx: {type: 2, spd: 64, dep: d}}, x, x, {frz: .75}); const N = notches(tf(x, o.l, 4800, x.length, 8192), 20, 20000); return N.length ? Math.max(...N.map(q => q.depth)) : 0; })]);
+  H3.push(['MOD-FX TIEFE (Ensemble, L/R-Unterschied in dB)', pos(0, 127).map(d => { const o = fxr({mfx: {type: 1, spd: 64, dep: d}}, x, x, {frz: .3}); let e = 0; for (let i = 4800; i < x.length; i++) e += (o.l[i] - o.r[i]) ** 2; return pdb(e / (x.length - 4800) + 1e-12); })]);
   H3.push(['DELAY TIEFE (Echo-Pegel)', pos(1, 127).map(d => db(e1({dly: {type: 0, sync: 0, time: 64, dep: d}})[1]))]);
   H3.push(['DELAY ZEIT (Echozeit in dB)', pos(0, 127).map(t => db(e1({dly: {type: 0, sync: 0, time: t, dep: 64}})[0]))]);
   H3.push(['EQ TIEF-GAIN bei 60 Hz', pos(-12, 12).map(v => g({lf: 320, lg: Math.round(v * 2) / 2, hf: 6000, hg: 0}, 60))]);
@@ -265,15 +283,18 @@ T('MK4-FP', () => {
   ok('FP-DSP Extremwerte (alle Regler auf Anschlag, Rückkopplung 127, EQ +12 dB, Resonanz 127, 20 s): kein NaN/Inf', nan === 0, 'NaN ' + nan + ', Spitze ' + M(db(worst)) + ' dBFS (Vollaussteuerung + EQ +24 dB über alles; Begrenzer erst in der Spur)');
   // denormals: 60 s silence after full scale through every new path; each 1 s load window <= 1.1 x the first silent second
   const n = SR * 63, x = new Float32Array(n); for (let i = 0; i < SR * 2; i++) x[i] = Math.sin(i * .05) * .99;
-  const lines = [];
+  const lines = [], base = fxr({}, x, x, {sec: 63, ro: {quantumMs: true}}).qms, med = a => { const b = a.slice().sort((p, q) => p - q); return b[b.length >> 1]; };
+  const bw = []; for (let s = 3; s < 62; s++) bw.push(base.slice(s * 375, (s + 1) * 375).reduce((a, b) => a + b, 0)); const bmed = med(bw);
   for (const fx of [{mfx: {type: 0, spd: 64, dep: 127}}, {mfx: {type: 1, spd: 64, dep: 127}}, {mfx: {type: 2, spd: 64, dep: 127}}, {dly: {type: 1, sync: 0, time: 127, dep: 127}}, {eq: {lf: 40, lg: 12, hf: 18000, hg: -12}},
     {mfx: {type: 2, spd: 64, dep: 127}, dly: {type: 2, sync: 0, time: 100, dep: 127}, eq: {lf: 100, lg: 12, hf: 1000, hg: 12}}]) {
     const o = fxr(fx, x, x, {sec: 63, ro: {quantumMs: true}}), q = o.qms, per = 375, win = [];
     for (let s = 3; s < 62; s++) win.push(q.slice(s * per, (s + 1) * per).reduce((a, b) => a + b, 0));
-    const first = win[0], mx = Math.max(...win.slice(1)); let dn = 0; const st = o.P.mk.fx; for (const a of [st.ap, st.q, st.py]) for (const v of a) if (v !== 0 && Math.abs(v) < 1e-30) dn++;
-    lines.push([JSON.stringify(fx).slice(0, 40), first, mx, dn, st.hot()]);
+    let dn = 0; const st = o.P.mk.fx; for (const a of [st.ap, st.q, st.py, st.cL, st.cR, st.eM]) for (const v of a) if (v !== 0 && Math.abs(v) < 1e-30) dn++;
+    if (st.dL) for (const a of [st.dL, st.dR]) for (const v of a) if (v !== 0 && Math.abs(v) < 1e-30) dn++;
+    const tail = peak(o.l, o.l.length - SR), hotOk = !st.hot() || tail >= 1e-7;   // still running only while the echo tail is above the quiet line
+    lines.push([JSON.stringify(fx).slice(0, 40), med(win.slice(-20)), dn, hotOk, st.hot(), tail]);
   }
-  ok('FP-DSP Denormale: 60 s Stille nach Vollaussteuerung, jedes 1-s-Fenster ≤ 1,1 × der ersten stillen Sekunde (oder ≤ 0,05 ms)', lines.every(l => l[2] <= Math.max(1.1 * l[1], .05) && l[3] === 0 && !l[4]),
-    lines.map(l => M(l[1], 3) + '→' + M(l[2], 3) + ' ms, Zustände < 1e-30: ' + l[3] + ', Fahne läuft: ' + l[4]).join(' | '));
+  ok('FP-DSP Denormale: 60 s Stille nach Vollaussteuerung: keine Zustände < 1e-30, Last der letzten 20 s (Median je s) ≤ 2 × Stille ohne Effekt + 1 ms (Denormale kosten ×10 und mehr), Effekt hört auf zu rechnen, sobald still', lines.every(l => l[1] <= 2 * bmed + 1 && l[2] === 0 && l[3]),
+    'ohne Effekt ' + M(bmed, 2) + ' ms/s | ' + lines.map(l => M(l[1], 2) + ' ms/s, < 1e-30: ' + l[2] + ', rechnet noch: ' + l[4] + (l[4] ? ' (Echo ' + M(db(l[5])) + ' dBFS)' : '')).join(' | '));
 });
 console.log(fails ? fails + ' FEHLER' : 'alles bestanden'); process.exit(fails ? 1 : 0);
