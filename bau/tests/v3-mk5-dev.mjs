@@ -1,0 +1,21 @@
+import { chromium } from 'playwright';
+const FILE = process.argv[2];
+const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await browser.newContext({viewport: {width: 844, height: 390}});
+const page = await ctx.newPage(); const errs = [];
+page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await page.goto('file://' + FILE); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+const r = await page.evaluate(async () => {
+  const Q = SYNQUENZER; Q.setEngine(0, 'mk'); Q.selectTrack(0); ensureAudio();
+  await new Promise(r => setTimeout(r, 1500));
+  Q.mkSet(0, 'arp.on', 1); Q.mkSet(0, 'arp.res', 1);
+  const t0 = AU.ctx.currentTime;
+  Q.keyOn(60, .8); Q.keyOn(64, .8); Q.keyOn(67, .8);
+  await new Promise(r => setTimeout(r, 1100));
+  Q.keyOff(60); Q.keyOff(64); Q.keyOff(67);
+  await new Promise(r => setTimeout(r, 300));
+  const L = Q.arpLog(0);
+  return {t0, eng: !!AU.synth[0], n: L.length, L: L.slice(0, 10).map(x => [+(x.t - t0).toFixed(4), x.note, +x.dur.toFixed(4), x.step]), voices: Q.voices().length, nl: Q.noteLog(20).filter(e => e.src === 'arp').length};
+});
+console.log(JSON.stringify(r), errs);
+await browser.close();

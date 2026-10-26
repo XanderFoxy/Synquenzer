@@ -1,0 +1,27 @@
+import {open, sleep} from './vgmk34-tl3.mjs';
+const T = await open(Object.assign({viewport: {width: 390, height: 844}}, process.env.SYNQ_APP ? {file: process.env.SYNQ_APP} : {})); const {p, E, errs} = T;
+console.log('APP', await E(() => SYNQUENZER.version));
+await E(() => SYNQUENZER.setMetronome(false));
+await E(() => { window.__mStart = () => { const c = AU.ctx; const sp = c.createScriptProcessor(1024, 2, 2), z = c.createGain(); z.gain.value = 0; const C = window.__mc = {L: [], sp, z, t0: null}; sp.onaudioprocess = e => { if (C.t0 == null) C.t0 = e.playbackTime; const a = e.inputBuffer.getChannelData(0), b = e.inputBuffer.getChannelData(1); const x = new Float32Array(a.length); for (let i = 0; i < a.length; i++) x[i] = (a[i] + b[i]) / 2; C.L.push(x); }; AU.M.ceil.connect(sp); sp.connect(z); z.connect(c.destination); };
+  window.__mStop = () => { const C = window.__mc; try { AU.M.ceil.disconnect(C.sp); } catch (e) {} C.sp.disconnect(); const N = C.L.reduce((a, b) => a + b.length, 0), x = new Float32Array(N); let o = 0; for (const b of C.L) { x.set(b, o); o += b.length; } const sr = AU.ctx.sampleRate, W = Math.round(.05 * sr), env = []; for (let i = 0; i + W <= N; i += W) { let s = 0; for (let k = i; k < i + W; k++) s += x[k] * x[k]; env.push(+(10 * Math.log10(s / W + 1e-20)).toFixed(1)); } return {t0: C.t0, env}; }; });
+await E(() => { SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await sleep(500);
+const c = await T.rectText('button', /^(VA|FM|WT) ▾$/); await T.tap(c.cx, c.cy, 400); await T.tapPop(/MS ?2000/); await sleep(900);
+await E(async () => { const Q = SYNQUENZER; Q.mkSet(0, 'dly.dep', 110); Q.mkSet(0, 'dly.sync', 1); Q.mkSet(0, 'dly.note', 8); Q.mkSet(0, 't.0.a.gate', 1); await Q.saveSound(0, 'EchoX', 'new'); });
+console.log('dly', JSON.stringify(await E(() => SYNQUENZER.mkGet(0).dly)), 'bpm', await E(() => SYNQUENZER.runtime().bpm));
+const id = await E(() => SYNQUENZER.library().find(s => s.name === 'EchoX').id);
+await E(() => SYNQUENZER.initSound ? SYNQUENZER.initSound(0) : 0); await sleep(300);
+await E(() => window.__mStart());
+await E(id => SYNQUENZER.browserPreview(id, true), id);
+let st; const t0 = Date.now(); do { await sleep(50); st = await E(() => SYNQUENZER.previewState()); } while (st.on && Date.now() - t0 < 15000);
+const tEnd = await E(() => AU.ctx.currentTime); await sleep(5000);
+const m = await E(() => window.__mStop()); const rel = tEnd - m.t0;
+const k0 = Math.round(rel / .05);
+console.log('PREVIEW: env from 1 s before phrase end, 50 ms steps:\n', m.env.slice(k0 - 20, k0 + 100).join(','));
+// the same sound on the track, one key
+await E(id => SYNQUENZER.browserTap(id), id); await sleep(500); await E(() => SYNQUENZER.closeBrowser()); await sleep(800);
+console.log('track dly', JSON.stringify(await E(() => SYNQUENZER.mkGet(0).dly)));
+await E(() => window.__mStart()); await sleep(200);
+await E(() => SYNQUENZER.keyOn(60, .8)); await sleep(300); await E(() => SYNQUENZER.keyOff(60)); const tk = await E(() => AU.ctx.currentTime);
+await sleep(5000); const m2 = await E(() => window.__mStop()); const r2 = Math.round((tk - m2.t0) / .05);
+console.log('TRACK KEY: env from 0.3 s before release:\n', m2.env.slice(r2 - 6, r2 + 100).join(','));
+console.log('errs', JSON.stringify(errs)); await T.br.close();

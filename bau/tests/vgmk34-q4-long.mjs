@@ -5,7 +5,7 @@ import {setupProject} from './v3-qa-gmk4-setup.mjs';
 import {recStart, recAnalyse} from './v3-qa-gmk2a-rec.mjs';
 import fs from 'fs';
 const MIN = +(process.argv[2] || 3), BASE = process.argv[3] === 'base', TAG = BASE ? 'base' : 'long';
-const T = await open(); const {p, E, errs} = T;
+const T = await open({viewport: {width: 390, height: 844}}); const {p, E, errs} = T;
 // short list delay to avoid the tap-through shield (a drag ≤ 500 ms after a list pick on the same spot is eaten)
 T.knobList = async (k, re) => { await T.tapMk(k, 300); const r = await T.tapPop(re); await sleep(600); return r ? 'ok' : 'no list item ' + re + ' ' + JSON.stringify(await T.popTexts()); };
 console.log('setup', JSON.stringify(await setupProject(E)));

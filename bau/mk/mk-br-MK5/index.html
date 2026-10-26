@@ -3843,6 +3843,232 @@ const MKTAB = (function () {
     NL, HL, OFF, SET, OCTF, HZ, GRP, ready: () => data().length > 1};
 })();
 /*}MKT*/
+/* ---- MK5 (Nachtrag 3 MK5, EN3-11): the step arpeggiator. It sits on the main thread between the note sources of a track (keys,
+   chord keys, MIDI in, clip notes, the song melody, recorded takes playing back) and spawnVoice. Every source goes into the
+   held set: intervals {source note, on, off} in audio time (live: press time + LIVE_LEAD; clips: their future time stamps), so
+   each step asks the set at its own time and never starts early. A step maps its source notes at its own time (outPitch:
+   harmony, ⇅, „Eine Skala“, FOLGT). The planner runs in tick() (also with the transport stopped) with the scheduler's horizon.
+   The pattern part (arpPattern) knows no engine and no track (Teil G Nr. 3, VI2a); the timbre masks and KEYS are the AM part. ---- */
+const ARPC = (function () {
+  'use strict';
+  const RES = [1 / 24, 1 / 16, 1 / 12, 1 / 8, 1 / 6, 1 / 4];   // W-11 (x 4 beats)
+  const TYP = ['Up', 'Down', 'Alt 1', 'Alt 2', 'Random', 'Trigger'];
+  const E_ = 1e-4, HIST = 48, LOGN = 4096, CHW = .03;
+  const ST = new Map();                 // track index -> state
+  const LOG = new Map();                // track uid -> arpLog ring
+  const md = (a, n) => ((a % n) + n) % n;
+  // a 32-bit hash for the Random type: project id + track uid + step counter (the same take sounds the same every time)
+  const fnv = s => { let h = 0x811c9dc5; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 0x01000193) >>> 0; } return h; };
+  const mix = (h, c) => { let x = (h ^ Math.imul(c | 0, 0x9e3779b1)) >>> 0; x ^= x >>> 16; x = Math.imul(x, 0x85ebca6b) >>> 0; x ^= x >>> 13; x = Math.imul(x, 0xc2b2ae35) >>> 0; x ^= x >>> 16; return x >>> 0; };
+  /* the pattern (HB-MS S. 45): N = held notes ascending (after mapping), U over R octaves; returns the notes of step counter c
+     (one note, or all for Trigger); n = {p: pitch, ...} objects, cap = voices for Trigger (the lowest play) */
+  function arpPattern(type, range, N, c, seed, cap) {
+    if (!N.length) return [];
+    if (type === 5) return N.slice(0, Math.max(1, cap || N.length));
+    const U = [];
+    for (let o = 0; o < Math.max(1, Math.min(4, range | 0)); o++) for (const x of N) if (x.p + 12 * o <= 127) U.push(o ? Object.assign({}, x, {p: x.p + 12 * o, o}) : Object.assign({}, x, {o: 0}));
+    let P = U;
+    if (type === 1) P = U.slice().reverse();
+    else if (type === 2) P = U.length > 2 ? U.concat(U.slice(1, -1).reverse()) : U;
+    else if (type === 3) P = U.concat(U.slice().reverse());
+    else if (type === 4) return [U[mix(seed, c) % U.length]];
+    return [P[md(c, P.length)]];
+  }
+  const A_ = i => { const tr = S.tracks[i]; return tr && tr.sound && tr.sound.p && tr.sound.p.mk ? tr.sound.p.mk : null; };
+  function on(i) { const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound.engine !== 'mk') return false; const m = tr.sound.p.mk; return !!(m && m.arp && m.arp.on); }
+  const stepB = m => RES[clamp(m.arp.res | 0, 0, 5)] * 4;
+  // the voices of the timbre(s) a Trigger step plays on (MK3 recap: Timbre Voice, the mono rule; Mono / Unison = one line)
+  function voicesOf(m, mask) {
+    const as = t => clamp(Math.round(t.asg), 0, 2), a = as(m.t[0]), b = as(m.t[1]), dual = m.mode === 1 || m.mode === 2;
+    if (!dual) return a === 1 ? (m.vmax || 4) : 1;
+    let na, nb; if (a === 0 || b === 0) { na = a === 0 ? 1 : a === 1 ? 3 : 2; nb = b === 0 ? 1 : b === 1 ? 3 : 2; } else { na = [1, 2, 3][m.tv | 0]; nb = 4 - na; }
+    if (a !== 1) na = 1; if (b !== 1) nb = 1;
+    return mask === 1 ? na : mask === 2 ? nb : Math.min(na, nb);
+  }
+  // Ziel (Umfang 6): which timbre a held key belongs to in Split (the key decides, never the arp note), mask of the arp notes
+  const keyTim = (m, p) => (m.mode === 2 ? (p < m.split ? 1 : 2) : m.mode === 1 ? 3 : 1);
+  // a new source note: does the arp take it, and does the other timbre hold it as a normal note (mask; 0 = the mode decides)?
+  function route(i, pitch) {
+    const m = A_(i), tg = m.arp.tgt | 0;
+    if (m.mode === 1 && tg) return {arp: true, hold: 3 - tg};
+    if (m.mode === 2 && tg && keyTim(m, pitch) !== tg) return {arp: false, hold: 0};
+    return {arp: true, hold: null};
+  }
+  function st(i) {
+    let s = ST.get(i);
+    if (!s) { s = {iv: [], grid: null, next: 0, pc: -1, pg: null, kOn: false, hist: [], planT: -Infinity, brk: -Infinity, bpm: S.bpm, res: -1, cur: null}; ST.set(i, s); }
+    return s;
+  }
+  function logOf(i) { const tr = S.tracks[i], k = tr && tr.uid ? tr.uid : 't' + i; let L = LOG.get(k); if (!L) { L = []; LOG.set(k, L); } return L; }
+  // ---- the grid: song (beats, transport running) or free (from the first key, transport stopped)
+  function nomT(s, idx) { return s.grid.k === 'song' ? b2t(idx * s.sb) : s.grid.ta + (idx - s.grid.ia) * s.grid.sec; }
+  function swingT(s, m, idx) {   // W-35 (arp swing replaces the global one on this track), else the global swing like the clip 16ths
+    const sw = m.arp.swing | 0, sec = s.sb * spb();
+    if (sw) return md(idx, 2) === 1 ? sw / 100 * .5 * sec : 0;
+    const b = s.grid.k === 'song' ? idx * s.sb : (idx - s.grid.ia) * s.sb;
+    return swingOffset(b) * spb();
+  }
+  const timeOf = (s, m, idx) => nomT(s, idx) + swingT(s, m, idx);
+  function gridSong(s, m, tFrom) { s.sb = stepB(m); s.res = m.arp.res | 0; s.grid = {k: 'song'}; s.next = Math.ceil((t2b(tFrom) - 1e-6) / s.sb); s.bpm = S.bpm; }
+  function gridFree(s, m, tA, ia) { s.sb = stepB(m); s.res = m.arp.res | 0; s.grid = {k: 'free', ta: tA, ia, sec: s.sb * spb()}; s.next = ia; s.bpm = S.bpm; }
+  // ---- the held set
+  function add(i, x) {
+    const s = st(i), L = s.iv;
+    // a chord is never played at exactly one instant: a key within 30 ms after a step that has not sounded yet joins that step
+    if (x.src === 'live' && s.grid) { const now = nowT(); for (let k = s.hist.length - 1; k >= 0; k--) { const r = s.hist[k]; if (r.t > x.on + 1e-6) continue; if (r.t > now + .002 && x.on - r.t <= CHW) x.on = r.t; break; } } let k = L.length; while (k > 0 && L[k - 1].on > x.on) k--; L.splice(k, 0, x);
+    if (s.grid && x.on <= s.planT + 1e-6) rewind(i, x.on);
+    return x;
+  }
+  // the set at time t: the group (keys connected without an „all up“ gap) that holds at t; latch keeps the last group
+  function query(s, t, latch) {
+    let g = null, mem = [], mx = -Infinity;
+    for (const x of s.iv) {
+      if (x.on > t + E_) break;
+      if (!g || x.on >= mx - 1e-6) { g = x; mem = []; mx = -Infinity; }   // touching (off = on) counts as all up: a new chord
+      mem.push(x); if (x.off > mx) mx = x.off;
+    }
+    if (!g) return null;
+    if (mx > t + E_) return {g, mem: latch ? mem : mem.filter(x => x.off > t + E_ && x.on <= t + E_)};
+    if (latch && !(s.brk > g.on - E_ && s.brk <= t + E_)) return {g, mem, held: true};   // a scene / part switch of this track ends a latched chord (Umfang 8)
+    return null;
+  }
+  function future(s, t) { for (const x of s.iv) if (x.on > t + E_) return true; return false; }
+  // ---- planning
+  function rec(s, r) { s.hist.push(r); if (s.hist.length > HIST) s.hist.splice(0, s.hist.length - HIST); s.planT = r.t; }
+  function engOf(i) { const E = AU.synth[i]; return E && !E.dead && !E.retiring ? E : null; }
+  function keys(i, s, ty, t) {   // a rewound step that is planned again at the same time does not send its KEYS twice
+    const last = ty === 9 ? 'k9' : 'k10'; s.kOn = ty === 9; if (s[last] != null && Math.abs(s[last] - t) < 1e-6) return; s[last] = t;
+    const E = engOf(i); if (E && E.keys) E.keys(ty, t);
+  }
+  function step(i, s, m, t, idx, silent) {
+    const A = m.arp, latch = !!A.latch, q = query(s, t, latch), r = {idx, t, tn: nomT(s, idx), pc: s.pc, pg: s.pg, pk: s.kOn, vs: [], le: [], s: -1};
+    if (!q || !q.mem.length) { if (s.kOn) keys(i, s, 10, t); s.pg = null; rec(s, r); return r; }
+    const ng = q.g !== s.pg;
+    if (ng) keys(i, s, 9, t);                                     // KEYS 9: a new chord after all keys up (LFO / SEQ key sync "Timbre")
+    const c = A.ks ? (ng ? 0 : s.pc + 1) : idx;                   // KEY SYNC on: the pattern starts with step 1; off: it runs with the grid
+    s.pc = c; s.pg = q.g; r.c = c;
+    const last = clamp(A.last | 0, 1, 8), sp = md(c, last); r.s = sp;
+    if (!((A.steps >> sp) & 1) || silent) { rec(s, r); return r; }   // Step-Arp: a step off is a rest, the note pointer moves on anyway
+    // the source notes mapped at this step's own time; ascending, one per pitch
+    const tr = S.tracks[i], dual = m.mode === 1 || m.mode === 2, tg = A.tgt | 0, byP = new Map();
+    for (const x of q.mem) {
+      const p = clamp(x.raw ? x.n : outPitch(i, x.key, x.n, t), 0, 127);
+      if (m.mode === 2 && tg && keyTim(m, p) !== tg) continue;
+      const o = byP.get(p); if (!o || x.vel > o.vel) byP.set(p, {p, vel: x.vel, x});
+    }
+    const N = [...byP.values()].sort((a, b) => a.p - b.p); if (!N.length) { rec(s, r); return r; }
+    const seed = seedOf(i);
+    let notes;
+    if (A.type === 5 && m.mode === 2) {   // Trigger in Split: the lowest of each timbre
+      notes = []; for (const k of [1, 2]) { const Nk = N.filter(n => keyTim(m, n.p) === k); notes.push(...arpPattern(5, 1, Nk, c, seed, voicesOf(m, k))); }
+    } else notes = arpPattern(A.type | 0, A.range | 0, N, c, seed, voicesOf(m, dual ? (tg || 3) : 1));
+    const sec = s.sb * spb(), g = clamp(A.gate | 0, 0, 100), dur = g >= 100 ? Math.max(.003, timeOf(s, m, idx + 1) - t) : Math.max(.003, g / 100 * sec);
+    const L = logOf(i);
+    for (const n of notes) {
+      const mask = m.mode === 1 ? tg : m.mode === 2 ? keyTim(m, n.p - 12 * (n.o || 0)) : 0;
+      const v = spawnVoice(i, n.p, n.vel, t, {src: 'arp', mask, clipNote: n.x.n, clipKey: n.x.key || null});
+      if (!v) continue;
+      v.release(t + dur); v.arp = {x: n.x, o: n.o || 0};
+      v.log = logNote({track: i, src: 'arp', clipNote: n.x.n, out: v.out, time: t, dur, vel: n.vel, step: sp + 1});
+      r.vs.push(v);
+      const le = {t, note: v.out, vel: n.vel, dur, step: sp + 1, c}; r.le.push(le); L.push(le); if (L.length > LOGN) L.splice(0, L.length - LOGN);
+    }
+    rec(s, r); return r;
+  }
+  // plan track i up to now + h
+  function plan(i, now, h) {
+    const s = ST.get(i); if (!s) return;
+    const m = A_(i);
+    if (!on(i) || S.tracks[i].mute) { end(i, true); return; }
+    // grid: the song's while the transport runs, a free one from the first key while it stands
+    if (R.playing && (!s.grid || s.grid.k !== 'song')) { rewind(i, now); const r0 = s.hist[s.hist.length - 1]; gridSong(s, m, Math.max(now + .001, r0 && s.sb ? r0.t + .5 * s.sb * spb() : now)); s.hist = []; }
+    else if (!R.playing && (!s.grid || s.grid.k !== 'free')) { const t0 = s.iv.length ? Math.max(now + LIVE_LEAD * .5, s.iv[0].on) : now + LIVE_LEAD; gridFree(s, m, t0, 0); s.hist = []; s.pc = -1; s.pg = null; }
+    if ((m.arp.res | 0) !== s.res || S.bpm !== s.bpm) {          // a new resolution or tempo: the next step is in the new one (no double, no missing step)
+      const last = s.hist.filter(r => r.t <= now).pop();
+      rewind(i, now + .001);
+      if (s.grid.k === 'song') { const b = s.sb, nb = stepB(m); s.sb = nb; if ((m.arp.res | 0) !== s.res) s.next = Math.ceil(((last ? last.idx * b : t2b(now)) + 1e-6) / nb - 1e-9); s.res = m.arp.res | 0; s.bpm = S.bpm; }
+      else { const ta = last ? last.tn : s.grid.ta, ia = last ? last.idx : s.grid.ia; gridFree(s, m, ta, ia); s.next = last ? last.idx + 1 : ia; }
+    }
+    for (let g = 0; g < 96; g++) {
+      const idx = s.next, t = timeOf(s, m, idx);
+      if (t >= now + h) break;
+      s.next = idx + 1;
+      if (t < now - .02) { step(i, s, m, t, idx, true); continue; }     // fell behind (throttled timer): never burst
+      step(i, s, m, Math.max(t, now), idx, false);
+      // idle: nothing held, nothing coming, no latch -> the state goes (a new key starts afresh)
+      const q = query(s, t, !!m.arp.latch);
+      if (!q && !future(s, t)) { if (s.kOn) keys(i, s, 10, t); ST.delete(i); return; }
+    }
+  }
+  // cancel the steps planned from t on (a carrier change, a cut, a new key, a tempo change) and plan them again
+  function rewind(i, t) {
+    const s = ST.get(i); if (!s) return;
+    const H = s.hist; let k = H.length; while (k > 0 && H[k - 1].t >= t - 1e-6) k--;
+    if (k < H.length) {
+      const r = H[k];
+      const gone = new Set();
+      for (let j = k; j < H.length; j++) { for (const v of H[j].vs) if (!v.dead) v.cancel(); for (const e of H[j].le) gone.add(e); }
+      if (gone.size) { const L = logOf(i); for (let j = L.length - 1; j >= 0 && gone.size; j--) if (gone.delete(L[j])) L.splice(j, 1); }   // a cancelled step never sounded: out of arpLog too
+      s.next = r.idx; s.pc = r.pc; s.pg = r.pg; s.kOn = r.pk; H.length = k; s.planT = k ? H[k - 1].t : -Infinity;
+    }
+    if (s.grid) { const m = A_(i); if (m) { const ix = s.grid.k === 'song' ? Math.ceil((t2b(t) - 1e-6) / s.sb) : s.grid.ia + Math.ceil((t - s.grid.ta) / s.grid.sec - 1e-6); if (ix < s.next && ix > (H.length ? H[H.length - 1].idx : -Infinity)) s.next = ix; } }
+  }
+  // the end of everything the arp of track i plays (stop, panic, arp off, engine change, mute): cancel the planned, release the sounding
+  function end(i, keepLive) {
+    const s = ST.get(i); if (!s) return;
+    const now = nowT();
+    for (const r of s.hist) for (const v of r.vs) if (!v.dead) { if (v.start > now + .002) v.cancel(); else v.release(now); }
+    if (s.kOn) keys(i, s, 10, now);
+    ST.delete(i);
+    void keepLive;
+  }
+  function endAll() { for (const i of [...ST.keys()]) end(i); }
+  // ---- sources
+  function live(i, id, n, vel, t) {   // a key (keyboard, chord keys, MIDI in, API): returns the mask of a normal held note or null
+    const r = route(i, n), s0 = ST.get(i), fresh = !s0;
+    if (!r.arp) return r.hold;
+    const x = add(i, {src: 'live', id, n, raw: true, key: null, vel, on: t, off: Infinity});
+    void x; void fresh; plan(i, nowT(), LOOKAHEAD);                 // at once: the first note in ≤ 10 ms (transport stopped), never a late step
+    return r.hold;
+  }
+  function liveUp(i, id, t) { const s = ST.get(i); if (!s) return; for (const x of s.iv) if (x.src === 'live' && x.id === id && x.off === Infinity) { x.off = Math.max(t, x.on + .001); if (x.off < s.planT) { rewind(i, x.off); plan(i, nowT(), LOOKAHEAD); } } }
+  function clip(i, out, n, key, vel, t, dur, src) {   // a clip note (or the song melody: raw); returns the mask of a normal note or null
+    const r = route(i, out);
+    if (r.arp) add(i, {src: src || 'clip', n, raw: src === 'melody', key: key || null, vel, on: t, off: t + dur});
+    return r.hold;
+  }
+  // a scene / part switch at t: clip notes end there (cutTrackAt), notes from t on are dropped (cancelTrackFrom)
+  function cut(i, t) { const s = ST.get(i); if (!s) return; let ch = false; for (const x of s.iv) if (x.src !== 'live' && x.off > t) { x.off = Math.max(x.on, t); ch = true; } s.brk = Math.max(s.brk, t); void ch; rewind(i, t); }
+  function cancelFrom(i, t) { const s = ST.get(i); if (!s) return; const n0 = s.iv.length; s.iv = s.iv.filter(x => x.src === 'live' || x.on < t - 1e-6); if (s.iv.length !== n0) rewind(i, t); }
+  // a carrier change at eff (applyCarrierChange): the planned steps behind it are made again with the new mapping; a sounding
+  // arp note that spans it follows like a clip voice (retune), unless the track holds its notes (onChange 'hold')
+  function carrier(eff) {
+    for (const i of [...ST.keys()]) {
+      rewind(i, eff);
+      const tr = S.tracks[i]; if (!tr || tr.onChange === 'hold') continue;
+      for (const v of VOICES) if (!v.dead && v.track === i && v.src === 'arp' && v.arp && v.start < eff && v.end > eff) {
+        const x = v.arp.x, p = clamp((x.raw ? x.n : outPitch(i, x.key, x.n, eff)) + 12 * v.arp.o, 0, 127); if (p !== v.out) v.retune(p, eff);
+      }
+    }
+  }
+  function tick(now, h) {
+    if (!ST.size) return;
+    const hz = typeof h === 'number' && h > 0 ? h : LOOKAHEAD;
+    for (const i of [...ST.keys()]) {
+      const s = ST.get(i);
+      // the set keeps the group that holds now and everything after it; older groups go (their notes are over)
+      if (s.iv.length > 8) { const q = query(s, now, true), keep = q ? q.g.on : -Infinity; s.iv = s.iv.filter(x => x.on >= keep - E_ || x.off > now - .5); }
+      plan(i, now, hz);
+    }
+  }
+  // the running step of track i for the panel LEDs (the record whose time has come, at most one frame late)
+  function cur(i, t) { const s = ST.get(i); if (!s) return null; let r = null; for (const x of s.hist) { if (x.t <= t + 1e-4) r = x; else break; } return r && r.s >= 0 ? {s: r.s, t: r.t, notes: r.vs.length} : null; }
+  function arpLog(i) { const tr = S.tracks[i], k = tr && tr.uid ? tr.uid : 't' + i; return deep(LOG.get(k) || []); }
+  function clearLog(i) { if (i == null) LOG.clear(); else { const tr = S.tracks[i]; LOG.delete(tr && tr.uid ? tr.uid : 't' + i); } }
+  const info = i => { const s = ST.get(i); return s ? {grid: s.grid && s.grid.k, next: s.next, held: s.iv.length, pc: s.pc, kOn: s.kOn} : null; };
+  const seedOf = i => { const tr = S.tracks[i]; return mix(fnv(String(S.id || '') + '|' + (tr && tr.uid || i)), 7); };
+  return {RES, TYP, arpPattern, seedOf, on, live, liveUp, clip, cut, cancelFrom, carrier, rewind, tick, plan, end, endAll, cur, arpLog, clearLog, info, busy: () => ST.size > 0, route};
+})();
 (function () {
 'use strict';
 const W = () => SQMK.W();
@@ -3878,6 +4104,10 @@ const L_ = {
   // MK4 effects (A.7)
   mfx: [['Chorus/Flanger', 'Ensemble', 'Phaser'], ['CHO', 'EnS', 'PHA']],
   dly: [['Stereo', 'Kreuz', 'L/R'], ['StE', 'CrO', 'L-r']],
+  // MK5 arpeggiator (A.8)
+  ares: [['1/24', '1/16', '1/12', '1/8', '1/6', '1/4'], ['1.24', '1.16', '1.12', '1.8', '1.6', '1.4']],
+  atyp: [['Auf', 'Ab', 'Wechsel 1', 'Wechsel 2', 'Zufall', 'Akkord'], ['UP', 'dn', 'AL1', 'AL2', 'rnd', 'trG']],
+  atgt: [['Beide', 'Timbre 1', 'Timbre 2'], ['bth', 't1', 't2']],
   dnote: [['1/32', '1/24', '1/16', '1/12', '3/32', '1/8', '1/6', '3/16', '1/4', '1/3', '3/8', '1/2', '2/3', '3/4', '1/1'], ['1.32', '1.24', '1.16', '1.12', '3.32', '1.8', '1.6', '3.16', '1.4', '1.3', '3.8', '1.2', '2.3', '3.4', '1.1']],
 };
 // a knob definition: l label, p path of p.mk (t.0. is added for timbre keys), L list, f(v) -> [display, LCD text], dark: package
@@ -3929,6 +4159,26 @@ Object.assign(KN, {
   eqLf: K('TIEF-FREQ', 'eq.lf', {log: 1, f: v => [kHz3(v), hz(v)]}), eqLg: K('TIEF-GAIN', 'eq.lg', {step: .5, f: v => [db3(v), dbT(v)]}),
   eqHf: K('HOCH-FREQ', 'eq.hf', {log: 1, f: v => [kHz3(v), hz(v)]}), eqHg: K('HOCH-GAIN', 'eq.hg', {step: .5, f: v => [db3(v), dbT(v)]}),
 });
+// MK5: ARP A · ARP B (EDIT-WAHL 2, B.3; W-11, W-34, W-35); TEMPO is the song tempo (EN3-10)
+const arpStepS = () => ARPC.RES[clamp(mk().arp.res | 0, 0, 5)] * 4 * 60 / S.bpm;
+const ATYP_T = ['C E G · C E G …', 'G E C · G E C …', 'C E G E · C E G E …', 'C E G G E C …', 'zufällig, bei jeder Wiederholung gleich', 'alle Tasten zugleich'];
+Object.assign(KN, {
+  arpRes: K('AUFLÖSUNG', 'arp.res', {L: 'ares', f: v => { const k = clamp(Math.round(v), 0, 5); return [L_.ares[1][k], L_.ares[0][k] + ' · ' + msS(ARPC.RES[k] * 4 * 60 / S.bpm) + ' je Schritt (Song-Tempo ' + S.bpm + ')']; }}),
+  arpGate: K('GATE', 'arp.gate', {f: v => [z3(v), v >= 100 ? '100 % · bis zum nächsten Schritt' : Math.round(v) + ' % · ' + msS(Math.max(.003, v / 100 * arpStepS()))]}),
+  arpTyp: K('TYP', 'arp.type', {L: 'atyp', f: v => { const k = clamp(Math.round(v), 0, 5); return [L_.atyp[1][k], L_.atyp[0][k] + ' · ' + ATYP_T[k]]; }}),
+  arpOct: K('OKTAVEN', 'arp.range', {stp: 1, f: v => { const r = clamp(Math.round(v), 1, 4); return [String(r), r + (r === 1 ? ' Oktave' : ' Oktaven') + (mk().arp.type === 5 ? ' · wirkt nicht bei TYP Akkord' : '')]; }}),
+  arpLat: K('LATCH', 'arp.latch', {L: 'onoff', f: v => { const k = Math.round(v) ? 1 : 0; return [L_.onoff[1][k], k ? 'an · der Akkord läuft nach dem Loslassen weiter' : 'aus']; }}),
+  arpSw: K('SWING', 'arp.swing', {f: v => { const x = Math.round(v); return [Math.abs(x) >= 100 ? '100' : z3(x), x === 0 ? '0 % · der Swing des Songs gilt' : ft(x, 1) + ' % · gerade Schritte ' + (x > 0 ? 'später' : 'früher') + ' (statt Song-Swing)']; }}),
+  arpKs: K('KEY SYNC', 'arp.ks', {L: 'onoff', f: v => { const k = Math.round(v) ? 1 : 0; return [L_.onoff[1][k], k ? 'an · jeder neue Akkord beginnt bei Schritt 1' : 'aus · das Muster läuft mit dem Takt']; }}),
+  arpLen: K('LÄNGE', 'arp.last', {stp: 1, f: v => [z3(v), Math.round(v) + ' Schritte · die Nummerntasten schalten sie an/aus']}),
+  arpTgt: K('ZIEL', 'arp.tgt', {L: 'atgt', f: v => { const k = clamp(Math.round(v), 0, 2); return [L_.atgt[1][k], L_.atgt[0][k] + (dualOn() ? (k ? ' · das andere Timbre hält den Akkord' : '') : ' · wirkt bei SCHICHT bzw. SPLIT')]; }}),
+});
+function arpTxt(pos) {
+  const a = mk().arp, on = a.on ? 'ARP an' : 'ARP aus (ARP-Taste)';
+  if (pos === 7) return on + ' · ' + L_.atyp[0][a.type] + ' · ' + L_.ares[0][a.res] + ' · GATE ' + a.gate + ' % · ' + a.range + (a.range === 1 ? ' Oktave' : ' Oktaven');
+  return on + ' · LATCH ' + (a.latch ? 'an' : 'aus') + ' · SWING ' + ft(a.swing, 1) + ' % · KEY SYNC ' + (a.ks ? 'an' : 'aus') + ' · LÄNGE ' + a.last + ' · ZIEL ' + L_.atgt[0][a.tgt];
+}
+const arpView = () => P.wahl === 2 && (P.pos[2] === 7 || P.pos[2] === 8) && !P.shift;   // the number keys are step keys (HB-MK S. 11)
 for (const n of [1, 2]) Object.assign(KN, {['l' + n + 'w']: K('WELLE', 'l' + n + '.w', {L: 'l' + n + 'w'}), ['l' + n + 'k']: K('KEY SYNC', 'l' + n + '.ks', {L: 'ks'}), ['l' + n + 's']: K('TEMPO SYNC', 'l' + n + '.sync', {L: 'onoff'}),
   ['l' + n + 'f']: K('FREQ', 'l' + n + '.f', {lfo: n, f: v => [z3(v), hz(W().lfoHz(v)).replace(' Hz', ' Hz')]}), ['l' + n + 'n']: K('NOTE', 'l' + n + '.note', {lfo: n})});
 const D = null;  // an empty place ("–" on the original)
@@ -3946,11 +4196,12 @@ const SEC1 = [
   ['LFO 1', 'LFO 1', ['l1w', 'l1k', 'l1s', 'l1f', D], null],
   ['LFO 2', 'LFO 2', ['l2w', 'l2k', 'l2s', 'l2f', D], null]];
 // EDIT-WAHL 2: dark until their packages (B.3; MK1 Umfang 3)
+// MK5: ARP A / ARP B active
 const SEC2 = [['PATCH 1', 'K-PEGEL A', '', ['QUELLE', 'ZIEL', 'INTENS.'], ['ps0', 'pd0', 'pi0', D, D]], ['PATCH 2', 'K-PEGEL B', '', ['QUELLE', 'ZIEL', 'INTENS.'], ['ps1', 'pd1', 'pi1', D, D]],
   ['PATCH 3', 'K-PAN A', '', ['QUELLE', 'ZIEL', 'INTENS.'], ['ps2', 'pd2', 'pi2', D, D]], ['PATCH 4', 'K-PAN B', '', ['QUELLE', 'ZIEL', 'INTENS.'], ['ps3', 'pd3', 'pi3', D, D]],   // MK2: active
   ['MOD-FX', 'MOD-FX', '', ['TYP', 'TEMPO', 'TIEFE'], ['mfxT', 'mfxS', 'mfxD', D, D]], ['DELAY', 'DELAY', '', ['TYP', 'T-SYNC', 'ZEIT', 'TIEFE'], ['dlyT', 'dlyS', 'dlyZ', 'dlyD', D]],   // MK4: active
   ['EQ', 'EQ', '', ['TIEF-FRQ', 'TIEF-GN', 'HOCH-FRQ', 'HOCH-GN'], ['eqLf', 'eqLg', 'eqHf', 'eqHg', D]],
-  ['ARP A', 'ARP A', 'MK5', ['TEMPO', 'AUFLÖS.', 'GATE', 'TYP', 'OKTAVEN']], ['ARP B', 'ARP B', 'MK5', ['LATCH', 'SWING', 'KEY SYNC', 'LÄNGE', 'ZIEL']], ['STIMMUNG', 'STIMMUNG', '', ['STIMMUNG', 'GRUNDTON'], ['scl', 'skey', D, D, D]], ['SEQ', '–', 'MK6', ['SEQ AN', 'SEQUENZ', 'ZIEL', 'BEWEGUNG', 'LÄNGE']]];
+  ['ARP A', 'ARP A', '', ['TEMPO', 'AUFLÖS.', 'GATE', 'TYP', 'OKTAVEN'], ['bpm', 'arpRes', 'arpGate', 'arpTyp', 'arpOct']], ['ARP B', 'ARP B', '', ['LATCH', 'SWING', 'KEY SYNC', 'LÄNGE', 'ZIEL'], ['arpLat', 'arpSw', 'arpKs', 'arpLen', 'arpTgt']], ['STIMMUNG', 'STIMMUNG', '', ['STIMMUNG', 'GRUNDTON'], ['scl', 'skey', D, D, D]], ['SEQ', '–', 'MK6', ['SEQ AN', 'SEQUENZ', 'ZIEL', 'BEWEGUNG', 'LÄNGE']]];
 const SPIEL = ['pcut', 'pres', 'patk', 'prel', 'bpm'];
 const KLAB = ['CUTOFF', 'RESO.', 'ATTACK', 'RELEASE', 'TEMPO'];  // the fixed print on the knobs (SPIEL)
 // short forms where a place is 44-56 px wide (B.3 Beschriftung)
@@ -4055,7 +4306,7 @@ function lcdOf(d) {
   else if (d.p === 'split' && mk().mode !== 2) extra = 'wirkt bei SPLIT';
   else if (d.p === 'tv' && dualOn()) { const a = mk().t[0].asg, b = mk().t[1].asg; if (a === 0 || b === 0) extra = 'ein Mono-Timbre: STIMMEN gilt nicht (Mono 1, daneben Poly 3 bzw. Unison 2)'; }
   else if (d.p === 'scale' && mk().scale === 9) extra = 'Tipp auf die Matrix-Zeile = EIGENE ▸';
-  const tl = /^(mfx|dly|eq)\./.test(d.p) ? '' : tLab();   // G-MK34-merge: MOD-FX / DELAY / EQ are program-wide (no T1/T2 prefix)
+  const tl = /^(mfx|dly|eq|arp)\./.test(d.p) || d.p === 'bpm' ? '' : tLab();   // G-MK34-merge: MOD-FX / DELAY / EQ are program-wide (no T1/T2 prefix)
   if (d.nu) { lcdShow(tl + secName() + ' · ' + lcdName(d) + unit, t.split(' · ').slice(1).join(' · ') + ' (Song-Tempo ' + S.bpm + ')'); return; }   // MK4: „DELAY · NOTE 1/8“ · 250 ms
   lcdShow(tl + secName() + ' · ' + lcdName(d) + unit, t + (extra ? ' · ' + extra : ''));
   if (d.wv || d.p === 't.0.o1.w' && w === 5) hint('wave', 'SPEICHERWELLE ≈', 'Nachgezeichnete Platzhalter, 64 Stück – die Originalwellen folgen später aus Aufnahmen. Tipp auf STEUER 2 = Liste');
@@ -4104,6 +4355,7 @@ function setWahl(w, pos) {
   P.wahl = w; P.lastWahl = w; P.shift = 0; render();
   const s = w === 1 ? SEC1[P.pos[1]] : SEC2[P.pos[2]];
   if (w === 2 && s[4] && P.pos[2] >= 4 && P.pos[2] <= 6) { lcdShow('EDIT-WAHL 2 · ' + s[0], fxTxt(P.pos[2])); hint('fx', 'MOD-FX · DELAY · EQ', 'die Effekte dieses Sounds, in dieser Reihenfolge; TIEFE 0 bzw. GAIN 0 = aus'); }
+  else if (w === 2 && s[4] && (P.pos[2] === 7 || P.pos[2] === 8)) { lcdShow('EDIT-WAHL 2 · ' + s[0], arpTxt(P.pos[2])); hint('arpst', 'SCHRITTE', 'Bei ARP A/B sind die Nummerntasten die 8 Schritte: leuchtet = spielt, blinkt = Pause, dunkel = über LÄNGE'); }
   else if (w === 2 && s[4] && P.pos[2] < 4) { lcdShow('EDIT-WAHL 2 · ' + s[0], patchTxt(P.pos[2]).replace(/^PATCH \d · /, '')); hint('patch', 'PATCH 1–4', 'Vier Wege: QUELLE (z. B. LFO 1) moduliert ein ZIEL (z. B. CUTOFF), INTENSITÄT −63…+63; 0 = aus'); }
   else if (w === 2 && s[4]) { lcdShow('EDIT-WAHL 2 · ' + s[0], L_.scl[0][mk().scale] + ' · Grundton ' + keyName(mk().skey) + (mk().scale === 9 ? ' · Tipp auf die Matrix-Zeile = EIGENE ▸' : '')); hint('scale', 'STIMMUNG', 'Zehn Stimmungen mit Grundton für beide Timbres; „Eigene“: 12 Werte in ct über die Matrix-Zeile'); }
   else if (w === 2) lcdShow('EDIT-WAHL 2 · ' + s[0], 'kommt mit ' + s[2] + ' – die Stellung bleibt frei');
@@ -4245,7 +4497,7 @@ function build(pg, i) {
   const btn = (k, lab, cls) => { const b = mkEl(k, 'mkb ' + (cls || ''), `<span class="lg">${lab}</span><span class="mkey"><i class="mled"></i><b class="msh"></b></span>`); b.setAttribute('role', 'button'); b.tabIndex = 0; return add(k, b); };
   // Z1 VOLUME (the track's volume = FX → SPUR, Vol)
   if (E.vol) ui.vol = add('vol', knobEl('vol', 'VOLUME', () => KN.vol));
-  if (E.arp) { ui.arp = btn('arp', 'ARP', 'dark'); }
+  if (E.arp) { ui.arp = btn('arp', 'ARP', 'marp'); ui.arp.querySelector('.mkey').insertAdjacentHTML('afterbegin', '<i class="mtled"></i>'); ui.arp.setAttribute('aria-pressed', 'false'); }   // MK5: LED = on, the small one = song tempo
   if (E.octd) { ui.octd = btn('octd', 'OKT ▼'); ui.octu = btn('octu', 'OKT ▲'); }
   if (E.bank) { ui.bank = add('bank', rotEl('bank', 'BANK', 8)); }
   if (E.side) ui.side = btn('side', 'SEITE');
@@ -4296,7 +4548,7 @@ function render() {
     const names = isW1 ? (P.wahl === 1 && P.shift && sct[3] ? sct[3] : sct[2]).map(x => { const d = kOf(x); return d ? (d.lfo ? (ct()['l' + d.lfo].sync ? 'NOTE' : 'FREQ') : sh(d.l)) : '–'; }) : [0, 1, 2, 3, 4].map(k => (sct[4] && sct[4][k] && kOf(sct[4][k]).dsw ? (mk().dly.sync ? 'NOTE' : 'ZEIT') : sct[3][k] ? sh(sct[3][k]) : '–'));
     const own = !isW1 && P.pos[2] === 9 && mk().scale === 9;   // MK3: the row carries "EIGENE ▸" (Zusatz-Ansicht)
     e.querySelector('.mmn').innerHTML = (isW1 && P.wahl === 1 && P.shift ? '<b class="meb">EB' + (P.shift + 1) + '</b> ' : '') + esc(sct[0]) + (dk ? ' <small>' + sct[2] + '</small>' : '') + (own ? ' <b class="meb">EIGENE ▸</b>' : '');
-    if (!isW1 && sct[4] && P.pos[2] < 4) e.title = patchTxt(P.pos[2]); else if (!isW1 && sct[4] && P.pos[2] <= 6) e.title = fxTxt(P.pos[2]); else e.title = '';
+    if (!isW1 && sct[4] && P.pos[2] < 4) e.title = patchTxt(P.pos[2]); else if (!isW1 && sct[4] && P.pos[2] <= 6) e.title = fxTxt(P.pos[2]); else if (!isW1 && (P.pos[2] === 7 || P.pos[2] === 8)) e.title = arpTxt(P.pos[2]); else e.title = '';
     e.querySelector('.mma').innerHTML = names.map((n, k) => `<span class="${knobs()[k] && knobs()[k].dark && isW1 ? 'mdk' : ''}">${esc(n)}</span>`).join('');
     e.classList.toggle('on', P.wahl === w); e.classList.toggle('dark', dk); };
   if (U.m1 && U.m2) { row(U.m1, 1); row(U.m2, 2); }
@@ -4310,11 +4562,16 @@ function render() {
   const oc = S.tracks[P.i].kbOct || 4; if (U.octd) { U.octd.classList.toggle('on', oc < 4); U.octu.classList.toggle('on', oc > 4); }
   // number keys: with SHIFT their SHIFT names (dark where the app has none); else programs of the bank (lit = loaded)
   const SH = ['T-KOPIE', 'T-TAUSCH', 'INIT', 'T-NEU', 'SEQ ▸', '–', '–', '–'], cur = progNum();
+  const av = arpView(), A_ = mk().arp, aL = clamp(A_.last | 0, 1, 8);
   U.nums.forEach((e, k) => { if (!e) return; const rec = P.side === 1 ? progAt(P.bank, k) : null;
+    e.classList.toggle('mstep', av); e.classList.toggle('mpause', av && k < aL && !((A_.steps >> k) & 1)); e.classList.toggle('mover', av && k >= aL); if (!av) e.classList.remove('mcur');   // MK5: step keys
+    if (av) { e.classList.toggle('on', k < aL && !!((A_.steps >> k) & 1)); e.classList.remove('mempty'); e.querySelector('.msh').textContent = ''; e.classList.remove('mshd'); e.title = 'Schritt ' + (k + 1); e.setAttribute('aria-label', 'Schritt ' + (k + 1) + (k >= aL ? ' (über LÄNGE)' : (A_.steps >> k) & 1 ? ' an' : ' Pause')); return; }
+    e.removeAttribute('aria-label');
     e.classList.toggle('on', !P.shift && cur === 'b.' + (P.bank + 1) + (k + 1)); e.classList.toggle('mempty', !P.shift && !rec);
     e.querySelector('.msh').textContent = P.shift ? SH[k] : ''; e.classList.toggle('mshd', !!P.shift && k > 3); e.title = rec ? rec.name : ''; });   // MK3: SHIFT + 1 / 2 / 4 work
-  if (U.prog) { U.prog.querySelector('.mpb').textContent = P.shift ? 'SHIFT' : 'BANK ' + (P.bank + 1) + ' · ' + (P.side ? 'B' : 'A') + ' · ' + cur.toUpperCase();
-    U.prog.querySelector('.mpn').textContent = P.shift ? 'Taste wählen' : s_.name; }
+  if (U.prog) { U.prog.querySelector('.mpb').textContent = P.shift ? 'SHIFT' : av ? 'SCHRITTE · LÄNGE ' + aL : 'BANK ' + (P.bank + 1) + ' · ' + (P.side ? 'B' : 'A') + ' · ' + cur.toUpperCase();
+    U.prog.querySelector('.mpn').textContent = P.shift ? 'Taste wählen' : av ? 'Tasten 1–' + aL + ': an │ Pause' : s_.name; }
+  if (U.arp) { U.arp.classList.toggle('on', !!A_.on); U.arp.setAttribute('aria-pressed', A_.on ? 'true' : 'false'); U.arp.querySelector('.msh').textContent = P.shift ? '–' : ''; }   // MK5
   if (U.write) U.write.querySelector('.msh').textContent = '';
   if (U.side) U.side.querySelector('.msh').textContent = P.shift ? 'WAHL ⇄' : '';
   if (U.octd) { U.octd.querySelector('.msh').textContent = P.shift ? 'WERT −' : ''; U.octu.querySelector('.msh').textContent = P.shift ? 'WERT +' : ''; }
@@ -4330,12 +4587,13 @@ function paintKnob(e, d) {
 function paintOrig() {
   const U = P.el; if (!U || !U.orig) return; const d = P.lastKnob;
   let on = false;
-  if (d && P.wahl !== 0 && P.orig && d.p && (d.p.startsWith('t.0.') || /^(tv|split|scale|skey|lay|usc\.\d+|(mfx|dly|eq)\.\w+)$/.test(d.p))) { const o = d.p === 'lay' ? [0, 1, 2, 0][P.orig.mode] : SQMK.mkPathGet(P.orig, tp(d.p)); on = (d.wv ? Math.floor(o / 2) + 1 : o) === get(d); }
+  if (d && P.wahl !== 0 && P.orig && d.p && (d.p.startsWith('t.0.') || /^(tv|split|scale|skey|lay|usc\.\d+|(mfx|dly|eq|arp)\.\w+)$/.test(d.p))) { const o = d.p === 'lay' ? [0, 1, 2, 0][P.orig.mode] : SQMK.mkPathGet(P.orig, tp(d.p)); on = (d.wv ? Math.floor(o / 2) + 1 : o) === get(d); }
   U.orig.classList.toggle('on', on);
 }
 // ◎: positions of EDIT-WAHL 1 whose section differs from INIT AM
 function wiaPos2() { const I_ = SQMK.init(), I0 = I_.t[0].p, P_ = ct().p, out = new Set(); for (let k = 0; k < 4; k++) if (P_[k].s !== I0[k].s || P_[k].d !== I0[k].d || P_[k].i !== I0[k].i) out.add(k);
-  ['mfx', 'dly', 'eq'].forEach((b, k) => { if (JSON.stringify(mk()[b]) !== JSON.stringify(I_[b])) out.add(4 + k); }); if (mk().scale || mk().skey) out.add(9); return out; }   // MK4: MOD-FX, DELAY, EQ; MK3: STIMMUNG
+  ['mfx', 'dly', 'eq'].forEach((b, k) => { if (JSON.stringify(mk()[b]) !== JSON.stringify(I_[b])) out.add(4 + k); }); if (mk().scale || mk().skey) out.add(9);
+  const a = mk().arp, a0 = I_.arp; if (['res', 'gate', 'type', 'range'].some(k => a[k] !== a0[k])) out.add(7); if (['latch', 'swing', 'ks', 'last', 'tgt', 'steps'].some(k => a[k] !== a0[k])) out.add(8); return out; }   // MK5: ARP A, ARP B   // MK4: MOD-FX, DELAY, EQ; MK3: STIMMUNG
 function wiaPos() {
   const I0 = SQMK.init(), out = new Set();
   SEC1.forEach((s, k) => { for (const x of s[2].concat(s[3] || [])) { const d = kOf(x); if (d && d.p && (d.p.startsWith('t.0.') || d.p === 'tv' || d.p === 'split' || d.p === 'lay') && (d.p === 'lay' ? 0 : SQMK.mkPathGet(I0, d.p)) !== get(d)) { out.add(k); break; } } });
@@ -4350,7 +4608,7 @@ function wire(U) {
   tap(U.side, () => { if (P.shift) { P.shift = 0; const w = P.wahl === 2 ? 1 : 2; setWahl(w, P.last[w]); return; } P.side = P.side ? 0 : 1; haptic('tick'); render(); lcdShow('SEITE ' + (P.side ? 'B' : 'A'), P.side ? 'eigene Sounds dieser Engine (A–Z)' : 'Werksklänge – kommen mit MK8'); });
   tap(U.write, () => { P.shift = 0; render(); openSavePop(U.write, P.i); hint('write', 'WRITE', 'sichert den Sound in der Bibliothek (wie „Sichern“ oben)'); });
   tap(U.octd, () => octBtn(-1)); tap(U.octu, () => octBtn(1));
-  tap(U.arp, () => lcdShow('ARP', 'Arpeggiator kommt mit MK5'));
+  tap(U.arp, arpKey);
   tap(U.timbre, timbreKey);
   tap(U.ein, () => lcdShow('E1 · E2', 'Eingänge (Instrument, Stimme) kommen mit MK7'));
   tap(U.orig, () => lcdShow('ORIGINAL', 'leuchtet, wenn der zuletzt gedrehte Wert dem gespeicherten gleicht'));
@@ -4373,7 +4631,23 @@ function octBtn(d) {
   tr.kbOct = clamp((tr.kbOct || 4) + d, 1, 7); markDirty(); UI.kbRelayout = true; UI.dirty.kb = true; haptic('tick'); render();
   lcdShow('OKTAVE', (tr.kbOct - 4 > 0 ? '+' : '') + (tr.kbOct - 4) + ' · Tastatur C' + (tr.kbOct - 1));
 }
+// MK5: the ARP key (Z2): arp on / off, one undo; SHIFT + ARP (DEMO at the original) does not exist in the app
+function arpKey() {
+  const i = P.i; if (P.shift) { P.shift = 0; render(); lcdShow('SHIFT + ARP', 'gibt es in der App nicht'); return; }
+  const v = mk().arp.on ? 0 : 1; soundEdit(i, MK_LABEL + ' ARP ' + (v ? 'an' : 'aus'), () => mkSetP(i, 'arp.on', v, false));
+  haptic('tick'); render(); lcdShow('ARP ' + (v ? 'AN' : 'AUS'), v ? arpTxt(7).replace(/^ARP an · /, '') + ' · Akkord halten' : 'die Tasten spielen wieder direkt');
+  if (v) hint('arp', 'ARPEGGIATOR', 'Akkord halten – die Töne kommen nacheinander im Song-Tempo. Einstellen: EDIT-WAHL 2 auf ARP A bzw. ARP B');
+}
+// MK5: a step key (ARP A/B shown): step k on │ rest, one undo; a key over LÄNGE stays dark
+function stepKey(k) {
+  const i = P.i, a = mk().arp, L = clamp(a.last | 0, 1, 8);
+  if (k >= L) { lcdShow('SCHRITT ' + (k + 1), 'liegt über LÄNGE ' + L + ' – erst LÄNGE (ARP B, Regler 4) erhöhen'); return; }
+  const v = a.steps ^ (1 << k), onS = !!((v >> k) & 1);
+  soundEdit(i, MK_LABEL + ' Schritt ' + (k + 1), () => mkSetP(i, 'arp.steps', v, false));
+  haptic('tick'); render(); lcdShow('SCHRITT ' + (k + 1), onS ? 'spielt' : 'Pause (die Taste blinkt)'); dispShow(onS ? 'On' : 'OFF');
+}
 function numKey(k) {
+  if (arpView()) { stepKey(k); return; }
   if (P.shift) {
     P.shift = 0; render();
     if (k === 2) { initSound(P.i); P.orig = null; P.wahl = 0; render(); return; }
@@ -4405,7 +4679,7 @@ function knobGesture(e) {
     const d = g.d; if (!d || d.dark || !d.p) return;
     if (g.st === 'down') { if (Math.abs(ev.clientY - g.y0) < CTL_SLOP && Math.abs(ev.clientX - g.x0) < CTL_SLOP) return; g.st = 'drag'; g.y = ev.clientY; }
     if (d.lock) { lcdShow(d.l, d.lock); return; }
-    const [lo, hi] = range(d), n = hi - lo, list = !!d.L && n <= 12, px = list ? n * clamp(PX_FULL / Math.max(1, n), 18, 40) : PX_FULL;
+    const [lo, hi] = range(d), n = hi - lo, list = (!!d.L || !!d.stp) && n <= 12, px = list ? n * clamp(PX_FULL / Math.max(1, n), 18, 40) : PX_FULL;
     const f = ctlPrecision(Math.abs(ev.clientX - g.x0));
     if (d.log) { const r = Math.log(hi / lo); g.v = clamp(lo * Math.exp(clamp(Math.log(Math.max(lo, g.v) / lo) + (g.y - ev.clientY) / px * r * f, 0, r)), lo, hi); }   // MK4: frequencies move in octaves
     else g.v = clamp(g.v + (g.y - ev.clientY) / px * n * f, lo, hi); g.y = ev.clientY;
@@ -4484,7 +4758,7 @@ function rotList(anchor, k) {
       h = `<h4>EDIT-WAHL ${w}</h4><div class="plist mkl mkmx">` + (w === 1 ? SEC1 : SEC2).map((s, x) => {
         const a = w === 1 ? s[2].map(y => { const d = kOf(y); return d ? (d.lfo ? 'FREQ' : d.l) : '–'; }) : s[3];
         const dk = w === 2 && !s[4];
-        return `<button class="rb${x === P.pos[w] && P.wahl === w ? ' on' : ''}${dk ? ' dark' : ''}" data-v="${x}"><b>${x + 1} ${esc(s[0])}${UI.wia && dif.has(x) ? ' <i class="mwdot">●</i>' : ''} <em class="mvoc">${esc(s[1])}</em>${dk ? ' <small>' + s[2] + '</small>' : ''}</b><small>${w === 2 && s[4] && x < 4 ? esc(patchTxt(x).replace(/^PATCH \d · /, '')) : w === 2 && s[4] && x <= 6 ? esc(fxTxt(x)) : w === 2 && x === 9 ? esc(L_.scl[0][mk().scale] + ' · Grundton ' + keyName(mk().skey)) : a.map(esc).join(' · ')}</small></button>`; }).join('') + '</div>';
+        return `<button class="rb${x === P.pos[w] && P.wahl === w ? ' on' : ''}${dk ? ' dark' : ''}" data-v="${x}"><b>${x + 1} ${esc(s[0])}${UI.wia && dif.has(x) ? ' <i class="mwdot">●</i>' : ''} <em class="mvoc">${esc(s[1])}</em>${dk ? ' <small>' + s[2] + '</small>' : ''}</b><small>${w === 2 && s[4] && x < 4 ? esc(patchTxt(x).replace(/^PATCH \d · /, '')) : w === 2 && s[4] && x <= 6 ? esc(fxTxt(x)) : w === 2 && (x === 7 || x === 8) ? esc(arpTxt(x)) : w === 2 && x === 9 ? esc(L_.scl[0][mk().scale] + ' · Grundton ' + keyName(mk().skey)) : a.map(esc).join(' · ')}</small></button>`; }).join('') + '</div>';
     }
     p.innerHTML = h; guardTouch(p);
     onTap(p, b => { closePop(); const x = +b.dataset.v; if (k === 'bank') { P.bank = x; render(); } else { const w = k === 'w1' ? 1 : 2; P.last[w] = x; setWahl(w, x); } }, 'button[data-v]');
@@ -4711,7 +4985,17 @@ async function probe(cases, o) {
     let k = 0;
     const raf = () => { const n = performance.now(); fps.push(1000 / Math.max(1, n - lastF)); if (n - lastF > 50) gaps++; lastF = n; fr++; if (n - t0 < sec_ * 1000 && !PROBE.stop) requestAnimationFrame(raf); };
     requestAnimationFrame(raf);
-    while (performance.now() - t0 < sec_ * 1000 && !PROBE.stop) {
+    // MK5: "+Arp" = "Kern" through the arp pattern: 1/24 in the song tempo, Auf over 2 octaves, GATE 75 %, a new chord every 24 steps
+    if (fall === 'arp') { const stp = ARPC.RES[0] * 4 * 60 / S.bpm; let tn = c.currentTime + .05, cc = 0;
+      while (performance.now() - t0 < sec_ * 1000 && !PROBE.stop) {
+        while (tn < c.currentTime + .15) { const ch = chord[Math.floor(cc / 24) % 4].map(p => ({p}));
+          Es.forEach((E, j) => { if (cc % 24 === 0) E.keys(9, tn); const n = ARPC.arpPattern(0, 2, ch, cc + j * 3, 0, 4)[0], x = ++id; E.on(x, n.p, .8, tn); E.off(x, tn + stp * .75); });
+          tn += stp; cc++; }
+        for (const E of Es) E.flush();
+        if (o.onTick) o.onTick((performance.now() - t0) / 1000 / sec_);
+        await new Promise(r => setTimeout(r, 40));
+      } }
+    while (fall !== 'arp' && performance.now() - t0 < sec_ * 1000 && !PROBE.stop) {
       const ch = chord[k++ % 4], tt = c.currentTime + .05;
       for (const E of Es) for (const nt of ch) { const x = ++id; E.on(x, nt, .8, tt); E.off(x, tt + .45); }
       for (const E of Es) E.flush();
@@ -4741,7 +5025,7 @@ const PROBE = {stop: false, last: null};
 function probeSheet() {
   openPop(null, p => {
     p.innerHTML = `<h4>Leistungs-Probe · ${MK_LABEL}</h4><p class="small">4 unhörbare Klangerzeuger spielen je 4 Stimmen, 10 s. Gemessen wird, wie viel Rechenzeit sie brauchen. Kein Netz, kein Mikrofon.</p>` +
-      '<div class="plist"><button class="rb" data-a="go"><b>Probe starten</b><small>Fälle „Kern“ (Speicherwelle, Sinus×) und „+FX“ (dazu MOD-FX, DELAY, EQ), je 10 s</small></button></div><pre class="mkpr small"></pre>' +
+      '<div class="plist"><button class="rb" data-a="go"><b>Probe starten</b><small>Fälle „Kern“ (Speicherwelle, Sinus×), „+FX“ (dazu MOD-FX, DELAY, EQ) und „+Arp“ (Arpeggiator 1/24), je 10 s</small></button></div><pre class="mkpr small"></pre>' +
       '<div class="plist"><button class="rb" data-a="copy" disabled><b>Ergebnis kopieren</b></button><button class="rb" data-a="file" disabled><b>Als Datei</b></button><button class="rb" data-a="stop"><b>Abbrechen</b></button></div>';
     guardTouch(p); const pre = p.querySelector('.mkpr');
     onTap(p, async b => {
@@ -4750,7 +5034,7 @@ function probeSheet() {
       if (a === 'copy') { try { await navigator.clipboard.writeText(JSON.stringify(PROBE.last, null, 1)); toast('Ergebnis kopiert'); } catch (e) { toast('Kopieren geht hier nicht – „Als Datei“'); } return; }
       if (a === 'file') { try { deliverNow('synquenzer-leistungs-probe', new TextEncoder().encode(JSON.stringify(PROBE.last, null, 1)), 'json', 'Leistungs-Probe'); } catch (e) { logErr(e); } return; }
       b.disabled = true; pre.textContent = 'läuft …';
-      let ci = 0; const r = await probe(['kern', 'fx'], {onTick: x => { pre.textContent = 'läuft … ' + Math.round(Math.min(1, x) * 50 + ci * 50) + ' %'; }, onCase: k => { ci = k; }});
+      let ci = 0; const r = await probe(['kern', 'fx', 'arp'], {onTick: x => { pre.textContent = 'läuft … ' + Math.round((Math.min(1, x) + ci) / 3 * 100) + ' %'; }, onCase: k => { ci = k; }});
       pre.textContent = JSON.stringify(r, null, 1); p.querySelectorAll('button[data-a="copy"],button[data-a="file"]').forEach(x => { x.disabled = false; }); b.disabled = false;
     }, 'button[data-a]');
   }, {name: 'mkprobe'});
@@ -4808,6 +5092,10 @@ const css = `
 .mkb.dark .lg,.mkb.dark .mkey{opacity:.45}
 .mkb.mnum .lg{font-size:10px}.mkb.mnum.mempty .mkey{opacity:.5}.mkb.mnum.mshd .msh{color:#8d8b86}
 .mkb.press .mkey,.mkb:active .mkey{background:#1a1b1d}
+.mkb.marp .mtled{position:absolute;right:4px;top:3px;width:5px;height:5px;border-radius:50%;background:#3d1a10}.mkb.marp .mtled.on{background:#ff3b1f;box-shadow:0 0 5px #ff3b1f}
+.mkb.mnum.mpause .mled{background:#ff5a1f;box-shadow:0 0 6px #ff5a1f;animation:mkbl1 1s steps(1) infinite}@keyframes mkbl1{50%{opacity:.12}}
+.mkb.mnum.mover .mkey{opacity:.32}.mkb.mnum.mover .lg{opacity:.5}
+.mkb.mnum.mcur .mkey{background:linear-gradient(#5a5d63,#3c3e43)}.mkb.mnum.mcur .mled{background:#ffd27a;box-shadow:0 0 8px #ffd27a}
 .mkx.mein{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}.mkx.mein .mled{width:8px;height:8px;border-radius:50%;background:#2c2622}
 .mkx.mdisp{background:#050404;border-radius:3px;box-shadow:inset 0 1px 3px #000;display:flex;align-items:center;justify-content:center;padding:4px}
 .mkx.mdisp svg{width:100%;height:100%}.mkx.mdisp path,.mkx.mdisp circle{fill:#2b0b07}.mkx.mdisp .on{fill:#ff3b1f;filter:drop-shadow(0 0 2px #ff3b1f)}
@@ -4857,9 +5145,20 @@ function panelInfo() {
   const wh = document.getElementById('mkWh'); if (wh && !wh.hidden) { const r = wh.getBoundingClientRect(); zones.push({id: 'RAEDER', x: r.left - br.left, y: r.top - br.top, w: r.width, h: r.height}); }
   return {fmt: F.k === 'L' ? 'voll-quer' : F.k === 'P' ? 'voll-hoch' : F.k === 'LH' ? 'halb-quer' : 'halb-hoch', half: F.k === 'LH' || F.k === 'PH' ? P.half : 'beide', scale: s,
     body: {w: br.width, h: br.height}, sel: {wahl: P.wahl, pos: P.wahl === 0 ? -1 : P.pos[P.wahl]}, pos: P.pos.slice(1), shift: P.shift ? P.shift + 1 : 0, timbre: !dualOn() ? 1 : P.tim === 3 ? 'beide' : P.tim, solo: P.solo || undefined, view: P.view || undefined, splitArm: P.splitArm || undefined, zones,
-    knobs: knobs().map(d => (d ? {l: d.l, p: d.p || null, dark: d.dark || null} : null)), matrix: [P.el.m1 && P.el.m1.textContent, P.el.m2 && P.el.m2.textContent], disp: P.el.disp ? P.el.disp._t : null, orig: !!(U.orig && U.orig.classList.contains('on'))};
+    knobs: knobs().map(d => (d ? {l: d.l, p: d.p || null, dark: d.dark || null} : null)), matrix: [P.el.m1 && P.el.m1.textContent, P.el.m2 && P.el.m2.textContent], disp: P.el.disp ? P.el.disp._t : null, orig: !!(U.orig && U.orig.classList.contains('on')),
+    arp: {on: !!mk().arp.on, steps: arpView(), cur: P.arpCur == null ? -1 : P.arpCur, curN: P.arpCurN || 0, tled: !!(U.arp && U.arp.querySelector('.mtled.on')),
+      keys: U.nums.map(e => (e ? (e.classList.contains('mover') ? 'dunkel' : e.classList.contains('mpause') ? 'pause' : e.classList.contains('on') ? 'an' : 'aus') : null))}};
 }
-window.MKUI = {build, render, wheels, wheelPaint, panelInfo, probe, probeSheet, randomize: randomizeMk, P, SEC1, SEC2, KN, knobs, setWahl, toSpiel, fmtv, get, range, setv, wv, MKTAB,
+// MK5: the tempo LED (song tempo, every frame, ± 1 frame) and the running step on the step keys (changes at most 30 times a second)
+function arpFrame(now, bAud) {
+  const U = P.el; if (!U || !U.body || !U.body.isConnected || P.i < 0) return;
+  const s_ = sndOf(P.i); if (!s_ || s_.engine !== 'mk' || !s_.p.mk) return;
+  const tA = now - (AU.outLat || 0), ph = R.playing ? bAud : tA * S.bpm / 60, led = ((ph % 1) + 1) % 1 < .5;
+  if (U.arp) { const L = U.arp.querySelector('.mtled'); if (L && L._on !== led) { L._on = led; L.classList.toggle('on', led); } }
+  const c = arpView() && s_.p.mk.arp.on ? ARPC.cur(P.i, tA) : null, k = c ? c.s : -1, pn = performance.now();
+  if (k !== P.arpCur && pn - (P.arpCurT || 0) >= 33) { P.arpCur = k; P.arpCurT = pn; P.arpCurN = (P.arpCurN || 0) + 1; U.nums.forEach((e, j) => e && e.classList.toggle('mcur', j === k)); }
+}
+window.MKUI = {build, render, wheels, wheelPaint, panelInfo, probe, probeSheet, arpFrame, arp: ARPC, arpKey, stepKey, randomize: randomizeMk, P, SEC1, SEC2, KN, knobs, setWahl, toSpiel, fmtv, get, range, setv, wv, MKTAB,
   setHalf: h => { P.half = h === 'A' ? 'A' : 'B'; }, lcdOf, timbreKey, timCopy, timSwap, timInit, timCopyPop, soloSet, leave, splitArm, viewOpen, viewClose, splitNote, ownInfo,
   progRefresh: () => { if (!P.el || !P.el.body.isConnected) return; const s_ = sndOf(P.i); if (s_) origSync(s_); render(); dispShow(progNum(), false); }};   // G-MK1-fix: after WRITE
 })();
@@ -5926,11 +6225,10 @@ class MkTim {
     v.target = k.tp; v.pitch = from >= 0 ? from : k.tp; v.gc = from >= 0 ? this.gc : 1;   // MK3: tp = the tuned pitch (W-43; = note in equal temperament)
     this.lastPitch = k.tp;
   }
+  keyReset() { if (this.T.l1.ks === 1) this.g1 = 0; if (this.T.l2.ks === 1) this.g2 = 0; }   // Key Sync "Timbre" (MK5: KEYS 9 while the arp runs; MK6 SEQ hooks here too)
   rank(a, b) { const pr = Math.round(this.T.prio); return pr === 1 ? a.note - b.note : pr === 2 ? b.note - a.note : b.ord - a.ord; }  // best first
   noteOn(id, note, vel) {
-    if (!this.keys.length && !this.V.some(v => v.on && v.gate && !v.ghost)) {  // first note after all keys up: Key Sync "Timbre"
-      if (this.T.l1.ks === 1) this.g1 = 0; if (this.T.l2.ks === 1) this.g2 = 0;
-    }
+    if (!this.par.arp && !this.keys.length && !this.V.some(v => v.on && v.gate && !v.ghost)) this.keyReset();  // first note after all keys up: Key Sync "Timbre" (MK5: with the arp only KEYS 9)
     const k = {id, note, vel, ord: ++this.ord, tp: this.par.tuned(note)};
     this.keys.push(k);
     if (this.ea === 1) this.polyOn(k, 0); else this.monoSel(true);
@@ -6519,7 +6817,7 @@ class MkTim {
 const MK_SOLOS = CR / (.005 * SR);
 class MkCore {
   constructor(host, init) {
-    this.h = host; this.seed = 0; this.keys = []; this.ord = 0; this.phm = new Map(); this.mode = 0; this.tv = 1; this.split = 60; this.scl = 0; this.skey = 0; this.usc = null;
+    this.h = host; this.seed = 0; this.arp = 0; this.keys = []; this.ord = 0; this.phm = new Map(); this.mode = 0; this.tv = 1; this.split = 60; this.scl = 0; this.skey = 0; this.usc = null;
     this.sc = new Float64Array(12); this.scOn = false; this.lim_ = 0; this.solo_ = 0; this.sg = [1, 1]; this.tap_ = '';
     this.bL = new Float32Array(CR); this.bR = new Float32Array(CR);
     const pm = init && typeof init === 'object' ? init : null, tt = pm && Array.isArray(pm.t) ? pm.t : [];
@@ -6543,6 +6841,7 @@ class MkCore {
   top(pm) {
     const r = (x, lo, hi, d) => (typeof x === 'number' && isFinite(x) ? Math.max(lo, Math.min(hi, Math.round(x))) : d);
     const m0 = this.mode, s0 = this.split, t0 = this.tv;
+    if (pm.arp && typeof pm.arp === 'object') this.arp = pm.arp.on >= .5 ? 1 : 0;   // MK5: the arp runs in the main thread; here only its key sync rule
     this.mode = r(pm.mode, 0, 3, this.mode); this.tv = r(pm.tv, 0, 2, this.tv); this.split = r(pm.split, 0, 127, this.split);
     const k0 = this.scl + '|' + this.skey + '|' + (this.usc ? this.usc.join(',') : '');
     this.scl = r(pm.scale, 0, 9, this.scl); this.skey = r(pm.skey, 0, 11, this.skey);
@@ -6567,7 +6866,9 @@ class MkCore {
     set(A, 0, na, cu(na), ea(na, a)); set(B, 1, nb, cu(nb), ea(nb, b));
     return ch;
   }
-  routes(note, k) { return this.mode === 1 ? true : this.mode === 2 ? (note < this.split ? k === 0 : k === 1) : k === 0; }
+  // MK5: d = the timbre mask of the note (0 = the mode decides, 1 T1, 2 T2, 3 both; only in Dual / Split, N3.0.4)
+  routes(note, k, d) { if (d && this.dual()) return ((d >> k) & 1) === 1; return this.mode === 1 ? true : this.mode === 2 ? (note < this.split ? k === 0 : k === 1) : k === 0; }
+  keysEv(ty) { if (ty === 9) { this.tm[0].keyReset(); this.tm[1].keyReset(); } }   // MK5 KEYS: 9 = first key after all up (a new chord), 10 = all up
   // after a change: re-distribute (routing) or re-assign the timbres whose rule changed, only at sounding / held notes
   after(route, reas, ch) {
     const R = this.tm;
@@ -6576,7 +6877,7 @@ class MkCore {
       // every held key as it sounds now go to the other timbre (a key that changes timbre continues them)
       const ks = this.keys.slice().sort((a, b) => a.ord - b.ord), ph = R.map(t => { const m = new Map(); for (const v of t.V) if (v.on && !v.ghost && v.gate && !m.has(v.id)) m.set(v.id, {t1: v.t1, t2: v.t2, sp: v.sp, l1: v.l1, l2: v.l2, tw: v.tw, wn: v.wn}); return m; });
       for (let k = 0; k < 2; k++) {
-        const l = ks.filter(x => this.routes(x.note, k)), same = !reas[k] && !ch[k] && l.length === R[k].keys.length && l.every(x => R[k].keys.some(y => y.id === x.id));
+        const l = ks.filter(x => this.routes(x.note, k, x.d)), same = !reas[k] && !ch[k] && l.length === R[k].keys.length && l.every(x => R[k].keys.some(y => y.id === x.id));
         if (same) continue;
         if (l.length || R[k].sounding() || R[k].keys.length) R[k].reassign(l, !reas[k] && !ch[k], ph[1 - k]);
       }
@@ -6599,6 +6900,7 @@ class MkCore {
       else { const v = +o[path]; if (!isFinite(v)) continue; const q = path.split('.');
         if (q[0] === 'mfx' || q[0] === 'dly' || q[0] === 'eq') { this.fx.set(q[0], q[1], v); fx = true; }   // MK4
         else if (q[0] === 'usc') { const u = this.usc ? this.usc.slice() : new Array(12).fill(0), j = +q[1]; if (j >= 0 && j < 12) { u[j] = v; tp.usc = u; } }
+        else if (q[0] === 'arp') { if (q[1] === 'on') this.arp = v >= .5 ? 1 : 0; }   // MK5
         else if (q.length === 1 && (q[0] === 'mode' || q[0] === 'tv' || q[0] === 'split' || q[0] === 'scale' || q[0] === 'skey')) tp[q[0]] = v; }
     }
     const [route, scl] = this.top(tp), ra = a ? this.tm[0].set(a) : false, rb = b ? this.tm[1].set(b) : false;
@@ -6623,10 +6925,10 @@ class MkCore {
     let e = this.phm.get(id); if (!e) { if (this.phm.size > 256) this.phm.clear(); e = {a: [], j: [0, 0]}; this.phm.set(id, e); }
     const j = e.j[ti]++; if (j < e.a.length) { v.t1 = e.a[j][0]; v.t2 = e.a[j][1]; } else e.a.push([v.t1, v.t2]);
   }
-  noteOn(id, note, vel) {
+  noteOn(id, note, vel, d) {
     if (!this.seed) this.seed = ((Math.random() * 4294967295) >>> 0) || 1;
-    this.keys.push({id, note, vel, ord: ++this.ord});
-    for (let k = 0; k < 2; k++) if (this.routes(note, k)) this.tm[k].noteOn(id, note, vel);
+    d = d > 0 && d < 4 ? d : 0; this.keys.push(d ? {id, note, vel, ord: ++this.ord, d} : {id, note, vel, ord: ++this.ord});
+    for (let k = 0; k < 2; k++) if (this.routes(note, k, d)) this.tm[k].noteOn(id, note, vel);
   }
   dropKey(id) { const i = this.keys.findIndex(k => k.id === id); if (i >= 0) this.keys.splice(i, 1); }
   noteOff(id) { this.dropKey(id); let any = false; for (const t of this.tm) if (t.holds(id)) { t.noteOff(id); any = true; } if (!any) this.endCheck(id); }
@@ -6754,7 +7056,7 @@ class AnalogCore extends AudioWorkletProcessor {
     }
     if (e[1] === 8) { for (let i = q.length - 1; i >= 0; i--) if (q[i][2] === e[2] && q[i][1] === 3) q.splice(i, 1); return; }
     const f = Math.round(e[0] * SR);
-    const ev = [f, e[1], e[2], e[3], e[4], e[5]];
+    const ev = e.length > 6 ? [f, e[1], e[2], e[3], e[4], e[5], e[6]] : [f, e[1], e[2], e[3], e[4], e[5]];   // MK5: a 7th element d (timbre mask)
     let i = q.length; while (i > 0 && q[i - 1][0] > f) i--;   // events arrive mostly in order: cheap insertion
     q.splice(i, 0, ev);
   }
@@ -7047,7 +7349,8 @@ class AnalogCore extends AudioWorkletProcessor {
     const q = this.q;
     while (q.length && q[0][0] < endFrame) {
       const e = q.shift(), type = e[1], id = e[2];
-      if (type === 1 && this.P.eng === 3) { this.mk.noteOn(id, e[3], e[4]); continue; }      // MK1: eng 3 plays in MkCore
+      if (type === 1 && this.P.eng === 3) { this.mk.noteOn(id, e[3], e[4], e[6] | 0); continue; }      // MK1: eng 3 plays in MkCore (MK5: e[6] = timbre mask d)
+      if (type === 9 || type === 10) { if (this.P.eng === 3) this.mk.keysEv(type); continue; }      // MK5 (EN3-11): KEYS 9 first key, 10 all keys up
       if ((type === 2 || type === 3 || type === 7) && this.mkHas(id)) { if (type === 2) this.mk.noteOff(id); else if (type === 3) this.mk.retune(id, e[3], e[4]); else this.mk.fastOff(id, e[3]); continue; }
       if (type === 5) this.mk.allOff(); else if (type === 6) this.mk.panic();
       if (type === 1) this.noteOn(id, e[3], e[4], e[5] == null ? -1 : e[5]);
@@ -12311,7 +12614,8 @@ const MK_LABEL = 'MS 2000';
     const post = m => { if (!E.dead) node.port.postMessage(m); };
     const push = ev => { if (E.dead) return; E.q.push(ev); if (!E.flushQueued) { E.flushQueued = true; queueMicrotask(E.flush); } };
     E.flush = () => { E.flushQueued = false; if (E.q.length) { post({ev: E.q}); E.q = []; } };
-    E.on = (id, note, vel, t, from) => push([t, 1, id, note, vel, from == null ? -1 : from]);
+    E.on = (id, note, vel, t, from, d) => push(d ? [t, 1, id, note, vel, from == null ? -1 : from, d] : [t, 1, id, note, vel, from == null ? -1 : from]);   // MK5: d = timbre mask (AM)
+    E.keys = (ty, t) => push([t, ty, 0]);                     // MK5 (EN3-11): KEYS 9 first key / 10 all keys up
     E.off = (id, t) => push([t, 2, id]);
     E.fastOff = (id, t, tau) => push([t, 7, id, tau || .004]);
     E.retune = (id, note, t, tau) => push([t, 3, id, note, tau]);
@@ -13687,7 +13991,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.12.0';
+const VERSION = '4.13.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -15277,7 +15581,7 @@ async function mkRender(sound, ev, o) {
   if (o.fxFrz != null) E.node.port.postMessage({mkFxFrz: o.fxFrz});
   E.tempo(o.bpm || 120, o.songStart == null ? null : o.songStart);
   const ids = {}; let id = 1;
-  for (const e of ev || []) { const k = e[4] != null ? e[4] : e[2]; if (e[1] === 'on') { ids[k] = id++; E.on(ids[k], e[2], e[3] == null ? .8 : e[3], e[0]); } else if (ids[k]) E.off(ids[k], e[0]); }
+  for (const e of ev || []) { if (e[1] === 'keys') { E.keys(e[2], e[0]); continue; } const k = e[4] != null ? e[4] : e[2]; if (e[1] === 'on') { ids[k] = id++; E.on(ids[k], e[2], e[3] == null ? .8 : e[3], e[0]); } else if (ids[k]) E.off(ids[k], e[0]); }
   E.flush();
   await new Promise(r => setTimeout(r, 20));
   const b = await oc.startRendering();
@@ -15641,7 +15945,8 @@ function spawnWkVoice(i, out, vel, t0, o, E, snd) {
     gs.grpOuts.push(out); gs.lastOut = out;
   }
   if (E === AU.synth[i]) { wkFlush(i); if (WKFM[i]) wkFm6(i, true); }   // pending knob / operator values reach the engine before the note
-  E.on(v.id, out, vel, t0, from);
+  if (o.mask) v.mask = o.mask;                                // MK5: the timbre mask of an AM note (arp target)
+  E.on(v.id, out, vel, t0, from, o.mask || 0);
   VOICES.push(v); E.proxies.set(v.id, v);
   if (o.src !== 'preview') { v.perf = perfAdd(i, out, t0, null, vel); if (v.perf) v.perfAll.push(v.perf); }
   return v;
@@ -15685,6 +15990,7 @@ function spawnVoice(i, out, vel, t0, o) {
   const snd0 = o.sound || tr.sound;
   // MK1 (B.5): AM on the worklet as eng 3; on the native path its timbre 1 as the flat VA patch (mkEco)
   if (snd0.engine === 'mk') { const E = o.chain ? o.chain.E : snd0 === tr.sound ? AU.synth[i] : null; if (E && !E.dead && !E.retiring) return spawnWkVoice(i, clamp(Math.round(out), 0, 127), vel, t0, o, E, snd0); }
+  if (snd0.engine === 'mk' && o.mask === 2) return null;    // MK5 (B.5): the ECO image is timbre 1 only; a T2-only note does not sound there
   const snd = snd0.engine === 'mk' ? mkEco(snd0, i) : snd0, P = snd.p, eng = snd.engine === 'fm6' && !P.fm6 ? 'analog' : snd.engine;
   out = clamp(Math.round(out), 0, 127);
   if (o.src !== 'audition' && o.src !== 'preview' && !o.sound) FMEV.note[i] = out;   // V0d (A.4b 4a): the FM editor's reference note
@@ -15752,11 +16058,11 @@ function spawnVoice(i, out, vel, t0, o) {
   if (o.src !== 'preview') { v.perf = perfAdd(i, out, t0, null, vel); if (v.perf) v.perfAll.push(v.perf); }
   return v;
 }
-function spawnClipVoice(i, out, vel, t, dur, clipNote, clipKey, noGlide) {
+function spawnClipVoice(i, out, vel, t, dur, clipNote, clipKey, noGlide, mask) {
   // LEGATO (§5.1 Modus) + an overlapping clip note (LAUF BINDUNG, §3.10): the engine glides without retriggering; the log says so
   const tr = S.tracks[i], P = tr && tr.kind === 'synth' ? tr.sound.p : null;
   const legato = !!(P && P.mode === 2 && VOICES.some(x => x.track === i && !x.dead && x.src === 'clip' && x.start < t - 1e-4 && x.relT > t + 1e-4));
-  const v = spawnVoice(i, out, vel, t, {src: 'clip', clipNote, clipKey, noGlide});
+  const v = spawnVoice(i, out, vel, t, mask ? {src: 'clip', clipNote, clipKey, noGlide, mask} : {src: 'clip', clipNote, clipKey, noGlide});   // MK5: mask = the timbre of an AM note
   if (!v) return null;
   v.release(t + dur);
   v.log = logNote({track: i, src: 'clip', clipNote, out: v.out, time: t, dur, vel, legato});
@@ -16032,7 +16338,7 @@ function logDrop(e) { if (e) e.removed = true; }
 function noteLog(n) {
   n = Math.min(n == null ? 128 : n, 4096, LOG.n);
   const out = [];
-  for (let i = LOG.n - n; i < LOG.n; i++) { const e = LOG.buf[i % 4096]; if (e.removed) continue; const o = {seq: e.seq, track: e.track, src: e.src, clipNote: e.clipNote, out: e.out, time: e.time, beat: e.beat, dur: e.dur, vel: e.vel}; if (e.legato) o.legato = true; out.push(o); }
+  for (let i = LOG.n - n; i < LOG.n; i++) { const e = LOG.buf[i % 4096]; if (e.removed) continue; const o = {seq: e.seq, track: e.track, src: e.src, clipNote: e.clipNote, out: e.out, time: e.time, beat: e.beat, dur: e.dur, vel: e.vel}; if (e.legato) o.legato = true; if (e.step != null) o.step = e.step; out.push(o); }
   return out;
 }
 function clearLog() { LOG.n = 0; LOG.buf = new Array(4096); }
@@ -16217,15 +16523,16 @@ function applyCarrierChange(entry, info) {
     if (v.start >= eff - 1e-6) {
       const st = v.start, du = v.end - v.start; v.cancel();
       const k = K(v.track, st, newOut); if (have.has(k)) continue;
-      have.add(k); spawnClipVoice(v.track, newOut, v.vel, st, du, v.clipNote, v.clipKey, true);
+      have.add(k); spawnClipVoice(v.track, newOut, v.vel, st, du, v.clipNote, v.clipKey, true, v.mask);
     } else if (v.start >= rf && eff - v.start <= .12) {
       const oldEnd = v.end; v.release(eff, .004);
       if (have.has(K(v.track, v.start, newOut))) continue;              // the merged note already sounds from this onset
       const k = K(v.track, eff, newOut); if (have.has(k)) continue;
       have.add(k); have.add(K(v.track, v.start, newOut));
-      if (oldEnd - eff > .06) spawnClipVoice(v.track, newOut, v.vel, eff, oldEnd - eff, v.clipNote, v.clipKey);
+      if (oldEnd - eff > .06) spawnClipVoice(v.track, newOut, v.vel, eff, oldEnd - eff, v.clipNote, v.clipKey, false, v.mask);
     } else if (tr.onChange !== 'hold') v.retune(newOut, eff);
   }
+  { const A = arpK(); if (A && A.busy()) A.carrier(eff); }      // MK5: the arp steps behind the change are made again with the new mapping
   // V2c′: with „Drums mittransponieren“ the drum hits already scheduled behind the change are planned again with the new tune
   if (S.settings.harmony.drums && R.playing && R.slot[DRUM_T] >= 0 && !S.tracks[DRUM_T].mute) {
     const b = t2b(eff); if (b < R.schedBeat) { cancelTrackFrom(DRUM_T, eff); scheduleTrack(DRUM_T, Math.max(0, b), R.schedBeat, true); }
@@ -16239,6 +16546,12 @@ function remapNow() {
 }
 function flushQueuedCarrier(now) { for (const e of T.timeline) if (e.time > now) e.time = now; }
 
+/* ---------- MK5 (Nachtrag 3 MK5, EN3-11): the arpeggiator between the note sources and spawnVoice. Its core (ARPC: held set,
+   planner, patterns) is in block sq-mk-src, which an AM track always has loaded (EN3-14); these hooks cost nothing elsewhere ---------- */
+function arpOn(i) { const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound.engine !== 'mk') return false; const m = tr.sound.p.mk; return !!(m && m.arp && m.arp.on) && (typeof ARPC !== 'undefined' || !!mkLoad()); }
+const arpK = () => (typeof ARPC !== 'undefined' ? ARPC : null);
+function arpTick(now, h) { const A = arpK(); if (A && A.busy()) A.tick(now, h); }
+function arpEndAll() { const A = arpK(); if (A) A.endAll(); }
 /* ---------- scheduler ---------- */
 function swingOffset(t) { const sw = S.settings.swing; if (!sw) return 0; return Math.abs((t % .5) - .25) < .02 ? sw / 12 : 0; }
 // h: horizon in s (default LOOKAHEAD). tickAhead(.3) runs it once with 300 ms before a long main-thread job (§1.7.5)
@@ -16253,7 +16566,7 @@ function tick(h) {
     const now = c.currentTime;
     try { T.tick(now, grid()); } catch (e) { tickErr(e); }
     try { gcVoices(now); T.prune(now - 2); previewTick(now); cpuTick(); } catch (e) { tickErr(e); }
-    if (!R.playing) return;
+    if (!R.playing) { try { arpTick(now, h); } catch (e) { tickErr(e); } return; }   // MK5: a held chord arpeggiates with the transport stopped
     if (R.countIn && t2b(now) >= 0) R.countIn = false;
     let b0 = R.schedBeat;
     const bEnd = t2b(now + (typeof h === 'number' && h > 0 ? h : LOOKAHEAD));
@@ -16295,6 +16608,7 @@ function tick(h) {
       try { if (TICKERR.fail === i) throw new Error('__failTrack(' + i + ')'); scheduleTrack(i, from, b1); } catch (e) { tickErr(e); }
     }
     try { if (R.songRec && R.songRec.pending && R.songRec.startBeat < b1) songRecBegin(); } catch (e) { tickErr(e); }
+    try { arpTick(now, h); } catch (e) { tickErr(e); }            // MK5: after the clips of this window are in the held set
   } catch (e) { tickErr(e); }
   finally { if (b1 != null && R.playing && R.runId === run && b1 > R.schedBeat) R.schedBeat = b1; }
   try { if (R.playing && R.songEndBeat != null) songEndCheck(); } catch (e) { tickErr(e); }
@@ -16331,7 +16645,11 @@ function scheduleTrack(i, from, to, late) {
   }
   for (const e of ev.values()) {
     if (tr.kind === 'drum') drumHit(e.n, e.v, e.t, 'clip');
-    else { const v = spawnClipVoice(i, e.out, e.v, e.t, e.dur, e.n, clip.key); if (v && oc && v.log) v.log.src = 'own'; }   // V2d′: noteLog src 'own'
+    else {
+      let mask;
+      if (arpOn(i)) { mask = ARPC.clip(i, e.out, e.n, clip.key, e.v, e.t, e.dur); if (mask == null) continue; }   // MK5: into the held set (the other timbre holds it)
+      const v = spawnClipVoice(i, e.out, e.v, e.t, e.dur, e.n, clip.key, false, mask); if (v && oc && v.log) v.log.src = 'own';   // V2d′: noteLog src 'own'
+    }
   }
 }
 /* V2d′ (song-delta 9.2, 12.1): the own clip track i plays now (R.own, a copy that only holds at this song place), else null.
@@ -16377,8 +16695,10 @@ function scheduleDrums(i, clip, from, to, late, lsrc, mu) {
 }
 function cutTrackAt(i, t) {
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip' && v.start < t && v.end > t) v.release(t);
+  { const A = arpK(); if (A && A.busy()) A.cut(i, t); }          // MK5: the clip notes in the arp's held set end here too
 }
 function cancelTrackFrom(i, t) {
+  { const A = arpK(); if (A && A.busy()) A.cancelFrom(i, t); }   // MK5
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip' && v.start >= t - 1e-6) v.cancel();
   if (S.tracks[i].kind === 'drum') for (const h of HITS.slice()) if (!h.dead && h.src === 'clip' && h.start >= t - 1e-6) hitCancel(h);
 }
@@ -16452,6 +16772,7 @@ function stopTrackNow(i) {
   R.pend[i] = null; R.prev[i] = null; R.slot[i] = -1;
   songLogNow(i, -1, audBeat()); partTakeOver(i); memSlot(i, audBeat(), -1, 0, false);
   cancelTrackFrom(i, now);
+  { const A = arpK(); if (A && A.busy()) A.cut(i, now + .005); }  // MK5: the arp of this track stops with its clip
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip') v.release(now + .005, .01);
   if (S.tracks[i].kind === 'drum') for (const h of HITS.slice()) if (!h.dead && h.src === 'clip') { try { h.out.gain.setTargetAtTime(0, now, .01); } catch (e) {} hitStopAll(h, now + .06); }
   UI.dirty.grid = true;
@@ -16779,7 +17100,9 @@ function songTickInner(b0, b1) {
         for (const n of mel.notes) {
           const bb = n.t + off; if (bb < b0 - 1e-9 || bb >= b1 - 1e-9 || n.t >= E - 1e-9 || n.t >= insB - .25 - 1e-9) continue;
           if (mu && n.t >= mu.a - 1e-9 && n.t < mu.b - 1e-9) continue;
-          const t = Math.max(b2t(bb), AU.ctx.currentTime + .003), v = spawnVoice(mi, n.n, n.v, t, {src: 'melody'});
+          const t = Math.max(b2t(bb), AU.ctx.currentTime + .003);
+          let mk_ = null; if (arpOn(mi)) { mk_ = ARPC.clip(mi, n.n, n.n, null, n.v, t, Math.max(n.d, 1 / 32) * spb(), 'melody'); if (mk_ == null) continue; }   // MK5: the melody through the arp (as heard)
+          const v = spawnVoice(mi, n.n, n.v, t, mk_ ? {src: 'melody', mask: mk_} : {src: 'melody'});
           if (v) { const d = Math.max(n.d, 1 / 32) * spb(); v.release(t + d); v.log = logNote({track: mi, src: 'melody', clipNote: null, out: n.n, time: t, dur: d, vel: n.v}); }
         }
       }
@@ -17582,6 +17905,7 @@ function stop() {
   // release everything while the transport still counts beats, so the Mitschnitt (PERF) gets the real end beats
   silenceAll(now, .02);
   releaseInputs(r => r === 'play' || r === 'pad');
+  arpEndAll();                                              // MK5 (Umfang 8): stop ends every arp note, also a latched chord
   R.playing = false; R.countIn = false; R.ciRun = false;
   CAP.buf.length = 0; CAP.open.clear(); CAP.last.fill(-1e9); UI.dirty.fang = true;
   for (let i = 0; i < NT(); i++) { if (R.pend[i]) { R.slot[i] = R.pend[i].slot; R.own[i] = R.pend[i].own || null; if (R.pend[i].cs != null) R.cstart[i] = 0; R.pend[i] = null; } R.prev[i] = null; }
@@ -18515,9 +18839,13 @@ function inputDown(note, id, vel) {
   } else if (route === 'play') {
     const n = kbLockNote(note);
     if (n !== note) { inp.note = n; kbFlash(n); }
-    inp.voice = spawnVoice(R.selT, n, vel, now + LIVE_LEAD, {src: 'live'});
-    const le = logNote({track: R.selT, src: 'live', clipNote: null, out: n, time: now + LIVE_LEAD, dur: null, vel});
-    if (inp.voice) inp.voice.log = le;
+    let am = null;
+    if (arpOn(R.selT)) { inp.arp = R.selT; am = ARPC.live(R.selT, id, n, vel, now + LIVE_LEAD); }   // MK5: the key goes to the arp's held set
+    if (inp.arp == null || am != null) {
+      inp.voice = spawnVoice(R.selT, n, vel, now + LIVE_LEAD, am ? {src: 'live', mask: am} : {src: 'live'});
+      const le = logNote({track: R.selT, src: 'live', clipNote: null, out: n, time: now + LIVE_LEAD, dur: null, vel});
+      if (inp.voice) inp.voice.log = le;
+    }
     R.lastNote[R.selT] = n;
     const rk = recNoteOn(id, R.selT, n, vel, now);
     // FANG (V0a K-07): each note keeps the Träger it was played under (as REC does), so the phrase is stored as it was heard
@@ -18555,6 +18883,7 @@ function inputUp(id) {
   else if (inp.route === 'carrier') T.keyUp(inp.note, now, grid());
   else if (inp.route === 'play') {
     if (inp.voice) inp.voice.release(now); recNoteOff(id); melNoteOff(id);
+    if (inp.arp != null) { const A = arpK(); if (A) A.liveUp(inp.arp, id, now + LIVE_LEAD); }   // MK5
     const o = CAP.open.get(id);
     if (o) { CAP.open.delete(id); if (R.playing) { o.d = Math.max(1 / 32, audBeat() - o.b); capPush(o); } }
   }
@@ -18676,14 +19005,14 @@ function setProjectKey(k) {
   UI.dirty.all = true; markDirty();
 }
 function fadeAll(tau) {
-  releaseInputs();
+  releaseInputs(); arpEndAll();                             // MK5
   const c = AU.ctx; if (!c) return;
   silenceAll(c.currentTime, tau || .02);
   T.held.clear();
   UI.dirty.all = true;
 }
 function panic() {
-  releaseInputs();
+  releaseInputs(); arpEndAll();                             // MK5
   if (PV.on) previewStop();                                 // a browser preview phrase stops too (§11.3)
   const c = AU.ctx; if (!c) return;
   for (const v of VOICES.slice()) v.cancel();
@@ -23629,6 +23958,7 @@ function uiFrame() {
   renderRing(now);
   if (UI.dirty.kb) { UI.dirty.kb = false; kbPaint(); padPaint(); }
   mkWheelFrame();                                            // MK1: BEND / MOD wheels left of the keys on AM tracks
+  if (R.editor === 'synth' && typeof MKUI !== 'undefined' && MKUI.arpFrame) MKUI.arpFrame(now, bAud);   // MK5: ARP / tempo LED, running step
   paintGhosts(tAud);
   padFlashes(tAud);
   recLaneFrame(bAud);
@@ -24742,13 +25072,14 @@ function applySound(i, snd, opts) {
   const again = [];
   for (const v of VOICES.slice()) {
     if (v.dead || v.track !== i || v.src === 'preview') continue;
-    if (v.start > now + .003) { if (v.src === 'clip') again.push({out: v.out, vel: v.vel, t: v.start, dur: isFinite(v.relT) ? v.relT - v.start : .25, n: v.clipNote, key: v.clipKey}); v.cancel(); }
+    if (v.start > now + .003) { if (v.src === 'clip') again.push({out: v.out, vel: v.vel, t: v.start, dur: isFinite(v.relT) ? v.relT - v.start : .25, n: v.clipNote, key: v.clipKey, mask: v.mask}); v.cancel(); }
     else { v.release(now, .006); busy = true; }
   }
   syncEngine(i, true);
   applyTrackParams(i, !!opts.immediate);
   void busy;
-  for (const e of again) spawnClipVoice(i, e.out, e.vel, e.t, e.dur, e.n, e.key, true);
+  for (const e of again) spawnClipVoice(i, e.out, e.vel, e.t, e.dur, e.n, e.key, true, e.mask);
+  { const A = arpK(); if (A && A.busy()) { A.rewind(i, now); A.plan(i, now, LOOKAHEAD); } }   // MK5: the arp steps planned ahead are made again on the new path
 }
 // a fresh track copy of a library or factory record: no id (a working copy), origin = the record
 function soundCopy(rec) {
@@ -30959,6 +31290,8 @@ function openMenu(goto) {
     MK_LABEL + ' · TIMBRE-Taste: tippen wechselt T1 → T2 → beide (jede Geste ändert beide gleich) → T1. SHIFT + TIMBRE = Solo (nur dieses Timbre klingt, LED blinkt), Tipp beendet Solo. SHIFT + 1 Timbre kopieren, + 2 tauschen, + 4 neu.',
     MK_LABEL + ' · STIMMUNG (EDIT-WAHL 2): zehn Stimmungen (z. B. Werckmeister III, Pelog) mit Grundton für beide Timbres; „Eigene“: Tipp auf die Matrix-Zeile öffnet 12 Regler, je Stufe −100…+100 ct.',
     MK_LABEL + ' · MOD-FX, DELAY, EQ (EDIT-WAHL 2): die Effekte gehören zum Sound und laufen in dieser Reihenfolge, vor den Spur-Effekten (Reiter FX). MOD-FX: Chorus/Flanger, Ensemble oder Phaser, TEMPO = wie schnell er schwingt. TIEFE 0 = aus.',
+    MK_LABEL + ' · ARP-Taste: Arpeggiator an/aus. Akkord halten – die Töne kommen nacheinander im Song-Tempo (auch bei gestopptem Song). EDIT-WAHL 2 → ARP A: AUFLÖSUNG (1/24 … 1/4), GATE (Tonlänge), TYP (Auf, Ab, Wechsel, Zufall, Akkord), OKTAVEN 1–4.',
+    MK_LABEL + ' · ARP B: LATCH (läuft nach dem Loslassen weiter), SWING, KEY SYNC (jeder neue Akkord beginnt vorne), LÄNGE 1–8, ZIEL (Schicht/Split: nur ein Timbre arpeggiert). Bei ARP A/B sind die Nummerntasten die Schritte: leuchtet = spielt, blinkt = Pause. Aufgenommen werden die gedrückten Tasten.',
     MK_LABEL + ' · DELAY: Stereo, Kreuz (Echo springt links ↔ rechts) oder L/R (abwechselnd). TEMPO SYNC an = NOTE im Song-Tempo (1/32 … 1/1), aus = ZEIT 1 ms … 1,4 s. TIEFE = Echo-Lautstärke und wie oft es wiederkommt. EQ: Tiefen und Höhen je ±12 dB.',
     'TASTATUR-ANSCHLAG (Menü → Bedienung): POSITION = oben auf der Taste leise, unten laut, jede Taste für sich; FEST = immer 0,8. Bei FEST tragen Anschlag-Regler und Anschlag-Modulationen einen grauen Hinweis – antippen schaltet POSITION ein.',
     'LAUF: Basslauf oder Sequenz Schritt für Schritt – Schritt antippen = an, hoch/runter ziehen = Ton in der Tonart.',
@@ -36295,6 +36628,7 @@ const SYNQUENZER = {
   mkSet: (t, path, v) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'mk') throw new Error('Keine ' + MK_LABEL + '-Spur: ' + t); return soundEdit(t, MK_LABEL + ' ' + path, () => mkSetP(t, path, v, false)); },
   mkRender: (sound, ev, o) => mkRender(sound, ev, o), mkScope: t => mkScopeOf(t), mkInfo: () => mkInfo(),
   mkWheel: (t, w, v) => mkWheelApi(t, w, v), mkPanel: () => (mkLoaded() ? MKUI.panelInfo() : null), perfProbe: cases => mkLoad().probe(cases),
+  arpLog: t => (arpK() ? ARPC.arpLog(t) : []), arpClear: t => { if (arpK()) ARPC.clearLog(t); }, arpInfo: t => (arpK() ? ARPC.info(t) : null),   // MK5 (B.7)
 
   storage: () => ({mode: kv ? kv.mode : null, booted: BOOT.done, dirty: !!(autosave && autosave.dirty), lastOk: autosave ? autosave.lastOk : 0, lastErr: autosave ? autosave.lastErr : null, persist: UI.persist || null}),
   // WP4 (§16): engine and effects

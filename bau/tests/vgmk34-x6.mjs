@@ -1,0 +1,20 @@
+import {open, sleep} from './vgmk34-tl3.mjs';
+const T = await open(Object.assign({viewport: {width: 390, height: 844}}, process.env.SYNQ_APP ? {file: process.env.SYNQ_APP} : {})); const {p, E, errs} = T;
+console.log('APP', await E(() => SYNQUENZER.version));
+await E(() => SYNQUENZER.setMetronome(false));
+await E(() => { window.__mStart = () => { const c = AU.ctx; const sp = c.createScriptProcessor(1024, 2, 2), z = c.createGain(); z.gain.value = 0; const C = window.__mc = {L: [], sp, z, t0: null}; sp.onaudioprocess = e => { if (C.t0 == null) C.t0 = e.playbackTime; const a = e.inputBuffer.getChannelData(0), b = e.inputBuffer.getChannelData(1); const x = new Float32Array(a.length); for (let i = 0; i < a.length; i++) x[i] = (a[i] + b[i]) / 2; C.L.push(x); }; AU.M.ceil.connect(sp); sp.connect(z); z.connect(c.destination); };
+  window.__mStop = () => { const C = window.__mc; try { AU.M.ceil.disconnect(C.sp); } catch (e) {} C.sp.disconnect(); const N = C.L.reduce((a, b) => a + b.length, 0), x = new Float32Array(N); let o = 0; for (const b of C.L) { x.set(b, o); o += b.length; } const sr = AU.ctx.sampleRate, W = Math.round(.05 * sr), env = []; for (let i = 0; i + W <= N; i += W) { let s = 0; for (let k = i; k < i + W; k++) s += x[k] * x[k]; env.push(+(10 * Math.log10(s / W + 1e-20)).toFixed(1)); } return {t0: C.t0, env}; }; });
+await E(() => { SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await sleep(500);
+const c = await T.rectText('button', /^(VA|FM|WT) ▾$/); await T.tap(c.cx, c.cy, 400); await T.tapPop(/MS ?2000/); await sleep(900);
+await E(async () => { const Q = SYNQUENZER; Q.mkSet(0, 't.0.a.gate', 1); await Q.saveSound(0, 'Dry', 'new'); Q.mkSet(0, 'dly.dep', 110); Q.mkSet(0, 'dly.sync', 1); Q.mkSet(0, 'dly.note', 8); await Q.saveSound(0, 'EchoX', 'new'); });
+await E(() => SYNQUENZER.initSound ? SYNQUENZER.initSound(0) : 0); await sleep(300);
+const pv = async name => { const id = await E(n => SYNQUENZER.library().find(s => s.name === n).id, name); await E(() => window.__mStart()); await sleep(300); const ts = await E(id => (SYNQUENZER.browserPreview(id, true), AU.ctx.currentTime), id);
+  let st; const t0 = Date.now(); do { await sleep(50); st = await E(() => SYNQUENZER.previewState()); } while (st.on && Date.now() - t0 < 15000);
+  const tEnd = await E(() => AU.ctx.currentTime); await sleep(3000); const m = await E(() => window.__mStop()); return {env: m.env, s: Math.round((ts - m.t0) / .05), e: Math.round((tEnd - m.t0) / .05)}; };
+const a = await pv('Dry'); await sleep(1000); const b = await pv('EchoX'); console.log('idx', a.s, a.e, a.env.length, b.s, b.e, b.env.length);
+console.log('DRY  ', a.env.slice(a.s, a.e + 30).join(','));
+console.log('ECHO ', b.env.slice(b.s, b.e + 30).join(','));
+// the sum of energy in the phrase gaps: echo should fill the gaps
+const gap = x => x.env.slice(x.s, x.e).filter(v => v < -45).length;
+console.log('frames below -45 dB inside the phrase: dry', gap(a), 'echo', gap(b), 'of', a.e - a.s, b.e - b.s);
+console.log('errs', JSON.stringify(errs)); await T.br.close();

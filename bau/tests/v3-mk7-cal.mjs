@@ -1,0 +1,12 @@
+import {render, vocP, rms, db, FILE} from './v3-mk7-node.mjs';
+import fs from 'fs';
+const src = fs.readFileSync(FILE, 'utf8'), a = src.indexOf('/*MKV{*/'), b = src.indexOf('/*}MKV*/');
+const r0 = render(vocP({}, {}), [], {sec: .01}), W = r0.MKW;
+const mkVowel = new Function('W', src.slice(a, b) + '\n;return mkVowel;')();
+const sr = 48000, vox = mkVowel({f0: 110, v: ['a', 'e', 'i', 'o', 'u'], seg: .4, sec: 2, sr, rms: -20}, W);
+console.log('vowel rms', db(rms(vox)));
+const ch = [[0, 'on', 48, .8], [0, 'on', 52, .8], [0, 'on', 55, .8], [0, 'on', 59, .8]];
+const p = vocP({}, {}); p.mode = 0;
+const syn = render(p, ch, {sec: 2});
+const voc = render(vocP({}, {}), ch, {sec: 2, inputs: {e2: vox}});
+console.log('synth', db(rms(syn.l, 24000, 96000)), 'vocoder', db(rms(voc.l, 24000, 96000)), 'peak', Math.max(...voc.l.map(Math.abs)));
