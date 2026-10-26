@@ -4774,7 +4774,8 @@ const PL = {zb: 0, el: null, ui: null, fam: '', mc: null};
 function measure(txt, fs, wt) {
   if (!PL.mc) { try { PL.mc = document.createElement('canvas').getContext('2d'); } catch (e) { PL.mc = null; } }
   if (!PL.mc) return txt.length * fs * .52;
-  PL.mc.font = (wt || 600) + ' ' + fs + 'px ' + PL.fam; return PL.mc.measureText(txt).width;
+  const f = (wt || 600) + ' ' + fs + 'px ' + PL.fam; if (PL.mf !== f) { PL.mf = f; PL.mc.font = f; }   // MK-P-09: setting the font is the costly part
+  return PL.mc.measureText(txt).width;
 }
 // a font size (u) at which txt fits into max u (never larger than fs)
 function fitFs(txt, fs, max, wt) { const w = measure(txt, 100, wt) / 100 * fs; return w <= max ? fs : Math.max(fs * .55, fs * max / w * .98); }
@@ -4858,16 +4859,26 @@ function buildPlate(zb) {
     if (e.art === 'name') { const n = el('div', 'mkpname'); n.textContent = MK_LABEL; n.style.fontSize = P_(30); n.style.lineHeight = P_(34); put(n, e.X, e.Y - 17); ui.name = n; }
   });
   PL.zb = zb; PL.el = pl; PL.ui = ui; PL.jobs = J; PL.ready = false; PL.t0 = performance.now(); PL.slices = []; PL.ms = 0;
-  plateSlice();
+  nextTask(plateSlice);   // MK-P-09 (a): the first slice too is a task of its own, not part of the opening tap
   return pl;
+}
+// a new task right after the current one (no 4 ms clamp of nested timers); rendering and input still run between two
+const NTQ = {q: [], ch: null};
+function nextTask(f) {
+  if (!NTQ.ch) { try { NTQ.ch = new MessageChannel(); NTQ.ch.port1.onmessage = () => { const g = NTQ.q.shift(); if (g) g(); }; } catch (e) { NTQ.ch = false; } }
+  if (!NTQ.ch) { setTimeout(f, 0); return; }
+  NTQ.q.push(f); NTQ.ch.port2.postMessage(0);
 }
 // the plate is built in slices of <= 6 ms (MK-P-09 a: <= 16 ms on the phone), one task each, the scheduler kept ahead (EN3-14)
 function plateSlice() {
   const t0 = performance.now(); try { tickAhead(.3); } catch (e) {}
   while (PL.jobs.length && performance.now() - t0 < 6) PL.jobs.shift()();
   PL.slices.push(+(performance.now() - t0).toFixed(2)); PL.ms += performance.now() - t0;
-  if (PL.jobs.length) { setTimeout(plateSlice, 0); return; }   // a task per slice (not a frame per slice): the event loop and the scheduler run between two slices, the plate is done in a few frames
-  PL.ready = true; PL.done = performance.now() - PL.t0; renderSoon();
+  if (PL.jobs.length) { nextTask(plateSlice); return; }   // a task per slice (not a frame per slice): the event loop and the scheduler run between two slices, the plate is done in a few frames
+  PL.ready = true; PL.done = performance.now() - PL.t0;
+  // MK-P-09 (a): the plate is built off the page and attached once: no frame lays out a half plate
+  const U = P.el; if (U && U.hull && U.hull.isConnected && PL.el.parentNode !== U.hull) U.hull.appendChild(PL.el);
+  renderSoon();
 }
 /* ---------- MK-P Umfang 3: what every element of the plate does (synth column / vocoder column) ---------- */
 const KDEF = {'ain.1': () => KN.trim1, 'ain.2': () => KN.trim2, vol: () => KN.vol,
@@ -5148,14 +5159,32 @@ function build(pg, i) {
   if (P.view) { hull.hidden = true; xvOpen(); }
   else if (P.tab === 'spiel') { hull.hidden = true; buildSpiel(); }
   applyView(false); render();
+  if (typeof ResizeObserver === 'undefined') requestAnimationFrame(coverSync);   // else: the observer's first call (after the layout of this frame, no forced layout in the opening task)
   try { const E_ = AU.synth[i]; if (E_) E_.mkScope(true); } catch (e) {}
   einOn(true);
   if (typeof ResizeObserver !== 'undefined') { U.ro = new ResizeObserver(() => {
     if (!fr.isConnected) { U.ro.disconnect(); return; }
+    coverSync();
     const r2 = fr.getBoundingClientRect(), w = Math.floor(r2.width), h = Math.floor(r2.height); if (!w || !h || (w === U.fw && h === U.fh)) return;
     clearTimeout(U.roT); U.roT = setTimeout(() => { if (!panelLive(pg, i) || P.el !== U) return; build(pg, i); }, 60); }); U.ro.observe(fr); }
   if (!P.seen) { P.seen = true; lcdShow(MK_LABEL, wholeMode() ? 'die ganze Platte · drehen, tippen, eine Sektion antippen = Zoom' : 'eine Hälfte der Platte · Wischen = andere Hälfte · Sektion antippen = Zoom'); }
 }
+/* MK-P-09 (Leistung): the parts of the main screen that the open MS-2000 sheet covers completely (the clip grid with its
+   running clips, landscape also the head, strip, mode bar, Träger and keyboard) are not painted while it covers them: every frame with a
+   change (Lauflicht, TEMPO LED, a knob) otherwise re-layerized their ~800 hidden nodes. Only visibility (no layout, no
+   size change); the CSS rule holds only while a sheet is open (#app.sheet-open), and leave() (✕, ≡, browser, project or
+   track switch, closeSheets) and buildSynthEd for another engine take the mark off again */
+const COVER = ['gridArea', 'top', 'strip', 'modebar', 'carrier', 'kbArea'];
+function coverSync() {
+  try {
+    const sh = EL.synthSheet; if (!sh || !sh.classList.contains('open')) { coverOff(); return; }
+    const a = sh.getBoundingClientRect();
+    for (const id of COVER) { const n = document.getElementById(id); if (!n) continue; const b = n.getBoundingClientRect();
+      const cov = b.width > 0 && b.height > 0 && b.left >= a.left - .5 && b.right <= a.right + .5 && b.top >= a.top - .5 && b.bottom <= a.bottom + .5;
+      if (n.classList.contains('mkcov') !== cov) n.classList.toggle('mkcov', cov); }
+  } catch (e) {}
+}
+function coverOff() { for (const id of COVER) { const n = document.getElementById(id); if (n && n.classList.contains('mkcov')) n.classList.remove('mkcov'); } }
 /* ---------- gestures on the plate (MK-P "Gesten", "Treffer") ---------- */
 const PT = new Map();
 function toPlate(fx, fy) { const T = P.el.T; return [(fx - T.tx) * PW / T.z, (fy - T.ty) * PW / T.z]; }
@@ -5222,7 +5251,7 @@ function knobMove(st, ev) {
   if (st.st === 'down') { if (Math.abs(ev.clientY - st.y0) < CTL_SLOP && Math.abs(ev.clientX - st.x0) < CTL_SLOP) return; st.st = 'drag'; st.y = ev.clientY; }
   if (d.src) return;
   const [lo, hi] = range(d), n = hi - lo, list = (!!d.L || !!d.stp || d.p === 'kbOct') && n <= 12, px = list ? n * clamp(PX_FULL / Math.max(1, n), 18, 40) : d.px || PX_FULL;
-  const f = ctlPrecision(Math.abs(ev.clientX - st.x0)); if (f < 1) lcdShow('FEIN', fineLabel(f));
+  const f = ctlPrecision(Math.abs(ev.clientX - st.x0));
   if (d.log) { const r = Math.log(hi / lo); st.v = clamp(lo * Math.exp(clamp(Math.log(Math.max(lo, st.v) / lo) + (st.y - ev.clientY) / px * r * f, 0, r)), lo, hi); }
   else st.v = clamp(st.v + (st.y - ev.clientY) / px * n * f, lo, hi);
   st.y = ev.clientY;
@@ -5231,11 +5260,16 @@ function knobMove(st, ev) {
   if (P.rec) recTouch(d, st);
   setv(d, nv, !list);
   if (Math.round(get(d)) !== before && (list || d.sst != null || (n > 12 && d.L) || d.wv)) haptic('tick');
-  P.lastKnob = d; paintKnob(st.e.id); lcdOf(d); showVal(d); paintOrig();
+  P.lastKnob = d; paintKnob(st.e.id); lcdSoon(d); showVal(d); paintOrig();
 }
+// MK-P-09 (c): during a drag the sheet's LCD line is written once per frame (its fit check reads the layout): the last
+// value of the frame wins, a gesture's end writes at once and drops a pending write
+let LCDQ = null, LCDR = 0;
+function lcdSoon(d) { LCDQ = d; if (!LCDR) LCDR = requestAnimationFrame(() => { LCDR = 0; const q = LCDQ; LCDQ = null; if (q) lcdOf(q); }); }
+function lcdSoonDrop() { LCDQ = null; }
 let LASTTAP = null;
 function knobEnd(st, cancel) {
-  const d = st.d; if (!d) return;
+  const d = st.d; if (!d) return; lcdSoonDrop();
   if (st.st === 'drag') {
     if (d.p === 'voc.efs') {
       setv(d, Math.round(st.v), false); P.lastKnob = d; const v = get(d);
@@ -5359,7 +5393,7 @@ function buildSpiel() {
 // landscape: the keys and the wheels fill the rest of the frame (H-17)
 function spielKb(U, sp) {
   if (P.land) requestAnimationFrame(() => { if (!sp.isConnected || sp.hidden) return; const fr = U.fr.getBoundingClientRect(), b = sp.getBoundingClientRect(), y = Math.round(b.bottom + 4);
-    const st = EL.app.style; st.setProperty('--mkkb-x', Math.round(fr.left) + 'px'); st.setProperty('--mkkb-y', y + 'px'); st.setProperty('--mkkb-w', Math.round(fr.width) + 'px'); st.setProperty('--mkkb-h', Math.max(60, Math.round(fr.bottom - y)) + 'px');
+    const st = (EL.kbArea || EL.app).style; st.setProperty('--mkkb-x', Math.round(fr.left) + 'px'); st.setProperty('--mkkb-y', y + 'px'); st.setProperty('--mkkb-w', Math.round(fr.width) + 'px'); st.setProperty('--mkkb-h', Math.max(60, Math.round(fr.bottom - y)) + 'px');
     if (!EL.app.classList.contains('mkqkb')) { releaseInputs(r => r === 'play' || r === 'pad'); EL.app.classList.add('mkqkb'); UI.kbRelayout = true; } });
 }
 function spielSteps() {
@@ -5460,6 +5494,7 @@ function morePop(anchor, i, o) {
 }
 // the editor closes or another sheet opens: T1, no armed split, no running take (all view state, never stored); the zoom stays
 function leave() {
+  coverOff();
   einOn(false); P.tim = 1; P.splitArm = false; UI.mkSplitArm = null; UI.mkSplitOff = null; P.view = null; P.xv = null; P.ch0 = null; P.editHeld = 0;
   if (P.rec) recCancel('abgebrochen (anderer Sound oder Editor zu)');
   try { const E = AU.synth[P.i]; if (E && E.mkScope) E.mkScope(false); } catch (e) {}
@@ -5486,12 +5521,16 @@ function frame(now, bAud) {
   if (k !== P.run) { P.run = k; P.runN = (P.runN || 0) + 1; const lit = k ? 0 : litOf(); if (PL.ui) for (let j = 1; j <= 16; j++) setLed('s' + j, k ? (k === j ? 'on run' : '') : stepBase(j, lit)); spielPaint(); }
 }
 /* ---------- test API (B.7): mkPanel(), mkView(o) ---------- */
+const ZCACHE = {k: null, Z: null};
 function panelInfo() {
   const U = P.el; if (!U || !U.fr || !U.fr.isConnected || !U.T) return null;
   const fr = U.fr.getBoundingClientRect(), T = U.T, s = T.z / PW, vis = visRect(), plate = P.tab === 'geraet' && !P.view;
   // the hit zones: the screen rectangle of the 0.5 % cells that belong to each element (Treffer = nearest element)
-  const Z = new Map(); if (plate) { const cs = 5; for (let y = cs / 2; y < PH; y += cs) for (let x = cs / 2; x < PW; x += cs) { if (x < vis[0] || x > vis[2] || y < vis[1] || y > vis[3]) continue; const e = hitAt(x, y, vis); if (!e) continue;
-    const z = Z.get(e.id) || {x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9}; z.x0 = Math.min(z.x0, x - cs / 2); z.y0 = Math.min(z.y0, y - cs / 2); z.x1 = Math.max(z.x1, x + cs / 2); z.y1 = Math.max(z.y1, y + cs / 2); Z.set(e.id, z); } }
+  // MK-P-09: the zones depend only on the visible rectangle (the hit buckets are fixed), so they are computed once per view
+  const zk = plate ? vis.map(v => v.toFixed(2)).join(',') : '';
+  let Z = plate && ZCACHE.k === zk ? ZCACHE.Z : null;
+  if (!Z) { Z = new Map(); if (plate) { const cs = 5; for (let y = cs / 2; y < PH; y += cs) for (let x = cs / 2; x < PW; x += cs) { if (x < vis[0] || x > vis[2] || y < vis[1] || y > vis[3]) continue; const e = hitAt(x, y, vis); if (!e) continue;
+    const z = Z.get(e.id) || {x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9}; z.x0 = Math.min(z.x0, x - cs / 2); z.y0 = Math.min(z.y0, y - cs / 2); z.x1 = Math.max(z.x1, x + cs / 2); z.y1 = Math.max(z.y1, y + cs / 2); Z.set(e.id, z); } ZCACHE.k = zk; ZCACHE.Z = Z; } }
   const scr = (x, y, w, h) => ({x: +(fr.left + T.tx + x * s).toFixed(2), y: +(fr.top + T.ty + y * s).toFixed(2), w: +(w * s).toFixed(2), h: +(h * s).toFixed(2)});
   const pg = curPage(), [a, b] = lcdLines();
   return {fmt: window.innerWidth + 'x' + window.innerHeight + (P.land ? ' quer' : ' hoch'), rahmen: {x: fr.left, y: fr.top, w: fr.width, h: fr.height}, z: +T.z.toFixed(2), zOv: +zOv().toFixed(2), zb: PL.zb, plateMs: +(PL.ms || 0).toFixed(1),
@@ -6001,9 +6040,12 @@ const css = `
 .mkpb{position:absolute;box-sizing:border-box;border-radius:calc(var(--u) * 1.8);background:linear-gradient(180deg,hsl(210 10% 89%),hsl(210 8% 79%));border:calc(var(--u) * 1) solid #4b5158}
 .mkpb::before{content:'';position:absolute;left:calc(var(--u) * 3);right:calc(var(--u) * 3);top:calc(var(--u) * 3);bottom:calc(var(--u) * 3);border:calc(var(--u) * .7) solid rgba(38,42,47,.5);border-radius:calc(var(--u) * 1.2)}
 .mkpb.dn{background:linear-gradient(180deg,hsl(210 8% 71%),hsl(210 8% 64%))}
-.mkpb .led{position:absolute;left:50%;top:calc(var(--u) * 4.5);width:calc(var(--u) * 7.5);height:calc(var(--u) * 4.2);margin-left:calc(var(--u) * -3.75);border-radius:calc(var(--u) * 1.2);background:#5a1c13;z-index:1}
+.mkpb .led{position:absolute;left:50%;top:calc(var(--u) * 4.5);width:calc(var(--u) * 7.5);height:calc(var(--u) * 4.2);margin-left:calc(var(--u) * -3.75);border-radius:calc(var(--u) * 1.2);background:#5a1c13;z-index:1;box-shadow:0 0 calc(var(--u) * 3) rgba(255,90,36,0)}
 .mkpb.st .led{top:calc(var(--u) * 5);height:calc(var(--u) * 7.5);border-radius:50%}
-.mkpl{position:absolute;border-radius:50%;background:#5a1c13;box-shadow:inset 0 0 0 calc(var(--u) * .6) rgba(0,0,0,.35)}
+/* MK-P-09: an LED keeps the same glow extent on and off (a transparent glow when off), so lighting it is a repaint only and
+   never changes the plate's paint bounds (that forced a full layerization of the page in every Lauflicht/TEMPO frame) */
+#app.sheet-open .mkcov{visibility:hidden}#app.mkqkb #kbArea.mkcov{visibility:visible}
+.mkpl{position:absolute;border-radius:50%;background:#5a1c13;box-shadow:inset 0 0 0 calc(var(--u) * .6) rgba(0,0,0,.35),0 0 calc(var(--u) * 3) rgba(255,90,36,0)}
 .mkpl.on,.mkpb .led.on{background:#ff4b1e;box-shadow:0 0 calc(var(--u) * 3) #ff5a24}
 .mkpl.gn,.mkpb .led.gn{background:#3fe05a;box-shadow:0 0 calc(var(--u) * 3) #3fe05a}
 .mkpl.red,.mkpb .led.red{background:#ff2a12;box-shadow:0 0 calc(var(--u) * 3) #ff2a12}
@@ -6024,7 +6066,7 @@ const css = `
 .mkspb,.mksk,.mkhp{position:relative;box-sizing:border-box;border-radius:5px;background:linear-gradient(180deg,hsl(210 10% 89%),hsl(210 8% 79%));border:1px solid #4b5158;color:var(--mkp-ink);font:700 9.5px/1.1 var(--font-ui);letter-spacing:.02em;touch-action:manipulation}
 .mkspb{flex:0 0 44px;width:44px;height:44px;display:flex;align-items:flex-end;justify-content:center;padding:0 0 5px;white-space:nowrap}
 .mkspb:active,.mksk:active,.mkhp:active{background:linear-gradient(180deg,hsl(210 8% 71%),hsl(210 8% 64%))}
-.mksp .led{position:absolute;left:50%;top:5px;width:9px;height:5px;margin-left:-4.5px;border-radius:2px;background:#5a1c13}
+.mksp .led{position:absolute;left:50%;top:5px;width:9px;height:5px;margin-left:-4.5px;border-radius:2px;background:#5a1c13;box-shadow:0 0 3px rgba(255,90,36,0)}
 .mksp .led.on{background:#ff4b1e;box-shadow:0 0 3px #ff5a24}.mksp .led.gn{background:#3fe05a}.mksp .led.red{background:#ff2a12}
 .mkspb.tim .led{margin-left:-11px}.mkspb.tim .led.l2{margin-left:2px}
 .mkspb .led.tl{left:auto;right:4px;margin:0;width:5px;height:5px;border-radius:50%;background:#5a1c13}.mkspb .led.tl.on{background:#ff3b1f}
@@ -6056,7 +6098,7 @@ const css = `
 #synthSheet.mkq .mkqh .preset .pv{flex:1 1 auto;min-width:56px;max-width:none;height:44px}#synthSheet.mkq .mkqh .preset .pa{flex:none;width:44px;min-width:44px;height:44px}
 #synthSheet.mkq .mkqh .sh-tabs{flex:0 0 auto;height:44px;padding:0;gap:2px;align-items:center}
 #synthSheet.mkq .mkqh .sh-tabs .tab{flex:none;min-width:44px;height:44px;border-radius:6px;border:1px solid var(--line);padding:0 7px;font-size:11px}
-#synthSheet.mkq .mkqh .lcd.mkql{position:absolute;left:0;right:0;top:2px;bottom:2px;height:auto;margin:0;z-index:3;display:none;padding:0 6px}
+#synthSheet.mkq .mkqh .lcd.mkql{position:absolute;left:0;right:0;top:2px;bottom:2px;height:auto;margin:0;z-index:3;display:none;padding:0 6px;contain:strict}
 #synthSheet.mkq .mkqh .lcd.mkql.on{display:flex}
 #synthSheet.mkq .mkqplay .g-stop{display:none;color:var(--text)}#synthSheet.mkq .mkqplay .g-play{color:var(--play)}
 #app.playing #synthSheet.mkq .mkqplay .g-play{display:none}#app.playing #synthSheet.mkq .mkqplay .g-stop{display:inline}
@@ -6111,7 +6153,7 @@ pre.mkpr{max-height:40vh;overflow:auto;white-space:pre-wrap;font-size:10px}
 function ensureCss() { if (document.getElementById('mk-css')) return; const st = document.createElement('style'); st.id = 'mk-css'; st.textContent = css; document.head.appendChild(st); }
 ensureCss();
 window.MKUI = {mkVowel, build, render, renderSoon, wheels, wheelPaint, panelInfo, probe, probeSheet, arpFrame: frame, arp: ARPC, randomize: randomizeMk, P, KN, fmtv, get, range, setv, wv, MKTAB,
-  lcdOf, seqInit, seqSwap, seqCopy, seqToolsPop, recArm, recCancel, recDone, knobSim, stepsInfo, stepsPaint, timCopy, timSwap, timInit, timCopyPop, leave, splitArm, splitOff, viewOpen, viewClose, splitNote, ownInfo,
+  lcdOf, seqInit, seqSwap, seqCopy, seqToolsPop, recArm, recCancel, recDone, knobSim, stepsInfo, stepsPaint, timCopy, timSwap, timInit, timCopyPop, leave, splitArm, splitOff, coverSync, coverOff, viewOpen, viewClose, splitNote, ownInfo,
   press, view, chrome, tabFast, lcdLines, lcdTap, pages, curItem, pageOf, defOf, bindOf, hitAt, haltAt, visRect, panelScript, ELS, SEC, HALTE, PL, mkPanelProg, zoomTo, toOverview, step, compare,
   progRefresh: () => { if (!P.el || !P.el.fr || !P.el.fr.isConnected) return; const s_ = sndOf(P.i); if (s_) { P.orig = null; P.origKey = ''; origSync(s_); } renderSoon(); }};
 })();
@@ -27032,7 +27074,7 @@ function buildSynthEd() {
   sh.style.setProperty('--tc', `var(--t${i + 1})`);
   const eng = tr.sound.engine;
   const mkE = eng === 'mk';                                        // MK-P (B.3 Rahmen): [GERÄT] [SPIEL] [FX]
-  sh.classList.remove('mkp', 'mkq'); if (!mkE) EL.app.classList.remove('mkq', 'mkqkb');
+  sh.classList.remove('mkp', 'mkq'); if (!mkE) { EL.app.classList.remove('mkq', 'mkqkb'); if (typeof MKUI !== 'undefined' && MKUI.coverOff) MKUI.coverOff(); }   // MK-P-09: the covered main screen is painted again
   if (mkE) { mkLoad(); if (!['geraet', 'spiel', 'fx'].includes(ED.tab)) ED.tab = 'geraet'; }
   else if (!['osc', 'filter', 'env', 'lfo', 'mod', 'fx'].includes(ED.tab)) ED.tab = 'osc';
   let subs = subTabsFor(ED.tab, eng);

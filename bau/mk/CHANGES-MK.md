@@ -2598,3 +2598,17 @@ das Ergebnis ist das reine MS-2000-Bedienfeld (kein Knoten, keine Funktion, kein
 - Nichts (Format 5, `APP_CODE` 4 017 000 ≤ Wächter 4 021 000). Kein Supabase-Aufruf.
 
 Snapshot: `synq-snapshots/G-MKP8-merge.html`.
+
+## G-MKP8 Farbe (26.10.) – Blech blau-metallic nach Xanders Fotos
+
+- Xander (Gerätefotos, 7 Stück): „der MS 2000 ist viel blauer“. Gemessen (Median der blauen Fläche je Foto): Farbton H 199–210°,
+  Sättigung 0,7; helle Studiofotos #28678f / #2c799c, Sonnenlicht #1a3b5b, Pressefotos dunkler (#11374f … #24384b).
+- Blech jetzt `--mkp-metal` = Verlauf hsl(203 55% 38%) → hsl(206 58% 26%), Rand hsl(207 55% 16%), Aufdruck weiß (#e8eef3),
+  inverse Felder hell mit blauer Schrift; Streifen-Textur entfernt. SPIEL-Tasten behalten dunkle Schrift auf Hellgrau.
+- Nur CSS im Block `sq-mk-src`; Klang und Bedienung unverändert. Smoke X/P1 ohne Fehler.
+- Regler wie am Gerät (Xander: „das sind ja nur Kreise“): schwarze Kappe mit geriffeltem Rand (repeating-conic), gewölbte
+  Oberseite, fester Glanzpunkt (dreht nicht mit, `.mkpk::after`), weißer Strich auf der Oberseite, Schlagschatten; Tasten mit
+  Schatten und heller Kante. Nur CSS; beim Drehen wird weiter nur `transform` der Kappe geändert.
+- Nachtrag (Xander: „das Blau wirkt dunkler“): Blech dunkler, hsl(205 58% 31%) → hsl(208 62% 20%) (näher an Sonnenlicht-/Pressefotos
+  #1a3b5b … #24384b), Rand hsl(209 58% 12%). Regler: feinere Riffelung, Fase am Rand der Oberseite, Schatten unten, stärkerer
+  fester Glanz.
