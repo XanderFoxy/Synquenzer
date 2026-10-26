@@ -21,8 +21,8 @@ gemeinsamer Mikrofon-Abgriff, Undo, ECO, Probe, Test-API, Hilfe) ≈ +11 KB. Kom
      Butterworth 6 kHz mit HPF-PEGEL und HPF-GATE (W-40), **DIREKT** (W-41), **K-PEGEL / K-PAN** je Band (W-42).
    - **Halten** (`voc.hold`, 16 × 0…127, 0,5-dB-Schritte): TIMBRE-Taste (LED „HALTEN“) friert die Folger ein und
      speichert sie mit dem Sound; nochmal = aus; FOLGER ganz auf hält ebenso. Ein gehaltener Sound klingt ohne Eingang.
-   - **Begrenzer Stufe 1** (CPU): statt 2 Bandpässen einer mit Q × 2 (+ Ausgleich 0,91), Wechsel 30 ms Vorlauf +
-     30 ms Gleichleistungs-Blende. Ausgang mit weichem Knie über ±1 (Spitze ≤ +6 dBFS).
+   - **Begrenzer Stufe 1** (CPU): ~~statt 2 Bandpässen einer mit Q × 2 (+ Ausgleich 0,91)~~ – **ersetzt in MK7-fix:**
+     dieselben Bänder 4. Ordnung bei halber Abtastrate. Wechsel 60 ms Vorlauf + 30 ms Blende je Sample. Ausgang mit weichem Knie über ±1 (Spitze ≤ +6 dBFS).
    - **Ruhe-Sparen:** stille Analyse wird übersprungen (keine Denormale), unbenutzter Eingang kostet nichts im Kern.
    - **Träger-Stimmen** (4 Säge im INIT „Vocoder“): OSZ 1 (alle Wellen, auch Sinus mit STEUER 1/2) + Rauschen + E1
      (W-19-Kurve), × EG2 × Pegel/Anschlag/KEYTR., Verzerrung (W-23), mono in die Trägersumme.
@@ -94,7 +94,7 @@ sie ist nur Anzeige (kein Tipp), der MK7-Test prüft sie richtig. Testanpassung 
 
 ### Abweichungen von der Spec
 - Analyse-Güte fest 10 (Spec nannte keinen Wert, 7,5 erreichte MK7-01 nicht).
-- Begrenzer Stufe 1 = ein Bandpass mit Q × 2 und Ausgleich 0,91; bei harmonischen Trägern +0,7 … +1,7 dB (nur Info; Rauschen −0,76 dB).
+- ~~Begrenzer Stufe 1 = ein Bandpass mit Q × 2 und Ausgleich 0,91~~ – ersetzt in MK7-fix (halbe Rate statt halber Ordnung, siehe unten).
 - MK7-03 Folger gemessen als Abfall −6 → −26 dB (die Spitze am Anfang verfälscht den 0-dB-Bezug).
 - MK7-04 Gate-Zeit mit langsamen Folgern und festem Säge-Träger gemessen (sonst überdeckt der Folger das Gate).
 - MK7-16 F1/F2 über Vibrato-Hüllkurve (max-hold Vokal/roh), weil LPC auf 4 Formanten unzuverlässig war; dafür Vokal-Quelle
@@ -130,3 +130,86 @@ sie ist nur Anzeige (kein Tipp), der MK7-Test prüft sie richtig. Testanpassung 
 - `sq-mk-src`: `mkVowel`, KN-Vocoder-Regler, SEC1 [4]/[5], SEC2 [5], SPIELV, srcPop/holdToggle/chReset/paintEin,
   16-BÄNDER-Ansicht, render/timbreKey/numKey/knobGesture, CSS.
 - Keine Datenbank-Änderung.
+
+---
+
+## MK7-fix — fünf Prüf-Befunde behoben · App bleibt 4.15.0 · Format 5 · keine Server-Änderung
+
+Ausgangsstand: `mk-br-MK7/index.html` 4.15.0 (2 927 671 B). Neuer Stand 2 931 675 B, Schnappschuss
+`synq-snapshots/MK7-fix.html`. Nur MK7-Code berührt (MkVoc im Worklet, `mkInRoute`/`mkInLink`, `setMute`, `paintEin`).
+Nichts committet, kein Supabase-Aufruf.
+
+### 1. Stumme Vocoder-Spur ließ DIREKT und HPF (und das Mikrofon) in den Master
+- **Ursache:** `setMute` beendet nur Clip-Stimmen; DIREKT und HPF brauchen keine Note.
+- **Fix:** Der Eingang einer AM-Spur läuft jetzt Merger → **Tor-Gain** → Knoten. `mkInRoute` setzt das Tor auf 0, solange
+  die Spur stumm ist (20-ms-Rampe wie `mkDryCut`), `setMute` ruft `mkInRoute` sofort. Eine stumme AM-Spur hört also keinen
+  Eingang mehr: kein DIREKT, kein HPF, keine Analyse. Live-Tasten auf einer stummen Spur klingen wie bisher (ohne Eingang).
+- **Belege** (Chromium, Live-Kontext): `v3-qa7-mute2.mjs` 2/2 (stumm −300 dB statt −46,7 / −30,2 dBFS);
+  `v3-repro-mk7-mutevoc.mjs`: DIREKT 127 stumm −300 dB, HPF stumm −300 dB, Mikrofon (Fake) stumm −300 dB, nach dem
+  Entstummen wieder −46,8 dBFS; `v3-repro-mk7-mutevoc-clip.mjs` (Clip-Fall, echter M-Knopf): −29,8 → −300 dB.
+- `v3-qa7-mute.mjs` stummte für seine Messung die Vocoder-Spur selbst (hing am Fehler). Ersatz `v3-mk7fix-mute-src.mjs`
+  (Träger still statt stumm): „Stummschalten der Quelle schweigt den Eingang“ besteht (−24,6 → −168,5 dB).
+
+### 2. 16 BÄNDER zeigte keine Live-Bandpegel
+- **Ursache:** `paintEin()` brach ab, weil die Ansicht keine E1/E2-LEDs hat; `bandsLive()` wurde nie erreicht.
+- **Fix:** `bandsLive(m.b)` steht vor der LED-Prüfung.
+- **Belege:** `v3-qa7-bands.mjs` 2/2; `v3-mk7fix-bands6.mjs` 6/6 (P1, P2, P3, L1, L2, W: 561–726 grüne Pixel);
+  `v3-mk7fix-bandsrate.mjs`: Zeichnen 28 Hz (≤ 30), rAF 58–60 fps. Bild `dirigent-test/qa-mk7/bands-live-fix-P1.png`.
+
+### 3./5. Begrenzer Stufe 1 änderte den Vocoder-Pegel um −4,5 … +21,5 dB (MK7-11 M-PEGEL ± 1 dB, B.4)
+- **Ursache:** Ein Bandpass 2. Ordnung mit fester Ausgleichszahl 0,91 trifft die Bandenergie nur bei Rauschen; Teiltöne
+  zwischen den Bandmitten gehen viel stärker durch. Kein fester Ausgleich kann das lösen.
+- **Fix (Abweichung von der Spec-Formulierung „halbiert die Filterordnung“, Ziel von B.4 erfüllt):** Stufe 1 rechnet
+  **dieselben Bänder 4. Ordnung bei halber Abtastrate** (halbe Filterarbeit). Halbband-Filter: polyphasiges IIR
+  (2 + 2 Allpass-Koeffizienten, elliptisch, Übergang 0,06 fs, Alias ≤ −57 dB) für E2 und Träger hinunter, für L/R hinauf.
+  Bandmitten bei halber Rate enden bei 0,21 fs (nur FORMANT/CUTOFF ganz oben betroffen). Die Dämpfung je Band wird so
+  angepasst, dass die Bandbreite in Hz der vollen Rate entspricht (bilineare Verengung). Der Weg mit voller Rate bekommt
+  3 Samples Verzögerung (= Laufzeit der Halbband-Kette), damit die Blende keine Phasenlöcher hat. Blende jetzt je Sample
+  (vorher 10-%-Stufen je Block), 60 ms Vorlauf, 30 ms Blende; das Abschalten der alten Bank erst nach dem letzten Blendblock.
+  Halbraten-Koeffizienten nur aus Tabellen (keine `Math.tan`/`pow` je Block) und nur, solange Stufe 1 läuft.
+- **Belege:** `v3-qa-mk7-lim2.mjs` 0 von 35 außerhalb ± 1 dB (größter Sprung −0,04 dB; vorher 17 von 35, bis +21,5 dB);
+  `v3-qa-mk7-lim.mjs` 8/8 ok; `v3-qa7-pegel.mjs` (App-`mkRender`) max |Δ| 0,00 dB; `v3-rep-mk7-limchr.mjs` alle Fälle
+  ≤ 0,03 dB; live `v3-qa7-lim-live.mjs` (cpuInject) −0,02 dB statt −2,86 dB; `v3-mk7fix-lvl.mjs` (24 Fälle: Rauschen/Säge,
+  RESO 0/64/127, Halten, Vokale) schlechtester −0,30 dB; `v3-mk7fix-lvl2.mjs` (FORMANT ± 2 + CUTOFF ± 63, FC-MOD LFO,
+  Rauschen, 48 und 44,1 kHz) M-PEGEL ≤ 0,02 dB, M-KLICK beim Umschalten = Klang der Stufe 1 selbst.
+  Builder-Suite `v3-mk7-voc.mjs` 37/37 (Stufe 1 Nachbarband jetzt 13,1 dB statt 8,1; M-PEGEL Rauschen −0,03 dB).
+- **CPU** (`v3-mk7-cpu.mjs`, Median aus 5): Vocoder-Spur 1,94 × VA-Stimme (≤ 2,4, unverändert), Stufe 1 1,48 × (vorher
+  1,55 ×), unbenutzter Eingang −0,02 × (≤ 0,16).
+- **Info:** `v3-mk7fix-lvl2.mjs` Fall „FC-MOD LFO 63, RESO 127“ bei 48 kHz: M-EINBRUCH beim Zurückschalten −4,03 dB,
+  der Klang ohne Umschalten selbst −3,47 dB (LFO-Schwankung); Grenze „Klang − 0,5 dB“ um 0,06 dB verfehlt. Der alte Stand
+  hatte hier −7,24 dB.
+
+### 4. Gehaltener Formant verstummte bei SCHWELLE ≥ 1 (MK7-03)
+- **Ursache:** Die Synthese rechnete `env × Gate`; ohne oder mit leiser Quelle schloss das Gate den gehaltenen Klang.
+- **Fix:** Das Gate wirkt auf den Modulator (W-39). Bei HALTEN, FOLGER 127 oder gespeichertem `hold` blendet `hw` die
+  Synthese in 5 ms auf „offen“; ohne Halten bleibt alles bitgleich (`hw` = 0). Die 16-BÄNDER-Pegel folgen demselben Wert.
+- **Belege:** `v3-qa-mk7-hold.mjs`: gespeichertes `hold` ohne Eingang bei SCHWELLE 0/1/20/40/64/100 je +1,9 dBFS
+  (vorher −240 ab SCHWELLE 1); TIMBRE/HALTEN live bei SCHWELLE 30/64 bleibt −19,7 dBFS; FOLGER 127 mit −70-dBFS-Rauschboden
+  bleibt −19,7 dBFS. `v3-rep-mk7-holdgate.mjs` alle −5,2 dBFS. Chromium `v3-qa-mk7-holdbr.mjs`: Render SCHWELLE 0…64 je
+  −1,8 dBFS, live Spitze −4,7 dBFS bei SCHWELLE 0 und 30; `v3-rep-mk7-holdgate-br.mjs` alle −7,7 dB.
+
+### Regression
+- `v3-mk7-voc.mjs` 37/37 (MK7-12 bitgleich gegen G-MK34 für AM Säge, Dual+FX, Split, VA), `v3-mk7-inputs.mjs` 24/24,
+  `v3-mk7-ui.mjs` 102/102, `v3-qa7-bit.mjs` 7/7, `v3-qa7-live` 11/11, `v3-qa7-mic` 6/6, `v3-qa7-amp` 5/5, `v3-qa7-w30`,
+  `v3-qa-mk7reg-sends.mjs` (Stumm/Entstumm wie vorher). Smoke: keine Fehler (`dirigent-test/v3-mk7fix-smoke.png`).
+- Der Vocoder-Ausgang im normalen Betrieb ist um 3 Samples (62 µs) später als vor dem Fix (Verzögerungs-Ausgleich); sonst
+  gleich. Synth-Programme bitgleich.
+- Wackelig auch auf dem alten Stand: Leistungs-Probe „Vocoder“ in `v3-mk7-ui.mjs` meldet im Test-Browser gelegentlich
+  `frames_ok: false` (alt 1 von 4, neu 1 von 4 Läufen). `v3-qa7-pegel.mjs` lieferte einmal einen stillen Render (+288 dB);
+  in 3 Wiederholungen und 36 weiteren Renders nicht wieder aufgetreten.
+- Unverändert offen (QA-Skripte, schon vor dem Fix gleich, nicht Teil dieses Auftrags): `v3-qa7-dsp1/sep` k±3 = 29,9–30,0 dB,
+  `v3-qa7-dsp2` FOLGER 0 / FOLGER 127 / K-PEGEL 0 mit strengerer Messung, `v3-qa7-dsp4` Stufe-1-M-KLICK +6,3 dB (alt +6,4),
+  `v3-qa7-vowel` F1/F2 9,3 %.
+
+### Budget
+- **MK7-14 Budget überschritten:** 2 931 675 B = **+56 933 B** gegen G-MK34 (≤ +52 KB = 53 248 B; vor dem Fix +52 929 B).
+  Die +4,0 KB sind Halbband-Weg, Band-Hilfsfunktion und das Tor für stumme Spuren. Kommentare sind schon gekürzt; weiteres
+  Sparen ginge nur über Minifizieren. Entscheidung beim Orchestrator (Datei-Grenze 5,0 MB weit entfernt).
+
+### Für den Hauptstrang / Zusammenführen
+- Berührt: Worklet `MK_VXF`-Zeile, neue Helfer vor `class MkVoc` (`MK_VHB`, `MK_VH`, `MK_VD`, `mkVgH`, `mkAp`, `mkHbDown`,
+  `mkHbUp`, `mkB4`), `MkVoc` (Konstruktor, `settle`, `block`, `bands`), MKW ohne `vocC2`; Hauptteil `mkInRoute`/`mkInLink`/
+  neues `mkInMute`, `setMute`; `sq-mk-src` `paintEin`.
+- Nichts aus MK4 oder früher geändert.
+- iPhone offen (Pages): Stufe 1 am Gerät hören (Vocoder-Akkord, viele Spuren bis LIM 1), Stummschalten einer Vocoder-Spur
+  mit Mikrofon.

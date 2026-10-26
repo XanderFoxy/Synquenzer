@@ -1,0 +1,11 @@
+import {open, sleep, OUT} from './v3-qa-gmk6-tl.mjs';
+const T = await open({viewport: {width: 844, height: 390}}); const {p, E, errs} = T;
+await T.openEd(2); await T.toMk();
+await E(() => { MKUI.setWahl(2, 10); }); await sleep(300);
+await T.tapMk('shift', 250); await T.tapMk('n4', 400);
+const info = await E(() => { const p = document.querySelector('#popLayer .pop'); if (!p) return null; const r = p.getBoundingClientRect(); return {pop: [r.x, r.y, r.width, r.height], btns: [...p.querySelectorAll('button')].slice(0, 8).map(b => { const q = b.getBoundingClientRect(); return [b.textContent, Math.round(q.x), Math.round(q.y), Math.round(q.width), Math.round(q.height)]; }), list: (() => { const l = p.querySelector('.plist'); const q = l.getBoundingClientRect(); return [q.y, q.height, l.scrollTop, l.scrollHeight]; })()}; });
+console.log(JSON.stringify(info));
+await p.screenshot({path: OUT + 'x7-L-tools.png'});
+const r = await T.tapPop(/^S2$/); console.log('tap', JSON.stringify(r)); await sleep(300);
+console.log('pop after', await E(() => !!document.querySelector('#popLayer.open .pop')), JSON.stringify(await E(() => SYNQUENZER.undoInfo().top)));
+await T.br.close();

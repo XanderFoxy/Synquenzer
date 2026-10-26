@@ -142,3 +142,88 @@ Entfällt (der microKORG hat keinen Mod-Sequenzer); die Kurven bleiben eK.
   `v3-mk6-ui.mjs` (Chromium, `v3-mk6-ui.out`), `v3-mk6-pe1.mjs` (`v3-mk6-pe1.out`), Hilfen `v3-mk6-q0.mjs`, `v3-mk6-dbg*.mjs`, `v3-mk6-look0.mjs`.
 - Bildschirmfotos `dirigent-test/v3-mk6-shots/`: je Format P1, P2, P3, L1, L2, W, L1-SA, L0-SA, L1-HB: `-seq`, `-seq-eb2`, `-schritte`; dazu `P1-schritte-edit.png`.
 - Schnappschuss: `synq-snapshots/MK6.html`.
+
+## MK6-fix — 4 bestätigte Befunde der Abnahme (App bleibt 4.14.0, Format 5, keine Datenbank-Änderung)
+
+### Behoben
+1. **● AUFN. endete nie bei LÄNGE 1 oder nach einem abgelaufenen LAUF Einmal** (MK6-09, MK6-14). Worklet:
+   - `recMsg` setzt `done` der Timbre- und aller Stimmen-Positionen zurück: während der Aufnahme läuft die Sequenz als Schleife weiter,
+     auch nach dem Auslaufen von Einmal (vorher stand die Position auf dem letzten Schritt fest).
+   - Neuer Durchlauf-Zähler `MkSqP.wr` (in `sqAdv`, Schleife und Song-Raster). `recStep` endet, wenn ein neuer Durchlauf beginnt
+     (`r.H.wr !== r.w`) oder der Schritt kleiner wird. Damit endet die Aufnahme auch bei LÄNGE 1, wo der Schritt immer 1 bleibt.
+   - Nachweis: `v3-qa6-acc.mjs` Q9a–e 5/5 (vorher Q9a/b/d FAIL). `v3-qa6-ui.mjs` ONLY=REC 3/3 in Chromium mit dem echten ● AUFN.-Knopf:
+     ZIEL 11, SEQ an, CUTOFF zurück auf 40, ein Undo. `v3-vrf-mk6rec.mjs` A, B, B2, C, D enden alle (vorher A, B, B2 hingen).
+2. **FP-SONG: Bei KEY SYNC aus folgte die Sequenz dem Transport-Schlag statt dem Song-Schlag** (MK6 Umfang 1, MK6-05).
+   - Hauptthread: `mkSongSync()` (neben `songBeatOf`) schickt `{mkSong: {off, prev, wrap}}` an die Engines, nur wenn sich etwas ändert.
+     Aufgerufen im Scheduler direkt nach `songTick`, also auch bei ▶ SONG ab Takt n, ⟲-Schleife und Teil-Sprung. Der Scheduler läuft
+     voraus, deshalb kommt ein Sprung vor dem hörbaren Zeitpunkt an.
+   - Worklet: `sqTick` rechnet Song-Schlag = Transport-Schlag − off (vor `wrap`: − prev), genau wie `songBeatOf`. Einmal wartet vor
+     Song-Schlag 0 auf Schritt 1 und hält nach C.
+   - Zwischen den Noten läuft das Song-Raster jetzt weiter (`idle(n, fr)` bekommt den Block-Frame). Vorher stand die Position still,
+     bis eine Note kam, und der erste Bericht nach einer Note zeigte einen alten Schritt.
+   - Nachweis: `v3-fp6q-song.mjs` ab Takt 2 58/58 und ab Takt 4 58/58 auf dem Song-Raster (vorher 0/60 bzw. 0/59).
+     `v3-fp6q-loop.mjs` 158/158 (vorher 86/161). `v3-fp6q-indep.mjs` 60/60, 61/61 und 60/60 (vorher 0/60 und 0/61).
+     `v3-fp6q-indep2.mjs` (Einmal ab Takt 2) hält ab Song-Schlag 4 auf Schritt 5 (done).
+3. **MK6-12 Leistung mit teuren Zielen** (beide Befunde: LFO1/2-FREQ bei LFO KEY SYNC Stimme; EG2 SUSTAIN, RESONANZ, Wellenfolge).
+   - LFO-Frequenz als Tabelle `MK_LHZ`/`mkLHz` in 1/16-Einheiten, linear dazwischen. Ganze Werte sind bitgleich zu `MKW.lfoHz`,
+     Bruchwerte weichen < 2e-6 relativ ab. Sie gilt nur auf den Seq-Wegen; ohne Seq bleibt alles wie vorher (MK6-10 bitgleich).
+   - Die Arbeit je Stimme (Position, Werte, EG-Latch, LFO-Raten `v.qr1`/`v.qr2`) läuft in `sqPreAll`/`sqPre` vor den Stimmen, in einer
+     eigenen Funktion. `voice()` liest nur noch `v.qso`/`v.qE1`/`v.qE2`/`v.qr1`/`v.qr2`.
+   - SUSTAIN bewegt sich innerhalb der Sustain-Stufe: nur `Ev.s`/`Ev.dT` werden neu gesetzt statt `mkEnvC` (kein exp/log je Block;
+     Stufe 3 liest nur `E.s`, der Rest wird an der nächsten Stufe neu gebaut). Ergebnis bitgleich.
+   - `Ev` hat jetzt dieselbe Form wie `E1`/`E2`: Das Feld `.on` fällt weg, an seiner Stelle stehen `v.sqO1`/`v.sqO2`.
+   - Schrittwerte werden einmal je Änderung in `sqPrep` geklemmt (`q.c`, Float64Array), nicht mehr je Stimme und Block.
+   - Nachweis (Node, eigener Prozess je Fall, verschachtelt):
+     - `v3-qa6-cpu.mjs`: LFO1+LFO2+RES 0,38 × (vorher 0,78–0,80), LFO1 allein 0,28 (0,80), LFO2 allein 0,29 (0,51), RES 0,22.
+     - `v3-fp6q-cpu2.mjs` N=9: egs 0,39 × (vorher 0,62–0,88), wv 0,33 × (vorher 0,65–0,80).
+     - `v3-mk6fix-cpu.mjs` (CPU-Uhr, alle Zielsätze, N=5–7): egs 0,32–0,47, egsStufe 0,38–0,41, wv 0,32–0,45, lfo 0,38–0,48,
+       cheap 0,16–0,32. „nul“ (alle Werte 0, nur der Mechanismus) kostet 0,22.
+     - `v3-mk6-cpu.mjs` (Builder) 0,20 / 0,12 / 0,37.
+   - Die Streuung auf der geteilten Maschine liegt bei ±0,1. Der Schätzer „cpu“ aus `v3-rv-mk6cpu-indep.mjs` zählt die ganze
+     Prozess-CPU, also auch JIT-Übersetzung, GC-Threads und das Lesen der Datei. Er ist keine Block-Messung und streut stark
+     (VA-Stimme 8,7 statt 4,8 ms/s). q25 und das beste Fenster bestehen dort (egs 0,41–0,53, wv 0,32–0,37).
+4. **Zusätzlich (gefunden mit `v3-qa6-ui.mjs`, Q-FIRST, scheiterte schon in MK6.html):** Bei der ersten Note nach dem Laden wurden die
+   Seq-Werte 5 ms eingeblendet. Ein EG-Ziel rastete dadurch mit fast 0 ein, und SEQ ATTACK +63 wirkte auf diese erste Note nicht.
+   `sqPrep` blendet jetzt nur ein, wenn es vorher schon einen Zielsatz gab (`this.sqSig != null`). Q-FIRST besteht: −36,3 dB wie das
+   gespeicherte ATTACK 63.
+
+### Regression (alle auf `mk-br-MK6/index.html`)
+- Node:
+  - `v3-mk6-seq.mjs` alle bestanden, MK6-10 bitgleich gegen 4.12.0 (MK4-fix.html).
+  - `v3-mk6-fp.mjs` alle bestanden.
+  - `v3-qa6-acc.mjs` 15/16. Q6 scheitert auch in MK6.html: Der Bericht bei t = 0,62 s liegt schon im Schritt ab 0,625 s; die Prüfung
+    ist zu grob gerastert und zeigt keinen Fehler.
+  - `v3-mk4-fx.mjs`, `v3-mk2-osc.mjs`, `v3-mk1-dsp.mjs`: Die einzigen Ausfälle sind die bekannten Zeitmessungen (Denormale,
+    MK1-24). Sie bestehen im zweiten Lauf und scheitern ebenso in MK6.html.
+  - `v3-mk3-scale.mjs` bestanden. `v3-mk4fix-kill.mjs` unverändert.
+  - `v3-fp6q-bit/ks/rec/rec2/t3.mjs` liefern dieselben Werte wie MK6.html (siehe „Offen“).
+- Chromium:
+  - `v3-mk6-ui.mjs` 28/28, auch mit den echten Schriften: `v3-mk6fix-ui-font.mjs` lädt `cloudPagesExtras()` mit `fonts/` neben einer
+    Kopie in `mk6fix-fonttest/`, alle 5 Schnitte geladen. Damit bestehen M-PLATZ, M-ANSICHT und die Leistungs-Probe „+Seq“
+    (fps 59,9, 0 longtasks).
+  - `v3-qa6-ui.mjs` alle bestanden.
+  - Smoke ohne Fehler (`dirigent-test/v3-mk6fix-smoke.png`).
+- Worklet weiter ASCII. Größe +4,1 KB (2 920 943 B).
+
+### Zusammenführen (zusätzlich zu oben)
+- Außerhalb der MK-Blöcke berührt:
+  - Scheduler (eine Zeile `mkSongSync()` nach `songTick`).
+  - `mkSongSync()` neben `songBeatOf`.
+  - Prozessor `onMsg` (`m.mkSong` → `this.sqSong`) und Konstruktor (`sqSong`).
+  - `MkCore.idle(n, fr)` und die zwei Aufrufer im Prozessor (`idle(CR, f0 + off)`, `idle(N, f0)`).
+- Wenn MK5/MK7 `MkCore.idle` oder `MkTim.idle` ändern, muss der zweite Parameter `fr` mitwandern.
+
+### Offen (nicht in der Befundliste, schon in MK6.html genauso; für den Orchestrator)
+- `v3-fp6q-rec2.mjs`: KEY SYNC Stimme. Endet die jüngste Stimme mitten in der Aufnahme, springt die Aufnahme auf die Timbre-Position,
+  und es bleiben Schritte ungeschrieben (4–6).
+- `v3-fp6q-t3.mjs`: Den Wert des laufenden Schritts bei Glatt + CUTOFF ändern (SCHRITTE malen) ergibt M-KLICK 24–27 dB (Stufe ≤ 2,5 dB).
+- `v3-fp6q-bit.mjs`: Gegen 4.12.0 weichen „patch 5/7“ auch bei Seq aus ab (max |Δ| 0,21 / 0,89). Ursache wohl vor MK6, gehört in den
+  Hauptstrang.
+- Hauptstrang (MK1, nicht hier behoben):
+  - `voice()` erzeugt auch ohne Seq ≈ 13 MB/s Müll. Gemessen mit `dirigent-test/v3-mk6fix-alloc.mjs`, wahrscheinlich doppelte Werte in
+    getaggten Feldern.
+  - Ein ruhendes Timbre ruft in `MkTim.idle` je Block zweimal `lfoRate` (Math.pow) auf statt `lfoRateC`.
+  - Beides kostet bei jedem AM-Klang.
+- Neue Hilfen in `dirigent-test/`: `v3-mk6fix-cpu.mjs`, `v3-mk6fix-alloc.mjs`, `v3-mk6fix-font.mjs`, `v3-mk6fix-ui-font.mjs`,
+  `v3-mk6fix-indep-dbg.mjs`, `v3-mk6fix-q6.mjs`.
+- Schnappschuss: `synq-snapshots/MK6-fix.html`.

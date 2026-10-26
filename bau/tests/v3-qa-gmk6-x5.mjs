@@ -1,0 +1,14 @@
+import {open, sleep, OUT, check, done, eq, diff} from './v3-qa-gmk6-tl.mjs';
+const T = await open({viewport: {width: 390, height: 844}}); const {p, E, errs} = T;
+const TR = 2;
+await T.openEd(TR);
+let c = await T.rectText('button', /^(VA|FM|WT) ▾$/); await T.tap(c.cx, c.cy, 400); await T.tapPop(/MS ?2000/); await sleep(1200);
+await E(t => { const Q = SYNQUENZER; Q.mkSet(t, 't.0.f.cut', 40); MKUI.setWahl(2, 10); MKUI.viewOpen('schritte'); }, TR);
+await sleep(400);
+const list = () => E(() => [...document.querySelectorAll('.hb.ur, button')].filter(b => /^[↶↷]$/.test(b.textContent.trim())).map(b => { const r = b.getBoundingClientRect(); return [b.id, b.className, b.textContent.trim(), r.x, r.y, r.width, r.height, b.disabled, b.closest('[id]') && b.closest('[id]').id]; }));
+console.log(JSON.stringify(await list()));
+await p.screenshot({path: OUT + 'x5.png'});
+await T.tapMk('rec', 400);
+console.log(JSON.stringify(await list()));
+await p.screenshot({path: OUT + 'x5-rec.png'});
+await T.br.close();

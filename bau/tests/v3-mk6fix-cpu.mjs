@@ -14,9 +14,10 @@ const C = {
   kern: [base, null], egs: [base, SEQ([23, 12, 25], [0, 0, 0])], egsStufe: [base, SEQ([23, 12, 25], [1, 1, 1])], cheap: [base, SEQ([11, 1, 16], [0, 1, 0])],
   kernW: [baseW, null], wv: [baseW, SEQ([5, 12, 23], [0, 0, 0])],
   lfok: [baseL, null], lfo: [baseL, SEQ([25, 26, 12], [0, 0, 0])], l1o: [baseL, SEQ([25], [0])], l2o: [baseL, SEQ([26], [0])], res3: [baseL, SEQ([12], [0])],
+  nul: [base, {on: 1, last: 16, type: 2, run: 1, ks: 2, res: 3, q: [11, 1, 16].map(k => ({k, m: 0, v: new Array(16).fill(0)}))}],
   va: [null, null],
 };
-const REF = {egs: 'kern', egsStufe: 'kern', cheap: 'kern', wv: 'kernW', lfo: 'lfok', l1o: 'lfok', l2o: 'lfok', res3: 'lfok'};
+const REF = {nul: 'kern', egs: 'kern', egsStufe: 'kern', cheap: 'kern', wv: 'kernW', lfo: 'lfok', l1o: 'lfok', l2o: 'lfok', res3: 'lfok'};
 if (process.argv[2] === 'one') {
   process.env.MK_FILE = FILE;
   { const pn = () => { const u = process.cpuUsage(); return (u.user + u.system) / 1000; }; Object.defineProperty(globalThis, 'performance', {value: {now: pn}, configurable: true, writable: true}); }
@@ -37,5 +38,5 @@ const med = a => { const s = a.slice().sort((x, y) => x - y); return s[s.length 
 for (const [j, nm] of [[0, 'q25 (CPU clock)'], [1, 'best window (CPU clock)']]) {
   const m = Object.fromEntries(Object.entries(R).map(([k, v]) => [k, med(v.map(x => x[j]))])), vaV = m.va / 4;
   console.log('== ' + nm + ': VA voice ' + vaV.toFixed(2) + ' ms/s');
-  for (const k of ks) if (REF[k]) { const x = (m[k] - m[REF[k]]) / vaV; console.log('  ' + (x <= .5 ? 'PASS' : 'FAIL') + ' ' + k.padEnd(9) + (x >= 0 ? '+' : '') + x.toFixed(2) + ' x VA voice (' + m[k].toFixed(2) + ' vs ' + REF[k] + ' ' + m[REF[k]].toFixed(2) + ' ms/s)'); }
+  for (const k of ks) if (REF[k]) { const x = (m[k] - m[REF[k]]) / vaV; console.log('  ' + (x <= .5 ? 'PASS' : 'FAIL') + ' ' + k.padEnd(9) + (x >= 0 ? '+' : '') + x.toFixed(2) + ' x VA voice (' + m[k].toFixed(2) + ' vs ' + REF[k] + ' ' + m[REF[k]].toFixed(2) + ' ms/s) · runs ' + R[k].map(x => x[j].toFixed(1)).join('/') + ' vs ' + R[REF[k]].map(x => x[j].toFixed(1)).join('/')); }
 }

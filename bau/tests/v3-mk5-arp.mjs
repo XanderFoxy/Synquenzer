@@ -83,7 +83,8 @@ await T('MK5-03', async page => {
     for (const res of [1, 0, 2, 3, 4, 5]) {
       H.reset(); H.Q.setBpm(120); H.arp({on: 1, res, gate: 50}); H.Q.play(); await H.sl(150);
       H.keys([60, 64, 67]); await H.sl(res >= 4 ? 2600 : 1400); H.up([60, 64, 67]); await H.sl(60);
-      const nl = H.Q.noteLog(400).filter(e => e.src === 'arp'), L = H.log();
+      // MK5-fix: a chord heard on a grid point starts with a late first step at once (flag late); the grid steps after it are measured
+      const nl = H.Q.noteLog(400).filter(e => e.src === 'arp' && !e.late), L = H.log().filter(x => !x.late);
       out[res] = {beats: nl.map(e => e.beat), dt: L.slice(1).map((x, k) => x.t - L[k].t)};
       H.Q.stop();
     }
@@ -111,7 +112,7 @@ await T('MK5-05', async page => {
   const r = await page.evaluate(async () => {
     const out = {};
     for (const sw of [50, -50, 0]) { H.reset(); H.Q.setBpm(120); H.arp({on: 1, res: 3, gate: 30, swing: sw}); H.Q.play(); await H.sl(150); H.keys([60, 64, 67]); await H.sl(1600); H.up([60, 64, 67]); await H.sl(50);
-      out[sw] = H.Q.noteLog(400).filter(e => e.src === 'arp').map(e => e.beat); H.Q.stop(); }
+      out[sw] = H.Q.noteLog(400).filter(e => e.src === 'arp' && !e.late).map(e => e.beat); H.Q.stop(); }
     return out;
   });
   const off = bs => bs.map(b => { const k = Math.round((b - (Math.abs(b * 2 - Math.round(b * 2)) < .1 ? 0 : 0)) * 2); return b; });

@@ -1,0 +1,15 @@
+import {open, sleep, check, done, OUT} from './v3-qa-gmk6-tl.mjs';
+const T = await open({viewport: {width: 390, height: 844}}); const {p, E, errs} = T;
+await T.openEd(0);
+const c = await T.rectText('button', /^VA ▾$/); await T.tap(c.cx, c.cy, 400); console.log('pop', JSON.stringify(await T.popTexts()));
+await T.tapPop(/MS ?2000/); await sleep(1200);
+console.log('engine', await E(() => SYNQUENZER.getSound(0).engine), JSON.stringify(await T.panel()));
+await p.screenshot({path: OUT + 'x2-mk.png'});
+await T.tapMk('w2', 300); console.log('w2 list', JSON.stringify(await T.popTexts()));
+await p.screenshot({path: OUT + 'x2-w2.png'});
+const r = await T.tapPop(/SEQ/); await sleep(300);
+console.log('after SEQ', JSON.stringify(await T.panel()), await T.lcd2());
+await p.screenshot({path: OUT + 'x2-seq.png'});
+console.log('mrow2', JSON.stringify(await E(() => [...document.querySelectorAll('#synthSheet .mrow2')].map(e => [e.dataset.k, e.textContent]))));
+console.log('errs', errs);
+await T.br.close();

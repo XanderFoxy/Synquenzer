@@ -3853,7 +3853,7 @@ const ARPC = (function () {
   'use strict';
   const RES = [1 / 24, 1 / 16, 1 / 12, 1 / 8, 1 / 6, 1 / 4];   // W-11 (x 4 beats)
   const TYP = ['Up', 'Down', 'Alt 1', 'Alt 2', 'Random', 'Trigger'];
-  const E_ = 1e-4, HIST = 48, LOGN = 4096, CHW = .03;
+  const E_ = 1e-4, HIST = 48, LOGN = 4096, CHW = .03, LATE = .06, LATEW = .02;
   const ST = new Map();                 // track index -> state
   const LOG = new Map();                // track uid -> arpLog ring
   const md = (a, n) => ((a % n) + n) % n;
@@ -3896,7 +3896,7 @@ const ARPC = (function () {
   }
   function st(i) {
     let s = ST.get(i);
-    if (!s) { s = {iv: [], grid: null, next: 0, pc: -1, pg: null, kOn: false, hist: [], planT: -Infinity, brk: -Infinity, bpm: S.bpm, res: -1, cur: null}; ST.set(i, s); }
+    if (!s) { s = {iv: [], grid: null, next: 0, pc: -1, pg: null, gb: null, late: null, kOn: false, hist: [], planT: -Infinity, brk: -Infinity, bpm: S.bpm, res: -1, cur: null}; ST.set(i, s); }
     return s;
   }
   function logOf(i) { const tr = S.tracks[i], k = tr && tr.uid ? tr.uid : 't' + i; let L = LOG.get(k); if (!L) { L = []; LOG.set(k, L); } return L; }
@@ -3916,6 +3916,7 @@ const ARPC = (function () {
     const s = st(i), L = s.iv;
     // a chord is never played at exactly one instant: a key within 30 ms after a step that has not sounded yet joins that step
     if (x.src === 'live' && s.grid) { const now = nowT(); for (let k = s.hist.length - 1; k >= 0; k--) { const r = s.hist[k]; if (r.t > x.on + 1e-6) continue; if (r.t > now + .002 && x.on - r.t <= CHW) x.on = r.t; break; } } let k = L.length; while (k > 0 && L[k - 1].on > x.on) k--; L.splice(k, 0, x);
+    if (s.grid && s.grid.k === 'song') { const m = A_(i), g = m ? lateIdx(s, m, x) : null; if (g != null) { if (!(s.late && s.late.idx === g && s.late.x.on <= x.on && s.iv.includes(s.late.x))) s.late = {idx: g, x}; if (g < s.next || s.hist.some(r => r.idx >= g)) rewind(i, nomT(s, g)); } }
     if (s.grid && x.on <= s.planT + 1e-6) rewind(i, x.on);
     return x;
   }
@@ -3932,6 +3933,22 @@ const ARPC = (function () {
     if (latch && !(s.brk > g.on - E_ && s.brk <= t + E_)) return {g, mem, held: true};   // a scene / part switch of this track ends a latched chord (Umfang 8)
     return null;
   }
+  /* MK5-fix (FP-SONG, MK5-14): a new chord played on the heard beat. ● REC/FANG store a key at t2b(press − outLat) (as heard),
+     the live key sounds at press + LIVE_LEAD. Without this the first grid point at or after press + LIVE_LEAD would be step 1,
+     one whole step after the beat the player meant (and after the beat the take stores). A grid point within LATE (≤ 0.4 step)
+     before the heard press (ref) – or after it, if the key only sounds after that point – is the chord's first step: it plays
+     at once (at x.on) with the counter of that grid point, so live play, the take and its playback give the same arp. A clip note
+     a little after the grid (an unquantized take) is treated the same way (ref = on), so its playback starts on the same step. */
+  function lateIdx(s, m, x) {
+    if (!s.grid || s.grid.k !== 'song' || !(x.on > nowT() - .002)) return null;
+    const gr = Math.min(LATE, .4 * s.sb * spb()), ref = x.ref != null ? x.ref : x.on;
+    let g = Math.ceil((t2b(ref - gr) - 1e-6) / s.sb), tg = timeOf(s, m, g);
+    if (tg < ref - gr - 1e-6) tg = timeOf(s, m, ++g);
+    if (tg >= x.on - E_ || tg > ref + gr + 1e-6 || timeOf(s, m, g + 1) <= x.on + (x.ref != null ? LATEW + .01 : E_)) return null;   // the normal step takes it
+    const q = query(s, tg, !!m.arp.latch); if (q && q.mem.length) return null;                     // a chord already holds there
+    const now = nowT(); for (const r of s.hist) if (r.idx >= g && r.vs.length && r.t <= now + .002) return null;   // never cut a sounding step
+    return g;
+  }
   function future(s, t) { for (const x of s.iv) if (x.on > t + E_) return true; return false; }
   // ---- planning
   function rec(s, r) { s.hist.push(r); if (s.hist.length > HIST) s.hist.splice(0, s.hist.length - HIST); s.planT = r.t; }
@@ -3940,20 +3957,25 @@ const ARPC = (function () {
     const last = ty === 9 ? 'k9' : 'k10'; s.kOn = ty === 9; if (s[last] != null && Math.abs(s[last] - t) < 1e-6) return; s[last] = t;
     const E = engOf(i); if (E && E.keys) E.keys(ty, t);
   }
-  function step(i, s, m, t, idx, silent) {
-    const A = m.arp, latch = !!A.latch, q = query(s, t, latch), r = {idx, t, tn: nomT(s, idx), pc: s.pc, pg: s.pg, pk: s.kOn, vs: [], le: [], s: -1};
+  function step(i, s, m, t, idx, silent, tq) {   // tq: the time the held set is read at (a late first step, MK5-fix), else t
+    const A = m.arp, latch = !!A.latch, q = query(s, tq != null ? tq : t, latch), r = {idx, t, tn: nomT(s, idx), pc: s.pc, pg: s.pg, pk: s.kOn, vs: [], le: [], s: -1};
+    if (tq != null) r.late = 1;
     r.q = q && q.mem.length ? 1 : 0;
     if (!r.q) { if (s.kOn) keys(i, s, 10, t); s.pg = null; rec(s, r); return r; }
     const ng = q.g !== s.pg;
     if (ng) keys(i, s, 9, t);                                     // KEYS 9: a new chord after all keys up (LFO / SEQ key sync "Timbre")
-    const c = A.ks ? (ng ? 0 : s.pc + 1) : idx;                   // KEY SYNC on: the pattern starts with step 1; off: it runs with the grid
+    r.gb = s.gb; if (s.grid.k === 'song' && (ng || s.gb == null)) s.gb = Math.floor(idx * s.sb / 4 + 1e-6) * 4;
+    /* KEY SYNC on: the pattern starts with step 1. Off: it runs with the song grid, counted from the bar line in which the chord
+       began (MK5-fix: a loop of whole bars and a recorded take replay the same arp, Random included; MK5-07 „dasselbe Muster ab
+       dem Takt“). Transport stopped (free grid from the first key): the grid counter. */
+    const c = A.ks ? (ng ? 0 : s.pc + 1) : s.grid.k === 'song' ? idx - Math.round(s.gb / s.sb) : idx;
     s.pc = c; s.pg = q.g; r.c = c;
     const last = clamp(A.last | 0, 1, 8), sp = md(c, last); r.s = sp;
     if (!((A.steps >> sp) & 1) || silent) { rec(s, r); return r; }   // Step-Arp: a step off is a rest, the note pointer moves on anyway
     // the source notes mapped at this step's own time; ascending, one per pitch
     const tr = S.tracks[i], dual = m.mode === 1 || m.mode === 2, tg = A.tgt | 0, byP = new Map();
     for (const x of q.mem) {
-      const p = clamp(x.raw ? x.n : outPitch(i, x.key, x.n, t), 0, 127);
+      const p = clamp(x.raw ? x.n : outPitch(i, x.key, x.n, tq != null ? Math.max(t, tq) : t), 0, 127);
       if (m.mode === 2 && tg && keyTim(m, p) !== tg) continue;
       const o = byP.get(p); if (!o || x.vel > o.vel) byP.set(p, {p, vel: x.vel, x});
     }
@@ -3963,16 +3985,16 @@ const ARPC = (function () {
     if (A.type === 5 && m.mode === 2) {   // Trigger in Split: the lowest of each timbre
       notes = []; for (const k of [1, 2]) { const Nk = N.filter(n => keyTim(m, n.p) === k); notes.push(...arpPattern(5, 1, Nk, c, seed, voicesOf(m, k))); }
     } else notes = arpPattern(A.type | 0, A.range | 0, N, c, seed, voicesOf(m, dual ? (tg || 3) : 1));
-    const sec = s.sb * spb(), g = clamp(A.gate | 0, 0, 100), dur = g >= 100 ? Math.max(.003, timeOf(s, m, idx + 1) - t) : Math.max(.003, g / 100 * sec);
+    const sec = s.sb * spb(), g = clamp(A.gate | 0, 0, 100), tN = timeOf(s, m, idx + 1), dur = g >= 100 || (r.late && t + g / 100 * sec > tN) ? Math.max(.003, tN - t) : Math.max(.003, g / 100 * sec);   // a late first step ends by the next one
     const L = logOf(i);
     for (const n of notes) {
       const mask = m.mode === 1 ? tg : m.mode === 2 ? keyTim(m, n.p - 12 * (n.o || 0)) : 0;
       const v = spawnVoice(i, n.p, n.vel, t, {src: 'arp', mask, clipNote: n.x.n, clipKey: n.x.key || null});
       if (!v) continue;
       v.release(t + dur); v.arp = {x: n.x, o: n.o || 0};
-      v.log = logNote({track: i, src: 'arp', clipNote: n.x.n, out: v.out, time: t, dur, vel: n.vel, step: sp + 1});
+      v.log = logNote({track: i, src: 'arp', clipNote: n.x.n, out: v.out, time: t, dur, vel: n.vel, step: sp + 1}); if (r.late) v.log.late = 1;
       r.vs.push(v);
-      const le = {t, note: v.out, vel: n.vel, dur, step: sp + 1, c}; r.le.push(le); L.push(le); if (L.length > LOGN) L.splice(0, L.length - LOGN);
+      const le = {t, note: v.out, vel: n.vel, dur, step: sp + 1, c}; if (r.late) le.late = 1; r.le.push(le); L.push(le); if (L.length > LOGN) L.splice(0, L.length - LOGN);
     }
     rec(s, r); return r;
   }
@@ -3982,11 +4004,12 @@ const ARPC = (function () {
     const m = A_(i);
     if (!on(i) || S.tracks[i].mute) { end(i, true); return; }
     // grid: the song's while the transport runs, a free one from the first key while it stands
-    if (R.playing && (!s.grid || s.grid.k !== 'song')) { rewind(i, now); const r0 = s.hist[s.hist.length - 1]; gridSong(s, m, Math.max(now + .001, r0 && s.sb ? r0.t + .5 * s.sb * spb() : now)); s.hist = []; }
+    if (R.playing && (!s.grid || s.grid.k !== 'song')) { rewind(i, now); const r0 = s.hist[s.hist.length - 1]; gridSong(s, m, Math.max(now + .001, r0 && s.sb ? r0.t + .5 * s.sb * spb() : now)); s.hist = []; s.gb = null; s.late = null;
+      for (const x of s.iv) { if (x.on <= now) continue; const g = lateIdx(s, m, x); if (g != null && g <= s.next) { s.late = {idx: g, x}; s.next = g; } break; } }   // MK5-fix: a fresh chord on the heard beat
     else if (!R.playing && (!s.grid || s.grid.k !== 'free')) { const t0 = s.iv.length ? Math.max(now + LIVE_LEAD * .5, s.iv[0].on) : now + LIVE_LEAD; gridFree(s, m, t0, 0); s.hist = []; s.pc = -1; s.pg = null; }
     if ((m.arp.res | 0) !== s.res || S.bpm !== s.bpm) {          // a new resolution or tempo: the next step is in the new one (no double, no missing step)
       const last = s.hist.filter(r => r.t <= now).pop();
-      rewind(i, now + .001);
+      rewind(i, now + .001); s.late = null;
       if (s.grid.k === 'song') { const b = s.sb, nb = stepB(m); s.sb = nb; if ((m.arp.res | 0) !== s.res) s.next = Math.ceil(((last ? last.idx * b : t2b(now)) + 1e-6) / nb - 1e-9); s.res = m.arp.res | 0; s.bpm = S.bpm; }
       else { const ta = last ? last.tn : s.grid.ta, ia = last ? last.idx : s.grid.ia; gridFree(s, m, ta, ia); s.next = last ? last.idx + 1 : ia; }
     }
@@ -3994,6 +4017,13 @@ const ARPC = (function () {
       const idx = s.next, t = timeOf(s, m, idx);
       if (t >= now + h) break;
       s.next = idx + 1;
+      const lx = s.late && s.late.idx === idx && s.late.x.on > t + E_ && s.late.x.on >= now - .02 ? s.late.x : null;
+      if (lx) { const q = query(s, t, !!m.arp.latch); if (!(q && q.mem.length)) {
+        let tl = lx.on; const tn = timeOf(s, m, idx + 1); for (const x of s.iv) if (x.on > tl && x.on <= lx.on + CHW && x.on < tn - E_) tl = x.on;   // the rest of a spread chord joins
+        if (lx.ref != null && t >= now + .003) { for (const x of s.iv) if (x.on > t && x.on <= tl) x.on = t; step(i, s, m, t, idx, false); }   // a live key just before a grid point that is still ahead: on the grid
+        else step(i, s, m, Math.max(lx.ref != null ? Math.max(tl, Math.min(tl + LATEW, tn - .01)) : tl, now), idx, false, tl);   // else at once (live: LATEW for the other keys of the chord; a clip note never before its own time); its gate ends by the next step
+        continue; } }   // MK5-fix: the late first step of a chord on the beat
+      if (s.late && idx > s.late.idx + 4) s.late = null;
       if (t < now - .02) { step(i, s, m, t, idx, true); continue; }     // fell behind (throttled timer): never burst
       const r = step(i, s, m, Math.max(t, now), idx, false);
       // idle: nothing held, nothing coming, no latch -> the state goes (a new key starts afresh)
@@ -4009,7 +4039,7 @@ const ARPC = (function () {
       const gone = new Set();
       for (let j = k; j < H.length; j++) { for (const v of H[j].vs) if (!v.dead) v.cancel(); for (const e of H[j].le) gone.add(e); }
       if (gone.size) { const L = logOf(i); for (let j = L.length - 1; j >= 0 && gone.size; j--) if (gone.delete(L[j])) L.splice(j, 1); }   // a cancelled step never sounded: out of arpLog too
-      s.next = r.idx; s.pc = r.pc; s.pg = r.pg; s.kOn = r.pk; H.length = k; s.planT = k ? H[k - 1].t : -Infinity;
+      s.next = r.idx; s.pc = r.pc; s.pg = r.pg; if ('gb' in r) s.gb = r.gb; s.kOn = r.pk; H.length = k; s.planT = k ? H[k - 1].t : -Infinity;
     }
     if (s.grid) { const m = A_(i); if (m) { const ix = s.grid.k === 'song' ? Math.ceil((t2b(t) - 1e-6) / s.sb) : s.grid.ia + Math.ceil((t - s.grid.ta) / s.grid.sec - 1e-6); if (ix < s.next && ix > (H.length ? H[H.length - 1].idx : -Infinity)) s.next = ix; } }
   }
@@ -4027,7 +4057,7 @@ const ARPC = (function () {
   function live(i, id, n, vel, t) {   // a key (keyboard, chord keys, MIDI in, API): returns the mask of a normal held note or null
     const r = route(i, n), s0 = ST.get(i), fresh = !s0;
     if (!r.arp) return r.hold;
-    const x = add(i, {src: 'live', id, n, raw: true, key: null, vel, on: t, off: Infinity});
+    const x = add(i, {src: 'live', id, n, raw: true, key: null, vel, on: t, off: Infinity, ref: t - LIVE_LEAD - (AU.outLat || 0)});   // ref: the press as heard (as ● REC / FANG store it)
     void x; void fresh; plan(i, nowT(), LOOKAHEAD);                 // at once: the first note in ≤ 10 ms (transport stopped), never a late step
     return r.hold;
   }
@@ -16341,7 +16371,7 @@ function logDrop(e) { if (e) e.removed = true; }
 function noteLog(n) {
   n = Math.min(n == null ? 128 : n, 4096, LOG.n);
   const out = [];
-  for (let i = LOG.n - n; i < LOG.n; i++) { const e = LOG.buf[i % 4096]; if (e.removed) continue; const o = {seq: e.seq, track: e.track, src: e.src, clipNote: e.clipNote, out: e.out, time: e.time, beat: e.beat, dur: e.dur, vel: e.vel}; if (e.legato) o.legato = true; if (e.step != null) o.step = e.step; out.push(o); }
+  for (let i = LOG.n - n; i < LOG.n; i++) { const e = LOG.buf[i % 4096]; if (e.removed) continue; const o = {seq: e.seq, track: e.track, src: e.src, clipNote: e.clipNote, out: e.out, time: e.time, beat: e.beat, dur: e.dur, vel: e.vel}; if (e.legato) o.legato = true; if (e.step != null) o.step = e.step; if (e.late) o.late = true; out.push(o); }
   return out;
 }
 function clearLog() { LOG.n = 0; LOG.buf = new Array(4096); }
