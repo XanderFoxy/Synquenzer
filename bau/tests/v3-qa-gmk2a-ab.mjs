@@ -1,0 +1,26 @@
+import {open, sleep, OUT, check, done, eq, diff} from './v3-qa-gmk2a-tl.mjs';
+import {setupProject} from './v3-qa-gmk2a-setup.mjs';
+const T = await open(); const {p, E, errs} = T;
+await setupProject(E);
+await T.openEd(0);
+console.log(await E(() => [...document.querySelectorAll('button')].filter(b => b.offsetWidth && b.getBoundingClientRect().y < 200).map(b => JSON.stringify(b.textContent.trim()) + (b.disabled ? '(dis)' : '')).join(' ')));
+await E(() => { const s = SYNQUENZER.library().find(x => x.name === 'Bass Welle'); SYNQUENZER.loadPreset(0, s.id); }); await sleep(300);
+const savedMk = await T.pm(0);
+await T.w('w1', /^3 OSZ 1/);
+await T.sweep('k2', -60, 30, 25);
+const editMk = await T.pm(0);
+console.log(await E(() => [...document.querySelectorAll('button')].filter(b => b.offsetWidth && b.getBoundingClientRect().y < 200).map(b => JSON.stringify(b.textContent.trim()) + (b.disabled ? '(dis)' : '')).join(' ')));
+console.log('c2', savedMk.t[0].o1.c2, editMk.t[0].o1.c2, 'edited', await E(() => SYNQUENZER.soundEdited(0)), 'name', await E(() => SYNQUENZER.getSound(0).name), 'undo', JSON.stringify(await T.undoTop()));
+const ab = await T.rectText('button', /A\s*\/\s*B|^A$|^B$/); console.log('ab', JSON.stringify(ab));
+if (!ab) { await E(() => SYNQUENZER.selectTrack(1)); await sleep(300); await E(() => SYNQUENZER.selectTrack(0)); await sleep(500); console.log('after track switch', await E(() => [...document.querySelectorAll('button')].filter(b => b.offsetWidth && b.getBoundingClientRect().y < 200).map(b => JSON.stringify(b.textContent.trim())).join(' '))); }
+const kA = await T.key(8);
+const fpk = async () => { await T.send('touchStart', [{x: kA.cx, y: kA.cy, id: 5}]); await sleep(200); const s = await T.spec(400); await T.send('touchEnd', [{x: kA.cx, y: kA.cy, id: 5}]); await sleep(300); return s.peaks.slice(0, 4); };
+const s0 = await fpk();
+await T.tap(ab.cx, ab.cy, 500);
+const a1 = await T.pm(0); const s1 = await fpk(); const pn1 = await T.panel(); const lcd1 = await T.lcdTxt();
+await T.tap(ab.cx, ab.cy, 500);
+const a2 = await T.pm(0); const s2 = await fpk();
+console.log('c2 saved/edit/A/B', savedMk.t[0].o1.c2, editMk.t[0].o1.c2, a1.t[0].o1.c2, a2.t[0].o1.c2, 'spec edit', JSON.stringify(s0), 'A', JSON.stringify(s1), 'B', JSON.stringify(s2), 'lcd', lcd1);
+check('A/B with an MK2 wave edit: A = saved program (wave + sound), B = edit', eq(a1, savedMk) && eq(a2, editMk), {d1: diff(a1, savedMk).slice(0, 3), d2: diff(a2, editMk).slice(0, 3)});
+check('no console errors', errs.length === 0, errs);
+await T.br.close(); done();

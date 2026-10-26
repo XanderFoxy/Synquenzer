@@ -4475,11 +4475,13 @@ function timCopy(i, src, srcT) {
 function timCopyPop(anchor, t) {   // MK3-fix: t = the track whose editor is open (⋯), else this panel's track
   const i = t == null ? P.i : t, k = tDst(i), L = ownList(), cur = sndOf(i); if (!cur || !cur.p.mk) return;
   openPop(anchor, p => {
-    let h = `<h4>${esc('Timbre kopieren → T' + (k + 1))}</h4><p class="small">Quelle wählen: ein ${esc(MK_LABEL)}-Sound und sein Timbre 1 oder 2.</p><div class="plist mkl mkcp pan-y">`;
+    let h = `<h4>${esc('Timbre kopieren → T' + (k + 1))}</h4><p class="small">Quelle wählen: ein ${esc(MK_LABEL)}-Sound und sein Timbre 1 oder 2.</p><div class="plist mkl mkcp">`;
     h += `<div class="mkcr"><b>${esc(cur.name)} <small>(dieser Sound)</small></b><button class="rb" data-s="-1" data-t="0"${k === 0 ? ' disabled' : ''}>T1</button><button class="rb" data-s="-1" data-t="1"${k === 1 ? ' disabled' : ''}>T2</button></div>`;
     L.forEach((r, x) => { h += `<div class="mkcr"><b>${esc(r.name)}</b><button class="rb" data-s="${x}" data-t="0">T1</button><button class="rb" data-s="${x}" data-t="1">T2</button></div>`; });
     if (!L.length) h += `<p class="small">Noch keine gesicherten ${esc(MK_LABEL)}-Sounds – mit WRITE sichern, dann stehen sie hier.</p>`;
     p.innerHTML = h + '</div>'; guardTouch(p);
+    // MK3-fix (as MK2-fix wavePop): a finger scrolls the list natively (guardTouch on the pop would cancel every touchstart; taps act on pointerup)
+    const Lc = p.querySelector('.plist.mkcp'); if (Lc) Lc.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
     onTap(p, b => { closePop(); const x = +b.dataset.s, src = x < 0 ? cur : (SQStore.normalizeSound(deep(L[x])) || L[x]); timCopy(i, src, +b.dataset.t); }, 'button[data-s]');
   }, {name: 'mkcopy'});
 }
@@ -23220,9 +23222,9 @@ function safeRebuild(fn) { if (GEST.size) pendingRebuild = fn; else fn(); }
 function abortAll(why) { RESTPTR.clear(); for (const [id, g] of [...GEST]) { GEST.delete(id); try { g.abort(why); } catch (_) {} } gestEnd(-1); }
 // iOS: user-select:none does not stop the loupe; a non-passive touchstart preventDefault does. Such surfaces get no
 // click from touch, so everything inside them acts on pointer events (onTap)
-// V0c-fix: a touch that starts in a sideways swipe list (.cp-sc, .pan-x; MK3-fix: an upright list .pan-y) keeps its native scrolling (a tap there acts on
+// V0c-fix: a touch that starts in a sideways swipe list (.cp-sc, .pan-x) keeps its native scrolling (a tap there acts on
 // pointerup as everywhere; its synthetic click is eaten by the ghost-click guard, a swipe ends in pointercancel)
-function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && e.target.closest('.cp-sc,.pan-x,.pan-y')) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
+function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && e.target.closest('.cp-sc,.pan-x')) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
 // tap = pointerdown + pointerup on the same element within 12 px. A click right after a handled pointer tap is ignored;
 // keyboard and programmatic clicks still activate. sel: delegate to children matching sel.
 function onTap(node, fn, sel) {

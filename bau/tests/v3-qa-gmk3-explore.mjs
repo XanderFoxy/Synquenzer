@@ -1,0 +1,16 @@
+import {open, sleep, OUT} from './v3-qa-gmk3-tl.mjs';
+const L = process.argv[2] === 'L';
+const T = await open({viewport: L ? {width: 844, height: 390} : {width: 390, height: 844}}); const {p, E, errs} = T;
+await E(() => { SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await sleep(600);
+const chip = await T.rectText('button', /^VA ▾$/); await T.tap(chip.cx, chip.cy, 400);
+console.log('pop', JSON.stringify(await T.popTexts()));
+await T.tapPop(/MS ?2000/); await sleep(900);
+console.log('engine', await E(() => SYNQUENZER.getSound(0).engine), 'undo', await T.undoN());
+console.log('panel', JSON.stringify(await T.panel()).slice(0, 1500));
+console.log('mk keys', JSON.stringify(await T.mkk()));
+console.log('lcd', JSON.stringify(await T.lcdAll()));
+console.log('key html', await E(() => { const k = document.querySelector('#kb .key'); return k ? k.outerHTML.slice(0, 300) : null; }));
+console.log('tim', JSON.stringify(await T.tim()));
+await p.screenshot({path: OUT + 'explore-' + (L ? 'L' : 'P') + '.png'});
+console.log('errs', JSON.stringify(errs));
+await T.br.close();

@@ -1,0 +1,18 @@
+import {open, sleep, OUT} from './v3-qa-gmk3-tl.mjs';
+const T = await open({viewport: {width: 844, height: 390}}); const {p, E, errs} = T;
+await E(() => { SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await sleep(800);
+const b = await T.rectText('button', /^MS ?2000$/); await T.tap(b.cx, b.cy, 900);
+await E(() => { SYNQUENZER.mkSet(0, 'mode', 2); }); await sleep(300);
+const where = async () => E(() => { const k = document.querySelector('.mkx[data-k="k1"]'); const r = k.getBoundingClientRect(); const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return {r: [r.x, r.y, r.width, r.height].map(Math.round), top: top && (top.className + '|' + (top.closest('.mkx') || {}).dataset?.k), pop: !!document.querySelector('#popLayer.open .pop')}; });
+console.log('before', JSON.stringify(await where()), JSON.stringify(await T.panel().then(p => p.sel)));
+await T.tapMk('timbre', 250);
+console.log('after timbre', JSON.stringify(await where()));
+const r = await T.w('w1', /^6 FILTER/); console.log('w', JSON.stringify(r));
+console.log('after w', JSON.stringify(await where()));
+await p.screenshot({path: OUT + 'dbgL-1.png'});
+await T.dragMk('k1', 90, 16);
+console.log('cut', JSON.stringify((await T.pm(0)).t.map(t => t.f.cut)), JSON.stringify(await T.lcdAll()));
+await sleep(500);
+await T.dragMk('k1', 60, 16);
+console.log('cut2', JSON.stringify((await T.pm(0)).t.map(t => t.f.cut)), JSON.stringify(await T.lcdAll()));
+await T.br.close();

@@ -1,0 +1,14 @@
+import {open, sleep, OUT} from './v3-qa-gmk2a-tl.mjs';
+const T = await open(); const {p, E, errs} = T;
+await E(() => { const Q = window.__g = {gaps: [], marks: []}; let last = performance.now(); Q.hb = setInterval(() => { const t = performance.now(); if (t - last > 40) Q.gaps.push([Math.round(t - last), Math.round(last)]); last = t; }, 5); });
+const mark = n => E(n => window.__g.marks.push([n, Math.round(performance.now())]), n);
+await mark('tap empty area'); await T.tap(200, 140, 800);
+await mark('vibrate'); await E(() => { const t = performance.now(); try { navigator.vibrate(10); } catch (e) {} return performance.now() - t; }).then(x => console.log('vibrate ms', x)); await sleep(500);
+await mark('tap ▶'); await T.tapSel('#bPlay', 1500);
+await mark('tap ▶ again'); await T.tapSel('#bPlay', 1500);
+await mark('click scene 2 (mouse)'); await E(() => { const b = [...document.querySelectorAll('button.scn')].find(b => /^▶\s*2/.test(b.textContent.trim())); b.click(); }); await sleep(1500);
+await mark('touch scene 1'); await T.tapTxt('button.scn', /^▶\s*1/); await sleep(1500);
+const Q = await E(() => { clearInterval(window.__g.hb); return window.__g; });
+const at = t => { const m = Q.marks.filter(m => m[1] <= t + 2).pop(); return m ? m[0] + ' +' + (t - m[1]) : 'pre'; };
+console.log('gaps', JSON.stringify(Q.gaps.map(([d, t]) => [d, at(t)])));
+await T.br.close();

@@ -1,0 +1,60 @@
+// controlled click test: one sustained note (C3) on an MS 2000 track with the filter at ~450 Hz (24LPF) so nothing above 5 kHz
+// sounds; then UI edits (touch) of MK2 features while the note sounds; raw worklet output of the track recorded; any HF burst = click
+import {open, sleep, OUT, check, done} from './v3-qa-gmk2a-tl.mjs';
+import {recStart, recAnalyse} from './v3-qa-gmk2a-rec.mjs';
+import fs from 'fs';
+const T = await open(); const {p, E, errs} = T;
+await E(() => { const Q = SYNQUENZER; Q.setMetronome(false); Q.setEngine(0, 'mk'); for (const [k, v] of Object.entries({'t.0.f.cut': 60, 't.0.f.res': 0, 't.0.e2.a': 0, 't.0.e2.s': 127, 't.0.e2.r': 40, 't.0.o1.w': 5, 't.0.o1.c2': 22, 't.0.a.lvl': 110})) Q.mkSet(0, k, v); });
+await T.openEd(0); await T.w('w1', /^3 OSZ 1/);
+await sleep(2500);
+await recStart(E, 120, [0]);
+// hold one key (touch id 1 stays down the whole time; other fingers do the edits)
+const kA = await T.key(12);
+const keyPt = {x: kA.cx, y: kA.cy, id: 90};
+await T.send('touchStart', [keyPt]); await sleep(800);
+const acts = [];
+const act = async (n, fn) => { const t = await E(() => AU.ctx.currentTime); let r; try { r = await fn(); } catch (e) { r = 'ERR ' + e.message; } await E(([n, t]) => window.__q.acts.push({n, t, pn: performance.now()}), [n, t]); acts.push([n, r]); console.log(n, '→', JSON.stringify(r).slice(0, 140)); await sleep(700); };
+// helpers using a 2nd finger (id 91) while the key finger stays
+const tap2 = async (x, y, wait = 250) => { await T.send('touchStart', [{x, y, id: 91}]); await sleep(40); await T.send('touchEnd', [{x, y, id: 91}]); await sleep(wait); };
+// NOTE: touchEnd with [keyPt] lists the remaining point; verify the key is still held below
+const drag2 = async (k, dy, steps = 60, ms = 25) => { const r = await T.mk(k); await T.send('touchStart', [{x: r.cx, y: r.cy, id: 92}]); for (let s = 1; s <= steps; s++) { await T.send('touchMove', [{x: r.cx, y: r.cy + dy * s / steps, id: 92}]); await sleep(ms); } await T.send('touchEnd', [{x: r.cx, y: r.cy + dy, id: 92}]); await sleep(150); };
+const list2 = async (k, re) => { const r = await T.mk(k); await tap2(r.cx, r.cy, 400); const b = await T.rectText('#popLayer .pop button', re); if (!b) return 'no item ' + re; await tap2(b.cx, b.cy, 300); return 'ok'; };
+const held = () => E(() => SYNQUENZER.voices().length);
+await act('held?', held);
+await act('STEUER 2 sweep up through ~40 waves (slow)', async () => { await drag2('k2', -160, 120, 25); return [(await T.pm(0)).t[0].o1.c2, await held()]; });
+await act('STEUER 2 sweep down fast', async () => { await drag2('k2', 160, 20, 16); return [(await T.pm(0)).t[0].o1.c2, await held()]; });
+await act('wave list → 61 (octave wave)', async () => { const r = await T.mk('k2'); await tap2(r.cx, r.cy, 600); await E(() => { const L = document.querySelector('#popLayer .plist.mkwv'); const b = document.querySelector('#popLayer .pop button[data-v="61"]'); L.scrollTop = b.offsetTop - L.offsetTop - 100; }); await sleep(300); const b = await E(() => { const r = document.querySelector('#popLayer .pop button[data-v="61"]').getBoundingClientRect(); return {cx: r.x + r.width / 2, cy: r.y + r.height / 2}; }); await tap2(b.cx, b.cy, 300); return [(await T.pm(0)).t[0].o1.c2, await held()]; });
+await act('wave list → 35 (Endlos)', async () => { const r = await T.mk('k2'); await tap2(r.cx, r.cy, 600); await E(() => { const L = document.querySelector('#popLayer .plist.mkwv'); const b = document.querySelector('#popLayer .pop button[data-v="35"]'); L.scrollTop = b.offsetTop - L.offsetTop - 100; }); await sleep(300); const b = await E(() => { const r = document.querySelector('#popLayer .pop button[data-v="35"]').getBoundingClientRect(); return {cx: r.x + r.width / 2, cy: r.y + r.height / 2}; }); await tap2(b.cx, b.cy, 300); return [(await T.pm(0)).t[0].o1.c2, await held()]; });
+await act('STEUER 2 sweep from 35 down through the 61-64 boundary? (up to 64)', async () => { await drag2('k2', -120, 80, 25); return [(await T.pm(0)).t[0].o1.c2, await held()]; });
+await act('WELLE → Säge', async () => [await list2('k0', /^Säge$/), await held()]);
+await act('WELLE → Sinus×', async () => [await list2('k0', /^Sinus×$/), await held()]);
+await act('Sinus× X-MOD sweep up/down', async () => { await drag2('k1', -100, 60, 25); await drag2('k1', 100, 60, 25); return [(await T.pm(0)).t[0].o1, await held()]; });
+await act('WELLE → Stimmwelle', async () => [await list2('k0', /^Stimmwelle$/), await held()]);
+await act('Stimmwelle FORM sweep', async () => { await drag2('k1', -100, 60, 25); return [(await T.pm(0)).t[0].o1, await held()]; });
+await act('WELLE → Rauschen', async () => [await list2('k0', /^Rauschen$/), await held()]);
+await act('Rauschen CUTOFF/RESO sweep', async () => { await drag2('k1', -60, 40, 25); await drag2('k2', -60, 40, 25); return [(await T.pm(0)).t[0].o1, await held()]; });
+await act('WELLE → Speicherwelle', async () => [await list2('k0', /^Speicherwelle/), await held()]);
+await act('EDIT-WAHL 2 → PATCH 2 (LFO 1 → CUTOFF): INT sweep up/down', async () => { const r = await T.mk('w2'); await tap2(r.cx, r.cy, 400); const b = await T.rectText('#popLayer .pop button', /^2 PATCH 2/); await tap2(b.cx, b.cy, 300); await drag2('k2', -60, 40, 25); await drag2('k2', 60, 40, 25); return [(await T.pm(0)).t[0].p[1], await held()]; });
+await act('PATCH 2 INT +30, QUELLE → EG 2, → LFO 2, ZIEL → PAN → AMP → TONHÖHE', async () => { await E(() => SYNQUENZER.mkSet(0, 't.0.p.1.i', 30)); await sleep(500); const a = [await list2('k0', /^EG 2$/), await list2('k0', /^LFO 2$/), await list2('k1', /^PAN$/), await list2('k1', /^AMP$/), await list2('k1', /^TONHÖHE$/)]; return [a, (await T.pm(0)).t[0].p[1], await held()]; });
+await act('PATCH 2 INT back to 0 (drag)', async () => { await drag2('k2', 120, 40, 20); return [(await T.pm(0)).t[0].p[1], await held()]; });
+await act('header undo ×4 / redo ×4 while the note sounds', async () => { for (let k = 0; k < 4; k++) { const r = await T.rectText('.hb.ur', /^↶$/); await tap2(r.cx, r.cy, 200); } for (let k = 0; k < 4; k++) { const r = await T.rectText('.hb.ur', /^↷$/); await tap2(r.cx, r.cy, 200); } return [(await T.pm(0)).t[0].p[1], await held()]; });
+await sleep(500);
+await T.send('touchEnd', [keyPt]); await sleep(1200);
+const tStop = await E(() => AU.ctx.currentTime);
+const A = await recAnalyse(E, tStop);
+const X = A.taps.t0;
+const byAct = f => { const a = A.acts.filter(a => f.t >= a.t - .05).pop(); return a ? a.n.slice(0, 50) + ' +' + (f.t - a.t).toFixed(2) : '-'; };
+console.log('t0 peak', X.peakDb, 'rms/s', JSON.stringify(X.rms1));
+console.log('HP flags', X.flags.length, JSON.stringify(X.flags.slice(0, 30).map(f => [f.t, f.db, f.lv, byAct(f)])));
+console.log('sustained', X.sflags.length, JSON.stringify(X.sflags.slice(0, 30).map(f => [f.t, f.db, f.lv, byAct(f)])));
+console.log('d2', X.d2f.length, JSON.stringify(X.d2f.slice(0, 30).map(f => [f.t, f.db, f.amp, byAct(f)])));
+console.log('drops', JSON.stringify(X.drops.slice(0, 10)));
+fs.writeFileSync(OUT + 'klick-result.json', JSON.stringify({A, acts}, null, 1));
+const NS = await E(() => window.__q.n);
+const parts = []; for (let o = 0; o < NS; o += 1 << 20) parts.push(Buffer.from(await E(([o]) => { const x = window.__q.bufs[1].subarray(o, Math.min(o + (1 << 20), window.__q.n)); let s = ''; const u = new Uint8Array(x.buffer, x.byteOffset, x.byteLength); for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return btoa(s); }, [o]), 'base64'));
+fs.writeFileSync(OUT + 'klick-t0.f32', Buffer.concat(parts)); fs.writeFileSync(OUT + 'klick-meta.json', JSON.stringify({sr: A.taps ? await E(() => window.__q.sr) : 0, t0: A.t0, acts: A.acts}));
+check('note held through all edits', acts.every(([n, r]) => !/ERR|no item/.test(JSON.stringify(r))) && acts.filter(([n]) => n !== 'held?').every(([n, r]) => Array.isArray(r) && r[r.length - 1] >= 1), acts.map(([n, r]) => JSON.stringify(r).slice(-12)));
+check('no HF click flag while the note sounds (raw track)', X.sflags.length === 0 && X.flags.length === 0, [X.flags.length, X.sflags.length]);
+check('no dropout', X.drops.length === 0, X.drops.slice(0, 5));
+check('no console errors', errs.length === 0, errs);
+await T.br.close(); done();

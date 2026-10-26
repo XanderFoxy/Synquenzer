@@ -1,0 +1,14 @@
+import {open, sleep, OUT} from './v3-qa-gmk2a-tl.mjs';
+const T = await open(); const {p, E, errs} = T;
+await T.openEd(0);
+const mkb = await T.rectText('button', /^MS ?2000$/); await T.tap(mkb.cx, mkb.cy, 800);
+await T.tapMk('w2', 400); console.log('w2 list direct', JSON.stringify(await T.popTexts()));
+console.log('closed', await T.closePop(), await T.pop());
+await T.tapMk('w1', 300); await T.tapPop(/^3 OSZ 1/); await sleep(300);
+await T.tapMk('k0', 300); await T.tapPop(/Speicherwelle/); await sleep(300);
+await T.tapMk('k2', 400); console.log('wave pop', !!(await T.pop()));
+console.log('closed', await T.closePop(), await T.pop());
+const r = await T.mk('w2'); console.log('w2 rect', JSON.stringify(r));
+const hit = await E(r => { const e = document.elementFromPoint(r.cx, r.cy); return e && (e.className + ' ' + (e.dataset.k || '') + ' ' + e.tagName); }, r); console.log('hit', hit);
+await T.tapMk('w2', 400); console.log('w2 list', JSON.stringify(await T.popTexts()), JSON.stringify((await T.panel()).sel));
+await T.br.close();

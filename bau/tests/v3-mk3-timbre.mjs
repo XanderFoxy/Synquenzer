@@ -169,7 +169,11 @@ T('MK3-13', () => {
   ok('MK3-13 SHIFT + TIMBRE (Solo T1): T2 ≤ −90 dB', rest - lvl(a, .05, .45) <= -90 || rest <= -120, 'T2-Rest ' + M(rest) + ' dB, T1 ' + M(lvl(a, .05, .45)) + ' dB');
   // solo on / off while playing: 5 ms ramps, no click
   const x = R(p, [[0, 'on', 57, .8], [0, 'on', 64, .8]], {sec: 1.2, at: [[.4, {mkSolo: 2}], [.8, {mkSolo: 0}]]});
-  const k = mKlick(x.l, SR, [0]);
+  // MK3-fix: both timbres of a key now start in phase (Schicht T1 = T2 no longer cancels at random); saw + square of the same notes
+  // then have coinciding edges, and the plain render WITHOUT any solo already reaches 6.1 dB at 1.174 s (a property of the steady
+  // tone, not a click). So the reading is taken around the two switches (0.4 / 0.8 s, +-30 ms with 100 ms context each side)
+  let kw = -99, kat = 0; for (const t of [.4, .8]) { const i0 = Math.round((t - .13) * SR), i1 = Math.round((t + .13) * SR), s = mKlick(x.l.slice(i0, i1), SR, []); if (s.worst > kw) { kw = s.worst; kat = t - .13 + s.at; } }
+  const k = {ok: kw <= 6, worst: kw, at: kat};
   ok('MK3-13 Solo an/aus beim Spielen: M-KLICK ≤ +6 dB', k.ok, M(k.worst) + ' dB bei ' + M(k.at, 3) + ' s');
 });
 

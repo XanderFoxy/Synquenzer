@@ -1,0 +1,77 @@
+// QA G-MK2a: 3 minutes playback (P 428x926, CDP touch) with MK2 sounds (stored waves incl. octave waves, Sinus×, Stimmwelle,
+// Rauschen, PATCH 1–4), scene switches and edits while playing. Recorded: master + raw worklet outputs of t0, t2, t3.
+// argv: minutes, 'base' (no edits)
+import {open, sleep, OUT, check, done} from './v3-qa-gmk2a-tl.mjs';
+import {setupProject} from './v3-qa-gmk2a-setup.mjs';
+import {recStart, recAnalyse} from './v3-qa-gmk2a-rec.mjs';
+import fs from 'fs';
+const MIN = +(process.argv[2] || 3), BASE = process.argv[3] === 'base', TAG = BASE ? 'base' : 'long';
+const T = await open(); const {p, E, errs} = T;
+console.log('setup', JSON.stringify(await setupProject(E)));
+await E(() => { SYNQUENZER.selectTrack(0); });
+await T.tapTxt('button.scn', /^▶\s*1/); await sleep(100);
+if (!(await E(() => SYNQUENZER.runtime().playing))) await T.tapSel('#bPlay');
+await sleep(300);
+console.log('rec', JSON.stringify(await recStart(E, MIN * 60 + 40, [0, 1, 2, 3])));
+const res = {};
+const act = async (name, fn) => { const t = await E(() => (window.__pn = Math.round(performance.now()), [AU.ctx.currentTime, audBeat(), window.__pn])); let r; try { r = await fn(); } catch (e) { r = 'ERR ' + e.message; } res[name] = r; await E(([n, t, b, r]) => window.__q.acts.push({n, t, b, r, pn: window.__pn, t1: AU.ctx.currentTime}), [name, t[0], t[1], typeof r === 'object' ? JSON.stringify(r).slice(0, 80) : String(r)]); const nm = await E(() => [0, 1, 2, 3].map(t => SYNQUENZER.getSound(t).name + ':' + (SYNQUENZER.mkGet(t) ? SYNQUENZER.mkGet(t).t[0].o1.w + '/' + SYNQUENZER.mkGet(t).t[0].o1.c2 : '-')).join(' | ') + ' · u' + SYNQUENZER.undoInfo().n); console.log(`[${(t[1] / 4).toFixed(1)}] ${name} → ${typeof r === 'object' ? JSON.stringify(r).slice(0, 160) : r}   ## ${nm}`); return r; };
+const atBar = bar => p.waitForFunction(x => audBeat() >= x, bar * 4 + 0.3, {timeout: 400000, polling: 10});
+const pm = t => E(t => SYNQUENZER.mkGet(t).t[0], t);
+const wheel = async (w, frac, hold = 600) => { const r = await E(w => { const e = document.querySelector('#mkWh .mkwheel[data-w="' + w + '"] .mwell'); if (!e || !e.getClientRects().length) return null; const r = e.getBoundingClientRect(); return {cx: r.x + r.width / 2, cy: r.y + r.height / 2, h: r.height}; }, w); if (!r) return 'no wheel'; const y0 = w === 'bend' ? r.cy : r.cy + r.h / 2 - 4; await T.down(r.cx, y0); await T.glide(r.cx, y0, r.cx, y0 - frac * r.h / 2, 20, 25); await sleep(hold); await T.glide(r.cx, y0 - frac * r.h / 2, r.cx, y0, 10, 25); await T.up(); await sleep(150); return E(w => SYNQUENZER.mkWheel(SYNQUENZER.runtime().selected, w), w); };
+const waveList = async n => { await T.tapMk('k2', 500); const rowOf = () => E(n => { const b = document.querySelector('#popLayer .pop button[data-v="' + n + '"]'); const L = document.querySelector('#popLayer .plist.mkwv'); if (!b || !L) return null; const r = b.getBoundingClientRect(), lr = L.getBoundingClientRect(); return {cx: r.x + r.width / 2, cy: r.y + r.height / 2, vis: r.top >= lr.top && r.bottom <= lr.bottom, lt: lr.top, lb: lr.bottom, lcx: lr.x + lr.width / 2}; }, n); let r = await rowOf(), k = 0; while (r && !r.vis && k < 12) { const dn = r.cy > r.lb; const a = dn ? r.lb - 20 : r.lt + 20, b = dn ? r.lt + 20 : r.lb - 20; await T.down(r.lcx, a); await T.glide(r.lcx, a, r.lcx, b, 10, 16); await T.up(); await sleep(350); r = await rowOf(); k++; } if (!r || !r.vis) return 'no row ' + n; await T.tap(r.cx, r.cy, 300); return (await pm(SYNQUENZER_SEL())).o1; };
+const SYNQUENZER_SEL = () => 0;
+if (!BASE) {
+await atBar(2); await act('open editor Synth 1 (bass, Speicherwelle 12) → OSZ 1', async () => { await T.openEd(0); return T.w('w1', /^3 OSZ 1/); });
+await atBar(4); await act('STEUER 2 slow sweep up (waves 12 → ~40) and back (touch)', async () => { await T.sweep('k2', -110, 70, 30); const a = (await pm(0)).o1.c2; await T.sweep('k2', 110, 70, 30); return [a, (await pm(0)).o1.c2]; });
+await atBar(9); await act('STEUER 2 tap → wave list, scroll, tap 61 (Stimme 1, octave wave)', async () => waveList(61));
+await atBar(12); await act('wave list again → 35 (Endlos)', async () => waveList(35));
+await atBar(14); await act('WELLE list → Sinus×, STEUER 1 sweep up', async () => { const a = await T.knobList('k0', /^Sinus×$/); await T.sweep('k1', -60, 40, 25); return [a, (await pm(0)).o1]; });
+await atBar(17); await act('WELLE → Stimmwelle, STEUER 1 sweep', async () => { const a = await T.knobList('k0', /^Stimmwelle$/); await T.sweep('k1', -60, 40, 25); return [a, (await pm(0)).o1]; });
+await atBar(20); await act('WELLE → Rauschen, then back to Speicherwelle (c2 kept)', async () => { const a = await T.knobList('k0', /^Rauschen$/); await sleep(1800); const b = await T.knobList('k0', /^Speicherwelle/); return [a, b, (await pm(0)).o1]; });
+await atBar(23); await act('scene 2 (API, editor open)', () => E(() => { SYNQUENZER.launchScene(1); return 1; }));
+await atBar(24); await act('EDIT-WAHL 2 → PATCH 2 (LFO1→CUTOFF): INTENSITÄT sweep up / down', async () => { await T.w('w2', /^2 PATCH 2/); await T.sweep('k2', -60, 40, 25); const a = (await pm(0)).p[1].i; await T.sweep('k2', 60, 40, 25); return [a, (await pm(0)).p[1]]; });
+await atBar(27); await act('PATCH 2: QUELLE → LFO 2, ZIEL → PAN (while playing)', async () => { const a = await T.knobList('k0', /^LFO 2$/); const b = await T.knobList('k1', /^PAN$/); await T.sweep('k2', -50, 30, 25); return [a, b, (await pm(0)).p[1]]; });
+await atBar(30); await act('PATCH 1: QUELLE MOD-RAD, ZIEL TONHÖHE, INT up; MOD wheel up/down', async () => { await T.w('w2', /^1 PATCH 1/); await T.knobList('k0', /^MOD-RAD$/); await T.knobList('k1', /^TONHÖHE$/); await T.sweep('k2', -30, 20, 25); const w = await wheel('mod', 1, 1200); return [(await pm(0)).p[0], w]; });
+await atBar(33); await act('PATCH 1 INT back to 0 (drag)', async () => { await T.sweep('k2', 80, 30, 20); return (await pm(0)).p[0]; });
+await atBar(35); await act('scene 3 (API) + editor → Synth 4 lead (Sinus×)', async () => { await E(() => SYNQUENZER.launchScene(2)); return T.openEd(3); });
+await atBar(36); await act('Synth 4: OSZ 1 STEUER 1 (X-MOD) sweep', async () => { await T.w('w1', /^3 OSZ 1/); await T.sweep('k1', -50, 40, 25); await T.sweep('k1', 50, 40, 25); return (await pm(3)).o1; });
+await atBar(39); await act('Synth 4: MOD wheel (PATCH 4 MOD-RAD → TONHÖHE +10)', async () => wheel('mod', 1, 900));
+await atBar(41); await act('Synth 4: 🎲 ×2', async () => { await T.closePop(); await T.tapTxt('.hb', /^🎲$/); await sleep(1200); await T.tapTxt('.hb', /^🎲$/); return (await pm(3)).o1; });
+await atBar(43); await act('undo ×3 / redo ×3 (header)', async () => { for (let k = 0; k < 3; k++) await T.tapTxt('.hb.ur', /^↶$/, 150); for (let k = 0; k < 3; k++) await T.tapTxt('.hb.ur', /^↷$/, 150); return E(() => SYNQUENZER.undoInfo().n); });
+await atBar(45); await act('editor Synth 3 pad: number key → "Pad Stimme" (octave wave program)', async () => { await T.openEd(2); let nm = null; for (let k = 0; k < 8 && nm !== 'Pad Stimme'; k++) { await T.tapMk('n' + k, 250); nm = await E(() => SYNQUENZER.getSound(2).name); } return [nm, (await pm(2)).o1]; });
+await atBar(48); await act('scene 4 (API)', () => E(() => { SYNQUENZER.launchScene(3); return 1; }));
+await atBar(49); await act('Synth 3: number key → "Bass Welle" on the pad track, then undo', async () => { let nm = null; for (let k = 0; k < 8 && nm !== 'Bass Welle'; k++) { await T.tapMk('n' + k, 250); nm = await E(() => SYNQUENZER.getSound(2).name); } await sleep(1500); await T.tapTxt('.hb.ur', /^↶$/, 200); return [nm, await E(() => SYNQUENZER.getSound(2).name)]; });
+await atBar(52); await act('Synth 3: SHIFT + 3 (Init) then undo', async () => { await T.tapMk('shift'); await T.tapMk('n2', 200); const a = await E(() => SYNQUENZER.getSound(2).name); await sleep(1500); await T.tapTxt('.hb.ur', /^↶$/, 200); return [a, await E(() => SYNQUENZER.getSound(2).name)]; });
+await atBar(55); await act('ECO on (forceNative)', () => E(() => { SYNQUENZER.forceNative(true); return 1; }));
+await atBar(58); await act('ECO off', () => E(() => { SYNQUENZER.forceNative(false); return 1; }));
+await atBar(60); await act('close editor (✕), scene 1 by touch', async () => { await T.closePop(); await T.tapTxt('button', /^✕$/); await sleep(500); const r = await T.tapTxt('button.scn', /^▶\s*1/); return !!r; });
+await atBar(63); await act('scene 2 by touch', async () => !!(await T.tapTxt('button.scn', /^▶\s*2/)));
+await atBar(65); await act('editor Synth 2 (Rauschen pluck): STEUER 1 sweep (noise cutoff)', async () => { await T.openEd(1); await T.w('w1', /^3 OSZ 1/); await T.sweep('k1', -40, 30, 25); await T.sweep('k1', 40, 30, 25); return (await pm(1)).o1; });
+await atBar(68); await act('Synth 2: WELLE → Speicherwelle, list → 64 (Stimme 4)', async () => { await T.knobList('k0', /^Speicherwelle/); return waveList(64); });
+await atBar(71); await act('Synth 2: STEUER 2 slow sweep down through 64 → ~50', async () => { await T.sweep('k2', 60, 60, 30); return (await pm(1)).o1; });
+await atBar(74); await act('close editor, scene 3 by touch', async () => { await T.closePop(); await T.tapTxt('button', /^✕$/); await sleep(500); return !!(await T.tapTxt('button.scn', /^▶\s*3/)); });
+await atBar(78); await act('scene 1 by touch', async () => !!(await T.tapTxt('button.scn', /^▶\s*1/)));
+}
+await atBar(MIN * 28); const tStop = await E(() => AU.ctx.currentTime);
+await act('■ stop', async () => { await T.closePop(); await E(() => SYNQUENZER.closeEditor && SYNQUENZER.closeEditor()); await sleep(200); return T.tapSel('#bPlay').then(b => !!b); });
+await sleep(4500);
+const fin = await E(() => ({voices: SYNQUENZER.voices().filter(v => v.state !== 'off'), live: SYNQUENZER.runtime().liveVoices, te: SYNQUENZER.tickErrors(), playing: SYNQUENZER.runtime().playing, eng: SYNQUENZER.engineInfo().perTrack && SYNQUENZER.engineInfo().perTrack.map(x => x && x.voices)}));
+const A = await recAnalyse(E, tStop);
+console.log('recorded', A.secs, 's; notes', A.notes, '; fps', A.fps, '; longtasks', JSON.stringify(A.lt), '; stalls', JSON.stringify(A.stall), '; late notes', A.late.length, JSON.stringify(A.late.slice(0, 20)));
+const byAct = f => { const a = A.acts.filter(a => f.t >= a.t - .05).pop(); return a ? a.n.slice(0, 50) + ' +' + (f.t - a.t).toFixed(2) : '-'; };
+for (const tap in A.taps) { const X = A.taps[tap]; console.log(tap, 'peak', X.peakDb, 'NaN', X.nan, 'flags', X.flags.length, 'drops', X.drops.length, 'sustained-flags', (X.sflags || []).length, JSON.stringify((X.sflags || []).slice(0, 8).map(f => [f.t, f.db, f.lv, byAct(f)])), 'd2', (X.d2f || []).length, JSON.stringify((X.d2f || []).slice(0, 8).map(f => [f.t, f.db, f.amp, byAct(f)])));
+  if (tap !== 'master') continue; const g = {}; for (const f of X.flags) { const k = byAct(f).replace(/ \+[\d.]+$/, ''); (g[k] = g[k] || []).push([f.t, f.db, f.lv, byAct(f).match(/\+([\d.]+)$/)?.[1]]); } for (const k in g) console.log('   ', k.padEnd(52), g[k].length, JSON.stringify(g[k].slice(0, 5))); }
+check('recorded ≥ ' + (MIN * 56 - 5) + ' s', A.secs >= MIN * 56 - 5, A.secs);
+check('no NaN, master peak < 0 dBFS', Object.values(A.taps).every(x => x.nan === 0) && A.taps.master.peakDb < 0, Object.fromEntries(Object.entries(A.taps).map(([k, x]) => [k, [x.nan, x.peakDb]])));
+check('no dropouts (master)', A.taps.master.drops.length === 0, A.taps.master.drops.slice(0, 5));
+check('per-track raw output: no click (sustained-zone HP outlier or 2nd-difference spike)', Object.entries(A.taps).every(([k, x]) => k === 'master' || (x.sflags.length === 0 && x.d2f.length === 0)), Object.fromEntries(Object.entries(A.taps).filter(([k]) => k !== 'master').map(([k, x]) => [k, [x.sflags.length, x.d2f.length]])));
+check('no stuck notes 4.5 s after ■', fin.voices.length === 0 && !fin.live, fin);
+check('tickErrors 0', !fin.te, fin.te);
+check('no late notes (scheduled ≥ 3 ms ahead)', A.late.length === 0, A.late.slice(0, 10));
+check('no console errors', errs.length === 0, errs.slice(0, 5));
+const stallX = A.stall.filter(([d, st]) => !A.acts.some(a => a.pn != null && st >= a.pn - 50 && st <= a.pn + 30000));
+check('no longtask > 50 ms / main-thread stall > 60 ms (outside actions)', !A.lt.some(x => x[0] > 50) && !stallX.length, {lt: A.lt.map(([d, st]) => { const a = A.acts.filter(a => a.pn != null && a.pn <= st + 5).pop(); return d + ' ms after ' + (a ? a.n.slice(0, 40) + ' +' + (st - a.pn) + 'ms' : '?'); }), stall: A.stall.map(([d, st]) => { const a = A.acts.filter(a => a.pn != null && a.pn <= st + 5).pop(); return d + ' ms after ' + (a ? a.n.slice(0, 40) + ' +' + (st - a.pn) + 'ms' : '?'); })});
+check('all actions ran (no ERR / missing item)', !Object.values(res).some(r => /ERR|no /.test(JSON.stringify(r))), Object.entries(res).filter(([k, r]) => /ERR|no /.test(JSON.stringify(r))));
+fs.writeFileSync(OUT + TAG + '-result.json', JSON.stringify({A, fin, errs, res}, null, 1));
+fs.writeFileSync(OUT + TAG + '-project.json', await E(() => SYNQUENZER.serialize()));
+await T.br.close(); done();

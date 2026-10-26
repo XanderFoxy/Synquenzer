@@ -127,3 +127,60 @@ Keine Änderung, keine Supabase-Abfrage. 4.11.0 = `p_app` 4 011 000 ≤ `max_app
 ### Geräte-Abgleich (microKORG, nach Gehör; ändert nur Werte in einem MK3-fix)
 Layer mit 2 Stimmen je Timbre (2+2) gegen „Schicht“; mehr Tasten als Stimmen (welche Note fällt weg); Mono/Poly-Layer (1/3);
 Edit Sync und Solo (TIMBRE-Taste); welche Seite der Split-Grenze T1 ist.
+
+## MK3-fix — Kopier-Liste per Finger, ⋯-Werkzeuge auf der offenen Spur, SPLIT ohne Abriss, Timbres in Phase, Solo/Split-Taste enden auf jedem Weg · App bleibt 4.11.0 · Format bleibt 5
+
+### Behoben (7 bestätigte Befunde, 5 Ursachen)
+1. **SHIFT + 1 „Timbre kopieren“: die Liste ließ sich nicht mit dem Finger scrollen (major).** `guardTouch(p)` auf dem Pop brach jedes
+   `touchstart` ab. Wie MK2-fix bei `wavePop`: Die Liste `.plist.mkcp` hält ihr `touchstart` bei sich (passiver Listener mit
+   `stopPropagation`); `guardTouch` selbst unverändert. Tipps wirken weiter über `pointerup`, ein Wischer kopiert nichts.
+2. **⋯ → „Timbre kopieren ▸“ kopierte in die zuletzt gebaute Spur (P.i) statt in die offene (major).** `timCopyPop(anchor, t)` bekommt
+   die Spur vom ⋯-Menü; `timCopy`/`timInit`/die Liste („dieser Sound“) arbeiten auf dieser Spur. `tDst(i)` nimmt die Timbre-Wahl nur aus
+   dem Bedienfeld, wenn es zu dieser Spur gehört, sonst T1 (wie ein frisch gebautes Bedienfeld).
+3. **SPLIT bei gehaltener Taste schnitt fremde Ausklänge ab (major).** `MkCore.after(route)` lässt ein Timbre, dessen gehaltene Tasten
+   und Regel gleich bleiben, unberührt. `MkTim.reassign(list, keep, from)`: bei reinem Umleiten (poly) klingen Ausklänge nicht
+   gehaltener Tasten weiter (außer auf derselben Note wie eine neu verteilte Taste).
+4. **M-EINBRUCH bis −22 dB, wenn eine gehaltene Taste das Timbre wechselt (major).** Vor dem Umverteilen merkt sich `after()` die
+   Oszillator- und LFO-Phasen jeder gehaltenen Taste (t1, t2, sp, l1, l2, tw/wn); die neue Stimme im anderen Timbre setzt sie fort
+   (`inheritPh`). Gleiche Timbres löschen sich in der 40-ms-Blende nicht mehr aus.
+5. **Schicht mit gleichen Timbres: Lautstärke je Note zufällig, einzelne Noten fast stumm (major).** Startphasen je Taste für beide
+   Timbres gleich (`MkCore.notePh`): wer zuerst eine Stimme für die Taste startet, zieht sie wie bisher (Single unverändert,
+   bitgleich), das andere Timbre übernimmt sie. Rauschen und S/H bleiben je Timbre zufällig (B.4 Nr. 3). Liste wird bei Ende der
+   Kennung und bei `panic` geleert.
+6. + 7. **Solo und [Split ← nächste Note] blieben nach ≡ (Menü) bzw. Projektwechsel aktiv (major, 2 Befunde).** `closeSheets()` ruft
+   `MKUI.leave()`, wenn das Synth-Blatt offen war: jeder Weg aus dem Editor (✕, ≡, Browser, Projektwechsel …) beendet Solo und die
+   scharfe Split-Taste. Zusätzlich nimmt `splitNote` eine Note nur an, solange genau dieser Editor offen ist.
+
+### Proben (Node 22 bzw. Chromium 1243; der Pfad chromium-1194 aus dem Auftrag existiert hier nicht)
+- Scroll: `v3-fpq-mk3-scroll.mjs` P1 0 → 152 px, L1 0 → 152 px (vorher 0), Liste bleibt offen, nichts kopiert; `v3-rep-mk3-cpscroll.mjs`
+  ebenso; neu `v3-mk3fix-cpreach.mjs`: nach Wischern Ende erreicht (P1 388/388, L1 522/522), Tipp auf [T1] der letzten Zeile „Src 15“
+  kopiert (CUTOFF 90), Pop zu, 0 Fehler.
+- ⋯-Kopie: `v3-fpq-mk3-more.mjs` und `v3-rep-mk3-tcopy-stale.mjs` (P1 + L1, echte Tipps): Zeile „FM-Pluck (dieser Sound)“ = Spur 1,
+  CUTOFF Spur 0/1 127/90 → 127/50 (vorher 50/90), Undo auf Spur 1.
+- SPLIT-Ausklang: `v3-fpq-mk3-tail2.mjs` 0,6–0,9 s −19,4 / −19,4 dB (vorher −98,6), Zug 60→66 −19,4 (vorher −99,8);
+  `v3-rp-mk3-splittail.mjs` T1-Ausklang und gehaltenes T2 unverändert (L −22,4/−22,4; R −18,1/−18,1).
+- Loch: `v3-fpq-mk3-hole.mjs` alle Fälle 0/24 Seeds < −3 dB (schlechtester −1,4 dB, vorher bis −14,2); `v3-rep-mk3-hole.mjs`
+  (strenge §16-Lesart) schlechtester −1,3 dB (vorher −22,4); `v3-rep-mk3-hole2.mjs` −0,5 dB (vorher −18,9);
+  `v3-rep-mk3-hole-br.mjs` (Chromium-Worklet) −1,3 dB, Sanity-Fall weiter −28 dB. M-KLICK höchstens 5,1 dB (≤ +6).
+- Phase: `v3-fpq-mk3-phase.mjs`/`-phase2.mjs` Schicht gegen Einzeln jede Note +6,0 dB (Sinus vorher −56,8 … +6,0);
+  `v3-rv-mk3-phase-oac.mjs` (App-`mkRender`) Sinus/Dreieck/Säge 6,0–6,1 dB, 0 Fehler.
+- Solo/Split-Taste: `v3-qa-mk3reg-leak4.mjs` P + L, ≡: −19,1 dB nach dem Menü (vorher −200); `v3-verify-solo-menu.mjs` P + L
+  inkl. „Neu ▾“: −19,1; `v3-qa-mk3reg-leak2.mjs` ok; `v3-qa-mk3reg-arm.mjs` P + L und `v3-rep-mk3-armmenu.mjs` (Spur 1 und 4):
+  split bleibt 60, Undo 1 → 1 (vorher 40/65/67, Undo 2).
+- Regression: `v3-mk3-timbre.mjs` alle Fälle (MK3-01 Dual = Summe 2,6e-8; MK3-07 Single bitgleich zu 4.10.0 max |Δ| 0; MK3-09
+  M-EINBRUCH ≥ −1,03 dB), `v3-mk3-scale.mjs` 6/6, `v3-mk3-fpdsp.mjs` 6/6, `v3-mk3-ui.mjs` 37/37, Smoke-Test ohne Fehler.
+  MK3-08 CPU streut auf der geteilten Maschine (1,00–1,15 ×); A/B gegen `MK3.html` auf einem Kern: alt 1,046/1,034 ×, neu 1,001/0,952 ×
+  (der Fix berührt nur den Notenstart). Worklet bleibt ASCII. Größe 2 829 915 B (+3,3 KB; MK3 gesamt +32,6 KB ≤ +33 KB).
+
+### Abweichungen
+- **MK3-13 M-KLICK-Lesart:** Säge (T1) + Rechteck (T2) derselben Noten starten jetzt in Phase; ihre Flanken fallen zusammen, und der
+  Render **ganz ohne Solo** erreicht schon 6,1 dB bei 1,174 s (Eigenschaft des stehenden Klangs, kein Knack). Die Probe misst darum
+  ±30 ms um die beiden Umschaltpunkte (mit 100 ms Umgebung): 3,4 dB (`v3-mk3fix-solo.mjs` zeigt die Gegenprobe für 6 Seeds).
+- Neue Stimme im anderen Timbre übernimmt nur Phasen, nicht Hüllkurven oder Filterzustand (B.6 Nr. 2: sie beginnt mit Einblendung).
+
+### Lücken / Hauptlinie
+- `wavePop` (MK2) ist auf der Hauptlinie bereits mit demselben Muster behoben (MK2-fix Nr. 5); hier nicht angefasst.
+- Der MK1-Befund zur Kennung beim Neuanschlag einer ausklingenden Note (s. oben) bleibt für die Hauptlinie offen.
+
+### Datenbank / Am Server offen
+Keine Änderung, keine Supabase-Abfrage.

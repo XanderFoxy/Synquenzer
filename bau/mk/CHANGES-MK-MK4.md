@@ -136,3 +136,49 @@ Ensemble macht aus Mono Stereo; Sound-Normalisierung (Laden/Speichern) behält a
 - Bildschirmfotos: `dirigent-test/v3-mk4-shots/` — je Format P1, P2, P3, L1, L2, W: `-modfx`, `-delay-zeit`, `-delay-note`, `-eq`; dazu
   `mk1-look-*` (SPIEL/FILTER aller Formate inkl. Safe-Area und Halb-Ansichten). Smoke: `dirigent-test/v3-mk4-smoke.png`.
 - Schnappschuss: `synq-snapshots/MK4.html`. Größe 2 822 269 B (MK2 + 24 967 B).
+
+## MK4-fix — zwei Befunde aus der Prüfung behoben · App bleibt 4.12.0 · Format 5 · keine Server-Änderung
+
+### 1. Änderung in der Stille wirkte erst beim nächsten Ton (TIEFE 0 / EQ 0 dB nicht bitgleich trocken)
+- **Ursache:** Nur `MkFx.run()` führte die Glätter (`sMd`, `sW`, `sDd`, `sLg/sHg/sLf/sHf`) und die Typ-Überblendungen nach — und `run()` läuft
+  nur, solange eine Stimme oder ein Effekt-Nachhall klingt. Außerdem blieb `mOn` nach dem Ausblenden stehen. Folge: Wer zwischen zwei Tönen
+  TIEFE auf 0 drehte, ein Programm wechselte (Zifferntasten) oder den TYP umschaltete, hörte am Anschlag des nächsten Tons noch den alten Effekt
+  (bis −5 dB in 0–5 ms; Programmwechsel max |d| 0,134 > Tonspitze; Typwechsel +4,5 dB).
+- **Behoben:** neue `MkFx.settle()`: Klingt nichts (keine Stimme, kein Effekt-Nachhall — oder die Effekte waren vor der Änderung aus), springen
+  alle Glätter, Mischung, Delay-Zeit/-Typ und der Mod-FX-Typ sofort auf ihr Ziel; eine laufende Mod-FX-Stufe startet mit leeren Leitungen und
+  frischen Abgriffen (kein Gleiten von der LFO-Stellung vor der Pause), eine abgeschaltete Stufe ist wirklich aus. Aufgerufen von
+  `MkCore.load` und `MkCore.set` (nur bei mfx/dly/eq-Pfaden, `fxSettle`) und am Quantums-Ende, sobald der Nachhall still ist (`fxEnd`).
+  Zusätzlich fällt `mOn` schon im Durchlauf ab, in dem die Mischung 0 erreicht. Änderungen bei klingendem Ton laufen unverändert geglättet.
+  Delay-Länge als `dLen()` ausgelagert (gleiche Rechnung).
+- **Nachweis (Node, echter Worklet-Code):** `v3-qa-mk4-idle.mjs` gegen 4.10.0: Programmwechsel, Ensemble TIEFE 127→0, TIEF-GAIN +12→0 jeweils
+  max |d| **0** (vorher 0,134 / 0,062 / 0,053), Pegel 0,0 dB in allen Fenstern; Kontrolle (Änderung bei klingendem Ton) unverändert ≤ 2,9e-6.
+  `v3-qa-mk4-idle2.mjs` Typwechsel Phaser→Cho/Flg in der Stille gegen „immer Cho/Flg“: max |d| **0** (vorher +4,5 dB). Neu
+  `v3-mk4fix-idle3.mjs` (Gegenrichtung: TIEFE 0→127, 40→127, Ensemble→Phaser, EQ 0→+12/−6, DELAY 0→100 in der Stille gegen „immer so“):
+  alle ≤ 3,7e-7 (vorher bis 0,13). **Chromium** (`v3-rep-mk4-idle-chrom.mjs`, OfflineAudioContext über SynthHost): alle Stille-Änderungen
+  max |d| 0, Kontrollen ≤ 2,9e-6, keine Konsolenfehler. **Live** (`v3-rep-mk4-idle-live.mjs`, Echtzeit, `SYNQUENZER.mkSet`): erster Ton nach der
+  Änderung minus späterer Ton 0,39/−0,66/0,30/−0,06 dB — innerhalb des Rauschbodens später-gegen-später (1,45/−1,72/0,70/−0,35 dB; vorher −5,65/−4,72 dB in 0–5 ms).
+
+### 2. Panik und ■■ („Hall und Echo aus“ / „Alle Töne aus“) ließen das MS-2000-DELAY weiterklingen (> 30 s)
+- **Ursache:** `tailKill()` leerte nur Bus-Echo und Hall; `MkCore.panic()` blendete nur die Stimmen aus; `MkFx` hatte keinen Löschweg.
+- **Behoben:** `MkFx.kill()`: klingt ein Effekt-Nachhall, blenden die Delay-Wiederholungen (Rückkopplung und Ausgang) und die Mod-FX-Mischung
+  über `MK_KQ` Quanten (10 ms) linear aus, danach vergisst das Delay seinen Puffer (`dWr = 0`, nur Neues kommt zurück) und die Mod-FX-Stufe
+  startet leer neu (Mischung blendet in 20 ms wieder ein); ist alles still, sofort (`wipe()`). Aufgerufen von `MkCore.panic()` (Worklet-Ereignis 6)
+  und von der neuen Nachricht `{mkFxKill}` (`E.mkFxKill()` im Host), die `tailKill()` an jede Synth-Spur (und die Vorhör-Kette) schickt.
+  Eine neue Note danach bekommt wieder ihr Echo. Alles ASCII im Worklet-Quelltext (btoa-Weg).
+- **Nachweis:** `v3-rp-mk4-dlytail.mjs` (Chromium, echte Taps, P1 390×844 und L1 844×390): ■■ mit TIEFE 127: 0–300 ms −97/−87 dB, ab 300 ms
+  Stille (vorher −26 … −34 dB über 4 s); panic(): 0–300 ms −90/−124 dB, ab 300 ms Stille bis 10 s (vorher −30 … −55 dB); panic + Stumm genauso;
+  Kontrollen TIEFE 0 still; keine Seitenfehler. `v3-qa-mk4reg-tailui.mjs`: Bus-Echo Basis/neu unverändert (−33 dB, dann Stille), MS-2000-Delay
+  jetzt −102/−94 dB, dann Stille. `v3-qa-mk4reg-panic.mjs` (ZEIT 127, Akkord): ab 0 s −200 dB, nichts über −60 dB (vorher noch bei 29,3 s).
+  Neu `v3-mk4fix-kill.mjs` (Node, 30 Prüfungen, `v3-mk4fix-kill.out`): Delay 127, Delay + Cho/Flg, Phaser, Cross + EQ +12, je Panik und Kill:
+  20 ms danach < −80 dB (Rest = Ausschwingen des DC-Blockers), ab 0,5 s < −100 dB, kein Knack (größter Sprung beim Kill ≤ Sprünge des laufenden
+  Nachhalls), neue Note hat wieder Echo.
+
+### Regression
+- `v3-mk4-fx.mjs` 61/61 PASS (`v3-mk4fix-fx.out`), `v3-mk4-ui.mjs` 64/64 PASS (`v3-mk4fix-ui.out`), `v3-mk1-dsp.mjs` 64 PASS
+  (`v3-mk4fix-mk1dsp.out`), Smoke ohne Fehler (`dirigent-test/v3-mk4fix-smoke.png`). Keine sichtbare Änderung (keine Layout-Prüfung nötig).
+- Chromium: `/opt/pw-browsers/chromium-1194` gibt es nicht; alle Läufe mit `chromium-1243` (wie die übrigen MK4-Tests).
+- **Zusammenführen:** zusätzlich berührt: `MkFx` (`settle`, `kill`, `wipe`, `dLen`, `mFresh`, `kq` in `run`/`hot`/`idle`), `MkCore.load`/`set`/`fxEnd`/
+  `fxSettle`/`panic`, `onMsg` (`mkFxKill`), Host `E.mkFxKill`, `tailKill()` im Hauptfaden.
+- Offen/Beobachtung: Stummschalten einer Spur schneidet einen laufenden Effekt-Nachhall nicht ab (gilt für das Spur-Ende vor der Stumm-Stufe;
+  nicht Teil des Befunds, nicht geändert).
+- Schnappschuss: `synq-snapshots/MK4-fix.html`, 2 826 589 B (MK4 + 4 320 B).

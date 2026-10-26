@@ -5233,6 +5233,7 @@ const MK_DXF = Math.round(.04 * SR);    // time / tempo change: read head crossf
 const MK_FXF = Math.round(.03 * SR);    // type change: 30 ms
 let MK_MDN = 64; while (MK_MDN < .0125 * SR + 8) MK_MDN <<= 1;   // Mod-FX lines (2^n)
 const MK_MDM = MK_MDN - 1, MK_TQ = 3e-6;   // MK_TQ: quiet (-110 dB)
+const MK_KQ = Math.max(1, Math.round(.01 * SR / 128));   // MK4-fix: tail kill fade, in quanta (10 ms)
 // a Mod-FX tap: Catmull-Rom
 function mkRdM(b, w, d) { const x = w - d, i = Math.floor(x), f = x - i, xm = b[(i - 1) & MK_MDM], x0 = b[i & MK_MDM], x1 = b[(i + 1) & MK_MDM], x2 = b[(i + 2) & MK_MDM];
   return x0 + .5 * f * (x1 - xm + f * (2 * xm - 5 * x0 + 4 * x1 - x2 + f * (3 * (x0 - x1) + x2 - xm))); }
@@ -5260,7 +5261,7 @@ class MkFx {
     this.q = new Float64Array(8); this.lc = new Float64Array(6); this.hc = new Float64Array(6); this.lk = [NaN, NaN]; this.hk = [NaN, NaN];
     const Q = MK_FQ; this.bL = new Float32Array(Q); this.bR = new Float32Array(Q); this.wL = new Float64Array(Q); this.wR = new Float64Array(Q); this.oL = new Float64Array(Q); this.oR = new Float64Array(Q);
     this.qf = -1; this.pend = false;
-    this.quiet = 1e9; this.tin = null; this.tinP = 0; this.bytes = 0;
+    this.quiet = 1e9; this.tin = null; this.tinP = 0; this.bytes = 0; this.kq = 0;
   }
   load(pm) {
     const n = (o, k, d) => (o && typeof o[k] === 'number' && isFinite(o[k]) ? o[k] : d);
@@ -5290,11 +5291,37 @@ class MkFx {
   }
   active() { return this.md > 0 || this.sMd > 0 || this.sW > 0 || (this.dL !== null && (this.dd > 0 || this.sDd > 0)) || this.lg !== 0 || this.sLg !== 0 || this.hg !== 0 || this.sHg !== 0 || this.tin !== null; }
   // tails sound without a voice: until quiet for the longest delay
-  hot() { if (!this.active()) return false; if (this.tin) return true; const dl = this.dOn ? Math.max(this.dA, this.dX >= 0 ? this.dB : 0) + MK_DXF : 0; return this.quiet < dl + 4096; }
-  idle(n) { if (this.frz < 0) this.ph = (this.ph + MKW.fxHz(this.ms) * n * ISR) % 1; }
+  hot() { if (!this.active()) return false; if (this.tin || this.kq) return true; const dl = this.dOn ? Math.max(this.dA, this.dX >= 0 ? this.dB : 0) + MK_DXF : 0; return this.quiet < dl + 4096; }
+  idle(n) { this.kq = 0; if (this.frz < 0) this.ph = (this.ph + MKW.fxHz(this.ms) * n * ISR) % 1; }   // MK4-fix: no run = nothing left to fade
+  dLen() { const W = MKW; const D = (this.dsy >= .5 ? W.DSYNC[Math.max(0, Math.min(14, Math.round(this.dn)))] * 4 * 60 / this.h.bpm : W.dlyS(Math.max(0, Math.min(127, this.dtm)))) * SR;
+    return Math.max(1, Math.min(MK_DLN - 3, Math.round(D))); }   // whole samples: no interpolation dulls the repeats
+  mFresh(t) { this.mClear(t); if (t === 1) this.ed[0] = -1; else if (t === 0) this.cd.fill(-1); else this.pa.fill(NaN); }
+  /* MK4-fix: nothing sounds (no voice, no effect tail; MkCore.fxSettle): every smoother and blend jumps to its target, so an edit
+     or a program change made in the silence holds from the first sample of the next note (TIEFE / GAIN 0 = dry and bit-identical) */
+  settle() {
+    const W = MKW, mdT = Math.max(0, Math.min(127, this.md)), ddT = Math.max(0, Math.min(127, this.dd));
+    // Mod-FX: the type in force, no blend; on = full mix at once with empty lines and fresh taps (no glide from the LFO position
+    // before the pause), off = the stage stops
+    if (this.mOld >= 0 || this.mPend >= 0 || this.mCur !== this.mt) { if (this.mCur !== this.mt) this.mFresh(this.mt); this.mOld = -1; this.mPend = -1; this.mX = 0; this.mCur = this.mt; }
+    this.sMd = mdT; this.mDh = mdT;
+    if (mdT > 0) { this.mFresh(this.mCur); this.sW = this.w0 = W.fxW(mdT); this.mOn = true; } else { this.sW = this.w0 = 0; this.mOn = false; }
+    // Delay: level, time and type at their targets
+    this.sDd = this.dL !== null ? ddT : 0; this.dOld = -1; this.dPend = -1; this.dTX = 0; this.dCur = this.dt; this.dX = -1;
+    if (this.dL !== null && ddT > 0) { if (!this.dOn) this.dWr = 0; this.dA = this.dLen(); this.lv0 = ddT / 127; this.dOn = true; } else { this.lv0 = 0; this.dOn = false; }
+    // EQ
+    const lgT = Math.max(-12, Math.min(12, this.lg)), hgT = Math.max(-12, Math.min(12, this.hg)), q = this.q;
+    this.sLg = lgT; this.sHg = hgT; this.sLf = Math.log(Math.max(40, Math.min(1000, this.lf))); this.sHf = Math.log(Math.max(1000, Math.min(18000, this.hf)));
+    if (lgT !== 0) { if (!this.lOn) q[0] = q[1] = q[2] = q[3] = 0; this.lOn = true; } else this.lOn = false;
+    if (hgT !== 0) { if (!this.hOn) q[4] = q[5] = q[6] = q[7] = 0; this.hOn = true; } else this.hOn = false;
+    this.kq = 0;
+  }
+  /* MK4-fix: panic / tail kill (double stop): the echo repeats and the Mod-FX tail fade out over MK_KQ quanta (~11 ms, no click), then the delay
+     forgets its buffer and the Mod-FX lines start empty (the mix fades in again, 20 ms); silent: at once */
+  kill() { if (this.hot()) { if (!this.kq) this.kq = MK_KQ; } else this.wipe(); }
+  wipe() { this.dWr = 0; this.mClear(0); this.mClear(1); this.mClear(2); this.cd.fill(-1); this.ed[0] = -1; this.pa.fill(NaN); this.kq = 0; }
   // one quantum: bL / bR (voice sum) -> added to Lo / Ro
   run(Lo, Ro) {
-    const xL = this.bL, xR = this.bR, n = MK_FQ, W = MKW, off = 0; this.pend = false; this.qf = -1;
+    const xL = this.bL, xR = this.bR, n = MK_FQ, W = MKW, off = 0, kq = this.kq, kEnd = kq === 1; this.pend = false; this.qf = -1; if (kq) this.kq--;
     if (this.tin) { const T = this.tin, p = this.tinP; for (let i = 0; i < n; i++) { const j = p + i; if (j < T.l.length) { xL[i] += T.l[j]; xR[i] += T.r[j]; } } this.tinP += n; if (this.tinP >= T.l.length) this.tin = null; }   // test input
     const sm = mkSmv;
     const mdT = Math.max(0, Math.min(127, this.md)); this.sMd = sm(this.sMd, mdT); this.sDd = sm(this.sDd, Math.max(0, Math.min(127, this.dd)));
@@ -5307,7 +5334,7 @@ class MkFx {
       const ph0 = this.frz >= 0 ? this.frz : this.ph, ph1 = this.frz >= 0 ? this.frz : (this.ph + W.fxHz(this.ms) * n * ISR) % 1; this.ph = ph1;
       if (mdT > 0) this.mDh = this.sMd;
       this.sW = mkSmw(this.sW, W.fxW(mdT));
-      const dep = mdT > 0 ? this.sMd : this.mDh, w0 = this.w0, w1 = this.sW, wL = this.wL, wR = this.wR;
+      const dep = mdT > 0 ? this.sMd : this.mDh, w0 = this.w0, w1 = kq ? this.w0 * (kq - 1) / kq : this.sW, wL = this.wL, wR = this.wR;
       this.mType(this.mCur, xL, xR, wL, wR, dep, ph0, ph1, n);
       if (this.mOld >= 0) {   // type blend
         const oL = this.oL, oR = this.oR; this.mType(this.mOld, xL, xR, oL, oR, dep, ph0, ph1, n);
@@ -5318,11 +5345,11 @@ class MkFx {
       for (let i = 0; i < n; i++) { const w = w0 + (w1 - w0) * (i + 1) / n; xL[i] = xL[i] * (1 - w) + wL[i] * w; xR[i] = xR[i] * (1 - w) + wR[i] * w; }
       this.w0 = w1;
       this.mw = (this.mw + n) & MK_MDM;
+      if (mdT === 0 && this.sW === 0 && this.sMd === 0) this.mOn = false;   // MK4-fix: off as soon as the mix is out (not only at the next run)
+      if (kEnd) { this.mOn = false; this.sW = 0; this.mOld = -1; if (this.mPend >= 0) { this.mCur = this.mPend; this.mPend = -1; } }   // MK4-fix: dry now; the next quantum starts the stage afresh
     }
     // ---- Delay (W-32, W-12) ----
-    const dOn = this.dL !== null && (this.dd > 0 || this.sDd > 0), h = this.h;
-    let D = (this.dsy >= .5 ? W.DSYNC[Math.max(0, Math.min(14, Math.round(this.dn)))] * 4 * 60 / h.bpm : W.dlyS(Math.max(0, Math.min(127, this.dtm)))) * SR;
-    D = Math.max(1, Math.min(MK_DLN - 3, Math.round(D)));   // whole samples: no interpolation dulls the repeats
+    const dOn = this.dL !== null && (this.dd > 0 || this.sDd > 0), D = this.dLen();
     if (dOn && !this.dOn) { this.dWr = 0; this.dA = D; this.dX = -1; this.dOld = -1; this.dPend = -1; this.lv0 = 0; }
     this.dOn = dOn;
     if (dOn) {
@@ -5340,6 +5367,7 @@ class MkFx {
           let pl = 0, pr = 0; if (B <= wr) { x = w - B; if (x < 0) x += N; j = x | 0; f = x - j; j1 = j + 1 === N ? 0 : j + 1; pl = L[j] + (L[j1] - L[j]) * f; pr = R[j] + (R[j1] - R[j]) * f; }
           const ga = ca0 + (ca1 - ca0) * u, gb = sb0 + (sb1 - sb0) * u; rl = rl * ga + pl * gb; rr = rr * ga + pr * gb;
         }
+        if (kq) { const g = (kq - u) / MK_KQ; rl *= g; rr *= g; }   // MK4-fix: kill: the repeats fade out (linear over MK_KQ quanta)
         const il = xL[i], ir = xR[i];
         // 0 Stereo, 1 Cross (feedback L <-> R), 2 L/R (mono sum, alternating)
         let ul, ur;
@@ -5351,7 +5379,7 @@ class MkFx {
         xL[i] = il + lv * rl; xR[i] = ir + lv * rr;
         if (++w === N) w = 0; if (wr < N) wr++;
       }
-      this.dw = w; this.dWr = wr; this.lv0 = lv1;
+      this.dw = w; this.dWr = kEnd ? 0 : wr; this.lv0 = lv1;   // kill: the buffer is forgotten (only what is written from now on returns)
       if (xf) { this.dX += n; if (this.dX >= MK_DXF) { this.dA = this.dB; this.dX = -1; } }
       if (to >= 0) { this.dTX += n; if (this.dTX >= MK_FXF) { this.dOld = -1; if (this.dPend >= 0) { const p = this.dPend; this.dPend = -1; this.dType_(p); } } }
     }
@@ -5543,7 +5571,7 @@ class MkCore {
   /* ---------------- parameters ---------------- */
   load(pm) {  // a whole p.mk (sound load / engine change)
     this.p = pm && typeof pm === 'object' ? pm : null;
-    this.fx.load(this.p);   // MK4
+    const fa = this.fx.active(); this.fx.load(this.p); this.fxSettle(fa);   // MK4
     const t = this.p && Array.isArray(this.p.t) && this.p.t[0] ? this.p.t[0] : null, T = mkT();
     if (t) for (const k in T) { const x = t[k]; if (x == null) continue;
       if (k === 'p') { if (Array.isArray(x)) for (let j = 0; j < 4; j++) { const q = x[j]; if (q && typeof q === 'object') for (const f of ['s', 'd', 'i']) if (typeof q[f] === 'number' && isFinite(q[f])) T.p[j][f] = q[f]; } continue; }
@@ -5559,10 +5587,10 @@ class MkCore {
     void re;
   }
   set(o) {  // {path: value} from a gesture (fractions allowed during the gesture)
-    const T = this.T; let st = false, reas = false, env = false; this.smRun = true;
+    const T = this.T, fa = this.fx.active(); let st = false, reas = false, env = false, fx = false; this.smRun = true;
     for (const path in o) {
       const v = +o[path]; if (!isFinite(v)) continue;
-      const q = path.split('.'); if (q[0] === 'mfx' || q[0] === 'dly' || q[0] === 'eq') { this.fx.set(q[0], q[1], v); continue; }   // MK4
+      const q = path.split('.'); if (q[0] === 'mfx' || q[0] === 'dly' || q[0] === 'eq') { this.fx.set(q[0], q[1], v); fx = true; continue; }   // MK4
       if (q[0] !== 't' || q[1] !== '0') continue;
       const k1 = q[2], k2 = q[3];
       if (k1 === 'p') { const P = T.p[+k2], f = q[4]; if (P && (f === 's' || f === 'd' || f === 'i')) { P[f] = v; this.pRun = true; } continue; }   // MK2: PATCH 1-4 ('t.0.p.1.i')
@@ -5573,6 +5601,7 @@ class MkCore {
     if (env || reas) this.derive();
     if (st) { const ns = this.structOf(), s0 = this.st; if (ns.w1 !== s0.w1 || ns.w2 !== s0.w2 || ns.mod !== s0.mod || ns.ft !== s0.ft || ns.gate !== s0.gate) { if (this.V.some(v => v.on && !v.ghost)) this.structXf(ns); else this.setStruct(ns); } }
     if (reas && this.V.some(v => v.on && !v.ghost)) this.reassign();
+    if (fx) this.fxSettle(fa);
   }
   structOf() { const T = this.T, r = x => Math.round(x); return {w1: r(T.o1.w), w2: r(T.o2.w), mod: r(T.o2.mod), ft: r(T.f.type), gate: r(T.a.gate)}; }
   setStruct(ns) { this.st = ns; for (const v of this.V) if (v.on && !v.ghost && !(this.sxOn && v.sxo)) v.st = ns; }
@@ -5607,7 +5636,10 @@ class MkCore {
   /* ---------------- notes ---------------- */
   busy() { if (this.keys.length) return true; for (const v of this.V) if (v.on) return true; return false; }
   fxHot() { return this.fx.hot(); }   // MK4: an echo / effect tail still sounds without a voice
-  fxEnd(L, R) { if (this.fx.pend) this.fx.run(L, R); }   // MK4: after the 8 control blocks of a quantum
+  fxEnd(L, R) { if (this.fx.pend) { this.fx.run(L, R); if (!this.fx.hot() && !this.busy()) this.fx.settle(); } }   // MK4: after the 8 control blocks of a quantum (MK4-fix: tail gone = settled)
+  // MK4-fix: an effect edit / program load while nothing sounds (no voice; no effect tail, or the effects were off before the
+  // change) takes effect at once instead of at the next note
+  fxSettle(fa) { if (this.busy()) return; const F = this.fx; if (!fa) F.quiet = 1e9; else if (F.hot()) return; F.settle(); }
   count() { let n = 0; for (const v of this.V) if (v.on && !v.ghost) n++; return n; }
   maxV() { return this.lim >= 2 ? 2 : 4; }
   uniN() { return this.lim >= 1 ? 2 : 4; }
@@ -5712,7 +5744,7 @@ class MkCore {
     for (const v of this.V) if (v.on && !v.ghost && v.id === id) { v.note = note; v.target = note; v.gc = tau > 0 ? 1 - Math.exp(-CR / (tau * SR)) : 1; }
   }
   allOff() { const ids = this.keys.map(k => k.id); this.keys.length = 0; for (const v of this.V) if (v.on && v.gate) this.release(v); for (const id of ids) this.endCheck(id); }
-  panic() { const ids = this.keys.map(k => k.id); this.keys.length = 0; for (const v of this.V) if (v.on) this.fadeOut(v, 64); for (const id of ids) this.endCheck(id); }
+  panic() { const ids = this.keys.map(k => k.id); this.keys.length = 0; for (const v of this.V) if (v.on) this.fadeOut(v, 64); for (const id of ids) this.endCheck(id); this.fx.kill(); }   // MK4-fix: the effect tails too
   // the held keys for an engine change away from eng 3: the voices fade out as ghosts, the keys go to the other engine
   handOver(n) {
     const held = this.keys.slice().sort((a, b) => a.ord - b.ord).map(k => ({id: k.id, note: k.note, vel: k.vel}));
@@ -6223,6 +6255,7 @@ class AnalogCore extends AudioWorkletProcessor {
     if (m.mkScope != null) { this.mk.scopeOn = !!m.mkScope; this.mk.scopeNext = 0; }
     if (m.mkTap != null) this.mk.tap = String(m.mkTap);
     if (m.mkFxIn) this.mk.fx.tin = m.mkFxIn.l && m.mkFxIn.r ? {l: m.mkFxIn.l, r: m.mkFxIn.r} : null, this.mk.fx.tinP = 0;   // MK4 test: a signal into the effect input
+    if (m.mkFxKill) this.mk.fx.kill();                           // MK4-fix: tail kill (double stop): echo repeats and Mod-FX tail out
     if (m.mkFxFrz != null) this.mk.fx.frz = m.mkFxFrz >= 0 ? m.mkFxFrz % 1 : -1;            // MK4 test: Mod-FX LFO frozen at a phase (-1 = runs)
     if (m.mkw) mkwAdd(m.mkw);                                   // MK2: a stored wave for every processor of this context
     if (m.set) this.setReq(m.set, !!m.xf, m.fm6 || null);      // V4a: a whole sound = params + FM patch in one crossfade
@@ -11815,6 +11848,7 @@ const MK_LABEL = 'MS 2000';
     // queued note events first, then the params; xf: a whole sound -> the worklet fades sounding voices through the change
     E.set = (diff, xf, fm6, mods, mk) => { Object.assign(E.sent, diff); E.flush(); const m = xf ? {set: diff, xf: true} : {set: diff}; if (mods) m.mods = mods; if (fm6) m.fm6 = fm6; if (mk) m.mk = mk; post(m); };
     E.mkSet = o => { E.flush(); post({mkSet: o}); };              // MK1: gesture values (fractions during the gesture, EN3-03)
+    E.mkFxKill = () => { E.flush(); post({mkFxKill: 1}); };       // MK4-fix: the MS 2000 effect tails out (tailKill)
     E.mkWheel = o => post({mkWheel: o}); E.mkScope = on => { on = !!on; if (on === !!E.mksOn) return; E.mksOn = on; post({mkScope: on}); };
     E.mods = list => { E.flush(); post({mods: list}); };
     E.fm6 = patch => { E.flush(); post({fm6: patch}); };     // WP7: the FM operators (structured clone = a snapshot)
@@ -18193,7 +18227,11 @@ function panic() {
   UI.dirty.all = true;
 }
 // hall and echo tails (§8.1): a stop lets them ring out; a second ■ within 1 s or panic() empties them
-function tailKill() { if (!AU.ctx) return; echoKill(); hallClear(); duckReset(AU.ctx.currentTime); }
+function tailKill() {
+  if (!AU.ctx) return; echoKill(); hallClear(); duckReset(AU.ctx.currentTime);
+  for (const E of AU.synth) if (E && E.mkFxKill) E.mkFxKill();   // MK4-fix: the MS 2000 program delay / Mod-FX tails too
+  try { if (PV.chain && PV.chain.E && PV.chain.E.mkFxKill) PV.chain.E.mkFxKill(); } catch (e) {}
+}
 
 /* ---------------- 60-ui.js ---------------- */
 /* =====================================================================
