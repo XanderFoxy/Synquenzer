@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+const FILE = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk-br-MK5/index.html';
+const b = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await b.newContext({viewport: {width: 375, height: 667}, hasTouch: true, isMobile: true, deviceScaleFactor: 2}); const p = await ctx.newPage();
+await p.goto('file://' + FILE); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+await p.evaluate(async () => { const Q = SYNQUENZER; ensureAudio(); Q.setEngine(0, 'mk'); Q.selectTrack(0); Q.openEditor(); await new Promise(r => setTimeout(r, 600)); MKUI.setWahl(2, 8); });
+await p.waitForTimeout(200);
+const info = await p.evaluate(() => { const e = ED.lcd, lv = e.querySelector('.lv'), cs = getComputedStyle(lv); return {h: lv.clientHeight, sh: lv.scrollHeight, w: lv.clientWidth, sw: lv.scrollWidth, clamp: cs.webkitLineClamp, ov: cs.overflow, to: cs.textOverflow, fs: cs.fontSize, html: e.outerHTML.slice(0, 400)}; });
+console.log(JSON.stringify(info));
+const lr = await p.evaluate(() => { const r = ED.lcd.getBoundingClientRect(); return {x: r.x, y: r.y, w: r.width, h: r.height}; });
+await p.screenshot({path: 'v3-qa-mk5-shots/lcd-P2-arpB.png', clip: {x: 0, y: Math.max(0, lr.y - 10), width: 375, height: lr.h + 20}});
+await p.evaluate(() => { MKUI.arpKey(); });
+await p.waitForTimeout(100);
+await p.screenshot({path: 'v3-qa-mk5-shots/lcd-P2-arpon.png', clip: {x: 0, y: Math.max(0, lr.y - 10), width: 375, height: lr.h + 20}});
+await b.close();

@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+import path from 'path';
+const FILE = path.resolve(process.argv[2]);
+const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const page = await (await browser.newContext({viewport: {width: 390, height: 844}})).newPage();
+await page.goto('file://' + FILE); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+const r = await page.evaluate(() => { SYNQUENZER.setEngine(0, 'mk');
+  const bad = {on: 5, last: 99, type: -3, run: 'x', ks: 9, res: 3.6, q: [{k: 99, m: 7, v: [999, -999, 'x', NaN, 2.6]}, null, {k: 2.4, m: .4, v: 'no'}], extra: {evil: 1}};
+  const p = SQMK.normMk({t: [{seq: bad}, {}]}); return {seq0: p.t[0].seq, seq1: p.t[1].seq}; });
+console.log(JSON.stringify(r));
+await browser.close();

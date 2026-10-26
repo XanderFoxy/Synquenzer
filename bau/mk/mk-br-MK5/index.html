@@ -4042,9 +4042,10 @@ const ARPC = (function () {
   function cancelFrom(i, t) { const s = ST.get(i); if (!s) return; const n0 = s.iv.length; s.iv = s.iv.filter(x => x.src === 'live' || x.on < t - 1e-6); if (s.iv.length !== n0) rewind(i, t); }
   // a carrier change at eff (applyCarrierChange): the planned steps behind it are made again with the new mapping; a sounding
   // arp note that spans it follows like a clip voice (retune), unless the track holds its notes (onChange 'hold')
-  function carrier(eff) {
+  function carrier(eff, noRetune) {
     for (const i of [...ST.keys()]) {
-      rewind(i, eff);
+      rewind(i, eff); plan(i, nowT(), LOOKAHEAD);
+      if (noRetune || !ST.has(i)) continue;
       const tr = S.tracks[i]; if (!tr || tr.onChange === 'hold') continue;
       for (const v of VOICES) if (!v.dead && v.track === i && v.src === 'arp' && v.arp && v.start < eff && v.end > eff) {
         const x = v.arp.x, p = clamp((x.raw ? x.n : outPitch(i, x.key, x.n, eff)) + 12 * v.arp.o, 0, 127); if (p !== v.out) v.retune(p, eff);
@@ -15534,6 +15535,7 @@ function mkSetP(i, path, v, live) {
   const s_ = sndOf(i); if (!s_ || !s_.p.mk) return undefined;
   const rg = SQMK.mkRange(path); if (!rg) throw new Error('mkSet: unbekannter Pfad ' + path);
   const x = clamp(+v, rg[0], rg[1]); if (!isFinite(x)) return SQMK.mkPathGet(s_.p.mk, path);
+  if (path === 'arp.on' && x >= .5) arpLoadSoon();                // MK5: the arp core lives in block sq-mk-src
   const before = SQMK.mkPathGet(s_.p.mk, path);
   s_.p.mk = SQMK.mkPathSet(s_.p.mk, path, x);
   const after = SQMK.mkPathGet(s_.p.mk, path);
@@ -16549,7 +16551,15 @@ function flushQueuedCarrier(now) { for (const e of T.timeline) if (e.time > now)
 
 /* ---------- MK5 (Nachtrag 3 MK5, EN3-11): the arpeggiator between the note sources and spawnVoice. Its core (ARPC: held set,
    planner, patterns) is in block sq-mk-src, which an AM track always has loaded (EN3-14); these hooks cost nothing elsewhere ---------- */
-function arpOn(i) { const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound.engine !== 'mk') return false; const m = tr.sound.p.mk; return !!(m && m.arp && m.arp.on) && (typeof ARPC !== 'undefined' || !!mkLoad()); }
+// sync: a key press (outside the scheduler) may load block sq-mk-src at once; the scheduler never does (mkLoad runs tickAhead)
+function arpOn(i, sync) {
+  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound.engine !== 'mk') return false;
+  const m = tr.sound.p.mk; if (!(m && m.arp && m.arp.on)) return false;
+  if (typeof ARPC !== 'undefined') return true;
+  if (sync) { mkLoad(); return typeof ARPC !== 'undefined'; }
+  arpLoadSoon(); return false;
+}
+function arpLoadSoon() { if (typeof ARPC !== 'undefined' || UI.arpLoadQ) return; UI.arpLoadQ = 1; setTimeout(() => { UI.arpLoadQ = 0; mkLoad(); }, 0); }
 const arpK = () => (typeof ARPC !== 'undefined' ? ARPC : null);
 function arpTick(now, h) { const A = arpK(); if (A && A.busy()) A.tick(now, h); }
 function arpEndAll() { const A = arpK(); if (A) A.endAll(); }
@@ -18841,7 +18851,7 @@ function inputDown(note, id, vel) {
     const n = kbLockNote(note);
     if (n !== note) { inp.note = n; kbFlash(n); }
     let am = null;
-    if (arpOn(R.selT)) { inp.arp = R.selT; am = ARPC.live(R.selT, id, n, vel, now + LIVE_LEAD); }   // MK5: the key goes to the arp's held set
+    if (arpOn(R.selT, true)) { inp.arp = R.selT; am = ARPC.live(R.selT, id, n, vel, now + LIVE_LEAD); }   // MK5: the key goes to the arp's held set
     if (inp.arp == null || am != null) {
       inp.voice = spawnVoice(R.selT, n, vel, now + LIVE_LEAD, am ? {src: 'live', mask: am} : {src: 'live'});
       const le = logNote({track: R.selT, src: 'live', clipNote: null, out: n, time: now + LIVE_LEAD, dur: null, vel});
@@ -19827,8 +19837,9 @@ function xpSet(beat, semi) {
   // older steps are not needed any more (the last one before the newest stays)
   while (tl.length > 3 && R.playing && AU.ctx && tl[2].b < t2b(AU.ctx.currentTime) - 8) tl.splice(1, 1);
   XP.due = beat;
+  { const A = arpK(); if (A && A.busy() && R.playing && AU.ctx) A.carrier(Math.max(b2t(beat), nowT() + .005), true); }   // MK5: arp steps behind a ⇅ change are mapped again (like the clip notes, sounding ones keep their pitch)
 }
-function xpReset() { XP.tl = [{b: -Infinity, semi: 0}]; XP.due = null; }
+function xpReset() { { const A = arpK(); if (A && A.busy() && AU.ctx) A.carrier(nowT() + .005, true); } XP.tl = [{b: -Infinity, semi: 0}]; XP.due = null; }
 const xpNow = () => xpAt(AU.ctx ? AU.ctx.currentTime : 0);
 function rowSaveCarrier() { if (PRT.saved !== undefined) return; const c = T.current(); PRT.saved = c.target ? carrierCopy(c.target, c.shift) : null; }
 function rowCommit(tg, t) {
@@ -25065,6 +25076,7 @@ function applySound(i, snd, opts) {
   snd = nvWrap(snd);
   const old = T.sound, other = !old || old.name !== snd.name || old.origin !== snd.origin || old.engine !== snd.engine;
   T.sound = snd; markDirty(); UI.dirty.strip = UI.dirty.grid = UI.dirty.edHead = true; UI.sndVer++;
+  if (snd.engine === 'mk' && snd.p.mk && snd.p.mk.arp && snd.p.mk.arp.on) arpLoadSoon();   // MK5: a sound with the arp on needs its core
   if (other && snd.engine === 'fm6') { try { fmInitSel(i, true); } catch (e) { logErr(e); } }   // V0d (A.4b 1): a newly loaded sound resets the choice
   const c = AU.ctx, A = AU.tracks[i];
   if (!c || !A) return;

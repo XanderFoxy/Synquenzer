@@ -1,0 +1,13 @@
+import * as Q from './v3-qa7-lib.mjs';
+const {SR, render, sine, rms, db, ok, spectrum, bandE} = Q;
+const br = await Q.launch(); const {page, errs} = await Q.openApp(br);
+const base = await Q.baseMk(page);
+const synth = t0 => { const s = JSON.parse(JSON.stringify(base)); const t = s.p.mk.t[0]; for (const k in t0) { if (typeof t0[k] === 'object' && !Array.isArray(t0[k])) Object.assign(t[k], t0[k]); else t[k] = t0[k]; } return s; };
+const sec = 4, e1 = sine(440, sec, .5), e2 = sine(1000, sec, .5);
+const o = await render(page, synth({o1: {w: 7, c1: 64, c2: 127}, l1: {w: 2, ks: 0, sync: 0, f: 40, note: 6}}), [[0, 'on', 60, .8]], {sec, inputs: {e1, e2}});
+const o0 = await render(page, synth({o1: {w: 7, c1: 64, c2: 0}, l1: {w: 2, ks: 0, sync: 0, f: 40, note: 6}}), [[0, 'on', 60, .8]], {sec, inputs: {e1, e2}});
+const tr = x => { const N = 4096, r = []; for (let s = 4800; s + N < x.length; s += 4800) { const P = spectrum(x, s, N); r.push(+(db(Math.sqrt(bandE(P, N, 420, 460))) - db(Math.sqrt(bandE(P, N, 980, 1020)))).toFixed(1)); } return r; };
+const A = tr(o.l), B = tr(o0.l);
+console.log('E1−E2 dB over time, C2 127:', A.join(' ')); console.log('C2 0:', B.join(' '));
+ok('MK7-09 STEUER 2 = LFO1 auf die BALANCE', Math.max(...A) - Math.min(...A) > 20 && Math.max(...B) - Math.min(...B) < 1, `Spanne ${(Math.max(...A) - Math.min(...A)).toFixed(1)} dB (C2 0: ${(Math.max(...B) - Math.min(...B)).toFixed(1)} dB)`);
+Q.summary(); await br.close();

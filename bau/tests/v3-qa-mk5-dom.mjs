@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const FILE = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk-br-MK5/index.html';
+const b = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await b.newContext({viewport: {width: 390, height: 844}, hasTouch: true, isMobile: true}); const p = await ctx.newPage();
+await p.goto('file://' + FILE); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+const r = await p.evaluate(async () => { const Q = SYNQUENZER; Q.setEngine(0, 'mk'); Q.selectTrack(0); Q.openEditor(); await new Promise(r => setTimeout(r, 600));
+  const kb = document.elementFromPoint(300, 760); const kb2 = document.elementFromPoint(240, 820);
+  const d = e => e ? e.tagName + '#' + e.id + '.' + e.className + ' < ' + (e.parentElement ? e.parentElement.tagName + '#' + e.parentElement.id + '.' + e.parentElement.className : '') : null;
+  const n2 = document.querySelector('#synthSheet .mkx[data-k="n2"]'); const cs = getComputedStyle(n2);
+  return {kb: d(kb), kb2: d(kb2), n2: n2.outerHTML.slice(0, 300), ta: cs.touchAction, us: cs.userSelect, wus: cs.webkitUserSelect, callout: cs.webkitTouchCallout};
+});
+console.log(JSON.stringify(r, null, 1));
+await b.close();
