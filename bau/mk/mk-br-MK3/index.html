@@ -4455,7 +4455,7 @@ function timbreKey() {
   if (!du) { P.tim = 1; render(); lcdShow('TIMBRE', 'T2 gesperrt bei EINZELN – erst STIMME → EINZELN/SCHICHT auf Schicht oder Split'); dispShow('t 1'); return; }
   P.tim = P.tim === 1 ? 2 : P.tim === 2 ? 3 : 1; P.lastKnob = null; haptic('tick'); render();
   dispShow(P.tim === 3 ? '1-2' : 't ' + P.tim);
-  lcdShow('TIMBRE · ' + (P.tim === 3 ? 'T1 + T2' : 'T' + P.tim), P.tim === 3 ? 'Edit Sync: jede Geste ändert beide Timbres um denselben Schritt (Anzeige T1)' : 'die Regler bearbeiten Timbre ' + P.tim + ' · SHIFT + TIMBRE = Solo');
+  lcdShow('TIMBRE · ' + (P.tim === 3 ? 'T1 + T2' : 'T' + P.tim), P.tim === 3 ? 'beide zugleich: jede Geste ändert T1 und T2 um denselben Schritt (Anzeige T1)' : 'die Regler bearbeiten Timbre ' + P.tim + ' · SHIFT + TIMBRE = Solo');
 }
 // one undo for a change of whole timbres: the sound goes to the engine as a whole ({mk}, held keys re-distributed)
 function timApply(i, label, fn) {
@@ -23334,7 +23334,7 @@ function lcdShow(label, txt, extra, range, rc) {
   L.classList.remove('pv', 'pvo'); if (UI.lcdPv) UI.lcdPv.hidden = true;
   const fest = range === FEST_HINT; L.classList.toggle('fest', fest);
   L.innerHTML = `<span class="lk">${esc(label)}</span><span class="lv">${esc(txt)}</span>` + (range ? `<span class="lm"${rc ? ` style="--mc:${rc}"` : ''}>${fest ? '' : '↕ '}${esc(range)}</span>` : '') + (fest ? '<span class="lx lfest">POSITION ▸</span>' : extra ? `<span class="lx">${esc(extra)}</span>` : '');
-  if (UI.lcdX && !fest && !extra) { try { UI.lcdX(L); } catch (e) { logErr(e); } }   // MK3: the MS 2000 panel's LCD key [Split ← nächste Note]
+  if (UI.lcdX && !fest && !extra) { try { UI.lcdX(L); } catch (e) { logErr(e); } }   // MK3: the AM panel's LCD key [Split ← nächste Note]
   L._full = [label, txt]; lcdFit(L);
 }
 function lcdHint() {
@@ -30447,7 +30447,7 @@ function openMenu(goto) {
     MK_LABEL + ' · Speicherwellen ≈: 64 nachgezeichnete Platzhalter – die Originalwellen folgen später aus Aufnahmen.',
     MK_LABEL + ' · PATCH 1–4 (EDIT-WAHL 2): vier freie Wege. QUELLE (Hüllkurve, LFO, Anschlag, Keytrack, BEND, MOD-Rad) bewegt ein ZIEL (Tonhöhe, OSZ 2, STEUER 1, Rauschen, Cutoff, Amp, Pan, LFO 2) um INTENSITÄT −63…+63; 0 = aus.',
     MK_LABEL + ' · TIMBRE: zwei Klänge in einem Sound. STIMME → EINZELN/SCHICHT: Schicht = beide spielen jede Note, Split = unten T1, oben T2 (SHIFT → SPLIT, oder Split ← nächste Note in der LCD-Zeile). STIMMEN teilt die vier Stimmen 1+3, 2+2 oder 3+1.',
-    MK_LABEL + ' · TIMBRE-Taste: tippen wechselt T1 → T2 → beide (Edit Sync: jede Geste ändert beide gleich) → T1. SHIFT + TIMBRE = Solo (nur dieses Timbre klingt, LED blinkt), Tipp beendet Solo. SHIFT + 1 Timbre kopieren, + 2 tauschen, + 4 neu.',
+    MK_LABEL + ' · TIMBRE-Taste: tippen wechselt T1 → T2 → beide (jede Geste ändert beide gleich) → T1. SHIFT + TIMBRE = Solo (nur dieses Timbre klingt, LED blinkt), Tipp beendet Solo. SHIFT + 1 Timbre kopieren, + 2 tauschen, + 4 neu.',
     MK_LABEL + ' · STIMMUNG (EDIT-WAHL 2): zehn Stimmungen (z. B. Werckmeister III, Pelog) mit Grundton für beide Timbres; „Eigene“: Tipp auf die Matrix-Zeile öffnet 12 Regler, je Stufe −100…+100 ct.',
     'TASTATUR-ANSCHLAG (Menü → Bedienung): POSITION = oben auf der Taste leise, unten laut, jede Taste für sich; FEST = immer 0,8. Bei FEST tragen Anschlag-Regler und Anschlag-Modulationen einen grauen Hinweis – antippen schaltet POSITION ein.',
     'LAUF: Basslauf oder Sequenz Schritt für Schritt – Schritt antippen = an, hoch/runter ziehen = Ton in der Tonart.',

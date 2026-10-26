@@ -1,0 +1,11 @@
+import {render, mkDefaults} from './v3-mk1-node.mjs';
+import {db, rms} from './v3-mk1-ana.mjs';
+const NEW = new URL('../mk-br-MK3/index.html', import.meta.url).pathname, SR = 48000;
+const merge = (a, b) => { for (const k in b || {}) { if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k] && typeof a[k] === 'object') merge(a[k], b[k]); else a[k] = b[k]; } return a; };
+const prog = (top, t1, t2) => { const p = mkDefaults(); merge(p, top || {}); merge(p.t[0], t1 || {}); merge(p.t[1], t2 || {}); return p; };
+const t = {o1: {w: 3, c1: 0}};
+const s1 = render(prog({mode: 0}, t, t), [[0, 'on', 60, .8]], {file: NEW, sec: .5}), L1 = db(rms(s1.l, 4800, 24000));
+const ev = []; for (let k = 0; k < 16; k++) ev.push([k * .3, 'on', 60, .8], [k * .3 + .25, 'off', 60]);
+const r = render(prog({mode: 1}, t, t), ev, {file: NEW, sec: 4.9, seed: 5});
+const lv = []; for (let k = 0; k < 16; k++) lv.push(db(rms(r.l, Math.round((k * .3 + .05) * SR), Math.round((k * .3 + .2) * SR))) - L1);
+console.log('Sinus, Schicht T1 = T2 (INIT-Kopie), 16 × C4 nacheinander, Pegel gegen Einzeln: ' + lv.map(x => x.toFixed(1)).join(' ') + ' dB; min ' + Math.min(...lv).toFixed(1));

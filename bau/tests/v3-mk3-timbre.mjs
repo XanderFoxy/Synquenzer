@@ -2,7 +2,7 @@
 // MK3-07 bit-equal to MK2, MK3-08 CPU, MK3-09 switching (M-KLICK / M-EINBRUCH), MK3-12 balance, MK3-13 solo (audio).
 // Usage: MK_FILE=<new index.html> MK_OLD=<MK2 index.html> node v3-mk3-timbre.mjs   (ONLY=<regex>)
 import {render, mkDefaults} from './v3-mk1-node.mjs';
-import {db, rms, peak, mKlick, mEinbruch} from './v3-mk1-ana.mjs';
+import {db, rms, peak, mKlick, mEinbruch, spectrum, pdb} from './v3-mk1-ana.mjs';
 import {cpu} from './v3-mk3-cpu.mjs';
 const NEW = process.env.MK_FILE || new URL('../mk-br-MK3/index.html', import.meta.url).pathname;
 const OLD = process.env.MK_OLD || new URL('../synq-snapshots/MK2.html', import.meta.url).pathname;
@@ -171,6 +171,23 @@ T('MK3-13', () => {
   const x = R(p, [[0, 'on', 57, .8], [0, 'on', 64, .8]], {sec: 1.2, at: [[.4, {mkSolo: 2}], [.8, {mkSolo: 0}]]});
   const k = mKlick(x.l, SR, [0]);
   ok('MK3-13 Solo an/aus beim Spielen: M-KLICK ≤ +6 dB', k.ok, M(k.worst) + ' dB bei ' + M(k.at, 3) + ' s');
+});
+
+T('MK3-H', () => {
+  // H-1 / H-3 (Spec §0.3, B.6 Nr. 3) for the new STIMME controls: EINZELN/SCHICHT, STIMMEN, SPLIT (STIMMUNG, GRUNDTON, EIGENE: MK3-06)
+  const band = (x, f0, f1) => { const n = 16384, P = spectrum(x.l, Math.round(.2 * SR), n); let e = 0; for (let k = Math.round(f0 * n / SR); k < Math.round(f1 * n / SR); k++) e += P[k]; return pdb(e + 1e-30); };
+  const dark = {o1: {w: 0}, f: {cut: 50}}, bright = {o1: {w: 1, c1: 60}, f: {cut: 127}, a: {lvl: 100}};
+  const four = [[0, 'on', 48, .8], [0, 'on', 52, .8], [0, 'on', 55, .8], [0, 'on', 60, .8]];
+  const a = R(prog({mode: 0}, dark, bright), four, {sec: .6}), b = R(prog({mode: 1}, dark, bright), four, {sec: .6});
+  const dl = lvl(b, .1, .55) - lvl(a, .1, .55), dbd = band(b, 2000, 8000) - band(a, 2000, 8000);
+  // STIMMEN: T1 a pure sine, T2 two octaves up; the band around T2's E (52 + 24 = 659 Hz) holds only T2's second voice
+  const sine = {o1: {w: 3, c1: 0}}, up = {o1: {w: 3, c1: 0}, trans: 24};
+  const c = R(prog({mode: 1, tv: 0}, sine, up), four, {sec: .6}), d = R(prog({mode: 1, tv: 2}, sine, up), four, {sec: .6});
+  const dt = band(c, 630, 690) - band(d, 630, 690);
+  const e = R(prog({mode: 2, split: 0}, dark, bright), [[0, 'on', 48, .8]], {sec: .6}), f = R(prog({mode: 2, split: 127}, dark, bright), [[0, 'on', 48, .8]], {sec: .6});
+  const ds = band(e, 2000, 8000) - band(f, 2000, 8000);
+  ok('MK3-H hörbar: EINZELN → SCHICHT (M-PEGEL ≥ 3 dB oder M-BAND ≥ 6 dB), STIMMEN 1+3 ↔ 3+1 (M-BAND um 659 Hz) und SPLIT 0 ↔ 127 (M-BAND 2–8 kHz) je ≥ 6 dB', (dl >= 3 || dbd >= 6) && Math.abs(dt) >= 6 && Math.abs(ds) >= 6,
+    'Schicht ' + M(dl) + ' dB / Band ' + M(dbd) + ' dB, STIMMEN Band ' + M(dt) + ' dB, SPLIT Band ' + M(ds) + ' dB');
 });
 
 console.log(fails ? fails + ' FEHLER' : 'alles bestanden');

@@ -14,13 +14,14 @@ if (process.argv[2] === 'one') {
   const pm = p ? Object.assign(mkPatch(p), fx || {}) : null;
   const q = renderW(pm, ev, Object.assign({sec: 40, quantumMs: true}, p ? {} : {eng: 0}), []).qms, per = 375, win = [];
   for (let s = 5; s < 40; s++) win.push(q.slice(s * per, (s + 1) * per).reduce((a, b) => a + b, 0));
-  win.sort((a, b) => a - b); console.log(win[Math.floor(win.length / 4)].toFixed(3)); process.exit(0);
+  win.sort((a, b) => a - b); const qs = q.slice(5 * per).sort((a, b) => a - b); console.log(win[Math.floor(win.length / 4)].toFixed(3) + ' ' + qs[Math.floor(qs.length * .999)].toFixed(4)); process.exit(0);
 }
-const run = k => +execFileSync(process.execPath, [new URL(import.meta.url).pathname, 'one', k, FILE].map(String), {encoding: 'utf8'}).trim().split('\n').pop();
+const PK = {}; const run = k => { const [a, b] = execFileSync(process.execPath, [new URL(import.meta.url).pathname, 'one', k, FILE].map(String), {encoding: 'utf8'}).trim().split('\n').pop().split(' ').map(Number); (PK[k] = PK[k] || []).push(b); return a; };
 const R = process.env.ALL ? {kern: [], dly: [], eq: [], m0: [], m2: [], va: []} : {kern: [], cho: [], ens: [], pha: [], va: []};
 for (let i = 0; i < 5; i++) for (const k in R) R[k].push(run(k));
 const med = a => a.slice().sort((x, y) => x - y)[2], m = Object.fromEntries(Object.entries(R).map(([k, v]) => [k, med(v)])), vaV = m.va / 4;
 let f = 0;
 for (const k of Object.keys(R).filter(k => k !== 'kern' && k !== 'va')) { const x = (m[k] - m.kern) / vaV, ok = x <= 1.0; if (!ok) f++; console.log((ok ? 'PASS' : 'FAIL') + ' MK4-11 ' + k + ' + Delay + EQ: +' + (m[k] - m.kern).toFixed(2) + ' ms je s = ' + x.toFixed(2) + ' × VA-Stimme (≤ 1,0)'); }
+console.log('Info Spitze je Quantum (99,9 %, Median der Läufe, ms): ' + JSON.stringify(Object.fromEntries(Object.entries(PK).map(([k, v]) => [k, +med(v).toFixed(4)]))));
 console.log('Info ms je s Audio (Median aus 5): ' + JSON.stringify(Object.fromEntries(Object.entries(m).map(([k, v]) => [k, +v.toFixed(2)]))) + ', VA-Stimme ' + vaV.toFixed(2));
 process.exit(f ? 1 : 0);

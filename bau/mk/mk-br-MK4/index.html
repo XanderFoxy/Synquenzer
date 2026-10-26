@@ -5232,14 +5232,14 @@ const MK_DLN = Math.ceil(6 * SR) + 4;   // W-32: 6 s (1/1 at 40 BPM)
 const MK_DXF = Math.round(.04 * SR);    // time / tempo change: read head crossfade 40 ms
 const MK_FXF = Math.round(.03 * SR);    // type change: 30 ms
 let MK_MDN = 64; while (MK_MDN < .0125 * SR + 8) MK_MDN <<= 1;   // Mod-FX lines (2^n)
-const MK_MDM = MK_MDN - 1, MK_TQ = 1e-7;   // MK_TQ: quiet
+const MK_MDM = MK_MDN - 1, MK_TQ = 3e-6;   // MK_TQ: quiet (-110 dB)
 // a Mod-FX tap: Catmull-Rom
 function mkRdM(b, w, d) { const x = w - d, i = Math.floor(x), f = x - i, xm = b[(i - 1) & MK_MDM], x0 = b[i & MK_MDM], x1 = b[(i + 1) & MK_MDM], x2 = b[(i + 2) & MK_MDM];
   return x0 + .5 * f * (x1 - xm + f * (2 * xm - 5 * x0 + 4 * x1 - x2 + f * (3 * (x0 - x1) + x2 - xm))); }
 function mkApC(r, p) { const fc = MKW.pha.lo * Math.exp(r * (.5 + .5 * SINE[(p * SINE_N) | 0])), t = Math.tan(Math.PI * Math.min(fc, .45 * SR) * ISR); return (t - 1) / (t + 1); }
 function mkCs(x) { return Math.cos(x * 1.5707963267948966); }
-// once per render quantum (after its 8 control blocks); EQ smoothed per 32
-const MK_FQ = 128, MK_SMQ = 1 - Math.exp(-MK_FQ / (.005 * SR)), MK_SME = 1 - Math.exp(-32 / (.005 * SR));
+// once per render quantum (after its 8 control blocks); EQ smoothed per control block
+const MK_FQ = 128, MK_SMQ = 1 - Math.exp(-MK_FQ / (.005 * SR)), MK_SME = 1 - Math.exp(-CR / (.005 * SR));
 function mkSmv(a, b) { const d = b - a; return d < 1e-6 && d > -1e-6 ? b : a + d * MK_SMQ; }   // 5 ms
 function mkSme(a, b) { const d = b - a; return d < 1e-6 && d > -1e-6 ? b : a + d * MK_SME; }
 const MK_SMW = 1 - Math.exp(-MK_FQ / (.02 * SR));   // Mod-FX mix 20 ms
@@ -5322,7 +5322,7 @@ class MkFx {
     // ---- Delay (W-32, W-12) ----
     const dOn = this.dL !== null && (this.dd > 0 || this.sDd > 0), h = this.h;
     let D = (this.dsy >= .5 ? W.DSYNC[Math.max(0, Math.min(14, Math.round(this.dn)))] * 4 * 60 / h.bpm : W.dlyS(Math.max(0, Math.min(127, this.dtm)))) * SR;
-    D = Math.max(1, Math.min(MK_DLN - 3, D));
+    D = Math.max(1, Math.min(MK_DLN - 3, Math.round(D)));   // whole samples: no interpolation dulls the repeats
     if (dOn && !this.dOn) { this.dWr = 0; this.dA = D; this.dX = -1; this.dOld = -1; this.dPend = -1; this.lv0 = 0; }
     this.dOn = dOn;
     if (dOn) {
@@ -5355,17 +5355,17 @@ class MkFx {
       if (xf) { this.dX += n; if (this.dX >= MK_DXF) { this.dA = this.dB; this.dX = -1; } }
       if (to >= 0) { this.dTX += n; if (this.dTX >= MK_FXF) { this.dOld = -1; if (this.dPend >= 0) { const p = this.dPend; this.dPend = -1; this.dType_(p); } } }
     }
-    // ---- EQ (W-33): shelves as TPT SVF (B.6 Nr. 10), per 32 ----
+    // ---- EQ (W-33): shelves as TPT SVF (B.6 Nr. 10), per control block ----
     const q = this.q, lgT = Math.max(-12, Math.min(12, this.lg)), hgT = Math.max(-12, Math.min(12, this.hg));
     const lfT = this.lfT === this.lf ? this.lfL : (this.lfT = this.lf, this.lfL = Math.log(Math.max(40, Math.min(1000, this.lf)))), hfT = this.hfT === this.hf ? this.hfL : (this.hfT = this.hf, this.hfL = Math.log(Math.max(1000, Math.min(18000, this.hf))));
     if (!this.lOn) this.sLf = lfT; if (!this.hOn) this.sHf = hfT;
-    for (let c = 0; c < n; c += 32) {
+    for (let c = 0; c < n; c += CR) {
       this.sLg = mkSme(this.sLg, lgT); this.sHg = mkSme(this.sHg, hgT); this.sLf = mkSme(this.sLf, lfT); this.sHf = mkSme(this.sHf, hfT);
       const lOn = lgT !== 0 || this.sLg !== 0, hOn = hgT !== 0 || this.sHg !== 0;
       if (lOn && !this.lOn) { q[0] = q[1] = q[2] = q[3] = 0; } if (hOn && !this.hOn) { q[4] = q[5] = q[6] = q[7] = 0; }
       this.lOn = lOn; this.hOn = hOn;
-      if (lOn) { this.shelf(0, this.sLf, this.sLg); this.eqRun(this.lc, 0, xL, xR, c, c + 32); }
-      if (hOn) { this.shelf(1, this.sHf, this.sHg); this.eqRun(this.hc, 4, xL, xR, c, c + 32); }
+      if (lOn) { this.shelf(0, this.sLf, this.sLg); this.eqRun(this.lc, 0, xL, xR, c, c + CR); }
+      if (hOn) { this.shelf(1, this.sHf, this.sHg); this.eqRun(this.hc, 4, xL, xR, c, c + CR); }
     }
     for (let k = 0; k < 8; k++) if (q[k] < 1e-15 && q[k] > -1e-15) q[k] = 0;
     // ---- out ----

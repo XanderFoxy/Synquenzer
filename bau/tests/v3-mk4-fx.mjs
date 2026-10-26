@@ -270,6 +270,12 @@ T('MK4-H', () => {
   H3.push(['EQ HOCH-FREQ bei 3 kHz (+12, fallend)', [18000, 8050, 4243, 2236, 1000].map(f => g({lf: 320, lg: 0, hf: f, hg: 12}, 3000))]);
   for (const [n, v] of H3) { let back = 0; for (let i = 1; i < v.length; i++) back = Math.max(back, v[i - 1] - v[i]); ok('MK4-H H-3 ' + n, back <= .5, v.map(q => M(q, 2)).join(' → ')); }
 });
+// ---------------- FP-DSP: echoes at a fractional delay (112 BPM, 44.1 kHz: 1/8 = 11812.5 samples) stay unfiltered ----------------
+T('MK4-FP-ECHO', () => {
+  const sr = 44100, n = sr * 4, x = imp(n, 2000), o = render(FXP({dly: {type: 0, sync: 1, note: 5, dep: 127}}), [], {sr, sec: 4, bpm: 112, tap: 'fx', at: [[0, {mkFxIn: {l: x, r: x}}]]});
+  const E = echoes(o.l, 2001, 1e-4, 5), conc = E.map(([i]) => { let e = 0; for (let k = i - 32; k < i + 32; k++) e += o.l[k] ** 2; return o.l[i] ** 2 / e; });
+  ok('FP-DSP Echos bei gebrochener Verzögerung (112 BPM, 44,1 kHz): jede Wiederholung ganz in einem Sample (keine Höhenverluste durch Interpolation)', E.length === 5 && conc.every(c => c > .999), E.map(q => q[0] - 2000).join(', ') + ' Samples; Anteil ' + conc.map(c => M(c, 4)).join(' / '));
+});
 // ---------------- FP-DSP: extremes (NaN/Inf, peaks), denormals, tails end ----------------
 T('MK4-FP', () => {
   const ev = []; for (const nt of [36, 48, 84, 96, 108]) ev.push([0, 'on', nt, 1]); for (const nt of [36, 48, 84, 96, 108]) ev.push([15, 'off', nt]);
@@ -291,7 +297,7 @@ T('MK4-FP', () => {
     for (let s = 3; s < 62; s++) win.push(q.slice(s * per, (s + 1) * per).reduce((a, b) => a + b, 0));
     let dn = 0; const st = o.P.mk.fx; for (const a of [st.ap, st.q, st.py, st.cL, st.cR, st.eM]) for (const v of a) if (v !== 0 && Math.abs(v) < 1e-30) dn++;
     if (st.dL) for (const a of [st.dL, st.dR]) for (const v of a) if (v !== 0 && Math.abs(v) < 1e-30) dn++;
-    const tail = peak(o.l, o.l.length - SR), hotOk = !st.hot() || tail >= 1e-7;   // still running only while the echo tail is above the quiet line
+    const tail = peak(o.l, o.l.length - SR), hotOk = !st.hot() || tail >= 3e-6;   // still running only while the echo tail is above the quiet line
     lines.push([JSON.stringify(fx).slice(0, 40), med(win.slice(-20)), dn, hotOk, st.hot(), tail]);
   }
   ok('FP-DSP Denormale: 60 s Stille nach Vollaussteuerung: keine Zustände < 1e-30, Last der letzten 20 s (Median je s) ≤ 2 × Stille ohne Effekt + 1 ms (Denormale kosten ×10 und mehr), Effekt hört auf zu rechnen, sobald still', lines.every(l => l[1] <= 2 * bmed + 1 && l[2] === 0 && l[3]),

@@ -6,13 +6,20 @@ const FILE = path.resolve(process.argv[2] || new URL('../mk-br-MK3/index.html', 
 const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
 let fails = 0; const ok = (id, c, info) => { if (!c) fails++; console.log((c ? 'PASS ' : 'FAIL ') + id + (info ? ' — ' + info : '')); };
 const T = async (id, f) => { if (ONLY && !ONLY.test(id)) return; try { await f(); } catch (e) { ok(id, false, 'Fehler ' + String(e.stack || e).slice(0, 500)); } };
-const FMT = {P1: [390, 844], P2: [375, 667], P3: [320, 568], L1: [844, 390], L2: [667, 375], W: [844, 1180]};
+const SA = '#app{padding-left:47px!important;padding-right:47px!important}', HB = '#app{padding-bottom:21px!important}';
+const FMT = {P1: [390, 844], P2: [375, 667], P3: [320, 568], L1: [844, 390], L2: [667, 375], W: [844, 1180], 'L1-SA': [844, 390, SA], 'L0-SA': [926, 428, SA], 'L1-HB': [844, 390, SA + HB]};
 async function open(fmt, o) {
   o = o || {}; const [w, h] = FMT[fmt];
   const ctx = await browser.newContext({viewport: {width: w, height: h}, hasTouch: true, isMobile: fmt !== 'W', deviceScaleFactor: 1});
   const page = await ctx.newPage(); const errs = [];
   page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await page.goto('file://' + FILE); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+  // the app's real font (as v3-mk1-look.mjs; Pages loads it from fonts/), NOFONT=1 = the fallback (Claude viewer)
+  if (!process.env.NOFONT) await page.evaluate(async F => { const f = [['Barlow Semi Condensed', 'barlow-semi-condensed', [500, 600, 700]], ['JetBrains Mono', 'jetbrains-mono', [500, 700]]];
+    const st = document.createElement('style'); st.textContent = f.map(([fam, file, ws]) => ws.map(w => `@font-face{font-family:"${fam}";font-weight:${w};src:url(${F}${file}-latin-${w}-normal.woff2) format("woff2")}`).join('')).join(''); document.head.appendChild(st);
+    await Promise.all(['500 10px "Barlow Semi Condensed"', '700 10px "Barlow Semi Condensed"', '600 10px "Barlow Semi Condensed"', '700 10px "JetBrains Mono"'].map(s => document.fonts.load(s))); await document.fonts.ready; },
+    'file:///tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/dirigent-wt/fonts/');
+  if (FMT[fmt][2]) await page.addStyleTag({content: FMT[fmt][2]});
   await page.evaluate(() => { SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); });
   await page.waitForTimeout(500);
   return {ctx, page, errs};
@@ -186,7 +193,7 @@ await T('MK3-10', async () => {
     ['liste-w2', null],
     ['kopieren', () => { closePop(); MKUI.timCopyPop(null); }]];
   const res = [];
-  for (const [f] of Object.entries(FMT)) for (const half of (f === 'P2' || f === 'P3' || f === 'L2') ? ['B', 'A'] : ['']) {
+  for (const [f] of Object.entries(FMT)) for (const half of (f === 'P2' || f === 'P3' || f === 'L2' || f === 'L1-HB') ? ['B', 'A'] : ['']) {
     const {ctx, page, errs} = await open(f);
     if (half) await page.evaluate(h => { MKUI.setHalf(h); MKUI.build(document.querySelector('#synthSheet .pg') || MKUI.P.pg, 0); }, half);
     for (const [n, fn] of states) {
@@ -216,7 +223,7 @@ await T('MK3-10', async () => {
     await ctx.close();
   }
   const bad = res.filter(x => x[1] !== 'ok');
-  ok('MK3-10 M-PLATZ in P1, P2 (A/B), P3 (A/B), L1, L2 (A/B), W × 11 Zustände: nichts außen, Treffer ≥ 44 × 44 ohne Überlappung, nichts abgeschnitten', !bad.length, res.length + ' Fälle' + (bad.length ? ' · ' + bad.slice(0, 6).map(x => x.join(': ')).join(' | ') : ''));
+  ok('MK3-10 M-PLATZ in P1, P2 (A/B), P3 (A/B), L1, L2 (A/B), W, L1 und 926 × 428 mit Safe-Area, L1 + Home-Balken (A/B) × 11 Zustände (echte App-Schrift): nichts außen, Treffer ≥ 44 × 44 ohne Überlappung, nichts abgeschnitten', !bad.length, res.length + ' Fälle' + (bad.length ? ' · ' + bad.slice(0, 6).map(x => x.join(': ')).join(' | ') : ''));
   // EIGENE: P1 2 x 6 à 60 (360 px), L1 12 x 56 with 3 px (705 px), L2 12 x 50 with 3 px (633 px); 12 knobs act ±100 ct; [◂ GERÄT] 44 px
   const sizes = [];
   for (const f of ['P1', 'L1', 'L2', 'P2', 'P3', 'W']) {

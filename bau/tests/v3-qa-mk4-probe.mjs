@@ -1,0 +1,10 @@
+import {open, sleep} from './v3-qa-gp2a-lib.mjs';
+const FILE = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk-br-MK4/index.html';
+const T = await open({mic: false, file: FILE, viewport: {width: 390, height: 844}}); const {E, errs} = T;
+await T.tapSel('#bPlay'); await sleep(400); await T.tapSel('#bPlay'); await sleep(300);
+await E(() => { if (!AU.ctx) ensureAudio(); });
+await T.p.waitForFunction(() => AU.ctx && SynthHost.state === 'ready', null, {timeout: 20000});
+const r = await E(async () => { const o = await SYNQUENZER.perfProbe(['fx', 'kern', 'fx', 'kern']); return {cases: o.cases, net: o.net, fx: SYNQUENZER.mkInfo().fxBytes}; });
+console.log(JSON.stringify(r));
+console.log('errors', JSON.stringify(errs.slice(0, 3)));
+await T.br.close();

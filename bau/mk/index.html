@@ -3728,25 +3728,9 @@ const MKTAB = (function () {
   function harm(n, f) {
     const w = data()[n], A = new Float64Array(KMAX + 1), P = new Float64Array(KMAX + 1); if (!w) return {A, P};
     const s = grpOf(n)[2], ab = abar(w), roll = ab >= Math.pow(10, -50 / 20);
-    if (n === 35) {   // only octave partials (f / 2) * 2^j, level from the envelope in Hz
-      const F = f || HZ;
-      for (let k = 1; k <= KMAX; k *= 2) {
-        const x = k * F / 2, o = Math.log2(x / 110); let L;
-        if (o <= 0) L = E35[0] + 6 * o; else if (o >= 6) L = E35[6] - 8 * (o - 6); else { const j = Math.floor(o), t = o - j; L = E35[j] + (E35[j + 1] - E35[j]) * t; }
-        A[k] = Math.pow(10, L / 20); P[k] = k <= w.K ? w.p[k] : schroeder(k);
-      }
-      return {A, P};
-    }
-    if (n >= 61) {    // the traced partials at k * 220.27 Hz are the support points of a fixed envelope in Hz
-      const F = f || HZ, Ld = new Float64Array(w.K + 1);
-      for (let k = 1; k <= w.K; k++) Ld[k] = w.a[k] > 0 ? 20 * Math.log10(w.a[k]) : -100;
-      for (let k = 1; k <= KMAX; k++) {
-        const h = k * F / HZ; let a;
-        if (h <= 1) a = Math.pow(10, (Ld[1] - 12 * Math.log2(1 / h)) / 20);
-        else if (h <= w.K) { const m = Math.min(w.K - 1, Math.floor(h)), t = Math.log(h / m) / Math.log((m + 1) / m); a = Math.pow(10, (Ld[m] + (Ld[m + 1] - Ld[m]) * t) / 20); }
-        else a = roll ? ab * Math.pow(h / 22.6, s / 6.02) : 0;
-        A[k] = a; P[k] = k <= w.K ? w.p[k] : schroeder(k);
-      }
+    if (isOct(n)) {   // 35: only octave partials (f / 2) * 2^j; 61-64: the traced partials at k * 220.27 Hz are the support points of a fixed envelope in Hz
+      const F = f || HZ, e = env(n);
+      for (let k = 1; k <= KMAX; k++) { const a = envA(e, k, F); if (a || n !== 35) { A[k] = a; P[k] = e.P[k]; } }
       return {A, P};
     }
     for (let k = 1; k <= KMAX; k++) {
@@ -3754,6 +3738,36 @@ const MKTAB = (function () {
       else { A[k] = roll ? ab * Math.pow(k / (22.6 * w.r), s / 6.02) : 0; P[k] = schroeder(k); }
     }
     return {A, P};
+  }
+  // MK2-fix: the envelope data of an octave wave (35, 61-64). harm() reads it, and it goes to the worklet with the wave ({mkw}.e):
+  // a voice builds its own note table from it (exact envelope in Hz at its pitch, MK2-12), g = the level factor of each octave set
+  const ENV = {};
+  function env(n) {
+    if (ENV[n]) return ENV[n]; const w = data()[n]; if (!w || !isOct(n)) return null;
+    const P = new Float64Array(KMAX + 1); for (let k = 1; k <= KMAX; k++) P[k] = k <= w.K ? w.p[k] : schroeder(k);
+    if (n === 35) return (ENV[n] = {t: 2, E: E35.slice(), P, r: w.r});
+    const Ld = new Float64Array(w.K + 1); for (let k = 1; k <= w.K; k++) Ld[k] = w.a[k] > 0 ? 20 * Math.log10(w.a[k]) : -100;
+    const ab = abar(w);
+    return (ENV[n] = {t: 1, K: w.K, Ld, ab, s: grpOf(n)[2], roll: ab >= Math.pow(10, -50 / 20) ? 1 : 0, hz: HZ, P, r: w.r});
+  }
+  // the level of table partial k at the reference (played) note frequency F; the worklet has the same text (mkEnvA)
+  function envA(e, k, F) {
+    if (e.t === 2) {
+      if (k & (k - 1)) return 0;
+      const x = k * F / 2, o = Math.log2(x / 110), E = e.E; let L;
+      if (o <= 0) L = E[0] + 6 * o; else if (o >= 6) L = E[6] - 8 * (o - 6); else { const j = Math.floor(o), t = o - j; L = E[j] + (E[j + 1] - E[j]) * t; }
+      return Math.pow(10, L / 20);
+    }
+    const h = k * F / e.hz, Ld = e.Ld, K = e.K;
+    if (h <= 1) return Math.pow(10, (Ld[1] - 12 * Math.log2(1 / h)) / 20);
+    if (h <= K) { const m = Math.min(K - 1, Math.floor(h)), t = Math.log(h / m) / Math.log((m + 1) / m); return Math.pow(10, (Ld[m] + (Ld[m + 1] - Ld[m]) * t) / 20); }
+    return e.roll ? e.ab * Math.pow(h / 22.6, e.s / 6.02) : 0;
+  }
+  // the payload part of the note tables: the envelope, the phases and the level factor of every octave set (35: one)
+  function envMsg(n) {
+    const e = env(n); if (!e) return null;
+    const g = n === 35 ? [norm(35, HZ)] : OCTF.map(f => norm(n, f));
+    return Object.assign({}, e, {E: e.E ? e.E.slice() : null, Ld: e.Ld ? e.Ld.slice() : null, P: e.P.slice(), g, f0: OCTF[0]});
   }
   // radix-2 complex FFT (forward sign -1 / inverse +1), twiddles from Math.cos / Math.sin per size (deterministic)
   const TW = {};
@@ -3822,9 +3836,9 @@ const MKTAB = (function () {
     if (!isOct(n)) return {n, r: data()[n] ? data()[n].r : 1, o: 0, d: mkTables({n})[0].buffer, R: [[0, 10]]};
     const d = new Float32Array(SET * 8), R = [];
     for (let j = 0; j < 8; j++) { const B = builder({n, oct: j}); while (!B.step()); d.set(B.buf, j * SET); R.push([B.lo, B.hi]); }
-    return {n, r: data()[n].r, o: 1, d: d.buffer, R};
+    return {n, r: data()[n].r, o: 1, d: d.buffer, R, e: envMsg(n)};
   }
-  return {mkTables, builder, range, wave: n => Object.assign(wave(n), {L: NL}), harm, data, norm, isOct, r: n => (data()[n] ? data()[n].r : 1), group: n => { const g = grpOf(n); return [g[3], n - g[0] + 1, g[2]]; },
+  return {mkTables, builder, range, wave: n => Object.assign(wave(n), {L: NL}), harm, data, norm, isOct, env, envA, envMsg, r: n => (data()[n] ? data()[n].r : 1), group: n => { const g = grpOf(n); return [g[3], n - g[0] + 1, g[2]]; },
     NL, HL, OFF, SET, OCTF, HZ, GRP, ready: () => data().length > 1};
 })();
 /*}MKT*/
@@ -4356,6 +4370,8 @@ function wavePop(anchor, d) {
     for (const g of MKTAB.GRP) { h += `<h5 class="mkgh">${esc(g[3])}</h5>`; for (let n = g[0]; n <= g[1]; n++) h += `<button class="rb${n === cur ? ' on' : ''}" data-v="${n}"><b>${n}</b> ${esc(wvName(n).replace(/^Speicherwelle \d+ · /, ''))} ≈</button>`; }
     p.innerHTML = h + '</div>'; guardTouch(p);
     const L = p.querySelector('.plist.mkwv'), on_ = p.querySelector('.rb.on');   // the current wave in the middle of the list (after the pop is placed)
+    // MK2-fix: a finger scrolls the list natively (guardTouch on the pop would cancel every touchstart; taps still act on pointerup)
+    if (L) L.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
     if (L && on_) requestAnimationFrame(() => { try { L.scrollTop = Math.max(0, on_.offsetTop - L.offsetTop - (L.clientHeight - on_.offsetHeight) / 2); } catch (e) {} });
     onTap(p, b => { closePop(); const v = +b.dataset.v; soundEdit(P.i, MK_LABEL + ' Speicherwelle', () => setv(d, v, false)); P.lastKnob = d; render(); lcdOf(d); dispShow(fmtv(d, get(d))[0]); }, 'button[data-v]');
   }, {name: 'mkwave'});
@@ -4445,11 +4461,11 @@ function wvStep(n) {
   if (!P.B) P.B = MKTAB.builder(oc ? {n, oct: P.j} : {n});
   if (P.B.step()) { P.d.set(P.B.buf, P.j * MKTAB.SET); P.R.push([P.B.lo, P.B.hi]); P.B = null; P.j++; }
   if (P.j < ns) return false;
-  WV.part.delete(n); WV.built.set(n, {n, r: MKTAB.r(n), o: oc ? 1 : 0, d: P.d.buffer, L: MKTAB.NL, R: P.R}); return true;
+  WV.part.delete(n); WV.built.set(n, {n, r: MKTAB.r(n), o: oc ? 1 : 0, d: P.d.buffer, L: MKTAB.NL, R: P.R, e: oc ? MKTAB.envMsg(n) : null}); return true;
 }
 function wvPost(E, n) {
   if (!E || E.dead || !E.node) return; const w = WV.built.get(n); if (!w) return; const C = wvCtx(E.node.context);
-  try { E.node.port.postMessage({mkw: {n: w.n, r: w.r, o: w.o, d: w.d, L: w.L, R: w.R}}); } catch (e) { logErr(e); return; }
+  try { E.node.port.postMessage({mkw: {n: w.n, r: w.r, o: w.o, d: w.d, L: w.L, R: w.R, e: w.e}}); } catch (e) { logErr(e); return; }
   C.sent.add(n); C.bytes += w.d.byteLength; WV.posts++; WV.at[n] = performance.now();
 }
 function wvLive() { const c = AU.ctx; if (!c) return null; for (let i = 0; i < AU.synth.length; i++) { const E = AU.synth[i], s_ = sndOf(i); if (E && !E.dead && E.node && E.node.context === c && s_ && s_.engine === 'mk') return E; } return null; }
@@ -5152,10 +5168,87 @@ function mkwAdd(m) {
   for (let j = 0; j < ns; j++) { const L = []; let o = j * set; for (let l = 0; l < 11; l++) { L.push(d.subarray(o, o + Ls[l] + 1)); o += Ls[l] + 1; }
     const R = m.R && m.R[j]; if (R) for (let l = 0; l < 11; l++) { if (l < R[0]) L[l] = L[R[0]]; else if (l > R[1]) L[l] = L[R[1]]; }   // unbuilt levels: the nearest built one
     sets.push(L); }
-  MKWT[n] = {r: +m.r || 1, o: m.o ? 1 : 0, s: sets};
+  MKWT[n] = {r: +m.r || 1, o: m.o ? 1 : 0, s: sets, N: Ls.slice(), e: m.o && m.e && m.e.P ? m.e : null};
+}
+/* ---- MK2-fix (MK2-12, MK2-09): note tables for the waves with a spectrum fixed in Hz (35, 61-64). Blending the octave sets
+   C(j) / C(j + 1) averages two shifted envelopes per partial number: between the C notes single partials missed the envelope in
+   Hz by up to 19 dB (the formants smear), and the blend read 4 tables per sample (x 1.27 of the saw). So a voice plays a table
+   built for its own pitch (key + TRANSP. + TUNE + unison detune; vibrato, bend and PATCH pitch read it like a sampler): partial
+   k = envelope(k f / r) (MKTAB envA, the same text) x the level factor of the octave sets interpolated in log f, the phases per
+   partial number as in the sets. Built here from the envelope data of the wave ({mkw}.e): only the mip levels of its pitch
+   +- 7 HT, at most one level per quantum and context (one FFT, <= ~0.1 ms), kept for every voice of the context (the 48 last
+   used). Until the table is there, and further than 7 HT from its pitch, the voice plays the octave blend; between the two a 5 ms
+   linear crossfade at the same read pointer (the same wave, correlated). ---- */
+const MK_NTR = 7, MK_NTS = CR / (.005 * SR), MK_NTMAX = 48;
+const MKNT = new Map(), MKNT_Q = [], MKNT_X = {}; let MKNT_F = -1;
+function mkEnvA(e, k, F) {  // = MKTAB envA (block sq-mk-src)
+  if (e.t === 2) {
+    if (k & (k - 1)) return 0;
+    const x = k * F / 2, o = Math.log2(x / 110), E = e.E; let L;
+    if (o <= 0) L = E[0] + 6 * o; else if (o >= 6) L = E[6] - 8 * (o - 6); else { const j = Math.floor(o), t = o - j; L = E[j] + (E[j + 1] - E[j]) * t; }
+    return Math.pow(10, L / 20);
+  }
+  const h = k * F / e.hz, Ld = e.Ld, K = e.K;
+  if (h <= 1) return Math.pow(10, (Ld[1] - 12 * Math.log2(1 / h)) / 20);
+  if (h <= K) { const m = Math.min(K - 1, Math.floor(h)), t = Math.log(h / m) / Math.log((m + 1) / m); return Math.pow(10, (Ld[m] + (Ld[m + 1] - Ld[m]) * t) / 20); }
+  return e.roll ? e.ab * Math.pow(h / 22.6, e.s / 6.02) : 0;
+}
+function mkntLv(p, r) { const f = Math.min(440 * Math.pow(2, (p - 69) / 12), .45 * SR), q = Math.log2(f / r) + MK_WQ; return q > 0 ? Math.min(9, Math.ceil(q)) : 0; }   // the level a of prep at pitch p
+function mkntG(e, F) {  // the level factor: the octave sets' factors, linear in dB over log f between their references
+  const g = e.g; if (!g || g.length < 2) return g && g[0] ? g[0] : 1;
+  let o = Math.log2(F / e.f0); if (o <= 0) return g[0]; if (o >= g.length - 1) return g[g.length - 1];
+  const j = Math.floor(o), t = o - j; return Math.exp(Math.log(g[j]) * (1 - t) + Math.log(g[j + 1]) * t);
+}
+// radix-2 inverse complex FFT (the MKTAB one), twiddles per size
+function mkFftI(re, im) {
+  const n = re.length; let T = MKNT_X[n];
+  if (!T) { T = MKNT_X[n] = {c: new Float64Array(n / 2), s: new Float64Array(n / 2), re: null, im: null}; for (let k = 0; k < n / 2; k++) { T.c[k] = Math.cos(2 * Math.PI * k / n); T.s[k] = Math.sin(2 * Math.PI * k / n); } }
+  for (let i = 1, j = 0; i < n; i++) { let b = n >> 1; for (; j & b; b >>= 1) j ^= b; j ^= b; if (i < j) { let x = re[i]; re[i] = re[j]; re[j] = x; x = im[i]; im[i] = im[j]; im[j] = x; } }
+  for (let len = 2; len <= n; len <<= 1) {
+    const h = len >> 1, st = n / len;
+    for (let i = 0; i < n; i += len) for (let j = 0; j < h; j++) {
+      const c = T.c[j * st], s = T.s[j * st], k = i + j, l = k + h, tr = re[l] * c - im[l] * s, ti = re[l] * s + im[l] * c;
+      re[l] = re[k] - tr; im[l] = im[k] - ti; re[k] += tr; im[k] += ti;
+    }
+  }
+}
+// one mip level L of the note table of wave W at the note frequency F: x[i] = g sum_k A_k sin(2 pi k i / N + P_k), k <= its limit
+function mkntLevel(W, F, g, L) {
+  // from level 2 on (<= 128 partials) 1024 points: images of the linear read stay <= -36 dB under the top partial, and a voice's own
+  // tables take half the cache (MK2-09; the shared sets keep 2048 there)
+  const N = L >= 2 ? Math.min(1024, W.N[L]) : W.N[L], K = Math.min(L >= 10 ? 1 : 512 >> L, N / 2 - 1), e = W.e, P = e.P;
+  let B = MKNT_X['b' + N]; if (!B) B = MKNT_X['b' + N] = {re: new Float64Array(N), im: new Float64Array(N)};
+  const re = B.re, im = B.im; re.fill(0); im.fill(0);
+  for (let k = 1; k <= K; k++) { const a = mkEnvA(e, k, F); if (!a) continue; re[k] = a * Math.sin(P[k]); im[k] = -a * Math.cos(P[k]); }
+  mkFftI(re, im);
+  const t = new Float32Array(N + 1); for (let i = 0; i < N; i++) t[i] = re[i] * g; t[N] = t[0]; return t;
+}
+// a voice asks for the note table of wave n at pitch P (key = wave + pitch in 1/1000 HT); a finished one comes at once
+function mkntReq(n, W, key, P) {
+  let j = MKNT.get(key);
+  if (j) { if (j.t) { MKNT.delete(key); MKNT.set(key, j); } j.want = currentFrame; return j; }   // least recently used last
+  const F = 440 * Math.pow(2, (P - 69) / 12), lo = mkntLv(P - MK_NTR, W.r), hi = Math.min(10, mkntLv(P + MK_NTR, W.r) + 1);
+  j = {k: key, n, P, F, W, lo, hi, l: lo, L: null, t: null, want: currentFrame, g: mkntG(W.e, F)};
+  MKNT.set(key, j); MKNT_Q.push(j);
+  if (MKNT.size > MK_NTMAX) for (const [k, x] of MKNT) if (x.t) { MKNT.delete(k); break; }
+  return j;
+}
+// the builder: one level per quantum and context; a request nobody waited for in 0.2 s is dropped
+function mkntWork() {
+  if (currentFrame === MKNT_F) return;
+  while (MKNT_Q.length) {
+    const j = MKNT_Q[0];
+    if (currentFrame - j.want > .2 * SR) { MKNT_Q.shift(); MKNT.delete(j.k); continue; }
+    MKNT_F = currentFrame;
+    if (!j.L) j.L = [null, null, null, null, null, null, null, null, null, null, null];
+    j.L[j.l] = mkntLevel(j.W, j.F, j.g, j.l); j.l++;
+    if (j.l > j.hi) { const L = j.L; for (let l = 0; l < 11; l++) L[l] = L[Math.max(j.lo, Math.min(j.hi, l))]; j.t = {n: j.n, P: j.P, L}; j.W = null; MKNT_Q.shift(); }
+    return;
+  }
 }
 // W-28 Stimmwelle: Rosenberg pulse with a fixed open time in ms (OQ at C4, at most 0.9 of the period), opening 0.714, closing
 // 0.286 of it; the fixed IIR = two 1-pole lowpasses at 300 Hz; MK_VG the level (INIT loudness as the saw at C3)
+const MK_VPR = Math.round(.01 * SR);   // MK2-fix: run-in of the Stimmwelle lowpasses at a voice's first block (samples)
 const MK_VREF = 261.6256, MK_VLP = 1 - Math.exp(-2 * Math.PI * 300 / SR), MK_VTP = .714, MK_VTN = .286, MK_VMEAN = .714 * .5 + .286 * 2 / Math.PI, MK_VG = 1.26;
 const MK_CUTU = 12 * Math.log2(1000) / 127;  // W-01: one cutoff unit in semitones (PATCH Cutoff, W-18)
 const MK_PSPAN = [24, 63, 127, 127, 127, 127, 63, 127];  // W-18 full span per destination (Tonhoehe in HT, the others in their units)
@@ -5245,7 +5338,11 @@ class MkVoice {
     // MK2: table phase (period of the table = r note periods), shown wave / blend partner / blend samples left, mip levels and
     // octave blend of the block (start / end), Stimmwelle lowpasses, noise oscillator (own generator, SVF state, g k gain start / end)
     this.tw = 0; this.wn = -1; this.wo = -1; this.wx = 0; this.wa = 0; this.wb = 0; this.wwA = -1; this.wwB = 0; this.woA = 0; this.woB = 0; this.wj = 0;
-    this.vz1 = 0; this.vz2 = 0; this.vgA = -1; this.vgB = 0;
+    this.vz1 = 0; this.vz2 = 0; this.vgA = -1; this.vgB = 0; this.vpb = -9; this.wqD = -1; this.wqR = 1;
+    // MK2-fix: note table (key, request, current / old source - null = the octave blend -, the old wave's source in a wave change,
+    // crossfade progress and its block start / end)
+    this.ntK = -1; this.ntJ = null; this.ntC = null; this.ntO = null; this.ntW = null; this.ntu = 1; this.ntA = 1; this.ntB = 1;
+    this.ntOk = false; this.ntP0 = 0; this.ntP1 = 0; this.ntP2 = 0;   // ntOk: its own table alone, for these pitch inputs
     this.rn = 1; this.ns1 = 0; this.ns2 = 0; this.ngA = -1; this.ngB = 0; this.nkA = 0; this.nkB = 0; this.nnA = 0; this.nnB = 0;
     this.xL2 = 0; this.pPan = 0;
   }
@@ -5553,6 +5650,7 @@ class MkCore {
       if (sync && L.ks < .5 && h.songStart >= 0) this.g2 = ((songT / spb / (MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4)) % 1 + 1) % 1;
       else this.g2 = (this.g2 + this.lr2 * step) % 1;
       if (this.g2 < o) this.gsh2 = (mkHash(this.seed, 9, ++this.lctr) / 4294967296) * 2 - 1; }
+    if (MKNT_Q.length) mkntWork();   // MK2-fix: one level of a note table per quantum
     const sx = this.sxOn, sk = this.sxkN;
     if (sx) { this.sxN++; this.sxT = Math.max(0, Math.min(1, (this.sxN - SX_M) * CR / MK_SXF)); }
     for (const v of this.V) {
@@ -5732,7 +5830,7 @@ class MkCore {
   prep(v, w1, dt1, m, p1, xC1) {
     const Sm = this.sm;
     if (w1 === 4) {  // W-28: level of the Stimmwelle; the open time is fixed in ms, so the power follows OQ_eff (gain 1 / sqrt)
-      let oq = (.3 + .5 * m) * dt1 * SR / MK_VREF; if (oq > .9) oq = .9; if (oq < 1e-3) oq = 1e-3;
+      const fq = dt1 * SR / MK_VREF; let oq = (.3 + .5 * m) * (fq < 1 ? fq : 1); if (oq < 1e-3) oq = 1e-3;   // MK2-fix: OQ = 0.3 + 0.5 m from C4 up (W-28), below C4 the same open time in ms
       const fr = dt1 * SR / 300, g = MK_VG / Math.sqrt(oq) * (1 + fr * fr); v.vgA = v.vgA < 0 ? g : v.vgB; v.vgB = g; return;   // x 1 / |H(f0)| of the lowpasses: the loudness stays, the envelope in Hz too
     }
     if (w1 === 6) {  // W-29: noise -> 2-pole TPT-SVF lowpass, cutoff = note * 2^((C1 - 24) / 12), res 0.98 C2 / 127; RMS kept (gain sqrt(k / g))
@@ -5744,13 +5842,39 @@ class MkCore {
     // w1 5: the stored wave n = STEUER 2 / 2 + 1 (values 2n - 2, 2n - 1 -> n); missing = the placeholder saw, asked for
     const n = Math.max(1, Math.min(64, Math.floor(this.T.o1.c2 / 2) + 1)), W = MKWT[n], e = W ? n : 0;
     if (!W) this.need(n);
-    if (v.wn < 0) { v.wn = e; v.tw = v.t1; }
-    else if (e !== v.wn) { if (v.wx > MK_WXF / 2) v.wn = v.wo; v.wo = v.wn; v.wn = e; v.wx = MK_WXF; }   // a change in the blend: from the louder one
-    const r = W ? W.r : 1, q = Math.log2(dt1 * SR / r) + MK_WQ; let a = 0, w = 0;
-    if (q > 0) { a = Math.ceil(q); w = q - a + 1; if (a > 9) { a = 9; w = 1; } }   // crossfade to level a + 1 over the whole octave (as V4a; the top half octave alone folds -48 dB at C7 for wave 27)
-    if (a !== v.wa || v.wwA < 0) { v.wa = a; v.wwA = w; } else v.wwA = v.wwB;
-    v.wwB = w;
+    let cut = false;   // MK2-fix: the note-table source may jump without a fade (first block, start of a wave change)
+    if (v.wn < 0) { v.wn = e; v.tw = v.t1; cut = true; }
+    else if (e !== v.wn) {   // a change in the blend: from the louder one (whose note table stays its source)
+      if (v.wx > MK_WXF / 2) v.wn = v.wo; else v.ntW = v.ntu >= .5 ? v.ntC : v.ntO;
+      v.wo = v.wn; v.wn = e; v.wx = MK_WXF; v.ntK = -1; v.ntJ = null; v.ntC = null; v.ntO = null; v.ntu = 1; v.ntA = 1; v.ntB = 1; v.ntOk = false; cut = true;
+    }
+    const r = W ? W.r : 1;
+    if (dt1 !== v.wqD || r !== v.wqR || v.wwA < 0) {   // MK2-fix (MK2-09): the mip position only when the pitch moved (no log2 per block)
+      const q = Math.log2(dt1 * SR / r) + MK_WQ; let a = 0, w = 0; v.wqD = dt1; v.wqR = r;
+      if (q > 0) { a = Math.ceil(q); w = q - a + 1; if (a > 9) { a = 9; w = 1; } }   // crossfade to level a + 1 over the whole octave (as V4a; the top half octave alone folds -48 dB at C7 for wave 27)
+      if (a !== v.wa || v.wwA < 0) { v.wa = a; v.wwA = w; } else v.wwA = v.wwB;
+      v.wwB = w;
+    } else v.wwA = v.wwB;
     if (!W || !W.o) return;
+    if (W.e) {  // MK2-fix: the note table of this voice (pitch without vibrato / bend / PATCH), its source and the crossfade
+      if (v.ntOk && v.target === v.ntP0 && Sm.trans === v.ntP1 && Sm.tune === v.ntP2) { const d = p1 - v.ntC.P; if (d <= MK_NTR && d >= -MK_NTR) { v.wj = -1; return; } }   // unchanged: its table alone
+      const pS = v.target + Sm.trans + Sm.tune / 100 + v.udet / 100, q3 = Math.round(pS * 1000), key = n * 1e7 + q3 + 5e5;
+      let J = v.ntJ;
+      if (key !== v.ntK) { v.ntK = key; J = v.ntJ = mkntReq(n, W, key, q3 / 1000); } else if (J && !J.t) J.want = currentFrame;
+      const NT = J ? J.t : null, c = v.ntC; let tg = null;
+      if (NT) { const d = p1 - NT.P; if (d <= MK_NTR && d >= -MK_NTR) tg = NT; }
+      if (!tg && c && c.n === n) { const d = p1 - c.P; if (d <= MK_NTR && d >= -MK_NTR) tg = c; }   // the old one until the new one is there
+      let u = v.ntu;
+      if (tg !== c) {
+        if (cut) { v.ntO = null; u = 1; }
+        else if (u >= 1) { v.ntO = c; u = 0; }
+        else if (u >= .5) { v.ntO = c; u = 1 - u; }   // in a crossfade: from the louder one
+        v.ntC = tg;
+      }
+      if (u < 1 || v.ntA < 1) { v.ntA = u; if (u < 1) { u += MK_NTS; if (u >= 1) u = 1; } v.ntu = u; v.ntB = u; }
+      v.ntOk = NT !== null && v.ntC === NT && v.ntA >= 1; v.ntP0 = v.target; v.ntP1 = Sm.trans; v.ntP2 = Sm.tune;
+      if (v.ntC && v.ntA >= 1) { v.wj = -1; return; }   // the note table alone: no octave blend to prepare
+    }
     let o = (p1 - 24) / 12, j = 0, oj = 0; if (o > 0) { j = Math.min(6, Math.floor(o)); oj = Math.min(1, o - j); }
     if (j !== v.wj) { v.wj = j; v.woA = oj; } else v.woA = v.woB;
     v.woB = oj;
@@ -5761,9 +5885,23 @@ class MkCore {
     if (w1 === 3) { for (let n = 0; n < N; n++) { t += dt1; let wrap = -1; if (t >= 1) { t -= 1; wrap = t / dt1; } wr[n] = wrap; ob[n] = t; } v.t1 = t; return; }
     if (w1 === 4) {  // Rosenberg pulse, polyBLAMP at the closing corner, DC removed, two 1-pole lowpasses at 300 Hz
       // the shape (OQ from STEUER 1 + LFO1) is held for the 16-sample block (control rate, its middle value): no division per sample
-      let oq = (.3 + .25 * (m0 + m)) * dt1 * SR / MK_VREF; if (oq > .9) oq = .9; else if (oq < 1e-3) oq = 1e-3;
-      const a = MK_VLP, dg = (v.vgB - v.vgA) / N, tp = MK_VTP * oq, tn = MK_VTN * oq, ip = SINE_N / (2 * tp), iq = SINE_N / (4 * tn), jb = 1.5707963267948966 * dt1 / (6 * tn), idt = 1 / dt1, dc = MK_VMEAN * oq;
+      const fq = dt1 * SR / MK_VREF; let oq = (.3 + .25 * (m0 + m)) * (fq < 1 ? fq : 1); if (oq < 1e-3) oq = 1e-3;   // MK2-fix: relative OQ from C4 up (W-28)
+      // MK2-fix: dc also holds the mean of the polyBLAMP term (jb d^3 over the two samples at the corner: jb / 2 per period); with
+      // the level gain 1 / |H(f0)| (up to x 260 at C8) it drove the ladder into saturation from about C8 up
+      const a = MK_VLP, dg = (v.vgB - v.vgA) / N, tp = MK_VTP * oq, tn = MK_VTN * oq, ip = SINE_N / (2 * tp), iq = SINE_N / (4 * tn), jb = 1.5707963267948966 * dt1 / (6 * tn), idt = 1 / dt1, dc = MK_VMEAN * oq + jb * dt1 * .5;
       let z1 = v.vz1, z2 = v.vz2, gg = v.vgA;
+      if (v.vpb !== this.blk - 1) {   // MK2-fix: the first block of the Stimmwelle on this voice: the lowpasses start in their steady
+        // state (10 ms run-in from the phase 10 ms earlier, same shape and gain); from 0 the start-up transient x 1 / |H(f0)| thumped
+        let r = t - MK_VPR * dt1; r -= Math.floor(r); z1 = 0; z2 = 0;
+        for (let n = 0; n < MK_VPR; n++) {
+          r += dt1; if (r >= 1) r -= 1; let y = 0;
+          if (r < tp) { const x = r * ip + 1024, i = x | 0; y = .5 - .5 * (SINE[i] + (SINE[i + 1] - SINE[i]) * (x - i)); }
+          else if (r < oq) { const x = (r - tp) * iq + 1024, i = x | 0; y = SINE[i] + (SINE[i + 1] - SINE[i]) * (x - i); }
+          const e = r - oq, ae = e < 0 ? -e : e; if (ae < dt1) { const d = 1 - ae * idt; y += jb * d * d * d; }
+          y = (y - dc) * gg; z1 += a * (y - z1); z2 += a * (z1 - z2);
+        }
+      }
+      v.vpb = this.blk;
       for (let n = 0; n < N; n++) {
         t += dt1; let wrap = -1; if (t >= 1) { t -= 1; wrap = t * idt; } wr[n] = wrap; gg += dg;
         let y = 0;
@@ -5792,16 +5930,24 @@ class MkCore {
     // 5: table read with linear interpolation, two mip levels (both alias-free), octave sets blended by pitch; a change of the
     // shown wave = 2 ms equal-power blend (sin / cos over a smoothstep: no corner in either gain) at the same read pointer
     // (phase-continuous); 0 = the placeholder saw at the note
-    const C = v.wn > 0 ? MKWT[v.wn] : null, O = v.wx > 0 && v.wo > 0 ? MKWT[v.wo] : null, a = v.wa, j = v.wj;
+    const C = v.wn > 0 ? MKWT[v.wn] : null, O = v.wx > 0 && v.wo > 0 ? MKWT[v.wo] : null, a = v.wa, j = v.wj < 0 ? 0 : v.wj;
     const dtw = dt1 / (C ? C.r : O ? O.r : 1), dww = (v.wwB - v.wwA) / N, dwo = (v.woB - v.woA) / N;
     let tw = v.tw, wx = v.wx, ww = v.wwA, wo = v.woA;
-    if (C && !C.o && wx <= 0) {  // the usual case: one single wave, no blend - both levels read at one index where they have the same size
-      const S = C.s[0], A = S[a], B = S[a + 1], na = A.length - 1, nb = B.length - 1, idt = 1 / dt1;
-      if (!this.wrUse && na === nb) {  // no sync: the note phase only has to run on (no wrap positions); the pointer in table samples
+    const nc = C && C.o ? v.ntC : null, ntx = C && C.o && v.ntA < 1;   // MK2-fix: an octave wave reads its note table (or blends to it)
+    const S0 = C && wx <= 0 && !ntx ? (C.o ? (nc ? nc.L : null) : C.s[0]) : null;
+    if (S0) {  // the usual case: one single wave (or a note table), no blend - both levels read at one index
+      const S = S0, A = S[a], B = S[a + 1], na = A.length - 1, nb = B.length - 1, idt = 1 / dt1;
+      if (!this.wrUse) {  // no sync: the note phase only has to run on (no wrap positions); the pointer in table samples
         let x = tw * na; const dx = dtw * na;
         if (dww === 0 && ww <= 0) for (let n = 0; n < N; n++) { x += dx; if (x >= na) x -= na; const i = x | 0; ob[n] = A[i] + (A[i + 1] - A[i]) * (x - i); }
-        else if (dww === 0) for (let n = 0; n < N; n++) { x += dx; if (x >= na) x -= na; const i = x | 0, f = x - i, ya = A[i] + (A[i + 1] - A[i]) * f; ob[n] = ya + (B[i] + (B[i + 1] - B[i]) * f - ya) * ww; }
-        else for (let n = 0; n < N; n++) { x += dx; if (x >= na) x -= na; ww += dww; const i = x | 0, f = x - i, ya = A[i] + (A[i + 1] - A[i]) * f; ob[n] = ww > 0 ? ya + (B[i] + (B[i + 1] - B[i]) * f - ya) * ww : ya; }
+        else if (na === nb) {
+          if (dww === 0) for (let n = 0; n < N; n++) { x += dx; if (x >= na) x -= na; const i = x | 0, f = x - i, ya = A[i] + (A[i + 1] - A[i]) * f; ob[n] = ya + (B[i] + (B[i + 1] - B[i]) * f - ya) * ww; }
+          else for (let n = 0; n < N; n++) { x += dx; if (x >= na) x -= na; ww += dww; const i = x | 0, f = x - i, ya = A[i] + (A[i + 1] - A[i]) * f; ob[n] = ww > 0 ? ya + (B[i] + (B[i + 1] - B[i]) * f - ya) * ww : ya; }
+        } else {  // MK2-fix: level a has twice the points of a + 1 (2048 / 1024): B at half the index (was the per-sample generic read)
+          const hb = nb / na;
+          for (let n = 0; n < N; n++) { x += dx; if (x >= na) x -= na; ww += dww; const i = x | 0, ya = A[i] + (A[i + 1] - A[i]) * (x - i);
+            if (ww > 0) { const xb = x * hb, ib = xb | 0; ob[n] = ya + (B[ib] + (B[ib + 1] - B[ib]) * (xb - ib) - ya) * ww; } else ob[n] = ya; }
+        }
         t += N * dt1; t -= Math.floor(t); v.tw = x / na; v.t1 = t; return;
       }
       if (ww <= 0 && dww === 0) for (let n = 0; n < N; n++) { t += dt1; let wrap = -1; if (t >= 1) { t -= 1; wrap = t * idt; } wr[n] = wrap; tw += dtw; if (tw >= 1) tw -= 1; const x = tw * na, i = x | 0; ob[n] = A[i] + (A[i + 1] - A[i]) * (x - i); }
@@ -5812,14 +5958,22 @@ class MkCore {
       else for (let n = 0; n < N; n++) { t += dt1; let wrap = -1; if (t >= 1) { t -= 1; wrap = t * idt; } wr[n] = wrap; tw += dtw; if (tw >= 1) tw -= 1; ww += dww; ob[n] = mkwLv(S, a, ww, tw); }
       v.tw = tw; v.t1 = t; return;
     }
+    this.osc1g(v, N, dt1, ob, wr, C, O, nc, ntx, a, j, dtw, dww, dwo);
+  }
+  // MK2-fix (MK2-09): the blends (wave change, octave sets, note-table crossfade, placeholder) in their own method: the fast reads
+  // above stay small for the optimizer
+  osc1g(v, N, dt1, ob, wr, C, O, nc, ntx, a, j, dtw, dww, dwo) {
+    let t = v.t1, tw = v.tw, wx = v.wx, ww = v.wwA, wo = v.woA;
+    const so = v.ntO, sw = v.ntW, du = (v.ntB - v.ntA) / N; let nu = v.ntA;
     for (let n = 0; n < N; n++) {
       t += dt1; let wrap = -1; if (t >= 1) { t -= 1; wrap = t / dt1; } wr[n] = wrap;
       tw += dtw; if (tw >= 1) tw -= 1; ww += dww; wo += dwo;
-      let y = C ? mkwRd(C, a, ww, j, wo, tw) : mkSaw(t, dt1);
-      if (wx > 0) { wx--; const u = 1 - wx / MK_WXF, z = u * u * (3 - 2 * u) * 1.5707963267948966, yo = O ? mkwRd(O, a, ww, j, wo, tw) : v.wo === 0 ? mkSaw(t, dt1) : 0; y = y * Math.sin(z) + yo * Math.cos(z); }
+      let y = nc ? mkwLv(nc.L, a, ww, tw) : C ? mkwRd(C, a, ww, j, wo, tw) : mkSaw(t, dt1);
+      if (ntx) { nu += du; const z = so ? mkwLv(so.L, a, ww, tw) : mkwRd(C, a, ww, j, wo, tw); y = z + (y - z) * nu; }   // MK2-fix: blend <-> note table
+      if (wx > 0) { wx--; const u = 1 - wx / MK_WXF, z = u * u * (3 - 2 * u) * 1.5707963267948966, yo = O ? (sw ? mkwLv(sw.L, a, ww, tw) : mkwRd(O, a, ww, j, wo, tw)) : v.wo === 0 ? mkSaw(t, dt1) : 0; y = y * Math.sin(z) + yo * Math.cos(z); }
       ob[n] = y;
     }
-    if (wx <= 0) v.wo = -1;
+    if (wx <= 0) { v.wo = -1; v.ntW = null; }
     v.tw = tw; v.wx = wx; v.t1 = t;
   }
   osc2(v, N, dt2, w2, sync, o2b, wr, hs, hq) {  // OSC 2, free or the sync slave of OSC 1 (hs / hq: the cross-term weights of the master wrap, osc2x)

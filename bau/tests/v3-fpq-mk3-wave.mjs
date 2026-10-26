@@ -1,0 +1,23 @@
+// FP-DSP live: stored waves of T2 reach the worklet (mode switch, swap, Edit Sync)
+import { chromium } from 'playwright';
+const FILE = new URL('../mk-br-MK3/index.html', import.meta.url).pathname;
+const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await browser.newContext({viewport: {width: 844, height: 390}, hasTouch: true, isMobile: true});
+const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await page.goto('file://' + FILE); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+await page.evaluate(() => { SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); });
+await page.waitForTimeout(500);
+await page.evaluate(async () => { ensureAudio(); await AU.ctx.resume(); inputDown(60, 'w', .8); }); await page.waitForTimeout(300); await page.evaluate(() => inputUp('w'));
+const inf = () => page.evaluate(() => { const i = SYNQUENZER.mkInfo(); return i.tables + '/' + i.waves; });
+const r = [];
+r.push('Start ' + await inf());
+await page.evaluate(() => { SYNQUENZER.mkSet(0, 't.1.o1.w', 5); SYNQUENZER.mkSet(0, 't.1.o1.c2', 40); }); await page.waitForTimeout(600);
+r.push('T2 Speicherwelle 21 bei Einzeln ' + await inf());
+await page.evaluate(() => SYNQUENZER.mkSet(0, 'mode', 1)); await page.waitForTimeout(600);
+r.push('→ Schicht ' + await inf());
+await page.evaluate(() => { SYNQUENZER.mkSet(0, 'mode', 0); SYNQUENZER.mkSet(0, 't.1.o1.c2', 60); }); await page.waitForTimeout(600);
+r.push('Einzeln, T2 Welle 31 ' + await inf());
+await page.evaluate(() => MKUI.timSwap(0)); await page.waitForTimeout(600);
+r.push('SHIFT+2 → T1 hat Welle 31 ' + await inf());
+console.log(r.join(' | ') + ' | Fehler ' + errs.length + ' ' + errs.join(' ').slice(0, 200));
+await browser.close();
