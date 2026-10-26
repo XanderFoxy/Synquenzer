@@ -1,0 +1,11 @@
+import {Cleaner} from './clean.mjs';
+import * as T from './test-signals.mjs';
+const sr = 48000, n = 20 * sr;
+const mic = T.noise(sr, 20, 0.1, 1), ref = T.noise(sr, 20, 0.1, 2), out = new Float32Array(1024);
+const c = new Cleaner(sr, {offline: true}); c.setWay('notes');
+let t = performance.now();
+for (let a = 0; a < n; a += 1024) c.process(mic.subarray(a, a + 1024), ref.subarray(a, a + 1024), out, 1024);
+console.log('notes 20s ms', (performance.now() - t).toFixed(0));
+c.setWay('hear'); t = performance.now();
+for (let a = 0; a < n; a += 1024) c.process(mic.subarray(a, a + 1024), ref.subarray(a, a + 1024), out, 1024);
+console.log('hear 20s ms', (performance.now() - t).toFixed(0));

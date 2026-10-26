@@ -1,0 +1,17 @@
+import {open, micOn, sleep} from './v3-vs3-h.mjs';
+const H = await open(), p = H.p;
+console.log(await p.evaluate(() => SYNQUENZER.version));
+await p.evaluate(() => { SYNQUENZER.play(); SYNQUENZER.stop(); });
+const sr = 48000, n = sr * 2, pcm = []; for (let i = 0; i < n; i++) pcm.push(Math.round(Math.sin(2 * Math.PI * 440 * i / sr) * 12000));
+const r = await p.evaluate(pc => SYNQUENZER.tkInject({pcm: pc, sr: 48000, scene: 0, len: 1}), pcm);
+console.log('inject', JSON.stringify(r));
+console.log('info', JSON.stringify(await p.evaluate(() => { const i = SYNQUENZER.tkInfo(); delete i.src; return i; })));
+await p.evaluate(() => { window.__tap(); SYNQUENZER.setMetronome(false); SYNQUENZER.launchScene(0); });
+await sleep(1500);
+console.log('lvl', JSON.stringify(await p.evaluate(() => window.__lvl())), 'src', JSON.stringify(await p.evaluate(() => SYNQUENZER.tkInfo().src.length)), 'starts', await p.evaluate(() => SYNQUENZER.tkInfo().starts));
+await p.evaluate(() => SYNQUENZER.stop()); await sleep(300);
+console.log('proj takes', JSON.stringify(await p.evaluate(() => SYNQUENZER.project().takes)));
+console.log('clip', JSON.stringify(await p.evaluate(t => SYNQUENZER.getClip(t, 0), r.track)));
+console.log('undo', JSON.stringify(await p.evaluate(() => SYNQUENZER.undoInfo())));
+console.log('errs', JSON.stringify(H.errs));
+await H.br.close();
