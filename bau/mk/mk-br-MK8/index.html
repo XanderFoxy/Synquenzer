@@ -5995,7 +5995,9 @@ function savePop(anchor, t) {
       go.textContent = 'Auf ' + L + ' schreiben'; back.hidden = !occ; ov.hidden = !userOrigin;
     };
     paint();
-    guardTouch(p);
+    // MK8-fix: no guardTouch on this pop (as the VA Sichern pop): its touchstart preventDefault kept a tap from focusing the
+    // name field (no keyboard on iPhone) and a finger from scrolling the pop in P3 / L2; taps act on pointerup (onTap), the
+    // tap-through shield of closePop covers the click after a closing tap, buttons carry touch-action:manipulation
     onTap(p, x => {
       if (x.dataset.b) { sel.b = +x.dataset.b; paint(); return; }
       if (x.dataset.s) { sel.s = +x.dataset.s; paint(); return; }
@@ -6007,6 +6009,8 @@ function savePop(anchor, t) {
       else if (a === 'back') restore(t, sel.b, sel.s);
     }, 'button');
     on(inp, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); closePop(); write(t, sel.b, sel.s, inp.value).catch(logErr); } e.stopPropagation(); });
+    // MK8-fix: the first tap into the field selects the prefilled name (as the VA pop): typing replaces it, the place grid stays first
+    let sel1 = false; on(inp, 'focus', () => { if (sel1) return; sel1 = true; setTimeout(() => { try { if (document.activeElement === inp) inp.select(); } catch (e) {} }, 0); });
   }, {name: 'save'});
 }
 // the preview of an arp program: a held chord through the arp pattern (W-11, W-34), two bars

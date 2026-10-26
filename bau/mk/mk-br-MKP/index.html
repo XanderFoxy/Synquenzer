@@ -4963,7 +4963,8 @@ function stepKey(n) {
 }
 function compare() {
   const i = P.i, on = !!(UI.ab && UI.ab.t === i && UI.ab.side === 'B');
-  if (!on && !originRec(sndOf(i))) { lcdShow('COMPARE', 'kein gespeicherter Stand zum Vergleichen'); return; }
+  const rec = !on && originRec(sndOf(i)), rs = rec && (FACTORY_BY_ID.has(rec.id) ? factorySound(rec.id) : rec);
+  if (!on && (!rs || rs.engine !== 'mk')) { lcdShow('COMPARE', 'kein gespeicherter ' + MK_LABEL + '-Stand zum Vergleichen'); return; }   // never a sound of another engine
   if (!on && !soundEdited(sndOf(i))) { lcdShow('COMPARE', 'unverändert – nichts zu vergleichen'); return; }
   toggleAB(i); lcdShow('COMPARE', on ? 'zurück zu deiner Änderung' : 'der gespeicherte Stand · EXIT = zurück');
 }
@@ -5134,7 +5135,7 @@ function build(pg, i) {
     if (!fr.isConnected) { U.ro.disconnect(); return; }
     const r2 = fr.getBoundingClientRect(), w = Math.floor(r2.width), h = Math.floor(r2.height); if (!w || !h || (w === U.fw && h === U.fh)) return;
     clearTimeout(U.roT); U.roT = setTimeout(() => { if (!panelLive(pg, i) || P.el !== U) return; build(pg, i); }, 60); }); U.ro.observe(fr); }
-  if (!P.seen) { P.seen = true; lcdShow(MK_LABEL, P.land ? 'die ganze Platte · drehen, tippen, eine Sektion antippen = Zoom' : 'eine Hälfte der Platte · Wischen = andere Hälfte · Sektion antippen = Zoom'); }
+  if (!P.seen) { P.seen = true; lcdShow(MK_LABEL, wholeMode() ? 'die ganze Platte · drehen, tippen, eine Sektion antippen = Zoom' : 'eine Hälfte der Platte · Wischen = andere Hälfte · Sektion antippen = Zoom'); }
 }
 /* ---------- gestures on the plate (MK-P "Gesten", "Treffer") ---------- */
 const PT = new Map();
@@ -5380,6 +5381,7 @@ function chrome(sh, i, o) {
   hd.append(x, ub[0], ub[1], play, pre, tabs, nav, more);
   if (lcd) { lcd.classList.add('mkql'); pre.appendChild(lcd); lcd._onShow = () => { const was = lcd.classList.contains('on'); lcd.classList.add('on'); if (!was) lcdFit(lcd); clearTimeout(lcd._qt); lcd._qt = setTimeout(() => lcd.classList.remove('on'), 1500); }; }
   sh.insertBefore(hd, sh.firstChild);
+  hd.classList.toggle('nar', sh.getBoundingClientRect().width < 800);   // with the notch's safe area (L1 ≈ 750 px) ‹ › give their room to the name (−/NO +/YES step too)
   return true;
 }
 function morePop(anchor, i, o) {
@@ -6003,7 +6005,7 @@ const css = `
 #synthSheet.mkq .mkqplay .g-stop{display:none;color:var(--text)}#synthSheet.mkq .mkqplay .g-play{color:var(--play)}
 #app.playing #synthSheet.mkq .mkqplay .g-play{display:none}#app.playing #synthSheet.mkq .mkqplay .g-stop{display:inline}
 #synthSheet.mkq .sh-body{padding:0}
-@media (max-width:719px){#synthSheet.mkq .mkqh .preset .pa{display:none}}
+@media (max-width:719px){#synthSheet.mkq .mkqh .preset .pa{display:none}}#synthSheet.mkq .mkqh.nar .preset .pa{display:none}
 #app.mkqkb #kbArea{position:fixed;left:var(--mkkb-x);top:var(--mkkb-y);width:var(--mkkb-w);height:var(--mkkb-h);z-index:41}
 .seg.mkqeng{display:flex;margin:4px 0 8px}.seg.mkqeng button{flex:1 1 0}
 /* the extra views (SCHRITTE, 16 BÄNDER, EIGENE) */
@@ -6054,7 +6056,7 @@ function ensureCss() { if (document.getElementById('mk-css')) return; const st =
 ensureCss();
 window.MKUI = {mkVowel, build, render, renderSoon, wheels, wheelPaint, panelInfo, probe, probeSheet, arpFrame: frame, arp: ARPC, randomize: randomizeMk, P, KN, fmtv, get, range, setv, wv, MKTAB,
   lcdOf, seqInit, seqSwap, seqCopy, seqToolsPop, recArm, recCancel, recDone, knobSim, stepsInfo, stepsPaint, timCopy, timSwap, timInit, timCopyPop, leave, splitArm, viewOpen, viewClose, splitNote, ownInfo,
-  press, view, chrome, lcdLines, lcdTap, pages, curItem, pageOf, defOf, bindOf, hitAt, haltAt, ELS, SEC, HALTE, PL, mkPanelProg, zoomTo, toOverview, step, compare,
+  press, view, chrome, lcdLines, lcdTap, pages, curItem, pageOf, defOf, bindOf, hitAt, haltAt, visRect, panelScript, ELS, SEC, HALTE, PL, mkPanelProg, zoomTo, toOverview, step, compare,
   progRefresh: () => { if (!P.el || !P.el.fr || !P.el.fr.isConnected) return; const s_ = sndOf(P.i); if (s_) { P.orig = null; P.origKey = ''; origSync(s_); } renderSoon(); }};
 })();
 

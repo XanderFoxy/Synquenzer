@@ -274,3 +274,17 @@ Bilder `v3-mk8-shots/` (P1, P2, P3, L1, L2, W: `*-sichern.png`, `*-bank.png`; da
 | H14 | Robotergruß | vocoder | Vocoder | Delay-Sync, Halten | eigenes Rezept |
 | H15 | Eingang | eingang | Single | Delay-Sync | eigenes Rezept |
 | H16 | INIT MS 2000 | effekt | Single |  | INIT |
+
+## MK8-fix (26.10.) – Namensfeld im Sichern-Fenster per Finger
+
+- Fehler (QA, major): Im MS 2000 „Sichern · Platz wählen“ (`.pop.mk8w`) fing ein Tipp auf das Namensfeld nicht den Fokus –
+  `MKF.savePop` hatte `guardTouch(p)` auf dem ganzen Fenster, dessen touchstart-`preventDefault` auch das Eingabefeld traf.
+  Auf dem iPhone kam keine Tastatur, der Name blieb „Klarer Ruf“ und das Programm wurde als „A05:Klarer Ruf 2“ geschrieben.
+  Nachgestellt mit Touch (page.tap und CDP Input.dispatchTouchEvent) in P1, P3, L1, L2 an MK8.html: 8/8 kein Fokus.
+- Behoben: `guardTouch` entfernt (wie beim VA-Sichern-Fenster); Tasten handeln weiter über `onTap` (pointerup), der
+  Tap-Schutz von `closePop`/`UI.ghost` schluckt den Folge-Klick nach „Auf … schreiben“. Der erste Fokus markiert den
+  vorgegebenen Namen (Tippen ersetzt ihn, wie im VA-Fenster). Nebenbei scrollt das Fenster in P3/L2 jetzt per Finger.
+- Nachweis: `dirigent-test/v3-mk8fix-name.mjs` (P1, P3, L1, L2 × page.tap/CDP, echte Schrift Barlow Semi Condensed,
+  Feld 16 px = kein iOS-Zoom): Fokus ja, Wert „Mein Lead“, geschrieben als „A05:Mein Lead“, Platz-Tasten per Finger,
+  kein Durchklick, 0 Konsolenfehler – 8/8 OK. `v3-qa8-inp.mjs`/`v3-qa8-inp2.mjs` grün, `v3-mk8-ui.mjs` 43 PASS / 0 FAIL,
+  Smoke ohne Fehler. Keine Datenbankänderung. Snapshot: `synq-snapshots/MK8-fix.html`.
