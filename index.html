@@ -14631,7 +14631,7 @@ function mkSetP(i, path, v, live) {
   s_.p.mk = SQMK.mkPathSet(s_.p.mk, path, x);
   const after = SQMK.mkPathGet(s_.p.mk, path);
   const E = AU.synth[i]; if (E && s_.engine === 'mk') { if (path === 't.0.o1.w' || path === 't.0.o1.c2') mkwFeed(E, s_, live ? x : null); E.mkSet({[path]: live ? x : after}); }
-  if (after !== before) { if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') UI.ab = null; UI.sndVer++; UI.dirty.strip = true; markDirty(); MKECO.delete(s_); if (!E) rebuildNativeLfos(i); }
+  if (after !== before) { if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') UI.ab = null; UI.sndVer++; UI.dirty.strip = UI.dirty.edHead = true; markDirty(); MKECO.delete(s_); if (!E) rebuildNativeLfos(i); }   // G-MK2a-fix: header dot + [A/B] at once (§11.3), like edParamChanged
   return after;
 }
 // B.7 mkScope: the worklet reports at 30 Hz while asked (the panel asks while it is shown, the test API on its first call)
