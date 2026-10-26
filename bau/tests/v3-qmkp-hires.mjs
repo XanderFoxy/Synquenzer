@@ -1,0 +1,10 @@
+import {launch, open, openMk, OUT, panel} from './v3-qmkp-lib.mjs';
+const b = await launch();
+const page = await open(b, 'X', {dpr: 3});
+await openMk(page); await page.waitForTimeout(500);
+const p = await panel(page);
+const r = p.rahmen;
+await page.screenshot({path: OUT + '/hires-X-left.png', clip: {x: r.x, y: r.y, width: r.w / 2, height: r.h}});
+await page.screenshot({path: OUT + '/hires-X-right.png', clip: {x: r.x + r.w / 2, y: r.y, width: r.w / 2, height: r.h}});
+console.log(JSON.stringify(page.errs));
+await b.close();

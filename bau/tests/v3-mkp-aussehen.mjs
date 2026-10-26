@@ -3,17 +3,17 @@
 import {launch, open} from './v3-mkp-lib.mjs';
 const FILE = process.argv[2]; const fail = [], R = {}; const ok = (id, c, info) => { if (!c) fail.push(id + ': ' + info); };
 const b = await launch(); const page = await open(b, FILE, 'L1', {dpr: 2});
-await page.evaluate(() => { MKUI.view({ansicht: 'ganz'}); SYNQUENZER.mkSet(0, 'oct', 1); for (const e of document.querySelectorAll('.lcd.mkql')) e.classList.remove('on'); }); await page.waitForTimeout(500);
-const shot = await page.screenshot();
+await page.evaluate(() => { MKUI.view({ansicht: 'ganz'}); MKUI.press('oct.u'); MKUI.render(); for (const e of document.querySelectorAll('.lcd.mkql')) e.classList.remove('on'); }); await page.waitForTimeout(500);
+const shot = await page.screenshot(); (await import('fs')).writeFileSync('v3-mkp-shots/aussehen-L1.png', shot);
 const an = await b.newPage();
 const px = await an.evaluate(async src => { const i = new Image(); await new Promise(r => { i.onload = r; i.src = src; }); const c = document.createElement('canvas'); c.width = i.width; c.height = i.height; const g = c.getContext('2d'); g.drawImage(i, 0, 0); window.__D = g.getImageData(0, 0, c.width, c.height); return [c.width, c.height]; }, 'data:image/png;base64,' + shot.toString('base64'));
 // regions in CSS px (from the app), measured on the screenshot (DPR 2)
 const geo = await page.evaluate(() => { const P = SYNQUENZER.mkPanel(), fr = MKUI.P.el.fr.getBoundingClientRect(), T = MKUI.P.el.T, s = T.z / 1000, X = u => fr.left + T.tx + u * s, Y = u => fr.top + T.ty + u * s, PH = 1000 / 1.95;
   const el = id => P.elements.find(e => e.id === id);
   // free plate areas (hit = free, no print): the inside of OSCILLATOR 2 between the LEDs and WAVE, and of MIXER between the knobs
-  const free = [[X(23.0 * 10 + 30), Y(19.5 / 100 * PH), 40 * s, 22 * s], [X(33.9 * 10), Y(36.5 / 100 * PH), 40 * s, 14 * s]];
-  const caps = [...document.querySelectorAll('.mkpk .cap')].slice(0, 60).map(c => { const r = c.getBoundingClientRect(); return [r.left + r.width * .72, r.top + r.height * .72]; });
-  const keys = [...document.querySelectorAll('.mkpb:not(.st)')].slice(0, 40).map(k => { const r = k.getBoundingClientRect(); return [r.left + r.width * .5, r.top + r.height * .78]; });
+  const free = [[X(23.0 * 10 + 30), Y(19.5 / 100 * PH), 40 * s, 22 * s], [X(34.2 * 10), Y(32.5 / 100 * PH), 36 * s, 12 * s]];
+  const caps = [...document.querySelectorAll('.mkpk .cap')].slice(0, 60).map(c => { const r = c.getBoundingClientRect(); return [[.72, .72], [.72, .3], [.3, .72]].map(([a, b]) => [r.left + r.width * a, r.top + r.height * b]); });   // three points of the cap body (the highlight at 38/32 and the pointer, which turns, can hit one of them: the median counts)
+  const keys = [...document.querySelectorAll('.mkpb:not(.st):not(.grau):not(.dn)')].slice(0, 40).map(k => { const r = k.getBoundingClientRect(); return [r.left + r.width * .5, r.top + r.height * .62]; });   // the key face inside its inner line
   const lcd = document.querySelector('.mkplate .mkplcd'), lr = lcd.getBoundingClientRect();
   const cs = e => getComputedStyle(e), root = getComputedStyle(MKUI.P.el.fr);
   const inv = [...document.querySelectorAll('.mkplate .mkpt.inv')], invTab = MKUI.ELS.filter(e => e.i).length;
@@ -22,7 +22,7 @@ const geo = await page.evaluate(() => { const P = SYNQUENZER.mkPanel(), fr = MKU
   const on = [...document.querySelectorAll('.mkplate .mkpl.on, .mkplate .led.on')].map(l => cs(l).backgroundColor), gn = [...document.querySelectorAll('.mkplate .gn')].map(l => (l.closest('[data-k]') || l).dataset.k || l.className);
   const cm = MKUI.ELS.filter(e => e.o && e.o.cm).map(e => e.id).sort(), ns = MKUI.ELS.filter(e => e.o && e.o.ns).map(e => e.id);
   const ptr = [...document.querySelectorAll('.mkpk .cap i')].map(i => cs(i).backgroundColor), scales = document.querySelectorAll('.mkpk .sc').length, knobs = document.querySelectorAll('.mkpk').length;
-  const scaleIds = [...document.querySelectorAll('.mkpk')].filter(k => !k.querySelector('.sc line, .sc .fl, .sc path, .sc text')).map(k => k.dataset.k || k.dataset.id || '?');
+  const scaleIds = [...document.querySelectorAll('.mkpk')].filter(k => !k.querySelector('.sc use, .sc line, .sc .fl, .sc path, .sc text')).map(k => k.dataset.k || k.dataset.id || '?');
   const wood = document.querySelectorAll('[class*="wood"], .mwood').length, lcdWrap = [...lcd.querySelectorAll('.ln')].map(l => [cs(l).whiteSpace, l.scrollWidth <= l.clientWidth + 1, l.textContent.length]);
   return {free, caps, keys, lcdBox: [lr.left + lr.width * .1, lr.top + lr.height * .08, lr.width * .8, lr.height * .06], ink, invC, invN: inv.length, invTab, ledR, on, gn, cm, ns, ptr: [...new Set(ptr)], scales, knobs, scaleIds,
     lcdFg: cs(lcd).color, lcdBg: cs(lcd).backgroundColor, varFg: root.getPropertyValue('--mkp-lcd-fg').trim(), varBg: root.getPropertyValue('--mkp-lcd-bg').trim(), wood, lcdWrap};
@@ -36,7 +36,7 @@ const stats = await an.evaluate(([g, dpr]) => {
   const out = {plate: [], rows: []};
   for (const r of g.free) { const A = area(r); const all = A.flat(); const H = all.map(hsl); out.plate.push([H.reduce((s, x) => s + x[0], 0) / H.length, H.reduce((s, x) => s + x[1], 0) / H.length, H.reduce((s, x) => s + x[2], 0) / H.length]);
     const rl = A.map(row => row.map(hsl).reduce((s, x) => s + x[2], 0) / row.length), m = rl.reduce((s, x) => s + x, 0) / rl.length; out.rows.push(Math.sqrt(rl.reduce((s, x) => s + (x - m) ** 2, 0) / rl.length) / m * 100); }
-  out.caps = g.caps.map(p => +Lstar(at(...p)).toFixed(1)); out.keys = g.keys.map(p => +hsl(at(...p))[2].toFixed(1));
+  out.caps = g.caps.map(ps => { const v = ps.map(p => Lstar(at(...p))).sort((a, b) => a - b); return +v[1].toFixed(1); }); out.keys = g.keys.map(p => +hsl(at(...p))[2].toFixed(1));
   const L = area(g.lcdBox).flat().map(hsl); out.lcdPx = [L.reduce((s, x) => s + x[0], 0) / L.length, L.reduce((s, x) => s + x[2], 0) / L.length];
   return out;
 }, [geo, 2]);
@@ -67,5 +67,5 @@ const cssOnly = await page.evaluate(() => { const t = [...document.querySelector
 R.anzeigeCss = cssOnly; ok('MK-P-11', !/#[0-9a-f]{3,6}|hsl\(|rgb\(/i.test(cssOnly.replace(/var\(--mkp-lcd-(fg|bg)\)/g, '').replace(/color-mix\(in srgb,\s*\d+%,#000\)/g, '')), 'Anzeige-Farben nur aus den Variablen ' + cssOnly);
 ok('MK-P-11', geo.wood === 0, 'Holzwangen ' + geo.wood);
 ok('konsole', !page.errs.length, page.errs.join(' | '));
-console.log(JSON.stringify(R, null, 1)); console.log('FEHLER', fail.length, JSON.stringify(fail, null, 1));
+R.geo = {free: geo.free, caps: geo.caps.slice(0, 6), keys: geo.keys.slice(0, 6)}; R.capsL = stats.caps; R.keysL = stats.keys; console.log(JSON.stringify(R, null, 1)); console.log('FEHLER', fail.length, JSON.stringify(fail, null, 1));
 await b.close();

@@ -1,0 +1,10 @@
+import {launch, open, openMk, OUT, panel} from './v3-qmkp-lib.mjs';
+const b = await launch();
+const page = await open(b, 'X', {dpr: 3});
+await openMk(page); await page.waitForTimeout(300);
+await page.evaluate(() => MKUI.view({ansicht: 'zoom', halt: 10})); await page.waitForTimeout(500);
+const p = await panel(page); const r = p.rahmen;
+await page.screenshot({path: OUT + '/seqlab-X-h10.png', clip: {x: r.x, y: r.y, width: r.w * .45, height: r.h}});
+const info = await page.evaluate(() => { const out = []; for (const t of MKUI.PL.el.querySelectorAll('.mkpt')) { const q = t.getBoundingClientRect(); if (/^(LEVEL|PAN|SEQ 1|SEQ 2|SEQ 3|CROSS|AUDIO IN|FILTER TYPE|RELEASE|ATTACK|CONTROL 2|SEMITONE)$/.test(t.textContent)) out.push([t.textContent, t.className, Math.round(q.left), Math.round(q.right), Math.round(q.top), t.style.fontSize, t.scrollWidth, t.clientWidth]); } return out; });
+for (const x of info) console.log(JSON.stringify(x));
+await b.close();

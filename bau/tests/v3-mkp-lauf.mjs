@@ -14,22 +14,24 @@ async function run(setup, ms, notes) {
     await new Promise(res => { const f = () => { if (E.mksN !== n && E.mks) { n = E.mksN; reps.push({t: E.mks.t, sq: E.mks.seq ? JSON.parse(JSON.stringify(E.mks.seq[MKUI.P.tim === 2 ? 1 : 0])) : null}); }
       const tA = AU.ctx.currentTime - (AU.outLat || 0), leds = []; for (let j = 1; j <= 16; j++) { const L = MKUI.PL.ui.led['s' + j]; if (L && /run/.test(L.className)) leds.push(j); }
       const sp = MKUI.P.sp ? MKUI.P.sp.steps.filter(b => /run/.test(b.querySelector('.led').className)).map(b => +b.dataset.n) : null;
-      fr.push({tA, run: MKUI.P.run, leds, sp}); if (performance.now() - t0 < ms) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); });
+      fr.push({tA, tApp: MKUI.P.runTA, run: MKUI.P.run, leds, sp}); if (performance.now() - t0 < ms) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); });
     return {reps, fr, bpm: S.bpm};
   }, [setup, ms, notes]);
 }
 function check(d, nm, want) {
   // the worklet's step timeline: a report (t, step, rem, nx) means step until t + rem·60/bpm, then nx
   const R_ = d.reps.filter(r => r.sq && r.sq.run && (r.sq.on || 1));
-  let match = 0, tot = 0, off1 = 0, multi = 0, seen = [];
+  let match = 0, tot = 0, off1 = 0, multi = 0, seen = [], far = 0, lag = 0;
+  const expAt = t => { let r = null; for (const x of R_) if (x.t <= t) r = x; return r ? (t >= r.t + r.sq.rem * 60 / d.bpm ? r.sq.nx : r.sq.step) : null; };
   for (const f of d.fr) {
     if (f.leds.length > 1) multi++;
-    let r = null; for (const x of R_) if (x.t <= f.tA) r = x; if (!r || !f.run) continue;
-    const exp = f.tA >= r.t + r.sq.rem * 60 / d.bpm ? r.sq.nx : r.sq.step; tot++;
-    if (exp === f.run && f.leds.length === 1 && f.leds[0] === f.run) match++; else off1++;
+    // the frame's own audio time (the app reads the clock at the start of the frame, this callback a little later: <= 1 frame)
+    const tF = f.tApp != null ? f.tApp : f.tA; lag = Math.max(lag, Math.abs(f.tA - tF));
+    const exp = expAt(tF); if (exp == null || !f.run) continue; tot++;
+    if (exp === f.run && f.leds.length === 1 && f.leds[0] === f.run) match++; else { off1++; if (expAt(tF - .017) !== f.run && expAt(tF + .017) !== f.run) far++; }
     if (seen[seen.length - 1] !== f.run) seen.push(f.run);
   }
-  const res = {frames: d.fr.length, verglichen: tot, gleich: tot ? +(match / tot * 100).toFixed(1) : 0, mehrfach: multi, folge: seen.slice(0, 40).join(',')};
+  const res = {frames: d.fr.length, verglichen: tot, gleich: tot ? +(match / tot * 100).toFixed(1) : 0, ueber1Bild: far, uhrAbstandMs: +(lag * 1000).toFixed(1), mehrfach: multi, folge: seen.slice(0, 40).join(',')};
   R[nm] = res; return res;
 }
 const base = [['t.0.seq.on', 1], ['t.0.seq.last', 16], ['t.0.seq.res', 3], ['t.0.seq.type', 0], ['t.0.seq.run', 1], ['t.0.seq.ks', 1], ['t.0.seq.q.0.k', 11]];

@@ -1,0 +1,10 @@
+import {launch, OUT} from './v3-qmkp-lib.mjs';
+import fs from 'fs';
+const [inp, out, x0, y0, x1, y1, sc] = process.argv.slice(2); const s = +(sc || 1);
+const html = OUT + '/crop.html'; fs.writeFileSync(html, `<html><body style="margin:0"><img id=i src="file://${inp}"></body></html>`);
+const b = await launch(); const p = await b.newPage();
+await p.goto('file://' + html); await p.waitForFunction(() => document.getElementById('i').complete && document.getElementById('i').naturalWidth > 0);
+const [w, h] = await p.evaluate(() => [document.getElementById('i').naturalWidth, document.getElementById('i').naturalHeight]);
+await p.setViewportSize({width: Math.ceil(w * s), height: Math.ceil(h * s)}); await p.evaluate(s => { const i = document.getElementById('i'); i.style.width = (i.naturalWidth * s) + 'px'; }, s);
+await p.screenshot({path: out, clip: {x: w * s * x0 / 100, y: h * s * y0 / 100, width: w * s * (x1 - x0) / 100, height: h * s * (y1 - y0) / 100}});
+console.log(w, h); await b.close();

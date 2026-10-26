@@ -4449,8 +4449,8 @@ function chReset(a) {
 }
 function paintEin(m) {
   if (P.xv && P.xv.bands && m && m.b) bandsLive(m.b);   // MK7-fix: before the LED check (16 BÄNDER has none)
-  const U = P.el; if (!U || !U.led) return;
-  for (let k = 0; k < 2; k++) { const a = m && m.i ? m.i[k] : 0, L = U.led['ain.l.' + k]; if (!L) continue; L.classList.toggle('on', a >= .003162); L.classList.toggle('red', a >= .8913); }
+  if (!PL.ui || !P.el || !P.el.fr || !P.el.fr.isConnected) return;   // the AUDIO IN LEDs of the plate: on from -50 dBFS, red from -1 dBFS
+  for (let k = 0; k < 2; k++) { const a = m && m.i ? m.i[k] : 0; setLed('ain.l.' + k, a >= .8913 ? 'red' : a >= .003162 ? 'on' : ''); }
 }
 function einOn(on) { const E = AU.synth[P.i]; try { if (E && E.mkLed) { E.onLv = on ? paintEin : null; E.mkLed(on); } } catch (e) { logErr(e); } }
 function patchTxt(k) { const p = ct().p[k], i = Math.round(p.i), l2s = p.d === 7 && ct().l2.sync;
@@ -4904,6 +4904,16 @@ function ownList() { return (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine =
 function mkPanelProg(action, arg) {
   const i = P.i, f = window.mkProg;
   if (typeof f === 'function') { try { const r = f(action, arg, i); if (r !== undefined) { renderSoon(); return r; } } catch (e) { logErr(e); } }
+  // the program memory of MK8 (object API on the selected track: select(bank, slot), step(dir), bank(dir), restore(bank, slot), current())
+  else if (f && typeof f.select === 'function' && i === R.selT) { try { const c = () => f.current();
+    switch (action) {
+      case 'label': { const x = c(); return x ? x.label : '---'; }
+      case 'lit': { const x = c(); return x && x.bank === f.bank(0) ? x.slot : 0; }
+      case 'bank': f.bank(arg); renderSoon(); return;
+      case 'select': f.select(f.bank(0), arg); P.orig = null; renderSoon(); return;
+      case 'step': f.step(arg); P.orig = null; renderSoon(); return;
+      case 'factory': { const x = c(); if (x && x.own) { f.restore(x.bank, x.slot); P.orig = null; renderSoon(); } else lcdShow('WERKSKLANG ZURÜCK', x ? x.label + ' ist schon der Werksklang' : 'kein Programmplatz geladen'); return; }
+    } } catch (e) { logErr(e); } }
   const s_ = sndOf(i); if (!s_) return undefined;
   if (action === 'label') return '---';
   if (action === 'lit') { const L = ownList(), k = L.findIndex(x => x.id && (x.id === s_.origin || x.id === s_.id)); return k >= P.bank * 16 && k < P.bank * 16 + 16 ? k - P.bank * 16 + 1 : 0; }
@@ -5441,7 +5451,7 @@ function frame(now, bAud) {
   setLed('arp.led', led ? 'on' : '');
   if (P.sp && P.sp.keys['arp.on']) { const L = P.sp.keys['arp.on'].querySelector('.tl'); if (L && L._on !== led) { L._on = led; L.classList.toggle('on', led); } }
   const want = !voc() && (ct().seq.on || !!P.rec); try { const E = AU.synth[P.i]; if (E && want && !E.mksOn) E.mkScope(true); } catch (e) {}
-  const k = want ? runStep(tA) : 0;
+  const k = want ? runStep(tA) : 0; P.runTA = tA;   // the audio time this frame shows (test API: light against the worklet's clock)
   if (k !== P.run) { P.run = k; P.runN = (P.runN || 0) + 1; const lit = k ? 0 : litOf(); if (PL.ui) for (let j = 1; j <= 16; j++) setLed('s' + j, k ? (k === j ? 'on run' : '') : stepBase(j, lit)); spielPaint(); }
 }
 /* ---------- test API (B.7): mkPanel(), mkView(o) ---------- */
@@ -5952,7 +5962,7 @@ const css = `
 .mkpk .sc{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
 .mkpk .sc line{stroke:var(--mkp-ink);stroke-width:1.2}.mkpk .sc .fl{fill:var(--mkp-ink)}
 .mkpk .cap{position:absolute;left:18.2%;top:18.2%;width:63.6%;height:63.6%;box-sizing:border-box;border-radius:50%;border:calc(var(--u) * .8) solid #000;
-  background:radial-gradient(circle at 38% 32%,#3b3e43 0,#17181a 52%,#060607 100%)}
+  background:radial-gradient(circle at 38% 32%,#2f3236 0,#111214 46%,#050506 100%)}
 .mkpk .cap i{position:absolute;left:50%;top:7%;width:calc(var(--u) * 1.7);margin-left:calc(var(--u) * -.85);height:43%;background:#f2f2ee;border-radius:calc(var(--u) * .8)}
 .mkpk.grau .cap,.mkpb.grau{opacity:.5}
 .mkpk .wd,.mkpb .wd{display:none}
@@ -6040,7 +6050,7 @@ const css = `
 .mkx.msqk .mkey{align-items:center;font-size:10.5px;font-weight:700;color:#ecebe6;white-space:nowrap}
 .mkx.msqk.on .mkey{color:#ffd27a}
 .mkbody.mkband .mkx.mkcol{touch-action:none;cursor:ns-resize}
-.mkx.mkxk{touch-action:none}.mkx.mkxk .cap{position:absolute;left:50%;top:14px;width:30px;height:30px;margin-left:-15px;border-radius:50%;border:1px solid #000;background:radial-gradient(circle at 38% 32%,#3b3e43 0,#17181a 52%,#060607 100%)}
+.mkx.mkxk{touch-action:none}.mkx.mkxk .cap{position:absolute;left:50%;top:14px;width:30px;height:30px;margin-left:-15px;border-radius:50%;border:1px solid #000;background:radial-gradient(circle at 38% 32%,#2f3236 0,#111214 46%,#050506 100%)}
 .mkx.mkxk .cap i{position:absolute;left:50%;top:2px;width:2px;margin-left:-1px;height:12px;background:#f2f2ee}
 /* lists */
 .plist.mkcp{display:block;max-height:min(360px,58vh);overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain}
