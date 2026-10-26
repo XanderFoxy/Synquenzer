@@ -2714,3 +2714,36 @@ Ergebnisse (dieselben Skripte wie im Befund):
 ## G-MKP8 + MK-P-Fix (26.10.)
 - MK-P-Fix-Runde per `git merge-file` (Basis = MK-P-Stand 16:27) in die Hauptlinie geholt; 1 Konflikt (MKUI-Exportliste:
   `splitOff, coverSync, coverOff` aus dem Fix + `note` aus dem Merge, beide behalten). Smoke + orch-mk-check ohne Fehler.
+
+## G-MKP8-merge-fix
+Vier Befunde nach der Zusammenführung (MK-P + MK8 + MK-P-Fix + Blau-Farbe). App bleibt 4.17.0 · Format 5 · keine Server-Änderung,
+kein Supabase-Aufruf. Alle vier vorher nachgestellt, danach mit denselben Skripten geprüft (Kopien in `dirigent-test/fix-gmkp8/`).
+Sicherung vorher: `mk-wt/index.html.vor-G-MKP8-merge-fix.html`. Snapshot: `synq-snapshots/G-MKP8-merge-fix.html`.
+
+1. **Quer: zweiter Tipp auf › traf [Rückgängig] des Programm-Toasts.** Der Toast lag im 44-px-Kopf über ‹ Name ›.
+   Jetzt (`mkHeadDockRect`) liegt er nur über dem Namen, 10 px Abstand zu ‹ und ›. Auch die Kopf-LCD-Zeile (1,5 s nach einer
+   Änderung, `.lcd.mkql`) deckt ‹ › nicht mehr ab (CSS, nur wenn die Pfeile da sind). `qa-arrows2/3` L1, X: B03 → B04 → B05 → B06
+   (vorher B04 → B03 rückgängig); P1 unverändert; ‹ ‹ ‹ = B05 B04 B03. `v3-qmkpf-toastw`: L1 Toast 245 · 199 × 44, Text ganz
+   lesbar (2 Zeilen), X 1 Zeile, L2/P unverändert. `v3-qmkp-toast3`: 0 px Überlappung in allen 8 Formaten.
+2. **Redo von „Vocoder + E2 = Mikrofon“ blieb stumm.** Redo/Undo eines `mkin`-Schritts mit Mikrofon startet es jetzt wieder
+   (`mkMicResume`, nach der ganzen Gruppe). `qa-vocredo`: Redo per API −17,2 dBFS, per ↷ −15,9 dBFS (vorher −94,9 / −∞).
+3. **E2 = Mikrofon, aber Mikrofon aus → stumm ohne Hinweis.** `mkVocAutoMic` startet das Mikrofon jetzt auch, wenn E2 schon
+   „mic“ ist (Umschalten auf Vocoder, Vocoder-Programm laden). Klappt das nicht, sagt die LCD „Mikrofon aus · E2 in GLOBAL 1B
+   neu starten“ und die Platte „MIKROFON AUS“. Nach dem Hintergrund (gesperrtes iPhone, App-Wechsel) startet das Mikrofon beim
+   Zurückkommen selbst wieder, ohne Undo-Schritt. Beim Öffnen eines Vocoders mit E2 = Mikrofon und Mikrofon aus (neu geladenes
+   Projekt) steht derselbe Hinweis. `fix-voc.mjs`: 10/10 (Stopp → Split → Vocoder −15,5 dBFS, Hintergrund → zurück −16,8, nach
+   Neuladen Hinweis, dann Split → Vocoder −15,7, H10 laden −21,6). Ohne Gerät: jedes Umschalten versucht neu und zeigt den Hinweis.
+4. **Quer: das ⋯-Menü ließ sich nicht mit dem Finger scrollen** (`guardTouch` auf dem Pop, der selbst scrollt). Jetzt scrollt es,
+   solange es überläuft (`overscroll-behavior: contain`), auch ab ▶ Hören. Dort wartet der Ton 150 ms, damit ein Wischen keinen
+   Ton spielt; Halten klingt wie bisher. Ein Menü, das passt (hochkant), behält den Schutz. `qa-pops2`/`qa-menu4`: L1 91/91,
+   L2 106/106, X 53/53. `fix-menu.mjs` 0 Fehler: „Timbre und Sequenz ▸“ in L1/L2/X erreichbar und antippbar; ▶ Hören halten klingt,
+   Loslassen ist still.
+
+**Prüfungen:** Rauchtest ohne Fehler, `orch-mk-check` ohne Fehler, „MS 2000“ genau 1×, kein Korg-Name. `v3-mkp-funk/gesten/lauf/
+platz/extra/close/trim/prog` je FEHLER 0. `gmkp8-voc-mic` 8/8, `gmkp8-mk8-platz-quer` 9/9, `v3-mk7-voc` 37/37,
+`v3-qmkp-gest` L2/P1/X 0, `v3-qmkp-reg-undo` 22/22, `v3-qmkp-toast2` L2: Regler drehen unter dem Toast.
+`v3-mkp-aussehen`: die 6 bekannten Fehler der alten hellen Platte (gewollt, Nachtrag 3 „Änderung 26.10. abends“). Mit diesem
+Stand und dem davor genau gleich. Lesbarkeit auf Blau (`qa-contrast2`): jeder Aufdruck der Platte ≥ 4,88:1 (Druck 7,07:1,
+invers 10,15:1).
+**Überholte Test-Erwartung (Nr. 26):** `gmkp8-mk8-09-platte` 26/27. „Toast [Rückgängig]“ sucht das Wort im Text. Im schmaleren
+Kopf-Platz (nur über dem Namen) zeigt der Toast das Symbol ↶ (`aria-label` „Rückgängig“), wie schon in L2.

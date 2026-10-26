@@ -5498,10 +5498,16 @@ function morePop(anchor, i, o) {
       `<button class="rb${UI.wia ? ' on' : ''}" data-a="wia"><b>◎ Was ist anders?</b><small>Punkte an Reglern und Seiten, die von INIT abweichen</small></button>` +
       '<button class="rb" data-a="init"><b>Init</b><small>neutraler Startklang</small></button><button class="rb mkqhear" data-a="hear"><b>▶ Hören</b><small>halten = spielen</small></button>' +
       '<button class="rb" data-a="tools"><b>Timbre und Sequenz ▸</b><small>wie UTILITY (Taste 16)</small></button></div>';
-    guardTouch(p);
-    const hb = p.querySelector('.mkqhear'); let H = null;
-    on(hb, 'pointerdown', e => { e.preventDefault(); previewStop(); H = auditionStart(i, R.lastNote[i] || 60, .8); hb.classList.add('on'); });
-    const up = () => { if (H) { H.release(nowT()); H = null; } hb.classList.remove('on'); }; on(hb, 'pointerup', up); on(hb, 'pointercancel', up); on(hb, 'lostpointercapture', up);
+    // G-MKP8-merge-fix: the pop itself is the scroller (landscape: 374 px for up to 465 px of entries) – a finger swipe scrolls it
+    // while it overflows (typical error 3), also from ▶ Hören: there the sound waits 150 ms, a swipe (pointercancel) plays nothing;
+    // a menu that fits keeps the guard and ▶ Hören sounds at once as before
+    p.style.overscrollBehavior = 'contain';
+    const ovf = () => p.scrollHeight > p.clientHeight + 1;
+    p.addEventListener('touchstart', e => { if (ovf()) return; if (e.cancelable) e.preventDefault(); }, {passive: false});
+    const hb = p.querySelector('.mkqhear'); let H = null, hT = 0;
+    const go = () => { hT = 0; previewStop(); H = auditionStart(i, R.lastNote[i] || 60, .8); hb.classList.add('on'); };
+    on(hb, 'pointerdown', e => { e.preventDefault(); clearTimeout(hT); if (e.pointerType === 'touch' && ovf()) { hT = setTimeout(go, 150); hb.classList.add('on'); } else go(); });
+    const up = e => { if (hT) { clearTimeout(hT); if (e && e.type === 'pointerup') go(); else hT = 0; } if (H) { H.release(nowT()); H = null; } hb.classList.remove('on'); }; on(hb, 'pointerup', up); on(hb, 'pointercancel', up); on(hb, 'lostpointercapture', up);
     onTap(p, b => { const e = b.dataset.e; if (e === cur) return; closePop(); const bf = soundSnapshot(i); setEngine(i, e); commitSound(i, bf, 'Klangerzeugung'); }, 'button[data-e]');
     onTap(p, b => { const a = b.dataset.a; if (a === 'hear') return; closePop();
       if (a === 'ab') toggleAB(i); else if (a === 'save') openSavePop(anchor, i); else if (a === 'dice') soundEdit(i, 'Zufall', () => randomize(i));
@@ -6123,6 +6129,8 @@ const css = `
 #app.playing #synthSheet.mkq .mkqplay .g-play{display:none}#app.playing #synthSheet.mkq .mkqplay .g-stop{display:inline}
 #synthSheet.mkq .sh-body{padding:0}
 @media (max-width:719px){#synthSheet.mkq .mkqh .preset .pa{display:none}}#synthSheet.mkq .mkqh.nar .preset .pa{display:none}
+/* G-MKP8-merge-fix: the head LCD (1,5 s after a change) lies over the name only, ‹ › stay visible and tappable (B03 → B04 → B05) */
+@media (min-width:720px){#synthSheet.mkq .mkqh:not(.nar) .lcd.mkql{left:46px;right:46px}}
 #app.mkqkb #kbArea{position:fixed;left:var(--mkkb-x);top:var(--mkkb-y);width:var(--mkkb-w);height:var(--mkkb-h);z-index:41}
 .seg.mkqeng{display:flex;margin:4px 0 8px}.seg.mkqeng button{flex:1 1 0}
 /* the extra views (SCHRITTE, 16 BÄNDER, EIGENE) */
@@ -17507,7 +17515,12 @@ function micTapPut(user) {
 function micTapLost() { const had = MICTAP.users.has('voc'); for (const u of [...MICTAP.users]) if (u !== 'st') micTapPut(u); if (had) toast('Mikrofon beendet · in QUELLE neu starten'); }
 function vocMicStart() {
   if (!micAvail()) return Promise.resolve(false);
-  if (!UI.vocVis) { UI.vocVis = () => { if (document.hidden && MICTAP.users.has('voc')) { micTapPut('voc'); UI.dirty.edHead = true; } }; document.addEventListener('visibilitychange', UI.vocVis); }
+  // G-MKP8-merge-fix: the mic stopped for the background (locked phone, other app) starts again when the page is back
+  if (!UI.vocVis) { UI.vocVis = () => {
+    if (document.hidden) { if (MICTAP.users.has('voc')) { micTapPut('voc'); UI.vocHid = true; UI.dirty.edHead = true; } return; }
+    if (!UI.vocHid) return; UI.vocHid = false;
+    for (let i = 0; i < NT(); i++) if (mkInMic(S.tracks[i])) { mkMicResume(i); break; }
+  }; document.addEventListener('visibilitychange', UI.vocVis); }
   return micTapGet('voc').then(ok => {
     if (!ok) { const n = MICTAP.err && MICTAP.err.name; toast(ST_ERR[n] || 'Mikrofon nicht verfügbar'); return false; }
     const r = stGuessRoute(MICTAP.label);
@@ -17518,13 +17531,32 @@ function vocMicStart() {
 }
 function vocMicStop() { micTapPut('voc'); }
 const vocMicOn = () => !!MICTAP.stream && MICTAP.users.has('voc');
+/* G-MKP8-merge-fix („man hört nichts“ again): E1/E2 = Mikrofon is set but the microphone is not running (redo, back from the
+   background, a reloaded project, a failed first start). Where a step brings the vocoder back (switch to Vocoder, a loaded
+   Vocoder program, undo/redo of the input) the mic starts again; if it cannot, the LCD says why it is silent. */
+const mkInMic = tr => !!(tr && tr.kind === 'synth' && tr.sound && tr.sound.engine === 'mk' && tr.mkIn && (tr.mkIn.e1 === 'mic' || tr.mkIn.e2 === 'mic'));
+function mkMicHint(i) {
+  const tr = S.tracks[i], k = tr && tr.mkIn && tr.mkIn.e2 === 'mic' ? 'E2 in GLOBAL 1B' : 'E1 in GLOBAL 1A';
+  lcdShow('VOCODER', 'Mikrofon aus · ' + k + ' neu starten');
+  try { if (typeof MKUI !== 'undefined' && MKUI.note) MKUI.note('MIKROFON AUS', 4000); } catch (e) {}
+}
+function mkMicResume(i) {
+  if (!mkInMic(S.tracks[i]) || vocMicOn()) return false;
+  if (!micAvail()) { queueMicrotask(() => { lcdShow('VOCODER', 'Mikrofon nur auf der GitHub-Seite'); try { if (typeof MKUI !== 'undefined' && MKUI.note) MKUI.note('MIKRO NUR GITHUB', 4000); } catch (e) {} }); return false; }
+  vocMicStart().then(ok => {
+    if (!ok) mkMicHint(i); else if (mkInMic(S.tracks[i])) lcdShow('VOCODER', 'Mikrofon läuft wieder · sprich und halte eine Taste');
+    try { if (typeof MKUI !== 'undefined') MKUI.renderSoon(); } catch (e) {}
+  });
+  return true;
+}
 /* G-MKP8 (Xander 26.10., 4.15.0 on the device: „man hört nichts“ im Vocoder): like the device (AUDIO IN 2 = the microphone is the
    modulator) a sound that becomes a Vocoder (MODUS, a loaded Vocoder program) with E2 empty gets E2 = mic and the mic starts. The
    input change joins the undo step of the mode change / load (commitSound picks UI.mkInJoin up; a caller without commitSound gets
    it as its own step in the next microtask). Without a microphone here (Claude viewer frame) the LCD says where it works. */
 function mkVocAutoMic(i) {
   const tr = S.tracks[i], s_ = tr && tr.kind === 'synth' ? tr.sound : null;
-  if (!s_ || s_.engine !== 'mk' || !s_.p || !s_.p.mk || s_.p.mk.mode !== 3 || (tr.mkIn && tr.mkIn.e2)) return false;
+  if (!s_ || s_.engine !== 'mk' || !s_.p || !s_.p.mk || s_.p.mk.mode !== 3) return false;
+  if (tr.mkIn && tr.mkIn.e2) { if (tr.mkIn.e2 === 'mic') mkMicResume(i); return false; }   // G-MKP8-merge-fix: E2 = mic set, mic off → start it
   if (!micAvail()) { queueMicrotask(() => { lcdShow('VOCODER', 'Mikrofon nur auf der GitHub-Seite'); try { if (typeof MKUI !== 'undefined' && MKUI.note) MKUI.note('MIKRO NUR GITHUB', 4000); } catch (e) {} }); return false; }   // after the caller's own LCD line
   const before = JSON.stringify(tr.mkIn || null), n = normMkIn(Object.assign({e1: null, e2: null, e1Dry: 1, e2Dry: 1}, tr.mkIn || {}, {e2: 'mic'}));
   tr.mkIn = n; markDirty(); UI.dirty.edHead = true;
@@ -20137,7 +20169,8 @@ function undoApply(e, val) {
   else if (e.kind === 'kit') restoreKit(JSON.parse(val));
   else if (e.kind === 'song') restoreSong(JSON.parse(val));
   else if (e.kind === 'own') ownRestore(e.id, val);
-  else if (e.kind === 'mkin') { const tr = S.tracks[e.track]; if (tr) { const n = normMkIn(JSON.parse(val)); if (n) tr.mkIn = n; else delete tr.mkIn; mkInRoute(); if (R.editor === 'synth' && R.selT === e.track && typeof MKUI !== 'undefined') MKUI.render(); } }
+  else if (e.kind === 'mkin') { const tr = S.tracks[e.track]; if (tr) { const n = normMkIn(JSON.parse(val)); if (n) tr.mkIn = n; else delete tr.mkIn; mkInRoute(); if (R.editor === 'synth' && R.selT === e.track && typeof MKUI !== 'undefined') MKUI.render();
+    if (n && (n.e1 === 'mic' || n.e2 === 'mic')) queueMicrotask(() => mkMicResume(e.track)); } }   // G-MKP8-merge-fix: redo brings the mic back (after the whole group)
   else if (e.kind === 'set') settingApply(e.key, JSON.parse(val));
   else if (e.kind === 'mkslot') mkSlotPut(JSON.parse(val));
   else if (e.kind === 'part') partRestore(JSON.parse(val));
@@ -25826,6 +25859,17 @@ function lcdDockRect(l) {
   }
   return {left: r.left, top: r.top, width: Math.max(0, right - r.left), height: r.height};
 }
+/* G-MKP8-merge-fix: in the head of the MK sheet (landscape, 44 px) ‹ › stay free: the toast lies over the name only, 10 px clear of
+   both arrows (their hit areas), so a second tap on › steps on and never lands on [Rückgängig] (B03 → B04 → B05) */
+function mkHeadDockRect(q) {
+  const r = q.getBoundingClientRect(), mid = r.left + r.width / 2; let left = r.left, right = r.right;
+  for (const b of q.children) {
+    if (b.tagName !== 'BUTTON' || !b.classList.contains('pa') || !vis(b)) continue;
+    const x = b.getBoundingClientRect();
+    if (x.left + x.width / 2 < mid) left = Math.max(left, x.right + 10); else right = Math.min(right, x.left - 10);
+  }
+  return {left, top: r.top, width: Math.max(0, right - left), height: r.height};
+}
 /* main-screen dock (§3.1 Result): P – the carrier bar's row (inset), or while the Aufnahme-Leiste shows, its display part
    (never ● FERTIG); L – the Träger readout, wide = readout + the AKKORD/LATCH/ORIGINAL row (only if the text needs it) */
 function carDockRect(wide) {
@@ -25873,7 +25917,7 @@ function toastPlace1(t) {
     return;
   }
   t.classList.remove('cark');
-  const r = h.kind === 'lcd' ? lcdDockRect(h.ref) : h.ref.getBoundingClientRect();
+  const r = h.kind === 'lcd' ? (h.mk ? mkHeadDockRect(h.ref) : lcdDockRect(h.ref)) : h.ref.getBoundingClientRect();
   const css = h.kind === 'lcd' ? `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`
     : `left:${r.left + 8}px;top:${r.top + 6}px;width:${Math.max(0, r.width - 16)}px;height:44px`;
   if (UI.toastPos !== css) {
@@ -26913,7 +26957,9 @@ function openEditor() {
   if (!EL.synthSheet.classList.contains('open') && !EL.drumSheet.classList.contains('open')) UI.shield = null;
   const tr = S.tracks[R.selT];
   if (tr.kind !== 'synth' || tr.sound.engine !== 'mk') { EL.app.classList.remove('mkq', 'mkqkb'); EL.synthSheet.classList.remove('mkq'); }   // MK-P
-  const sh = tr.kind === 'drum' ? EL.drumSheet : EL.synthSheet;
+  const sh = tr.kind === 'drum' ? EL.drumSheet : EL.synthSheet, was = sh.classList.contains('open');
+  // G-MKP8-merge-fix: a Vocoder with E2 = Mikrofon whose mic is not running (reloaded project) says so when it is opened
+  if (!was && mkInMic(tr) && tr.sound.p && tr.sound.p.mk && tr.sound.p.mk.mode === 3 && !vocMicOn()) { const t = R.selT; setTimeout(() => { if (R.editor === 'synth' && R.selT === t && mkInMic(S.tracks[t]) && !vocMicOn()) mkMicHint(t); }, 450); }
   if (!sh.classList.contains('open')) closeSheets();
   else { EL.clipSheet.classList.remove('open'); (sh === EL.drumSheet ? EL.synthSheet : EL.drumSheet).classList.remove('open'); }
   R.editor = tr.kind === 'drum' ? 'drum' : 'synth';
