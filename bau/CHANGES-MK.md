@@ -1172,3 +1172,840 @@ MK4 → Hauptlinie (16 Konflikte):
 
 ### Datenbank / Am Server offen
 - Nichts (keine Server-Änderung; Format bleibt 5, `APP_CODE` 4 012 000 ≤ Wächter 4 021 000).
+
+
+# CHANGES – MS 2000, Paket MK5 (Zweig-Kopie `mk-br-MK5`)
+
+## MK5 — Step-Arpeggiator · App 4.13.0 · Format bleibt 5
+
+**Vorgänger-Stand** für alle „bitgleich“-/Regressions-Vergleiche: **4.12.0** (Startstand dieser Kopie, MK0–MK4 gemischt;
+gesichert als `scratchpad/mk5-base-4.12.0.html`, 2 874 742 B).
+Zweig-Bau: MK6 (`mk-br-MK6`) und MK7 (`mk-br-MK7`) entstehen gleichzeitig; der Orchestrator führt zusammen und setzt die VERSION-Zeile.
+Server: keine Änderung nötig (`max_app` 4 021 000 ≥ 4 013 000, `max_format` 5). Kein Supabase-Aufruf in diesem Lauf.
+Neustart-Prüfung: kein `synq-snapshots/MK5.html`, keine MK5-Spuren in der Kopie → frischer Bau.
+
+### Gebaut
+1. **Arp-Kern im Hauptfaden** (`ARPC`, Block `sq-mk-src`, EN3-11/EN3-14). Alle Notenquellen einer AM-Spur mit `arp.on` gehen in den
+   **gehaltenen Satz** (Intervalle {Quellnote, an, aus} in Audio-Zeit) statt an `spawnVoice`: Tastatur/MIDI/API (`inputDown`, Zeit + `LIVE_LEAD`),
+   Clip-Noten (`scheduleTrack`, mit ihren künftigen Zeitstempeln; auch eigene Song-Clips und Aufnahmen beim Abspielen) und die MELODIE-Spur
+   des Songs (wie gehört, nicht abgebildet).
+   - Jeder Schritt fragt den Satz **zu seiner eigenen Zeit** ab und bildet die Quellnoten dann über `outPitch` ab (Harmonie, ⇅, „Eine Skala“,
+     FOLGT). Gruppen: Tasten ohne „alle los“-Lücke gehören zu einem Akkord; Noten, die sich nur berühren (aus = an), gelten als neuer Akkord.
+   - **Planer** in `tick()`: bei stehendem Transport **vor** `if (!R.playing) return`, bei laufendem nach dem Einplanen der Clips desselben
+     Fensters (sonst sähe ein Schritt die Clip-Noten seines Fensters nicht); Horizont `LOOKAHEAD`. Eine neue Taste plant sofort
+     (erste Note ≤ 10 ms, nie ein zu später Schritt).
+   - **Raster:** Transport läuft = Song-Raster (Schlag · Auflösung W-11); Transport steht = Raster ab dem ersten Tastendruck. Start des
+     Transports bei laufendem Arp: Wechsel aufs Song-Raster. Tempo- oder Auflösungswechsel: die schon geplanten Schritte hinter „jetzt“
+     werden neu gemacht, der nächste Schritt liegt im neuen Tempo (kein doppelter, kein fehlender Schlag).
+   - **Muster** (`arpPattern`, engine-frei für VI2a): Auf, Ab, Wechsel 1 (U + U rückwärts ohne Ränder), Wechsel 2 (U + U rückwärts), Zufall
+     (Startwert aus Projekt-`id` + Spur-`uid` + Schritt-Zähler, 32-bit-Hash), Akkord (alle gehaltenen; mehr Tasten als Stimmen → die tiefsten;
+     Stimmenzahl nach Timbre Voice / Mono-Regel aus MK3). OKTAVEN 1–4.
+   - **KEY SYNC** an: Zähler 0 beim ersten Schritt eines neuen Akkords; aus: Zähler = Rasterschritt, gezählt ab dem Taktstrich, in dem der
+     Akkord begann (MK5-fix; Transport steht: Rasterschritt ab der ersten Taste).
+   - **Step-Arp:** LÄNGE 1–8 und Maske `steps`; ein aus-geschalteter Schritt ist eine Pause, der Notenzeiger rückt trotzdem weiter.
+   - **GATE** W-34: max(3 ms, gate/100 · Schritt); 100 % = bis zum nächsten Einsatz (mit Swing). **SWING** W-35 auf die geraden Schritte;
+     W-35 = 0 → der Song-Swing wie bei den Clip-16teln (`swingOffset`), W-35 ≠ 0 ersetzt ihn (kein doppelter Swing).
+   - **Latch:** Loslassen hält den Akkord, neue Tasten nach „alle los“ ersetzen, eine weitere Taste beim Halten ergänzt; Latch aus → Stopp
+     ≤ 1 Schritt. Ein Szenen-/Teilwechsel dieser Spur beendet einen gehaltenen (gelatchten) Akkord (Umfang 8).
+   - **Ziel** (Schicht/Split): Arp-Noten tragen beim ON die Timbre-Maske `d`; in Schicht hält das andere Timbre die Tasten als normale Noten
+     (Gegenmaske), in Split bestimmt die **gehaltene Taste** das Timbre (auch wenn OKTAVEN über `split` hebt); Tasten des nicht arpeggierten
+     Split-Timbres spielen normal.
+   - **Aufräumen:** Stopp, Panik, `fadeAll` (Projektwechsel), Szenen-/Teilwechsel (`cutTrackAt`, `cancelTrackFrom`, ■■), Engine-Wechsel,
+     Arp aus und Spur stumm beenden alle Arp-Noten (geplante abgebrochen, klingende normal losgelassen).
+   - **Träger-Wechsel** (`applyCarrierChange`) und ⇅ (`xpSet`/`xpReset`): die geplanten Schritte dahinter werden neu gemacht; eine klingende
+     Arp-Note über den Wechsel folgt wie eine Clip-Stimme (`retune`, außer `onChange 'hold'`; bei ⇅ behalten klingende Noten ihre Höhe wie Clip-Noten).
+   - **Akkord-Fenster 30 ms:** Eine Taste, die bis 30 ms nach dem ersten Schritt eines Akkords kommt, und dieser Schritt hat noch nicht geklungen,
+     wird in ihn aufgenommen (ein Akkord wird nie in genau einem Augenblick gegriffen).
+   - **ECO** (`forceNative`): der Arp läuft weiter über NativeVoice (Timbre-1-Bild); Noten nur für T2 (Maske 2) klingen dort nicht (B.5).
+   - `noteLog` bekommt `src: 'arp'` mit `step`; `arpLog(t)` (B.7) mit {t, note, vel, dur, step, c}. Abgebrochene Schritte verschwinden aus beiden.
+   - **Aufnahme** (H-8): ●, FANG, Overdub und MELODIE nehmen weiter die **gedrückten Tasten** auf (unverändert). Der MIDI-Mitschnitt (`PERF`,
+     `buildMidiLog`) enthält die klingenden Arp-Noten, der Szenen-/Song-Export nur die Clip-Noten.
+2. **Worklet** (AM-Zweig, ASCII): Note-On mit 7. Element `d` (0 = Modus entscheidet, 1 T1, 2 T2, 3 beide; alte 6-Element-Ereignisse = 0),
+   `MkCore.routes(note, k, d)` auch bei Neuverteilung (MODUS/SPLIT); **KEYS** Typ 9 (erste Taste nach „alle los“) und 10 (alle los) mit
+   Zeitstempel. Solange `arp.on`, setzen LFO 1/2 mit Key Sync „Timbre“ nur bei KEYS 9 zurück (`MkTim.keyReset`, dort hängt MK6 SEQ an);
+   „Stimme“ setzt wie bisher je Note (= je Arp-Note) zurück. Host: `E.on(…, d)`, `E.keys(ty, t)`; `mkRender` versteht `[t, 'keys', 9|10]`.
+3. **Bedienfeld** (wie am Original):
+   - **ARP-Taste** (Z2): Arp an/aus (LED, ein Undo); kleine **Tempo-LED** blinkt im Song-Tempo (jedes Bild, nur Klassenwechsel). SHIFT + ARP: „gibt es in der App nicht“.
+   - **EDIT-WAHL 2 ARP A:** TEMPO (Song-Tempo) · AUFLÖSUNG (Liste 1/24 … 1/4, LCD mit ms) · GATE (%, ms) · TYP (Liste Auf, Ab, Wechsel 1,
+     Wechsel 2, Zufall, Akkord) · OKTAVEN (rastet 1–4). **ARP B:** LATCH · SWING (−100…+100 %) · KEY SYNC · LÄNGE (rastet 1–8) · ZIEL
+     (Liste Beide, Timbre 1, Timbre 2). Auswahl-Liste und Matrix-Zeile mit Klartext-Zusammenfassung; ◎ markiert ARP A/B bei Abweichung von INIT.
+   - **Schritt-Tasten:** bei ARP A/B (ohne SHIFT) sind die Nummerntasten die Schritte 1–8 am selben Platz: leuchtet = an, blinkt 1 Hz
+     (CSS-Animation) = Pause, dunkel = über LÄNGE; der laufende Schritt hell (Wechsel ≤ 30/s, ≤ 1 Bild Verzug). Programm-Zeile „SCHRITTE · n“.
+   - Hilfe: zwei neue Zeilen (ARP-Taste/ARP A, ARP B/Schritte/Aufnahme). Erster Tipp auf ARP und erste ARP-A/B-Wahl: LCD-Hinweis (L10).
+4. **Leistungs-Probe:** neuer Fall **„+Arp“** (4 Engines, 1/24 im Song-Tempo, Auf über 2 Oktaven, GATE 75 %, KEYS je Akkord).
+5. **Laden des Kerns:** `ARPC` liegt in `sq-mk-src`; ein Sound mit Arp an (Sound laden, `arp.on` setzen) lädt den Block gleich danach
+   (`arpLoadSoon`), ein Tastendruck notfalls sofort; der Planer selbst lädt nie (sonst liefe `tickAhead` im `tick`).
+6. Version **4.13.0**. Größe 2 907 221 B (**+31,7 KB**, Budget +33 KB).
+
+### Abnahme MK5 (Chromium `v3-mk5-arp.mjs` 79 ✔, `v3-mk5-arp-audio.mjs` 11 ✔, `v3-mk5-ui.mjs` 80 ✔, `v3-mk5-perf.mjs`, `v3-mk5-fp.mjs` 10 ✔, `smoke.mjs`)
+| ID | Ergebnis |
+|---|---|
+| MK5-01 | ✔ C-E-G, Auf/Ab/Wechsel 1/Wechsel 2 × OKTAVEN 1–4 deep-equal zur Tabelle (2 Durchläufe), Akkord je Schritt C E G (OKTAVEN ignoriert); Beispiel Range 1: Wechsel 1 = C E G E, Wechsel 2 = C E G G E C. |
+| MK5-02 | ✔ 4 Töne, 2000 Schritte: 24,1 / 24,7 / 25,9 / 25,3 %. Gleicher Startwert → gleiche Folge, anderer → andere; live zweimal = dieselbe Folge = Muster ab Zähler 0. |
+| MK5-03 | ✔ 1/16 bei 120 BPM: Abstand 125,000 ms; Einsätze im Song-Raster max. 0,00003 Schlag (`noteLog`) für 1/24, 1/16, 1/12, 1/8, 1/6, 1/4. Audio offline (App-Worklet, Hüllkurven-Abgriff): jeder Einsatz 0,000 ms Fehler (≤ 1 ms). |
+| MK5-04 | ✔ GATE 50 % = 62,500 ms (`arpLog`), im Audio 62,3 ms bis zum Beginn des Loslassens; 100 % = bis zum nächsten Einsatz, Sustain 127: M-EINBRUCH −1,67 dB (Akkord) / −1,66 dB (dieselbe Taste, Stimme startet neu), M-KLICK +0,7 / +3,1 dB; 0 % = 3,00 ms. |
+| MK5-05 | ✔ SWING +50 (1/8): gerade Noten +62,50 ms, −50: −62,50 ms, 0: gerade (± 0,00 ms). |
+| MK5-06 | ✔ LÄNGE 4, Schritt 2 aus: Schritte 1 3 4 1 3 4 …, Noten C G C E C E … (Zeiger rückt bei der Pause weiter). Alle Schritte aus: 0 Noten, 0 Stimmen, keine Fehler. |
+| MK5-07 | ✔ KEY SYNC an: neuer Akkord D-F-A nach „alle los“ beginnt mit D bei Schritt 1 (Zähler 0). Aus: zwei Läufe mit Anschlag nach 130 bzw. 460 ms = dasselbe Muster im 2. Takt. |
+| MK5-08 | ✔ Latch hält, ersetzt nach „alle los“, ergänzt beim Halten; Latch aus → 0 Noten nach 1 Schritt, 0 Stimmen. |
+| MK5-09 | ✔ Transport steht: erste Arp-Note 10,00 ms nach dem Tastendruck (Audio-Uhr in `inputDown`; 5 Läufe). |
+| MK5-10 | ✔ 120 → 90 BPM im Lauf: alle Abstände ¼ Schlag (kein doppelter/fehlender Schlag), danach 166,67 ms. |
+| MK5-11 | ✔ Schicht + Ziel T1 (STIMMEN 1+3): T1 eine Arp-Note, T2 hält C E G; Ziel Beide: beide Timbres spielen die Arp-Note; Split + Ziel T1 + OKTAVEN 3: keine Arp-Note auf T2 (Arp bis 79 über `split` 60), T2 hält 72/76; Split + Beide: das G (T1-Taste) bleibt oktaviert auf T1. |
+| MK5-12 | ✔ Akkord mit 6 Tasten bei 4 Stimmen: 48 55 60 64 (die 4 tiefsten). |
+| MK5-13 | ✔ 4-Takt-Akkord-Clip zwei Durchläufe identisch (64 Noten): KEY SYNC an (Wechsel 2, 2 Okt.) und KEY SYNC aus (Wechsel 1, Musterlänge 4). Spur stoppt am Taktstrich: 0 Proxies, 0 Worklet-Stimmen; Szenenwechsel: ab dem Strich nur der neue Akkord, keine Note über den Strich. |
+| MK5-14 | ✔ ● mit Arp: Clip = die gedrückten Tasten (60 62 64 65 67 69), ein Undo; Abspielen = dieselbe Zufallsfolge je Akkord; Mitschnitt = 17 Arp-Noten = `arpLog` (MIDI 17); Szenen-MIDI-Export 6 Note-On = 6 Clip-Noten. |
+| MK5-15 | ✔ Stopp, Panik, Szenenwechsel, Engine-Wechsel, Arp aus, Spur stumm, Spur stoppt am Taktstrich: nach 1 Schritt + Release 0 Worklet-Stimmen, kein Arp-Schritt danach, keine nicht losgelassene Arp-Stimme (siehe „Befund aus früheren Paketen“). |
+| MK5-16 | ✔ 4 Arp-Spuren 1/24, Arp-Anteil je `tick` p95 0,2–0,3 ms (Auflösung von `performance.now` 0,1 ms; max 1,1–2,5 ms), ganzer `tick` p95 0,8 ms (4.12.0 ohne Arp 0,6–1,3 ms); PE1: rAF-Median 60 fps, keine longtask, keine Fehler. Probe „+Arp“: `load_med` 0,031 (Kern 0,083, +FX 0,096), `frames_ok`, 0 Netzaufrufe. |
+| MK5-17 | ✔ ARP-Taste und Schritt-Tasten ≥ 44 × 44 (P1 8 × 44, P2 2 × 4 à 80 × 44, P3 2 × 4 à 68 × 44, L1 46 × 46 bei Maßstab 1,05); M-PLATZ in P1, P2, P3, L1, L2, W, L1-SA, 926 × 428-SA, L1-HB (je Hälfte) für SPIEL, ARP an, ARP A, ARP A + SHIFT, ARP B, Schritte mit Pausen/LÄNGE 6, laufender Schritt; M-ANSICHT 0,00 px; M-SKIZZE (`v3-mk1-look.mjs` 88 ✔). LED-Zustände an │ Pause (Animation `mkbl1`, 1 Hz) │ dunkel laut Einstellung; Tempo-LED 0 falsche Bilder in 3 s (12 Wechsel); laufender Schritt 22–24 Wechsel/s bei 24 Schritten/s, 0 Bilder > 1 Bild Verzug. Listen AUFLÖSUNG/TYP/ZIEL Zeilen ≥ 44 px. |
+| MK5-18 | ✔ `v3-v2d2-rec.mjs` 65/65, `v3-v2d-fang.mjs` 39/39, `v3-v2d2-regcore.mjs` 28 gleich (die „log“-Abweichungen sind Live-Zeit-Jitter, dieselben gegen 4.12.0 wie 4.12.0 gegen V2c′), `v3-mk3-ui.mjs` 37 ✔, `v3-mk4-ui.mjs` 63 ✔ (1 erwartete Abweichung: der Test verlangt ARP A/B noch dunkel), `v3-mk4-fx.mjs` 61 ✔ (bitgleich gegen 4.12.0). Clip-Wiedergabe Drums/VA/AM mit Arp aus: 149 = 149 Noten gleich 4.12.0. Budget +31,7 KB. |
+| MK5-19 | ✔ 4-Takt-Akkord-Clip, Träger C → Am in Takt 3 (gesetzt 60 ms vor dem Strich, Planer schaut schon hinein): ab Takt 3 nur 57/60/64; ebenso mit „Eine Skala“; ⇅ +2 in Takt 3: nur 62/66/69; keine hängende Note. |
+| MK5-20 | ✔ Song-Swing 30 %, Arp 1/16, SWING 0: Arp-Einsätze = Clip-16tel (137,5 ms); SWING +50: nur W-35 (+31,25 ms); Transport steht: 4,25 s ohne Lücke; Clip-Note bei Schlag 4,5 → erste Arp-Note 4,5. |
+| MK5-21 | ✔ Hauptfaden: KEYS 9,10,9,10 bei 2 Akkorden/10 Schritten. Worklet (Abgriff LFO 1, Säge, Key Sync Timbre, Arp an, GATE 50 %): Phase läuft über die Schritte (0,01 0,43 0,84 −0,75 …), neuer Akkord = 0,014 wie Akkord 1; ohne Arp setzt jede Note zurück; Key Sync Stimme je Arp-Note. **SEQ** (MK6) ist in dieser Kopie nicht gebaut: `MkTim.keyReset` ist der Haken, MK5-21 für SEQ ist **am Merge offen**. |
+| MK5-22 | ✔ `forceNative`: `arpLog` wie im Worklet-Klang (60 64 67 72 76 79 …), Schicht + Ziel T2 im ECO: nur der gehaltene Akkord (T1), keine Fehler. |
+
+### Fach-Prüfung (vor der Abnahme, an mir selbst): FP-SONG ● (Haupt-Blick), FP-TOUCH (Zweit-Blick)
+`v3-mk5-fp.mjs` 10 ✔, dazu Durchsicht des Diffs, der Testausgaben und der Bildschirmfotos. **9 Befunde, alle behoben:**
+1. FP-SONG — `inputDown`: `if (!inp.arp …)` war bei Spur 0 falsch (Index 0), die Taste klang zusätzlich als normale Stimme → `inp.arp == null`.
+2. FP-SONG — abgebrochene (neu geplante) Schritte blieben in `arpLog` → werden mit dem Schritt entfernt (Mitschnitt = `arpLog`, MK5-14).
+3. FP-SONG — `arpOn` hätte im Planer `mkLoad` aufgerufen (darin `tickAhead` → `tick` im `tick`, doppelte Noten möglich) → Laden nur außerhalb des Planers (`arpLoadSoon`, Tastendruck).
+4. FP-SONG — ein neu geplanter erster Schritt schickte KEYS 9 ein zweites Mal → KEYS gleicher Zeit nur einmal.
+5. FP-SONG — Latch hielt einen Akkord über einen Szenen-/Teilwechsel → der Wechsel beendet das Halten (Umfang 8).
+6. FP-SONG — ⇅-Wechsel kurz vor dem Strich: schon geplante Schritte hatten die alte Höhe → `xpSet`/`xpReset` planen hinter dem Wechsel neu.
+7. FP-SONG — eine zweite Akkordtaste nach dem schon geplanten (nicht klingenden) ersten Schritt wurde nicht aufgenommen → Neuplanung auch bei `on` = letzter geplanter Schritt, Akkord-Fenster 30 ms.
+8. FP-TOUCH — Programm-Zeile in P3 LINKS lief über („SCHRITTE · LÄNGE 8“) → „SCHRITTE · 8“ / „an │ Pause“.
+9. FP-TOUCH — erster Tipp auf ARP: der Hinweis überschrieb die Rückmeldung „ARP AN“ → beim ersten Mal ein gemeinsamer Text.
+FP-SONG-Punkte ohne Befund: M-ZEIT (MK5-03/-10/-20), `S.tracks[].clips` und Song deep-equal nach Wiedergabe mit Arp, Undo-Gruppen (ARP, Schritt, Regler je ein Undo), Rundweg Speichern/Laden aller Arp-Felder, `normMk` klemmt, Taktstrich-Regel (MK5-13/-15), Harmonie-Kern (`Transposer`, `Harmony`, `mapOut`, `outPitch`) bytegleich zu 4.12.0, MIDI-Export (MK5-14).
+FP-TOUCH ohne Befund: Treffer ≥ 44, keine Überlappung, M-ANSICHT 0 px, ein Undo je Geste, Haptik (ARP, Schritt, rastende Regler), keine neuen Gesten (nur Tipp, Ziehen wie bisher), Beschriftungen deutsch (TYP-Namen Auf/Ab/Wechsel/Zufall/Akkord; LATCH, SWING, KEY SYNC, GATE wie am Gerät, im LCD erklärt).
+
+### Abweichungen / Entscheidungen (eK)
+- **Chromium:** Die Tests starten `/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` (der vorgegebene Pfad `chromium-1194` existiert in diesem Container nicht; wie alle MK-Tests).
+- **KEY SYNC aus + Clip-Schleife** (ersetzt durch MK5-fix, s. u.): Der Zähler zählt ab dem Taktstrich, in dem der Akkord begann; jede Schleife aus ganzen Takten und jede Aufnahme klingt bei jedem Durchlauf gleich, auch mit Zufall.
+- **KEYS 9** kommt zum Zeitpunkt der ersten Arp-Note des Akkords (bei stehendem Transport = Tastendruck + 10 ms, bei laufendem der nächste Rasterpunkt), damit die LFO-Phase genau mit dem ersten Ton beginnt. KEYS 10 beim ersten leeren Schritt.
+- **Akkord-Fenster 30 ms** (s. o.): Kommt eine Taste erst, nachdem der erste Schritt schon klingt (> ≈ 8 ms auseinander auf dem iPhone, ≈ 10 ms im Test-Chromium), ist dieser erste Schritt unvollständig; danach stimmt das Muster.
+- **Split + Ziel:** Ob eine Taste arpeggiert oder normal spielt, entscheidet ihre Höhe beim Anschlag (nicht neu bei einem späteren Träger-Wechsel).
+- **Aufräumen bei Szenen-/Teilwechsel** beendet auch einen gelatchten Live-Akkord dieser Spur (Umfang 8 „beenden alle Arp-Noten“); physisch gehaltene Tasten spielen weiter.
+- **Noten gleicher Höhe** im Satz (zwei Tasten, eine Höhe nach der Abbildung) zählen einmal.
+- **`noteLog`:** Eine Taste auf einer Arp-Spur erzeugt keinen `live`-Eintrag mehr (es klingt keine eigene Stimme), nur die `arp`-Noten; ● REC, FANG und MELODIE bekommen die Taste wie bisher.
+- `arp.tempo` wird nur gespeichert (EN3-10); TEMPO in ARP A ist das Song-Tempo.
+
+### Befund aus früheren Paketen (auf der Hauptlinie beheben, hier nicht geändert)
+- **MK1/MK3 `MkTim.polyOn`:** Startet eine losgelassene Stimme derselben Note neu (gleiche Note, neue Taste), wird die alte Kennung nie mit
+  `endCheck` gemeldet. Ihr Proxy bleibt bis zum GC-Netz (`stopAt` + 1 s ≈ 1,3 s) in `VOICES` (Zustand `released`, klingt nicht). Mit dem Arp
+  (gleiche Note in jedem Durchlauf) kommt das ständig vor; `voices()` zeigt dann bis zu einige losgelassene Proxies. Vorschlag:
+  `const old = v.id; this.start(v, k, …); if (old !== k.id) this.endCheck(old);` im Zweig „the same note releasing“.
+- `v3-mk4-ui.mjs` prüft, dass ARP A/B in der EDIT-WAHL-2-Liste noch dunkel sind; ab MK5 nicht mehr (Test anpassen).
+
+### Merge-Hinweise (für den Orchestrator)
+- Block `sq-mk-src`: neues `ARPC` direkt nach `/*}MKT*/`; im Bedienfeld: Listen `ares/atyp/atgt`, `KN.arp*`, `arpTxt`, `arpView`, `SEC2` ARP A/B
+  aktiv, `arpKey`, `stepKey`, `numKey`, `render` (Nummerntasten/Programm-Zeile/ARP-LED), `setWahl`, `rotList`, `wiaPos2`, Regler-Geste (`stp`),
+  `arpFrame`, Probe-Fall `arp`, CSS (`marp`, `mpause`, `mover`, `mcur`), `MKUI`-Export, `panelInfo().arp`.
+- Worklet (AM-Zweig): `MkTim.noteOn` (Reset nur ohne Arp) + `keyReset`, `MkCore` (`arp`, `top`, `set` `arp.on`, `routes(…, d)`, `keysEv`,
+  `noteOn(…, d)`, `after`), `AnalogCore.runEvents` (Typ 1 mit `e[6]`, Typ 9/10), `enqueue` (7. Element). **MK6** hängt den SEQ-Reset „Timbre“ an `keyReset`.
+- Hauptfaden: `SynthHost` (`E.on` mit `d`, `E.keys`), `spawnWkVoice` (Maske), `spawnVoice` (ECO Maske 2), `spawnClipVoice(…, mask)`,
+  `applyCarrierChange`, `xpSet`/`xpReset`, Hilfsfunktionen `arpOn`/`arpLoadSoon`/`arpK`/`arpTick`/`arpEndAll` vor `swingOffset`, `tick`,
+  `scheduleTrack`, `cutTrackAt`, `cancelTrackFrom`, `stopTrackNow`, Song-MELODIE in `songTick`, `inputDown`/`inputUp`, `stop`, `fadeAll`, `panic`,
+  `applySound`, `mkSetP`, `mkRender` (KEYS), `noteLog` (`step`), `uiFrame` (`arpFrame`), Test-API `arpLog`/`arpClear`/`arpInfo`, Hilfe-Zeilen, VERSION.
+
+### Leistung / FP-IPHONE (Information)
+- Node-Offline: der Arp sitzt im Hauptfaden; die Stimmen sind dieselben wie bei Clip-Noten (keine neue DSP).
+- Chromium ×4 gedrosselt (`v3-mk5-perf.mjs 4`): Arp-Anteil je `tick` p95 1,2–1,3 ms, ganzer `tick` p95 3,8–3,9 ms (4.12.0 ohne Arp 2,9–3,2 ms), rAF 60 fps, keine longtask.
+- Leistungs-Probe am iPhone: neuer Fall „+Arp“ (Menü → Info → Leistungs-Probe; jetzt drei Fälle à 10 s).
+
+### iPhone-Prüfpunkte (Xander)
+1. ARP-Taste an (LED), einen Akkord halten: die Töne kommen nacheinander, die kleine LED blinkt im Takt.
+2. EDIT-WAHL 2 auf ARP A: TYP (Regler 4) auf Wechsel 2, OKTAVEN (Regler 5) auf 2.
+3. ARP B: LÄNGE (Regler 4) auf 6, zwei Nummerntasten antippen – sie blinken (Pause), 7 und 8 sind dunkel; der laufende Schritt leuchtet hell.
+4. Mit laufendem Song spielen, dann ● aufnehmen: Der Clip enthält die gedrückten Akkorde, beim Abspielen arpeggiert er wieder.
+
+### Geräte-Abgleich (microKORG, nach Gehör; blockiert nicht)
+Step-Arp „Schritt aus“ (rückt die Note weiter?) · Swing +50 · Gate 0 · Key Sync aus bei laufendem Takt (nur Muster-Neustart vergleichen) ·
+Arp 1/16, Gate 50 %, LFO 1 Key Sync Timbre: startet der LFO je Akkord oder je Schritt neu? · Auslösung Single mit Arp.
+
+### Lücken
+- Arp-Noten im Song-MIDI-Export (bewusst nicht, H-8; der Mitschnitt hat sie). Arp mit eigenem Tempo (nicht im Umfang). Arp für VA/FM/WT (VI2a).
+- MK5-21 für den Mod-Sequenzer erst nach dem Merge mit MK6 prüfbar (am Merge offen).
+- Am Server offen: nichts (keine Server-Änderung).
+
+### Tests und Bilder
+`dirigent-test/v3-mk5-arp.mjs` (+ `.out`), `v3-mk5-arp-audio.mjs` (+ `.out`), `v3-mk5-ui.mjs` (+ `.out`), `v3-mk5-perf.mjs` (+ `v3-mk5-perf4.out`),
+`v3-mk5-fp.mjs`, `v3-mk5-shot.mjs` → `dirigent-test/v3-mk5-shots/` (P1, P2 L/R, P3 L/R, L1, L2 L/R, W; ARP B, Schritte 2/5 Pause, LÄNGE 6,
+laufender Schritt), `v3-mk5-look-shots/` (M-SKIZZE), Regression `dirigent-test/v3-mk5-reg/`, `v3-mk5-smoke.png`.
+
+## MK5-fix — Befunde der Abnahme (App bleibt 4.13.0, Format 5; nur `ARPC` im MK-Block plus ein Feld in `noteLog`)
+
+Neustart-Prüfung: kein `synq-snapshots/MK5-fix.html` → alle drei Befunde neu behoben.
+
+1. **KEY SYNC aus (INIT) – Schleife und Aufnahme klangen bei jedem Durchlauf anders** (zwei Befunde, acceptance + specialist).
+   Ursache: Mit KEY SYNC aus war der Muster-Zähler der absolute Song-Rasterschritt (`c = idx`). Ein Dreiklang in einem Takt (16 Schritte)
+   wanderte je Durchlauf um eine Note; bei Zufall stand der absolute Schritt im Startwert, so wiederholte sich nie etwas.
+   Behebung: Mit KEY SYNC aus zählt der Zähler auf dem Song-Raster **ab dem Taktstrich, in dem der Akkord begann** (`s.gb`, beim Zurückspulen
+   wiederhergestellt) und läuft über gehaltene Takte weiter. Damit gilt MK5-07 weiter (zwei Anschläge im selben Takt = dasselbe Muster ab dem
+   Takt), und MK5-13/MK5-14 gelten auch mit den INIT-Werten; Zufall bleibt innerhalb eines gehaltenen Akkords zufällig (keine 1-Takt-Wiederholung).
+   **Entscheidung (eK, Spec-Konflikt Umfang 3 / MK5-07 gegen MK5-13/-14):** Am Gerät läuft der Zähler mit KEY SYNC aus frei weiter; hier richtet
+   er sich nach dem Takt, in dem der Akkord begann, damit Schleifen und Aufnahmen gleich klingen (Umfang 2 „damit Wiederholungen gleich bleiben“).
+   Sichtbar ändert sich nichts (LCD-Text „aus · das Muster läuft mit dem Takt“ bleibt richtig). Wenn Xander lieber den frei laufenden Zähler
+   des Geräts will, ist das eine Zeile (Vorschlag für den Funk, nicht umgesetzt).
+2. **FP-SONG: Akkord auf dem gehörten Schlag startete den Arp einen ganzen Schritt zu spät** (bei 1/4 ein ganzer Schlag), während ● REC/FANG
+   die Taste auf dem Schlag speichern → Aufnahme und Abspielen wichen ab.
+   Ursache: Der erste Schritt war der erste Rasterpunkt nach Tastendruck + `LIVE_LEAD` (Audio-Zeit); REC/FANG speichern `t2b(Druck − outLat)`.
+   Behebung (`lateIdx`, `s.late`): Jede Live-Taste trägt `ref` = Druck wie gehört (`now − outLat`, genau wie REC/FANG). Liegt ein Rasterpunkt
+   bis `LATE` = min(60 ms, 0,4 Schritt) vor (oder nach) diesem gehörten Druck und würde der normale Weg ihn verpassen, ist er **Schritt 1 des
+   neuen Akkords** (Zähler dieses Rasterpunkts, KEYS 9 dort). Er klingt sofort: liegt der Rasterpunkt noch vor „jetzt“, genau auf dem Raster,
+   sonst 20 ms (`LATEW`, damit die übrigen Tasten eines Akkords aus mehreren Berührungen dazukommen) nach dem Klang der Taste, spätestens
+   10 ms vor dem nächsten Schritt; seine Länge endet spätestens beim nächsten Schritt. Ab Schritt 2 liegt alles wieder auf dem Raster.
+   Nur für einen **neuen** Akkord (nichts gehalten, auch kein gelatchter Akkord) und nie, wenn dort schon ein Schritt klingt.
+   Clip-Noten bekommen dieselbe Regel mit `ref = an`: eine ungequantelte Aufnahme (Note 1.012) beginnt beim Abspielen ebenfalls auf Schlag 1
+   (klingt zur Notenzeit, nie früher) – so sind Spielen, ● REC mit Q AUTO und mit Q aus gleich.
+   `arpLog`/`noteLog` markieren diesen ersten Schritt mit `late` (Test-API; MK5-03/-05 messen das Raster ohne ihn).
+   **Abweichung (eK):** Dieser eine erste Schritt liegt nicht auf dem Raster (M-ZEIT ± 0,002 Schlag gilt ab Schritt 2); er kann nicht in der
+   Vergangenheit klingen. Vorher kam stattdessen ein ganzer Schritt Verspätung und eine verschobene Folge.
+   Grenzfall: Ein Akkord, der vor dem ersten Schlag einer ● Aufnahme ohne Einzähler gedrückt wird, startet live auf dem gehörten Schritt
+   davor, während die Aufnahme ihn auf ihren Anfang legt (dort ein Schritt Versatz, unverändert vom Aufnahme-Weg).
+
+**Belege** (Chromium 1243, `mk-br-MK5/index.html`):
+- Neu `dirigent-test/v3-mk5-fix.mjs`: 17/17 PASS – MK5-13 INIT (KEY SYNC 0) 1 und 4 Takte, Auf und Zufall, drei Durchläufe gleich; MK5-07 aus;
+  MK5-14 KEY SYNC 0/1 × Q auto/aus × Auf/Zufall (Abspielen = Spielen, erste Note sofort und `late`, zweite auf B + 0,25 ± 0,002);
+  FP-SONG 1/16 und 1/4 bei −20/0/+20 ms zum gehörten Schlag: Zähler 0,1,2, C zuerst, Schritt 2 auf dem Raster.
+- Repro-Skripte der Abnahme: `v3-qa-mk5-a.mjs` 3/3 PASS (MK5-13 INIT Auf/Zufall, MK5-14 Zufall INIT); `v3-repro-mk5-ks0loop.mjs` alle
+  `same12/same23: true`; `v3-verify-mk5-ks0.mjs` 6/6 PASS; `v3-qa-mk5-rectake.mjs` Spielen = Abspielen in allen 4 Fällen;
+  `v3-qa-mk5-onbeat.mjs`/`v3-repro-mk5-14onbeat.mjs`: erster Arp-Ton mit dem Zähler des gehörten Schlags (vorher immer ein Schritt danach).
+- `v3-mk5-arp.mjs` 79/79 (MK5-03/-05 messen das Raster ohne den `late`-Schritt), `v3-mk5-arp-audio.mjs` alle, `v3-mk5-ui.mjs` 80/80,
+  `v3-mk5-perf.mjs` (Arp-Anteil p95 0,2–0,3 ms, PE1), `v3-qa-mk5-stress.mjs` (0 Fehler, keine hängende Stimme), Smoke ohne Fehler.
+- Bekannt wackelig, auch im Stand vor dem Fix (nicht Teil der Befunde): MK5-02 „live zweimal“ (Akkord-Fenster bei der 10-ms-Uhr von
+  Headless-Chromium; vorher 3/6, jetzt 1/6 Fehlläufe) und MK5-16 `frames_ok` der Leistungs-Probe (Quantum-Spitzen der Testumgebung).
+
+## G-MK5-Fix (Gruppe): Akkord auf dem Schlag mit normaler Finger-Spreizung verlor Schritt 1 (4.13.0, Version unverändert)
+
+**Befund (major):** Drei Tasten 15–20 ms auseinander (30–40 ms erste bis letzte, typisch für drei Finger auf dem Bildschirm) auf dem
+gehörten Taktstrich: der `late`-Schritt 1 (C) fiel weg, der Schlag blieb stumm, der erste Arp-Ton war E auf B + 0,25 (KEY SYNC an: C eine
+Sechzehntel zu spät, ganzes Muster verschoben; 1/8: erste Achtel stumm). Live ≠ ● Aufnahme. Ursache (`ARPC.plan`): Der späte Schritt
+galt nur, solange die **erste** Taste des Akkords jünger als 20 ms war (`s.late.x.on >= now − .02`); jede weitere Taste plant ihn neu,
+die dritte kam 30–40 ms nach der ersten → der Neuplan verwarf ihn und Schritt 0 lief stumm. Das 30-ms-Akkordfenster wurde nur von der
+ersten Taste aus gemessen (`lx.on + CHW`).
+
+**Behebung (nur `ARPC.plan`, eine Stelle):** Die übrigen Tasten eines gespreizten Akkords schließen sich als **Kette** an (jede höchstens
+`CHW` = 30 ms nach der vorigen, vor dem nächsten Schritt); der späte Schritt bleibt gültig, solange die **letzte** Taste dieser Kette frisch
+ist. Er klingt wie bisher `LATEW` (20 ms) nach der letzten Taste, spätestens 10 ms vor dem nächsten Schritt, und liest den Akkord mit allen
+Tasten der Kette. Ein bereits klingender Schritt wird nie geschnitten (unverändert); keine anderen Wege berührt.
+
+**Belege** (Chromium 1243, `mk-br-MK5/index.html`):
+- `v3-qa-gmk5-x8.mjs` (Spreizung 12–40 ms, −10/0 ms): vorher 9/16, jetzt **16/16** PASS (C als `late`-Schritt vor der 2. Sechzehntel).
+- `v3-qa-gmk5-x8b.mjs` (KEY SYNC an / 1/8): **6/6** PASS. `v3-qa-gmk5-x6.mjs` (CDP-Touch, 3 Finger): **10/10** PASS.
+- Neu `dirigent-test/v3-gfix-mk5-x6r.mjs` (CDP-Touch, Wiederholungen, Fenster-bewusst, Stimmen geplant/abgesagt protokolliert):
+  1/16 16/16, 1/8 8/8, KEY SYNC an 8/8 PASS.
+- Klang (nicht noteLog): `v3-verify-mk5-spread.mjs` (AudioWorklet-Abgriff, Tonhöhe per Autokorrelation): **0/15** verlorene C
+  (vorher 9/15); C klingt bei B + 94–110 ms, E auf der 2. Sechzehntel – wie das Abspielen der Aufnahme (C auf B, E auf B + 0,25).
+- Regression: `v3-mk5-arp.mjs` 78/79 (einziger Fehler MK5-02 „live zweimal“, bekannt wackelig, transport-gestoppt/freies Raster, vom Fix
+  nicht berührt; derselbe Test schlägt auch auf `synq-snapshots/MK5-fix.html` 1 von 3 Läufen fehl), `v3-mk5-fix.mjs` 17/17,
+  `v3-mk5-arp-audio.mjs` 11/11, `v3-qa-mk5-a.mjs` 3/3, `v3-verify-mk5-ks0.mjs` 6/6, `v3-qa-mk5-rectake.mjs` Spielen = Abspielen (4 Fälle),
+  `v3-qa-mk5-onbeat.mjs` erster Ton C mit dem Zähler des gehörten Schlags, `v3-qa-mk5-stress.mjs` 0 Fehler, Smoke ohne Fehler.
+- Keine Layout-/Aussehens-Änderung, keine Datenbank-Änderung.
+
+
+# CHANGES – MS 2000, Paket MK6 (Zweig-Kopie `mk-br-MK6`)
+
+## MK6 — Mod-Sequenzer 3×16 und „Bewegung aufnehmen“ · App 4.14.0 (`APP_CODE` 4 014 000) · Format bleibt 5
+
+**Vorgänger-Stand** für alle „bitgleich“-Abnahmen: **4.12.0** (Start dieser Kopie, MK0–MK4 zusammengeführt; Kopie
+`scratchpad/mk6-base-4.12.0.html`, 2 874 742 B). MK5 (Arp) und MK7 (Vocoder) entstehen gleichzeitig in `mk-br-MK5` / `mk-br-MK7`;
+der Orchestrator führt zusammen und setzt die VERSION-Zeile. Server: keine Änderung nötig (`max_app` 4 021 000 ≥ 4 014 000, Format 5).
+Kein Supabase-Aufruf in diesem Lauf. Neustart-Prüfung: kein `MK6.html` und keine halbe MK6-Arbeit vorhanden → neu gebaut.
+
+### Gebaut
+1. **Seq-Kern im AM-Zweig des Worklets** (zwischen `/*MK{*/ … /*}MK*/`, ASCII): je Timbre drei Sequenzen à 16 Schritte mit
+   gemeinsamer Position (`MkSqP`). KEY SYNC **Timbre** = eine Position je Timbre (Neustart bei der ersten Note nach „alle los“, an derselben
+   Stelle wie der LFO-Key-Sync), **Stimme** = eine Position je Stimme (Neustart bei Neuanschlag, nicht bei Legato), **aus** = Song-Raster:
+   Zyklus C = Summe der Schrittlängen, Schritt bei (Song-Schlag mod C); ohne laufenden Song frei weiterlaufend. Einmal + KEY SYNC aus
+   startet bei Schlag 0 und hält nach C. Tempo-Wechsel behält die Schlag-Lage (wie der Sync-LFO).
+   - LETZTER SCHRITT 1–16, TYP Vorwärts / Rückwärts / Wechsel 1 (1…16, 15…2) / Wechsel 2 (1…16, 16…1), LAUF Einmal (hält den letzten Wert) /
+     Schleife, AUFLÖSUNG W-10 (16 Werte × 4 Schläge) im Song-Tempo.
+   - BEWEGUNG **Glatt** = linear zwischen den Schrittwerten (Bruchwerte); **Stufe** = halten, jeder Sprung als lineare **1-ms-Rampe ab der
+     Blockgrenze** (B.6 Nr. 2 b).
+   - **31 ZIELE** (0 keins … 30): Tonhöhe ±24 HT (wirkt auf KT, also auch auf Keytrack und Patch-Quelle Keytrack), Schrittlänge ±6
+     (verschiebt den Auflösungs-Index je Schritt), Portamento, OSZ1-Steuer 1/2, OSZ2-Halbton ±24, OSZ2-Fein, Mixer OSZ1/OSZ2/Rauschen,
+     Cutoff, Resonanz, HK-INT, Keytrack, Amp-Pegel, Pan, EG1 A/D/S/R, EG2 A/D/S/R, LFO1/2-Freq, Patch 1–4 Intensität. Schrittwert +
+     gespeicherter Wert, geklemmt; Vorrang SEQ 3 > SEQ 2 > SEQ 1. LFO-Freq bei TEMPO SYNC an wirkungslos (bitgleich). Steuer 2 bei der
+     Speicherwelle = **Wellenfolge** (Stufe springt direkt zur Welle des Schritts, 2-ms-Blende aus MK2; keine Zwischenwellen).
+     EG-Zeiten wirken ab der nächsten Stufe (je Stimme beim Stufenwechsel eingerastet; SUSTAIN folgt in der Sustain-Stufe).
+   - **Bewegung aufnehmen** im Worklet (`{mkRec}` → `{mkRecDone}`): der Live-Wert des Reglers minus seinem Startwert landet ab dem laufenden
+     Schritt bis LETZTER SCHRITT; währenddessen vorwärts als Schleife (auch bei Rückwärts/Einmal); die aufgenommene Sequenz ist dabei stumm.
+   - Neutral: Seq aus und Seq an mit lauter 0 rechnen bitgleich zum Vorgänger (Offsets werden nur angewandt, wenn ≠ 0).
+   - `mkScope`: je Stimme `seqStep` (die seit dem letzten Bericht betretenen Schritte), dazu `seq[ti] = {on, run, step, done, rec, vals}`.
+   - Test-Abgriff `'gain'` (Verstärkung je Sample ohne Signal).
+2. **Bedienfeld** (`sq-mk-src`): EDIT-WAHL 2 Stellung 11 **SEQ** aktiv (vorher „kommt mit MK6“). Ebene 1 SEQ AN · SEQUENZ (1│2│3, Ansicht)
+   · ZIEL (31 Einträge, stetiger Regler mit Rundung, alle in < 200 px; Tipp = scrollende Liste) · BEWEGUNG · LÄNGE; **Ebene 2 (SHIFT)**
+   TYP · LAUF · KEY SYNC · AUFLÖSUNG (Matrix „EB2“). Matrix-Zeile „SEQ ●“ (an) und „SCHRITTE ▸“; LCD-„*“, wenn eine höhere Sequenz
+   dasselbe Ziel hat; ◎ markiert SEQ; Auswahl-Liste der EDIT-WAHL 2 zeigt eine SEQ-Zeile.
+   - **Zusatz-Ansicht SCHRITTE** (Tipp auf die Matrix-Zeile): [◂ GERÄT] [SEQ 1][SEQ 2][SEQ 3] [● AUFN.] (je ≥ 44 × 44) und 16 Säulen in
+     **einem Canvas** (P1 2×8 à 41×88/4 px = 356×232, P2 39×88 = 340, P3 36×88 ohne Abstand = 288, L1 16×41×90/3 px = 701×136,
+     L2/Halb-Ansicht quer 16×36×74 = 621×120). Senkrecht ziehen = Wert über die volle Säulenhöhe in Ziel-Einheiten (±6/±24/±63), Tipp
+     über/unter dem Balken ±1, waagrecht > 8 px malt, ein Undo je Geste, zweiter Finger ignoriert, laufender Schritt hell (≤ 30 Hz, nur
+     sichtbar und nur während er läuft).
+   - **● AUFN.**: wählt die Sequenz, springt zu GERÄT in SPIEL (CUTOFF/RESONANZ unter den Fingern), Matrix-Zeile „● AUFN.“ blinkt. Der erste
+     bewegte Regler einer EDIT-WAHL-1-Sektion, einer PATCH-Stellung oder SPIEL-CUTOFF/-RESONANZ wird das ZIEL (ARP-/Effekt-Regler und
+     Schalter nehmen nicht auf, LCD sagt es). Am Ende: Regler zurück auf seinen Startwert, SEQ an, **ein Undo** für alles.
+   - **SHIFT + 5 Sequenz-Werkzeuge** (auch unter ⋯): Neu (S1/S2/S3/ALLE), Tauschen (1⇄2, 2⇄3, 1⇄3), Kopieren aus diesem oder einem
+     gesicherten MS-2000-Sound (T1/T2 × S1/S2/S3 → gewählte Sequenz, ALLE = alle drei samt Einstellungen); je ein Undo.
+   - Hilfe: zwei neue Zeilen (SEQ, ● AUFN./Werkzeuge); LCD-Hinweis beim ersten Antippen.
+3. **Hauptfaden**: `mkRange` kennt die Seq-Pfade (`t.X.seq.on|last|type|run|ks|res`, `t.X.seq.q.K.k|m`, `t.X.seq.q.K.v.S`); `normMk`
+   Ziel-Bereich 0…30 (vorher 0…40, ungenutzt); Wellen einer Wellenfolge werden vorab gebaut/geschickt (`mkSeqWaves`, auch in `mkRender`);
+   `{mkRecDone}` an das Bedienfeld.
+4. **Leistungs-Probe** (Menü → Info): Fälle „Kern“, „+FX“, **„+Seq“** (= „+FX“ mit drei Sequenzen je Sound bei KEY SYNC Stimme).
+5. **Test-API**: `MKUI.knobSim(path, werte)` (Reglergeste durch die Bedienfeld-Logik, auch für die Aufnahme), `MKUI.stepsInfo()`,
+   `MKUI.seqInit/seqSwap/seqCopy/seqToolsPop/recArm/recCancel`, `mkPanel()` mit `sq`, `rec`, `steps`.
+
+### Abnahme MK6 (Node `v3-mk6-seq.mjs` 36/36, `v3-mk6-cpu.mjs`, `v3-mk6-fp.mjs` 16/16; Chromium `v3-mk6-ui.mjs` 28/28, `v3-mk6-pe1.mjs`, `v3-mk1-look.mjs` 88/88, `smoke.mjs`)
+| ID | Ergebnis |
+|---|---|
+| MK6-01 | ✔ 1/16 bei 120 BPM, Ziel Amp-Pegel, Stufe: Rampenbeginn bei −16 Samples (genau ein Steuerblock vor dem 125-ms-Raster, ≤ 1 Block), Rampe 48 Samples = 1 ms; alle 16 Auflösungen (1/48 = 41,7 ms … 1/1 = 2 s) je 3 Schritte im Raster; M-KLICK Pegel-Stufe ±63: Säge C5 2,5 dB, Rauschen 2,3 dB. |
+| MK6-02 | ✔ Glatt: Schrittmitte gemessen = erwartet (Abweichung 0,000 Einheiten = 0 % des Hubs); jede Steuerblock-Grenze bewegt sich. |
+| MK6-03 | ✔ `seqStep` deep-equal für Vorwärts, Rückwärts, Wechsel 1, Wechsel 2 (L 16, zwei Zyklen); LETZTER SCHRITT 5 = Länge 5; Wechsel bei 5: 1,2,3,4,5,4,3,2 bzw. 1,2,3,4,5,5,4,3,2,1. |
+| MK6-04 | ✔ Einmal: nach dem 5. Schritt bis 2,5 s Abweichung 0 (Wert von Schritt 5); Schleife: Zyklus 2 und 3 = Zyklus 1 (max \|Δ\| 0). |
+| MK6-05 | ✔ Timbre: zweite Note bleibt im Raster, neue Note nach „alle los“ setzt zurück. Stimme: zwei Noten 0,3 s versetzt auf Schritt 5 bzw. 3. Aus: Schritt = (Song-Schlag mod C) mit Schrittlänge ±2 (C = 4,083 Schläge), zwei Starts aus Takt 2 und 3 zeigen am selben Schlag denselben Schritt (55/55). **Mit Arp (MK5-21) nicht prüfbar:** MK5 fehlt in diesem Zweig (s. Zusammenführen). |
+| MK6-06 | ✔ Tonhöhe +12 an Schritt 3: +1199,98 ct, sonst ≤ 0,05 ct · Cutoff 40+63 → W-01(103), 100+63 → geklemmt 127 · Schrittlänge +2 an Schritt 1: 8992 Samples (187,5 ms ± 1 Block) · OSZ2-Halbton +2400 / −2400,09 / 0,03 ct · EG: DECAY-Schritt mitten im Decay bitgleich, RELEASE +63 wirkt ab dem Release · Patch-Intensität wirkt (Cutoff-Bereich ×4,7·10⁵ statt ×1) · LFO1-Freq bei Tempo Sync bitgleich wirkungslos (Kontrolle Sync aus 0,32). |
+| MK6-07 | ✔ SEQ 1 + SEQ 3 auf Cutoff = nur SEQ 3 (max \|Δ\| 0); LCD „ZIEL *“ mit „SEQ 3 hat dasselbe ZIEL und Vorrang“. |
+| MK6-08 | ✔ Wellen 1, 11, 21, 31, 41, 51 je Schritt: Spektrum = Einzel-Render (Abstand 0); M-KLICK 5,2 dB gegen den lauteren stehenden Zustand (Verfahren MK2, `mKlickSw`). |
+| MK6-09 | ✔ Worklet: Schritte 3…8 (Start im 3. Schritt, LETZTER SCHRITT 8), Ziel CUTOFF, nur der erste Regler zählt. App (P1, echter Zug am FILTER-CUTOFF): ZIEL CUTOFF, SEQ an, Schritte 1–12 geschrieben, CUTOFF zurück auf 40, **ein Undo** stellt alles deep-equal her; MOD-FX TIEFE nimmt nicht auf; L1: SPIEL-CUTOFF nach ● AUFN. bei KEY SYNC Stimme in SEQ 2. |
+| MK6-10 | ✔ Seq aus: 4 Timbres max \|Δ\| 0 gegen 4.12.0; Seq an mit lauter 0: 120 Renders (alle 29 Ziele außer Schrittlänge, KEY SYNC aus/Timbre/Stimme, alle TYP/LAUF/AUFLÖSUNG) max \|Δ\| 0; VA/FM6 0. |
+| MK6-11 | ✔ Ziehen ¼ Säulenhöhe = +31,5 → +32 Einheiten (29 → 61), Malen über 4 Säulen, Tipp ±1 — je ein Undo; zweiter Finger ändert nichts; TONHÖHE ganz oben = +24; alle 31 ZIEL-Einträge in 200 px; ZIEL-Liste 31 Zeilen ≥ 44 px, scrollt. M-PLATZ in P1, P2, P3, L1, L2, W, L1 + Safe-Area, 926×428 + Safe-Area, L1 + Home-Balken (Halb-Ansicht): SEQ Ebene 1 und 2 und SCHRITTE — alle Treffer ≥ 44×44, keine Überlappung, nichts abgeschnitten, kein Scrollen; M-ANSICHT Ebene 1↔2 und GERÄT↔SCHRITTE ≤ 2 px (Rahmen, LCD, Seite, Räder, Tastatur stehen). M-SKIZZE (`v3-mk1-look.mjs`) 88/88. |
+| MK6-12 | ✔ Node-Offline, Median aus 5 je Fall, je eigener Prozess: 3 Sequenzen KEY SYNC Stimme (Cutoff glatt, Tonhöhe Stufe, Pan glatt) **+0,08 … +0,26 × VA-Stimme** in 4 Läufen; KEY SYNC Timbre +0,07 … +0,30; Zusatzfall A-HK DECAY + PATCH 1 + LFO 1 FREQ +0,22 … +0,55 (Maschine stark ausgelastet, Geschwister-Builds liefen; Spitze je Quantum 99,9 % ≤ 1,4 ms in allen Fällen inkl. VA). PE1 (Demo spielt, zwei MS-2000-Spuren mit je 3 Sequenzen, SCHRITTE offen, Werte werden bei gehaltener Taste editiert, 120 → 90 → 120 BPM): rAF-Median 60 / 59,7 fps, 0 longtasks > 50 ms, laufender Schritt sichtbar. Leistungs-Probe „+Seq“ in Chromium: load_med 0,107, frames_ok, 59,9 fps, 0 longtasks, 0 Netz. |
+| MK6-13 | ✔ Tauschen, Neu (eine/alle), Kopieren (eine aus T2 eines anderen Sounds, alle) deep-equal, je genau ein Undo, Rücknahme deep-equal; SHIFT + 5 öffnet die Werkzeuge (15 Tasten ≥ 44 px). Regression s. unten. **Budget +42 111 B (41,1 KiB) > 36 KB** (s. Abweichungen). |
+| MK6-14 | ✔ Seq-Tonhöhe +12 mit KEYTRACK +48 hebt den Cutoff um +12,000 HT; während ● AUFN. läuft die Sequenz vorwärts als Schleife (TYP Rückwärts, LAUF Einmal: 3,4,5,6,7,8). |
+
+**Hörbarkeit (H-1/H-3, Spec §0.3):** jeder Seq-Regler ändert den Klang messbar: SEQ AN (Pegel-Stufen ±50 an/aus), ZIEL (Cutoff → Pegel → Pan),
+BEWEGUNG (Glatt/Stufe, MK6-02 gegen MK6-01), LÄNGE / TYP / LAUF (Schrittfolgen MK6-03/04), KEY SYNC (MK6-05), AUFLÖSUNG (16 Raster, MK6-01),
+Schrittwerte (App-Pfad `mkRender`: Höhen-Anteil −21,8 / −35,3 dB bei Cutoff 64 ± 50). Speichern → Neuladen: `p.mk` deep-equal.
+
+### Fach-Prüfung (vor der Abnahme, selbst ausgeführt): FP-DSP (Haupt-Blick), FP-SONG (Zweit-Blick) — 6 Befunde, 5 behoben, 1 begründet
+1. **FP-DSP / Umschalten (behoben):** Ein Wechsel der wirkenden Ziele (SEQ AN, ZIEL, Vorrang, Aufnahmebeginn) bei klingender Note sprang
+   hart (ZIEL Cutoff → Pegel: M-KLICK 5,4 dB, knapp unter der Grenze). Jetzt blenden alte Offsets in 5 ms aus und neue in 5 ms ein (L3); reine
+   Werte-Änderungen behalten Rampe/Gleiten. Danach `v3-mk6-fp.mjs`: 12 Umschalt-Fälle M-KLICK ≤ 3,8 dB, kein Einbruch unter den leiseren
+   stehenden Zustand (≥ −0,1 dB). Nach dem Ausblenden ist „aus“ wieder bitgleich.
+2. **FP-DSP / Wellenfolge (behoben):** Die 1-ms-Stufenrampe lief bei Steuer 2 durch alle Zwischenwellen (0 → 20 = Wellen 1…11, fehlende
+   Tabellen → Platzhalter-Säge, M-KLICK 41,5 dB). Jetzt springt die Welle direkt (2-ms-Wellenblende), die Rampe bleibt für die WFM-Tiefe.
+3. **FP-DSP / Fuzz (geprüft):** 300 Zufalls-Sequenzen über alle Ziele, Typen, KEY SYNC, Extremwerte, mit Patches/Resonanz: 0 NaN, Spitze 0,62.
+4. **FP-SONG / Takt (geprüft):** KEY SYNC aus folgt dem Song-Schlag auch über 120 → 90 BPM (0 Abweichungen in 116 Berichten); Einmal ab
+   Schlag 0 hält nach 4 Schlägen; KEY SYNC Timbre läuft über den Tempo-Wechsel stetig.
+5. **FP-SONG / Anzeige (behoben):** Der Schrittbericht einer ruhenden Spur war veraltet (Seq-Zustand erst beim nächsten Ton neu berechnet) und
+   der laufende Schritt leuchtete auch ohne Ton. Jetzt rechnet der Bericht nach, und hell ist nur ein laufender Schritt.
+6. **FP-DSP / CPU (begründet):** Node-Zeiten streuen auf dieser Maschine stark (Geschwister-Builds); Kernfall ≤ 0,26 × VA in allen Läufen,
+   der eigene Zusatzfall (EG + Patch + LFO-Freq) einmal 0,55. Die Leistungs-Probe „+Seq“ misst am iPhone.
+- Undo-Gruppen und Rundweg (FP-SONG): je Geste/Werkzeug/Aufnahme genau ein Undo, Speichern → Laden deep-equal; Clips/Song unberührt
+  (Seq lebt im Sound, `p.mk.t[].seq`). Worklet-ASCII ✓; ECO-Rückfall ohne Seq (B.5) unverändert.
+
+### Abweichungen von der Spec (bewusst)
+- **Budget +41,1 KiB statt ≤ +36 KB (×1,14).** Zusätzlich zum Plan: 5-ms-Zielblenden (FP-Befund 1), Wellenfolge ohne Zwischenwellen,
+  scrollende Langlisten, Kurz-Namen für schmale Formate, Test-Hilfen (`knobSim`, `stepsInfo`, Abgriff `gain`, ≈ 1,5 KB). Kommentare
+  wurden schon gekürzt (−6,7 KB gegenüber dem ersten Stand).
+- **Schrittwerte werden mit ±63 gespeichert** und erst dort, wo sie wirken, auf den Bereich des Ziels geklemmt (±24 Tonhöhe/Halbton, ±6
+  Schrittlänge). So geht beim Durchdrehen von ZIEL nichts verloren; der Editor schreibt nur Werte im Zielbereich.
+- **Bewegung aufnehmen** schreibt die Reglerbewegung **relativ zum Startwert** des Reglers und setzt den Regler danach zurück (sonst
+  doppelte Wirkung beim Abspielen). Tonhöhe nimmt über TRANSP. auf. Nach ● AUFN. steht das Bedienfeld in SPIEL (CUTOFF/RESONANZ dort nehmen auch auf).
+- **EG-Ziele**: Zeiten rasten je Stimme beim Stufenbeginn ein; SUSTAIN folgt in der Sustain-Stufe.
+- **Globale LFOs bei KEY SYNC Stimme** nehmen den LFO-Freq-Wert der jüngsten Stimme (wie der Patch auf LFO2-Freq).
+- **Glatt + KEY SYNC Timbre-Neustart** bei noch ausklingenden Stimmen springt auf Schritt 1 (keine Rampe); Stufe rampt.
+- **Verzerrer-Tiefe** (W-23, aus den Mixer-Pegeln) folgt den Mixer-Zielen der Sequenz nicht.
+- **SCHRITTE bei TIMBRE „beide“** bearbeitet T1 (die angezeigte Spalte).
+- Abnahme MK6-12 in Node gemessen; der iPhone-Faktor ist weiter unbelegt (Leistungs-Probe „+Seq“).
+
+### Zusammenführen (für den Orchestrator)
+- **MK5 (Arp, KEYS 9/10):** Der Seq-Neustart bei KEY SYNC Timbre steht in `MkTim.noteOn` direkt neben dem LFO-Key-Sync-Timbre
+  (`if (Math.round(this.T.seq.ks) !== 0) …`). Wenn MK5 diese Stelle auf den KEYS-Tastensatz umstellt, muss die Seq-Zeile mitwandern;
+  danach MK6-05 „mit Arp an (Gate 50 %): Reset nur je Akkord“ prüfen. Probe: „+Seq“ baut auf „+FX“ (MK5 bringt „+Arp“).
+- **MK7 (Vocoder):** SEQ ist im Vocoder dunkel/„–“ (SEC2[10][1] = '–'); `build()` schließt SCHRITTE bei `mode` 3. MK7 muss die Stellung im
+  Vocoder dunkel zeichnen.
+- Berührt außerhalb der MK-Blöcke: `onMsg` (`m.mkRec`), Scope-Meldung (`seq: this.mk.sqScope()`), `SynthHost.track` (`mkRecDone`),
+  `mkSetP` (Seq-Pfade → `mkwFeed`), `mkwFeed`/`mkSeqWaves`, `mkRender` (Wellen der Wellenfolge), `openEdMore` (⋯ → Sequenz-Werkzeuge),
+  Hilfe (2 Zeilen), `VERSION`. Im immer geladenen Teil: `SEQK` 30, `mkRange` (Seq-Pfade). Worklet: `mkT()`/`MkTim.load/set` (seq),
+  `start`/`monoSel`/`polyOn` (Seq-Position, Gleiten `v.gl`), `voice()` (Offsets), `prep` (`vc1`/`vc2`/`vw2`), `inherit`, `mkClone`, `MkCore.recMsg/sqScope`.
+  Bedienfeld: `L_`, `KN`, `SEC2[10]` (+ Ebene 2 in `s[5]`), `kOf`, `knobs()`, `get`/`setv` (`sqsel`), `lcdOf`, `setWahl`, Matrix-`render`,
+  `wiaPos2`, `numKey` (SHIFT + 5), `listPop` (Langlisten), `knobGesture` (Aufnahme-Haken, `d.px`), `build` (Ansicht 'schritte'), `timReset`, Probe, CSS.
+
+### Regression
+- Node: `v3-mk1-dsp` 64/64, `v3-mk4-fx` 61/61, `v3-mk3-scale` 6/6, `v3-mk2-osc` 31/31, `v3-mk4fix-kill` 30/30.
+- Chromium: `v3-mk1-look` 88/88 (M-SKIZZE), `v3-mk3-ui` 37/37, `v3-mk4-ui` 63/64, `v3-mk1-ui` 32/33, `v3-mk2-ui` 22/24. Smoke ohne Fehler (`dirigent-test/v3-mk6-smoke.png`).
+- **Nicht aus MK6 (schon im Vorgänger 4.12.0, gehören in den Hauptstrang):** `v3-mk4-ui` MK4-12 erwartet STIMMUNG/SEQ dunkel (veraltet seit MK3;
+  scheitert auch auf 4.12.0); `v3-mk2-ui` MK2-10 erwartet MOD-FX … SEQ dunkel (veraltet); `v3-mk3-timbre` MK3-07 Stimmwelle gegen 4.10.0
+  (scheitert auch auf 4.12.0, Folge von MK2-fix); `v3-mk2-ui` MK2-08 (Wellen-Zeit 30,2 ms, schwankt) und `v3-mk1-ui` MK1-31 (🎲 1 stummer Wurf
+  von 100) wie in CHANGES-MK-MK4 beschrieben; `v3-mk1-fpdsp`/`v3-mk3-fpdsp` „Denormale Filtertyp 0“ ist eine Zeitmessung, die auf 4.12.0
+  ebenso scheitert (15–19/58 Fenster) und hier zwischen 0/58 und 16/58 schwankt.
+- Markenwörter (B.6 Nr. 9): AM-Teil 0, ganze Datei genau 1× `MS 2000` (MK_LABEL). Worklet ASCII. Keine Konsolenfehler in allen Läufen.
+
+### iPhone-Prüfpunkte (Spec MK6)
+1. MS-2000-Spur, EDIT-WAHL 2 auf **SEQ** (letzte Stellung): SEQ AN, ZIEL CUTOFF. Tipp auf die Matrix-Zeile → **SCHRITTE**: Säulen malen,
+   Song starten → der Klang „läuft“ im Takt, der laufende Schritt leuchtet.
+2. **● AUFN.** tippen → GERÄT (SPIEL), eine Taste halten und den **CUTOFF**-Regler langsam drehen → die Bewegung steht danach in den Säulen,
+   der Regler springt zurück, ↶ nimmt alles zurück.
+3. SHIFT: TYP Rückwärts / Wechsel, LAUF Einmal, KEY SYNC Stimme (zwei Töne nacheinander laufen versetzt).
+
+### Geräte-Abgleich
+Entfällt (der microKORG hat keinen Mod-Sequenzer); die Kurven bleiben eK.
+
+### Tests und Dateien
+- `dirigent-test/v3-mk6-seq.mjs` (Node, `v3-mk6-seq.out`), `v3-mk6-cpu.mjs` (`v3-mk6-cpu.out`), `v3-mk6-fp.mjs` (Fach-Prüfung, `v3-mk6-fp.out`),
+  `v3-mk6-ui.mjs` (Chromium, `v3-mk6-ui.out`), `v3-mk6-pe1.mjs` (`v3-mk6-pe1.out`), Hilfen `v3-mk6-q0.mjs`, `v3-mk6-dbg*.mjs`, `v3-mk6-look0.mjs`.
+- Bildschirmfotos `dirigent-test/v3-mk6-shots/`: je Format P1, P2, P3, L1, L2, W, L1-SA, L0-SA, L1-HB: `-seq`, `-seq-eb2`, `-schritte`; dazu `P1-schritte-edit.png`.
+- Schnappschuss: `synq-snapshots/MK6.html`.
+
+## MK6-fix — 4 bestätigte Befunde der Abnahme (App bleibt 4.14.0, Format 5, keine Datenbank-Änderung)
+
+### Behoben
+1. **● AUFN. endete nie bei LÄNGE 1 oder nach einem abgelaufenen LAUF Einmal** (MK6-09, MK6-14). Worklet:
+   - `recMsg` setzt `done` der Timbre- und aller Stimmen-Positionen zurück: während der Aufnahme läuft die Sequenz als Schleife weiter,
+     auch nach dem Auslaufen von Einmal (vorher stand die Position auf dem letzten Schritt fest).
+   - Neuer Durchlauf-Zähler `MkSqP.wr` (in `sqAdv`, Schleife und Song-Raster). `recStep` endet, wenn ein neuer Durchlauf beginnt
+     (`r.H.wr !== r.w`) oder der Schritt kleiner wird. Damit endet die Aufnahme auch bei LÄNGE 1, wo der Schritt immer 1 bleibt.
+   - Nachweis: `v3-qa6-acc.mjs` Q9a–e 5/5 (vorher Q9a/b/d FAIL). `v3-qa6-ui.mjs` ONLY=REC 3/3 in Chromium mit dem echten ● AUFN.-Knopf:
+     ZIEL 11, SEQ an, CUTOFF zurück auf 40, ein Undo. `v3-vrf-mk6rec.mjs` A, B, B2, C, D enden alle (vorher A, B, B2 hingen).
+2. **FP-SONG: Bei KEY SYNC aus folgte die Sequenz dem Transport-Schlag statt dem Song-Schlag** (MK6 Umfang 1, MK6-05).
+   - Hauptthread: `mkSongSync()` (neben `songBeatOf`) schickt `{mkSong: {off, prev, wrap}}` an die Engines, nur wenn sich etwas ändert.
+     Aufgerufen im Scheduler direkt nach `songTick`, also auch bei ▶ SONG ab Takt n, ⟲-Schleife und Teil-Sprung. Der Scheduler läuft
+     voraus, deshalb kommt ein Sprung vor dem hörbaren Zeitpunkt an.
+   - Worklet: `sqTick` rechnet Song-Schlag = Transport-Schlag − off (vor `wrap`: − prev), genau wie `songBeatOf`. Einmal wartet vor
+     Song-Schlag 0 auf Schritt 1 und hält nach C.
+   - Zwischen den Noten läuft das Song-Raster jetzt weiter (`idle(n, fr)` bekommt den Block-Frame). Vorher stand die Position still,
+     bis eine Note kam, und der erste Bericht nach einer Note zeigte einen alten Schritt.
+   - Nachweis: `v3-fp6q-song.mjs` ab Takt 2 58/58 und ab Takt 4 58/58 auf dem Song-Raster (vorher 0/60 bzw. 0/59).
+     `v3-fp6q-loop.mjs` 158/158 (vorher 86/161). `v3-fp6q-indep.mjs` 60/60, 61/61 und 60/60 (vorher 0/60 und 0/61).
+     `v3-fp6q-indep2.mjs` (Einmal ab Takt 2) hält ab Song-Schlag 4 auf Schritt 5 (done).
+3. **MK6-12 Leistung mit teuren Zielen** (beide Befunde: LFO1/2-FREQ bei LFO KEY SYNC Stimme; EG2 SUSTAIN, RESONANZ, Wellenfolge).
+   - LFO-Frequenz als Tabelle `MK_LHZ`/`mkLHz` in 1/16-Einheiten, linear dazwischen. Ganze Werte sind bitgleich zu `MKW.lfoHz`,
+     Bruchwerte weichen < 2e-6 relativ ab. Sie gilt nur auf den Seq-Wegen; ohne Seq bleibt alles wie vorher (MK6-10 bitgleich).
+   - Die Arbeit je Stimme (Position, Werte, EG-Latch, LFO-Raten `v.qr1`/`v.qr2`) läuft in `sqPreAll`/`sqPre` vor den Stimmen, in einer
+     eigenen Funktion. `voice()` liest nur noch `v.qso`/`v.qE1`/`v.qE2`/`v.qr1`/`v.qr2`.
+   - SUSTAIN bewegt sich innerhalb der Sustain-Stufe: nur `Ev.s`/`Ev.dT` werden neu gesetzt statt `mkEnvC` (kein exp/log je Block;
+     Stufe 3 liest nur `E.s`, der Rest wird an der nächsten Stufe neu gebaut). Ergebnis bitgleich.
+   - `Ev` hat jetzt dieselbe Form wie `E1`/`E2`: Das Feld `.on` fällt weg, an seiner Stelle stehen `v.sqO1`/`v.sqO2`.
+   - Schrittwerte werden einmal je Änderung in `sqPrep` geklemmt (`q.c`, Float64Array), nicht mehr je Stimme und Block.
+   - Nachweis (Node, eigener Prozess je Fall, verschachtelt):
+     - `v3-qa6-cpu.mjs`: LFO1+LFO2+RES 0,38 × (vorher 0,78–0,80), LFO1 allein 0,28 (0,80), LFO2 allein 0,29 (0,51), RES 0,22.
+     - `v3-fp6q-cpu2.mjs` N=9: egs 0,39 × (vorher 0,62–0,88), wv 0,33 × (vorher 0,65–0,80).
+     - `v3-mk6fix-cpu.mjs` (CPU-Uhr, alle Zielsätze, N=5–7): egs 0,32–0,47, egsStufe 0,38–0,41, wv 0,32–0,45, lfo 0,38–0,48,
+       cheap 0,16–0,32. „nul“ (alle Werte 0, nur der Mechanismus) kostet 0,22.
+     - `v3-mk6-cpu.mjs` (Builder) 0,20 / 0,12 / 0,37.
+   - Die Streuung auf der geteilten Maschine liegt bei ±0,1. Der Schätzer „cpu“ aus `v3-rv-mk6cpu-indep.mjs` zählt die ganze
+     Prozess-CPU, also auch JIT-Übersetzung, GC-Threads und das Lesen der Datei. Er ist keine Block-Messung und streut stark
+     (VA-Stimme 8,7 statt 4,8 ms/s). q25 und das beste Fenster bestehen dort (egs 0,41–0,53, wv 0,32–0,37).
+4. **Zusätzlich (gefunden mit `v3-qa6-ui.mjs`, Q-FIRST, scheiterte schon in MK6.html):** Bei der ersten Note nach dem Laden wurden die
+   Seq-Werte 5 ms eingeblendet. Ein EG-Ziel rastete dadurch mit fast 0 ein, und SEQ ATTACK +63 wirkte auf diese erste Note nicht.
+   `sqPrep` blendet jetzt nur ein, wenn es vorher schon einen Zielsatz gab (`this.sqSig != null`). Q-FIRST besteht: −36,3 dB wie das
+   gespeicherte ATTACK 63.
+
+### Regression (alle auf `mk-br-MK6/index.html`)
+- Node:
+  - `v3-mk6-seq.mjs` alle bestanden, MK6-10 bitgleich gegen 4.12.0 (MK4-fix.html).
+  - `v3-mk6-fp.mjs` alle bestanden.
+  - `v3-qa6-acc.mjs` 15/16. Q6 scheitert auch in MK6.html: Der Bericht bei t = 0,62 s liegt schon im Schritt ab 0,625 s; die Prüfung
+    ist zu grob gerastert und zeigt keinen Fehler.
+  - `v3-mk4-fx.mjs`, `v3-mk2-osc.mjs`, `v3-mk1-dsp.mjs`: Die einzigen Ausfälle sind die bekannten Zeitmessungen (Denormale,
+    MK1-24). Sie bestehen im zweiten Lauf und scheitern ebenso in MK6.html.
+  - `v3-mk3-scale.mjs` bestanden. `v3-mk4fix-kill.mjs` unverändert.
+  - `v3-fp6q-bit/ks/rec/rec2/t3.mjs` liefern dieselben Werte wie MK6.html (siehe „Offen“).
+- Chromium:
+  - `v3-mk6-ui.mjs` 28/28, auch mit den echten Schriften: `v3-mk6fix-ui-font.mjs` lädt `cloudPagesExtras()` mit `fonts/` neben einer
+    Kopie in `mk6fix-fonttest/`, alle 5 Schnitte geladen. Damit bestehen M-PLATZ, M-ANSICHT und die Leistungs-Probe „+Seq“
+    (fps 59,9, 0 longtasks).
+  - `v3-qa6-ui.mjs` alle bestanden.
+  - Smoke ohne Fehler (`dirigent-test/v3-mk6fix-smoke.png`).
+- Worklet weiter ASCII. Größe +4,1 KB (2 920 943 B).
+
+### Zusammenführen (zusätzlich zu oben)
+- Außerhalb der MK-Blöcke berührt:
+  - Scheduler (eine Zeile `mkSongSync()` nach `songTick`).
+  - `mkSongSync()` neben `songBeatOf`.
+  - Prozessor `onMsg` (`m.mkSong` → `this.sqSong`) und Konstruktor (`sqSong`).
+  - `MkCore.idle(n, fr)` und die zwei Aufrufer im Prozessor (`idle(CR, f0 + off)`, `idle(N, f0)`).
+- Wenn MK5/MK7 `MkCore.idle` oder `MkTim.idle` ändern, muss der zweite Parameter `fr` mitwandern.
+
+### Offen (nicht in der Befundliste, schon in MK6.html genauso; für den Orchestrator)
+- `v3-fp6q-rec2.mjs`: KEY SYNC Stimme. Endet die jüngste Stimme mitten in der Aufnahme, springt die Aufnahme auf die Timbre-Position,
+  und es bleiben Schritte ungeschrieben (4–6).
+- `v3-fp6q-t3.mjs`: Den Wert des laufenden Schritts bei Glatt + CUTOFF ändern (SCHRITTE malen) ergibt M-KLICK 24–27 dB (Stufe ≤ 2,5 dB).
+- `v3-fp6q-bit.mjs`: Gegen 4.12.0 weichen „patch 5/7“ auch bei Seq aus ab (max |Δ| 0,21 / 0,89). Ursache wohl vor MK6, gehört in den
+  Hauptstrang.
+- Hauptstrang (MK1, nicht hier behoben):
+  - `voice()` erzeugt auch ohne Seq ≈ 13 MB/s Müll. Gemessen mit `dirigent-test/v3-mk6fix-alloc.mjs`, wahrscheinlich doppelte Werte in
+    getaggten Feldern.
+  - Ein ruhendes Timbre ruft in `MkTim.idle` je Block zweimal `lfoRate` (Math.pow) auf statt `lfoRateC`.
+  - Beides kostet bei jedem AM-Klang.
+- Neue Hilfen in `dirigent-test/`: `v3-mk6fix-cpu.mjs`, `v3-mk6fix-alloc.mjs`, `v3-mk6fix-font.mjs`, `v3-mk6fix-ui-font.mjs`,
+  `v3-mk6fix-indep-dbg.mjs`, `v3-mk6fix-q6.mjs`.
+- Schnappschuss: `synq-snapshots/MK6-fix.html`.
+
+## G-MK6-gruppe-fix (4.14.0, Befunde der Gruppen-QA G-MK6, 26.10.)
+
+Version bleibt 4.14.0 (Fix im Paket MK6), Format 5, keine Server-Änderung. Nur der Seq-Kern im AM-Zweig des Worklets
+(`MkSqP`, `MkTim.sqPrep/sqAdv/sqVal/recMsg/recStep`, die zwei `recStep`-Aufrufe in `idle`/`block`) ist geändert. Größe +2,4 KB
+(2 923 384 B), Worklet weiter ASCII, Markenwort-Prüfung unverändert (1 × `MS 2000`).
+
+### Behoben
+1. **● AUFN. endete nach 1–3 Schritten bei abgesetzten Noten (KEY SYNC Timbre/Stimme).** Eine neue Note nach „alle los“ setzte
+   die Position auf Schritt 1 zurück, `recStep` las das als Ende der Aufnahme.
+   - Neu: Bei KEY SYNC Timbre und Stimme hat die Aufnahme eine eigene Position. Sie startet beim laufenden Schritt (Index wie bisher,
+     in der Vorwärts-Folge) und läuft vorwärts als Schleife bis LETZTER SCHRITT, unabhängig von Key-Sync-Neustarts (Umfang 4,
+     MK6-09/-14). KEY SYNC aus bleibt auf Timbre- bzw. Song-Raster-Position.
+   - Damit ist auch der offene Punkt `v3-fp6q-rec2.mjs` behoben (jüngste Stimme endet mitten in der Aufnahme: jetzt keine Lücken).
+   - Nachweis: `v3-qa-gmk6-rec2.mjs` 3/3 (Timbre und Stimme staccato: Schritte 2–16), `v3-qa-gmk6-rec.mjs` 4/4 im Song (Bass
+     Timbre/Stimme: 1–16, keine Lücken), `v3-repro-mk6-recks.mjs` (staccato Timbre/Stimme 1–16 in ≈ 2 s statt 1–2 in 0,18 s),
+     `v3-repro-mk6-recks2.mjs` (Touch: nach 1 s läuft die Aufnahme noch, Ende „Schritte 1–16“), `v3-fp6q-rec2.mjs` (keine Lücke).
+2. **Glatt sprang ohne Rampe bei TYP, LÄNGE, KEY SYNC, AUFLÖSUNG während einer Note.**
+   - Neu: Springt die Glatt-Linie (Positionssprung durch eine Einstellung, Key-Sync-Neustart bei klingenden Stimmen, Song-Sprung bei
+     KEY SYNC aus), gleitet der Wert vom letzten Wert mit τ = 5 ms zur neuen Linie (B.6 Nr. 2). Ohne Sprung bleibt die Linie exakt
+     linear (MK6-02, MK6-10 bitgleich).
+   - KEY SYNC Timbre ↔ Stimme bei klingender Note: Die Stimmen laufen an ihrer bisherigen Position (und mit ihren Werten) weiter,
+     kein Sprung. (Bei Stimme → Timbre übernimmt die Timbre-Position die der jüngsten Stimme.)
+   - Gain-Tap (`v3-qa-gmk6-gain.mjs`): TYP 6,2 ms, LÄNGE 5,7 ms, AUFLÖSUNG 6,4 ms (vorher je 0,3 ms), KEY SYNC → Stimme ohne Sprung
+     (vorher 0,53 → 0,06 in 0,3 ms). Bezug Regler-Änderung 5,8 ms.
+3. **Undo/Redo und Malen des laufenden Schritts in Glatt sprangen hart.** Dieselbe Gleit-Regel greift bei jeder Wert-Änderung
+   (`sqPrep` zählt Änderungen, `sqVal` gleitet ab dem letzten Wert).
+   - Gain-Tap: ↶ 7,1 ms, ↷ 5,7 ms, Malen 6,6 ms (vorher je 0,32 ms); Bezug Regler-↶ 7,1 ms.
+   - Spur-Ausgang, HF-Burst gegen den lauteren stehenden Pegel (`v3-repro-gmk6-undoglatt.mjs`, Cutoff 64, Touch): ↶ +2,7 dB, ↷ +0,9 dB
+     (vorher +32,6 / +36,2), Malen über den laufenden Schritt +2,5–2,7 dB (vorher +31), Ziehen 4,4–4,7 dB (vorher 14); Bezug Regler-↶ 2,0 dB.
+   - Damit ist auch der offene Punkt `v3-fp6q-t3.mjs` behoben: Glatt CUTOFF −4,7…−5,5 dB, Glatt A-PEGEL −1,1 dB (vorher 24–27 / 6,3 dB).
+   - Ein Wechsel BEWEGUNG Glatt → Stufe rampt ab dem Glatt-Wert (1 ms) statt zu springen.
+
+### Messhinweis (für die Abnahme)
+- `v3-qa-gmk6-click.mjs` misst M-KLICK gegen den Median ±20 ms. Ein großer CUTOFF-Wechsel öffnet die Höhen in wenigen ms; das wertet
+  dieses Maß auch beim gewöhnlichen Regler (5-ms-Glättung) als Knack: „Stored knob change under a seq (CUTOFF 40 → 90)“ 27–29 dB.
+  Glatt-CUTOFF-Fälle (TYP 38,8 dB) liegen deshalb dort weiter über 6 dB, obwohl sie jetzt wie der Regler gleiten.
+- `dirigent-test/v3-gmk6g-click.mjs` (Kopie mit HF-Burst gegen den lauteren stehenden Pegel, wie im Befund 3): alle Glatt-Fälle
+  ≤ 6 dB (TYP CUTOFF 10,8 dB bei 11,1 dB Eigen-Schwankung der laufenden CUTOFF-Rampe ohne Änderung). Die verbleibenden Ausfälle
+  dort sind Stufe (1-ms-Rampe nach B.6 Nr. 2 b, gewollt) und M-EINBRUCH bei echten Pegel-Änderungen (LÄNGE 16 → 4 macht die
+  Sequenz leiser; ebenso der Bezug „AMP PEGEL 127 → 60“).
+
+### Regression (alle auf `mk-br-MK6/index.html`)
+- Node: `v3-mk6-seq.mjs` 36/36 (MK6-09 Start bei Schritt 3, MK6-10 bitgleich gegen MK4-fix), `v3-mk6-fp.mjs` 16/16,
+  `v3-qa6-acc.mjs` 14/15 (Q6 wie bisher, siehe oben), `v3-fp6q-ks.mjs` alle 0 dB (vorher Stufe Timbre → Stimme −5,1 dB),
+  `v3-fp6q-rec.mjs` unverändert, `v3-fp6q-bit.mjs` gleich wie MK6-fix.
+- Neu `dirigent-test/v3-gmk6g-bit.mjs`: 26 Seq-Läufe (KEY SYNC 0/1/2 × Glatt/Stufe × 4 TYPEN, Einmal, Schrittlänge, Akkord + Pause)
+  bitgleich zu MK6-fix (`dirigent-test/v3-gmk6g-base.html`).
+- `v3-mk6-cpu.mjs` (MK6-12) besteht: 0,26–0,36 / 0,14–0,21 / 0,42–0,46 × VA-Stimme (MK6-fix im selben Lauf 0,35 / 0,14 / 0,46).
+- Chromium: `v3-fp6q-song.mjs` (FP-SONG) wie vorher; `v3-mk6fix-ui-font.mjs` mit den echten Schriften (`mk6fix-fonttest/`)
+  28/28 inkl. M-PLATZ/M-ANSICHT und Probe „+Seq“ (fps 60,2, 0 longtasks); `v3-qa6-ui.mjs` bestanden; `v3-qa-gmk6-undo.mjs` 7/7;
+  Smoke ohne Fehler (`dirigent-test/v3-gmk6g-smoke.png`).
+- Hinweis Testumgebung: `/opt/pw-browsers/chromium-1194` gibt es auf dieser Maschine nicht; alle Läufe nutzen wie bisher
+  `chromium-1243`.
+
+### Offen (nicht behoben, für den Orchestrator)
+- KEY SYNC Stimme → Timbre bei mehreren klingenden Stimmen an verschiedenen Positionen: die älteren Stimmen springen auf die Position
+  der jüngsten (eine geteilte Position kann nicht je Stimme gleiten). Selten (Einstellung während eines Akkords).
+- Stufe-Sprünge (Malen, Undo, TYP) bleiben bei 1-ms-Rampe nach B.6 Nr. 2 b; bei CUTOFF/AMP großer Hub hörbar hart, aber so verlangt.
+- `v3-fp6q-bit.mjs` „patch 5/7“ und die Hauptstrang-Punkte (MK1) wie oben.
+- Schnappschuss: `synq-snapshots/G-MK6-gruppe-fix.html`.
+
+
+# CHANGES – MS 2000, Paket MK7 (Zweig-Kopie `mk-br-MK7`)
+
+## MK7 — Vocoder mit 16 Bändern und Eingänge E1/E2 · App 4.15.0 (`APP_CODE` 4 015 000) · Format bleibt 5
+
+**Vorgänger-Stand** für alle „bitgleich“-Abnahmen und das Budget: **4.12.0** (MK0–MK4 zusammengeführt =
+`synq-snapshots/G-MK34-merge.html`, 2 874 742 B). Diese Kopie startet dort; MK5/MK6 entstehen in eigenen Zweigen.
+Der Orchestrator führt zusammen und setzt die VERSION-Zeile endgültig. Server: keine Änderung nötig
+(`max_app` 4 021 000 ≥ 4 015 000, Format 5). Kein Supabase-Aufruf in diesem Lauf. Nichts committet.
+
+**Größe:** 2 927 671 B = **+52 929 B** (Budget MK7-14 ≤ +52 KB = 53 248 B) — eingehalten.
+Davon grob: Worklet (MkVoc, Eingänge, Eingang-Welle) ≈ +20 KB, Bedienfeld `sq-mk-src` ≈ +22 KB, Hauptteil (Eingänge,
+gemeinsamer Mikrofon-Abgriff, Undo, ECO, Probe, Test-API, Hilfe) ≈ +11 KB. Kommentare wurden dafür gekürzt.
+
+### Gebaut
+1. **Vocoder im Worklet** (`class MkVoc` im AM-Teil `/*MK{*/ … /*}MK*/`, ASCII), nur Timbre 1, MODUS 3:
+   - **16 Analyse-Bänder** auf E2 (je 2 TPT-SVF-Bandpässe = 4. Ordnung, Güte fest 10), Mitten W-36-Raster,
+     **Folger** je Band (W-38-Zeitkonstante, Anstieg τ/4), FOLGER 127 = Halten.
+   - **16 Synthese-Bänder** auf dem summierten Träger (4. Ordnung, Q = 3 + 9·RESO/127), Lage aus W-36 mit
+     FORMANT-SHIFT, CUTOFF, FC-MOD (Quelle + Intensität, W-37), Zwischenwerte log. in Noten interpoliert.
+   - **Gate** (W-39, 3-ms-Spitzenfenster, exponentielles Schließen bis −60 dB in der Gate-Zeit), **HPF** 4. Ordnung
+     Butterworth 6 kHz mit HPF-PEGEL und HPF-GATE (W-40), **DIREKT** (W-41), **K-PEGEL / K-PAN** je Band (W-42).
+   - **Halten** (`voc.hold`, 16 × 0…127, 0,5-dB-Schritte): TIMBRE-Taste (LED „HALTEN“) friert die Folger ein und
+     speichert sie mit dem Sound; nochmal = aus; FOLGER ganz auf hält ebenso. Ein gehaltener Sound klingt ohne Eingang.
+   - **Begrenzer Stufe 1** (CPU): ~~statt 2 Bandpässen einer mit Q × 2 (+ Ausgleich 0,91)~~ – **ersetzt in MK7-fix:**
+     dieselben Bänder 4. Ordnung bei halber Abtastrate. Wechsel 60 ms Vorlauf + 30 ms Blende je Sample. Ausgang mit weichem Knie über ±1 (Spitze ≤ +6 dBFS).
+   - **Ruhe-Sparen:** stille Analyse wird übersprungen (keine Denormale), unbenutzter Eingang kostet nichts im Kern.
+   - **Träger-Stimmen** (4 Säge im INIT „Vocoder“): OSZ 1 (alle Wellen, auch Sinus mit STEUER 1/2) + Rauschen + E1
+     (W-19-Kurve), × EG2 × Pegel/Anschlag/KEYTR., Verzerrung (W-23), mono in die Trägersumme.
+2. **Eingänge E1/E2** (EN3-15): Worklet-Knoten mit einem Stereo-Eingang (discrete), je AM-Spur ein ChannelMerger.
+   `tr.mkIn = {e1, e2, e1Dry, e2Dry}` mit Quelle `null | 'mic' | 't:<uid>'` (Spur **vor dem Fader**, Abgriff an der
+   `duck`-Stufe). **„Quelle nur als Eingang“** nimmt die Quelle über einen neuen Knoten `N.cut` (20-ms-Rampe) aus Master
+   und Sends. **Kreis-Schutz** über alle Spuren (nicht wählbare Zeile „nicht möglich (Kreis)“). Ein Undo je Änderung
+   (Art `mkin`), übersteht Speichern/Laden.
+3. **Gemeinsamer Mikrofon-Abgriff** `MICTAP` (ref-gezählt, Nutzer `voc` und `st`): ein `getUserMedia` mit MIC_ASK
+   (echoCancellation/noiseSuppression/autoGainControl aus), nur nach Tipp; der letzte Nutzer stoppt die Spuren.
+   VS1 🎤 Stimme nutzt ihn jetzt ebenfalls (`stStart`/`stRelease`). Für den Vocoder laufen kein MPM und kein Ringpuffer.
+   In der Claude-App gibt es keinen Mikrofon-Eintrag. Versteckte Seite = Vocoder-Mikrofon aus.
+4. **Welle „Eingang“ (OSZ 1 = 7, W-30)** im Synth: (1 − BALANCE)·E1 + BALANCE·E2 durch Filter/Amp; TRANSP./FEIN wirkungslos.
+5. **Bedienfeld:** Vocoder-Zeilen in EDIT-WAHL 1/2 (grüne Namen, Farbton 138°), SPIEL-Belegung im Vocoder,
+   QUELLE 1/2 ▾ (Listen aus | Mikrofon | Spuren, „Quelle nur als Eingang“, „Mikrofon stoppen“), TIMBRE = HALTEN,
+   SHIFT + 1/+ 2 = Pegel/Pan zurück (ein Undo), Zusatz-Ansicht **16 BÄNDER** (Canvas 2D, K-PEGEL oder K-PAN je Band
+   ziehen, Bandpegel live ≤ 30 Hz, nur solange sichtbar), LEDs E1/E2 (an ab −50 dBFS, rot ab −1 dBFS).
+   Modus Synth ↔ Vocoder startet die Tasten von T1 in der anderen Art neu; alle Elemente bleiben an ihrem Platz.
+6. **Vokal-Quelle** `mkVowel` (W-44, DOM-frei, im `sq-mk-src` zwischen `/*MKV{*/ … /*}MKV*/`): Glottis (W-28) →
+   F1–F4-Kaskade → Abstrahlung. Für Probe, Tests und später MK8/MK12.
+7. **ECO:** Vocoder-Sound bleibt ohne Worklet stumm (keine Stimme), LCD „Vocoder braucht den Worklet-Klang – im ECO-Klang stumm“.
+8. **Leistungs-Probe** mit drittem Fall „Vocoder“ (Vokalfolge in E2). **Hilfe:** 3 kurze MS-2000-Zeilen (Vocoder,
+   Formant halten, Eingänge mit Latenz-/Kabel-Kopfhörer-Hinweis).
+9. **Test-API:** `mkIn`, `mkInInfo`, `mkVocMic`, `mkHold`, `mkVowel`; `mkRender` mit `inputs {e1, e2}` und `at`.
+
+### Abnahme MK7-01 … MK7-16
+Tests: `dirigent-test/v3-mk7-voc.mjs` (Node-Offline, 37/37), `v3-mk7-inputs.mjs` (Chromium, Fake-Mikrofon, 24/24),
+`v3-mk7-ui.mjs` (Chromium, 102/102), `v3-mk7-cpu.mjs`, Bilder `v3-mk7-shot.mjs` → `dirigent-test/v3-mk7-shots/`.
+
+| Nr. | Ergebnis |
+|---|---|
+| MK7-01 | ✓ Bandtrennung k±1 ≥ 13,1 dB (≥ 12), k±3 ≥ 30,5 dB (≥ 30) |
+| MK7-02 | ✓ Bandmitten W-36 (FORMANT 0/+1/−2, CUTOFF +63) max. 0,07 %; CUTOFF +32 0,4 % einer Stufe; FC-MOD EG2 +63 = +2 Stufen (0,39 %); SPIEL-Belegung im Bedienfeld |
+| MK7-03 | ✓ FOLGER 0/64/126: 11,6 / 274,5 / 5 895 ms gegen W-38 11,5 / 273,7 / 5 894,6 ms; Halten (FOLGER 127 und TIMBRE) 5 s: 0,04 dB; gehaltener Sound ohne Eingang −19,8 dBFS; hold Speichern → Laden deep-equal |
+| MK7-04 | ✓ Gate 64: −60 dB nach 68,0 ms (W-39 65,8); Gate 100: 452 ms (469,2); SCHWELLE 0: Ausgang folgt bis −90 dB |
+| MK7-05 | ✓ HPF-PEGEL 127: Modulator > 6 kHz −3,1 dB; HPF-GATE: ohne Trägerstimme still, mit Stimme −3,1 dB |
+| MK7-06 | ✓ DIREKT 127 ohne Stimme: Korrelation 0,9996; DIREKT 0 still |
+| MK7-07 | ✓ K-PEGEL 0: −∞ dB; K-PAN L63: rechts −∞ dB; SHIFT + 1/+ 2, Init und SHIFT + 3 behalten den Vocoder |
+| MK7-08 | ✓ jede OSZ-1-Welle als Träger hörbar; Akkord C-E-G-H 54–86 dB über der Lücke; EINGANG 1 im Träger; Sinus STEUER 1 +1,72 Okt., STEUER 2 mit LFO 1 |
+| MK7-09 | ✓ Eingang durch 24LPF −34,4 dB = Ladder-Kurve; BALANCE ≥ 113 dB Trennung; TRANSP./FEIN Δ = 0; QUELLE 1/2 an Regler 4/5 |
+| MK7-10 | ✓ Kreis abgelehnt (auch 3er-Kette), Graph kreisfrei; Spur → Eingang 0 Samples; Claude-App: 0 getUserMedia, kein Mikrofon-Eintrag; getUserMedia erst nach Tipp, MIC_ASK-Flags, Stopp → `ended`; Stimme + Vocoder: Stoppen des einen lässt den anderen laufen, erst der letzte → `ended`; „Quelle nur als Eingang“ Master −∞, Eingang weiter −17,1 dBFS; Fader 0 ändert den Eingang nicht; Stummschalten wie bisher; 0 Netzaufrufe |
+| MK7-11 | ✓ Vocoder-Spur 1,92–2,15 × VA-Stimme (≤ 2,4, drei Läufe); Stufe 1: Nachbarband 8,1 dB (≥ 8), M-PEGEL Rauschen −0,76 dB, M-KLICK/M-EINBRUCH bestanden; Probe „Vocoder“ läuft (load_med 0,17, frames_ok) |
+| MK7-12 | ✓ bitgleich (max \|Δ\| = 0) für AM Säge, AM Dual+FX, AM Split Rauschen, VA gegen 4.12.0. Unverbundener Eingang: 0,07 / 0,09 / 0,15 / 0,17 × VA in vier Läufen — **an der Grenze 0,16 und vom Mess-Rauschen bestimmt** (Differenz < 1 ms je s Audio; der Kern tut bei stillem Eingang nichts, der Rest ist Chromium-Graph-Arbeit) |
+| MK7-13 | ✓ M-PLATZ Vocoder-Stellungen (Ebene 1/2) und 16 BÄNDER in P1–P3, L1, L2, W, mit Safe-Area/Home-Balken; M-SKIZZE grün 120–138°; M-ANSICHT Synth ↔ Vocoder; LEDs (E2 −26 dBFS an; +1,6 dBFS rot; −46 an; −54 aus); Bandpegel 28,6 Hz, rAF 59,9 fps |
+| MK7-14 | ✓ Budget +52 929 B; VS2-Abnahme (`v3-mk7-vsacc.mjs`): alles grün bis auf „Stimme rechtzeitig geplant“ (−9 ms), das **auch auf 4.12.0** fehlschlägt (Zeitmessung im Test-Browser, nicht MK7); Mikro-Wege laufen über den gemeinsamen Abgriff |
+| MK7-15 | ✓ ECO: Worklet −18,1 dBFS, ECO −∞ dBFS mit LCD-Hinweis, keine Konsolenfehler |
+| MK7-16 | ✓ Vokal-Quelle F1/F2 für C2/C3 × a e i o u: größte Abweichung 0,5 % (≤ 7); `tr.mkIn` Speichern → Laden deep-equal |
+
+Regression auf dieser Datei: Rauchtest ohne Fehler (`dirigent-test/v3-mk7-smoke.png`); `v3-mk1-look.mjs` 88/88;
+`v3-mk2-marke.mjs` alles PASS (Markenwörter 0, „MS 2000“ genau 1, keine neue Schrift/Bild-Daten, Worklet ASCII);
+`v3-mk4-ui.mjs` 63/64 — MK4-12 schlägt genauso auf 4.12.0 fehl (Test erwartet eine ältere Liste);
+`v3-mk3-ui.mjs` MK3-10: einziger Befund ist die neue LED-Leiste `ein` (16 × 44), die der alte Test als Trefferfläche zählt —
+sie ist nur Anzeige (kein Tipp), der MK7-Test prüft sie richtig. Testanpassung beim Zusammenführen.
+
+### Fach-Prüfung
+- **FP-DSP ● (Haupt):** Extremwerte 20 s (Resonanz 127, FC-MOD 50 Hz voll, alle Pegel 127): 0 NaN/Inf, Spitze +3,4 dBFS
+  (vorher 7,5 dBFS → weiches Knie eingebaut). 60 s Stille nach Vollaussteuerung: keine Denormal-Spitzen (Analyse wird bei
+  Stille übersprungen). Bandtrennung zuerst nur 29 dB bei k±3 → Analyse-Güte von 7,5 auf 10 gehoben. Stufe 1 mit zwei
+  Filtern 2. Ordnung dämpfte das Nachbarband nur 3,5 dB → ein Bandpass mit Q × 2 (8,1 dB). Pegel abgeglichen: Vokal
+  −20 dBFS auf 4 Säge-Stimmen ≈ Synth-Pegel (−15 dBFS). Koeffizienten je 16-Sample-Block, Glättung aller Sprünge.
+- **FP-IPHONE (Zweit-Blick):** keine neuen Dauer-Timer; Bandansicht malt nur sichtbar (~30 Hz); Bandpegel-Meldungen nur
+  solange die Ansicht offen ist; Mikrofon aus bei versteckter Seite; Touch-Ziele ≥ 44 (Ausnahme unten).
+  Latenz ≈ 70–75 ms laut VS1-Messung → Hilfe und Hinweis „Kabel-Kopfhörer“; INIT hat DIREKT 0 und HPF-PEGEL ≤ 40.
+- **FP-SICHER (Zweit-Blick):** Mikrofon nur nach Tipp, nie in der Claude-App, nichts wird aufgenommen oder gesendet
+  (0 Netzaufrufe); ein gemeinsamer Abgriff, der letzte Nutzer stoppt die Spuren (`ended`); N7V-35 eingehalten
+  (Quelle `t:<uid>` geprüft gegen UID_RE, `normMkIn` verwirft alles andere); Kreis-Schutz über alle Spuren, auch bei
+  Laden/Undo (`mkInRoute` verbindet nie einen Kreis). B.6 Nr. 9: keine Markenwörter (Vokal-Tabelle heißt `VOW`, nicht
+  `VOX`), „MS 2000“ genau einmal, keine Schrift/Bilder.
+
+### Abweichungen von der Spec
+- Analyse-Güte fest 10 (Spec nannte keinen Wert, 7,5 erreichte MK7-01 nicht).
+- ~~Begrenzer Stufe 1 = ein Bandpass mit Q × 2 und Ausgleich 0,91~~ – ersetzt in MK7-fix (halbe Rate statt halber Ordnung, siehe unten).
+- MK7-03 Folger gemessen als Abfall −6 → −26 dB (die Spitze am Anfang verfälscht den 0-dB-Bezug).
+- MK7-04 Gate-Zeit mit langsamen Folgern und festem Säge-Träger gemessen (sonst überdeckt der Folger das Gate).
+- MK7-16 F1/F2 über Vibrato-Hüllkurve (max-hold Vokal/roh), weil LPC auf 4 Formanten unzuverlässig war; dafür Vokal-Quelle
+  als Kaskade + Abstrahlung, Bandbreiten 70/80/120/150 Hz.
+- QUELLE 1/2 bei Synth-Welle „Eingang“ an OSZ-1-Reglern 4/5; im Vocoder an MIXER / EING. 1 mit SHIFT.
+- HALTEN = Array `voc.hold`; FOLGER 127 hält ebenfalls. INST-PEGEL folgt der W-19-Kurve. DIREKT/HPF in der Mitte −3 dB.
+- Vocoder-Ausgang mit weichem Knie. ECO-Vocoder startet keine Stimme (statt leiser Stimme).
+- Bandsäulen in P2/P3 schmaler als 44 px (16 Säulen bei der Spec-Breite, keine Überlappung); gegriffen wird über die ganze
+  Säulenhöhe (≥ 44 hoch), der Wert folgt dem senkrechten Ziehen.
+- `getSettings().echoCancellation === false` nur am Gerät prüfbar (die Fake-Kamera liefert keine Settings); getestet ist die Anfrage.
+
+### Bekannte Lücken
+- **MK7-12** Leerlauf-Kosten des verbundenen, stillen Eingangs liegen im Rauschen um die Grenze 0,16 × VA (0,07–0,17).
+- **iPhone-Punkte** (Pages, Kopfhörer) offen: 1) STIMME → Vocoder, QUELLE 2 = Mikrofon, sprechen + Akkord; 2) TIMBRE/HALTEN,
+  Mikrofon aus, weiterspielen; 3) gehaltenen Sound in der Claude-App spielen; 4) `ST.latMs` je Weg (Lautsprecher, Kabel,
+  Bluetooth) ablesen und hier eintragen.
+- **Geräte-Abgleich** offen: Vocoder mit FORMANT +1/−1, FOLGER Halten, HPF-PEGEL hoch (Zischlaute).
+- Bluetooth-Hinweis „Kabel-Kopfhörer empfohlen“ kommt über den bestehenden Mikrofon-Weg (`bt`); der Vocoder nennt ihn in
+  Hinweiszeile und Hilfe immer.
+- Vocoder-Werksklänge folgen mit MK8 (hier nur INIT „Vocoder“).
+- Alte Tests MK3-10 (LED-Leiste) und MK4-12 (Liste) beim Zusammenführen anpassen; VS2 „Stimme rechtzeitig geplant“ ist
+  im Test-Browser auch auf 4.12.0 wackelig.
+
+### Hinweise zum Zusammenführen (berührte Stellen)
+- Worklet: MKW-Tabelle (VR, vocPos/vocQ/vocTau/vocThDb/vocGate/vocHpf/vocDir/vocChl/vocK, holdQ/holdA, VOW/vowB/vowG/vowOQ),
+  `MkVoice` (vm), `MkTim.voice`/`block` (Eingang-Welle, Träger-Stimmen), neue Klasse `MkVoc` vor `MkCore`, `MkCore`
+  (inE1/inE2/io/vc, load/set mit voc.*, inSet, vocHot, vmOn, block), `AnalogCore.process` (inputs, vocHot, mkLv,
+  mkHoldGet, mkLed), Knoten `numberOfInputs 1`, `channelCount 2`.
+- Hauptteil: `SynthHost.track` (Eingänge, mkLv, mkHoldGet), `buildChain` (`N.cut`, `N.dryCut`), neuer Block vor
+  „sq-mk-src: evaluated on first need“ (normMkIn … mkInSet, MICTAP), `stStart`/`stGot`/`stRelease` (gemeinsamer Abgriff),
+  `normTrack` (mkIn), Undo-Art `mkin`, `syncEngine`/`cpuTick` → `mkInRoute`, `mkEco`/`spawnVoice`/`ecoMsg`, `initSound`,
+  `mkRange`/`mkSetP` (voc.hold), `mkRender` (inputs, at), Probe-Fall `voc`, Hilfe-Zeilen, Test-API, NO_SYNC.
+- `sq-mk-src`: `mkVowel`, KN-Vocoder-Regler, SEC1 [4]/[5], SEC2 [5], SPIELV, srcPop/holdToggle/chReset/paintEin,
+  16-BÄNDER-Ansicht, render/timbreKey/numKey/knobGesture, CSS.
+- Keine Datenbank-Änderung.
+
+---
+
+## MK7-fix — fünf Prüf-Befunde behoben · App bleibt 4.15.0 · Format 5 · keine Server-Änderung
+
+Ausgangsstand: `mk-br-MK7/index.html` 4.15.0 (2 927 671 B). Neuer Stand 2 931 675 B, Schnappschuss
+`synq-snapshots/MK7-fix.html`. Nur MK7-Code berührt (MkVoc im Worklet, `mkInRoute`/`mkInLink`, `setMute`, `paintEin`).
+Nichts committet, kein Supabase-Aufruf.
+
+### 1. Stumme Vocoder-Spur ließ DIREKT und HPF (und das Mikrofon) in den Master
+- **Ursache:** `setMute` beendet nur Clip-Stimmen; DIREKT und HPF brauchen keine Note.
+- **Fix:** Der Eingang einer AM-Spur läuft jetzt Merger → **Tor-Gain** → Knoten. `mkInRoute` setzt das Tor auf 0, solange
+  die Spur stumm ist (20-ms-Rampe wie `mkDryCut`), `setMute` ruft `mkInRoute` sofort. Eine stumme AM-Spur hört also keinen
+  Eingang mehr: kein DIREKT, kein HPF, keine Analyse. Live-Tasten auf einer stummen Spur klingen wie bisher (ohne Eingang).
+- **Belege** (Chromium, Live-Kontext): `v3-qa7-mute2.mjs` 2/2 (stumm −300 dB statt −46,7 / −30,2 dBFS);
+  `v3-repro-mk7-mutevoc.mjs`: DIREKT 127 stumm −300 dB, HPF stumm −300 dB, Mikrofon (Fake) stumm −300 dB, nach dem
+  Entstummen wieder −46,8 dBFS; `v3-repro-mk7-mutevoc-clip.mjs` (Clip-Fall, echter M-Knopf): −29,8 → −300 dB.
+- `v3-qa7-mute.mjs` stummte für seine Messung die Vocoder-Spur selbst (hing am Fehler). Ersatz `v3-mk7fix-mute-src.mjs`
+  (Träger still statt stumm): „Stummschalten der Quelle schweigt den Eingang“ besteht (−24,6 → −168,5 dB).
+
+### 2. 16 BÄNDER zeigte keine Live-Bandpegel
+- **Ursache:** `paintEin()` brach ab, weil die Ansicht keine E1/E2-LEDs hat; `bandsLive()` wurde nie erreicht.
+- **Fix:** `bandsLive(m.b)` steht vor der LED-Prüfung.
+- **Belege:** `v3-qa7-bands.mjs` 2/2; `v3-mk7fix-bands6.mjs` 6/6 (P1, P2, P3, L1, L2, W: 561–726 grüne Pixel);
+  `v3-mk7fix-bandsrate.mjs`: Zeichnen 28 Hz (≤ 30), rAF 58–60 fps. Bild `dirigent-test/qa-mk7/bands-live-fix-P1.png`.
+
+### 3./5. Begrenzer Stufe 1 änderte den Vocoder-Pegel um −4,5 … +21,5 dB (MK7-11 M-PEGEL ± 1 dB, B.4)
+- **Ursache:** Ein Bandpass 2. Ordnung mit fester Ausgleichszahl 0,91 trifft die Bandenergie nur bei Rauschen; Teiltöne
+  zwischen den Bandmitten gehen viel stärker durch. Kein fester Ausgleich kann das lösen.
+- **Fix (Abweichung von der Spec-Formulierung „halbiert die Filterordnung“, Ziel von B.4 erfüllt):** Stufe 1 rechnet
+  **dieselben Bänder 4. Ordnung bei halber Abtastrate** (halbe Filterarbeit). Halbband-Filter: polyphasiges IIR
+  (2 + 2 Allpass-Koeffizienten, elliptisch, Übergang 0,06 fs, Alias ≤ −57 dB) für E2 und Träger hinunter, für L/R hinauf.
+  Bandmitten bei halber Rate enden bei 0,21 fs (nur FORMANT/CUTOFF ganz oben betroffen). Die Dämpfung je Band wird so
+  angepasst, dass die Bandbreite in Hz der vollen Rate entspricht (bilineare Verengung). Der Weg mit voller Rate bekommt
+  3 Samples Verzögerung (= Laufzeit der Halbband-Kette), damit die Blende keine Phasenlöcher hat. Blende jetzt je Sample
+  (vorher 10-%-Stufen je Block), 60 ms Vorlauf, 30 ms Blende; das Abschalten der alten Bank erst nach dem letzten Blendblock.
+  Halbraten-Koeffizienten nur aus Tabellen (keine `Math.tan`/`pow` je Block) und nur, solange Stufe 1 läuft.
+- **Belege:** `v3-qa-mk7-lim2.mjs` 0 von 35 außerhalb ± 1 dB (größter Sprung −0,04 dB; vorher 17 von 35, bis +21,5 dB);
+  `v3-qa-mk7-lim.mjs` 8/8 ok; `v3-qa7-pegel.mjs` (App-`mkRender`) max |Δ| 0,00 dB; `v3-rep-mk7-limchr.mjs` alle Fälle
+  ≤ 0,03 dB; live `v3-qa7-lim-live.mjs` (cpuInject) −0,02 dB statt −2,86 dB; `v3-mk7fix-lvl.mjs` (24 Fälle: Rauschen/Säge,
+  RESO 0/64/127, Halten, Vokale) schlechtester −0,30 dB; `v3-mk7fix-lvl2.mjs` (FORMANT ± 2 + CUTOFF ± 63, FC-MOD LFO,
+  Rauschen, 48 und 44,1 kHz) M-PEGEL ≤ 0,02 dB, M-KLICK beim Umschalten = Klang der Stufe 1 selbst.
+  Builder-Suite `v3-mk7-voc.mjs` 37/37 (Stufe 1 Nachbarband jetzt 13,1 dB statt 8,1; M-PEGEL Rauschen −0,03 dB).
+- **CPU** (`v3-mk7-cpu.mjs`, Median aus 5): Vocoder-Spur 1,94 × VA-Stimme (≤ 2,4, unverändert), Stufe 1 1,48 × (vorher
+  1,55 ×), unbenutzter Eingang −0,02 × (≤ 0,16).
+- **Info:** `v3-mk7fix-lvl2.mjs` Fall „FC-MOD LFO 63, RESO 127“ bei 48 kHz: M-EINBRUCH beim Zurückschalten −4,03 dB,
+  der Klang ohne Umschalten selbst −3,47 dB (LFO-Schwankung); Grenze „Klang − 0,5 dB“ um 0,06 dB verfehlt. Der alte Stand
+  hatte hier −7,24 dB.
+
+### 4. Gehaltener Formant verstummte bei SCHWELLE ≥ 1 (MK7-03)
+- **Ursache:** Die Synthese rechnete `env × Gate`; ohne oder mit leiser Quelle schloss das Gate den gehaltenen Klang.
+- **Fix:** Das Gate wirkt auf den Modulator (W-39). Bei HALTEN, FOLGER 127 oder gespeichertem `hold` blendet `hw` die
+  Synthese in 5 ms auf „offen“; ohne Halten bleibt alles bitgleich (`hw` = 0). Die 16-BÄNDER-Pegel folgen demselben Wert.
+- **Belege:** `v3-qa-mk7-hold.mjs`: gespeichertes `hold` ohne Eingang bei SCHWELLE 0/1/20/40/64/100 je +1,9 dBFS
+  (vorher −240 ab SCHWELLE 1); TIMBRE/HALTEN live bei SCHWELLE 30/64 bleibt −19,7 dBFS; FOLGER 127 mit −70-dBFS-Rauschboden
+  bleibt −19,7 dBFS. `v3-rep-mk7-holdgate.mjs` alle −5,2 dBFS. Chromium `v3-qa-mk7-holdbr.mjs`: Render SCHWELLE 0…64 je
+  −1,8 dBFS, live Spitze −4,7 dBFS bei SCHWELLE 0 und 30; `v3-rep-mk7-holdgate-br.mjs` alle −7,7 dB.
+
+### Regression
+- `v3-mk7-voc.mjs` 37/37 (MK7-12 bitgleich gegen G-MK34 für AM Säge, Dual+FX, Split, VA), `v3-mk7-inputs.mjs` 24/24,
+  `v3-mk7-ui.mjs` 102/102, `v3-qa7-bit.mjs` 7/7, `v3-qa7-live` 11/11, `v3-qa7-mic` 6/6, `v3-qa7-amp` 5/5, `v3-qa7-w30`,
+  `v3-qa-mk7reg-sends.mjs` (Stumm/Entstumm wie vorher). Smoke: keine Fehler (`dirigent-test/v3-mk7fix-smoke.png`).
+- Der Vocoder-Ausgang im normalen Betrieb ist um 3 Samples (62 µs) später als vor dem Fix (Verzögerungs-Ausgleich); sonst
+  gleich. Synth-Programme bitgleich.
+- Wackelig auch auf dem alten Stand: Leistungs-Probe „Vocoder“ in `v3-mk7-ui.mjs` meldet im Test-Browser gelegentlich
+  `frames_ok: false` (alt 1 von 4, neu 1 von 4 Läufen). `v3-qa7-pegel.mjs` lieferte einmal einen stillen Render (+288 dB);
+  in 3 Wiederholungen und 36 weiteren Renders nicht wieder aufgetreten.
+- Unverändert offen (QA-Skripte, schon vor dem Fix gleich, nicht Teil dieses Auftrags): `v3-qa7-dsp1/sep` k±3 = 29,9–30,0 dB,
+  `v3-qa7-dsp2` FOLGER 0 / FOLGER 127 / K-PEGEL 0 mit strengerer Messung, `v3-qa7-dsp4` Stufe-1-M-KLICK +6,3 dB (alt +6,4),
+  `v3-qa7-vowel` F1/F2 9,3 %.
+
+### Budget
+- **MK7-14 Budget überschritten:** 2 931 675 B = **+56 933 B** gegen G-MK34 (≤ +52 KB = 53 248 B; vor dem Fix +52 929 B).
+  Die +4,0 KB sind Halbband-Weg, Band-Hilfsfunktion und das Tor für stumme Spuren. Kommentare sind schon gekürzt; weiteres
+  Sparen ginge nur über Minifizieren. Entscheidung beim Orchestrator (Datei-Grenze 5,0 MB weit entfernt).
+
+### Für den Hauptstrang / Zusammenführen
+- Berührt: Worklet `MK_VXF`-Zeile, neue Helfer vor `class MkVoc` (`MK_VHB`, `MK_VH`, `MK_VD`, `mkVgH`, `mkAp`, `mkHbDown`,
+  `mkHbUp`, `mkB4`), `MkVoc` (Konstruktor, `settle`, `block`, `bands`), MKW ohne `vocC2`; Hauptteil `mkInRoute`/`mkInLink`/
+  neues `mkInMute`, `setMute`; `sq-mk-src` `paintEin`.
+- Nichts aus MK4 oder früher geändert.
+- iPhone offen (Pages): Stufe 1 am Gerät hören (Vocoder-Akkord, viele Spuren bis LIM 1), Stummschalten einer Vocoder-Spur
+  mit Mikrofon.
+
+
+## G-MK567-merge — Zusammenführung · App 4.15.0 (`APP_CODE` 4 015 000) · Format bleibt 5
+
+Echter 3-Wege-Merge (`git merge-file`, Basis `mk-base-C.html` = 4.12.0 = G-MK34-merge) der Zweige **MK5** (Step-Arpeggiator, 4.13.0),
+**MK6** (Mod-Sequenzer 3×16 + „Bewegung aufnehmen“, 4.14.0) und **MK7** (Vocoder 16 Bänder + Eingänge E1/E2, 4.15.0) in die
+Hauptlinie `mk-wt/index.html`, in dieser Reihenfolge. Sicherung vorher: `mk-wt/index.html.vor-merge-G-MK567-merge.html`.
+VERSION = höchste aller Seiten = **4.15.0** (`APP_CODE` 4 015 000 ≤ Wächter 4 021 000). Kein Supabase-Aufruf, nichts committet.
+Größe 3 017 704 B (+142 962 B gegen 4.12.0; Summe der Zweige +142 450 B, Rest = zusammengelegte Stellen).
+
+### Konflikte und Auflösung
+- **MK5:** ohne Konflikt.
+- **MK6 (14 Stellen):**
+  1. KN-Regler (Bedienfeld): ARP A/B-Regler (MK5) **und** SEQ-Regler (MK6) beide eingetragen.
+  2. `SEC2`: ARP A/B aktiv mit ihren Reglern (MK5) und SEQ aktiv mit Ebene 1 + SHIFT-Ebene (MK6) in derselben Liste.
+  3. Matrix-Zeile: MK6-Zeile (● AUFN., EB2, ●, SCHRITTE ▸) + MK5-Titel `arpTxt` für ARP A/B.
+  4./5. Nummerntasten: `SHIFT + 5` wirkt (MK6, `mshd` ab k > 4) und die Schritt-Tasten-Anzeige des Arp (MK5: SCHRITTE · LÄNGE, ARP-LED) bleibt.
+  6. `wiaPos2` (Punkt „geändert“): STIMMUNG/FX + SEQ (10, MK6) + ARP A/B (7/8, MK5).
+  7. Wertliste: `stp`-Listen (MK5: OKTAVEN, LÄNGE) und `d.px` (MK6: ZIEL 31 Einträge in 176 px) zusammen.
+  8. EDIT-WAHL-2-Liste: Unterzeile für ARP A/B (`arpTxt`) und SEQ (`seqTxt`).
+  9./10. Leistungs-Probe: Fälle „+Arp“ und „+Seq“ beide (Fortschritt durch die Fallzahl).
+  11. `panelInfo` (sq, rec, steps **und** arp), `arpFrame` bleibt; `window.MKUI` = Vereinigung beider Exporte.
+  12. Worklet Key Sync „Timbre“: MK5 hatte den Rücksetzer in `keyReset()` ausgelagert (beim Arp nur über KEYS 9), MK6 setzte die
+      Seq-Position im alten Block zurück. Gelöst: MK5-Zeile bleibt, der MK6-Rücksetzer (`sq.reset()`/`sq.init()`) sitzt jetzt in
+      `keyReset()` — damit startet die Sequenz auch bei laufendem Arp mit jedem neuen Akkord (KEYS 9) neu (vorher wäre der Arp-Fall
+      verloren gegangen). Nachweis `dirigent-test/gmk567-keysync.mjs` 4/4.
+  13. VERSION (vorläufig 4.14.0, s. MK7). 14. Hilfe: Arp-Zeilen (MK5) und SEQ/AUFN.-Zeilen (MK6) beide.
+- **MK7 (38 Stellen):**
+  1. `ARPC` (MK5) und `mkVowel` (MK7, `/*MKV{*/`-Block) beide. 2. Listen `ares/atyp/atgt` und `hpg` beide. 3. KN: Arp + Seq + Vocoder-Regler.
+  4. `SEC2` PATCH 1–4: MK7 hängt als Index 5 die Vocoder-Kanal-Zeilen an — MK6 nutzt Index 5 als SHIFT-Ebene. Gelöst in `knobs()`
+     und der Matrix-Zeile: Vocoder → Index 5 = Kanäle (wie MK7); sonst gilt Index 5 als SHIFT-Ebene **nur** bei SEQ (Stellung 11).
+     Ohne diese Wache hätte SHIFT bei PATCH 1–4 im Synth die Vocoder-Kanäle gezeigt.
+  5. SPIEL/SPIELV beide. 6. Kurznamen: MK7-Liste + AUFL./LAUF (MK6). 7. `knobs()`: Vocoder-Wege (SPIELV, Kanäle, SEQ im Vocoder leer,
+     EDIT-WAHL-1-Vocoder-Zeilen, Eingang-Welle) + MK6 (SHIFT-Ebene SEQ, SEQUENZ-Wahl `P.sq`) + Delay-Schalter.
+  8. LCD: `seqLcd` (MK6) vor der MK7-Zeile mit QUELLE (`d.src`). 9. `setWahl`: Vocoder-Kanäle, „im Vocoder kein Mod-Sequenzer“, FX, ARP A/B.
+  10.–12. Ansichten SCHRITTE (MK6) und 16 BÄNDER (MK7) nebeneinander (Bauen, Zeichnen, Schließen).
+  13. Matrix-Zeile: MK7-Aufbau (Namen über `knobs()`, grüne Vocoder-Namen, 16 BÄNDER ▸) + MK6 (EB2 nur bei SEQ, ● AUFN., ●, SCHRITTE ▸
+      — im Vocoder nicht) + MK5-Titel ARP A/B.
+  14./15. SHIFT-Werkzeuge: Vocoder PEG/PAN INIT (MK7, ab k > 2 dunkel), sonst T-KOPIE … SEQ ▸ (MK6, ab k > 4 dunkel); Arp-Anzeige bleibt.
+  16. ORIG-Vergleich: Pfade `arp.*` (MK5) und `voc.*` (MK7). 17. `wiaPos2`: Vocoder-Kanäle (MK7) + SEQ (nicht im Vocoder) + ARP A/B.
+  18. Tipp auf die Matrix-Zeile: Vocoder PATCH → 16 BÄNDER (MK7), SEQ → SCHRITTE nur ohne Vocoder (MK6).
+  19. Wertliste: QUELLE-Hinweis (MK7) + `stp`/`px` (MK5/MK6). 20. Wellenliste: ZIEL-Spannen (MK6) + „E1/E2 … statt eines Oszillators“ (MK7).
+  21. `leave()`: `einOn(false)` (MK7) + `P.rec = null` (MK6).
+  22.–24. Probe: „+Seq“-Aufbau (MK6) und „Vocoder“-Aufbau mit Vokal-Quelle (MK7); Fälle Kern, +FX, +Arp, +Seq, Vocoder (5, wie Nachtrag 3 B.4).
+  25. CSS beider Zweige. 26. `panelInfo` (MK5/MK6) + `mkVowel`-Export (MK7).
+  27. Worklet-Tabellen: SEQ (`SRES`, `SQT`, `sqR`) und Vocoder (`VR`, `voc*`, `VOW`, `hold*`) beide. 28. `MkVoice`: Seq-Felder + `vm/vaA/vaB`.
+  29. Block-Schleife: `sqPreAll` (MK6-fix) und `VC` (MK7) beide. 30. Patches: Vocoder-Stimme ohne Patches (MK7), Seq-Patchwerte (MK6).
+  31. Stimme: Welle 7 = Eingang (MK7, ohne Säge-Ersatz) + Seq-Mixer-Werte (MK6) + `vocAudio` (MK7).
+  32. Nachrichten `mkRec`/`mkSong` (MK6) + `mkHoldGet`/`mkLed` (MK7). 33. `process`: `vocHot()` (MK7) + `idle(CR, f0 + off)` (MK6-fix Song-Schlag).
+  34. `mkScope`: `seq` (MK6) + `vocBands` (MK7) und die Pegel-Meldung `mkLv`. 35. Hauptfaden: `mkRecDone` + `mkLv`/`mkHold`.
+  36. VERSION 4.15.0. 37. ECO: T2-Noten stumm (MK5) und Vocoder-Programm stumm (MK7). 38. Test-API: Arp (MK5) + Eingänge/Vokal (MK7).
+
+### Abnahme (Chromium 1243, der Pfad 1194 fehlt hier; Ausgaben `scratchpad/gmk567/out/`)
+- Smoke ohne Fehler (`dirigent-test/g-mk567-smoke.png`); keine Konfliktmarken; Worklet-AM-Teil ASCII; `v3-mk2-marke.mjs` alles PASS.
+- MK5: `v3-mk5-arp.mjs` 77/79 im ersten Lauf (MK5-01 „Trigger Range 2“ einmalig, im Wiederholungslauf PASS; MK5-02 „live zweimal“ bekannt
+  wackelig — 4 Wiederholungen: Merge 4/4 PASS, MK5-Zweig 1/4 PASS), `v3-mk5-arp-audio.mjs` alle, `v3-mk5-fix.mjs` 17/17, `v3-mk5-ui.mjs` 80/80,
+  `gmk567-mk5-fp.mjs` (Kopie von `v3-mk5-fp.mjs`, Pfad mk-wt) 10/10, `gmk567-mk5-perf.mjs` bestanden (ein Lauf mit einem 57-ms-longtask der
+  geteilten Maschine, Wiederholung 0).
+- MK6: `v3-mk6-seq.mjs` 36/36 (MK6-10 bitgleich gegen 4.12.0), `v3-mk6-fp.mjs` alle, `v3-mk6-cpu.mjs` alle (0,21 / 0,14 / 0,39 × VA),
+  `v3-mk6-ui.mjs` 28/28, `gmk567-mk6-pe1.mjs` (Kopie, Pfad mk-wt) bestanden.
+- MK7: `v3-mk7-voc.mjs` 37/37 (MK7-12 bitgleich gegen 4.12.0), `v3-mk7-inputs.mjs` 24/24, `v3-mk7-ui.mjs` 101/102 — die Probe „Vocoder“
+  meldete einmal `frames_ok: false` (bekannt wackelig, s. MK7-fix); 3 Wiederholungen Merge und Zweig je 3/3 PASS.
+  `v3-mk7-cpu.mjs` MK7-11 (Vocoder − Synth ≤ 2,4 × VA): Merge 2,85 / 2,63 ×, **MK7-Zweig im selben Lauf ebenso 2,82 ×** — kein Merge-Effekt.
+- Hauptlinie: `v3-mk4-fx.mjs` alles, `gmk34-merge-fx.mjs` alles, `gmk34-merge-nt.mjs` alles, `v3-mk1-look.mjs` 88/88,
+  `gmk34-mk4-ui.mjs` 63/64 (MK4-12 erwartet ARP A/B noch dunkel — seit MK5 aktiv, erwartet), `v3-mk3-ui.mjs` 36/37 (MK3-10 nur die
+  neue Eingangs-LED-Leiste `ein` 16 × 44, wie im MK7-Changelog beschrieben).
+- Neu für den Merge: `gmk567-keysync.mjs` 4/4 (Node: KEYS 9 des Arp setzt die Seq-Position bei KEY SYNC Timbre zurück, ohne KEYS 9 und bei
+  KEY SYNC aus nicht), `gmk567-cross.mjs` 20/20 (Chromium: PATCH + SHIFT im Synth ohne Kanäle, SEQ-Ebenen, Vocoder-Kanäle mit/ohne SHIFT,
+  SEQ im Vocoder leer und ohne SCHRITTE, ARP A im Vocoder, SPIELV, Probe mit 5 Fällen, Hilfe-Zeilen, Arp + Seq + Vocoder ohne Konsolenfehler).
+
+### Offen
+- `v3-mk7-cpu.mjs` MK7-11 liegt schon im MK7-Zweig über der Grenze 2,4 × (2,6–2,9 × auf dieser Maschine; Vocoder-Spur gesamt 5,7–5,9 × VA,
+  B.4-Grenze ≤ 8 eingehalten) — gehört zum MK7-Paket, nicht zum Merge.
+- `gmk34-mk4-ui.mjs` MK4-12 und `v3-mk3-ui.mjs` MK3-10 erwarten ältere Zustände (Tests anpassen).
+- MK5-02 „live zweimal“ bleibt eine wackelige Live-Zeitmessung (auch im Zweig).
+
+### Datenbank / Am Server offen
+- Nichts (Format 5, `APP_CODE` 4 015 000 ≤ Wächter 4 021 000).
+
+## G-MK567-merge-fix — zwei Befunde nach der Zusammenführung · App bleibt 4.15.0 · Format 5 · keine Server-Änderung
+
+1. **Mod-Sequenzer im Vocoder (MK6 × MK7, major).** Ein gespeicherter SEQ lief im Vocoder-Modus weiter (z. B. TONHÖHE 0/+12 →
+   Oktavsprünge im Träger), obwohl das Bedienfeld „nicht im Vocoder“ zeigt. Jetzt:
+   - Worklet `sqPrep`: `on = (S.on ≥ .5 || rec) && mode ≠ 3` – im Vocoder hat der SEQ keine Wirkung (Nachtrag 3 MK6: außerhalb des Umfangs);
+     `recMsg` nimmt im Vocoder keine AUFN. an.
+   - `MkCore.sqMode()`: Synth ↔ Vocoder (Regler und Laden) setzt beide Timbres auf neu vorbereiten; eine laufende AUFN. endet; der
+     Wechsel blendet in 5 ms (die vorhandene L3-Blende), beim Zurück auf Synth wirkt der gespeicherte SEQ wieder.
+   - Bedienfeld: SYNTH/VOC. → Vocoder bricht eine laufende AUFN. ab („abgebrochen (Vocoder hat keinen Mod-Sequenzer)“); die
+     EDIT-WAHL-2-Liste zeigt Zeile 11 im Vocoder dunkel „SEQ – nicht im Vocoder“ statt „an · SEQ 1 → …“.
+   - Probe: `vg567-seqvoc.mjs` Modus 3 TONHÖHE / AMP PEGEL / MIXER OSZ 1: max |Δ| 0 (vorher 0,28); Modus 0 unverändert.
+     `vg567-seqvoc2.mjs`: `mkScope(2).seq[0]` = `{on: 0, vals: [0,0,0]}` bei gehaltener Taste. `vg567-seqvoc3.mjs`: Liste,
+     Vocoder → Synth (SEQ wirkt wieder, Werte 12/0) → Vocoder (wieder aus). `v3-mk6-seq.mjs`: 0 FAIL.
+2. **MK7-11 Vocoder-CPU (major).** Die 16 Bänder liefen je Band und Block über `mkB4` + Pufferschleife. Jetzt im Normalfall
+   (4. Ordnung, kein Umschalten) Analyse-Band + Hüllkurvenfolger in einer Schleife (feste Koeffizienten) und Synthese-Band
+   (Koeffizienten-Rampe) + Kanal-Pegel/Pan direkt in den Ausgang – dieselbe Rechnung, kein Zwischenpuffer.
+   - Bitgleich: `vg567-vocbit.mjs` (Vokal-Modulator, FC-MOD LFO, K-PAN, Begrenzer-Umschalten 1 → 0) gegen `mk-br-MK7`: max |Δ| 0.
+   - `v3-mk7-cpu.mjs` (zweimal): **PASS MK7-11 1,69 × und 1,62 × VA-Stimme** (≤ 2,4; vorher 2,60 / 2,69); Vocoder-Spur gesamt
+     4,71–4,73 × VA (B.4 ≤ 8); MK7-12 PASS. `v3-mk7-voc.mjs`: alles PASS (inkl. MK7-12 bitgleich gegen G-MK34-merge).
+   - Info: der Begrenzer Stufe 1 (2. Ordnung, unverändert) misst jetzt 1,95 × und ist damit nicht mehr billiger als die volle Bank.
+3. Smoke-Test ohne Fehler. Schnappschuss `synq-snapshots/G-MK567-merge-fix.html`.
