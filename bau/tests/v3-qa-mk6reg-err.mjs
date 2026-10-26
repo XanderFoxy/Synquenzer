@@ -1,0 +1,24 @@
+// QA regression MK6: locate the uncaught "reading 't'" error: editor open on an MS 2000 track while the project is replaced
+import { chromium } from 'playwright';
+import fs from 'fs';
+const S = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/';
+const OLD = fs.readFileSync(S + 'dirigent-test/v3-qa-mk6reg/old-4120-mk.json', 'utf8');
+const file = process.argv[2] === 'base' ? S + 'mk6-base-4.12.0.html' : S + 'mk-br-MK6/index.html';
+const variant = process.argv[3] || 'steps';
+const br = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await br.newContext({viewport: {width: 390, height: 844}});
+const p = await ctx.newPage(); const errs = [];
+p.on('pageerror', e => errs.push('[' + phase + '] ' + String(e) + '\n' + (e.stack || '').split('\n').slice(0, 8).join('\n')));
+p.on('console', m => { if (m.type() === 'error') errs.push('[' + phase + '] console: ' + m.text()); });
+let phase = 'boot';
+await p.goto('file://' + file); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+await p.waitForTimeout(500);
+const step = async (name, fn, arg) => { phase = name; await p.evaluate(fn, arg); await p.waitForTimeout(900); };
+await step('setup', async () => { const Q = window.SYNQUENZER; await Q.loadDemo(); Q.setEngine(0, 'mk'); Q.selectTrack(0); Q.openEditor(); });
+await step('wahl', v => { const M = window.MKUI; if (v === 'steps') { M.setWahl(2, 10); M.viewOpen('schritte'); } else if (v === 'seq') M.setWahl(2, 10); else if (v === 'eigene') { window.SYNQUENZER.mkSet(0, 'scale', 9); M.setWahl(2, 9); M.viewOpen('eigene'); } else M.setWahl(2, 5); }, variant);
+await step('import-old', t => { window.SYNQUENZER.importJSON(t); }, OLD);
+await step('loadDemo', async () => { await window.SYNQUENZER.loadDemo(); });
+await step('newProject', () => { window.SYNQUENZER.newProject({init: true}); });
+await step('play', () => { const Q = window.SYNQUENZER; Q.setBpm(240); Q.launchScene(0); });
+console.log(file.slice(-25), variant, errs.length ? errs.join('\n---\n') : 'no errors');
+await br.close();

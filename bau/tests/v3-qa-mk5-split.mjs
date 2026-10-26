@@ -15,7 +15,7 @@ const r = await p.evaluate(async () => {
   await sl(300); Q.clearLog(); ARPC.clearLog();
   Q.launchScene(0); Q.play(); await sl(700);
   xpSet(4, 2);   // ⇅ +2 from bar 2 (beat 4)
-  { const A = ARPC; A.carrier(Math.max(b2t(4), AU.ctx.currentTime + .005), true); }
+
   await sl(3600);
   const nl = Q.noteLog(400).filter(e => e.track === 0 && e.beat < 8).map(e => [e.src, +e.beat.toFixed(2), e.out]);
   const voicesNow = [];

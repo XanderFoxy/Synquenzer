@@ -5979,6 +5979,10 @@ function mkEnvC(E, a, d, s, r) {
   E.dC = sp > 1e-6 ? tau(td / -Math.log((.1 * sp + MK_RD) / (sp + MK_RD))) : 0; E.dT = s - MK_RD;
   E.rC = tau(Math.max(1e-5, r) * SR / CR / -Math.log((.1 + MK_RD) / (1 + MK_RD))); E.rT = -MK_RD; E.s = s;
 }
+// MK6-fix (MK6-12): W-08 LFO frequency as a table (1/16 unit, linear between): the seq targets LFO1/2-FREQ move in fractions every
+// block per voice; integer values give exactly MKW.lfoHz (the table point), fractions differ < 2e-6 relative
+const MK_LHZ = new Float64Array(127 * 16 + 2); for (let i = 0; i < MK_LHZ.length; i++) MK_LHZ[i] = MKW.lfoHz(i < 2032 ? i / 16 : 127);
+function mkLHz(x) { x = x > 0 ? (x < 127 ? x : 127) : 0; const y = x * 16, i = y | 0, a = MK_LHZ[i]; return y === i ? a : a + (MK_LHZ[i + 1] - a) * (y - i); }
 // one control block of an envelope: st 0 idle 1 attack 2 decay 3 sustain 4 release
 let MK_ST = 0;
 function mkEnvB(E, st, o) {
@@ -6039,11 +6043,11 @@ class MkVoice {
     this.rn = 1; this.ns1 = 0; this.ns2 = 0; this.ngA = -1; this.ngB = 0; this.nkA = 0; this.nkB = 0; this.nnA = 0; this.nnB = 0;
     this.xL2 = 0; this.pPan = 0;
     // MK6: own seq position, glide flag, seq PORTAM., latched EGs
-    this.sq = null; this.gl = false; this.sqPv = -1; this.sqE1 = null; this.sqE2 = null; this.sqS1 = -1; this.sqS2 = -1; this.sqU1 = 0; this.sqU2 = 0;
+    this.sq = null; this.gl = false; this.sqPv = -1; this.sqE1 = null; this.sqE2 = null; this.sqS1 = -1; this.sqS2 = -1; this.sqU1 = 0; this.sqU2 = 0; this.sqO1 = false; this.sqO2 = false;
   }
 }
 function mkClone(v) { const c = Object.assign(new MkVoice(v.i), v); c.dz = v.dz.slice(); c.sxE = [0, 0, 0]; c.sxo = null; c.sxA = 1; c.sxB = 0; c.sxBlk = -1;
-  c.sq = v.sq ? v.sq.copy() : null; c.sqE1 = null; c.sqE2 = null; c.sqS1 = -1; c.sqS2 = -1; return c; }   // MK6
+  c.sq = v.sq ? v.sq.copy() : null; c.sqE1 = null; c.sqE2 = null; c.sqS1 = -1; c.sqS2 = -1; c.sqO1 = false; c.sqO2 = false; return c; }   // MK6
 const MK_STRUCT = {'o1.w': 'w1', 'o2.w': 'w2', 'o2.mod': 'mod', 'f.type': 'ft', 'a.gate': 'gate'};
 const MK_REASSIGN = {asg: 1, prio: 1, trig: 1};
 /* ---- MK6 mod sequencer: 3 x 16 steps per timbre, one position per timbre (per voice at KEY SYNC Stimme); offsets in H.o by target ---- */
@@ -6064,11 +6068,11 @@ function mkSqSet(S, ks, v) {
   if (ks[2] === 'k' || ks[2] === 'm') Q[ks[2]] = v; else if (ks[2] === 'v') { const s = +ks[3]; if (s >= 0 && s < 16) Q.v[s] = v; }
 }
 class MkSqP {
-  constructor() { this.j = 0; this.u = 0; this.done = false; this.st = -1; this.jj = -1; this.cy = 0; this.fresh = false; this.gen = -1; this.h = [];
+  constructor() { this.j = 0; this.u = 0; this.done = false; this.st = -1; this.jj = -1; this.cy = 0; this.wr = 0; this.fresh = false; this.gen = -1; this.h = [];
     this.fo = new Float64Array(MK_SQN + 1); this.fx = 0; this.o = new Float64Array(MK_SQN + 1); this.f = new Float64Array(3); this.g = new Float64Array(3); this.r = new Float64Array(3); this.a = new Float64Array(3); }
   reset() { this.j = 0; this.u = 0; this.done = false; this.st = -1; }
   init() { this.reset(); this.fresh = true; }
-  copy() { const c = new MkSqP(); c.j = this.j; c.u = this.u; c.done = this.done; c.st = this.st; c.fresh = this.fresh; c.gen = this.gen; c.o.set(this.o); c.fo.set(this.fo); c.fx = this.fx; c.f.set(this.f); c.g.set(this.g); c.r.set(this.r); c.a.set(this.a); return c; }
+  copy() { const c = new MkSqP(); c.j = this.j; c.u = this.u; c.done = this.done; c.st = this.st; c.wr = this.wr; c.fresh = this.fresh; c.gen = this.gen; c.o.set(this.o); c.fo.set(this.fo); c.fx = this.fx; c.f.set(this.f); c.g.set(this.g); c.r.set(this.r); c.a.set(this.a); return c; }
 }
 const mkCl = (x, lo, hi) => (x < lo ? lo : x > hi ? hi : x);
 
@@ -6213,11 +6217,12 @@ class MkTim {
     if (H.j >= n) { H.j %= n; H.u = 0; }
     if (abs) {
       if (!this.sqLoop && b >= this.sqC) { H.j = n - 1; H.u = D[O[n - 1]]; H.done = true; }
+      else if (!this.sqLoop && b < 0) { H.j = 0; H.u = 0; H.done = false; }   // MK6-fix: Einmal waits for song beat 0
       else { let x = ((b % this.sqC) + this.sqC) % this.sqC, j = 0; while (j < n - 1 && x >= D[O[j]]) { x -= D[O[j]]; j++; } H.j = j; H.u = x; H.done = false; }
-      const cy = Math.floor(b / this.sqC); if (H.st >= 0 && (H.j !== H.jj || cy !== H.cy)) this.sqHist(H, O[H.j]); H.cy = cy;
+      const cy = Math.floor(b / this.sqC); if (H.st >= 0 && (H.j !== H.jj || cy !== H.cy)) this.sqHist(H, O[H.j]); if (cy !== H.cy) H.wr++; H.cy = cy;   // MK6-fix: wr = passes (AUFN. end)
     } else if (!H.done) {
       H.u += nb;
-      while (H.u >= D[O[H.j]]) { H.u -= D[O[H.j]]; H.j++; if (H.j >= n) { if (this.sqLoop) H.j = 0; else { H.j = n - 1; H.u = D[O[n - 1]]; H.done = true; break; } } this.sqHist(H, O[H.j]); }
+      while (H.u >= D[O[H.j]]) { H.u -= D[O[H.j]]; H.j++; if (H.j >= n) { if (this.sqLoop) { H.j = 0; H.wr++; } else { H.j = n - 1; H.u = D[O[n - 1]]; H.done = true; break; } } this.sqHist(H, O[H.j]); }
     }
     if (H.st < 0) this.sqHist(H, O[H.j]); H.jj = H.j;
   }
@@ -6246,13 +6251,17 @@ class MkTim {
   // EG targets: latched per stage ("ab der naechsten Stufe")
   sqEnv(v, n, so) {
     const st = n ? v.e2s : v.e1s, b = n ? 21 : 17, e = n ? this.T.e2 : this.T.e1, da = so[b], dd = so[b + 1], ds = so[b + 2], dr = so[b + 3];
-    let Ev = n ? v.sqE2 : v.sqE1;
-    if (st !== (n ? v.sqS2 : v.sqS1) || (st === 3 && ds !== (n ? v.sqU2 : v.sqU1))) {
-      if (da || dd || ds || dr) { if (!Ev) Ev = {}; const W = MKW; mkEnvC(Ev, W.atk(mkCl(e.a + da, 0, 127)), W.dec(mkCl(e.d + dd, 0, 127)), W.sus(mkCl(e.s + ds, 0, 127)), W.dec(mkCl(e.r + dr, 0, 127))); Ev.on = 1; }
-      else if (Ev) Ev.on = 0;
-      if (n) { v.sqE2 = Ev; v.sqS2 = st; v.sqU2 = ds; } else { v.sqE1 = Ev; v.sqS1 = st; v.sqU1 = ds; }
+    let Ev = n ? v.sqE2 : v.sqE1, on = n ? v.sqO2 : v.sqO1; const ps = n ? v.sqS2 : v.sqS1;
+    if (st !== ps || (st === 3 && ds !== (n ? v.sqU2 : v.sqU1))) {
+      const any = da || dd || ds || dr, W = MKW;
+      // MK6-fix (MK6-12): SUSTAIN moving inside the sustain stage changes only the level (stage 3 reads E.s; the rest is rebuilt at the
+      // next stage) - no exp / log per block. Ev keeps the shape of E1 / E2 (no extra field: one hidden class for mkEnvB)
+      if (st === ps && on && any) { const sv = W.sus(mkCl(e.s + ds, 0, 127)); Ev.s = sv; Ev.dT = sv - MK_RD; }
+      else if (any) { if (!Ev) Ev = {}; mkEnvC(Ev, W.atk(mkCl(e.a + da, 0, 127)), W.dec(mkCl(e.d + dd, 0, 127)), W.sus(mkCl(e.s + ds, 0, 127)), W.dec(mkCl(e.r + dr, 0, 127))); on = true; }
+      else on = false;
+      if (n) { v.sqE2 = Ev; v.sqS2 = st; v.sqU2 = ds; v.sqO2 = on; } else { v.sqE1 = Ev; v.sqS1 = st; v.sqU1 = ds; v.sqO1 = on; }
     }
-    return Ev && Ev.on ? Ev : n ? this.E2 : this.E1;
+    return on ? Ev : n ? this.E2 : this.E1;
   }
   sqPar(tg) { const p = MK_SQP[tg], T = this.T; if (!p) return 0; return p[0] === 'p' ? T.p[+p[1]].i : p.length === 1 ? T[p[0]] : T[p[0]][p[1]]; }
   sqHold() { if (!this.sqV) return this.sq; let vo = null; for (const v of this.V) if (v.on && !v.ghost && v.sq && (!vo || v.age > vo.age)) vo = v; return vo ? vo.sq : this.sq; }
@@ -6262,7 +6271,8 @@ class MkTim {
     if (this.sqFi < 1) { this.sqFi += MK_SQF; if (this.sqFi > 1) this.sqFi = 1; }
     if (this.sqFo > 0) { this.sqFo -= MK_SQF; if (this.sqFo <= 0) { this.sqFo = 0; this.sqEo = null; this.sqDirty = true; } }
     const h = this.h, abs = this.sqKs === 0 && h.songStart >= 0 && frame >= 0;
-    this.sqAdv(this.sq, nb, abs, abs ? ((frame * ISR - h.songStart) * h.bpm / 60) : 0);
+    let b = 0; if (abs) { b = (frame * ISR - h.songStart) * h.bpm / 60; const g = h.sqSong; if (g) b -= g.wrap != null && b < g.wrap - 1e-9 ? g.prev : g.off; }   // MK6-fix: the SONG beat (MK6 Umfang 1)
+    this.sqAdv(this.sq, nb, abs, b);
     if (this.sqOn && !this.sqV) this.sqVal(this.sq);
   }
   // {mkRec: {k, tg, base} | {cancel}}
@@ -6270,19 +6280,21 @@ class MkTim {
     if (!m || m.cancel) { if (this.rec) { this.rec = null; this.sqDirty = true; } return; }
     const tg = m.tg | 0; if (!(tg >= 1 && tg < MK_SQN) || tg === 2) return;
     let vo = null; if (this.sqV) for (const v of this.V) if (v.on && !v.ghost && v.sq && (!vo || v.age > vo.age)) vo = v;
-    this.rec = {k: mkCl(m.k | 0, 0, 2), tg, base: +m.base || 0, H: vo ? vo.sq : this.sq, vo, cur: -1, s0: -1, v: this.T.seq.q[mkCl(m.k | 0, 0, 2)].v.slice(), R: MKW.sqR(tg)};
+    this.rec = {k: mkCl(m.k | 0, 0, 2), tg, base: +m.base || 0, H: vo ? vo.sq : this.sq, vo, cur: -1, s0: -1, w: 0, v: this.T.seq.q[mkCl(m.k | 0, 0, 2)].v.slice(), R: MKW.sqR(tg)};
+    this.sq.done = false; for (const v of this.V) if (v.sq) v.sq.done = false;   // MK6-fix (MK6-14): an Einmal run-out loops on during AUFN.
     this.sqDirty = true;
   }
   recStep() {
     const r = this.rec; if (this.sqDirty) this.sqPrep();
-    if (r.vo && (!r.vo.on || r.vo.ghost || r.vo.sq !== r.H)) { r.vo = null; r.H = this.sq; }
+    if (r.vo && (!r.vo.on || r.vo.ghost || r.vo.sq !== r.H)) { r.vo = null; r.H = this.sq; r.w = this.sq.wr; }
     const s = this.sqO[r.H.j];
-    if (r.cur >= 0 && s < r.cur) {
+    // MK6-fix (MK6-09): ends after LETZTER SCHRITT = the next pass began (also at LAENGE 1, where the step never gets smaller)
+    if (r.cur >= 0 && (s < r.cur || r.H.wr !== r.w)) {
       this.rec = null; this.sqDirty = true;
       try { this.h.port.postMessage({mkRecDone: {ti: this.ti, k: r.k, tg: r.tg, v: r.v, from: r.s0 + 1, to: r.cur + 1}}); } catch (e) {}
       return;
     }
-    if (r.s0 < 0) r.s0 = s; r.cur = s;
+    if (r.s0 < 0) { r.s0 = s; r.w = r.H.wr; } r.cur = s;
     r.v[s] = mkCl(Math.round(this.sqPar(r.tg) - r.base), -r.R, r.R);
   }
   sqInfo() { if (this.sqDirty) this.sqPrep(); const H = this.sqHold(); return {on: this.sqOn && !this.rec ? 1 : 0, run: this.busy() || this.rec || (this.sqKs === 0 && this.h.songStart >= 0) ? 1 : 0, step: this.sqO[H.j < this.sqN ? H.j : 0] + 1, done: H.done, rec: this.rec ? {k: this.rec.k, tg: this.rec.tg, step: this.rec.cur + 1} : null, vals: Array.from(H.a)}; }
@@ -6469,8 +6481,9 @@ class MkTim {
   }
   /* ---------------- rendering ---------------- */
   // no voice: the free-running LFO phases go on (Key Sync OFF keeps its phase between notes, like the VA global LFOs)
-  idle(n) { const T = this.T; this.g1 = (this.g1 + this.lfoRate(T.l1, T.l1.sync >= .5) * n * ISR) % 1; this.g2 = (this.g2 + this.lfoRate(T.l2, T.l2.sync >= .5) * n * ISR) % 1;
-    if (this.rec || (this.sqKs === 0 && this.h.songStart < 0)) { this.sqTick(-1, n * ISR * this.h.bpm / 60); if (this.rec) this.recStep(); } }   // MK6
+  idle(n, fr) { const T = this.T; this.g1 = (this.g1 + this.lfoRate(T.l1, T.l1.sync >= .5) * n * ISR) % 1; this.g2 = (this.g2 + this.lfoRate(T.l2, T.l2.sync >= .5) * n * ISR) % 1;
+    const ab = this.sqKs === 0 && this.h.songStart >= 0 && fr >= 0;   // MK6-fix (FP-SONG): the song grid runs on between notes (fr = frame of this block)
+    if (this.rec || (this.sqKs === 0 && this.h.songStart < 0) || ab) { this.sqTick(ab ? fr + n : -1, n * ISR * this.h.bpm / 60); if (this.rec) this.recStep(); } }   // MK6
   lfoRate(L, sync) { const spb = 60 / this.h.bpm; return sync ? 1 / (MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4 * spb) : MKW.lfoHz(L.f); }
   lfoRateC(n, L) {  // MK1-fix (MK1-24): lfoRate, recomputed only when FREQ / Sync / NOTE / tempo change
     const K = this.lfK, o = n * 5, sync = L.sync >= .5, b = this.h.bpm;
@@ -6495,8 +6508,8 @@ class MkTim {
     const songT = frame * ISR - h.songStart, spb = 60 / h.bpm; this.lr1 = this.lfoRateC(0, T.l1); this.lr2 = this.lfoRateC(1, T.l2);
     this.pStep(); if (this.xL2g && T.l2.sync < .5) this.lr2 = this.l2x(this.xL2g);   // MK2: PATCH ... -> LFO2-Freq (the newest voice drives the shared phase)
     if (this.sqL) { const so = this.sqHold().o;   // MK6
-      if ((this.sqL & 1) && so[25] && T.l1.sync < .5) this.lr1 = MKW.lfoHz(mkCl(T.l1.f + so[25], 0, 127));
-      if ((this.sqL & 2) && so[26] && T.l2.sync < .5) this.lr2 = this.l2x(this.xL2g + so[26]); }
+      if ((this.sqL & 1) && so[25] && T.l1.sync < .5) this.lr1 = mkLHz(T.l1.f + so[25]);   // MK6-fix: table
+      if ((this.sqL & 2) && so[26] && T.l2.sync < .5) this.lr2 = mkLHz(T.l2.f + this.xL2g + so[26]); }
     { const L = T.l1, sync = L.sync >= .5, o = this.g1;
       if (sync && L.ks < .5 && h.songStart >= 0) this.g1 = ((songT / spb / (MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4)) % 1 + 1) % 1;
       else this.g1 = (this.g1 + this.lr1 * step) % 1;
@@ -6534,9 +6547,9 @@ class MkTim {
     // ---- control rate ----
     v.e1 = mkEnvB(E1, v.e1s, v.e1); v.e1s = MK_ST; v.e2 = mkEnvB(E2, v.e2s, v.e2); v.e2s = MK_ST;
     let lv1 = 0, lv2 = 0;  // MK1-fix (MK1-24): numbers from the start (an undefined start boxes every double in optimized code)
-    if (Math.round(T.l1.ks) === 2) { const o = v.l1; v.l1 = (v.l1 + (so && so[25] && T.l1.sync < .5 ? MKW.lfoHz(mkCl(T.l1.f + so[25], 0, 127)) : this.lr1) * step) % 1; if (v.l1 < o) v.sh1 = mkRnd(v) * 2 - 1; lv1 = mkLfoV(1, Math.round(T.l1.w), v.l1, v.sh1); }
+    if (Math.round(T.l1.ks) === 2) { const o = v.l1; v.l1 = (v.l1 + (so && so[25] && T.l1.sync < .5 ? mkLHz(T.l1.f + so[25]) : this.lr1) * step) % 1; if (v.l1 < o) v.sh1 = mkRnd(v) * 2 - 1; lv1 = mkLfoV(1, Math.round(T.l1.w), v.l1, v.sh1); }
     else lv1 = mkLfoV(1, Math.round(T.l1.w), this.g1, this.gsh1);
-    if (Math.round(T.l2.ks) === 2) { const o = v.l2, x2 = so && so[26] && T.l2.sync < .5 ? v.xL2 + so[26] : v.xL2; v.l2 = (v.l2 + (x2 ? this.l2x(x2) : this.lr2) * step) % 1; if (v.l2 < o) v.sh2 = mkRnd(v) * 2 - 1; lv2 = mkLfoV(2, Math.round(T.l2.w), v.l2, v.sh2); }
+    if (Math.round(T.l2.ks) === 2) { const o = v.l2, sq2 = so && so[26] && T.l2.sync < .5, x2 = sq2 ? v.xL2 + so[26] : v.xL2; v.l2 = (v.l2 + (sq2 ? mkLHz(T.l2.f + x2) : x2 ? this.l2x(x2) : this.lr2) * step) % 1; if (v.l2 < o) v.sh2 = mkRnd(v) * 2 - 1; lv2 = mkLfoV(2, Math.round(T.l2.w), v.l2, v.sh2); }
     else lv2 = mkLfoV(2, Math.round(T.l2.w), this.g2, this.gsh2);
     v.lv1 = lv1; v.lv2 = lv2;
     if (this.sqPt && v.gl) { const pv = mkCl(Math.round(T.porta) + (so ? so[3] : 0), 0, 127); if (pv !== v.sqPv) { v.sqPv = pv; const pt = MKW.porta(pv); v.gc = pt > 0 ? 1 - Math.exp(-CR / (pt / Math.LN10 * SR)) : 1; } }   // MK6
@@ -7062,7 +7075,7 @@ class MkCore {
     for (const h of held) this.noteOn(h.id, h.note, h.vel);
     for (const t of this.tm) for (const v of t.V) if (v.on && !v.ghost) { v.fin = n; v.finN = n; }
   }
-  idle(n) { this.fx.idle(n); this.tm[0].idle(n); this.tm[1].idle(n); this.soloStep(); }
+  idle(n, fr) { this.fx.idle(n); this.tm[0].idle(n, fr); this.tm[1].idle(n, fr); this.soloStep(); }
   soloStep() { const s = this.solo_, g = this.sg; let mv = false; for (let k = 0; k < 2; k++) { const tg = s === 0 || s === k + 1 ? 1 : 0; if (g[k] !== tg && !this.tm[k].busy()) { g[k] = tg; continue; } if (g[k] !== tg) { g[k] = tg > g[k] ? Math.min(tg, g[k] + MK_SOLOS) : Math.max(tg, g[k] - MK_SOLOS); mv = true; } } return mv; }
   block(Lo, Ro, off, frame) {
     if (MKNT_Q.length) mkntWork();   // MK2-fix: one level of a note table per quantum (G-MK34-merge: once in the core, for both timbres)
@@ -7073,7 +7086,7 @@ class MkCore {
     if (fxa) { if (FX.qf !== frame - off) { FX.qf = frame - off; VL.fill(0); VR.fill(0); } FX.pend = true; }   // the effects run at the end of the quantum (fxEnd)
     for (let k = 0; k < 2; k++) {
       const t = this.tm[k], a = k ? g1 : g0, b = this.sg[k];
-      if (!(t.busy() || (k === 0 && this.tap_ === 'lfo'))) { t.idle(CR); continue; }
+      if (!(t.busy() || (k === 0 && this.tap_ === 'lfo'))) { t.idle(CR, frame); continue; }
       if (a === 1 && b === 1) { t.block(VL, VR, vo, frame); continue; }   // the usual case: straight into the output / effect input (bit-equal)
       const L = this.bL, R = this.bR; L.fill(0); R.fill(0); t.block(L, R, 0, frame);
       if (a === 0 && b === 0) continue;   // muted by solo: the timbre runs on, unheard
@@ -7100,7 +7113,7 @@ class AnalogCore extends AudioWorkletProcessor {
     this.src = new Float64Array(NSRC); this.dst = new Float64Array(NDST);
     this.gl1 = 0; this.gl2 = 0;         // global (free-running) LFO phases
     this.gsh1 = Math.random() * 2 - 1; this.gsh2 = Math.random() * 2 - 1;   // global S&H values (new one at every global phase wrap)
-    this.bpm = 120; this.songStart = -1; this.ended = []; this.ageCtr = 0; this.stereo = false;
+    this.bpm = 120; this.songStart = -1; this.sqSong = null; this.ended = []; this.ageCtr = 0; this.stereo = false;
     this.busy = 0; this.busyN = 0; this.lastRep = 0; this.alive = true; this.qMax = 0;
     // mod scope for the UI: source values of the focus voice (newest gated, else newest sounding), ~30 Hz, only on request
     this.scopeOn = false; this.scopeNext = 0; this.sc = new Float64Array(NSRC); this.scHas = false; this.focus = null;
@@ -7146,6 +7159,7 @@ class AnalogCore extends AudioWorkletProcessor {
     if (m.mkTap != null) this.mk.tap = String(m.mkTap);
     if (m.mkSolo != null) this.mk.solo = m.mkSolo | 0;                // MK3: SHIFT + TIMBRE (not stored)
     if (m.mkRec) this.mk.recMsg(m.mkRec);   // MK6
+    if (m.mkSong) this.sqSong = m.mkSong;   // MK6-fix (FP-SONG): song beat = transport beat - off (prev before wrap)
     if (m.mkFxIn) this.mk.fx.tin = m.mkFxIn.l && m.mkFxIn.r ? {l: m.mkFxIn.l, r: m.mkFxIn.r} : null, this.mk.fx.tinP = 0;   // MK4 test: a signal into the effect input
     if (m.mkFxKill) this.mk.fx.kill();                           // MK4-fix: tail kill (double stop): echo repeats and Mod-FX tail out
     if (m.mkFxFrz != null) this.mk.fx.frz = m.mkFxFrz >= 0 ? m.mkFxFrz % 1 : -1;            // MK4 test: Mod-FX LFO frozen at a phase (-1 = runs)
@@ -8367,7 +8381,7 @@ class AnalogCore extends AudioWorkletProcessor {
           }
           if (Z && Z.ok) this.xfTry();
         }
-        if (this.mk.busy() || this.mk.fxHot() || this.mk.tap === 'lfo') this.mk.block(L, R, off, f0 + off); else if (this.P.eng === 3) this.mk.idle(CR);   // MK1: eng 3 (and its fading voices after a change)
+        if (this.mk.busy() || this.mk.fxHot() || this.mk.tap === 'lfo') this.mk.block(L, R, off, f0 + off); else if (this.P.eng === 3) this.mk.idle(CR, f0 + off);   // MK1: eng 3 (and its fading voices after a change)
       }
       this.mk.fxEnd(L, R);   // MK4: the program effects of the AM sound, once per quantum
       for (let i = this.ghosts.length - 1; i >= 0; i--) { const g = this.ghosts[i]; if (g.xfState !== 4 || !g.V.some(v => v.on)) { this.ghosts.splice(i, 1); this.dropGhost(g); } }
@@ -8377,7 +8391,7 @@ class AnalogCore extends AudioWorkletProcessor {
       const P = this.P, spb = 60 / this.bpm, r1 = P.l1sync > 0 ? 1 / (P.l1sync * spb) : P.l1rate, r2 = P.l2sync > 0 ? 1 / (P.l2sync * spb) : P.l2rate;
       const og1 = this.gl1, og2 = this.gl2;
       this.gl1 = (this.gl1 + r1 * N * ISR) % 1; this.gl2 = (this.gl2 + r2 * N * ISR) % 1;
-      if (P.eng === 3) this.mk.idle(N);                          // MK1: the AM LFO phases run on between notes
+      if (P.eng === 3) this.mk.idle(N, f0);                          // MK1: the AM LFO phases run on between notes
       if (this.gl1 < og1) this.gsh1 = Math.random() * 2 - 1;
       if (this.gl2 < og2) this.gsh2 = Math.random() * 2 - 1;
     }
@@ -16703,6 +16717,7 @@ function tick(h) {
     } catch (e) { tickErr(e); }
     try { recTick(b0, b1); } catch (e) { tickErr(e); }
     if (R.songPlay) { try { songTick(b0, b1); } catch (e) { tickErr(e); } }   // §3.9 (Anhang D.7): the song's launches, Träger, melody
+    try { mkSongSync(); } catch (e) { tickErr(e); }               // MK6-fix (FP-SONG): the AM seq at KEY SYNC aus follows the song beat
     if (R.row || R.rowPend || R.part || R.partPend || XP.due != null) { try { partTick(b0, b1); } catch (e) { tickErr(e); } }   // V2c: parts, chord rows, R.xp
     if (R.songRecEndAt != null) { const te = R.songRecEndAt; R.songRecEndAt = null; try { if (R.songRec && R.songRec.over) songRecEnd(te, {auto: true}); } catch (e) { tickErr(e); } }
     for (let i = 0; i < NT(); i++) {
@@ -17291,6 +17306,13 @@ function songBeatOf(tb) {
   return tb - (sp.wrapAt != null && tb < sp.wrapAt - 1e-9 ? sp.prevOff : sp.off);
 }
 const songHasContent = () => !!(S.song && S.song.bars > 0);
+// MK6-fix (FP-SONG, MK6 Umfang 1): the worklet gets songBeatOf() as {off, prev, wrap} (beats; prev before the loop / jump beat wrap),
+// sent only when it changed (the scheduler runs ahead, so a wrap arrives before it is heard)
+function mkSongSync() {
+  const sp = R.songPlay, w = sp && sp.wrapAt != null ? sp.wrapAt : null, o = sp ? {off: sp.off, prev: w != null ? sp.prevOff : sp.off, wrap: w} : {off: 0, prev: 0, wrap: null};
+  const sig = o.off + '|' + o.prev + '|' + o.wrap;
+  for (const E of AU.synth) if (E && !E.dead && E.node && E.mkSongSig !== sig) { E.mkSongSig = sig; try { E.node.port.postMessage({mkSong: o}); } catch (e) {} }
+}
 /* V0c S-04: the melody track for a take — the synth track without clips in the song (an empty song: without a clip playing
    now), preferably not MONO/LEGATO; the selected one when it is free (or nothing is) */
 const soundMono = t => { const sd = S.tracks[t] && S.tracks[t].sound, p = sd && sd.p; return !!(p && (p.mode === 1 || p.mode === 2)); };

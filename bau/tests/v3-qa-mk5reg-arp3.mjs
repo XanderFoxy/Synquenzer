@@ -1,0 +1,22 @@
+import { open, APP } from './v3-qa-mk5reg-pw.mjs';
+import fs from 'fs';
+const D = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/dirigent-test/v3-qa-mk5reg/';
+const FILE = process.argv[2] || APP;
+const {b, p, errs} = await open({width: 390, height: 844}, FILE);
+const r = await p.evaluate(async () => { const Q = window.SYNQUENZER; const sl = ms => new Promise(r => setTimeout(r, ms));
+  Q.newProject({init: true}); Q.setBpm(240); const K = {root: 9, scale: 'aeolian'}, N = (t, n, d) => ({t, d: d || .4, n, v: .8});
+  Q.setEngine(1, 'mk'); await sl(600);
+  Q.setClip(1, 0, {len: 1, key: K, notes: [N(0, 57, 4), N(0, 60, 4), N(0, 64, 4)]});
+  const got = [];
+  window.claude = {use: async k => (k === 'downloads' ? {save: async ({filename, data}) => { got.push(Array.from(new Uint8Array(await data.arrayBuffer()))); }} : null)};
+  await Q.exportMidi({mode: 'scene', scene: 0}); await sl(500);
+  Q.mkSet(1, 'arp.res', 4); await sl(100);
+  await Q.exportMidi({mode: 'scene', scene: 0}); await sl(500);
+  Q.mkSet(1, 'arp.on', 1); await sl(100);
+  await Q.exportMidi({mode: 'scene', scene: 0}); await sl(500);
+  const un = z => { let i = 0; const dv = new DataView(new Uint8Array(z).buffer); const cs = dv.getUint32(i + 18, true), nl = dv.getUint16(i + 26, true), xl = dv.getUint16(i + 28, true); return z.slice(i + 30 + nl + xl, i + 30 + nl + xl + cs); };
+  const txt = d => d.map(x => x >= 32 && x < 127 ? String.fromCharCode(x) : '.').join('');
+  return got.map(g => { const d = un(g); return {len: d.length, txt: txt(d), hex: d.join(',')}; }); });
+for (const x of r) console.log(x.len, x.txt);
+const a = r[0].hex.split(','), c = r[2].hex.split(','); for (let i = 0; i < Math.max(a.length, c.length); i++) if (a[i] !== c[i]) { console.log('first diff at', i, a.slice(i - 4, i + 12).join(','), '|', c.slice(i - 4, i + 12).join(',')); break; }
+await b.close();
