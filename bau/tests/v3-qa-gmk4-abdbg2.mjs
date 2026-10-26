@@ -1,0 +1,15 @@
+import {open, sleep, OUT} from './v3-qa-gmk4-tl.mjs';
+const file = process.argv[2];
+const T = await open(Object.assign({viewport: {width: 428, height: 926}}, file ? {file} : {})); const {p, E, errs} = T;
+await E(() => { SYNQUENZER.setMetronome && SYNQUENZER.setMetronome(false); ensureAudio(); SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); });
+await sleep(800);
+await E(async () => { await SYNQUENZER.saveSound(0, 'AB Basis', 'new'); });
+await T.openEd(0); await sleep(500);
+const st = async l => console.log(l, JSON.stringify(await E(() => ({ed: SYNQUENZER.soundEdited(0), ab: [...document.querySelectorAll('#synthSheet button.abb')].map(b => !b.hidden), dot: !!document.querySelector('#synthSheet .pv .chg')}))));
+await st('start');
+await T.sweep('k0', 40, 10, 20); await sleep(1500); await st('after SPIEL CUTOFF drag (1.5 s)');
+await T.tapTxt('.hb.ur', /^↶$/, 400); await st('after undo');
+await E(() => MKUI.setWahl(1, 5)); await sleep(200); await T.knobList('k0', /^12LPF$/); await sleep(1500); await st('after FILTER TYP list');
+await T.tapTxt('.hb.ur', /^↶$/, 400); await st('after undo');
+await T.tapTxt('#synthSheet .tab', /^FX$/, 500); await st('after FX tab'); await T.tapTxt('#synthSheet .tab', /^GERÄT$/, 500); await st('back to GERÄT');
+await T.br.close();

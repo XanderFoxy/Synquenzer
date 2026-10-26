@@ -3868,7 +3868,7 @@ const fSig = (v, u) => [z3(v), ft(v, 1) + (u || '')];
 const KN = {
   mode: K('SYNTH/VOC.', 'mode', {L: 'mode', lock: 'Vocoder ab MK7'}), lay: K('EINZELN', 'lay', {L: 'lay'}),
   asg: K('ZUWEISUNG', 'asg', {L: 'asg'}), trig: K('AUSLÖSUNG', 'trig', {L: 'trig'}), udet: K('UNI-VERST.', 'udet', {f: v => [z3(v), Math.round(v) + ' ct']}),
-  prio: K('PRIORITÄT', 'prio', {L: 'prio'}), tv: K('STIMMEN', 'tv', {L: 'tv'}), split: K('SPLIT', 'split', {f: v => [z3(v), noteLabel(Math.round(v)) + ' · darunter T1, ab hier T2 · Tipp = Split ← nächste Note']}), vmax: K('ST.-ZAHL', 'vmax', {dark: 'MK13'}),
+  prio: K('PRIORITÄT', 'prio', {L: 'prio'}), tv: K('STIMMEN', 'tv', {L: 'tv'}), split: K('SPLIT', 'split', {f: v => [z3(v), noteLabel(Math.round(v)) + ' · darunter T1, ab hier T2' + (mk().mode === 2 ? '' : ' · Tipp = Split ← nächste Note')]}),   // G-MK3-fix: in Split the LCD key itself is the tip vmax: K('ST.-ZAHL', 'vmax', {dark: 'MK13'}),
   trans: K('TRANSP.', 'trans', {f: v => fSig(v, ' HT')}), tune: K('FEIN', 'tune', {f: v => fSig(v, ' ct')}),
   porta: K('PORTAM.', 'porta', {f: v => [z3(v), v <= 0 ? 'aus' : sec(W().porta(v))]}), bend: K('BEND', 'bend', {f: v => fSig(v, ' HT')}),
   vib: K('VIBRATO', 'vib', {f: v => [z3(v), ft(v / 63 * 200, 1) + ' ct (× MOD-Rad)']}), mw: K('MOD-RAD', 'mw', {f: v => [z3(v), Math.round(v / 127 * 100) + ' % (Startwert)']}),
@@ -4489,7 +4489,7 @@ function timCopyPop(anchor, t) {   // MK3-fix: t = the track whose editor is ope
 function splitArm() {
   if (mk().mode !== 2) { lcdShow('SPLIT', 'erst STIMME → EINZELN/SCHICHT auf Split'); return; }
   P.splitArm = true; UI.mkSplitArm = splitNote; haptic('tick');
-  lcdShow('SPLIT ← NÄCHSTE NOTE', 'eine Taste spielen: sie wird der Split-Punkt (darunter T1, ab ihr T2)');
+  lcdShow('SPLIT', 'eine Taste spielen = Split-Punkt (darunter T1, ab ihr T2)');
 }
 function splitNote(note) {
   if (!P.splitArm) return false; P.splitArm = false; UI.mkSplitArm = null; const i = P.i, s_ = sndOf(i); if (!s_ || !s_.p.mk) return false;
@@ -4499,7 +4499,7 @@ function splitNote(note) {
 }
 // the LCD key [Split ← nächste Note] (shown while EDIT-WAHL 1 = STIMME and the mode is Split)
 UI.lcdX = L => { if (!P.el || P.el.own || !P.el.body.isConnected || R.editor !== 'synth' || R.selT !== P.i || !sndOf(P.i) || sndOf(P.i).engine !== 'mk') return;
-  if (P.wahl === 1 && P.pos[1] === 0 && mk().mode === 2) { const b = el('span', 'lx lsplit' + (P.splitArm ? ' on' : ''), 'Split ← nächste Note'); L.appendChild(b); } };
+  if (P.wahl === 1 && P.pos[1] === 0 && mk().mode === 2) { const b = el('span', 'lx lsplit' + (P.splitArm ? ' on' : ''), '<b>Split ←</b> <b>nächste Note</b>'); L.appendChild(b); } };   // G-MK3-fix: two lines in portrait
 UI.mkSplitTap = () => splitArm();
 /* Zusatz-Ansicht EIGENE (B.3): 12 knobs -100..+100 ct in the full page width without wood cheeks, [◂ GERÄT] on top;
    P1 2 x 6 à 60, L1 12 x 56 (3 px), L2 12 x 50 (3 px); P2 / P3 2 x 6 at the page width */
@@ -4746,7 +4746,9 @@ const css = `
 .plist.mkcp{display:block;max-height:min(360px,58vh);overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain}
 .plist.mkcp .mkcr{display:flex;align-items:center;gap:4px;min-height:44px;padding:0 4px}.plist.mkcp .mkcr b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
 .plist.mkcp .mkcr button.rb{flex:none;width:52px;min-height:44px;justify-content:center}
-.lcd .lx.lsplit{cursor:pointer}.lcd .lx.lsplit.on{background:#ff5a1f;color:#111}
+.lcd .lx.lsplit{cursor:pointer}.lcd .lx.lsplit.on{background:#ff5a1f;color:#111}.lcd .lx.lsplit b{font:inherit}
+/* G-MK3-fix (B.6 Nr. 5): in portrait the key is two short lines, so label, value and key fit before ◎/⋯ (lcdFit wraps or scrolls the rest) */
+@media (orientation:portrait){.lcd .lx.lsplit{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:9.5px;line-height:10px;padding:1px 4px}}
 .mkb .msh{font-size:7.5px;line-height:9px;font-weight:700;color:#ffb36b;padding-bottom:1px;white-space:nowrap;overflow:hidden;max-width:100%}
 .mkb.dark .lg,.mkb.dark .mkey{opacity:.45}
 .mkb.mnum .lg{font-size:10px}.mkb.mnum.mempty .mkey{opacity:.5}.mkb.mnum.mshd .msh{color:#8d8b86}
@@ -23375,10 +23377,11 @@ function lcdHint() {
 function lcdFit(L) {
   L.classList.remove('lng', 'mq');
   const v = L.querySelector('.lv'); if (!v || L.classList.contains('wia')) return;
-  if (!v.clientWidth || v.scrollWidth <= v.clientWidth + 1) return;
+  const over = () => L.scrollWidth > L.clientWidth + 1;   // G-MK3-fix: a key beside the value (MK3 [Split ← nächste Note]) can squeeze .lv to 0 px
+  if (!L.clientWidth || (v.scrollWidth <= v.clientWidth + 1 && !over())) return;
   const k = L.querySelector('.lk'), kin = el('b', 'lkin'); kin.textContent = k ? k.textContent : '';
   v.insertBefore(kin, v.firstChild); L.classList.add('lng');
-  if (v.scrollHeight <= v.clientHeight + 1 && v.scrollWidth <= v.clientWidth + 1) return;
+  if (v.scrollHeight <= v.clientHeight + 1 && v.scrollWidth <= v.clientWidth + 1 && !over()) return;
   kin.remove(); L.classList.remove('lng'); L.classList.add('mq');
   const w = v.scrollWidth - v.clientWidth, mi = el('span', 'mqi'); while (v.firstChild) mi.appendChild(v.firstChild); v.appendChild(mi);
   mi.style.setProperty('--mq', -Math.ceil(w + 4) + 'px'); mi.style.setProperty('--mqd', (2.6 + (w + 4) / 38).toFixed(1) + 's');

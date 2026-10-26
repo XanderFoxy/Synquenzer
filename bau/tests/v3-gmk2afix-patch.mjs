@@ -1,0 +1,17 @@
+import {open, sleep, check, done} from './v3-qa-gmk2a-tl.mjs';
+const T = await open({viewport: {width: 428, height: 926}}); const {E} = T;
+await T.openEd(0); await sleep(300);
+const mkb = await T.rectText('button', /^MS ?2000$/); await T.tap(mkb.cx, mkb.cy, 800);
+await E(() => SYNQUENZER.saveSound(0, 'Patch sauber', 'new')); await sleep(300);
+await E(() => SYNQUENZER.selectTrack(1)); await sleep(300); await E(() => SYNQUENZER.selectTrack(0)); await sleep(500);
+const h = () => E(() => ({pn: ED.hdr.pName.innerHTML, ab: !ED.hdr.ab.hidden, ed: SYNQUENZER.soundEdited(0)}));
+const h0 = await h(); console.log('h0', JSON.stringify(h0));
+await T.w('w2', /^1 PATCH 1/); await sleep(300);
+const keys = await E(() => [...document.querySelectorAll('[data-k]')].filter(e => e.offsetWidth).map(e => e.dataset.k).join(','));
+console.log('keys', keys);
+await T.sweep('k2', 50, 20, 20); await sleep(400);
+const h1 = await h(); const pi = await E(() => S.tracks[0].sound.p.mk.t[0].p[0].i);
+console.log('h1', JSON.stringify(h1), 'p0.i', pi);
+check('clean', !h0.ab && !/chg/.test(h0.pn), h0);
+check('PATCH 1 INTENSITÄT drag shows dot + A/B at once', h1.ab && /chg/.test(h1.pn) && pi !== 0, {h1, pi});
+await T.br.close(); done();

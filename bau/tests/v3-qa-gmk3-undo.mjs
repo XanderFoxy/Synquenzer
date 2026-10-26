@@ -75,14 +75,15 @@ await E(() => { const i = document.querySelector('#popLayer .pop input'); if (i)
 const sv = await T.rectText('#popLayer .pop button', /Sichern|Speichern|Als neu|Neu/); if (sv) await T.tap(sv.cx, sv.cy, 700);
 const libS = await E(() => SYNQUENZER.library().find(s => s.name === 'Split Eigen'));
 check('S4 WRITE → library entry p.mk deep-equal (mode, split, tv, usc, T2)', libS && eq(libS.p.mk, mkF), libS ? diff(libS.p.mk, mkF).slice(0, 4) : 'missing');
-const exp = await E(id => SYNQUENZER.exportSounds([id]), libS && libS.id);
-const expTxt = typeof exp === 'string' ? exp : JSON.stringify(exp);
+const dl2 = p.waitForEvent('download', {timeout: 8000}).catch(() => null);
+await E(id => SYNQUENZER.exportSounds([id]), libS && libS.id);
+const d2 = await dl2; let expTxt = null; if (d2) { const fp = OUT + 'sound-' + (L ? 'L' : 'P') + '.json'; await d2.saveAs(fp); expTxt = fs.readFileSync(fp, 'utf8'); }
 await E(id => SYNQUENZER.deleteSound(id), libS.id); await sleep(300);
 const imp = await E(t => SYNQUENZER.importSounds(t), expTxt); await sleep(500);
 const libS2 = await E(() => SYNQUENZER.library().find(s => s.name === 'Split Eigen'));
 check('S5 exportSounds → delete → importSounds → p.mk deep-equal', libS2 && eq(libS2.p.mk, mkF), {imp: JSON.stringify(imp).slice(0, 120), d: libS2 ? diff(libS2.p.mk, mkF).slice(0, 4) : 'missing'});
 // load the library sound onto track 3 via the API setSound (as the browser does) → deep-equal
-await E(() => SYNQUENZER.setSound(3, SYNQUENZER.library().find(s => s.name === 'Split Eigen'))); await sleep(400);
+await E(() => { const x = SYNQUENZER.library().find(s => s.name === 'Split Eigen'); if (x) SYNQUENZER.setSound(3, x); }); await sleep(400);
 check('S6 library sound on another track: p.mk deep-equal', eq(await pm(3), mkF), diff(await pm(3), mkF).slice(0, 4));
 // reload (autosave)
 await E(() => SYNQUENZER.save()); await sleep(1500);

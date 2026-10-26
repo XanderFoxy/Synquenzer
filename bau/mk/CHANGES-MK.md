@@ -685,3 +685,20 @@ vorher oder besser; Oktav-Sätze bitgleich zu 4.10.0 (`v3-mk2fix/tabeq.mjs`, 64/
 1. MS 2000 → OSZ 1 → WELLE Speicherwelle → Tipp auf STEUER 2: die Liste mit dem Finger bis „64 Stimme 4“ schieben, antippen.
 2. Mit Welle 63 (Stimme 3) eine Tonleiter spielen: der Vokal bleibt gleich (vorher wanderte er innerhalb jeder Oktave).
 3. WELLE Stimmwelle, OKTAVE dreimal hoch (LCD „Tastatur C6“): STEUER 1 von 0 nach 127 drehen – der Klang ändert sich; kein „Plopp“ beim Anschlag.
+
+## G-MK2a-gruppe-fix — Kopfzeile „geändert“ und [A/B] sofort nach jeder MS 2000-Änderung · App bleibt 4.10.0 · Format bleibt 5
+
+### Behobener Befund
+- **Kopfzeile blieb nach einer Änderung im MS 2000-Panel „sauber“** (seit MK1, betrifft jede MK2-Wellen-/PATCH-Änderung): Knopf (z. B. SPIEL
+  CUTOFF), WELLE-Liste, Speicherwellen-Liste (STEUER 2), PATCH 1–4 QUELLE/ZIEL/INTENSITÄT setzten `soundEdited` = true, aber der Punkt
+  „geändert“ und [A/B] erschienen erst nach einem Spurwechsel. Ursache: `mkSetP` setzte `UI.dirty.edHead` nicht (der VA-/FM-Weg setzt es in
+  `edParamChanged`). Jetzt setzt `mkSetP` das Flag bei jeder echten Wertänderung (eine Zeile, ~l.14634); `edHeadRefresh` läuft im nächsten
+  Bild wie bei VA. Rückgängig/A/B laufen weiter über `applySound` (setzte das Flag schon).
+
+### Prüfungen (`dirigent-test/`)
+- `v3-qa-gmk2a-hdr.mjs` (P: 2/2; L: MS 2000-Prüfung PASS – die VA-Kontrolle findet im Querformat keinen Knopf unter y > 250 im Skript-Selektor,
+  kein App-Fehler), `v3-rp-mkhdr-indep.mjs` P 6/6, `v3-rp-mkhdr-indep2.mjs` L 3/3 (A/B-Tipp wechselt auf B), neu `v3-gmk2afix-patch.mjs`
+  (PATCH 1 INTENSITÄT per Finger → Punkt + [A/B] sofort, 2/2). Smoke ohne Fehler.
+
+### iPhone-Prüfpunkt (Xander, ≈ 30 s)
+1. MS 2000-Sound speichern, dann einen Knopf drehen oder eine Speicherwelle wählen: neben dem Namen erscheint sofort der Punkt und [A/B].

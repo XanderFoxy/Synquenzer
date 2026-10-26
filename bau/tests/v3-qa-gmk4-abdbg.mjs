@@ -1,0 +1,10 @@
+import {open, sleep, OUT} from './v3-qa-gmk4-tl.mjs';
+const T = await open({viewport: {width: 428, height: 926}}); const {p, E, errs} = T;
+await E(() => { SYNQUENZER.setMetronome && SYNQUENZER.setMetronome(false); ensureAudio(); SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); });
+await sleep(800);
+await E(async () => { const Q = SYNQUENZER; for (const [k, v] of Object.entries({'dly.dep': 100, 'dly.sync': 1, 'dly.note': 5})) Q.mkSet(0, k, v); await Q.saveSound(0, 'AB Basis', 'new'); });
+await T.openEd(0);
+await T.w2(/^6 DELAY/); await T.sweep('k3', 110, 15, 20); await sleep(500);
+console.log(JSON.stringify(await E(() => ({ed: SYNQUENZER.soundEdited(0), abs: [...document.querySelectorAll('button.abb')].map(b => [b.hidden, b.offsetWidth, b.textContent, b.closest('.sheet,.sh') ? b.closest('.sheet,.sh').id : null]), name: SYNQUENZER.getSound(0).name}))));
+await p.screenshot({path: OUT + 'abdbg.png'});
+await T.br.close();
