@@ -117,7 +117,7 @@ info('Echo-Tabelle', echoRows);
   const c3 = new Cleaner(sr), xn = Float32Array.from(sc.mic), o3 = new Float32Array(xn.length);
   for (let i = sr; i < sr + 300; i++) xn[i] = i % 2 ? NaN : Infinity;
   for (let a = 0; a < xn.length; a += B) c3.process(xn.subarray(a, a + B), sc.ref.subarray(a, a + B), o3.subarray(a, a + B), B);
-  check('NaN/Inf-Schutz: Ausgabe endlich', o3.subarray(2 * sr).every(Number.isFinite), o3.slice(0, 2 * sr + 5000).filter(v => !Number.isFinite(v)).length + ' nicht endliche Samples (nur trocken durchgereicht)');
+  check('NaN/Inf-Schutz: Ausgabe endlich', o3.subarray(2 * sr).every(Number.isFinite), o3.slice(0, 2 * sr + 5000).filter(v => !Number.isFinite(v)).length + ' nicht endliche Samples');
   // winzige Werte (Denormal-Gefahr): Rechenzeit darf nicht einbrechen
   const tiny = new Float32Array(sr * 2).map((_, i) => (i % 2 ? 1 : -1) * 1e-38), c4 = new Cleaner(sr), o4 = new Float32Array(B);
   let t0 = performance.now(); for (let a = 0; a < tiny.length; a += B) c4.process(tiny.subarray(a, a + B), tiny.subarray(a, a + B), o4, B); const tTiny = performance.now() - t0;

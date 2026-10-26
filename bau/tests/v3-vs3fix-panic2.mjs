@@ -1,0 +1,17 @@
+import {launch, open, sleep} from './v3-qa-vs3-h.mjs';
+const sine = (sr, sec, f, a = 0.3) => { const n = Math.round(sr * sec), x = new Array(n); for (let i = 0; i < n; i++) x[i] = Math.round(Math.sin(2 * Math.PI * f * i / sr) * a * 32767); return x; };
+const br = await launch(null);
+const H = await open(br), p = H.p;
+await p.evaluate(() => { SYNQUENZER.play(); SYNQUENZER.stop(); SYNQUENZER.setMetronome(false); SYNQUENZER.setBpm(120); });
+await p.evaluate(pc => SYNQUENZER.tkInject({pcm: pc, sr: 48000, scene: 7, len: 4}), sine(48000, 8.2, 330));
+await p.evaluate(() => { window.__tap(); SYNQUENZER.launchScene(7); }); await sleep(2500);
+await p.evaluate(() => SYNQUENZER.panic()); await sleep(1500);
+const a = (await p.evaluate(() => window.__lvl())).rmsDb;
+await sleep(5000);
+const b = (await p.evaluate(() => window.__lvl())).rmsDb;
+await p.evaluate(() => SYNQUENZER.stop()); await sleep(600);
+await p.evaluate(() => SYNQUENZER.launchScene(7)); await sleep(1200);
+const c = (await p.evaluate(() => window.__lvl())).rmsDb;
+console.log('after panic', a.toFixed(1), '| next loop start', b.toFixed(1), '| stop+relaunch', c.toFixed(1), 'errs', JSON.stringify(H.errs.slice(0,3)));
+console.log(a < -100 && b > -25 && c > -25 ? 'OK' : 'FAIL');
+await br.close();

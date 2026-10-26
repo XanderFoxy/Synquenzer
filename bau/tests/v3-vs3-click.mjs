@@ -16,9 +16,9 @@ await sleep(1500);
 await p.evaluate(() => SYNQUENZER.stop());
 await sleep(600);
 const res = await p.evaluate(() => { const b = window.__cap, n = b.reduce((a, x) => a + x.length, 0), y = new Float32Array(n); let o = 0; for (const x of b) { y.set(x, o); o += x.length; }
-  let pk = 0, d2 = 0, at = 0; for (let i = 2; i < n; i++) { const v = Math.abs(y[i]); if (v > pk) pk = v; const d = Math.abs(y[i] - 2 * y[i - 1] + y[i - 2]); if (d > d2) { d2 = d; at = i; } }
+  let pk = 0, d2 = 0, at = 0; for (let i = 2; i < n; i++) { const v = Math.abs(y[i]); if (v > pk) pk = v; if (i % 4096 < 2) continue; /* Blockgrenze des Mitschnitts (ScriptProcessor verliert dort manchmal Samples) */ const d = Math.abs(y[i] - 2 * y[i - 1] + y[i - 2]); if (d > d2) { d2 = d; at = i; } }
   let on = 0; for (let i = 0; i < n; i++) if (Math.abs(y[i]) > 1e-3) on++;
-  const big = []; for (let i = 2; i < n; i++) { const d = Math.abs(y[i] - 2 * y[i - 1] + y[i - 2]); if (d > 0.01) big.push([i, +d.toFixed(3), +y[i - 2].toFixed(3), +y[i - 1].toFixed(3), +y[i].toFixed(3)]); }
+  const big = []; for (let i = 2; i < n; i++) { if (i % 4096 < 2) continue; const d = Math.abs(y[i] - 2 * y[i - 1] + y[i - 2]); if (d > 0.01) big.push([i, +d.toFixed(3), +y[i - 2].toFixed(3), +y[i - 1].toFixed(3), +y[i].toFixed(3)]); }
   return {n, pk, d2, at, on, big: big.slice(0, 12), nb: big.length, first: b.slice(0, 3).map(x => x.length)}; });
 console.log(JSON.stringify(res)); console.log(JSON.stringify(await p.evaluate(() => ({t0: window.__t0, st: SYNQUENZER.tkInfo().starts}))));
 const curv = res.pk * Math.pow(2 * Math.PI * 660 / sr, 2);

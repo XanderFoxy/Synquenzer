@@ -62,6 +62,9 @@ function factory() {
   class Cleaner {
     constructor(sr, o = {}) {
       this.sr = sr;
+      // laufende Skalare in einem Float64Array (Schreiben legt so nie ein Zahl-Objekt an): 0 h1, 1 h2 (Hochpass),
+      // 2 SÄUBERN-Wert, 3 Pey, 4 Pyy, 5 Leck, 6 Lern-Summe, 7 Echo-Energie, 8 Fehler-Energie
+      this.st = new Float64Array(12);
       const N = o.block || (sr >= 32000 ? 256 : 128), M = 2 * N, K = N + 1;
       const P = Math.max(2, Math.min(512, Math.ceil((o.tail != null ? o.tail : 0.25) * sr / N)));
       Object.assign(this, {N, M, K, P});
@@ -96,27 +99,30 @@ function factory() {
       let d = 1; while (d < this.latency + 2) d <<= 1; this.dry = new Float32Array(d); this.dryMask = d - 1; this.dryW = 0;
       const maxDel = Math.ceil((o.maxDelay || 1) * sr) + 1; let r = 1; while (r < maxDel) r <<= 1;
       this.refR = new Float32Array(r); this.refMask = r - 1; this.refW = 0; this.delay = 0;
-      this.hp = hpCoefs(sr, 80); this.h1 = 0; this.h2 = 0;
-      this.amt = 0; this.amtT = 0; this.amtStep = 1 / Math.max(1, Math.round(0.02 * sr));
+      this.hp = hpCoefs(sr, 80); this.st[0] = 0; this.st[1] = 0;
+      this.st[2] = 0; this.amtT = 0; this.amtStep = 1 / Math.max(1, Math.round(0.02 * sr));
       this.way = 'hear'; this.under = 0; this.rate = 1; this.offline = !!o.offline;   // offline: kein HP/Mischen hier (macht clean() phasenfrei)   // rate: Faktor auf die Lernrate nach dem Einlernen (langsames Nachlernen)
       this.resetAec();
       this.setAmount(o.amount != null ? o.amount : 1, true);
     }
+    get leak() { return this.st[5]; }
+    get sEcho() { return this.st[7]; }
+    get sErr() { return this.st[8]; }
     resetAec() {
       const {P} = this;
       this.Wr.fill(0); this.Wi.fill(0); this.Xr.fill(0); this.Xi.fill(0); this.xOld.fill(0);
       this.pow.fill(0); this.Eh.fill(0); this.Yh.fill(0);
       const dec = Math.exp(-2.4 / P); let s = 0; this.prop[0] = 0.7; for (let i = 1; i < P; i++) this.prop[i] = this.prop[i - 1] * dec;
       for (let i = 0; i < P; i++) s += this.prop[i]; for (let i = 0; i < P; i++) this.prop[i] = 0.8 * this.prop[i] / s;
-      this.Pey = 1; this.Pyy = 1; this.leak = 1; this.adapted = false; this.sumAdapt = 0; this.cnt = 0; this.resets = 0;
-      this.sEcho = 0; this.sErr = 0;
+      this.st[3] = 1; this.st[4] = 1; this.st[5] = 1; this.adapted = false; this.st[6] = 0; this.cnt = 0; this.resets = 0;
+      this.st[7] = 0; this.st[8] = 0;
     }
     resetStreams() {   // Puffer leeren, Filter behalten
       this.fill = 0; this.xOld.fill(0); this.Xr.fill(0); this.Xi.fill(0);
       this.eR.fill(0); this.yR.fill(0); this.eCnt = 0; this.ola.fill(0);
       this.wf.fill(0); this.wfR = 0; this.wfW = this.H - 1; this.wfN = this.H - 1; this.dry.fill(0); this.dryW = 0;
-      this.refR.fill(0); this.refW = 0; this.h1 = 0; this.h2 = 0; this.Gp.fill(1); this.gp.fill(1); this.under = 0;
-      this.sEcho = 0; this.sErr = 0;
+      this.refR.fill(0); this.refW = 0; this.st[0] = 0; this.st[1] = 0; this.Gp.fill(1); this.gp.fill(1); this.under = 0;
+      this.st[7] = 0; this.st[8] = 0;
     }
     // Rest-Echo-Profil: im 1. Lauf je Rahmen und Frequenz 10·log10(|E|²/|Y|²) (1 dB, Int8) und je Rahmen das
     // Gesamtverhältnis merken; ρ_k = Mittel über die Rahmen mit dem kleinsten Gesamtverhältnis (≈ ohne Stimme).
@@ -130,22 +136,22 @@ function factory() {
         if (this.pr[m] < -900 || this.pr[m] > th) continue;
         for (let k = 0; k < KF; k++) { const d = this.pd[m * KF + k]; if (d === -128) continue; prof[k] += Math.pow(10, d / 10); cnt[k]++; }
       }
-      for (let k = 0; k < KF; k++) prof[k] = cnt[k] >= 4 ? Math.min(1, prof[k] / cnt[k]) : this.leak;
+      for (let k = 0; k < KF; k++) prof[k] = cnt[k] >= 4 ? Math.min(1, prof[k] / cnt[k]) : this.st[5];
       this.pd = this.pr = null; return prof;
     }
     setResidualProfile(p) { this.prof = p ? Float64Array.from(p) : null; }
     setDelay(n) { this.delay = Math.max(0, Math.min(this.refMask - this.N, Math.round(+n || 0))); }
     setWay(w) { this.way = w === 'notes' ? 'notes' : 'hear'; }
     setNoisePsd(p) { if (p) { for (let k = 0; k < this.KF; k++) this.noise[k] = ok(p[k]); this.noiseFixed = true; } else this.noiseFixed = false; }
-    setAmount(a, now) { a = ok(+a); this.amtT = a < 0 ? 0 : a > 1 ? 1 : a; if (now) this.amt = this.amtT; }
+    setAmount(a, now) { a = ok(+a); this.amtT = a < 0 ? 0 : a > 1 ? 1 : a; if (now) this.st[2] = this.amtT; }
     exportState() {
       return {N: this.N, P: this.P, Wr: this.Wr.slice(), Wi: this.Wi.slice(), pow: this.pow.slice(), Eh: this.Eh.slice(), Yh: this.Yh.slice(),
-        prop: this.prop.slice(), Pey: this.Pey, Pyy: this.Pyy, leak: this.leak, adapted: this.adapted, sumAdapt: this.sumAdapt, delay: this.delay};
+        prop: this.prop.slice(), Pey: this.st[3], Pyy: this.st[4], leak: this.st[5], adapted: this.adapted, sumAdapt: this.st[6], delay: this.delay};
     }
     importState(s) {
       if (!s || s.N !== this.N || s.P !== this.P) return false;
       this.Wr.set(s.Wr); this.Wi.set(s.Wi); this.pow.set(s.pow); this.Eh.set(s.Eh); this.Yh.set(s.Yh); this.prop.set(s.prop);
-      Object.assign(this, {Pey: s.Pey, Pyy: s.Pyy, leak: s.leak, adapted: s.adapted, sumAdapt: s.sumAdapt}); this.setDelay(s.delay);
+      this.st[3] = s.Pey; this.st[4] = s.Pyy; this.st[5] = s.leak; this.adapted = s.adapted; this.st[6] = s.sumAdapt; this.setDelay(s.delay);
       return true;
     }
 
@@ -181,7 +187,7 @@ function factory() {
       if (!(See >= 0 && Syy >= 0 && Sxx >= 0) || !(Syy < N * 1e9 && Sxx < N * 1e9 && See < N * 1e10)) {
         this.resetAec(); this.resets++; for (let i = 0; i < N; i++) { yb[i] = 0; eb[i] = mb[i]; } return;
       }
-      this.sEcho += Syy; this.sErr += See;
+      this.st[7] += Syy; this.st[8] += See;
       See = Math.max(See, N * 100);
       // 4. E = FFT([0, e]) und Y' = FFT([0, y]) in einem komplexen Lauf
       for (let i = 0; i < N; i++) { tr[i] = 0; ti[i] = 0; tr[i + N] = eb[i]; ti[i + N] = yb[i]; }
@@ -204,24 +210,24 @@ function factory() {
       Pyy = Math.sqrt(Pyy); Pey = Pyy > 0 ? Pey / Pyy : 0;
       let t32 = this.beta0 * Syy; if (t32 > this.betaMax * See) t32 = this.betaMax * See;
       const al = t32 / See;
-      this.Pey = (1 - al) * this.Pey + al * Pey; this.Pyy = (1 - al) * this.Pyy + al * Pyy;
-      if (this.Pyy < 1) this.Pyy = 1;
-      if (this.Pey < 0.005 * this.Pyy) this.Pey = 0.005 * this.Pyy;
-      if (this.Pey > this.Pyy) this.Pey = this.Pyy;
-      this.leak = this.Pey / this.Pyy;
-      let RER = (0.0001 * Sxx + 3 * this.leak * Syy) / See;
+      this.st[3] = (1 - al) * this.st[3] + al * Pey; this.st[4] = (1 - al) * this.st[4] + al * Pyy;
+      if (this.st[4] < 1) this.st[4] = 1;
+      if (this.st[3] < 0.005 * this.st[4]) this.st[3] = 0.005 * this.st[4];
+      if (this.st[3] > this.st[4]) this.st[3] = this.st[4];
+      this.st[5] = this.st[3] / this.st[4];
+      let RER = (0.0001 * Sxx + 3 * this.st[5] * Syy) / See;
       const lb = Sey * Sey / (1 + See * Syy); if (RER < lb) RER = lb; if (RER > 0.5) RER = 0.5;
-      if (!this.adapted && this.sumAdapt > P && this.leak * Syy > 0.03 * Syy) this.adapted = true;
+      if (!this.adapted && this.st[6] > P && this.st[5] * Syy > 0.03 * Syy) this.adapted = true;
       if (this.adapted) {
         for (let k = 0; k < K; k++) {
-          const e = Rf[k] + 1; let r = this.leak * Yf[k]; if (r > 0.5 * e) r = 0.5 * e;
+          const e = Rf[k] + 1; let r = this.st[5] * Yf[k]; if (r > 0.5 * e) r = 0.5 * e;
           r = 0.7 * r + 0.3 * RER * e; pw1[k] = this.rate * r / (e * (pow[k] + 10));
         }
       } else {
         let rate = 0;
         if (Sxx > M * 1000) { let t = 0.25 * Sxx; if (t > 0.25 * See) t = 0.25 * See; rate = t / See; }
         for (let k = 0; k < K; k++) pw1[k] = rate / (pow[k] + 10);
-        this.sumAdapt += rate;
+        this.st[6] += rate;
       }
       // 6. Gradient: W[p] += prop[p]·pw1·conj(X)·E; dabei |W[p]|² für die proportionalen Schrittweiten sammeln
       const c2 = P > 1 ? 1 + (this.cnt % (P - 1)) : 0;
@@ -267,7 +273,7 @@ function factory() {
       for (let i = 0; i < F; i++) { fr[i] = eR[i] * win[i]; fi[i] = yR[i] * win[i]; }
       this.ff.fwd(fr, fi);
       const notes = this.way === 'notes';
-      const a = this.amt, floor = Math.pow(10, (-6 - 18 * a) / 20), post = 1.5 * a, leak = this.leak;
+      const a = this.st[2], floor = Math.pow(10, (-6 - 18 * a) / 20), post = 1.5 * a, leak = this.st[5];
       this.nFrames++;
       let sPe = 0, sPy = 0;
       for (let k = 0; k < KF; k++) {
@@ -305,7 +311,7 @@ function factory() {
       for (let i = 0; i < H; i++) {
         let v = ola[i];
         if (!notes && !this.offline) {
-          const y = c.b0 * v + this.h1; this.h1 = dn(c.b1 * v - c.a1 * y + this.h2); this.h2 = dn(c.b2 * v - c.a2 * y); v = y;
+          const y = c.b0 * v + this.st[0]; this.st[0] = dn(c.b1 * v - c.a1 * y + this.st[1]); this.st[1] = dn(c.b2 * v - c.a2 * y); v = y;
         }
         this.wf[this.wfW] = v; this.wfW = (this.wfW + 1) & this.wfMask; this.wfN++;
       }
@@ -330,11 +336,11 @@ function factory() {
           if (this.eCnt % H === 0) { this._frame(); this.eR.copyWithin(0, H); this.yR.copyWithin(0, H); }
         }
         // Ausgabe
-        if (this.amt !== this.amtT) { const d = this.amtT - this.amt; this.amt = Math.abs(d) <= this.amtStep ? this.amtT : this.amt + Math.sign(d) * this.amtStep; }
+        if (this.st[2] !== this.amtT) { const d = this.amtT - this.st[2]; this.st[2] = Math.abs(d) <= this.amtStep ? this.amtT : this.st[2] + Math.sign(d) * this.amtStep; }
         const dry = this.dry[(this.dryW - 1 - this.latency) & this.dryMask];
         let wet = 0;
         if (this.wfN > 0) { wet = this.wf[this.wfR]; this.wfR = (this.wfR + 1) & this.wfMask; this.wfN--; } else this.under++;
-        const w = this.way === 'notes' || this.offline ? 1 : Math.min(1, this.amt * 5);
+        const w = this.way === 'notes' || this.offline ? 1 : Math.min(1, this.st[2] * 5);
         out[i] = w === 0 ? dry : w === 1 ? wet : dry + w * (wet - dry);
       }
     }

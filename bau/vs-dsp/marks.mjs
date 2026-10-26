@@ -152,7 +152,6 @@ function factory() {
     };
     // c in Samples (Rahmenmitte) → Einsatz; erst Pegel, dann Höhen (Klick auf Ton); ohne Anstieg (Bindung) bleibt c
     const refine = (c) => { let r = cross(envS, c); if (r < 0) r = cross(envH, c); return r >= 0 ? r : c; };
-    if (o.debug) Object.assign(o.debug, {odf, flux, Es, active, hop});
     const minGap = Math.round((o.minGap || 0.07) * sr / hop);
     const cand = [];
     let lastT = -1e9;

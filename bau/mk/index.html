@@ -20230,6 +20230,9 @@ function undoApply(e, val) {
     else closeRoll();
   }
   if (e.kind === 'clip' && S.tracks[e.track].kind === 'synth') scheduleAutoKey(e.scene);
+  if ((e.kind === 'clip' || e.kind === 'song' || e.kind === 'takes') && UI.pop && UI.pop.name === 'takes' && !TK.sheetQ) {   // VS3-fix: the open takes sheet follows ↶ ↷
+    TK.sheetQ = true; queueMicrotask(() => { TK.sheetQ = false; if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); });
+  }
 }
 function undo() {
   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && UNDO.length && UNDO[UNDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
@@ -21184,7 +21187,7 @@ function panic() {
   if (PV.on) previewStop();                                 // a browser preview phrase stops too (§11.3)
   const c = AU.ctx; if (!c) return;
   for (const v of VOICES.slice()) v.cancel();
-  tkSilence(c.currentTime, .003);                           // VS3
+  tkSilence(c.currentTime, .003, true);                     // VS3 (VS3-fix: keep the plan keys, no restart)
   for (const E of AU.synth) if (E) E.panic();               // ALL-OFF in the worklet (§5.4), also notes without a proxy
   try { if (PV.chain && PV.chain.E) PV.chain.E.panic(); } catch (e) {}
   // drum hits: a sounding one fades out in τ 3 ms (like a choke) instead of a hard stop (a click); one not started yet is dropped
@@ -26226,7 +26229,8 @@ function abortAll(why) { RESTPTR.clear(); for (const [id, g] of [...GEST]) { GES
 // click from touch, so everything inside them acts on pointer events (onTap)
 // V0c-fix: a touch that starts in a sideways swipe list (.cp-sc, .pan-x) keeps its native scrolling (a tap there acts on
 // pointerup as everywhere; its synthetic click is eaten by the ghost-click guard, a swipe ends in pointercancel)
-function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && e.target.closest('.cp-sc,.pan-x')) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
+// VS3-fix: the same for an upright list (.pan-y, e.g. the takes list), so it scrolls by finger
+function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && e.target.closest('.cp-sc,.pan-x,.pan-y')) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
 // tap = pointerdown + pointerup on the same element within 12 px. A click right after a handled pointer tap is ignored;
 // keyboard and programmatic clicks still activate. sel: delegate to children matching sel.
 function onTap(node, fn, sel) {
@@ -38848,6 +38852,8 @@ function tkQWatch() {
 function tkStartSrc(o) {
   const c = o.ctx || AU.ctx; if (!c || !o.buf) return null;
   const dest = o.dest || (AU.tracks[o.i] && AU.tracks[o.i].trackIn); if (!dest) return null;
+  // FP-DSP: liegt der Start schon in der Vergangenheit (Hauptfaden war langsam), beginnt das Stück jetzt – mit Blende und passendem Versatz
+  if (!o.ctx) { const lim = c.currentTime + .006; if (o.when < lim) { o = Object.assign({}, o, {off: o.off + (lim - o.when), when: lim, fi: Math.max(o.fi || 0, .005)}); } }
   const dur = o.end - o.when; if (!(dur > .002)) return null;
   const s = c.createBufferSource(), g = c.createGain(), G = isNum(o.gain) ? o.gain : 1;
   s.buffer = o.buf;
@@ -38931,9 +38937,11 @@ function tkSched(i, clip, from, to, late, ownId) {
 function tkCancelFrom(i, t) { for (const r of TK.src.slice()) if (!r.vox && r.i === i && r.start >= t - 1e-6) { TK.reg.delete(r.key); tkKill(r); } }
 function tkCutAt(i, t) { for (const r of TK.src.slice()) if (!r.vox && r.i === i && r.start < t && r.end > t) tkFadeAt(r, t); }
 function tkStopTrack(i, now) { for (const r of TK.src.slice()) if (r.i === i && !r.vox) { if (r.start > now + .002) tkKill(r); else tkFadeAt(r, now, .006); } }
-function tkSilence(now, tau) {
+// keep = true (PANIK): the plan keys stay, so the running scheduler does not start the silenced pieces again as a late
+// start; the take sounds again only from its next clip start / song pass (new key), like a cancelled synth voice
+function tkSilence(now, tau, keep) {
   for (const r of TK.src.slice()) { if (r.start > now + .002) tkKill(r); else tkFadeAt(r, now, tau || .01); }
-  TK.reg.clear();
+  if (!keep) TK.reg.clear();
 }
 // nach einer Änderung (Take gewählt, Take fertig, Undo): die Spur ab jetzt neu planen, laufende Stücke blenden 5 ms aus
 function tkTrackResync(i) {
@@ -39091,9 +39099,15 @@ function tkSongCommit(sr, endBar, ins) {
 }
 function tkVoxId(list) { let n = 1; while (list.some(x => x.id === 'V' + n)) n++; return 'V' + n; }
 // ein Song-Audio-Clip auf die Takte [x0, x1) gekürzt (gleiche Stelle im Take)
+// VS3-fix: the overdub takes underneath (alt) are trimmed at the same song place, so A/B plays their own bars
+function tkSegTrim(g, sh, sp) {
+  const at = Math.max(0, g.at - sh), cut = Math.max(0, sh - g.at) * sp;
+  return {in: tkR6(Math.min(g.out, g.in + cut)), at: tkR6(at)};
+}
 function tkVoxTrim(o, x0, x1, sp) {
-  const sh = (x0 - o.bar) * 4, at = Math.max(0, o.at - sh), cut = Math.max(0, sh - o.at) * sp;
-  return Object.assign({}, o, {bar: x0, len: x1 - x0, in: tkR6(o.in + cut), at: tkR6(at)});
+  const sh = (x0 - o.bar) * 4, r = Object.assign({}, o, {bar: x0, len: x1 - x0}, tkSegTrim(o, sh, sp));
+  if (Array.isArray(o.alt)) r.alt = o.alt.map(g => Object.assign({}, g, tkSegTrim(g, sh, sp)));
+  return r;
 }
 // nach pushSongUndo: Take und neue Spur gehören in denselben Schritt
 function tkSongUndoFix(sr, changed) {
@@ -39196,7 +39210,7 @@ function tkSheetPaint(p) {
   const per = TK.persist === 'persisted' ? ' · dauerhaft ✓' : TK.persist === 'best-effort' ? ' · nicht dauerhaft – ab und zu exportieren' : '';
   p.innerHTML = `<h4>STIMME · ${esc(x.label)} · ${segs.length} ${segs.length === 1 ? 'Take' : 'Takes'}</h4>` +
     (ok ? '' : '<div class="small warn">Audio nur auf der eigenen Seite</div>') +
-    `<div class="tklist">${rows}</div>` +
+    `<div class="tklist pan-y">${rows}</div>` +
     `<div class="small">${esc(est + per)}</div>` +
     `<div class="savrow"><button class="mbtn rb" data-a="ab"${segs.length > 1 ? '' : ' disabled'}>A/B</button><button class="mbtn rb" data-a="wav"${ok ? '' : ' disabled'}>WAV</button><button class="mbtn rb" data-a="zip"${ok ? '' : ' disabled'}>ZIP + Projekt</button><button class="mbtn rb" data-a="gc"${ok ? '' : ' disabled'}>Aufräumen</button></div>` +
     '<div class="small">Oben = der hörbare Take. Ein Tipp holt einen älteren Take nach oben (A/B: die zwei obersten tauschen). ✕ = löschen, ↶ holt ihn zurück.</div>';
