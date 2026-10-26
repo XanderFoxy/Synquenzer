@@ -206,3 +206,101 @@ umgestellten Oberflächen-Teile (`MKUI.setWahl`/`toSpiel`/`knobs` gibt es nicht 
 7. Menü → Info → Leistungs-Probe „Bedienfeld“ schicken (FP-IPHONE, am Gerät offen).
 
 Snapshot: `synq-snapshots/MK-P.html`.
+
+---
+
+## MK-P-Fix — Fix-Runde nach dem Tester-Befund (26.10.) · App bleibt **4.16.0** · Format 5 · +7,0 KB (3 065 097 B)
+
+Alle vier gemeldeten Fehler zuerst selbst nachgestellt (alle vier reproduzierbar), dann behoben und mit denselben Skripten erneut
+geprüft. Kein Supabase-Aufruf, keine Datenbank-Änderung. Snapshot: `synq-snapshots/MK-P-fix.html`.
+
+### 1. MK-P-08 / typische Fehler 8 — zwei Regler mit zwei Fingern = zwei unabhängige Undos
+
+- Ursache wie gemeldet: `knobStart` merkt sich `soundSnapshot` des ganzen Sounds; die zuletzt endende Geste trug als „vorher“
+  einen Stand, der die Änderung des anderen Fingers schon zurücknahm.
+- Behoben (`gestBefore`, `gestLeaf` in sq-mk-src): Liefen zwei Regler-Gesten gleichzeitig, ist das „vorher“ einer Geste der Sound
+  von jetzt, in dem nur ihr eigener Wert und die Werte der noch laufenden Gesten auf ihren Startwert (aus dem eigenen Schnappschuss)
+  zurückgesetzt sind. Eine einzelne Geste behält ihren Start-Schnappschuss unverändert (bisheriges Verhalten).
+- `v3-qmkp-2f.mjs` X und P1: nach der Geste 59/59, Undo 1 → 59/30 (nur RESONANCE), Undo 2 → 30/30, Redo 1 → 59/30,
+  Redo 2 → 59/59. `v3-qmkp-reg-undo.mjs` 22/22, `v3-mkp-gesten.mjs` FEHLER 0.
+
+### 2. Split ← nächste Note endet auf jedem Weg und ist sichtbar (typische Fehler 6 und 10)
+
+- Neu `splitOff()`: endet mit jedem anderen Tipp auf die Platte (Taste, Regler, freie Fläche), jedem `press` (EXIT, CURSOR,
+  ±, EDIT …), einem zweiten Tipp auf die Anzeige, ■ (Hook `UI.mkSplitOff` in `stop()`), Szenenwechsel (`launchScene`) und wie
+  bisher mit `leave()` (✕, ≡, Spur-/Projektwechsel). Die Tastatur (auch im Reiter SPIEL) setzt den Punkt weiter.
+- Sichtbar: solange bewaffnet zeigt die Anzeige der Platte in Zeile 2 `SPLIT ← TASTE ?` (16 Zeichen, mit Cursor).
+- `v3-qmkp-split.mjs` zweimal: exit / cur.r / knob / stop → nicht mehr bewaffnet, Note 72 ändert den Split nicht (60, kein
+  Undo „SPLIT“); ohne Aktion setzt Note 72 den Split wie verlangt. `v3-qmkpf-split2.mjs`: Szenenwechsel und zweiter Anzeige-Tipp
+  beenden, Reiter SPIEL + Tastatur setzt 72, Anzeige zeigt den Zustand: FEHLER 0. `v3-qmkpf-lcdarm.mjs`: die Zeile passt in allen
+  8 Formaten (scrollWidth ≤ clientWidth).
+
+### 3. L2 (667 × 375): der Undo-/Redo-Toast blieb über der Reglerreihe
+
+- Ursache: im 44-px-Kopf passte der Text auch mit Symbolen nicht neben ↷, `toastPlace1` legte den Toast dann auf die
+  Tastatur-Oberkante (`EL.kbArea`), die quer unter dem Vollbild-Blatt liegt — mitten auf k1–k16.
+- Behoben: `toastHome` kennzeichnet den Kopf des MS-2000-Blatts (`mk: true`); dort verlässt der Toast den Kopf nie mehr: erst eine
+  Zeile, dann Symbole (`tcomp`), dann zwei bzw. drei kleine Zeilen (`mkw` + `dk2`/`dk3`, Umbruch an Wortgrenzen). Andere Editoren
+  unverändert.
+- Mit der echten App-Schrift (Barlow Semi Condensed als data:-Font eingebunden, `v3-qmkpf-font.mjs`) gemessen,
+  `v3-qmkpf-toastw.mjs`: L2 Toast 191,0 · 130 × 44 im Kopf, Text „Rückgängig: MS 2000 CUTOFF“ in 2 Zeilen ganz lesbar
+  (74/74 px, 24/24 px), nichts von der Platte darunter; L1, X, P1, P2, P3, XH unverändert (eine Zeile). `v3-qmkp-toast2.mjs` L2:
+  k1/k4/k8 drehen während der Toast steht (0→23, 8→31), `elementFromPoint` = Regler. `v3-qmkp-toast3.mjs`: in allen 8 Formaten
+  0 px Überlappung mit dem Rahmen. `v3-qmkp-gest.mjs` L2/P1/X: je 50 Elemente, 0 Fehler.
+
+### 4. MK-P-09 Leistung (×4, DPR 3)
+
+Gemessen (Tracing + Performance-Metriken + LoAF, `v3-qmkpf-*.mjs`), Ursachen und Behebungen:
+
+| Ursache | Behebung |
+|---|---|
+| Jede LED (Lauflicht, TEMPO, Tasten) schaltete den Glow-`box-shadow` an/aus; das änderte die Paint-Grenzen der Platte und erzwang in jedem solchen Bild eine volle Layerisierung der ganzen Seite (7–8 ms je Bild ×4) | LEDs haben an und aus dieselbe Glow-Ausdehnung (aus = transparenter Glow): Leuchten ist nur noch Neuzeichnen. Aussehen unverändert. LED-Bild 14–16 → 8,2–8,5 ms ×4 |
+| Das Clip-Raster (≈ 760 Knoten mit laufenden Clips) und quer Kopf, Spurleiste, Modusleiste, Träger und Tastatur liegen ganz unter dem offenen Blatt, wurden aber in jedem Bild mit-layerisiert/gezeichnet | `coverSync`: was das offene MS-2000-Blatt geometrisch ganz bedeckt, bekommt `mkcov` → `visibility:hidden` (nur solange `#app.sheet-open`; `leave()` und `buildSynthEd` für eine andere Engine nehmen es weg; SPIEL-Tastatur quer bleibt sichtbar). Kein Layout-Wechsel. `v3-qmkpf-cov.mjs`: 8 Formate, jede versteckte Fläche liegt ganz unter dem Blatt, nach ✕ und nach Engine-Wechsel 0 versteckt. Ruhe ×4: Hauptfaden 3,0–3,3 s → 2,0–2,1 s je 5 s (Vorgänger 2,3–2,5 s); Reglerbild 23,6 → 16,5 ms ×4 |
+| SPIEL quer: `--mkkb-*` wurden auf `#app` gesetzt → Neuberechnung aller ≈ 2 050 Elemente (89 ms ×4) | auf `#kbArea` selbst. Erstes SPIEL-Bild 110 → 52–65 ms ×4 |
+| Regler drehen: `lcdOf` → `lcdShow`/`lcdFit` (erzwungenes Layout) bei jeder Bewegung | `lcdSoon`: die LCD-Zeile des Blatts einmal je Bild (letzter Wert gewinnt), Gestenende schreibt sofort; Kopf-LCD quer `contain:strict` |
+| Erstes Öffnen: `coverSync` zwang im Öffnungs-Task ein Layout; erstes Platten-Häppchen lief im Tipp; `measure` setzte je Aufruf `ctx.font` | Prüfung im ersten ResizeObserver-Aufruf (nach dem Layout des Bildes), erstes Häppchen als eigener Task, Häppchen per MessageChannel (ohne 4-ms-Klemme), Schrift nur bei Wechsel setzen |
+| Test-API `mkPanel()` rechnete je Aufruf 20 000 `hitAt` | Trefferzonen je sichtbarem Rechteck zwischengespeichert |
+
+Ergebnisse (dieselben Skripte wie im Befund):
+
+| | vorher (Befund) | jetzt |
+|---|---|---|
+| Sitzung ×4 P1/L1 (`v3-qmkp-perf.mjs`, je 2 Läufe): rAF p95 | 16,8–33,4 ms | **16,8 ms** (alle 4) |
+| Bilder > 50 ms je 10 s | 5–6 | 1–3 |
+| Scheduler-Abstände > 50 ms je 10 s (max) | 28–44 (126–199 ms) | 13–17 (105–132 ms) |
+| Long-Tasks in der Sitzung | 53–101 ms | **keine** |
+| Sitzung ×1 P1/L1 | 2–5 Abstände (max 63–65) | 0–1 (max 49 / 64) |
+| Ruhe ×4, Bedienfeld offen (`IDLE=1`) neu / 4.15.0 | 3–8 (max 65) / 0–1 | **1 / 1 (max 51–61 / 50–57)** — gleich |
+| Erstes Öffnen ×1 (`v3-qmkp-build2.mjs`) neu / 4.15.0 | 75–96 ms / keiner | 52 · keiner / 50 · keiner — gleich |
+| Erstes Öffnen ×4 (`v3-qmkp-build.mjs`): fertig, Häppchen max | 466–616 ms, ≤ 10,6 ms | 398–466 ms, ≤ 10,6 ms |
+
+**Weiter nicht erreicht (×4) und warum:**
+- (a) Der Long-Task beim ersten Öffnen ×4 (187–304 ms) ist der synchrone Aufbau des Editor-Blatts im Hauptstrang-Code
+  (`buildSynthEd`, `fillSynthTab`, Tastatur-/Modus-Fits; beim ersten MS-2000-Klang zur Laufzeit zusätzlich das Auswerten von
+  sq-mk-src); 4.15.0 hat im selben Lauf 207–258 ms (`v3-qmkpf-open.mjs`). Der MS-2000-Anteil darin ist jetzt ≈ 13–19 ms ×1.
+  „fertig ≤ 150 ms“ ×4 ist mit Bildern zwischen den Häppchen nicht erreichbar (ganz abseits gebaut und auf einmal eingehängt wären
+  es 213–254 ms, dafür ein Einhänge-Bild von 140–240 ms — verworfen).
+- (f) Die übrigen Abstände > 50 ms liegen zum größten Teil auf den `mkPanel()`-Aufrufen des Test-Skripts (Serialisierung des
+  großen Ergebnisses, `v3-qmkpf-dragg.mjs`: Abstände direkt vor jedem `panel()`) und in den Regler-Bildern quer (L1 ≈ 19 ms ×4
+  je Bild: volle Layerisierung durch die Kappen-Drehung, im Vorgänger gleich).
+- iPhone (g): am Gerät offen.
+
+### Für den Hauptstrang (neu berührt außerhalb von sq-mk-src)
+
+- `stop()` und `launchScene()`: je eine Zeile `UI.mkSplitOff` (Split ← nächste Note endet).
+- `toastHome` (`mk: true` für den MS-2000-Kopf), `toastPlace1` (Kopf-Zweig ohne Rückfall auf die Tastatur), CSS `#toast.dock.mkw`
+  bzw. `.lcdk.mkw`, `mkw` in den Klassen-Rücksetzungen.
+- `buildSynthEd`: bei einer anderen Engine `MKUI.coverOff()`.
+- **Vorschläge (nicht geändert, großer Gewinn für alle Editoren):** (1) dasselbe `visibility:hidden` für das vom Blatt bedeckte
+  Raster in jedem Editor (Synth, Drums, Clip) — das Raster kostet sonst in jedem Bild ≈ 30 % der Hauptfaden-Zeit ×4;
+  (2) `renderPartBar` liest in jedem Bild `clientWidth` (erzwungenes Layout); (3) `edHeadRefresh` → `soundHash` je Bild beim
+  Drehen (siehe oben).
+
+### Prüfungen dieses Laufs
+
+`v3-qmkp-2f.mjs` X/P1, `v3-qmkp-split.mjs` ×2, `v3-qmkpf-split2.mjs`, `v3-qmkpf-lcdarm.mjs`, `v3-qmkp-toast2.mjs` L2,
+`v3-qmkp-toast3.mjs`, `v3-qmkpf-toastw.mjs` (echte Schrift), `v3-qmkp-gest.mjs` L2/P1/X, `v3-qmkp-reg-undo.mjs` 22/22,
+`v3-mkp-gesten.mjs`, `v3-mkp-extra.mjs`, `v3-mkp-close.mjs`, `v3-mkp-funk.mjs` (MK-P-06 Marke: 1× „MS 2000“), `v3-mkp-lauf.mjs`,
+`v3-mkp-aussehen.mjs` (LED-Farben/Pixel unverändert), `v3-mkp-prog.mjs`, `v3-mkp-trim.mjs`, `v3-mkp-platz.mjs`,
+`v3-mkp-daten.mjs` gegen 4.15.0 (bitgleich, deep-equal): alle FEHLER 0. Rauchtest `smoke.mjs`: keine Fehler
+(`dirigent-test/v3-qmkpf-smoke.png`). Defekte aus MK7 oder früher: keine neuen gefunden.

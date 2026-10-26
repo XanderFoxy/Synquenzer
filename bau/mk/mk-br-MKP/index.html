@@ -5169,7 +5169,7 @@ function build(pg, i) {
     clearTimeout(U.roT); U.roT = setTimeout(() => { if (!panelLive(pg, i) || P.el !== U) return; build(pg, i); }, 60); }); U.ro.observe(fr); }
   if (!P.seen) { P.seen = true; lcdShow(MK_LABEL, wholeMode() ? 'die ganze Platte · drehen, tippen, eine Sektion antippen = Zoom' : 'eine Hälfte der Platte · Wischen = andere Hälfte · Sektion antippen = Zoom'); }
 }
-/* MK-P-09 (Leistung): the parts of the main screen that the open MS-2000 sheet covers completely (the clip grid with its
+/* MK-P-09 (Leistung): the parts of the main screen that the open sheet of the AM engine covers completely (the clip grid with its
    running clips, landscape also the head, strip, mode bar, Träger and keyboard) are not painted while it covers them: every frame with a
    change (Lauflicht, TEMPO LED, a knob) otherwise re-layerized their ~800 hidden nodes. Only visibility (no layout, no
    size change); the CSS rule holds only while a sheet is open (#app.sheet-open), and leave() (✕, ≡, browser, project or
