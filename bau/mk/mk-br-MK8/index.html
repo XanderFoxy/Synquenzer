@@ -2233,6 +2233,16 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .pop .tin{width:100%;max-width:300px;height:44px;margin:4px 0 8px;display:block}
 .savrow{display:flex;gap:8px;justify-content:flex-end}
 .savrow .mbtn{min-width:96px}
+/* MK8: place choice (Sichern / WRITE, Bank ▾): 44 px keys, 4 columns on narrow phones, 8 from 400 px */
+.pop.mk8w{width:min(440px,calc(100vw - 16px))}
+.pop.mk8w .mk8g{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:0 0 6px}
+.pop.mk8w .mk8g button{min-height:44px;height:44px;padding:0;font:700 14px/1 var(--font-num);color:var(--text)}
+.pop.mk8w .mk8g button.on{border-color:var(--sel);box-shadow:inset 0 0 0 2px var(--sel);color:var(--sel)}
+.pop.mk8w .mk8sl button.own::after{content:'•';position:absolute;margin:-18px 0 0 18px;color:var(--amber)}
+.pop.mk8w .mk8i{margin:2px 0 4px;min-height:30px;line-height:15px}
+.pop.mk8w .mk8r{flex-wrap:wrap}.pop.mk8w .mk8r .mbtn{min-height:44px;min-width:0;flex:1 1 auto}
+.pop.mk8w .tin{max-width:none}
+@media (max-width:399px){.pop.mk8w .mk8g{grid-template-columns:repeat(4,minmax(0,1fr))}}
 /* ---------- sound browser (§11.2) ---------- */
 /* placement: as every .sheet.ed (P: rows 2–4 over grid, strip and carrier; L/W: row 2 only, so the mode bar and the
    keyboard stay playable and a key press can stop a preview, §2.3 / §11.3) */
@@ -5647,7 +5657,366 @@ window.MKUI = {mkVowel, build, render, wheels, wheelPaint, panelInfo, probe, pro
   setHalf: h => { P.half = h === 'A' ? 'A' : 'B'; }, lcdOf, timbreKey, seqInit, seqSwap, seqCopy, seqToolsPop, recArm, recCancel, recDone, knobSim, stepsInfo, stepsPaint, timCopy, timSwap, timInit, timCopyPop, soloSet, leave, splitArm, viewOpen, viewClose, splitNote, ownInfo,   // MK6
   progRefresh: () => { if (!P.el || !P.el.body.isConnected) return; const s_ = sndOf(P.i); if (s_) origSync(s_); render(); dispShow(progNum(), false); }};   // G-MK1-fix: after WRITE
 })();
-
+/* ===== MK8 (Nachtrag 3 MK8): the program memory, 128 places A01-H16 with own factory programs (EN3-07: own recipes, no
+   device data). Data: one integer per changed field against INIT (fixed field order), per bank one Base64 part with a salt
+   byte (B.6 Nr. 9), unpacked per bank on first need (tickAhead first, EN3-14). The roles per place follow the order of the
+   device (Umfang 2); H16 is INIT (the record f-init-am). Own sounds lie on a place through WRITE (bank / slot in the
+   library) and cover the factory program; WERKSKLANG ZURÜCK frees the place. MK-P binds BANK, SELECT, -/+ and WRITE to the
+   API object window.mkProg (main script), which calls this module (MKF). ===== */
+/*MKF{*/
+const SQ_MK_FACTORY = {v: 1,
+  B: ['Wk5OVluGW1grWnZaHlpCW29cVVpiWgpYVlofWmKUW1hadVoKX4pQWnpa1RRaekBUWFoKW1hbQljWW1tYWi9aOlpmWG9cQVsKWFlap1taaohbWFtbWhZailBadlrVFFp2WlhYWFp9W1hNTkpbqltY21taTlpGWG9f8ltablrWW1ruW1vyW1puWlda6lteaVFO51tYWnVa+ltfilBaVFrVFFpUTl9bW1tTWFtNWNZbWNdbWm5aZltqWm9cXVp2WmZYelp7WkKMW4pQWmpa1RRaakBfW1tbWX5bdlxIW5JbWAtaalp+WG9cVloiWgpbXlpWWktaGlN2n1sZWnJYVltmWopQWnxa1RRafHtUWFpmU8NbWiJaclhvXEVbZlhWWm9ack1YX0xbZltCWklaCltyWn1aZlpWW0laAFt+WkX4W1haWFtfWmZailBaQFrVFFpATlRcWn5bXlt8X1deb1xGW9ZbWBpap1ta8ltWXloOnltYW1hablqKUFpUWtUUWlRWVFhYWFtCWO5bW1haZ14RW1hRUjZBOBpaMk9fW1tbXFhaHllNWPpbWNNbWnJabltmWm9cSVpmWnJYVlpPWkqMW4pQWnha1RRaeHhOVFuGW1jTW1raW1hyWm9Qclp6WldaJk1YXlZaTFpbW05adloaWhZaGlp2Wk5bSVp5WnFaeVpJWl36W1haGVoiX4pQWnxa1RRafElKZllCW7JbW1haB1pWWW9QzltaalpHWsZbXk2TW1haeVq6W1+KUFpSWtUUWlJDX1tbW19CXl5aVFunW1qkW1hnWk5Zb1xCWk5aClhWWldablZYWmaeW1hbWFp2WopQWn5a1RRafklOSluyW1jXW1pKWgpafltvXwpaVloiWgpbZlpWWk9aYoxbilBaUFrVFFpQRFRQW3pSb1pOWW9QUlpWWntaDk1YX1BYUlpKWkJaelpCWkpaUltyWmpacltWWk5aVvlbWFhmWopQWlZa1RRaVkpfW0n/W1o2WgJbclpvWFhZeVtyWEpab1pejFuKUFp6WtUUWnpOVFZaIloKXCJaXlorWtZbWW9Q7ltablviW14RUQqaW1hbGls+WopQWkZa1RRaRg==',
+    'WklIWFpUWxNakltYB1p6Wm5Yb1xBWnJaZllnWnaVWxVaEl+KUFp2WtUUWnZDVFxaZllCWGZYe15vXEFbClhVWqdbWnZWXlpmnltYW19aHlqKUFpyWtUUWnJaWFteWlhaYVtYS05OW6pbW1xaw1taZllvUO5bWm5aS1riW5RbXloJWu5bX4pQWkpa1RRaSk9fW1tbX35aXlrWW1lNWCJY21taZlpqWG9cWVpOWnJYelpHWk6MW4pQWmpa1RRaakBaWEteWlBb91taqltYH15TXFZaZlpmWFZae1oaVlhadhNCXl5Qe15TUE5aVlpvWg4NWFtbWm50VFxacllUX2daZllvXEFbZlhdWvdbWnZWXlpmU1hfWFhUWkJaVFtcWk5aQltUWkRaQlpQWlxbU1pMWEpaelpSW0JaclpKW1JaTlp+WlZbUchbWFtbWmpailBaalrVFFpqSVRcWtZbW15balBvXFZbIlhuWqdbWv5bVl5aFZpbWFoNWgpfilBaQlrVFFpCTVRYWu5bW1hbQlpcWz5bWFozWnJaGlpyW29ZZlhdWk5aPlh+Wo9bWjKMW4pQWnpa1RRaek5fW1tbU1haWFpUWCJYw1taaloKWG9cTVpOWnJYQlp7WlaMW4pQWmpa1RRaanxUWFoiUl5aB1rWW1lvUFJaVlpvWg5bWFhuUX5cWF5bWkxbTlpJWnJafVtmWlNaRFprWlBaaFpHW3JaSVpO+FtYWlhbWFpmWopQWl5a1RRaXk9UUloKW15YSFs+W1haH1pOWW9Q1ltablpPWsJbXnWTW1hadVqSW1+KUFpOWtUUWk5IX1hbW1pKWEJXF1r2W1pOWG9RVlpXWhqIW1hbWFpuWopQWmpa1RRaaklUXlpmW15bQlpQW9ZbW1xa91teb1AKWnpae1omlVsBWtZbX4pQWn5a1RRafnVUUFvaW1J3Xm9RXlrfW1oaTVhfUFhKWl5aTlpSWkJaVlpGW3paXlp+WlJaclpWWnZaelthWmZafVpyWmFaZlp9WnJaYVpmWn1aclphWmZafVpyyltYWlhYZlqKUFp4WtUUWnhIX1tbW1xcWgpcClgrXm9cVVtyWEJae1pKVl5aCpJbilBaQlrVFFpCQkhYWmpb91tapFtbXloTWgpZb1F6Wm9aMltYWBJcXlpYWj6ZW15aWFtfWgpailBaalrVFFpq',
+    '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'],
+  N: ["Sägeblock|Kiesel-Arp|Weiches Feld|Rundbass|Klarer Ruf|Pulsfolge|Glasglocke|Orgelreihe|Tiefgang|Wanderfilter|Streichsatz|Sync-Sturz|Blechsatz|Wellenband|Knackbass|Sturmwind",
+    "Ringkante|Funkenarp|Eisfläche|Gummibass|Doppelglanz|Stufenglas|Kristallton|Zupfklavier|Ringknurrer|Funkregen|Lichtchor|Pfeifkante|Glashauch|Wellenfunk|Glanzbass|Funkzirpen",
+    "Tiefschlag|Nachtarp|Nebelbank|Brummbass|Dunkelruf|Kellertakt|Holzschlag|Stubenpiano|Grollbass|Tropfnacht|Mönchschor|Schwerlead|Hornsatz|Schattenzug|Kellerbass|Tiefseeruf",
+    "Wellenstoß|Wellenarp|Wellenmeer|Wellenbass|Hauchlead|Wellenkette|Blechtrommel|Röhrenorgel|Stimmbass|Formwandel|Wellenchor|Wellenlead|Flötenwelle|Wellenzug|Wellenpunch|Wellenspuk",
+    "Pumpakkord|Laufarp|Atemfläche|Hüpfbass|Pedalruf|Zahnradfolge|Pingtropfen|Wackelpiano|Schiebebass|Laufband|Wogenchor|Kurvenlead|Schwellblech|Wellenrad|Pendelbass|Ufo-Landung",
+    "Doppelstab|Zwillingsarp|Schichtfeld|Splitbass|Zweiklang|Kreuzfolge|Spieluhr|Splitpiano|Schichtbass|Splitfolge|Doppelchor|Splitlead|Bläserpaar|Wellenpaar|Splitkeller|Doppelsirene",
+    "Echostab|Phasenarp|Raumdecke|Hallbass|Echolead|Echofolge|Glockenwurf|Phaserorgel|Tiefzirkel|Raumpuls|Hallchor|Flangerlead|Weichwolke|Wellenhall|Echobass|Laserschuss",
+    "Polyfarbe|Datenstrom|Sternfläche|Bassquinte|Holzflöte|Filterwerk|Zeitsprung|Kammerpuls|Vokalchor|Vokal O|Vokalwah|Vokalpuls|Stimmwandel|Robotergruß|Eingang"],
+  T: [["Zwei leicht verstimmte Sägen, die Filter-Hüllkurve schnappt kurz auf – kurze Akkorde auf der Zählzeit.",
+      "Puls und eine Oktave Rechteck darüber, kurz gezupft; der Arp läuft aufwärts über zwei Oktaven, das Echo im punktierten Achtel.",
+      "Langsam einschwingende Sägen, ein träger LFO öffnet den Filter ein wenig; das Ensemble macht es breit.",
+      "Säge mit kurzer Filter-Hüllkurve: rund unten, aber mit genug Obertönen, damit man ihn auch am Handy hört.",
+      "Einstimmige Säge mit kleinem Gleiten; das MOD-Rad bringt das Vibrato, das Echo setzt den Ton in den Raum.",
+      "Eine Folge aus 16 Schritten öffnet und schließt das Filter im Sechzehntel – ein Ton genügt für eine ganze Figur.",
+      "Sinus, von Oszillator 2 eine Duodezime höher verbogen; die Biegung klingt mit der Hüllkurve aus wie bei einer Glocke.",
+      "Zwei Rechtecke im Oktavabstand mit Gate-Hüllkurve; der Chorus dreht schnell wie ein rotierender Lautsprecher.",
+      "Puls mit einer Säge eine Oktave tiefer; der Filter bleibt dunkel, die Hüllkurve gibt nur einen kleinen Kick.",
+      "Eine weiche Folge schiebt das Filter langsam auf und ab; halte einen Akkord und lass ihn atmen.",
+      "Zwei Sägen, deren Form ein LFO bewegt, dazu das Ensemble – ein breiter Streicherteppich.",
+      "Oszillator 2 ist hart an 1 gekoppelt; die Filter-Hüllkurve zieht seine Tonhöhe hoch und lässt sie fallen.",
+      "Weicher Blechbläser-Einsatz: die Filter-Hüllkurve öffnet etwas verzögert, fester Anschlag macht heller.",
+      "Speicherwellen im Sechzehntel: die Folge schaltet STEUER 2 von Welle zu Welle, das Echo verbindet sie.",
+      "Säge mit resonanter, schnell zuschnappender Filter-Hüllkurve und Verzerrung – knackt bei jeder Note.",
+      "Gefiltertes Rauschen; ein langsamer LFO fährt den Bandpass auf und ab. Lange Noten halten."],
+    ["Ringmodulation gibt dem Akkord eine metallische Kante; kurzer Filter-Schlag.",
+      "Heller Sinus mit Kreuzmodulation, der Arp springt abwechselnd hoch und runter; Echo im Achtel.",
+      "Hochpass-gefilterte Sägen mit langsamem Einschwingen; der Phaser lässt die Fläche glitzern.",
+      "Dreieck mit gefalteter Form und Gleiten zwischen gebundenen Noten – federnd und weich.",
+      "Zwei Timbres in Schicht: eine Sync-Säge und eine weiche Dreieck-Stimme eine Oktave höher.",
+      "Die Folge springt in Halbtönen und färbt dabei das Filter; der Ton tanzt über eine Oktave.",
+      "Sinus mit starker Kreuzmodulation, schnell abklingend – wie ein angeschlagenes Kristallglas.",
+      "Schmaler Puls mit kurzer Hüllkurve und Anschlagdynamik – eine helle, gezupfte Tastenstimme.",
+      "Säge mit Ringmodulation eine Quinte darüber; der Filter zieht schnell zu – hart und knurrig.",
+      "Zufällige Werte (S/H) und eine Folge bewegen den Bandpass – wie Funksignale aus der Ferne.",
+      "Stimmwelle mit offenem Filter und Ensemble – ein heller, gehauchter Chor.",
+      "Zwei Sägen mit Unisono-Stapel und hoher Resonanz – ein schneidender Lead mit Pfeifen im Filter.",
+      "Weicher Dreieck-Synth mit Hochpass und langsamem Chorus – leise und durchsichtig.",
+      "Speicherwellen im Wechsel, die Folge springt zwischen hellen Wellen; Kreuz-Echo.",
+      "Sinus mit Kreuzmodulation als Bass – der Anschlag klingt hell, der Rest bleibt rund.",
+      "Ringmodulator mit schnell wanderndem Oszillator 2 – zirpende Funkgeräusche."],
+    ["Dunkle Säge mit Puls, die Filter-Hüllkurve geht weit auf – ein kräftiger Stab tief im Raum.",
+      "Dunkler Puls, der Arp läuft abwärts über drei Oktaven; die Resonanz singt leise mit.",
+      "Tiefpass auf zwei verstimmten Sägen, sehr langsam; Rauschen im Hintergrund macht es neblig.",
+      "Zwei Sägen mit Unisono, tief gefiltert – ein dicker, brummender Bass.",
+      "Rechteck-Lead mit hoher Resonanz und Gleiten; die Hüllkurve öffnet ihn beim Anschlag.",
+      "Ein Arp im Sechzehntel auf einem dunklen Bass-Klang – der Takt kommt aus dem Keller.",
+      "Kurzer, resonanter Bandpass auf einem Rechteck – klingt wie ein Holzblock.",
+      "Zwei Dreiecke mit Anschlagdynamik und weichem Ausklang – ein warmes elektrisches Klavier.",
+      "Rechteck mit Sub eine Oktave tiefer, leicht verzerrt – grollt unter allem anderen.",
+      "Die Folge öffnet die Resonanz in Stufen – tropfende Töne in einer dunklen Nacht.",
+      "Tiefe Stimmwelle, zwei Timbres in Schicht eine Oktave auseinander – ein dunkler Männerchor.",
+      "Drei Stimmen im Unisono-Stapel mit Verzerrung – ein schwerer, dunkler Lead.",
+      "Zwei Timbres: tiefe Hörner mit langsamer Filter-Hüllkurve und eine weiche Oberstimme.",
+      "Speicherwellen in Schritten und eine dunkle Hüllkurve – ein Zug durch tiefe Wellen.",
+      "Dreieck und Säge, sehr tief gefiltert, mit kurzer Resonanzspitze – schiebt den Raum.",
+      "Selbstschwingendes Filter, vom LFO langsam verbogen – Rufe aus der Tiefsee."],
+    ["Speicherwelle mit kurzer Filter-Hüllkurve – ein digital klingender Akkord-Stoß.",
+      "Eine helle Speicherwelle, der Arp spielt zufällig über zwei Oktaven; Echo im Achtel.",
+      "Zwei Speicherwellen-Timbres in Schicht, leicht verstimmt, sehr langsam – ein ruhiges Meer.",
+      "Speicherwelle als Bass mit Sub-Rechteck – trocken und knurrig.",
+      "Stimmwelle mit Gleiten und Vibrato übers MOD-Rad – ein gehauchter Lead.",
+      "Speicherwellen-Folge mit Tonhöhen-Schritten – eine Kette aus wechselnden Farben.",
+      "Metallische Speicherwelle, sehr kurz – wie eine angeschlagene Blechdose.",
+      "Speicherwelle mit Gate-Hüllkurve und schnellem Chorus – eine Orgel mit eigener Farbe.",
+      "Stimmwelle tief mit kurzer Filter-Hüllkurve – ein Bass, der fast spricht.",
+      "Die Folge verformt die Stimmwelle Schritt für Schritt – Vokale im Takt.",
+      "Speicherwelle und Stimmwelle in Schicht, mit Ensemble – ein synthetischer Chor.",
+      "Helle Speicherwelle, ein LFO zieht die Tonhöhe leicht – ein Lead mit digitalem Glanz.",
+      "Weiche Speicherwelle mit langsamem Einschwingen und Atemrauschen.",
+      "Die Folge fährt mit Glatt-Bewegung durch zwölf Speicherwellen – eine Welle, die sich ständig wandelt.",
+      "Kurze Speicherwelle mit starker Filter-Hüllkurve und Verzerrung – ein Bass mit Schlag.",
+      "Speicherwelle, deren Nummer ein S/H-LFO zufällig wechselt – ein spukender Klang."],
+    ["Die Folge pumpt die Lautstärke im Sechzehntel – ein Akkord, der von selbst im Takt atmet.",
+      "Säge-Arp mit Swing, der LFO bewegt das Filter dazu – lebendig und laufend.",
+      "Ein langsamer LFO bewegt die Wellenform beider Sägen – die Fläche atmet.",
+      "Die Folge springt in Oktaven – aus einer gehaltenen Note wird ein hüpfender Bass.",
+      "Der LFO öffnet das Filter rhythmisch wie ein Wah-Pedal; synchron zum Tempo.",
+      "Zwei Folgen greifen ineinander: Tonhöhe und Filter mit unterschiedlicher Länge.",
+      "Kurzer Sinus, die Tonhöhe fällt mit der Hüllkurve – Tropfen, die im Echo springen.",
+      "Weiches Puls-Piano mit Tremolo und Panorama-Wandern aus dem LFO.",
+      "Mit Gleiten und Legato; der LFO2 gibt eine kleine Tonhöhen-Wellenbewegung.",
+      "Folge auf Filter und Pan im Achtel-Triolen-Raster – der Ton läuft durch den Raum.",
+      "Stimmwelle, ein langsamer LFO fährt die Form auf und ab – der Chor wogt.",
+      "Ein Sync-Lead, dessen Tonhöhe der LFO2 übers MOD-Rad biegt; die Folge setzt Akzente.",
+      "Bläser mit langsam anschwellendem Filter; ein LFO lässt ihn leise flattern.",
+      "Die Folge dreht STEUER 2 im Kreis durch acht Speicherwellen, rückwärts.",
+      "Ein LFO lässt die Pulsbreite pendeln; sonst ein schlichter, satter Bass.",
+      "Die Tonhöhe fällt mit der Hüllkurve, ein schneller LFO zittert – ein landendes Ufo."],
+    ["Zwei Timbres in Schicht: kurze Säge und ein Rechteck eine Quinte darüber.",
+      "Der Arp spielt nur Timbre 2; Timbre 1 hält den Akkord als leise Fläche darunter.",
+      "Zwei Flächen in Schicht: unten warm, oben hell und langsam einschwingend.",
+      "Split bei C3: unten ein Bass, oben ein heller Lead – zwei Hände, zwei Klänge.",
+      "Zwei Lead-Timbres in Schicht, eine Oktave versetzt, leicht verstimmt.",
+      "Arp im Achtel und eine Folge im Sechzehntel auf zwei Timbres – sie kreuzen sich.",
+      "Sinus und Dreieck in Schicht, zwei Oktaven hoch – eine kleine Spieluhr.",
+      "Split bei C3: links ein runder Tastenbass, rechts ein helles E-Piano.",
+      "Zwei Bass-Timbres: ein Sinus für den Druck, eine gefilterte Säge für die Kontur.",
+      "Split bei C4: unten läuft eine Folge, oben spielst du dazu eine Fläche.",
+      "Stimmwelle in zwei Timbres eine Quinte auseinander – ein offener, weiter Chor.",
+      "Split bei C4: oben ein schneidender Sync-Lead, unten ein weicher Begleitklang.",
+      "Zwei Bläser-Timbres, eines mit weichem, eines mit schnellem Einsatz.",
+      "Zwei Speicherwellen-Timbres, die Folge von Timbre 1 wechselt die Welle im Takt.",
+      "Split bei C3: unten ein tiefer Unisono-Bass, oben ein kurzer Klick-Akkord.",
+      "Zwei Timbres mit gegenläufigen LFOs auf der Tonhöhe – eine schräge Sirene."],
+    ["Kurzer Stab, das Kreuz-Echo im punktierten Achtel trägt ihn durch den Takt.",
+      "Arp im Sechzehntel durch den Phaser – die Töne drehen sich im Raum.",
+      "Weiche Fläche mit langem Echo und Ensemble – füllt den ganzen Raum.",
+      "Ein Bass mit Flanger, der ihn dreht; das Echo bleibt ganz leise.",
+      "Lead mit Links-Rechts-Echo im Achtel und etwas Chorus – singt in den Raum.",
+      "Kurze Folge mit Tonhöhe und Pan, das Echo im Triolen-Achtel spinnt sie weiter.",
+      "Glocke im Arp mit Zufallsfolge – ein Glockenspiel, das sich selbst spielt.",
+      "Orgel aus drei Fußlagen mit langsamem Phaser – schwebend und warm.",
+      "Tiefer Dreieck-Bass mit Ensemble – rund und breit.",
+      "Die Folge öffnet die Lautstärke rhythmisch, das Kreuz-Echo macht den Puls räumlich.",
+      "Stimmwelle in einem großen Ensemble und langem Echo – ein Chor im Dom.",
+      "Säge-Lead durch einen kräftigen Flanger – der Ton zischt und kreist.",
+      "Weicher Synth mit langsamem Phaser und Echo – eine Wolke aus Bläsern.",
+      "Speicherwellen-Folge mit Ensemble und langem Echo – Wellen im Hall.",
+      "Bass mit Echo im Sechzehntel – jede Note wird zur kleinen Figur.",
+      "Die Tonhöhe stürzt in Sekundenbruchteilen ab, das Echo wirft den Schuss zurück."],
+    ["Säge und Puls mit langsamem Pan-LFO – ein farbiger Akkord, der im Raum wandert.",
+      "Zwei Timbres: Rauschen und ein Ringmodulator, eine S/H-Folge macht Datengeräusche.",
+      "Glitzernde Fläche aus Sinus× und Säge, sehr langsam mit Phaser.",
+      "Split bei C3: unten ein Bass, oben ein Lead mit Quinte – Bass und Melodie auf einer Tastatur.",
+      "Dreieck mit Atemrauschen und weichem Einsatz – ein hölzerner Flötenlead.",
+      "Zwei Folgen auf Filter und Resonanz eines Rechtecks – ein ratterndes Filterwerk.",
+      "Ein Klang, der rückwärts zu laufen scheint: langsamer Einsatz, plötzliches Ende, dazu das Echo.",
+      "Pulsbreite schmal, Anschlag-Dynamik – eine helle Tastenstimme für kurze Akkorde.",
+      "Vocoder mit festem Vokal „a“ (Halten) auf einer Säge, das Ensemble macht einen Chor daraus – singt ohne Mikrofon.",
+      "Vocoder mit dem Vokal „o“, Träger Puls mit Chorus – dunkel und rund.",
+      "Vocoder mit „e“; ein LFO verschiebt die Formanten wie ein Wah-Pedal.",
+      "Vocoder mit „i“, der Arp tippt den Akkord im Sechzehntel an.",
+      "Vocoder mit „u“, Formanten eine Stufe tiefer und Rauschen dazu – eine verwandelte Stimme.",
+      "Vocoder mit „a“ auf einem Puls, Formanten höher, Verzerrung an – eine Roboterstimme.",
+      "Oszillator 1 = Eingang E1: wähle eine Quelle (Mikrofon oder eine Spur), dann klingt sie durch Filter und Effekte."]]};
+/*}MKF*/
+(function () {
+'use strict';
+const F = SQ_MK_FACTORY, BL = 'ABCDEFGH';
+// roles per place 1-16 of A-G (Umfang 2): [key, label, library role (EN-18), preview phrase; the sequence programs get held
+// chords, so their KEY SYNC sequence runs through]
+const RA = [null, ['hart', 'Synth, hart', 'chord', 'stab'], ['arp', 'Arpeggio', 'seq', 'chord'], ['flaeche', 'Fläche', 'pad', 'pad'], ['bass', 'Bass', 'bass', 'bass'],
+  ['lead', 'Lead', 'lead', 'lead'], ['seq', 'Sequenz', 'seq', 'chord'], ['perk', 'Glocke, Perkussion', 'keys', 'bell'], ['tasten', 'Tasten', 'keys', 'keys'],
+  ['bass', 'Bass', 'bass', 'bass'], ['bewegung', 'Bewegung', 'seq', 'chord'], ['chor', 'Streicher, Chor', 'pad', 'pad'], ['lead', 'Lead', 'lead', 'lead'],
+  ['blaeser', 'Bläser, weich', 'chord', 'chord'], ['wseq', 'Wellen-Sequenz', 'seq', 'pad'], ['bass', 'Bass', 'bass', 'bass'], ['effekt', 'Effekt', 'fx', 'fx']];
+const RFX = ['effekt', 'Effekt', 'fx', 'fx'], RVOC = ['vocoder', 'Vocoder', 'chord', 'chord'], RIN = ['eingang', 'Eingang', 'fx', 'lead'];
+function roleOf(b, s) { if (b === 8) { if (s === 2 || s === 7) return RFX; if (s >= 9 && s <= 14) return RVOC; if (s === 15) return RIN; } return RA[s]; }   // b, s 1-based
+const CAT = {bass: 'bass', lead: 'lead', chord: 'poly', pad: 'flaeche', keys: 'pluck', seq: 'sequenz', fx: 'effekt'};
+const lab = (b, s) => BL[b - 1] + String(s).padStart(2, '0');
+const idOf = (b, s) => 'f-mk-' + BL[b - 1].toLowerCase() + String(s).padStart(2, '0');
+/* the field order: INIT AM walked in its key order (v, usc, vmax skipped; voc.hold as 16 values + a flag); 'mw' = the MOD
+   wheel start value (flat p.mw, 0..127); EQ gains in half dB */
+function leaves() {
+  const L = [], init = SQMK.init();
+  const walk = (o, pre) => { for (const k of Object.keys(o)) { if (!pre && (k === 'v' || k === 'usc' || k === 'vmax')) continue; const v = o[k], p = pre ? pre + '.' + k : k; if (p === 'voc.hold') continue;
+    if (Array.isArray(v)) v.forEach((x, i) => (x && typeof x === 'object' ? walk(x, p + '.' + i) : L.push([p + '.' + i, x])));
+    else if (v && typeof v === 'object') walk(v, p); else L.push([p, p === 'eq.lg' || p === 'eq.hg' ? v * 2 : v]); } };
+  walk(init, '');
+  for (let i = 0; i < 16; i++) L.push(['voc.hold.' + i, 0]);
+  L.push(['holdOn', 0], ['mw', 0]);
+  return L;
+}
+let LV = null, LVP = null, INIT_S = '';
+function prepLV() { if (LV) return; LV = leaves(); LVP = LV.map(l => l[0].split('.')); INIT_S = JSON.stringify(SQMK.init()); }
+// one program from its changed fields [[index, delta] ...] (only these are written; INIT is the rest)
+function build(diffs) {
+  const pm = JSON.parse(INIT_S); let hold = null, holdOn = 0, mw = 0;
+  for (const [i, d] of diffs) {
+    const p = LV[i][0], v = LV[i][1] + d;
+    if (p.startsWith('voc.hold.')) (hold || (hold = new Array(16).fill(0)))[+p.slice(9)] = v;
+    else if (p === 'holdOn') holdOn = v; else if (p === 'mw') mw = v;
+    else { const ks = LVP[i]; let o = pm; for (let k = 0; k < ks.length - 1; k++) o = o[ks[k]]; o[ks[ks.length - 1]] = p === 'eq.lg' || p === 'eq.hg' ? v / 2 : v; }
+  }
+  pm.voc.hold = holdOn ? hold || new Array(16).fill(0) : null;
+  return {mk: SQMK.normMk(pm), mw: Math.max(0, Math.min(127, mw)) / 127};
+}
+const BANKS = new Array(8).fill(null), STAT = {ms: new Array(8).fill(0)};
+function decodeBank(b) {   // b 1-based
+  if (BANKS[b - 1]) return BANKS[b - 1];
+  try { tickAhead(.3); } catch (e) {}
+  const t0 = performance.now();
+  prepLV();
+  const bin = atob(F.B[b - 1] || ''), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  const salt = u.length ? u[0] : 0; let k = 1;
+  const rd = () => { let v = 0, m = 1, x; do { x = k < u.length ? u[k++] ^ salt : 0; v += (x & 127) * m; m *= 128; } while (x & 128); return v; };
+  const out = [];
+  for (let s = 0; s < 16; s++) {
+    const n = k < u.length ? rd() : 0, diffs = []; let idx = -1;
+    for (let j = 0; j < n; j++) { idx += rd() + 1; const z = rd(); if (idx < LV.length) diffs.push([idx, z & 1 ? -(z + 1) / 2 : z / 2]); }
+    out.push(build(diffs));
+  }
+  STAT.ms[b - 1] = performance.now() - t0;
+  return (BANKS[b - 1] = out);
+}
+// all 128 in slices of one bank (<= 8 ms) with a scheduler tick between them (MK8-08)
+function decodeAll() {
+  return new Promise(res => { let b = 1; const next = () => { if (b > 8) { res(STAT.ms.slice()); return; } decodeBank(b++); setTimeout(next, 30); }; next(); });
+}
+const NAMES = F.N.map(x => (x ? x.split('|') : []));
+const FREC = new Map();
+function facRec(b, s) {   // the factory program of place b, s (1-based); H16 = INIT
+  if (b === 8 && s === 16) return FACTORY_BY_ID.get(INIT_IDS.mk);
+  const id = idOf(b, s); let r = FREC.get(id); if (r) return r;
+  const R_ = roleOf(b, s), lib = R_[2];
+  r = {id, name: NAMES[b - 1][s - 1] || lab(b, s), cat: CAT[lib] || 'eigene', engine: 'mk', ev: 1, demo: R_[3], ref: lab(b, s) + ' · ' + R_[1],
+    tip: (F.T[b - 1] || [])[s - 1] || '', role: lib, prole: R_[0], bank: b, slot: s, mods: [], fx: INIT_FX(), bus: null};
+  Object.defineProperty(r, 'p', {enumerable: true, get() { const d = decodeBank(b)[s - 1]; return Object.assign({}, INIT_VA_P, {level: .457, mw: d.mw, mk: deep(d.mk)}); }});
+  FREC.set(id, r); return r;
+}
+// register the 127 programs in the library lists (factory order: before the INIT sounds)
+(function register() {
+  const add = [];
+  for (let b = 1; b <= 8; b++) for (let s = 1; s <= 16; s++) { if (b === 8 && s === 16) continue; const r = facRec(b, s); FACTORY_BY_ID.set(r.id, r); add.push(r); }
+  const k = SYNTH_LIB.findIndex(x => x.cat === 'init'); SYNTH_LIB.splice(k < 0 ? SYNTH_LIB.length : k, 0, ...add);
+  try { OHASH.key = ''; } catch (e) {}
+  prepLV();   // the field order once (the first bank then unpacks as fast as the others)
+})();
+const ownAt = (b, s) => (LIB.ok ? LIB.lib.all() : []).find(x => x.engine === 'mk' && x.bank === b && x.slot === s) || null;
+const progRec = (b, s) => ownAt(b, s) || facRec(b, s);
+const bankList = b => { const o = []; for (let s = 1; s <= 16; s++) o.push(progRec(b, s)); return o; };
+const P = {bank: 1, last: null};
+function cur(t) {
+  const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound.engine !== 'mk') return null;
+  const o = tr.sound.origin || ''; let b = 0, s = 0;
+  const m = /^f-mk-([a-h])(\d\d)$/.exec(o);
+  if (m) { b = BL.toLowerCase().indexOf(m[1]) + 1; s = +m[2]; }
+  else if (o === INIT_IDS.mk) { b = 8; s = 16; }
+  else if (o.startsWith('u-')) { const r = LIB.ok ? LIB.lib.get(o) : null; if (r && r.bank) { b = r.bank; s = r.slot; } }
+  if (!b || s < 1 || s > 16) return null;
+  return {bank: b, slot: s, label: lab(b, s), name: tr.sound.name, text: lab(b, s) + ':' + tr.sound.name, own: o.startsWith('u-'), edited: soundEdited(tr.sound)};
+}
+const okBS = (b, s) => Number.isInteger(b) && Number.isInteger(s) && b >= 1 && b <= 8 && s >= 1 && s <= 16;
+function headRefresh(t) {
+  if (R.editor === 'synth' && t === R.selT) { UI.dirty.edHead = true; if (ED.hdr) ED.hdr.key = null; }
+  if (R.editor === 'browser') brRefresh();
+}
+function select(t, b, s) {
+  const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth' || !okBS(b, s) || nvTr(tr)) return false;
+  const r = progRec(b, s), L = lab(b, s);
+  previewStop();
+  soundEdit(t, 'Programm ' + L, () => loadPreset(t, r.id));
+  P.bank = b; P.last = {bank: b, slot: s};
+  const txt = L + ':' + r.name;
+  lcdShow(b === 8 && s === 15 && !r.id.startsWith('u-') ? 'Eingang wählen: GLOBAL 1A' : 'Programm', txt);   // H15 sounds with the chosen input (E1)
+  toast(txt, [{label: 'Rückgängig', fn: () => undo()}]);
+  return true;
+}
+function step(t, dir) {
+  const c = cur(t) || P.last, i = c ? (c.bank - 1) * 16 + c.slot - 1 : -1, d = dir < 0 ? -1 : 1;
+  let n = i + d;
+  if (i < 0) n = d > 0 ? 0 : 127;
+  if (n < 0 || n > 127) { lcdShow('Programm', n < 0 ? 'Anfang · A01' : 'Ende · H16'); return false; }
+  return select(t, Math.floor(n / 16) + 1, n % 16 + 1);
+}
+function bankStep(dir) { const c = cur(R.selT); if (!P.touched && c) P.bank = c.bank; P.touched = 1; if (!dir) return P.bank; P.bank = Math.max(1, Math.min(8, P.bank + (dir < 0 ? -1 : 1))); lcdShow('Bank', BL[P.bank - 1] + ' · SELECT 1–16 wählt das Programm'); return P.bank; }   // dir 0 = read the bank
+async function write(t, b, s, name) {
+  const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth' || tr.sound.engine !== 'mk' || !okBS(b, s) || nvTr(tr)) return null;
+  if (!LIB.ok) await libReady();
+  const occ = ownAt(b, s), before = soundSnapshot(t), L = lab(b, s);
+  const snd = deep(tr.sound); snd.bank = b; snd.slot = s;
+  const saved = await LIB.lib.save(snd, {mode: 'new', name: (name && String(name).trim()) || tr.sound.name});
+  if (occ) await LIB.lib.put(occ.id, Object.assign(deep(occ), {bank: 0, slot: 0}));
+  const ids = [saved.id].concat(occ ? [occ.id] : []), was = {}; was[saved.id] = null; if (occ) was[occ.id] = occ;
+  tr.sound.origin = saved.id; tr.sound.name = saved.name; UI.ab = null; UI.sndVer++; markDirty(); UI.dirty.strip = UI.dirty.grid = true;
+  undoPush({kind: 'group', label: 'Sichern auf ' + L, items: [{kind: 'mkslot', ids, before: JSON.stringify(was)}, {kind: 'sound', track: t, before}]});
+  P.bank = b; P.last = {bank: b, slot: s};
+  libChanged(); headRefresh(t);
+  const txt = L + ':' + saved.name;
+  lcdShow('Gesichert auf Platz', txt + (occ ? ' · „' + occ.name + '“ bleibt in Eigene' : ''));
+  toast('Geschrieben: ' + txt, [{label: 'Rückgängig', fn: () => undo()}]);
+  return deep(saved);
+}
+function restore(t, b, s) {
+  if (!okBS(b, s)) return false;
+  const occ = ownAt(b, s), L = lab(b, s), f = facRec(b, s);
+  if (!occ) { lcdShow('Werksklang', L + ' spielt schon den Werksklang „' + f.name + '“'); return false; }
+  const items = [{kind: 'mkslot', ids: [occ.id], before: mkSlotSnap([occ.id])}];
+  LIB.lib.put(occ.id, Object.assign(deep(occ), {bank: 0, slot: 0})).catch(logErr);
+  const tr = S.tracks[t];
+  if (tr && tr.kind === 'synth' && tr.sound.origin === occ.id) { const bs = soundSnapshot(t); loadPreset(t, f.id); items.push({kind: 'sound', track: t, before: bs}); }
+  undoPush({kind: 'group', label: 'Werksklang ' + L, items});
+  libChanged(); headRefresh(t);
+  lcdShow('Werksklang zurück', L + ':' + f.name + ' · „' + occ.name + '“ bleibt in Eigene');
+  toast('Werksklang zurück: ' + L + ':' + f.name, [{label: 'Rückgängig', fn: () => undo()}]);
+  return true;
+}
+const label = (b, s) => (okBS(b, s) ? lab(b, s) : '');
+function names() { const o = []; for (let b = 1; b <= 8; b++) for (let s = 1; s <= 16; s++) if (!(b === 8 && s === 16)) o.push(facRec(b, s).name); return o; }
+// the browser's Bank ▾ (A-H, „Alle“ = back to the role chips)
+function bankPop(anchor) {
+  hideToast();
+  openPop(anchor, p => {
+    p.classList.add('mk8w');
+    p.innerHTML = '<h4>Bank</h4><div class="mk8g mk8bk">' + [...BL].map((x, k) => `<button class="rb${BR.bank === k + 1 ? ' on' : ''}" data-b="${k + 1}">${x}</button>`).join('') + '</div>' +
+      `<div class="savrow"><button class="mbtn rb" data-b="0">Alle ${esc(MK_LABEL)}</button></div>`;
+    guardTouch(p);
+    onTap(p, x => { closePop(); BR.bank = +x.dataset.b; BR.role = 'alle'; BR.more = BR.ren = null; brRefresh(); }, 'button[data-b]');
+  }, {name: 'mkbank'});
+}
+// Sichern / WRITE on an AM track: the place first (default: the program loaded last), then write; also „Ohne Platz“ (Eigene),
+// Überschreiben (an own sound) and WERKSKLANG ZURÜCK for a place that carries an own sound
+function savePop(anchor, t) {
+  const tr = S.tracks[t]; if (!tr) return null;
+  const c = cur(t) || (P.last ? {bank: P.last.bank, slot: P.last.slot} : {bank: 1, slot: 1}), sel = {b: c.bank, s: c.slot};
+  const o = tr.sound.origin, userOrigin = o && o.startsWith('u-') && LIB.ok && LIB.lib.get(o);
+  hideToast();   // the load toast would lie over the place keys (FP-TOUCH)
+  return openPop(anchor, p => {
+    p.classList.add('mk8w');
+    p.innerHTML = '<h4>Sichern · Platz wählen</h4><div class="mk8g mk8bk"></div><div class="mk8g mk8sl"></div><p class="mk8i small"></p>';
+    const inp = el('input', 'tin'); inp.value = tr.sound.name; inp.maxLength = 32; inp.setAttribute('aria-label', 'Name des Sounds'); inp.setAttribute('enterkeyhint', 'done');
+    const row = el('div', 'savrow mk8r'), go = el('button', 'mbtn rb go', ''), free = el('button', 'mbtn rb', 'Ohne Platz'), ov = el('button', 'mbtn rb', 'Überschreiben'), back = el('button', 'mbtn rb mk8fr', 'Werksklang zurück');
+    go.dataset.a = 'go'; free.dataset.a = 'free'; ov.dataset.a = 'ov'; back.dataset.a = 'back';
+    row.append(back, ov, free, go); p.append(inp, row);
+    const bk = p.querySelector('.mk8bk'), sl = p.querySelector('.mk8sl'), inf = p.querySelector('.mk8i');
+    const paint = () => {
+      bk.innerHTML = [...BL].map((x, k) => `<button class="rb${sel.b === k + 1 ? ' on' : ''}" data-b="${k + 1}" aria-label="Bank ${x}">${x}</button>`).join('');
+      sl.innerHTML = Array.from({length: 16}, (_, k) => `<button class="rb${sel.s === k + 1 ? ' on' : ''}${ownAt(sel.b, k + 1) ? ' own' : ''}" data-s="${k + 1}" aria-label="Platz ${lab(sel.b, k + 1)}">${k + 1}</button>`).join('');
+      const occ = ownAt(sel.b, sel.s), L = lab(sel.b, sel.s);
+      inf.textContent = occ ? L + ' trägt „' + occ.name + '“ (eigener Klang) – er bleibt in Eigene' : L + ' · Werksklang „' + facRec(sel.b, sel.s).name + '“ wird überdeckt';
+      go.textContent = 'Auf ' + L + ' schreiben'; back.hidden = !occ; ov.hidden = !userOrigin;
+    };
+    paint();
+    guardTouch(p);
+    onTap(p, x => {
+      if (x.dataset.b) { sel.b = +x.dataset.b; paint(); return; }
+      if (x.dataset.s) { sel.s = +x.dataset.s; paint(); return; }
+      const a = x.dataset.a; if (!a) return;
+      closePop();
+      if (a === 'go') write(t, sel.b, sel.s, inp.value).catch(e => { logErr(e); toast('Sichern fehlgeschlagen'); });
+      else if (a === 'free') saveSound(t, inp.value, 'new').then(s_ => toast('Gesichert: „' + s_.name + '“ (Eigene)')).catch(() => toast('Sichern fehlgeschlagen'));
+      else if (a === 'ov') saveSound(t, inp.value, 'overwrite').then(s_ => toast('Überschrieben: „' + s_.name + '“')).catch(() => toast('Sichern fehlgeschlagen'));
+      else if (a === 'back') restore(t, sel.b, sel.s);
+    }, 'button');
+    on(inp, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); closePop(); write(t, sel.b, sel.s, inp.value).catch(logErr); } e.stopPropagation(); });
+  }, {name: 'save'});
+}
+// the preview of an arp program: a held chord through the arp pattern (W-11, W-34), two bars
+function arpPhrase(pm) {
+  const a = pm.arp, st = ARPC.RES[Math.max(0, Math.min(5, a.res | 0))] * 4, N = [48, 55, 60, 63].map(p => ({p})), out = [];
+  for (let c = 0; c * st < 8 - 1e-6; c++) for (const x of ARPC.arpPattern(a.type | 0, a.range | 0, N, c, 12345, 4)) out.push([c * st, Math.max(.02, a.gate / 100 * st), x.p, c % 4 ? .7 : .9]);
+  return out;
+}
+window.MKF = {select, step, bankStep, write, restore, cur, label, names, bankList, progRec, facRec, ownAt, bankPop, savePop, arpPhrase, decodeBank, decodeAll, leaves: () => (LV || (LV = leaves())).map(x => x.slice()), stat: () => ({ms: STAT.ms.slice(), loaded: BANKS.map(Boolean)}), P, roleOf: (b, s) => roleOf(b, s).slice()};
+})();
 </script>
 <script type="text/plain" id="sq-worklet-src">
 /* SYNQUENZER synth worklet module (spec v2 1.1 block 1, 1.4, 5.4): processors 'dirigent-analog' and 'dirigent-hall'.
@@ -12125,6 +12494,7 @@ const MK_LABEL = 'MS 2000';
     if (engine === 'fm6' && o.common && typeof o.common === 'object') fm6Common(s, normCommon(o.common));
     const bus = normBus(o.bus); if (bus) s.bus = bus;
     if (typeof o.tip === 'string') s.tip = o.tip.slice(0, 400);
+    if (engine === 'mk') { const b = Math.round(num(o.bank, 0)), sl = Math.round(num(o.slot, 0)); if (b >= 1 && b <= 8 && sl >= 1 && sl <= 16) { s.bank = b; s.slot = sl; } }   // MK8: program place A01-H16 (not in soundHash)
     return engine === 'fm2' ? migrateFm2(s) : s;
   }
   // §6.7: a factory FM record's common block -> level = 10^(gain/20), glide / mode / poly, LFO 1 (wave sine/tri/square/saw ->
@@ -12451,14 +12821,18 @@ const MK_LABEL = 'MS 2000';
       async save(sound, opts) {
         opts = opts || {}; const s = normalizeSound(sound); if (!s) throw new Error('sound');
         const over = opts.mode === 'overwrite' && s.origin && s.origin.startsWith('u-') && L.get(s.origin);
-        if (over) { const i = list.findIndex(x => x.id === s.origin); s.id = s.origin; s.name = cleanName(opts.name || list[i].name); s.ct = list[i].ct; s.mt = now(); s.origin = list[i].origin; list[i] = s; }
+        if (over) { const i = list.findIndex(x => x.id === s.origin); s.id = s.origin; s.name = cleanName(opts.name || list[i].name); s.ct = list[i].ct; s.mt = now(); s.origin = list[i].origin;
+          if (s.bank == null && list[i].bank) { s.bank = list[i].bank; s.slot = list[i].slot; }   // MK8: an overwritten program keeps its place
+          list[i] = s; }
         else { s.id = uid('u'); s.origin = sound.origin || null; s.name = uniqueName(cleanName(opts.name || s.name), taken()); s.ct = s.mt = now(); if (opts.cat) s.cat = opts.cat; list.push(s); }
         await persist(); return deep(s);
       },
       async rename(id, name) { const s = L.get(id); if (!s) return null; s.name = uniqueName(cleanName(name, s.name), taken().filter(n => n !== s.name)); s.mt = now(); await persist(); return deep(s); },
       async remove(id) { const i = list.findIndex(s => s.id === id); if (i < 0) return null; const [s] = list.splice(i, 1); await persist(); return s; },   // keep the result for "Rückgängig"
-      async restore(s) { if (!s || L.get(s.id)) return false; list.push(normalizeSound(s)); await persist(); return true; },
-      async duplicate(id) { const s = L.get(id); return s ? L.save(Object.assign(deep(s), {origin: s.id}), {name: s.name}) : null; },
+      async restore(s) { if (!s || L.get(s.id)) return false; const n = normalizeSound(s); if (n && n.bank && list.some(x => x.bank === n.bank && x.slot === n.slot)) { delete n.bank; delete n.slot; } list.push(n); await persist(); return true; },   // MK8: a place taken meanwhile stays with its sound
+      async duplicate(id) { const s = L.get(id); return s ? L.save(Object.assign(deep(s), {origin: s.id, bank: 0, slot: 0}), {name: s.name}) : null; },   // MK8: a copy has no place
+      // MK8 (undo of WRITE / WERKSKLANG ZURÜCK): put a record back as it was (null = remove it)
+      async put(id, rec) { const i = list.findIndex(x => x.id === id); if (rec) { const s = normalizeSound(rec); if (!s) return false; s.id = id; if (i >= 0) list[i] = s; else list.push(s); } else if (i >= 0) list.splice(i, 1); else return true; await persist(); return true; },
       /* merge sounds from a file: same sound (hash) -> skip; same id with other content -> keep both (new id); name clash -> "Name 2" */
       async importMany(sounds) {
         // hash dedupe against the library as it was (§11.3): sounds of the same file that share a hash but carry their own
@@ -12468,6 +12842,7 @@ const MK_LABEL = 'MS 2000';
           if (have.has(h) || seen.has(hn)) { res.skipped++; continue; }
           seen.add(hn);
           if (!s.id || !s.id.startsWith('u-') || L.get(s.id)) s.id = uid('u');
+          if (s.bank && list.some(x => x.bank === s.bank && x.slot === s.slot)) { delete s.bank; delete s.slot; }   // MK8: one own sound per place
           s.name = uniqueName(s.name, taken()); list.push(s); res.added.push(s.id); }
         if (res.added.length) await persist(); return res;
       },
@@ -14988,7 +15363,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.15.0';
+const VERSION = '4.17.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -16668,6 +17043,24 @@ function mkLoad() {
   MKL.ms = performance.now() - t0;
   return typeof MKUI !== 'undefined' ? MKUI : null;
 }
+/* MK8 (Nachtrag 3 MK8 Umfang 5-6): the program memory A01-H16. The factory programs, the place logic, WRITE and WERKSKLANG
+   ZURÜCK live in block sq-mk-src (MKF); here only the undo of the library records and the API object for the panel (MK-P binds
+   BANK, SELECT, -/+ and WRITE to it) */
+function mkSlotSnap(ids) { const o = {}; for (const id of ids || []) o[id] = LIB.ok ? LIB.lib.get(id) : null; return JSON.stringify(o); }
+function mkSlotPut(o) {
+  if (!LIB.ok || !o) return;
+  for (const id in o) LIB.lib.put(id, o[id] ? deep(o[id]) : null).catch(logErr);
+  libChanged(); if (R.editor === 'browser') brRefresh();
+}
+const mkProgM = () => (mkLoad() && window.MKF ? MKF : null);
+window.mkProg = {
+  select: (bank, slot) => { const M = mkProgM(); return M ? M.select(R.selT, bank, slot) : false; },
+  step: dir => { const M = mkProgM(); return M ? M.step(R.selT, dir) : false; },
+  bank: dir => { const M = mkProgM(); return M ? M.bankStep(dir) : 0; },
+  write: (bank, slot, name) => { const M = mkProgM(); return M ? M.write(R.selT, bank, slot, name) : Promise.resolve(null); },
+  restore: (bank, slot) => { const M = mkProgM(); return M ? M.restore(R.selT, bank, slot) : false; },
+  current: () => { const M = mkProgM(); return M ? M.cur(R.selT) : null; },
+};
 // MK2: the stored wave a sound needs (OSZ 1 Speicherwelle: STEUER 2 values 2n - 2, 2n - 1 -> wave n), 0 = none
 function mkWaveOf(pm, c2, ti) { const t = pm && pm.t && pm.t[ti | 0]; if (!t || !t.o1 || Math.round(t.o1.w) !== 5) return 0; return Math.max(1, Math.min(64, Math.floor((c2 != null ? c2 : t.o1.c2) / 2) + 1)); }
 // before the engine gets a sound (or a gesture reaches STEUER 2): its wave goes once to this context (block sq-mk-src builds it)
@@ -16679,7 +17072,7 @@ function mkwPull(E, n) { const M = mkLoad(); if (M && M.wv) M.wv.pull(E, n | 0);
 function mkInfo() { const W = mkLoaded() && MKUI.wv ? MKUI.wv.info(AU.ctx) : {tables: 0, tableBytes: 0, built: 0, posts: 0};
   let fxB = 0; for (const E of AU.synth) if (E && E.mkFxB) fxB += E.mkFxB;   // MK4: delay buffers of all AM tracks (0 until a delay depth > 0)
   return {loaded: mkLoaded(), tables: W.tables, tableBytes: W.tableBytes, built: W.built, posts: W.posts, blockMs: +MKL.ms.toFixed(2), waves: 'platzhalter', err: MKL.err, fxBytes: fxB}; }
-// B.7 mkRender: an AM sound offline through the app worklet (OfflineAudioContext); ev [t, 'on'|'off', note, vel]
+// B.7 mkRender: an AM sound offline through the app worklet (OfflineAudioContext); ev [t, 'on'|'off', note, vel, key?, mask?] (MK8: mask = timbre mask)
 async function mkRender(sound, ev, o) {
   o = o || {}; const sr = o.sr || 48000, sec = o.sec || 2;
   const snd = SQStore.normalizeSound(sound); if (!snd) throw new Error('mkRender: kein Sound');
@@ -16699,7 +17092,7 @@ async function mkRender(sound, ev, o) {
   if (o.at) for (const [t, m] of o.at) oc.suspend(Math.round(t * sr / 128) * 128 / sr).then(() => { E.node.port.postMessage(m); oc.resume(); }).catch(() => {});
   E.tempo(o.bpm || 120, o.songStart == null ? null : o.songStart);
   const ids = {}; let id = 1;
-  for (const e of ev || []) { if (e[1] === 'keys') { E.keys(e[2], e[0]); continue; } const k = e[4] != null ? e[4] : e[2]; if (e[1] === 'on') { ids[k] = id++; E.on(ids[k], e[2], e[3] == null ? .8 : e[3], e[0]); } else if (ids[k]) E.off(ids[k], e[0]); }
+  for (const e of ev || []) { if (e[1] === 'keys') { E.keys(e[2], e[0]); continue; } const k = e[4] != null ? e[4] : e[2]; if (e[1] === 'on') { ids[k] = id++; E.on(ids[k], e[2], e[3] == null ? .8 : e[3], e[0], null, e[5] || 0); } else if (ids[k]) E.off(ids[k], e[0]); }
   E.flush();
   await new Promise(r => setTimeout(r, 20));
   const b = await oc.startRendering();
@@ -19173,6 +19566,7 @@ function undoState(e) {
   if (e.kind === 'song') return songSnapshot();
   if (e.kind === 'own') return S.song && S.song.own && S.song.own[e.id] ? JSON.stringify(S.song.own[e.id]) : null;   // V2e′
   if (e.kind === 'mkin') return S.tracks[e.track] ? JSON.stringify(S.tracks[e.track].mkIn || null) : 'null';
+  if (e.kind === 'mkslot') return mkSlotSnap(e.ids);       // MK8: the library records a WRITE / WERKSKLANG ZURÜCK touched
   return fxSnapshot();
 }
 // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
@@ -19191,6 +19585,7 @@ function undoApply(e, val) {
   else if (e.kind === 'own') ownRestore(e.id, val);
   else if (e.kind === 'mkin') { const tr = S.tracks[e.track]; if (tr) { const n = normMkIn(JSON.parse(val)); if (n) tr.mkIn = n; else delete tr.mkIn; mkInRoute(); if (R.editor === 'synth' && R.selT === e.track && typeof MKUI !== 'undefined') MKUI.render(); } }
   else if (e.kind === 'set') settingApply(e.key, JSON.parse(val));
+  else if (e.kind === 'mkslot') mkSlotPut(JSON.parse(val));
   else if (e.kind === 'part') partRestore(JSON.parse(val));
   else restoreFx(JSON.parse(val));
   UI.dirty.all = true; markDirty();
@@ -26225,7 +26620,7 @@ function applySound(i, snd, opts) {
 function soundCopy(rec) {
   if (!rec) return null;
   if (FACTORY_BY_ID.has(rec.id)) return factorySound(rec.id);
-  const s = deep(rec); s.origin = rec.id || rec.origin || null; s.id = null; return s;
+  const s = deep(rec); s.origin = rec.id || rec.origin || null; s.id = null; delete s.bank; delete s.slot; return s;   // MK8: the place belongs to the library record
 }
 // factory id, user id, factory or user name, or an old v2 preset name -> {rec, old}
 function findSound(q) {
@@ -26435,7 +26830,9 @@ function setMod(t, src, dst, knobAmt) {
 function clearMods(t, dst) { const snd = sndOf(t); if (!snd) return; snd.mods = dst ? snd.mods.filter(m => m.dst !== dst) : []; rebuildNativeLfos(t); UI.sndVer++; markDirty(); }
 // is the track's sound "geändert" against the record it came from (§11.3: soundHash !== soundHash(origin))?
 const OHASH = {key: '', h: null};
-function originRec(snd) { const o = snd && snd.origin; if (!o) return null; return FACTORY_BY_ID.get(o) || (LIB.ok ? LIB.lib.get(o) : null); }
+function originRec(snd) { const o = snd && snd.origin; if (!o) return null;
+  if (!FACTORY_BY_ID.has(o) && o.startsWith('f-mk-') && !mkLoaded()) mkLoad();   // MK8: the programs A01-H15 live in block sq-mk-src
+  return FACTORY_BY_ID.get(o) || (LIB.ok ? LIB.lib.get(o) : null); }
 function soundEdited(snd) {
   const rec = originRec(snd); if (!rec) return false;
   const key = snd.origin + ':' + LIB.ver;
@@ -29843,6 +30240,7 @@ function stepList(i) {
 }
 function stepSound(i, dir) {
   const snd = S.tracks[i].sound, o = snd.origin;
+  if (snd.engine === 'mk' && mkLoad() && window.MKF) { MKF.step(i, dir); return; }   // MK8: ‹ › = program −/+ (A01 … H16, stops at the ends)
   const list = stepList(i); if (!list.length) return;
   let k = list.findIndex(x => x.id === o); if (k < 0) k = dir > 0 ? -1 : 0;
   const next = list[(k + dir + list.length) % list.length];
@@ -30024,6 +30422,7 @@ function soundStampName(snd, d) {
   return r + ' ' + stampDate(d) + ' ' + stampTime(d);
 }
 function openSavePop(anchor, i) {
+  if (S.tracks[i].sound.engine === 'mk' && mkLoad() && window.MKF) return MKF.savePop(anchor, i);   // MK8: WRITE asks for the place
   const snd = S.tracks[i].sound, o = snd.origin, userOrigin = o && o.startsWith('u-') && LIB.ok && LIB.lib.get(o), drum = snd.engine === 'drum';
   const askName = pop => {
     const taken = (LIB.ok ? LIB.lib.names() : []).concat(factoryNames(), KIT_NAMES);
@@ -30053,7 +30452,7 @@ function openSavePop(anchor, i) {
 async function saveSound(t, name, mode) {
   const tr = S.tracks[t]; if (!tr) throw new Error('Keine Spur: ' + t);
   if (!LIB.ok) await libReady();
-  const snd = deep(tr.sound);
+  const snd = deep(tr.sound); delete snd.bank; delete snd.slot;   // MK8: a place only through WRITE (MKF.write)
   if (snd.engine === 'drum') snd.cat = 'drums';                    // WP6: an own kit (§11.2 „Eigene Kits“)
   else if (!snd.origin || !snd.origin.startsWith('u-') || mode !== 'overwrite') { const rec = originRec(snd); if (rec && rec.cat && !snd.origin.startsWith('u-')) snd.cat = rec.cat; }
   const saved = await LIB.lib.save(snd, {mode: mode === 'overwrite' ? 'overwrite' : 'new', name: name || undefined});
@@ -30069,7 +30468,7 @@ async function saveSound(t, name, mode) {
 /* ---------- user library (§11.4): KV key 'lib', loaded at start-up; the full library goes into every project file ---------- */
 const LIB = {lib: null, ok: false, ver: 0, wait: null};
 // factory names count as taken for own sounds: no two rows in „Alle“ share a name (§11.3 „Rom-Fläche 2“)
-function factoryNames() { return FACTORY.map(f => f.name).concat(KIT_NAMES); }
+function factoryNames() { return FACTORY.map(f => f.name).concat(KIT_NAMES, mkLoaded() && window.MKF ? MKF.names() : []); }
 function libReady() {
   if (LIB.ok) return Promise.resolve(LIB.lib);
   if (!LIB.wait) LIB.wait = (async () => {
@@ -30133,7 +30532,8 @@ function previewStart(t, sound, demo, id) {
   if (sound.engine === 'drum') return drumPreviewStart(sound === S.tracks[DRUM_T].sound ? null : sound, id);
   pvChainRetire(); PV.drum = null;
   const tr = S.tracks[t]; PV.chain = tr && tr.kind === 'synth' && sound !== tr.sound ? pvChain(t, sound) : null;
-  const ph = (SQF.PREVIEW && (SQF.PREVIEW[demo] || SQF.PREVIEW.lead)) || [];
+  let ph = (SQF.PREVIEW && (SQF.PREVIEW[demo] || SQF.PREVIEW.lead)) || [];
+  if (sound.engine === 'mk' && sound.p.mk && sound.p.mk.arp && sound.p.mk.arp.on && window.MKF) ph = MKF.arpPhrase(sound.p.mk);   // MK8: a held chord through the program's arp (the arp core runs for tracks only)
   const root = S.key.root, sh = root <= 6 ? root : root - 12;
   Object.assign(PV, {on: true, t, sound, id: id || null, spb: 60 / S.bpm, t0: c.currentTime + .05, k: 0, voices: [], gs: {},
     notes: ph.map(([b, d, n, v]) => ({b, d, n: clamp(n + sh, 0, 127), v})).sort((a, b) => a.b - b.b)});
@@ -30197,7 +30597,7 @@ const demoForCat = c => ({bass: 'bass', lead: 'lead', poly: 'chord', flaeche: 'p
 /* ---------- sound browser (§11.2; V0b §12.1, EN-04/EN-18): P sheet over grid + strip + carrier, L chips in a 120 px column.
    Name = load silently (one undo, toast); ▶ = preview (one at a time). Filter = the track's engine, „Alle Engines“ on
    request (active engine first); another engine's sound loads only from there („wechselt zu VA“). Drums: kits. ---------- */
-const BR = {t: 0, cat: 'kits', role: 'alle', all: false, eng: null, open: null, more: null, ren: null, list: null};
+const BR = {t: 0, cat: 'kits', role: 'alle', all: false, eng: null, open: null, more: null, ren: null, list: null, bank: 0};   // MK8: bank 1-8 = the 16 places of A-H
 const DCATS2 = [['kits', 'Kits', 'Kits'], ['ekits', 'Eigene', 'Eigene Kits'], ['dinit', 'Init', 'Init']];
 // the records of scope {all, eng, role} on track t: 'alle' = factory + own, 'eigene' = own, else that role's factory sounds
 function brPool(t, sc) {
@@ -30211,6 +30611,7 @@ function brPool(t, sc) {
 function brList(t, sc) {
   const tr = S.tracks[t]; if (!tr) return [];
   if (tr.kind === 'drum') return BR.cat === 'ekits' ? (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine === 'drum') : BR.cat === 'dinit' ? [INIT_KIT] : DRUM_FACTORY;
+  if (sc.bank && !sc.all && (sc.eng || engKey(tr.sound.engine)) === 'mk' && mkLoad() && window.MKF) return MKF.bankList(sc.bank);   // MK8: exactly the 16 places (own sound instead of the factory one)
   const {fac, own} = brPool(t, sc);
   if (sc.role === 'eigene') return own;
   if (!sc.role || sc.role === 'alle') return fac.concat(own);
@@ -30239,6 +30640,8 @@ function openBrowser(t) {
   // §11.2: the drum track's categories are „Kits“, „Eigene Kits“ (and V0b „Init“)
   if (tr.kind === 'drum') BR.cat = rec && rec.id && rec.id.startsWith('u-') ? 'ekits' : rec && rec.id === INIT_KIT.id ? 'dinit' : 'kits';
   else { BR.all = false; BR.eng = null; BR.role = brDefaultRole(t, engKey(tr.sound.engine)); }    // EN-04: the track's engine first
+  BR.bank = 0;
+  if (tr.kind === 'synth' && tr.sound.engine === 'mk' && mkLoad() && window.MKF) { const c = MKF.cur(t); if (c) { BR.bank = c.bank; BR.role = 'alle'; } }   // MK8: a program opens its bank
   BR.open = tr.sound.origin || null;
   libReady().then(() => { if (R.editor === 'browser') brRefresh(); });
   buildBrowser();
@@ -30274,7 +30677,7 @@ function buildBrowser() {
   // chips are built by brRefresh; a chip never loads or plays (N0b-05)
   onTap(cats, b => {
     if (b.dataset.scope) { brScope(b.dataset.scope, b); return; }
-    if (S.tracks[BR.t].kind === 'drum') BR.cat = b.dataset.c; else BR.role = b.dataset.c;
+    if (S.tracks[BR.t].kind === 'drum') BR.cat = b.dataset.c; else { BR.role = b.dataset.c; BR.bank = 0; }
     BR.more = BR.ren = null; brRefresh();
   }, 'button');
   const list = el('div', 'brlist'); BR.list = list;
@@ -30299,14 +30702,16 @@ function buildBrowser() {
 // [FM ▾ │ Alle Engines]: all engines (the track's first, tagged); FM ▾ again = look at another engine (loading switches it)
 function brScope(sc, anchor) {
   const e0 = engKey(S.tracks[BR.t].sound.engine);
-  if (sc === 'all') { if (BR.all) return; BR.all = true; BR.eng = null; BR.role = 'alle'; }
+  if (sc === 'bank') { if (mkLoad() && window.MKF) MKF.bankPop(anchor); return; }   // MK8: Bank ▾ (A-H)
+  BR.bank = 0;
+  if (sc === 'all') { if (BR.all) return; BR.all = true; BR.eng = null; BR.role = 'alle'; mkLoad(); }   // MK8: „Alle Engines“ lists the programs A01-H15 too
   else if (BR.all || (BR.eng && BR.eng !== e0)) { BR.all = false; BR.eng = null; BR.role = brDefaultRole(BR.t, e0); }
   else {
     openPop(anchor, p => {
       p.innerHTML = '<h4>Andere Engine ansehen</h4><div class="plist breng">' + [['analog', 'VA'], ['fm6', 'FM'], ['wt', 'WT'], ['mk', MK_LABEL]].map(([e, l]) =>
         `<button class="rb${e === (BR.eng || e0) ? ' on' : ''}" data-e="${e}">${l}${e === e0 ? ' · Spur' : ''}</button>`).join('') + '</div><p class="small">Laden aus einer anderen Engine wechselt die Klangerzeugung der Spur (mit Rückgängig).</p>';
       guardTouch(p);
-      onTap(p, b => { closePop(); const e = b.dataset.e; BR.eng = e === e0 ? null : e; BR.role = 'alle'; BR.more = BR.ren = null; brRefresh(); }, 'button[data-e]');
+      onTap(p, b => { closePop(); const e = b.dataset.e; BR.eng = e === e0 ? null : e; BR.role = 'alle'; BR.bank = 0; BR.more = BR.ren = null; if (e === 'mk') mkLoad(); brRefresh(); }, 'button[data-e]');
     }, {name: 'breng'});
     return;
   }
@@ -30318,7 +30723,8 @@ function brChipsHTML(t) {
   const e0 = engKey(tr.sound.engine), shown = BR.eng || e0;
   const seg = `<div class="brseg" role="group" aria-label="Engine"><button class="chip rb brse${BR.all ? '' : ' on'}" data-scope="eng" aria-label="Nur ${ENGINE_LABEL[shown]}-Sounds">${ENGINE_LABEL[shown]} ▾</button>` +
     `<button class="chip rb brsa${BR.all ? ' on' : ''}" data-scope="all">Alle Engines</button></div>`;
-  return seg + brRoles(t, BR).map(([id, l]) => `<button class="chip rb${BR.role === id ? ' on' : ''}" data-c="${id}"><span class="cs">${esc(l)}</span><span class="cl">${esc(l)}</span></button>`).join('');
+  const bk = shown === 'mk' && !BR.all ? `<button class="chip rb brbank${BR.bank ? ' on' : ''}" data-scope="bank" aria-label="Bank wählen"><span class="cs">${BR.bank ? 'Bank ' + 'ABCDEFGH'[BR.bank - 1] : 'Bank'} ▾</span><span class="cl">${BR.bank ? 'Bank ' + 'ABCDEFGH'[BR.bank - 1] : 'Bank'} ▾</span></button>` : '';   // MK8
+  return seg + bk + brRoles(t, BR).map(([id, l]) => `<button class="chip rb${BR.role === id && !BR.bank ? ' on' : ''}" data-c="${id}"><span class="cs">${esc(l)}</span><span class="cl">${esc(l)}</span></button>`).join('');
 }
 function brRefresh() {
   const sh = EL.sndSheet; if (!sh.classList.contains('open') || !BR.list) return;
@@ -30332,8 +30738,8 @@ function brRefresh() {
   const ch = brChipsHTML(BR.t);
   if (E.cats._h !== ch) { E.cats._h = ch; E.cats.innerHTML = ch; E.cats._shown = null; }
   // WP7: the chip row scrolls (P); the active chip is brought into view when the choice changes
-  const sel = drum ? BR.cat : BR.role + '|' + BR.all + '|' + BR.eng;
-  if (E.cats._shown !== sel) { E.cats._shown = sel; const c = E.cats, onC = c.querySelector('.chip.on[data-c]'), sg = c.querySelector('.brseg');
+  const sel = drum ? BR.cat : BR.role + '|' + BR.all + '|' + BR.eng + '|' + BR.bank;
+  if (E.cats._shown !== sel) { E.cats._shown = sel; const c = E.cats, onC = c.querySelector('.chip.on[data-c]') || c.querySelector('.chip.on.brbank'), sg = c.querySelector('.brseg');
     if (onC) { const cr = c.getBoundingClientRect(), r = onC.getBoundingClientRect(), sr = sg ? sg.getBoundingClientRect() : null;
       // behind the sticky engine segment (P row / L column)
       const offX = sr ? sr.width + 8 : 8, offY = sr ? sr.height + 6 : 6;
@@ -30345,7 +30751,7 @@ function brRefresh() {
     : '<div class="mempty">Keine Sounds.</div>';
   for (const f of items) {
     const own = f.id && f.id.startsWith('u-'), loaded = snd.origin === f.id, open = BR.open === f.id, playing = PV.on && PV.id === f.id;
-    const nv = SQStore.isForeign(f), ref = nv ? SQStore.NV_NAME : own ? (f.engine === 'drum' ? 'Eigenes Kit' + (f.p && f.p.base ? ' · aus ' + f.p.base : '') : ROLE_LABEL[soundRole(f)] || CAT_LABEL[f.cat] || 'Eigene') : (f.ref || '');
+    const nv = SQStore.isForeign(f), ref = nv ? SQStore.NV_NAME : own ? (f.engine === 'drum' ? 'Eigenes Kit' + (f.p && f.p.base ? ' · aus ' + f.p.base : '') : f.bank && window.MKF ? MKF.label(f.bank, f.slot) + ' · eigener Klang' : ROLE_LABEL[soundRole(f)] || CAT_LABEL[f.cat] || 'Eigene') : (f.ref || '');
     h += `<div class="brow${loaded ? ' cur' : ''}${open ? ' open' : ''}" data-id="${esc(f.id)}" data-engine="${esc(engKey(f.engine))}">` +
       `<button class="bpv rb${playing ? ' on' : ''}" data-act="pv" aria-label="${playing ? 'Vorhören beenden' : 'Vorhören'} ${esc(f.name)}">${playing ? '■' : '▶'}</button>` +
       `<button class="bmain" data-act="load" aria-label="${esc(f.name)} laden"><b>${esc(f.name)}</b><span>${esc(ref)}</span></button>` +
@@ -30355,7 +30761,7 @@ function brRefresh() {
     if (open && f.tip) h += `<div class="btip" data-id="${esc(f.id)}">ⓘ ${esc(f.tip)}</div>`;
     if (own && BR.more === f.id) {
       if (BR.ren === f.id) h += `<div class="bacts" data-id="${esc(f.id)}"><input class="tin" maxlength="32" value="${esc(f.name)}" aria-label="Neuer Name"><button class="mbtn rb go" data-act="renok">OK</button><button class="mbtn rb" data-act="rencancel">Abbrechen</button></div>`;
-      else h += `<div class="bacts" data-id="${esc(f.id)}"><button class="mbtn rb" data-act="ren">Umbenennen</button><button class="mbtn rb" data-act="dup">Duplizieren</button><button class="mbtn rb" data-act="exp1">Exportieren</button><button class="mbtn rb" data-act="del">Löschen</button></div>`;
+      else h += `<div class="bacts" data-id="${esc(f.id)}"><button class="mbtn rb" data-act="ren">Umbenennen</button><button class="mbtn rb" data-act="dup">Duplizieren</button><button class="mbtn rb" data-act="exp1">Exportieren</button><button class="mbtn rb" data-act="del">Löschen</button>${f.bank ? '<button class="mbtn rb" data-act="mkfree">Werksklang zurück</button>' : ''}</div>`;
     }
   }
   if (list._h !== h) { list._h = h; list.innerHTML = h; list.scrollTop = st; }
@@ -30395,6 +30801,7 @@ function brTap(b) {
   else if (act === 'dup' && rec) LIB.lib.duplicate(id).then(s => { libChanged(); BR.more = null; brRefresh(); if (s) toast('Kopie „' + s.name + '“'); });
   else if (act === 'exp1' && rec) exportSounds([id]);
   else if (act === 'del' && rec) { BR.more = null; deleteSound(id); }
+  else if (act === 'mkfree' && rec && rec.bank && mkLoad() && window.MKF) { BR.more = null; MKF.restore(t, rec.bank, rec.slot); }   // MK8
 }
 function brRename(inp) {
   const row = inp && inp.closest('[data-id]'); if (!row) return;
@@ -32422,6 +32829,7 @@ function openMenu(goto) {
     MK_LABEL + ' · EDIT-WAHL 1 und 2: drehen (ziehen) wählt eine Sektion, die fünf Regler bearbeiten sie; was sie gerade tun, steht in der Zeile darunter. Tippen = Liste aller Stellungen. Leuchten beide Lämpchen, spielen die Regler CUTOFF, RESONANZ, ATTACK, RELEASE und TEMPO.',
     MK_LABEL + ' · SHIFT: Regler auf Ebene 2 (z. B. FILTER → ANSCHLAG); SHIFT + 3 = Init, SHIFT + SEITE = andere EDIT-WAHL, SHIFT + OKT = Wert ±1. ORIGINAL leuchtet, wenn ein Wert dem gespeicherten gleicht.',
     MK_LABEL + ' · Programme: BANK 1–8 und SEITE A│B, dann eine Nummerntaste. Seite B = deine eigenen Sounds dieser Engine (A–Z); die leuchtende Taste noch einmal = zurück zum Spielen. WRITE = Sichern.',
+    MK_LABEL + ' · Programm-Speicher: 128 eigene Programme A01–H16 (A–G je Platz dieselbe Rolle: 01 Synth hart, 02 Arpeggio, 03 Fläche, 04 Bass … 16 Effekt; H09–H14 Vocoder, H15 Eingang, H16 INIT). ‹ › im Klang-Kopf = Programm zurück/weiter, Bibliothek → Bank ▾ = die 16 Plätze einer Bank. Sichern fragt nach dem Platz (WRITE): dein Klang überdeckt dort den Werksklang; „Werksklang zurück“ gibt den Platz wieder frei, nichts geht verloren.',
     MK_LABEL + ' · BEND und MOD: die Räder links der Tasten. BEND federt zur Mitte zurück, MOD bleibt stehen (Vibrato mit TONH. → VIBRATO). Beides wird nicht gespeichert.',
     MK_LABEL + ' · Leistungs-Probe (Menü → Info): misst 10 s lang, wie viel Rechenzeit vier Klangerzeuger mit je vier Stimmen brauchen – das Ergebnis kopieren und schicken.',
     MK_LABEL + ' · OSZ 1 WELLE: Säge, Puls, Dreieck, Sinus× (STEUER 1 = wie stark OSZ 2 den Sinus verbiegt), Stimmwelle (Klang bleibt beim Tonhöhenwechsel), Speicherwelle (STEUER 2 wählt eine von 64; Tipp = Liste), Rauschen (STEUER 1 = Tonhöhe des Filters, STEUER 2 = Resonanz).',

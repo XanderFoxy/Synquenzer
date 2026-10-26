@@ -1,0 +1,10 @@
+import {launch, open, tap, panel} from './v3-mkp-lib.mjs';
+const b = await launch(); const page = await open(b, process.argv[2], 'L1');
+await page.evaluate(() => MKUI.view({ansicht: 'zoom', halt: 9})); await page.waitForTimeout(100);
+await page.setViewportSize({width: 390, height: 844}); await page.waitForTimeout(800);
+console.log(await page.evaluate(() => ({maps: document.querySelectorAll('.mkmap').length, r: [...document.querySelectorAll('.mkmap')].map(m => JSON.stringify(m.getBoundingClientRect())), q: EL.app.classList.contains('mkq'), tabs: document.querySelector('#synthSheet .sh-tabs') && document.querySelector('#synthSheet .sh-tabs').getBoundingClientRect().top, a: MKUI.P.ansicht, land: MKUI.P.land})));
+await page.evaluate(() => { window.__L = []; window.addEventListener('pointerdown', e => __L.push(e.target.className + ' ' + Math.round(e.clientX) + ',' + Math.round(e.clientY)), true); });
+const mp = await page.evaluate(() => { const r = document.querySelector('.mkmap').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+await tap(page, ...mp); await page.waitForTimeout(300);
+console.log(mp, await page.evaluate(() => [__L, MKUI.P.ansicht, MKUI.P.haelfte]));
+await b.close();

@@ -1987,3 +1987,25 @@ Größe 3 017 704 B (+142 962 B gegen 4.12.0; Summe der Zweige +142 450 B, Rest 
 
 ### Datenbank / Am Server offen
 - Nichts (Format 5, `APP_CODE` 4 015 000 ≤ Wächter 4 021 000).
+
+## G-MK567-merge-fix — zwei Befunde nach der Zusammenführung · App bleibt 4.15.0 · Format 5 · keine Server-Änderung
+
+1. **Mod-Sequenzer im Vocoder (MK6 × MK7, major).** Ein gespeicherter SEQ lief im Vocoder-Modus weiter (z. B. TONHÖHE 0/+12 →
+   Oktavsprünge im Träger), obwohl das Bedienfeld „nicht im Vocoder“ zeigt. Jetzt:
+   - Worklet `sqPrep`: `on = (S.on ≥ .5 || rec) && mode ≠ 3` – im Vocoder hat der SEQ keine Wirkung (Nachtrag 3 MK6: außerhalb des Umfangs);
+     `recMsg` nimmt im Vocoder keine AUFN. an.
+   - `MkCore.sqMode()`: Synth ↔ Vocoder (Regler und Laden) setzt beide Timbres auf neu vorbereiten; eine laufende AUFN. endet; der
+     Wechsel blendet in 5 ms (die vorhandene L3-Blende), beim Zurück auf Synth wirkt der gespeicherte SEQ wieder.
+   - Bedienfeld: SYNTH/VOC. → Vocoder bricht eine laufende AUFN. ab („abgebrochen (Vocoder hat keinen Mod-Sequenzer)“); die
+     EDIT-WAHL-2-Liste zeigt Zeile 11 im Vocoder dunkel „SEQ – nicht im Vocoder“ statt „an · SEQ 1 → …“.
+   - Probe: `vg567-seqvoc.mjs` Modus 3 TONHÖHE / AMP PEGEL / MIXER OSZ 1: max |Δ| 0 (vorher 0,28); Modus 0 unverändert.
+     `vg567-seqvoc2.mjs`: `mkScope(2).seq[0]` = `{on: 0, vals: [0,0,0]}` bei gehaltener Taste. `vg567-seqvoc3.mjs`: Liste,
+     Vocoder → Synth (SEQ wirkt wieder, Werte 12/0) → Vocoder (wieder aus). `v3-mk6-seq.mjs`: 0 FAIL.
+2. **MK7-11 Vocoder-CPU (major).** Die 16 Bänder liefen je Band und Block über `mkB4` + Pufferschleife. Jetzt im Normalfall
+   (4. Ordnung, kein Umschalten) Analyse-Band + Hüllkurvenfolger in einer Schleife (feste Koeffizienten) und Synthese-Band
+   (Koeffizienten-Rampe) + Kanal-Pegel/Pan direkt in den Ausgang – dieselbe Rechnung, kein Zwischenpuffer.
+   - Bitgleich: `vg567-vocbit.mjs` (Vokal-Modulator, FC-MOD LFO, K-PAN, Begrenzer-Umschalten 1 → 0) gegen `mk-br-MK7`: max |Δ| 0.
+   - `v3-mk7-cpu.mjs` (zweimal): **PASS MK7-11 1,69 × und 1,62 × VA-Stimme** (≤ 2,4; vorher 2,60 / 2,69); Vocoder-Spur gesamt
+     4,71–4,73 × VA (B.4 ≤ 8); MK7-12 PASS. `v3-mk7-voc.mjs`: alles PASS (inkl. MK7-12 bitgleich gegen G-MK34-merge).
+   - Info: der Begrenzer Stufe 1 (2. Ordnung, unverändert) misst jetzt 1,95 × und ist damit nicht mehr billiger als die volle Bank.
+3. Smoke-Test ohne Fehler. Schnappschuss `synq-snapshots/G-MK567-merge-fix.html`.

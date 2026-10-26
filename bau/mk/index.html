@@ -4362,7 +4362,7 @@ function setv(d, v, live) {
   if (d.p === 'bpm') { setBpm(Math.round(v)); return; }
   if (d.p === 'vol') { setP(i, 'fx.vol', clamp(v, 0, 127) / 127); return; }
   if (d.p === 'lay') { const m = [0, 1, 2][clamp(Math.round(v), 0, 2)]; mkSetP(i, 'mode', m, false); if (m === 0) { P.tim = 1; soloSet(0); } return; }   // MK3: EINZELN │ SCHICHT │ SPLIT
-  if (d.p === 'mode') { const m = Math.round(v) >= 1 ? 3 : 0; if ((s_.p.mk.mode === 3) !== (m === 3)) { mkSetP(i, 'mode', m, false); P.tim = 1; soloSet(0); P.view = null; } return; }
+  if (d.p === 'mode') { const m = Math.round(v) >= 1 ? 3 : 0; if ((s_.p.mk.mode === 3) !== (m === 3)) { if (m === 3 && P.rec) recCancel('abgebrochen (Vocoder hat keinen Mod-Sequenzer)'); mkSetP(i, 'mode', m, false); P.tim = 1; soloSet(0); P.view = null; } return; }
   if (d.p === 'pvA' || d.p === 'pvR') { mkSetP(i, 't.0.e2.' + (d.p === 'pvA' ? 'a' : 'r'), v, live); return; }
   if (d.src) return;
   if (d.ch != null) {   // MK7: K-PEGEL / K-PAN: channel c = bands 2c, 2c + 1, both moved by the same step (from the gesture's start)
@@ -4986,8 +4986,8 @@ function rotList(anchor, k) {
       const w = k === 'w1' ? 1 : 2, dif = w === 1 ? wiaPos() : wiaPos2();
       h = `<h4>EDIT-WAHL ${w}</h4><div class="plist mkl mkmx">` + (w === 1 ? SEC1 : SEC2).map((s, x) => {
         const a = w === 1 ? s[2].map(y => { const d = kOf(y); return d ? (d.lfo ? 'FREQ' : d.l) : '–'; }) : s[3];
-        const dk = w === 2 && !s[4];
-        return `<button class="rb${x === P.pos[w] && P.wahl === w ? ' on' : ''}${dk ? ' dark' : ''}" data-v="${x}"><b>${x + 1} ${esc(s[0])}${UI.wia && dif.has(x) ? ' <i class="mwdot">●</i>' : ''} <em class="mvoc">${esc(s[1])}</em>${dk ? ' <small>' + s[2] + '</small>' : ''}</b><small>${w === 2 && s[4] && x < 4 ? esc(patchTxt(x).replace(/^PATCH \d · /, '')) : w === 2 && s[4] && x <= 6 ? esc(fxTxt(x)) : w === 2 && (x === 7 || x === 8) ? esc(arpTxt(x)) : w === 2 && x === 9 ? esc(L_.scl[0][mk().scale] + ' · Grundton ' + keyName(mk().skey)) : w === 2 && x === 10 ? esc(seqTxt()) : a.map(esc).join(' · ')}</small></button>`; }).join('') + '</div>';
+        const dk = w === 2 && (voc() ? x === 10 : !s[4]);   // G-MK567-merge-fix: no SEQ in the vocoder
+        return `<button class="rb${x === P.pos[w] && P.wahl === w ? ' on' : ''}${dk ? ' dark' : ''}" data-v="${x}"><b>${x + 1} ${esc(s[0])}${UI.wia && dif.has(x) ? ' <i class="mwdot">●</i>' : ''} <em class="mvoc">${esc(s[1])}</em>${dk ? ' <small>' + (w === 2 && x === 10 ? 'nicht im Vocoder' : s[2]) + '</small>' : ''}</b><small>${w === 2 && x === 10 && voc() ? '' : w === 2 && s[4] && x < 4 ? esc(patchTxt(x).replace(/^PATCH \d · /, '')) : w === 2 && s[4] && x <= 6 ? esc(fxTxt(x)) : w === 2 && (x === 7 || x === 8) ? esc(arpTxt(x)) : w === 2 && x === 9 ? esc(L_.scl[0][mk().scale] + ' · Grundton ' + keyName(mk().skey)) : w === 2 && x === 10 ? esc(seqTxt()) : a.map(esc).join(' · ')}</small></button>`; }).join('') + '</div>';
     }
     p.innerHTML = h; guardTouch(p);
     onTap(p, b => { closePop(); const x = +b.dataset.v; if (k === 'bank') { P.bank = x; render(); } else { const w = k === 'w1' ? 1 : 2; P.last[w] = x; setWahl(w, x); } }, 'button[data-v]');
@@ -6748,7 +6748,8 @@ class MkTim {
     for (let s = 0; s < L; s++) O[n++] = ty === 1 ? L - 1 - s : s;
     if (ty === 2) for (let s = L - 2; s >= 1; s--) O[n++] = s; else if (ty === 3) for (let s = L - 1; s >= 0; s--) O[n++] = s;
     this.sqN = n; this.sqLoop = !!r || S.run >= .5; this.sqKs = mkCl(Math.round(S.ks), 0, 2);
-    const on = S.on >= .5 || !!r, wasV = this.sqV; this.sqV = this.sqKs === 2; this.sqEv++;   // G-MK6: every edit (values, TYP, LAENGE, AUFL., undo) = a Glatt glide point
+    const on = (S.on >= .5 || !!r) && this.par.mode !== 3, wasV = this.sqV;   // G-MK567-merge-fix: no Mod-Sequencer in the vocoder (Nachtrag 3 MK6: out of scope)
+    this.sqV = this.sqKs === 2; this.sqEv++;   // G-MK6: every edit (values, TYP, LAENGE, AUFL., undo) = a Glatt glide point
     // G-MK6: KEY SYNC Timbre <-> Stimme at a sounding note: the voices go on from the position (and values) they had, no jump
     if (this.sqV !== wasV && this.sqSig != null && this.sounding()) {   // (not at the first prep of a timbre: nothing ran before)
       if (this.sqV) { for (const v of this.V) if (v.on) { v.sq = v.sq ? v.sq.take(this.sq) : this.sq.copy(); const c = v.sxo; if (c && c.on) c.sq = c.sq ? c.sq.take(this.sq) : this.sq.copy(); } }
@@ -6854,7 +6855,7 @@ class MkTim {
   // {mkRec: {k, tg, base} | {cancel}}
   recMsg(m) {
     if (!m || m.cancel) { if (this.rec) { this.rec = null; this.sqDirty = true; } return; }
-    const tg = m.tg | 0; if (!(tg >= 1 && tg < MK_SQN) || tg === 2) return;
+    const tg = m.tg | 0; if (!(tg >= 1 && tg < MK_SQN) || tg === 2 || this.par.mode === 3) return;   // G-MK567-merge-fix: no AUFN. in the vocoder
     if (this.sqDirty) this.sqPrep();
     // G-MK6 (MK6-09, Umfang 4): with KEY SYNC Timbre / Stimme the take runs on its own forward loop from the step that sounds now, so a
     // key-sync restart by a new (detached) note neither ends nor shortens it; KEY SYNC aus stays on the timbre / song grid position
@@ -7716,7 +7717,13 @@ class MkVoc {
         const o = 8 * b; let e = env[b];
         if (p2) { mkB4(hE, 0, H, az, o + 4, this.agH[b], 0, this.aaH[b], 0, this.akH[b], yb);
           if (!p4) { const fA = this.fA2, fR = this.fR2; for (let m = 0; m < H; m++) { const y = yb[m], r = y < 0 ? -y : y; e += (r - e) * (r > e ? fA : fR); } } }
-        if (p4) { mkB4(E2, io, CR, az, o, this.ag[b], 0, this.aa[b], 0, this.ak, yf); const fA = this.fA, fR = this.fR;
+        if (p4 && !p2) {   // G-MK567-merge-fix (MK7-11 CPU): the usual case fused: static band (= mkB4 with dg = da = 0, bit-equal) + follower, no buffer
+          const fA = this.fA, fR = this.fR, a1 = this.aa[b], g = this.ag[b], a2 = g * a1, a3 = g * a2, k = this.ak; let s1 = az[o], s2 = az[o + 1], s3 = az[o + 2], s4 = az[o + 3];
+          for (let n = 0; n < CR; n++) {
+            let v3 = E2[io + n] - s2, v1 = a1 * s1 + a2 * v3, v2 = s2 + a2 * s1 + a3 * v3; s1 = 2 * v1 - s1; s2 = 2 * v2 - s2;
+            v3 = k * v1 - s4; v1 = a1 * s3 + a2 * v3; v2 = s4 + a2 * s3 + a3 * v3; s3 = 2 * v1 - s3; s4 = 2 * v2 - s4; const y = k * v1, r = y < 0 ? -y : y; e += (r - e) * (r > e ? fA : fR); }
+          az[o] = mkFl(s1); az[o + 1] = mkFl(s2); az[o + 2] = mkFl(s3); az[o + 3] = mkFl(s4); }
+        else if (p4) { mkB4(E2, io, CR, az, o, this.ag[b], 0, this.aa[b], 0, this.ak, yf); const fA = this.fA, fR = this.fR;
           for (let n = 0; n < CR; n++) { let y = yf[n]; if (p2) { const w = w4a + dw * (n + 1); y = y * w + yb[n >> 1] * (1 - w); } const r = y < 0 ? -y : y; e += (r - e) * (r > e ? fA : fR); } }
         env[b] = e < 1e-12 ? 0 : e;
       }
@@ -7743,9 +7750,15 @@ class MkVoc {
       for (let b = 0; b < N; b++) {
         const o = 8 * b, eg = env[b] * gg * K, l1 = eg * cL[b], r1 = eg * cR[b], l0 = eLs[b], r0 = eRs[b]; eLs[b] = l1; eRs[b] = r1;
         if (l1 === 0 && r1 === 0 && l0 === 0 && r0 === 0 && cm === 0 && !qz) { let z = true; for (let i = o; i < o + 8; i++) if (sz[i] !== 0) { z = false; break; } if (z) continue; }
-        if (p4) { tail = Math.max(tail, mkB4(cD, 0, CR, sz, o, gA[b], (gB[b] - gA[b]) / CR, aA[b], (aB[b] - aA[b]) / CR, k, yf));
-          let el = l0 * wxa, er = r0 * wxa; const dl = (l1 * wxb - l0 * wxa) / CR, dr = (r1 * wxb - r0 * wxa) / CR;
-          for (let n = 0; n < CR; n++) { el += dl; er += dr; Lo[off + n] += yf[n] * el; Ro[off + n] += yf[n] * er; } }
+        if (p4) {   // G-MK567-merge-fix (MK7-11 CPU): mkB4 (ramped) and the channel gains fused, no buffer (same arithmetic)
+          let g = gA[b], a1 = aA[b], s1 = sz[o], s2 = sz[o + 1], s3 = sz[o + 2], s4 = sz[o + 3], el = l0 * wxa, er = r0 * wxa;
+          const dg = (gB[b] - g) / CR, da = (aB[b] - a1) / CR, dl = (l1 * wxb - l0 * wxa) / CR, dr = (r1 * wxb - r0 * wxa) / CR;
+          for (let n = 0; n < CR; n++) {
+            g += dg; a1 += da; const a2 = g * a1, a3 = g * a2; let v3 = cD[n] - s2, v1 = a1 * s1 + a2 * v3, v2 = s2 + a2 * s1 + a3 * v3; s1 = 2 * v1 - s1; s2 = 2 * v2 - s2;
+            v3 = k * v1 - s4; v1 = a1 * s3 + a2 * v3; v2 = s4 + a2 * s3 + a3 * v3; s3 = 2 * v1 - s3; s4 = 2 * v2 - s4; const y = k * v1;
+            el += dl; er += dr; Lo[off + n] += y * el; Ro[off + n] += y * er; }
+          sz[o] = s1 = mkFl(s1); sz[o + 1] = s2 = mkFl(s2); sz[o + 2] = s3 = mkFl(s3); sz[o + 3] = s4 = mkFl(s4);
+          tail = Math.max(tail, s1 < 0 ? -s1 : s1, s2 < 0 ? -s2 : s2, s3 < 0 ? -s3 : s3, s4 < 0 ? -s4 : s4); }
         if (p2) { tail = Math.max(tail, mkB4(hC, 0, H, sz, o + 4, hA[b], (hB[b] - hA[b]) / H, bA[b], (bB[b] - bA[b]) / H, this.skH[b], yb));
           let el = l0, er = r0; const dl = (l1 - l0) / H, dr = (r1 - r0) / H;
           for (let m = 0; m < H; m++) { el += dl; er += dr; hL[m] += yb[m] * el; hR[m] += yb[m] * er; } }
@@ -7858,7 +7871,7 @@ class MkCore {
     const m0 = this.mode; this.vc.load(pm.voc); if (!this.busy()) this.vc.settle();
     const [route, scl] = this.top(pm), ra = this.tm[0].load(tt[0] || null), rb = this.tm[1].load(tt[1] || null);
     if (scl) { this.tm[0].rescale(); this.tm[1].rescale(); }
-    const ch = this.recap(); if ((m0 === 3) !== (this.mode === 3)) ch[0] = true; this.after(route, [ra, rb], ch);   // MK7: Synth <-> Vocoder re-starts T1's keys in the other kind
+    const ch = this.recap(); if ((m0 === 3) !== (this.mode === 3)) { ch[0] = true; this.sqMode(); } this.after(route, [ra, rb], ch);   // MK7: Synth <-> Vocoder re-starts T1's keys in the other kind
   }
   set(o) {  // {path: value} of a gesture: 't.0.*' T1, 't.1.*' T2 (Edit Sync sends both), the program values
     let a = null, b = null, fx = false; const tp = {}, fa = this.fx.active(), m0 = this.mode;
@@ -7875,10 +7888,11 @@ class MkCore {
     }
     const [route, scl] = this.top(tp), ra = a ? this.tm[0].set(a) : false, rb = b ? this.tm[1].set(b) : false;
     if (scl) { this.tm[0].rescale(); this.tm[1].rescale(); }
-    const ch = this.recap(); if ((m0 === 3) !== (this.mode === 3)) ch[0] = true; this.after(route, [ra, rb], ch);
+    const ch = this.recap(); if ((m0 === 3) !== (this.mode === 3)) { ch[0] = true; this.sqMode(); } this.after(route, [ra, rb], ch);
     if (fx) this.fxSettle(fa);
   }
   wheel(o) { this.tm[0].wheel(o); this.tm[1].wheel(o); }
+  sqMode() { for (const t of this.tm) { if (this.mode === 3 && t.rec) t.rec = null; t.sqDirty = true; } }   // G-MK567-merge-fix: Synth <-> Vocoder switches the Mod-Sequencer off / on again (5 ms fade)
   recMsg(m) { const t = this.tm[m && m.ti === 1 ? 1 : 0]; t.recMsg(m); }   // MK6
   sqScope() { return [this.tm[0].sqInfo(), this.tm[1].sqInfo()]; }
   // notes

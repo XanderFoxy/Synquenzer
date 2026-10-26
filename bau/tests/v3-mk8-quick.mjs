@@ -1,0 +1,22 @@
+import { chromium } from 'playwright';
+const FILE = process.argv[2] || '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk-br-MK8/index.html';
+const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const page = await browser.newPage({viewport: {width: 390, height: 844}}); const errs = [];
+page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await page.goto('file://' + FILE); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 20000});
+const r = await page.evaluate(async () => {
+  SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0);
+  const o = {};
+  o.sel = mkProg.select(1, 4); o.cur = mkProg.current(); o.name = S.tracks[0].sound.name;
+  o.step = mkProg.step(1); o.cur2 = mkProg.current();
+  const w = await mkProg.write(3, 5, 'Mein Test'); o.w = w && [w.name, w.bank, w.slot]; o.cur3 = mkProg.current();
+  o.list = MKF.bankList(3).map(x => x.name).slice(3, 6);
+  undo(); o.afterUndo = [mkProg.current(), MKF.ownAt(3, 5)];
+  redo(); o.afterRedo = [mkProg.current(), !!MKF.ownAt(3, 5)];
+  o.rest = mkProg.restore(3, 5); o.cur4 = mkProg.current(); o.own = !!MKF.ownAt(3, 5);
+  undo(); o.cur5 = mkProg.current();
+  o.stat = MKF.stat();
+  return o;
+});
+console.log(JSON.stringify(r, null, 1)); console.log('errs', errs);
+await browser.close();

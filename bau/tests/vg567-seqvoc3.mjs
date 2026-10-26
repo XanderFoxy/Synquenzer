@@ -1,0 +1,25 @@
+// G-MK567-merge-fix: EDIT-WAHL 2 list row 11 in vocoder mode, and back to Synth: the stored SEQ acts again
+import {open, sleep} from './vg567-gmk7-tl.mjs';
+import {setupProject} from './vg567-gmk7-setup.mjs';
+const T = await open({viewport: {width: 390, height: 844}}); const {p, E, errs} = T;
+await setupProject(E);
+const PAD = 2, LEAD = 3;
+await E(([a, b]) => { const Q = SYNQUENZER; Q.setEngine(a, 'mk'); Q.mkSet(a, 't.0.seq.on', 1); Q.mkSet(a, 't.0.seq.q.0.k', 1); for (let s = 0; s < 16; s++) Q.mkSet(a, 't.0.seq.q.0.v.' + s, s % 2 ? 12 : 0); Q.mkSet(a, 'mode', 3); Q.mkIn(a, 'e2', b); }, [PAD, LEAD]);
+await T.openEd(PAD); await sleep(600);
+await T.closePop(); await T.tapMk('w2', 300); await sleep(300);
+const rows = await T.popTexts(); console.log('list voc row 11:', JSON.stringify((rows || []).filter(x => /^11 /.test(x))));
+await T.closePop();
+await E(() => { SYNQUENZER.launchScene(0); SYNQUENZER.play(); }); await sleep(800);
+const grab = async () => { const k = await T.key(5); await T.send('touchStart', [{x: k.cx, y: k.cy, id: 41}]); const sc = []; for (let i = 0; i < 5; i++) { await sleep(130); sc.push(await E(t => { const s = SYNQUENZER.mkScope(t); return s && s.seq && s.seq[0] ? {on: s.seq[0].on, step: s.seq[0].step, vals: s.seq[0].vals} : null; }, PAD)); } await T.send('touchEnd', []); await sleep(300); return sc; };
+console.log('voc', JSON.stringify(await grab()));
+await E(a => SYNQUENZER.mkSet(a, 'mode', 0), PAD); await sleep(400);
+console.log('synth', JSON.stringify(await grab()));
+await E(a => SYNQUENZER.mkSet(a, 'mode', 3), PAD); await sleep(400);
+console.log('voc again', JSON.stringify(await grab()));
+await T.closePop(); await T.tapMk('w2', 300); await sleep(300);
+console.log('list voc row 11 (2):', JSON.stringify(((await T.popTexts()) || []).filter(x => /^11 /.test(x)))); await T.closePop();
+await E(a => SYNQUENZER.mkSet(a, 'mode', 0), PAD); await sleep(400);
+await T.tapMk('w2', 300); await sleep(300);
+console.log('list synth row 11:', JSON.stringify(((await T.popTexts()) || []).filter(x => /^11 /.test(x)))); await T.closePop();
+console.log('errs', JSON.stringify(errs));
+await T.br.close();
