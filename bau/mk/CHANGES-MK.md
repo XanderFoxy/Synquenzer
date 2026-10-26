@@ -466,3 +466,132 @@ Referenz-Skizze in einem `MK1-fix`.
 1. Synth 1 → „MS 2000“ → ✕: der Editor geht zu, ▶1–▶4 reagieren normal.
 2. EDIT-WAHL 1 auf FILTER, dann auf die Anzeige oder eine leere Nummerntaste tippen: die Regler sind wieder CUTOFF · RESONANZ ·
    ATTACK · RELEASE · TEMPO, dein Sound bleibt.
+
+## MK2 — Alle Oszillator-Arten und PATCH 1–4 · App 4.10.0 (`APP_CODE` 4 010 000) · Format bleibt 5
+
+Vorgänger für alle „bitgleich“-Abnahmen: **4.9.0** (MK1 + MK1-fix + G-MK1-gruppe-fix), Stand von `mk-wt/index.html` vor diesem Paket
+(Kopie `mk2work/index.mk1base.html`, 2 742 396 B). Kein Datenbank-Bedarf (Format 5, `max_app` 4 021 000 deckt 4 010 000).
+
+### Gebaut
+- **OSZ 1, alle Wellen des Originals außer „Eingang“ (MK7):**
+  - **Sinus×** (W-27): Phasenmodulation durch OSZ 2 *nach* Sync, *vor* Ring, Index 4 · (STEUER 1 + LFO 1 · STEUER 2) / 127 rad. OSZ 2 läuft als
+    Modulator auch bei Mixer 0. Sinus aus der Sinustabelle (Klirr −145 dB).
+  - **Stimmwelle** (W-28): Rosenberg-Puls live (Öffnen 0,714, Schließen 0,286 der Offenzeit), polyBLAMP an der Schließecke, Gleichanteil
+    abgezogen, festes IIR = zwei 1-Pol-Tiefpässe bei 300 Hz. Form je 16er-Block (keine Division je Sample).
+  - **Speicherwellen 1–64** (Platzhalter „≈“): Datenblock `MK_WD` (Base64, 9 473 B → 12 632 Zeichen, Salz 0, 0 Markenwörter) aus
+    `dwgs-trace/dwgs-64-compact.json` mit dem Bau-Skript `dirigent-test/v3-mk2-wellen.mjs` (`--write`; enthält keine Wellennamen). Alle
+    Teiltöne der Kompaktdatei (Prot. 58), darüber der Gruppen-Abfall, Schroeder-Phasen, Tonlage r (3, 34, 35: r 2; 28, 59: r 1,49831),
+    35 als Shepard-Ton mit der Hülle in Hz, 61–64 mit fester Hülle in Hz (Oktav-Sätze C1 … C8, B.6 Nr. 6). Wahl über STEUER 2
+    (Werte 2n − 2, 2n − 1 → n). Wellenwechsel = 2-ms-Gleichleistungs-Blende (sin/cos über Smoothstep) am selben Lesezeiger.
+  - **Rauschen** (W-29): weißes Rauschen (eigener Generator je Note) → TPT-SVF-Tiefpass, Cutoff = Note · 2^((C1 − 24)/12), Res 0,98 · C2/127,
+    Pegel über √(k/g) gehalten.
+- **Gemeinsamer Tabellen-Bau `mkTables`** (Block `MKT` in `sq-mk-src`, DOM-frei; Spec §10.1, Teil G Nr. 9): Mip-Kette mit 11 Stufen,
+  Stufe L hält k ≤ 512 >> L, schrittweiser Bauer (eine Stufe je Schritt), Übergabe `{mkw: {n, r, o, d, L, R}}` einmal je Kontext in die
+  **MKW-Tabelle im `AudioWorkletGlobalScope`** (alle Prozessoren eines Kontexts teilen sie; ein Prozessor ohne Welle fragt `{mkwNeed}`, ein
+  zweites Fragen bekommt eine Kopie für diesen Knoten = Rückfall „je Knoten kopieren“). Die Welle eines Sounds wird sofort gebaut und
+  geschickt (Einzelwelle synchron ≈ 2 ms, Oktav-Welle in Häppchen ≤ 6,5 ms über `MessageChannel`, vorher `tickAhead(.3)`), danach die
+  übrigen 59 Einzelwellen in Leerlauf-Häppchen; Oktav-Wellen nur, wenn ein Sound sie braucht oder die Wellen-Liste offen ist.
+  Bis eine Welle da ist: Platzhalter-Säge, dann 2-ms-Blende. `mkRender` schickt die Welle vor dem Rendern.
+- **PATCH 1–4** (A.5, W-18) je Timbre: Quellen EG 1, EG 2, LFO 1, LFO 2 (Rechteck(+) 0…1), Anschlag, Keytrack (KT − 60)/60, BEND-Rad,
+  MOD-Rad; Ziele Tonhöhe ±24 HT, OSZ 2-Tonhöhe ±63 Fein-Einheiten (auf den Wert vor W-14), OSZ 1-Steuer 1 ±127, Rauschen ±127,
+  Cutoff ±127 Einheiten, Amp ±127, Pan (aus der Mitte voller Weg), LFO 2-Freq ±127 (W-08; wirkungslos bei TEMPO SYNC). Intensität
+  5 ms geglättet; Intensität 0 wird gar nicht gerechnet; ein Wechsel von Quelle/Ziel blendet den alten Weg aus und den neuen ein.
+- **Bedienfeld:** EDIT-WAHL 2 mit PATCH 1–4 aktiv (QUELLE · ZIEL · INTENSITÄT, Listen mit 8 Zeilen, LCD „PATCH 2 · LFO 1 → CUTOFF · +32“,
+  Hinweis „wirkt nicht: LFO 2 TEMPO SYNC an“), Liste der EDIT-WAHL 2 mit dem Weg je PATCH, ◎ auch an EDIT-WAHL 2. OSZ 1: STEUER 2 wird
+  bei der Speicherwelle zum Wellen-Regler (stetig mit Rundung, 200 px für 64, Haptik je Stufe), Tipp = Liste mit 64 Zeilen (≥ 44 px,
+  13 Gruppenköpfe mit eigenen Namen: Sinus, Bass, Welle, Quinte, Digital, Endlos, E-Piano, Orgel, Clavi, Gitarre, Bass II, Glocke,
+  Stimme), jede Zeile und jede LCD-Anzeige mit „≈“; LCD „Speicherwelle 12 · Bass 5 ≈ Platzhalter“, STEUER 1 dort „ohne Wirkung“.
+  4 neue Hilfe-Zeilen, LCD-Hinweis beim ersten Antippen (L10). 🎲 würfelt auch die neuen Wellen.
+- **Leistungs-Probe** Fall „Kern“: Engines 1/3 Speicherwelle 23, 2/4 Sinus× (X-MOD 64, OSZ 2 Sync), je zwei aktive Patches.
+- Test-API: `mkInfo()` mit `tables`, `tableBytes` (je Kontext), `built`, `posts`; Test-Abgriffe `mkTap` 'sx' und 'lfo2'.
+
+### Abnahme (Skripte in `dirigent-test/`, Chromium 1243)
+| ID | Ergebnis |
+|---|---|
+| MK2-01 | ✓ X-MOD 0 Klirr −145 dB; X-MOD 64 (OSZ 2 Dreieck +12) Seitenband +3,3 dB zum Träger, M-SP 221 → 918 Hz (+2,06 Okt); X-LFO 127 Seitenband schwankt 105 dB; Ring / Ring+Sync deterministisch, 0 NaN, = Referenz W-27 aus den Abgriffen (max \|Δ\| 4e-7) |
+| MK2-02 | ✓ Hülle C2/C4 in Terzbändern 400–4000 Hz: max 1,1 / 1,6 / 2,5 dB (FORM 0/64/127); FORM 0 → 127: M-SP 335 → 220 Hz (0,6 Okt); C7 gefaltet −68,9 dB |
+| MK2-03 | ✓ 64 Wellen Spitze 1, \|DC\| ≤ 7e-10; kleinster Abstand 3,95 dB (14/23); Abfall je Oktave exakt nach Formel (FFT Stufe 0), Wellen mit Ā < −50 dB ohne Teiltöne darüber, 35 nur Oktaven (Rest ≤ −100 dB); C7 am Oszillator ≤ −53,9 dB (alle 64); Wellenwechsel (Sprünge, Oktav-Wellen, Zug mit Bruchwerten, Akkord) Wechsel-Klick ≤ 3,9 dB, Einbruch ≥ −2 dB; Platzhalter → Tabelle 1,2 dB / −2,3 dB; „≈“ in LCD (64) und Liste (64) |
+| MK2-04 | ✓ C3/C4 und Fis3/Fis4 deckungsgleich ≤ 0,04 dB (13 Teiltöne); chromatisch 2 Okt größter Sprung 0,09 dB |
+| MK2-05 | ✓ RESO 127 / CUTOFF 24: Spitze +12 ct (C3), −12,4 ct (C5); CUTOFF 36: +7,5 ct zur Oktave; RESO 0: 11,65 dB/Okt, keine Spitze |
+| MK2-06 | ✓ Tonhöhe ±2400 ct; Cutoff +127,0 Einheiten (mkScope 20 Hz → 20 kHz); Pan 0 … 1; LFO 2-Freq 51,19 Hz, mit Sync bitgleich wirkungslos; Pulsbreite C4 49,9 % / C6 31 %; Amp/Anschlag +6,1 dB, Rauschen/LFO 1 86,8 dB Hub, OSZ 2/EG 1 618 → 220 Hz; Intensität 0 bitgleich; 4 × 10 = 1 × 40 (1523,8 ct) |
+| MK2-07 | ✓ MK1-Klänge (20 Renders, alle Wellen 0–2, Sync/Ring, Unison, Filter, Verzerrer, LFOs, Vibrato) sowie VA und FM6: max \|Δ\| = 0 gegen 4.9.0 |
+| MK2-08 | ✓ eben geladener Sound: Einzelwelle 13,0 ms, Oktav-Welle 28,7 ms vom Laden (inkl. ≈ 10 ms UI von `setSound`) bis zur Übergabe; alle 64 Wellen in 483 ms ohne longtask > 50 ms; 5,42 MB je Kontext (alle 64), zweite/dritte AM-Spur 0 Byte; Node baut bitgleiche Tabellen (64/64, FNV-Hash) |
+| MK2-09 | ✓ (`v3-mk2-cpu.mjs`, jeder Fall in eigenem Node-Prozess, Median aus 5 Paaren): Speicherwelle ×1,070, Stimmwelle ×1,040, Sinus× ×1,109, 4 Patches ×1,023 gegen die Säge (13,95 ms je s Audio, 4 Stimmen); Oktav-Welle ×1,27 (ohne Grenze); AM-Säge = 0,76 × VA-Stimme |
+| MK2-10 | ✓ PATCH 1–4 per Drehschalter und Geste (ein Undo), LCD wie gefordert, Listen ≥ 44 px; M-PLATZ/M-ANSICHT/M-SKIZZE für alle 44 Stellungen/Ebenen in P1–P3, L1, L0, L1 mit Safe-Area und Home-Balken, W (`v3-mk1-look.mjs` 88/88); H-1 für 14 neue Regler, H-3 für 5 stetige |
+| MK2-11 | ✓ Regression: `v3-mk1-dsp` 64/64, `v3-mk1-ui` alles, `v3-mk1-eco` alles, `v3-mk1-fpdsp` alles, `v3-mk1-probe` alles, `v3-mk1-perf` alles (ohne AM −14 ms, mit AM +3 ms, PE1 59,9 fps, 0 longtasks), `v3-fixgmk1-verify` 13/13 P + L, `v3-fixgmk1-spiel` 11/11 P + L, `v3-mk1-format` alles außer der festen Erwartung `APP_CODE` 4 009 000 (jetzt 4 010 000, gewollt); Smoke ohne Fehler; Markenwörter 0, „MS 2000“ genau 1; Worklet-ASCII. **Budget ✗ +53,6 KB** (s. Abweichungen) |
+| MK2-12 | ✓ Block bitgleich, 0 Markenwörter, keine Namen, dekodiert ≤ 0,0125 dB / 0,00077 rad, r exakt; Form je Welle ≤ rms32 + 0,1 pp (knappste 60: −0,098 pp; 35: 4,57 % ≤ 5,7 %); gespielt bei 187,5 Hz: Grundton bei f/r ± 1 ct (alle 64), Teiltöne 1–16 ≤ 0,63 dB (1–60 und 35), **61–64 nur an den Oktav-Stützpunkten ≤ 0,31 dB** (s. Lücken) |
+
+Skripte: `v3-mk2-wellen.mjs` (Bau + MK2-12), `v3-mk2-osc.mjs` (MK2-01 … 07, H-1/H-3, SXF, FP-DSP; Ausgabe `v3-mk2-osc.out`),
+`v3-mk2-cpu.mjs` (MK2-09), `v3-mk2-ui.mjs` (MK2-03-UI, 08, 10, 12 gespielt, Probe; `v3-mk2-ui.out`), `v3-mk2-marke.mjs`,
+`v3-mk2-pegel.mjs`, `v3-mk2-node.mjs` (Hilfen), `v3-mk2-shot.mjs` → `v3-mk2-shots/` (P1, P2, P3, L1, L2, W: OSZ 1 Speicherwelle,
+PATCH 2, Wellen-Liste).
+
+### Fach-Prüfung (selbst, ohne zweiten Agenten; FP-DSP Haupt-, FP-KLANG und FP-SICHER Zweit-Blick)
+- **FP-DSP** (8 Befunde, alle behoben): (1) Mip-Größen nach §10.1 (bis 64 Punkte) falteten Welle 27 bei C7 um −29 dB (Bilder der
+  linearen Interpolation, (k/N)²) → Stufen ≥ 1024 Punkte. (2) Gleichleistungs-Blende mit Knick in der Gain-Kurve → Smoothstep.
+  (3) Speicherwelle ×1,2 CPU → schneller Pfad ohne Wrap-Positionen, Index in Tabellen-Samples. (4) Pan-Patch mit cos/sin je Block →
+  Sinustabelle; Patch-Glättung nur solange sich etwas bewegt. (5) Stimmwelle mit drei Divisionen je Sample → Form je Block.
+  (6) 35 nicht auf Spitze 1 bei 220,27 Hz → Faktor aus diesem Satz. (7) Oktav-Welle 36–40 ms bis zur Übergabe → schrittweiser Bau,
+  nur die Mip-Stufen des Tonbereichs je Oktav-Satz, `MessageChannel`. (8) Einzelwelle im ersten (kalten) Bau 18 ms in einem Stück →
+  Bau stufenweise; synchron bleibt nur die Einzelwelle eines eben geladenen Sounds (warm ≈ 2 ms). Geprüft: eine W-Quelle (neue
+  Konstanten nur im Worklet), aus = bitgleich, NaN/Inf, Filter-Stabilität W-29 (C8, C1/C2 127: −34 dBFS), Denormale (letzte 10 s ≤
+  erste 10 s, Wellen 3–6), Worklet-ASCII, ECO (`v3-mk1-eco` alles; Wellen 4–6 → Säge, Sinus× → Sinus wie B.5).
+- **FP-KLANG** (3 Befunde, begründet): (1) Die Speicherwellen haben je Spitze 1, ihr RMS liegt daher zwischen −14,2 dBFS (30) und
+  −1,8 dBFS (17), Spanne 12,4 dB – so verlangt (B.6, MK2 Umfang 3), Pegel zwischen den Wellen sind unbekannt; Vorschlag: Pegel-Faktor
+  je Welle mit MK8/MK10 (Pegel-Nachlauf). (2) Stimmwelle ist mit zwei Tiefpässen bei 300 Hz sehr dunkel (M-SP 220–335 Hz bei C3) →
+  Geräte-Abgleich. (3) 61–64 zwischen den Oktav-Stützpunkten (Lücken).
+- **FP-SICHER** (0 Befunde): Datenblock nur Base64-Zahlen, keine Namen (64 Namen in `index.html` und in den Testskripten 0 Treffer;
+  `v3-mk2-wellen.mjs` liest sie nur zur Prüfung aus der privaten Datei), Bild-Referenz/PDF/Nachzeichnung bleiben in
+  `scratchpad/dwgs-trace` (nicht im Repo, nicht in der App); AM-Teil 0 Markenwörter, ganze Datei 0 × microKORG/RADIAS/DWGS, „MS 2000“
+  genau einmal; keine Bild-Daten, keine neue Schrift; kein neuer Weg vom Gerät weg.
+
+### Abweichungen
+- **Datenblock 12,3 KB statt ≤ 9 KB** (MK2-12): Prot. 58 baut alle 3 136 Teiltöne der Kompaktdatei ein (die Daten-Zeile „K = 32 · r“
+  ist dadurch überholt); Kopfbyte je Welle trägt zusätzlich K/32 − 1 (Bits 2–3).
+- **Abfall über dem letzten Teilton der Kompaktdatei** (K = 32 · r oder 64 · r), nicht über Teilton 32 – Folge von Prot. 58. Ā bleibt der
+  Effektivwert der Teiltöne 16r + 1 … 32r.
+- **Mip-Größen 2048, 2048, 2048, 1024 × 8** statt §10.1 (2048 … 64): nötig für B.6 Nr. 12 bei C7 mit linearer Interpolation; laut Teil G
+  Nr. 9 gilt die MK2-Festlegung als gemeinsame Definition (V8a, V4e, V9a). Speicher 57 KB je Satz.
+- **Stimmwelle (W-28):** Die Offenzeit ist **in ms fest** (OQ = 0,3 + 0,5 · m gilt bei C4, höchstens 0,9 der Periode); nur so bleibt
+  die Hülle in Hz bei Tonhöhenwechsel (MK2-02; mit relativem OQ wichen C2/C4 um 8–14 dB ab). Pegel je Note: 1 / √OQ_eff · 1 / |H(f₀)|
+  der Tiefpässe (RMS C2–C7 je FORM innerhalb 2,6 dB, C3 ≈ Säge − 1,6 dB). MK2-02 misst die Hülle als Leistung je Hz an den Terzmitten, bezogen auf den
+  Gesamtpegel der Hülle in 400–4000 Hz (der Gesamtpegel aller Teiltöne hängt bei C4 vom 1. Teilton bei 262 Hz ab).
+- **Normierung der Oktav-Wellen:** 35 ein Faktor aus dem 220,27-Hz-Satz; 61–64 ein Faktor je Oktav-Satz (die feste Hülle hält bei C1
+  ≈ 12 dB mehr Teiltöne als bei C4).
+- **M-KLICK bei Wellenwechseln** gegen den lauteren der beiden stehenden Zustände (Median 2 ms-Fenster vor/nach dem Wechsel): das
+  reine M-KLICK (Median ± 20 ms) meldet jeden Wechsel von einer hellen zu einer dunklen Welle (z. B. 37 → 36: +4 dB Höhen = 6,4 dB),
+  auch ohne Knack.
+- **C7-Faltung am Oszillator gemessen** (Abgriff 'mix'): mit offenem Filter faltet Welle 27 (Energie bei 12–15 kHz) durch die
+  Sättigung der Ladder −39,4 dB (MK1-Pfad, nicht die Tabellen); alle anderen ≤ −50 dB.
+- **H-3 Sinus× X-MOD** mit OSZ 2 Dreieck im Band 400–1200 Hz geprüft; mit der Säge als Modulator fällt M-SP oberhalb X-MOD ≈ 96 wieder
+  (Phasenmodulation, Bessel-Verlauf) – gewollter Charakter.
+- **MK2-09** in getrennten Node-Prozessen (25-%-Quantil der 1-s-Fenster nach 5 s, Median aus 5 Paaren): in einem Prozess streuten die
+  Zeiten durch die JIT-Zustände der Fälle ×2.
+- **Pan-Patch:** ±63 aus der Mitte (voller Weg L ↔ R bei Intensität 63), nicht ±126.
+- **Budget +53,6 KB** (2 742 396 → 2 797 302 B) gegen +42 KB (Prot. 58 ≈ +45 KB): +19 %; davon Datenblock 12,3 KB und ≈ 21 KB
+  Kommentare. Unter der 50-%-Schwelle; Vorschlag wie MK1: SL1 packt `sq-mk-src`.
+
+### Lücken
+- **61–64 zwischen den Oktav-Stützpunkten** (MK2-12 gespielt): Die Stimme mischt zwei Oktav-Sätze; bei 187,5 Hz (zwischen C3 und C4)
+  weichen einzelne Teiltöne bis 12–20 dB von der Hülle in Hz ab (formantreiche Hülle mit Tälern), an C3/C4 ≤ 0,31 dB. Mit ≤ 8 Sätzen
+  je Welle (B.6 Nr. 6) nicht genauer; die echten Wellen (MK10) klären, ob das Gerät hier überhaupt eine feste Hülle hat ([U]).
+- Oktav-Welle bis zur Übergabe 28,7 ms in Chromium; am iPhone (× 2–2,5 unbelegt) eher 40–60 ms – solange spielt die Platzhalter-Säge
+  und blendet dann in 2 ms über. Öffnen der Wellen-Liste baut alle Wellen vorab.
+- Leistungs-Probe `quantum_max_ms` 7–9 ms in Chromium headless (wie 4.9.0: 6–8 ms; Date.now-Raster, erste Quanten), `frames_ok` wahr.
+
+### Datenbank / Am Server offen
+- Nichts. Kein Supabase-Aufruf. `save_project` mit Format 5 und App 4 010 000 ≤ `max_app` 4 021 000.
+
+### iPhone-Prüfpunkte (Xander, ≈ 4 min)
+1. MS 2000 → EDIT-WAHL 1 auf OSZ 1 → WELLE „Speicherwelle“, dann STEUER 2 langsam durchdrehen: jede Welle klingt anders, kein Knacken,
+   im LCD „Speicherwelle n · Gruppe ≈“. Tipp auf STEUER 2 = Liste mit 64 Wellen.
+2. EDIT-WAHL 2 auf PATCH 1: QUELLE LFO 2, ZIEL CUTOFF, INTENSITÄT +40 → der Klang „wabert“ im LFO-Takt.
+3. WELLE Sinus× (STEUER 1 hoch), Stimmwelle (STEUER 1 0 / 64 / 127), Rauschen (STEUER 1 = 24, STEUER 2 = 127: das Rauschen pfeift auf
+   der gespielten Note).
+4. Menü → Info → Leistungs-Probe (Fall „Kern“ mit Speicherwelle und Sinus×): Ergebnis bitte schicken.
+
+### Geräte-Abgleich (microKORG, nach Gehör; ändert nur die W-Tabelle in einem MK2-fix)
+- Stimmwelle FORM 0 / 64 / 127 – ist unsere viel dunkler?
+- Sinus× X-MOD 64 (OSZ 2 Dreieck, +12).
+- Rauschen CUTOFF 24, RESO 127: gleiche Tonhöhe wie die Taste?
+- Einzelne Speicherwellen als Vorgeschmack; 3, 28, 59 auf A3: liegt der Grundton am Gerät eine Oktave (3) bzw. Quinte (28, 59) tiefer?

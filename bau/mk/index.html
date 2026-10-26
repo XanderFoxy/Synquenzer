@@ -3784,27 +3784,47 @@ const MKTAB = (function () {
     const p = peak0(n, n === 35 ? HZ : f);
     return (NORM[key] = p > 0 ? 1 / p : 1);
   }
+  // the mip levels an octave set can be read at: set j plays from one octave under to one octave over its reference (the voice
+  // blends j and j + 1 by pitch), sets 0 and 7 everything under C2 / over C7; one level of margin for 22-96 kHz contexts. A level
+  // outside is not built (zeros; the worklet reads the nearest built one there, which never happens at those pitches)
+  function range(n, f, oct) {
+    if (!isOct(n) || oct == null) return [0, 10];
+    const r = data()[n].r, q = x => Math.log2(x / r * 512 / 11025);
+    const lo = oct === 0 ? 0 : Math.max(0, Math.ceil(q(f / 2) - 2.13) - 1), hi = oct === 7 ? 10 : Math.min(10, Math.ceil(q(2 * f)) + 1);
+    return [lo, Math.max(lo + 1, hi)];
+  }
+  // an incremental builder of one set (one level per step; the level 0 of the set first, it gives the peak factor), so the
+  // main thread can slice the work <= 8 ms; mkTables runs it to the end
+  function builder(spec) {
+    const n = spec.n | 0, oct = isOct(n) && spec.oct != null ? spec.oct : null, f = isOct(n) ? (spec.f || (oct != null ? OCTF[oct] : HZ)) : 0;
+    const [lo, hi] = range(n, f, oct), buf = new Float32Array(SET), out = NL.map((N, L) => buf.subarray(OFF[L], OFF[L] + N + 1));
+    let H = null, g = 0, L = -1;
+    return {lo, hi, out, buf,
+      step() {
+        if (L < 0) { H = harm(n, f); L = lo; return false; }
+        if (L > hi) return true;
+        const N = NL[L], t = out[L];
+        if (L === 10) { const a = out[9], M = a.length - 1; for (let i = 0; i < N; i++) t[i] = a[(i * M / N) | 0]; }   // level 10 = level 9 (one partial)
+        else {
+          const x = level(H, L);
+          if (!g) { const key = n + '|' + (n >= 61 ? f : 0);   // the factor: 35 from its 220.27 Hz set, 61-64 per set, the others from their level 0
+            if (NORM[key]) g = NORM[key]; else if (L === 0 && n !== 35) { let p = 0; for (let i = 0; i < N; i++) { const v = Math.abs(x[i]); if (v > p) p = v; } g = NORM[key] = p > 0 ? 1 / p : 1; } else g = norm(n, f); }
+          for (let i = 0; i < N; i++) t[i] = x[i] * g;
+        }
+        t[N] = t[0]; L++; return L > hi;
+      }};
+  }
   // mkTables(spec) -> Float32Array[]: the 11 levels of one set (views on one buffer, each with its guard sample).
   // spec = {n: 1..64, oct?: 0..7 (octave tables: the reference C1 + oct), f?: reference Hz (octave waves; default 220.27)}
-  function mkTables(spec) {
-    const n = spec.n | 0, f = isOct(n) ? (spec.f || (spec.oct != null ? OCTF[spec.oct] : HZ)) : 0, H = harm(n, f), g = norm(n, f);
-    const buf = new Float32Array(SET), out = [];
-    for (let L = 0; L < NL.length; L++) {
-      const N = NL[L], x = L === 10 ? null : level(H, L), t = buf.subarray(OFF[L], OFF[L] + N + 1);
-      if (x) { for (let i = 0; i < N; i++) t[i] = x[i] * g; }
-      else { const a = out[9], M = a.length - 1; for (let i = 0; i < N; i++) t[i] = a[(i * M / N) | 0]; }   // level 10 = level 9 (one partial)
-      t[N] = t[0]; out.push(t);
-    }
-    return out;
+  function mkTables(spec) { const B = builder(spec); while (!B.step()); return B.out; }
+  // the payload of one wave for the worklet ({mkw}): one set, or the 8 octave sets in one buffer (R: the built levels per set)
+  function wave(n) {
+    if (!isOct(n)) return {n, r: data()[n] ? data()[n].r : 1, o: 0, d: mkTables({n})[0].buffer, R: [[0, 10]]};
+    const d = new Float32Array(SET * 8), R = [];
+    for (let j = 0; j < 8; j++) { const B = builder({n, oct: j}); while (!B.step()); d.set(B.buf, j * SET); R.push([B.lo, B.hi]); }
+    return {n, r: data()[n].r, o: 1, d: d.buffer, R};
   }
-  // the payload of one wave for the worklet ({mkw}): one set, or the 8 octave sets in one buffer
-  function wave(n, onlyOct) {
-    if (!isOct(n)) return {n, r: data()[n] ? data()[n].r : 1, o: 0, d: mkTables({n})[0].buffer};
-    const d = new Float32Array(SET * 8);
-    for (let j = 0; j < 8; j++) { if (onlyOct != null && onlyOct !== j) continue; d.set(new Float32Array(mkTables({n, oct: j})[0].buffer), j * SET); }
-    return {n, r: data()[n].r, o: 1, d: d.buffer};
-  }
-  return {mkTables, wave: (n, j) => Object.assign(wave(n, j), {L: NL}), harm, data, norm, isOct, r: n => (data()[n] ? data()[n].r : 1), group: n => { const g = grpOf(n); return [g[3], n - g[0] + 1, g[2]]; },
+  return {mkTables, builder, range, wave: n => Object.assign(wave(n), {L: NL}), harm, data, norm, isOct, r: n => (data()[n] ? data()[n].r : 1), group: n => { const g = grpOf(n); return [g[3], n - g[0] + 1, g[2]]; },
     NL, HL, OFF, SET, OCTF, HZ, GRP, ready: () => data().length > 1};
 })();
 /*}MKT*/
@@ -4330,11 +4350,13 @@ function listPop(anchor, d) {
 // MK2: the 64 stored waves as a list with group heads (rows >= 44 px, scrolls; L4), every one marked "≈"
 function wavePop(anchor, d) {
   const cur = clamp(Math.round(get(d)), 1, 64);
+  wv.all();   // browsing all waves: the octave waves too (idle slices), so a choice from the list sounds at once
   openPop(anchor, p => {
     let h = `<h4>${esc('OSZ 1 · STEUER 2 · SPEICHERWELLE')}</h4><p class="small">Nachgezeichnete Platzhalter ≈ – die Originalwellen folgen später aus Aufnahmen.</p><div class="plist mkl mkwv">`;
     for (const g of MKTAB.GRP) { h += `<h5 class="mkgh">${esc(g[3])}</h5>`; for (let n = g[0]; n <= g[1]; n++) h += `<button class="rb${n === cur ? ' on' : ''}" data-v="${n}"><b>${n}</b> ${esc(wvName(n).replace(/^Speicherwelle \d+ · /, ''))} ≈</button>`; }
     p.innerHTML = h + '</div>'; guardTouch(p);
-    const on_ = p.querySelector('.rb.on'); if (on_) try { on_.scrollIntoView({block: 'center'}); } catch (e) {}
+    const L = p.querySelector('.plist.mkwv'), on_ = p.querySelector('.rb.on');   // the current wave in the middle of the list (after the pop is placed)
+    if (L && on_) requestAnimationFrame(() => { try { L.scrollTop = Math.max(0, on_.offsetTop - L.offsetTop - (L.clientHeight - on_.offsetHeight) / 2); } catch (e) {} });
     onTap(p, b => { closePop(); const v = +b.dataset.v; soundEdit(P.i, MK_LABEL + ' Speicherwelle', () => setv(d, v, false)); P.lastKnob = d; render(); lcdOf(d); dispShow(fmtv(d, get(d))[0]); }, 'button[data-v]');
   }, {name: 'mkwave'});
 }
@@ -4412,28 +4434,30 @@ function wheelGesture(e) {
    needs first, then the other 59 single waves in idle slices (a sweep of STEUER 2 never waits); the octave waves 35 and 61-64
    only when a sound needs them (B.6 Nr. 6). A processor that misses a wave asks ({mkwNeed}); the first ask after the wave went
    to its context is ignored (it is on its way through the shared scope), a second one gets a copy for this node (fallback). ---- */
-const WV = {built: new Map(), part: new Map(), ctx: new WeakMap(), q: [], wait: new Map(), run: false, posts: 0, built0: 0};
+const WV = {built: new Map(), part: new Map(), ctx: new WeakMap(), q: [], wait: new Map(), run: false, posts: 0, built0: 0, at: {}};
 function wvCtx(c) { let o = WV.ctx.get(c); if (!o) { o = {sent: new Set(), bytes: 0, asked: new Map()}; WV.ctx.set(c, o); } return o; }
-// one step of building wave n: a single wave at once (~1 ms), an octave wave one octave set per step; true = complete
+// one step of building wave n: one mip level per step (<= ~1 ms on the phone), a single wave in 12 steps, an octave wave set by
+// set (only the levels its pitch range uses); true = complete
 function wvStep(n) {
   if (WV.built.has(n)) return true;
-  if (!MKTAB.isOct(n)) { WV.built.set(n, MKTAB.wave(n)); return true; }
-  let P = WV.part.get(n); if (!P) { P = {d: new Float32Array(MKTAB.SET * 8), j: 0}; WV.part.set(n, P); }
-  P.d.set(new Float32Array(MKTAB.mkTables({n, oct: P.j})[0].buffer), P.j * MKTAB.SET); P.j++;
-  if (P.j < 8) return false;
-  WV.part.delete(n); WV.built.set(n, {n, r: MKTAB.r(n), o: 1, d: P.d.buffer, L: MKTAB.NL}); return true;
+  const oc = MKTAB.isOct(n), ns = oc ? 8 : 1;
+  let P = WV.part.get(n); if (!P) { P = {d: new Float32Array(MKTAB.SET * ns), j: 0, B: null, R: []}; WV.part.set(n, P); }
+  if (!P.B) P.B = MKTAB.builder(oc ? {n, oct: P.j} : {n});
+  if (P.B.step()) { P.d.set(P.B.buf, P.j * MKTAB.SET); P.R.push([P.B.lo, P.B.hi]); P.B = null; P.j++; }
+  if (P.j < ns) return false;
+  WV.part.delete(n); WV.built.set(n, {n, r: MKTAB.r(n), o: oc ? 1 : 0, d: P.d.buffer, L: MKTAB.NL, R: P.R}); return true;
 }
 function wvPost(E, n) {
   if (!E || E.dead || !E.node) return; const w = WV.built.get(n); if (!w) return; const C = wvCtx(E.node.context);
-  try { E.node.port.postMessage({mkw: {n: w.n, r: w.r, o: w.o, d: w.d, L: w.L}}); } catch (e) { logErr(e); return; }
-  C.sent.add(n); C.bytes += w.d.byteLength; WV.posts++;
+  try { E.node.port.postMessage({mkw: {n: w.n, r: w.r, o: w.o, d: w.d, L: w.L, R: w.R}}); } catch (e) { logErr(e); return; }
+  C.sent.add(n); C.bytes += w.d.byteLength; WV.posts++; WV.at[n] = performance.now();
 }
 function wvLive() { const c = AU.ctx; if (!c) return null; for (let i = 0; i < AU.synth.length; i++) { const E = AU.synth[i], s_ = sndOf(i); if (E && !E.dead && E.node && E.node.context === c && s_ && s_.engine === 'mk') return E; } return null; }
 // a slice <= 8 ms (tickAhead first, then at least one scheduler tick before the next slice): waves somebody waits for first
 function wvSlice() {
   WV.run = false; try { tickAhead(.3); } catch (e) {}
-  const t0 = performance.now();
-  while (performance.now() - t0 < 5) {
+  const t0 = performance.now(), lim = WV.wait.size ? 6.5 : 5;   // a wave somebody waits for: a bigger slice (still <= 8 ms)
+  while (performance.now() - t0 < lim) {
     const n = WV.wait.size ? WV.wait.keys().next().value : WV.q.length ? WV.q[0] : 0; if (!n) break;
     if (!wvStep(n)) continue;
     if (WV.wait.has(n)) { for (const E of WV.wait.get(n)) if (!wvCtx(E.node.context).sent.has(n)) wvPost(E, n); WV.wait.delete(n); }
@@ -4442,15 +4466,20 @@ function wvSlice() {
   }
   wvKick();
 }
+// a wave somebody waits for (an octave wave, ~7 ms): the next slice right after the event loop has run once (MessageChannel: no 4 ms timer clamp; the
+// scheduler stays 0.3 s ahead through tickAhead); the background rest in idle time
+let WVMC = null;
 function wvKick() { if (WV.run || (!WV.q.length && !WV.wait.size)) return; WV.run = true;
-  if (WV.wait.size || typeof requestIdleCallback !== 'function') setTimeout(wvSlice, WV.wait.size ? 4 : 30); else requestIdleCallback(wvSlice, {timeout: 250}); }
+  if (WV.wait.size) { try { if (!WVMC) { WVMC = new MessageChannel(); WVMC.port1.onmessage = wvSlice; } WVMC.port2.postMessage(0); } catch (e) { setTimeout(wvSlice, 0); } }
+  else if (typeof requestIdleCallback !== 'function') setTimeout(wvSlice, 30); else requestIdleCallback(wvSlice, {timeout: 250}); }
 const wv = {
   // the wave of a sound / gesture: a single wave is built at once (<= ~3 ms on the phone) and sent; an octave wave in slices
   need(E, n) {
     if (!E || !E.node || !(n >= 1 && n <= 64)) return; const C = wvCtx(E.node.context);
     if (!C.sent.has(n)) {
-      if (!WV.built.has(n) && !MKTAB.isOct(n)) { try { tickAhead(.3); } catch (e) {} wvStep(n); }
-      if (WV.built.has(n)) wvPost(E, n); else { const a = WV.wait.get(n) || []; if (!a.includes(E)) a.push(E); WV.wait.set(n, a); wvKick(); }
+      if (!WV.built.has(n) && !MKTAB.isOct(n)) { try { tickAhead(.3); } catch (e) {} while (!wvStep(n)); }   // a single wave at once (~2 ms; the scheduler is 0.3 s ahead)
+      if (WV.built.has(n)) wvPost(E, n);
+      else { const a = WV.wait.get(n) || []; if (!a.includes(E)) a.push(E); WV.wait.set(n, a); if (WV.run && WV.wait.size === 1) WV.run = false; wvKick(); }
     }
     if (!WV.built0 && E.node.context === AU.ctx) { WV.built0 = 1; for (let k = 1; k <= 64; k++) if (!MKTAB.isOct(k) && !WV.built.has(k)) WV.q.push(k); wvKick(); }
   },
@@ -4459,6 +4488,8 @@ const wv = {
     if (!C.sent.has(n)) { this.need(E, n); return; }
     const a = C.asked.get(E) || {}; if (a[n] && now - a[n] > 600) { wvPost(E, n); delete a[n]; } else a[n] = a[n] || now; C.asked.set(E, a);
   },
+  // an offline render (mkRender) cannot wait for slices: build the wave to the end now and send it
+  now(E, n) { if (!E || !E.node || !(n >= 1 && n <= 64)) return; while (!wvStep(n)); WV.wait.delete(n); if (!wvCtx(E.node.context).sent.has(n)) wvPost(E, n); },
   info(c) { const C = c ? wvCtx(c) : {sent: new Set(), bytes: 0}; return {tables: C.sent.size, tableBytes: C.bytes, built: WV.built.size, posts: WV.posts}; },
   all() { for (let k = 1; k <= 64; k++) if (!WV.built.has(k) && !WV.q.includes(k)) WV.q.push(k); wvKick(); },   // tests / probe: every wave
   WV};
@@ -5118,7 +5149,9 @@ function mkwAdd(m) {
   const n = m.n | 0, Ls = m.L; if (n < 1 || n > 64 || !m.d || !Ls || Ls.length !== 11) return;
   const d = m.d instanceof Float32Array ? m.d : new Float32Array(m.d), sets = [], ns = m.o ? 8 : 1;
   let set = 0; for (const x of Ls) set += x + 1; if (d.length < ns * set) return;
-  for (let j = 0; j < ns; j++) { const L = []; let o = j * set; for (let l = 0; l < 11; l++) { L.push(d.subarray(o, o + Ls[l] + 1)); o += Ls[l] + 1; } sets.push(L); }
+  for (let j = 0; j < ns; j++) { const L = []; let o = j * set; for (let l = 0; l < 11; l++) { L.push(d.subarray(o, o + Ls[l] + 1)); o += Ls[l] + 1; }
+    const R = m.R && m.R[j]; if (R) for (let l = 0; l < 11; l++) { if (l < R[0]) L[l] = L[R[0]]; else if (l > R[1]) L[l] = L[R[1]]; }   // unbuilt levels: the nearest built one
+    sets.push(L); }
   MKWT[n] = {r: +m.r || 1, o: m.o ? 1 : 0, s: sets};
 }
 // W-28 Stimmwelle: Rosenberg pulse with a fixed open time in ms (OQ at C4, at most 0.9 of the period), opening 0.714, closing
@@ -14465,7 +14498,7 @@ async function mkRender(sound, ev, o) {
   await oc.audioWorklet.addModule('data:application/javascript;base64,' + btoa(src));
   const E = SynthHost.track(oc, oc.destination, wkFlat(snd), wkMods(snd), snd.engine === 'fm6' && snd.p.fm6 ? wkFmOf(snd.p) : null, snd.engine === 'mk' ? snd.p.mk : null);
   E.node.port.postMessage({mkSeed: o.seed == null ? 1 : o.seed});
-  if (snd.engine === 'mk') { E.mkWheel({mw0: +snd.p.mw || 0, reset: true}); mkwFeed(E, snd); const M = (o.waves || []).length ? mkLoad() : null; for (const n of o.waves || []) if (M && M.wv) M.wv.need(E, n | 0); }   // MK2: the stored wave before rendering
+  if (snd.engine === 'mk') { E.mkWheel({mw0: +snd.p.mw || 0, reset: true}); const n0 = mkWaveOf(snd.p.mk), M = n0 || (o.waves || []).length ? mkLoad() : null; if (M && M.wv) for (const n of [n0].concat(o.waves || [])) if (n) M.wv.now(E, n | 0); }   // MK2: the stored waves before rendering   // MK2: the stored wave before rendering
   if (o.tap) E.node.port.postMessage({mkTap: o.tap});
   E.tempo(o.bpm || 120, o.songStart == null ? null : o.songStart);
   const ids = {}; let id = 1;

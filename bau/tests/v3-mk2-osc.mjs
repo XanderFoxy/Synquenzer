@@ -246,5 +246,61 @@ T('FP-DSP', () => {
   ok('FP-DSP Denormale: 60 s Stille nach Vollaussteuerung (Wellen 3–6, gehaltene Note, Mixer 0): Last der letzten 10 s ≤ 1,1 × der ersten 10 stillen s', den.every(x => x[4]),
     den.map(([w, f, l, x]) => 'W' + w + ' ' + M(f, 2) + ' → ' + M(l, 2) + ' ms (max ' + M(x, 2) + ')').join('; ') + ' (Node, x86)');
 });
+// ---------------- WELLE changes to / between the new waves at a sounding note (SXF 30 ms, B.6 Nr. 2) ----------------
+T('MK2-SXF', () => {
+  const t0 = Math.ceil(.5 * SR / 128) * 128 / SR, res = [];
+  for (const [a, b] of [[0, 3], [3, 4], [4, 5], [5, 6], [6, 0], [1, 5], [5, 2]]) {
+    const base = {o1: {w: a, c1: 40, c2: wv(23)}, o2: {semi: 7}, mix: {o2: 40}, f: {cut: 100}, a: {gate: 1}};
+    const x = renderW(mkPatch(base), [[0, 'on', 57, .8], [0, 'on', 61, .8], [0, 'on', 64, .8]], {sec: 1, at: [[.5, {mkSet: {'t.0.o1.w': b}}]]}, [23]).l;
+    const y = renderW(mkPatch(base), [[0, 'on', 69, .8]], {sec: 1, at: [[.5, {mkSet: {'t.0.o1.w': b}}]]}, [23]).l;
+    const k = mKlickSw(x, SR, [t0]), e = mEinbruch(y, SR, t0); let nan = 0; for (const v of x) if (!isFinite(v)) nan++;
+    res.push([a + '→' + b, k.worst, e.worst, k.ok && e.ok && !nan]);
+  }
+  ok('MK2 WELLE-Wechsel bei klingender Note zu und zwischen den neuen Wellen (SXF): M-KLICK am Wechsel, M-EINBRUCH', res.every(r => r[3]), res.map(r => r[0] + ' ' + M(r[1]) + '/' + M(r[2], 2)).join('; '));
+});
+// ---------------- MK2-10 H-1 / H-3 for every new control (Spec §0.3; C3, velocity 0.8, 0-300 ms) ----------------
+const BANDS = [[20, 45], [45, 90], [90, 180], [180, 400], [400, 1200], [1200, 4000], [4000, 12000]];
+function meas(x) {
+  const i0 = 0, i1 = Math.round(.3 * SR), lev = db(rms(x, i0, i1)), sp = centroid(x, 2400, 8192, SR);
+  const P = spectrum(x, 2400, 8192, 'hann'), bin = SR / 8192, B = BANDS.map(([a, b]) => { let e = 0; for (let k = Math.ceil(a / bin); k < b / bin; k++) e += P[k]; return pdb(e + 1e-30); });
+  return {lev, sp, B};
+}
+function h1(a, b) {   // H-1: level >= 3 dB, a relevant band >= 6 dB, centroid >= 1/3 octave
+  const mx = Math.max(...a.B, ...b.B); let band = 0; for (let k = 0; k < 7; k++) if (Math.max(a.B[k], b.B[k]) >= mx - 30) band = Math.max(band, Math.abs(a.B[k] - b.B[k]));
+  return {ok: Math.abs(a.lev - b.lev) >= 3 || band >= 6 || Math.abs(Math.log2(a.sp / b.sp)) >= 1 / 3, d: 'Pegel ' + M(b.lev - a.lev) + ' dB, Band ' + M(band) + ' dB, M-SP ' + M(Math.log2(b.sp / a.sp), 2) + ' Okt'};
+}
+T('MK2-10H', () => {
+  const R = (p, ns) => renderW(mkPatch(merge({f: {cut: 100}}, p)), [[0, 'on', 48, .8]], {sec: .5}, ns || []).l;
+  const P2 = (k, o) => { const p = [{s: 0, d: 0, i: 0}, {s: 2, d: 4, i: 0}, {s: 3, d: 0, i: 0}, {s: 4, d: 5, i: 0}]; p[k] = Object.assign({}, p[k], o); return p; };
+  const C = [
+    ['WELLE Säge → Sinus×', {o1: {w: 0}}, {o1: {w: 3}}], ['WELLE Säge → Stimmwelle', {o1: {w: 0}}, {o1: {w: 4}}], ['WELLE Säge → Speicherwelle', {o1: {w: 0}}, {o1: {w: 5, c2: 0}}, [1]], ['WELLE Säge → Rauschen', {o1: {w: 0}}, {o1: {w: 6}}],
+    ['Sinus× STEUER 1 (X-MOD)', {o1: {w: 3, c1: 0}}, {o1: {w: 3, c1: 127}}], ['Sinus× STEUER 2 (X-LFO)', {o1: {w: 3, c2: 0}, l1: {f: 90}}, {o1: {w: 3, c2: 127}, l1: {f: 90}}],
+    ['Stimmwelle STEUER 1 (FORM)', {o1: {w: 4, c1: 0}}, {o1: {w: 4, c1: 127}}],
+    ['Speicherwelle STEUER 2 (1 → 64)', {o1: {w: 5, c2: 0}}, {o1: {w: 5, c2: 127}}, [1, 64]], ['Rauschen STEUER 1 (CUTOFF)', {o1: {w: 6, c1: 0, c2: 60}}, {o1: {w: 6, c1: 127, c2: 60}}],
+    ['Rauschen STEUER 2 (RESO.)', {o1: {w: 6, c1: 24, c2: 0}}, {o1: {w: 6, c1: 24, c2: 127}}],
+    ['PATCH INTENSITÄT (LFO 1 → CUTOFF, −63 → +63)', {f: {cut: 64}, l1: {f: 90}, p: P2(1, {i: -63})}, {f: {cut: 64}, l1: {f: 90}, p: P2(1, {i: 63})}],
+    ['PATCH QUELLE (MOD-RAD → EG 1, Ziel Cutoff +63)', {f: {cut: 40}, e1: {d: 90}, p: P2(1, {s: 7, i: 63})}, {f: {cut: 40}, e1: {d: 90}, p: P2(1, {s: 0, i: 63})}],
+    ['PATCH ZIEL (EG 1 → Tonhöhe ↔ LFO 2 FREQ, +63)', {e1: {d: 50}, p: P2(0, {d: 7, i: 63})}, {e1: {d: 50}, p: P2(0, {d: 0, i: 63})}]];
+  const bad = [], rows = [];
+  for (const [nm, a, b, ns] of C) { const r = h1(meas(R(a, ns)), meas(R(b, ns))); rows.push(nm + ': ' + r.d); if (!r.ok) bad.push(nm + ' (' + r.d + ')'); }
+  // a modulation depth (Stimmwelle STEUER 2 = LFO1 on the form): the M-SP of 50 ms windows over 1.5 s swings >= 1/3 octave more than without
+  const sw = c2 => { const x = renderW(mkPatch({o1: {w: 4, c1: 0, c2}, l1: {f: 50}, f: {cut: 100}}), [[0, 'on', 48, .8]], {sec: 1.6}, []).l, v = []; for (let s0 = 4800; s0 + 2048 < x.length; s0 += 2400) v.push(Math.log2(centroid(x, s0, 2048, SR))); return Math.max(...v) - Math.min(...v); };
+  const sw0 = sw(0), sw1 = sw(127); rows.push('Stimmwelle STEUER 2 (WFM): M-SP-Schwankung ' + M(sw0, 2) + ' → ' + M(sw1, 2) + ' Okt'); if (sw1 - sw0 < 1 / 3) bad.push('Stimmwelle STEUER 2');
+  ok('MK2-10 H-1: jeder neue Regler hörbar (Pegel ≥ 3 dB, Band ≥ 6 dB oder M-SP ≥ ⅓ Okt; Modulationstiefe: M-SP-Schwankung ≥ ⅓ Okt)', !bad.length, bad.join('; ') || (C.length + 1) + ' Regler');
+  for (const r of rows) console.log('    ' + r);
+  // H-3: positions 0, 1/4, 1/2, 3/4, 1 without a step back > 0.5 dB (in octaves: the same as 0.5 dB / 6.02 dB per octave)
+  const pos = [0, .25, .5, .75, 1], H3 = [
+    ['Sinus× X-MOD (OSZ 2 Dreieck) → Band 400–1200 Hz (dB)', v => ({o1: {w: 3, c1: Math.round(127 * v)}, o2: {w: 2}}), x => meas(x).B[4], 1],
+    ['Stimmwelle FORM → M-SP', v => ({o1: {w: 4, c1: Math.round(127 * v)}}), x => meas(x).sp, -1],
+    ['Rauschen CUTOFF → M-SP', v => ({o1: {w: 6, c1: Math.round(127 * v), c2: 60}}), x => meas(x).sp, 1],
+    ['Rauschen RESO. → Spitze um die Note (dB)', v => ({o1: {w: 6, c1: 24, c2: Math.round(127 * v)}}), x => { const P = welch(x, 2400, 8192); const bin = SR / 8192, f = mtof(48); let e = 0, t = 0; for (let k = 1; k < 4096; k++) { t += P[k]; if (Math.abs(k * bin - f) < f * .06) e += P[k]; } return pdb(e / t); }, 1],
+    ['PATCH INTENSITÄT (EG 1 → Tonhöhe) → Tonhöhe', v => ({e1: {s: 127}, a: {gate: 1}, p: P2(0, {i: Math.round(126 * v - 63)})}), x => 1200 * Math.log2(zcFreq(x, 4800, 19200, SR) / mtof(48)), 1]];
+  const b3 = [];
+  for (const [nm, f, g, dir] of H3) { const v = pos.map(x => g(renderW(mkPatch(merge({f: {cut: 127}}, f(x))), [[0, 'on', 48, .8]], {sec: .5}, []).l));
+    const unit = /M-SP/.test(nm) ? 'Okt' : /Tonhöhe/.test(nm) ? 'ct' : 'dB', vv = unit === 'Okt' ? v.map(x => Math.log2(x)) : v, tol = unit === 'Okt' ? .5 / 6.02 : unit === 'ct' ? 1 : .5;
+    let back = 0; for (let k = 1; k < 5; k++) back = Math.max(back, -(vv[k] - vv[k - 1]) * dir);
+    if (back > tol) b3.push(nm + ' Rückgang ' + M(back, 3) + ' ' + unit); console.log('    H-3 ' + nm + ': ' + vv.map(x => M(x, 2)).join(' → ') + ' ' + unit); }
+  ok('MK2-10 H-3: Stellungen 0, ¼, ½, ¾, 1 ohne Rückgang > 0,5 dB im Zielmaß', !b3.length, b3.join('; ') || H3.length + ' Regler');
+});
 console.log(fails ? fails + ' FAIL' : 'alles PASS');
 process.exit(fails ? 1 : 0);
