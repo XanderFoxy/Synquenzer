@@ -9,7 +9,7 @@ const out = []; let bad = [];
 for (let n = 1; n <= 64; n++) {
   const oct = n === 35 || n >= 61, t = M.mkTables(oct ? {n, f: 220.27} : {n})[0], r = M.r(n), K = M.data()[n].K;
   // DFT of the table period: sin coefficients a sin(k th + p): x = sum (b_k sin + c_k cos) -> a = hypot, p = atan2(c, b)
-  const A = {}, P = {}; for (let k = 1; k <= 64 * r + 1e-9; k++) { let s = 0, c = 0; for (let i = 0; i < N; i++) { const th = 2 * Math.PI * k * i / N; s += t[i] * Math.sin(th); c += t[i] * Math.cos(th); } A[k] = 2 * Math.hypot(s, c) / N; P[k] = Math.atan2(c, s); }
+  const A = {}, P = {}; for (let k = 1; k <= Math.max(K, 64 * r + 1e-9); k++) { let s = 0, c = 0; for (let i = 0; i < N; i++) { const th = 2 * Math.PI * k * i / N; s += t[i] * Math.sin(th); c += t[i] * Math.cos(th); } A[k] = 2 * Math.hypot(s, c) / N; P[k] = Math.atan2(c, s); }
   const lim32 = Math.round(32 * r), sel = kk => { const a = {}, p = {}; for (let k = 1; k <= kk; k++) { a[k] = A[k]; p[k] = P[k]; } return [a, p]; };
   const ref = (() => { const a = {}, p = {}; for (const h of FULL[n - 1].harm) { a[h.k] = h.amp; p[h.k] = h.phase; } const x = synth(a, p); const pk = Math.max(...x.map(Math.abs)); return x.map(v => v / pk); })();
   const dist = x => { let xy = 0, xx = 0; for (let i = 0; i < N; i++) { xy += x[i] * ref[i]; xx += x[i] * x[i]; } const g = xy / xx; let e = 0; for (let i = 0; i < N; i++) e += (g * x[i] - ref[i]) ** 2; return 100 * Math.sqrt(e / N); };
