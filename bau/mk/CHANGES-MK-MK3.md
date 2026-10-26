@@ -184,3 +184,34 @@ Edit Sync und Solo (TIMBRE-Taste); welche Seite der Split-Grenze T1 ist.
 
 ### Datenbank / Am Server offen
 Keine Änderung, keine Supabase-Abfrage.
+
+## G-MK3-gruppe-fix — LCD-Zeile im Split hochkant lesbar · App bleibt 4.11.0 · Format bleibt 5
+
+### Behoben (1 bestätigter Befund, major)
+- **Split hochkant: Wert in der LCD-Zeile 0 px breit, ⋯ verdeckt die Taste.** Ursache: Hochkant hat `#synthSheet .lcd` rechts
+  100 px Platz für ◎/⋯; `.lk` und die MK3-Taste `.lx.lsplit` schrumpfen nicht, also drückte die Taste `.lv` auf 0 px, und
+  `lcdFit` sprang bei `clientWidth 0` sofort heraus (die Zeile lief 2–27 px in den ◎/⋯-Bereich).
+  - Taste [Split ← nächste Note] hochkant zweizeilig („Split ←“ / „nächste Note“, 9,5 px, 59–70 px statt 109 px breit);
+    quer unverändert einzeilig. Text und Tipp-Verhalten wie gehabt.
+  - `lcdFit` (gemeinsamer LCD-Code, 3 Zeilen): prüft jetzt auch, ob die ganze Zeile überläuft (nicht nur `.lv`), und bricht
+    erst bei unsichtbarer Zeile ab. Bleibt im Lauftext-Modus neben der Beschriftung < 48 px, läuft die Beschriftung mit
+    (Klasse `mqk`, auch in `pv` zurückgesetzt). Beim Zusammenführen mit der Hauptlinie bitte diese Zeilen in `lcdFit`
+    mitnehmen.
+  - SPLIT-Wert im Split-Modus ohne „· Tipp = Split ← nächste Note“ (die Taste steht daneben); in Einzeln/Schicht bleibt der Tipp.
+  - Scharf-Hinweis kürzer: „SPLIT · eine Taste spielen = Split-Punkt (darunter T1, ab ihr T2)“ (vorher Beschriftung „SPLIT ←
+    NÄCHSTE NOTE“ doppelt zur orangen Taste).
+
+### Proben (Chromium 1243; echte App-Schrift Barlow Semi Condensed/JetBrains Mono per @font-face aus `synquenzer/fonts`)
+- `v3-gfix-mk3-lcdsplit.mjs` (Touch über CDP, P1 390×844, P2 375×812, P2se 375×667, P3, L1, L2; Schicht, Split, ZUWEISUNG Mono,
+  SPLIT ziehen/losgelassen, scharf): **ALL OK** — LCD scrollWidth = clientWidth überall (P1 374/374, P2 359/359), `.lv` sichtbar
+  (Split 36 px „Split“, Mono 28 px; SPLIT-Zug zweizeilig „T1 · STIMME · SPLIT 075 / E♭5 · darunter T1, ab hier T2“ 182–197 px),
+  Taste endet bei 267 (P2) vor ⋯ (277), `elementFromPoint` am rechten Tastenrand = LCD. Auch mit Ersatzschrift (`NOFONT=1`):
+  ALL OK. P3: LCD-Zeile dort absichtlich aus (`.lcd{display:none}`, unverändert; Split per Tipp auf SPLIT).
+- Gegenprobe alte Fassung `MK3-fix.html` mit echter Schrift: P2 SPLIT-Zug `.lv` 19 px, scharf 14 px → FAIL.
+- Melder-/Nachstell-Skripte `v3-rep-mk3-lcdsplit.mjs`, `v3-qa-gmk3-lcd3.mjs`, `v3-qa-gmk3-lcd5.mjs`: Wert sichtbar, keine
+  Überdeckung, 0 Fehler. Bilder: `dirigent-test/v3-gfix-mk3/*.png`.
+- Regression: `v3-mk3-ui.mjs` alles bestanden (inkl. MK3-10 M-PLATZ 143 Fälle mit echter Schrift, MK3-03 Split-Taste), Smoke-Test
+  ohne Fehler (`v3-gfix-mk3-smoke.png`). Größe 2 830 935 B (+1,0 KB).
+
+### Datenbank / Am Server offen
+Keine Änderung, keine Supabase-Abfrage.

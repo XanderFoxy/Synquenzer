@@ -851,6 +851,7 @@ svg{display:block}
 .lcd.lng .lv{flex:1 1 auto;white-space:normal;text-overflow:clip;font:500 10.5px/12px var(--font-ui);letter-spacing:.01em;max-height:24px;padding:0;margin:0;overflow:hidden;overflow-wrap:anywhere}
 .lcd.lng .lkin{font:700 9.5px/12px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--tc,var(--text-dim));margin-right:6px}
 .lcd.mq .lv{text-overflow:clip}
+.lcd.mqk .lk{display:none}.lcd.mqk .lv{flex:1 1 auto}.lcd.mqk .lkin{font:700 9.5px/1 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--tc,var(--text-dim));margin-right:6px}
 .lcd.mq .mqi{display:inline-block;animation:lcdmq var(--mqd,6s) linear infinite alternate}
 @keyframes lcdmq{0%,14%{transform:translateX(0)}86%,100%{transform:translateX(var(--mq,0))}}
 .pop.lcdfull{max-width:min(420px,92vw)}.pop.lcdfull h4{margin:0 0 4px;font:700 11px/1.2 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}.pop.lcdfull p{margin:0;font:500 13px/1.35 var(--font-ui);color:var(--text);white-space:normal}
@@ -23375,7 +23376,7 @@ function lcdHint() {
 // L6 „nichts abgeschnitten“ (V4b-fix): a text longer than the LCD line first flows over two lines (label + text, smaller UI
 // face); if even that is too short it runs as a slow marquee (LCD style, pauses at both ends). A tap on the LCD shows it whole.
 function lcdFit(L) {
-  L.classList.remove('lng', 'mq');
+  L.classList.remove('lng', 'mq', 'mqk');
   const v = L.querySelector('.lv'); if (!v || L.classList.contains('wia')) return;
   const over = () => L.scrollWidth > L.clientWidth + 1;   // G-MK3-fix: a key beside the value (MK3 [Split ← nächste Note]) can squeeze .lv to 0 px
   if (!L.clientWidth || (v.scrollWidth <= v.clientWidth + 1 && !over())) return;
@@ -23383,6 +23384,7 @@ function lcdFit(L) {
   v.insertBefore(kin, v.firstChild); L.classList.add('lng');
   if (v.scrollHeight <= v.clientHeight + 1 && v.scrollWidth <= v.clientWidth + 1 && !over()) return;
   kin.remove(); L.classList.remove('lng'); L.classList.add('mq');
+  if (k && v.clientWidth < 48) { L.classList.add('mqk'); v.insertBefore(kin, v.firstChild); }   // G-MK3-fix: too little room beside the label: the label scrolls along
   const w = v.scrollWidth - v.clientWidth, mi = el('span', 'mqi'); while (v.firstChild) mi.appendChild(v.firstChild); v.appendChild(mi);
   mi.style.setProperty('--mq', -Math.ceil(w + 4) + 'px'); mi.style.setProperty('--mqd', (2.6 + (w + 4) / 38).toFixed(1) + 's');
 }
@@ -25545,7 +25547,7 @@ function lcdPredict(label, txt, P) {
   const L = ED.lcd; if (!L || !L.isConnected) return;
   const s = 'pv\u0001' + txt + '\u0001' + P.line + '\u0001' + P.bars.map(b => Math.round(b)).join(',') + P.per.slice(0, 8).map(v => v.toFixed(2)).join(',');
   if (L._s === s) return; L._s = s;
-  L.classList.remove('wia', 'fest', 'lng', 'mq'); L.classList.add('pv');
+  L.classList.remove('wia', 'fest', 'lng', 'mq', 'mqk'); L.classList.add('pv');
   const mk = line => `<span class="lpv">${fxPredSvg(P)}</span><span class="lv lv2"><b>${esc(txt)}</b><i>${esc(line)}</i></span>`;
   let html = mk(P.line);
   L.innerHTML = html;

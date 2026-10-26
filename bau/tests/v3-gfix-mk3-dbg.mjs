@@ -1,0 +1,12 @@
+import {chromium} from 'playwright';
+const APP = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk-br-MK3/index.html';
+const br = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome'});
+const ctx = await br.newContext({viewport: {width: 375, height: 812}, hasTouch: true, isMobile: true, deviceScaleFactor: 2});
+const p = await ctx.newPage(); await p.goto('file://' + APP); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version);
+await p.evaluate(() => { SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); });
+await new Promise(r => setTimeout(r, 800));
+console.log(await p.evaluate(() => { const L = document.querySelector('#synthSheet .lcd');
+  L.innerHTML = '<span class="lk">T1 · STIMME · ZUWEISUNG</span><span class="lv">Mono</span><span class="lx lsplit"><b>Split ←</b> <b>nächste Note</b></span>';
+  const v = L.querySelector('.lv'), k = L.querySelector('.lk'), kin = document.createElement('b'); kin.className = 'lkin'; kin.textContent = k.textContent; v.insertBefore(kin, v.firstChild); L.classList.add('lng');
+  return JSON.stringify({Lsw: L.scrollWidth, Lcw: L.clientWidth, vsw: v.scrollWidth, vcw: v.clientWidth, vsh: v.scrollHeight, vch: v.clientHeight, kinW: kin.getBoundingClientRect().width}); }));
+await br.close();
