@@ -64,7 +64,7 @@ for (const [name, file] of [['base', BASE], ['new', APP]]) {
     await ctx.close();
   }
 }
-fs.writeFileSync(OUT + 'lay.json', JSON.stringify(res));
+fs.writeFileSync(OUT + 'lay-' + (process.env.STATES||'all').replace(/,/g,'_') + '.json', JSON.stringify(res));
 for (const k of Object.keys(res.new)) {
   const A = res.base[k], B = res.new[k];
   const moved = [], added = [], gone = [], newClip = [], newOff = [];

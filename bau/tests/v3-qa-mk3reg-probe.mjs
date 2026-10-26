@@ -1,0 +1,10 @@
+import { open, APP } from './v3-qa-mk3reg-pw.mjs';
+const {b, p, errs} = await open({width: 390, height: 844}, APP, true);
+const r = await p.evaluate(async () => { const Q = window.SYNQUENZER; Q.setEngine(0, 'mk'); await new Promise(r => setTimeout(r, 400));
+  const m = Q.mkGet(0); return {top: Object.keys(m).filter(k => k !== 't').map(k => k + '=' + JSON.stringify(m[k])).join(' '), t0: JSON.stringify(m.t[0]).slice(0, 900)}; });
+console.log(r);
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.selectTrack(0); Q.openEditor(); }); await p.waitForTimeout(600);
+const vis = await p.evaluate(() => [...document.querySelectorAll('button, [role=button]')].filter(e => { const r = e.getBoundingClientRect(); if (r.width < 2) return false; const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return t && (e.contains(t) || t.contains(e)); }).filter(e => !e.closest('#synthSheet .mkx')).map(e => (e.id || e.className) + ':' + (e.textContent || '').trim().slice(0, 20) + '@' + Math.round(e.getBoundingClientRect().top)));
+console.log(vis.join('\n'));
+await p.screenshot({path: '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/dirigent-test/v3-qa-mk3reg/probe-P1-ed.png'});
+console.log(errs); await b.close();

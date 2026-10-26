@@ -1,0 +1,26 @@
+import {render, mkDefaults} from './v3-mk1-node.mjs';
+const NEW = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk-br-MK3/index.html', SR = 48000;
+const merge = (a, b) => { for (const k in b || {}) { if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k] && typeof a[k] === 'object') merge(a[k], b[k]); else a[k] = b[k]; } return a; };
+const C = x => JSON.parse(JSON.stringify(x));
+const prog = (top, t1, t2) => { const p = mkDefaults(); merge(p, C(top || {})); merge(p.t[0], C(t1 || {})); merge(p.t[1], C(t2 || {})); return p; };
+let bad = 0;
+const chk = (lab, p, ev, o, wantIds) => { const r = render(p, ev, Object.assign({file: NEW, sec: 3}, o || {})); const ends = r.msgs.filter(m => m.end).map(m => m.end).flat(); const cnt = {}; for (const e of ends) cnt[e] = (cnt[e] || 0) + 1;
+  const tm = []; r.msgs.forEach((m, i) => { if (m.end) tm.push(m.end.join(',')); });
+  const live = r.P.mk.tm.map(t => t.V.filter(v => v.on).length); const missing = wantIds.filter(id => !cnt[id]), dup = Object.keys(cnt).filter(k => cnt[k] > 1);
+  const good = !missing.length && !dup.length && live[0] + live[1] === 0; if (!good) bad++;
+  console.log((good ? 'ok   ' : 'BAD  ') + lab.padEnd(52), 'ends', JSON.stringify(cnt), 'missing', JSON.stringify(missing), 'dup', JSON.stringify(dup), 'voices still on', JSON.stringify(live)); };
+const shortR = {e2: {r: 10}}, longR = {e2: {r: 80}};
+// ids: harness assigns 1.. in order of 'on'
+chk('Dual, T2 long release', prog({mode: 1}, shortR, longR), [[0, 'on', 60], [.2, 'off', 60]], {}, [1]);
+chk('Dual 2 notes', prog({mode: 1}, shortR, longR), [[0, 'on', 60], [.1, 'on', 64], [.3, 'off', 60], [.4, 'off', 64]], {}, [1, 2]);
+chk('Split both sides', prog({mode: 2, split: 60}, longR, shortR), [[0, 'on', 48], [.1, 'on', 72], [.3, 'off', 48], [.4, 'off', 72]], {}, [1, 2]);
+chk('Dual 1+3: T1 mono steals within T1', prog({mode: 1, tv: 0}), [[0, 'on', 60], [.05, 'on', 64], [.1, 'on', 67], [.3, 'off', 60], [.35, 'off', 64], [.4, 'off', 67]], {}, [1, 2, 3]);
+chk('Dual 2+2, 5 keys (stealing in both)', prog({mode: 1, tv: 1}), [[0, 'on', 60], [.05, 'on', 64], [.1, 'on', 67], [.12, 'on', 70], [.15, 'on', 72], [.5, 'off', 60], [.5, 'off', 64], [.5, 'off', 67], [.5, 'off', 70], [.5, 'off', 72]], {}, [1, 2, 3, 4, 5]);
+chk('Dual→Single while held, then off', prog({mode: 1}, shortR, longR), [[0, 'on', 60], [.1, 'on', 64], [.6, 'off', 60], [.7, 'off', 64]], {at: [[.3, {mkSet: {mode: 0}}]]}, [1, 2]);
+chk('Single→Split while held (note moves T1→T2)', prog({mode: 0}, shortR, longR), [[0, 'on', 64], [.6, 'off', 64]], {at: [[.3, {mkSet: {mode: 2, split: 60}}]]}, [1]);
+chk('Split 60→70 while held (T2→T1)', prog({mode: 2, split: 60}, shortR, longR), [[0, 'on', 64], [.6, 'off', 64]], {at: [[.3, {mkSet: {split: 70}}]]}, [1]);
+chk('Dual, solo 2 while held', prog({mode: 1}, shortR, longR), [[0, 'on', 60], [.6, 'off', 60]], {at: [[.3, {mkSolo: 2}]]}, [1]);
+chk('Dual, released during T2 release → mode 0', prog({mode: 1}, shortR, longR), [[0, 'on', 60], [.2, 'off', 60]], {at: [[.3, {mkSet: {mode: 0}}]]}, [1]);
+chk('Split, T2 Mono 3 keys above', prog({mode: 2, split: 60}, {}, {asg: 0}), [[0, 'on', 64], [.05, 'on', 67], [.1, 'on', 72], [.3, 'off', 72], [.35, 'off', 67], [.4, 'off', 64]], {}, [1, 2, 3]);
+chk('Dual 2+2 → 1+3 while 2 keys held', prog({mode: 1, tv: 1}), [[0, 'on', 60], [.05, 'on', 64], [.6, 'off', 60], [.65, 'off', 64]], {at: [[.3, {mkSet: {tv: 0}}]]}, [1, 2]);
+console.log(bad ? bad + ' mit Befund' : 'alle Noten gemeldet');

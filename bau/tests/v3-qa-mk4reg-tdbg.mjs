@@ -1,0 +1,14 @@
+import { open } from './v3-qa-mk4reg-pw.mjs';
+const {b, p, errs} = await open({width: 390, height: 844});
+const trace = (ms) => p.evaluate(async ms => { const Q = window.SYNQUENZER, xs = []; const t0 = performance.now(); while (performance.now() - t0 < ms) { const m = Q.meter(); xs.push(Math.round(performance.now() - t0) + ':' + (isFinite(m.rmsDb) ? m.rmsDb.toFixed(0) : '-inf')); await new Promise(r => setTimeout(r, 50)); } return xs.join(' '); }, ms);
+await p.evaluate(async () => { const Q = window.SYNQUENZER; Q.newProject({init: true}); Q.setBpm(120);
+  Q.setEngine(0, 'mk'); await new Promise(r => setTimeout(r, 400));
+  Q.mkSet(0, 'dly.dep', 127); Q.mkSet(0, 'dly.sync', 0); Q.mkSet(0, 'dly.time', 110);
+  Q.setClip(0, 0, {len: 1, key: {root: 9, scale: 'aeolian'}, notes: [{t: 0, d: .25, n: 57, v: .9}]}); Q.launchClip(0, 0); });
+console.log(await p.evaluate(() => JSON.stringify({d: window.SYNQUENZER.getSound(0).p.mk.dly, info: window.SYNQUENZER.mkInfo()})));
+console.log('play', await trace(2500));
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.stopTrackNow(0); });
+console.log('stopTrackNow', await trace(2500));
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.stop(); });
+console.log('stop', await trace(1500));
+console.log(errs); await b.close();

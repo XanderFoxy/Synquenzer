@@ -1,0 +1,24 @@
+// Solo with the editor open: keyboard vs. clip playback; per-track level via the track's analyser if any
+import { open, APP } from './v3-qa-mk3reg-pw.mjs';
+const FILE = process.argv[2] || APP;
+const box = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; }, sel);
+const tapSel = async (p, sel) => { const b = await box(p, sel); await p.touchscreen.tap(b.x, b.y); await p.waitForTimeout(250); };
+const tapK = (p, k) => tapSel(p, '#synthSheet .mkx[data-k="' + k + '"]');
+const meas = (p, ms) => p.evaluate(async ms => { let mx = -200; const t0 = performance.now(); while (performance.now() - t0 < ms) { const m = window.SYNQUENZER.meter(); if (isFinite(m.rmsDb)) mx = Math.max(mx, m.rmsDb); await new Promise(r => setTimeout(r, 30)); } return +mx.toFixed(1); }, ms);
+const {b, p, errs} = await open({width: 390, height: 844}, FILE, true);
+const info = await p.evaluate(async () => { const Q = window.SYNQUENZER; Q.setEngine(0, 'mk'); await new Promise(r => setTimeout(r, 500));
+  Q.mkSet(0, 'mode', 1); Q.mkSet(0, 't.0.a.lvl', 0); Q.mkSet(0, 't.1.a.lvl', 127); Q.mkSet(0, 't.1.o1.w', 1); Q.selectTrack(0);
+  Q.setBpm(120); Q.setClip(0, 0, {len: 1, key: {root: 0, scale: 'ionian'}, notes: [0, 1, 2, 3].map(t => ({t, d: .9, n: 60, v: .9}))});
+  const P = Q.project(); return P.tracks.map((t, i) => i + ':' + t.kind + ':' + (t.sound && t.sound.engine) + ':' + t.clips.filter(Boolean).length).join(' '); });
+console.log('tracks', info);
+const log = [];
+await p.evaluate(() => window.SYNQUENZER.launchClip(0, 0)); await p.waitForTimeout(800); log.push('clip, no solo ' + await meas(p, 1500));
+await p.evaluate(() => window.SYNQUENZER.stop()); await p.waitForTimeout(1200);
+await p.evaluate(() => window.SYNQUENZER.openEditor()); await p.waitForTimeout(600);
+await tapK(p, 'shift'); await tapK(p, 'timbre'); log.push('panel solo ' + (await p.evaluate(() => window.SYNQUENZER.mkPanel())).solo);
+await p.evaluate(() => window.SYNQUENZER.tap(60, 600)); log.push('kb, solo T1 ' + await meas(p, 700)); await p.waitForTimeout(800);
+await p.evaluate(() => window.SYNQUENZER.launchClip(0, 0)); await p.waitForTimeout(800); log.push('clip, solo T1, editor open ' + await meas(p, 1500));
+log.push('noteLog ' + JSON.stringify(await p.evaluate(() => window.SYNQUENZER.noteLog(50).slice(-4).map(n => [n.track, n.out, n.beat && +n.beat.toFixed(2)]))));
+await p.evaluate(() => window.SYNQUENZER.stop()); await p.waitForTimeout(1200);
+await p.evaluate(() => window.SYNQUENZER.tap(60, 600)); log.push('kb after stop, solo T1 ' + await meas(p, 700));
+console.log(log.join('\n')); console.log('errs', errs); await b.close();

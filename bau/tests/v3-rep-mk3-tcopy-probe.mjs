@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+const FILE = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/mk-br-MK3/index.html';
+const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await browser.newContext({viewport: {width: 390, height: 844}, hasTouch: true, isMobile: true});
+const page = await ctx.newPage();
+await page.goto('file://' + FILE); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 30000});
+await page.evaluate(() => { SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); }); await page.waitForTimeout(500);
+console.log(await page.evaluate(() => [...document.querySelectorAll('#synthSheet button')].filter(b => b.offsetParent).slice(0, 25).map(b => (b.id || '') + '[' + b.className + ']' + b.textContent.trim().slice(0, 12) + '{' + (b.getAttribute('aria-label') || '') + '}').join(' ; ')));
+console.log(await page.evaluate(() => { const b = document.getElementById('bKlang'); const r = b.getBoundingClientRect(); const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return JSON.stringify(r) + ' top ' + (e && (e.id || e.className)); }));
+await browser.close();

@@ -4462,19 +4462,20 @@ function timApply(i, label, fn) {
   const s_ = deep(sndOf(i)); if (!s_ || !s_.p.mk) return; fn(s_.p.mk); s_.p.mk = SQMK.normMk(s_.p.mk); UI.ab = null;
   soundEdit(i, MK_LABEL + ' ' + label, () => applySound(i, s_)); P.lastKnob = null; render();
 }
-const tDst = () => ti();
+// MK3-fix: the timbre a tool acts on belongs to track i: its own panel's choice, a track whose panel is not built works on T1
+const tDst = i => (i == null || i === P.i) && P.i >= 0 && sndOf(P.i) && sndOf(P.i).p.mk ? ti() : 0;
 function timSwap(i) { timApply(i, 'Timbre tauschen', pm => { const a = pm.t[0]; pm.t[0] = pm.t[1]; pm.t[1] = a; }); lcdShow('SHIFT + 2 · TIMBRE TAUSCHEN', 'T1 ⇄ T2 getauscht · ↶ = zurück'); }
-function timInit(i) { const k = tDst(); timApply(i, 'Timbre neu', pm => { pm.t[k] = SQMK.init().t[0]; }); lcdShow('SHIFT + 4 · TIMBRE NEU', 'T' + (k + 1) + ' auf INIT-Werte · ↶ = zurück'); }
+function timInit(i) { const k = tDst(i); timApply(i, 'Timbre neu', pm => { pm.t[k] = SQMK.init().t[0]; }); lcdShow('SHIFT + 4 · TIMBRE NEU', 'T' + (k + 1) + ' auf INIT-Werte · ↶ = zurück'); }
 // copy timbre srcT of a sound (the library or this one) into the edited timbre (MK9 later: 🔒 is contagious, EN3-08a)
 function timCopy(i, src, srcT) {
-  const k = tDst(), sp = src && src.p && src.p.mk ? SQMK.normMk(src.p.mk) : null; if (!sp) return false;
+  const k = tDst(i), sp = src && src.p && src.p.mk ? SQMK.normMk(src.p.mk) : null; if (!sp) return false;
   timApply(i, 'Timbre kopieren', pm => { pm.t[k] = deep(sp.t[srcT ? 1 : 0]); });
   lcdShow('SHIFT + 1 · TIMBRE KOPIEREN', (src.name || 'Sound') + ' T' + (srcT ? 2 : 1) + ' → T' + (k + 1) + ' · ↶ = zurück'); return true;
 }
-function timCopyPop(anchor) {
-  const i = P.i, k = tDst(), L = ownList(), cur = snd();
+function timCopyPop(anchor, t) {   // MK3-fix: t = the track whose editor is open (⋯), else this panel's track
+  const i = t == null ? P.i : t, k = tDst(i), L = ownList(), cur = sndOf(i); if (!cur || !cur.p.mk) return;
   openPop(anchor, p => {
-    let h = `<h4>${esc('Timbre kopieren → T' + (k + 1))}</h4><p class="small">Quelle wählen: ein ${esc(MK_LABEL)}-Sound und sein Timbre 1 oder 2.</p><div class="plist mkl mkcp">`;
+    let h = `<h4>${esc('Timbre kopieren → T' + (k + 1))}</h4><p class="small">Quelle wählen: ein ${esc(MK_LABEL)}-Sound und sein Timbre 1 oder 2.</p><div class="plist mkl mkcp pan-y">`;
     h += `<div class="mkcr"><b>${esc(cur.name)} <small>(dieser Sound)</small></b><button class="rb" data-s="-1" data-t="0"${k === 0 ? ' disabled' : ''}>T1</button><button class="rb" data-s="-1" data-t="1"${k === 1 ? ' disabled' : ''}>T2</button></div>`;
     L.forEach((r, x) => { h += `<div class="mkcr"><b>${esc(r.name)}</b><button class="rb" data-s="${x}" data-t="0">T1</button><button class="rb" data-s="${x}" data-t="1">T2</button></div>`; });
     if (!L.length) h += `<p class="small">Noch keine gesicherten ${esc(MK_LABEL)}-Sounds – mit WRITE sichern, dann stehen sie hier.</p>`;
@@ -4490,6 +4491,7 @@ function splitArm() {
 }
 function splitNote(note) {
   if (!P.splitArm) return false; P.splitArm = false; UI.mkSplitArm = null; const i = P.i, s_ = sndOf(i); if (!s_ || !s_.p.mk) return false;
+  if (R.editor !== 'synth' || R.selT !== i || !EL.synthSheet.classList.contains('open')) return false;   // MK3-fix: armed only while this editor is open
   note = clamp(Math.round(note), 0, 127); soundEdit(i, MK_LABEL + ' SPLIT', () => mkSetP(i, 'split', note, false));
   render(); lcdShow('SPLIT', noteLabel(note) + ' · darunter T1, ab hier T2'); dispShow(z3(note)); return true;
 }
@@ -5520,6 +5522,7 @@ class MkTim {
     if (fresh) {
       Object.assign(v, new MkVoice(v.i)); v.on = true; v.rng = mkHash(this.par.seed, 1 + this.ti, ++this.nctr); v.sr = (v.rng ^ 0x5bd1e995) >>> 0 || 7; v.rn = (v.rng ^ 0x2545f491) >>> 0 || 3;
       v.t1 = mkRnd(v); v.t2 = mkRnd(v); v.sh1 = mkRnd(v) * 2 - 1; v.sh2 = mkRnd(v) * 2 - 1; v.os = k.note + T.trans + T.tune / 100 >= MK_OSN;
+      if (this.par.notePh) this.par.notePh(this.ti, k.id, v);   // MK3-fix: both timbres of a key start with the same oscillator phases
     } else if (retrig) {
       if (T.e1.rst >= .5) { v.e1 = 0; } if (T.e2.rst >= .5) { v.e2 = 0; v.aA = -1; }
     }
@@ -5620,22 +5623,28 @@ class MkTim {
   // the held keys are distributed again under the new rule and fade in; a key keeps its phases and envelopes where it can
   // MK3: list = the held keys of the whole program in their order for this timbre (MODUS / STIMMEN / SPLIT changed); a key this
   // timbre did not have starts fresh with the fade-in
-  reassign(list) {
+  // MK3-fix: keep (a pure routing change, poly): a release tail of a key that is not held rings on; from = the phases of the keys as
+  // they sound in the other timbre (a key that changes timbre continues them: equal timbres do not cancel in the crossfade)
+  reassign(list, keep, from) {
     const old = this.V.filter(v => v.on && !v.ghost), byId = new Map();
     const att = MKW.atk(this.T.e2.a), n = Math.round(Math.max(.04, Math.min(.5, att)) * SR);
-    for (const v of old) { if (!byId.has(v.id)) byId.set(v.id, mkClone(v)); v.ghost = true; v.xfo = true; v.gate = false; this.fadeOut(v, n); }
+    const kp = keep && this.ea === 1, hid = kp ? new Set(this.keys.map(k => k.id)) : null, hn = kp ? new Set((list || this.keys).map(k => k.note)) : null;
+    for (const v of old) { if (kp && !v.gate && !hid.has(v.id) && !hn.has(v.note)) continue;
+      if (!byId.has(v.id)) byId.set(v.id, mkClone(v)); v.ghost = true; v.xfo = true; v.gate = false; this.fadeOut(v, n); }
     let keys = this.keys.slice().sort((a, b) => a.ord - b.ord);
     if (list) { const had = new Map(keys.map(k => [k.id, k])); keys = list.map(g => { const k = had.get(g.id) || {id: g.id, note: g.note, vel: g.vel, tp: this.par.tuned(g.note)}; k.ord = ++this.ord; return k; }); }
     this.keys = [];
     for (const k of keys) {
       this.keys.push(k);
-      if (this.ea === 1) { const v = this.polyOn(k, MK_EXF); if (v && byId.has(k.id)) this.inherit(v, byId.get(k.id)); }
+      if (this.ea === 1) { const v = this.polyOn(k, MK_EXF); if (v && byId.has(k.id)) this.inherit(v, byId.get(k.id)); else if (v && from && from.has(k.id)) this.inheritPh(v, from.get(k.id)); }
     }
     if (this.ea !== 1 && this.keys.length) {
       this.monoSel(false);
-      for (const v of this.line()) { const c = byId.get(v.id); if (c) this.inherit(v, c); v.fin = MK_EXF; v.finN = MK_EXF; }
+      for (const v of this.line()) { const c = byId.get(v.id); if (c) this.inherit(v, c); else if (from && from.has(v.id)) this.inheritPh(v, from.get(v.id)); v.fin = MK_EXF; v.finN = MK_EXF; }
     }
   }
+  // MK3-fix: the oscillator and LFO phases of a key from the other timbre (same pitch: the crossfade adds up, no hole)
+  inheritPh(v, c) { v.t1 = c.t1; v.t2 = c.t2; v.sp = c.sp; v.l1 = c.l1; v.l2 = c.l2; if (c.wn >= 0) { v.tw = c.tw; v.wn = c.wn; v.wx = 0; } }
   inherit(v, c) {
     for (const k of ['t1', 't2', 'sp', 'e1', 'e1s', 'e2', 'e2s', 'gt', 'l1', 'l2', 'sh1', 'sh2', 's1', 's2', 's3', 's4', 'pitch', 'dx', 'dF', 'rng', 'os', 'o1p', 'rsc',
       'tw', 'wn', 'vz1', 'vz2', 'rn', 'ns1', 'ns2', 'xL2']) v[k] = c[k];   // MK2: the table phase, the shown wave, the Stimmwelle / noise states
@@ -6058,7 +6067,7 @@ class MkTim {
 const MK_SOLOS = CR / (.005 * SR);
 class MkCore {
   constructor(host, init) {
-    this.h = host; this.seed = 0; this.keys = []; this.ord = 0; this.mode = 0; this.tv = 1; this.split = 60; this.scl = 0; this.skey = 0; this.usc = null;
+    this.h = host; this.seed = 0; this.keys = []; this.ord = 0; this.phm = new Map(); this.mode = 0; this.tv = 1; this.split = 60; this.scl = 0; this.skey = 0; this.usc = null;
     this.sc = new Float64Array(12); this.scOn = false; this.lim_ = 0; this.solo_ = 0; this.sg = [1, 1]; this.tap_ = '';
     this.bL = new Float32Array(CR); this.bR = new Float32Array(CR);
     const pm = init && typeof init === 'object' ? init : null, tt = pm && Array.isArray(pm.t) ? pm.t : [];
@@ -6109,7 +6118,17 @@ class MkCore {
   // after a change: re-distribute (routing) or re-assign the timbres whose rule changed, only at sounding / held notes
   after(route, reas, ch) {
     const R = this.tm;
-    if (route && this.keys.length) { const ks = this.keys.slice().sort((a, b) => a.ord - b.ord); for (let k = 0; k < 2; k++) { const l = ks.filter(x => this.routes(x.note, k)); if (l.length || R[k].sounding() || R[k].keys.length) R[k].reassign(l); } return; }
+    if (route && this.keys.length) {
+      // MK3-fix: a timbre whose keys and rule stay is left alone (SPLIT moved past no held key: its tails ring on); the phases of
+      // every held key as it sounds now go to the other timbre (a key that changes timbre continues them)
+      const ks = this.keys.slice().sort((a, b) => a.ord - b.ord), ph = R.map(t => { const m = new Map(); for (const v of t.V) if (v.on && !v.ghost && v.gate && !m.has(v.id)) m.set(v.id, {t1: v.t1, t2: v.t2, sp: v.sp, l1: v.l1, l2: v.l2, tw: v.tw, wn: v.wn}); return m; });
+      for (let k = 0; k < 2; k++) {
+        const l = ks.filter(x => this.routes(x.note, k)), same = !reas[k] && !ch[k] && l.length === R[k].keys.length && l.every(x => R[k].keys.some(y => y.id === x.id));
+        if (same) continue;
+        if (l.length || R[k].sounding() || R[k].keys.length) R[k].reassign(l, !reas[k] && !ch[k], ph[1 - k]);
+      }
+      return;
+    }
     for (let k = 0; k < 2; k++) if ((reas[k] || ch[k]) && R[k].sounding()) R[k].reassign();
   }
   load(pm) {  // a whole p.mk (sound load / engine change)
@@ -6136,7 +6155,13 @@ class MkCore {
   busy() { return this.keys.length > 0 || this.tm[0].busy() || this.tm[1].busy(); }
   count() { return this.tm[0].count() + this.tm[1].count(); }
   has(id) { for (const t of this.tm) { if (t.keys.some(k => k.id === id)) return true; for (const v of t.V) if (v.on && !v.ghost && v.id === id) return true; } return false; }
-  endCheck(id) { if (id < 0) return; for (const t of this.tm) if (t.holds(id)) return; this.h.ended.push(id); }
+  endCheck(id) { if (id < 0) return; for (const t of this.tm) if (t.holds(id)) return; this.phm.delete(id); this.h.ended.push(id); }
+  // MK3-fix: one list of start phases per key: the timbre that starts a voice first draws them, the other one takes the same
+  // (Schicht with equal timbres = +6 dB every note, never a random cancel; Single draws exactly as before)
+  notePh(ti, id, v) {
+    let e = this.phm.get(id); if (!e) { if (this.phm.size > 256) this.phm.clear(); e = {a: [], j: [0, 0]}; this.phm.set(id, e); }
+    const j = e.j[ti]++; if (j < e.a.length) { v.t1 = e.a[j][0]; v.t2 = e.a[j][1]; } else e.a.push([v.t1, v.t2]);
+  }
   noteOn(id, note, vel) {
     if (!this.seed) this.seed = ((Math.random() * 4294967295) >>> 0) || 1;
     this.keys.push({id, note, vel, ord: ++this.ord});
@@ -6148,7 +6173,7 @@ class MkCore {
   fastOff(id, tau) { this.dropKey(id); for (const t of this.tm) t.fastOff(id, tau); }
   killId(id) { this.dropKey(id); for (const t of this.tm) t.killId(id); }
   allOff() { this.keys.length = 0; for (const t of this.tm) t.allOff(); }
-  panic() { this.keys.length = 0; for (const t of this.tm) t.panic(); }
+  panic() { this.keys.length = 0; this.phm.clear(); for (const t of this.tm) t.panic(); }
   handOver(n) {
     const held = this.keys.slice().sort((a, b) => a.ord - b.ord).map(k => ({id: k.id, note: k.note, vel: k.vel}));
     this.keys.length = 0; for (const t of this.tm) t.handOver(n);
@@ -23195,9 +23220,9 @@ function safeRebuild(fn) { if (GEST.size) pendingRebuild = fn; else fn(); }
 function abortAll(why) { RESTPTR.clear(); for (const [id, g] of [...GEST]) { GEST.delete(id); try { g.abort(why); } catch (_) {} } gestEnd(-1); }
 // iOS: user-select:none does not stop the loupe; a non-passive touchstart preventDefault does. Such surfaces get no
 // click from touch, so everything inside them acts on pointer events (onTap)
-// V0c-fix: a touch that starts in a sideways swipe list (.cp-sc, .pan-x) keeps its native scrolling (a tap there acts on
+// V0c-fix: a touch that starts in a sideways swipe list (.cp-sc, .pan-x; MK3-fix: an upright list .pan-y) keeps its native scrolling (a tap there acts on
 // pointerup as everywhere; its synthetic click is eaten by the ghost-click guard, a swipe ends in pointercancel)
-function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && e.target.closest('.cp-sc,.pan-x')) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
+function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && e.target.closest('.cp-sc,.pan-x,.pan-y')) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
 // tap = pointerdown + pointerup on the same element within 12 px. A click right after a handled pointer tap is ignored;
 // keyboard and programmatic clicks still activate. sel: delegate to children matching sel.
 function onTap(node, fn, sel) {
@@ -23955,6 +23980,7 @@ function dropUntouchedRollClip() {
   return true;
 }
 function closeSheets() {
+  if (EL.synthSheet.classList.contains('open') && typeof MKUI !== 'undefined' && MKUI.leave) { try { MKUI.leave(); } catch (e) { logErr(e); } }   // MK3-fix: ≡, browser, project switch … end solo / armed split like ✕
   EL.synthSheet.classList.remove('open'); EL.drumSheet.classList.remove('open'); EL.clipSheet.classList.remove('open');
   if (EL.sndSheet && EL.sndSheet.classList.contains('open')) { EL.sndSheet.classList.remove('open'); EL.sndSheet.innerHTML = ''; }
   previewStop();
@@ -24680,7 +24706,7 @@ function openEdMore(anchor, t) {
       (!drum && tr.sound.engine === 'mk' && mkLoaded() ? '<button class="rb" data-a="tcopy"><b>Timbre kopieren ▸</b><small>SHIFT + 1 · aus einem gesicherten Sound</small></button><button class="rb" data-a="tswap"><b>Timbre tauschen</b><small>SHIFT + 2 · T1 ⇄ T2</small></button><button class="rb" data-a="tinit"><b>Timbre neu</b><small>SHIFT + 4 · das gewählte Timbre auf INIT</small></button>' : '') + '</div>';   // MK3
     guardTouch(p);
     onTap(p, b => { closePop(); const a = b.dataset.a; if (a === 'init') initSound(t); else if (a === 'wia') wiaToggle(); else if (a === 'kbpos') kbVelPos();
-      else if (a === 'tcopy') MKUI.timCopyPop(anchor); else if (a === 'tswap') MKUI.timSwap(t); else if (a === 'tinit') MKUI.timInit(t); }, 'button[data-a]');
+      else if (a === 'tcopy') MKUI.timCopyPop(anchor, t); else if (a === 'tswap') MKUI.timSwap(t); else if (a === 'tinit') MKUI.timInit(t); }, 'button[data-a]');
   }, {name: 'edmore'});
 }
 /* MK1 (B.3 Zeile 1, MK1-21, H-13): the track name stays visible - where the four engine keys squeeze it, one chip takes their place;

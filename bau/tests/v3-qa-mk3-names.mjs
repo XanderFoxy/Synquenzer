@@ -1,0 +1,14 @@
+import {launch, open, tap, lcd, J, pickPop} from './v3-qa-mk3-lib.mjs';
+const b = await launch();
+const {ctx, page, errs} = await open('L1');
+await page.evaluate(() => { S.settings.noteNames = 'de'; SYNQUENZER.mkSet(0, 'scale', 9); SYNQUENZER.mkSet(0, 'skey', 10); MKUI.setWahl(2, 9); MKUI.lcdOf(MKUI.knobs()[1]); });
+await page.waitForTimeout(150);
+const l1 = await lcd(page), disp = await page.evaluate(() => MKUI.panelInfo().disp);
+await tap(page, 'k1'); const list = await page.evaluate(() => [...document.querySelectorAll('.pop .plist.mkl button')].map(x => x.textContent.trim())); await page.evaluate(() => closePop());
+await page.waitForTimeout(600);
+await page.evaluate(() => MKUI.viewOpen('eigene')); await page.waitForTimeout(200);
+const own = await page.evaluate(() => [document.querySelector('#synthSheet .mprog') && document.querySelector('#synthSheet .mprog').innerText.replace(/\s+/g, ' '), [...document.querySelectorAll('#synthSheet .mkx[data-k^="u"] .lg')].map(e => e.textContent).join(' ')]);
+await page.evaluate(() => MKUI.viewClose()); await page.evaluate(() => { SYNQUENZER.mkSet(0, 'mode', 2); SYNQUENZER.mkSet(0, 'split', 71); MKUI.setWahl(1, 0); MKUI.P.shift = 1; MKUI.render(); MKUI.lcdOf(MKUI.knobs()[2]); });
+const l2 = await lcd(page);
+console.log('Einstellung Notennamen = de, Grundton 10 (A♯/B):\n  GRUNDTON-LCD:', l1, '| Anzeige', disp, '\n  GRUNDTON-Liste:', J(list), '\n  EIGENE-Kopf:', own[0], '\n  EIGENE-Regler:', own[1], '\n  SPLIT 71 LCD:', l2);
+await ctx.close(); await b.close();
