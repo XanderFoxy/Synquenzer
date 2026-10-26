@@ -3818,3 +3818,142 @@ nahm die Projekt-Tonart statt der Szenen-Tonart.
 
 ## G-P2a-gruppe-fix · App 4.8.0
 Gruppen-Prüfung G-P2a (VS2b, V2c′, V2d′, V2e, V2e′): „Eine Skala“ behandelt eigene Clips jetzt wie Szenen-Clips. Ein unveränderter eigener Clip klingt genau wie sein Szenen-Clip; Kollisionsschutz, Stärke, Durchgangstöne und „Automatisch“ gelten auch dort (vorher fielen z. B. F und F♯ auf denselben Ton).
+
+## VS3 — STIMME-Spur & Takes (Take aus Stimme-FANG und ● REC, Overdub, Punch im Song mit Rückfrage, IndexedDB v2 `audio`, WAV/ZIP, persist(), Herkunfts-Hinweis) · App 4.18.0
+
+Grundlage: Nachtrag 2 Teil C (C.1–C.5, Paket-Zeile VS3, N2-VS3-01 … -03, K2-30, K2-31), `r7/stimme.md` §8, §11 Skizzen 4/6, §12 VS3,
+§13 N7V-16 … N7V-20 (+ N7V-35); Tor N7V-12 von Xander am 26.10. bestanden („Ja das ist soweit relativ sauber“). **Version 4.18.0**
+(`APP_CODE` 4 018 000, Auftrag: VS3 = 4.18.0 statt 4.15.0). **Format bleibt 5**, alles additiv (K2-31). Keine Server-Änderung
+(Wächter `max_app` 4 021 000 deckt 4.18.0; kein Supabase-Aufruf in diesem Lauf).
+
+**Was neu ist**
+1. **Datenmodell (additiv, ein Projekt ohne Takes bleibt Zeichen für Zeichen gleich – `v3-vs3-same.mjs`):**
+   `S.takes = {id: {sr, len, chunks:[id:k…], route, latMs, created, src}}` (nur Maße und Schlüssel, nie Audio); Szene-Clip der STIMME-Spur
+   `clip.audio = {take, in, out, at, gain, fadeIn, fadeOut, alt:[{take,in,out,at}]}`; MELODIE-Clip `clip.take = id`; Spur `stimme: true`
+   (genau eine, Zusatzspur ab Index 6, synth-Art – kein neuer `kind`, damit alle Synth-Pfade unverändert bleiben); Song `song.vox =
+   [{id, bar, len, …audio}]` (Punch-Audio auf der Song-Zeitachse). `normalizeProject`/`normClip`/`normTrack`/`normSong`/`cleanClip`
+   tragen alles; Undo kennt `takes` und `tflag`.
+2. **Speicher (N7V-19):** IndexedDB `synquenzer` **Version 2** (Store `kv` bleibt, neu `audio`), PCM16-Stücke ≤ 1 MB (524 288 Samples),
+   Schlüssel `<take>:<k>`; ohne IndexedDB nur Arbeitsspeicher der Sitzung. Nach dem ersten Take `navigator.storage.persist()`;
+   Takes-Blatt zeigt `estimate()` (belegt/frei, „dauerhaft ✓“ bzw. „nicht dauerhaft – ab und zu exportieren“). Speicher-Fehler →
+   Toast mit [Exportieren]. Nur die hörbaren Takes liegen als AudioBuffer im Speicher (stumme werden beim Wählen geladen).
+3. **Takes entstehen aus dem Gesang** (Mikrofon nur auf der eigenen Seite):
+   - **Stimme-FANG** → MELODIE-Clip **und** STIMME-Clip mit **derselben take-ID**, ein Undo „Stimme“ (Gruppe: [neue Spur], Takes, MELODIE,
+     STIMME); [Verwerfen] im Ergebnis-Blatt nimmt beides zurück. Der Take reicht vom Clip-Anfang (mit 0,25 s Vorlauf als `in`) bis zum
+     Ende nach `fangClose`; liegt das Ende in der Zukunft (E1-Fall), wird er gefüllt, sobald das Mikro so weit geliefert hat.
+   - **● REC mit 🎤** → Take in derselben Szene, **auch ohne erkannte Noten** (gesprochen, Atmer). Liegt dort schon ein Audio-Clip:
+     **Overdub = neuer Take oben, der alte stumm in `alt`** (N7V-18), am Clip-Raster (jüngster voller Durchgang).
+   - Die STIMME-Spur wird beim ersten Take **automatisch angelegt** (Zusatzspur „Stimme“; bei 8 Spuren wird eine leere Zusatzspur
+     umgeschaltet, sonst Toast); im Spur-Blatt gibt es [＋ STIMME-Spur].
+   - **Latenzausgleich:** derselbe Lese-Weg wie VS1/VS2 (Zeitkarte `stLatAt`, Bruchteil-Samples linear) – der Take liegt sample-genau
+     auf dem, was die App spielte (N7V-16).
+4. **Punch im Song (S5-Rückfrage, Skizze 6):** Läuft 🎤 bei ● SONG, nimmt jede Song-Aufnahme die Stimme mit (Modi aus dem V2d′-Start-Blatt:
+   Überschreiben ab n, Einfügen ab n, Ersetzen/Overdub im gelben Bereich). Ergebnis in `song.vox`: Überschreiben/Ersetzen kürzt die alte
+   Stimme an den Rändern (gleiche Stelle im Take), Overdub legt die alten Stücke als stumme Takes darunter, Einfügen schiebt alles ab n
+   (`songShift`/`songClear` verschieben bzw. kürzen `song.vox` – auch Teil-Löschen/Einfügen). Während der Aufnahme schweigt die alte Stimme
+   im ersetzten Bereich (erster Durchgang). Ein Undo (Gruppe Song + Take). Blenden 5 ms an allen Schnitten.
+5. **Abspielen:** `AudioBufferSourceNode` je Clip-Durchlauf über die Kette der STIMME-Spur (Pegel, Pan, Sends, Mute), Blende 5 ms
+   ein/aus, spätes Dazukommen mit Versatz und Blende; Schnitt/Stopp/■■/PANIK blenden aus; Szene-Audio der STIMME-Spur schweigt, wo im Song
+   `song.vox` liegt. Kein Knacken bei Schleife, Take-Wechsel, Stopp (FP-DSP unten).
+6. **Takes-Blatt** (✎ in der Spurleiste bei gewähltem STIMME-Clip – die Leiste sagt „🎤 Audio · Takes: ✎“ –, Tipp auf die Song-Stimme in der Song-Ansicht; `v3-vs3-edit.mjs`): Liste (oben = hörbar,
+   ● Take n · Dauer · Uhrzeit · Weg), Tipp = Take nach oben, **[A/B]** tauscht die zwei obersten (klingt sofort), **✕** löscht
+   (je ein Undo, Toast), **[WAV]**, **[ZIP + Projekt]**, **[Aufräumen]** (löscht Audio-Stücke, die kein gespeichertes Projekt, kein
+   Verlauf und kein Undo nennt). Knöpfe ≥ 44 × 44, im Bild in P1–P3, L1, L2, 926 × 428.
+7. **WAV/ZIP (N7V-20, N2-VS3-03):** WAV 16 Bit mono in der Abtastrate des Takes, Datenteil bitgleich zum gespeicherten Roh-Take; ZIP
+   (STORE) = `projekt.json` + `takes/<id>.wav`. [Datei öffnen] nimmt jetzt auch `.zip`: auf der eigenen Seite kommen die WAVs in den
+   Audio-Store, in der Claude-App Toast „Audio übergangen – nur auf der eigenen Seite“, das Projekt lädt.
+8. **Claude-App / anderes Gerät:** STIMME-Spur grau, Kopf „Audio nur auf der eigenen Seite“ (fehlt ein Take auf dem Gerät: Clip grau,
+   „fehlt hier“ im Blatt); die Daten bleiben beim Speichern deep-equal; kein `getUserMedia`, keine Wiedergabe.
+9. **Herkunft (C.2 Nr. 2, N2-VS3-01):** auf `raw.githack.com` erscheint **vor dem ersten Take** (beim Start von ● REC mit 🎤, beim FANG-Tipp,
+   beim Song-Punch) einmal je Sitzung der Hinweis „Aufnahmen liegen auf einer geteilten Adresse – bitte die Seite
+   https://xanderfoxy.github.io/Synquenzer/ benutzen oder exportieren“ mit [WAV/ZIP exportieren]; auf der Pages-Seite nie.
+10. **Datenschutz (N7V-35, N2-VS1-02):** Während Take-Aufnahme (● REC mit 🎤, FANG-Take, Song-Punch) bis zum Ende des Speicherns läuft
+    `stQuiet` (SYNC hält, Realtime getrennt, Zähler fetch/XHR/Beacon/WS); Marken lösen sich selbst (Wächter 2 s). Audio verlässt das
+    Gerät nie; der Projekttext trägt nur IDs und Maße.
+11. **Innere API für VS4/VS5a (Parallelbau):** `tkPcm(id)`, `tkBuffer/tkSetBuffer`, `tkExt().take/.audio` (Zusatzfelder beim
+    Normalisieren), `tkExt().proc` (Verarbeitung je Take beim Abspielen, z. B. gesäuberte Fassung), `tkExt().place` (Abspiel-Stück
+    ändern, z. B. Zeitkarte), `tkStartSrc(o)`, `tkTrackResync(i)`, `tkVoxResync(true)`, `tkSegs(a)`. Alles im Block „VS3“ vor
+    `voicesInfo()`; in fremden Funktionen nur Ein-Zeilen-Haken (`scheduleTrack`, `cutTrackAt`, `cancelTrackFrom`, `stopTrackNow`,
+    `silenceAll`, `panic`, `songTickInner`, `songJumpApply`, `songPlayEnd`, `songChanged`, `songShift`, `songClear`, `setMute`, `vsFang`,
+    `vsFangDone`, `vsRecBegin`, `vsRecDone`, `vsResDrop`, `songRecStartOver`, `songRecWrap`, `songRecEndOver`, `renderGrid`, `openRoll`,
+    Spur-Blatt, `svTap`, `svDraw`, `onFilePicked`, `deliverNow`, `KV()`).
+12. **Test-API:** `takes`, `tkInfo`, `tkOrigin(o)`, `tkOriginHint`, `tkAddTrack`, `tkVoice`, `tkInject({pcm, sr, scene, len, at})`,
+    `tkPcmHash`, `tkPcmRange`, `tkBufRange`, `tkWavInfo`, `tkExportWav`, `tkZipInfo`, `tkZipBytes`, `tkZipRoundtrip`, `tkImportZip`,
+    `tkGc`, `tkForget`, `tkLoadAll`, `tkSheet`, `tkPick`, `tkSimLoop`, `tkSongMute`, `tkKeys`.
+
+**Abnahme** (Chromium 1243 headless, Mikro-Attrappe im selben AudioContext wie VS2 – `--use-fake-device…` liefert keinen Loopback;
+Skripte in `dirigent-test/`; Ausgaben `v3-vs3-accept.out` 72/72, `v3-vs3-lay.out` 42/42, `v3-vs3-click.out`, `v3-vs3-click10.out`,
+`v3-vs3-same.out`)
+
+| ID | Ergebnis | Messung / Skript |
+|---|---|---|
+| N2-VS3-02 | ✓ Stimme-FANG: MELODIE-Clip und STIMME-Clip mit gleicher take-ID, Take 4 Takte, Gesang drin (−20,6 dBFS); **ein Undo** entfernt MELODIE, STIMME (+ neue Spur) und Take; Redo stellt beides her | accept A |
+| N7V-16 | ✓ **echter App-Weg über Loopback** (App-Ausgang → 21,37 ms Verzögerung → Mikro; Einmessen „voll“ 43,615 ms, Streuung 0): Metronom-Klicks im Take gegen die Referenz je Schlag **max 0,002 ms**; Offline-Simulation (Chirp-Schätzer, Bruchteil-Latenz 37,43 ms, SNR 20 dB, Wiedergabe über `tkStartSrc` im OfflineAudioContext) **max 0,005 ms** (Soll ≤ 1 ms) | accept B |
+| N7V-17 | ✓ Ersetzen Takt 3–4: nur dort neue Stimme, davor/danach die alte an gleicher Stelle (Rest ab Takt 5 spielt den alten Take ab in + 8 s); alte Stimme schweigt während der Aufnahme in Takt 3–4; Lanes unverändert. **Einfügen ab Takt 3 (2 Takte):** Song 8 → 10 Takte, alle späteren Lane-Einträge aller Spuren + 2, Song-Stimme ab Takt 3 + 2, neuer Take in Takt 3–4; ein Undo (Song + Take) → deep-equal | accept F |
+| N7V-18 | ✓ Overdub (zweites ● REC): neuer Take oben, alter in `alt` (stumm), nur der obere klingt; Undo → Clip deep-equal | accept B |
+| N7V-19 | ✓ IndexedDB v2 mit `kv` + `audio`; 14-s-Take = 2 Stücke (1 048 576 + 295 424 B); Projekt-JSON nur IDs (15 854 Zeichen); persist() aufgerufen; Neuladen: Take + Spur da, bitgleich, klingt (330 Hz) | accept C |
+| N7V-20 | ✓ WAV 48 kHz / 16 Bit / mono, Datenteil = Roh-Take (FNV gleich, 672 000 Samples, Stichprobe bitgleich) | accept C |
+| N2-VS3-01 | ✓ githack (Test-API): Hinweis-Text wörtlich + [WAV/ZIP exportieren], erscheint beim Start von ● REC vor dem ersten Take; Pages: keiner | accept E |
+| N2-VS3-03 | ✓ eigene Seite → JSON → Claude-App (iframe, getrennter Speicher): STIMME grau „Audio nur auf der eigenen Seite“, Daten deep-equal → Speichern → Export → eigene Seite: `project()` deep-equal (ohne id/Name/Ansicht), Take bitgleich, spielt (523 Hz). ZIP in der Claude-App (API und [Datei öffnen]): Toast „Audio übergangen – nur auf der eigenen Seite“, Projekt lädt, 0 Konsolenfehler; ZIP auf frischer eigener Seite: Take bitgleich übernommen | accept D |
+| N7V-35 | ✓ während FANG-Take `stQuiet` > 0; danach Zähler fetch/XHR/Beacon/WS = 0 | accept A |
+| Takes-Blatt, hörbar | ✓ oberer Take klingt (877 Hz), [A/B] → sofort der ältere (441 Hz), ein Undo „Take gewählt“, ✕ löscht, Undo holt zurück | accept G |
+| M-PLATZ | ✓ P1, P2, P3, L1, L2, 926×428: STIMME-Kopf sichtbar, Clip mit Wellenform, kein Layout-Sprung, kein waagrechtes Rollen; Takes-Blatt und Herkunfts-Hinweis im Bild, alle Knöpfe ≥ 44 × 44, nichts abgeschnitten (42/42) | `v3-vs3-lay.mjs`, Bilder `v3-vs3-{P1,P2,P3,L1,L2,XL}-{matrix,takes,hinweis}.png`, Song-Ansicht `v3-vs3-{P1,L1}-song.png` (Tipp auf die Song-Stimme öffnet das Blatt) |
+| Regression | ✓ `v3-vs2-accept` ALLE OK (49), `v3-v2d2-rec` 65/65, `gmkp8-voc-mic` 8/8, `gmkp8-mk8-platz-quer` 9/9; `v3-v2e-acc` 87/90 und `gmkp8-mk8-09-platte` 26/27 **gleich wie vor VS3** (dieselben Punkte schlagen auf `index-vor-VS3.html` fehl – ältere Erwartungen, nicht durch VS3); Demo-Projekt Zeichen für Zeichen gleich zu vor VS3; Rauchtest ohne Fehler (`v3-vs3-smoke.png`) | `dirigent-test/vs3reg/r-*.out` |
+
+**Fach-Prüfung (Teil J, Gruppe 7: FP-DSP ● Haupt, FP-IPHONE; VS3 zusätzlich FP-SICHER)** – eigener zweiter Durchgang über Diff,
+Messungen und Bilder (kein getrennter Agent verfügbar). **6 Befunde, alle behoben:**
+- *FP-DSP 1:* Das erste Sample jedes Stücks lief mit Verstärkung 1 (Grundwert des GainNode vor dem ersten Ereignis) → Ein-Sample-Spitze
+  0,22 beim Start. → `gain.value = 0` vor der Rampe.
+- *FP-DSP 2:* Lag die geplante Startzeit schon in der Vergangenheit (Hauptfaden langsam), sprang die Rampe sofort auf voll → Knack an einer
+  128er-Grenze. → `tkStartSrc` verschiebt den Start auf jetzt + 6 ms mit passendem Versatz und Blende.
+- *FP-DSP 3:* Messung danach (`v3-vs3-click.mjs`, Mitschnitt aller Ausgänge, Schleifengrenze + A/B mitten im Ton + Stopp): 2. Differenz
+  0,0032–0,0044 bei Krümmung 0,0034–0,0036 des 660-Hz-Tons (≤ 1,5×) in 22 von 24 Läufen; 2 Läufe mit 0,030 genau an Sample 4224 des
+  Mitschnitts (Block 4096 + 128) – in 16 weiteren Läufen mit Ausgabe nicht wiederholbar; Mitschnitt-Blockgrenzen (ScriptProcessor) sind
+  ausgenommen. Als **offen/beobachten** vermerkt (eher Mitschnitt, nicht belegt).
+- *FP-IPHONE 4:* Lesen eines langen Takes erzeugte zwei Float-Kopien (Mikro + Referenz, bei 2 min ≈ 46 MB) → `tkReadMic` liest direkt
+  PCM16 (Zeitkarte wie `stRead {align}`).
+- *FP-IPHONE 5:* Alle Takes des Projekts lagen als AudioBuffer im Speicher (≈ 11,5 MB/min) → nur die hörbaren (oben in jedem Clip), stumme
+  beim Wählen.
+- *FP-SICHER 6:* Eingeführte Takes (Import/Test) riefen `persist()` nicht → jetzt auch dort. Geprüft ohne Befund: Projekt/Cloud tragen
+  nur IDs und Maße; ZIP-Leser begrenzt (Namen per Regex, WAV-Leser mit try/catch, Größen geklemmt); [Aufräumen] löscht nur, was kein
+  gespeichertes Projekt/Verlauf/Undo nennt; Export nur auf Tipp; githack-Hinweis; Netz-Ruhe beim Aufnehmen. FP-IPHONE sonst: `AudioBuffer`-
+  Konstruktor (Safari ≥ 14.1, Rückfall `createBuffer`), `DecompressionStream` nur wenn vorhanden, `cancelAndHoldAtTime` mit Rückfall,
+  IndexedDB-Upgrade v1 → v2 ohne Datenverlust (Store `kv` bleibt), alles in try/catch.
+
+**Abweichungen (begründet)**
+- **Version 4.18.0** statt 4.15.0 (Auftrag). **Format 5** bleibt (K2-31 nennt Format 4 – seit MK0 ist es 5; additiv).
+- **Abtastrate:** der Take hat die Rate des AudioContext (iPhone 48 kHz → WAV 48 kHz wie N7V-20; der Test-Browser läuft mit 44,1 kHz, daher
+  N7V-20 mit einem 48-kHz-Take geprüft). Ein Umrechnen auf 48 kHz würde „bitgleich zum Roh-Take“ brechen.
+- **STIMME = Zusatzspur mit `stimme: true`**, nicht eine neue Spur-Art `kind` (alle Synth-Pfade, Undo, Spurbank bleiben unverändert); der
+  gespeicherte Klang der Spur bleibt, spielt aber nicht. **Punch im Song** speichert die Stimme in `song.vox` (eigene Song-Zeitachse) statt
+  als eigene Clips je Lane – so verschieben Einfügen/Löschen sie mit, und Szene-Clips bleiben unberührt.
+- **Song-Ziel:** keine vierte Ziel-Taste im Start-Blatt (Platz in P3); mit 🎤 an nimmt jede Song-Aufnahme die Stimme mit, der Abschluss-Toast
+  nennt „🎤 Stimme“.
+- **N7V-16** zusätzlich zum geforderten OfflineAudioContext-Modell als echter Loopback in der App gemessen (Mikro-Attrappe).
+- **Budget:** +35 KB geplant, gebaut **+64,5 KB roh / +21,8 KB gzip** (3 121 851 → 3 186 336 B): Song-Punch mit Kürzen/Verschieben,
+  ZIP-Lesen/-Import, Aufräumen, Herkunfts-Hinweis, Test-Simulation N7V-16 und deutsche Kommentare. Weit unter 5,0 MB; Startzeit
+  unverändert (der Block tut beim Laden nichts, Takes laden erst nach dem Projekt).
+
+**Bekannte Lücken**
+- Die **erste** Song-Aufnahme eines leeren Songs (● SONG ohne Song) nimmt keine Stimme auf – nur Punch in einen bestehenden Song.
+- Tempo-Änderung nach der Aufnahme: der Take wird nicht gedehnt (VS5b), er spielt ab seinem Schlag in Originalgeschwindigkeit.
+- Teil-Kopien per Drag & Drop (V2e′) kopieren `song.vox` nicht mit (Einfügen/Löschen von Takten verschieben sie).
+- Auf der STIMME-Spur spielt die Tastatur weiter den (unsichtbaren) Spur-Klang; KLANG öffnet ihn.
+- Partner im Paar-Raum sieht die STIMME-Spur grau mit „Audio nur auf der eigenen Seite“ (Spec: „… auf dem Gerät von <Name>“) – der Name
+  des Aufnehmenden steht nicht im Take.
+- Säubern (VS4), Marken/Quantisieren (VS5a), Dehnen/Songtext (VS5b) folgen.
+
+**Für Xander am iPhone (Pages-Seite, Kopfhörer)**
+1. 🎤 an, ▶, 4–8 Takte singen, **FANG 🎤** → im Ergebnis-Blatt OK. In der Matrix liegt jetzt eine Zeile **STIMME** mit Wellenform; sie
+   spielt deine Stimme im Takt zur Musik. ↶ nimmt Noten und Stimme zusammen zurück.
+2. Auf eine leere Szene ● drücken und singen (oder sprechen) → STIMME-Take in dieser Szene. Noch einmal ● auf derselben Szene → neuer Take
+   oben; ✎ auf dem STIMME-Clip → Takes-Blatt: [A/B] vergleichen, ✕ löschen, [WAV] / [ZIP + Projekt] sichern.
+3. Song-Ansicht: Takt 3 gelb wählen, ● → „Ersetzen“ → singen → nur Takt 3 ist neu; „Einfügen“ schiebt den Rest nach hinten.
+4. Bitte melden: hörst du deine Stimme genau im Takt (keine Verzögerung)? Knackt etwas beim Wechseln der Takes? Bleiben die Takes nach dem
+   Neuladen der Seite da?
+
+## VS3-fix · App 4.18.0
+- Takes-Blatt: die Liste lässt sich mit dem Finger rollen (`.tklist.pan-y`; `guardTouch` lässt `.pan-y` wie `.cp-sc/.pan-x` nativ rollen, Tippen wirkt weiter über pointerup). Hochkant 73 px, quer 100–111 px gerollt (vorher 0). Das offene Blatt folgt jetzt auch ↶/↷ (vorher blieb es auf dem alten Stand).
+- Song-Schnitt (Takte einfügen/löschen, Punch-Reste): `tkVoxTrim` kürzt auch die Overdub-Takes in `alt` an derselben Song-Stelle (`tkSegTrim`); nach A/B spielt der alte Take seine eigenen Takte (Takt 4: 549 Hz statt 328 Hz).
+- PANIK: eine laufende STIMME bleibt still (`tkSilence(now, tau, keep)` behält die Planschlüssel; vorher Neustart nach 6–26 ms). Sie klingt erst beim nächsten Clip-Start/Song-Durchgang wieder; Stop leert die Schlüssel wie bisher.
+- Tests: v3-qa-vs3-t3/t3b/t4/t4b/t5b, v3-vs3fix-panic2.mjs, Smoke ohne Fehler.

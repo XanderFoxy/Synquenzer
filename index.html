@@ -3302,6 +3302,20 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 #modeSeg #segMic{display:none}
 #segMic .led{display:none}
 #app:not(.micok) #bMicT{display:none!important}
+/* VS3: STIMME-Spur & Takes-Blatt */
+.th.vox .fb{color:var(--t8)}
+.th.voxoff,.slot.voxoff{filter:grayscale(1);opacity:.5}
+.tksheet{max-width:min(380px,calc(100vw - 16px))}
+.tksheet .tklist{display:flex;flex-direction:column;gap:6px;max-height:38vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;margin:6px 0}
+.tksheet .tkrow{display:flex;gap:6px;align-items:stretch}
+.tksheet .tk-pick{flex:1 1 auto;min-width:0;min-height:44px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;padding:4px 10px}
+.tksheet .tk-pick b,.tksheet .tk-pick small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tksheet .tk-pick small{opacity:.75;font-size:11px}
+.tksheet .tkrow.on .tk-pick{box-shadow:inset 0 0 0 2px var(--t8)}
+.tksheet .tk-del{flex:0 0 44px;min-width:44px;min-height:44px;padding:0}
+.tksheet .savrow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tksheet .savrow .mbtn{min-height:44px;width:100%;margin:0}
+.tksheet .warn,.tkorigin .warn{color:var(--warn,#ffb22e)}
 .micb .led{width:8px;height:8px;border-radius:50%;background:var(--led-off);flex:none}
 #segMic.on{background:var(--rec-dim);color:#fff;box-shadow:inset 0 0 0 1px var(--rec)}
 #segMic.on .led{background:var(--rec);box-shadow:0 0 8px var(--rec)}
@@ -3679,7 +3693,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 <div id="toast" role="status"></div>
 <div id="bub" aria-hidden="true"></div>
 <div id="banner">Audio unterbrochen – tippen zum Fortsetzen</div>
-<input type="file" id="fileIn" accept=".json,application/json" hidden>
+<input type="file" id="fileIn" accept=".json,application/json,.zip,application/zip" hidden>
 <input type="file" id="sndIn" accept=".json,application/json" hidden>
 <input type="file" id="syxIn" hidden>
 <script type="text/plain" id="sq-mk-src">
@@ -13308,14 +13322,16 @@ const MK_LABEL = 'MS 2000';
     ready = new Promise(res => {
       try {
         if (!G.indexedDB) return res(mode);
-        const rq = G.indexedDB.open('synquenzer', 1);
-        rq.onupgradeneeded = () => { rq.result.createObjectStore('kv'); };
+        // VS3 (N7V-19): Version 2 = Store `kv` (bleibt) + Store `audio` (Takes als PCM16-Stücke ≤ 1 MB)
+        const rq = G.indexedDB.open('synquenzer', 2);
+        rq.onupgradeneeded = () => { const d = rq.result; if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv'); if (!d.objectStoreNames.contains('audio')) d.createObjectStore('audio'); };
         rq.onsuccess = () => { db = rq.result; db.onversionchange = () => { try { db.close(); } catch (e) {} db = null; }; mode = 'indexedDB'; res(mode); };
         rq.onerror = rq.onblocked = () => res(mode);
         setTimeout(() => res(mode), 1500);                  // Safari private mode / sandbox: never hang the app on storage
       } catch (e) { res(mode); }
     });
     const tx = (m, fn) => new Promise((res, rej) => { try { const t = db.transaction('kv', m), st = t.objectStore('kv'), r = fn(st); t.oncomplete = () => res(r && r.result); t.onerror = t.onabort = () => rej(t.error || new Error('idb')); } catch (e) { rej(e); } });
+    const amem = new Map(), atx = (m, fn) => new Promise((res, rej) => { try { const t = db.transaction('audio', m), st = t.objectStore('audio'), r = fn(st); t.oncomplete = () => res(r && r.result); t.onerror = t.onabort = () => rej(t.error || new Error('idb')); } catch (e) { rej(e); } });
     const lsGet = k => { if (!lsOk) return undefined; try { const v = G.localStorage.getItem(LS + k); return v == null ? undefined : JSON.parse(v); } catch (e) { return undefined; } };
     const lsKeys = () => { const ks = []; if (lsOk) { try { for (let i = 0; i < G.localStorage.length; i++) { const k = G.localStorage.key(i); if (k && k.startsWith(LS)) ks.push(k.slice(LS.length)); } } catch (e) {} } return ks; };
     const api = {
@@ -13348,6 +13364,12 @@ const MK_LABEL = 'MS 2000';
       setSync(k, v) { if (!lsOk) return false; try { G.localStorage.setItem(LS + k, typeof v === 'string' ? v : JSON.stringify(v)); return true; } catch (e) { return false; } },
       getSync(k) { if (!lsOk) return null; try { return G.localStorage.getItem(LS + k); } catch (e) { return null; } },
       delSync(k) { if (lsOk) try { G.localStorage.removeItem(LS + k); } catch (e) {} },
+      /* VS3: Audio-Store (nur IndexedDB; ohne IndexedDB nur im Arbeitsspeicher dieser Sitzung). Werte = ArrayBuffer */
+      get audioMode() { return db && db.objectStoreNames.contains('audio') ? 'indexedDB' : 'memory'; },
+      async aput(k, buf) { await ready; if (api.audioMode === 'indexedDB') { await atx('readwrite', s => s.put(buf, k)); return 'indexedDB'; } amem.set(k, buf); return 'memory'; },
+      async aget(k) { await ready; if (api.audioMode === 'indexedDB') { const v = await atx('readonly', s => s.get(k)); if (v !== undefined) return v; } return amem.get(k); },
+      async adel(k) { await ready; if (api.audioMode === 'indexedDB') { try { await atx('readwrite', s => s.delete(k)); } catch (e) {} } amem.delete(k); },
+      async akeys() { await ready; let ks = []; if (api.audioMode === 'indexedDB') { try { ks = (await atx('readonly', s => s.getAllKeys())).map(String); } catch (e) { ks = []; } } return Array.from(new Set(ks.concat(Array.from(amem.keys())))); },
     };
     return api;
   }
@@ -15908,7 +15930,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.17.0';
+const VERSION = '4.18.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -16635,6 +16657,8 @@ function normClip(c, kind, pk) {
   // a drum clip without a seed gets one derived from its notes: the same clip always makes the same chance decisions,
   // and an untouched demo stays equal to a fresh one (isPristine)
   if (kind === 'drum') out.seed = isNum(c.seed) ? Math.abs(Math.round(c.seed)) % 2147483647 : parseInt(SQStore.fnv(JSON.stringify(notes)), 16) % 2147483647;
+  if (kind !== 'drum' && c.audio) { const a = tkNormAudio(c.audio); if (a) out.audio = a; }          // VS3: Audio-Clip der STIMME-Spur
+  if (typeof c.take === 'string' && UID_RE.test(c.take)) out.take = c.take;                          // VS3: MELODIE-Clip ↔ Take
   return out;
 }
 function normTrack(t, def, pk, warns) {
@@ -16667,6 +16691,7 @@ function normTrack(t, def, pk, warns) {
   const cl = Array.isArray(t.clips) ? t.clips : [];
   o.clips = emptyClips().map((_, s) => normClip(cl[s], def.kind, pk));
   if (typeof t.uid === 'string' && UID_RE.test(t.uid)) o.uid = t.uid;
+  if (def.kind === 'synth' && t.stimme === true) o.stimme = true;  // VS3: STIMME-Spur (normalizeProject: nur eine, Index ≥ 6)
   return o;
 }
 function normalizeProject(obj) {
@@ -16736,6 +16761,7 @@ function normalizeProject(obj) {
       seen.add(o.uid);
     };
     p.tracks.forEach((t, i) => fix(t, 't', i)); p.scenes.forEach((sc, i) => fix(sc, 's', i));
+    tkNormProject(obj, p);                                         // VS3: Takes (nur IDs und Maße), STIMME-Spur
     // WP6 (§7.4): kit substitutions of the drum migration are toasted once (applyProject)
     if (warns.length) Object.defineProperty(p, '_warn', {value: warns, enumerable: false, configurable: true});
     p.fxBus = normFxBus(obj.fxBus);
@@ -16861,6 +16887,7 @@ function normSong(o, pk, nt) {
   for (const l of lanes) for (const e of l) if (e.own && !v4.own[e.own]) delete e.own;          // a lane never names a missing own clip
   if (Array.isArray(o.xp)) v4.xp = o.xp.filter(x => x && isNum(x.beat) && isNum(x.semi) && x.beat >= 0).map(x => ({beat: +x.beat, semi: clamp(Math.round(x.semi), -12, 12)})).sort((a, b) => a.beat - b.beat);
   if (o.src === 'plan') v4.src = 'plan';
+  const vox = tkNormVox(o.vox); if (vox) v4.vox = vox;                                              // VS3: Punch-Audio der STIMME-Spur
   return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, mel}, v4);
 }
 function ownNorm(c, pk, nt) {
@@ -16959,6 +16986,8 @@ function cleanClip(c) {
   const o = {len: c.len, key: cleanKey(c.key), notes: c.notes.map(cleanNote)};
   if (c.q) o.q = {grid: c.q.grid, swing: c.q.swing, strength: c.q.strength};
   if (c.seed != null) o.seed = c.seed;
+  if (c.audio) o.audio = tkCleanAudio(c.audio);                  // VS3
+  if (c.take) o.take = c.take;
   return o;
 }
 const stripReplacer = (k, v) => (k === 'born' || k === 'bornRun' ? undefined : v);
@@ -18367,6 +18396,7 @@ function gcVoices(now) {
   for (let k = HITS.length - 1; k >= 0; k--) { const h = HITS[k]; if (!h.dead && now > h.stopAt + 1) hitCleanup(h); }
 }
 function silenceAll(now, tau) {
+  tkSilence(now, tau);                                           // VS3: Takes blenden mit aus
   for (const v of VOICES.slice()) if (!v.dead) { if (v.start > now + .002) v.cancel(); else v.release(now, tau); }
   for (const h of HITS.slice()) {
     if (h.dead) continue;
@@ -18725,6 +18755,7 @@ function scheduleTrack(i, from, to, late) {
   OS.tick++;                                                     // V2c′: clip content may have changed since the last look
   const s = R.slot[i]; if (s < 0) return;
   const tr = S.tracks[i], oc = ownPlaying(i), clip = oc || tr.clips[s];
+  if (tr.stimme) { if (clip && !tr.mute) tkSched(i, clip, from, to, late, oc ? R.own[i] : null); return; }   // VS3: STIMME = Audio
   if (!clip || tr.mute || !clip.notes.length) return;
   const mu = takeMute(i);                                        // V2d′ (K2-21, 7.2): the target track's old notes are silent during the take
   if (tr.kind === 'drum') { scheduleDrums(i, clip, from, to, late, oc ? 'own' : null, mu); return; }
@@ -18800,11 +18831,13 @@ function scheduleDrums(i, clip, from, to, late, lsrc, mu) {
   }
 }
 function cutTrackAt(i, t) {
+  if (TK.src.length) tkCutAt(i, t);                              // VS3
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip' && v.start < t && v.end > t) v.release(t);
   { const A = arpK(); if (A && A.busy()) A.cut(i, t); }          // MK5: the clip notes in the arp's held set end here too
 }
 function cancelTrackFrom(i, t) {
   { const A = arpK(); if (A && A.busy()) A.cancelFrom(i, t); }   // MK5
+  if (TK.src.length) tkCancelFrom(i, t);                         // VS3
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip' && v.start >= t - 1e-6) v.cancel();
   if (S.tracks[i].kind === 'drum') for (const h of HITS.slice()) if (!h.dead && h.src === 'clip' && h.start >= t - 1e-6) hitCancel(h);
 }
@@ -18879,6 +18912,7 @@ function stopTrackNow(i) {
   R.pend[i] = null; R.prev[i] = null; R.slot[i] = -1;
   songLogNow(i, -1, audBeat()); partTakeOver(i); memSlot(i, audBeat(), -1, 0, false);
   cancelTrackFrom(i, now);
+  if (TK.src.length) tkStopTrack(i, now);                        // VS3
   { const A = arpK(); if (A && A.busy()) A.cut(i, now + .005); }  // MK5: the arp of this track stops with its clip
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip') v.release(now + .005, .01);
   if (S.tracks[i].kind === 'drum') for (const h of HITS.slice()) if (!h.dead && h.src === 'clip') { try { h.out.gain.setTargetAtTime(0, now, .01); } catch (e) {} hitStopAll(h, now + .06); }
@@ -18911,7 +18945,7 @@ const songTakeOpen = () => !!(R.songRec || R.melRec);
 // a toast's [Rückgängig] for a song edit — none while a take runs (the edit is part of the take's undo step)
 const songUndoAct = () => (songTakeOpen() ? null : {label: 'Rückgängig', fn: () => undo()});
 function songSnapshot() { return JSON.stringify(S.song); }
-function songChanged() { UI.dirty.song = true; UI.songVer = (UI.songVer | 0) + 1; markDirty(); svSelFix(); }
+function songChanged() { UI.dirty.song = true; UI.songVer = (UI.songVer | 0) + 1; markDirty(); svSelFix(); if (TK.voxSig || (S.song && S.song.vox)) tkVoxResync(); }
 // V2e′: an own clip back to a state (in place: an open ROLLE keeps its reference); null = the clip is gone
 function ownRestore(id, val) {
   const song = S.song; if (!song) return;
@@ -19094,6 +19128,7 @@ function songPlayEnd(stopTransport, why) {
     SV.lastStop = why === 'end' || sb == null || !S.song ? null : clamp(Math.floor(sb / 4 + 1e-9), 0, Math.max(0, S.song.bars - 1));
   } catch (e) { SV.lastStop = null; }
   R.songPlay = null; R.songEndBeat = null; R.songOverride.fill(false); R.carrierLive = false;
+  if (TK.src.length && AU.ctx) tkVoxCut(AU.ctx.currentTime + .004);   // VS3
   if (S.song && S.song.xp && S.song.xp.length && !R.part) xpReset();          // V2d: the song's Teil-Transposition ends with it
   UI.dirty.song = UI.dirty.grid = true;
   if (stopTransport && R.playing) stop();
@@ -19140,6 +19175,7 @@ function songTick(b0, b1) {
 }
 function songJumpApply(j) {
   const sp = R.songPlay, song = S.song; if (!sp || !song) return;
+  if (TK.src.length) tkVoxCut(b2t(j.at));                         // VS3: die Song-Stimme springt mit
   sp.prevOff = sp.off; sp.wrapAt = j.at; sp.off = j.at - j.bar * 4; R.songEndBeat = null;
   R.songApplying = true;
   try {
@@ -19213,6 +19249,7 @@ function songTickInner(b0, b1) {
           if (v) { const d = Math.max(n.d, 1 / 32) * spb(); v.release(t + d); v.log = logNote({track: mi, src: 'melody', clipNote: null, out: n.n, time: t, dur: d, vel: n.v}); }
         }
       }
+      try { tkVoxTick(song, b0, b1, off, E, insB, guard && sp.wrapAt != null ? sp.wrapAt : -Infinity); } catch (e) { tickErr(e); }   // VS3: Song-Stimme
       if (!wrap) break;
       const A = lp.a * 4;
       sp.prevOff = sp.off; sp.wrapAt = eb; sp.off = eb - A;       // ⟲: the next pass starts at the loop start (song: bar 1)
@@ -19467,6 +19504,7 @@ function songRecStartOver(o) {
   // take runs (first pass); Overdub and Einfügen keep them
   sr.mute = tg.mel && noteT != null && (mode === 'over' || mode === 'replace') ? {t: noteT, a: from * 4 - .25, b: to != null ? to * 4 - .25 : Infinity} : null;
   if (sr.mute) takeMuteNow(sr.mute);
+  tkSongBegin(sr); if (sr.vox) { tkOriginHint(); tkVoxResync(true); }   // VS3: mit 🎤 nimmt die Song-Aufnahme die Stimme auf (STIMME-Spur)
   MEL.open.clear(); MEL.warned = false;
   if (tg.mel && noteT != null && R.selT !== noteT && S.tracks[noteT].kind === 'synth') selectTrack(noteT);
   if (tg.mel && noteT === song.melodyTrack) melShareHint();
@@ -19581,6 +19619,7 @@ function songRecWrap(passEnd) {
   for (let t = 0; t < NT(); t++) if (sr.ev[t].length) R.songOverride[t] = false;
   sr.ev = Array.from({length: MAX_T}, () => []); sr.pass++;
   sr.from = Math.min(sr.from, S.song.loop.a);
+  tkSongWrap(sr);                                                 // VS3: die letzte Runde zählt für die Stimme
   UI.dirty.song = UI.dirty.grid = true;
 }
 /* NOTEN (7.2, K2-21): the notes of a pass into [A, B). Überschreiben / Ersetzen: the first pass replaces every bar of the range
@@ -19665,13 +19704,16 @@ function songRecEndOver(sr, atBeat, o) {
   const cm = curMel(song); cm.notes.sort((a, b) => a.t - b.t);
   cm.len = Math.max(cm.len || 1, song.bars);
   const recT = [...sr.recT];
+  try { tkSongCommit(sr, endBar, ins); } catch (e) { logErr(e); }   // VS3: Stimme → song.vox (im selben Undo)
   const changed = songSnapshot() !== sr.before;
   if (changed) pushSongUndo(sr.before, ins ? 'Song: ' + ins + (ins === 1 ? ' Takt' : ' Takte') + ' eingefügt' : 'Song-Aufnahme');
+  tkSongUndoFix(sr, changed);
   songChanged();
   const parts = [];
   if (sr.tg.chords) parts.push(sr.nCh + (sr.nCh === 1 ? ' Akkord' : ' Akkorde'));
   if (sr.tg.mel) { const nn = sr.nNotes | 0; parts.push(nn + (nn === 1 ? ' Note' : ' Noten') + (sr.nt != null && sr.nt !== song.melodyTrack ? ' ' + trShort(sr.nt) : '') + (sr.nOwnN ? ' (eigener Clip)' : '')); }
   if (sr.tg.clips) parts.push(recT.length + (recT.length === 1 ? ' Spur' : ' Spuren'));
+  if (sr.voxUndo) parts.push('🎤 Stimme');
   const head = ins ? ins + (ins === 1 ? ' Takt' : ' Takte') + ' eingefügt ab Takt ' + (sr.from + 1) : recModeName(sr.mode) + ' Takt ' + (sr.from + 1) + (endBar - sr.from > 1 ? '–' + endBar : '');
   toast(changed ? head + ' · ' + parts.join(' · ') : 'Aufnahme: nichts geändert', changed ? {label: 'Rückgängig', fn: () => undo()} : null);
   // the song plays on: the recorded tracks follow it again from the next bar (with what was just recorded); after Einfügen every
@@ -20153,6 +20195,8 @@ function undoState(e) {
   if (e.kind === 'own') return S.song && S.song.own && S.song.own[e.id] ? JSON.stringify(S.song.own[e.id]) : null;   // V2e′
   if (e.kind === 'mkin') return S.tracks[e.track] ? JSON.stringify(S.tracks[e.track].mkIn || null) : 'null';
   if (e.kind === 'mkslot') return mkSlotSnap(e.ids);       // MK8: the library records a WRITE / WERKSKLANG ZURÜCK touched
+  if (e.kind === 'takes') return S.takes ? JSON.stringify(S.takes) : null;                     // VS3
+  if (e.kind === 'tflag') return S.tracks[e.track] && S.tracks[e.track].stimme ? '1' : '0';     // VS3
   return fxSnapshot();
 }
 // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
@@ -20173,6 +20217,8 @@ function undoApply(e, val) {
     if (n && (n.e1 === 'mic' || n.e2 === 'mic')) queueMicrotask(() => mkMicResume(e.track)); } }   // G-MKP8-merge-fix: redo brings the mic back (after the whole group)
   else if (e.kind === 'set') settingApply(e.key, JSON.parse(val));
   else if (e.kind === 'mkslot') mkSlotPut(JSON.parse(val));
+  else if (e.kind === 'takes') { if (val) S.takes = JSON.parse(val); else delete S.takes; }      // VS3
+  else if (e.kind === 'tflag') tkFlag(e.track, val === '1');
   else if (e.kind === 'part') partRestore(JSON.parse(val));
   else restoreFx(JSON.parse(val));
   UI.dirty.all = true; markDirty();
@@ -20184,6 +20230,9 @@ function undoApply(e, val) {
     else closeRoll();
   }
   if (e.kind === 'clip' && S.tracks[e.track].kind === 'synth') scheduleAutoKey(e.scene);
+  if ((e.kind === 'clip' || e.kind === 'song' || e.kind === 'takes') && UI.pop && UI.pop.name === 'takes' && !TK.sheetQ) {   // VS3-fix: the open takes sheet follows ↶ ↷
+    TK.sheetQ = true; queueMicrotask(() => { TK.sheetQ = false; if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); });
+  }
 }
 function undo() {
   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && UNDO.length && UNDO[UNDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
@@ -20291,6 +20340,7 @@ function openTrackSheet(i, anchor) {
       '<div class="savrow">' +
       `<button class="mbtn rb" data-a="ed">Klang öffnen</button>` +
       `<button class="mbtn rb" data-a="add"${canAddTrack() ? '' : ' disabled'}>＋ Spur</button>` +
+      (tkAudioOk() && stimmeT() < 0 ? `<button class="mbtn rb" data-a="vox">＋ STIMME-Spur</button>` : '') +
       (rem ? `<button class="mbtn rb warn" data-a="rem">Spur entfernen</button>` : '') + '</div>' +
       (rem ? '<div class="small">Clips und Song-Melodie dieser Spur gehen mit – ↶ holt alles zurück.</div>'
         : '<div class="small">' + (i >= BASE_T ? 'Entfernen geht nur bei der zuletzt hinzugefügten Spur.' : 'Synth 1–4, MELODIE und DRUMS bleiben immer – einfach leer lassen.') + '</div>');
@@ -20300,6 +20350,7 @@ function openTrackSheet(i, anchor) {
       if (a === 'ed') { selectTrack(i); openEditor(); }
       else if (a === 'add') addTrack();
       else if (a === 'rem') removeTrack(i);
+      else if (a === 'vox') tkAddTrack();
     }, 'button[data-a]');
   }, {name: 'track'});
 }
@@ -21136,6 +21187,7 @@ function panic() {
   if (PV.on) previewStop();                                 // a browser preview phrase stops too (§11.3)
   const c = AU.ctx; if (!c) return;
   for (const v of VOICES.slice()) v.cancel();
+  tkSilence(c.currentTime, .003, true);                     // VS3 (VS3-fix: keep the plan keys, no restart)
   for (const E of AU.synth) if (E) E.panic();               // ALL-OFF in the worklet (§5.4), also notes without a proxy
   try { if (PV.chain && PV.chain.E) PV.chain.E.panic(); } catch (e) {}
   // drum hits: a sounding one fades out in τ 3 ms (like a choke) instead of a hard stop (a click); one not started yet is dropped
@@ -21343,9 +21395,11 @@ function renderGrid(bAud) {
   for (const i of MX.rows) {
     const tr = S.tracks[i], vs = VS[i], H = UI.heads[i];
     setTxt(H.nm, H.st, 'nm', tr.name);
-    setTxt(H.sb, H.st, 'sb', soundLabel(tr));
+    setTxt(H.sb, H.st, 'sb', tr.stimme ? (tkAudioOk() ? '🎤 STIMME · Audio' : 'Audio nur auf der eigenen Seite') : soundLabel(tr));
+    setCls(H.el, H.st, 'vox', !!tr.stimme); setCls(H.el, H.st, 'voxoff', !!tr.stimme && !tkAudioOk());   // VS3
     let fb, fcls = 'fb';
-    if (tr.kind === 'drum') fb = '🔒';
+    if (tr.stimme) fb = '🎤';
+    else if (tr.kind === 'drum') fb = '🔒';
     else if (!tr.follow) { fb = 'fest'; fcls = 'fb fix'; }
     else { fb = '⇅'; if (T.targetAt(nowT()).target) fcls = 'fb act'; }
     setTxt(H.fb, H.st, 'fb', fb);
@@ -21404,13 +21458,15 @@ function renderGrid(bAud) {
       setTxt(C.big, st, 'big', big);
       setCls(C.big, st, 'on', !!big);
       // while recording the target slot shows the notes played so far (redrawn at most every 250 ms)
-      let sig = clip ? clipSig(clip) : '';
+      if (clip && clip.audio && tkAudioOk()) tkLoad(clip.audio.take);                       // VS3
+      setCls(C.el, st, 'voxoff', !!(clip && clip.audio && (!tkAudioOk() || TK.missing.has(clip.audio.take))));
+      let sig = clip ? (clip.audio ? tkCellSig(clip) : clipSig(clip)) : '';
       if (rs === 'rec' && !clip && rec.temp.length) {
         const now = performance.now();
         if (!C.recMiniT || now - C.recMiniT > 250) { C.recMiniT = now; const L = Math.max(4, Math.ceil((bAud - rec.startBeat + .01) / 4) * 4); sig = 'rec:' + rec.temp.length + ':' + L; if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = miniSvg({len: L / 4, notes: rec.temp.map(n => ({t: Math.min(n.t, L - .01), d: n.d, n: n.n}))}, tr.kind === 'drum'); } }
         continue;
       }
-      if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = clip ? miniSvg(clip, tr.kind === 'drum') : ''; }
+      if (sig !== C.sig) { C.sig = sig; C.mini.innerHTML = clip ? (clip.audio ? tkMiniSvg(clip.audio) : miniSvg(clip, tr.kind === 'drum')) : ''; }
     }
   }
   for (let k = 0; k < MX.scenes.length; k++) {
@@ -21488,8 +21544,8 @@ const SV = {rows: [0, 1, 2, 3, 4], pages: null, x: 0, vx: 0, cellW: 36, rowH: 30
 /* V2a: the rows are the visible tracks (display order, SV.rows), then AKKORDE, then MELODIE. Below 26 px a row the synth
    tracks are paged like the matrix (same page, UI.trackBank; DRUMS stays); [▲▼] in the „Takt“ label cell turns it */
 const svNRows = () => (SV.rows ? SV.rows.length : 5) + 2;
-const svShort = i => (isDrum(i) ? 'DRUMS' : i === MEL_T ? 'MELOD.' : 'SYN ' + (i < DRUM_T ? i + 1 : i - 1));
-const trackTag = i => (isDrum(i) ? 'DR' : i === MEL_T ? 'MEL' : 'S' + (i < DRUM_T ? i + 1 : i - 1));      // V2a: S1–S4, MEL, S5, S6
+const svShort = i => (isDrum(i) ? 'DRUMS' : i === MEL_T ? 'MELOD.' : isStimmeT(i) ? 'STIMME' : 'SYN ' + (i < DRUM_T ? i + 1 : i - 1));   // VS3
+const trackTag = i => (isDrum(i) ? 'DR' : i === MEL_T ? 'MEL' : isStimmeT(i) ? 'ST' : 'S' + (i < DRUM_T ? i + 1 : i - 1));      // V2a: S1–S4, MEL, S5, S6
 function svBuildRows() {
   const L = SV.labs; if (!L) return;
   const rows = SV.rows || trackOrder(), key = rows.join(',');
@@ -22346,6 +22402,7 @@ function songShift(song, n, d) {
   for (const v of song.xp || []) if (v.beat >= n * 4 - 1e-6) v.beat = +(v.beat + d * 4).toFixed(4);
   for (const k in song.mel) for (const nt of song.mel[k].notes) if (nt.t >= n * 4 - .25 - 1e-9) nt.t = +(nt.t + d * 4).toFixed(6);
   for (const m of song.marks) if (m.a >= n) m.a += d;
+  if (song.vox) tkVoxShift(song, n, d);                           // VS3
 }
 // remove the content of [a, b); marks: inside → gone, overlapping → trimmed, enclosing → split (o.split) or shortened
 function songClear(song, a, b, o) {
@@ -22355,6 +22412,7 @@ function songClear(song, a, b, o) {
   song.xp = (song.xp || []).filter(v => !(v.beat >= a * 4 - 1e-6 && v.beat < b * 4 - 1e-6));
   if (!o.keepMel) for (const k in song.mel) song.mel[k].notes = song.mel[k].notes.filter(n => !(n.t >= a * 4 - .25 - 1e-9 && n.t < b * 4 - .25 - 1e-9));
   if (!o.keepMarks) marksCut(song, a, b, o.split);
+  if (song.vox && !o.keepMel) tkVoxClear(song, a, b);              // VS3
 }
 function marksCut(song, a, b, split) {
   const out = [];
@@ -24090,7 +24148,8 @@ function svTap(x, y) {
   if (UI.pop && UI.pop.name === 'mark') { const m = row === -1 ? svMarkAt(bar) : null; if (!(m && !svMarkOpen(m))) { closePop(); return; } }   // another mark: its sheet
   if (row === -1) { svRulerTapX(bar); return; }      // V0c N7-R7 + V2e marks: the ruler selects (yellow) and sets the Positionsmarke, never jumps
   if (!song) { toast('Noch kein Song – erst ● SONG'); return; }
-  if (row < svChordRow()) { const t = SV.rows[row]; if (t < 0 || bar > song.bars) return; if (bar < song.bars && svCellOwnAt(t, bar)) { openOwnRoll(t, bar); return; }   // V2e′ (9.2): a tap on an own clip = ROLLE on it
+  if (row < svChordRow()) { const t = SV.rows[row]; if (t < 0 || bar > song.bars) return; if (isStimmeT(t) && tkVoxAt(bar)) { tkSheet({vox: tkVoxAt(bar).id}); return; }   // VS3: Song-Stimme → Takes-Blatt
+    if (bar < song.bars && svCellOwnAt(t, bar)) { openOwnRoll(t, bar); return; }   // V2e′ (9.2): a tap on an own clip = ROLLE on it
     const r = songCycle(t, bar); folEdit('song'); lcdOrToast(S.tracks[t].name + ' · Takt ' + (bar + 1) + ': ' + (r >= 0 ? 'Clip ' + (r + 1) : 'stopp')); return; }
   if (row === svChordRow()) { if (!song.bars || bar >= song.bars) return; const k = svChipAt(x, y); openChordPick(k != null ? {k} : {bar}); return; }   // N7-R10
   if (row === svMelRow()) openMelodyRoll();
@@ -25081,6 +25140,7 @@ function svDraw(force, sbIn) {
       g.fillStyle = SV.cols[song.melodyTrack] || '#fff'; bars(ns, 3);
       if (!ns.length) { g.fillStyle = '#6b7080'; g.textAlign = 'left'; g.fillText(trackTag(song.melodyTrack) + ': leer', Math.max(4, 4 - SV.x), ym + rh / 2); g.textAlign = 'center'; }
     } else { g.fillStyle = '#4a4e57'; g.textAlign = 'left'; g.fillText(R.melRec || R.songRec ? 'spielen = Melodie' : 'antippen = Melodie bearbeiten', Math.max(4, 4 - SV.x), ym + rh / 2); g.textAlign = 'center'; }
+    try { tkSvDraw(g, song, XB, ru, rh, W); } catch (e) { logErr(e); }   // VS3: Song-Stimme als gläserne Wellen
     // song end
     const xe = X(bars); g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(xe, ru, 1, H - ru);
   }
@@ -25265,7 +25325,7 @@ function renderStrip() {
   const i = R.selT, tr = S.tracks[i];
   EL.app.style.setProperty('--tc', `var(--t${i + 1})`);
   EL.stName.textContent = tr.name;
-  const sl = soundLabel(tr); if (EL.stSub.textContent !== sl) EL.stSub.textContent = sl;
+  const sl = tr.stimme ? (tkAudioOk() ? '🎤 Audio · Takes: ✎' : 'Audio nur auf der eigenen Seite') : soundLabel(tr); if (EL.stSub.textContent !== sl) EL.stSub.textContent = sl;   // VS3
   EL.bFolgt.hidden = tr.kind !== 'synth';
   EL.stLock.hidden = tr.kind === 'synth';
   EL.bFolgt.classList.toggle('on', tr.kind === 'synth' && tr.follow);
@@ -26169,7 +26229,8 @@ function abortAll(why) { RESTPTR.clear(); for (const [id, g] of [...GEST]) { GES
 // click from touch, so everything inside them acts on pointer events (onTap)
 // V0c-fix: a touch that starts in a sideways swipe list (.cp-sc, .pan-x) keeps its native scrolling (a tap there acts on
 // pointerup as everywhere; its synthetic click is eaten by the ghost-click guard, a swipe ends in pointercancel)
-function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && e.target.closest('.cp-sc,.pan-x')) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
+// VS3-fix: the same for an upright list (.pan-y, e.g. the takes list), so it scrolls by finger
+function guardTouch(node) { node.addEventListener('touchstart', e => { if (e.target && e.target.closest && e.target.closest('.cp-sc,.pan-x,.pan-y')) return; if (e.cancelable) e.preventDefault(); }, {passive: false}); return node; }
 // tap = pointerdown + pointerup on the same element within 12 px. A click right after a handled pointer tap is ignored;
 // keyboard and programmatic clicks still activate. sel: delegate to children matching sel.
 function onTap(node, fn, sel) {
@@ -32331,6 +32392,7 @@ function afterClipEdit(t, s, noKey) {
 function openRoll(t, s) {
   t = clamp(t | 0, 0, NT() - 1); s = clamp(s | 0, 0, NS() - 1);
   const tr = S.tracks[t];
+  if (tr.stimme) { selectSlot(t, s); tkSheet({t, s}); return; }        // VS3: die STIMME-Spur hat Takes statt Noten
   selectSlot(t, s);
   if (tr.kind === 'drum') { cancelTapStop(t, s); ED.dTab = 'steps'; openEditor(); return; }
   cancelTapStop(t, s);                                                 // selecting to edit never stops by accident (§3.2)
@@ -33685,6 +33747,7 @@ function applyProject(p, opts) {
   if (EL.menu && EL.menu.classList.contains('open')) closeMenu();
   S = p;
   if (!S.id) S.id = newProjectId();
+  TK.missing.clear(); TK.peaks.clear(); TK.voxSig = ''; TK.reg.clear(); setTimeout(tkLoadAll, 0);   // VS3: Takes des Projekts laden
   BOOT.gen++;
   if (S.tracks.some(t => t && t.kind === 'synth' && t.sound && t.sound.engine === 'mk')) mkLoad();   // MK1 (EN3-14): an AM project loads sq-mk-src now, before the transport can start
   for (let i = 0; i < MAX_T; i++) { R.slot[i] = S.tracks[i] && S.tracks[i].clips[0] ? 0 : -1; R.own[i] = null; R.pend[i] = null; R.cstart[i] = 0; R.prev[i] = null; }
@@ -33962,6 +34025,11 @@ async function saveFile() {
 }
 function onFilePicked(file) {
   if (!file) return;
+  // VS3: Projekt + Audio als ZIP (N2-VS3-03): Projekt laden, die WAVs in den Audio-Store (in der Claude-App übergangen)
+  if (/\.zip$/i.test(file.name || '') || /zip/.test(file.type || '')) {
+    file.arrayBuffer().then(b => tkImportZip(new Uint8Array(b), txt => onFilePicked(new File([txt], 'projekt.json', {type: 'application/json'})))).catch(e => { logErr(e); toast('ZIP nicht lesbar'); });
+    return;
+  }
   const r = new FileReader();
   r.onload = () => {
     let bo = null; try { bo = JSON.parse(String(r.result)); } catch (e) { bo = null; }
@@ -35898,13 +35966,13 @@ async function deliver(base, bytes, kind, label) {
    the platform can switch off); mid / syx / wav / m4a are not allowed. Audio goes as it is (.webm, or .mp4 for the recorder's
    audio/mp4), MIDI and DX7 banks (.syx) inside a store-only ZIP, JSON / TXT directly. A refused format (rejected_extension,
    extension_not_enabled) is said once — no retry, no other format. */
-const DL_EXT = {webm: 'webm', m4a: 'mp4', json: 'json', txt: 'txt', mid: 'zip', syx: 'zip'};
-const DL_MIME = {mid: 'audio/midi', m4a: 'audio/mp4', webm: 'audio/webm', syx: 'application/octet-stream', json: 'application/json', txt: 'text/plain', zip: 'application/zip', mp4: 'audio/mp4'};
+const DL_EXT = {webm: 'webm', m4a: 'mp4', json: 'json', txt: 'txt', mid: 'zip', syx: 'zip', wav: 'zip', zip: 'zip'};
+const DL_MIME = {wav: 'audio/wav', mid: 'audio/midi', m4a: 'audio/mp4', webm: 'audio/webm', syx: 'application/octet-stream', json: 'application/json', txt: 'text/plain', zip: 'application/zip', mp4: 'audio/mp4'};
 async function deliverNow(base, bytes, kind, label) {
   let dl = null;
   try { dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) { dl = null; }
   if (dl) {
-    const ext = DL_EXT[kind] || 'json', zip = ext === 'zip', filename = base + '.' + ext;
+    const ext = DL_EXT[kind] || 'json', zip = ext === 'zip' && kind !== 'zip', filename = base + '.' + ext;
     const data = zip ? new Blob([buildZip([{name: base + '.' + kind, data: bytes}])], {type: 'application/zip'}) : new Blob([bytes], {type: DL_MIME[ext] || 'application/octet-stream'});
     try {
       await dl.save({filename, data});
@@ -36247,6 +36315,7 @@ function setMute(t, m) {
   const tr = S.tracks[t]; if (!tr) return;
   tr.mute = !!m;
   try { mkInRoute(); } catch (e) { logErr(e); }
+  if (tr.stimme && AU.ctx && R.playing) { if (m) { tkStopTrack(t, AU.ctx.currentTime); tkVoxCut(AU.ctx.currentTime + .004); } else { tkTrackResync(t); tkVoxResync(true); } }   // VS3
   if (m && AU.ctx) { const now = AU.ctx.currentTime; for (const v of VOICES.slice()) if (v.track === t && v.src === 'clip') { if (v.start > now) v.cancel(); else v.release(now); } if (isDrum(t)) cancelTrackFrom(t, now); }
   UI.dirty.all = true; markDirty();
 }
@@ -38298,6 +38367,7 @@ function vsFang(o) {
   if (!S.tracks[MEL_T]) return false;
   if (vsMelFree() < 0) { toast('Kein freier Platz in MELODIE'); return false; }
   const tapAt = AU.ctx.currentTime, t = isNum(o.beat) ? Math.min(o.beat, audBeat()) : audBeat();
+  if (tkAudioOk()) { tkQ('fang', true); tkOriginHint(); }      // VS3: der Take entsteht jetzt – kein Netz bis er gespeichert ist
   const res = fangCompute(Math.max(0, t), tapAt);            // dieselbe Taktstrich-Regel wie FANG TEIL (N2-VS2-01)
   const E = res.E, until = Math.min(E, t), ls = vsLiveStart(until), from = Math.max(0, E - 68, ls != null ? ls - 4.5 : 0);   // die Phrase (live gehört) und 1 Takt davor
   VS.busy = 1; haptic('pop');
@@ -38331,6 +38401,7 @@ function vsFangDone(job, A) {
   if (!res.count) { toast('Nichts gesungen erkannt – erst singen, dann FANG'); return false; }
   const tr = S.tracks[MEL_T];
   switchTrackAt(MEL_T, si, nextBarFromAudible(), start * 4);     // läuft phasengleich weiter (wie FANG)
+  if (tkAudioOk()) { try { res.tk = tkVoiceTake({kind: 'fang', si, a: start * 4, b: (start + len) * 4, cs: start * 4, len, mel: tr.clips[si], top: UNDO[UNDO.length - 1]}); } catch (e) { logErr(e); } }   // VS3: + STIMME-Take, ein Undo
   selectSlot(MEL_T, si); CAP.last[MEL_T] = -1e9; VS.lastVoice = -1e9;
   VS.res = res; VS.lastFang = {si, len, start, Eb, rule: job.res.rule, notes: tr.clips[si].notes.length};
   markDirty(); UI.dirty.all = true;
@@ -38338,7 +38409,7 @@ function vsFangDone(job, A) {
   return true;
 }
 /* ● REC mit 🎤: Bereich merken, am Ende auswerten → MELODIE-Clip in derselben Szene */
-function vsRecBegin() { if (!ST.on || ST.phase === 'off' || !S.tracks[MEL_T]) { VS.rec = null; return; } VS.rec = {start: rec.startBeat, scene: rec.scene, track: rec.track, mode: rec.mode, cfg: Object.assign({}, vsCfg())}; }
+function vsRecBegin() { if (!ST.on || ST.phase === 'off' || !S.tracks[MEL_T]) { VS.rec = null; return; } VS.rec = {start: rec.startBeat, scene: rec.scene, track: rec.track, mode: rec.mode, cfg: Object.assign({}, vsCfg())}; if (tkAudioOk()) { tkQ('rec', true); tkOriginHint(); } }
 function vsRecEnd(endBeat) {
   const r = VS.rec; if (!r) return; VS.rec = null;
   if (!ST.on || !(endBeat > r.start)) return;
@@ -38357,6 +38428,7 @@ function vsRecDone(r, A, until) {
   const ph = base && R.slot[MEL_T] === si ? R.cstart[MEL_T] : r.start;
   const res = {kind: 'rec', track: MEL_T, si, len, start: r.start / 4, phase: ph, A, cfg: r.cfg, oct: 0, snap: r.cfg.snap, grid: r.cfg.grid, base, from: r.start - 0.25, to: Math.min(r.end, until), first: true};
   vsApply(res);
+  if (tkAudioOk()) { try { res.tk = tkVoiceTake({kind: 'rec', si, a: r.start, b: r.end, cs: r.start, len: clamp(Math.round((r.end - r.start) / 4), 1, 16), mel: res.count ? tr.clips[si] : null, top: res.count ? UNDO[UNDO.length - 1] : null}); } catch (e) { logErr(e); } }   // VS3: der Take auch ohne erkannte Noten
   if (!res.count) { if (!base && tr.clips[si] && !tr.clips[si].notes.length) { /* nichts */ } toast(r.cfg.src === 'inst' ? 'Kein Instrument erkannt' : 'Kein Gesang erkannt'); return false; }
   if (!base && R.playing && R.slot[MEL_T] !== si) switchTrackAt(MEL_T, si, nextBarFromAudible(), r.start);
   VS.res = res; markDirty(); UI.dirty.all = true;
@@ -38406,7 +38478,7 @@ function vsResDrop() {
   const r = VS.res; VS.res = null; if (UI.pop && UI.pop.name === 'vsres') closePop();
   if (!r || !r.clip) return false;
   const u = UNDO[UNDO.length - 1];
-  if (u && u.kind === 'clip' && u.track === MEL_T && u.scene === r.si && u.label === 'Stimme' && S.tracks[MEL_T].clips[r.si] === r.clip) { undo(); return true; }
+  if (u && ((u.kind === 'clip' && u.track === MEL_T && u.scene === r.si) || (u.kind === 'group' && u.tk)) && u.label === 'Stimme' && S.tracks[MEL_T].clips[r.si] === r.clip) { undo(); return true; }
   return false;
 }
 function vsResultInfo() {
@@ -38551,6 +38623,822 @@ function viewState(kind) {
   if (k === 'song' && UI.songView && SV.w) { const pw = svPw(); return Object.assign({editor: 'song', page: Math.floor(SV.x / SV.cellW / pw + 1e-6), x0: SV.x / SV.cellW, ppb: SV.cellW / 4, pw}, fs()); }
   return null;
 }
+/* =====================================================================================================================
+   VS3 (Nachtrag 2 Teil C; r7/stimme.md §8, §12 VS3, §13 N7V-16 … N7V-20; N2-VS3-01 … -03): STIMME-Spur & Takes.
+   Datenmodell (additive Felder, Format bleibt, K2-31; ein Projekt ohne Takes bleibt Zeichen für Zeichen gleich):
+     S.takes    = {id: {sr, len (Samples), chunks: [key…] (IndexedDB `synquenzer` v2, Store `audio`, PCM16 ≤ 1 MB je Stück),
+                  route, latMs, created, src}} – das Projekt trägt nur IDs und Maße, Audio verlässt das Gerät nie (C.2 Nr. 5)
+     clip.audio = {take, in, out (s im Take), at (Schlag im Clip), gain, fadeIn, fadeOut (s), alt: [{take, in, out, at}]}
+                  (alt = ältere Takes desselben Clips, stumm: Overdub = neuer Take oben, N7V-18)
+     clip.take  = id   (MELODIE-Clip aus Stimme-FANG / ● REC mit 🎤: derselbe Take wie der STIMME-Clip, N2-VS3-02)
+     track.stimme = true (genau eine Zusatzspur, Index ≥ 6; Klang der Spur bleibt gespeichert, spielt aber nicht)
+     song.vox   = [{id, bar, len (Takte), …audio}] (Punch im Song: Audio der STIMME-Spur auf der Song-Zeitachse)
+   Innere API für VS4 (Säubern) und VS5a (Marken / Zeitkarte), damit beide Zweige nicht dieselben Zeilen ändern:
+     tkPcm(id) → Promise<Int16Array|null> (gespeicherter Roh-Take)   ·   tkBuffer(id) / tkSetBuffer(id, ab) (Abspiel-Cache)
+     tkExt().take.push(fn(raw, out))  / tkExt().audio.push(fn(raw, out))   Zusatzfelder beim Normalisieren behalten
+     tkExt().proc.push(fn(takeId, audio) → AudioBuffer|null)                Verarbeitung je Take beim Abspielen (null = roh)
+     tkExt().place.push(fn(o) → o|null)                                    Abspiel-Stück ändern (z. B. Zeitkarte), null = so lassen
+     tkStartSrc(o)                                                          ein Abspiel-Stück planen (Szene, Song, offline)
+     tkTrackResync(i) / tkVoxResync(true)                                   nach einer Änderung neu hören
+   ===================================================================================================================== */
+function tkExt() { const w = typeof window !== 'undefined' ? window : globalThis; return w.__synqTkExt || (w.__synqTkExt = {take: [], audio: [], proc: [], place: []}); }
+function tkR6(v) { return +(+v).toFixed(6); }
+function tkNormTake(m) {
+  if (!m || typeof m !== 'object') return null;
+  const sr = isNum(m.sr) ? Math.round(m.sr) : 0, len = isNum(m.len) ? Math.round(m.len) : 0;
+  if (sr < 8000 || sr > 192000 || len < 1 || len > sr * 3600) return null;
+  const nc = Math.ceil(len / 524288), ch = Array.isArray(m.chunks) ? m.chunks.filter(k => typeof k === 'string' && k.length > 0 && k.length <= 40).slice(0, nc) : [];
+  if (ch.length !== nc) return null;
+  const o = {sr, len, chunks: ch, route: ['speaker', 'wired', 'bt', 'datei'].includes(m.route) ? m.route : 'speaker', latMs: isNum(m.latMs) ? +clamp(m.latMs, -2000, 2000).toFixed(3) : 0,
+    created: isNum(m.created) ? Math.round(m.created) : 0, src: ['fang', 'rec', 'song', 'import'].includes(m.src) ? m.src : 'rec'};
+  for (const f of tkExt().take) { try { f(m, o); } catch (e) {} }
+  return o;
+}
+function tkNormTakes(o) {
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+  const out = {}; let n = 0;
+  for (const k of Object.keys(o)) { if (n >= 512) break; if (!UID_RE.test(k)) continue; const t = tkNormTake(o[k]); if (t) { out[k] = t; n++; } }
+  return n ? out : null;
+}
+function tkNormSeg(a) {
+  if (!a || typeof a !== 'object' || typeof a.take !== 'string' || !UID_RE.test(a.take)) return null;
+  const i = isNum(a.in) ? Math.max(0, a.in) : 0, o = isNum(a.out) ? Math.min(a.out, 3600) : 0;
+  if (!(o > i + 1e-4)) return null;
+  return {take: a.take, in: tkR6(i), out: tkR6(o), at: isNum(a.at) ? tkR6(clamp(a.at, 0, 64)) : 0};
+}
+function tkNormAudio(a) {
+  const s = tkNormSeg(a); if (!s) return null;
+  s.gain = isNum(a.gain) ? +clamp(a.gain, 0, 4).toFixed(4) : 1;
+  s.fadeIn = isNum(a.fadeIn) ? tkR6(clamp(a.fadeIn, 0, .5)) : .005;
+  s.fadeOut = isNum(a.fadeOut) ? tkR6(clamp(a.fadeOut, 0, .5)) : .005;
+  const alt = Array.isArray(a.alt) ? a.alt.map(tkNormSeg).filter(Boolean).slice(0, 16) : [];
+  if (alt.length) s.alt = alt;
+  for (const f of tkExt().audio) { try { f(a, s); } catch (e) {} }
+  return s;
+}
+function tkNormVox(list) {
+  if (!Array.isArray(list)) return null;
+  const out = [], ids = new Set();
+  for (const v of list.slice(0, 512)) {
+    if (!v || !isNum(v.bar) || !isNum(v.len)) continue;
+    const a = tkNormAudio(v); if (!a) continue;
+    let id = typeof v.id === 'string' && /^V\d{1,6}$/.test(v.id) && !ids.has(v.id) ? v.id : null;
+    if (!id) { let n = 1; while (ids.has('V' + n) || list.some(x => x && x.id === 'V' + n && x !== v)) n++; id = 'V' + n; }
+    ids.add(id);
+    out.push(Object.assign({id, bar: clamp(Math.round(v.bar), 0, SONG_MAX_BARS - 1), len: clamp(Math.round(v.len), 1, 64)}, a));
+  }
+  out.sort((x, y) => x.bar - y.bar || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
+  return out.length ? out : null;
+}
+// normalizeProject: Takes, genau eine STIMME-Spur (Zusatzspur, synth), sonst ohne Feld (ein altes Projekt bleibt gleich)
+function tkNormProject(obj, p) {
+  const tk = tkNormTakes(obj && obj.takes); if (tk) p.takes = tk;
+  let st = -1;
+  p.tracks.forEach((t, i) => { if (t.stimme) { if (st < 0 && i >= BASE_T && t.kind === 'synth') st = i; else delete t.stimme; } });
+}
+function tkCleanAudio(a) { return a ? JSON.parse(JSON.stringify(a)) : a; }
+
+const TK = {buf: new Map(), peaks: new Map(), wait: new Map(), pend: new Map(), missing: new Set(), src: [], reg: new Set(), origin: null, hinted: false,
+  persist: null, q: new Set(), qT: 0, voxSig: '', writes: 0, werr: null, last: null, starts: 0, gc: null, sheet: null};
+const TK_CHUNK = 524288, TK_PRE = 0.25;
+function stimmeT() { for (let i = 0; i < S.tracks.length; i++) if (S.tracks[i] && S.tracks[i].stimme) return i; return -1; }
+const isStimmeT = i => !!(S.tracks[i] && S.tracks[i].stimme);
+// Herkunft (C.2 Nr. 2; N2-VS3-01: die Test-API kann sie vorgeben)
+function tkWhere() {
+  const o = TK.origin || location.origin;
+  return o === CLOUD.origin ? 'pages' : o === 'https://raw.githack.com' ? 'githack' : !TK.origin && location.protocol === 'file:' ? 'datei' : 'andere';
+}
+// Audio gibt es nur auf der eigenen Seite (oberstes Fenster mit getUserMedia); in der Claude-App ist die Spur grau (C.2 Nr. 1)
+function tkAudioOk() { return micAvail(); }
+
+/* ---------- Puffer: Roh-Take (IndexedDB) → AudioBuffer (Cache) ---------- */
+function tkToBuffer(pcm, sr) {
+  let b = null;
+  try { b = new AudioBuffer({length: Math.max(1, pcm.length), numberOfChannels: 1, sampleRate: sr}); } catch (e) { try { b = AU.ctx ? AU.ctx.createBuffer(1, Math.max(1, pcm.length), sr) : null; } catch (e2) { b = null; } }
+  if (!b) return null;
+  const d = b.getChannelData(0), k = 1 / 32767; for (let i = 0; i < pcm.length; i++) d[i] = pcm[i] * k;
+  return b;
+}
+function tkBuffer(id) { return TK.buf.get(id) || null; }
+function tkSetBuffer(id, ab) { if (ab) { TK.buf.set(id, ab); TK.peaks.delete(id); } else TK.buf.delete(id); UI.dirty.grid = UI.dirty.song = true; }
+async function tkPcm(id) {
+  const m = S.takes && S.takes[id]; if (!m || !kv || !kv.aget) return null;
+  const out = new Int16Array(m.len); let o = 0;
+  for (const k of m.chunks) {
+    const b = await kv.aget(k); if (!b) return null;
+    const a = b instanceof ArrayBuffer ? new Int16Array(b) : ArrayBuffer.isView(b) ? new Int16Array(b.buffer, b.byteOffset, b.byteLength >> 1) : null;
+    if (!a) return null;
+    const n = Math.min(a.length, m.len - o); out.set(n === a.length ? a : a.subarray(0, n), o); o += n;
+  }
+  return o >= m.len ? out : null;
+}
+// lädt einen Take in den Cache (einmal); fehlt er auf diesem Gerät, wird die Spur dort grau („Audio nicht auf diesem Gerät“)
+function tkLoad(id) {
+  if (TK.buf.has(id) || TK.wait.has(id) || TK.pend.has(id) || TK.missing.has(id)) return;
+  const m = S.takes && S.takes[id]; if (!m) { TK.missing.add(id); UI.dirty.grid = true; return; }
+  const p = tkPcm(id).then(pcm => {
+    TK.wait.delete(id);
+    if (!pcm) { TK.missing.add(id); UI.dirty.grid = UI.dirty.song = true; return; }
+    const b = tkToBuffer(pcm, m.sr); if (b) TK.buf.set(id, b);
+    UI.dirty.grid = UI.dirty.song = true;
+    if (R.playing) { tkVoxResync(true); const st = stimmeT(); if (st >= 0) tkTrackResync(st); }
+  }, e => { TK.wait.delete(id); TK.missing.add(id); logErr(e); });
+  TK.wait.set(id, p);
+}
+// nur die hörbaren Takes (oben in jedem Clip) liegen im Speicher; stumme kommen beim Wählen (FP-IPHONE: ≈ 11,5 MB je Minute)
+function tkActiveIds() {
+  const ids = new Set(), add = a => { if (a && a.take) ids.add(a.take); };
+  for (const t of S.tracks) for (const c of t.clips) if (c) add(c.audio);
+  if (S.song) { for (const v of S.song.vox || []) add(v); for (const k in S.song.own || {}) add(S.song.own[k].audio); }
+  return ids;
+}
+function tkLoadAll() {
+  if (!tkAudioOk() || !S.takes) { TK.buf.clear(); return; }
+  const act = tkActiveIds();
+  for (const id of [...TK.buf.keys()]) if (!act.has(id) && !TK.pend.has(id) && !TK.src.some(r => !r.dead && r.take === id)) TK.buf.delete(id);
+  for (const id of act) tkLoad(id);
+}
+/* Mikro aus dem Ringpuffer direkt als PCM16 (Zeitkarte wie stRead {align}: Latenz je Frame, Bruchteil-Samples linear, am Rand der
+   letzte gültige Wert) – ohne die Float-Kopien von Mikro und Referenz (FP-IPHONE: halber Speicher bei langen Takes) */
+function tkReadMic(G, a, b, out, base) {
+  const lo = Math.max(G.start, G.end - G.len + 1); a = Math.max(Math.round(a), lo); b = Math.min(Math.round(b), G.end);
+  const n = Math.max(0, b - a), L = G.len, srk = G.sr / 1000, off = a - base;
+  for (let i = 0; i < n && off + i < out.length; i++) {
+    const F = a + i; let s = F + stLatAt(F) * srk;
+    if (s > G.end - 2) s = G.end - 2; if (s < lo) s = lo;
+    const s0 = Math.floor(s), fr = s - s0, v = Math.round(G.mic[s0 % L] * (1 - fr) + G.mic[(s0 + 1) % L] * fr);
+    out[off + i] = v > 32767 ? 32767 : v < -32768 ? -32768 : v;
+  }
+  return n;
+}
+// der Puffer, der gespielt wird: VS4 / VS5 können je Take einen eigenen liefern (tkExt().proc), sonst der Roh-Take
+function tkPlayBuf(id, a) {
+  for (const f of tkExt().proc) { try { const b = f(id, a); if (b) return b; } catch (e) { logErr(e); } }
+  return tkBuffer(id);
+}
+// Hüllkurve für die Anzeige (Wellenform): 96 Werte 0…1 (Spitze je Abschnitt), aus dem Cache
+function tkPeaks(id, a, n) {
+  n = n || 96; const b = tkBuffer(id); if (!b) return null;
+  const key = id + ':' + (a ? a.in + ':' + a.out : '') + ':' + n, c = TK.peaks.get(key); if (c) return c;
+  const d = b.getChannelData(0), sr = b.sampleRate, i0 = a ? Math.floor(a.in * sr) : 0, i1 = Math.min(d.length, a ? Math.ceil(a.out * sr) : d.length), out = new Float32Array(n), step = Math.max(1, (i1 - i0) / n);
+  let mx = 1e-4;
+  for (let k = 0; k < n; k++) { let p = 0; const s0 = Math.floor(i0 + k * step), s1 = Math.min(i1, Math.floor(i0 + (k + 1) * step)); for (let j = s0; j < s1; j += 4) { const v = d[j] < 0 ? -d[j] : d[j]; if (v > p) p = v; } out[k] = p; if (p > mx) mx = p; }
+  for (let k = 0; k < n; k++) out[k] = Math.sqrt(out[k] / mx);
+  if (TK.peaks.size > 200) TK.peaks.clear();
+  TK.peaks.set(key, out); return out;
+}
+
+/* ---------- Speichern (N7V-19: Stücke ≤ 1 MB, nur IDs im Projekt, persist() nach dem ersten Take) ---------- */
+function tkStore(id, pcm, chunks) {
+  TK.writes++;
+  const jobs = chunks.map((k, i) => { const a = pcm.subarray(i * TK_CHUNK, Math.min(pcm.length, (i + 1) * TK_CHUNK)); const ab = a.slice().buffer; return () => kv.aput(k, ab); });
+  let p = Promise.resolve();
+  for (const j of jobs) p = p.then(j);
+  return p.then(() => { TK.writes--; TK.last = Object.assign({}, TK.last, {stored: id, where: kv.audioMode}); return true; },
+    e => { TK.writes--; TK.werr = String(e && (e.name || e.message) || e); toast('Take nicht gespeichert – Speicher voll? Bitte als WAV/ZIP exportieren', {label: 'Exportieren', fn: () => tkExportZip()}); logErr(e); return false; });
+}
+function tkPersist() {
+  if (TK.persist) return;
+  TK.persist = 'pending';
+  SQStore.requestPersist().then(r => { TK.persist = r; UI.persist = r; }, () => { TK.persist = 'n/a'; });
+}
+/* ein neuer Take: Maße stehen sofort fest (ein Undo-Schritt, deep-equal), der Inhalt kommt aus dem Ringpuffer, sobald das
+   Mikrofon bis zum Ende geliefert hat (Latenz + Rand; bei FANG mit Ende in der Zukunft höchstens ein Takt später) */
+function tkMakeTake(aBeat, bBeat, src, done) {
+  const G = ST.ring; if (!G || G.end < 0 || !AU.ctx) return null;
+  const sr = G.sr, Fa = Math.round(b2t(aBeat) * sr), Fb = Math.round(b2t(bBeat) * sr);
+  if (Fb - Fa < sr * 0.05) return null;
+  const lo = Math.max(G.start, G.end - G.len + 1), pre = Math.max(0, Math.min(Math.round(TK_PRE * sr), Fa - lo)), F0 = Fa - pre, n = Fb - F0;
+  const late = Math.max(0, lo - Fa);                      // Anfang schon überschrieben (> 2 min): der Take beginnt später
+  const id = newUid(), nc = Math.ceil(n / TK_CHUNK), chunks = [];
+  for (let k = 0; k < nc; k++) chunks.push(id + ':' + k);
+  const m = {sr, len: n, chunks, route: ST.route || 'speaker', latMs: +(+stLatAt(Fa) || 0).toFixed(3), created: Date.now(), src};
+  if (!S.takes) S.takes = {};
+  S.takes[id] = m;
+  TK.pend.set(id, {F0, Fb, n, sr});
+  tkPersist();
+  const t0 = performance.now(), lim = Math.max(0, (b2t(bBeat) - AU.ctx.currentTime) * 1000) + 3000;
+  const need = () => Math.round(Fb + (stLatAt(Fb) / 1000 + 0.03) * sr);
+  const fill = () => {
+    const g = ST.ring;
+    if (g && g.end < need() && performance.now() - t0 < lim) { setTimeout(fill, 50); return; }
+    TK.pend.delete(id);
+    const pcm = new Int16Array(n);
+    const got = g ? tkReadMic(g, F0 + late, Fb, pcm, F0) : 0;
+    const b = tkToBuffer(pcm, sr); if (b) TK.buf.set(id, b);
+    TK.last = {id, n, sr, got, pre: pre / sr, late: late / sr, src};
+    UI.dirty.grid = UI.dirty.song = true;
+    const fin = ok => { if (done) { try { done(ok, id); } catch (e) { logErr(e); } } };
+    tkStore(id, pcm, chunks).then(fin);                  // auch nach ↶ (↷ holt den Take zurück; [Aufräumen] löscht Reste)
+    if (R.playing) { tkVoxResync(true); const st = stimmeT(); if (st >= 0) tkTrackResync(st); }
+  };
+  setTimeout(fill, 0);
+  return {id, inSec: pre / sr, lateBeats: late / sr / spb()};
+}
+
+/* ---------- Netz-Ruhe während Take-Aufnahme (N7V-35, N2-VS1-02): Marken, die sich selbst lösen ---------- */
+function tkQ(tag, on) {
+  if (on) { if (!TK.q.has(tag)) { TK.q.add(tag); stQuiet(true); } if (!TK.qT) TK.qT = setInterval(tkQWatch, 2000); return; }
+  if (TK.q.delete(tag)) stQuiet(false);
+  if (!TK.q.size && TK.qT) { clearInterval(TK.qT); TK.qT = 0; }
+}
+function tkQWatch() {
+  if (TK.q.has('rec') && !VS.rec && !TK.recJob && TK.writes === 0) tkQ('rec', false);
+  if (TK.q.has('song') && !(R.songRec && R.songRec.vox) && !TK.songJob && TK.writes === 0) tkQ('song', false);
+  if (TK.q.has('fang') && !TK.fangJob && TK.writes === 0) tkQ('fang', false);
+}
+
+/* ---------- Abspielen ---------- */
+function tkStartSrc(o) {
+  const c = o.ctx || AU.ctx; if (!c || !o.buf) return null;
+  const dest = o.dest || (AU.tracks[o.i] && AU.tracks[o.i].trackIn); if (!dest) return null;
+  // FP-DSP: liegt der Start schon in der Vergangenheit (Hauptfaden war langsam), beginnt das Stück jetzt – mit Blende und passendem Versatz
+  if (!o.ctx) { const lim = c.currentTime + .006; if (o.when < lim) { o = Object.assign({}, o, {off: o.off + (lim - o.when), when: lim, fi: Math.max(o.fi || 0, .005)}); } }
+  const dur = o.end - o.when; if (!(dur > .002)) return null;
+  const s = c.createBufferSource(), g = c.createGain(), G = isNum(o.gain) ? o.gain : 1;
+  s.buffer = o.buf;
+  const fi = Math.min(o.fi || 0, dur / 2), fo = Math.min(o.fo || 0, dur / 2);
+  g.gain.value = fi > 0 ? 0 : G;                                  // vor dem ersten Ereignis gilt der Grundwert (sonst 1 Sample voll)
+  g.gain.setValueAtTime(fi > 0 ? 0 : G, o.when);
+  if (fi > 0) g.gain.linearRampToValueAtTime(G, o.when + fi);
+  if (fo > 0) { g.gain.setValueAtTime(G, o.end - fo); g.gain.linearRampToValueAtTime(0, o.end); }
+  s.connect(g); g.connect(dest);
+  try { s.start(o.when, Math.max(0, o.off)); s.stop(o.end + .005); } catch (e) { try { s.disconnect(); g.disconnect(); } catch (e2) {} logErr(e); return null; }
+  const r = {i: o.i, s, g, start: o.when, end: o.end, off: o.off, key: o.key, vox: !!o.vox, take: o.take, dead: false};
+  if (!o.ctx) { TK.src.push(r); s.onended = () => tkDrop(r); TK.starts++; }
+  return r;
+}
+function tkDrop(r) { if (r.dead) return; r.dead = true; try { r.s.disconnect(); r.g.disconnect(); } catch (e) {} const k = TK.src.indexOf(r); if (k >= 0) TK.src.splice(k, 1); }
+function tkKill(r) { try { r.s.stop(); } catch (e) {} tkDrop(r); }
+function tkFadeAt(r, t, tau) {
+  try { const p = r.g.gain; if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(t); else p.cancelScheduledValues(t); p.setTargetAtTime(0, t, tau || .004); r.s.stop(t + 10 * (tau || .004) + .01); } catch (e) {}
+  r.end = Math.min(r.end, t);
+}
+// ein Stück [A, B) (Transport-Schläge) eines Audio-Stücks a planen; spät dazukommen = ab jetzt mit Versatz (5 ms Blende)
+function tkPlace(i, buf, a, A, B, key, vox, lo) {
+  if (TK.reg.has(key)) return;
+  const c = AU.ctx, now = c.currentTime, sp = spb();
+  let o = {i, buf, a, A, B, key, vox};
+  for (const f of tkExt().place) { try { const r = f(o); if (r) o = r; } catch (e) { logErr(e); } }
+  TK.reg.add(key);
+  const pieces = vox ? tkUnmuted(o.A, o.B) : tkUncovered(o.A, o.B);
+  for (const [pa0, pb] of pieces) {
+    const pa = lo != null ? Math.max(pa0, lo) : pa0; if (pb <= pa + 1e-6) continue;
+    let t0 = b2t(pa); const t1 = b2t(pb); let off = a.in + (pa - o.A) * sp, joined = pa > o.A + 1e-6;
+    if (t1 <= now + .004) continue;
+    if (t0 < now + .004) { off += now + .004 - t0; t0 = now + .004; joined = true; }
+    if (off >= a.out - 1e-4) continue;
+    tkStartSrc({i, buf: o.buf, when: t0, off, end: Math.min(t1, t0 + (a.out - off)), gain: a.gain, fi: joined ? .005 : a.fadeIn, fo: pb < o.B - 1e-6 ? .005 : a.fadeOut, key, vox, take: a.take});
+  }
+}
+// Szene-Clips der STIMME-Spur: wo im laufenden Song ein Audio-Clip (song.vox) liegt oder die Aufnahme ersetzt, schweigen sie
+function tkUncovered(A, B) {
+  const sp = R.songPlay, song = S.song; if (!sp || !song) return [[A, B]];
+  const sbA = songBeatOf(A); if (sbA == null) return [[A, B]];
+  const off = A - sbA, cut = [];
+  if (song.vox) for (const v of song.vox) cut.push([v.bar * 4 + off, (v.bar + v.len) * 4 + off]);
+  const mu = tkSongMute(); if (mu) cut.push([mu[0] + off, mu[1] + off]);
+  return tkSubtract([[A, B]], cut);
+}
+function tkUnmuted(A, B) {
+  const mu = tkSongMute(); if (!mu || !R.songPlay) return [[A, B]];
+  const sbA = songBeatOf(A); if (sbA == null) return [[A, B]];
+  const off = A - sbA; return tkSubtract([[A, B]], [[mu[0] + off, mu[1] + off]]);
+}
+function tkSubtract(list, cut) {
+  for (const [ca, cb] of cut) {
+    const nx = [];
+    for (const [a, b] of list) { if (cb <= a + 1e-9 || ca >= b - 1e-9) { nx.push([a, b]); continue; } if (ca > a + 1e-9) nx.push([a, ca]); if (cb < b - 1e-9) nx.push([cb, b]); }
+    list = nx;
+  }
+  return list;
+}
+// der Song-Bereich (Schläge), in dem die alte Stimme während einer Aufnahme mit 🎤 schweigt (erster Durchgang; Overdub hört sie)
+function tkSongMute() {
+  const sr = R.songRec; if (!sr || !sr.over || !sr.vox || sr.pass > 0) return null;
+  if (sr.mode === 'overdub') return null;
+  return [sr.from * 4, sr.mode === 'insert' || sr.to == null ? Infinity : sr.to * 4];
+}
+// scheduleTrack der STIMME-Spur (statt Noten)
+function tkSched(i, clip, from, to, late, ownId) {
+  const a = clip && clip.audio; if (!a || !tkAudioOk() || !AU.ctx) return;
+  const buf = tkPlayBuf(a.take, a); if (!buf) { tkLoad(a.take); return; }
+  const sp = spb(), L = clip.len * 4, cs = R.cstart[i];
+  const segA = Math.min(a.at, L), segB = Math.min(L, segA + (a.out - a.in) / sp);
+  if (segB <= segA + 1e-6) return;
+  let k = Math.floor((from - cs - segB) / L) + 1; if (k < 0) k = 0;
+  for (let n = 0; n < 256; n++, k++) {
+    const C = cs + k * L, A = C + segA, B = C + segB;
+    if (A >= to - 1e-9) break;
+    if (B <= from + 1e-9) continue;
+    tkPlace(i, buf, a, A, B, 'c' + R.runId + ':' + i + ':' + (ownId || R.slot[i]) + ':' + C.toFixed(4), false);
+  }
+}
+function tkCancelFrom(i, t) { for (const r of TK.src.slice()) if (!r.vox && r.i === i && r.start >= t - 1e-6) { TK.reg.delete(r.key); tkKill(r); } }
+function tkCutAt(i, t) { for (const r of TK.src.slice()) if (!r.vox && r.i === i && r.start < t && r.end > t) tkFadeAt(r, t); }
+function tkStopTrack(i, now) { for (const r of TK.src.slice()) if (r.i === i && !r.vox) { if (r.start > now + .002) tkKill(r); else tkFadeAt(r, now, .006); } }
+// keep = true (PANIK): the plan keys stay, so the running scheduler does not start the silenced pieces again as a late
+// start; the take sounds again only from its next clip start / song pass (new key), like a cancelled synth voice
+function tkSilence(now, tau, keep) {
+  for (const r of TK.src.slice()) { if (r.start > now + .002) tkKill(r); else tkFadeAt(r, now, tau || .01); }
+  if (!keep) TK.reg.clear();
+}
+// nach einer Änderung (Take gewählt, Take fertig, Undo): die Spur ab jetzt neu planen, laufende Stücke blenden 5 ms aus
+function tkTrackResync(i) {
+  if (!AU.ctx || !R.playing || i < 0) return;
+  const now = AU.ctx.currentTime, at = now + .006;
+  for (const r of TK.src.slice()) if (r.i === i && !r.vox) { TK.reg.delete(r.key); if (r.start > at) tkKill(r); else tkFadeAt(r, at, .003); }
+  for (const k of [...TK.reg]) if (k.startsWith('c' + R.runId + ':' + i + ':')) TK.reg.delete(k);
+  if (R.slot[i] >= 0 && !R.pend[i]) { try { scheduleTrack(i, Math.max(R.cstart[i], t2b(at)), R.schedBeat, true); } catch (e) { logErr(e); } }
+}
+// song.vox: planen im Takt des Songs (songTickInner, je Durchgang: Song-Schläge [lo, E) ↔ Transport + off)
+function tkVoxTick(song, b0, b1, off, E, insB, lo) {
+  const vx = song.vox; if (!vx || !vx.length || !tkAudioOk() || !R.playing) return;
+  const st = stimmeT(); if (st < 0 || S.tracks[st].mute) return;
+  const hi = Math.min(E, insB), sp = spb(), L0 = Math.max(b0, lo);
+  for (const v of vx) {
+    const sa = v.bar * 4 + v.at, sb = Math.min((v.bar + v.len) * 4, sa + (v.out - v.in) / sp, hi);
+    if (sb <= sa + 1e-6) continue;
+    const A = sa + off, B = sb + off;
+    if (B <= L0 + 1e-9 || A >= b1 - 1e-9) continue;
+    const buf = tkPlayBuf(v.take, v); if (!buf) { tkLoad(v.take); continue; }
+    tkPlace(st, buf, v, A, B, 'v' + R.runId + ':' + v.id + ':' + A.toFixed(4), true, lo > A ? lo : null);
+  }
+}
+// Song geändert (Punch, Undo, Teil verschoben): laufende Song-Stimme neu (nur wenn sich song.vox wirklich geändert hat)
+function tkVoxResync(force) {
+  const song = S.song, sig = song && song.vox ? JSON.stringify(song.vox) : '';
+  if (!force && sig === TK.voxSig) return;
+  TK.voxSig = sig;
+  if (!AU.ctx || !R.playing) return;
+  const at = AU.ctx.currentTime + .006;
+  for (const r of TK.src.slice()) if (r.vox) { TK.reg.delete(r.key); if (r.start > at) tkKill(r); else tkFadeAt(r, at, .003); }
+  for (const k of [...TK.reg]) if (k[0] === 'v') TK.reg.delete(k);
+  if (R.songPlay && song) { try { const b0 = t2b(at), sp = R.songPlay; tkVoxTick(song, b0, R.schedBeat, sp.off, song.bars * 4, Infinity, sp.wrapAt != null && sp.wrapAt <= b0 ? sp.wrapAt : -Infinity); } catch (e) { logErr(e); } }
+  const st = stimmeT(); if (st >= 0) tkTrackResync(st);
+}
+function tkVoxCut(t) { for (const r of TK.src.slice()) if (r.vox) { TK.reg.delete(r.key); if (r.start >= t - 1e-6) tkKill(r); else if (r.end > t) tkFadeAt(r, t, .003); } }
+
+/* ---------- Spur: STIMME anlegen (Zusatzspur) oder eine leere Zusatzspur umschalten ---------- */
+function tkFlag(i, on) {
+  const tr = S.tracks[i]; if (!tr) return;
+  if (on) tr.stimme = true; else delete tr.stimme;
+  if (!on) tkStopTrack(i, AU.ctx ? AU.ctx.currentTime : 0);
+  UI.sndVer++; UI.dirty.all = UI.dirty.grid = UI.dirty.song = true;
+  if (UI.heads && EL.grid) buildGrid();
+  if (UI.songView) svLayout();
+}
+const tkTrackEmpty = i => { const t = S.tracks[i], s = S.song; return !!t && t.kind === 'synth' && !t.mel && !t.clips.some(Boolean) && !(s && ((s.mel[i] && s.mel[i].notes.length) || (s.lanes[i] && s.lanes[i].some(e => e.slot >= 0)))); };
+// liefert den Index der STIMME-Spur; neue Undo-Teile kommen nach items (Teil der Gruppe des Takes)
+function tkEnsureTrack(items) {
+  let st = stimmeT(); if (st >= 0) return st;
+  if (rec.state !== 'off' && rec.state !== 'recording' && rec.state !== 'overdub') return -1;
+  if (canAddTrack()) {
+    const i = NT(), t = newSynthTrack(i); t.name = 'Stimme'; t.stimme = true;
+    restoreTrack(i, JSON.stringify(t)); items.push({kind: 'track', track: i, before: null});
+    toast('STIMME-Spur angelegt (' + S.tracks[i].name + ')');
+    return i;
+  }
+  for (let i = NT() - 1; i >= BASE_T; i--) if (tkTrackEmpty(i)) { items.push({kind: 'tflag', track: i, before: '0'}); tkFlag(i, true); toast(S.tracks[i].name + ' ist jetzt die STIMME-Spur'); return i; }
+  return -1;
+}
+// [＋ STIMME-Spur] im Spur-Blatt (ein Undo)
+function tkAddTrack() {
+  if (stimmeT() >= 0) { selectTrack(stimmeT()); return stimmeT(); }
+  if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return -1; }
+  const items = [], i = tkEnsureTrack(items);
+  if (i < 0) { toast('Höchstens 8 Spuren – eine leere Zusatzspur wird zur STIMME-Spur'); haptic('err'); return -1; }
+  undoPush(items.length === 1 ? Object.assign({label: '＋ STIMME-Spur'}, items[0]) : {kind: 'group', label: '＋ STIMME-Spur', items});
+  selectTrack(i); haptic('pop'); markDirty();
+  return i;
+}
+
+/* ---------- Takes aus dem Gesang: Stimme-FANG und ● REC (MELODIE + STIMME, ein Undo) ---------- */
+// o: {kind:'fang'|'rec', si, a, b (Schläge der Aufnahme), cs (Clip-Anfang, Phase), len (Takte, neuer Clip), mel (MELODIE-Clip|null), top (dessen Undo-Eintrag|null)}
+function tkVoiceTake(o) {
+  if (!tkAudioOk() || !ST.ring || !AU.ctx) return null;
+  const items = [], takesBefore = S.takes ? JSON.stringify(S.takes) : null;
+  const st = tkEnsureTrack(items);
+  if (st < 0) { toast('Kein Platz für die STIMME-Spur – eine Zusatzspur leeren'); return null; }
+  const tr = S.tracks[st], old = tr.clips[o.si], before = old ? cleanClip(old) : null;
+  const L = (old && old.audio ? old.len : o.len) * 4, sp = spb();
+  // Overdub auf einem laufenden Audio-Clip: ein voller Durchgang am Clip-Raster (der jüngste), sonst ab dem Anfang der Aufnahme
+  let a = o.a, at = 0;
+  if (old && old.audio) {
+    const ph = R.playing && R.slot[st] === o.si && !R.pend[st] ? R.cstart[st] : o.cs; let c0 = ph + Math.floor((o.b - L - ph) / L + 1e-9) * L; if (c0 + L > o.b + 1e-6) c0 -= L;
+    if (c0 >= o.a - 0.25) { a = c0; at = 0; } else { a = o.a; at = ((o.a - ph) % L + L) % L; }
+  }
+  const b = Math.min(o.b, a + L - at);
+  const job = {kind: o.kind};
+  const tk = tkMakeTake(a, b, o.kind, () => { if (o.kind === 'rec') TK.recJob = null; else TK.fangJob = null; });
+  if (!tk) { for (const it of items.reverse()) undoApply(it, it.before); return null; }
+  if (o.kind === 'rec') TK.recJob = job; else TK.fangJob = job;
+  const seg = {take: tk.id, in: tkR6(tk.inSec), out: tkR6(tk.inSec + (b - a - tk.lateBeats) * sp), at: tkR6(at + tk.lateBeats)};
+  let clip;
+  if (old && old.audio) {
+    clip = deep(old);
+    const prev = {take: clip.audio.take, in: clip.audio.in, out: clip.audio.out, at: clip.audio.at};
+    Object.assign(clip.audio, seg);
+    clip.audio.alt = [prev].concat(clip.audio.alt || []).slice(0, 16);
+  } else {
+    const k = sceneKeyOf(o.si) || S.key;
+    clip = {len: clamp(Math.round(L / 4), 1, 16), key: {root: k.root, scale: k.scale, src: 'auto'}, notes: [], audio: tkNormAudio(seg)};
+  }
+  tr.clips[o.si] = clip;
+  if (o.mel && S.tracks[MEL_T] && S.tracks[MEL_T].clips[o.si] === o.mel) o.mel.take = tk.id;
+  const its = items.concat([{kind: 'takes', before: takesBefore}]);
+  const top = UNDO[UNDO.length - 1];
+  if (o.top && top === o.top) { UNDO.pop(); its.push(o.top); }
+  its.push({kind: 'clip', track: st, scene: o.si, before});
+  undoPush({kind: 'group', label: 'Stimme', items: its, tk: 1});
+  // läuft phasengleich weiter (wie der MELODIE-Clip), ein Overdub klingt sofort mit dem neuen Take
+  if (R.playing) { if (R.slot[st] === o.si && !R.pend[st]) tkTrackResync(st); else switchTrackAt(st, o.si, nextBarFromAudible(), old && old.audio ? undefined : o.cs); }
+  clipChanged(st, o.si);
+  tkOriginHint();
+  markDirty(); UI.dirty.all = true;
+  return {track: st, scene: o.si, take: tk.id};
+}
+
+/* ---------- Punch im Song (S5-Rückfrage: Überschreiben / Einfügen / Ersetzen / Overdub, Bereich) ---------- */
+function tkSongBegin(sr) {
+  if (!sr || !sr.over || !ST.on || ST.phase === 'off' || !tkAudioOk() || !R.songPlay) return;
+  sr.vox = {passes: [{a: sr.from, T: sr.from * 4 + R.songPlay.off}]};
+  tkQ('song', true);
+}
+function tkSongWrap(sr) { if (sr && sr.vox && R.songPlay) sr.vox.passes.push({a: S.song.loop.a, T: S.song.loop.a * 4 + R.songPlay.off}); }
+// am Ende der Aufnahme: Audio der letzten Runde [a, E) → song.vox (vor dem Undo-Schnappschuss; der Take gehört in denselben Schritt)
+function tkSongCommit(sr, endBar, ins) {
+  const v = sr && sr.vox, song = S.song; if (!v || !song) return;
+  const p = v.passes[v.passes.length - 1], from = sr.mode === 'insert' ? sr.from : Math.max(p.a, sr.from), E = endBar;
+  if (E <= from) return;
+  const T = p.T + (from - p.a) * 4;
+  const takesBefore = S.takes ? JSON.stringify(S.takes) : null;
+  const items = [], st = tkEnsureTrack(items);
+  if (st < 0) { toast('Kein Platz für die STIMME-Spur – eine Zusatzspur leeren'); return; }
+  TK.songJob = {};
+  const tk = tkMakeTake(T, T + (E - from) * 4, 'song', () => { TK.songJob = null; });
+  if (!tk) { TK.songJob = null; return; }
+  const sp = spb(), clip = {bar: from, len: E - from, take: tk.id, in: tkR6(tk.inSec), out: tkR6(tk.inSec + ((E - from) * 4 - tk.lateBeats) * sp), at: tkR6(tk.lateBeats)};
+  const vx = song.vox ? song.vox.slice() : [];
+  const lostTake = [];
+  // Überschreiben / Ersetzen: alte Stimme in [from, E) weg (Ränder werden gekürzt); Overdub: die alten Stücke dort werden die stummen Takes
+  const kept = [];
+  for (const o of vx) {
+    const a0 = o.bar, a1 = o.bar + o.len;
+    if (a1 <= from || a0 >= E) { kept.push(o); continue; }
+    if (sr.mode === 'overdub') { const sh = (from - a0) * 4; lostTake.push({take: o.take, in: tkR6(o.in + Math.max(0, sh - o.at) * sp), out: o.out, at: tkR6(Math.max(0, o.at - sh))}); }
+    if (a0 < from) kept.push(tkVoxTrim(o, a0, from, sp));
+    if (a1 > E) kept.push(tkVoxTrim(o, E, a1, sp));
+  }
+  const nv = tkNormAudio(Object.assign({}, clip, {alt: lostTake.filter(x => x.out > x.in + 1e-3)}));
+  if (!nv) return;
+  kept.push(Object.assign({id: tkVoxId(kept), bar: from, len: E - from}, nv));
+  song.vox = tkNormVox(kept) || undefined; if (!song.vox) delete song.vox;
+  if (E > song.bars && sr.mode !== 'insert') songSetBars(song, Math.min(E, SONG_MAX_BARS));
+  sr.voxUndo = {items, takesBefore};
+}
+function tkVoxId(list) { let n = 1; while (list.some(x => x.id === 'V' + n)) n++; return 'V' + n; }
+// ein Song-Audio-Clip auf die Takte [x0, x1) gekürzt (gleiche Stelle im Take)
+// VS3-fix: the overdub takes underneath (alt) are trimmed at the same song place, so A/B plays their own bars
+function tkSegTrim(g, sh, sp) {
+  const at = Math.max(0, g.at - sh), cut = Math.max(0, sh - g.at) * sp;
+  return {in: tkR6(Math.min(g.out, g.in + cut)), at: tkR6(at)};
+}
+function tkVoxTrim(o, x0, x1, sp) {
+  const sh = (x0 - o.bar) * 4, r = Object.assign({}, o, {bar: x0, len: x1 - x0}, tkSegTrim(o, sh, sp));
+  if (Array.isArray(o.alt)) r.alt = o.alt.map(g => Object.assign({}, g, tkSegTrim(g, sh, sp)));
+  return r;
+}
+// nach pushSongUndo: Take und neue Spur gehören in denselben Schritt
+function tkSongUndoFix(sr, changed) {
+  const u = sr && sr.voxUndo; if (!u) return;
+  const top = UNDO[UNDO.length - 1];
+  if (changed && top && top.kind === 'song') { UNDO.pop(); undoPush(Object.assign({}, top, {kind: 'group', label: top.label, items: u.items.concat([{kind: 'takes', before: u.takesBefore}, {kind: 'song', before: top.before}]), tk: 1})); }
+  tkOriginHint();
+}
+// Song-Zeitachse: Einfügen / Löschen verschiebt bzw. kürzt die Song-Stimme mit (songShift / songClear)
+function tkVoxShift(song, n, d) {
+  if (!song.vox) return;
+  const out = [];
+  for (const v of song.vox) {
+    if (v.bar >= n) { out.push(Object.assign({}, v, {bar: v.bar + d})); continue; }
+    if (v.bar + v.len > n && d > 0) { const sp = spb(); out.push(tkVoxTrim(v, v.bar, n, sp)); const r = tkVoxTrim(v, n, v.bar + v.len, sp); r.bar += d; r.id = null; out.push(r); continue; }
+    out.push(v);
+  }
+  for (const v of out) if (!v.id) v.id = tkVoxId(out.filter(x => x.id));
+  song.vox = tkNormVox(out) || undefined; if (!song.vox) delete song.vox;
+}
+function tkVoxClear(song, a, b) {
+  if (!song.vox) return;
+  const sp = spb(), out = [];
+  for (const v of song.vox) {
+    const a0 = v.bar, a1 = v.bar + v.len;
+    if (a1 <= a || a0 >= b) { out.push(v); continue; }
+    if (a0 < a) out.push(tkVoxTrim(v, a0, a, sp));
+    if (a1 > b) { const r = tkVoxTrim(v, b, a1, sp); r.id = null; out.push(r); }
+  }
+  for (const v of out) if (!v.id) v.id = tkVoxId(out.filter(x => x.id));
+  song.vox = tkNormVox(out) || undefined; if (!song.vox) delete song.vox;
+}
+function tkVoxAt(bar) { const s = S.song; if (!s || !s.vox) return null; return s.vox.find(v => bar >= v.bar && bar < v.bar + v.len) || null; }
+
+/* ---------- Takes-Blatt (wählen, A/B, löschen; WAV, ZIP; Speicher) ---------- */
+function tkFmtDur(sec) { sec = Math.max(0, Math.round(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
+function tkRef(r) {   // r = {t, s} (Szene-Clip) oder {vox: id}
+  if (r.vox) { const v = S.song && S.song.vox ? S.song.vox.find(x => x.id === r.vox) : null; return v ? {a: v, label: 'Song · Takt ' + (v.bar + 1) + (v.len > 1 ? '–' + (v.bar + v.len) : '')} : null; }
+  const c = S.tracks[r.t] && S.tracks[r.t].clips[r.s]; return c && c.audio ? {a: c.audio, clip: c, label: 'Szene ' + (r.s + 1)} : null;
+}
+const tkSegs = a => [{take: a.take, in: a.in, out: a.out, at: a.at}].concat(a.alt || []);
+// Take k (0 = der aktive) nach oben holen / löschen – je ein Undo
+function tkPick(r, k, del) {
+  const x = tkRef(r); if (!x) return false;
+  const segs = tkSegs(x.a); if (k < 0 || k >= segs.length || (!del && k === 0)) return false;
+  const label = del ? 'Take gelöscht' : 'Take gewählt';
+  const apply = a => {
+    const ss = tkSegs(a), pick = ss[k];
+    if (del) ss.splice(k, 1); else { ss.splice(k, 1); ss.unshift(pick); }
+    if (!ss.length) return false;
+    Object.assign(a, {take: ss[0].take, in: ss[0].in, out: ss[0].out, at: ss[0].at});
+    if (ss.length > 1) a.alt = ss.slice(1); else delete a.alt;
+    return true;
+  };
+  if (r.vox) {
+    const before = songSnapshot(), v = S.song.vox.find(z => z.id === r.vox);
+    if (del && tkSegs(v).length === 1) { S.song.vox = S.song.vox.filter(z => z !== v); if (!S.song.vox.length) delete S.song.vox; }
+    else apply(v);
+    pushSongUndo(before, label); songChanged(); tkVoxResync(true);
+  } else {
+    const c = x.clip, before = cleanClip(c);
+    if (del && tkSegs(c.audio).length === 1) { S.tracks[r.t].clips[r.s] = null; if (R.slot[r.t] === r.s && AU.ctx) { tkStopTrack(r.t, AU.ctx.currentTime); } clipRestored(r.t, r.s); }
+    else { apply(c.audio); tkTrackResync(r.t); clipChanged(r.t, r.s); }
+    pushUndo(r.t, r.s, before, label);
+  }
+  markDirty(); UI.dirty.all = true; haptic('tick');
+  if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el);
+  return true;
+}
+function tkSheet(r, anchor) {
+  if (r.t != null && !tkRef(r)) {
+    if (isStimmeT(r.t)) toast(tkAudioOk() ? 'STIMME-Spur: mit 🎤 singen, dann FANG 🎤 oder ●' : 'Audio nur auf der eigenen Seite');
+    return false;
+  }
+  if (!tkRef(r)) return false;
+  TK.sheet = r;
+  openPop(anchor || EL.top, p => { p.classList.add('tksheet'); guardTouch(p); tkSheetPaint(p);
+    onTap(p, b => {
+      const d = b.dataset, rr = TK.sheet; if (!rr) return;
+      if (d.k != null) { tkPick(rr, +d.k, d.del === '1'); return; }
+      if (d.a === 'ab') { tkPick(rr, 1, false); return; }
+      if (d.a === 'wav') { const x = tkRef(rr); if (x) tkExportWav(x.a.take); return; }
+      if (d.a === 'zip') { tkExportZip(); return; }
+      if (d.a === 'gc') { tkGc().then(n => { toast(n ? n + (n === 1 ? ' altes Stück' : ' alte Stücke') + ' gelöscht' : 'Nichts aufzuräumen'); if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); }); return; }
+      if (d.a === 'x') closePop();
+    }, 'button[data-k],button[data-a]');
+  }, {name: 'takes'});
+  return true;
+}
+function tkSheetPaint(p) {
+  const r = TK.sheet, x = r && tkRef(r); if (!x) { closePop(); return; }
+  const segs = tkSegs(x.a), ok = tkAudioOk();
+  const rows = segs.map((sg, k) => {
+    const m = S.takes && S.takes[sg.take], d = new Date(m ? m.created : 0), miss = TK.missing.has(sg.take);
+    const info = (m ? tkFmtDur(sg.out - sg.in) + ' · ' + z2(d.getHours()) + ':' + z2(d.getMinutes()) + ' · ' + (ST_RSHORT[m.route] || '') : '?') + (miss ? ' · fehlt hier' : '');
+    return `<div class="tkrow${k === 0 ? ' on' : ''}"><button class="mbtn rb tk-pick" data-k="${k}"${k === 0 ? ' aria-pressed="true"' : ''}><b>${k === 0 ? '● ' : '○ '}Take ${segs.length - k}</b><small>${esc(info)}</small></button>` +
+      `<button class="mbtn rb tk-del" data-k="${k}" data-del="1" aria-label="Take ${segs.length - k} löschen">✕</button></div>`;
+  }).join('');
+  const est = TK.est ? 'Speicher: ' + tkMB(TK.est.usage) + ' belegt · ' + tkMB(Math.max(0, TK.est.quota - TK.est.usage)) + ' frei' : 'Speicher: …';
+  const per = TK.persist === 'persisted' ? ' · dauerhaft ✓' : TK.persist === 'best-effort' ? ' · nicht dauerhaft – ab und zu exportieren' : '';
+  p.innerHTML = `<h4>STIMME · ${esc(x.label)} · ${segs.length} ${segs.length === 1 ? 'Take' : 'Takes'}</h4>` +
+    (ok ? '' : '<div class="small warn">Audio nur auf der eigenen Seite</div>') +
+    `<div class="tklist pan-y">${rows}</div>` +
+    `<div class="small">${esc(est + per)}</div>` +
+    `<div class="savrow"><button class="mbtn rb" data-a="ab"${segs.length > 1 ? '' : ' disabled'}>A/B</button><button class="mbtn rb" data-a="wav"${ok ? '' : ' disabled'}>WAV</button><button class="mbtn rb" data-a="zip"${ok ? '' : ' disabled'}>ZIP + Projekt</button><button class="mbtn rb" data-a="gc"${ok ? '' : ' disabled'}>Aufräumen</button></div>` +
+    '<div class="small">Oben = der hörbare Take. Ein Tipp holt einen älteren Take nach oben (A/B: die zwei obersten tauschen). ✕ = löschen, ↶ holt ihn zurück.</div>';
+  if (!TK.est || performance.now() - (TK.estT || 0) > 5000) { TK.estT = performance.now(); try { navigator.storage.estimate().then(e => { TK.est = e; const q = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null; if (q && q === p) tkSheetPaint(p); }, () => {}); } catch (e) {} }
+}
+function tkMB(b) { b = +b || 0; return b >= 1e9 ? fmtDec(b / 1e9, 1) + ' GB' : Math.round(b / 1e6) + ' MB'; }
+
+/* ---------- WAV (48 kHz bzw. Abtastrate des Takes, 16 Bit, mono; bitgleich zum gespeicherten Roh-Take, N7V-20) ---------- */
+function tkWav(pcm, sr) {
+  const n = pcm.length, out = new Uint8Array(44 + n * 2), dv = new DataView(out.buffer), w = (o, s) => { for (let i = 0; i < s.length; i++) out[o + i] = s.charCodeAt(i); };
+  w(0, 'RIFF'); dv.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); w(36, 'data'); dv.setUint32(40, n * 2, true);
+  new Int16Array(out.buffer, 44, n).set(pcm);
+  return out;
+}
+function tkWavRead(u8) {
+  try {
+    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), s = (o, n) => String.fromCharCode(...u8.subarray(o, o + n));
+    if (s(0, 4) !== 'RIFF' || s(8, 4) !== 'WAVE') return null;
+    let o = 12, sr = 0, ch = 1, bits = 16, fmt = 1;
+    while (o + 8 <= u8.length) {
+      const id = s(o, 4), len = dv.getUint32(o + 4, true);
+      if (id === 'fmt ') { fmt = dv.getUint16(o + 8, true); ch = dv.getUint16(o + 10, true); sr = dv.getUint32(o + 12, true); bits = dv.getUint16(o + 22, true); }
+      if (id === 'data') {
+        if (fmt !== 1 || bits !== 16 || !sr) return null;
+        const n = Math.floor(Math.min(len, u8.length - o - 8) / 2 / ch), pcm = new Int16Array(n);
+        for (let i = 0; i < n; i++) pcm[i] = dv.getInt16(o + 8 + i * 2 * ch, true);
+        return {sr, pcm};
+      }
+      o += 8 + len + (len & 1);
+    }
+  } catch (e) {}
+  return null;
+}
+async function tkExportWav(id) {
+  const m = S.takes && S.takes[id]; if (!m) return false;
+  const pcm = await tkPcm(id); if (!pcm) { toast('Take fehlt auf diesem Gerät'); return false; }
+  const d = new Date(m.created || Date.now());
+  return deliver('synquenzer-take-' + d.getFullYear() + z2(d.getMonth() + 1) + z2(d.getDate()) + '-' + z2(d.getHours()) + z2(d.getMinutes()) + '-' + id.slice(0, 4), tkWav(pcm, m.sr), 'wav', 'Take als WAV');
+}
+// ZIP: Projekt-Datei (JSON wie [Speichern]) + takes/<id>.wav je Take, den das Projekt nennt
+async function tkZipBytes() {
+  const files = [{name: 'projekt.json', data: new TextEncoder().encode(JSON.stringify(projectFileObj(S, false, true)))}];
+  for (const id of tkUsedIds()) { const m = S.takes[id], pcm = await tkPcm(id); if (m && pcm) files.push({name: 'takes/' + id + '.wav', data: tkWav(pcm, m.sr)}); }
+  return buildZip(files);
+}
+async function tkExportZip() {
+  const z = await tkZipBytes();
+  return deliver(SQStore.fileName('project', S.name).replace(/\.json$/, '') + '-mit-audio', z, 'zip', 'Projekt + Audio (ZIP)');
+}
+function tkUsedIds() {
+  const ids = new Set(), add = a => { if (a) for (const s of tkSegs(a)) ids.add(s.take); };
+  for (const t of S.tracks) for (const c of t.clips) if (c) { add(c.audio); if (c.take) ids.add(c.take); }
+  if (S.song) { for (const v of S.song.vox || []) add(v); for (const k in S.song.own || {}) { const c = S.song.own[k]; add(c.audio); if (c.take) ids.add(c.take); } }
+  return [...ids].filter(id => S.takes && S.takes[id]);
+}
+// ZIP lesen (STORE wie buildZip; deflate über DecompressionStream, wo es das gibt)
+async function tkUnzip(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), out = [], dec = new TextDecoder();
+  let o = 0;
+  while (o + 30 <= u8.length && dv.getUint32(o, true) === 0x04034b50) {
+    const meth = dv.getUint16(o + 8, true), csz = dv.getUint32(o + 18, true), nl = dv.getUint16(o + 26, true), xl = dv.getUint16(o + 28, true);
+    const name = dec.decode(u8.subarray(o + 30, o + 30 + nl)), d0 = o + 30 + nl + xl, raw = u8.subarray(d0, d0 + csz);
+    let data = null;
+    if (meth === 0) data = raw;
+    else if (meth === 8 && typeof DecompressionStream === 'function') { try { data = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()); } catch (e) { data = null; } }
+    out.push({name, data});
+    o = d0 + csz;
+  }
+  return out;
+}
+// [Datei öffnen] mit einer ZIP: Projekt laden; auf der eigenen Seite die Takes in den Audio-Store, in der Claude-App übergehen
+async function tkImportZip(u8, open) {
+  const fs = await tkUnzip(u8), pj = fs.find(f => /\.json$/i.test(f.name) && f.data);
+  if (!pj) { toast('ZIP ohne Projekt-Datei'); return false; }
+  const wavs = fs.filter(f => /^takes\/[0-9a-v]{10}\.wav$/.test(f.name) && f.data);
+  let nOk = 0;
+  if (wavs.length && !tkAudioOk()) toast('Audio übergangen – nur auf der eigenen Seite');
+  else for (const f of wavs) {
+    const id = f.name.slice(6, 16), w = tkWavRead(f.data); if (!w) continue;
+    const n = w.pcm.length, nc = Math.ceil(n / TK_CHUNK), keys = []; for (let k = 0; k < nc; k++) keys.push(id + ':' + k);
+    if (await tkStore(id, w.pcm, keys)) { nOk++; TK.missing.delete(id); TK.buf.delete(id); }
+  }
+  open(new TextDecoder().decode(pj.data));
+  if (nOk) setTimeout(() => toast(nOk + (nOk === 1 ? ' Take' : ' Takes') + ' übernommen'), 1800);
+  return true;
+}
+// [Aufräumen]: Audio-Stücke, die kein gespeichertes Projekt (auch Verlauf und geparkte) und nicht das offene nennt
+async function tkGc() {
+  if (!kv || !kv.akeys) return 0;
+  const keep = new Set(Object.keys(S.takes || {}));
+  for (const u of UNDO.concat(REDO)) { const s = JSON.stringify(u.before || '') + JSON.stringify(u.items || ''); for (const m of s.match(/[0-9a-v]{10}/g) || []) keep.add(m); }
+  const ks = await kv.keys('');
+  for (const k of ks) { if (!/^(project|proj:|hist:)/.test(k)) continue; let v = null; try { v = await kv.get(k); } catch (e) {} const s = v ? JSON.stringify(v) : ''; const i = s.indexOf('"takes"'); if (i < 0) continue; for (const m of s.match(/"([0-9a-v]{10})":\{"sr"/g) || []) keep.add(m.slice(1, 11)); }
+  let n = 0;
+  for (const k of await kv.akeys()) { const id = String(k).split(':')[0]; if (!keep.has(id) && !TK.pend.has(id)) { await kv.adel(k); n++; } }
+  TK.gc = {deleted: n, kept: keep.size};
+  return n;
+}
+
+/* ---------- Herkunft (C.2 Nr. 2, N2-VS3-01): auf githack vor dem ersten Take ein Hinweis mit Export ---------- */
+function tkOriginHint(force) {
+  if (tkWhere() !== 'githack' || (TK.hinted && !force) || !tkAudioOk()) return false;
+  TK.hinted = true;
+  openPop(EL.top, p => {
+    p.classList.add('tkorigin'); guardTouch(p);
+    p.innerHTML = '<h4>Aufnahmen auf geteilter Adresse</h4><div class="small">Aufnahmen liegen auf einer geteilten Adresse – bitte die Seite ' +
+      '<b>https://xanderfoxy.github.io/Synquenzer/</b> benutzen oder exportieren.</div>' +
+      '<div class="savrow"><button class="mbtn rb" data-a="zip">WAV/ZIP exportieren</button><button class="mbtn rb" data-a="ok">OK</button></div>';
+    onTap(p, b => { const a = b.dataset.a; closePop(); if (a === 'zip') tkExportZip(); }, 'button[data-a]');
+  }, {name: 'tkorigin'});
+  return true;
+}
+
+/* ---------- Anzeige: Matrix (Wellenform statt Noten), Song-Ansicht (gläserne Wellen auf der STIMME-Zeile) ---------- */
+function tkMiniSvg(a) {
+  const pk = a && tkPeaks(a.take, a, 64); if (!pk) return '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 50 H100" stroke="currentColor" stroke-width="3" opacity=".5" fill="none"/></svg>';
+  let d = ''; for (let k = 0; k < pk.length; k++) { const x = (k + .5) / pk.length * 100, h = Math.max(2, pk[k] * 44); d += `M${x.toFixed(1)} ${(50 - h).toFixed(1)}V${(50 + h).toFixed(1)}`; }
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="${d}" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>`;
+}
+function tkCellSig(clip) { const a = clip.audio; return 'au:' + a.take + ':' + a.in + ':' + a.out + ':' + (TK.buf.has(a.take) ? 1 : 0) + ':' + (TK.missing.has(a.take) ? 'x' : ''); }
+function tkSvDraw(g, song, XB, ru, rh, W) {
+  const st = stimmeT(), vx = song && song.vox; if (st < 0 || !vx || !vx.length) return;
+  const r = SV.rows.indexOf(st); if (r < 0) return;
+  const y = ru + r * rh, col = SV.cols[st] || '#9ad', ok = tkAudioOk();
+  for (const v of vx) {
+    const x0 = XB(v.bar * 4), x1 = XB((v.bar + v.len) * 4); if (x1 < 0 || x0 > W) continue;
+    g.globalAlpha = ok ? .28 : .14; g.fillStyle = col; g.fillRect(x0 + 1, y + 3, x1 - x0 - 3, rh - 6);
+    g.globalAlpha = ok ? .9 : .35; g.strokeStyle = '#f2f4f8'; g.lineWidth = 1; g.strokeRect(x0 + 1.5, y + 3.5, x1 - x0 - 4, rh - 7);
+    const pk = ok ? tkPeaks(v.take, v, Math.max(8, Math.min(160, Math.round((x1 - x0) / 3)))) : null;
+    if (pk) { g.fillStyle = '#f2f4f8'; const n = pk.length, w = (x1 - x0 - 6) / n, mid = y + rh / 2; for (let k = 0; k < n; k++) { const h = Math.max(1, pk[k] * (rh / 2 - 6)); g.fillRect(x0 + 3 + k * w, mid - h, Math.max(1, w - .6), 2 * h); } }
+    g.globalAlpha = 1;
+  }
+}
+// ein Take aus fertigem PCM (ZIP-Import, Test-API): Maße ins Projekt, Inhalt in den Store
+function tkAddPcmTake(pcm, sr, src, id) {
+  id = id && UID_RE.test(id) ? id : newUid();
+  const n = pcm.length, nc = Math.ceil(n / TK_CHUNK), chunks = []; for (let k = 0; k < nc; k++) chunks.push(id + ':' + k);
+  if (!S.takes) S.takes = {};
+  S.takes[id] = {sr, len: n, chunks, route: 'speaker', latMs: 0, created: Date.now(), src: src || 'import'};
+  const b = tkToBuffer(pcm, sr); if (b) TK.buf.set(id, b);
+  TK.missing.delete(id); tkPersist();
+  return {id, stored: tkStore(id, pcm, chunks)};
+}
+/* Test-API: Rundlauf-Simulation (N7V-16, „Kabel-Loopback“ ohne Gerät): App-Klicks auf dem Raster, um lat ms (Bruchteil-Samples)
+   verzögert im Mikro, Latenz per Chirp mit dem VS0/VS1-Schätzer gemessen, Take über denselben Lese-Weg (stRead align) wie die
+   Aufnahme, abgespielt über tkStartSrc in einem OfflineAudioContext → Abstand jedes Klicks zum Raster */
+async function tkSimLoop(o) {
+  o = o || {};
+  const sr = o.sr || 48000, lat = isNum(o.latMs) ? o.latMs : 37.43, bpm = o.bpm || 120, sp = 60 / bpm, nb = o.beats || 8, snr = isNum(o.snr) ? o.snr : 30;
+  const click = t => { const f = 1500, w = 0.0015; return Math.exp(-0.5 * (t / w) * (t / w)) * Math.sin(2 * Math.PI * f * t); };
+  const t0 = 1.0, dur = t0 + nb * sp + 1, n = Math.round(dur * sr), ref = new Float32Array(n), mic = new Float32Array(n), L = lat / 1000;
+  let seed = 12345; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff * 2 - 1; };
+  const na = Math.pow(10, -snr / 20) * 0.3;
+  for (let i = 0; i < n; i++) { const t = i / sr; let r = 0, m = 0; for (let k = 0; k < nb; k++) { const c = t0 + k * sp; if (Math.abs(t - c) < .01) r += .5 * click(t - c); if (Math.abs(t - L - c) < .01) m += .3 * click(t - L - c); } ref[i] = r; mic[i] = m + na * rnd(); }
+  // Latenz einmessen: Chirp, gleich verzögert (Bruchteil-Samples per Sinc-freier Neuberechnung des Chirps)
+  const ch = micChirp(sr), cn = ch.length + Math.round(sr * .2), cref = new Float32Array(cn), cmic = new Float32Array(cn);
+  for (let i = 0; i < ch.length; i++) cref[i] = ch[i];
+  const T = MIC_CHIRP.dur, f0 = MIC_CHIRP.f0, f1 = MIC_CHIRP.f1, K = Math.log(f1 / f0);
+  for (let i = 0; i < cn; i++) { const t = i / sr - L; if (t < 0 || t >= T) { cmic[i] = na * rnd(); continue; } const u = t / T, ph = 2 * Math.PI * f0 * T * (Math.exp(K * u) - 1) / K; cmic[i] = .4 * Math.sin(ph) * Math.sin(Math.PI * u) + na * rnd(); }
+  const est = micLatEst(cmic, cref, sr), latEst = est && isNum(est.ms) ? est.ms : isNum(est && est.lat) ? est.lat : null;
+  if (latEst == null) return {ok: false, est};
+  // Ringpuffer und Zeitkarte kurz ersetzen
+  const keep = {ring: ST.ring, marks: ST.marks};
+  const G = {sr, len: n, dl: Math.ceil(n / 3), mic: new Int16Array(n), ref: new Int16Array(n), d: new Int16Array(Math.ceil(n / 3)), start: 0, end: n};
+  for (let i = 0; i < n; i++) { G.mic[i] = Math.round(clamp(mic[i], -1, 1) * 32767); G.ref[i] = Math.round(clamp(ref[i], -1, 1) * 32767); }
+  ST.ring = G; ST.marks = [{f: 0, ms: latEst, how: 'voll'}];
+  let x;
+  try { x = stRead(Math.round((t0 - TK_PRE) * sr), Math.round((t0 + nb * sp) * sr), {align: true}); } finally { ST.ring = keep.ring; ST.marks = keep.marks; }
+  const pcm = new Int16Array(x.mic.length); for (let k = 0; k < pcm.length; k++) pcm[k] = Math.round(clamp(x.mic[k], -1, 1) * 32767);
+  // abspielen: Clip-Anfang = Schlag 0 bei 0,5 s im Offline-Kontext; in = TK_PRE
+  const oc = new OfflineAudioContext(1, Math.round((0.5 + nb * sp + .5) * sr), sr), buf = tkToBuffer(pcm, sr);
+  tkStartSrc({ctx: oc, dest: oc.destination, i: 0, buf, when: 0.5, off: TK_PRE, end: 0.5 + nb * sp, gain: 1, fi: .005, fo: .005});
+  const y = (await oc.startRendering()).getChannelData(0);
+  // Klick-Zeit: Maximum der Kreuzkorrelation mit der Klick-Form (±10 ms um die Rasterzeit), parabolisch verfeinert
+  const W = Math.round(.004 * sr), tpl = new Float32Array(2 * W + 1); for (let j = -W; j <= W; j++) tpl[j + W] = click(j / sr);
+  const errs = [];
+  for (let k = 1; k < nb; k++) {
+    const c = Math.round((0.5 + k * sp) * sr); let best = -1e9, bi = 0; const cc = [];
+    for (let d = -Math.round(.01 * sr); d <= Math.round(.01 * sr); d++) { let s = 0; for (let j = -W; j <= W; j++) s += y[c + d + j] * tpl[j + W]; cc.push(s); if (s > best) { best = s; bi = cc.length - 1; } }
+    let fr = 0; if (bi > 0 && bi < cc.length - 1) { const a = cc[bi - 1], b = cc[bi], cq = cc[bi + 1]; fr = .5 * (a - cq) / (a - 2 * b + cq || 1); }
+    errs.push(((bi - Math.round(.01 * sr) + fr) / sr) * 1000);
+  }
+  return {ok: true, latMs: lat, latEst, errMs: errs.map(e => +e.toFixed(4)), maxAbsMs: +Math.max(...errs.map(Math.abs)).toFixed(4)};
+}
+async function tkHash(u8) { let h = 0x811c9dc5; for (let i = 0; i < u8.length; i++) { h ^= u8[i]; h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16) + ':' + u8.length; }
+const TK_API = {
+  takes: () => deep(S.takes || {}),
+  tkInfo: () => ({stimme: stimmeT(), where: tkWhere(), audioOk: tkAudioOk(), store: kv && kv.audioMode ? kv.audioMode : null, persist: TK.persist, starts: TK.starts, last: TK.last,
+    src: TK.src.filter(r => !r.dead).map(r => ({i: r.i, start: r.start, end: r.end, off: r.off, vox: r.vox, take: r.take, key: r.key})), buf: [...TK.buf.keys()], missing: [...TK.missing],
+    pend: [...TK.pend.keys()], writes: TK.writes, quiet: [...TK.q], stQuiet: ST.quiet, net: ST.net ? Object.assign({}, ST.net) : null, netLast: ST.netLast, hinted: TK.hinted, werr: TK.werr, gc: TK.gc,
+    vox: S.song && S.song.vox ? deep(S.song.vox) : null}),
+  tkOrigin: o => { TK.origin = o || null; TK.hinted = false; return tkWhere(); },
+  tkOriginHint: () => tkOriginHint(),
+  tkAddTrack: () => tkAddTrack(),
+  tkVoice: o => { const r = tkVoiceTake(o || {}); return r; },
+  // ein Take aus PCM (Zahlen −32768…32767) in Szene s der STIMME-Spur (Overdub, wenn dort schon einer liegt); ein Undo
+  tkInject: o => {
+    o = o || {}; const pcm = Int16Array.from(o.pcm || []), sr = o.sr || 48000, items = [], tb = S.takes ? JSON.stringify(S.takes) : null, st = tkEnsureTrack(items);
+    if (st < 0 || !pcm.length) return null;
+    const s = clamp(o.scene | 0, 0, N_SCN - 1), old = S.tracks[st].clips[s], before = old ? cleanClip(old) : null, r = tkAddPcmTake(pcm, sr, 'rec');
+    const seg = {take: r.id, in: 0, out: tkR6(pcm.length / sr), at: tkR6(o.at || 0)};
+    if (old && old.audio) { const c = deep(old), prev = {take: c.audio.take, in: c.audio.in, out: c.audio.out, at: c.audio.at}; Object.assign(c.audio, seg); c.audio.alt = [prev].concat(c.audio.alt || []).slice(0, 16); S.tracks[st].clips[s] = c; }
+    else { const k = sceneKeyOf(s) || S.key; S.tracks[st].clips[s] = {len: clamp(o.len || 1, 1, 16), key: {root: k.root, scale: k.scale, src: 'auto'}, notes: [], audio: tkNormAudio(seg)}; }
+    undoPush({kind: 'group', label: 'Stimme', items: items.concat([{kind: 'takes', before: tb}, {kind: 'clip', track: st, scene: s, before}]), tk: 1});
+    clipChanged(st, s); if (R.playing) tkTrackResync(st); markDirty(); UI.dirty.all = true;
+    return r.stored.then(ok => ({id: r.id, track: st, scene: s, stored: ok}));
+  },
+  tkPcmHash: async id => { const p = await tkPcm(id); return p ? tkHash(new Uint8Array(p.buffer)) : null; },
+  tkPcmRange: async (id, a, b) => { const p = await tkPcm(id); return p ? Array.from(p.subarray(a || 0, b == null ? p.length : b)) : null; },
+  tkBufRange: (id, a, b) => { const x = tkBuffer(id); return x ? Array.from(x.getChannelData(0).subarray(a || 0, b == null ? x.length : b)) : null; },
+  tkWavInfo: async id => { const m = S.takes && S.takes[id], p = await tkPcm(id); if (!m || !p) return null; const w = tkWav(p, m.sr), r = tkWavRead(w), dv = new DataView(w.buffer);
+    return {sr: dv.getUint32(24, true), bits: dv.getUint16(34, true), ch: dv.getUint16(22, true), n: r ? r.pcm.length : 0, same: !!r && r.pcm.length === p.length && r.pcm.every((v, i) => v === p[i]), hashData: await tkHash(new Uint8Array(w.buffer, 44)), hashRaw: await tkHash(new Uint8Array(p.buffer))}; },
+  tkExportWav: id => tkExportWav(id),
+  tkZipInfo: async () => { const z = await tkZipBytes(), f = await tkUnzip(z); return {bytes: z.length, files: f.map(x => ({name: x.name, n: x.data ? x.data.length : 0}))}; },
+  tkZipRoundtrip: async () => { const z = await tkZipBytes(); let txt = null; const ok = await tkImportZip(z, t => { txt = t; }); return {ok, json: txt}; },
+  tkZipBytes: async () => Array.from(await tkZipBytes()),
+  tkImportZip: async arr => { let txt = null; const ok = await tkImportZip(Uint8Array.from(arr), t => { txt = t; importJSON(t); }); return {ok, hasJson: !!txt}; },
+  tkGc: () => tkGc(),
+  tkForget: () => { TK.buf.clear(); TK.peaks.clear(); TK.missing.clear(); TK.wait.clear(); return true; },
+  tkLoadAll: async () => { tkLoadAll(); await Promise.all([...TK.wait.values()]); return [...TK.buf.keys()]; },
+  tkSheet: r => tkSheet(r || {t: stimmeT(), s: R.selS}),
+  tkPick: (r, k, del) => tkPick(r, k, !!del),
+  tkSimLoop: o => tkSimLoop(o),
+  tkSongMute: () => tkSongMute(),
+  tkKeys: async () => kv && kv.akeys ? kv.akeys() : [],
+};
+
 function voicesInfo() {
   const now = nowT();
   return VOICES.filter(v => !v.dead).map(v => ({id: v.id, track: v.track, src: v.src, out: v.outAt(Math.max(now, v.start)), start: v.start, end: v.end, state: v.state(now)}))
@@ -38957,6 +39845,7 @@ function fxGestureApi(t, g) {
 }
 // every state-changing API call leaves the UI rendered (no need to wait for the next animation frame)
 function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
+Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes
 const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
