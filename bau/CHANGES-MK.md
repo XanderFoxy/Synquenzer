@@ -702,3 +702,473 @@ vorher oder besser; Oktav-Sätze bitgleich zu 4.10.0 (`v3-mk2fix/tabeq.mjs`, 64/
 
 ### iPhone-Prüfpunkt (Xander, ≈ 30 s)
 1. MS 2000-Sound speichern, dann einen Knopf drehen oder eine Speicherwelle wählen: neben dem Namen erscheint sofort der Punkt und [A/B].
+
+## MK3 — Zwei Timbres, Split, Stimmung · App 4.11.0 (`APP_CODE` 4 011 000) · Format bleibt 5
+
+**Vorgänger-Stand** für alle Gleichheits-Abnahmen: **4.10.0** (MK2 = `synq-snapshots/MK2.html`, 2 797 302 B).
+Parallel-Bau im Zweig `mk-br-MK3` (Kopie von MK2). Geändert nur: AM-Zweig des Worklets (`/*MK{*/ … /*}MK*/`, W-43 in `MKW`),
+Block `sq-mk-src` (Bedienfeld), `SQMK.normMk` (2 Zeilen: `usc`), AM-Helfer im Hauptfaden (`mkSetP`, `mkwFeed`, `mkWaveOf`, `mkRelSec`,
+`mkRender` mit `o.solo`), drei Einhänge-Zeilen außerhalb (`inputDown` → Split ← nächste Note, LCD-Zeile → `UI.lcdX`/`UI.mkSplitTap`,
+`closeEditor` → `MKUI.leave`), ⋯-Menü (3 Zeilen), Hilfe (3 Zeilen), `VERSION`.
+**Neustart-Hinweis:** Ein erster Lauf wurde nach ≈ 25 min unterbrochen (Container); sein halbfertiger Stand (Worklet, Bedienfeld) wurde
+nicht verworfen, sondern geprüft, vervollständigt und mit allen Abnahmen neu getestet.
+
+### Gebaut
+1. **Programm-Ebene im Worklet** (`MkCore` hält jetzt zwei `MkTim`): Single (nur T1, bitgleich zu 4.10.0), Dual (= Schicht: beide je
+   Note), Split (Note < `split` → T1, sonst T2). Stimmen-Teilung nach `tv` 1+3 │ 2+2 │ 3+1; ein Timbre mit 1 Stimme spielt mono;
+   **Mono-Regel**: ein Mono-Timbre belegt 1 Stimme, daneben Poly 3 bzw. Unison 2, beide Mono 1 + 1; Unison nutzt die Stimmen seines
+   Timbres; Priorität/Rückgabe je Timbre (MK1). Begrenzer-Stufe 2: Dual/Split 1 + 1, Stufe 1: Unison ≤ 2 (nur neue Noten).
+   Zufall je Note = hash(Seed, Timbre, Zähler dieses Timbres), globales S/H je Timbre eigener Zähler (B.4 Nr. 3) → Dual = Summe.
+2. **Umschalten** von MODUS, STIMMEN, SPLIT und Zuweisung bei klingenden Noten: `engXf`-artig (alte Stimmen 40 ms als Geister
+   mit cos-Blende, gehaltene Tasten unter der neuen Regel neu verteilt, gleiche Taste im gleichen Timbre erbt den Zustand, Einblendung
+   sin über 40 ms bzw. den Attack).
+3. **Stimmung (W-43)**: 10 Stimmungen + Grundton, je Note vor der Tonhöhe (gestimmte Tonhöhe `tp` ist Ziel, Portamento-Start und
+   Keytrack-Grundlage KT); Eigene Stimmung `usc` (12 × −100…+100 ct, Bruchwerte während der Geste); Wechsel bei gehaltenen Noten
+   stimmt die klingenden Stimmen um (ohne Klick). Tabelle genau einmal in `MKW.SCL` (der Hauptfaden liest dieselbe Quelle).
+4. **Solo** (`{mkSolo}`, nicht gespeichert): nur das gewählte Timbre klingt, 5-ms-Rampen; ein stilles Timbre übernimmt die
+   Solo-Verstärkung sofort (keine Rampe ins erste Anschlag-Stück).
+5. **Bedienfeld** (B.3): STIMME Ebene 1 EINZELN/SCHICHT (Einzeln │ Schicht │ Split, Liste per Tipp), Ebene 2 STIMMEN (1+3 │ 2+2 │ 3+1)
+   und SPLIT (C-1…G9; LCD „darunter T1, ab hier T2“); EDIT-WAHL 2 Stellung **STIMMUNG** (STIMMUNG, GRUNDTON; ◎-Punkt bei Abweichung).
+   **TIMBRE-Taste** aktiv: Tipp T1 → T2 → beide → T1 (LEDs 10/01/11), bei EINZELN T2 gesperrt mit LCD-Hinweis; „beide“ = jede Geste
+   ändert T1 und T2 um denselben Schritt (Anzeige und Startwert T1; Listen: gleicher Wert; ein Undo); **SHIFT + TIMBRE** = Solo
+   (LED blinkt, Tipp beendet; Wechsel/Schließen des Editors beendet ebenfalls). Alle Sektionen bearbeiten das gewählte Timbre, die
+   LCD-Zeile trägt „T1 ·“/„T2 ·“/„T1+2 ·“ (nur bei Schicht/Split). ORIGINAL-LED und ◎ kennen die Timbre- und Programm-Pfade.
+6. **Werkzeuge** SHIFT + 1 Timbre kopieren ▸ (Liste: dieser Sound und alle gesicherten MS-2000-Sounds der Bibliothek, je [T1] [T2],
+   Zeilen 44 px), SHIFT + 2 tauschen, SHIFT + 4 Timbre neu (das gewählte Timbre = INIT); je ein Undo; auch unter ⋯ im Blatt.
+7. **[Split ← nächste Note]** in der LCD-Zeile (STIMME, Split): die ganze LCD-Zeile ist die Taste (wie FEST); auch ein Tipp auf den
+   SPLIT-Regler (EB2) macht sie scharf; die nächste gespielte Note wird `split` (ein Undo), die Note klingt dabei.
+8. **Zusatz-Ansicht EIGENE** (Tipp auf die Matrix-Zeile STIMMUNG bei „Eigene“, die Zeile trägt „EIGENE ▸“): 12 Regler (Stufe ab dem
+   Grundton, Notenname als Aufschrift), [◂ GERÄT] 96 × 44; P1 2 × 6 à 60 (360 px), L1/W 12 × 56 + 3 px (705), L2 12 × 50 + 3 px (633),
+   P2 2 × 6 à 57, P3 2 × 6 à 48.
+9. **Haupt-Faden:** Speicherwelle von T2 wird bei Schicht/Split mitgeladen; `mkRelSec` nimmt das längere Timbre; `mkRender(…, {solo})`;
+   Version 4.11.0; 3 Hilfe-Zeilen (Namen aus `MK_LABEL`).
+
+### Fach-Prüfung (N3 Teil F: FP-DSP ● Haupt, FP-TOUCH Zweit; selbst vor der Abnahme, ohne zweiten Agenten)
+- **FP-DSP** (`v3-mk3-fpdsp.mjs`, `v3-mk3-timbre.mjs`, `v3-mk3-scale.mjs`): W-43 eine Quelle (`MKW.SCL`), unabhängig im Test aus der Spec
+  abgeschrieben und gegengeprüft; „Aus = bitgleich“: Single 33 Fälle, VA, Gleichstufig mit 4 Grundtönen = 0; Extremwerte beider Timbres
+  (Resonanz 127, alle Mixer 127, Unison 99 ct, PATCH ±63, Pelog/Eigene ±100) mit 20-s-Sturm aus 177 Noten (C-1…G9) und 80 Programm-
+  wechseln (MODUS/STIMMEN/SPLIT/STIMMUNG/GRUNDTON/Zuweisung/Solo/EIGENE): kein NaN/Inf, Spitze −5,9 dBFS, danach keine Stimme an;
+  Denormale: Dual mit stummem T2 (Solo) nach Vollaussteuerung 60 s, kein Fenster > 1,1 ×; M-KLICK/M-EINBRUCH aller Umschaltungen;
+  CPU je Quantum; Worklet-ASCII (0 Nicht-ASCII-Zeichen). Neue IIR-Zustände gibt es in MK3 nicht.
+  **Befunde: 3, alle behoben:** (1) Solo, vor der Note gesetzt, ließ das stumme Timbre 5 ms anklingen (Rampe von 1 auf 0 im ersten
+  Block: Split-Gegenseite nur −56,7 dB statt ≤ −60, Solo-Rest −64,5 dB statt ≤ −90) → ein stilles Timbre übernimmt die Solo-Verstärkung
+  sofort (Setter + Block), jetzt −600 dB; (2) M-EINBRUCH mit einem Akkord aus nicht verwandten Noten schwankt schon ohne Umschalten
+  ±4 dB je 5-ms-Fenster (Schwebungen) → Messung mit Oktav-Akkord 69/81/93 (s. Abweichungen), der Akkord bleibt für M-KLICK; (3) ein
+  fehlender Ende-Bericht (`end`) einer Note in der Sturm-Prüfung → Ursache liegt in MK1 (s. Lücken), nicht im MK3-Code.
+- **FP-TOUCH** (`v3-mk3-ui.mjs`, `v3-mk3-shot.mjs`, Regression `v3-mk1-look.mjs`): M-SKIZZE (IoU 1,000, 88/88), M-PLATZ und Treffer
+  ≥ 44 × 44 ohne Überlappung in 9 Formaten (P1, P2 A/B, P3 A/B, L1, L2 A/B, W, L1 und 926 × 428 mit Safe-Area, L1 + Home-Balken A/B)
+  × 11 Zuständen mit echter App-Schrift = 143 Fälle; M-ANSICHT beim Timbre-Wechsel 0 px; ein Undo je Geste/Werkzeug; Haptik `tick`
+  an TIMBRE, Solo und Split-Taste. **Befunde: 4, alle behoben:** (1) die LCD-Taste [Split ← nächste Note] war nur das 10-px-Schild →
+  die ganze LCD-Zeile ist die Taste (Höhe der Zeile s. Abweichungen), der SPLIT-Regler (44 × 44) macht sie ebenso scharf; (2) Fachwort
+  „Edit Sync“ in LCD und Hilfe → „beide zugleich“; (3) nach einem Wechsel auf EINZELN von außen (Undo, API) meldete die Taste noch T2
+  → Tipp setzt T1, `mkPanel().timbre` = 1 bei EINZELN; (4) Liste EDIT-WAHL 2 rief für STIMMUNG den PATCH-Text (TypeError im
+  unterbrochenen Lauf) → eigene Zeile „Stimmung · Grundton“. Dazu FP-SICHER-Teilprüfung B.6 Nr. 9: ein Kommentar enthielt die
+  Zeichenfolge des Engine-Namens (zweiter Treffer) → umformuliert, ganze Datei wieder genau 1 Treffer (`MK_LABEL`).
+
+### Abnahme (Skripte in `dirigent-test/`: `v3-mk3-timbre.mjs` 30/30, `v3-mk3-scale.mjs` 6/6, `v3-mk3-ui.mjs` 37/37, `v3-mk3-fpdsp.mjs` 6/6; Node 22 bzw. Chromium 1243)
+
+| ID | Ergebnis |
+|---|---|
+| MK3-01 | ✓ Dual 2+2 / 1+3 / 3+1 = Summe der Einzel-Renders (Solo T1 + Solo T2) mit Rauschen, S/H, PATCH: max \|Δ\| 2,6e-8; ebenso T1 allein (T2 PEGEL 0) + T2 allein: 2,4e-8; gleicher Seed gleich, anderer Seed anders |
+| MK3-02 | ✓ 1+3 Dreiklang: T1 [67], T2 [60 64 67]; 2+2 Vierklang: je [67 72] (Letzte), T1 Tiefste [60 64] / T2 Höchste [67 72]; 3+1 spiegelbildlich; T1 Unison in 2+2: 2 gestapelte Stimmen, T2 eine; T1 Mono + T2 Poly, 4 Tasten: T2 [64 67 72]; T1 Unison + T2 Mono: 2 + 1; beide Mono 1 + 1; Rückgabe der gehaltenen Taste |
+| MK3-03 | ✓ Split C4: C3 und H3 nur T1, C4 und C5 nur T2 (Gegenseite −600 dB); [Split ← nächste Note]: E4 → `split` 64, ein Undo, danach nicht mehr scharf, ↶ = 60; Tipp auf SPLIT (EB2) ebenso (C5 → 72); Ziehen ändert, LCD „darunter T1, ab hier T2“ |
+| MK3-04 | ✓ TIMBRE T1 → T2 → beide → T1, LEDs 01/11/10; Bearbeitung mit T2 (CUTOFF 127 → 98) lässt T1 deep-equal, ein Undo, LCD „T2 · FILTER · …“; EINZELN: T2 gesperrt mit LCD-Hinweis, Taste bleibt T1 |
+| MK3-05 | ✓ SHIFT + 1: Liste (dieser Sound + Bibliothek, [T1] [T2] je 52 × 44), Quelle T2 → T2 und T1 → T1 deep-equal; SHIFT + 2 zweimal = Ausgang; SHIFT + 4 = INIT-Werte, T2 unverändert; je ein Undo; ⋯ zeigt die drei Werkzeuge (48 px) |
+| MK3-06 | ✓ alle 10 Stimmungen × Grundton C und A × C4…H4: Abweichung zu W-43 höchstens 0,068 ct (Spektrum, Blackman 2¹⁵) bzw. 0,011 ct (Nulldurchgänge); Eigene (Grundton E) 0,057 ct; Gleichstufig mit Grundton C/E/A/H bitgleich zu 4.10.0; T2 gestimmt (Pelog E4 −130,0 ct); Wechsel bei gehaltener Note ohne Klick (2,9 dB) |
+| MK3-07 | ✓ 11 Single-Patches × 3 Programm-Varianten (mit T2-Inhalt, Grundton, `tv`/`split`) bitgleich zu 4.10.0 (max \|Δ\| 0); VA bitgleich |
+| MK3-08 | ✓ Dual 2+2 gegen Single 4 Stimmen: 0,99 × (Quantum, Minimum aus 7 verschachtelten Läufen, auf einen Kern gebunden 1,008 ×; CPU-Zeit 0,93 ×); nie mehr als 4 klingende Stimmen (4 Modi × 5 Zuweisungs-Paare × 12 Tasten; eine gestohlene Stimme in ihrer 5-ms-Blende zählt nicht, wie MK1) |
+| MK3-09 | ✓ Einzeln↔Schicht, Schicht↔Split, Einzeln→Split, STIMMEN 2+2→1+3, 1+3→3+1, SPLIT 60→62, T2 Poly→Mono bei klingenden Noten: M-KLICK ≤ 5,0 dB, M-EINBRUCH ≥ −0,24 dB; danach keine hängende Note |
+| MK3-10 | ✓ M-PLATZ/Treffer 143 Fälle (s. FP-TOUCH), M-SKIZZE 88/88 (Regression `v3-mk1-look.mjs`), M-ANSICHT 0 px; EIGENE-Maße wie Spec (P1 360, L1 705, L2 633), Regler ändert `usc`, ein Undo, [◂ GERÄT] zurück |
+| MK3-11 | ✓ Regression s. unten; Budget **+28,7 KB** (2 797 302 → 2 826 651 B) ≤ +33 KB; Startzeit ohne AM +4 ms, mit AM +17 ms (Median aus 5); PE1 L1/P1 59,9 fps, 0 longtasks; Smoke-Test ohne Fehler; Hilfe 3 Zeilen; Worklet-ASCII |
+| MK3-12 | ✓ PEGEL T1 0 → T1-Anteil −600 dB; PAN T1 L63/T2 R63: Trennung 76 bzw. 78 dB; KEYTRACK +48 mit Werckmeister III: Cutoff-Abweichung = W-43 ± 0 ct (C4…H4) |
+| MK3-13 | ✓ „beide“: CUTOFF-Zug Δ 23/23, ein Undo, ↶ stellt beide her; SPIEL RELEASE ebenso; Taste ändert `soundHash` nicht; SHIFT + TIMBRE: Solo T1 (LED blinkt), T2-Anteil −600 dB (Node und Chromium-OfflineAudioContext), Tipp beendet, nichts gespeichert; Editor schließen beendet Solo |
+| Hörbar | ✓ (Spec §0.3 H-1/H-3, B.6 Nr. 3) EINZELN → SCHICHT +4,5 dB; STIMMEN 1+3 ↔ 3+1 Band um 659 Hz 111 dB; SPLIT 0 ↔ 127 Band 2–8 kHz 75 dB; STIMMUNG/GRUNDTON/EIGENE über MK3-06 (ct-genau) |
+
+**Regression** (Neubau gegen MK2 bzw. 4.8.1): `v3-mk1-dsp.mjs` 64/64, `v3-mk1-hear.mjs` 53/53, `v3-mk1-look.mjs` 88/88, `v3-mk1-ui.mjs` alle,
+`v3-mk1-eco.mjs` alle, `v3-mk2-osc.mjs` alle, `v3-mk2-ui.mjs` alle bis auf die erwartete Zeile „MOD-FX … SEQ dunkel“ (STIMMUNG ist jetzt
+aktiv), `v3-mk1-format.mjs` alle bis auf die erwarteten Zeilen „APP_CODE 4 009 000“ (jetzt 4 011 000) und – einmal von drei Läufen –
+„64 Werks-Sounds bitgleich“ (1 Abweichung in einem Lauf, zwei Wiederholungen 0; Zeitfenster des Test-`flush` auf der geteilten Maschine),
+`v3-mk1-fpdsp.mjs` alle bis auf die Denormal-Zeiten (schwanken auf der geteilten Maschine; derselbe Lauf mit 4.10.0 scheitert ebenso
+5/58, Mediane gleich 7,5/4,3 ms). Markenwort-Prüfung B.6 Nr. 9 (a) AM-Teil 0, (b) ganze Datei 0 / genau 1 „MS 2000“.
+
+**Bildschirmfotos:** `dirigent-test/v3-mk3-shots/<Format>-{stimme-split, stimme-eb2, filter-t2, filter-beide, solo, stimmung, eigene,
+kopieren}.png` für P1, P2, P3, L1, L2, W (für Xanders Sicht-Abgleich).
+
+### Abweichungen
+- **LCD-Taste [Split ← nächste Note]:** Die ganze LCD-Zeile ist die Trefferfläche (wie das FEST-Schild). Sie ist so hoch wie die Zeile
+  des Blattrahmens (L1 26 px, P1 36 px), nicht 44 px; der vollwertige 44 × 44-Weg ist der Tipp auf den SPLIT-Regler (SHIFT → STIMME).
+  In P3 zeigt der Blattrahmen keine LCD-Zeile (Stand MK1); dort nur der Regler-Weg.
+- **Solo bei „beide“:** SHIFT + TIMBRE schaltet T1 solo; ein zweites SHIFT + TIMBRE wechselt zum anderen Timbre (am Gerät Halten). „beide“
+  bleibt dabei die Bearbeitungs-Wahl.
+- **Prüf-Lesarten:** M-EINBRUCH (MK3-09) mit Oktav-Akkord 69/81/93 und zwei verschiedenen Timbres (gleiche Timbres löschen sich je nach
+  Zufallsphase aus); M-KLICK mit dem Akkord 57/61/64. CPU (MK3-08) als Minimum über 7 verschachtelte Läufe (Median-Werte streuen auf der
+  geteilten Maschine 0,7–1,8 ×; Messung ohne Fremdlast, auf einen Kern gebunden: 1,008 ×). Stimmenzahl ohne gestohlene Stimmen in ihrer
+  5-ms-Blende.
+- **Eigene Stimmung:** `usc` wird wie in MK1 (`normMk`, B.1 „nur bei scale 9“) beim Wechsel auf eine andere Stimmung verworfen; ↶ holt
+  die Werte zurück. Beim Einschalten von „Eigene“ beginnt sie mit 12 × 0 ct.
+- **Edit Sync bei Listen** (WELLE, TYP …): T2 bekommt denselben Listenwert wie T1 (kein „Δ“ bei Listen).
+
+### Lücken
+- **MK1-Fehler (Hauptlinie, hier nicht behoben):** Wird dieselbe Note wieder angeschlagen, während ihre vorige Stimme noch ausklingt
+  (`polyOn`: „the same note releasing: the voice restarts“), übernimmt die Stimme die neue Kennung, ohne für die alte `end` zu melden
+  (Probe: C4 an/aus/an/aus → nur die zweite Kennung endet, auch in 4.10.0). Der Proxy in `VOICES` bleibt dann bis zum Aufräumen
+  1 s nach `stopAt` stehen. Vorschlag für die Hauptlinie: in `start()` bei `v.id !== k.id` vorher `endCheck(alte Kennung)`.
+- Leistungs-Probe: MK3 bringt keinen eigenen Fall (Nachtrag 3 nennt ihn nicht); Chromium-Gegenprobe der Last nicht eigens gemessen.
+- Am iPhone ungeprüft (Gerät): Solo-LED-Blinken, Haptik, Lesbarkeit der LCD-Zeile mit „T1 ·“.
+
+### Datenbank / Am Server offen
+Keine Änderung, keine Supabase-Abfrage. 4.11.0 = `p_app` 4 011 000 ≤ `max_app` 4 021 000, Format 5 ≤ `max_format` 5.
+
+### iPhone-Prüfpunkte (Xander, ≈ 4 min)
+1. MS-2000-Spur öffnen, EDIT-WAHL 1 auf STIMME, Regler 2 (EINZELN) antippen und in der Liste „Split“ wählen. SHIFT, dann Regler 3 (SPLIT) antippen und C4
+   auf der Tastatur spielen → LCD „SPLIT · C4“.
+2. TIMBRE einmal tippen (LED 2): FILTER CUTOFF hochdrehen → nur die obere Hälfte wird heller. TIMBRE noch einmal (beide LEDs) und
+   RELEASE drehen → beide Hälften ändern sich gleich. Noch ein Tipp → LED 1.
+3. Unten Bass (T1), oben Fläche (T2) bauen; SHIFT + TIMBRE → nur T1 klingt, LED blinkt; Tipp auf TIMBRE → wieder beide.
+4. EDIT-WAHL 2 auf STIMMUNG, Regler 1 → „Werckmeister III“, Akkorde spielen; dann „Eigene“, Tipp auf die Zeile „STIMMUNG EIGENE ▸“
+   → 12 Regler, einen Ton verstimmen, [◂ GERÄT].
+5. SHIFT + 2 (Timbres tauschen) → oben und unten vertauscht; ↶ → zurück.
+
+### Geräte-Abgleich (microKORG, nach Gehör; ändert nur Werte in einem MK3-fix)
+Layer mit 2 Stimmen je Timbre (2+2) gegen „Schicht“; mehr Tasten als Stimmen (welche Note fällt weg); Mono/Poly-Layer (1/3);
+Edit Sync und Solo (TIMBRE-Taste); welche Seite der Split-Grenze T1 ist.
+
+## MK3-fix — Kopier-Liste per Finger, ⋯-Werkzeuge auf der offenen Spur, SPLIT ohne Abriss, Timbres in Phase, Solo/Split-Taste enden auf jedem Weg · App bleibt 4.11.0 · Format bleibt 5
+
+### Behoben (7 bestätigte Befunde, 5 Ursachen)
+1. **SHIFT + 1 „Timbre kopieren“: die Liste ließ sich nicht mit dem Finger scrollen (major).** `guardTouch(p)` auf dem Pop brach jedes
+   `touchstart` ab. Wie MK2-fix bei `wavePop`: Die Liste `.plist.mkcp` hält ihr `touchstart` bei sich (passiver Listener mit
+   `stopPropagation`); `guardTouch` selbst unverändert. Tipps wirken weiter über `pointerup`, ein Wischer kopiert nichts.
+2. **⋯ → „Timbre kopieren ▸“ kopierte in die zuletzt gebaute Spur (P.i) statt in die offene (major).** `timCopyPop(anchor, t)` bekommt
+   die Spur vom ⋯-Menü; `timCopy`/`timInit`/die Liste („dieser Sound“) arbeiten auf dieser Spur. `tDst(i)` nimmt die Timbre-Wahl nur aus
+   dem Bedienfeld, wenn es zu dieser Spur gehört, sonst T1 (wie ein frisch gebautes Bedienfeld).
+3. **SPLIT bei gehaltener Taste schnitt fremde Ausklänge ab (major).** `MkCore.after(route)` lässt ein Timbre, dessen gehaltene Tasten
+   und Regel gleich bleiben, unberührt. `MkTim.reassign(list, keep, from)`: bei reinem Umleiten (poly) klingen Ausklänge nicht
+   gehaltener Tasten weiter (außer auf derselben Note wie eine neu verteilte Taste).
+4. **M-EINBRUCH bis −22 dB, wenn eine gehaltene Taste das Timbre wechselt (major).** Vor dem Umverteilen merkt sich `after()` die
+   Oszillator- und LFO-Phasen jeder gehaltenen Taste (t1, t2, sp, l1, l2, tw/wn); die neue Stimme im anderen Timbre setzt sie fort
+   (`inheritPh`). Gleiche Timbres löschen sich in der 40-ms-Blende nicht mehr aus.
+5. **Schicht mit gleichen Timbres: Lautstärke je Note zufällig, einzelne Noten fast stumm (major).** Startphasen je Taste für beide
+   Timbres gleich (`MkCore.notePh`): wer zuerst eine Stimme für die Taste startet, zieht sie wie bisher (Single unverändert,
+   bitgleich), das andere Timbre übernimmt sie. Rauschen und S/H bleiben je Timbre zufällig (B.4 Nr. 3). Liste wird bei Ende der
+   Kennung und bei `panic` geleert.
+6. + 7. **Solo und [Split ← nächste Note] blieben nach ≡ (Menü) bzw. Projektwechsel aktiv (major, 2 Befunde).** `closeSheets()` ruft
+   `MKUI.leave()`, wenn das Synth-Blatt offen war: jeder Weg aus dem Editor (✕, ≡, Browser, Projektwechsel …) beendet Solo und die
+   scharfe Split-Taste. Zusätzlich nimmt `splitNote` eine Note nur an, solange genau dieser Editor offen ist.
+
+### Proben (Node 22 bzw. Chromium 1243; der Pfad chromium-1194 aus dem Auftrag existiert hier nicht)
+- Scroll: `v3-fpq-mk3-scroll.mjs` P1 0 → 152 px, L1 0 → 152 px (vorher 0), Liste bleibt offen, nichts kopiert; `v3-rep-mk3-cpscroll.mjs`
+  ebenso; neu `v3-mk3fix-cpreach.mjs`: nach Wischern Ende erreicht (P1 388/388, L1 522/522), Tipp auf [T1] der letzten Zeile „Src 15“
+  kopiert (CUTOFF 90), Pop zu, 0 Fehler.
+- ⋯-Kopie: `v3-fpq-mk3-more.mjs` und `v3-rep-mk3-tcopy-stale.mjs` (P1 + L1, echte Tipps): Zeile „FM-Pluck (dieser Sound)“ = Spur 1,
+  CUTOFF Spur 0/1 127/90 → 127/50 (vorher 50/90), Undo auf Spur 1.
+- SPLIT-Ausklang: `v3-fpq-mk3-tail2.mjs` 0,6–0,9 s −19,4 / −19,4 dB (vorher −98,6), Zug 60→66 −19,4 (vorher −99,8);
+  `v3-rp-mk3-splittail.mjs` T1-Ausklang und gehaltenes T2 unverändert (L −22,4/−22,4; R −18,1/−18,1).
+- Loch: `v3-fpq-mk3-hole.mjs` alle Fälle 0/24 Seeds < −3 dB (schlechtester −1,4 dB, vorher bis −14,2); `v3-rep-mk3-hole.mjs`
+  (strenge §16-Lesart) schlechtester −1,3 dB (vorher −22,4); `v3-rep-mk3-hole2.mjs` −0,5 dB (vorher −18,9);
+  `v3-rep-mk3-hole-br.mjs` (Chromium-Worklet) −1,3 dB, Sanity-Fall weiter −28 dB. M-KLICK höchstens 5,1 dB (≤ +6).
+- Phase: `v3-fpq-mk3-phase.mjs`/`-phase2.mjs` Schicht gegen Einzeln jede Note +6,0 dB (Sinus vorher −56,8 … +6,0);
+  `v3-rv-mk3-phase-oac.mjs` (App-`mkRender`) Sinus/Dreieck/Säge 6,0–6,1 dB, 0 Fehler.
+- Solo/Split-Taste: `v3-qa-mk3reg-leak4.mjs` P + L, ≡: −19,1 dB nach dem Menü (vorher −200); `v3-verify-solo-menu.mjs` P + L
+  inkl. „Neu ▾“: −19,1; `v3-qa-mk3reg-leak2.mjs` ok; `v3-qa-mk3reg-arm.mjs` P + L und `v3-rep-mk3-armmenu.mjs` (Spur 1 und 4):
+  split bleibt 60, Undo 1 → 1 (vorher 40/65/67, Undo 2).
+- Regression: `v3-mk3-timbre.mjs` alle Fälle (MK3-01 Dual = Summe 2,6e-8; MK3-07 Single bitgleich zu 4.10.0 max |Δ| 0; MK3-09
+  M-EINBRUCH ≥ −1,03 dB), `v3-mk3-scale.mjs` 6/6, `v3-mk3-fpdsp.mjs` 6/6, `v3-mk3-ui.mjs` 37/37, Smoke-Test ohne Fehler.
+  MK3-08 CPU streut auf der geteilten Maschine (1,00–1,15 ×); A/B gegen `MK3.html` auf einem Kern: alt 1,046/1,034 ×, neu 1,001/0,952 ×
+  (der Fix berührt nur den Notenstart). Worklet bleibt ASCII. Größe 2 829 915 B (+3,3 KB; MK3 gesamt +32,6 KB ≤ +33 KB).
+
+### Abweichungen
+- **MK3-13 M-KLICK-Lesart:** Säge (T1) + Rechteck (T2) derselben Noten starten jetzt in Phase; ihre Flanken fallen zusammen, und der
+  Render **ganz ohne Solo** erreicht schon 6,1 dB bei 1,174 s (Eigenschaft des stehenden Klangs, kein Knack). Die Probe misst darum
+  ±30 ms um die beiden Umschaltpunkte (mit 100 ms Umgebung): 3,4 dB (`v3-mk3fix-solo.mjs` zeigt die Gegenprobe für 6 Seeds).
+- Neue Stimme im anderen Timbre übernimmt nur Phasen, nicht Hüllkurven oder Filterzustand (B.6 Nr. 2: sie beginnt mit Einblendung).
+
+### Lücken / Hauptlinie
+- `wavePop` (MK2) ist auf der Hauptlinie bereits mit demselben Muster behoben (MK2-fix Nr. 5); hier nicht angefasst.
+- Der MK1-Befund zur Kennung beim Neuanschlag einer ausklingenden Note (s. oben) bleibt für die Hauptlinie offen.
+
+### Datenbank / Am Server offen
+Keine Änderung, keine Supabase-Abfrage.
+
+## G-MK3-gruppe-fix — LCD-Zeile im Split hochkant lesbar · App bleibt 4.11.0 · Format bleibt 5
+
+### Behoben (1 bestätigter Befund, major)
+- **Split hochkant: Wert in der LCD-Zeile 0 px breit, ⋯ verdeckt die Taste.** Ursache: Hochkant hat `#synthSheet .lcd` rechts
+  100 px Platz für ◎/⋯; `.lk` und die MK3-Taste `.lx.lsplit` schrumpfen nicht, also drückte die Taste `.lv` auf 0 px, und
+  `lcdFit` sprang bei `clientWidth 0` sofort heraus (die Zeile lief 2–27 px in den ◎/⋯-Bereich).
+  - Taste [Split ← nächste Note] hochkant zweizeilig („Split ←“ / „nächste Note“, 9,5 px, 59–70 px statt 109 px breit);
+    quer unverändert einzeilig. Text und Tipp-Verhalten wie gehabt.
+  - `lcdFit` (gemeinsamer LCD-Code, 3 Zeilen): prüft jetzt auch, ob die ganze Zeile überläuft (nicht nur `.lv`), und bricht
+    erst bei unsichtbarer Zeile ab. Bleibt im Lauftext-Modus neben der Beschriftung < 48 px, läuft die Beschriftung mit
+    (Klasse `mqk`, auch in `pv` zurückgesetzt). Beim Zusammenführen mit der Hauptlinie bitte diese Zeilen in `lcdFit`
+    mitnehmen.
+  - SPLIT-Wert im Split-Modus ohne „· Tipp = Split ← nächste Note“ (die Taste steht daneben); in Einzeln/Schicht bleibt der Tipp.
+  - Scharf-Hinweis kürzer: „SPLIT · eine Taste spielen = Split-Punkt (darunter T1, ab ihr T2)“ (vorher Beschriftung „SPLIT ←
+    NÄCHSTE NOTE“ doppelt zur orangen Taste).
+
+### Proben (Chromium 1243; echte App-Schrift Barlow Semi Condensed/JetBrains Mono per @font-face aus `synquenzer/fonts`)
+- `v3-gfix-mk3-lcdsplit.mjs` (Touch über CDP, P1 390×844, P2 375×812, P2se 375×667, P3, L1, L2; Schicht, Split, ZUWEISUNG Mono,
+  SPLIT ziehen/losgelassen, scharf): **ALL OK** — LCD scrollWidth = clientWidth überall (P1 374/374, P2 359/359), `.lv` sichtbar
+  (Split 36 px „Split“, Mono 28 px; SPLIT-Zug zweizeilig „T1 · STIMME · SPLIT 075 / E♭5 · darunter T1, ab hier T2“ 182–197 px),
+  Taste endet bei 267 (P2) vor ⋯ (277), `elementFromPoint` am rechten Tastenrand = LCD. Auch mit Ersatzschrift (`NOFONT=1`):
+  ALL OK. P3: LCD-Zeile dort absichtlich aus (`.lcd{display:none}`, unverändert; Split per Tipp auf SPLIT).
+- Gegenprobe alte Fassung `MK3-fix.html` mit echter Schrift: P2 SPLIT-Zug `.lv` 19 px, scharf 14 px → FAIL.
+- Melder-/Nachstell-Skripte `v3-rep-mk3-lcdsplit.mjs`, `v3-qa-gmk3-lcd3.mjs`, `v3-qa-gmk3-lcd5.mjs`: Wert sichtbar, keine
+  Überdeckung, 0 Fehler. Bilder: `dirigent-test/v3-gfix-mk3/*.png`.
+- Regression: `v3-mk3-ui.mjs` alles bestanden (inkl. MK3-10 M-PLATZ 143 Fälle mit echter Schrift, MK3-03 Split-Taste), Smoke-Test
+  ohne Fehler (`v3-gfix-mk3-smoke.png`). Größe 2 830 935 B (+1,0 KB).
+
+### Datenbank / Am Server offen
+Keine Änderung, keine Supabase-Abfrage.
+
+# CHANGES – MS 2000, Paket MK4 (Zweig-Kopie `mk-br-MK4`)
+
+## MK4 — Effekte je Sound: MOD-FX, DELAY, EQ · App 4.12.0 (`APP_CODE` 4 012 000) · Format bleibt 5
+
+**Vorgänger-Stand** für alle „bitgleich“-Abnahmen: **4.10.0** (MK2 = `synq-snapshots/MK2.html`, 2 797 302 B).
+Zweig-Bau: Diese Kopie startet bei MK2 (4.10.0); MK3 (4.11.0) entsteht gleichzeitig in `mk-br-MK3`, MK2-Prüfungen laufen in `mk-wt`.
+Der Orchestrator führt zusammen und setzt die VERSION-Zeile. Server: keine Änderung nötig (`max_app` 4 021 000 ≥ 4 012 000, Format 5).
+Kein Supabase-Aufruf in diesem Lauf.
+
+Hinweis zum Neustart: Diese Kopie enthielt schon halb fertige MK4-Arbeit eines abgebrochenen Laufs (Effektkern, Bedienfeld,
+Test-Skript ohne grünen Lauf, leeres CHANGES). Sie wurde übernommen, geprüft, an 7 Stellen nachgebessert (siehe Fach-Prüfung) und fertig gebaut.
+
+### Gebaut
+1. **Effektkern im AM-Zweig des Worklets** (`class MkFx`, zwischen `/*MK{*/` … `/*}MK*/`, ASCII), stereo je Spur, Reihenfolge
+   **MOD-FX → DELAY → EQ**, hinter der Stimmensumme und vor der unveränderten Spur-Kette (Drive, Chorus, Hall-/Echo-Send, Pump, Vol, Pan).
+   - **MOD-FX** (W-31): Chorus/Flanger (1 ms + Hub dep/127 · 4 ms, Rückkopplung max(0,(dep−64)/63) · 0,85, L/R-LFO 90° versetzt,
+     Catmull-Rom-Abgriff), Ensemble (3 Abgriffe 120° versetzt um 8 ms, Hub dep/127 · 3 ms, L = A1 + ½A2, R = A3 + ½A2),
+     Phaser (6 Allpässe je Kanal, 200 Hz … 4 kHz, Rückkopplung dep/127 · 0,7). Tempo 0,02 Hz · 2^(9·spd/127).
+     Mischung für alle Typen w = min(0,5; 0,6·dep/127).
+   - **DELAY** (W-32, W-12): Stereo, Kreuz (Rückkopplung L↔R), L/R (Mono-Summe, Echos abwechselnd). Pegel dep/127,
+     Rückkopplung 0,8·dep/127. ZEIT 1 ms · 2^(10,45·time/127) (1 ms … 1,4 s), TEMPO SYNC mit NOTE 1/32 … 1/1 im Song-Tempo,
+     jede Note im ganzen Bereich 40–240 BPM ohne Kürzung (Puffer 6 s). Verzögerung in **ganzen Samples** (keine Interpolation,
+     die Wiederholungen werden nicht dumpfer). ZEIT-, NOTE- und Tempo-Wechsel: der Lesekopf blendet in 40 ms gleichleistungsgemäß
+     auf die neue Stelle (kein Sprung, kein Tonhöhen-Jaulen).
+   - **EQ** (W-33): Tiefen- und Höhen-Kuhschwanz 2. Ordnung (Q 0,707) als TPT-SVF (B.6 Nr. 10), 40 … 1000 Hz bzw. 1 … 18 kHz,
+     ±12 dB in 0,5-dB-Schritten. Koeffizienten je Steuerblock (16 Samples) aus geglätteten Werten (5 ms, Frequenz im Log-Maß).
+   - **Aus = bitgleich:** Jede Stufe rechnet nur, solange ihre Tiefe/ihr Gain (Ziel oder geglättet) ≠ 0 ist; sind alle aus, gehen die
+     Stimmen wie bisher direkt zum Ausgang (bitgleich zu 4.10.0).
+   - **Schalten ohne Knacken:** Typ-Wechsel MOD-FX und DELAY bei laufendem Effekt 30 ms Gleichleistungs-Blende (alter Typ aus, neuer ein;
+     ein weiterer Wechsel wartet). MOD-FX ein: die Tiefe steht sofort, nur die Mischung blendet mit 20 ms ein; aus: die Tiefe bleibt
+     stehen, während die Mischung ausblendet. Stetige Werte 5 ms geglättet, Bruchwerte während der Geste (EN3-03).
+   - **Puffer:** 6 s stereo Float32 je AM-Spur (2 304 032 B bei 48 kHz, 2 116 832 B bei 44,1 kHz), angelegt erst beim ersten
+     `dly.dep` > 0 im Nachrichten-Weg (oder beim Laden eines Sounds mit Delay), nie in `process()`; vorher 0 Byte. Meldung `{mkFxMem}` an
+     den Hauptfaden, `mkInfo().fxBytes` zählt alle Spuren.
+   - **Nachklang:** Echo, Chorus-Rückkopplung und Filter klingen ohne Stimme weiter (`fxHot`), bis der Ausgang länger als die längste
+     Verzögerung unter −110 dBFS liegt; dann rechnet der Zweig nicht mehr. Denormale: alle Rückkopplungs- und IIR-Zustände werden am
+     Blockende bzw. beim Schreiben unter 1e-15 auf 0 gesetzt (B.6 Nr. 11).
+   - **Leistung:** Der Effektzweig läuft **einmal je Render-Quantum** (128 Samples, nach den 8 Steuerblöcken der Stimmen; Aufruf
+     `this.mk.fxEnd(L, R)` im Prozessor vor der Mono-Halbierung) statt je 16er-Block — das halbiert seine Kosten.
+2. **Bedienfeld** (EDIT-WAHL 2, Stellungen 5–7 wie am Original, vorher dunkel „kommt mit MK4“):
+   - **MOD-FX:** TYP (Liste Chorus/Flanger · Ensemble · Phaser, Anzeige CHO/EnS/PHA) · TEMPO (Hz des Effekt-LFO) · TIEFE (% Effekt-Anteil, 0 = aus).
+   - **DELAY:** TYP (Stereo · Kreuz · L/R; StE/CrO/L-r) · TEMPO SYNC (an/aus) · **ZEIT │ NOTE** am selben Platz (wechselt mit TEMPO SYNC,
+     Matrix-Zeile „ZEIT“/„NOTE“) · TIEFE (Echo-Pegel und Wiederholung in dB). NOTE ist ein stetiger Regler mit Rundung auf die 15 Werte
+     (Haptik je Stufe), Tipp = Liste mit 15 Zeilen. LCD z. B. „DELAY · NOTE 1/8“ / „250 ms (Song-Tempo 120)“, Anzeige „1.8“ wie am Original.
+   - **EQ:** TIEF-FREQ · TIEF-GAIN · HOCH-FREQ · HOCH-GAIN; Frequenzen logarithmisch (gleicher Weg = gleiches Verhältnis), Gains enden auf
+     0,5-dB-Schritten, LCD in Hz/kHz und dB („EQ · TIEF-GAIN“ / „+4,5 dB“), Anzeige z. B. „4.5“, „6.00“, „18.0“.
+   - Liste der EDIT-WAHL 2 zeigt je Effekt eine Zeile (z. B. „Kreuz · NOTE 1/8 · 250 ms · TIEFE 41“), Auswahl-LCD ebenso; ◎ markiert
+     abweichende Effekt-Stellungen; ◎-Vergleich mit dem Original auch für `mfx`/`dly`/`eq`. Eine Geste = ein Undo. SHIFT+OKT ±1 kennt die
+     0,5-dB-Schritte. Hilfe: zwei neue Zeilen (MOD-FX/DELAY/EQ, DELAY-Typen und TEMPO SYNC).
+3. **Leistungs-Probe** (Menü → Info): Fälle „Kern“ und **„+FX“** (Kern mit allen drei Effekten: Phaser bzw. Cho/Flg, Delay Stereo 1/8
+   TIEFE 64, EQ +6/−4 dB).
+4. **Test-API:** `mkRender(sound, ev, {fxIn: {l, r}, fxFrz})` (Signal in den Effekteingang, Effekt-LFO eingefroren), Worklet-Nachrichten
+   `{mkFxIn}`, `{mkFxFrz}`, Tap `'fx'` (Effektausgang ohne DC-Sperre), `mkInfo().fxBytes`.
+
+### Abnahme MK4 (Node-Offline `v3-mk4-fx.mjs`, `v3-mk4-cpu.mjs`; Chromium `v3-mk4-ui.mjs`, `v3-mk4-pe1.mjs`, `v3-mk1-look.mjs`, `smoke.mjs`)
+| ID | Ergebnis |
+|---|---|
+| MK4-01 | ✔ 32 Renders (3 Timbres × Mod-FX-Typ 0–2 × TEMPO 0/64/127 bei TIEFE 0, Delay alle Typen TIEFE 0, EQ 0 dB, dazu VA und FM6) gegen 4.10.0: max \|Δ\| = 0. Ohne Delay-TIEFE 0 Byte Puffer. |
+| MK4-02 | ✔ Cho/Flg auf Rauschen, LFO eingefroren: TIEFE 100 Kerbtiefe 15,6 dB (≥ 12; W-31 ≈ 16,8), TIEFE 40: 4,1 dB (≤ 6). Kammabstand wandert 56 % (erste Kerbe 504 → 223 Hz). LFO-Periode aus der Verzögerung je 20 ms: 2,16 s gegen W-31 2,156 s (TEMPO 64). |
+| MK4-03 | ✔ Ensemble TIEFE 127: Korrelation der nassen Signale L/R 0,19 … 0,24 (≤ 0,5) in 7 LFO-Stellungen; nasser Pegel −0,72 … +0,96 dB (± 1). |
+| MK4-04 | ✔ Phaser TIEFE 127: 3 Kerben 16,6 / 19 / 20,2 dB (LFO unten) bzw. 20,5 / 22,4 / 18,2 dB (oben); tiefste Kerbe 53 → 1172 Hz = 4,47 Okt. |
+| MK4-05 | ✔ Sync 1/8 bei 120 BPM: erstes Echo +12 000 Samples in L und R; TIEFE 64: −5,95 dB (W-32 −5,95); TIEFE 127: jede Wiederholung −1,94 dB, Spitze Impuls −6 dBFS. Info: ein 4-stimmiger Akkord mit Anschlag 1 und TIEFE 127 erreicht am Engine-Ausgang +2,1 dBFS (trocken −3,9; Echos addieren sich); der Nachhall fällt danach stetig; Begrenzer und Soft-Decke der Summe folgen (siehe Abweichungen). |
+| MK4-06 | ✔ Kreuz, Impuls nur links: Echos L, R, L (> 250 dB Trennung, also nur ein Kanal); L/R mit Mono-Impuls: L, R, L, R. |
+| MK4-07 | ✔ ZEIT 0/64/127: 1,00 / 38,48 / 1398,83 ms = W-32 (Abweichung < 0,1 %). ZEIT-Sprünge (90→110→60→100→30) und Zug 64→120 in 1 s bei laufendem Echo: M-KLICK ≤ 2,3 dB, M-EINBRUCH ≥ −2,1 dB. |
+| MK4-08 | ✔ 120 → 90 BPM während des Echos: Impuls 0,5 s nach dem Wechsel echot nach 333,33 ms (genau, also < 1 Takt); M-KLICK 2,3 dB, M-EINBRUCH ≥ −0,6 dB. |
+| MK4-09 | ✔ Tiefen-Kuhschwanz 100 Hz +12 dB: 25 Hz +11,94, 400 Hz +0,06, 1 kHz 0,00 dB. Höhen-Kuhschwanz 8 kHz −12 dB: 16 kHz −11,81, 2 kHz −0,04 dB. |
+| MK4-10 | ✔ Echo eines Rauschstoßes trägt die Phaser-Kerben (246 / 914 / 4242 Hz, 19–22 dB); EQ 8 kHz −12 dB im Echo: −11,8 dB bei 16 kHz. |
+| MK4-11 | ✔ Node-Offline, je Fall eigener Prozess, Median aus 5: alle drei Effekte an = **+0,72 … +0,79 × VA-Stimme** je Spur (Cho/Flg 0,79, Ensemble 0,72, Phaser 0,78; ≤ 1,0). VA-Stimme 4,66 ms je s Audio. Spitze je Quantum (99,9 %): Kern 0,31 ms, +FX 0,35–0,47 ms (Rauschen der Maschine; p50 +0,009 ms). Leistungs-Probe mit „+FX“ läuft (frames_ok, 0 Netzaufrufe). |
+| MK4-12 | ✔ M-PLATZ in P1, P2, P3, L1, L2, W, L1 mit Safe-Area, 926 × 428 mit Safe-Area, L1 mit Home-Balken (Halb-Ansicht quer), Halb-Ansichten LINKS/RECHTS: MOD-FX, DELAY ZEIT, DELAY NOTE (Ebene 1 und 2), EQ (Ebene 1 und 2), alle Treffer ≥ 44 × 44, keine Überlappung, nichts abgeschnitten, kein Scrollen. M-ANSICHT ZEIT │ NOTE und Effekt-Stellungen: 0,00 px. Listen TYP (3), NOTE (15), EDIT-WAHL 2 (11): Zeilen ≥ 44 px, im Bild, gewählte sichtbar. H-1 / H-3 aller Effekt-Regler: siehe unten. MK1-21/MK1-32 (`v3-mk1-look.mjs`, 88 Prüfungen, M-SKIZZE) bestehen weiter. |
+| MK4-13 | ✔ Spur-Effekte unverändert (Spur-Kette nicht angefasst; VA/FM6 und AM ohne Effekte bitgleich). Worklet ASCII. Markenwörter (B.6 Nr. 9): AM-Teil 0, ganze Datei genau 1× `MS 2000` in `MK_LABEL`. Keine Konsolenfehler (alle Läufe), Smoke-Test ohne Fehler. PE1: rAF-Median 59,9–60 fps, keine longtask > 50 ms, Noten wie Grundstand, 0 Tick-Fehler. **Budget: +24 967 B (24,4 KiB) ≤ 25 KB.** |
+| MK4-14 | ✔ 1/1 und 3/4 bei 120/60/40 BPM: erstes Echo nach 96 000 / 72 000 / 192 000 / 144 000 / 288 000 / 216 000 Samples (genau). Tempo 120 → 40 → 120 BPM während des Echos: M-KLICK 2,0 dB. Puffer vor der ersten TIEFE > 0: 0 Byte, danach **2 304 032 B ≈ 2,3 MB je Spur** (48 kHz; Chromium mit 44,1 kHz: 2 116 832 B), einmal angelegt (zweites Einschalten legt nichts neu an). |
+
+**H-1 (min → max)** MOD-FX TYP Cho/Flg → Phaser 10,2 dB (Band) · TIEFE 12,1 dB · TEMPO Periode ×108 (64 → 127; 0 = 50 s wäre zu lang für
+einen Render) · DELAY TIEFE +42 dB Echo · ZEIT ×1399 · NOTE ×32 · TEMPO SYNC ×13 · TYP (Kreuz) Kanalwechsel · EQ TIEF-GAIN 24,0 dB ·
+TIEF-FREQ 11,9 dB · HOCH-GAIN 23,1 dB · HOCH-FREQ 11,8 dB. **H-3** (0, ¼, ½, ¾, 1, kein Rückgang > 0,5 dB): Cho/Flg-Kerbtiefe
+0 → 3,1 → 7,7 → 14,3 → 19,6; Phaser tiefste Kerbe 0 → 3,0 → 7,5 → 15,2 → 20,2; Ensemble L/R-Unterschied −120 → −31,7 → −25,1 → −22,1 → −19,8 dB;
+Delay-Echo −48,1 → −17,9 → −12,0 → −8,5 → −6,0 dB; ZEIT, alle EQ-Regler stetig steigend. **Umschalten** (M-KLICK ≤ 6 dB, M-EINBRUCH
+≥ −3 dB): Mod-FX-Typ 0→1→2→0 3,9 dB; Mod-FX-TIEFE 0→127→0 als Sprung 4,0 dB; Delay-Typ 2,3 dB; Delay-TIEFE und TEMPO SYNC 2,5 dB;
+EQ-Sprünge 2,1 dB; Züge in 1 s (Phaser-TIEFE, Ensemble-TEMPO, Cho/Flg-TIEFE, Delay-TIEFE, NOTE 1/32→1/1, TIEF-FREQ, HOCH-GAIN) ≤ 4,7 dB.
+**Im App-Pfad** (mkRender über das echte Worklet): Echo nach 250 ms bei −5,95 dB; EQ 4 kHz −12 dB senkt 8/12 kHz um 11,3/11,9 dB;
+Ensemble macht aus Mono Stereo; Sound-Normalisierung (Laden/Speichern) behält alle Effektwerte (auch −3,5 dB).
+
+### Fach-Prüfung (vor der Abnahme, selbst ausgeführt): FP-DSP (Haupt-Blick), FP-IPHONE (Zweit-Blick) — 9 Befunde, 8 behoben, 1 begründet
+1. **FP-DSP / CPU (behoben):** Erster Stand mit Effekt je 16er-Block kostete +1,23 … +1,35 × VA-Stimme (MK4-11 verfehlt). Jetzt einmal je Quantum: +0,72 … +0,79.
+2. **FP-DSP / Mod-FX-Sprung (behoben):** TIEFE 0 → 127 als Sprung blendete die Mischung nur in 5 ms ein (M-KLICK 6,1 dB). Jetzt Mischung 20 ms,
+   Tiefe beim Einschalten sofort, beim Ausschalten gehalten: 4,0 dB.
+3. **FP-DSP / Echo-Klang (behoben):** Lineare Interpolation bei gebrochener Verzögerung (z. B. 112 BPM bei 44,1 kHz: 1/8 = 11 812,5 Samples)
+   machte jede Wiederholung dumpfer (−2,4 dB bei 10 kHz je Durchlauf). Jetzt ganze Samples; Prüfung: jede Wiederholung liegt ganz in einem Sample.
+4. **FP-DSP / Nachklang (behoben):** Die Ruhe-Schwelle 1e-7 (−140 dB) ließ ein Echo 1,4 s / TIEFE 127 über 100 s weiterrechnen. Jetzt −110 dBFS.
+5. **FP-DSP / EQ-Bauform (behoben):** Koeffizienten je 32 Samples → je Steuerblock 16 (B.6 Nr. 10). Abweichung: g wird je 16er-Block aus dem
+   geglätteten Wert gesetzt, nicht je Sample interpoliert (TPT verträgt das; M-KLICK der EQ-Sprünge 2,1 dB).
+6. **FP-DSP / Messung (begründet):** Ein Flanger mit Rückkopplung auf einem harmonischen Akkord schwillt von selbst an, wenn Kammspitzen und
+   Teiltöne zusammenfallen (+6,0 dB im 2-ms-Fenster, auch in einem idealen float64-Flanger, `v3-mk4-dbg5.mjs`). M-KLICK auf diesem Akkord wird
+   deshalb an den Umschaltpunkten (−5 … +80 ms) und über die Gesten gemessen, auf Rauschen über das ganze Signal.
+7. **FP-DSP / LCD (behoben):** EQ-Gain zeigte „005“ statt „+4,5 dB“; EQ-LCD jetzt nur in Hz/kHz und dB.
+8. **FP-IPHONE / PE1 (geprüft):** unbeschränkt rAF 59,9–60 fps, 0 longtasks, Noten wie Grundstand. Mit 4× CPU-Drossel haben Grundstand
+   und MK4 gleichermaßen longtasks (Grundstand 1–5, MK4 0–7 je Lauf, beide 47–60 fps) — kein MK4-eigener Befund.
+9. **FP-IPHONE / Speicher (geprüft):** 2,3 MB je AM-Spur mit Delay (8 Spuren ≈ 18,4 MB höchstens); der Puffer bleibt bis zum Neubau des
+   Spur-Knotens (bewusst, damit ein Wieder-Einschalten nichts anlegt). Anlegen im Nachrichten-Weg des Audio-Fadens (Spec W-32); Chromium
+   legt große Float32Arrays als genullte Seiten an (keine Kopierarbeit). Startzeit unverändert (Effekt-UI im nachgeladenen `sq-mk-src`).
+
+### Abweichungen von der Spec (bewusst)
+- **MK4-05 „kein Überlauf“** gilt für den Prüf-Impuls (Spitze −6 dBFS) und den stetig fallenden Nachhall; ein voller 4-stimmiger Akkord mit
+  Anschlag 1 und TIEFE 127 erreicht am Engine-Ausgang +2,1 dBFS (wie am Gerät addieren sich Echos), danach folgen Begrenzer und Soft-Decke der Summe.
+- **M-KLICK auf dem Akkord** an Umschaltpunkten und Gesten (Befund 6).
+- **EQ-Koeffizienten je 16er-Block** statt je Sample interpoliert (Befund 5).
+- **MK4-11** in Node (V8) gemessen; der iPhone-Faktor ist weiter unbelegt (§15.1).
+- **MK4-02 Periode** über die laufende Verzögerung (Kreuzkorrelation je 20 ms) statt aus einer Impulsantwort; H-1 von TEMPO als 64 → 127.
+
+### Bekannte Lücken / für den Hauptstrang
+- **ECO-Klang ohne Effekte** (Spec B.5: „ohne T2, FX …“).
+- **MK2-Test veraltet:** `v3-mk2-ui.mjs` MK2-10 erwartet MOD-FX … SEQ dunkel; ab MK4 sind MOD-FX/DELAY/EQ aktiv → Erwartung nach dem Zusammenführen anpassen.
+- **Schon im MK2-Stand (nicht hier behoben):** `v3-mk2-ui.mjs` MK2-08 „Welle ≤ 30 ms nach dem Laden“ schwankt (MK2.html: 37,7/57,8 ms, MK4: 24,6/36,0 ms);
+  `v3-mk1-ui.mjs` MK1-31 „🎲 jeder hörbar“ fällt zufällig (MK2.html: 1 stummer Wurf von 100; hier einmal 1, einmal 0).
+- **Zusammenführen:** MK4 berührt `MkCore.block` (Stimmensumme in den Effektpuffer, Zeilen um `this.fx`), `MkCore`-Konstruktor/Laden/`set`/`idle`,
+  `process()` des Prozessors (eine Zeile `this.mk.fxEnd(L, R)` vor der Mono-Halbierung, `fxHot()` in den zwei `busy()`-Bedingungen), die
+  Nachrichten `{mkFxIn}`/`{mkFxFrz}`, `mkFxMem` im Host, `mkInfo`, `mkRender`, im Bedienfeld `L_`, `KN`, `SEC2` (Stellungen 5–7), `knobs()`,
+  `fmtv`, `lcdOf`, `setWahl`, die Matrix-Namen, `paintKnob` (Log-Regler), `wiaPos2`, `knobGesture`, `octBtn`, Probe, Hilfe. MK3 ändert ebenfalls
+  `MkCore.block` (Timbre-Verteilung) — dort zusammenführen: die Stimmen beider Timbres summieren in `VL/VR` mit `vo = off`.
+
+### Geräte-Abgleich (für Xander am eigenen Gerät, EN3-16)
+1. MOD-FX Chorus/Flanger TIEFE 40 (sanfter Chorus) und TIEFE 100 (deutlicher Flanger mit Pfeifen).
+2. MOD-FX Ensemble TIEFE 127 auf einer Fläche: breit, schwebend.
+3. MOD-FX Phaser TEMPO 30: langsames Wandern (≈ 0,09 Hz, eine Runde ≈ 11 s).
+4. DELAY TIEFE 64, NOTE 1/8: Wie viele Wiederholungen hörst du? Die App: erstes Echo −6 dB, dann je −7,9 dB → ≈ 5 hörbare Wiederholungen.
+
+### iPhone-Prüfpunkte (Pages-Stand nach MK4, EN3-17)
+1. MS-2000-Spur, EDIT-WAHL 2 auf **DELAY** (Stellung 6): TEMPO SYNC an, NOTE 1/8, TIEFE 60, Song läuft → Echo im Takt, kein Knacken beim Drehen.
+2. BPM während des Songs ändern → Echo folgt sofort, ohne Knacken.
+3. **MOD-FX** Ensemble auf einer Fläche (TIEFE hoch) → breiter Stereoklang; TIEFE auf 0 → genau der Klang ohne Effekt.
+4. **EQ** TIEF-GAIN +6 dB → mehr Bass; HOCH-GAIN −12 dB → dumpfer.
+
+### Tests und Dateien
+- `dirigent-test/v3-mk4-fx.mjs` (Node, 61 Prüfungen, Ausgabe `v3-mk4-fx.out`), `v3-mk4-cpu.mjs` (`v3-mk4-cpu.out`), `v3-mk4-ui.mjs`
+  (Chromium, 64 Prüfungen, `v3-mk4-ui.out`), `v3-mk4-pe1.mjs` (`v3-mk4-pe1.out`), `v3-mk4-shot.mjs`, Hilfen `v3-mk4-dbg*.mjs`, `v3-mk4-qpk.mjs`.
+- Bildschirmfotos: `dirigent-test/v3-mk4-shots/` — je Format P1, P2, P3, L1, L2, W: `-modfx`, `-delay-zeit`, `-delay-note`, `-eq`; dazu
+  `mk1-look-*` (SPIEL/FILTER aller Formate inkl. Safe-Area und Halb-Ansichten). Smoke: `dirigent-test/v3-mk4-smoke.png`.
+- Schnappschuss: `synq-snapshots/MK4.html`. Größe 2 822 269 B (MK2 + 24 967 B).
+
+## MK4-fix — zwei Befunde aus der Prüfung behoben · App bleibt 4.12.0 · Format 5 · keine Server-Änderung
+
+### 1. Änderung in der Stille wirkte erst beim nächsten Ton (TIEFE 0 / EQ 0 dB nicht bitgleich trocken)
+- **Ursache:** Nur `MkFx.run()` führte die Glätter (`sMd`, `sW`, `sDd`, `sLg/sHg/sLf/sHf`) und die Typ-Überblendungen nach — und `run()` läuft
+  nur, solange eine Stimme oder ein Effekt-Nachhall klingt. Außerdem blieb `mOn` nach dem Ausblenden stehen. Folge: Wer zwischen zwei Tönen
+  TIEFE auf 0 drehte, ein Programm wechselte (Zifferntasten) oder den TYP umschaltete, hörte am Anschlag des nächsten Tons noch den alten Effekt
+  (bis −5 dB in 0–5 ms; Programmwechsel max |d| 0,134 > Tonspitze; Typwechsel +4,5 dB).
+- **Behoben:** neue `MkFx.settle()`: Klingt nichts (keine Stimme, kein Effekt-Nachhall — oder die Effekte waren vor der Änderung aus), springen
+  alle Glätter, Mischung, Delay-Zeit/-Typ und der Mod-FX-Typ sofort auf ihr Ziel; eine laufende Mod-FX-Stufe startet mit leeren Leitungen und
+  frischen Abgriffen (kein Gleiten von der LFO-Stellung vor der Pause), eine abgeschaltete Stufe ist wirklich aus. Aufgerufen von
+  `MkCore.load` und `MkCore.set` (nur bei mfx/dly/eq-Pfaden, `fxSettle`) und am Quantums-Ende, sobald der Nachhall still ist (`fxEnd`).
+  Zusätzlich fällt `mOn` schon im Durchlauf ab, in dem die Mischung 0 erreicht. Änderungen bei klingendem Ton laufen unverändert geglättet.
+  Delay-Länge als `dLen()` ausgelagert (gleiche Rechnung).
+- **Nachweis (Node, echter Worklet-Code):** `v3-qa-mk4-idle.mjs` gegen 4.10.0: Programmwechsel, Ensemble TIEFE 127→0, TIEF-GAIN +12→0 jeweils
+  max |d| **0** (vorher 0,134 / 0,062 / 0,053), Pegel 0,0 dB in allen Fenstern; Kontrolle (Änderung bei klingendem Ton) unverändert ≤ 2,9e-6.
+  `v3-qa-mk4-idle2.mjs` Typwechsel Phaser→Cho/Flg in der Stille gegen „immer Cho/Flg“: max |d| **0** (vorher +4,5 dB). Neu
+  `v3-mk4fix-idle3.mjs` (Gegenrichtung: TIEFE 0→127, 40→127, Ensemble→Phaser, EQ 0→+12/−6, DELAY 0→100 in der Stille gegen „immer so“):
+  alle ≤ 3,7e-7 (vorher bis 0,13). **Chromium** (`v3-rep-mk4-idle-chrom.mjs`, OfflineAudioContext über SynthHost): alle Stille-Änderungen
+  max |d| 0, Kontrollen ≤ 2,9e-6, keine Konsolenfehler. **Live** (`v3-rep-mk4-idle-live.mjs`, Echtzeit, `SYNQUENZER.mkSet`): erster Ton nach der
+  Änderung minus späterer Ton 0,39/−0,66/0,30/−0,06 dB — innerhalb des Rauschbodens später-gegen-später (1,45/−1,72/0,70/−0,35 dB; vorher −5,65/−4,72 dB in 0–5 ms).
+
+### 2. Panik und ■■ („Hall und Echo aus“ / „Alle Töne aus“) ließen das MS-2000-DELAY weiterklingen (> 30 s)
+- **Ursache:** `tailKill()` leerte nur Bus-Echo und Hall; `MkCore.panic()` blendete nur die Stimmen aus; `MkFx` hatte keinen Löschweg.
+- **Behoben:** `MkFx.kill()`: klingt ein Effekt-Nachhall, blenden die Delay-Wiederholungen (Rückkopplung und Ausgang) und die Mod-FX-Mischung
+  über `MK_KQ` Quanten (10 ms) linear aus, danach vergisst das Delay seinen Puffer (`dWr = 0`, nur Neues kommt zurück) und die Mod-FX-Stufe
+  startet leer neu (Mischung blendet in 20 ms wieder ein); ist alles still, sofort (`wipe()`). Aufgerufen von `MkCore.panic()` (Worklet-Ereignis 6)
+  und von der neuen Nachricht `{mkFxKill}` (`E.mkFxKill()` im Host), die `tailKill()` an jede Synth-Spur (und die Vorhör-Kette) schickt.
+  Eine neue Note danach bekommt wieder ihr Echo. Alles ASCII im Worklet-Quelltext (btoa-Weg).
+- **Nachweis:** `v3-rp-mk4-dlytail.mjs` (Chromium, echte Taps, P1 390×844 und L1 844×390): ■■ mit TIEFE 127: 0–300 ms −97/−87 dB, ab 300 ms
+  Stille (vorher −26 … −34 dB über 4 s); panic(): 0–300 ms −90/−124 dB, ab 300 ms Stille bis 10 s (vorher −30 … −55 dB); panic + Stumm genauso;
+  Kontrollen TIEFE 0 still; keine Seitenfehler. `v3-qa-mk4reg-tailui.mjs`: Bus-Echo Basis/neu unverändert (−33 dB, dann Stille), MS-2000-Delay
+  jetzt −102/−94 dB, dann Stille. `v3-qa-mk4reg-panic.mjs` (ZEIT 127, Akkord): ab 0 s −200 dB, nichts über −60 dB (vorher noch bei 29,3 s).
+  Neu `v3-mk4fix-kill.mjs` (Node, 30 Prüfungen, `v3-mk4fix-kill.out`): Delay 127, Delay + Cho/Flg, Phaser, Cross + EQ +12, je Panik und Kill:
+  20 ms danach < −80 dB (Rest = Ausschwingen des DC-Blockers), ab 0,5 s < −100 dB, kein Knack (größter Sprung beim Kill ≤ Sprünge des laufenden
+  Nachhalls), neue Note hat wieder Echo.
+
+### Regression
+- `v3-mk4-fx.mjs` 61/61 PASS (`v3-mk4fix-fx.out`), `v3-mk4-ui.mjs` 64/64 PASS (`v3-mk4fix-ui.out`), `v3-mk1-dsp.mjs` 64 PASS
+  (`v3-mk4fix-mk1dsp.out`), Smoke ohne Fehler (`dirigent-test/v3-mk4fix-smoke.png`). Keine sichtbare Änderung (keine Layout-Prüfung nötig).
+- Chromium: `/opt/pw-browsers/chromium-1194` gibt es nicht; alle Läufe mit `chromium-1243` (wie die übrigen MK4-Tests).
+- **Zusammenführen:** zusätzlich berührt: `MkFx` (`settle`, `kill`, `wipe`, `dLen`, `mFresh`, `kq` in `run`/`hot`/`idle`), `MkCore.load`/`set`/`fxEnd`/
+  `fxSettle`/`panic`, `onMsg` (`mkFxKill`), Host `E.mkFxKill`, `tailKill()` im Hauptfaden.
+- Offen/Beobachtung: Stummschalten einer Spur schneidet einen laufenden Effekt-Nachhall nicht ab (gilt für das Spur-Ende vor der Stumm-Stufe;
+  nicht Teil des Befunds, nicht geändert).
+- Schnappschuss: `synq-snapshots/MK4-fix.html`, 2 826 589 B (MK4 + 4 320 B).
+
+## G-MK34-merge — Zusammenführung · App 4.12.0 (`APP_CODE` 4 012 000) · Format bleibt 5
+
+**Zusammengeführt** (echter 3-Wege-Merge, `git merge-file`, Basis = MK2 `mk-base-B.html` 2 797 302 B): Hauptlinie (MK2 + MK2-fix +
+G-MK2a-gruppe-fix, 4.10.0) ← **MK3** (inkl. MK3-fix, G-MK3-gruppe-fix, 4.11.0) ← **MK4** (inkl. MK4-fix, 4.12.0). `VERSION` = 4.12.0 (die höchste).
+Sicherung vorher: `mk-wt/index.html.vor-merge-G-MK34-merge.html`. Ergebnis 2 874 742 B. Keine Konfliktmarken mehr, Worklet bleibt ASCII,
+alle Skript-Blöcke syntaktisch geprüft (`node --check`).
+
+### Konflikte und Auflösung
+MK3 → Hauptlinie (2 Konflikte):
+1. **Worklet, LFO-2-Phase / Notentabellen-Arbeit** (MK2-fix ruft `mkntWork()` einmal je Quantum im Kern auf; MK3 machte den alten Kern zum
+   Timbre `MkTim` und zieht den S/H-Zufall je Timbre): MK3-Zeile (`this.par.seed`, `9 + 10 * ti`) übernommen; `mkntWork()` wandert in
+   `MkCore.block` (einmal je Quantum für beide Timbres, nicht doppelt im Schicht-Modus).
+2. **`mkSetP`**: MK3s Wellen-Zufuhr für beide Timbres (`t.0|1.o1.w|c2`, `mode`) + G-MK2a-fix `UI.dirty.edHead = true` (Kopfzeile „geändert“
+   und [A/B] sofort) — beides behalten.
+
+MK4 → Hauptlinie (16 Konflikte):
+3. **Effekte im Worklet** (größter Punkt): MK4 hatte MOD-FX/DELAY/EQ (`MkFx`) in den Ein-Timbre-Kern gebaut, der seit MK3 `MkTim` heißt.
+   Die Effekte gehören zum Sound (Programm-Ebene) und laufen jetzt in `MkCore` **nach der Summe beider Timbres**: `this.fx` im
+   `MkCore`-Konstruktor, `fx.load` + `fxSettle` in `MkCore.load`, `mfx.*`/`dly.*`/`eq.*` in `MkCore.set` (MK3-Programmpfade bleiben),
+   `fxHot`/`fxEnd`/`fxSettle` in `MkCore`, `fx.kill()` in `MkCore.panic`, `fx.idle()` in `MkCore.idle`; `MkCore.block` schreibt beide
+   Timbres (auch den Solo-Blendweg) in den Effekt-Eingang, wenn ein Effekt an ist, sonst direkt in den Ausgang (wie vorher).
+   Aus `MkTim` entfernt: `new MkFx`, Effekt-Zweig in `load`/`set`/`block`/`idle`/`panic` (MkTim bleibt in MK3-Form: `load(tt)`,
+   `set` mit Rückgabe `reas`, Pfad-Filter je Timbre).
+4. **Port-Nachrichten**: `mkSolo` (MK3) und `mkFxIn`/`mkFxKill`/`mkFxFrz` (MK4) — beide.
+5. **`MKW`-Konstanten**: Stimmungen `SCL`/`sclCt` (MK3) und Effekt-Konstanten W-31…W-33 (MK4) — beide.
+6. **EDIT-WAHL-2-Tabelle**: MOD-FX/DELAY/EQ aktiv mit Knöpfen (MK4) und STIMMUNG aktiv mit `scl`/`skey` (MK3).
+7. **`patchTxt`**: MK3 (`ct()` = bearbeitetes Timbre) + MK4s neue `fxTxt`.
+8. **`lcdOf`-Kopf**: MK4s Einheit (NOTE, EQ in Hz/dB) mit MK3s `ct().o1.w` und `tLab()`-Präfix bei PATCH.
+9. **`lcdOf`-Ende**: MK3s Hinweise (SCHICHT/SPLIT/Mono/EIGENE) + MK4s NOTE-Zeile; Präfix T1/T2 entfällt nur bei MOD-FX/DELAY/EQ (gehören
+   zum Sound, nicht zu einem Timbre).
+10. **LCD bei Abschnittswahl EDIT-WAHL 2**: Effekte (Pos. 4–6) → `fxTxt`, PATCH (0–3) → `patchTxt`, STIMMUNG (9) → Stimmung + Grundton.
+    (MK4s Bedingung `pos ≥ 4` hätte sonst STIMMUNG als EQ-Zeile gezeigt.)
+11. **Matrix-Zeile**: Namen mit `ct()` (MK3) und ZEIT/NOTE-Umschalter (MK4); „EIGENE ▸“ (MK3); Titel PATCH/Effekt/leer nach Position.
+12. **Original-Markierung** (`P.orig`): Regex um `(mfx|dly|eq).*` erweitert, MK3s `tv|split|scale|skey|lay|usc` und `tp()` bleiben.
+13. **`wiaPos2`** (Punkte „geändert“ in EDIT-WAHL 2): PATCH des bearbeiteten Timbres (MK3), Effekte 4–6 (MK4), STIMMUNG 9 (MK3).
+14. **Gesten-Ende**: MK4s Rundung (`d.step`, NOTE) + MK3s `P.sync0 = null`.
+15. **Matrix-Liste**: Zeilentext PATCH (0–3) / Effekt (4–6, `fxTxt`) / STIMMUNG (9).
+16. **`normMk`-Bereiche**: `usc` (MK3) + `eq: EQR` (MK4).
+17. **`VERSION`**: 4.12.0. 18. **Hilfe**: drei MK3-Zeilen + zwei MK4-Zeilen.
+19. Außerhalb der Konflikte: zwei MK4-fix-Kommentare enthielten das Markenwort („the MS 2000 …“) → „the AM …“ (B.6 Nr. 9: genau 1 Treffer).
+
+### Proben (gegen `mk-wt/index.html`; Bitgleich-Vergleiche gegen die Hauptlinie vor dem Merge; Chromium 1243, der Pfad 1194 fehlt hier)
+- Smoke ohne Fehler (`dirigent-test/g-mk34-smoke.png`).
+- MK3: `v3-mk3-timbre.mjs` 30/30, `v3-mk3-scale.mjs` 6/6, `v3-mk3-fpdsp.mjs` 6/6, `v3-mk3-ui.mjs` 37/37, `v3-mk3fix-solo.mjs` ok,
+  `v3-mk3fix-cpreach.mjs` (Kopie `gmk34-mk3fix-cpreach.mjs`, Pfad mk-wt) P1 + L1 ok, `v3-gfix-mk3-lcdsplit.mjs` ALL OK.
+- MK4: `v3-mk4-fx.mjs` 61/61, `v3-mk4fix-kill.mjs` 30/30, `v3-mk4-cpu.mjs` 3/3 (≤ 0,76 × VA-Stimme), `v3-mk4-pe1.mjs` (Kopie
+  `gmk34-mk4-pe1.mjs`) bestanden (ein Lauf mit einem 72-ms-longtask auf der geteilten Maschine, Wiederholung 0), `v3-mk4-ui.mjs` 63/64 —
+  die eine Zeile MK4-12 erwartet STIMMUNG dunkel (seit MK3 aktiv, erwartet); Kopie `gmk34-mk4-ui.mjs` mit STIMMUNG aktiv 65/65.
+- Hauptlinie (MK2-fix, G-MK2a): `v3-mk2-osc.mjs` 32/32, `v3-mk2fix-nt.mjs` alles PASS (allein; parallel gestartet 1 Zeitgrenze),
+  `v3-gmk2afix-patch.mjs` 2/2, `v3-mk2-ui.mjs` 22/25: MK2-10 erwartet „MOD-FX … SEQ dunkel“ (seit MK3/MK4 aktiv, erwartet); MK2-08
+  „Oktav-Welle ≤ 30 ms nach dem Laden“ schwankt 26–32 ms — **ebenso vor dem Merge** (30,3–31,4 ms, MK2-fix-Nutzlast), nicht durch den Merge.
+- Regression: `v3-mk1-dsp.mjs` 64/64, `v3-mk1-hear.mjs` 53/53, `v3-mk1-look.mjs` 88/88, `v3-mk1-ui.mjs` 33/33, `v3-mk1-eco.mjs` 6/6,
+  `v3-mk1-format.mjs` gegen 4.8.1 (`MK0-fix.html`) 20/21 — nur die fest verdrahtete Erwartung „APP_CODE 4 009 000“ (jetzt 4 012 000, erwartet).
+- Neu für den Merge: `gmk34-merge-fx.mjs` 14/14 (Node): Single mit Effekten bitgleich zum MK4-Zweig (5 Effekt-Fälle, max |Δ| 0);
+  Schicht: Effekt(T1 + T2) = Effekt(T1) + Effekt(T2) (max |Δ| ≤ 1,2e-7, T2 hat sein Echo); Split: T2-Note mit Echo; Solo T1 + DELAY =
+  T2 PEGEL 0 + DELAY (|Δ| 0); Panik in Schicht nimmt beide Echos; DELAY TIEFE → 0 in der Stille = trocken bitgleich.
+  `gmk34-merge-nt.mjs` 4/4 (Chromium, App-`mkRender`): Notentabellen-Wellen 35/61/64 auf T2 in Schicht = gleicher Pegel wie T1 Einzeln
+  (Δ 0,00 dB), mit DELAY Echo, 0 Konsolenfehler. Ausgaben in `gmk34/`.
+
+### Offen
+- `MkTim.inherit` (strukturelle Blende) übernimmt `vpb` nicht: eine Stimmwelle startet beim SXF ihre Tiefpass-Einschwingung neu (so schon
+  in der Hauptlinie vor dem Merge, nicht durch den Merge).
+- MK2-08-Zeitgrenze (s. oben) knapp, schon vor dem Merge.
+
+### Datenbank / Am Server offen
+- Nichts (keine Server-Änderung; Format bleibt 5, `APP_CODE` 4 012 000 ≤ Wächter 4 021 000).
