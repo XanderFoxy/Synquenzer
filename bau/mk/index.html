@@ -1965,12 +1965,14 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 /* ---------- VS5a Marken-Editor (Skizze 4; Überlagerung wie das Quantisier-Blatt, verschiebt nichts) ---------- */
 #wpSheet{display:none;z-index:26;flex-direction:column;border-radius:12px 12px 0 0;border:1px solid var(--line);border-bottom:0;background:linear-gradient(#20232a,#15171b)}
 #wpSheet.open{display:flex}
-#wpSheet .qh{flex:none;display:flex;align-items:center;gap:6px;height:40px;padding:0 4px 0 12px;border-bottom:1px solid var(--panel-edge)}
-#wpSheet .qh b{flex:1 1 auto;min-width:0;font:700 12px/1.1 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#wpSheet .qh .sh-x{width:44px;height:36px}
-#wpSheet .wpab{flex:0 0 76px;height:36px;padding:0;font:700 12px/1 var(--font-ui)}
+#wpSheet .qh{flex:none;display:flex;align-items:center;gap:6px;height:44px;padding:0 4px 0 12px;border-bottom:1px solid var(--panel-edge)}
+/* F1: der Titel bricht zwischen seinen Stücken um (bis 3 Zeilen), nie mit „…“ */
+#wpSheet .qh b{flex:1 1 auto;min-width:0;font:700 12px/1.05 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;white-space:normal;overflow:hidden}
+#wpSheet .qh b .tp,#qSheet .qh.hasfol b .tp{white-space:nowrap}
+#wpSheet .qh .sh-x{flex:0 0 44px;width:44px;height:44px}
+#wpSheet .wpab{flex:0 0 56px;height:44px;padding:0;font:700 12px/1 var(--font-ui)}
 #wpSheet .wpab.on{color:var(--ink);background:var(--amber);border-color:var(--amber)}
-#wpSheet .wptx{flex:0 0 56px;height:36px;padding:0;font:700 12px/1 var(--font-ui)}
+#wpSheet .wptx{flex:0 0 56px;height:44px;padding:0;font:700 12px/1 var(--font-ui)}
 #wpSheet .wptx.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}
 #wpSheet .wpinfo.warn{color:#ffb35c}
 .pop.wplyr{width:min(360px,calc(100vw - 16px))}
@@ -1979,9 +1981,10 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #wpSheet .wpcv{position:relative;flex:1 1 auto;min-height:48px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
 #wpSheet .wpcv canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
 #wpSheet .wpan{position:absolute;top:0;width:1px;height:10px;pointer-events:none}
-#wpSheet .wpinfo{position:absolute;left:4px;bottom:2px;max-width:calc(100% - 8px);pointer-events:none;font:600 10px/14px var(--font-ui);color:var(--text-dim);background:rgba(14,16,20,.75);padding:0 4px;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#wpSheet .qchips{flex:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
-#wpSheet .qchips button{height:32px;min-width:0;padding:0;font:700 13px/1 var(--font-ui)}
+#wpSheet .wpinfo{position:absolute;left:4px;bottom:2px;max-width:calc(100% - 8px);pointer-events:none;font:600 10px/14px var(--font-ui);color:var(--text-dim);background:rgba(14,16,20,.75);padding:0 4px;border-radius:3px;white-space:normal;overflow:hidden}
+#wpSheet .qchips{flex:none;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px}
+#wpSheet .qchips button{height:34px;min-width:0;padding:0;font:700 12px/1 var(--font-ui)}
+#wpSheet .wpsl{flex:none;display:flex;flex-direction:column;gap:3px}
 #wpSheet .qchips button.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}
 #wpSheet .qrow{flex:none;display:flex;align-items:center;gap:10px;height:44px}
 #wpSheet .qrow .lbl{flex:0 0 56px}
@@ -1991,14 +1994,21 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #wpSheet .wpmode{flex:1 1 auto;display:flex;min-width:0}
 #wpSheet .wpmode button{flex:1 1 0;height:44px;min-width:0}
 #wpSheet .wpz{flex:0 0 88px;height:44px;padding:0;font:700 12px/1 var(--font-ui)}
-#qSheet .qfol{flex:0 0 auto;height:32px;padding:0 10px;font:700 11px/1 var(--font-ui)}
+#qSheet .qfol{flex:0 0 auto;height:44px;padding:0 10px;font:700 11px/1 var(--font-ui)}
+#qSheet .qh.hasfol{height:44px}
+#qSheet .qh.hasfol b{white-space:normal;line-height:1.05}
+#qSheet .qh.hasfol .sh-x{width:44px;height:44px}
+@media (orientation:landscape){#qSheet .qh.hasfol{height:40px}#qSheet .qh.hasfol .qfol,#qSheet .qh.hasfol .sh-x{height:38px}}
 #qSheet .qfol.on{color:var(--ink);background:var(--play);border-color:var(--play)}
 .tksheet .tk-wp{width:100%;min-height:44px;margin:0 0 6px}
 @media (orientation:portrait){#wpSheet{grid-row:2/5;grid-column:1/-1;align-self:end;justify-self:stretch;margin:0 8px;height:350px;max-height:100%}}
-@media (orientation:portrait) and (max-height:600px){#wpSheet{height:292px}#wpSheet .qh{height:36px}#wpSheet .qchips button{height:28px}#wpSheet .qrow,#wpSheet .qrow input[type=range]{height:40px}#wpSheet .wpf,#wpSheet .wpmode button,#wpSheet .wpz{height:40px}}
+/* F1 P3: Raster in 2 Reihen (36 px breit), Stärke und Swing nebeneinander – alles ≥ 44 hoch bzw. 36×34, die Wellenform bleibt ≥ 64 px */
+@media (orientation:portrait) and (max-height:600px){#wpSheet{height:292px}#wpSheet .qchips{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}#wpSheet .qrow,#wpSheet .qrow input[type=range]{height:40px}
+  #wpSheet .wpsl{flex-direction:row;gap:10px}#wpSheet .wpsl .qrow{flex:1 1 0;min-width:0;gap:4px}#wpSheet .wpsl .qrow .lbl{flex:0 0 auto}#wpSheet .wpsl .qrow .mval{flex:0 0 36px}}
 @media (orientation:landscape){
   #wpSheet{grid-row:2/4;grid-column:2/-1;justify-self:end;width:380px;max-width:100%;height:100%;border-radius:12px 0 0 0;border-right:0}
-  #wpSheet .qh{height:36px}
+  #wpSheet .qh{height:40px}
+  #wpSheet .qh .sh-x,#wpSheet .wpab,#wpSheet .wptx{height:38px}
   #wpSheet .qchips{grid-template-columns:repeat(8,minmax(0,1fr));gap:3px}
   #wpSheet .qchips button{height:34px;font-size:11px}
 }
@@ -21615,6 +21625,7 @@ function setSongView(on) {
   UI.songView = on;
   EL.gridArea.classList.toggle('song', on); EL.app.classList.toggle('songv', on);
   EL.songView.hidden = !on; hintSideSync(); if (on) pickCancel();
+  if (typeof WP !== 'undefined' && WP.ed) wpClose();          // F1: der Marken-Editor endet mit dem Wechsel der Ansicht
   if (UI.pop && /^(mark|place|rangemore|aspart|partlist|markname|partcolor|cell)$/.test(UI.pop.name || '')) closePop();   // V2e: song sheets end with the view
   if (!on) { SV.mark = null; SV.copy = null; SV.cell = null; svHintFree(); }
   rangeBarSync();
@@ -38847,9 +38858,13 @@ function tkPlayBuf(id, a) {
   return tkBuffer(id);
 }
 // Hüllkurve für die Anzeige (Wellenform): 96 Werte 0…1 (Spitze je Abschnitt), aus dem Cache
+// F1: die Hüllkurve zeigt, was klingt (gesäubert und/oder gedehnt/geschnitten), nicht den Roh-Take
+const TK_PK = new WeakMap(); let TK_PKN = 0;
+const tkPkId = b => { let k = TK_PK.get(b); if (!k) { k = ++TK_PKN; TK_PK.set(b, k); } return k; };
+function tkHeard(id, a) { const raw = tkBuffer(id); if (!raw) return null; let b = null; try { b = tkPlayBuf(id, a); } catch (e) { logErr(e); } return b || raw; }
 function tkPeaks(id, a, n) {
-  n = n || 96; const b = tkBuffer(id); if (!b) return null;
-  const key = id + ':' + (a ? a.in + ':' + a.out : '') + ':' + n, c = TK.peaks.get(key); if (c) return c;
+  n = n || 96; const b = tkHeard(id, a); if (!b) return null;
+  const key = id + ':' + tkPkId(b) + ':' + (a ? a.in + ':' + a.out : '') + ':' + n, c = TK.peaks.get(key); if (c) return c;
   const d = b.getChannelData(0), sr = b.sampleRate, i0 = a ? Math.floor(a.in * sr) : 0, i1 = Math.min(d.length, a ? Math.ceil(a.out * sr) : d.length), out = new Float32Array(n), step = Math.max(1, (i1 - i0) / n);
   let mx = 1e-4;
   for (let k = 0; k < n; k++) { let p = 0; const s0 = Math.floor(i0 + k * step), s1 = Math.min(i1, Math.floor(i0 + (k + 1) * step)); for (let j = s0; j < s1; j += 4) { const v = d[j] < 0 ? -d[j] : d[j]; if (v > p) p = v; } out[k] = p; if (p > mx) mx = p; }
@@ -39429,7 +39444,7 @@ function tkMiniSvg(a) {
   let d = ''; for (let k = 0; k < pk.length; k++) { const x = (k + .5) / pk.length * 100, h = Math.max(2, pk[k] * 44); d += `M${x.toFixed(1)} ${(50 - h).toFixed(1)}V${(50 + h).toFixed(1)}`; }
   return `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="${d}" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>`;
 }
-function tkCellSig(clip) { const a = clip.audio; return 'au:' + a.take + ':' + a.in + ':' + a.out + ':' + (TK.buf.has(a.take) ? 1 : 0) + ':' + (TK.missing.has(a.take) ? 'x' : ''); }
+function tkCellSig(clip) { const a = clip.audio, h = TK.buf.has(a.take) ? tkHeard(a.take, a) : null; return 'au:' + a.take + ':' + a.in + ':' + a.out + ':' + (h ? tkPkId(h) : 0) + ':' + (TK.missing.has(a.take) ? 'x' : ''); }   // F1: neue Fassung → neue Wellenform
 function tkSvDraw(g, song, XB, ru, rh, W) {
   const st = stimmeT(), vx = song && song.vox; if (st < 0 || !vx || !vx.length) return;
   const r = SV.rows.indexOf(st); if (r < 0) return;
@@ -39978,7 +39993,7 @@ return out;
 }
 return {clean, Cleaner, estimateDelay, nlms, VERSION: 'vs4-clean-1'};
 }
-const CL = {w: null, wid: 0, wq: new Map(), buf: new Map(), job: new Map(), info: {}, ab: 'sauber', busy: 0, notes: null, runs: 0, last: null, err: null, core: null, bad: new Set()};
+const CL = {w: null, wid: 0, wq: new Map(), buf: new Map(), job: new Map(), info: {}, ab: 'sauber', busy: 0, notes: null, runs: 0, last: null, err: null, core: null, bad: new Set(), calc: new Set(), loads: 0};
 const CL_LEAD = 0.02, CL_DEF = 60, CL_RES = 0.0316;   // Rest-Übersprechen nach dem Echo-Abzug für die Noten-Probe (−15 dB)
 tkExt().take.push((raw, o) => {
   if (isNum(raw.rf) && raw.rf >= 1 && raw.rf <= 48000) o.rf = Math.round(raw.rf);
@@ -40061,7 +40076,7 @@ function clEnsure(id) {
     const cur = S.takes && S.takes[id];
     if (b && cur && (cur.cl | 0) === a) {
       const act = tkActiveIds(); for (const k of [...CL.buf.keys()]) if (k !== id && !act.has(k)) CL.buf.delete(k);
-      CL.buf.set(id, {a, b}); clResync();
+      CL.buf.set(id, {a, b}); clResync(); UI.dirty.grid = UI.dirty.song = true;   // F1: Wellenform folgt
       const inf = CL.info[id];
       if (inf && inf.hint && !inf.told) { inf.told = true; toast('Viel Übersprechen – Kopfhörer oder leiser spielen'); }
     }
@@ -40072,11 +40087,21 @@ function clEnsure(id) {
   CL.job.set(id, {key, p}); clPaint();
   return p;
 }
+/* F1: Schlüssel der gesäuberten Fassung = Take + Stärke + Stand des Säubern-Kerns (Prüfsumme seines Quelltexts): nach dem Neuladen
+   kommt sie aus dem Audio-Store; gerechnet wird nur, wenn sich einer der drei geändert hat */
+let CL_CORE = '';
+function clCoreVer() {
+  if (CL_CORE) return CL_CORE;
+  const t = vsCleanMake.toString(); let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return (CL_CORE = (h >>> 8).toString(36));
+}
 async function clMake(id, m, a) {
-  const keys = clKeys(id, m, 'c' + a + ':');
+  const tag = 'c' + a + 'v' + clCoreVer(), keys = clKeys(id, m, tag + ':'), ik = id + ':ci' + a + 'v' + clCoreVer();
   let pcm = await clRead(keys, m.len);
-  if (pcm) { if (!CL.info[id] || CL.info[id].a !== a) { try { const b = await kv.aget(id + ':ci' + a); CL.info[id] = b ? JSON.parse(new TextDecoder().decode(b)) : {a}; } catch (e) { CL.info[id] = {a}; } } }
+  if (pcm) { CL.loads = (CL.loads | 0) + 1; if (!CL.info[id] || CL.info[id].a !== a) { try { const b = await kv.aget(ik); CL.info[id] = b ? JSON.parse(new TextDecoder().decode(b)) : {a}; } catch (e) { CL.info[id] = {a}; } } }
   else {
+    CL.calc.add(id); clPaint();
+    try {
     const raw = await tkPcm(id); if (!raw) return null;
     const ref = m.rf ? await clRead(clKeys(id, m, 'r'), m.len) : null;
     const r = await clRun(raw, ref, m.sr, {amount: a / 100}, true);
@@ -40085,9 +40110,10 @@ async function clMake(id, m, a) {
     CL.info[id] = {a, way: inf.way, delayMs: inf.delay != null ? +(inf.delay / m.sr * 1000 - (m.rf || 0) / m.sr * 1000).toFixed(1) : null, echoDb: inf.echoDb != null ? inf.echoDb : null,
       hint: !!inf.hint, ref: !!ref, ms: CL.last ? CL.last.ms : null};
     if (await tkStore(id, pcm, keys)) {
-      try { await kv.aput(id + ':ci' + a, new TextEncoder().encode(JSON.stringify(CL.info[id])).buffer); } catch (e) {}
-      try { for (const k of await kv.akeys()) { const s = String(k); if (s.startsWith(id + ':c') && !keys.includes(s) && s !== id + ':ci' + a) await kv.adel(s); } } catch (e) {}
+      try { await kv.aput(ik, new TextEncoder().encode(JSON.stringify(CL.info[id])).buffer); } catch (e) {}
+      try { for (const k of await kv.akeys()) { const s = String(k); if (s.startsWith(id + ':c') && !keys.includes(s) && s !== ik) await kv.adel(s); } } catch (e) {}
     }
+    } finally { CL.calc.delete(id); }
   }
   return tkToBuffer(pcm, m.sr);
 }
@@ -40100,10 +40126,11 @@ function clResync() {
   // G-S7-merge (VS4 × VS5): ist eine Fassung mit Zeitkarte (VS5 Scheiben/Dehnen) im Spiel, liegen alt und neu nicht mehr zeitgleich –
   // dann wechselt wpSwitch (plant neu mit der Zeitkarte, Überblendung an passender Stelle) statt des Tauschs an derselben Stelle
   if (typeof wpSwitch === 'function') {
-    const own = b => !!b && [...WP.cache.values(), ...WP.old.values()].some(c => c.buf === b);
+    const own = b => !!b && [...WP.cache.values(), ...WP.old.values(), ...WP.alt.values()].some(c => c.buf === b);
     for (const r of TK.src) {
       if (r.dead || !r.o || r.end <= at + T) continue;
       const nb = tkPlayBuf(r.take, r.aud);
+      if (nb && nb !== r.s.buffer && wpSameMap(nb, r.s.buffer)) continue;   // F1: A/B mit Zeitkarte – beide zeitgleich, Tausch an derselben Stelle (unten)
       if (nb && nb !== r.s.buffer && (wpWarp(r.take) || own(nb) || own(r.s.buffer))) { wpSwitch(); return; }
     }
   }
@@ -40123,6 +40150,7 @@ function clResync() {
 function clSync() {
   for (const id of tkActiveIds()) { const m = S.takes && S.takes[id]; if (m && m.cl) clEnsure(id); }
   clResync(); clPaint(); UI.dirty.grid = UI.dirty.song = true;
+  if (typeof wpClChanged === 'function') wpClChanged();      // F1: Marken-Editor offen → Marken der jetzt geltenden Quelle
 }
 function clSet(id, pct) {
   const m = S.takes && S.takes[id]; if (!m || !tkAudioOk()) return false;
@@ -40142,7 +40170,7 @@ function clState(id) {
   let txt, warn = '';
   if (!ok) txt = 'Audio nur auf der eigenen Seite';
   else if (!a) txt = '0 % = Original (bitgleich)';
-  else if (j) txt = 'säubert … (Netz pausiert)';
+  else if (j) txt = CL.calc.has(id) ? 'säubert … (Netz pausiert)' : 'lädt die gesäuberte Fassung …';   // F1: aus dem Store, nicht neu gerechnet
   else if (inf && inf.a === a) {
     txt = (inf.ref ? 'Echo-Abzug ✓' + (inf.echoDb != null ? ' · Musik im Mikro ' + (inf.echoDb >= 0 ? fmtDec(inf.echoDb, 0) + ' dB über' : fmtDec(-inf.echoDb, 0) + ' dB unter') + ' der Stimme' : '') : 'ohne Echo-Abzug (Kopfhörer)') + ' · Rauschen ↓ · kein Gate';
     if (inf.hint) warn = 'Viel Übersprechen – Kopfhörer oder leiser spielen';
@@ -40237,7 +40265,7 @@ async function clNotes(s, o) {
 }
 
 const CL_API = {
-  clInfo: id => { const m = S.takes && S.takes[id]; return {a: m ? m.cl | 0 : 0, rf: m ? m.rf || 0 : 0, ab: CL.ab, busy: CL.busy, job: CL.job.has(id), buf: CL.buf.has(id), info: CL.info[id] || null, last: CL.last, runs: CL.runs, err: CL.err, worker: CL.w ? 'worker' : CL.w === false ? 'hauptfaden' : null}; },
+  clInfo: id => { const m = S.takes && S.takes[id]; return {a: m ? m.cl | 0 : 0, rf: m ? m.rf || 0 : 0, ab: CL.ab, busy: CL.busy, job: CL.job.has(id), buf: CL.buf.has(id), info: CL.info[id] || null, last: CL.last, runs: CL.runs, loads: CL.loads, core: clCoreVer(), err: CL.err, worker: CL.w ? 'worker' : CL.w === false ? 'hauptfaden' : null}; },
   clSet: (id, pct) => clSet(id, pct),
   clAB: v => clAB(v),
   clWait: async id => { const j = CL.job.get(id); if (j) await j.p; return !!CL.buf.get(id); },
@@ -40811,7 +40839,7 @@ return {stretch, cacheKey, VERSION: 'vs5b-stretch-5'};
 }
 const VSM = vsMarksMake(), VSX = vsStretchMake();
 VSM.X = VSX;
-const WP = {det: new Map(), dq: new Map(), cache: new Map(), old: new Map(), job: new Map(), ids: new WeakMap(), mi: new WeakMap(), bid: 0, w: null, wid: 0, wq: new Map(),
+const WP = {det: new Map(), dq: new Map(), cache: new Map(), old: new Map(), alt: new Map(), job: new Map(), ids: new WeakMap(), mi: new WeakMap(), bid: 0, w: null, wid: 0, wq: new Map(),
   ab: false, ed: null, renders: 0, last: null, lastDet: null, how: null};
 const WP_GRIDS = ['off', 'auto', '1/4', '1/8', '1/8T', '1/16', '1/16T', '1/32'], WP_FIX = new Set(WP_GRIDS.slice(2));
 
@@ -40868,8 +40896,24 @@ function wpPlay(id, a) {
   if (c && c.key === key) return c.buf;
   const o = WP.old.get(id);                        // VS5b Render-Cache: die vorige Fassung (Modus hin und zurück, ↶ ↷ im Editor)
   if (o && o.key === key) { if (c) WP.old.set(id, c); else WP.old.delete(id); WP.cache.set(id, o); return o.buf; }
-  wpRender(id, key, b, w);
+  const al = WP.alt.get(id);                       // F1: die andere Quelle derselben Karte (A/B Roh │ Sauber) liegt schon fertig bereit
+  if (al && al.key === key) { if (c) WP.alt.set(id, c); else WP.alt.delete(id); WP.cache.set(id, al); return al.buf; }
+  if (WP.job.get(id + '#alt') !== key) wpRender(id, key, b, w);   // wird gerade als „andere Quelle“ gerechnet: nicht doppelt
   return c ? c.buf : null;                         // bis die neue Fassung da ist: die vorige (sonst der Roh-Take)
+}
+/* F1: hat ein Take mit Zeitkarte auch SÄUBERN, wird die Fassung der anderen Quelle (roh bzw. gesäubert, dieselbe Karte) gleich mitgerechnet –
+   der A/B-Schalter wechselt dann ohne Rechenpause, an derselben Stelle (clResync, 6-ms-Blende) */
+function wpPreAlt(id) {
+  const m = S.takes && S.takes[id], w = wpWarp(id); if (!m || !(m.cl | 0) || !w || WP.ab) return;
+  const cb = CL.buf.get(id), clean = cb && cb.a === (m.cl | 0) ? cb.b : null, raw = tkBuffer(id); if (!clean || !raw) return;
+  const other = wpBase(id) === clean ? raw : clean, k = wpKey(w, other), c = WP.cache.get(id), al = WP.alt.get(id);
+  if ((c && c.key === k) || (al && al.key === k) || WP.job.get(id + '#alt') === k) return;
+  wpRender(id, k, other, w, true);
+}
+// gleiche Karte und gleicher Modus (nur die Quelle anders: roh / gesäubert) → beide Puffer liegen zeitgleich
+function wpSameMap(a, b) {
+  const kk = x => { for (const M of [WP.cache, WP.old, WP.alt]) for (const c of M.values()) if (c.buf === x) return c.key.split('@')[0]; return null; };
+  const ka = kk(a); return !!ka && ka === kk(b);
 }
 function wpRun(M, m) {
   if (m.op === 'det') return M.detectMarks(m.x, m.sr).map(k => ({t: k.t, conf: k.conf, word: !!k.word}));
@@ -40909,9 +40953,10 @@ function wpToBuf(y, sr) {
 // Anfang des Anschlags (bis ±0,4 ms Streuung, bei Anschlägen im Ausklang bis 3 ms) noch in der Blende → 4 ms Vorlauf (N7V-27)
 const WP_LEAD = .004;
 // gerendert wird eins nach dem anderen; ist die Karte inzwischen neuer, folgt gleich die neueste (Regler ziehen)
-function wpRender(id, key, b, w) {
-  if (WP.job.has(id)) return;
-  WP.job.set(id, key);
+function wpRender(id, key, b, w, alt) {
+  const jk = alt ? id + '#alt' : id;                 // F1: die andere Quelle rechnet neben der klingenden Fassung
+  if (WP.job.has(jk)) return;
+  WP.job.set(jk, key);
   const s = w.map.src, d = w.map.dst, t0 = performance.now(), sr = b.sampleRate;
   const L = Math.round(WP_LEAD * sr) / sr;           // VS5a-fix2: Schnitt und Übergang enden WP_LEAD vor der Marke, gleiche Verschiebung
   let msg;
@@ -40932,19 +40977,28 @@ function wpRender(id, key, b, w) {
     msg = {op: 'stretch', x: b.getChannelData(0), sr, src: S2, dst: D2, lock: .02 + L};
   } else msg = {op: 'slice', x: b.getChannelData(0), sr, on: s.slice(1, -1).map(v => v - L), to: d.slice(1, -1).map(v => v - L)};
   wpCall(msg).then(r => {
-    WP.job.delete(id);
+    WP.job.delete(jk);
     const y = r && r.y ? r.y : r, warn = r && r.warn ? r.warn : [];
     const ab = wpToBuf(y, sr); if (!ab) return;
+    if (alt) {
+      WP.alt.set(id, {key, buf: ab, warn, mode: w.mode}); WP.altRenders = (WP.altRenders | 0) + 1;
+      const nw = wpWarp(id), nb = nw && !WP.ab && wpBase(id);
+      if (nb && wpKey(nw, nb) === key) { clResync(); UI.dirty.grid = UI.dirty.song = true; wpPaint(); }   // inzwischen umgeschaltet: jetzt hören
+      return;
+    }
     const prev = WP.cache.get(id);
     if (prev && prev.key !== key && WP.ed && WP.ed.id === id) WP.old.set(id, prev);
     WP.cache.set(id, {key, buf: ab, warn, mode: w.mode});
     WP.renders++; WP.last = {id, ms: Math.round(performance.now() - t0), how: WP.how, n: s.length - 2, key, mode: w.mode, warn: warn.length, wsola: r && r.wsola != null ? r.wsola : undefined};
     if (warn.length && WP.warnK !== key) { WP.warnK = key; toast('Dehnen: ' + warn.length + (warn.length === 1 ? ' Stelle' : ' Stellen') + ' nur verschoben – Faktor außerhalb 0,5–2,0'); }
     const act = tkActiveIds(); for (const k of [...WP.cache.keys()]) if (!act.has(k) && WP.cache.size > 6) WP.cache.delete(k);
+    for (const k of [...WP.alt.keys()]) if (!act.has(k)) WP.alt.delete(k);   // F1: die andere Quelle nur für klingende Takes
     const nw = wpWarp(id), nb = nw && wpBase(id);
     if (nw && nb && wpKey(nw, nb) !== key) wpPlay(id); else wpResync();
+    UI.dirty.grid = UI.dirty.song = true;                 // F1: Wellenform in Matrix und Song = die klingende Fassung
     wpPaint();
-  }, e => { WP.job.delete(id); logErr(e); });
+    wpPreAlt(id);                                         // F1
+  }, e => { WP.job.delete(jk); logErr(e); });
 }
 // neue Fassung hören (STIMME-Spur und Song). VS5a-fix: beim Abspielen über wpSwitch (Überblendung an einer passenden Stelle)
 const wpResync = () => wpSwitch();
@@ -41064,7 +41118,15 @@ function wpDetect(id) {
   WP.dq.set(id, p); p.then(() => WP.dq.delete(id), () => WP.dq.delete(id));
   return p;
 }
-function wpMarks(id) { const m = S.takes && S.takes[id]; return m && m.marks ? m.marks : WP.det.get(id) || null; }
+function wpMarks(id) { const m = S.takes && S.takes[id]; if (m && m.marks) return m.marks;
+  if (m && WP.detCl && WP.det.has(id) && (WP.detCl.get(id) | 0) !== (m.cl | 0)) return null;   // F1: erkannt für eine andere SÄUBERN-Stärke (↶ ↷, Regler) – gilt nicht mehr
+  return WP.det.get(id) || null; }
+// F1: SÄUBERN geändert (Regler, ↶ ↷) und der Editor ist offen → die (nicht gespeicherten) Marken neu erkennen, an der Quelle, die jetzt gilt
+function wpClChanged() {
+  const E = WP.ed, m = E && S.takes && S.takes[E.id]; if (!m || m.marks || !WP.detCl || !WP.detCl.has(E.id) || (WP.detCl.get(E.id) | 0) === (m.cl | 0)) return;
+  const id = E.id; wpInfoTxt('Marken werden gesucht …'); wpPaint();
+  wpDetect(id).then(() => { if (WP.ed && WP.ed.id === id) { wpPaint(); wpClChanged(); } }, e => { logErr(e); wpInfoTxt('Marken nicht gefunden'); });
+}
 // Sekunde im Take auf Schlag 0 des Clips (bzw. des Song-Takts): a = das Audio-Stück, sonst das erste, das den Take spielt
 function wpT0(id, a) {
   if (!a) {
@@ -41193,6 +41255,8 @@ function wpQsHead(head, c, x) {
   const id = c && c.take; if (!id || !S.takes || !S.takes[id] || !tkAudioOk()) return;
   QS.follow = S.takes[id].follow !== false;
   const b = el('button', 'rb qfol' + (QS.follow ? ' on' : ''), 'Audio folgt'); b.setAttribute('aria-pressed', String(QS.follow));
+  const tt = head.querySelector('b'); if (tt) tt.innerHTML = wpTitlePieces(tt.textContent);   // F1: Titel bricht zwischen den Stücken um
+  head.classList.add('hasfol');                                  // F1: Kopf 44 px (P) – [Audio folgt] und ✕ ganz zu treffen
   b.addEventListener('click', () => { QS.follow = !QS.follow; b.classList.toggle('on', QS.follow); b.setAttribute('aria-pressed', String(QS.follow)); });
   head.insertBefore(b, x);
   wpDetect(id).catch(() => {});
@@ -41216,7 +41280,7 @@ function wpOpen(r) {
   const w0 = S.takes[id] && S.takes[id].warp, md0 = w0 ? w0.mode : 'stretch';     // VS5b: Gesang → Standard „Dehnen“ 70 % (C.5 Nr. 3, 7)
   WP.ed = {r, id, zoom: segBars <= 2.05 ? 0 : 2, va: x.a.in, sel: -1, p: null, ghost: null, mode: md0, str: w0 ? w0.strength : wpDefStr(md0), sw: w0 ? w0.swing : .5, sb: null};
   const sh = EL.wpSheet; sh.innerHTML = '';
-  const head = el('div', 'qh', `<b>Marken · STIMME · ${esc(x.label)}</b>`);
+  const head = el('div', 'qh', `<b>${wpTitlePieces('Marken · STIMME · ' + x.label)}</b>`);   // F1: Stücke, die zwischen sich umbrechen
   const ab = el('button', 'rb wpab', 'A/B'); ab.setAttribute('aria-label', 'Original hören (A/B)');
   ab.addEventListener('click', () => { WP.ab = !WP.ab; wpResync(); wpPaint(); });
   const cl = el('button', 'sh-x rb', '✕'); cl.setAttribute('aria-label', 'Schließen'); cl.addEventListener('click', () => wpClose());
@@ -41259,7 +41323,8 @@ function wpOpen(r) {
   const zb = el('button', 'rb wpz', ''), info = el('span', 'qnote wpinfo', '');
   zb.addEventListener('click', () => { const E = WP.ed; if (!E) return; E.zoom = WP_ZOOM[(WP_ZOOM.indexOf(E.zoom) + 1) % WP_ZOOM.length]; wpPaint(); });
   foot.append(seg, zb); cvw.append(info);
-  b.append(cvw, chips, rs, rw, foot);
+  const sl = el('div', 'wpsl'); sl.append(rs, rw);       // F1: in P3 nebeneinander
+  b.append(cvw, chips, sl, foot);
   sh.append(head, b);
   Object.assign(WP.ed, {cv, an, chips, rs, rw, zb, info, ab, cvw, seg, tx});
   sh.classList.add('open');
@@ -41268,6 +41333,8 @@ function wpOpen(r) {
   wpDetect(id).then(() => wpPaint(), e => { logErr(e); wpInfoTxt('Marken nicht gefunden'); });
   return true;
 }
+// F1: „A · B · C“ → <span class="tp">A ·</span> <span class="tp">B ·</span> <span class="tp">C</span> (der Text bleibt gleich)
+function wpTitlePieces(t) { const p = String(t).split(' · '); return p.map((x, k) => '<span class="tp">' + esc(x + (k < p.length - 1 ? ' ·' : '')) + '</span>').join(' '); }
 function wpCurW() { const E = WP.ed, m = E && S.takes && S.takes[E.id]; return m && m.warp || null; }
 function wpInfoTxt(t) { if (WP.ed && WP.ed.info) WP.ed.info.textContent = t; }
 function wpClose() {

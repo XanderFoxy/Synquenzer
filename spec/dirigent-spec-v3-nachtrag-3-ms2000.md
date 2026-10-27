@@ -1382,6 +1382,30 @@ Eine Version: **4.9.0** · **Budget** +115 KB (Rev. 2: +15 KB für Bedienfeld-Ma
 **Risiken.** Nichts ist angehört. 128 Klänge sind viel Klangarbeit, deshalb drei Bau-Abschnitte. Die Rollen-Ordnung folgt dem Gerät; die Klänge selbst sind eigene Rezepte.
 
 ---
+### MK8b — Kompakt-Bibliothek: 128 eigene Klänge im Stil der kleinen Schwester (Genres) — aktiv (Xander 27.10.)
+
+**Anlass** (Xander, 27.10.2026): „Du hast am Anfang auch gesagt, dass du die Bibliothek von MicroCork reinmachst. Dann mach es auch.“ Wie bei MK8 (eigene MS2000-Werksklänge) gilt: **keine Korg-Daten** – keine Werte, keine Namen aus einer Werksliste (EN3-07). Es sind eigene Rezepte, die so klingen, wie man es von der kleinen Schwester des MS2000 kennt.
+
+**Ziel.** Xander findet in der Bibliothek eine Sammlung **„Kompakt“** mit **128 eigenen Klängen** für die Engine „MS 2000“, geordnet in **8 Genres zu je 16** (Reiter wie an der kleinen Schwester: TRANCE · TECHNO/HOUSE · ELECTRONICA · D&B/BREAKS · HIPHOP/VINTAGE · RETRO · S.E./HIT · VOCODER). Antippen = Vorhören, [Laden] = auf die Spur (ein Undo), [Auf Platz schreiben] = WRITE auf einen Platz A01–H16 (wie MK8, der Werksklang des Platzes bleibt erhalten).
+
+**Umfang.**
+1. **Rezepte** mit dem MK8-Generator (kompakt kodiert, kein Rohdaten-Block): je Genre typische Rollen (Lead, Pad, Bass, Arp, Sequenz, Chord, FX/Hit, Drum-artig), mindestens 6 Klänge pro Genre mit laufendem Arp oder Mod-Sequenz, 2-Timbre-Klänge (Dual/Split) wo passend; Genre VOCODER: 16 Vocoder-Klänge mit E2 = Mikrofon (MK-P/G-MKP8-Regel), 8 davon mit Kanal-Paaren wie bei 8 Bändern (Pegel/Pan paarweise gleich).
+2. **Pegel** wie MK8 kalibriert (gleiche LUFS-Spanne und Spitzen-Grenze).
+3. **Namen** eigene, kurze englische Klangnamen (≤ 12 Zeichen); Abgleich gegen die private Namensliste wie MK8-02 (Levenshtein ≤ 2 = verboten).
+4. **Oberfläche** in der Bibliothek: Sammlung „Kompakt“, 8 Genre-Reiter, Liste per Finger scrollbar, Trefferflächen ≥ 44 px, kein Layout-Sprung; im Claude-Fenster gilt der Vocoder-Hinweis wie in 4.17.0.
+5. **Marken-Regel:** In der App steht nirgends ein Korg- oder Modellname der kleinen Schwester; die Sammlung heißt „Kompakt“.
+
+**Version 4.23.0** (nach F1 = 4.22.0; die Zusammenführung setzt die Nummer) · **Budget** ≤ +45 KB · Format bleibt 5.
+
+**Abnahme**
+- [ ] **MK8b-01** 128 Klänge, 8 Genres × 16, alle laden ohne Fehler, jeder Klang hörbar (rms > −40 dBFS bei C3 gehalten bzw. mit Mikro-Attrappe für Vocoder).
+- [ ] **MK8b-02** Namen: kein Treffer gegen die private Werksnamen-Liste (Levenshtein ≤ 2), keine doppelten Namen.
+- [ ] **MK8b-03** Pegel: LUFS-Spanne und Spitzen wie MK8-Pegelprüfung.
+- [ ] **MK8b-04** Genre-Merkmale: ≥ 6 Arp/Seq-Klänge je Genre, VOCODER-Genre 16 Vocoder mit E2 = Mikro.
+- [ ] **MK8b-05** Laden = 1 Undo, Undo stellt deep-equal her; WRITE auf Platz wie MK8-09; Speichern → Laden deep-equal.
+- [ ] **MK8b-06** Layout P1, P2, P3, L1, L2, 926×428: nichts abgeschnitten, ≥ 44 px, Liste per Finger scrollbar, 0 px Layout-Sprung.
+- [ ] **MK8b-07** Marken-Regel: kein Korg-/Modellname im ausgelieferten Code (grep).
+
 ### MK9 — Späterer Import eigener Programme (MS2000 und microKORG, nur lokal) — zurückgestellt
 
 **Status (25.10., Xander; EN3-21): zurückgestellt.** Xander hat keinen Rechner, kein Editor-Programm und keine .syx/.prg-Dateien; er arbeitet nur am iPhone und kennt MIDI nicht, und iOS Safari hat kein Web MIDI. Ohne Rechner und MIDI-Interface entstehen keine Dumps. MK9 steht deshalb **außerhalb der Versionsfolge** (E.1), wird nicht gebaut und hält kein anderes Paket auf. Der Text bleibt als Vorlage stehen. Wird MK9 später doch gebaut (nur auf Xanders Wunsch), bekommt es die nächste freie Nummer in Bau-Reihenfolge (E.4), rüstet `mkLocalStrip` in alle dann vorhandenen Wege vom Gerät weg nach (EN3-08, EN3-19) und braucht vorher den Nachweis, dass der Weg ohne Rechner geht (zum Beispiel Dateien, die Xander am iPhone bekommt). **Rev. 3 (26.10.):** Über diesen Weg kann Xanders Wunsch „Presets vom microKORG nachrüsten“ später gehen: microKORG-Programme passen auf dieselbe Engine (A.11), die Engine braucht dafür nichts Neues. Werksprogramme von Korg kommen nie in die App (EN3-07).
