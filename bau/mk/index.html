@@ -1516,6 +1516,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 /* main screen (§3.1 Result): P – the toast takes the carrier bar's row, the place the Aufnahme-Leiste held during the take
    (no layout shift); L – it covers the Träger readout (a display). The clip rows keep their size and position and are
    never covered, so a tap aimed at a clip or a ■ always acts on that clip or ■ */
+#toast.dock.wpk{z-index:55}                               /* G-S7-merge-fix: marks editor head – under the popovers (Text, Marke) */
 #toast.dock.cark{border-radius:6px;z-index:55}            /* under the popovers (#popLayer 60): an open Kette / Träger popover is never covered */
 #toast.dock.cark button{height:calc(100% - 8px);max-height:40px;min-height:30px}
 #menu>#toast.band,#clipSheet>#toast.band{margin:6px 10px 8px}
@@ -25946,6 +25947,9 @@ function hintSideSync() {
   if (off !== h.classList.contains('hoff')) h.classList.toggle('hoff', off);
 }
 function toastHome() {
+  // G-S7-merge-fix: the marks editor (VS5) lies over the carrier row – an action toast docks on its title in the head,
+  // 10 px clear of [Text] [A/B] [✕], so no tap meant for an editor tool ever lands on [Rückgängig] / [↷ Wiederholen]
+  if (EL.wpSheet && EL.wpSheet.classList.contains('open')) { const q = EL.wpSheet.querySelector('.qh'); if (vis(q)) return {kind: 'lcd', ref: q, wp: true}; }
   if ((R.editor === 'synth' || R.editor === 'drum') && (EL.synthSheet.classList.contains('open') || EL.drumSheet.classList.contains('open'))) {
     const l = ED.lcd, q = EL.synthSheet.classList.contains('mkq') && EL.synthSheet.querySelector('.mkqh .preset');   // MK-P
     if (q && vis(q)) return {kind: 'lcd', ref: q, mk: true};
@@ -25981,6 +25985,13 @@ function mkHeadDockRect(q) {
   }
   return {left, top: r.top, width: Math.max(0, right - left), height: r.height};
 }
+/* G-S7-merge-fix: in the head of the marks editor the toast lies over the title only: from its left edge to 10 px before
+   the first button ([Text]), the head's height less 2 px top and bottom */
+function wpHeadDockRect(q) {
+  const r = q.getBoundingClientRect(); let right = r.right - 4;
+  for (const b of q.children) { if (b.tagName === 'BUTTON' && vis(b)) right = Math.min(right, b.getBoundingClientRect().left - 10); }
+  return {left: r.left + 4, top: r.top + 2, width: Math.max(0, right - r.left - 4), height: Math.max(0, r.height - 4)};
+}
 /* main-screen dock (§3.1 Result): P – the carrier bar's row (inset), or while the Aufnahme-Leiste shows, its display part
    (never ● FERTIG); L – the Träger readout, wide = readout + the AKKORD/LATCH/ORIGINAL row (only if the text needs it) */
 function carDockRect(wide) {
@@ -26007,13 +26018,13 @@ function toastPlace() {
 function toastPlace1(t) {
   if (!UI.toastActs) {
     if (t.parentNode !== document.body) document.body.appendChild(t);
-    if (UI.toastPos !== 'top') { UI.toastPos = 'top'; t.classList.remove('band', 'dock', 'lcdk', 'cark', 'tcomp', 't3', 'tpw', 'dk2', 'dk3', 'mkw'); t.style.cssText = ''; }
+    if (UI.toastPos !== 'top') { UI.toastPos = 'top'; t.classList.remove('band', 'dock', 'lcdk', 'cark', 'tcomp', 't3', 'tpw', 'dk2', 'dk3', 'mkw', 'wpk'); t.style.cssText = ''; }
     return;
   }
   const h = toastHome();
   if (h.kind === 'band') {
     if (t.parentNode !== h.ref) h.ref.appendChild(t);
-    if (UI.toastPos !== 'band') { UI.toastPos = 'band'; t.classList.remove('dock', 'lcdk', 'cark', 'dk2', 'dk3', 'mkw'); t.classList.add('band'); t.style.cssText = ''; toastFit(t); }
+    if (UI.toastPos !== 'band') { UI.toastPos = 'band'; t.classList.remove('dock', 'lcdk', 'cark', 'dk2', 'dk3', 'mkw', 'wpk'); t.classList.add('band'); t.style.cssText = ''; toastFit(t); }
     return;
   }
   if (t.parentNode !== document.body) document.body.appendChild(t);
@@ -26021,23 +26032,23 @@ function toastPlace1(t) {
     const px = r => `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;
     let css = px(h.r);
     if (UI.toastPos === css || UI.toastPos === 'w:' + css) return;
-    UI.toastPos = css; t.classList.remove('band', 'tcomp', 't3', 'tpw', 'lcdk', 'mkw'); t.classList.add('dock', 'cark'); t.style.cssText = css;
+    UI.toastPos = css; t.classList.remove('band', 'tcomp', 't3', 'tpw', 'lcdk', 'mkw', 'wpk'); t.classList.add('dock', 'cark'); t.style.cssText = css;
     if (!toastDockFit(t, 'car') && !(window.matchMedia && window.matchMedia('(orientation: portrait)').matches)) {
       t.style.cssText = px(carDockRect(true)); toastDockFit(t, 'car'); UI.toastPos = 'w:' + css;   // L: the readout + the mode row
     }
     return;
   }
   t.classList.remove('cark');
-  const r = h.kind === 'lcd' ? (h.mk ? mkHeadDockRect(h.ref) : lcdDockRect(h.ref)) : h.ref.getBoundingClientRect();
+  const r = h.kind === 'lcd' ? (h.mk ? mkHeadDockRect(h.ref) : h.wp ? wpHeadDockRect(h.ref) : lcdDockRect(h.ref)) : h.ref.getBoundingClientRect();
   const css = h.kind === 'lcd' ? `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`
     : `left:${r.left + 8}px;top:${r.top + 6}px;width:${Math.max(0, r.width - 16)}px;height:44px`;
   if (UI.toastPos !== css) {
-    UI.toastPos = css; t.classList.remove('band', 'tcomp', 't3', 'tpw', 'mkw'); t.classList.add('dock'); t.classList.toggle('lcdk', h.kind === 'lcd'); t.style.cssText = css;
+    UI.toastPos = css; t.classList.remove('band', 'tcomp', 't3', 'tpw', 'mkw'); t.classList.add('dock'); t.classList.toggle('lcdk', h.kind === 'lcd'); t.classList.toggle('wpk', !!h.wp); t.style.cssText = css;
     // MK-P (landscape head, 44 px): the plate under it stays playable, so a long message never leaves the head: two small
     // lines beside the symbols (✎ ↶ ↷), the rest cut off
-    if (h.mk && !toastDockFit(t, 'lcd')) { t.classList.add('mkw', 'dk2'); const m = t.querySelector('.tmsg'); if (m && m.scrollHeight > m.clientHeight + 1) t.classList.replace('dk2', 'dk3'); }
+    if ((h.mk || h.wp) && !toastDockFit(t, 'lcd')) { t.classList.add('mkw', 'dk2'); const m = t.querySelector('.tmsg'); if (m && m.scrollHeight > m.clientHeight + 1) t.classList.replace('dk2', 'dk3'); }
     // the LCD line holds one line only: a message that does not fit there even beside ✎ ↶ docks on the keyboard top
-    else if (!h.mk && !toastDockFit(t, h.kind) && h.kind === 'lcd') {
+    else if (!h.mk && !h.wp && !toastDockFit(t, h.kind) && h.kind === 'lcd') {
       const k = EL.kbArea.getBoundingClientRect();
       t.classList.remove('lcdk'); t.style.cssText = `left:${k.left + 8}px;top:${k.top + 6}px;width:${Math.max(0, k.width - 16)}px;height:44px`;
       toastDockFit(t, 'kb');

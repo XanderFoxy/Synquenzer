@@ -4509,3 +4509,21 @@ kein Supabase-Aufruf. Eingebettete Kerne: `vsCleanMake` = VS4-fix-Fassung von `v
 - Mit Zeitkarte rechnet A/B „Roh │ Sauber“ jedes Umschalten neu (der Render-Cache hält je Take nur die aktuelle und – bei offenem
   Editor – die vorige Fassung); klingt nach ≈ 0,1–0,7 s um.
 - Wellenform in Matrix/Song zeigt weiter den Roh-Take (VS4-Lücke).
+
+## G-S7-merge-fix (4.21.0 bleibt, 27.10.2026) – ein Befund nach der Zusammenführung
+
+- **Marken-Editor: Aktions-Toast lag über seinen Knöpfen (major).** `toastHome()` kannte `#wpSheet` nicht; der Toast
+  („Songtext gesetzt [Rückgängig]“, „Marke gelöscht [Rückgängig]“, VS4 „Rückgängig: Säubern 100 % [↷ Wiederholen]“) dockte
+  auf der Träger-Zeile unter dem Blatt und lag damit 5 s über [A/B] / [✕] / [Text] (L) bzw. [Dehnen] [Scheiben] [Ganz] (P).
+  Ein Tipp dort machte rückgängig oder wiederholte (Songtext weg, gelöschte Marke zurück, Säubern 60 → 100) oder wurde
+  verschluckt. Jetzt (§10.4, wie MK-P-Kopf): bei offenem Editor dockt der Toast auf dem Titel im Kopf, von dessen linkem
+  Rand bis 10 px vor [Text] (`wpHeadDockRect`), Knöpfe als Symbol (↶ / ↷), zu lange Meldungen in zwei/drei kleinen Zeilen,
+  Rest abgeschnitten – nie über Werkzeugen, Leinwand oder Reglern. z-index 55 (`.wpk`): unter den Popovern (Text, Marke).
+- Proben (`dirigent-test/vgs7/`): `toastcheck.mjs`, `toastcheck2.mjs`, `toastdel.mjs`, `toastredo.mjs` (BTN = A/B, ✕, Text)
+  in 844×390, 667×375, 390×844, 320×568: elementFromPoint trifft jeweils das Editor-Werkzeug, Songtext bleibt, A/B schaltet,
+  Marke bleibt gelöscht (16 → 15), Editor schließt, Säubern bleibt 60 %. Neu `toastfix-verify.mjs`: kein Editor-Element unter
+  dem Toast, Toast-↶ macht den Songtext weiter rückgängig, [Scheiben] und Zoom wirken binnen 5 s. Smoke ohne Fehler.
+- Unverändert (schon im Stand G-S7-merge, nicht durch diesen Fix): `gs7-v3-qab5b-ui` meldet Titel-Auslassung und P3-Info-Zeile
+  (bekannt), `gmkp8-mk8-09-platte` FAIL „Toast [Rückgängig]“ (MK-P-Kopf-Dock, gleiches Ergebnis vor dem Fix). In 320×568 zeigt
+  der Kopf-Toast lange Meldungen nur angeschnitten („Rück-gän-gig: …“), das Symbol ↷ bleibt lesbar.
+- Schnappschuss: `synq-snapshots/G-S7-merge-fix.html`.
