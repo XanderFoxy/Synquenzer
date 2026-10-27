@@ -48,6 +48,9 @@ function factory() {
       // statt ohne Suche festgelegt (vorher: Phasensprung → bis −5,4 dB Einbruch vor jeder Marke bei kurzen Abschnitten)
       if (b <= a) { if (tau > hi) { b = hi; a = Math.max(lo, hi - 2 * Dl); } else { a = lo; b = Math.min(hi, lo + 2 * Dl); } }
       if (b <= a) return Math.min(hi, Math.max(lo, tau));
+      // VS5b-Einbau: stille Vorlage (digitale Stille) → natürliche Stelle statt des ersten Treffers (sonst holt die Suche den
+      // Ausklang der vorigen Note in die Stille, −70-dB-Reste)
+      if (cum[Math.min(n, tmpl + Hs)] - cum[tmpl] < 1e-10 * Hs) return Math.min(b, Math.max(a, tau));
       // grob
       const td = Math.floor(tmpl / dec); let bc = -1, bs = -Infinity;
       if (td + Hd <= nd) {
@@ -76,6 +79,7 @@ function factory() {
       if (b <= a) return Math.min(hi, Math.max(lo, tau));
       let bi = Math.min(hi, Math.max(lo, tau)), bf = -Infinity;
       const ok2 = next + Hs <= n;
+      if (cum[Math.min(n, tmpl + Hs)] - cum[tmpl] < 1e-10 * Hs && (!ok2 || cum[next + Hs] - cum[next] < 1e-10 * Hs)) return Math.min(b, Math.max(a, tau));
       for (let i = a; i <= b; i++) {
         let s1 = 0, s2 = 0;
         for (let m = 0; m < Hs; m += 2) { s1 += x[tmpl + m] * x[i + m]; if (ok2) s2 += x[next + m] * x[i + Hs + m]; }
@@ -173,7 +177,7 @@ function factory() {
     return 'vs5b-' + h.toString(16).padStart(8, '0') + '-' + warp.src.length;
   }
 
-  return {stretch, cacheKey, VERSION: 'vs5b-stretch-3'};
+  return {stretch, cacheKey, VERSION: 'vs5b-stretch-4'};
 }
 
 const api = factory();

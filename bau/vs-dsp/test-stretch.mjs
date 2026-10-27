@@ -105,6 +105,16 @@ const tone = (dur, f0, o = {}) => {   // harmonischer Ton mit Formanten (Vokal �
   check('Kurze Abschnitte: 4 ms Vorlauf + 20 ms ab der Marke bitgleich', bit === ons.length, bit + '/' + ons.length);
 }
 
+// 3c. Digitale Stille zwischen Noten (Datei-Takes): die Stille bleibt Stille (keine Ausklang-Reste durch die Suche)
+{
+  const dur = 6, n = dur * sr, x = new Float32Array(n), on = [], b = tone(0.22, 247);
+  for (let k = 0; k < 16; k++) { const t = 0.3 + k * 0.33; on.push(t); x.set(b.map((v, i) => v * Math.min(1, i / 200, (b.length - i) / 400)), Math.round(t * sr)); }
+  const dst = on.map((t, k) => t + (k % 2 ? 0.03 : -0.025)), w = MK.makeWarp(on, dst, dur);
+  const y = stretch(x, sr, w).y; let bad = 0, worst = 0;
+  for (let k = 0; k + 1 < on.length; k++) { const r = (dst[k + 1] - dst[k]) / (on[k + 1] - on[k]), a = Math.round((dst[k] + 0.22 * r + 0.07) * sr), e = Math.round((dst[k + 1] - 0.012) * sr); for (let i = a; i < e; i++) if (y[i] !== 0) { bad++; worst = Math.max(worst, Math.abs(y[i])); } }
+  check('Digitale Stille zwischen Noten bleibt Stille', bad === 0, {bad, worstDb: worst ? +(20 * Math.log10(worst)).toFixed(1) : null});
+}
+
 // 4. Grenzen 0,5–2,0 (N7V-29): außerhalb nur verschieben + Warnung
 {
   const x = tone(6, 220), w = MK.makeWarp([1, 2, 3, 4], [1, 3.5, 3.85, 4.85], 6, 6.85);   // Faktor 2,5 und 0,35, dann 1,0
