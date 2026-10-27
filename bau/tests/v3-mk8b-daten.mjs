@@ -61,10 +61,10 @@ ok('MK8b-04 VOCODER: 16 Vocoder ohne Halten, DIREKT 0, HPF ≤ 40', V.length ===
 ok('MK8b-04 VOCODER: ≥ 8 mit Kanal-Paaren wie 8 Bänder', pairs.length >= 8, pairs.length + ' Programme: ' + pairs.map(x => x.name).join(', '));
 ok('MK8b-04 Dual/Split wo passend', dual.reduce((a, b) => a + b, 0) >= 6, dual.map((n, i) => A.gl[i][0] + ' ' + n).join(' · '));
 // ---- MK8b-07 brand rule (B.6 Nr. 9): no Korg / model name in the shipped file; „MS 2000“ exactly once
-const nAll = (app.match(/korg|radias|dwgs|dw[ -]?[68]000|\bvox\b/gi) || []).length, ms = app.match(/ms[ -]?2000/gi) || [];
+const nAll = (app.match(/korg|radias|dwgs|dw[ -]?[68]000/gi) || []).length, ms = app.match(/ms[ -]?2000/gi) || [];
 const blk = app.slice(app.indexOf('/*MKK{*/'), app.indexOf('/*}MKK*/')), nBlk = (blk.match(new RegExp(BRAND.source, 'gi')) || []).length;
 const sister = (app.match(/kleine[nr]? Schwester/gi) || []).length;
-ok('MK8b-07 Marken-Regel (grep)', nAll === 0 && ms.length === 1 && ms[0] === 'MS 2000' && nBlk === 0, 'Korg/microKORG/RADIAS/DWGS/Vox ' + nAll + ' Treffer, „MS 2000“ ' + ms.length + '×, Kompakt-Block ' + nBlk + ' Treffer, Sammlung heißt „Kompakt“ (Hinweis „kleine Schwester“ nur in Code-Kommentaren: ' + sister + ')');
+ok('MK8b-07 Marken-Regel (grep)', nAll === 0 && ms.length === 1 && ms[0] === 'MS 2000' && nBlk === 0, 'Korg/microKORG/RADIAS/DWGS ' + nAll + ' Treffer (Datei; „vox“ nur als alter Variablenname, wie MK8-02 im Block geprüft), „MS 2000“ ' + ms.length + '×, Kompakt-Block ' + nBlk + ' Treffer, Sammlung heißt „Kompakt“ (Hinweis „kleine Schwester“ nur in Code-Kommentaren: ' + sister + ')');
 // ---- size and time
 const a = app.indexOf('/*MKK{*/'), b = app.indexOf('/*}MKK*/'), sz = Buffer.byteLength(app.slice(a, b + 8));
 ok('MK8b Datenblock', sz <= 30 * 1024, (sz / 1024).toFixed(1) + ' KB (Parameter Base64 ' + (blk.match(/'[A-Za-z0-9+/=]{40,}'/g) || []).reduce((s, x) => s + x.length - 2, 0) + ' B)');

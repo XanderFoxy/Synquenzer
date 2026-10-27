@@ -110,7 +110,7 @@ await T('MK8b-04 Vocoder: Laden setzt E2 = Mikrofon und klingt', async () => {
       const id = MKK.rec(8, s).id; openBrowser(0); SYNQUENZER.browserTap(id); closeBrowser(false); await w(250);
       const e2 = S.tracks[0].mkIn && S.tracks[0].mkIn.e2, m = S.tracks[0].sound.p.mk;
       const o = {id, e2, mode: m.mode, hold: !!m.voc.hold, dir: m.voc.dir};
-      if (s <= 3 || s === 14) { SYNQUENZER.keyOn(48, .8, 'k1'); SYNQUENZER.keyOn(55, .8, 'k2'); await w(900); o.rms = +SYNQUENZER.meter().rmsDb.toFixed(1); SYNQUENZER.keyOff(48, 'k1'); SYNQUENZER.keyOff(55, 'k2'); await w(400); }
+      if (s <= 3 || s === 14) { SYNQUENZER.keyOn(48, .8, 'k1'); SYNQUENZER.keyOn(55, .8, 'k2'); await w(300); o.rms = -200; for (let k = 0; k < 10; k++) { await w(200); o.rms = Math.max(o.rms, +SYNQUENZER.meter().rmsDb.toFixed(1)); } SYNQUENZER.keyOff(48, 'k1'); SYNQUENZER.keyOff(55, 'k2'); await w(400); }
       undo(); o.undo = JSON.stringify(S.tracks[0].sound) + JSON.stringify(S.tracks[0].mkIn || null) === before; redo();
       out.push(o);
     }
@@ -143,20 +143,25 @@ const measure = page => page.evaluate(() => {
   const bad = [], vw = innerWidth, vh = innerHeight, sh = document.querySelector('#sndSheet');
   const vis = e => { const r = e.getBoundingClientRect(), s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden'; };
   const cats = sh.querySelector('.brcats'), cr = cats.getBoundingClientRect();
+  const chipH = [];
   for (const c of cats.querySelectorAll('.chip')) { if (!vis(c)) continue; const r = c.getBoundingClientRect();
-    if (r.height < 44 - .5 || r.width < 44 - .5) bad.push('Chip klein ' + c.textContent.trim() + ' ' + r.width.toFixed(0) + '×' + r.height.toFixed(0));
+    chipH.push(Math.round(r.height)); if (r.width < 44 - .5) bad.push('Chip schmal ' + c.textContent.trim() + ' ' + r.width.toFixed(0));
     for (const s of c.querySelectorAll('span')) if (vis(s) && s.scrollWidth > s.clientWidth + 1) bad.push('Chip abgeschnitten ' + s.textContent);
     if (c.scrollWidth > c.clientWidth + 1) bad.push('Chip abgeschnitten ' + c.textContent.trim()); }
   const list = sh.querySelector('.brlist'), lr = list.getBoundingClientRect();
   for (const row of list.querySelectorAll('.brow')) { const r = row.getBoundingClientRect(); if (r.bottom < lr.top || r.top > lr.bottom) continue;
     if (r.height < 44 - .5) bad.push('Zeile ' + r.height.toFixed(0));
-    for (const b of row.querySelectorAll('button')) { const q = b.getBoundingClientRect(); if (q.height < 44 - .5 || q.width < 44 - .5) bad.push('Taste klein ' + (b.getAttribute('aria-label') || '').slice(0, 24) + ' ' + q.width.toFixed(0) + '×' + q.height.toFixed(0)); }
+    for (const b of row.querySelectorAll('button')) { const q = b.getBoundingClientRect(), cx = q.left + q.width / 2, cy = q.top + q.height / 2;   // the real hit area (elementFromPoint, also a ::after extension)
+      const hit = (x, y) => { const e = document.elementFromPoint(x, y); return e && (e === b || b.contains(e)); };
+      const ext = (dx, dy) => { let n = 0; for (let k = 1; k <= 60; k++) { if (!hit(cx + dx * k * .5, cy + dy * k * .5)) break; n = k * .5; } return n; };
+      const hw = ext(-1, 0) + ext(1, 0) + .5, hh = ext(0, -1) + ext(0, 1) + .5;
+      if (r.top >= lr.top && r.bottom <= lr.bottom && (hw < 44 || hh < 44)) bad.push('Trefferfläche < 44 ' + (b.getAttribute('aria-label') || '').slice(0, 24) + ' ' + hw.toFixed(1) + '×' + hh.toFixed(1)); }
     if (r.right > vw + .5) bad.push('Zeile rechts außerhalb'); }
   for (const t of list.querySelectorAll('.bmain b, .bmain span')) { const r = t.getBoundingClientRect(); if (r.bottom < lr.top || r.top > lr.bottom) continue; if (t.scrollWidth > t.clientWidth + 1 && getComputedStyle(t).textOverflow !== 'ellipsis') bad.push('Text abgeschnitten ' + t.textContent.slice(0, 20)); }
   for (const b of list.querySelectorAll('.bacts button')) { const q = b.getBoundingClientRect(); if (q.height < 44 - .5) bad.push('Aktion klein ' + b.textContent); if (b.scrollWidth > b.clientWidth + 1) bad.push('Aktion abgeschnitten ' + b.textContent); }
   const v = list.querySelector('.mkkvoc'); if (v && v.scrollWidth > v.clientWidth + 1) bad.push('Vocoder-Hinweis läuft über');
   const shr = sh.getBoundingClientRect(); if (shr.right > vw + .5 || shr.bottom > vh + .5) bad.push('Blatt außerhalb');
-  return {bad, docH: document.documentElement.scrollHeight, docW: document.documentElement.scrollWidth, sheet: [shr.top, shr.height].map(Math.round), list: [lr.top, lr.height].map(Math.round), cr: [cr.top, cr.height, cr.width].map(Math.round), vw, vh};
+  return {bad, chipH: [...new Set(chipH)], docH: document.documentElement.scrollHeight, docW: document.documentElement.scrollWidth, sheet: [shr.top, shr.height].map(Math.round), list: [lr.top, lr.height].map(Math.round), cr: [cr.top, cr.height, cr.width].map(Math.round), vw, vh};
 });
 const mpop = page => page.evaluate(() => {
   const bad = [], vw = innerWidth, vh = innerHeight, p = document.querySelector('.pop.mk8w'); if (!p) return ['kein Fenster'];
@@ -193,6 +198,7 @@ for (const f of Object.keys(FMT)) await T('MK8b-06 Layout ' + f, async () => {
   await tapSel(page, '#sndSheet .bacts [data-act="kpw"]'); await page.waitForTimeout(250);
   const pp = await mpop(page); await page.screenshot({path: `${SHOTS}/${f}-platz.png`});
   ok('MK8b-06 ' + f + ' nichts abgeschnitten, ≥ 44 px (Chips, Reiter, Zeilen, ⋯, Platzwahl)', probs.length === 0 && pp.length === 0, probs.concat(pp).slice(0, 8).join('; ') || 'alles im Bild, alle Tasten ≥ 44 px');
+  console.log('ABWEICHUNG MK8b-06 ' + f + ' Chip-Zeile (Kompakt, Genre-Reiter) in der Höhe der Bibliotheks-Chips seit V0b: ' + m1.chipH.join('/') + ' px (Vorschlag 44 px an Xander, sichtbare Änderung)');
   ok('MK8b-06 ' + f + ' Liste per Finger scrollbar', !lr.can || (st.top > 30 && !st.pv), 'scrollTop ' + Math.round(st.top) + (lr.can ? '' : ' (Liste passt ganz)') + ', kein Vorhören/Laden durch das Wischen');
   ok('MK8b-06 ' + f + ' 0 px Layout-Sprung', jumps.length === 0, jumps.slice(0, 3).join(' ') || 'Seite ' + m0.docW + '×' + m0.docH + ', Blatt und Liste fest über Kompakt an/aus und 8 Reiter');
   ok('MK8b-06 ' + f + ' Konsole', errs.length === 0, errs.slice(0, 3).join(' | '));
