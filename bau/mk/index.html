@@ -2001,7 +2001,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 @media (orientation:landscape){#qSheet .qh.hasfol{height:40px}#qSheet .qh.hasfol .qfol,#qSheet .qh.hasfol .sh-x{height:38px}}
 /* G-MK8b-merge (typische Fehler 4, F1-Rest): quer bleiben [Audio folgt] und ✕ 38 px hoch zu sehen; ihre Trefferfläche reicht unsichtbar
    bis an die Blattkante (1,5 px) und in den leeren Innenabstand darunter (5 px) = 44,5 px */
-@media (orientation:landscape){#qSheet .qh.hasfol .qfol,#qSheet .qh.hasfol .sh-x{position:relative}#qSheet .qh.hasfol .qfol::after,#qSheet .qh.hasfol .sh-x::after{content:'';position:absolute;left:-1px;right:-1px;top:-2.5px;bottom:-6px}}
+@media (orientation:landscape){#qSheet .qh.hasfol .qfol,#qSheet .qh.hasfol .sh-x{position:relative}#qSheet .qh.hasfol .qfol::after,#qSheet .qh.hasfol .sh-x::after{content:'';position:absolute;left:-1px;right:0;top:-2.5px;bottom:-6px}}
 #qSheet .qfol.on{color:var(--ink);background:var(--play);border-color:var(--play)}
 .tksheet .tk-wp{width:100%;min-height:44px;margin:0 0 6px}
 @media (orientation:portrait){#wpSheet{grid-row:2/5;grid-column:1/-1;align-self:end;justify-self:stretch;margin:0 8px;height:350px;max-height:100%}}
@@ -2017,19 +2017,20 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 }
 /* G-MK8b-merge (typische Fehler 4, F1-Rest): jede Taste des Marken-Editors trifft auf ≥ 44 × 44 px, Aussehen und Wirkung gleich.
    Raster in einer Reihe (P ≥ 390 px, L, W): 34 px hoch zu sehen, die Trefferfläche reicht unsichtbar 8 px nach oben (3 px Abstand +
-   5 px Unterkante der Wellenform) und 3 px nach unten (bis an die Regler-Reihe), seitlich je 1 px in den Spalt (42 + 2 = 44).
+   5 px Unterkante der Wellenform) und 3 px nach unten (bis an die Regler-Reihe), seitlich nur nach links: 2 px Spalt + 0,75 px der linken
+   Nachbar-Taste (42,25 + 2,75 − 0,75 = 44,25; nach links zählt nicht in scrollWidth, typische Fehler A1).
    Hochkant unter 390 px Breite passen 8 × 44 px nicht in eine Reihe: dort stehen die 8 Raster wie in P3 in 2 Reihen à 4 (Reihen-Abstand
    6 px, darunter 4 px Luft), die Trefferflächen teilen den Spalt (obere Reihe 8 px nach oben / 2 px nach unten, untere 4 / 6 px). Kopf quer: Tasten 38 px zu sehen,
    Trefferfläche bis an die Blattkante (1,5 px) und in den leeren Innenabstand darunter (6,5 px) = 46 px. */
 #wpSheet .qchips button{position:relative}
-#wpSheet .qchips button::after{content:'';position:absolute;left:-2px;right:-2px;top:-9px;bottom:-4px}   /* insets from the padding box (1 px border) */
+#wpSheet .qchips button::after{content:'';position:absolute;left:-3.75px;right:0;top:-9px;bottom:-4px}   /* insets from the padding box (1 px border); only to the left, so scrollWidth stays = clientWidth (A1) */
 @media (orientation:portrait) and (max-width:389px){
   #wpSheet .qchips{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 4px;margin-bottom:4px}
-  #wpSheet .qchips button::after{left:-1px;right:-1px}
+  #wpSheet .qchips button::after{left:0;right:0}
   #wpSheet .qchips button:nth-child(-n+4)::after{top:-9px;bottom:-3px}
   #wpSheet .qchips button:nth-child(n+5)::after{top:-5px;bottom:-7px}
 }
-@media (orientation:landscape){#wpSheet .qh .sh-x,#wpSheet .wpab,#wpSheet .wptx{position:relative}#wpSheet .qh .sh-x::after,#wpSheet .wpab::after,#wpSheet .wptx::after{content:'';position:absolute;left:-1px;right:-1px;top:-2.5px;bottom:-7.5px}}
+@media (orientation:landscape){#wpSheet .qh .sh-x,#wpSheet .wpab,#wpSheet .wptx{position:relative}#wpSheet .qh .sh-x::after,#wpSheet .wpab::after,#wpSheet .wptx::after{content:'';position:absolute;left:-1px;right:0;top:-2.5px;bottom:-7.5px}}
 /* ---------- clip sheet v3 (§3.7): P bottom sheet with 2 button columns (3 on short screens); L 420 px panel, 3 columns ---------- */
 #clipSheet .sh-body.cs3{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px;padding:8px 8px 10px}
 #clipSheet .sh-body.cs3>*{flex:0 0 auto}            /* rows never shrink into each other (a wrapped key row stays readable) */
@@ -2359,7 +2360,9 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .brow .bmain span.bkp{white-space:normal;text-overflow:clip}   /* G-MK8b-merge (A1): two lines where needed (genre │ „NN · Rolle“), never „…“ */
 .brow .bmain span.bkp i{font-style:normal;white-space:nowrap}
 .brcats .chip.brkp,.brcats .chip.brkg{position:relative}
-.brcats .chip.brkp::before,.brcats .chip.brkg::before{content:'';position:absolute;left:-1px;right:-1px;top:-6px;bottom:-6px}   /* G-MK8b-merge (A4): 36 + 2 x 5 = 46 px hit height in the 48 px row (P1), look unchanged (insets from the padding box, 1 px border) */
+.brcats .chip.brkp::before,.brcats .chip.brkg::before{content:'';position:absolute;left:-1px;right:0;top:-6px;bottom:-6px}   /* G-MK8b-merge (A4): 36 + 2 x 5 = 46 px hit height in the 48 px row (P1), look unchanged (insets from the padding box, 1 px border) */
+@media (orientation:portrait) and (max-height:700px){.brcats .chip.brkp::before,.brcats .chip.brkg::before{top:-5px;bottom:-5px}}   /* the 41 px row: up to its edge (40 px), never past it */
+@media (orientation:landscape){.brcats .chip.brkp::before,.brcats .chip.brkg::before{top:-3.5px;bottom:-3.5px}}   /* the column: 37 px pitch, the gap shared */
 .btip{font:500 12.5px/1.4 var(--font-ui);color:var(--text);padding:6px 8px 10px 48px;border-bottom:1px solid #1d2026}
 .bacts{display:flex;flex-wrap:wrap;gap:6px;padding:6px 0 10px 48px;border-bottom:1px solid #1d2026;align-items:center}
 .bacts .tin{flex:1 1 140px;height:40px;min-width:0}
