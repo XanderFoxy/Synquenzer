@@ -25,7 +25,8 @@ const b05 = await snap(), u0 = s.undo;
 await press('s5'); s = await st();
 ok('MK8-09P SELECT 5 lädt B05', s.cur === 'B05' && s.origin === 'f-mk-b05' && /^B05:/.test(s.lcd[0]) && s.lit.join() === 's5', JSON.stringify({cur: s.cur, lcd: s.lcd, lit: s.lit}));
 ok('MK8-09P SELECT = ein Undo', s.undo === u0 + 1 && /Programm B05/.test(s.top), s.undo - u0 + ' · ' + s.top);
-const toast = await page.evaluate(() => { const t = document.querySelector('#toast'); return t ? t.innerText : ''; });
+// F1: in L the toast docks on the header display and shows its action as ↶ (44 px, aria-label „Rückgängig“) – the action counts, not the visible word
+const toast = await page.evaluate(() => { const t = document.querySelector('#toast'); return t ? t.innerText + ' ' + [...t.querySelectorAll('button')].map(b => b.getAttribute('aria-label') || b.textContent).join(' ') : ''; });
 ok('MK8-09P Toast [Rückgängig]', /B05:/.test(toast) && /Rückgängig/.test(toast), toast.replace(/\s+/g, ' '));
 await page.evaluate(() => undo()); await page.waitForTimeout(100);
 const ua = await snap(); ok('MK8-09P Undo des Ladens deep-equal', ua.snd === b05.snd, '');

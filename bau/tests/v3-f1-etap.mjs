@@ -1,0 +1,25 @@
+import {launch, open5, sleep, clicks, toI16} from './gs7-v3-qa-vs5a-h2.mjs';
+const br = await launch(null);
+const OFF = [12, -18, 30, -8, 45, -40, 20, 0, 22, -26, 15, -5];
+const T = OFF.map((o, k) => 0.5 + k * 0.25 + o / 1000), x = toI16(clicks(T, 3.6));
+const H = await open5(br, {viewport: {width: 390, height: 844}, touch: true, mobile: true, url: process.argv[2] ? 'file://' + process.argv[2] : undefined}), p = H.p;
+await p.evaluate(() => { SYNQUENZER.newProject(); SYNQUENZER.setBpm(120); }); await sleep(300);
+const r = await p.evaluate(pcm => SYNQUENZER.tkInject({pcm, sr: 48000, scene: 0, len: 2}), x);
+await p.evaluate(id => SYNQUENZER.wpDetect(id), r.id);
+await p.evaluate(st => { SYNQUENZER.selectSlot(st, 0); return SYNQUENZER.tkSheet({t: st, s: 0}); }, r.track); await sleep(300);
+await (await p.$('.tksheet button[data-a="wp"]')).tap(); await sleep(500);
+await p.evaluate(id => SYNQUENZER.wpQuantize(id, {grid: '1/16'}), r.id); await sleep(300);
+const cdp = await p.context().newCDPSession(p);
+const touch = async (type, pts) => cdp.send('Input.dispatchTouchEvent', {type, touchPoints: pts.map(([xx, yy]) => ({x: xx, y: yy, id: 1}))});
+let G = await p.evaluate(() => SYNQUENZER.wpGeom()); const yy = G.y + G.h * 0.55;
+const vis = G.marks.filter(mx => mx > G.x + 30 && mx < G.x + G.w - 80);
+await touch('touchStart', [[vis[1], yy]]); await sleep(600);
+for (let d = 4; d <= 40; d += 4) { await touch('touchMove', [[vis[1] + d, yy]]); await sleep(16); }
+await touch('touchEnd', []); await sleep(300);
+G = await p.evaluate(() => SYNQUENZER.wpGeom());
+const mk = G.marks.find(mx => mx > G.x + 30 && mx < G.x + G.w - 80);
+console.log('G', JSON.stringify({y: G.y, h: G.h, yy, mk}), await p.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e.tagName + '#' + e.id + '.' + e.className; }, [mk, G.y + G.h * 0.55]));
+console.log('Ep', await p.evaluate(() => JSON.stringify(WP.ed.p))); console.log('toast', await p.evaluate(() => { const t = document.getElementById('toast'); const q = t.getBoundingClientRect(); return t.className + ' ' + JSON.stringify([q.top, q.bottom]) + ' ' + t.textContent; }));
+await p.evaluate(() => { window.__ev = []; const cv = document.querySelector('#wpSheet canvas'); const oc = closePop; window.__cs = []; closePop = function () { window.__cs.push(new Error().stack.split('\n').slice(1, 5).join(' / ')); return oc.apply(this, arguments); }; const oo = openPop; openPop = function () { window.__cs.push('open'); return oo.apply(this, arguments); }; for (const t of ['pointerdown','pointerup','pointercancel']) cv.addEventListener(t, e => window.__ev.push(t + ':' + Math.round(e.clientX))); }); await touch('touchStart', [[mk, yy]]); await sleep(60); await touch('touchEnd', []); await sleep(350);
+console.log('pop', await p.evaluate(() => [!!document.querySelector('.pop.wpsel'), UI.pop && UI.pop.name, WP.ed.sel, (SYNQUENZER.wpInfo().marks||[]).length]));
+console.log('ev', await p.evaluate(() => window.__ev), await p.evaluate(() => window.__cs)); await br.close();

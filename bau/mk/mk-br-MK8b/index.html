@@ -2279,6 +2279,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .savrow .mbtn{min-width:96px}
 /* MK8: place choice (Sichern / WRITE, Bank ▾): 44 px keys, 4 columns on narrow phones, 8 from 400 px */
 .pop.mk8w{width:min(440px,calc(100vw - 16px))}
+.mkkvoc{color:var(--text-dim);font-size:12.5px;line-height:1.4;padding:8px 10px;border-bottom:1px solid var(--line)}
 .pop.mk8w .mk8g{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:0 0 6px}
 .pop.mk8w .mk8g button{min-height:44px;height:44px;padding:0;font:700 14px/1 var(--font-num);color:var(--text)}
 .pop.mk8w .mk8g button.on{border-color:var(--sel);box-shadow:inset 0 0 0 2px var(--sel);color:var(--sel)}
@@ -6562,7 +6563,7 @@ function bankPop(anchor) {
     p.innerHTML = '<h4>Bank</h4><div class="mk8g mk8bk">' + [...BL].map((x, k) => `<button class="rb${BR.bank === k + 1 ? ' on' : ''}" data-b="${k + 1}">${x}</button>`).join('') + '</div>' +
       `<div class="savrow"><button class="mbtn rb" data-b="0">Alle ${esc(MK_LABEL)}</button></div>`;
     guardTouch(p);
-    onTap(p, x => { closePop(); BR.bank = +x.dataset.b; BR.role = 'alle'; BR.more = BR.ren = null; brRefresh(); }, 'button[data-b]');
+    onTap(p, x => { closePop(); BR.bank = +x.dataset.b; BR.kp = 0; BR.role = 'alle'; BR.more = BR.ren = null; brRefresh(); }, 'button[data-b]');
   }, {name: 'mkbank'});
 }
 // Sichern / WRITE on an AM track: the place first (default: the program loaded last), then write; also „Ohne Platz“ (Eigene),
@@ -6613,6 +6614,281 @@ function arpPhrase(pm) {
   return out;
 }
 window.MKF = {select, step, bankStep, write, restore, cur, label, names, bankList, progRec, facRec, ownAt, bankPop, savePop, arpPhrase, decodeBank, decodeAll, leaves: () => (LV || (LV = leaves())).map(x => x.slice()), stat: () => ({ms: STAT.ms.slice(), loaded: BANKS.map(Boolean)}), P, roleOf: (b, s) => roleOf(b, s).slice()};
+})();
+/* ===== MK8b (Nachtrag 3 MK8b, Xander 27.10.): the collection „Kompakt“ – 128 own programs in 8 genres x 16 in the style known
+   from the small sister of the device (own recipes, own names, no device data, EN3-07). Same encoding as MKF (changed fields
+   against INIT, one Base64 part per genre with a salt byte), unpacked per genre on first need (tickAhead first). The records
+   f-mk-k<g><nn> live in FACTORY_BY_ID only (not in the role lists): the library shows them under the chip „Kompakt“ with 8
+   genre tabs. ⋯ of a row = Laden / Auf Platz schreiben (WRITE onto A01-H16 like MK8: an own sound with bank / slot, the
+   factory program of the place stays). Vocoder programs: no hold, E2 = microphone on loading (mkVocAutoMic, G-MKP8). ===== */
+/*MKK{*/
+const SQ_MK_KOMPAKT = {v: 1,
+  B: ['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'],
+  N: ["Gate Saws|Euphoric Ld|Starfall|Roll Bass|Cloud Bloom|Rain Pluck|Anthem Stab|Ice Run|Hymn Strings|Sub Pulse|Cut Chords|Acid Glide|Crystal Bell|Lift Off|Twin Spiral|Peak Hit",
+    "Club Organ|Dub Chord|Acid Loop|Rubber Low|Rave Horn|Tribal Tom|Deep Kick|Tick Hat|House Piano|Pump Pad|Minimal Blip|Warehouse|Octave Jack|Strobe|Echo Stab|Ride Wash",
+    "Bit Lead|Glitch Line|Blip Rain|Wobble Low|Haze Pad|Prism Keys|Ring Bell|Drift Wave|Wave Steps|Fold Bass|Pixel Arp|Noise Sweep|Formant Ld|Chime Pan|Split Duo|Data Burst",
+    "Reese Low|Neuro Growl|Deep Sub|Liquid Pad|Roller|Snare Crack|Tom Roll|Minor Rush|Break Arp|Siren Call|Dark Atmos|Dive Lead|Chop Bass|Echo Pluck|Dual Roller|Rewind",
+    "Dusty Keys|Soul Organ|Boom Low|Funk Clav|Lo-Fi Pad|Horn Hit|Whistler|Smooth Lead|Vinyl Arp|Strings 70s|Scratcher|Mellow Seq|Swell Horns|Bounce Arp|Twang Pluck|Split Lounge",
+    "Poly Brass|Sync Rider|Square Run|Ladder Low|Polysweep|Chip Arp|Chip Lead|Space Seq|Disco Octave|Lush Strings|Sync Sweep|Synth Toms|Pioneer Seq|Laser Zap|Combo Organ|Brass+Bows",
+    "Big Hit|Impact|White Riser|Downlifter|Alarm|Zap Gun|Far Storm|Wind Gust|Robot Chat|Saucer|Glitch Hit|Bubbles|Ping Storm|Chop Stab|Sci-Fi Arp|Crash Noise",
+    "Robo Voice|Choir Voc|Whisper Voc|Talkbox Ld|Voc Arp|Voc Strings|Metal Voc|Deep Voc|Bright Voc|Gate Voc|Wah Voc|Pad Voc|Voc Bass|Wide Voc|Echo Voc|Sing Arp"],
+  R: ["seq|lead|arp|bass|pad|keys|chord|arp|pad|bass|seq|lead|bell|fx|arp|hit",
+    "keys|chord|seq|bass|lead|drum|drum|drum|keys|seq|seq|fx|bass|arp|chord|fx",
+    "lead|seq|arp|bass|pad|keys|bell|pad|seq|bass|arp|fx|lead|seq|arp|hit",
+    "bass|bass|bass|pad|seq|drum|drum|chord|arp|lead|pad|lead|seq|keys|bass|fx",
+    "keys|keys|bass|keys|pad|hit|lead|lead|arp|pad|fx|seq|chord|arp|keys|bass",
+    "chord|lead|arp|bass|pad|arp|lead|seq|bass|pad|lead|drum|seq|fx|keys|chord",
+    "hit|hit|fx|fx|fx|fx|fx|fx|seq|fx|seq|seq|arp|seq|arp|hit",
+    "voc|voc|voc|voc|voc|voc|voc|voc|voc|voc|voc|voc|voc|voc|voc|voc"],
+  T: [["Breite Sägen, die eine Folge im Sechzehntel ein- und ausschaltet – halte einen Akkord.",
+      "Vier verstimmte Sägen im Unisono mit kleinem Gleiten; das Echo im punktierten Achtel trägt die Melodie.",
+      "Gezupfte Säge, der Arp läuft drei Oktaven aufwärts im Sechzehntel, das Echo antwortet.",
+      "Ein Basston rollt durch eine Filterfolge im Sechzehntel – die erste Stufe betont, die Nachschläge offen.",
+      "Langsam aufblühende Sägen, ein träger LFO öffnet das Filter; das Ensemble macht die Fläche breit.",
+      "Kurzer Zupfer aus Säge und Puls; das Kreuz-Echo wirft ihn zwischen links und rechts hin und her.",
+      "Unisono-Sägen mit Quinte, kurzer Filterschlag – für Akkord-Stöße auf der Zählzeit.",
+      "Glasiger Sinus mit etwas Kreuzmodulation; der Arp springt abwechselnd auf und ab über zwei Oktaven.",
+      "Streicherfläche aus zwei Sägen mit bewegter Form, weich im Einsatz und lang im Ausklang.",
+      "Rechteck mit Sub-Oktave, fast ohne Filterhub – ein fester Grund unter dem Offbeat-Bass.",
+      "Puls-Fläche, in Stücke geschnitten: eine Folge schaltet den Pegel, eine zweite fährt das Filter.",
+      "Einstimmige Säge mit Resonanz und Gleiten; die Filter-Hüllkurve quakt bei jedem neuen Ton.",
+      "Sinus, von Oszillator 2 zwei Oktaven höher verbogen; die Biegung klingt aus wie bei einer Glocke.",
+      "Rauschen und Säge steigen langsam auf: die Hüllkurve zieht Tonhöhe und Filter über vier Takte nach oben.",
+      "Zwei Timbres: Timbre 1 läuft als Arp, Timbre 2 hält dazu eine weiche Fläche.",
+      "Ein Akkord-Schlag, der nach unten wegkippt und im langen Echo verschwindet – für den Höhepunkt."],
+    ["Zwei Rechtecke im Oktavabstand mit kurzer Hüllkurve – der klassische Orgel-Stoß im Haus-Takt.",
+      "Ein dunkler Akkord mit Quinte und Septime, das Kreuz-Echo wiederholt ihn immer leiser.",
+      "Resonante Säge mit einer Folge auf Filter und Tonhöhe – ein Ton spielt eine ganze Säurelinie.",
+      "Dreieck mit gefalteter Form und Gleiten zwischen gebundenen Noten – federnd und rund.",
+      "Verstimmte Puls-Wellen im Unisono, die Tonhöhe fällt beim Anschlag kurz ab – ein dröhnender Rave-Ruf.",
+      "Sinus mit schnellem Tonhöhen-Fall und etwas Rauschen – eine Trommel, die man in Tonhöhen spielt.",
+      "Tiefer Sinus, dessen Tonhöhe in einem Augenblick abstürzt – eine Fußtrommel zum Selberspielen (C2).",
+      "Hochpass-Rauschen, ganz kurz – ein Becken-Tick; der Arp spielt ihn im Sechzehntel.",
+      "Helle Puls-Tasten mit Anschlag-Dynamik – für Akkordschläge im Viertel.",
+      "Fläche, deren Pegel eine Folge jede Viertel duckt – das Pumpen eines Clubs ohne Kompressor.",
+      "Kurze Puls-Blips; eine Folge auf Filter und Pegel macht daraus ein trockenes Muster.",
+      "Rauschen durch ein resonantes Bandpass-Filter, das ein langsamer LFO bewegt – Halle, Wind, Maschinen.",
+      "Kurzer Rechteck-Bass, der Arp springt im Sechzehntel zwischen zwei Oktaven.",
+      "Rechteck-Blitze in zufälliger Folge über zwei Oktaven, sehr kurz – flackert wie ein Stroboskop.",
+      "Ganz kurzer Stoß in ein langes Echo – ein Akkord wird zur rhythmischen Wolke.",
+      "Hochpass-Rauschen mit langem Ausklang durch den Phaser – ein Becken, das sich ausbreitet."],
+    ["Schmaler Puls mit Verzerrung und Gleiten – ein kantiger Lead mit digitalem Biss.",
+      "Eine Folge im Zweiunddreißigstel springt durch Form und Pegel – das Muster stottert wie ein Fehler.",
+      "Sinus-Tropfen in zufälliger Reihenfolge über drei Oktaven, im Vierundzwanzigstel – Regen aus Tönen.",
+      "Ein LFO im Achtel-Takt öffnet und schließt das Filter des Basses – er wackelt mit dem Tempo.",
+      "Stimmwelle mit langsamem Einsatz und Phaser – eine Fläche wie ein gesummter Chor im Nebel.",
+      "Sinus mit Kreuzmodulation, die beim Anschlag stark ist und dann verschwindet – glasige Tasten.",
+      "Ringmodulation mit einem unharmonischen Abstand – eine metallische Glocke mit langem Nachklang.",
+      "Speicherwelle, deren Lage ein langsamer LFO verschiebt – die Fläche ändert ständig ihre Farbe.",
+      "Wellen-Sequenz: jeder Schritt wählt eine andere Speicherwelle – ein gehaltener Ton wird zur Melodie der Farben.",
+      "Dreieck mit gefalteter Form: Oktave und Quinte klingen mit, der Bass bleibt aber rund.",
+      "Rechteck-Arp im Zwölftel, abwechselnd auf und ab über drei Oktaven – wie Musik aus einer Spielkonsole.",
+      "Rauschen, das ein Sägen-LFO immer wieder von unten nach oben fegt.",
+      "Stimmwelle als Lead mit Vibrato vom MOD-Rad – singt wie eine künstliche Stimme.",
+      "Glockiger Sinus; eine Folge verteilt die Schritte im Stereobild und öffnet das Filter abwechselnd.",
+      "Split bei C4: links ein runder Bass, rechts läuft ein Arp – Bass und Begleitung auf einer Tastatur.",
+      "Ein kurzer Ausbruch aus Rauschen und Ringmodulation – wie ein Datenpaket, das zerplatzt."],
+    ["Zwei Sägen, die gegeneinander schweben, im Unisono – ein tiefer, schwebender Bass für schnelle Takte.",
+      "Verzerrte Säge, ein LFO im Sechzehntel reißt das Filter auf – ein knurrender Bass.",
+      "Fast reiner Sinus mit einer Spur Form – ein Sub, der mehr drückt als klingt.",
+      "Weiche Sägen-Fläche mit Phaser und langem Ausklang – warm unter schnellen Rhythmen.",
+      "Bass mit einer Filterfolge im Sechzehntel – rollt von selbst, wenn du eine Taste hältst.",
+      "Rauschen mit einem kurzen Ton darunter – eine knallende Trommel, in der Tonhöhe spielbar.",
+      "Trommeln mit Tonhöhen-Fall, der Arp wirbelt sie im Sechzehntel abwärts.",
+      "Ein Moll-Stoß aus Säge und kleiner Terz, kurz und hart – für Breaks-Akzente.",
+      "Gezupfter Puls-Arp mit Swing, abwechselnd auf und ab – groovt über einem gebrochenen Takt.",
+      "Ein langsamer LFO zieht die Tonhöhe auf und ab – ein Sirenen-Ruf über dem Beat.",
+      "Rauschen und eine tiefe Säge mit Phaser – eine dunkle Atmosphäre zwischen den Breaks.",
+      "Unisono-Puls, der bei jeder Note von oben in den Ton stürzt.",
+      "Ein Bass, den eine Pegelfolge im Sechzehntel zerhackt – wie ein geschnittenes Sample.",
+      "Kurzer Dreieck-Zupfer, das Echo im Achtel-Triolen-Abstand macht daraus eine Kette.",
+      "Zwei Timbres: unten ein Sinus-Sub, darüber eine Säge mit Filterfolge – Druck und Bewegung zugleich.",
+      "Ein Klang, der wie ein zurückgespultes Band nach unten absinkt."],
+    ["E-Piano-artige Tasten aus Sinus mit leichter Kreuzmodulation, dazu ein langsamer Chorus.",
+      "Dreieck und Rechteck im Oktavabstand mit Gate-Hüllkurve; eine Folge lässt den Pegel leicht wogen.",
+      "Tiefer Sinus mit langem Ausklang und einem kleinen Tonhöhen-Knick am Anfang – für langsame Beats.",
+      "Schmaler Puls durch einen Bandpass, sehr kurz; der Arp im Akkord-Modus tippt im Sechzehntel.",
+      "Dunkle Säge-Fläche mit Rauschen, wie von einer alten Kassette.",
+      "Ein kurzer Bläser-Stoß aus zwei Sägen mit schnell öffnendem Filter.",
+      "Pfeifender Sinus mit Gleiten und Vibrato – eine hohe Melodiestimme.",
+      "Weiche Säge mit 12-dB-Filter und langem Gleiten – ein singender Synth-Lead der Westküste.",
+      "Ein sanfter Arp im Achtel mit Swing, weiche Tasten – wie eine Platte im Hintergrund.",
+      "Streichmaschinen-Klang aus Sägen mit Ensemble – breit und ein wenig schwebend.",
+      "Rauschen und Säge, ein schneller LFO zerrt an der Tonhöhe – erinnert an ein geschobenes Platten-Geräusch.",
+      "Weiche Tasten, eine Folge im Achtel öffnet das Filter mal mehr, mal weniger.",
+      "Bläsersatz aus Sägen, das Filter öffnet sich langsam – ein schwellender Akkord.",
+      "Bass-Arp im Achtel mit Swing, aufwärts über eine Oktave – hüpft mit dem Beat.",
+      "Ringmodulierter Zupfer mit kleinem Tonhöhen-Knick – drahtig wie eine fremde Saite.",
+      "Split bei C3: unten ein weicher Bass mit Gleiten, oben weiche Tasten für die Begleitung."],
+    ["Ein Bläsersatz aus Sägen, die Filter-Hüllkurve öffnet mit jedem Akkord – wie ein Synthesizer der frühen Achtziger.",
+      "Harter Sync, die Filter-Hüllkurve verbiegt die Tonhöhe von Oszillator 2 – ein schneidender Lead.",
+      "Rechteck-Arp aufwärts über zwei Oktaven im Sechzehntel – die einfache Maschine.",
+      "Säge mit 24-dB-Filter und mittlerer Resonanz – der warme Bass alter Geräte.",
+      "Eine langsame Filter-Hüllkurve öffnet und schließt die Fläche bei jedem Akkord.",
+      "Ganz schmaler Puls im Vierundzwanzigstel über zwei Oktaven – flirrend wie alte Heimcomputer.",
+      "Einstimmiges Rechteck mit schnellem Vibrato vom MOD-Rad – eine Melodie aus der Spielhalle.",
+      "Eine Folge über Tonhöhe und Filter, mit Echo – ein gehaltener Ton schwebt als Melodie durchs All.",
+      "Der Arp springt im Sechzehntel zwischen zwei Oktaven – der Tanzflächen-Bass.",
+      "Volle Streicher aus vier Sägen, das Ensemble macht sie breit wie ein Orchester.",
+      "Ein LFO fährt die Sync-Tonhöhe langsam auf und ab – der Lead singt von allein.",
+      "Elektronische Trommeln mit Tonhöhen-Fall und Rauschen; der Arp spielt einen Wirbel abwärts.",
+      "Eine sechzehnstufige Folge auf Filter und Tonhöhe, wie eine Sequenz der Elektronik-Pioniere.",
+      "Die Tonhöhe stürzt in einem Augenblick zwei Oktaven ab – ein Laserschuss.",
+      "Dünne, helle Orgel aus Rechteck und Dreieck mit schnellem Vibrato.",
+      "Zwei Timbres: Bläser vorne, Streicher dahinter – ein Akkord mit Druck und Weite."],
+    ["Ein breiter Schlag aus Unisono-Sägen und Rauschen mit langem Echo – ein Orchesterschlag aus Strom.",
+      "Tiefer Aufprall: Sinus und Rauschen fallen in der Tonhöhe und klingen lang aus.",
+      "Rauschen, das über vier Takte anschwillt und dabei immer heller wird.",
+      "Ein Klang, der langsam nach unten sinkt und dunkler wird – das Gegenstück zum Riser.",
+      "Ein Rechteck-LFO springt zwischen zwei Tonhöhen – ein Warnsignal.",
+      "Ringmodulation und ein blitzschneller Tonhöhen-Sturz – ein Strahlengewehr.",
+      "Tiefes Rauschen mit langem Grollen und langsam zitterndem Filter – ein Gewitter in der Ferne.",
+      "Rauschen durch ein Bandpass-Filter, das ein LFO wie Windböen auf und ab bläst.",
+      "Eine Folge auf Tonhöhe und Form plappert in kurzen Silben – eine Maschine, die spricht.",
+      "Ein Sinus, dessen Tonhöhe ein LFO schnell und weit hin und her biegt – eine landende Untertasse.",
+      "Ein Schlag, den eine Folge im Zweiunddreißigstel zerhackt und im Stereobild verteilt.",
+      "Resonantes Filter, das eine zufällige Folge im Sechzehntel anstößt – blubbernde Blasen.",
+      "Sinus-Pings in zufälliger Folge über vier Oktaven im Vierundzwanzigstel – ein Gewitter aus Tönen.",
+      "Ein Akkord-Schlag, der sich in immer kürzeren Stücken wiederholt.",
+      "Ringmodulierte Töne, der Arp läuft abwechselnd auf und ab – Funksignale aus dem All.",
+      "Hochpass-Rauschen mit langem Ausklang – ein Becken-Schlag zum Abschluss."],
+    ["Sprich ins Mikrofon und halte Tasten: ein Puls-Träger mit Verzerrung macht daraus eine Roboterstimme.",
+      "Säge als Träger mit langsamem Einsatz, das Ensemble macht aus deiner Stimme einen Chor.",
+      "Rauschen als Träger: deine Stimme wird zu einem Flüstern, ganz ohne Tonhöhe der Tasten.",
+      "Einstimmige Säge mit Gleiten als Träger – deine Stimme spricht durch eine Lead-Melodie.",
+      "Der Arp spielt den gehaltenen Akkord im Sechzehntel aufwärts, deine Stimme formt jeden Ton.",
+      "Ein weicher Streicher-Träger mit langem Ausklang – deine Stimme als Fläche.",
+      "Gefalteter Sinus als Träger und hohe Resonanz – deine Stimme klingt wie aus Blech.",
+      "Formanten zwei Stufen tiefer – aus deiner Stimme wird ein dunkler Riese.",
+      "Formanten höher und etwas Zischen vom Hochpass – eine helle, klare Vocoder-Stimme; der Arp wechselt auf und ab.",
+      "Der Arp im Akkord-Modus schneidet deine Stimme im Achtel in Stücke.",
+      "Ein LFO verschiebt die Formanten wie ein Wah-Pedal, während du sprichst.",
+      "Langsam ausklingende Bänder: jedes gesprochene Wort hallt als Fläche nach.",
+      "Einstimmiger Puls tief unten, der Arp springt zwischen zwei Oktaven – deine Stimme als Bass-Figur.",
+      "Die Bänder sind paarweise ganz nach links und rechts verteilt – deine Stimme füllt das ganze Stereobild.",
+      "Dreieck-Träger, der Arp läuft abwärts und das Kreuz-Echo wiederholt jede Silbe.",
+      "Der Arp springt in zufälliger Folge über zwei Oktaven – deine Stimme singt eine Melodie, die du nicht spielst."]]};
+/*}MKK*/
+(function () {
+'use strict';
+const K = SQ_MK_KOMPAKT;
+// genre tabs [short (portrait chip), long (landscape column, list)]
+const GL = [['TRANCE', 'TRANCE'], ['TECHNO', 'TECHNO/HOUSE'], ['ELECTRO', 'ELECTRONICA'], ['D&B', 'D&B/BREAKS'], ['HIPHOP', 'HIPHOP/VINTAGE'], ['RETRO', 'RETRO'], ['S.E./HIT', 'S.E./HIT'], ['VOCODER', 'VOCODER']];
+// role key -> [label, library role (EN-18), preview phrase]
+const RK = {lead: ['Lead', 'lead', 'lead'], pad: ['Fläche', 'pad', 'pad'], bass: ['Bass', 'bass', 'bass'], arp: ['Arpeggio', 'seq', 'chord'], seq: ['Sequenz', 'seq', 'chord'],
+  chord: ['Akkord', 'chord', 'stab'], keys: ['Tasten', 'keys', 'keys'], bell: ['Glocke', 'bell', 'bell'], fx: ['Effekt', 'fx', 'fx'], hit: ['Hit', 'fx', 'stab'],
+  drum: ['Drum', 'fx', 'seq8'], voc: ['Vocoder', 'chord', 'chord']};
+const CAT = {bass: 'bass', lead: 'lead', chord: 'poly', pad: 'flaeche', keys: 'pluck', seq: 'sequenz', fx: 'effekt', bell: 'glocke'};
+const PVH = [46, 34, 32, 57, 72, 72, 80, 97, 82, 89, 56, 39, 33, 24, 0, 0];   // preview of a vocoder without mic: the own vowel „a“ held (MK8 hold spectrum)
+const nn = s => String(s).padStart(2, '0');
+const idOf = (g, s) => 'f-mk-k' + g + nn(s);
+const lab = (g, s) => GL[g - 1][1] + ' ' + nn(s);
+const NAMES = K.N.map(x => x.split('|')), ROLES = K.R.map(x => x.split('|'));
+let LV = null, LVP = null, INIT_S = '';
+function prep() { if (LV) return; LV = MKF.leaves(); LVP = LV.map(l => l[0].split('.')); INIT_S = JSON.stringify(SQMK.init()); }
+function build(diffs) {
+  const pm = JSON.parse(INIT_S); let hold = null, holdOn = 0, mw = 0;
+  for (const [i, d] of diffs) {
+    const p = LV[i][0], v = LV[i][1] + d;
+    if (p.startsWith('voc.hold.')) (hold || (hold = new Array(16).fill(0)))[+p.slice(9)] = v;
+    else if (p === 'holdOn') holdOn = v; else if (p === 'mw') mw = v;
+    else { const ks = LVP[i]; let o = pm; for (let k = 0; k < ks.length - 1; k++) o = o[ks[k]]; o[ks[ks.length - 1]] = p === 'eq.lg' || p === 'eq.hg' ? v / 2 : v; }
+  }
+  pm.voc.hold = holdOn ? hold || new Array(16).fill(0) : null;
+  return {mk: SQMK.normMk(pm), mw: Math.max(0, Math.min(127, mw)) / 127};
+}
+const GEN = new Array(8).fill(null), STAT = {ms: new Array(8).fill(0)};
+function decodeGenre(g) {   // g 1-based
+  if (GEN[g - 1]) return GEN[g - 1];
+  try { tickAhead(.3); } catch (e) {}
+  const t0 = performance.now(); prep();
+  const bin = atob(K.B[g - 1] || ''), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  const salt = u.length ? u[0] : 0; let k = 1;
+  const rd = () => { let v = 0, m = 1, x; do { x = k < u.length ? u[k++] ^ salt : 0; v += (x & 127) * m; m *= 128; } while (x & 128); return v; };
+  const out = [];
+  for (let s = 0; s < 16; s++) {
+    const n = k < u.length ? rd() : 0, diffs = []; let idx = -1;
+    for (let j = 0; j < n; j++) { idx += rd() + 1; const z = rd(); if (idx < LV.length) diffs.push([idx, z & 1 ? -(z + 1) / 2 : z / 2]); }
+    out.push(build(diffs));
+  }
+  STAT.ms[g - 1] = performance.now() - t0;
+  return (GEN[g - 1] = out);
+}
+function decodeAll() { return new Promise(res => { let g = 1; const next = () => { if (g > 8) { res(STAT.ms.slice()); return; } decodeGenre(g++); setTimeout(next, 30); }; next(); }); }
+const REC = new Map();
+function rec(g, s) {   // the program s of genre g (1-based)
+  const id = idOf(g, s); let r = REC.get(id); if (r) return r;
+  const rk = ROLES[g - 1][s - 1] || 'lead', R_ = RK[rk] || RK.lead;
+  r = {id, name: NAMES[g - 1][s - 1] || lab(g, s), cat: CAT[R_[1]] || 'eigene', engine: 'mk', ev: 1, demo: R_[2], ref: lab(g, s) + ' · ' + R_[0],
+    tip: (K.T[g - 1] || [])[s - 1] || '', role: R_[1], prole: rk, kp: g, kslot: s, mods: [], fx: INIT_FX(), bus: null};
+  Object.defineProperty(r, 'p', {enumerable: true, get() { const d = decodeGenre(g)[s - 1]; return Object.assign({}, INIT_VA_P, {level: .457, mw: d.mw, mk: deep(d.mk)}); }});
+  REC.set(id, r); return r;
+}
+(function register() {   // into FACTORY_BY_ID only: loading by id, origin, „geändert“; the role lists stay as they are
+  for (let g = 1; g <= 8; g++) for (let s = 1; s <= 16; s++) { const r = rec(g, s); FACTORY_BY_ID.set(r.id, r); }
+  try { OHASH.key = ''; } catch (e) {}
+})();
+const of = id => { const m = /^f-mk-k([1-8])(\d\d)$/.exec(id || ''); return m && +m[2] >= 1 && +m[2] <= 16 ? {g: +m[1], s: +m[2]} : null; };
+const list = g => { const o = []; if (g >= 1 && g <= 8) for (let s = 1; s <= 16; s++) o.push(rec(g, s)); return o; };
+function names() { const o = []; for (let g = 1; g <= 8; g++) for (let s = 1; s <= 16; s++) o.push(rec(g, s).name); return o; }
+// the preview of a vocoder program without mic: the held own vowel (the preview voice has no inputs)
+function pvFix(snd) { const m = snd && snd.engine === 'mk' && snd.p && snd.p.mk; if (!m || m.mode !== 3 || m.voc.hold) return false; m.voc.hold = PVH.slice(); return true; }
+// Auf Platz schreiben: a Kompakt program onto place b, s of the program memory (= WRITE of MK8, one undo; an older own sound on
+// the place only loses bank / slot and stays in Eigene; the factory program of the place stays and comes back with WERKSKLANG ZURÜCK)
+async function writeRec(r, b, s, name) {
+  if (!r || !of(r.id) || !Number.isInteger(b) || !Number.isInteger(s) || b < 1 || b > 8 || s < 1 || s > 16) return null;
+  if (!LIB.ok) await libReady();
+  const occ = MKF.ownAt(b, s), L = MKF.label(b, s);
+  const snd = factorySound(r.id); snd.bank = b; snd.slot = s;
+  const saved = await LIB.lib.save(snd, {mode: 'new', name: (name && String(name).trim()) || r.name});
+  if (occ) await LIB.lib.put(occ.id, Object.assign(deep(occ), {bank: 0, slot: 0}));
+  const ids = [saved.id].concat(occ ? [occ.id] : []), was = {}; was[saved.id] = null; if (occ) was[occ.id] = occ;
+  undoPush({kind: 'mkslot', ids, before: JSON.stringify(was), label: 'Sichern auf ' + L});
+  MKF.P.bank = b;
+  libChanged(); if (R.editor === 'browser') brRefresh();
+  try { if (window.MKUI && MKUI.progRefresh) MKUI.progRefresh(); } catch (e) { logErr(e); }
+  toast('Geschrieben: ' + L + ':' + saved.name + (occ ? ' · „' + occ.name + '“ bleibt in Eigene' : ''), [{label: 'Rückgängig', fn: () => undo()}]);
+  return deep(saved);
+}
+function placePop(anchor, r) {
+  if (!r) return null;
+  const c = MKF.P.last || {bank: MKF.P.bank || 1, slot: 1}, sel = {b: c.bank, s: c.slot}, BL = 'ABCDEFGH';
+  hideToast();
+  return openPop(anchor, p => {
+    p.classList.add('mk8w');
+    p.innerHTML = '<h4>Auf Platz schreiben</h4><div class="mk8g mk8bk"></div><div class="mk8g mk8sl"></div><p class="mk8i small"></p>';
+    const inp = el('input', 'tin'); inp.value = r.name; inp.maxLength = 32; inp.setAttribute('aria-label', 'Name des Sounds'); inp.setAttribute('enterkeyhint', 'done');
+    const row = el('div', 'savrow mk8r'), no = el('button', 'mbtn rb', 'Abbrechen'), go = el('button', 'mbtn rb go', '');
+    no.dataset.a = 'no'; go.dataset.a = 'go'; row.append(no, go); p.append(inp, row);
+    const bk = p.querySelector('.mk8bk'), sl = p.querySelector('.mk8sl'), inf = p.querySelector('.mk8i');
+    const paint = () => {
+      bk.innerHTML = [...BL].map((x, k) => `<button class="rb${sel.b === k + 1 ? ' on' : ''}" data-b="${k + 1}" aria-label="Bank ${x}">${x}</button>`).join('');
+      sl.innerHTML = Array.from({length: 16}, (_, k) => `<button class="rb${sel.s === k + 1 ? ' on' : ''}${MKF.ownAt(sel.b, k + 1) ? ' own' : ''}" data-s="${k + 1}" aria-label="Platz ${MKF.label(sel.b, k + 1)}">${k + 1}</button>`).join('');
+      const occ = MKF.ownAt(sel.b, sel.s), L = MKF.label(sel.b, sel.s);
+      inf.textContent = occ ? L + ' trägt „' + occ.name + '“ (eigener Klang) – er bleibt in Eigene' : L + ' · Werksklang „' + MKF.facRec(sel.b, sel.s).name + '“ wird überdeckt (Werksklang zurück holt ihn wieder)';
+      go.textContent = 'Auf ' + L + ' schreiben';
+    };
+    paint();
+    onTap(p, x => {
+      if (x.dataset.b) { sel.b = +x.dataset.b; paint(); return; }
+      if (x.dataset.s) { sel.s = +x.dataset.s; paint(); return; }
+      const a = x.dataset.a; if (!a) return;
+      closePop();
+      if (a === 'go') writeRec(r, sel.b, sel.s, inp.value).catch(e => { logErr(e); toast('Sichern fehlgeschlagen'); });
+    }, 'button');
+    on(inp, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); closePop(); writeRec(r, sel.b, sel.s, inp.value).catch(logErr); } e.stopPropagation(); });
+    let sel1 = false; on(inp, 'focus', () => { if (sel1) return; sel1 = true; setTimeout(() => { try { if (document.activeElement === inp) inp.select(); } catch (e) {} }, 0); });
+  }, {name: 'mkkplace'});
+}
+window.MKK = {GL, of, list, rec, names, decodeGenre, decodeAll, writeRec, placePop, pvFix, label: (g, s) => lab(g, s), roleOf: (g, s) => ROLES[g - 1][s - 1],
+  stat: () => ({ms: STAT.ms.slice(), loaded: GEN.map(Boolean)})};
 })();
 </script>
 <script type="text/plain" id="sq-worklet-src">
@@ -15982,7 +16258,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.21.0';
+const VERSION = '4.23.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -31204,7 +31480,7 @@ async function saveSound(t, name, mode) {
 /* ---------- user library (§11.4): KV key 'lib', loaded at start-up; the full library goes into every project file ---------- */
 const LIB = {lib: null, ok: false, ver: 0, wait: null};
 // factory names count as taken for own sounds: no two rows in „Alle“ share a name (§11.3 „Rom-Fläche 2“)
-function factoryNames() { return FACTORY.map(f => f.name).concat(KIT_NAMES, mkLoaded() && window.MKF ? MKF.names() : []); }
+function factoryNames() { return FACTORY.map(f => f.name).concat(KIT_NAMES, mkLoaded() && window.MKF ? MKF.names() : [], mkLoaded() && window.MKK ? MKK.names() : []); }   // MK8b: Kompakt
 function libReady() {
   if (LIB.ok) return Promise.resolve(LIB.lib);
   if (!LIB.wait) LIB.wait = (async () => {
@@ -31303,7 +31579,8 @@ function previewStop() {
 }
 function previewFor(t, rec) {
   if (rec && rec.engine === 'drum') return drumPreviewStart(rec, rec.id);
-  const snd = soundCopy(rec); return previewStart(t, snd, rec.demo || (FACTORY_BY_ID.get(snd.origin) || {}).demo || demoForCat(rec.cat), rec.id);
+  const snd = soundCopy(rec); if (window.MKK && MKK.pvFix(snd)) toast('Vorhören mit Probe-Vokal · geladen spricht das Mikrofon (E2)');   // MK8b: a Vocoder program without mic
+  return previewStart(t, snd, rec.demo || (FACTORY_BY_ID.get(snd.origin) || {}).demo || demoForCat(rec.cat), rec.id);
 }
 /* kit preview (§11.3): the „Rom Pop“ pattern for one bar at the current tempo, over the music, never touching the transport or
    the clips. rec null = the loaded kit (its own strips); else that kit's slots through own preview strips on the kit bus */
@@ -31333,7 +31610,7 @@ const demoForCat = c => ({bass: 'bass', lead: 'lead', poly: 'chord', flaeche: 'p
 /* ---------- sound browser (§11.2; V0b §12.1, EN-04/EN-18): P sheet over grid + strip + carrier, L chips in a 120 px column.
    Name = load silently (one undo, toast); ▶ = preview (one at a time). Filter = the track's engine, „Alle Engines“ on
    request (active engine first); another engine's sound loads only from there („wechselt zu VA“). Drums: kits. ---------- */
-const BR = {t: 0, cat: 'kits', role: 'alle', all: false, eng: null, open: null, more: null, ren: null, list: null, bank: 0};   // MK8: bank 1-8 = the 16 places of A-H
+const BR = {t: 0, cat: 'kits', role: 'alle', all: false, eng: null, open: null, more: null, ren: null, list: null, bank: 0, kp: 0};   // MK8: bank 1-8 = the 16 places of A-H; MK8b: kp 1-8 = a genre of the collection Kompakt
 const DCATS2 = [['kits', 'Kits', 'Kits'], ['ekits', 'Eigene', 'Eigene Kits'], ['dinit', 'Init', 'Init']];
 // the records of scope {all, eng, role} on track t: 'alle' = factory + own, 'eigene' = own, else that role's factory sounds
 function brPool(t, sc) {
@@ -31347,6 +31624,7 @@ function brPool(t, sc) {
 function brList(t, sc) {
   const tr = S.tracks[t]; if (!tr) return [];
   if (tr.kind === 'drum') return BR.cat === 'ekits' ? (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine === 'drum') : BR.cat === 'dinit' ? [INIT_KIT] : DRUM_FACTORY;
+  if (sc.kp && !sc.all && (sc.eng || engKey(tr.sound.engine)) === 'mk' && mkLoad() && window.MKK) return MKK.list(sc.kp);   // MK8b: the 16 programs of a Kompakt genre
   if (sc.bank && !sc.all && (sc.eng || engKey(tr.sound.engine)) === 'mk' && mkLoad() && window.MKF) return MKF.bankList(sc.bank);   // MK8: exactly the 16 places (own sound instead of the factory one)
   const {fac, own} = brPool(t, sc);
   if (sc.role === 'eigene') return own;
@@ -31376,8 +31654,8 @@ function openBrowser(t) {
   // §11.2: the drum track's categories are „Kits“, „Eigene Kits“ (and V0b „Init“)
   if (tr.kind === 'drum') BR.cat = rec && rec.id && rec.id.startsWith('u-') ? 'ekits' : rec && rec.id === INIT_KIT.id ? 'dinit' : 'kits';
   else { BR.all = false; BR.eng = null; BR.role = brDefaultRole(t, engKey(tr.sound.engine)); }    // EN-04: the track's engine first
-  BR.bank = 0;
-  if (tr.kind === 'synth' && tr.sound.engine === 'mk' && mkLoad() && window.MKF) { const c = MKF.cur(t); if (c) { BR.bank = c.bank; BR.role = 'alle'; } }   // MK8: a program opens its bank
+  BR.bank = 0; BR.kp = 0;
+  if (tr.kind === 'synth' && tr.sound.engine === 'mk' && mkLoad() && window.MKF) { const c = MKF.cur(t); if (c) { BR.bank = c.bank; BR.role = 'alle'; } const k = window.MKK && MKK.of(tr.sound.origin); if (k) { BR.kp = k.g; BR.role = 'alle'; } }   // MK8b: a Kompakt program opens its genre   // MK8: a program opens its bank
   BR.open = tr.sound.origin || null;
   libReady().then(() => { if (R.editor === 'browser') brRefresh(); });
   buildBrowser();
@@ -31413,7 +31691,8 @@ function buildBrowser() {
   // chips are built by brRefresh; a chip never loads or plays (N0b-05)
   onTap(cats, b => {
     if (b.dataset.scope) { brScope(b.dataset.scope, b); return; }
-    if (S.tracks[BR.t].kind === 'drum') BR.cat = b.dataset.c; else { BR.role = b.dataset.c; BR.bank = 0; }
+    if (b.dataset.g) { BR.kp = +b.dataset.g; BR.kpLast = BR.kp; BR.bank = 0; BR.more = BR.ren = null; brRefresh(); return; }   // MK8b: a genre tab
+    if (S.tracks[BR.t].kind === 'drum') BR.cat = b.dataset.c; else { BR.role = b.dataset.c; BR.bank = 0; BR.kp = 0; }
     BR.more = BR.ren = null; brRefresh();
   }, 'button');
   const list = el('div', 'brlist'); BR.list = list;
@@ -31439,7 +31718,8 @@ function buildBrowser() {
 function brScope(sc, anchor) {
   const e0 = engKey(S.tracks[BR.t].sound.engine);
   if (sc === 'bank') { if (mkLoad() && window.MKF) MKF.bankPop(anchor); return; }   // MK8: Bank ▾ (A-H)
-  BR.bank = 0;
+  if (sc === 'kp') { if (BR.kp) BR.kp = 0; else if (mkLoad() && window.MKK) { BR.kp = BR.kpLast || 1; BR.bank = 0; BR.role = 'alle'; } BR.more = BR.ren = null; brRefresh(); return; }   // MK8b: Kompakt on / off
+  BR.bank = 0; BR.kp = 0;
   if (sc === 'all') { if (BR.all) return; BR.all = true; BR.eng = null; BR.role = 'alle'; mkLoad(); }   // MK8: „Alle Engines“ lists the programs A01-H15 too
   else if (BR.all || (BR.eng && BR.eng !== e0)) { BR.all = false; BR.eng = null; BR.role = brDefaultRole(BR.t, e0); }
   else {
@@ -31447,7 +31727,7 @@ function brScope(sc, anchor) {
       p.innerHTML = '<h4>Andere Engine ansehen</h4><div class="plist breng">' + [['analog', 'VA'], ['fm6', 'FM'], ['wt', 'WT'], ['mk', MK_LABEL]].map(([e, l]) =>
         `<button class="rb${e === (BR.eng || e0) ? ' on' : ''}" data-e="${e}">${l}${e === e0 ? ' · Spur' : ''}</button>`).join('') + '</div><p class="small">Laden aus einer anderen Engine wechselt die Klangerzeugung der Spur (mit Rückgängig).</p>';
       guardTouch(p);
-      onTap(p, b => { closePop(); const e = b.dataset.e; BR.eng = e === e0 ? null : e; BR.role = 'alle'; BR.bank = 0; BR.more = BR.ren = null; if (e === 'mk') mkLoad(); brRefresh(); }, 'button[data-e]');
+      onTap(p, b => { closePop(); const e = b.dataset.e; BR.eng = e === e0 ? null : e; BR.role = 'alle'; BR.bank = 0; BR.kp = 0; BR.more = BR.ren = null; if (e === 'mk') mkLoad(); brRefresh(); }, 'button[data-e]');
     }, {name: 'breng'});
     return;
   }
@@ -31460,7 +31740,11 @@ function brChipsHTML(t) {
   const seg = `<div class="brseg" role="group" aria-label="Engine"><button class="chip rb brse${BR.all ? '' : ' on'}" data-scope="eng" aria-label="Nur ${ENGINE_LABEL[shown]}-Sounds">${ENGINE_LABEL[shown]} ▾</button>` +
     `<button class="chip rb brsa${BR.all ? ' on' : ''}" data-scope="all">Alle Engines</button></div>`;
   const bk = shown === 'mk' && !BR.all ? `<button class="chip rb brbank${BR.bank ? ' on' : ''}" data-scope="bank" aria-label="Bank wählen"><span class="cs">${BR.bank ? 'Bank ' + 'ABCDEFGH'[BR.bank - 1] : 'Bank'} ▾</span><span class="cl">${BR.bank ? 'Bank ' + 'ABCDEFGH'[BR.bank - 1] : 'Bank'} ▾</span></button>` : '';   // MK8
-  return seg + bk + brRoles(t, BR).map(([id, l]) => `<button class="chip rb${BR.role === id && !BR.bank ? ' on' : ''}" data-c="${id}"><span class="cs">${esc(l)}</span><span class="cl">${esc(l)}</span></button>`).join('');
+  // MK8b: the collection Kompakt (chip) with its 8 genre tabs instead of the role chips; „Alle MS 2000“ leads back
+  const kp = shown === 'mk' && !BR.all && window.MKK ? `<button class="chip rb brkp${BR.kp ? ' on' : ''}" data-scope="kp" aria-pressed="${BR.kp ? 'true' : 'false'}" aria-label="Sammlung Kompakt"><span class="cs">Kompakt</span><span class="cl">Kompakt</span></button>` : '';
+  if (kp && BR.kp) return seg + bk + kp + `<button class="chip rb" data-c="alle"><span class="cs">${esc(brRoles(t, BR)[0][1])}</span><span class="cl">${esc(brRoles(t, BR)[0][1])}</span></button>` +
+    MKK.GL.map(([s_, l], k) => `<button class="chip rb brkg${BR.kp === k + 1 ? ' on' : ''}" data-g="${k + 1}"><span class="cs">${esc(s_)}</span><span class="cl">${esc(l)}</span></button>`).join('');
+  return seg + bk + kp + brRoles(t, BR).map(([id, l]) => `<button class="chip rb${BR.role === id && !BR.bank && !BR.kp ? ' on' : ''}" data-c="${id}"><span class="cs">${esc(l)}</span><span class="cl">${esc(l)}</span></button>`).join('');
 }
 function brRefresh() {
   const sh = EL.sndSheet; if (!sh.classList.contains('open') || !BR.list) return;
@@ -31474,8 +31758,8 @@ function brRefresh() {
   const ch = brChipsHTML(BR.t);
   if (E.cats._h !== ch) { E.cats._h = ch; E.cats.innerHTML = ch; E.cats._shown = null; }
   // WP7: the chip row scrolls (P); the active chip is brought into view when the choice changes
-  const sel = drum ? BR.cat : BR.role + '|' + BR.all + '|' + BR.eng + '|' + BR.bank;
-  if (E.cats._shown !== sel) { E.cats._shown = sel; const c = E.cats, onC = c.querySelector('.chip.on[data-c]') || c.querySelector('.chip.on.brbank'), sg = c.querySelector('.brseg');
+  const sel = drum ? BR.cat : BR.role + '|' + BR.all + '|' + BR.eng + '|' + BR.bank + '|' + BR.kp;
+  if (E.cats._shown !== sel) { E.cats._shown = sel; const c = E.cats, onC = c.querySelector('.chip.on[data-g]') || c.querySelector('.chip.on[data-c]') || c.querySelector('.chip.on.brbank'), sg = c.querySelector('.brseg');
     if (onC) { const cr = c.getBoundingClientRect(), r = onC.getBoundingClientRect(), sr = sg ? sg.getBoundingClientRect() : null;
       // behind the sticky engine segment (P row / L column)
       const offX = sr ? sr.width + 8 : 8, offY = sr ? sr.height + 6 : 6;
@@ -31485,6 +31769,7 @@ function brRefresh() {
   let h = '';
   if (!items.length) h = (drum ? BR.cat === 'ekits' : BR.role === 'eigene') ? (drum ? '<div class="mempty">Noch keine eigenen Kits.<br>Im Drum-Editor „Sichern“ tippen – oder „Importieren“.</div>' : '<div class="mempty">Noch keine eigenen Sounds' + (cross ? '' : ' für ' + esc(ENGINE_LABEL[BR.eng || engKey(snd.engine)] || '')) + '.<br>Im Klang-Editor „Sichern“ tippen – oder „Importieren“.</div>')
     : '<div class="mempty">Keine Sounds.</div>';
+  if (!drum && BR.kp === 8 && !cross) h += '<div class="mkkvoc small">' + (micAvail() ? 'Vocoder: Laden schaltet E2 = Mikrofon ein – sprich und halte Tasten. ▶ hört mit einem Probe-Vokal.' : 'Vocoder: Mikrofon nur auf der GitHub-Seite. ▶ hört mit einem Probe-Vokal.') + '</div>';   // MK8b
   for (const f of items) {
     const own = f.id && f.id.startsWith('u-'), loaded = snd.origin === f.id, open = BR.open === f.id, playing = PV.on && PV.id === f.id;
     const nv = SQStore.isForeign(f), ref = nv ? SQStore.NV_NAME : own ? (f.engine === 'drum' ? 'Eigenes Kit' + (f.p && f.p.base ? ' · aus ' + f.p.base : '') : f.bank && window.MKF ? MKF.label(f.bank, f.slot) + ' · eigener Klang' : ROLE_LABEL[soundRole(f)] || CAT_LABEL[f.cat] || 'Eigene') : (f.ref || '');
@@ -31493,8 +31778,9 @@ function brRefresh() {
       `<button class="bmain" data-act="load" aria-label="${esc(f.name)} laden"><b>${esc(f.name)}</b><span>${esc(ref)}</span></button>` +
       `<span class="beng">${nv ? 'NEU' : ENGINE_LABEL[f.engine] || 'VA'}</span>` +
       `<button class="binfo" data-act="info" aria-label="Trick zu ${esc(f.name)}">ⓘ</button>` +
-      (own ? `<button class="bmore rb" data-act="more" aria-label="Mehr zu ${esc(f.name)}">⋯</button>` : '') + '</div>';
+      (own || f.kp ? `<button class="bmore rb" data-act="more" aria-label="Mehr zu ${esc(f.name)}">⋯</button>` : '') + '</div>';   // MK8b: Kompakt rows: Laden / Auf Platz schreiben
     if (open && f.tip) h += `<div class="btip" data-id="${esc(f.id)}">ⓘ ${esc(f.tip)}</div>`;
+    if (f.kp && !own && BR.more === f.id) h += `<div class="bacts" data-id="${esc(f.id)}"><button class="mbtn rb" data-act="load">Laden</button><button class="mbtn rb go" data-act="kpw">Auf Platz schreiben</button></div>`;
     if (own && BR.more === f.id) {
       if (BR.ren === f.id) h += `<div class="bacts" data-id="${esc(f.id)}"><input class="tin" maxlength="32" value="${esc(f.name)}" aria-label="Neuer Name"><button class="mbtn rb go" data-act="renok">OK</button><button class="mbtn rb" data-act="rencancel">Abbrechen</button></div>`;
       else h += `<div class="bacts" data-id="${esc(f.id)}"><button class="mbtn rb" data-act="ren">Umbenennen</button><button class="mbtn rb" data-act="dup">Duplizieren</button><button class="mbtn rb" data-act="exp1">Exportieren</button><button class="mbtn rb" data-act="del">Löschen</button>${f.bank ? '<button class="mbtn rb" data-act="mkfree">Werksklang zurück</button>' : ''}</div>`;
@@ -31538,6 +31824,7 @@ function brTap(b) {
   else if (act === 'exp1' && rec) exportSounds([id]);
   else if (act === 'del' && rec) { BR.more = null; deleteSound(id); }
   else if (act === 'mkfree' && rec && rec.bank && mkLoad() && window.MKF) { BR.more = null; MKF.restore(t, rec.bank, rec.slot); }   // MK8
+  else if (act === 'kpw' && rec && rec.kp && window.MKK) { BR.more = null; brRefresh(); MKK.placePop(BR.list.querySelector('.brow[data-id="' + rec.id + '"] .bmore') || b, rec); }   // MK8b
 }
 function brRename(inp) {
   const row = inp && inp.closest('[data-id]'); if (!row) return;
@@ -33572,6 +33859,7 @@ function openMenu(goto) {
     MK_LABEL + ' · Anzeige: im Spielen Programm und Modus; EDIT zeigt Seite und Wert („08B FILTER“). SELECT 1–16 = Seite, PAGE −/+ blättert, CURSOR ◀ ▶ wählt den Wert, −/NO +/YES ändern ihn. Tipp auf die Anzeige = Liste des Werts bzw. die Ansicht mit ▸. EXIT = zurück; EDIT halten + EXIT = COMPARE.',
     MK_LABEL + ' · Programme: −/NO +/YES und SELECT 1–16 wählen im Spielen den Sound, BANK ▼ ▲ die Bank; WRITE sichert. GLOBAL: Eingänge 1A/1B, Oktave 1C, Seiten-Sprung 1D.',
     MK_LABEL + ' · Programm-Speicher: 128 eigene Programme A01–H16 (A–G je Platz dieselbe Rolle: 01 Synth hart, 02 Arpeggio, 03 Fläche, 04 Bass … 16 Effekt; H09–H14 Vocoder, H15 Eingang, H16 INIT). BANK ▼ ▲ wählt die Bank, SELECT 1–16 lädt einen Platz, −/NO +/YES (und ‹ › im Klang-Kopf) = Programm zurück/weiter; Bibliothek → Bank ▾ = die 16 Plätze einer Bank. WRITE fragt nach dem Platz: dein Klang überdeckt dort den Werksklang; WERKSKLANG ZURÜCK (UTILITY) gibt den Platz wieder frei, nichts geht verloren.',
+    MK_LABEL + ' · Sammlung Kompakt: 128 weitere eigene Klänge in 8 Genres (TRANCE … VOCODER). Bibliothek → Chip „Kompakt“ → Genre-Reiter; ▶ hört vor, Name lädt (ein Rückgängig), ⋯ → „Auf Platz schreiben“ legt den Klang auf A01–H16 (der Werksklang des Platzes bleibt, WERKSKLANG ZURÜCK holt ihn). Die 16 Vocoder nehmen das Mikrofon als E2.',
     MK_LABEL + ' · PITCH und MOD: die Räder links der Tasten. PITCH federt zur Mitte zurück, MOD bleibt stehen (Vibrato über 04 PITCH → VIBRATO). Beides wird nicht gespeichert. Reiter SPIEL: Tasten, Räder und die wichtigsten Tasten der Platte zusammen.',
     MK_LABEL + ' · Leistungs-Probe (Menü → Info): misst 10 s lang, wie viel Rechenzeit vier Klangerzeuger mit je vier Stimmen brauchen – das Ergebnis kopieren und schicken.',
     MK_LABEL + ' · OSCILLATOR 1 WAVE: Säge, Puls, Dreieck, Sinus (CROSS: CONTROL 1 = wie stark OSZ 2 den Sinus verbiegt), Stimmwelle (Klang bleibt beim Tonhöhenwechsel), Speicherwelle (CONTROL 2 wählt eine von 64), Rauschen (CONTROL 1 = Tonhöhe des Filters, CONTROL 2 = Resonanz), Eingang.',

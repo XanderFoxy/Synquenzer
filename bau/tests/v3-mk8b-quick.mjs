@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+const FILE = process.argv[2];
+const browser = await chromium.launch({executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--autoplay-policy=no-user-gesture-required']});
+const page = await browser.newPage(); const errs = []; page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await page.goto('file://' + FILE); await page.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 30000});
+const r = await page.evaluate(async () => { mkLoad(); const ms = await MKK.decodeAll(); const a = MKK.list(1).map(x => x.name); const snd = factorySound('f-mk-k103');
+  const x = await SYNQUENZER.mkRender(snd, [[0, 'on', 48, .8], [1, 'off', 48]], {sec: 1.5, seed: 1}); let e = 0; for (const v of x.l) e += v * v;
+  return {ms, a, ver: VERSION, rms: 10 * Math.log10(e / x.l.length + 1e-30), n: FACTORY_BY_ID.size}; });
+console.log(JSON.stringify(r), errs);
+await browser.close();

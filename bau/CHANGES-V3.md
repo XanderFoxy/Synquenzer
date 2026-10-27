@@ -4527,3 +4527,66 @@ kein Supabase-Aufruf. Eingebettete Kerne: `vsCleanMake` = VS4-fix-Fassung von `v
   (bekannt), `gmkp8-mk8-09-platte` FAIL „Toast [Rückgängig]“ (MK-P-Kopf-Dock, gleiches Ergebnis vor dem Fix). In 320×568 zeigt
   der Kopf-Toast lange Meldungen nur angeschnitten („Rück-gän-gig: …“), das Symbol ↷ bleibt lesbar.
 - Schnappschuss: `synq-snapshots/G-S7-merge-fix.html`.
+
+## F1 — Nacharbeiten 4.21.0 · App 4.22.0
+
+Stand: Hauptlinie `mk-wt/index.html` (4.21.0 = MS 2000 + Stimme VS3–VS5b). **Version 4.22.0** (APP_CODE 4 022 000), **Format bleibt 5**.
+Auftrag Xander 27.10. („Mache bitte weiter und stelle das fertig“). Alle Befunde zuerst nachgestellt (alle sieben nachgestellt), dann behoben,
+danach dieselbe Probe noch einmal. Layout-Proben mit der echten App-Schrift (Barlow Semi Condensed / JetBrains Mono aus `fonts/`, per
+`@font-face` in die Probe geladen, `document.fonts.check` = true), nicht mit einer Ersatzschrift.
+
+- **Marken-Editor (#wpSheet), Layout (major).** Titel „MARKEN · STIMME · SZENE 2“ war in allen Größen mit „…“ gekürzt (189 > 92–169 px);
+  Raster-Chips 32 px (P3 28 px) hoch; Kopf-Knöpfe [Text] [A/B] [✕] 36 px; P3: Warnzeile „⚠ 1 nur verschoben (Faktor außer 0,5–2)“ abgeschnitten.
+  Jetzt: Titel in Stücken („Marken ·“ „STIMME ·“ „Szene 2“), die nur zwischen sich umbrechen (bis 3 Zeilen, 13 px Zeilenhöhe, nie „…“);
+  Kopf P 44 px mit [Text] 56×44, [A/B] 56×44, [✕] 44×44 (L 40 px, Knöpfe 38 hoch = dichtes Raster L4 ≥ 40×36); Raster-Chips 34 px hoch
+  (L4 dichtes Raster ≥ 36×34): in P1/P2 und L in einer Reihe (8 × 40–42 px), in P3 zwei Reihen à 4; in P3 stehen Stärke und Swing
+  nebeneinander; [Dehnen] [Scheiben] [Ganz] in P3 44 statt 40 hoch. Die Wellenform wird dabei größer statt kleiner: P1/P2 84 → 114 px,
+  P3 50 → 69 px, L unverändert ±4 px. Die Info-Zeile bricht um statt „…“. Blattgröße, Lage und Bedienung unverändert.
+- **Quantisier-Blatt mit [Audio folgt]:** Kopf 44 px (P) bzw. 40 px (L), [Audio folgt] und [✕] 44 hoch (L 38); Titel bricht zwischen den Stücken
+  um (P3: „Quantisieren · Melodie · Szene 1“ war abgeschnitten). Ohne verknüpften Take bleibt der Kopf wie bisher.
+- **Song-Ansicht schließt den Marken-Editor** (`setSongView`, bei jedem Wechsel der Ansicht) – vorher blieb er über der Song-Ansicht offen.
+- **Tipp auf eine Marke (neu gefunden beim Nachprüfen, major):** das Blatt [✕ Löschen] [Abbrechen] ging unter dem Finger auf; der
+  Kompatibilitäts-Klick desselben Tipps traf [Abbrechen] (Blatt sofort zu) und ein späterer Tipp „daneben“ traf [✕ Löschen] (Marke weg).
+  Jetzt: der Klick des Tipps wird verschluckt (`UI.ghost`), und das Blatt geht über der Wellenform auf (unter ihr, wenn oben kein Platz ist –
+  L), nie über der Stelle, an der der Finger liegt.
+- **A/B Roh │ Sauber mit Zeitkarte (major):** jeder Wechsel rechnete die gedehnte/geschnittene Fassung neu (Renders +1 je Tipp) und war
+  0,10–0,23 s zu spät hörbar. Jetzt wird bei Takes mit SÄUBERN > 0 und Zeitkarte die Fassung der anderen Quelle (gleiche Karte) gleich
+  mitgerechnet (`wpPreAlt`, `WP.alt`, nur für klingende Takes); der Schalter tauscht an derselben Stelle mit der linearen 6-ms-Blende von
+  VS4 (`clResync`, `wpSameMap`) statt über die Suche von `wpSwitch`. Gemessen: 12 ms (6 Wechsel, keine neuen Renders), kein Klick
+  (Spitzen der 2. Ableitung an den Wechseln ≤ 2,2 dB über der Umgebung, sonst im Signal bis 4,1 dB).
+- **SÄUBERN nach dem Neuladen (major):** die gesäuberte Fassung lag schon im Audio-Store, der Schlüssel enthielt aber nur Take + Stärke.
+  Jetzt Take + Stärke + Stand des Säubern-Kerns (Prüfsumme von `vsCleanMake`, z. B. `c100v2stdc`); neu gerechnet wird nur, wenn sich
+  einer der drei ändert (alte Schlüssel werden beim nächsten Rechnen weggeräumt). Beim Laden aus dem Store zeigt das Takes-Blatt
+  „lädt die gesäuberte Fassung …“ statt „säubert …“. Probe: nach Neuladen `runs 0`, `loads 1`, Puffer-Prüfsumme gleich.
+- **Wellenform in Matrix und Song = was klingt (major):** `tkPeaks` las den Roh-Take. Jetzt die Hüllkurve des klingenden Puffers
+  (gesäubert und/oder gedehnt/geschnitten, `tkHeard`); Zellen-Signatur und Song-Ansicht zeichnen neu, sobald eine neue Fassung fertig ist.
+  Probe: Hüllkurve = klingender Puffer (Abweichung 0), gegen Roh 0,32 (gesäubert) bzw. 0,85 (gesäubert + gedehnt); vorher genau umgekehrt.
+- **Marken nach ↶ von „Säubern“ (major, `vgs7/edundo.mjs`):** nach ↶ blieben die am gesäuberten Take erkannten Marken stehen (detCl 100
+  bei cl 0). Jetzt: ändert sich SÄUBERN (Regler, ↶, ↷) bei offenem Editor, werden nicht gespeicherte Marken an der nun geltenden Quelle neu
+  erkannt (`wpClChanged`); `wpMarks` gibt eine für eine andere Stärke erkannte Liste nicht mehr aus (auch „Audio folgt“ nimmt dann die neuen).
+  Probe: ↶ → detCl 0, ↷ → detCl 100.
+- **MK8-09P „Toast [Rückgängig]“ (`gmkp8-mk8-09-platte.mjs`): Probe veraltet, App richtig.** Quer dockt der Aktions-Toast seit MK-P auf der
+  Kopf-Anzeige (188 px) und zeigt die Aktion als ↶ (44 px, aria-label „Rückgängig“); `innerText` enthält das Wort darum nicht. Ein
+  Fingertipp auf ↶ macht das Laden rückgängig (B05 → A01, geprüft). Die Probe liest jetzt auch das aria-label → 27/27.
+- Bekannte, nicht durch F1 verursachte Abweichungen: `gs7-v3-vs5a-t2` „↶ → Stärke 100 %“ (veraltet seit VS5b: Dehnen startet mit 70 %,
+  siehe VS5b); `gs7-v3-vs5b-t1` „Render-Cache“ zählt je nach Zeitpunkt 7 → 7 oder 7 → 8 (mit 4.21.0 genauso; `instant` ist jedes Mal true).
+
+Proben (alle mit `mk-wt/index.html` 4.22.0):
+- Nachstellung + Nachweis: `vgs7/f1-lay.mjs` (echte Schrift, P1 P2 P3 L1 L2 XL W) 63/63; `gs7-v3-qab5b-ui` 35/35 (vorher 28/35);
+  `gs7-v3-qa-vs5a-e` 54/54 (vorher 32/54); `vgs7/f1-ablat.mjs` PASS (vorher 0,10–0,23 s); `vgs7/f1-clcache.mjs` PASS; `vgs7/f1-wave.mjs`
+  PASS (mit 4.21.0 FAIL); `vgs7/edundo.mjs` detCl folgt; `gmkp8-mk8-09-platte` 27/27; `v3-f1-toast.mjs` (↶ per Finger wirkt).
+- Regression: `gs7-merge-vs4vs5` ALL OK; VS5a `t1` `t3` `t4` `t5` ALL OK; VS5b `t1` (Lauf 2) `t2` `t3` `t4` `t5` ALL OK; `qab5b-switch`, `-song`
+  ALL OK, `-core` max diff 0; VS4 `qa-vs4-b`, `-d` ALL OK; `vgs7/toastcheck`, `toastcheck2`, `toastdel`, `toastredo`, `toastfix-verify` in
+  390×844, 844×390, 320×568, 667×375 wie vorher (Werkzeuge unter dem Kopf-Toast frei, Aktionen wirken); `vgs7/edclose` ✓. Smoke ohne Fehler.
+- Screenshots: `dirigent-test/vgs7/f1-ed-*.png`.
+
+### Für Xander im Dashboard / am Server offen
+4.22.0 liegt über dem Wächter `max_app` 4 021 000 – **vor dem Ausliefern** im SQL-Editor des Projekts **synquenzer**
+(`dbdnsryoivvezspgydpx`, nicht das Klassenzimmer!) ausführen, sonst lehnt `save_project` das Online-Speichern ab:
+
+```sql
+update private.settings set max_app = greatest(max_app, 4022000);
+```
+Format bleibt 5 (`max_format` 5 reicht). Keine weitere Server-Änderung (am Server offen: nur dieser Wert).
+
+- Schnappschuss: `synq-snapshots/F1-fix.html`.

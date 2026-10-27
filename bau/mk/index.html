@@ -1967,7 +1967,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #wpSheet.open{display:flex}
 #wpSheet .qh{flex:none;display:flex;align-items:center;gap:6px;height:44px;padding:0 4px 0 12px;border-bottom:1px solid var(--panel-edge)}
 /* F1: der Titel bricht zwischen seinen Stücken um (bis 3 Zeilen), nie mit „…“ */
-#wpSheet .qh b{flex:1 1 auto;min-width:0;font:700 12px/1.05 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;white-space:normal;overflow:hidden}
+#wpSheet .qh b{flex:1 1 auto;min-width:0;font:700 12px/13px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;white-space:normal;overflow:hidden}
 #wpSheet .qh b .tp,#qSheet .qh.hasfol b .tp{white-space:nowrap}
 #wpSheet .qh .sh-x{flex:0 0 44px;width:44px;height:44px}
 #wpSheet .wpab{flex:0 0 56px;height:44px;padding:0;font:700 12px/1 var(--font-ui)}
@@ -1980,7 +1980,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #wpSheet .qb{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:3px;padding:5px 10px 6px;overflow:hidden}
 #wpSheet .wpcv{position:relative;flex:1 1 auto;min-height:48px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
 #wpSheet .wpcv canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
-#wpSheet .wpan{position:absolute;top:0;width:1px;height:10px;pointer-events:none}
+#wpSheet .wpan{position:absolute;top:0;width:1px;height:100%;pointer-events:none}   /* F1: Anker = ganze Höhe – das Marken-Blatt geht über oder unter der Wellenform auf, nie unter dem Finger */
 #wpSheet .wpinfo{position:absolute;left:4px;bottom:2px;max-width:calc(100% - 8px);pointer-events:none;font:600 10px/14px var(--font-ui);color:var(--text-dim);background:rgba(14,16,20,.75);padding:0 4px;border-radius:3px;white-space:normal;overflow:hidden}
 #wpSheet .qchips{flex:none;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px}
 #wpSheet .qchips button{height:34px;min-width:0;padding:0;font:700 12px/1 var(--font-ui)}
@@ -1996,7 +1996,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 #wpSheet .wpz{flex:0 0 88px;height:44px;padding:0;font:700 12px/1 var(--font-ui)}
 #qSheet .qfol{flex:0 0 auto;height:44px;padding:0 10px;font:700 11px/1 var(--font-ui)}
 #qSheet .qh.hasfol{height:44px}
-#qSheet .qh.hasfol b{white-space:normal;line-height:1.05}
+#qSheet .qh.hasfol b{white-space:normal;line-height:13px}
 #qSheet .qh.hasfol .sh-x{width:44px;height:44px}
 @media (orientation:landscape){#qSheet .qh.hasfol{height:40px}#qSheet .qh.hasfol .qfol,#qSheet .qh.hasfol .sh-x{height:38px}}
 #qSheet .qfol.on{color:var(--ink);background:var(--play);border-color:var(--play)}
@@ -15992,7 +15992,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.21.0';
+const VERSION = '4.22.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -41469,6 +41469,7 @@ function wpGest(cv) {
     if (p.mode) return;
     if (performance.now() - p.t0 >= 500) { wpPaint(); return; }      // Halten hat im Marken-Editor keine Bedeutung (K2-64)
     const cx = xOf(e);
+    UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};   // F1: der Klick desselben Tipps landet nie auf dem Blatt, das jetzt unter dem Finger aufgeht ([✕ Löschen])
     if (p.k >= 0) wpSelSheet(p.k, cx); else wpMarkAdd(E.id, E.vw.a + cx / E.cv.clientWidth * E.vw.W);
   };
   cv.addEventListener('pointerup', e => end(e, false));
@@ -41483,7 +41484,7 @@ function wpSelSheet(k, cx) {
     p.classList.add('wpsel'); guardTouch(p);
     p.innerHTML = `<h4>Marke ${k + 1}</h4><div class="savrow"><button class="mbtn rb" data-a="del">✕ Löschen</button><button class="mbtn rb" data-a="no">Abbrechen</button></div>`;
     onTap(p, bt => { const a = bt.dataset.a, Q = WP.ed; closePop(); if (a === 'del' && Q && wpMarkDel(Q.id, k)) toast('Marke gelöscht', {label: 'Rückgängig', fn: () => undo()}); }, 'button[data-a]');
-  }, {name: 'wpsel', onClose: () => { if (WP.ed) { WP.ed.sel = -1; wpPaint(); } }});
+  }, {name: 'wpsel', above: true, onClose: () => { if (WP.ed) { WP.ed.sel = -1; wpPaint(); } }});
 }
 // VS5b [Text]: Songtext eintippen, Silben mit Bindestrich („Lie-be ist ein Feu-er“); ✓ = ein Undo, leer = löschen
 function wpLyrPop(anchor) {
