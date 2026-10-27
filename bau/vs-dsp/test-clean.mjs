@@ -116,6 +116,16 @@ info('Echo-Tabelle', echoRows);
     for (const amt of [0.6, 1]) { const out = clean(x, null, sr, {amount: amt}); tone[f + '@' + amt * 100] = +T.db(T.rms(out, sr / 2, x.length - sr / 2) ** 2 / T.rms(x, sr / 2, x.length - sr / 2) ** 2).toFixed(2); }
   }
   check('Gehaltener Sinus 220/440 Hz bleibt im Pegel (< 1 dB, 60 % und 100 %)', Object.values(tone).every(v => Math.abs(v) < 1), tone);
+  // Lautsprecher-Weg ohne Echo (Referenz da, Mikro hört sie nicht): Legato in der Tonart der Begleitung → kein Echo-Abzug
+  const ref = T.playback(sr, 8, {seed: 33}), rl = {};
+  for (const amt of [0.6, 1]) {
+    const info = {}, out = clean(mic, ref, sr, {amount: amt, info});
+    const hpV = T.hp1(V, sr, 150), hpO = T.hp1(out, sr, 150);
+    let vo = 0, vv = 0; for (let i = a; i < b; i++) { vo += hpV[i] * hpO[i]; vv += hpV[i] * hpV[i]; } const g = vo / vv;
+    let s = 0, e = 0; for (let i = a; i < b; i++) { s += (g * hpV[i]) ** 2; e += (hpO[i] - g * hpV[i]) ** 2; }
+    rl[amt] = {sdr: +T.db(s / e).toFixed(1), gainDb: +(20 * Math.log10(g)).toFixed(2), pk: info.pk, aec: info.aec || 'an'};
+  }
+  check('Legato, Referenz ohne Echo: kein Echo-Abzug, SDR ≥ 20 dB, Stimme < 1 dB (60 % und 100 %)', [0.6, 1].every(k => rl[k].sdr >= 20 && Math.abs(rl[k].gainDb) < 1 && rl[k].aec === 'aus'), rl);
 }
 // 4c. VS4-fix: o.from – Echo-Weg ändert sich im Vorlauf (erst ohne Echo, dann +6 dB mit Sättigung): Ergebnis ab „from“
 {

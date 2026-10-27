@@ -10,7 +10,9 @@
 // API:
 //   stretch(x, sr, warp, o?) → {y: Float32Array, warnings: [{seg, ratio, t}], segs: [{s0, s1, d0, d1, mode}]}
 //       o.lock 0,02 s · o.xfade 0,005 s · o.win 0,04 s (WSOLA-Fenster) · o.search 0,012 s · o.minRatio 0,5 · o.maxRatio 2
-//       o.endAlign (true): letzter WSOLA-Rahmen auf die nächste Marke ausgerichtet (weniger Phasensprung an der Naht)
+//       o.endAlign (false; VS5b-Einbau: Standard aus): letzter WSOLA-Rahmen fest auf die nächste Marke ausgerichtet. Seit die letzten
+//       Rahmen auch am Abschnittsende gesucht werden, ist ohne Ausrichtung der Einbruch an den Nähten kleiner (196 Hz: 0,9 statt 3,2 dB;
+//       Klickfolge mit Ton, 250-ms-Abschnitte: 2,0 statt 5,4 dB)
 //   cacheKey(warp, o?, extra?) → String (FNV-1a über Karte, Optionen und z. B. Take-ID/Länge) für den Render-Cache
 //   srcText() → Quelltext „(function(){…})()“ für Worker/Skript
 
@@ -24,7 +26,7 @@ function factory() {
     const n = x.length;
     const lock = Math.round((o.lock == null ? 0.02 : o.lock) * sr), X = Math.max(1, Math.round((o.xfade == null ? 0.005 : o.xfade) * sr));
     const Hs = Math.max(8, Math.round((o.win == null ? 0.04 : o.win) * sr / 2)), W = 2 * Hs, Dl = Math.round((o.search == null ? 0.012 : o.search) * sr);
-    const rMin = o.minRatio == null ? 0.5 : o.minRatio, rMax = o.maxRatio == null ? 2 : o.maxRatio, endAlign = o.endAlign !== false;
+    const rMin = o.minRatio == null ? 0.5 : o.minRatio, rMax = o.maxRatio == null ? 2 : o.maxRatio, endAlign = o.endAlign === true;
     const S = Array.from(warp.src, t => Math.min(n, Math.max(0, Math.round(t * sr))));
     const D = Array.from(warp.dst, t => Math.max(0, Math.round(t * sr)));
     S[S.length - 1] = n;                                   // Ende der Quelle
@@ -41,7 +43,10 @@ function factory() {
     const Hd = Math.max(4, Math.floor(Hs / dec)), Dd = Math.ceil(Dl / dec) + 1;
 
     const best = (tmpl, tau, lo, hi) => {     // bestes i in [tau−Δ, tau+Δ] ∩ [lo, hi] zur Vorlage x[tmpl … tmpl+Hs)
-      const a = Math.max(lo, tau - Dl), b = Math.min(hi, tau + Dl);
+      let a = Math.max(lo, tau - Dl), b = Math.min(hi, tau + Dl);
+      // VS5b-Einbau: liegt das Suchfenster ganz hinter dem Abschnittsende (letzte Rahmen), wird im letzten erlaubten Stück gesucht
+      // statt ohne Suche festgelegt (vorher: Phasensprung → bis −5,4 dB Einbruch vor jeder Marke bei kurzen Abschnitten)
+      if (b <= a) { if (tau > hi) { b = hi; a = Math.max(lo, hi - 2 * Dl); } else { a = lo; b = Math.min(hi, lo + 2 * Dl); } }
       if (b <= a) return Math.min(hi, Math.max(lo, tau));
       // grob
       const td = Math.floor(tmpl / dec); let bc = -1, bs = -Infinity;
@@ -66,7 +71,8 @@ function factory() {
 
     // wie best(), aber zusätzlich soll die zweite Hälfte des Rahmens in den Rahmen bei `next` übergehen
     const best2 = (tmpl, next, tau, lo, hi) => {
-      const a = Math.max(lo, tau - Dl), b = Math.min(hi, tau + Dl, n - W);
+      let a = Math.max(lo, tau - Dl), b = Math.min(hi, tau + Dl, n - W);
+      if (b <= a) { const h2 = Math.min(hi, n - W); if (tau > h2) { b = h2; a = Math.max(lo, h2 - 2 * Dl); } else { a = lo; b = Math.min(h2, lo + 2 * Dl); } }
       if (b <= a) return Math.min(hi, Math.max(lo, tau));
       let bi = Math.min(hi, Math.max(lo, tau)), bf = -Infinity;
       const ok2 = next + Hs <= n;
@@ -96,11 +102,25 @@ function factory() {
       else if (mode === 'shift') {
         const m1 = Math.min(sl, dl);
         for (let i = 0; i < m1; i++) y[d0 + i] = x[s0 + i];
-        if (dl > sl) {   // Lücke: Ausklang (Ende vor- und rückwärts gespiegelt, ausblendend)
-          const av = Math.max(1, Math.min(sl, Math.round(0.05 * sr))), len = dl - sl;
+        if (dl > sl) {   // Lücke (VS5b-Einbau): Schleife aus dem Ende des Abschnitts wie renderSlices (VS5a) – Periode mit der
+          // besten Korrelation 5–40 ms; je Runde blendet die Naht ≤ 2 ms von der echten Fortsetzung in den Schleifenanfang
+          // (vorher: Spiegelung mit Ausblendung → Loch bis −17 dB und Knick an jeder Umkehr)
+          const Wc = Math.max(1, Math.round(0.005 * sr)), pmin = Math.max(1, Math.round(0.005 * sr)), pmax = Math.min(Math.round(0.04 * sr), sl - Wc);
+          let bR = -2, Lp = Math.max(1, sl);
+          for (let L = pmin; L <= pmax; L++) {
+            let ab = 0, aa = 0, bb = 0;
+            for (let k = 0; k < Wc; k++) { const u = x[s1 - Wc + k], v = x[s1 - L - Wc + k]; ab += u * v; aa += u * u; bb += v * v; }
+            const r = ab / Math.sqrt(aa * bb + 1e-20); if (r > bR) { bR = r; Lp = L; }
+          }
+          const av = Math.max(1, Math.min(Math.round(0.002 * sr), Lp)), len = dl - sl;
           for (let i = 0; i < len; i++) {
-            const r = i % (2 * av), q = r < av ? s1 - 1 - r : s1 - av + (r - av);
-            y[d0 + sl + i] = x[Math.max(0, q)] * (0.5 + 0.5 * Math.cos(Math.PI * Math.min(1, i / (len + X))));
+            const k = i % Lp, q = s1 - Lp + k; let v = q >= 0 ? x[q] : 0;
+            if (k < av && s1 + k < n) {
+              const u = (k + 0.5) / av; let gi, go;
+              if (bR > 0.5) { gi = 0.5 - 0.5 * Math.cos(Math.PI * u); go = 1 - gi; } else { gi = Math.sin(0.5 * Math.PI * u); go = Math.cos(0.5 * Math.PI * u); }
+              v = x[s1 + k] * go + v * gi;
+            }
+            y[d0 + sl + i] = v;
           }
         }
       } else {
@@ -153,7 +173,7 @@ function factory() {
     return 'vs5b-' + h.toString(16).padStart(8, '0') + '-' + warp.src.length;
   }
 
-  return {stretch, cacheKey, VERSION: 'vs5b-stretch-1'};
+  return {stretch, cacheKey, VERSION: 'vs5b-stretch-3'};
 }
 
 const api = factory();

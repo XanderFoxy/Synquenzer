@@ -3,7 +3,7 @@
 Parallel zu VS3 gebaut, damit der spätere Einbau von **Säubern** (VS4), **Marken & Scheiben** (VS5a) und **Dehnen** (VS5b) schnell geht. Die App selbst wurde nicht angefasst.
 Die Module sind reine ES-Module ohne Abhängigkeiten und ohne DOM. Audio liegt überall als Float32Array vor. Puffer werden vorab angelegt, NaN- und Denormal-Schutz ist eingebaut, und die Ergebnisse sind deterministisch.
 
-Tests laufen in Node 22 und brauchen keinen Browser: `node run-tests.mjs`. Das dauert etwa 2 Minuten und läuft komplett im Vordergrund. Das letzte Protokoll steht in `test-results.txt`. Ergebnis: **101 Prüfungen, alle grün.**
+Tests laufen in Node 22 und brauchen keinen Browser: `node run-tests.mjs`. Das dauert etwa 2 Minuten und läuft komplett im Vordergrund. Das letzte Protokoll steht in `test-results.txt`. Ergebnis: **107 Prüfungen, alle grün** (Stand VS4-fix 27.10.).
 
 ## API
 
@@ -14,7 +14,9 @@ Tests laufen in Node 22 und brauchen keinen Browser: `node run-tests.mjs`. Das d
   - Die Kette: Laufzeit per GCC-PHAT bestimmen. Dann folgen zwei Läufe:
     - **1. Lauf** über die ersten 20 s: MDF lernt den Echo-Weg, dazu entstehen das Rauschprofil (leiseste 10 % der Rahmen oder `noiseRange`) und das Rest-Echo-Profil je Frequenz (Rahmen mit dem kleinsten Fehler/Echo-Verhältnis, also ohne Stimme).
     - **2. Lauf** mit warmem Filter und langsamem Nachlernen (`relearn` 0,1). Dadurch lernt das Filter die Stimme nicht mit, auch wenn sie in der Tonart der Begleitung singt.
-  - `info` liefert `{delay, echoDb, hint:'Kopfhörer oder leiser', leak, ms}`.
+  - `info` liefert `{delay, echoDb, hint:'Kopfhörer oder leiser', leak, ms, pk, aec, learn}`.
+  - VS4-fix: Rauschprofil je Frequenz nach oben begrenzt (Legato/gehaltene Töne sind kein Rauschen); Echo-Abzug nur bei klarem
+    Echo-Weg (`o.minPk` 15, sonst `aec:'aus'`); `o.from` = Ergebnis erst ab hier, zweiter Lern-Versuch nur über die letzten 8 s.
 - `new Cleaner(sr, o)` ist der Block-Verarbeiter für Worker oder Worklet. Er nimmt beliebige Blocklängen und legt in `process()` keine Speicher an.
   - Die Ausgabe ist um `.latency` verzögert (1023 Samples bei 48 kHz).
   - Weitere Methoden: `setAmount(a)` (20-ms-Rampe), `setDelay`, `setWay`, `setNoisePsd`, `setResidualProfile`, `exportState`/`importState` (Filter mitnehmen), `resetStreams`.
@@ -24,7 +26,7 @@ Tests laufen in Node 22 und brauchen keinen Browser: `node run-tests.mjs`. Das d
 - `detectMarks(x, sr)` → `[{t, i, conf, src:'onset'|'start'|'pitch', word, voiced}]`.
   - Erkennung: SuperFlux (Vibrato-fest) plus Pegelanstieg.
   - Aktivität mit Hysterese: Boden (3-%-Perzentil) + 10 dB an, + 6 dB aus. Mindestabstand 70 ms.
-  - Feinlage über die 1-ms-Hüllkurve (Pegel, sonst Höhen).
+  - Feinlage über die 1-ms-Hüllkurve (Pegel, sonst Höhen). VS5a-fix: bei harten Anschlägen (50 % der Spitze in ≤ 3 ms) danach `fine()` – Marke auf dem ersten Sample des Anstiegs (vorher 2–3 ms davor).
   - Stimmhaftigkeit per YIN auf etwa 12 kHz. Bei Bindung ohne Pegelanstieg setzt ein Tonwechsel ≥ 80 Cent eine Marke.
   - `word` bedeutet: davor liegen ≥ 120 ms Ruhe.
 - `quantizeMarks(times, {bpm, t0, grid, strength, swing, catch, minGap, detectGrid})` → `{times, grid, swing, moved}`.

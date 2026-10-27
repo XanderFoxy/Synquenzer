@@ -12,11 +12,13 @@
 //       o.delay    Laufzeit Referenz→Mikro in Samples (sonst geschätzt per GCC-PHAT)
 //       o.noiseRange [t0, t1] in Sekunden für das Rauschprofil (sonst die leisesten 10 % der Rahmen, je Frequenz nach oben
 //                  begrenzt: Legato und gehaltene Töne werden nicht zu „Rauschen“)
-//       o.from     Samples: der 2. Lauf beginnt erst hier (warm), davor bleibt mic unverändert (Vorlauf nur zum Lernen)
+//       o.from     Samples: der 2. Lauf beginnt erst hier (warm), davor bleibt mic unverändert (Vorlauf nur zum Lernen); ist das
+//                  Ergebnis ab hier besser, wenn nur die letzten 8 s lernen (Echo-Weg im Vorlauf anders), gilt das (info.learn 'neu')
+//       o.minPk    Echo-Abzug nur bei klarem Echo-Weg: GCC-PHAT-Spitze ≥ minPk × Effektivwert (Standard 15; info.pk, info.aec 'aus')
 //       o.tail     Länge des Echo-Filters in s (Standard 0,25)
 //       o.passes   2 (Standard: 1. Lauf über die ersten o.learnSec = 20 s lernt Weg, Rauschprofil und Rest-Echo-Profil;
 //                  2. Lauf über alles mit warmem Filter und langsamem Nachlernen o.relearn = 0,1) | 1
-//       o.info     Objekt, wird gefüllt: {delay, way, leak, echoDb, hint, ms}
+//       o.info     Objekt, wird gefüllt: {delay, way, leak, echoDb, hint, ms, pk, aec, learn}
 //   new Cleaner(sr, o?)          Block-Verarbeiter für den Worker (keine Allokation in process())
 //       .process(mic, ref, out, n?)   beliebige Blocklänge; Ausgabe um .latency Samples verzögert
 //       .setAmount(a, sofort?)        geglättet (20 ms Rampe), klickfrei
@@ -371,7 +373,8 @@ function factory() {
     if (!used) return 0;
     for (let k = 0; k < n; k++) { const m = Math.hypot(Sr[k], Si[k]) + 1e-20; re[k] = Sr[k] / m; im[k] = Si[k] / m; }
     f.inv(re, im);
-    let mx = 0, at = 0; for (let l = 0; l <= maxLag; l++) if (re[l] > mx) { mx = re[l]; at = l; }
+    let mx = 0, at = 0, q = 0; for (let l = 0; l <= maxLag; l++) { q += re[l] * re[l]; if (re[l] > mx) { mx = re[l]; at = l; } }
+    if (o.info) o.info.pk = mx / Math.sqrt(q / (maxLag + 1) + 1e-30);
     for (let l = 0; l < at; l++) if (re[l] >= 0.5 * mx && re[l] >= re[l - 1 < 0 ? 0 : l - 1] && re[l] >= re[l + 1]) { at = l; break; }
     return at;
   }
@@ -448,8 +451,13 @@ function factory() {
     const amount = o.amount == null ? 1 : +o.amount;
     if (!(amount > 0)) { info.way = 'aus'; info.ms = 0; return Float32Array.from(mic); }    // 0 % = bitgleich
     const n = mic.length, way = o.way === 'notes' ? 'notes' : 'hear';
-    const hasRef = !!ref && ref.some(v => v !== 0);
-    const delay = o.delay != null ? Math.round(o.delay) : hasRef ? estimateDelay(mic, ref, sr) : 0;
+    const di = {}, has0 = !!ref && ref.some(v => v !== 0);
+    const delay = o.delay != null ? Math.round(o.delay) : has0 ? estimateDelay(mic, ref, sr, {info: di}) : 0;
+    // VS4-fix: ohne klaren Echo-Weg (GCC-PHAT-Spitze < 15 × Effektivwert; gemessen: kein Echo 5–11, Echo ab −10 dB rel. Stimme ≥ 27)
+    // kein Echo-Abzug – sonst bildet das Filter gehaltene Töne der Stimme aus der Begleitung in derselben Tonart nach (Legato −3,5 dB)
+    const hasRef = has0 && !(di.pk < (o.minPk || 15));
+    if (di.pk != null) info.pk = +di.pk.toFixed(1);
+    if (has0 && !hasRef) { ref = null; info.aec = 'aus'; }
     const margin = Math.round(0.0025 * sr), mk = () => { const c = new Cleaner(sr, {tail: o.tail, amount, offline: true}); c.setDelay(Math.max(0, delay - margin)); return c; };
     let out, c;
     if (o.passes === 1) { c = mk(); c.setWay(way); c.setAmount(amount, true); out = run(c, mic, ref, n); }

@@ -100,7 +100,7 @@ Grundlage: Zweig-Kopie `vs-br-VS5/index.html` ab VS3-fix (4.18.0). Spec: Nachtra
 - **Chromium-Pfad:** `/opt/pw-browsers/chromium-1194/…` gibt es nicht. Benutzt wurde `/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`, wie in den VS3-Tests.
 
 ### Bekannte Lücken / offen
-- **Marken-Feinlage:** Harte Klicks liegen 2,0 ms zu früh; quantisiert landen sie 2,0 ms nach der Linie. Das ist genau die Grenze von N7S-51. Eine Verfeinerung wäre ein kausales Fenster in `cross()`; ich habe sie nicht eingebaut, um den getesteten Kern nicht weiter zu verändern.
+- ~~**Marken-Feinlage:** Harte Klicks liegen 2,0 ms zu früh.~~ Behoben in VS5a-fix (siehe unten).
 - **Dauerton-Phasensprung in Lücken** (siehe FP-DSP).
 - **Tempo:** Wird das Tempo nach dem Quantisieren geändert, bleibt die Karte (in Sekunden) wie sie ist. Das Audio folgt dem Tempo ohnehin erst mit dem Dehnen (VS5b).
 - **„Audio folgt“** gilt beim [Anwenden], nicht schon in der Live-Vorschau des Quantisier-Blatts.
@@ -118,3 +118,50 @@ Grundlage: Zweig-Kopie `vs-br-VS5/index.html` ab VS3-fix (4.18.0). Spec: Nachtra
 
 ### Datenbank
 Nichts nötig. Format 5 und `max_app` 4021000 decken 4.20.0 ab.
+
+
+## VS5a-fix (4.20.0 bleibt, 27.10.2026) – zwei QA-Befunde
+
+Snapshot: `synq-snapshots/VS5a-fix.html`. Kein Format-, Versions- oder Datenbank-Wechsel, kein Supabase-Aufruf. Nur VS5a-Code (Marken-Kern, `wp*`, `tk*`-Abspielweg) geändert.
+
+### 1. N7S-51 – Einsätze landeten 2,0–2,9 ms hinter der Linie (QA `v3-qa-vs5a-a.mjs`)
+- **Nachgestellt:** ja. Am Original VS5a lagen 11 von 15 Einsätzen 1,6–2,9 ms zu spät, weil die Marke vor dem hörbaren Einsatz saß.
+- **Kern `vs-dsp/marks.mjs` (`detectMarks`, eingebettet gleich):** neue Feinlage `fine()` nach `cross()`. Sie greift nur bei harten Anschlägen (50 % der Spitze in ≤ 3 ms) und setzt die Marke auf das erste Sample des Anstiegs. Sonst bleibt alles wie bisher; am gesungenen QA-Satz bewegt sich 1 von 64 Marken (+2,4 ms). Kern-Test `test-marks.mjs`: 32/32 OK. Gesang bei SNR 20 dB: 90 % in 6,2 ms statt 5,2 ms, Median unverändert 3,0 ms. `VERSION: 'vs5a-marks-2'`.
+- **App: Schutz des Anschlags.** Sitzt die Marke auf dem Anschlag, lag der 5-ms-Übergang der Scheiben, der an der Marke endet, über dessen erstem Bruchteil. Folge: N7V-27 nur noch 8/16 bitgleich. Jetzt laufen Schnitt und Übergang `WP_LEAD` = 4 ms (ganze Samples) vor der Marke, bei gleicher Verschiebung. Die Einblende am Clip-Anfang folgt dem ebenso.
+- **App: Ziele auf ganze Samples (`wpSmp`).** Ziele der Zeitkarte und von Hand gesetzte oder verschobene Marken liegen jetzt auf ganzen Samples. Bei 44,1 kHz fällt jede ungerade 1/16 bei 120 BPM sonst auf ein halbes Sample. Dann zeigt die Karte etwas anderes, als gerendert wird, nämlich eine um 1 Sample andere Verschiebung. N7V-26 bleibt ≤ 0,49 Samples (Spec ±1).
+- **Ergebnis (`v3-qa-vs5a-a.mjs`, 2 Läufe):**
+  - N7V-27: 15/15 bitgleich (Original 14/16).
+  - Ausgabe gleich Render.
+  - Alle nicht verdeckten Einsätze liegen −0,4 … +0,34 ms an der Linie.
+- **Rest im QA-Skript, kein App-Fehler:** 2–3 Anschläge je Lauf liegen im lauten Ausklang des vorigen Klangs (Ausklang > 10 % der neuen Spitze). Für diese setzt der QA-Finder `onsets20` den Einsatz auf „Block − 3 ms“. Das liegt 1,5–2,8 ms **vor** dem echten Beginn, deshalb zeigt das Skript dort −3,0 … −3,8 ms.
+  - Gegenprobe mit der wahren Generator-Zeit (`v3-vs5afix-adump.mjs` + `v3-vs5afix-aan.mjs`): alle Einsätze im Fangfenster liegen bei 100 % zwischen −1,09 und +0,14 ms an der Linie. Bei 50 % ist der halbe Weg auf ±0,01 ms getroffen. Ab dem wahren Beginn sind 15/15 Anschläge bitgleich.
+  - Am Datei-Take (`v3-vs5afix2-truth.mjs`): |Marke − wahr| ≤ 1,10 ms.
+- **„50 % = halber Weg … 222 ms“** im selben QA-Skript scheitert am Original genauso. Der Finder verliert verdeckte Einsätze, danach ordnet er die Paare falsch zu. Die Wahrheits-Gegenprobe zeigt bei 50 % höchstens 0,01 ms.
+
+### 2. Fassungswechsel beim Abspielen: −7 … −9 dB und Knacks (QA `v3-qa-vs5a-c/d/d2.mjs`)
+- **Nachgestellt:** Mit dem QA-Aufnehmer ja. Die Ursache liegt aber zum großen Teil im Messaufbau:
+  - Das AudioWorklet meldet in Chromium ab und zu denselben `currentFrame` zweimal hintereinander, und zwar gerade dann, wenn der Hauptfaden den Graphen ändert, also beim Wechsel. Gelesen wird `Δ = 0` und danach `Δ = 256`.
+  - `recStop` legt die Blöcke nach `currentFrame` ab. Dadurch überschreibt es einen Block und lässt ein 128-Sample-Loch aus Nullen. Das ergibt genau den gemeldeten Einbruch von −7 … −9 dB und den „Knacks“: Der Sprung von 0,17–0,30 entspricht der Signalhöhe.
+  - Beleg 1: Der Aufnehmer `v3-vs5afix2-rec.mjs` legt einen wiederholten Frame an die Folgestelle. Damit verschwinden die Ereignisse.
+  - Beleg 2: Auch ohne jeden Wechsel tritt die Anomalie auf, etwa beim Aufbau des Drum-Busses beim Start (dort Sprung 0,150 bei Ablage nach Frame, nichts bei Ablage in Reihenfolge).
+  - Beleg 3: Der QA-Dauerton hat **0 Marken**. Die Aktivitätsschwelle braucht eine Ruhe, der Ton hat keine. Quantisieren ist dort also ein Wechsel zwischen bitgleichen Fassungen und kann nichts auslöschen.
+- **Echter Teil, behoben:** Bei echten neuen Fassungen sind alt und neu zwei verschieden verschobene Signale. Die bisherige feste Blende mit `setTargetAtTime` (τ 3 ms) gegen eine 5-ms-Rampe konnte sie bei Gegenlage auslöschen.
+  - `wpSwitch` ersetzt `wpResync` beim Abspielen. Es prüft Zeitpunkte von jetzt + 30 ms bis zur Planungsgrenze in 1-ms-Schritten.
+  - Je Stück, dessen Puffer wechselt, rechnet es eine 12-ms-Kosinus-Überblendung an beiden Puffern nach: gleichspannungs-, gleichleistungsgemäß oder korrelationsnormiert. Es nimmt die erste Stelle mit höchstens 1 dB Abweichung, sonst die beste.
+  - Alte Stücke blenden mit `setValueCurveAtTime` aus (`tkXfOut`), neue mit der Gegenkurve ein (`tkStartSrc` `xc`).
+  - Unveränderte Takes blenden gleichspannungsgemäß in sich selbst über, das Ergebnis ist bitgleich.
+  - Hauptfaden: ≤ 3,3 ms je Wechsel.
+- **Ergebnis:**
+  - `v3-vs5afix2-sw.mjs 24 legato` (gesungen, 18 Marken, 23 echte Wechsel mit Chips, Aus und ↶, Aufnehmer ohne Frame-Fehler): Gegen alte und neue Fassung an derselben Take-Stelle liegt der Pegel höchstens −1,21 dB darunter (Grenze −3 dB). HP-5k höchstens +2,8 dB, größter Sprung ≤ 1,06× der Fassungen, kein Rückfall der Automation.
+  - `v3-vs5afix2-sw.mjs 24 tone`: schlechtester Einbruch −1,23 dB.
+  - `v3-vs5afix2-dseq.mjs` (QA-d mit diesem Aufnehmer): kein Einbruch über 0,7 dB, kein Sprung über 0,0294. Am Original ebenso, bis auf −8,1 dB an der Schleifennaht.
+  - `v3-qa-vs5a-c.mjs`: ALL OK.
+  - Die verbleibenden „HP-5k 11–20 dB“-Zeilen in QA-d treten am Original identisch auf. Es sind die Tonwechsel des Testtons: Der Sprung 0,0294 gegen 0,0262 entspricht genau 294 Hz zu 262 Hz. Hinzu kommt die Schleifennaht des Clips (VS3, −5 dB über 5 ms). Mit dem Fassungswechsel hat das nichts zu tun.
+- **Für die QA:** `recStop` in `v3-qa-vs5a-h2.mjs` sollte wiederholte `currentFrame`-Werte an die Folgestelle legen, so wie `v3-vs5afix2-rec.mjs` es tut. Sonst misst jeder Wechseltest Löcher, die nicht hörbar sind.
+
+### Regression (dieser Stand)
+- `v3-vs5a-t1`, `t2`, `t3` (Layout), `t5`, `v3-qa-vs5a-reg`, `v3-qa-vs5a-c`: ALL OK. Smoke: keine Fehler.
+- `v3-qa-vs5a-reg2` („FANG nach 8 Takten Akkorden → Teil-Blatt: null“) scheitert am Original VS5a genauso. Das ist ein vorhandener Befund und gehört nicht zu VS5a-fix.
+- `v3-qa-vs5a-b` „Audio folgt … ≤ 5 ms“ schwankt je Lauf: 29/41, 34/41 und 39/41 hier, 39/41 und 40/41 am Original.
+  - Die Abstände Note ↔ Marke sind in beiden Fassungen gleich (z. B. 84–87 ms an derselben Silbe). Nur die Aufnahme-Lage zum Raster schwankt mit dem Start des Fake-Mikros, und Noten nahe der 1/8-Mitte fallen dann auf die andere Seite.
+  - `fine()` bewegt am gesungenen Satz 1 von 64 Marken.

@@ -68,7 +68,7 @@ const tone = (dur, f0, o = {}) => {   // harmonischer Ton mit Formanten (Vokal �
     const P2 = Math.round(2 * sr / f0), ref = T.rms(x, sr, 2 * sr); let dip = 0;
     for (let s = Math.round(1.02 * sr); s + P2 < y.length - sr; s += Math.round(P2 / 4)) dip = Math.max(dip, -20 * Math.log10(T.rms(y, s, s + P2) / ref));
     // Bei streng periodischem Ton und festen Marken ist ein Phasensprung an der Naht unvermeidbar (Endausrichtung mildert ihn)
-    check(`Pegel-Einbruch an Nähten ${f0} Hz ≤ 4 dB (2-Perioden-RMS)`, dip <= 4, dip.toFixed(2) + ' dB');
+    check(`Pegel-Einbruch an Nähten ${f0} Hz ≤ 3 dB (2-Perioden-RMS)`, dip <= 3, dip.toFixed(2) + ' dB');
     results.push({f0, worstCents: +worst.toFixed(2), jumpIn: +jx.toFixed(4), jumpOut: +jy.toFixed(4), dipDb: +dip.toFixed(2)});
     check(`Tonhöhe ${f0} Hz unverändert (< 5 Cent) bei Faktor 0,55 … 1,9`, worst < 5, worst.toFixed(2) + ' Cent');
     check(`Keine Klicks ${f0} Hz: max. Sprung ≤ Eingang (+0,01 dB Rechentoleranz)`, jy <= jx * 1.00115, {jx: +jx.toFixed(5), jy: +jy.toFixed(5), ratio: +(jy / jx).toFixed(6)});
@@ -89,6 +89,22 @@ const tone = (dur, f0, o = {}) => {   // harmonischer Ton mit Formanten (Vokal �
   info('Gesang: Abschnitte', {marks: M.length, wsola: R.segs.filter(s => s.mode === 'wsola').length, copy: R.segs.filter(s => s.mode === 'copy').length, shift: R.segs.filter(s => s.mode === 'shift').length});
 }
 
+// 3b. Kurze Abschnitte (Achtel, 120 BPM): Klicks auf einem gehaltenen Ton, Marken 4 ms vor dem Klick (wie die App, WP_LEAD) –
+//     kein Einbruch > 3 dB (2-Perioden-RMS) vor den Marken (VS5b-Einbau: letzte Rahmen gesucht, endAlign aus)
+{
+  const dur = 4.6, x = tone(dur, 196, {vib: 15}), r = T.rng(5), OFF = [14, -22, 31, -9, 26, -35, 18, 4, -27, 12, -16, 33, -6, 21, -30, 9];
+  for (let i = 0; i < 0.3 * sr; i++) x[i] = 0;
+  const ons = OFF.map((o, k) => 0.5 + k * 0.25 + o / 1000);
+  for (const t of ons) { const i0 = Math.round(t * sr); for (let k = 0; k < 0.03 * sr; k++) x[i0 + k] += 0.6 * Math.exp(-k / (0.004 * sr)) * T.gauss(r) * Math.min(1, k / 6); }
+  const L = 0.004, src = [0, ...ons.map(t => t - L), dur], dst = [0, ...ons.map(t => Math.round(t / 0.25) * 0.25 - L), dur];
+  const R = stretch(x, sr, {src, dst}, {lock: 0.02 + L}), y = R.y;
+  const P2 = Math.round(2 * sr / 196), ref = T.rms(x, Math.round(0.35 * sr), Math.round(0.45 * sr)); let dip = 0;
+  for (let s = Math.round(0.6 * sr); s + P2 < Math.round(4.3 * sr); s += Math.round(P2 / 4)) dip = Math.max(dip, -20 * Math.log10(T.rms(y, s, s + P2) / ref));
+  check('Kurze Abschnitte (Achtel) mit Klicks auf Ton: Einbruch ≤ 3 dB', dip <= 3, dip.toFixed(2) + ' dB');
+  let bit = 0; for (let k = 1; k + 1 < src.length; k++) { const s0 = Math.round(src[k] * sr), d0 = Math.round(dst[k] * sr); let same = true; for (let i = 0; i < 0.024 * sr; i++) if (y[d0 + i] !== x[s0 + i]) { same = false; break; } if (same) bit++; }
+  check('Kurze Abschnitte: 4 ms Vorlauf + 20 ms ab der Marke bitgleich', bit === ons.length, bit + '/' + ons.length);
+}
+
 // 4. Grenzen 0,5–2,0 (N7V-29): außerhalb nur verschieben + Warnung
 {
   const x = tone(6, 220), w = MK.makeWarp([1, 2, 3, 4], [1, 3.5, 3.85, 4.85], 6, 6.85);   // Faktor 2,5 und 0,35, dann 1,0
@@ -98,6 +114,10 @@ const tone = (dur, f0, o = {}) => {   // harmonischer Ton mit Formanten (Vokal �
   const s0 = Math.round(2 * sr), d0 = Math.round(3.5 * sr); let same = true; for (let i = 0; i < 0.345 * sr; i++) if (R.y[d0 + i] !== x[s0 + i]) { same = false; break; }
   check('Verschobener Abschnitt: Inhalt unverändert (bitgleich bis zum Übergang 5 ms vor dem Ende)', same);
   check('Verschoben: keine Klicks', maxJump(R.y) <= maxJump(x) * 1.00115, +maxJump(R.y).toFixed(4));
+  // Lücke hinter dem verschobenen Abschnitt (Faktor 2,5: 1,5 s): Schleife statt Ausblendung → kein Loch (2-Perioden-RMS ≥ −3 dB)
+  const P2 = Math.round(2 * sr / 220), ref = T.rms(x, sr, 2 * sr); let dip = 0;
+  for (let s = Math.round(1.05 * sr); s + P2 < Math.round(3.45 * sr); s += Math.round(P2 / 4)) dip = Math.max(dip, -20 * Math.log10(T.rms(R.y, s, s + P2) / ref));
+  check('Verschoben mit Lücke: kein Loch (≤ 3 dB unter dem Ton)', dip <= 3, dip.toFixed(2) + ' dB');
 }
 
 // 5. Unveränderte Karte bitgleich; deterministisch; Cache-Schlüssel; NaN

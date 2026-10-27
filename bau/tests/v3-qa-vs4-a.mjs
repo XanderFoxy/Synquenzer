@@ -65,6 +65,7 @@ if (process.env.SLIP) { const t = await pair(); const m = measure(t.raw, t.cl, y
   for (let a = 0; a + W <= t.raw.length; a += W) { let best = -1e30, bl = 0, e = 0; for (let i = a; i < a + W; i++) { let k = ((i - off) % P + P) % P; e += y[k] * y[k]; } if (e < 1) { out.push('-'); continue; } for (let l = -L; l <= L; l++) { let s2 = 0; for (let i = a; i < a + W; i += 2) { let k = ((i - off - l) % P + P) % P; s2 += y[k] * t.raw[i]; } if (s2 > best) { best = s2; bl = l; } } out.push(bl); }
   console.log('  local lag (samples) per 0.5 s:', out.join(' ')); }
 let r60 = null;
+if (process.env.DUMP) { const t = await pair(), fs = await import('fs'); fs.writeFileSync(process.env.DUMP + '-raw.f32', Buffer.from(Float32Array.from(t.raw).buffer)); if (ref) fs.writeFileSync(process.env.DUMP + '-ref.f32', Buffer.from(Float32Array.from(ref, v => v / 32767).buffer)); fs.writeFileSync(process.env.DUMP + '-voice.f32', Buffer.from(Float32Array.from(y).buffer)); }
 if (route === 'speaker') r60 = await doM('60 %');
 await p.evaluate(id => SYNQUENZER.clSet(id, 100), id); await p.evaluate(id => SYNQUENZER.clWait(id), id);
 const r100 = await doM('100 %');

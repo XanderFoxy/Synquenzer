@@ -99,7 +99,7 @@ ok(SW.filter(s => s.pairs).length >= G.length - 2, 'a real version switch for (n
 ok(true, 'info: level against the quieter of 25 ms before / after (also counts real level changes of the music): worst ' + maxDip.toFixed(2) + ' dB');
 ok(SW.every(s => !s.ref || s.corr >= 0.85), 'reference alignment found for every switch (corr ≥ 0.85; worst ' + Math.min(...SW.filter(s => s.ref).map(s => s.corr)).toFixed(3) + ')');
 ok(minRefDip >= -3 && maxRefHp <= 6, 'against the old and new version at the same take position (output-level scaled): level ≥ −3 dB (worst ' + minRefDip.toFixed(2) + ' dB), HP-5k ≤ +6 dB (worst +' + maxRefHp.toFixed(1) + ' dB)');
-ok(true || maxHp <= 6, 'no added HP-5k energy at switches without a note onset in the window (worst +' + maxHp.toFixed(1) + ' dB over the 60 ms around)');
+ok(true, 'info (the reference check above is the measure): added HP-5k energy at switches without a note onset in the window (worst +' + maxHp.toFixed(1) + ' dB over the 60 ms around)');
 ok(maxStepR <= 1.25, 'largest sample step ≤ 1.25× that of the old/new version at the same place (worst ' + maxStepR.toFixed(3) + '×)');
 ok(true, 'info: switches without onset vs. 60 ms around: largest sample step ≤ 1.25× the largest step in the 60 ms around (worst ' + maxStep.toFixed(3) + '×)');
 ok(SW.every(s => !s.err), 'no automation fallback (xfErr)');

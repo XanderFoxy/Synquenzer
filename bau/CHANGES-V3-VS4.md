@@ -109,3 +109,39 @@ Agent). **7 Befunde, alle behoben:**
 3. Mit Kopfhörern: der Take bleibt roh (0 %); Regler hoch → nur Rauschen ↓.
 4. Bitte melden: ab wie viel % klingt es für dich am besten (Standard 60 %)? Knackt es beim Umschalten? Steht der Hinweis „Viel
    Übersprechen“, wenn die Musik sehr laut war?
+
+## VS4-fix (27.10.) · App bleibt 4.19.0 · Format 5 · keine Server-Änderung
+
+**Behoben (beide QA-Befunde nachgestellt, dann behoben und erneut gemessen)**
+1. **SÄUBERN machte gehaltene Töne/Legato leiser** (N7V-23; Sinus −17/−24 dB, Legato SDR 6–8 dB). Ursache wie gemeldet: Rauschprofil =
+   „leiseste 10 % der Rahmen“ = ohne Pause die Stimme selbst. Fix im Kern (`noisePsd`): Profil je Frequenz nach oben begrenzt
+   (20-%-Quantil über die Zeit, Minimum über ±6 Bins, ×9). Echtes Rauschen bleibt darunter (Rauschboden-Test 23,6 dB unverändert).
+   Dazu: **Lautsprecher-Weg ohne Echo** bildete das Echo-Filter gehaltene Töne der Stimme aus der Begleitung derselben Tonart nach
+   (Stimme −3,5 … −5 dB). Fix: Echo-Abzug nur bei klarem Echo-Weg (GCC-PHAT-Spitze ≥ 15 × Effektivwert; gemessen ohne Echo 3,8–11,
+   mit Echo ab −10 dB rel. Stimme 27–143); sonst `info.aec = 'aus'`, Säubern = nur Entrauschen.
+   Gemessen in der App (echte Mikro-Attrappe, gleiche Aufnahme alt/neu verglichen, `qa-vs4/takecmp.mjs`):
+   Kopfhörer-Legato 100 % SDR 6,7 → **27,8 dB**, Stimme −3,7 → **−0,11 dB**; 60 % 7,8 → **28,3 dB**. Lautsprecher-Legato 60 %
+   6,1 → **28,3 dB**, −4,7 → −0,11 dB. Sinus 440/220 Hz bei 60/100 %: **0 / −0,2 dB** (vorher −17/−24). Szene mit 440-Hz-Take:
+   `v3-qa-vs4-reg` alles grün.
+2. **Stimme-FANG über Lautsprecher bei +6 dB mit Sättigung fand Bass-Noten** (N7V-22, Noten-F 0,55–0,67). Zwei Ursachen:
+   (a) Die Übersprech-Probe rechnete ohne Einmessen mit −20 dB Kopplung; tatsächlich −1 … −7 dB. Jetzt misst `clNotes` die Kopplung
+   aus dem abgezogenen Echo (Mikro − Ergebnis gegen Referenz, `CL.notes.coupDb`); die Probe nimmt die höhere von eingemessen und
+   gemessen (`vsBleedPow(m, gm)`). (b) Änderte sich der Echo-Weg im 8-s-Vorlauf (erst ohne, dann mit Echo), lernte das Filter zu
+   langsam. Kern-Option `o.from`: das Ergebnis zählt erst ab dem ausgewerteten Stück; zweiter Versuch, der nur die letzten 8 s lernt,
+   gilt, wenn er dort weniger Rest-Energie lässt (`info.learn 'neu'`). Gemessen (HPC 1,35, je Lauf): sat6 **F 0,941** (5 Läufe),
+   fang6 0,941, fang0 0,941, fangN 0,941 – vorher 0,55–0,67 / 0,67 / 0,80.
+- Der Noten-Weg meldet ohne Echo-Weg jetzt `way 'roh'` (mit `pk`, `aec 'aus'`) statt „1E“: es gibt nichts abzuziehen (VS2-Verhalten).
+  N7V-25 („1E“) gilt, sobald ein Echo da ist (sat6/fang6/fang0/Abnahme: „1E“).
+- Kern `vs-dsp/clean.mjs` + Tests (`node run-tests.mjs`: **107 Prüfungen grün**, neu: Legato ohne Pause, gehaltener Sinus, Legato mit
+  Referenz ohne Echo, `o.from` mit/ohne Wechsel des Echo-Wegs); eingebettet per `dirigent-test/v3-vs4fix-embed.mjs` (Kommentare raus),
+  App-Kern im Worker bitgleich zum Modul (`v3-vs4-core.mjs` ALLE OK). Builder-Abnahme `v3-vs4-accept.mjs` ALLE OK, Smoke ohne Fehler.
+- Größe: 3 231 078 → 3 233 663 B (+2,6 KB roh, +1,0 KB gzip). Rechenzeit Kern unverändert (alt/neu im selben Lauf gleich schnell);
+  der Noten-Weg rechnet bei `from` bis zu zwei Lern-Läufe (In-App 2,5–3,2 s für 13 s statt 1,9–2,4 s, Xeon, unter Last).
+
+**Bekannte Lücken / beobachtet**
+- Legato **mit** Echo (Lautsprecher, Begleitung in derselben Tonart): das Echo-Filter kostet die Stimme weiter ≈ 1 dB, SDR ≈ 14 dB
+  (synthetisch); mit Pausen 19–25 dB. Echtes Gerät ungemessen.
+- Test-Umgebung: unter CPU-Last (Nachbar-Builds) lieferte die Fake-Mikro-Aufnahme mehrmals einen schon kaputten Roh-Take (Roh-SDR
+  18,8 / 18,1 / 1,4 / −16 dB statt 36,5) – dann ist jede Messung danach wertlos; alt/neu auf derselben Aufnahme verglichen.
+  Ebenso schwankt der Take-SDR bei sat6 (9,6–15,7 dB) und echo0 (100 %: 13,3–14,8 dB) von Lauf zu Lauf – alter und neuer Kern auf
+  derselben Aufnahme bitgleich bzw. ±0,1 dB, also kein Effekt dieses Fixes (echo0 100 % knapp unter 15 dB: Befund an VS4, offen).
