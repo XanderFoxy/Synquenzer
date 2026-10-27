@@ -3316,6 +3316,14 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .tksheet .savrow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .tksheet .savrow .mbtn{min-height:44px;width:100%;margin:0}
 .tksheet .warn,.tkorigin .warn{color:var(--warn,#ffb22e)}
+.tksheet .clbox{display:flex;flex-direction:column;gap:4px;margin:4px 0 6px}
+@media (max-height:440px){.tksheet > .small:last-child{display:none}.tksheet .clbox{gap:2px;margin:2px 0 4px}}
+.tksheet .clrow{display:flex;align-items:center;gap:8px;min-height:44px}
+.tksheet .cllab{flex:0 0 auto;min-width:92px;font-size:12px;white-space:nowrap}
+.tksheet .clr{flex:1 1 auto;min-width:0;height:44px;margin:0;accent-color:var(--amber);touch-action:pan-x}
+.tksheet .clab{flex:1 1 auto;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tksheet .clab .mbtn{min-height:44px;margin:0;width:100%}
+.tksheet .clab .mbtn[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--t8)}
 .micb .led{width:8px;height:8px;border-radius:50%;background:var(--led-off);flex:none}
 #segMic.on{background:var(--rec-dim);color:#fff;box-shadow:inset 0 0 0 1px var(--rec)}
 #segMic.on .led{background:var(--rec);box-shadow:0 0 8px var(--rec)}
@@ -15930,7 +15938,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.18.0';
+const VERSION = '4.19.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -20217,7 +20225,7 @@ function undoApply(e, val) {
     if (n && (n.e1 === 'mic' || n.e2 === 'mic')) queueMicrotask(() => mkMicResume(e.track)); } }   // G-MKP8-merge-fix: redo brings the mic back (after the whole group)
   else if (e.kind === 'set') settingApply(e.key, JSON.parse(val));
   else if (e.kind === 'mkslot') mkSlotPut(JSON.parse(val));
-  else if (e.kind === 'takes') { if (val) S.takes = JSON.parse(val); else delete S.takes; }      // VS3
+  else if (e.kind === 'takes') { if (val) S.takes = JSON.parse(val); else delete S.takes; if (typeof clSync === 'function') queueMicrotask(clSync); }      // VS3; VS4: Säubern folgt
   else if (e.kind === 'tflag') tkFlag(e.track, val === '1');
   else if (e.kind === 'part') partRestore(JSON.parse(val));
   else restoreFx(JSON.parse(val));
@@ -38217,7 +38225,7 @@ function vsBleedDb() {
   const g = p && p.gainDb != null ? p.gainDb : lc && lc.route === 'speaker' && lc.gainDb != null ? lc.gainDb : VS_BLEED_DEF;
   return clamp(+g || VS_BLEED_DEF, -70, 0);
 }
-function vsBleedPow(m) { const g = vsBleedDb(); return g == null ? 0 : Math.pow(10, (g + (m == null ? VS_BLEED_DB : m)) / 10); }
+function vsBleedPow(m, gm) { let g = vsBleedDb(); if (g != null && gm != null && gm > g) g = gm; return g == null ? 0 : Math.pow(10, (g + (m == null ? VS_BLEED_DB : m)) / 10); }
 function vsLiveCfg() { const run = ST.run; if (run && run.node) { try { run.node.port.postMessage({cfg: vsLiveOpts()}); } catch (e) {} } }
 // Worklet-Meldung: erkannte Taste an/aus (nur Wechsel)
 function vsLitMsg(run, d) {
@@ -38294,8 +38302,8 @@ async function vsAnalyse(ta, tb, cfg) {
   const sr = G.sr, lat = F => stLatAt(F) * sr / 1000, Fa = Math.round(ta * sr), Fb = Math.round(tb * sr);
   const Ma = Fa + lat(Fa), Mb = Fb + lat(Fb), pad = Math.round(0.06 * sr);
   const s = stRead(Ma - pad, Mb + pad, {d16: true}); if (!s || !s.d16 || s.d16.length < 600) return null;
-  const x = s.d16, d0 = s.d0, fs = sr / 3, hop = Math.max(1, Math.round(fs * 0.005)), nF = Math.floor((x.length - 1) / hop) + 1;
-  const mic = i => 3 * (d0 + i * hop) + 2 - 23;               // Frame i ↔ Mikro-Frame (Mitte; Laufzeit des Dezimierers 23)
+  const x = (await clNotes(s)) || s.d16, d0 = s.d0, fs = sr / 3, hop = Math.max(1, Math.round(fs * 0.005)), nF = Math.floor((x.length - 1) / hop) + 1;
+  const mic = i => 3 * (d0 + i * hop) + 2 - 23;               // Frame i ↔ Mikro-Frame (Mitte; Laufzeit des Dezimierers 23); VS4: x beim Lautsprecher-Weg = Noten-Weg „1E“ (clNotes)
   const half = 0.023 * sr, mask = new Uint8Array(nF), mark = (a, b) => { const i0 = Math.max(0, Math.ceil(((a - half - 2 - 3 * d0 + 23) / 3) / hop)), i1 = Math.min(nF - 1, Math.floor(((b + half - 2 - 3 * d0 + 23) / 3) / hop)); for (let i = i0; i <= i1; i++) mask[i] = 1; };
   let nm = 0;
   for (const [a, b] of VS.masks) { const A = a * sr + lat(a * sr), B = b * sr + lat(b * sr); if (B < Ma - pad || A > Mb + pad) continue; mark(A + half, B - half + 0.012 * sr); nm++; }
@@ -38305,8 +38313,11 @@ async function vsAnalyse(ta, tb, cfg) {
   VS.runs++;
   // Frame-Zeit (s im Ausschnitt) → Schlag: Mikro-Frame → Referenz-Frame (minus Latenz der Zeitkarte) → t2b
   const beatOf = sec => { const M = 3 * (d0 + sec * fs) + 2 - 23, Fr = M - lat(M); return t2b(Fr / sr); };
-  const bl = vsBleedPow();
-  return {tr, fs, hop, d0, sr, beatOf, inst, masked: nm, mic, x, bleed: bl > 0 ? n => vsBleedNote(x, d0, fs, sr, lat, n, bl, vsBleedPow(VS_BLEED_BB), vsLatUnc()) : null};
+  // VS4: nach dem Echo-Abzug (Noten-Weg „1E“) prüft die Übersprech-Probe gegen den Rest (Kopplung −15 dB = Abnahme-Schwelle N7V-21)
+  // VS4-fix: Kopplung = die höhere von eingemessen/angenommen und gemessen (abgezogenes Echo, clNotes) – N7V-22 (+6 dB) fand sonst Bass-Noten
+  const cln = x !== s.d16, rk = cln ? (CL.resK != null ? CL.resK : CL_RES) : 1, gc = cln && CL.notes && CL.notes.coupDb != null ? CL.notes.coupDb : null;
+  const bl = vsBleedPow(null, gc), bb = vsBleedPow(VS_BLEED_BB, gc);
+  return {tr, fs, hop, d0, sr, beatOf, inst, masked: nm, mic, x, bleed: bl > 0 ? n => vsBleedNote(x, d0, fs, sr, lat, n, bl * rk, bb * rk, vsLatUnc()) : null};
 }
 /* VS2-fix: eine erkannte Note, die nur Übersprechen ist (Lautsprecher): Mikro-Energie an Grundton + 2 Obertönen über die Note
    (40-ms-Hann-Stücke) gegen die Referenz zur selben Zeit (Latenz der Zeitkarte, ±10/+20 ms) × Kopplung × Rand */
@@ -38369,7 +38380,7 @@ function vsFang(o) {
   const tapAt = AU.ctx.currentTime, t = isNum(o.beat) ? Math.min(o.beat, audBeat()) : audBeat();
   if (tkAudioOk()) { tkQ('fang', true); tkOriginHint(); }      // VS3: der Take entsteht jetzt – kein Netz bis er gespeichert ist
   const res = fangCompute(Math.max(0, t), tapAt);            // dieselbe Taktstrich-Regel wie FANG TEIL (N2-VS2-01)
-  const E = res.E, until = Math.min(E, t), ls = vsLiveStart(until), from = Math.max(0, E - 68, ls != null ? ls - 4.5 : 0);   // die Phrase (live gehört) und 1 Takt davor
+  const E = res.E, until = Math.min(E, t), ls = vsLiveStart(until), from = Math.max(0, E - 68, ls != null ? ls - (ST.route === 'speaker' ? 12.5 : 4.5) : 0);   // die Phrase (live gehört) und 1 Takt davor; VS4: beim Lautsprecher 3 Takte (live hört die Stimme unter der Musik oft erst später, offline entscheidet der Noten-Weg „1E“)
   VS.busy = 1; haptic('pop');
   const job = {kind: 'fang', res, E, until, from, tapAt, cfg: Object.assign({}, vsCfg()), o};
   VS.job = job;
@@ -38813,6 +38824,7 @@ function tkMakeTake(aBeat, bBeat, src, done) {
   const id = newUid(), nc = Math.ceil(n / TK_CHUNK), chunks = [];
   for (let k = 0; k < nc; k++) chunks.push(id + ':' + k);
   const m = {sr, len: n, chunks, route: ST.route || 'speaker', latMs: +(+stLatAt(Fa) || 0).toFixed(3), created: Date.now(), src};
+  clNewTake(m);                                          // VS4: Lautsprecher → Referenz + SÄUBERN 60 %
   if (!S.takes) S.takes = {};
   S.takes[id] = m;
   TK.pend.set(id, {F0, Fb, n, sr});
@@ -38829,7 +38841,7 @@ function tkMakeTake(aBeat, bBeat, src, done) {
     TK.last = {id, n, sr, got, pre: pre / sr, late: late / sr, src};
     UI.dirty.grid = UI.dirty.song = true;
     const fin = ok => { if (done) { try { done(ok, id); } catch (e) { logErr(e); } } };
-    tkStore(id, pcm, chunks).then(fin);                  // auch nach ↶ (↷ holt den Take zurück; [Aufräumen] löscht Reste)
+    Promise.all([tkStore(id, pcm, chunks), clFill(id, g, F0 + late, F0, n, m)]).then(r => { fin(r[0]); if (m.cl && S.takes && S.takes[id] === m) clEnsure(id); });   // auch nach ↶ (↷ holt den Take zurück; [Aufräumen] löscht Reste); VS4: Referenz, dann säubern
     if (R.playing) { tkVoxResync(true); const st = stimmeT(); if (st >= 0) tkTrackResync(st); }
   };
   setTimeout(fill, 0);
@@ -38864,7 +38876,7 @@ function tkStartSrc(o) {
   if (fo > 0) { g.gain.setValueAtTime(G, o.end - fo); g.gain.linearRampToValueAtTime(0, o.end); }
   s.connect(g); g.connect(dest);
   try { s.start(o.when, Math.max(0, o.off)); s.stop(o.end + .005); } catch (e) { try { s.disconnect(); g.disconnect(); } catch (e2) {} logErr(e); return null; }
-  const r = {i: o.i, s, g, start: o.when, end: o.end, off: o.off, key: o.key, vox: !!o.vox, take: o.take, dead: false};
+  const r = {i: o.i, s, g, start: o.when, end: o.end, off: o.off, key: o.key, vox: !!o.vox, take: o.take, dead: false, o};   // VS4: o = Plan (Puffer-Tausch beim Säubern)
   if (!o.ctx) { TK.src.push(r); s.onended = () => tkDrop(r); TK.starts++; }
   return r;
 }
@@ -39194,7 +39206,7 @@ function tkSheet(r, anchor) {
       if (d.a === 'gc') { tkGc().then(n => { toast(n ? n + (n === 1 ? ' altes Stück' : ' alte Stücke') + ' gelöscht' : 'Nichts aufzuräumen'); if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); }); return; }
       if (d.a === 'x') closePop();
     }, 'button[data-k],button[data-a]');
-  }, {name: 'takes'});
+  }, {name: 'takes', onClose: clSheetClosed});
   return true;
 }
 function tkSheetPaint(p) {
@@ -39214,6 +39226,7 @@ function tkSheetPaint(p) {
     `<div class="small">${esc(est + per)}</div>` +
     `<div class="savrow"><button class="mbtn rb" data-a="ab"${segs.length > 1 ? '' : ' disabled'}>A/B</button><button class="mbtn rb" data-a="wav"${ok ? '' : ' disabled'}>WAV</button><button class="mbtn rb" data-a="zip"${ok ? '' : ' disabled'}>ZIP + Projekt</button><button class="mbtn rb" data-a="gc"${ok ? '' : ' disabled'}>Aufräumen</button></div>` +
     '<div class="small">Oben = der hörbare Take. Ein Tipp holt einen älteren Take nach oben (A/B: die zwei obersten tauschen). ✕ = löschen, ↶ holt ihn zurück.</div>';
+  clSheet(p, x);                                                  // VS4: SÄUBERN, A/B Roh │ Sauber
   if (!TK.est || performance.now() - (TK.estT || 0) > 5000) { TK.estT = performance.now(); try { navigator.storage.estimate().then(e => { TK.est = e; const q = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null; if (q && q === p) tkSheetPaint(p); }, () => {}); } catch (e) {} }
 }
 function tkMB(b) { b = +b || 0; return b >= 1e9 ? fmtDec(b / 1e9, 1) + ' GB' : Math.round(b / 1e6) + ' MB'; }
@@ -39255,6 +39268,7 @@ async function tkExportWav(id) {
 async function tkZipBytes() {
   const files = [{name: 'projekt.json', data: new TextEncoder().encode(JSON.stringify(projectFileObj(S, false, true)))}];
   for (const id of tkUsedIds()) { const m = S.takes[id], pcm = await tkPcm(id); if (m && pcm) files.push({name: 'takes/' + id + '.wav', data: tkWav(pcm, m.sr)}); }
+  await clZipAdd(files);                                       // VS4: Referenz je Take (Säubern nach dem Import gleich)
   return buildZip(files);
 }
 async function tkExportZip() {
@@ -39294,6 +39308,7 @@ async function tkImportZip(u8, open) {
     const n = w.pcm.length, nc = Math.ceil(n / TK_CHUNK), keys = []; for (let k = 0; k < nc; k++) keys.push(id + ':' + k);
     if (await tkStore(id, w.pcm, keys)) { nOk++; TK.missing.delete(id); TK.buf.delete(id); }
   }
+  if (tkAudioOk()) await clZipRead(fs);                // VS4: Referenz-WAVs
   open(new TextDecoder().decode(pj.data));
   if (nOk) setTimeout(() => toast(nOk + (nOk === 1 ? ' Take' : ' Takes') + ' übernommen'), 1800);
   return true;
@@ -39439,6 +39454,717 @@ const TK_API = {
   tkKeys: async () => kv && kv.akeys ? kv.akeys() : [],
 };
 
+/* =====================================================================================================================
+   VS4 (Nachtrag 2 Teil C; r7/stimme.md §7, §12 VS4, §13 N7V-21 … N7V-25, N7V-35; N2-VS1-02): Säubern.
+   Echo-Abzug (Block-/MDF-Filter, langsames Nachlernen, Doppelsprech-Bremse) → Nachfilter → Wiener-Entrauschen → HP 80 Hz;
+   Regler SÄUBERN je Take (0 % = Roh-Take bitgleich), A/B „Roh │ Sauber“, Hinweis „Kopfhörer oder leiser“; kein Gate.
+   Kern = vs-dsp/clean.mjs (getestet; hier ohne Kommentare, bitgleich), läuft im Worker. Netz-Ruhe während des Säuberns.
+   Daten (additiv, Format bleibt): take.rf = Vorlauf der Referenz in Samples (Referenz-Stücke <id>:r<k> = das eigene Playback,
+   nur beim Lautsprecher-Weg), take.cl = SÄUBERN in % (fehlt = 0). Gesäuberte Fassung = Cache im Audio-Store <id>:c<%>:<k>
+   (der Kern ist deterministisch: fehlt der Cache, wird aus Roh + Referenz neu gerechnet). Noten-Weg (VS2): nur Echo-Abzug „1E“.
+   ===================================================================================================================== */
+function vsCleanMake() {
+'use strict';
+const TAU = 2 * Math.PI;
+const SC = 32768;
+const ok = v => (v === v && v < 1e30 && v > -1e30 ? v : 0);
+const dn = v => (v < 1e-25 && v > -1e-25 ? 0 : v);
+function FFT(n) {
+const rev = new Uint32Array(n), cs = new Float64Array(n >> 1), sn = new Float64Array(n >> 1);
+let bits = 0; while ((1 << bits) < n) bits++;
+for (let i = 0; i < n; i++) { let r = 0; for (let b = 0; b < bits; b++) r |= ((i >> b) & 1) << (bits - 1 - b); rev[i] = r; }
+for (let i = 0; i < n >> 1; i++) { cs[i] = Math.cos(TAU * i / n); sn[i] = Math.sin(TAU * i / n); }
+function run(re, im, inv) {
+for (let i = 0; i < n; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+for (let size = 2; size <= n; size <<= 1) {
+const half = size >> 1, step = n / size;
+for (let i = 0; i < n; i += size) {
+for (let j = i, k = 0; j < i + half; j++, k += step) {
+const l = j + half, c = cs[k], s = inv ? sn[k] : -sn[k];
+const tr = re[l] * c - im[l] * s, ti = re[l] * s + im[l] * c;
+re[l] = re[j] - tr; im[l] = im[j] - ti; re[j] += tr; im[j] += ti;
+}
+}
+}
+}
+return {n, fwd: (re, im) => run(re, im, false), inv: (re, im) => run(re, im, true)};
+}
+function hpCoefs(sr, fc) {
+const w = TAU * fc / sr, cw = Math.cos(w), al = Math.sin(w) / (2 * Math.SQRT1_2), a0 = 1 + al;
+return {b0: (1 + cw) / 2 / a0, b1: -(1 + cw) / a0, b2: (1 + cw) / 2 / a0, a1: -2 * cw / a0, a2: (1 - al) / a0};
+}
+class Cleaner {
+constructor(sr, o = {}) {
+this.sr = sr;
+this.st = new Float64Array(12);
+const N = o.block || (sr >= 32000 ? 256 : 128), M = 2 * N, K = N + 1;
+const P = Math.max(2, Math.min(512, Math.ceil((o.tail != null ? o.tail : 0.25) * sr / N)));
+Object.assign(this, {N, M, K, P});
+this.fm = FFT(M);
+this.Wr = new Float64Array(P * K); this.Wi = new Float64Array(P * K);
+this.Xr = new Float64Array(P * K); this.Xi = new Float64Array(P * K); this.head = 0;
+this.tr = new Float64Array(M); this.ti = new Float64Array(M);
+this.Yr = new Float64Array(K); this.Yi = new Float64Array(K);
+this.Er = new Float64Array(K); this.Ei = new Float64Array(K);
+this.Rf = new Float64Array(K); this.Yf = new Float64Array(K); this.pw1 = new Float64Array(K);
+this.pow = new Float64Array(K); this.Eh = new Float64Array(K); this.Yh = new Float64Array(K);
+this.prop = new Float64Array(P);
+this.xOld = new Float64Array(N); this.mb = new Float64Array(N); this.rb = new Float64Array(N);
+this.eb = new Float64Array(N); this.yb = new Float64Array(N); this.fill = 0;
+this.ss = 0.35 / P; this.specAvg = N / sr; this.beta0 = 2 * N / sr; this.betaMax = 0.5 * N / sr;
+const F = 4 * N, H = 2 * N, KF = F / 2 + 1;
+Object.assign(this, {F, H, KF});
+this.ff = FFT(F);
+this.win = new Float64Array(F); for (let i = 0; i < F; i++) this.win[i] = Math.sqrt(0.5 - 0.5 * Math.cos(TAU * i / F));
+this.eR = new Float64Array(F); this.yR = new Float64Array(F); this.eCnt = 0;
+this.ola = new Float64Array(F); this.fr = new Float64Array(F); this.fi = new Float64Array(F);
+this.noise = new Float64Array(KF); this.noiseFixed = false; this.psm = new Float64Array(KF);
+this.Gp = new Float64Array(KF).fill(1); this.gp = new Float64Array(KF).fill(1);
+this.prof = null; this.collect = false; this.pd = null; this.pr = null; this.pn = 0;
+this.nFrames = 0;
+this.latency = F - 1;
+let q = 1; while (q < 4 * F) q <<= 1; this.wf = new Float32Array(q); this.wfMask = q - 1; this.wfR = 0; this.wfW = H - 1; this.wfN = H - 1;
+let d = 1; while (d < this.latency + 2) d <<= 1; this.dry = new Float32Array(d); this.dryMask = d - 1; this.dryW = 0;
+const maxDel = Math.ceil((o.maxDelay || 1) * sr) + 1; let r = 1; while (r < maxDel) r <<= 1;
+this.refR = new Float32Array(r); this.refMask = r - 1; this.refW = 0; this.delay = 0;
+this.hp = hpCoefs(sr, 80); this.st[0] = 0; this.st[1] = 0;
+this.st[2] = 0; this.amtT = 0; this.amtStep = 1 / Math.max(1, Math.round(0.02 * sr));
+this.way = 'hear'; this.under = 0; this.rate = 1; this.offline = !!o.offline;
+this.resetAec();
+this.setAmount(o.amount != null ? o.amount : 1, true);
+}
+get leak() { return this.st[5]; }
+get sEcho() { return this.st[7]; }
+get sErr() { return this.st[8]; }
+resetAec() {
+const {P} = this;
+this.Wr.fill(0); this.Wi.fill(0); this.Xr.fill(0); this.Xi.fill(0); this.xOld.fill(0);
+this.pow.fill(0); this.Eh.fill(0); this.Yh.fill(0);
+const dec = Math.exp(-2.4 / P); let s = 0; this.prop[0] = 0.7; for (let i = 1; i < P; i++) this.prop[i] = this.prop[i - 1] * dec;
+for (let i = 0; i < P; i++) s += this.prop[i]; for (let i = 0; i < P; i++) this.prop[i] = 0.8 * this.prop[i] / s;
+this.st[3] = 1; this.st[4] = 1; this.st[5] = 1; this.adapted = false; this.st[6] = 0; this.cnt = 0; this.resets = 0;
+this.st[7] = 0; this.st[8] = 0;
+}
+resetStreams() {
+this.fill = 0; this.xOld.fill(0); this.Xr.fill(0); this.Xi.fill(0);
+this.eR.fill(0); this.yR.fill(0); this.eCnt = 0; this.ola.fill(0);
+this.wf.fill(0); this.wfR = 0; this.wfW = this.H - 1; this.wfN = this.H - 1; this.dry.fill(0); this.dryW = 0;
+this.refR.fill(0); this.refW = 0; this.st[0] = 0; this.st[1] = 0; this.Gp.fill(1); this.gp.fill(1); this.under = 0;
+this.st[7] = 0; this.st[8] = 0;
+}
+startProfile(nFrames) { this.pd = new Int8Array((nFrames + 4) * this.KF); this.pr = new Float32Array(nFrames + 4); this.pn = 0; this.collect = true; }
+endProfile(q = 0.3) {
+this.collect = false; if (!this.pd || this.pn < 8) { this.pd = this.pr = null; return null; }
+const KF = this.KF, n = this.pn, r = Array.from(this.pr.subarray(0, n)).filter(v => v > -900).sort((a, b) => a - b);
+if (r.length < 8) { this.pd = this.pr = null; return null; }
+const th = r[Math.floor(q * (r.length - 1))], prof = new Float64Array(KF), cnt = new Float64Array(KF);
+for (let m = 0; m < n; m++) {
+if (this.pr[m] < -900 || this.pr[m] > th) continue;
+for (let k = 0; k < KF; k++) { const d = this.pd[m * KF + k]; if (d === -128) continue; prof[k] += Math.pow(10, d / 10); cnt[k]++; }
+}
+for (let k = 0; k < KF; k++) prof[k] = cnt[k] >= 4 ? Math.min(1, prof[k] / cnt[k]) : this.st[5];
+this.pd = this.pr = null; return prof;
+}
+setResidualProfile(p) { this.prof = p ? Float64Array.from(p) : null; }
+setDelay(n) { this.delay = Math.max(0, Math.min(this.refMask - this.N, Math.round(+n || 0))); }
+setWay(w) { this.way = w === 'notes' ? 'notes' : 'hear'; }
+setNoisePsd(p) { if (p) { for (let k = 0; k < this.KF; k++) this.noise[k] = ok(p[k]); this.noiseFixed = true; } else this.noiseFixed = false; }
+setAmount(a, now) { a = ok(+a); this.amtT = a < 0 ? 0 : a > 1 ? 1 : a; if (now) this.st[2] = this.amtT; }
+exportState() {
+return {N: this.N, P: this.P, Wr: this.Wr.slice(), Wi: this.Wi.slice(), pow: this.pow.slice(), Eh: this.Eh.slice(), Yh: this.Yh.slice(),
+prop: this.prop.slice(), Pey: this.st[3], Pyy: this.st[4], leak: this.st[5], adapted: this.adapted, sumAdapt: this.st[6], delay: this.delay};
+}
+importState(s) {
+if (!s || s.N !== this.N || s.P !== this.P) return false;
+this.Wr.set(s.Wr); this.Wi.set(s.Wi); this.pow.set(s.pow); this.Eh.set(s.Eh); this.Yh.set(s.Yh); this.prop.set(s.prop);
+this.st[3] = s.Pey; this.st[4] = s.Pyy; this.st[5] = s.leak; this.adapted = s.adapted; this.st[6] = s.sumAdapt; this.setDelay(s.delay);
+return true;
+}
+_aec() {
+const {N, M, K, P, tr, ti, Wr, Wi, Xr, Xi, Yr, Yi, Er, Ei, Rf, Yf, pw1, pow, mb, rb, eb, yb} = this;
+const sM = 1 / M;
+for (let i = 0; i < N; i++) { tr[i] = this.xOld[i]; tr[i + N] = rb[i]; ti[i] = 0; ti[i + N] = 0; }
+this.fm.fwd(tr, ti);
+this.head = (this.head + P - 1) % P; const h0 = this.head * K;
+let Sxx = 0; for (let i = 0; i < N; i++) { Sxx += rb[i] * rb[i]; this.xOld[i] = rb[i]; }
+for (let k = 0; k < K; k++) { Xr[h0 + k] = tr[k] * sM; Xi[h0 + k] = ti[k] * sM; }
+Yr.fill(0); Yi.fill(0);
+for (let p = 0; p < P; p++) {
+const w0 = p * K, x0 = ((this.head + p) % P) * K;
+for (let k = 0; k < K; k++) {
+const wr = Wr[w0 + k], wi = Wi[w0 + k], xr = Xr[x0 + k], xi = Xi[x0 + k];
+Yr[k] += wr * xr - wi * xi; Yi[k] += wr * xi + wi * xr;
+}
+}
+for (let k = 0; k < K; k++) { tr[k] = Yr[k]; ti[k] = Yi[k]; }
+for (let k = K; k < M; k++) { tr[k] = Yr[M - k]; ti[k] = -Yi[M - k]; }
+this.fm.inv(tr, ti);
+let See = 0, Syy = 0, Sey = 0, Sdd = 0;
+for (let i = 0; i < N; i++) {
+const y = tr[i + N], e = mb[i] - y;
+yb[i] = y; eb[i] = e; See += e * e; Syy += y * y; Sey += e * y; Sdd += mb[i] * mb[i];
+}
+if (!(See >= 0 && Syy >= 0 && Sxx >= 0) || !(Syy < N * 1e9 && Sxx < N * 1e9 && See < N * 1e10)) {
+this.resetAec(); this.resets++; for (let i = 0; i < N; i++) { yb[i] = 0; eb[i] = mb[i]; } return;
+}
+this.st[7] += Syy; this.st[8] += See;
+See = Math.max(See, N * 100);
+for (let i = 0; i < N; i++) { tr[i] = 0; ti[i] = 0; tr[i + N] = eb[i]; ti[i + N] = yb[i]; }
+this.fm.fwd(tr, ti);
+for (let k = 0; k < K; k++) {
+const j = (M - k) % M, ar = tr[k], ai = ti[k], br = tr[j], bi = -ti[j];
+const er = 0.5 * (ar + br) * sM, ei = 0.5 * (ai + bi) * sM, yr = 0.5 * (ai - bi) * sM, yi = -0.5 * (ar - br) * sM;
+Er[k] = er; Ei[k] = ei; Rf[k] = er * er + ei * ei; Yf[k] = yr * yr + yi * yi;
+}
+const ss = this.ss, sa = this.specAvg;
+let Pey = 0, Pyy = 0;
+for (let k = 0; k < K; k++) {
+const xf = Xr[h0 + k] * Xr[h0 + k] + Xi[h0 + k] * Xi[h0 + k];
+pow[k] = dn((1 - ss) * pow[k] + 1 + ss * xf);
+const eh = Rf[k] - this.Eh[k], yh = Yf[k] - this.Yh[k];
+Pey += eh * yh; Pyy += yh * yh;
+this.Eh[k] = dn((1 - sa) * this.Eh[k] + sa * Rf[k]); this.Yh[k] = dn((1 - sa) * this.Yh[k] + sa * Yf[k]);
+}
+Pyy = Math.sqrt(Pyy); Pey = Pyy > 0 ? Pey / Pyy : 0;
+let t32 = this.beta0 * Syy; if (t32 > this.betaMax * See) t32 = this.betaMax * See;
+const al = t32 / See;
+this.st[3] = (1 - al) * this.st[3] + al * Pey; this.st[4] = (1 - al) * this.st[4] + al * Pyy;
+if (this.st[4] < 1) this.st[4] = 1;
+if (this.st[3] < 0.005 * this.st[4]) this.st[3] = 0.005 * this.st[4];
+if (this.st[3] > this.st[4]) this.st[3] = this.st[4];
+this.st[5] = this.st[3] / this.st[4];
+let RER = (0.0001 * Sxx + 3 * this.st[5] * Syy) / See;
+const lb = Sey * Sey / (1 + See * Syy); if (RER < lb) RER = lb; if (RER > 0.5) RER = 0.5;
+if (!this.adapted && this.st[6] > P && this.st[5] * Syy > 0.03 * Syy) this.adapted = true;
+if (this.adapted) {
+for (let k = 0; k < K; k++) {
+const e = Rf[k] + 1; let r = this.st[5] * Yf[k]; if (r > 0.5 * e) r = 0.5 * e;
+r = 0.7 * r + 0.3 * RER * e; pw1[k] = this.rate * r / (e * (pow[k] + 10));
+}
+} else {
+let rate = 0;
+if (Sxx > M * 1000) { let t = 0.25 * Sxx; if (t > 0.25 * See) t = 0.25 * See; rate = t / See; }
+for (let k = 0; k < K; k++) pw1[k] = rate / (pow[k] + 10);
+this.st[6] += rate;
+}
+const c2 = P > 1 ? 1 + (this.cnt % (P - 1)) : 0;
+let mx = 1, sum = 0;
+for (let p = 0; p < P; p++) {
+const w0 = p * K, x0 = ((this.head + p) % P) * K, g = this.prop[p];
+let t = 1;
+for (let k = 0; k < K; k++) {
+const xr = Xr[x0 + k], xi = Xi[x0 + k], s = g * pw1[k];
+const wr = Wr[w0 + k] + s * (xr * Er[k] + xi * Ei[k]), wi = Wi[w0 + k] + s * (xr * Ei[k] - xi * Er[k]);
+Wr[w0 + k] = wr; Wi[w0 + k] = wi; t += 2 * (wr * wr + wi * wi);
+}
+this.prop[p] = Math.sqrt(t); if (this.prop[p] > mx) mx = this.prop[p];
+}
+this._constrain(0, c2);
+this.cnt++;
+for (let p = 0; p < P; p++) { this.prop[p] += 0.1 * mx; sum += this.prop[p]; }
+for (let p = 0; p < P; p++) this.prop[p] = 0.99 * this.prop[p] / sum;
+}
+_constrain(p, q) {
+const {N, M, K, tr, ti, Wr, Wi} = this, a = p * K, b = q * K, sM = 1 / M;
+for (let k = 0; k < K; k++) {
+const qr = q ? Wr[b + k] : 0, qi = q ? Wi[b + k] : 0;
+tr[k] = Wr[a + k] - qi; ti[k] = Wi[a + k] + qr;
+if (k > 0 && k < N) { tr[M - k] = Wr[a + k] + qi; ti[M - k] = -Wi[a + k] + qr; }
+}
+this.fm.inv(tr, ti);
+for (let i = N; i < M; i++) { tr[i] = 0; ti[i] = 0; }
+for (let i = 0; i < N; i++) { tr[i] *= sM; ti[i] *= sM; }
+this.fm.fwd(tr, ti);
+for (let k = 0; k < K; k++) {
+const j = (M - k) % M;
+Wr[a + k] = dn(0.5 * (tr[k] + tr[j])); Wi[a + k] = dn(0.5 * (ti[k] - ti[j]));
+if (q) { Wr[b + k] = dn(0.5 * (ti[k] + ti[j])); Wi[b + k] = dn(-0.5 * (tr[k] - tr[j])); }
+}
+}
+_frame() {
+const {F, H, KF, fr, fi, win, eR, yR, noise, psm, Gp, gp, ola} = this;
+for (let i = 0; i < F; i++) { fr[i] = eR[i] * win[i]; fi[i] = yR[i] * win[i]; }
+this.ff.fwd(fr, fi);
+const notes = this.way === 'notes';
+const a = this.st[2], floor = Math.pow(10, (-6 - 18 * a) / 20), post = 1.5 * a, leak = this.st[5];
+this.nFrames++;
+let sPe = 0, sPy = 0;
+for (let k = 0; k < KF; k++) {
+const j = (F - k) % F, ar = fr[k], ai = fi[k], br = fr[j], bi = -fi[j];
+const er = 0.5 * (ar + br), ei = 0.5 * (ai + bi), yr = 0.5 * (ai - bi), yi = -0.5 * (ar - br);
+const pe = er * er + ei * ei, py = yr * yr + yi * yi;
+let G = 1;
+if (this.collect) {
+let d = -128;
+if (py > 1e-14) { d = Math.round(10 * Math.log10(pe / py + 1e-12)); if (d < -100) d = -100; else if (d > 100) d = 100; }
+if (this.pn * KF + k < this.pd.length) this.pd[this.pn * KF + k] = d;
+sPe += pe; sPy += py;
+}
+if (!notes) {
+if (!this.noiseFixed) {
+psm[k] = this.nFrames < 3 ? pe : dn(0.85 * psm[k] + 0.15 * pe);
+if (this.nFrames < 3 || psm[k] < noise[k]) noise[k] = psm[k]; else noise[k] = dn(noise[k] * 1.002 + 1e-20);
+}
+const nz = this.noiseFixed ? noise[k] : 1.5 * noise[k];
+const rho = this.prof ? this.prof[k] : leak;
+const D = nz + post * rho * py + 1e-20, gam = pe / D;
+const xi = 0.98 * Gp[k] * Gp[k] * gp[k] + 0.02 * (gam > 1 ? gam - 1 : 0);
+G = xi / (1 + xi); if (!(G >= floor)) G = floor; if (G > 1) G = 1;
+Gp[k] = G; gp[k] = gam < 1e3 ? gam : 1e3;
+}
+fr[k] = er * G; fi[k] = ei * G;
+}
+if (this.collect && this.pn < this.pr.length) { this.pr[this.pn] = sPy > 1e-10 ? 10 * Math.log10(sPe / sPy + 1e-12) : -999; this.pn++; }
+for (let k = KF; k < F; k++) { fr[k] = fr[F - k]; fi[k] = -fi[F - k]; }
+this.ff.inv(fr, fi);
+const sF = 1 / F;
+for (let i = 0; i < F; i++) ola[i] += fr[i] * sF * win[i];
+const c = this.hp;
+for (let i = 0; i < H; i++) {
+let v = ola[i];
+if (!notes && !this.offline) {
+const y = c.b0 * v + this.st[0]; this.st[0] = dn(c.b1 * v - c.a1 * y + this.st[1]); this.st[1] = dn(c.b2 * v - c.a2 * y); v = y;
+}
+this.wf[this.wfW] = v; this.wfW = (this.wfW + 1) & this.wfMask; this.wfN++;
+}
+ola.copyWithin(0, H); ola.fill(0, F - H);
+}
+process(mic, ref, out, n) {
+n = n == null ? mic.length : n;
+const {N, H, F} = this, SCi = 1 / SC;
+for (let i = 0; i < n; i++) {
+const m = ok(mic[i]), r = ref ? ok(ref[i]) : 0;
+this.refR[this.refW] = r;
+const rd = this.refR[(this.refW - this.delay) & this.refMask]; this.refW = (this.refW + 1) & this.refMask;
+this.dry[this.dryW] = m; this.dryW = (this.dryW + 1) & this.dryMask;
+this.mb[this.fill] = m * SC; this.rb[this.fill] = rd * SC;
+if (++this.fill === N) {
+this.fill = 0; this._aec();
+const o0 = F - H + (this.eCnt % H);
+for (let k = 0; k < N; k++) { this.eR[o0 + k] = this.eb[k] * SCi; this.yR[o0 + k] = this.yb[k] * SCi; }
+this.eCnt += N;
+if (this.eCnt % H === 0) { this._frame(); this.eR.copyWithin(0, H); this.yR.copyWithin(0, H); }
+}
+if (this.st[2] !== this.amtT) { const d = this.amtT - this.st[2]; this.st[2] = Math.abs(d) <= this.amtStep ? this.amtT : this.st[2] + Math.sign(d) * this.amtStep; }
+const dry = this.dry[(this.dryW - 1 - this.latency) & this.dryMask];
+let wet = 0;
+if (this.wfN > 0) { wet = this.wf[this.wfR]; this.wfR = (this.wfR + 1) & this.wfMask; this.wfN--; } else this.under++;
+const w = this.way === 'notes' || this.offline ? 1 : Math.min(1, this.st[2] * 5);
+out[i] = w === 0 ? dry : w === 1 ? wet : dry + w * (wet - dry);
+}
+}
+}
+function estimateDelay(mic, ref, sr, o = {}) {
+const maxLag = Math.round((o.maxDelay || 0.5) * sr);
+let L = 1; while (L < 2 * maxLag) L <<= 1; const seg = L, n = 2 * L;
+const f = FFT(n), re = new Float64Array(n), im = new Float64Array(n), Sr = new Float64Array(n), Si = new Float64Array(n);
+const len = Math.min(mic.length, ref.length, Math.round((o.maxSec || 15) * sr));
+let used = 0;
+for (let a = 0; a + seg <= len || (a === 0 && len > maxLag); a += seg) {
+const e = Math.min(len, a + seg); let ex = 0;
+re.fill(0); im.fill(0);
+for (let i = a; i < e; i++) { re[i - a] = ok(mic[i]); im[i - a] = ok(ref[i]); ex += im[i - a] * im[i - a]; }
+if (ex < 1e-8 * (e - a)) continue;
+f.fwd(re, im);
+for (let k = 0; k < n; k++) {
+const j = (n - k) % n, mr = 0.5 * (re[k] + re[j]), mi = 0.5 * (im[k] - im[j]), rr = 0.5 * (im[k] + im[j]), ri = -0.5 * (re[k] - re[j]);
+Sr[k] += mr * rr + mi * ri; Si[k] += mi * rr - mr * ri;
+}
+used++;
+if (e >= len) break;
+}
+if (!used) return 0;
+for (let k = 0; k < n; k++) { const m = Math.hypot(Sr[k], Si[k]) + 1e-20; re[k] = Sr[k] / m; im[k] = Si[k] / m; }
+f.inv(re, im);
+let mx = 0, at = 0, q = 0; for (let l = 0; l <= maxLag; l++) { q += re[l] * re[l]; if (re[l] > mx) { mx = re[l]; at = l; } }
+if (o.info) o.info.pk = mx / Math.sqrt(q / (maxLag + 1) + 1e-30);
+for (let l = 0; l < at; l++) if (re[l] >= 0.5 * mx && re[l] >= re[l - 1 < 0 ? 0 : l - 1] && re[l] >= re[l + 1]) { at = l; break; }
+return at;
+}
+function noisePsd(e, sr, c, range) {
+const {F, H, KF, win} = c, f = FFT(F), re = new Float64Array(F), im = new Float64Array(F);
+const nF = Math.max(0, Math.floor((e.length - F) / H) + 1), en = new Float64Array(nF);
+let a0 = 0, a1 = nF;
+if (range) { a0 = Math.max(0, Math.floor(range[0] * sr / H)); a1 = Math.min(nF, Math.max(a0 + 1, Math.floor((range[1] * sr - F) / H) + 1)); }
+for (let m = 0; m < nF; m++) { let s = 0; for (let i = 0; i < F; i++) { const v = e[m * H + i]; s += v * v; } en[m] = s; }
+let pick;
+if (range) pick = m => m >= a0 && m < a1;
+else {
+const s = Array.from(en).filter(v => v > 1e-12 * F).sort((x, y) => x - y);
+if (!s.length) return null;
+const th = s[Math.min(s.length - 1, Math.max(9, Math.floor(s.length * 0.1)))];
+pick = m => en[m] > 1e-12 * F && en[m] <= th;
+}
+const live = []; for (let m = 0; m < nF; m++) if (en[m] > 1e-12 * F) live.push(m);
+const nL = live.length, pw = new Float32Array(nL * KF);
+const psd = new Float64Array(KF); let cnt = 0;
+for (let q = 0; q < nL; q++) {
+const m = live[q];
+for (let i = 0; i < F; i++) { re[i] = e[m * H + i] * win[i]; im[i] = 0; }
+f.fwd(re, im);
+const sel = pick(m);
+for (let k = 0; k < KF; k++) { const p = re[k] * re[k] + im[k] * im[k]; pw[q * KF + k] = p; if (sel) psd[k] += p; }
+if (sel) cnt++;
+}
+if (!cnt) return null;
+for (let k = 0; k < KF; k++) psd[k] /= cnt;
+if (nL >= 8) {
+const col = new Float32Array(nL), T = new Float64Array(KF), qi = Math.floor(0.2 * (nL - 1));
+for (let k = 0; k < KF; k++) { for (let q = 0; q < nL; q++) col[q] = pw[q * KF + k]; col.sort(); T[k] = col[qi]; }
+for (let k = 0; k < KF; k++) {
+let mn = Infinity; for (let j = Math.max(0, k - 6); j <= Math.min(KF - 1, k + 6); j++) if (T[j] < mn) mn = T[j];
+const cap = 9 * mn; if (psd[k] > cap) psd[k] = cap;
+}
+}
+return psd;
+}
+function hpZero(x, sr) {
+const c = hpCoefs(sr, 80), n = x.length; let h1 = 0, h2 = 0;
+const pass = (from, to, st) => {
+h1 = 0; h2 = 0;
+for (let i = from; i !== to; i += st) {
+const v = x[i], y = c.b0 * v + h1; h1 = dn(c.b1 * v - c.a1 * y + h2); h2 = dn(c.b2 * v - c.a2 * y); x[i] = y;
+}
+};
+pass(0, n, 1); pass(n - 1, -1, -1);
+return x;
+}
+function run(c, mic, ref, n) {
+const L = c.latency, out = new Float32Array(n), B = 1024;
+const bm = new Float32Array(B), br = new Float32Array(B), bo = new Float32Array(B);
+for (let a = 0; a < n + L; a += B) {
+const len = Math.min(B, n + L - a);
+for (let i = 0; i < len; i++) { const j = a + i; bm[i] = j < n ? mic[j] : 0; br[i] = ref && j < ref.length ? ref[j] : 0; }
+c.process(bm, br, bo, len);
+for (let i = 0; i < len; i++) { const j = a + i - L; if (j >= 0 && j < n) out[j] = bo[i]; }
+}
+return out;
+}
+function clean(mic, ref, sr, o = {}) {
+const t0 = Date.now(), info = o.info || {};
+const amount = o.amount == null ? 1 : +o.amount;
+if (!(amount > 0)) { info.way = 'aus'; info.ms = 0; return Float32Array.from(mic); }
+const n = mic.length, way = o.way === 'notes' ? 'notes' : 'hear';
+const di = {}, has0 = !!ref && ref.some(v => v !== 0);
+const delay = o.delay != null ? Math.round(o.delay) : has0 ? estimateDelay(mic, ref, sr, {info: di}) : 0;
+const hasRef = has0 && !(di.pk < (o.minPk || 15));
+if (di.pk != null) info.pk = +di.pk.toFixed(1);
+if (has0 && !hasRef) { ref = null; info.aec = 'aus'; }
+const margin = Math.round(0.0025 * sr), mk = () => { const c = new Cleaner(sr, {tail: o.tail, amount, offline: true}); c.setDelay(Math.max(0, delay - margin)); return c; };
+let out, c;
+if (o.passes === 1) { c = mk(); c.setWay(way); c.setAmount(amount, true); out = run(c, mic, ref, n); }
+else {
+const s0 = o.from > 0 ? Math.min(n, Math.round(o.from)) : 0, lw = s0 ? Math.max(0, Math.min(s0, n - Math.round(8 * sr))) : 0;
+const two = l0 => {
+const c = mk(), n1 = Math.min(n - l0, Math.round((o.learnSec || 20) * sr));
+c.setWay('notes'); c.setAmount(1, true); c.startProfile(Math.ceil((n1 + c.latency) / c.H) + 2);
+const e1 = run(c, l0 ? mic.subarray(l0) : mic, l0 && ref ? ref.subarray(l0) : ref, n1);
+const echoDb = +(10 * Math.log10((c.sEcho + 1e-9) / (c.sErr + 1e-9))).toFixed(1);
+const st = c.exportState(), psd = way === 'hear' ? noisePsd(e1, sr, c, o.noiseRange) : null, prof = c.endProfile(0.3);
+c.resetStreams(); c.importState(st); c.rate = o.relearn != null ? +o.relearn : 0.1; c.setWay(way); c.setAmount(amount, true); c.setNoisePsd(psd); c.setResidualProfile(prof);
+let y; if (s0) { y = Float32Array.from(mic); y.set(run(c, mic.subarray(s0), ref ? ref.subarray(s0) : null, n - s0), s0); } else y = run(c, mic, ref, n);
+let en = 0; for (let i = s0; i < n; i++) en += y[i] * y[i];
+return {y, c, echoDb, en};
+};
+let r = two(0);
+if (lw > 0 && hasRef) { const r2 = two(lw); if (r2.en < r.en) { r = r2; info.learn = 'neu'; } }
+out = r.y; c = r.c; info.echoDb = r.echoDb;
+}
+if (way === 'hear') {
+hpZero(out, sr);
+const w = Math.min(1, amount * 5);
+if (w < 1) for (let i = 0; i < n; i++) out[i] = mic[i] + w * (out[i] - mic[i]);
+}
+Object.assign(info, {delay, way: way === 'notes' ? '1E' : '1E+NF+W+HP', leak: +c.leak.toFixed(4), resets: c.resets,
+hint: info.echoDb != null && info.echoDb > 0 ? 'Kopfhörer oder leiser' : '', ms: Date.now() - t0});
+return out;
+}
+function nlms(mic, ref, taps, mu = 0.5) {
+const n = mic.length, out = new Float32Array(n), w = new Float64Array(taps), xb = new Float64Array(taps);
+let pw = 0, p = 0;
+for (let i = 0; i < n; i++) {
+const x = ok(ref[i]), old = xb[p]; pw += x * x - old * old; xb[p] = x;
+let y = 0, q = p;
+for (let k = 0; k < taps; k++) { y += w[k] * xb[q]; q = q === 0 ? taps - 1 : q - 1; }
+const e = ok(mic[i]) - y; out[i] = e;
+const g = mu * e / (pw + 1e-6); q = p;
+for (let k = 0; k < taps; k++) { w[k] = dn(w[k] + g * xb[q]); q = q === 0 ? taps - 1 : q - 1; }
+p = p + 1 === taps ? 0 : p + 1;
+}
+return out;
+}
+return {clean, Cleaner, estimateDelay, nlms, VERSION: 'vs4-clean-1'};
+}
+const CL = {w: null, wid: 0, wq: new Map(), buf: new Map(), job: new Map(), info: {}, ab: 'sauber', busy: 0, notes: null, runs: 0, last: null, err: null, core: null, bad: new Set()};
+const CL_LEAD = 0.02, CL_DEF = 60, CL_RES = 0.0316;   // Rest-Übersprechen nach dem Echo-Abzug für die Noten-Probe (−15 dB)
+tkExt().take.push((raw, o) => {
+  if (isNum(raw.rf) && raw.rf >= 1 && raw.rf <= 48000) o.rf = Math.round(raw.rf);
+  if (isNum(raw.cl)) { const v = clamp(Math.round(raw.cl), 0, 100); if (v) o.cl = v; }
+});
+// was gespielt wird: die gesäuberte Fassung, sobald sie da ist (sonst der Roh-Take); A/B „Roh“ hört den Roh-Take
+tkExt().proc.push(id => {
+  const m = S.takes && S.takes[id], a = m ? m.cl | 0 : 0;
+  if (!a || CL.ab === 'roh') return null;
+  const c = CL.buf.get(id); if (c && c.a === a) return c.b;
+  clEnsure(id); return null;
+});
+const clKeys = (id, m, tag) => { const n = Math.ceil(m.len / TK_CHUNK), k = []; for (let i = 0; i < n; i++) k.push(id + ':' + tag + i); return k; };
+async function clRead(keys, len) {
+  if (!kv || !kv.aget) return null;
+  const out = new Int16Array(len); let o = 0;
+  for (const k of keys) {
+    const b = await kv.aget(k); if (!b) return null;
+    const a = b instanceof ArrayBuffer ? new Int16Array(b) : ArrayBuffer.isView(b) ? new Int16Array(b.buffer, b.byteOffset, b.byteLength >> 1) : null;
+    if (!a) return null;
+    const n = Math.min(a.length, len - o); out.set(n === a.length ? a : a.subarray(0, n), o); o += n;
+  }
+  return o >= len ? out : null;
+}
+// ein neuer Take (Mikro): Lautsprecher-Weg → Referenz mitschreiben und SÄUBERN 60 % (Skizze 4); Kopfhörer → Roh-Take
+function clNewTake(m) { if (m && m.route === 'speaker') { m.rf = Math.round(CL_LEAD * m.sr); m.cl = CL_DEF; } }
+/* Referenz zum Take: was die App spielte, um rf Samples vorgezogen (das Mikro ist schon um die Latenz nachgeführt, das Echo liegt
+   so sicher hinter der Referenz – ein kausales Filter kann es abziehen) */
+function clFill(id, G, a, F0, n, m) {
+  if (!m || !m.rf || !G) return Promise.resolve(true);
+  const D = m.rf, ref = new Int16Array(n), L = G.len, lo = Math.max(G.start, G.end - L + 1);
+  for (let i = Math.max(0, a - F0); i < n; i++) { const F = F0 + i + D; if (F >= lo && F < G.end) ref[i] = G.ref[F % L]; }
+  return tkStore(id, ref, clKeys(id, m, 'r'));
+}
+/* ---------- Worker (Blob; Rückfall Hauptfaden) ---------- */
+function clWorker() {
+  if (CL.w !== null) return CL.w;
+  try {
+    const src = vsCleanMake.toString() + ';const C = vsCleanMake();const f = a => { if (!a || a instanceof Float32Array) return a || null; const y = new Float32Array(a.length); for (let i = 0; i < a.length; i++) y[i] = a[i] / 32767; return y; };' +
+      'onmessage = e => { const m = e.data; try { const info = {}; let y = C.clean(f(m.mic), f(m.ref), m.sr, Object.assign({info}, m.o)); if (m.q16) { const q = new Int16Array(y.length); for (let i = 0; i < y.length; i++) { const v = Math.round(y[i] * 32767); q[i] = v > 32767 ? 32767 : v < -32768 ? -32768 : v; } y = q; } postMessage({id: m.id, y, info}, [y.buffer]); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
+    const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+    w.onmessage = e => { const m = e.data, q = CL.wq.get(m.id); if (!q) return; CL.wq.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok({y: m.y, info: m.info, how: 'worker'}); };
+    w.onerror = e => { for (const q of CL.wq.values()) { clearTimeout(q.to); q.no(new Error('worker')); } CL.wq.clear(); CL.w = false; try { e.preventDefault(); } catch (er) {} };
+    CL.w = w;
+  } catch (e) { CL.w = false; }
+  return CL.w;
+}
+function clLocal(mic, ref, sr, o, q16) {
+  const C = CL.core || (CL.core = vsCleanMake()), f = a => { if (!a || a instanceof Float32Array) return a || null; const y = new Float32Array(a.length); for (let i = 0; i < a.length; i++) y[i] = a[i] / 32767; return y; };
+  const info = {}; let y = C.clean(f(mic), f(ref), sr, Object.assign({info}, o));
+  if (q16) { const q = new Int16Array(y.length); for (let i = 0; i < y.length; i++) { const v = Math.round(y[i] * 32767); q[i] = v > 32767 ? 32767 : v < -32768 ? -32768 : v; } y = q; }
+  return {y, info, how: 'hauptfaden'};
+}
+// mic/ref: Int16Array (Take) oder Float32Array; o: {amount, way, …} wie clean(); q16 → Ergebnis als Int16Array
+function clRun(mic, ref, sr, o, q16) {
+  const w = clWorker(), t0 = performance.now(); CL.runs++;
+  const done = r => { CL.last = {how: r.how, ms: Math.round(performance.now() - t0), sec: +(mic.length / sr).toFixed(2), way: r.info && r.info.way}; return r; };
+  if (!w) return Promise.resolve().then(() => done(clLocal(mic, ref, sr, o, q16)));
+  return new Promise((ok, no) => {
+    const id = ++CL.wid, m = mic.slice(), r = ref ? ref.slice() : null, lim = 20000 + 1500 * mic.length / sr;
+    const to = setTimeout(() => { CL.wq.delete(id); no(new Error('Zeit')); }, lim);
+    CL.wq.set(id, {ok: x => ok(done(x)), no, to});
+    try { w.postMessage({id, mic: m, ref: r, sr, o: o || {}, q16: !!q16}, r ? [m.buffer, r.buffer] : [m.buffer]); }
+    catch (e) { clearTimeout(to); CL.wq.delete(id); try { ok(done(clLocal(mic, ref, sr, o, q16))); } catch (er) { no(er); } }
+  });
+}
+function clQuiet(on) { CL.busy = Math.max(0, CL.busy + (on ? 1 : -1)); tkQ('clean', CL.busy > 0); }
+
+/* ---------- gesäuberte Fassung je Take (Cache im Audio-Store, sonst rechnen) ---------- */
+function clEnsure(id) {
+  const m = S.takes && S.takes[id], a = m ? m.cl | 0 : 0;
+  if (!a || !tkAudioOk()) return null;
+  const key = id + ':' + a, j = CL.job.get(id); if (j && j.key === key) return j.p;
+  if (CL.bad.has(key)) return null;                     // ging schon schief (Roh-Take fehlt, Fehler): nicht bei jedem Planen neu
+  const c = CL.buf.get(id); if (c && c.a === a) return Promise.resolve(c.b);
+  clQuiet(true);                                        // N2-VS1-02 / N7V-35: beim Säubern keine Netzaufrufe (ab dem ersten Schritt)
+  const p = clMake(id, m, a).then(b => {
+    if (CL.job.get(id) && CL.job.get(id).key === key) CL.job.delete(id);
+    const cur = S.takes && S.takes[id];
+    if (b && cur && (cur.cl | 0) === a) {
+      const act = tkActiveIds(); for (const k of [...CL.buf.keys()]) if (k !== id && !act.has(k)) CL.buf.delete(k);
+      CL.buf.set(id, {a, b}); clResync();
+      const inf = CL.info[id];
+      if (inf && inf.hint && !inf.told) { inf.told = true; toast('Viel Übersprechen – Kopfhörer oder leiser spielen'); }
+    }
+    else if (!b) CL.bad.add(key);
+    clPaint(); return b;
+  }, e => { CL.bad.add(key); if (CL.job.get(id) && CL.job.get(id).key === key) CL.job.delete(id); CL.err = String(e && e.message || e); logErr(e); toast('Säubern ging nicht – der Roh-Take spielt'); clPaint(); return null; })
+    .finally(() => clQuiet(false));
+  CL.job.set(id, {key, p}); clPaint();
+  return p;
+}
+async function clMake(id, m, a) {
+  const keys = clKeys(id, m, 'c' + a + ':');
+  let pcm = await clRead(keys, m.len);
+  if (pcm) { if (!CL.info[id] || CL.info[id].a !== a) { try { const b = await kv.aget(id + ':ci' + a); CL.info[id] = b ? JSON.parse(new TextDecoder().decode(b)) : {a}; } catch (e) { CL.info[id] = {a}; } } }
+  else {
+    const raw = await tkPcm(id); if (!raw) return null;
+    const ref = m.rf ? await clRead(clKeys(id, m, 'r'), m.len) : null;
+    const r = await clRun(raw, ref, m.sr, {amount: a / 100}, true);
+    pcm = r.y;
+    const inf = r.info || {};
+    CL.info[id] = {a, way: inf.way, delayMs: inf.delay != null ? +(inf.delay / m.sr * 1000 - (m.rf || 0) / m.sr * 1000).toFixed(1) : null, echoDb: inf.echoDb != null ? inf.echoDb : null,
+      hint: !!inf.hint, ref: !!ref, ms: CL.last ? CL.last.ms : null};
+    if (await tkStore(id, pcm, keys)) {
+      try { await kv.aput(id + ':ci' + a, new TextEncoder().encode(JSON.stringify(CL.info[id])).buffer); } catch (e) {}
+      try { for (const k of await kv.akeys()) { const s = String(k); if (s.startsWith(id + ':c') && !keys.includes(s) && s !== id + ':ci' + a) await kv.adel(s); } } catch (e) {}
+    }
+  }
+  return tkToBuffer(pcm, m.sr);
+}
+// laufende Stücke, deren Puffer nicht mehr stimmt (gesäubert fertig, A/B, Undo), ab jetzt neu – 5 ms Blende (tkVoxResync)
+/* FP-DSP: Roh und gesäubert sind zeitgleich – laufende Stücke werden gegen dieselbe Stelle der anderen Fassung linear überblendet
+   (6 ms, Summe konstant: kein Knick, kein Pegelsprung); geplante Stücke bekommen einfach den anderen Puffer */
+function clResync() {
+  if (!AU.ctx || !R.playing) return;
+  const now = AU.ctx.currentTime, at = now + .012, T = .006;
+  for (const r of TK.src.slice()) {
+    if (r.dead || !r.o || r.end <= at + T) continue;
+    const nb = tkPlayBuf(r.take, null); if (!nb || nb === r.s.buffer) continue;
+    if (r.start > at) { tkKill(r); tkStartSrc(Object.assign({}, r.o, {buf: nb, end: r.end})); continue; }
+    const G = isNum(r.o.gain) ? r.o.gain : 1, fo = r.end < r.o.end - 1e-6 ? .005 : r.o.fo || 0;
+    if (at < r.start + (r.o.fi || 0) + .001 || at + T > r.end - fo - .001) continue;    // in einer Blende: das nächste Stück nimmt die neue Fassung
+    const o = Object.assign({}, r.o, {buf: nb, when: at, off: r.o.off + (at - r.o.when), end: r.end, fi: T, fo});
+    if (!tkStartSrc(o)) continue;
+    // alte Fassung: ab „at“ linear auf 0 (cancelAndHoldAtTime + Rampe springt in Chromium sofort auf 0 – daher feste Werte)
+    try { const p = r.g.gain; p.cancelScheduledValues(at); p.setValueAtTime(G, at); p.linearRampToValueAtTime(0, at + T); r.s.stop(at + T + .01); } catch (e) {}
+    r.end = at; r.o = null;
+  }
+}
+function clSync() {
+  for (const id of tkActiveIds()) { const m = S.takes && S.takes[id]; if (m && m.cl) clEnsure(id); }
+  clResync(); clPaint(); UI.dirty.grid = UI.dirty.song = true;
+}
+function clSet(id, pct) {
+  const m = S.takes && S.takes[id]; if (!m || !tkAudioOk()) return false;
+  pct = clamp(Math.round(+pct || 0), 0, 100); if ((m.cl | 0) === pct) return false;
+  const before = JSON.stringify(S.takes);
+  if (pct) m.cl = pct; else delete m.cl;
+  undoPush({kind: 'takes', before, label: 'Säubern ' + pct + ' %'});
+  clSync(); markDirty(); UI.dirty.all = true; haptic('tick');
+  return true;
+}
+function clAB(v) { const n = v === 'roh' ? 'roh' : 'sauber'; if (CL.ab === n) return false; CL.ab = n; clResync(); clPaint(); return true; }
+
+/* ---------- Takes-Blatt: SÄUBERN-Regler, A/B Roh │ Sauber, Zustand ---------- */
+function clState(id) {
+  const m = S.takes && S.takes[id]; if (!m) return {a: 0, txt: ''};
+  const a = m.cl | 0, inf = CL.info[id], j = CL.job.get(id), ok = tkAudioOk();
+  let txt, warn = '';
+  if (!ok) txt = 'Audio nur auf der eigenen Seite';
+  else if (!a) txt = '0 % = Original (bitgleich)';
+  else if (j) txt = 'säubert … (Netz pausiert)';
+  else if (inf && inf.a === a) {
+    txt = (inf.ref ? 'Echo-Abzug ✓' + (inf.echoDb != null ? ' · Musik im Mikro ' + (inf.echoDb >= 0 ? fmtDec(inf.echoDb, 0) + ' dB über' : fmtDec(-inf.echoDb, 0) + ' dB unter') + ' der Stimme' : '') : 'ohne Echo-Abzug (Kopfhörer)') + ' · Rauschen ↓ · kein Gate';
+    if (inf.hint) warn = 'Viel Übersprechen – Kopfhörer oder leiser spielen';
+  } else txt = CL.buf.has(id) ? 'gesäubert' : 'wartet …';
+  return {a, txt, warn, busy: !!j};
+}
+function clSheet(p, x) {
+  const sav = p.querySelector('.savrow'), lst = p.querySelector('.tklist'); if (!sav || !x || !x.a) return;
+  const id = x.a.take, ok = tkAudioOk() && !!(S.takes && S.takes[id]) && !TK.missing.has(id), st = clState(id);
+  const box = el('div', 'clbox');
+  box.innerHTML = `<div class="clrow"><span class="cllab">SÄUBERN <b class="clv">${st.a} %</b></span><input type="range" class="clr pan-x" min="0" max="100" step="5" value="${st.a}"${ok ? '' : ' disabled'} aria-label="Säubern 0 bis 100 Prozent"></div>` +
+    `<div class="clrow"><span class="cllab">Vergleich</span><div class="clab" role="group" aria-label="A/B: Roh oder gesäubert hören"><button class="mbtn rb" data-cl="roh"${CL.ab === 'roh' ? ' aria-pressed="true"' : ''}${ok && st.a ? '' : ' disabled'}>Roh</button><button class="mbtn rb" data-cl="sauber"${CL.ab !== 'roh' ? ' aria-pressed="true"' : ''}${ok && st.a ? '' : ' disabled'}>Sauber</button></div></div>` +
+    `<div class="small clst">${esc(st.txt)}</div>` + (st.warn ? `<div class="small warn clwarn">${esc(st.warn)}</div>` : '');
+  if (lst && lst.nextSibling) lst.parentNode.insertBefore(box, lst.nextSibling); else sav.parentNode.insertBefore(box, sav);
+  p.classList.add('pan-y');                              // ist das Blatt höher als der Schirm, rollt es mit dem Finger
+  const r = box.querySelector('.clr'), v = box.querySelector('.clv');
+  r.addEventListener('input', () => { v.textContent = r.value + ' %'; });
+  r.addEventListener('change', () => { clSet(id, +r.value); });
+  onTap(box, b => { clAB(b.dataset.cl); }, 'button[data-cl]');
+  p._clId = id;
+  if (p.isConnected) popFit(p);                         // das Blatt bleibt ganz im Bild (auch quer)
+}
+// nur Zustand und A/B-Knöpfe nachziehen (der Regler bleibt unter dem Finger)
+function clPaint() {
+  const p = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null; if (!p || !p._clId) return;
+  const box = p.querySelector('.clbox'); if (!box) return;
+  const st = clState(p._clId), t = box.querySelector('.clst'); if (t) t.textContent = st.txt;
+  let w = box.querySelector('.clwarn');
+  if (st.warn && !w) { w = el('div', 'small warn clwarn'); box.appendChild(w); }
+  if (w) { if (st.warn) w.textContent = st.warn; else w.remove(); }
+  for (const b of box.querySelectorAll('button[data-cl]')) { b.setAttribute('aria-pressed', String((b.dataset.cl === 'roh') === (CL.ab === 'roh'))); b.disabled = !st.a || !tkAudioOk(); }
+  popFit(p);
+}
+// Blatt zu → wieder „Sauber“ (A/B ist nur zum Vergleichen)
+function clSheetClosed() { if (CL.ab === 'roh') { CL.ab = 'sauber'; clResync(); } }
+
+/* ---------- ZIP: Referenz als takes/<id>.ref.wav (damit die gesäuberte Fassung nach dem Import gleich klingt) ---------- */
+async function clZipAdd(files) {
+  for (const id of tkUsedIds()) { const m = S.takes[id]; if (!m || !m.rf) continue; const r = await clRead(clKeys(id, m, 'r'), m.len); if (r) files.push({name: 'takes/' + id + '.ref.wav', data: tkWav(r, m.sr)}); }
+}
+async function clZipRead(fs) {
+  let n = 0;
+  for (const f of fs) {
+    const mm = /^takes\/([0-9a-v]{10})\.ref\.wav$/.exec(f.name); if (!mm || !f.data) continue;
+    const w = tkWavRead(f.data); if (!w) continue;
+    if (await tkStore(mm[1], w.pcm, clKeys(mm[1], {len: w.pcm.length}, 'r'))) n++;
+  }
+  return n;
+}
+
+/* ---------- Noten-Weg (VS2, N7V-25): nur Echo-Abzug „1E“ beim Lautsprecher-Weg; Ergebnis in derselben 3:1-Form wie d16 ---------- */
+let CL_H = null;
+function clDecH(sr) {   // dieselben 47 Taps wie der Dezimierer im Worklet (Blackman-Sinc, fc 6,8 kHz)
+  if (CL_H && CL_H.sr === sr) return CL_H.h;
+  const T = 47, h = new Float64Array(T), fc = 6800 / sr; let s = 0;
+  for (let i = 0; i < T; i++) { const k = i - (T - 1) / 2, w = 0.42 - 0.5 * Math.cos(2 * Math.PI * i / (T - 1)) + 0.08 * Math.cos(4 * Math.PI * i / (T - 1)); h[i] = (k === 0 ? 2 * fc : Math.sin(2 * Math.PI * fc * k) / (Math.PI * k)) * w; s += h[i]; }
+  for (let i = 0; i < T; i++) h[i] /= s;
+  CL_H = {sr, h}; return h;
+}
+async function clNotes(s, o) {
+  o = o || {};
+  const G = ST.ring; if (!o.raw) CL.notes = null;
+  if (!G || !s || !s.d16 || (!o.raw && (ST.route !== 'speaker' || CL.noNotes))) return null;
+  const sr = G.sr, d0 = s.d0, dn = s.d16.length, h = clDecH(sr), T = h.length, L = G.len, lo = Math.max(G.start, G.end - L + 1);
+  const A = 3 * d0 + 2 - (T - 1), B = 3 * (d0 + dn - 1) + 3;
+  const P0 = Math.max(lo, A - Math.round((o.pre != null ? o.pre : 8) * sr)), P1 = Math.min(G.end, B), n = P1 - P0;
+  if (n < sr * 0.5) return null;
+  const mic = new Int16Array(n), ref = new Int16Array(n); let e = 0;
+  for (let i = 0; i < n; i++) { mic[i] = G.mic[(P0 + i) % L]; const r = G.ref[(P0 + i) % L]; ref[i] = r; e += r * r; }
+  let y, info = null; const t0 = performance.now();
+  if (o.raw) { y = new Float32Array(n); for (let i = 0; i < n; i++) y[i] = mic[i] / 32767; }
+  else {
+    if (e / n < 1073) return null;                     // Referenz unter −60 dBFS: nichts abzuziehen
+    clQuiet(true);
+    // VS4-fix: Ergebnis zählt erst ab dem ausgewerteten Stück (from); der Kern lernt bei Bedarf nur die letzten 8 s (Echo-Weg im Vorlauf anders)
+    try { const r = await clRun(mic, ref, sr, {way: 'notes', from: Math.max(0, A - P0)}); y = r.y; info = r.info; } catch (err) { logErr(err); return null; } finally { clQuiet(false); }
+  }
+  // nur wenn der Abzug die Musik im Mikro spürbar senkt (≥ 1,5 dB im ausgewerteten Stück), sonst bleibt der Noten-Weg wie in VS2
+  if (!o.raw) {
+    // VS4-fix: dazu die tatsächliche Kopplung Lautsprecher → Mikro = abgezogenes Echo (Mikro − Ergebnis) gegen die Referenz; die
+    // Übersprech-Probe nimmt sie, wenn sie höher ist als die eingemessene (lauter gestellt, nicht eingemessen: sonst −20 dB angenommen)
+    let er = 0, ec = 0, ee = 0, rr = 0; for (let i = Math.max(0, A - P0); i < n; i++) { const m = mic[i] / 32767, d = m - y[i], r = ref[i] / 32767; er += m * m; ec += y[i] * y[i]; ee += d * d; rr += r * r; }
+    const red = 10 * Math.log10((er + 1e-12) / (ec + 1e-12));
+    info.coupDb = rr > 0 ? +clamp(10 * Math.log10((ee + 1e-12) / rr), -70, 0).toFixed(1) : null;
+    if (red < 1.5) { CL.notes = {way: 'roh', redDb: +red.toFixed(1), echoDb: info ? info.echoDb : null, pk: info ? info.pk : null, aec: info && info.aec || 'an', ms: Math.round(performance.now() - t0)}; return null; }
+    info.redDb = +red.toFixed(1);
+  }
+  const x = new Float32Array(dn);
+  for (let j = 0; j < dn; j++) { const c = 3 * (d0 + j) + 2 - P0; let v = 0; for (let k = 0; k < T; k++) { const q = c - k; if (q >= 0 && q < n) v += h[k] * y[q]; } x[j] = v; }
+  if (!o.raw) CL.notes = {way: info && info.way, delayMs: info ? +(info.delay / sr * 1000).toFixed(2) : null, echoDb: info ? info.echoDb : null, redDb: info ? info.redDb : null, coupDb: info ? info.coupDb : null, learn: info && info.learn || 'alles', sec: +(n / sr).toFixed(2), ms: Math.round(performance.now() - t0)};
+  return x;
+}
+
+const CL_API = {
+  clInfo: id => { const m = S.takes && S.takes[id]; return {a: m ? m.cl | 0 : 0, rf: m ? m.rf || 0 : 0, ab: CL.ab, busy: CL.busy, job: CL.job.has(id), buf: CL.buf.has(id), info: CL.info[id] || null, last: CL.last, runs: CL.runs, err: CL.err, worker: CL.w ? 'worker' : CL.w === false ? 'hauptfaden' : null}; },
+  clSet: (id, pct) => clSet(id, pct),
+  clAB: v => clAB(v),
+  clWait: async id => { const j = CL.job.get(id); if (j) await j.p; return !!CL.buf.get(id); },
+  clEnsure: id => clEnsure(id),
+  // der Kern direkt (Worker-Weg wie die Takes): Float32 als Base64 hin und zurück
+  clCore: async (micB64, refB64, sr, o) => {
+    const dec = b => { if (!b) return null; const s = atob(b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return new Float32Array(u.buffer); };
+    const r = await clRun(dec(micB64), dec(refB64), sr, o || {});
+    const u = new Uint8Array(r.y.buffer); let s = ''; for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768));
+    return {y: btoa(s), info: r.info, how: r.how};
+  },
+  clPlayRange: (id, a, b) => { const x = tkPlayBuf(id, null); return x ? Array.from(x.getChannelData(0).subarray(a || 0, b == null ? x.length : b)) : null; },
+  clPlayHash: id => { const x = tkPlayBuf(id, null); if (!x) return null; const d = x.getChannelData(0), u = new Uint8Array(d.buffer, d.byteOffset, d.byteLength); let h = 0x811c9dc5; for (let i = 0; i < u.length; i++) { h ^= u[i]; h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16) + ':' + d.length; },
+  clRefRange: async (id, a, b) => { const m = S.takes && S.takes[id]; if (!m || !m.rf) return null; const r = await clRead(clKeys(id, m, 'r'), m.len); return r ? Array.from(r.subarray(a || 0, b == null ? r.length : b)) : null; },
+  clNotesInfo: () => CL.notes,
+  clNotesOff: v => { CL.noNotes = !!v; return CL.noNotes; },
+  clResK: v => { CL.resK = v == null ? null : +v; return CL.resK; },
+  // Prüfung des Dezimierers: Roh-Mikro über clNotes (ohne Abzug) gegen das d16 des Worklets
+  clDecCheck: async (a, b) => { const s = stRead(a, b, {d16: true}); if (!s) return null; const x = await clNotes(s, {raw: true, pre: 0}); if (!x) return null; let mx = 0, ms = 0; for (let i = 0; i < x.length; i++) { mx = Math.max(mx, Math.abs(x[i] - s.d16[i])); ms = Math.max(ms, Math.abs(s.d16[i])); } return {n: x.length, maxDiff: mx, peak: ms}; },
+};
 function voicesInfo() {
   const now = nowT();
   return VOICES.filter(v => !v.dead).map(v => ({id: v.id, track: v.track, src: v.src, out: v.outAt(Math.max(now, v.start)), start: v.start, end: v.end, state: v.state(now)}))
@@ -39846,6 +40572,7 @@ function fxGestureApi(t, g) {
 // every state-changing API call leaves the UI rendered (no need to wait for the next animation frame)
 function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
 Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes
+Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
 const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
