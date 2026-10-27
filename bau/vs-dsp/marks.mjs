@@ -338,25 +338,46 @@ function factory() {
     const S = new Int32Array(K + 2), D = new Int32Array(K + 2);
     for (let k = 0; k < K; k++) S[k + 1] = cuts[k]; S[K + 1] = n;
     for (let j = 0; j <= K; j++) D[j] = S[j] + sh[j]; D[K + 1] = n;
-    const A = Math.round(0.05 * sr);
-    // Wert der Scheibe j an Ausgabestelle i: eigenes Audio, danach ihr Ausklang (Ende rückwärts/vorwärts gespiegelt, ausblendend)
+    // Ausklang einer Scheibe (Lücke, wenn die nächste später kommt): eine Schleife aus ihrem Ende, Länge = die Periode mit der
+    // besten Korrelation (5–40 ms), die Naht je Runde blendet von der Fortsetzung (Audio bis zum Einsatz) in den
+    // Schleifenanfang (≤ 2 ms; gleichspannungsgemäß bei Korrelation > 0,5, sonst gleichleistungsgemäß). VS5a-Einbau: vorher
+    // Spiegelung mit Kosinus-Ausblendung über die Lücke (gehaltener Gesang: bis −17 dB Loch und Knick an jeder Umkehr).
+    const loops = new Array(K + 1), W = Math.max(1, Math.round(0.005 * sr)), pmin = Math.max(1, Math.round(0.005 * sr));
+    const loopOf = j => {
+      if (loops[j]) return loops[j];
+      const s0 = Math.max(0, S[j]), s1 = S[j + 1], on = j < K ? Math.round(onsets[j] * sr) : s1;
+      const pmax = Math.min(Math.round(0.04 * sr), s1 - s0 - W);
+      let best = -2, Lp = Math.max(1, s1 - s0);
+      for (let L = pmin; L <= pmax; L++) {
+        let ab = 0, aa = 0, bb = 0;
+        for (let k = 0; k < W; k++) { const u = x[s1 - W + k], v = x[s1 - L - W + k]; ab += u * v; aa += u * u; bb += v * v; }
+        const r = ab / Math.sqrt(aa * bb + 1e-20); if (r > best) { best = r; Lp = L; }
+      }
+      return (loops[j] = {Lp, rho: best, av: Math.max(1, Math.min(on - s1, Math.round(0.002 * sr), Lp))});
+    };
+    const blend = (rho, u) => (rho > 0.5 ? [0.5 + 0.5 * Math.cos(Math.PI * u), 0.5 - 0.5 * Math.cos(Math.PI * u)] : [Math.cos(0.5 * Math.PI * u), Math.sin(0.5 * Math.PI * u)]);
+    // Wert der Scheibe j an Ausgabestelle i: eigenes Audio, danach ihr Ausklang
     const val = (j, i) => {
       const p = S[j] + (i - D[j]);
       if (p < 0) return 0;
       if (p < S[j + 1]) return x[p];
-      const m = p - S[j + 1], av = Math.max(1, Math.min(A, S[j + 1] - S[j])), r = m % (2 * av);
-      const q = r < av ? S[j + 1] - 1 - r : S[j + 1] - av + (r - av);
-      const gap = Math.max(0, (D[j + 1] - D[j]) - (S[j + 1] - S[j])), lf = gap + X;
-      return q >= 0 ? x[q] * (0.5 + 0.5 * Math.cos(Math.PI * Math.min(1, m / lf))) : 0;
+      const L = loopOf(j), s1 = S[j + 1], k = (p - s1) % L.Lp, q = s1 - L.Lp + k;
+      let v = q >= 0 ? x[q] : 0;
+      if (k < L.av && s1 + k < n) { const [go, gi] = blend(L.rho, (k + 0.5) / L.av); v = x[s1 + k] * go + v * gi; }
+      return v;
     };
     for (let j = 0; j <= K; j++) for (let i = Math.max(0, D[j]); i < Math.min(n, D[j + 1]); i++) y[i] = val(j, i);
-    // Übergang 5 ms gleichleistungsgemäß, endet am Einsatz → Anschlag ab dem Einsatz bitgleich
+    // Übergang 5 ms, endet am Einsatz → Anschlag ab dem Einsatz bitgleich; gleichleistungsgemäß, bei Korrelation > 0,5
+    // gleichspannungsgemäß (gleiche Lage → kein Buckel, Gegenlage → kein Loch)
     for (let j = 1; j <= K; j++) {
       if (sh[j] === sh[j - 1]) continue;
       const b = D[j] + (Math.round(onsets[j - 1] * sr) - S[j]), a = b - X;
+      let ab = 0, aa = 0, bb = 0;
+      for (let i = Math.max(0, a); i < Math.min(n, b); i++) { const p = S[j] + (i - D[j]), u = val(j - 1, i), v = p >= 0 ? x[p] : 0; ab += u * v; aa += u * u; bb += v * v; }
+      const rho = ab / Math.sqrt(aa * bb + 1e-20);
       for (let i = Math.max(0, a); i < Math.min(n, b); i++) {
-        const u = (i - a + 0.5) / X, p = S[j] + (i - D[j]);
-        y[i] = val(j - 1, i) * Math.cos(0.5 * Math.PI * u) + (p >= 0 ? x[p] : 0) * Math.sin(0.5 * Math.PI * u);
+        const p = S[j] + (i - D[j]), [go, gi] = blend(rho, (i - a + 0.5) / X);
+        y[i] = val(j - 1, i) * go + (p >= 0 ? x[p] : 0) * gi;
       }
     }
     return y;

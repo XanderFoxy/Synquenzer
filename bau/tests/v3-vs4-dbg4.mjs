@@ -1,0 +1,13 @@
+import {open, sleep} from './v3-vs3-h.mjs';
+const APP = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/vs-br-VS4/index.html';
+const H = await open({file: APP}), p = H.p;
+await p.evaluate(() => { SYNQUENZER.newProject({init: true}); SYNQUENZER.play(); SYNQUENZER.stop(); SYNQUENZER.setMetronome(false); SYNQUENZER.setBpm(120); });
+const sr = await p.evaluate(() => window.__ctx.sampleRate);
+const x = []; for (let i = 0; i < sr * 2; i++) x.push(Math.round(Math.sin(2 * Math.PI * 440 * i / sr) * 16000));
+const r = await p.evaluate(([pc, sr]) => SYNQUENZER.tkInject({pcm: pc, sr, scene: 0, len: 1}), [x, sr]);
+await p.evaluate(id => SYNQUENZER.clSet(id, 100), r.id); await p.evaluate(id => SYNQUENZER.clWait(id), r.id);
+await p.evaluate(() => SYNQUENZER.launchScene(0)); await sleep(1200);
+console.log(JSON.stringify(await p.evaluate(() => ({now: window.__ctx.currentTime, src: SYNQUENZER.tkInfo().src}))));
+await p.evaluate(() => SYNQUENZER.clAB('roh'));
+console.log(JSON.stringify(await p.evaluate(() => ({now: window.__ctx.currentTime, src: SYNQUENZER.tkInfo().src}))));
+await H.br.close();

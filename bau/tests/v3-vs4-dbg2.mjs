@@ -1,0 +1,28 @@
+import {open, sleep, b64, resample} from './v3-vs3-h.mjs';
+import {renderVoice} from './v3-vs2-corpus.mjs';
+const APP = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/vs-br-VS4/index.html';
+const BPM = 120, SB = 0.5, LEAD = 0.04, off = process.argv[2] === 'off', noloop = process.argv[3] === 'noloop';
+const MELG = [[0, 1, 57], [1, 1, 60], [4, 1, 64], [5, 1, 62], [8, 1, 60], [9, 1, 64], [12, 1, 59], [13, 1, 57]];
+const silent = process.argv[4] === "silent";
+const x0 = renderVoice(MELG.map(([b, d, m], k) => ({on: LEAD + b * SB, dur: d * SB, midi: m, legato: false, rest: k ? 0.1 : 0})), {voice: 'male', seed: 3, sigma: 12, vib: [20, 40], bpm: BPM}).x;
+const x = silent ? new Float32Array(x0.length) : x0;
+const H = await open({file: APP}), p = H.p;
+await p.evaluate(() => { SYNQUENZER.play(); SYNQUENZER.stop(); });
+await p.evaluate(() => SYNQUENZER.stimmeStart({route: 'speaker', cal: false}));
+await p.waitForFunction(() => SYNQUENZER.stimme().phase === 'live', null, {timeout: 20000}); await sleep(500);
+if (!noloop) await p.evaluate(s => window.__loop(s), 0.02137);
+await p.evaluate(() => SYNQUENZER.stimmeCal('voll')); await sleep(300);
+const sr = await p.evaluate(() => SYNQUENZER.vsClock().sr);
+await p.evaluate(([v, rk]) => { SYNQUENZER.setBpm(120); SYNQUENZER.setMetronome(false); SYNQUENZER.clNotesOff(v); if (rk != null) SYNQUENZER.clResK(rk); }, [off, process.env.RK != null ? +process.env.RK : null]);
+const y = resample(x, 16000, sr);
+await p.evaluate(([b, lead]) => { SYNQUENZER.play(); const c = SYNQUENZER.vsClock(); window.__fake.play(b, c.start - lead); }, [b64(y), LEAD]);
+const wb = b => p.waitForFunction(b => { const c = SYNQUENZER.vsClock(); return c.playing && (c.now - c.outLat - c.start) / c.spb >= b; }, b, {timeout: 60000, polling: 20});
+await p.evaluate(() => { SYNQUENZER.setKbMode('transpose'); SYNQUENZER.setHarmony({change: 'bar', latch: true}); });
+for (const [k, n] of [57, 53, 48, 55, 57].entries()) { await wb(k * 4 - 0.6); await p.evaluate(n => SYNQUENZER.keyOn(n, 0.8, 'ch'), n); await sleep(80); await p.evaluate(() => SYNQUENZER.keyOff(0, 'ch')); }
+await p.evaluate(() => SYNQUENZER.setKbMode('play'));
+await wb(16.5);
+console.log('fang', await p.evaluate(() => SYNQUENZER.vsFang({beat: 16.5})));
+await p.waitForFunction(() => !SYNQUENZER.vsInfo().busy, null, {timeout: 30000});
+const r = await p.evaluate(() => SYNQUENZER.vsResult());
+console.log('off', off, 'noloop', noloop, 'notes', JSON.stringify(r && r.notes.map(n => [n.o != null ? n.o : n.t, n.n])), 'len', r && r.len, 'start', r && r.start, JSON.stringify(await p.evaluate(() => SYNQUENZER.clNotesInfo())), JSON.stringify(await p.evaluate(() => SYNQUENZER.vsInfo().lastFang)));
+await H.br.close();
