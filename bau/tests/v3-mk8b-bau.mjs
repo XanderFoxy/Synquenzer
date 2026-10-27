@@ -1,5 +1,5 @@
 // MK8b build: recipes (v3-mk8b-rezepte.mjs) + calibration (v3-mk8b-cal.json: levels) -> the 128 programs of the collection
-// „Kompakt“ (8 genres x 16), the same generator and encoder as MK8 (v3-mk8-bau.mjs: changed fields against INIT as varints,
+// „Micro“ (renamed from „Kompakt“ in G-MK8b-merge; 8 genres x 16), the same generator and encoder as MK8 (v3-mk8-bau.mjs: changed fields against INIT as varints,
 // one Base64 part per genre with a salt byte against brand words, B.6 Nr. 9), inserted between /*MKK{*/ and /*}MKK*/.
 // Usage: node v3-mk8b-bau.mjs <index.html> [--write]
 import fs from 'fs';
@@ -78,7 +78,7 @@ export function encode(file, progs) {
   return {B, N, T, R, sizes};
 }
 export function blockText(enc) {
-  return 'const SQ_MK_KOMPAKT = {v: 1,\n  B: [' + enc.B.map(x => "'" + x + "'").join(',\n    ') + '],\n  N: [' + enc.N.map(x => JSON.stringify(x)).join(',\n    ') +
+  return 'const SQ_MK_MICRO = {v: 1,\n  B: [' + enc.B.map(x => "'" + x + "'").join(',\n    ') + '],\n  N: [' + enc.N.map(x => JSON.stringify(x)).join(',\n    ') +
     '],\n  R: [' + enc.R.map(x => JSON.stringify(x)).join(',\n    ') +
     '],\n  T: [' + enc.T.map(a => '[' + a.map(x => JSON.stringify(x)).join(',\n      ') + ']').join(',\n    ') + ']};\n';
 }

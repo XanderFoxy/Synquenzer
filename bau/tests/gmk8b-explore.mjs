@@ -1,0 +1,23 @@
+import { chromium } from 'playwright';
+const FILE = process.argv[2];
+const EXE = '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome';
+const b = await chromium.launch({executablePath: EXE, args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await b.newContext({viewport: {width: 390, height: 844}, hasTouch: true, isMobile: true});
+const p = await ctx.newPage(); const errs = [];
+p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('file://' + FILE); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.storage().booted, null, {timeout: 30000});
+const r = await p.evaluate(async () => {
+  await SYNQUENZER.libraryReady(); SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); mkLoad(); await MKK.decodeAll();
+  const o = {};
+  o.cur0 = mkProg.current && mkProg.current();
+  mkProg.select(1, 5); o.cur1 = mkProg.current(); o.lcd1 = document.querySelector('.mkp-lcd, .mklcd, [class*=lcd]') && document.querySelector('[class*=lcd]').textContent.slice(0, 80);
+  SYNQUENZER.browserTap('f-mk-k103'); closeBrowser(false);
+  o.cur2 = mkProg.current(); o.origin = S.tracks[0].sound.origin; o.name = S.tracks[0].sound.name;
+  o.mkfcur = MKF.cur(0);
+  o.keys = Object.keys(window.MKUI || {});
+  o.mkProgKeys = Object.keys(mkProg);
+  return o;
+});
+console.log(JSON.stringify(r, null, 1).slice(0, 3000));
+console.log('errs', errs);
+await b.close();
