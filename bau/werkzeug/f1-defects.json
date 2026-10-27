@@ -1,0 +1,51 @@
+[
+ {
+  "title": "ORDER + version (not a defect): Xander 27.10. morning: 'Ich habe nicht gesagt, dass du anhalten sollst. Mache bitte weiter und stelle das fertig' – finish all known open points of 4.21.0. Set VERSION 4.22.0 (APP_CODE 4022000, format stays 5) and add a changelog section '## F1 — Nacharbeiten 4.21.0 · App 4.22.0' to /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/CHANGES-V3.md listing every item below with proof. No Supabase calls.",
+  "severity": "major",
+  "repro": "-",
+  "expected": "-",
+  "actual": "-"
+ },
+ {
+  "title": "VS5 marker editor (#wpSheet): title is cut off with '…' in every size; chips are 32 px high; header buttons are 36 px; at 320×568 the warning info line is cut off; opening the song view does not close the editor",
+  "severity": "major",
+  "repro": "Run dirigent-test/gs7-v3-qab5b-ui.mjs and the QA VS5a 'e' script (dirigent-test names contain qa…vs5a / vs5b ui) against the app; also measure at 390×844, 375×667, 320×568, 844×390, 667×375, 926×428",
+  "expected": "all labels fully visible with the real app font, every touch target >= 44×44 px, no layout jump, song view closes the editor",
+  "actual": "see title"
+ },
+ {
+  "title": "A/B Roh/Sauber toggle with an active time map re-renders, so the switch is heard 0.1–0.7 s late",
+  "severity": "major",
+  "repro": "take with markers + quantize (time map active), play, tap A/B repeatedly",
+  "expected": "switch audible within one audio block (pre-render or keep both versions rendered and crossfade 5 ms)",
+  "actual": "0.1–0.7 s late"
+ },
+ {
+  "title": "VS4: after a reload the cleaned (SÄUBERN) version is calculated again instead of loaded from storage",
+  "severity": "major",
+  "repro": "record take, SÄUBERN 100 %, reload page, open the take",
+  "expected": "cleaned audio cached in IndexedDB (keyed by take id + amount + core version) and loaded; recompute only if the key changed",
+  "actual": "recomputed every reload"
+ },
+ {
+  "title": "The waveform in Matrix/Song view shows the raw take instead of what is heard (cleaned and/or stretched)",
+  "severity": "major",
+  "repro": "take with SÄUBERN > 0 and quantize/stretch, look at the clip waveform in matrix and song view",
+  "expected": "waveform of the audible version",
+  "actual": "raw take"
+ },
+ {
+  "title": "MK8-09P toast [Rückgängig] check fails (gmkp8-mk8-09-platte.mjs) and vgs7/edundo.mjs shows detCl 100 after ↶ (marks should be detected again on the raw take after undoing cleaning)",
+  "severity": "major",
+  "repro": "run dirigent-test/gmkp8-mk8-09-platte.mjs and dirigent-test/vgs7/edundo.mjs against the app",
+  "expected": "both pass; decide from the spec what is right and fix the app (not the test) unless the test is outdated – then say so in the changelog",
+  "actual": "fail"
+ },
+ {
+  "title": "Run the remaining known QA failures of VS5a ('e', 32/54) and VS5b ('ui', 28/35) again and fix every real defect they show",
+  "severity": "major",
+  "repro": "dirigent-test scripts gs7-v3-qa*vs5a*e* / gs7-v3-qab5b-ui.mjs (and their originals) against the app",
+  "expected": "pass, or clearly outdated expectations named in the changelog",
+  "actual": "fail"
+ }
+]
