@@ -165,3 +165,128 @@ Snapshot: `synq-snapshots/VS5a-fix.html`. Kein Format-, Versions- oder Datenbank
 - `v3-qa-vs5a-b` „Audio folgt … ≤ 5 ms“ schwankt je Lauf: 29/41, 34/41 und 39/41 hier, 39/41 und 40/41 am Original.
   - Die Abstände Note ↔ Marke sind in beiden Fassungen gleich (z. B. 84–87 ms an derselben Silbe). Nur die Aufnahme-Lage zum Raster schwankt mit dem Start des Fake-Mikros, und Noten nahe der 1/8-Mitte fallen dann auf die andere Seite.
   - `fine()` bewegt am gesungenen Satz 1 von 64 Marken.
+
+
+## VS5b – Dehnen & Songtext (4.21.0, 27.10.2026)
+
+Grundlage: diese Zweig-Kopie `vs-br-VS5/index.html` ab VS5a-fix (4.20.0). Spec: Nachtrag 2 Teil C (C.2–C.5, Tabelle C.3 Zeile VS5b), `r7/stimme.md` §9, §10, §13 (N7V-28, N7V-29, N7V-30), C.5 Nr. 3, 7, 8. Nachtrag 2 hat für VS5b keine eigenen N2-VS5b-Punkte; die Abnahme sind die drei N7V-Punkte und C.5. DSP-Kern `vs-dsp/stretch.mjs` eingebettet (ohne Kommentare, `function vsStretchMake()`, auch im Worker). Versionszeile `4.21.0` (APP_CODE 4021000 = `max_app`). Format bleibt 5 (neues Feld `take.lyrics` additiv, K2-31). Keine Datenbank-Änderung, kein Supabase-Aufruf.
+
+### Gebaut
+1. **Modus „Dehnen“ (C.5 Nr. 7):**
+   - `take.warp.mode = 'stretch'` rendert im Worker mit `stretch()` des Kerns:
+     - Die ersten 20 ms nach jeder Marke bleiben bitgleich.
+     - Der Rest des Abschnitts wird per WSOLA auf die Ziellänge gebracht.
+     - Die Naht ist 5 ms lang.
+   - Dieselbe Vorlauf-Regel wie bei „Scheiben“ (VS5a-fix, `WP_LEAD` 4 ms): Abschnitte beginnen 4 ms vor der Marke, fest sind 24 ms. Ab der Marke sind damit 20 ms bitgleich, die Naht endet 4 ms vor der Marke. Liegt eine Marke in den ersten 4 ms, wird der Vorlauf kürzer.
+   - Vor der ersten und hinter der letzten Marke wird nur verschoben, nicht gedehnt (Steigung 1, wie bei „Scheiben“). Sonst gäbe es Faktor-Warnungen für Atem und Stille am Take-Rand. Die Fassung ist deshalb um die Verschiebung der letzten Marke länger oder kürzer als der Take; abgespielt wird wie bisher `in…out`.
+2. **Grenzen 0,5–2,0 (N7V-29):**
+   - Ein Abschnitt außerhalb dieser Grenzen wird nur verschoben (bitgleich), dazu kommt eine Warnung.
+   - Die Warnung erscheint als Toast „Dehnen: n Stelle(n) nur verschoben – Faktor außerhalb 0,5–2,0“ (einmal je Fassung) und in der Info-Zeile des Editors („⚠ n nur verschoben“, orange).
+   - Die Lücke hinter einem verschobenen Abschnitt füllt eine Schleife wie bei „Scheiben“ (siehe Kern-Änderungen).
+3. **Modus-Schalter [Dehnen │ Scheiben]** im Marken-Editor (vorher war Dehnen gesperrt):
+   - Ein Tipp ist ein Undo („Modus · Dehnen/Scheiben“).
+   - **Standard-Stärke (C.5 Nr. 3):** 70 % in Dehnen, 100 % in Scheiben. Eine Stärke, die auf dem Standard des alten Modus steht, wandert auf den des neuen. Eine selbst gewählte Stärke bleibt.
+4. **Standard „Gesang → Dehnen“ (C.5 Nr. 7):**
+   - Der Editor öffnet einen Take ohne Karte mit [Dehnen] und 70 %.
+   - „Audio folgt“ quantisiert einen Take ohne Karte im Modus Dehnen; die Stärke kommt wie bisher vom MELODIE-Quantisieren.
+   - Die Test-API `wpQuantize` ohne `mode` bleibt bei „Scheiben“, so wie in VS5a.
+5. **Render-Cache:**
+   - Der Schlüssel besteht aus Karte, Modus und Quell-Puffer.
+   - Neu: Solange der Editor offen ist, hält er zusätzlich die vorige Fassung des Takes. Modus hin und zurück sowie ↶ ↷ klingen dann sofort, ohne neu zu rechnen (gemessen: 1 statt 2 Renders).
+   - Beim Schließen des Editors wird die vorige Fassung freigegeben (Speicher am iPhone).
+   - Ein Wechsel der Fassung beim Abspielen läuft wie in VS5a-fix über `wpSwitch` mit Überblendung.
+6. **Songtext auf Silben (§10, N7V-30):**
+   - Das Feld `take.lyrics` ist ein Text je Take, normalisiert auf höchstens 400 Zeichen. Speichern → Laden ist deep-equal.
+   - Der Knopf [Text] im Kopf des Editors (56 × 36 px) öffnet ein Blatt mit Eingabefeld (Platzhalter „Lie-be ist ein Feu-er“) und [✓].
+   - ✓ ist ein Undo mit Toast [Rückgängig]; leer + ✓ löscht den Text.
+   - Anzeige im Bild:
+     - Eine Silbe je Marke von links, gezeichnet an der Stelle, wo die Marke **klingt**: am Ziel der Zeitkarte, im A/B-Original an der Quelle.
+     - Der Text hängt an der Marke, nicht an der Zeit, und wandert beim Quantisieren mit.
+     - Fehlende Silben erscheinen als „·“, überzählige rot am Ende.
+     - Der Knopf [Text] ist hervorgehoben, wenn ein Text da ist.
+7. **Test-API:**
+   - Neu: `wpMode`, `wpLyrics`, `wpLyr`, `wpWarn`, `wpLyrGeom`, `wpStretchCore`.
+   - `wpInfo` liefert zusätzlich `lyrics`, `warn` und `old`; `last` enthält `mode`, `warn` und `wsola`.
+8. **Kleine VS5a-Korrektur (für die Silben-Lage nötig):** Der Editor rechnete die Zeichenbreite aus dem Rahmen statt aus der Leinwand. Wegen des 1-px-Rands war die Zeichnung um 2 px gestaucht, Treffer und Marken lagen bis 1,5 px daneben. Jetzt wird aus der Leinwand gerechnet.
+
+### Änderungen am DSP-Kern `vs-dsp/stretch.mjs` (gefunden beim Einbau; `VERSION 'vs5b-stretch-4'`)
+1. **Lücke beim nur Verschieben:**
+   - Vorher: gespiegeltes Ende mit Ausblendung über die ganze Lücke. Gemessen bei Faktor 2,5 ergab das ein **Loch von 47,6 dB**.
+   - Jetzt: eine Schleife wie `renderSlices` (VS5a). Gemessen: **0,03 dB**.
+2. **Letzte WSOLA-Rahmen:**
+   - Vorher lag ihr Suchfenster hinter dem Abschnittsende; die Rahmen wurden dann ohne Suche gesetzt. Das ergab einen Phasensprung: bei Klicks auf einem Ton mit Achtel-Abschnitten bis **−5,4 dB** vor jeder Marke.
+   - Jetzt wird im letzten erlaubten Stück gesucht, und `endAlign` ist standardmäßig aus.
+   - Ergebnis: −2,1 dB; an den Nähten 110/196/330 Hz 0,58/0,92/0,35 dB (vorher 1,94/3,24/0,19 dB).
+3. **Digitale Stille:**
+   - Vorher: Bei stiller Vorlage nahm die Suche den ersten Treffer und holte Ausklang-Reste (−70 dB) in die Stille. Gefunden mit `v3-qa-vs5a-b`: M-KLICK **51,5 dB** gegen 32,8 dB im Original.
+   - Jetzt bleibt die Suche dort an der natürlichen Stelle. Ergebnis: 23,3 dB gegen 23,2 dB im Original.
+- Neue Kern-Tests: Lücke ohne Loch, kurze Abschnitte mit Klicks auf Ton (≤ 3 dB, Vorlauf + 20 ms bitgleich), digitale Stille bleibt Stille. Die Naht-Grenze ist von 4 auf 3 dB verschärft.
+- `node vs-dsp/run-tests.mjs`: **alle grün** (VS4 45, VS5a 32, VS5b 34). README ergänzt.
+
+### Abnahme (eigene Läufe, Chromium 1243 headless; Skripte in `dirigent-test/`, Bilder in `dirigent-test/vs5b/`)
+| ID | Prüfung | Ergebnis | Skript |
+|---|---|---|---|
+| N7V-28 | Dehnen, Klickfolge mit Ton dazwischen, 70 % und 100 %: erste 20 ms je Scheibe bitgleich; Länge je Scheibe ±1 ms | ✓ 17/17 bitgleich (beide Stärken); Länge je Scheibe unabhängig gefunden (Suche der bitgleichen Blöcke im Ausgang): Fehler 0,000 ms; Faktoren 0,875–1,231 | `v3-vs5b-t1.mjs` |
+| N7V-28 (Mikro) | gesungene WAV über das Fake-Mikrofon → ● REC → Dehnen 70 % | ✓ 17/17 bzw. 18/18 bitgleich in 3 Läufen; Ziele 0,5 Samples genau; Spitze ≤ Original; 0 Netzaufrufe | `v3-vs5b-t5.mjs` |
+| N7V-29 | Faktor 2,08 (Marken 0,55 → 0,5 und 0,67 → 0,75 bei 1/8) | ✓ nur verschoben (120 ms bitgleich), Warnung im Toast und in der Info-Zeile, Lücke gefüllt (−0,11 dB gegen den Ton) | `v3-vs5b-t1.mjs` |
+| N7V-30 | „Lie-be ist ein Feu-er“ auf 6 Marken; 5 Marken; nach Quantisieren | ✓ 6 Silben je Marke; bei 5 Marken „er“ rot (Pixelprüfung: rote Pixel); jede Silbe auf dem Ziel ihrer Marke (≤ 0,6 px) – in P1, P2, P3, L1, L2 per Touch über [Text] | `v3-vs5b-t2.mjs` |
+| C.5 Nr. 8 | Stärke 0 % bitgleich, A/B, ein Undo, nach ↶ Original bitgleich, ↷ deep-equal | ✓ alle | `v3-vs5b-t1.mjs` |
+| C.5 Nr. 3 | Standard 70 % Dehnen / 100 % Scheiben | ✓ Editor öffnet mit Dehnen 70 %; Chip 1/8 → Dehnen 70 %, ein Undo; Scheiben 100 % → Dehnen 70 % | `t1`, `t2` |
+| Hörbar | Ausgang mitgeschnitten (Klick-Take, Dehnen 1/16) | ✓ Einsatz-Abstände 250,0 ms (11/11 auf dem Raster); A/B: 165–310 ms; Dehnen vs. Scheiben unterscheiden sich um −10 … −15 dB Differenz-Energie | `v3-vs5b-t3.mjs`, `t1` |
+| Klick/Einbruch | M-KLICK, Pegel im Ton zwischen den Klicks | ✓ M-KLICK 34,4 dB gegen 35,3 dB im Original; schlechtester Einbruch −1,93 dB (≤ 3) | `v3-vs5b-t1.mjs` |
+| Wechsel beim Spielen | 4 × Modus umschalten während der Wiedergabe | ✓ 4 überblendete Fassungswechsel, schlechteste Abweichung 0,94 dB, Hauptfaden ≤ 5 ms | `v3-vs5b-t3.mjs` |
+| Audio folgt | Take ohne Karte → Dehnen | ✓ | `v3-vs5b-t3.mjs` |
+| Render-Cache | Dehnen → Scheiben → Dehnen im Editor | ✓ zurück sofort fertig (1 statt 2 Renders); vorige Fassung nach ✕ freigegeben | `v3-vs5b-t1.mjs` |
+| Rundweg | Speichern → Laden mit Songtext, Modus und Karte | ✓ deep-equal | `v3-vs5b-t1.mjs` |
+| M-PLATZ | P1 390×844, P2 375×667, P3 320×568, L1 844×390, L2 667×375, XL 926×428 | ✓ kein Knopf außerhalb des Blatts, kein Knopf abgeschnitten, keine Seitenbreite > Bild; [Text] 56×36, Modus-Knöpfe ≥ 40 px hoch; Text-Blatt im Bild | `v3-vs5b-t2.mjs`, `v3-vs5b-shots.mjs`, Bilder `ed-*.png`, `lay-*.png` |
+| Smoke | `smoke.mjs` | ✓ keine Fehler | – |
+
+### Regression
+- `v3-vs5a-t1`, `v3-vs5a-t3`, `v3-vs5a-t5`, `v3-qa-vs5a-c`, `vs5a/reg/v3-qa-vs3-reg`, `vs5a/reg/v3-qa-vs3-t2` sind grün.
+  - `v3-vs5a-t5` fiel einmal mit „max 4465 samples“ (Lage des Fake-Mikros), beim zweiten Lauf grün.
+  - `v3-qa-vs5a-c` (M-KLICK beim Wechsel) schwankt ebenfalls je Lauf. Ursache ist der bekannte Aufnehmer-Effekt aus VS5a-fix; 3 von 3 Wiederholungen waren grün.
+- **Durch VS5b absichtlich überholte Erwartungen (typische-fehler Nr. 26):**
+  - `v3-vs5a-t2` erwartet nach ↶ „Stärke 100 %“. Jetzt gilt 70 %, weil der Editor mit Dehnen startet. Die Kopie `v3-vs5b-reg-t2.mjs` mit 70 % ist grün.
+  - `v3-qa-vs5a-a` tippt den Raster-Chip ohne Moduswahl und erwartet damit Scheiben 100 %. In der Kopie `v3-vs5b-reg-qa-a.mjs` wird vorher [Scheiben] getippt. Übrig bleiben nur die zwei Zeilen, die in VS5a-fix schon als Mess-Artefakte des QA-Skripts belegt sind: −3,65 ms und „50 % … 222 ms“.
+- `v3-qa-vs5a-b`:
+  - M-KLICK ist jetzt grün (siehe Kern-Änderung 3).
+  - „Audio folgt ≤ 5 ms“ liegt bei 39/41 und 40/41. Diese Zeile schwankt schon in VS5a-fix (29–40/41).
+- `vs5a/reg/v3-qa-vs3-t1` und `t3` zeigen nur die bekannten VS3-Befunde (siehe unten).
+
+### Fach-Prüfung (Nachtrag 2 Teil J, Gruppe 7: FP-DSP, FP-IPHONE) – an mir selbst
+- **FP-DSP:**
+  - Bitgleich bei Stärke 0 %, A/B und ↶ (Roh-Take); die ersten 20 ms nach jeder Marke ebenso.
+  - Einbruch an Nähten ≤ 3 dB (gemessen 0,35–2,14 dB). Lücken gefüllt, digitale Stille bleibt Stille.
+  - M-KLICK nicht über dem Original (QA-b 23,3 gegen 23,2 dB; Klickfolge 34,4 gegen 35,3 dB). Tonhöhe bleibt (< 1 Cent, Kern-Test).
+  - Der NaN/Inf-Schutz kommt aus dem Kern.
+  - Kein Worklet-Code. Das Rendern läuft offline im Worker; der Fassungswechsel beim Spielen wird überblendet (≤ 0,94 dB).
+- **FP-IPHONE** (60-s-Take, `v3-vs5b-t4.mjs`):
+  - Dehnen 70 % rendert in 651 ms im Worker (VM). Kern allein: 0,4–1,0 s je 60 s bei 48 kHz.
+  - Kein longtask > 50 ms auf dem Hauptfaden über Öffnen, Quantisieren, 4 × Modus, Songtext mit 360 Silben, Regler und Zoom.
+  - Speicher: je hörbarem Take mit Karte eine Fassung (≈ 11,5 MB je Minute, wie VS5a). Nur bei offenem Editor kommt die vorige Fassung dazu.
+  - Die CPU am iPhone ist ungemessen.
+- **Größe:** +17,8 KB gegenüber VS5a-fix (Budget +30 KB): Kern 7,4 KB, App + CSS ≈ 10 KB, gzip +5,5 KB. Die Datei hat 3,27 MB.
+
+### Abweichungen von der Spec
+- ***(P1)* Signalsmith Stretch nachladbar:** nicht gebaut. Die Option ist optional, bräuchte auf der Pages-Seite einen Netzaufruf zu einem CDN und hat einen eigenen Datenschutz-Weg. Vorschlag für später.
+- **Standard-Modus:** Ein STIMME-Take gilt als Gesang, deshalb startet der Editor mit [Dehnen] 70 % (C.5 Nr. 3, 7). Das ist eine sichtbare Änderung gegenüber VS5a, wo Scheiben 100 % galt. Sie folgt der Spec. Beatbox und Instrument wählen [Scheiben] (ein Tipp). Eine Erkennung „Gesang oder Instrument“ je Take gibt es nicht; das Feld fehlt im Take.
+- **Vorlauf und Ausklang** werden nur verschoben, nicht gedehnt (siehe Gebaut Nr. 1). Die gespeicherte Zeitkarte bleibt wie in VS5a, mit (0,0) und (Ende, Ende).
+- **Songtext** erscheint nur im Marken-Editor, nicht auf der Clip-Kachel und nicht in der Song-Ansicht. „Zwei Silben durch Wischen zu einem Wort verbinden“ (§10) ist weiter nicht gebaut (wie VS5a).
+
+### Bekannte Lücken / offen
+- **Tempo:** Ändert sich das Tempo nach dem Quantisieren, bleibt die Karte in Sekunden. Dehnen folgt dem neuen Tempo nicht von selbst; dafür einfach neu quantisieren. Das ist so nicht verlangt, wäre aber mit `stretch()` machbar.
+- **Echte Stimmen:** Gemessen ist nur synthetisch bzw. mit Fake-Mikrofon. Am iPhone ist nichts geprüft.
+- **Fake-Mikrofon-Läufe** schwanken in der Lage zum Raster (siehe Regression).
+
+### VS3-Befunde (nur gelistet, nicht geändert)
+- `v3-qa-vs3-t3`: Das Spurleisten-Etikett „🎤 Audio · Takes: ✎“ ist in P1, P2, P3, L1 und XL abgeschnitten (`scrollWidth` 103 > `clientWidth` 62–79). Unverändert gegenüber VS5a.
+- `v3-qa-vs3-t1`: Das Prüfskript zählt den `blob:`-Worker als Netzaufruf. Es ist kein echter Netzaufruf.
+
+### Für Xander am iPhone (Geräte-Punkte, kurz)
+1. Auf https://xanderfoxy.github.io/Synquenzer/ 2 Takte singen (● REC mit 🎤). Danach STIMME-Clip ✎ → [✎ Marken · Quantisieren]. Unten steht jetzt [Dehnen] (an).
+2. [1/8] tippen und abspielen: Sitzen die Silben auf dem Takt, ohne zu knacken oder zu „flattern“? Mit [A/B] vergleichen; [Scheiben] zum Vergleich.
+3. [Text] tippen, z. B. „Lie-be ist ein Feu-er“ eingeben, ✓. Steht je Silbe ein Stück Text unter dem richtigen Strich, und wandert der Text beim Quantisieren mit?
+4. Erscheint „⚠ … nur verschoben“, liegen zwei Marken sehr eng oder sehr weit auseinander. Dann eine Marke löschen oder setzen.
+
+### Datenbank
+Nichts nötig. Format 5 und `max_app` 4021000 decken 4.21.0 ab.

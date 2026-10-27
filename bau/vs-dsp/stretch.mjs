@@ -89,6 +89,36 @@ function factory() {
       return bi;
     };
 
+    // VS5b-fix: kleinste Verschiebung d (|d| ≤ Δ), mit der x[c+d …] wie x[ia …] aussieht (Phasen-Versatz zwischen natürlicher
+    // Fortsetzung und markengenauer Lage). Grob auf ~12 kHz, unter den Gipfeln ≥ 85 % des besten der mit kleinstem |d|; fein auf voller Rate.
+    // Ohne klare Periodizität (bester Wert < 0,3) → 0 (keine Lenkung)
+    const phaseOff = (ia, c) => {
+      if (ia < 0 || ia + Hs > n || cum[ia + Hs] - cum[ia] < 1e-10 * Hs) return 0;
+      const ta = Math.floor(ia / dec), ca = Math.floor(c / dec); if (ta + Hd > nd) return 0;
+      const ea = cumd[ta + Hd] - cumd[ta], sc = new Float64Array(2 * Dd + 1).fill(-2);
+      let mx = -2;
+      for (let d = -Dd; d <= Dd; d++) {
+        const cc = ca + d; if (cc < 0 || cc + Hd > nd) continue;
+        let s = 0; for (let m = 0; m < Hd; m++) s += xd[ta + m] * xd[cc + m];
+        const v = s / Math.sqrt(ea * (cumd[cc + Hd] - cumd[cc]) + 1e-20); sc[d + Dd] = v; if (v > mx) mx = v;
+      }
+      if (mx < 0.3) return 0;
+      let bd = 0, bad = Infinity;
+      for (let d = -Dd; d <= Dd; d++) {
+        const v = sc[d + Dd]; if (v < 0.85 * mx) continue;
+        if ((d > -Dd && sc[d + Dd - 1] > v) || (d < Dd && sc[d + Dd + 1] > v)) continue;
+        if (Math.abs(d) < bad) { bad = Math.abs(d); bd = d; }
+      }
+      const g = ca * dec + bd * dec - c;   // grobe Verschiebung auf voller Rate
+      let bf = -Infinity, bi = g;
+      for (let d = g - dec; d <= g + dec; d++) {
+        const cc = c + d; if (d < -Dl - dec || d > Dl + dec || cc < 0 || cc + Hs > n) continue;
+        let s = 0; for (let m = 0; m < Hs; m += 2) s += x[ia + m] * x[cc + m];
+        const v = s / Math.sqrt(cum[cc + Hs] - cum[cc] + 1e-12); if (v > bf) { bf = v; bi = d; }
+      }
+      return bi;
+    };
+
     let prev = null;
     for (let k = 0; k + 1 < S.length; k++) {
       const s0 = S[k], s1 = S[k + 1], d0 = D[k], d1 = Math.min(outLen, D[k + 1]), sl = s1 - s0, dl = d1 - d0;
@@ -135,11 +165,24 @@ function factory() {
         // (Ausgabe q ↔ Quelle s1), damit der Übergang zur nächsten Marke phasengleich ist; Rahmen jf−1 wird zu beiden
         // Seiten passend gesucht (Fortsetzung von jf−2 und Übergang in jf).
         const jf = Math.ceil((q - p) / Hs), ijf = s1 - (q - (p - Hs + jf * Hs));
+        // VS5b-fix: Phasen-Lenkung. Die Phasenlage an der Marke ist fest (bitgleicher Anschlag); vorher landete der ganze Rest-Versatz
+        // (bis eine halbe Periode) in der 5-ms-Naht → Auslöschung bis −7,8 dB (M-EINBRUCH). Jetzt: die letzten beiden Rahmen liegen genau
+        // auf der Marke (Quelle endet bei s1), der Versatz wird in gleichen Teilen auf bis zu 4 Rahmen davor verteilt (je Übergang ≤ ⅛
+        // Periode statt ½); die Naht sieht dann gleiche Phase
+        const steer = !endAlign && o.steer !== false && jf >= 3 && ijf - Hs >= a;
+        const j0 = steer ? Math.max(1, jf - 5) : jf + 1;
         let iPrev = a - Hs;
         for (let j = 0; j <= jf; j++) {
           const oj = p - Hs + j * Hs;
           let ij;
           if (j === 0) ij = Math.max(0, a - Hs);
+          else if (steer && j >= jf - 1) ij = ijf - (jf - j) * Hs;
+          else if (steer && j >= j0) {
+            const ia = ijf - (jf - j) * Hs, c = Math.min(iPrev + Hs, n - Hs), K = jf - j, tau = Math.round(a - Hs + j * Hs / rr);
+            const beta = (j - j0 + 1) / (jf - j0), tj = Math.round(tau + (ia - tau) * beta);
+            const e = phaseOff(ia, c);
+            ij = best(Math.max(0, Math.min(n - Hs, c + Math.round(e / K))), tj, lo, Math.max(lo, hi));
+          }
           else if (j === jf && endAlign) ij = Math.max(0, ijf);
           else if (j === jf - 1 && endAlign) ij = best2(Math.min(iPrev + Hs, n - Hs), Math.max(0, ijf), Math.round(a - Hs + j * Hs / rr), lo, Math.max(lo, hi));
           else ij = best(Math.min(iPrev + Hs, n - Hs), Math.round(a - Hs + j * Hs / rr), lo, Math.max(lo, hi));
@@ -177,7 +220,7 @@ function factory() {
     return 'vs5b-' + h.toString(16).padStart(8, '0') + '-' + warp.src.length;
   }
 
-  return {stretch, cacheKey, VERSION: 'vs5b-stretch-4'};
+  return {stretch, cacheKey, VERSION: 'vs5b-stretch-5'};
 }
 
 const api = factory();

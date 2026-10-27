@@ -1,5 +1,5 @@
 import {launch, open5, sleep, toI16, clickTone, OUTB} from './v3-vs5b-h.mjs';
-const VP = {P1: [390, 844], P2: [375, 667], P3: [320, 568], L1: [844, 390], L2: [667, 375]};
+const VP = {P1: [390, 844], P2: [375, 667], P3: [320, 568], L1: [844, 390], L2: [667, 375], XL: [926, 428]};
 const br = await launch(null); const T6 = [0.52, 0.77, 1.01, 1.24, 1.53, 1.71], x = clickTone(T6, 2.4, {toneFrom: 0.1});
 const res = {};
 for (const [name, [w, h]] of Object.entries(VP)) {

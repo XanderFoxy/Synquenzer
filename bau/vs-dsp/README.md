@@ -43,7 +43,9 @@ Tests laufen in Node 22 und brauchen keinen Browser: `node run-tests.mjs`. Das d
 ### `stretch.mjs` – VS5b Dehnen
 - `stretch(x, sr, warp, {lock, xfade, win, search, minRatio, maxRatio, endAlign})` → `{y, warnings, segs}`.
   - Die ersten 20 ms nach jeder Marke bleiben bitgleich. Der Rest wird per WSOLA gedehnt: Fenster 40 ms, Suche ±12 ms (grob auf etwa 12 kHz, fein auf voller Rate).
-  - Der letzte Rahmen ist auf die nächste Marke ausgerichtet.
+  - ~~Der letzte Rahmen ist auf die nächste Marke ausgerichtet.~~ VS5b-Einbau: `endAlign` ist jetzt standardmäßig **aus**; die letzten Rahmen werden auch dann gesucht, wenn das Suchfenster hinter dem Abschnittsende läge (im letzten erlaubten Stück, ±24 ms). Einbruch an Nähten 110/196/330 Hz: 0,58/0,92/0,35 dB statt 1,94/3,24/0,19 dB; Klickfolge auf Ton mit Achtel-Abschnitten: 2,1 statt 5,4 dB.
+  - VS5b-Einbau: Bei stiller Vorlage (digitale Stille) bleibt die Suche an der natürlichen Stelle (vorher holte der erste Treffer Ausklang-Reste in die Stille; QA-Satz „b“: M-KLICK 51,5 → 21,4 dB, Original 32,8 dB).
+  - VS5b-Einbau: Die Lücke hinter einem nur verschobenen Abschnitt füllt eine Schleife wie bei `renderSlices` (vorher Spiegelung mit Ausblendung: 47,6 dB Loch, jetzt 0,03 dB).
   - Die Naht zur nächsten Marke ist eine 5-ms-Blende, die korrelationsabhängig gleichleistungs- oder gleichspannungsgemäß überblendet.
   - Faktor außerhalb 0,5–2,0: Der Abschnitt wird nur verschoben, dazu kommt eine Warnung.
   - Bei unveränderter Karte ist die Ausgabe bitgleich.
@@ -113,8 +115,8 @@ Testsignale: Gesang mit Formanten (a/e/i/o/u), Vibrato 5,5 Hz ±25 Cent, Konsona
   - Bindungen ohne Pegelanstieg werden über den Spektralfluss gefunden; sehr weiche Tonwechsel unter 80 Cent nicht.
   - Ein Take ohne jede ruhige Stelle (< 3 % Ruhe) hat keinen Bodenwert, dann kommen kaum Marken.
 - Dehnen:
-  - Bei streng periodischem Dauerton ist an der Naht vor einer Marke ein Phasensprung unvermeidbar, weil die Marke fest und bitgleich bleibt. Gemessen: ≤ 3,2 dB Einbruch für weniger als 10 ms. Bei Gesang verdeckt der folgende Einsatz das.
+  - Bei streng periodischem Dauerton ist an der Naht vor einer Marke ein Phasensprung unvermeidbar, weil die Marke fest und bitgleich bleibt. Gemessen: ≤ 3,2 dB Einbruch für weniger als 10 ms (seit dem VS5b-Einbau ohne feste Endausrichtung: ≤ 0,92 dB; mit Achtel-Abschnitten 2,1 dB). Bei Gesang verdeckt der folgende Einsatz das.
   - Abschnitte kürzer als 60 ms werden nur verschoben.
 - Scheiben (geändert beim Einbau von VS5a, 26.10.): Die Lücke füllt eine Schleife aus dem Ende der vorigen Scheibe (Länge = Periode mit der besten Korrelation, 5–40 ms); die Naht je Runde blendet ≤ 2 ms von der Fortsetzung in den Schleifenanfang, der Übergang zum Einsatz ist korrelationsabhängig (gleichspannungs- bzw. gleichleistungsgemäß). Vorher: Spiegelung mit Kosinus-Ausblendung → bei gehaltenem Gesang bis −17 dB Loch und ein Knick an jeder Umkehr (M-KLICK +35 dB bei reinem Ton). Danach: gesungene Noten kein zusätzliches Loch (≤ 0,3 dB gegenüber dem Original); bei streng periodischem Dauerton bleibt an einer Lücke ein Phasensprung (gemessen −4,4 dB / M-KLICK 6,8 dB an 1 von 12 Schnitten), weil der Anschlag bitgleich an fester Stelle bleibt – wie beim Dehnen. `node run-tests.mjs`: alle grün.
 - Marken-Feinlage: harte Klicks liegen systematisch 2,0 ms vor dem echten Einsatz (Hüllkurve mit ±3-ms-Fenster); quantisiert landen Klick-Einsätze damit 2,0 ms nach der Rasterlinie (N7S-51: ±2 ms – an der Grenze).
-- Noch nicht gebaut sind UI und App-Teile: Marken-Editor, A/B-Schalter, Undo, „Audio folgt“, Songtext-Anzeige und Worker-Verdrahtung. Die P1-Option aus VS5b (nachladbarer höherwertiger Stretcher) fehlt ebenfalls.
+- App-Einbau: VS5a (Marken-Editor, Scheiben, Audio folgt) und VS5b (Dehnen, Songtext, Render-Cache) sind in `vs-br-VS5/index.html` gebaut. Die P1-Option aus VS5b (nachladbarer höherwertiger Stretcher) fehlt.
