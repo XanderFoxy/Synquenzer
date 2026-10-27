@@ -3957,3 +3957,573 @@ Messungen und Bilder (kein getrennter Agent verfügbar). **6 Befunde, alle behob
 - Song-Schnitt (Takte einfügen/löschen, Punch-Reste): `tkVoxTrim` kürzt auch die Overdub-Takes in `alt` an derselben Song-Stelle (`tkSegTrim`); nach A/B spielt der alte Take seine eigenen Takte (Takt 4: 549 Hz statt 328 Hz).
 - PANIK: eine laufende STIMME bleibt still (`tkSilence(now, tau, keep)` behält die Planschlüssel; vorher Neustart nach 6–26 ms). Sie klingt erst beim nächsten Clip-Start/Song-Durchgang wieder; Stop leert die Schlüssel wie bisher.
 - Tests: v3-qa-vs3-t3/t3b/t4/t4b/t5b, v3-vs3fix-panic2.mjs, Smoke ohne Fehler.
+
+
+## VS4 — Säubern (Echo-Abzug, Nachfilter, Wiener-Entrauschen, HP 80 Hz, Regler SÄUBERN je Take, A/B Roh │ Sauber, Noten-Weg „1E“) · App 4.19.0
+
+Grundlage: Nachtrag 2 Teil C (C.2 Nr. 4–6, Paket-Zeile VS4, C.4), `r7/stimme.md` §6, §7, §8, §11 Skizze 4, §12 VS4, §13 N7V-21 … N7V-25 und
+N7V-35, N2-VS1-02; DSP-Kern `vs-dsp/clean.mjs` (getestet, 101/101 grün, unverändert übernommen). **Version 4.19.0** (`APP_CODE` 4 019 000,
+Auftrag: VS4 = 4.19.0 statt 4.16.0). **Format bleibt 5**, alles additiv (K2-31). Keine Server-Änderung (Wächter `max_app` 4 021 000 deckt
+4.19.0; kein Supabase-Aufruf in diesem Lauf). Zweig-Kopie `vs-br-VS4`, gestartet von VS3-fix (4.18.0).
+
+**Was neu ist**
+1. **Kern in der App:** `vsCleanMake()` = `clean.mjs` ohne Kommentare/Einrückung (20,7 KB), läuft im **Worker** (Blob), Rückfall
+   Hauptfaden. Im Browser **bitgleich** zum getesteten Modul (`srcText()` im selben Browser); gegen den Node-Lauf max. 6·10⁻¹¹
+   (nur Rundung der Math-Funktionen der JS-Maschine).
+2. **Daten (additiv, ein Projekt ohne VS4-Felder bleibt Zeichen für Zeichen gleich):** `take.rf` = Vorlauf der Referenz in Samples (20 ms),
+   `take.cl` = SÄUBERN in % (fehlt = 0 = Roh-Take). Audio-Store: Referenz-Stücke `<id>:r<k>` (nur Lautsprecher-Weg), gesäuberte Fassung
+   als Cache `<id>:c<%>:<k>` + Info `<id>:ci<%>`; ältere Stärken eines Takes werden beim Neurechnen gelöscht; [Aufräumen] (VS3) behandelt
+   alles über die Take-ID. Der Kern ist deterministisch: fehlt der Cache (anderes Gerät, ZIP), wird aus Roh + Referenz gleich neu gerechnet.
+3. **Neuer Take (Mikro):** Lautsprecher-Weg → die App schreibt ihr eigenes Playback (Referenz, um 20 ms vorgezogen, damit das Echo sicher
+   hinter der Referenz liegt) mit und setzt **SÄUBERN 60 %** (Skizze 4); Kopfhörer/Bluetooth → Roh-Take (0 %), Regler frei.
+   Gesäubert wird nach dem Speichern im Worker; bis dahin spielt der Roh-Take, danach wird ohne Knacken umgeblendet.
+4. **Hör-Weg** = Echo-Abzug (MDF, 2 Läufe, langsames Nachlernen, Doppelsprech-Bremse) + Nachfilter + Wiener (Rauschprofil aus den leisen
+   Stellen) + HP 80 Hz phasenfrei; Boden −6 … −24 dB, **nie stumm (kein Gate)**. **0 % = Roh-Puffer selbst (bitgleich).**
+5. **Takes-Blatt** (unter der Take-Liste): **SÄUBERN** 0–100 % (Regler, Schritt 5, ein Undo „Säubern n %“ beim Loslassen, Blatt folgt ↶/↷),
+   **Vergleich [Roh] [Sauber]** (A/B, klingt sofort, Blatt zu → wieder „Sauber“), Zustand („säubert … (Netz pausiert)“, „Echo-Abzug ✓ ·
+   Musik im Mikro 4 dB über der Stimme · Rauschen ↓ · kein Gate“, „ohne Echo-Abzug (Kopfhörer)“, „0 % = Original (bitgleich)“) und der
+   Hinweis **„Viel Übersprechen – Kopfhörer oder leiser spielen“** (Übersprechen > 0 dB rel. Stimme; einmal je Take auch als Toast).
+   In der Claude-App: Regler und A/B gesperrt, „Audio nur auf der eigenen Seite“, kein Worker, Daten bleiben deep-equal.
+6. **Noten-Weg (VS2, N7V-25):** beim Lautsprecher-Weg rechnet die Auswertung von Stimme-FANG/● REC auf dem Echo-Abzug **„1E“** (ohne
+   Nachfilter/Wiener/HP; 8 s Vorlauf zum Lernen; gleiche 3:1-Dezimierung wie das Worklet, gegen `d16` geprüft), aber nur, wenn der Abzug
+   die Musik im Mikro spürbar senkt (≥ 1,5 dB), sonst bleibt alles wie in VS2. Die Übersprech-Probe (VS2-fix) prüft danach gegen den Rest
+   (Kopplung −15 dB = Schwelle N7V-21). Beim Lautsprecher reicht das FANG-Fenster 3 Takte vor den live gehörten Anfang (live hört die
+   Stimme unter lauter Musik oft erst später; offline entscheidet der Noten-Weg).
+7. **Datenschutz (N7V-35, N2-VS1-02):** jedes Säubern (Take und Noten-Weg) hält die Netz-Ruhe (`tkQ('clean')` → `stQuiet`, SYNC hält,
+   Realtime getrennt) ab dem ersten Schritt bis zum Speichern; Zähler fetch/XHR/Beacon/WS danach 0. Audio verlässt das Gerät nie.
+8. **ZIP:** zusätzlich `takes/<id>.ref.wav` (Referenz) → nach dem Import klingt der Take gleich gesäubert (bitgleich nachgerechnet).
+9. **Abspielen (FP-DSP):** Roh und gesäubert sind zeitgleich; laufende Stücke werden an derselben Stelle linear überblendet (6 ms,
+   Summe konstant), geplante Stücke bekommen den anderen Puffer. `tkStartSrc` merkt sich dafür den Plan (`r.o`).
+10. **Test-API:** `clInfo`, `clSet`, `clAB`, `clWait`, `clEnsure`, `clCore` (Kern über den Worker-Weg), `clPlayRange`, `clPlayHash`,
+    `clRefRange`, `clNotesInfo`, `clNotesOff`, `clResK`, `clDecCheck`.
+11. **Haken in VS2/VS3-Code (je eine Zeile):** `tkMakeTake` (`clNewTake`, Referenz + Säubern nach dem Speichern), `tkStartSrc` (`o` am
+    Stück), `tkSheet` (`onClose`), `tkSheetPaint` (`clSheet`), `undoApply` (Art `takes` → `clSync`), `tkZipBytes`/`tkImportZip`
+    (Referenz-WAV), `vsAnalyse` (Noten-Weg, Probe gegen den Rest), `vsFang` (Fenster beim Lautsprecher). MK-Motor/Platte unberührt.
+
+**Abnahme** (Chromium 1243 headless; Skripte in `dirigent-test/`; Ausgaben `v3-vs4-core.out`, `v3-vs4-accept.out` (26/26),
+`v3-vs4-lay.out`, `v3-vs4-fakewav.out`, `v3-vs4-click.out`, `v3-vs4-perf.out`)
+
+| ID | Ergebnis | Messung / Skript |
+|---|---|---|
+| N7V-21 | ✓ Kern der App (Worker) mit dem `bleed`-Szenario (0 dB, Einmessen 2 s, Raum 80 ms, RT60 0,3 s): **SDR 24,3 dB** (≥ 15), **Minderung in Pausen 31,8 dB** (≥ 15), **RPA 100 %** über 223 Fenster (≥ 99 %; ohne Säubern 74,4 %). In der App-Kette (Loopback App-Ausgang → Mikro, Musik so laut wie die Stimme, Stimme-FANG-Take): Musik in den Gesangspausen **−39,8 dB** bei 60 %, **−46,8 dB** bei 100 %, Stimme −0,4 … −0,7 dB | `v3-vs4-core`, `v3-vs4-accept B` |
+| N7V-22 | ✓ +6 dB mit Sättigung (tanh): **SDR 13,2 dB** (≥ 10), RPA 99 %; **Noten-F in der App-Kette 1,000** (8/8, Musik im Mikro +4,8 dB über der Stimme, Lautsprecher-Loopback, Noten-Weg „1E“; ohne Säubern 0 Noten) | `v3-vs4-core`, `v3-vs4-accept B` |
+| N7V-23 | ✓ kein Gate (SNR 40, 100 %): SDR 39,3 dB, längste Lücke < −40 dB in Noten 0 ms; **am echten Mikro-Weg** (getUserMedia mit `--use-file-for-fake-audio-capture` = gesungene WAV, ● REC): 0 ms, gesäubert gegen roh 44,3 dB in den gesungenen Stellen, Rauschen in den Pausen −19,7 dB | `v3-vs4-core`, `v3-vs4-fakewav` |
+| N7V-24 | ✓ Kern: 0 % → bitgleiche Kopie; Take-Weg: bei 0 % spielt der Roh-Puffer selbst (Hash gleich), Regler per Finger auf 0 % → ein Undo, Undo → wieder die gesäuberte Fassung bitgleich | `v3-vs4-core`, `-accept B`, `-fakewav` |
+| N7V-25 | ✓ Test-API meldet „1E“ (Kern und App-Kette `clNotesInfo`) | `v3-vs4-core`, `-accept B` |
+| N7V-35 / N2-VS1-02 | ✓ während des Säuberns `quiet` enthält „clean“ und `stQuiet > 0`; danach Ruhe beendet, Zähler fetch/XHR/Beacon/WS = 0 | `-accept B` |
+| hörbar | ✓ STIMME allein, Ausgang in den Gesangspausen: Roh −24,6 dB, Sauber −70 dB (Δ 45 dB); laute Stellen gleich | `-accept B` |
+| Speichern/Laden | ✓ Neuladen: Takes deep-equal (cl, rf), gesäuberte Fassung aus dem Store ohne neues Rechnen, bitgleich; ZIP mit `.ref.wav` → frische Seite rechnet bitgleich nach | `-accept B` |
+| Claude-App | ✓ Import deep-equal (cl bleibt), kein Säubern, kein Worker, Regler/A/B gesperrt | `v3-vs4-lay` |
+| M-PLATZ | ✓ P1, P2, P3, L1, L2, 926×428: Blatt im Bild, Inhalt nicht höher als das Blatt, Regler und Knöpfe ≥ 44 × 44, nichts abgeschnitten, kein Layout-Sprung; Tipp „Roh“ und Regler-Ziehen mit dem Finger (Touch) wirken | `v3-vs4-lay`, Bilder `v3-vs4-{P1,P2,P3,L1,L2,XL}-takes.png`, `v3-vs4-claude-takes.png` |
+| M-KLICK | ✓ A/B viermal und neue Stärke während des Spielens: 2. Differenz 1,09 × Krümmung des 440-Hz-Tons (≤ 1,5), 4 von 4 Läufen | `v3-vs4-click` |
+| Regression | ✓ `v3-vs2-accept` ALLE OK (49), `v3-vs3-accept` 72/72, `v3-vs3-lay` grün, `v3-vs3-click` grün, `gmkp8-voc-mic` 8/8, `gmkp8-mk8-platz-quer` 9/9, Rauchtest ohne Fehler (`v3-vs4-smoke.png`) | `dirigent-test/vs4reg/r-*.out` |
+
+**Fach-Prüfung (Teil J, Gruppe 7: FP-DSP ● Haupt, FP-IPHONE)** – eigener zweiter Durchgang über Diff, Messungen und Bilder (kein getrennter
+Agent). **7 Befunde, alle behoben:**
+- *FP-DSP 1:* Puffer-Tausch über `tkVoxResync` (Ausblenden exponentiell, Einblenden linear) gab einen Knick: 1,75–2,1 × Krümmung. → Tausch
+  an derselben Stelle mit gleich langer linearer Überblendung (Summe konstant): 1,09 ×.
+- *FP-DSP 2:* `cancelAndHoldAtTime` + `linearRampToValueAtTime` sprang in Chromium sofort auf 0 (Einbruch 0,3 → 0,01). → feste Werte
+  (`cancelScheduledValues`, `setValueAtTime(G)`, Rampe); in Blenden wird nicht getauscht.
+- *FP-DSP 3:* Noten-Weg ohne Probe: Musik allein (Lautsprecher) ergab 35 falsche tiefe Noten aus Bass-Resten. → Probe gegen den Rest
+  (−15 dB): 0 Noten; mit Gesang 8/8.
+- *FP-DSP 4:* Klick im Mikro, der nicht vom Lautsprecher kommt (VS2-Test G), teilte nach dem Abzug eine Note (7 statt 5). → Abzug nur,
+  wenn er ≥ 1,5 dB senkt (dort 0,1 dB → VS2-Weg, 5/5).
+- *FP-DSP 5:* Bei lauter Musik hörte die Live-Erkennung die Stimme erst ab Takt 2 → FANG-Fenster begann zu spät (erster Takt fehlte).
+  → Lautsprecher: 3 Takte vor dem live gehörten Anfang.
+- *FP-IPHONE 6:* Takes-Blatt ragte in 926 × 428 unten 5 px aus dem Bild und rollte nicht mit dem Finger. → `popFit`, Blatt `pan-y`, quer
+  (≤ 440 px hoch) kürzer (Hilfetext aus, engere Abstände).
+- *FP-IPHONE 7:* Ging Säubern schief (Roh-Take fehlt), hätte jede Planung es neu gestartet. → Fehler-Merker je Take und Stärke.
+- Geprüft ohne Befund: 60-s-Take im Worker 3,8 s (6,3 % Echtzeit, Xeon), Hauptfaden 60 fps, längster Frame 25 ms, keine lange Aufgabe
+  (`v3-vs4-perf`); NaN-/Denormal-Schutz und Allokationsfreiheit im Kern (vs-dsp-Tests); Worker-Fehler → Toast, Roh-Take spielt.
+
+**Abweichungen (begründet)**
+- **Version 4.19.0** statt 4.16.0 (Auftrag). **Format 5** bleibt (additiv).
+- **Standard SÄUBERN:** neue Lautsprecher-Takes 60 % (Wert aus Skizze 4), Kopfhörer-Takes 0 % – sonst ändert sich der Klang einer
+  Aufnahme, bei der es nichts abzuziehen gibt. Alte Takes bleiben 0 % (bitgleich).
+- **A/B** heißt im Blatt „Vergleich [Roh] [Sauber]“, weil das Takes-Blatt schon einen [A/B]-Knopf für zwei Takes hat (VS3).
+- **Säubern im Worker** offline nach dem Speichern (Spec: „Worker“); der Block-Verarbeiter `Cleaner` für live (Worklet) ist eingebettet,
+  aber nicht verdrahtet (live = nur Hören, C.2 Nr. 5).
+- **Speicher:** Lautsprecher-Takes belegen etwa das Dreifache (Roh + Referenz + gesäuberte Fassung), Kopfhörer-Takes mit Säubern das
+  Doppelte; Worker-Spitze bei einem 2-min-Take ≈ 90 MB (Int16-Kopien + 3 Float-Felder) – am iPhone ungemessen.
+- **VS2-Verhalten beim Lautsprecher** geändert (Noten-Weg „1E“, Probe gegen den Rest, FANG-Fenster 3 Takte); VS2-Abnahme bleibt grün.
+- **Budget:** +25 KB geplant, gebaut **+43,7 KB roh / +14,9 KB gzip** (3 187 354 → 3 231 078 B): der Kern allein 20,7 KB, dazu
+  Worker/Cache/Blatt/ZIP/Noten-Weg und Test-API. Weit unter 5,0 MB; Startzeit unverändert (der Block tut beim Laden nichts).
+
+**Bekannte Lücken**
+- Wellenform in Matrix/Song zeigt den Roh-Take (Skizze 4: gesäubert).
+- Ein Take ohne ruhige Stelle in den ersten 20 s hat kein Rest-Echo-Profil (Rückfall Leck-Schätzung, vs-dsp README).
+- Echo-Abzug ist linear: sehr lauter Handy-Lautsprecher nah am Mikro (Sättigung) lässt etwa SDR 13 dB – der Hinweis rät dann zu
+  Kopfhörern.
+- Alles synthetisch bzw. mit Loopback gemessen; echte Stimme/Raum/iPhone-CPU fehlen (Geräte-Punkte unten).
+
+**Befunde an VS3 oder früher (nur gemeldet)**
+- VS2: Bei lauter Musik über den Lautsprecher (Musik ≥ Stimme) fand Stimme-FANG ohne Säubern 0 Noten (Live-Start zu spät, Übersprech-Probe
+  verwirft alles) – mit VS4 behoben (siehe Punkt 6); Kopfhörer-Weg unverändert.
+- VS3: `tkFadeAt` nutzt `cancelAndHoldAtTime` + `setTargetAtTime`; mit linearer Rampe danach springt Chromium auf 0 (siehe FP-DSP 2) –
+  `tkFadeAt` selbst ist davon nicht betroffen (VS3-Klicktest grün), nur als Warnung für spätere Pakete.
+
+**Für Xander am iPhone (Pages-Seite)**
+1. **Ohne Kopfhörer**, Musik normal laut: 🎤 an, ▶, 4 Takte singen, **FANG 🎤** → OK. Nach ein paar Sekunden ist der Take gesäubert.
+   ✎ auf dem STIMME-Clip → im Blatt **SÄUBERN 60 %** und **Vergleich [Roh] [Sauber]**: hörst du bei „Sauber“ die Musik in deinen
+   Gesangspausen fast nicht mehr? Klingt deine Stimme gleich (nicht dumpf, nicht „blubbernd“)?
+2. Regler auf 100 % und auf 30 % ziehen, jeweils vergleichen. ↶ holt den alten Wert zurück.
+3. Mit Kopfhörern: der Take bleibt roh (0 %); Regler hoch → nur Rauschen ↓.
+4. Bitte melden: ab wie viel % klingt es für dich am besten (Standard 60 %)? Knackt es beim Umschalten? Steht der Hinweis „Viel
+   Übersprechen“, wenn die Musik sehr laut war?
+
+## VS4-fix (27.10.) · App bleibt 4.19.0 · Format 5 · keine Server-Änderung
+
+**Behoben (beide QA-Befunde nachgestellt, dann behoben und erneut gemessen)**
+1. **SÄUBERN machte gehaltene Töne/Legato leiser** (N7V-23; Sinus −17/−24 dB, Legato SDR 6–8 dB). Ursache wie gemeldet: Rauschprofil =
+   „leiseste 10 % der Rahmen“ = ohne Pause die Stimme selbst. Fix im Kern (`noisePsd`): Profil je Frequenz nach oben begrenzt
+   (20-%-Quantil über die Zeit, Minimum über ±6 Bins, ×9). Echtes Rauschen bleibt darunter (Rauschboden-Test 23,6 dB unverändert).
+   Dazu: **Lautsprecher-Weg ohne Echo** bildete das Echo-Filter gehaltene Töne der Stimme aus der Begleitung derselben Tonart nach
+   (Stimme −3,5 … −5 dB). Fix: Echo-Abzug nur bei klarem Echo-Weg (GCC-PHAT-Spitze ≥ 15 × Effektivwert; gemessen ohne Echo 3,8–11,
+   mit Echo ab −10 dB rel. Stimme 27–143); sonst `info.aec = 'aus'`, Säubern = nur Entrauschen.
+   Gemessen in der App (echte Mikro-Attrappe, gleiche Aufnahme alt/neu verglichen, `qa-vs4/takecmp.mjs`):
+   Kopfhörer-Legato 100 % SDR 6,7 → **27,8 dB**, Stimme −3,7 → **−0,11 dB**; 60 % 7,8 → **28,3 dB**. Lautsprecher-Legato 60 %
+   6,1 → **28,3 dB**, −4,7 → −0,11 dB. Sinus 440/220 Hz bei 60/100 %: **0 / −0,2 dB** (vorher −17/−24). Szene mit 440-Hz-Take:
+   `v3-qa-vs4-reg` alles grün.
+2. **Stimme-FANG über Lautsprecher bei +6 dB mit Sättigung fand Bass-Noten** (N7V-22, Noten-F 0,55–0,67). Zwei Ursachen:
+   (a) Die Übersprech-Probe rechnete ohne Einmessen mit −20 dB Kopplung; tatsächlich −1 … −7 dB. Jetzt misst `clNotes` die Kopplung
+   aus dem abgezogenen Echo (Mikro − Ergebnis gegen Referenz, `CL.notes.coupDb`); die Probe nimmt die höhere von eingemessen und
+   gemessen (`vsBleedPow(m, gm)`). (b) Änderte sich der Echo-Weg im 8-s-Vorlauf (erst ohne, dann mit Echo), lernte das Filter zu
+   langsam. Kern-Option `o.from`: das Ergebnis zählt erst ab dem ausgewerteten Stück; zweiter Versuch, der nur die letzten 8 s lernt,
+   gilt, wenn er dort weniger Rest-Energie lässt (`info.learn 'neu'`). Gemessen (HPC 1,35, je Lauf): sat6 **F 0,941** (5 Läufe),
+   fang6 0,941, fang0 0,941, fangN 0,941 – vorher 0,55–0,67 / 0,67 / 0,80.
+- Der Noten-Weg meldet ohne Echo-Weg jetzt `way 'roh'` (mit `pk`, `aec 'aus'`) statt „1E“: es gibt nichts abzuziehen (VS2-Verhalten).
+  N7V-25 („1E“) gilt, sobald ein Echo da ist (sat6/fang6/fang0/Abnahme: „1E“).
+- Kern `vs-dsp/clean.mjs` + Tests (`node run-tests.mjs`: **107 Prüfungen grün**, neu: Legato ohne Pause, gehaltener Sinus, Legato mit
+  Referenz ohne Echo, `o.from` mit/ohne Wechsel des Echo-Wegs); eingebettet per `dirigent-test/v3-vs4fix-embed.mjs` (Kommentare raus),
+  App-Kern im Worker bitgleich zum Modul (`v3-vs4-core.mjs` ALLE OK). Builder-Abnahme `v3-vs4-accept.mjs` ALLE OK, Smoke ohne Fehler.
+- Größe: 3 231 078 → 3 233 663 B (+2,6 KB roh, +1,0 KB gzip). Rechenzeit Kern unverändert (alt/neu im selben Lauf gleich schnell);
+  der Noten-Weg rechnet bei `from` bis zu zwei Lern-Läufe (In-App 2,5–3,2 s für 13 s statt 1,9–2,4 s, Xeon, unter Last).
+
+**Bekannte Lücken / beobachtet**
+- Legato **mit** Echo (Lautsprecher, Begleitung in derselben Tonart): das Echo-Filter kostet die Stimme weiter ≈ 1 dB, SDR ≈ 14 dB
+  (synthetisch); mit Pausen 19–25 dB. Echtes Gerät ungemessen.
+- Test-Umgebung: unter CPU-Last (Nachbar-Builds) lieferte die Fake-Mikro-Aufnahme mehrmals einen schon kaputten Roh-Take (Roh-SDR
+  18,8 / 18,1 / 1,4 / −16 dB statt 36,5) – dann ist jede Messung danach wertlos; alt/neu auf derselben Aufnahme verglichen.
+  Ebenso schwankt der Take-SDR bei sat6 (9,6–15,7 dB) und echo0 (100 %: 13,3–14,8 dB) von Lauf zu Lauf – alter und neuer Kern auf
+  derselben Aufnahme bitgleich bzw. ±0,1 dB, also kein Effekt dieses Fixes (echo0 100 % knapp unter 15 dB: Befund an VS4, offen).
+
+
+# CHANGES – Zweig VS5 (VS5a, VS5b)
+
+## VS5a – Marken & Scheiben, Audio quantisieren (4.20.0, 26.10.2026)
+
+Grundlage: Zweig-Kopie `vs-br-VS5/index.html` ab VS3-fix (4.18.0). Spec: Nachtrag 2 Teil C (C.2, C.4 N2-VS5a-01, C.5), `r7/stimme.md` §9, §10, §13 (N7V-26, N7V-27), `song-delta.md` N7S-51. DSP-Kern `vs-dsp/marks.mjs` eingebettet (ohne Kommentare, `function vsMarksMake()`), Verhalten bis auf die Lückenfüllung der Scheiben unverändert (siehe unten). Versionszeile `4.20.0`; Format bleibt 5 (additive Felder, K2-31). Keine Datenbank-Änderung, kein Supabase-Aufruf.
+
+### Gebaut
+1. **Daten (additiv am Take, Format 5):**
+   - `take.marks = [{t, conf, word?, user?}]` – Sekunden im Take. Die Marken stehen erst im Projekt, wenn Xander sie von Hand ändert oder quantisiert. Vorher werden sie im Worker erkannt (`detectMarks`) und je Take zwischengespeichert, abhängig nur vom Audio. Ein Take ohne Änderung bleibt deshalb Zeichen für Zeichen gleich. Das ist auch für die VS3-Undo-Tests wichtig.
+   - `take.warp = {mode:'slice', grid ('auto'|'1/4'…), res (benutztes Raster), strength, swing, bpm, t0, map:{v:1, src, dst}}` – die Zeitkarte `warp.map` (stückweise linear, C.5 Nr. 5). Gespeichert wird sie mit 6 Nachkommastellen, das Normalisieren ist idempotent.
+   - `take.follow = false` bedeutet „Audio folgt“ aus. Standard ist an.
+   - Normalisiert wird über `tkExt().take`. Speichern → Laden ist deep-equal (geprüft mit Marken und Karte).
+2. **Quantisieren (C.5 Nr. 3, 4):**
+   - Es gibt eine Funktion `wpQuant`. Sie ruft `quantizeMarks` mit der Logik von `quantizeNoteSet` auf, Auto über `KeyDetect.detectGrid`.
+   - Raster: Aus, Auto, 1/4, 1/8, 1/8T, 1/16, 1/16T, 1/32. Dazu Stärke 0–100 % (Standard 100 % in „Scheiben“) und Swing 50–75 %.
+   - Das Fangfenster ist ±40 %; Marken außerhalb bleiben stehen. Die Reihenfolge bleibt immer erhalten.
+   - Grundlage für das Raster ist `t0` = die Take-Sekunde auf Schlag 0 des Clips (`in − at·spb`); für Song-Stimmen gilt dasselbe am Song-Takt.
+   - Wird eine Marke geändert, rechnet die Karte mit dem gespeicherten Raster, der Stärke und dem Swing neu – im selben Undo.
+3. **Abspielen (C.5 Nr. 5, 6, 8):**
+   - `tkExt().proc` steht vorn (`unshift`) und liefert die gerenderte Fassung („Scheiben“, `renderSlices`) aus einem Worker (Blob, keine Netzaufrufe).
+   - Der Cache gilt je Take und ist an Karte und Quell-Puffer geschlüsselt. Die Quelle ist das, was die anderen Verarbeiter liefern (VS4 Säubern, sobald gemergt), sonst der Roh-Take.
+   - Aus, Stärke 0 % oder ↶ ergibt den Roh-Take selbst, also bitgleich.
+   - Ist die neue Fassung fertig, plant `tkVoxResync(true)` STIMME-Spur und Song-Stimme ab jetzt neu (5-ms-Blenden).
+   - Beim Ziehen eines Reglers wird erst nach 150 ms Ruhe gerendert, beim Loslassen sofort (FP-IPHONE).
+4. **Marken-Editor** (Skizze 4, eigenes Blatt `#wpSheet` wie das Quantisier-Blatt, als Überlagerung, die nichts verschiebt):
+   - **Öffnen:** Takes-Blatt → [✎ Marken · Quantisieren]. Das geht für Szenen-Clips und Song-Stimmen.
+   - **Kopf:** „MARKEN · STIMME · Szene n“, [A/B] (vorübergehend das Original hören; ✕ schaltet zurück auf die quantisierte Fassung), [✕].
+   - **Bild:** Wellenform (Original), Takt-, Schlag- und Rasterlinien, Taktnummern, außerhalb des gespielten Stücks dunkler.
+   - **Marken:** Silbe dünn, Wort dick, unsicher blasser, mit Griff oben. Das Ziel quantisierter Marken ist ein bernsteinfarbener Strich mit Verbindung.
+   - **Info-Zeile im Bild:** „n Marken · Raster · Stärke · rechnet …“.
+   - **Bedienung:** Raster-Chips, Stärke, Swing, Modus [Scheiben │ Dehnen] (Dehnen ist gesperrt, kommt mit VS5b), Zoom [1 Takt │ 2 Takte │ 4 Takte │ Ganz].
+   - **Gesten (C.5 Nr. 2, K2-64):**
+     - Tipp auf eine leere Stelle setzt eine Marke (ein Undo).
+     - Ziehen > 8 px auf einer Marke verschiebt sie. Die Grenze liegt je 10 ms vor bzw. nach den Nachbarn. Beim Ziehen sieht man die Marke als Geist; beim Loslassen entsteht ein Undo.
+     - Ziehen auf einer leeren Stelle verschiebt die Ansicht.
+     - Tipp auf eine Marke öffnet das Blatt [✕ Löschen] [Abbrechen] (L4). Löschen ist ein Undo mit Toast [Rückgängig].
+     - Halten (≥ 500 ms ohne Bewegung) bewirkt nichts.
+   - **Undo:** ↶ ↷ einer Take-Änderung lässt Wiedergabe und Editor folgen (`wpUndone` in `undoApply`). `closeSheets` schließt den Editor.
+5. **„Audio folgt“ (C.5 Nr. 3):**
+   - Quantisieren eines MELODIE-Clips mit `clip.take` nimmt den Take mit demselben (aufgelösten) Raster, derselben Stärke und demselben Swing mit, im **selben Undo**: Die Gruppe enthält `clip` und `takes`.
+   - Das gilt für das Quantisier-Blatt [Anwenden] und für `quantizeClip`. Raster „Aus“ entfernt die Karte.
+   - Im Kopf des Quantisier-Blatts gibt es den Schalter [Audio folgt]. Er erscheint nur mit einem verknüpften Take auf der eigenen Seite und wird mit [Anwenden] gespeichert.
+   - Fehlen die Marken noch, wartet der Take auf die Erkennung. Er hängt sich nur an das Undo, solange es noch oben liegt.
+6. **Claude-App:** Ohne Audio (`tkAudioOk()` falsch) gibt es weder den Knopf noch den Editor noch [Audio folgt] (C.5 Nr. 1). Die Take-Daten bleiben beim Speichern erhalten.
+7. **Test-API:** `wpInfo`, `wpDetect`, `wpQuantize`, `wpMark(add|move|del)`, `wpAB`, `wpPlayed` (die Fassung, die klingt), `wpOpen`, `wpClose`, `wpGeom`, `wpCore`.
+
+### Änderung am DSP-Kern `vs-dsp/marks.mjs` (renderSlices, Lückenfüllung) – Begründung
+- **Vorher** wurde die Lücke mit dem gespiegelten Ende der vorigen Scheibe gefüllt, mit Kosinus-Ausblendung über die ganze Lücke. Gemessen auf gehaltenem Gesang gab das **bis −17 dB Loch** (M-EINBRUCH) und an jeder Umkehr einen Knick (M-KLICK **+35 dB** bei reinem Ton). Für Gesang bis zum Erscheinen von VS5b ist Scheiben der einzige Modus.
+- **Jetzt:**
+  - Die Lücke füllt eine Schleife aus dem Ende der Scheibe. Ihre Länge ist die Periode mit der besten Korrelation (5–40 ms).
+  - Die Naht je Runde blendet ≤ 2 ms von der echten Fortsetzung (Audio vor dem Einsatz) in den Schleifenanfang.
+  - Der Übergang am Einsatz ist korrelationsabhängig: gleichspannungsgemäß bei ρ > 0,5, sonst gleichleistungsgemäß wie im Dehnen-Kern.
+  - Anschläge ab dem Einsatz bleiben bitgleich.
+- `node vs-dsp/run-tests.mjs`: **alle grün** (VS4 39, VS5a 32, VS5b 30). Der README-Abschnitt „Bekannte Grenzen“ ist ergänzt.
+
+### Abnahme (eigene Läufe, Chromium 1243 headless; Skripte in `dirigent-test/`)
+| ID | Prüfung | Ergebnis | Skript |
+|---|---|---|---|
+| N7V-26 | Stärke 100 % → alle Marken im Fangfenster auf dem Raster; 50 % = halber Weg | ✓ 15 Marken, Abstand 0,000 Samples; 1 Marke außerhalb ±40 % unverändert; 50 %: Abweichung 0,0000 ms | `v3-vs5a-t1.mjs` |
+| N7V-27 | Scheiben, Klickfolge: Spitze je Klick ±0,1 dB, Anschläge bitgleich | ✓ 0,0000 dB; 16/16 Anschläge (20 ms ab Einsatz) bitgleich | `v3-vs5a-t1.mjs` |
+| N7S-51 | 1/16, 100 %: Einsätze ±2 ms am Raster | ✓ **an der Grenze**: 15/15 mit 2,0 ms (die Marken-Feinlage des Kerns liegt bei harten Klicks 2,0 ms vor dem Einsatz, siehe Lücken) | `v3-vs5a-t1.mjs` |
+| N7S-51 | M-KLICK (HP 5 kHz, 2-ms-Fenster, +6 dB) | ✓ Klickfolge 5,45 dB (Original 5,51); gesungene Noten 10,82 dB gegen Original 10,67 dB (die Testsignale mit 15-ms-Anschlag liegen schon selbst über 6 dB, deshalb Vergleich ≤ Original + 1 dB) | `v3-vs5a-t1.mjs` |
+| N7S-51 | M-EINBRUCH ≤ 3 dB an jedem Schnitt | ✓ gesungene Noten (`voice()` des Kerns): kein Schnitt mehr als 0,34 dB unter dem Loch des Originals an derselben Stelle. **Grenze:** streng periodischer Dauerton −4,44 dB an 1 von 12 Schnitten (Phasensprung in der Lücke bei bitgleichem Anschlag, wie beim Dehnen dokumentiert) | `v3-vs5a-t1.mjs` |
+| N7S-51 | nach Undo Original bitgleich; Stärke 50 % halber Weg; außerhalb ±40 % bleiben | ✓ alle drei | `v3-vs5a-t1.mjs` |
+| C.5 Nr. 8 | Stärke 0 % = bitgleich; A/B; ein Undo | ✓ Stärke 0 → Roh-Take; A/B → Roh-Take; jede Aktion genau 1 Undo | `v3-vs5a-t1.mjs`, `t2` |
+| N2-VS5a-01 | Halten 1 s ohne Bewegung → deep-equal; Halten 600 ms + 40 px ziehen → nur verschoben, 1 Undo; Tipp leer → neue Marke, 1 Undo; Tipp auf Marke → [✕ Löschen] [Abbrechen]; Löschen → weg, 1 Undo, Toast [Rückgängig] | ✓ alle fünf (Touch-Tipps über `touchscreen`, Ziehen per Zeiger); [Abbrechen] löscht nicht; ↶ holt die Marke zurück | `v3-vs5a-t2.mjs` |
+| Hörbar (e2e) | STIMME-Clip spielen, Ausgang mitschneiden | ✓ quantisiert: Einsatz-Abstände 250,0 ms (genau 1/16-Vielfache), nur der Klick außerhalb ±40 % weicht ab (308/192 ms); [A/B] Original: 220/298/212/303 … ms | `v3-vs5a-t2.mjs` |
+| Audio folgt | MELODIE-Quantisieren nimmt den Take mit, ein Undo, ↶ deep-equal | ✓ API und Blatt [Anwenden]: Gruppe `clip,takes`; Schalter aus → Take bleibt, `follow:false` im selben Undo | `v3-vs5a-t2.mjs` |
+| Mikrofon (Fake-Gerät) | gesungene WAV → ● REC-Take → Marken → 1/8 → klingt | ✓ 16 Marken auf 16 Silben (123 ms im Worker), Ziele 0,00 Samples auf dem Clip-Raster, Wiedergabe = quantisierte Fassung, 0 Netzaufrufe (nur `blob:` des Workers) | `v3-vs5a-t5.mjs` |
+| M-PLATZ | P1 390×844, P2 375×667, P3 320×568, L1 844×390, L2 667×375, XL 926×428 | ✓ Editor ganz im Bild, nichts abgeschnitten, keine Knöpfe außerhalb, Seitengröße unverändert; Bild P1 84 px, P3 50 px, L1 118 px hoch; Takes-Knopf 44 px; [Audio folgt] nicht abgeschnitten | `v3-vs5a-t3.mjs`, Bilder `dirigent-test/vs5a/lay-*-{takes,editor,qsheet}.png` |
+| Claude-App | iframe ohne Mikrofon | ✓ `audioOk` falsch, Editor öffnet nicht | `v3-vs5a-t3.mjs` |
+| Rundweg | Speichern → Laden mit Marken und Karte | ✓ deep-equal | `v3-vs5a-t1.mjs` |
+| Smoke | `smoke.mjs` | ✓ keine Fehler | – |
+| VS3-Regression | `v3-qa-vs3-reg`, `-t1`, `-t2`, `-t3` gegen diese Kopie | ✓ reg, t2 grün; t1 und t3 zeigen dieselben Befunde wie die Hauptlinie 4.18.0 (siehe unten), nichts Neues | Kopien in `dirigent-test/vs5a/reg/` |
+
+### Fach-Prüfung (Nachtrag 2 Teil J, Gruppe 7: FP-DSP, FP-IPHONE) – an mir selbst
+- **FP-DSP:**
+  - Bitgleichheit bei Aus, 0 % und ↶ ist geprüft, ebenso die Anschläge (N7V-27).
+  - Die Klick-Folge liegt unter dem Original. Der Knick der alten Spiegelung (+35 dB) ist behoben, Loch und Knick ebenfalls.
+  - **Grenze:** Bei streng periodischem Dauerton bleibt ein Phasensprung an Lücken: −4,4 dB bzw. M-KLICK 6,8 dB an 1 von 12 Schnitten.
+  - NaN/Inf-Schutz kommt aus dem Kern (`ok()`); der Kern-Test „Ausgabe endlich“ ist grün.
+  - Kein Worklet-Code; das Rendern läuft offline im Worker.
+  - Der Wechsel zwischen alter und neuer Fassung beim Abspielen läuft über die vorhandenen 3/5-ms-Blenden von VS3 (`tkVoxResync`).
+  - Der Rückfall auf den Hauptfaden greift nur, wenn kein Worker möglich ist.
+- **FP-IPHONE** (60-s-Take, `v3-vs5a-t4.mjs`):
+  - Marken: 1,4 s im Worker; Rendern: 118 ms im Worker; getroffen 88/88 Einsätze ±30 ms.
+  - Hauptfaden ohne longtask > 50 ms über Öffnen, Quantisieren, 20 Regler-Schritte und 4 Zoom-Stufen. Ein 75-ms-Task beim allerersten Tipp der Seite ist der App-Start (Audio-Kontext), nicht VS5a.
+  - Speicher: je Take mit Karte ein zusätzlicher AudioBuffer (≈ 11,5 MB je Minute), nur für hörbare Takes (Cache ≤ 6 übrige). Beim Rendern hält der Worker kurz eine Kopie.
+  - Regler-Ziehen rendert erst nach 150 ms Ruhe (vorher ein GC-Task von 121 ms gemessen, behoben).
+  - Die CPU am iPhone ist ungemessen (iPhone-Faktor unbelegt).
+  - Dateigröße siehe unten.
+
+### Abweichungen von der Spec
+- **Quelle der Marken:** Die Marken kommen aus `detectMarks` des Kerns (Spektralfluss + Pegel + Tonwechsel), nicht aus den VS2-Noteneinsätzen. Sie gelten für Gesang und Instrument gleich und sind getestet (README: 100 % in ±30 ms).
+- **A/B im Editor** ist ein vorübergehender Hör-Schalter (nicht im Projekt, kein Undo). ✕ schaltet zurück.
+- **Marken verschieben** ändert die *Quellstelle* (wo der Einsatz im Take liegt). Das Ziel ergibt sich aus Raster, Stärke und Swing.
+- **Wort-Marken:** Sie werden erkannt (≥ 120 ms Ruhe davor) und dick gezeichnet. „Zwei Silben durch Wischen verbinden“ (§10) ist nicht gebaut; Songtext kommt mit VS5b.
+- **Nicht im Editor:** Die Tonhöhenlinie und die Korrektur-Griffe aus Skizze 4 fehlen. SÄUBERN ist VS4.
+- **Budget:** +54 KB statt +25 KB (Kern 20,4 KB, App 29,4 KB, CSS 3,4 KB; gzip +18 KB). Die Datei hat 3,24 MB, die Grenze liegt bei 4,0 MB.
+- **Chromium-Pfad:** `/opt/pw-browsers/chromium-1194/…` gibt es nicht. Benutzt wurde `/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`, wie in den VS3-Tests.
+
+### Bekannte Lücken / offen
+- ~~**Marken-Feinlage:** Harte Klicks liegen 2,0 ms zu früh.~~ Behoben in VS5a-fix (siehe unten).
+- **Dauerton-Phasensprung in Lücken** (siehe FP-DSP).
+- **Tempo:** Wird das Tempo nach dem Quantisieren geändert, bleibt die Karte (in Sekunden) wie sie ist. Das Audio folgt dem Tempo ohnehin erst mit dem Dehnen (VS5b).
+- **„Audio folgt“** gilt beim [Anwenden], nicht schon in der Live-Vorschau des Quantisier-Blatts.
+- **Gerät:** Am iPhone ungeprüft (siehe Geräte-Punkte).
+
+### VS3-Befunde (nur gelistet, nicht geändert)
+- `v3-qa-vs3-t3`: Das Spurleisten-Etikett „🎤 Audio · Takes: ✎“ ist in P1, P2, P3, L1 und XL abgeschnitten (`scrollWidth` 103 > `clientWidth` 62–79). Das gilt auch auf der Hauptlinie 4.18.0.
+- `v3-qa-vs3-t1`: „no network requests during recording (1)“ zählt die `blob:`-Adresse eines lokalen Workers als Netzaufruf, ebenfalls auf der Hauptlinie. Es ist kein echter Netzaufruf; das Prüfskript sollte nur `http(s)` zählen.
+
+### Für Xander am iPhone (Geräte-Punkte, kurz)
+1. Auf https://xanderfoxy.github.io/Synquenzer/ 2 Takte mit Kopfhörern singen (● REC mit 🎤). Danach STIMME-Clip ✎ → [✎ Marken · Quantisieren].
+2. Stimmen die weißen Striche mit deinen Silben? Fehlende mit einem Tipp setzen, falsche antippen → [✕ Löschen].
+3. [1/16] oder [1/8] tippen und abspielen: Sitzen die Silben auf dem Takt? Mit [A/B] vergleichen. Knackt oder bricht es irgendwo ab?
+4. Den MELODIE-Clip desselben FANGs quantisieren (Quantisier-Blatt, „Audio folgt“ an): Rücken Gesang und Noten zusammen?
+
+### Datenbank
+Nichts nötig. Format 5 und `max_app` 4021000 decken 4.20.0 ab.
+
+
+## VS5a-fix (4.20.0 bleibt, 27.10.2026) – zwei QA-Befunde
+
+Snapshot: `synq-snapshots/VS5a-fix.html`. Kein Format-, Versions- oder Datenbank-Wechsel, kein Supabase-Aufruf. Nur VS5a-Code (Marken-Kern, `wp*`, `tk*`-Abspielweg) geändert.
+
+### 1. N7S-51 – Einsätze landeten 2,0–2,9 ms hinter der Linie (QA `v3-qa-vs5a-a.mjs`)
+- **Nachgestellt:** ja. Am Original VS5a lagen 11 von 15 Einsätzen 1,6–2,9 ms zu spät, weil die Marke vor dem hörbaren Einsatz saß.
+- **Kern `vs-dsp/marks.mjs` (`detectMarks`, eingebettet gleich):** neue Feinlage `fine()` nach `cross()`. Sie greift nur bei harten Anschlägen (50 % der Spitze in ≤ 3 ms) und setzt die Marke auf das erste Sample des Anstiegs. Sonst bleibt alles wie bisher; am gesungenen QA-Satz bewegt sich 1 von 64 Marken (+2,4 ms). Kern-Test `test-marks.mjs`: 32/32 OK. Gesang bei SNR 20 dB: 90 % in 6,2 ms statt 5,2 ms, Median unverändert 3,0 ms. `VERSION: 'vs5a-marks-2'`.
+- **App: Schutz des Anschlags.** Sitzt die Marke auf dem Anschlag, lag der 5-ms-Übergang der Scheiben, der an der Marke endet, über dessen erstem Bruchteil. Folge: N7V-27 nur noch 8/16 bitgleich. Jetzt laufen Schnitt und Übergang `WP_LEAD` = 4 ms (ganze Samples) vor der Marke, bei gleicher Verschiebung. Die Einblende am Clip-Anfang folgt dem ebenso.
+- **App: Ziele auf ganze Samples (`wpSmp`).** Ziele der Zeitkarte und von Hand gesetzte oder verschobene Marken liegen jetzt auf ganzen Samples. Bei 44,1 kHz fällt jede ungerade 1/16 bei 120 BPM sonst auf ein halbes Sample. Dann zeigt die Karte etwas anderes, als gerendert wird, nämlich eine um 1 Sample andere Verschiebung. N7V-26 bleibt ≤ 0,49 Samples (Spec ±1).
+- **Ergebnis (`v3-qa-vs5a-a.mjs`, 2 Läufe):**
+  - N7V-27: 15/15 bitgleich (Original 14/16).
+  - Ausgabe gleich Render.
+  - Alle nicht verdeckten Einsätze liegen −0,4 … +0,34 ms an der Linie.
+- **Rest im QA-Skript, kein App-Fehler:** 2–3 Anschläge je Lauf liegen im lauten Ausklang des vorigen Klangs (Ausklang > 10 % der neuen Spitze). Für diese setzt der QA-Finder `onsets20` den Einsatz auf „Block − 3 ms“. Das liegt 1,5–2,8 ms **vor** dem echten Beginn, deshalb zeigt das Skript dort −3,0 … −3,8 ms.
+  - Gegenprobe mit der wahren Generator-Zeit (`v3-vs5afix-adump.mjs` + `v3-vs5afix-aan.mjs`): alle Einsätze im Fangfenster liegen bei 100 % zwischen −1,09 und +0,14 ms an der Linie. Bei 50 % ist der halbe Weg auf ±0,01 ms getroffen. Ab dem wahren Beginn sind 15/15 Anschläge bitgleich.
+  - Am Datei-Take (`v3-vs5afix2-truth.mjs`): |Marke − wahr| ≤ 1,10 ms.
+- **„50 % = halber Weg … 222 ms“** im selben QA-Skript scheitert am Original genauso. Der Finder verliert verdeckte Einsätze, danach ordnet er die Paare falsch zu. Die Wahrheits-Gegenprobe zeigt bei 50 % höchstens 0,01 ms.
+
+### 2. Fassungswechsel beim Abspielen: −7 … −9 dB und Knacks (QA `v3-qa-vs5a-c/d/d2.mjs`)
+- **Nachgestellt:** Mit dem QA-Aufnehmer ja. Die Ursache liegt aber zum großen Teil im Messaufbau:
+  - Das AudioWorklet meldet in Chromium ab und zu denselben `currentFrame` zweimal hintereinander, und zwar gerade dann, wenn der Hauptfaden den Graphen ändert, also beim Wechsel. Gelesen wird `Δ = 0` und danach `Δ = 256`.
+  - `recStop` legt die Blöcke nach `currentFrame` ab. Dadurch überschreibt es einen Block und lässt ein 128-Sample-Loch aus Nullen. Das ergibt genau den gemeldeten Einbruch von −7 … −9 dB und den „Knacks“: Der Sprung von 0,17–0,30 entspricht der Signalhöhe.
+  - Beleg 1: Der Aufnehmer `v3-vs5afix2-rec.mjs` legt einen wiederholten Frame an die Folgestelle. Damit verschwinden die Ereignisse.
+  - Beleg 2: Auch ohne jeden Wechsel tritt die Anomalie auf, etwa beim Aufbau des Drum-Busses beim Start (dort Sprung 0,150 bei Ablage nach Frame, nichts bei Ablage in Reihenfolge).
+  - Beleg 3: Der QA-Dauerton hat **0 Marken**. Die Aktivitätsschwelle braucht eine Ruhe, der Ton hat keine. Quantisieren ist dort also ein Wechsel zwischen bitgleichen Fassungen und kann nichts auslöschen.
+- **Echter Teil, behoben:** Bei echten neuen Fassungen sind alt und neu zwei verschieden verschobene Signale. Die bisherige feste Blende mit `setTargetAtTime` (τ 3 ms) gegen eine 5-ms-Rampe konnte sie bei Gegenlage auslöschen.
+  - `wpSwitch` ersetzt `wpResync` beim Abspielen. Es prüft Zeitpunkte von jetzt + 30 ms bis zur Planungsgrenze in 1-ms-Schritten.
+  - Je Stück, dessen Puffer wechselt, rechnet es eine 12-ms-Kosinus-Überblendung an beiden Puffern nach: gleichspannungs-, gleichleistungsgemäß oder korrelationsnormiert. Es nimmt die erste Stelle mit höchstens 1 dB Abweichung, sonst die beste.
+  - Alte Stücke blenden mit `setValueCurveAtTime` aus (`tkXfOut`), neue mit der Gegenkurve ein (`tkStartSrc` `xc`).
+  - Unveränderte Takes blenden gleichspannungsgemäß in sich selbst über, das Ergebnis ist bitgleich.
+  - Hauptfaden: ≤ 3,3 ms je Wechsel.
+- **Ergebnis:**
+  - `v3-vs5afix2-sw.mjs 24 legato` (gesungen, 18 Marken, 23 echte Wechsel mit Chips, Aus und ↶, Aufnehmer ohne Frame-Fehler): Gegen alte und neue Fassung an derselben Take-Stelle liegt der Pegel höchstens −1,21 dB darunter (Grenze −3 dB). HP-5k höchstens +2,8 dB, größter Sprung ≤ 1,06× der Fassungen, kein Rückfall der Automation.
+  - `v3-vs5afix2-sw.mjs 24 tone`: schlechtester Einbruch −1,23 dB.
+  - `v3-vs5afix2-dseq.mjs` (QA-d mit diesem Aufnehmer): kein Einbruch über 0,7 dB, kein Sprung über 0,0294. Am Original ebenso, bis auf −8,1 dB an der Schleifennaht.
+  - `v3-qa-vs5a-c.mjs`: ALL OK.
+  - Die verbleibenden „HP-5k 11–20 dB“-Zeilen in QA-d treten am Original identisch auf. Es sind die Tonwechsel des Testtons: Der Sprung 0,0294 gegen 0,0262 entspricht genau 294 Hz zu 262 Hz. Hinzu kommt die Schleifennaht des Clips (VS3, −5 dB über 5 ms). Mit dem Fassungswechsel hat das nichts zu tun.
+- **Für die QA:** `recStop` in `v3-qa-vs5a-h2.mjs` sollte wiederholte `currentFrame`-Werte an die Folgestelle legen, so wie `v3-vs5afix2-rec.mjs` es tut. Sonst misst jeder Wechseltest Löcher, die nicht hörbar sind.
+
+### Regression (dieser Stand)
+- `v3-vs5a-t1`, `t2`, `t3` (Layout), `t5`, `v3-qa-vs5a-reg`, `v3-qa-vs5a-c`: ALL OK. Smoke: keine Fehler.
+- `v3-qa-vs5a-reg2` („FANG nach 8 Takten Akkorden → Teil-Blatt: null“) scheitert am Original VS5a genauso. Das ist ein vorhandener Befund und gehört nicht zu VS5a-fix.
+- `v3-qa-vs5a-b` „Audio folgt … ≤ 5 ms“ schwankt je Lauf: 29/41, 34/41 und 39/41 hier, 39/41 und 40/41 am Original.
+  - Die Abstände Note ↔ Marke sind in beiden Fassungen gleich (z. B. 84–87 ms an derselben Silbe). Nur die Aufnahme-Lage zum Raster schwankt mit dem Start des Fake-Mikros, und Noten nahe der 1/8-Mitte fallen dann auf die andere Seite.
+  - `fine()` bewegt am gesungenen Satz 1 von 64 Marken.
+
+
+## VS5b – Dehnen & Songtext (4.21.0, 27.10.2026)
+
+Grundlage: diese Zweig-Kopie `vs-br-VS5/index.html` ab VS5a-fix (4.20.0). Spec: Nachtrag 2 Teil C (C.2–C.5, Tabelle C.3 Zeile VS5b), `r7/stimme.md` §9, §10, §13 (N7V-28, N7V-29, N7V-30), C.5 Nr. 3, 7, 8. Nachtrag 2 hat für VS5b keine eigenen N2-VS5b-Punkte; die Abnahme sind die drei N7V-Punkte und C.5. DSP-Kern `vs-dsp/stretch.mjs` eingebettet (ohne Kommentare, `function vsStretchMake()`, auch im Worker). Versionszeile `4.21.0` (APP_CODE 4021000 = `max_app`). Format bleibt 5 (neues Feld `take.lyrics` additiv, K2-31). Keine Datenbank-Änderung, kein Supabase-Aufruf.
+
+### Gebaut
+1. **Modus „Dehnen“ (C.5 Nr. 7):**
+   - `take.warp.mode = 'stretch'` rendert im Worker mit `stretch()` des Kerns:
+     - Die ersten 20 ms nach jeder Marke bleiben bitgleich.
+     - Der Rest des Abschnitts wird per WSOLA auf die Ziellänge gebracht.
+     - Die Naht ist 5 ms lang.
+   - Dieselbe Vorlauf-Regel wie bei „Scheiben“ (VS5a-fix, `WP_LEAD` 4 ms): Abschnitte beginnen 4 ms vor der Marke, fest sind 24 ms. Ab der Marke sind damit 20 ms bitgleich, die Naht endet 4 ms vor der Marke. Liegt eine Marke in den ersten 4 ms, wird der Vorlauf kürzer.
+   - Vor der ersten und hinter der letzten Marke wird nur verschoben, nicht gedehnt (Steigung 1, wie bei „Scheiben“). Sonst gäbe es Faktor-Warnungen für Atem und Stille am Take-Rand. Die Fassung ist deshalb um die Verschiebung der letzten Marke länger oder kürzer als der Take; abgespielt wird wie bisher `in…out`.
+2. **Grenzen 0,5–2,0 (N7V-29):**
+   - Ein Abschnitt außerhalb dieser Grenzen wird nur verschoben (bitgleich), dazu kommt eine Warnung.
+   - Die Warnung erscheint als Toast „Dehnen: n Stelle(n) nur verschoben – Faktor außerhalb 0,5–2,0“ (einmal je Fassung) und in der Info-Zeile des Editors („⚠ n nur verschoben“, orange).
+   - Die Lücke hinter einem verschobenen Abschnitt füllt eine Schleife wie bei „Scheiben“ (siehe Kern-Änderungen).
+3. **Modus-Schalter [Dehnen │ Scheiben]** im Marken-Editor (vorher war Dehnen gesperrt):
+   - Ein Tipp ist ein Undo („Modus · Dehnen/Scheiben“).
+   - **Standard-Stärke (C.5 Nr. 3):** 70 % in Dehnen, 100 % in Scheiben. Eine Stärke, die auf dem Standard des alten Modus steht, wandert auf den des neuen. Eine selbst gewählte Stärke bleibt.
+4. **Standard „Gesang → Dehnen“ (C.5 Nr. 7):**
+   - Der Editor öffnet einen Take ohne Karte mit [Dehnen] und 70 %.
+   - „Audio folgt“ quantisiert einen Take ohne Karte im Modus Dehnen; die Stärke kommt wie bisher vom MELODIE-Quantisieren.
+   - Die Test-API `wpQuantize` ohne `mode` bleibt bei „Scheiben“, so wie in VS5a.
+5. **Render-Cache:**
+   - Der Schlüssel besteht aus Karte, Modus und Quell-Puffer.
+   - Neu: Solange der Editor offen ist, hält er zusätzlich die vorige Fassung des Takes. Modus hin und zurück sowie ↶ ↷ klingen dann sofort, ohne neu zu rechnen (gemessen: 1 statt 2 Renders).
+   - Beim Schließen des Editors wird die vorige Fassung freigegeben (Speicher am iPhone).
+   - Ein Wechsel der Fassung beim Abspielen läuft wie in VS5a-fix über `wpSwitch` mit Überblendung.
+6. **Songtext auf Silben (§10, N7V-30):**
+   - Das Feld `take.lyrics` ist ein Text je Take, normalisiert auf höchstens 400 Zeichen. Speichern → Laden ist deep-equal.
+   - Der Knopf [Text] im Kopf des Editors (56 × 36 px) öffnet ein Blatt mit Eingabefeld (Platzhalter „Lie-be ist ein Feu-er“) und [✓].
+   - ✓ ist ein Undo mit Toast [Rückgängig]; leer + ✓ löscht den Text.
+   - Anzeige im Bild:
+     - Eine Silbe je Marke von links, gezeichnet an der Stelle, wo die Marke **klingt**: am Ziel der Zeitkarte, im A/B-Original an der Quelle.
+     - Der Text hängt an der Marke, nicht an der Zeit, und wandert beim Quantisieren mit.
+     - Fehlende Silben erscheinen als „·“, überzählige rot am Ende.
+     - Der Knopf [Text] ist hervorgehoben, wenn ein Text da ist.
+7. **Test-API:**
+   - Neu: `wpMode`, `wpLyrics`, `wpLyr`, `wpWarn`, `wpLyrGeom`, `wpStretchCore`.
+   - `wpInfo` liefert zusätzlich `lyrics`, `warn` und `old`; `last` enthält `mode`, `warn` und `wsola`.
+8. **Kleine VS5a-Korrektur (für die Silben-Lage nötig):** Der Editor rechnete die Zeichenbreite aus dem Rahmen statt aus der Leinwand. Wegen des 1-px-Rands war die Zeichnung um 2 px gestaucht, Treffer und Marken lagen bis 1,5 px daneben. Jetzt wird aus der Leinwand gerechnet.
+
+### Änderungen am DSP-Kern `vs-dsp/stretch.mjs` (gefunden beim Einbau; `VERSION 'vs5b-stretch-4'`)
+1. **Lücke beim nur Verschieben:**
+   - Vorher: gespiegeltes Ende mit Ausblendung über die ganze Lücke. Gemessen bei Faktor 2,5 ergab das ein **Loch von 47,6 dB**.
+   - Jetzt: eine Schleife wie `renderSlices` (VS5a). Gemessen: **0,03 dB**.
+2. **Letzte WSOLA-Rahmen:**
+   - Vorher lag ihr Suchfenster hinter dem Abschnittsende; die Rahmen wurden dann ohne Suche gesetzt. Das ergab einen Phasensprung: bei Klicks auf einem Ton mit Achtel-Abschnitten bis **−5,4 dB** vor jeder Marke.
+   - Jetzt wird im letzten erlaubten Stück gesucht, und `endAlign` ist standardmäßig aus.
+   - Ergebnis: −2,1 dB; an den Nähten 110/196/330 Hz 0,58/0,92/0,35 dB (vorher 1,94/3,24/0,19 dB).
+3. **Digitale Stille:**
+   - Vorher: Bei stiller Vorlage nahm die Suche den ersten Treffer und holte Ausklang-Reste (−70 dB) in die Stille. Gefunden mit `v3-qa-vs5a-b`: M-KLICK **51,5 dB** gegen 32,8 dB im Original.
+   - Jetzt bleibt die Suche dort an der natürlichen Stelle. Ergebnis: 23,3 dB gegen 23,2 dB im Original.
+- Neue Kern-Tests: Lücke ohne Loch, kurze Abschnitte mit Klicks auf Ton (≤ 3 dB, Vorlauf + 20 ms bitgleich), digitale Stille bleibt Stille. Die Naht-Grenze ist von 4 auf 3 dB verschärft.
+- `node vs-dsp/run-tests.mjs`: **alle grün** (VS4 45, VS5a 32, VS5b 34). README ergänzt.
+
+### Abnahme (eigene Läufe, Chromium 1243 headless; Skripte in `dirigent-test/`, Bilder in `dirigent-test/vs5b/`)
+| ID | Prüfung | Ergebnis | Skript |
+|---|---|---|---|
+| N7V-28 | Dehnen, Klickfolge mit Ton dazwischen, 70 % und 100 %: erste 20 ms je Scheibe bitgleich; Länge je Scheibe ±1 ms | ✓ 17/17 bitgleich (beide Stärken); Länge je Scheibe unabhängig gefunden (Suche der bitgleichen Blöcke im Ausgang): Fehler 0,000 ms; Faktoren 0,875–1,231 | `v3-vs5b-t1.mjs` |
+| N7V-28 (Mikro) | gesungene WAV über das Fake-Mikrofon → ● REC → Dehnen 70 % | ✓ 17/17 bzw. 18/18 bitgleich in 3 Läufen; Ziele 0,5 Samples genau; Spitze ≤ Original; 0 Netzaufrufe | `v3-vs5b-t5.mjs` |
+| N7V-29 | Faktor 2,08 (Marken 0,55 → 0,5 und 0,67 → 0,75 bei 1/8) | ✓ nur verschoben (120 ms bitgleich), Warnung im Toast und in der Info-Zeile, Lücke gefüllt (−0,11 dB gegen den Ton) | `v3-vs5b-t1.mjs` |
+| N7V-30 | „Lie-be ist ein Feu-er“ auf 6 Marken; 5 Marken; nach Quantisieren | ✓ 6 Silben je Marke; bei 5 Marken „er“ rot (Pixelprüfung: rote Pixel); jede Silbe auf dem Ziel ihrer Marke (≤ 0,6 px) – in P1, P2, P3, L1, L2 per Touch über [Text] | `v3-vs5b-t2.mjs` |
+| C.5 Nr. 8 | Stärke 0 % bitgleich, A/B, ein Undo, nach ↶ Original bitgleich, ↷ deep-equal | ✓ alle | `v3-vs5b-t1.mjs` |
+| C.5 Nr. 3 | Standard 70 % Dehnen / 100 % Scheiben | ✓ Editor öffnet mit Dehnen 70 %; Chip 1/8 → Dehnen 70 %, ein Undo; Scheiben 100 % → Dehnen 70 % | `t1`, `t2` |
+| Hörbar | Ausgang mitgeschnitten (Klick-Take, Dehnen 1/16) | ✓ Einsatz-Abstände 250,0 ms (11/11 auf dem Raster); A/B: 165–310 ms; Dehnen vs. Scheiben unterscheiden sich um −10 … −15 dB Differenz-Energie | `v3-vs5b-t3.mjs`, `t1` |
+| Klick/Einbruch | M-KLICK, Pegel im Ton zwischen den Klicks | ✓ M-KLICK 34,4 dB gegen 35,3 dB im Original; schlechtester Einbruch −1,93 dB (≤ 3) | `v3-vs5b-t1.mjs` |
+| Wechsel beim Spielen | 4 × Modus umschalten während der Wiedergabe | ✓ 4 überblendete Fassungswechsel, schlechteste Abweichung 0,94 dB, Hauptfaden ≤ 5 ms | `v3-vs5b-t3.mjs` |
+| Audio folgt | Take ohne Karte → Dehnen | ✓ | `v3-vs5b-t3.mjs` |
+| Render-Cache | Dehnen → Scheiben → Dehnen im Editor | ✓ zurück sofort fertig (1 statt 2 Renders); vorige Fassung nach ✕ freigegeben | `v3-vs5b-t1.mjs` |
+| Rundweg | Speichern → Laden mit Songtext, Modus und Karte | ✓ deep-equal | `v3-vs5b-t1.mjs` |
+| M-PLATZ | P1 390×844, P2 375×667, P3 320×568, L1 844×390, L2 667×375, XL 926×428 | ✓ kein Knopf außerhalb des Blatts, kein Knopf abgeschnitten, keine Seitenbreite > Bild; [Text] 56×36, Modus-Knöpfe ≥ 40 px hoch; Text-Blatt im Bild | `v3-vs5b-t2.mjs`, `v3-vs5b-shots.mjs`, Bilder `ed-*.png`, `lay-*.png` |
+| Smoke | `smoke.mjs` | ✓ keine Fehler | – |
+
+### Regression
+- `v3-vs5a-t1`, `v3-vs5a-t3`, `v3-vs5a-t5`, `v3-qa-vs5a-c`, `vs5a/reg/v3-qa-vs3-reg`, `vs5a/reg/v3-qa-vs3-t2` sind grün.
+  - `v3-vs5a-t5` fiel einmal mit „max 4465 samples“ (Lage des Fake-Mikros), beim zweiten Lauf grün.
+  - `v3-qa-vs5a-c` (M-KLICK beim Wechsel) schwankt ebenfalls je Lauf. Ursache ist der bekannte Aufnehmer-Effekt aus VS5a-fix; 3 von 3 Wiederholungen waren grün.
+- **Durch VS5b absichtlich überholte Erwartungen (typische-fehler Nr. 26):**
+  - `v3-vs5a-t2` erwartet nach ↶ „Stärke 100 %“. Jetzt gilt 70 %, weil der Editor mit Dehnen startet. Die Kopie `v3-vs5b-reg-t2.mjs` mit 70 % ist grün.
+  - `v3-qa-vs5a-a` tippt den Raster-Chip ohne Moduswahl und erwartet damit Scheiben 100 %. In der Kopie `v3-vs5b-reg-qa-a.mjs` wird vorher [Scheiben] getippt. Übrig bleiben nur die zwei Zeilen, die in VS5a-fix schon als Mess-Artefakte des QA-Skripts belegt sind: −3,65 ms und „50 % … 222 ms“.
+- `v3-qa-vs5a-b`:
+  - M-KLICK ist jetzt grün (siehe Kern-Änderung 3).
+  - „Audio folgt ≤ 5 ms“ liegt bei 39/41 und 40/41. Diese Zeile schwankt schon in VS5a-fix (29–40/41).
+- `vs5a/reg/v3-qa-vs3-t1` und `t3` zeigen nur die bekannten VS3-Befunde (siehe unten).
+
+### Fach-Prüfung (Nachtrag 2 Teil J, Gruppe 7: FP-DSP, FP-IPHONE) – an mir selbst
+- **FP-DSP:**
+  - Bitgleich bei Stärke 0 %, A/B und ↶ (Roh-Take); die ersten 20 ms nach jeder Marke ebenso.
+  - ~~Einbruch an Nähten ≤ 3 dB (gemessen 0,35–2,14 dB).~~ **Falsch gemessen** (≈ 10-ms-Fenster statt 5 ms) – richtig waren bis −7,8 dB; behoben in VS5b-fix (unten). Lücken gefüllt, digitale Stille bleibt Stille.
+  - M-KLICK nicht über dem Original (QA-b 23,3 gegen 23,2 dB; Klickfolge 34,4 gegen 35,3 dB). Tonhöhe bleibt (< 1 Cent, Kern-Test).
+  - Der NaN/Inf-Schutz kommt aus dem Kern.
+  - Kein Worklet-Code. Das Rendern läuft offline im Worker; der Fassungswechsel beim Spielen wird überblendet (≤ 0,94 dB).
+- **FP-IPHONE** (60-s-Take, `v3-vs5b-t4.mjs`):
+  - Dehnen 70 % rendert in 651 ms im Worker (VM). Kern allein: 0,4–1,0 s je 60 s bei 48 kHz.
+  - Kein longtask > 50 ms auf dem Hauptfaden über Öffnen, Quantisieren, 4 × Modus, Songtext mit 360 Silben, Regler und Zoom.
+  - Speicher: je hörbarem Take mit Karte eine Fassung (≈ 11,5 MB je Minute, wie VS5a). Nur bei offenem Editor kommt die vorige Fassung dazu.
+  - Die CPU am iPhone ist ungemessen.
+- **Größe:** +17,8 KB gegenüber VS5a-fix (Budget +30 KB): Kern 7,4 KB, App + CSS ≈ 10 KB, gzip +5,5 KB. Die Datei hat 3,27 MB.
+
+### Abweichungen von der Spec
+- ***(P1)* Signalsmith Stretch nachladbar:** nicht gebaut. Die Option ist optional, bräuchte auf der Pages-Seite einen Netzaufruf zu einem CDN und hat einen eigenen Datenschutz-Weg. Vorschlag für später.
+- **Standard-Modus:** Ein STIMME-Take gilt als Gesang, deshalb startet der Editor mit [Dehnen] 70 % (C.5 Nr. 3, 7). Das ist eine sichtbare Änderung gegenüber VS5a, wo Scheiben 100 % galt. Sie folgt der Spec. Beatbox und Instrument wählen [Scheiben] (ein Tipp). Eine Erkennung „Gesang oder Instrument“ je Take gibt es nicht; das Feld fehlt im Take.
+- **Vorlauf und Ausklang** werden nur verschoben, nicht gedehnt (siehe Gebaut Nr. 1). Die gespeicherte Zeitkarte bleibt wie in VS5a, mit (0,0) und (Ende, Ende).
+- **Songtext** erscheint nur im Marken-Editor, nicht auf der Clip-Kachel und nicht in der Song-Ansicht. „Zwei Silben durch Wischen zu einem Wort verbinden“ (§10) ist weiter nicht gebaut (wie VS5a).
+
+### Bekannte Lücken / offen
+- **Tempo:** Ändert sich das Tempo nach dem Quantisieren, bleibt die Karte in Sekunden. Dehnen folgt dem neuen Tempo nicht von selbst; dafür einfach neu quantisieren. Das ist so nicht verlangt, wäre aber mit `stretch()` machbar.
+- **Echte Stimmen:** Gemessen ist nur synthetisch bzw. mit Fake-Mikrofon. Am iPhone ist nichts geprüft.
+- **Fake-Mikrofon-Läufe** schwanken in der Lage zum Raster (siehe Regression).
+
+### VS3-Befunde (nur gelistet, nicht geändert)
+- `v3-qa-vs3-t3`: Das Spurleisten-Etikett „🎤 Audio · Takes: ✎“ ist in P1, P2, P3, L1 und XL abgeschnitten (`scrollWidth` 103 > `clientWidth` 62–79). Unverändert gegenüber VS5a.
+- `v3-qa-vs3-t1`: Das Prüfskript zählt den `blob:`-Worker als Netzaufruf. Es ist kein echter Netzaufruf.
+
+### Für Xander am iPhone (Geräte-Punkte, kurz)
+1. Auf https://xanderfoxy.github.io/Synquenzer/ 2 Takte singen (● REC mit 🎤). Danach STIMME-Clip ✎ → [✎ Marken · Quantisieren]. Unten steht jetzt [Dehnen] (an).
+2. [1/8] tippen und abspielen: Sitzen die Silben auf dem Takt, ohne zu knacken oder zu „flattern“? Mit [A/B] vergleichen; [Scheiben] zum Vergleich.
+3. [Text] tippen, z. B. „Lie-be ist ein Feu-er“ eingeben, ✓. Steht je Silbe ein Stück Text unter dem richtigen Strich, und wandert der Text beim Quantisieren mit?
+4. Erscheint „⚠ … nur verschoben“, liegen zwei Marken sehr eng oder sehr weit auseinander. Dann eine Marke löschen oder setzen.
+
+### Datenbank
+Nichts nötig. Format 5 und `max_app` 4021000 decken 4.21.0 ab.
+
+## VS5b-fix (4.21.0 bleibt, 27.10.2026) – ein QA-Befund (FP-DSP, M-EINBRUCH)
+
+### Befund (nachgestellt, bevor etwas geändert wurde)
+`v3-qab5b-einbruch.mjs 220 prof`: N7V-28-Material (Klicks über einem gehaltenen Ton) bei 44,1 kHz, Editor-Standard 1/8 · 70 % · Dehnen. M-EINBRUCH genau nach Spec (5-ms-Fenster, 1-ms-Schritte, ±50 ms um Marke − 6,5 ms): **24 von 50 Nähten unter −3 dB, schlimmste −6,57 dB** (Original an denselben Marken −0,13 dB); 196 Hz bis −7,79 dB. Das Loch lag im Fenster 10…5 ms vor der Marke, also in der 5-ms-Naht, die WP_LEAD vor der Marke endet. Meine Angabe „0,35–2,14 dB“ war mit ≈ 10-ms-Fenstern gemessen, die das 5-ms-Loch verschmieren.
+
+### Ursache
+Ab s0 (4 ms vor der Marke) ist die Ausgabe bitgleich festgelegt, deshalb treffen sich in der Naht zwei unterschiedlich verschobene Fassungen desselben Tons. Der Rest-Versatz liegt zwischen 0 und ½ Periode. Die Blende endete immer genau an s0 und war fest gleichspannungs- bzw. gleichleistungsgemäß. Je nachdem, wo die Blende in der Periode lag, fiel ein Pulsschlag der Periode aus (Abstand P + Versatz) und die Anteile löschten sich aus. Dazu kam ein Fehler in der WSOLA-Suche: Ein nur angeschnittenes Suchfenster (wenige Samples vor dem Abschnittsende) fand keine passende Periode (ρ −0,25) und ließ ein −5-dB-Loch ≈ 25 ms vor der Marke.
+
+### Änderung am DSP-Kern `vs-dsp/stretch.mjs` (`VERSION 'vs5b-stretch-5'`, in der App über `vsStretchMake`, ohne Kommentare)
+1. **Lage der Blende:** Die 5-ms-Blende darf bis 12 ms vor s0 liegen; dahinter läuft die Quelle unverändert in die Marke. Gewählt wird die Lage, bei der das leiseste 5-ms-Fenster (0,5-ms-Schritte, über Blende und Marke) am lautesten ist. Die Pulse rücken dann zusammen statt auseinander. Ohne Auslöschung bleibt die Lage wie bisher an der Marke (Gleichstand → 0 ms).
+2. **Energie-Ausgleich:** Fehlt in der Blende danach noch Energie gegenüber einer gleichphasigen Blende (Pegel beider Seiten), hebt eine Glocke (sin², Gipfel G ≤ 4) genau so viel an. Ohne Auslöschung ist G = 1. Die Anhebung erzeugt keine steileren Flanken, als der Eingang hat (sonst wird G in Schritten kleiner). Damit bleibt der Kern-Test „Keine Klicks“ grün.
+3. **Feste Teile bleiben unberührt:** Die Blende reicht nie in die festen ersten 24 ms der vorigen Scheibe (bei sehr kurzen Scheiben wie bisher).
+4. **WSOLA-Suche:** Ein angeschnittenes Suchfenster wird auf volle Breite 2Δ gebracht (Erweiterung der VS5b-Einbau-Regel).
+5. **Verworfen** (gemessen): (a) Phasen-Lenkung über 4 Rahmen: Bei formantreichem Ton löschen sich die Obertöne an jeder Rahmengrenze aus (Kern-Test 3b 5,66 dB statt 2,14). (b) Nur korrelationsnormierte Verstärkung: Die Gesamtenergie stimmte, das 5-ms-Fenster nicht (−4,6 dB).
+- **Neuer Kern-Test 3e:** M-EINBRUCH genau nach Spec bei 44,1 kHz, 202/180 Hz, 70/100 %. Alter Kern: FAIL (−5,67 … −6,52 dB). Neuer Kern: −0,78 … −1,08 dB (Original −0,20 / −1,07).
+- `node run-tests.mjs`: **112 Prüfungen, alle grün** (45 + 32 + 35). Rechenzeit Dehnen 60 s bei 48 kHz: 0,54 s statt 0,43 s.
+- Weitere Kern-Werte: 2-Perioden-Einbruch 110/196/330 Hz 0,05/0,43/0,08 dB (vorher 0,58/0,92/0,35). Achtel mit Klicks 0,22 dB (vorher 2,14). Tonhöhe, Länge und 20 ms bitgleich unverändert.
+
+### Nachweis in der App (gleiche Skripte wie der Befund, Chromium headless, 44,1 kHz)
+| Lauf | vorher | nachher |
+|---|---|---|
+| 220 Hz, 1/8 70 % | 24/50 Nähte < −3 dB, schlimmste −6,57 | **0/50**, schlimmste −2,13 |
+| 220 Hz, 1/8 100 % | 13/49, −6,79 | **0/49**, −0,86 |
+| 220 Hz, 1/16 70 % / 100 % | 9/49 −5,92 / 12/49 −6,88 | **0/49** −0,58 / **0/49** −0,86 |
+| 196 Hz, 1/8 70 % / 100 % | −5,21 / −7,79 | **0** Nähte, −2,73 / −1,11 (Original −2,12) |
+| 196 Hz, 1/16 70 % / 100 % | – | **0**, −2,10 / −2,43 |
+| Legato `v3-qab5b-einbruch2.mjs`, 1/8 70 % | 2 von 9: −5,05 und −4,07 | 1 von 9: −4,07 (siehe unten) |
+
+- Zwei Läufe bei 220 Hz liefern dieselben Zahlen.
+- **Legato −4,07 dB ist keine Naht:** Das Fenster liegt +34…+45 ms hinter der Marke 3,742 s, also 7–18 ms nach der nächsten Marke (3,769 s, nach dem Quantisieren nur 27 ms später). Dort ist die Ausgabe der bitgleiche Anfang der nächsten Silbe. Ihr Pegel ist im Original genauso leise (y gegen x je 5 ms: −27,7/−27,8/−28,8 gegen −27,7/−27,8/−28,7 dB). Vor dem Fix stand dort derselbe Wert (−4,07). Am Original misst die gleiche Marke −0,32 dB, weil dort die nächste Silbe 90 ms entfernt liegt.
+- Der Replay `v3-vs5bfix-replay.mjs` (Node, Kern mit der Zeitkarte der App) ist bitgleich zur App-Ausgabe (maxdiff 0 auf dem Legato-Dump).
+
+### Regression (dieser Stand)
+- `v3-vs5b-t1`: ALL OK. N7V-28 bitgleich 17/17, Länge ±0 ms, M-KLICK 34,4 gegen 35,3 dB, N7V-29, 0 %/A/B/↶ bitgleich, Cache, Speichern/Laden.
+- `v3-vs5b-t3` (gehört): ALL OK. Einsätze auf 1/16, Fassungswechsel beim Spielen ≤ 0,92 dB.
+- `v3-vs5b-t4` (60-s-Take, FP-IPHONE): ALL OK. Render im Worker 642 ms; kein longtask > 50 ms.
+- `smoke.mjs`: ohne Fehler.
+- **Größe:** +2,4 KB roh, +0,9 KB gzip gegenüber VS5b (3 272 365 Byte). VS5b liegt damit bei +20,2 KB vom +30-KB-Budget.
+- UI, Bedienung und Version (4.21.0) sind unverändert; Format und Datenbank unberührt.
+
+### Test-Werkzeug
+`dirigent-test/v3-vs5a-h.mjs` `mEinbruch()`: Indizes sind jetzt ganzzahlig. Vorher war `P + d·sr/1000` bei 44,1 kHz gebrochen; die Hilfe lieferte dort immer 0 und konnte das Loch nicht finden. Gegenprobe: Ein 5-ms-Loch bei 44,1 kHz ergibt jetzt −19,99 dB.
+
+### Offen (nicht Teil dieses Befunds, VS5a „Scheiben“)
+Modus **Scheiben** zeigt auf demselben Material weiter Löcher, z. B. 1/16 100 %: 10/49 Nähte < −3 dB, schlimmste −6,72 dB bei 220 Hz und −4,81 dB bei 196 Hz. Grund ist derselbe Phasensprung am festen Anschlag. Die Spec legt bei Scheiben den Schnitt 3 ms vor dem Einsatz am Nulldurchgang fest (C.5 Nr. 6), deshalb habe ich die Blende dort nicht verschoben. Der Vorschlag ist dieselbe Lage-Suche wie beim Dehnen, als eigenes Paket bzw. als Rückfrage an Xander, denn sie würde den Schnittpunkt verändern. Für Gesang gilt der Standard [Dehnen].
+
+
+
+## G-S7-merge — Zusammenführung (VS4 + VS5a/VS5b → Hauptlinie) · App 4.21.0 · Format 5 · keine Server-Änderung
+
+Hauptlinie war gleich der Basis (VS3-fix, 4.18.0). Echte 3-Wege-Zusammenführung mit `git merge-file` (Sicherung
+`mk-wt/index.html.vor-merge-G-S7-merge.html`): erst **VS4** (Säubern, inkl. VS4-fix) – ohne Konflikt –, dann **VS5** (VS5a Marken &
+Scheiben inkl. VS5a-fix, VS5b Dehnen & Songtext inkl. VS5b-fix) – 6 Konflikte. **Version 4.21.0** (höchste Seite, = `max_app`), Format 5,
+kein Supabase-Aufruf. Eingebettete Kerne: `vsCleanMake` = VS4-fix-Fassung von `vs-dsp/clean.mjs`, `vsMarksMake`/`vsStretchMake` = VS5b-fix
+(`node vs-dsp/run-tests.mjs`: alle grün).
+
+**Konflikte und Lösung**
+1. `VERSION` 4.19.0 │ 4.21.0 → **4.21.0**.
+2. `undoApply` Art `takes`: VS4 `clSync` (Säubern folgt) │ VS5 `wpUndone()` (Zeitkarte/Editor folgen) → **beides** (`clSync` als Mikro-Aufgabe, `wpUndone` sofort).
+3. `tkStartSrc` Stück-Objekt: VS4 `o` (Plan für den Puffer-Tausch) │ VS5 `G`, `aud` (Fassungswechsel) → **alle Felder**.
+4. Großer Block hinter `TK_API` (zwei Konflikte, `git` hatte die beiden `FFT`-Funktionen der Kerne aufeinandergelegt): VS4-Block
+   (`vsCleanMake`, `CL`, `cl*`, `CL_API`) und VS5-Block (`vsMarksMake`, `vsStretchMake`, `WP`, `wp*`, `WP_API`) **beide vollständig**
+   hintereinander übernommen (je aus der Zweig-Datei, Zeile für Zeile).
+5. `Object.assign(SYNQUENZER, …)`: `TK_API` + `CL_API` + `WP_API`.
+
+**Zusammenspiel (ohne Textkonflikt, beim Zusammenführen ergänzt)**
+- **Kette je Take: Säubern vor Marken/Dehnen.** VS5 legt `wpProc` vorn in `tkExt().proc` und holt die Quelle über `wpBase` aus den
+  übrigen Verarbeitern = VS4 Säubern; die Zeitkarte (Scheiben/Dehnen) rendert also aus dem gesäuberten Take, sobald er fertig ist
+  (Cache-Schlüssel an der Quelle → neue SÄUBERN-Stärke = neue Fassung). A/B „Roh“ = Zeitkarte über dem Roh-Take.
+- **Marken-Erkennung am gesäuberten Take:** `wpDetect` wartet bei SÄUBERN > 0 auf `clEnsure` und erkennt am gesäuberten Take; die
+  erkannten (nicht gespeicherten) Marken werden neu erkannt, wenn sich die SÄUBERN-Stärke ändert (`WP.detCl`). Von Hand gesetzte/
+  quantisierte Marken (`take.marks`) bleiben.
+- **Fassungswechsel beim Spielen:** VS4 tauscht gesäuberte ↔ rohe Fassung an derselben Stelle (lineare 6-ms-Blende, `clResync`). Mit
+  Zeitkarte liegen alt und neu nicht mehr zeitgleich → `clResync` übergibt dann an `wpSwitch` (VS5a-fix, plant mit der Zeitkarte neu,
+  Überblendung an passender Stelle). Stücke, die ein VS5-Wechsel schon ausblendet (`tkXfOut`), tauscht `clResync` nicht mehr
+  (sonst doppelt bei ↶ während des Spielens); der lineare Tausch nimmt keine VS5-Blendkurve (`xc`) mit.
+- **Takes-Blatt quer (≤ 440 px hoch):** SÄUBERN-Block (VS4) + [✎ Marken · Quantisieren] (VS5) waren 3–21 px höher als das Blatt
+  (L1/L2, `v3-vs4-lay`). Nur engere Abstände in dieser Höhe (Polster 10 px, Überschrift/Liste/Knopf-Abstände 2–4 px); Knöpfe bleiben ≥ 44 px,
+  Hochkant unverändert.
+- **Geister-Maus beim Öffnen des Editors:** Mit dem höheren Takes-Blatt lag der Stärke-Regler des Marken-Editors genau unter
+  [✎ Marken · Quantisieren]; das `mousedown` desselben Tipps (Kompatibilitäts-Maus nach `touchend`) verstellte ihn (P2/L2: 49 % bzw. 0 %
+  statt 70 %, `v3-vs5b-t2`). Jetzt verwirft ein Schutz wie `UI.ghost` diese Geister-Maus auf Reglern im Editor.
+
+**Abnahme am zusammengeführten Stand** (Kopien der Skripte mit Ziel `mk-wt/index.html`: `dirigent-test/gs7-*.mjs`, Ausgaben `dirigent-test/gs7/out/`)
+- VS4: `v3-vs4-core` ALLE OK (13), `v3-vs4-accept` 26/26, `v3-vs4-lay` 23/23 (nach Fix), `-fakewav` 8/8, `-click` 6/6, `-perf` 2/2.
+- VS5a: `v3-vs5a-t1` 20/20, `t3` 31/31, `t4` 5/5, `t5` 6/6; `v3-vs5b-reg-t2` 21/21 (`v3-vs5a-t2` 20/21: „↶ → 100 %“ ist durch VS5b
+  absichtlich überholt, siehe VS5b-Regression).
+- VS5b: `v3-vs5b-t1` 32/32, `t2` 51/51 (nach Fix), `t3` 5/5, `t4` 6/6, `t5` 9/9.
+- Zusammenspiel neu `gs7-merge-vs4vs5.mjs` 10/10: Säubern 60 % → Marken am gesäuberten Take → Dehnen aus der gesäuberten Fassung;
+  A/B Roh mit Zeitkarte; SÄUBERN 100 % beim Spielen (Wechsel per `wpSwitch`, ein klingendes Stück); ↶ beim Spielen (Stärke und
+  Quantisieren); Speichern → Laden deep-equal (cl, warp) und wieder gesäubert + gedehnt; keine Konsolenfehler.
+- QA-Skripte: `v3-qa-vs4-b` 62/63, `-d`, `-e`, `-f` ALL OK, `-reg` 15/15, `-g` Pegel 0/−0,2 dB; `v3-qa-vs5a-g` ALL OK, `-reg` 13/13,
+  `-e` 32/54 und `-c` 5/6, `v3-qab5b-ui` 28/35 – **jeweils dieselben Befunde am Zweig VS4 bzw. VS5** (gegengeprüft), nicht durch die
+  Zusammenführung; `v3-qab5b-core` bitgleich (max diff 0), `-einbruch` Dehnen 0 Nähte > 3 dB, `-switch`, `-song` ALL OK.
+- Regression: Rauchtest ohne Fehler, `v3-vs3-accept` 72/72, VS2-Abnahme 48/49 („Stimme rechtzeitig geplant −20,6 ms“ auch am
+  Zweig VS4; Test G schwankt mit dem Fake-Mikro, 2 Wiederholungen grün), `gmkp8-voc-mic` 8/8, `gmkp8-mk8-platz-quer` 9/9,
+  `gmkp8-mk8-09-platte` 26/27 (Toast B05 – an der Basis 4.18.0 genauso).
+- Größe 3 321 532 B (gzip 1 080 052 B).
+
+**Offen (nicht durch die Zusammenführung entstanden)**
+- `v3-qa-vs4-b`: nach Neuladen wird die 100-%-Fassung einmal neu gerechnet statt aus dem Speicher geholt (auch am Zweig VS4-fix).
+- `v3-qa-vs5a-c` M-KLICK 7,7 dB beim Wechsel auf dem QA-Dauerton (0 Marken): mit dem bildgenauen Aufnehmer am Zweig VS5 derselbe Wert;
+  liegt am Tonwechsel des Testtons (VS5a-fix §2).
+- `v3-qa-vs5a-e`, `v3-qab5b-ui`: Editor-Titel „Marken · STIMME · Szene n“ mit Auslassung, Chips 32 px hoch, Kopf-Knöpfe 36 px,
+  Info-Zeile mit Warnung in P3 abgeschnitten, Songansicht schließt den Editor nicht – Befunde aus VS5a/VS5b-QA, am Zweig gleich.
+- Mit Zeitkarte rechnet A/B „Roh │ Sauber“ jedes Umschalten neu (der Render-Cache hält je Take nur die aktuelle und – bei offenem
+  Editor – die vorige Fassung); klingt nach ≈ 0,1–0,7 s um.
+- Wellenform in Matrix/Song zeigt weiter den Roh-Take (VS4-Lücke).
+
+## G-S7-merge-fix (4.21.0 bleibt, 27.10.2026) – ein Befund nach der Zusammenführung
+
+- **Marken-Editor: Aktions-Toast lag über seinen Knöpfen (major).** `toastHome()` kannte `#wpSheet` nicht; der Toast
+  („Songtext gesetzt [Rückgängig]“, „Marke gelöscht [Rückgängig]“, VS4 „Rückgängig: Säubern 100 % [↷ Wiederholen]“) dockte
+  auf der Träger-Zeile unter dem Blatt und lag damit 5 s über [A/B] / [✕] / [Text] (L) bzw. [Dehnen] [Scheiben] [Ganz] (P).
+  Ein Tipp dort machte rückgängig oder wiederholte (Songtext weg, gelöschte Marke zurück, Säubern 60 → 100) oder wurde
+  verschluckt. Jetzt (§10.4, wie MK-P-Kopf): bei offenem Editor dockt der Toast auf dem Titel im Kopf, von dessen linkem
+  Rand bis 10 px vor [Text] (`wpHeadDockRect`), Knöpfe als Symbol (↶ / ↷), zu lange Meldungen in zwei/drei kleinen Zeilen,
+  Rest abgeschnitten – nie über Werkzeugen, Leinwand oder Reglern. z-index 55 (`.wpk`): unter den Popovern (Text, Marke).
+- Proben (`dirigent-test/vgs7/`): `toastcheck.mjs`, `toastcheck2.mjs`, `toastdel.mjs`, `toastredo.mjs` (BTN = A/B, ✕, Text)
+  in 844×390, 667×375, 390×844, 320×568: elementFromPoint trifft jeweils das Editor-Werkzeug, Songtext bleibt, A/B schaltet,
+  Marke bleibt gelöscht (16 → 15), Editor schließt, Säubern bleibt 60 %. Neu `toastfix-verify.mjs`: kein Editor-Element unter
+  dem Toast, Toast-↶ macht den Songtext weiter rückgängig, [Scheiben] und Zoom wirken binnen 5 s. Smoke ohne Fehler.
+- Unverändert (schon im Stand G-S7-merge, nicht durch diesen Fix): `gs7-v3-qab5b-ui` meldet Titel-Auslassung und P3-Info-Zeile
+  (bekannt), `gmkp8-mk8-09-platte` FAIL „Toast [Rückgängig]“ (MK-P-Kopf-Dock, gleiches Ergebnis vor dem Fix). In 320×568 zeigt
+  der Kopf-Toast lange Meldungen nur angeschnitten („Rück-gän-gig: …“), das Symbol ↷ bleibt lesbar.
+- Schnappschuss: `synq-snapshots/G-S7-merge-fix.html`.
