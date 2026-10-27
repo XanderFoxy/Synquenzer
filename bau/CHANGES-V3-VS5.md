@@ -256,7 +256,7 @@ Grundlage: diese Zweig-Kopie `vs-br-VS5/index.html` ab VS5a-fix (4.20.0). Spec: 
 ### Fach-Prüfung (Nachtrag 2 Teil J, Gruppe 7: FP-DSP, FP-IPHONE) – an mir selbst
 - **FP-DSP:**
   - Bitgleich bei Stärke 0 %, A/B und ↶ (Roh-Take); die ersten 20 ms nach jeder Marke ebenso.
-  - Einbruch an Nähten ≤ 3 dB (gemessen 0,35–2,14 dB). Lücken gefüllt, digitale Stille bleibt Stille.
+  - ~~Einbruch an Nähten ≤ 3 dB (gemessen 0,35–2,14 dB).~~ **Falsch gemessen** (≈ 10-ms-Fenster statt 5 ms) – richtig waren bis −7,8 dB; behoben in VS5b-fix (unten). Lücken gefüllt, digitale Stille bleibt Stille.
   - M-KLICK nicht über dem Original (QA-b 23,3 gegen 23,2 dB; Klickfolge 34,4 gegen 35,3 dB). Tonhöhe bleibt (< 1 Cent, Kern-Test).
   - Der NaN/Inf-Schutz kommt aus dem Kern.
   - Kein Worklet-Code. Das Rendern läuft offline im Worker; der Fassungswechsel beim Spielen wird überblendet (≤ 0,94 dB).
@@ -290,3 +290,50 @@ Grundlage: diese Zweig-Kopie `vs-br-VS5/index.html` ab VS5a-fix (4.20.0). Spec: 
 
 ### Datenbank
 Nichts nötig. Format 5 und `max_app` 4021000 decken 4.21.0 ab.
+
+## VS5b-fix (4.21.0 bleibt, 27.10.2026) – ein QA-Befund (FP-DSP, M-EINBRUCH)
+
+### Befund (nachgestellt, bevor etwas geändert wurde)
+`v3-qab5b-einbruch.mjs 220 prof`: N7V-28-Material (Klicks über einem gehaltenen Ton) bei 44,1 kHz, Editor-Standard 1/8 · 70 % · Dehnen. M-EINBRUCH genau nach Spec (5-ms-Fenster, 1-ms-Schritte, ±50 ms um Marke − 6,5 ms): **24 von 50 Nähten unter −3 dB, schlimmste −6,57 dB** (Original an denselben Marken −0,13 dB); 196 Hz bis −7,79 dB. Das Loch lag im Fenster 10…5 ms vor der Marke, also in der 5-ms-Naht, die WP_LEAD vor der Marke endet. Meine Angabe „0,35–2,14 dB“ war mit ≈ 10-ms-Fenstern gemessen, die das 5-ms-Loch verschmieren.
+
+### Ursache
+Ab s0 (4 ms vor der Marke) ist die Ausgabe bitgleich festgelegt, deshalb treffen sich in der Naht zwei unterschiedlich verschobene Fassungen desselben Tons. Der Rest-Versatz liegt zwischen 0 und ½ Periode. Die Blende endete immer genau an s0 und war fest gleichspannungs- bzw. gleichleistungsgemäß. Je nachdem, wo die Blende in der Periode lag, fiel ein Pulsschlag der Periode aus (Abstand P + Versatz) und die Anteile löschten sich aus. Dazu kam ein Fehler in der WSOLA-Suche: Ein nur angeschnittenes Suchfenster (wenige Samples vor dem Abschnittsende) fand keine passende Periode (ρ −0,25) und ließ ein −5-dB-Loch ≈ 25 ms vor der Marke.
+
+### Änderung am DSP-Kern `vs-dsp/stretch.mjs` (`VERSION 'vs5b-stretch-5'`, in der App über `vsStretchMake`, ohne Kommentare)
+1. **Lage der Blende:** Die 5-ms-Blende darf bis 12 ms vor s0 liegen; dahinter läuft die Quelle unverändert in die Marke. Gewählt wird die Lage, bei der das leiseste 5-ms-Fenster (0,5-ms-Schritte, über Blende und Marke) am lautesten ist. Die Pulse rücken dann zusammen statt auseinander. Ohne Auslöschung bleibt die Lage wie bisher an der Marke (Gleichstand → 0 ms).
+2. **Energie-Ausgleich:** Fehlt in der Blende danach noch Energie gegenüber einer gleichphasigen Blende (Pegel beider Seiten), hebt eine Glocke (sin², Gipfel G ≤ 4) genau so viel an. Ohne Auslöschung ist G = 1. Die Anhebung erzeugt keine steileren Flanken, als der Eingang hat (sonst wird G in Schritten kleiner). Damit bleibt der Kern-Test „Keine Klicks“ grün.
+3. **Feste Teile bleiben unberührt:** Die Blende reicht nie in die festen ersten 24 ms der vorigen Scheibe (bei sehr kurzen Scheiben wie bisher).
+4. **WSOLA-Suche:** Ein angeschnittenes Suchfenster wird auf volle Breite 2Δ gebracht (Erweiterung der VS5b-Einbau-Regel).
+5. **Verworfen** (gemessen): (a) Phasen-Lenkung über 4 Rahmen: Bei formantreichem Ton löschen sich die Obertöne an jeder Rahmengrenze aus (Kern-Test 3b 5,66 dB statt 2,14). (b) Nur korrelationsnormierte Verstärkung: Die Gesamtenergie stimmte, das 5-ms-Fenster nicht (−4,6 dB).
+- **Neuer Kern-Test 3e:** M-EINBRUCH genau nach Spec bei 44,1 kHz, 202/180 Hz, 70/100 %. Alter Kern: FAIL (−5,67 … −6,52 dB). Neuer Kern: −0,78 … −1,08 dB (Original −0,20 / −1,07).
+- `node run-tests.mjs`: **112 Prüfungen, alle grün** (45 + 32 + 35). Rechenzeit Dehnen 60 s bei 48 kHz: 0,54 s statt 0,43 s.
+- Weitere Kern-Werte: 2-Perioden-Einbruch 110/196/330 Hz 0,05/0,43/0,08 dB (vorher 0,58/0,92/0,35). Achtel mit Klicks 0,22 dB (vorher 2,14). Tonhöhe, Länge und 20 ms bitgleich unverändert.
+
+### Nachweis in der App (gleiche Skripte wie der Befund, Chromium headless, 44,1 kHz)
+| Lauf | vorher | nachher |
+|---|---|---|
+| 220 Hz, 1/8 70 % | 24/50 Nähte < −3 dB, schlimmste −6,57 | **0/50**, schlimmste −2,13 |
+| 220 Hz, 1/8 100 % | 13/49, −6,79 | **0/49**, −0,86 |
+| 220 Hz, 1/16 70 % / 100 % | 9/49 −5,92 / 12/49 −6,88 | **0/49** −0,58 / **0/49** −0,86 |
+| 196 Hz, 1/8 70 % / 100 % | −5,21 / −7,79 | **0** Nähte, −2,73 / −1,11 (Original −2,12) |
+| 196 Hz, 1/16 70 % / 100 % | – | **0**, −2,10 / −2,43 |
+| Legato `v3-qab5b-einbruch2.mjs`, 1/8 70 % | 2 von 9: −5,05 und −4,07 | 1 von 9: −4,07 (siehe unten) |
+
+- Zwei Läufe bei 220 Hz liefern dieselben Zahlen.
+- **Legato −4,07 dB ist keine Naht:** Das Fenster liegt +34…+45 ms hinter der Marke 3,742 s, also 7–18 ms nach der nächsten Marke (3,769 s, nach dem Quantisieren nur 27 ms später). Dort ist die Ausgabe der bitgleiche Anfang der nächsten Silbe. Ihr Pegel ist im Original genauso leise (y gegen x je 5 ms: −27,7/−27,8/−28,8 gegen −27,7/−27,8/−28,7 dB). Vor dem Fix stand dort derselbe Wert (−4,07). Am Original misst die gleiche Marke −0,32 dB, weil dort die nächste Silbe 90 ms entfernt liegt.
+- Der Replay `v3-vs5bfix-replay.mjs` (Node, Kern mit der Zeitkarte der App) ist bitgleich zur App-Ausgabe (maxdiff 0 auf dem Legato-Dump).
+
+### Regression (dieser Stand)
+- `v3-vs5b-t1`: ALL OK. N7V-28 bitgleich 17/17, Länge ±0 ms, M-KLICK 34,4 gegen 35,3 dB, N7V-29, 0 %/A/B/↶ bitgleich, Cache, Speichern/Laden.
+- `v3-vs5b-t3` (gehört): ALL OK. Einsätze auf 1/16, Fassungswechsel beim Spielen ≤ 0,92 dB.
+- `v3-vs5b-t4` (60-s-Take, FP-IPHONE): ALL OK. Render im Worker 642 ms; kein longtask > 50 ms.
+- `smoke.mjs`: ohne Fehler.
+- **Größe:** +2,4 KB roh, +0,9 KB gzip gegenüber VS5b (3 272 365 Byte). VS5b liegt damit bei +20,2 KB vom +30-KB-Budget.
+- UI, Bedienung und Version (4.21.0) sind unverändert; Format und Datenbank unberührt.
+
+### Test-Werkzeug
+`dirigent-test/v3-vs5a-h.mjs` `mEinbruch()`: Indizes sind jetzt ganzzahlig. Vorher war `P + d·sr/1000` bei 44,1 kHz gebrochen; die Hilfe lieferte dort immer 0 und konnte das Loch nicht finden. Gegenprobe: Ein 5-ms-Loch bei 44,1 kHz ergibt jetzt −19,99 dB.
+
+### Offen (nicht Teil dieses Befunds, VS5a „Scheiben“)
+Modus **Scheiben** zeigt auf demselben Material weiter Löcher, z. B. 1/16 100 %: 10/49 Nähte < −3 dB, schlimmste −6,72 dB bei 220 Hz und −4,81 dB bei 196 Hz. Grund ist derselbe Phasensprung am festen Anschlag. Die Spec legt bei Scheiben den Schnitt 3 ms vor dem Einsatz am Nulldurchgang fest (C.5 Nr. 6), deshalb habe ich die Blende dort nicht verschoben. Der Vorschlag ist dieselbe Lage-Suche wie beim Dehnen, als eigenes Paket bzw. als Rückfrage an Xander, denn sie würde den Schnittpunkt verändern. Für Gesang gilt der Standard [Dehnen].
+

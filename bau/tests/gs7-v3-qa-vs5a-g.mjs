@@ -1,0 +1,43 @@
+// QA VS5a G: Claude app (iframe, no mic): project with take.marks / warp / follow:false survives import → save, no editor, no [Audio folgt], MELODIE quantize leaves the take alone
+import {launch, open5, sleep, clicks, toI16, deq, QOUT} from './gs7-v3-qa-vs5a-h2.mjs';
+let fail = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) fail++; };
+const br = await launch(null);
+// 1) make a project with a quantized take on the own page
+let H = await open5(br, {}), p = H.p;
+await p.evaluate(() => { SYNQUENZER.newProject(); SYNQUENZER.setBpm(120); }); await sleep(300);
+const r = await p.evaluate(pcm => SYNQUENZER.tkInject({pcm, sr: 48000, scene: 0, len: 2}), toI16(clicks([0.51, 0.77, 1.02, 1.24, 1.53, 1.71], 3)));
+await p.evaluate(id => SYNQUENZER.wpQuantize(id, {grid: '1/8', strength: 0.8, swing: 0.6}), r.id);
+await p.evaluate(id => SYNQUENZER.wpMark(id, 'add', 2.2), r.id);
+await p.evaluate(id => SYNQUENZER.setClip(5, 0, {len: 2, notes: [{t: 0.07, d: 0.4, n: 60, v: 0.8}, {t: 0.55, d: 0.4, n: 62, v: 0.8}], take: id}), r.id);
+await p.evaluate(() => SYNQUENZER.openQuant(5, 0)); await sleep(200); await (await p.$('#qSheet .qfol')).click(); await (await p.$('#qSheet .qact .go')).click(); await sleep(500);
+const J = await p.evaluate(() => SYNQUENZER.serialize()), P0 = JSON.parse(J);
+const tk0 = await p.evaluate(id => SYNQUENZER.takes()[id], r.id);
+console.log('take fields', Object.keys(tk0).join(','), 'follow', tk0.follow, 'warp', tk0.warp && tk0.warp.res, tk0.warp && tk0.warp.swing);
+ok(tk0.follow === false && tk0.warp && tk0.marks, 'own page: take has marks, warp, follow:false');
+await H.ctx.close();
+// 2) Claude app (iframe)
+const ctx = await br.newContext({viewport: {width: 420, height: 900}});
+p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('file://' + QOUT.replace('qa-vs5a', 'vs5a') + '/frame.html'); await sleep(2500);
+const f = p.frames().find(fr => fr.url().includes('mk-wt'));
+await f.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version);
+const ok1 = await f.evaluate(() => SYNQUENZER.tkInfo().audioOk); ok(ok1 === false, 'iframe: audio not available');
+await f.evaluate(j => SYNQUENZER.importJSON(j), J); await sleep(800);
+const P1 = await f.evaluate(() => JSON.parse(SYNQUENZER.serialize()));
+const strip = P => { const q = JSON.parse(JSON.stringify(P)); delete q.saved; delete q.savedAt; delete q.modified; return q; };
+ok(deq(P0.takes, P1.takes), 'iframe: import → serialize keeps takes deep-equal (marks, warp, follow)');
+const st = await f.evaluate(() => SYNQUENZER.tkInfo().stimme);
+await f.evaluate(st => { SYNQUENZER.selectSlot(st, 0); return SYNQUENZER.tkSheet({t: st, s: 0}); }, st); await sleep(300);
+ok(!(await f.$('.tksheet button[data-a="wp"]')), 'iframe: no [✎ Marken · Quantisieren] in the takes sheet');
+ok(!(await f.evaluate(() => SYNQUENZER.wpOpen({t: SYNQUENZER.tkInfo().stimme, s: 0}))), 'iframe: editor does not open');
+await f.evaluate(() => SYNQUENZER.closeAll && SYNQUENZER.closeAll());
+await f.evaluate(() => SYNQUENZER.openQuant(5, 0)); await sleep(200);
+ok(!(await f.$('#qSheet .qfol')), 'iframe: no [Audio folgt]');
+await f.evaluate(() => SYNQUENZER.closeQuant(false));
+await f.evaluate(() => SYNQUENZER.quantizeClip(5, 0, {grid: '1/16'})); await sleep(300);
+const P2 = await f.evaluate(() => JSON.parse(SYNQUENZER.serialize()));
+ok(deq(P0.takes, P2.takes), 'iframe: MELODIE quantize leaves the take untouched');
+console.log('errors', JSON.stringify(errs.slice(0, 3)));
+ok(!errs.filter(e => !/getUserMedia|Permissions|storage/i.test(e)).length, 'iframe: no console errors');
+await br.close();
+console.log(fail ? 'FAIL ' + fail : 'ALL OK');

@@ -55,7 +55,8 @@ export function mKlick(y, attacks, sr = SR) {
 }
 // M-EINBRUCH around point p: 5-ms windows step 1 ms from -50 to +50 ms; ref = mean of windows -50…-10 ms; worst drop
 export function mEinbruch(y, p, sr = SR) {
-  const W = Math.round(0.005 * sr), lv = c => { let s = 0; for (let i = c; i < c + W; i++) s += y[i] * y[i]; return 10 * Math.log10(s / W + 1e-14); };
+  // VS5b-fix: ganzzahlige Indizes (bei 44,1 kHz war P + d·sr/1000 gebrochen → y[i] undefined → NaN → immer 0)
+  const W = Math.round(0.005 * sr), lv = c => { c = Math.round(c); let s = 0; for (let i = c; i < c + W; i++) s += y[i] * y[i]; return 10 * Math.log10(s / W + 1e-14); };
   const P = Math.round(p * sr), ref = []; for (let d = -50; d <= -10; d++) ref.push(lv(P + d * sr / 1000));
   const r = ref.reduce((a, b) => a + b) / ref.length; let worst = 0;
   for (let d = -50; d <= 45; d++) { const v = lv(P + Math.round(d * sr / 1000)) - r; if (v < worst) worst = v; }

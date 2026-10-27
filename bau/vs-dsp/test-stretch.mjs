@@ -105,6 +105,32 @@ const tone = (dur, f0, o = {}) => {   // harmonischer Ton mit Formanten (Vokal �
   check('Kurze Abschnitte: 4 ms Vorlauf + 20 ms ab der Marke bitgleich', bit === ons.length, bit + '/' + ons.length);
 }
 
+// 3e. VS5b-fix: M-EINBRUCH genau nach Spec (5-ms-Fenster, 1-ms-Schritte, ±50 ms um Marke − 6,5 ms, gegen das Mittel −50…−10 ms) an
+//     jeder Naht, bei 44,1 kHz (Browser-Rate); Klicks über einem gehaltenen Ton (N7V-28-Material), 202/180 Hz, Achtel 70 % und 100 %
+{
+  const sr2 = 44100;
+  const mE = (y, p) => { const W = Math.round(0.005 * sr2), lv = c => { c = Math.round(c); let q = 0; for (let i = c; i < c + W; i++) q += y[i] * y[i]; return 10 * Math.log10(q / W + 1e-14); };
+    const P = Math.round(p * sr2), ref = []; for (let d = -50; d <= -10; d++) ref.push(lv(P + d * sr2 / 1000)); const r = ref.reduce((a, b) => a + b) / ref.length; let w = 0;
+    for (let d = -50; d <= 45; d++) { const v = lv(P + d * sr2 / 1000) - r; if (v < w) w = v; } return w; };
+  const OFF = [14, -22, 31, -9, 26, -35, 18, 4, -27, 12, -16, 33, -6, 21, -30, 9, 15, -12, 28, -20, 7, -33, 24];
+  const res = [];
+  for (const f0 of [202, 180]) {
+    const dur = 6.6, n = Math.round(dur * sr2), x = new Float32Array(n), r = T.rng(9), ons = OFF.map((o, k) => 0.5 + k * 0.25 + o / 1000);
+    let ph = 0;
+    for (let i = 0; i < n; i++) { const t = i / sr2; if (t < 0.3) continue; ph += 2 * Math.PI * f0 * (1 + 0.003 * Math.sin(2 * Math.PI * 5.5 * t)) / sr2;
+      let v = 0; for (let h = 1; h <= 10; h++) v += Math.sin(h * ph) / h * (h === 3 || h === 4 ? 1.5 : 1); x[i] = 0.08 * v * Math.min(1, (t - 0.3) / 0.02) * Math.min(1, (dur - t) / 0.03); }
+    for (const t of ons) { const i0 = Math.round(t * sr2); for (let k = 0; k < 0.03 * sr2; k++) x[i0 + k] += 0.6 * Math.exp(-k / (0.004 * sr2)) * T.gauss(r) * Math.min(1, k / 6); }
+    for (const st of [0.7, 1]) {
+      const L = Math.round(0.004 * sr2) / sr2, to = ons.map(t => t + (Math.round(t / 0.25) * 0.25 - t) * st);
+      const src = [0, ...ons.map(t => t - L), dur], dst = [0, ...to.map(t => t - L), dur];
+      const y = stretch(x, sr2, {src, dst}, {lock: 0.02 + L}).y;
+      let worst = 0, wo = 0; ons.forEach((t, k) => { if (k === 0) return; worst = Math.min(worst, mE(y, to[k] - 0.0065)); wo = Math.min(wo, mE(x, t - 0.0065)); });
+      res.push({f0, st, worst: +worst.toFixed(2), orig: +wo.toFixed(2)});
+    }
+  }
+  check('M-EINBRUCH (5-ms-Fenster, 44,1 kHz) an allen Nähten ≤ 3 dB', res.every(v => v.worst >= -3), res);
+}
+
 // 3c. Digitale Stille zwischen Noten (Datei-Takes): die Stille bleibt Stille (keine Ausklang-Reste durch die Suche)
 {
   const dur = 6, n = dur * sr, x = new Float32Array(n), on = [], b = tone(0.22, 247);

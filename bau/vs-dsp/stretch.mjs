@@ -47,6 +47,9 @@ function factory() {
       // VS5b-Einbau: liegt das Suchfenster ganz hinter dem Abschnittsende (letzte Rahmen), wird im letzten erlaubten Stück gesucht
       // statt ohne Suche festgelegt (vorher: Phasensprung → bis −5,4 dB Einbruch vor jeder Marke bei kurzen Abschnitten)
       if (b <= a) { if (tau > hi) { b = hi; a = Math.max(lo, hi - 2 * Dl); } else { a = lo; b = Math.min(hi, lo + 2 * Dl); } }
+      // VS5b-fix: auch ein nur angeschnittenes Suchfenster (wenige Samples vor hi bzw. nach lo) auf volle Breite 2Δ bringen – vorher
+      // fand der vorletzte Rahmen dort keine passende Periode (ρ −0,25 → −5 dB Loch ~25 ms vor der Marke)
+      else if (b - a < 2 * Dl) { if (b === hi) a = Math.max(lo, hi - 2 * Dl); else if (a === lo) b = Math.min(hi, lo + 2 * Dl); }
       if (b <= a) return Math.min(hi, Math.max(lo, tau));
       // VS5b-Einbau: stille Vorlage (digitale Stille) → natürliche Stelle statt des ersten Treffers (sonst holt die Suche den
       // Ausklang der vorigen Note in die Stille, −70-dB-Reste)
@@ -89,36 +92,8 @@ function factory() {
       return bi;
     };
 
-    // VS5b-fix: kleinste Verschiebung d (|d| ≤ Δ), mit der x[c+d …] wie x[ia …] aussieht (Phasen-Versatz zwischen natürlicher
-    // Fortsetzung und markengenauer Lage). Grob auf ~12 kHz, unter den Gipfeln ≥ 85 % des besten der mit kleinstem |d|; fein auf voller Rate.
-    // Ohne klare Periodizität (bester Wert < 0,3) → 0 (keine Lenkung)
-    const phaseOff = (ia, c) => {
-      if (ia < 0 || ia + Hs > n || cum[ia + Hs] - cum[ia] < 1e-10 * Hs) return 0;
-      const ta = Math.floor(ia / dec), ca = Math.floor(c / dec); if (ta + Hd > nd) return 0;
-      const ea = cumd[ta + Hd] - cumd[ta], sc = new Float64Array(2 * Dd + 1).fill(-2);
-      let mx = -2;
-      for (let d = -Dd; d <= Dd; d++) {
-        const cc = ca + d; if (cc < 0 || cc + Hd > nd) continue;
-        let s = 0; for (let m = 0; m < Hd; m++) s += xd[ta + m] * xd[cc + m];
-        const v = s / Math.sqrt(ea * (cumd[cc + Hd] - cumd[cc]) + 1e-20); sc[d + Dd] = v; if (v > mx) mx = v;
-      }
-      if (mx < 0.3) return 0;
-      let bd = 0, bad = Infinity;
-      for (let d = -Dd; d <= Dd; d++) {
-        const v = sc[d + Dd]; if (v < 0.85 * mx) continue;
-        if ((d > -Dd && sc[d + Dd - 1] > v) || (d < Dd && sc[d + Dd + 1] > v)) continue;
-        if (Math.abs(d) < bad) { bad = Math.abs(d); bd = d; }
-      }
-      const g = ca * dec + bd * dec - c;   // grobe Verschiebung auf voller Rate
-      let bf = -Infinity, bi = g;
-      for (let d = g - dec; d <= g + dec; d++) {
-        const cc = c + d; if (d < -Dl - dec || d > Dl + dec || cc < 0 || cc + Hs > n) continue;
-        let s = 0; for (let m = 0; m < Hs; m += 2) s += x[ia + m] * x[cc + m];
-        const v = s / Math.sqrt(cum[cc + Hs] - cum[cc] + 1e-12); if (v > bf) { bf = v; bi = d; }
-      }
-      return bi;
-    };
-
+    let jIn = 0; for (let i = 1; i < n; i++) { const d = Math.abs(x[i] - x[i - 1]); if (d > jIn) jIn = d; }
+    const xf = new Float32Array(2 * X + Math.round(0.012 * sr) + 2 * Math.round(0.005 * sr) + 2);
     let prev = null;
     for (let k = 0; k + 1 < S.length; k++) {
       const s0 = S[k], s1 = S[k + 1], d0 = D[k], d1 = Math.min(outLen, D[k + 1]), sl = s1 - s0, dl = d1 - d0;
@@ -165,24 +140,11 @@ function factory() {
         // (Ausgabe q ↔ Quelle s1), damit der Übergang zur nächsten Marke phasengleich ist; Rahmen jf−1 wird zu beiden
         // Seiten passend gesucht (Fortsetzung von jf−2 und Übergang in jf).
         const jf = Math.ceil((q - p) / Hs), ijf = s1 - (q - (p - Hs + jf * Hs));
-        // VS5b-fix: Phasen-Lenkung. Die Phasenlage an der Marke ist fest (bitgleicher Anschlag); vorher landete der ganze Rest-Versatz
-        // (bis eine halbe Periode) in der 5-ms-Naht → Auslöschung bis −7,8 dB (M-EINBRUCH). Jetzt: die letzten beiden Rahmen liegen genau
-        // auf der Marke (Quelle endet bei s1), der Versatz wird in gleichen Teilen auf bis zu 4 Rahmen davor verteilt (je Übergang ≤ ⅛
-        // Periode statt ½); die Naht sieht dann gleiche Phase
-        const steer = !endAlign && o.steer !== false && jf >= 3 && ijf - Hs >= a;
-        const j0 = steer ? Math.max(1, jf - 5) : jf + 1;
         let iPrev = a - Hs;
         for (let j = 0; j <= jf; j++) {
           const oj = p - Hs + j * Hs;
           let ij;
           if (j === 0) ij = Math.max(0, a - Hs);
-          else if (steer && j >= jf - 1) ij = ijf - (jf - j) * Hs;
-          else if (steer && j >= j0) {
-            const ia = ijf - (jf - j) * Hs, c = Math.min(iPrev + Hs, n - Hs), K = jf - j, tau = Math.round(a - Hs + j * Hs / rr);
-            const beta = (j - j0 + 1) / (jf - j0), tj = Math.round(tau + (ia - tau) * beta);
-            const e = phaseOff(ia, c);
-            ij = best(Math.max(0, Math.min(n - Hs, c + Math.round(e / K))), tj, lo, Math.max(lo, hi));
-          }
           else if (j === jf && endAlign) ij = Math.max(0, ijf);
           else if (j === jf - 1 && endAlign) ij = best2(Math.min(iPrev + Hs, n - Hs), Math.max(0, ijf), Math.round(a - Hs + j * Hs / rr), lo, Math.max(lo, hi));
           else ij = best(Math.min(iPrev + Hs, n - Hs), Math.round(a - Hs + j * Hs / rr), lo, Math.max(lo, hi));
@@ -195,17 +157,54 @@ function factory() {
       }
       // Übergang an der Marke (endet bei d0, also vor dem festen Transienten)
       if (prev && !(prev.mode === 'copy' && prev.d0 - prev.s0 === d0 - s0)) {   // nahtlos, wenn der vorige Abschnitt mit gleichem Versatz kopiert ist
-        const xa = Math.max(0, d0 - X), len = d0 - xa;
-        if (len > 0 && s0 - len >= 0) {
-          let sab = 0, saa = 0, sbb = 0;
-          for (let i = 0; i < len; i++) { const A = y[xa + i], B = x[s0 - len + i]; sab += A * B; saa += A * A; sbb += B * B; }
-          const rho = sab / Math.sqrt(saa * sbb + 1e-20);
+        // VS5b-fix: Die Phasenlage an der Marke ist fest (bitgleicher Anschlag ab s0), davor ist die Quelle frei. An der Naht treffen sich
+        // zwei verschieden verschobene Fassungen desselben Tons (Rest-Versatz bis ½ Periode). Vorher endete die Blende immer genau an der
+        // Marke und war fest gleichspannungs- bzw. gleichleistungsgemäß → je nach Lage fiel ein Pulsschlag der Periode aus (Abstand
+        // P + Versatz) und es löschte sich aus: bis −7,8 dB im 5-ms-Fenster (M-EINBRUCH). Jetzt:
+        // (1) Die 5-ms-Blende darf bis 12 ms vor der Marke liegen (dahinter läuft die Quelle unverändert in die Marke). Gewählt wird die
+        //     Lage, bei der das leiseste 5-ms-Fenster der Naht am lautesten ist (die Pulse rücken zusammen statt auseinander).
+        // (2) Fehlt in der Blende danach noch Energie gegenüber einer gleichphasigen Blende, hebt eine Glocke (Gipfel G ≤ 4) sie genau so
+        //     weit an. Keine Auslöschung → G = 1. Die Anhebung erzeugt keine steileren Flanken als der Eingang hat (sonst kleineres G).
+        const len = Math.min(X, d0), W5 = Math.max(1, Math.round(0.005 * sr)), stp = Math.max(1, Math.round(0.0005 * sr));
+        const lim = Math.max(prev.d0 + Math.min(lock, d0 - prev.d0 - len), W5);   // fester Teil der vorigen Scheibe bleibt unberührt (kurze Scheibe: wie bisher)
+        // Blende ab xa mit Quelle ab sb − len: Kosinus-Blende in xf[0…len), Glocken-Gipfel G für die fehlende Energie
+        const fade = (xa, sb) => {
+          let saa = 0, sbb = 0, d2 = 0, dc = 0, c2 = 0, want = 0;
+          for (let i = 0; i < len; i++) { const A = y[xa + i], B = x[sb - len + i]; saa += A * A; sbb += B * B; }
+          const ga = Math.sqrt(saa / len), gb = Math.sqrt(sbb / len);
           for (let i = 0; i < len; i++) {
-            const u = (i + 0.5) / len;
-            let gi, go;
-            if (rho > 0.5) { gi = 0.5 - 0.5 * Math.cos(Math.PI * u); go = 1 - gi; } else { gi = Math.sin(0.5 * Math.PI * u); go = Math.cos(0.5 * Math.PI * u); }
-            y[xa + i] = y[xa + i] * go + x[s0 - len + i] * gi;
+            const u = (i + 0.5) / len, gi = 0.5 - 0.5 * Math.cos(Math.PI * u), go = 1 - gi, m = y[xa + i] * go + x[sb - len + i] * gi, c = m * Math.sin(Math.PI * u) ** 2, d = m - c;
+            xf[i] = m; want += (go * ga + gi * gb) ** 2; d2 += d * d; dc += d * c; c2 += c * c;
           }
+          if (!(d2 + 2 * dc + c2 < want * 0.98 && c2 > 1e-20)) return 1;
+          const disc = dc * dc - c2 * (d2 - want);
+          return Math.min(4, Math.max(1, disc > 0 ? (-dc + Math.sqrt(disc)) / c2 : 4));
+        };
+        if (len > 0 && s0 - len >= 0 && d0 - len >= lim) {
+          let bestD = 0, bestV = -Infinity;
+          for (let dl2 = 0; dl2 <= Math.round(0.012 * sr); dl2 += stp) {
+            const xa = d0 - len - dl2, sb = s0 - dl2; if (xa < lim || sb - len < 0) break;
+            const G = fade(xa, sb);
+            // Ausgabe über [xa − W5, d0 + W5): y, Blende, Quelle (ab d0 der feste Teil); leisestes 5-ms-Fenster
+            const z0 = xa - W5, zn = Math.min(d0 + W5, d0 + n - s0) - z0, zz = xf.subarray(len);
+            for (let i = 0; i < zn; i++) {
+              const t = z0 + i; let v;
+              if (t < xa) v = y[t]; else if (t < xa + len) { const u = (t - xa + 0.5) / len; v = xf[t - xa] * (1 + (G - 1) * Math.sin(Math.PI * u) ** 2); } else v = x[s0 - (d0 - t)];
+              zz[i] = v * v;
+            }
+            let e = 0, mn = Infinity; for (let i = 0; i < W5; i++) e += zz[i];
+            for (let i = W5; i <= zn; i++) { if ((i - W5) % stp === 0) mn = Math.min(mn, e); if (i < zn) e += zz[i] - zz[i - W5]; }
+            if (mn > bestV * 1.02 + 1e-30) { bestV = mn; bestD = dl2; }
+          }
+          const xa = d0 - len - bestD, sb = s0 - bestD;
+          for (let t = xa + len; t < d0; t++) y[t] = x[s0 - (d0 - t)];
+          let G = fade(xa, sb);
+          for (let al = 1; al >= 0; al -= 0.25) {
+            const Gx = 1 + al * (G - 1); let prv = xa > 0 ? y[xa - 1] : 0, jm = 0;
+            for (let i = 0; i < len; i++) { const u = (i + 0.5) / len, v = xf[i] * (1 + (Gx - 1) * Math.sin(Math.PI * u) ** 2); jm = Math.max(jm, Math.abs(v - prv)); prv = v; }
+            if (Math.max(jm, Math.abs(x[sb] - prv)) <= jIn || al <= 0) { G = Gx; break; }
+          }
+          for (let i = 0; i < len; i++) { const u = (i + 0.5) / len; y[xa + i] = xf[i] * (1 + (G - 1) * Math.sin(Math.PI * u) ** 2); }
         }
       }
       prev = seg;

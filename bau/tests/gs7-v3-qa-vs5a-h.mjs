@@ -1,0 +1,38 @@
+// QA VS5a H (FP-IPHONE): 60-s sung take – editor open, detection, chips, slider drag, zoom, pan while PLAYING: longtasks > 50 ms, frame gaps
+import {launch, open5, sleep, toI16} from './gs7-v3-qa-vs5a-h2.mjs';
+import {voice} from '../vs-dsp/test-signals.mjs';
+let fail = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) fail++; };
+const br = await launch(null);
+const H = await open5(br, {touch: true, mobile: true}), p = H.p;
+await p.evaluate(() => { SYNQUENZER.newProject(); SYNQUENZER.setBpm(120); SYNQUENZER.setMetronome(false); }); await sleep(300);
+const F = [220, 247, 262, 294, 330, 294, 262, 247], notes = [];
+for (let k = 0; k < 230; k++) notes.push({t: 0.3 + k * 0.25 + ((k * 37) % 9 - 4) * 0.006, d: 0.22, f0: F[k % 8], vowel: 'aeiou'[k % 5], cons: k % 3 === 0});
+const x = voice(48000, 60, notes, {seed: 9}).x;
+const r = await p.evaluate(pcm => SYNQUENZER.tkInject({pcm, sr: 48000, scene: 0, len: 32}), toI16(x));
+await p.evaluate(() => SYNQUENZER.launchScene(0)); await sleep(800);
+await p.evaluate(() => { window.__lt = []; new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push([Math.round(e.startTime), Math.round(e.duration)]); }).observe({entryTypes: ['longtask']});
+  window.__fr = []; let last = performance.now(); const f = t => { window.__fr.push(t - last); last = t; if (window.__frOn) requestAnimationFrame(f); }; window.__frOn = true; requestAnimationFrame(f); });
+const marks = []; const mark = async n => marks.push([n, Math.round(await p.evaluate(() => performance.now()))]);
+await mark('tksheet'); await p.evaluate(st => { SYNQUENZER.selectSlot(st, 0); return SYNQUENZER.tkSheet({t: st, s: 0}); }, r.track); await sleep(300);
+await mark('open-tksheet-done'); await (await p.$('.tksheet button[data-a="wp"]')).tap(); await mark('editor-tap');
+await p.waitForFunction(id => SYNQUENZER.wpInfo(id).det, r.id, {timeout: 30000});
+await mark('detected'); const d = await p.evaluate(id => SYNQUENZER.wpInfo(id).lastDet, r.id); console.log('detect', JSON.stringify(d));
+for (const g of ['1/8', '1/16', 'auto', '1/16T', '1/8']) { await mark('chip ' + g); await (await p.$(`#wpSheet .wpchips button[data-v="${g}"]`)).tap(); await sleep(250); } await mark('slider');
+const sl = await p.$('#wpSheet .qrow input[type=range]'), b = await sl.boundingBox();
+await p.touchscreen.tap(b.x + b.width * 0.95, b.y + b.height / 2);
+await p.mouse.move(b.x + b.width * 0.95, b.y + b.height / 2); await p.mouse.down();
+for (let k = 0; k < 30; k++) { await p.mouse.move(b.x + b.width * (0.95 - k * 0.02), b.y + b.height / 2); await sleep(30); }
+await p.mouse.up(); await sleep(400);
+await mark('zoom'); for (let k = 0; k < 4; k++) { await (await p.$('#wpSheet .wpz')).tap(); await sleep(200); } await mark('pan');
+const G = await p.evaluate(() => SYNQUENZER.wpGeom());
+let ex = null; for (let xx = G.x + 30; xx < G.x + G.w - 30; xx += 3) if (G.marks.every(m => Math.abs(m - xx) > 17)) { ex = xx; break; } if (ex == null) ex = G.x + G.w / 2;
+await p.mouse.move(ex, G.y + G.h / 2); await p.mouse.down(); for (let k = 0; k < 20; k++) { await p.mouse.move(ex - k * 8, G.y + G.h / 2); await sleep(16); } await p.mouse.up();
+await sleep(1500);
+const R = await p.evaluate(() => { window.__frOn = false; const fr = window.__fr.slice(5).sort((a, b) => b - a); return {lt: window.__lt, frWorst: fr.slice(0, 5).map(v => Math.round(v)), frN: fr.length, over50: fr.filter(v => v > 50).length}; });
+const I = await p.evaluate(id => SYNQUENZER.wpInfo(id), r.id);
+console.log('steps', JSON.stringify(marks)); console.log('longtasks', JSON.stringify(R.lt), 'frames', R.frN, 'worst frame gaps', JSON.stringify(R.frWorst), '>50 ms', R.over50, 'renders', I.renders, JSON.stringify(I.last));
+ok(!R.lt.filter(v => v[1] > 50).length, 'no longtask > 50 ms during editor work on a 60-s take while playing');
+ok(R.over50 === 0, 'no frame gap > 50 ms');
+ok(!H.errs.length, 'no console errors ' + JSON.stringify(H.errs.slice(0, 2)));
+await br.close();
+console.log(fail ? 'FAIL ' + fail : 'ALL OK');
