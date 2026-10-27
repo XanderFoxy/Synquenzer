@@ -97,6 +97,38 @@ info('Echo-Tabelle', echoRows);
   check('N7V-23 kein Abschnitt > 50 ms unter −40 dB in Noten', worst <= 50, worst + ' ms');
 }
 
+// 4b. VS4-fix: Legato ohne Pause und gehaltene Töne (N7V-23 sinngemäß): das Rauschprofil darf nicht die Stimme sein
+{
+  const scale = [0, 3, 7, 5, 3, 7, 2, 0], notes = scale.map((s, k) => ({t: 0.2 + k * 0.9, d: 0.9, f0: 220 * Math.pow(2, s / 12), vowel: 'aeiou'[k % 5]}));
+  const V = T.voice(sr, 8, notes, {seed: 31}).x, nz = T.noise(sr, 8, T.rms(V, Math.round(0.3 * sr), Math.round(7.3 * sr)) * 0.01, 32);
+  const mic = Float32Array.from(V, (v, i) => v + nz[i]), a = Math.round(0.4 * sr), b = Math.round(7.2 * sr), r = {};
+  for (const amt of [0.6, 1]) {
+    const out = clean(mic, null, sr, {amount: amt});
+    const hpV = T.hp1(V, sr, 150), hpO = T.hp1(out, sr, 150);
+    let vo = 0, vv = 0; for (let i = a; i < b; i++) { vo += hpV[i] * hpO[i]; vv += hpV[i] * hpV[i]; } const g = vo / vv;
+    let s = 0, e = 0; for (let i = a; i < b; i++) { s += (g * hpV[i]) ** 2; e += (hpO[i] - g * hpV[i]) ** 2; }
+    r[amt] = {sdr: +T.db(s / e).toFixed(1), gainDb: +(20 * Math.log10(g)).toFixed(2)};
+  }
+  check('Legato ohne Pause, SNR 40: SDR ≥ 20 dB und Stimme < 1 dB (60 % und 100 %)', [0.6, 1].every(k => r[k].sdr >= 20 && Math.abs(r[k].gainDb) < 1), r);
+  const tone = {};
+  for (const f of [220, 440]) {
+    const x = Float32Array.from({length: Math.round(4.2 * sr)}, (_, i) => 0.3 * Math.sin(2 * Math.PI * f * i / sr));
+    for (const amt of [0.6, 1]) { const out = clean(x, null, sr, {amount: amt}); tone[f + '@' + amt * 100] = +T.db(T.rms(out, sr / 2, x.length - sr / 2) ** 2 / T.rms(x, sr / 2, x.length - sr / 2) ** 2).toFixed(2); }
+  }
+  check('Gehaltener Sinus 220/440 Hz bleibt im Pegel (< 1 dB, 60 % und 100 %)', Object.values(tone).every(v => Math.abs(v) < 1), tone);
+}
+// 4c. VS4-fix: o.from – Echo-Weg ändert sich im Vorlauf (erst ohne Echo, dann +6 dB mit Sättigung): Ergebnis ab „from“
+{
+  const sc = scene(16, {echoDb: 6, sat: true, seed: 41}), cut = Math.round(6 * sr), from = Math.round(8 * sr);
+  const mic = Float32Array.from(sc.mic, (v, i) => i < cut ? v - sc.echo[i] : v);
+  const sdr = o => { let v = 0, e = 0; for (let i = from; i < o.length; i++) { v += sc.S.x[i] ** 2; e += (o[i] - sc.S.x[i]) ** 2; } return +T.db(v / e).toFixed(1); };
+  const a = sdr(clean(mic, sc.ref, sr, {way: 'notes'})), b = clean(mic, sc.ref, sr, {way: 'notes', from: from - Math.round(0.5 * sr)}), bb = sdr(b);
+  check('o.from: Vorlauf mit anderem Echo-Weg verdirbt das Ergebnis nicht (SDR ab from ≥ 8 dB, ≥ 3 dB besser als ohne from)', bb >= 8 && bb >= a + 3, {ohne: a, mit: bb});
+  const sa = sdr(clean(sc.mic, sc.ref, sr, {way: 'notes'})), sb = sdr(clean(sc.mic, sc.ref, sr, {way: 'notes', from: from - Math.round(0.5 * sr)}));
+  check('o.from: gleicher Echo-Weg im Vorlauf → höchstens 1 dB schlechter als ohne from', sb >= sa - 1, {ohne: sa, mit: sb});
+  check('o.from: vor „from“ bleibt das Mikro bitgleich', b.subarray(0, from - Math.round(0.5 * sr)).every((v, i) => v === mic[i]));
+}
+
 // 5. Block-Verarbeiter (Worker): 128er-Blöcke, Latenz, Rampe, NaN, keine Allokation je Block
 {
   const c = new Cleaner(sr); c.setWay('notes');

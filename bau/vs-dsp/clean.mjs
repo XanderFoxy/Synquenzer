@@ -10,7 +10,9 @@
 //       o.amount   SÄUBERN 0…1 (Standard 1); 0 → bitgleiche Kopie von mic
 //       o.way      'hear' (Hör-Weg, Standard) | 'notes' (Noten-Weg = nur Echo-Abzug, ohne Nachfilter/Wiener/HP)
 //       o.delay    Laufzeit Referenz→Mikro in Samples (sonst geschätzt per GCC-PHAT)
-//       o.noiseRange [t0, t1] in Sekunden für das Rauschprofil (sonst die leisesten 10 % der Rahmen)
+//       o.noiseRange [t0, t1] in Sekunden für das Rauschprofil (sonst die leisesten 10 % der Rahmen, je Frequenz nach oben
+//                  begrenzt: Legato und gehaltene Töne werden nicht zu „Rauschen“)
+//       o.from     Samples: der 2. Lauf beginnt erst hier (warm), davor bleibt mic unverändert (Vorlauf nur zum Lernen)
 //       o.tail     Länge des Echo-Filters in s (Standard 0,25)
 //       o.passes   2 (Standard: 1. Lauf über die ersten o.learnSec = 20 s lernt Weg, Rauschprofil und Rest-Echo-Profil;
 //                  2. Lauf über alles mit warmem Filter und langsamem Nachlernen o.relearn = 0,1) | 1
@@ -375,6 +377,9 @@ function factory() {
   }
 
   // ---- Rauschprofil aus leisen Stellen (gleiche STFT-Geometrie wie Cleaner) ----
+  // VS4-fix: ohne echte Pause (Legato, gehaltener Ton) sind die „leisesten 10 %“ die Stimme selbst → das Profil wird je Frequenz
+  // nach oben begrenzt: 20-%-Quantil über die Zeit (Töne wandern, Rauschen bleibt), davon das Minimum über ±6 Bins (Rauschen ist
+  // glatt, Teiltöne sind schmal), ×9 (Quantil-Ausgleich 1/0,223 = +6,5 dB, dazu +3 dB Reserve). Echtes Rauschen bleibt darunter.
   function noisePsd(e, sr, c, range) {
     const {F, H, KF, win} = c, f = FFT(F), re = new Float64Array(F), im = new Float64Array(F);
     const nF = Math.max(0, Math.floor((e.length - F) / H) + 1), en = new Float64Array(nF);
@@ -389,16 +394,27 @@ function factory() {
       const th = s[Math.min(s.length - 1, Math.max(9, Math.floor(s.length * 0.1)))];
       pick = m => en[m] > 1e-12 * F && en[m] <= th;
     }
+    const live = []; for (let m = 0; m < nF; m++) if (en[m] > 1e-12 * F) live.push(m);
+    const nL = live.length, pw = new Float32Array(nL * KF);
     const psd = new Float64Array(KF); let cnt = 0;
-    for (let m = 0; m < nF; m++) {
-      if (!pick(m)) continue;
+    for (let q = 0; q < nL; q++) {
+      const m = live[q];
       for (let i = 0; i < F; i++) { re[i] = e[m * H + i] * win[i]; im[i] = 0; }
       f.fwd(re, im);
-      for (let k = 0; k < KF; k++) psd[k] += re[k] * re[k] + im[k] * im[k];
-      cnt++;
+      const sel = pick(m);
+      for (let k = 0; k < KF; k++) { const p = re[k] * re[k] + im[k] * im[k]; pw[q * KF + k] = p; if (sel) psd[k] += p; }
+      if (sel) cnt++;
     }
     if (!cnt) return null;
     for (let k = 0; k < KF; k++) psd[k] /= cnt;
+    if (nL >= 8) {
+      const col = new Float32Array(nL), T = new Float64Array(KF), qi = Math.floor(0.2 * (nL - 1));
+      for (let k = 0; k < KF; k++) { for (let q = 0; q < nL; q++) col[q] = pw[q * KF + k]; col.sort(); T[k] = col[qi]; }
+      for (let k = 0; k < KF; k++) {
+        let mn = Infinity; for (let j = Math.max(0, k - 6); j <= Math.min(KF - 1, k + 6); j++) if (T[j] < mn) mn = T[j];
+        const cap = 9 * mn; if (psd[k] > cap) psd[k] = cap;
+      }
+    }
     return psd;
   }
 
@@ -434,21 +450,30 @@ function factory() {
     const n = mic.length, way = o.way === 'notes' ? 'notes' : 'hear';
     const hasRef = !!ref && ref.some(v => v !== 0);
     const delay = o.delay != null ? Math.round(o.delay) : hasRef ? estimateDelay(mic, ref, sr) : 0;
-    const c = new Cleaner(sr, {tail: o.tail, amount, offline: true});
-    const margin = Math.round(0.0025 * sr);
-    c.setDelay(Math.max(0, delay - margin));
-    let out;
-    if (o.passes === 1) { c.setWay(way); c.setAmount(amount, true); out = run(c, mic, ref, n); }
+    const margin = Math.round(0.0025 * sr), mk = () => { const c = new Cleaner(sr, {tail: o.tail, amount, offline: true}); c.setDelay(Math.max(0, delay - margin)); return c; };
+    let out, c;
+    if (o.passes === 1) { c = mk(); c.setWay(way); c.setAmount(amount, true); out = run(c, mic, ref, n); }
     else {
-      // 1. Lauf: nur Echo-Abzug (lernt den Weg, liefert das Signal für das Rauschprofil)
-      const n1 = Math.min(n, Math.round((o.learnSec || 20) * sr));
-      c.setWay('notes'); c.setAmount(1, true); c.startProfile(Math.ceil((n1 + c.latency) / c.H) + 2);
-      const e1 = run(c, mic, ref, n1);
-      info.echoDb = +(10 * Math.log10((c.sEcho + 1e-9) / (c.sErr + 1e-9))).toFixed(1);
-      const st = c.exportState(), psd = way === 'hear' ? noisePsd(e1, sr, c, o.noiseRange) : null, prof = c.endProfile(0.3);
-      // 2. Lauf: warmes Filter, gewählter Weg
-      c.resetStreams(); c.importState(st); c.rate = o.relearn != null ? +o.relearn : 0.1; c.setWay(way); c.setAmount(amount, true); c.setNoisePsd(psd); c.setResidualProfile(prof);
-      out = run(c, mic, ref, n);
+      // VS4-fix: o.from = erst ab hier zählt das Ergebnis (davor nur Vorlauf zum Lernen, bleibt unverändert). Ändert sich der
+      // Echo-Weg im Vorlauf (erst ohne Echo, dann laut; Lautstärke), bremst die Doppelsprech-Bremse das Lernen → zweiter Versuch,
+      // der nur die letzten 8 s lernt; es gilt der mit weniger Rest-Energie ab „from“ (die Stimme ist in beiden gleich).
+      const s0 = o.from > 0 ? Math.min(n, Math.round(o.from)) : 0, lw = s0 ? Math.max(0, Math.min(s0, n - Math.round(8 * sr))) : 0;
+      const two = l0 => {
+        const c = mk(), n1 = Math.min(n - l0, Math.round((o.learnSec || 20) * sr));
+        // 1. Lauf: nur Echo-Abzug (lernt den Weg, liefert das Signal für das Rauschprofil)
+        c.setWay('notes'); c.setAmount(1, true); c.startProfile(Math.ceil((n1 + c.latency) / c.H) + 2);
+        const e1 = run(c, l0 ? mic.subarray(l0) : mic, l0 && ref ? ref.subarray(l0) : ref, n1);
+        const echoDb = +(10 * Math.log10((c.sEcho + 1e-9) / (c.sErr + 1e-9))).toFixed(1);
+        const st = c.exportState(), psd = way === 'hear' ? noisePsd(e1, sr, c, o.noiseRange) : null, prof = c.endProfile(0.3);
+        // 2. Lauf: warmes Filter, gewählter Weg (mit o.from erst ab dort)
+        c.resetStreams(); c.importState(st); c.rate = o.relearn != null ? +o.relearn : 0.1; c.setWay(way); c.setAmount(amount, true); c.setNoisePsd(psd); c.setResidualProfile(prof);
+        let y; if (s0) { y = Float32Array.from(mic); y.set(run(c, mic.subarray(s0), ref ? ref.subarray(s0) : null, n - s0), s0); } else y = run(c, mic, ref, n);
+        let en = 0; for (let i = s0; i < n; i++) en += y[i] * y[i];
+        return {y, c, echoDb, en};
+      };
+      let r = two(0);
+      if (lw > 0 && hasRef) { const r2 = two(lw); if (r2.en < r.en) { r = r2; info.learn = 'neu'; } }
+      out = r.y; c = r.c; info.echoDb = r.echoDb;
     }
     if (way === 'hear') {          // HP phasenfrei, dann trocken/nass mischen (wie im Block-Verarbeiter: voll nass ab 20 %)
       hpZero(out, sr);

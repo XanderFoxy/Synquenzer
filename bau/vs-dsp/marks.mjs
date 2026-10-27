@@ -151,7 +151,29 @@ function factory() {
       return -1;
     };
     // c in Samples (Rahmenmitte) → Einsatz; erst Pegel, dann Höhen (Klick auf Ton); ohne Anstieg (Bindung) bleibt c
-    const refine = (c) => { let r = cross(envS, c); if (r < 0) r = cross(envH, c); return r >= 0 ? r : c; };
+    // VS5a-fix: die 6-ms-Hüllkurve ist mittig, ihr 50-%-Punkt liegt bei harten Anschlägen 2–3 ms vor dem hörbaren Einsatz.
+    // Feinlage: erstes Sample ≥ 10 % der Spitze (und ≥ 2× davor) in [r − 4 ms, r + 8 ms bzw. Fluss-Spitze + 1 Rahmen]; ohne klaren, schnellen Anstieg bleibt r
+    const fine = (r, c) => {
+      const hi = Math.min(n - 1, Math.max(r + Math.round(0.008 * sr), c + F));   // bis eine Rahmenlänge nach der Fluss-Spitze
+      const a = Math.max(0, r - Math.round(0.025 * sr)), b = Math.max(0, r - Math.round(0.004 * sr)), e = Math.min(n, Math.max(r + Math.round(0.03 * sr), hi + Math.round(0.005 * sr)));
+      let pre = 0, pk = 0;
+      for (let i = a; i < b; i++) { const v = Math.abs(ok(x[i])); if (v > pre) pre = v; }
+      for (let i = r; i < e; i++) { const v = Math.abs(ok(x[i])); if (v > pk) pk = v; }
+      if (!(pk > 0) || pk < 3 * pre) return r;
+      const th = Math.max(0.1 * pk, 2 * pre);
+      let i0 = -1; for (let i = b; i <= hi; i++) if (Math.abs(ok(x[i])) >= th) { i0 = i; break; }
+      if (i0 < 0) return r;
+      const lim = Math.min(n, i0 + Math.round(0.003 * sr));   // nur harte Anschläge (50 % der Spitze in ≤ 3 ms)
+      let sharp = false; for (let i = i0; i < lim; i++) if (Math.abs(ok(x[i])) >= 0.5 * pk) { sharp = true; break; }
+      if (!sharp) return r;
+      // zurück bis zum Beginn des Anstiegs (0,2-ms-Fenster ≤ 2 % der Spitze bzw. 2× davor, höchstens 2 ms): der Übergang der
+      // Scheiben endet an der Marke, der Anschlag bleibt ab seinem ersten Sample bitgleich
+      const th2 = Math.max(0.02 * pk, 2 * pre), w = Math.max(1, Math.round(0.0002 * sr)), j0 = Math.max(b + w, i0 - Math.round(0.002 * sr));
+      let j = i0;
+      while (j > j0) { let m = 0; for (let k = j - w; k < j; k++) { const v = Math.abs(ok(x[k])); if (v > m) m = v; } if (m <= th2) break; j--; }
+      return j;
+    };
+    const refine = (c) => { let r = cross(envS, c); if (r < 0) r = cross(envH, c); return r >= 0 ? fine(r, c) : c; };
     const minGap = Math.round((o.minGap || 0.07) * sr / hop);
     const cand = [];
     let lastT = -1e9;
@@ -392,7 +414,7 @@ function factory() {
   }
 
   return {detectMarks, quantizeMarks, detectGrid, makeWarp, warpTime, warpInverse, warpIsIdentity, warpToJSON, warpFromJSON,
-    sliceCuts, renderSlices, assignLyrics, GRIDS, VERSION: 'vs5a-marks-1'};
+    sliceCuts, renderSlices, assignLyrics, GRIDS, VERSION: 'vs5a-marks-2'};
 }
 
 const api = factory();
