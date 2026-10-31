@@ -1,0 +1,46 @@
+== core fix
+✓ G2-05 hard 100 %: Zischlaute/Atmer bitgleich (0 Samples anders, max 0)
+✓ G2-01 hard 50 %: Tonhöhe je Note am Ziel ±5 Cent – max 0.14 Cent (Render 107 ms) [+35→-0.0 -40→+0.0 +30→+0.0 -45→+0.0 +42→+0.0 -33→-0.1 +38→+0.1 -31→-0.1 +44→-0.1 -36→+0.0]
+✓ G2-03 hard 50 %: Dauer unverändert (264000 = 264000 Samples)
+✓ G2-03 hard 50 %: Klick-Detektor max 30.5 dB (Original 30.5 dB)
+✓ G2-05 hard 50 %: Zischlaute/Atmer bitgleich (0 Samples anders, max 0)
+✓ G2-01 soft 100 %: Tonhöhe je Note am Ziel ±5 Cent – max 0.12 Cent (Render 67 ms) [+35→+0.0 -40→-0.1 +30→-0.1 -45→-0.1 +42→-0.1 -33→+0.1 +38→-0.1 -31→+0.0 +44→+0.0 -36→-0.0]
+✓ G2-03 soft 100 %: Dauer unverändert (264000 = 264000 Samples)
+✓ G2-03 soft 100 %: Klick-Detektor max 30.5 dB (Original 30.5 dB)
+✓ G2-05 soft 100 %: Zischlaute/Atmer bitgleich (0 Samples anders, max 0)
+✓ G2-01 soft 50 %: Tonhöhe je Note am Ziel ±5 Cent – max 0.16 Cent (Render 112 ms) [+35→-0.0 -40→+0.0 +30→+0.0 -45→+0.1 +42→+0.1 -33→-0.1 +38→+0.2 -31→-0.1 +44→-0.1 -36→+0.0]
+✓ G2-03 soft 50 %: Dauer unverändert (264000 = 264000 Samples)
+✓ G2-03 soft 50 %: Klick-Detektor max 30.5 dB (Original 30.5 dB)
+✓ G2-05 soft 50 %: Zischlaute/Atmer bitgleich (0 Samples anders, max 0)
+   Hülle je Fall (max dB @ Hz): a131+38ct:0.00 (Kurve 2.0@2900) a131-42ct:0.00 (Kurve 1.9@1200) a131+300ct:0.00 (Kurve 3.1@1150) a131+700ct:0.00 (Kurve 2.8@2850) a131+1200ct:0.00 (Kurve 6.7@1200) e147+38ct:0.00 (Kurve 2.7@2050) e147-42ct:0.00 (Kurve 2.6@2050) e147+300ct:0.00 (Kurve 4.4@450) e147+700ct:0.00 (Kurve 4.3@2050) e147+1200ct:0.00 (Kurve 8.5@450) i175+38ct:0.00 (Kurve 3.8@2250) i175-42ct:0.00 (Kurve 3.8@2300) i175+300ct:0.00 (Kurve 4.5@350) i175+700ct:0.00 (Kurve 5.7@2250) i175+1200ct:0.00 (Kurve 9.8@2300) o196+38ct:0.00 (Kurve 1.8@2700) o196-42ct:0.00 (Kurve 1.8@2750) o196+300ct:0.00 (Kurve 4.5@350) o196+700ct:0.00 (Kurve 6.1@400) o196+1200ct:0.00 (Kurve 6.4@600) u220+38ct:0.00 (Kurve 1.3@2400) u220-42ct:0.00 (Kurve 1.5@2650) u220+300ct:0.00 (Kurve 3.3@650) u220+700ct:0.00 (Kurve 2.7@2400) u220+1200ct:0.00 (Kurve 5.5@650) a262+38ct:0.00 (Kurve 3.7@2850) a262-42ct:0.00 (Kurve 3.8@2900) a262+300ct:0.00 (Kurve 6.6@800) a262+700ct:0.00 (Kurve 7.4@2900) a262+1200ct:0.00 (Kurve 11.1@800)
+✓ G2-02 Weich: Vibrato-Tiefe ≥ 70 % – min 99 %
+✓ G2-02 Weich (±38/42 Cent): Teiltöne auf der Hülle des Originals 300 Hz–4 kHz ±1 dB – max 0.00 dB
+  (Hart: Rest-Vibrato Spitze-Spitze max 3.1 Cent, Original ±25 Cent)
+✓ G2-05 Note +3 HT: 300.0 Cent (Fehler 0.0), Zischlaute anders: 0, außerhalb der Note anders: 0, Klick 30.5 dB (Original 30.5)
+✓ G2-05 Note -3 HT: -300.0 Cent (Fehler 0.0), Zischlaute anders: 0, außerhalb der Note anders: 0, Klick 30.5 dB (Original 30.5)
+✓ G2-05 Note +4 HT: 400.0 Cent (Fehler -0.0), Zischlaute anders: 0, außerhalb der Note anders: 0, Klick 30.5 dB (Original 30.5)
+✓ G2-05 Note +7 HT: 700.1 Cent (Fehler 0.1), Zischlaute anders: 0, außerhalb der Note anders: 0, Klick 30.5 dB (Original 30.5)
+✓ G2-05 Note +12 HT: 1200.0 Cent (Fehler 0.0), Zischlaute anders: 0, außerhalb der Note anders: 0, Klick 30.5 dB (Original 30.5)
+✓ G2-05 Note -12 HT: -1200.0 Cent (Fehler 0.0), Zischlaute anders: 0, außerhalb der Note anders: 0, Klick 30.5 dB (Original 30.5)
+✓ G2-04 Rechenzeit 32-s-Take (Node): Analyse 1519 ms + Rendern 687 ms = 2206 ms (≤ 3000)
+alle grün
+== core orig
+28
+== rt-g2 fix
+✓ G2-05 Hart: Zisch-/Plosivlaute bitgleich: s 0 Samples anders, t 0 Samples anders, s 0 Samples anders, t 0 Samples anders
+ALLE GRÜN
+== rt-g7 fix
+✓ G7-02 d-Moll: Zisch-/Plosivlaute bitgleich (0,0,0,0 Samples anders)
+✓ G7-02 E-Dur: Zisch-/Plosivlaute bitgleich (0,0,0,0 Samples anders)
+✓ G7-02 F-Dur: Zisch-/Plosivlaute bitgleich (0,0,0,0 Samples anders)
+✓ G7-02 d-Moll (Cache): Zisch-/Plosivlaute bitgleich (0,0,0,0 Samples anders)
+ALLE GRÜN
+== rt-g6 fix
+✗ G6-02 Terz 80er: Lead -30.7 LUFS, Chor -36.6 LUFS → Chor 5.9 LU unter dem Lead (Soll 6…10; Ziel laut Bau 8); Summe -29.7 LUFS, Spitze -17.4 dBFS
+1 FEHLER
+== builder g2-app fix
+ALLE GRÜN
+== builder g6-app fix
+ALLE GRÜN
+== builder g7-app fix
+ALLE GRÜN

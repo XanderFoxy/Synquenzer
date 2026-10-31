@@ -1,16 +1,16 @@
 ✓ Szene 0 erkannt als {"root":7,"scale":"ionian"} (Soll G-Dur)
 ✓ Tipp [Chor] im Takes-Blatt öffnet das Blatt „Chor“
-✓ G6-01 G-Dur Terz oben (Tipp): G4→H4 H4→D5 D5→F#5 H4→D5 A4→C5 F#4→A4 D4→F#4 F#4→A4 – 0 falsch (Fis leitereigen: D→Fis, Fis→A) [fertig nach 505 ms]
+✓ G6-01 G-Dur Terz oben (Tipp): G4→H4 H4→D5 D5→F#5 H4→D5 A4→C5 F#4→A4 D4→F#4 F#4→A4 – 0 falsch (Fis leitereigen: D→Fis, Fis→A) [fertig nach 450 ms]
 ✓ G6-01 Kopie 1: Tonhöhe je Chornote (Soll Terz -6 Cent Doppel-Verstimmung) max 0.8 Cent neben Soll; gegen reine Terz max 6.8 Cent (±10)
 ✓ G6-01 Kopie 2: Tonhöhe je Chornote (Soll Terz +8 Cent Doppel-Verstimmung) max 1.1 Cent neben Soll; gegen reine Terz max 8.0 Cent (±10)
 ✓ G6 Dreistimmig mit Begleitung (G | D): G4:H4/D5 H4:D5/G5 D5:G5/H5 H4:D5/G5 A4:D5/F#5 F#4:A4/D5 D4:F#4/A4 F#4:A4/D5 – 0 anders als Akkordtöne der Begleitung (D4 über D-Dur → Fis4/A4)
 ✓ G6 Barbershop (Tenor/Bariton/Bass nach Akkord der Begleitung): G4:H4/D4/G3 H4:D5/G4/G3 D5:G5/H4/G4 H4:D5/G4/G3 A4:D5/F#4/D4 F#4:A4/D4/D3 D4:F#4/A3/D3 F#4:A4/D4/D3
 ✓ keine langen Tasks > 50 ms bei Tipp Chor/Terz/Dreistimmig/Barbershop: [–]
-✓ G6-02 Terz 80er: Lead -30.6 LUFS, Chor -37.5 LUFS → Chor 6.9 LU unter dem Lead (Soll 6…10; Ziel laut Bau 8); Summe -29.8 LUFS, Spitze -16.5 dBFS
-✓ G6-02 Terz Pop: Lead -30.9 LUFS, Chor -39.8 LUFS → Chor 8.9 LU unter dem Lead (Soll 6…10; Ziel laut Bau 9); Summe -30.5 LUFS, Spitze -17.6 dBFS
-✓ G6 Selbst singen: Führung spielt Stimme 2 solo (gemessen 589.2 Hz, Soll D5 587.3 Hz, 5.6 Cent inkl. Doppel)
+✓ G6-02 Terz 80er: Lead -30.7 LUFS, Chor -37.7 LUFS → Chor 7.0 LU unter dem Lead (Soll 6…10; Ziel laut Bau 8); Summe -29.8 LUFS, Spitze -17.3 dBFS
+✓ G6-02 Terz Pop: Lead -31.0 LUFS, Chor -39.6 LUFS → Chor 8.6 LU unter dem Lead (Soll 6…10; Ziel laut Bau 9); Summe -30.4 LUFS, Spitze -17.7 dBFS
+✓ G6 Selbst singen: Führung spielt Stimme 2 solo (gemessen 589.2 Hz, Soll D5 587.3 Hz, 5.4 Cent inkl. Doppel)
 ✓ G6-04 Selbst gesungen: Stimme 2 = neuer Take (true), Lead bleibt (true), kein alt-Eintrag (true), Solo aus (null), Pan/Sends gleich
-✓ G6 Song (Szene 0 ×2): Chor spielt mit – 8 lange Puffer-Quellen gestartet (Lead + Stimme 1 ×2 + selbst gesungen), Chor-Solo im Song -38.3 LUFS; lange Tasks [–]
+✓ G6 Song (Szene 0 ×2): Chor spielt mit – 8 lange Puffer-Quellen gestartet (Lead + Stimme 1 ×2 + selbst gesungen), Chor-Solo im Song -38.2 LUFS; lange Tasks [–]
 ✓ G6-05 Speichern/Laden: Chor (mit selbst gesungener Stimme) deep-equal
 ✓ Layout Blatt Chor 320×568: Blatt 56–526 (Fenster 568), Scroll 468/468, Seitenbreite 320; abgeschnitten [–]; Tasten < 44 [–]
 ✓ Layout Noten-Editor einer Chor-Stimme 320×568: abgeschnitten [–]

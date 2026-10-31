@@ -1,20 +1,20 @@
 ✓ Alt-Stand (kein Feld, kein Transponieren) nach 4,5 s Abspielen: gespielt = Roh-Take bitgleich (0 anders)
-✗ Projekt-JSON nach dem Abspielen ohne neue Felder (pitch/chor: "pitch","pitch","pitch"), Spuren/Takes deep-equal
-✓ G7-01 Träger d-Moll: je Note = outPitch der STIMME-Spur ±5 Cent – max 0.70 Cent: A3→D4 -0.3, C4→F4 -0.7, E4→A4 +0.0, D4→G4 -0.7, H3→E4 -0.1, G3→C4 -0.7, A3→D4 -0.2; Verschiebung [5,5,5,5,5,5,5] (bereit nach 204 ms, Renders +1)
-✗ G7-02 d-Moll: Zisch-/Plosivlaute bitgleich (0,0,239,0 Samples anders)
-✓ G7-01 Träger E-Dur: je Note = outPitch der STIMME-Spur ±5 Cent – max 0.69 Cent: A3→E3 -0.3, C4→G#3 -0.7, E4→H3 -0.2, D4→A3 -0.7, H3→F#3 -0.2, G3→D#3 -0.6, A3→E3 -0.3; Verschiebung [-5,-4,-5,-5,-5,-4,-5] (bereit nach 183 ms, Renders +1)
-✗ G7-02 E-Dur: Zisch-/Plosivlaute bitgleich (0,0,240,0 Samples anders)
-✓ G7-01 Träger F-Dur: je Note = outPitch der STIMME-Spur ±5 Cent – max 0.71 Cent: A3→F3 -0.3, C4→A3 -0.6, E4→C4 -0.3, D4→H3 -0.7, H3→G3 -0.3, G3→E3 -0.7, A3→F3 -0.3; Verschiebung [-4,-3,-4,-3,-4,-3,-4] (bereit nach 181 ms, Renders +1)
-✗ G7-02 F-Dur: Zisch-/Plosivlaute bitgleich (0,0,239,0 Samples anders)
-✓ G7-01 Träger d-Moll (Cache): je Note = outPitch der STIMME-Spur ±5 Cent – max 0.70 Cent: A3→D4 -0.3, C4→F4 -0.7, E4→A4 +0.0, D4→G4 -0.7, H3→E4 -0.1, G3→C4 -0.7, A3→D4 -0.2; Verschiebung [5,5,5,5,5,5,5] (bereit nach 182 ms, Renders +0)
-✗ G7-02 d-Moll (Cache): Zisch-/Plosivlaute bitgleich (0,0,239,0 Samples anders)
+✓ Projekt-JSON nach dem Abspielen ohne neue Felder (neue pitch/chor-Schlüssel an Takes/Audio: keine), Spuren/Takes deep-equal
+✓ G7-01 Träger d-Moll: je Note = outPitch der STIMME-Spur ±5 Cent – max 0.71 Cent: A3→D4 -0.2, C4→F4 -0.7, E4→A4 +0.0, D4→G4 -0.7, H3→E4 -0.1, G3→C4 -0.7, A3→D4 -0.2; Verschiebung [5,5,5,5,5,5,5] (bereit nach 218 ms, Renders +1)
+✓ G7-02 d-Moll: Zisch-/Plosivlaute bitgleich (0,0,0,0 Samples anders)
+✓ G7-01 Träger E-Dur: je Note = outPitch der STIMME-Spur ±5 Cent – max 0.82 Cent: A3→E3 -0.3, C4→G#3 -0.7, E4→H3 -0.2, D4→A3 -0.7, H3→F#3 -0.2, G3→D#3 -0.8, A3→E3 -0.3; Verschiebung [-5,-4,-5,-5,-5,-4,-5] (bereit nach 180 ms, Renders +1)
+✓ G7-02 E-Dur: Zisch-/Plosivlaute bitgleich (0,0,0,0 Samples anders)
+✓ G7-01 Träger F-Dur: je Note = outPitch der STIMME-Spur ±5 Cent – max 0.77 Cent: A3→F3 -0.3, C4→A3 -0.6, E4→C4 -0.3, D4→H3 -0.7, H3→G3 -0.2, G3→E3 -0.8, A3→F3 -0.3; Verschiebung [-4,-3,-4,-3,-4,-3,-4] (bereit nach 180 ms, Renders +1)
+✓ G7-02 F-Dur: Zisch-/Plosivlaute bitgleich (0,0,0,0 Samples anders)
+✓ G7-01 Träger d-Moll (Cache): je Note = outPitch der STIMME-Spur ±5 Cent – max 0.71 Cent: A3→D4 -0.2, C4→F4 -0.7, E4→A4 +0.0, D4→G4 -0.7, H3→E4 -0.1, G3→C4 -0.7, A3→D4 -0.2; Verschiebung [5,5,5,5,5,5,5] (bereit nach 179 ms, Renders +0)
+✓ G7-02 d-Moll (Cache): Zisch-/Plosivlaute bitgleich (0,0,0,0 Samples anders)
 ✓ G7-03 zurück (Akkord a-Moll): gespielt = Roh-Take bitgleich (0 anders; shift null)
 ✓ G7-03 zurück per resetCarrier (Träger aus): bitgleich (0 anders; shift null)
 ✓ keine langen Tasks > 50 ms beim Transponieren (4 Lagen + zurück): [–]
 ✓ G7-04 8 Wechsel a-Moll ↔ d-Moll beim Abspielen (gehaltene Fläche): Löcher ≥ 6 dB: 0 [–]
-✓ G7-04 gehört: beide Lagen im Mitschnitt (Frames Original 975, d-Moll-Lage 772, Cent-Werte 0/500)
-✓ G7-04 keine langen Tasks > 50 ms beim Wechseln: [–]; Überblendung {"n":21,"at":37.45185941043084,"call":37.42185941043084,"kind":"ep","rho":-0.01,"bad":0.46,"pairs":1,"q":0.5701,"take":"acugk0mctg","ms":0.6,"err":0}
-✓ G7-04 Klick-Maß (HP 4 kHz, 1 ms über Median ±30 ms): mit 8 Wechseln 22.7 dB (bei 7.702 s), ohne Wechsel 22.6 dB
-✓ G7+G2: quantisierter Take (Hart 100 %) unter d-Moll je Note = outPitch ±5 Cent – max 0.22 [0.1 0.1 0.2 0.1 0.2 0.1 0.1]
+✓ G7-04 gehört: beide Lagen im Mitschnitt (Frames Original 974, d-Moll-Lage 773, Cent-Werte 0/500)
+✓ G7-04 keine langen Tasks > 50 ms beim Wechseln: [–]; Überblendung {"n":21,"at":36.60072108843536,"call":36.562721088435374,"kind":"ep","rho":-0.104,"bad":0.39,"pairs":1,"q":0.61,"take":"baua5ce84g","ms":0.9,"err":0}
+✓ G7-04 Klick-Maß (HP 4 kHz, 1 ms über Median ±30 ms): mit 8 Wechseln 23.1 dB (bei 2.888 s), ohne Wechsel 23.0 dB
+✓ G7+G2: quantisierter Take (Hart 100 %) unter d-Moll je Note = outPitch ±5 Cent – max 0.23 [0.1 0.0 0.2 0.1 0.2 0.1 0.1]
 ✓ G7+G2 zurück: bitgleich zur Quantisier-Fassung (0 anders)
 ✓ keine Seitenfehler 

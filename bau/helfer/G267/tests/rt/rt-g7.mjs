@@ -48,10 +48,10 @@ for (const [name, chord] of [['d-Moll', [62, 65, 69]], ['E-Dur', [64, 68, 71]], 
   const rows = [], e = []; MEL.forEach((m, k) => { const [a, b] = win(truth[k]); const f = notePitch(P.y, SR, a, b), c = ct(f, hz(tab[k])); e.push(c); rows.push(`${nm(m)}→${nm(tab[k])} ${c >= 0 ? '+' : ''}${c.toFixed(1)}`); });
   const w = Math.max(...e.map(Math.abs)), sh = inf.shift || [];
   const shOk = MEL.every((m, k) => sh[k] === tab[k] - m);
-  const cd = cons.map(([a, b, k]) => { let d = 0; for (let i = Math.floor(a * SR); i < Math.floor((b + (k === 't' ? 0.025 : 0)) * SR); i++) if (P.y[i] !== xr[i]) d++; return d; });
+  let cmx = 0, cpk = 0; const cd = cons.map(([a, b, k]) => { let d = 0; for (let i = Math.floor(a * SR); i < Math.floor((b + (k === 't' ? 0.025 : 0)) * SR); i++) { cpk = Math.max(cpk, Math.abs(xr[i])); if (P.y[i] !== xr[i]) { d++; cmx = Math.max(cmx, Math.abs(P.y[i] - xr[i])); } } return d; });
   results[name] = P.y;
   ok(!P.raw && w <= 5 && shOk, `G7-01 Träger ${name}: je Note = outPitch der STIMME-Spur ±5 Cent – max ${w.toFixed(2)} Cent: ${rows.join(', ')}; Verschiebung ${JSON.stringify(sh)} (bereit nach ${tReady} ms, Renders +${inf.renders - rn0})`);
-  ok(cd.every(d => d === 0), `G7-02 ${name}: Zisch-/Plosivlaute bitgleich (${cd.join(',')} Samples anders)`);
+  ok(cd.every(d => d === 0), `G7-02 ${name}: Zisch-/Plosivlaute bitgleich (${cd.join(',')} Samples anders${cmx ? ', max ' + (20 * Math.log10(cmx)).toFixed(1) + ' dBFS = ' + (20 * Math.log10(cmx / cpk)).toFixed(1) + ' dB unter Konsonant-Spitze' : ''})`);
 }
 // zurück: Akkord a-Moll → bitgleich
 await p.evaluate(() => SYNQUENZER.chord([57, 60, 64], 150)); await sleep(800);

@@ -222,3 +222,24 @@ Daten: **kein neues Feld** (der Plan entsteht beim Abspielen aus Transponieren +
 - `applyCarrierChange`: erste Zeile `g7Changed()`; `xpSet`: eine Zeile `g7Changed()` nach `XP.due = beat;`.
 - `tkSched`: eine Zeile `g7Prefetch` nach der `tkPlayBuf`-Zeile.
 - G2-Block: `g2Plan` nimmt ohne Feld die erkannten Noten (`g7Pitch`) und die Verschiebung `g7Shift`.
+
+## Unabhängige Nachprüfung G2 / G6 / G7 (eigene Signale und Wege) und Korrekturen
+
+Bericht: `tests/rt/RETEST.md` (E♭-Dur, 44,1 kHz, tiefe 87–117 Hz und hohe 311–415 Hz Stimme, Legato, echte Touch-Wege; G-Dur mit Begleitung;
+A-Moll unter d-Moll/E-Dur/F-Dur; altes 4.23.0-Projekt aus ZIP). Zwei Mängel gefunden und behoben:
+
+| Mangel | Ursache | Behebung | nachher |
+|---|---|---|---|
+| **D1** Ende eines „s“ direkt vor „i“ (D4) wurde mitverschoben (G2: 659 Samples, G7: 239 Samples, bis −46,6 dBFS; Soll bitgleich bzw. ≤ −60 dB). Der eigene Test prüfte nur die ersten 19 ms des Konsonanten | pYIN markiert Frames schon ~20 ms vor dem Vokal als stimmhaft (Fenster ragt in den Vokal); die Schutzzone begann dort | Schutzzone beginnt/endet am ersten Frame, der auf voller Rate periodisch ist (YIN-Rest ≤ 0,3), höchstens 3 Frames je Rand (`model()` in App und `dsp/g2pitch.js`) | alle Konsonanten bitgleich (G2 und G7), Tonhöhe weiter ≤ 0,34 Cent, Klick am Notenende +1,8 statt +3,2 dB |
+| **D2** Terz + „80er großer Refrain“: Chor 5,9–6,9 LU unter dem Lead (ein Lauf außerhalb 6–10) | Hall-Anteil geschätzt, `G6_CAL` nur an Falsett (2 Stimmen) gemessen | `G6_MIX['80'].below` 8 → 9 | Terz 80er 7,0–7,6 LU, Falsett 80er 8,6 LU, Pop 8,6–9,0 LU |
+
+Alles andere ✓ (u. a. G2 Hart ≤ 0,26 Cent, Weich ≤ 1,79 Cent, Touch-Weg bereit nach 242–278 ms mit Tonart E♭ der Szene; G6 Terz in G-Dur mit F♯,
+Dreistimmig/Barbershop aus den Akkorden der Begleitung, Song-Wiedergabe mit Chor; G7 je Note = outPitch ≤ 0,71 Cent, 8 Wechsel ohne Aussetzer;
+altes Projekt bitgleich, JSON ohne neue Felder).
+
+### Hinweise aus der Nachprüfung (offen, keine Abnahme-Mängel)
+- In einer **Legato-Phrase** ändert das Verschieben einer Note die Samples (Phase) der Nachbarnoten derselben Phrase (Tonhöhe gleich, kein
+  Klick) – „bitgleich außerhalb der Note“ gilt nur für getrennte Noten.
+- Legato-Töne, die weniger als ~30 Cent auseinander gesungen werden, erkennt VS2 als eine Note.
+- Chor auf einer **Song-Stimme**: die Akkorde der Begleitung werden dort nicht gelesen (leitereigene Dreiklänge).
+- Die K-Bewertung für den Chor-Pegel nutzt die 48-kHz-Koeffizienten auch bei 44,1-kHz-Takes (Abweichung < 0,1 dB).

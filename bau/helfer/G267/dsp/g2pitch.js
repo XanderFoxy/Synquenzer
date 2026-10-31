@@ -98,7 +98,13 @@ function model(x, sr, an) {
   for (let i = 0; i < an.n;) {
     if (!(f0[i] > 0)) { i++; continue; }
     let j = i; while (j < an.n && f0[j] > 0) j++;
-    const A = Math.round(i * Hs) + G, B = Math.min(n, Math.round((j - 1) * Hs) - G);
+    // Rand der Strecke: pYIN markiert schon Frames, deren Fenster erst in den Vokal ragt (Zischlaut davor/danach) – erst ab dem
+    // ersten Frame, der auf voller Rate periodisch ist (YIN-Rest ≤ 0,3), zählt die Schutzzone (höchstens 3 Frames je Rand: hauchige
+    // Stimmen mit hohem Rest werden weiter verschoben)
+    let i2 = i, j2 = j; const ap = an.ap || [];
+    while (i2 < Math.min(j - 1, i + 3) && ap[i2] > 0.3) i2++;
+    while (j2 > Math.max(i2 + 1, j - 3) && ap[j2 - 1] > 0.3) j2--;
+    const A = Math.round(i2 * Hs) + G, B = Math.min(n, Math.round((j2 - 1) * Hs) - G);
     if (B - A >= Math.round(0.03 * sr)) {
       const L = B - A, fs = new Float32Array(L), ph = new Float64Array(L);
       for (let q = 0; q < L; q++) { const p = Math.min(j - 1, Math.max(i, (A + q) / Hs)), k = Math.floor(p), fr = p - k; fs[q] = k + 1 < j ? f0[k] + (f0[k + 1] - f0[k]) * fr : f0[k]; }
