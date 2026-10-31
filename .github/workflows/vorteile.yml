@@ -1,0 +1,73 @@
+# Vorteils-Radar: sucht stündlich Vorteile für Xander (Deals, Erleben, Reisen, Musik, Nebenverdienst, Tests)
+# und meldet Seltenes sofort per ntfy, den Rest einmal am Tag (ab 18 Uhr). Code: vorteile/. Daten: Zweig "vorteile-daten".
+name: Vorteils-Radar
+
+on:
+  schedule:
+    - cron: '41 * * * *'   # jede Stunde um :41 (Zeitpläne laufen nur vom Standardzweig aus)
+  workflow_dispatch:
+    inputs:
+      modus:
+        description: 'auto = normal, digest = Zusammenfassung jetzt schicken, still = nichts senden'
+        type: choice
+        options: [auto, digest, still]
+        default: auto
+      alle:
+        description: 'Alle Module sofort neu abfragen (Intervalle ignorieren)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vorteile
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: vorteile
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Tests
+        working-directory: vorteile
+        run: npm test
+
+      - name: Daten-Zweig holen (oder neu anlegen)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$URL" vorteile-daten >/dev/null; then
+            git clone --quiet --depth 1 --branch vorteile-daten "$URL" daten
+          else
+            mkdir daten && git -C daten init --quiet -b vorteile-daten && git -C daten remote add origin "$URL"
+          fi
+
+      - name: Suchen und benachrichtigen
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
+          MODUS: ${{ inputs.modus || 'auto' }}
+        run: node vorteile/scan/main.mjs --data daten/vorteile/data ${{ inputs.alle && '--alle' || '' }}
+
+      - name: Daten speichern
+        working-directory: daten
+        run: |
+          git config user.name "vorteile-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          printf '# Daten des Vorteils-Radars\nAutomatisch erzeugt (stündlich). Code: Ordner vorteile/.\n' > README.md
+          git add -A
+          # Ein einziger Commit (der Verlauf steckt in zustand.json) -> der Zweig bleibt klein.
+          git checkout --quiet --orphan neu
+          git commit --quiet -m "Daten $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push --quiet --force origin neu:vorteile-daten
