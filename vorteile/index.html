@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Vorteile</title>
+<meta name="description" content="Persönlicher Vorteils-Radar: Schnäppchen, Konzerte, Erleben, Reisen, Musik, Nebenverdienst und Tests – an einem Ort">
+<meta name="theme-color" content="#f5f2ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16151a" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Vorteile">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #f5f2ec; --karte: #fffdf9; --text: #22201c; --leise: #6d675e; --linie: #e4ddd1;
+    --akzent: #2f6f5e; --akzent-hell: #e4f0eb; --akzent-text: #fff; --warm: #9a5b1c; --warm-hell: #f6ebdc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16151a; --karte: #201f25; --text: #ecebef; --leise: #a5a2ad; --linie: #33313b;
+      --akzent: #7fcdb3; --akzent-hell: #1d3530; --akzent-text: #12201c; --warm: #e8b27a; --warm-hell: #3a2c1e;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 64px; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+  main { max-width: 640px; margin: 0 auto; }
+  header { padding: 20px 0 4px; }
+  h1 { font-size: 28px; margin: 0; letter-spacing: -0.02em; }
+  #stand { color: var(--leise); font-size: 14px; margin: 2px 0 0; }
+  nav {
+    position: sticky; top: 0; z-index: 2; background: var(--bg); margin: 12px -16px 0; padding: 10px 16px;
+    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--linie);
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav a {
+    flex: none; text-decoration: none; color: var(--text); background: var(--karte); border: 1px solid var(--linie);
+    border-radius: 999px; padding: 8px 14px; font-size: 14px; min-height: 36px; display: inline-flex; align-items: center; gap: 6px;
+  }
+  nav a .n { color: var(--leise); font-variant-numeric: tabular-nums; }
+  section { margin-top: 26px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .07em; color: var(--leise); margin: 0 4px 10px; display: flex; justify-content: space-between; }
+  h2 small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+  h2 small a { color: var(--akzent); text-decoration: none; }
+  .karte { background: var(--karte); border: 1px solid var(--linie); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; }
+  .karte.sofort { border-color: var(--akzent); box-shadow: inset 4px 0 0 var(--akzent); }
+  .oben { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--leise); margin-bottom: 4px; flex-wrap: wrap; }
+  .marke { border-radius: 6px; padding: 1px 7px; background: var(--akzent-hell); color: var(--akzent); font-weight: 600; }
+  .marke.frist { background: var(--warm-hell); color: var(--warm); }
+  h3 { font-size: 17px; margin: 0 0 4px; line-height: 1.3; overflow-wrap: anywhere; }
+  .zeile { margin: 0 0 6px; font-weight: 600; color: var(--akzent); overflow-wrap: anywhere; }
+  .sogehts { margin: 0 0 12px; font-size: 15px; color: var(--text); }
+  .sogehts b { color: var(--leise); font-weight: 600; }
+  .schritte { margin: -6px 0 12px; padding-left: 18px; font-size: 14px; color: var(--leise); }
+  .aktionen { display: flex; gap: 8px; }
+  a.los {
+    flex: 1; display: flex; align-items: center; justify-content: center; min-height: 46px; border-radius: 12px;
+    background: var(--akzent); color: var(--akzent-text); text-decoration: none; font-weight: 650;
+  }
+  button.weg, button.kopie {
+    min-height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--linie); background: transparent;
+    color: var(--leise); font: inherit; font-size: 14px;
+  }
+  .leer { color: var(--leise); font-size: 15px; padding: 14px 16px; border: 1px dashed var(--linie); border-radius: 16px; margin: 0; }
+  .liste { list-style: none; margin: 0; padding: 0; }
+  .liste li a { display: flex; gap: 12px; align-items: center; text-decoration: none; color: inherit; background: var(--karte);
+    border: 1px solid var(--linie); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; }
+  .liste .haupt { flex: 1; min-width: 0; }
+  .liste b { display: block; overflow-wrap: anywhere; }
+  .liste span { color: var(--leise); font-size: 14px; }
+  .liste .rechts { font-weight: 650; white-space: nowrap; color: var(--akzent); }
+  details { background: var(--karte); border: 1px solid var(--linie); border-radius: 16px; padding: 4px 16px; margin-bottom: 10px; }
+  summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+  details p, details li { font-size: 15px; }
+  pre { white-space: pre-wrap; font: inherit; font-size: 15px; background: var(--bg); border-radius: 10px; padding: 12px; margin: 0 0 10px; }
+  .klein { font-size: 13px; color: var(--leise); }
+  .klein code { overflow-wrap: anywhere; }
+  .mehr { display: block; text-align: center; color: var(--leise); font-size: 14px; padding: 8px; background: none; border: 0; width: 100%; font: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Vorteile</h1>
+    <p id="stand">Lade …</p>
+  </header>
+  <nav id="nav" aria-label="Bereiche"></nav>
+
+  <section id="jetzt" hidden>
+    <h2>Jetzt lohnt es sich</h2>
+    <div id="jetzt-liste"></div>
+  </section>
+
+  <section id="schnaeppchen">
+    <h2>Schnäppchen <small><a href="../schnaeppchen/">alle</a></small></h2>
+    <ul class="liste" id="schnaeppchen-liste"><li class="leer">Lade …</li></ul>
+  </section>
+
+  <section id="konzerte">
+    <h2>Konzerte <small><a href="../konzerte/">alle</a></small></h2>
+    <ul class="liste" id="konzerte-liste"><li class="leer">Lade …</li></ul>
+  </section>
+
+  <div id="kategorien"></div>
+
+  <section id="tipps">
+    <h2>Spar-Tipps &amp; Vorlagen</h2>
+    <a class="karte" href="spartipps.html" style="display:block;text-decoration:none;color:inherit">
+      <h3>Spar-Tipps: So holst du mehr raus</h3>
+      <p class="sogehts" style="margin:0">Coupons stapeln, Mehrkauf richtig nutzen, Apps, Cashback, gebrauchte Synths verhandeln.</p>
+    </a>
+    <details>
+      <summary>Vorlage: Bewerbung als Band / Act</summary>
+      <pre id="v-band">Hallo,
+
+ich bin Xander und mache Synthpop – elektronisch, melodisch, mit deutschen und englischen Texten. Ich würde sehr gern bei euch spielen.
+
+Hörprobe: [Link]
+Foto: [Link]
+Technik: Ich bringe Synths und Laptop mit, brauche nur 2 Kanäle (Stereo-DI) und Strom.
+
+Viele Grüße
+Xander</pre>
+      <button class="kopie" data-ziel="v-band">Kopieren</button>
+    </details>
+    <details>
+      <summary>Vorlage: Antwort auf Deutschunterricht / Nachhilfe</summary>
+      <pre id="v-deutsch">Hallo,
+
+ich habe Ihre Anzeige gesehen. Ich unterrichte Deutsch (auch als Fremdsprache) – online per Video oder in Döbeln. Ich habe Erfahrung mit Lernenden mit Arabisch und Englisch als Erstsprache.
+
+Ich hätte z. B. [Wochentag] oder [Wochentag] Zeit. Eine kurze kostenlose Kennenlernstunde (20 Minuten) ist möglich.
+
+Viele Grüße
+Xander</pre>
+      <button class="kopie" data-ziel="v-deutsch">Kopieren</button>
+    </details>
+    <details>
+      <summary>Vorlage: Angebot Übersetzung</summary>
+      <pre id="v-uebersetzung">Hallo,
+
+ich übersetze Deutsch ↔ Englisch und Deutsch ↔ Arabisch (Arabisch mit muttersprachlicher Korrektur). Gern mache ich Ihnen zuerst einen kurzen Probeabsatz kostenlos.
+
+Preis: [x] € pro Normseite bzw. [x] Cent pro Wort, Lieferung in [x] Tagen.
+
+Viele Grüße
+Xander</pre>
+      <button class="kopie" data-ziel="v-uebersetzung">Kopieren</button>
+    </details>
+  </section>
+
+  <section>
+    <details>
+      <summary>Push aufs iPhone</summary>
+      <p>In der ntfy-App auf „+“ tippen und dieses Thema abonnieren (Server: ntfy.sh). Es ist derselbe Kanal wie beim Schnäppchen-Wecker:</p>
+      <p class="klein"><code id="topic">…</code></p>
+      <p>Seltenes kommt sofort (höchstens 3 am Tag), alles andere einmal am Tag gegen 18 Uhr.</p>
+      <p class="klein" id="quellen"></p>
+      <p class="klein"><button class="mehr" id="zeigen" hidden>Ausgeblendete wieder zeigen</button></p>
+    </details>
+  </section>
+</main>
+
+<script>
+const REPO = 'XanderFoxy/Synquenzer';
+const TOPIC = 'xander-schnaeppchen-b5cbf4442aaa9734f3';
+const lokal = new URLSearchParams(location.search).has('lokal');
+const RAW = (zweig, pfad) => lokal ? `../${pfad}` : `https://raw.githubusercontent.com/${REPO}/${zweig}/${pfad}`;
+const QUELLEN = {
+  vorteile: RAW('vorteile-daten', 'vorteile/data/aktuell.json'),
+  schnaeppchen: RAW('schnaeppchen-daten', 'schnaeppchen/data/current.json'),
+  konzerte: RAW('konzerte-daten', 'konzerte/data/konzerte.json'),
+};
+const NAMEN = { deals: 'Deals', erleben: 'Erleben', reisen: 'Reisen', musik: 'Musik', nebenverdienst: 'Nebenverdienst', tests: 'Tests & Gewinnspiele' };
+const UNTER = {
+  deals: 'echt durchgerechnet', erleben: 'Therme, Kino, Feste', reisen: 'ab Leipzig, Dresden, Berlin',
+  musik: 'Geräte & Auftritte', nebenverdienst: 'von zu Hause', tests: 'ohne Fallen',
+};
+const SICHTBAR = 4;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sicher = u => (/^https:\/\//.test(u || '') ? u : '#');
+const euro = v => (v == null ? '' : Number(v).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }));
+const datum = iso => (iso ? new Date(iso.slice(0, 10) + 'T12:00:00').toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }) : '');
+const lies = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const merk = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+let weg = new Set(lies('vorteile-weg', []));
+let daten = null;
+
+$('topic').textContent = TOPIC;
+
+function karte(e) {
+  const schritte = e.extra?.schritte?.length > 1 ? `<ul class="schritte">${e.extra.schritte.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : '';
+  return `<article class="karte${e.sofort ? ' sofort' : ''}" data-id="${esc(e.id)}">
+    <div class="oben"><span class="marke">${esc(NAMEN[e.kategorie] || '')}</span>${e.frist ? `<span class="marke frist">bis ${esc(datum(e.frist))}</span>` : ''}<span>${esc(e.quelle)}</span></div>
+    <h3>${esc(e.titel)}</h3>
+    ${e.zeile ? `<p class="zeile">${esc(e.zeile)}</p>` : ''}
+    <p class="sogehts"><b>So geht's:</b> ${esc(e.soGehts)}</p>
+    ${schritte}
+    <div class="aktionen"><a class="los" href="${esc(sicher(e.link))}" target="_blank" rel="noopener">Öffnen</a><button class="weg" data-id="${esc(e.id)}" aria-label="Ausblenden">Ausblenden</button></div>
+  </article>`;
+}
+
+function zeigeVorteile() {
+  const k = daten?.kategorien || {};
+  const alle = Object.values(k).flat();
+  const nachId = Object.fromEntries(alle.map(e => [e.id, e]));
+  const jetzt = (daten?.sofort || []).map(id => nachId[id]).filter(e => e && !weg.has(e.id)).slice(0, 5);
+  $('jetzt').hidden = !jetzt.length;
+  $('jetzt-liste').innerHTML = jetzt.map(karte).join('');
+  const schonOben = new Set(jetzt.map(e => e.id));
+  $('kategorien').innerHTML = Object.keys(NAMEN).map(name => {
+    const liste = (k[name] || []).filter(e => !weg.has(e.id) && !schonOben.has(e.id));
+    const mehr = liste.length > SICHTBAR ? `<button class="mehr" data-mehr="${name}">${liste.length - SICHTBAR} weitere zeigen</button>` : '';
+    return `<section id="${name}"><h2>${esc(NAMEN[name])} <small>${esc(UNTER[name])}</small></h2>
+      ${liste.length ? liste.slice(0, SICHTBAR).map(karte).join('') + `<div hidden data-rest="${name}">${liste.slice(SICHTBAR).map(karte).join('')}</div>` + mehr
+        : '<p class="leer">Gerade nichts Besonderes. Das ist in Ordnung – hier erscheint nur, was sich wirklich lohnt.</p>'}</section>`;
+  }).join('');
+  $('zeigen').hidden = !weg.size;
+  zeigeNav();
+}
+
+function zeigeSchnaeppchen(s) {
+  const deals = (s.produkte || []).filter(p => p.deal && p.bestes);
+  const technik = (s.technik || []).slice(0, 3);
+  const zeilen = [
+    ...deals.map(p => `<li><a href="${esc(sicher(p.bestes.link))}" target="_blank" rel="noopener"><div class="haupt"><b>${esc(p.name)}</b><span>${esc(p.bestes.shop)} · ${esc(p.grund)}</span></div><div class="rechts">${esc(euro(p.bestes.preis))}</div></a></li>`),
+    ...technik.map(t => `<li><a href="${esc(sicher(t.link))}" target="_blank" rel="noopener"><div class="haupt"><b>${esc(t.titel)}</b><span>${esc([t.shop, t.grund || 'Preisfehler'].filter(Boolean).join(' · '))}</span></div><div class="rechts">${esc(euro(t.preis))}</div></a></li>`),
+  ];
+  $('schnaeppchen-liste').innerHTML = zeilen.join('') || '<li class="leer">Gerade keine Schnäppchen bei deinen Lieblingsprodukten.</li>';
+  return deals.length + technik.length;
+}
+
+function zeigeKonzerte(k) {
+  const radius = k.pushRadiusKm || 200;
+  const liste = (k.konzerte || []).filter(x => x.km == null || x.km <= radius).slice(0, 6);
+  $('konzerte-liste').innerHTML = liste.map(x => `<li><a href="${esc(sicher(x.link))}" target="_blank" rel="noopener"><div class="haupt"><b>${esc(x.band)}</b><span>${esc([x.ort, x.stadt].filter(Boolean).join(', '))}</span></div><div class="rechts">${esc(datum(x.datum))}</div></a></li>`).join('')
+    || `<li class="leer">Gerade keine Konzerte im Umkreis von ${radius} km.</li>`;
+  return liste.length;
+}
+
+const zaehler = {};
+function zeigeNav() {
+  const k = daten?.kategorien || {};
+  const teile = [['schnaeppchen', 'Schnäppchen', zaehler.schnaeppchen], ['konzerte', 'Konzerte', zaehler.konzerte],
+    ...Object.keys(NAMEN).map(n => [n, NAMEN[n], (k[n] || []).filter(e => !weg.has(e.id)).length]), ['tipps', 'Spar-Tipps']];
+  $('nav').innerHTML = teile.map(([id, name, n]) => `<a href="#${id}">${esc(name)}${n ? ` <span class="n">${n}</span>` : ''}</a>`).join('');
+}
+
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('button');
+  if (!b) return;
+  if (b.classList.contains('weg')) { weg.add(b.dataset.id); merk('vorteile-weg', [...weg].slice(-300)); zeigeVorteile(); }
+  else if (b.dataset.mehr) { document.querySelector(`[data-rest="${b.dataset.mehr}"]`).hidden = false; b.remove(); }
+  else if (b.id === 'zeigen') { weg = new Set(); merk('vorteile-weg', []); zeigeVorteile(); }
+  else if (b.classList.contains('kopie')) {
+    navigator.clipboard?.writeText($(b.dataset.ziel).textContent).then(() => { b.textContent = 'Kopiert ✓'; setTimeout(() => (b.textContent = 'Kopieren'), 1500); }).catch(() => {});
+  }
+});
+
+const hol = url => fetch(`${url}?t=${Math.floor(Date.now() / 60000)}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : Promise.reject(r.status)));
+
+hol(QUELLEN.vorteile).then(d => {
+  daten = d;
+  const t = new Date(d.aktualisiert);
+  $('stand').textContent = `Stand: ${t.toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })} · ${d.ort || 'Döbeln'}`;
+  $('quellen').textContent = 'Quellen beim letzten Lauf: ' + Object.entries(d.status || {}).map(([n, s]) => `${NAMEN[n] || n} ${s.aus ? 'aus' : s.ok ? '✓' : '⚠ ' + ((s.fehler || [])[0] || '')}`).join(' · ');
+  zeigeVorteile();
+}).catch(() => {
+  $('stand').textContent = 'Noch keine Daten – der erste Lauf auf GitHub steht noch aus.';
+  daten = { kategorien: {} }; zeigeVorteile();
+});
+hol(QUELLEN.schnaeppchen).then(s => { zaehler.schnaeppchen = zeigeSchnaeppchen(s); zeigeNav(); })
+  .catch(() => { $('schnaeppchen-liste').innerHTML = '<li class="leer">Schnäppchen-Daten gerade nicht erreichbar.</li>'; });
+hol(QUELLEN.konzerte).then(k => { zaehler.konzerte = zeigeKonzerte(k); zeigeNav(); })
+  .catch(() => { $('konzerte-liste').innerHTML = '<li class="leer">Konzert-Daten gerade nicht erreichbar.</li>'; });
+
+if ('serviceWorker' in navigator && !lokal) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
