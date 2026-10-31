@@ -25,14 +25,16 @@ await p.evaluate(() => { SYNQUENZER.newProject(); SYNQUENZER.setBpm(120); }); aw
 const tk = await clickTake(p, T, 4, 0), id = tk.id;
 await p.evaluate(id => SYNQUENZER.wpLyrics(id, 'Lie-be ist ein Feu-er in mir so hell und heiß da drau-ßen'), id);
 await p.evaluate(r => SYNQUENZER.wpOpen(r), tk.ref); await sleep(300);
-const g0 = await p.evaluate(() => SYNQUENZER.wpLyrGeom()), px0 = await p.evaluate(() => WP.ed.cv.toDataURL());
+// Ausgangsbild erst, wenn die Wellenform fertig ist (zwei gleiche Bilder nacheinander; Puffer/Analyse kommen asynchron)
+let px0 = null; for (let q = 0; q < 20; q++) { const a = await p.evaluate(() => { wpPaint(); return WP.ed.cv.toDataURL(); }); if (a === px0) break; px0 = a; await sleep(150); }
+const g0 = await p.evaluate(() => SYNQUENZER.wpLyrGeom());
 await p.evaluate(r => SYNQUENZER.g9Text(r, true), tk.ref); await sleep(200);
 const v0 = await V(p, id), g1 = await p.evaluate(() => SYNQUENZER.wpLyrGeom());
 { const wg = await p.evaluate(() => SYNQUENZER.wpGeom()); const same = g1.length === g0.length && g1.every((o, i) => o.text === g0[i].text && (o.k < 0 || Math.abs(o.x + wg.x - wg.marks[o.k]) < .6));
   ok(same, 'G9-50 Text-Modus zeigt den VS5b-Text wie VS5b: gleiche Silben, jede an ihrer Marke (±0,6 px)'); }
 ok(deq(v0.cells.slice(0, 16).map(c => c.x.join('')), 'Lie be ist ein Feu er in mir so hell und heiß da drau ßen'.split(' ').concat(['', '']).slice(0, 16).map((x, i) => x)) , 'G9-50 Leiste: eine Silbe je Marke von links (wie VS5b)');
 await p.evaluate(() => SYNQUENZER.g9Text(null, false)); await sleep(150);
-ok(await p.evaluate(() => WP.ed.cv.toDataURL()) === px0, 'G9-50 Marken-Modus nach dem Text-Modus pixelgleich zu vorher (Wellenform mit VS5b-Text)');
+ok(await p.evaluate(() => { wpPaint(); return WP.ed.cv.toDataURL(); }) === px0, 'G9-50 Marken-Modus nach dem Text-Modus pixelgleich zu vorher (Wellenform mit VS5b-Text)');
 ok(!(await LY(p, id)), 'G9-50 Ansehen wandelt nicht um (kein ly)');
 const u0 = (await U(p)).n;
 await SET(p, id, {op: 'shift', k: 4, d: 1});
