@@ -4,8 +4,9 @@ Ein persönlicher Preisalarm. Er sucht **jede Stunde von selbst** nach deinen Li
 in den Prospekten der Märkte in Döbeln (04720) und online – und schickt dir **nur dann** eine
 Push-Nachricht aufs iPhone, wenn etwas **wirklich günstig** ist. In der Nachricht steckt der direkte Link.
 
-- **Übersicht:** <https://xanderfoxy.github.io/Synquenzer/schnaeppchen/>
-  (Safari → Teilen → „Zum Home-Bildschirm“, dann wie eine App)
+- **Übersicht:** <https://xanderfoxy.github.io/Synquenzer/mein-vorteil/#angebote> – eine Seite für Angebote,
+  Preisfehler, Vorteile und Konzerte (Safari → Teilen → „Zum Home-Bildschirm“, dann wie eine App).
+  Die alte Adresse `…/schnaeppchen/` leitet dorthin weiter.
 - **Push-Thema (ntfy):** `xander-schnaeppchen-b5cbf4442aaa9734f3`
 
 ## Push-Nachrichten einrichten (3 Schritte)
@@ -57,8 +58,9 @@ bleiben, ein eigenes Thema als Actions-Secret `NTFY_TOPIC` hinterlegen und in de
   jetzt 23,99 € (−75 %)“. „Vorher“ ist der Vergleichspreis von mydealz (von der Deal-Seite), sonst UVP/„statt“
   aus dem Deal-Text (mit Quelle dabei), sonst „Vorher-Preis unbekannt“.
 - **Keine abgelaufenen Preisfehler:** Preisfehler sind oft nach Minuten vorbei. Deshalb nur Meldungen der letzten
-  72 Stunden, und jede wird auf ihrer mydealz-Seite geprüft (höchstens 10 Seiten pro Lauf, gemerkt in
-  `dealseiten.json`): steht dort „abgelaufen“ oder ist die Seite nicht lesbar, wird sie nicht gezeigt.
+  24 Stunden (wie beim Vorteils-Radar), und jede wird auf ihrer mydealz-Seite geprüft (höchstens 10 Seiten pro Lauf,
+  gemerkt in `dealseiten.json`): steht dort „abgelaufen“ oder „vielleicht abgelaufen“ oder ist die Seite nicht lesbar,
+  wird sie nicht gezeigt.
 - **Keine Doppel-Nachrichten:** jedes Angebot (Produkt, Shop, Preis, Gültigkeit) meldet sich nur einmal,
   höchstens 8 Nachrichten pro Stunde.
 - **TikTok Shop** ist nicht dabei: es gibt keine offene Schnittstelle, und Abgreifen der App wäre gegen die Regeln.

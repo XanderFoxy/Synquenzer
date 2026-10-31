@@ -7,7 +7,7 @@
     "topic": "xander-schnaeppchen-b5cbf4442aaa9734f3",
     "maxProLauf": 8
   },
-  "seite": "https://xanderfoxy.github.io/Synquenzer/schnaeppchen/",
+  "seite": "https://xanderfoxy.github.io/Synquenzer/mein-vorteil/#angebote",
   "maerkte": {
     "_hinweis": "Nur Prospekt-Angebote dieser Ketten zählen (Namen wie bei marktguru, Kleinschreibung egal, Teilwort reicht). 'ausgeschlossen' schlägt 'erlaubt' (Großhandel wie „EDEKA Foodservice“ mit „NUR FÜR GROSSHÄNDLER“).",
     "erlaubt": ["Kaufland", "Lidl", "Aldi Nord", "Netto Marken-Discount", "Penny", "Rewe", "Edeka", "Norma", "Globus", "Marktkauf"],
@@ -32,8 +32,8 @@
     "standardKosten": 4.95
   },
   "preisfehler": {
-    "_hinweis": "Technik-Preisfehler nur bis 'maxAlterStunden' nach dem Melden und nur, wenn die mydealz-Deal-Seite sie nicht als abgelaufen zeigt. Höchstens 'dealSeitenProLauf' Seiten pro Lauf; laufende werden nach 'neuPruefenNachMinuten' erneut geprüft.",
-    "maxAlterStunden": 72,
+    "_hinweis": "Technik-Preisfehler nur bis 'maxAlterStunden' nach dem Melden (wie der Vorteils-Radar: 24 h; echte sind meist nach Minuten bis wenigen Stunden vorbei) und nur, wenn die mydealz-Deal-Seite sie nicht als abgelaufen oder „vielleicht abgelaufen“ zeigt. Höchstens 'dealSeitenProLauf' Seiten pro Lauf; laufende werden nach 'neuPruefenNachMinuten' erneut geprüft.",
+    "maxAlterStunden": 24,
     "dealSeitenProLauf": 10,
     "neuPruefenNachMinuten": 45
   },

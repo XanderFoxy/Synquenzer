@@ -3,8 +3,9 @@
 Ein Ort für alle Vorteile – ohne selbst suchen zu müssen.
 Der Radar schaut jede Stunde nach, rechnet nach und meldet sich nur, wenn sich etwas wirklich lohnt.
 
-**Seite (auch als App auf dem Home-Bildschirm):** https://xanderfoxy.github.io/Synquenzer/vorteile/
-(Safari → Teilen → „Zum Home-Bildschirm“)
+**Seite (auch als App auf dem Home-Bildschirm):** https://xanderfoxy.github.io/Synquenzer/mein-vorteil/#vorteile
+(Safari → Teilen → „Zum Home-Bildschirm“) – eine Seite für Angebote, Preisfehler, Vorteile und Konzerte; die alte
+Adresse `…/vorteile/` leitet dorthin weiter.
 
 ## Was er macht
 

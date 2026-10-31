@@ -18,18 +18,27 @@ s.technik = [
     titel: 'Möglicher Preisfehler: Lumaland Outdoor Pop-Up Pavillon 2,5 x 2,5 m in Schwarz & Grau',
     shop: 'Amazon', preis: 23.99, versand: 0,
     preisVorher: 96.99, vorherQuelle: 'Vergleichspreis laut mydealz', ersparnisEuro: 73, ersparnisProzent: 75,
-    preisAlt: 96.99, ersparnis: 0.753, grund: 'Preisfehler, 75 % unter Vergleichspreis',
+    preisAlt: 96.99, ersparnis: 0.753, grund: 'Preisfehler, 75 % unter Vergleichspreis', preisfehler: true,
     link: 'https://www.mydealz.de/deals/test-lumaland-2861129', bild: '',
-    datum: '2026-10-31T15:50:00.000Z', bis: '2026-11-03T15:50:00.000Z', bisGeschaetzt: true, geprueft: '2026-10-31T16:30:00.000Z',
+    // ohne Ende auf der Deal-Seite: gemeldet + 24 h (Schnäppchen-Wecker und Vorteils-Radar gleich)
+    datum: '2026-10-31T15:50:00.000Z', bis: '2026-11-01T15:50:00.000Z', bisGeschaetzt: true, geprueft: '2026-10-31T16:30:00.000Z',
   },
   { // wie RTX 5070: kein Vorher-Preis bekannt
     typ: 'technik', id: 'technik-preisfehler', name: 'Technik-Preisfehler',
     titel: 'Zotac Gaming GeForce RTX 5070 Twin Edge OC Nvidia Grafikkarte 12GB Preisfehler',
     shop: 'MediaMarkt', preis: 165, versand: null,
     preisVorher: null, vorherQuelle: null, ersparnisEuro: null, ersparnisProzent: null,
-    preisAlt: null, ersparnis: null, grund: 'Preisfehler gemeldet',
+    preisAlt: null, ersparnis: null, grund: 'Preisfehler gemeldet', preisfehler: true,
     link: 'https://www.mydealz.de/deals/test-rtx-5070-2852994', bild: '',
-    datum: '2026-10-31T16:05:00.000Z', bis: '2026-11-03T16:05:00.000Z', bisGeschaetzt: true,
+    datum: '2026-10-31T16:05:00.000Z', bis: '2026-11-01T16:05:00.000Z', bisGeschaetzt: true,
+  },
+  { // kein gemeldeter Preisfehler, aber ≥ 60 % unter „statt“-Preis; echtes Ende von der Deal-Seite (endDate)
+    typ: 'technik', id: 'technik-preisfehler', name: 'Technik-Preisfehler',
+    titel: 'Samsung 55" QLED TV GQ55Q60 für 199 € statt 499 €', shop: 'MediaMarkt', preis: 199, versand: 4.99,
+    preisVorher: 499, vorherQuelle: 'statt-Preis laut Deal-Text', ersparnisEuro: 300, ersparnisProzent: 60,
+    preisAlt: 499, ersparnis: 0.601, grund: '60 % unter Vergleichspreis', preisfehler: false,
+    link: 'https://www.mydealz.de/deals/test-samsung-2500002', bild: '',
+    datum: '2026-10-31T14:00:00.000Z', bis: '2026-10-31T20:00:00.000Z', bisGeschaetzt: false, geprueft: '2026-10-31T16:30:00.000Z',
   },
   { // abgelaufen (Deal-Seite: endDate vorbei) – darf nicht erscheinen
     typ: 'technik', id: 'technik-preisfehler', name: 'Technik-Preisfehler',
@@ -48,6 +57,14 @@ chips.bestes = {
   link: 'https://www.marktguru.de/offers/1', quelle: 'marktguru', online: false, deal: true, grund: '59 % unter Normalpreis', ersparnis: 0.59,
 };
 chips.deal = true; chips.ersparnis = 0.59;
+// … und ein teureres, noch laufendes Angebot: nach dem Ende des besten zeigt die Karte dieses, ohne den alten Tiefstpreis-Satz
+chips.weitere = [{
+  shop: 'REWE', titel: 'Lorenz Crunchips', beschreibung: 'versch. Sorten, je 150 g', preis: 1.49, versand: 0,
+  einheitspreis: 0.993, packung: '150 g', menge: { gramm: 150 }, mengeSicher: true, mengeQuelle: 'grundpreis', preisVorher: null,
+  gueltigAb: '2026-10-25T23:00:00Z', gueltigBis: '2026-11-07T22:59:00Z', ab: '2026-10-25T23:00:00Z', bis: '2026-11-07T22:59:00Z',
+  link: 'https://www.marktguru.de/offers/2', quelle: 'marktguru', online: false, deal: false, grund: '', ersparnis: 0.38,
+}];
+chips.tiefst = { status: 'unbekannt', text: 'Günstigstes von 2 Angeboten in deiner Nähe · Verlauf erst seit 1 Tag', heuteGuenstigstes: true, tage: 1, tiefst30: 0.66, anzahl: 2 };
 schreib('schnaeppchen-current.json', s);
 
 // --- Vorteile --------------------------------------------------------------------------------------------------------

@@ -6,7 +6,7 @@ Push aufs iPhone, sobald eine deiner Lieblingsbands
 - **etwas Neues veröffentlicht** (Album, EP, Single – keine Best-ofs, Remaster oder Neuauflagen).
 
 Jede Neuigkeit kommt **genau einmal**, mit direktem Link zu Tickets bzw. zum Anhören.
-Übersicht fürs Handy: **https://xanderfoxy.github.io/synquenzer/konzerte/**
+Übersicht fürs Handy: **https://xanderfoxy.github.io/Synquenzer/mein-vorteil/#konzerte** (eine Seite für Angebote, Vorteile und Konzerte; die alte Adresse `…/konzerte/` leitet dorthin weiter)
 
 ## 1. Push abonnieren (einmalig, 1 Minute)
 
@@ -70,7 +70,7 @@ GitHub Actions (alle 3 h + manuell)  .github/workflows/konzerte.yml
        └─ Deezer                       neue Alben/Singles + Hör-Link, Neuauflagen per MusicBrainz-Abgleich raus
   ├─ Dedupe gegen gesehen.json → ntfy-Push (max. 8 pro Lauf, Rest als Sammelmeldung)
   └─ JSON → Branch konzerte-daten (nicht main → die App-Seite wird nicht neu gebaut)
-konzerte/index.html liest raw.githubusercontent.com/xanderfoxy/synquenzer/konzerte-daten/konzerte/data/*.json
+mein-vorteil/index.html liest raw.githubusercontent.com/xanderfoxy/synquenzer/konzerte-daten/konzerte/data/*.json
 ```
 
 - Fällt eine Quelle aus, laufen die anderen weiter; ihre alten Einträge bleiben auf der Seite stehen. Fehler stehen unten auf der Seite unter „Quellen“ und in `status.json`.

@@ -147,7 +147,7 @@ test('echte Daten: nach Kaufland-Ende (18:00 UTC) verschwindet das Angebot von s
   await page.clock.setFixedTime(new Date('2026-10-31T18:00:30Z'));
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
   assert.equal(await page.locator('[data-produkt="knoppers-schnitte"]').count(), 0);
-  assert.match(await text(page, '#p-angebote'), /Knoppers Schnitte\s*Gerade kein Angebot/);
+  assert.match(nbsp(await text(page, '#p-angebote')), /Knoppers Schnitte\s*Gerade kein Angebot · zuletzt 0,19 € pro Stück bei Kaufland · Normalpreis geschätzt: ca\. 0,38 € pro Stück/);
   assert.doesNotMatch(await text(page, '#p-angebote'), /Milch-Haselnuss-Schnitte/);
   // auch im Vorteils-Reiter nichts mehr davon
   assert.doesNotMatch(await page.locator('#p-vorteile').textContent(), /Knoppers/);
@@ -176,12 +176,20 @@ test('altes Produktionsformat (31.10.): keine falsche Packung, keine erfundenen 
 test('Preisfehler: vorher → jetzt, du sparst, Quelle; ohne Vorher-Preis ehrlich „unbekannt“; Abgelaufenes fehlt', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ satz: 'vertrag' });
   const karten = page.locator('#p-angebote [data-preisfehler]');
-  assert.equal(await karten.count(), 2, 'Lumaland (doppelt in beiden Quellen) einmal + RTX');
+  assert.equal(await karten.count(), 3, 'Lumaland (doppelt in beiden Quellen) einmal + RTX + Technik-Deal Samsung');
   const luma = nbsp(await karten.filter({ hasText: 'Lumaland' }).innerText());
   assert.match(luma, /vorher 96,99 €\s*→\s*jetzt 23,99 €/);
   assert.match(luma, /du sparst 73,00 € \(−75 %\)/);
   assert.match(luma, /Vergleichspreis laut mydealz/);
   assert.match(luma, /gemeldet vor 45 Min\./);
+  assert.match(luma, /^Preisfehler/);
+  assert.doesNotMatch(luma, /\bbis\b/, 'geschätztes Ende (gemeldet + 24 h) wird nicht als „bis“ gezeigt');
+  const samsung = nbsp(await karten.filter({ hasText: 'Samsung' }).innerText());
+  assert.match(samsung, /^Technik-Deal/, 'kein gemeldeter Preisfehler (Feld preisfehler: false)');
+  assert.match(samsung, /bis heute, 21:00 Uhr/, 'echtes Ende von der Deal-Seite');
+  assert.match(samsung, /vorher 499,00 €\s*→\s*jetzt 199,00 €/);
+  assert.match(samsung, /du sparst 300,00 € \(−60 %\)/);
+  assert.match(samsung, /statt-Preis laut Deal-Text · zzgl\. 4,99 € Versand/);
   const rtx = nbsp(await karten.filter({ hasText: 'RTX 5070' }).innerText());
   assert.match(rtx, /jetzt 165,00 €/);
   assert.match(rtx, /Originalpreis unbekannt/);
@@ -192,7 +200,33 @@ test('Preisfehler: vorher → jetzt, du sparst, Quelle; ohne Vorher-Preis ehrlic
     await reiter(page, r);
     assert.doesNotMatch(await page.locator('#p-' + r).textContent(), /ABGELAUFEN/, `${r}: Abgelaufenes sichtbar`);
   }
-  assert.equal(await page.locator('#t-angebote .n').innerText(), '4', 'Zähler: 2 Deals + 2 Preisfehler');
+  assert.equal(await page.locator('#t-angebote .n').innerText(), '5', 'Zähler: 2 Deals + 3 Preisfehler/Technik-Deals');
+  // Crunchips: das beste Angebot ist abgelaufen -> die Karte zeigt das teurere REWE-Angebot, ohne Prozent und ohne den alten Satz
+  const chips = nbsp(await page.locator('[data-produkt="crunchips"]').innerText());
+  assert.match(chips, /Lorenz Crunchips · 150 g/);
+  assert.match(chips, /1,49 €\s*bei REWE/);
+  assert.match(chips, /Tiefstpreis\?\s*nein\s*Schon günstiger gesehen: 0,66 € pro 100 g/);
+  assert.doesNotMatch(chips, /−59 %|Günstigstes von 2|ABGELAUFEN/);
+  assert.equal(await page.locator('[data-produkt="crunchips"].deal').count(), 0);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Preisfehler verschwinden von selbst: Technik-Deal am Deal-Ende, Preisfehler ohne Ende 24 h nach dem Melden', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', jetzt: '2026-10-31T19:59:00Z' });
+  const karten = page.locator('#p-angebote [data-preisfehler]');
+  assert.equal(await karten.count(), 3);
+  await page.clock.setFixedTime(new Date('2026-10-31T20:00:30Z'));
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  assert.deepEqual((await karten.allInnerTexts()).map(t => /Lumaland/.test(t) ? 'Lumaland' : /RTX/.test(t) ? 'RTX' : t.slice(0, 30)), ['RTX', 'Lumaland']);
+  // Lumaland: im Schnäppchen-Wecker bis = gemeldet + 24 h, im Radar sichtbarBis = gemeldet + 24 h -> beide weg
+  await page.clock.setFixedTime(new Date('2026-11-01T15:51:00Z'));
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  assert.deepEqual((await karten.allInnerTexts()).map(t => /RTX/.test(t) ? 'RTX' : t.slice(0, 30)), ['RTX']);
+  await page.clock.setFixedTime(new Date('2026-11-01T16:06:00Z'));
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  assert.equal(await karten.count(), 0);
+  assert.match(await text(page, '#p-angebote'), /Gerade kein laufender Preisfehler/);
   assert.deepEqual(fehler, []);
   await ctx.close();
 });

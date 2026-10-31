@@ -124,13 +124,16 @@ test('Gesamtlauf mit Fixtures: Deals, Technik, Fehlerliste, Dedupe', async () =>
   assert.equal(p('softys-rote-fruechte').deal, true);
   assert.equal(p('softys-fruchtmix').bestes, null, 'rote Tüte ist nicht die gelbe');
   assert.equal(r.current.produkte[0].deal, true, 'Deals stehen oben');
-  // Technik: PS5 + Samsung laufen (Deal-Seite), AirPods laut Seite abgelaufen, Xbox älter als 72 h (Seite nicht geladen)
+  // Technik: PS5 + Samsung laufen (Deal-Seite), AirPods laut Seite abgelaufen, Xbox älter als 24 h (Seite nicht geladen)
   assert.deepEqual(r.current.technik.map(t => t.titel.split(' ')[0]), ['PlayStation', 'Samsung']);
   const ps5 = r.current.technik[0];
   assert.deepEqual([ps5.preis, ps5.preisVorher, ps5.vorherQuelle, ps5.ersparnisEuro, ps5.ersparnisProzent],
     [44, 449, 'Vergleichspreis laut mydealz', 405, 90]);
   assert.equal(ps5.datum, '2026-10-30T20:00:00.000Z');
-  assert.equal(ps5.bis, '2026-11-02T20:00:00.000Z');
+  assert.equal(ps5.bis, '2026-10-31T20:00:00.000Z', 'ohne Ende auf der Deal-Seite: gemeldet + 24 h (wie der Vorteils-Radar)');
+  assert.equal(ps5.bisGeschaetzt, true);
+  assert.equal(ps5.preisfehler, true, 'aus der Preisfehler-Gruppe');
+  assert.equal(r.current.technik[1].preisfehler, false, 'Samsung: nur ≥ 60 % unter Vergleichspreis, kein gemeldeter Preisfehler');
   assert.equal(r.current.technik[1].vorherQuelle, 'statt-Preis laut Deal-Text');
   assert.ok(abrufe.includes('https://www.mydealz.de/deals/airpods-2500006'));
   assert.ok(!abrufe.some(u => u.includes('xbox')), 'zu alt -> nicht einmal geprüft');
@@ -145,6 +148,23 @@ test('Gesamtlauf mit Fixtures: Deals, Technik, Fehlerliste, Dedupe', async () =>
   const r2 = await scan({ cfg, watchlist, holeText: async u => { abrufe2.push(u); return holeText(u); }, jetzt: JETZT, sent, history: r.history, dealseiten: r.dealseiten });
   assert.equal(r2.msgs.length, 0);
   assert.ok(!abrufe2.some(u => u.includes('/deals/')), 'gerade geprüft -> nicht sofort wieder');
+});
+
+test('Technik: „vielleicht abgelaufen“ laut Deal-Seite und älter als 24 h = nicht zeigen (wie der Vorteils-Radar)', async () => {
+  const samsung = 'https://www.mydealz.de/deals/samsung-qled-2500002';
+  const vielleicht = async (url, o) => {
+    const t = await holeText(url, o);
+    return url === samsung ? t.replace('"isMaybeExpired":false', '"isMaybeExpired":true') : t;
+  };
+  const r = await scan({ cfg, watchlist, holeText: vielleicht, jetzt: JETZT, sent: {}, history: null });
+  assert.deepEqual(r.current.technik.map(t => t.titel.split(' ')[0]), ['PlayStation']);
+  assert.equal(r.dealseiten.seiten[samsung].vielleichtAbgelaufen, true);
+  // 25 Stunden nach dem Melden ist auch die PS5 weg (ohne dass ihre Seite noch einmal geladen wird)
+  const abrufe = [];
+  const spaet = await scan({ cfg, watchlist, holeText: async (u, o) => { abrufe.push(u); return holeText(u, o); },
+    jetzt: new Date('2026-10-31T21:00:00Z'), sent: {}, history: null });
+  assert.deepEqual(spaet.current.technik, [], 'PS5 + Samsung älter als 24 h, AirPods laut Seite abgelaufen');
+  assert.ok(!abrufe.some(u => u.includes('ps5-2500005') || u.includes('samsung-qled-2500002')), 'zu alt -> Seite nicht geladen');
 });
 
 test('ntfy-Nachricht enthält Preis, Grundpreis, Ersparnis und direkten Link', () => {

@@ -429,9 +429,17 @@ function knopfText(o) {
   return `Zum Angebot bei ${o.shop}`;
 }
 function tiefstInfo(p, o) {
-  if (p.tiefst?.text) return p.tiefst;
   if (!o) return { status: 'unbekannt', text: 'Gerade kein Angebot' };
   if (!mengeSicher(o)) return { status: 'unbekannt', text: 'Packungsgröße unklar – Preis pro Stück/100 g nicht sicher' };
+  if (p.bestes && o !== p.bestes) {
+    // Das Angebot, auf das sich tiefst.text bezieht, ist seit dem letzten Lauf abgelaufen -> nicht dessen Satz zeigen
+    const t30 = zahl(p.tiefst?.tiefst30);
+    if (t30 != null && zahl(o.einheitspreis) != null && t30 < o.einheitspreis - 0.005) {
+      return { status: 'nein', text: `Schon günstiger gesehen: ${euro(t30, true)} ${BASIS_KURZ[p.basis] || p.basisLabel || ''}`.trim() };
+    }
+    return { status: 'unbekannt', text: 'Das bisher günstigste Angebot ist gerade abgelaufen – neue Antwort nach dem nächsten Lauf' };
+  }
+  if (p.tiefst?.text) return p.tiefst;
   const tage = p.historieTage || 0;
   if (tage < 5) return { status: 'unbekannt', text: tage <= 1 ? 'Verlauf erst seit 1 Tag' : `Verlauf erst seit ${tage} Tagen` };
   if (p.tiefstpreis != null && o.einheitspreis <= p.tiefstpreis + 0.005) return { status: 'ja', text: `So günstig wie nie in ${tage} Tagen` };
@@ -440,6 +448,8 @@ function tiefstInfo(p, o) {
 const STATUS_TEXT = { ja: 'ja', nein: 'nein', unbekannt: 'unklar' };
 
 function angebotWahl(p) {
+  // Ohne „bestes“ hat der Scanner alle Angebote als unplausibel eingestuft (eher ein anderes Produkt) -> keine Karte
+  if (!p.bestes) return { o: null, rest: [] };
   const alle = [p.bestes, ...(p.weitere || [])].filter(o => o && !vorbei(o));
   return { o: alle[0] || null, rest: alle.slice(1) };
 }
@@ -484,11 +494,18 @@ function produktKarte(p, o, rest) {
   </article>`;
 }
 
+function keinAngebotText(p, basis) {
+  const b = p.bestes; // war beim letzten Lauf da, ist inzwischen abgelaufen
+  if (b && mengeSicher(b) && zahl(b.einheitspreis) != null) return `Gerade kein Angebot · zuletzt ${euro(b.einheitspreis, true)} ${basis} bei ${b.shop}`;
+  const t = p.tiefst?.text; // vom Scanner, z. B. „Gerade kein Angebot · zuletzt 0,19 € pro Stück am 31.10.“
+  if (!b && t && /^Gerade kein Angebot/.test(t)) return t;
+  return 'Gerade kein Angebot';
+}
 function produktZeile(p) {
   const basis = BASIS_KURZ[p.basis] || p.basisLabel || '';
   const geschaetzt = p.normalGeschaetzt === true || p.normalQuelle === 'schaetzung';
   const normal = zahl(p.normalpreis) != null ? ` · ${geschaetzt ? 'Normalpreis geschätzt: ca.' : 'Normalpreis:'} ${euro(p.normalpreis, true)} ${basis}` : '';
-  return `<li><div class="reihe"><div class="haupt"><b>${esc(produktName(p, null))}</b><span>Gerade kein Angebot${esc(normal)}</span></div></div></li>`;
+  return `<li><div class="reihe"><div class="haupt"><b>${esc(produktName(p, null))}</b><span>${esc(keinAngebotText(p, basis))}${esc(normal)}</span></div></div></li>`;
 }
 
 const istPreisfehler = e => e.preisfehler === true || (e.preisfehler == null && /preisfehler/i.test(`${e.grund || ''}`));
@@ -501,7 +518,8 @@ function preisfehlerListe() {
       preisVorher: zahl(t.preisVorher ?? t.preisAlt), vorherQuelle: t.vorherQuelle ?? null,
       ersparnisEuro: zahl(t.ersparnisEuro), ersparnisProzent: zahl(t.ersparnisProzent),
       datum: t.datum, bis: t.bis ?? null, sichtbarBis: t.sichtbarBis ?? null, link: t.link,
-      echt: /preisfehler/i.test(`${t.grund || ''} ${t.titel || ''}`),
+      endeBekannt: t.bis && t.bisGeschaetzt !== true ? t.bis : null, // geschätztes Ende (gemeldet + 24 h) nicht anzeigen
+      echt: typeof t.preisfehler === 'boolean' ? t.preisfehler : /preisfehler/i.test(`${t.grund || ''} ${t.titel || ''}`),
     });
   }
   for (const e of Object.values(S.vorteile?.d?.kategorien || {}).flat()) {
@@ -511,6 +529,7 @@ function preisfehlerListe() {
       preisVorher: zahl(e.preisVorher), vorherQuelle: e.vorherQuelle ?? null,
       ersparnisEuro: zahl(e.ersparnisEuro), ersparnisProzent: zahl(e.ersparnisProzent),
       datum: e.datum, bis: e.bis ?? null, sichtbarBis: e.sichtbarBis ?? null, link: e.link, echt: true,
+      endeBekannt: e.bis || null, // Radar: bis nur mit echter Quelle (Deal-Seite/Text), sonst sichtbarBis
       zeile: e.zeile,
     });
   }
@@ -533,6 +552,7 @@ function preisfehlerKarte(x) {
   const oben = [`<span class="marke warm">${x.echt ? 'Preisfehler' : 'Technik-Deal'}</span>`];
   if (x.shop) oben.push(`<span>${esc(x.shop)}</span>`);
   if (x.datum) oben.push(`<span>gemeldet ${esc(vor(x.datum))}</span>`);
+  if (x.endeBekannt) oben.push(`<span class="marke warm">${esc(bisText(x.endeBekannt))}</span>`);
   const preis = x.preis != null ? esc(euro(x.preis)) : '?';
   const versand = zahl(x.versand) > 0 ? ` · zzgl. ${euro(x.versand)} Versand` : '';
   return `<article class="karte fehler" data-preisfehler>

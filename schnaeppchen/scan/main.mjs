@@ -159,7 +159,7 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
   // 3. electronics price errors: nur frische (≤ maxAlterStunden) und laut Deal-Seite nicht abgelaufene
   const technik = [];
   const pf = cfg.preisfehler || {};
-  const maxAlterMs = (pf.maxAlterStunden ?? 72) * 36e5;
+  const maxAlterMs = (pf.maxAlterStunden ?? 24) * 36e5;
   const technikFehler = [];
   if (watchlist.technik) {
     const vorauswahl = alle
@@ -173,7 +173,7 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       const seite = ergebnisse.get(o.link);
       if (!seite) continue; // diesmal nicht geprüft -> nicht zeigen (nächster Lauf)
       if (!seite.ok) { technikFehler.push(`Deal-Seite nicht lesbar: ${seite.fehler}`); continue; }
-      if (seite.abgelaufen) continue;
+      if (seite.abgelaufen || seite.vielleichtAbgelaufen) continue; // wie der Vorteils-Radar: „vielleicht abgelaufen“ = weg
       const b = technikBewertung(o, watchlist.technik, cfg, seite);
       if (!b) continue;
       const geplant = seite.bis && Date.parse(seite.bis) > jetztMs ? seite.bis : null;
@@ -183,7 +183,7 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
         typ: 'technik', id: watchlist.technik.id, name: watchlist.technik.name, titel: o.titel, shop: seite.haendler || o.shop,
         preis: b.preis, versand: seite.versand ?? null,
         preisVorher: b.preisVorher, vorherQuelle: b.vorherQuelle, ersparnisEuro: b.ersparnisEuro, ersparnisProzent: b.ersparnisProzent,
-        preisAlt: b.preisVorher, ersparnis: b.ersparnis, grund: b.grund,
+        preisAlt: b.preisVorher, ersparnis: b.ersparnis, grund: b.grund, preisfehler: b.preisfehler,
         link: o.link, bild: o.bild || '', datum: o.datum, bis, bisGeschaetzt: !geplant, geprueft: seite.geprueft,
         temperatur: seite.temperatur ?? o.temperatur ?? null,
       };
