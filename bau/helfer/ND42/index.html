@@ -3696,6 +3696,69 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 #synthSheet .sh-head .seg.eng.eng4 button.eco,#synthSheet .sh-head .seg.eng.engchip button.eco{padding-bottom:7px}
 @media (orientation:landscape){#synthSheet .sh-head .seg.eng.eng4 button.eco::before,#synthSheet .sh-head .seg.eng.engchip button.eco::before{content:''}
   #synthSheet .sh-head .seg.eng.eng4 button.eco,#synthSheet .sh-head .seg.eng.engchip button.eco{padding-bottom:0}}
+/* ND2 (Nachtrag 6 §ND2): Editor der Drum-Engine – Zellen in Geräte-Paaren (Name, Wert groß, Unterzeile), Zeilen B/E, Listen, KIT-Block */
+.pg-md,.pg-mdk{display:flex;flex-direction:column;gap:6px;min-height:0}
+.dsrc{position:relative}
+.mdrb .dsel,.mdre .rb,.mdre .tgl,.pg-mdk .drow .dsel{height:44px}
+.mdrb{gap:6px}.mdrb .dsel{flex:1 1 0;min-width:0}.mdrb .dinst{flex:1 1 0}
+.mdnowk{color:var(--warn,#e0a040);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mdf{display:flex;flex-direction:column;gap:6px;flex:none}
+.mdr{display:flex;gap:6px;justify-content:flex-start;min-width:0}
+.knob.mdc{width:auto;flex:1 1 0;min-width:57px;max-width:96px;height:64px;padding:4px 2px 3px;gap:0;justify-content:center;border:1px solid var(--line);background:linear-gradient(var(--chassis-2),var(--chassis));box-shadow:inset 0 1px 0 var(--hi)}
+.knob.mdc svg,.knob.mdc .kb{display:none}
+.knob.mdc .kl{font:700 10px/12px var(--font-ui);letter-spacing:.04em;max-width:100%}
+.knob.mdc .kn{font:600 19px/22px var(--font-num);color:var(--text);max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.knob.mdc .msub{font:500 9px/11px var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 2px}
+.knob.mdc.press{border-color:var(--tc,var(--t5))}
+.knob.mdc.kidle{opacity:1}
+.knob.mdc.inert .kn,.knob.mdc.inert .kl{color:var(--text-dim);opacity:.55}
+.knob.mdc .fine{bottom:auto;top:-2px}
+.mdre{gap:6px;margin-top:auto}.mdre .tgl{flex:1 1 0;min-width:0;justify-content:center;padding:0 6px}.mdre .tgl span{white-space:nowrap;line-height:14px}
+.mdre .mdtrig,.mdre .mdmore{flex:none;width:52px;font-size:16px}
+.tgl.on .led{background:var(--led-on,#ffb340);box-shadow:0 0 6px var(--led-on,#ffb340)}
+.mdsoloh{flex:none;margin:0 6px;padding:3px 6px;border-radius:4px;font:700 10px/1 var(--font-ui);letter-spacing:.06em;color:#000;background:var(--led-on,#ffb340)}
+.pad.mdall{outline:2px solid var(--led-on,#ffb340);outline-offset:-2px}
+.pop.mdpop{max-width:min(560px,calc(100vw - 16px))}
+.mdwl{display:flex;flex-direction:column;gap:4px;max-height:min(62vh,420px);overflow-y:auto}
+.mdwr{display:flex;align-items:center;gap:6px}.mdwf{flex:none;width:62px;font:600 10px/1.1 var(--font-ui);color:var(--text-dim)}
+.mdwb{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
+.mdw{width:52px;height:44px;flex-direction:column;gap:0;padding:2px}.mdw b{font:700 14px/16px var(--font-num)}.mdw small{font:500 8px/10px var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;max-width:48px}
+.mdw.on,.mdcl .on,.mdcats .on,.mdpl .on,.mdov .on{border-color:var(--led-on,#ffb340);box-shadow:inset 0 0 0 1px var(--led-on,#ffb340)}
+.mdcl{grid-template-columns:repeat(2,minmax(0,1fr));max-height:min(60vh,380px);overflow-y:auto}.mdcl .rb{min-height:44px;justify-content:flex-start;padding:0 8px;gap:6px}.mdcl small{color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mdcats{display:flex;gap:4px;overflow-x:auto;margin:0 0 8px;flex-wrap:nowrap}.mdcats .rb{flex:none;min-width:48px;height:44px;flex-direction:column;gap:0;padding:2px 4px}.mdcats b{font:700 12px/14px var(--font-ui)}.mdcats small{font:500 8px/10px var(--font-ui);color:var(--text-dim)}
+.pop .mdcats{flex-wrap:wrap}
+.mdpl{max-height:min(46vh,320px);overflow-y:auto}.mdpl .rb{min-height:44px}
+.mdmore .rb,.mdswap .rb{min-height:44px}.mdswap{margin-top:8px}
+.mdkr{gap:8px;flex-wrap:wrap}.mdkr .seg button{min-width:36px;min-height:44px}.mdkr .tgl{height:44px}
+.mdov{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;overflow-y:auto;min-height:0;flex:1 1 auto}
+.mdov .rb{height:44px;justify-content:flex-start;gap:5px;padding:0 6px;font:600 11px/1 var(--font-ui);min-width:0}
+.mdov .sw{width:8px;height:8px;border-radius:2px;background:var(--pc);flex:none}.mdov b{flex:none;min-width:30px}.mdov span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-dim);min-width:0}.mdov .pn{flex:1 1 auto;color:var(--text)}.mdov .mo{flex:none;color:var(--led-on,#ffb340)}
+.mdkit{display:flex;flex-direction:column;gap:6px}
+@media (orientation:landscape){.mdkit{flex-direction:row;flex-wrap:wrap}.mdkit .mdr{gap:4px}}
+.mdkh{font:700 10px/12px var(--font-ui);letter-spacing:.08em;color:var(--text-dim)}
+.mdkit .mdr2{align-items:center}.mdkit .lgrp.dsg{flex:none}.mdkit .seg button{min-height:44px;min-width:44px}
+.mdtap{flex:none;min-width:64px;height:44px;font:700 12px/1 var(--font-ui)}
+@media (orientation:landscape){
+  .pg-md{gap:4px}
+  .mdf{flex-direction:row;gap:4px}.mdf .mdr{gap:4px;flex:1 1 auto}
+  .knob.mdc{min-width:58px;height:64px}
+  .pg-md>.vchips{display:none}
+  .knob.mdc .kl{font-size:9px;letter-spacing:0}
+  .mdre .tgl{flex:none;padding:0 8px}.mdre .mdtrig,.mdre .mdmore{width:46px}
+  .pg-md{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"b e" "f f";align-content:start}
+  .pg-md>.mdrb{grid-area:b}.pg-md>.mdre{grid-area:e;margin-top:0}.pg-md>.mdf{grid-area:f}
+  .mdrb .dsel{flex:0 1 auto;max-width:200px}
+  .mdov{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (orientation:portrait) and (max-height:700px){.pg-md,.mdf,.mdr{gap:4px}.knob.mdc{height:56px}.knob.mdc .kn{font-size:17px;line-height:19px}}
+@media (orientation:portrait) and (max-width:340px){.mdkr .lgrp>.lbl{display:none}.knob.mdc .kl{letter-spacing:0}.mdre .tgl{padding:0 4px;gap:4px}.mdre .tgl span{letter-spacing:0}.knob.mdc{min-width:0;height:52px}.knob.mdc .kn{font-size:16px;line-height:18px}.knob.mdc .kl{font-size:9px}.mdre .mdtrig,.mdre .mdmore{width:46px}.mdre .tgl{font-size:10px;letter-spacing:.02em}.mdwf{width:48px}}
+@media (orientation:portrait) and (max-height:700px){.pg-md>.vchips{display:none}.pg-md .dinst.sm{display:inline-flex}.pg-md .drow .dsel .lbl{display:none}}
+#drumSheet .pg-md .drow .dsel,#drumSheet .pg-mdk .drow .dsel,#drumSheet .pg-md .drow .tgl,#drumSheet .pg-mdk .drow .tgl{height:44px}
+.drow.dsegs.mdkr .seg button{min-width:44px;min-height:44px}
+@media (orientation:landscape){.mdkit .knob.mdc{min-width:76px}}
+@media (orientation:landscape){.pg-md .dinst.sm{display:inline-flex}.pg-md .drow .dsel .lbl{display:none}}
+.pg-mdk{flex:1 1 auto;height:100%;overflow:hidden}.mdkr .seg button{min-width:44px}
+/* Ende ND2 */
 </style>
 </head>
 <body>
@@ -19643,6 +19706,7 @@ function launch(i, slot, atT) {
   switchTrackAt(i, target, nextBarFromAudible(atT));
 }
 function launchScene(s) {
+  try { mdEditEnd(); } catch (e) { logErr(e); }               // ND2
   ensureAudio(); if (!AU.ctx) return;
   s = clamp(s | 0, 0, NS() - 1);
   if (UI.mkSplitOff) { try { UI.mkSplitOff(); } catch (e) { logErr(e); } }   // MK-P: a scene change ends Split ← nächste Note
@@ -20806,6 +20870,7 @@ function startTransport(countIn) {
 function play() { startTransport(null); }
 function stop() {
   const c = AU.ctx;
+  try { mdEditEnd(); } catch (e) { logErr(e); }               // ND2
   if (UI.mkSplitOff) { try { UI.mkSplitOff(); } catch (e) { logErr(e); } }   // MK-P: ■ ends Split ← nächste Note
   if (!R.playing) {                                          // ■ twice within 1 s: tails off (§8.1)
     if (c && tailWinOpen()) { tailKill(); tailWinSet(false); haptic('snap'); toast('Hall und Echo aus'); }
@@ -27667,7 +27732,7 @@ function makeCtl(d, get, set, o) {
         } else lastTap = {t, x: e.clientX, y: e.clientY};
         UI.modFocus = k; modModeRefresh();
       } else if (dbl) { lastTap.t = 0; resetDefault(G.before); }
-      else lastTap = {t, x: e.clientX, y: e.clientY};
+      else { lastTap = {t, x: e.clientX, y: e.clientY}; if (o.onTap) o.onTap(); }   // ND2: o.onTap (Liste beim Tipp)
     }
     gestEnd(G.id);
   }
@@ -27803,6 +27868,7 @@ function openEditor() {
   UI.dirty.all = true;
 }
 function closeEditor() { if (typeof MKUI !== 'undefined' && MKUI.leave) { try { MKUI.leave(); } catch (e) { logErr(e); } }   // MK3: solo / Edit Sync / armed split end with the editor
+  try { mdEditEnd(); } catch (e) { logErr(e); }               // ND2: ALLE KANÄLE / SOLO PART enden
   if (EL.synthSheet.classList.contains('open') || EL.drumSheet.classList.contains('open') || EL.clipSheet.classList.contains('open') || EL.rollSheet.classList.contains('open') || EL.sndSheet.classList.contains('open')) shieldTap(); closeSheets(); R.editor = null; UI.dirty.all = true; }
 function edRefresh() { for (const f of ED.refreshers) { try { f(); } catch (e) { logErr(e); } } }
 /* §1.7.3 / §2.3: editor pages never scroll. Conditional content (FILTER hint line, …) can push a page past its body at
@@ -32766,8 +32832,8 @@ function buildDrumEd() {
   if (!DLAYERS.some(x => x[0] === ED.dLayer)) ED.dLayer = 'ton';
   ED.dVoice = clamp(ED.dVoice | 0, 0, 11);
   sh.style.setProperty('--tc', 'var(--t5)');
-  const sl = DRUM_VOICES[ED.dVoice], P = slotParams(sl.id);
-  const subs = ED.dTab === 'fx' ? {list: FX_SUBS, cur: ED.dFx, on: id => { ED.dFx = id; safeRebuild(buildDrumEd); }}
+  const sl = DRUM_VOICES[ED.dVoice], P = slotParams(sl.id), mdp = mdIsSrc(sl.id);   // ND2: Modell-Pad
+  const subs = mdp && ED.dTab === 'sound' ? {list: MD_SUBS, cur: MDE.sub, on: id => { MDE.sub = id; if (MDE.solo) mdSoloApply(); safeRebuild(buildDrumEd); }} : mdp && ED.dTab === 'tief' ? null : ED.dTab === 'kit' && mdUsed() ? {list: [['kit', 'KIT'], ['md', esc(MD_NAME) + ' · HALL &amp; ECHO']], cur: MDE.kitSub, on: id => { MDE.kitSub = id; safeRebuild(buildDrumEd); }} : ED.dTab === 'fx' ? {list: FX_SUBS, cur: ED.dFx, on: id => { ED.dFx = id; safeRebuild(buildDrumEd); }}
     : ED.dTab === 'tief' ? {list: DLAYERS.map(([id, l]) => [id, (LAYER_LVL[id] ? `<i class="led${layerOn(P, id) ? ' on' : ''}"></i>` : '') + `<span class="ll">${l}</span><span class="ls">${DLAY_SHORT[id]}</span>`]), cur: ED.dLayer, on: id => { ED.dLayer = id; safeRebuild(buildDrumEd); }} : null;
   const F = sheetFrame(sh, tr.name, DTABS, ED.dTab, id => { ED.dTab = id; safeRebuild(buildDrumEd); }, subs);
   // row 2: ‹ Kit • › (the kit browser) · Sichern · 🎲 (the selected instrument) · ▶ (audition it)
@@ -32789,12 +32855,12 @@ function buildDrumEd() {
   if (ED.dTab === 'steps') F.r1.insertBefore(folChip('steps'), em);           // V0b FOLGEN (§5.1)
   ED.dhdr = {name: kName}; drumHeadRefresh();
   if (ED.dTab === 'fx' && GLOBAL_SUBS.has(ED.dFx)) globalBand(F);
-  const pg = el('div', 'pg rest pg-d' + ED.dTab + (ED.dTab === 'fx' ? ' pg-fxg pg-fx-' + ED.dFx : ED.dTab === 'tief' ? ' pg-dl-' + ED.dLayer : '')); F.body.appendChild(pg);
+  const pg = el('div', 'pg rest pg-d' + ED.dTab + (ED.dTab === 'fx' ? ' pg-fxg pg-fx-' + ED.dFx : ED.dTab === 'tief' ? (mdp ? ' pg-mdk' : ' pg-dl-' + ED.dLayer) : '') + (mdp && ED.dTab === 'sound' ? ' pg-md' : '')); F.body.appendChild(pg);
   if (tr.sound._nv && ED.dTab !== 'steps' && !(ED.dTab === 'fx' && GLOBAL_SUBS.has(ED.dFx))) nvPage(pg, DRUM_T);
-  else if (ED.dTab === 'sound') pageDrumSound(pg);
-  else if (ED.dTab === 'tief') pageDrumTief(pg);
+  else if (ED.dTab === 'sound') { if (mdp) pageMdSound(pg); else pageDrumSound(pg); }   // ND2
+  else if (ED.dTab === 'tief') { if (mdp) pageMdKanal(pg); else pageDrumTief(pg); }
   else if (ED.dTab === 'steps') pageDrumSteps(pg);
-  else if (ED.dTab === 'kit') pageDrumKit(pg);
+  else if (ED.dTab === 'kit') { if (MDE.kitSub === 'md' && mdUsed()) mdKitBlock(pg); else pageDrumKit(pg); }   // ND2: KIT │ MD_NAME · HALL & ECHO
   else if (ED.dFx === 'chorus') pageDrumChorus(pg);
   else if (ED.dFx === 'hall') pageFxHall(pg);
   else if (ED.dFx === 'echo') pageFxEcho(pg);
@@ -32802,6 +32868,7 @@ function buildDrumEd() {
   else pageDrumSpur(pg);
   if (ED.dTab === 'fx') fxLongLabels(pg);
   ED.refreshers.push(() => drumHeadRefresh());
+  mdHeadSolo(); sh.classList.toggle('mdsub', mdp && ED.dTab === 'sound');   // ND2: „SOLO PART“ im Kopf, Unter-Reiter 44 px
   sh.classList.add('open');
 }
 // SOUND: chips · [Modell ▾] [Sound laden ▾] · the model's 4–6 macros · Pegel, Panorama, Raum, Gate
@@ -33018,6 +33085,344 @@ function pageDrumChorus(pg) {
   pg.appendChild(info);
   upd(); ED.refreshers.push(() => { mode.update(); ks.forEach(x => x.update()); upd(); });
 }
+/* ===================== ND2 (Nachtrag 6 §ND2): Editor der Drum-Engine MD_NAME =====================
+   SOUND eines Modell-Pads: Zeile A Instrument · Zeile B [Instrument ▾][Quelle ▾][Programm ▾] · Unter-Reiter TONE NOISE CLICK MIX FX ·
+   Zellen in Geräte-Paaren (Name, Wert groß in Geräte-Schreibweise, Unterzeile) · Zeile E [ALLE KANÄLE][SOLO PART][▶][⋯].
+   TIEF = KANAL (Dynamik-Kurve, Mono-Gruppe, Übersicht), KIT = Block „MD_NAME · HALL & ECHO“. Jede Geste = ein Undo (soundEdit). */
+const MDE = {sub: 'tone', kitSub: 'kit', all: false, solo: false, scl: '', aud: 0, clip: null, taps: [], cat: 'bd'};
+const MD_SUBS = [['tone', 'TONE'], ['noise', 'NOISE'], ['click', 'CLICK'], ['mix', 'MIX'], ['fx', 'FX']];
+const MD_FAM = [['A', 'Analog'], ['t', 'T-Brücke'], ['F', 'FM'], ['H', 'Harmonisch'], ['d', 'Fell'], ['P', 'Stabspiel'], ['C', 'Becken'], ['r', 'Ringmod']];
+const MD_WAVE = {A1: ['Sinus', 'Sinus, ohne Obertöne'], A2: ['Dreieck', 'zwei Dreiecke'], A3: ['Säge', 'zwei Sägezähne'], A4: ['Rechteck', 'zwei Rechtecke'],
+  A5: ['Hohl', 'Rechteck mit Hochpass, hohl'], A6: ['Puls', 'Puls, Breite gleitet'], t1: ['Brücke', 'T-Brücke, analoger Kick-Kreis'], t2: ['Doppel', 'T-Brücke mit zweitem Resonator'],
+  F1: ['FM', 'FM, Modulator → Träger'], F2: ['Rau', 'FM mit Rückkopplung, rau'], F3: ['Kette', 'FM-Kette, metallisch'], F4: ['Zwei', 'FM-Doppelton'],
+  H1: ['Voll', 'harmonisch, alle Teiltöne'], H2: ['Röhre', 'nur ungerade Teiltöne, hohl'], H3: ['Nasal', 'ohne jeden 3. Teilton, nasal'], H4: ['Oktav', 'Grundton und gerade, orgelartig'],
+  H5: ['Spricht', 'zwei Formanten, sprechend'], H6: ['Stahl', 'gestreckte Teiltöne, Stahl'], d1: ['Bauch', 'Fell, Mitte angeschlagen'], d2: ['Tom', 'Fell, außermittig'],
+  d3: ['Kessel', 'Fell, luftbelastet (Kessel)'], d4: ['Hand', 'beladenes Fell (Handtrommel)'], d5: ['Teppich', 'Fell mit Snare-Teppich'], d6: ['Rahmen', 'dünnes Rahmenfell'],
+  d7: ['Conga', 'tiefer Kessel mit Slap'], P1: ['Marimba', 'Holzstab (Marimba)'], P2: ['Vibra', 'Metallstab (Vibraphon)'], P3: ['Xylo', 'Holzstab, Duodezime (Xylophon)'],
+  P4: ['Glocke', 'freier Stab (Glockenspiel)'], C1: ['Becken', 'Becken, viele Teiltöne'], C2: ['Metall', 'sechs Rechtecke, Metall-Schaltung'], C3: ['Ring', 'Ringmod-Paare, metallisch'],
+  r1: ['Ring', 'Ringmodulation, Sinus'], r2: ['Ring Q', 'Ringmodulation, Rechteck']};
+const MD_NTYP = {L1: 'Tiefpass 12 dB', L2: 'Tiefpass 24 dB', b1: 'Bandpass 6 dB', b2: 'Bandpass 12 dB', H1: 'Hochpass 12 dB', H2: 'Hochpass 24 dB', H3: 'Hochpass 24 dB, Höhen weich'};
+const MD_CTY = {n1: 'Rauschen kurz', n2: 'Rauschen hell', n3: 'Rauschen Holz', P1: 'Impuls 0,05 ms', P2: 'Impuls 0,3 ms', P3: 'Impuls 1,2 ms', H1: 'Impuls, Hochpass 2 kHz',
+  H2: 'Impuls, Hochpass 4 kHz', H3: 'Impuls, Hochpass 8 kHz', C1: 'Zirpen 8 → 2 kHz', C2: 'Zirpen 4 → 0,8 kHz', C3: 'Zirpen 2 → 0,2 kHz'};
+const MD_DTY = {dr: 'Röhre (Übersteuerung)', SA: 'Abtastrate runter', rn: 'Ringmod mit Sinus'}, MD_DTY_S = {dr: 'Röhre', SA: 'Abtastrate', rn: 'Ringmod'};
+const MD_NTYP_S = {L1: 'TP 12 dB', L2: 'TP 24 dB', b1: 'BP 6 dB', b2: 'BP 12 dB', H1: 'HP 12 dB', H2: 'HP 24 dB', H3: 'HP weich'};
+const MD_CTY_S = {n1: 'Rauschen', n2: 'hell', n3: 'Holz', P1: 'Impuls', P2: 'Impuls', P3: 'Impuls', H1: 'Impuls HP', H2: 'Impuls HP', H3: 'Impuls HP', C1: 'Zirpen', C2: 'Zirpen', C3: 'Zirpen'};
+const MD_MODE_S = {E1: 'exp.', E2: 'exp. rund', E3: 'exp. weich', L: 'linear', P: 'Punch', G: 'Gate'};
+const MD_MODE = {E1: 'exponentiell', E2: 'exponentiell, rund', E3: 'exponentiell, weich', L: 'linear', P: 'Punch', G: 'Gate'};
+const MD_CRV = {Li: 'linear', L1: 'verdichtet leicht', L2: 'verdichtet mittel', L3: 'verdichtet stark', O1: 'wenig Dynamik', O2: 'kaum Dynamik'};
+const MD_RVT = {ti: 'gekachelter Raum', r1: 'Raum klein', r2: 'Raum', p1: 'Platte 1', p2: 'Platte 2', p3: 'Platte 3', p4: 'Platte 4', St: 'Bühne', hA: 'Halle'};
+const MD_SCL = {h1: ['Dur-Dreiklang', [0, 4, 7]], h2: ['Moll-Dreiklang', [0, 3, 7]], h3: ['Dur-Septakkord', [0, 4, 7, 11]], h4: ['Moll-Septakkord', [0, 3, 7, 10]], h5: ['Sus4', [0, 5, 7]],
+  h6: ['Quinten', [0, 7]], h7: ['Quarten', [0, 5, 10]], P1: ['Dur-Pentatonik', [0, 2, 4, 7, 9]], P2: ['Moll-Pentatonik', [0, 3, 5, 7, 10]],
+  H1: ['Kurd', [0, 7, 8, 10, 12, 14, 15, 17, 19, 20, 22, 24], 1], H2: ['Keltisch-Moll', [0, 7, 10, 12, 14, 15, 17, 19, 22, 24, 26, 27], 1], H3: ['Hijaz', [0, 7, 8, 11, 12, 14, 15, 17, 19, 20, 23, 24], 1],
+  H4: ['Pygmy', [0, 3, 5, 7, 10, 12, 14, 15, 19, 22, 24, 26], 1], H5: ['Ägäisch', [0, 4, 7, 11, 12, 14, 16, 18, 19, 23, 24, 26], 1], Av: ['hexatonisch übermäßig', [0, 3, 4, 7, 8, 11]], bL: ['Blues', [0, 3, 5, 6, 7, 10]]};
+const MD_CAT = [['bd', 'Bassdrum'], ['Sn', 'Snare'], ['to', 'Toms'], ['HH', 'Hi-Hats'], ['Cy', 'Becken'], ['Pc', 'Percussion'], ['Be', 'Glocken'], ['Tu', 'Gestimmt'], ['Ef', 'Effekte']];
+// Stufen-Tabellen §1.15
+const MD_VERH = (() => { const a = [.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 1.41, .25, .333, .667, .75, 1.25, 1.333, 1.5, 1.667, 1.75, 2.25, 2.333, 2.5, 2.667, 3.5, 4.5, 5.5,
+  .707, 1.19, 1.483, 1.571, 1.593, 1.618, 1.732, 1.8, 1.98, 2.136, 2.236, 2.295, 2.38, 2.44, 2.546, 2.63, 2.646, 2.653, 2.67, 2.718, 2.756, 2.917, 2.94, 3.142, 3.155, 3.236, 3.317, 3.5, 3.598, 3.606, 3.897, 5.404];
+  for (let i = 0; i < 36; i++) a.push(.125 * Math.pow(2, i * .2)); return a; })();
+const MD_VERST = (() => { const a = [0]; for (let i = 1; i <= 24; i++) a.push(.02 * i); for (let i = 1; i <= 24; i++) a.push(i); for (let i = 1; i <= 24; i++) a.push(-i);
+  return a.concat([8.33, 9.51, 10.18, 11.83, 13.14, 13.93, 14.38, 15.01, 15.44, 16.18, 16.74, 16.85, 16.89, 17.00, 17.31, 17.55, 18.53, 18.67, 19.82, 19.89, 20.33, 20.76, 21.69, 22.17, 22.20, 23.55, 29.21]); })();
+// Skalen §1.2
+const mdT = x => .004 * Math.pow(2500, x / 50), mdG = x => (x / 50) * (x / 50), mdFN = n => 30 * Math.pow(600, n / 50), mdFE = n => 40 * Math.pow(400, n / 50);
+const mdDec = (v, d) => fmtDec(v, d).replace('.', ',');
+const mdTime = s => (s < 1 ? Math.round(s * 1000) + ' ms' : mdDec(s, 2) + ' s');
+const mdHz = f => (f < 1000 ? Math.round(f) + ' Hz' : mdDec(f / 1000, f < 10000 ? 2 : 1) + ' kHz');
+const mdDb = x => (x <= 0 ? 'aus' : (x >= 50 ? '0,0' : '−' + mdDec(-20 * Math.log10(mdG(x)), 1)) + ' dB');
+const mdSgn = v => (v > 0 ? '+' + v : v < 0 ? '−' + Math.abs(v) : '0');
+const mdRatio = r => '×' + mdDec(r, r >= 10 ? 1 : r < 1 ? 3 : 2).replace(/,?0+$/, '');
+const mdFam = w => String(w || 'A1')[0];
+function mdNote(p) { const m = Math.round(p), f = 440 * Math.pow(2, (p - 69) / 12); return noteNames()[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1) + ' · ' + mdDec(f, 1).replace(/,0$/, '') + ' Hz'; }
+const mdPan = v => (v === 0 ? 'C' : v < 0 ? 'L' + (-v) : 'r' + v);
+// Zell-Beschreibungen: key = gespeicherter Schlüssel (oder 'mode' / 'nmode' / 'scl'); l = Geräte-Name; n = Zahlbereich [min, max] bzw. vals = Codes
+const MD_CELL = {
+  mSpc: {l: 'SPECTRA', n: [0, 99], sub: (v, s) => { const w = s.mWav, f = mdFam(w), p = s.mPit; if (w === 'A1' || w === 't1') return '';
+    if (f === 'A' && w !== 'A6' || w === 't2') { const h = MD_VERST[v]; return (h > 0 ? '+' : h < 0 ? '−' : '') + mdDec(Math.abs(h), Math.abs(h) < 1 && h ? 2 : Math.abs(h) % 1 ? 2 : 0) + ' HT'; }
+    if (w === 'A6') return 'Puls ' + Math.round(50 - 45 * v / 99) + ' %';
+    if (f === 'F' || f === 'r') return 'Verh. ' + mdRatio(MD_VERH[v]);
+    if (f === 'H') return 'Formant ' + mdHz(440 * Math.pow(2, (p - 69) / 12) * Math.pow(2, 8 * v / 99));
+    if (f === 'd') return 'Fell ' + mdRatio(Math.pow(2, (v - 33) / 33));
+    if (f === 'P') return 'Rohr ' + mdRatio(Math.pow(2, (v - 24) / 25));
+    return 'Stimmung ' + mdRatio(Math.pow(2, (v - 50) / 50)); }, inert: s => s.mWav === 'A1' || s.mWav === 't1', what: 'Klangfarbe des Modells'},
+  mFrq: {l: 'FREQ', n: [0, 50], sub: (v, s) => { const w = s.mWav, f = mdFam(w); if (w === 'A1') return '';
+    if (f === 'A' || w === 'r2') return 'Tiefpass ×' + Math.round(Math.pow(2, 9 * v / 50)); if (w === 't1') return 'Impuls ' + mdDec(2 * Math.pow(.025, v / 50), 2) + ' ms';
+    if (w === 't2') return 'Mischung ' + Math.round(v * 2) + ' %'; if (f === 'F') return 'FM-Index ' + mdDec((w === 'F1' ? 10 : 8) * mdG(v), 1);
+    if (f === 'H') return 'Neigung ' + mdDec(2 - 1.7 * v / 50, 2); if (f === 'd' || f === 'P') return 'Härte ' + mdDec(4 * Math.pow(.025, v / 50), 2) + ' ms';
+    if (w === 'r1') return 'Ringmod ' + Math.round(v * 2) + ' %'; return 'Helligkeit ' + Math.round(v * 2) + ' %'; }, inert: s => s.mWav === 'A1', what: 'Anfangs-Klangfarbe'},
+  mDyf: {l: 'DYN FILTER', n: [0, 9], sub: v => (v ? 'Anschlag öffnet' : 'aus'), inert: s => s.mWav === 'A1', what: 'Anschlag öffnet die Klangfarbe'},
+  mTdec: {l: 'DECAY', n: [0, 50], sub: (v, s) => mdTime(mdT(v)), what: 'Länge des Tons'},
+  mode: {l: 'MODE', vals: ['E1', 'E2', 'E3', 'L', 'P'], dyn: 1, m: 'mDm', d: 'mDd', what: 'Abklingform; Zahl = Dynamic Decay (Länge bei leisem Anschlag)'},
+  mBnd: {l: 'BEND', n: [-50, 50], bip: 1, sub: v => (v ? 'beginnt ' + mdDec(48 * (v / 50) * (v / 50), 1) + ' HT ' + (v > 0 ? 'höher' : 'tiefer') : 'aus'), what: 'Tonhöhen-Biegung je Anschlag'},
+  mBt: {l: 'TIME', n: [0, 50], sub: v => mdTime(mdT(v)), what: 'Dauer der Biegung'},
+  mPit: {l: 'PITCH', n: [0, 127.5], pit: 1, sub: v => mdNote(v), what: 'Grundtonhöhe'},
+  mWav: {l: 'WAVE', vals: MDN.WAVES, list: 'wave', sub: v => (MD_WAVE[v] || [''])[0], what: 'Synthesemodell'},
+  scl: {l: 'SCL PRE', vals: [''].concat(Object.keys(MD_SCL)), list: 'scl', what: 'Harmonie/Skala auf alle Kanäle (nicht gespeichert)'},
+  mNres: {l: 'RESONANCE', n: [0, 20], sub: v => 'Güte ' + mdDec(.5 + 15.5 * (v / 20) * (v / 20), 1), what: 'Resonanz des Rauschfilters'},
+  mNfrq: {l: 'FREQ', n: [0, 50], sub: v => mdHz(mdFN(v)), what: 'Filterfrequenz des Rauschens'},
+  mNdec: {l: 'DECAY', n: [0, 50], sub: v => mdTime(mdT(v)), what: 'Länge des Rauschens'},
+  mNtyp: {l: 'FILT TYPE', vals: ['L1', 'L2', 'b1', 'b2', 'H1', 'H2', 'H3'], sub: v => MD_NTYP_S[v], long: v => MD_NTYP[v], what: 'Filterart des Rauschens'},
+  mNdyf: {l: 'DYN FILTER', n: [-9, 9], bip: 1, sub: v => (v > 0 ? 'Anschlag öffnet' : v < 0 ? 'Anschlag schließt' : 'aus'), what: 'Anschlag bewegt das Rauschfilter'},
+  nmode: {l: 'MODE', vals: ['E1', 'E2', 'E3', 'L', 'G'], dyn: 1, m: 'mNdm', d: 'mNdd', what: 'Abklingform des Rauschens; Zahl = Dynamic Decay'},
+  mClv: {l: 'LEVEL', n: [0, 50], sub: v => mdDb(v), what: 'Pegel des Anschlag-Klicks'},
+  mCty: {l: 'TYPE', vals: ['n1', 'n2', 'n3', 'P1', 'P2', 'P3', 'H1', 'H2', 'H3', 'C1', 'C2', 'C3'], sub: v => MD_CTY_S[v], long: v => MD_CTY[v], what: 'Art des Klicks'},
+  mNlv: {l: 'NOISE LVL', n: [0, 50], sub: v => mdDb(v), what: 'Pegel des Rauschens'},
+  mChlv: {l: 'CH LEVEL', n: [0, 50], sub: v => mdDb(v), what: 'Pegel des Kanals'},
+  mTlv: {l: 'TONE LVL', n: [0, 50], sub: v => mdDb(v), what: 'Pegel des Tons'},
+  mPan: {l: 'PAN', n: [-9, 9], bip: 1, fmt: mdPan, sub: v => (v === 0 ? 'Mitte' : v < 0 ? 'links' : 'rechts'), what: 'Panorama'},
+  mEqf: {l: 'EQ FREQ', n: [0, 50], sub: v => mdHz(mdFE(v)), inert: s => !s.mEqg, what: 'Frequenz des EQ (wirkt nur mit EQ GAIN)'},
+  mEqg: {l: 'EQ GAIN', n: [-9, 9], bip: 1, sub: v => (v ? (v > 0 ? '+' : '−') + mdDec(Math.abs(v) * 8 / 3, 1) + ' dB' : 'aus'), what: 'Anhebung/Absenkung ±24 dB'},
+  mDst: {l: 'DIST', n: [0, 50], sub: v => (v ? 'Menge ' + v : 'aus'), what: 'Verzerrung'},
+  mDty: {l: 'TYPE', vals: ['dr', 'SA', 'rn'], sub: v => MD_DTY_S[v], long: v => MD_DTY[v], what: 'Art der Verzerrung'},
+  mRvb: {l: 'REVERB', n: [0, 50], sub: v => (v ? Math.round(v * 2) + ' % Hall' : 'trocken'), what: 'Anteil im gemeinsamen Hall'},
+  mDly: {l: 'DELAY', n: [0, 50], sub: v => (v ? Math.round(v * 2) + ' % Echo' : 'aus'), what: 'Anteil im Echo'},
+};
+const MD_PAGES = {tone: [['mSpc', 'mFrq', 'mTdec', 'mBnd', 'mPit'], ['mWav', 'mDyf', 'mode', 'mBt', 'scl']], noise: [['mNres', 'mNfrq', 'mNdec'], ['mNtyp', 'mNdyf', 'nmode']],
+  click: [['mClv'], ['mCty']], mix: [['mNlv', 'mChlv'], ['mTlv', 'mPan']], fx: [['mEqf', 'mDst', 'mRvb'], ['mEqg', 'mDty', 'mDly']]};
+const mdCurSl = () => DRUM_VOICES[clamp(ED.dVoice | 0, 0, 11)];
+const mdCur = () => mdSlot(mdCurSl().id) || MDN.init();
+const mdChans = () => DRUM_VOICES.filter(v => mdIsSrc(v.id));
+// ein Wert in einen Kanal (ALLE KANÄLE: in alle Modell-Kanäle; PITCH dann relativ mit Gruppen-Grenze, §1.6)
+function mdSet(key, v) {
+  const sl = mdCurSl(), st = mdSlot(sl.id); if (!st) return;
+  const nv = MDN.val(key, v); if (nv === st[key] && !MDE.all) return;
+  if (MDE.all || (key === 'mPit' && MDE.rel)) {
+    const L = mdChans().map(x => mdSlot(x.id));
+    if (key === 'mPit') { let d = Math.round((nv - st.mPit) * 10) / 10; for (const s of L) d = d > 0 ? Math.min(d, 127.5 - s.mPit) : Math.max(d, -s.mPit); if (!d) return; for (const s of L) s.mPit = MDN.val('mPit', s.mPit + d); }
+    else for (const s of L) s[key] = nv;
+  } else st[key] = nv;
+  drumChanged(sl.id);
+}
+function mdAudition(force) {
+  if (R.playing && !force) return;
+  const t = performance.now(); if (!force && t - MDE.aud < 300) return; MDE.aud = t;
+  drumAudition(mdCurSl().idx, .8);
+}
+// ALLE KANÄLE / SOLO PART enden mit Schließen des Editors, ■, Szenenwechsel (Regel 6)
+function mdEditEnd() { if (!MDE.all && !MDE.solo && !MDE.rel) return; MDE.all = MDE.solo = MDE.rel = false; mdSolo(-1); mdFocus(); if (R.editor === 'drum') safeRebuild(buildDrumEd); }
+function mdSoloApply() { if (!MDE.solo) { mdSolo(-1); return; } const s = MDE.sub; mdSolo(mdCurSl().idx, s === 'tone' || s === 'noise' || s === 'click' ? s : 'all'); }
+// Fokus-Rahmen auf allen Modell-Pads, solange ALLE KANÄLE an ist
+function mdFocus() { (UI.padEls || []).forEach((p, k) => { if (p && p.classList) p.classList.toggle('mdall', !!MDE.all && mdIsSrc(DRUM_VOICES[k].id)); }); }
+// eine Zelle (Zellen-Bauteil makeCtl, als Geräte-Wertfeld dargestellt)
+function mdCell(key) {
+  const C = MD_CELL[key], sl = mdCurSl();
+  let d, get, set, fmt, sub, long = C.long || null;
+  if (C.dyn) {                                   // MODE: E1 E2 E3 L P|G, danach 0–50 (Dynamic Decay)
+    const N = C.vals.length + 51;
+    d = {l: C.l, min: 0, max: N - 1, c: 'lin', def: 0};
+    get = () => { const s = mdCur(); return s[C.m] === 'D' ? C.vals.length + s[C.d] : Math.max(0, C.vals.indexOf(s[C.m])); };
+    set = v => { const i = clamp(Math.round(v), 0, N - 1); if (i < C.vals.length) mdSet(C.m, C.vals[i]); else { mdSet(C.m, 'D'); mdSet(C.d, i - C.vals.length); } };
+    fmt = v => { const i = Math.round(v); return i < C.vals.length ? (key === 'nmode' && C.vals[i] === 'E1' ? 'E' : C.vals[i]) : String(i - C.vals.length); };
+    sub = v => { const i = Math.round(v); return i < C.vals.length ? MD_MODE_S[C.vals[i]] : 'Dyn. ' + mdTime(mdT(i - C.vals.length)); };
+    long = v => { const i = Math.round(v); return i < C.vals.length ? MD_MODE[C.vals[i]] : 'Dynamic Decay: leiser Anschlag ' + mdTime(mdT(i - C.vals.length)) + ', voller Anschlag = DECAY'; };
+  } else if (C.vals) {
+    const V = C.vals;
+    d = V.length <= 12 ? {l: C.l, vals: V.map((_, i) => i), def: 0} : {l: C.l, min: 0, max: V.length - 1, c: 'lin', def: 0};
+    get = () => (key === 'scl' ? Math.max(0, V.indexOf(MDE.scl)) : Math.max(0, V.indexOf(mdCur()[key])));
+    set = v => { const x = V[clamp(Math.round(v), 0, V.length - 1)]; if (key === 'scl') mdScl(x); else mdSet(key, x); };
+    fmt = v => (key === 'scl' && !V[Math.round(v)] ? '–' : V[Math.round(v)]);
+    sub = v => (key === 'scl' ? (MD_SCL[V[Math.round(v)]] || [''])[0] : C.sub(V[Math.round(v)]));
+    if (C.long) long = v => C.long(V[Math.round(v)]);
+    if (key === 'scl') long = v => (V[Math.round(v)] ? MD_SCL[V[Math.round(v)]][0] + ' ab dem tiefsten Kanal' : 'aus – Start beim tiefsten Kanal');
+    d.def = key === 'scl' ? 0 : Math.max(0, V.indexOf(MDN.K[key][4]));
+  } else {
+    const [a, b] = C.n;
+    d = {l: C.l, min: a, max: b, c: C.bip ? 'bip' : 'lin', def: MDN.K[key][4]};
+    get = () => mdCur()[key];
+    set = v => mdSet(key, C.pit ? (k && k.classList.contains('fineon') ? Math.round(v * 10) / 10 : Math.round(v)) : Math.round(v));
+    fmt = v => (C.fmt ? C.fmt(Math.round(v)) : C.pit ? (Math.round(v * 10) / 10).toFixed(1) : C.bip ? mdSgn(Math.round(v)) : String(Math.round(v)));
+    sub = v => C.sub(C.pit ? v : Math.round(v), mdCur());
+  }
+  const inert = () => !!(C.inert && C.inert(mdCur()));
+  const what = () => { const v = get(); return inert() ? 'ohne Wirkung bei ' + (key === 'mEqf' ? 'EQ GAIN 0' : 'WAVE ' + mdCur().mWav) : (key === 'mWav' ? (MD_WAVE[mdCur().mWav] || ['', ''])[1] : long ? long(v) : sub(v) || C.what); };
+  let tapT = 0;
+  const k = makeCtl(d, get, set, {undo: soundUndo(DRUM_T), label: C.l, key: 'md.' + key, fmt: v => (inert() ? '–' : fmt(v)), idle: what,
+    onTouch: () => { clearTimeout(tapT); }, onChange: () => { upd(); mdAudition(); },
+    onTap: C.list || C.vals || C.dyn ? () => { clearTimeout(tapT); tapT = setTimeout(() => mdList(key, k), DBL_MS + 20); } : null});
+  k.classList.add('mdc'); if (C.bip) k.classList.add('mdbip');
+  const se = el('span', 'msub'); k.appendChild(se);
+  const upd = () => { const t = inert() ? '' : sub(get()) || ''; if (se.textContent !== t) se.textContent = t; };
+  const u0 = k.update; k.update = () => { u0(); upd(); }; upd();
+  return k;
+}
+// Liste beim Tipp (WAVE: 34 Felder in 8 Familienzeilen; sonst die Codes); Tipp = wählen + hören, ein Undo
+function mdList(key, anchor) {
+  const C = MD_CELL[key]; if (!anchor.isConnected) return;
+  openPop(anchor, p => {
+    let h = '';
+    if (key === 'mWav') {
+      const cur = mdCur().mWav;
+      h = '<h4>WAVE – Modell</h4><div class="mdwl pan-y">' + MD_FAM.map(([f, fl]) => `<div class="mdwr"><span class="mdwf">${esc(fl)}</span><div class="mdwb">` +
+        MDN.WAVES.filter(w => w[0] === f).map(w => `<button class="rb mdw${w === cur ? ' on' : ''}" data-v="${w}" aria-label="${esc(w + ' ' + MD_WAVE[w][1])}"><b>${w}</b><small>${esc(MD_WAVE[w][0])}</small></button>`).join('') + '</div></div>').join('') + '</div>';
+    } else {
+      const vals = C.dyn ? C.vals.concat(['D']) : C.vals, s = mdCur(), cur = key === 'scl' ? MDE.scl : C.dyn ? s[C.m] : s[key];
+      const name = v => (key === 'scl' ? (v ? MD_SCL[v][0] : 'aus') : C.dyn ? (v === 'D' ? 'Dynamic Decay (Zahl)' : MD_MODE[v]) : C.sub(v));
+      h = `<h4>${esc(C.l)}</h4><div class="plist mdcl pan-y">` + vals.map(v => `<button class="rb${v === cur ? ' on' : ''}" data-v="${esc(v)}"><b>${esc(v === 'D' ? '0–50' : key === 'nmode' && v === 'E1' ? 'E' : v || '–')}</b> <small>${esc(name(v) || '')}</small></button>`).join('') + '</div>';
+    }
+    p.innerHTML = h; p.classList.add('mdpop'); guardTouch(p);
+    onTap(p, b => {
+      const v = b.dataset.v;
+      soundEdit(DRUM_T, C.l + ' ' + (v || '–'), () => { if (key === 'scl') mdScl(v); else if (C.dyn) { mdSet(C.m, v); } else mdSet(key, v); });
+      for (const o of p.querySelectorAll('button[data-v]')) o.classList.toggle('on', o === b);
+      edRefresh(); mdAudition(); lcdShow(C.l, v || '–', '', key === 'mWav' ? MD_WAVE[v][1] : '');
+      if (key !== 'mWav') closePop();
+    }, 'button[data-v]');
+  }, {name: 'mdlist'});
+}
+// SCL PRE (§1.6): Start = PITCH des tiefsten Modell-Kanals (Slot-Reihenfolge), Kanal i bekommt Start + Stufe(i); schaltet ALLE KANÄLE an
+function mdScl(code) {
+  MDE.scl = code || '';
+  if (!code) return;
+  const L = mdChans(); if (!L.length) return;
+  const S0 = mdSlot(L[0].id).mPit, st = MD_SCL[code][1], fixed = MD_SCL[code][2];
+  L.forEach((v, i) => { const off = fixed ? st[Math.min(i, st.length - 1)] + (i >= st.length ? 12 * Math.floor(i / st.length) : 0) : st[i % st.length] + 12 * Math.floor(i / st.length); mdSlot(v.id).mPit = MDN.val('mPit', S0 + off); drumChanged(v.id); });
+  MDE.all = true; mdFocus();
+}
+// SOUND eines Modell-Pads
+function pageMdSound(pg) {
+  const sl = mdCurSl();
+  pg.appendChild(drumVoiceChips(v => { drumAudition(v); if (MDE.solo) mdSoloApply(); safeRebuild(buildDrumEd); }));
+  const row = el('div', 'drow rest mdrb');
+  row.appendChild(drumInstBtn('sm'));
+  row.appendChild(mdSrcBtn(sl.id));
+  const pb = el('button', 'rb dsel mdprog', `<span class="lbl">Programm</span><b>${esc(mdCur().mName || 'INIT')}</b><span class="car">▾</span>`);
+  pb.setAttribute('aria-label', 'Programm: ' + (mdCur().mName || 'INIT')); onTap(pb, () => mdProgPop(pb)); row.appendChild(pb);
+  if (!mdCan() && AU.ctx) row.appendChild(el('span', 'mdnowk small', esc(MD_NAME) + ' braucht AudioWorklet'));
+  pg.appendChild(row);
+  const sub = MD_PAGES[MDE.sub] || MD_PAGES.tone, cells = [];
+  const fld = el('div', 'mdf rest mdf-' + MDE.sub + ' mc' + sub[0].length);
+  for (const r of sub) { const rr = el('div', 'mdr'); for (const key of r) { const c = mdCell(key); cells.push(c); rr.appendChild(c); } fld.appendChild(rr); }
+  pg.appendChild(fld);
+  // Zeile E
+  const e = el('div', 'drow rest mdre');
+  const all = el('button', 'tgl rb mdall' + (MDE.all ? ' on' : ''), '<i class="led"></i><span>ALLE KANÄLE</span>'); all.setAttribute('role', 'switch'); all.setAttribute('aria-checked', String(MDE.all));
+  onTap(all, () => { MDE.all = !MDE.all; if (!MDE.all) MDE.scl = ''; all.classList.toggle('on', MDE.all); all.setAttribute('aria-checked', String(MDE.all)); mdFocus(); lcdShow('ALLE KANÄLE', MDE.all ? 'an – jede Änderung gilt für alle ' + MD_NAME + '-Pads' : 'aus'); });
+  const solo = el('button', 'tgl rb mdsolo' + (MDE.solo ? ' on' : ''), '<i class="led"></i><span>SOLO PART</span>'); solo.setAttribute('role', 'switch'); solo.setAttribute('aria-checked', String(MDE.solo));
+  onTap(solo, () => { MDE.solo = !MDE.solo; mdSoloApply(); solo.classList.toggle('on', MDE.solo); solo.setAttribute('aria-checked', String(MDE.solo)); mdHeadSolo(); lcdShow('SOLO PART', MDE.solo ? 'an – nur ' + (MDE.sub === 'mix' || MDE.sub === 'fx' ? 'dieser Kanal' : MDE.sub.toUpperCase()) + ' klingt' : 'aus'); });
+  const trig = el('button', 'rb mdtrig', '▶'); trig.setAttribute('aria-label', 'Hören: ' + sl.l); onTap(trig, () => mdAudition(true));
+  const more = el('button', 'rb mdmore', '⋯'); more.setAttribute('aria-label', 'Kanal: Kopieren, Einfügen, Tauschen, Init, Programm sichern'); onTap(more, () => mdMore(more));
+  e.append(all, solo, trig, more);
+  pg.appendChild(e);
+  ED.refreshers.push(() => { cells.forEach(c => c.update()); const n = mdCur().mName || 'INIT', b = pb.querySelector('b'); if (b.textContent !== n) b.textContent = n; });
+  lcdHint2(sl.l + ' · ' + MD_NAME, 'ziehen = Wert · seitlich = fein · 2× tippen = INIT · Liste: antippen');
+}
+function mdHeadSolo() {
+  const sh = EL.drumSheet; if (!sh) return; const r1 = sh.querySelector('.sh-row.r1'); if (!r1) return;
+  let t = r1.querySelector('.mdsoloh'); if (!MDE.solo) { if (t) t.remove(); return; }
+  if (!t) { t = el('span', 'mdsoloh', 'SOLO PART'); const tt = r1.querySelector('.sh-title'); if (tt && tt.nextSibling) r1.insertBefore(t, tt.nextSibling); else r1.appendChild(t); }
+}
+// ⋯: Kopieren, Einfügen (ALLE KANÄLE: an alle), Tauschen, Init, Programm sichern – je ein Undo
+const MD_KEEP = ['mMono', 'mDcrv'];             // Kanal-Einstellungen (Kit) bleiben beim Programm-Wechsel am Kanal
+const mdProg = s => { const o = {}; for (const k of MDN.KEYS) if (!MD_KEEP.includes(k)) o[k] = s[k]; return o; };
+function mdMore(anchor) {
+  const sl = mdCurSl();
+  openPop(anchor, p => {
+    const ch = mdChans().filter(v => v.id !== sl.id);
+    p.innerHTML = '<h4>Kanal ' + esc(sl.l) + '</h4><div class="plist mdmore">' + [['copy', 'Kopieren'], ['paste', MDE.all ? 'Einfügen in alle' : 'Einfügen', !MDE.clip], ['swap', 'Tauschen mit …', !ch.length], ['init', 'Init'], ['save', 'Programm sichern']]
+      .map(([a, l, dis]) => `<button class="rb" data-a="${a}"${dis ? ' disabled' : ''}>${esc(l)}</button>`).join('') + '</div><div class="plist mdswap" hidden>' + ch.map(v => `<button class="rb" data-sw="${v.id}">${esc(v.l)}</button>`).join('') + '</div>';
+    guardTouch(p);
+    onTap(p, b => {
+      const a = b.dataset.a, sw = b.dataset.sw;
+      if (sw) { closePop(); soundEdit(DRUM_T, 'Tauschen ' + sl.l + ' ↔ ' + DRUM_BY_ID[sw].l, () => { const A = mdSlot(sl.id), B = mdSlot(sw), x = mdProg(A); Object.assign(A, mdProg(B)); Object.assign(B, x); drumChanged(sl.id); drumChanged(sw); }); safeRebuild(buildDrumEd); return; }
+      if (a === 'swap') { p.querySelector('.mdswap').hidden = false; return; }
+      if (a === 'save') { mdSavePop(anchor); return; }
+      closePop();
+      if (a === 'copy') { MDE.clip = mdProg(mdCur()); toast('Kanal kopiert: ' + sl.l); return; }
+      if (a === 'paste' && MDE.clip) soundEdit(DRUM_T, MDE.all ? 'Einfügen in alle' : 'Einfügen', () => { for (const v of MDE.all ? mdChans() : [sl]) { Object.assign(mdSlot(v.id), deep(MDE.clip)); drumChanged(v.id); } });
+      if (a === 'init') soundEdit(DRUM_T, 'Init ' + sl.l, () => { Object.assign(mdSlot(sl.id), mdProg(MDN.init())); drumChanged(sl.id); });
+      mdAudition(); safeRebuild(buildDrumEd);
+    }, 'button');
+  }, {name: 'mdmore'});
+}
+// Programm sichern (STORE DRUM): Name ≤ 16 + Kategorie -> eigene Programme
+function mdSavePop(anchor) {
+  const sl = mdCurSl();
+  openPop(anchor, p => {
+    let cat = mdCur().mCat || MDE.cat || 'bd';
+    p.innerHTML = '<h4>Programm sichern</h4>';
+    const inp = el('input', 'tin'); inp.maxLength = 16; inp.value = (mdCur().mName || sl.l).slice(0, 16); inp.setAttribute('aria-label', 'Name des Programms'); inp.setAttribute('enterkeyhint', 'done');
+    const cs = el('div', 'mdcats'); cs.innerHTML = MD_CAT.map(([c, l]) => `<button class="rb${c === cat ? ' on' : ''}" data-c="${c}"><b>${c}</b><small>${esc(l)}</small></button>`).join('');
+    onTap(cs, b => { cat = b.dataset.c; for (const o of cs.children) o.classList.toggle('on', o === b); }, 'button');
+    const ok = el('button', 'mbtn rb go', 'Sichern'), cb = el('button', 'mbtn rb', 'Abbrechen'), row = el('div', 'savrow'); row.append(ok, cb);
+    p.append(inp, cs, row);
+    const go = () => { closePop(); const nm = inp.value.trim().slice(0, 16) || sl.l; mdLibSave(sl.id, nm, cat).then(s => { soundEdit(DRUM_T, 'Programm ' + s.name, () => { const st = mdSlot(sl.id); st.mName = s.name.slice(0, 16); st.mCat = cat; drumChanged(sl.id); }); edRefresh(); toast('Gesichert: „' + s.name + '“ (Eigene)'); }).catch(e => toast('Sichern fehlgeschlagen' + (e && e.message ? ': ' + e.message : ''))); };
+    onTap(ok, go); onTap(cb, () => closePop());
+    on(inp, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } e.stopPropagation(); });
+    setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 30);
+  }, {name: 'mdsave'});
+}
+// Programm ▾ (DRUM SELECT): Kategorie-Chips + Liste (Werk aus ND3: window.MD_PROGRAMS [{name, mCat, …Spec-Werte}], Eigene aus der Bibliothek)
+const mdFactory = () => (Array.isArray(window.MD_PROGRAMS) ? window.MD_PROGRAMS : []);
+function mdProgPop(anchor) {
+  libReady().then(() => openPop(anchor, p => {
+    const sl = mdCurSl();
+    const paint = () => {
+      const L = MDE.cat === 'own' ? mdLibList().map(u => ({name: u.name, p: u.p, own: true})) : mdFactory().filter(x => x.mCat === MDE.cat).map(x => ({name: x.name, p: x}));
+      p.querySelector('.mdcats').innerHTML = MD_CAT.concat([['own', 'Eigene']]).map(([c, l]) => `<button class="rb${c === MDE.cat ? ' on' : ''}" data-c="${c}"><b>${c === 'own' ? 'Eigene' : c}</b><small>${esc(c === 'own' ? 'gesichert' : l)}</small></button>`).join('');
+      p.querySelector('.mdpl').innerHTML = L.length ? L.map((x, k) => `<button class="rb${x.own ? ' own' : ''}${x.name === mdCur().mName ? ' on' : ''}" data-k="${k}">${esc(x.name)}</button>`).join('') : '<div class="mempty">' + (MDE.cat === 'own' ? 'Noch keine eigenen Programme – ⋯ → Programm sichern.' : 'Noch keine Programme in dieser Kategorie.') + '</div>';
+      p._L = L;
+    };
+    p.innerHTML = '<h4>Programm – ' + esc(sl.l) + '</h4><div class="mdcats pan-x"></div><div class="plist mdpl pan-y"></div>';
+    p.classList.add('mdpop'); guardTouch(p); paint();
+    onTap(p, b => {
+      if (b.dataset.c) { MDE.cat = b.dataset.c; paint(); return; }
+      const x = p._L && p._L[+b.dataset.k]; if (!x) return;
+      soundEdit(DRUM_T, 'Programm ' + x.name, () => mdLoadProgram(sl.id, x.p, x.name));
+      for (const o of p.querySelectorAll('button[data-k]')) o.classList.toggle('on', o === b);
+      mdAudition(); edRefresh();
+    }, 'button');
+  }, {name: 'mdprog'}));
+}
+// TIEF → KANAL: DYNAMICS, MONO-GRUPPE, Übersicht der 12 Pads
+function pageMdKanal(pg) {
+  const sl = mdCurSl(), id = sl.id;
+  const head = el('div', 'drow rest'); head.appendChild(drumInstBtn('')); head.appendChild(mdSrcBtn(id)); pg.appendChild(head);
+  const crv = makeSeg(MDN.K.mDcrv[2].map(c => [c, c, MD_CRV[c]]), () => mdCur().mDcrv, v => { mdSet('mDcrv', v); lcdShow('DYNAMICS', v, '', MD_CRV[v]); }, 'mdcrv', {undo: soundUndo(DRUM_T), label: 'DYNAMICS'});
+  const mono = el('button', 'tgl rb mdmono', '<i class="led"></i><span>MONO-GRUPPE</span>'); mono.setAttribute('role', 'switch');
+  const mu = () => { const v = !!mdCur().mMono; mono.classList.toggle('on', v); mono.setAttribute('aria-checked', String(v)); };
+  onTap(mono, () => { soundEdit(DRUM_T, 'Mono-Gruppe ' + (mdCur().mMono ? 'aus' : 'an'), () => mdSet('mMono', mdCur().mMono ? 0 : 1)); mu(); ov(); lcdShow('MONO-GRUPPE', mdCur().mMono ? 'an – ein Schlag bringt die anderen Pads der Gruppe zum Schweigen' : 'aus'); }); mu();
+  const r = el('div', 'drow dsegs rest mdkr'); r.append(lgrp('DYNAMICS', crv, 'dsg'), mono); pg.appendChild(r);
+  const list = el('div', 'mdov pan-y');
+  const ov = () => { list.innerHTML = DRUM_VOICES.map((v, k) => { const s = mdSlot(v.id), md = !!s && s.src === 'md'; return `<button class="rb${k === ED.dVoice ? ' on' : ''}" data-i="${k}" style="--pc:var(--p${k + 1})"><i class="sw"></i><b>${esc(v.sl)}</b><span>${esc(md ? MD_NAME : 'Drum')}</span><span class="pn">${esc(md ? s.mName || 'INIT' : '')}</span><span class="mo">${md && s.mMono ? '●' : ''}</span></button>`; }).join(''); };
+  ov(); onTap(list, b => { ED.dVoice = +b.dataset.i; safeRebuild(buildDrumEd); }, 'button[data-i]');
+  pg.appendChild(list);
+  ED.refreshers.push(() => { crv.update(); mu(); });
+  lcdHint2(sl.l + ' · KANAL', 'Dynamik-Kurve und Mono-Gruppe gehören zum Kit');
+}
+// KIT: Block „MD_NAME · HALL & ECHO“ (nur mit mindestens einem Modell-Pad)
+const MD_BPM = (() => { const a = []; for (let b = 60; b <= 179; b++) a.push([b, '♩', 60 / b]); for (let b = 90; b <= 179; b++) a.push([b, '♪', 30 / b]); for (let b = 90; b <= 300; b++) a.push([b, '♬', 15 / b]); for (let m = 50; m >= 1; m--) a.push([m / 1000, 's', m / 1000]); return a; })();
+const mdBpmTxt = i => { const x = MD_BPM[clamp(i | 0, 0, MD_BPM.length - 1)]; return x[1] === 's' ? fmtDec(x[0], 3) + ' s' : x[0] + ' ' + x[1]; };
+const mdKit = () => Object.assign(MDN.kitInit(), drumSnd().p.md || {});
+function mdKitSet(k, v) { const s = drumSnd(); const K = s.p.md || (s.p.md = MDN.kitInit()); const nv = MDN.kval(k, v); if (K[k] === nv) return; K[k] = nv; UI.drumVer++; UI.sndVer++; mdDirty(); UI.dirty.edHead = true; markDirty(); }
+function mdKitBlock(pg) {
+  if (!mdUsed()) return;
+  const box = el('div', 'mdkit rest');
+  const cell = (k, l, d, fmt, sub) => { const c = makeCtl(Object.assign({l}, d), () => mdKit()[k], v => mdKitSet(k, d.vals ? v : Math.round(v)), {undo: soundUndo(DRUM_T), label: l, key: 'md.' + k, fmt, idle: () => sub(mdKit()[k])}); c.classList.add('mdc'); if (d.c === 'bip') c.classList.add('mdbip'); const se = el('span', 'msub'); c.appendChild(se); const u0 = c.update; c.update = () => { u0(); se.textContent = sub(mdKit()[k]); }; c.update(); return c; };
+  const RV = MDN.KK.rvT[1];
+  const rv = makeCtl({l: 'REVERB TYPE', vals: RV.map((_, i) => i), def: 1}, () => RV.indexOf(mdKit().rvT), v => mdKitSet('rvT', RV[v]), {undo: soundUndo(DRUM_T), label: 'REVERB TYPE', key: 'md.rvT', fmt: v => RV[v], idle: () => MD_RVT[mdKit().rvT]});
+  rv.classList.add('mdc'); { const se = el('span', 'msub'); rv.appendChild(se); const u0 = rv.update; rv.update = () => { u0(); se.textContent = MD_RVT[mdKit().rvT]; }; rv.update(); }
+  const col = cell('rvC', 'COLOR', {min: -9, max: 9, c: 'bip', def: 0}, v => mdSgn(Math.round(v)), v => (v < 0 ? 'Höhen weg' : v > 0 ? 'Tiefen weg' : 'neutral'));
+  const mode = makeSeg([['r', 'RATE', 'Echo-Zeit frei'], ['b', 'BPM', 'Echo-Zeit als Tempo']], () => mdKit().dlM, v => mdKitSet('dlM', v), 'mddlm', {undo: soundUndo(DRUM_T), label: 'Echo RATE/BPM'});
+  const rate = cell('dlR', 'RATE', {min: 0, max: 99, c: 'lin', def: 50}, v => String(Math.round(v)), v => mdTime(1.15 * Math.pow(.01 / 1.15, v / 99)));
+  const bpm = cell('dlB', 'BPM', {min: 0, max: 470, c: 'lin', def: 60}, v => mdBpmTxt(Math.round(v)), v => mdTime(MD_BPM[v][2]));
+  const fb = cell('dlF', 'FEEDBACK', {min: 0, max: 20, c: 'lin', def: 0}, v => String(Math.round(v)), v => (v ? (v === 20 ? 'fast endlos' : v + ' / 20') : 'ein Echo'));
+  const tap = el('button', 'rb mdtap', 'TAP'); tap.setAttribute('aria-label', 'Tempo tippen');
+  onTap(tap, () => mdTap(tap));
+  const r1 = el('div', 'mdr'); r1.append(rv, col, fb); const r2 = el('div', 'mdr mdr2'); r2.append(lgrp('ECHO', mode, 'dsg'), rate, bpm, tap);
+  const vis = () => { const b = mdKit().dlM === 'b'; rate.hidden = b; bpm.hidden = !b; };
+  vis(); box.append(r1, r2); pg.appendChild(box);
+  lcdHint2(MD_NAME + ' · HALL & ECHO', 'ein Hall und ein Echo für alle ' + MD_NAME + '-Pads · Anteil je Pad: SOUND → FX');
+  ED.refreshers.push(() => { rv.update(); col.update(); mode.update(); rate.update(); bpm.update(); fb.update(); vis(); });
+}
+// TAP (§1.10): ≥ 4 Schläge, Mittel der letzten 3 Abstände -> Viertel 60–179 (BPM-Modus), ein Undo
+function mdTap(btn) {
+  const t = performance.now(); MDE.taps = MDE.taps.filter(x => t - x < 2500).concat([t]).slice(-4);
+  const n = MDE.taps.length;
+  if (n < 4) { btn.textContent = 'TAP ' + n; lcdShow('TAP', n + ' – weiter tippen'); return; }
+  const a = MDE.taps, avg = (a[3] - a[0]) / 3, bpm = clamp(Math.round(60000 / avg), 60, 179);
+  soundEdit(DRUM_T, 'Echo-Tempo ' + bpm, () => { mdKitSet('dlM', 'b'); mdKitSet('dlB', bpm - 60); });
+  btn.textContent = bpm + ' ♩'; lcdShow('TAP', bpm + ' ♩'); edRefresh();
+}
+/* ===================== Ende ND2 ===================== */
+
 // bar pager of the SCHRITTE tab: a one-row segment [TAKT 1|2|…] where the footer is wide enough (container query),
 // otherwise ‹ Takt k/n › whose middle button opens a grid of all bars. Every bar of a 2–16-bar clip stays one or two taps away.
 function barPager(len) {
