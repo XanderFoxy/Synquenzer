@@ -137,7 +137,8 @@ Alles mit einem Ende bekommt `bis` (ISO-Zeit, UTC) und wird beim Scan entfernt, 
   dann unter `status.<bereich>.fehler`.
 - Gleicher Link in zwei Bereichen (z. B. Hotel-Preisfehler in Deals und Reisen): nur im spezielleren Bereich
   (Reisen vor Deals).
-- Schnäppchen-Angebote mit `mengeSicher: false` werden nicht gerechnet (keine Prozent-Aussage), Großhandel
+- Schnäppchen-Angebote mit `mengeSicher: false` – oder im alten Datenformat ganz ohne `mengeSicher`/`packung` –
+  werden nicht gerechnet (keine Prozent-Aussage), Großhandel
   („EDEKA Foodservice … nur für Großhändler“) auch nicht. Ist der Normalpreis nur geschätzt
   (`normalQuelle: "schaetzung"`), steht „Normalpreis geschätzt“ in der Zeile.
 

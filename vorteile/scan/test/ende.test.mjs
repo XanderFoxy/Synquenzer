@@ -208,6 +208,9 @@ test('Schnäppchen-Angebote: vorbei, unsichere Menge und Großhandel werden nich
   assert.equal(angebotOk({ shop: 'PENNY', gueltigBis: '2026-11-01T22:59:00Z', mengeSicher: false }, j), false);
   assert.equal(angebotOk({ shop: 'EDEKA Foodservice', titel: 'Choco Crossies', gueltigBis: '2026-11-04T22:59:00Z' }, j), false);
   assert.equal(angebotOk({ shop: 'Lidl', titel: 'Ben & Jerry\'s', beschreibung: '465/4x100ml', gueltigBis: '2026-11-07T22:59:00Z', mengeSicher: true }, j), true);
+  // altes Format (Produktion bis 31.10.): ohne mengeSicher/packung -> unsicher, keine „10 Packungen … (−87 %)“-Zeile mehr
+  assert.equal(angebotOk({ shop: 'PENNY', titel: 'Knoppers', gueltigBis: '2026-11-01T22:59:00Z', menge: { stueck: 40, gramm: 1000 } }, j), false);
+  assert.equal(angebotOk({ shop: 'Lidl', titel: 'Knoppers 8er', gueltigBis: '2026-11-01T22:59:00Z', packung: '8 × 25 g', menge: { stueck: 8 } }, j), true);
 });
 
 test('Schnäppchen-Daten nach neuem Datenvertrag: bis mit Uhrzeit, ab in der Zukunft, Packung, Normalpreis geschätzt', async () => {

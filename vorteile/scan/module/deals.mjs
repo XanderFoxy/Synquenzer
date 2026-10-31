@@ -26,7 +26,9 @@ export function angebotOk(o, jetztMs = Date.now()) {
   if (!o) return false;
   if (o.gueltigBis && Date.parse(o.gueltigBis) < jetztMs) return false;
   if (o.bis && Date.parse(o.bis) < jetztMs) return false;
-  if (o.mengeSicher === false) return false; // ohne sichere Menge keine Prozent-Aussage
+  // ohne sichere Menge keine Prozent-Aussage. Altes Datenformat (ohne mengeSicher/packung, z. B. „Knoppers 24er-Pack“
+  // mit 40 Stück aus „1 kg = 7,44“) gilt als unsicher – wie auf der Seite mein-vorteil/.
+  if (!(o.mengeSicher === true || (o.mengeSicher == null && !!o.packung))) return false;
   return !GROSSHANDEL.test(`${o.shop || ''} ${o.titel || ''} ${o.beschreibung || ''}`);
 }
 
