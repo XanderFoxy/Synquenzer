@@ -105,6 +105,7 @@ test('Folgelauf: nur Neues in Reichweite, MusicBrainz+Deezer = ein Release, Hamb
   const ns = e.releases.find(r => r.titel === 'Neue Sterne');
   assert.deepEqual(ns.quellen.sort(), ['deezer', 'musicbrainz']);
   assert.match(ns.link, /deezer\.com/);
+  assert.equal(e.releases.find(r => r.titel === 'Lichtjahr').angekuendigt, false); // Deezer hat es schon
   assert.ok(e.konzerte.some(k => k.stadt === 'Hamburg' && k.km > 200));
   assert.match(e.pushes[0].text, /14\.03\.2027 20:00 · Haus Auensee, Leipzig \(\d+ km\)/);
   // Zweiter Durchlauf mit gemerktem Stand: keine Wiederholung

@@ -58,6 +58,7 @@ export function verarbeite({ konzerte, releases, gesehen, config, heute, seitenG
   }
   const rListe = [...rm.values()].sort((a, b) => b.datum.localeCompare(a.datum));
   const grenze = new Date(Date.parse(heute) - config.releaseFensterTage * 864e5).toISOString().slice(0, 10);
+  for (const r of rListe) r.angekuendigt = r.datum > heute;
   for (const r of rListe) {
     r.neu = !gesehen.releases[r.key];
     if (!r.neu) continue;
