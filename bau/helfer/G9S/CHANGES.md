@@ -60,6 +60,23 @@ Stand 31.10.2026. Grundlage: `spec/dirigent-spec-v3-nachtrag-8.md` (Teil A, B.5,
    Übersprechen der Musik (−30 dB) keine Stimm-Strecke werden (G9-22).
 9. Ein Wort in einem schon belegten Abschnitt fällt beim Lücken-Füllen **ganz** weg (keine halben Wörter).
 
+## Unabhängige Prüfung (Prüfer-Sitzung, 31.10.)
+15 Befunde, alle bearbeitet; Regression + Fuzz (≈ 27 000 Schritte, Invarianten: `t` nicht fallend, `j` nur nach gleicher Zeit, nie `j`+`o`,
+≤ 3 Silben je Marke ohne `o`, Silbenzahl erhalten, feste Silben ohne Marke wandern nie) in `tests/pruefer.mjs` – grün.
+- `o`-Silben mitten im Take zählen beim Verschieben an ihrer Marke (vorher: alles Folgende ans Take-Ende). Trennen nimmt `o`-Silben der Gruppe mit.
+- Feste Silben **ohne** Marke sind Anker (Grenze nach ihrer Zeit) in Ausrichtung, Sicht, Verschieben, Einfügen, Überschreiben, Trennen,
+  Verschmelzen und Erkennung; keine Silbe läuft an ihnen vorbei. Marken-Haken: würde eine mitgenommene Silbe die Reihenfolge brechen,
+  behalten die Silben ihre Zeit und rasten über die Sicht neu ein. Marke 1 gelöscht (keine vorige Marke): dasselbe.
+- Normalisieren zählt gleiche Zeit auch ohne `j` mit (ab der 4. `o`), weiter idempotent.
+- Überschreiben: Einfügestelle nach Marke/Zeit, Rest eines überschriebenen Worts wird eigenes Wort; endet vor jeder festen Silbe (auch `o`).
+- Ersetzen ist eine ausdrückliche Nutzer-Aktion: ist die feste Silbe Anfang des ersetzten Worts, wird sie ersetzt (gewollt).
+- Kleinere: führender Bindestrich bleibt, Zahl mit Trennzeichen `p: 0.3`, Satzzeichen am Textanfang hängt am ersten Wort, 24 Zeichen ohne
+  geteilte Surrogat-Paare, `lyText` bei erstem Wort > 400 Zeichen gekürzt statt leer, [+] ohne Marken → `o`, Gleichstand in der DP → links,
+  ohne Merkmale gilt jede Marke als Einsatz, `loesch` auch per Silben-Index (`o`-Wörter), 30-%-Regel rechnet mit der Wortdauer vor dem Abschneiden.
+- **Offen gelassen (Befund 7):** Stimm-Strecken verlangen „≥ Spitze − 30 dB“. Sehr leiser Gesang > 30 dB unter der lautesten Stelle desselben
+  Takes fällt aus der Erkennung (Text tippen/einfügen geht weiter). Grund: G9-22 verlangt, dass Übersprechen der Musik bei −30 dB keine Wörter
+  erzeugt. Einstellbar über `o.rel`; nach Messung mit echtem Gesang (G9b-1) entscheiden.
+
 ## Was fehlt / Grenzen
 - **K-G9 (a)/(b)** fehlen: kein Zugang zum öffentlichen Gesangs-Datensatz (Freigabe F0) und keine Takes von Xander (F7). Alle Ausrichtungs-
   Werte stammen aus dem **synthetischen** Korpus (c) mit echten VS5a-Marken. Echter Gesang ist schwerer (Vibrato, Legato, Atem) – G9-02/04
@@ -72,4 +89,4 @@ Stand 31.10.2026. Grundlage: `spec/dirigent-spec-v3-nachtrag-8.md` (Teil A, B.5,
 Keine neuen. (Vorgaben laut Spec D.2 gelten.)
 
 ## Bitte prüfen
-Nichts am iPhone – dieser Zweig ändert die App nicht. Prüfbar für den Dirigenten: `cd bau/helfer/G9S/tests && node alle.mjs` (≈ 85 s, alles grün).
+Nichts am iPhone – dieser Zweig ändert die App nicht. Prüfbar für den Dirigenten: `cd bau/helfer/G9S/tests && node alle.mjs` (≈ 90 s, 6 Dateien, alles grün).

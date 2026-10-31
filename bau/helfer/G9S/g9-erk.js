@@ -142,7 +142,7 @@ function zurueck(wordsPerWin, pl) {
       const mid = (s + e) / 2, seg = pl.map.find(m => mid >= m.s0 - 1e-9 && mid <= m.s0 + m.len + 1e-9);
       if (!seg) { drop.null++; continue; }   // Mitte in den 0,3-s-Nullen
       const cl = v => Math.min(seg.s0 + seg.len, Math.max(seg.s0, v));
-      const ts = R6(seg.t0 + cl(s) - seg.s0), te = R6(seg.t0 + cl(e) - seg.s0), dur = Math.max(0.05, te - ts);
+      const ts = R6(seg.t0 + cl(s) - seg.s0), te = R6(seg.t0 + cl(e) - seg.s0), dur = Math.max(0.05, e - s);   // Dauer vor dem Abschneiden: Teil in den Nullen zählt als „nicht Stimme“
       let inV = 0; for (const g of pl.segs) inV += Math.max(0, Math.min(te + (te === ts ? 0.025 : 0), g.b) - Math.max(ts - (te === ts ? 0.025 : 0), g.a));
       if (inV < 0.3 * dur) { drop.stille++; continue; }
       const o = {text: String(x.text).trim(), start: ts, end: te};

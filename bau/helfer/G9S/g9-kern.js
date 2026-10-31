@@ -139,7 +139,8 @@ function sylX(word, lang) {
   const lead = w.slice(0, a), trail = w.slice(b); let core = w.slice(a, b);
   const wrap = (parts, p) => { if (!parts.length) return {s: [w]}; parts[0] = lead + parts[0]; parts[parts.length - 1] += trail; return p == null ? {s: parts} : {s: parts, p}; };
   if (!core) return {s: [w]};
-  if (core.indexOf('-') >= 0) { const parts = core.split('-').filter(Boolean); if (parts.length > 1 || core.endsWith('-')) return wrap(parts.length ? parts : [core]); core = parts[0] || core; }
+  if (core.indexOf('-') >= 0) { const parts = core.split('-').filter(Boolean); if (parts.length > 1 || core.endsWith('-') || core.startsWith('-')) return wrap(parts.length > 1 ? parts : [core]); core = parts[0] || core; }
+  if (/^\p{N}+([.,:]\p{N}+)+$/u.test(core)) return wrap([core], 0.3);   // Zahl mit Trennzeichen: eine Silbe, unsicher
   if (/^\p{N}+$/u.test(core)) {
     const nw = numWord(core, lang);
     if (!nw) return wrap([core], 0.3);
@@ -168,14 +169,16 @@ function sylX(word, lang) {
 function syl(word, lang) { return sylX(word, lang).s; }
 
 // Text → Silben {x, w?, p?} (Zeilen → w: 2). Reine Satzzeichen hängen am vorigen Wort.
+const cp24 = x => [...x].slice(0, 24).join('');   // 24 Zeichen, ohne Surrogat-Paare zu teilen
 function words(text, lang) {
+  let lead = '';
   const out = [], lines = String(text == null ? '' : text).replace(/\r\n?/g, '\n').split('\n');
   for (const line of lines) {
     let first = true;
     for (const tok of line.split(/[ \t ]+/).filter(Boolean)) {
-      if (!/[\p{L}\p{N}]/u.test(tok) && out.length) { const l = out[out.length - 1]; l.x = (l.x + tok).slice(0, 24); continue; }
-      const r = sylX(tok, lang);
-      r.s.forEach((x, i) => { const o = {x: x.slice(0, 24)}; if (i === 0) o.w = first ? 2 : 1; if (r.p != null) o.p = r.p; out.push(o); });
+      if (!/[\p{L}\p{N}]/u.test(tok)) { if (out.length) { const l = out[out.length - 1]; l.x = cp24(l.x + tok); } else lead += tok; continue; }
+      const r = sylX(lead + tok, lang); lead = '';
+      r.s.forEach((x, i) => { const o = {x: cp24(x)}; if (i === 0) o.w = first ? 2 : 1; if (r.p != null) o.p = r.p; out.push(o); });
       if (r.s.length) first = false;
       if (out.length >= 4000) return out.slice(0, 4000);
     }
@@ -243,7 +246,7 @@ function feat(x, sr, marks) {
 // ───────────────────────── Kosten (§6.3) ─────────────────────────
 const C = {skip0: 0.2, skipRise: 1.5, skipGap: 2.0, skipTone: 0.8, skipVow: 0.8, merge: 1.2, mergeWord: 0.6, mergeLong: 0.5, longF: 1.7, over: 3.0, onWeak: 2.0,
   wordGap: -0.5, inWordGap: 1.0, lineGap: -1.0, lineMiss: 0.5, cons: -0.2, tauS: 0.15, edge: 0.3, tip: -0.8, tipSkip: 1.5, band: 1.5};
-const F0 = {rise: 0, gap: 0, pj: 0, vo: 0, von: 0, uv: 0, dur: 0, conf: 0.5, vf: 0};
+const F0 = {rise: 10, gap: 0, pj: 0, vo: 0, von: 0, uv: 0, dur: 0, conf: 0.5, vf: 0};   // ohne Merkmale: jede Marke ein Einsatz
 const CONS = /^(sch|st|s|t|k|p|f|z|ch|th|c)/i;
 function costs(marks, feat, o) {
   const m = marks.length, K = Object.assign({}, C, o && o.cost), sk = new Float64Array(m), tip = new Uint8Array(m);
@@ -280,7 +283,7 @@ function costs(marks, feat, o) {
 // → Feld der Marken-Indizes je Silbe und Zähler (1 … 3, 4 = o)
 function dpSeg(S, marks, CO, L, cL, R, o) {
   const m = marks.length, n = S.length, INF = 1e18, K = CO.K;
-  const a = L >= 0 ? L : 0, b = R >= 0 ? R - 1 : fin(o && o.bEnd) ? Math.min(m - 1, o.bEnd) : m - 1, open = R < 0 && fin(o && o.bEnd);
+  const a = L >= 0 ? L : fin(o && o.aMin) ? Math.max(0, o.aMin) : 0, b = R >= 0 ? R - 1 : fin(o && o.bEnd) ? Math.min(m - 1, o.bEnd) : m - 1, open = R < 0 && fin(o && o.bEnd);
   if (!n) return {k: [], c: [], cost: 0};
   if (b < a || m === 0) { const k0 = L >= 0 ? L : R >= 0 ? R : (m ? 0 : -1); return {k: S.map(() => k0), c: S.map(() => 4), cost: n * K.over}; }
   const W = b - a + 1;
@@ -301,7 +304,7 @@ function dpSeg(S, marks, CO, L, cL, R, o) {
   const off = new Int32Array(n + 1); for (let i = 0; i < n; i++) off[i + 1] = off[i] + (hi[i] - lo[i] + 1) * 4;
   const D = new Float64Array(off[n]).fill(INF), B = new Int32Array(off[n]).fill(-1);
   const at = (i, j, c) => off[i] + (j - lo[i]) * 4 + (c - 1);
-  const lead = j => (L >= 0 ? CO.skipSum(L + 1, j) : K.edge * (j - a));
+  const lead = j => (L >= 0 ? CO.skipSum(L + 1, j) : fin(o && o.aMin) ? CO.skipSum(a, j) : K.edge * (j - a));
   for (let j = lo[0]; j <= hi[0]; j++) {
     const y = S[0];
     if (j === L) { const c = Math.min(4, cL + 1); D[at(0, j, c)] = (c >= 4 ? K.over : CO.merge(y, j) + CO.tau(y, j)); }
@@ -324,7 +327,7 @@ function dpSeg(S, marks, CO, L, cL, R, o) {
   let bv = INF, bj = -1, bc = 1;
   for (let j = lo[n - 1]; j <= hi[n - 1]; j++) for (let c = 1; c <= 4; c++) {
     const v = D[at(n - 1, j, c)]; if (!(v < INF)) continue;
-    const tail = R >= 0 ? CO.skipSum(j + 1, R) : open ? 0 : K.edge * (b - j), w = v + tail;
+    const tail = R >= 0 ? CO.skipSum(j + 1, R) : open ? 0 : K.edge * 0.999 * (b - j), w = v + tail;   // Gleichstand → links
     if (w < bv) { bv = w; bj = j; bc = c; }
   }
   const kk = new Array(n), cc = new Array(n);
@@ -345,16 +348,18 @@ function align(sylIn, marks, feat, o) {
   // feste Silben monoton halten (eine rückwärts liegende feste Marke → ohne Marke)
   let lastK = -1; for (const i of fixed) { if (k[i] >= 0 && k[i] < lastK) k[i] = -1; if (k[i] >= 0) lastK = k[i]; }
   const kEnd = fin(o.kEnd) ? Math.min(m, o.kEnd) : -1;
-  const anchors = fixed.filter(i => k[i] >= 0);
+  const anchors = fixed;   // feste Silben mit und ohne Marke sind Anker (ohne Marke: Grenze nach ihrer Zeit)
+  const geT = t => { let q = 0; while (q < m && marks[q].t < t - 1e-9) q++; return q; }, gtT = t => { let q = 0; while (q < m && marks[q].t <= t + 1e-9) q++; return q; };
   let prev = -1;
   const run = (i0, i1) => {   // freie Silben i0 … i1−1 zwischen Ankern
     if (i1 <= i0) return;
     const L = prev >= 0 ? k[prev] : -1;
     let cL = 0; if (L >= 0) for (let q = prev; q >= 0 && k[q] === L; q--) cL++;
     const nx = anchors.find(i => i >= i1);
-    let R = nx != null ? k[nx] : -1;
+    let R = nx != null ? (k[nx] >= 0 ? k[nx] : gtT(sylIn[nx].t)) : -1;
     if (kEnd >= 0 && (R < 0 || kEnd < R)) R = kEnd;
     const opt = Object.assign({}, o);
+    if (prev >= 0 && L < 0) opt.aMin = geT(sylIn[prev].t);
     if (i0 !== 0 || !fin(o.k0)) delete opt.k0;
     const r = dpSeg(sylIn.slice(i0, i1), marks, CO, L, cL, R, opt);
     for (let q = 0; q < r.k.length; q++) { k[i0 + q] = r.k[q]; c[i0 + q] = r.c[q]; }
@@ -401,11 +406,10 @@ function normLy(ly, len) {
     const s = {x, t};
     if (y.w === 1 || y.w === 2) s.w = y.w;
     if (oo) s.o = 1;
-    else if ((y.j === 1 || y.j === true) && t === pt) { run++; if (run <= 3) s.j = 1; else { s.o = 1; } }
+    else if (t === pt) { run++; if (run > 3) s.o = 1; else if (y.j === 1 || y.j === true) s.j = 1; }   // gleiche Marke: zählt mit, ab der 4. o
     else run = 1;
     if (fin(+y.p) && y.p !== null && y.p !== '') s.p = R2(clamp(+y.p, 0, 1));
     if (y.u === 1 || y.u === true) s.u = 1;
-    if (!s.o && !s.j) run = 1;
     out.push(s); pt = t;
     if (out.length >= 4000) break;
   }
@@ -417,7 +421,7 @@ function lyText(ly) {
   if (!ly || !ly.s || !ly.s.length) return '';
   const W = []; for (const y of ly.s) { if (y.w || !W.length) W.push([y.x]); else W[W.length - 1].push(y.x); }
   let out = '';
-  for (const w of W) { const t = w.join('-'); const nx = out ? out + ' ' + t : t; if (nx.length > 400) break; out = nx; }
+  for (const w of W) { const t = w.join('-'); const nx = out ? out + ' ' + t : t; if (nx.length > 400) { if (!out) out = [...t].slice(0, 400).join(''); break; } out = nx; }
   return out;
 }
 // VS5b → ly: Silbe k → Marke k (von links), überzählige o: 1 an der letzten Marke
@@ -436,23 +440,23 @@ function fromVs5b(lyrics, marks, lang) {
 function view(ly, marks, feat, o) {
   if (!ly || !ly.s) return {V: [], n: {snap: 0, re: 0, nm: 0}};
   const m = marks.length, S = ly.s, n = S.length, k = new Array(n).fill(-2), oo = new Uint8Array(n), CO = costs(marks, feat, o);
-  let j = 0;
+  let j = 0, lastFixT = null;
   for (let i = 0; i < n; i++) {   // Marke ≤ 30 ms vom Anker, monoton
     const t = S[i].t; while (j < m && marks[j].t < t - 0.03 - 1e-9) j++;
     let bk = -1, bd = 0.03 + 1e-9; for (let q = j; q < m && marks[q].t <= t + 0.03 + 1e-9; q++) { const d = Math.abs(marks[q].t - t); if (d < bd) { bd = d; bk = q; } }
-    if (bk >= 0 && (i === 0 || k[i - 1] < 0 || bk >= k[i - 1])) k[i] = bk;
-    else if (S[i].u) k[i] = -1;
+    if (bk >= 0 && (i === 0 || (k[i - 1] === -2) || (k[i - 1] >= 0 && bk >= k[i - 1]) || (k[i - 1] === -1 && marks[bk].t >= S[i - 1].t - 1e-9)) && (lastFixT == null || marks[bk].t >= lastFixT - 1e-9)) k[i] = bk;
+    else if (S[i].u) { k[i] = -1; lastFixT = S[i].t; }
   }
   let snap = 0, re = 0, nm = 0;
   for (let i = 0; i < n; i++) { if (k[i] >= 0) snap++; else if (k[i] === -1) nm++; }
   for (let i = 0; i < n;) {   // nicht feste, nicht eingerastete Stücke lokal neu ausrichten
     if (k[i] !== -2) { i++; continue; }
     let e = i; while (e < n && k[e] === -2) e++;
-    let p = i - 1; while (p >= 0 && k[p] < 0) p--;
-    let q = e; while (q < n && k[q] < 0) q++;
-    const L = p >= 0 ? k[p] : -1; let cL = 0; if (L >= 0) for (let z = p; z >= 0 && k[z] === L; z--) cL++;
-    const R = q < n ? k[q] : -1;
-    const r = dpSeg(S.slice(i, e).map(y => ({x: y.x, w: y.w})), marks, CO, L, cL, R, {});
+    const p = i - 1, q = e;   // Nachbarn: eingerastet (k ≥ 0) oder feste Silbe ohne Marke (k = −1, Grenze nach Zeit)
+    const L = p >= 0 && k[p] >= 0 ? k[p] : -1; let cL = 0; if (L >= 0) for (let z = p; z >= 0 && k[z] === L; z--) cL++;
+    let R = -1; if (q < n) { if (k[q] >= 0) R = k[q]; else { R = 0; while (R < m && marks[R].t <= S[q].t + 1e-9) R++; } }
+    const opt = {}; if (p >= 0 && k[p] === -1) { let a = 0; while (a < m && marks[a].t < S[p].t - 1e-9) a++; opt.aMin = a; }
+    const r = dpSeg(S.slice(i, e).map(y => ({x: y.x, w: y.w})), marks, CO, L, cL, R, opt);
     for (let z = 0; z < r.k.length; z++) { k[i + z] = r.k[z]; if (r.c[z] >= 4) oo[i + z] = 1; }
     re += e - i; i = e;
   }
@@ -466,18 +470,18 @@ function posOf(SL, k) { let lo = 0, hi = SL.length - 1; while (lo <= hi) { const
 function wordAt(V, i) { let a = i; while (a > 0 && !V[a].w) a--; let b = i + 1; while (b < V.length && !V[b].w) b++; return [a, b]; }
 function firstAt(V, k) { for (let i = 0; i < V.length; i++) if (V[i].k === k && !V[i].o) return i; return -1; }
 // Verschieben ab Silbe i um d Plätze (Silben-Plätze, §6.1); darüber hinaus → o an der letzten Marke
-function shiftFrom(V, i, d, SL, m) {
+function shiftFrom(V, i, d, SL, m, marks) {
   if (i < 0 || i >= V.length || !d) return false;
-  const pos = V.map(y => (y.o || y.k < 0 ? SL.length : posOf(SL, y.k)));
-  if (d < 0) { for (let q = i; q < V.length; q++) if (V[q].k >= 0 && !V[q].o) { if (pos[q] + d < 0) return false; break; } }
-  let floor = -1; for (let q = i - 1; q >= 0; q--) if (V[q].k >= 0) { floor = V[q].o ? SL.length : posOf(SL, V[q].k); break; }
-  for (let q = i; q < V.length; q++) {
-    if (V[q].k < 0 && V[q].u && !V[q].o) continue;   // feste Silbe ohne Marke bleibt
-    const p = Math.max(pos[q] + d, floor); floor = p;   // nie vor die vorige Silbe: dort verschmolzen
-    if (p > SL.length) { V[q].k = m - 1; V[q].o = 1; delete V[q].nm; continue; }
-    if (p >= SL.length) { V[q].k = m - 1; V[q].o = 1; }
-    else { V[q].k = SL[Math.max(0, p)]; V[q].o = 0; }
-    delete V[q].nm;
+  const pos = V.map(y => (y.k < 0 ? -1 : posOf(SL, y.k)));   // o-Silben zählen an ihrer Marke
+  const slotGe = t => { let z = 0; while (z < SL.length && marks[SL[z]].t < t - 1e-9) z++; return z; };
+  let end = V.length, cap = SL.length - 1, bar = false;   // Barriere: nächste feste Silbe ohne Marke
+  for (let q = i; q < V.length; q++) if (V[q].k < 0) { end = q; bar = true; cap = -1; for (let z = 0; z < SL.length; z++) if (marks[SL[z]].t <= V[q].t + 1e-9) cap = z; break; }
+  if (d < 0) { for (let q = i; q < end; q++) { if (pos[q] + d < 0) return false; break; } }
+  let floor = -1; for (let q = i - 1; q >= 0; q--) { floor = V[q].k >= 0 ? posOf(SL, V[q].k) : slotGe(V[q].t); break; }
+  for (let q = i; q < end; q++) {
+    let p = Math.max(pos[q] + d, floor, 0); floor = p;   // nie vor die vorige Silbe: dort verschmolzen
+    if (p > cap) { if (!bar) { V[q].k = m - 1; V[q].o = 1; delete V[q].nm; continue; } p = Math.max(0, cap); }
+    V[q].k = SL[p]; V[q].o = 0; delete V[q].nm;
   }
   return true;
 }
@@ -498,15 +502,15 @@ function apply(ly, marks, feat, op, o) {
   }
   if (op.op === 'mkMove') {
     if (!ly) return {ok: true, s: null};
-    const s = ly.s.map(y => (Math.abs(y.t - op.tOld) < 1e-4 ? Object.assign({}, y, {t: R6(op.tNew)}) : Object.assign({}, y)));
-    return {ok: true, s: reflag(s)};
+    const s = ly.s.map(y => (Math.abs(y.t - op.tOld) < 1e-4 ? Object.assign({}, y, {t: R6(op.tNew), _m: 1}) : Object.assign({}, y)));
+    return {ok: true, s: reflag(keepOrder(s, ly.s))};
   }
   if (op.op === 'mkDel') {   // marks = Marken VOR dem Löschen
     if (!ly) return {ok: true, s: null};
     let q = -1; for (let k = 0; k < m; k++) if (Math.abs(marks[k].t - op.t) < 1e-4) q = k;
-    const tn = q > 0 ? marks[q - 1].t : q === 0 && m > 1 ? marks[1].t : null;
-    let moved = 0;
-    const s = ly.s.map(y => { if (Math.abs(y.t - op.t) < 1e-4 && tn != null) { moved++; return Object.assign({}, y, {t: R6(tn), j: 1}); } return Object.assign({}, y); });
+    const tn = q > 0 ? marks[q - 1].t : null;   // ohne vorige Marke: Silben behalten ihre Zeit und rasten über die Sicht neu ein (§5.1)
+    const s0 = ly.s.map(y => (Math.abs(y.t - op.t) < 1e-4 && tn != null ? Object.assign({}, y, {t: R6(tn), j: 1, _m: 1}) : Object.assign({}, y)));
+    const s = keepOrder(s0, ly.s), moved = s.filter((y, i) => y.t !== ly.s[i].t).length;
     const r = reflag(s, true); const nO = r.filter((y, i) => y.o && !ly.s[i].o).length;
     return {ok: true, s: r, merged: moved - nO, over: nO, lost: 0};
   }
@@ -517,31 +521,33 @@ function apply(ly, marks, feat, op, o) {
   const SL = slotsOf(V, CO, m);
   if (op.op === 'links' || op.op === 'rechts') {
     if (!(op.i >= 0 && op.i < V.length)) return no();
-    if (!shiftFrom(V, op.i, op.op === 'links' ? -1 : 1, SL, m)) return no('Weiter nach links geht es nicht.');
+    if (!shiftFrom(V, op.i, op.op === 'links' ? -1 : 1, SL, m, marks)) return no('Weiter nach links geht es nicht.');
     return ok(V, marks, {sel: V[op.i].k});
   }
-  if (op.op === 'nach') { if (!(op.i >= 0 && op.i < V.length)) return no(); for (let r = 0; r < (op.n || 1); r++) { const SL2 = slotsOf(V, CO, m); shiftFrom(V, op.i, 1, SL2, m); } return ok(V, marks, {}); }
+  if (op.op === 'nach') { if (!(op.i >= 0 && op.i < V.length)) return no(); for (let r = 0; r < (op.n || 1); r++) { const SL2 = slotsOf(V, CO, m); shiftFrom(V, op.i, 1, SL2, m, marks); } return ok(V, marks, {}); }
   if (op.op === 'versch') {
-    const i = op.i; if (!(i >= 0 && i + 1 < V.length) || V[i].k < 0) return no();
+    const i = op.i; if (!(i >= 0 && i + 1 < V.length) || V[i].k < 0 || V[i + 1].k < 0) return no();   // feste Silbe ohne Marke bleibt
     if (V[i + 1].k === V[i].k && !V[i + 1].o) return no();
     const p1 = V[i + 1].o ? SL.length : posOf(SL, V[i + 1].k), p0 = posOf(SL, V[i].k), d = p1 - p0;
     V[i + 1].k = V[i].k; V[i + 1].o = 0;
-    if (i + 2 < V.length) shiftFrom(V, i + 2, -Math.max(1, Math.min(1, d)), SL, m);
+    if (i + 2 < V.length) shiftFrom(V, i + 2, -Math.max(1, Math.min(1, d)), SL, m, marks);
     return ok(V, marks, {sel: V[i].k});
   }
   if (op.op === 'trenn') {
     const i = op.i; if (!(i >= 0 && i < V.length) || V[i].k < 0) return no();
-    const k = V[i].k; let a = i; while (a > 0 && V[a - 1].k === k && !V[a - 1].o) a--; let b = i; while (b + 1 < V.length && V[b + 1].k === k && !V[b + 1].o) b++;
+    const k = V[i].k; let a = i; while (a > 0 && V[a - 1].k === k) a--; let b = i; while (b + 1 < V.length && V[b + 1].k === k) b++;   // Gruppe inkl. o-Silben
     if (b === a) return no();
     const p = posOf(SL, k);
     if (p + 1 >= SL.length) return no('Keine freie Marke – beide Silben bleiben zusammen.');
-    const nk = SL[p + 1], occ = V.some((y, q) => q > b && y.k === nk && !y.o);
-    if (occ) shiftFrom(V, b + 1, 1, SL, m);
+    const nk = SL[p + 1], bar = V.find((y, q) => q > b && y.k < 0);
+    if (bar && marks[nk].t > bar.t + 1e-9) return no('Keine freie Marke – beide Silben bleiben zusammen.');   // feste Silbe ohne Marke dazwischen
+    const occ = V.some((y, q) => q > b && y.k === nk && !y.o);
+    if (occ) shiftFrom(V, b + 1, 1, SL, m, marks);
     V[b].k = nk; V[b].o = 0;
     return ok(V, marks, {sel: nk});
   }
   if (op.op === 'loesch') {
-    const i = firstAt(V, op.k); if (i < 0) return no();
+    const i = fin(op.i) ? op.i : firstAt(V, op.k); if (!(i >= 0 && i < V.length)) return no();   // op.i erreicht auch Wörter ohne eigene Marke (o)
     const [a, b] = wordAt(V, i), word = V.slice(a, b).map(y => y.x).join('');
     if (b < V.length && !V[b].w) V[b].w = V[a].w || 1;
     V.splice(a, b - a);
@@ -554,11 +560,13 @@ function apply(ly, marks, feat, op, o) {
     if (!S.length) return no();
     if (S[0].w === 2) S[0].w = 1;
     if (op.ins) {   // [+]: vor Abschnitt k einsetzen, gewählter und folgende rücken um n Plätze
+      if (!m) { S.forEach(y => { y.k = -1; y.t = 0; y.o = 1; }); V.splice(0, 0, ...S); return ok(V, marks, {sel: 0, word: S.map(y => y.x).join(''), n: S.length}); }
       let SLx = SL.slice(); if (SLx.indexOf(k) < 0) { SLx.push(k); SLx.sort((x, y) => x - y); }
-      let i0 = V.findIndex(y => y.k >= k && !y.o); if (i0 < 0) i0 = V.findIndex(y => y.o); if (i0 < 0) i0 = V.length;
-      if (i0 < V.length) shiftFrom(V, i0, S.length, SLx, m);
-      const p = posOf(SLx, k);
-      S.forEach((y, q) => { if (p + q < SLx.length) { y.k = SLx[p + q]; y.o = 0; } else { y.k = m - 1; y.o = 1; } });
+      let i0 = V.findIndex(y => (y.k >= 0 ? y.k >= k : y.t >= marks[k].t - 1e-9)); if (i0 < 0) i0 = V.length;
+      if (i0 < V.length) shiftFrom(V, i0, S.length, SLx, m, marks);
+      const p = posOf(SLx, k), bar = V.find((y, q) => q >= i0 && y.k < 0);
+      let capP = SLx.length - 1; if (bar) { capP = p; for (let z = p; z < SLx.length; z++) if (marks[SLx[z]].t <= bar.t + 1e-9) capP = z; }
+      S.forEach((y, q) => { if (p + q <= capP) { y.k = SLx[p + q]; y.o = 0; } else if (bar) { y.k = SLx[capP]; y.o = 0; } else { y.k = m - 1; y.o = 1; } });
       V.splice(i0, 0, ...S);
       return ok(V, marks, {sel: nextSel(V, i0 + S.length - 1), word: S.map(y => y.x).join(''), n: S.length});
     }
@@ -567,8 +575,8 @@ function apply(ly, marks, feat, op, o) {
     // Bereich k0 … k0+8. Ersetzen: bis vor das nächste Wort; Überschreiben: bis vor die nächste feste Silbe.
     // Gibt es dort eine Grenze, sind die übrigen Abschnitte Melisma (Überspring-Kosten); sonst ist das Ende offen.
     let kE = Math.min(m, k0 + 9), closed = false;
-    if (a >= 0) { if (b < V.length && V[b].k >= 0 && V[b].k <= kE) { kE = Math.max(k0 + 1, V[b].k); closed = true; } }
-    else for (const y of V) if (y.u && y.k > k0 && !y.o) { if (y.k <= kE) { kE = y.k; closed = true; } break; }
+    if (a >= 0) { if (b < V.length) { let nk = V[b].k; if (nk < 0) { nk = 0; while (nk < m && marks[nk].t <= V[b].t + 1e-9) nk++; } if (nk <= kE) { kE = Math.max(k0 + 1, nk); closed = true; } } }
+    else for (const y of V) { if (!y.u) continue; let yk = y.k; if (yk < 0) { if (!m || y.t <= marks[k0].t) continue; yk = 0; while (yk < m && marks[yk].t <= y.t + 1e-9) yk++; } if (yk > k0) { if (yk <= kE) { kE = yk; closed = true; } break; } }
     const r = dpSeg(S, marks, CO, -1, 0, closed ? kE : -1, closed ? {k0} : {k0, bEnd: kE - 1});
     S.forEach((y, q) => { y.k = r.k[q]; y.o = r.c[q] >= 4 ? 1 : 0; });
     const lastK = S[S.length - 1].k;
@@ -577,9 +585,11 @@ function apply(ly, marks, feat, op, o) {
     if (a >= 0) NV = V.slice(0, a).concat(S, V.slice(b));
     else {
       const keep = V.filter(y => y.u || y.k < k0 || y.k > lastK);
-      let ins = keep.findIndex(y => y.k >= k0 || y.o); if (ins < 0) ins = keep.length;
+      const tk0 = m ? marks[k0].t : 0;
+      let ins = keep.findIndex(y => (y.k >= 0 ? y.k >= k0 : y.t >= tk0)); if (ins < 0) ins = keep.length;
       NV = keep.slice(0, ins).concat(S, keep.slice(ins));
-      const nx = NV[ins + S.length]; if (nx && !nx.w) nx.w = 1;
+      const nx = NV[ins + S.length], vi = nx ? V.indexOf(nx) : -1;
+      if (nx && !nx.w && vi > 0 && keep.indexOf(V[vi - 1]) < 0) nx.w = 1;   // Rest eines überschriebenen Worts wird ein eigenes Wort
     }
     const iS = NV.indexOf(S[S.length - 1]);
     let missing = 0;
@@ -591,6 +601,11 @@ function apply(ly, marks, feat, op, o) {
 }
 // Abschnitt nach der letzten Silbe bzw. nächste schon beschriftete Silbe
 function nextSel(V, i) { const k = V[i] ? V[i].k : -1; for (let q = i + 1; q < V.length; q++) if (V[q].k > k && !V[q].o) return Math.min(V[q].k, k + 1); return k + 1; }
+// Marken-Haken: bricht eine verschobene Silbe die Reihenfolge (feste Silbe ohne Marke dazwischen), behält sie ihre alte Zeit
+function keepOrder(s, orig) {
+  let bad = false; for (let i = 1; i < s.length; i++) if (s[i].t < s[i - 1].t - 1e-9) bad = true;
+  return s.map((y, i) => { const z = Object.assign({}, y); if (bad && z._m) { z.t = orig[i].t; if (!orig[i].j) delete z.j; } delete z._m; return z; });   // dann alle verschobenen zurück
+}
 // j/o nach Zeiten neu setzen (Marken-Haken)
 function reflag(s, mergeMoved) {
   const out = []; let pt = -1, cnt = 0;

@@ -25,7 +25,7 @@ Spec: `spec/n8/G9.md` §5, §6.1–§6.5, §7.12. Namen in der App (Test-API §7
 |---|---|
 | `{op: 'wort', k, text, lang}` | Wort an Abschnitt k tippen bzw. das Wort dort ersetzen (§6.4); Silben `u: 1`; Rückgabe `sel` = nächster Abschnitt, `hint` „2 Silben auf einer Marke“, `missing` = fehlende Plätze für [Nachrücken] |
 | `{op: 'wort', k, text, lang, ins: true}` | [+] Wort vor k einfügen, Rest rückt n Silben-Plätze rechts |
-| `{op: 'loesch', k}` | Wort am Abschnitt k löschen, Rest bleibt auf seinen Marken |
+| `{op: 'loesch', k}` bzw. `{op: 'loesch', i}` | Wort am Abschnitt k (bzw. mit Silbe i – erreicht auch Wörter ohne eigene Marke, `o`) löschen, Rest bleibt auf seinen Marken |
 | `{op: 'nach', i, n}` | [Nachrücken]: ab Silbe i n Plätze nach rechts |
 | `{op: 'links' \| 'rechts', i}` | Text ab hier ‹ Silbe / Silbe › (Silben-Plätze §6.1) |
 | `{op: 'versch', i}` / `{op: 'trenn', i}` | Verschmelzen / Trennen (`ok: false, toast` „Keine freie Marke – beide Silben bleiben zusammen.“) |
