@@ -26,11 +26,12 @@ await p.evaluate(() => { window.__hid = true; document.dispatchEvent(new Event('
 await p.waitForTimeout(35000);
 const i2 = await info(); console.log('hidden 35 s:', JSON.stringify(i2));
 await p.evaluate(() => { window.__hid = false; document.dispatchEvent(new Event('visibilitychange')); });
+if (process.env.TAPBACK) { await p.waitForTimeout(1500); const cvb = await (await p.$('#vvSheet canvas')).boundingBox(); await p.touchscreen.tap(cvb.x + cvb.width / 2, cvb.y + cvb.height / 2); await p.waitForTimeout(1000); console.log('after tap:', JSON.stringify(await info())); }
 const tB = Date.now();
 await p.waitForFunction(() => !SYNQUENZER.vvInfo().busy, null, {timeout: +(process.env.WAITMS || 150000), polling: 200}).catch(() => {});
 const i3 = await info(); console.log('visible again, after', ((Date.now() - tB) / 1000).toFixed(1), 's:', JSON.stringify(Object.assign(i3, {res: await p.evaluate(() => { const r = SYNQUENZER.vvInfo().res; return r && {how: r.how, dur: r.dur, size: r.size}; })})));
 const bl = await p.evaluate(() => SYNQUENZER.vvBlob());
-if (bl) { const f = OUTQ + 'wake-hidden.' + bl.ext; fs.writeFileSync(f, Buffer.from(bl.b64, 'base64')); console.log('file', execSync(`ffprobe -v error -show_entries format=duration -of csv=p=0 ${f}`).toString().trim(), execSync(`node n5-v-qm-aud.mjs ${f}`).toString().trim().slice(0, 400)); }
+if (bl) { const f = OUTQ + 'wake-hidden.' + bl.ext; fs.writeFileSync(f, Buffer.from(bl.b64, 'base64')); const au = JSON.parse(execSync(`node n5-v-qm-aud.mjs ${f}`).toString()); const sil = []; au.peaks05.forEach((v, k) => { if (v < -60) sil.push(k / 2); }); console.log('file', JSON.stringify({expectedDur: (await p.evaluate(() => SYNQUENZER.vvInfo().res.dur)), audioDur: au.dur, silentHalfSecondsAt: sil.slice(0, 80)})); }
 else console.log('no file; busy still', (await info()).busy);
 console.log('errors', errs);
 await b.close();

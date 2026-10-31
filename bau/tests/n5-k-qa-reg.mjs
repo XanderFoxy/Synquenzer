@@ -22,7 +22,7 @@ await p.waitForFunction(() => SYNQUENZER.runtime().playing, null, {timeout: 1000
 const chords = [57, 53, 48, 55, 57, 53, 48, 55]; const b0 = Math.ceil((await E(() => audBeat())) / 4) * 4 + 4;
 for (let k = 0; k < chords.length; k++) { await p.waitForFunction(b => audBeat() >= b, b0 + 4 * k + 0.05, {timeout: 60000, polling: 5}); await E(n => { SYNQUENZER.keyOn(n, .8, 'c'); setTimeout(() => SYNQUENZER.keyOff(0, 'c'), 120); }, chords[k]); }
 await p.waitForFunction(b => audBeat() >= b, b0 + 32.3, {timeout: 60000, polling: 5});
-const fb = (await T.find('#bFang'))[0]; if (fb) await T.tap(fb.cx, fb.cy, 400);
+const fb = (await T.find('#bFang, .fangb'))[0]; console.log('fang button', JSON.stringify(fb)); if (fb) await T.tap(fb.cx, fb.cy, 400);
 const fp = await E(() => SYNQUENZER.fangPart());
 ok(fp && fp.len >= 2, 'FANG after 8 bars of chords -> part sheet: ' + JSON.stringify(fp && {len: fp.len, name: fp.suggest && fp.suggest.name}));
 await E(() => SYNQUENZER.fangAccept('part')); await sleep(400);
@@ -65,7 +65,8 @@ const PB = await E(() => JSON.stringify(SYNQUENZER.project()));
 await E(n => { for (let i = 0; i < n; i++) redo(); }, nU); await sleep(300);
 const PC = await E(() => JSON.stringify(SYNQUENZER.project()));
 const sameB = (() => { const a = JSON.parse(strip(PB)), b = JSON.parse(strip(P_0)); for (const k of ['takes', 'id', 'name']) { delete a[k]; delete b[k]; } return JSON.stringify(a.tracks.map(t => t.clips)) === JSON.stringify(b.tracks.map(t => t.clips)) && JSON.stringify(a.song) === JSON.stringify(b.song); })();
-ok(nU >= 5 && strip(PC) === strip(PA), 'undo x' + nU + ' then redo x' + nU + ' -> same project');
+const dif = (a, b, path = '') => { if (JSON.stringify(a) === JSON.stringify(b)) return []; if (a && b && typeof a === 'object' && typeof b === 'object') { let o = []; for (const k of new Set(Object.keys(a).concat(Object.keys(b)))) o = o.concat(dif(a[k], b[k], path + '.' + k)); return o; } return [path + ': ' + JSON.stringify(a).slice(0, 80) + ' | ' + JSON.stringify(b).slice(0, 80)]; };
+ok(nU >= 5 && strip(PC) === strip(PA), 'undo x' + nU + ' then redo x' + nU + ' -> same project ' + JSON.stringify(dif(JSON.parse(strip(PA)), JSON.parse(strip(PC))).slice(0, 6)));
 ok(sameB, 'undo x' + nU + ' -> clips and song as at the start');
 // 8 save -> reload deep-equal
 await E(() => SYNQUENZER.save()); await sleep(1800);
