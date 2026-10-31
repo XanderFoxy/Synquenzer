@@ -2,6 +2,41 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
+<!-- Umgezogen: Angebote, Vorteile und Konzerte stehen jetzt auf einer Seite (/Synquenzer/mein-vorteil/). -->
+<noscript><meta http-equiv="refresh" content="0; url=/Synquenzer/mein-vorteil/#vorteile"></noscript>
+<script>(function () {
+  // Ziel immer absolut: auch eine Kopie an falscher Stelle (z. B. als /Synquenzer/ aus einem fremden Zwischenspeicher)
+  // landet auf Mein Vorteil statt auf /mein-vorteil/ außerhalb des Repos (404).
+  var p = location.pathname, i = p.indexOf('/vorteile/');
+  var basis = i >= 0 ? p.slice(0, i) : '/Synquenzer';
+  var h = location.hash.slice(1), r = h === 'schnaeppchen' ? 'angebote' : h === 'konzerte' ? 'konzerte' : 'vorteile';
+  var ziel = basis + '/mein-vorteil/?von=vorteile#' + r;
+  var weg = false, los = function () { if (!weg) { weg = true; location.replace(ziel); } };
+  // Die alte Seite darunter nicht mehr aufbauen (kein Aufblitzen, keine unnötigen Datenabrufe): der Rest wird reiner Text
+  document.write('<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Mein Vorteil</title>'
+    + '<style>html{background:#f4f2ee;color:#1f1d1a;font:17px/1.5 -apple-system,BlinkMacSystemFont,sans-serif}body{margin:0;padding:24px 16px}'
+    + 'a{display:inline-flex;align-items:center;min-height:44px;color:#2f6f5e;font-weight:600}'
+    + '@media (prefers-color-scheme:dark){html{background:#141317;color:#ecebef}a{color:#7fcdb3}}</style>'
+    + '<p>Die Vorteile sind umgezogen: <a href="' + ziel + '">Mein Vorteil öffnen</a></p><plaintext hidden>');
+  var sw = 'serviceWorker' in navigator ? navigator.serviceWorker : null;
+  if (!sw || !(location.protocol === 'https:' || location.hostname === 'localhost')) return los();
+  setTimeout(los, 3000); // spätestens dann weiter, auch wenn das Anmelden hängt
+  var eigen = /\/vorteile\/sw\.js$/.test((sw.controller && sw.controller.scriptURL) || ''), mv = basis + '/mein-vorteil/';
+  // 1. Zuerst den Worker von Mein Vorteil anmelden. Sonst übernimmt der SYNQUENZER-Worker der Wurzel den ersten Besuch:
+  //    er speichert dann Mein Vorteil als Offline-Kopie des Synthesizers (und zeigt bei schwachem Netz den Synthesizer).
+  //    Ist die Anmeldung da, geht der Aufruf ans Netz bzw. an diesen Worker – nie mehr an den Wurzel-Worker.
+  var schritte = [sw.register(mv + 'sw.js', { scope: mv }).then(function (reg) {
+    return new Promise(function (fertig) { // kurz warten, bis er übernimmt (dann ist Mein Vorteil gleich offline da)
+      var w = reg.installing || reg.waiting;
+      if (reg.active || !w) return fertig();
+      w.addEventListener('statechange', function () { if (w.state !== 'installing' && w.state !== 'installed') fertig(); });
+      setTimeout(fertig, 1000);
+    });
+  }, function () {})];
+  // 2. Eigener kleiner Worker für diesen Ordner (falls noch keiner): danach sieht der SYNQUENZER-Worker diese Adresse nie mehr
+  if (i >= 0 && !eigen) schritte.push(sw.register('sw.js', { scope: './' }).then(null, function () {}));
+  Promise.all(schritte).then(los);
+})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Vorteile</title>

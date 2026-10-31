@@ -1,0 +1,17 @@
+{
+  "name": "Mein Vorteil",
+  "short_name": "Mein Vorteil",
+  "description": "Angebote, Preisfehler, Vorteile und Konzerte – alles auf einer Seite",
+  "lang": "de",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f2ee",
+  "theme_color": "#2f6f5e",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

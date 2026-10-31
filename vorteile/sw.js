@@ -1,13 +1,28 @@
-// Service Worker nur für /vorteile/: Seite offline verfügbar (Netz zuerst, sonst Zwischenspeicher). Daten werden nicht abgefangen.
-const CACHE = 'vorteile-v1';
-const DATEIEN = ['./', 'index.html', 'spartipps.html', 'manifest.webmanifest', 'icon.svg', 'icon-192.png'];
-self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(DATEIEN)).then(() => self.skipWaiting())); });
+/* Die Seite /vorteile/ ist umgezogen nach /mein-vorteil/ (eine Seite für Angebote, Vorteile und Konzerte).
+   Dieser kleine Worker bleibt bewusst angemeldet: Solange er den Ordner /vorteile/ übernimmt, sieht der SYNQUENZER-Worker im
+   Wurzelordner diese Adressen nie – sonst würde er die Weiterleitung als Offline-Kopie des Synthesizers speichern.
+   Er löscht den alten Zwischenspeicher ('vorteile-…'), lädt offene Fenster neu und gibt Seitenaufrufe ans Netz weiter
+   (dort leitet index.html auf Mein Vorteil weiter). Ohne Netz antwortet er selbst mit derselben Weiterleitung.
+   Alles andere (Symbole, Daten) geht direkt ans Netz. */
+const ZIEL = new URL('../mein-vorteil/', self.registration.scope).pathname;
+const WEITER = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mein Vorteil</title>
+<script>var h = location.hash.slice(1), r = h === 'schnaeppchen' ? 'angebote' : h === 'konzerte' ? 'konzerte' : 'vorteile'; location.replace(${JSON.stringify(ZIEL)} + '?von=vorteile#' + r);</script></head><body><p><a href="${ZIEL}#vorteile">Mein Vorteil öffnen</a></p></body></html>`;
+
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(k => Promise.all(k.filter(n => n.startsWith('vorteile-') && n !== CACHE).map(n => caches.delete(n)))).then(() => self.clients.claim()));
+  e.waitUntil((async () => {
+    const alt = (await caches.keys()).filter(n => n.startsWith('vorteile-'));
+    await Promise.all(alt.map(n => caches.delete(n)));
+    try { await self.clients.claim(); } catch {}
+    // Nur nach dem Wechsel von der alten Seite: offene Fenster dieses Ordners (alte Seite aus dem alten Zwischenspeicher)
+    // neu laden -> Weiterleitung. Frisch von der Weiterleitung angemeldet (kein alter Speicher): nichts neu laden.
+    if (!alt.length) return;
+    // nicht abwarten: die neue Seite holt dieser Worker selbst, und das geht erst nach dem Aktivieren
+    const fenster = await self.clients.matchAll({ type: 'window' });
+    for (const f of fenster) if (f.url.startsWith(self.registration.scope)) f.navigate(f.url).catch(() => {});
+  })());
 });
 self.addEventListener('fetch', e => {
-  const u = new URL(e.request.url);
-  if (e.request.method !== 'GET' || u.origin !== location.origin || !u.pathname.includes('/vorteile/')) return;
-  e.respondWith(fetch(e.request).then(r => { const k = r.clone(); caches.open(CACHE).then(c => c.put(e.request, k)); return r; })
-    .catch(() => caches.match(e.request).then(r => r || caches.match('index.html'))));
+  if (e.request.mode !== 'navigate') return;
+  e.respondWith(fetch(e.request).catch(() => new Response(WEITER, { headers: { 'content-type': 'text/html; charset=utf-8' } })));
 });

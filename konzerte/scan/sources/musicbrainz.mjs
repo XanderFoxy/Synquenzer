@@ -22,6 +22,8 @@ export function mbParse(groups, band, heute, fensterTage) {
     if (!['Album', 'EP', 'Single'].includes(typ)) continue;
     const sek = g['secondary-types'] || [];
     if (sek.some(s => OHNE.has(s))) continue;
+    // Mitschnitte mit Datum im Titel („1987-12-10: Wembley Arena, London“) sind Bootlegs, keine neue Platte
+    if (/^\d{4}-\d{2}-\d{2}\s*:/.test(g.title || '')) continue;
     if (!/^\d{4}-\d{2}(-\d{2})?$/.test(d) || d < grenze) continue;
     neu.push({
       quelle: 'musicbrainz', band: band.name, titel: g.title, typ: typ + (sek.length ? ` (${sek.join(', ')})` : ''),
@@ -45,7 +47,8 @@ export default async function musicbrainz(ctx) {
       }
       const groups = [];
       for (let off = 0; off < 1000; off += 100) {
-        const j = await ctx.http.get(`${WS}/release-group?artist=${id}&type=album|ep|single&limit=100&offset=${off}&fmt=json`);
+        // nur offizielle Veröffentlichungen (website-default blendet Bootlegs/Pseudo-Releases aus, wie musicbrainz.org)
+        const j = await ctx.http.get(`${WS}/release-group?artist=${id}&type=album|ep|single&release-group-status=website-default&limit=100&offset=${off}&fmt=json`);
         groups.push(...(j['release-groups'] || []));
         if (groups.length >= (j['release-group-count'] || 0) || !(j['release-groups'] || []).length) break;
       }

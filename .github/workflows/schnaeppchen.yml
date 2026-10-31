@@ -11,6 +11,10 @@ on:
         description: 'Nur testen, keine Push-Nachrichten senden'
         type: boolean
         default: false
+      roh:
+        description: 'Roh-Mitschnitt: alle Quell-Antworten + Ergebnis auf Zweig roh-daten, ohne Push und ohne Daten-Zweig'
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
@@ -22,7 +26,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: schnaeppchen
+  group: ${{ inputs.roh && 'schnaeppchen-roh' || 'schnaeppchen' }}   # Roh-Läufe stören die stündlichen Läufe nicht
   cancel-in-progress: false
 
 jobs:
@@ -58,10 +62,12 @@ jobs:
         env:
           KEEPA_KEY: ${{ secrets.KEEPA_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          DRY_RUN: ${{ (inputs.dry_run || inputs.roh) && '1' || '0' }}
+          ROH_DIR: ${{ inputs.roh && format('{0}/roh', runner.temp) || '' }}
         run: node schnaeppchen/scan/main.mjs --data daten/schnaeppchen/data
 
       - name: Daten speichern
+        if: ${{ !inputs.roh }}
         working-directory: daten
         run: |
           git config user.name "schnaeppchen-bot"
@@ -72,3 +78,32 @@ jobs:
           git checkout --quiet --orphan neu
           git commit --quiet -m "Daten $(date -u +%Y-%m-%dT%H:%MZ)"
           git push --quiet --force origin neu:schnaeppchen-daten
+
+      # Nur bei roh: Mitschnitt auf den eigenen Zweig roh-daten unter schnaeppchen/<Lauf-Nr.>/ (nie auf den Daten-Zweig).
+      - name: Rohdaten speichern (Zweig roh-daten)
+        if: ${{ always() && inputs.roh }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROH_DIR: ${{ runner.temp }}/roh
+        run: |
+          if [ ! -d "$ROH_DIR" ]; then echo "kein Mitschnitt vorhanden"; exit 1; fi
+          URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$URL" roh-daten >/dev/null; then
+            git clone --quiet --depth 1 --branch roh-daten "$URL" roh-zweig
+          else
+            mkdir roh-zweig && git -C roh-zweig init --quiet -b roh-daten && git -C roh-zweig remote add origin "$URL"
+          fi
+          ZIEL="roh-zweig/schnaeppchen/${GITHUB_RUN_ID}"
+          mkdir -p "$ZIEL" && cp -R "$ROH_DIR"/. "$ZIEL"/
+          cd roh-zweig
+          git config user.name "roh-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit --quiet -m "Rohdaten schnaeppchen Lauf ${GITHUB_RUN_ID}"
+          # Andere Wecker können gleichzeitig schreiben -> bei Ablehnung neu aufsetzen und wiederholen
+          for i in 1 2 3 4 5; do
+            if git push --quiet origin HEAD:roh-daten; then echo "gespeichert: schnaeppchen/${GITHUB_RUN_ID}"; exit 0; fi
+            sleep $((i * 4))
+            git pull --quiet --rebase origin roh-daten || true
+          done
+          exit 1

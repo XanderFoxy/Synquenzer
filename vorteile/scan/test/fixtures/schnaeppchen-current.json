@@ -1,10 +1,10 @@
-{"version":1,"aktualisiert":"2026-10-31T18:17:00.000Z","plz":"04720","ort":"Döbeln","deals":1,
+{"version":2,"aktualisiert":"2026-10-31T18:17:00.000Z","plz":"04720","ort":"Döbeln","deals":1,
  "produkte":[
   {"id":"crunchips","name":"Lorenz Crunchips","basis":"100g","basisLabel":"pro 100 g","gruppe":"crunchips","deal":true,"grund":"66 % unter Normalpreis","ersparnis":0.66,"normalpreis":1.32667,"normalQuelle":"schaetzung",
-   "bestes":{"shop":"Kaufland","titel":"Lorenz Crunchips 2 Tüten für 0,88 € – max. 5x pro Kunde – jetzt +25 g gratis, 150 g","preis":0.88,"versand":0,"einheitspreis":0.29,"menge":{"gramm":150},"gueltigAb":"2026-10-30T00:00:00Z","gueltigBis":"2026-11-04T23:00:00Z","link":"https://www.marktguru.de/offers/crunchips-kaufland","quelle":"marktguru","online":false,"deal":true},
-   "weitere":[{"shop":"Netto Marken-Discount","titel":"Lorenz Crunchips versch. Sorten 150 g","preis":0.99,"versand":0,"einheitspreis":0.66,"menge":{"gramm":150},"link":"https://www.marktguru.de/offers/crunchips-netto","quelle":"marktguru","online":false,"deal":true}]},
+   "bestes":{"shop":"Kaufland","titel":"Lorenz Crunchips 2 Tüten für 0,88 € – max. 5x pro Kunde – jetzt +25 g gratis, 150 g","preis":0.88,"versand":0,"einheitspreis":0.29,"menge":{"gramm":150},"mengeSicher":true,"mengeQuelle":"text","gueltigAb":"2026-10-30T00:00:00Z","gueltigBis":"2026-11-04T23:00:00Z","link":"https://www.marktguru.de/offers/crunchips-kaufland","quelle":"marktguru","online":false,"deal":true},
+   "weitere":[{"shop":"Netto Marken-Discount","titel":"Lorenz Crunchips versch. Sorten 150 g","preis":0.99,"versand":0,"einheitspreis":0.66,"menge":{"gramm":150},"mengeSicher":true,"mengeQuelle":"text","link":"https://www.marktguru.de/offers/crunchips-netto","quelle":"marktguru","online":false,"deal":true}]},
   {"id":"knoppers","name":"Knoppers","basis":"stueck","gruppe":"knoppers","deal":false,"normalpreis":0.31,
-   "bestes":{"shop":"Lidl","titel":"Knoppers 8er","preis":2.49,"versand":0,"menge":{"stueck":8},"link":"https://www.marktguru.de/offers/knoppers-lidl","quelle":"marktguru","online":false}}
+   "bestes":{"shop":"Lidl","titel":"Knoppers 8er","preis":2.49,"versand":0,"packung":"8 × 25 g","menge":{"stueck":8,"gramm":200},"mengeSicher":true,"mengeQuelle":"text","link":"https://www.marktguru.de/offers/knoppers-lidl","quelle":"marktguru","online":false}}
  ],
  "technik":[{"typ":"technik","titel":"Preisfehler: Soundbar für 19 €","link":"https://www.mydealz.de/deals/soundbar-preisfehler-1","preis":19}],
  "quellen":[],"fehler":[]}

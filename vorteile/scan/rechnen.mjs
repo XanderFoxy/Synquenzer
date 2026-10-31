@@ -52,21 +52,61 @@ export function parseAktion(text) {
     a.limit = Number(m[1]);
     a.limitEinheit = /stueck|stk|packungen|tueten|artikel/.test(m[2] || '') ? 'stueck' : 'aktion';
   }
-  // Coupons und Cashback (je Satzteil höchstens einer)
+  // Coupons und Cashback (je Satzteil höchstens einer). Der Wert zählt nur, wenn er direkt am Coupon-Wort steht
+  // („Coupon mit 1 € Sofort-Rabatt“, „1 € Sofort-Rabatt mit dem Coupon“, „Coupon 0,10 €“, „Scondoo Cashback 0,50 €“) –
+  // nicht irgendein Preis im selben Satz („Butter 2,49 € … Coupon“).
   for (const roh of String(text || '').split(/\s[–—-]\s|[;|•\n]|,\s|[.!]\s(?=[A-ZÄÖÜa-z])/)) {
     const teil = norm(roh).replace(/(\d)\s*€/g, '$1 €');
-    const wert = (() => {
-      const e = teil.match(/(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur\b|euro\b)/);
-      const p = teil.match(/(\d{1,2})\s*%/);
-      return e ? { wert: parsePrice(e[1]) } : p ? { prozent: Number(p[1]) / 100 } : null;
-    })();
-    if (!wert) continue;
     const cb = CASHBACK.find(([re]) => new RegExp(`\\b(?:${re})`).test(teil));
     const app = !cb && MARKT_APPS.find(([re]) => new RegExp(`\\b(?:${re})`).test(teil));
+    if (!cb && !app) continue;
+    const wert = wertAmWort(teil, (cb || app)[0]);
+    if (!wert) continue;
     if (cb && wert.wert != null) a.coupons.push({ art: 'cashback', name: cb[1], ...wert });
     else if (app) a.coupons.push({ art: 'markt', name: app[1], ...wert });
   }
   return a;
+}
+
+const BETRAG = '(\\d+(?:[.,]\\d{1,2})?)\\s*(€|eur\\b|euro\\b|%)';
+const DAZWISCHEN_NACH = '(?:\\s*(?:coupon|ecoupon|app|card|plus|cashback))?\\s*(?::|mit|ueber|im wert von|in hoehe von|von|in hoehe|i h v)?\\s*(?:sofort\\s*)?(?:rabatt\\s*)?(?:von\\s*)?-?\\s*';
+const DAZWISCHEN_VOR = '\\s*(?:sofort\\s*)?(?:rabatt|nachlass|ersparnis|zurueck|geld zurueck|cashback|coupon)?\\s*(?:mit|per|durch|ueber|dank|via|beim|bei)?\\s*(?:de[mnr]|einem|einer|eine|die|das)?\\s*';
+/** Wert direkt vor oder nach dem Coupon-/Cashback-Wort -> { wert } | { prozent } | null */
+export function wertAmWort(teil, wortRe) {
+  const lies = (z, e) => (e === '%' ? (Number(String(z).replace(',', '.')) > 0 && Number(String(z).replace(',', '.')) < 100 ? { prozent: Number(String(z).replace(',', '.')) / 100 } : null) : { wert: parsePrice(z) });
+  const nach = teil.match(new RegExp(`\\b(?:${wortRe})${DAZWISCHEN_NACH}${BETRAG}`));
+  if (nach) return lies(nach[1], nach[2]);
+  const vor = teil.match(new RegExp(`${BETRAG}${DAZWISCHEN_VOR}(?:[a-z]+\\s+)?(?:${wortRe})\\b`));
+  if (vor) return lies(vor[1], vor[2]);
+  return null;
+}
+
+/**
+ * Steckt ein Coupon schon im Deal-Preis? (mydealz: „2,49 € – 1 € Coupon = nur 1,49 €“, „1,49 € mit Coupon“, „dank Coupon“)
+ * Dann wird er NICHT noch einmal abgezogen.
+ */
+export function couponImPreis(text, preis, coupon) {
+  if (!(preis > 0)) return false;
+  const t = norm(text).replace(/(\d)\s*€/g, '$1 €');
+  if (/(?:mit|dank|inkl|inklusive|nach|abzueglich|abzgl)\.?\s*(?:de[mnr]\s*|einem\s*)?(?:\w+\s*)?(?:coupon|gutschein|cashback)/.test(t)) return true;
+  const p = String(preis.toFixed(2)).replace('.', ',');
+  if (new RegExp(`=\\s*(?:nur\\s*(?:noch\\s*)?)?${p.replace(',', '[.,]')}`).test(t)) return true;
+  if (coupon?.wert > 0) {
+    // ein anderer Preis im Text minus Coupon = Deal-Preis
+    for (const m of t.matchAll(/(\d+[.,]\d{2})\s*(?:€|eur|euro)/g)) if (Math.abs(parsePrice(m[1]) - coupon.wert - preis) < 0.015) return true;
+  }
+  return false;
+}
+
+/** Wo gibt es den Coupon? Nur wenn der Text es im Satz mit dem Coupon sagt („Coupon in der EDEKA-App“) – sonst ''. */
+export function couponWo(text) {
+  for (const satz of String(text || '').split(/(?<=[.!?])\s+/)) {
+    if (!/coupon|gutschein/i.test(satz)) continue;
+    const m = satz.match(/\b(?:in|über|ueber|mit|aus)\s+(?:der|dem|die)\s+([A-ZÄÖÜ][\wäöüß]*-?App|App|Kundenkarte|DeutschlandCard|Payback-App|Couponheft|Coupon-Heft|Zeitung|Prospekt)\b/)
+      || satz.match(/\b(?:auf|im)\s+(coupons\.de|Markt|Aufsteller|Prospekt|Couponheft)\b/i);
+    if (m) return /^(Markt|Aufsteller)$/i.test(m[1]) ? 'gibt es im Markt' : `gibt es ${/^(coupons\.de)$/i.test(m[1]) ? 'auf ' : /^(Prospekt|Couponheft)$/i.test(m[1]) && /\bim\b/i.test(m[0]) ? 'im ' : /App|Karte|Card|Heft|Zeitung/.test(m[1]) ? 'in der ' : 'im '}${m[1]}`;
+  }
+  return '';
 }
 
 /** Welche Coupons dürfen zusammen? Ein Markt-Coupon (der beste) + je Anbieter ein Cashback. */
@@ -89,6 +129,9 @@ export function rechne(o) {
   const a = o.aktion || parseAktion(o.text || '');
   const maxPackungen = o.maxPackungen ?? 10;
   const einzel = o.einzelpreis ?? null;
+  // couponsImPreis: der Preis ist schon der Endpreis (mydealz) -> Coupons nur als Hinweis, nichts abziehen
+  // (couponAbgezogen: der Text zeigt, dass der Coupon im Preis steckt -> „im Preis schon abgezogen“)
+  const imPreis = !!o.couponsImPreis;
   // 1. Kaufeinheit (wie viele Packungen, welcher Preis)
   let proEinheit, preisEinheit, aktionText;
   if (a.art === 'buendel') { proEinheit = a.anzahl; preisEinheit = a.buendelPreis; aktionText = `${a.anzahl} für ${euro(a.buendelPreis)}`; }
@@ -97,8 +140,9 @@ export function rechne(o) {
   else if (einzel) { proEinheit = 1; preisEinheit = einzel; aktionText = ''; }
   else return null;
 
-  // 2. Wie oft? Limit beachten, nicht mehr als maxPackungen Vorrat.
-  const maxEinheiten = Math.max(1, Math.floor(maxPackungen / proEinheit));
+  // 2. Wie oft? Ohne echte Mehrkauf-Aktion genau 1 Packung (kein erfundener 10er-Vorrat). Bei Mehrkauf: Limit
+  //    beachten, nicht mehr als maxPackungen Vorrat.
+  const maxEinheiten = proEinheit > 1 ? Math.max(1, Math.floor(maxPackungen / proEinheit)) : 1;
   let wdh = maxEinheiten;
   if (a.limit) wdh = Math.min(wdh, a.limitEinheit === 'stueck' ? Math.max(1, Math.floor(a.limit / proEinheit)) : a.limit);
   const packungen = proEinheit * wdh;
@@ -109,7 +153,7 @@ export function rechne(o) {
 
   // 4. Coupons/Cashback, Versand
   const coupons = stapelCoupons(a.coupons || [], ware);
-  const abzug = round(coupons.reduce((s, c) => s + c.betrag, 0));
+  const abzug = imPreis ? 0 : round(coupons.reduce((s, c) => s + c.betrag, 0));
   const versand = o.versand || 0;
   const zahlen = round(Math.max(0, ware - abzug) + versand);
 
@@ -130,11 +174,21 @@ export function rechne(o) {
   }
 
   const schritte = [];
+  // Coupon steckt schon im Deal-Preis (1 Packung): im Laden steht der Regalpreis -> den zeigen und vorrechnen
+  const regal = imPreis && o.couponAbgezogen && !aktionText && packungen === 1 && einzel && coupons.length
+    ? round(einzel + coupons.reduce((s, c) => s + c.betrag, 0)) : null;
+  const wo = regal ? couponWo(o.text) : '';
   if (aktionText) schritte.push(`${wdh}× „${aktionText}“${a.limit ? ` (max. ${a.limit}${a.limitEinheit === 'stueck' ? ' Stück' : '×'} pro Kunde)` : ''} = ${packungen} Packungen`);
+  else if (regal) schritte.push(`Regalpreis ${euro(regal)} − ${coupons.map(c => `${euro(c.betrag)} ${c.art === 'cashback' ? c.name : 'Coupon'}`).join(' − ')} = ${euro(einzel)}`);
   else schritte.push(`${packungen} Packung${packungen > 1 ? 'en' : ''} zu je ${euro(einzel)}`);
   if (a.extraMenge || a.extraProzent) schritte.push(`Aktionspackung: ${gramm} g statt ${o.gramm} g`);
-  for (const c of coupons) schritte.push(c.art === 'cashback' ? `danach ${c.name}: ${euro(c.betrag)} zurück (Kassenbon hochladen)` : `${c.name} an der Kasse: −${euro(c.betrag)}`);
-  if (versand) schritte.push(`plus ${euro(versand)} Versand`);
+  for (const c of coupons) {
+    const wie = o.couponAbgezogen ? 'im Preis schon abgezogen' : 'nicht eingerechnet';
+    if (regal) schritte.push(c.art === 'cashback' ? `danach Kassenbon bei ${c.name} hochladen (${euro(c.betrag)} zurück)` : `${c.name}${wo ? ` (${wo})` : ''} an der Kasse zeigen – ohne ${c.name} zahlst du ${euro(regal)}`);
+    else if (imPreis) schritte.push(c.art === 'cashback' ? `${c.name} nutzen (${euro(c.betrag)} – ${wie})` : `${c.name} an der Kasse zeigen (${euro(c.betrag)} – ${wie})`);
+    else schritte.push(c.art === 'cashback' ? `danach ${c.name}: ${euro(c.betrag)} zurück (Kassenbon hochladen)` : `${c.name} an der Kasse: −${euro(c.betrag)}`);
+  }
+  if (versand) schritte.push(`plus ${euro(versand)} Versand${o.versandHinweis ? ` (${o.versandHinweis})` : ''}`);
 
   const soGehts = baueSoGehts({ shop: o.shop, wdh, aktionText, packungen, coupons, zahlen, lohnt, einzel, warnung });
   return {

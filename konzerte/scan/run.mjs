@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 // Konzert- & Release-Alarm. Aufruf: DATA_DIR=<ordner> node konzerte/scan/run.mjs
 // Env: TM_KEY (Ticketmaster), NTFY_TOPIC (überschreibt config), NTFY_TOKEN (optional), DRY_RUN=1 (keine Pushes)
+//      ROH_DIR=<ordner>: Roh-Mitschnitt (alle Quell-Antworten + Ergebnis), immer ohne Push.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { macheHttp, ntfy } from './lib.mjs';
+import { rohOrdner, macheMitschnitt } from './roh.mjs';
 import { koordinaten } from './geo.mjs';
 import { verarbeite, mitAltbestand } from './kern.mjs';
 import ticketmaster from './sources/ticketmaster.mjs';
@@ -30,10 +32,12 @@ export async function lauf({ env = process.env, fetchImpl = globalThis.fetch, je
   const ids = lies(f('ids.json'), { mb: {}, deezer: {} });
   const geoCache = lies(f('geo.json'), {});
   const gesehen = lies(f('gesehen.json'), null);
-  http = http || macheHttp({ fetchImpl, abstandMs: { 'musicbrainz.org': 1100, 'nominatim.openstreetmap.org': 1100, 'app.ticketmaster.com': 250 } });
+  const rohDir = rohOrdner([], env);
+  const roh = rohDir ? macheMitschnitt(rohDir, { projekt: 'konzerte', env }) : null;
+  http = http || macheHttp({ fetchImpl: roh ? roh.fetch(fetchImpl) : fetchImpl, abstandMs: { 'musicbrainz.org': 1100, 'nominatim.openstreetmap.org': 1100, 'app.ticketmaster.com': 250 } });
 
   const ctx = { http, bands, config, env, heute, ids, log: console.log };
-  const status = {}, konzerte = [], releases = [], kaputt = new Set();
+  const status = {}, konzerte = [], releases = [], kaputt = new Set(), bandKaputt = new Set();
   let seitenGeprueft = [];
   for (const [name, fn] of quellen) {
     const t0 = Date.now();
@@ -42,7 +46,10 @@ export async function lauf({ env = process.env, fetchImpl = globalThis.fetch, je
       konzerte.push(...(r.konzerte || [])); releases.push(...(r.releases || []));
       const n = (r.konzerte || []).length + (r.releases || []).length;
       status[name] = { ok: !r.fehler?.length, treffer: n, fehler: r.fehler || [], uebersprungen: r.uebersprungen || null, ms: Date.now() - t0 };
+      // Quellen mit mehreren Seiten (Festival-Seiten): wie viele davon wirklich geprüft wurden (ok: false heißt nur „nicht alle“)
+      if (Array.isArray(r.geprueft)) Object.assign(status[name], { geprueft: r.geprueft.length, gesamt: r.gesamt ?? r.geprueft.length + (r.fehler || []).length });
       if (r.fehler?.length && (r.fehler.length >= bands.length || name === 'seiten')) kaputt.add(name);
+      for (const f of r.fehler || []) { const b = bands.find(x => String(f).startsWith(`${x.name}:`)); if (b) bandKaputt.add(`${name}|${b.name}`); }
       if (r.geprueft) seitenGeprueft = r.geprueft;
     } catch (e) {
       kaputt.add(name);
@@ -50,17 +57,19 @@ export async function lauf({ env = process.env, fetchImpl = globalThis.fetch, je
     }
   }
   // Seiten-Quelle: nur die einzelnen kaputten Seiten aus dem Altbestand übernehmen
-  const quelleKaputt = q => kaputt.has(q) || (q.startsWith('seite:') && !seitenGeprueft.includes(q.slice(6)));
+  const quelleKaputt = (q, x) => kaputt.has(q) || (q.startsWith('seite:') && !seitenGeprueft.includes(q.slice(6))) || bandKaputt.has(`${q}|${x?.band}`);
   const alleK = mitAltbestand(konzerte, vorher.konzerte, quelleKaputt);
   const alleR = mitAltbestand(releases, vorher.releases, quelleKaputt);
 
   for (const k of alleK) if ((k.lat == null || k.lon == null) && k.stadt) Object.assign(k, await koordinaten(k.stadt, k.land, geoCache, http) || {});
 
-  const erg = verarbeite({ konzerte: alleK, releases: alleR, gesehen, config, heute, seitenGeprueft });
+  const erg = verarbeite({ konzerte: alleK, releases: alleR, gesehen, config, heute, jetzt: jetzt.toISOString(), seitenGeprueft });
   const ziel = { server: config.ntfy.server, topic: env.NTFY_TOPIC || config.ntfy.topic, token: env.NTFY_TOKEN };
   const MAX = 8, seiteUrl = config.seiteUrl;
   let gesendet = 0;
-  const senden = async p => { if (env.DRY_RUN) { console.log('[push]', p.titel, '|', p.text.replace(/\n/g, ' / ')); return; } await ntfy(ziel, p, fetchImpl); };
+  // Roh-Modus ist immer ein Probelauf: keine Pushes (der Workflow schreibt dann auch nichts auf den Daten-Branch)
+  const probe = !!(env.DRY_RUN || roh), probePushes = [];
+  const senden = async p => { if (probe) { probePushes.push(p); console.log('[push]', p.titel, '|', p.text.replace(/\n/g, ' / ')); return; } await ntfy(ziel, p, fetchImpl); };
 
   if (erg.erstlauf) {
     try {
@@ -83,6 +92,12 @@ export async function lauf({ env = process.env, fetchImpl = globalThis.fetch, je
   schreib(f('gesehen.json'), erg.gesehen);
   schreib(f('ids.json'), ids);
   schreib(f('geo.json'), geoCache);
+  if (roh) {
+    for (const n of ['konzerte.json', 'releases.json', 'status.json', 'gesehen.json', 'ids.json', 'geo.json']) roh.ausgabe(n, fs.readFileSync(f(n), 'utf8'));
+    roh.ausgabe('pushes.json', probePushes);
+    roh.abschluss({ dryRun: true, konzerte: erg.konzerte.length, releases: erg.releases.length, pushes: probePushes.length });
+    console.log(`Roh-Mitschnitt: ${roh.abrufe.length} Abrufe → ${roh.dir}`);
+  }
   console.log(`Konzerte: ${erg.konzerte.length}, Releases: ${erg.releases.length}, Pushes: ${gesendet}/${erg.pushes.length}`);
   for (const [n, s] of Object.entries(status)) console.log(`  ${n}: ${s.ok ? 'ok' : 'FEHLER'} ${s.treffer ?? ''} ${s.uebersprungen || ''} ${(s.fehler || []).slice(0, 3).join(' | ')}`);
   return { erg, status, gesendet };

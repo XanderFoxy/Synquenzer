@@ -58,12 +58,36 @@ export const WIEDERVEROEFFENTLICHUNG = /\b(remaster(ed)?|anniversary|jubil(ae|a)
 
 export function datumOk(d) { return /^\d{4}-\d{2}-\d{2}$/.test(d || ''); }
 
+const BERLIN = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+const versatzMin = ms => {
+  const p = Object.fromEntries(BERLIN.formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+  return Math.round((Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - ms) / 60e3);
+};
+/** ISO -> "DD.MM. HH:MM" in Berliner Zeit (für Pushes) */
+export function berlinKurz(iso) {
+  const t = Date.parse(iso || '');
+  if (!Number.isFinite(t)) return '';
+  const p = Object.fromEntries(BERLIN.formatToParts(new Date(t)).map(x => [x.type, x.value]));
+  return `${p.day}.${p.month}. ${p.hour}:${p.minute}`;
+}
+
+/** "YYYY-MM-DD" (+ "HH:MM") in Berliner Ortszeit -> ISO in UTC; ohne Uhrzeit = Ende des Tages (23:59:59). */
+export function berlinIso(datum, zeit = '') {
+  if (!datumOk(datum)) return null;
+  const [j, m, t] = datum.split('-').map(Number);
+  const [h, mi, s] = /^\d{1,2}:\d{2}/.test(zeit) ? [...zeit.split(':').map(Number), 0].slice(0, 3) : [23, 59, 59];
+  const lokal = Date.UTC(j, m - 1, t, h, mi, s);
+  let utc = lokal - versatzMin(lokal) * 60e3;
+  utc = lokal - versatzMin(utc) * 60e3;
+  return new Date(utc).toISOString();
+}
+
 export function tageZwischen(a, b) { return Math.round((Date.parse(b) - Date.parse(a)) / 864e5); }
 
 const warte = ms => new Promise(r => setTimeout(r, ms));
 
 /** Höfliches HTTP mit Timeout, kleinem Retry und optionalem Mindestabstand pro Host. */
-export function macheHttp({ fetchImpl = globalThis.fetch, abstandMs = {}, timeoutMs = 20000, schlafen = warte } = {}) {
+export function macheHttp({ fetchImpl = globalThis.fetch, abstandMs = {}, timeoutMs = 20000, schlafen = warte, versuche503 = { 'musicbrainz.org': 5 } } = {}) {
   const letzter = {};
   async function get(url, { json = true, headers = {} } = {}) {
     const host = new URL(url).host, gap = abstandMs[host] || 0;
@@ -74,7 +98,9 @@ export function macheHttp({ fetchImpl = globalThis.fetch, abstandMs = {}, timeou
       const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), timeoutMs);
       try {
         const r = await fetchImpl(url, { headers: { 'User-Agent': UA, Accept: json ? 'application/json' : 'text/html', ...headers }, signal: ctrl.signal });
-        if ((r.status === 429 || r.status >= 500) && versuch < 2) { await schlafen(2000 * (versuch + 1)); continue; }
+        // 429/5xx: kurz warten und neu versuchen; MusicBrainz antwortet bei Last mit 503 -> dort öfter und länger
+        const max = (r.status === 503 || r.status === 429) && versuche503[host] ? versuche503[host] : 2;
+        if ((r.status === 429 || r.status >= 500) && versuch < max) { await schlafen(2000 * (versuch + 1)); continue; }
         if (!r.ok) throw new Error(`HTTP ${r.status} ${host}`);
         return json ? await r.json() : await r.text();
       } catch (e) {

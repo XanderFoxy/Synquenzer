@@ -6,7 +6,7 @@ Push aufs iPhone, sobald eine deiner Lieblingsbands
 - **etwas Neues veröffentlicht** (Album, EP, Single – keine Best-ofs, Remaster oder Neuauflagen).
 
 Jede Neuigkeit kommt **genau einmal**, mit direktem Link zu Tickets bzw. zum Anhören.
-Übersicht fürs Handy: **https://xanderfoxy.github.io/synquenzer/konzerte/**
+Übersicht fürs Handy: **https://xanderfoxy.github.io/Synquenzer/mein-vorteil/#konzerte** (eine Seite für Angebote, Vorteile und Konzerte; die alte Adresse `…/konzerte/` leitet dorthin weiter)
 
 ## 1. Push abonnieren (einmalig, 1 Minute)
 
@@ -70,7 +70,7 @@ GitHub Actions (alle 3 h + manuell)  .github/workflows/konzerte.yml
        └─ Deezer                       neue Alben/Singles + Hör-Link, Neuauflagen per MusicBrainz-Abgleich raus
   ├─ Dedupe gegen gesehen.json → ntfy-Push (max. 8 pro Lauf, Rest als Sammelmeldung)
   └─ JSON → Branch konzerte-daten (nicht main → die App-Seite wird nicht neu gebaut)
-konzerte/index.html liest raw.githubusercontent.com/xanderfoxy/synquenzer/konzerte-daten/konzerte/data/*.json
+mein-vorteil/index.html liest raw.githubusercontent.com/xanderfoxy/synquenzer/konzerte-daten/konzerte/data/*.json
 ```
 
 - Fällt eine Quelle aus, laufen die anderen weiter; ihre alten Einträge bleiben auf der Seite stehen. Fehler stehen unten auf der Seite unter „Quellen“ und in `status.json`.
@@ -89,6 +89,56 @@ node --test konzerte/scan/test/*.test.mjs
 DRY_RUN=1 node konzerte/scan/run.mjs   # echte Abrufe, Pushes nur in der Konsole, Daten in konzerte/data-lokal/
 ```
 
+Roh-Mitschnitt für die Fehlersuche: *Run workflow* mit Haken **roh** → kein Push, nichts auf den Daten-Zweig; alle Quell-Antworten (je max. 2 MB, Schlüssel geschwärzt) und das berechnete Ergebnis landen auf dem Zweig **`roh-daten`** unter `konzerte/<Lauf-Nr.>/` (`index.json`, `quellen/`, `ausgabe/`). Lokal: `ROH_DIR=/tmp/roh node konzerte/scan/run.mjs`.
+
 ## Hinweis für den Einbau in main
 
 Der Service-Worker der Synquenzer-App (`sw.js`, Scope `/synquenzer/`) behandelt **jede** Seitennavigation unter seinem Scope als App-Startseite: Er speichert die geladene Seite als Offline-Kopie der App und liefert bei langsamem Netz (> 3 s) die App statt dieser Seite. Wer `/synquenzer/konzerte/` öffnet, nachdem die App installiert ist, kann damit die Offline-Kopie der App überschreiben. Empfehlung (nicht Teil dieses Branches, weil `sw.js` hier tabu ist): in `sw.js` Navigationen nach `konzerte/` überspringen, z. B. `if (rest.startsWith('konzerte/')) return;` direkt nach der Berechnung von `rest`.
+
+## Enddaten
+
+- **Konzerte** haben `bis` = Ende des (letzten) Konzerttags, 23:59 Uhr Berliner Zeit (Ticketmaster
+  `dates.end.localDate`, sonst `dates.start.localDate`). Danach fliegen sie beim nächsten Lauf raus; die Seite blendet
+  zusätzlich alles mit `bis` in der Vergangenheit aus.
+- **Vorverkauf** (nur Ticketmaster, `sales.presales[]` und `sales.public`): beendete Vorverkäufe werden entfernt. Der
+  nächste offene steht im Push („Magenta-Vorverkauf ab 02.11. 10:00 Uhr“ bzw. „… läuft bis …“).
+- **Festivalseiten**: Steht auf der Seite ein Zeitraum mit Jahr („03.–05.09.2027“ auf der NCN-Startseite), wird er zu
+  `datum`/`bis`; einzelne Daten (News, Vorverkaufsstart) zählen nicht. Sonst bleibt `datum` leer und `bis` `null`.
+- **Releases** haben kein Ende (kein `bis`); die Seite zeigt `releaseListeTage` (365) Tage zurück.
+- Fällt bei einer Quelle nur **eine Band** aus (z. B. MusicBrainz 503 bei Plastic Autumn), bleiben deren alte Einträge
+  stehen. MusicBrainz-503 wird bis zu 5-mal wiederholt.
+
+**Stand 31.10.2026 (echter Mitschnitt):** `TM_KEY` ist nicht gesetzt → keine Konzerte und keine Vorverkaufsdaten.
+Dark Storm liefert nur ein JavaScript-Gerüst (Line-up nicht lesbar), Gothic meets Klassik ist nicht erreichbar
+(„fetch failed“).
+
+## Datenformat (`konzerte/data/*.json` auf `konzerte-daten`)
+
+```text
+konzerte.json { stand: ISO, zuhause: { name, plz, lat, lon }, pushRadiusKm, konzerte: [Konzert …] }   // nach Datum sortiert
+releases.json { stand: ISO, releases: [Release …] }                                                  // neueste zuerst
+status.json   { stand: ISO, quellen: { ticketmaster|seiten|musicbrainz|deezer: { ok, treffer, fehler: [Text], uebersprungen, ms } }, pushes, erstlauf }
+              seiten zusätzlich { geprueft, gesamt }: ok: false heißt nur „nicht alle Seiten erreichbar“; die Seite sagt
+              „3 von 4 geprüft – Gothic meets Klassik gerade nicht erreichbar“ und „Konzertsuche aus“ erst bei 0 geprüften.
+```
+
+| Feld (Konzert) | Typ | Bedeutung |
+|---|---|---|
+| `quelle` | Text | `ticketmaster` oder `seite:<id>` (Festivalseite) |
+| `band`, `titel` | Text | Band aus `artists.json`, Name der Veranstaltung |
+| `datum`, `zeit` | `JJJJ-MM-TT` / `HH:MM` oder `""` | Beginn (Festivalseite ohne Termin: leer) |
+| `bis` | ISO \| null | Ende (UTC), siehe oben |
+| `vorverkauf` | `[{ art: "presale"\|"public", name, ab: ISO\|null, bis: ISO\|null }]` | nur Ticketmaster; nur noch offene |
+| `ort`, `stadt`, `land`, `lat`, `lon`, `km` | | Halle/Stadt, Entfernung von Döbeln (km, `null` = unbekannt) |
+| `link` | URL | Tickets bzw. Festivalseite |
+| `festival` | bool | Festival |
+| `status` | Text | z. B. „verschoben“, „auf Seite erwähnt – Festival 03.09.2027 bis 05.09.2027“ |
+| `key`, `neu` | Text, bool | Dedupe-Schlüssel; neu seit dem letzten Lauf |
+
+| Feld (Release) | Typ | Bedeutung |
+|---|---|---|
+| `band`, `titel`, `typ` | Text | `typ`: Album, EP, Single (MusicBrainz evtl. mit Zusatz, z. B. „Single (Remix)“) |
+| `datum` | `JJJJ-MM-TT` | Veröffentlichung |
+| `angekuendigt` | bool | Datum liegt in der Zukunft |
+| `link`, `links`, `quellen`, `cover` | | Hör-Link (Deezer bevorzugt), alle Links je Quelle, Quellen, Cover-Bild (Deezer) |
+| `key`, `neu` | Text, bool | Dedupe-Schlüssel; neu seit dem letzten Lauf |

@@ -27,10 +27,18 @@ export function leseRss(xml) {
   for (const m of xml.matchAll(/<item[\s>][\s\S]*?<\/item>/gi)) {
     const b = m[0];
     const merchant = attrs(b, 'pepper:merchant');
+    // Heiß-Feed: „113° - Titel“ -> Temperatur als Zahl, Titel ohne Präfix
+    let titel = entities(ohneTags(entities(tag(b, 'title'))));
+    let temperatur = null;
+    const grad = titel.match(/^(-?\d{1,5})°\s*[-–]\s*/);
+    if (grad) { temperatur = Number(grad[1]); titel = titel.slice(grad[0].length); }
     items.push({
-      titel: entities(ohneTags(entities(tag(b, 'title')))),
+      titel,
+      temperatur,
       link: entities(tag(b, 'link')),
       beschreibung: ohneTags(entities(tag(b, 'description'))).slice(0, 600),
+      // Beginn/Ende/„mit App“ stehen oft weiter hinten (Sammeldeals) -> nur dafür länger lesen
+      langtext: ohneTags(entities(tag(b, 'description'))).slice(0, 4000),
       datum: tag(b, 'pubDate'),
       shop: merchant.name || '',
       preisText: merchant.price || '',

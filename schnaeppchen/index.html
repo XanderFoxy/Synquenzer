@@ -3,216 +3,45 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Schnäppchen</title>
-<meta name="description" content="Persönlicher Preisalarm: Lieblingsprodukte in Döbeln und online">
-<meta name="theme-color" content="#0f1412">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Schnäppchen">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" href="icon-192.png">
+<meta name="robots" content="noindex">
+<title>Mein Vorteil</title>
+<!-- Umgezogen: Angebote, Vorteile und Konzerte stehen jetzt auf einer Seite (/Synquenzer/mein-vorteil/). -->
+<noscript><meta http-equiv="refresh" content="0; url=/Synquenzer/mein-vorteil/#angebote"></noscript>
+<link rel="canonical" href="/Synquenzer/mein-vorteil/">
+<script>(function () {
+  // Ziel immer absolut: auch eine Kopie an falscher Stelle (z. B. als /Synquenzer/ aus einem fremden Zwischenspeicher)
+  // landet auf Mein Vorteil statt auf /mein-vorteil/ außerhalb des Repos (404).
+  var p = location.pathname, i = p.indexOf('/schnaeppchen/');
+  var basis = i >= 0 ? p.slice(0, i) : '/Synquenzer';
+  var r = 'angebote';
+  var ziel = basis + '/mein-vorteil/?von=schnaeppchen#' + r;
+  var weg = false, los = function () { if (!weg) { weg = true; location.replace(ziel); } };
+  var sw = 'serviceWorker' in navigator ? navigator.serviceWorker : null;
+  if (!sw || !(location.protocol === 'https:' || location.hostname === 'localhost')) return los();
+  setTimeout(los, 3000); // spätestens dann weiter, auch wenn das Anmelden hängt
+  var eigen = /\/schnaeppchen\/sw\.js$/.test((sw.controller && sw.controller.scriptURL) || ''), mv = basis + '/mein-vorteil/';
+  // 1. Zuerst den Worker von Mein Vorteil anmelden. Sonst übernimmt der SYNQUENZER-Worker der Wurzel den ersten Besuch:
+  //    er speichert dann Mein Vorteil als Offline-Kopie des Synthesizers (und zeigt bei schwachem Netz den Synthesizer).
+  //    Ist die Anmeldung da, geht der Aufruf ans Netz bzw. an diesen Worker – nie mehr an den Wurzel-Worker.
+  var schritte = [sw.register(mv + 'sw.js', { scope: mv }).then(function (reg) {
+    return new Promise(function (fertig) { // kurz warten, bis er übernimmt (dann ist Mein Vorteil gleich offline da)
+      var w = reg.installing || reg.waiting;
+      if (reg.active || !w) return fertig();
+      w.addEventListener('statechange', function () { if (w.state !== 'installing' && w.state !== 'installed') fertig(); });
+      setTimeout(fertig, 1000);
+    });
+  }, function () {})];
+  // 2. Eigener kleiner Worker für diesen Ordner (falls noch keiner): danach sieht der SYNQUENZER-Worker diese Adresse nie mehr
+  if (i >= 0 && !eigen) schritte.push(sw.register('sw.js', { scope: './' }).then(null, function () {}));
+  Promise.all(schritte).then(los);
+})();</script>
 <style>
-  :root {
-    --bg: #f4f6f5; --karte: #ffffff; --text: #17201c; --leise: #5e6b65; --linie: #dfe5e2;
-    --gruen: #0f8a4f; --gruen-hell: #e3f5ea; --gruen-text: #0b6a3c; --rot: #b3261e; --knopf: #17201c; --knopf-text: #fff;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0f1412; --karte: #18201c; --text: #eef3f0; --leise: #9aa8a1; --linie: #2a3530;
-      --gruen: #3ccf83; --gruen-hell: #143523; --gruen-text: #7fe3ad; --rot: #ff8a80; --knopf: #eef3f0; --knopf-text: #0f1412;
-    }
-  }
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-    padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-  }
-  main { max-width: 640px; margin: 0 auto; }
-  header { display: flex; align-items: center; gap: 12px; padding: 18px 0 10px; }
-  header h1 { font-size: 28px; margin: 0; letter-spacing: -0.02em; flex: 1; }
-  #stand { color: var(--leise); font-size: 14px; margin: 0 0 14px; }
-  #neu {
-    border: 1px solid var(--linie); background: var(--karte); color: var(--text); border-radius: 999px;
-    min-height: 44px; padding: 0 16px; font: inherit; font-size: 15px; font-weight: 600;
-  }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--leise); margin: 26px 4px 10px; }
-  .karte { background: var(--karte); border: 1px solid var(--linie); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
-  .karte.deal { border: 2px solid var(--gruen); background: linear-gradient(var(--gruen-hell), var(--karte) 70%); }
-  .kopf { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
-  .name { font-weight: 650; font-size: 17px; margin: 0; }
-  .marke { flex: none; font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--gruen); color: #fff; }
-  @media (prefers-color-scheme: dark) { .marke { color: #0f1412; } }
-  .preiszeile { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 10px 0 2px; }
-  .preis { font-size: 30px; font-weight: 750; letter-spacing: -0.02em; }
-  .shop { font-weight: 600; }
-  .einheit { color: var(--gruen-text); font-weight: 650; }
-  .karte:not(.deal) .einheit { color: var(--text); }
-  .titel { color: var(--leise); font-size: 14px; margin: 2px 0 10px; }
-  .fakten { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0 14px; }
-  .fakt { background: var(--bg); border-radius: 10px; padding: 8px 10px; min-width: 0; }
-  .fakt b { display: block; font-size: 15px; overflow-wrap: anywhere; }
-  .fakt span { font-size: 12px; color: var(--leise); }
-  a.los {
-    display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 12px;
-    background: var(--knopf); color: var(--knopf-text); text-decoration: none; font-weight: 650; font-size: 16px;
-  }
-  .deal a.los { background: var(--gruen); color: #fff; }
-  @media (prefers-color-scheme: dark) { .deal a.los { color: #0f1412; } }
-  .leer { color: var(--leise); margin: 8px 0 4px; font-size: 15px; }
-  details { margin-top: 10px; }
-  summary { cursor: pointer; color: var(--leise); font-size: 14px; min-height: 32px; display: flex; align-items: center; }
-  .weitere { list-style: none; padding: 0; margin: 4px 0 0; }
-  .weitere li { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--linie); font-size: 14px; }
-  .weitere a { color: inherit; }
-  .klein { font-size: 13px; color: var(--leise); }
-  .hinweis { font-size: 13px; color: var(--leise); padding: 0 4px; }
-  .fehler { color: var(--rot); }
-  #quellen li { font-size: 14px; padding: 4px 0; }
+  body { margin: 0; padding: 24px max(16px, env(safe-area-inset-left)); font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f2ee; color: #1f1d1a; }
+  a { display: inline-flex; align-items: center; min-height: 44px; color: #2f6f5e; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { body { background: #141317; color: #ecebef; } a { color: #7fcdb3; } }
 </style>
 </head>
 <body>
-<main>
-  <header>
-    <h1>Schnäppchen</h1>
-    <button id="neu" type="button">Aktualisieren</button>
-  </header>
-  <p id="stand">Lade …</p>
-  <div id="inhalt"></div>
-  <h2>Quellen</h2>
-  <div class="karte"><ul id="quellen" style="margin:0;padding-left:18px"></ul>
-    <p class="hinweis" style="margin:10px 0 0">Prüft stündlich Prospekte der Märkte in Döbeln (über marktguru), mydealz und – mit Schlüssel – Keepa (Amazon). Preise ohne Gewähr, im Laden zählt das Preisschild.</p>
-  </div>
-</main>
-<script>
-const QUELLE = new URLSearchParams(location.search).has('lokal')
-  ? 'data/current.json'
-  : 'https://raw.githubusercontent.com/XanderFoxy/Synquenzer/schnaeppchen-daten/schnaeppchen/data/current.json';
-const SPEICHER = 'schnaeppchen-letzte';
-const $ = s => document.querySelector(s);
-
-function el(tag, attrs = {}, ...kinder) {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (v == null || v === false) continue;
-    if (k === 'class') e.className = v; else e.setAttribute(k, v);
-  }
-  for (const k of kinder.flat()) if (k != null && k !== false) e.append(k instanceof Node ? k : String(k));
-  return e;
-}
-const add = (e, ...k) => { e.append(...k.flat().filter(x => x != null && x !== false)); return e; };
-const euro = v => v == null ? '–' : v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: v < 1 ? 3 : 2 }).replace(/(\d),(\d\d)0(\s)/, '$1,$2$3');
-const datum = d => d ? new Date(d).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric', timeZone: 'Europe/Berlin' }) : '–';
-const prozent = x => x == null ? '' : `−${Math.round(x * 100)} %`;
-function vor(iso) {
-  const min = Math.round((Date.now() - new Date(iso)) / 60000);
-  if (min < 2) return 'gerade eben';
-  if (min < 60) return `vor ${min} Min.`;
-  const h = Math.round(min / 60);
-  return h < 48 ? `vor ${h} Std.` : `am ${datum(iso)}`;
-}
-function menge(m) {
-  if (!m) return '';
-  const t = [];
-  if (m.stueck) t.push(`${m.stueck} Stück`);
-  if (m.gramm) t.push(m.gramm >= 1000 ? `${(m.gramm / 1000).toLocaleString('de-DE')} kg` : `${m.gramm} g`);
-  if (m.ml) t.push(m.ml >= 1000 ? `${(m.ml / 1000).toLocaleString('de-DE')} l` : `${m.ml} ml`);
-  return t.join(' · ') + (m.geschaetzt ? ' (geschätzt)' : '');
-}
-function gueltig(a) {
-  if (!a) return '–';
-  if (a.online) return 'online';
-  if (a.gueltigAb && new Date(a.gueltigAb) > new Date()) return `ab ${datum(a.gueltigAb)}`;
-  return a.gueltigBis ? `bis ${datum(a.gueltigBis)}` : '–';
-}
-
-function produktKarte(p) {
-  const b = p.bestes;
-  const kurz = { stueck: '/ Stück', '100g': '/ 100 g', '100ml': '/ 100 ml' }[p.basis] || '';
-  const ca = p.normalQuelle === 'schaetzung' ? '≈ ' : '';
-  const k = el('article', { class: 'karte' + (p.deal ? ' deal' : '') },
-    el('div', { class: 'kopf' }, el('h3', { class: 'name' }, p.name), p.deal ? el('span', { class: 'marke' }, prozent(p.ersparnis) || 'Deal') : null));
-  if (!b) {
-    add(k, el('p', { class: 'leer' }, 'Gerade kein Angebot gefunden.'),
-      el('p', { class: 'klein' }, `Normal ${euro(p.normalpreis)} ${p.basisLabel}` + (p.tiefstpreis != null ? ` · Tiefstpreis ${euro(p.tiefstpreis)}` : '')));
-    return k;
-  }
-  add(k,
-    el('div', { class: 'preiszeile' },
-      el('span', { class: 'preis' }, euro(b.preis)),
-      el('span', { class: 'shop' }, b.shop),
-      b.online && b.versand ? el('span', { class: 'klein' }, `inkl. ${euro(b.versand)} Versand`) : null),
-    el('div', { class: 'einheit' }, `${euro(b.einheitspreis)} ${p.basisLabel}`, !p.deal && b.ersparnis > 0 ? el('span', { class: 'klein' }, `  (${prozent(b.ersparnis)})`) : null),
-    el('p', { class: 'titel' }, [b.titel, menge(b.menge)].filter(Boolean).join(' – ')),
-    p.deal ? el('p', { class: 'klein', style: 'margin:-4px 0 8px;color:var(--gruen-text);font-weight:600' }, p.grund) : null,
-    el('div', { class: 'fakten' },
-      el('div', { class: 'fakt' }, el('span', {}, `normal ${kurz}`), el('b', {}, ca + euro(p.normalpreis))),
-      el('div', { class: 'fakt' }, el('span', {}, `tiefst ${kurz}`), el('b', {}, euro(p.tiefstpreis))),
-      el('div', { class: 'fakt' }, el('span', {}, 'gültig'), el('b', {}, gueltig(b)))),
-    el('a', { class: 'los', href: b.link, target: '_blank', rel: 'noopener' }, `Zum Angebot bei ${b.shop}`));
-  if (p.weitere?.length) {
-    add(k, el('details', {}, el('summary', {}, `${p.weitere.length} weitere Angebote`),
-      el('ul', { class: 'weitere' }, p.weitere.map(w => el('li', {},
-        el('a', { href: w.link, target: '_blank', rel: 'noopener' }, `${w.shop}: ${euro(w.preis)}`),
-        el('span', {}, `${euro(w.einheitspreis)} ${p.basisLabel} · ${gueltig(w)}`))))));
-  }
-  return k;
-}
-
-function technikKarte(t) {
-  return el('article', { class: 'karte deal' },
-    el('div', { class: 'kopf' }, el('h3', { class: 'name' }, t.titel), el('span', { class: 'marke' }, t.ersparnis ? prozent(t.ersparnis) : 'Preisfehler?')),
-    el('div', { class: 'preiszeile' }, el('span', { class: 'preis' }, euro(t.preis)), el('span', { class: 'shop' }, t.shop),
-      t.preisAlt ? el('span', { class: 'klein' }, `statt ${euro(t.preisAlt)}`) : null),
-    el('p', { class: 'titel' }, `${t.grund}${t.datum ? ' · gemeldet ' + vor(t.datum) : ''}`),
-    el('a', { class: 'los', href: t.link, target: '_blank', rel: 'noopener' }, 'Zum Deal'));
-}
-
-function zeige(d, alt) {
-  const inhalt = $('#inhalt');
-  inhalt.replaceChildren();
-  const alter = (Date.now() - new Date(d.aktualisiert)) / 36e5;
-  $('#stand').replaceChildren(
-    `${d.ort} ${d.plz} · aktualisiert ${vor(d.aktualisiert)}`,
-    alt ? el('span', { class: 'fehler' }, ' · offline, letzter Stand') : '',
-    alter > 3 ? el('span', { class: 'fehler' }, ' · Suche läuft gerade nicht') : '');
-  const deals = d.produkte.filter(p => p.deal);
-  const rest = d.produkte.filter(p => !p.deal);
-  if (deals.length || d.technik.length) {
-    inhalt.append(el('h2', {}, `Jetzt günstig (${deals.length + d.technik.length})`), ...deals.map(produktKarte), ...d.technik.map(technikKarte));
-  } else {
-    inhalt.append(el('div', { class: 'karte' }, el('p', { class: 'leer', style: 'margin:0' }, 'Gerade kein echtes Schnäppchen. Du bekommst eine Push-Nachricht, sobald etwas richtig günstig ist.')));
-  }
-  inhalt.append(el('h2', {}, 'Deine Liste'), ...rest.map(produktKarte));
-  if (!d.technik.length) inhalt.append(el('h2', {}, 'Technik-Preisfehler'), el('p', { class: 'hinweis' }, 'Gerade nichts Auffälliges.'));
-  $('#quellen').replaceChildren(...d.quellen.map(q => el('li', { class: q.ok && !q.fehler.length ? '' : 'fehler' },
-    `${q.name}: ${q.ok ? `${q.anzahl} Einträge` : 'nicht erreichbar'}${q.hinweis ? ' – ' + q.hinweis : ''}${q.fehler.length ? ' – ' + q.fehler.join('; ') : ''}`)));
-}
-
-let geladen = 0;
-async function lade() {
-  $('#neu').disabled = true;
-  try {
-    const r = await fetch(`${QUELLE}?t=${Math.floor(Date.now() / 60000)}`, { cache: 'no-store' });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const d = await r.json();
-    try { localStorage.setItem(SPEICHER, JSON.stringify(d)); } catch {}
-    zeige(d, false);
-    geladen = Date.now();
-  } catch (e) {
-    let alt = null;
-    try { alt = JSON.parse(localStorage.getItem(SPEICHER)); } catch {}
-    if (alt) zeige(alt, true);
-    else $('#stand').replaceChildren(el('span', { class: 'fehler' }, 'Noch keine Daten. Die erste Suche läuft nach dem Einrichten automatisch (stündlich).'));
-  } finally { $('#neu').disabled = false; }
-}
-$('#neu').addEventListener('click', lade);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - geladen > 10 * 60000) lade(); });
-lade();
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
-</script>
+<p>Die Schnäppchen sind umgezogen: <a href="/Synquenzer/mein-vorteil/#angebote">Mein Vorteil öffnen</a></p>
 </body>
 </html>

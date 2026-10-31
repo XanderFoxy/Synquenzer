@@ -1,5 +1,6 @@
 // Kleiner RSS/Atom-Leser ohne Abhängigkeiten. RSS-Teil wie schnaeppchen/scan/rss.mjs (gleiche Felder),
 // zusätzlich Atom-<entry> und <source> (Google News).
+import { temperaturAusTitel } from './mydealz.mjs';
 const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', euro: '€', auml: 'ä', ouml: 'ö', uuml: 'ü', Auml: 'Ä', Ouml: 'Ö', Uuml: 'Ü', szlig: 'ß', ndash: '–', mdash: '—' };
 export function entities(s) {
   return String(s ?? '')
@@ -29,14 +30,18 @@ export function leseRss(xml) {
     const b = m[0];
     const atom = /^<entry/i.test(b);
     const merchant = attrs(b, 'pepper:merchant');
+    // Hot-Feed: Temperatur steht nur als Präfix im Titel ("109° - …"); pepper:temperature gibt es im echten Feed nicht
+    const t = temperaturAusTitel(entities(ohneTags(entities(tag(b, 'title')))));
     items.push({
-      titel: entities(ohneTags(entities(tag(b, 'title')))),
+      titel: t.titel,
       link: atom ? (attrs(b, 'link').href || '') : entities(tag(b, 'link')),
       beschreibung: ohneTags(entities(tag(b, atom ? 'summary' : 'description') || tag(b, 'content'))).slice(0, 800),
+      // Enden („Läuft bis …“, „Teilnahmeschluss …“) stehen oft weit hinten -> nur für die Enddaten länger lesen
+      langtext: ohneTags(entities(tag(b, atom ? 'summary' : 'description') || tag(b, 'content'))).slice(0, 4000),
       datum: tag(b, 'pubDate') || tag(b, 'updated') || tag(b, 'published'),
       shop: merchant.name || '',
       preisText: merchant.price || '',
-      temperatur: Number(tag(b, 'pepper:temperature')) || null,
+      temperatur: Number(tag(b, 'pepper:temperature')) || t.temperatur,
       herkunft: entities(ohneTags(tag(b, 'source'))),
       bild: attrs(b, 'media:content').url || '',
     });

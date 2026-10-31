@@ -1,23 +1,28 @@
-/* Schnäppchen-Seite: eigener Service Worker nur für /schnaeppchen/ (hat für diesen Pfad Vorrang vor dem SYNQUENZER-Worker).
-   Seite: erst Netz, ohne Netz die letzte Kopie. Daten (raw.githubusercontent.com) gehen immer direkt ans Netz;
-   die Seite merkt sich den letzten Stand selbst (localStorage). */
-const CACHE = 'schnaeppchen-1';
-const SEITE = new URL('./', self.registration.scope).href;
-const STATISCH = /\/(icon-\d+\.png|manifest\.webmanifest)$/;
-self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll([SEITE, 'icon-192.png', 'manifest.webmanifest'])).catch(() => {})); self.skipWaiting(); });
+/* Die Seite /schnaeppchen/ ist umgezogen nach /mein-vorteil/ (eine Seite für Angebote, Vorteile und Konzerte).
+   Dieser kleine Worker bleibt bewusst angemeldet: Solange er den Ordner /schnaeppchen/ übernimmt, sieht der SYNQUENZER-Worker im
+   Wurzelordner diese Adressen nie – sonst würde er die Weiterleitung als Offline-Kopie des Synthesizers speichern.
+   Er löscht den alten Zwischenspeicher ('schnaeppchen-…'), lädt offene Fenster neu und gibt Seitenaufrufe ans Netz weiter
+   (dort leitet index.html auf Mein Vorteil weiter). Ohne Netz antwortet er selbst mit derselben Weiterleitung.
+   Alles andere (Symbole, Daten) geht direkt ans Netz. */
+const ZIEL = new URL('../mein-vorteil/', self.registration.scope).pathname;
+const WEITER = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mein Vorteil</title>
+<script>var r = 'angebote'; location.replace(${JSON.stringify(ZIEL)} + '?von=schnaeppchen#' + r);</script></head><body><p><a href="${ZIEL}#angebote">Mein Vorteil öffnen</a></p></body></html>`;
+
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('schnaeppchen-') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil((async () => {
+    const alt = (await caches.keys()).filter(n => n.startsWith('schnaeppchen-'));
+    await Promise.all(alt.map(n => caches.delete(n)));
+    try { await self.clients.claim(); } catch {}
+    // Nur nach dem Wechsel von der alten Seite: offene Fenster dieses Ordners (alte Seite aus dem alten Zwischenspeicher)
+    // neu laden -> Weiterleitung. Frisch von der Weiterleitung angemeldet (kein alter Speicher): nichts neu laden.
+    if (!alt.length) return;
+    // nicht abwarten: die neue Seite holt dieser Worker selbst, und das geht erst nach dem Aktivieren
+    const fenster = await self.clients.matchAll({ type: 'window' });
+    for (const f of fenster) if (f.url.startsWith(self.registration.scope)) f.navigate(f.url).catch(() => {});
+  })());
 });
 self.addEventListener('fetch', e => {
-  const rq = e.request; if (rq.method !== 'GET') return;
-  const u = new URL(rq.url), scope = new URL(self.registration.scope);
-  if (u.origin !== scope.origin || !u.pathname.startsWith(scope.pathname)) return;
-  if (rq.mode === 'navigate') {
-    e.respondWith(fetch(rq).then(r => {
-      if (r.ok) { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(SEITE, c)).catch(() => {}); }
-      return r;
-    }).catch(() => caches.open(CACHE).then(ca => ca.match(SEITE)).then(r => r || Response.error())));
-    return;
-  }
-  if (STATISCH.test(u.pathname)) e.respondWith(caches.open(CACHE).then(ca => ca.match(rq).then(hit => hit || fetch(rq))));
+  if (e.request.mode !== 'navigate') return;
+  e.respondWith(fetch(e.request).catch(() => new Response(WEITER, { headers: { 'content-type': 'text/html; charset=utf-8' } })));
 });

@@ -3,7 +3,7 @@
   "ort": "Döbeln",
   "plz": "04720",
   "region": ["Döbeln", "Mittelsachsen", "Sachsen", "Leipzig", "Dresden", "Chemnitz", "Riesa", "Meißen", "Freiberg", "Mittweida", "Grimma", "Oschatz", "Waldheim", "Hartha", "Leisnig", "Roßwein", "Rochlitz", "Wurzen", "Torgau", "Borna", "Zwickau", "Halle"],
-  "seite": "https://xanderfoxy.github.io/Synquenzer/vorteile/",
+  "seite": "https://xanderfoxy.github.io/Synquenzer/mein-vorteil/#vorteile",
   "ntfy": {
     "_hinweis": "Gleicher Kanal wie der Schnäppchen-Wecker. Das GitHub-Secret NTFY_TOPIC (falls gesetzt) gilt für alle drei Wecker.",
     "server": "https://ntfy.sh",
@@ -28,6 +28,8 @@
       "aktiv": true,
       "intervallStunden": 1,
       "maxPackungen": 10,
+      "_maxPackungen": "Nur bei echten Mehrkauf-Aktionen (3 für 2, 2 Tüten für 0,88 €): so viele Packungen höchstens als Vorrat. Ohne Aktion wird immer genau 1 Packung gerechnet.",
+      "amazon": { "prime": false, "kostenlosAb": 39, "kosten": 3.99, "_hinweis": "Wie schnaeppchen/config.json versand: ohne Prime kostet Versand unter 39 € bei Amazon 3,99 €." },
       "minErsparnis": 0.3,
       "sofortAbErsparnis": 0.6,
       "feeds": [
@@ -35,7 +37,7 @@
         { "name": "mydealz Drogerie", "url": "https://www.mydealz.de/rss/gruppe/drogerie", "maxAlterTage": 7 },
         { "name": "mydealz Preisfehler", "url": "https://www.mydealz.de/rss/gruppe/preisfehler", "maxAlterTage": 3, "preisfehler": true }
       ],
-      "aktionWoerter": ["für|fuer", "zum preis von", "gratis", "geschenkt", "1+1", "halben preis", "coupon", "cashback", "scondoo", "lidl plus", "kaufland card", "geld zurück|geld zurueck"]
+      "aktionWoerter": ["zum preis von", "gratis", "geschenkt", "1+1", "halben preis", "coupon", "cashback", "scondoo", "lidl plus", "kaufland card", "geld zurück|geld zurueck"]
     },
     "erleben": {
       "aktiv": true,
