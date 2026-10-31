@@ -44205,6 +44205,7 @@ function g2Ready(id, a) {
 // Noten und Tonhöhen-Spur der Quelle (für den Editor und das erste Quantisieren), einmal je Take + Quelle
 function g2Analyse(id) {
   const b0 = g2Src(id), key = b0 ? id + '@' + wpBid(b0) : null, c = G2.an.get(id);   // G-GES: an der Quelle (vor G4)
+  try { g2Base(id); } catch (e) {}                   // G-GES: die G4-Fassung (eigener Worker) rechnet gleichzeitig – das erste Rendern klingt dann schon mit G4
   if (c && c.key === key) return Promise.resolve(c);
   if (G2.aq.has(key)) return G2.aq.get(key);
   const p = (async () => {
