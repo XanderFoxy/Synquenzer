@@ -11,6 +11,7 @@ const L = new Float32Array(128), Rr = new Float32Array(128);
 let f = 0, id = 1, cur = 0, lastEv = 0, rnd = 7;
 const R = () => { rnd = (Math.imul(rnd, 1664525) + 1013904223) >>> 0; return rnd / 4294967296; };
 const shapes = [0, 1, 2, 3, 4];
+let quanta = 0; const frozen = {g1: 0, g2: 0, v1: 0, v2: 0};
 let stalls = [], samples = [], params = {l1shape: 0, l1rate: 2, l1sync: 0, l1retrig: 0, l2shape: 4, l2rate: 3, l2sync: 0, l2retrig: 0}, events = 0;
 const N = Math.round(MIN * 60 * sr / 128) * 128;
 let nextNote = 0, nextScene = 3 * sr, nextTempo = 7 * sr, nextGap = 11 * sr, playing = false;
@@ -29,7 +30,12 @@ while (f < N) {
   }
   if (f >= nextTempo) { playing = !playing || R() < .5; const bpm = 80 + Math.floor(R() * 80); P.onMsg({tempo: {bpm, start: playing ? t - R() * 2 : null}}); nextTempo = f + Math.round((3 + 6 * R()) * sr); events++; }
   if (f >= nextGap) { f += Math.round(sr * (.5 + R() * 3) / 128) * 128; nextGap = f + Math.round((20 + 30 * R()) * sr); events++; continue; }   // background: frames pass without process()
+  const ph0 = [P.gl1, P.gl2], vp0 = P.V.map(v => (v.on ? [v.id, v.l1, v.l2] : null));
   G.currentFrame = f; P.process([], [[L, Rr]]);
+  // phase check: every LFO phase in use moves in every quantum (global, and per note with Start NOTE)
+  { const pr = P.P; quanta++;
+    if (P.gl1 === ph0[0]) frozen.g1++; if (P.gl2 === ph0[1]) frozen.g2++;
+    P.V.forEach((v, j) => { const o = vp0[j]; if (!v.on || !o || o[0] !== v.id) return; if (pr.l1retrig && v.l1 === o[1]) frozen.v1++; if (pr.l2retrig && v.l2 === o[2]) frozen.v2++; }); }
   const ms = P.__msgs; if (ms && ms.length) { for (const m of ms) if (m.scope && m.nv > 0) samples.push([m.t, m.scope[1], m.scope[2], params]); P.__msgs = []; }
   for (let i = 0; i < 128; i++) if (L[i] !== L[i]) { console.log('NaN at', t); process.exit(1); }
   f += 128;
@@ -46,4 +52,4 @@ function check(k) {
   }
   return {stalls: n, worstCycles: worst};
 }
-console.log(JSON.stringify({min: MIN, events, samples: samples.length, lfo1: check(1), lfo2: check(2), ms: Date.now() - t0}));
+console.log(JSON.stringify({min: MIN, events, quanta, frozenQuanta: frozen, pass: !frozen.g1 && !frozen.g2 && !frozen.v1 && !frozen.v2, valueRuns: {lfo1: check(1), lfo2: check(2)}, ms: Date.now() - t0}));

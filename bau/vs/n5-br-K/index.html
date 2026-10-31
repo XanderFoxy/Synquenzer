@@ -5613,6 +5613,7 @@ function morePop(anchor, i, o) {
       '<div class="plist edmore">' + (ab ? '<button class="rb" data-a="ab"><b>A/B</b><small>Vergleich mit dem gespeicherten Stand</small></button>' : '') +
       '<button class="rb" data-a="save"><b>Sichern</b><small>in der Bibliothek</small></button><button class="rb" data-a="dice"><b>🎲 Zufall</b><small>Oszillatoren, Mixer, Filter, Hüllkurven</small></button>' +
       `<button class="rb${UI.wia ? ' on' : ''}" data-a="wia"><b>◎ Was ist anders?</b><small>Punkte an Reglern und Seiten, die von INIT abweichen</small></button>` +
+      `<button class="rb" data-a="k1m"><b>Modulationen (${k1Mods(i).length})</b><small>jede aktive Modulation · Tipp = zum Regler, ✕ = löschen</small></button>` +   // K1
       '<button class="rb" data-a="init"><b>Init</b><small>neutraler Startklang</small></button><button class="rb mkqhear" data-a="hear"><b>▶ Hören</b><small>halten = spielen</small></button>' +
       '<button class="rb" data-a="tools"><b>Timbre und Sequenz ▸</b><small>wie UTILITY (Taste 16)</small></button></div>';
     // G-MKP8-merge-fix: the pop itself is the scroller (landscape: 374 px for up to 465 px of entries) – a finger swipe scrolls it
@@ -5627,7 +5628,7 @@ function morePop(anchor, i, o) {
     onTap(p, b => { const e = b.dataset.e; if (e === cur) return; closePop(); const bf = soundSnapshot(i); setEngine(i, e); commitSound(i, bf, 'Klangerzeugung'); }, 'button[data-e]');
     onTap(p, b => { const a = b.dataset.a; if (a === 'hear') return; closePop();
       if (a === 'ab') toggleAB(i); else if (a === 'save') openSavePop(anchor, i); else if (a === 'dice') soundEdit(i, 'Zufall', () => randomize(i));
-      else if (a === 'wia') wiaToggle(); else if (a === 'init') initSound(i); else if (a === 'tools') openEdMore(anchor, i); }, 'button[data-a]');
+      else if (a === 'wia') wiaToggle(); else if (a === 'init') initSound(i); else if (a === 'tools') openEdMore(anchor, i); else if (a === 'k1m') openK1Mods(anchor, i); }, 'button[data-a]');
   }, {name: 'mkqmore'});
 }
 // the editor closes or another sheet opens: T1, no armed split, no running take (all view state, never stored); the zoom stays
@@ -31584,13 +31585,14 @@ function k1Jump(i, key) {
 }
 function openK1Mods(anchor, i) {
   const render = p => {
+    p.classList.add('k1pop');   // the width before openPop places it
     const L = k1Mods(i), tr = S.tracks[i];
     p.innerHTML = `<h4>Modulationen · ${esc(tr.name)}</h4>` + (L.length ? '<div class="k1ml pan-y">' + L.map(e =>
       `<div class="k1mr" data-k="${esc(e.key)}"><button class="rb k1go" data-k="${esc(e.key)}"><b>${esc(e.src)} → ${esc(e.dst)}</b><small>${esc(e.amt)}</small></button>` +
       `<button class="rb k1x" data-x="${esc(e.key)}" aria-label="Löschen: ${esc(e.src)} → ${esc(e.dst)}">✕</button></div>`).join('') + '</div>'
       : '<div class="k1empty small">Keine Modulation – die Tonhöhe steht auf 0 Cent.</div>');
   };
-  const p = openPop(anchor, render, {name: 'k1mods'}); p.classList.add('k1pop');
+  const p = openPop(anchor, render, {name: 'k1mods'});
   guardTouch(p);
   onTap(p, b => {
     if (b.dataset.x) { k1Del(i, b.dataset.x); render(p); popFit(p); return; }

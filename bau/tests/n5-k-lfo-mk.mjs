@@ -12,6 +12,7 @@ P.onMsg({tempo: {bpm: 120, start: null}}); P.onMsg({mkSeed: 3}); P.onMsg({mkScop
 const L = new Float32Array(128), Rr = new Float32Array(128);
 let f = 0, id = 1, cur = 0; const N = Math.round(MIN * 60 * sr / 128) * 128;
 let nextNote = 0, nextScene = 3 * sr, nextTempo = 7 * sr, nextGap = 11 * sr, playing = false, events = 0, nan = 0;
+let quanta = 0; const frozen = {g1: 0, g2: 0, v1: 0, v2: 0};
 const S1 = [], S2 = []; let cfg = pm.t[0];
 while (f < N) {
   const t = f / sr;
@@ -19,7 +20,11 @@ while (f < N) {
   if (f >= nextScene) { pm = prog(); cfg = pm.t[0]; P.onMsg({mk: pm}); nextScene = f + Math.round((2 + 4 * R()) * sr); events++; }
   if (f >= nextTempo) { playing = !playing || R() < .5; P.onMsg({tempo: {bpm: 80 + Math.floor(R() * 80), start: playing ? t - R() * 2 : null}}); nextTempo = f + Math.round((3 + 6 * R()) * sr); events++; }
   if (f >= nextGap) { f += Math.round(sr * (.5 + R() * 3) / 128) * 128; nextGap = f + Math.round((20 + 30 * R()) * sr); events++; continue; }
+  const T0 = P.mk.tm[0], ph0 = [T0.g1, T0.g2], vp0 = T0.V.map(v => (v.on ? [v.id, v.l1, v.l2] : null));
   G.currentFrame = f; P.process([], [[L, Rr]]);
+  { const T = T0.T; quanta++;
+    if (T0.g1 === ph0[0]) frozen.g1++; if (T0.g2 === ph0[1]) frozen.g2++;
+    T0.V.forEach((v, j) => { const o = vp0[j]; if (!v.on || v.ghost || !o || o[0] !== v.id) return; if (Math.round(T.l1.ks) === 2 && v.l1 === o[1]) frozen.v1++; if (Math.round(T.l2.ks) === 2 && v.l2 === o[2]) frozen.v2++; }); }
   for (let i = 0; i < 128; i++) if (L[i] !== L[i]) nan++;
   const ms = P.__msgs; if (ms && ms.length) { for (const m of ms) if (m.mkScope && m.mkScope.voices.length) { const v = m.mkScope.voices.reduce((a, b) => (b.t > a.t ? b : a)); S1.push([m.mkScope.t, v.lfo1, cfg.l1]); S2.push([m.mkScope.t, v.lfo2, cfg.l2]); } P.__msgs = []; }
   f += 128;
@@ -34,4 +39,4 @@ function check(S, name) {
   }
   return n;
 }
-console.log(JSON.stringify({min: MIN, events, n: S1.length, nan, stall1: check(S1, 'lfo1'), stall2: check(S2, 'lfo2')}));
+console.log(JSON.stringify({min: MIN, events, quanta, nan, frozenQuanta: frozen, pass: !nan && !frozen.g1 && !frozen.g2 && !frozen.v1 && !frozen.v2, valueRuns: {lfo1: check(S1, 'lfo1'), lfo2: check(S2, 'lfo2')}}));
