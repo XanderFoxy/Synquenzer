@@ -33,7 +33,7 @@
     C('HH', 'Offen', Object.assign({}, kZu, {mDec: 30, mDm: 'E1', mNdec: 28, mNdm: 'E1'})),
     C('HH', 'Pedal', Object.assign({}, kZu, {mDec: 10, mDm: 'E3', mNlv: 10, mCty: 'n1', mClv: 10})),
     C('HH', 'Ring-Metall', {mWav: 'C3', mPit: 62, mSpc: 55, mFrq: 40, mDec: 13, mDm: 'E2', mNtyp: 'H2', mNfrq: 45, mNdec: 11, mNlv: 16, mMono: 1}),
-    C('HH', 'Rausch-Hat', {mTlv: 0, mNtyp: 'H2', mNfrq: 45, mNres: 6, mNdyf: 2, mNdec: 13, mNdm: 'E3', mNlv: 50, mCty: 'H3', mClv: 12, mMono: 1}),
+    C('HH', 'Rausch-Hat', {mTlv: 0, mNtyp: 'H2', mNfrq: 45, mNres: 6, mNdyf: 2, mNdec: 13, mNdm: 'E3', mNlv: 50, mCty: 'H3', mClv: 12}),
     // Cy - Becken
     C('Cy', 'Crash', {mWav: 'C1', mPit: 64, mSpc: 50, mFrq: 40, mDyf: 4, mDec: 40, mDm: 'E1', mNtyp: 'H1', mNfrq: 40, mNdec: 34, mNlv: 20}),
     C('Cy', 'Ride', {mWav: 'C1', mPit: 72, mSpc: 76, mFrq: 30, mDec: 42, mDm: 'E1', mCty: 'C1', mClv: 16}),

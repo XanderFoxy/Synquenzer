@@ -130,7 +130,8 @@ const MDX = (() => {
     init.push({t: 'reset'}); if (o.hits) init.push({t: 'hit', list: o.hits});
     const n = new AudioWorkletNode(oc, 'synq-md', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: {init}}); n.connect(oc.destination);
     const post = m => n.port.postMessage(m);
-    for (const [t, m] of o.msgs || []) oc.suspend(Math.round(t * sr / 128) * 128 / sr).then(() => { post(m); oc.resume(); }).catch(() => {});
+    const at = new Map(); for (const [t, m] of o.msgs || []) { const f = Math.round(t * sr / 128) * 128; if (!at.has(f)) at.set(f, []); at.get(f).push(m); }   // one suspend per render quantum
+    for (const [f, L] of at) oc.suspend(f / sr).then(() => { post(L.length === 1 ? L[0] : {t: 'all', list: L}); oc.resume(); }).catch(() => {});   // one message per suspend (Chromium applied only the first of several)
     const b = await oc.startRendering(); return {l: b.getChannelData(0), r: b.getChannelData(1)};
   }
   const load1 = () => { let s = 0; for (const E of NODES) s += E.load || 0; return s; };

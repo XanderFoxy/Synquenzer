@@ -6,7 +6,7 @@ export function loadSrc() { return fs.readFileSync(SRC_PATH, 'utf8'); }
 export function makeEngine(sr = 48000, src = loadSrc()) {
   const procs = {};
   class AWP { constructor() { this.port = {onmessage: null, out: [], postMessage(m) { this.out.push(m); }}; } }
-  const ctx = {sampleRate: sr, currentFrame: 0, currentTime: 0, registerProcessor: (n, c) => { procs[n] = c; }, AudioWorkletProcessor: AWP, performance, console, Math};
+  const ctx = {sampleRate: sr, currentFrame: 0, currentTime: 0, registerProcessor: (n, c) => { procs[n] = c; }, AudioWorkletProcessor: AWP, performance, console};   // the context's own Math (a host-realm Math boxes every number)
   vm.createContext(ctx);
   const t0 = performance.now(); vm.runInContext(src, ctx); const loadMs = performance.now() - t0;
   const P = new procs['synq-md']();
