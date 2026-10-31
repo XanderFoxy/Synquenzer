@@ -23,3 +23,6 @@ Staging-Merge Gesang läuft: wf_c92749ea-f4e (S/v3-merge-mk.js, Args S/merge-sta
 Finaler Gesang-Merge danach: Hauptlinie ← VS-L, VS-P, stage-ges (Basis vs-base-B), G267, n5-br-K → 4.25.0 (bzw. 4.24.0 falls N4 nicht vorher eigens).
 | session_01LWJYUU15fSJA4dbhKHvCc2 | Schnäppchen-Alarm (Ordner schnaeppchen/, Daten-Zweig schnaeppchen-daten, ntfy) | schnaeppchen | main | → nach Prüfung Ordner + Workflow nach main (nur schnaeppchen/ und .github/workflows/schnaeppchen.yml) |
 | session_01LWJYUXAqP3mobyDJ9RLgVW | Konzert-/Neuerscheinungs-Alarm (Ordner konzerte/, Daten-Zweig konzerte-daten, ntfy) | konzerte | main | → nach Prüfung nach main |
+konzerte: Plastic Autumn bestätigt (Xander) → Vermerk entfernen beim Review.
+K1: n5-br-K fertig (K1-fix?). Minor-Befunde (Liste nach Undo veraltet, Menge ±0 % bei Tonhöhe) im Gesang-Merge mit beheben.
+| session_01LWJYUTTg2qjG38pCtbUbAw | Vorteils-Radar (vorteile/: Deal-Mathe 2-für-1/Coupons, Erleben, Reisen, Musik/Auftritte, Nebenverdienst, Tests/Gewinnspiele, Spar-Tipps; Dach-Seite für schnaeppchen+konzerte) | vorteile | main | → nach Prüfung alles drei nach main |
