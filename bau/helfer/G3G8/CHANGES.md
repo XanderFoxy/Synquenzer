@@ -42,9 +42,26 @@ Kein Supabase-Aufruf, kein alert/confirm/prompt, keine Marken-Namen.
    Länge 1/2/4/…/64). Der **Ringpuffer** hält beim Einschalten des Mikrofons 64 Takte + 4 Takte beim aktuellen Tempo
    (120 … 300 s; 120 BPM → 140 s). Eine Szene mit langem Clip wird als Teil so lang wie ihr Clip (bis 64).
 
-## Abnahme
+## Abnahme (Chromium 1243 headless, Mikro-Attrappe im selben AudioContext wie VS2/VS3; Skripte in `tests/`)
 
-(wird unten ergänzt)
+| ID | Ergebnis | Messung |
+|---|---|---|
+| G3-01 | ✓ | Auftakt (2 × 659 Hz) ½ Takt vor Takt 1, ● REC Länge 2: Take-Anlauf `pre.sec` 1,03 s, `in` 4,25 s (2 Takte + 0,25 s), Take 1 Takt länger als `out`; Klammer 2 Takte; MELODIE `pre` = 2 Noten (t −2 / −1). Einstieg am Taktstrich: 659 Hz vor dem Strich **−23,2 dB**, vor der Wiederholung **−78,2 dB**; genau ein Anlauf im Plan; Übergang Anlauf → Clip 2. Differenz 0,0023 (kein Knack); MELODIE spielt beim Einstieg 2 Auftakt-Noten (`g3-accept.mjs A`) |
+| G3-02 | ✓ | Teil mit STIMME-Clip (Takt 10): Schwänzchen gezeichnet (18,5 px STIMME, 18 px MELODIE), Anlauf vor dem Teil −23,3 dB (davor Stille); Teil an den Anfang verschoben → Eintrag Takt 2, Schwänzchen mit, Anlauf −23,2 dB. Song-Stimme (Punch Takt 5–6, Anlauf 1,03 s): hörbar −23,2 dB, gezeichnet; Teil (Takt 5–8) ans Ende verschoben → Song-Stimme Takt 9 mit gleichem Take/`in`, Anlauf dort −23,2 dB, an der alten Stelle −200 dB (`B`) |
+| G3-03 | ✓ | Teil A (392 Hz über das Clip-Ende, Ausklang 0,55 s) + Teil B (Anlauf 1,03 s) direkt dahinter: vor dem Strich A −20,6 dB und Anlauf B −24,5 dB, nach dem Strich Ausklang A −20,6 dB und B −24,6 dB, danach Ausklang aus (−66,7 dB); größte 2. Differenz über alle Ränder 0,0029 (Töne allein ≈ 0,003) (`C`) |
+| G3-04 | ✓ | Projekt trägt Take `pre`/`post` und MELODIE `pre`; Undo nimmt Take samt Anlauf zurück; Redo deep-equal; Speichern → Neuladen deep-equal (`D`) |
+| G3-05 | ✓ | Song-Ansicht P1 390×844, P2 375×667, P3 320×568, L1 844×390, L2 667×375, XL 926×428: Anlauf 18,5 px, Ausklang 9,9 px, Auftakt-Noten 18 px, alle im Bild, Seitengröße unverändert, kein waagrechtes Rollen; Bilder `tests/out/g3-*-song*.png` (`g3-lay.mjs`) |
+| G3-06 | ✓ | Laufender 4-Takt-Loop, Auftakt ½ Takt vor Takt 5: **● REC** (ab Takt 4, Länge auto, Ende Takt 9) und **Stimme-FANG** → MELODIE und STIMME 4 Takte, beginnen bei Takt 5 (cstart 16, FANG start 4), erste Note A4 auf 0, Auftakt 2 × E5 als Vorlauf, Take-Anlauf 1,03 s; beim Einstieg −23,3 dB hörbar, im Song vor dem Teil −23,2 dB, Schwänzchen auf STIMME und MELODIE (`F`) |
+| G8-01 | ✓ | Song-Aufnahme **5 min** (300 s, Ringpuffer 150 s) mit 🎤: Take aus 26 mitgeschriebenen Stücken, 303,5 s im Speicher, 31 Stichproben (Sek. 0 … 299) mit richtiger Tonhöhe, **300/300 Ton-Strecken ohne Loch** (kleinster 20-ms-Pegel −15,1 dB), keine lange Aufgabe > 50 ms, Take 2,1 s nach dem Ende fertig (`g8-accept.mjs A`, Ausgabe `tests/out/g8-A.out`). Stück-Weg erzwungen bei 24 s: gleich, Neuladen bitgleich (`S`) |
+| G8-02 | ✓ | ● REC Länge **32** und **64** (240 BPM) mit Gesang: MELODIE 32/64 Takte (32/64 Noten, letzte im letzten Takt), STIMME 32,000/64,000 s; beide Clips ab Schlag 8; 2. Durchgang der STIMME phasengleich (0,00 ms), Ton des Takts im 2. Durchgang hörbar (−26 dB); Speichern → Laden deep-equal, danach starten beide zusammen (`B`) |
+| G8-03 | ✓ | Tasten-FANG einer 24-Takt-Phrase → 32-Takt-Clip (48 Noten); Stimme-FANG 24 Takte → MELODIE und STIMME 32 Takte (`C`) |
+| G8-04 | ✓ (Maß) | siehe unten |
+| Restzeit | ✓ | Speicher-Schätzung vorgegeben (150 s): bei > 2 min keine Anzeige, darunter „🎤 noch 1:59 Aufnahmezeit“, bei 0 „Speicher knapp – Aufnahme beendet“, Take bis dahin gespeichert (`R`) |
+| Länge 16/32/64 | ✓ | Aufnahme-Blatt in allen 6 Formaten: AUTO 1 2 4 8 16 32 64, nichts abgeschnitten, kein waagrechtes Rollen, Tipp auf 64 wirkt (Tastenhöhe siehe Befunde) (`g8-lay.mjs`) |
+
+**G8-04 – Speicher/CPU, iPhone-Maß (Rechnung aus den Messungen, 48 kHz):** Audio-Store 96 kB/s (0,1 MB/s; Lautsprecher-Weg + Referenz + gesäuberte Fassung ≈ 0,29 MB/s) → 5 min ≈ 29 MB. Arbeitsspeicher während der Aufnahme: die Stücke (2 B/Sample) ≈ 0,1 MB/s (5 min: 25 × 1 MB gemessen bei 44,1 kHz); am Ende der Take als Float-Puffer 4 B/Sample (5 min ≈ 58 MB), die Stücke werden danach frei. Ringpuffer 4,67 B/Sample: 120 BPM → 140 s ≈ 31 MB (vorher 120 s ≈ 27 MB), höchstens 300 s ≈ 67 MB. CPU: Nachlesen alle 0,5 s (≈ 24 000 Samples, Zeitkarte je Sample) – im Test keine lange Aufgabe; der Float-Puffer wird am Ende in Scheiben ≤ 8 ms gebaut. Stimme-FANG / ● REC über 64 Takte: die Auswertung (Worker) braucht 5 s (64 s Audio, Chromium) – so lange bleibt der neue Take wie bisher stumm, danach setzt er phasengleich ein. Am iPhone nicht gemessen.
+
+**Regression / Rauchtest:** siehe „Nachtest“.
 
 ## Abweichungen / Auslegung (begründet)
 - **„Hörbar ist, was gesungen wurde“:** der Take hält immer bis 2 Takte / 1 Takt, *klingen* (und gezeichnet werden) nur der gesungene
@@ -85,3 +102,22 @@ Kein Supabase-Aufruf, kein alert/confirm/prompt, keine Marken-Namen.
   dieselbe Größe; nichts abgeschnitten, kein waagrechtes Rollen.
 - `v3-vs2-accept` A: die Vorbedingung „Stimme rechtzeitig geplant“ des Prüfskripts schwankt (−12 … +2,6 ms) – auf der Basis und hier,
   je nach Lauf; kein App-Verhalten.
+
+## Für das Zusammenführen (geänderte Funktionen / Blöcke)
+Neue Blöcke (am Stück, vor `function voicesInfo()`): **`/* G3 … */`** (Konstanten `G3_*`, `G3`, `g3*`-Funktionen, `tkExt().take`-Normalisierung, `G3_API`) und **`/* G8 … */`** (`G8_*`, `G8`, `g8*`, `G8_API`). Nach `Object.assign(SYNQUENZER, TK_API)` zwei Zeilen `G3_API`, `G8_API`.
+
+Ein-Zeilen-Haken / geänderte Zeilen (alle mit `/* G3 */` bzw. `/* G8 */` markiert):
+- `tick()` (nach `recTick`): `g3Tick`. `songTickInner` (nach `tkVoxTick`): `g3SongTick`. `svDraw` (nach `tkSvDraw`): `g3SvDraw`.
+- `tkVoxTick`: Schleife `v0` → `g3VoxSeg`, `sb` mit `g3pb`. `tkCutAt`: Ausnahme `aud.g3e`.
+- `tkMakeTake`: erste Zeile G8-Haken; Zeile `pre/F0/Fe/n` (2 Takte / 1 Takt); `fill`: `g3TakePre`, `store()` (mit `TK.pend.delete`) erst nach `g3TakePost`.
+- `tkVoiceTake`: `G3.noPre` bei Overdub; Clip-Länge 64. `tkSongCommit`: `G3.noPre` bei späterer Runde. `tkSongBegin`: `g8Begin`. `tkSongWrap`: `g8Wrap`.
+- `tkNormSeg` (`at` bis 256), `tkNormVox` (`len` bis `SONG_MAX_BARS`), `TK_API.tkInject` (Länge 64).
+- `normClip` (Länge 64, `pre`), `cleanClip` (`pre`), `songWrite` (`g3VoxWrite`), `markAction` move/swap (`vox` im Chunk), `sceneChunk` (64).
+- `vsFangDone` (Auftakt-Regel, 64, `g3`), `vsPhrase` (256), `vsFang` (`E − 260`), `vsRecBegin` (`g3fix`), `vsRecEnd` (Auswertung 2 Takte früher), `vsRecDone` (`rs`), `vsApply` (`g3ApplyPre`).
+- `recTick` (auto bis 256 Schläge), `recClose` (64), `capture()` (`maxBars: 64`), Notenpuffer `CAP.buf` 16 384.
+- Clip-Editor: `duplicate`, `setLen`, `lenDrag` (64); Länge ×2/÷2 (64).
+- `recLength`: Normalisieren der Einstellungen, `setRecOptions`, `popRecOpts` (Segment), Menü „Aufnahme · Länge“: 16/32/64.
+- `stRing` (Länge `g8RingSec`), Mikro-Start: Ringpuffer neu, wenn zu kurz.
+
+**Überschneidung mit VS-L** (16-Takte-Takes, `recLength 16`): dieselben Zeilen in `tkVoiceTake`/`vsRecDone`/`vsFangDone` (16 → hier 64) und die
+`recLength`-Listen (hier schon 16, 32, 64). Beim Zusammenführen die G8-Werte (64, Liste bis 64) nehmen.

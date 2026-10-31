@@ -116,6 +116,7 @@ if (want('B')) {
     ok(stc && stc.len === LEN && stc.audio && Math.abs(stc.audio.out - stc.audio.in - LEN * 4 * spbx) < .01, `STIMME-Clip ${stc && stc.len} Takte, Audio ${stc && (stc.audio.out - stc.audio.in).toFixed(3)} s`);
     if (mel) { const last = mel.notes[mel.notes.length - 1]; ok(last.t >= (LEN - 1) * 4 - .2, `letzte Note im letzten Takt (t = ${last.t})`); }
     // Schleife: zweiter Durchgang beginnt bei S0 + LEN·4, beide Spuren am selben Ursprung; STIMME klingt im 2. Durchgang am richtigen Takt
+    await sleep(4 * spbx * 1000 + 300);                                 // der Wechsel (nächster Taktstrich) ist durch
     const rt = await p.evaluate(() => SYNQUENZER.runtime());
     console.log('  Zustand:', JSON.stringify({slots: rt.slots, cstart: rt.cstart, clock: await p.evaluate(() => SYNQUENZER.vsClock()).then ? null : null}), JSON.stringify(await p.evaluate(() => { const c = SYNQUENZER.vsClock(); return {pl: c.playing, start: c.start, now: c.now, beat: (c.now - c.start) / c.spb}; })));
     ok(rt.cstart[5] === S0 && rt.cstart[sti] === S0, `beide Clips laufen ab demselben Schlag (MELODIE ${rt.cstart[5]}, STIMME ${rt.cstart[sti]})`);

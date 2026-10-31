@@ -1,0 +1,29 @@
+✓ ● REC Länge 32: ab Schlag 8
+✓ MELODIE-Clip 32 Takte, 32 Noten
+✓ STIMME-Clip 32 Takte, Audio 32.000 s
+✓ letzte Note im letzten Takt (t = 124)
+  Zustand: {"slots":[-1,0,0,-1,0,-1,-1],"cstart":[8,0,0,0,0,0,0],"clock":null} {"pl":true,"start":1.641859410430839,"now":38.521904761904764,"beat":147.5201814058957}
+✗ beide Clips laufen ab demselben Schlag (MELODIE 0, STIMME 0)
+✓ 2. Durchgang der STIMME phasengleich ab Schlag 136 (Abweichung 0.00 ms, Start 2.927 s nach dem Taktstrich)
+✓ 2. Durchgang, Takt 6: die Stimme dieses Takts klingt (349.2 Hz: -26.4 dB; RMS -13.8 dB)
+✓ Speichern → Laden: deep-equal, beide Clips 32 Takte
+✓ nach dem Laden: beide Clips starten zusammen (cstart 0 / 0)
+✓ keine Konsolenfehler []
+✓ ● REC Länge 64: ab Schlag 8
+✓ MELODIE-Clip 64 Takte, 64 Noten
+✓ STIMME-Clip 64 Takte, Audio 64.000 s
+✓ letzte Note im letzten Takt (t = 252)
+  Zustand: {"slots":[-1,0,0,-1,0,3,3],"cstart":[8,0,0,0,0,8,8],"clock":null} {"pl":true,"start":1.6128344671201815,"now":72.86131519274376,"beat":284.9939229024943}
+✓ beide Clips laufen ab demselben Schlag (MELODIE 8, STIMME 8)
+✓ 2. Durchgang der STIMME phasengleich ab Schlag 264 (Abweichung 0.00 ms, Start 4.993 s nach dem Taktstrich)
+✓ 2. Durchgang, Takt 8: die Stimme dieses Takts klingt (392.0 Hz: -25.5 dB; RMS -13.8 dB)
+✓ Speichern → Laden: deep-equal, beide Clips 64 Takte
+✓ nach dem Laden: beide Clips starten zusammen (cstart 0 / 0)
+✓ keine Konsolenfehler []
+FEHLER: 1
+✓ bei > 2 min Rest keine Anzeige (Rest 139 s)
+✓ unter 2 min: Restzeit angezeigt ["🎤 noch 1:59 Aufnahmezeit"]
+✓ Rest 0: „Speicher knapp – Aufnahme beendet“, die Aufnahme endet [{"kind":"full","sec":149.1,"t":150551}]
+✓ der Take bis dahin ist gespeichert: [[0,74]]
+✓ keine Konsolenfehler []
+ALLE OK
