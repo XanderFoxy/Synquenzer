@@ -1,0 +1,10 @@
+import { launch } from './n5-h-lib.mjs';
+const n = await launch(); const p = n.p;
+await p.evaluate(async () => { SYNQUENZER.loadDemo(); await new Promise(r => setTimeout(r, 300)); });
+await p.evaluate(() => openMenu()); await p.waitForTimeout(300);
+console.log(await p.evaluate(() => [...document.querySelectorAll('#menu button')].filter(b => /Datei|Verlauf|Video/.test(b.textContent)).map(b => { const r = b.getBoundingClientRect(); return b.textContent.trim().slice(0, 30) + ' ' + Math.round(r.y) + ' ' + Math.round(r.height); })));
+await p.locator('#menu .mrow', {hasText: 'Projektdatei'}).locator('button', {hasText: 'mit Verlauf'}).click();
+p.on('download', d => console.log('DL', d.suggestedFilename()));
+await p.locator('#menu button', {hasText: 'Als Datei sichern'}).click(); await p.waitForTimeout(3000);
+console.log('errs', n.errs || '', await p.evaluate(() => document.querySelector('.toast, #toast') ? document.querySelector('.toast, #toast').textContent : ''));
+await n.b.close();

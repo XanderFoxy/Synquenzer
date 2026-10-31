@@ -20884,6 +20884,7 @@ function histProj(ops) {
   const ref = histAdd({t: histNow(), u: 'proj', z: {p: tops}, d: ops, l: 'Projekt: ' + tops.join(', ')}); ref.at = performance.now(); HIST.lastData = ref;
 }
 function histBusy() {
+  if (UI.vvOff) return true;                                // Staging VV1+VC2a: no sweep/keyframe while the offline song pass has the song swapped (loop.on)
   if (HIST.ptr.size && performance.now() - HIST.ptrT < 30000) return true;
   try { return rec.state === 'recording' || rec.state === 'overdub' || !!R.songRec || (!!ST.on && ST.phase !== 'live'); } catch (e) { return false; }
 }
@@ -43607,7 +43608,7 @@ function vvDrawRun(g, W, H, view, st, rt) {
   if (!rt) rt = vvRun({view});
   if (view === 'auto' && rt.ver !== (UI.songVer | 0) && !VV.busy) { const n = vvRun({view, cam: rt.cam, range: {a: rt.A, b: rt.B}}); rt.shots = n.shots; rt.ver = n.ver; rt.cams = {}; }
   const ts = st.sb == null ? 0 : st.sb * 60 / rt.bpm;
-  const tsp = VV.test && VV.test.spur != null ? VV.test.spur : view === 'spur' ? st.spur : null;   // VV3: track shot (view 'spur' with st.spur; tests: VV.test.spur)
+  const tsp = view === 'spur' && st.spur != null ? st.spur : VV.test && VV.test.spur != null ? VV.test.spur : null;   // VV3: track shot (view 'spur' with st.spur; tests: VV.test.spur)
   if (tsp != null) { vvDrawShot(g, W, H, rt, {k: 0, v: 'spur', t: tsp}, st, ts); return; }
   if (view !== 'auto') { vvDrawShot(g, W, H, rt, {k: 0, v: view, t: null}, st, ts); return; }
   const sh = vvShotAt(rt, st.sb), dt = st.sb == null ? 1 : (st.sb - sh.a * 4) * 60 / rt.bpm;
