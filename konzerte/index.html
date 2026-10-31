@@ -4,134 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#14121a">
-<title>Konzert-Alarm</title>
+<title>Mein Vorteil</title>
+<!-- Umgezogen: Angebote, Vorteile und Konzerte stehen jetzt auf einer Seite (../mein-vorteil/). -->
+<meta http-equiv="refresh" content="0; url=../mein-vorteil/#konzerte">
+<link rel="canonical" href="../mein-vorteil/">
+<script>location.replace('../mein-vorteil/#konzerte');</script>
 <style>
-  :root { --bg:#14121a; --karte:#1e1b27; --linie:#2e2a3a; --text:#ece9f3; --leise:#a39fb2; --akzent:#c9a7ff; --neu:#7ee0b5; --weit:#e0b07e; }
-  @media (prefers-color-scheme: light) { :root { --bg:#f6f4fa; --karte:#fff; --linie:#e3dfec; --text:#1d1a24; --leise:#6b6678; --akzent:#6a3fc9; --neu:#11875a; --weit:#a3621b; } }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.4 -apple-system, system-ui, sans-serif;
-         padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); max-width: 640px; margin-inline: auto; }
-  h1 { font-size: 1.5rem; margin: 0 0 2px; }
-  h2 { font-size: 1.1rem; margin: 28px 0 10px; color: var(--akzent); }
-  .stand { color: var(--leise); font-size: .85rem; }
-  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-  li a { display: flex; gap: 12px; align-items: center; background: var(--karte); border: 1px solid var(--linie); border-radius: 12px; padding: 12px; color: inherit; text-decoration: none; }
-  li a:active { opacity: .7; }
-  .datum { min-width: 52px; text-align: center; line-height: 1.1; }
-  .datum b { display:block; font-size: 1.3rem; }
-  .datum small { color: var(--leise); font-size: .75rem; text-transform: uppercase; }
-  .info { flex: 1; min-width: 0; }
-  .band { font-weight: 600; }
-  .wo, .zusatz { color: var(--leise); font-size: .88rem; overflow-wrap: anywhere; }
-  .km { font-variant-numeric: tabular-nums; color: var(--leise); font-size: .85rem; white-space: nowrap; }
-  .tag { display:inline-block; font-size:.7rem; padding: 1px 6px; border-radius: 6px; margin-left: 4px; vertical-align: 1px; border: 1px solid currentColor; }
-  .tag.neu { color: var(--neu); } .tag.weit { color: var(--weit); } .tag.fest { color: var(--akzent); }
-  img.cover { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; background: var(--linie); flex: none; }
-  .leer { color: var(--leise); padding: 12px; background: var(--karte); border-radius: 12px; border: 1px dashed var(--linie); }
-  details { margin-top: 28px; color: var(--leise); font-size: .85rem; }
-  details code { overflow-wrap: anywhere; }
-  .knopf { display:inline-block; margin-top:8px; padding:8px 12px; border-radius:10px; background:var(--akzent); color:var(--bg); text-decoration:none; font-weight:600; }
-  .filter { display:flex; gap:8px; margin-top: 12px; }
-  .filter button { flex:1; padding:8px; border-radius:10px; border:1px solid var(--linie); background:var(--karte); color:var(--text); font:inherit; font-size:.9rem; }
-  .filter button[aria-pressed="true"] { border-color: var(--akzent); color: var(--akzent); }
+  body { margin: 0; padding: 24px max(16px, env(safe-area-inset-left)); font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f2ee; color: #1f1d1a; }
+  a { display: inline-flex; align-items: center; min-height: 44px; color: #2f6f5e; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { body { background: #141317; color: #ecebef; } a { color: #7fcdb3; } }
 </style>
 </head>
 <body>
-<h1>Konzert-Alarm</h1>
-<div class="stand" id="stand">Lade …</div>
-<div class="filter" role="group" aria-label="Umkreis">
-  <button id="nah" aria-pressed="true">In Reichweite</button>
-  <button id="alle" aria-pressed="false">Alle</button>
-</div>
-
-<h2>Konzerte &amp; Festivals</h2>
-<ul id="konzerte"><li class="leer">Lade …</li></ul>
-
-<h2>Neue Veröffentlichungen</h2>
-<ul id="releases"><li class="leer">Lade …</li></ul>
-
-<details>
-  <summary>Push aufs iPhone &amp; Quellen</summary>
-  <p>ntfy-App öffnen → „+“ → Thema <code id="topic">…</code> eintragen (Server ntfy.sh). Oder:</p>
-  <a class="knopf" id="abo" href="#">In ntfy abonnieren</a>
-  <p id="quellen"></p>
-</details>
-
-<script>
-const REPO = 'xanderfoxy/synquenzer', BRANCH = 'konzerte-daten';
-const TOPIC = 'xander-schnaeppchen-b5cbf4442aaa9734f3';
-const RAW = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/konzerte/data/`;
-const MON = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-const WT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-const sicher = u => /^https:\/\//.test(u || '') ? u : '#';
-const $ = id => document.getElementById(id);
-let daten = null, nurNah = true;
-try { nurNah = localStorage.getItem('konz-alle') !== '1'; } catch {}
-
-$('topic').textContent = TOPIC;
-$('abo').href = `https://ntfy.sh/${TOPIC}`;
-
-function datumBox(d) {
-  if (!d) return '<div class="datum"><b>?</b><small>Datum</small></div>';
-  const t = new Date(d + 'T12:00:00');
-  return `<div class="datum"><small>${WT[t.getDay()]}</small><b>${t.getDate()}</b><small>${MON[t.getMonth()]} ${String(t.getFullYear()).slice(2)}</small></div>`;
-}
-
-function zeigeKonzerte() {
-  const { konzerte = [], pushRadiusKm = 200 } = daten.k;
-  const liste = konzerte.filter(k => !nurNah || k.km == null || k.km <= pushRadiusKm);
-  $('konzerte').innerHTML = liste.length ? liste.map(k => `
-    <li><a href="${esc(sicher(k.link))}" target="_blank" rel="noopener">
-      ${datumBox(k.datum)}
-      <div class="info">
-        <div class="band">${esc(k.band)}${k.neu ? '<span class="tag neu">neu</span>' : ''}${k.festival ? '<span class="tag fest">Festival</span>' : ''}${k.km > pushRadiusKm ? '<span class="tag weit">weit</span>' : ''}</div>
-        <div class="wo">${esc([k.ort, k.stadt].filter(Boolean).join(', '))}${k.zeit ? ' · ' + esc(k.zeit) : ''}</div>
-        ${k.titel && k.titel !== k.band ? `<div class="zusatz">${esc(k.titel)}</div>` : ''}
-        ${k.status ? `<div class="zusatz">${esc(k.status)}</div>` : ''}
-      </div>
-      <div class="km">${k.km != null ? k.km + ' km' : ''}</div>
-    </a></li>`).join('') : `<li class="leer">Gerade nichts${nurNah ? ` im Umkreis von ${pushRadiusKm} km` : ''}. Sobald etwas angekündigt wird, kommt ein Push.</li>`;
-}
-
-function zeigeReleases() {
-  const r = daten.r.releases || [];
-  $('releases').innerHTML = r.length ? r.map(x => `
-    <li><a href="${esc(sicher(x.link))}" target="_blank" rel="noopener">
-      ${x.cover ? `<img class="cover" src="${esc(sicher(x.cover))}" alt="" loading="lazy">` : datumBox(x.datum)}
-      <div class="info">
-        <div class="band">${esc(x.band)}${x.neu ? '<span class="tag neu">neu</span>' : ''}${x.angekuendigt ? '<span class="tag fest">angekündigt</span>' : ''}</div>
-        <div class="wo">${esc(x.typ)} „${esc(x.titel)}“</div>
-        <div class="zusatz">${esc(new Date(x.datum + 'T12:00:00').toLocaleDateString('de-DE'))}</div>
-      </div>
-    </a></li>`).join('') : '<li class="leer">Keine neuen Veröffentlichungen im letzten Jahr.</li>';
-}
-
-function zeigeStatus(s) {
-  const stand = new Date(s?.stand || daten.k.stand);
-  $('stand').textContent = isNaN(stand) ? '' : `Stand: ${stand.toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })} · Döbeln`;
-  if (!s?.quellen) return;
-  $('quellen').innerHTML = 'Quellen beim letzten Lauf: ' + Object.entries(s.quellen).map(([n, q]) =>
-    `${esc(n)} ${q.uebersprungen ? '– ' + esc(q.uebersprungen) : q.ok ? '✓' : '⚠ ' + esc((q.fehler || [])[0] || '')}`).join(' · ');
-}
-
-function knopf(alle) {
-  nurNah = !alle;
-  $('nah').setAttribute('aria-pressed', String(!alle)); $('alle').setAttribute('aria-pressed', String(alle));
-  try { localStorage.setItem('konz-alle', alle ? '1' : '0'); } catch {}
-  if (daten) zeigeKonzerte();
-}
-$('nah').onclick = () => knopf(false); $('alle').onclick = () => knopf(true);
-knopf(!nurNah);
-
-const hol = n => fetch(RAW + n + '?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status));
-Promise.all([hol('konzerte.json'), hol('releases.json'), hol('status.json').catch(() => null)])
-  .then(([k, r, s]) => { daten = { k, r }; zeigeKonzerte(); zeigeReleases(); zeigeStatus(s); })
-  .catch(() => {
-    $('stand').textContent = 'Noch keine Daten – der erste Lauf auf GitHub steht noch aus.';
-    $('konzerte').innerHTML = $('releases').innerHTML = '<li class="leer">Noch leer.</li>';
-  });
-</script>
+<p>Der Konzert-Alarm ist umgezogen: <a href="../mein-vorteil/#konzerte">Mein Vorteil öffnen</a></p>
 </body>
 </html>

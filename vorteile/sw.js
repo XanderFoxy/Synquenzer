@@ -1,13 +1,16 @@
-// Service Worker nur für /vorteile/: Seite offline verfügbar (Netz zuerst, sonst Zwischenspeicher). Daten werden nicht abgefangen.
-const CACHE = 'vorteile-v1';
-const DATEIEN = ['./', 'index.html', 'spartipps.html', 'manifest.webmanifest', 'icon.svg', 'icon-192.png'];
-self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(DATEIEN)).then(() => self.skipWaiting())); });
+/* Die Seite /vorteile/ ist umgezogen nach /mein-vorteil/ (eine Seite für Angebote, Vorteile und Konzerte).
+   Dieser Worker ersetzt den alten: er löscht dessen Zwischenspeicher ('vorteile-…'), meldet sich ab und lädt offene
+   Fenster neu. Ohne Worker kommt die Seite dann frisch aus dem Netz – und leitet sofort auf ../mein-vorteil/ weiter.
+   Kein fetch-Handler: alles geht direkt ans Netz. */
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(k => Promise.all(k.filter(n => n.startsWith('vorteile-') && n !== CACHE).map(n => caches.delete(n)))).then(() => self.clients.claim()));
-});
-self.addEventListener('fetch', e => {
-  const u = new URL(e.request.url);
-  if (e.request.method !== 'GET' || u.origin !== location.origin || !u.pathname.includes('/vorteile/')) return;
-  e.respondWith(fetch(e.request).then(r => { const k = r.clone(); caches.open(CACHE).then(c => c.put(e.request, k)); return r; })
-    .catch(() => caches.match(e.request).then(r => r || caches.match('index.html'))));
+  e.waitUntil((async () => {
+    try { await self.clients.claim(); } catch {}
+    const namen = await caches.keys();
+    await Promise.all(namen.filter(n => n.startsWith('vorteile-')).map(n => caches.delete(n)));
+    await self.registration.unregister();
+    // nur Fenster dieses Ordners neu laden (andere Seiten derselben Adresse bleiben unberührt)
+    const fenster = await self.clients.matchAll({ type: 'window' });
+    for (const f of fenster) if (f.url.startsWith(self.registration.scope)) { try { await f.navigate(f.url); } catch {} }
+  })());
 });
