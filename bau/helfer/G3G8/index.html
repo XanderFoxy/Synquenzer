@@ -42123,6 +42123,7 @@ function g3SvDraw(g, song, XB, ru, rh, W) {
     const tr = S.tracks[t], lane = song.lanes[t]; if (!tr || !lane || !lane.length) continue;
     for (const e of lane) {
       if (e.bar >= song.bars) break;
+      const xe = XB(e.bar * 4); if (xe < -W || xe > 2 * W) continue;  // nur, was im Bild (oder knapp daneben) liegt
       const o = laneOriginAt(lane, e.bar), pv = e.bar > 0 ? laneOriginAt(lane, e.bar - 1) : {slot: -1, cs: 0, own: null};
       if (o.slot === pv.slot && (o.own || null) === (pv.own || null)) continue;
       const B = e.bar * 4;
