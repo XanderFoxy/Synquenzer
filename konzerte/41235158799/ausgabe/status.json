@@ -1,0 +1,39 @@
+{
+ "stand": "2026-10-31T19:38:28.246Z",
+ "quellen": {
+  "ticketmaster": {
+   "ok": true,
+   "treffer": 0,
+   "fehler": [],
+   "uebersprungen": "kein TM_KEY gesetzt",
+   "ms": 0
+  },
+  "seiten": {
+   "ok": false,
+   "treffer": 0,
+   "fehler": [
+    "Gothic meets Klassik: fetch failed"
+   ],
+   "uebersprungen": null,
+   "ms": 13914,
+   "geprueft": 3,
+   "gesamt": 4
+  },
+  "musicbrainz": {
+   "ok": true,
+   "treffer": 7,
+   "fehler": [],
+   "uebersprungen": null,
+   "ms": 12422
+  },
+  "deezer": {
+   "ok": true,
+   "treffer": 3,
+   "fehler": [],
+   "uebersprungen": null,
+   "ms": 3119
+  }
+ },
+ "pushes": 0,
+ "erstlauf": false
+}
