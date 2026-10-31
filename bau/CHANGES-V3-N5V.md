@@ -155,7 +155,7 @@ Chromium headless, 4 vCPU; **Last-Mittel 3–20** (die Geschwister-Zweige testen
 | VV1-01 | bestanden | `n5-v-abn-01.mjs fx`: 16:9 und 9:16 je 1920×1080 / 1080×1920, 30/1, 584 Bilder, Bild 19,467 s, Ton 19,50 s, Soll 19,474 s; dekodiert ohne Fehler. Rückfall webm vp8/opus vorhanden (unter Last 16–18 nur ~22 Bilder – gleich mit der Fassung VV1.html unter derselben Last, s. Abweichungen VV1). |
 | VV1-03 | bestanden | `n5-v-a3.mjs`: Song live −14,34 / offline −14,36 LUFS, Noten 254 = 254 gleich; solo Synth 1 −0,10, Synth 2 −0,11, Synth 3 −0,05, Drums +0,18, Stimme-Take +0,08 LU. |
 | VV1-04 | bestanden | `n5-v-abn-04.mjs fx`: Laufband an Takt 2 und 6 je ±0,007 Schläge zum Soll (< 1 Bild). Die Zeile „matrixRange“ dieses Skripts erwartet Slot 2 auf Synth 1, wo die Demo keinen Clip hat (R.slot = −1) – gleiches Ergebnis mit `synq-snapshots/VV1.html`, kein Fehler des Bildes. |
-| VV1-06 | bestanden (Projekt/Knoten/Werte) | `n5-v-abn-06.mjs fx`: Projekt unverändert, Unterschiede nur Laufzeit-Messwerte (LIM.load, WAKE, SYNC-Schnappschuss, Engine-Last) – dieselben wie vor dem Fix. `n5-v-a3.mjs`/`n5-v-fx-06.mjs`: Projekt gleich, alle Live-Knoten dieselben, Engine-Werte gleich, Takt-Timer da; Notenvergleich der Live-Wiedergabe s. unten. |
+| VV1-06 | bestanden (Projekt/Knoten/Werte) | `n5-v-abn-06.mjs fx`: Projekt unverändert, Unterschiede nur Laufzeit-Messwerte (LIM.load, WAKE, SYNC-Schnappschuss, Engine-Last) – dieselben wie vor dem Fix. `n5-v-a3.mjs`/`n5-v-fx-06.mjs` (3 Läufe): Projekt gleich, alle Live-Knoten dieselben, Engine-Werte gleich, Takt-Timer da, Live-Lautheit vor/nach −14,34 / −14,34 LUFS; Notenvergleich s. Abweichungen (gleich wie vor dem Fix). |
 | VV1-07 | bestanden | `n5-v-abn-07.mjs fx`: P1, P2, P3, L1, L2, 926×428 je ruhend / beim Erstellen / fertig / Vorschau: 0 Knöpfe < 44 × 44, nichts abgeschnitten, keine Seitenüberlänge, Layout-Sprung: keiner. |
 | VV1-08 | bestanden | `n5-v-abn-01.mjs fx`: ohne `VideoEncoder` Weg „Aufnahme in Echtzeit · video/webm“; ohne beides Knopf grau mit Grund. |
 
@@ -165,8 +165,10 @@ Weitere Läufe: `smoke.mjs` ohne Fehler; `gmk8b-reg.mjs` (APP = dieser Zweig) **
 - **VV1-05 unter Last:** Bei Last-Mittel 10–14 (4 vCPU, Geschwister-Tests) gibt es noch einzelne Tasks 50–90 ms **Wandzeit**, darunter
   einzelne Scheduler-Schritte (bis 77 ms Wand). Im Chrome-Trace hat kein Task > 50 ms **CPU-Zeit**; die Häppchen selbst sind ≤ 19 ms
   (swapIn), ≤ 11 ms (trim), Scheduler ≤ 24 ms bei Last 9. Eine Messung auf einem ruhigen Rechner steht noch aus.
-- **VV1-06 Live-Notenvergleich:** wird bei sehr hoher Last (Last 17–20) unbrauchbar, weil die *Live*-Wiedergabe schon vor dem Auftrag
-  Noten auslässt (204 statt 254 Noten im Lauf vor dem Video). Ergebnis bei ruhigerer Last s. Nachtrag unten.
+- **VV1-06 Live-Notenvergleich:** bei Last 11–18 hört die *Live*-Wiedergabe vor dem Auftrag je eine Note weniger (253, nach dem Auftrag
+  254 = alle Noten, LUFS −14,34 / −14,34). Mit der Fassung **vor** dem Fix (`synq-snapshots/VV1.html`) unter derselben Last genau gleich
+  (253 / 254, `APP=…/VV1.html node n5-v-fx-06.mjs`) – die Live-Wiedergabe lässt unter dieser Last eine Note aus, das Video ändert nichts.
+  Bei Last 17–20 ließ die Live-Wiedergabe sogar 50 Noten aus (204). Der Vergleich gehört auf einen ruhigen Rechner.
 - Die Spalten-Regel des Matrix-Bilds bei weit auseinanderliegenden Szenen ist die kleinste Änderung, die VV1-04 erfüllt (s. Frage 3).
 
 ### Fragen an Xander
