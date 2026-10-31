@@ -39331,16 +39331,17 @@ function vpStep(J, until) {
     const g = J.r.g, thr = VP_CEIL * .7 / g, H = vpTp(), K = VP_K, nb = Math.ceil(n / K) + 2;
     const need = J.need || (J.need = new Float32Array(nb).fill(1));
     const put = (i, v) => { const a = v * g; if (a <= VP_CEIL) return; const q = VP_CEIL / a, k = (i / K) | 0; if (q < need[k]) need[k] = q; if (q < need[k + 1]) need[k + 1] = q; };
-    let i = J.i;
+    let i = J.i; const H0 = H[0], H1 = H[1], H2 = H[2];
     while (i < n) {
-      const end = Math.min(n, i + 8192);
+      const end = Math.min(n, i + 1024);                                    // VS-P-fix: Zeit öfter prüfen (kein Häppchen > 50 ms, auch kalt)
       for (; i < end; i++) {
         const a = d[i] < 0 ? -d[i] : d[i]; if (a < thr) continue;
         put(i, a);
         for (let k = Math.max(J.lastK + 1, i - 1); k <= i; k++) {
           if (k < 23 || k + 24 >= n) continue;
-          let m = 0;
-          for (const h of H) { let s = 0; for (let j = 0; j < 48; j++) s += h[j] * d[k - 23 + j]; const as = s < 0 ? -s : s; if (as > m) m = as; }
+          let s0 = 0, s1 = 0, s2 = 0; const o = k - 23;
+          for (let j = 0; j < 48; j++) { const x = d[o + j]; s0 += H0[j] * x; s1 += H1[j] * x; s2 += H2[j] * x; }
+          let m = s0 < 0 ? -s0 : s0; if (s1 > m) m = s1; else if (-s1 > m) m = -s1; if (s2 > m) m = s2; else if (-s2 > m) m = -s2;
           put(k, m); put(k + 1, m); J.lastK = k;
         }
       }

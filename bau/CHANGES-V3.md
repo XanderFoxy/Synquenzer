@@ -4590,3 +4590,694 @@ update private.settings set max_app = greatest(max_app, 4022000);
 Format bleibt 5 (`max_format` 5 reicht). Keine weitere Server-Änderung (am Server offen: nur dieser Wert).
 
 - Schnappschuss: `synq-snapshots/F1-fix.html`.
+
+# CHANGES – Zweig K (Nachtrag 5, K1)
+
+## K1 — Klang-Prüfung: Synth stabil, nichts Verstecktes, gleicher Klang nach Speichern · App 4.25.0 (`APP_CODE` 4 025 000) · Format bleibt 5 · keine Server-Änderung
+
+Zweig `n5-br-K` ab 4.23.0 (`vs-base-B.html`). Am Server offen: **max_app ≥ 4025000** (Xander hebt den Wächter selbst an; kein Supabase-Aufruf in diesem Zweig).
+
+### Was neu ist
+
+**Gefundene Fehler und Ursachen (gemessen, dann behoben)**
+
+1. **„Gleiche Werte – klingt plötzlich anders“ beim MS 2000 (behoben).** Die 5-ms-Glättung der stufenlosen Werte (Cutoff, Resonanz, EG-Int, Mixer, Tune, Pan, Pegel …) lief nur, solange eine Stimme klang. Wer einen Regler drehte oder ein Programm lud, **während nichts klang**, behielt im Worklet den alten Glättungsstand: die nächste Note glitt dann vom *vorigen* Wert zum neuen. Wie stark, hing davon ab, welchen Weg die Regler vorher gegangen waren. Gemessen in 4.23.0: gleiche Endeinstellung, zwei Reglerwege, danach dieselbe Note → nur **−4,5 dB** Abstand, also klar hörbar. Einzeln: CUTOFF −27,6 dB, OSC 2 SEMITONE −9,3 dB, RESONANZ −31,7 dB. Jetzt springt die Glättung auf den eingestellten Wert, sobald das Timbre nichts mehr spielt. Dann gibt es nichts zu glätten und nichts knackt. Ergebnis: **−331 dB** (bitgleich) für jeden Reglerweg. Klingende Noten gleiten weiter wie bisher. Frisch geladene Klänge und alle Werksklänge rendern unverändert (Golden-Render).
+2. **„Ein paar Cent“ im neuen Projekt (Ursache belegt, für INIT behoben).** Die Ursache ist der Regler **Analog** (MIX-Seite, Vorbelegung 15 %). Er gibt jeder Note eine zufällige Verstimmung: Tonhöhe ±analog·8 ct, jeder Oszillator ±analog·5 ct, Cutoff ±analog·1,5 HT. Bei INIT Analog sind das bis ±1,95 ct je Oszillator. Gemessen in 4.23.0 (INIT, 8 Noten A3): −1,18 … +1,12 ct. Dazu kam die Vorbelegung **Osz 2 Fein +7 ct**: Wer Osz 2 aufdrehte, hatte sofort 7 ct Schwebung. Ein Fehler in der Engine ist das nicht, aber eine Vorbelegung. **INIT Analog** hat jetzt Analog 0 und Osz 2 Fein 0. Gemessen über 8 Noten: **±0,003 ct**. Das neue Projekt mit [Leer (Init)] steht auf 0 Cent. INIT des MS 2000 war schon frei von Modulation und misst ±0,009 ct. Bei den MS-2000-Programmen kommt die Tonhöhen-Bewegung aus dem **Vibrato über die gespeicherte Mod-Rad-Stellung**: 12 von 256 Programmen, z. B. Hauchlead VIB 20 × Mod-Rad 31 % = ±40 ct. Dazu kommen PATCH → Tonhöhe (28 Programme) und Mod-Sequenz → Tonhöhe (10). Bei den VA-Werksklängen haben 39 von 64 Drift und 16 eine LFO → Tonhöhe-Route. Alles das ist gewollte Klanggestaltung und steht jetzt in der Mod-Übersicht. Alte Projekte mit INIT Analog behalten ihre gespeicherten 15 %/+7 ct und klingen wie vorher. Sie gelten nicht als „geändert“, weil der INIT-Stand vor 4.25.0 mit anerkannt wird.
+3. **LFO „hält an“ nach dem Hintergrund (behoben).** Steht die App 30 s versteckt und ohne Wiedergabe, hält sie den Audio-Kontext an, um Strom zu sparen (§14.4.8). Danach liefen LFOs, LFO-Punkt und Mod-Anzeigen erst nach dem nächsten Tipp weiter. Jetzt läuft der Kontext an, sobald die Seite wieder sichtbar ist. Gemessen: suspended → running, die Zeit läuft 0,41 s in 0,4 s weiter. In 4.23.0 blieb er stehen.
+4. **„Bewegt sich, aber ich komme nicht rein“ (behoben).** Im MOD-Reiter liefen die Pegelbalken der Quellen-Chips (LFO 1, LFO 2, Tonhöhe …) **immer**, auch ohne eine einzige Route. Es sah aus, als moduliere etwas die Tonhöhe, aber es gab keinen Eintrag, den man hätte öffnen oder löschen können. Jetzt bewegt sich ein Chip nur noch, wenn der Klang eine Route von dieser Quelle hat. Gemessen bei INIT ohne Route: kein Chip bewegt sich. Mit LFO 1 → Cutoff bewegt sich nur LFO 1.
+
+**Mod-Übersicht (Punkt 3, die einzige neue Gestaltung)**
+
+- Zu erreichen über **⋯ → „Modulationen (n)“** in jedem Synth-Editor (VA, FM, WT, MS 2000 hochkant) und im Querformat des MS 2000 über **⋯ (mkqmore) → „Modulationen (n)“**.
+- Eine Zeile je aktiver Modulation, in der Form **Quelle → Ziel** und darunter die **Menge** in echten Einheiten:
+  - **VA/FM/WT:** jede Route der Matrix mit Tiefe und Bereich (z. B. „+4 % · 380 Hz … 501 Hz“), auch Spur-FX-Routen. Dazu die fest eingebauten: Filter-Hüllk. → Cutoff, Anschlag → Filter-Hüllk.-Menge (nur mit Hüllkurve), Keytrack → Cutoff, Analog (Zufall je Note) → Tonhöhe · Cutoff („bis ±1,6 ct · ±0,18 HT“).
+  - **MS 2000 (je Timbre, bei Dual „T1 ·“/„T2 ·“):** LFO 2 × Mod-Rad → Tonhöhe (VIBRATO, „±40,2 ct (Mod-Rad 31 %, Tiefe 20)“), PATCH 1–4 (Quelle → Ziel, Intensität), EG 1 / Keytrack / Anschlag → Cutoff, Keytrack → Amp, Mod-Sequenz n → Ziel (Anzahl der Schritte).
+- **Tipp auf die Zeile** öffnet den Ziel-Regler: VA/FM öffnen Seite und Unterseite, der Regler leuchtet 1,6 s. Ein Ziel ohne eigenen Regler (Tonhöhe, Amp, Pan, OP n) öffnet den MOD-Reiter, die Route ist dort markiert. Beim MS 2000 öffnet sich GERÄT mit dem Zoom auf die Sektion des Knopfes (wenn es einen gibt) und der EDIT-Seite des Werts. Der Wert steht im LCD.
+- **[✕]** (44 × 44) löscht die Modulation in **einem Undo-Schritt**, mit Toast [Rückgängig]. Bei einer Route fällt die Route weg. Bei einem fest eingebauten Wert wird der Regler 0 (Hüllk.-Menge, Keytrack, Analog, VIB INT, PATCH-Intensität, EG-Int …). Bei der Mod-Sequenz wird das Ziel der Spur „keins“.
+- Die Liste ist ruhig und bewegt sich nicht. Was sich anderswo bewegt, hat in der Liste eine Zeile (siehe Punkt 4 oben).
+- Ohne Modulation steht dort: „Keine Modulation – die Tonhöhe steht auf 0 Cent.“
+- Lange Listen scrollen mit dem Finger (`pan-y`). Das Blatt bleibt in allen sechs Formaten innerhalb des Bildschirms.
+
+**Geprüft und ohne Fehler (nichts geändert)**
+
+- **Osz 3:** Pegel, Grundton und Pegelstufen sind bitgleich zu Osz 1/2 (je solo −20,30 dB, Grundton −19,38 dB, Stufen 0,25/0,5/1 identisch). HT +7 trifft 329,6 Hz (−15,5 dB), bei 220 Hz liegt −138 dB. Eine Änderung an Osz 3 wirkt auf Osz 1/2 nur über die gemeinsame (nichtlineare) Ladder: −31 … −43 dB. Osz 2 wirkt mit denselben Änderungen genauso (−30 … −41 dB). Im linearen Bereich ist die Wirkung ≤ −81 dB. Das *Gefühl* „Osz 3 hört man kaum / er verändert die anderen“ hat eine messbare Ursache. Osz 3 steht mit Fein 0 auf **genau derselben Tonhöhe wie Osz 1**, beide laufen phasenstarr mit zufälliger Startphase je Note. Der Pegelgewinn liegt deshalb je Note zwischen **0 und +5,5 dB** (16 Noten gemessen), und die Klangfarbe von Osz 1 ändert sich mit, statt dass eine Schwebung entsteht. Osz 2 hat ab Werk +7 ct und schwebt hörbar. Die Vorbelegung von Osz 3 ist außerdem Puls 16′. Das Verhalten ist Physik und keine Kopplung in der Engine. Ob Osz 3 eine Vorbelegung wie Osz 2 bekommen soll, steht unter Fragen.
+- **LFOs:** Dauerlauf je 10 min Audiozeit (VA und MS 2000) mit 1 081 bzw. 1 055 Wechseln (Notenwechsel, ganze Szenen-Klänge, Tempo, Start/Stopp, Sync, Neustart, Hintergrund-Lücken). Die LFO-Phase stand in **0 von 212 792** bzw. **0 von 209 577** Blöcken still (global und je Note). Kein NaN.
+- **Sample & Hold:** ein neuer Zufallswert je LFO-Takt, gehalten bis zum nächsten. Gemessene Stufen 14–15 von 15 Scope-Takten (VA, global und je Note) und 23 456–23 472 von 23 467 Samples (MS 2000, Key Sync aus/Stimme). Der Klang ist bitgleich zu 4.23.0 (VA −328 dB, MS 2000 −320 dB).
+- **Ladder (VA, 96 Fälle):** alle 6 Typen × ECO/ANALOG × Resonanz 1/1,15 × Drive 0/1 × leise/voll (21 Unison-Stimmen + Sub + Rauschen), Cutoff alle 10 ms gedreht, LFO 40 Hz auf Cutoff/Resonanz. **0 NaN, 0 Inf**, kein Aussetzer bei LP/HP. Die Spitze bleibt begrenzt (max 4,97 = Eingangsstapel plus Resonanzspitze bei HP24 unter ±10-Oktaven-Sweep). Ein 2,7-ms-Tal bei BP24/ECO, wenn der 40-Hz-LFO den Cutoff ±120 HT fegt: Ein Bandpass bei 20 Hz lässt nichts durch, das ist kein Abbruch. **MS 2000** (16 Fälle, RESONANZ 127, 4 Filtertypen, DIST, CUTOFF als Bruchwerte alle 10 ms): 0 NaN/Inf, 0 Aussetzer, Spitze 1,83.
+- **Zustandsfreiheit:** zwei Reglerwege zur gleichen Einstellung, danach dieselbe Note. VA −331,9 dB, FM −324,6 dB, MS 2000 −331,1 dB (vorher −4,5 dB, siehe Fehler 1).
+- **Regler kommen vollständig an:** Nach 120 zufälligen VA-Reglerwerten und Routen, FM-Operator- und Makro-Änderungen und 60 MS-2000-Gesten mit Bruchwerten (dann Endwert, Dual, Mod-Sequenz) spielt das Worklet exakt die gespeicherten Werte. Abweichungen: 0 Parameter, 0 Routen, 0 Timbre-Felder.
+- **Alte Klänge:** Alle 320 Werksklänge (64 VA/FM/WT, 256 MS-2000-Programme) rendern bitgleich zu 4.23.0, außer INIT Analog (gewollt, Fehler 2). Gegen 4.22.0 (F1-fix), 4.17.0 (MK8-fix) und 4.9.0 (MK1-fix) sind 192 bzw. 65 Klänge bitgleich. Das Worklet ist für alle 64 VA/FM/WT-Klänge seit 4.3.0 (V2c-fix, V2e′-fix, MK0-fix) bitgleich. „Früher optimierte Sounds klingen heute anders“ kommt also **nicht** aus einer Engine-Änderung. Die gemessenen Ursachen sind Fehler 1 (MS 2000, je nach Reglerweg) und die Auto-Qualität (siehe Fragen).
+
+### Abnahme
+
+| ID | Ergebnis | Messung/Skript |
+|---|---|---|
+| K1-01 Osz 3 solo/Mix messbar, keine Wirkung auf Osz 1/2 | bestanden | solo −20,30/−20,30/−20,30 dB, Grundton −19,38 dB je Osz, Stufen identisch; HT +7: 329,6 Hz −15,5 dB / 220 Hz −138 dB; Rest-Wirkung auf Osz 1/2 −31…−43 dB = wie Osz 2 (−30…−41 dB), linear ≤ −81 dB; gleiche Tonhöhe: 0…+5,5 dB je Note (Phase) — `n5-k-osc3.mjs` → `n5-k-01.out` |
+| K1-02 LFO-Dauerlauf 10 min ohne Stillstand | bestanden | VA 1 081 Wechsel, 0/212 792 Blöcke ohne Phasenfortschritt; MS 2000 1 055 Wechsel, 0/209 577 — `n5-k-lfo.mjs`, `n5-k-lfo-mk.mjs` (Argument `"" 10`) |
+| K1-02 Hintergrund | bestanden (4.23.0: nicht) | suspended → running beim Sichtbarwerden, +0,41 s in 0,4 s — `n5-k-02b.mjs` |
+| K1-02 S&H-Stufen = Zufall je Takt, Klang = 4.23.0 | bestanden | Stufenlänge 14–15/15 (VA), 23 456–23 472/23 467 (MS 2000), je Takt neu; gegen 4.23.0 −328/−320 dB — `n5-k-sh.mjs` |
+| K1-03 Mod-Übersicht vollständig gegen die Engine | bestanden | 315 Klänge (alle VA/FM-Werksklänge und 256 Programme) gegen den Worklet-Zustand (`k1Dump`): 434 Einträge, 0 Abweichungen — `n5-k-03.mjs` (complete) |
+| K1-03 Löschen hörbar, Undo | bestanden | VA-Route LFO 1 → Tonhöhe: Engine 1 → 0 → 1 Route, 1 Undo-Schritt, Schwankung 32,5 ct → 0 ct, Werksklang nach ✕ +2,5 dB anders, nach Undo −324 dB; MS-2000-Vibrato: VIB 20 → 0 → 20, 40,2 ct → 3,2 ct, 1 Undo-Schritt — `n5-k-03.mjs` (delVA, delMk) |
+| K1-03 Tipp springt zum Ziel | bestanden | Filter-Hüllk. → FILTER/REGLER, Regler leuchtet; Route vel → Cutoff → Cutoff-Regler; MS 2000 VIB → EDIT Seite 4 (PITCH), LCD „PITCH · VIBRATO +20“ — `n5-k-03.mjs` (jump), per Finger `n5-k-06.mjs` |
+| K1-03 was sich bewegt, hat einen Eintrag | bestanden | INIT im MOD-Reiter, Note hält: 0 von 8 Chips bewegen sich (4.23.0: alle); mit LFO 1 → Cutoff: nur LFO 1 (20 Werte in 1,2 s) — `n5-k-03.mjs` (move) |
+| K1-03 INIT/neues Projekt ohne Modulation, 0 Cent | bestanden | 0 Einträge; Tonhöhe 8 Noten ±0,003 ct (4.23.0: −1,18…+1,12 ct); INIT MS 2000 0 Einträge, ±0,009 ct; altes INIT nicht „geändert“ — `n5-k-03.mjs` (init) |
+| K1-04 Ladder Res max, schnelles Drehen | bestanden | VA 96 Fälle: 0 NaN/Inf, Spitze ≤ 4,97, LP/HP ohne Aussetzer (BP24-ECO-Tal bei ±10-Okt.-Sweep erklärt); MS 2000 16 Fälle: 0 NaN/Inf/Aussetzer, Spitze 1,83 — `n5-k-ladder.mjs`, `n5-k-ladder-mk.mjs` |
+| K1-04 Zustandsfreiheit (zwei Wege → Render gleich) | bestanden | VA −331,9 dB, FM −324,6 dB, MS 2000 −331,1 dB (4.23.0: −4,5 dB) — `n5-k-path.mjs`, `n5-k-path-fm.mjs`, Einzelregler `n5-k-path2.mjs` |
+| K1-05 Speichern/Laden bitgleich je Engine | bestanden | Worklet = gespeicherte Werte (0 Abweichungen); Projekttext → normalisieren: VA −337,7 / FM −319,2 / MS 2000 −318,9 dB, Daten gleich (auch WT, Drums); Speichern → Seite neu laden: gleiche Werte, gleiche Daten — `n5-k-05.mjs` |
+| K1-05 alte Projekte gegen ihre Snapshots | bestanden | Demo und Leer (Init) aus 4.23.0, 4.22.0, 4.17.0, 4.9.0 in 4.25.0 geöffnet: jede Synth-Spur ≤ −324 dB gegen den Render in ihrer Version, „geändert“ wie dort — `n5-k-05old.mjs`; Werksklänge `n5-k-golden.mjs` (320 gegen 4.23.0, 1 gewollt anders), `n5-k-golden-node.mjs` (bis 4.3.0) |
+| K1-06 Übersicht ≥ 44 px, alle Formate | bestanden | 390×844, 375×667, 320×568, 844×390, 667×375, 926×428, VA und MS 2000, per Finger über ⋯: Blatt im Bildschirm, Zeilen ≥ 48 px, ✕ 44 × 44, nichts abgeschnitten, Seitenhöhe unverändert, Liste scrollt mit dem Finger, ✕ = 1 Undo, Tipp springt — `n5-k-06.mjs`, Bilder `n5-k-06-*.png` |
+| K1-06 CPU ≤ 4.23.0 | bestanden | Worklet in Node, 9 Läufe abwechselnd: VA 8 Stimmen 1,005 ×, MS 2000 4 Stimmen 0,959 × (Messrauschen gleiche Datei gegen sich: bis 1,11 ×) — `n5-k-cpu.mjs` |
+| Rauchtest | bestanden | `smoke.mjs` ohne Fehler, `n5-k-smoke.png` |
+| Regression MS 2000 (Node) | wie 4.23.0 | `v3-mk1-dsp` 64/64, `v3-mk1-fpdsp` 14/14, `v3-mk3-fpdsp` 6/6 (beim 2. Lauf; Zeitfenster-Messung schwankt auch bei 4.23.0), `v3-mk3-scale` 6/6, `v3-mk4-fx` 61/61, `v3-mk6-fp` 16/16, `v3-mk3-timbre` 29/30 und `v3-mk6-seq` 33/34 (gleicher Fehler auch bei 4.23.0) — `n5-k-reg-*.out`, `n5-k-regbase-*.out` |
+| Regression MS 2000 Querformat-Wege | wie 4.23.0 | `n5-k-reg-spielq.mjs` (Kopie von `v3-qmkp-spielq.mjs` auf diesen Zweig) |
+
+### Abweichungen
+
+- **Anschlag → Lautstärke** (VA „Anschlag“ auf STIMME, MS 2000 AMP VELO INT) steht **nicht** in der Liste. Das ist Spieldynamik, nichts bewegt sich dabei. Sonst hätte jedes INIT eine „Modulation“ und die Regel „INIT ohne Modulation“ wäre verletzt. Anschlag → Cutoff und → Filter-Hüllk.-Menge stehen in der Liste.
+- **Drums** haben keine Einträge: Die Tonhöhen-Hüllkurven der Pads sind Teil der Drum-Stimme und keine Modulation. Für Drums ist das ⋯-Menü ohne Eintrag „Modulationen“.
+- **WT** läuft nativ ohne Analog-Drift. Bei WT steht „Analog“ deshalb nicht in der Liste, Routen und Filterwerte schon.
+- **Osz 2 Fein** im INIT ist jetzt 0 statt +7 ct. Das gehört zu „Tonhöhe auf 0 Cent genau“ und ist auf dem Fein-Regler von Osz 2 sichtbar.
+- Ein Test-Zugang `{k1Dump}` im Worklet (meldet den gespielten Zustand, nur auf Anfrage) und `SYNQUENZER.k1Mods/k1Del/k1Jump/k1Open/k1Dump/k1Expect`.
+- Die vorhandene ⋯-Taste im Editor-Kopf misst hochkant 36 × 31 px. Sie war schon so, der Kopf ist von Xander festgelegt, deshalb nicht geändert. Im Querformat des MS 2000 misst sie 44 × 44.
+
+### Fragen an Xander
+
+1. **Osz 3:** Er ist technisch gleich wie Osz 1/2. Mit Fein 0 läuft er aber exakt auf der Tonhöhe von Osz 1, mal lauter, mal fast unhörbar, je nach Phase der Note (0 … +5,5 dB). Soll Osz 3 eine Vorbelegung bekommen wie Osz 2 (+7 ct), z. B. −7 ct? Oder sollen Oszillatoren auf gleicher Tonhöhe mit gleicher Phase starten? Beides ändert den Klang. Darum ist nichts gebaut.
+2. **Qualität „Auto“:** Wird das iPhone knapp an Rechenzeit, schaltet die App die Ladder auf ECO und begrenzt Unison und Stimmen. Das ist der Schutz gegen Aussetzer. Gleiche Regler klingen dann anders: Bass mit Res 0,6 −15 dB Unterschied, Lead −25 dB. Das ist eine zweite Ursache für „klingt plötzlich anders“. Soll das so bleiben (Menü → Klang → Qualität „Analog“ hält den Klang fest), soll die App den Wechsel anzeigen, oder etwas anderes?
+3. **S&H mit Key Sync (Timbre/Stimme):** Beim Neustart durch eine Taste behält der erste Takt den letzten Wert, der neue Zufallswert kommt erst am Taktende. Unverändert gelassen (Klang = 4.23.0). Soll ein Tastenstart sofort einen neuen Wert ziehen?
+4. Ist es richtig, dass Anschlag → Lautstärke nicht als Modulation zählt (siehe Abweichungen)?
+
+### iPhone (Xander)
+
+- Neues Projekt [Leer (Init)], Synth 1, A gedrückt halten mit Osz 2 auf 100 %: keine Schwebung mehr, kein „paar Cent“. ⋯ → „Modulationen (0)“ zeigt „Keine Modulation – die Tonhöhe steht auf 0 Cent.“
+- Einen Werksklang laden (z. B. Moog-Bass), ⋯ → „Modulationen (5)“: Zeile antippen → der Regler leuchtet. ✕ → hörbar weg, [Rückgängig] holt es zurück.
+- MS 2000: Programm „Hauchlead“ (D05), ⋯ → Modulationen: „LFO 2 × Mod-Rad → Tonhöhe ±40 ct“. ✕ → das Vibrato ist weg. Im Querformat steht der Eintrag im ⋯ oben rechts.
+- MS 2000: Ohne zu spielen CUTOFF drehen, dann die Taste. Die Note beginnt sofort mit dem neuen Cutoff, ohne Wischer vom alten Wert. Mehrmals mit verschiedenen Wegen: immer gleich.
+- MOD-Reiter ohne Route: Die Quellen-Chips stehen still. Mit einer Route bewegt sich nur deren Quelle.
+- App 30 s in den Hintergrund und zurück: LFO-Punkt und Modulationen laufen ohne Tipp weiter.
+
+### Für das Zusammenführen
+
+Alle Änderungen sind kurze Einhänger in vorhandenen Funktionen oder ein eigener Block. Nichts wurde verschoben oder neu formatiert.
+
+- **Worklet** (`sq-worklet-src`, nur ASCII geprüft): `MkTimbre.idle()` hat eine neue erste Zeile nach der LFO-Zeile (Glättung → Zielwerte, wenn nichts klingt und kein Vocoder tönt). `AnalogCore.onMsg()` hat eine Zeile `{k1Dump}` am Ende.
+- `SynthHost.track` / `node.port.onmessage`: eine Zeile `if (m.k1Dump) E.k1Dump = …`.
+- `INIT_SYNTH` `f-init-analog`: `p` bekommt `analog: 0, o2fine: 0` (`INIT_VA_P` unverändert, die MS-2000-/Kompakt-Records nutzen es weiter).
+- `soundEdited()`: `OHASH.h0` (INIT Analog vor 4.25.0) als zweiter gültiger Hash.
+- `modFrame()`: 1 Zeile `k1u`/`k1h`, Chip-Wert 0 ohne Route.
+- `openEdMore()`: Eintrag `data-a="k1m"` und Zweig `else if (a === 'k1m') openK1Mods(anchor, t)`.
+- MS-2000-Block (`sq-mk-src`): neue Funktion `k1JumpPath()` vor `window.MKUI`, Export `k1: {jump: k1JumpPath}` am Anfang von `window.MKUI = {…}`. `morePop()` hat den Eintrag `k1m` und den Zweig im Tap.
+- **Neuer Block** „K1 (Nachtrag 5 K1, Punkt 3): Mod-Übersicht“ direkt vor „Sichern (§11.3)“: `k1Num`, `k1Sgn`, `K1_PG`, `K1_RK`, `K1_PSRC`, `K1_PDST`, `K1_SQT`, `k1Mods()`, `k1Del()`, `k1Jump()`, `openK1Mods()`.
+- CSS: Regeln `.pop.k1pop`, `.k1ml`, `.k1mr`, `.k1go`, `.k1x`, `.k1empty`, `.k1hl` direkt nach `.plist.edmore small`.
+- Init: `visibilitychange` (sichtbar): `AU.ctx.resume()`, wenn `UI.idleSusp`.
+- `SYNQUENZER`: `k1Mods`, `k1Del`, `k1Jump`, `k1Open`, `k1Dump`, `k1Expect` nach `initSound`.
+- `VERSION` 4.25.0. Die Zeile `live: true,` ist unverändert.
+- Test-Skripte: `dirigent-test/n5-k-*.mjs` (Hilfen `n5-k-lib.mjs` Node, `n5-k-blib.mjs` Browser), Ausgaben `n5-k-*.out`, Bilder `n5-k-06-*.png`, `n5-k-smoke.png`.
+- Snapshot: `synq-snapshots/K1.html`.
+
+## K1-fix — Mod-Übersicht vollständig (MS 2000 STEUER 2, Vocoder, FM-Feld, FM-Tonhöhen-Hüllkurve), Liste folgt ↶ ↷, Trefferflächen · App 4.25.0 (unverändert) · Format 5 · keine Server-Änderung
+
+Am Server offen wie bei K1: **max_app ≥ 4025000** (kein Supabase-Aufruf). Am Klang ändert sich nichts: Das Worklet hat nur im Test-Zugang `{k1Dump}` drei Felder mehr.
+
+### Was neu ist (die gemeldeten Fehler, jeder zuerst nachgestellt)
+
+1. **MS 2000: LFO 1 → Osz 1 Form (STEUER 2) fehlte** (zwei gleiche Meldungen). Nachgestellt: 0 von 8 Werksprogrammen mit Eintrag, „Streichsatz“ meldete „Keine Modulation“. Die Engine rechnet `MKW.form(c1 + LFO 1 × c2)` für Säge, Puls, Dreieck, Sinus (X-Mod), Stimmwelle und Eingang. Jetzt steht dort je Timbre z. B. **„LFO 1 → Osz 1 Form · Steuer 2 · Tiefe +30“**. Bei Puls heißt das Ziel „Osz 1 Pulsbreite“, bei Sinus „Osz 1 X-Mod“, beim Eingang „Osz 1 Balance“. Bei Speicherwelle und Rauschen wählt STEUER 2 die Welle bzw. die Resonanz. Das ist keine Modulation, deshalb gibt es dort keinen Eintrag (34 solche Programme, 0 Einträge). Tipp öffnet GERÄT mit OSC 1, das LCD zeigt „OSC 1 · STEUER 2 (WFM) 30“. ✕ setzt STEUER 2 auf 0, ein Undo-Schritt. Alle 8 Programme haben jetzt den Eintrag: Streichsatz, Atemfläche, Wogenchor, Pendelbass, Hymn Strings, Haze Pad, Lush Strings und Brass+Bows (T2). Dazu kommt das Vocoder-Programm „Metal Voc“: Auch dort wirkt STEUER 2 auf die Trägerwelle.
+2. **MS 2000 Vocoder: QUELLE × INTENSITÄT fehlte.** Nachgestellt: Vokalwah und Wah Voc zeigten „Modulationen (0)“. Jetzt steht dort **„LFO 1 → Vocoder Formant · Intensität +30“** (die Quelle so, wie sie eingestellt ist). Tipp führt zu FILTER · INTENSITÄT, ✕ setzt sie auf 0 (ein Undo-Schritt). Der Vocoder-KEYTRACK steht als „Keytrack → Vocoder Pegel“ in der Liste, genauso wie AMP KEYTRACK außerhalb des Vocoders. Gemessen: Die Vocoder-Stimme benutzt Filter und Amp des Timbres nicht. EG-Int, Keytrack und Anschlag auf 63 gegenüber dem Programm ergeben **−327 dB** (bitgleich), INTENSITÄT 0 dagegen **+2,7 dB**. Darum zeigt die Liste im Vocoder-Modus keine Zeilen „EG 1 / Keytrack / Anschlag → Cutoff“ und „Keytrack → Amp“ mehr. Sie würden etwas anzeigen, das sich nicht bewegt.
+3. **FM-Feld: LFO FM / LFO AM je Operator fehlten.** Nachgestellt: Mit LFO FM 18 stand „Modulationen (0)“, während die Tonhöhe um ±42 ct schwankte. Jetzt steht dort **„LFO 1 → Tonhöhe · bis ±46,7 ct“**, wenn es alle klingenden Operatoren betrifft, sonst „LFO 1 → OP 1, 2, 3 Tonhöhe“. Der Pegel steht als **„LFO 1 → OP 2, 4, 6 Pegel · bis −16,1 dB“**. Operatoren mit gleichem Wert teilen sich eine Zeile. PMD/AMD aus .syx werden mitgerechnet (PMD 0 = keine Zeile). Ein Operator ohne Pegel oder mit M (stumm) hat keine Zeile. Tipp öffnet FELD → OP n → Seite Mod, die Zeile LFO FM bzw. LFO AM leuchtet. ✕ setzt den Wert der Operatoren der Zeile auf 0 (ein Undo-Schritt). Im MOD-Reiter bewegt sich der Chip „LFO 1“ jetzt auch ohne Route, wenn LFO FM/AM wirkt (10 verschiedene Werte in 1 s, die anderen Chips stehen still).
+4. **FM: Tonhöhen-Hüllkurve fehlte.** Nachgestellt: Nach `setFmPeg` stand „Modulationen (0) … 0 Cent“. Jetzt steht dort **„Tonhöhen-Hüllk. → Tonhöhe · +4,5 HT“** mit dem Bereich der Stufen. Das gilt für die DX-Hüllkurve (fm6.peg ohne Feld) und für die Hüllkurve je Operator im Feld, auch für die Punkt-Form. Diese gilt auch für feste Operatoren, z. B. „Tonhöhen-Hüllk. → OP 5 Tonhöhe · +0,8 HT“. Tipp auf eine Hüllkurve aller Operatoren in DX-Form öffnet HÜLLK. → TONH., sonst FELD → OP n → Tonh. ✕ macht die Hüllkurve flach, wie die TONH.-Seite oder „Tonhöhe Init“ im Feld (ein Undo-Schritt).
+5. **Liste veraltet nach [Rückgängig] im Toast.** Nachgestellt (P und L): 5 Zeilen statt 6. Jetzt zeichnet sich die offene Übersicht nach jedem ↶ ↷ neu, egal ob es aus dem Toast oder vom Kopf kommt (ein Einhänger in `undoApply`, wie beim Takes-Blatt). Gemessen: ✕ → 5, [Rückgängig] → 6, [↷ Wiederholen] → 5 Zeilen.
+6. **Trefferflächen (K1-06 / typischer Fehler 4).** Die Flächen sind unsichtbar vergrößert, an den Knöpfen sieht man nichts.
+   - Toast-Knöpfe ([Rückgängig], [↷ Wiederholen] …) haben jetzt überall 44 px Höhe. Vorher waren es 31/34 px. Gemessen 44 × 44 bzw. 95 × 44/45. Ausnahme: hochkant 601–700 px, wenn der Toast in der LCD-Zeile sitzt. Dort ist die Fläche das ganze Band zwischen Kopf und Reitern, 44 × 34, wie bei ⋯.
+   - ⋯ im Editor-Kopf, Querformat (844×390, 667×375, 926×428): vorher 37 × 35, jetzt **44 × 44**.
+   - ⋯ bei 320×568: vorher 36 × 32, jetzt **42 × 39**.
+   - Die Flächen der Nachbarknöpfe sind gleich geblieben (gemessen vorher/nachher, `n5-k-fix-nb.mjs`).
+7. **„±0 %“ bei kleinen Routen** (beim Nachstellen von Fehler 3 gesehen): Eine Route unter 0,5 % zeigt jetzt eine Nachkommastelle, z. B. „+0,4 %“. Vorher stand dort „±0 %“ neben „±0,11 HT“.
+
+**Neues Projekt „Mit Startsounds“ (Meldung 4):** Nachgestellt, die Meldung stimmt. 4 von 5 Synth-Spuren haben Modulation, z. B. Mini-Lead mit LFO 2 → Tonhöhe ±10 ct und Analog-Drift ±2,6 ct. Das sind die Werksklänge, wie Xander sie kennt. Sie zu ändern wäre neue Klanggestaltung (Regel 27). Deshalb ist nichts geändert und die Frage steht unten. Die Übersicht zeigt jede dieser Modulationen mit ✕. „Leer (Init)“ steht weiter auf 0 Cent.
+
+### Abnahme
+
+| ID | Ergebnis | Messung/Skript |
+|---|---|---|
+| Meldung STEUER 2 (2×) | behoben | 8/8 Programme mit Eintrag (vorher 0/8), 0/34 bei Speicherwelle/Rauschen; ✕ → 0, 1 Undo, Undo → 30; Tipp → GERÄT, LCD „OSC 1 · STEUER 2 (WFM) 30“ — `n5-k-qa-rep2.mjs`, `n5-k-qa-c2.mjs`, `n5-k-fix-mods.mjs`, per Finger `n5-k-qa-mkui.mjs` P/L, `n5-k-fix-finger.mjs` P/L |
+| Meldung Vocoder | behoben | Vokalwah/Wah Voc je 1 Eintrag (vorher 0); ✕ 1 Undo; Tipp → FILTER · INTENSITÄT; Filter/Amp-Int. im Vocoder wirkungslos −327 dB, INTENSITÄT 0 +2,7 dB — `n5-k-qa-voc.mjs`, `n5-k-qa-rep.mjs`, `n5-k-fix-mods.mjs` (d, k) |
+| Meldung FM-Feld LFO FM/AM | behoben | LFO FM 18 / AM 127 / beides: 1/1/2 Einträge (vorher 0); 4 gemischte Graphen gegen das Worklet (`k1Dump.fmx`): gleich; ✕ 1 Undo; Tipp → FELD OP 1 Mod, LFO FM leuchtet (P und L per Finger); LFO-1-Chip bewegt sich (10 Werte), andere still — `n5-k-qa-fmx.mjs`, `n5-k-qa-rep.mjs`, `n5-k-fix-mods.mjs` (e, j, l), `n5-k-fix-finger.mjs` |
+| Meldung FM-Tonhöhen-Hüllk. | behoben | „Tonhöhen-Hüllk. → Tonhöhe +4,5 HT“ (vorher 0 Einträge), auch ohne Feld (fm6.peg); ✕ → flach, 1 Undo; Tipp per Finger → HÜLLK./TONH. (P und L) — `n5-k-qa-hidden2.mjs`, `n5-k-qa-fmpeg.mjs` P/L, `n5-k-fix-mods.mjs` (f, g), `n5-k-fix-finger.mjs` |
+| Meldung Liste nach Toast-Undo | behoben | P und L: ✕ 5 → [Rückgängig] 6 Zeilen = 6 Einträge; ↷ → 5; Kopf-↶ ↷ wie vorher — `n5-k-qa-flow1.mjs` P/L, `n5-k-qa-undo.mjs`, `n5-k-fix-mods.mjs` (h) |
+| Meldung ⋯ / [Rückgängig] < 44 | behoben, Rest siehe Abweichungen | ⋯ Querformat 44 × 44 (vorher 37 × 35), 320×568 42 × 39 (36 × 32), 390×844 44 × 44, 375×667 44 × 34 (unverändert, Band); Toast 44 hoch (31/34) in allen Formaten; Nachbarn unverändert — `n5-k-fix-edm.mjs` (edm, toast), `n5-k-fix-nb.mjs`, `n5-k-qa-rep2.mjs`, `n5-k-qa-06.mjs` |
+| Meldung „Mit Startsounds“ | belegt, Frage an Xander | Mini-Lead/Melodie-Lead ±10 ct (LFO 2), Rom-Fläche ±7 ct, Drift bis ±2,6 ct; alle in der Übersicht — `n5-k-qa-newstd.mjs` |
+| K1-03 vollständig gegen die Engine | bestanden | 315 Klänge, **445** Einträge (vorher 434: +9 STEUER 2, davon 1 im Vocoder „Metal Voc“, +2 Vocoder-INTENSITÄT), 0 Abweichungen; Abgleich jetzt auch für STEUER 2, Vocoder, FM-Feld, fm6-PEG — `n5-k-03.mjs` (complete) |
+| K1-03 Rest (INIT 0 ct, Löschen, Undo, Tipp, Bewegung) | bestanden | wie K1 — `n5-k-03.mjs` |
+| K1-06 alle Formate | bestanden | 12/12 Fälle ok (Blatt im Bildschirm, Zeilen ≥ 48, ✕ 44 × 44, nichts abgeschnitten, Seitenhöhe gleich) — `n5-k-06.mjs`, `n5-k-qa-06.mjs` |
+| Rauchtest | bestanden | `smoke.mjs` ohne Fehler — `n5-k-fix-smoke.png` |
+
+### Abweichungen
+
+- **⋯ hochkant 375×667 (44 × 34) und 320×568 (42 × 39)** erreichen keine 44 px Höhe bzw. Breite. Der Grund ist die Geometrie: Bei 375×667 sitzt ⋯ in der LCD-Zeile, einem 34 px hohen Band zwischen Kopfzeile 2 und Reitern. Bei 320×568 sitzt ⋯ in einer Kopfzeile aus 36 × 32-Knöpfen mit 3 px Abstand, dort sind 39 px Raster möglich. Mehr ginge nur auf Kosten der Nachbarknöpfe oder mit einem anderen Kopf, und das wäre sichtbar anders. Beide Werte liegen über der Untergrenze für dichte Raster (36 × 34, spec v3 L4). Siehe Frage 2.
+- **MS 2000 Querformat ⋯ (mkqmore) 45 × 43:** Die Kopfleiste ist 44 px hoch, davon 1 px Trennlinie, und sie schneidet ab. Für 44 müsste die Kopfleiste 1 px höher werden. Das ist nicht geändert.
+- Im Vocoder-Modus fallen die Zeilen „EG 1 / Keytrack / Anschlag → Cutoff“ und „Keytrack → Amp“ weg, weil sie dort nicht wirken (gemessen −327 dB). Neu ist „Keytrack → Vocoder Pegel“.
+- Test-Zugang `{k1Dump}` meldet zusätzlich `voc`, `fmx` (on, fmS, am, amG, pit, pt) und `peg`. Das wird nur auf Anfrage gesendet, im Audio-Pfad passiert nichts.
+
+### Fragen an Xander
+
+1. **Neues Projekt „Mit Startsounds“:** Mini-Lead und Melodie-Lead haben ab Werk ein leichtes Vibrato (LFO 2 → Tonhöhe ±10 ct), Rom-Fläche ±7 ct, und 4 von 5 Synth-Spuren haben Analog-Drift (bis ±2,6 ct je Note). Mit „Leer (Init)“ ist alles auf 0. Sollen die Startsounds so bleiben (jede Modulation steht in der Übersicht und lässt sich mit ✕ löschen)? Oder sollen sie ohne Vibrato/Drift starten? Das würde ihren Klang ändern.
+2. **⋯ auf kleinen iPhones hochkant (375×667, 320×568):** Die Trefferfläche ist 44 × 34 bzw. 42 × 39. Volle 44 × 44 gehen nur, wenn die LCD-Zeile dort 10 px höher wird (dafür wird der Editor-Körper 10 px kleiner) bzw. wenn die Kopfzeile bei 320 px Breite einen Knopf weniger hat. Soll ich eins davon bauen?
+
+### iPhone (Xander)
+
+- MS 2000: „Streichsatz“ laden, ⋯ → „Modulationen (1)“: „LFO 1 → Osz 1 Form · Steuer 2 · Tiefe +30“. Antippen: OSC 1 STEUER 2 steht im LCD. ✕: die Streicher schweben nicht mehr. [Rückgängig] holt es zurück, die Liste zeigt die Zeile sofort wieder.
+- „Vokalwah“ mit Mikro: ⋯ → Modulationen: „LFO 1 → Vocoder Formant · Intensität +30“. ✕: der Wah-Effekt ist weg.
+- FM-Spur, FELD, OP 1 → Mod → LFO FM hochziehen: ⋯ → Modulationen zeigt „LFO 1 → OP 1 Tonhöhe“. Im MOD-Reiter bewegt sich der Chip LFO 1.
+- FM, HÜLLK. → TONH. eine Hüllkurve ziehen: die Übersicht zeigt „Tonhöhen-Hüllk. → Tonhöhe“.
+- Im Querformat ⋯ am Rand antippen, auch knapp daneben: das Menü öffnet. [Rückgängig] im Toast auch knapp über oder unter dem Knopf.
+
+### Für das Zusammenführen
+
+- Block „K1 (Nachtrag 5 K1, Punkt 3): Mod-Übersicht“:
+  - `k1Mods()`: MS-2000-Zweig mit STEUER 2 (`K1_O1C`), Filter/Amp nur ohne Vocoder, Vocoder `voc.mint`/`voc.kbd`. Routen ohne „±0 %“. FM ruft am Ende `k1FmMods()` auf.
+  - Neu nach `k1Mods()`: `K1_O1C`, `K1_PMS`, `K1_PR`, `k1Ht`, `k1FmPit()`, `k1FmMods()`, `k1FmxLfo()`.
+  - `k1Del()`: Zweige `fpeg` (`fmSetPeg(i, null)`) und `fmx` (`fmxApply` + `fmChanged(i, true, true)`).
+  - `k1Jump()`: Zweige für `fpeg`/`fmx`, also TONH. (`ED.sub.envfm`) bzw. FELD OP n Mod/Tonh. mit Leuchten.
+  - `openK1Mods()`: `UI.pop.k1r` (Neuzeichnen).
+- `undoApply()`: eine Zeile vor dem Takes-Einhänger (`UI.pop.k1r` per Microtask).
+- `modFrame()`: die K1-Zeile `k1u/k1h` bekommt `k1f = k1FmxLfo(i)`.
+- Worklet `AnalogCore.onMsg()` `{k1Dump}`: Felder `voc`, `fmx`, `peg` (nur ASCII geprüft).
+- CSS nach `.k1hl`: `#toast button{position:relative}` + `::after`, P2-Regel `#toast.lcdk`, `.hb.edm1` (Querformat) und `.hb.edm2` (≤ 600 px hochkant) mit `::after` und `z-index:1`.
+- Test-Skript `n5-k-03.mjs` (complete) rechnet die neuen Pfade mit ein. Neue Skripte: `n5-k-fix-mods.mjs`, `n5-k-fix-finger.mjs`, `n5-k-fix-edm.mjs`, `n5-k-fix-nb.mjs`, Bilder `n5-k-fix-*.png`.
+- Snapshot: `synq-snapshots/K1-fix.html`.
+
+# S012 — Teil bearbeiten (S0), Teil überarbeiten im Lauf (S1), Zusammenfassen (S2) · Basis App 4.23.0 (VERSION unverändert)
+
+Grundlage: `spec/dirigent-spec-v3-nachtrag-5.md` Abschnitte S0, S1, S2; `spec/typische-fehler.md` (alle Punkte geprüft, siehe unten).
+Datei: `bau/helfer/S012/index.html` (Kopie von `bau/werkzeug/vs-base-B.html`). Tests: `bau/helfer/S012/tests/` (Chromium, Touch).
+
+## S0 — Teil bearbeiten (Fehler „Strophe ersetzen“)
+
+### Fehler nachgestellt (`tests/repro-s0.mjs`, gegen die Basis)
+Song Strophe (T1–2) · Refrain (T3–4) · Strophe (T5–6), beide Strophen = derselbe Teil. FANG TEIL fängt eine Strophe ohne Drums,
+Name-Chip „Strophe ▾“ → „⟳ Strophe ersetzen“ → **beide** Stellen und die Teil-Vorlage wurden ersetzt (`markReplaceAll` über alle
+Marken), obwohl nur die zweite gemeint war. Bei zwei Teilen „Strophe“ und „Strophe 2“ traf „⟳ Strophe ersetzen“ immer den Teil
+„Strophe“ (Suche nach dem ersten passenden Namen) – „Strophe 2“ ließ sich so gar nicht ersetzen. Ergebnis Basis:
+„1. Strophe (Takt 1) unverändert? false · Vorlage Strophe unverändert? false“.
+
+### Was neu ist
+1. **Ersetzen trifft genau die gewählte Stelle.** Kann „⟳ Strophe ersetzen“ mehr als eine Stelle meinen (Marken „Strophe“, „Strophe 2“ …
+   im Song, gleichnamige Teile ohne Marke), zeigt das FANG-Blatt statt der Zeile „＋ Strophe 2 │ ⟳ Strophe ersetzen“ die Zeile
+   **„Welche: [⟳ Strophe 1 (Takt 1)] [⟳ Strophe 2 (Takt 5)] [‹]“** (Song-Reihenfolge; gleiche Namen nummeriert, ein Teil ohne Marke
+   „(nicht im Song)“). Die gewählte Stelle ist im Song markiert (weißer Rand der Marke). [ALS TEIL ✓] ohne Wahl ersetzt nichts
+   (Hinweis „Welche Strophe? Bitte die Stelle wählen“). Ersetzt wird:
+   - eine Marke, deren Teil nur dort steht (oder ein Teil ohne Marke): Teil-Vorlage + diese Stelle (wie bisher);
+   - eine Marke eines Teils, der öfter im Song steht: **nur diese Stelle** (Melodie und eigene Clips dort bleiben wie bei
+     „Auf alle übertragen“), Vorlage und die anderen Stellen bleiben deep-equal; die Marke behält ihren Namen und zeigt „′“.
+   Eine Stelle = genau eine mögliche Bedeutung → wie bisher ohne Rückfrage. Ein Undo (`group` [part, song]).
+2. **Marken-Blatt → [Bearbeiten]** (Tipp auf die gelbe Kopfzeile = Marke im Song; der Knopf steht in der Zeile von „● Neu aufnehmen …“):
+   dasselbe Blatt zeigt „STROPHE · Bearbeiten · Takt 5–6 [‹]“, [✎ Name: Strophe] (das bestehende Namens-Blatt: Teil überall │ nur
+   hier) und die **Liste der Spuren/Clips dieser Stelle über ihre Länge** (je Spur eine Zeile, je Clip-Abschnitt ein Knopf „Sz1“,
+   „Sz2 T7–8“, „Eigener“ mit „an/aus“). Tipp = **an │ aus für diese Stelle**: „aus“ = die Spur schweigt in diesem Abschnitt, danach
+   geht der Song phasengleich weiter; was dort lag, wird an der Marke gemerkt (`mark.off`) und kommt mit „an“ unverändert zurück
+   (auch eigene Clips). Je Tipp ein Undo (`song`), Toast mit [Rückgängig]. Die Liste rollt per Finger.
+3. Test-API: `fangReplaceWhich()`, `fangReplacePick(j|'back')`, `markSegs(id)`, `markSeg(id, t, b0, on)`, `markEdit(id)`.
+
+### Daten (Format 5, nur additiv)
+`song.marks[].off = [{t, b0, b1, e:[Lane-Einträge relativ], own?:{id: Clip}}]` – nur vorhanden, wenn an dieser Stelle etwas aus ist;
+`marksNorm` übernimmt das Feld (sonst unverändert). Ältere Projekte: kein Feld, nichts ändert sich.
+
+### Abnahme S0 (`tests/s0-acc.mjs` → ALL OK 38/38)
+| ID | Ergebnis |
+|---|---|
+| S0-01 | ✓ ein Teil, zwei Marken: Blatt fragt „⟳ Strophe 1 (Takt 1) · ⟳ Strophe 2 (Takt 5)“ (Knöpfe 163 × 44); ohne Wahl nichts ersetzt; gewählte Marke im Song markiert; nach [ALS TEIL ✓] nur T5–6 geändert (Drums aus), T1–4 und die Vorlage deep-equal, Marke „Strophe′“; ein Undo = alles zurück. Teile „Strophe“/„Strophe 2“: „Strophe 2“ gewählt → nur Strophe 2 (Vorlage + Stelle), „Strophe“ deep-equal |
+| S0-02 | ✓ Bearbeiten → ✎ Name → „Vers“ (Teil überall, alle Marken), Undo → „Strophe“ |
+| S0-03 | ✓ DR aus in T5–6 per Touch: Lanes der anderen Spuren/Takte deep-equal; hörbar (Master-Mitschnitt): Drums T5 −64,5 dB (nur Ausklang des letzten Refrain-Schlags), T6 −84,9 dB, vorher −14 dB; Mischung T1–4 ±0,2 dB gleich; Speichern/Laden (serialize → importProject) deep-equal mit `mark.off`; „an“ → Lanes deep-equal zum Anfang; je Tipp ein Undo |
+| S0-04 | ✓ Bearbeiten-Blatt und Marken-Blatt mit [Bearbeiten] in 390×844, 375×667, 320×568, 844×390, 667×375, 926×428: alle Knöpfe ≥ 44 × 44 (‹ wie ✕: 44 × 32 sichtbar + 12 px Trefferzone = 44 × 44), nichts abgeschnitten, im Bild, kein waagrechtes Rollen; Bilder `s0-04-*.png` |
+
+Smoke (`tests/smoke.mjs`): keine Fehler.
+
+## S1 — Teil überarbeiten im Lauf (unverbindlich, mit FANG)
+
+### Was neu ist
+1. Läuft ein Teil, den man auf der Teil-Leiste angetippt hat, wird im Lauf **nichts überschrieben**: Clips/Spuren an/aus,
+   Szenenwechsel und Dazuspielen landen wie bisher nur im Song-Gedächtnis bzw. im FANG-Puffer (der Teil bleibt deep-equal).
+2. **FANG bzw. FANG TEIL** fängt dann den **letzten vollständigen Durchlauf** des Teils mit allen Änderungen als **neue Fassung**:
+   Spuren, die man angefasst hat, bekommen ihre Lane aus dem Gedächtnis (z. B. „DR Sz1, aus T3–4“), unberührte behalten ihre
+   Lane; hat der Teil eine Akkord-Zeile, kommt sie aus dem, was wirklich klang; **dazugespielte Noten** (Synth-Spuren, wie gehört)
+   kommen als `Part.mel` in die Fassung und spielen ab dann im Teil mit (auch im Song, wenn der Teil eingesetzt wird).
+3. Ergebnis-Blatt **„TEIL ÜBERARBEITET“** (Platz und Form wie das FANG-Blatt: P über der Tastatur, quer im Seitenfeld): Teil-Chip,
+   „Letzter Durchlauf eingefangen · n Noten dazugespielt“, Zeilen **Neu** / **Bisher**, **[Verwerfen] [Als neuen Teil] [Teil ersetzen]**.
+   Der alte Teil bleibt unverändert bis [Teil ersetzen]. [Als neuen Teil] = nächster freier Platz, Name „Strophe 2“ (N7-R2-Nummer).
+   ✕ / daneben = Verwerfen. Je Aktion ein Undo (`part`).
+4. Ein Szenenwechsel im Lauf beendet den Teil; er bleibt für FANG gemerkt, bis ein anderer Teil startet oder ▶ stoppt.
+   Noch kein vollständiger Durchlauf seit dem Tipp → FANG/FANG TEIL machen das Bisherige (kein Blatt). Ein mit FANG TEIL gefangener
+   Kreis, der als Teil weiterläuft, ist kein „angetippter“ Teil → FANG TEIL fängt dort wie bisher eine neue Phrase (sonst wäre der
+   zweite Fang aus V2d/V2e′ weg; Regression `v3-qa-v2e2reg-fangui` gleich wie Basis).
+5. Test-API: `s1Fang({beat?})`, `s1Info()`, `s1Accept('replace'|'new')`, `s1Discard()`, `s1Active()`.
+
+### Daten (Format 5, additiv)
+`Part.mel = {Spur: [{t (Schläge ab Teil-Anfang), d, n (gehört), v}]}` – nur wenn Noten dazugespielt wurden. `normPart` liest es
+verlustfrei, `partChunk` schreibt es beim Einsetzen in den Song nach `song.mel` (wie jede Song-Melodie).
+
+### Abnahme S1 (`tests/s1-acc.mjs` → ALL OK 28/28)
+| ID | Ergebnis |
+|---|---|
+| S1-01 | ✓ Teil (4 Takte) per Touch auf der Teil-Leiste gestartet; im 2. Durchlauf Drums am Taktstrich 3 aus → Teil während des Laufs deep-equal; FANG (Touch `#bFang`) → Fassung DR `[{bar 0, Sz1}, {bar 2, aus}]`, andere Spuren wie der Teil; alter Teil unverändert bis [Teil ersetzen]; danach neu gestartet: Drums in T1–2, ab T3 still (noteLog) |
+| S1-02 | ✓ Noten 72 (T1) und 76 (T2) dazugespielt → `mel[3]` t = 1,06 / 5,02; im neu gestarteten Teil erklingen sie an denselben Stellen (±0,01 Schlag) |
+| S1-03 | ✓ [Teil ersetzen] / [Als neuen Teil] je ein Undo → deep-equal; Speichern/Laden deep-equal mit `Part.mel`; [Verwerfen] ändert nichts |
+| Blatt | ✓ 390×844, 375×667, 320×568, 844×390, 667×375, 926×428: im Bild, Knöpfe ≥ 44 px, nichts abgeschnitten (Kopf quer 11 px) |
+
+## S2 — Zusammenfassen (Teil konsolidieren, Teile verketten)
+
+### Was neu ist
+1. **Marken-Blatt → [Zusammenfassen]** (neben [Bearbeiten]): alles im Bereich der Marke wird **ein neuer Teil** – Lanes (mit
+   Phasen und **eigenen Clips**), Akkorde/Träger, die **im Song dazu aufgenommene Melodie** (`song.mel` aller Spuren) und die
+   **Song-Stimme** (`song.vox`). Der Song selbst bleibt, wie er ist (er klingt unverändert); nur die Marke zeigt jetzt den neuen Teil.
+2. **Gelbe Auswahl über zwei oder mehr Teile → Bereich-Leiste ⋯ → „Zusammenfassen“**: die gewählten Takte werden ein Teil
+   (Länge = Summe), eine Marke ersetzt die bisherigen. Höchstens 16 Takte (Grenze eines Teils, wie „Als Teil …“).
+3. Name wie bei „Als Teil …“ (Namens-Chips N7-R2, ✎ eigener Text); Vorschlag bei einer Marke ihr Name mit Nummer („Strophe 2“),
+   sonst der nächste freie Name. Ein Undo (`group` [part, song]).
+4. Wird der neue Teil woanders eingesetzt (Ziehen, Teil einsetzen, Ersetzen durch), bringt er Melodie, eigene Clips und Stimme mit.
+5. Test-API: `sumMark(id, name?)`, `sumRange(a, b, name?)`, `openSum(a, b)`.
+
+### Daten (Format 5, additiv)
+`Part.mel` (wie S1), `Part.own = {id: Clip}` (eigene Clips, Lane-Einträge mit `own`), `Part.vox = [Stimm-Abschnitte, bar relativ]`,
+bei `src: 'song'` zusätzlich `ph` an späteren Lane-Einträgen (sonst ginge eine Phase nach einem eigenen Clip verloren). `partChunk`
+schreibt alles mit, `songWrite` setzt `vox` an die Stelle. Teile ohne diese Felder: unverändert (FANG-TEIL-Teile behalten ihr
+bisheriges Verhalten, geprüft mit `v3-qa-v2e2reg-fangui` und `v3-qa-reg-fang2`).
+
+### Abnahme S2 (`tests/s2-acc.mjs` → ALL OK 25/25)
+| ID | Ergebnis |
+|---|---|
+| S2-01 | ✓ Song Strophe · Refrain · Strophe mit Song-Melodie (S4, 4 Noten in T1–2), eigenem Clip (S1 T2) und Stimme (330-Hz-Take T1–2); Tipp auf die Marke → [Zusammenfassen] (Touch) → „Strophe 2“: Teil mit Lanes, `mel` (4), `own` (1), `vox` (1); Song deep-equal (ohne Marken), Marke ohne „′“. Teil hinter dem Ende eingesetzt (T7–8): je Takt Clip/Phase/eigener Clip/Träger/Melodie/Stimme gleich; **hörbar**: 87 Noten T1–2 = T7–8 (Spur, Schlag auf 0,001, Ton), Pegel −13,4/−13,8 dB = −14,0/−14,2 dB (±0,6), Stimme 330 Hz −24,1 / −24,4 dB (T3 ohne Stimme −47,4) |
+| S2-02 | ✓ gelbe Auswahl T1–4 über Strophe + Refrain → ⋯ (Touch) → „Zusammenfassen“ → Chip „Refrain“ → Teil „Refrain 2“ mit 4 Takten (2 + 2), eine Marke T1–4, Song deep-equal; eingesetzt an T7–10 = T1–4 je Takt; hörbar 120 Noten gleich |
+| S2-03 | ✓ Undo (Einsetzen, Zusammenfassen) → deep-equal; Speichern/Laden deep-equal mit `Part.mel/own/vox` |
+| Formate | ✓ Namens-Blatt in 6 Formaten ≥ 44 px, nichts abgeschnitten; [Zusammenfassen] im Marken-Blatt ≥ 44 × 44 (bricht als „Zusammen-fassen“ um, nie abgeschnitten) |
+
+„Bitgleicher Render“: Die App hat keinen Offline-Render des Songs; geprüft wird (a) der Song-Inhalt selbst bleibt deep-equal
+(dort also bitgleich), (b) der eingesetzte Teil erzeugt dieselben Ereignisse (Notenprotokoll, Stimm-Abschnitte, Träger) und
+(c) Pegel/330-Hz-Anteil im Master-Mitschnitt gleich. Ein Sample-Vergleich des Echtzeit-Mitschnitts ist wegen freilaufender
+Oszillator-/LFO-Phasen nicht bitgleich möglich (auch nicht zwischen zwei Läufen derselben Stelle).
+
+## Regression (Basis 4.23.0 gegen S012, `tests/reg/`, Kopien der Skripte aus `bau/tests/` mit lokalen Pfaden)
+| Skript | Ergebnis |
+|---|---|
+| `v3-qa-reg-part`, `-part2`, `-part3` (Teil-Lanes, ＋, Akkord-Zeile) | gleich (Bass-Noten je Schlag identisch, keine Fehler) |
+| `v3-qa-reg-loop` (Schleifen-Bereich) | gleich (46 = 46 Noten) |
+| `v3-qa-reg-fang2` (FANG → FANG TEIL) | gleich |
+| `v3-qa-v2e2reg-song` (Import, Rundweg, 30 Undos, Song nach Undo) | gleich |
+| `v3-qa-v2e2reg-fangui` (FANG-Blatt per Touch, ALS TEIL, ＋ Ans Song-Ende, P1/L1) | gleich bis auf die gemessene Tipp-Zeit im Takt (10 % gegen 12 %, Zeitrauschen) – vor dem `caught`-Fix fing der zweite FANG TEIL fälschlich als S1, behoben |
+| `v3-qa-reg-song` (● SONG-Mitschnitt in Echtzeit) | zeitabhängig: auch Basis gegen Basis weicht beim aufgenommenen Song ab; die Notenprotokolle folgen dem jeweils aufgenommenen Song – kein Befund |
+| `tests/smoke.mjs` | keine Fehler |
+
+## Unabhängige Nachprüfung (eigener Prüf-Agent, Skripte `tests/qa/`) – 7 Befunde, alle behoben
+| # | Befund | Behebung |
+|---|---|---|
+| D1 | „Auf alle übertragen“ mit einem Teil, der `Part.mel` trägt (S1/S2): Melodie an den Zielstellen doppelt (behaltene Song-Melodie + Teil-Melodie); Vorlage behielt alte `mel/own/vox` | `markReplaceAll`: auf Spuren, für die der Teil eine Melodie mitbringt, gilt die des Teils; `markApplyAll` übernimmt bei solchen Teilen auch `mel/own/vox` von der Stelle (`s012ApplyAll`) |
+| D2 | Eine Stelle des Teils „Strophe“, „nur hier“ in „Vers“ umbenannt, wurde ohne Rückfrage mit ersetzt | Die Auswahl „Welche“ nimmt alle Stellen eines passenden Teils auf, auch umbenannte („Vers (Takt 5)“) |
+| D3 | `mark.off` nach Löschen am Anfang einer Marke bzw. Teilen der Marke (Als Teil, Zusammenfassen über einen Teil) mit alten Abständen → „an“ unmöglich oder falscher Inhalt | `marksCut` verschiebt `off` mit (`s0OffShift`; ein angeschnittener Abschnitt bekommt seinen Zustand am neuen Anfang inkl. Phase / eigenem Clip) |
+| D4 | Szenenwechsel im Lauf beendete den Teil → FANG ohne S1 | Der zuletzt angetippte Teil bleibt im selben Lauf gemerkt, bis ein anderer Teil startet; FANG fängt seinen letzten Durchlauf (alle Spuren „von Hand“, Szene je Takt aus dem Gedächtnis) |
+| D5 | FANG-Taste hochkant unsichtbar, obwohl S1 fangen könnte (letzte Note > 8 s her, z. B. 100 bpm) | FANG leuchtet/erscheint, sobald ein vollständiger Durchlauf da ist (`s1Lit`) |
+| D6 | Note im letzten ¼ Schlag vor dem Durchlauf-Ende ging beim Einsetzen in den Song verloren | Sie gilt als Auftakt zu Takt 1 (TA5): `t` negativ, klingt im Kreis vor Takt 1 und landet im Song als Auftakt |
+| D7 | Auftakt-Note der Song-Melodie fiel beim Zusammenfassen weg (`t < 0` verworfen) | `Part.mel` erlaubt Auftakte bis −¼ Schlag |
+
+Nachlauf: `qa/q1` 4/4, `q2` 24/24, `q3` 10/10, `q5` 3/3; `q4` 9/10 und `q7` 8/9 – die beiden roten Punkte sind keine Fehler:
+`q4 (a)` erwartet die per `launchScene` in Takt 3 gestartete Szene schon ab Takt 3, sie startet (quantisiert) am nächsten
+Taktstrich = Takt 4, die Fassung zeigt Sz2 ab Takt 4; `q7 C` ist die oben genannte Abweichung (`song.xp` im Bereich). Danach
+S0 38/38, S1 28/28, S2 25/25, Regressionen wie oben, Smoke ohne Fehler.
+
+## Abweichungen
+- S0 „gespeichert im Teil“: an/aus wird **an der Stelle** (Marke) gespeichert, nicht in der Teil-Vorlage – sonst würden alle
+  Strophen schweigen, Xanders Beispiel ist aber „im letzten Teil schweigen die Drums“. Siehe Fragen.
+- S1 gilt für einen Teil, der auf der Teil-Leiste angetippt wurde. Ein Song, der in einer Schleife über eine Marke läuft, wird
+  nicht als „Teil im Lauf“ behandelt (FANG dort wie bisher) – siehe Fragen.
+- S1 nimmt dazugespielte **Synth**-Noten in die Fassung; auf den Pads dazugespielte Drums nicht (Song-Melodien gibt es nur für
+  Synth-Spuren). Der Name „TEIL ÜBERARBEITET“ des Ergebnis-Blatts folgt dem FANG-Blatt („TEIL GEFANGEN“); die Spec nennt keinen.
+- S2: Ein Teil mit eigenen Clips/Stimme, der auf der **Teil-Leiste** angetippt wird, spielt dort die Szenen-Clips der eigenen Clips
+  und keine Stimme (die Teil-Leiste spielt nur Szenen-Clips; im Song klingt alles). Song-Melodie spielt auch dort (S1-Weg).
+  Eine Teil-Transposition im Song (`song.xp`) innerhalb des Bereichs wird nicht in den Teil übernommen (wie „Als Teil …“).
+- S2: Zusammenfassen fragt nach dem Namen (wie „Als Teil …“); die Spec nennt keinen Namen.
+- Der ‹-Knopf im Bearbeiten-Kopf hat dieselbe Form wie das bestehende ✕ des Marken-Blatts (44 × 32 sichtbar, Trefferzone 44 × 44).
+
+## Fragen an Xander
+1. S0: Soll „aus“ im Bearbeiten-Blatt nur an dieser Stelle gelten (so gebaut) oder für alle Stellen des Teils (dann „Auf alle
+   übertragen“ danach)?
+2. S0: Früher ersetzte „⟳ Strophe ersetzen“ Vorlage + alle Strophen auf einmal. Jetzt fragt das Blatt nach der einen Stelle. Brauchst du
+   zusätzlich „alle Strophen“ als Wahl (bisher über Marken-Blatt → „Auf alle übertragen“ erreichbar)?
+
+3. S1: Soll „Teil ersetzen“ auch die Stellen dieses Teils im Song mitnehmen (wie früher ⟳ ersetzen) – oder nur die Vorlage
+   (so gebaut; die Song-Stellen zeigen dann „′“ und lassen sich mit „Auf alle übertragen“ angleichen)?
+4. S1: Soll auch ein Song, der in der Schleife über eine Marke läuft („Songteil antippen zum Hören“ über ▶ Ab hier + Schleife Teil),
+   so eingefangen werden? Dann würde [Teil ersetzen] diese eine Stelle ersetzen.
+5. S1: Sollen auf den Pads dazugespielte Drums auch in die Fassung (als neuer Drum-Clip)?
+
+6. S2: Soll der zusammengefasste Teil den alten Namen behalten (z. B. „Strophe“ statt „Strophe 2“), wenn nur eine Marke
+   zusammengefasst wird? Dann müsste der alte Teil umbenannt oder ersetzt werden.
+7. S2: Mehr als 16 Takte zusammenfassen (z. B. drei 8-Takt-Teile) geht wegen der Teil-Grenze nicht – mit G8 (64 Takte) anheben?
+
+## Für das Zusammenführen
+- Alles in markierten Blöcken: Code-Block `/* S0 … */ … /* /S0 */` direkt vor `function uiSync()`, CSS nach `.msheet .ms-all{…}`.
+- Ein-Zeilen-Haken: `fangAccept` (Zeile `/* S0 */` am Anfang des Ersetzen-Zweigs), `openFangSheet` paint/onTap/onClose (je eine Zeile
+  `/* S0 */`, `dupx` ruft `s0FangClear()`), `markReplaceAll(song, p, skipId, onlyId)` (neuer optionaler 4. Parameter), `marksNorm`
+  (eine Zeile `mark.off`), `openMarkSheet` paint (eine Zeile `s012MarkSheetPaint(p, m)` nach dem `innerHTML`),
+  `Object.assign(SYNQUENZER, S012_API)` nach `WP_API`.
+- S1-Haken: `normPart` (eine Zeile `s012PartExtra`), `partChunk` (`mel: s1ChunkMel(p, L)` statt `mel: {}`), `partTick` (eine Zeile
+  `s1PartMelTick`), `fangTap` (eine Zeile vorn), `fangAdopt` (`caught: 1` am übernommenen Kreis). Block `/* S1 … */ … /* /S1 */` hinter S0.
+- S2-Haken: `partChunk` (Lane-Zeile: `ph`/`own`; Rückgabe `Object.assign(…, s2ChunkExtra(p, L))`), `songWrite` (eine Zeile `vox`),
+  `openRangeMore` (Listeneintrag + eine `else if`-Zeile). Block `/* S2 … */ … /* /S2 */` hinter S1; der Knopf im Marken-Blatt kommt
+  über denselben `s012MarkSheetPaint`-Haken wie [Bearbeiten].
+- VV2 (Video-Zeile im selben Blatt): unser Haken hängt die Knöpfe hinter `.ms-rec` ein und ersetzt in der Bearbeiten-Ansicht das
+  ganze `innerHTML` – eine Video-Zeile, die VV2 im paint per `innerHTML` mitbaut, verschwindet in der Bearbeiten-Ansicht und ist nach ‹
+  wieder da. Konflikt nur, wenn VV2 dieselbe Zeile `B('rec', …)` umschreibt: dann `s012MarkSheetPaint(p, m);` einfach hinter VV2s
+  Zeile stehen lassen.
+
+## Typische Fehler (spec/typische-fehler.md) – geprüft
+1/4/5 Formate, ≥ 44 px, kein Sprung: S0-04 · 3 Liste rollt per Finger (`pan-y`, `touch-action:pan-y`) · 6 Blatt schließt mit ✕/neben
+das Blatt (bestehendes Marken-Blatt), Bearbeiten → ‹ · 7 geändert-Punkt über `songChanged`/`markDirty` · 8 ein Undo je Aktion ·
+9 Speichern/Laden deep-equal · 10 Wahl im FANG-Blatt endet mit ‹, Verwerfen, Schließen (`s0FangClear`) · 12–17 keine DSP-Änderung ·
+20 kein Supabase-Aufruf (keine neuen Aufrufe, Netz-Wächter im Test leer) · 24 „MS 2000“ genau einmal, kein Markenname · 26 keine
+früheren Tests angepasst · 27 nichts Zusätzliches: offene Punkte unter „Fragen an Xander“.
+
+# Helfer N12D1K2 — K2 · N1 · N2 · D1 (Basis App 4.23.0, `vs-base-B.html`)
+
+Stand: alle vier Pakete gebaut, Abnahme grün (Einzelheiten je Paket). Keine Supabase-Aufrufe; „MS 2000“ genau einmal, kein Korg-Wort.
+
+Zweig `helfer-n12d1k2`, Datei `bau/helfer/N12D1K2/index.html`. VERSION-Zeile unverändert (4.23.0). Format 5, nur additive Felder.
+
+---
+
+## K2 — FM-FELD: Hüllkurven bei mehr als 3 Operatoren
+
+### Was gemessen wurde (Ursache)
+- **Hüllkurven-Rechnung selbst ist richtig.** Die Hüllkurve jedes Operators (DX- und Punkt-Form, parallel, Paare, Kette, 1…6
+  Operatoren) ist im Verbund gleich wie derselbe Operator allein (Verstärkung je Block exakt gleich, 0,000 dB) und gleich auf
+  OP 1…6 (Lage-unabhängig). Im Klang (6 Ausgänge, Teilton je OP per Goertzel) höchstens 0,25 dB. Die Normierung 0,5/√(Ausgänge)
+  ist laut Nachtrag 1 so gewollt und verändert die Form nicht.
+- **Ursache der „falschen Hüllkurven“: Stimmenklau durch den CPU-Begrenzer.** Mehr Operatoren = mehr Rechenzeit (gemessen: 6-OP-Stimme
+  ≈ 2× eine VA-Stimme). Ab Last 0,60 / 0,75 setzt der Begrenzer die Stimmenzahl auf 6 / 4 (bei schwerem Graph oder Punkt-Schleife
+  auf 4). Der Worklet hat dann auch **gehaltene** Noten geklaut: ein 6-Ton-Akkord verlor bei Stufe 3 zwei Töne mitten in der
+  Hüllkurve (gemessen 4 gehaltene Noten gestohlen in 2 Akkorden), dazu mit nur 96 Samples (2 ms) Ausblende = Knackser.
+
+### Was neu ist
+1. Die Stimmen-Grenzen des Begrenzers (6 / 4, und 4 für schwere Graphen ab Stufe 2) kürzen nur noch **ausklingende** Stimmen.
+   Gehaltene Noten werden erst über der eigenen Stimmenzahl des Klangs geklaut (neues Worklet-Feld `polyH` = gespeicherte
+   Stimmenzahl, nur solange der Begrenzer kappt; nicht im Projekt gespeichert). Stimmenzahl muss nicht von Hand erhöht werden.
+   Die Grenze „> 12 Verbindungen → 6 Stimmen“ (K2-42) bleibt hart.
+2. Stimmenklau-Ausblende 5 ms statt 2 ms (wie beim AM-Klang `MK_STEAL`): Knackser > 3 kHz einer geklauten lauten Note
+   −50,2 dB statt −43,2 dB.
+3. Ohne Stimmenklau ist der Klang bitgleich zu 4.23.0 (FM und VA, `k2-gleich.mjs`).
+
+### Abnahme
+| Punkt | Prüfung | Ergebnis |
+|---|---|---|
+| K2-01 | 1…6 OP, dx/Punkt, parallel/Paare/Kette: Hüllkurve je OP im Verbund = OP allein | 0,000 dB (≤ 1) — bestanden |
+| K2-01 | gleiche Hüllkurve auf OP 1…6 = auf OP 1 | 0,000 dB — bestanden |
+| K2-01 | Klang: 6 Ausgänge, Teilton je OP gegen OP allein (Worklet in Node und App-Worklet im Browser) | 0,25 dB — bestanden |
+| K2-02 | 6-Ton-Akkord über ausklingendem 6-Ton-Akkord, 3/4/6 OP, poly 8 und Begrenzer poly 6 / 4 | 0 gehaltene Noten geklaut, kein NaN — bestanden (vorher bei poly 4: 4 geklaut) |
+| K2-02 | App: Begrenzer Stufe 3 → poly 4 + polyH 8, zurück auf 0 → polyH 0 | bestanden |
+| K2-02 | Klau-Knackser > 3 kHz | −50,2 dB (vorher −43,2 dB) |
+| K2-03 | CPU je Stimme (Node, Xeon): VA ≈ 10–12 µs, FM 1 OP ≈ 7–17 µs, 6 OP ≈ 14–28 µs je 128er-Block; 6 Stimmen × 6 OP ≈ 0,15 ms von 2,67 ms | im Rahmen (kein Mehr gegen 4.23.0) |
+
+Tests: `tests/k2-abnahme.mjs`, `tests/k2-click.mjs`, `tests/k2-cpu.mjs`, `tests/k2-gleich.mjs`, `tests/k2-app.mjs`, `tests/k2-app-lim.mjs`
+(Lib `tests/k2-lib.mjs`: der Worklet aus index.html in Node). Regression: `bau/tests/smoke.mjs` ohne Fehler, `n5-k-path-fm.mjs` −324,6 dB (wie vorher).
+
+### Abweichungen
+- Die Spec nennt „1…8 Operatoren“; das FELD hat 6 Operatoren (ein 7. wird abgelehnt). Geprüft: 1…6.
+- Bei Begrenzer-Stufe 2/3 kann ein großer Akkord jetzt mehr Rechenzeit kosten als vorher (gehaltene Noten bleiben); die
+  Ausklänge werden weiter gekürzt.
+
+### Fragen an Xander
+- K2: Hattest du die falschen Hüllkurven auf dem iPhone bei mehreren Spuren gleichzeitig (dann war es der Begrenzer, jetzt behoben)?
+  Falls es auch mit nur einer FM-Spur und wenigen Noten passiert: welcher Klang/welches Feld? Dann bitte das Projekt schicken.
+
+### Für das Zusammenführen
+- Worklet: `STEAL_N` (neben `FMX_EDGE_CAP`), `stealIfFull()` (Block `/* K2 */`), `defaults()` + `polyH: 0`.
+- Hauptteil: `limited()` (+ `polyH` ab Stufe 2), `applyLimiter()` (polyH zurück auf 0), `wkFlush()` (eine Zeile).
+- Berührt nicht K1 (Osz 3 / LFO / Ladder / Mod-Übersicht).
+
+---
+
+## N1 — Noten umdrehen
+
+### Was neu ist
+- Noten-Editor (Clip, Song-Melodie, eigener Clip – alle nutzen dieselbe Rolle), Aktionsleiste hinter „−12“: **[Spiegeln]** und
+  **[Umdrehen]**, je mit gezeichnetem Symbol (SVG: Pfeile ↑↓ bzw. ←→ über einer gestrichelten Achse, kein Emoji).
+  Wirkung auf die Auswahl, sonst auf den ganzen Clip (wie die anderen Aktionen, Anzeige „ALLE“ / „n Noten“). Ein Undo je Tipp.
+- **Spiegeln:** Tonhöhen um die Mitte (tiefster + höchster Ton) in **Tonleiter-Stufen** der Clip-Tonart gespiegelt → alle
+  Töne bleiben in der Skala, Intervalle gespiegelt (C-D-E-G → G-F-E-C in C-Dur); zweimal = Ausgangslage. Ein leiterfremder Ton
+  bleibt leiterfremd, wenn gegenüber ein Ganzton-Schritt liegt; landet er gegenüber in einem Halbton-Schritt (E–F, H–C), gibt es dort
+  keinen leiterfremden Ton – er rastet in die Tonart ein (dann ist zweimal nicht mehr die Ausgangslage). Zeit, Länge, Anschlag bleiben.
+  Ergebnis außerhalb C1…C8 (Zeilen der Rolle) → nichts geändert, Blase.
+- **Umdrehen:** zeitlich rückwärts: Start' = a + b − Start − Länge. Bereich: Auswahl = erste Note bis letztes Ende; ganzer Clip
+  = 0 … Clip-Länge. Länge, Anschlag, Ton je Note bleiben; der Roh-Einsatz `o` wandert mit (zweimal = deep-equal).
+- Beide nacheinander möglich (rückwärts gespiegelt). Nichts zu ändern → kein Undo-Schritt, kurze Blase.
+
+### Abnahme
+| Punkt | Prüfung (echte Touch-Tipps) | Ergebnis |
+|---|---|---|
+| N1-01 | C-D-E-G → Spiegeln → G-F-E-C, alle Töne in C-Dur, Zeit/Länge/Anschlag gleich; Auswahl D,E → E,D | bestanden |
+| N1-02 | Umdrehen ganzer Clip: Starts 0 / 1,25 / 2,75 / 3,5 (Soll), Anschlag/Länge je Note gleich; Auswahl im Bereich 1…2,75 | bestanden |
+| N1-03 | Spiegeln ×2, Umdrehen ×2 = Ausgangslage deep-equal (auch `o`, auch A-Moll mit C♯/F♯ gegenüber Ganztönen); beide + 2× Undo = Ausgangslage | bestanden (leiterfremd gegenüber Halbton: rastet ein, s. o.) |
+| Undo | genau ein Undo-Schritt je Tipp | bestanden |
+| Bedienung | 6 Formate: sichtbar (Leiste scrollt), Symbol gezeichnet, nichts abgeschnitten, Breite 92/102 px, Trefferfläche = volle Leistenhöhe | bestanden |
+
+Tests: `tests/n1-abnahme.mjs` (18/18), `tests/n1-hit.mjs` (12/12), Hilfen `tests/touch-lib.mjs`.
+
+### Abweichungen
+- Die Aktionsleiste des Editors ist in der App 36–44 px hoch (P1 44, P2 40, P3 38, quer 36; bestehendes Layout, nicht geändert,
+  sonst Layout-Sprung). Die neuen Knöpfe nutzen die volle Leistenhöhe als Trefferfläche (Breite ≥ 92 px); 44 px hoch ist in
+  P2/P3/quer nur mit einer höheren Leiste möglich → Frage.
+
+### Fragen an Xander
+- N1: Soll „Umdrehen“ ohne Auswahl im ganzen Clip (0 … Ende, so gebaut) oder nur zwischen erster und letzter Note drehen?
+- N1/allgemein: Die Editor-Leisten sind quer 36 px hoch – sollen sie für 44-px-Tasten höher werden (weniger Platz fürs Raster)?
+
+### Für das Zusammenführen
+- Nur im PianoRoll-Block: `N1_SVG`/`N1_ICON` (neben `EDGE`), CSS `.n1b`/`.n1i` (vor `.pr-bar .sep`), zwei Knöpfe hinter „−12“,
+  `n1Pos`/`n1Note`/`mirrorNotes`/`reverseNotes` (vor `quantizeNotes`). Alle mit `/* N1 */` markiert.
+
+---
+
+## N2 — Weite Wege beim Ziehen: Mini-Karte und Achsen-Einrasten
+
+### Was neu ist
+- **Mini-Karte:** Sobald Noten gehalten und gezogen werden (Zeichnen oder Auswahl, Geste „Verschieben“), erscheint im Notenfeld
+  eine Karte des ganzen Clips (bzw. der Song-Melodie): 48 px hoch, volle Breite (8 px Rand), Noten als Striche (die gehaltenen
+  hell), sichtbarer Ausschnitt als gelber Rahmen. Sie liegt oben; beginnt der Finger im oberen Band (< 78 px), liegt sie unten –
+  sie liegt nie unter der Stelle, an der der Finger aufsetzt. Die Info-Blase rückt unter die Karte.
+- **Finger auf die Karte:** Die Ansicht gleitet dorthin (≈ 0,2 s, mitlaufend), die Noten bleiben in der Hand: die gefasste Note
+  steht am Takt/Schritt unter dem Finger (Raster), Tonhöhe bleibt (bei waagrechter Sperre die gesperrte). Loslassen auf der Karte
+  setzt sie dort ab; zurück ins Notenfeld = normal weiterziehen. Eine Geste = ein Undo, Länge und Anschlag bleiben.
+- **Achsen-Einrasten:** nach den ersten 12 px: klar waagrecht (|dx| ≥ 2·|dy|) → Tonhöhe fest; klar senkrecht → Zeit fest;
+  schräg → frei. Einrasten mit leichter Haptik (`haptic('tick')`). Die Sperre löst sich erst nach 48 px quer (≈ 2 Reihen).
+  Bei senkrechter Sperre ist die Karte aus (sie würde sonst die Zeit verschieben).
+- Ohne Ziehen ändert sich nichts (Regression gegen 4.23.0: Knöpfe, gerade Züge, Länge, Zeichnen gleich).
+
+### Abnahme
+| Punkt | Prüfung (CDP-Touch-Züge) | Ergebnis |
+|---|---|---|
+| N2-01 | 16-Takt-Clip, Note in Takt 16 → auf die Karte links → Takt 1 in ≈ 0,93 s (inkl. Zug), Anschlag 0,37 und Länge 0,75 gleich, +1 Undo; 6 Formate | bestanden |
+| N2-02 | waagrecht 180 px mit ±20 px Zittern → Ton unverändert, Haptik | bestanden (P1, L1) |
+| N2-03 | senkrecht 112 px mit ±20 px Zittern → Zeit unverändert, Haptik | bestanden (P1, L1) |
+| N2-04 | Karte 48 px hoch, ganz im Bild, nicht unter dem Finger (auch Finger oben → Karte unten); 6 Formate | bestanden |
+| N2-05/06 | Sperre löst sich bei 90 px quer; schräger Zug bleibt frei | bestanden |
+| Layout | Seitenhöhe gleich, Karte weg nach dem Loslassen, keine Fehler | bestanden |
+| Regression | `roll-regress.mjs`: gleiche Aktionen auf 4.23.0 und neu → gleicher Clip, gleiches Layout (P1, P3, L1) | 30/30 |
+
+Tests: `tests/n2-abnahme.mjs` (28/28), `tests/roll-regress.mjs` (30/30).
+
+### Abweichungen
+- „Bestehende Tasten zum Sperren bleiben“: Die Rolle hatte keine Sperr-Tasten (nur „Tonart sperren“ an der Tastatur, unberührt).
+- Liegt die Karte oben, deckt sie beim Ziehen die obersten ~2 Reihen ab; ein Zug dorthin wird zum Kartensprung. Zum Ablegen
+  dort kurz scrollen (oder senkrecht ziehen: dann ist die Karte aus).
+- N1-Nachtrag: die Trefferflächen-Erweiterung der N1-Knöpfe ragte 2 px seitlich über (Text galt als abgeschnitten) – behoben.
+
+### Fragen an Xander
+- N2: Soll die Karte auch die Tonhöhe übernehmen (Finger auf der Karte höher = höherer Ton)? Gebaut: nur die Zeit.
+- N2: Karte auch beim Ändern der Länge (rechtes Ende ziehen) oder beim Zeichnen? Gebaut: nur beim Verschieben (Spec: „hält und zieht“).
+
+### Für das Zusammenführen
+- Nur im PianoRoll-Block: Konstanten `MMH/MMG/AX_ON/AX_OFF`, CSS `.pr canvas.pr-mm`, Canvas `cMM`, `mmOn/mmRect/mmSpan/mmBeat/mmDraw/mmGlide`
+  (vor `rr`), ein Aufruf `mmDraw(C)` in `draw()`, `move`-Zweig in `drag()` (Achse, Karte), zwei Zeilen Animationsende
+  (`mainUp`, `abort`), Test-Hook `_mm()`. Markiert mit `/* N2 */`.
+
+---
+
+## D1 — Drum-Sequencer: Länge je Spur, Richtung
+
+### Was neu ist
+- **Daten (Format 5, additiv):** Drum-Clip bekommt `lanes` = `{GM-Nummer: {len 1–64, dir 'rev'|'pend'|'rnd', seed 1–99}}`, nur
+  Abweichungen vom Standard (fehlt `len` = Clip-Länge, fehlt `dir` = vorwärts). In `normClip` (normiert/geprüft) und `cleanClip`
+  (Undo, Kopie, Speichern). Clips ohne `lanes` spielen exakt wie 4.23.0.
+- **Polymeter:** Eine Spur mit eigener Länge zählt ihre Schritte ab Clip-Start durch (nicht je Clip-Runde): Hi-Hat 12 gegen
+  Kick 16 ist nach 48 Schritten wieder deckungsgleich. Schritte hinter der Spur-Länge schweigen (bleiben gespeichert). Der Clip
+  selbst bleibt so lang wie bisher. Chance, Wirbel, Timing, Akzent, Locks und Swing wirken wie bisher (gleiche `expandStep`).
+- **Richtung je Spur:** vorwärts · rückwärts · Pendel (0…n−1…1, ohne doppelte Enden) · Zufall (Schritt = Zufall aus Startwert
+  und Schrittzahl → jedes Abspielen gleich; anderer Startwert = andere Folge).
+- **Bedienung (SCHRITTE, gewähltes Instrument):** Im Fuß neben „Euklid…“/„Muster ▾“ ein Knopf mit gezeichneter Loop-Klammer und
+  der Länge (z. B. „] 12 ←“). Tipp → Blatt „HH ZU – Länge und Richtung“: Regler Länge (1–64 Schr.), vier Richtungs-Tasten
+  (44 px), Regler Startwert (nur bei Zufall), Taste **„×2 – Clip verdoppeln (mit Inhalt)“** (bis 16 Takte, Spuren behalten ihre
+  Länge). Alles sofort hörbar; ein Undo, wenn das Blatt schließt (ohne Änderung keins); ×2 = ein Undo. Gespeichert wird nur, was
+  vom Standard abweicht: eine Spur so lang wie der Clip hat keine eigene Länge und wächst mit ×2 mit. Der Länge-Regler reicht bis
+  zur Clip-Länge (max. 64); längere Spuren nach ×2. Die Werkzeug-Zeile lässt sich per Finger seitlich wischen (P2/P3 mit Takt-Wahl).
+- **Im Schritt-Raster:** der letzte Schritt der Spur trägt eine gelbe Klammer, Schritte dahinter sind gedimmt; der Laufpunkt
+  zeigt beim Abspielen den Schritt der Spur (auch rückwärts/Pendel/Zufall).
+
+### Abnahme
+| Punkt | Prüfung | Ergebnis |
+|---|---|---|
+| D1-01 | Clip spielt (240 BPM, echte Planung, gemessene Treffer): Hi-Hat 12 Schritte (Schritte 1, 6, 14) gegen Kick 16 → Treffer bei g mod 12 ∈ {0, 5}, Schritt 14 schweigt, Schritte 0–47 = 48–95 | bestanden |
+| D1-02 | rückwärts (5), Pendel (4), Zufall (8, Startwert 5): Treffer = Definition, zweiter Lauf gleich, Zufall ≠ vorwärts, Startwert 6 anders | bestanden |
+| D1-03 | ×2 per Touch: 1 → 2 Takte, Inhalt doppelt, Spuren bleiben, +1 Undo; Undo deep-equal; Richtung per Touch +1 Undo; Speichern → Laden deep-equal; ungültige Felder normiert | bestanden |
+| D1-03 | alter Clip ohne `lanes` (mit Chance/Wirbel/Timing/Akzent): gleiche Treffer wie 4.23.0 | bestanden |
+| D1-04 | Knopf und Blatt in 6 Formaten im Bild, nichts abgeschnitten, Blatt-Tasten ≥ 44 × 44, Seitenhöhe gleich | 18/18 |
+| Laufpunkt/Klammer | rückwärts 12: Laufpunkt = Spur-Schritt 24/24, Klammer auf Schritt 12, 4 gedimmt | bestanden |
+| Regression | Schritt-Seite ohne `lanes` gegen 4.23.0: Zellen, Leiste, Overview, Seitenhöhe, Tipp-Ergebnis gleich (alle Formate) | gleich; Abweichungen siehe unten |
+
+Tests: `tests/d1-abnahme.mjs` (11/11), `tests/d1-layout.mjs` (18/18), `tests/d1-playhead.mjs` (3/3), `tests/d1-regress.mjs`.
+
+### Abweichungen
+- „Loop-Klammer im Schritt-Raster ziehbar“: gebaut als Länge-Regler im Blatt + gezeichnete Klammer im Raster (Spec: „Länge
+  bzw. Loop-Klammer“). Ein Zug an der Klammer selbst kollidiert mit dem Malen der Schritte (Wischen = malen) und mit dem
+  8×2-Raster hochkant → Frage.
+- Der neue Knopf braucht 50 px im Fuß: quer rücken Euklid/Muster/Takt-Wahl 50 px nach links, die Spur-Tabs werden 50 px
+  schmaler (alle 7 ganz sichtbar außer 667×375 mit mehrtaktigem Clip: dort scrollt die Tab-Zeile wie vorher, TIMING jetzt auch
+  im Scrollbereich). Hochkant P2/P3 mit mehrtaktigem Clip: die Takt-Wahl ist 96 px breit und die Werkzeug-Zeile scrollt seitlich
+  (wie die Werkzeugleisten der Rolle). Fuß-Knöpfe sind 28–34 px hoch wie Euklid/Muster (bestehendes Layout).
+- MIDI-Export schreibt die gespeicherten Schritte (ohne Polymeter/Richtung); der Klang in der App folgt `lanes`.
+
+### Fragen an Xander
+- D1: **Wahrscheinlichkeit je Schritt und Wirbel (Ratchets) gibt es schon** (Reiter CHANCE und WIRBEL in SCHRITTE). Vorschläge
+  für weitere „Spielereien“ (nicht gebaut): Wahrscheinlichkeit je Spur statt je Schritt, Wirbel-Zufall, Spur-Versatz (Start
+  verschieben), „Schritt überspringen“, Swing je Spur.
+- D1: Soll die Klammer im Raster direkt ziehbar sein (dann z. B. nur mit Halten > 0,5 s, damit Wischen weiter malt)?
+- D1: Soll der MIDI-Export die Polymeter-Folge ausschreiben (dann so lang wie bis zur Deckung, z. B. 48 Schritte)?
+- D1: Zählt die Spur bei jedem Neustart des Clips (Szenenwechsel) von vorn (so gebaut) oder soll sie über Szenen weiterlaufen?
+
+### Für das Zusammenführen
+- `/* D1 */`-Blöcke: `D1_DIRS`, `d1Norm`, `d1Lane`, `d1Pos`, `d1Map` (vor `cleanClip`), eine Zeile in `cleanClip`, eine in `normClip`;
+  `scheduleDrums` (zwei Zeilen) + `d1Sched` (vor `cutTrackAt`); Laufpunkt (eine Zeile im Schritt-Rahmen); `pageDrumSteps`
+  (`decorate` + `d1Tools`); `d1Decorate`, `d1Tools`, `d1Double`, `d1Pop`, `D1_ICON` (vor `openEuclid`); CSS nach `.dtools`.
+
+---
+
+## Unabhängiger Nachtest (zweiter Prüfer) und Korrekturen
+
+Ein zweiter Prüfer hat den Diff gelesen und mit eigenen Touch-/Klang-Skripten geprüft. Bestätigte Fehler und was daraus wurde:
+
+| # | Fund | Korrektur | Nachweis |
+|---|---|---|---|
+| 1 | D1: Werkzeug-Zeile in 375×667 (2 Takte) per Finger nicht wischbar (Blatt hat `touch-action:none`), Länge-Knopf unerreichbar | Zeile scrollt per Pointer-Zug (Tipp bleibt Tipp, > 12 px ist kein Tipp) | `qa-fixes.mjs` QA-1: echter Wisch, Knopf ganz sichtbar, Tipp öffnet Blatt |
+| 2/8 | D1: Antippen von Richtung schrieb die Länge fest (nach ×2 / kürzerem Clip schwieg die Spur taktweise) und machte ohne Änderung einen Undo-Schritt | nur Abweichungen speichern; ohne Änderung kein Undo | QA-2 Leerlauf (keine lanes, +0 Undo), QA-2 ×2 (Spur 32) |
+| 3 | N1: Behauptung „leiterfremd bleibt leiterfremd, zweimal = Ausgangslage“ stimmte nicht gegenüber Halbtonschritten | Beschreibung korrigiert (rastet dort in die Tonart ein); Tonumfang auf die Rollen-Zeilen C1…C8 begrenzt | – (Verhalten bewusst, siehe Frage) |
+| 4 | N2: Loslassen direkt auf der Karte → Ansicht blieb auf halbem Weg stehen, abgesetzte Note nicht im Bild | Gleiten läuft nach dem Loslassen zu Ende | QA-4 |
+| 5 | N2: Schließen der Rolle während des Gleitens → TypeError | Gleiten hat eigenen Zustand, `destroy` stoppt es | QA-5 |
+| 6 | D1: Spur länger als der Clip = nur unbearbeitbare Stille | Länge-Regler bis Clip-Länge (64 nach ×2…) | QA-6 |
+| 7 | Trefferflächen < 44 px (Fuß-Knopf D1 28–34 px, N1-Knöpfe = Leistenhöhe 36–44 px) | nicht geändert (bestehende Leisten-/Fußhöhe der App) | offen → Frage |
+
+Nicht bestätigte Verdachtsfälle (offen gelassen): K2 – bei Begrenzer-Stufe 3 können gehaltene Noten jetzt bis zur eigenen Stimmenzahl
+klingen (weniger Aussetzerschutz, CPU nur mit 6 Stimmen gemessen); der Vorhör-Klang (`PV.chain`) bekommt `polyH: 0` nicht zurück
+(wirkt nur, wenn dort poly gesenkt wird); N1 mit automatischer Tonart kann zwischen zwei Tipps die Tonart neu erkennen; Umdrehen einer
+Note, die über das Clip-Ende ragt, schneidet sie auf 0 (zweimal ≠ Ausgangslage).
+
+### Fragen an Xander (Nachtest)
+- N1: Leiterfremder Ton gegenüber einem Halbtonschritt – einrasten (so gebaut) oder chromatisch spiegeln (dann bleibt die Ausgangslage, aber Töne außerhalb der Tonart entstehen)?
+- Allgemein: Editor-Leisten und Drum-Fuß höher machen (44 px Tasten) auf Kosten des Rasters?
+- K2: Soll der Begrenzer auf Stufe 3 gehaltene Noten doch kürzen dürfen (Aussetzerschutz vor vollem Akkord)?
+
+## G-T-merge — Zusammenführung · App **4.24.0** (`APP_CODE` 4 024 000) · Format bleibt 5 · kein Supabase-Aufruf
+
+Hauptlinie 4.23.0 (G-MK8b-merge-fix) + drei Zweige ab `vs-base-B.html` (4.23.0), echte 3-Wege-Zusammenführung
+(`git merge-file -L MAIN -L BASE -L <Zweig>`), in dieser Reihenfolge:
+
+| Zweig | Pakete | Ergebnis `git merge-file` |
+|---|---|---|
+| K1 (`n5-br-K`, K1 + K1-fix) | K1 Klang-Prüfung, Mod-Übersicht | 0 Konflikte |
+| S012 (`helfer-s012`) | S0 Teil bearbeiten, S1 Teil überarbeiten im Lauf, S2 Zusammenfassen | 0 Konflikte |
+| N12D1K2 (`helfer-n12d1k2`) | N1 Noten umdrehen/spiegeln, N2 Mini-Karte + Achsen-Einrasten, D1 Länge/Richtung je Drum-Spur, K2 FM-FELD-Stimmenklau | 0 Konflikte |
+
+Sicherung vorher: `mk-wt/index.html.vor-merge-G-T-merge.html`. Keine Konfliktmarken (`^<<<<<<<`, `^=======$`, `^>>>>>>>`: 0).
+Alle Zweige haben ihre Haken in getrennte Zeilen gesetzt; nur zwei Stellen berühren dieselbe Funktion und wurden geprüft:
+- **Worklet:** K1 (`MkTimbre.idle()` Glättung, `{k1Dump}`) und K2 (`STEAL_N`, `stealIfFull`, `polyH`) liegen in verschiedenen Klassen –
+  beide wirken (K1 `n5-k-path*` −331 dB, K2 `k2-abnahme` 12/12).
+- **`undoApply` / Marken-Blatt:** K1-Einhänger (offene Mod-Übersicht folgt ↶ ↷) und S0/S2-Einhänger (`s012MarkSheetPaint`) stehen
+  getrennt; beide geprüft (`n5-k-qa-undo`, `q3-s0-edit` 10/10).
+
+**VERSION:** Zweig K1 hatte 4.25.0, die anderen 4.23.0. Die Ausgabe ist laut Auftrag **4.24.0** (`APP_CODE` 4 024 000; Wächter am
+Server `max_app` = 4 030 000 reicht, siehe Funk 31.10. ~14:50). Der K1-Hash-Kommentar „INIT Analog vor 4.25.0“ heißt jetzt „vor 4.24.0“
+(Wirkung gleich: ein INIT Analog mit Drift 15 %/Osz 2 +7 ct gilt nicht als „geändert“). Die Zeile `  live: true,` ist unverändert.
+In den angehängten Zweig-Abschnitten oben steht noch „4.25.0“ – das ist der Stand des Zweigs, ausgeliefert wird 4.24.0.
+
+### K1-Entscheidungen Xander 31.10. (~16:00) – jetzt eingebaut
+
+1. **Key-Reset: Oszillatoren starten phasengleich.** Bei jeder neuen Note beginnen Osz 1/2/3 und der Sub (VA/WT im Worklet und im
+   Ersatzklang ohne Worklet) bei Phase 0 – für jeden Klang, auch ohne den Schalter „Phasen-Reset“. Gleiche Tonhöhe = immer gleicher
+   Pegel: Osz 1 + Osz 3 gleiche Tonhöhe, 16 Noten: **+6,0 dB jedes Mal** (4.23.0/K1: 0 … +5,5 dB je nach Startphase) – `n5-k-osc3.mjs`.
+   Keine Verstimmung dazu. Die Unisono-Kopien behalten ihre eigenen Phasen. Die Zufallszahlen (Drift, Pan, Unisono-Phasen) bleiben
+   dieselben wie vorher. Mono/Legato: die laufende Stimme läuft weiter wie bisher (kein Phasensprung mitten im Ton).
+   MS 2000 und FM starteten schon immer phasengleich (keine Änderung). S&H unverändert (siehe 3).
+2. **Qualität „Auto“ ändert den Klang nie.** Unter CPU-Last schaltet Auto (und Analog) nicht mehr auf die ECO-Ladder und begrenzt
+   kein Unisono mehr; beim MS 2000 bleiben Unisono-Stimmen und der Vocoder-Pfad, wie sie sind (`mkLimS` = nur bei „Eco“). Die Last
+   wird über die Stimmenzahl gelöst: VA/FM kürzen zuerst die leisesten Ausklänge (K2: gehaltene Noten bleiben), der MS 2000 nimmt
+   unter dem Begrenzer (Stufe ≥ 2, Last-Note-Priorität) die **leiseste** gehaltene Stimme statt der ältesten (`gt/mk-steal.mjs`).
+   Sichtbarer Hinweis einmal je Sitzung, sobald die Stimmen-Grenze greift: Toast „Viel Rechenlast – die leisesten Stimmen klingen
+   kürzer aus. Der Klang bleibt gleich.“ Wer im Menü „Eco“ wählt, bekommt die einfacheren Filter/weniger Unisono wie bisher.
+   Menü-Text unter Klang angepasst: „Qualität Auto: der Klang bleibt immer gleich; bei hoher Rechenlast klingen die leisesten Stimmen
+   kürzer aus. Eco: einfachere Filter und weniger Unisono.“ Einfrieren (FR1) kommt später.
+3. **Sample & Hold bleibt genau so** (gleiches Muster je Tastendruck): nichts geändert. Nachweis: mit Phasen-Reset an rendert S&H
+   bitgleich zu 4.23.0 (VA −327,6/−328,0 dB, MS 2000 −319,5/−320,9 dB, `gt/n5-k-sh-reset1.mjs`); mit Phasen-Reset aus unterscheidet
+   sich nur die Oszillator-Startphase (Entscheidung 1), die Stufen sind dieselben (14–15/15, 23 456–23 472/23 467).
+4. **Anschlag → Lautstärke** steht nicht in der Mod-Übersicht (war in K1 schon so, bestätigt).
+
+**Regel 28 (alte Projekte):** Ohne Entscheidung 1 rendert die zusammengeführte Fassung **alle 320 Werksklänge bitgleich zu 4.23.0**
+außer INIT Analog (K1, gewollt) – geprüft mit einer Testkopie ohne Key-Reset (`gt/merged-noKR.html`: `n5-k-golden` 319/320,
+`n5-k-05old` alle Spuren ≤ −324 dB, `n5-k-golden-node` 64/64 gegen 4.23.0 und 4.3.0). **Mit** Entscheidung 1 klingen alle VA-/WT-Klänge mit
+Phasen-Reset aus im Anschlag anders (gewollt, Xander: „stabil, ohne Unterschiede“): 35 Werksklänge (z. B. Mini-Lead, Rom-Fläche,
+Supersaw-Hymne, alle WT-Klänge mit 2 Oszillatoren), in alten Projekten die Spuren Rom-Fläche, Mini-Lead, Melodie-Lead des Demos und
+INIT Analog. Unverändert: Klänge mit Phasen-Reset an (z. B. Moog-Bass), alle FM-, MS-2000- und Drum-Klänge. Eine Umrechnung gibt es
+dafür nicht, weil die alte Startphase Zufall war (jede Note anders) – genau das, was Xander abschaffen wollte.
+
+### K1-Restbefunde behoben
+- **Tonhöhen-Routen in Cent:** Eine Route auf Tonhöhe/Osz 2 Tonhöhe zeigt die Menge jetzt in Cent statt „+0,5 % · ±0,11 HT“, z. B.
+  „LFO 2 → Tonhöhe · ±11 ct“ (Mini-Lead), „±7,2 ct“ (Rom-Fläche) – `gt/k1cents.mjs`.
+- **Liste nach [Rückgängig] im Toast:** in der Hauptlinie nachgeprüft (P 320×568 und L 844×390, Toast am Kopf): ✕ → 3 bzw. 5 Zeilen,
+  [Rückgängig] → 5 bzw. 6 Zeilen, nichts fehlt – `n5-k-qa-undo.mjs`, `n5-k-fix-mods.mjs` (h), `n5-k-qa-flow1.mjs` P/L.
+
+### K2: FM-FELD für Slap-Bass schnell genug (geprüft, nichts zu ändern)
+Gemessen am Klang (Operator allein, 0,25-ms-Fenster, `gt/slap-probe.mjs`): DX-Form Rate 99 → Anstieg auf 90 % in **0,5 ms**; Punkt-Form
+Zeit 0 → **0,25 ms**. Abklingen: DX R2 99 → −20 dB in 1,8 ms, R2 80 → 11,5 ms; Punkt-Form 30 ms → −20 dB in 7 ms. Der Amp ist bei FM ein
+Tor mit 0,25 ms (fmAmp 0). Attack ≤ 1 ms und kurzes Decay gehen also; kein Umbau nötig.
+
+### Abnahme nach der Zusammenführung (gegen `mk-wt/index.html` 4.24.0)
+| Skript | Ergebnis |
+|---|---|
+| `smoke.mjs` | ohne Fehler (`gt/G-T-merge-smoke.png`) |
+| `gt/gt-k1dec.mjs` (neu: Auto/Eco/Hinweis/MS 2000) | ALL OK 9/9 (K1-Zweig: 3 rot) |
+| `gt/mk-steal.mjs` (neu: leiseste MS-2000-Stimme) | OK (K1-Zweig: rot) |
+| K1: `n5-k-03` · `-02b` · `-06` · `-fix-mods` · `-fix-finger` P/L · `-fix-edm` · `-fix-nb` · `-qa-undo` · `-qa-flow1` P/L · `-reg-spielq` · `-05` · `-path` · `-path-fm` · `-path2` · `-ladder-mk` · `-lfo` · `-lfo-mk` · `-cpu` | bestanden (CPU VA 0,83 ×, MS 2000 0,95 × gegen 4.23.0) |
+| K1: `n5-k-osc3` | bestanden, jetzt +6,0 dB je Note (Entscheidung 1) |
+| K1: `n5-k-sh`, `n5-k-golden`, `n5-k-05old`, `n5-k-golden-node` | „rot“ nur durch Entscheidung 1 (siehe Regel 28 oben; ohne Key-Reset alle grün) |
+| K1: `n5-k-ladder` | 0 NaN/Inf; 7 statt 6 Einträge des groben Rasters: Spitze 5,29 statt 4,97 (phasengleicher Start von 21 Unisono+Sub+Rauschen) und ein 2,7-ms-Tal bei LP24, wenn der 40-Hz-LFO den Cutoff durch 20 Hz fegt – kein Abbruch, das Tal von K1 (BP24) an anderer Stelle |
+| K2: `k2-abnahme` 12/12, `k2-click` −50,2 dB, `k2-app`, `k2-app-lim`, `k2-cpu` | bestanden |
+| K2: `k2-gleich` | FM bitgleich; VA rot nur durch Entscheidung 1 (Testklang mit Phasen-Reset aus) |
+| N1: `n1-abnahme` 18/18, `n1-hit` 12/12 · N2: `n2-abnahme` 28/28, `roll-regress` 30/30, `qa-fixes` 8/8 | bestanden |
+| D1: `d1-abnahme` 11/11 (im 1. und 3. Lauf 8–9/11), `d1-layout` 18/18, `d1-playhead` 3/3 | bestanden; `d1-regress` 70/84 = wie im Zweig (gewollte Fuß-Verschiebung, Zweig-Abweichungen) |
+| S0: `s0-acc` 38/38 · S1: `s1-acc` 27/28 · S2: `s2-acc` 24–25/25 | die roten Punkte sind Echtzeit-Messungen (live gespielte Note 1,30 statt 1,00 ± 0,08 Schlag; Mitschnitt-Pegel); im Zweig selbst in dieser Umgebung genauso wechselnd (S0 37/38, S1 27/28) |
+| S012-QA: `q2` 24/24, `q3` 10/10, `q5` 3/3, `q8` 2/2, `q1` 4/4 (Wiederholung), `q4` 9/10, `q7` 8/9, `q6` 24/42 | wie im Zweig (`q4 (a)`, `q7 C`, `q6` gleich viele Punkte rot im Zweig) |
+| S012-Regression `reg/` (part, part2, part3, loop, fang2, v2e2reg-song, v2e2reg-fangui) | gleich wie 4.23.0 |
+| G-MK8b: `gmk8b-hit44`, `-ui`, `-reg`, `-restore`, `-panik`, `-cross`, `-plate`, `-contrast`, `-daten`, `-fix-voc`, `-cpu`; `v3-mk2-wellen` | bestanden; `gmk8b-lay` 12 rot = genauso in 4.23.0 vor der Zusammenführung (alte Probe, ersetzt durch `gmk8b-hit44`) |
+
+Echtzeit-Tests (D1-Treffer bei 240 BPM, S1/S2 „hörbar“) schwanken in dieser Umgebung (4 Kerne, kein Audio-Gerät) auch mit den
+Zweig-Dateien; gemessen: gleiche Planung, Long-Tasks 50–160 ms in beiden.
+
+Test-Skripte der Helfer: aus `origin/helfer-s012` / `origin/helfer-n12d1k2` (`bau/helfer/<NAME>/tests/`) nach `dirigent-test/gt/S012/`,
+`dirigent-test/gt/N12D1K2/` kopiert; `gt/index.html` zeigt auf die Hauptlinie, `werkzeug/vs-base-B.html` auf die Basis. Ausgaben in `gt/out/`.
+
+### Für Xander (iPhone)
+- Synth mit zwei Oszillatoren auf gleicher Tonhöhe: jede Note gleich laut, kein „mal laut, mal leise“ mehr.
+- Viele Spuren auf einmal: der Klang bleibt gleich, höchstens die leisesten Ausklänge werden kürzer; einmal erscheint der Hinweis.
+- ⋯ → Modulationen: Vibrato-Routen stehen in Cent („±11 ct“).
+
+### Fragen an Xander
+1. Der Schalter **„Phasen-Reset“** (OSZ → STIMME) hat jetzt keine hörbare Wirkung mehr, weil jeder Klang phasengleich startet. Soll er
+   wegfallen, oder soll „aus“ wieder freie Phasen erlauben (dann klingt es wieder je Note anders)?
+2. In älteren Klang-Beschreibungen stehen noch die Namen „Nord Lead“/„Nord Drum“ als Vergleich (11 Stellen, seit lange vor 4.23.0).
+   Sollen sie neutral umformuliert werden?
+
+Snapshot: `synq-snapshots/G-T-merge.html`.

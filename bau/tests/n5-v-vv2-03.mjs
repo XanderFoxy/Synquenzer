@@ -35,7 +35,10 @@ for (let k = 0; k < 2; k++) {
   runs.push({cuts: m.cuts, dur: m.dur, logN: L.log ? L.log.length : 0, logHash: execSync('sha1sum', {input: lh}).toString().slice(0, 12), L});
   if (k === 0) { const bl = await p.evaluate(() => SYNQUENZER.vvBlob()); fs.writeFileSync(`n5-v-out/vv2-03-${FMT.replace(':', 'x')}.mp4`, Buffer.from(bl.b64, 'base64')); }
 }
-res.zweiLaeufe = {cuts: runs.map(r => r.cuts), log: runs.map(r => r.logHash + ' (' + r.logN + ')'), ok: runs[0].cuts === runs[1].cuts && runs[0].cuts === c1.hash && runs[0].logHash === runs[1].logHash};
+// the pictures: the camera of every common picture (the tail's length varies by a few ms between two offline renders: engine noise)
+const nC = Math.min(runs[0].logN, runs[1].logN), key = e => [e.ts, e.k, e.cx.toFixed(3), e.cy.toFixed(3), e.z.toFixed(4)].join(',');
+const sameCam = runs[0].L.log ? runs[0].L.log.slice(0, nC).every((e, k) => key(e) === key(runs[1].L.log[k])) : true;
+res.zweiLaeufe = {cuts: runs.map(r => r.cuts), dauer: runs.map(r => r.dur), bilder: runs.map(r => r.logN), kameraGleichIn: nC, ok: runs[0].cuts === runs[1].cuts && runs[0].cuts === c1.hash && sameCam};
 const spb = await p.evaluate(() => 60 / S.bpm);
 // the cut in the video: the first picture of shot k lies on the bar line (≤ 1 picture after it)
 if (FMT === '9:16') {

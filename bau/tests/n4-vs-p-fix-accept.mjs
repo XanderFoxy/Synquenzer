@@ -67,7 +67,7 @@ if (which === '03' || which === 'all') {
   // (a) leiser Gesang −30 dBFS RMS mit Plosiven bei 0 dBFS (roh); (b) Gesang −28 mit Spitzen, die nach dem Ausgleich bei 0 dBFS liegen
   const A = sung(8, sr, -30, {seed: 21}).y; for (const t of [0.5, 1.7, 3.1, 4.4, 6.2]) pop(A, t, 1);
   for (let i = 0; i < A.length; i++) A[i] = Math.max(-1, Math.min(1, A[i]));
-  const B0 = sung(8, sr, -28, {seed: 22}); const gB = Math.pow(10, (-15.134 - Lu([B0.y], sr).lufs) / 20), B = B0.y; for (const t of [0.9, 2.2, 3.6, 5.3, 6.8]) pop(B, t, 1 / gB);
+  const B0 = sung(8, sr, -28, {seed: 22}); const gB = Math.pow(10, (-19.0103 - Lu([B0.y], sr).lufs) / 20), B = B0.y; for (const t of [0.9, 2.2, 3.6, 5.3, 6.8]) pop(B, t, 1 / gB);
   const tests = [['a', A, 0], ['b', B, 1]];
   for (const [nm, x, sc] of tests) {
     const r = await inject(p, x, sr, sc, 4);
