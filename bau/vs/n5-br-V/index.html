@@ -1249,7 +1249,7 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .vvsheet.busy .vvprog{display:flex}
 .vvdone{visibility:hidden}
 .vvsheet.has .vvdone{visibility:visible}
-.vvway{display:flex;flex-direction:column;gap:2px;min-height:28px;font:500 11px/1.25 var(--font-ui);color:var(--text-dim)}
+.vvway{display:flex;flex-direction:column;gap:2px;height:30px;flex:none;overflow:hidden;font:500 11px/1.25 var(--font-ui);color:var(--text-dim)}
 .vvway.warn{color:var(--amber)}
 .vvway .vvtxt{flex:none;min-height:14px;font:600 12px/1.2 var(--font-ui);color:var(--text)}
 .vvrow.txt{min-height:32px}
@@ -42228,7 +42228,10 @@ function vvDrawMatrix(g, LW, LH, st) {
   for (let k = 0; k < nc; k++) {
     const s = c0 + k, x = labW + pad + k * cw, on = rows.some(i => st.slots[i] === s);
     vvRound(g, x + 2, y0, cw - 4, head - 6, 5); g.fillStyle = on ? '#16241c' : C.ch2; g.fill(); g.strokeStyle = on ? C.play : C.line; g.lineWidth = 1; g.stroke();
-    g.font = '700 13px ' + C.num; g.fillStyle = on ? C.play : C.text; g.fillText('▶ ' + (s + 1), x + cw / 2, y0 + (head - 6) / 2);
+    g.font = '700 13px ' + C.num; g.fillStyle = on ? C.play : C.text;
+    const cy = y0 + (head - 6) / 2, tx = x + cw / 2 - 9;          // the ▶ as a drawn triangle (never a font glyph / emoji)
+    g.beginPath(); g.moveTo(tx - 4, cy - 5); g.lineTo(tx + 4, cy); g.lineTo(tx - 4, cy + 5); g.closePath(); g.fill();
+    g.fillText(String(s + 1), x + cw / 2 + 6, cy);
   }
   rows.forEach((i, r) => {
     const y = y0 + head + r * chh, tc = C.t[i] || '#888';
@@ -42556,8 +42559,8 @@ function vvClose() {
 // the stage canvas fits its box (aspect of the format); preview size = box × dpr, the encoder draws its own full size
 function vvFit() {
   const u = VV.ui; if (!u) return;
-  const [W, H] = VV_SIZE[vvPrefs().fmt], bx = u.stage.getBoundingClientRect(), k = Math.min(bx.width / W, bx.height / H) || .1;
-  const cw = Math.max(10, Math.floor(W * k)), ch = Math.max(10, Math.floor(H * k));
+  const [W, H] = VV_SIZE[vvPrefs().fmt], bw = Math.floor(u.stage.clientWidth), bh = Math.floor(u.stage.clientHeight), k = Math.min(bw / W, bh / H) || .1;
+  const cw = Math.max(10, Math.min(bw, Math.round(W * k))), ch = Math.max(10, Math.min(bh, Math.round(H * k)));
   u.cv.style.width = cw + 'px'; u.cv.style.height = ch + 'px';
   if (!VV.busy) { const d = Math.min(2, window.devicePixelRatio || 1); u.cv.width = Math.round(cw * d); u.cv.height = Math.round(ch * d); vvStill(); }
 }
@@ -42620,7 +42623,7 @@ async function vvGo() {
       const q = Math.round(p * 100); if (q === lastP) return; lastP = q;
       i.style.transform = 'scaleX(' + p.toFixed(3) + ')'; s.textContent = (what === 'Ton' ? 'Ton wird berechnet' : what === 'Video' ? 'Video wird erstellt' : 'Bild in Echtzeit') + ' · ' + q + ' %';
     }});
-    if (VV.ui === u) toast('Video fertig · ' + vvFmtTime(res.dur) + ' · ' + vvMB(res.size));
+    void res;                                                     // the result stands in the sheet („0:19 · 9:16 · 2,9 MB“)
   } catch (e) {
     if (String(e && e.message) !== 'abgebrochen') { logErr(e); toast('Video fehlgeschlagen: ' + (e && e.message || e)); } else toast('Video abgebrochen');
   } finally { VV.busy = false; VV.cancel = false; if (VV.ui === u) { vvSync(); } }

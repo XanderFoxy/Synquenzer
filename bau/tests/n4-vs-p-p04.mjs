@@ -17,8 +17,6 @@ const sr = await p.evaluate(() => window.__ctx.sampleRate), y = sung(8, sr, -30,
 const r = await p.evaluate(([pc, sr]) => SYNQUENZER.tkInject({pcm: pc, sr, scene: 0, len: 4}), [pcm, sr]);
 const h0 = await p.evaluate(id => SYNQUENZER.tkPcmHash(id), r.id), w0 = await p.evaluate(id => SYNQUENZER.tkWavInfo(id), r.id), j0 = await p.evaluate(() => SYNQUENZER.serialize());
 await p.evaluate(() => SYNQUENZER.saveNow ? SYNQUENZER.saveNow() : SYNQUENZER.save()); await sleep(1500); await p.close();
-const ctx2 = await br.newContext({viewport: {width: 390, height: 844}, storageState: undefined}); void ctx2;
-H = await open({br, file: APP}); await H.ctx.close(); // (eigener Kontext wäre leer – derselbe Kontext unten)
 const pg = await ctx.newPage(); const errs = []; pg.on('pageerror', e => errs.push(String(e)));
 const {INIT} = await import('./v3-vs2-h.mjs'); await pg.addInitScript(INIT);
 const LIB = (await import('fs')).readFileSync('/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/dirigent-test/n4-vs-p-lib.mjs', 'utf8').replace(/^export /gm, '');
@@ -46,6 +44,6 @@ const h1 = await p.evaluate(id => SYNQUENZER.tkPcmHash(id), r.id), w1 = await p.
 ok(h1 === h0 && w1.same && w1.hashData === w0.hashData && w1.hashData === w1.hashRaw, `WAV-Export bitgleich zum Roh-Take und zu 4.23.0 (Roh ${h1}, WAV-Daten ${w1.hashData})`);
 const z = await p.evaluate(() => SYNQUENZER.tkZipInfo());
 ok(z.files.some(f => /takes\/.*\.wav/.test(f.name)), 'ZIP enthält den Roh-Take als WAV: ' + z.files.map(f => f.name + ':' + f.n).join(', '));
-ok(!errs.length && !H.errs.length, 'keine Konsolenfehler ' + JSON.stringify(errs.slice(0, 2)));
+ok(!errs.length, 'keine Konsolenfehler ' + JSON.stringify(errs.slice(0, 2)));
 await br.close();
 console.log(fail ? `\n${fail} FEHLER` : '\nALLE OK'); process.exit(fail ? 1 : 0);

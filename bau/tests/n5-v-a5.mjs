@@ -11,9 +11,9 @@ await p.evaluate(() => {
 });
 res.song = await p.evaluate(() => ({bars: S.song.bars, sec: +(S.song.bars * 4 * 60 / S.bpm).toFixed(1), load: null}));
 for (const fmt of ['9:16']) {
-  const m = await p.evaluate(async fmt => { SYNQUENZER.vvTest({opus: true}); window.__lt = []; const t0 = performance.now(); window.__t0 = t0; const x = await SYNQUENZER.vvMake({fmt, view: 'auto'}); return Object.assign(x, {wall: Math.round(performance.now() - t0), lt: window.__lt.map(e => ({at: e.t - Math.round(t0), d: e.d}))}); }, fmt);
+  const m = await p.evaluate(async fmt => { SYNQUENZER.vvTest({opus: true}); window.__lt = []; const t0 = performance.now(); window.__t0 = t0; const x = await SYNQUENZER.vvMake({fmt, view: 'auto'}); const pr = SYNQUENZER.vvInfo().prof; return Object.assign(x, {wall: Math.round(performance.now() - t0), big: (pr.big || []).map(b => [b[0], b[1] - Math.round(t0), b[2]]), prof: Object.fromEntries(Object.entries(pr).filter(([k]) => k !== 'big').map(([k, v]) => [k, {n: v.n, max: Math.round(v.max), avg: +(v.sum / v.n).toFixed(1)}])), lt: window.__lt.map(e => ({at: e.t - Math.round(t0), d: e.d}))}); }, fmt);
   const lt = m.lt.filter(e => e.at >= 0);
-  res['05-' + fmt] = {how: m.how, dur: +m.dur.toFixed(2), wallMs: m.wall, msAudio: m.msAudio, x: +(m.dur * 1000 / m.wall).toFixed(2), size: m.size, longTasks: lt.length, longest: lt.length ? Math.max(...lt.map(e => e.d)) : 0, lt: lt.slice(0, 20), ok: m.wall < m.dur * 1000};
+  res['05-' + fmt] = {how: m.how, dur: +m.dur.toFixed(2), wallMs: m.wall, msAudio: m.msAudio, x: +(m.dur * 1000 / m.wall).toFixed(2), size: m.size, longTasks: lt.length, longest: lt.length ? Math.max(...lt.map(e => e.d)) : 0, prof: m.prof, lt: lt.map(e => { const b = m.big.find(x => x[1] <= e.at + e.d && x[1] + x[2] >= e.at); return [e.at, e.d, b ? b[0] : '?']; }), ok: m.wall < m.dur * 1000};
 }
 // cancel: start a job, cancel after 3 s → it ends ≤ 300 ms later, the live engine is back
 {

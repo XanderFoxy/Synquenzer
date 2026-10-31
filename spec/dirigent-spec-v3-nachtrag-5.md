@@ -242,3 +242,39 @@ kurzer Clip, „rückwärts laufen lassen … diese coolen Sachen, Spielereien�
 - D1-01 Hi-Hat 12 Schritte gegen Kick 16 → nach 48 Schritten wieder deckungsgleich (gemessene Treffer); D1-02 rückwärts/Pendel/Zufall
   hörbar und wiederholbar (zwei Läufe gleiche Treffer); D1-03 ×2 → Inhalt doppelt; Undo/Speichern/Laden; ältere Projekte klingen
   unverändert; D1-04 Bedienung ≥ 44 px in allen Formaten.
+
+---
+
+## K1 — Klang-Prüfung: Synth stabil, nichts Verstecktes, gleicher Klang nach Speichern (Xander 31.10. ~13:00, Fehler zuerst)
+
+Xander (Kern, wörtlich in fragen-xander-9.md): dritter Oszillator „hört man im Mischungsverhältnis meistens gar nicht … scheint sogar
+die anderen Oszillatoren zu beeinflussen“; LFOs „halten manchmal einfach an“; in der Übersicht bewegen sich Modulationen, „man kommt
+aber nicht rein und sieht nicht, was … die Tonhöhe moduliert, obwohl ich das nie adressiert habe, … könnte ich auch nicht löschen“;
+neue Datei/Programme haben schon Modulation („ein paar Cent“); Filter/Ladder „Abbrüche“, „gleiche Werte … klingt plötzlich anders“;
+„was man zuletzt gehört hat, auch wieder öffnet … genauso klingt“; früher optimierte Sounds klingen heute anders. Sample & Hold soll
+klanglich bleiben, wie es ist.
+
+Gilt für alle Klangerzeuger (Haupt-Synth mit 3 Oszillatoren und Ladder-Filter, FM, MS 2000, Drums). Keine neue Gestaltung außer der
+Mod-Übersicht (Punkt 3), die Xander verlangt.
+
+1. **Oszillator 3:** Pegel und Tonhöhe von Osz 3 wirken hörbar und messbar wie bei Osz 1/2; Ändern von Osz 3 verändert Osz 1/2 nicht
+   (Spektrum je Oszillator solo geprüft). Ursache finden und beheben.
+2. **LFOs:** laufen stabil (kein Stehenbleiben bei Notenwechsel, Szenenwechsel, Tempo-Sync, Neustart, Hintergrund); **Sample & Hold**
+   prüfen: je LFO-Takt ein neuer Zufallswert, bis zum nächsten gehalten (klassisch) – Klang unverändert lassen, nur Fehler beheben.
+3. **Keine versteckten Modulationen:** eine Übersicht je Klang listet **jede** aktive Modulation mit Quelle → Ziel → Menge (auch aus
+   Programmen/Voreinstellungen und Standard-Klängen), Tipp springt zum Ziel-Regler, **[✕]** löscht sie (Undo). Was sich in der
+   Übersicht bewegt, hat genau einen Eintrag. Ein neues Projekt/INIT-Klang hat **keine** Modulation (Tonhöhe auf 0 Cent genau).
+   Woher kommen die „ein paar Cent“? Ursache belegen (Programm, Vorbelegung, Drift, Fehler) und, falls Fehler, beheben.
+4. **Filter (Ladder u. a.):** keine Aussetzer/Abbrüche (NaN/Denormal/Instabilität bei hoher Resonanz, Selbstoszillation, schnellem
+   Drehen); **gleiche Einstellung = gleicher Klang**, egal welchen Weg die Regler vorher gingen (kein verbleibender Zustand außer dem
+   gewollten Ausklang); Regleränderungen kommen in Echtzeit und vollständig im Klang an (keine verlorenen Nachrichten).
+5. **Speichern = Klang:** Projekt speichern → neu laden → Offline-Render bitgleich bzw. ≤ −90 dB Abweichung, für jeden Klangerzeuger
+   und alle Parameter. **Alte Projekte:** Xanders gespeicherte Projekte/Demo aus früheren Versionen klingen wie in ihrer Version
+   (Golden-Render mit den Snapshots in `synq-snapshots/` vergleichen); Abweichungen = Fehler beheben oder belegen, warum gewollt.
+6. Leistung: kein Mehr an CPU; was nur wackelt und Rechenzeit frisst, raus.
+
+**Abnahme K1** — K1-01 Osz 3 solo/Mix messbar, keine Wirkung auf Osz 1/2; K1-02 LFO-Dauerlauf 10 min mit Wechseln ohne Stillstand,
+S&H-Stufen = Zufall je Takt, Klang gegen 4.23.0 gleich; K1-03 Mod-Übersicht vollständig (Abgleich mit der Engine-Liste), Löschen
+wirkt hörbar, Undo; INIT/neues Projekt ohne Modulation, 0 Cent; K1-04 Ladder bei Res max und schnellem Drehen: kein NaN, kein
+Aussetzer, Zustandsfreiheit (zwei Wege → gleiche Einstellung → Render gleich ≤ −90 dB); K1-05 Speichern/Laden bitgleich je Engine;
+alte Projekte gegen ihre Snapshots; K1-06 Übersicht ≥ 44 px, alle Formate; CPU ≤ 4.23.0.

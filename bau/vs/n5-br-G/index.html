@@ -16298,7 +16298,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.23.0';
+const VERSION = '4.25.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -41462,13 +41462,16 @@ function wpT0(id, a) {
   }
   return a ? a.in - a.at * spb() : 0;
 }
-// die Quantisier-Funktion für Audio (C.5 Nr. 3, 4): Logik wie quantizeNoteSet, Fangfenster ±40 %, Reihenfolge bleibt
+// die Quantisier-Funktion für Audio (C.5 Nr. 3, 4): Logik wie quantizeNoteSet, Reihenfolge bleibt
+// G1 (Nachtrag 5): Fangfenster ±50 % = jeder Einsatz rückt auf seine nächste Rasterlinie, wie die Noten (vorher ±40 %: gesungene
+// Einsätze 50–62 ms neben einer 1/16 bei 120 BPM blieben stehen – „schnappt nicht ein“)
+const WP_CATCH = 0.5;
 function wpQuant(id, o) {
   const m = S.takes && S.takes[id]; if (!m) return null;
   if (o.grid === 'off') { delete m.warp; return 'off'; }
   const mk = wpMarks(id); if (!mk) return null;
   const bpm = o.bpm || S.bpm, t0 = isNum(o.t0) ? o.t0 : wpT0(id), times = mk.map(k => k.t), str = clamp(o.strength == null ? 1 : +o.strength, 0, 1);
-  const q = VSM.quantizeMarks(times, {bpm, t0, grid: o.grid, strength: str, swing: o.swing, detectGrid: KeyDetect.detectGrid, swingAuto: o.swingAuto});
+  const q = VSM.quantizeMarks(times, {bpm, t0, grid: o.grid, strength: str, swing: o.swing, detectGrid: KeyDetect.detectGrid, swingAuto: o.swingAuto, catch: WP_CATCH});
   if (q.grid === 'off') { delete m.warp; return 'off'; }
   if (!m.marks) m.marks = mk.map(k => Object.assign({}, k));
   const w = VSM.makeWarp(times, Array.from(q.times, t => wpSmp(m, t)), m.len / m.sr);   // VS5a-fix2: Ziele auf ganze Samples (= was gerendert wird)
@@ -41526,7 +41529,8 @@ async function wpSetQ(id, o, a, label) {
 }
 // VS5b: Modus [Scheiben │ Dehnen] (ein Undo). Standard-Stärke 100 % bzw. 70 % (C.5 Nr. 3): eine Stärke auf dem Standard des
 // alten Modus wandert auf den des neuen, eine selbst gewählte bleibt
-const wpDefStr = mode => (mode === 'stretch' ? .7 : 1);
+// G1 (Nachtrag 5): Standard 100 % auch in „Dehnen“ (vorher 70 %: ein Einsatz 60 ms daneben blieb 18 ms daneben – „höre keinen Unterschied“)
+const wpDefStr = mode => 1;
 function wpSetMode(id, mode) {
   mode = mode === 'stretch' ? 'stretch' : 'slice';
   const E = WP.ed && WP.ed.id === id ? WP.ed : null;
@@ -41603,7 +41607,7 @@ function wpOpen(r) {
   if (QS.open) closeQuantSheet(false, true);
   closePop(); if (WP.ed) wpClose();
   const id = x.a.take, segBars = (x.a.out - x.a.in) / spb() / 4;
-  const w0 = S.takes[id] && S.takes[id].warp, md0 = w0 ? w0.mode : 'stretch';     // VS5b: Gesang → Standard „Dehnen“ 70 % (C.5 Nr. 3, 7)
+  const w0 = S.takes[id] && S.takes[id].warp, md0 = w0 ? w0.mode : 'stretch';     // VS5b: Gesang → Standard „Dehnen“ (C.5 Nr. 3, 7); G1: 100 %
   WP.ed = {r, id, zoom: segBars <= 2.05 ? 0 : 2, va: x.a.in, sel: -1, p: null, ghost: null, mode: md0, str: w0 ? w0.strength : wpDefStr(md0), sw: w0 ? w0.swing : .5, sb: null};
   const sh = EL.wpSheet; sh.innerHTML = '';
   const head = el('div', 'qh', `<b>${wpTitlePieces('Marken · STIMME · ' + x.label)}</b>`);   // F1: Stücke, die zwischen sich umbrechen
@@ -41620,7 +41624,7 @@ function wpOpen(r) {
   chips.addEventListener('click', e => { const bt = e.target.closest('button[data-v]'); const E = WP.ed; if (!bt || !E) return; const m = S.takes[E.id], w = m && m.warp;
     const o = {grid: bt.dataset.v}; if (!w) { o.strength = E.str; o.swing = E.sw; o.mode = E.mode; }
     if (!wpMarks(E.id)) wpInfoTxt('Marken werden gesucht …');
-    wpSetQ(E.id, o, tkRef(E.r) && tkRef(E.r).a).then(g => { if (g === 'off' && o.grid === 'auto') toast('Kein Raster erkannt – Audio bleibt'); });
+    wpSetQ(E.id, o, tkRef(E.r) && tkRef(E.r).a).then(g => { if (g === 'off' && o.grid === 'auto') toast('Kein Raster erkannt – Audio bleibt'); else if (g && g !== 'off' && WP.ed && WP.ed.id === E.id) wpMovedToast(E.id); });   // G1
   });
   const slider = (label, min, max, get, set) => {
     const row = el('div', 'qrow'), inp = el('input'), v = el('span', 'mval');
@@ -41640,7 +41644,7 @@ function wpOpen(r) {
     wpRequant(E.id, w);
     // FP-IPHONE: beim Ziehen erst nach 150 ms Ruhe neu rendern (je Lauf zwei Kopien des Takes), beim Loslassen sofort
     clearTimeout(E.rt); if (fin) wpAfter(E.id); else { wpPaint(); const id = E.id; E.rt = setTimeout(() => { if (WP.ed && WP.ed.id === id) wpAfter(id); }, 150); }
-    if (fin) { const before = E.sb; E.sb = null; if (JSON.stringify(S.takes) !== before) undoPush({kind: 'takes', before, label: k === 'strength' ? 'Stärke · Audio' : 'Swing · Audio'}); }
+    if (fin) { const before = E.sb; E.sb = null; if (JSON.stringify(S.takes) !== before) { undoPush({kind: 'takes', before, label: k === 'strength' ? 'Stärke · Audio' : 'Swing · Audio'}); wpMovedToast(E.id); } }   // G1: Meldung
   };
   const rs = slider('Stärke', 0, 100, () => { const w = wpCurW(); return Math.round((w ? w.strength : WP.ed.str) * 100); }, (v, f) => qset('strength', v, f));
   const rw = slider('Swing', 50, 75, () => { const w = wpCurW(); return Math.round((w ? w.swing : WP.ed.sw) * 100); }, (v, f) => qset('swing', v, f));
@@ -41693,21 +41697,30 @@ function wpPaint() {
   g.font = WP.font || (WP.font = '600 10px ' + getComputedStyle(document.body).fontFamily);
   for (let bt = b0, n = 0; bt <= b1 + 1e-9 && n < 2000; bt += step, n++) {
     const bb = Math.round(bt * 1e6) / 1e6, xx = Math.round(X(t0 + bb * sp)) + .5, bar = Math.abs(bb / 4 - Math.round(bb / 4)) < 1e-6, beat = Math.abs(bb - Math.round(bb)) < 1e-6;
-    g.fillStyle = bar ? '#59606e' : beat ? '#363b46' : '#22262e'; g.fillRect(xx - (bar ? 1 : .5), 0, bar ? 2 : 1, Hp);
+    g.fillStyle = bar ? '#6c7586' : beat ? '#4a5466' : '#343c4a'; g.fillRect(xx - (bar ? 1 : .5), 0, bar ? 2 : 1, Hp);   // G1: Rasterlinien deutlich
     if (bar) { g.fillStyle = '#8b93a3'; g.fillText(String(Math.round(bb / 4) + 1), xx + 3, 10); }
   }
   // außerhalb des gespielten Stücks: dunkler
   g.fillStyle = 'rgba(0,0,0,.55)'; const xi = X(a.in), xo = X(a.out); if (xi > 0) g.fillRect(0, 0, xi, Hp); if (xo < Wp) g.fillRect(xo, 0, Wp - xo, Hp);
-  // Wellenform (Original; Spitze je Pixel)
-  const buf = wpBase(id, a), mid = Hp * .58, hh = Hp * .36;
-  if (buf) {
-    const d = buf.getChannelData(0), sr = buf.sampleRate;
-    g.fillStyle = WP.ab ? '#7d8796' : '#7fb0de';
+  // Wellenform (Spitze je Pixel). G1: quantisiert = das Original blass, die gehörte Fassung kräftig (die gerechnete; bis sie fertig ist,
+  // das Original über die Zeitkarte gelegt)
+  const buf = wpBase(id, a), mid = Hp * .58, hh = Hp * .36, live = !!(w && !WP.ab && !wpMapInfo(w.map).ident);
+  const wave = (b, inv) => {
+    const d = b.getChannelData(0), sr = b.sampleRate;
     for (let px = 0; px < Wp; px++) {
-      const i0 = Math.max(0, Math.floor((V.a + px / Wp * V.W) * sr)), i1 = Math.min(d.length, Math.floor((V.a + (px + 1) / Wp * V.W) * sr));
+      let ta = V.a + px / Wp * V.W, tb = V.a + (px + 1) / Wp * V.W; if (inv) { ta = inv(ta); tb = inv(tb); }
+      const i0 = Math.max(0, Math.floor(ta * sr)), i1 = Math.min(d.length, Math.floor(tb * sr));
       let pk = 0; for (let i = i0, st = Math.max(1, (i1 - i0) >> 7); i < i1; i += st) { const v = d[i] < 0 ? -d[i] : d[i]; if (v > pk) pk = v; }
       if (pk > 0) { const h = Math.max(1, Math.sqrt(pk) * hh); g.fillRect(px, mid - h, 1, 2 * h); }
     }
+  };
+  if (buf) {
+    g.fillStyle = WP.ab ? '#7d8796' : '#7fb0de';
+    if (live) {
+      g.globalAlpha = .3; wave(buf); g.globalAlpha = 1;
+      const c = WP.cache.get(id), hb = wpReady(id) && c ? c.buf : null;
+      if (hb) wave(hb); else wave(buf, t => VSM.warpInverse(w.map, t));
+    } else wave(buf);
   }
   // Ziel der quantisierten Marken (bernstein) mit Verbindung zur Quelle
   if (w && !WP.ab && !wpMapInfo(w.map).ident) {
@@ -41719,9 +41732,11 @@ function wpPaint() {
       g.fillRect(Math.min(xs, xd), 14, Math.abs(xd - xs), 2);
     }
   }
-  // Marken: Silbe dünn, Wort dick, unsicher blasser; Griff oben (Dreieck)
+  // Marken: Silbe dünn, Wort dick, unsicher blasser; Griff oben (Dreieck). G1: sie stehen dort, wo sie klingen (quantisiert: auf der
+  // Linie) und springen beim Quantisieren sichtbar dorthin (WP_ANIM)
+  const P = wpMarkPos(E, mk, live ? w.map : null);
   mk.forEach((k, i) => {
-    const t = E.ghost && E.ghost.k === i ? E.ghost.t : k.t, xx = X(t); if (xx < -6 || xx > Wp + 6) return;
+    const xx = X(P[i]); if (xx < -6 || xx > Wp + 6) return;
     const sel = i === E.sel || (E.ghost && E.ghost.k === i);
     g.globalAlpha = sel ? 1 : .45 + .55 * k.conf; g.fillStyle = sel ? '#ffd35a' : '#f2f4f8';
     const lw = k.word ? 3 : 1.5; g.fillRect(xx - lw / 2, 4, lw, Hp - 4);
@@ -41732,9 +41747,8 @@ function wpPaint() {
   E.lyr = null;
   const LY = m && m.lyrics ? VSM.assignLyrics(m.lyrics, mk.length) : null;
   if (LY) {
-    const yb = Hp - 18, live = w && !WP.ab && !wpMapInfo(w.map).ident, pos = [];
+    const yb = Hp - 18, pos = P.map(X);
     g.font = WP.lfont || (WP.lfont = '600 11px ' + getComputedStyle(document.body).fontFamily); g.textBaseline = 'alphabetic';
-    mk.forEach((k, i) => { const t = E.ghost && E.ghost.k === i ? E.ghost.t : k.t; pos.push(X(live ? VSM.warpTime(w.map, t) : t)); });
     E.lyr = [];
     let xe = -Infinity;
     LY.labels.forEach((tx, i) => {
@@ -41768,11 +41782,34 @@ function wpPaint() {
     (wn ? ' · ⚠ ' + wn.length + ' nur verschoben (Faktor außer 0,5–2)' : ''));
   E.info.classList.toggle('warn', !!wn);
 }
+/* G1: wo die Marken gezeichnet werden (Sekunden im Take, wie sie klingen) – quantisiert am Ziel der Zeitkarte, sonst an der Quelle;
+   ändert sich das Ziel, gleiten sie in WP_ANIM ms dorthin (ease-out). Ein Griff (Ziehen) steht unter dem Finger. */
+const WP_ANIM = 200;
+const wpSame = (x, y) => !!x && !!y && x.length === y.length && x.every((v, i) => Math.abs(v - y[i]) < 1e-6);
+function wpMarkPos(E, mk, map) {
+  const tgt = mk.map(k => (map ? VSM.warpTime(map, k.t) : k.t)), now = performance.now();
+  if (E.anim ? !wpSame(E.anim.to, tgt) : E.mpos && !wpSame(E.mpos, tgt))
+    E.anim = E.mpos && E.mpos.length === tgt.length && !E.ghost ? {from: E.mpos, to: tgt, t0: now} : null;
+  let P = tgt;
+  if (E.anim) {
+    const u = Math.min(1, (now - E.anim.t0) / WP_ANIM), e = 1 - (1 - u) * (1 - u) * (1 - u), A = E.anim;
+    P = A.to.map((v, i) => A.from[i] + (v - A.from[i]) * e);
+    if (u >= 1) E.anim = null; else if (!E.raf) E.raf = requestAnimationFrame(() => { E.raf = 0; if (WP.ed === E) wpPaint(); });
+  }
+  if (E.ghost) { P = P.slice(); P[E.ghost.k] = E.ghost.t; }
+  E.mpos = P; E.map = map;
+  return P;
+}
+// Fingerstelle (wie es klingt) → Stelle im Take (Quelle der Marke)
+const wpSrcT = (E, t) => (E.map ? VSM.warpInverse(E.map, t) : t);
 function wpHit(E, cx) {
-  const mk = wpMarks(E.id) || []; let best = -1, bd = 16;
-  mk.forEach((k, i) => { const d = Math.abs(E.X(k.t) - cx); if (d < bd) { bd = d; best = i; } });
+  const mk = wpMarks(E.id) || [], P = E.mpos && E.mpos.length === mk.length ? E.mpos : mk.map(k => k.t); let best = -1, bd = 16;
+  P.forEach((t, i) => { const d = Math.abs(E.X(t) - cx); if (d < bd) { bd = d; best = i; } });
   return best;
 }
+// G1: kurze Meldung nach dem Quantisieren: wie viele Einsätze gerückt sind
+function wpMovedN(id) { const m = S.takes && S.takes[id], w = m && m.warp; if (!w) return 0; const s = w.map.src, d = w.map.dst; let n = 0; for (let k = 1; k < s.length - 1; k++) if (Math.abs(s[k] - d[k]) > 1e-6) n++; return n; }
+function wpMovedToast(id) { const n = wpMovedN(id); toast(n + (n === 1 ? ' Einsatz' : ' Einsätze') + ' gerückt'); return n; }
 function wpGest(cv) {
   const xOf = e => e.clientX - cv.getBoundingClientRect().left;
   cv.addEventListener('pointerdown', e => {
@@ -41791,12 +41828,12 @@ function wpGest(cv) {
     const E = WP.ed, p = E && E.p; if (!p || p.id !== e.pointerId) return;
     E.p = null; const gh = E.ghost; E.ghost = null;
     if (cancel) { wpPaint(); return; }
-    if (p.mode === 'move' && gh) { wpMarkMove(E.id, gh.k, gh.t); wpPaint(); return; }
+    if (p.mode === 'move' && gh) { wpMarkMove(E.id, gh.k, wpSrcT(E, gh.t)); wpPaint(); return; }
     if (p.mode) return;
     if (performance.now() - p.t0 >= 500) { wpPaint(); return; }      // Halten hat im Marken-Editor keine Bedeutung (K2-64)
     const cx = xOf(e);
     UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};   // F1: der Klick desselben Tipps landet nie auf dem Blatt, das jetzt unter dem Finger aufgeht ([✕ Löschen])
-    if (p.k >= 0) wpSelSheet(p.k, cx); else wpMarkAdd(E.id, E.vw.a + cx / E.cv.clientWidth * E.vw.W);
+    if (p.k >= 0) wpSelSheet(p.k, cx); else wpMarkAdd(E.id, wpSrcT(E, E.vw.a + cx / E.cv.clientWidth * E.vw.W));
   };
   cv.addEventListener('pointerup', e => end(e, false));
   cv.addEventListener('pointercancel', e => end(e, true));
@@ -41854,7 +41891,9 @@ const WP_API = {
     return x ? {raw: x === raw, sr: x.sampleRate, n: x.length, data: Array.from(x.getChannelData(0).subarray(a || 0, b == null ? x.length : b))} : null; },
   wpOpen: r => wpOpen(r || {t: stimmeT(), s: R.selS}), wpClose: () => { wpClose(); return true; },
   wpGeom: () => { const E = WP.ed; if (!E || !E.cv) return null; const rc = E.cv.getBoundingClientRect(), mk = wpMarks(E.id) || [];
-    return {x: rc.left, y: rc.top, w: rc.width, h: rc.height, view: {a: E.vw.a, W: E.vw.W}, marks: mk.map(k => rc.left + E.X(k.t))}; },
+    const P = E.mpos && E.mpos.length === mk.length ? E.mpos : mk.map(k => k.t);   // G1: wo die Marken gezeichnet sind (quantisiert: am Ziel)
+    return {x: rc.left, y: rc.top, w: rc.width, h: rc.height, view: {a: E.vw.a, W: E.vw.W}, marks: P.map(t => rc.left + E.X(t)), src: mk.map(k => rc.left + E.X(k.t)), anim: !!E.anim}; },
+  wpMoved: r => wpMovedN(wpId(r)),                                                   // G1: Zahl der gerückten Einsätze
   wpCore: (fn, args) => { const r = VSM[fn](...args.map(v => (Array.isArray(v) && v.length > 64 ? Float32Array.from(v) : v))); return r && r.times ? {times: Array.from(r.times), grid: r.grid, swing: r.swing, moved: Array.from(r.moved)} : ArrayBuffer.isView(r) ? Array.from(r) : r; },
 };
 
