@@ -13570,6 +13570,7 @@ const MK_LABEL = 'MS 2000';
   }
   function packClipNotes(clip) {
     if (!clip || !Array.isArray(clip.notes)) return clip; const c = Object.assign({}, clip);
+    if (c.cv) { const v = c.cv; delete c.cv; c.cv = v; }       // BM8: cv always last (as normClip writes it), whatever was added later
     const z = clip.notes.some(n => n && n.o != null) ? packNotesZ(clip.notes) : null;
     if (z) { c.notes = z; c.nz = 1; } else c.notes = clip.notes.map(packNote);
     return c;
