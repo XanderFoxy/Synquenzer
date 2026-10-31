@@ -53,13 +53,20 @@ test('Echt: Knoppers = Kaufland 15 × 25 g für 2,79 € = 0,19 € pro Stück (
   assert.equal(k.bestes.preisVorher, null, 'marktguru liefert keinen Altpreis');
   assert.equal(k.bestes.bis, '2026-10-31T18:00:00Z', 'Kaufland endet um 19:00 deutscher Zeit');
   assert.deepEqual(k.weitere, [], 'Knoppers Minis (PENNY) sind ein anderes Produkt');
-  assert.equal(k.normalQuelle, 'schaetzung');
-  assert.equal(k.normalGeschaetzt, true);
-  // geschätzter Normalpreis für DIESE Packungsgröße (15er-Familienpackung ca. 4,50 € = 0,30 €/Stück), nicht 0,38 €
-  assert.equal(k.normalpreis, 0.3);
+  // keine Schätzung mehr: regulärer Preis recherchiert (REWE 15er 3,49 €, supermarktcheck.de), gleiche Packung
+  assert.equal(k.normalQuelle, 'recherche');
+  assert.equal(k.normalGeschaetzt, false);
   assert.equal(k.normalJePackung, true);
-  assert.equal(k.deal, true);
-  assert.equal(k.grund, '38 % unter geschätztem Normalpreis');
+  assert.equal(k.ersparnis, 0.201, '2,79 € statt regulär 3,49 €');
+  // 2,79 € = üblich, aber über dem 12-Monats-Tief + 10 % (2,49 € mit Kaufland Card) -> kein Deal, kein Push
+  assert.equal(k.deal, false);
+  assert.equal(k.grund, '');
+  assert.equal(k.preise.zeile, 'Jetzt 2,79 € · Regulär 3,49 € · Üblich im Angebot 2,79 € · Tiefst 12 Mon. 2,49 € (Kaufland mit Card, Okt. 2026)');
+  assert.equal(k.preise.packung, '15 Stück');
+  assert.deepEqual([k.preise.regulaer.shop, k.preise.regulaer.quelle, k.preise.regulaer.stand], ['REWE', 'supermarktcheck.de', 'Meldung ohne Datum']);
+  assert.equal(k.preise.ueblich.anzahl, 3);
+  assert.deepEqual([k.preise.tiefst12.pack, k.preise.tiefst12.tag, k.preise.tiefst12.quelle], [2.49, '2026-10-26', 'discounto.de']);
+  assert.ok(!JSON.stringify(k.preise).includes('unbekannt'));
   assert.deepEqual(k.tiefst, { status: 'unbekannt', text: 'Einziges gefundenes Angebot in deiner Nähe · Verlauf erst seit 1 Tag', heuteGuenstigstes: true, tage: 1, tiefst30: 0.186, anzahl: 1, anzahlSicher: 1 });
   assert.equal(r.current.produkte.filter(p => /knoppers/i.test(p.name)).length, 2, 'Schnitte + NussRiegel, kein „24er“/„5er“ mehr');
 });
@@ -72,7 +79,11 @@ test('Echt: kein Großhandel, Sammeldeal nur mit eigenem Teil und ohne Versand, 
   // „465/4x100ml“: beide Packungen zum selben Preis -> beide genannt, Prozent mit der teureren (4 × 100 ml = 1,00 €/100 ml)
   assert.equal(bj.bestes.zeile, "Ben & Jerry's Eiscreme · 465 ml oder 4 × 100 ml · 3,99 € · 1,00 € pro 100 ml");
   assert.equal(bj.bestes.packung, '465 ml oder 4 × 100 ml');
-  assert.equal(bj.grund, '33 % unter geschätztem Normalpreis');
+  // 3,99 € ≤ üblich 4,22 € und ≤ Tiefst 3,79 € + 10 % -> Deal; Prozent nur gegen regulär (Lidl 6,99 €)
+  assert.equal(bj.grund, 'unter dem üblichen Angebotspreis und nah am 12-Monats-Tief');
+  assert.equal(bj.ersparnis, 0.429);
+  assert.equal(bj.preise.zeile, 'Jetzt 3,99 € · Regulär 6,99 € · Üblich im Angebot 4,22 € · Tiefst 12 Mon. 3,79 € (EDEKA, Aug. 2026)');
+  assert.equal(bj.preise.packung, '465 ml', 'verglichen wird der 465-ml-Becher (wie im Prospekt), nicht 4 × 100 ml');
   assert.equal(bj.bestes.startetSpaeter, true);
   assert.equal(bj.bestes.ab, '2026-11-01T23:00:00Z');
   const penny = bj.weitere[0];
@@ -134,7 +145,8 @@ test('Echt: Verlauf neu (alte falsche Punkte weg), nur sichere und laufende Ange
   const r = await lauf();
   assert.equal(r.history.version, 2);
   assert.deepEqual(Object.keys(r.history.gruppen), ['knoppers-schnitte']);
-  assert.deepEqual(r.history.gruppen['knoppers-schnitte'].punkte, [{ tag: '2026-10-31', p: 0.186, shop: 'Kaufland' }]);
+  // mit Packung (m = 15 Stück) und Packungspreis: später zählen nur gleiche Packungen für Üblich/Tiefst
+  assert.deepEqual(r.history.gruppen['knoppers-schnitte'].punkte, [{ tag: '2026-10-31', p: 0.186, shop: 'Kaufland', m: 15, pp: 2.79 }]);
   assert.ok(!JSON.stringify(r.current).includes('0.07'), 'nirgends mehr 0,07 €');
 });
 
@@ -146,24 +158,21 @@ test('Echt: RTX 5070 (Preisfehler vom 12.10., längst abgelaufen) ist weg – oh
   assert.deepEqual(r.current.fehler, []);
 });
 
-test('Echt: Pushes – Knoppers mit Packung, geschätztem Normalpreis und Uhrzeit des Endes', async () => {
+test('Echt: Pushes – nur echte Deals (≤ üblich, nah am 12-Monats-Tief), mit Tiefst/üblich/regulär und Quelle', async () => {
   const r = await lauf();
-  assert.equal(r.msgs.length, 2);
-  const k = r.msgs.find(m => m.title === 'Schnäppchen: Knoppers Schnitte');
-  assert.equal(k.priority, 4, 'gegen einen nur geschätzten Normalpreis nie höchste Stufe');
-  assert.equal(k.message, [
-    '2,79 € bei Kaufland · 15 × 25 g',
-    '0,19 € pro Stück – normal ca. 0,30 € (geschätzt)',
-    '38 % unter geschätztem Normalpreis',
-    'Einziges gefundenes Angebot in deiner Nähe · Verlauf erst seit 1 Tag',
-    'gültig bis Sa 31.10. 19:00',
-    'Storck Knoppers Milch-Haselnuss-Schnitte',
-  ].join('\n'));
-  assert.equal(k.click, 'https://www.marktguru.de/offers/25495632');
+  assert.equal(r.msgs.length, 1, 'Knoppers 2,79 € liegt 12 % über dem 12-Monats-Tief -> keine Nachricht');
+  assert.ok(!r.msgs.some(m => /Knoppers/.test(m.title)));
   const bj = r.msgs.find(m => m.title.includes('Ben'));
-  assert.match(bj.message, /gilt ab Mo 2\.11\. bis Sa 7\.11\./);
-  // marktguru: 3,99 € für 465 ml (Prospekt: 8,58 €/l) – gerechnet wird ehrlich mit 4 × 100 ml; beide stehen da
-  assert.match(bj.message, /^1,00 € pro 100 ml \(bei 4 × 100 ml; 465 ml: 0,86 €\) – normal ca\. 1,50 € \(geschätzt\)$/m);
+  assert.equal(bj.priority, 4, 'nicht unter dem 12-Monats-Tief -> nicht höchste Stufe');
+  assert.equal(bj.message, [
+    '3,99 € bei Lidl · 465 ml oder 4 × 100 ml',
+    'Tiefst 12 Mon. 3,79 € (EDEKA, Aug. 2026) · üblich 4,22 € · statt regulär 6,99 € (−43 %)',
+    // marktguru: 3,99 € für 465 ml (Prospekt: 8,58 €/l) – Grundpreis ehrlich mit 4 × 100 ml; beide stehen da
+    '1,00 € pro 100 ml (bei 4 × 100 ml; 465 ml: 0,86 €) – unter dem üblichen Angebotspreis und nah am 12-Monats-Tief',
+    'gilt ab Mo 2.11. bis Sa 7.11.',
+    "Ben & Jerry's Eiscreme",
+  ].join('\n'));
+  assert.doesNotMatch(bj.message, /geschätzt|unbekannt/);
   const karte = r.karte('ben-jerrys').bestes;
   assert.deepEqual(karte.einheitspreisVarianten.map(v => [v.packung, Math.round(v.einheitspreis * 100) / 100]), [['4 × 100 ml', 1], ['465 ml', 0.86]]);
   assert.equal(r.karte('knoppers-schnitte').bestes.einheitspreisVarianten, null, 'nur eine Packung -> keine Varianten');
@@ -237,7 +246,7 @@ test('Echt: CLI --wiedergabe rechnet einen Roh-Mitschnitt offline nach, ohne zu 
   const log = console.log; console.log = () => {};
   try {
     const r = await main(['--wiedergabe', ECHT, '--data', dir, '--jetzt', JETZT], env);
-    assert.equal(r.msgs.length, 2);
+    assert.equal(r.msgs.length, 1);
     assert.equal(gesendet, 0, 'Wiedergabe ist immer ein Probelauf');
     assert.deepEqual((await readdir(dir)).sort(), ['current.json', 'dealseiten.json', 'history.json', 'sent.json']);
     const c = JSON.parse(await readFile(join(dir, 'current.json'), 'utf8'));

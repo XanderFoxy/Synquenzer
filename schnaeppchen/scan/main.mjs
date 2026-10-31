@@ -7,7 +7,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { bestimmeMenge, einheitspreis, packungText, passt, stueckPasst, istSammeldeal, sammelTeil, norm, round, euroKurz, BASIS_LABEL } from './text.mjs';
 import { pruefeHistorie, eintragen, aufraeumen, statistik, tiefstSeit } from './history.mjs';
-import { referenz, refFuer, bewerte, versandkosten, technikBewertung, tiefstInfo, schaetzungPlausibel, istGeschaetzt } from './deals.mjs';
+import { versandkosten, technikBewertung, tiefstInfo } from './deals.mjs';
+import { ladeReferenz, preisKontext, verlaufEintraege, pushZeile } from './referenz.mjs';
+import { median } from './history.mjs';
 import { pruefeDealSeiten, leereDealseiten, versandImPreis } from './preisfehler.mjs';
 import { nachricht, dedupeKey, senden } from './notify.mjs';
 import { macheAbruf, macheFixtureAbruf, macheWiedergabe } from './http.mjs';
@@ -18,6 +20,9 @@ import { mydealz, mydealzZeit } from './sources/mydealz.mjs';
 import { keepa } from './sources/keepa.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
+const REFERENZ_DATEI = join(HIER, '..', 'referenzpreise.json');
+// Menge eines Angebots in Basis-Einheiten (Stück, g, ml) – damit nur gleiche Packungen verglichen werden
+export const mengeInBasis = (m, basis) => (basis === 'stueck' ? m?.stueck : basis === '100ml' ? m?.ml : m?.gramm) || null;
 export const QUELLEN = { marktguru, mydealz, keepa };
 
 const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${name}: Zeitlimit`)), ms).unref())]);
@@ -55,10 +60,17 @@ function ansicht(a, item) {
     zeile: [a.titel, a.packung, euroKurz(a.preis), a.mengeSicher ? `${euroKurz(a.einheitspreis)} ${label}` : 'Menge unklar'].filter(Boolean).join(' · '),
     link: a.link, bild: a.bild || '',
     quelle: a.quelle, online: !!a.online, deal: !!a.deal, grund: a.grund || '', ersparnis: a.ersparnis ?? null,
+    // Regulär · Üblich im Angebot · Tiefst 12 Mon. für genau diese Packung (recherchiert + eigener Verlauf, mit Quelle)
+    preise: a.preise || null,
   };
 }
 
-export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText, env = {}, jetzt = new Date(), log = () => {} }) {
+const GRUND = { tiefst: 'so günstig wie das 12-Monats-Tief', gut: 'unter dem üblichen Angebotspreis und nah am 12-Monats-Tief' };
+
+export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText, referenz, env = {}, jetzt = new Date(), log = () => {} }) {
+  // recherchierte Referenzpreise (Regulär, Angebote, Tiefstpreise mit Quelle); ohne Angabe die Datei im Repo
+  referenz ??= JSON.parse(await readFile(REFERENZ_DATEI, 'utf8'));
+  const refs = ladeReferenz(referenz, watchlist);
   const hp = pruefeHistorie(history);
   if (hp.neu) log('Preisverlauf neu gestartet (alte Version mit falschen Packungsgrößen verworfen)');
   history = hp.historie;
@@ -90,9 +102,11 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
   const verlaesslich = a => !a.unsicher && a.mengeSicher;
   for (const item of watchlist.produkte) {
     const gruppe = item.gruppe || item.id;
-    const stats = statistik(history, gruppe, cfg.deal.normalpreisFensterTage, jetztMs);
-    const ref = referenz(item, stats, cfg);
-    const gesehen = new Set();
+    const ref = refs[item.id] || null;
+    const verlauf = verlaufEintraege(history.gruppen[gruppe], item.basis);
+    // Plausibilität (anderes Produkt / Lesefehler?): grob gegen den recherchierten Grundpreis
+    const refEinheit = median((ref?.regal || []).filter(e => e.rang <= 2).map(e => e.einheit))
+      ?? median([...(ref?.angebote || []), ...verlauf].map(e => e.einheit));    const gesehen = new Set();
     const angebote = [];
     for (const roh of alle) {
       if (!(roh.preis > 0)) continue;
@@ -138,32 +152,43 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       }
       const a = { ...o, versand, preis: gesamt, einheitspreis: up, einheitspreisVarianten: varianten, ...mg };
       // implausible (probably a different product or a parsing error): show, but never alert
-      a.unsicher = ref.p > 0 && (up < ref.p * 0.15 || up > ref.p * 6);
+      a.unsicher = refEinheit > 0 && (up < refEinheit * 0.15 || up > refEinheit * 6);
       a.laeuft = !a.gueltigAb || Date.parse(a.gueltigAb) <= jetztMs;
       angebote.push(a);
     }
     angebote.sort((x, y) => (verlaesslich(y) - verlaesslich(x)) || (x.unsicher - y.unsicher) || (x.einheitspreis - y.einheitspreis));
     const sichere = angebote.filter(verlaesslich);
-    // Normalpreis je Angebot (geschätzt ggf. je Packungsgröße, z. B. 15er-Familienpackung günstiger pro Stück)
-    for (const a of angebote) a.ref = refFuer(item, ref, a);
-    const plausibel = schaetzungPlausibel(ref, sichere, a => a.ref);
-    for (const a of angebote) Object.assign(a, bewerte(a, a.ref, stats, cfg, { guenstigstes: a === sichere[0], plausibel }));
-    for (const a of sichere) if (a.laeuft) punkte.push({ gruppe, basis: item.basis, p: a.einheitspreis, shop: a.shop });
+    // Preis-Kontext je Angebot (gleiche Packung): Deal nur, wenn ≤ üblicher Angebotspreis UND nah am 12-Monats-Tief;
+    // Prozent nur gegen den recherchierten regulären Preis. Unsichere Menge/unplausibel: Kontext ja, Bewertung nein.
+    for (const a of angebote) {
+      const m = mengeInBasis(a.menge, item.basis);
+      const ok = a.mengeSicher && !a.unsicher && m > 0;
+      a.preise = preisKontext({ ref, basis: item.basis, verlauf, angebot: ok ? { preis: a.preis, menge: m, shop: a.shop } : null, jetztMs, cfg });
+      a.deal = ok && a.preise.deal;
+      a.ersparnis = ok ? a.preise.ersparnis : null;
+      a.grund = a.deal ? GRUND[a.preise.stufe] || '' : '';
+    }
+    for (const a of sichere) if (a.laeuft) punkte.push({ gruppe, basis: item.basis, p: a.einheitspreis, shop: a.shop, m: mengeInBasis(a.menge, item.basis), pp: a.preis });
     const bestes = angebote.find(a => !a.unsicher) || null;
-    produkte.push({ item, gruppe, ref, angebote, sichere, bestes });
+    const ohneAngebot = preisKontext({ ref, basis: item.basis, verlauf, angebot: null, jetztMs, cfg });
+    produkte.push({ item, gruppe, angebote, sichere, bestes, ohneAngebot });
   }
   // history after the decision (the decision compares against the past)
   for (const pt of punkte) eintragen(history, pt.gruppe, pt.basis, pt, jetztMs);
   aufraeumen(history, cfg.deal.historieBehaltenTage, jetztMs);
 
-  const karten = produkte.map(({ item, gruppe, ref, angebote, sichere, bestes }) => {
+  const karten = produkte.map(({ item, gruppe, angebote, sichere, bestes, ohneAngebot }) => {
     const s = statistik(history, gruppe, cfg.deal.normalpreisFensterTage, jetztMs);
     const tiefst = tiefstInfo({ bestes, sichere, angebote, stats: s, tiefst30: tiefstSeit(history, gruppe, 30, jetztMs), basis: item.basis, cfg, jetztMs });
-    const rb = bestes?.ref || ref;
+    const preise = bestes?.preise?.jetzt ? bestes.preise : ohneAngebot;
+    const reg = preise.regulaer;
     const p = {
       id: item.id, name: item.name, basis: item.basis, basisLabel: BASIS_LABEL[item.basis], gruppe,
       deal: !!bestes?.deal, grund: bestes?.grund || '', ersparnis: bestes?.ersparnis ?? null,
-      normalpreis: rb.p, normalQuelle: rb.quelle, normalGeschaetzt: istGeschaetzt(rb), normalJePackung: !!rb.staffel,
+      // Regulär · Üblich im Angebot · Tiefst 12 Mon. (für das beste Angebot bzw. die übliche Packung, wenn keins läuft)
+      preise,
+      // ältere Felder (bisherige Seite): „Normalpreis“ = recherchierter regulärer Preis pro Stück/100 g
+      normalpreis: reg?.einheit ?? null, normalQuelle: reg ? 'recherche' : 'unbekannt', normalGeschaetzt: !!reg?.geschaetzt, normalJePackung: !!reg && !reg.umgerechnet,
       tiefst,
       // ältere Felder (bisherige Seite)
       tiefstpreis: s.tiefst?.p ?? null, tiefstTag: s.tiefst?.tag ?? null, tiefstShop: s.tiefst?.shop ?? null, historieTage: s.tage,
@@ -176,7 +201,7 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
         typ: 'produkt', id: item.id, name: item.name, basis: item.basis, titel: bestes.titel, shop: bestes.shop,
         packung: bestes.packung, preis: bestes.preis, versand: bestes.versand, online: bestes.online, einheitspreis: bestes.einheitspreis,
         einheitspreisVarianten: bestes.einheitspreisVarianten || null,
-        normalpreis: rb.p, normalGeschaetzt: p.normalGeschaetzt, tiefstpreis: p.tiefstpreis, tiefstText: tiefst.text,
+        preise: bestes.preise, kontextText: pushZeile(bestes.preise), neuesTief: !!bestes.preise?.neuesTief,
         ersparnis: bestes.ersparnis, grund: bestes.grund, gueltigAb: bestes.gueltigAb, gueltigBis: bestes.gueltigBis,
         startetSpaeter: !bestes.laeuft, link: bestes.link,
       });
@@ -241,7 +266,7 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
   // 5. current.json
   const fehler = quellen.flatMap(q => q.fehler.map(f => `${q.name}: ${f}`));
   const current = {
-    version: 2,
+    version: 3, // 3: je Produkt/Angebot „preise“ (Regulär, Üblich, Tiefst 12 Mon., Jetzt, mit Quelle)
     aktualisiert: new Date(jetztMs).toISOString(),
     plz: cfg.plz, ort: cfg.ort,
     deals: karten.filter(p => p.deal).length + technik.length,

@@ -59,6 +59,8 @@ const DATEI = {
 const SATZ = {
   v1: n => join(FIX, 'echt-2026-10-31', 'v1', n), // Produktionsformat vom 31.10.2026 (alte Scanner)
   v2: n => join(FIX, 'echt-2026-10-31', /^(schnaeppchen|vorteile)/.test(n) ? 'v2' : 'v1', n), // neue Scanner, echte Antworten
+  // Scanner mit Preis-Kontext (Version 3: „preise“ = Regulär · Üblich · Tiefst 12 Mon., recherchiert mit Quelle)
+  v3: n => join(FIX, 'echt-2026-10-31', /^(schnaeppchen|vorteile)/.test(n) ? 'v3' : 'v1', n),
   vertrag: n => join(FIX, 'vertrag', n),
   vertragB: n => join(FIX, 'vertrag-b', n), // Sonderfälle der zweiten Prüfung (Versand im Preis, Ende nach 24 h, unplausibel)
 };
@@ -159,6 +161,52 @@ test('echte Daten (neue Scanner, 31.10. 16:35): Knoppers-Karte ist eindeutig', {
   assert.match(nbsp(await text(page, '#stand')), /^Stand: Angebote gerade eben · Vorteile gerade eben · Konzerte vor 5 Min\./);
   assert.equal(await page.locator('#t-angebote .n').innerText(), '1', 'nur Knoppers läuft jetzt; Ben & Jerry\'s erst ab Montag');
   assert.equal(await page.locator('#t-konzerte .n').isHidden(), true, 'leerer Zähler bei 0 Konzerten');
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Preis-Kontext (v3): Jetzt · Regulär · Üblich im Angebot · Tiefst 12 Mon. mit Laden, Monat und Quelle', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'v3' });
+  const karte = page.locator('[data-produkt="knoppers-schnitte"]');
+  const t = nbsp(await karte.innerText());
+  const zellen = (await karte.locator('.kx > div').allInnerTexts()).map(z => nbsp(z).replace(/\s+/g, ' ').trim());
+  assert.deepEqual(zellen, [
+    'Jetzt 2,79 € Kaufland · 15 Stück',
+    'Regulär 3,49 € REWE · Meldung ohne Datum · supermarktcheck.de',
+    'Üblich im Angebot 2,79 € 3 Angebote in 12 Mon. · marktguru.de, discounto.de u. a.',
+    'Tiefst 12 Mon. 2,49 € Kaufland mit Card · Okt. 2026 · discounto.de',
+  ]);
+  // Prozent nur gegen den recherchierten regulären Preis – und kein Deal (2,49 € mit Card war günstiger)
+  assert.match(t, /statt regulär 3,49 €/);
+  assert.equal(await karte.locator('.prozent').innerText(), '−20 %');
+  assert.match(await karte.locator('.prozent').getAttribute('class'), /leise/);
+  assert.match(t, /üblich\s*Üblicher Angebotspreis – war schon günstiger/);
+  assert.doesNotMatch(t, /geschätzt|unbekannt|Tiefstpreis\?|Normalpreis/);
+  await karte.locator('details.kx-quellen summary').click();
+  const links = await karte.locator('details.kx-quellen a').evaluateAll(a => a.map(x => [x.textContent.trim(), x.href]));
+  assert.ok(links.some(([n, u]) => /^Regulär:/.test(n) && u.startsWith('https://www.supermarktcheck.de/')), JSON.stringify(links));
+  // Ben & Jerry's (ab Mo): Deal, −43 % gegen regulär 6,99 € (Lidl), Tiefst 3,79 € bei EDEKA im August
+  const bj = page.locator('[data-produkt="ben-jerrys"]');
+  const b = nbsp(await bj.innerText());
+  assert.equal(await bj.locator('.prozent').innerText(), '−43 %');
+  assert.doesNotMatch(await bj.locator('.prozent').getAttribute('class'), /leise/);
+  assert.match(b, /statt regulär 6,99 €/);
+  assert.match(b, /Tiefst 12 Mon\.\s*3,79 €\s*EDEKA · Aug\. 2026/);
+  assert.match(b, /Deal\s*Unter dem üblichen Angebotspreis, nah am 12-Monats-Tief/);
+  // ohne Angebot: Orientierung in der Liste
+  const liste = nbsp(await page.locator('#p-angebote .liste').innerText());
+  assert.match(liste, /Nestlé Choco Crossies\s*Gerade kein Angebot · Üblich 2,11 € · Tiefst 1,69 € \(Kaufland, März 2026\) · je 150 g/);
+  assert.match(liste, /Lorenz Crunchips X-Cut\s*Gerade kein Angebot · Üblich 1,49 € · Tiefst 1,49 € \(Action, Okt\. 2026\) · je 130 g/);
+  assert.equal((liste.match(/Gerade kein Angebot · Üblich [\d,]+ € · Tiefst [\d,]+ € \([^)]+ 20\d\d\)/g) || []).length, 8, '8 Produkte ohne Angebot, alle mit Üblich + Tiefst');
+  assert.doesNotMatch(liste, /unbekannt|geschätzt/);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Preis-Kontext (v3): nach Kaufland-Ende steht Knoppers mit Üblich/Tiefst in der Liste', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'v3', jetzt: '2026-10-31T18:00:30Z' });
+  assert.equal(await page.locator('[data-produkt="knoppers-schnitte"]').count(), 0);
+  assert.match(nbsp(await text(page, '#p-angebote')), /Knoppers Schnitte\s*Gerade kein Angebot · Üblich 2,79 € · Tiefst 2,49 € \(Kaufland mit Card, Okt\. 2026\) · je 15 Stück/);
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
@@ -747,7 +795,7 @@ test('Push-Hilfe quer (926 × 428): „In ntfy öffnen“ und „Schließen“ s
 for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
   for (const dunkel of [false, true]) {
     test(`Layout ${breite}×${hoehe} (${lage}, ${dunkel ? 'dunkel' : 'hell'}): kein seitliches Scrollen, Tippflächen ≥ 44 px, Bildschirmfotos`, { skip: ohnePw }, async () => {
-      for (const satz of dunkel ? ['vertrag'] : ['vertrag', 'v2']) {
+      for (const satz of dunkel ? ['vertrag', 'v3'] : ['vertrag', 'v2', 'v3']) {
         const { ctx, page, fehler } = await oeffne({ satz, breite, hoehe, dunkel });
         for (const r of ['angebote', 'vorteile', 'konzerte']) {
           await reiter(page, r);

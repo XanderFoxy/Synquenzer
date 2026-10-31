@@ -111,17 +111,26 @@ test('Gesamtlauf mit Fixtures: Deals, Technik, Fehlerliste, Dedupe', async () =>
   const r = await scan({ cfg, watchlist: wl, holeText: fehlerHole, env: { KEEPA_KEY: 'x' }, jetzt: JETZT,
     sent: {}, history: null });
   const p = id => r.current.produkte.find(x => x.id === id);
-  assert.equal(p('crunchips').deal, true);
+  // PENNY 1,11 €: 44 % unter regulär (1,99 €), aber teurer als üblich im Angebot (0,99 €) -> kein Deal
+  assert.equal(p('crunchips').deal, false);
   assert.equal(p('crunchips').bestes.einheitspreis, 0.74);
-  assert.equal(p('crunchips').grund, '54 % unter geschätztem Normalpreis');
+  assert.equal(p('crunchips').ersparnis, 0.442);
+  assert.equal(p('crunchips').preise.zeile, 'Jetzt 1,11 € · Regulär 1,99 € · Üblich im Angebot 0,99 € · Tiefst 12 Mon. 0,88 € (Kaufland, Okt. 2026)');
   assert.equal(p('crunchips-xcut').bestes.shop, 'REWE');
+  assert.equal(p('crunchips-xcut').deal, true, '1,49 € = Tiefst 12 Mon. (Action) = üblich');
+  assert.equal(p('crunchips-xcut').grund, 'so günstig wie das 12-Monats-Tief');
   const k = p('knoppers-schnitte');
   assert.equal(k.bestes.shop, 'Kaufland', 'Aldi Süd liegt nicht in der Liste der Märkte');
   assert.equal(k.bestes.packung, '5 × 25 g');
   assert.deepEqual(k.weitere.map(w => w.shop), ['Netto Marken-Discount', 'Amazon'], '24er und 5er in einer Karte, pro Stück verglichen');
   assert.equal(k.tiefst.text, 'Günstigstes von 3 gefundenen Angeboten in deiner Nähe und online · Verlauf erst seit 1 Tag');
   assert.equal(p('knoppers-nussriegel').bestes.einheitspreis, 0.358);
-  assert.equal(p('softys-rote-fruechte').deal, true);
+  assert.equal(p('softys-rote-fruechte').deal, false, 'ALDI 1,29 € = regulärer Preis');
+  // 5er-Pack: dafür gibt es keinen recherchierten Wert -> über den Preis pro Stück umgerechnet (und so markiert)
+  assert.equal(k.preise.regulaer.umgerechnet, true);
+  assert.equal(k.preise.regulaer.packungQuelle, '8 Stück');
+  // ohne Angebot: Orientierung „Gerade kein Angebot · Üblich … · Tiefst … (Händler, Monat)“
+  assert.equal(p('choco-crossies').preise.zeile, 'Gerade kein Angebot · Üblich 2,11 € · Tiefst 1,69 € (Kaufland, März 2026) · je 150 g');
   assert.equal(p('softys-fruchtmix').bestes, null, 'rote Tüte ist nicht die gelbe');
   assert.equal(r.current.produkte[0].deal, true, 'Deals stehen oben');
   // Technik: PS5 + Samsung laufen (Deal-Seite), AirPods laut Seite abgelaufen, Xbox älter als 24 h (Seite nicht geladen)
@@ -140,7 +149,7 @@ test('Gesamtlauf mit Fixtures: Deals, Technik, Fehlerliste, Dedupe', async () =>
   assert.equal(r.dealseiten.seiten['https://www.mydealz.de/deals/airpods-2500006'].abgelaufen, true);
   assert.ok(r.current.fehler.some(f => f.startsWith('keepa')));
   assert.ok(r.current.fehler.some(f => f.includes('Lebensmittel')));
-  assert.equal(r.msgs.length, 6);
+  assert.equal(r.msgs.length, 3);
   assert.equal(r.msgs.find(m => m.title.includes('PlayStation')).message.split('\n')[0], 'vorher 449,00 € → jetzt 44,00 € (−90 %)');
   // second run: everything already sent -> no new messages; deal pages remembered (only running ones re-checked later)
   const sent = Object.fromEntries(r.zuSenden.map(k => [dedupeKey(k), 'x']));
@@ -167,18 +176,23 @@ test('Technik: „vielleicht abgelaufen“ laut Deal-Seite und älter als 24 h =
   assert.ok(!abrufe.some(u => u.includes('ps5-2500005') || u.includes('samsung-qled-2500002')), 'zu alt -> Seite nicht geladen');
 });
 
-test('ntfy-Nachricht enthält Preis, Grundpreis, Ersparnis und direkten Link', () => {
-  const m = nachricht({ typ: 'produkt', id: 'knoppers-schnitte', name: 'Knoppers Schnitte', basis: 'stueck', titel: 'Knoppers 24er', shop: 'Netto',
-    packung: '24 × 25 g', preis: 5.99, versand: 0, online: false, einheitspreis: 0.25, normalpreis: 0.38, normalGeschaetzt: false, tiefstpreis: 0.25,
-    ersparnis: 0.34, grund: '34 % unter Normalpreis', tiefstText: 'Günstigstes von 2 gefundenen Angeboten in deiner Nähe · so günstig wie nie in 30 Tagen',
-    gueltigBis: '2026-11-01T22:59:00Z', link: 'https://example.org/a' }, cfg);
+test('ntfy-Nachricht enthält Preis, Tiefst 12 Mon. (Händler, Monat), üblich, regulär und direkten Link', () => {
+  const d = { typ: 'produkt', id: 'knoppers-schnitte', name: 'Knoppers Schnitte', basis: 'stueck', titel: 'Knoppers 24er', shop: 'Netto',
+    packung: '24 × 25 g', preis: 4.49, versand: 0, online: false, einheitspreis: 0.187, ersparnis: 0.358, neuesTief: true,
+    grund: 'so günstig wie das 12-Monats-Tief', kontextText: 'Tiefst 12 Mon. 4,49 € (Netto Marken-Discount, Okt. 2026) · üblich 4,99 € · statt regulär 6,99 € (−36 %)',
+    gueltigBis: '2026-11-01T22:59:00Z', link: 'https://example.org/a' };
+  const m = nachricht(d, cfg);
   assert.equal(m.topic, cfg.ntfy.topic);
   assert.equal(m.click, 'https://example.org/a');
-  assert.match(m.message, /^5,99 € bei Netto · 24 × 25 g\n/);
-  assert.match(m.message, /0,25 € pro Stück – normal 0,38 €\n/);
-  assert.match(m.message, /34 % unter Normalpreis/);
-  assert.match(m.message, /so günstig wie nie in 30 Tagen/);
-  assert.match(m.message, /gültig bis So 1\.11\./);
+  assert.equal(m.message, [
+    '4,49 € bei Netto · 24 × 25 g',
+    'Tiefst 12 Mon. 4,49 € (Netto Marken-Discount, Okt. 2026) · üblich 4,99 € · statt regulär 6,99 € (−36 %)',
+    '0,19 € pro Stück – so günstig wie das 12-Monats-Tief',
+    'gültig bis So 1.11.',
+    'Knoppers 24er',
+  ].join('\n'));
+  assert.equal(m.priority, 5, 'auf dem 12-Monats-Tief = höchste Stufe');
+  assert.equal(nachricht({ ...d, neuesTief: false }, cfg).priority, 4);
   assert.equal(m.actions[0].url, 'https://example.org/a');
 });
 
@@ -191,7 +205,7 @@ test('CLI dry-run schreibt current.json, history.json, sent.json, dealseiten.jso
     assert.equal(c.plz, '04720');
     assert.ok(c.produkte.length === watchlist.produkte.length);
     const s = JSON.parse(await readFile(join(dir, 'sent.json'), 'utf8'));
-    assert.equal(Object.keys(s).length, 6);
+    assert.equal(Object.keys(s).length, 3);
     const d = JSON.parse(await readFile(join(dir, 'dealseiten.json'), 'utf8'));
     assert.equal(Object.keys(d.seiten).length, 3, 'geprüfte Deal-Seiten gemerkt');
     assert.equal(JSON.parse(await readFile(join(dir, 'history.json'), 'utf8')).version, 2);

@@ -40,11 +40,17 @@ Oben: „Stand“ je Quelle (rot, wenn der letzte Lauf zu lange her ist oder kei
 
 - Überschrift = das Produkt, das du verfolgst (ohne Packungsgröße, wenn das Angebot eine andere Packung ist).
 - Darunter der **eigene Titel des Angebots** und seine **Packung** („15 × 25 g“), Preis, Laden, Preis pro Stück / 100 g.
-- **„Tiefstpreis?“** mit ja / nein / unklar und dem ehrlichen Satz aus den Daten (`tiefst.text`). Steht auf derselben
+- **Preis-Kontext** (Daten ab Scanner-Version 3): kleine Tabelle **Jetzt · Regulär · Üblich im Angebot · Tiefst 12 Mon.**,
+  je mit Laden, Monat und Quellenname; „Quellen der Preise“ klappt die Links auf (Tippflächen ≥ 44 px). Neben dem Preis
+  „statt regulär 3,49 €“, oben rechts „−20 %“ – **nur gegen den recherchierten regulären Preis** (grün nur bei einem Deal,
+  sonst grau). Darunter das Urteil: „Deal“ (≤ üblich und nah am 12-Monats-Tief), „üblich“ oder „teurer“.
+- **Ohne Angebot** steht in „Deine Liste“: „Gerade kein Angebot · Üblich 2,11 € · Tiefst 1,69 € (Kaufland, März 2026)
+  · je 150 g“, darunter Regulär und Quellen.
+- Ältere Daten (ohne `preise`): wie bisher **„Tiefstpreis?“** mit ja / nein / unklar und dem ehrlichen Satz aus den Daten (`tiefst.text`). Steht auf derselben
   Karte ein im Ganzen billigeres Angebot (z. B. mit unklarer Packung), sagt die Seite nie „ja“ oder „Einziges
   Angebot“, sondern nennt es.
 - Angebote, die erst später beginnen, stehen unter **„Bald günstig“** (nicht unter „Jetzt günstig“, nicht im Zähler).
-- **„Normalpreis geschätzt“**, solange der Normalpreis nur eine Schätzung ist.
+- **„Normalpreis geschätzt“** nur noch bei älteren Daten.
 - **Gültig** („bis heute, 19:00 Uhr“, „ab Mo 2.11.“) – in Berliner Zeit.
 - Ist die Packungsgröße unsicher (`mengeSicher: false`), gibt es **keine Prozentangabe** und keinen Preis pro Stück.
 

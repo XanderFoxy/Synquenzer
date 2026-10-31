@@ -1,5 +1,5 @@
 {
-  "_hinweis": "Lieblingsprodukte. Neues Produkt = einen Block kopieren und anpassen. Felder siehe README.md.",
+  "_hinweis": "Lieblingsprodukte. Neues Produkt = einen Block kopieren und anpassen. Felder siehe README.md. Preise (Regulär, Üblich, Tiefst) stehen recherchiert in referenzpreise.json – keine Schätzungen mehr hier.",
   "produkte": [
     {
       "id": "softys-fruchtmix",
@@ -9,8 +9,7 @@
       "sorte": ["fruchtmix|frucht mix|fruchtig"],
       "nicht": ["rote fruechte", "sauer"],
       "basis": "100g",
-      "standardGramm": 225,
-      "normalpreis": 0.80
+      "standardGramm": 225
     },
     {
       "id": "softys-rote-fruechte",
@@ -20,8 +19,7 @@
       "sorte": ["rote fruechte|rote frucht"],
       "nicht": ["sauer"],
       "basis": "100g",
-      "standardGramm": 225,
-      "normalpreis": 0.80
+      "standardGramm": 225
     },
     {
       "id": "crunchips",
@@ -30,8 +28,7 @@
       "muss": ["crunchips"],
       "nicht": ["x cut", "xcut", "roasted", "stapel"],
       "basis": "100g",
-      "standardGramm": 150,
-      "normalpreis": 1.60
+      "standardGramm": 150
     },
     {
       "id": "crunchips-xcut",
@@ -39,8 +36,7 @@
       "suche": ["Crunchips X-Cut"],
       "muss": ["crunchips", "x cut|xcut"],
       "basis": "100g",
-      "standardGramm": 130,
-      "normalpreis": 1.80
+      "standardGramm": 130
     },
     {
       "id": "choco-crossies",
@@ -48,8 +44,7 @@
       "suche": ["Choco Crossies"],
       "muss": ["crossies"],
       "basis": "100g",
-      "standardGramm": 150,
-      "normalpreis": 2.00
+      "standardGramm": 150
     },
     {
       "id": "knoppers-schnitte",
@@ -61,10 +56,7 @@
       "nicht": ["nussriegel", "nuss riegel", "riegel", "kakaocreme riegel", "mini", "eis", "bites", "keks"],
       "basis": "stueck",
       "stueckGramm": 25,
-      "standardStueck": 5,
-      "normalpreis": 0.30,
-      "_normalpreisStaffel": "Geschätzter Normalpreis pro Stück je Packungsgröße (marktguru liefert keinen Streichpreis): einzeln ca. 0,55 €, 5er/8er-Pack ca. 0,37 €, 15er-Familienpackung ca. 4,50 € = 0,30 €. 'normalpreis' gilt, wenn die Packungsgröße unbekannt ist.",
-      "normalpreisStaffel": [{ "bisStueck": 4, "preis": 0.55 }, { "bisStueck": 10, "preis": 0.37 }, { "bisStueck": 999, "preis": 0.30 }]
+      "standardStueck": 5
     },
     {
       "id": "knoppers-nussriegel",
@@ -74,8 +66,7 @@
       "nicht": ["mini"],
       "basis": "stueck",
       "stueckGramm": 40,
-      "standardStueck": 5,
-      "normalpreis": 0.46
+      "standardStueck": 5
     },
     {
       "id": "haribo-colorado",
@@ -84,8 +75,7 @@
       "suche": ["Haribo Colorado"],
       "muss": ["haribo", "colorado"],
       "basis": "100g",
-      "standardGramm": 175,
-      "normalpreis": 0.85
+      "standardGramm": 175
     },
     {
       "id": "haribo-tropi-frutti",
@@ -94,8 +84,7 @@
       "suche": ["Haribo Tropi Frutti"],
       "muss": ["haribo", "tropi"],
       "basis": "100g",
-      "standardGramm": 175,
-      "normalpreis": 0.85
+      "standardGramm": 175
     },
     {
       "id": "ben-jerrys",
@@ -104,8 +93,7 @@
       "muss": ["ben", "jerry"],
       "nicht": ["shirt", "tasse", "stick", "sandwich"],
       "basis": "100ml",
-      "standardMl": 465,
-      "normalpreis": 1.50
+      "standardMl": 465
     }
   ],
   "technik": {

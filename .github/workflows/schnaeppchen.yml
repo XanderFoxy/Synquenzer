@@ -19,6 +19,7 @@ on:
     branches: [main]
     paths:
       - 'schnaeppchen/watchlist.json'
+      - 'schnaeppchen/referenzpreise.json'
       - 'schnaeppchen/config.json'
       - 'schnaeppchen/scan/**'
 

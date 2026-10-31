@@ -42,16 +42,21 @@ bleiben, ein eigenes Thema als Actions-Secret `NTFY_TOPIC` hinterlegen und in de
   sonst aus dem Text. Grundpreis-Angaben („1 kg = 7,44“, „100 g = 0,99 €“) sind nie die Packung. Stückzahlen nur aus
   klaren Angaben („15 St.“, „15er“, „15 x 25 g“) oder aus dem sicheren Gewicht. Ist die Menge unklar, steht
   „Menge unklar“ da – dann gibt es **keine Prozentangabe und keine Nachricht**.
-- **Normalpreis** = Median der letzten 8 Wochen (pro Tag der niedrigste gesehene Preis). Solange noch
-  weniger als 5 Tage Verlauf da sind, gilt der geschätzte `normalpreis` aus `watchlist.json` – das steht dann
-  ausdrücklich da („normal ca. 0,30 € (geschätzt)“, `normalQuelle: "schaetzung"`). Die Schätzung kann je
-  Packungsgröße verschieden sein (`normalpreisStaffel`, z. B. Knoppers: einzeln ca. 0,55 €, 15er-Familienpackung ca.
-  0,30 € pro Stück) – dann zählt die Stufe der Packung des Angebots. Gegen eine Schätzung kommt die Nachricht nie mit
-  höchster Dringlichkeit.
-- **Deal**, wenn der Grundpreis **mindestens 25 % unter dem Normalpreis** liegt, oder (sobald genug Verlauf da ist)
-  auf/unter dem **bisherigen Tiefstpreis** und mindestens 10 % günstiger als normal. Gegen einen nur **geschätzten**
-  Normalpreis zählt es nur, wenn es das **günstigste aktuelle Angebot** ist und nicht unglaubwürdig weit darunter
-  liegt (> 60 % = eher ein Lesefehler).
+- **Preis-Kontext zu jedem Angebot** (`scan/referenz.mjs`, Daten in `referenzpreise.json` – recherchiert, je Wert mit
+  Quelle und Datum): **Jetzt · Regulär · Üblich im Angebot · Tiefst 12 Mon.** Keine Schätzungen mehr.
+  - Verglichen wird nur **dieselbe Packung** (± 15 %, z. B. Haribo XXL 300/340 g, aber Knoppers 8er ≠ 15er). Gibt es
+    für eine Packung keinen Wert, wird über den Grundpreis (€/Stück, €/100 g, €/100 ml) umgerechnet und so beschriftet.
+  - **Regulär** = Regalpreis, zuerst der Laden des Angebots, sonst Median der Ketten in Döbeln (Kaufland, Lidl,
+    Netto MD, Penny, Aldi Nord, EDEKA/Marktkauf, REWE), dann Globus/Norma/Amazon. UVP und Schätzungen nur als letzte Stufe.
+  - **Üblich im Angebot** = Median der Angebote der letzten 12 Monate (Referenz + eigener Verlauf, nur Döbelner Ketten
+    und online; je Laden/Preis/Woche einmal). Weniger als 3 → der recherchierte Wert (`ueblich`).
+  - **Tiefst 12 Mon.** = günstigstes davon, mit Händler und Monat („2,49 € (Kaufland mit Card, Okt. 2026)“).
+  - Aldi Süd, Wasgau, Netto mit dem Scottie, Großhandel, „nur zum Vergleich“ zählen nie (nur als allerletzte Rückfallstufe).
+  - Werte älter als 90 Tage bekommen „Stand …“, undatierte „Meldung ohne Datum“. Es gibt kein „unbekannt“.
+- **Deal (Push)** nur, wenn der Preis jetzt **≤ üblich im Angebot** und **≤ Tiefst 12 Mon. + 10 %** ist
+  (`config.json` → `deal.nahTiefst`). Die Prozentangabe („−43 %“) gilt immer gegen den recherchierten **regulären**
+  Preis. Push: „Tiefst 12 Mon. 3,79 € (EDEKA, Aug. 2026) · üblich 4,22 € · statt regulär 6,99 € (−43 %)“; höchste
+  Dringlichkeit nur auf dem 12-Monats-Tief.
 - **„Ist das der Tiefstpreis?“** steht bei jedem Produkt als kurzer Satz (`tiefst.text`), z. B. „Günstigstes von
   3 gefundenen Angeboten in deiner Nähe · Verlauf erst seit 1 Tag“ („gefunden“: geprüft sind nur marktguru und mydealz), „… · so günstig wie nie in 30 Tagen“ oder
   „Schon günstiger gesehen: 0,17 € pro Stück am 12.10. bei Lidl“. marktguru liefert keinen Preisverlauf; der
@@ -92,10 +97,12 @@ In `watchlist.json` einen Block kopieren und anpassen, z. B.:
   "muss": ["milka", "alpenmilch"],
   "nicht": ["riegel"],
   "basis": "100g",
-  "standardGramm": 100,
-  "normalpreis": 1.49
+  "standardGramm": 100
 }
 ```
+
+Dazu in `referenzpreise.json` einen Block mit gleicher `id` anlegen (`regulaer[]`, `angebote[]`, `ueblich`, `tiefst12`,
+je mit `quelle`/`url` und Datum). Ohne diesen Block zählen nur der eigene Verlauf und die laufenden Angebote.
 
 | Feld | Bedeutung |
 |---|---|
@@ -109,8 +116,6 @@ In `watchlist.json` einen Block kopieren und anpassen, z. B.:
 | `stueckGramm` | Gewicht eines Stücks (rechnet Gramm ↔ Stück um) |
 | `stueckMin` / `stueckMax` | nur Packungen mit so vielen Stück (z. B. 24er ≥ 15) |
 | `standardGramm` / `standardMl` / `standardStueck` | Packungsgröße, falls das Angebot sie nicht nennt |
-| `normalpreis` | geschätzter Normalpreis **pro Basis** (z. B. € pro Stück), bis genug Verlauf da ist |
-| `normalpreisFest` | `true` = immer diesen Normalpreis nehmen statt des Verlaufs |
 | `gruppe` | gleicher Wert = gemeinsamer Preisverlauf (z. B. Knoppers 5er und 24er) |
 | `asins` | Amazon-ASINs (nur mit Keepa-Schlüssel), z. B. `["B0..."]` |
 
@@ -139,14 +144,18 @@ geprüft. Dazu im Repo unter **Settings → Secrets and variables → Actions �
   Einen echten Roh-Mitschnitt offline nachrechnen: `node scan/main.mjs --wiedergabe <roh-ordner> --data /tmp/probe --jetzt 2026-10-31T16:35:00Z`
   (ein Auszug vom 31.10.2026 liegt in `scan/test/fixtures/echt-2026-10-31/`, ohne marktguru-Startseite → dafür
   `MARKTGURU_API_KEY=x MARKTGURU_CLIENT_KEY=y` setzen; `scan/test/echt.test.mjs` prüft damit Knoppers & Co.).
-- `current.json` (Version 2) pro Angebot: `titel`, `packung` („15 × 25 g“), `menge`, `mengeSicher`, `mengeQuelle`
+- `current.json` **Version 3**: pro Produkt und pro Angebot `preise` = `{ menge, packung, jetzt: { pack, shop },
+  regulaer|ueblich|tiefst12: { pack, shop, monat, stand, quelle, url, umgerechnet, … }, ersparnis, deal, stufe
+  (tiefst/gut/ueblich/normal/kein-angebot), zeile }`; `normalpreis` = regulärer Preis pro Basis (`normalQuelle: "recherche"`).
+- Ältere Felder (Version 2) pro Angebot: `titel`, `packung` („15 × 25 g“), `menge`, `mengeSicher`, `mengeQuelle`
   (`grundpreis`/`text`/`vorgabe`), `preisVorher`, `ab`/`bis` (ISO), `zeile` (fertiger Satz); pro Produkt `tiefst`
   (`status` ja/nein/unbekannt, `text`, `heuteGuenstigstes`, `tage`, `tiefst30`, `anzahl` = alle glaubhaften
   Angebote, `anzahlSicher`), `normalQuelle`, `normalGeschaetzt`, `normalJePackung`; pro Angebot außerdem `unsicher`
   (unplausibel – nie als Hauptkarte), `hinweis`/`nurMitApp`/`preisOhneApp` und bei mydealz `datum`/`sichtbarBis`;
   pro Preisfehler `preis`, `preisVorher`, `vorherQuelle`, `ersparnisEuro`, `ersparnisProzent`, `datum`, `bis`,
   `versandInklusive`. `scan/ende.mjs` ist eine Kopie von `vorteile/scan/lib/ende.mjs` (gleiche Regeln).
-- `history.json` Version 2: Verläufe der Version 1 (vor dem 31.10.2026, mit falschen Packungsgrößen wie Knoppers
+- `history.json` Version 2, Punkte neu mit `m` (Packung in Stück/g/ml) und `pp` (Packungspreis) – nur solche Punkte
+  zählen für Üblich/Tiefst. Version 2: Verläufe der Version 1 (vor dem 31.10.2026, mit falschen Packungsgrößen wie Knoppers
   0,07 €/Stück) werden beim ersten Lauf einmal verworfen.
   Echter Lauf ohne Push: `node scan/main.mjs --dry-run`.
 - Roh-Mitschnitt für die Fehlersuche: *Run workflow* mit Haken **roh** → kein Push, nichts auf den Daten-Zweig; alle Quell-Antworten (je max. 2 MB, Schlüssel geschwärzt) und das berechnete Ergebnis landen auf dem Zweig **`roh-daten`** unter `schnaeppchen/<Lauf-Nr.>/` (`index.json`, `quellen/`, `ausgabe/`). Lokal: `ROH_DIR=/tmp/roh node scan/main.mjs`.

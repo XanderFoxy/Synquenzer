@@ -137,6 +137,25 @@
   .pill.ja { background: var(--akzent); color: var(--akzent-text); }
   .pill.nein { background: var(--rot-hell); color: var(--rot); }
   .pill.unbekannt { background: var(--warm-hell); color: var(--warm); }
+  .prozent.leise { background: var(--flaeche); color: var(--leise); }
+  .statt { color: var(--leise); font-size: 15px; }
+  .statt s { white-space: nowrap; }
+
+  /* Preis-Kontext: Jetzt · Regulär · Üblich im Angebot · Tiefst 12 Mon. (je mit Laden/Monat/Quelle) */
+  .kx { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; margin: 12px 0 0; padding: 4px 12px; background: var(--flaeche); border-radius: 12px; }
+  @media (min-width: 600px) { .kx { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .kx > div { padding: 8px 0; min-width: 0; }
+  .kx dt { font-size: 12px; color: var(--leise); font-weight: 600; margin: 0; }
+  .kx dd { margin: 0; }
+  .kx .wert { display: block; font-size: 17px; font-weight: 700; white-space: nowrap; }
+  .kx .jetzt .wert { color: var(--akzent); }
+  .kx .wo { display: block; font-size: 12px; line-height: 1.35; color: var(--leise); }
+  .kx-urteil { margin: 8px 0 0; font-size: 14px; }
+  details.kx-quellen > summary { font-size: 14px; }
+  details.kx-quellen ul { list-style: none; margin: 0; padding: 0; }
+  details.kx-quellen li a, details.kx-quellen li p { display: flex; align-items: center; min-height: 44px; margin: 0; border-top: 1px solid var(--linie); font-size: 14px; color: inherit; }
+  details.kx-quellen li span { color: var(--leise); margin-left: 6px; }
+  .liste .haupt > span.kx-zeile { color: var(--text); }
 
   /* Preisfehler */
   .vj { margin: 10px 0 0; font-size: 18px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
@@ -525,12 +544,53 @@ function angebotWahl(p) {
   return { o: alle[0] || null, rest: alle.slice(1) };
 }
 
+// --- Preis-Kontext (Scanner ab Version 3: „preise“ je Angebot/Produkt, recherchiert mit Quelle) ------------------
+// Für das gezeigte Angebot: eigener Kontext (gleiche Packung); ältere Daten: der des Produkts, wenn es das beste ist
+function kontextVon(p, o) {
+  if (o && o.preise && typeof o.preise === 'object') return o.preise;
+  if (p.preise && typeof p.preise === 'object' && (!o || o === p.bestes)) return p.preise;
+  return null;
+}
+const STUFE = {
+  tiefst: ['ja', 'So günstig wie das 12-Monats-Tief'],
+  gut: ['ja', 'Unter dem üblichen Angebotspreis, nah am 12-Monats-Tief'],
+  ueblich: ['unbekannt', 'Üblicher Angebotspreis – war schon günstiger'],
+  normal: ['nein', 'Teurer als üblich im Angebot'],
+};
+function woZeile(x, mitMonat = true) { // „Kaufland · Okt. 2026 · kaufda.de“
+  if (!x) return '';
+  const teile = [x.shop, mitMonat ? x.monat : '', x.stand, x.umgerechnet && x.packungQuelle ? `umgerechnet von ${x.packungQuelle}` : '', x.quelle];
+  return teile.filter(Boolean).filter((t, i, a) => a.indexOf(t) === i).join(' · ');
+}
+function kontextBlock(k, o) {
+  const zelle = (klasse, titel, wert, wo) => `<div class="${klasse}"><dt>${esc(titel)}</dt><dd><span class="wert">${esc(wert)}</span>${wo ? `<span class="wo">${esc(wo)}</span>` : ''}</dd></div>`;
+  const jetztWert = k.jetzt ? euro(k.jetzt.pack) : euro(o.preis);
+  const jetztWo = k.jetzt ? [k.jetzt.shop, k.packung].filter(Boolean).join(' · ') : `${o.shop} · Packung unklar`;
+  const zellen = [
+    zelle('jetzt', 'Jetzt', jetztWert, jetztWo),
+    zelle('', 'Regulär', k.regulaer ? euro(k.regulaer.pack) : '–', woZeile(k.regulaer, false) + (k.regulaer?.uvp ? ' · UVP' : '') + (k.regulaer?.geschaetzt ? ' · geschätzt' : '')),
+    zelle('', 'Üblich im Angebot', k.ueblich ? euro(k.ueblich.pack) : '–', [k.ueblich?.anzahl ? `${k.ueblich.anzahl} Angebote in 12 Mon.` : '', k.ueblich?.stand, k.ueblich?.umgerechnet ? 'umgerechnet' : '', k.ueblich?.quelle].filter(Boolean).join(' · ')),
+    zelle('', 'Tiefst 12 Mon.', k.tiefst12 ? euro(k.tiefst12.pack) : '–', woZeile(k.tiefst12)),
+  ];
+  const fuer = !k.jetzt && k.packung ? `<p class="klein">Regulär, üblich und Tiefst für ${esc(k.packung)}</p>` : '';
+  const st = k.jetzt && STUFE[k.stufe];
+  const urteil = st ? `<p class="kx-urteil"><span class="pill ${st[0]}">${esc(k.deal ? 'Deal' : k.stufe === 'ueblich' ? 'üblich' : 'teurer')}</span>${esc(st[1])}</p>` : '';
+  const links = [['Regulär', k.regulaer], ['Üblich', k.ueblich], ['Tiefst', k.tiefst12]].filter(([, x]) => x && x.quelle);
+  const quellen = links.length ? `<details class="kx-quellen"><summary>Quellen der Preise</summary><ul>${links.map(([n, x]) => x.url
+    ? `<li><a href="${esc(sicher(x.url))}" target="_blank" rel="noopener">${esc(n)}:<span>${esc(x.quelle)}</span></a></li>`
+    : `<li><p>${esc(n)}:<span>${esc(x.quelle)}</span></p></li>`).join('')}</ul></details>` : '';
+  return `<dl class="kx">${zellen.join('')}</dl>${fuer}${urteil}${quellen}`;
+}
+
 function produktKarte(p, o, rest) {
   const basis = BASIS_KURZ[p.basis] || p.basisLabel || '';
   const sicherMenge = mengeSicher(o);
   const istBestes = o === p.bestes;
   const deal = istBestes && p.deal && sicherMenge;
-  const prozent = deal && zahl(p.ersparnis) > 0 ? Math.round(p.ersparnis * 100) : null;
+  const k = kontextVon(p, o);
+  // Prozent nur gegen den recherchierten regulären Preis (neue Daten); ältere Daten wie bisher nur bei Deals
+  const ersparnis = k ? (sicherMenge && k.jetzt ? zahl(k.ersparnis) : null) : deal ? zahl(p.ersparnis) : null;
+  const prozent = ersparnis > 0 ? Math.round(ersparnis * 100) : null;
   const packung = o.packung || (o.mengeSicher === false || !sicherMenge ? 'Packungsgröße unklar' : '');
   const geschaetzt = p.normalGeschaetzt === true || p.normalQuelle === 'schaetzung';
   const ti = tiefstInfo(p, o, rest);
@@ -538,10 +598,10 @@ function produktKarte(p, o, rest) {
   const v = o.einheitspreisVarianten;
   const varianten = sicherMenge && Array.isArray(v) && v.length > 1 && zahl(v[1]?.einheitspreis) != null
     ? ` <span class="klein">(bei ${esc(v[0].packung)}; ${esc(v[1].packung)}: ${esc(euro(v[1].einheitspreis, true))})</span>` : '';
-  const fakten = [
+  const fakten = k ? [] : [
     `<div class="fakt"><dt>Tiefstpreis?</dt><dd><span class="pill ${esc(ti.status)}">${esc(STATUS_TEXT[ti.status] || 'unklar')}</span>${esc(ti.text)}</dd></div>`,
   ];
-  if (zahl(p.normalpreis) != null) {
+  if (!k && zahl(p.normalpreis) != null) {
     const dazu = prozent != null ? ` · ${prozent} % darunter` : '';
     fakten.push(geschaetzt
       ? `<div class="fakt"><dt>Normalpreis geschätzt</dt><dd>ca. ${esc(euro(p.normalpreis, true))} ${esc(basis)}${istBestes && p.normalJePackung ? ' für diese Packungsgröße' : ''}${esc(dazu)}</dd></div>`
@@ -559,11 +619,12 @@ function produktKarte(p, o, rest) {
   else { const b = zeit(o.bis ?? o.gueltigBis); if (b != null && tag(b) === 'heute') oben.push(`<span class="marke warm">endet ${esc(bisText(o.bis ?? o.gueltigBis).replace(/^bis /, ''))}</span>`); }
   return `<article class="karte angebot${deal ? ' deal' : ''}" data-produkt="${esc(p.id)}">
     ${oben.length ? `<div class="oben">${oben.join('')}</div>` : ''}
-    <div class="karte-kopf"><h3>${esc(produktName(p, o))}</h3>${prozent != null ? `<span class="prozent">−${prozent} %</span>` : ''}</div>
+    <div class="karte-kopf"><h3>${esc(produktName(p, o))}</h3>${prozent != null ? `<span class="prozent${deal ? '' : ' leise'}" title="gegen den regulären Preis">−${prozent} %</span>` : ''}</div>
     <p class="angebot-titel">${esc(o.titel)}${packung ? ` · <b>${esc(packung)}</b>` : ''}</p>
-    <div class="preiszeile"><span class="preis">${esc(euro(o.preis))}</span><span class="shop">bei ${esc(o.shop)}</span>${zahl(o.versand) > 0 ? `<span class="klein">+ ${esc(euro(o.versand))} Versand</span>` : ''}${o.hinweis ? `<span class="klein">${esc(o.hinweis)}</span>` : ''}</div>
+    <div class="preiszeile"><span class="preis">${esc(euro(o.preis))}</span><span class="shop">bei ${esc(o.shop)}</span>${prozent != null && k?.regulaer ? `<span class="statt">statt regulär <s>${esc(euro(k.regulaer.pack))}</s></span>` : ''}${zahl(o.versand) > 0 ? `<span class="klein">+ ${esc(euro(o.versand))} Versand</span>` : ''}${o.hinweis ? `<span class="klein">${esc(o.hinweis)}</span>` : ''}</div>
     ${sicherMenge && zahl(o.einheitspreis) != null ? `<p class="einheit">${esc(euro(o.einheitspreis, true))} ${esc(basis)}${varianten}</p>`
       : `<p class="einheit unsicher">Preis ${esc(basis)} nicht sicher – Packungsgröße unklar</p>`}
+    ${k ? kontextBlock(k, o) : ''}
     <dl class="fakten">${fakten.join('')}</dl>
     <a class="los" href="${esc(sicher(o.link))}" target="_blank" rel="noopener">${esc(knopfText(o))}</a>
     ${weitere}
@@ -577,8 +638,25 @@ function keinAngebotText(p, basis) {
   if (!b && t && /^Gerade kein Angebot/.test(t)) return t;
   return 'Gerade kein Angebot';
 }
+// „Gerade kein Angebot · Üblich 0,99 € · Tiefst 0,88 € (Kaufland, Okt. 2026) · je 225 g“ – zur Orientierung
+function keinAngebotKontext(k) {
+  const t = k.tiefst12;
+  return ['Gerade kein Angebot',
+    k.ueblich ? `Üblich ${euro(k.ueblich.pack)}` : '',
+    t ? `Tiefst ${euro(t.pack)} (${[t.shop, t.monat].filter(Boolean).join(', ')})` : '',
+    k.packung ? `je ${k.packung}` : ''].filter(Boolean).join(' · ');
+}
 function produktZeile(p) {
   const basis = BASIS_KURZ[p.basis] || p.basisLabel || '';
+  if (p.preise && typeof p.preise === 'object') {
+    const k = p.preise;
+    const namen = [k.regulaer, k.ueblich, k.tiefst12].filter(Boolean).flatMap(x => String(x.quelle || '').replace(/ u\. a\.$/, '').split(', ')).filter(Boolean);
+    const alle = [...new Set(namen)];
+    const quellen = alle.length > 3 ? [...alle.slice(0, 3), 'u. a.'] : alle;
+    const reg = k.regulaer ? `Regulär ${euro(k.regulaer.pack)} (${woZeile({ ...k.regulaer, quelle: '' }, false)})` : '';
+    return `<li><div class="reihe"><div class="haupt"><b>${esc(produktName(p, null))}</b><span class="kx-zeile">${esc(keinAngebotKontext(k))}</span>`
+      + `<span>${esc([reg, quellen.length ? `Quellen: ${quellen.join(', ').replace(', u. a.', ' u. a.')}` : ''].filter(Boolean).join(' · '))}</span></div></div></li>`;
+  }
   const geschaetzt = p.normalGeschaetzt === true || p.normalQuelle === 'schaetzung';
   const normal = zahl(p.normalpreis) != null ? ` · ${geschaetzt ? 'Normalpreis geschätzt: ca.' : 'Normalpreis:'} ${euro(p.normalpreis, true)} ${basis}` : '';
   return `<li><div class="reihe"><div class="haupt"><b>${esc(produktName(p, null))}</b><span>${esc(keinAngebotText(p, basis))}${esc(normal)}</span></div></div></li>`;

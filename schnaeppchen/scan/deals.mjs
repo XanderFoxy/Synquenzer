@@ -2,66 +2,6 @@
 import { norm, round, euroKurz, zeitpunktText, BASIS_LABEL } from './text.mjs';
 import { vorherAusText, vorherJetzt } from './preisfehler.mjs';
 
-// Reference price: history median once there is enough data, else the estimate from watchlist.json.
-// quelle: 'fest' (von Xander festgelegt) | 'verlauf' (eigener Preisverlauf) | 'schaetzung' (Schätzung aus watchlist.json)
-//         | 'verlauf-kurz' (wenige Tage Verlauf, keine Schätzung) | 'unbekannt'
-export function referenz(item, stats, cfg) {
-  if (item.normalpreisFest && item.normalpreis) return { p: item.normalpreis, quelle: 'fest' };
-  if (stats.normal != null && stats.tage >= cfg.deal.historieMinTage) return { p: round(stats.normal, 3), quelle: 'verlauf' };
-  if (item.normalpreis) return { p: item.normalpreis, quelle: 'schaetzung' };
-  if (stats.normal != null) return { p: round(stats.normal, 3), quelle: 'verlauf-kurz' };
-  return { p: null, quelle: 'unbekannt' };
-}
-export const istGeschaetzt = ref => ref.quelle === 'schaetzung' || ref.quelle === 'verlauf-kurz';
-
-/**
- * Normalpreis für ein bestimmtes Angebot. Eine Schätzung kann je Packungsgröße verschieden sein
- * (watchlist.json normalpreisStaffel: [{ bisStueck, preis }] – einzeln teurer als die 15er-Familienpackung).
- * Nur mit sicherer Stückzahl; sonst die allgemeine Referenz.
- */
-export function refFuer(item, ref, a) {
-  const staffel = item?.normalpreisStaffel;
-  if (ref.quelle !== 'schaetzung' || !Array.isArray(staffel) || !a?.mengeSicher || !(a.menge?.stueck > 0)) return ref;
-  const stufe = [...staffel].sort((x, y) => x.bisStueck - y.bisStueck).find(x => a.menge.stueck <= x.bisStueck);
-  return stufe?.preis > 0 ? { p: stufe.preis, quelle: 'schaetzung', staffel: true } : ref;
-}
-
-// Ist die Schätzung glaubwürdig? Liegen drei oder mehr Angebote alle weit (≥ 30 %) darunter, ist eher die Schätzung
-// zu hoch als dass überall Aktion ist. refVon(a) = Normalpreis für das Angebot a (Staffel je Packungsgröße).
-export function schaetzungPlausibel(ref, sichere, refVon = () => ref) {
-  if (!(ref.p > 0)) return false;
-  if (sichere.length < 3) return true;
-  return Math.max(...sichere.map(a => a.einheitspreis / (refVon(a).p || ref.p))) >= 0.7;
-}
-
-/**
- * Deal oder nicht? Ehrlich:
- * - Menge unsicher oder Preis unplausibel -> nie Deal, keine Prozentangabe.
- * - Gegen einen GESCHÄTZTEN Normalpreis nur, wenn das Angebot das günstigste aller aktuellen ist, die Schätzung
- *   plausibel ist und der Abstand nicht absurd groß (> schaetzungMaxRabatt = eher Lesefehler als Schnäppchen).
- */
-export function bewerte(angebot, ref, stats, cfg, { guenstigstes = true, plausibel = true } = {}) {
-  const up = angebot.einheitspreis;
-  const res = { deal: false, ersparnis: null, grund: '' };
-  if (!(up > 0) || angebot.mengeSicher === false || angebot.unsicher) return res;
-  if (ref.p > 0) res.ersparnis = round(1 - up / ref.p, 3);
-  const geschaetzt = istGeschaetzt(ref);
-  if (res.ersparnis != null && res.ersparnis >= cfg.deal.rabattMin) {
-    const ok = !geschaetzt || (guenstigstes && plausibel && res.ersparnis <= (cfg.deal.schaetzungMaxRabatt ?? 0.6));
-    if (ok) {
-      res.deal = true;
-      res.grund = `${Math.round(res.ersparnis * 100)} % unter ${geschaetzt ? 'geschätztem ' : ''}Normalpreis`;
-    }
-  }
-  const t = stats.tiefst;
-  if (t && stats.punkte >= cfg.deal.tiefstpreisMinPunkte && up <= t.p + 1e-9 &&
-      (res.ersparnis ?? 0) >= cfg.deal.tiefstpreisMinRabatt && (!geschaetzt || guenstigstes)) {
-    res.deal = true;
-    res.grund = res.grund ? `${res.grund}, Tiefstpreis` : 'auf Tiefstpreis';
-  }
-  return res;
-}
-
 const tagKurz = tag => { const [, m, d] = String(tag).split('-'); return `${d}.${m}.`; };
 function wo(angebote) {
   const laden = angebote.some(a => !a.online), online = angebote.some(a => a.online);

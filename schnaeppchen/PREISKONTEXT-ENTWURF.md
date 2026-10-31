@@ -1,5 +1,9 @@
 # Entwurf: „Regulär · Üblich · Tiefst · Jetzt“ für Mein Vorteil
 
+> **Umgesetzt (Zweig `mv-preise`):** `scan/referenz.mjs` + `referenzpreise.json`. Abweichend von diesem Entwurf gibt es
+> **kein „unbekannt“** mehr: fehlt ein Wert für die Packung, wird über den Grundpreis umgerechnet oder der recherchierte
+> Referenzwert mit Quelle gezeigt („Stand …“ bei Werten älter als 90 Tage). Deal = ≤ üblich und ≤ Tiefst 12 Mon. + 10 %.
+
 Stand: 31.10.2026. Grundlage: `BEFUND.md` (Preis-Sonde, Actions-Lauf 41227676320) und der Code auf `origin/mein-vorteil` (561910f).
 Wunsch von Xander: Zu jedem Angebot sollen der reguläre Preis, der übliche Angebotspreis und der Tiefstpreis der letzten Monate oder Jahre stehen. Jeder Wert ist recherchiert und mit Quelle angegeben.
 
