@@ -3717,7 +3717,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .mdre .mdtrig,.mdre .mdmore{flex:none;width:52px;font-size:16px}
 .tgl.on .led{background:var(--led-on,#ffb340);box-shadow:0 0 6px var(--led-on,#ffb340)}
 .mdsoloh{flex:none;margin:0 6px;padding:3px 6px;border-radius:4px;font:700 10px/1 var(--font-ui);letter-spacing:.06em;color:#000;background:var(--led-on,#ffb340)}
-.pad.mdall{outline:2px solid var(--led-on,#ffb340);outline-offset:-2px}
+.pad.mdfoc{outline:2px solid var(--led-on,#ffb340);outline-offset:-2px}
 .pop.mdpop{max-width:min(560px,calc(100vw - 16px))}
 .mdwl{display:flex;flex-direction:column;gap:4px;max-height:min(62vh,420px);overflow-y:auto}
 .mdwr{display:flex;align-items:center;gap:6px}.mdwf{flex:none;width:62px;font:600 10px/1.1 var(--font-ui);color:var(--text-dim)}
@@ -18911,7 +18911,7 @@ function mdEnsure() {
     MDX.st = 'loading';
     MDX.p = mdModule(c).then(ok => {
       if (MDX.ctx !== c) return;
-      try { if (!ok) throw new Error('addModule'); mdNode(c); MDX.st = 'ready'; mdSync(true); mdFlush(); }
+      try { mdNode(c); MDX.st = 'ready'; mdSync(true); mdFlush(); }   // auch wenn addModule meldet „schon registriert“
       catch (e) { MDX.st = 'failed'; mdNoWk(); mdFallback(); }
     });
   } else if (MDX.st === 'ready') mdConnect();
@@ -18949,6 +18949,7 @@ function mdSync(force) {
     const p = MDN.spec(st), j = JSON.stringify(p);
     if (MDX.sent[v.idx] !== j) { MDX.sent[v.idx] = j; mdPost({t: 'ch', ch: v.idx, p}); }
   }
+  if (force && MDX.solo) mdPost({t: 'mute', ch: MDX.solo.ch, solo: MDX.solo.part});
   const k = Object.assign(MDN.kitInit(), snd.p.md || {}), kj = JSON.stringify(k);
   if (MDX.kit !== kj) { MDX.kit = kj; mdPost({t: 'kit', p: k}); }
 }
@@ -19137,7 +19138,7 @@ class SynqMdStub extends AudioWorkletProcessor {
     const vel = Math.max(0, Math.min(1, (h.v || 0) + 0.3 * (h.acc || 0)));
     const cv = (MDCRV[p.mCrv] || MDCRV.Li)(Math.max(0, Math.min(1, h.v || 0)));
     const x = p.mDm === 'D' ? p.mDd + (p.mDec - p.mDd) * vel : p.mDec;
-    v.on = 1; v.ph = 0; v.t = 0; v.fade = 0; v.g = 1;
+    v.on = 1; v.ph = 0; v.t = 0; v.fade = 0; v.g = 1; v.t0 = currentTime;
     v.f0 = 440 * Math.pow(2, ((p.mPit || 0) + (h.tune || 0) - 69) / 12);
     v.T = MDT(x) * (h.dec || 1); v.mode = p.mDm === 'D' ? 'E1' : p.mDm; v.v = vel;
     const b = p.mBnd || 0; v.b0 = (b < 0 ? -1 : 1) * 48 * (b / 50) * (b / 50) * (0.3 + 0.7 * vel); v.tb = MDT(p.mBt || 0);
@@ -19168,7 +19169,7 @@ class SynqMdStub extends AudioWorkletProcessor {
           if (!v.on) continue;
           const bend = v.t < v.tb ? v.b0 * (Math.exp(-4 * v.t / v.tb) - Math.exp(-4)) / (1 - Math.exp(-4)) : 0;
           const f = v.f0 * Math.pow(2, bend / 12);
-          if (v.fade) v.g *= fadeK; else if (stopping) v.g *= stopK;
+          if (v.fade) v.g *= fadeK; else if (stopping && v.t0 < this.stopAt) v.g *= stopK;
           const y = mute ? 0 : Math.sin(2 * Math.PI * v.ph) * v.amp * this.env(v) * v.g;
           L[i] += y * v.pl; R[i] += y * v.pr;
           v.ph += f / sr; if (v.ph >= 1) v.ph -= 1; v.t += 1 / sr;
@@ -19740,6 +19741,7 @@ function stopTrackNow(i) {
   { const A = arpK(); if (A && A.busy()) A.cut(i, now + .005); }  // MK5: the arp of this track stops with its clip
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip') v.release(now + .005, .01);
   if (S.tracks[i].kind === 'drum') for (const h of HITS.slice()) if (!h.dead && h.src === 'clip') { try { h.out.gain.setTargetAtTime(0, now, .01); } catch (e) {} hitStopAll(h, now + .06); }
+  if (S.tracks[i].kind === 'drum') mdPost({t: 'stop', at: now, tau: .01});   // ND4: klingende North-Stimmen ebenso
   UI.dirty.grid = true;
 }
 // a stop that was queued by a tap on the playing clip (§3.2): cancelled silently when the clip is opened for editing
@@ -27828,6 +27830,7 @@ function dropUntouchedRollClip() {
   return true;
 }
 function closeSheets() {
+  if (EL.drumSheet.classList.contains('open')) { try { mdEditEnd(true); } catch (e) { logErr(e); } }   // ND2: ALLE KANÄLE / SOLO PART enden
   if (EL.synthSheet.classList.contains('open') && typeof MKUI !== 'undefined' && MKUI.leave) { try { MKUI.leave(); } catch (e) { logErr(e); } }   // MK3-fix: ≡, browser, project switch … end solo / armed split like ✕
   EL.synthSheet.classList.remove('open', 'mkq'); EL.drumSheet.classList.remove('open'); EL.clipSheet.classList.remove('open');
   if (EL.app.classList.contains('mkqkb')) releaseInputs(r => r === 'play' || r === 'pad'); EL.app.classList.remove('mkq', 'mkqkb');   // MK-P
@@ -27868,7 +27871,7 @@ function openEditor() {
   UI.dirty.all = true;
 }
 function closeEditor() { if (typeof MKUI !== 'undefined' && MKUI.leave) { try { MKUI.leave(); } catch (e) { logErr(e); } }   // MK3: solo / Edit Sync / armed split end with the editor
-  try { mdEditEnd(); } catch (e) { logErr(e); }               // ND2: ALLE KANÄLE / SOLO PART enden
+  try { mdEditEnd(true); } catch (e) { logErr(e); }           // ND2: ALLE KANÄLE / SOLO PART enden
   if (EL.synthSheet.classList.contains('open') || EL.drumSheet.classList.contains('open') || EL.clipSheet.classList.contains('open') || EL.rollSheet.classList.contains('open') || EL.sndSheet.classList.contains('open')) shieldTap(); closeSheets(); R.editor = null; UI.dirty.all = true; }
 function edRefresh() { for (const f of ED.refreshers) { try { f(); } catch (e) { logErr(e); } } }
 /* §1.7.3 / §2.3: editor pages never scroll. Conditional content (FILTER hint line, …) can push a page past its body at
@@ -28140,7 +28143,7 @@ function findSound(q) {
   if (OLD_PRESETS[id]) return {rec: FACTORY_BY_ID.get(OLD_PRESETS[id]), old: true};
   const n = id.trim().toLowerCase();
   const f = SYNTH_LIB.find(x => x.name.toLowerCase() === n); if (f) return {rec: f, old: false};
-  const u = LIB.ok ? LIB.lib.all().find(x => x.name.toLowerCase() === n) : null; if (u) return {rec: u, old: false};
+  const u = LIB.ok ? LIB.lib.all().find(x => x.name.toLowerCase() === n && x.engine !== MD_LIB) : null; if (u) return {rec: u, old: false};   // ND4: North-Programme nicht auf Synth-Spuren
   return {rec: null, old: false};
 }
 function loadPreset(t, idOrName) {
@@ -32868,6 +32871,7 @@ function buildDrumEd() {
   else pageDrumSpur(pg);
   if (ED.dTab === 'fx') fxLongLabels(pg);
   ED.refreshers.push(() => drumHeadRefresh());
+  if (MDE.solo) { if (mdp) mdSoloApply(); else { MDE.solo = false; mdSolo(-1); } }   // ND2: SOLO PART folgt dem Pad
   mdHeadSolo(); sh.classList.toggle('mdsub', mdp && ED.dTab === 'sound');   // ND2: „SOLO PART“ im Kopf, Unter-Reiter 44 px
   sh.classList.add('open');
 }
@@ -33199,10 +33203,10 @@ function mdAudition(force) {
   drumAudition(mdCurSl().idx, .8);
 }
 // ALLE KANÄLE / SOLO PART enden mit Schließen des Editors, ■, Szenenwechsel (Regel 6)
-function mdEditEnd() { if (!MDE.all && !MDE.solo && !MDE.rel) return; MDE.all = MDE.solo = MDE.rel = false; mdSolo(-1); mdFocus(); if (R.editor === 'drum') safeRebuild(buildDrumEd); }
+function mdEditEnd(closing) { if (!MDE.all && !MDE.solo && !MDE.rel) return; MDE.all = MDE.solo = MDE.rel = false; MDE.scl = ''; mdSolo(-1); mdFocus(); if (!closing && R.editor === 'drum' && EL.drumSheet.classList.contains('open')) safeRebuild(buildDrumEd); }
 function mdSoloApply() { if (!MDE.solo) { mdSolo(-1); return; } const s = MDE.sub; mdSolo(mdCurSl().idx, s === 'tone' || s === 'noise' || s === 'click' ? s : 'all'); }
 // Fokus-Rahmen auf allen Modell-Pads, solange ALLE KANÄLE an ist
-function mdFocus() { (UI.padEls || []).forEach((p, k) => { if (p && p.classList) p.classList.toggle('mdall', !!MDE.all && mdIsSrc(DRUM_VOICES[k].id)); }); }
+function mdFocus() { (UI.padEls || []).forEach((p, k) => { if (p && p.classList) p.classList.toggle('mdfoc', !!MDE.all && mdIsSrc(DRUM_VOICES[k].id)); }); }
 // eine Zelle (Zellen-Bauteil makeCtl, als Geräte-Wertfeld dargestellt)
 function mdCell(key) {
   const C = MD_CELL[key], sl = mdCurSl();
@@ -33276,7 +33280,7 @@ function mdScl(code) {
   const L = mdChans(); if (!L.length) return;
   const S0 = mdSlot(L[0].id).mPit, st = MD_SCL[code][1], fixed = MD_SCL[code][2];
   L.forEach((v, i) => { const off = fixed ? st[Math.min(i, st.length - 1)] + (i >= st.length ? 12 * Math.floor(i / st.length) : 0) : st[i % st.length] + 12 * Math.floor(i / st.length); mdSlot(v.id).mPit = MDN.val('mPit', S0 + off); drumChanged(v.id); });
-  MDE.all = true; mdFocus();
+  MDE.all = true; mdFocus(); try { edRefresh(); } catch (e) { logErr(e); }
 }
 // SOUND eines Modell-Pads
 function pageMdSound(pg) {
@@ -33303,7 +33307,7 @@ function pageMdSound(pg) {
   const more = el('button', 'rb mdmore', '⋯'); more.setAttribute('aria-label', 'Kanal: Kopieren, Einfügen, Tauschen, Init, Programm sichern'); onTap(more, () => mdMore(more));
   e.append(all, solo, trig, more);
   pg.appendChild(e);
-  ED.refreshers.push(() => { cells.forEach(c => c.update()); const n = mdCur().mName || 'INIT', b = pb.querySelector('b'); if (b.textContent !== n) b.textContent = n; });
+  ED.refreshers.push(() => { all.classList.toggle('on', !!MDE.all); all.setAttribute('aria-checked', String(!!MDE.all)); cells.forEach(c => c.update()); const n = mdCur().mName || 'INIT', b = pb.querySelector('b'); if (b.textContent !== n) b.textContent = n; });
   lcdHint2(sl.l + ' · ' + MD_NAME, 'ziehen = Wert · seitlich = fein · 2× tippen = INIT · Liste: antippen');
 }
 function mdHeadSolo() {
@@ -33338,7 +33342,7 @@ function mdMore(anchor) {
 function mdSavePop(anchor) {
   const sl = mdCurSl();
   openPop(anchor, p => {
-    let cat = mdCur().mCat || MDE.cat || 'bd';
+    const okc = c => MD_CAT.some(x => x[0] === c); let cat = okc(mdCur().mCat) ? mdCur().mCat : okc(MDE.cat) ? MDE.cat : 'bd';
     p.innerHTML = '<h4>Programm sichern</h4>';
     const inp = el('input', 'tin'); inp.maxLength = 16; inp.value = (mdCur().mName || sl.l).slice(0, 16); inp.setAttribute('aria-label', 'Name des Programms'); inp.setAttribute('enterkeyhint', 'done');
     const cs = el('div', 'mdcats'); cs.innerHTML = MD_CAT.map(([c, l]) => `<button class="rb${c === cat ? ' on' : ''}" data-c="${c}"><b>${c}</b><small>${esc(l)}</small></button>`).join('');
@@ -33391,7 +33395,7 @@ function pageMdKanal(pg) {
 }
 // KIT: Block „MD_NAME · HALL & ECHO“ (nur mit mindestens einem Modell-Pad)
 const MD_BPM = (() => { const a = []; for (let b = 60; b <= 179; b++) a.push([b, '♩', 60 / b]); for (let b = 90; b <= 179; b++) a.push([b, '♪', 30 / b]); for (let b = 90; b <= 300; b++) a.push([b, '♬', 15 / b]); for (let m = 50; m >= 1; m--) a.push([m / 1000, 's', m / 1000]); return a; })();
-const mdBpmTxt = i => { const x = MD_BPM[clamp(i | 0, 0, MD_BPM.length - 1)]; return x[1] === 's' ? fmtDec(x[0], 3) + ' s' : x[0] + ' ' + x[1]; };
+const mdBpmTxt = i => { const x = MD_BPM[clamp(i | 0, 0, MD_BPM.length - 1)]; return x[1] === 's' ? x[0].toFixed(3) + ' s' : x[0] + ' ' + x[1]; };
 const mdKit = () => Object.assign(MDN.kitInit(), drumSnd().p.md || {});
 function mdKitSet(k, v) { const s = drumSnd(); const K = s.p.md || (s.p.md = MDN.kitInit()); const nv = MDN.kval(k, v); if (K[k] === nv) return; K[k] = nv; UI.drumVer++; UI.sndVer++; mdDirty(); UI.dirty.edHead = true; markDirty(); }
 function mdKitBlock(pg) {
@@ -33416,12 +33420,15 @@ function mdKitBlock(pg) {
 }
 // TAP (§1.10): ≥ 4 Schläge, Mittel der letzten 3 Abstände -> Viertel 60–179 (BPM-Modus), ein Undo
 function mdTap(btn) {
-  const t = performance.now(); MDE.taps = MDE.taps.filter(x => t - x < 2500).concat([t]).slice(-4);
+  const t = performance.now(), a0 = MDE.taps, last = a0[a0.length - 1];
+  MDE.taps = (last != null && t - last < 2500 ? a0 : []).concat([t]).slice(-4);   // eine Folge: Abstand zum vorigen Tipp < 2,5 s
   const n = MDE.taps.length;
   if (n < 4) { btn.textContent = 'TAP ' + n; lcdShow('TAP', n + ' – weiter tippen'); return; }
-  const a = MDE.taps, avg = (a[3] - a[0]) / 3, bpm = clamp(Math.round(60000 / avg), 60, 179);
-  soundEdit(DRUM_T, 'Echo-Tempo ' + bpm, () => { mdKitSet('dlM', 'b'); mdKitSet('dlB', bpm - 60); });
-  btn.textContent = bpm + ' ♩'; lcdShow('TAP', bpm + ' ♩'); edRefresh();
+  const a = MDE.taps, avg = (a[3] - a[0]) / 3000;
+  // die Stellung der BPM-Strecke mit der nächsten Echo-Zeit (Viertel 60–179, sonst Achtel/Sechzehntel/Zeit)
+  let bi = 0; for (let i = 1; i < MD_BPM.length; i++) if (Math.abs(MD_BPM[i][2] - avg) < Math.abs(MD_BPM[bi][2] - avg) - 1e-9) bi = i;
+  soundEdit(DRUM_T, 'Echo-Tempo ' + mdBpmTxt(bi), () => { mdKitSet('dlM', 'b'); mdKitSet('dlB', bi); });
+  btn.textContent = mdBpmTxt(bi); lcdShow('TAP', mdBpmTxt(bi)); edRefresh();
 }
 /* ===================== Ende ND2 ===================== */
 

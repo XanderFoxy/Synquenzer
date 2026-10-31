@@ -83,6 +83,14 @@ Tests in `bau/helfer/ND42/tests/` (Aufruf: `NODE_PATH=<playwright> node <test> <
 8. Größe +68 KB gegenüber der Basis (Budget ND4 10 + ND2 30 KB); davon ≈ 6 KB Stub, der beim Zusammenführen ersetzt wird.
 9. Hinweis „North braucht AudioWorklet“ als Toast und in Zeile B der SOUND-Seite (nicht im Sheet-Kopf).
 
+## Unabhängige Nachprüfung (Fixes)
+Ein zweiter, unabhängiger Prüflauf fand 11 Punkte, alle behoben und mit `md2-fix.mjs` nachgetestet: SOLO PART folgt dem gewählten
+Pad (und endet auf einem Drum-Pad); ALLE KANÄLE / SOLO PART enden auch über ≡, Browser, Projektwechsel (`closeSheets`); SCL PRE
+zeigt ALLE KANÄLE sofort an; TAP geht von 60 ♩ bis in die ♪/♬-Stellungen; ■■ auf der Drum-Spur stoppt klingende North-Stimmen;
+Stub: `stop` dämpft keine danach gestarteten Schläge; Programm sichern speichert nur gültige Kategorien; „0.050 s“ mit Punkt;
+SOLO wird nach dem Laden des Moduls nachgesendet; Modul-Laden fällt bei „schon registriert“ nicht auf „ohne Worklet“ zurück;
+North-Programme lassen sich nicht per Name auf Synth-Spuren laden.
+
 ## Fragen an Xander
 1. **SOLO PART** schaltet nur die anderen North-Pads stumm; Pads mit Drum-Stimme spielen weiter. So lassen oder alle Pads stumm?
 2. **🎲 (Zufall)** im Kopf wirkt bei einem North-Pad auf seine (unhörbare) Drum-Stimme. Ausblenden, eigener Zufall für North, oder lassen?
