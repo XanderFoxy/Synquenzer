@@ -56,6 +56,9 @@ test('Push-Text Preisfehler: „vorher X € → jetzt Y € (−Z %)“, sonst 
   const ohne = nachricht({ ...mit, preis: 165, preisVorher: null, ersparnisProzent: null, vorherQuelle: null, titel: 'RTX 5070', shop: 'MediaMarkt' }, cfg, Date.parse('2026-10-29T13:26:13Z'));
   assert.equal(ohne.message.split('\n')[0], 'jetzt 165,00 € · Vorher-Preis unbekannt');
   assert.match(ohne.message, /gemeldet vor 2 Std\./);
+  // Titel nach Art: gemeldeter Preisfehler vs. großer Technik-Rabatt (wie auf der Seite)
+  assert.match(nachricht({ ...mit, preisfehler: true }, cfg).title, /^Preisfehler\? Lumaland/);
+  assert.match(nachricht({ ...mit, preisfehler: false }, cfg).title, /^Technik-Deal: Lumaland/);
 });
 
 test('Deal-Seiten prüfen: abgelaufen gemerkt, laufende neu geprüft, Fehler nicht gemerkt, Grenze pro Lauf', async () => {

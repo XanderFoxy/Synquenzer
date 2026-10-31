@@ -74,14 +74,19 @@ const ALTPREIS_MUSTER = [
   ['UVP laut Deal-Text', new RegExp(`(?:uvp|unverbindliche preisempfehlung)\\s*(?:von|liegt bei|:)?\\s*(?:ca\\.?\\s*)?${BETRAG}`, 'i')],
   ['Vergleichspreis laut Deal-Text', new RegExp(`(?:vergleichspreis|preisvergleich|pvg|vgp)(?:[^0-9€%]{0,25}?)(?:liegt\\s*)?(?:bei|ab|:)?\\s*(?:ca\\.?\\s*)?${BETRAG}`, 'i')],
   ['Normalpreis laut Deal-Text', new RegExp(`(?:normalerweise|regul(?:ä|ae)r|normalpreis)(?:[^0-9€%]{0,20}?)\\s*(?:ca\\.?\\s*)?${BETRAG}`, 'i')],
-  ['Preis vorher laut Deal-Text', new RegExp(`(?:anstatt|statt)\\s*(?:der\\s*)?(?:ca\\.?\\s*)?${BETRAG}`, 'i')],
+  ['Preis vorher laut Deal-Text', new RegExp(`(?:anstatt|statt)\\s*(?:der\\s*)?(?:ca\\.?\\s*|knapp\\s*|rund\\s*|etwa\\s*)?${BETRAG}`, 'i')],
 ];
 // Davor oder danach: dann ist der Betrag Versand, eine Gebühr oder ein anderer Zusammenhang
 const KEIN_ALTPREIS_NACH = /^[^.!?]{0,25}(versand|vsk|porto|liefer|gebühr|gebuehr|anschluss|monat|mtl|pro jahr|im jahr|%)/i;
 
-/** Altpreis aus Titel/Beschreibung – nur wenn größer als der jetzige Preis. -> { preis, quelle } | null */
-export function altpreisAusText(text, jetztPreis = null) {
+/**
+ * Altpreis aus Titel/Beschreibung – nur wenn größer als der jetzige Preis. -> { preis, quelle } | null
+ * niedrigster: unter allen Treffern (UVP, Vergleichspreis, „statt“ …) den niedrigsten nehmen – für Deals, damit eine
+ * hohe UVP (26,99 €) nicht mehr Ersparnis vortäuscht als der echte Vergleichspreis („statt knapp 21 €“).
+ */
+export function altpreisAusText(text, jetztPreis = null, { niedrigster = false } = {}) {
   const t = String(text || '').replace(/\s+/g, ' ');
+  let bester = null;
   for (const [quelle, re] of ALTPREIS_MUSTER) {
     const g = new RegExp(re.source, 'gi');
     let m;
@@ -90,10 +95,12 @@ export function altpreisAusText(text, jetztPreis = null) {
       const nach = t.slice(m.index + m[0].length);
       if (v == null || v <= 0 || KEIN_ALTPREIS_NACH.test(nach)) continue;
       if (jetztPreis != null && !(v > jetztPreis)) continue;
-      return { preis: v, quelle };
+      if (!niedrigster) return { preis: v, quelle };
+      if (!bester || v < bester.preis) bester = { preis: v, quelle };
+      break;
     }
   }
-  return null;
+  return bester;
 }
 
 /** Preisangaben nach Datenvertrag: { preis, preisVorher, vorherQuelle, ersparnisEuro, ersparnisProzent } */

@@ -7,14 +7,14 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { bestimmeMenge, einheitspreis, passt, stueckPasst, istSammeldeal, sammelTeil, norm, round, euroKurz, BASIS_LABEL } from './text.mjs';
 import { pruefeHistorie, eintragen, aufraeumen, statistik, tiefstSeit } from './history.mjs';
-import { referenz, bewerte, versandkosten, technikBewertung, tiefstInfo, schaetzungPlausibel, istGeschaetzt } from './deals.mjs';
-import { pruefeDealSeiten, leereDealseiten } from './preisfehler.mjs';
+import { referenz, refFuer, bewerte, versandkosten, technikBewertung, tiefstInfo, schaetzungPlausibel, istGeschaetzt } from './deals.mjs';
+import { pruefeDealSeiten, leereDealseiten, versandImPreis } from './preisfehler.mjs';
 import { nachricht, dedupeKey, senden } from './notify.mjs';
 import { macheAbruf, macheFixtureAbruf, macheWiedergabe } from './http.mjs';
 import { rohOrdner, macheMitschnitt } from './roh.mjs';
 import { leseRss } from './rss.mjs';
 import { marktguru } from './sources/marktguru.mjs';
-import { mydealz } from './sources/mydealz.mjs';
+import { mydealz, mydealzZeit } from './sources/mydealz.mjs';
 import { keepa } from './sources/keepa.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
@@ -44,7 +44,12 @@ function ansicht(a, item) {
     packung: a.packung, menge: a.mengeSicher ? a.menge : { ...a.menge, geschaetzt: true }, mengeSicher: !!a.mengeSicher, mengeQuelle: a.mengeQuelle,
     preisVorher: a.quelle === 'keepa' ? null : a.preisAlt ?? null, // nur ein echter Streichpreis, kein Durchschnitt
     gueltigAb: a.gueltigAb || null, gueltigBis: a.gueltigBis || null, ab: a.gueltigAb || null, bis: a.gueltigBis || null,
+    // mydealz ohne bekanntes Ende: Anzeigefenster (Veröffentlichung bzw. Beginn + 72 h), die Seite blendet danach aus
+    ...(a.quelle === 'mydealz' ? { datum: a.datum || null, sichtbarBis: a.sichtbarBis || null } : {}),
     startetSpaeter: !a.laeuft,
+    // unplausibel (eher ein anderes Produkt): die Seite nimmt so ein Angebot nie als Hauptkarte
+    unsicher: !!a.unsicher,
+    hinweis: a.hinweis || '', nurMitApp: !!a.nurMitApp, preisOhneApp: a.preisOhneApp ?? null,
     zeile: [a.titel, a.packung, euroKurz(a.preis), a.mengeSicher ? `${euroKurz(a.einheitspreis)} ${label}` : 'Menge unklar'].filter(Boolean).join(' · '),
     link: a.link, bild: a.bild || '',
     quelle: a.quelle, online: !!a.online, deal: !!a.deal, grund: a.grund || '', ersparnis: a.ersparnis ?? null,
@@ -100,8 +105,15 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       }
       const text = `${o.titel} ${o.beschreibung || ''}`;
       if (!o.online && !shopErlaubt(o.shop, cfg, text)) continue;
+      // mydealz: Beginn/Ende/„mit App“ aus dem Text, ohne Ende höchstens 72 h (wie der Vorteils-Radar)
+      if (o.quelle === 'mydealz') {
+        if (!Number.isFinite(Date.parse(o.datum || ''))) continue;
+        const z = mydealzZeit(o, item, jetztMs);
+        o = { ...o, gueltigAb: z.ab, gueltigBis: z.bis, sichtbarBis: z.sichtbarBis, nurMitApp: z.nurMitApp, preisOhneApp: z.preisOhneApp, hinweis: z.hinweis };
+        if (o.sichtbarBis && Date.parse(o.sichtbarBis) <= jetztMs) continue;
+      }
       // abgelaufen = weg (kein Nachlauf; die Seite blendet zusätzlich beim Anzeigen aus)
-      if (o.gueltigBis && Date.parse(o.gueltigBis) < jetztMs) continue;
+      if (o.gueltigBis && Date.parse(o.gueltigBis) <= jetztMs) continue;
       const mg = bestimmeMenge(o, item);
       if (!stueckPasst(mg.menge, item)) continue;
       const key = `${o.link}|${o.shop}|${o.preis}`;
@@ -109,8 +121,10 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       gesehen.add(key);
       const versand = versandkosten(o, cfg);
       const gesamt = round(o.preis + versand);
-      const up = einheitspreis(gesamt, mg.menge, item, versand === 0 ? o.refPreis : null);
+      let up = einheitspreis(gesamt, mg.menge, item, versand === 0 ? o.refPreis : null);
       if (up == null) continue;
+      // „465/4x100ml“: zum selben Preis gibt es auch 4 × 100 ml -> mit der teureren Variante rechnen (ehrliche Prozent)
+      if (mg.alternativ) { const alt = einheitspreis(gesamt, mg.alternativ, item, null); if (alt > up) up = alt; }
       const a = { ...o, versand, preis: gesamt, einheitspreis: up, ...mg };
       // implausible (probably a different product or a parsing error): show, but never alert
       a.unsicher = ref.p > 0 && (up < ref.p * 0.15 || up > ref.p * 6);
@@ -119,8 +133,10 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
     }
     angebote.sort((x, y) => (verlaesslich(y) - verlaesslich(x)) || (x.unsicher - y.unsicher) || (x.einheitspreis - y.einheitspreis));
     const sichere = angebote.filter(verlaesslich);
-    const plausibel = schaetzungPlausibel(ref, sichere);
-    for (const a of angebote) Object.assign(a, bewerte(a, ref, stats, cfg, { guenstigstes: a === sichere[0], plausibel }));
+    // Normalpreis je Angebot (geschätzt ggf. je Packungsgröße, z. B. 15er-Familienpackung günstiger pro Stück)
+    for (const a of angebote) a.ref = refFuer(item, ref, a);
+    const plausibel = schaetzungPlausibel(ref, sichere, a => a.ref);
+    for (const a of angebote) Object.assign(a, bewerte(a, a.ref, stats, cfg, { guenstigstes: a === sichere[0], plausibel }));
     for (const a of sichere) if (a.laeuft) punkte.push({ gruppe, basis: item.basis, p: a.einheitspreis, shop: a.shop });
     const bestes = angebote.find(a => !a.unsicher) || null;
     produkte.push({ item, gruppe, ref, angebote, sichere, bestes });
@@ -131,11 +147,12 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
 
   const karten = produkte.map(({ item, gruppe, ref, angebote, sichere, bestes }) => {
     const s = statistik(history, gruppe, cfg.deal.normalpreisFensterTage, jetztMs);
-    const tiefst = tiefstInfo({ bestes, sichere, stats: s, tiefst30: tiefstSeit(history, gruppe, 30, jetztMs), basis: item.basis, cfg });
+    const tiefst = tiefstInfo({ bestes, sichere, angebote, stats: s, tiefst30: tiefstSeit(history, gruppe, 30, jetztMs), basis: item.basis, cfg, jetztMs });
+    const rb = bestes?.ref || ref;
     const p = {
       id: item.id, name: item.name, basis: item.basis, basisLabel: BASIS_LABEL[item.basis], gruppe,
       deal: !!bestes?.deal, grund: bestes?.grund || '', ersparnis: bestes?.ersparnis ?? null,
-      normalpreis: ref.p, normalQuelle: ref.quelle, normalGeschaetzt: istGeschaetzt(ref),
+      normalpreis: rb.p, normalQuelle: rb.quelle, normalGeschaetzt: istGeschaetzt(rb), normalJePackung: !!rb.staffel,
       tiefst,
       // ältere Felder (bisherige Seite)
       tiefstpreis: s.tiefst?.p ?? null, tiefstTag: s.tiefst?.tag ?? null, tiefstShop: s.tiefst?.shop ?? null, historieTage: s.tage,
@@ -147,7 +164,7 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       kandidaten.push({
         typ: 'produkt', id: item.id, name: item.name, basis: item.basis, titel: bestes.titel, shop: bestes.shop,
         packung: bestes.packung, preis: bestes.preis, versand: bestes.versand, online: bestes.online, einheitspreis: bestes.einheitspreis,
-        normalpreis: ref.p, normalGeschaetzt: p.normalGeschaetzt, tiefstpreis: p.tiefstpreis, tiefstText: tiefst.text,
+        normalpreis: rb.p, normalGeschaetzt: p.normalGeschaetzt, tiefstpreis: p.tiefstpreis, tiefstText: tiefst.text,
         ersparnis: bestes.ersparnis, grund: bestes.grund, gueltigAb: bestes.gueltigAb, gueltigBis: bestes.gueltigBis,
         startetSpaeter: !bestes.laeuft, link: bestes.link,
       });
@@ -174,14 +191,18 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       if (!seite) continue; // diesmal nicht geprüft -> nicht zeigen (nächster Lauf)
       if (!seite.ok) { technikFehler.push(`Deal-Seite nicht lesbar: ${seite.fehler}`); continue; }
       if (seite.abgelaufen || seite.vielleichtAbgelaufen) continue; // wie der Vorteils-Radar: „vielleicht abgelaufen“ = weg
+      // Ende laut Deal-Seite schon vorbei (auch wenn mydealz es noch nicht als abgelaufen markiert hat) = weg
+      if (seite.bis && Date.parse(seite.bis) <= jetztMs) continue;
       const b = technikBewertung(o, watchlist.technik, cfg, seite);
       if (!b) continue;
-      const geplant = seite.bis && Date.parse(seite.bis) > jetztMs ? seite.bis : null;
+      const geplant = seite.bis || null;
       const bis = geplant || new Date(Date.parse(o.datum) + maxAlterMs).toISOString();
-      if (Date.parse(bis) < jetztMs) continue;
+      if (Date.parse(bis) <= jetztMs) continue;
+      // „0,99 € + VSK“ und Deal-Preis 6,98 € = Versand steckt schon im Preis -> nicht noch einmal dazurechnen
+      const inkl = versandImPreis(o.titel, seite);
       const t = {
         typ: 'technik', id: watchlist.technik.id, name: watchlist.technik.name, titel: o.titel, shop: seite.haendler || o.shop,
-        preis: b.preis, versand: seite.versand ?? null,
+        preis: b.preis, versand: inkl ? 0 : seite.versand ?? null, versandInklusive: inkl,
         preisVorher: b.preisVorher, vorherQuelle: b.vorherQuelle, ersparnisEuro: b.ersparnisEuro, ersparnisProzent: b.ersparnisProzent,
         preisAlt: b.preisVorher, ersparnis: b.ersparnis, grund: b.grund, preisfehler: b.preisfehler,
         link: o.link, bild: o.bild || '', datum: o.datum, bis, bisGeschaetzt: !geplant, geprueft: seite.geprueft,

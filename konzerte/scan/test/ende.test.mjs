@@ -89,3 +89,28 @@ test('Gesamtlauf: fällt eine Band bei einer Quelle aus, bleiben ihre alten Eint
     assert.equal(r.status.musicbrainz.ok, false);
   } finally { console.log = log; }
 });
+
+test('Festival-Seite ohne Datum: höchstens 60 Tage ab der ersten Erwähnung (altes Line-up bleibt nicht für immer)', () => {
+  const s = { quelle: 'seite:wgt', band: 'OMD', datum: '', bis: null, stadt: 'Leipzig', lat: 51.34, lon: 12.37, link: 'https://x', festival: true, status: 'auf Seite erwähnt – Datum siehe Link' };
+  const g = { konzerte: { 's|wgt|omd': '2026-09-01' }, releases: {} };
+  const e = verarbeite({ konzerte: [{ ...s }], releases: [], gesehen: g, config: CONFIG, heute: '2026-10-31', jetzt: '2026-10-31T16:35:00Z', seitenGeprueft: ['wgt'] });
+  assert.equal(e.konzerte.length, 1);
+  assert.equal(e.konzerte[0].sichtbarBis, berlinIso('2026-10-31'));
+  const spaeter = verarbeite({ konzerte: [{ ...s }], releases: [], gesehen: g, config: CONFIG, heute: '2026-11-01', jetzt: '2026-11-01T10:00:00Z', seitenGeprueft: ['wgt'] });
+  assert.equal(spaeter.konzerte.length, 0, 'seit 1.9. erwähnt, ohne Datum -> nach 60 Tagen weg');
+  assert.equal(g.konzerte['s|wgt|omd'], '2026-09-01', 'bleibt gemerkt: kein neuer Push, solange die Seite es erwähnt');
+});
+
+test('MusicBrainz: nur offizielle Veröffentlichungen (website-default), Mitschnitte mit Datum im Titel raus', async () => {
+  const { mbParse, default: musicbrainz } = await import('../sources/musicbrainz.mjs');
+  const groups = [
+    { id: 'a', title: '1987-12-10: Wembley Arena, London, England', 'primary-type': 'Album', 'secondary-types': ['Live'], 'first-release-date': '2026-03-01' },
+    { id: 'b', title: 'Neue Platte', 'primary-type': 'Album', 'secondary-types': [], 'first-release-date': '2026-09-01' },
+  ];
+  assert.deepEqual(mbParse(groups, { name: 'New Order' }, '2026-10-31', 365).neu.map(r => r.titel), ['Neue Platte']);
+  const urls = [];
+  const ctx = { bands: [{ name: 'New Order', mbid: 'f1106b17' }], ids: { mb: {} }, heute: '2026-10-31', config: { releaseListeTage: 365 },
+    http: { get: async u => { urls.push(u); return { 'release-groups': [], 'release-group-count': 0 }; } } };
+  await musicbrainz(ctx);
+  assert.match(urls[0], /release-group-status=website-default/);
+});

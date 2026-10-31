@@ -13,7 +13,7 @@ Adresse `…/vorteile/` leitet dorthin weiter.
 |---|---|---|
 | **Schnäppchen** | deine Lieblings-Snacks (vom Schnäppchen-Wecker) | Zweig `schnaeppchen-daten` |
 | **Konzerte** | deine Bands im Umkreis (vom Konzert-Alarm) | Zweig `konzerte-daten` |
-| **Deals** | jeder Deal wird *echt* durchgerechnet: „2 für 1“, „3 zum Preis von 2“, „zweite gratis“, Bündelpreise („2 Tüten für 0,88 €“), „+25 g gratis“, Limits pro Kunde, Markt-Coupons + Cashback (stapelbar), Versand. Ergebnis: Preis pro Packung und pro 100 g. Eine Packung, die pro 100 g teurer ist, wird nie empfohlen. | Schnäppchen-Daten, mydealz-RSS |
+| **Deals** | jeder Deal wird *echt* durchgerechnet: „2 für 1“, „3 zum Preis von 2“, „zweite gratis“, Bündelpreise („2 Tüten für 0,88 €“), „+25 g gratis“, Limits pro Kunde, Markt-Coupons + Cashback (stapelbar), Versand. Ergebnis: Preis pro Packung und pro 100 g. Eine Packung, die pro 100 g teurer ist, wird nie empfohlen. Ohne echte Mehrkauf-Aktion wird **genau 1 Packung** gerechnet. Der mydealz-Preis ist der Endpreis: ein Coupon darin („2,49 € − 1 € Coupon = 1,49 €“) wird nicht noch einmal abgezogen. „Statt“ = Vergleichspreis der mydealz-Deal-Seite, sonst der niedrigste Vergleichswert aus dem Text (nicht die höhere UVP). Amazon ohne Prime: unter 39 € + 3,99 € Versand. | Schnäppchen-Daten, mydealz-RSS |
 | **Erleben** | Therme/Erlebnisbad, Kino, Freizeit, Stadtfeste in der Region – nur wenn ungewöhnlich gut (großer Rabatt, gratis, sehr beliebt) | mydealz-Suche, Google-News-RSS |
 | **Reisen** | Flug-, Bahn- und Urlaubs-Knaller ab Leipzig/Dresden/Berlin, Preisfehler | mydealz Reisen, Urlaubspiraten, Urlaubsguru |
 | **Musik** | Wunsch-Synths unter Zielpreis oder auf Tiefstpreis; „Bands gesucht“ und Open Calls mit Frist | mydealz-Suche, optional Geizhals, Google-News-RSS |
@@ -122,6 +122,7 @@ Alles mit einem Ende bekommt `bis` (ISO-Zeit, UTC) und wird beim Scan entfernt, 
   | Reise-Deals (mydealz Reisen, Urlaubspiraten) | 4 Tage |
   | Freebies | 7 Tage |
   | mydealz-Gewinnspiele ohne Teilnahmeschluss | 14 Tage |
+  | Ticket-Verlosungen ohne Teilnahmeschluss | 6 Tage (enden vor der Veranstaltung) |
   | Google-News-Treffer (Gewinnspiele, Produkttester, Feste) | 14 Tage, Zeile „Teilnahmeschluss unbekannt“ |
   | „Bands gesucht“ ohne Frist | 30 Tage |
   | Stellenanzeigen | 21 Tage |

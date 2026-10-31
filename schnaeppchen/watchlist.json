@@ -62,7 +62,9 @@
       "basis": "stueck",
       "stueckGramm": 25,
       "standardStueck": 5,
-      "normalpreis": 0.38
+      "normalpreis": 0.30,
+      "_normalpreisStaffel": "Geschätzter Normalpreis pro Stück je Packungsgröße (marktguru liefert keinen Streichpreis): einzeln ca. 0,55 €, 5er/8er-Pack ca. 0,37 €, 15er-Familienpackung ca. 4,50 € = 0,30 €. 'normalpreis' gilt, wenn die Packungsgröße unbekannt ist.",
+      "normalpreisStaffel": [{ "bisStueck": 4, "preis": 0.55 }, { "bisStueck": 10, "preis": 0.37 }, { "bisStueck": 999, "preis": 0.30 }]
     },
     {
       "id": "knoppers-nussriegel",

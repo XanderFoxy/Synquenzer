@@ -1,14 +1,16 @@
 // Baut die Vertrags-Fixtures (test/fixtures/vertrag/) aus den echten Daten vom 31.10.2026 (v2) plus den Fällen,
 // die es an diesem Tag nicht gab: laufender Preisfehler mit Vorher-Preis, einer ohne, abgelaufene Einträge,
 // ein neuer Bereich „Prämien & Freunde werben“, Konzerte (TM_KEY fehlte) inkl. vergangener.
-// Aufruf: node test/fixtures/baue-vertrag.mjs   (Zeitpunkt der Tests: 2026-10-31T16:35:00Z)
+// Aufruf: npm run fixtures   (= node werkzeug/baue-vertrag.mjs; Zeitpunkt der Tests: 2026-10-31T16:35:00Z)
+// Liegt absichtlich nicht unter test/: „node --test“ würde jede .mjs dort als Test ausführen (und vertrag/ neu schreiben).
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const HIER = dirname(fileURLToPath(import.meta.url));
+const HIER = join(dirname(fileURLToPath(import.meta.url)), '..', 'test', 'fixtures');
 const lies = n => JSON.parse(readFileSync(join(HIER, n), 'utf8'));
-const schreib = (n, o) => { mkdirSync(join(HIER, 'vertrag'), { recursive: true }); writeFileSync(join(HIER, 'vertrag', n), JSON.stringify(o, null, 1) + '\n'); };
+const schreibIn = ordner => (n, o) => { mkdirSync(join(HIER, ordner), { recursive: true }); writeFileSync(join(HIER, ordner, n), JSON.stringify(o, null, 1) + '\n'); };
+const schreib = schreibIn('vertrag');
 
 // --- Schnäppchen ---------------------------------------------------------------------------------------------------
 const s = lies('echt-2026-10-31/v2/schnaeppchen-current.json');
@@ -140,4 +142,37 @@ const st = lies('echt-2026-10-31/v1/konzerte-status.json');
 st.quellen.ticketmaster = { ok: true, treffer: 4, fehler: [], uebersprungen: null, ms: 900 };
 schreib('konzerte-status.json', st);
 schreib('konzerte-releases.json', lies('echt-2026-10-31/v1/konzerte-releases.json'));
-console.log('vertrag/ geschrieben');
+
+// --- vertrag-b: Sonderfälle aus der zweiten Prüfung -------------------------------------------------------------------
+// Versand steckt im Preis (CAMELBAK), Technik-Deal mit echtem Ende NACH dem 24-h-Fenster, unplausibles Angebot als
+// einziges übrig (Knoppers Minis nach Ende des Kaufland-Angebots)
+const sb = JSON.parse(JSON.stringify(s));
+sb.technik = [
+  { // echte Werte CAMELBAK 2852900: price 6,98 = 0,99 + 5,99 Versand, nextBestPrice 11,99
+    typ: 'technik', id: 'technik-preisfehler', name: 'Technik-Preisfehler', titel: '(Preisfehler) CAMELBAK Stash Belt für 0,99€ + VSK',
+    shop: 'Talk-Point', preis: 6.98, versand: 0, versandInklusive: true,
+    preisVorher: 11.99, vorherQuelle: 'Vergleichspreis laut mydealz', ersparnisEuro: 5.01, ersparnisProzent: 42, grund: 'Preisfehler', preisfehler: true,
+    link: 'https://www.mydealz.de/deals/test-camelbak-2852900', datum: '2026-10-31T15:00:00.000Z', bis: '2026-11-01T15:00:00.000Z', bisGeschaetzt: true,
+  },
+  { // Technik-Deal, Deal-Seite nennt ein Ende in 3 Tagen – die Karte verschwindet trotzdem 24 h nach dem Melden
+    typ: 'technik', id: 'technik-preisfehler', name: 'Technik-Preisfehler', titel: 'Sony WH-1000XM6 Kopfhörer für 129 € statt 399 €',
+    shop: 'Otto', preis: 129, versand: null, preisVorher: 399, vorherQuelle: 'statt-Preis laut Deal-Text', ersparnisEuro: 270, ersparnisProzent: 68,
+    grund: '68 % unter Vergleichspreis', preisfehler: false,
+    link: 'https://www.mydealz.de/deals/test-sony-2500009', datum: '2026-10-31T10:00:00.000Z', bis: '2026-11-03T11:00:00.000Z', bisGeschaetzt: false,
+  },
+];
+const kn = sb.produkte.find(p => p.id === 'knoppers-schnitte');
+kn.weitere = [{
+  shop: 'PENNY', titel: 'Knoppers Minis (anderes Produkt, unplausibel)', beschreibung: '200 g', preis: 1.99, versand: 0, einheitspreis: 0.05,
+  packung: '40 × 5 g', menge: { gramm: 200, stueck: 40 }, mengeSicher: true, mengeQuelle: 'text', preisVorher: null,
+  gueltigAb: '2026-10-25T23:00:00Z', gueltigBis: '2026-11-07T22:59:00Z', ab: '2026-10-25T23:00:00Z', bis: '2026-11-07T22:59:00Z',
+  link: 'https://www.marktguru.de/offers/9', quelle: 'marktguru', online: false, deal: false, grund: '', ersparnis: null, unsicher: true,
+}];
+// Daten wie vom Lauf vor der Korrektur: „Einziges Angebot“, obwohl PENNY (Packung unklar) billiger ist -> die Seite
+// widerspricht nicht sich selbst, sondern nennt das billigere Angebot
+const bjB = sb.produkte.find(p => p.id === 'ben-jerrys');
+bjB.tiefst = { status: 'unbekannt', text: 'Einziges Angebot in deiner Nähe · noch kein Preisverlauf', heuteGuenstigstes: true, tage: 0, tiefst30: null, anzahl: 1 };
+const sbB = schreibIn('vertrag-b');
+sbB('schnaeppchen-current.json', sb);
+for (const n of ['vorteile-aktuell.json', 'konzerte-konzerte.json', 'konzerte-status.json', 'konzerte-releases.json']) sbB(n, JSON.parse(readFileSync(join(HIER, 'vertrag', n), 'utf8')));
+console.log('vertrag/ und vertrag-b/ geschrieben');

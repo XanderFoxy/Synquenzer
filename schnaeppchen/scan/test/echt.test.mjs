@@ -55,9 +55,12 @@ test('Echt: Knoppers = Kaufland 15 × 25 g für 2,79 € = 0,19 € pro Stück (
   assert.deepEqual(k.weitere, [], 'Knoppers Minis (PENNY) sind ein anderes Produkt');
   assert.equal(k.normalQuelle, 'schaetzung');
   assert.equal(k.normalGeschaetzt, true);
+  // geschätzter Normalpreis für DIESE Packungsgröße (15er-Familienpackung ca. 4,50 € = 0,30 €/Stück), nicht 0,38 €
+  assert.equal(k.normalpreis, 0.3);
+  assert.equal(k.normalJePackung, true);
   assert.equal(k.deal, true);
-  assert.equal(k.grund, '51 % unter geschätztem Normalpreis');
-  assert.deepEqual(k.tiefst, { status: 'unbekannt', text: 'Einziges Angebot in deiner Nähe · Verlauf erst seit 1 Tag', heuteGuenstigstes: true, tage: 1, tiefst30: 0.186, anzahl: 1 });
+  assert.equal(k.grund, '38 % unter geschätztem Normalpreis');
+  assert.deepEqual(k.tiefst, { status: 'unbekannt', text: 'Einziges Angebot in deiner Nähe · Verlauf erst seit 1 Tag', heuteGuenstigstes: true, tage: 1, tiefst30: 0.186, anzahl: 1, anzahlSicher: 1 });
   assert.equal(r.current.produkte.filter(p => /knoppers/i.test(p.name)).length, 2, 'Schnitte + NussRiegel, kein „24er“/„5er“ mehr');
 });
 
@@ -66,7 +69,10 @@ test('Echt: kein Großhandel, Sammeldeal nur mit eigenem Teil und ohne Versand, 
   const choco = r.karte('choco-crossies');
   assert.equal(choco.bestes, null, 'EDEKA Foodservice „NUR FÜR GROSSHÄNDLER“ zählt nicht');
   const bj = r.karte('ben-jerrys');
-  assert.equal(bj.bestes.zeile, "Ben & Jerry's Eiscreme · 465 ml · 3,99 € · 0,86 € pro 100 ml");
+  // „465/4x100ml“: beide Packungen zum selben Preis -> beide genannt, Prozent mit der teureren (4 × 100 ml = 1,00 €/100 ml)
+  assert.equal(bj.bestes.zeile, "Ben & Jerry's Eiscreme · 465 ml oder 4 × 100 ml · 3,99 € · 1,00 € pro 100 ml");
+  assert.equal(bj.bestes.packung, '465 ml oder 4 × 100 ml');
+  assert.equal(bj.grund, '33 % unter geschätztem Normalpreis');
   assert.equal(bj.bestes.startetSpaeter, true);
   assert.equal(bj.bestes.ab, '2026-11-01T23:00:00Z');
   const penny = bj.weitere[0];
@@ -77,6 +83,44 @@ test('Echt: kein Großhandel, Sammeldeal nur mit eigenem Teil und ohne Versand, 
   assert.equal(penny.ersparnis, null, 'keine Prozentangabe ohne sichere Menge');
   assert.equal(penny.deal, false);
   assert.equal(penny.zeile, '[Penny] Ben Jerrys 3,49 · 3,49 € · Menge unklar');
+  assert.equal(penny.unsicher, false);
+});
+
+test('Echt (mydealz 2861577): PENNY Ben & Jerry\'s 3,49 € nur mit App, ab Mo 2.11. – und die Karte sagt nicht „Einziges Angebot“', async () => {
+  const r = await lauf();
+  const bj = r.karte('ben-jerrys');
+  const penny = bj.weitere[0];
+  // „Ab Montag den 2.11. … Ben und Jerrys Eis für 3,49 Euro mit App bzw. 3,99 Euro ohne App.“
+  assert.equal(penny.ab, '2026-11-01T23:00:00.000Z');
+  assert.equal(penny.startetSpaeter, true);
+  assert.equal(penny.nurMitApp, true);
+  assert.equal(penny.preisOhneApp, 3.99);
+  assert.equal(penny.hinweis, 'nur mit PENNY-App (ohne App 3,99 €)');
+  assert.equal(penny.bis, null, 'kein Ende im Text');
+  assert.equal(penny.sichtbarBis, '2026-11-04T23:00:00.000Z', 'ohne Ende: höchstens 72 h ab Beginn');
+  assert.equal(penny.datum, '2026-10-30T09:33:39.000Z');
+  // Tiefstpreis-Antwort zählt das billigere PENNY-Angebot mit
+  assert.equal(bj.anzahlAngebote, 2);
+  assert.equal(bj.tiefst.anzahl, 2);
+  assert.equal(bj.tiefst.status, 'unbekannt');
+  assert.equal(bj.tiefst.text, 'PENNY hat 3,49 € (mit App, ab Mo 02.11.) – Packungsgröße dort nicht sicher');
+  assert.doesNotMatch(bj.tiefst.text, /Einziges/);
+  // nach dem Fenster (Beginn + 72 h) ist das PENNY-Angebot weg
+  const spaeter = await lauf('2026-11-05T00:00:00Z');
+  assert.deepEqual(spaeter.karte('ben-jerrys').weitere, []);
+});
+
+test('mydealz-Angebote für die Merkliste: „nur am Donnerstag 29.10.“ ist am 31.10. weg, ohne Ende höchstens 72 h', async () => {
+  const LEBENSMITTEL = 'https://www.mydealz.de/rss/gruppe/lebensmittel';
+  const item = (titel, tag) => `<item><pepper:merchant name="Lidl" price="2,22€"/><title><![CDATA[${titel}]]></title><description><![CDATA[<p>${titel}</p>]]></description><link>https://www.mydealz.de/deals/test-${tag}</link><pubDate>${tag}</pubDate></item>`;
+  const patch = { [LEBENSMITTEL]: t => t.replace('<item>', item('[Lidl] Knoppers 15er Pack (375 g) für 2,22 € – nur am Donnerstag 29.10.!', 'Thu, 29 Oct 2026 08:00:00 +0100') + item('[Lidl] Knoppers 15er Pack (375 g) für 2,25 €', 'Tue, 27 Oct 2026 08:00:00 +0100') + '<item>') };
+  const r = await lauf(JETZT, { patch });
+  const k = r.karte('knoppers-schnitte');
+  assert.ok(![k.bestes, ...k.weitere].some(o => o && /Lidl/.test(o.shop)), 'nur am 29.10. bzw. älter als 72 h -> nicht mehr da');
+  // am 29.10. mittags war das erste noch gültig – mit Ende 29.10. 23:59
+  const damals = await lauf('2026-10-29T12:00:00Z', { patch });
+  const lidl = [damals.karte('knoppers-schnitte').bestes, ...damals.karte('knoppers-schnitte').weitere].find(o => o?.preis === 2.22);
+  assert.equal(lidl.bis, '2026-10-29T22:59:59.000Z');
 });
 
 test('Echt: Verlauf neu (alte falsche Punkte weg), nur sichere und laufende Angebote kommen hinein', async () => {
@@ -99,10 +143,11 @@ test('Echt: Pushes – Knoppers mit Packung, geschätztem Normalpreis und Uhrzei
   const r = await lauf();
   assert.equal(r.msgs.length, 2);
   const k = r.msgs.find(m => m.title === 'Schnäppchen: Knoppers Schnitte');
+  assert.equal(k.priority, 4, 'gegen einen nur geschätzten Normalpreis nie höchste Stufe');
   assert.equal(k.message, [
     '2,79 € bei Kaufland · 15 × 25 g',
-    '0,19 € pro Stück – normal ca. 0,38 € (geschätzt)',
-    '51 % unter geschätztem Normalpreis',
+    '0,19 € pro Stück – normal ca. 0,30 € (geschätzt)',
+    '38 % unter geschätztem Normalpreis',
     'Einziges Angebot in deiner Nähe · Verlauf erst seit 1 Tag',
     'gültig bis Sa 31.10. 19:00',
     'Storck Knoppers Milch-Haselnuss-Schnitte',
@@ -142,6 +187,34 @@ test('Echt: Preisfehler mit Deal-Seite – vorher/jetzt aus mydealz, abgelaufen 
   assert.ok(t.bis > '2026-10-29T11:30:00Z');
   const m = live.msgs.find(x => x.click === LUMA);
   assert.equal(m.message.split('\n')[0], 'vorher 96,99 € → jetzt 23,99 € (−75 %)');
+  // Ende laut Deal-Seite schon vorbei, aber (noch) nicht als abgelaufen markiert -> trotzdem weg, kein Push
+  const ende = Date.parse(t.bis);
+  const vorbei = await lauf(new Date(ende + 60e3).toISOString(), { watchlist: wl, patch: { [LUMA]: x => x.replace('"isExpired":true', '"isExpired":false') } });
+  assert.deepEqual(vorbei.current.technik, []);
+  assert.equal(vorbei.msgs.filter(x => x.click === LUMA).length, 0);
+});
+
+test('Echt (CAMELBAK 2852900): Versand steckt schon im Preis -> nicht noch einmal „zzgl. Versand“; Push-Titel nach Art', async () => {
+  const wl = { ...watchlist, technik: { ...watchlist.technik, woerter: ['camelbak'] } };
+  const CAMEL = 'https://www.mydealz.de/deals/preisfehler-camelbak-stash-belt-fur-099eur-vsk-bauchtasche-gurteltasche-laufgurt-gr-m-schwarz-2852900';
+  const feed = (await readdir(join(ECHT, 'quellen'))).find(n => n.includes('camelbak'));
+  assert.ok(feed, 'Fixture fehlt');
+  const seite = await readFile(join(ECHT, 'quellen', feed), 'utf8');
+  const PF = 'https://www.mydealz.de/rss/gruppe/preisfehler';
+  const datum = seite.match(/"publishedAt":(\d+)/)[1] * 1000;
+  const jetzt = new Date(datum + 2 * 36e5).toISOString();
+  const item = `<item><pepper:merchant name="Amazon" price="6,98€"/><title><![CDATA[Preisfehler: CAMELBAK Stash Belt für 0,99€ + VSK]]></title><description><![CDATA[x]]></description><link>${CAMEL}</link><pubDate>${new Date(datum).toUTCString()}</pubDate></item>`;
+  const patch = { [PF]: t => t.replace('<item>', item + '<item>'), [CAMEL]: () => seite.replace('"isExpired":true', '"isExpired":false').replace(/"endDate":\{[^}]*\}/, '"endDate":null') };
+  const r = await lauf(jetzt, { watchlist: wl, patch });
+  const t = r.current.technik.find(x => x.link === CAMEL);
+  assert.ok(t, 'CAMELBAK fehlt');
+  assert.equal(t.preis, 6.98);
+  assert.equal(t.versand, 0);
+  assert.equal(t.versandInklusive, true);
+  const m = r.msgs.find(x => x.click === CAMEL);
+  assert.match(m.title, /^Preisfehler\? /);
+  assert.match(m.message, /inkl\. Versand/);
+  assert.doesNotMatch(m.message, /\+ 5,99/);
 });
 
 test('Echt: CLI --wiedergabe rechnet einen Roh-Mitschnitt offline nach, ohne zu senden', async () => {

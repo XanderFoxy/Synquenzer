@@ -20,6 +20,10 @@ export function vorverkaufZeile(vv = [], jetzt) {
   return v.bis ? `${v.name} läuft bis ${berlinKurz(v.bis)} Uhr` : `${v.name} läuft`;
 }
 
+/** Festival-Seite ohne erkennbares Datum: höchstens so viele Tage ab der ersten Erwähnung zeigen (sonst bliebe ein
+ *  altes Line-up auf einer nicht aktualisierten Seite für immer stehen). */
+export const SEITE_OHNE_DATUM_TAGE = 60;
+
 export function verarbeite({ konzerte, releases, gesehen, config, heute, jetzt = `${heute}T00:00:00.000Z`, seitenGeprueft = [] }) {
   const erstlauf = !gesehen;
   gesehen = gesehen || { konzerte: {}, releases: {} };
@@ -27,12 +31,20 @@ export function verarbeite({ konzerte, releases, gesehen, config, heute, jetzt =
 
   // Konzerte: Distanz, Radius, Zukunft, Dedupe (gleiches Datum+Stadt+Band aus mehreren Quellen = eins)
   const km = new Map();
+  const nochErwaehnt = new Set(); // Seite erwähnt die Band noch, das Anzeigefenster ist aber vorbei (kein neuer Push)
   for (const k of konzerte) {
     if (k.datum && k.datum < heute) continue;
     // Ende: nach dem Konzerttag (bzw. letzten Festivaltag) vorbei; vorbei -> raus
     const bis = k.bis || (k.datum ? berlinIso(k.datum) : null);
     if (bis && bis < jetzt) continue;
     k.bis = bis;
+    // ohne Datum (Festival-Seite nennt nur den Namen): Anzeigefenster ab der ersten Erwähnung
+    if (!bis && !k.datum) {
+      const erst = gesehen.konzerte[konzertKey(k)] || k.erstGesehen || heute;
+      k.erstGesehen = erst;
+      k.sichtbarBis = berlinIso(new Date(Date.parse(erst) + SEITE_OHNE_DATUM_TAGE * 864e5).toISOString().slice(0, 10));
+      if (k.sichtbarBis < jetzt) { nochErwaehnt.add(konzertKey(k)); continue; }
+    }
     // beendete Vorverkäufe raus
     if (k.vorverkauf) k.vorverkauf = k.vorverkauf.filter(v => !v.bis || v.bis >= jetzt);
     const dist = k.lat != null && k.lon != null ? distanzKm(z, { lat: k.lat, lon: k.lon }) : null;
@@ -59,7 +71,7 @@ export function verarbeite({ konzerte, releases, gesehen, config, heute, jetzt =
 
   // Festival-Seiten: verschwundene Erwähnung vergessen → spätere Rückkehr meldet erneut (nur geprüfte Seiten)
   for (const key of Object.keys(gesehen.konzerte)) {
-    if (key.startsWith('s|') && seitenGeprueft.includes(key.split('|')[1]) && !km.has(key)) delete gesehen.konzerte[key];
+    if (key.startsWith('s|') && seitenGeprueft.includes(key.split('|')[1]) && !km.has(key) && !nochErwaehnt.has(key)) delete gesehen.konzerte[key];
     if (key.startsWith('k|') && tageZwischen(key.split('|')[2] || heute, heute) > 30) delete gesehen.konzerte[key];
   }
 

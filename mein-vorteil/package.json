@@ -6,6 +6,6 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "fixtures": "node test/fixtures/baue-vertrag.mjs"
+    "fixtures": "node werkzeug/baue-vertrag.mjs"
   }
 }

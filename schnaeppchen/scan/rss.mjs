@@ -37,6 +37,8 @@ export function leseRss(xml) {
       temperatur,
       link: entities(tag(b, 'link')),
       beschreibung: ohneTags(entities(tag(b, 'description'))).slice(0, 600),
+      // Beginn/Ende/„mit App“ stehen oft weiter hinten (Sammeldeals) -> nur dafür länger lesen
+      langtext: ohneTags(entities(tag(b, 'description'))).slice(0, 4000),
       datum: tag(b, 'pubDate'),
       shop: merchant.name || '',
       preisText: merchant.price || '',

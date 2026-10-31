@@ -10,6 +10,7 @@ export const HOECHSTALTER_STUNDEN = {
   reise: 96, // mydealz Reisen, Urlaubspiraten
   freebie: 7 * 24, // mydealz Freebies
   gewinnspiel: 14 * 24, // mydealz Gewinnspiele ohne Teilnahmeschluss
+  gewinnspielTicket: 6 * 24, // Ticket-Verlosungen ohne Teilnahmeschluss (enden vor der Veranstaltung)
   nachricht: 14 * 24, // Google News (Gewinnspiele, Produkttester, Feste): Ende unbekannt
   aufruf: 30 * 24, // „Bands gesucht“ ohne Frist
   job: 21 * 24, // Stellenanzeigen
@@ -66,7 +67,8 @@ function mitJahr(jahr, monat, tag, jetzt) {
   return jahr;
 }
 
-const WOCHENTAG = '(?:(?:montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|mo|di|mi|do|fr|sa|so)\\.?,?\\s*(?:den\\s*)?)?';
+// "Montag, den 2.11." | "Montag dem 02.11.26" | "Mo. 2.11."
+const WOCHENTAG = '(?:(?:montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|mo|di|mi|do|fr|sa|so)\\.?,?\\s*(?:de[nm]\\s*)?)?';
 // "07.11.2026" | "07.11." | "7.11.26" | "7. november 2026" | "4. nov"
 const DATUM = new RegExp(`^${WOCHENTAG}(\\d{1,2})\\s?\\.\\s?(\\d{1,2})\\s?\\.?(?:\\s?(\\d{4})|(\\d{2})(?![\\d.:]))?|^${WOCHENTAG}(\\d{1,2})\\s?\\.?\\s?([a-z]{3})[a-z]*\\.?(?:\\s?(\\d{4}))?`);
 const ZEIT = /^\s*,?\s*\(?\s*(?:um\s*)?(\d{1,2})[:.](\d{2})\s*(?:uhr)?/;
@@ -88,7 +90,7 @@ export function datumAm(rest, jetzt) {
 }
 
 // Wörter, nach denen ein Datum das Ende einer Aktion/Teilnahme meint
-const SIGNAL = /((?<![a-z])frist|bewerbungsschluss|einsendeschluss|anmeldeschluss|teilnahmeschluss|annahmeschluss|deadline|bewerben bis|bewerbung bis|anmeldung bis|teilnahme bis|buchbar bis|buchung bis|buchungen bis|endet am|endet|laeuft bis|laeuft noch bis|gueltig bis|nur noch bis|noch bis|bis spaetestens|bis einschliesslich|bis zum|bis)\s*:?\s*(?:(?:zum|am|einschliesslich|spaetestens|ende)\s+)*/g;
+const SIGNAL = /((?<![a-z])frist|nur (?:noch )?(?:heute )?am|bewerbungsschluss|einsendeschluss|anmeldeschluss|teilnahmeschluss|annahmeschluss|deadline|bewerben bis|bewerbung bis|anmeldung bis|teilnahme bis|buchbar bis|buchung bis|buchungen bis|endet am|endet|laeuft bis|laeuft noch bis|gueltig bis|nur noch bis|noch bis|bis spaetestens|bis einschliesslich|bis zum|bis)\s*:?\s*(?:(?:zum|am|einschliesslich|spaetestens|ende)\s+)*/g;
 // Steht davor eines dieser Wörter, ist das Datum ein Reise-, Aufenthalts- oder Haltbarkeitszeitraum – kein Aktionsende.
 const KEIN_ENDE = /(reisezeit|(?<!aktions|angebots|buchungs|teilnahme)zeitraum|reisen|reise |reisedatum|aufenthalt|hinflug|rueckflug|anreise|abreise|nacht von|uebernachtung|geoeffnet|oeffnungszeit|mhd|haltbar|liefer|einloesbar|coupon ist|termine)[^.!?]{0,40}$/;
 

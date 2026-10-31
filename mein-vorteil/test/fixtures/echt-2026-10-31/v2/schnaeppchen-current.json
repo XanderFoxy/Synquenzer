@@ -12,18 +12,20 @@
    "basisLabel": "pro Stück",
    "gruppe": "knoppers-schnitte",
    "deal": true,
-   "grund": "51 % unter geschätztem Normalpreis",
-   "ersparnis": 0.511,
-   "normalpreis": 0.38,
+   "grund": "38 % unter geschätztem Normalpreis",
+   "ersparnis": 0.38,
+   "normalpreis": 0.3,
    "normalQuelle": "schaetzung",
    "normalGeschaetzt": true,
+   "normalJePackung": true,
    "tiefst": {
     "status": "unbekannt",
     "text": "Einziges Angebot in deiner Nähe · Verlauf erst seit 1 Tag",
     "heuteGuenstigstes": true,
     "tage": 1,
     "tiefst30": 0.186,
-    "anzahl": 1
+    "anzahl": 1,
+    "anzahlSicher": 1
    },
    "tiefstpreis": 0.186,
    "tiefstTag": "2026-10-31",
@@ -50,14 +52,18 @@
     "ab": "2026-10-28T23:00:00Z",
     "bis": "2026-10-31T18:00:00Z",
     "startetSpaeter": false,
+    "unsicher": false,
+    "hinweis": "",
+    "nurMitApp": false,
+    "preisOhneApp": null,
     "zeile": "Storck Knoppers Milch-Haselnuss-Schnitte · 15 × 25 g · 2,79 € · 0,19 € pro Stück",
     "link": "https://www.marktguru.de/offers/25495632",
     "bild": "https://mg2de.b-cdn.net/api/v1/offers/25495632/images/default/0/medium.webp",
     "quelle": "marktguru",
     "online": false,
     "deal": true,
-    "grund": "51 % unter geschätztem Normalpreis",
-    "ersparnis": 0.511
+    "grund": "38 % unter geschätztem Normalpreis",
+    "ersparnis": 0.38
    },
    "weitere": []
   },
@@ -68,18 +74,20 @@
    "basisLabel": "pro 100 ml",
    "gruppe": "ben-jerrys",
    "deal": true,
-   "grund": "43 % unter geschätztem Normalpreis",
-   "ersparnis": 0.427,
+   "grund": "33 % unter geschätztem Normalpreis",
+   "ersparnis": 0.333,
    "normalpreis": 1.5,
    "normalQuelle": "schaetzung",
    "normalGeschaetzt": true,
+   "normalJePackung": false,
    "tiefst": {
     "status": "unbekannt",
-    "text": "Einziges Angebot in deiner Nähe · noch kein Preisverlauf",
-    "heuteGuenstigstes": true,
+    "text": "PENNY hat 3,49 € (mit App, ab Mo 02.11.) – Packungsgröße dort nicht sicher",
+    "heuteGuenstigstes": false,
     "tage": 0,
     "tiefst30": null,
-    "anzahl": 1
+    "anzahl": 2,
+    "anzahlSicher": 1
    },
    "tiefstpreis": null,
    "tiefstTag": null,
@@ -92,8 +100,8 @@
     "beschreibung": "465/4x100ml",
     "preis": 3.99,
     "versand": 0,
-    "einheitspreis": 0.86,
-    "packung": "465 ml",
+    "einheitspreis": 1,
+    "packung": "465 ml oder 4 × 100 ml",
     "menge": {
      "ml": 465
     },
@@ -105,14 +113,18 @@
     "ab": "2026-11-01T23:00:00Z",
     "bis": "2026-11-07T22:59:00Z",
     "startetSpaeter": true,
-    "zeile": "Ben & Jerry's Eiscreme · 465 ml · 3,99 € · 0,86 € pro 100 ml",
+    "unsicher": false,
+    "hinweis": "",
+    "nurMitApp": false,
+    "preisOhneApp": null,
+    "zeile": "Ben & Jerry's Eiscreme · 465 ml oder 4 × 100 ml · 3,99 € · 1,00 € pro 100 ml",
     "link": "https://www.marktguru.de/offers/25478997",
     "bild": "https://mg2de.b-cdn.net/api/v1/offers/25478997/images/default/0/medium.webp",
     "quelle": "marktguru",
     "online": false,
     "deal": true,
-    "grund": "43 % unter geschätztem Normalpreis",
-    "ersparnis": 0.427
+    "grund": "33 % unter geschätztem Normalpreis",
+    "ersparnis": 0.333
    },
    "weitere": [
     {
@@ -130,11 +142,17 @@
      "mengeSicher": false,
      "mengeQuelle": "vorgabe",
      "preisVorher": null,
-     "gueltigAb": null,
+     "gueltigAb": "2026-11-01T23:00:00.000Z",
      "gueltigBis": null,
-     "ab": null,
+     "ab": "2026-11-01T23:00:00.000Z",
      "bis": null,
-     "startetSpaeter": false,
+     "datum": "2026-10-30T09:33:39.000Z",
+     "sichtbarBis": "2026-11-04T23:00:00.000Z",
+     "startetSpaeter": true,
+     "unsicher": false,
+     "hinweis": "nur mit PENNY-App (ohne App 3,99 €)",
+     "nurMitApp": true,
+     "preisOhneApp": 3.99,
      "zeile": "[Penny] Ben Jerrys 3,49 · 3,49 € · Menge unklar",
      "link": "https://www.mydealz.de/deals/penny-ben-jerrys-349-kartoffeln-75kg-444-zwiebeln-3kg-199-oatly-barista-179-die-ofenfrische-179-2861577",
      "bild": "https://static.mydealz.de/threads/raw/2xH13/2861577_1/re/150x150/qt/55/2861577_1.jpg",
@@ -158,13 +176,15 @@
    "normalpreis": 0.8,
    "normalQuelle": "schaetzung",
    "normalGeschaetzt": true,
+   "normalJePackung": false,
    "tiefst": {
     "status": "unbekannt",
     "text": "Gerade kein Angebot",
     "heuteGuenstigstes": false,
     "tage": 0,
     "tiefst30": null,
-    "anzahl": 0
+    "anzahl": 0,
+    "anzahlSicher": 0
    },
    "tiefstpreis": null,
    "tiefstTag": null,
@@ -186,13 +206,15 @@
    "normalpreis": 0.8,
    "normalQuelle": "schaetzung",
    "normalGeschaetzt": true,
+   "normalJePackung": false,
    "tiefst": {
     "status": "unbekannt",
     "text": "Gerade kein Angebot",
     "heuteGuenstigstes": false,
     "tage": 0,
     "tiefst30": null,
-    "anzahl": 0
+    "anzahl": 0,
+    "anzahlSicher": 0
    },
    "tiefstpreis": null,
    "tiefstTag": null,
@@ -214,13 +236,15 @@
    "normalpreis": 1.6,
    "normalQuelle": "schaetzung",
    "normalGeschaetzt": true,
+   "normalJePackung": false,
    "tiefst": {
     "status": "unbekannt",
     "text": "Gerade kein Angebot",
     "heuteGuenstigstes": false,
     "tage": 0,
     "tiefst30": null,
-    "anzahl": 0
+    "anzahl": 0,
+    "anzahlSicher": 0
    },
    "tiefstpreis": null,
    "tiefstTag": null,
@@ -242,13 +266,15 @@
    "normalpreis": 1.8,
    "normalQuelle": "schaetzung",
    "normalGeschaetzt": true,
+   "normalJePackung": false,
    "tiefst": {
     "status": "unbekannt",
     "text": "Gerade kein Angebot",
     "heuteGuenstigstes": false,
     "tage": 0,
     "tiefst30": null,
-    "anzahl": 0
+    "anzahl": 0,
+    "anzahlSicher": 0
    },
    "tiefstpreis": null,
    "tiefstTag": null,
@@ -270,13 +296,15 @@
    "normalpreis": 2,
    "normalQuelle": "schaetzung",
    "normalGeschaetzt": true,
+   "normalJePackung": false,
    "tiefst": {
     "status": "unbekannt",
     "text": "Gerade kein Angebot",
     "heuteGuenstigstes": false,
     "tage": 0,
     "tiefst30": null,
-    "anzahl": 0
+    "anzahl": 0,
+    "anzahlSicher": 0
    },
    "tiefstpreis": null,
    "tiefstTag": null,
@@ -298,13 +326,15 @@
    "normalpreis": 0.46,
    "normalQuelle": "schaetzung",
    "normalGeschaetzt": true,
+   "normalJePackung": false,
    "tiefst": {
     "status": "unbekannt",
     "text": "Gerade kein Angebot",
     "heuteGuenstigstes": false,
     "tage": 0,
     "tiefst30": null,
-    "anzahl": 0
+    "anzahl": 0,
+    "anzahlSicher": 0
    },
    "tiefstpreis": null,
    "tiefstTag": null,
@@ -326,13 +356,15 @@
    "normalpreis": 0.85,
    "normalQuelle": "schaetzung",
    "normalGeschaetzt": true,
+   "normalJePackung": false,
    "tiefst": {
     "status": "unbekannt",
     "text": "Gerade kein Angebot",
     "heuteGuenstigstes": false,
     "tage": 0,
     "tiefst30": null,
-    "anzahl": 0
+    "anzahl": 0,
+    "anzahlSicher": 0
    },
    "tiefstpreis": null,
    "tiefstTag": null,
@@ -354,13 +386,15 @@
    "normalpreis": 0.85,
    "normalQuelle": "schaetzung",
    "normalGeschaetzt": true,
+   "normalJePackung": false,
    "tiefst": {
     "status": "unbekannt",
     "text": "Gerade kein Angebot",
     "heuteGuenstigstes": false,
     "tage": 0,
     "tiefst30": null,
-    "anzahl": 0
+    "anzahl": 0,
+    "anzahlSicher": 0
    },
    "tiefstpreis": null,
    "tiefstTag": null,

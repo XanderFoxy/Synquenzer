@@ -23,7 +23,8 @@ export function nachricht(d, cfg, jetztMs = Date.now()) {
   const zeilen = [];
   if (d.typ === 'technik') {
     zeilen.push(vorherJetztText(d));
-    zeilen.push([`bei ${d.shop}`, d.vorherQuelle ? `vorher = ${d.vorherQuelle}` : '', d.datum ? alterText(d.datum, jetztMs) : ''].filter(Boolean).join(' · '));
+    const versand = d.versandInklusive ? 'inkl. Versand' : d.versand > 0 ? `+ ${euroKurz(d.versand)} Versand` : '';
+    zeilen.push([`bei ${d.shop}`, versand, d.vorherQuelle ? `vorher = ${d.vorherQuelle}` : '', d.datum ? alterText(d.datum, jetztMs) : ''].filter(Boolean).join(' · '));
     zeilen.push(d.titel);
   } else {
     const label = BASIS_LABEL[d.basis];
@@ -37,10 +38,12 @@ export function nachricht(d, cfg, jetztMs = Date.now()) {
   }
   return {
     topic: cfg.ntfy.topic,
-    title: d.typ === 'technik' ? `Preisfehler? ${d.titel}`.slice(0, 120) : `Schnäppchen: ${d.name}`,
+    // gemeldeter Preisfehler vs. großer Technik-Rabatt – wie auf der Seite beschriftet
+    title: d.typ === 'technik' ? `${d.preisfehler === false ? 'Technik-Deal: ' : 'Preisfehler? '}${d.titel}`.slice(0, 120) : `Schnäppchen: ${d.name}`,
     message: zeilen.filter(Boolean).join('\n'),
     click: d.link,
-    priority: d.typ === 'technik' || (d.ersparnis ?? 0) >= 0.4 ? 5 : 4,
+    // höchste Stufe nur bei sicherem Normalpreis (aus dem Verlauf); gegen eine Schätzung höchstens 4
+    priority: d.typ === 'technik' || ((d.ersparnis ?? 0) >= 0.4 && !d.normalGeschaetzt) ? 5 : 4,
     tags: d.typ === 'technik' ? ['rotating_light'] : ['shopping_cart'],
     actions: [
       { action: 'view', label: 'Zum Angebot', url: d.link, clear: true },

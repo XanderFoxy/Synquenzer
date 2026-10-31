@@ -230,7 +230,7 @@ test('Schnäppchen-Daten nach neuem Datenvertrag: bis mit Uhrzeit, ab in der Zuk
   const e = r.eintraege[0];
   assert.equal(e.titel, 'Ben & Jerry\'s bei Lidl', 'Großhandel nicht gewählt, obwohl billiger');
   assert.deepEqual([e.bis, e.bisQuelle, e.ab, e.frist], ['2026-11-07T22:59:00.000Z', 'feld', '2026-11-01T23:00:00.000Z', '2026-11-07']);
-  assert.match(e.zeile, /^ab 02\.11\.2026 · \d+ Packungen à 465 ml für/);
+  assert.match(e.zeile, /^ab 02\.11\.2026 · 1 Packung à 465 ml für 3,99\s€ statt 6,98\s€ \(−43 %\)/, 'ohne Mehrkauf-Aktion genau 1 Packung');
   assert.match(e.zeile, /Normalpreis geschätzt$/);
   assert.equal(e.preisVorher, null);
 });

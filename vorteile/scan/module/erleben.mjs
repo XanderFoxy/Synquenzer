@@ -29,7 +29,8 @@ export default async function erleben({ holeText, cfg, jetzt, zustand }) {
       if (!heiss && !(rabatt >= 0.4) && gut < 2) continue;
       const s = await pruefer.pruefe(it.link, { neuNachStunden: 6 });
       if (s.info?.abgelaufen) continue;
-      const endeSeite = s.info?.ende && Date.parse(s.info.ende) > jetztMs ? s.info.ende : null;
+      if (s.info?.ende && Date.parse(s.info.ende) <= jetztMs) continue; // Ende laut Deal-Seite schon vorbei
+      const endeSeite = s.info?.ende || null;
       eintraege.push(eintrag({
         kategorie: 'erleben', titel: it.titel, quelle: it.feed, link: it.link, datum: it.datum, jetzt,
         bis: it.bis || endeSeite, bisQuelle: it.bis ? 'text' : endeSeite ? 'deal-seite' : null, ab: it.ab, art: 'deal',

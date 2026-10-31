@@ -1,7 +1,7 @@
 // Modul "deals": rechnet alle Deals neu durch (Mehrkauf, Aktionspackung, Coupons, Cashback, Limits, Versand).
 // Quellen: Daten des Schnäppchen-Weckers (schnaeppchen-daten) + mydealz-Feeds (Lebensmittel, Preisfehler ohne Technik).
 // Enden: Schnäppchen-Angebote bis gueltigBis (mit Uhrzeit), mydealz bis Textende / Deal-Seite, sonst Höchstalter (lib/ende.mjs).
-import { rechne, bestesAngebot, parseAktion } from '../rechnen.mjs';
+import { rechne, bestesAngebot, parseAktion, couponImPreis } from '../rechnen.mjs';
 import { parsePrice, grammAus, enthaelt, euro, round, datumDe } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
 import { dealPruefer, preisAngaben, altpreisAusText } from '../lib/mydealz.mjs';
@@ -12,7 +12,7 @@ const prozent = v => `−${Math.round(v * 100)} %`;
 export function zeileAus(r, basis = '100g', { geschaetzt = false, packung = null, ab = null } = {}) {
   const teile = [`${r.packungen} Packung${r.packungen > 1 ? 'en' : ''}${packung ? ` à ${packung}` : ''} für ${euro(r.zahlen)}${r.normalGesamt ? ` statt ${euro(r.normalGesamt)}` : ''}${r.ersparnis > 0 ? ` (${prozent(r.ersparnis)})` : ''}`];
   if (r.pro100 != null) teile.push(`${euro(round(r.pro100, 2))} pro 100 ${basis === '100ml' ? 'ml' : 'g'}${r.normalPro100 ? ` statt ${euro(round(r.normalPro100, 2))}` : ''}`);
-  else teile.push(`${euro(r.proPackung)} pro Packung`);
+  else if (r.packungen > 1) teile.push(`${euro(r.proPackung)} pro Packung`);
   if (geschaetzt && r.normalGesamt) teile.push('Normalpreis geschätzt');
   if (ab) teile.unshift(`ab ${datumDe(berlinTag(ab))}`);
   return teile.join(' · ');
@@ -45,6 +45,22 @@ export function rechneSchnaeppchen(o, p, m) {
   const r = rechne({ aktion: a, shop: o.shop, einzelpreis, gramm, versand, normalEinzelpreis: normalEinzelpreis && round(normalEinzelpreis, 3), maxPackungen: m.maxPackungen });
   if (r) r.angebot = o;
   return r;
+}
+
+/**
+ * Versand für einen mydealz-Deal: Deal-Seite (frei/Preis) zuerst; im Laden nichts; Amazon ohne Prime unter der
+ * Grenze aus config (module.deals.amazon, wie schnaeppchen/config.json versand); sonst unbekannt = 0.
+ */
+export function versandFuer({ shop, text = '', preis, info = null }, cfg) {
+  if (info?.versandFrei) return { versand: 0, hinweis: '' };
+  if (info?.versand > 0) return { versand: info.versand, hinweis: '' };
+  if (info?.lokal) return { versand: 0, hinweis: '' };
+  const amazon = cfg.module?.deals?.amazon;
+  if (amazon && /amazon/i.test(shop || '') && !amazon.prime && preis > 0 && preis < (amazon.kostenlosAb ?? 39)) {
+    if (/versandkostenfrei|kostenlose[rn]? versand|gratis versand|free shipping/i.test(text) && !/prime/i.test(text)) return { versand: 0, hinweis: '' };
+    return { versand: amazon.kosten ?? 3.99, hinweis: 'ohne Prime' };
+  }
+  return { versand: 0, hinweis: '' };
 }
 
 export default async function deals({ holeText, cfg, jetzt, zustand }) {
@@ -98,23 +114,39 @@ export default async function deals({ holeText, cfg, jetzt, zustand }) {
       else if (r.grund === 'Deal-Seite nicht lesbar') fehler.push(`Preisfehler ausgelassen (${r.grund}): ${it.titel.slice(0, 60)}`);
       continue;
     }
-    if (!enthaelt(text, m.aktionWoerter)) continue;
     const preis = parsePrice(it.preisText) ?? null;
-    // Normalpreis je Packung (darf gleich dem Einzelpreis sein: „3 für 2, statt 1,29 € je Packung“)
-    const altInfo = altpreisAusText(text);
-    const alt = altInfo?.preis ?? null;
-    const r = rechne({ text, shop: it.shop, einzelpreis: preis, gramm: grammAus(it.titel), normalEinzelpreis: alt, maxPackungen: m.maxPackungen });
-    if (!r || !r.lohnt || !(r.ersparnis >= m.minErsparnis)) continue;
-    // abgelaufen laut Deal-Seite? (nur wenn das Abruf-Limit es erlaubt; sonst gilt das Höchstalter)
+    const aktion = parseAktion(text);
+    // Der mydealz-Preis ist der Endpreis: ein Coupon darin („2,49 € – 1 € Coupon = nur 1,49 €“) wird nicht noch
+    // einmal abgezogen. Nie günstiger rechnen als der Deal selbst sagt.
+    const couponsImPreis = true;
+    const couponAbgezogen = aktion.coupons.some(c => couponImPreis(text, preis, c));
+    // Aktion = echte Mehrkauf-Aktion, Coupon/Cashback, Aktionspackung oder ein Aktionswort (ein bloßes „für“ zählt nicht)
+    const mitAktion = !!(aktion.art || aktion.coupons.length || aktion.extraMenge || aktion.extraProzent || aktion.limit) || enthaelt(text, m.aktionWoerter);
+    const gramm = grammAus(it.titel);
+    // Normalpreis je Packung: der niedrigste Vergleichswert aus dem Text (UVP ist oft höher als der echte Vergleich);
+    // bei Mehrkauf darf der Normalpreis je Packung gleich dem Einzelpreis sein („3 für 2, statt 1,29 € je Packung“)
+    const altInfo = altpreisAusText(text, aktion.art ? null : preis, { niedrigster: true });
+    const vorab = rechne({ aktion, text, shop: it.shop, einzelpreis: preis, gramm, normalEinzelpreis: altInfo?.preis ?? null, maxPackungen: m.maxPackungen, couponsImPreis, couponAbgezogen });
+    if (!vorab || !vorab.lohnt || !(vorab.ersparnis >= m.minErsparnis)) continue;
+    // Deal-Seite: abgelaufen? Ende schon vorbei? Vergleichspreis von mydealz (Vorrang vor UVP/Text), Beginn, Versand.
+    // (nur wenn das Abruf-Limit es erlaubt; sonst gelten Text und Höchstalter)
     const s = await pruefer.pruefe(it.link, { neuNachStunden: 6 });
     if (s.info?.abgelaufen) continue;
-    const endeSeite = s.info?.ende && Date.parse(s.info.ende) > jetztMs ? s.info.ende : null;
+    if (s.info?.ende && Date.parse(s.info.ende) <= jetztMs) continue;
+    const endeSeite = s.info?.ende || null;
+    const vergleich = preis != null && s.info?.vergleichspreis > preis
+      ? { preis: s.info.vergleichspreis, quelle: 'Vergleichspreis laut mydealz' }
+      : altInfo;
+    const v = versandFuer({ shop: s.info?.haendler || it.shop, text, preis, info: s.info }, cfg);
+    const r = rechne({ aktion, text, shop: it.shop, einzelpreis: preis, gramm, normalEinzelpreis: vergleich?.preis ?? null, maxPackungen: m.maxPackungen, couponsImPreis, couponAbgezogen, versand: v.versand, versandHinweis: v.hinweis });
+    if (!r || !r.lohnt || !(r.ersparnis >= m.minErsparnis)) continue;
+    const ab = it.ab || (s.info?.start && Date.parse(s.info.start) > jetztMs ? s.info.start : null);
     eintraege.push(eintrag({
-      kategorie: 'deals', titel: it.titel, zeile: zeileAus(r, '100g', { ab: it.ab && Date.parse(it.ab) > jetztMs ? it.ab : null }), soGehts: r.soGehts, link: it.link, quelle: it.feed, datum: it.datum, jetzt,
-      bis: it.bis || endeSeite, bisQuelle: it.bis ? 'text' : endeSeite ? 'deal-seite' : null, ab: it.ab, art: 'deal',
+      kategorie: 'deals', titel: it.titel, zeile: zeileAus(r, '100g', { ab: ab && Date.parse(ab) > jetztMs ? ab : null }), soGehts: r.soGehts, link: it.link, quelle: it.feed, datum: it.datum, jetzt,
+      bis: it.bis || endeSeite, bisQuelle: it.bis ? 'text' : endeSeite ? 'deal-seite' : null, ab, art: 'deal',
       wert: Math.min(100, 35 + r.ersparnis * 70), sofort: r.ersparnis >= m.sofortAbErsparnis && (s.info?.temperatur ?? it.temperatur ?? 0) >= 300,
-      grund: 'Aktion durchgerechnet', preise: preisAngaben({ preis, preisVorher: alt, vorherQuelle: altInfo?.quelle }),
-      extra: { schritte: r.schritte, pro100: r.pro100, ersparnis: r.ersparnis, shop: it.shop },
+      grund: mitAktion ? 'Aktion durchgerechnet' : 'Deal durchgerechnet', preise: preisAngaben({ preis: preis != null ? round(preis + (v.versand || 0)) : null, preisVorher: vergleich?.preis, vorherQuelle: vergleich?.quelle }),
+      extra: { schritte: r.schritte, pro100: r.pro100, ersparnis: r.ersparnis, shop: it.shop, versand: v.versand, couponAbgezogen },
     }));
   }
   return { eintraege, fehler };

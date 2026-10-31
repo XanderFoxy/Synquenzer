@@ -111,12 +111,13 @@ test('Stückzahl nur aus ausdrücklichen Angaben oder sicherem Gewicht', () => {
   assert.equal(bestimmeMenge({ titel: 'Knoppers', beschreibung: 'je 15 St. = 375-g-Packg.', packWiderspruch: true }, item).mengeSicher, false);
 });
 
-test('Ben & Jerry\'s „465/4x100ml“: Packung laut Grundpreis 465 ml, die 4 Stück gehören zur anderen Variante', () => {
+test('Ben & Jerry\'s „465/4x100ml“: 465 ml laut Grundpreis ODER 4 × 100 ml zum selben Preis – beide genannt', () => {
   const item = { basis: '100ml', standardMl: 465 };
   const m = bestimmeMenge({ quelle: 'marktguru', titel: "Ben & Jerry's Eiscreme", beschreibung: '465/4x100ml', packMenge: { ml: 465 },
     refPreis: { preis: 8.58, einheit: 'l' } }, item);
-  assert.deepEqual(m, { menge: { ml: 465 }, packung: '465 ml', mengeSicher: true, mengeQuelle: 'grundpreis' });
+  assert.deepEqual(m, { menge: { ml: 465 }, packung: '465 ml oder 4 × 100 ml', mengeSicher: true, mengeQuelle: 'grundpreis', alternativ: { ml: 400, stueck: 4 } });
   assert.equal(einheitspreis(3.99, m.menge, item, { preis: 8.58, einheit: 'l' }), 0.86);
+  assert.equal(einheitspreis(3.99, m.alternativ, item, null), 1, 'die 4 × 100 ml kosten 1,00 € pro 100 ml');
 });
 
 test('Sammeldeal (mehrere Produkte mit eigenem Preis): nur der eigene Teil, Menge unsicher', () => {

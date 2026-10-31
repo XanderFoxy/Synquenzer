@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { leereHistorie, eintragen, statistik, median, aufraeumen, pruefeHistorie, tiefstSeit } from '../history.mjs';
-import { referenz, bewerte, versandkosten, technikBewertung, altpreisAus, tiefstInfo, schaetzungPlausibel } from '../deals.mjs';
+import { referenz, refFuer, bewerte, versandkosten, technikBewertung, altpreisAus, tiefstInfo, schaetzungPlausibel } from '../deals.mjs';
 
 const cfg = {
   deal: { rabattMin: 0.25, schaetzungMaxRabatt: 0.6, tiefstpreisMinPunkte: 10, tiefstpreisMinRabatt: 0.1, historieMinTage: 5, normalpreisFensterTage: 56, technikRabattMin: 0.6 },
@@ -68,7 +68,7 @@ test('Ist das der Tiefstpreis? – ehrliche Antwort', () => {
   eintragen(h, 'k', 'stueck', { p: 0.186, shop: 'Kaufland' }, T0);
   let st = statistik(h, 'k', 56, T0);
   const eins = tiefstInfo({ bestes: kauf, sichere: [kauf], stats: st, tiefst30: tiefstSeit(h, 'k', 30, T0), basis: 'stueck', cfg });
-  assert.deepEqual(eins, { status: 'unbekannt', text: 'Einziges Angebot in deiner Nähe · Verlauf erst seit 1 Tag', heuteGuenstigstes: true, tage: 1, tiefst30: 0.186, anzahl: 1 });
+  assert.deepEqual(eins, { status: 'unbekannt', text: 'Einziges Angebot in deiner Nähe · Verlauf erst seit 1 Tag', heuteGuenstigstes: true, tage: 1, tiefst30: 0.186, anzahl: 1, anzahlSicher: 1 });
   const zwei = { einheitspreis: 0.25, mengeSicher: true, online: true };
   assert.match(tiefstInfo({ bestes: kauf, sichere: [kauf, zwei, zwei], stats: st, tiefst30: null, basis: 'stueck', cfg }).text,
     /^Günstigstes von 3 Angeboten in deiner Nähe und online · /);
@@ -86,6 +86,39 @@ test('Ist das der Tiefstpreis? – ehrliche Antwort', () => {
   // Menge unklar -> keine Aussage
   assert.equal(tiefstInfo({ bestes: { ...kauf, mengeSicher: false }, sichere: [], stats: st, tiefst30: null, basis: 'stueck', cfg }).status, 'unbekannt');
   assert.equal(tiefstInfo({ bestes: null, sichere: [], stats: st, tiefst30: null, basis: 'stueck', cfg }).text, 'Gerade kein Angebot');
+});
+
+test('Tiefstpreis: ein billigeres Angebot mit unklarer Packung zählt mit – nie „Einziges Angebot“ (echter Fall Ben & Jerry\'s)', () => {
+  const J = Date.parse('2026-10-31T16:35:00Z');
+  const lidl = { shop: 'Lidl', preis: 3.99, einheitspreis: 1.0, mengeSicher: true, online: false, gueltigAb: '2026-11-01T23:00:00Z' };
+  const penny = { shop: 'PENNY', preis: 3.49, einheitspreis: 0.75, mengeSicher: false, online: false, nurMitApp: true, gueltigAb: '2026-11-01T23:00:00.000Z' };
+  const st = { tage: 0 };
+  const t = tiefstInfo({ bestes: lidl, sichere: [lidl], angebote: [lidl, penny], stats: st, tiefst30: null, basis: '100ml', cfg, jetztMs: J });
+  assert.equal(t.status, 'unbekannt');
+  assert.equal(t.text, 'PENNY hat 3,49 € (mit App, ab Mo 02.11.) – Packungsgröße dort nicht sicher');
+  assert.equal(t.heuteGuenstigstes, false);
+  assert.equal(t.anzahl, 2);
+  assert.doesNotMatch(t.text, /Einziges/);
+  // teurer und Packung unklar: kein „Einziges Angebot“, sondern „mit bekannter Packungsgröße“
+  const teuer = { ...penny, preis: 4.49 };
+  assert.equal(tiefstInfo({ bestes: lidl, sichere: [lidl], angebote: [lidl, teuer], stats: st, tiefst30: null, basis: '100ml', cfg, jetztMs: J }).text,
+    'Einziges Angebot mit bekannter Packungsgröße in deiner Nähe · noch kein Preisverlauf');
+  // unplausible Treffer (eher ein anderes Produkt) zählen nicht
+  assert.equal(tiefstInfo({ bestes: lidl, sichere: [lidl], angebote: [lidl, { ...penny, unsicher: true }], stats: st, tiefst30: null, basis: '100ml', cfg, jetztMs: J }).text,
+    'Einziges Angebot in deiner Nähe · noch kein Preisverlauf');
+});
+
+test('Geschätzter Normalpreis je Packungsgröße (Knoppers: 15er-Familienpackung ist pro Stück günstiger als einzeln)', () => {
+  const item = { normalpreis: 0.30, normalpreisStaffel: [{ bisStueck: 4, preis: 0.55 }, { bisStueck: 10, preis: 0.37 }, { bisStueck: 999, preis: 0.30 }] };
+  const ref = { p: 0.30, quelle: 'schaetzung' };
+  assert.equal(refFuer(item, ref, { mengeSicher: true, menge: { stueck: 15 } }).p, 0.30);
+  assert.equal(refFuer(item, ref, { mengeSicher: true, menge: { stueck: 8 } }).p, 0.37);
+  assert.equal(refFuer(item, ref, { mengeSicher: true, menge: { stueck: 1 } }).p, 0.55);
+  assert.equal(refFuer(item, ref, { mengeSicher: false, menge: { stueck: 5 } }), ref, 'Packung unklar -> allgemeine Schätzung');
+  assert.equal(refFuer(item, { p: 0.2, quelle: 'verlauf' }, { mengeSicher: true, menge: { stueck: 1 } }).p, 0.2, 'echter Verlauf hat Vorrang');
+  // 2,79 € für 15 Stück = 0,186 €: gegen 0,30 € sind das 38 %, nicht 51 % (gegen die alte 0,38-€-Schätzung)
+  const b = bewerte({ einheitspreis: 0.186, mengeSicher: true }, refFuer(item, ref, { mengeSicher: true, menge: { stueck: 15 } }), { tage: 1, punkte: 1 }, cfg);
+  assert.equal(b.grund, '38 % unter geschätztem Normalpreis');
 });
 
 test('Alter Verlauf (Version 1, falsche Packungsgrößen) wird einmal verworfen', () => {

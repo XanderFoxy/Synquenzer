@@ -18,8 +18,11 @@ export function bewerteTest(text, m, cfg) {
   return { art: test ? 'test' : 'gewinnspiel', wert: 35 + thema * 10 + leicht * 8 + (regional ? 15 : 0), regional };
 }
 
-// Anzeigefenster ohne bekanntes Ende (lib/ende.mjs): Freebies 7 Tage, mydealz-Gewinnspiele und Nachrichten 14 Tage
-const artVon = it => (/news\.google/.test(it.feedInfo.url) ? 'nachricht' : /gewinnspiel/.test(it.feedInfo.url) ? 'gewinnspiel' : 'freebie');
+// Anzeigefenster ohne bekanntes Ende (lib/ende.mjs): Freebies 7 Tage, mydealz-Gewinnspiele und Nachrichten 14 Tage,
+// Ticket-Verlosungen 6 Tage (sie enden vor der Veranstaltung, oft nach wenigen Tagen)
+const TICKETS = /\b(tickets?|freikarten|eintrittskarten|karten für|karten fuer|gästeliste|gaesteliste)\b/i;
+export const artVon = (it, b) => (b?.art === 'gewinnspiel' && TICKETS.test(`${it.titel} ${it.beschreibung || ''}`) ? 'gewinnspielTicket'
+  : /news\.google/.test(it.feedInfo.url) ? 'nachricht' : /gewinnspiel/.test(it.feedInfo.url) ? 'gewinnspiel' : 'freebie');
 
 export default async function tests({ holeText, cfg, jetzt, zustand }) {
   const m = cfg.module.tests;
@@ -36,7 +39,7 @@ export default async function tests({ holeText, cfg, jetzt, zustand }) {
     const frist = it.bis ? berlinTag(it.bis) : null;
     eintraege.push(eintrag({
       kategorie: 'tests', titel: it.titel, quelle: it.herkunft || it.feed, link: it.link, datum: it.datum, jetzt,
-      bis: it.bis, ab: it.ab, art: artVon(it),
+      bis: it.bis, ab: it.ab, art: artVon(it, b),
       zeile: [b.art === 'test' ? 'Produkttest' : 'Gewinnspiel', b.regional ? 'regional (weniger Konkurrenz)' : '', frist ? `bis ${datumDe(frist)}` : 'Teilnahmeschluss unbekannt'].filter(Boolean).join(' · '),
       soGehts: b.art === 'test'
         ? 'Link öffnen, kurzes Bewerbungsformular ausfüllen (Name, Adresse, 2 Sätze warum). Nie Geld oder Kontodaten angeben.'

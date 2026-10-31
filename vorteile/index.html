@@ -2,9 +2,23 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<!-- Umgezogen: Angebote, Vorteile und Konzerte stehen jetzt auf einer Seite (../mein-vorteil/). -->
-<meta http-equiv="refresh" content="0; url=../mein-vorteil/#vorteile">
-<script>(function () { var h = location.hash.slice(1); location.replace('../mein-vorteil/#' + (h === 'schnaeppchen' ? 'angebote' : h === 'konzerte' ? 'konzerte' : 'vorteile')); })();</script>
+<!-- Umgezogen: Angebote, Vorteile und Konzerte stehen jetzt auf einer Seite (/Synquenzer/mein-vorteil/). -->
+<noscript><meta http-equiv="refresh" content="0; url=/Synquenzer/mein-vorteil/#vorteile"></noscript>
+<script>(function () {
+  // Ziel immer absolut: auch eine Kopie an falscher Stelle (z. B. als /Synquenzer/ aus einem fremden Zwischenspeicher)
+  // landet auf Mein Vorteil statt auf /mein-vorteil/ außerhalb des Repos (404).
+  var p = location.pathname, i = p.indexOf('/vorteile/');
+  var basis = i >= 0 ? p.slice(0, i) : '/Synquenzer';
+  var h = location.hash.slice(1), r = h === 'schnaeppchen' ? 'angebote' : h === 'konzerte' ? 'konzerte' : 'vorteile';
+  var ziel = basis + '/mein-vorteil/?von=vorteile#' + r;
+  var weg = false, los = function () { if (!weg) { weg = true; location.replace(ziel); } };
+  // Eigener Worker für diesen Ordner (falls noch keiner – auch wenn gerade der SYNQUENZER-Worker der Wurzel übernimmt):
+  // danach sieht der SYNQUENZER-Worker diese Adresse nie mehr
+  var sw = 'serviceWorker' in navigator ? navigator.serviceWorker : null, eigen = /\/vorteile\/sw\.js$/.test((sw && sw.controller && sw.controller.scriptURL) || '');
+  if (i >= 0 && sw && !eigen && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    sw.register('sw.js', { scope: './' }).then(los, los); setTimeout(los, 600);
+  } else los();
+})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Vorteile</title>

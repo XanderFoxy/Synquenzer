@@ -136,6 +136,7 @@ export function bestimmeMenge(o, item) {
   const m = {};
   let quelle = null;
   let sicher = !sammel && !o.packWiderspruch;
+  let alternativ = null;
   if (g) {
     Object.assign(m, g);
     quelle = 'grundpreis';
@@ -144,6 +145,8 @@ export function bestimmeMenge(o, item) {
       const tm = masse(t);
       const passend = !t.ausMulti || (tm > 0 && Math.abs(tm - masse(g)) / masse(g) <= 0.03);
       if (passend) m.stueck = t.stueck;
+      // … und diese andere Packung gibt es zum selben Preis: beide nennen, gerechnet wird mit der teureren pro 100 ml
+      else if (tm > 0 && (t.gramm != null) === (g.gramm != null)) alternativ = { ...(t.gramm != null ? { gramm: t.gramm } : { ml: t.ml }), stueck: t.stueck };
     }
   } else if (masse(t) > 0) {
     if (t.gramm != null) m.gramm = t.gramm;
@@ -183,6 +186,9 @@ export function bestimmeMenge(o, item) {
     if (item.standardMl) { m.ml = item.standardMl; quelle = quelle && o.refPreis ? quelle : 'vorgabe'; }
   }
   if (!quelle) sicher = false;
+  if (alternativ && sicher) {
+    return { menge: m, packung: [packung, packungText(alternativ)].filter(Boolean).join(' oder '), mengeSicher: sicher, mengeQuelle: quelle, alternativ };
+  }
   return { menge: m, packung, mengeSicher: sicher, mengeQuelle: quelle };
 }
 

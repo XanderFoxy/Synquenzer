@@ -64,6 +64,10 @@
   @media (prefers-reduced-motion: reduce) { .kopf-knopf[aria-busy="true"] svg { animation: none; } }
   .stand { margin: 2px 0 0; font-size: 13px; color: var(--leise); }
   .stand .alt { color: var(--rot); }
+  .umzug { display: flex; gap: 10px; align-items: center; margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--akzent-hell); color: var(--text); font-size: 14px; }
+  .umzug p { margin: 0; flex: 1; min-width: 0; }
+  .umzug button { flex: none; min-height: 44px; min-width: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--linie); background: var(--karte); color: var(--text); font-size: 14px; font-weight: 600; }
+  .gestoert { color: var(--warm); font-size: 14px; margin: 10px 4px 0; }
 
   /* Reiter */
   .reiter {
@@ -226,6 +230,7 @@
       </button>
     </div>
     <p id="stand" class="stand" aria-live="polite">Lade …</p>
+    <div id="umzug" class="umzug" hidden><p>Neu: alles auf einer Seite. Für das neue Symbol in Safari <b>Teilen → Zum Home-Bildschirm</b>, das alte Symbol kannst du löschen.</p><button id="umzug-zu" type="button">Verstanden</button></div>
   </div>
 </header>
 
@@ -346,24 +351,29 @@ function vorbei(x, maxAlterStunden = 0) {
 }
 
 // --- Daten laden: gemerkter Stand sofort, dann alles parallel frisch -------------------------------------------
-const S = {}; // angebote | vorteile | konzerte: { d, holZeit, offline, fehler }
+const S = {}; // angebote | vorteile | konzerte: { d, holZeit, gestoert, fehler }
 const SPEICHER = 'mein-vorteil-daten-';
-for (const q of REITER) { const alt = lies(SPEICHER + q, null); if (alt?.d) S[q] = { ...alt, offline: false, ausSpeicher: true }; }
+for (const q of REITER) { const alt = lies(SPEICHER + q, null); if (alt?.d) S[q] = { ...alt, gestoert: false, ausSpeicher: true }; }
 
+// optional: Fehler -> { fehler } statt Ausnahme (dann lässt sich „gestört“ von „leer“ unterscheiden)
 async function hol(url, optional) {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), 15000);
   try {
     const r = await fetch(`${url}?t=${Math.floor(Date.now() / 60000)}`, { cache: 'no-store', signal: ctl.signal });
-    if (!r.ok) { if (optional) return null; throw new Error(`HTTP ${r.status}`); }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return await r.json();
-  } catch (e) { if (optional) return null; throw e; } finally { clearTimeout(t); }
+  } catch (e) { if (optional) return { fehler: String(e?.message || e) }; throw e; } finally { clearTimeout(t); }
 }
 
 const LADER = {
   angebote: () => hol(URLS.angebote),
   vorteile: () => hol(URLS.vorteile),
-  konzerte: () => Promise.all([hol(URLS.konzerte), hol(URLS.releases, true), hol(URLS.kstatus, true)]).then(([k, r, s]) => ({ k, r, s })),
+  // Konzerte und Neuerscheinungen unabhängig: fällt eins aus, zeigt der Reiter das andere trotzdem
+  konzerte: () => Promise.all([hol(URLS.konzerte, true), hol(URLS.releases, true), hol(URLS.kstatus, true)]).then(([k, r, s]) => {
+    if (k?.fehler && r?.fehler) throw new Error(k.fehler);
+    return { k: k?.fehler ? null : k, r: r?.fehler ? null : r, s: s?.fehler ? null : s, kFehler: !!k?.fehler, rFehler: !!r?.fehler };
+  }),
 };
 
 let laeuft = 0, geladenUm = 0;
@@ -373,10 +383,12 @@ function lade() {
   $('neu').setAttribute('aria-busy', 'true');
   for (const q of REITER) {
     LADER[q]().then(d => {
-      S[q] = { d, holZeit: Date.now(), offline: false };
-      merk(SPEICHER + q, { d, holZeit: S[q].holZeit });
+      // Konzerte: eine Hälfte gestört -> die gemerkte Hälfte behalten
+      if (q === 'konzerte' && S[q]?.d) { if (d.kFehler) d.k = S[q].d.k || null; if (d.rFehler) d.r = S[q].d.r || null; }
+      S[q] = { d, holZeit: Date.now(), offline: false, gestoert: false };
+      merk(SPEICHER + q, { d: { ...d, kFehler: false, rFehler: false }, holZeit: S[q].holZeit });
     }, e => {
-      if (S[q]) S[q].offline = true; else S[q] = { d: null, fehler: String(e?.message || e) };
+      if (S[q]) { S[q].gestoert = true; S[q].fehler = String(e?.message || e); } else S[q] = { d: null, gestoert: true, fehler: String(e?.message || e) };
     }).then(() => {
       zeichne(q);
       if (--laeuft === 0) { $('neu').removeAttribute('aria-busy'); geladenUm = Date.now(); }
@@ -391,17 +403,28 @@ function standZeit(q) {
   if (q === 'konzerte') return d.s?.stand || d.k?.stand || null;
   return d.aktualisiert || null;
 }
+// „offline“ nur, wenn das Telefon wirklich kein Netz hat oder alle Quellen ausfallen; sonst ist nur EINE Quelle gestört
+const alleGestoert = () => REITER.every(q => S[q]?.gestoert);
+const offline = () => navigator.onLine === false || alleGestoert();
+function uhrzeit(iso) { const t = zeit(iso); if (t == null) return '?'; const p = teile(t); return `${tag(t) === 'heute' ? '' : tag(t) + ', '}${p.hour}:${p.minute} Uhr`; }
 function zeigeStand() {
   const teil = REITER.map(q => {
     const s = S[q];
     if (!s) return `${NAMEN[q]} lädt …`;
-    if (!s.d) return `<span class="alt">${NAMEN[q]}: keine Verbindung</span>`;
+    if (!s.d) return `<span class="alt">${NAMEN[q]}: ${offline() ? 'keine Verbindung' : 'gerade gestört'}</span>`;
     const iso = standZeit(q);
     const alt = iso && Date.now() - zeit(iso) > ALT_STUNDEN[q] * 36e5;
-    const txt = `${NAMEN[q]} ${iso ? vor(iso) : '?'}${s.offline ? ' (offline)' : ''}`;
-    return alt || s.offline ? `<span class="alt">${esc(txt)}</span>` : esc(txt);
+    const txt = !s.gestoert ? `${NAMEN[q]} ${iso ? vor(iso) : '?'}`
+      : offline() ? `${NAMEN[q]} ${iso ? vor(iso) : '?'} (offline)` : `${NAMEN[q]}: letzter Stand von ${uhrzeit(iso)} – Quelle gerade gestört`;
+    return alt || s.gestoert ? `<span class="alt">${esc(txt)}</span>` : esc(txt);
   });
   $('stand').innerHTML = 'Stand: ' + teil.join(' · ');
+}
+// Hinweis oben im Reiter, wenn seine Karten aus einem älteren Lauf stammen (Quelle gestört, Telefon aber online)
+function stoerHinweis(q) {
+  const s = S[q];
+  if (!s?.gestoert || !s.d || offline()) return '';
+  return `<p class="gestoert">Quelle gerade gestört – du siehst den letzten Stand von ${esc(uhrzeit(standZeit(q)))}.</p>`;
 }
 
 // --- Angebote (Schnäppchen-Wecker + Preisfehler) ------------------------------------------------------------------
@@ -422,13 +445,30 @@ function gueltigText(o) {
   if (ab != null && ab > Date.now()) return `${abText(o.ab ?? o.gueltigAb)}${bis ? ' · ' + bisText(bis) : ''}`;
   return bis ? bisText(bis) : 'Ende unbekannt';
 }
-const startetSpaeter = o => { const ab = zeit(o.ab ?? o.gueltigAb); return ab != null && ab > Date.now(); };
+const startetSpaeter = o => { const ab = zeit(o.ab ?? o.gueltigAb); if (ab != null && ab > Date.now()) { merkeEnde(ab); return true; } return false; };
 function knopfText(o) {
   if (o.quelle === 'marktguru') return `Im Prospekt ansehen (${o.shop})`;
   if (o.quelle === 'mydealz') return 'Zum Deal';
   return `Zum Angebot bei ${o.shop}`;
 }
-function tiefstInfo(p, o) {
+// Ein anderes Angebot auf derselben Karte ist im Ganzen billiger -> „Einziges/Günstigstes“ oder „ja“ wäre falsch
+function billigerAnderswo(o, rest) {
+  return rest.filter(w => zahl(w.preis) != null && w.preis < o.preis - 0.005
+    && (!mengeSicher(w) || (zahl(w.einheitspreis) != null && w.einheitspreis < o.einheitspreis - 0.0005)))
+    .sort((a, b) => a.preis - b.preis)[0] || null;
+}
+function andersText(w) {
+  const extra = [w.nurMitApp ? 'mit App' : '', startetSpaeter(w) ? abText(w.ab ?? w.gueltigAb) : ''].filter(Boolean);
+  return `${w.shop} hat ${euro(w.preis)}${extra.length ? ` (${extra.join(', ')})` : ''}${mengeSicher(w) ? '' : ' – Packungsgröße dort nicht sicher'}`;
+}
+function tiefstInfo(p, o, rest = []) {
+  const ti = tiefstInfoRoh(p, o);
+  const w = o && mengeSicher(o) ? billigerAnderswo(o, rest) : null;
+  // nur eingreifen, wenn der Satz das billigere Angebot verschweigt („ja“, „Einziges …“, „Günstigstes …“)
+  if (w && (ti.status === 'ja' || /^(Einziges|Günstigstes)/.test(ti.text || ''))) return { status: 'unbekannt', text: andersText(w) };
+  return ti;
+}
+function tiefstInfoRoh(p, o) {
   if (!o) return { status: 'unbekannt', text: 'Gerade kein Angebot' };
   if (!mengeSicher(o)) return { status: 'unbekannt', text: 'Packungsgröße unklar – Preis pro Stück/100 g nicht sicher' };
   if (p.bestes && o !== p.bestes) {
@@ -450,7 +490,8 @@ const STATUS_TEXT = { ja: 'ja', nein: 'nein', unbekannt: 'unklar' };
 function angebotWahl(p) {
   // Ohne „bestes“ hat der Scanner alle Angebote als unplausibel eingestuft (eher ein anderes Produkt) -> keine Karte
   if (!p.bestes) return { o: null, rest: [] };
-  const alle = [p.bestes, ...(p.weitere || [])].filter(o => o && !vorbei(o));
+  // unplausible Treffer (unsicher) nie als Hauptkarte, auch wenn das beste Angebot inzwischen abgelaufen ist
+  const alle = [p.bestes, ...(p.weitere || [])].filter(o => o && !vorbei(o) && o.unsicher !== true);
   return { o: alle[0] || null, rest: alle.slice(1) };
 }
 
@@ -462,21 +503,22 @@ function produktKarte(p, o, rest) {
   const prozent = deal && zahl(p.ersparnis) > 0 ? Math.round(p.ersparnis * 100) : null;
   const packung = o.packung || (o.mengeSicher === false || !sicherMenge ? 'Packungsgröße unklar' : '');
   const geschaetzt = p.normalGeschaetzt === true || p.normalQuelle === 'schaetzung';
-  const ti = tiefstInfo(p, o);
+  const ti = tiefstInfo(p, o, rest);
   const fakten = [
     `<div class="fakt"><dt>Tiefstpreis?</dt><dd><span class="pill ${esc(ti.status)}">${esc(STATUS_TEXT[ti.status] || 'unklar')}</span>${esc(ti.text)}</dd></div>`,
   ];
   if (zahl(p.normalpreis) != null) {
     const dazu = prozent != null ? ` · ${prozent} % darunter` : '';
     fakten.push(geschaetzt
-      ? `<div class="fakt"><dt>Normalpreis geschätzt</dt><dd>ca. ${esc(euro(p.normalpreis, true))} ${esc(basis)}${esc(dazu)}</dd></div>`
+      ? `<div class="fakt"><dt>Normalpreis geschätzt</dt><dd>ca. ${esc(euro(p.normalpreis, true))} ${esc(basis)}${istBestes && p.normalJePackung ? ' für diese Packungsgröße' : ''}${esc(dazu)}</dd></div>`
       : `<div class="fakt"><dt>Normalpreis</dt><dd>${esc(euro(p.normalpreis, true))} ${esc(basis)} (aus deinem Preisverlauf)${esc(dazu)}</dd></div>`);
   }
   fakten.push(`<div class="fakt"><dt>Gültig</dt><dd>${esc(gueltigText(o))}</dd></div>`);
   const weitere = rest.length ? `<details class="weitere"><summary>${rest.length === 1 ? '1 weiteres Angebot' : rest.length + ' weitere Angebote'}</summary><ul>${rest.map(w => {
     const pk = w.packung || (mengeSicher(w) ? '' : 'Packungsgröße unklar');
     const ep = mengeSicher(w) && zahl(w.einheitspreis) != null ? `${euro(w.einheitspreis, true)} ${basis}` : 'Menge unklar';
-    return `<li><a href="${esc(sicher(w.link))}" target="_blank" rel="noopener"><span><b>${esc(w.shop)}</b> · ${esc(w.titel)}${pk ? ' · ' + esc(pk) : ''}<br><span class="klein">${esc(gueltigText(w))}</span></span><span><b>${esc(euro(w.preis))}</b><br><span class="klein">${esc(ep)}</span></span></a></li>`;
+    const bedingung = [gueltigText(w), w.hinweis || ''].filter(Boolean).join(' · ');
+    return `<li><a href="${esc(sicher(w.link))}" target="_blank" rel="noopener"><span><b>${esc(w.shop)}</b> · ${esc(w.titel)}${pk ? ' · ' + esc(pk) : ''}<br><span class="klein">${esc(bedingung)}</span></span><span><b>${esc(euro(w.preis))}</b><br><span class="klein">${esc(ep)}</span></span></a></li>`;
   }).join('')}</ul></details>` : '';
   const oben = [];
   if (startetSpaeter(o)) oben.push(`<span class="marke warm">${esc(abText(o.ab ?? o.gueltigAb))}</span>`);
@@ -485,7 +527,7 @@ function produktKarte(p, o, rest) {
     ${oben.length ? `<div class="oben">${oben.join('')}</div>` : ''}
     <div class="karte-kopf"><h3>${esc(produktName(p, o))}</h3>${prozent != null ? `<span class="prozent">−${prozent} %</span>` : ''}</div>
     <p class="angebot-titel">${esc(o.titel)}${packung ? ` · <b>${esc(packung)}</b>` : ''}</p>
-    <div class="preiszeile"><span class="preis">${esc(euro(o.preis))}</span><span class="shop">bei ${esc(o.shop)}</span>${zahl(o.versand) > 0 ? `<span class="klein">+ ${esc(euro(o.versand))} Versand</span>` : ''}</div>
+    <div class="preiszeile"><span class="preis">${esc(euro(o.preis))}</span><span class="shop">bei ${esc(o.shop)}</span>${zahl(o.versand) > 0 ? `<span class="klein">+ ${esc(euro(o.versand))} Versand</span>` : ''}${o.hinweis ? `<span class="klein">${esc(o.hinweis)}</span>` : ''}</div>
     ${sicherMenge && zahl(o.einheitspreis) != null ? `<p class="einheit">${esc(euro(o.einheitspreis, true))} ${esc(basis)}</p>`
       : `<p class="einheit unsicher">Preis ${esc(basis)} nicht sicher – Packungsgröße unklar</p>`}
     <dl class="fakten">${fakten.join('')}</dl>
@@ -519,6 +561,7 @@ function preisfehlerListe() {
       ersparnisEuro: zahl(t.ersparnisEuro), ersparnisProzent: zahl(t.ersparnisProzent),
       datum: t.datum, bis: t.bis ?? null, sichtbarBis: t.sichtbarBis ?? null, link: t.link,
       endeBekannt: t.bis && t.bisGeschaetzt !== true ? t.bis : null, // geschätztes Ende (gemeldet + 24 h) nicht anzeigen
+      versandInklusive: t.versandInklusive === true,
       echt: typeof t.preisfehler === 'boolean' ? t.preisfehler : /preisfehler/i.test(`${t.grund || ''} ${t.titel || ''}`),
     });
   }
@@ -530,16 +573,31 @@ function preisfehlerListe() {
       ersparnisEuro: zahl(e.ersparnisEuro), ersparnisProzent: zahl(e.ersparnisProzent),
       datum: e.datum, bis: e.bis ?? null, sichtbarBis: e.sichtbarBis ?? null, link: e.link, echt: true,
       endeBekannt: e.bis || null, // Radar: bis nur mit echter Quelle (Deal-Seite/Text), sonst sichtbarBis
+      versandInklusive: e.extra?.versandInklusive === true || /inkl\. Versand/.test(e.zeile || ''),
       zeile: e.zeile,
     });
   }
   const nachLink = new Map();
   for (const x of liste) {
-    if (vorbei(x, PREISFEHLER_STUNDEN)) continue;
+    if (pfVorbei(x)) continue;
+    // ein Ende nach dem Verschwinden der Karte (gemeldet + 24 h) wäre irreführend -> nicht zeigen
+    const weg = zeit(x.datum) != null ? zeit(x.datum) + PREISFEHLER_STUNDEN * 36e5 : null;
+    if (x.endeBekannt && weg != null && zeit(x.endeBekannt) > weg) x.endeBekannt = null;
+    if (x.versandInklusive) x.versand = 0;
     const alt = nachLink.get(x.link);
     if (!alt || (x.preisVorher && !alt.preisVorher)) nachLink.set(x.link, x);
   }
   return [...nachLink.values()].sort((a, b) => (zeit(b.datum) || 0) - (zeit(a.datum) || 0));
+}
+
+// Preisfehler und Technik-Deals: höchstens 24 h nach dem Melden, auch wenn ein späteres Ende bekannt ist
+function pfVorbei(x) {
+  if (vorbei(x, PREISFEHLER_STUNDEN)) return true;
+  const d = zeit(x.datum);
+  if (d == null) return false;
+  if (Date.now() - d > PREISFEHLER_STUNDEN * 36e5) return true;
+  merkeEnde(d + PREISFEHLER_STUNDEN * 36e5);
+  return false;
 }
 
 function preisfehlerKarte(x) {
@@ -554,7 +612,7 @@ function preisfehlerKarte(x) {
   if (x.datum) oben.push(`<span>gemeldet ${esc(vor(x.datum))}</span>`);
   if (x.endeBekannt) oben.push(`<span class="marke warm">${esc(bisText(x.endeBekannt))}</span>`);
   const preis = x.preis != null ? esc(euro(x.preis)) : '?';
-  const versand = zahl(x.versand) > 0 ? ` · zzgl. ${euro(x.versand)} Versand` : '';
+  const versand = x.versandInklusive ? ' · inkl. Versand' : zahl(x.versand) > 0 ? ` · zzgl. ${euro(x.versand)} Versand` : '';
   return `<article class="karte fehler" data-preisfehler>
     <div class="oben">${oben.join('')}</div>
     <h3>${esc(x.titel)}</h3>
@@ -564,7 +622,7 @@ function preisfehlerKarte(x) {
          <p class="klein">${esc(x.vorherQuelle || 'Vorher-Preis laut Deal')}${esc(versand)}</p>`
       : `<p class="vj"><span>jetzt <span class="jetzt">${preis}</span></span></p>
          <p class="unbekannt-vorher">Originalpreis unbekannt</p>${versand ? `<p class="klein">${esc(versand.slice(3))}</p>` : ''}`}
-    <p class="klein">Preisfehler werden oft schnell storniert – nur mit Käuferschutz (z. B. PayPal) bezahlen.</p>
+    ${x.echt ? '<p class="klein">Preisfehler werden oft schnell storniert – nur mit Käuferschutz (z. B. PayPal) bezahlen.</p>' : ''}
     <a class="los" href="${esc(sicher(x.link))}" target="_blank" rel="noopener">Zum Deal</a>
   </article>`;
 }
@@ -583,19 +641,24 @@ function zeichneAngebote() {
       + `<p class="leer">${s ? 'Angebots-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade Angebote …'}</p>`;
     return fehler.length;
   }
-  const deals = [], liste = [], ohne = [];
+  const deals = [], bald = [], liste = [], ohne = [];
   for (const p of d.produkte || []) {
     const { o, rest } = angebotWahl(p);
     if (!o) { ohne.push(p); continue; }
     const k = produktKarte(p, o, rest);
-    (o === p.bestes && p.deal && mengeSicher(o) ? deals : liste).push(k);
+    // Angebote, die erst später beginnen, stehen unter „Bald günstig“ (nicht unter „Jetzt“, nicht im Zähler)
+    if (o === p.bestes && p.deal && mengeSicher(o)) (startetSpaeter(o) ? bald : deals).push(k);
+    else liste.push(k);
   }
-  const teile = [];
-  const pfBlock = `<h2>Preisfehler <small>${fehler.length ? fehler.length : ''}</small></h2>` + (fehler.length ? fehler.map(preisfehlerKarte).join('')
+  const teile = [stoerHinweis('angebote')];
+  const nurTechnik = fehler.length && fehler.every(x => !x.echt);
+  const pfTitel = !fehler.length || fehler.every(x => x.echt) ? 'Preisfehler' : nurTechnik ? 'Technik-Deals' : 'Preisfehler &amp; Technik-Deals';
+  const pfBlock = `<h2>${pfTitel} <small>${fehler.length ? fehler.length : ''}</small></h2>` + (fehler.length ? fehler.map(preisfehlerKarte).join('')
     : '<p class="leer">Gerade kein laufender Preisfehler. Abgelaufene zeigt die Seite nicht – Preisfehler sind oft nach Minuten vorbei.</p>');
   if (fehler.length) teile.push(pfBlock);
   teile.push(`<h2>Jetzt günstig <small>${deals.length || ''}</small></h2>`);
   teile.push(deals.length ? deals.join('') : '<p class="leer">Gerade kein echtes Schnäppchen bei deinen Produkten. Du bekommst eine Push-Nachricht, sobald etwas richtig günstig ist.</p>');
+  if (bald.length) teile.push(`<h2>Bald günstig <small>${bald.length}</small></h2>${bald.join('')}`);
   if (!fehler.length) teile.push(pfBlock);
   if (liste.length || ohne.length) {
     teile.push('<h2>Deine Liste</h2>');
@@ -677,7 +740,7 @@ function zeichneVorteile() {
   const nachId = Object.fromEntries(Object.values(gueltig).flat().map(e => [e.id, e]));
   const jetzt = (d.sofort || []).map(id => nachId[id]).filter(e => e && !weg.has(e.id)).slice(0, 5);
   const schonOben = new Set(jetzt.map(e => e.id));
-  const teile = [];
+  const teile = [stoerHinweis('vorteile')];
   let anzahl = 0;
   if (jetzt.length) teile.push('<h2>Jetzt lohnt es sich</h2>' + jetzt.map(e => vorteilKarte(e, namen)).join(''));
   anzahl += jetzt.length;
@@ -722,6 +785,8 @@ function datumBox(d) {
   return `<div class="datum"><small>${WT[t.getUTCDay()]}</small><b>${t.getUTCDate()}</b><small>${MON[t.getUTCMonth()]} ${String(t.getUTCFullYear()).slice(2)}</small></div>`;
 }
 function konzertVorbei(k) {
+  const sb = zeit(k.sichtbarBis); // Festival-Seite ohne Datum: Anzeigefenster ab der ersten Erwähnung
+  if (sb != null) { if (sb <= Date.now()) return true; merkeEnde(sb); }
   const b = zeit(k.bis);
   if (b != null) { merkeEnde(b); return b <= Date.now(); }
   return !!k.datum && /^\d{4}-\d\d-\d\d$/.test(k.datum) && k.datum < heuteBerlin();
@@ -729,6 +794,8 @@ function konzertVorbei(k) {
 function vorverkaufText(k) {
   for (const v of k.vorverkauf || []) {
     const ab = zeit(v.ab), bis = zeit(v.bis);
+    // Beginn und Ende merken: die Zeile wechselt von selbst, auch wenn die Seite offen bleibt
+    merkeEnde(ab); merkeEnde(bis);
     if (bis != null && bis <= Date.now()) continue;
     const name = v.name || (v.art === 'presale' ? 'Vorverkauf' : 'Vorverkauf');
     if (ab != null && ab > Date.now()) return `${name} ${abText(v.ab)}`;
@@ -737,18 +804,33 @@ function vorverkaufText(k) {
   return '';
 }
 
+// Läuft überhaupt eine Konzert-Quelle? (Ticketmaster ohne Schlüssel + Festival-Seiten gestört = keine Konzertsuche)
+function konzertSuche(st) {
+  const q = st?.quellen;
+  if (!q) return { an: true, text: '' };
+  const tm = q.ticketmaster, se = q.seiten;
+  const tmAus = !tm || !!tm.uebersprungen || tm.ok === false;
+  const seAus = !se || se.ok === false;
+  if (!tmAus || !seAus) return { an: true, text: '' };
+  const grund = tm?.uebersprungen && /TM_KEY/i.test(tm.uebersprungen) ? 'Ticketmaster-Schlüssel fehlt' : 'Ticketmaster gestört';
+  return { an: false, text: `${grund}${seAus ? ', Festival-Seiten gerade nicht erreichbar' : ''}` };
+}
+
 function zeichneKonzerte() {
   const s = S.konzerte, el = $('p-konzerte');
   const d = s?.d;
-  if (!d?.k) { el.innerHTML = `<p class="leer">${s ? 'Konzert-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade Konzerte …'}</p>`; return 0; }
-  const radius = d.k.pushRadiusKm || 200;
-  const alle = (d.k.konzerte || []).filter(k => !konzertVorbei(k));
+  if (!d) { el.innerHTML = `<p class="leer">${s ? 'Konzert-Daten gerade nicht erreichbar. Später noch einmal auf ↻ tippen.' : 'Lade Konzerte …'}</p>`; return 0; }
+  const teile = [stoerHinweis('konzerte')];
+  const radius = d.k?.pushRadiusKm || 200;
+  const alle = (d.k?.konzerte || []).filter(k => !konzertVorbei(k));
   const liste = alle.filter(k => !nurNah || k.km == null || k.km <= radius);
   const tm = d.s?.quellen?.ticketmaster;
-  const teile = [];
-  teile.push(`<div class="filter" role="group" aria-label="Umkreis"><button type="button" data-nah="1" aria-pressed="${nurNah}">Bis ${radius} km</button><button type="button" data-nah="0" aria-pressed="${!nurNah}">Alle</button></div>`);
+  const suche = konzertSuche(d.s);
+  if (d.k) teile.push(`<div class="filter" role="group" aria-label="Umkreis"><button type="button" data-nah="1" aria-pressed="${nurNah}">Bis ${radius} km</button><button type="button" data-nah="0" aria-pressed="${!nurNah}">Alle</button></div>`);
   teile.push(`<h2>Konzerte &amp; Festivals <small>${liste.length || ''}</small></h2>`);
-  if (liste.length) {
+  if (!d.k) {
+    teile.push('<p class="leer">Konzerttermine gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>');
+  } else if (liste.length) {
     teile.push(`<ul class="liste">${liste.map(k => {
       const vv = vorverkaufText(k);
       return `<li><a class="reihe" href="${esc(sicher(k.link))}" target="_blank" rel="noopener">
@@ -760,15 +842,19 @@ function zeichneKonzerte() {
           ${k.status ? `<span>${esc(k.status)}</span>` : ''}</div>
         <div class="rechts">${k.km != null ? esc(k.km) + ' km' : ''}</div></a></li>`;
     }).join('')}</ul>`);
+  } else if (!suche.an) {
+    // kein Versprechen, das nicht gehalten werden kann: ohne laufende Quelle kommt auch kein Push
+    teile.push(`<p class="leer">Konzertsuche gerade aus – ${esc(suche.text)}. Bis das behoben ist, kommt hier kein Push.</p>`);
   } else {
     teile.push(`<p class="leer">Gerade nichts${nurNah ? ` im Umkreis von ${radius} km` : ''}. Sobald etwas angekündigt wird, kommt ein Push.</p>`);
   }
-  if (tm?.uebersprungen && /TM_KEY/i.test(tm.uebersprungen)) {
-    teile.push('<p class="hinweis">Konzerttermine von Ticketmaster fehlen noch: der kostenlose Schlüssel <b>TM_KEY</b> ist nicht eingerichtet (Anleitung in konzerte/README.md).</p>');
+  if (suche.an && tm?.uebersprungen && /TM_KEY/i.test(tm.uebersprungen)) {
+    teile.push('<p class="hinweis">Konzerttermine von Ticketmaster fehlen noch: der kostenlose Ticketmaster-Schlüssel ist nicht eingerichtet. Bis dahin kommen Termine nur von den Festival-Seiten.</p>');
   }
   const rel = d.r?.releases || [];
   teile.push(`<h2>Neue Veröffentlichungen <small>${rel.length || ''}</small></h2>`);
-  teile.push(rel.length ? `<ul class="liste">${rel.map(x => `<li><a class="reihe" href="${esc(sicher(x.link))}" target="_blank" rel="noopener">
+  teile.push(!d.r ? '<p class="leer">Neuerscheinungen gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>'
+    : rel.length ? `<ul class="liste">${rel.map(x => `<li><a class="reihe" href="${esc(sicher(x.link))}" target="_blank" rel="noopener">
       ${/^https:\/\//.test(x.cover || '') ? `<img class="cover" src="${esc(x.cover)}" alt="" loading="lazy" decoding="async" width="50" height="50">` : datumBox(x.datum)}
       <div class="haupt"><b>${esc(x.band)}${x.neu ? '<span class="tag neu">neu</span>' : ''}${x.angekuendigt ? '<span class="tag fest">angekündigt</span>' : ''}</b>
         <span>${esc(x.typ)} „${esc(x.titel)}“</span><span>${esc(tagBerlinAusDatum(x.datum))}</span></div></a></li>`).join('')}</ul>`
@@ -803,11 +889,11 @@ function pruefeEnden(r) {
   const d = S[r]?.d;
   if (!d) return;
   if (r === 'angebote') {
-    for (const p of d.produkte || []) for (const o of [p.bestes, ...(p.weitere || [])]) if (o) vorbei(o);
+    for (const p of d.produkte || []) for (const o of [p.bestes, ...(p.weitere || [])]) if (o) { vorbei(o); merkeEnde(zeit(o.ab ?? o.gueltigAb)); }
     for (const t of d.technik || []) vorbei(t, PREISFEHLER_STUNDEN);
   }
   if (r === 'vorteile') for (const e of Object.values(d.kategorien || {}).flat()) if (e) vorbei(e, istPreisfehler(e) ? PREISFEHLER_STUNDEN : 0);
-  if (r === 'konzerte') for (const k of d.k?.konzerte || []) konzertVorbei(k);
+  if (r === 'konzerte') for (const k of d.k?.konzerte || []) { konzertVorbei(k); vorverkaufText(k); }
 }
 const zeichneAlles = () => zeichne('alle');
 
@@ -867,6 +953,14 @@ $('push').addEventListener('click', () => { if (dlg.showModal) dlg.showModal(); 
 $('zu').addEventListener('click', () => { if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); });
 dlg.addEventListener('click', ev => { if (ev.target === dlg && dlg.close) dlg.close(); });
 $('kopieren').addEventListener('click', ev => kopiere(TOPIC, ev.currentTarget));
+
+// --- Umzug: von einer alten Adresse/einem alten Symbol gekommen (?von=…) -> einmal sagen, wie das neue Symbol kommt ---
+(() => {
+  const von = new URLSearchParams(location.search).get('von');
+  if (von) history.replaceState(null, '', location.pathname + location.hash);
+  if (von && !lies('mein-vorteil-umzug', false)) $('umzug').hidden = false;
+  $('umzug-zu').addEventListener('click', () => { merk('mein-vorteil-umzug', true); $('umzug').hidden = true; });
+})();
 
 // --- Start -------------------------------------------------------------------------------------------------------
 $('neu').addEventListener('click', lade);

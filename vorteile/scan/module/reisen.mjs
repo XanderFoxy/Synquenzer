@@ -7,11 +7,36 @@ const FLUG = /\b(flug|fluege|flüge|hin und rück|hin- und rück|return|nonstop|
 
 // Wo geht es los? 'eigen' (Leipzig/Dresden/Berlin), 'fremd' (nur andere Abflughäfen) oder 'egal' (kein Abflug genannt)
 export function abflugArt(text, m) {
+  if (abflugOrt(text, m)) return 'eigen';
   const t = norm(text);
-  const eigen = m.abflug.some(o => new RegExp(`(ab|von|from|via)\\s(${norm(o)})\\b`).test(t) || new RegExp(`\\b${norm(o)}\\b`).test(t) && FLUG.test(text));
-  if (eigen) return 'eigen';
   const fremd = m.fremdAbflug.some(o => new RegExp(`(ab|von|from)\\s(${norm(o)})\\b`).test(t));
   return fremd ? 'fremd' : 'egal';
+}
+
+const FLUGHAFEN = { lej: 'Leipzig', drs: 'Dresden', ber: 'Berlin' };
+/** Welcher eigene Abflughafen steht wirklich im Text? („Ziele ab Berlin“ -> 'Berlin') – nur der gefundene, nie alle drei. */
+export function abflugOrt(text, m) {
+  const t = norm(text);
+  const name = o => FLUGHAFEN[norm(o)] || o;
+  const mitWort = m.abflug.find(o => new RegExp(`(ab|von|from|via)\\s(${norm(o)})\\b`).test(t));
+  if (mitWort) return name(mitWort);
+  const genannt = FLUG.test(text) && m.abflug.find(o => new RegExp(`\\b${norm(o)}\\b`).test(t));
+  return genannt ? name(genannt) : null;
+}
+
+/** Was der Preis meint, aus Titel/Text: „pro Strecke“, „oneway“, „hin und zurück“, „für 2 Personen“, „pro Person“ */
+export function preisZusatz(titel, text, preis) {
+  const ti = String(titel || '');
+  if (preis != null) {
+    const p = String(preis).replace('.', ',').replace(/,00$/, '');
+    const um = new RegExp(`${p.replace(',', '[.,]')}(?:[.,]0{1,2})?\\s*(?:€|eur|euro)?\\s*(?:\\(?\\s*)?(?:für|fuer)\\s*(2|zwei)\\s*personen`, 'i');
+    if (um.test(text)) return 'für 2 Personen';
+  }
+  if (/\/\s*strecke|pro strecke|je strecke/i.test(ti)) return 'pro Strecke';
+  if (/one\s?way|einfache strecke/i.test(ti)) return 'oneway';
+  if (/inkl\.?\s*rückflug|hin und zurück|hin- und rückflug|hin- & rückflug/i.test(ti)) return 'hin und zurück';
+  if (/\bp\.\s?p\.|pro person/i.test(ti)) return 'pro Person';
+  return '';
 }
 
 // Preis aus Reise-Titeln: "für 19 €", "ab 29€", "nur 9,99 €"
@@ -54,11 +79,17 @@ export default async function reisen({ holeText, cfg, jetzt, zustand }) {
     }
     const s = await pruefer.pruefe(it.link, { neuNachStunden: 6 });
     if (s.info?.abgelaufen) continue;
-    const endeSeite = s.info?.ende && Date.parse(s.info.ende) > jetztMs ? s.info.ende : null;
+    if (s.info?.ende && Date.parse(s.info.ende) <= jetztMs) continue; // Ende laut Deal-Seite schon vorbei
+    const endeSeite = s.info?.ende || null;
+    // „ab 49,00 € pro Strecke statt …“ – was der Preis meint und wovon er abgeht, steht direkt daneben
+    const abPreis = preis != null && new RegExp(`\\bab\\s*${String(Math.floor(preis))}`, 'i').test(it.titel) ? 'ab ' : '';
+    const zusatz = preisZusatz(it.titel, text, preis);
+    const preisText = preis != null ? `${abPreis}${euro(preis)}${zusatz ? ' ' + zusatz : ''}${alt ? ` statt ${euro(alt)}` : ''}` : '';
+    const ort = ab === 'eigen' ? abflugOrt(text, m) : null;
     eintraege.push(eintrag({
       kategorie: 'reisen', titel: it.titel, quelle: it.feed, link: it.link, datum: it.datum, jetzt,
       bis: it.bis || endeSeite, bisQuelle: it.bis ? 'text' : endeSeite ? 'deal-seite' : null, ab: it.ab, art: 'reise',
-      zeile: [preis != null ? euro(preis) : '', rabatt >= 0.1 ? `−${Math.round(rabatt * 100)} %` : '', ab === 'eigen' ? 'ab Leipzig/Dresden/Berlin' : bahn ? 'Bahn' : ''].filter(Boolean).join(' · '),
+      zeile: [preisText, rabatt >= 0.1 ? `−${Math.round(rabatt * 100)} %` : '', ort ? `ab ${ort}` : bahn ? 'Bahn' : ''].filter(Boolean).join(' · '),
       soGehts, wert, sofort: billigFlug && heiss, grund: heiss ? 'sehr beliebt' : billigFlug ? 'sehr günstiger Flug' : 'Knaller',
       preise: preisAngaben({ preis, preisVorher: alt, vorherQuelle: altInfo?.quelle }),
     }));

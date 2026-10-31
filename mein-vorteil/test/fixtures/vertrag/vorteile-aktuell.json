@@ -21,11 +21,11 @@
     "id": "99ehvz",
     "kategorie": "deals",
     "titel": "[edeka] Président Meersalzbutter für 1,49 € statt 4,99€",
-    "zeile": "ab 02.11.2026 · 10 Packungen für 12,41 € statt 49,90 € (−75 %) · 1,24 € pro Packung",
-    "soGehts": "Bei EDEKA: 10 Packungen nehmen, Coupon an der Kasse zeigen → 12,41 € gesamt.",
+    "zeile": "ab 02.11.2026 · 1 Packung für 1,49 € statt 4,99 € (−70 %)",
+    "soGehts": "Bei EDEKA: 1 Packung nehmen, Coupon an der Kasse zeigen → 1,49 € gesamt.",
     "link": "https://www.mydealz.de/deals/edeka-president-meersalzbutter-fur-149-eur-statt-499eur-2862219",
     "quelle": "mydealz Lebensmittel",
-    "wert": 88,
+    "wert": 84,
     "sofort": false,
     "grund": "Aktion durchgerechnet",
     "frist": "2026-11-07",
@@ -42,25 +42,27 @@
     "ersparnisProzent": 70,
     "extra": {
      "schritte": [
-      "10 Packungen zu je 1,49 €",
-      "Coupon an der Kasse: −2,49 €"
+      "1 Packung zu je 1,49 €",
+      "Coupon an der Kasse zeigen (1,00 € – im Preis schon abgezogen)"
      ],
      "pro100": null,
-     "ersparnis": 0.751,
-     "shop": "EDEKA"
+     "ersparnis": 0.701,
+     "shop": "EDEKA",
+     "versand": 0,
+     "couponAbgezogen": true
     }
    },
    {
     "id": "i307ak",
     "kategorie": "deals",
     "titel": "ROTH Rätsel & Bio-Tee-Adventskalender (24 Bio-Teesorten & Rätselbuch für Erwachsene, ohne Schokolade) (Prime)",
-    "zeile": "10 Packungen für 99,90 € statt 269,90 € (−63 %) · 9,99 € pro Packung",
-    "soGehts": "Bei Amazon: 10 Packungen nehmen → 99,90 € gesamt.",
+    "zeile": "1 Packung für 13,98 € statt 21,00 € (−33 %)",
+    "soGehts": "Bei Amazon: 1 Packung nehmen → 13,98 € gesamt.",
     "link": "https://www.mydealz.de/deals/roth-ratsel-bio-tee-adventskalender-24-bio-teesorten-ratselbuch-fur-erwachsene-ohne-schokolade-prime-2862136",
     "quelle": "mydealz Lebensmittel",
-    "wert": 79,
+    "wert": 58,
     "sofort": false,
-    "grund": "Aktion durchgerechnet",
+    "grund": "Deal durchgerechnet",
     "frist": null,
     "datum": "2026-10-31T11:55:52.000Z",
     "bis": null,
@@ -68,108 +70,39 @@
     "ab": null,
     "sichtbarBis": "2026-11-03T11:55:52.000Z",
     "preisfehler": false,
-    "preis": 9.99,
-    "preisVorher": 26.99,
-    "vorherQuelle": "UVP laut Deal-Text",
-    "ersparnisEuro": 17,
-    "ersparnisProzent": 63,
+    "preis": 13.98,
+    "preisVorher": 21,
+    "vorherQuelle": "Preis vorher laut Deal-Text",
+    "ersparnisEuro": 7.02,
+    "ersparnisProzent": 33,
     "extra": {
      "schritte": [
-      "10 Packungen zu je 9,99 €"
+      "1 Packung zu je 9,99 €",
+      "plus 3,99 € Versand (ohne Prime)"
      ],
      "pro100": null,
-     "ersparnis": 0.63,
-     "shop": "Amazon"
-    }
-   },
-   {
-    "id": "18qqvj8",
-    "kategorie": "deals",
-    "titel": "Knoppers Schnitte bei Kaufland",
-    "zeile": "10 Packungen à 15 × 25 g für 27,90 € statt 57,00 € (−51 %) · 2,79 € pro Packung · Normalpreis geschätzt",
-    "soGehts": "Bei Kaufland: 10 Packungen nehmen → 27,90 € gesamt.",
-    "link": "https://www.marktguru.de/offers/25495632",
-    "quelle": "Schnäppchen-Wecker",
-    "wert": 76,
-    "sofort": false,
-    "grund": "Schnäppchen",
-    "frist": "2026-10-31",
-    "datum": "2026-10-31T16:35:00.000Z",
-    "bis": "2026-10-31T18:00:00.000Z",
-    "bisQuelle": "feld",
-    "ab": null,
-    "sichtbarBis": "2026-10-31T18:00:00.000Z",
-    "preisfehler": false,
-    "preis": 2.79,
-    "preisVorher": null,
-    "vorherQuelle": null,
-    "ersparnisEuro": null,
-    "ersparnisProzent": null,
-    "extra": {
-     "schritte": [
-      "10 Packungen zu je 2,79 €"
-     ],
-     "pro100": null,
-     "ersparnis": 0.511,
-     "shop": "Kaufland",
-     "produkt": "knoppers-schnitte",
-     "angebotTitel": "Storck Knoppers Milch-Haselnuss-Schnitte",
-     "packung": "15 × 25 g",
-     "normalQuelle": "schaetzung"
-    }
-   },
-   {
-    "id": "x4tbj5",
-    "kategorie": "deals",
-    "titel": "Ben & Jerry's Eis (alle Sorten) bei Lidl",
-    "zeile": "ab 02.11.2026 · 10 Packungen à 465 ml für 39,90 € statt 69,75 € (−43 %) · 0,86 € pro 100 ml statt 1,50 € · Normalpreis geschätzt",
-    "soGehts": "Bei Lidl: 10 Packungen nehmen → 39,90 € gesamt.",
-    "link": "https://www.marktguru.de/offers/25478997",
-    "quelle": "Schnäppchen-Wecker",
-    "wert": 70,
-    "sofort": false,
-    "grund": "Schnäppchen",
-    "frist": "2026-11-07",
-    "datum": "2026-10-31T16:35:00.000Z",
-    "bis": "2026-11-07T22:59:00.000Z",
-    "bisQuelle": "feld",
-    "ab": "2026-11-01T23:00:00.000Z",
-    "sichtbarBis": "2026-11-07T22:59:00.000Z",
-    "preisfehler": false,
-    "preis": 3.99,
-    "preisVorher": null,
-    "vorherQuelle": null,
-    "ersparnisEuro": null,
-    "ersparnisProzent": null,
-    "extra": {
-     "schritte": [
-      "10 Packungen zu je 3,99 €"
-     ],
-     "pro100": 0.8581,
-     "ersparnis": 0.428,
-     "shop": "Lidl",
-     "produkt": "ben-jerrys",
-     "angebotTitel": "Ben & Jerry's Eiscreme",
-     "packung": "465 ml",
-     "normalQuelle": "schaetzung"
+     "ersparnis": 0.334,
+     "shop": "Amazon",
+     "versand": 3.99,
+     "couponAbgezogen": false
     }
    },
    {
     "id": "7a9uvr",
     "kategorie": "deals",
     "titel": "[Kaufland offline] Bonne Maman im großen 345-370gr. Glas für 2,-€",
-    "zeile": "10 Packungen für 20,00 € statt 29,90 € (−33 %) · 2,00 € pro Packung",
-    "soGehts": "Bei Kaufland: 10 Packungen nehmen → 20,00 € gesamt.",
+    "zeile": "ab 02.11.2026 · 1 Packung für 2,00 € statt 2,99 € (−33 %)",
+    "soGehts": "Bei Kaufland: 1 Packung nehmen → 2,00 € gesamt.",
     "link": "https://www.mydealz.de/deals/kaufland-offline-bonne-maman-im-grossen-345-370gr-glas-fur-2-eur-2862107",
     "quelle": "mydealz Lebensmittel",
     "wert": 58,
     "sofort": false,
-    "grund": "Aktion durchgerechnet",
+    "grund": "Deal durchgerechnet",
     "frist": null,
     "datum": "2026-10-31T10:53:42.000Z",
     "bis": null,
     "bisQuelle": null,
-    "ab": null,
+    "ab": "2026-11-01T23:00:00.000Z",
     "sichtbarBis": "2026-11-03T10:53:42.000Z",
     "preisfehler": false,
     "preis": 2,
@@ -179,11 +112,13 @@
     "ersparnisProzent": 33,
     "extra": {
      "schritte": [
-      "10 Packungen zu je 2,00 €"
+      "1 Packung zu je 2,00 €"
      ],
      "pro100": null,
      "ersparnis": 0.331,
-     "shop": "Kaufland"
+     "shop": "Kaufland",
+     "versand": 0,
+     "couponAbgezogen": false
     }
    },
    {
@@ -222,7 +157,7 @@
     "id": "1fu5c87",
     "kategorie": "reisen",
     "titel": "SAS Sale: Skandinavien-Flüge ab 49€/Strecke | Nordamerika ab 381€, Thailand 838€, Japan 900€, Südkorea 700€ (je inkl Rückflug) (Nov-Apr)",
-    "zeile": "49,00 € · ab Leipzig/Dresden/Berlin",
+    "zeile": "ab 49,00 € pro Strecke · ab Berlin",
     "soGehts": "Link öffnen, Termin wählen und nur mit kostenloser Stornierung oder Käuferschutz buchen. Nicht hetzen lassen.",
     "link": "https://www.mydealz.de/deals/sas-sale-skandinavien-fluge-ab-49eurstrecke-nordamerika-ab-381eur-thailand-838eur-japan-900eur-sudkorea-700eur-je-inkl-ruckflug-nov-apr-2861776",
     "quelle": "mydealz Reisen",
@@ -246,7 +181,7 @@
     "id": "1swqtit",
     "kategorie": "reisen",
     "titel": "Ryanair Blitzverkauf | Flüge ab 17€ | z.B. London, Mallorca, Porto, Barcelona, Alicante uvm | von Berlin, Köln, uvm | bis 31.03. | oneway",
-    "zeile": "16,99 € · ab Leipzig/Dresden/Berlin",
+    "zeile": "16,99 € oneway · ab Berlin",
     "soGehts": "Link öffnen, Termin wählen und nur mit kostenloser Stornierung oder Käuferschutz buchen. Nicht hetzen lassen.",
     "link": "https://www.mydealz.de/deals/ryanair-blitzverkauf-fluge-ab-17eur-zb-london-mallorca-porto-barcelona-alicante-uvm-von-berlin-koln-uvm-bis-3103-oneway-2861548",
     "quelle": "mydealz Reisen",
@@ -294,7 +229,7 @@
     "id": "xdq1yb",
     "kategorie": "reisen",
     "titel": "Eisenstadt (Österreich): 1 Nacht im 4*-Hotel Galántha | inkl. Frühstück, Spa & Frizzante | ab 54,50€ p.P. | Rooftop-Bar am Schloss Esterházy",
-    "zeile": "109,00 € · −53 %",
+    "zeile": "109,00 € für 2 Personen statt 233,00 € · −53 %",
     "soGehts": "Link öffnen, Termin wählen und nur mit kostenloser Stornierung oder Käuferschutz buchen. Nicht hetzen lassen.",
     "link": "https://www.mydealz.de/deals/eisenstadt-osterreich-1-nacht-im-4-hotel-galantha-inkl-fruhstuck-spa-frizzante-ab-5450eur-pp-rooftop-bar-am-schloss-esterhazy-2854033",
     "quelle": "mydealz Reisen",
@@ -359,63 +294,6 @@
   "nebenverdienst": [],
   "tests": [
    {
-    "id": "566jrd",
-    "kategorie": "tests",
-    "titel": "RB Leipzig: Bundesliga-Frauen empfangen Bayern München - Tickets gewinnen - Gewinnspiel - LVZ - Leipziger Volkszeitung",
-    "zeile": "Gewinnspiel · regional (weniger Konkurrenz) · Teilnahmeschluss unbekannt",
-    "soGehts": "Link öffnen, nur mitmachen, wenn es beim Veranstalter selbst ist und nichts kostet. Keine Telefonnummer, kein Newsletter-Zwang.",
-    "link": "https://news.google.com/rss/articles/CBMi4wFBVV95cUxQdU9ObVk2TGhKZ181TlI3bWJ3Q1JUWHRVekJwazlyaTYwYnRVNDRfUE5oVnlySG5VVTg4S2h4a3BZTDB3bGtwMTNWX0kweFpxd3VhWEJibDNXT19CTlB3Si1PMkd1SzZXYnE4UjhEeFlkMHBuR0pNT0VQdnE5VzRaQ04yREJSTEJ0MWNCQTNSN2xUSHdTVjEyZDhJc3pFUTAtcVhlWmppYm9uZkYyUVZubFR5cU9kb2dzZ1dvdDkxQWt5MWVEVWdlSkZwMGctNDMzc0s3NFppejJocWFlWnZSS1VoUdIB_wFBVV95cUxPNW5JQldVcHduT0l0V2FtTGxwYXVSbWFTSXQ2cGd1T25PSkNLd3ZnR1p2T0o3d1dSQTFkMDlKODVodFJ2RU5YaHNUcmZ5SHB1TS1IYjNZcTd6R01nU3BldFFYNkI0SjJVRER3UWpxbElFODAtNk5sQnNlQTVrNzZFaFMxNUdzd2VLTG5QZkd5cVJpdVZhdk9LT1ZGTUd5NVFZR1lPT0lkcVNKUnlmSUh1akVjS092a1BkY0NsOFlwZXVzamVqVG1oQkh4UG8tcFhvTjdpdGFkN1M3NVJKT1d3aHdQaXo2dUpxYjg0bW5pNjhFeWtDM2xZN25DTDdlc1k?oc=5",
-    "quelle": "LVZ - Leipziger Volkszeitung",
-    "wert": 60,
-    "sofort": false,
-    "grund": "gewinnspiel",
-    "frist": null,
-    "datum": "2026-10-20T07:00:00.000Z",
-    "bis": null,
-    "bisQuelle": null,
-    "ab": null,
-    "sichtbarBis": "2026-11-03T07:00:00.000Z",
-    "preisfehler": false
-   },
-   {
-    "id": "16tlm1r",
-    "kategorie": "tests",
-    "titel": "Juli Zeh liest in Leipzig – Tickets und signierte Bücher für „Pony Show\" gewinnen - LVZ - Leipziger Volkszeitung",
-    "zeile": "Gewinnspiel · regional (weniger Konkurrenz) · Teilnahmeschluss unbekannt",
-    "soGehts": "Link öffnen, nur mitmachen, wenn es beim Veranstalter selbst ist und nichts kostet. Keine Telefonnummer, kein Newsletter-Zwang.",
-    "link": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxQSU1hZ2NyZjRNTlQ4elJlNDRnbldRRnlpZTJUSllua1lFVmRzU3RISU5TNWlHWHF3WFlmaWxhWlBRbGxHOGJvVC13VXVLZnV2ZDV4QTNGd2E2dWk0RWZJU0s3Uy1QbXpZOXJTdDd5aFFMQmhNOXFXWjFYTV91Yi1laVlBcWpoM1lRZ2MtVVVsSnlzT3RBOHA1NjV2Z1RMcThaLVNtTHdIVVhHMjNqWFc1d3dJeVBfTm9ZVTZGWkxYblg2Y3hWTENxQWNadHFGUkZMWVMwVmlQczdRSmZyV0tj0gH7AUFVX3lxTFA5OHRSRHotN21BYzl2Qm9yWmpUYjdIZmlpdDNWWmphem5Zd3dUR3ZuZXpVeWVqMG52VWZHZHFGdXN6TUxWdUxlMmhZNGQ0WXU4TTVKaGxqbVhpaHpLSFJZOWlmTVlwVE12cmZ6N0M5SDZfWWdsQXFHanVwQmN1ZU9vX2hhQUJGZ1lvT0pMV1NnTkplYVdCSy1jTmhPQTg4RXc4TkRHMndtUms1clRJSFk5Tm0ycGdQRG5EUy14M3E3YzNYQ3J3UjE5Qk5LbDZEWHMzUE0zX3Q3V094N2xkT1VmUjdLRUdhVEE0aVlIdmxlN1RWWFJYVThoS0l3?oc=5",
-    "quelle": "LVZ - Leipziger Volkszeitung",
-    "wert": 60,
-    "sofort": false,
-    "grund": "gewinnspiel",
-    "frist": null,
-    "datum": "2026-10-22T05:06:00.000Z",
-    "bis": null,
-    "bisQuelle": null,
-    "ab": null,
-    "sichtbarBis": "2026-11-05T05:06:00.000Z",
-    "preisfehler": false
-   },
-   {
-    "id": "sq7cq8",
-    "kategorie": "tests",
-    "titel": "2×2 Tickets für DOK Leipzig 2026 gewinnen - urbanite.net",
-    "zeile": "Gewinnspiel · regional (weniger Konkurrenz) · Teilnahmeschluss unbekannt",
-    "soGehts": "Link öffnen, nur mitmachen, wenn es beim Veranstalter selbst ist und nichts kostet. Keine Telefonnummer, kein Newsletter-Zwang.",
-    "link": "https://news.google.com/rss/articles/CBMikgFBVV95cUxPWjJXdlJuVnVtS0pJUnlHRFBBZExfYzlSN1hOcjVBZkZxRGR6UnlhNUFWVWlJWGxRMkNaRnhWU2pJaFlvOFBrbUo1eUtTOUZ2dmo4WUpIUGc5ZUZvMjBjMzI2UU9oZS1QSUF5XzBCUy1nMDdLazhBeVpCZnROQ3VXcWJrMXNSNXFBUGhZd1JkUEx6QQ?oc=5",
-    "quelle": "urbanite.net",
-    "wert": 60,
-    "sofort": false,
-    "grund": "gewinnspiel",
-    "frist": null,
-    "datum": "2026-10-18T07:00:00.000Z",
-    "bis": null,
-    "bisQuelle": null,
-    "ab": null,
-    "sichtbarBis": "2026-11-01T07:00:00.000Z",
-    "preisfehler": false
-   },
-   {
     "id": "1u8vjbz",
     "kategorie": "tests",
     "titel": "Afrob & Ferris MC: Tickets gewinnen - Ahoi Leipzig",
@@ -431,7 +309,7 @@
     "bis": null,
     "bisQuelle": null,
     "ab": null,
-    "sichtbarBis": "2026-11-12T18:55:18.000Z",
+    "sichtbarBis": "2026-11-04T18:55:18.000Z",
     "preisfehler": false
    },
    {
@@ -450,7 +328,7 @@
     "bis": null,
     "bisQuelle": null,
     "ab": null,
-    "sichtbarBis": "2026-11-12T18:02:05.000Z",
+    "sichtbarBis": "2026-11-04T18:02:05.000Z",
     "preisfehler": false
    },
    {
@@ -525,9 +403,9 @@
  "status": {
   "deals": {
    "ok": true,
-   "anzahl": 5,
+   "anzahl": 3,
    "fehler": [],
-   "ms": 164,
+   "ms": 177,
    "stand": "2026-10-31T16:35:00.000Z"
   },
   "erleben": {
@@ -541,7 +419,7 @@
     "mydealz „Freizeitpark“: HTTP 404 bei www.mydealz.de",
     "mydealz „Konzert Tickets“: HTTP 404 bei www.mydealz.de"
    ],
-   "ms": 78,
+   "ms": 72,
    "stand": "2026-10-31T16:35:00.000Z"
   },
   "reisen": {
@@ -551,7 +429,7 @@
     "Urlaubsguru: HTTP 401 bei www.urlaubsguru.de",
     "mydealz Bahn: HTTP 404 bei www.mydealz.de"
    ],
-   "ms": 65,
+   "ms": 71,
    "stand": "2026-10-31T16:35:00.000Z"
   },
   "musik": {
@@ -582,14 +460,14 @@
     "Jobsuche „Videoschnitt“: HTTP 403 bei rest.arbeitsagentur.de",
     "Jobsuche „KI Trainer Deutsch“: HTTP 403 bei rest.arbeitsagentur.de"
    ],
-   "ms": 2,
+   "ms": 3,
    "stand": "2026-10-31T16:35:00.000Z"
   },
   "tests": {
    "ok": true,
    "anzahl": 8,
    "fehler": [],
-   "ms": 51,
+   "ms": 40,
    "stand": "2026-10-31T16:35:00.000Z"
   },
   "praemien": {

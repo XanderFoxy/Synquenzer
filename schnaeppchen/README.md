@@ -44,7 +44,10 @@ bleiben, ein eigenes Thema als Actions-Secret `NTFY_TOPIC` hinterlegen und in de
   „Menge unklar“ da – dann gibt es **keine Prozentangabe und keine Nachricht**.
 - **Normalpreis** = Median der letzten 8 Wochen (pro Tag der niedrigste gesehene Preis). Solange noch
   weniger als 5 Tage Verlauf da sind, gilt der geschätzte `normalpreis` aus `watchlist.json` – das steht dann
-  ausdrücklich da („normal ca. 0,38 € (geschätzt)“, `normalQuelle: "schaetzung"`).
+  ausdrücklich da („normal ca. 0,30 € (geschätzt)“, `normalQuelle: "schaetzung"`). Die Schätzung kann je
+  Packungsgröße verschieden sein (`normalpreisStaffel`, z. B. Knoppers: einzeln ca. 0,55 €, 15er-Familienpackung ca.
+  0,30 € pro Stück) – dann zählt die Stufe der Packung des Angebots. Gegen eine Schätzung kommt die Nachricht nie mit
+  höchster Dringlichkeit.
 - **Deal**, wenn der Grundpreis **mindestens 25 % unter dem Normalpreis** liegt, oder (sobald genug Verlauf da ist)
   auf/unter dem **bisherigen Tiefstpreis** und mindestens 10 % günstiger als normal. Gegen einen nur **geschätzten**
   Normalpreis zählt es nur, wenn es das **günstigste aktuelle Angebot** ist und nicht unglaubwürdig weit darunter
@@ -52,15 +55,24 @@ bleiben, ein eigenes Thema als Actions-Secret `NTFY_TOPIC` hinterlegen und in de
 - **„Ist das der Tiefstpreis?“** steht bei jedem Produkt als kurzer Satz (`tiefst.text`), z. B. „Günstigstes von
   3 Angeboten in deiner Nähe · Verlauf erst seit 1 Tag“, „… · so günstig wie nie in 30 Tagen“ oder
   „Schon günstiger gesehen: 0,17 € pro Stück am 12.10. bei Lidl“. marktguru liefert keinen Preisverlauf; der
-  eigene Verlauf wächst jede Stunde. Am Anfang heißt die ehrliche Antwort deshalb „unbekannt“.
+  eigene Verlauf wächst jede Stunde. Am Anfang heißt die ehrliche Antwort deshalb „unbekannt“. Gezählt werden **alle**
+  Angebote: ist eines mit unklarer Packung im Ganzen billiger, steht genau das da („PENNY hat 3,49 € (mit App, ab Mo
+  02.11.) – Packungsgröße dort nicht sicher“), nie „Einziges Angebot“.
+- **mydealz-Angebote für die Merkliste** (z. B. aus Sammeldeals): Beginn („Ab Montag den 2.11.“), Ende („bis 7.11.“,
+  „nur am Donnerstag 29.10.“) und „mit App“ („3,49 Euro mit App bzw. 3,99 Euro ohne App“) werden aus dem Text gelesen;
+  ohne Ende höchstens 72 Stunden ab Veröffentlichung bzw. Beginn (wie beim Vorteils-Radar).
+- **Zwei Packungen zum selben Preis** („465/4x100ml“): beide werden genannt („465 ml oder 4 × 100 ml“), gerechnet wird
+  mit der teureren pro 100 ml.
 - **Technik-Preisfehler:** Fernseher, Konsolen, Kopfhörer usw. aus mydealz – Nachricht, wenn als Preisfehler
-  gemeldet oder **mindestens 60 % unter dem Vergleichspreis**. Immer mit **vorher → jetzt**: „vorher 96,99 € →
+  gemeldet oder **mindestens 60 % unter dem Vergleichspreis** (Titel der Nachricht: „Preisfehler? …“ bzw.
+  „Technik-Deal: …“). Immer mit **vorher → jetzt**: „vorher 96,99 € →
   jetzt 23,99 € (−75 %)“. „Vorher“ ist der Vergleichspreis von mydealz (von der Deal-Seite), sonst UVP/„statt“
   aus dem Deal-Text (mit Quelle dabei), sonst „Vorher-Preis unbekannt“.
 - **Keine abgelaufenen Preisfehler:** Preisfehler sind oft nach Minuten vorbei. Deshalb nur Meldungen der letzten
   24 Stunden (wie beim Vorteils-Radar), und jede wird auf ihrer mydealz-Seite geprüft (höchstens 10 Seiten pro Lauf,
-  gemerkt in `dealseiten.json`): steht dort „abgelaufen“ oder „vielleicht abgelaufen“ oder ist die Seite nicht lesbar,
-  wird sie nicht gezeigt.
+  gemerkt in `dealseiten.json`): steht dort „abgelaufen“ oder „vielleicht abgelaufen“, liegt das Ende der Deal-Seite
+  schon in der Vergangenheit oder ist die Seite nicht lesbar, wird sie nicht gezeigt. Steckt der Versand schon im Preis
+  („0,99 € + VSK“, Deal-Preis 6,98 €), steht `versand: 0` und `versandInklusive: true`.
 - **Keine Doppel-Nachrichten:** jedes Angebot (Produkt, Shop, Preis, Gültigkeit) meldet sich nur einmal,
   höchstens 8 Nachrichten pro Stunde.
 - **TikTok Shop** ist nicht dabei: es gibt keine offene Schnittstelle, und Abgreifen der App wäre gegen die Regeln.
@@ -126,8 +138,11 @@ geprüft. Dazu im Repo unter **Settings → Secrets and variables → Actions �
   `MARKTGURU_API_KEY=x MARKTGURU_CLIENT_KEY=y` setzen; `scan/test/echt.test.mjs` prüft damit Knoppers & Co.).
 - `current.json` (Version 2) pro Angebot: `titel`, `packung` („15 × 25 g“), `menge`, `mengeSicher`, `mengeQuelle`
   (`grundpreis`/`text`/`vorgabe`), `preisVorher`, `ab`/`bis` (ISO), `zeile` (fertiger Satz); pro Produkt `tiefst`
-  (`status` ja/nein/unbekannt, `text`, `heuteGuenstigstes`, `tage`, `tiefst30`), `normalQuelle`, `normalGeschaetzt`;
-  pro Preisfehler `preis`, `preisVorher`, `vorherQuelle`, `ersparnisEuro`, `ersparnisProzent`, `datum`, `bis`.
+  (`status` ja/nein/unbekannt, `text`, `heuteGuenstigstes`, `tage`, `tiefst30`, `anzahl` = alle glaubhaften
+  Angebote, `anzahlSicher`), `normalQuelle`, `normalGeschaetzt`, `normalJePackung`; pro Angebot außerdem `unsicher`
+  (unplausibel – nie als Hauptkarte), `hinweis`/`nurMitApp`/`preisOhneApp` und bei mydealz `datum`/`sichtbarBis`;
+  pro Preisfehler `preis`, `preisVorher`, `vorherQuelle`, `ersparnisEuro`, `ersparnisProzent`, `datum`, `bis`,
+  `versandInklusive`. `scan/ende.mjs` ist eine Kopie von `vorteile/scan/lib/ende.mjs` (gleiche Regeln).
 - `history.json` Version 2: Verläufe der Version 1 (vor dem 31.10.2026, mit falschen Packungsgrößen wie Knoppers
   0,07 €/Stück) werden beim ersten Lauf einmal verworfen.
   Echter Lauf ohne Push: `node scan/main.mjs --dry-run`.

@@ -55,6 +55,14 @@ export function leseDealSeite(html) {
   };
 }
 
+/** Steckt der Versand schon im Deal-Preis? (CAMELBAK: Titel „0,99€ + VSK“, Seite price 6,98, shipping 5,99) – wie
+ *  vorteile/scan/lib/mydealz.mjs versandImPreis. seite = leseDealSeite(…) */
+export function versandImPreis(titel, seite) {
+  if (!seite || !(seite.versand > 0) || seite.preis == null) return false;
+  const tp = parsePrice((String(titel || '').match(/(\d+(?:[.,]\d{1,2})?)\s*€/) || [])[1]);
+  return tp != null && Math.abs(tp + seite.versand - seite.preis) < 0.02;
+}
+
 // --- Vorher-Preis aus dem Text (nur als Notlösung, wenn die Deal-Seite keinen Vergleichspreis hat) ---------------
 
 const Z = String.raw`(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)`;

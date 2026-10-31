@@ -83,6 +83,8 @@ export const PREISFEHLER = /preisfehler|fehlerpreis|error fare/i;
  */
 export async function preisfehlerEintrag(it, { kategorie, pruefer, jetzt, wert = 90, preis: preisErsatz = null, mitPreis = false, soGehts } = {}) {
   if (mitPreis && parsePrice(it.preisText) == null && preisErsatz == null) return { grund: 'ohne Preis' };
+  // ohne lesbares Datum lässt sich das 24-Stunden-Fenster nicht prüfen -> weglassen (wie der Schnäppchen-Wecker)
+  if (!Number.isFinite(Date.parse(it.datum || ''))) return { grund: 'ohne Datum' };
   if (alterStunden(it.datum, jetzt) > HOECHSTALTER_STUNDEN.preisfehler) return { grund: 'älter als 24 Stunden' };
   let info = null;
   if (istMydealzDeal(it.link)) {
@@ -93,6 +95,8 @@ export async function preisfehlerEintrag(it, { kategorie, pruefer, jetzt, wert =
     if (info.vielleichtAbgelaufen) return { grund: 'laut mydealz vielleicht abgelaufen' };
   }
   const jetztMs = new Date(jetzt).getTime();
+  // Ende laut Deal-Seite schon vorbei, auch wenn mydealz es (noch) nicht als abgelaufen markiert hat
+  if (info?.ende && Date.parse(info.ende) <= jetztMs) return { grund: 'abgelaufen' };
   const text = `${it.titel} ${it.beschreibung}`;
   const preis = info?.preis ?? parsePrice(it.preisText) ?? preisErsatz;
   const vorher = preis != null && info?.vergleichspreis > preis
@@ -102,14 +106,15 @@ export async function preisfehlerEintrag(it, { kategorie, pruefer, jetzt, wert =
   const shop = info?.haendler || it.shop || '';
   const inkl = versandImPreis(it.titel, info);
   const versand = inkl ? ' inkl. Versand' : info?.versand > 0 ? ` + ${euro(info.versand)} Versand` : '';
-  const endeSeite = info?.ende && Date.parse(info.ende) > jetztMs ? info.ende : null;
+  const endeSeite = info?.ende || null;
   const eintragDaten = eintrag({
     kategorie, titel: it.titel, link: it.link, quelle: it.feed, datum: it.datum, jetzt,
     zeile: [p.preis != null ? preisZeile(p) + versand : '', shop ? `bei ${shop}` : '', p.vorherQuelle || '', 'als Preisfehler gemeldet'].filter(Boolean).join(' · '),
     soGehts: soGehts || 'Schnell bestellen, nur mit Käuferschutz (z. B. PayPal) – Preisfehler werden manchmal storniert, dann bekommst du das Geld zurück.',
     art: 'preisfehler', bis: endeSeite || it.bis || null, bisQuelle: endeSeite ? 'deal-seite' : it.bis ? 'text' : null, ab: it.ab,
     wert, sofort: true, grund: 'Preisfehler', preisfehler: true, preise: p,
-    extra: { shop: shop || null, versand: info?.versand ?? null, temperatur: info?.temperatur ?? it.temperatur ?? null, geprueft: !!info },
+    // Versand steckt schon im Preis (CAMELBAK „0,99 € + VSK“ = 6,98 €) -> versand 0, damit die Seite nicht „zzgl.“ schreibt
+    extra: { shop: shop || null, versand: inkl ? 0 : info?.versand ?? null, versandInklusive: inkl, temperatur: info?.temperatur ?? it.temperatur ?? null, geprueft: !!info },
   });
   return { eintrag: eintragDaten };
 }
