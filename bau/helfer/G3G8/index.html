@@ -42104,7 +42104,7 @@ function g3Log(x) { x.t = AU.ctx ? +AU.ctx.currentTime.toFixed(4) : 0; G3.log.pu
 /* ---------- Song-Ansicht: das Schwänzchen vor dem Teil (Anlauf) und nach dem Teil (Ausklang) ---------- */
 function g3Tail(g, x0, x1, y, rh, col, dir) {
   if (!(x1 - x0 >= 1.5)) return;
-  const mid = y + rh / 2, h = Math.max(2, (rh - 8) / 2), thin = 1;
+  const mid = y + rh / 2, h = Math.max(2, (rh - 6) / 4), thin = .75;
   g.globalAlpha = .75; g.fillStyle = col;
   g.beginPath();
   if (dir < 0) { g.moveTo(x0, mid - thin); g.lineTo(x1, mid - h); g.lineTo(x1, mid + h); g.lineTo(x0, mid + thin); }   // vor dem Teil: zur Kante hin dicker
