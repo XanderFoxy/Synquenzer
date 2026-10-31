@@ -48,3 +48,5 @@ Gesammelt aus den Fix-Abschnitten in CHANGES-V3.md und CHANGES-MK*.md (Stand 26.
     soll. Nie still den Klang ändern.
 29. **Arbeitsweise (Xander 31.10.: „ich möchte, dass wir in Zukunft immer so arbeiten“):** Pakete parallel auf mehrere Helfer-Sitzungen
     (eigene Rechner) verteilen, Zwischenstände laufend in Zweige pushen, der Dirigent führt zusammen und veröffentlicht jede fertige Stufe.
+
+30. **Nicht ständig fragen (Xander 31.10.):** Professionelle Vorschläge werden ohne Rückfrage umgesetzt – so, wie man es professionell macht, stabil und funktionierend. Gefragt wird nur, was wirklich nur Xander entscheiden kann (Geld/Abos, persönlicher Geschmack ohne Profi-Standard, Zugänge/Freigaben). Regel 28 (alter Klang bleibt) gilt weiter; nichts „Unübliches“ einbauen, das er nicht verlangt hat. Priorität ab 31.10.: Songtext/Silben (G9) vor allen anderen neuen Funktionen.
