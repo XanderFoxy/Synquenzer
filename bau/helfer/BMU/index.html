@@ -18352,7 +18352,7 @@ function mkEco(snd, i) {
 // the wheels (H-5, B.1 "Raeder"): live per track, MOD starts on p.mw; BEND springs back
 const MKWH = {};
 function mkWheelOf(i) { const tr = S.tracks[i]; if (!tr) return null; const k = tr.uid || ('t' + i); return MKWH[k] || (MKWH[k] = {bend: 0, mod: null}); }
-function mkWheelVal(i, w, snd) { const o = i == null ? null : mkWheelOf(i); if (w === 'bend') return o ? o.bend : 0; const s_ = snd || sndOf(i); return o && o.mod != null ? o.mod : s_ ? (+s_.p.mw || 0) : 0; }
+function mkWheelVal(i, w, snd) { const o = i == null ? null : mkWheelOf(i); if (w === 'bend') return o ? o.bend : 0; const s_ = snd || sndOf(i); return o && o.mod != null ? o.mod : s_ && s_.engine !== 'bm' ? (+s_.p.mw || 0) : 0; }   // BM6: the Bit Mask wheel starts at 0 (never stored)
 // a sound load / track switch: MOD back on the sound's p.mw, BEND in the centre
 function mkWheelSync(i, reset) {
   const o = mkWheelOf(i), E = AU.synth[i], s_ = sndOf(i); if (!o || !s_) return;
@@ -32095,7 +32095,8 @@ function pvChain(t, snd) {
   const c = AU.ctx, A = AU.tracks[t]; if (!c || !A) return null;
   const N = Object.assign(buildChain(c), {sound: snd, t, gone: false, E: null,
     lfoPitch: c.createGain(), lfoCut: c.createGain(), nl: {lfo: [null, null], key: ['', ''], routes: [], tremBase: 1}});
-  if (isWkEngine(snd.engine) && wkReady()) { N.E = newEngine(N.trackIn, snd); syncLfoSet(N, {p: snd.p, mods: snd.engine === 'mk' ? [] : snd.mods.filter(fxRoute)}, 97); }   // the worklet runs the voice routes itself
+  if (snd.engine === 'bm') { if (bmReady() && bmLoad()) { N.E = bmTrack(c, N.trackIn, snd); N.E.onEnd = id => { const v = N.E && N.E.proxies.get(id); if (v) wkVoiceDead(v); }; } else if (bmCan() && bmLoad()) bmEnsure(); syncLfoSet(N, {p: snd.p, mods: []}, 97); }   // BM6: a Bit Mask row plays through its own node (native until the module is there)
+  else if (isWkEngine(snd.engine) && wkReady()) { N.E = newEngine(N.trackIn, snd); syncLfoSet(N, {p: snd.p, mods: snd.engine === 'mk' ? [] : snd.mods.filter(fxRoute)}, 97); }   // the worklet runs the voice routes itself
   else syncLfoSet(N, snd.engine === 'mk' ? mkEco(snd) : snd, 97);
   applyChainFx(N, fxOfSound(snd), true);
   return N;
