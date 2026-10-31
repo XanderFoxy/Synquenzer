@@ -39,5 +39,13 @@ const snap = (msgs, t, sec) => { let s = null; const want = Math.round(t * SR / 
   const {s, r} = snap(msgs, .3, .35), ends = r.msgs.filter(m => m.t === 'end');
   const firstGone = !s.some(v => v.n === 48), seventh = s.filter(v => v.n === 60).length;
   ok('BM4-05 Layer braucht 2 Stimmen je Note; die 7. Note klaut (12 Stimmen)', s.length === 12 && firstGone && seventh === 2, s.length + ' Stimmen, 1. Note geklaut ' + firstGone + ', 7. Note mit ' + seventh + ' Stimmen'); }
+// second review #7: BAL turned while A sounds (B silent): A glides out (1 ms steps x 0.25), no step to silence
+{ const r = render(base({bal: 0}, {}, {o1: {m: 31, e: {l: 0}}}).concat([[0, on(.01, 57, .8)], [.2, {t: 'ly', p: {md: 'lay', semi: 0, bal: 100, pan: 0, tune: 0, sp: 60}}]]), {sec: .4});
+  const w = i => rms(r.l, i, i + 48), t0 = Math.round(.2 * SR / 128) * 128, before = w(t0 - 480);
+  let i0 = t0; while (i0 < t0 + 4800 && w(i0) > .9 * before) i0 += 48;
+  let i1 = i0; while (i1 < t0 + 4800 && w(i1) > .01 * before) i1 += 48;
+  const ms = (i1 - i0) / SR * 1000, late = w(t0 + Math.round(.04 * SR));
+  ok('BM4-R7 Layer-BAL gedreht während A klingt: gleitet (−1 → −40 dB in 8–30 ms, ein Sprung wäre < 1 ms), nach 40 ms still', ms >= 8 && ms <= 30 && late < 1e-3 * before,
+    '−1 → −40 dB in ' + R(ms, 1) + ' ms, nach 40 ms ' + (late > 0 ? R(db(late / before)) + ' dB' : 'still')); }
 fs.writeFileSync(HERE + 'bm4-layer.out.json', JSON.stringify(res, null, 1));
 process.exit(fails ? 1 : 0);

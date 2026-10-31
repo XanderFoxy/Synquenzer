@@ -4,24 +4,24 @@ PASS MK5-01 Up Range 3 — [60,64,67,72,76,79,84,88,91,60,64,67,72,76,79,84,88,9
 PASS MK5-01 Up Range 4 — [60,64,67,72,76,79,84,88,91,96,100,103,60,64,67,72,76,79,84,88,91,96,100,103,60,64]
 PASS MK5-01 Down Range 1 — [67,64,60,67,64,60,67,64]
 PASS MK5-01 Down Range 2 — [79,76,72,67,64,60,79,76,72,67,64,60,79,76]
-PASS MK5-01 Down Range 3 — [91,88,84,79,76,72,67,64,60,91,88,84,79,76,72,67,64,60,91,88]
+FAIL MK5-01 Down Range 3 — [84,88,84,79,76,72,67,64,60,91,88,84,79,76,72,67,64,60,91,88]
 PASS MK5-01 Down Range 4 — [103,100,96,91,88,84,79,76,72,67,64,60,103,100,96,91,88,84,79,76,72,67,64,60,103,100]
-PASS MK5-01 Alt 1 Range 1 — [60,64,67,64,60,64,67,64,60]
+PASS MK5-01 Alt 1 Range 1 — [60,64,67,64,60,64,67,64,60,64]
 PASS MK5-01 Alt 1 Range 2 — [60,64,67,72,76,79,76,72,67,64,60,64,67,72,76,79,76,72,67,64,60,64]
 PASS MK5-01 Alt 1 Range 3 — [60,64,67,72,76,79,84,88,91,88,84,79,76,72,67,64,60,64,67,72,76,79,84,88,91,88]
 PASS MK5-01 Alt 1 Range 4 — [60,64,67,72,76,79,84,88,91,96,100,103,100,96,91,88,84,79,76,72,67,64,60,64,67,72]
-PASS MK5-01 Alt 2 Range 1 — [60,64,67,67,64,60,60,64,67,67,64,60,60]
+PASS MK5-01 Alt 2 Range 1 — [60,64,67,67,64,60,60,64,67,67,64,60,60,64]
 PASS MK5-01 Alt 2 Range 2 — [60,64,67,72,76,79,79,76,72,67,64,60,60,64,67,72,76,79,79,76,72,67,64,60,60,64]
 PASS MK5-01 Alt 2 Range 3 — [60,64,67,72,76,79,84,88,91,91,88,84,79,76,72,67,64,60,60,64,67,72,76,79,84,88]
 PASS MK5-01 Alt 2 Range 4 — [60,64,67,72,76,79,84,88,91,96,100,103,103,100,96,91,88,84,79,76,72,67,64,60,60,64]
 PASS MK5-01 Trigger Range 1 (ignoriert) — [[60,64,67],[60,64,67],[60,64,67]] ×9
-PASS MK5-01 Trigger Range 2 (ignoriert) — [[60,64,67],[60,64,67],[60,64,67]] ×9
-PASS MK5-01 Trigger Range 3 (ignoriert) — [[60,64,67],[60,64,67],[60,64,67]] ×9
+PASS MK5-01 Trigger Range 2 (ignoriert) — [[60,64,67],[60,64,67],[60,64,67]] ×8
+PASS MK5-01 Trigger Range 3 (ignoriert) — [[60,64,67],[60,64,67],[60,64,67]] ×8
 PASS MK5-01 Trigger Range 4 (ignoriert) — [[60,64,67],[60,64,67],[60,64,67]] ×9
 PASS MK5-01 Beispiel Range 1: Alt 1 = C E G E, Alt 2 = C E G G E C
-PASS MK5-02 2000 Schritte: jeder Ton 25 % ± 4 % — 25.8 / 25.3 / 24.3 / 24.6
+PASS MK5-02 2000 Schritte: jeder Ton 25 % ± 4 % — 24.5 / 24.9 / 25.9 / 24.6
 PASS MK5-02 gleicher Seed → gleiche Folge (deep-equal), anderer Seed → andere
-PASS MK5-02 live zweimal (KEY SYNC an): dieselbe Folge, = Muster ab Zähler 0 — 64 71 67 64 71 60 64 60 67 60 60 67 64 64 71 64 | 64 71 67 64 71 60 64 60 67 60 60 67 64 64 71 64 | 64 71 67 64 71 60 64 60 67 60 60 67 64 64 71 64
+PASS MK5-02 live zweimal (KEY SYNC an): dieselbe Folge, = Muster ab Zähler 0 — 71 71 60 67 71 71 67 60 60 64 67 60 71 71 64 67 | 71 71 60 67 71 71 67 60 60 64 67 60 71 71 64 67 | 71 71 60 67 71 71 67 60 60 64 67 60 71 71 64 67
 PASS MK5-03 1/16 bei 120 BPM: Abstand 125.0 ms, Einsätze auf dem Song-Raster ± 0,002 Schlag — n=12 Raster-Fehler 0.00000 Schlag, Abstand-Fehler 0.000 ms
 PASS MK5-03 1/24 bei 120 BPM: Abstand 83.3 ms, Einsätze auf dem Song-Raster ± 0,002 Schlag — n=17 Raster-Fehler 0.00003 Schlag, Abstand-Fehler 0.000 ms
 PASS MK5-03 1/12 bei 120 BPM: Abstand 166.7 ms, Einsätze auf dem Song-Raster ± 0,002 Schlag — n=9 Raster-Fehler 0.00003 Schlag, Abstand-Fehler 0.000 ms
@@ -49,8 +49,32 @@ PASS MK5-11 Dual + Ziel T1: T1 arpeggiert (1 Note), T2 hält den Akkord — [[1,
 PASS MK5-11 Dual + Ziel Beide: beide Timbres spielen die Arp-Note — [[1,67],[2,67]]
 PASS MK5-11 Split + Ziel T1 + OKTAVEN 3: keine Arp-Note auf T2 (auch über split), T2 hält 72/76 — [[[1,48],[2,72],[2,76]],[[1,52],[2,72],[2,76]],[[1,55],[2,72],[2,76]]] log max 79
 PASS MK5-11 Split + Ziel Beide: die gehaltene Taste bestimmt das Timbre (G → T1 auch oktaviert über split) — [[[1,55]],[[2,72]],[[2,72]],[[1,67]]]
-PASS MK5-12 TYP Akkord mit 6 Tasten bei 4 Stimmen: die 4 tiefsten spielen (ab dem 2. Schritt; der erste kann bei Tasten > 8 ms auseinander unvollständig sein) — [[48,55,60,64],[48,55,60,64]]
+PASS MK5-12 TYP Akkord mit 6 Tasten bei 4 Stimmen: die 4 tiefsten spielen (ab dem 2. Schritt; der erste kann bei Tasten > 8 ms auseinander unvollständig sein) — [[48,64,72],[48,55,60,64]]
 PASS MK5-13 4-Takt-Akkord-Clip durch den Arp (KEY SYNC an, Wechsel 2, 2 Okt.): zwei Durchläufe = dieselbe Folge — 64 / 64 [[0,60],[0.25,64],[0.5,67],[0.75,72]]
 PASS MK5-13 dasselbe mit KEY SYNC aus (Wechsel 1, Musterlänge 4 teilt den Takt-Loop) — 64 / 64
 PASS MK5-13 Spur stoppen am Taktstrich: keine hängende Note (Proxies und Worklet) — 0 / 0
 PASS MK5-13 Szenenwechsel am Taktstrich: ab dort nur der neue Akkord, nichts hängt über den Strich — [62,74,74,62,62,74] über den Strich: 0
+PASS MK5-14 ● mit Arp nimmt die Tasten auf (Clip-Noten = gespielte Akkorde), ein Undo — [60,62,64,65,67,69] undo +1
+PASS MK5-14 Abspielen der Aufnahme: dieselbe Arp-Folge je Akkord wie beim Spielen (Zufall, gleicher Seed) — [[64,64,67,60,67,64],[65,65,69,62,69,65]] | [[64,64,67,60,67,64],[65,65,69,62,69,65],[64,64,67,60,67,64],[65,65,69,62,69,65],[64,64,67]]
+PASS MK5-14 Szenen-/Song-MIDI-Export: nur die Clip-Noten (ohne Arp-Noten) — 6 Note-On im Export, 6 Clip-Noten
+PASS MK5-14 Mitschnitt (PERF / buildMidiLog) = genau die Arp-Noten aus arpLog — 17 / 17 (MIDI 17)
+PASS MK5-15 Stopp: nach ≤ 1 Schritt + Release 0 klingende Stimmen (Worklet), kein Arp-Schritt danach — {"pv":0,"wv":0,"late":0,"arpLive":0,"orphan":1}
+PASS MK5-15 Panik: nach ≤ 1 Schritt + Release 0 klingende Stimmen (Worklet), kein Arp-Schritt danach — {"pv":0,"wv":0,"late":0,"arpLive":0,"orphan":0}
+PASS MK5-15 Szenenwechsel: nach ≤ 1 Schritt + Release 0 klingende Stimmen (Worklet), kein Arp-Schritt danach — {"pv":0,"wv":0,"late":0,"arpLive":0,"orphan":0}
+PASS MK5-15 Engine-Wechsel: nach ≤ 1 Schritt + Release 0 klingende Stimmen (Worklet), kein Arp-Schritt danach — {"pv":0,"wv":0,"late":0,"arpLive":0,"orphan":1}
+PASS MK5-15 Arp aus: nach ≤ 1 Schritt + Release 0 klingende Stimmen (Worklet), kein Arp-Schritt danach — {"pv":0,"wv":0,"late":0,"arpLive":0,"orphan":1}
+PASS MK5-15 Spur stumm: nach ≤ 1 Schritt + Release 0 klingende Stimmen (Worklet), kein Arp-Schritt danach — {"pv":0,"wv":0,"late":0,"arpLive":0,"orphan":1}
+PASS MK5-15 Teilwechsel (Spur stoppt am Taktstrich): nach ≤ 1 Schritt + Release 0 klingende Stimmen (Worklet), kein Arp-Schritt danach — {"pv":0,"wv":0,"late":0,"arpLive":0,"orphan":0}
+PASS MK5-19 Träger-Wechsel in Takt 3 (plain): ab Takt 3 jede Arp-Note aus dem neuen Akkord (± 0 HT), keine hängende Note — neu [57,60,64] gespielt [64,57,60] vorher [60,64,67]
+PASS MK5-19 Träger-Wechsel in Takt 3 (single): ab Takt 3 jede Arp-Note aus dem neuen Akkord (± 0 HT), keine hängende Note — neu [57,60,64] gespielt [64,57,60] vorher [60,64,67]
+PASS MK5-19 Träger-Wechsel in Takt 3 (xp): ab Takt 3 jede Arp-Note aus dem neuen Akkord (± 0 HT), keine hängende Note — neu [62,66,69] gespielt [69,62,66] vorher [60,64,67]
+PASS MK5-20 Song-Swing 30 %, Arp 1/16, SWING 0: gerade Arp-Schritte wie die Clip-16tel (± 1 ms) — [0,0.1375,0.25,0.3875,0.5,0.6375] | [0,0.1375,0.25,0.3875,0.5,0.6375]
+PASS MK5-20 SWING +50: nur W-35 wirkt (gerade +31,25 ms) — [0,31.25,0,31.25,0,31.25]
+PASS MK5-20 Transport steht: ein gehaltener Akkord läuft ≥ 4 s ohne Lücke — {"n":35,"gap":0,"span":4.25}
+PASS MK5-20 Clip-Noten mit künftigen Zeitstempeln: kein Arp-Schritt zu früh (erste Note bei Schlag 4,5) — 4.5
+PASS MK5-21 Hauptfaden: KEYS 9 einmal je gehaltenem Akkord (nicht je Schritt), KEYS 10 bei „alle los“ — [9,10,9,10] bei 10 Schritten
+PASS MK5-21 Worklet, Key Sync Timbre + Arp: Phase läuft über die Arp-Schritte weiter, Reset beim neuen Akkord — Einsätze 0.01 0.43 0.84 -0.75 -0.34 0.07 0.48 0.89 | Akkord 2: 0.014
+PASS MK5-21 ohne Arp (bisher): jede Note nach „alle los“ setzt zurück; Key Sync Stimme: je Arp-Note zurück — 0.014 0.014 0.014 0.014 | 0.014 0.014 0.014 0.014
+PASS MK5-22 forceNative: der AM-Sound arpeggiert weiter, arpLog wie im Worklet-Klang — [60,64,67,72,76,79,60] | [60,64,67,72,76,79,60]
+PASS MK5-22 ECO: nur T1-Noten (Schicht + Ziel T2: der gehaltene T1-Akkord klingt, keine T2-Arp-Note) — ["live","live","live"]
+1 FEHLER

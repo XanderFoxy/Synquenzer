@@ -198,3 +198,82 @@ Versatz nicht über alle 16 streng steigen (Frage 4). „Pegeländerung ± 3 dB�
   auf Rev. 2.
 - `BmHost.prog` muss `{t:'gl', p: b.gl}` schicken; `perfProbe` 'bm' am besten mit 12 Stimmen + FX (wie `bmkProbe`).
 - Lautstärke: der Prozessor gibt INIT bei −18 LUFS aus (OUTG); die Spur-Kette der App kommt danach.
+
+---
+
+## BM4 — Layer/Split und Arpeggiator (31.10.)
+
+**Gebaut:**
+- **Layer/Split im Prozessor** (§1.13): `{t:'prog', ab:'b', p}` + `{t:'ly', p}`. LAYER: jede Taste spielt A und B (2 Stimmen von 12), SPLIT: Taste < `sp` → A,
+  ≥ `sp` → B. SEMI und TUNE wirken auf B, BAL wie §1.3 (A × (1 − b), B × b), PAN 0–100 spreizt A nach links und B nach rechts. FX-Typen kommen aus A,
+  der FX1-Anteil je Programm (zwei FX1-Steckplätze), FX2 einmal mit Typ und Anteil aus A; LFOs, Spielweise, Hüllkurven je Programm. `on.d`:
+  1 = nur A (der Arp spielt nur A), 2 = nur B, 3 = beide, 0 = nach LAYER/SPLIT. Ein geschichteter Ton meldet `end`, wenn seine letzte Stimme endet.
+- **Gemeinsamer Block `sq-arp-src`** (§5.2): `ARPC` (MK5) **wortgleich** aus `sq-mk-src` verschoben (dort steht ein Hinweis-Kommentar); neue Funktion
+  `arpSrcLoad()` lädt den Block einmal, `mkLoad()` ruft sie vor dem MS-Block auf (die einzigen Änderungen an bestehendem Code, in `werkzeug/edits.json`
+  gelistet und von `bmk-regel28.mjs` geprüft).
+- **BMARP** (im selben Block): die 26 Muster in Spielreihenfolge nach §1.14 und die Schrittlänge (Transport steht: frei mit SPD in Sechzehnteln;
+  Transport läuft: nächster Wert von SPD/BPM aus {¼, ⅛, ⅛T, 1/16, 1/16T, 1/32}). Reine Funktionen ohne Engine und Spur.
+- **Nicht gebaut (Einbindung, gehört zu BM6/BM5):** ARPC kennt bisher nur die Engine `mk`. Damit der Arp auf einer Bit-Mask-Spur läuft, braucht
+  ARPC die Engine `bm` (sie entsteht erst mit BM6): `on(i)` für `p.bm.a.ar.t !== 'off'`, Muster `BMARP.step(t, Tasten in Spielreihenfolge, c, Saat)`,
+  Schritt `BMARP.div(sp, S.bpm, R.playing)`, Noten mit `d: 1` (nur A), TRIG OFF = eine Stimme mit `{t:'rt'}` statt neuer Noten, HOLD (Arp-Taste 1 s,
+  Klangwechsel, HOLD OFF) im Bedienfeld. Das ist eine Änderung an ARPC selbst und wird beim Zusammenführen mit BM6 gemacht, damit MS 2000 hier
+  wortgleich bleibt.
+
+### Abnahme BM4 (`bm4-layer` 6/6, `bm4-arp` 4/4, `bm4-browser` 1/1, MK5-Suiten alt/neu `tests/mk5/`)
+| Punkt | Ergebnis |
+|---|---|
+| BM4-01 Layer | ✓ 2 Stimmen je Note; B-SEMI +12 → +1200,000 ct; BAL 0: B still, 50: A − B 0,00 dB, 100: A still; PAN 100: A rechts 0, B links 0; TUNE 37 → 37,001 ct |
+| BM4-02 Split | ✓ 59 → A, 60 → B (sp 60). „Split halten + Taste“ = Bedienfeld (BM5) |
+| BM4-03 FX | ✓ FX1 A und B wirken je für sich, B-eigener FX1-Typ ändert nichts (Typ aus A), FX2 aus B ändert nichts, FX2 aus A wirkt |
+| BM4-04 LFOs | ✓ A und B an 49 Zeitpunkten verschieden, B (Rechteck) eigene Werte |
+| BM4-05 Stimmen | ✓ 6 Töne = 12 Stimmen, der 7. klaut den ältesten Ton (beide Stimmen) |
+| BM4-06 Muster | ✓ 26 Muster gleich der Referenztabelle (E4, C4, G4), RND saatgleich |
+| BM4-07 SPD | ✓ frei 125,000 ms; bei 120 BPM 120/60/90/240/400 → 1/16, 1/8, 1/8T, 1/32, 1/32 |
+| BM4-08 | ◐ Prozessor-Teil ✓ (TRIG OFF: 1 Stimme, Tonhöhe 64 → 60 → 67; Layer mit d = 1 spielt nur A); HOLD/Arp-Taste/Klangwechsel = BM5/BM6 |
+| BM4-09 | ✓ ARPC wortgleich im neuen Block, MS-Block ohne ARPC, Chromium: `mkLoad()` lädt `sq-arp-src` und den MS-Block ohne Fehler; MK5-Suiten siehe unten |
+| BM4-R7 (Prüfer #7) | ✓ Layer-BAL gedreht, während A klingt: A gleitet −1 → −40 dB in 14 ms (ohne Glättung: 0 ms = Sprung), nach 40 ms still |
+
+MK5-Regel 28 (BM4-09): `tests/mk5/run.sh` lässt `v3-mk5-arp` und `v3-mk5-arp-audio` gegen die Basis (vs-base-B) und gegen diesen Bau laufen:
+(Endlauf läuft, Ergebnis folgt im nächsten Commit; Stand davor: 79/79 und 11/11, alt und neu gleich)
+
+### Zweite Prüfung (eigener Prüfer, BM3/BM4) — 14 Befunde, alle bearbeitet
+| # | Befund | Änderung |
+|---|---|---|
+| 1 | FX-Steckplatz schlief, obwohl der Eingang noch klang (Fahne abgeschnitten) | Schlaf nur, wenn Eingang dieses Abschnitts still **und** Fahne vorbei |
+| 2 | Panik auf schlafendem Steckplatz ließ alte Fahne stehen | schlafend/umgangen: sofort leeren |
+| 3 | BAL 0 → Weg umgangen, aber Fahne kam beim Hochdrehen wieder | beim Umgehen leeren; beim Wiedereinschalten leer starten |
+| 4 | Typwechsel während laufender Blende überschrieb die ausklingende Einheit | neuer Typ wartet, bis die Blende fertig ist |
+| 5 | nach Panik setzte der Effekt hart wieder ein | nach 50 ms Ruhe blendet der Eingang 30 ms ein |
+| 6 | RM: Sinus/Cosinus-Rekursion driftet über Minuten | exakte Phase |
+| 8 | BAL-Sprünge (LFO auf fx1b/fx2b in Stufen) knackten | BAL gleitet höchstens 1/5 ms je Sample |
+| 9 | `clear()` setzte Schreibzeiger/aktuelle Einheit nicht zurück | zurückgesetzt |
+| 10 | BPM 0/negativ/riesig → Echo-Zeit unsinnig | BPM 20–400, Echo höchstens 1,04 s |
+| 11 | Chorus: Typwechsel aus der Stille knackte | Eingangsblende auch beim Chorus |
+| 12 | FX1-Typ von B kam aus Bs LFO | Typ kommt aus A (auch der LFO-Anteil) |
+| 13 | Layer: `end` kam schon, wenn die erste der zwei Stimmen endete | `end` erst mit der letzten Stimme der Taste |
+| 14 | Arp RND konnte Noten > 127 liefern | ≤ 127 |
+| 7 | Layer BAL/PAN sprangen im 1-ms-Raster | gleiten (Faktor 0,25 je ms, 99 % nach 16 ms); ohne klingende Stimme sofort |
+
+### Nacharbeit nach der zweiten Prüfung (selbst gefunden beim Gegenmessen)
+- **Heap wuchs wieder** (BM1-13: 2 von 3 Läufen +11,3 MB/60 s statt 0,3 MB, ohne GC-Lauf — auf dem iPhone wäre das ein GC alle paar Sekunden).
+  Ursache (mit dem Allokations-Profiler gefunden): Seit BM4 ist `ctlVoice` größer; V8 bettet dann nicht mehr alle Helfer ein, und jeder nicht
+  eingebettete Aufruf mit Kommazahl-**Argument** oder -**Rückgabe** legt ein Heap-Objekt an (`envStep` 4×, `maskD` 2×, `TD`, Layer-Werte).
+  Fix: Diese Helfer bekommen/liefern Kommazahlen nur noch über ein festes Float64Array (`tq`), die Delta-Zeiten werden je Programm vorgerechnet
+  (`__d.td`), die Notenzeit/Tonhöhen-Werte der Stimme liegen in `v.H` (Float64Array). Ergebnis: 12 Stimmen 0,38 MB in 60 s (3 von 3 Läufen),
+  0 GC; im Profil keine Allokation des Prozessors mehr (nur Test-Schleife). Rechnung unverändert (alle bitgleich-Tests grün).
+- **Erster Ton in den Hall war zu schwach** (BM3-07 fiel): Im Leerlauf laufen die FX nicht; der Umgehungs-Weg endete erst mit dem ersten Ton, und
+  BAL-Gleiten + Eingangsblende verschluckten dessen Anfang. Jetzt: War der Eingang vorher still (< −100 dB), gilt sofort der volle BAL ohne Blende;
+  nur Einschalten mitten im Klang gleitet.
+- **Fehlendes `end` nach Moduswechsel** (R10 fiel, 2 von 3597 Noten): Nach POLY → MONO tragen kurz zwei Stimmen eines Programms dieselbe id; die neue
+  Zwillings-Prüfung (#13) verschluckte dann das `end`. Jetzt zählt als Zwilling nur die Stimme des **anderen** Programms (Layer).
+
+### Bitte prüfen (BM4)
+1. Layer: A und B zusammen, BAL und PAN während des Spielens drehen (soll gleiten, nicht knacken), SEMI/TUNE von B.
+2. Split: Töne unter/über dem Splitpunkt; FX1 je Seite.
+3. Erster Ton nach Stille in Hall/Echo (soll voll im Effekt einsetzen); BAL von 0 hochdrehen, während ein Ton klingt (soll weich einsetzen).
+4. MS 2000 Arp unverändert (Laden, Muster, Tempo) — er kommt jetzt aus dem gemeinsamen Block.
+
+### Fragen an Xander (BM4)
+1. **Split und BAL:** Die Spec nennt BAL für LAYER; gebaut wirkt BAL auch bei SPLIT (A × (1 − b), B × b). Soll BAL bei SPLIT neutral sein?
+2. **Arp-Einbindung:** ARPC kennt die Engine `bm` erst mit BM6. Soll ich die ARPC-Erweiterung (siehe „Nicht gebaut“) schon hier als Vorschlag liefern,
+   oder macht das der Zusammenführer mit BM6?

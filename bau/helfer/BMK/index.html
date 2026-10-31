@@ -4081,7 +4081,7 @@ const BMARP = (function () {
   // the note of step c (0, 1, 2 ...); seed = project id + track uid (RND: + the step counter); null = nothing to play
   function step(t, keys, c, seed) {
     if (!keys.length || t === 'off') return null;
-    if (t === 'rnd' || t === 'rnd2' || t === 'rnd3') { const U = oct(keys, t === 'rnd' ? 1 : t === 'rnd2' ? 2 : 3); return U[mix(seed >>> 0, c) % U.length]; }
+    if (t === 'rnd' || t === 'rnd2' || t === 'rnd3') { const U = oct(keys, t === 'rnd' ? 1 : t === 'rnd2' ? 2 : 3); const x = U[mix(seed >>> 0, c) % U.length]; return x <= 127 ? x : null; }
     const s = seq(t, keys); if (!s.length) return null; const n = s[md(c, s.length)]; return n <= 127 ? n : null;
   }
   // the step length: transport stopped = free sixteenths at SPD BPM; running = the song is the clock, the division nearest (log) to SPD / song BPM
@@ -7114,7 +7114,7 @@ var BMK = (function () {
     clear() {
       if (this.kind === 1) { this.cb[0].fill(0); this.cb[1].fill(0); this.ap.fill(0); this.fb.fill(0); }
       else { this.db[0].fill(0); this.db[1].fill(0); for (const b of this.ri) b.fill(0); for (const b of this.rl) b.fill(0); }
-      this.st.fill(0); this.ph = 0; this.lfs = 0; this.lfc = 1; this.tCur = 0; this.tTgt = 0; this.tStep = 0; this.t0 = 0; this.e = 0; this.apA = 0; this.apC = 0; this.inR = 0; this.inN = Math.round(.03 * this.sr);
+      this.st.fill(0); this.w = 1 << 20; this.ph = 0; this.lfs = 0; this.lfc = 1; this.tCur = 0; this.tTgt = 0; this.tStep = 0; this.t0 = 0; this.e = 0; this.apA = 0; this.apC = 0; this.inR = 0; this.inN = Math.round(.03 * this.sr);
     }
     set(fam, n) { this.fam = fam; this.n = n; this.clear(); if (fam === 'RV') this.rsize(rvSize(n)); }
     // the tank scale (as 'size' of dirigent-hall): short halls need a smaller tank, else one loop is longer than the decay
@@ -7137,7 +7137,8 @@ var BMK = (function () {
         let s = this.lfs, c = this.lfc, wi = this.w;
         for (; i < e; i++) {
           s += w * c; c -= w * s;
-          b0[wi & 1023] = xL[i]; b1[wi & 1023] = xR[i];
+          let gi = 1; if (this.inR > 0) { gi = 1 - this.inR / this.inN; this.inR--; }
+          b0[wi & 1023] = xL[i] * gi; b1[wi & 1023] = xR[i] * gi;
           const dl = (7 + dep * s) * sr / 1000, dr = (7 + dep * c) * sr / 1000;   // L / R 90 degrees apart
           let p = wi - dl, k = Math.floor(p), fr = p - k; const a = b0[k & 1023] * (1 - fr) + b0[(k + 1) & 1023] * fr;
           p = wi - dr; k = Math.floor(p); fr = p - k; const b = b1[k & 1023] * (1 - fr) + b1[(k + 1) & 1023] * fr;
@@ -7204,13 +7205,12 @@ var BMK = (function () {
         Q[0] = ph; Q[1] = hl; Q[2] = hr; Q[3] = s1; Q[4] = s2; Q[5] = s3; Q[6] = s4; this.ph = tp;
       } else if (f === 'RM') {
         // sine carrier 0.4 Hz * 2^(0.84 (n - 1)), right 90 degrees later
-        const hz = .4 * Math.pow(2, .84 * (n - 1)), w = 2 * Math.PI * hz / sr;
-        let s = this.lfs, c = this.lfc;
-        for (; i < e; i++) { const a = xL[i] * s, b = xR[i] * -c; yL[i] = a; yR[i] = b; en += a * a + b * b; s += w * c; c -= w * s; }
-        const m = Math.sqrt(s * s + c * c); this.lfs = s / m; this.lfc = c / m;
+        const inc = .4 * Math.pow(2, .84 * (n - 1)) / sr; let ph = this.ph;
+        for (; i < e; i++) { const w = 2 * Math.PI * ph, a = xL[i] * Math.sin(w), b = xR[i] * -Math.cos(w); yL[i] = a; yR[i] = b; en += a * a + b * b; ph += inc; if (ph >= 1) ph -= 1; }
+        this.ph = ph;
       } else if (f === 'DL') {
         // time 800 ms * (1/800)^((n-1)/15); feedback 0.45 / 0.6 / 0.75; 5 kHz low pass in the loop (n <= 6); ping-pong (n <= 4); SYNC (DL1-8)
-        const want = (P.sy && n <= 8 ? dlSync(n, P.bpm) : dlMs(n) / 1000) * sr, fbk = n <= 6 ? .45 : n <= 10 ? .6 : .75, lp = n <= 6, pp = n <= 4;
+        const want = Math.min(1.04 * sr, (P.sy && n <= 8 ? dlSync(n, Math.min(400, Math.max(20, +P.bpm || 120))) : dlMs(n) / 1000) * sr), fbk = n <= 6 ? .45 : n <= 10 ? .6 : .75, lp = n <= 6, pp = n <= 4;
         // a new time (tempo change with SYNC): the read pointer glides there in 50 ms (raised cosine: no kink in the speed)
         if (this.tCur <= 0) { this.tCur = want; this.tTgt = want; this.tStep = 0; }
         if (want !== this.tTgt) { this.t0 = this.tCur; this.tTgt = want; this.tStep = 1; }
@@ -7222,6 +7222,7 @@ var BMK = (function () {
           const a = B0[k & m] * (1 - fr) + B0[(k + 1) & m] * fr, b = B1[k & m] * (1 - fr) + B1[(k + 1) & m] * fr;
           let fa = a, fb_ = b;
           if (lp) { Q[0] += al * (a - Q[0]); Q[1] += al * (b - Q[1]); fa = Q[0]; fb_ = Q[1]; }
+          if (fa < 1e-15 && fa > -1e-15) fa = 0; if (fb_ < 1e-15 && fb_ > -1e-15) fb_ = 0;   // no subnormal limit cycle (rule 17)
           let gi = 1; if (this.inR > 0) { gi = 1 - this.inR / this.inN; this.inR--; }
           if (pp) { B0[wi & m] = .5 * (xL[i] + xR[i]) * gi + fbk * fb_; B1[wi & m] = fbk * fa; }
           else { B0[wi & m] = xL[i] * gi + fbk * fa; B1[wi & m] = xR[i] * gi + fbk * fb_; }
@@ -7269,15 +7270,19 @@ var BMK = (function () {
       return en;
     }
   }
+  // the sample k of both channels under -100 dB
+  function nearZ(L, R, k) { const l = L[k], r = R[k]; return l < 1e-5 && l > -1e-5 && r < 1e-5 && r > -1e-5; }
   class FxSlot {
     constructor(kind, sr) {
-      this.kind = kind; this.sr = sr; this.u = [new FxUnit(kind, sr), new FxUnit(kind, sr)]; this.cur = 0; this.type = '';
+      this.kind = kind; this.sr = sr; this.u = [new FxUnit(kind, sr), new FxUnit(kind, sr)]; this.cur = 0; this.type = ''; this.pend = '';
       this.xf = 0; this.xn = Math.round(.03 * sr);   // 30 ms crossfade on a type change
       this.wL = new Float32Array(128); this.wR = new Float32Array(128); this.oL = new Float32Array(128); this.oR = new Float32Array(128);
       this.quiet = 1e9; this.kill = 0; this.kn = Math.round(.01 * sr); this.par = {sy: 0, bpm: 120}; this.silN = 1e12; this.mute = 0;
+      this.bc = 0; this.bs = 1 / Math.round(.005 * sr);   // the BAL in use: it moves at most 1 / 5 ms per sample (TIME FX, LFO steps)
+      this.byp = true; this.lz = true;   // lz: the input before was silent (the processor skips the FX while it has no voices)
     }
     grow(N) { if (this.wL.length < N) { this.wL = new Float32Array(N); this.wR = new Float32Array(N); this.oL = new Float32Array(N); this.oR = new Float32Array(N); } }
-    clear() { this.u[0].clear(); this.u[1].clear(); this.xf = 0; this.quiet = 1e9; this.silN = 1e12; this.mute = 0; this.kill = 0; }
+    clear() { this.u[0].clear(); this.u[1].clear(); this.xf = 0; this.quiet = 1e9; this.silN = 1e12; this.mute = 0; this.kill = 0; this.pend = ''; }
     // samples a silent input still sounds (the sleep must not cut a tail): echo repeats down to -140 dB, reverb 140 / 60 x RT60
     tailN() {
       const U = this.u[this.cur], n = U.n, sr = this.sr;
@@ -7285,25 +7290,33 @@ var BMK = (function () {
       if (U.fam === 'RV') return 8 * Math.pow(.3 / 8, (n - 1) / 15) * 140 / 60 * 1.5 * sr;
       return .03 * sr;
     }
-    // the type to play (fam + n); a change starts the 30 ms crossfade into the other unit
+    // the type to play (fam + n); a change starts the 30 ms crossfade into the other unit; a change during a crossfade waits
+    // for its end (the fading unit is never overwritten while it sounds)
     setType(t) {
-      if (t === this.type) return;
+      if (t === this.type) { this.pend = ''; return; }
+      if (this.xf > 0) { this.pend = t; return; }
       const fam = t.slice(0, 2), n = +t.slice(2) | 0;
-      if (!this.type || this.quiet > 4) { this.u[this.cur].set(fam, n); this.type = t; this.xf = 0; return; }
-      // chorus family: the new unit takes the old input history; echo / reverb: a fresh unit whose input fades in over the
-      // crossfade (its first echo then has no onset step)
+      if (!this.type || this.quiet > 4 || this.byp) { this.u[this.cur].set(fam, n); this.type = t; this.xf = 0; return; }
+      // chorus family: the new unit takes the old input history; else a fresh unit whose input fades in over the crossfade
       const nx = 1 - this.cur, old = this.u[this.cur]; this.u[nx].set(fam, n); if (old.fam === fam && this.kind === 1) this.u[nx].copyHist(old); else this.u[nx].inR = this.xn; this.cur = nx; this.type = t; this.xf = this.xn;
     }
-    // in place over [i, e): x = x (1 - b) + wet b; b = 0 (and no fade running): untouched
+    // in place over [i, e): x = x (1 - b) + wet b; bypassed (BAL 0 reached): untouched, the effect cleared
     process(L, R, i, e, b) {
-      if (this.mute > 0) { this.mute -= e - i; return; }   // after a panic: 60 ms without FX (the voices' own 3 ms fades end meanwhile)
-      if (b <= 0 && this.xf === 0) { if (this.kill > 0) { this.clear(); this.kill = 0; this.mute = Math.round(.05 * this.sr); } this.quiet = 1e9; return; }
-      // sleep: the input silent and the tail done (the input is scanned only while the slot may sleep)
-      let peak = 1;
-      if (this.quiet > 4 && this.xf === 0) {
-        peak = 0; for (let j = i; j < e; j++) if (L[j] !== 0 || R[j] !== 0) { peak = 1; break; }
-        if (peak) this.silN = 0; else { this.silN += e - i; if (this.silN > this.tailN()) return; }
+      if (this.mute > 0) {   // after a panic: 50 ms without FX (the voices' own 3 ms fades end meanwhile), then the input fades in
+        this.mute -= e - i; if (this.mute <= 0) { this.mute = 0; this.u[this.cur].inR = this.xn; } return;
       }
+      if (b <= 0 && this.bc <= 0 && this.xf === 0) {
+        if (!this.byp) { this.clear(); this.byp = true; }   // entering the bypass: the old tails are gone, nothing comes back later
+        this.lz = nearZ(L, R, e - 1);   // the input ends (near) silent (-100 dB)
+        return;
+      }
+      // leaving the bypass: after silence at once at the target BAL (the units are cleared, nothing can click); while sound runs
+      // with the BAL slew + input fade
+      if (this.byp) { this.byp = false; this.quiet = 0; this.silN = 0; if (this.lz) this.bc = b; else this.u[this.cur].inR = this.xn; }
+      // the input of this segment (before the mix)
+      let peak = 0; for (let j = i; j < e; j++) if (L[j] !== 0 || R[j] !== 0) { peak = 1; break; }
+      if (peak) this.silN = 0; else this.silN += e - i;
+      if (this.kill === 0 && !peak && this.quiet > 4 && this.xf === 0 && this.bc === b && this.silN > this.tailN()) return;   // sleep
       this.grow(e);
       const U = this.u[this.cur], wL = this.wL, wR = this.wR;
       U.run(L, R, wL, wR, i, e, this.par);
@@ -7312,21 +7325,22 @@ var BMK = (function () {
         const O = this.u[1 - this.cur], oL = this.oL, oR = this.oR; O.run(L, R, oL, oR, i, e, this.par);
         for (let j = i; j < e; j++) { const x = this.xf > 0 ? this.xf / this.xn : 0; if (this.xf > 0) this.xf--; wL[j] = wL[j] * (1 - x) + oL[j] * x; wR[j] = wR[j] * (1 - x) + oR[j] * x; }
         en += O.e;
+        if (this.xf === 0 && this.pend) { const t = this.pend; this.pend = ''; this.setType(t); }
       }
-      const d = 1 - b;
+      const bs = this.bs; let bc = this.bc;
       if (this.kill > 0) {   // panic / double stop: the wet path fades out in 10 ms, then all tails are cleared
-        for (let j = i; j < e; j++) { const k = this.kill > 0 ? this.kill / this.kn : 0; if (this.kill > 0) this.kill--; L[j] = L[j] * d + wL[j] * b * k; R[j] = R[j] * d + wR[j] * b * k; }
-        if (this.kill <= 0) { this.clear(); this.kill = 0; this.mute = Math.round(.05 * this.sr); }
+        for (let j = i; j < e; j++) { const k = this.kill > 0 ? this.kill / this.kn : 0; if (this.kill > 0) this.kill--; L[j] = L[j] * (1 - bc) + wL[j] * bc * k; R[j] = R[j] * (1 - bc) + wR[j] * bc * k; }
+        if (this.kill <= 0) { this.clear(); this.mute = Math.round(.05 * this.sr); }
         return;
       }
-      for (let j = i; j < e; j++) { L[j] = L[j] * d + wL[j] * b; R[j] = R[j] * d + wR[j] * b; }
-      if (en < 1e-14 * (e - i + 1)) {   // the wet path is silent: is the input too?
-        if (peak === 1 && this.quiet <= 4) { peak = 0; for (let j = i; j < e; j++) if (L[j] !== 0 || R[j] !== 0) { peak = 1; break; } if (!peak) this.silN += e - i; else this.silN = 0; }
-        this.quiet = peak ? 0 : this.quiet + 1;
-      } else { this.quiet = 0; if (peak) this.silN = 0; }
+      if (bc === b) { const d = 1 - b; for (let j = i; j < e; j++) { L[j] = L[j] * d + wL[j] * b; R[j] = R[j] * d + wR[j] * b; } }
+      else for (let j = i; j < e; j++) { bc = bc < b ? Math.min(b, bc + bs) : Math.max(b, bc - bs); L[j] = L[j] * (1 - bc) + wL[j] * bc; R[j] = R[j] * (1 - bc) + wR[j] * bc; }
+      this.bc = bc;
+      this.quiet = !peak && en < 1e-14 * (e - i + 1) ? this.quiet + 1 : 0;
     }
-    asleep() { return this.mute > 0 || (this.xf === 0 && this.kill === 0 && this.quiet > 4 && (this.silN > 1e11 || this.silN > this.tailN())); }
-    panic() { if (this.quiet < 1e9) this.kill = this.kn; else { this.clear(); this.mute = Math.round(.06 * this.sr); } }
+    asleep() { return this.byp || (this.mute === 0 && this.xf === 0 && this.kill === 0 && this.quiet > 4 && (this.silN > 1e11 || this.silN > this.tailN())); }
+    // panic: a sleeping or bypassed slot is cleared at once; a sounding one fades its wet path out first
+    panic() { if (this.asleep()) { this.clear(); this.byp = true; this.bc = 0; this.lz = true; } else this.kill = this.kn; }
   }
 
   /* ---- one voice ---- */
@@ -7346,7 +7360,8 @@ var BMK = (function () {
       // envelopes [osc1, osc2, noise, filter]: stage 0 off, 1 attack, 2 decay, 3 sustain, 4 release; level; timer; quantized level
       this.es = new Int8Array(4); this.el = new Float64Array(4); this.et = new Float64Array(4); this.eq = new Float64Array(4);
       this.pr = new Float64Array(4);          // PARA: own release level of a voice let go while others are held
-      this.t = 0; this.ds1 = 0; this.ds2 = 0; this.dm1 = 0; this.dm2 = 0; this.dp = 0; this.dpT = 0; this.gld = 0; this.lastP = -1e9;
+      this.ds1 = 0; this.ds2 = 0; this.dm1 = 0; this.dm2 = 0; this.dpT = 0;
+      this.H = new Float64Array(4); this.H[3] = -1e9;   // [t since note-on, pitch delta, glide, last pitch]: doubles stored each step
       this.vm = new Float64Array(NT);         // velocity route sums (u * v', per note)
       this.vVol = 1; this.vFeg = 1; this.vPeg = 1; this.vAtk = 1;
       this.pan0 = 0;                          // PANS spread of this note
@@ -7354,6 +7369,7 @@ var BMK = (function () {
       this.I = new Int32Array(5); this.C = new Int32Array(5);
       this.hl = hl; this.hb = new Float64Array(2 * hl); this.hp = 0;
     }
+    get gld() { return this.H[2]; }   // (tests)
   }
   // per program running state: LFOs, PARA envelope, held keys
   class PState {
@@ -7378,6 +7394,8 @@ var BMK = (function () {
       this.comp = sr < 46000 ? -0.082923 : -0.076902;   // droop compensation [c, 1-2c, c]
       this.dcR = Math.exp(-2 * Math.PI * 8 / sr);
       this.P = [this.prog(null), null]; this.ly = lyInit(); this.gl = glInit();
+      this.lyS = new Float64Array(2); this.lyS[0] = .5; this.lyG = 0;   // layer BAL / PAN in use (0..1), glided per control step (no step on a turn)
+      this.tq = new Float64Array(8);   // in / out of the per-step helpers (no double arguments or returns: no heap numbers)
       this.S = [new PState(), new PState()];
       this.NV = 12; this.V = []; for (let k = 0; k < 18; k++) this.V.push(new Voice(k, this.hl));   // 12 voices + 6 crossfade slots
       for (const v of this.V) this.clearVoice(v);
@@ -7402,10 +7420,11 @@ var BMK = (function () {
     prep(pi) {
       const P = this.P[pi]; if (!P) return;
       // the slots as fixed arrays [target, amount] x 4 (made once per program object, then only overwritten: no allocation)
-      const D = P.__d || (P.__d = {mo: 0, w: new Int8Array(2), fm: 0, slots: {v: new Float64Array(8), mw: new Float64Array(8), at: new Float64Array(8), l1: new Float64Array(8), l2: new Float64Array(8)}});
+      const D = P.__d || (P.__d = {mo: 0, w: new Int8Array(2), td: new Float64Array(3), fm: 0, slots: {v: new Float64Array(8), mw: new Float64Array(8), at: new Float64Array(8), l1: new Float64Array(8), l2: new Float64Array(8)}});
       D.mo = Math.max(0, MODES.indexOf(P.g.mo)); D.w[0] = Math.max(0, WAVES.indexOf(P.l1.w)); D.w[1] = Math.max(0, WAVES.indexOf(P.l2.w));
       this.slotFill(D.slots.v, P.mo.v, OKS.v); this.slotFill(D.slots.mw, P.mo.mw, OKS.mw); this.slotFill(D.slots.at, P.mo.at, OKS.mw); this.slotFill(D.slots.l1, P.l1.t, OKS.lfo); this.slotFill(D.slots.l2, P.l2.t, OKS.lfo);
       D.fm = FMODE[P.f.md] == null ? 0 : FMODE[P.f.md];
+      D.td[0] = TD(P.o1.dv); D.td[1] = TD(P.o2.dv); D.td[2] = TD(P.pe.dv);   // delta times (no TD call per control step)
       // FX types as (family, n): FX1 CH DT BC RM = 0..3, FX2 DL RV DT = 4, 5, 1
       const ft = (t, fams) => { if (typeof t !== 'string' || t.length < 3) return [-1, 0]; const fi = fams.indexOf(t.slice(0, 2)), n = +t.slice(2) | 0; return fi < 0 || n < 1 || n > 16 || String(n) !== t.slice(2) ? [-1, 0] : [FXF.indexOf(t.slice(0, 2)), n]; };
       const a = ft(P.fx.t1, FAM1), b = ft(P.fx.t2, FAM2); D.f1 = a[0]; D.n1 = a[1]; D.f2 = b[0]; D.n2 = b[1];
@@ -7418,14 +7437,14 @@ var BMK = (function () {
       switch (m.t) {
         case 'prog': { const k = m.ab === 'b' ? 1 : 0; this.P[k] = m.p ? this.prog(m.p) : (k ? null : this.prog(null)); this.prep(k); this.progChanged(k); break; }
         case 'set': this.set(m.ab, String(m.k || ''), m.v); break;
-        case 'ly': this.ly = fill(lyInit(), m.p); break;
+        case 'ly': this.ly = fill(lyInit(), m.p); this.lyNew(); break;
         case 'gl': this.gl = fill(glInit(), m.p); break;
         case 'on': for (const x of m.list || []) { const at = num(x.at, 0); if (at < now - 1 / this.sr) this.late++; this.q.push({k: 1, at, n: num(x.n, 60), v: num(x.v, .8), d: x.d | 0, id: x.id == null ? -1 : x.id}); } this.sortQ(); break;
         case 'off': for (const x of m.list || []) this.q.push({k: 2, at: num(x.at, 0), n: num(x.n, 60), id: x.id == null ? -1 : x.id, tau: num(x.tau, 0), kill: x.kill ? 1 : 0}); this.sortQ(); break;
         case 'rt': for (const x of m.list || []) this.q.push({k: 3, at: num(x.at, 0), n: num(x.n, 60), to: num(x.to, 60), id: x.id == null ? -1 : x.id}); this.sortQ(); break;
         case 'ctl': this.ctl(m); break;
-        case 'tr': { const run = !!m.run; if (m.bpm) this.bpm = +m.bpm || 120; if (run) { this.q.push({k: 6, at: num(m.at, now)}); this.sortQ(); } this.trRun = run; break; }
-        case 'bpm': this.bpm = +m.bpm || this.bpm; break;
+        case 'tr': { const run = !!m.run; if (m.bpm) this.bpm = clamp(+m.bpm || 120, 20, 400); if (run) { this.q.push({k: 6, at: num(m.at, now)}); this.sortQ(); } this.trRun = run; break; }
+        case 'bpm': this.bpm = clamp(+m.bpm || this.bpm, 20, 400); break;
         case 'stop': this.q.push({k: 4, at: num(m.at, 0), tau: num(m.tau, .02)}); this.sortQ(); break;
         case 'panic': this.q.length = 0; for (const v of this.V) if (v.on) this.fadeOut(v, .003); for (const S of this.S) { this.endKeys(S); S.keys.length = 0; S.es.fill(0); S.el.fill(0); S.eq.fill(0); } this.sus = false; this.fx1[0].panic(); this.fx1[1].panic(); this.fx2.panic(); break;
         case 'reset': this.reset(); break;
@@ -7441,7 +7460,7 @@ var BMK = (function () {
       for (const v of this.V) if (v.on && !v.ghost && v.pg === pi) { this.maskTurn(v, 1, clamp(Math.round(P.o1.m), 0, 511)); this.maskTurn(v, 2, clamp(Math.round(P.o2.m), 0, 511)); }
     }
     set(ab, k, v) {
-      if (ab === 'ly') { const o = Object.assign({}, this.ly); o[k] = v; this.ly = fill(lyInit(), o); return; }
+      if (ab === 'ly') { const o = Object.assign({}, this.ly); o[k] = v; this.ly = fill(lyInit(), o); this.lyNew(); return; }
       if (ab === 'gl') { const old = this.gl[k], o = Object.assign({}, this.gl); o[k] = v; const nw = fill(glInit(), o); const x = nw[k]; this.gl[k] = old;
         if (typeof old === 'number' && typeof x === 'number' && !NOSM[k]) this.smooth(this.gl, k, old, x); else this.gl[k] = x; return; }
       const pi = ab === 'b' ? 1 : 0, P = this.P[pi]; if (!P) return;
@@ -7493,20 +7512,21 @@ var BMK = (function () {
     }
     reset() {
       this.q.length = 0; this.noteCnt = 0; this.ord = 0; this.trRun = false;
-      for (const v of this.V) { if (v.on && !v.ghost) this.endVoice(v); this.clearVoice(v); v.lastP = -1e9; }
+      for (const v of this.V) { if (v.on && !v.ghost) this.endVoice(v); this.clearVoice(v); v.H[3] = -1e9; }
       this.endR.fill(-1); this.endP = 0;
       for (let i = 0; i < 3; i++) { this.cT[i] = 0; this.cV[i] = 0; this.cS[i] = 0; this.cMoved[i] = 0; }
       for (const S of this.S) { S.keys.length = 0; S.panAlt = 1; S.lastP = -1e9; this.lfoReset(S); S.es.fill(0); S.el.fill(0); S.et.fill(0); S.eq.fill(0); S.mod.fill(0); }
       for (const s of this.sm) if (s.o) { s.o[s.k] = s.b; s.o = null; } this.smN = 0;
       this.sus = false; this.gc = 0;
-      this.fx1[0].clear(); this.fx1[1].clear(); this.fx2.clear(); this.fx1[0].type = this.fx1[1].type = this.fx2.type = '';
+      for (const F of [this.fx1[0], this.fx1[1], this.fx2]) { F.clear(); F.type = ''; F.cur = 0; F.byp = true; F.bc = 0; F.lz = true; }
+      this.lyNew();
     }
     lfoReset(S) { S.lph.fill(0); S.lv.fill(0); S.lrng[0] = 0x2545f491; S.lrng[1] = 0x6c8e9cf5; for (let l = 0; l < 2; l++) { let r = S.lrng[l]; r ^= r << 13; r ^= r >>> 17; r ^= r << 5; S.lrng[l] = r; S.lrnd[l] = r * 4.656612873077393e-10; } S.lt = 0; S.dlyOff.fill(0); S.lphP.fill(0); S.lrndP.set(S.lrnd); S.lite = 0; }
     clearVoice(v) {
       v.on = false; v.ghost = false; v.id = -1; v.key = -1; v.gate = false; v.kill = 0; v.susHeld = false; v.paraRel = false; v.relOrd = 0; v.endSent = false;
       v.Z[0] = 0; v.Z[1] = 0; v.D.fill(0); v.D[11] = 1; v.xw1 = v.xw2 = 0;
       v.I.fill(0); v.C.fill(0); v.hb.fill(0); v.hp = 0;
-      v.es.fill(0); v.el.fill(0); v.et.fill(0); v.eq.fill(0); v.pr.fill(1); v.quiet = 0; v.gld = 0; v.dp = 0; v.dpT = 0;
+      v.es.fill(0); v.el.fill(0); v.et.fill(0); v.eq.fill(0); v.pr.fill(1); v.quiet = 0; v.H[2] = 0; v.H[1] = 0; v.dpT = 0;
     }
     tap(m) {
       this.tapOn = !!m.on; this.tapK = String(m.k || 'ctl'); this.tapAll = !!m.all;
@@ -7533,7 +7553,7 @@ var BMK = (function () {
       }
       if (!best) return null;
       // a voice slot of the 12 (the crossfade slots never carry a note); its envelope levels are kept for the modes without restart
-      const keep = best.lastP; this.keepEl.set(best.el); this.stole = true; this.ghostOf(best); this.clearVoice(best); best.lastP = keep;
+      const keep = best.H[3]; this.keepEl.set(best.el); this.stole = true; this.ghostOf(best); this.clearVoice(best); best.H[3] = keep;
       if (best.k >= this.NV) { for (let i = 0; i < this.NV; i++) if (!this.V[i].on) return this.V[i]; }
       return best;
     }
@@ -7564,9 +7584,10 @@ var BMK = (function () {
       for (let k = 0; k < 4; k++) { v.es[k] = 1; v.el[k] = 0; v.et[k] = 0; v.pr[k] = 1; }
       // PANS: alternate sides per note (section 1.10)
       const S = this.S[pg]; S.panAlt = -S.panAlt; v.pan0 = S.panAlt * P.g.ps / 15;
-      v.fm = D.fm; v.quiet = 0; v.paraRel = false; v.gld = 0; v.now = true;
+      v.fm = D.fm; v.quiet = 0; v.paraRel = false; v.H[2] = 0; v.now = true;
     }
-    maskD(ds, dv, t) { if (!ds) return 0; const T = TD(dv); if (t >= T - 1e-9) return 0; const d = Math.abs(ds) * Math.exp(-t * LN100 / T); return (ds < 0 ? -1 : 1) * Math.ceil(d - 1e-9); }
+    // mask delta k (0 / 1) of voice v at its time H[0] -> tq[k]
+    maskD(v, D, k) { const q = this.tq, ds = k ? v.ds2 : v.ds1, T = D.td[k], t = v.H[0]; q[k] = 0; if (!ds) return; if (t >= T - 1e-9) return; const d = Math.abs(ds) * Math.exp(-t * LN100 / T); q[k] = (ds < 0 ? -1 : 1) * Math.ceil(d - 1e-9); }
     // velocity routes (per note): u * v' summed per target; vol / feg / peg / atk as factors (section 1.9)
     velRoutes(v, P) {
       v.vm.fill(0); v.vVol = 1; v.vFeg = 1; v.vPeg = 1; v.vAtk = 1; const s = P.__d.slots.v, vv = v.velC;
@@ -7574,9 +7595,9 @@ var BMK = (function () {
         if (t === TI.vol) v.vVol *= Math.max(0, 1 - Math.abs(u) * (1 - vv)); else if (t === TI.feg) v.vFeg *= 1 + u * (vv - 1);
         else if (t === TI.peg) v.vPeg *= 1 + u * (vv - 1); else if (t === TI.atk) v.vAtk *= Math.pow(2, -4 * u * vv); else v.vm[t] += u * vv * TD_[t]; }
     }
-    deltas(v, P) { v.t = 0; v.ds1 = P.o1.ds; v.ds2 = P.o2.ds; v.dm1 = P.o1.ds; v.dm2 = P.o2.ds; v.dp = Math.sign(P.pe.ds) * 48 * Math.pow(Math.abs(P.pe.ds) / 63, 2) * v.vPeg; v.dpT = 0; }
+    deltas(v, P) { v.H[0] = 0; v.ds1 = P.o1.ds; v.ds2 = P.o2.ds; v.dm1 = P.o1.ds; v.dm2 = P.o2.ds; v.H[1] = Math.sign(P.pe.ds) * 48 * Math.pow(Math.abs(P.pe.ds) / 63, 2) * v.vPeg; v.dpT = 0; }
     // portamento from a pitch (semitones) over T(PORT) (exponential, 1 % rest)
-    glideFrom(v, from) { const P = this.P[v.pg] || this.P[0]; v.gld = P.g.po > 0 && from > -1e8 ? from - this.keyPitch(v.n) : 0; }
+    glideFrom(v, from) { const P = this.P[v.pg] || this.P[0]; v.H[2] = P.g.po > 0 && from > -1e8 ? from - this.keyPitch(v.n) : 0; }
     heldIdx(S, e) { for (let i = 0; i < S.keys.length; i++) { const k = S.keys[i]; if (e.id >= 0 ? k.id === e.id : k.n === e.n) return i; } return -1; }
     takeKey(v, e) { v.id = e.id; v.key = e.n; v.n = e.n; v.vel = e.v; v.velC = velCurve(this.gl.vc, e.v); v.gate = true; v.susHeld = false; v.endSent = false; v.ord = ++this.ord; this.velRoutes(v, this.P[v.pg] || this.P[0]); }
     // BM4 layer / split (section 1.13): the programs a key plays. d (BM6 'on.d'): 1 = only A, 2 = only B, 3 = both, 0 = by LAYER / SPLIT
@@ -7587,8 +7608,13 @@ var BMK = (function () {
       else this.voiceOnPg(e, 0);
     }
     // the level and side of a program in LAYER / SPLIT: BAL 0..100 (A x (1 - b), B x b, as BAL of section 1.3), PAN 0..100 spreads A left, B right
-    lyGain(pg) { if (!this.P[1] || this.ly.md === 'ein') return 1; const b = clamp(this.ly.bal, 0, 100) / 100; return pg ? b : 1 - b; }
-    lyPan(pg) { if (!this.P[1] || this.ly.md === 'ein') return 0; const p = clamp(this.ly.pan, 0, 100) / 100; return pg ? p : -p; }
+    // new layer values: nothing sounding -> at once; else they glide (1 ms steps, factor 0.25: 99 % after 16 ms)
+    lyNew() { let any = false; for (const v of this.V) if (v.on) any = true; this.lyG = 1; if (!any) { this.lyS[0] = clamp(this.ly.bal, 0, 100) / 100; this.lyS[1] = clamp(this.ly.pan, 0, 100) / 100; } }
+    // layer gain -> tq[2], layer pan -> tq[3]
+    lyGP(pg) {
+      const q = this.tq; if (!this.P[1] || this.ly.md === 'ein') { q[2] = 1; q[3] = 0; return; }
+      const b = this.lyS[0], p = this.lyS[1]; q[2] = pg ? b : 1 - b; q[3] = pg ? p : -p;
+    }
     voiceOnPg(e, pg) {
       const P = this.P[pg], S = this.S[pg], mo = P.__d.mo;
       const legato = S.keys.length > 0;
@@ -7602,14 +7628,14 @@ var BMK = (function () {
         if (v && !restart) {
           // MONO: no restart (attack again from the current level when nothing was held), portamento always;
           // MONO PORTA / MOLY legato: no restart, portamento legato
-          const from = this.keyPitch(v.n) + v.gld;
+          const from = this.keyPitch(v.n) + v.H[2];
           if (!v.gate) this.sendEnd(v);
           this.takeKey(v, e); this.glideFrom(v, from);
           if (!legato) { for (let k = 0; k < 4; k++) { v.es[k] = 1; v.et[k] = 0; } this.deltas(v, P); }
           return;
         }
         let from = -1e9;
-        if (v) { from = this.keyPitch(v.n) + v.gld; const keep = v.lastP; this.ghostOf(v); this.clearVoice(v); v.lastP = keep; } else { v = this.pickVoice(); if (v && mo === 1) from = v.lastP; }
+        if (v) { from = this.keyPitch(v.n) + v.H[2]; const keep = v.H[3]; this.ghostOf(v); this.clearVoice(v); v.H[3] = keep; } else { v = this.pickVoice(); if (v && mo === 1) from = v.H[3]; }
         if (!v) return;
         this.newVoice(v, e, pg, e.n);
         if (legato || mo === 1) this.glideFrom(v, from);
@@ -7619,7 +7645,7 @@ var BMK = (function () {
       if ((mo === 2 || mo === 6) && legato) {
         let near = null; for (const x of this.V) if (x.on && !x.ghost && x.gate && x.pg === pg) { const d = Math.abs(x.key - e.n); if (d >= 1 && d <= 2 && (!near || x.ord > near.ord)) near = x; }
         if (near) {
-          const from = this.keyPitch(near.n) + near.gld, oi = this.heldIdx(S, {id: near.id, n: near.key});
+          const from = this.keyPitch(near.n) + near.H[2], oi = this.heldIdx(S, {id: near.id, n: near.key});
           if (oi >= 0) S.keys.splice(oi, 1);
           this.sendEnd(near);
           this.takeKey(near, e); this.glideFrom(near, from);
@@ -7629,7 +7655,7 @@ var BMK = (function () {
       // POLY family: a free voice (or a steal: POLY, SLUR, PARA, MOLY run on from the taken voice's level, POLY RETRIG restarts)
       this.stole = false;
       const v = this.pickVoice(); if (!v) return;
-      const from = v.lastP;
+      const from = v.H[3];
       this.newVoice(v, e, pg, e.n);
       if (this.stole && mo !== 8) v.el.set(this.keepEl);
       if (mo === 0 || mo === 8) this.glideFrom(v, from);                       // poly portamento: from this voice's last pitch
@@ -7657,7 +7683,7 @@ var BMK = (function () {
         if ((mo === 1 || mo === 3 || mo === 7 || mo === 5) && S.keys.length && !e.kill && !(e.tau > 0)) {
           let mono = true; if (mo === 5) { let n = 0; for (const x of this.V) if (x.on && !x.ghost && x.gate && x.pg === pg) n++; mono = n === 1; }
           if (mono) {
-            const k2 = S.keys[S.keys.length - 1], from = this.keyPitch(v.n) + v.gld;
+            const k2 = S.keys[S.keys.length - 1], from = this.keyPitch(v.n) + v.H[2];
             this.sendEnd(v);
             v.id = k2.id; v.key = k2.n; v.n = k2.n; this.glideFrom(v, from);
             continue;
@@ -7687,7 +7713,9 @@ var BMK = (function () {
     }
     // ---------------- envelopes ----------------
     // one ADSR step; tsc scales the times (RATE), atk the attack (velocity route ATK); returns the 10-bit level
-    envStep(es, el, et, k, E, tsc, atk) {
+    // envelope k one control step; the time scale in tq[4], the attack factor in tq[5]
+    envStep(es, el, et, k, E, q) {
+      const tsc = this.tq[4], atk = this.tq[5];   // the 10-bit value goes to q[k] (no returned double: no heap number per step)
       const dt = this.dt; let st = es[k], l = el[k];
       if (st === 1) { const T = TX(E.a) * tsc * atk; l = T <= 0 ? 1 : l + dt / T; if (l >= 1) { l = 1; st = 2; et[k] = 0; } }
       else if (st === 2) {
@@ -7697,7 +7725,7 @@ var BMK = (function () {
       } else if (st === 3) { l = (E.s / 15) * (E.s / 15); }
       else if (st === 4) { const T = TX(E.r) * tsc; l = T <= 0 ? 0 : l * Math.exp(-dt * LN1000 / T); if (l < 1e-6) { l = 0; st = 0; } }
       es[k] = st; el[k] = l;
-      return Math.round(l * 1024) / 1024;     // 10 bit (section 2.4)
+      q[k] = Math.round(l * 1024) / 1024;     // 10 bit (section 2.4)
     }
     masks(v, mod) {
       const vm = v.vm;
@@ -7735,6 +7763,7 @@ var BMK = (function () {
     }
     ctlGlobal(lite) {
       this.smoothStep();
+      if (this.lyG) { this.lyG = 0; for (let i = 0; i < 2; i++) { const L = this.lyS, d = (clamp(i ? this.ly.pan : this.ly.bal, 0, 100) / 100) - L[i]; if (d !== 0) { L[i] = d < 1e-4 && d > -1e-4 ? L[i] + d : L[i] + .25 * d; this.lyG = 1; } } }
       for (let i = 0; i < 3; i++) if (this.cV[i] !== this.cT[i]) { const x = this.cV[i] + this.cS[i]; this.cV[i] = (this.cS[i] > 0 ? x >= this.cT[i] : x <= this.cT[i]) ? this.cT[i] : x; }
       const mw = this.cV[1], at = atCurve(this.gl.ac, this.cV[2]);
       for (let pi = 0; pi < 2; pi++) {
@@ -7756,7 +7785,7 @@ var BMK = (function () {
         else S.lite = 1;
         }
         // PARA: one envelope set per program
-        if (D.mo === 4 || D.mo === 6) { S.eq[0] = this.envStep(S.es, S.el, S.et, 0, P.o1.e, 1, 1); S.eq[1] = this.envStep(S.es, S.el, S.et, 1, P.o2.e, 1, 1); S.eq[2] = this.envStep(S.es, S.el, S.et, 2, P.n.e, 1, 1); S.eq[3] = this.envStep(S.es, S.el, S.et, 3, P.f.e, 1, 1); }
+        if (D.mo === 4 || D.mo === 6) { this.tq[4] = 1; this.tq[5] = 1; this.envStep(S.es, S.el, S.et, 0, P.o1.e, S.eq); this.envStep(S.es, S.el, S.et, 1, P.o2.e, S.eq); this.envStep(S.es, S.el, S.et, 2, P.n.e, S.eq); this.envStep(S.es, S.el, S.et, 3, P.f.e, S.eq); }
       }
       this.cMoved[1] = 0; this.cMoved[2] = 0;
     }
@@ -7793,23 +7822,24 @@ var BMK = (function () {
         if (S.es[0] === 0 && S.es[1] === 0 && S.es[2] === 0 && !v.gate) v.paraRel = true;
         v.eq[0] = g1; v.eq[1] = g2; v.eq[2] = g3; v.eq[3] = gf;
       } else {
-        g1 = v.eq[0] = this.envStep(v.es, v.el, v.et, 0, P.o1.e, tsc, v.vAtk); g2 = v.eq[1] = this.envStep(v.es, v.el, v.et, 1, P.o2.e, tsc, v.vAtk);
-        g3 = v.eq[2] = this.envStep(v.es, v.el, v.et, 2, P.n.e, tsc, v.vAtk); gf = v.eq[3] = this.envStep(v.es, v.el, v.et, 3, P.f.e, tsc, v.vAtk);
+        const q = v.eq; this.tq[4] = tsc; this.tq[5] = v.vAtk;
+        this.envStep(v.es, v.el, v.et, 0, P.o1.e, q); this.envStep(v.es, v.el, v.et, 1, P.o2.e, q);
+        this.envStep(v.es, v.el, v.et, 2, P.n.e, q); this.envStep(v.es, v.el, v.et, 3, P.f.e, q);
+        g1 = q[0]; g2 = q[1]; g3 = q[2]; gf = q[3];
       }
       // deltas: mask START -> 0, pitch START -> 0 (END after release), exponential, 1 % rest after T_D(SPD) (section 1.3)
       // the mask delta as whole steps away from 0 (the target is reached at T_D, where the 1 % rest is dropped)
-      const t = v.t; v.t += dt;
-      v.dm1 = this.maskD(v.ds1, P.o1.dv, t); v.dm2 = this.maskD(v.ds2, P.o2.dv, t);
+      this.maskD(v, P.__d, 0); this.maskD(v, P.__d, 1); v.H[0] += dt; v.dm1 = this.tq[0] | 0; v.dm2 = this.tq[1] | 0;
       this.masks(v, mod);
       // pitch (semitones, A4 = 69 = TUNE): key through the temperament, SEMIs, TUNE, deltas, glide, bend, routes
       // the key through the temperament (inline: a returned double of a non-inlined call would be a heap number per step)
-      const TT = TEMP[gl.tm] || TEMP.et, kn = v.n, kr = Math.round(kn), kc = ((kr % 12) + 12) % 12, kp = kr - kc + TT[kc] / 100 + (kn - kr) + gl.st, base = kp + (v.pg && this.ly.md !== 'ein' ? this.ly.semi + this.ly.tune / 100 : 0) + P.g.st + v.dp + v.gld + this.cV[0] * gl.pb + mod[0] + vm[0];
+      const TT = TEMP[gl.tm] || TEMP.et, kn = v.n, kr = Math.round(kn), kc = ((kr % 12) + 12) % 12, kp = kr - kc + TT[kc] / 100 + (kn - kr) + gl.st, base = kp + (v.pg && this.ly.md !== 'ein' ? this.ly.semi + this.ly.tune / 100 : 0) + P.g.st + v.H[1] + v.H[2] + this.cV[0] * gl.pb + mod[0] + vm[0];
       const p1 = base + P.o1.st + P.o1.tu / 100 + mod[1], p2 = base + P.o2.st + P.o2.tu / 100 + mod[2];
       const f1 = gl.tn * Math.pow(2, (p1 - 69) / 12), f2 = gl.tn * Math.pow(2, (p2 - 69) / 12), s = 4294967296 / (16 * sr);
-      v.lastP = kp + v.gld;
+      v.H[3] = kp + v.H[2];
       // pitch delta and portamento: this step used the current values; on toward their targets (exponential, 1 % rest after T)
-      v.dp = v.dpT + (v.dp - v.dpT) * Math.exp(-dt * LN100 / TD(P.pe.dv)); if (Math.abs(v.dp - v.dpT) < 1e-6) v.dp = v.dpT;
-      if (v.gld !== 0) { const T = P.g.po > 0 ? .008 * Math.pow(1.6, P.g.po - 1) : 0; v.gld = T > 0 ? v.gld * Math.exp(-dt * LN100 / T) : 0; if (Math.abs(v.gld) < 1e-5) v.gld = 0; }
+      v.H[1] = v.dpT + (v.H[1] - v.dpT) * Math.exp(-dt * LN100 / P.__d.td[2]); if (Math.abs(v.H[1] - v.dpT) < 1e-6) v.H[1] = v.dpT;
+      if (v.H[2] !== 0) { const T = P.g.po > 0 ? .008 * Math.pow(1.6, P.g.po - 1) : 0; v.H[2] = T > 0 ? v.H[2] * Math.exp(-dt * LN100 / T) : 0; if (Math.abs(v.H[2]) < 1e-5) v.H[2] = 0; }
       v.Z[3] = Math.round(clamp(f1, 0, 8 * sr) * s); v.Z[4] = Math.round(clamp(f2, 0, 8 * sr) * s);
       const L1 = (P.o1.e.l / 99) * (P.o1.e.l / 99), L2 = (P.o2.e.l / 99) * (P.o2.e.l / 99), L3 = (P.n.e.l / 99) * (P.n.e.l / 99);
       D[6] = g1 * L1 * Math.max(0, 1 + mod[4] + vm[4]) * CSC; D[7] = g2 * L2 * Math.max(0, 1 + mod[5] + vm[5]) * CSC; D[8] = g3 * L3 * Math.max(0, 1 + mod[6] + vm[6]) * CSC;
@@ -7825,7 +7855,8 @@ var BMK = (function () {
       D[16] = g; D[17] = k; D[18] = 1 / (1 + g * (g + k)); D[19] = g * D[18]; D[20] = g * D[19]; v.fm = P.__d.fm;
       // level: VOL^2 x velocity (as the other synth engines: 1 - 0.6 + 0.6 v') x routes; pan: PANS + LFO
       const vo = (P.g.vo / 99) * (P.g.vo / 99), vg = (1 - .6 + .6 * v.velC) * v.vVol * Math.max(0, 1 + mod[3] + vm[3]);
-      const pan = clamp(v.pan0 + mod[12] + this.lyPan(v.pg), -1, 1), a = (pan + 1) * Math.PI / 4, out = vo * vg * OUTG * 2 * this.lyGain(v.pg);   // x 2: the SVF input runs at 0.5
+      this.lyGP(v.pg);
+      const pan = clamp(v.pan0 + mod[12] + this.tq[3], -1, 1), a = (pan + 1) * Math.PI / 4, out = vo * vg * OUTG * 2 * this.tq[2];   // x 2: the SVF input runs at 0.5
       D[10] = out * Math.cos(a); D[13] = out * Math.sin(a);
       const amp = D[6] + D[7] + D[8];
       if (!v.gate && amp === 0) v.quiet++; else v.quiet = 0;
@@ -7955,12 +7986,13 @@ var BMK = (function () {
     // the held keys without a sounding voice of their own (left by a mono voice) end with a stop / panic
     held(v) { const S = this.S[v.pg] || this.S[0]; for (let i = 0; i < S.keys.length; i++) if (S.keys[i].id === v.id && v.id !== -1) return true; return false; }
     endKeys(S) { for (let i = 0; i < S.keys.length; i++) { const k = S.keys[i]; let has = false; for (const v of this.V) if (v.on && !v.ghost && v.id === k.id) has = true; if (!has) this.endId(k.n, k.id); } }
-    twin(v) { if (v.id === -1) return false; for (let k = 0; k < this.NV; k++) { const x = this.V[k]; if (x !== v && x.on && !x.ghost && x.id === v.id) return true; } return false; }
+    // the layer twin: the other program's voice of the same key (two voices of one program never hold back an 'end')
+    twin(v) { if (v.id === -1) return false; for (let k = 0; k < this.NV; k++) { const x = this.V[k]; if (x !== v && x.on && !x.ghost && x.pg !== v.pg && x.id === v.id) return true; } return false; }
     endVoice(v) {
       if (!v.ghost && !this.twin(v)) this.sendEnd(v); this.clearVoice(v);   // a layered key: 'end' when its last voice ends
     }
     // one 'end' per note id: the ids already ended sit in a ring (the last 512; ids are unique from the host)
-    sendEnd(v) { this.endId(v.n, v.id); }
+    sendEnd(v) { if (!this.twin(v)) this.endId(v.n, v.id); }
     endId(n, id) {
       if (id === -1 || id == null) return; const E = this.endR;
       for (let i = 0; i < E.length; i++) if (E[i] === id) return;
@@ -7982,7 +8014,7 @@ var BMK = (function () {
       const A = this.P[0];
       for (let p = 0; p < (two ? 2 : 1); p++) {
         const P = this.P[p], mod = this.S[p].mod, pL = this.pbL[p], pR = this.pbR[p];
-        const t = this.fxType(A.__d.f1, A.__d.n1, mod[18]), bal = t ? clamp(num(P.fx.b1, 0) + mod[20], 0, 100) / 100 : 0;
+        const t = this.fxType(A.__d.f1, A.__d.n1, this.S[0].mod[18]), bal = t ? clamp(num(P.fx.b1, 0) + mod[20], 0, 100) / 100 : 0;
         if (t) this.fx1[p].setType(t);
         this.fx1[p].process(pL, pR, a, b, bal);
         for (let i = a; i < b; i++) { L[i] += pL[i]; R[i] += pR[i]; }

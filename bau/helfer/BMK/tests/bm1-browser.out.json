@@ -13,7 +13,7 @@
   {
    "id": "BM1-13 Chromium (echter AudioWorklet, nur Messwert): Bit-Mask-Stimme gegen VA-Stimme",
    "ok": true,
-   "info": "0.45 × (Bit Mask 1 Stimme 0.40 %, 12 Stimmen + FX1 CH4 + FX2 RV3 7.99 % (max 9.99 %, Quantum max 3 ms), Leerlauf 0.400 %; VA-Stimme 0.90 %)"
+   "info": "3.00 × (Bit Mask 1 Stimme 1.20 %, 12 Stimmen + FX1 CH4 + FX2 RV3 7.19 % (max 9.59 %, Quantum max 2 ms), Leerlauf 0.000 %; VA-Stimme 0.40 %)"
   },
   {
    "id": "BM1 Chromium: App startet ohne Konsolenfehler, Block sq-bm-src läuft",
@@ -38,7 +38,7 @@
    "sr": 44100,
    "voices": 0,
    "reports": 6,
-   "load_med": 0.004,
+   "load_med": 0,
    "load_max": 0.004,
    "quantum_max_ms": 1
   },
@@ -50,8 +50,8 @@
    "sr": 44100,
    "voices": 1,
    "reports": 6,
-   "load_med": 0.008,
-   "load_max": 0.012,
+   "load_med": 0.012,
+   "load_max": 0.016,
    "quantum_max_ms": 1
   },
   "bm12": {
@@ -62,11 +62,11 @@
    "sr": 44100,
    "voices": 12,
    "reports": 6,
-   "load_med": 0.0839,
-   "load_max": 0.0999,
-   "quantum_max_ms": 3
+   "load_med": 0.0719,
+   "load_max": 0.0959,
+   "quantum_max_ms": 2
   },
   "va0": 0,
-  "va1": 0.008987771739130434
+  "va1": 0.003994565217391304
  }
 }

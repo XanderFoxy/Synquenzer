@@ -42,7 +42,7 @@
     clear() {
       if (this.kind === 1) { this.cb[0].fill(0); this.cb[1].fill(0); this.ap.fill(0); this.fb.fill(0); }
       else { this.db[0].fill(0); this.db[1].fill(0); for (const b of this.ri) b.fill(0); for (const b of this.rl) b.fill(0); }
-      this.st.fill(0); this.ph = 0; this.lfs = 0; this.lfc = 1; this.tCur = 0; this.tTgt = 0; this.tStep = 0; this.t0 = 0; this.e = 0; this.apA = 0; this.apC = 0; this.inR = 0; this.inN = Math.round(.03 * this.sr);
+      this.st.fill(0); this.w = 1 << 20; this.ph = 0; this.lfs = 0; this.lfc = 1; this.tCur = 0; this.tTgt = 0; this.tStep = 0; this.t0 = 0; this.e = 0; this.apA = 0; this.apC = 0; this.inR = 0; this.inN = Math.round(.03 * this.sr);
     }
     set(fam, n) { this.fam = fam; this.n = n; this.clear(); if (fam === 'RV') this.rsize(rvSize(n)); }
     // the tank scale (as 'size' of dirigent-hall): short halls need a smaller tank, else one loop is longer than the decay
@@ -65,7 +65,8 @@
         let s = this.lfs, c = this.lfc, wi = this.w;
         for (; i < e; i++) {
           s += w * c; c -= w * s;
-          b0[wi & 1023] = xL[i]; b1[wi & 1023] = xR[i];
+          let gi = 1; if (this.inR > 0) { gi = 1 - this.inR / this.inN; this.inR--; }
+          b0[wi & 1023] = xL[i] * gi; b1[wi & 1023] = xR[i] * gi;
           const dl = (7 + dep * s) * sr / 1000, dr = (7 + dep * c) * sr / 1000;   // L / R 90 degrees apart
           let p = wi - dl, k = Math.floor(p), fr = p - k; const a = b0[k & 1023] * (1 - fr) + b0[(k + 1) & 1023] * fr;
           p = wi - dr; k = Math.floor(p); fr = p - k; const b = b1[k & 1023] * (1 - fr) + b1[(k + 1) & 1023] * fr;
@@ -132,13 +133,12 @@
         Q[0] = ph; Q[1] = hl; Q[2] = hr; Q[3] = s1; Q[4] = s2; Q[5] = s3; Q[6] = s4; this.ph = tp;
       } else if (f === 'RM') {
         // sine carrier 0.4 Hz * 2^(0.84 (n - 1)), right 90 degrees later
-        const hz = .4 * Math.pow(2, .84 * (n - 1)), w = 2 * Math.PI * hz / sr;
-        let s = this.lfs, c = this.lfc;
-        for (; i < e; i++) { const a = xL[i] * s, b = xR[i] * -c; yL[i] = a; yR[i] = b; en += a * a + b * b; s += w * c; c -= w * s; }
-        const m = Math.sqrt(s * s + c * c); this.lfs = s / m; this.lfc = c / m;
+        const inc = .4 * Math.pow(2, .84 * (n - 1)) / sr; let ph = this.ph;
+        for (; i < e; i++) { const w = 2 * Math.PI * ph, a = xL[i] * Math.sin(w), b = xR[i] * -Math.cos(w); yL[i] = a; yR[i] = b; en += a * a + b * b; ph += inc; if (ph >= 1) ph -= 1; }
+        this.ph = ph;
       } else if (f === 'DL') {
         // time 800 ms * (1/800)^((n-1)/15); feedback 0.45 / 0.6 / 0.75; 5 kHz low pass in the loop (n <= 6); ping-pong (n <= 4); SYNC (DL1-8)
-        const want = (P.sy && n <= 8 ? dlSync(n, P.bpm) : dlMs(n) / 1000) * sr, fbk = n <= 6 ? .45 : n <= 10 ? .6 : .75, lp = n <= 6, pp = n <= 4;
+        const want = Math.min(1.04 * sr, (P.sy && n <= 8 ? dlSync(n, Math.min(400, Math.max(20, +P.bpm || 120))) : dlMs(n) / 1000) * sr), fbk = n <= 6 ? .45 : n <= 10 ? .6 : .75, lp = n <= 6, pp = n <= 4;
         // a new time (tempo change with SYNC): the read pointer glides there in 50 ms (raised cosine: no kink in the speed)
         if (this.tCur <= 0) { this.tCur = want; this.tTgt = want; this.tStep = 0; }
         if (want !== this.tTgt) { this.t0 = this.tCur; this.tTgt = want; this.tStep = 1; }
@@ -150,6 +150,7 @@
           const a = B0[k & m] * (1 - fr) + B0[(k + 1) & m] * fr, b = B1[k & m] * (1 - fr) + B1[(k + 1) & m] * fr;
           let fa = a, fb_ = b;
           if (lp) { Q[0] += al * (a - Q[0]); Q[1] += al * (b - Q[1]); fa = Q[0]; fb_ = Q[1]; }
+          if (fa < 1e-15 && fa > -1e-15) fa = 0; if (fb_ < 1e-15 && fb_ > -1e-15) fb_ = 0;   // no subnormal limit cycle (rule 17)
           let gi = 1; if (this.inR > 0) { gi = 1 - this.inR / this.inN; this.inR--; }
           if (pp) { B0[wi & m] = .5 * (xL[i] + xR[i]) * gi + fbk * fb_; B1[wi & m] = fbk * fa; }
           else { B0[wi & m] = xL[i] * gi + fbk * fa; B1[wi & m] = xR[i] * gi + fbk * fb_; }
@@ -197,15 +198,19 @@
       return en;
     }
   }
+  // the sample k of both channels under -100 dB
+  function nearZ(L, R, k) { const l = L[k], r = R[k]; return l < 1e-5 && l > -1e-5 && r < 1e-5 && r > -1e-5; }
   class FxSlot {
     constructor(kind, sr) {
-      this.kind = kind; this.sr = sr; this.u = [new FxUnit(kind, sr), new FxUnit(kind, sr)]; this.cur = 0; this.type = '';
+      this.kind = kind; this.sr = sr; this.u = [new FxUnit(kind, sr), new FxUnit(kind, sr)]; this.cur = 0; this.type = ''; this.pend = '';
       this.xf = 0; this.xn = Math.round(.03 * sr);   // 30 ms crossfade on a type change
       this.wL = new Float32Array(128); this.wR = new Float32Array(128); this.oL = new Float32Array(128); this.oR = new Float32Array(128);
       this.quiet = 1e9; this.kill = 0; this.kn = Math.round(.01 * sr); this.par = {sy: 0, bpm: 120}; this.silN = 1e12; this.mute = 0;
+      this.bc = 0; this.bs = 1 / Math.round(.005 * sr);   // the BAL in use: it moves at most 1 / 5 ms per sample (TIME FX, LFO steps)
+      this.byp = true; this.lz = true;   // lz: the input before was silent (the processor skips the FX while it has no voices)
     }
     grow(N) { if (this.wL.length < N) { this.wL = new Float32Array(N); this.wR = new Float32Array(N); this.oL = new Float32Array(N); this.oR = new Float32Array(N); } }
-    clear() { this.u[0].clear(); this.u[1].clear(); this.xf = 0; this.quiet = 1e9; this.silN = 1e12; this.mute = 0; this.kill = 0; }
+    clear() { this.u[0].clear(); this.u[1].clear(); this.xf = 0; this.quiet = 1e9; this.silN = 1e12; this.mute = 0; this.kill = 0; this.pend = ''; }
     // samples a silent input still sounds (the sleep must not cut a tail): echo repeats down to -140 dB, reverb 140 / 60 x RT60
     tailN() {
       const U = this.u[this.cur], n = U.n, sr = this.sr;
@@ -213,25 +218,33 @@
       if (U.fam === 'RV') return 8 * Math.pow(.3 / 8, (n - 1) / 15) * 140 / 60 * 1.5 * sr;
       return .03 * sr;
     }
-    // the type to play (fam + n); a change starts the 30 ms crossfade into the other unit
+    // the type to play (fam + n); a change starts the 30 ms crossfade into the other unit; a change during a crossfade waits
+    // for its end (the fading unit is never overwritten while it sounds)
     setType(t) {
-      if (t === this.type) return;
+      if (t === this.type) { this.pend = ''; return; }
+      if (this.xf > 0) { this.pend = t; return; }
       const fam = t.slice(0, 2), n = +t.slice(2) | 0;
-      if (!this.type || this.quiet > 4) { this.u[this.cur].set(fam, n); this.type = t; this.xf = 0; return; }
-      // chorus family: the new unit takes the old input history; echo / reverb: a fresh unit whose input fades in over the
-      // crossfade (its first echo then has no onset step)
+      if (!this.type || this.quiet > 4 || this.byp) { this.u[this.cur].set(fam, n); this.type = t; this.xf = 0; return; }
+      // chorus family: the new unit takes the old input history; else a fresh unit whose input fades in over the crossfade
       const nx = 1 - this.cur, old = this.u[this.cur]; this.u[nx].set(fam, n); if (old.fam === fam && this.kind === 1) this.u[nx].copyHist(old); else this.u[nx].inR = this.xn; this.cur = nx; this.type = t; this.xf = this.xn;
     }
-    // in place over [i, e): x = x (1 - b) + wet b; b = 0 (and no fade running): untouched
+    // in place over [i, e): x = x (1 - b) + wet b; bypassed (BAL 0 reached): untouched, the effect cleared
     process(L, R, i, e, b) {
-      if (this.mute > 0) { this.mute -= e - i; return; }   // after a panic: 60 ms without FX (the voices' own 3 ms fades end meanwhile)
-      if (b <= 0 && this.xf === 0) { if (this.kill > 0) { this.clear(); this.kill = 0; this.mute = Math.round(.05 * this.sr); } this.quiet = 1e9; return; }
-      // sleep: the input silent and the tail done (the input is scanned only while the slot may sleep)
-      let peak = 1;
-      if (this.quiet > 4 && this.xf === 0) {
-        peak = 0; for (let j = i; j < e; j++) if (L[j] !== 0 || R[j] !== 0) { peak = 1; break; }
-        if (peak) this.silN = 0; else { this.silN += e - i; if (this.silN > this.tailN()) return; }
+      if (this.mute > 0) {   // after a panic: 50 ms without FX (the voices' own 3 ms fades end meanwhile), then the input fades in
+        this.mute -= e - i; if (this.mute <= 0) { this.mute = 0; this.u[this.cur].inR = this.xn; } return;
       }
+      if (b <= 0 && this.bc <= 0 && this.xf === 0) {
+        if (!this.byp) { this.clear(); this.byp = true; }   // entering the bypass: the old tails are gone, nothing comes back later
+        this.lz = nearZ(L, R, e - 1);   // the input ends (near) silent (-100 dB)
+        return;
+      }
+      // leaving the bypass: after silence at once at the target BAL (the units are cleared, nothing can click); while sound runs
+      // with the BAL slew + input fade
+      if (this.byp) { this.byp = false; this.quiet = 0; this.silN = 0; if (this.lz) this.bc = b; else this.u[this.cur].inR = this.xn; }
+      // the input of this segment (before the mix)
+      let peak = 0; for (let j = i; j < e; j++) if (L[j] !== 0 || R[j] !== 0) { peak = 1; break; }
+      if (peak) this.silN = 0; else this.silN += e - i;
+      if (this.kill === 0 && !peak && this.quiet > 4 && this.xf === 0 && this.bc === b && this.silN > this.tailN()) return;   // sleep
       this.grow(e);
       const U = this.u[this.cur], wL = this.wL, wR = this.wR;
       U.run(L, R, wL, wR, i, e, this.par);
@@ -240,19 +253,20 @@
         const O = this.u[1 - this.cur], oL = this.oL, oR = this.oR; O.run(L, R, oL, oR, i, e, this.par);
         for (let j = i; j < e; j++) { const x = this.xf > 0 ? this.xf / this.xn : 0; if (this.xf > 0) this.xf--; wL[j] = wL[j] * (1 - x) + oL[j] * x; wR[j] = wR[j] * (1 - x) + oR[j] * x; }
         en += O.e;
+        if (this.xf === 0 && this.pend) { const t = this.pend; this.pend = ''; this.setType(t); }
       }
-      const d = 1 - b;
+      const bs = this.bs; let bc = this.bc;
       if (this.kill > 0) {   // panic / double stop: the wet path fades out in 10 ms, then all tails are cleared
-        for (let j = i; j < e; j++) { const k = this.kill > 0 ? this.kill / this.kn : 0; if (this.kill > 0) this.kill--; L[j] = L[j] * d + wL[j] * b * k; R[j] = R[j] * d + wR[j] * b * k; }
-        if (this.kill <= 0) { this.clear(); this.kill = 0; this.mute = Math.round(.05 * this.sr); }
+        for (let j = i; j < e; j++) { const k = this.kill > 0 ? this.kill / this.kn : 0; if (this.kill > 0) this.kill--; L[j] = L[j] * (1 - bc) + wL[j] * bc * k; R[j] = R[j] * (1 - bc) + wR[j] * bc * k; }
+        if (this.kill <= 0) { this.clear(); this.mute = Math.round(.05 * this.sr); }
         return;
       }
-      for (let j = i; j < e; j++) { L[j] = L[j] * d + wL[j] * b; R[j] = R[j] * d + wR[j] * b; }
-      if (en < 1e-14 * (e - i + 1)) {   // the wet path is silent: is the input too?
-        if (peak === 1 && this.quiet <= 4) { peak = 0; for (let j = i; j < e; j++) if (L[j] !== 0 || R[j] !== 0) { peak = 1; break; } if (!peak) this.silN += e - i; else this.silN = 0; }
-        this.quiet = peak ? 0 : this.quiet + 1;
-      } else { this.quiet = 0; if (peak) this.silN = 0; }
+      if (bc === b) { const d = 1 - b; for (let j = i; j < e; j++) { L[j] = L[j] * d + wL[j] * b; R[j] = R[j] * d + wR[j] * b; } }
+      else for (let j = i; j < e; j++) { bc = bc < b ? Math.min(b, bc + bs) : Math.max(b, bc - bs); L[j] = L[j] * (1 - bc) + wL[j] * bc; R[j] = R[j] * (1 - bc) + wR[j] * bc; }
+      this.bc = bc;
+      this.quiet = !peak && en < 1e-14 * (e - i + 1) ? this.quiet + 1 : 0;
     }
-    asleep() { return this.mute > 0 || (this.xf === 0 && this.kill === 0 && this.quiet > 4 && (this.silN > 1e11 || this.silN > this.tailN())); }
-    panic() { if (this.quiet < 1e9) this.kill = this.kn; else { this.clear(); this.mute = Math.round(.06 * this.sr); } }
+    asleep() { return this.byp || (this.mute === 0 && this.xf === 0 && this.kill === 0 && this.quiet > 4 && (this.silN > 1e11 || this.silN > this.tailN())); }
+    // panic: a sleeping or bypassed slot is cleared at once; a sounding one fades its wet path out first
+    panic() { if (this.asleep()) { this.clear(); this.byp = true; this.bc = 0; this.lz = true; } else this.kill = this.kn; }
   }

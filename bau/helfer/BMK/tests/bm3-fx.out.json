@@ -2,7 +2,7 @@
  {
   "id": "BM3-01 BAL 0 → trocken bitgleich (Weg umgangen); 50 → trocken −6,02 ± 0,1 dB; 100 → trocken ≤ −90 dB",
   "ok": true,
-  "info": "Differenz bei 0: 0; 50: -6.021 dB; 100: -99.8 dB"
+  "info": "Differenz bei 0: 0; 50: -6.021 dB; 100: -169.7 dB"
  },
  {
   "id": "BM3-02 CH1–14 Tempo und Tiefe ± 5 % (Tonhöhenschwankung eines 1-kHz-Sinus, L und R)",
@@ -27,7 +27,7 @@
  {
   "id": "BM3-05 RM8–16 Seitenbänder bei f ± fn (± 1 %); RM1–4 L/R 90° ± 5°",
   "ok": true,
-  "info": "größte Abw. 0.45 % von fn; Phasen L−R 90 / 90 / 90 / 90°"
+  "info": "größte Abw. 0.09 % von fn; Phasen L−R 90 / 90 / 90 / 90°"
  },
  {
   "id": "BM3-06 DL1–16 Zeit ± 1 ms (n ≥ 10 ± 0,05 ms), Abfall je Wiederholung ± 0,3 dB, Ping-Pong n ≤ 4, Kammspitzen bei Vielfachen von 1/t",
@@ -62,7 +62,7 @@
  {
   "id": "BM2-05 FX-Ziele wirken messbar (fx1t, fx2t, fx1b, fx2b)",
   "ok": true,
-  "info": "LFO→fx1t -1.1 dB, LFO→fx2t -2.7 dB, LFO→fx2b 4 dB, MW→fx1b -2.8 dB, MW→fx2b 2.1 dB, AT→fx1b -2.8 dB"
+  "info": "LFO→fx1t -1.1 dB, LFO→fx2t -2.7 dB, LFO→fx2b 0.9 dB, MW→fx1b -2.8 dB, MW→fx2b 2.1 dB, AT→fx1b -2.8 dB"
  },
  {
   "id": "BM2-09 TIME FX OFF → DL/RV umgangen (bitgleich trocken), DT bleibt",

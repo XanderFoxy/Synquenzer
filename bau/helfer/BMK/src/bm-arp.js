@@ -29,7 +29,7 @@ const BMARP = (function () {
   // the note of step c (0, 1, 2 ...); seed = project id + track uid (RND: + the step counter); null = nothing to play
   function step(t, keys, c, seed) {
     if (!keys.length || t === 'off') return null;
-    if (t === 'rnd' || t === 'rnd2' || t === 'rnd3') { const U = oct(keys, t === 'rnd' ? 1 : t === 'rnd2' ? 2 : 3); return U[mix(seed >>> 0, c) % U.length]; }
+    if (t === 'rnd' || t === 'rnd2' || t === 'rnd3') { const U = oct(keys, t === 'rnd' ? 1 : t === 'rnd2' ? 2 : 3); const x = U[mix(seed >>> 0, c) % U.length]; return x <= 127 ? x : null; }
     const s = seq(t, keys); if (!s.length) return null; const n = s[md(c, s.length)]; return n <= 127 ? n : null;
   }
   // the step length: transport stopped = free sixteenths at SPD BPM; running = the song is the clock, the division nearest (log) to SPD / song BPM

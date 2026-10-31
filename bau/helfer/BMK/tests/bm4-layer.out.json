@@ -12,7 +12,7 @@
  {
   "id": "BM4-03 FX-Typen aus A; FX1-Anteil je Programm (zwei Instanzen); FX2 einmal (Typ und Anteil aus A)",
   "ok": true,
-  "info": "FX1 A wirkt 0.321, FX1 B wirkt 0.257, B-eigener Typ ändert nichts (0), FX2 aus B ändert nichts (0), FX2 aus A wirkt"
+  "info": "FX1 A wirkt 0.331, FX1 B wirkt 0.253, B-eigener Typ ändert nichts (0), FX2 aus B ändert nichts (0), FX2 aus A wirkt"
  },
  {
   "id": "BM4-04 LFOs je Programm: A und B mit eigenen Werten",
@@ -23,5 +23,10 @@
   "id": "BM4-05 Layer braucht 2 Stimmen je Note; die 7. Note klaut (12 Stimmen)",
   "ok": true,
   "info": "12 Stimmen, 1. Note geklaut true, 7. Note mit 2 Stimmen"
+ },
+ {
+  "id": "BM4-R7 Layer-BAL gedreht während A klingt: gleitet (−1 → −40 dB in 8–30 ms, ein Sprung wäre < 1 ms), nach 40 ms still",
+  "ok": true,
+  "info": "−1 → −40 dB in 14 ms, nach 40 ms still"
  }
 ]
