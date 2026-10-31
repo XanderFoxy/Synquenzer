@@ -14,11 +14,10 @@
     "ausgeschlossen": ["Foodservice", "Großhandel", "Metro", "Selgros"]
   },
   "deal": {
-    "_hinweis": "Ein Angebot ist ein Deal, wenn der Stückpreis/100-g-Preis mindestens 'rabattMin' unter dem Normalpreis liegt, oder auf/unter dem Tiefstpreis (mit genug Verlauf). Gegen einen nur geschätzten Normalpreis zählt es nur, wenn es das günstigste aktuelle Angebot ist und höchstens 'schaetzungMaxRabatt' darunter liegt (mehr = eher ein Lesefehler als ein Schnäppchen).",
-    "rabattMin": 0.25,
-    "schaetzungMaxRabatt": 0.60,
-    "tiefstpreisMinPunkte": 10,
-    "tiefstpreisMinRabatt": 0.10,
+    "_hinweis": "Ein Angebot ist ein Deal (Push), wenn der Preis jetzt ≤ dem üblichen Angebotspreis (Median der Angebote der letzten 12 Monate, gleiche Packung) UND höchstens 'nahTiefst' über dem Tiefstpreis der letzten 12 Monate liegt. Prozent nur gegen den recherchierten regulären Preis (referenzpreise.json). 'ueblichMinAngebote': so viele Angebote braucht der Median, sonst gilt der recherchierte Wert. Referenzwerte älter als 'referenzAltTage' bekommen ein „Stand …“.",
+    "nahTiefst": 0.10,
+    "ueblichMinAngebote": 3,
+    "referenzAltTage": 90,
     "historieMinTage": 5,
     "normalpreisFensterTage": 56,
     "historieBehaltenTage": 400,

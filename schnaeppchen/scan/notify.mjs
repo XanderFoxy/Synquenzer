@@ -32,9 +32,9 @@ export function nachricht(d, cfg, jetztMs = Date.now()) {
     // „465 ml oder 4 × 100 ml“: sagen, für welche Packung der Preis gilt (der Prospekt rechnet oft mit der anderen)
     const v = d.einheitspreisVarianten;
     const bei = v?.length > 1 ? ` (bei ${v[0].packung}; ${v[1].packung}: ${euroKurz(v[1].einheitspreis)})` : '';
-    zeilen.push(`${euroKurz(d.einheitspreis)} ${label}${bei} – normal ${d.normalGeschaetzt ? 'ca. ' : ''}${euroKurz(d.normalpreis)}${d.normalGeschaetzt ? ' (geschätzt)' : ''}`);
-    if (d.grund) zeilen.push(d.grund);
-    if (d.tiefstText) zeilen.push(d.tiefstText);
+    // Kontext statt Schätzung: „Tiefst 12 Mon. 2,49 € (Kaufland, Okt. 2026) · üblich 2,79 € · statt regulär 3,49 € (−20 %)“
+    if (d.kontextText) zeilen.push(d.kontextText);
+    zeilen.push(`${euroKurz(d.einheitspreis)} ${label}${bei}${d.grund ? ` – ${d.grund}` : ''}`);
     if (d.startetSpaeter && d.gueltigAb) zeilen.push(`gilt ab ${zeitpunktText(d.gueltigAb)}${d.gueltigBis ? ` bis ${zeitpunktText(d.gueltigBis)}` : ''}`);
     else if (d.gueltigBis) zeilen.push(`gültig bis ${zeitpunktText(d.gueltigBis)}`);
     zeilen.push(d.titel);
@@ -45,8 +45,8 @@ export function nachricht(d, cfg, jetztMs = Date.now()) {
     title: d.typ === 'technik' ? `${d.preisfehler === false ? 'Technik-Deal: ' : 'Preisfehler? '}${d.titel}`.slice(0, 120) : `Schnäppchen: ${d.name}`,
     message: zeilen.filter(Boolean).join('\n'),
     click: d.link,
-    // höchste Stufe nur bei sicherem Normalpreis (aus dem Verlauf); gegen eine Schätzung höchstens 4
-    priority: d.typ === 'technik' || ((d.ersparnis ?? 0) >= 0.4 && !d.normalGeschaetzt) ? 5 : 4,
+    // höchste Stufe: Preisfehler oder so günstig wie das 12-Monats-Tief
+    priority: d.typ === 'technik' || d.neuesTief ? 5 : 4,
     tags: d.typ === 'technik' ? ['rotating_light'] : ['shopping_cart'],
     actions: [
       { action: 'view', label: 'Zum Angebot', url: d.link, clear: true },

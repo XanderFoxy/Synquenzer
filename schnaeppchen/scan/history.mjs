@@ -1,5 +1,5 @@
 // Price history per group: one point per day and shop (the lowest unit price seen that day).
-// history = { version: 2, gruppen: { [gruppe]: { basis, punkte: [{ tag, p, shop }], tiefst: { p, tag, shop } } } }
+// history = { version: 2, gruppen: { [gruppe]: { basis, punkte: [{ tag, p, shop, m?, pp? }], tiefst: { p, tag, shop } } } }
 // Version 2 (31.10.2026): Packungsgrößen werden richtig gelesen. Version-1-Verläufe enthalten falsche Punkte
 // (z. B. Knoppers 0,07 €/Stück aus „1 kg“) und werden deshalb einmal verworfen.
 
@@ -18,9 +18,10 @@ export function eintragen(hist, gruppe, basis, punkt, jetzt) {
   const g = (hist.gruppen[gruppe] ||= { basis, punkte: [], tiefst: null });
   g.basis = basis;
   const tag = tagVon(jetzt);
-  const alt = g.punkte.find(x => x.tag === tag && x.shop === punkt.shop);
-  if (alt) { if (punkt.p < alt.p) alt.p = punkt.p; }
-  else g.punkte.push({ tag, p: punkt.p, shop: punkt.shop });
+  // m = Packung in Basis-Einheiten (Stück/g/ml), pp = Packungspreis: damit später nur gleiche Packungen verglichen werden
+  const alt = g.punkte.find(x => x.tag === tag && x.shop === punkt.shop && (x.m ?? null) === (punkt.m ?? null));
+  if (alt) { if (punkt.p < alt.p) { alt.p = punkt.p; if (punkt.pp) alt.pp = punkt.pp; } }
+  else g.punkte.push({ tag, p: punkt.p, shop: punkt.shop, ...(punkt.m > 0 ? { m: punkt.m, pp: punkt.pp } : {}) });
   if (!g.tiefst || punkt.p < g.tiefst.p) g.tiefst = { p: punkt.p, tag, shop: punkt.shop };
 }
 
