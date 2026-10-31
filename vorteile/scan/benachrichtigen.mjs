@@ -4,6 +4,7 @@ import { schluessel } from './lib/text.mjs';
 
 export const KATEGORIEN = {
   deals: 'Deals', erleben: 'Erleben', reisen: 'Reisen', musik: 'Musik', nebenverdienst: 'Nebenverdienst', tests: 'Tests & Gewinnspiele',
+  praemien: 'Prämien & Freunde werben',
 };
 
 export function berlin(jetzt) {
@@ -61,6 +62,14 @@ export function plane({ eintraege, zustand, cfg, jetzt, modus = 'auto' }) {
     digest: digest.length ? { liste: digest, msg: digestNachricht(digest, cfg) } : null,
     digestFaellig,
   };
+}
+
+/** Einträge als schon gemeldet markieren (ohne Push), z. B. beim ersten Lauf eines neuen Moduls. */
+export function alsGemeldet(zustand, eintraege, jetzt) {
+  const iso = new Date(jetzt).toISOString();
+  zustand.gemeldet ||= {};
+  for (const e of eintraege) { zustand.gemeldet[e.id] = iso; zustand.gemeldet[titelKey(e)] = iso; }
+  return zustand;
 }
 
 /** Nach dem Senden: Zustand fortschreiben (nur wirklich gesendete Einträge gelten als gemeldet). */

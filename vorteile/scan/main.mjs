@@ -6,18 +6,19 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { macheAbruf, macheFixtureAbruf } from './lib/http.mjs';
 import { tageBis } from './lib/text.mjs';
-import { plane, verbuche, sende, KATEGORIEN } from './benachrichtigen.mjs';
+import { plane, verbuche, sende, KATEGORIEN, alsGemeldet } from './benachrichtigen.mjs';
 import deals from './module/deals.mjs';
 import erleben from './module/erleben.mjs';
 import reisen from './module/reisen.mjs';
 import musik from './module/musik.mjs';
 import nebenverdienst from './module/nebenverdienst.mjs';
 import tests from './module/tests.mjs';
+import praemien from './module/praemien.mjs';
 import { FIXTURE_KARTE } from './test/fixtures/karte.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
-export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests };
-const MAX_ALTER_TAGE = { deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21 };
+export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien };
+const MAX_ALTER_TAGE = { deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14 };
 
 const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${name}: Zeitlimit`)), ms).unref())]);
 
@@ -28,6 +29,7 @@ export async function lauf({ cfg, wunschliste, vorher, zustand, holeText, env = 
   zustand.lauf ||= {};
   const kategorien = {};
   const status = {};
+  const neueModule = [];
   for (const [name, fn] of Object.entries(MODULE)) {
     const m = cfg.module[name];
     const alt = vorher?.kategorien?.[name] || [];
@@ -46,6 +48,7 @@ export async function lauf({ cfg, wunschliste, vorher, zustand, holeText, env = 
       const kaputt = !r.eintraege.length && r.fehler.length > 0;
       kategorien[name] = kaputt ? alt : r.eintraege;
       status[name] = { ok: !r.fehler.length, anzahl: r.eintraege.length, fehler: r.fehler.slice(0, 10), ms: Date.now() - t0, stand: new Date(jetztMs).toISOString() };
+      if (!zustand.lauf[name] && zustand.gemeldet && !kaputt) neueModule.push(name);
       zustand.lauf[name] = new Date(jetztMs).toISOString();
     } catch (e) {
       kategorien[name] = alt;
@@ -58,9 +61,11 @@ export async function lauf({ cfg, wunschliste, vorher, zustand, holeText, env = 
     kategorien[name] = liste
       .filter(e => !(e.frist && tageBis(e.frist, new Date(jetztMs)) < 0))
       .filter(e => !e.datum || (jetztMs - Date.parse(e.datum)) / 864e5 <= (MAX_ALTER_TAGE[name] ?? 21))
-      .sort((a, b) => b.wert - a.wert)
+      .sort((a, b) => (b.extra?.sortWert ?? b.wert) - (a.extra?.sortWert ?? a.wert))
       .slice(0, 40);
   }
+  // Neues Modul in einem laufenden Radar: beim ersten Lauf nichts nachmelden (keine Push-Flut), nur auf der Seite zeigen
+  for (const name of neueModule) alsGemeldet(zustand, kategorien[name], new Date(jetztMs));
   const alleEintraege = Object.values(kategorien).flat();
   const aktuell = {
     version: 1,
