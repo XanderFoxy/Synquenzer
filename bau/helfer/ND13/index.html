@@ -11411,7 +11411,7 @@ this.smK = 1 - Math.exp(-CR / (0.01 * SR));
 this.chs = []; for (let i = 0; i < NCH; i++) this.chs.push(new Chan(this, i));
 this.nz = new Uint32Array(NCH);
 this.mskT = new Float64Array(NCH); this.mskN = new Float64Array(NCH); this.mskC = new Float64Array(NCH);
-this.soloCh = -1; this.soloP = 0; this.lim = 0; this.tap = 0; this.sent = true; this.errAt = -1e12; this.dcA = 1 - TAU * 3 / SR; this.dcX = 0.1; this.dcY = 0.1; this.dcW = 0.1; this.dcZ = 0.1;
+this.soloCh = -1; this.soloP = 0; this.lim = 0; this.tap = 0; this.sent = true; this.errAt = -1e12;
 this.QN = 512; this.q = []; for (let i = 0; i < this.QN; i++) this.q.push({fr: 0, ch: 0, v: 0, acc: 0, tune: 0, dec: 1}); this.qn = 0;
 this.late = 0; this.lateSent = 0;
 this.stopFr = -1; this.stopTau = 0.02; this.pan = 0;
@@ -11445,7 +11445,7 @@ resetAll() {
 for (let i = 0; i < NCH; i++) { this.chs[i].reset(); this.nz[i] = (0x9E3779B9 ^ Math.imul(i + 1, 2654435761)) >>> 0 || 1; }
 for (let i = 0; i < NCH; i++) { const C = this.chs[i]; this.levels(C); C.tlS = C.tlT; C.nlS = C.nlT; C.clS = C.clT; this.fxSnap(C); }
 this.qn = 0; this.stopFr = -1; this.pan = 0; this.dlyT = dlyTime(this.K); this.dlyS = Math.round(this.dlyT * SR); this.dlyFb = 0.97 * this.K.dlF / 20;
-this.hallReset(); this.dcX = 0; this.dcY = 0; this.dcW = 0; this.dcZ = 0;
+this.hallReset();
 }
 levels(C) {
 const P = C.P, i = C.i, so = this.soloCh;
@@ -11532,7 +11532,7 @@ this.hit(h, off); qi++;
 }
 if (qi > 0) { const q = this.q; for (let i = qi; i < this.qn; i++) { const t = q[i - qi]; q[i - qi] = q[i]; q[i] = t; } this.qn -= qi; }
 if (stopK > 0) for (let c = 0; c < NCH; c++) for (let j = 0; j < NV; j++) { const v = this.chs[c].v[j]; if (v.on) v.stpK = stopK; }
-if (!any && this.hsleep > 0.5 * SR / N && this.pan === 0 && this.dcY < 1e-9 && this.dcY > -1e-9 && this.dcZ < 1e-9 && this.dcZ > -1e-9) { this.account(t0, N); return true; }
+if (!any && this.hsleep > 0.5 * SR / N && this.pan === 0) { this.account(t0, N); return true; }
 let needD = false; for (let c = 0; c < NCH; c++) { const C = this.chs[c]; if (C.act && (C.tDl > 0 || C.sDl > 0 || C.dlHold > 0 || C.dlyE > 0)) needD = true; }
 if (needD) { const tg = Math.round(this.dlyT * SR), st = this.dlySt, DT = this.dT; let d = this.dlyS;
 for (let i = 0; i < N; i++) { if (d !== tg) { if (d < tg) { d += st; if (d > tg) d = tg; } else { d -= st; if (d < tg) d = tg; } } DT[i] = d; }
@@ -11547,12 +11547,9 @@ if (!alive && C.dlyE < 1e-10 && C.dlHold === 0) C.act = false;
 }
 this.hall(hin, L, R, N);
 { let sm = 0; for (let i = 0; i < N; i++) sm += L[i] + R[i]; if (!(sm - sm === 0)) { L.fill(0); if (R !== L) R.fill(0); for (let c = 0; c < NCH; c++) { const C = this.chs[c]; C.v[0].reset0(); C.v[1].reset0(); C.dl.fill(0); C.dlyE = 0; C.dlHold = 0; C.eqx1 = C.eqx2 = C.eqy1 = C.eqy2 = 0; C.adaa = 0.2; C.dcx = C.dcy = 0; } this.hallReset(); this.err(-1); } }
-{ const a = this.dcA; let x1 = this.dcX, y1 = this.dcY, x2 = this.dcW, y2 = this.dcZ;
-for (let i = 0; i < N; i++) { const l = L[i], r = R[i]; y1 = l - x1 + a * y1; x1 = l; L[i] = y1; y2 = r - x2 + a * y2; x2 = r; R[i] = y2; }
-if (y1 < 1e-15 && y1 > -1e-15) y1 = 0; if (y2 < 1e-15 && y2 > -1e-15) y2 = 0; this.dcX = x1; this.dcY = y1; this.dcW = x2; this.dcZ = y2; }
 if (this.pan > 0) {
 for (let i = 0; i < N; i++) { const g = this.pan > 0 ? this.pan / this.panN : 0; L[i] *= g; if (R !== L) R[i] *= g; if (this.pan > 0) this.pan--; }
-if (this.pan === 0) { this.dcX = 0; this.dcY = 0; this.dcW = 0; this.dcZ = 0; for (let c = 0; c < NCH; c++) { const C = this.chs[c]; C.v[0].reset0(); C.v[1].reset0(); C.dl.fill(0); C.dlyE = 0; C.act = false; C.eqx1 = C.eqx2 = C.eqy1 = C.eqy2 = 0; } this.hallReset(); }
+if (this.pan === 0) { for (let c = 0; c < NCH; c++) { const C = this.chs[c]; C.v[0].reset0(); C.v[1].reset0(); C.dl.fill(0); C.dlyE = 0; C.act = false; C.eqx1 = C.eqx2 = C.eqy1 = C.eqy2 = 0; } this.hallReset(); }
 }
 this.account(t0, N);
 return true;
@@ -16158,7 +16155,7 @@ window.MDX = MDX;
     C('Ef', 'Rausch-Sweep', {mTlv: 0, mNtyp: 'b2', mNfrq: 20, mNres: 16, mNdyf: 9, mNdec: 36, mNdm: 'L', mNlv: 44, mDly: 20})];
   // CH LEVEL per program (measured: ND3-03 level targets bd/Sn/HH, toms equal; the other categories peak at -9 dBFS [A]; tests/md3-kits.mjs --calib)
   const LV = {};
-  Object.assign(LV, {"Rund":48,"Brücke":48,"Fellkick":41,"FM-Druck":38,"Verzerrt":50,"Klassisch":50,"Fell":41,"Gated":43,"FM-Snare":50,"Rausch-Klatsch":50,"Fell tief":28,"Fell mitte":29,"Fell hoch":30,"Elektro-Tom":44,"Kessel":47,"Zu":48,"Offen":42,"Pedal":50,"Ring-Metall":47,"Rausch-Hat":50,"Crash":28,"Ride":29,"China":46,"Splash":32,"Gong-Becken":36,"Holzblock":50,"Kuhglocke":45,"Conga":35,"Shaker":44,"Klangholz":45,"Glocke":41,"Röhre":47,"Ring-Glocke":45,"Kristall":23,"Doppelglocke":45,"Marimba":23,"Vibra":28,"Xylo":29,"Stahltrommel":21,"Handtrommel":40,"Laser":47,"Tropfen":50,"Lo-Fi-Zap":46,"Ringmod-Blech":46,"Rausch-Sweep":50});
+  Object.assign(LV, {"Rund":48,"Brücke":48,"Fellkick":42,"FM-Druck":38,"Verzerrt":50,"Klassisch":50,"Fell":41,"Gated":43,"FM-Snare":50,"Rausch-Klatsch":50,"Fell tief":28,"Fell mitte":29,"Fell hoch":30,"Elektro-Tom":44,"Kessel":47,"Zu":48,"Offen":42,"Pedal":50,"Ring-Metall":47,"Rausch-Hat":50,"Crash":28,"Ride":29,"China":46,"Splash":32,"Gong-Becken":36,"Holzblock":50,"Kuhglocke":45,"Conga":35,"Shaker":44,"Klangholz":45,"Glocke":41,"Röhre":47,"Ring-Glocke":45,"Kristall":23,"Doppelglocke":45,"Marimba":23,"Vibra":28,"Xylo":29,"Stahltrommel":21,"Handtrommel":41,"Laser":47,"Tropfen":50,"Lo-Fi-Zap":46,"Ringmod-Blech":46,"Rausch-Sweep":50});
   const progs = P.map(p => Object.freeze(MDX.norm(Object.assign({}, MDX.INIT, p, LV[p.mName] != null ? {mLvl: LV[p.mName]} : {}))));
   const byName = {}; for (const p of progs) byName[p.mName] = p;
   const prog = n => (byName[n] ? Object.assign({}, byName[n]) : null);

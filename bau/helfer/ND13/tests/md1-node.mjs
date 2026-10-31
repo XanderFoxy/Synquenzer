@@ -23,8 +23,6 @@ function zcInst(x, a, b) { const z = []; if (a === 0 && x[0] === 0 && x[1] > 0) 
 function crossT(x, dbRel, from = 0) { const {e, dt, off} = M.hilbDb(x, SR, 0.001, 0.0002); let pk = -1e9, pi = 0; e.forEach((v, i) => { if (v > pk) { pk = v; pi = i; } }); for (let i = Math.max(pi, from); i < e.length; i++) if (e[i] - pk <= dbRel) return i * dt + off; return NaN; }
 function t60band(x, f, q = 8) { return M.t60(M.bandpass(x, SR, f, q), SR); }
 const within = (v, t, tol) => Math.abs(v - t) <= tol;
-// undo the engine's output DC blocker (one pole at 3 Hz) to see a click or an echo event without the blocker's long, tiny tail
-const undc = x => { const a = 1 - 2 * Math.PI * 3 / SR, y = new Float32Array(x.length); let p = 0, q = 0; for (let i = 0; i < x.length; i++) { const v = p + x[i] - a * q; q = x[i]; p = v; y[i] = v; } return y; };
 const R = (a, d = 2) => (+a).toFixed(d);
 const run = (id, f) => { if (ONLY && !id.startsWith(ONLY)) return; try { f(); } catch (e) { check(id, false, 'Fehler ' + (e && e.stack || e)); } };
 
@@ -236,7 +234,7 @@ run('ND1-15', () => {
 // ND1-16 click
 run('ND1-16', () => {
   const len = {n1: 1.5, n2: 4, n3: 8, P1: 0.15, P2: 0.4, P3: 1.3, H1: 1, H2: 1, H3: 1, C1: 2, C2: 4, C3: 8};   // H1-H3: spec 1-3 ms -> at least 1 ms
-  for (const ty of Object.keys(len)) { const r0 = one({mTlv: 0, mClv: 50, mCty: ty}, {sec: 0.05}), r = {L: undc(r0.L)}; let last = 0; for (let i = 0; i < r.L.length; i++) if (Math.abs(r.L[i]) > 1e-9) last = i;
+  for (const ty of Object.keys(len)) { const r = one({mTlv: 0, mClv: 50, mCty: ty}, {sec: 0.05}); let last = 0; for (let i = 0; i < r.L.length; i++) if (Math.abs(r.L[i]) > 1e-9) last = i;
     const L = (last + 1) / SR * 1000; let first = 0, pm = 0; for (let i = 0; i < 200; i++) if (Math.abs(r.L[i]) > pm) { pm = Math.abs(r.L[i]); first = i; }
     const okP = ty[0] !== 'P' || first === 0; check('ND1-16a ' + ty, (ty[0] === 'H' && ty !== 'H1' ? L >= 0.9 && L <= 3.3 : Math.abs(L / len[ty] - 1) <= 0.1) && okP, 'Länge ' + R(L, 3) + ' ms (Soll ' + len[ty] + '), Spitze bei Sample ' + first + ', M-SP ' + R(msp(r.L, 0, 0.0427), 0) + ' Hz'); }
   for (const w of ['A1', 'd2', 't1']) { const t = one({mWav: w, mPit: 45, mFrq: 30, mDec: 30}, {sec: 0.05}), c = one({mWav: w, mTlv: 0, mClv: 40, mCty: 'P2'}, {sec: 0.05});
@@ -285,7 +283,7 @@ run('ND1-20', () => {
 });
 // ND1-21 echo
 run('ND1-21', () => {
-  const echo = (kit, o = {}) => { const r = one(Object.assign({mTlv: 0, mClv: 50, mCty: 'P1', mDly: 25}, o), {sec: o.sec || 2.5, r: {kit: Object.assign({rvT: 'r1', rvC: 0, dlR: 50, dlM: 'r', dlB: 60, dlF: 0}, kit)}}); return {L: undc(r.L), R: undc(r.R)}; };
+  const echo = (kit, o = {}) => { const r = one(Object.assign({mTlv: 0, mClv: 50, mCty: 'P1', mDly: 25}, o), {sec: o.sec || 2.5, r: {kit: Object.assign({rvT: 'r1', rvC: 0, dlR: 50, dlM: 'r', dlB: 60, dlF: 0}, kit)}}); return r; };
   const peaksT = (x, n) => { const out = []; const thr = M.peakAbs(x) * 1e-4; let i = 0; while (i < x.length && out.length < n) { if (Math.abs(x[i]) > thr) { let m = i; for (let k = i; k < Math.min(x.length, i + 40); k++) if (Math.abs(x[k]) > Math.abs(x[m])) m = k; out.push({i: m, a: Math.abs(x[m])}); i = m + Math.round(0.0005 * SR); } else i++; } return out; };
   for (const [r, ms] of [[0, 1150], [50, 104.7], [99, 10]]) { const e = echo({dlR: r}); const P = peaksT(e.L, 2); const t = (P[1].i - P[0].i) / SR * 1000; check('ND1-21a RATE ' + r, Math.abs(t - ms) <= Math.max(1, ms * 0.001), R(t, 2) + ' ms'); }
   { const e = echo({dlR: 99, dlF: 0}, {sec: 0.2}); const P = peaksT(e.L, 4); check('ND1-21b FEEDBACK 0', P.length === 2, P.length + ' Ereignisse (Schlag + Echos)'); }

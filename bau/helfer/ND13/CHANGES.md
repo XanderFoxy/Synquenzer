@@ -175,6 +175,10 @@ Eine unabhängige Nachprüfung (eigene Messungen, Chromium + Node) bestätigte d
 - **Q4 (Datenfelder, wichtig für ND4):** Die Spec-Felder `mDec` (TONE DECAY) und `mLvl` (CH LEVEL) heißen genauso wie bestehende Felder der
   Drum-Stimme (Metall-Decay `mDec`, Metall-Pegel `mLvl` der Hi-Hat-Slots in `DrumKits`). Flach im selben Slot gespeichert überschreiben sie sich.
   Die Engine nimmt im `ch`-Programm genau die Spec-Namen; die Ablage im Slot (z. B. eigener Unterschlüssel) muss ND4/der Dirigent entscheiden.
+- **Q8 (ND1-27 Gleichanteil):** Im 1-min-Zufallsflug liegt der Gleichanteil bei 48 kHz bei 0,003–0,004, bei 44,1 kHz bei 0,005–0,006 (Grenze 0,005).
+  Ursache sind die laut §1.8 einseitigen Rechteck-Clicks P1–P3 (immer positive Fläche) bei 16tel-Schlägen auf 12 Kanälen. Ein Hochpass 3 Hz am Ausgang
+  wurde probiert und wieder entfernt (verschiebt tiefe Phasen, langer leiser Nachlauf). Soll die Engine einen Gleichanteil-Filter bekommen (z. B. nur
+  im Click-Weg), oder gilt der Gleichanteil-Schutz des Master-Busses?
 - **Q6 (Abweichung 1):** Modal-Abklingen bei E1 wie gebaut (Moden mit T, ohne Hüllkurve – erfüllt ND1-10 „T60 ×1,5“) oder wie in §1.4 (T_M = 4T,
   Hüllkurve 4T/3 – dann ist ND1-10b nicht erfüllbar und hohe Moden klingen länger)?
 - **Q7 (Abweichung 8):** F2 „Selbst-Rückkopplung β = 0,6“ – in Perioden (gebaut, sehr rau) oder in Radiant (deutlich zahmer)?
