@@ -1,0 +1,20 @@
+App 4.25.0
+  Original, gehört gegen das Raster (ms): 0.4 60.4 -59.6 45.4 -49.6 60.4 -59.6 0.4 55.4 -44.6 60.4 -59.6 30.4 -29.6
+✓ Messung: Original gehört wie gesungen (±3 ms): max 0.4 ms, ρ ≥ 0.67
+  Editor [1/8] → stretch 100 %; gehört (ms): 0.4 3.4 2.4 3.4 1.4 3.4 1.4 3.4 1.4 2.1 1.4 3.4 1.4 3.4
+✓ G1-01 Editor-Tipp 1/8 (Standard 100 %): alle 14 Einsätze ±5 ms auf dem Raster – max 3.4 ms
+  Stärke 50 % → gehört (ms): 0.3 31.8 -28.7 24.3 -24.2 31.8 -29.2 1.8 28.3 -21.4 30.8 -28.2 15.8 -13.2
+✓ G1-01 Stärke 50 %: halber Abstand ±5 ms – max 1.8 ms
+✓ G1-01 Scheiben 100 %: ±5 ms – max 3.4 ms
+✓ G1-01 Scheiben 50 %: halber Abstand ±5 ms – max 1.7 ms
+✓ G1-01 im Song (Dehnen 100 %): ±5 ms – max 3.4 ms
+✓ G1-03 ↶ (6 Schritte, ohne Song-Schritt) → keine Karte, keine gespeicherten Marken, Klang = Roh-Take bitgleich (192000 Samples)
+✓ G1-03 ↷ → Marken und Karte deep-equal zum Zustand nach dem Tipp
+✓ G1-03 nach ↷ gehört wieder auf dem Raster: max 3.4 ms
+✓ G1-03 kein Knacken an den Schnitten (Dehnen 100 %): M-KLICK 12.19 dB (Original 11.99 dB)
+✓ G1-03 kein Knacken (Scheiben 100 %): M-KLICK 12.19 dB (Original 11.99 dB)
+✓ G1-03 Ausgang (Dehnen, mitgeschnitten): M-KLICK 13.14 dB gegen Original-Ausgang 13.07 dB
+  Audio folgt 1/16 → stretch 1; gehört (ms): 0.0 3.0 2.0 3.0 1.0 3.0 1.0 3.0 1.0 1.7 1.0 3.0 1.0 3.0
+✓ Ursache Fangfenster: Audio folgt 1/16, Einsätze 45–60 ms neben der Linie → 14/14 auf dem Raster ±5 ms (max 3.0 ms)
+✓ keine Konsolenfehler []
+ALL OK
