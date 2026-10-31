@@ -62,11 +62,11 @@ CPU (`tests/md1-cpu.mjs`, Renderzeit im Chromium-OfflineAudioContext), ND3 (`tes
 | ND1-20 Anteile | ✓ | RVB/DLY 25 → −6,021 dB; 50 → −∞ |
 | ND1-21 Echo | ✓ 12/12 | RATE 0/50/99 → 1149,98 / 104,69 / 9,98 ms; FB 0 → 1 Echo; FB 20 → −0,265 dB; BPM-Strecke exakt; L9 → rechts −∞ |
 | ND1-22 Hall | ✓ 14/14 | RT60 alle Typen ±10 %; COLOR −9/−4,5/+4,5/+9 → 1503/5476/171/1500 Hz; 0 umgangen |
-| ND1-23 Knackfrei | ✓ 13/13 | Wirbel 1/64 4,3 dB; Mono-Gruppe −∞ nach 4 ms; 7 Regler-Fahrten ≤ 1,1 dB; Echo-RATE-Fahrt 2,1 dB (FEEDBACK 0, siehe Abw. 12); Halltyp, Programmwechsel, Panik −∞ |
+| ND1-23 Knackfrei | ✓ 13/13 (beide Raten) | Wirbel 1/64 4,3 dB; Mono-Gruppe −∞ nach 4 ms; 7 Regler-Fahrten ≤ 1,1 dB; Echo-RATE-Fahrt 2,1 dB (FEEDBACK 0, siehe Abw. 12); Halltyp, Programmwechsel, Panik −∞ |
 | ND1-24 Dynamik-Kurven | ✓ 7/7 | Li −6,02; L1 −5,72; L2 −3,60; L3 −2,45; O1 −2,62; O2 −1,21 dB; Klangziel unabhängig |
 | ND1-25 Akzent/Locks | ✓ | Akzent 0,5 → +3,67 dB; TUNE +12 → 1200,00 Cent; DECAY ×2 → ×2,00 |
 | ND1-26 Bitgleich | ✓ | Node-Shim und Chromium-Offline je zwei Render bitgleich (44,1 + 48 kHz); Chromium gegen Node-Shim M-NULL −163 dB |
-| ND1-27 Robust | **✗ teilweise** | 1 min Flug, 12 Kanäle: NaN 0, Gleichanteil 0,003–0,005, late 0; **Spitze +20 dBFS > +12** (Frage Q2). `--long` = 10 min |
+| ND1-27 Robust | **✗ teilweise** | 1 min Flug, 12 Kanäle: NaN 0, late 0; Gleichanteil 0,004 (48 kHz) ✓ / **0,0057 (44,1 kHz) > 0,005** (Frage Q8); **Spitze +20 dBFS > +12** (Frage Q2). `--long` = 10 min |
 | ND1-28 CPU | **✗ teilweise** | siehe CPU-Tabelle; Leerlauf 0,07 % ✓; Modul-Laden 6,5–10 ms ✓; kein GC im Node-Shim (Felder vorab), Chromium-GC nicht messbar |
 | ND1-29 ASCII/Marke | ✓ | Worklet ASCII, kein Markenwort in den neuen Blöcken |
 | ND1-30 Gerätetest | offen | Xander (iPhone) nach ND4 |
@@ -76,6 +76,8 @@ CPU (`tests/md1-cpu.mjs`, Renderzeit im Chromium-OfflineAudioContext), ND3 (`tes
 | ND3-04 NaN/DC/CPU | ✓ / CPU siehe Tabelle | Kits: kein NaN, DC ≤ 0,004 |
 | ND3-05 Rolle | ✓ | alle 12 Slots → Programm laut Liste |
 | ND3-06 Hörprobe | offen | Xander: `node tests/md3-kits.mjs --wav=DIR` |
+
+Nachprüfungs-Fehler: `tests/md1-retest.mjs` 18/18 (48 kHz, mit Chromium) und 17/17 (44,1 kHz). Gesamt ND1-Suite: 188/191 bei 48 und bei 44,1 kHz.
 
 **CPU** (`tests/md1-cpu.mjs`, Renderzeit Chromium-OfflineAudioContext auf dieser VM, je Stimme; Bezug auf derselben Maschine: VA-Stimme der App 0,63 %,
 FM-Stimme 0,42 %):
