@@ -1,0 +1,22 @@
+// knob drags by finger while the demo plays: one sound event each, with curve? ↶ by finger in the editor while playing
+process.env.APP = process.env.APP || '/home/user/Synquenzer/bau/helfer/VIDSTAGE/index.html';
+const {open, sleep} = await import('./n5-k-qa-lib.mjs');
+const T = await open({vp: [390, 844]}); const {p, E, errs} = T;
+await E(() => { SYNQUENZER.setMetronome(false); SYNQUENZER.setBpm(120); });
+await sleep(2500); await E(() => histDrainNow());
+const n0 = await E(() => HIST.cur.strs.length);
+const tapScene = async n => { const b = (await T.find('button.scn', new RegExp('^▶\\s*' + n)))[0]; await T.tap(b.cx, b.cy, 200); };
+const drag = async (x, y, dy, ms) => { const n = Math.round(ms / 16); await T.down(x, y); await sleep(30); for (let i = 1; i <= n; i++) { await T.move(x, y + dy * i / n); await sleep(16); } await sleep(30); await T.up(); };
+await tapScene(1); await sleep(1500);
+const th = (await T.find('.th', /Synth 3/))[0]; await T.tap(th.cx, th.cy, 250); await T.tapSel('button', /^KLANG$/, 900);
+const L = await T.find('#synthSheet .knob'); console.log('knobs', L.slice(0, 5).map(k => k.t).join(' | '));
+const v = () => E(() => JSON.stringify([SYNQUENZER.getSound(2).p.o1lvl, SYNQUENZER.getSound(2).p.pw, SYNQUENZER.undoInfo().n]));
+console.log('before', await v(), JSON.stringify(L.slice(0,5))); await p.screenshot({path: 'mu2/playknob.png'});
+await drag(L[2].cx, L[2].cy, 60, 1500); await sleep(600); console.log('after drag 1 (Anteil)', await v());
+await drag(L[0].cx, L[0].cy, -40, 400); await sleep(600); console.log('after drag 2 (PW)', await v());
+await sleep(3000);
+await E(() => histDrainNow());
+const evs = await E(n => HIST.cur.strs.slice(n).map(s => JSON.parse(s)), n0);
+for (const e of evs) console.log(e.u, e.u === 'ctx' ? e.z.c : JSON.stringify(e.z.p), JSON.stringify(e.l), 'd' + (e.d || []).length, e.c ? 'c' + e.c.length : '');
+console.log('errs', errs.slice(0, 3));
+await T.b.close();

@@ -1,0 +1,12 @@
+import { open, SONG8, OUT } from './n5-v-abn-lib.mjs';
+const {b, p, errs} = await open({w: 390, h: 844, touch: true, dpr: 2});
+await p.evaluate(s => { SYNQUENZER.setSong(s); }, SONG8);
+await p.waitForTimeout(6000);
+await p.screenshot({path: OUT + 'app-matrix-p1.png'});
+await p.evaluate(() => { songPlayStart(4); });
+await p.waitForTimeout(1500);
+await p.screenshot({path: OUT + 'app-matrix-p1-play.png'});
+await p.evaluate(() => { stop(); SYNQUENZER.vvOpen(); });
+await p.waitForTimeout(800);
+await p.screenshot({path: OUT + 'sheet-p1-idle.png'});
+await b.close();

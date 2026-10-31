@@ -1,0 +1,14 @@
+import { open, SONG8 } from './n5-v-lib.mjs';
+import fs from 'fs'; import { execSync } from 'child_process';
+const {b, p, errs} = await open();
+await p.evaluate(async (s) => { SYNQUENZER.setSong(s); SYNQUENZER.songSelect(0, 3); SYNQUENZER.vvTest({noVE: true}); SYNQUENZER.vvOpen(); }, SONG8);
+await p.waitForTimeout(500);
+const t0 = Date.now();
+await p.evaluate(() => { window.__fr = 0; const C = CanvasCaptureMediaStreamTrack.prototype, o = C.requestFrame; C.requestFrame = function () { window.__fr++; return o.call(this); }; const le = window.logErr; window.__errs = []; SYNQUENZER.vvGo(); });
+await p.waitForTimeout(1500); console.log('toast', await p.evaluate(() => EL.toast.textContent), await p.evaluate(() => (window.__errs||[]).join('|'))); await p.screenshot({path: 'n5-v-out/mr-busy.png'});
+await p.waitForFunction(() => !SYNQUENZER.vvInfo().busy, null, {timeout: 120000});
+const info = await p.evaluate(() => ({i: SYNQUENZER.vvInfo(), fr: window.__fr}));
+console.log(JSON.stringify(info), Date.now() - t0);
+const bl = await p.evaluate(() => SYNQUENZER.vvBlob()); fs.writeFileSync('n5-v-out/mr2.webm', Buffer.from(bl.b64, 'base64'));
+console.log(execSync('for s in v:0 a:0; do ffprobe -v error -select_streams $s -show_entries packet=pts_time -of csv=p=0 n5-v-out/mr2.webm | sed -n "1p;\\$p" ; ffprobe -v error -select_streams $s -count_packets -show_entries stream=nb_read_packets -of csv=p=0 n5-v-out/mr2.webm; done', {shell: '/bin/bash'}).toString());
+console.log(errs); await b.close();

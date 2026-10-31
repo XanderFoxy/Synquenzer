@@ -1,0 +1,10 @@
+import { open, T, sleep } from './n5-h-qa-lib.mjs';
+const {b, p, errs, cdp} = await open('P1', {wait: 2500});
+const t = T(p, cdp), E = t.E;
+await sleep(2600); await E(() => historyCheck());
+const n0 = await t.evN();
+await E(k => { const Q = SYNQUENZER; for (let i = 0; i < 5; i++) { Q.setClip(1 + (i % 3), (k + i) % 4, {len: 1, notes: [{n: 60 + i + k, t: 0, d: 1, v: .8}]}); const s = Q.getSound(2); s.p.cutoff = 500 + 100 * i + k; Q.setSound(2, s); } selectTrack(k % 4); return S.id; }, 1);
+await t.drain(); await sleep(2600);
+const evs = await t.evSince(n0);
+console.log(evs.length, JSON.stringify(evs.map(e => ({u: e.u, l: e.l, d: (e.d || []).map(o => o.op + ' ' + o.path + ' ' + String(JSON.stringify(o.value)).slice(0, 60))}))));
+await b.close();
