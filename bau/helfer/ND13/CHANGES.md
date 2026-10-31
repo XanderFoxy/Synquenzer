@@ -120,15 +120,18 @@ FM-Stimme 0,42 %):
    Vorspannungs-Term (sonst Gleichanteil, ND1-27). Unter DIST 1 wird zwischen trocken und verzerrt überblendet (0 = bitgleich umgangen).
 10. **Akzent/Dynamik-Kurve** wirken je Stimme vor DIST (die Spec sagt „nach CH LEVEL“; ein Kanal-DIST ist nicht je Schlag teilbar). Ohne DIST identisch.
 11. **NOISE 2. Stufe** (L2/H2/b2) Q 0,7071 ohne Resonanz; b1/b2 normierte Bandpässe (Spitze 0 dB).
-12. **Echo/Stop:** `stop` verwirft geplante Schläge ab `at` (sonst klängen nach ■ noch vorausgeschickte Schläge). Echo-Zeitwechsel gleitet (50 ms) —
+12. **Echo/Stop:** `stop` verwirft geplante Schläge ab `at` (sonst klängen nach ■ noch vorausgeschickte Schläge); Schläge davor (auch im selben
+    128er-Block) klingen mit τ aus; nach ≈ 6τ beendet eine 2-ms-Blende die Stimme (wie die Drum-Stimme, ≤ 200 ms bei τ 0,02/0,03).
+    `panic` verwirft ebenfalls die geplanten Schläge. Echozeit im Ruhezustand auf ganze Samples gerundet (≤ 0,5 Sample = 10 µs) → die Rückkopplung
+    filtert nicht (§1.10 „ohne Klangfilter“); nur während des 50-ms-Gleitens wird zwischen Samples gelesen. Echo-Zeitwechsel gleitet (50 ms) —
     bei FEEDBACK > 0 entsteht beim Durchdrehen der Zeit ein Flanger-artiges Gleiten (Absicht des Gleitens, kein Knack).
 13. **Hall:** Dattorro-Tank als eigene Instanz; Lowcut im Tank 40 Hz, Mod 0,5 (hA 0,6); frühe Reflexionen als feste Abgriffe [A]
     (stark/hell 8, mittel 6, spärlich 4 Abgriffe). Vorverzögerung gleitet ≤ 0,1 Sample je Sample; Größe je Sample gerampt.
 14. **Offline-Render:** `MDX.render` gibt die ersten Nachrichten als `processorOptions.init` mit (im OfflineAudioContext kamen Port-Nachrichten teils erst
-    nach Renderbeginn an → verspätete Schläge). Echtzeit nutzt wie spezifiziert den Port.
+    nach Renderbeginn an → verspätete Schläge) und schickt je Suspend-Punkt genau **eine** Nachricht (mehrere als `{t:'all', list}`; Chromium wendete
+    von mehreren gleichzeitig nur die erste an). Echtzeit nutzt wie spezifiziert den Port.
 15. **Größe:** Worklet-Quelle in der App ≈ 68 KB (Budget 45 KB): minBLEP-Tabelle (2,8 KB), vorab angelegte Felder (V8: keine Zahlen-Boxen je Block), Kopfkommentar.
-16. **ND3 nachgestimmt** (Spec: „Startwerte, nachstimmen per Messung“): Rund TONE LVL 46; Brücke TONE LVL 44; Fellkick SPC 36, DEC 28 E1, NOISE LVL 12,
-    CLICK 16; FM-Druck DEC 34; Verzerrt TONE LVL 50, DIST 20; Klassisch TONE LVL 46, NOISE LVL 31; Gated DEC 22 E1, TONE LVL 50, NOISE LVL 13;
+16. **ND3 nachgestimmt** (Spec: „Startwerte, nachstimmen per Messung“): Rund TONE LVL 46; Brücke TONE LVL 44; Fellkick SPC 36, DEC 28 E1, NOISE LVL 12; FM-Druck DEC 34; Verzerrt TONE LVL 50, DIST 20; Klassisch TONE LVL 46, NOISE LVL 31; Gated DEC 22 E1, TONE LVL 50, NOISE LVL 13;
     FM-Snare TONE LVL 50, NOISE LVL 28; Rausch-Klatsch RES 3, NOISE LVL 50, CLICK 38; Rausch-Hat NOISE LVL 50; Ride P 72.0 SPC 76; Splash DEC 35;
     Gong-Becken FREQ 50, P 62.0; Kristall SPC 45; Doppelglocke SPC 37 (×1,618, sonst rein harmonisch → ND3-02 „≥ 2 unharmonische Spitzen“ unerfüllbar).
     CH LEVEL je Programm gemessen; Kategorien ohne Pegelziel (to Cy Pc Be Tu Ef) auf Spitze −9 dBFS [A]; Kit-Pegel-Trimm Fell & Holz +2,5 dB,
@@ -138,7 +141,25 @@ FM-Stimme 0,42 %):
     M-MODEN mit 1,36-s-Fenster für kurze Moden; M-AUS mit Hilbert-Hüllkurve (5-ms-RMS-Fenster < Periode eines 50-Hz-Tons); M-BAND mit Rechteckfenster
     ab dem Anschlag; M-KLICK mit Hochpass 24 dB/Okt bei 5 kHz, tonalen Testklängen (sonst wertet Rauschen/Periodik als Knack) und einem Boden: 2-ms-Fenster unter −80 dBFS
     (nach dem Hochpass) zählen nicht (bei 44,1 kHz meldete ein Fenster bei −99 dBFS sonst +9 dB über dem Median).
-18. **Neuanschlag/Mono-Gruppe:** die 3-ms-Ausblendung der alten Stimme ist kosinusförmig (statt linear), gleiche Dauer.
+18. **Neuanschlag/Mono-Gruppe:** die 3-ms-Ausblendung der alten Stimme ist kosinusförmig (statt linear), gleiche Dauer. Bekannte Grenze (2 Stimmplätze
+    laut Spec): kommen 3 Schläge auf einen Kanal innerhalb von 3 ms (Flam-Sonderfall), wird die noch ausblendende Stimme hart übernommen.
+19. **DIST TYPE** während ein Kanal klingt: die Menge gleitet mit dem alten Typ auf 0, dann wird umgeschaltet und wieder aufgeblendet (kein Sprung).
+20. **Schlafen/Schutz:** Echo hält den Kanal wach, solange etwas über −100 dBFS geschrieben wurde; Hall schläft 0,5 s nach −100 dBFS; die NaN-Wache prüft
+    jedes Sample (Kanal und Ausgang) und meldet höchstens einmal je 5 s.
+
+## Nachprüfung (unabhängig, zweite Sitzung) und Korrekturen
+
+Eine unabhängige Nachprüfung (eigene Messungen, Chromium + Node) bestätigte die meisten Punkte und fand 9 Fehler; behoben und als Dauer-Test
+`tests/md1-retest.mjs` abgesichert (48 kHz 18/18, 44,1 kHz 17/17):
+- **Säge (A3) hatte Gleichanteil** (minBLEP-Rest nur bei Aufwärtssprüngen; bis −0,17 bei PITCH 96) → Ausgleich über das Integral des Rests: jetzt ≤ 5·10⁻⁴.
+- **Echo-Rückkopplung filterte** (lineare Interpolation, 10 kHz −21 dB nach 10 Wiederholungen) → ganze Samples im Ruhezustand: −0,265 dB je Wiederholung, 10 kHz ±0 dB.
+- **Click-Pegel** war v² und folgte der Dynamik-Kurve → jetzt G(LEVEL)·v (§1.8/§1.11), mit Akzent.
+- **Stopp** erfasste Schläge im selben 128er-Block nicht; **Stimmen lebten nach ■ bis 230/350 ms** → beides behoben (≤ 123/184 ms).
+- **`MDX.render`** verlor eine von zwei gleichzeitigen Nachrichten → eine Nachricht je Suspend-Punkt.
+- **Rausch-Hat** hatte ohne Tabellen-Grundlage die Mono-Gruppe → entfernt.
+- Plausible Punkte ebenfalls umgesetzt: Schlaf-Schwellen −100 dBFS, NaN-Wache über jedes Sample mit 5-s-Meldegrenze, DIST-Typwechsel ohne Sprung.
+- Bleibt als Frage (nicht geändert, Regel 27): Modal-Abklingen E1 (Abweichung 1), F2-Rückkopplungseinheit (Abweichung 8), 3-Schläge-in-3-ms (Abweichung 18).
+- Hinweis zur Messung: der Node-Shim gab dem Prozessor das `Math` des Host-Realms; das täuscht Zahlen-Boxen vor → Shim nutzt jetzt das eigene `Math`.
 
 ## Fragen an Xander
 
@@ -154,6 +175,9 @@ FM-Stimme 0,42 %):
 - **Q4 (Datenfelder, wichtig für ND4):** Die Spec-Felder `mDec` (TONE DECAY) und `mLvl` (CH LEVEL) heißen genauso wie bestehende Felder der
   Drum-Stimme (Metall-Decay `mDec`, Metall-Pegel `mLvl` der Hi-Hat-Slots in `DrumKits`). Flach im selben Slot gespeichert überschreiben sie sich.
   Die Engine nimmt im `ch`-Programm genau die Spec-Namen; die Ablage im Slot (z. B. eigener Unterschlüssel) muss ND4/der Dirigent entscheiden.
+- **Q6 (Abweichung 1):** Modal-Abklingen bei E1 wie gebaut (Moden mit T, ohne Hüllkurve – erfüllt ND1-10 „T60 ×1,5“) oder wie in §1.4 (T_M = 4T,
+  Hüllkurve 4T/3 – dann ist ND1-10b nicht erfüllbar und hohe Moden klingen länger)?
+- **Q7 (Abweichung 8):** F2 „Selbst-Rückkopplung β = 0,6“ – in Perioden (gebaut, sehr rau) oder in Radiant (deutlich zahmer)?
 - **Q5:** Die Basis-App enthält schon vor diesem Paket das Markenwort (Hilfe-/Tipp-Texte „… Drum / Waldorf Attack“ bei Zeilen ~13994, 14384, 14421,
   15382, 15765, 16468 der Basis) und `nOrd` in Bezeichnern → `grep -i 'nord'` ist in der App nicht 0. Nicht angefasst (nicht mein Paket); entfernen?
 
