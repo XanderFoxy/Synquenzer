@@ -135,26 +135,28 @@ function g9Gest(node, cvOf) {
     const E = WP.ed, G = E && E.g9, p = G && G.p; if (!p || p.id !== e.pointerId) return;
     const dx = e.clientX - p.x0;
     if (!p.mode && Math.hypot(dx, e.clientY - p.y0) > 8) { p.mode = 'pan'; try { node.setPointerCapture(e.pointerId); } catch (er) {} }
-    if (p.mode === 'pan') { E.va = p.va - dx / Math.max(1, p.cv.clientWidth) * E.vw.W; G.follow = null; wpPaint(); }
+    if (p.mode === 'pan') { E.va = p.va - dx / Math.max(1, p.cv.getBoundingClientRect().width) * E.vw.W; G.follow = null; wpPaint(); }
   });
   const end = (e, cancel) => {
     const E = WP.ed, G = E && E.g9, p = G && G.p; if (!p || p.id !== e.pointerId) return;
     G.p = null;
     if (p.mode) { G.dragT = performance.now(); return; }
     if (cancel || performance.now() - p.t0 >= 500) return;
-    const cx = e.clientX - p.cv.getBoundingClientRect().left;
+    const cr = p.cv.getBoundingClientRect(), cx = e.clientX - cr.left;
     G.tapT = performance.now();   // (kein UI.ghost: der Klick desselben Tipps gehört dem Haptik-Label)
-    g9Select(g9HitK(E, cx), {tap: true});
+    g9Select(g9HitK(E, cx, cr.width), {tap: true});
     g9Focus(E);
   };
   node.addEventListener('pointerup', e => end(e, false));
   node.addEventListener('pointercancel', e => end(e, true));
   node.addEventListener('click', () => { const E = WP.ed; if (E && E.g9) g9Focus(E); });
 }
+// Abschnitte in Pixeln einer Fläche der Breite w (Wellenform oder Leiste; im Quer-Dock 88 px ist die Wellenform weg)
+function g9SxFor(E, w) { const G = E.g9, V = E.vw; if (!G.secT || !V) return []; return G.secT.map(([a, b]) => [(a - V.a) / V.W * w, (b - V.a) / V.W * w]); }
 // Treffer-Regel (§7.2): schmale Abschnitte (< 44 px) bekommen links/rechts (44 − b)/2 dazu, nur von einem Nachbarn, der ≥ 44 px behält;
 // schmale Nachbarn teilen sich die Fläche (nächste Mitte gewinnt)
-function g9HitK(E, cx) {
-  const sx = E.g9.sx, n = sx.length; if (!n) return 0;
+function g9HitK(E, cx, w) {
+  const sx = w ? g9SxFor(E, w) : E.g9.sx, n = sx.length; if (!n) return 0;
   const iv = sx.map(s => [s[0], s[1]]);
   for (let k = 0; k < n; k++) {
     const w = sx[k][1] - sx[k][0]; if (w >= 44) continue;
@@ -203,8 +205,8 @@ function g9Fill(E) {
 }
 // der gewählte Abschnitt bleibt im mittleren Drittel (weiches Nachführen ≤ 200 ms)
 function g9Follow(E, k) {
-  const G = E.g9; if (!E.vw || !G.sx[k]) return;
-  const W = E.cv.clientWidth || 1, s = G.sx[k];
+  const G = E.g9; if (!E.vw || !G.secT || !G.secT[k]) return;
+  const W = G.bcv.getBoundingClientRect().width || 1, s = g9SxFor(E, W)[k];
   if (s[0] >= W / 3 && s[1] <= 2 * W / 3 || (s[1] - s[0] > W / 3 && s[0] >= 0 && s[1] <= W)) return;
   const to = E.va + ((s[0] + s[1]) / 2 - W / 2) / W * E.vw.W, from = E.va, t0 = performance.now();
   G.follow = {to, from, t0};
@@ -380,7 +382,8 @@ function g9Play(id, k) {
 function g9PaintWave(E, g, P, X, Wp, Hp, mk) {
   const G = E.g9, m = S.takes && S.takes[E.id], len = m ? m.len / m.sr : 0, map = E.map;
   const endT = map ? VSM.warpTime(map, len) : len;
-  G.sx = mk.map((k, j) => [X(P[j]), j + 1 < P.length ? X(P[j + 1]) : X(endT)]);
+  G.secT = mk.map((k, j) => [P[j], j + 1 < P.length ? P[j + 1] : endT]);   // Abschnitte in gehörter Zeit (wie gezeichnet, G1)
+  G.sx = G.secT.map(([a, b]) => [X(a), X(b)]);
   G.X = X;
   const k = G.fk >= 0 ? G.fk : G.sel, s = G.sx[k]; if (!s) return;
   const lw = performance.now() - G.pulse < G9_PULSE ? 3 : 2;
@@ -404,7 +407,7 @@ function g9PaintBar(E, mk) {
   }
   const C = g9Ctx(E.id); if (!C) return;
   const W = G.prevW ? G.prevW.W : C.W, pv = G.prevW, {cells, extra, dash} = g9Cells(C, W);
-  const sx = G.sx, ff = G9.ff || (G9.ff = getComputedStyle(document.body).fontFamily);
+  const sx = g9SxFor(E, Wp), ff = G9.ff || (G9.ff = getComputedStyle(document.body).fontFamily);
   const fN = '600 13px ' + ff;
   const sel = G.fk >= 0 ? G.fk : G.sel;
   g.textBaseline = 'middle';
@@ -429,7 +432,7 @@ function g9PaintBar(E, mk) {
   });
   // feste Silben ohne Marke: gestrichelt an t
   for (const d of dash) {
-    const xx = G.X ? G.X(E.map ? VSM.warpTime(E.map, d.t) : d.t) : -99; if (xx < -40 || xx > Wp) continue;
+    const xx = ((E.map ? VSM.warpTime(E.map, d.t) : d.t) - V.a) / V.W * Wp; if (xx < -40 || xx > Wp) continue;
     g.font = fN; const tw = g.measureText(d.x).width; g.setLineDash([3, 3]); g.strokeStyle = '#f2f4f8'; g.lineWidth = 1; g.strokeRect(xx + .5, 4.5, tw + 8, Hp - 9); g.setLineDash([]);
     g.fillStyle = '#f2f4f8'; g.fillText(d.x, xx + 4, Hp / 2);
   }
