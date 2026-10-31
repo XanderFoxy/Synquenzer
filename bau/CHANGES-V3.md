@@ -5281,3 +5281,23 @@ Test-Skripte der Helfer: aus `origin/helfer-s012` / `origin/helfer-n12d1k2` (`ba
    Sollen sie neutral umformuliert werden?
 
 Snapshot: `synq-snapshots/G-T-merge.html`.
+
+## G-T-merge-fix — zwei Fehler nach der Zusammenführung · App bleibt **4.24.0** · Format 5 · kein Supabase-Aufruf
+
+1. **S2 × D1 (Zusammenfassen mit Polymeter-Spur):** `songStateAt` hielt die Clip-Phase nur modulo Clip-Länge; D1-Spuren zählen ab
+   Clip-Start, also ging die Spur-Position verloren (neuer Teil „Mitte“: Hi-Hat 0,5,12,17,24,29 statt 1,8,13,20,25). Neu:
+   `songClipPeriod` = kgV aus Clip-Schritten und Spur-Perioden (vorwärts/rückwärts Ls, Pendel 2·Ls−2, Zufall: keine Periode → volle
+   Verschiebung); `phMod` rechnet damit. Gilt auch für Fortsetzung (Einfügen/Ersetzen/Löschen) und eigene Kopien (`ownSame`,
+   `ownPlayAs`, Kopie entfernen). Clips ohne D1-Spur: Periode = Clip-Länge wie bisher (Regel 28 unberührt).
+   Nachweis `vt-gt/s/s2d1.mjs`: Teil `ph: 4`, Hi-Hat 1,8,13,20,25 = Bereich im Song; Song unverändert, keine Fehler.
+2. **D1-04 [Länge]-Knopf:** unsichtbare Trefferfläche (`.d1b::before`, wie S0 „‹“), Aussehen unverändert. Im Hochformat ≤ 700 px
+   mit Takt-Blättern (Werkzeugzeile scrollt seitlich) bekommt die Zeile 7 px oben / 3 px unten Innenabstand mit Gegen-Rand, damit die
+   Fläche nicht abgeschnitten wird, ohne dass die Seite enger wird (`fit`-Stufe bleibt). Treffer 44 × 44 px in 390×844, 844×390,
+   375×667, 667×375, 926×428, 428×926 (`vt-gt/s/d1hit.mjs`, `d1hit2.mjs`, `d1scan.mjs`).
+
+Nachtests: S2 25/25, S0 38/38, D1 11/11, D1-Bedienung 18/18, D1-Laufpunkt 3/3, Song-/Teil-Regression gleich wie Basis, Rauchtest ohne
+Fehler. D1-Regression 70/84 genau wie vor dem Fix (die 14 Abweichungen sind älter: Werkzeugzeile im Querformat 50 px verschoben).
+S1-02 (zweiter Teil-Durchlauf) scheitert auch auf `G-T-merge.html` gleich: der Test zählt eine Note des vorigen Durchlaufs mit
+(−2,95 Schläge); die Fassung selbst klingt an den richtigen Stellen.
+
+Snapshot: `synq-snapshots/G-T-merge-fix.html`.
