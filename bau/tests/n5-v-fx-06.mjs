@@ -40,6 +40,7 @@ const notes = log => log.filter(e => e.src !== 'click').map(e => [e.track, e.src
 // VV1-06: project deep-equal around a whole video job; the live engine afterwards as before
 {
   const before = await p.evaluate(() => ({proj: JSON.stringify(SYNQUENZER.serialize()), sent: JSON.stringify(AU.synth.map(E => E ? E.sent : null)), nodes: [AU.M, AU.hall, AU.echo, ...AU.tracks].map(x => x), ctx: AU.ctx}).proj);
+  await live(null);                                              // warm-up: the first live pass after load (take decode, JIT)
   const live0 = await live(null);
   const m = await p.evaluate(async () => { SYNQUENZER.vvTest({opus: true}); window.__ids = [AU.ctx, AU.M, AU.hall, AU.echo, AU.kit, ...AU.tracks, ...AU.synth]; window.__sent = JSON.stringify(AU.synth.map(E => E ? E.sent : null)); const x = await SYNQUENZER.vvMake({fmt: '9:16', view: 'matrix'}); return x.how; });
   const after = await p.evaluate(() => ({proj: JSON.stringify(SYNQUENZER.serialize()), same: [AU.ctx, AU.M, AU.hall, AU.echo, AU.kit, ...AU.tracks, ...AU.synth].every((x, k) => x === window.__ids[k]), sent: JSON.stringify(AU.synth.map(E => E ? E.sent : null)) === window.__sent, timer: !!AU.timer, voices: VOICES.length, R: R.playing}));
