@@ -20653,7 +20653,7 @@ function redo() {
    ein Finger liegt oder aufgenommen wird); Ansichts-/Laufzeitfelder im Projekt stehen in HIST.volatile (M-REKON).
    ===================================================================== */
 var HIST = {
-  volatile: ['ui'], kinds: new Map(), unknown: new Set(),
+  volatile: ['ui', 'settings.coach'], kinds: new Map(), unknown: new Set(),   // settings.coach = „Hinweis schon gezeigt“ (Ansichtsfeld)
   on: true, avail: null, why: '', init: false, pid: null, sh: null, cache: new Map(),
   q: [], qT: false, ev: new WeakMap(), lastEv: null, cur: null, meta: null, metaP: null, dbP: null,
   ft: 0, lastFlush: -1e9, dirty: false, sinceKf: 0, kfDue: false, ptr: new Set(), ptrT: 0, cv: null, pend: null,
@@ -20792,7 +20792,7 @@ function histFullOps(ops) {
 function histPush(e, how) {
   if (!HIST || !HIST.on || !HIST.sh || !e) return;
   HIST.q.push({e, how: how || 'push', t: histNow()});
-  if (!HIST.qT) { HIST.qT = true; queueMicrotask(histDrain); }
+  if (!HIST.qT) { HIST.qT = true; setTimeout(histDrain, 0); }   // own task: never lengthens the gesture's task (no longtask by the recorder)
 }
 const histMerge = e => histPush(e, 'merge');      // pushUndo: the same gesture again within 2 s (mergeKey)
 function histDirty() { if (!HIST || !HIST.on || !HIST.sh) return; HIST.dirty = true; histSoon(); }
@@ -20850,9 +20850,9 @@ function histCurve(v) {
   const n = performance.now(); v = +v.toPrecision(4);
   if (!c.v.length || n - c.t >= 100) { c.v.push(v); c.t = n; } else c.v[c.v.length - 1] = v;
 }
-function histCurveTake() {
+function histCurveTake(t) {
   const c = HIST.cv; HIST.cv = null;
-  if (!c || c.v.length < 2 || performance.now() - c.t > 1000) return null;
+  if (!c || c.v.length < 2 || (c.up != null ? t - c.up > 60 : t - c.t > 1000)) return null;
   const v = c.v; if (v.length <= 50) return v.slice();
   const out = []; for (let i = 0; i < 50; i++) out.push(v[Math.round(i * (v.length - 1) / 49)]);
   return out;
@@ -20902,8 +20902,8 @@ function histFlush() {
   return HIST.wq;
 }
 function histFail(e) {
-  logErr(e);
   if (HIST.avail === false) return;
+  HIST.err = String((e && (e.name || e.message)) || e);                // Speicher fehlt/wirft: still aus (Menü sagt es), kein Fehler
   HIST.avail = false; HIST.on = false; HIST.why = 'Speicher nicht verfügbar'; HIST.sh = null; HIST.cur = null; HIST.q.length = 0;
   clearTimeout(HIST.ft); HIST.ft = 0;
 }
@@ -20913,8 +20913,9 @@ const histTx = tx => new Promise((res, rej) => { tx.oncomplete = () => res(); tx
 function histDb() {
   if (HIST.dbP) return HIST.dbP;
   HIST.dbP = new Promise((res, rej) => {
-    if (typeof indexedDB === 'undefined' || !indexedDB || typeof indexedDB.open !== 'function') { rej(new Error('kein IndexedDB')); return; }
-    const op = indexedDB.open('synq-hist', 1);
+    let idb = null; try { idb = window.indexedDB; } catch (e) { idb = null; }
+    if (!idb || typeof idb.open !== 'function') { rej(new Error('kein IndexedDB')); return; }
+    let op; try { op = idb.open('synq-hist', 1); } catch (e) { rej(e); return; }
     op.onupgradeneeded = () => { const db = op.result; if (!db.objectStoreNames.contains('c')) db.createObjectStore('c'); if (!db.objectStoreNames.contains('m')) db.createObjectStore('m'); };
     op.onsuccess = () => { const db = op.result; try { db.onversionchange = () => db.close(); } catch (e) {} if (HIST.avail == null) HIST.avail = true; res(db); };
     op.onerror = () => rej(op.error || new Error('IndexedDB'));
@@ -20993,9 +20994,10 @@ function histInit() {
   if (HIST.init) return; HIST.init = true;
   let pref = true; try { pref = uiPrefs().histOn !== false; } catch (e) {}
   HIST.on = pref;
-  if (typeof indexedDB === 'undefined' || !indexedDB) { HIST.avail = false; HIST.on = false; HIST.why = 'Speicher nicht verfügbar'; return; }
+  let idb = null; try { idb = window.indexedDB; } catch (e) { idb = null; }        // fehlt oder wirft (Sandbox, privat)
+  if (!idb) { HIST.avail = false; HIST.on = false; HIST.why = 'Speicher nicht verfügbar'; return; }
   try { addEventListener('pointerdown', e => { HIST.ptr.add(e.pointerId); HIST.ptrT = performance.now(); }, true);
-    const up = e => HIST.ptr.delete(e.pointerId); addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
+    const up = e => { HIST.ptr.delete(e.pointerId); if (HIST.cv && HIST.cv.up == null) HIST.cv.up = performance.now(); };   // the curve belongs to the step of this lift only addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
     addEventListener('blur', () => HIST.ptr.clear());
     addEventListener('pagehide', () => histLeave()); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') histLeave(); }); } catch (e) {}
   setTimeout(() => { if (HIST.on) histDb().catch(() => {}); }, 0);

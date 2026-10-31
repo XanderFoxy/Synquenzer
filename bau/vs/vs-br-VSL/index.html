@@ -39447,7 +39447,7 @@ function tkTrackResync(i) {
   const now = AU.ctx.currentTime, at = TK.xf ? TK.xf.t : now + .006;
   for (const r of TK.src.slice()) if (r.i === i && !r.vox) { TK.reg.delete(r.key); if (r.start > at) tkKill(r); else if (TK.xf) tkXfOut(r); else tkFadeAt(r, at, .003); }
   for (const k of [...TK.reg]) if (k.startsWith('c' + R.runId + ':' + i + ':')) TK.reg.delete(k);
-  if (R.slot[i] >= 0 && !R.pend[i]) { try { scheduleTrack(i, Math.max(R.cstart[i], t2b(at)), R.schedBeat, true); } catch (e) { logErr(e); } }
+  if (R.slot[i] >= 0 && !R.pend[i]) { try { scheduleTrack(i, Math.max(R.cstart[i], t2b(at)), Math.max(R.schedBeat, t2b(at + .05)), true); } catch (e) { logErr(e); } }   // VS-L: auch wenn der Hauptfaden den Planungs-Vorlauf verpasst hat (langer Take gelesen), setzt das neue Stück sofort ein – keine Lücke
 }
 // song.vox: planen im Takt des Songs (songTickInner, je Durchgang: Song-Schläge [lo, E) ↔ Transport + off)
 function tkVoxTick(song, b0, b1, off, E, insB, lo) {
@@ -39554,11 +39554,19 @@ function tkVoiceTake(o) {
   its.push({kind: 'clip', track: st, scene: o.si, before});
   undoPush({kind: 'group', label: 'Stimme', items: its, tk: 1});
   // läuft phasengleich weiter (wie der MELODIE-Clip), ein Overdub klingt sofort mit dem neuen Take
-  if (R.playing) { if (grow) switchTrackAt(st, o.si, nextBarFromAudible(), gcs); else if (R.slot[st] === o.si && !R.pend[st]) tkTrackResync(st); else switchTrackAt(st, o.si, nextBarFromAudible(), old && old.audio ? undefined : o.cs); }   // VS-L: der längere Clip läuft ab dem Takt der Aufnahme
+  if (R.playing && grow) tkGrowPhase(st, o.si, gcs);                // VS-L: der längere Clip läuft ab dem Takt der Aufnahme
+  else if (R.playing) { if (R.slot[st] === o.si && !R.pend[st]) tkTrackResync(st); else switchTrackAt(st, o.si, nextBarFromAudible(), old && old.audio ? undefined : o.cs); }
   clipChanged(st, o.si);
   tkOriginHint();
   markDirty(); UI.dirty.all = true;
   return {track: st, scene: o.si, take: tk.id, len: clip.len};
+}
+
+// VS-L: Overdub länger als der Clip – läuft die Szene schon, gilt die neue Phase sofort; der laufende Take klingt weiter, bis der neue
+// fertig gelesen ist (tkMakeTake → tkTrackResync blendet dort über, keine Lücke); sonst Start am nächsten Takt wie ein neuer Clip
+function tkGrowPhase(st, si, cs) {
+  if (R.slot[st] === si && !R.pend[st]) { R.cstart[st] = cs; memSlot(st, t2b(AU.ctx.currentTime + .006), si, cs, !!R.partApplying, R.own[st]); UI.dirty.grid = true; }
+  else switchTrackAt(st, si, nextBarFromAudible(), cs);
 }
 
 /* ---------- Punch im Song (S5-Rückfrage: Überschreiben / Einfügen / Ersetzen / Overdub, Bereich) ---------- */

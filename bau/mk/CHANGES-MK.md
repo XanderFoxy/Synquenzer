@@ -3100,3 +3100,50 @@ Editor, Marken-Tipp, A/B mit Zeitkarte, SÄUBERN-Schlüssel, Wellenform = was kl
 - `max_app` muss vor dem Ausliefern auf ≥ **4 023 000** (Wächter heute 4 021 000; sonst lehnt `save_project` mit `bad_version` ab).
   SQL (nicht ausgeführt, kein Supabase-Aufruf): `update private.settings set max_app = greatest(max_app, 4023000);` (Projekt synquenzer
   `dbdnsryoivvezspgydpx`). Format bleibt 5.
+
+## G-MK8b-merge-fix — Nacharbeit der Zusammenführung · App bleibt **4.23.0** · Format 5 · kein Supabase-Aufruf
+Schnappschuss `synq-snapshots/G-MK8b-merge-fix.html` (Sicherung vorher: `mk-wt-before-G-MK8b-merge-fix.html`). Alles CSS außer (4).
+
+1. **Bibliothek ≥ 44 × 44 (MK8b-06), jede Taste:** jeder Chip der Leiste (Engine-Segment, Bank ▾, Micro, „Alle …“, Rollen, 8 Genre-Reiter)
+   bekommt eine unsichtbare `::before`-Fläche über die volle Zeilenhöhe und 4 px des Spalts **links** (nur nach links, A1 bleibt sauber).
+   Hochkant P2/P3: Zeilen-Innenabstand 4 → 6 px (Chips bleiben 32 px, die Zeile 4 px höher, die Liste 4 px kürzer). Quer: 12 px statt
+   5 px zwischen den 32-px-Chips (44-px-Raster), die zwei verbundenen Engine-Tasten 44 px hoch. Kopf A/B · Klang · ✕ und Fuß
+   Sichern/Importieren/Exportieren: 45 px hoch (P), A/B nach links auf 45 px; quer reicht die Fläche von der Kopf-Oberkante in den leeren
+   4-px-Rand über der Liste (der Rand ist jetzt Margin statt Padding, sieht gleich aus; das ⋯ der Zeile trifft 2 px tiefer statt höher);
+   Fuß quer 4 → 5 px Innenabstand. `vq-lib`: 0 Ziele < 44 in P1 P2 P3 L1 L2 X 375×812 (vorher 19/37/…); `gmk8b-hit44` 43/43 PASS.
+2. **Quantisier-Blatt (`#qSheet`):** hochkant wächst das Blatt mit dem Inhalt (war 300/290 px fest → [Abbrechen] [Anwenden] 7 px
+   abgeschnitten); Raster 34 px zu sehen, 10 px Reihenabstand, Trefferfläche 44 px (5 px nach oben/unten); P3 wie P1 (Raster 34,
+   Regler 44, Tasten 44); ✕ auch ohne [Audio folgt] 44 × 44 (Kopf 44 px). Quer: Raster-Reihe nutzt den Seitenrand (8 × 44,5 px Raster),
+   Fläche 3 px links + 10 px nach unten. `vq-wp`: #qSheet 0 Ziele < 44 in allen 7 Formaten (vorher 8–13).
+3. **Marken-Editor P3:** Stärke/Swing 44 px hoch (Blatt 292 → 296 px, Wellenform bleibt 63 px), Wert-Spalte 40 statt 52 px →
+   Regler 52 × 44 bzw. 58 × 44 (vorher 41 × 40 / 46 × 41). `vq-wp` P3 #wpSheet 0 < 44.
+4. **Echo Voc True Peak:** Rezept `fs: 1` (Formant-Verschiebung +1, wie Sing Arp) und Pegel `g` 4,68 → 4,0 (`v3-mk8b-rezepte.mjs`,
+   `v3-mk8b-cal.json`, Sicherungen `.vor-G-MK8b-merge-fix`; Block neu mit `v3-mk8b-bau.mjs --write`, nur der VOCODER-Teil, +4 B).
+   `gmk8b-vocal`: Echo Voc Vokal −20,2 / WAV −16,2 LUFS, **TP −1,4 dBTP** (vorher +0,1); alle 16: Vokal −20,9 … −16,1, WAV −19,9 … −15,5,
+   TP ≤ −1,2 → **PASS**. (Lautstärke-Kürzen allein ging nicht: der Vokal wäre unter −21 LUFS gefallen.)
+5. **Hauptbildschirm, Song, ⋯-Menü** (unsichtbar per `::before`, waagrecht nur nach links bzw. bis zur Spaltmitte): Kopfleiste (quer
+   ist die Unterkante jetzt Innen-Schatten statt Rand – gleiche zwei Linien, die Leiste hat 44 statt 43 px Treffer), Stopp-Spalte und
+   „Szenen 5–8“ (Breite), Teile-Leiste, Träger-Anzeige + AKKORD/LATCH/ORIGINAL, ✎ ⇅ M ↶ (quer ≥ 800 px 41 px breit, der Spurname gibt
+   4 px), ‹ › Oktave, Engine-Wahl im ⋯-Menü. Sichtbar: Song-Werkzeugzeile hochkant 40 → 44 px (die Tasten schneiden ihren Text, ein
+   `::before` käme nicht heraus), Song-Werkzeugspalte quer 76 → 91 px (Spalten 44 px). `vq-sweep` 390×844: main 0, mk 0, menu 0 (vorher
+   15/2); 844×390: Kopfleiste, Seitenleiste, Teile, Werkzeuge, ⋯-Menü alle ≥ 44.
+
+### Prüfungen (gegen `mk-wt/index.html`)
+Rauchtest ohne Fehler; `vq-lib` / `vq-wp` 0 < 44 überall; `gmk8b-hit44` 43/43; `gmk8b-vocal` PASS; `v3-mk2-wellen` alles PASS;
+`v3-mk2-marke` alles PASS; `vgs7/f1-lay` ALL OK; `gs7-v3-qab5b-ui` ALL OK; `gmk8b-ui/cross/restore/reg/panik/contrast` ALL PASS;
+`gmk8b-p3count` 0/128 (P1–P3); `gmk8b-fix-voc` 0 Fehler (Mikro startet nach Rückkehr nicht von selbst); `v3-mk8b-daten` 0 Fehler (allein
+gelaufen); `v3-mk8-ui` MK8-08 Laden 5,9 ms, 0 longtasks; `gmkp8-voc-mic` 8/8, `-platz-quer` 9/9, `-mk8-09-platte` 27/27, `-mk8fix-name` OK.
+Gleich vorher wie nachher (nicht durch diese Nacharbeit): `gmk8b-lay` 12 (Vocoder-Hinweis absichtlich weg; scrollIntoView legt Chips
+unter die klebende Engine-Leiste), `v3-mk8b-ui` MK8b-04 Fake-Mikro-Pegel schwankt (auch in der Sicherung), `v3-mk8-ui` Entpack-Zeiten
+schwanken + M-PLATZ L1/L2 (überholt seit MK-P), `fix-gmkp8/fix-menu` 3 „Wischen ab ▶ Hören ohne Ton“ (überholt: ▶ Hören spielt sofort).
+
+### Offen – nur mit sichtbarem Umbau (Fragen an Xander)
+1. **Quer, Spur-Zeilen der Clip-Matrix** (Spurkopf 120 × 31–37, ■ 45 × 31–37, ▲▼ 35 × 27–32): fünf Spuren teilen sich ≈ 165 px (§2.2
+   „Zeilen ≥ 30 px“). 44 px je Zeile bräuchten ≈ 60 px mehr Höhe – die Tastatur würde von 132 auf ≈ 70 px schrumpfen, oder quer nur 4
+   Spuren je Seite. Vorschlag: 4 Spuren je Seite quer (▲▼ blättert schon).
+2. **Quer, SPIELEN │ TRANSPONIEREN** (87 × 39–40): die Modus-Wahl hat 80 px für zwei Tasten über der Oktav-Reihe. Vorschlag: Oktave ‹ ›
+   neben die Modus-Wahl oder die Modus-Wahl als eine Taste mit Umschalten.
+3. **Song-Spuren AKKORDE / MELODIE** (hochkant 65 × 38–39, quer 57 × 27–28): alle Spuren sind gleich hoch und teilen sich die Höhe.
+   Vorschlag: nur die beiden Spurnamen-Tasten auf 44 px, die Song-Ansicht scrollt dafür senkrecht.
+4. Nicht in den Repros, aber mit `dirigent-test/fx/cs.mjs` gemessen ebenso < 44: P2/P3 Spur-Leiste (✎ ⇅ M ↶ 34–38 × 36), P3 Song-Werkzeugspalte (30 px breit,
+   §0.4 „P3 darf vereinfachen“), quer 667 × 375 ✎ ⇅ M ↶ (38 px, der Spurname hat dort keine 12 px mehr).

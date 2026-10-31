@@ -39272,7 +39272,7 @@ function tkQWatch() {
    Neu-Planung (Take fertig, gewählt, gesäubert, gedehnt) wartet, bis die neue Fassung gemessen ist – bis dahin spielt das Alte weiter;
    ein Stück mit noch ungemessenem Puffer setzt danach ein (wie ein Take, der noch lädt). Nur ein Weg, den das nicht abdeckt, rechnet
    sofort (vpGet, gezählt in VP.sync). */
-const VP_LUFS = -16, VP_REF = .8, VP_LO = -12, VP_HI = 24, VP_CEIL = Math.pow(10, -1.3 / 20), VP_K = 16, VP_ATT = .002, VP_REL = .1, VP_SLICE = 6;
+const VP_LUFS = -16, VP_REF = .8, VP_LO = -12, VP_HI = 24, VP_CEIL = Math.pow(10, -1.3 / 20), VP_K = 16, VP_ATT = .002, VP_REL = .1, VP_SLICE = 6, VP_HOT = 20;
 const VP = {m: new WeakMap(), q: [], qs: new WeakSet(), t: 0, cb: new Map(), runs: 0, sync: 0, gated: 0, deferred: 0, maxMs: 0, err: 0, last: null};
 function vpKco(fs) {
   let f0 = 1681.974450955533, G = 3.999843853973347, Q = 0.7071752369554196, K = Math.tan(Math.PI * f0 / fs), Vh = Math.pow(10, G / 20), Vb = Math.pow(Vh, 0.4996667741545416);
@@ -39368,10 +39368,10 @@ function vpStep(J, until) {
 }
 function vpFinish(J) { VP.m.set(J.b, J.r); VP.runs++; VP.last = J.r; const k = VP.q.indexOf(J); if (k >= 0) VP.q.splice(k, 1); VP.qs.delete(J.b); J.d = null; }
 function vpPump() {
-  VP.t = 0; const t0 = performance.now(); let done = false;
-  while (VP.q.length && performance.now() - t0 < VP_SLICE) {
+  VP.t = 0; const t0 = performance.now(), lim = VP.q.length && VP.q[0].hot ? VP_HOT : VP_SLICE; let done = false;   // gewartet wird: größere Häppchen (< 50 ms)
+  while (VP.q.length && performance.now() - t0 < lim) {
     const J = VP.q[0];
-    try { if (vpStep(J, t0 + VP_SLICE)) { vpFinish(J); done = true; } } catch (e) { VP.err++; logErr(e); vpFinish(Object.assign(J, {r: {lufs: null, gDb: 0, g: 1, pk: 0, env: null, segs: [], K: VP_K, grDb: 0}})); }
+    try { if (vpStep(J, t0 + lim)) { vpFinish(J); done = true; } } catch (e) { VP.err++; logErr(e); vpFinish(Object.assign(J, {r: {lufs: null, gDb: 0, g: 1, pk: 0, env: null, segs: [], K: VP_K, grDb: 0}})); }
   }
   const ms = performance.now() - t0; if (ms > VP.maxMs) VP.maxMs = +ms.toFixed(1);
   if (VP.q.length) VP.t = setTimeout(vpPump, 0);
@@ -39383,7 +39383,7 @@ function vpPump() {
 // eine Neu-Planung wartet, bis alle ihre Puffer gemessen sind (true = später, fn läuft dann)
 function vpDefer(key, bufs, fn) {
   let wait = false;
-  for (const b of bufs) if (b && !VP.m.has(b)) { vpKick(b); wait = true; }
+  for (const b of bufs) if (b && !VP.m.has(b)) { vpKick(b); vpHot(b); wait = true; }
   if (wait) { VP.cb.set(key, fn); VP.deferred++; }
   return wait;
 }
@@ -39397,11 +39397,13 @@ function vpKick(b) {
   if (b && !VP.m.has(b) && !VP.qs.has(b)) { VP.qs.add(b); VP.q.push(vpJob(b)); if (!VP.t) VP.t = setTimeout(vpPump, 0); }
   return b;
 }
-// gemessen? now = true: den Rest sofort rechnen (ein Stück muss pünktlich beginnen)
+// ein Puffer, auf den etwas wartet: nach vorn in der Reihe, größere Häppchen
+function vpHot(b) { const k = VP.q.findIndex(x => x.b === b); if (k < 0) return; const J = VP.q[k]; J.hot = true; if (k > 0) { VP.q.splice(k, 1); VP.q.unshift(J); } }
+// gemessen? now = true: den Rest sofort rechnen
 function vpReady(b, now) {
   if (!b || VP.m.has(b)) return true;
   vpKick(b);
-  if (!now) { VP.gated++; return false; }
+  if (!now) { VP.gated++; vpHot(b); return false; }
   const J = VP.q.find(x => x.b === b); VP.sync++;
   try { vpStep(J, Infinity); vpFinish(J); } catch (e) { VP.err++; logErr(e); vpFinish(Object.assign(J, {r: {lufs: null, gDb: 0, g: 1, pk: 0, env: null, segs: [], K: VP_K, grDb: 0}})); }
   return true;
