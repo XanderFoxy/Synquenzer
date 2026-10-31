@@ -10,7 +10,7 @@ function g9Toggle(on) {
 }
 function g9End(why) { const E = WP.ed; if (E && E.g9) g9Off(E); return why; }
 function g9Btn(cls, long, short, aria, fn) {
-  const b = el('button', 'rb ' + cls, esc(long)); b.dataset.l = long; b.dataset.s = short || long; if (aria) b.setAttribute('aria-label', aria);
+  const b = el('button', 'rb ' + cls, '<span class="g9bl">' + esc(long) + '</span>'); b.dataset.l = long; b.dataset.s = short || long; if (aria) b.setAttribute('aria-label', aria);
   b.addEventListener('mousedown', e => e.preventDefault());              // Fokus bleibt im Feld (Chromium)
   b.addEventListener('click', e => { const E = WP.ed; if (!E || !E.g9) return; G9.hits = (G9.hits | 0) + 1; try { fn(E, e); } catch (err) { logErr(err); } g9Refocus(E); });
   return b;
@@ -97,10 +97,11 @@ function g9ZoomRule(E) {
 function g9Fit(E) {
   const G = E && E.g9; if (!G) return;
   const tl = G.tl; tl.classList.remove('short');
-  for (const b of G.longs) b.textContent = b.dataset.l;
+  const txt = (b, t) => { const sp = b.querySelector('.g9bl'); if (sp) sp.textContent = t; };
+  for (const b of G.longs) txt(b, b.dataset.l);
   const forced = G.dock && G.dock.H < 250 || EL.wpSheet.classList.contains('g9q');
   const over = forced || G.longs.some(b => b.scrollWidth > b.clientWidth + .5 || b.clientWidth < 44);
-  if (over) { tl.classList.add('short'); for (const b of G.longs) b.textContent = b.dataset.s; }
+  if (over) { tl.classList.add('short'); for (const b of G.longs) txt(b, b.dataset.s); }
 }
 
 /* ---------- Haptik-Label im Ziel (§7.9) ---------- */
@@ -127,13 +128,13 @@ function g9Gest(node, cvOf) {
   node.addEventListener('mousedown', e => { if (WP.ed && WP.ed.g9) e.preventDefault(); });
   node.addEventListener('pointerdown', e => {
     const E = WP.ed, G = E && E.g9; if (!G || G.p || e.button > 0) return;
-    try { node.setPointerCapture(e.pointerId); } catch (er) {}
+    // kein Pointer-Capture beim Tipp: sonst ginge der Klick an den Rahmen statt an das Label (kein Tick, §7.9)
     G.p = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), va: E.va, mode: null, cv: cvOf()};
   });
   node.addEventListener('pointermove', e => {
     const E = WP.ed, G = E && E.g9, p = G && G.p; if (!p || p.id !== e.pointerId) return;
     const dx = e.clientX - p.x0;
-    if (!p.mode && Math.hypot(dx, e.clientY - p.y0) > 8) p.mode = 'pan';
+    if (!p.mode && Math.hypot(dx, e.clientY - p.y0) > 8) { p.mode = 'pan'; try { node.setPointerCapture(e.pointerId); } catch (er) {} }
     if (p.mode === 'pan') { E.va = p.va - dx / Math.max(1, p.cv.clientWidth) * E.vw.W; G.follow = null; wpPaint(); }
   });
   const end = (e, cancel) => {
@@ -142,8 +143,7 @@ function g9Gest(node, cvOf) {
     if (p.mode) { G.dragT = performance.now(); return; }
     if (cancel || performance.now() - p.t0 >= 500) return;
     const cx = e.clientX - p.cv.getBoundingClientRect().left;
-    UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};
-    G.tapT = performance.now();
+    G.tapT = performance.now();   // (kein UI.ghost: der Klick desselben Tipps gehört dem Haptik-Label)
     g9Select(g9HitK(E, cx), {tap: true});
     g9Focus(E);
   };
@@ -289,10 +289,25 @@ function g9Field(E, f) {
 function g9Preview(E) {
   const G = E.g9, v = g9Clean(G.field.value);
   G.prevW = null;
-  if (v) { const C = g9Ctx(E.id), r = C && g9OpWord(C, G.sel, v); if (r && !r.err) { g9Place(C, r.W); G.prevW = {W: r.W, first: r.first, last: r.last}; const h = (G.field.value.match(/-/g) || []).length; if (h !== G.hy) { const z = r.W[Math.min(r.last, r.first + h)]; if (z && z.k >= 0 && z.k !== G.fk) { G.fk = z.k; g9Pulse(E); g9Play(E.id, z.k); } G.hy = h; } } }
-  else { G.fk = G.sel; G.hy = 0; }
+  if (v) {
+    const C = g9Ctx(E.id), r = C && g9OpWord(C, G.sel, v);
+    if (r && !r.err) {
+      g9Place(C, r.W); G.prevW = {W: r.W, first: r.first, last: r.last};
+      const h = (G.field.value.match(/-/g) || []).length;
+      if (h !== G.hy) {
+        // Bindestrich: der Rahmen geht zur nächsten Silbe desselben Worts (nach der Ausrichtung, nicht stur k+1)
+        let z = null;
+        if (/-$/.test(v)) { const r2 = g9OpWord(C, G.sel, v + 'x'); if (r2 && !r2.err) { g9Place(C, r2.W); z = r2.W[r2.last]; } }
+        else z = r.W[Math.min(r.last, r.first + h)];
+        if (z && z.k >= 0 && z.k !== G.fk) { G.fk = z.k; G.fkMoved = true; g9Pulse(E); g9Play(E.id, z.k); }
+        G.hy = h;
+      }
+    }
+  }
+  else { if (G.fk !== G.sel) G.fkMoved = true; G.fk = G.sel; G.hy = 0; }
   g9Tools(E);
-  wpPaint();
+  // gezeichnet wird im nächsten Bild (ein Neuzeichnen je Bild; der Tastendruck selbst rechnet nur die Vorschau)
+  if (!G.raf) G.raf = requestAnimationFrame(() => { G.raf = 0; if (WP.ed !== E || !E.g9) return; if (G.fkMoved) { G.fkMoved = false; wpPaint(); } else g9PaintBar(E, wpMarks(E.id) || []); });
 }
 function g9Pulse(E) { const G = E.g9; G.pulse = performance.now(); const tick = () => { if (WP.ed === E && E.g9 && performance.now() - E.g9.pulse < G9_PULSE + 20) { wpPaint(); requestAnimationFrame(tick); } else if (WP.ed === E) wpPaint(); }; requestAnimationFrame(tick); }
 // übernehmen: how = 'space' | 'enter' | 'next' | 'blur' | 'plus'
@@ -389,7 +404,7 @@ function g9PaintBar(E, mk) {
   }
   const C = g9Ctx(E.id); if (!C) return;
   const W = G.prevW ? G.prevW.W : C.W, pv = G.prevW, {cells, extra, dash} = g9Cells(C, W);
-  const sx = G.sx, ff = getComputedStyle(document.body).fontFamily;
+  const sx = G.sx, ff = G9.ff || (G9.ff = getComputedStyle(document.body).fontFamily);
   const fN = '600 13px ' + ff;
   const sel = G.fk >= 0 ? G.fk : G.sel;
   g.textBaseline = 'middle';

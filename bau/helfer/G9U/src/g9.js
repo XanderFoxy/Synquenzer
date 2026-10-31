@@ -14,9 +14,17 @@ function g9FeatOf(id) {
 }
 
 /* ---------- Arbeits-Form eines Takes: W = [{x, w, u, p, k (Marke), o, nm}] + Silben-Plätze P (§6.1) ---------- */
+// Zwischenspeicher je Take: gleiche ly/lyrics/Marken/Merkmale → dieselbe Arbeits-Form (Tastendruck ≤ 2 ms); Ops arbeiten auf Kopien
 function g9Ctx(id) {
   const m = S.takes && S.takes[id], mk = wpMarks(id) || [];
   if (!m) return null;
+  const F0 = g9FeatOf(id), c = G9.ctx;
+  if (c && c.id === id && c.m === m && c.ly === m.ly && c.lyrics === m.lyrics && c.mk === mk && c.F === F0) return Object.assign({}, c.C, {P: c.C.P.slice()});
+  const C = g9Ctx0(id, m, mk);
+  G9.ctx = {id, m, ly: m.ly, lyrics: m.lyrics, mk, F: F0, C};
+  return Object.assign({}, C, {P: C.P.slice()});
+}
+function g9Ctx0(id, m, mk) {
   let W = [], lang = 'de', src = 'getippt', vs5b = false;
   if (m.ly && m.ly.s) {
     const v = G9K.view(m.ly.s, mk);

@@ -1,0 +1,12 @@
+import {launch, open, clickTake, sleep} from './h.mjs';
+const br = await launch(); const {p, errs} = await open(br);
+await p.evaluate(() => { SYNQUENZER.newProject(); SYNQUENZER.setBpm(120); }); await sleep(300);
+const tk = await clickTake(p, Array.from({length: 16}, (_, k) => 0.3 + k * 0.22), 4);
+await p.evaluate(r => SYNQUENZER.wpOpen(r), tk.ref); await p.evaluate(r => SYNQUENZER.g9Text(r, true), tk.ref); await sleep(300);
+const g = await p.evaluate(() => SYNQUENZER.g9Geom());
+const x = g.wave.x + g.wave.w / 2, y = g.wave.y + 20;
+console.log(await p.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e.tagName + '.' + e.className + ' ' + getComputedStyle(e).display; }, [x, y]));
+await p.evaluate(() => { window.__ev = []; for (const t of ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'click']) document.addEventListener(t, e => window.__ev.push(t + ':' + e.target.tagName + (e.defaultPrevented ? '!' : '')), true); });
+await p.touchscreen.tap(x, y); await sleep(100);
+console.log(await p.evaluate(() => window.__ev.join(' ')), JSON.stringify(await p.evaluate(() => SYNQUENZER.g9HapLog())));
+console.log(errs); await br.close();
