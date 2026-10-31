@@ -39237,7 +39237,7 @@ function tkMakeTake(aBeat, bBeat, src, done) {
     TK.pend.delete(id);
     const pcm = new Int16Array(n);
     const got = g ? tkReadMic(g, F0 + late, Fb, pcm, F0) : 0;
-    const b = tkToBuffer(pcm, sr); if (b) TK.buf.set(id, b);
+    const b = tkToBuffer(pcm, sr); if (b) TK.buf.set(id, vpKick(b));   // VS-P-fix: messen, sobald der Take fertig ist
     TK.last = {id, n, sr, got, pre: pre / sr, late: late / sr, src};
     UI.dirty.grid = UI.dirty.song = true;
     const fin = ok => { if (done) { try { done(ok, id); } catch (e) { logErr(e); } } };
@@ -39262,17 +39262,22 @@ function tkQWatch() {
 
 /* ---------- VS-P (Nachtrag 4): Stimme im Mix – Auto-Pegel je Take + Spitzen-Schutz ----------
    Gemessen wird die Fassung, die klingt (Roh, gesäubert, gedehnt: je AudioBuffer einmal, Cache WeakMap): integrierte Lautheit nach
-   ITU-R BS.1770-4 (K-Filter, 400-ms-Blöcke, 75 % Überlappung, Gate −70 LUFS absolut / −10 LU relativ). Der Ausgleich ergibt am Ausgang
-   der STIMME-Spur bei Pegel-Standard (0,8, Mitte) −16 LUFS (Spur-Ausgang stereo L = R: +3,01 dB; Pegel 0,8² = −3,88 dB), −12 … +24 dB.
-   Pegel-Regler, Pan, Mute und Sends wirken wie bisher zusätzlich. Spitzen-Schutz: aus demselben Puffer eine Hüllkurve (alle 16 Samples)
-   – wahre Spitze (4× Überabtastung) des ausgeglichenen Takes ≤ −1,3 dBTP vor dem Pegel-Regler, 2 ms Vorschau, 100 ms Freigabe; weil der
-   Take vorher bekannt ist, wird nichts verzögert (keine Verschiebung gegen die anderen Spuren). Die Hüllkurve wirkt als eigener GainNode
-   nur in Stücken, die eine Spitze enthalten. Nichts davon steht im Projekt; WAV/ZIP bleiben der Roh-Take.
-   Gerechnet wird in Häppchen ≤ 6 ms im Hauptfaden (kein langer Task), angestoßen sobald ein Puffer geladen ist oder klingen soll. Eine
+   ITU-R BS.1770-4 (K-Filter, 400-ms-Blöcke, 75 % Überlappung, Gate −70 LUFS absolut / −10 LU relativ). Der Ausgleich ergibt −16 LUFS
+   vor dem Pegel-Regler (Eingang der STIMME-Spur, stereo L = R: +3,01 dB) – derselbe Bezug wie die −18 LUFS der kalibrierten Synth-Programme
+   (am Klangerzeuger, vor dem Pegel): Pegel ganz auf = −16 LUFS am Ausgang, Pegel-Standard 0,8 (−3,88 dB) = −19,9 LUFS, wie die Synths
+   2 dB darüber (VS-P-fix). −12 … +24 dB. Pegel-Regler, Pan, Mute und Sends wirken wie bisher zusätzlich. Spitzen-Schutz: aus demselben
+   Puffer eine Hüllkurve (alle 16 Samples) – wahre Spitze (4× Überabtastung) des ausgeglichenen Takes ≤ −7,32 dBTP vor Pegel und Pan
+   (Pan ganz außen legt L + R auf eine Seite: +6,02 dB; damit ≤ −1,3 dBTP am Ausgang in jeder Stellung von Pegel und Panorama), 2 ms
+   Vorschau, 100 ms Freigabe; weil der Take vorher bekannt ist, wird nichts verzögert (keine Verschiebung gegen die anderen Spuren). Die
+   Hüllkurve liegt einmal je Puffer als AudioBuffer (¼ der Abtastrate) vor und steuert in Stücken mit einer Spitze den Pegel eines eigenen
+   GainNode, gestartet mit derselben Zeit und demselben Versatz wie das Stück (sample-genau, fester Aufwand je Stück). Nichts davon steht
+   im Projekt; WAV/ZIP bleiben der Roh-Take.
+   Gerechnet wird in Häppchen ≤ 6 ms im Hauptfaden (kein langer Task), angestoßen sobald ein Puffer da ist (Take fertig, geladen,
+   gesäubert, gedehnt) oder klingen soll. Eine
    Neu-Planung (Take fertig, gewählt, gesäubert, gedehnt) wartet, bis die neue Fassung gemessen ist – bis dahin spielt das Alte weiter;
    ein Stück mit noch ungemessenem Puffer setzt danach ein (wie ein Take, der noch lädt). Nur ein Weg, den das nicht abdeckt, rechnet
    sofort (vpGet, gezählt in VP.sync). */
-const VP_LUFS = -16, VP_REF = .8, VP_LO = -12, VP_HI = 24, VP_CEIL = Math.pow(10, -1.3 / 20), VP_K = 16, VP_ATT = .002, VP_REL = .1, VP_SLICE = 6, VP_HOT = 20;
+const VP_LUFS = -16, VP_REF = 1, VP_LO = -12, VP_HI = 24, VP_CEIL = Math.pow(10, -1.3 / 20) / 2, VP_K = 16, VP_ATT = .002, VP_REL = .1, VP_SLICE = 6, VP_HOT = 20;
 const VP = {m: new WeakMap(), q: [], qs: new WeakSet(), t: 0, cb: new Map(), runs: 0, sync: 0, gated: 0, deferred: 0, maxMs: 0, err: 0, last: null};
 function vpKco(fs) {
   let f0 = 1681.974450955533, G = 3.999843853973347, Q = 0.7071752369554196, K = Math.tan(Math.PI * f0 / fs), Vh = Math.pow(10, G / 20), Vb = Math.pow(Vh, 0.4996667741545416);
@@ -39362,9 +39367,23 @@ function vpStep(J, until) {
     }
     if (s0 >= 0) segs.push([Math.max(0, s0 - 1), Math.min(nb - 1, last + 1)]);
     J.r.env = env; J.r.segs = segs; J.r.grDb = +(-20 * Math.log10(Math.max(1e-6, lo))).toFixed(2); J.need = null; J.st = 3;
+    J.r.eb = vpEnvBuf(env, segs, n, J.sr);
   }
   J.ms += performance.now() - t0; J.r.ms = +J.ms.toFixed(1); J.r.sec = +(n / J.sr).toFixed(2);
   return true;
+}
+// VS-P-fix: die Hüllkurve als AudioBuffer (Abtastrate sr/D, D | VP_K; Stützstellen genau auf dem 16er-Raster, dazwischen linear wie
+// setValueCurveAtTime) mit Werten env − 1 (außerhalb der Abschnitte 0): an den gain (Grundwert 1) eines GainNode angeschlossen
+function vpEnvBuf(env, segs, n, sr) {
+  const D = sr >= 32000 ? 4 : sr >= 16000 ? 2 : 1, M = VP_K / D, nb = env.length, L = Math.ceil(n / D) + 2 * M + 2;
+  let b = null;
+  try { b = new AudioBuffer({length: L, numberOfChannels: 1, sampleRate: sr / D}); } catch (e) { try { b = AU.ctx ? AU.ctx.createBuffer(1, L, sr / D) : null; } catch (e2) { b = null; } }
+  const d = b ? b.getChannelData(0) : new Float32Array(L);
+  for (const [s0, s1] of segs) for (let k = s0; k <= s1; k++) {
+    const v0 = env[k] - 1, v1 = (k + 1 < nb ? env[k + 1] : 1) - 1;
+    for (let m = 0; m < M; m++) { const j = k * M + m; if (j < L) d[j] = v0 + (v1 - v0) * m / M; }
+  }
+  return b || {d, sr: sr / D};
 }
 function vpFinish(J) { VP.m.set(J.b, J.r); VP.runs++; VP.last = J.r; const k = VP.q.indexOf(J); if (k >= 0) VP.q.splice(k, 1); VP.qs.delete(J.b); J.d = null; }
 function vpPump() {
@@ -39409,26 +39428,21 @@ function vpReady(b, now) {
   return true;
 }
 function vpGet(b) { if (!b) return null; vpReady(b, true); return VP.m.get(b) || null; }
-// Spitzen-Schutz eines Abspiel-Stücks: GainNode mit der Hüllkurve, nur wenn das Stück eine Spitze enthält (sonst null)
+// Spitzen-Schutz eines Abspiel-Stücks: GainNode, dessen gain die Hüllkurve (AudioBuffer) steuert – nur wenn das Stück eine Spitze
+// enthält (sonst null). VS-P-fix: kein Kurven-Aufbau je Stück mehr (der kostete bei langen Takes 20 … 190 ms im Hauptfaden: Start nach
+// seiner Zeit, Knacken beim A/B, Hüllkurve gegen die Spitzen verschoben); jetzt zwei Knoten, Aufwand unabhängig von der Take-Länge
 function vpLim(c, V, sr, when, off, end) {
-  if (!V || !V.env || !V.segs.length) return null;
-  const T = V.K / sr, b0 = off / T, b1 = (off + (end - when)) / T, env = V.env;
-  let n = null;
-  for (const [s0, s1] of V.segs) {
-    if (s1 <= b0 || s0 > b1 + 1) continue;
-    if (!n) { n = c.createGain(); n.gain.value = 1; }
-    const p = n.gain, k0 = Math.max(s0, Math.ceil(b0)), k1 = Math.min(s1, Math.ceil(b1) + 1), tc = when + k0 * T - off;
-    try {
-      if (k0 > s0 && tc > when + 1e-6) p.setValueAtTime(Math.min(env[k0 - 1], env[k0]), when);   // Stück beginnt in der Kurve
-      if (k1 > k0) p.setValueCurveAtTime(env.subarray(k0, k1 + 1), tc, (k1 - k0) * T);
-      else p.setValueAtTime(env[k0], tc);
-    } catch (e) {
-      VP.err++; let mn = 1; for (let k = Math.max(0, k0 - 1); k <= k1; k++) if (env[k] < mn) mn = env[k];
-      try { p.cancelScheduledValues(0); p.setValueAtTime(mn, when); } catch (e2) {}
-      break;
-    }
-  }
-  return n;
+  if (!V || !V.eb || !V.segs.length) return null;
+  const T = V.K / sr, a = off, z = off + (end - when);
+  let t0 = Infinity, t1 = -Infinity;
+  for (const [s0, s1] of V.segs) { const sa = s0 * T, sb = (s1 + 1) * T; if (sb <= a || sa >= z) continue; if (sa < t0) t0 = sa; if (sb > t1) t1 = sb; }
+  if (!(t1 > t0)) return null;
+  t0 = Math.max(t0, a); t1 = Math.min(t1, z);
+  if (!V.eb.getChannelData) { const f = V.eb; try { const b = c.createBuffer(1, f.d.length, f.sr); b.getChannelData(0).set(f.d); V.eb = b; } catch (e) { VP.err++; return null; } }
+  const n = c.createGain(), es = c.createBufferSource();
+  n.gain.value = 1; es.buffer = V.eb; es.connect(n.gain);
+  try { es.start(when + (t0 - a), t0); es.stop(when + (t1 - a) + .005); } catch (e) { VP.err++; try { es.disconnect(); } catch (e2) {} return null; }
+  n.es = es; return n;
 }
 const VP_API = {
   // Test-Info: je Take die Messung der klingenden Fassung (und des Roh-Takes)
@@ -39474,7 +39488,7 @@ function tkStartSrc(o) {
   if (!o.ctx) { TK.src.push(r); s.onended = () => tkDrop(r); TK.starts++; }
   return r;
 }
-function tkDrop(r) { if (r.dead) return; r.dead = true; try { r.s.disconnect(); r.g.disconnect(); } catch (e) {} const k = TK.src.indexOf(r); if (k >= 0) TK.src.splice(k, 1); }
+function tkDrop(r) { if (r.dead) return; r.dead = true; try { r.s.disconnect(); r.g.disconnect(); } catch (e) {} if (r.lim && r.lim.es) { try { r.lim.es.stop(); r.lim.es.disconnect(); } catch (e) {} } const k = TK.src.indexOf(r); if (k >= 0) TK.src.splice(k, 1); }
 function tkKill(r) { try { r.s.stop(); } catch (e) {} tkDrop(r); }
 function tkFadeAt(r, t, tau) {
   try { const p = r.g.gain; if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(t); else p.cancelScheduledValues(t); p.setTargetAtTime(0, t, tau || .004); r.s.stop(t + 10 * (tau || .004) + .01); } catch (e) {}
@@ -39982,7 +39996,7 @@ function tkAddPcmTake(pcm, sr, src, id) {
   const n = pcm.length, nc = Math.ceil(n / TK_CHUNK), chunks = []; for (let k = 0; k < nc; k++) chunks.push(id + ':' + k);
   if (!S.takes) S.takes = {};
   S.takes[id] = {sr, len: n, chunks, route: 'speaker', latMs: 0, created: Date.now(), src: src || 'import'};
-  const b = tkToBuffer(pcm, sr); if (b) TK.buf.set(id, b);
+  const b = tkToBuffer(pcm, sr); if (b) TK.buf.set(id, vpKick(b));   // VS-P-fix
   TK.missing.delete(id); tkPersist();
   return {id, stored: tkStore(id, pcm, chunks)};
 }
@@ -40594,7 +40608,7 @@ function clEnsure(id) {
     const cur = S.takes && S.takes[id];
     if (b && cur && (cur.cl | 0) === a) {
       const act = tkActiveIds(); for (const k of [...CL.buf.keys()]) if (k !== id && !act.has(k)) CL.buf.delete(k);
-      CL.buf.set(id, {a, b}); clResync(); UI.dirty.grid = UI.dirty.song = true;   // F1: Wellenform folgt
+      CL.buf.set(id, {a, b: vpKick(b)}); clResync(); UI.dirty.grid = UI.dirty.song = true;   // F1: Wellenform folgt
       const inf = CL.info[id];
       if (inf && inf.hint && !inf.told) { inf.told = true; toast('Viel Übersprechen – Kopfhörer oder leiser spielen'); }
     }
@@ -41499,14 +41513,14 @@ function wpRender(id, key, b, w, alt) {
     const y = r && r.y ? r.y : r, warn = r && r.warn ? r.warn : [];
     const ab = wpToBuf(y, sr); if (!ab) return;
     if (alt) {
-      WP.alt.set(id, {key, buf: ab, warn, mode: w.mode}); WP.altRenders = (WP.altRenders | 0) + 1;
+      WP.alt.set(id, {key, buf: vpKick(ab), warn, mode: w.mode}); WP.altRenders = (WP.altRenders | 0) + 1;
       const nw = wpWarp(id), nb = nw && !WP.ab && wpBase(id);
       if (nb && wpKey(nw, nb) === key) { clResync(); UI.dirty.grid = UI.dirty.song = true; wpPaint(); }   // inzwischen umgeschaltet: jetzt hören
       return;
     }
     const prev = WP.cache.get(id);
     if (prev && prev.key !== key && WP.ed && WP.ed.id === id) WP.old.set(id, prev);
-    WP.cache.set(id, {key, buf: ab, warn, mode: w.mode});
+    WP.cache.set(id, {key, buf: vpKick(ab), warn, mode: w.mode});
     WP.renders++; WP.last = {id, ms: Math.round(performance.now() - t0), how: WP.how, n: s.length - 2, key, mode: w.mode, warn: warn.length, wsola: r && r.wsola != null ? r.wsola : undefined};
     if (warn.length && WP.warnK !== key) { WP.warnK = key; toast('Dehnen: ' + warn.length + (warn.length === 1 ? ' Stelle' : ' Stellen') + ' nur verschoben – Faktor außerhalb 0,5–2,0'); }
     const act = tkActiveIds(); for (const k of [...WP.cache.keys()]) if (!act.has(k) && WP.cache.size > 6) WP.cache.delete(k);

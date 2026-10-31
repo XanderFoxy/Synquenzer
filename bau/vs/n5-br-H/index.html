@@ -20789,6 +20789,10 @@ function histDirty() { if (!HIST || !HIST.on || !HIST.sh) return; HIST.dirty = t
 // VC2a-fix: je Aufgabe merken, ob markDirty ohne Undo-Eintrag kam (dann ist der Abgleich 'proj' rechtmäßig, sonst ein Umweg)
 function histTk() { if (!HIST.tkQ) { HIST.tkQ = true; queueMicrotask(histTkEnd); } }
 function histTkEnd() { HIST.tkQ = false; if (HIST.tkD && !HIST.tkP) HIST.legit = true; HIST.tkD = HIST.tkP = false; }
+// Test-API: jeder Aufruf ist ein eigener Abschnitt (Skripte rufen mehrere Gesten in einer Aufgabe)
+function histApiWrap(A) {
+  for (const k of Object.keys(A)) { const f = A[k]; if (typeof f !== 'function') continue; A[k] = function () { if (HIST.tkQ) histTkEnd(); try { return f.apply(this, arguments); } finally { if (HIST.tkQ) histTkEnd(); } }; }
+}
 // VC2a-fix: eine Aufnahme fester Länge legt ihren Undo-Eintrag beim Start an; ihr Ereignis wartet bis zum Ende (inkl. Nachlauf)
 function histHold() { try { return HIST.q.length > 0 && (rec.state === 'recording' || !!rec.tail) && performance.now() - HIST.q[0].t < 120000; } catch (e) { return false; } }
 function histDrain(force) {
@@ -42830,6 +42834,7 @@ for (const k of Object.keys(SYNQUENZER)) {
   SYNQUENZER[k] = function () { const r = f.apply(this, arguments); uiSync(); if (r && typeof r.then === 'function') return r.then(v => { uiSync(); return v; }); return r; };
 }
 const DIRIGENT = SYNQUENZER;              // old name stays as an alias (§16)
+histApiWrap(SYNQUENZER);  // VC2a-fix
 window.SYNQUENZER = SYNQUENZER; window.DIRIGENT = SYNQUENZER;
 
 /* ---------- init ---------- */
