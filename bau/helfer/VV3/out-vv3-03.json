@@ -1,0 +1,64 @@
+{
+ "VV3-03 Klang": {
+  "jobs": {
+   "0": {
+    "dur": 18.32,
+    "how": "webcodecs"
+   },
+   "1": {
+    "dur": 18.27,
+    "how": "webcodecs"
+   },
+   "2": {
+    "dur": 18.2,
+    "how": "webcodecs"
+   },
+   "4": {
+    "dur": 18.23,
+    "how": "webcodecs"
+   }
+  },
+  "projEqual": true,
+  "nodesSame": true,
+  "paramsSame": true,
+  "timer": true,
+  "liveNotesSame": true,
+  "notes": 248,
+  "liveLUFSbefore": -16.42,
+  "liveLUFSafter": -16.42,
+  "offline": {
+   "sameNotes": true,
+   "dRmsDb": -0.018
+  },
+  "ok": true
+ },
+ "VV3-03 Tempo Song-Bild (VV1)": {
+  "dur": 182.1,
+  "wallS": 53.6,
+  "xRealtime": 3.4,
+  "frameMeanMs": 7.6,
+  "frameMaxMs": 77,
+  "longTasks": 6,
+  "longest": 76
+ },
+ "VV3-03 Tempo Spur-Bild MS (Synth 3)": {
+  "dur": 182.1,
+  "wallS": 58.4,
+  "xRealtime": 3.12,
+  "frameMeanMs": 9.7,
+  "frameMaxMs": 45,
+  "longTasks": 1,
+  "longest": 52,
+  "ok": true
+ },
+ "VV3-03 Tempo Spur-Bild FM (Synth 2)": {
+  "dur": 182.1,
+  "wallS": 48.6,
+  "xRealtime": 3.75,
+  "frameMeanMs": 7.4,
+  "frameMaxMs": 49,
+  "longTasks": 1,
+  "longest": 57,
+  "ok": true
+ }
+}

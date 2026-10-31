@@ -6,7 +6,7 @@ export async function setup(p, o = {}) {
     const set = (k, v) => SYNQUENZER.mkSet(2, 't.0.' + k, v);
     set('l1.w', o.w != null ? o.w : 0); set('l1.sync', o.sync ? 1 : 0); set('l1.note', 3); set('l1.ks', o.ks || 0);
     set('l1.f', o.f != null ? o.f : 127 * Math.log2(20) / 10);          // W-08: 0.05 · 2^(10 v / 127) = 1 Hz
-    set('p.0.s', 2); set('p.0.d', 4); set('p.0.i', 40); set('f.cut', 60); set('f.res', 30); set('f.eg', 0);
+    set('p.0.s', 2); set('p.0.d', 4); set('p.0.i', 20); set('f.cut', 60); set('f.res', 30); set('f.eg', 0);
     set('e2.s', 127); set('e2.r', 30);
     if (o.seq) { set('seq.on', 1); set('seq.last', 8); set('seq.res', 9); set('seq.q.0.k', 11); for (let s = 0; s < 8; s++) set('seq.q.0.v.' + s, [0, 20, 40, 10, -20, -40, 0, 30][s]); }
     // Synth 3 plays long notes (a held chord over every bar) so the LFO sweeps the cutoff audibly

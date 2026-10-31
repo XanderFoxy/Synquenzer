@@ -42734,7 +42734,7 @@ function vv3MkSeq(T, t, sb, notes, bpm) {
   const res = Math.round(S_.res), D = []; for (let s = 0; s < 16; s++) D[s] = W.SRES[clamp(res + (sl ? Math.round(clamp(sl.v[s], -6, 6)) : 0), 0, 15)] * 4;
   let C = 0; for (const s of O) C += D[s];
   const loop = S_.run >= .5, ks = clamp(Math.round(S_.ks), 0, 2);
-  let b; if (ks === 0) b = sb; else { if (!notes.length) return {O, D, j: 0, u: 0, idle: true}; let g = notes[notes.length - 1].a; if (ks === 1) for (let j = notes.length - 2; j >= 0; j--) if (notes[j].b > g - 1e-9 && notes[j].a <= g) g = notes[j].a; b = (t - g) / (60 / bpm); }
+  let b; if (ks === 0) b = sb; else { if (!notes.length) return {O, D, j: 0, u: 0, step: O[0], val: {}, idle: true}; let g = notes[notes.length - 1].a; if (ks === 1) for (let j = notes.length - 2; j >= 0; j--) if (notes[j].b > g - 1e-9 && notes[j].a <= g) g = notes[j].a; b = (t - g) / (60 / bpm); }
   if (b == null) b = 0;
   let j = 0, u = 0;
   if (!loop && b >= C) { j = O.length - 1; u = D[O[j]]; }
