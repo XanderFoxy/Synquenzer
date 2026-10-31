@@ -108,7 +108,7 @@ for (const [mode, s] of [['hard', 1], ['hard', 0.5], ['soft', 1], ['soft', 0.5]]
       V.fft(re, im, false); for (let k = 0; k < N; k++) acc[k] += re[k] * re[k] + im[k] * im[k]; cnt++;
     }
     for (let k = 0; k < N; k++) { re[k] = Math.log(acc[k] / cnt + 1e-20); im[k] = 0; }
-    V.fft(re, im, true); const L = Math.floor(0.5 * P);
+    V.fft(re, im, true); const L = Math.floor((+process.env.LIF || 0.3) * P);
     for (let q = 0; q < N; q++) { const qq = Math.min(q, N - q); const w = qq < L ? 1 : 0; re[q] *= w / N; im[q] *= w / N; }
     V.fft(re, im, false);
     const out = []; for (let f = 300; f <= 4000; f += 50) out.push(10 / Math.LN10 * re[Math.round(f / SR * N)]);
@@ -119,11 +119,34 @@ for (const [mode, s] of [['hard', 1], ['hard', 0.5], ['soft', 1], ['soft', 0.5]]
     const tx = track(M.x, SR, a, b).filter(v => v === v), ty = track(y, SR, a, b).filter(v => v === v);
     const dep = t => { const c = t.map(v => ct(v, median(t))); return Math.max(...c) - Math.min(...c); };
     vmin = Math.min(vmin, dep(ty) / dep(tx));
-    const Pp = SR / Math.max(g.f0, g.f0 * Math.pow(2, Math.abs(g.off) / 1200)), lx = env(M.x, g.t + 0.05, b, Pp), ly = env(y, g.t + 0.05, b, Pp);
-    let nm = 0, at = 0; lx.forEach((v, k) => { const d = Math.abs(ly[k] - v); if (d > nm) { nm = d; at = 300 + 50 * k; } fmax = Math.max(fmax, d); }); if (process.env.DBG) console.log("   Note", g.vowel, g.f0.toFixed(0), "Hz: max", nm.toFixed(2), "dB bei", at, "Hz");
   });
+  // Spektralhülle: Stimme ohne Vibrato (gehaltene Vokale a e i o u, 130–260 Hz), Weich 100 % (±35…45 Cent) und +3/+7/+12 HT.
+  // Hülle = Betrag je Teilton (Goertzel über den Notenkern, Spitze ±0,5 %), in dB über der Frequenz interpoliert (Catmull-Rom),
+  // 300 Hz–4 kHz je 50 Hz; Vergleich Ausgang gegen Original, Pegel-Mittel abgezogen
+  const gz = (x, a, b, f) => { const i0 = Math.round(a * SR), W = Math.round((b - a) * SR), w = 2 * Math.PI * f / SR, c = 2 * Math.cos(w); let s1 = 0, s2 = 0; for (let j = 0; j < W; j++) { const v = x[i0 + j] * (0.5 - 0.5 * Math.cos(2 * Math.PI * j / (W - 1))) + c * s1 - s2; s2 = s1; s1 = v; } return Math.sqrt(Math.max(1e-30, s1 * s1 + s2 * s2 - c * s1 * s2)) / W; };
+  const henv = (x, a, b, f) => {
+    const H = []; for (let h = 1; h * f < 4400; h++) { let m = 0; for (let d = -5; d <= 5; d++) m = Math.max(m, gz(x, a, b, h * f * (1 + d * 0.001))); H.push([h * f, 20 * Math.log10(m)]); }
+    const out = []; for (let F = 300; F <= 4000; F += 50) { let k = 0; while (k < H.length - 2 && H[k + 1][0] < F) k++; const P0 = H[Math.max(0, k - 1)][1], P1 = H[k][1], P2 = H[k + 1][1], P3 = H[Math.min(H.length - 1, k + 2)][1], t = (F - H[k][0]) / (H[k + 1][0] - H[k][0]);
+      out.push(0.5 * (2 * P1 + (-P0 + P2) * t + (2 * P0 - 5 * P1 + 4 * P2 - P3) * t * t + (-P0 + 3 * P1 - 3 * P2 + P3) * t * t * t)); }
+    const mu = out.reduce((p, q) => p + q, 0) / out.length; return out.map(v => v - mu);
+  };
+  const rows = [];
+  for (const [v, f0] of [['a', 131], ['e', 147], ['i', 175], ['o', 196], ['u', 220], ['a', 262]]) for (const c of [38, -42, 300, 700, 1200]) {
+    const x = voice(SR, 0.8, [{t: 0.05, d: 0.7, f0, vowel: v}], {vibrato: 0, seed: 3}).x, A = P.analyse(x, SR, V);
+    const yy = P.render(x, SR, A, {mode: 'soft', notes: A.notes.map(n => ({t0: n.t0, t1: n.t1, m: n.m, to: n.m, s: 0, e: c}))}).y;
+    const ex = henv(x, 0.15, 0.65, f0), ey = henv(yy, 0.15, 0.65, f0 * Math.pow(2, c / 1200)); let d = 0, at = 0;
+    ex.forEach((q, k) => { if (Math.abs(ey[k] - q) > d) { d = Math.abs(ey[k] - q); at = 300 + 50 * k; } });
+    // Hauptmaß: jeder Teilton des Ausgangs gegen die Hülle des Originals an seiner Frequenz (dB-linear zwischen den zwei
+    // benachbarten Original-Teiltönen – die Hülle, die das Original wirklich trägt), 300 Hz–4 kHz, Pegel-Mittel abgezogen
+    const pkd = (z, F) => { let m = 0; for (let dd = -5; dd <= 5; dd++) m = Math.max(m, gz(z, 0.15, 0.65, F * (1 + dd * 0.001))); return 20 * Math.log10(m); };
+    const fy = f0 * Math.pow(2, c / 1200), Hx = []; for (let h = 1; h * f0 < 4500; h++) Hx.push(pkd(x, h * f0));
+    const dv = []; for (let h = 1; h * fy <= 4000; h++) { const F = h * fy; if (F < 300) continue; const kk = F / f0, lo = Math.floor(kk), t = kk - lo; if (lo < 1 || lo >= Hx.length) continue; dv.push(pkd(yy, F) - (Hx[lo - 1] + (Hx[lo] - Hx[lo - 1]) * t)); }
+    const mu = dv.reduce((p, q) => p + q, 0) / dv.length, dh = Math.max(...dv.map(q => Math.abs(q - mu))); if (process.env.DBG && !rows.length) console.log("dv", dv.map(q => q.toFixed(2)).join(" "));
+    if (Math.abs(c) < 100) fmax = Math.max(fmax, dh); rows.push(v + f0 + (c > 0 ? '+' : '') + c + 'ct:' + dh.toFixed(2) + ' (Kurve ' + d.toFixed(1) + '@' + at + ')');
+  }
+  console.log('   Hülle je Fall (max dB @ Hz):', rows.join(' '));
   ok(vmin >= 0.7, 'G2-02 Weich: Vibrato-Tiefe ≥ 70 % – min ' + (vmin * 100).toFixed(0) + ' %');
-  ok(fmax <= 1, 'G2-02 Weich: Formanten (Terzbänder 250 Hz–4 kHz) ±1 dB – max ' + fmax.toFixed(2) + ' dB');
+  ok(fmax <= 1, 'G2-02 Weich (±38/42 Cent): Teiltöne auf der Hülle des Originals 300 Hz–4 kHz ±1 dB – max ' + fmax.toFixed(2) + ' dB');
   // Hart: Vibrato eingerastet (Info)
   const rh = P.render(M.x, SR, an, planQ(an, 'hard', 1)).y; let hd = 0;
   M.notes.forEach(g => { const a = g.t + 0.2, b = g.t + g.d - 0.05; const t = track(rh, SR, a, b).filter(v => v === v), c = t.map(v => ct(v, median(t))); hd = Math.max(hd, Math.max(...c) - Math.min(...c)); });

@@ -26,7 +26,7 @@ function decim(x, sr) {
   return {y, fs, D};
 }
 function analyse(x, sr, V) {
-  const d = decim(x, sr), fs = d.fs, hop = Math.max(1, Math.round(fs * 0.005));
+  const d = decim(x, sr), fs = d.fs, hop = Math.max(1, Math.round(fs * 0.01));   // 10-ms-Frames (5 ms kostet doppelt, ohne hörbaren Gewinn)
   const tr = V.pyin(d.y, {fs, hop, fmin: 55, fmax: 1050});
   const sg = V.segment(tr, {snap: false, tuning: 0});
   const H = hop * d.D / sr, n = tr.n, f0 = new Float32Array(n), ap = new Float32Array(n);
@@ -101,7 +101,7 @@ function model(x, sr, an) {
       const L = B - A, fs = new Float32Array(L), ph = new Float64Array(L);
       for (let q = 0; q < L; q++) { const p = Math.min(j - 1, Math.max(i, (A + q) / Hs)), k = Math.floor(p), fr = p - k; fs[q] = k + 1 < j ? f0[k] + (f0[k + 1] - f0[k]) * fr : f0[k]; }
       let P = 0; for (let q = 0; q < L; q++) { ph[q] = P; P += 2 * Math.PI * fs[q] / sr; }
-      const step = Math.round(0.005 * sr), nf = Math.floor((L - 1) / step) + 1, re = new Float32Array(nf * HMAX), im = new Float32Array(nf * HMAX), H = new Uint8Array(nf);
+      const step = Math.round(0.01 * sr), nf = Math.floor((L - 1) / step) + 1, re = new Float32Array(nf * HMAX), im = new Float32Array(nf * HMAX), H = new Uint8Array(nf);
       // Φ außerhalb der Strecke (Fenster ragt hinaus): linear fortgesetzt
       const phA = q => q < 0 ? ph[0] + 2 * Math.PI * fs[0] / sr * q : q >= L ? ph[L - 1] + 2 * Math.PI * fs[L - 1] / sr * (q - L + 1) : ph[q];
       for (let k = 0; k < nf; k++) {
@@ -113,7 +113,7 @@ function model(x, sr, an) {
         for (let h = 1; h <= Hk; h++) {
           let sr2 = 0, si2 = 0;
           for (let j2 = 0; j2 < N; j2++) { const a = xr[j2], b = xm[j2], r2 = a * zr[j2] - b * zi[j2], i2 = a * zi[j2] + b * zr[j2]; xr[j2] = r2; xm[j2] = i2; sr2 += r2; si2 += i2; }
-          re[k * HMAX + h - 1] = 2 * sr2 / sw; im[k * HMAX + h - 1] = 2 * si2 / sw;
+          const ar = 2 * sr2 / sw, ai = 2 * si2 / sw; re[k * HMAX + h - 1] = Math.log(Math.hypot(ar, ai) + 1e-9); im[k * HMAX + h - 1] = Math.atan2(ai, ar);
         }
       }
       runs.push({i0: i, i1: j, A, B, step, nf, fs, ph, re, im, H});
@@ -125,19 +125,17 @@ function model(x, sr, an) {
 // Teilton-Koeffizient (Betrag/Phase) zwischen den Frames: Betrag linear, Phase auf dem kürzeren Bogen
 function coef(R, q, h, out) {
   const p = Math.min(R.nf - 1, q / R.step), k = Math.floor(p), fr = p - k, k2 = Math.min(R.nf - 1, k + 1);
-  const hh = h - 1, a = k * HMAX + hh, b = k2 * HMAX + hh;
-  const ha = h <= R.H[k], hb = h <= R.H[k2];
-  const ar = ha ? R.re[a] : 0, ai = ha ? R.im[a] : 0, br = hb ? R.re[b] : 0, bi = hb ? R.im[b] : 0;
-  const ma = Math.hypot(ar, ai), mb = Math.hypot(br, bi), m = ma + (mb - ma) * fr;
-  let pa = Math.atan2(ai, ar), pb = Math.atan2(bi, br); if (!ma) pa = pb; if (!mb) pb = pa;
+  const hh = h - 1, a = k * HMAX + hh, b = k2 * HMAX + hh, ha = h <= R.H[k], hb = h <= R.H[k2];
+  if (!ha && !hb) { out[0] = -20.7; out[1] = 0; return out; }
+  const la = ha ? R.re[a] : R.re[b] - 9, lb = hb ? R.re[b] : R.re[a] - 9, pa = ha ? R.im[a] : R.im[b], pb = hb ? R.im[b] : R.im[a];
   let d = pb - pa; d -= 2 * Math.PI * Math.round(d / (2 * Math.PI));
-  out[0] = m; out[1] = pa + d * fr; return out;
+  out[0] = la + (lb - la) * fr; out[1] = pa + d * fr; return out;
 }
 function render(x, sr, an, plan) {
   const y = Float32Array.from(x), n = x.length, H = an.hop;
   const {c, runs} = curve(an, plan);
   if (!an.mdl) an.mdl = model(x, sr, an);
-  const RMP = Math.round(0.010 * sr), BLK = 32, o2 = [0, 0], o3 = [0, 0];
+  const RMP = Math.round(0.010 * sr), BLK = 64, o2 = [0, 0], o3 = [0, 0];
   let segs = 0;
   for (const [i0, i1] of runs) {
     const R = an.mdl.find(z => z.i0 === i0 && z.i1 === i1); if (!R) continue;
@@ -149,14 +147,18 @@ function render(x, sr, an, plan) {
       const cc = c[k] + (c[k2] - c[k]) * fr, r = Math.pow(2, cc / 1200); rr[q] = r; ps[q] = P; P += 2 * Math.PI * R.fs[q] * r / sr; } }
     const Cm = new Float64Array(2 * HMAX), Cm2 = new Float64Array(2 * HMAX), Cs = new Float64Array(2 * HMAX), Cs2 = new Float64Array(2 * HMAX);
     // Koeffizienten an der Blockgrenze q: Original (h ganz) und verschoben (Hülle an der neuen Frequenz h·f0·r, Phase des nächsten Teiltons)
+    const LM = new Float64Array(HMAX + 2), PH = new Float64Array(HMAX + 2);
     const setC = (q, M, S) => {
       const k = Math.min(R.nf - 1, Math.round(q / R.step)), Hk = R.H[k], f = R.fs[Math.min(L - 1, q)], r = rr[Math.min(L - 1, q)];
-      for (let h = 1; h <= HMAX; h++) { if (h <= Hk) { coef(R, q, h, o2); M[2 * h - 2] = o2[0] * Math.cos(o2[1]); M[2 * h - 1] = o2[0] * Math.sin(o2[1]); } else { M[2 * h - 2] = 0; M[2 * h - 1] = 0; } }
+      for (let h = 1; h <= Hk; h++) { coef(R, q, h, o2); LM[h] = o2[0]; PH[h] = o2[1]; const m = Math.exp(o2[0]); M[2 * h - 2] = m * Math.cos(o2[1]); M[2 * h - 1] = m * Math.sin(o2[1]); }
+      for (let h = Hk + 1; h <= HMAX; h++) { M[2 * h - 2] = 0; M[2 * h - 1] = 0; }
+      LM[0] = LM[1]; LM[Hk + 1] = LM[Hk] - 3;
       for (let h = 1; h <= HMAX; h++) {
         const kk = h * r, F = kk * f; if (F >= FTOP || kk > Hk + 0.5 || F >= 0.45 * sr) { S[2 * h - 2] = 0; S[2 * h - 1] = 0; continue; }
-        const lo = Math.max(1, Math.floor(kk)), hi = Math.min(Hk, lo + 1), fr = Math.min(1, Math.max(0, kk - lo));
-        coef(R, q, lo, o2); coef(R, q, hi, o3);
-        const la = Math.log(o2[0] + 1e-9), lb = Math.log(o3[0] + 1e-9), m = kk < 1 ? o2[0] : Math.exp(la + (lb - la) * fr), p = fr < 0.5 ? o2[1] : o3[1];
+        const lo = Math.min(Hk, Math.max(1, Math.floor(kk))), t = Math.min(1, Math.max(0, kk - lo));
+        // Hülle über der Teilton-Nummer: Log-Betrag linear zwischen den zwei Nachbar-Teiltönen (keine Spitze, die das Original nicht trägt)
+        const lm = LM[lo] + (LM[Math.min(Hk + 1, lo + 1)] - LM[lo]) * t;
+        const m = Math.exp(lm), p = PH[t < 0.5 ? lo : Math.min(Hk, lo + 1)];
         S[2 * h - 2] = m * Math.cos(p); S[2 * h - 1] = m * Math.sin(p);
       }
     };
