@@ -39929,7 +39929,8 @@ function tkMakeTake(aBeat, bBeat, src, done) {
   const late = Math.max(0, lo - Fa);                      // Anfang schon überschrieben (> 2 min): der Take beginnt später
   const id = newUid(), nc = Math.ceil(n / TK_CHUNK), chunks = [];
   for (let k = 0; k < nc; k++) chunks.push(id + ':' + k);
-  const m = {sr, len: n, chunks, route: ST.route || 'speaker', latMs: +(+stLatAt(Fa) || 0).toFixed(3), created: Date.now(), src, follow: true};   // G-GES (G7): neue Takes folgen dem Transponieren
+  const m = {sr, len: n, chunks, route: ST.route || 'speaker', latMs: +(+stLatAt(Fa) || 0).toFixed(3), created: Date.now(), src};
+  if (g7RecFollow(b2t(aBeat), b2t(bBeat))) m.follow = true;   // G-GES (G7): neue Takes folgen dem Transponieren (nicht, wenn beim Singen transponiert war)
   clNewTake(m);                                          // VS4: Lautsprecher → Referenz + SÄUBERN 60 %
   if (!S.takes) S.takes = {};
   S.takes[id] = m;
@@ -43266,7 +43267,8 @@ function g8MakeTake(aBeat, bBeat, done) {
   s.used = true;
   const F0 = s.F0, Fe = Fb + Math.round(g3PostCap() * sr), n = Fe - F0, id = s.id, nc = Math.ceil(n / TK_CHUNK), chunks = [];
   for (let k = 0; k < nc; k++) chunks.push(id + ':' + k);
-  const m = {sr, len: n, chunks, route: ST.route || 'speaker', latMs: +(+stLatAt(Fa) || 0).toFixed(3), created: Date.now(), src: 'song', follow: true};   // G-GES (G7)
+  const m = {sr, len: n, chunks, route: ST.route || 'speaker', latMs: +(+stLatAt(Fa) || 0).toFixed(3), created: Date.now(), src: 'song'};
+  if (g7RecFollow(b2t(aBeat), b2t(bBeat))) m.follow = true;   // G-GES (G7)
   clNewTake(m);
   if (!S.takes) S.takes = {};
   S.takes[id] = m;
@@ -44776,6 +44778,16 @@ const G7 = {t: null, n: 0, pre: new Set()};
    klingen wie bisher; je Take umschaltbar im Takes-Blatt [folgt Transponieren] (ein Undo, Art 'takes'). */
 tkExt().take.push((m, o) => { if (m.follow === true) o.follow = true; });
 const g7Follows = id => !!(S.takes && S.takes[id] && S.takes[id].follow === true);
+// Voreinstellung beim Aufnehmen: war beim Singen schon transponiert (Träger, Teil-Transposition), hat der Sänger in dieser Lage gesungen –
+// der Take folgt dann nicht (sonst wäre er doppelt verschoben); sonst folgt er späterem Transponieren. Umschaltbar je Take.
+function g7RecFollow(ta, tb) {
+  try {
+    const st = stimmeT(), ts = [ta, (ta + tb) / 2, tb - 1e-3];
+    for (const e of T.timeline || []) if (e && e.time > ta && e.time < tb) ts.push(e.time + 1e-4);
+    for (const t of ts) if (st >= 0 ? g7Moves(st, t) : !!((T.targetAt(t + 1e-6) || {}).target || xpAt(t + 1e-6))) return false;
+  } catch (e) { logErr(e); }
+  return true;
+}
 function g7Toggle(r) {
   const x = tkRef(r), id = x && x.a.take, m = id && S.takes && S.takes[id]; if (!m) return false;
   const before = JSON.stringify(S.takes);
@@ -44812,7 +44824,7 @@ function g7Pitch(id, force) {
   return {mode: 'soft', str: 1, q: false, notes: A.notes};
 }
 // transponiert gerade etwas die STIMME-Spur? (Probe: ein C und ein E – bleiben beide, ist nichts zu tun)
-function g7Moves(st) { try { const t = G7.t != null ? G7.t : nowT() + .35, k = S.key; for (const p of [60, 62, 64, 65, 67, 69, 71]) if (outPitch(st, k, p, t) !== p) return true; } catch (e) {} return false; }
+function g7Moves(st, tt) { try { const t = tt != null ? tt : G7.t != null ? G7.t : nowT() + .35, k = S.key; for (const p of [60, 62, 64, 65, 67, 69, 71]) if (outPitch(st, k, p, t) !== p) return true; } catch (e) {} return false; }
 // Wechsel des Trägers / der Teil-Transposition: die klingenden Takes neu (aus dem Cache sofort, sonst nach dem Rechnen, Wechsel ohne Loch)
 function g7Changed() {
   G7.n++;
