@@ -18,7 +18,8 @@ self.addEventListener('fetch', e => {
   const u = new URL(rq.url), scope = new URL(self.registration.scope);
   if (u.origin !== scope.origin || !u.pathname.startsWith(scope.pathname)) return;
   const rest = u.pathname.slice(scope.pathname.length);
-  if (rq.mode === 'navigate' || rest === '' || rest === 'index.html') {
+  // only the app page itself: other pages in this scope (e.g. mein-vorteil/) are never answered or cached as the app copy
+  if (rest === '' || rest === 'index.html') {
     let put = Promise.resolve();
     const net = fetch(rq).then(r => {
       if (r && r.ok && r.type === 'basic') { const c = r.clone(); put = caches.open(CACHE).then(ca => ca.put(PAGE, c)).catch(() => {}); }
