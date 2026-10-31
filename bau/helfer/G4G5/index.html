@@ -42296,7 +42296,7 @@ function g4Paint(full, el0) {
         if (before == null) before = g4Snap(s);
         tr.gfx = g4Norm(Object.assign({}, tr.gfx, {[k]: +r.value}));
         const lb = p.querySelector('.g4v[data-k="' + k + '"]'); if (lb) lb.textContent = g4Fmt(k, tr.gfx[k]);
-        g4Changed(false);
+        markDirty(); g4Changed(false);                            // „geändert“ sofort, Undo beim Loslassen
       });
       r.addEventListener('change', () => { if (before != null) { g4Commit(before, 'Effekte: ' + G4_LBL[k]); before = null; g4Changed(true); } });
     }

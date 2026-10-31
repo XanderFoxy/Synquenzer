@@ -1,0 +1,22 @@
+// Reihenfolge je Take: Säubern (VS4) → G4 → Zeitkarte (VS5a): mit Karte klingt die gerenderte Fassung der G4-Fassung; Säubern ändert die G4-Quelle
+import {open, sleep, APP, voice} from './h.mjs';
+const FILE = process.argv[2] || APP;
+let fail = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) fail++; };
+const i16 = x => Array.from(x, v => Math.max(-32768, Math.min(32767, Math.round(v * 32767))));
+const H = await open({file: FILE}), p = H.p;
+await p.evaluate(() => { SYNQUENZER.newProject({init: true}); SYNQUENZER.play(); SYNQUENZER.stop(); SYNQUENZER.setBpm(100); }); await sleep(300);
+const sr = await p.evaluate(() => window.__ctx.sampleRate);
+const r = await p.evaluate(([pc, sr]) => SYNQUENZER.tkInject({pcm: pc, sr, scene: 0, len: 4, at: 0.07}), [i16(voice(4, 100, sr, -26, {voice: 'female'})), sr]);
+const wait = async () => { for (let k = 0; k < 6; k++) { await p.evaluate(id => SYNQUENZER.g4Played(id), r.id); await sleep(150); await p.evaluate(() => SYNQUENZER.g4Wait(30000)); } };
+await wait();
+console.log('  Reihenfolge tkExt().proc:', JSON.stringify(await p.evaluate(() => SYNQUENZER.g4Info().order)));
+await p.evaluate(() => SYNQUENZER.wpQuantize({t: stimmeT(), s: 0}, {grid: '1/8', strength: 1}));
+await wait(); await p.evaluate(() => SYNQUENZER.wpPlayed({t: stimmeT(), s: 0})); await wait();
+const q = await p.evaluate(id => { const pl = tkPlayBuf(id), c = G4.cache.get(id), w = WP.cache.get(id); return {warp: !!(w && pl === w.buf), g4: !!c, srcIsG4: !!(w && c && w.key.endsWith('@' + wpBid(c.buf)))}; }, r.id);
+ok(q.warp && q.srcIsG4, `Zeitkarte an: es klingt die Scheiben-Fassung, gerechnet aus der G4-Fassung (${JSON.stringify(q)})`);
+await p.evaluate(() => SYNQUENZER.g4AB(true)); await wait();
+const q2 = await p.evaluate(id => { const pl = tkPlayBuf(id), w = WP.cache.get(id); return {warp: !!(w && pl === w.buf), srcRaw: !!(w && w.key.endsWith('@' + wpBid(tkBuffer(id))))}; }, r.id);
+ok(q2.warp && q2.srcRaw, `A/B „ohne“: Scheiben-Fassung aus dem Roh-Take (${JSON.stringify(q2)})`);
+await p.evaluate(() => SYNQUENZER.g4AB(false)); await wait();
+if (H.errs.length) ok(false, 'Konsolenfehler ' + H.errs.slice(0, 3));
+await H.br.close(); console.log(fail ? `FEHLER: ${fail}` : 'ALLE OK'); process.exit(fail ? 1 : 0);
