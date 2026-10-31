@@ -14123,7 +14123,7 @@ const MK_LABEL = 'MS 2000';
       {o2fine: 6, o2lvl: .9, o3w: 0, o3oct: 1, o3fine: -3, o3lvl: .25, cutoff: 1300, res: .38, drive: .4, kt: .66, fenv: .32, fvel: .3,
         fA: .008, fD: .5, fS: .45, fR: .3, aA: .004, aD: .3, aS: .92, aR: .22, ampVel: .4, mode: 2, poly: 1, glide: .07, l2shape: 0, l2rate: 5.3, l2fade: .7, analog: .2, spread: 0, level: 0.52},
       [M('lfo2', 'pitch', .0045)], {rev: .22, dly: .22}),
-    A('sync-lead', 'Sync-Lead', 'lead', 'lead', 'Prophet-5 Sync („Let’s Go“), Nord Lead',
+    A('sync-lead', 'Sync-Lead', 'lead', 'lead', 'Prophet-5 Sync („Let’s Go“)',
       'Osz 2 ist an Osz 1 gekoppelt (Sync): seine Tonhöhe ändert nur die Klangfarbe. Hüllkurve 2 fegt die Osz-2-Tonhöhe herunter = das typische „Jauu“. Mod-Rad = von Hand fegen.',
       {o1lvl: .35, o2sync: 1, o2semi: 7, o2fine: 0, o2lvl: 1, cutoff: 2600, res: .18, drive: .3, kt: .5, fenv: .2, fA: .002, fD: .4, fS: .5,
         aA: .003, aD: .2, aS: .9, aR: .2, ampVel: .4, mA: .001, mD: .5, mS: .15, mR: .3, mode: 2, poly: 1, glide: .04, l2shape: 0, l2rate: 5.5, l2fade: .6, analog: .12, spread: 0, level: 0.58},
@@ -14513,7 +14513,7 @@ const MK_LABEL = 'MS 2000';
       perc: {model: 'cb', tLvl: 1, wav: 'square', frq: 560, o2: 1, o2w: 'square', o2r: 1.48, tDec: .25, tSpk: .5, tfTyp: 'bandpass', tfFrq: 2600, tfQ: 1.5, lvl: .5, pan: -.2},
       shaker: {model: 'sh', nLvl: 1, nTyp: 'bandpass', nFrq: 9000, nQ: 1.2, nAtk: .004, nDec: .09, nCrv: .2, mLvl: .35, mTun: 1.6, mHp: 9000, mDec: .08, dyn: .7, lvl: .5, pan: -.3},
     },
-    // resonant, tuned percussion (Nord Drum / Waldorf Attack flavour): long pitch bends, FM bells, resonant noise snare
+    // resonant, tuned percussion (Waldorf Attack flavour): long pitch bends, FM bells, resonant noise snare
     'Resonanz-Perc': {
       kick: {tLvl: 1, frq: 46, pAmt: 26, pDec: .07, tDec: .7, o2r: 1, fmI: 1.4, fmDec: .02, cLvl: .3, cTyp: 1, drv: .35, dyn: .4},
       snare: {tLvl: .9, frq: 230, pAmt: 3, pDec: .03, tDec: .12, nLvl: 1.7, nTyp: 'bandpass', nFrq: 2800, nQ: 4, nEnv: 1, nEnvDec: .06, nHp: 600, nDec: .2, sRoom: .2},
@@ -14550,7 +14550,7 @@ const MK_LABEL = 'MS 2000';
     {id: 'f-kit-disko-85', name: 'Disko 85', cat: 'drums', engine: 'drum', ev: 1, base: null, p: NEW_KITS['Disko 85'],
       tip: 'Synth-Pop 1985: runder Kick mit „Knock“-Klick, fette Snare mit Raum, Tamburin-Shaker. Shaker auf 1/16 mit Anschlag-Akzenten = Groove.'},
     {id: 'f-kit-resonanz-perc', name: 'Resonanz-Perc', cat: 'drums', engine: 'drum', ev: 1, base: null, p: NEW_KITS['Resonanz-Perc'],
-      tip: 'Wie ein Nord Drum / Waldorf Attack: Toms mit langen Pitch-Bends (16 Halbtöne), Snare aus resonantem Rauschfilter (Q 4), FM-Glöckchen. Toms auf Grundton, Quinte, Oktave stimmen (82 / 123 / 164 Hz ≈ E2 H2 E3).'},
+      tip: 'Wie ein Waldorf Attack: Toms mit langen Pitch-Bends (16 Halbtöne), Snare aus resonantem Rauschfilter (Q 4), FM-Glöckchen. Toms auf Grundton, Quinte, Oktave stimmen (82 / 123 / 164 Hz ≈ E2 H2 E3).'},
   ];
 
   /* ---------- preview phrases ("Vorhören" in the browser): [beat, durBeats, midi, vel] at 112 BPM, transpose to the project key root ---------- */
@@ -15511,7 +15511,7 @@ const MK_LABEL = 'MS 2000';
    App changes (spec v2 §7.1, §14.1): per-hit drive WaveShaper with oversample 'none' (Entscheidung, no latency jump between
    driven and clean hits); every source remembers its stop time (s._end) for the choke cancel fix; the buffers are built in
    steps (buildSteps; the METAL bank from one-period tables: same band-limited squares, ≈ 10 ms instead of ≈ 300 ms). kits.js unchanged. */
-/* DrumSynth v2 prototype: one universal voice (Attack / Nord Drum style), four sources per hit:
+/* DrumSynth v2 prototype: one universal voice (Attack style), four sources per hit:
    TONE (osc1 + osc2, 2-op FM, pitch env), NOISE (white/pink, LP/BP/HP with sweep, multi-burst),
    METAL (808 six-square bank through 3.4k / 7.1k bands + HP), CLICK (pre-rendered transients).
    Native nodes only (no AudioWorklet), so it runs everywhere the app runs, also in the artifact sandbox.
@@ -15894,7 +15894,7 @@ const MK_LABEL = 'MS 2000';
       cym: {mLvl: 1, mLo: .7, mTun: 1.2, mHp: 4000, mDec: 1.8, sGate: .2},
       perc: cow808, shaker: shaker(),
     },
-    // FM percussion (Nord Drum "FM" / Rytm BD FM flavour)
+    // FM percussion (Rytm BD FM flavour)
     'FM Labor': {
       kick: {tLvl: 1, frq: 48, pAmt: 24, pDec: .04, o2r: 1, fmI: 3, fmDec: .03, tDec: .5, drv: .2},
       snare: {tLvl: .9, frq: 210, o2r: 1.41, fmI: 4, fmDec: .08, tDec: .18, nLvl: .7, nTyp: 'highpass', nFrq: 2500, nDec: .15},
@@ -16597,7 +16597,7 @@ const KIT_NAMES = ['808', '909', 'Rom Pop', 'Gated 84', 'FM Labor', 'Disko 85', 
 const KIT_OLD = {'Lo-Fi': 'Rom Pop', 'Industrial': 'FM Labor'};                // v2 kit names (old API / tests)
 // the „Vorbild“ line of a kit in the browser (§11.2)
 const KIT_REF = {'808': 'Roland TR-808', '909': 'Roland TR-909', 'Rom Pop': 'Synth-Pop, klingt auch auf dem Handy', 'Gated 84': 'LinnDrum + Gate-Hall (1984)',
-  'FM Labor': 'FM-Percussion (Nord Drum)', 'Disko 85': 'Linn / DMX, Synth-Pop 1985', 'Resonanz-Perc': 'Nord Drum / Waldorf Attack'};
+  'FM Labor': 'FM-Percussion', 'Disko 85': 'Linn / DMX, Synth-Pop 1985', 'Resonanz-Perc': 'Waldorf Attack'};
 const KIT_DATA = () => Object.assign({}, DrumKits.KITS, (window.SQ_FACTORY && window.SQ_FACTORY.NEW_KITS) || {});
 const kitId = name => 'f-kit-' + String(name).toLowerCase().replace(/\s+/g, '-');
 const KIT_DEF = () => ({gate: .34, gateLvl: 4, room: 1.4, accent: .5, padVel: 'pos'});   // §7.4 kit bus block
@@ -31992,7 +31992,7 @@ function libReady() {
 function libChanged() { LIB.ver++; OHASH.key = ''; UI.sndVer++; UI.dirty.edHead = true; cloudLibDirty(); }
 async function deleteSound(id) {
   await libReady();
-  if (SQStore.isForeign(LIB.lib.get(id))) { toast(SQStore.NV_NAME); return false; }   // MK0
+  if (SQStore.isForeign(LIB.lib.get(id)) && LIB.lib.get(id).engine !== MD_LIB) { toast(SQStore.NV_NAME); return false; }   // MK0 (ND4: eigene MD_NAME-Programme dürfen weg)
   const s = await LIB.lib.remove(id); if (!s) return false;
   libChanged();
   toast('„' + s.name + '“ gelöscht', {label: 'Rückgängig', fn: () => restoreSound(s).then(() => toast('„' + s.name + '“ ist wieder da'))});
@@ -33180,6 +33180,8 @@ const MD_PAGES = {tone: [['mSpc', 'mFrq', 'mTdec', 'mBnd', 'mPit'], ['mWav', 'mD
 const mdCurSl = () => DRUM_VOICES[clamp(ED.dVoice | 0, 0, 11)];
 const mdCur = () => mdSlot(mdCurSl().id) || MDN.init();
 const mdChans = () => DRUM_VOICES.filter(v => mdIsSrc(v.id));
+// Undo je Geste; Loslassen = einmal hören (Anschlag 0,8, nicht bei laufendem Transport, §ND2 Punkt 10)
+const mdUndo = {snap: () => soundSnapshot(DRUM_T), commit: (b, l) => { const r = commitSound(DRUM_T, b, l); if (r && !R.playing) { MDE.aud = 0; mdAudition(); } return r; }};
 // ein Wert in einen Kanal (ALLE KANÄLE: in alle Modell-Kanäle; PITCH dann relativ mit Gruppen-Grenze, §1.6)
 function mdSet(key, v) {
   const sl = mdCurSl(), st = mdSlot(sl.id); if (!st) return;
@@ -33234,7 +33236,7 @@ function mdCell(key) {
   const inert = () => !!(C.inert && C.inert(mdCur()));
   const what = () => { const v = get(); return inert() ? 'ohne Wirkung bei ' + (key === 'mEqf' ? 'EQ GAIN 0' : 'WAVE ' + mdCur().mWav) : (key === 'mWav' ? (MD_WAVE[mdCur().mWav] || ['', ''])[1] : long ? long(v) : sub(v) || C.what); };
   let tapT = 0;
-  const k = makeCtl(d, get, set, {undo: soundUndo(DRUM_T), label: C.l, key: 'md.' + key, fmt: v => (inert() ? '–' : fmt(v)), idle: what,
+  const k = makeCtl(d, get, set, {undo: mdUndo, label: C.l, key: 'md.' + key, fmt: v => (inert() ? '–' : fmt(v)), idle: what,
     onTouch: () => { clearTimeout(tapT); }, onChange: () => { upd(); mdAudition(); },
     onTap: C.list || C.vals || C.dyn ? () => { clearTimeout(tapT); tapT = setTimeout(() => mdList(key, k), DBL_MS + 20); } : null});
   k.classList.add('mdc'); if (C.bip) k.classList.add('mdbip');

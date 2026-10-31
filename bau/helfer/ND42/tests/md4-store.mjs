@@ -138,6 +138,8 @@ ok('lib_mdp_record_survives_reload', rl.kept && rl.rec.engine === 'mdp', {...rl.
 ok('lib_mdp_not_in_synth_browser', !rl.inPool && rl.listed && !rl.kits, {inPool: rl.inPool, listed: rl.listed, inKits: rl.kits});
 ok('lib_mdp_load_program', rl.loadOk);
 const PROJ_TEXT = rl.text;
+// Hinweis (zählt nicht zum Ergebnis): eigenes mdp-Programm über deleteSound löschen – mdp gilt für SQStore als „fremde Engine“
+const info = await A.p.evaluate(async () => { const r = await mdLibSave('kick', 'Wegwerf', 'bd'); const d = await deleteSound(r.id); const still = !!LIB.lib.get(r.id); if (still) await LIB.lib.remove(r.id); return {mdpDeleteSound: d, stillThere: still}; });
 ok('new_no_page_errors', !A.errs.length, {errs: A.errs.slice(0, 4)});
 
 // ---- ND4-06: alte Version (4.23.0 Basis) lädt das Projekt ohne Fehler, Drum-Stimme spielt, src/m* bleiben ----
@@ -158,6 +160,6 @@ ok('ND4-06_old_build_loads', ro.imp && ro.kept && ro.plays && ro.keptOnSave && !
 ok('old_build_keeps_mdp_in_library', ro.lib >= 1, {lib: ro.lib});
 
 const pass = Object.values(checks).every(v => v === true || (v && v.ok === true));
-console.log(JSON.stringify({test: 'md4-store', ids: ['ND4-02', 'ND4-06', 'ND4-07'], pass, checks}));
+console.log(JSON.stringify({test: 'md4-store', ids: ['ND4-02', 'ND4-06', 'ND4-07'], pass, checks, info}));
 await b.close();
 process.exit(pass ? 0 : 1);
