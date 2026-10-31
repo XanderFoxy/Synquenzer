@@ -159,7 +159,9 @@ if (want('C')) {
   ok(x2.f392 > -40 && x2.f440 > -40, 'nach dem Taktstrich: Ausklang von A und Anfang von B klingen beide');
   ok(x3.f392 < x2.f392 - 20, `der Ausklang endet (392 Hz danach ${x3.f392.toFixed(1)} dB)`);
   const k = await C.click(9.9, 13.2);
-  ok(k.d2 < 0.02, 'kein Knacken an den Rändern (größte 2. Differenz ' + k.d2.toFixed(4) + ')');
+  const cT = await p.evaluate(() => SYNQUENZER.vsClock()), offC = 0;
+  ok(k.d2 < 0.02, 'kein Knacken an den Rändern (größte 2. Differenz ' + k.d2.toFixed(4) + ' bei Schlag ' + ((k.at - cT.start) / cT.spb).toFixed(3) + ', Mitschnitt-Block-Sample ' + k.blk + ')');
+  if (k.d2 >= .02) console.log('  Plan:', JSON.stringify(await p.evaluate(() => SYNQUENZER.g3Info().log)), JSON.stringify(await p.evaluate(() => SYNQUENZER.tkInfo().src)));
   const lg = await p.evaluate(() => SYNQUENZER.g3Info().log);
   ok(lg.some(x => x.kind === 'post') && lg.some(x => x.kind === 'pre' && x.song), 'Plan: ' + JSON.stringify(lg.filter(x => x.kind !== 'drop').slice(-4)));
   ok(!H.errs.length, 'keine Konsolenfehler ' + JSON.stringify(H.errs.slice(0, 3)));

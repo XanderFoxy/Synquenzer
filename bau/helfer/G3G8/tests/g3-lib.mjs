@@ -45,5 +45,5 @@ export const CAPTURE = () => {
     const G = f => { const w = 2 * Math.PI * f / sr, c = 2 * Math.cos(w); let s1 = 0, s2 = 0; for (let i = i0; i < i1; i++) { const s0 = x[i] + c * s1 - s2; s2 = s1; s1 = s0; } return 10 * Math.log10((s1 * s1 + s2 * s2 - c * s1 * s2) / Math.max(1, (i1 - i0) ** 2) + 1e-20); };
     return {rms: 10 * Math.log10(s / Math.max(1, i1 - i0) + 1e-20), f330: G(330), f440: G(440), f523: G(523.25), f660: G(660), f880: G(880), f392: G(392)}; };
   // grösste 2. Differenz (Klick-Maß) zwischen a, b
-  window.__capClick = (t0, a, b) => { const x = window.__capX, sr = window.__ctx.sampleRate, i0 = Math.max(2, Math.round((a - t0) * sr)), i1 = Math.min(x.length, Math.round((b - t0) * sr)); let m = 0, mi = 0; for (let i = i0; i < i1; i++) { const d = Math.abs(x[i] - 2 * x[i - 1] + x[i - 2]); if (d > m) { m = d; mi = i; } } return {d2: m, at: t0 + mi / sr}; };
+  window.__capClick = (t0, a, b) => { const x = window.__capX, sr = window.__ctx.sampleRate, i0 = Math.max(2, Math.round((a - t0) * sr)), i1 = Math.min(x.length, Math.round((b - t0) * sr)); let m = 0, mi = 0; for (let i = i0; i < i1; i++) { const d = Math.abs(x[i] - 2 * x[i - 1] + x[i - 2]); if (d > m) { m = d; mi = i; } } return {d2: m, at: t0 + mi / sr, blk: mi % 4096}; };
 };
