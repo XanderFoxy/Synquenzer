@@ -11702,7 +11702,7 @@ const RecHelpers = (() => {
       const c = clip();
       if (!E.sel.size) {                                            // nothing selected: double the clip (×2 Länge)
         if (c.len * 2 > 16) { say('max. 16 Takte'); return; }
-        model.begin(); const Lb = L(); c.notes = c.notes.concat(c.notes.map(n => Object.assign({...n, t: n.t + Lb}, n.o != null ? {o: +(n.o + Lb).toFixed(4)} : {}))); /* the copy's raw onsets move with it (as clip sheet ×2) */ c.len *= 2; sortNotes(); E.loop = null; model.end(true, 'Clip verdoppeln'); render(); say('×2 → ' + c.len + ' Takte'); return;
+        model.begin(); const Lb = L(); c.notes = c.notes.concat(c.notes.map(n => Object.assign({...n, t: n.t + Lb}, n.o != null ? {o: +(n.o + Lb).toFixed(4)} : {}))); /* the copy's raw onsets move with it (as clip sheet ×2) */ if (c.cv) cvSet(c, cvRepeat(c.cv, Lb, 2)); /* BM8 */ c.len *= 2; sortNotes(); E.loop = null; model.end(true, 'Clip verdoppeln'); render(); say('×2 → ' + c.len + ' Takte'); return;
       }
       const ns = scope(), t0 = Math.min(...ns.map(n => n.t)), t1 = Math.max(...ns.map(n => n.t + n.d));
       const span = Math.max(gridStep(), Math.ceil((t1 - t0) / gridStep() - 1e-6) * gridStep());
@@ -11730,6 +11730,7 @@ const RecHelpers = (() => {
       model.begin();
       c.notes = c.notes.filter(n => n.t >= a - 1e-9 && n.t < b - 1e-9);
       for (const n of c.notes) { n.t = +(n.t - a).toFixed(6); if (n.o != null) n.o = wrapO(Math.max(0, n.o - a), nl); n.d = Math.min(n.d, nl); }
+      if (c.cv) cvSet(c, cvSlice(c.cv, a, b));                   // BM8: die Kurven des Bereichs
       c.len = lp.b - lp.a + 1; E.loop = null; E.sel = new Set([...E.sel].filter(n => c.notes.includes(n)));
       if (E.step != null && E.step >= nl) E.step = 0;
       sortNotes(); model.end(true, 'Zuschneiden'); V.x0 = 0; render(); say(c.len + (c.len === 1 ? ' Takt' : ' Takte'));
@@ -11749,6 +11750,7 @@ const RecHelpers = (() => {
         if (n.t + n.d > nl + 1e-9) { n.d = +(nl - n.t).toFixed(6); ch = true; }
         if (n.o != null) { const w = wrapO(n.o, nl); if (w !== n.o) { n.o = w; ch = true; } }
       }
+      if (c.cv) { const cv = cvCut(c.cv, nl); if (JSON.stringify(cv) !== JSON.stringify(c.cv)) { cvSet(c, cv); ch = true; } }   // BM8: Punkte hinter dem Ende fallen weg
       if (ch) E.sel = new Set([...E.sel].filter(n => c.notes.includes(n)));
       if (E.step != null && E.step >= nl) E.step = 0;
       return ch;
@@ -17417,13 +17419,22 @@ function cvJoin(parts, L) {
     for (const [cv, off, len] of parts) {
       const c = cv && cv[k];
       if (c) { for (const p of c) if (p[0] < len) { const t = cvQt(p[0] + off); if (t < L) r.push([t, p[1]]); } last = cvAt(c, len); }
-      else if (r.length) r.push([cvQt(off), cvQv(k, last)]);
-      else r.push([cvQt(off), k === 'bd' || k === 'at' ? 0 : null]);
+      else if (k !== 'mw') r.push([cvQt(off), 0]);                // a part without the curve: Bend / Druck at rest (0)
+      else if (r.length) r.push([cvQt(off), cvQv(k, last)]);       // … the wheel stays where it was
     }
     const c = cvNormCurve(k, r.filter(p => p[1] != null), L); if (c) o[k] = c;
   }
   return Object.keys(o).length ? o : null;
 }
+// song melody (absolute song beats, §5.4): shift everything from X by D beats, clear [A, B), put a chunk's curves at N
+const cvE = () => SONG_MAX_BARS * 4;
+function cvShiftAbs(cv, X, D) {
+  if (!cv || !D) return cvClone(cv); const E = cvE();
+  return D > 0 ? cvJoin([[cvSlice(cv, 0, X), 0, X], [null, X, D], [cvSlice(cv, X, E), X + D, E - X]], E)
+    : cvJoin([[cvSlice(cv, 0, X + D), 0, X + D], [cvSlice(cv, X, E), X + D, E - X]], E);
+}
+function cvClearAbs(cv, A, B) { if (!cv || B <= A) return cvClone(cv); const E = cvE(); return cvJoin([[cvSlice(cv, 0, A), 0, A], [null, A, B - A], [cvSlice(cv, B, E), B, E - B]], E); }
+function cvPutAbs(cv, part, N, Lc) { if (!part) return cvClone(cv); const E = cvE(); return cvJoin([[cvSlice(cv, 0, N), 0, N], [part, N, Lc], [cvSlice(cv, N + Lc, E), N + Lc, E - N - Lc]], E); }
 // the same curves n times one after the other (Länge ×2: n = 2)
 function cvRepeat(cv, len, n) { const p = []; for (let i = 0; i < n; i++) p.push([cv, i * len, len]); return cvJoin(p, len * n); }
 // shift by dt inside a loop of L beats (wraps, like notes shifted with wrap)
@@ -20283,6 +20294,7 @@ function setMelodyTrack(t, o) {
   melChoose(song, t);
   if (move) {
     const to = curMel(song); to.notes = to.notes.concat(fm.notes).sort((a, c) => a.t - c.t); to.len = Math.max(to.len, fm.len);
+    if (fm.cv) { const cv = cvClone(to.cv) || {}; for (const k of CV_K) if (fm.cv[k] && !cv[k]) cv[k] = fm.cv[k].map(p => [p[0], p[1]]); cvSet(to, cv); }   // BM8
     delete song.mel[from];
   }
   pushSongUndo(b, (move ? 'Melodie verschoben auf ' : 'Melodie-Spur: ') + S.tracks[t].name); songChanged();
@@ -22878,6 +22890,7 @@ function songShift(song, n, d) {
   for (const c of song.carrier) if (c.beat >= n * 4 - 1e-6) c.beat = +(c.beat + d * 4).toFixed(4);
   for (const v of song.xp || []) if (v.beat >= n * 4 - 1e-6) v.beat = +(v.beat + d * 4).toFixed(4);
   for (const k in song.mel) for (const nt of song.mel[k].notes) if (nt.t >= n * 4 - .25 - 1e-9) nt.t = +(nt.t + d * 4).toFixed(6);
+  for (const k in song.mel) if (song.mel[k].cv) cvSet(song.mel[k], cvShiftAbs(song.mel[k].cv, n * 4, d * 4));     // BM8
   for (const m of song.marks) if (m.a >= n) m.a += d;
   if (song.vox) tkVoxShift(song, n, d);                           // VS3
 }
@@ -22888,6 +22901,7 @@ function songClear(song, a, b, o) {
   song.carrier = song.carrier.filter(c => !(c.beat >= a * 4 - 1e-6 && c.beat < b * 4 - 1e-6));
   song.xp = (song.xp || []).filter(v => !(v.beat >= a * 4 - 1e-6 && v.beat < b * 4 - 1e-6));
   if (!o.keepMel) for (const k in song.mel) song.mel[k].notes = song.mel[k].notes.filter(n => !(n.t >= a * 4 - .25 - 1e-9 && n.t < b * 4 - .25 - 1e-9));
+  if (!o.keepMel) for (const k in song.mel) if (song.mel[k].cv) cvSet(song.mel[k], cvClearAbs(song.mel[k].cv, a * 4, b * 4));   // BM8
   if (!o.keepMarks) marksCut(song, a, b, o.split);
   if (song.vox && !o.keepMel) tkVoxClear(song, a, b);              // VS3
 }
@@ -22947,6 +22961,10 @@ function songWrite(song, n, ch, keepIds) {
     for (const nt of ch.mel[k]) m.notes.push(Object.assign({}, nt, {t: +Math.max(0, n * 4 + nt.t).toFixed(6)}));
     m.notes.sort((a, b) => a.t - b.t);
   }
+  for (const k of Object.keys(ch.melCv || {})) {                  // BM8: die Kurven des Stücks an ihre Stelle
+    const t = +k; if (!S.tracks[t] || S.tracks[t].kind !== 'synth') continue;
+    const m = song.mel[t] || (song.mel[t] = melEmpty()); cvSet(m, cvPutAbs(m.cv, ch.melCv[k], n * 4, ch.len * 4));
+  }
   for (const m of ch.marks || []) { const x = Object.assign({}, m, {a: n + m.a}); if (!keepIds || !x.id || song.marks.some(y => y.id === x.id)) x.id = newMarkId(song); song.marks.push(x); }
   song.marks.sort((a, b) => a.a - b.a);
 }
@@ -22968,7 +22986,7 @@ function songTidy(song) {
   song.carrier.sort((a, b) => a.beat - b.beat);
   if (song.xp) { song.xp.sort((a, b) => a.beat - b.beat); let v = 0; song.xp = song.xp.filter(x => { if (x.semi === v) return false; v = x.semi; return true; }); }
   song.marks = marksNorm(song.marks, song.bars);
-  for (const k in song.mel) { const m = song.mel[k]; m.notes.sort((a, b) => a.t - b.t); m.len = Math.max(1, song.bars); }
+  for (const k in song.mel) { const m = song.mel[k]; m.notes.sort((a, b) => a.t - b.t); m.len = Math.max(1, song.bars); if (m.cv) cvSet(m, cvCut(m.cv, m.len * 4)); }
   if (song.own) { const used = new Set(); for (const l of song.lanes) for (const e of l) if (e.own) used.add(e.own); for (const id of Object.keys(song.own)) if (!used.has(id)) delete song.own[id]; }
 }
 /* ---------- V2d′ eigener Clip (song-delta 9.2, N7-R9; Daten und Wiedergabe – die Gesten kommen mit V2e′): a copy that only holds
@@ -23092,11 +23110,16 @@ function ownWhole(song, t, x) {
   // the notes as they sound now, bar by bar (scene clip or own clip), from c0 on
   const pieces = [];
   for (let c0 = bs; c0 < be; c0 += 16) {
-    const c1 = Math.min(be, c0 + 16), notes = [];
+    const c1 = Math.min(be, c0 + 16), notes = [], cvp = []; let anyCv = false;
     for (let b = c0; b < c1; b++) {
-      const ob = laneOriginAt(lane, b); if (!laneClipOk(song, t, ob)) continue;
-      const own = ob.own && song.own[ob.own], src = own || S.tracks[t].clips[ob.slot]; if (!src) continue;
+      const ob = laneOriginAt(lane, b); if (!laneClipOk(song, t, ob)) { cvp.push([null, (b - c0) * 4, 4]); continue; }
+      const own = ob.own && song.own[ob.own], src = own || S.tracks[t].clips[ob.slot]; if (!src) { cvp.push([null, (b - c0) * 4, 4]); continue; }
       const Lb = songClipBeats(song, t, own ? ob : {slot: ob.slot}), ocs = ob.cs;
+      {                                                             // BM8: the curves of this bar as they sound (one or two pieces of the loop)
+        const u = (((b * 4 - ocs) % Lb) + Lb) % Lb, off = (b - c0) * 4; if (src.cv) anyCv = true;
+        if (u + 4 <= Lb + 1e-9) cvp.push([src.cv ? cvSlice(src.cv, u, u + 4) : null, off, 4]);
+        else { cvp.push([src.cv ? cvSlice(src.cv, u, Lb) : null, off, Lb - u]); cvp.push([src.cv ? cvSlice(src.cv, 0, 4 - (Lb - u)) : null, off + Lb - u, 4 - (Lb - u)]); }
+      }
       for (let m = Math.floor((b * 4 - ocs) / Lb) - 1; ocs + m * Lb < b * 4 + 4; m++) for (const nt of src.notes) {
         if (nt.t >= Lb - 1e-9) continue;
         const st = ocs + m * Lb + nt.t; if (st < b * 4 - 1e-9 || st >= b * 4 + 4 - 1e-9) continue;
@@ -23104,7 +23127,7 @@ function ownWhole(song, t, x) {
       }
     }
     notes.sort((a, b) => a.t - b.t);
-    pieces.push({c0, c1, notes});
+    pieces.push({c0, c1, notes, cv: anyCv ? cvJoin(cvp, (c1 - c0) * 4) : null});
   }
   const refE = ref.lanes[t].find(e => e.bar === bs);
   for (let j = lane.length - 1; j >= 0; j--) if (lane[j].bar >= bs && lane[j].bar < be) lane.splice(j, 1);
@@ -23112,7 +23135,7 @@ function ownWhole(song, t, x) {
   const ids = [];
   for (const pc of pieces) {
     const c = deep(base), id = ownNewId(song); delete c.from;
-    c.len = pc.c1 - pc.c0; c.notes = pc.notes;
+    c.len = pc.c1 - pc.c0; c.notes = pc.notes; cvSet(c, pc.cv);
     c.from = {t, s, bar: pc.c0, e: pc.c0 === bs && refE ? deep(refE) : null, prev: {slot: s, own: null, cs: +o.cs.toFixed(4)}, cs: +o.cs.toFixed(4)};
     if (pc.c1 < be) c.from.e1 = pc.c1;
     song.own[id] = c; laneInsert(lane, {bar: pc.c0, slot: s, own: id}); ids.push(id);
@@ -23202,7 +23225,9 @@ function songCut(song, a, b) {
   const mel = {}; for (const k in song.mel) { const ns = song.mel[k].notes.filter(n => n.t >= a * 4 - .25 - 1e-9 && n.t < b * 4 - .25 - 1e-9).map(n => Object.assign({}, n, {t: +(n.t - a * 4).toFixed(6)})); if (ns.length) mel[k] = ns; }
   const marks = song.marks.filter(m => m.a < b && m.a + m.len > a).map(m => { const A = Math.max(m.a, a), E = Math.min(m.a + m.len, b); return Object.assign({}, m, {a: A - a, len: E - A}); });
   const own = {}; for (const l of lanes) for (const e of l) if (e.own && song.own && song.own[e.own]) own[e.own] = deep(song.own[e.own]);
-  return {len: b - a, lanes, carrier, xp, mel, marks, own};
+  const o = {len: b - a, lanes, carrier, xp, mel, marks, own};
+  for (const k in song.mel) { const c = song.mel[k].cv && cvSlice(song.mel[k].cv, a * 4, b * 4); if (c) (o.melCv || (o.melCv = {}))[k] = c; }   // BM8: die Kurven des Bereichs
+  return o;
 }
 // EINFÜGEN(n, chunk): from n on everything moves by L; at or behind the end = append (snaps to the end, no gap)
 function opInsert(song, n, ch, keepIds) {
@@ -23384,6 +23409,7 @@ function markReplaceAll(song, p, skipId) {
   let n = 0;
   for (const m of song.marks.filter(x => x.part === p.id && x.id !== skipId).sort((a, b) => b.a - a.a)) {
     const mel = {}; for (const k in song.mel) mel[k] = song.mel[k].notes.filter(x => x.t >= m.a * 4 - .25 - 1e-9 && x.t < (m.a + m.len) * 4 - .25 - 1e-9).map(x => Object.assign({}, x, {t: x.t - m.a * 4}));
+    const mcv = {}; for (const k in song.mel) { const c = song.mel[k].cv && cvSlice(song.mel[k].cv, m.a * 4, (m.a + m.len) * 4); if (c) mcv[k] = c; }   // BM8
     // V2e-fix: the own clips inside the mark (relative bar, up to the next lane entry or the mark's end)
     const owns = [];
     song.lanes.forEach((l, t) => l.forEach((e, k) => {
@@ -23404,6 +23430,7 @@ function markReplaceAll(song, p, skipId) {
       if (alt) songCont(song, E, alt);                                     // after the own clip the template goes on
     }
     for (const k in mel) { const t = +k, mm = song.mel[t] || (song.mel[t] = melEmpty()); for (const x of mel[k]) if (x.t < ch.len * 4 - .25) mm.notes.push(Object.assign({}, x, {t: +(x.t + a * 4).toFixed(6)})); mm.notes.sort((u, v) => u.t - v.t); }
+    for (const k in mcv) { const t = +k, mm = song.mel[t] || (song.mel[t] = melEmpty()), Lc = Math.min(m.len, ch.len) * 4; cvSet(mm, cvPutAbs(mm.cv, cvCut(mcv[k], Lc), a * 4, Lc)); }
     n++;
   }
   return n;
@@ -25688,7 +25715,7 @@ function melodyModel(t) {
     getClip: cur,
     begin() { snap = songSnapshot(); },
     end(changed, label) { if (changed && snap) { const m = cur(); m.notes.sort((a, b) => a.t - b.t); pushSongUndo(snap, 'Melodie: ' + (label || 'Bearbeiten')); songChanged(); folEdit('mel'); } snap = null; },
-    revert() { if (snap) { const o = JSON.parse(snap), m = cur(), om = o && o.mel && o.mel[S.song.melodyTrack]; if (m) { m.notes = om ? om.notes : []; m.len = om ? om.len : 1; } } snap = null; },
+    revert() { if (snap) { const o = JSON.parse(snap), m = cur(), om = o && o.mel && o.mel[S.song.melodyTrack]; if (m) { m.notes = om ? om.notes : []; m.len = om ? om.len : 1; cvSet(m, om && om.cv ? om.cv : null); } } snap = null; },
     undo: () => { undo(); }, redo: () => { redo(); },
     canUndo: () => UNDO.length > 0, canRedo: () => REDO.length > 0,
     audition(n, v) { const vo = auditionStart(t, n, v == null ? .8 : v); if (vo) vo.release(AU.ctx.currentTime + .18); }
@@ -25708,6 +25735,7 @@ function melodyToClip() {
   const key = tg ? Object.assign(Harmony.keyForRecording(tg, songKeyAtBar(a), h.mode, Object.assign(hopts(), {octaveMode: h.octaveMode})), {src: 'carrier'}) : {root: S.key.root, scale: S.key.scale, src: 'auto'};
   pushUndo(t, si, null, 'Melodie → Clip');
   tr.clips[si] = {len, key, notes: ns.map(x => ({t: +(x.t - t0).toFixed(6), o: +(x.t - t0).toFixed(4), d: Math.min(x.d, t1 - x.t), n: x.n, v: x.v}))};
+  { const m = curMel(song); if (m.cv) cvSet(tr.clips[si], cvSlice(m.cv, t0, t1)); }   // BM8: die Kurven des Bereichs gehen mit
   analyseClip(t, si, true, true);
   clipChanged(t, si); markDirty(); UI.dirty.all = true;
   toast('Clip ' + (si + 1) + ' auf ' + tr.name + ': ' + len + (len === 1 ? ' Takt' : ' Takte') + (tg ? ' · folgt dem Träger' : ''), {label: 'Rückgängig', fn: () => undo()});
@@ -33729,6 +33757,7 @@ function clipLength(t, s, f) {
     clip.notes.forEach(n => { n.d = Math.min(n.d, NL); if (n.o != null) { const w = ((n.o % NL) + NL) % NL; n.o = +(w >= NL - 1e-4 ? 0 : w).toFixed(4); } });   // raw onsets stay inside the clip
   }
   else if (f === 2) clip.notes = clip.notes.concat(clip.notes.filter(n => n.t + L < nl * 4).map(n => Object.assign(cleanNote(n), {t: n.t + L}, n.o != null ? {o: +(n.o + L).toFixed(4)} : {})));
+  if (clip.cv) cvSet(clip, f === 2 ? cvJoin([[clip.cv, 0, L], [clip.cv, L, L]], nl * 4) : cvCut(clip.cv, nl * 4));   // BM8: Kurven wie die Noten
   clip.len = nl;
   afterClipEdit(t, s);
   if (R.editor === 'clip') openClipSheet(t, s);
