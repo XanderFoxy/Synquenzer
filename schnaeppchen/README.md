@@ -97,6 +97,7 @@ geprüft. Dazu im Repo unter **Settings → Secrets and variables → Actions �
 - Tests: `cd schnaeppchen && npm test` (Node ≥ 20, keine Abhängigkeiten).
   Probelauf ohne Netz mit aufgezeichneten Antworten: `node scan/main.mjs --fixtures --data /tmp/probe`.
   Echter Lauf ohne Push: `node scan/main.mjs --dry-run`.
+- Roh-Mitschnitt für die Fehlersuche: *Run workflow* mit Haken **roh** → kein Push, nichts auf den Daten-Zweig; alle Quell-Antworten (je max. 2 MB, Schlüssel geschwärzt) und das berechnete Ergebnis landen auf dem Zweig **`roh-daten`** unter `schnaeppchen/<Lauf-Nr.>/` (`index.json`, `quellen/`, `ausgabe/`). Lokal: `ROH_DIR=/tmp/roh node scan/main.mjs`.
 - Höflich abfragen: eigener User-Agent, 1,5 s Pause pro Server, eine Suche pro Produkt und Stunde, keine Logins,
   keine Amazon-Produktseiten.
 - Seite lokal: `cd schnaeppchen && python3 -m http.server`, dann `http://localhost:8000/?lokal` (liest `data/current.json`).

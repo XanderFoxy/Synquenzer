@@ -86,6 +86,7 @@ Wer mehr will, trägt bei einem Gerät die Geizhals-Adresse ein (wird höchstens
 - Workflow `.github/workflows/vorteile.yml`: stündlich um :41, plus manuell (*Actions → Vorteils-Radar → Run workflow*,
   mit „digest“ für eine Zusammenfassung sofort oder „alle“, um alles neu abzufragen).
   Die Daten landen auf dem Zweig **`vorteile-daten`** (`vorteile/data/aktuell.json`, `zustand.json`), nicht auf `main`.
+- Roh-Mitschnitt für die Fehlersuche: *Run workflow* mit Haken **roh** → alle Module, kein Push, nichts auf den Daten-Zweig; alle Quell-Antworten (je max. 2 MB, Schlüssel geschwärzt) und das berechnete Ergebnis landen auf dem Zweig **`roh-daten`** unter `vorteile/<Lauf-Nr.>/` (`index.json`, `quellen/`, `ausgabe/`). Lokal: `ROH_DIR=/tmp/roh node scan/main.mjs`.
 - Die Seite liest ihre Daten von `raw.githubusercontent.com` (Zweige `vorteile-daten`, `schnaeppchen-daten`, `konzerte-daten`).
 
 Lokal testen (ohne Internet, mit aufgezeichneten Antworten):

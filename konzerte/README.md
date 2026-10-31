@@ -89,6 +89,8 @@ node --test konzerte/scan/test/*.test.mjs
 DRY_RUN=1 node konzerte/scan/run.mjs   # echte Abrufe, Pushes nur in der Konsole, Daten in konzerte/data-lokal/
 ```
 
+Roh-Mitschnitt für die Fehlersuche: *Run workflow* mit Haken **roh** → kein Push, nichts auf den Daten-Zweig; alle Quell-Antworten (je max. 2 MB, Schlüssel geschwärzt) und das berechnete Ergebnis landen auf dem Zweig **`roh-daten`** unter `konzerte/<Lauf-Nr.>/` (`index.json`, `quellen/`, `ausgabe/`). Lokal: `ROH_DIR=/tmp/roh node konzerte/scan/run.mjs`.
+
 ## Hinweis für den Einbau in main
 
 Der Service-Worker der Synquenzer-App (`sw.js`, Scope `/synquenzer/`) behandelt **jede** Seitennavigation unter seinem Scope als App-Startseite: Er speichert die geladene Seite als Offline-Kopie der App und liefert bei langsamem Netz (> 3 s) die App statt dieser Seite. Wer `/synquenzer/konzerte/` öffnet, nachdem die App installiert ist, kann damit die Offline-Kopie der App überschreiben. Empfehlung (nicht Teil dieses Branches, weil `sw.js` hier tabu ist): in `sw.js` Navigationen nach `konzerte/` überspringen, z. B. `if (rest.startsWith('konzerte/')) return;` direkt nach der Berechnung von `rest`.

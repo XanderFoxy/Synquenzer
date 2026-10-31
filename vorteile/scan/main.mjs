@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 // Vorteils-Radar: ruft die fälligen Module auf, führt Ergebnisse zusammen, schreibt aktuell.json und schickt Pushes.
-// node scan/main.mjs [--data <ordner>] [--modus auto|digest|still] [--alle] [--fixtures] [--dry-run] [--jetzt <iso>]
+// node scan/main.mjs [--data <ordner>] [--modus auto|digest|still] [--alle] [--fixtures] [--dry-run] [--jetzt <iso>] [--roh <ordner>]
+// --roh / ROH_DIR: Roh-Mitschnitt (alle Quell-Antworten + Ergebnis in <ordner>), immer alle Module, immer ohne Push.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { macheAbruf, macheFixtureAbruf } from './lib/http.mjs';
+import { rohOrdner, macheMitschnitt } from './lib/roh.mjs';
 import { tageBis } from './lib/text.mjs';
 import { plane, verbuche, sende, KATEGORIEN } from './benachrichtigen.mjs';
 import deals from './module/deals.mjs';
@@ -77,9 +79,13 @@ export async function lauf({ cfg, wunschliste, vorher, zustand, holeText, env = 
 function arg(args, name) { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; }
 async function leseJson(pfad, fallback) { try { return JSON.parse(await readFile(pfad, 'utf8')); } catch { return fallback; } }
 
-export async function main(args = process.argv.slice(2), env = process.env) {
+// test: { fetchImpl, abruf } nur für Tests (eigenes fetch, z. B. ohne Pause)
+export async function main(args = process.argv.slice(2), env = process.env, test = {}) {
   const fixtures = args.includes('--fixtures');
-  const dryRun = fixtures || args.includes('--dry-run') || env.DRY_RUN === '1';
+  const rohDir = rohOrdner(args, env);
+  // Roh-Modus ist immer ein Probelauf: keine Pushes (der Workflow schreibt dann auch nichts auf den Daten-Zweig)
+  const dryRun = fixtures || !!rohDir || args.includes('--dry-run') || env.DRY_RUN === '1';
+  const roh = rohDir ? macheMitschnitt(rohDir, { projekt: 'vorteile', env }) : null;
   const basis = resolve(HIER, '..');
   const daten = resolve(arg(args, '--data') || env.VORTEILE_DATA || join(basis, 'data'));
   const cfg = JSON.parse(await readFile(join(basis, 'config.json'), 'utf8'));
@@ -87,11 +93,14 @@ export async function main(args = process.argv.slice(2), env = process.env) {
   const wunschliste = JSON.parse(await readFile(join(basis, 'wunschliste.json'), 'utf8'));
   const vorher = await leseJson(join(daten, 'aktuell.json'), null);
   const zustand = await leseJson(join(daten, 'zustand.json'), {});
-  const holeText = fixtures ? macheFixtureAbruf(join(HIER, 'test', 'fixtures'), FIXTURE_KARTE) : macheAbruf(cfg.abruf);
+  const fetchImpl = roh ? roh.fetch(test.fetchImpl) : test.fetchImpl;
+  const holeText = fixtures ? macheFixtureAbruf(join(HIER, 'test', 'fixtures'), FIXTURE_KARTE) : macheAbruf({ ...cfg.abruf, ...test.abruf }, fetchImpl);
   const jetzt = arg(args, '--jetzt') ? new Date(arg(args, '--jetzt')) : new Date();
   const modus = arg(args, '--modus') || env.MODUS || 'auto';
 
-  const r = await lauf({ cfg, wunschliste, vorher, zustand, holeText, env, jetzt, alle: fixtures || args.includes('--alle'), log: console.log });
+  let r;
+  try { r = await lauf({ cfg, wunschliste, vorher, zustand, holeText, env, jetzt, alle: fixtures || !!rohDir || args.includes('--alle'), log: console.log }); }
+  catch (e) { roh?.abschluss({ absturz: String(e?.message || e) }); throw e; }
   // Erster Lauf überhaupt: nichts nachmelden, nur einmal Bescheid geben (kein Push-Gewitter)
   const erstlauf = !zustand.gemeldet;
   const plan = plane({ eintraege: r.alleEintraege, zustand: r.zustand, cfg, jetzt, modus: erstlauf ? 'still' : modus });
@@ -109,6 +118,13 @@ export async function main(args = process.argv.slice(2), env = process.env) {
   await mkdir(daten, { recursive: true });
   await writeFile(join(daten, 'aktuell.json'), JSON.stringify(r.aktuell, null, 1) + '\n');
   await writeFile(join(daten, 'zustand.json'), JSON.stringify(r.zustand) + '\n');
+  if (roh) {
+    roh.ausgabe('aktuell.json', JSON.stringify(r.aktuell, null, 1) + '\n');
+    roh.ausgabe('zustand.json', JSON.stringify(r.zustand) + '\n');
+    roh.ausgabe('pushes.json', { sofort: plan.sofort.map(s => s.msg), digest: plan.digest?.msg || null, modus: erstlauf ? 'still' : modus });
+    roh.abschluss({ dryRun: true, eintraege: r.alleEintraege.length, sofort: plan.sofort.length, digest: !!plan.digest });
+    console.log(`Roh-Mitschnitt: ${roh.abrufe.length} Abrufe → ${roh.dir}`);
+  }
   console.log(`${r.alleEintraege.length} Einträge, ${plan.sofort.length} Sofort-Pushes, Zusammenfassung: ${plan.digest ? plan.digest.liste.length + ' Einträge' : 'nein'}${dryRun ? ' (dry-run)' : ''} → ${daten}`);
   return { ...r, plan, ok };
 }

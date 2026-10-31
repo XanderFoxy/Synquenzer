@@ -2,7 +2,8 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-export function macheAbruf(abruf) {
+// fetchImpl: nur für den Roh-Mitschnitt (roh.mjs) und Tests; sonst das normale fetch.
+export function macheAbruf(abruf, fetchImpl) {
   const letzter = new Map();
   const warte = ms => new Promise(r => setTimeout(r, ms));
   return async function holeText(url, { headers = {}, method = 'GET', body } = {}) {
@@ -13,7 +14,7 @@ export function macheAbruf(abruf) {
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), abruf.timeoutMs);
     try {
-      const r = await fetch(url, {
+      const r = await (fetchImpl || fetch)(url, {
         method, body, signal: ctl.signal, redirect: 'follow',
         headers: { 'user-agent': abruf.userAgent, 'accept-language': 'de-DE,de;q=0.9', ...headers },
       });

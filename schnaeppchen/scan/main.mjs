@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Schnäppchen-Wecker: collects offers, computes unit prices, keeps history, decides deals, writes current.json, pushes via ntfy.
-// node scan/main.mjs [--dry-run] [--fixtures] [--data <dir>]
+// node scan/main.mjs [--dry-run] [--fixtures] [--data <dir>] [--roh <dir>]
+// --roh / ROH_DIR: Roh-Mitschnitt (alle Quell-Antworten + Ergebnis in <dir>), immer ohne Push.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +10,7 @@ import { leereHistorie, eintragen, aufraeumen, statistik } from './history.mjs';
 import { referenz, bewerte, versandkosten, technikBewertung } from './deals.mjs';
 import { nachricht, dedupeKey, senden } from './notify.mjs';
 import { macheAbruf, macheFixtureAbruf } from './http.mjs';
+import { rohOrdner, macheMitschnitt } from './roh.mjs';
 import { marktguru } from './sources/marktguru.mjs';
 import { mydealz } from './sources/mydealz.mjs';
 import { keepa } from './sources/keepa.mjs';
@@ -159,9 +161,13 @@ export async function scan({ cfg, watchlist, history, sent, holeText, env = {}, 
 function argWert(args, name) { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; }
 async function leseJson(pfad, fallback) { try { return JSON.parse(await readFile(pfad, 'utf8')); } catch { return fallback; } }
 
-export async function main(args = process.argv.slice(2), env = process.env) {
+// test: { fetchImpl, abruf } nur für Tests (eigenes fetch, z. B. ohne Pause)
+export async function main(args = process.argv.slice(2), env = process.env, test = {}) {
   const fixtures = args.includes('--fixtures');
-  const dryRun = fixtures || args.includes('--dry-run') || env.DRY_RUN === '1';
+  const rohDir = rohOrdner(args, env);
+  // Roh-Modus ist immer ein Probelauf: keine Pushes (der Workflow schreibt dann auch nichts auf den Daten-Zweig)
+  const dryRun = fixtures || !!rohDir || args.includes('--dry-run') || env.DRY_RUN === '1';
+  const roh = rohDir ? macheMitschnitt(rohDir, { projekt: 'schnaeppchen', env }) : null;
   const basis = resolve(HIER, '..');
   const datenDir = resolve(argWert(args, '--data') || env.SCHNAEPPCHEN_DATA || join(basis, 'data'));
   const cfg = JSON.parse(await readFile(join(basis, 'config.json'), 'utf8'));
@@ -169,10 +175,13 @@ export async function main(args = process.argv.slice(2), env = process.env) {
   const watchlist = JSON.parse(await readFile(join(basis, 'watchlist.json'), 'utf8'));
   const history = await leseJson(join(datenDir, 'history.json'), leereHistorie());
   const sent = await leseJson(join(datenDir, 'sent.json'), {});
-  const holeText = fixtures ? macheFixtureAbruf(join(HIER, 'test', 'fixtures')) : macheAbruf(cfg.abruf);
+  const fetchImpl = roh ? roh.fetch(test.fetchImpl) : test.fetchImpl;
+  const holeText = fixtures ? macheFixtureAbruf(join(HIER, 'test', 'fixtures')) : macheAbruf({ ...cfg.abruf, ...test.abruf }, fetchImpl);
   const jetzt = argWert(args, '--jetzt') ? new Date(argWert(args, '--jetzt')) : new Date();
 
-  const r = await scan({ cfg, watchlist, history, sent, holeText, env, jetzt, log: console.log });
+  let r;
+  try { r = await scan({ cfg, watchlist, history, sent, holeText, env, jetzt, log: console.log }); }
+  catch (e) { roh?.abschluss({ absturz: String(e?.message || e) }); throw e; }
   const ok = await senden(r.msgs, cfg, { dryRun });
   r.zuSenden.forEach((k, i) => { if (ok[i]) r.sent[dedupeKey(k)] = r.current.aktualisiert; });
   const grenze = new Date(new Date(jetzt).getTime() - 45 * 864e5).toISOString();
@@ -182,6 +191,14 @@ export async function main(args = process.argv.slice(2), env = process.env) {
   await writeFile(join(datenDir, 'current.json'), JSON.stringify(r.current, null, 1) + '\n');
   await writeFile(join(datenDir, 'history.json'), JSON.stringify(r.history) + '\n');
   await writeFile(join(datenDir, 'sent.json'), JSON.stringify(r.sent, null, 1) + '\n');
+  if (roh) {
+    roh.ausgabe('current.json', JSON.stringify(r.current, null, 1) + '\n');
+    roh.ausgabe('history.json', JSON.stringify(r.history) + '\n');
+    roh.ausgabe('sent.json', JSON.stringify(r.sent, null, 1) + '\n');
+    roh.ausgabe('pushes.json', r.msgs);
+    roh.abschluss({ dryRun: true, deals: r.current.deals, pushes: r.msgs.length });
+    console.log(`Roh-Mitschnitt: ${roh.abrufe.length} Abrufe → ${roh.dir}`);
+  }
   console.log(`${r.current.deals} Deals, ${r.msgs.length} Nachrichten${dryRun ? ' (dry-run, nichts gesendet)' : ''}, ${r.current.fehler.length} Quellen-Fehler → ${datenDir}`);
   return r;
 }

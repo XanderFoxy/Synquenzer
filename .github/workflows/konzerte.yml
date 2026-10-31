@@ -4,13 +4,18 @@ name: konzerte
 on:
   schedule:
     - cron: '17 */3 * * *'   # alle 3 Stunden (UTC)
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      roh:
+        description: 'Roh-Mitschnitt: alle Quell-Antworten + Ergebnis auf Zweig roh-daten, ohne Push und ohne Daten-Branch'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 concurrency:
-  group: konzerte
+  group: ${{ inputs.roh && 'konzerte-roh' || 'konzerte' }}   # Roh-Läufe stören die stündlichen Läufe nicht
   cancel-in-progress: false
 
 jobs:
@@ -47,9 +52,11 @@ jobs:
           TM_KEY: ${{ secrets.TM_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
+          ROH_DIR: ${{ inputs.roh && format('{0}/roh', runner.temp) || '' }}
         run: node code/konzerte/scan/run.mjs
 
       - name: Daten speichern
+        if: ${{ !inputs.roh }}
         working-directory: daten
         run: |
           git config user.name "konzerte-bot"
@@ -58,3 +65,32 @@ jobs:
           if git diff --cached --quiet; then echo "keine Änderungen"; exit 0; fi
           git commit --quiet -m "Daten $(date -u +%Y-%m-%dT%H:%MZ)"
           git push --quiet origin HEAD:konzerte-daten
+
+      # Nur bei roh: Mitschnitt auf den eigenen Zweig roh-daten unter konzerte/<Lauf-Nr.>/ (nie auf den Daten-Zweig).
+      - name: Rohdaten speichern (Zweig roh-daten)
+        if: ${{ always() && inputs.roh }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROH_DIR: ${{ runner.temp }}/roh
+        run: |
+          if [ ! -d "$ROH_DIR" ]; then echo "kein Mitschnitt vorhanden"; exit 1; fi
+          URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$URL" roh-daten >/dev/null; then
+            git clone --quiet --depth 1 --branch roh-daten "$URL" roh-zweig
+          else
+            mkdir roh-zweig && git -C roh-zweig init --quiet -b roh-daten && git -C roh-zweig remote add origin "$URL"
+          fi
+          ZIEL="roh-zweig/konzerte/${GITHUB_RUN_ID}"
+          mkdir -p "$ZIEL" && cp -R "$ROH_DIR"/. "$ZIEL"/
+          cd roh-zweig
+          git config user.name "roh-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit --quiet -m "Rohdaten konzerte Lauf ${GITHUB_RUN_ID}"
+          # Andere Wecker können gleichzeitig schreiben -> bei Ablehnung neu aufsetzen und wiederholen
+          for i in 1 2 3 4 5; do
+            if git push --quiet origin HEAD:roh-daten; then echo "gespeichert: konzerte/${GITHUB_RUN_ID}"; exit 0; fi
+            sleep $((i * 4))
+            git pull --quiet --rebase origin roh-daten || true
+          done
+          exit 1
