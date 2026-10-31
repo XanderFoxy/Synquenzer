@@ -66,8 +66,8 @@ CPU (`tests/md1-cpu.mjs`, Renderzeit im Chromium-OfflineAudioContext), ND3 (`tes
 | ND1-24 Dynamik-Kurven | ✓ 7/7 | Li −6,02; L1 −5,72; L2 −3,60; L3 −2,45; O1 −2,62; O2 −1,21 dB; Klangziel unabhängig |
 | ND1-25 Akzent/Locks | ✓ | Akzent 0,5 → +3,67 dB; TUNE +12 → 1200,00 Cent; DECAY ×2 → ×2,00 |
 | ND1-26 Bitgleich | ✓ | Node-Shim und Chromium-Offline je zwei Render bitgleich (44,1 + 48 kHz); Chromium gegen Node-Shim M-NULL −163 dB |
-| ND1-27 Robust | **✗ teilweise** | 1 min Flug, 12 Kanäle: NaN 0, late 0; Gleichanteil 0,004 (48 kHz) ✓ / **0,0057 (44,1 kHz) > 0,005** (Frage Q8); **Spitze +20 dBFS > +12** (Frage Q2). `--long` = 10 min |
-| ND1-28 CPU | **✗ teilweise** | siehe CPU-Tabelle; Leerlauf 0,07 % ✓; Modul-Laden 6,5–10 ms ✓; kein GC im Node-Shim (Felder vorab), Chromium-GC nicht messbar |
+| ND1-27 Robust | **✗ teilweise** | 1 min Flug, 12 Kanäle, 48 und 44,1 kHz: NaN 0, late 0, Gleichanteil ≤ 0,00002 ✓; **Spitze +20 dBFS > +12** (Frage Q2; ohne Clicks +11,9 dBFS). `--long` = 10 min |
+| ND1-28 CPU | **✗ teilweise** | siehe CPU-Tabelle; Leerlauf ≤ 0,1 % ✓; Modul-Laden 6,5–10 ms ✓; `md1-gc.mjs`: 60 s Render 0 GC-Ereignisse, Heap ±2 MB ✓ |
 | ND1-29 ASCII/Marke | ✓ | Worklet ASCII, kein Markenwort in den neuen Blöcken |
 | ND1-30 Gerätetest | offen | Xander (iPhone) nach ND4 |
 | ND3-01 Anzahl/Namen | ✓ | 45 Programme, 9 × 5, 4 Kits, alle Pads `md`, kein Gerätename |
@@ -77,27 +77,27 @@ CPU (`tests/md1-cpu.mjs`, Renderzeit im Chromium-OfflineAudioContext), ND3 (`tes
 | ND3-05 Rolle | ✓ | alle 12 Slots → Programm laut Liste |
 | ND3-06 Hörprobe | offen | Xander: `node tests/md3-kits.mjs --wav=DIR` |
 
-Nachprüfungs-Fehler: `tests/md1-retest.mjs` 18/18 (48 kHz, mit Chromium) und 17/17 (44,1 kHz). Gesamt ND1-Suite: 188/191 bei 48 und bei 44,1 kHz.
+Nachprüfungs-Befunde: `tests/md1-retest.mjs` 44/44 (48 kHz, mit Chromium) und 40/40 (44,1 kHz). Gesamt ND1-Suite: 188/191 bei 48 und bei 44,1 kHz
+(offen nur ND1-10a H1/P1 = Spec-Widerspruch Q1 und ND1-27 Spitze = Q2). ND3: 53/53.
 
-**CPU** (`tests/md1-cpu.mjs`, Renderzeit Chromium-OfflineAudioContext auf dieser VM, je Stimme; Bezug auf derselben Maschine: VA-Stimme der App 0,63 %,
-FM-Stimme 0,42 %):
+**CPU** (`tests/md1-cpu.mjs`, Renderzeit Chromium-OfflineAudioContext, je Stimme; Spanne aus 4 Läufen auf dieser VM, die Werte schwanken
+zwischen Läufen um bis zu ±50 %; Bezug auf derselben Maschine: VA-Stimme der App 0,63 %, FM-Stimme 0,42 %):
 
 | Teil | gemessen | Rahmen [A] |
 |---|---|---|
-| A3 / A2 / A6 | 0,17 / 0,23 / 0,17 % | 0,15 % |
-| t1 / t2 | 0,12 / 0,12 % ✓ | 0,15 % |
-| r1 / r2, P4 | 0,22 / 0,16, 0,17 % | 0,15 % |
-| F1 / F2 / F4 | 0,22 / 0,21 / 0,20 % | 0,15 % |
-| F3, C2, C3 | 0,27, 0,37, 0,46 % | 0,25 % |
-| d6 (16 Moden), d5 | 0,39, 0,40 % | 0,25 % |
-| H1 (32 Moden) | 0,48 % | 0,35 % |
-| C1 (48 Moden) | 0,72 % | 0,50 % |
-| NOISE 24 dB | 0,35 % | 0,10 % |
-| Kanal-Effekte (dr + EQ + Echo) | 0,35 % je Kanal | 0,10 % |
-| Hall | 1,07 % | 1,0 % |
-| schlimmster Fall (12 × C1 + NOISE + Dist + Echo + Hall, 16tel) | 13,6 % (Begrenzer Stufe 1: 11,8 %, Stufe 2: 10,3 %) | 8 % |
-| typischer Groove (Kit Fell & Holz) | im Echtzeit-Test nicht verlässlich messbar (Worklet hat hier nur `Date.now`) | 3 % |
-
+| A3 / A2 / A6 | 0,17–0,29 / 0,20–0,25 / 0,17–0,34 % | 0,15 % |
+| t1 / t2 | 0,11–0,16 / 0,12–0,17 % | 0,15 % |
+| r1 / r2, P4 | 0,19–0,29 / 0,14–0,17, 0,14–0,17 % | 0,15 % |
+| F1 / F2 / F4 | 0,20–0,26 / 0,16–0,24 / 0,17–0,35 % | 0,15 % |
+| F3, C2, C3 | 0,20–0,27, 0,33–0,39, 0,32–0,46 % | 0,25 % |
+| d6 (16 Moden), d5 | 0,21–0,42, 0,20–0,40 % | 0,25 % |
+| H1 (32 Moden) | 0,31–0,48 % | 0,35 % |
+| C1 (48 Moden) | 0,41–0,72 % | 0,50 % |
+| NOISE 24 dB | 0,24–0,56 % | 0,10 % |
+| Kanal-Effekte (dr + EQ + Echo) | 0,23–0,44 % je Kanal | 0,10 % |
+| Hall | 0,80–1,15 % | 1,0 % |
+| schlimmster Fall (12 × C1 + NOISE + Dist + Echo + Hall, 16tel) | 13–17 % (Begrenzer Stufe 1: ≈ 12 %, Stufe 2: ≈ 10,5 %) | 8 % |
+| typischer Groove (Kit Fell & Holz) | im Echtzeit-Test nicht verlässlich messbar (im Worklet nur `Date.now`) | 3 % |
 
 ## Abweichungen (bewusst, mit Grund)
 
@@ -147,6 +147,11 @@ FM-Stimme 0,42 %):
 18. **Neuanschlag/Mono-Gruppe:** die 3-ms-Ausblendung der alten Stimme ist kosinusförmig (statt linear), gleiche Dauer. Bekannte Grenze (2 Stimmplätze
     laut Spec): kommen 3 Schläge auf einen Kanal innerhalb von 3 ms (Flam-Sonderfall), wird die noch ausblendende Stimme hart übernommen.
 19. **DIST TYPE** während ein Kanal klingt: die Menge gleitet mit dem alten Typ auf 0, dann wird umgeschaltet und wieder aufgeblendet (kein Sprung).
+21. **Gleichanteil-Sperre 5 Hz am Engine-Ausgang** (einpolig, wie die Synth-Worklets der App, nicht in der Spec): unter 30 Hz gestimmte Klänge,
+    Bend nach unten und Ringmodulation bei Verhältnis 1 (Differenzton 0 Hz) tragen Gleichanteil (Parameterflug ohne Sperre 0,004–0,007 > 0,005).
+    Wirkung: −0,04 dB bei 40 Hz, kleine Phasendrehung unter 50 Hz, sehr leiser Nachlauf nach einseitigen Clicks. Messungen von Wellenform-Details
+    (Bend-Start, Gate-Ende, Click-Länge, Halterate, Echo-Ereignisse; ND3-Bend) laufen über den Testschalter `{t:'test', dc:0}` vor der Sperre –
+    wie der Test-Abgriff der Synth-Worklets; Pegel, Parameterflug und alle übrigen Punkte mit Sperre.
 20. **Schlafen/Schutz:** Echo hält den Kanal wach, solange etwas über −100 dBFS geschrieben wurde; Hall schläft 0,5 s nach −100 dBFS; die NaN-Wache prüft
     jedes Sample (Kanal und Ausgang) und meldet höchstens einmal je 5 s.
 
@@ -201,12 +206,6 @@ wurde von einem weiteren Prüfer nachgemessen (18 bestätigt, 1 widerlegt). Alle
   Drum-Stimme (Metall-Decay `mDec` in Sekunden, Metall-Pegel `mLvl` der Slots HH ZU, HH OFFEN **und BECKEN** in `DrumKits`; in den Werks-Kits
   13 Slots, auch der DECAY-Lock `Q.mDec *= lk.dec` liest es). `MDX.norm` auf einen Drum-Slot angewandt würde diese Werte zerstören. Flach im selben Slot gespeichert überschreiben sie sich.
   Die Engine nimmt im `ch`-Programm genau die Spec-Namen; die Ablage im Slot (z. B. eigener Unterschlüssel) muss ND4/der Dirigent entscheiden.
-- **Q8 (ND1-27 Gleichanteil):** Im 1-min-Zufallsflug liegt der Gleichanteil bei 48 kHz bei 0,003–0,004, bei 44,1 kHz bei 0,005–0,006 (Grenze 0,005).
-  Ursache sind die laut §1.8 einseitigen Rechteck-Clicks P1–P3 (immer positive Fläche) bei 16tel-Schlägen auf 12 Kanälen. Ein Hochpass 3 Hz am Ausgang
-  wurde probiert und wieder entfernt (verschiebt tiefe Phasen, langer leiser Nachlauf). Soll die Engine einen Gleichanteil-Filter bekommen (z. B. nur
-  im Click-Weg), oder gilt der Gleichanteil-Schutz des Master-Busses?
-- **Q9 (Seitengröße):** ND4-01 erlaubt +100 KB für den ganzen Nachtrag; ND1+ND3 brauchen allein ≈ +97 KB. Budget erhöhen oder soll ich die
-  Worklet-Quelle verdichten (Bezeichner kürzen/minifizieren; die kommentierte Quelle bleibt im Repo)?
 - **Q6 (Abweichung 1):** Modal-Abklingen bei E1 wie gebaut (Moden mit T, ohne Hüllkurve – erfüllt ND1-10 „T60 ×1,5“) oder wie in §1.4 (T_M = 4T,
   Hüllkurve 4T/3 – dann ist ND1-10b nicht erfüllbar und hohe Moden klingen länger)?
 - **Q7 (Abweichung 8):** F2 „Selbst-Rückkopplung β = 0,6“ – in Perioden (gebaut, sehr rau) oder in Radiant (deutlich zahmer)?
