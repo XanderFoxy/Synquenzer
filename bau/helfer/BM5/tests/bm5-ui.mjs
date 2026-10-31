@@ -64,7 +64,7 @@ await tapK('seq'); I = await info(); ok(I.env && I.leds.seq === 1, 'Seq/Env an, 
 await tapK('osc1'); I = await info(); ok(I.params.join(' ') === 'L A D S R LOOP' && I.path === 'o1.e.l', 'Env Osc1 = L A D S R LOOP');
 for (const k of ['osc2', 'noise', 'filter']) { await tapK(k); I = await info(); ok(I.params.join(' ') === 'L A D S R LOOP' && I.path.endsWith('.e.l'), 'Env ' + k); }
 await tapK('octR'); await sleep(200); ok(await p.evaluate(() => R.playing), '» unter Seq = ▶');
-I = await info(); ok(I.leds.octR === 1, '▶-LED');
+I = await info(); ok(!I.leds.octR, 'keine eigene Octave-LED (§3.1)');
 await tapK('octR'); await sleep(200); ok(!(await p.evaluate(() => R.playing)), '» erneut = ■');
 await tapK('octL'); await sleep(200); const rs = await p.evaluate(() => rec.state); ok(rs !== 'off', '« unter Seq = ● (' + rs + ')');
 await tapK('octL'); await sleep(300); await p.evaluate(() => { if (rec.state !== 'off') recPress(); if (R.playing) stop(); }); await sleep(200);
@@ -113,12 +113,10 @@ await tapK('init'); await tapK('init'); b0 = await bm(); ok(b0.a.o1.m === 7 && b
 // Write: U-place, name field, Write → DONE
 await tapK('osc1'); await drag('value', vert(24, 2), 14);
 await tapK('write'); I = await info(); ok(I.mode === 'write' && I.disp.trim() === 'U00', 'Write → U00');
-await tapK('write'); await sleep(200); const pop = await p.evaluate(() => !!document.querySelector('.pop input.tin'));
-ok(pop, 'Write erneut = Namensfeld');
-await p.evaluate(() => { const i = document.querySelector('.pop input.tin'); i.value = 'Mein Bit'; }); 
-await p.evaluate(() => { const b = [...document.querySelectorAll('.pop button')].find(x => x.textContent === 'Write'); b.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true})); b.dispatchEvent(new PointerEvent('pointerup', {bubbles: true})); b.click(); });
-await sleep(500); I = await info(); const own = await p.evaluate(() => LIB.lib.all().filter(s => s.engine === 'bm').map(s => s.name));
-ok(I.disp === 'DONE' && own.includes('Mein Bit'), 'DONE, gesichert auf U00: ' + I.disp + ' ' + own);
+await tapK('write'); await sleep(200); ok(await p.evaluate(() => !!document.querySelector('.bmname input')), 'Write erneut = Namensfeld im Bedienfeld');
+await p.evaluate(() => { document.querySelector('.bmname input').value = 'Mein Bit'; });
+await tapK('write'); await sleep(500); I = await info(); const own = await p.evaluate(() => LIB.lib.all().filter(s => s.engine === 'bm').map(s => s.name));
+ok(I.disp === 'DONE' && own.includes('Mein Bit'), 'dreimal Write = gesichert auf U00, DONE: ' + I.disp + ' ' + own);
 await tapK('voice'); I = await info(); ok(I.disp.trim() === 'U00', 'Voice zeigt U00: ' + I.disp);
 await tapK('parL'); I = await info(); ok(I.disp.trim() === 'U00', 'Voice « am Ende bleibt U00');
 await tapK('parR'); I = await info(); ok(I.disp.trim() === 'P00', 'Voice » = P00');
@@ -158,6 +156,19 @@ ok(wr.length === 2, 'zwei Räder');
   ok(await p.evaluate(() => bmWheelOf(0).mod) > 0, 'MOD-Rad hoch'); }
 { const [x, y] = wr[0]; await touch(p, 'touchStart', [[x, y, 121]]); await touch(p, 'touchMove', [[x, y - 20, 121]]); await sleep(40); const b = await p.evaluate(() => bmWheelOf(0).bend); await touch(p, 'touchEnd', []); await sleep(200);
   ok(b > 0 && await p.evaluate(() => bmWheelOf(0).bend) === 0, 'BEND hoch, federt zurück'); }
+// prüfer-befunde: Compare nur mit gespeichertem Bit-Mask-Stand; im Compare keine Änderung; Arp halten blättert nicht; Kurzformen; Undo-Text
+await p.evaluate(() => { const s = deep(S.tracks[1].sound); }); 
+{ await p.evaluate(() => { SYNQUENZER.setEngine(1, 'bm'); SYNQUENZER.selectTrack(1); }); await sleep(600);
+  const e0 = await p.evaluate(() => S.tracks[1].sound.origin); await tapK('osc1'); await drag('value', vert(16, 2), 14); await tapK('compare');
+  ok(await p.evaluate(() => S.tracks[1].sound.engine) === 'bm' && !(await info()).compare, 'Compare mit VA-Ursprung (' + e0 + ') wechselt die Engine nicht');
+  await p.evaluate(() => { SYNQUENZER.selectTrack(0); }); await sleep(600); }
+await tapK('osc1'); await drag('value', vert(16, 2), 14); await tapK('compare'); I = await info();
+if (I.compare) { const m0 = (await bm()).a.o1.m; await tapK('osc1'); await tapK('osc1'); await drag('value', vert(24, 2), 14); ok((await bm()).a.o1.m === m0 && (await info()).compare, 'im Compare ändert Value nichts, Modus-Taste beendet Compare nicht'); await tapK('compare'); } else ok(false, 'Compare nicht aktiv');
+await tapK('arp'); I = await info(); const pa = I.param; await tapK('arp', 1150); I = await info(); ok(I.param === pa, 'Arp 1 s halten blättert nicht weiter (' + I.param + ')');
+await tapK('arp'); I = await info(); ok(I.param !== pa, 'Arp kurz tippen = nächster Parameter');
+await tapK('general'); await p.evaluate(() => { S.tracks[0].sound.p.bm.a.g.mo = 'mono'; }); await tapK('lfo1'); await tapK('general'); await drag('value', vert(8, 2), 14); await sleep(2200); I = await info(); ok(I.disp === 'MPRT', 'MONO PORTA bleibt als MPRT stehen: ' + I.disp);
+await tapK('fx'); await drag('value', vert(8, 2), 14); const lab = await p.evaluate(() => UNDO[UNDO.length - 1].label); ok(!/Bit\s*Mask ?\d/.test(lab), 'Undo-Text ohne Name vor Ziffer: ' + lab);
+await tapK('pitch'); await tapK('parR'); await p.evaluate(() => { S.tracks[0].sound.p.bm.a.pe.dv = 39; }); await drag('value', vert(8, 2), 14); ok(/2,0 ms bis 1 %/.test(await lcd()), 'SPD 40 = 2,0 ms: ' + await lcd());
 ok(await p.evaluate(() => SYNQUENZER.historyCheck ? SYNQUENZER.historyCheck() : true), 'historyCheck');
 ok(!p.errs.length, 'keine Konsolenfehler ' + p.errs.slice(0, 3));
 console.log(FMT + ': ' + (n - fail) + '/' + n + ' PASS' + (fail ? ', ' + fail + ' FAIL' : ''));

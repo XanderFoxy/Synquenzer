@@ -27,11 +27,15 @@ kein Supabase-Aufruf, „MS 2000“ genau 1×, Anzeigename nur aus `BM_NAME`.
    - **Mehrfach-Bearbeitung:** Taste halten + zweite tippen → beide leuchten, jede Änderung an beiden, ein Undo; Einzel-Tipp beendet.
    - **Voice** (P00 … rechts, U00 … links; Wechsel = Laden, ein Undo, gehaltene Tasten klingen neu an), **Layer/Split** (zeigt B, Value wählt,
      « Param » → SEMI BAL PAN TUNE; Voice einmal = Grundklang, Layer/Split blinkt; Voice zweimal = aus; Split halten + Taste = Splitpunkt, ein Undo),
-     **Init** (1OSC/2OSC/VEL/RAND, Init bestätigt, zweimal = Säge), **Write** (U-Platz → Namensfeld → Write → „DONE“), **Global**, **Compare**
-     („COMP“, A/B der App; Compare oder Voice beendet), **Arp** 1 s halten → `window.BMARP.stop` (kommt mit BM4).
+     **Init** (1OSC/2OSC/VEL/RAND, Init bestätigt, zweimal = Säge), **Write** (Write → U-Platz, Write → Namensfeld im Bedienfeld über den unteren
+     Tasten, Write → „DONE“; jede andere Taste schließt das Feld ohne Sichern), **Global**, **Compare** („COMP“, A/B der App, nur mit gespeichertem
+     Bit-Mask-Stand; im Vergleich ändert Value nichts; Compare oder Voice beendet), **Arp** 1 s halten → `window.BMARP.stop` (kommt mit BM4).
    - Ziel-Plätze 2–4 erscheinen erst, wenn der vorige eine Menge ≠ 0 hat (LFO und Mod).
    - LEDs §3.1: Modus-Taste, Mehrfach, Layer/Split blinken (aktiv, nicht gezeigt), Arp blinkt (Muster an und Taste gehalten oder HOLD),
-     Seq/Env und Compare als Schalter, unter Seq: ● leuchtet bei Aufnahme, ▶ bei Wiedergabe.
+     Seq/Env und Compare als Schalter. Octave-Tasten ohne eigene LED (§3.1 nennt keine).
+   - Werte mit mehr als 4 Zeichen laufen einmal durch, danach steht eine eindeutige Kurzform: POLY RETRIG → PRTG, MONO PORTA → MPRT,
+     MONO RETRIG → MRTG, PARA SLUR → PSLR, NOTCH → NTCH.
+   - Arp bzw. Split in ihrem eigenen Modus: der nächste Parameter kommt erst beim Loslassen (1 s halten = Arp stoppen, Split halten + Taste = Splitpunkt, ohne Weiterblättern).
 3. **Räder** BEND/MOD links der Tasten in `#kbArea` (Bauweise des MK1-Bauteils, eigene Kopie im Block, damit der MS-2000-Block nicht geladen
    werden muss): BEND federt in 80 ms zurück, MOD bleibt; senden `{t:'ctl', list:[{k:'bd'|'mw', v}]}`.
 4. **Druck-Geste (§3.4, F3):** Finger auf gehaltener Taste nach oben: 6 px tote Zone, 0 → 1 über 60 px, AT CURVE formt (1–5, 6, NONE),
@@ -56,7 +60,7 @@ vor `sq-mk-src` bzw. nach `mkWheelFrame`.
 
 | ID | Ergebnis |
 |---|---|
-| BM5-01 M-SKIZZE | ✓ Anordnung quer: Reihen, Reihenfolge, Gruppen, Anzeige zwischen Global und Param, Value zwischen General und Compare, Vol links, Masken-Übersicht rechts; hoch: Faltung §3.2 (`bm5-look.mjs`). `tests/bm-skizze.json` = gemessene Lage je Format (Referenz für spätere Läufe). **Offen:** IoU gegen die Handbuch-Zeichnung nicht gemessen (die privaten Seitenbilder `S/mask1-render/` liegen nicht in dieser Sitzung) |
+| BM5-01 M-SKIZZE | ✓ Anordnung quer: Reihen, Reihenfolge, Gruppen, Anzeige zwischen Global und Param, Value zwischen General und Compare, Vol links, Masken-Übersicht rechts; hoch: Faltung §3.2. IoU je Zone ≥ 0,95 gegen `tests/bm-skizze.json` (feste Referenz aus §3.1/§3.2, Raster an die gemessenen Außenzonen angepasst). **Offen:** Vergleich mit der Handbuch-Zeichnung selbst (private Seitenbilder `S/mask1-render/` nicht in dieser Sitzung) – beim Merge durch den Dirigenten |
 | BM5-02 M-PLATZ | ✓ 428×926, 926×428 (+ Safe-Area), 390×844, 375×667, 320×568, 844×390 (+ Safe-Area), 667×375: 23 Tasten, 2 Drehgeber, 2 Räder ≥ 44 × 44 (elementFromPoint), keine Überlappung, nichts außerhalb des Rahmens, Beschriftungen überlappen weder sich noch Tasten, kein Scrollen, kein Layout-Sprung über 14 Modus-/Seq-Env-/Layer-/Split-/Init-Wechsel, layout-shift im Bedienfeld 0; Drehen hoch → quer → hoch = gleiche Lage |
 | BM5-03 Bedienlogik | ✓ alle Parameterfolgen §3.3, « Param » und erneutes Tippen, Ein-Parameter-Modi, Laufschrift (STAR → TART → Wert), Masken „007“ (`bm5-ui.mjs`) |
 | BM5-04 Seq/Env | ✓ » = ▶/■, « = ●, Osc1–Filter = L A D S R LOOP, LEDs; aus = Octave ±1 |
@@ -68,6 +72,7 @@ vor `sq-mk-src` bzw. nach `mkWheelFrame`.
 | BM5-10 Leistung | ✓ (Test-Browser) Öffnen ohne Long-Task (Block 3–5 ms), Anzeige in Ruhe 0 Änderungen in 1,5 s, 60 Bilder/s mit offenem Feld. iPhone am Gerät offen |
 | BM5-11 Marke | ✓ DOM, CSS, Datei-Zusätze: kein Hersteller-/Gerätename, „MS 2000“ genau 1×, `BM_NAME` nie vor Ziffer; Kopie mit anderem `BM_NAME` → alle Anzeigen folgen (`bm5-regel.mjs`) |
 | BM5-12 Bilder | ✓ `bm5-shots/`: alle Formate je Voice, Osc1, Env, Mod, Global (45 Bilder) |
+| Unabhängige Prüfung | eigener Prüf-Agent ohne Builder-Kontext: 16 Befunde. Behoben: Compare wechselte bei VA-Ursprung die Engine (hoch); dreimal Write sicherte nicht (hoch); Änderungen im Compare gingen still verloren; Skizzen-Prüfung war zirkulär (jetzt feste Referenz `tests/bm-skizze.json` aus §3.1/§3.2, IoU je Zone ≥ 0,95); lange Werte nicht unterscheidbar; Undo-Text „Bit Mask 1BAL“ (Name vor Ziffer); SPD-Klartext ≥ 37 falsch; `getParam(engine)` = va; Halte-Gesten blätterten weiter; Octave-LEDs und stiller Wechsel TRANSP.→SPIELEN; Compare endete mit jeder Modus-Taste; Hinweistexte in der LCD-Zeile; Vol-Doppeltipp; Neuanschlag mit fester Stärke 0,8. Offen (Info): P3 hat keine LCD-Zeile (App-Regel, bestehend); L2 Lücken 1 px statt 2 px (rechnerisch kein Platz); Noten während das Modul lädt gehen verloren (Pufferung = BM6) |
 | Regel 28 | ✓ gegen 4.23.0: alle Werksklänge normalisieren gleich, neues Projekt gleich, VA- und MS-2000-Render bitgleich, keine zusätzlichen Netz-Aufrufe |
 
 **Größe:** +72 054 B gegen 4.23.0. Davon Block `sq-bm-src` 59 981 B (nur bei Bedarf; Budget +40 KB → ×1,5, Grund: Klartext der LCD-Zeile
@@ -81,8 +86,10 @@ für alle Parameter, Tabellen, CSS, Räder, Druck), Platzhalter-Prozessor 3 997 
 5. Octave: Mitte = Tastatur-Oktave 4 wie beim MS 2000 (Spur 1 steht ab Werk auf −2), ±2; « leuchtet unter, » über der Mitte.
 6. Bereiche Layer/Split (nicht in der Spec): SEMI ±24, BAL 0–100, PAN ±99, TUNE ±50 ct. VEL CURVE als 1–6 (6 = MAX), AT CURVE 1–6 und 0 = NONE gespeichert (für BM6 `normBm`).
 7. Layer/Split ohne gewählten Klang B zeigt „----“; bis Value einen Klang wählt, wirken Änderungen auf A.
-8. Write, dritter Schritt: der Knopf „Write“ im Namensfeld (die Tasten liegen unter dem Namensfeld).
-9. Compare ohne gespeicherten Stand: „COMP“ blinkt kurz, LCD „kein gespeicherter Stand zum Vergleichen“.
+8. Write: das Namensfeld liegt im Bedienfeld über den unteren Tasten (Write-Taste bleibt frei); jede andere Taste bricht ab.
+13. Kurzformen langer Werte in der Anzeige: PRTG, MPRT, MRTG, PSLR, NTCH.
+14. Octave ±2 um die Mitte 4 (App erlaubt 1–7): außerhalb von 2…6 tut die Taste nichts.
+9. Compare ohne gespeicherten Bit-Mask-Stand: „COMP“ kurz, LCD „kein gespeicherter Stand zum Vergleichen“.
 10. Value: × 1 unter 0,25 px/ms, × 8 ab ≈ 1,25 px/ms; Fein ab 40 px seitlich; kreisend ab 60° um die Mitte.
 11. Räder-Beschriftung BEND / MOD, MOD startet bei 0. Druck-Balken an der Fingerstelle.
 12. Farben: weiß lackiertes Blech, schwarze Schrift, warmweiß leuchtende Tastenflächen, rote Segmente – Fotos würden helfen.
@@ -94,7 +101,7 @@ für alle Parameter, Tabellen, CSS, Räder, Druck), Platzhalter-Prozessor 3 997 
 4. Seq/Env an → Osc1 zeigt L A D S R LOOP; « = Aufnahme, » = Start/Stopp.
 5. Layer → Value wählt P00, « Param » → SEMI…; Voice einmal (Layer blinkt), zweimal (aus).
 6. Split halten + Taste auf der Tastatur = Splitpunkt (LCD zeigt die Note).
-7. Init → 1OSC/2OSC/VEL/RAND mit Value, Init bestätigt; Write → U00 → Name → Write → „DONE“.
+7. Init → 1OSC/2OSC/VEL/RAND mit Value, Init bestätigt; Write → U00, Write → Name tippen, Write → „DONE“.
 8. Taste halten und Finger nach oben schieben → oranger Balken (Druck), seitlich weg → normales Gleiten.
 9. BEND- und MOD-Rad links der Tasten.
 10. Klang ist nur ein Platzhalter (Sinus = Maske 31) – der echte Klang kommt mit BM1–BM4.

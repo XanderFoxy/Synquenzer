@@ -3863,6 +3863,9 @@ const T_MW = ['flt', 'l1a', 'l1s', 'l2a', 'l2s', 'vol', 'mask', 'freq', 'o1v', '
 const T_V = ['flt', 'feg', 'vol', 'mask', 'peg', 'atk'];
 const WAVES = ['sin', 'sqr', 'up', 'down', 'saws', 'step', 'hsin', 'rand'], WAVE_T = ['Sinus', 'Rechteck', 'Rampe auf', 'Rampe ab', 'Sägen (Form der Maske 23)', 'Stufen (8)', 'Halber Sinus (Bogen der Maske 15)', 'Zufall je Periode'];
 const MODES = ['poly', 'pretrig', 'mono', 'mport', 'mretrig', 'slur', 'para', 'pslur', 'moly'], MODE_L = ['POLY', 'POLY RETRIG', 'MONO', 'MONO PORTA', 'MONO RETRIG', 'SLUR', 'PARA', 'PARA SLUR', 'MOLY'];
+// a value longer than 4 characters runs through once, then this 4-character form stands (distinct for every value)
+const SHORT = {'POLY RETRIG': 'PRTG', 'MONO PORTA': 'MPRT', 'MONO RETRIG': 'MRTG', 'PARA SLUR': 'PSLR', NOTCH: 'NTCH'};
+const short4 = t => SHORT[t] || t.slice(0, 4);
 const FMODES = ['lp', 'hp', 'bp', 'notch'], FMODE_T = ['Tiefpass', 'Hochpass', 'Bandpass', 'Kerbfilter'];
 const fam = (f, n) => Array.from({length: n}, (_, k) => f + (k + 1));
 const FX1 = [].concat(fam('CH', 16), fam('DT', 16), fam('BC', 16), fam('RM', 16)), FX2 = [].concat(fam('DL', 16), fam('RV', 16), fam('DT', 16));
@@ -3882,7 +3885,7 @@ const dB = g => (g <= 0 ? '−∞ dB' : dc(20 * Math.log10(g), 1) + ' dB');
 const Hz = f => (f >= 1000 ? dc(f / 1000, 2) + ' kHz' : f >= 100 ? Math.round(f) + ' Hz' : dc(f, 1) + ' Hz');
 const sr = () => (AU.ctx ? AU.ctx.sampleRate : 48000);
 const X = {
-  mask: v => 'Maske ' + v, semi: v => sg(v) + ' HT', ct: v => sg(v) + ' ct', mstart: v => sg(v) + ' Masken-Stufen', dspd: v => dc(5 * Math.pow(2500, -(v - 1) / 39), 2).replace(/,?0+$/, '') + ' s bis 1 %',
+  mask: v => 'Maske ' + v, semi: v => sg(v) + ' HT', ct: v => sg(v) + ' ct', mstart: v => sg(v) + ' Masken-Stufen', dspd: v => (t => (t < 1 ? dc(t * 1000, t < .01 ? 1 : 0) + ' ms' : dc(t, 2) + ' s'))(5 * Math.pow(2500, -(v - 1) / 39)) + ' bis 1 %',
   lvl: v => 'Pegel ' + dB(Math.pow(v / 99, 2)), time: v => Tms(v), sus: v => 'Sustain ' + dB(Math.pow(v / 15, 2)), loop: v => (v ? 'Schleife an (A + D wiederholt)' : 'Schleife aus'),
   nfreq: v => (v >= 99 ? 'weiß (jedes Sample)' : 'Halte-Rate ' + Hz(30 * Math.pow(16 * sr() / 30, v / 99))), cut: v => Hz(Math.max(10, Math.min(.45 * sr(), 20 * Math.pow(1000, v / 99)))),
   reso: v => (v >= 99 ? 'Selbstoszillation' : 'Q ' + dc(1 / (1.414 * (1 - v / 99)), 2)), fmode: v => FMODE_T[FMODES.indexOf(v)] || v, pct: v => v + ' %',
@@ -3977,7 +3980,7 @@ function dispRun(name, then) {
 }
 function dispPar(withName) {
   const d = curPar(); if (!d) { dispSet('----'); return; }
-  const show = () => { const v = valOf(d), t = fmtV(d, v); if (t.length > 4) dispRun(t, () => dispSet(t.slice(0, 4))); else dispSet(t); };
+  const show = () => { const v = valOf(d), t = fmtV(d, v); if (t.length > 4) dispRun(t, () => dispSet(short4(t))); else dispSet(t); };
   if (withName && d.t !== 'place' && d.t !== 'slot') dispRun(d.n, show); else { dispStop(); show(); }
 }
 function lcdPar() {
@@ -4003,7 +4006,7 @@ function soundOfRec(r) {
 }
 function retrigHeld(i) {   // gehaltene Tasten klingen neu an (§3.3 Voice)
   const now = nowT();
-  for (const id in R.inputs) { const inp = R.inputs[id]; if (!inp || inp.route !== 'play' || inp.track !== i) continue; if (inp.voice) inp.voice.release(now, .004); inp.voice = spawnVoice(i, inp.note, .8, now + .01, {src: 'live'}); }
+  for (const id in R.inputs) { const inp = R.inputs[id]; if (!inp || inp.route !== 'play' || inp.track !== i) continue; const vel = inp.voice && inp.voice.vel || .8; if (inp.voice) inp.voice.release(now, .004); inp.voice = spawnVoice(i, inp.note, vel, now + .01, {src: 'live'}); }
 }
 function loadPlace(x) {
   const r = recAt(x); if (!r) return false; const s_ = soundOfRec(r); if (!s_) return false;
@@ -4034,7 +4037,7 @@ function targets(d) {
   return out;
 }
 function setVal(d, v) {
-  const bm = bmOf(); if (!bm || !d || !d.k) return false;
+  const bm = bmOf(); if (!bm || !d || !d.k || P.cmpOn) return false;   // Compare plays the stored state: nothing is edited there
   if (d.k === '$init') { const j = INITS.indexOf(v); if (j < 0 || j === P.initSel) return false; P.initSel = j; return true; }
   let ch = false;
   for (const [e, ab] of targets(d)) {
@@ -4045,7 +4048,7 @@ function setVal(d, v) {
   return ch;
 }
 function stepVal(d, n) {   // n steps on the current parameter (lists: index steps, clamped at the ends)
-  if (!d) return false;
+  if (!d || P.cmpOn) return false;
   if (d.t === 'place') return placeStep(n > 0 ? 1 : -1);
   if (d.t === 'slot') { const nU = ownList().length, w = clamp(P.wSlot + n, 0, nU); if (w === P.wSlot) return false; P.wSlot = w; return true; }
   const v = valOf(d);
@@ -4061,6 +4064,7 @@ function enterMode(m) { P.mode = m; P.pi = 0; P.multi = null; }
 function keyDown(id, ev) {
   const i = P.i, s_ = sndOf(i); if (!s_ || !s_.p.bm) return;
   haptic('tick');
+  if (P.wName && id !== 'write') nameClose();
   // Mehrfach-Bearbeitung: a mode key held, another tapped → both lit, every change for both (§3.3)
   if (MODEK.includes(id)) {
     const held = [...P.held.keys()].filter(k => k !== id && MODEK.includes(k));
@@ -4080,7 +4084,7 @@ function keyDown(id, ev) {
     }
     case 'layer': case 'split': {
       const md = id === 'layer' ? 'lay' : 'spl', bm = s_.p.bm;
-      if (P.mode === id && !P.multi) { P.pi = (P.pi + 1) % pList().length; shown(true); return; }
+      if (P.mode === id && !P.multi) { P.pend = id; return; }   // next parameter on release (Split held = split point)
       enterMode(id); P.ab = 'b';
       if (bm.ly.md !== md) soundEdit(i, NM() + (id === 'layer' ? ' Layer' : ' Split'), () => { bm.ly.md = md; bmChanged({r: 1, k: 'ly.md'}); });
       shown(false); return;
@@ -4090,37 +4094,40 @@ function keyDown(id, ev) {
       enterMode('init'); P.initSel = 0; shown(false); return;
     }
     case 'write': {
-      if (P.mode === 'write') { writeName(); return; }
+      if (P.mode === 'write') { if (P.wName) nameDone(); else writeName(); return; }
       enterMode('write'); const U = ownList(), x = posOf(s_); P.wSlot = x != null && x < 0 ? -x - 1 : U.length; shown(false); return;
     }
     case 'compare': { if (P.cmpOn) cmpEnd(); else cmpStart(); return; }
-    case 'seq': { P.env = !P.env; if (ENVK.includes(P.mode)) P.pi = 0; if (P.multi && !P.multi.every(m => (P.env ? ENVK : ['osc1', 'osc2']).includes(m))) P.multi = null; lcdShow('SEQ/ENV', P.env ? 'an · « » = ● Aufnahme und ▶/■ · Osc1–Filter = Hüllkurven' : 'aus · « » = Octave · Osc1–Filter = Werte'); shown(true); return; }
+    case 'seq': { P.env = !P.env; if (ENVK.includes(P.mode)) P.pi = 0; if (P.multi && !P.multi.every(m => (P.env ? ENVK : ['osc1', 'osc2']).includes(m))) P.multi = null; lcdShow('SEQ/ENV', P.env ? 'ON' : 'OFF'); shown(true); return; }
     case 'octL': case 'octR': {
       const dir = id === 'octL' ? -1 : 1;
       if (P.env) { ensureAudio(); if (dir < 0) recPress(AU.ctx ? AU.ctx.currentTime : null); else togglePlay(); P.dirty = true; paintSoon(); return; }
-      const tr = S.tracks[i], o = (tr.kbOct || 4) + dir; if (o < 2 || o > 6) { haptic('snap'); return; }   // ±2 Oktaven [H]
-      if (R.kbMode === 'transpose') setKbMode('play'); changeOctave(dir); lcdShow('OCTAVE', (o - 4 > 0 ? '+' : '') + (o - 4) + ' Oktave' + (Math.abs(o - 4) === 1 ? '' : 'n')); P.dirty = true; paintSoon(); return;
+      const o = kbOctave() + dir; if (o < 2 || o > 6) { haptic('snap'); return; }   // ±2 Oktaven [H] around the middle 4 (as the MS 2000)
+      changeOctave(dir); lcdShow('OCTAVE', (o - 4 > 0 ? '+' : '') + (o - 4) + ' Oktave' + (Math.abs(o - 4) === 1 ? '' : 'n')); P.dirty = true; paintSoon(); return;
     }
     case 'parL': case 'parR': {
       const dir = id === 'parL' ? -1 : 1, d = curPar(); if (!d) return;
-      if (single() || P.mode === 'voice') { const b = soundSnapshot(i); const ch = stepVal(d, dir); if (P.mode !== 'voice') commitSound(i, b, NM() + ' ' + d.n); else commitSound(i, b, NM() + ' Klang'); shown(false); if (!ch) haptic('snap'); return; }
+      if (single() || P.mode === 'voice') { const b = soundSnapshot(i); const ch = stepVal(d, dir); if (P.mode !== 'voice') commitSound(i, b, NM() + ' · ' + d.n); else commitSound(i, b, NM() + ' Klang'); shown(false); if (!ch) haptic('snap'); return; }
       const n = pList().length; P.pi = (P.pi + dir + n) % n; shown(true); return;
     }
     default:
       if (!MODEK.includes(id)) return;
-      if (P.cmpOn) cmpEnd();
-      if (P.mode === id && !P.multi) { const n = pList().length; if (n > 1) P.pi = (P.pi + 1) % n; shown(true); return; }   // dieselbe Taste erneut = nächster Parameter
+      if (P.mode === id && !P.multi) { if (id === 'arp') { P.pend = id; return; } const n = pList().length; if (n > 1) P.pi = (P.pi + 1) % n; shown(true); return; }   // dieselbe Taste erneut = nächster Parameter (Arp: on release, a 1 s hold stops)
       enterMode(id); if (['global'].includes(id)) {} shown(true);
   }
 }
-function keyUp(id) { if (id === 'split') splitArm(false); }
+function keyUp(id) {
+  if (id === 'split') splitArm(false);
+  if (P.pend === id) { P.pend = null; const n = pList().length; if (n > 1) P.pi = (P.pi + 1) % n; shown(true); }
+}
 function keyHold(id) {   // 1 s held: Arp stops a held arp [H] (the arp lives in BM4: window.BMARP.stop)
+  if (P.pend === id) P.pend = null;
   if (id === 'arp') { try { if (window.BMARP && BMARP.stop) BMARP.stop(P.i); } catch (e) { logErr(e); } }
 }
 // Split held + a key on the app keyboard = split point (one undo; the note sounds as well) [H]
 function splitArm(on) {
   P.splitHeld = !!on;
-  if (on) { UI.mkSplitArm = n => { const i = P.i, s_ = sndOf(i); if (!s_ || !s_.p.bm) return; if (s_.p.bm.ly.sp !== n) soundEdit(i, NM() + ' Splitpunkt', () => { s_.p.bm.ly.sp = n; bmChanged({r: 1, k: 'ly.sp'}); }); lcdShow('SPLIT', 'Splitpunkt ' + noteLabel(n)); }; }
+  if (on) { UI.mkSplitArm = n => { const i = P.i, s_ = sndOf(i); if (!s_ || !s_.p.bm) return; if (P.pend === 'split') P.pend = null; if (s_.p.bm.ly.sp !== n) soundEdit(i, NM() + ' Splitpunkt', () => { s_.p.bm.ly.sp = n; bmChanged({r: 1, k: 'ly.sp'}); }); lcdShow('SPLIT', 'Splitpunkt ' + noteLabel(n)); }; }
   else if (UI.mkSplitArm && !mkSplitOwned()) UI.mkSplitArm = null;
 }
 const mkSplitOwned = () => typeof MKUI !== 'undefined' && MKUI.P && MKUI.P.splitArm;
@@ -4144,18 +4151,22 @@ function doInit(kind) {
   soundEdit(i, NM() + ' Init', () => { const s_ = deep(cur); s_.p.bm = SQBM.normBm(initBm(kind)); s_.name = 'INIT'; s_.origin = null; UI.ab = null; applySound(i, s_); bmSync(true); });
   enterMode('voice'); P.ab = 'a'; dispSet(['1OSC', '2OSC', 'VEL', 'RAND'][INITS.indexOf(kind)]); lcdShow('INIT', kind.toUpperCase() + ' · ' + X.init(kind)); P.dirty = true; paintSoon();
 }
-function writeName() {   // Write → Name im Namensfeld der App → Write → „DONE“ [H]
-  const i = P.i, tr = S.tracks[i], slot = P.wSlot, U = ownList(), over = U[slot] || null, a = P.el && P.el.keys.write;
-  openPop(a, p => {
-    p.innerHTML = '<h4>' + esc(NM()) + ' · Write U' + String(slot).padStart(2, '0') + '</h4>';
-    const inp = el('input', 'tin'); inp.value = over ? over.name : tr.sound.name; inp.maxLength = 32; inp.setAttribute('aria-label', 'Name des Klangs'); inp.setAttribute('enterkeyhint', 'done');
-    const go = el('button', 'mbtn rb go', 'Write'), cb = el('button', 'mbtn rb', 'Abbrechen'), row = el('div', 'savrow'); row.append(go, cb); p.append(inp, row);
-    const done = () => { closePop(); writeDo(i, slot, over, inp.value); };
-    onTap(go, done); onTap(cb, () => closePop());
-    on(inp, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); done(); } e.stopPropagation(); });
-    setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 30);
-  }, {name: 'bmwrite'});
+// Write → Name im Namensfeld der App → Write → „DONE“ [H]: the name field lies in the panel over the lower keys, so that the Write key
+// stays free: Write again (or Enter) writes, any other key closes the field without writing ("dreimal Write = gleicher Platz")
+function writeName() {
+  const i = P.i, tr = S.tracks[i], slot = P.wSlot, U = ownList(), over = U[slot] || null, E_ = P.el; if (!E_) return;
+  nameClose();
+  const z = E_.Ly.z, top = E_.land ? z.seq.y - 2 : z.seq.y - 2, bot = (E_.land ? z.compare.y : z.compare.y) + Z + 2;
+  const box = el('div', 'bmname'); box.style.cssText = `left:${z.seq.x}px;top:${top}px;width:${z.compare.x + Z - z.seq.x}px;height:${bot - top}px`;
+  box.innerHTML = '<b>U' + String(slot).padStart(2, '0') + '</b>';
+  const inp = el('input', 'tin'); inp.value = over ? over.name : tr.sound.name; inp.maxLength = 32; inp.setAttribute('aria-label', 'Name des Klangs'); inp.setAttribute('enterkeyhint', 'done');
+  box.appendChild(inp); E_.plate.appendChild(box);
+  on(inp, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); nameDone(); } else if (e.key === 'Escape') { e.preventDefault(); nameClose(); } e.stopPropagation(); });
+  P.wName = {box, inp, i, slot, over}; dispStop(); dispSet('NAME'); lcdShow('WRITE', 'U' + String(slot).padStart(2, '0') + ' · Name eingeben · Write = sichern');
+  setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 30);
 }
+function nameClose() { const W = P.wName; if (!W) return; P.wName = null; try { W.inp.blur(); } catch (e) {} W.box.remove(); }
+function nameDone() { const W = P.wName; if (!W) return; const nm = W.inp.value; nameClose(); writeDo(W.i, W.slot, W.over, nm); }
 // BM6-PLATZHALTER: the write itself (BM6-09 owns the U places in the library); the panel uses the app's saveSound
 async function writeDo(i, slot, over, name) {
   const tr = S.tracks[i]; if (!tr) return;
@@ -4166,7 +4177,7 @@ async function writeDo(i, slot, over, name) {
   } catch (e) { logErr(e); toast('Sichern fehlgeschlagen'); }
 }
 function cmpStart() {
-  const i = P.i, s_ = sndOf(i); if (!s_ || !soundEdited(s_) || !originRec(s_)) { dispStop(); dispSet('COMP'); lcdShow('COMPARE', 'kein gespeicherter Stand zum Vergleichen'); setTimeout(() => { if (!P.cmpOn) dispPar(false); }, 700); return; }
+  const i = P.i, s_ = sndOf(i); const oR = s_ && originRec(s_); if (!s_ || !soundEdited(s_) || !oR || oR.engine !== 'bm') { dispStop(); dispSet('COMP'); lcdShow('COMPARE', 'kein gespeicherter Stand zum Vergleichen'); setTimeout(() => { if (!P.cmpOn) dispPar(false); }, 700); return; }
   toggleAB(i); P.cmpOn = !!(UI.ab && UI.ab.t === i && UI.ab.side === 'B'); bmSync(true); dispStop(); dispSet('COMP'); lcdShow('COMPARE', 'COMP · der gespeicherte Stand spielt'); P.dirty = true; paintSoon();
 }
 function cmpEnd() { const i = P.i; if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') toggleAB(i); P.cmpOn = false; bmSync(true); shown(false); }
@@ -4233,7 +4244,7 @@ function build(pg, i) {
   if (P.i !== i) { P.i = i; P.mode = 'voice'; P.pi = 0; P.multi = null; P.ab = 'a'; P.cmpOn = false; P.env = false; }
   if (P.cmpOn && !(UI.ab && UI.ab.t === i && UI.ab.side === 'B')) P.cmpOn = false;
   const s_ = sndOf(i); if (!s_ || !s_.p.bm) return;
-  css();
+  css(); P.wName = null; P.pend = null;
   pg.classList.add('bmpg'); pg.innerHTML = '';
   const fr = el('div', 'bmfr'); pg.appendChild(fr);
   const r = fr.getBoundingClientRect(), W = Math.floor(r.width), H = Math.floor(r.height);
@@ -4281,7 +4292,6 @@ function build(pg, i) {
   plate.style.bottom = 'auto'; plate.style.height = (land ? H : Ly.extra.H) + 'px';
   dispSet(P.disp.txt || '----'); P.disp.q = null; P.dirty = true; paint();
   shown(!P.seen ? false : false);
-  if (!P.seen) { P.seen = true; lcdShow(NM(), 'Modus-Taste + « Param » + Value · Seq/Env schaltet « » und die Hüllkurven'); }
   if (typeof ResizeObserver !== 'undefined') { const ro = new ResizeObserver(() => { if (!fr.isConnected) { ro.disconnect(); return; } const r2 = fr.getBoundingClientRect(); if (Math.floor(r2.width) === U.W && Math.floor(r2.height) === U.H) return;
     clearTimeout(U.roT); U.roT = setTimeout(() => { if (live(pg, i) && P.el === U) build(pg, i); }, 60); }); ro.observe(fr); U.ro = ro; }
 }
@@ -4300,7 +4310,7 @@ function ledState() {
   if (pa.ar.t !== 'off' && (held || pa.ar.ho)) o.arp = o.arp === 1 ? 1 : 2;
   o.seq = P.env ? 1 : 0; o.compare = P.cmpOn ? 1 : 0;
   const tr = S.tracks[P.i], oc = tr ? tr.kbOct || 4 : 4;
-  if (P.env) { o.octL = rec.state !== 'off' ? 1 : 0; o.octR = R.playing ? 1 : 0; } else { o.octL = oc < 4 ? 1 : 0; o.octR = oc > 4 ? 1 : 0; }
+  o.octL = o.octR = 0; void oc;   // §3.1 names no LEDs for the Octave keys
   o.parL = o.parR = 0;
   return o;
 }
@@ -4312,7 +4322,7 @@ function paint() {
   if (kv) { const a = (-135 + 270 * vol).toFixed(1); if (kv._a !== a) { kv._a = a; kv.firstChild.style.transform = 'rotate(' + a + 'deg)'; } }
   const kw = U.knobs.value; if (kw) { const a = ((P.valRot || 0) % 360).toFixed(1); if (kw._a !== a) { kw._a = a; kw.firstChild.style.transform = 'rotate(' + a + 'deg)'; } }
   clearTimeout(P.blinkT); P.blinkT = 0;
-  if (blink || P.env) P.blinkT = setTimeout(paintSoon, blink ? 250 - (Date.now() % 250) + 2 : 400);   // blinking LEDs and the transport/rec LEDs under Seq
+  if (blink) P.blinkT = setTimeout(paintSoon, 250 - (Date.now() % 250) + 2);   // blinking LEDs and the transport/rec LEDs under Seq
 }
 /* ---------- key gestures: pointerdown acts at once; held keys are known for multi edit; Arp 1 s; Split held = split point ---------- */
 function keyWire(b, id) {
@@ -4362,7 +4372,7 @@ function knobWire(b, id) {
     if (id === 'vol') { const s_ = sndOf(P.i); let v = clamp((s_.fx.vol == null ? .8 : s_.fx.vol) + px / 8 * acc / 100, 0, 1); v = Math.round(v * 100) / 100; if (v !== s_.fx.vol) { s_.fx.vol = v; applyTrackParams(P.i, false); UI.sndVer++; UI.dirty.strip = UI.dirty.edHead = true; markDirty(); } volShow(v); paintSoon(); return; }
     g.acc += px / 8 * acc;
     const n = g.acc > 0 ? Math.floor(g.acc) : Math.ceil(g.acc);
-    if (n) { g.acc -= n; const d = curPar(); if (d && stepVal(d, n)) { const v = valOf(d), t = fmtV(d, v); dispStop(); dispSet(t.length > 4 ? t.slice(0, 4) : t); lcdPar(); haptic('tick'); } }
+    if (n) { g.acc -= n; const d = curPar(); if (d && stepVal(d, n)) { const v = valOf(d), t = fmtV(d, v); dispStop(); dispSet(t.length > 4 ? short4(t) : t); lcdPar(); haptic('tick'); } }
     paintSoon();
   });
   const knobEnd = e => {
@@ -4370,14 +4380,13 @@ function knobWire(b, id) {
     const i = P.i;
     if (!G.moved && e && e.type === 'pointerup') {   // a tap; two taps within 300 ms = INIT value
       const now = performance.now();
-      if (now - lastTap < 300 && id === 'value') { lastTap = 0; const d = curPar(), v0 = initVal(d); if (v0 != null) { setVal(d, v0); commitSound(i, G.before, NM() + ' ' + d.n + ' Init'); shown(false); } return; }
-      if (now - lastTap < 300 && id === 'vol') { lastTap = 0; const s_ = sndOf(i); s_.fx.vol = .8; applyTrackParams(i, false); UI.sndVer++; UI.dirty.strip = UI.dirty.edHead = true; markDirty(); commitSound(i, G.before, 'Lautstärke'); volShow(.8); paintSoon(); return; }
+      if (now - lastTap < 300 && id === 'value') { lastTap = 0; const d = curPar(), v0 = initVal(d); if (v0 != null) { setVal(d, v0); commitSound(i, G.before, NM() + ' · ' + d.n + ' Init'); shown(false); } return; }
       lastTap = now; return;
     }
     lastTap = 0;
     if (id === 'vol') { commitSound(i, G.before, 'Lautstärke'); setTimeout(() => { if (!g) dispPar(false); }, 800); return; }
-    const d = G.d; commitSound(i, G.before, NM() + ' ' + (d ? (d.t === 'place' ? 'Klang' : d.n) : 'Value'));
-    if (d && d.t !== 'place' && d.t !== 'slot') { const t = fmtV(d, valOf(d)); if (t.length > 4) dispRun(t, () => dispSet(t.slice(0, 4))); }
+    const d = G.d; commitSound(i, G.before, NM() + ' · ' + (d ? (d.t === 'place' ? 'Klang' : d.n) : 'Value'));
+    if (d && d.t !== 'place' && d.t !== 'slot') { const t = fmtV(d, valOf(d)); if (t.length > 4) dispRun(t, () => dispSet(short4(t))); }
     else shown(false);
   };
   on(b, 'pointerup', knobEnd); on(b, 'pointercancel', knobEnd); on(b, 'lostpointercapture', knobEnd);
@@ -4472,6 +4481,8 @@ function css() {
 .bmwheel .mrid{position:absolute;inset:-40px 0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.12) 0 2px,transparent 2px 7px);transform:translateY(calc((0.5 - var(--n, .5)) * 40px))}
 .bmwheel .mmid{position:absolute;left:2px;right:2px;top:50%;height:2px;margin-top:-1px;background:#ffb36b;opacity:.7}
 .bmwheel.press .mwhl{box-shadow:inset 0 2px 4px #000,0 0 0 1px #d9a441}
+.bmname{position:absolute;z-index:3;display:flex;align-items:center;gap:8px;padding:0 8px;box-sizing:border-box;background:var(--bm-plate);border:1px solid #9d9b94;border-radius:6px}
+.bmname b{font:700 13px var(--font,'Barlow Semi Condensed',system-ui,sans-serif);color:var(--bm-ink)}.bmname .tin{flex:1;min-width:0;height:40px;font-size:16px}
 .bmat{position:fixed;width:6px;border-radius:3px;background:#ff5a1f;box-shadow:0 0 4px rgba(255,90,31,.8);pointer-events:none;z-index:50}
 @media (max-width:330px) and (orientation:portrait){#synthSheet.bmp .pg.bmpg{margin-left:-3px;margin-right:-3px}}
 `;
@@ -17429,7 +17440,7 @@ const GM_PROGRAM = {bass: 38, lead: 81, poly: 62, flaeche: 89, pluck: 45, sequen
 const OLD_PRESETS = {Bass: 'f-moog-bass', Pluck: 'f-pop-pluck', Pad: 'f-juno-pad', Lead: 'f-mini-lead', Brass: 'f-ob-brass', Glocke: 'f-wt-glas', Acid: 'f-acid-303', Arp: 'f-glas-pluck'};
 const PRESET_NAMES = Object.keys(OLD_PRESETS);
 // engines: API / UI name <-> stored Sound.engine (WP3–WP6: FM = the legacy 2-operator 'fm2'; WP7: FM = 'fm6', §6, §6.7)
-const ENG_OF = {va: 'analog', fm: 'fm6', wt: 'wt', mk: 'mk', bm: 'bm'}, ENG_API = {analog: 'va', fm2: 'fm', fm6: 'fm', wt: 'wt', mk: 'mk'};
+const ENG_OF = {va: 'analog', fm: 'fm6', wt: 'wt', mk: 'mk', bm: 'bm'}, ENG_API = {analog: 'va', fm2: 'fm', fm6: 'fm', wt: 'wt', mk: 'mk', bm: 'bm'};
 const ENGINE_LABEL = {va: 'VA', fm: 'FM', wt: 'WT', analog: 'VA', fm2: 'FM', fm6: 'FM', mk: MK_LABEL, drum: 'KIT', bm: BM_NAME};   // BM6-PLATZHALTER: bm
 const FM2_DEF = () => ({ratio: 2, index: 3, modDecay: .3, modSus: .2}), WT_DEF = () => ({table: 'digital', pos: .3, scan: .3, scanTime: .8});
 // §5.2: the FM block a sound gets when it is switched to FM without one (the v1 default pair through FMH.fromV1)

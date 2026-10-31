@@ -67,6 +67,14 @@ for (const nm of ONLY) {
     ok(FOLD.every(L => L.length <= 7) && Math.max(...Zs.map(([, z]) => z.r[0] + z.r[2])) - Math.min(...Zs.map(([, z]) => z.r[0])) <= 308 + 6 * 8 + 1, nm + ' höchstens 7 Zonen je Zeile');
     const wantOv = w >= 390 && h >= 800; ok(wantOv ? !!M.ov && M.ov[1] > M.zones.compare.r[1] : !M.ov, nm + ' Masken-Übersicht ' + (wantOv ? '5. Zeile' : 'entfällt'));
   }
+  { // M-SKIZZE: reference boxes from bm-skizze.json, the grid fitted to the measured outer zones (gap uniform), IoU per zone
+    const K = JSON.parse(fs.readFileSync(new URL('./bm-skizze.json', import.meta.url), 'utf8')), ref = {}, Zr = k => M.zones[k].r, ious = [];
+    if (land) { const W_ = K.quer.cols, x0 = Zr('seq')[0], x1 = Zr('compare')[0] + Zr('compare')[2], sumW = W_.reduce((a, b) => a + b, 0) * 44, g = (x1 - x0 - sumW) / (W_.length - 1), cx_ = c => x0 + W_.slice(0, c).reduce((a, b) => a + b * 44 + g, 0);
+      for (const [row, yk] of [['A', 'vol'], ['B', 'seq']]) for (const [k, c, wz, off] of K.quer[row]) { const span = wz && k === 'disp' ? cx_(c + wz) - g - cx_(c) : (wz || 1) * 44; ref[k] = [cx_(c) + (off || 0) * 44, Zr(yk)[1], span, 44]; } }
+    else { K.hoch.rows.forEach((L, r) => { const y = Zr(typeof L[0] === 'string' ? L[0] : L[0][0])[1], x0 = Zr('seq')[0], x1 = Zr('lfo2')[0] + 44, g = (x1 - x0 - 7 * 44) / 6; let c = 0; for (const e of L) { const [k, n_] = typeof e === 'string' ? [e, 1] : e; ref[k] = [x0 + c * (44 + g), y, n_ * 44 + (n_ - 1) * g, 44]; c += n_; } }); }
+    for (const k in ref) { const a_ = ref[k], b_ = k === 'disp' ? Zr(k) : Zr(k), I_ = inter(a_, b_), U_ = a_[2] * a_[3] + b_[2] * b_[3] - I_; ious.push([k, I_ / U_]); }
+    const bad = ious.filter(x => x[1] < .95); ok(!bad.length && ious.length === 26, nm + ' M-SKIZZE IoU ≥ 0,95 je Zone (kleinste ' + Math.min(...ious.map(x => x[1])).toFixed(3) + ') ' + bad.map(x => x[0] + ' ' + x[1].toFixed(2)).join(','));
+  }
   skizze[nm] = Object.fromEntries(Zs.map(([k, z]) => [k, [(z.r[0] - M.frame[0]) / M.frame[2], (z.r[1] - M.frame[1]) / M.frame[3], z.r[2] / M.frame[2], z.r[3] / M.frame[3]].map(v => Math.round(v * 1e4) / 1e4)]));
   // BM5-11 brand: DOM text, panel CSS
   ok(!BRAND.test(M.text) && !BRAND.test(M.css) && (M.text.match(/Bit\s+Mask/g) || []).length >= 1 && !/Bit\s*Mask ?\d/.test(M.text), nm + ' Marke: kein Hersteller-/Gerätename, BM_NAME nicht vor Ziffer ' + ((M.text.match(BRAND) || [''])[0] + ' ' + (M.text.match(/Bit Mask ?\d/) || [''])[0] + ' ' + (M.text.match(/Bit Mask/g) || []).length));
@@ -100,6 +108,5 @@ for (const nm of ONLY) {
   const I = await p.evaluate(() => SYNQUENZER.bmPanel()); ok(I.land && I.zones.compare.rect[2] >= 44, 'Drehen hoch → quer: ganzes Feld');
   await p.setViewportSize({width: 428, height: 926}); await sleep(900); const b = await p.evaluate(() => JSON.stringify(SYNQUENZER.bmPanel().zones));
   ok(a === b, 'Drehen zurück: gleiche Lage wie vorher'); ok(!p.errs.length, 'Drehen ohne Fehler ' + p.errs.slice(0, 2)); await p.context().close(); }
-fs.writeFileSync(new URL('./bm-skizze.json', import.meta.url).pathname, JSON.stringify(skizze, null, 0).replace(/\],"/g, '],\n"'));
 console.log('look: ' + (n - fail) + '/' + n + ' PASS' + (fail ? ', ' + fail + ' FAIL' : ''));
 await br.close(); process.exit(fail ? 1 : 0);
