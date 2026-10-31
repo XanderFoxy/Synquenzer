@@ -42243,8 +42243,8 @@ function g8Rest(s) {
   const e = G8.est; if (e && e.quota > 0) rest = Math.min(rest, Math.max(0, (e.quota - e.usage) * .9) / store - (G8.estFake ? sec : 0));
   G8.rest = rest;
   if (rest < G8_REST_SHOW && R.songRec && R.songRec.vox) {
-    if (rest <= 1 && !G8.ended) { G8.ended = true; g8Log({kind: 'full', sec: +sec.toFixed(1)}); toast('Speicher knapp – Aufnahme beendet'); try { songRecEnd(null); } catch (er) { logErr(er); } return; }
-    if (now - G8.restToast > 10000) { G8.restToast = now; toast('🎤 noch ' + tkFmtDur(rest) + ' Aufnahmezeit'); }
+    if (rest <= 1 && !G8.ended) { G8.ended = true; g8Log({kind: 'full', sec: +sec.toFixed(1)}); try { songRecEnd(null); } catch (er) { logErr(er); } toast('Speicher knapp – Aufnahme beendet'); return; }   // nach dem Abschluss-Toast, sonst überschrieben
+    if (now - G8.restToast > 10000) { G8.restToast = now; toast('🎤 noch ' + tkFmtDur(Math.floor(rest)) + ' Aufnahmezeit'); }
   }
 }
 // tkMakeTake (Song): der Take aus dem Strom – nur wenn der Ringpuffer den Anfang nicht mehr hat (oder G8.force im Test)

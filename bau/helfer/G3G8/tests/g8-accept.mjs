@@ -117,15 +117,18 @@ if (want('B')) {
     if (mel) { const last = mel.notes[mel.notes.length - 1]; ok(last.t >= (LEN - 1) * 4 - .2, `letzte Note im letzten Takt (t = ${last.t})`); }
     // Schleife: zweiter Durchgang beginnt bei S0 + LEN·4, beide Spuren am selben Ursprung; STIMME klingt im 2. Durchgang am richtigen Takt
     const rt = await p.evaluate(() => SYNQUENZER.runtime());
+    console.log('  Zustand:', JSON.stringify({slots: rt.slots, cstart: rt.cstart, clock: await p.evaluate(() => SYNQUENZER.vsClock()).then ? null : null}), JSON.stringify(await p.evaluate(() => { const c = SYNQUENZER.vsClock(); return {pl: c.playing, start: c.start, now: c.now, beat: (c.now - c.start) / c.spb}; })));
     ok(rt.cstart[5] === S0 && rt.cstart[sti] === S0, `beide Clips laufen ab demselben Schlag (MELODIE ${rt.cstart[5]}, STIMME ${rt.cstart[sti]})`);
     await p.evaluate(() => { SYNQUENZER.setMute(5, true); window.__capMore(); window.__capStart(); });
-    const P2 = S0 + LEN * 4, k = Math.min(LEN - 2, 5);
+    const P2 = S0 + LEN * 4, bn = await beatNow(p), k = Math.min(LEN - 2, Math.max(5, Math.ceil((bn - P2) / 4) + 1));   // ein Takt nach dem Mitschnitt-Start
     await waitBeat(p, P2 + 4 * (k + 1) + .2, 300000);
     const cap = await p.evaluate(() => window.__capStop()), c = await p.evaluate(() => SYNQUENZER.vsClock()), T = x => c.start + x * c.spb;
     const e = await p.evaluate(([t0, a, b]) => window.__capAt(t0, a, b), [cap.t0, T(P2 + 4 * k + .3), T(P2 + 4 * k + 2)]);
     const src = await p.evaluate(() => SYNQUENZER.tkInfo().src);
-    const pass2 = src.filter(r => r.key && r.key.endsWith(':' + P2.toFixed(4)));
-    ok(pass2.length === 1 && Math.abs(pass2[0].start - T(P2)) < .002, `2. Durchgang der STIMME startet genau bei Schlag ${P2} (${pass2.length ? (pass2[0].start - T(P2)).toFixed(4) : '–'} s)`);
+    const pass2 = src.filter(r => r.key && r.key.endsWith(':' + P2.toFixed(4))), a2 = stc.audio;
+    // phasengleich: Stelle im Take = in + (Startzeit − Schlag P2) (ein später eingesetztes Stück beginnt mit passendem Versatz)
+    const ph = pass2.length ? (pass2[0].off - a2.in) - (pass2[0].start - T(P2)) : null;
+    ok(pass2.length === 1 && Math.abs(ph) < .002, `2. Durchgang der STIMME phasengleich ab Schlag ${P2} (Abweichung ${ph == null ? '–' : (ph * 1000).toFixed(2)} ms, Start ${pass2.length ? (pass2[0].start - T(P2)).toFixed(3) : '–'} s nach dem Taktstrich)`);
     const fk = await p.evaluate(([t0, a, b, f]) => { const x = window.__capAt(t0, a, b); return x; }, [cap.t0, T(P2 + 4 * k + .3), T(P2 + 4 * k + 2), 0]);
     void fk;
     const want = fBar(k, 0), gz = await p.evaluate(([t0, a, b, f]) => { const x = window.__capX, sr = window.__ctx.sampleRate, i0 = Math.round((a - t0) * sr), i1 = Math.round((b - t0) * sr), c2 = 2 * Math.cos(2 * Math.PI * f / sr); let s1 = 0, s2 = 0; for (let i = i0; i < i1; i++) { const s0 = x[i] + c2 * s1 - s2; s2 = s1; s1 = s0; } return 10 * Math.log10((s1 * s1 + s2 * s2 - c2 * s1 * s2) / ((i1 - i0) ** 2) + 1e-20); }, [cap.t0, T(P2 + 4 * k + .2), T(P2 + 4 * k + 2.2), want]);
@@ -187,7 +190,7 @@ if (want('R')) {
   await p.waitForFunction(() => SYNQUENZER.g8Info().rest < 115, null, {timeout: 60000});
   await sleep(1500);
   const r2 = await p.evaluate(() => ({rest: SYNQUENZER.g8Info().rest, toasts: window.__toasts.slice()}));
-  ok(r2.toasts.some(x => /noch 1:5\d Aufnahmezeit|noch 1:[0-5]\d Aufnahmezeit/.test(x)), 'unter 2 min: Restzeit angezeigt ' + JSON.stringify(r2.toasts.filter(x => /Aufnahmezeit/.test(x))));
+  ok(r2.toasts.some(x => /noch 1:[0-5]\d Aufnahmezeit/.test(x)), 'unter 2 min: Restzeit angezeigt ' + JSON.stringify(r2.toasts.filter(x => /Aufnahmezeit/.test(x))));
   await p.waitForFunction(() => !SYNQUENZER.runtime().song.rec, null, {timeout: 200000});
   const r3 = await p.evaluate(() => ({toasts: window.__toasts.slice(), log: SYNQUENZER.g8Info().log}));
   ok(r3.toasts.some(x => /Speicher knapp – Aufnahme beendet/.test(x)) && r3.log.some(x => x.kind === 'full'), 'Rest 0: „Speicher knapp – Aufnahme beendet“, die Aufnahme endet ' + JSON.stringify(r3.log.filter(x => x.kind === 'full')));
