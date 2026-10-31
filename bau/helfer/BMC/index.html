@@ -25550,13 +25550,15 @@ function openCellSheet(t, bar) {
     p.classList.add('plsheet', 'csheet'); guardTouch(p);
     p.innerHTML = `<div class="ms-h"><b>${esc(tr.name.toUpperCase())}</b><span>· ${rng} · ${own ? 'eigener Clip' : 'Szene ' + sc}</span><button class="rb ms-x" data-a="x" aria-label="Schließen">✕</button></div>` +
       (own ? `<button class="rb pl-o" data-a="edit"><b>Bearbeiten</b><small>ROLLE auf diesem eigenen Clip</small></button>` +
-             `<button class="rb pl-o" data-a="back"><b>Zurück zum Szenen-Clip</b><small>die Kopie fällt weg, hier spielt wieder Szene ${sc}</small></button>`
+             `<button class="rb pl-o" data-a="back"><b>Zurück zum Szenen-Clip</b><small>die Kopie fällt weg, hier spielt wieder Szene ${sc}</small></button>` +
+             (cvHas(song.own && song.own[own]) ? `<button class="rb pl-o" data-a="cvdel" aria-label="Kurven löschen (Bend · Rad · Druck)"><b>Kurven löschen</b><small>Bend · Rad · Druck</small></button>` : '')   // BM8 (§5.4)
            : `<button class="rb pl-o" data-a="own"><b>Eigener Clip (dieser Durchlauf)</b><small>${rng} wird eine Kopie, die nur hier gilt</small></button>`) +
       `<button class="rb pl-o" data-a="whole"><b>Ganzer Block</b><small>${Math.min(blk.be, song.bars) - blk.bs > 1 ? 'Takt ' + (blk.bs + 1) + '–' + Math.min(blk.be, song.bars) : 'Takt ' + (blk.bs + 1)} wird ein eigener Clip</small></button>` +
       `<button class="rb pl-c" data-a="x">Abbrechen</button>`;
     onTap(p, b => {
       const a = b.dataset.a; closePop(); if (a === 'x') return;
       if (a === 'edit') { openOwnRoll(t, bar); return; }
+      if (a === 'cvdel') { if (songEdit('Kurven löschen', sg => { const c = sg.own && sg.own[own]; if (c) delete c.cv; })) toast('Kurven gelöscht', songUndoAct()); return; }
       if (a === 'back') { if (dropOwn(t, bar)) { toast(tr.name + ' · ' + rng + ': wieder Szene ' + sc, songUndoAct()); svButtons(); } return; }
       const id = makeOwn(t, bar, a === 'whole'), oc = id ? ownClipAt(t, bar) : null;
       if (!id || !oc) { toast('Hier ist kein Clip'); return; }

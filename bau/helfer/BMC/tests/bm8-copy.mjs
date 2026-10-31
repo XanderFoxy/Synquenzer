@@ -128,6 +128,14 @@ const r6 = await p.evaluate(() => {
 ok('BM8-06 Menüpunkt nur bei Clips mit Kurven', r6.withCv && r6.without && r6.after, r6);
 ok('BM8-06 löscht alle drei, ein Undo', r6.gone); ok('BM8-06 Undo / Redo', r6.undo && r6.redo);
 ok('Taste „Kurven löschen“ ≥ 44 px hoch', r6.size[1] >= 44, r6.size);
+// eigener Clip: „Kurven löschen“ im Zellen-Menü des Songs
+await p.evaluate(() => { SYNQUENZER.makeOwn(0, 2); window.__oid = svCellOwnAt(0, 2); openCellSheet(0, 2); });
+const hasBtn = await p.locator('button[data-a="cvdel"]').count();
+const bb = hasBtn ? await p.locator('button[data-a="cvdel"]').boundingBox() : null;
+if (hasBtn) await p.locator('button[data-a="cvdel"]').click();
+const r6o = await p.evaluate(() => { const id = window.__oid, gone = !S.song.own[id].cv, lab = UNDO[UNDO.length - 1].label; SYNQUENZER.undo(); const back = JSON.stringify(S.song.own[id].cv) === JSON.stringify(window.__cv);
+  SYNQUENZER.redo(); openCellSheet(0, 2); const again = !!document.querySelector('button[data-a="cvdel"]'); closePop(); SYNQUENZER.undo(); SYNQUENZER.undo(); return {gone, lab, back, again}; });
+ok('BM8-06 eigener Clip: „Kurven löschen“ im Zellen-Menü, ein Undo, danach nicht mehr angeboten', hasBtn === 1 && r6o.gone && r6o.lab === 'Kurven löschen' && r6o.back && !r6o.again && bb && bb.height >= 44, Object.assign(r6o, {h: bb && bb.height}));
 // ---------- BM8-08 Normalisierer ----------
 const r8 = await p.evaluate(() => {
   const A = SYNQUENZER, J = x => JSON.stringify(x), out = {}, k = S.tracks[0].clips.findIndex(c => !c);
