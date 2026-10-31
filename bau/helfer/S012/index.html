@@ -22457,7 +22457,7 @@ function partTick(b0, b1) {
     UI.dirty.parts = true;
   }
   if (R.part) { try { partLaneTick(R.part, b0, b1); } catch (e) { logErr(e); } }      // V2d: the part's lanes in a circle (4.6)
-  if (R.part) { try { s1PartMelTick(R.part, b0, b1); } catch (e) { logErr(e); } }      /* S1: the part's melody */
+  try { s1Track(); if (R.part) s1PartMelTick(R.part, b0, b1); } catch (e) { logErr(e); }      /* S1: the part's melody */
   if (rp && rp.beat < b1 - 1e-9) {
     R.rowPend = null;
     if (R.row && !R.row.hand) rowRecalls(R.row, from, rp.beat);
@@ -22818,6 +22818,7 @@ function songClear(song, a, b, o) {
 }
 function marksCut(song, a, b, split) {
   const out = [];
+  for (const m of song.marks) if (m.off) m.a0 = m.a;   /* S0 */
   for (const m of song.marks) {
     const me = m.a + m.len;
     if (me <= a || m.a >= b) { out.push(m); continue; }
@@ -22831,6 +22832,7 @@ function marksCut(song, a, b, split) {
     else out.push(Object.assign({}, m, {a: b, len: me - b}));
   }
   song.marks = out;
+  for (const m of song.marks) if (m.a0 != null) { const d = m.a - m.a0; delete m.a0; s0OffShift(m, d); }   /* S0 */
   for (const m of song.marks) if (!m.id) m.id = newMarkId(song);
 }
 // Fortsetzung (5.3 EINFÜGEN 3): at bar x the old content goes on in phase (only where it would sound different otherwise)
@@ -23297,6 +23299,7 @@ function markApplyAll(m) {
   const bp = partSnap(), bs = songSnapshot();
   const tp = templateFrom(S.song, m.a, m.a + m.len);
   p.lanes = tp.lanes; p.slots = tp.slots; p.chords = normChordRow(tp.chords); p.xp = null; p.len = tp.len; if (p.len > 16) p.len = 16;
+  s012ApplyAll(p, m, i);   /* S2 */
   const n = markReplaceAll(S.song, p, m.id);
   songTidy(S.song);
   undoPush({kind: 'group', label: 'Auf alle ' + p.name + ' übertragen', items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
@@ -23329,6 +23332,7 @@ function markReplaceAll(song, p, skipId, onlyId) {
       laneInsert(lane, Object.assign(o.e, {bar: x0}));
       if (alt) songCont(song, E, alt);                                     // after the own clip the template goes on
     }
+    for (const k of Object.keys(ch.mel || {})) delete mel[k];   /* S1/S2: the template brings its own melody there */
     for (const k in mel) { const t = +k, mm = song.mel[t] || (song.mel[t] = melEmpty()); for (const x of mel[k]) if (x.t < ch.len * 4 - .25) mm.notes.push(Object.assign({}, x, {t: +(x.t + a * 4).toFixed(6)})); mm.notes.sort((u, v) => u.t - v.t); }
     n++;
   }
@@ -26577,7 +26581,7 @@ function uiFrame() {
   paintGhosts(tAud);
   padFlashes(tAud);
   recLaneFrame(bAud);
-  const fm = fangMode(), fl = fm === 'teil' ? fangTeilLit() : fm === 'stimme' ? vsFangLit() : fangLit();     // V2d: FANG TEIL (§4.7 E3-08, EN7-09); VS2: Stimme
+  const fm = fangMode(), fl = (fm === 'teil' ? fangTeilLit() : fm === 'stimme' ? vsFangLit() : fangLit()) || (fm !== 'stimme' && s1Lit());   /* S1 */     // V2d: FANG TEIL (§4.7 E3-08, EN7-09); VS2: Stimme
   if (fm !== UI.last.fangM) {
     UI.last.fangM = fm; const tl = fm === 'teil', vs = fm === 'stimme';
     EL.bFang.innerHTML = tl ? 'FANG<br>TEIL' : vs ? 'FANG<br>🎤' : 'FANG<br>⤓'; EL.bFangT.textContent = tl ? 'FANG TEIL' : vs ? 'FANG 🎤' : 'FANG ⤓';
@@ -42301,9 +42305,10 @@ const s0NameRe = n => new RegExp('^' + String(n).replace(/[.*+?^${}()|[\]\\]/g, 
 function s0Cands(n) {
   partsEnsure();
   const re = s0NameRe(n), out = [], song = S.song, seen = new Set();
+  const pk = new Set(); S.parts.forEach((p, k) => { if (p && re.test(p.name)) pk.add(k); });
   if (song) for (const m of song.marks.slice().sort((x, y) => x.a - y.a)) {
-    const lab = markLabel(m); if (!re.test(lab)) continue;
     const k = m.part && m.part[0] === 'P' && S.parts[+m.part.slice(1) - 1] ? +m.part.slice(1) - 1 : -1;
+    const lab = markLabel(m); if (!re.test(lab) && !pk.has(k)) continue;           // also a place of that part renamed „nur hier“
     if (k >= 0) seen.add(k);
     out.push({id: m.id, a: m.a, len: m.len, k, lab});
   }
@@ -42495,7 +42500,7 @@ function s1MelNorm(mel, nt) {
   const out = {};
   for (const k of Object.keys(mel)) {
     const t = +k; if (!Number.isInteger(t) || t < 0 || t >= nt || t === DRUM_T || !Array.isArray(mel[k])) continue;
-    const ns = mel[k].filter(n => n && isNum(n.t) && isNum(n.d) && isNum(n.n) && isNum(n.v) && n.t >= 0 && n.t < 64 && n.d > 0)
+    const ns = mel[k].filter(n => n && isNum(n.t) && isNum(n.d) && isNum(n.n) && isNum(n.v) && n.t >= -.25 - 1e-9 && n.t < 64 && n.d > 0)
       .map(n => ({t: +(+n.t).toFixed(6), d: +Math.min(+n.d, 64).toFixed(6), n: clamp(Math.round(n.n), 0, 127), v: clamp(+n.v, .01, 1)})).sort((a, b) => a.t - b.t).slice(0, 2048);
     if (ns.length) out[t] = ns;
   }
@@ -42532,17 +42537,17 @@ function s1PartMelTick(rp, b0, b1) {
     }
   }
 }
-const s1Active = () => !!(R.playing && AU.ctx && R.part && !R.part.tmp && !R.part.caught && R.part.i >= 0 && S.parts && S.parts[R.part.i] && rec.state === 'off' && !R.songRec && !R.songPlay && !R.countIn);
+const s1Active = () => !!s1Run();
 // FANG while a part runs: the last complete pass (o.beat: tests – the audible beat of the tap)
 function s1Fang(o) {
   o = o || {};
   if (!s1Active()) return false;
-  const rp = R.part, i = rp.i, p = S.parts[i], L = partLen(p), L4 = L * 4, tapAt = AU.ctx.currentTime;
+  const rp = s1Run(), i = rp.i, p = S.parts[i], L = partLen(p), L4 = L * 4, tapAt = AU.ctx.currentTime;
   const t = isNum(o.beat) ? Math.min(o.beat, audBeat()) : audBeat(), from = rp.from != null ? rp.from : rp.startBeat;
   const k = Math.floor((t - rp.startBeat) / L4 + 1e-9), A = rp.startBeat + (k - 1) * L4, E = A + L4;
   if (k < 1 || A < from - 1e-6 || Math.abs(A / 4 - Math.round(A / 4)) > 1e-6) { if (!o.quiet) toast('Erst einen ganzen Durchlauf spielen – dann FANG'); return false; }   // FANG: then the usual way
   const a = Math.round(A / 4), bars = fangBars(a, a + L - 1, E, tapAt), got = fangBuild({bars}, a, L);
-  const v = deep(p), own = rp.own || new Set();
+  const v = deep(p), own = rp === R.part ? rp.own || new Set() : new Set(Array.from({length: NT()}, (_, t) => t));   // the part ended (scene start): every track went by hand
   // tracks the hand did not touch keep their lane as it is (a clip longer than the part runs on, „bleibt“ stays „bleibt“)
   v.lanes = p.lanes.map((l, tt) => (own.has(tt) ? got.lanes[tt] : deep(l)));
   for (let tt = p.lanes.length; tt < NT(); tt++) v.lanes.push(own.has(tt) ? got.lanes[tt] : []);
@@ -42551,9 +42556,12 @@ function s1Fang(o) {
   // played along: every note of the pass (synth tracks; held keys with their length so far)
   const ab = audBeat(), held = [...CAP.open.values()].map(x => Object.assign({}, x, {d: Math.max(1 / 32, ab - x.b)}));
   const mel = deep(p.mel || {}); let n = 0;
-  for (const x of CAP.buf.concat(held)) {
-    if (x.b < A - 1e-6 || x.b >= E - 1e-6 || !S.tracks[x.track] || S.tracks[x.track].kind !== 'synth') continue;
-    (mel[x.track] || (mel[x.track] = [])).push({t: +(x.b - A).toFixed(6), d: +Math.max(1 / 32, Math.min(x.d, E - x.b)).toFixed(6), n: x.n, v: x.v}); n++;
+  // up to ¼ beat before a bar line = upbeat to it (TA5): the upbeat to bar 1 is the one played right before FANG (end of the pass),
+  // else the one before the pass
+  const all = CAP.buf.concat(held).filter(x => S.tracks[x.track] && S.tracks[x.track].kind === 'synth');
+  const late = all.filter(x => x.b >= E - .25 - 1e-6 && x.b < E - 1e-6), up = late.length ? late.map(x => [x, x.b - E]) : all.filter(x => x.b >= A - .25 - 1e-6 && x.b < A - 1e-6).map(x => [x, x.b - A]);
+  for (const [x, t] of up.concat(all.filter(x => x.b >= A - 1e-6 && x.b < E - .25 - 1e-6).map(x => [x, x.b - A]))) {
+    (mel[x.track] || (mel[x.track] = [])).push({t: +t.toFixed(6), d: +Math.max(1 / 32, Math.min(x.d, L4 - .25 - t)).toFixed(6), n: x.n, v: x.v}); n++;
   }
   v.mel = mel;
   S1.v = normPart(v, i, NT()); S1.v.len = partLen(S1.v); S1.i = i; S1.a = a; S1.n = n; S1.pass = k;
@@ -42691,6 +42699,43 @@ Object.assign(S012_API, {
   openSum: (a, b) => s2OpenSum(null, a, (b == null ? a : b) + 1),
 });
 /* /S2 */
+/* S0/S1/S2 Nachprüfung (QA-Befunde D1–D7) */
+// D3 marksCut: a mark trimmed at its front / split keeps its content; mark.off (relative to the mark start) is moved along
+function s0OffShift(m, d) {
+  if (!m.off) return;
+  const out = [];
+  for (const r of m.off) {
+    let b0 = r.b0 - d, b1 = Math.min(r.b1 - d, m.len), e = r.e;
+    if (b1 <= 0 || b0 >= m.len) continue;
+    if (b0 < 0) {                                             // the front of this segment is gone: its state at the new start
+      const c = -b0, o = laneOriginAt(e, c), x = o.slot < 0 ? {bar: 0, slot: -1} : Object.assign({bar: 0, slot: o.slot, re: 1}, c * 4 - o.cs > 1e-6 ? {ph: +(c * 4 - o.cs).toFixed(4)} : null, o.own ? {own: o.own} : null);
+      e = [x].concat(e.filter(y => y.bar > c).map(y => Object.assign({}, y, {bar: y.bar - c}))); b0 = 0;
+      if (x.slot < 0 && e.length === 1) continue;
+    }
+    out.push(Object.assign({}, r, {b0, b1, e}));
+  }
+  if (out.length) m.off = out; else delete m.off;
+}
+// D1 markApplyAll: a part that carries song content (mel / own / vox) takes it from this place too
+function s012ApplyAll(p, m, i) {
+  if (!p.mel && !p.own && !p.vox) return;
+  const tp = s2Template(S.song, m.a, m.a + m.len), q = Object.assign(deep(p), {lanes: tp.lanes, slots: tp.slots, src: 'song'});
+  delete q.mel; delete q.own; delete q.vox; if (tp.mel) q.mel = tp.mel; if (tp.own) q.own = tp.own; if (tp.vox) q.vox = tp.vox;
+  const n = normPart(q, i, NT()); for (const k of ['mel', 'own', 'vox']) delete p[k]; Object.assign(p, n);
+}
+// D4 S1 after a scene start during the part: the part that ran is remembered (same run of the transport) until another part starts
+function s1Track() { const rp = R.part; if (rp && !rp.tmp && !rp.caught && rp.i >= 0) S1.run = Object.assign(rp, {run: R.runId}); else if (rp) S1.run = null; }
+function s1Run() {
+  if (!R.playing || !AU.ctx || rec.state !== 'off' || R.songRec || R.songPlay || R.countIn) return null;
+  const rp = R.part; if (rp) return !rp.tmp && !rp.caught && rp.i >= 0 && S.parts && S.parts[rp.i] ? rp : null;
+  const r = S1.run; return r && r.run === R.runId && S.parts && S.parts[r.i] ? r : null;
+}
+// D5 the FANG key is lit (visible) as soon as there is a complete pass to catch
+function s1Lit() {
+  const rp = s1Run(); if (!rp) return false;
+  const L4 = partLen(S.parts[rp.i]) * 4, t = audBeat(), k = Math.floor((t - rp.startBeat) / L4 + 1e-9), A = rp.startBeat + (k - 1) * L4;
+  return k >= 1 && A >= (rp.from != null ? rp.from : rp.startBeat) - 1e-6;
+}
 // every state-changing API call leaves the UI rendered (no need to wait for the next animation frame)
 function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
 Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes

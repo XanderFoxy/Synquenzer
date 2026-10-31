@@ -57,7 +57,8 @@ Smoke (`tests/smoke.mjs`): keine Fehler.
    „Letzter Durchlauf eingefangen · n Noten dazugespielt“, Zeilen **Neu** / **Bisher**, **[Verwerfen] [Als neuen Teil] [Teil ersetzen]**.
    Der alte Teil bleibt unverändert bis [Teil ersetzen]. [Als neuen Teil] = nächster freier Platz, Name „Strophe 2“ (N7-R2-Nummer).
    ✕ / daneben = Verwerfen. Je Aktion ein Undo (`part`).
-4. Noch kein vollständiger Durchlauf seit dem Tipp → FANG/FANG TEIL machen das Bisherige (kein Blatt). Ein mit FANG TEIL gefangener
+4. Ein Szenenwechsel im Lauf beendet den Teil; er bleibt für FANG gemerkt, bis ein anderer Teil startet oder ▶ stoppt.
+   Noch kein vollständiger Durchlauf seit dem Tipp → FANG/FANG TEIL machen das Bisherige (kein Blatt). Ein mit FANG TEIL gefangener
    Kreis, der als Teil weiterläuft, ist kein „angetippter“ Teil → FANG TEIL fängt dort wie bisher eine neue Phrase (sonst wäre der
    zweite Fang aus V2d/V2e′ weg; Regression `v3-qa-v2e2reg-fangui` gleich wie Basis).
 5. Test-API: `s1Fang({beat?})`, `s1Info()`, `s1Accept('replace'|'new')`, `s1Discard()`, `s1Active()`.
@@ -116,6 +117,22 @@ Oszillator-/LFO-Phasen nicht bitgleich möglich (auch nicht zwischen zwei Läufe
 | `v3-qa-v2e2reg-fangui` (FANG-Blatt per Touch, ALS TEIL, ＋ Ans Song-Ende, P1/L1) | gleich bis auf die gemessene Tipp-Zeit im Takt (10 % gegen 12 %, Zeitrauschen) – vor dem `caught`-Fix fing der zweite FANG TEIL fälschlich als S1, behoben |
 | `v3-qa-reg-song` (● SONG-Mitschnitt in Echtzeit) | zeitabhängig: auch Basis gegen Basis weicht beim aufgenommenen Song ab; die Notenprotokolle folgen dem jeweils aufgenommenen Song – kein Befund |
 | `tests/smoke.mjs` | keine Fehler |
+
+## Unabhängige Nachprüfung (eigener Prüf-Agent, Skripte `tests/qa/`) – 7 Befunde, alle behoben
+| # | Befund | Behebung |
+|---|---|---|
+| D1 | „Auf alle übertragen“ mit einem Teil, der `Part.mel` trägt (S1/S2): Melodie an den Zielstellen doppelt (behaltene Song-Melodie + Teil-Melodie); Vorlage behielt alte `mel/own/vox` | `markReplaceAll`: auf Spuren, für die der Teil eine Melodie mitbringt, gilt die des Teils; `markApplyAll` übernimmt bei solchen Teilen auch `mel/own/vox` von der Stelle (`s012ApplyAll`) |
+| D2 | Eine Stelle des Teils „Strophe“, „nur hier“ in „Vers“ umbenannt, wurde ohne Rückfrage mit ersetzt | Die Auswahl „Welche“ nimmt alle Stellen eines passenden Teils auf, auch umbenannte („Vers (Takt 5)“) |
+| D3 | `mark.off` nach Löschen am Anfang einer Marke bzw. Teilen der Marke (Als Teil, Zusammenfassen über einen Teil) mit alten Abständen → „an“ unmöglich oder falscher Inhalt | `marksCut` verschiebt `off` mit (`s0OffShift`; ein angeschnittener Abschnitt bekommt seinen Zustand am neuen Anfang inkl. Phase / eigenem Clip) |
+| D4 | Szenenwechsel im Lauf beendete den Teil → FANG ohne S1 | Der zuletzt angetippte Teil bleibt im selben Lauf gemerkt, bis ein anderer Teil startet; FANG fängt seinen letzten Durchlauf (alle Spuren „von Hand“, Szene je Takt aus dem Gedächtnis) |
+| D5 | FANG-Taste hochkant unsichtbar, obwohl S1 fangen könnte (letzte Note > 8 s her, z. B. 100 bpm) | FANG leuchtet/erscheint, sobald ein vollständiger Durchlauf da ist (`s1Lit`) |
+| D6 | Note im letzten ¼ Schlag vor dem Durchlauf-Ende ging beim Einsetzen in den Song verloren | Sie gilt als Auftakt zu Takt 1 (TA5): `t` negativ, klingt im Kreis vor Takt 1 und landet im Song als Auftakt |
+| D7 | Auftakt-Note der Song-Melodie fiel beim Zusammenfassen weg (`t < 0` verworfen) | `Part.mel` erlaubt Auftakte bis −¼ Schlag |
+
+Nachlauf: `qa/q1` 4/4, `q2` 24/24, `q3` 10/10, `q5` 3/3; `q4` 9/10 und `q7` 8/9 – die beiden roten Punkte sind keine Fehler:
+`q4 (a)` erwartet die per `launchScene` in Takt 3 gestartete Szene schon ab Takt 3, sie startet (quantisiert) am nächsten
+Taktstrich = Takt 4, die Fassung zeigt Sz2 ab Takt 4; `q7 C` ist die oben genannte Abweichung (`song.xp` im Bereich). Danach
+S0 38/38, S1 28/28, S2 25/25, Regressionen wie oben, Smoke ohne Fehler.
 
 ## Abweichungen
 - S0 „gespeichert im Teil“: an/aus wird **an der Stelle** (Marke) gespeichert, nicht in der Teil-Vorlage – sonst würden alle
