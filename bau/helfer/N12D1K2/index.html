@@ -11411,6 +11411,7 @@ const RecHelpers = (() => {
   const SLOP = 7;                                                 // px before a touch counts as a drag
   const FITK = .88;                                               // ⤢ whole clip: the clip fills 88 %, 12 % room on the right (V0a K-05)
   const EDGE = 24, EDGE_BPS = 4;
+  const MMH = 48, MMG = 8, AX_ON = 12, AX_OFF = 48;               /* N2: mini map height / margin; axis lock decided after 12 px, released after 48 px across */
   /* N1: drawn symbols (SVG, currentColor): Spiegeln = arrows up/down across a dashed axis, Umdrehen = arrows left/right across a dashed axis */
   const N1_SVG = d => '<svg class="n1i" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
   const N1_ICON = {v: N1_SVG('<path d="M10 2v6M7 5l3-3 3 3M10 18v-6M7 15l3 3 3-3"/><path d="M2 10h16" stroke-dasharray="2 2.5" stroke-width="1.5"/>'),
@@ -11434,7 +11435,9 @@ const RecHelpers = (() => {
 .pr-bar button.loopb{background:var(--amber,#ffb22e);color:#111}
 .pr-bar button:disabled{opacity:.35}
 .pr-bar button[hidden]{display:none}
-.pr-bar button.n1b{display:inline-flex;align-items:center;gap:5px;position:relative}.pr-bar button.n1b::after{content:'';position:absolute;left:-2px;right:-2px;top:-7px;bottom:-7px}.pr-bar .n1i{flex:none;display:block}
+.pr canvas.pr-mm{position:absolute;left:8px;top:6px;width:calc(100% - 16px);height:48px;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 2px 10px #0009}
+.pr canvas.pr-mm.on{opacity:1}.pr canvas.pr-mm.bot{top:auto;bottom:6px}
+.pr-bar button.n1b{display:inline-flex;align-items:center;gap:5px;position:relative}.pr-bar button.n1b::after{content:'';position:absolute;left:0;right:0;top:-7px;bottom:-7px}.pr-bar .n1i{flex:none;display:block}
 .pr-bar .sep{flex:none;width:1px;height:24px;background:var(--line,#2d323c);margin:0 2px}
 .pr-bar .ask{flex:none;font-weight:700;color:var(--rec,#ff4538);padding:0 4px;white-space:nowrap}
 .pr-corner{font-size:9px;letter-spacing:.08em;color:var(--text-dim,#9aa0aa);display:flex;align-items:center;justify-content:center}
@@ -11464,7 +11467,8 @@ const RecHelpers = (() => {
     const bar = mk('div', 'pr-bar prt'), corner = mk('div', 'pr-corner', 'TAKT'), ruler = mk('div', 'pr-ruler'), keys = mk('div', 'pr-keys'),
       main = mk('div', 'pr-main'), vlab = mk('div', 'pr-vlab', 'VEL'), vel = mk('div', 'pr-vel'), acts = mk('div', 'pr-bar pra');
     const cR = mk('canvas'), cK = mk('canvas'), cM = mk('canvas'), cV = mk('canvas'), ph = mk('div', 'pr-ph'), bubble = mk('div', 'pr-bubble'), rd = mk('div', 'pr-rd');
-    ruler.append(cR, rd); keys.append(cK); main.append(cM, ph, bubble); vel.append(cV);
+    const cMM = mk('canvas', 'pr-mm');                              /* N2: the mini map while notes are held and dragged */
+    ruler.append(cR, rd); keys.append(cK); main.append(cM, ph, bubble, cMM); vel.append(cV);
     root.append(corner, ruler, keys, main, vlab, vel, acts);
     if (opts.toolbarHost) opts.toolbarHost.appendChild(bar); else root.prepend(bar);
     ['contextmenu', 'selectstart', 'dragstart'].forEach(ev => root.addEventListener(ev, e => e.preventDefault()));
@@ -11621,6 +11625,7 @@ const RecHelpers = (() => {
         // resize grip
         if (r.w >= 18) { x.fillStyle = '#0b0c0f'; x.globalAlpha = .5; x.fillRect(r.x + r.w - 5, r.y + r.h * .3, 2, r.h * .4); x.globalAlpha = 1; }
       }
+      mmDraw(C);                                                    /* N2 */
       if (gst && gst.kind === 'marquee') { const m = gst.rect; x.strokeStyle = C.sel; x.setLineDash([4, 3]); x.strokeRect(m.x + .5, m.y + .5, m.w, m.h); x.setLineDash([]); x.fillStyle = C.sel; x.globalAlpha = .08; x.fillRect(m.x, m.y, m.w, m.h); x.globalAlpha = 1; }
       // keys
       x = fit(cK, V.KW, V.H); x.fillStyle = C.bg; x.fillRect(0, 0, V.KW, V.H);
@@ -11669,6 +11674,33 @@ const RecHelpers = (() => {
       if (tb.undo && model.canUndo) tb.undo.disabled = !model.canUndo();
       if (tb.redo && model.canRedo) tb.redo.disabled = !model.canRedo();
       if (opts.onRender) opts.onRender(api.state);
+    }
+    /* N2: mini map of the whole clip (notes as strokes, the visible part as a frame), shown while a 'move' gesture runs;
+       at the top of the note area, at the bottom when the finger started in the top band (it never covers the touch point) */
+    function mmOn() { return !!(gst && gst.kind === 'move' && gst.ax !== 'v'); }   // a vertical lock keeps the time: no map then
+    function mmRect() { const bot = !!(gst && gst.mmBot); return {x: MMG, y: bot ? V.H - 6 - MMH : 6, w: Math.max(40, V.W - 2 * MMG), h: MMH}; }
+    function mmSpan() { const ns = clip().notes, vis = [noteOfRow(V.top), noteOfRow(V.top + V.H / V.rowH - 1)];
+      let lo = Math.min(...vis), hi = Math.max(...vis); for (const n of ns) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; } return {lo: lo - 1, hi: hi + 1, Lb: Math.max(L(), 1)}; }
+    const mmBeat = (px, R, sp) => clamp((px - R.x) / R.w * sp.Lb, 0, sp.Lb);
+    function mmDraw(C) {
+      const on = mmOn();
+      if (cMM.classList.contains('on') !== on) { cMM.classList.toggle('on', on); bubble.style.top = on && !gst.mmBot ? (MMH + 12) + 'px' : ''; }
+      if (!on) return;
+      cMM.classList.toggle('bot', !!gst.mmBot);
+      const R = mmRect(), sp = mmSpan(), x = fit(cMM, R.w, R.h), sx = R.w / sp.Lb, sy = (R.h - 8) / Math.max(1, sp.hi - sp.lo), yN = n => 4 + (sp.hi - n) * sy;
+      x.fillStyle = '#0b0c0fe6'; x.fillRect(0, 0, R.w, R.h);
+      x.strokeStyle = C.line; x.lineWidth = 1; for (let b = 4; b < sp.Lb; b += 4) { const bx = Math.round(b * sx) + .5; x.beginPath(); x.moveTo(bx, 0); x.lineTo(bx, R.h); x.stroke(); }
+      const held = new Set(gst.set); x.lineCap = 'round';
+      for (const nt of clip().notes) { x.strokeStyle = held.has(nt) ? C.sel : col; x.globalAlpha = held.has(nt) ? 1 : .8; x.lineWidth = held.has(nt) ? 3 : 2; const y = yN(nt.n); x.beginPath(); x.moveTo(nt.t * sx + 1, y); x.lineTo(Math.max(nt.t * sx + 2, (nt.t + nt.d) * sx - 1), y); x.stroke(); }
+      x.globalAlpha = 1;
+      const fx = clamp(V.x0, 0, sp.Lb) * sx, fw = Math.max(6, Math.min(sp.Lb, V.x0 + V.W / V.ppb) * sx - fx), ft = yN(noteOfRow(V.top)) - 3, fb = yN(noteOfRow(V.top + V.H / V.rowH - 1)) + 3;
+      x.strokeStyle = C.amber; x.lineWidth = 2; x.strokeRect(fx + 1, Math.max(1, ft), Math.max(4, fw - 2), Math.min(R.h - 2, fb - ft));
+    }
+    // N2: the finger of the drag on the map: the view glides there (≈ 0,2 s), the held notes go to that beat (pitch kept)
+    function mmGlide() {
+      gst.vraf = 0; if (!gst || gst.kind !== 'move' || gst.vx == null || dead) return;
+      const d = gst.vx - V.x0; V.x0 = Math.abs(d) < .02 ? gst.vx : V.x0 + d * .35; clampView(); render();
+      if (Math.abs(gst.vx - V.x0) > .02 && V.x0 !== gst.vxc) { gst.vxc = V.x0; gst.vraf = requestAnimationFrame(mmGlide); }
     }
     function rr(x, a, b, w, h, r) { r = Math.max(0, Math.min(r, w / 2, h / 2)); x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
     let bubbleT = 0;
@@ -11837,7 +11869,7 @@ const RecHelpers = (() => {
       if (h) {
         let set = [h.note];
         if (tool === 'select') { if (!E.sel.has(h.note)) { E.sel = new Set([h.note]); } set = scope(); }
-        begin('move', {set, t0: set.map(n => n.t), n0: set.map(n => n.n), anchor: h.note, lastN: h.note.n}); return;
+        begin('move', {set, t0: set.map(n => n.t), n0: set.map(n => n.n), anchor: h.note, lastN: h.note.n, mmBot: gst.p0.y < MMH + 6 + 24, ax: null, dR: 0}); return;   /* N2: map side, axis lock */
       }
       if (tool === 'select') { begin('marquee', {rect: {x: gst.p0.x, y: gst.p0.y, w: 0, h: 0}}); return; }
       // draw on empty: the note appears where the finger went down and follows it
@@ -11858,8 +11890,25 @@ const RecHelpers = (() => {
           say(nm(nt.n) + ' · ' + fmtLen(nt.d)); break;
         }
         case 'move': {
-          const dB = (p.x - gst.p0.x) / V.ppb, q = g ? Math.round(dB / g) * g : dB;
-          const dR = Math.round((p.y - gst.p0.y) / V.rowH);
+          /* N2: beats / rows from the view (the view can glide under the finger: map), the mini map, the axis lock */
+          const R = mmRect(), onMap = mmOn() && p.x >= R.x && p.x <= R.x + R.w && p.y >= R.y && p.y <= R.y + R.h, ai = gst.set.indexOf(gst.anchor);
+          let dB, dR;
+          if (onMap) {
+            const sp = mmSpan(), b = mmBeat(p.x - 0, R, sp), tb = g ? Math.floor(b / g + 1e-6) * g : b;
+            dB = tb - gst.t0[ai]; dR = gst.mDR != null ? gst.mDR : gst.dR;
+            const vx = b - V.W / V.ppb / 2; if (gst.vx == null || Math.abs(vx - gst.vx) > 1e-3) { gst.vx = vx; gst.vxc = null; if (!gst.handed) { gst.handed = true; hand('scroll'); } if (!gst.vraf) gst.vraf = requestAnimationFrame(mmGlide); }
+            gst.onMap = true;
+          } else {
+            if (gst.onMap) { gst.onMap = false; gst.vx = null; }
+            const ddx = p.x - gst.p0.x, ddy = p.y - gst.p0.y;
+            if (gst.ax == null && Math.hypot(ddx, ddy) >= AX_ON) { gst.ax = Math.abs(ddx) >= 2 * Math.abs(ddy) ? 'h' : Math.abs(ddy) >= 2 * Math.abs(ddx) ? 'v' : 'free'; if (gst.ax !== 'free' && opts.onTick) opts.onTick(); }
+            if (gst.ax === 'h' && Math.abs(ddy) > AX_OFF) { gst.ax = 'free'; gst.mFz = {y: p.y, s: Math.sign(ddy)}; gst.mDR = 0; } else if (gst.ax === 'v' && Math.abs(ddx) > AX_OFF) gst.ax = 'free';
+            dB = gst.ax === 'v' ? 0 : beatAt(p.x) - gst.beat0; dR = gst.ax === 'h' ? 0 : Math.round(rowAt(p.y) - gst.row0); gst.dR = dR;
+            // the pitch the notes take onto the map: the locked one while the finger keeps heading on from where the lock let go
+            if (gst.mFz && gst.mFz.s * (p.y - gst.mFz.y) < 0) gst.mFz = null;
+            if (!gst.mFz) gst.mDR = dR;
+          }
+          const q = onMap ? dB : g ? Math.round(dB / g) * g : dB;
           const minT = Math.min(...gst.t0), maxT = Math.max(...gst.t0);
           const dt = clamp(q, -minT, L() - 1e-6 - maxT);
           gst.set.forEach((nt, i) => { nt.t = +(gst.t0[i] + dt).toFixed(6); if (dt) delete nt.o; nt.n = clamp(V.rows[clamp(rowOfNote(gst.n0[i]) + dR, 0, V.rows.length - 1)], 0, 127); });
@@ -11893,6 +11942,7 @@ const RecHelpers = (() => {
       if (gst.kind === 'pinch') { if (P.size === 0) { gst = null; } return; }    // the finger still down after a pinch does nothing
       if (e.pointerId !== gst.id) return;
       // a finger that just rested on the screen (> 500 ms, no movement) edits nothing
+      if (gst.vraf) { cancelAnimationFrame(gst.vraf); gst.vraf = 0; }   /* N2 */
       if (gst.kind === 'pending') { if (performance.now() - gst.ms < 500) tap(); } else { if (gst.kind === 'create' || gst.kind === 'move' || gst.kind === 'resize') sortNotes(); model.end(gst.changed, label(gst.kind)); }
       gst = null; render();
     }
@@ -11906,6 +11956,7 @@ const RecHelpers = (() => {
     function cancelAll() { for (const id of P.keys()) { try { cM.releasePointerCapture(id); } catch (_) {} } P.clear(); abort(); gst = null; render(); }
     // end a single-finger gesture without keeping anything (second finger arrived, or the system cancelled the touch)
     function abort() {
+      if (gst && gst.vraf) { cancelAnimationFrame(gst.vraf); gst.vraf = 0; }   /* N2 */
       if (!gst || gst.kind === 'pending' || gst.kind === 'pinch') { if (gst && gst.kind === 'pending') gst = null; return; }
       if (gst.changed) { model.revert(); afterExternal(); } else model.end(false);
       gst = null;
@@ -12091,6 +12142,7 @@ const RecHelpers = (() => {
       _vel(beat, v) { const r = cV.getBoundingClientRect(); return {x: r.left + xOf(beat) + 2, y: r.top + (1 - v) * V.VH}; },
       _ruler(beat) { const r = cR.getBoundingClientRect(); return {x: r.left + xOf(beat), y: r.top + V.RH / 2}; },
       _barNum(bar) { const r = cR.getBoundingClientRect(); return {x: r.left + xOf(bar * 4) + NUMW / 2, y: r.top + V.RH / 2}; },
+      _mm() { const r = cM.getBoundingClientRect(), R = mmRect(), sp = mmSpan(); return {on: mmOn(), x: r.left + R.x, y: r.top + R.y, w: R.w, h: R.h, Lb: sp.Lb, ax: gst && gst.ax, onMap: !!(gst && gst.onMap)}; },   /* N2 tests */
       _key(note) { const r = cK.getBoundingClientRect(); return {x: r.left + V.KW / 2, y: r.top + yOfRow(rowOfNote(note)) + V.rowH / 2}; }};
     open();
     return api;

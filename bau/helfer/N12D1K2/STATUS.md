@@ -4,5 +4,5 @@
 |---|---|
 | K2 FM-FELD Hüllkurven > 3 OP | fertig, Abnahme grün (siehe CHANGES.md) |
 | N1 Noten umdrehen | fertig, Abnahme grün |
-| N2 Mini-Karte / Achsen-Einrasten | offen |
+| N2 Mini-Karte / Achsen-Einrasten | fertig, Abnahme grün |
 | D1 Drum-Sequencer Länge/Richtung | offen |

@@ -91,3 +91,48 @@ Tests: `tests/n1-abnahme.mjs` (18/18), `tests/n1-hit.mjs` (12/12), Hilfen `tests
 ### Für das Zusammenführen
 - Nur im PianoRoll-Block: `N1_SVG`/`N1_ICON` (neben `EDGE`), CSS `.n1b`/`.n1i` (vor `.pr-bar .sep`), zwei Knöpfe hinter „−12“,
   `n1Pos`/`n1Note`/`mirrorNotes`/`reverseNotes` (vor `quantizeNotes`). Alle mit `/* N1 */` markiert.
+
+---
+
+## N2 — Weite Wege beim Ziehen: Mini-Karte und Achsen-Einrasten
+
+### Was neu ist
+- **Mini-Karte:** Sobald Noten gehalten und gezogen werden (Zeichnen oder Auswahl, Geste „Verschieben“), erscheint im Notenfeld
+  eine Karte des ganzen Clips (bzw. der Song-Melodie): 48 px hoch, volle Breite (8 px Rand), Noten als Striche (die gehaltenen
+  hell), sichtbarer Ausschnitt als gelber Rahmen. Sie liegt oben; beginnt der Finger im oberen Band (< 78 px), liegt sie unten –
+  sie liegt nie unter der Stelle, an der der Finger aufsetzt. Die Info-Blase rückt unter die Karte.
+- **Finger auf die Karte:** Die Ansicht gleitet dorthin (≈ 0,2 s, mitlaufend), die Noten bleiben in der Hand: die gefasste Note
+  steht am Takt/Schritt unter dem Finger (Raster), Tonhöhe bleibt (bei waagrechter Sperre die gesperrte). Loslassen auf der Karte
+  setzt sie dort ab; zurück ins Notenfeld = normal weiterziehen. Eine Geste = ein Undo, Länge und Anschlag bleiben.
+- **Achsen-Einrasten:** nach den ersten 12 px: klar waagrecht (|dx| ≥ 2·|dy|) → Tonhöhe fest; klar senkrecht → Zeit fest;
+  schräg → frei. Einrasten mit leichter Haptik (`haptic('tick')`). Die Sperre löst sich erst nach 48 px quer (≈ 2 Reihen).
+  Bei senkrechter Sperre ist die Karte aus (sie würde sonst die Zeit verschieben).
+- Ohne Ziehen ändert sich nichts (Regression gegen 4.23.0: Knöpfe, gerade Züge, Länge, Zeichnen gleich).
+
+### Abnahme
+| Punkt | Prüfung (CDP-Touch-Züge) | Ergebnis |
+|---|---|---|
+| N2-01 | 16-Takt-Clip, Note in Takt 16 → auf die Karte links → Takt 1 in ≈ 0,93 s (inkl. Zug), Anschlag 0,37 und Länge 0,75 gleich, +1 Undo; 6 Formate | bestanden |
+| N2-02 | waagrecht 180 px mit ±20 px Zittern → Ton unverändert, Haptik | bestanden (P1, L1) |
+| N2-03 | senkrecht 112 px mit ±20 px Zittern → Zeit unverändert, Haptik | bestanden (P1, L1) |
+| N2-04 | Karte 48 px hoch, ganz im Bild, nicht unter dem Finger (auch Finger oben → Karte unten); 6 Formate | bestanden |
+| N2-05/06 | Sperre löst sich bei 90 px quer; schräger Zug bleibt frei | bestanden |
+| Layout | Seitenhöhe gleich, Karte weg nach dem Loslassen, keine Fehler | bestanden |
+| Regression | `roll-regress.mjs`: gleiche Aktionen auf 4.23.0 und neu → gleicher Clip, gleiches Layout (P1, P3, L1) | 30/30 |
+
+Tests: `tests/n2-abnahme.mjs` (28/28), `tests/roll-regress.mjs` (30/30).
+
+### Abweichungen
+- „Bestehende Tasten zum Sperren bleiben“: Die Rolle hatte keine Sperr-Tasten (nur „Tonart sperren“ an der Tastatur, unberührt).
+- Liegt die Karte oben, deckt sie beim Ziehen die obersten ~2 Reihen ab; ein Zug dorthin wird zum Kartensprung. Zum Ablegen
+  dort kurz scrollen (oder senkrecht ziehen: dann ist die Karte aus).
+- N1-Nachtrag: die Trefferflächen-Erweiterung der N1-Knöpfe ragte 2 px seitlich über (Text galt als abgeschnitten) – behoben.
+
+### Fragen an Xander
+- N2: Soll die Karte auch die Tonhöhe übernehmen (Finger auf der Karte höher = höherer Ton)? Gebaut: nur die Zeit.
+- N2: Karte auch beim Ändern der Länge (rechtes Ende ziehen) oder beim Zeichnen? Gebaut: nur beim Verschieben (Spec: „hält und zieht“).
+
+### Für das Zusammenführen
+- Nur im PianoRoll-Block: Konstanten `MMH/MMG/AX_ON/AX_OFF`, CSS `.pr canvas.pr-mm`, Canvas `cMM`, `mmOn/mmRect/mmSpan/mmBeat/mmDraw/mmGlide`
+  (vor `rr`), ein Aufruf `mmDraw(C)` in `draw()`, `move`-Zweig in `drag()` (Achse, Karte), zwei Zeilen Animationsende
+  (`mainUp`, `abort`), Test-Hook `_mm()`. Markiert mit `/* N2 */`.
