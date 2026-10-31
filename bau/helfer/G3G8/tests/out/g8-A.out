@@ -1,0 +1,12 @@
+  Ringpuffer 149.71 s – Aufnahme 300 s
+✓ die Aufnahme (300 s) ist länger als der Ringpuffer (149.71 s)
+✓ Take aus den mitgeschriebenen Stücken: {"id":"br2aomdk76","sec":303.47,"chunks":26,"lost":0,"werr":null}
+✓ Song-Stimme ab Takt 1, 150 Takte
+✓ 5 min: Take 303.471 s im Speicher (≥ 301.5 s)
+✓ 5 min: Anfang da und alles am Platz – 31 Stichproben (Sek. 0 … 299) mit der richtigen Tonhöhe
+✓ 5 min: kein Aussetzer – 300 Ton-Strecken, kleinster 20-ms-Pegel -15.1 dB
+  G8-04: Stücke im Speicher während der Aufnahme (max) 25 × 1 MB; Heap 42.1 → Spitze 42.1 → danach 42.1 MB; lange Aufgaben [] ; fertig 2060 ms nach dem Ende
+✓ keine lange Aufgabe > 200 ms im Hauptfaden (größte 0 ms, Anzahl > 50 ms: 0)
+✓ keine Konsolenfehler []
+ALLE OK
+exit 0
