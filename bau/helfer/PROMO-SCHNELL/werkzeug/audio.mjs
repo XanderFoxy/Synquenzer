@@ -1,0 +1,16 @@
+import { open } from './n5-v-lib.mjs';
+import fs from 'fs';
+const SONG={bars:15,lanes:[[{bar:0,slot:0}],[{bar:0,slot:0},{bar:8,slot:1}],[{bar:2,slot:0},{bar:10,slot:1}],[],[{bar:0,slot:0},{bar:6,slot:1}],[]],carrier:[],mel:{},marks:[{id:'m1',a:0,len:6,name:'Intro'},{id:'m2',a:6,len:9,name:'Refrain'}]};
+fs.writeFileSync('song.json',JSON.stringify(SONG));
+const {b,p,errs}=await open({});
+await p.evaluate(s=>SYNQUENZER.setSong(s),SONG);
+const x=await p.evaluate(()=>SYNQUENZER.vvRender());
+console.log('render',x.dur,x.songSec,x.peak,x.rms,x.sr);
+const pcm=await p.evaluate(()=>SYNQUENZER.vvPcm(0));
+const d=Buffer.from(pcm.b64,'base64'); const h=Buffer.alloc(44);
+h.write('RIFF',0);h.writeUInt32LE(36+d.length,4);h.write('WAVE',8);h.write('fmt ',12);h.writeUInt32LE(16,16);h.writeUInt16LE(1,20);h.writeUInt16LE(2,22);h.writeUInt32LE(pcm.sr,24);h.writeUInt32LE(pcm.sr*4,28);h.writeUInt16LE(4,32);h.writeUInt16LE(16,34);h.write('data',36);h.writeUInt32LE(d.length,40);
+fs.writeFileSync('song.wav',Buffer.concat([h,d]));
+const m=await p.evaluate(()=>SYNQUENZER.vvMake({fmt:'9:16',view:'auto'}));
+console.log('make',JSON.stringify(m));
+const bl=await p.evaluate(()=>SYNQUENZER.vvBlob()); fs.writeFileSync('songvideo.'+bl.ext,Buffer.from(bl.b64,'base64'));
+console.log(errs.slice(0,5)); await b.close();
