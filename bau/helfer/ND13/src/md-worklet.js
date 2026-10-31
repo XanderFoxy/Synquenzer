@@ -29,6 +29,29 @@ function cosc(ph) { return sinc(ph + 0.25); }
 const TN = 4096, TANT = new Float64Array(TN + 2);          // tan(pi * f / SR) over f / SR in [0, 0.5)
 for (let i = 0; i < TN + 2; i++) TANT[i] = Math.tan(PI * Math.min(i, TN - 1) / (2 * TN));
 function tanf(f) { let x = f * ISR; if (x > 0.45) x = 0.45; if (x < 0) x = 0; x *= 2 * TN; const i = x | 0, fr = x - i; return TANT[i] + (TANT[i + 1] - TANT[i]) * fr; }
+// minimum-phase band-limited step (minBLEP) for the A family: Blackman-windowed sinc (16 zero crossings, cut 0.45 fs),
+// minimum phase via the real cepstrum, integrated; residual = step - 1 over 32 samples, 32 table points per sample
+function fftc(re, im) { const n = re.length; for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+  for (let len = 2; len <= n; len <<= 1) { const a = -2 * PI / len, wr = Math.cos(a), wi = Math.sin(a), h = len >> 1;
+    for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let j = 0; j < h; j++) { const k = i + j + h, vr = re[k] * cr - im[k] * ci, vi = re[k] * ci + im[k] * cr;
+      re[k] = re[i + j] - vr; im[k] = im[i + j] - vi; re[i + j] += vr; im[i + j] += vi; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } } } }
+const BZ = 16, BOS = 32, BL = 2 * BZ, BRES = new Float64Array(BL * BOS + BOS + 2);
+(function () {
+  const n = BL * BOS + 1, N = 8192, re = new Float64Array(N), im = new Float64Array(N), fc = 0.45;
+  for (let i = 0; i < n; i++) { const x = (i - (n - 1) / 2) / BOS, sn = x === 0 ? 2 * fc : Math.sin(2 * PI * fc * x) / (PI * x), w = 0.42 - 0.5 * Math.cos(2 * PI * i / (n - 1)) + 0.08 * Math.cos(4 * PI * i / (n - 1)); re[i] = sn * w; }
+  fftc(re, im);
+  for (let i = 0; i < N; i++) { re[i] = Math.log(Math.max(1e-12, Math.hypot(re[i], im[i]))); im[i] = 0; }
+  fftc(re, im); for (let i = 0; i < N; i++) { re[i] /= N; im[i] = -im[i] / N; }            // real cepstrum (input real and even)
+  for (let i = 1; i < N / 2; i++) { re[i] *= 2; im[i] *= 2; } for (let i = N / 2 + 1; i < N; i++) { re[i] = 0; im[i] = 0; }
+  fftc(re, im);
+  for (let i = 0; i < N; i++) { const e = Math.exp(re[i]), a = im[i]; re[i] = e * Math.cos(a); im[i] = -e * Math.sin(a); }
+  fftc(re, im);
+  let s = 0; for (let i = 0; i < n - 1; i++) s += re[i];
+  let c = 0; for (let i = 0; i < BRES.length; i++) { if (i < n - 1) c += re[i] / s; BRES[i] = (i < n - 1 ? c : 1) - 1; }
+  for (let i = BL * BOS; i < BRES.length; i++) BRES[i] = 0;
+})();
+// add a step of height h that happened frac samples before the next sample (ring position p + 1)
+function blepAdd(R, p, frac, h) { for (let k = 0; k < BL; k++) { const x = (k + frac) * BOS, j = x | 0; R[(p + 1 + k) & 63] += h * (BRES[j] + (BRES[j + 1] - BRES[j]) * (x - j)); } }
 // scales (section 1.2)
 function Tsec(x) { return 0.004 * Math.pow(2500, x / 50); }
 function Glv(x) { const a = x / 50; return a * a; }
@@ -200,7 +223,7 @@ class Voice {
     this.zr = new Float64Array(MAXM); this.zi = new Float64Array(MAXM); this.cr = new Float64Array(MAXM); this.ci = new Float64Array(MAXM);
     this.mf = new Float64Array(MAXM); this.mr = new Float64Array(MAXM); this.nm = 0;
     this.TB = new Float64Array(CR); this.NB = new Float64Array(CR);
-    this.ph = new Float64Array(8); this.ph2 = new Float64Array(8);
+    this.ph = new Float64Array(8); this.ph2 = new Float64Array(8); this.R1 = new Float64Array(64); this.R2 = new Float64Array(64); this.rp = 0;
     this.reset0();
   }
   reset0() {
@@ -209,6 +232,7 @@ class Voice {
     this.n1 = 0; this.n2 = 0; this.n3 = 0; this.n4 = 0; this.n5 = 0; this.tri = 0; this.tri2 = 0; this.fb1 = 0; this.fb2 = 0; this.ef = 0;
     this.gT = 0; this.dgT = 0; this.gN = 0; this.dgN = 0; this.gC = 0; this.cpos = 1e9; this.clen = 0; this.ctab = null; this.cpol = 1;
     this.inc = 0; this.dinc = 0; this.ex = 0; this.exN = 0;
+    if (this.R1) { this.R1.fill(0); this.R2.fill(0); } this.rp = 0;
   }
   // start a hit: everything structural is copied from the channel program here
   start(P, v, acc, tune, decK) {
@@ -383,7 +407,7 @@ class Voice {
       const nf = this.fEff(t, this.nfrq, this.dfN, this.TfN), fc = fNz(nf), g = tanf(fc);
       this.ng = g; const kq = 1 / this.nq; this.nk = kq;
       this.na1 = 1 / (1 + g * (g + kq)); this.na2 = g * this.na1; this.na3 = g * this.na2;
-      const k2 = this.ntyp === 3 ? 2 : 1.4142135623730951; this.nk2 = k2;   // 2nd stage: band Q 0.5, LP/HP Q 0.7071
+      const k2 = 1.4142135623730951; this.nk2 = k2;   // 2nd stage (24 dB / b2): Q 0.7071, no resonance
       this.nb1 = 1 / (1 + g * (g + k2)); this.nb2 = g * this.nb1; this.nb3 = g * this.nb2;
       if (this.ntyp === 6) { const gl = tanf(Math.max(3 * fc, 6000)); this.nlp = gl / (1 + gl); }
     }
@@ -466,31 +490,46 @@ class Voice {
     const fam = this.fam, s = this.sub;
     let inc = this.inc; const dinc = this.dinc;
     if (fam === FAM_A) {
-      const ph = this.ph, ph2 = this.ph2, det = this.det, two = s >= 2 && s <= 5;
-      let p1 = ph[0], p2 = ph2[0], tri = this.tri, tri2 = this.tri2;
+      // naive waves + minBLEP residuals (ring per oscillator); square/pulse/saw jump +2 at the wrap, square -2 at 0.5, pulse -2 at w
+      const ph = this.ph, ph2 = this.ph2, det = this.det, two = s >= 2 && s <= 5, R1 = this.R1, R2 = this.R2;
+      let p1 = ph[0], p2 = ph2[0], tri = this.tri, tri2 = this.tri2, rp = this.rp;
       let z1 = this.s1, z2 = this.s2, h1 = this.s3, h2 = this.s4;
-      const a1 = this.la1, a2 = this.la2, a3 = this.la3, kq = this.lpk;
+      const a1 = this.la1, a2 = this.la2, a3 = this.la3, w = this.pw;
       const leak = 1 - TAU * 5 * ISR;
       for (let i = 0; i < n; i++) {
-        let x;
-        if (s === 1) { x = sinc(p1); }
-        else if (s === 3) { x = 1 - 2 * p1 + blep(p1, inc); if (two) x = 0.5 * (x + 1 - 2 * p2 + blep(p2, inc * det)); }
-        else if (s === 4 || s === 5) { x = sq(p1, inc); x = 0.5 * (x + sq(p2, inc * det)); }
-        else if (s === 2) { tri = tri * leak + 4 * inc * sq(p1, inc); tri2 = tri2 * leak + 4 * inc * det * sq(p2, inc * det); x = 0.5 * (tri + tri2); }
-        else { const w = this.pw; x = pulse(p1, inc, w) - (2 * w - 1); }
-        if (s === 5) { // high-pass 12 dB at f0 (hollow)
-          const hv3 = x - h2, hv1 = this.ha1 * h1 + this.ha2 * hv3, hv2 = h2 + this.ha2 * h1 + this.ha3 * hv3; h1 = 2 * hv1 - h1; h2 = 2 * hv2 - h2; x = x - this.hk * hv1 - hv2;
+        const q = rp & 63; let x;
+        const inc2 = inc * det;
+        if (s === 1) { x = sinc(p1); p1 += inc; if (p1 >= 1) p1 -= 1; }
+        else {
+          let y1, y2 = 0;
+          if (s === 3) y1 = 1 - 2 * p1; else if (s === 6) y1 = p1 < w ? 1 : -1; else y1 = p1 < 0.5 ? 1 : -1;
+          y1 += R1[q]; R1[q] = 0;
+          const o1 = p1; p1 += inc;
+          if (s !== 3) { const e = s === 6 ? w : 0.5; if (o1 < e && p1 >= e) blepAdd(R1, rp, (p1 - e) / inc, -2); }
+          if (p1 >= 1) { p1 -= 1; blepAdd(R1, rp, p1 / inc, 2); if (s !== 3 && s !== 6 && p1 >= 0.5) blepAdd(R1, rp, (p1 - 0.5) / inc, -2); }
+          if (two) {
+            if (s === 3) y2 = 1 - 2 * p2; else y2 = p2 < 0.5 ? 1 : -1;
+            y2 += R2[q]; R2[q] = 0;
+            const o2 = p2; p2 += inc2;
+            if (s !== 3 && o2 < 0.5 && p2 >= 0.5) blepAdd(R2, rp, (p2 - 0.5) / inc2, -2);
+            if (p2 >= 1) { p2 -= 1; blepAdd(R2, rp, p2 / inc2, 2); if (s !== 3 && p2 >= 0.5) blepAdd(R2, rp, (p2 - 0.5) / inc2, -2); }
+          }
+          if (s === 2) { tri = tri * leak + 4 * inc * y1; tri2 = tri2 * leak + 4 * inc2 * y2; x = 0.5 * (tri + tri2); }
+          else if (s === 6) x = y1 - (2 * w - 1);
+          else x = 0.5 * (y1 + y2);
+          if (s === 5) { // high-pass 12 dB at f0 (hollow)
+            const hv3 = x - h2, hv1 = this.ha1 * h1 + this.ha2 * hv3, hv2 = h2 + this.ha2 * h1 + this.ha3 * hv3; h1 = 2 * hv1 - h1; h2 = 2 * hv2 - h2; x = x - this.hk * hv1 - hv2;
+          }
+          const v3 = x - z2, v1 = a1 * z1 + a2 * v3, v2 = z2 + a2 * z1 + a3 * v3; z1 = 2 * v1 - z1; z2 = 2 * v2 - z2; x = v2;
         }
-        if (s !== 1) { const v3 = x - z2, v1 = a1 * z1 + a2 * v3, v2 = z2 + a2 * z1 + a3 * v3; z1 = 2 * v1 - z1; z2 = 2 * v2 - z2; x = v2; }
-        TB[i] = x;
-        p1 += inc; if (p1 >= 1) p1 -= 1; p2 += inc * det; if (p2 >= 1) p2 -= 1;
+        TB[i] = x; rp++;
         inc += dinc;
       }
-      ph[0] = p1; ph2[0] = p2; this.tri = tri; this.tri2 = tri2; this.s1 = z1; this.s2 = z2; this.s3 = h1; this.s4 = h2;
+      ph[0] = p1; ph2[0] = p2; this.tri = tri; this.tri2 = tri2; this.s1 = z1; this.s2 = z2; this.s3 = h1; this.s4 = h2; this.rp = rp & 0x3fffffff;
     } else if (fam === FAM_T) {
       const cr0 = this.cr[0], ci0 = this.ci[0], cr1 = this.cr[1], ci1 = this.ci[1];
       let zr0 = this.zr[0], zi0 = this.zi[0], zr1 = this.zr[1], zi1 = this.zi[1];
-      const two = s === 2, mb = this.mixB, ma = 1 - mb, d = this.drv * 0.45, nd = 1 / tnh(d);
+      const two = s === 2, mb = this.mixB, ma = 1 - mb, d = this.drv * 0.9, nd = 1 / tnh(d);
       let exN = this.exN; const ex1 = this.ex, ex2 = this.ex2;
       for (let i = 0; i < n; i++) {
         const xa = exN > 0 ? ex1 : 0, xb = exN > 0 ? ex2 : 0; if (exN > 0) exN--;
@@ -596,7 +635,7 @@ class Voice {
         const u = ty === 1 ? v2 : ty === 3 ? k * v1 : x - k * v1 - v2;
         const w3 = u - y2, w1 = b1 * y1 + b2 * w3, w2 = y2 + b2 * y1 + b3 * w3; y1 = 2 * w1 - y1; y2 = 2 * w2 - y2;
         y = ty === 1 ? w2 : ty === 3 ? k2 * w1 : u - k2 * w1 - w2;
-        if (ty === 6) { lp += this.nlp * (y - lp); y = lp; }
+        if (ty === 6) { const v = (y - lp) * this.nlp, o = v + lp; lp = o + v; y = o; }   // TPT one-pole low-pass
       }
       NB[i] = y;
     }
