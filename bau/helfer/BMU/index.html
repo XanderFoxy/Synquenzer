@@ -3667,6 +3667,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 }
 /* MK1 (B.3 Zeile 1): four engine keys - >= 36 px wide with 4 px gaps, the 44 px hit height over ::after; the AM label in two lines where narrow */
 #synthSheet .sh-head .seg.eng.eng4{gap:4px}
+#synthSheet .sh-head .seg.eng.engchip button.bm2{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:10.5px;line-height:1;padding:0 6px}   /* BM6: the Bit Mask chip in two lines */
 #synthSheet .sh-head .seg.eng.eng4 button{min-width:36px;padding:0 5px}
 #synthSheet .sh-head .seg.eng.eng4 button.mkeb{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:10.5px;line-height:1;padding:0 4px}
 #synthSheet .sh-head .seg.eng.eng4 button::before,#synthSheet .sh-head .seg.eng.engchip button::before{content:'';position:absolute;left:0;right:0;top:-6px;bottom:-6px}
@@ -14754,6 +14755,12 @@ const BM_NAME = 'Bit Mask';
         x.connect(wg); wg.connect(mix);
       }
       mix.gain.value = .85;
+    } else if (engine === 'bm' && P.bm && typeof bmWave === 'function') {
+      // BM6 (§5.2 ohne AudioWorklet): O1 / O2 as PeriodicWaves of their start masks, levels (L/99)², SEMI / TUNE (+ program SEMI)
+      const A = G.SQBM.normBm(P.bm).a;
+      for (const k of ['o1', 'o2']) { const O = A[k], lv = Math.pow(O.e.l / 99, 2); if (!(lv > .001)) continue;
+        const x = osc(null, f * Math.pow(2, (O.st + A.g.st) / 12), O.tu); x.setPeriodicWave(bmWave(c, Math.max(0, Math.min(255, O.m + O.ds)))); const g = G_(lv); x.connect(g); g.connect(mix); }
+      mix.gain.value = .5;
     } else if (engine === 'fm6' && G.DXN && P.fm6) {
       // §6.4: the native FM voice; the DX sources are started by DXN.voice itself (no `starts` entries)
       const fm = fm6Macro(P), n6 = note + (fm.trans | 0), pt = fmxPtNative(P);
@@ -17577,6 +17584,7 @@ function ensureAudio() {
   AU.timer = setInterval(tick, TICK_MS);
   measureFx();                                      // loop extra + compressor latency (offline, ≈ 20 ms), then the echo bus
   loadWorklet();                                    // §1.4: not awaited; notes use the native path until the module is ready
+  bmBoot();                                         // BM6: only with a Bit Mask track
   drumBufsIdle();                                   // §7.1: the drum buffers in idle steps right after the unlock
   UI.dirty.all = true;
   return c;
@@ -17842,6 +17850,7 @@ function lfoAnchor() { return R.playing ? R.startTime : (AU.lfo0 != null ? AU.lf
 function rebuildNativeLfos(i) {
   const A = AU.tracks[i], c = AU.ctx, tr = S.tracks[i]; if (!A || !c || !A.nl || !tr || tr.kind !== 'synth') return;
   const E = AU.synth[i];
+  if (tr.sound.engine === 'bm') { syncLfoSet(A, {p: tr.sound.p, mods: []}, i * 7); return; }   // BM6: no VA routes (its LFOs are in the node)
   if (E) E.mods(wkMods(tr.sound));
   // on the worklet the engine runs the voice routes; the track-FX routes of §9.6 stay native LFOs on every path
   // MK1 (B.1): AM skips the stored VA routes (fx.* too); its ECO path plays the routes of mkToFlat
@@ -17942,7 +17951,8 @@ const isWkEngine = e => e === 'analog' || e === 'fm6' || e === 'mk';     // MK1:
 function wkReady() { return SynthHost.state === 'ready' && !UI.forceNative && !!AU.ctx; }
 function wkWanted(i) { const tr = S.tracks[i]; return !!(tr && tr.kind === 'synth' && isWkEngine(tr.sound.engine) && wkReady() && AU.tracks[i]); }
 // a VA/FM track that is not on the worklet (blocked, forced, still loading) runs the native fallback: „ECO-Klang“ (§1.3)
-function trackEco(i) { const tr = S.tracks[i]; return !!(tr && tr.kind === 'synth' && isWkEngine(tr.sound.engine) && (UI.forceNative || SynthHost.state === 'failed' || (SynthHost.state === 'ready' && AU.ctx && !AU.synth[i]))); }
+function trackEco(i) { const tr = S.tracks[i]; if (tr && tr.kind === 'synth' && tr.sound.engine === 'bm') return !!AU.ctx && (UI.forceNative || BMX.st === 'failed' || !bmCan());   // BM6
+  return !!(tr && tr.kind === 'synth' && isWkEngine(tr.sound.engine) && (UI.forceNative || SynthHost.state === 'failed' || (SynthHost.state === 'ready' && AU.ctx && !AU.synth[i]))); }
 // the flat patch for the worklet: numbers only, the engine id, and the limiter's working values (§14.3: the stored sound
 // is never changed)
 function wkFlat(snd) {
@@ -17964,6 +17974,7 @@ function newEngine(dest, snd) {
 // bring track i's engine in line with its sound: create (VA/FM6 + worklet ready), update (full: the whole sound), or retire
 function syncEngine(i, full) {
   const A = AU.tracks[i], tr = S.tracks[i]; if (!A || !tr || tr.kind !== 'synth') return;
+  if (bmSync(i, full)) { rebuildNativeLfos(i); mkInRoute(); return; }   // BM6: Bit Mask has its own node
   if (wkWanted(i)) {
     if (!AU.synth[i]) { AU.synth[i] = newEngine(A.trackIn, tr.sound); if (UI.fmxLvT === i) AU.synth[i].fmxLv(true); }
     else if (full) {          // V0b-fix: routes and FM patch ride in the same message (an engine change restarts held keys with them at once)
@@ -17976,6 +17987,320 @@ function syncEngine(i, full) {
   mkInRoute();
 }
 function syncEngines() { for (const i of synthTracks()) syncEngine(i, true); }
+/* ---------- BM6 (Nachtrag 7 §2.1, §5.2): Bit Mask on the main thread ----------
+   One AudioWorkletNode 'synq-bm' per Bit Mask track (output -> the track's input, like the synth worklet). The track's E in
+   AU.synth[i] offers the calls of the synth host (on / off / fastOff / retune / kill / allOff / panic / set / tempo / scope /
+   dispose, proxies), so spawnVoice, scheduleTrack, inputDown, MELODIE, Eine Skala, ⇅, FANG and ● run unchanged over it.
+   Messages are the ones of §2.1, batched per task (one 'on' and one 'off' list). Additive fields (a processor without them
+   still works): id in on/off (echoed in end), tau / kill in off, {t:'rt'} retune, {t:'lim'} limiter level, {t:'bpm'}.
+   Loaded on first need (bmBoot): a track switches to Bit Mask or a loaded project has a Bit Mask sound. Without one: no
+   addModule, no worker. Until the module is ready (and without AudioWorklet) the native path plays (bmEco, vereinfacht). */
+const BMX = {st: 'off', ctx: null, p: null, adds: 0, workers: 0, warned: false, err: null, late: 0, need: 0, fallbacks: 0, ms: 0};
+const bmUsed = () => S.tracks.some(t => t && t.kind === 'synth' && t.sound && t.sound.engine === 'bm');
+const bmCan = () => !!(AU.ctx && AU.ctx.audioWorklet && typeof AudioWorkletNode === 'function' && !UI.forceNative && window.isSecureContext !== false);
+const bmReady = () => BMX.st === 'ready' && BMX.ctx === AU.ctx && !UI.forceNative && !!AU.ctx;
+function bmBoot() { try { if (AU.ctx && bmUsed()) { if (bmCan()) bmEnsure(); else bmNoWk(); } } catch (e) { logErr(e); } }
+function bmNoWk() { if (BMX.warned) return; BMX.warned = true; toast(BM_NAME + ' braucht AudioWorklet – vereinfacht'); }
+// the module (Blob, else data URL; ASCII source) once per context
+function bmModule(c, src) {
+  const to = p => Promise.race([p, new Promise((_, rj) => setTimeout(() => rj(new Error('Zeitüberschreitung')), 2500))]);
+  return (async () => {
+    const ways = [() => URL.createObjectURL(new Blob([src], {type: 'application/javascript'})), () => 'data:application/javascript;base64,' + btoa(src)];
+    for (const mk of ways) { let u = ''; try { u = mk(); if (c === AU.ctx) BMX.adds++; await to(c.audioWorklet.addModule(u)); BMX.err = null; return true; } catch (e) { BMX.err = String(e && e.message || e); } finally { if (u.startsWith('blob:')) { try { URL.revokeObjectURL(u); } catch (e) {} } } }
+    return false;
+  })();
+}
+// a probe node proves the registration (also when addModule timed out or said „already registered“)
+function bmProbeNode(c) { const n = new AudioWorkletNode(c, 'synq-bm', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]}); n.port.postMessage({t: 'panic'}); n.disconnect(); }
+function bmEnsure() {
+  const c = AU.ctx; if (!c) return null;
+  if (BMX.ctx !== c) Object.assign(BMX, {ctx: c, st: 'off', p: null});
+  if (BMX.st !== 'off') return BMX.p;
+  BMX.st = 'loading'; const T0 = performance.now();
+  BMX.p = bmModule(c, BM_WK).then(ok => {
+    if (BMX.ctx !== c) return false;
+    try { bmProbeNode(c); BMX.st = 'ready'; } catch (e) { BMX.st = 'failed'; bmNoWk(); }
+    BMX.ms = performance.now() - T0;
+    if (BMX.st === 'ready' && !UI.forceNative) { for (const i of synthTracks()) if (S.tracks[i].sound.engine === 'bm') syncEngine(i, true); tickAhead(.3); }
+    wkReport(); return BMX.st === 'ready';
+  });
+  return BMX.p;
+}
+// E: the host of one 'synq-bm' node (the calls of SynthHost.track)
+function bmTrack(c, dest, snd) {
+  const node = new AudioWorkletNode(c, 'synq-bm', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]});
+  node.connect(dest);
+  const E = {bm: true, node, load: 0, nv: 0, dead: false, proxies: new Map(), onEnd: null, onScope: null, sent: {poly: 10}, ons: [], offs: [], fq: false,
+    notes: new Map(), at0: new Map(), lim: -1, run: null, st0: null, bpm: 0, sentJ: '', scopeMsg: null, ends: 0, late: 0};
+  const post = m => { if (!E.dead) node.port.postMessage(m); };
+  node.port.onmessage = ev => {
+    const m = ev.data; if (!m || typeof m !== 'object') return;
+    if (m.t === 'load') { E.load = +m.v || 0; E.nv = m.nv | 0; }
+    else if (m.t === 'late') { E.late += m.n | 0; BMX.late += m.n | 0; }
+    else if (m.t === 'need') { BMX.need++; BMX.fallbacks++; }
+    else if (m.t === 'end') { E.ends++; bmEnd(E, m); }
+    else if (m.t === 'scope') { E.scopeMsg = m; if (E.onScope) E.onScope(m); }
+  };
+  const q = () => { if (!E.fq) { E.fq = true; queueMicrotask(E.flush); } };
+  E.flush = () => { E.fq = false; if (E.ons.length) { post({t: 'on', list: E.ons}); E.ons = []; } if (E.offs.length) { post({t: 'off', list: E.offs}); E.offs = []; } };
+  E.on = (id, n, v, at, from, d) => { E.notes.set(id, n); E.at0.set(id, at); E.ons.push({n, v, at, d: d || 0, id}); q(); };
+  E.off = (id, at) => { const n = E.notes.get(id); if (n == null) return; E.offs.push({n, at, id}); q(); };
+  E.fastOff = (id, at, tau) => { const n = E.notes.get(id); if (n == null) return; E.offs.push({n, at, id, tau: tau || .004}); q(); };
+  // a voice that has not started: dropped from the batch, else released at its own start (never a stuck note)
+  E.kill = id => {
+    const n = E.notes.get(id); if (n == null) return;
+    const k = E.ons.findIndex(o => o.id === id);
+    if (k >= 0) { E.ons.splice(k, 1); E.offs = E.offs.filter(o => o.id !== id); }
+    else { E.offs.push({n, at: E.at0.get(id) || 0, id, kill: 1}); q(); }
+    E.notes.delete(id); E.at0.delete(id);
+  };
+  E.retune = (id, to, at, tau) => { const n = E.notes.get(id); if (n == null) return; E.flush(); post({t: 'rt', list: [{n, to, at, tau: tau || .004, id}]}); E.notes.set(id, to); };
+  E.cancelRetune = () => {};
+  E.keys = () => {};
+  E.allOff = at => { E.flush(); post({t: 'stop', at, tau: .02}); };
+  E.stop = (at, tau) => { E.flush(); post({t: 'stop', at, tau}); };
+  E.panic = () => { E.ons = []; E.offs = []; post({t: 'panic'}); };
+  E.reset = () => { E.flush(); post({t: 'reset'}); };
+  // the flat VA keys are not Bit Mask's; only the limiter level goes on (§2.6)
+  E.set = () => { if (LIM.level !== E.lim) { E.lim = LIM.level; post({t: 'lim', level: LIM.level}); } };
+  E.mods = () => {}; E.fm6 = () => {}; E.fmxLv = () => {}; E.scopeDst = () => {};
+  // the whole sound: layer first, then program A (and B); only when it changed
+  E.prog = (s, force) => {
+    const b = s && s.p && s.p.bm; if (!b) return; const j = JSON.stringify(b); if (!force && j === E.sentJ) return;
+    E.flush(); E.sentJ = j; post({t: 'ly', p: b.ly}); post({t: 'prog', ab: 'a', p: b.a}); if (b.b) post({t: 'prog', ab: 'b', p: b.b});
+  };
+  E.bmSet = (ab, k, v) => { E.flush(); post({t: 'set', ab, k, v}); };
+  E.ctl = o => post(Object.assign({t: 'ctl'}, o));
+  // the wheels of MK1 (§3.6): bend −1 … +1, mw 0 … 1; never stored
+  E.mkWheel = o => { const x = {}; if (o.bend != null) x.bend = o.bend; if (o.mod != null) x.mw = o.mod; else if (o.reset) x.mw = 0; if (Object.keys(x).length) E.ctl(x); };
+  E.tempo = (bpm, start, at) => {
+    const run = start != null;
+    if (run !== E.run || (run && start !== E.st0)) { E.run = run; E.st0 = start; post({t: 'tr', run, at: run ? start : at != null ? at : node.context.currentTime, bpm}); }
+    else if (bpm !== E.bpm) post({t: 'bpm', bpm});
+    E.bpm = bpm;
+  };
+  E.scope = on => post({t: 'scope', on: !!on});
+  E.dispose = () => { if (E.dead) return; E.flush(); post({t: 'panic'}); E.dead = true; node.port.onmessage = null; try { node.disconnect(); } catch (e) {} };
+  E.prog(snd, true); E.set();
+  return E;
+}
+// {t:'end', n, id?}: the proxy with that id, else the oldest released one on that note
+function bmEnd(E, m) {
+  let v = m.id != null ? E.proxies.get(m.id) : null;
+  if (!v) for (const x of E.proxies.values()) if (x.out === m.n && isFinite(x.relT) && (!v || x.relT < v.relT)) v = x;
+  if (v) { E.notes.delete(v.id); E.at0.delete(v.id); if (E.onEnd) E.onEnd(v.id); }
+}
+function bmNew(i) {
+  const tr = S.tracks[i], A = AU.tracks[i];
+  const E = bmTrack(AU.ctx, A.trackIn, tr.sound);
+  E.onEnd = id => { const v = E.proxies.get(id); if (v) wkVoiceDead(v); };
+  E.tempo(S.bpm, R.playing ? R.startTime : null);
+  const w = mkWheelOf(i); if (w) E.ctl({bend: w.bend, mw: w.mod == null ? 0 : w.mod});
+  return E;
+}
+// syncEngine for Bit Mask: true = handled (the track is Bit Mask); a Bit Mask node of a track that left the engine goes
+function bmSync(i, full) {
+  const tr = S.tracks[i], E = AU.synth[i];
+  if (tr.sound.engine !== 'bm') { if (E && E.bm) retireEngine(i); return false; }
+  if (E && !E.bm) retireEngine(i);
+  if (!bmReady()) { bmBoot(); return true; }
+  if (!AU.synth[i]) AU.synth[i] = bmNew(i); else if (full) AU.synth[i].prog(tr.sound);
+  return true;
+}
+// a whole sound on a Bit Mask path (applySound): Bit Mask -> Bit Mask continues in the node; an engine change between two
+// ready nodes moves the held and the queued notes to the new node (old fades τ 10 ms, the new one starts them), §5.2
+function bmSwitch(i, snd) {
+  const E = AU.synth[i]; if (!E || E.dead || E.retiring) return false;
+  const to = snd.engine === 'bm';
+  if (E.bm && to) { E.prog(snd); return true; }
+  let nE = null;
+  if (to && !E.bm && bmReady()) nE = bmNew(i);
+  else if (!to && E.bm && wkWanted(i)) nE = newEngine(AU.tracks[i].trackIn, snd);
+  if (!nE) return false;
+  AU.synth[i] = nE; WKSET[i] = null;
+  const now = nowT();
+  for (const v of [...E.proxies.values()]) {
+    if (v.dead || (isFinite(v.relT) && v.start <= now + .002)) continue;
+    if (v.start > now + .002) E.kill(v.id); else E.fastOff(v.id, now, .01);
+    E.proxies.delete(v.id);
+    Object.assign(v, {E: nE, P: snd.p, fm: snd.engine === 'fm6', mkRel: snd.engine === 'mk' && snd.p.mk ? mkRelSec(snd.p.mk) : to ? SQBM.relSec(snd.p.bm) : 0});
+    nE.proxies.set(v.id, v); nE.on(v.id, v.out, v.vel, Math.max(v.start, now), -1, v.mask || 0);
+  }
+  retireE(E);
+  rebuildNativeLfos(i); mkInRoute();
+  return true;
+}
+// the native image of a Bit Mask sound (no AudioWorklet / module still loading): O1 + O2 as PeriodicWaves of their start
+// masks (first 64 partials), the filter as the native one (NOTCH open), the amp envelope of the louder oscillator
+const BMECO = new WeakMap();
+function bmEco(snd) {
+  const sig = JSON.stringify(snd.p.bm), c = BMECO.get(snd); if (c && c.sig === sig) return c.eco;
+  const B = SQBM.normBm(snd.p.bm), P = B.a, T = SQBM.T, e = P.o1.e.l >= P.o2.e.l ? P.o1.e : P.o2.e, vo = Math.pow(P.g.vo / 99, 2);
+  const ft = {lp: 1, hp: 5, bp: 3, notch: 1}[P.f.md], cut = P.f.md === 'notch' ? 20000 : Math.min(20000, SQBM.cutHz(P.f.cu));
+  const p = Object.assign({}, snd.p, {ftype: ft, cutoff: cut, res: P.f.re / 99, kt: P.f.tk / 100, fenv: 0, fvel: 0, drive: 0, bass: 0, lq: 0,
+    aA: T(e.a), aD: T(e.d), aS: Math.pow(e.s / 15, 2), aR: T(e.r), ampVel: 1, glide: 0, mode: 0, poly: 8, spread: 0, level: .6 * vo, reset: 1});
+  const eco = {engine: 'bm', name: snd.name, p, mods: [], fx: snd.fx, origin: null, cat: snd.cat};
+  BMECO.set(snd, {sig, eco}); return eco;
+}
+// the PeriodicWave of a mask (cached per context; disableNormalization: the raw level of the rule, §1.2)
+const BMPW = new WeakMap();
+function bmWave(c, m) {
+  let C = BMPW.get(c); if (!C) BMPW.set(c, C = new Map());
+  if (!C.has(m)) { const P = SQBM.partials(m, 64); C.set(m, c.createPeriodicWave(P.re, P.im, {disableNormalization: true})); }
+  return C.get(m);
+}
+/* the Bit Mask probe of perfProbe (§2.6, BM6-11): 10 voices + FX1/FX2 on one node into a silent sink, sec seconds */
+async function bmProbe(o) {
+  o = o || {}; if (!AU.ctx) ensureAudio(); const c = AU.ctx; if (!c) return {fall: 'bm', err: 'kein AudioContext'};
+  if (!bmReady()) { if (BMX.ctx !== c || BMX.st === 'off') { BMX.ctx = c; BMX.st = 'off'; } await bmEnsure(); }
+  if (!bmReady()) return {fall: 'bm', err: BM_NAME + ' braucht AudioWorklet'};
+  const sec = o.sec || 10, sink = c.createGain(); sink.gain.value = 0; sink.connect(c.destination);
+  const snd = factorySound(INIT_IDS.bm); const B = snd.p.bm;
+  Object.assign(B.a.o2.e, {l: 80}); Object.assign(B.a.fx, {t1: 'CH4', b1: 50, t2: 'RV3', b2: 40}); Object.assign(B.a.f, {cu: 60, re: 40}); B.a.l1.am = 30;
+  const E = bmTrack(c, sink, snd); E.tempo(S.bpm, null);
+  const rep = [], fps = []; let lastF = performance.now(), id = 1e8;
+  const t0 = performance.now(), fr = () => { const n = performance.now(); fps.push(1000 / Math.max(1, n - lastF)); lastF = n; if (n - t0 < sec * 1000) requestAnimationFrame(fr); };
+  requestAnimationFrame(fr);
+  const f0 = node => node.port.onmessage, f = f0(E.node); E.node.port.onmessage = ev => { f(ev); if (ev.data && ev.data.t === 'load') rep.push(+ev.data.v || 0); };
+  const notes = [48, 52, 55, 59, 60, 62, 64, 67, 71, 72];
+  while (performance.now() - t0 < sec * 1000) {
+    const tt = c.currentTime + .05; for (const n of notes) { const x = ++id; E.on(x, n, .8, tt); E.off(x, tt + .9); } E.flush();
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  E.panic(); await new Promise(r => setTimeout(r, 60)); E.dispose(); try { sink.disconnect(); } catch (e) {}
+  const s = rep.slice().sort((a, b) => a - b), fm = fps.slice().sort((a, b) => a - b);
+  return {fall: 'bm', voices: 10, fx: 'CH4 + RV3', load_med: +(s.length ? s[s.length >> 1] : 0).toFixed(4), load_max: +(s.length ? s[s.length - 1] : 0).toFixed(4),
+    reports: rep.length, frames_ok: rep.length >= Math.floor(sec) - 1, fps_med: +(fm.length ? fm[fm.length >> 1] : 0).toFixed(1), stub: /BM-STUB/.test(BM_WK)};
+}
+async function perfProbeAll(cases) {
+  const list = Array.isArray(cases) ? cases : [], bm = list.includes('bm'), rest = list.filter(x => x !== 'bm');
+  const out = rest.length || !bm ? await mkLoad().probe(rest) : {app: VERSION, ua: navigator.userAgent, sr: AU.ctx ? AU.ctx.sampleRate : 0, cases: []};
+  if (bm && out && Array.isArray(out.cases)) out.cases.push(await bmProbe());
+  return out;
+}
+/* the test API of §5.3 (BM6 part; bmMask / tables are BM1's) */
+async function bmRender(sound, ev, o) {
+  o = o || {}; const sr = o.sr || 48000, sec = o.sec || 2;
+  const snd = SQStore.normalizeSound(sound && sound.engine ? sound : {engine: 'bm', name: 'Test', p: {bm: sound || {}}});
+  if (!snd || snd.engine !== 'bm') throw new Error('bmRender: kein ' + BM_NAME + '-Klang');
+  const oc = new OfflineAudioContext(2, Math.round(sec * sr), sr);
+  await oc.audioWorklet.addModule('data:application/javascript;base64,' + btoa(BM_WK));
+  const E = bmTrack(oc, oc.destination, snd);
+  E.reset(); E.tempo(o.bpm || 120, o.songStart == null ? null : o.songStart, 0);
+  if (o.at) for (const [t, m] of o.at) oc.suspend(Math.round(t * sr / 128) * 128 / sr).then(() => { E.node.port.postMessage(m); oc.resume(); }).catch(() => {});
+  const ids = {}; let id = 1;
+  for (const e of ev || []) { const k = e[4] != null ? e[4] : e[2]; if (e[1] === 'on') { ids[k] = id++; E.on(ids[k], e[2], e[3] == null ? .8 : e[3], e[0], -1, e[5] || 0); } else if (e[1] === 'off' && ids[k]) E.off(ids[k], e[0]); }
+  E.flush(); await new Promise(r => setTimeout(r, 20));
+  const b = await oc.startRendering();
+  return {l: b.getChannelData(0), r: b.getChannelData(1)};
+}
+// a value of p.bm by path ('a.o1.m'): stored rounded through SQBM; the node gets {t:'set'} (one undo per call)
+function bmSetP(t, path, v) {
+  const s_ = sndOf(t); if (!s_ || s_.engine !== 'bm') throw new Error('Keine ' + BM_NAME + '-Spur: ' + t);
+  if (!SQBM.range(path)) throw new Error('Unbekannter Pfad: ' + path);
+  const snd = deep(s_); const had = !!snd.p.bm.b; if (!SQBM.set(snd.p.bm, path, v)) return false;
+  snd.p.bm = SQBM.normBm(snd.p.bm);
+  const E = AU.synth[t];
+  if (E && E.bm && !E.dead) { const ks = path.split('.'); if (ks[0] === 'ly' || (ks[0] === 'b' && !had)) E.prog(snd); else { E.bmSet(ks[0], ks.slice(1).join('.'), SQBM.get(snd.p.bm, path)); E.sentJ = JSON.stringify(snd.p.bm); } }
+  applySound(t, snd);
+  return SQBM.get(snd.p.bm, path);
+}
+// K1 (§1.9): the routes of a Bit Mask track; [✕] = every path of the route to 0, one undo
+function bmRoutes(t) { const s_ = sndOf(t); return s_ && s_.engine === 'bm' ? SQBM.routes(s_.p.bm) : []; }
+function bmRouteClear(t, k) {
+  const r = bmRoutes(t)[k]; if (!r) return false;
+  return soundEdit(t, BM_NAME + ' Route ' + r.src + ' entfernt', () => { const snd = deep(sndOf(t)); for (const p of r.clear) SQBM.set(snd.p.bm, p, 0); snd.p.bm = SQBM.normBm(snd.p.bm); applySound(t, snd); return true; });
+}
+function bmInfo() {
+  let nodes = 0, voices = 0; for (const E of AU.synth) if (E && E.bm && !E.dead) { nodes++; voices += E.nv; }
+  return {geladen: BMX.st === 'ready', status: BMX.st, adds: BMX.adds, worker: BMX.workers, tabellen: 0, poolFertig: false, speicher: 0, fallbacks: BMX.fallbacks,
+    late: BMX.late, knoten: nodes, stimmen: voices, ms: Math.round(BMX.ms), err: BMX.err, platzhalter: /BM-STUB/.test(BM_WK)};
+}
+function bmVoices(t) { const E = AU.synth[t]; return E && E.bm ? {nv: E.nv, proxies: E.proxies.size, ends: E.ends, late: E.late} : null; }
+function bmReadyApi() { return bmCan() ? bmEnsure() || Promise.resolve(false) : Promise.resolve(false); }
+/* BM-STUB: placeholder processor 'synq-bm' for BM6 (branch U). It understands every message of Nachtrag 7 section 2.1 (plus the
+   additive fields of BmHost) and plays mask 031 (sine) only: OSC1 SEMI/TUNE, program SEMI, BEND (range g.pb), the OSC1 ADSR with
+   L (section 1.3 scales), VOL, velocity, 10 voices per node, sample-exact 'at'. Branch K (BM1-BM3) replaces the whole block from
+   here to "Ende BM-STUB" (constant BM_WK, ASCII only). */
+const BM_WK = `/* BM-STUB synq-bm */
+const T = x => (x <= 0 ? .001 : .002 * Math.pow(7500, x / 15));
+class BmStub extends AudioWorkletProcessor {
+  constructor() {
+    super(); this.P = {a: null, b: null}; this.ly = null; this.v = []; this.q = []; this.bend = 0; this.mw = 0; this.lim = 0; this.run = false;
+    this.scopeOn = false; this.cnt = 0; this.busy = 0; this.lastRep = 0; this.late = 0;
+    for (let k = 0; k < 10; k++) this.v.push({on: false, n: 0, id: -1, ph: 0, env: 0, st: 0, rel: false, tau: 0, vel: 0, t0: 0});
+    this.port.onmessage = e => this.msg(e.data);
+  }
+  msg(m) {
+    if (!m || typeof m !== 'object') return;
+    const now = currentTime;
+    switch (m.t) {
+      case 'prog': this.P[m.ab === 'b' ? 'b' : 'a'] = m.p; break;
+      case 'set': { const P = this.P[m.ab === 'b' ? 'b' : 'a']; if (!P) break; const ks = String(m.k).split('.'); let o = P; for (let i = 0; i < ks.length - 1 && o; i++) o = o[ks[i]]; if (o) o[ks[ks.length - 1]] = m.v; break; }
+      case 'ly': this.ly = m.p; break;
+      case 'on': for (const x of m.list || []) { if (x.at < now - 1 / sampleRate) this.late++; this.q.push({k: 1, at: x.at, n: x.n, v: x.v, id: x.id == null ? -1 : x.id}); } this.sortQ(); break;
+      case 'off': for (const x of m.list || []) this.q.push({k: 2, at: x.at, n: x.n, id: x.id == null ? -1 : x.id, tau: x.tau || 0, kill: x.kill ? 1 : 0}); this.sortQ(); break;
+      case 'rt': for (const x of m.list || []) this.q.push({k: 3, at: x.at, n: x.n, to: x.to, id: x.id == null ? -1 : x.id}); this.sortQ(); break;
+      case 'ctl': if (m.bend != null) this.bend = +m.bend || 0; if (m.mw != null) this.mw = +m.mw || 0; break;
+      case 'tr': this.run = !!m.run; break;
+      case 'stop': this.q.push({k: 4, at: m.at || 0, tau: m.tau || .02}); this.sortQ(); break;
+      case 'panic': this.q = []; for (const v of this.v) if (v.on) { v.rel = true; v.tau = .003; } break;
+      case 'reset': this.q = []; for (const v of this.v) { v.on = false; v.env = 0; } this.cnt = 0; break;
+      case 'lim': this.lim = m.level | 0; break;
+      case 'scope': this.scopeOn = !!m.on; break;
+    }
+  }
+  sortQ() { this.q.sort((a, b) => a.at - b.at || a.k - b.k); }
+  ev(e) {
+    const V = this.v;
+    if (e.k === 1) {
+      const cap = this.lim >= 2 ? 4 : this.lim >= 1 ? 6 : 10; let v = null, act = 0;
+      for (const x of V) if (x.on) act++;
+      for (const x of V) if (!x.on) { v = x; break; }
+      if (!v || act >= cap) { let best = null; for (const x of V) if (x.on && (!best || (x.rel && !best.rel) || (x.rel === best.rel && x.t0 < best.t0))) best = x; v = best; }
+      Object.assign(v, {on: true, n: e.n, id: e.id, ph: 0, env: 0, st: 0, rel: false, tau: 0, vel: e.v, t0: e.at});
+    } else if (e.k === 2) {
+      for (const v of V) if (v.on && !v.rel && (e.id >= 0 ? v.id === e.id : v.n === e.n)) { v.rel = true; v.tau = e.kill ? .001 : e.tau; if (e.id < 0) break; }
+    } else if (e.k === 3) {
+      for (const v of V) if (v.on && (e.id >= 0 ? v.id === e.id : v.n === e.n)) v.n = e.to;
+    } else if (e.k === 4) { for (const v of V) if (v.on) { v.rel = true; v.tau = e.tau; } }
+  }
+  process(ins, outs) {
+    const o = outs[0], L = o[0], R = o[1] || o[0], N = L.length, P = this.P.a, sr = sampleRate, t0 = currentTime;
+    let i0 = 0;
+    const play = (a, b) => {
+      if (!P || b <= a) return;
+      const e = P.o1.e, A = T(e.a) * sr, Dk = Math.exp(Math.log(.001) / (T(e.d) * sr)), Rk = Math.exp(Math.log(.001) / (T(e.r) * sr));
+      const S = Math.pow(e.s / 15, 2), lv = Math.pow(e.l / 99, 2) * Math.pow(P.g.vo / 99, 2) * .5;
+      for (const v of this.v) {
+        if (!v.on) continue;
+        const f = 440 * Math.pow(2, (v.n - 69 + P.o1.st + P.g.st + P.o1.tu / 100 + this.bend * P.g.pb) / 12), dp = f / sr, tk = v.tau > 0 ? Math.exp(-1 / (v.tau * sr)) : Rk;
+        for (let k = a; k < b; k++) {
+          if (v.rel) v.env *= tk;
+          else if (v.st === 0) { v.env += 1 / Math.max(1, A); if (v.env >= 1) { v.env = 1; v.st = 1; } }
+          else v.env = S + (v.env - S) * Dk;
+          const y = Math.sin(2 * Math.PI * v.ph) * v.env * lv * v.vel;
+          L[k] += y; R[k] += y; v.ph += dp; if (v.ph >= 1) v.ph -= 1;
+        }
+        if (v.rel && v.env < 1e-5) { v.on = false; this.port.postMessage({t: 'end', n: v.n, id: v.id}); }
+      }
+    };
+    while (this.q.length && this.q[0].at < t0 + N / sr) {
+      const e = this.q.shift(), k = Math.max(0, Math.min(N, Math.round((e.at - t0) * sr)));
+      if (k > i0) { play(i0, k); i0 = k; }
+      this.ev(e);
+    }
+    play(i0, N);
+    if (this.late) { this.port.postMessage({t: 'late', n: this.late}); this.late = 0; }
+    this.cnt += N;
+    if (this.cnt - this.lastRep >= sr) { this.lastRep = this.cnt; let nv = 0; for (const v of this.v) if (v.on) nv++; this.port.postMessage({t: 'load', v: 0, nv}); }
+    if (this.scopeOn && this.cnt % 1600 < N) this.port.postMessage({t: 'scope', m1: P ? P.o1.m : 31, m2: P ? P.o2.m : 31, ph: 0});
+    return true;
+  }
+}
+registerProcessor('synq-bm', BmStub);
+`;
+/* Ende BM-STUB */
 /* ---------- MK1 (Nachtrag 3): the AM engine on the main thread ----------
    p.mk lives in the sound (device units, SQMK.normMk); the worklet gets it whole as {mk} (load, engine change) and gesture
    values as {mkSet} (fractions while the finger moves, EN3-03; rounded at the end of the gesture and for undo). The wheels are
@@ -18001,13 +18326,13 @@ function mkWheelVal(i, w, snd) { const o = i == null ? null : mkWheelOf(i); if (
 function mkWheelSync(i, reset) {
   const o = mkWheelOf(i), E = AU.synth[i], s_ = sndOf(i); if (!o || !s_) return;
   if (reset) { o.mod = null; o.bend = 0; }
-  if (E && s_.engine === 'mk') E.mkWheel({mw0: +s_.p.mw || 0, reset: o.mod == null, mod: o.mod == null ? undefined : o.mod, bend: o.bend});
+  if (E && (s_.engine === 'mk' || E.bm)) E.mkWheel({mw0: +s_.p.mw || 0, reset: o.mod == null, mod: o.mod == null ? undefined : o.mod, bend: o.bend});
   if (typeof MKUI !== 'undefined' && MKUI.wheelPaint) MKUI.wheelPaint(i);
 }
 function mkWheelSet(i, w, v, ret) {
   const o = mkWheelOf(i); if (!o) return 0;
   if (w === 'bend') o.bend = clamp(+v || 0, -1, 1); else o.mod = clamp(+v || 0, 0, 1);
-  const E = AU.synth[i]; if (E && sndOf(i) && sndOf(i).engine === 'mk') E.mkWheel(w === 'bend' ? {bend: o.bend, ret: ret || 0} : {mod: o.mod});
+  const E = AU.synth[i]; if (E && sndOf(i) && (sndOf(i).engine === 'mk' || E.bm)) E.mkWheel(w === 'bend' ? {bend: o.bend, ret: ret || 0} : {mod: o.mod});
   if (w === 'mod') MKECO.delete(sndOf(i) || {});
   return w === 'bend' ? o.bend : o.mod;
 }
@@ -18266,7 +18591,8 @@ async function mkRender(sound, ev, o) {
 function engChipWanted() { return window.innerWidth < 380 && window.innerHeight > window.innerWidth; }
 function engChip(i) {
   const s = el('div', 'seg eng engchip'), b = el('button', 'on', ''); s.appendChild(b);
-  const lab = () => { const e = engKey(S.tracks[i].sound.engine); b.innerHTML = esc(ENGINE_LABEL[e] || 'VA') + ' ▾'; b.setAttribute('aria-label', 'Klangerzeugung ' + (ENGINE_LABEL[e] || 'VA') + ' – wählen'); };
+  // BM6: the Bit Mask chip in two lines (the name field keeps 72 px)
+  const lab = () => { const e = engKey(S.tracks[i].sound.engine); b.classList.toggle('bm2', e === 'bm'); b.innerHTML = e === 'bm' ? '<span>' + esc(BM_NAME).replace(' ', '</span><span>') + ' ▾</span>' : esc(ENGINE_LABEL[e] || 'VA') + ' ▾'; b.setAttribute('aria-label', 'Klangerzeugung ' + (ENGINE_LABEL[e] || 'VA') + ' – wählen'); };
   lab(); s.update = lab;
   onTap(b, () => openPop(b, p => {
     const cur = engKey(S.tracks[i].sound.engine);
@@ -18278,7 +18604,7 @@ function engChip(i) {
 }
 // the wheels on AM tracks (B.3 Räder): shown only while the selected track is an AM track (the keyboard is unchanged otherwise)
 function mkWheelFrame() {
-  const tr = S.tracks[R.selT], want = !!(tr && tr.kind === 'synth' && tr.sound.engine === 'mk' && !EL.app.classList.contains('drumpads'));
+  const tr = S.tracks[R.selT], want = !!(tr && tr.kind === 'synth' && (tr.sound.engine === 'mk' || tr.sound.engine === 'bm') && !EL.app.classList.contains('drumpads'));   // BM6 (§3.6): + Bit Mask
   if (want === !!UI.mkWh) return;
   UI.mkWh = want;
   if (want) { const M = mkLoad(); if (M) M.wheels(true); } else if (mkLoaded()) MKUI.wheels(false);
@@ -18605,10 +18931,10 @@ function spawnWkVoice(i, out, vel, t0, o, E, snd) {
   const P = snd.p, v = Object.create(WkVoiceProto), gs = o.gs || AU.tracks[i];
   Object.assign(v, {id: ++VSEQ, track: i, src: o.src, clipNote: o.clipNote == null ? null : o.clipNote, clipKey: o.clipKey || null,
     out, baseOut: out, vel, start: t0, end: Infinity, relT: Infinity, stopAt: Infinity, dead: false, stolen: false,
-    E, wk: true, fm: snd.engine === 'fm6', P, perf: null, perfAll: [], log: null, mkRel: snd.engine === 'mk' && P.mk ? mkRelSec(P.mk) : 0});
+    E, wk: true, fm: snd.engine === 'fm6', P, perf: null, perfAll: [], log: null, mkRel: snd.engine === 'mk' && P.mk ? mkRelSec(P.mk) : snd.engine === 'bm' ? SQBM.relSec(P.bm) : 0});
   if (o.chain) v.chain = o.chain;
   let from = -1;
-  if (!o.noGlide && snd.engine !== 'mk') {             // the same grouping rule as the native voice (chords never glide among themselves); MK1: AM glides in the worklet
+  if (!o.noGlide && snd.engine !== 'mk' && snd.engine !== 'bm') {             // the same grouping rule as the native voice (chords never glide among themselves); MK1: AM glides in the worklet
     if (gs.grpT == null || Math.abs(t0 - gs.grpT) > .035) { if (gs.grpOuts && gs.grpOuts.length) gs.prevOuts = gs.grpOuts; gs.grpOuts = []; gs.grpT = t0; }
     if (P.glide > 0 && gs.prevOuts && gs.prevOuts.length) { from = gs.prevOuts[0]; for (const x of gs.prevOuts) if (Math.abs(x - out) < Math.abs(from - out)) from = x; if (from === out) from = -1; }
     gs.grpOuts.push(out); gs.lastOut = out;
@@ -18661,7 +18987,8 @@ function spawnVoice(i, out, vel, t0, o) {
   if (snd0.engine === 'mk') { const E = o.chain ? o.chain.E : snd0 === tr.sound ? AU.synth[i] : null; if (E && !E.dead && !E.retiring) return spawnWkVoice(i, clamp(Math.round(out), 0, 127), vel, t0, o, E, snd0); }
   if (snd0.engine === 'mk' && o.mask === 2) return null;    // MK5 (B.5): the ECO image is timbre 1 only; a T2-only note does not sound there
   if (snd0.engine === 'mk' && snd0.p.mk && snd0.p.mk.mode === 3) return null;
-  const snd = snd0.engine === 'mk' ? mkEco(snd0, i) : snd0, P = snd.p, eng = snd.engine === 'fm6' && !P.fm6 ? 'analog' : snd.engine;
+  if (snd0.engine === 'bm') { const E = o.chain ? o.chain.E : snd0 === tr.sound ? AU.synth[i] : null; if (E && E.bm && !E.dead && !E.retiring) return spawnWkVoice(i, clamp(Math.round(out), 0, 127), vel, t0, o, E, snd0); }   // BM6
+  const snd = snd0.engine === 'mk' ? mkEco(snd0, i) : snd0.engine === 'bm' ? bmEco(snd0) : snd0, P = snd.p, eng = snd.engine === 'fm6' && !P.fm6 ? 'analog' : snd.engine;
   out = clamp(Math.round(out), 0, 127);
   if (o.src !== 'audition' && o.src !== 'preview' && !o.sound) FMEV.note[i] = out;   // V0d (A.4b 4a): the FM editor's reference note
   // §5.4: VA (and FM6 from WP7) play through the track's worklet engine; a browser preview of another sound through its own
@@ -18941,6 +19268,7 @@ function gcVoices(now) {
 }
 function silenceAll(now, tau) {
   tkSilence(now, tau);                                           // VS3: Takes blenden mit aus
+  for (const E of AU.synth) if (E && E.bm && !E.dead) E.stop(now, tau);   // BM6 (§5.2): ■ = voices with the app's τ, FX tails ring out
   for (const v of VOICES.slice()) if (!v.dead) { if (v.start > now + .002) v.cancel(); else v.release(now, tau); }
   for (const h of HITS.slice()) {
     if (h.dead) continue;
@@ -21750,6 +22078,7 @@ function panic() {
 function tailKill() {
   if (!AU.ctx) return; echoKill(); hallClear(); duckReset(AU.ctx.currentTime);
   for (const E of AU.synth) if (E && E.mkFxKill) E.mkFxKill();   // MK4-fix: the AM program delay / Mod-FX tails too
+  for (const E of AU.synth) if (E && E.bm) E.panic();            // BM6 (§5.2): ■■ = Bit Mask voices and FX tails <= 50 ms
   try { if (PV.chain && PV.chain.E && PV.chain.E.mkFxKill) PV.chain.E.mkFxKill(); } catch (e) {}
 }
 
@@ -27829,6 +28158,7 @@ function applySound(i, snd, opts) {
   if (other && snd.engine === 'fm6') { try { fmInitSel(i, true); } catch (e) { logErr(e); } }   // V0d (A.4b 1): a newly loaded sound resets the choice
   const c = AU.ctx, A = AU.tracks[i];
   if (!c || !A) return;
+  if (bmSwitch(i, snd)) { applyTrackParams(i, !!opts.immediate); return; }   // BM6: Bit Mask <-> worklet engines, Bit Mask -> Bit Mask
   if (AU.synth[i] && wkWanted(i)) { syncEngine(i, true); applyTrackParams(i, !!opts.immediate); return; }
   const now = c.currentTime; let busy = false;
   const again = [];
@@ -28185,6 +28515,7 @@ function buildSynthEd() {
   const mkE = eng === 'mk';                                        // MK-P (B.3 Rahmen): [GERÄT] [SPIEL] [FX]
   sh.classList.remove('mkp', 'mkq'); if (!mkE) { EL.app.classList.remove('mkq', 'mkqkb'); if (typeof MKUI !== 'undefined' && MKUI.coverOff) MKUI.coverOff(); }   // MK-P-09: the covered main screen is painted again
   if (mkE) { mkLoad(); if (!['geraet', 'spiel', 'fx'].includes(ED.tab)) ED.tab = 'geraet'; }
+  else if (eng === 'bm') { if (ED.tab !== 'fx') ED.tab = 'bm'; }   // BM6: placeholder page until the editor (BM5)
   else if (!['osc', 'filter', 'env', 'lfo', 'mod', 'fx'].includes(ED.tab)) ED.tab = 'osc';
   let subs = subTabsFor(ED.tab, eng);
   // N4b-01: the FM page coming back from another engine's sub-page (OSZ 1 …) opens the track's own view, not the first sub-tab
@@ -28198,12 +28529,12 @@ function buildSynthEd() {
   if (subs && bigHere) subs = SK === 'osc' ? subs.map(x => (x[0] === 'feld' ? ['feld', '✕ FELD'] : x)) : SK === 'envfm' ? [['fxback', '✕ FELD']].concat(subs) : subs;
   if (eng === 'fm6' && ED.fmT !== i) fmInitSel(i, false);
   if (UI.fmSolo && (UI.fmSolo.t !== i || eng !== 'fm6' || ED.tab !== 'osc' || ED.sub.osc !== 'op')) fmSoloOff();   // §6.5: Solo is monitor-only
-  const F = sheetFrame(sh, tr.name, mkE ? [['geraet', 'GERÄT'], ['spiel', 'SPIEL'], ['fx', 'FX']] : [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']], ED.tab,
+  const F = sheetFrame(sh, tr.name, mkE ? [['geraet', 'GERÄT'], ['spiel', 'SPIEL'], ['fx', 'FX']] : eng === 'bm' ? [['bm', BM_NAME], ['fx', 'FX']] : [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']], ED.tab,
     id => { if (mkE && mkLoaded() && MKUI.tabFast(id)) return; ED.tab = id; FXF.big = null; safeRebuild(buildSynthEd); },   // MK-P-09: GERÄT ↔ SPIEL only swaps the frame's content
     subs ? {list: subs, cur: ED.sub[SK], on: id => { if (bigHere && (id === 'fxback' || (SK === 'osc' && id === 'feld'))) { fxBigBack(); return; } ED.sub[SK] = id; FMEV.fine = false; FXF.big = null; if (eng === 'fm6' && SK === 'osc' && (id === 'feld' || id === 'algo')) fmViewSet(i, id); safeRebuild(buildSynthEd); }} : null);
   // row 1: ● SYNTH n · [VA | FM | WT] · ⇅ chip · ECO-Klang badge (native fallback, §1.3) · ↶ ↷ · ✕
   // MK1 (B.3 Zeile 1, H-13): a 4th key with MK_LABEL (two lines where it is narrow); P2/P3: one engine chip with a list
-  const engSeg = engChipWanted() ? engChip(i) : makeSeg([['analog', 'VA', 'VA'], ['fm6', 'FM', 'FM'], ['wt', 'WT', 'WT'], ['mk', '<span>' + MK_LABEL.replace(' ', '</span> <span>') + '</span>', MK_LABEL]], () => (S.tracks[i].sound.engine === 'fm2' ? 'fm6' : S.tracks[i].sound.engine),
+  const engSeg = engChipWanted() ? engChip(i) : makeSeg([['analog', 'VA', 'VA'], ['fm6', 'FM', 'FM'], ['wt', 'WT', 'WT'], ['mk', '<span>' + MK_LABEL.replace(' ', '</span> <span>') + '</span>', MK_LABEL], ['bm', '<span>' + BM_NAME.replace(' ', '</span> <span>') + '</span>', BM_NAME]], () => (S.tracks[i].sound.engine === 'fm2' ? 'fm6' : S.tracks[i].sound.engine),
     v => setEngine(i, v), 'eng', {undo: soundUndo(i), label: 'Klangerzeugung'});
   F.r1.insertBefore(engSeg, F.r1.querySelector('.sh-title').nextSibling);
   if (bigHere) { const bk = sh.querySelector('.sh-subs .stab[data-sub="' + (SK === 'osc' ? 'feld' : 'fxback') + '"]'); if (bk) { bk.classList.add('fxbk', 'fxback'); bk.setAttribute('aria-label', 'Zurück zum FELD'); } }
@@ -28213,6 +28544,7 @@ function buildSynthEd() {
   // P has no room for the badge in row 1 (the track name would vanish): there the VA button carries a small „ECO“ line
   // (CSS ::before of the class 'eco', so the button text stays „VA“)
   ED.ecoB = engSeg.children[0];
+  if (eng === 'bm' && !engSeg.classList.contains('engchip') && engSeg.children[4]) ED.ecoB = engSeg.children[4];   // BM6: a Bit Mask track marks its own key
   if (mkE && !engSeg.classList.contains('engchip') && engSeg.children[3]) ED.ecoB = engSeg.children[3];   // MK1-fix: an AM track marks its own key
   onTap(ED.ecoB, b => { if (b.classList.contains('eco')) lcdShow('ECO-Klang', ecoMsg(i)); });
   // row 2: ‹ name • › · [A/B] · Sichern · 🎲 · ▶ Hören
@@ -28249,7 +28581,7 @@ function buildSynthEd() {
   F.r2.append(pre, ab, save, dice, wia, em2, hear);
   sheetButtons(F.r1, F.r2, true);
   F.r1.insertBefore(em1, F.r1.querySelector('.hb.ur'));
-  if (!engSeg.classList.contains('engchip')) { engSeg.classList.add('eng4'); if (engSeg.lastChild) engSeg.lastChild.classList.add('mkeb'); }
+  if (!engSeg.classList.contains('engchip')) { engSeg.classList.add('eng4'); for (const b of [...engSeg.children].slice(3)) b.classList.add('mkeb'); }   // BM6: the 4th and 5th key in two lines
   ED.hdr = {pName, ab, save};
   edHeadRefresh();
   const mkQ = mkE && mkLoaded() && MKUI.chrome(sh, i, {pre, ab, save, dice, hear});   // MK-P: ◀ Karte ▶; landscape: one 44 px head
@@ -28322,7 +28654,7 @@ function edHeadFit(sh, i, engSeg) {
       const tb = hd.querySelector('.sh-title .stt b') || hd.querySelector('.sh-title b:not(.mtg)'), tw = () => { const t = hd.querySelector('.sh-title'); return t ? t.getBoundingClientRect().width : 99; };
       const st_ = hd.querySelector('.sh-title'), cut = () => !!st_ && (st_.scrollWidth > st_.clientWidth + 1 || (!!tb && tb.scrollWidth > tb.clientWidth + 1 && tb.clientWidth < (parseFloat(getComputedStyle(tb).maxWidth) || 1e9) - 1));
       const bad = () => over() || (hd.classList.contains('mkts') ? tw() < 40 : cut());
-      const put = c => (c === 'mk2z' ? engSeg.lastChild.classList.add(c) : c === 'mkem' ? sh.classList.add(c) : hd.classList.add(c));
+      const put = c => (c === 'mk2z' ? [...engSeg.children].slice(3).forEach(b => b.classList.add(c)) : c === 'mkem' ? sh.classList.add(c) : hd.classList.add(c));
       for (const c of ['mk2z', 'mkht', 'mkem']) { if (!bad()) break; put(c); }
       if (bad()) { hd.classList.remove('mkht'); sh.classList.remove('mkem'); const ch = engChip(i); engSeg.replaceWith(ch); ED.ecoB = ch.firstChild;
         for (const c of ['mkht', 'mkem', 'mkts']) { if (!bad()) break; put(c); }
@@ -28346,6 +28678,12 @@ function edHeadRefresh() {
   H.ab.classList.toggle('on', abOn && UI.ab.side === 'B');
   H.ab.textContent = abOn && UI.ab.side === 'B' ? 'B · Orig.' : 'A/B';
 }
+// BM6: the page of a Bit Mask track until the editor (BM5, open questions F1/F2) – name, the program in short, the routes (K1)
+function bmPage(pg, i) {
+  const B = SQBM.normBm(sndOf(i).p.bm), A = B.a, m3 = x => String(x).padStart(3, '0'), rs = SQBM.routes(B);
+  pg.innerHTML = `<div class="nvp bmp"><b>${esc(BM_NAME)}</b><p>OSC1 · MASK ${m3(A.o1.m)} · L ${A.o1.e.l}<br>OSC2 · MASK ${m3(A.o2.m)} · L ${A.o2.e.l}<br>FILTER · CUTF ${A.f.cu} · ${A.f.md.toUpperCase()}</p>` +
+    `<p class="small">Der Editor folgt. Routen: ${rs.length ? rs.map(r => esc(r.src + ' → ' + r.dst)).join(' · ') : 'keine'}</p></div>`;
+}
 function nvPage(pg, i) {
   pg.innerHTML = `<div class="nvp"><b>${SQStore.NV_NAME}</b><p>„${esc(S.tracks[i].sound._nv.name)}“ spielt hier als INIT und bleibt, wie er ist.</p><button class="mbtn rb go" data-a="1">Anderer Sound</button> <button class="mbtn rb">Neu laden</button></div>`;
   onTap(pg, b => (b.dataset.a ? openBrowser(i) : cloudReload()), 'button');
@@ -28354,6 +28692,7 @@ function fillSynthTab(body, i) {
   const pg = el('div', 'pg rest'); body.appendChild(pg);
   if (S.tracks[i].sound._nv && !(ED.tab === 'fx' && GLOBAL_SUBS.has(ED.sub.fx))) { nvPage(pg, i); return; }
   if (S.tracks[i].sound.engine === 'mk' && ED.tab !== 'fx') { if (mkLoad()) MKUI.build(pg, i); return; }   // MK-P: the plate in its fixed frame (GERÄT, SPIEL)
+  if (S.tracks[i].sound.engine === 'bm' && ED.tab !== 'fx') { bmPage(pg, i); return; }   // BM6: placeholder (BM5 replaces bmPage)
   const fmE = ED.tab === 'env' && S.tracks[i].sound.engine === 'fm6';
   const tab = ED.tab, sub = ED.sub[fmE ? 'envfm' : tab];
   pg.classList.add('pg-' + tab + (sub ? '-' + sub : ''));
@@ -28795,7 +29134,7 @@ function fmStripCol(i, k) {
 const fmxVoiceCap = i => { const s_ = sndOf(i), x = s_ && s_.engine === 'fm6' && s_.p.fmx; return !!(x && x.edges.length > 12); };
 const FMX_CAP_TXT = '6 Stimmen · mehr als 12 Verbindungen';
 // V4a (Spec 9.3, V4a-07): a FM graph that is not DX-tauglich plays natively as its nearest DX algorithm
-function ecoMsg(i) { const s_ = sndOf(i), f = s_ && s_.engine === 'fm6' && s_.p.fm6; if (s_ && s_.engine === 'mk') return s_.p.mk && s_.p.mk.mode === 3 ? 'Vocoder braucht den Worklet-Klang – im ECO-Klang stumm' : MK_LABEL + ' im ECO-Klang: nur Grundklang'; return f && f.approx ? fmxEcoTxt(f) : 'Studio-Klang nicht verfügbar – vereinfachte Klangerzeugung'; }
+function ecoMsg(i) { const s_ = sndOf(i), f = s_ && s_.engine === 'fm6' && s_.p.fm6; if (s_ && s_.engine === 'bm') return BM_NAME + ' braucht AudioWorklet – vereinfacht'; if (s_ && s_.engine === 'mk') return s_.p.mk && s_.p.mk.mode === 3 ? 'Vocoder braucht den Worklet-Klang – im ECO-Klang stumm' : MK_LABEL + ' im ECO-Klang: nur Grundklang'; return f && f.approx ? fmxEcoTxt(f) : 'Studio-Klang nicht verfügbar – vereinfachte Klangerzeugung'; }
 const fmxEcoTxt = f => 'ECO: angenähert (nächster DX-Alg. ' + (f.alg | 0) + ')';
 function fmNativeHint(i) {
   const h = el('div', 'fmhint small');
@@ -29890,7 +30229,7 @@ const FX_HELP = ['Operator auf einen anderen ziehen: verbinden – oben modulier
   'Tipp: mit einem Operator anfangen, die anderen per Doppeltipp stumm schalten.',
   'Hüllkurve (Amp/Tonh.): Punkt antippen = Sustain, Loop A/B, ✗, + ; nichts gewählt = Exp/Lin, Skala, Retrig/Frei. Zwei Finger auseinander = Zeit-Zoom.'];
 function fxHelpPop() { openPop(null, p => { p.classList.add('fxlist'); p.innerHTML = '<h4>FM-FELD</h4><ol class="fxhelp">' + FX_HELP.map(t => `<li>${esc(t)}</li>`).join('') + '</ol>'; }, {name: 'fxhelp'}); }
-function fxAbout() { openPop(null, p => { p.classList.add('fxlist'); p.innerHTML = '<h4>ⓘ Vorbild</h4><p>Das FM-FELD folgt der Bedienung des EssenceFM von Kodamo (Handbuch V7.0): Operatoren auf einem Raster, unten die Ausgänge, ziehen = verbinden.</p><p class="small">Marken gehören ihren Inhabern, keine Verbindung.</p>'; }, {name: 'fxabout'}); }
+function fxAbout() { openPop(null, p => { p.classList.add('fxlist'); p.innerHTML = '<h4>ⓘ Vorbild</h4><p>Das FM-FELD folgt der Bedienung eines FM-Geräts mit Operator-Raster: Operatoren auf einem Raster, unten die Ausgänge, ziehen = verbinden.</p><p class="small">Marken gehören ihren Inhabern, keine Verbindung.</p>'; }, {name: 'fxabout'}); }
 // ---------- Vorlagen (Algorithm Library): the WP7 sheet with 32 pictures; a choice replaces edges and cells, one undo
 function fxAlgSheet(i) {
   const cur = FMX.badge(fxX(i)).match;
@@ -34093,6 +34432,14 @@ function openMenu(goto) {
     MK_LABEL + ' · Vocoder: 01 COMMON → MODUS Vocoder. Deine Stimme (E2) formt in 16 Bändern OSZ 1, Rauschen und E1 – ist E2 leer, wird beim Umschalten das Mikrofon E2 (wie AUDIO IN 2 am Gerät); die weißen Namen auf Schwarz gelten. CH PARAM (SEQ EDIT SELECT): die 16 Regler = Kanal-Pegel bzw. -Pan, Seite 14/15 → 16 BÄNDER ▸.',
     MK_LABEL + ' · Formant halten: E.F.SENSE (KBD TRACK) ganz auf = HOLD – der Vokal bleibt, auch ohne Mikrofon, und wird gespeichert. UTILITY (Taste 16): Pegel bzw. Pan zurück.',
     MK_LABEL + ' · Eingänge E1 (Instrument), E2 (Stimme): GLOBAL 1A/1B wählt die Quelle, AUDIO IN 1/2 regelt den Pegel (live, nicht gespeichert). Mikrofon nur in Safari, nichts wird aufgenommen; ≈ 70–75 ms Verzögerung: Kabel-Kopfhörer, DIRECT LEVEL leise.',
+    BM_NAME + ' · Masken: Jede Maske (000–255) zerlegt einen Sinus in 32 Teile – Teile wiederholt, gespiegelt oder still. Jede Maske klingt auf der gespielten Note; manche klingen 1–3 Oktaven höher (SEMI gleicht aus).',
+    BM_NAME + ' · Bits und Karte: Die 8 Bits der Maskennummer sind 8 Schalter. Karte 16 × 16: Zeile = obere 4 Bits, Spalte = untere 4 Bits; Spalte 15 = die runden Masken.',
+    BM_NAME + ' · Masken-Hüllkurve: START versetzt die Maske beim Tastendruck, SPD bestimmt, wie schnell sie zur eingestellten MASK läuft (nur ganze Masken).',
+    BM_NAME + ' · Spielweisen: POLY, POLY RETRIG, MONO, MONO PORTA, MONO RETRIG, SLUR, PARA, PARA SLUR, MOLY – bis 10 Stimmen je Spur.',
+    BM_NAME + ' · Schicht/Split: Zwei Programme A und B im selben Klang – zusammen (SCHICHT) oder links/rechts geteilt (SPLIT); SEMI, BAL, PAN, TUNE gehören zum Klang.',
+    BM_NAME + ' · Arp: Muster in der gespielten Reihenfolge der Tasten oder feste Akkorde von der letzten Taste aus; TEILUNG im Song-Tempo, HOLD rastet ein.',
+    BM_NAME + ' · Effekte: FX1 (Chorus, Verzerrung, Bitcrush, Ringmod) und FX2 (Echo, Hall, Verzerrung) in Reihe, je Typ und Anteil (BAL).',
+    BM_NAME + ' · VERKNÜPFT: Hüllen von OSC1, OSC2, NOISE und FILTER verknüpfen – eine Geste ändert alle verknüpften auf denselben Wert (ein Rückgängig).',
     'TASTATUR-ANSCHLAG (Menü → Bedienung): POSITION = oben auf der Taste leise, unten laut, jede Taste für sich; FEST = immer 0,8. Bei FEST tragen Anschlag-Regler und Anschlag-Modulationen einen grauen Hinweis – antippen schaltet POSITION ein.',
     'LAUF: Basslauf oder Sequenz Schritt für Schritt – Schritt antippen = an, hoch/runter ziehen = Ton in der Tonart.',
     'SONG: SONG ⇄ (Ecke oben links im Raster) zeigt den Song. Beim ersten ● SONG wird alles mitgeschnitten: Szenenwechsel, Clip-Stopps, Akkorde und deine Melodie; ▶ SONG spielt alles ab. Eine Zelle antippen = anderer Clip in diesem Takt, wischen = blättern. Während der Song läuft: Clip starten = Spur übernehmen, ↩ SONG gibt sie zurück. Unter MELODIE: Melodie bearbeiten, als Clip, Kette aus Szenen.',
@@ -34323,6 +34670,7 @@ function applyProject(p, opts) {
   TK.missing.clear(); TK.peaks.clear(); TK.voxSig = ''; TK.reg.clear(); setTimeout(tkLoadAll, 0);   // VS3: Takes des Projekts laden
   BOOT.gen++;
   if (S.tracks.some(t => t && t.kind === 'synth' && t.sound && t.sound.engine === 'mk')) mkLoad();   // MK1 (EN3-14): an AM project loads sq-mk-src now, before the transport can start
+  bmBoot();                                                 // BM6 (§5.2): a Bit Mask project loads its module now (no-op without one)
   for (let i = 0; i < MAX_T; i++) { R.slot[i] = S.tracks[i] && S.tracks[i].clips[0] ? 0 : -1; R.own[i] = null; R.pend[i] = null; R.cstart[i] = 0; R.prev[i] = null; }
   if (opts.first) { R.selT = 3; R.selS = 0; } else if (opts.ui && S.ui) { R.selT = clamp(S.ui.selT | 0, 0, NT() - 1); R.selS = clamp(S.ui.selS | 0, 0, NS() - 1); } else { R.selT = clamp(R.selT, 0, NT() - 1); R.selS = clamp(R.selS, 0, NS() - 1); }
   UI.sceneBank = S.ui && S.ui.sceneBank === 1 ? 1 : R.selS >= 4 ? 1 : 0; UI.trackBank = S.ui && S.ui.trackBank === 1 ? 1 : 0;   // V2a: the banks (view)
@@ -42269,7 +42617,7 @@ const SYNQUENZER = {
   mkGet: t => { const s_ = sndOf(t); return s_ && s_.p.mk ? deep(s_.p.mk) : null; },
   mkSet: (t, path, v) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'mk') throw new Error('Keine ' + MK_LABEL + '-Spur: ' + t); return soundEdit(t, MK_LABEL + ' ' + path, () => mkSetP(t, path, v, false)); },
   mkRender: (sound, ev, o) => mkRender(sound, ev, o), mkScope: t => mkScopeOf(t), mkInfo: () => mkInfo(),
-  mkWheel: (t, w, v) => mkWheelApi(t, w, v), mkPanel: () => (mkLoaded() ? MKUI.panelInfo() : null), perfProbe: cases => mkLoad().probe(cases),
+  mkWheel: (t, w, v) => mkWheelApi(t, w, v), mkPanel: () => (mkLoaded() ? MKUI.panelInfo() : null), perfProbe: cases => perfProbeAll(cases),   // BM6: case 'bm' = the Bit Mask probe
   arpLog: t => (arpK() ? ARPC.arpLog(t) : []), arpClear: t => { if (arpK()) ARPC.clearLog(t); }, arpInfo: t => (arpK() ? ARPC.info(t) : null),   // MK5 (B.7)
   mkIn: (t, which, src, dry) => { if (which != null) { const s_ = typeof src === 'number' ? (S.tracks[src] ? 't:' + S.tracks[src].uid : null) : src; if (!mkInSet(t, which, s_, dry)) throw new Error('mkIn: nicht wählbar'); } return deep(S.tracks[t].mkIn || null); },
   mkInInfo: () => ({tracks: AU.tracks.map(A => { const k = A && A.mkL && A.mkL.k; return A ? {e1: !!(k && k[1]), e2: !!(k && k[2]), dryCut: !!A.dryCut} : null; }),
@@ -42436,12 +42784,27 @@ function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
 Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes
 Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
 Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
+Object.assign(SYNQUENZER, {                       // BM6 (Nachtrag 7 §5.3): Bit Mask
+  bmName: () => BM_NAME,
+  bmGet: t => { const s_ = sndOf(t); return s_ && s_.p.bm ? deep(s_.p.bm) : null; },
+  bmSet: (t, path, v) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'bm') throw new Error('Keine ' + BM_NAME + '-Spur: ' + t); return soundEdit(t, BM_NAME + ' ' + path, () => bmSetP(t, path, v)); },
+  bmRender: (sound, ev, o) => bmRender(sound, ev, o),
+  bmScope: t => { const E = AU.synth[t]; if (!E || !E.bm) return null; E.scope(true); return E.scopeMsg ? deep(E.scopeMsg) : null; },
+  bmInfo: () => bmInfo(), bmVoices: t => bmVoices(t), bmReady: () => bmReadyApi(),
+  bmMask: m => { const P = SQBM.partials(m, 256); let best = 1, num = 0, den = 0; const a = k => Math.hypot(P.re[k], P.im[k]);
+    for (let k = 1; k <= 256; k++) { const x = a(k) * a(k); num += k * x; den += x; if (a(k) > a(best)) best = k; }
+    let on = 0, s2 = 0; const N = 4096; for (let n = 0; n < N; n++) { const ph = (n + .5) / N, M = Math.round(m) & 255, sp = SQBM.span(M); if (((Math.floor(ph * sp)) & M) < 32) on++; s2 += Math.pow(SQBM.maskY(M, ph), 2); }
+    return {spanne: SQBM.span(m), aktiv: on / N, kmax: best, okt: Math.round(Math.log2(best)), schwerpunkt: den ? num / den : 0, rmsDb: 20 * Math.log10(Math.sqrt(s2 / N) / Math.SQRT1_2 || 1e-9)}; },
+  bmRoutes: t => bmRoutes(t), bmRouteClear: (t, k) => bmRouteClear(t, k),
+  bmInit: (t, kind) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'bm') throw new Error('Keine ' + BM_NAME + '-Spur: ' + t); return soundEdit(t, 'Init', () => { const snd = deep(s_); snd.p.bm = SQBM.init(kind); applySound(t, snd); return true; }); },
+});
 const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
   'fmDefaultOp', 'fmEnvView', 'fmxEnvAction', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint', 'getFmx', 'fmxLevels', 'dxLayout', 'fmxDx', 'fmxFromFm6',
   'fmxPredict', 'fmxPredictX', 'fmxRaster', 'syxVoiceOf', 'buildSyx', 'parseSyx', 'mkGet', 'mkScope', 'mkInfo', 'mkRender', 'perfProbe', 'mkInInfo', 'mkVowel', 'mkHold', 'mkVocMic', 'memory', 'fangPart', 'fangClose', 'songMarks', 'lastOpMs', 'vsInfo', 'vsResult', 'vsAnalyseSignal', 'vsClock']);
+for (const k of ['bmName', 'bmGet', 'bmRender', 'bmScope', 'bmInfo', 'bmVoices', 'bmReady', 'bmMask', 'bmRoutes']) NO_SYNC.add(k);   // BM6
 for (const k of Object.keys(SYNQUENZER)) {
   const f = SYNQUENZER[k]; if (typeof f !== 'function' || NO_SYNC.has(k)) continue;
   SYNQUENZER[k] = function () { const r = f.apply(this, arguments); uiSync(); if (r && typeof r.then === 'function') return r.then(v => { uiSync(); return v; }); return r; };
