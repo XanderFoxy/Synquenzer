@@ -14,7 +14,7 @@ export function marktguruAngebot(r) {
   const shop = r.advertisers?.[0]?.name || r.advertiser?.name || '';
   const marke = r.brand?.name || '';
   const produkt = r.product?.name || '';
-  const titel = [marke, produkt].filter(Boolean).join(' ').trim() || r.description || '';
+  const titel = (produkt && marke && produkt.toLowerCase().includes(marke.toLowerCase()) ? produkt : [marke, produkt].filter(Boolean).join(' ')).trim() || r.description || '';
   const gueltig = (r.validityDates || [])[0] || {};
   const einheit = r.unit?.shortName || r.unit?.name || '';
   return {
