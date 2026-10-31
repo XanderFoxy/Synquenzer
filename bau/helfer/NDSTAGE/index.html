@@ -10795,6 +10795,9 @@ registerProcessor('dirigent-hall', DirigentHall);
 /* SYNQUENZER drum model engine worklet 'synq-md' (Nachtrag 6, ND1). The commented source with the message protocol is md-worklet.js in the repo. */
 'use strict';
 const SR = sampleRate, ISR = 1 / SR, CR = 16, NCH = 12, NV = 2, MAXM = 48, LN1K = 6.907755278982137;
+const M_LIM1 = 24, M_LIM2 = 12, H_MAX = 32, H_LIM1 = 16, H_LIM2 = 12;
+const LG_T = 2, LG_C = 3.9810717055349722, LG_W = LG_C - LG_T;
+const H_FC = 5, P_SIG = 0.08;
 const PI = Math.PI, TAU = 2 * Math.PI;
 const NYQ = 0.45 * SR;
 const SN = 4096, SINT = new Float64Array(SN + 2);
@@ -11017,7 +11020,7 @@ const f0 = this.f0, fam = this.fam, s = this.sub, E = this.E;
 const F0 = this.fEff(0, this.frq, this.dfT);
 this.ph.fill(0); this.ph2.fill(0);
 const bmax = this.b0 > 0 ? Math.pow(2, this.b0 / 12) : 1;
-let cap = E.lim >= 2 ? 12 : E.lim >= 1 ? 24 : MAXM;
+let cap = E.lim >= 2 ? M_LIM2 : E.lim >= 1 ? M_LIM1 : MAXM;
 this.inc = Math.min(f0 * this.bm, NYQ) * ISR; this.dinc = 0;
 if (fam === FAM_A) {
 this.det = s >= 2 && s <= 5 ? Math.pow(2, VERST[this.spc] / 12) : 1;
@@ -11049,15 +11052,15 @@ this.kap = Math.pow(2, (this.spc - 50) / 50);
 this.setupModalDecay(); this.modal = true;
 this.nm = 0; this.cap = cap; this.bmax = bmax; this.gmax = 1;
 if (fam === FAM_H) {
-const al = 2 - 1.7 * F0 / 50, fc = f0 * Math.pow(2, 8 * this.spc / 99);
+const al = 2 - 1.7 * F0 / 50, fc = f0 * Math.pow(2, H_FC * this.spc / 99);
 let ss = 0; const kmax = s === 6 ? 24 : 64; let cnt = 0;
-const hcap = Math.min(cap, E.lim >= 1 ? (E.lim >= 2 ? 12 : 16) : 32);
-for (let k = 1; k <= kmax && cnt < 32; k++) {
+const hcap = Math.min(cap, E.lim >= 1 ? (E.lim >= 2 ? H_LIM2 : H_LIM1) : H_MAX);
+for (let k = 1; k <= kmax && cnt < H_MAX; k++) {
 if (s === 2 && k % 2 === 0) continue; if (s === 3 && k % 3 === 0) continue; if (s === 4 && k > 1 && k % 2 === 1) continue;
 cnt++; const a = Math.pow(k, -al); ss += a * a;
 }
 const nrm = 1 / Math.sqrt(ss); cnt = 0; this.cap = hcap;
-for (let k = 1; k <= kmax && cnt < 32; k++) {
+for (let k = 1; k <= kmax && cnt < H_MAX; k++) {
 if (s === 2 && k % 2 === 0) continue; if (s === 3 && k % 3 === 0) continue; if (s === 4 && k > 1 && k % 2 === 1) continue;
 cnt++; const f = s === 6 ? k * f0 * Math.sqrt(1 + 0.0008 * k * k) : k * f0;
 this.add(f, Math.pow(k, -al) * this.wH(f, fc, s === 5) * nrm, Math.pow(k, -0.5));
@@ -11080,7 +11083,7 @@ if (this.snr) { this.sg = tanf(5000); this.sk = 1; this.sa1 = 1 / (1 + this.sg *
 } else if (fam === FAM_P) {
 const B = PMOD[s - 1], fR = f0 * Math.pow(2, (this.spc - 24) / 25), tc = 0.004 * Math.pow(0.025, F0 / 50);
 for (let k = 0; k < B.r.length; k++) {
-const f = f0 * B.r[k], l = Math.log2(f / fR), W = 1 + 3 * Math.exp(-l * l / (2 * 0.08 * 0.08));
+const f = f0 * B.r[k], l = Math.log2(f / fR), W = 1 + 3 * Math.exp(-l * l / (2 * P_SIG * P_SIG));
 this.add(f, B.a[k] * B.nrm * hard(f, tc) * W, B.g[k] * (1 + 0.5 * (W - 1) / 3));
 }
 } else if (fam === FAM_C1) {
@@ -11460,7 +11463,7 @@ this.chs = []; for (let i = 0; i < NCH; i++) this.chs.push(new Chan(this, i));
 this.nz = new Uint32Array(NCH);
 this.mskT = new Float64Array(NCH); this.mskN = new Float64Array(NCH); this.mskC = new Float64Array(NCH);
 this.soloCh = -1; this.soloP = 0; this.lim = 0; this.tap = 0; this.sent = true; this.errAt = -1e12; this.qover = 0; this.dcOn = true; this.dcA = 1 - TAU * 5 / SR; this.dcX = 0.1; this.dcY = 0.1; this.dcW = 0.1; this.dcZ = 0.1;
-this.QN = 4096; this.q = []; for (let i = 0; i < this.QN; i++) this.q.push({fr: 0, ch: 0, v: 0, acc: 0, tune: 0, dec: 1}); this.qn = 0;
+this.QN = 4096; this.q = []; for (let i = 0; i < this.QN; i++) this.q.push({fr: 0, ch: 0, v: 0, acc: 0, tune: 0, dec: 1, id: 0}); this.qn = 0;
 this.late = 0; this.lateSent = 0;
 this.stopFr = -1; this.stopTau = 0.02; this.pan = 0;
 this.K = {rvT: 1, rvC: 0, dlR: 50, dlM: 0, dlB: 60, dlF: 0};
@@ -11527,6 +11530,8 @@ case 'hit': { const L = m.list || []; for (const h of L) this.enqueue(h); break;
 case 'all': { const L = m.list || []; for (const x of L) this.onMsg(x); break; }
 case 'mute': { const s = m.solo; this.soloCh = s ? (m.ch | 0) : -1; this.soloP = s === 'tone' ? 1 : s === 'noise' ? 2 : s === 'click' ? 3 : 0; for (const C of this.chs) this.levels(C); break; }
 case 'stop': { this.stopFr = Math.round((+m.at || 0) * SR); this.stopTau = Math.max(0.001, +m.tau || 0.02); break; }
+case 'cancel': { const ids = m.ids || []; if (!ids.length) break; const S = new Set(ids); let j = 0;
+for (let i = 0; i < this.qn; i++) { if (!S.has(this.q[i].id)) { const t = this.q[j]; this.q[j] = this.q[i]; this.q[i] = t; j++; } } this.qn = j; break; }
 case 'panic': { this.qn = 0; this.pan = Math.max(1, Math.round(0.01 * SR)); this.panN = this.pan; break; }
 case 'reset': { this.resetAll(); break; }
 case 'lim': { this.lim = Math.max(0, Math.min(3, m.s | 0)); break; }
@@ -11546,7 +11551,7 @@ const fr = Math.round((+h.at || 0) * SR);
 let j = this.qn; const q = this.q, rec = q[j];
 while (j > 0 && q[j - 1].fr > fr) { q[j] = q[j - 1]; j--; }
 q[j] = rec; this.qn++;
-rec.fr = fr; rec.ch = ch; rec.v = clampN(h.v, 0, 1, 0.8); rec.acc = clampN(h.acc, 0, 1, 0); rec.tune = clampN(h.tune, -48, 48, 0); rec.dec = clampN(h.dec, 0.05, 20, 1);
+rec.fr = fr; rec.ch = ch; rec.v = clampN(h.v, 0, 1, 0.8); rec.acc = clampN(h.acc, 0, 1, 0); rec.tune = clampN(h.tune, -48, 48, 0); rec.dec = clampN(h.dec, 0.05, 20, 1); rec.id = (+h.id || 0) | 0;
 }
 renderTo(C, s) { for (let j = 0; j < NV; j++) { const v = C.v[j]; if (v.on && v.bp < s) { v.render(C.buf, v.bp, s); v.bp = s; } } }
 hit(h, off) {
@@ -11602,6 +11607,8 @@ this.hall(hin, L, R, N);
 if (this.dcOn) { const a = this.dcA; let x1 = this.dcX, y1 = this.dcY, x2 = this.dcW, y2 = this.dcZ;
 for (let i = 0; i < N; i++) { const l = L[i], r = R[i]; y1 = l - x1 + a * y1; x1 = l; L[i] = y1; y2 = r - x2 + a * y2; x2 = r; R[i] = y2; }
 if (y1 < 1e-15 && y1 > -1e-15) y1 = 0; if (y2 < 1e-15 && y2 > -1e-15) y2 = 0; this.dcX = x1; this.dcY = y1; this.dcW = x2; this.dcZ = y2; }
+for (let i = 0; i < N; i++) { const l = L[i]; if (l > LG_T) L[i] = LG_T + LG_W * Math.tanh((l - LG_T) / LG_W); else if (l < -LG_T) L[i] = -LG_T - LG_W * Math.tanh((-l - LG_T) / LG_W); }
+if (R !== L) for (let i = 0; i < N; i++) { const r = R[i]; if (r > LG_T) R[i] = LG_T + LG_W * Math.tanh((r - LG_T) / LG_W); else if (r < -LG_T) R[i] = -LG_T - LG_W * Math.tanh((-r - LG_T) / LG_W); }
 if (this.pan > 0) {
 for (let i = 0; i < N; i++) { const g = this.pan > 0 ? this.pan / this.panN : 0; L[i] *= g; if (R !== L) R[i] *= g; if (this.pan > 0) this.pan--; }
 if (this.pan === 0) { this.dcX = 0; this.dcY = 0; this.dcW = 0; this.dcZ = 0; for (let c = 0; c < NCH; c++) { const C = this.chs[c]; C.v[0].reset0(); C.v[1].reset0(); C.dl.fill(0); C.dlyE = 0; C.act = false; C.eqx1 = C.eqx2 = C.eqy1 = C.eqy2 = 0; } this.hallReset(); }
@@ -14235,10 +14242,11 @@ const MK_LABEL = 'MS 2000';
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
-/* ND4 (Nachtrag 6, §ND4 Punkt 8): Daten der Drum-Engine MD_NAME je Pad – flache Felder im Slot (Format 5, nur additiv), Kit-Effekte
-   p.md, Normalisierung (Werte auf §1-Bereiche, Codes gegen Listen, Fehlendes = INIT, unbekannte Felder bleiben, Regel 9).
-   Gespeicherte Schlüssel = Spec-Namen, außer drei, die mit Feldern der Drum-Stimme (Metall-Schicht mDec / mLvl / mCrv) kollidieren:
-   TONE DECAY = mTdec, CH LEVEL = mChlv, Dynamik-Kurve = mDcrv. Die Nachricht an die Engine trägt die Spec-Namen (MDN.spec). */
+/* ND4 (Nachtrag 6, §ND4 Punkt 8): Daten der Drum-Engine MD_NAME je Pad (Format 5, nur additiv), Kit-Effekte p.md,
+   Normalisierung (Werte auf §1-Bereiche, Codes gegen Listen, Fehlendes = INIT, unbekannte Felder bleiben, Regel 9).
+   NDSTAGE (Dirigent Q4): das Programm eines Pads liegt im Slot unter einem eigenen Unterschlüssel slot.md = {src, m*-Spec-Felder},
+   weil mDec / mLvl / mCrv schon Felder der Drum-Stimme sind (Metall-Schicht); die Drum-Felder des Slots bleiben unberührt,
+   alte Projekte ohne slot.md bitgleich. slot.md.src 'md' = das Pad spielt die Engine; fehlt = Drum-Stimme (Werte bleiben gemerkt). */
 (function (G) {
   const WAVES = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 't1', 't2', 'F1', 'F2', 'F3', 'F4', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
     'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'P1', 'P2', 'P3', 'P4', 'C1', 'C2', 'C3', 'r1', 'r2'];
@@ -14246,15 +14254,15 @@ const MK_LABEL = 'MS 2000';
   // key: [Spec-Name, Art (i ganzzahlig | p Pitch 0,1 | l Liste | s Text), min | Liste, max, INIT]
   const K = {
     mWav: ['mWav', 'l', WAVES, 0, 'A1'], mSpc: ['mSpc', 'i', 0, 99, 0], mFrq: ['mFrq', 'i', 0, 50, 25], mDyf: ['mDyf', 'i', 0, 9, 0],
-    mTdec: ['mDec', 'i', 0, 50, 20], mDm: ['mDm', 'l', ['E1', 'E2', 'E3', 'L', 'P', 'D'], 0, 'E1'], mDd: ['mDd', 'i', 0, 50, 20],
+    mDec: ['mDec', 'i', 0, 50, 20], mDm: ['mDm', 'l', ['E1', 'E2', 'E3', 'L', 'P', 'D'], 0, 'E1'], mDd: ['mDd', 'i', 0, 50, 20],
     mBnd: ['mBnd', 'i', -50, 50, 0], mBt: ['mBt', 'i', 0, 50, 10], mPit: ['mPit', 'p', 0, 127.5, 45],
     mNres: ['mNres', 'i', 0, 20, 0], mNtyp: ['mNtyp', 'l', ['L1', 'L2', 'b1', 'b2', 'H1', 'H2', 'H3'], 0, 'L1'], mNfrq: ['mNfrq', 'i', 0, 50, 30],
     mNdyf: ['mNdyf', 'i', -9, 9, 0], mNdec: ['mNdec', 'i', 0, 50, 15], mNdm: ['mNdm', 'l', ['E1', 'E2', 'E3', 'L', 'G', 'D'], 0, 'E1'], mNdd: ['mNdd', 'i', 0, 50, 15],
     mClv: ['mClv', 'i', 0, 50, 0], mCty: ['mCty', 'l', ['n1', 'n2', 'n3', 'P1', 'P2', 'P3', 'H1', 'H2', 'H3', 'C1', 'C2', 'C3'], 0, 'n1'],
-    mNlv: ['mNlv', 'i', 0, 50, 0], mTlv: ['mTlv', 'i', 0, 50, 40], mChlv: ['mLvl', 'i', 0, 50, 40], mPan: ['mPan', 'i', -9, 9, 0],
+    mNlv: ['mNlv', 'i', 0, 50, 0], mTlv: ['mTlv', 'i', 0, 50, 40], mLvl: ['mLvl', 'i', 0, 50, 40], mPan: ['mPan', 'i', -9, 9, 0],
     mEqf: ['mEqf', 'i', 0, 50, 25], mEqg: ['mEqg', 'i', -9, 9, 0], mDst: ['mDst', 'i', 0, 50, 0], mDty: ['mDty', 'l', ['dr', 'SA', 'rn'], 0, 'dr'],
     mRvb: ['mRvb', 'i', 0, 50, 0], mDly: ['mDly', 'i', 0, 50, 0],
-    mMono: ['mMono', 'i', 0, 1, 0], mDcrv: ['mCrv', 'l', ['Li', 'L1', 'L2', 'L3', 'O1', 'O2'], 0, 'Li'], mName: ['mName', 's', 0, 16, ''], mCat: ['mCat', 'l', CATS, 0, ''],
+    mMono: ['mMono', 'i', 0, 1, 0], mCrv: ['mCrv', 'l', ['Li', 'L1', 'L2', 'L3', 'O1', 'O2'], 0, 'Li'], mName: ['mName', 's', 0, 16, ''], mCat: ['mCat', 'l', CATS, 0, ''],
   };
   const KEYS = Object.keys(K), SPEC = {}; for (const k of KEYS) SPEC[K[k][0]] = k;
   // Kit-Effekte (§1.10): dlB 60 = Viertel 120
@@ -14272,12 +14280,16 @@ const MK_LABEL = 'MS 2000';
   const init = () => { const o = {}; for (const k of KEYS) o[k] = K[k][4]; return o; };
   const kitInit = () => { const o = {v: 1}; for (const k in KK) o[k] = KK[k][3]; return o; };
   const has = s => !!s && typeof s === 'object' && KEYS.some(k => k in s);
-  // ein Slot: src nur 'drum' | 'md'; trägt er Felder der Engine (oder src 'md'), werden alle geprüft und Fehlendes = INIT
-  function normSlot(s) {
-    if (!s || typeof s !== 'object') return s;
-    if ('src' in s && s.src !== 'drum' && s.src !== 'md') delete s.src;
-    if (s.src === 'md' || has(s)) for (const k of KEYS) s[k] = vk(k, s[k]);
-    return s;
+  // ein Programm (slot.md): src nur 'drum' | 'md'; alle m*-Werte geprüft, Fehlendes = INIT; unbekannte Zahlen/Texte bleiben (Regel 9)
+  function normSlot(m) {
+    if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+    const o = {};
+    for (const k in m) { const v = m[k]; if (!/^[a-zA-Z0-9]{1,12}$/.test(k)) continue; if (fin(v) || (typeof v === 'string' && v.length <= 16)) o[k] = v; }
+    if ('src' in o && o.src !== 'drum' && o.src !== 'md') delete o.src;
+    if (o.src === 'drum') delete o.src;
+    if (!o.src && !has(o)) return null;
+    for (const k of KEYS) o[k] = vk(k, o[k]);
+    return o;
   }
   function normKit(m) {
     if (!m || typeof m !== 'object') return null;
@@ -14289,7 +14301,8 @@ const MK_LABEL = 'MS 2000';
   }
   // Haken in normDrum: die normierten Slots und der Kit-Block
   function norm(p, out) {
-    for (const id in out.slots) normSlot(out.slots[id]);
+    // normDrum behält nur Zahlen/Texte – slot.md kommt hier aus dem Eingang dazu
+    for (const id in out.slots) { const src = p && p.slots && p.slots[id], m = src ? normSlot(src.md) : null; if (m) out.slots[id].md = m; else delete out.slots[id].md; }
     const m = p && p.md ? normKit(p.md) : null; if (m) out.md = m;
     return out;
   }
@@ -14297,8 +14310,9 @@ const MK_LABEL = 'MS 2000';
   function spec(s) { const o = {}; for (const k of KEYS) o[K[k][0]] = vk(k, s ? s[k] : undefined); return o; }
   // Programm mit Spec-Namen (ND3-Daten, Bibliothek) -> gespeicherte Schlüssel; Fehlendes = INIT
   function fromSpec(p) { const o = init(); if (p && typeof p === 'object') for (const sk in p) { const k = SPEC[sk]; if (k) o[k] = vk(k, p[sk]); } return o; }
-  const pick = s => { const o = {}; if (s) { for (const k of KEYS) if (k in s) o[k] = s[k]; if ('src' in s) o.src = s.src; } return o; };
-  const strip = s => { if (s) { for (const k of KEYS) delete s[k]; delete s.src; } return s; };
+  // ein Slot: sein Programm (slot.md, tief kopiert) bzw. ohne Programm
+  const pick = s => (s && s.md && typeof s.md === 'object' ? {md: JSON.parse(JSON.stringify(s.md))} : {});
+  const strip = s => { if (s) delete s.md; return s; };
   G.MDN = {WAVES, CATS, K, KEYS, KK, SPEC, init, kitInit, has, normSlot, normKit, norm, spec, fromSpec, pick, strip, val: vk, kval: (k, v) => val(KK[k], v)};
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -14590,6 +14604,7 @@ const MK_LABEL = 'MS 2000';
     else if (f.engine === 'drum') {
       const K = (G.DrumKits && G.DrumKits.KITS) || {};
       p = {base: f.base || null, slots: deep(f.base ? (K[f.base] || {}) : (f.p || {}))};   // drum kits: partial slots; the engine fills defaults per slot model
+      if (f.md && typeof f.md === 'object') p.md = deep(f.md);                               // NDSTAGE: Kit-Effekte der Drum-Engine (North-Kits)
     } else p = deep(f.p);
     return normalizeSound({engine: f.engine, ev: f.ev, id: null, name: f.name, cat: f.cat, p, mods: f.mods, fx: f.fx, common: f.common, bus: f.bus, origin: f.id, tip: f.tip, ct: now(), mt: now()});
   }
@@ -16087,7 +16102,8 @@ const MK_LABEL = 'MS 2000';
    MDX.load(ctx) -> Promise<bool>        addModule (Blob URL, then data: URL; source is ASCII), once per context
    MDX.node(ctx, dest) -> E               one AudioWorkletNode per drum track (0 inputs, 1 stereo output -> dest); on an
                                           OfflineAudioContext the node gets no CPU-limiter stage and is not counted in cpuLoad
-     E.ch(i, p) · E.kit(p) · E.hit(list) (batched per task) · E.mute(ch, solo) · E.stop(at, tau) · E.panic() · E.reset()
+     E.ch(i, p) · E.kit(p) · E.hit(list) (batched per task; item {ch, at, v, acc, tune, dec, id?}) · E.cancel(ids) · E.mute(ch, solo)
+     E.stop(at, tau) · E.panic() · E.reset()
      E.lim(stage) · E.test(msg) -> Promise(reply|null, by id, 2 s) · E.dispose(); E.load / E.nv / E.late (once per second)
      live hits: send at most 4096 ahead (worklet queue); MDX.render splits long patterns by itself
    MDX.render(o) -> Promise<{l, r}>       offline render through the same module (tests, video VV1, freeze FR1); a node for an
@@ -16198,6 +16214,8 @@ const MDX = (() => {
     E.mute = (ch, solo) => post({t: 'mute', ch, solo: solo || null});
     E.stop = (at, tau) => { E.flush(); post({t: 'stop', at, tau}); };
     E.panic = () => { E.q = []; post({t: 'panic'}); };
+    // NDSTAGE (ND4): drop planned hits by id - still batched here, or already queued in the worklet
+    E.cancel = ids => { if (!ids || !ids.length) return; const S = new Set(ids); E.q = E.q.filter(h => !S.has(h.id)); post({t: 'cancel', ids: [...S]}); };
     E.reset = () => { E.flush(); post({t: 'reset'}); };
     E.lim = s => { if (E.offline) return; E.lastLim = s | 0; post({t: 'lim', s: s | 0}); };
     // test API: every request carries an id, the worklet always answers with it; null after 2 s, on a closed context or after dispose
@@ -17962,6 +17980,17 @@ const SQF = window.SQ_FACTORY || {ANALOG: [], FM6: [], KITS: [], PREVIEW: {}, PR
 // browser, in the category order of §11.1). WP6 (§7.6, §11.1): the 7 drum kits in DRUM_FACTORY; FACTORY_BY_ID knows both
 const FACTORY = SQF.ANALOG.concat(SQF.FM6 || [], WT_FACTORY);
 const DRUM_FACTORY = (SQF.KITS || []).map(k => Object.assign({}, k, {base: k.base || k.name, demo: 'drums', ref: KIT_REF[k.name] || 'Drum-Kit', fx: k.fx || {drive: 0, rev: .08, dly: 0, vol: .85, pan: 0}}));
+// NDSTAGE (ND3 Punkt 3, ND4 Punkt 10): die 4 Kits der Drum-Engine im Kit-Browser nach den Werks-Kits. Alle 12 Pads Quelle MD_NAME
+// (Programm in slot.md), Kit-Effekte p.md; die Drum-Felder der Slots = Rom Pop (Rückfall ohne AudioWorklet). Die alten Kits bleiben unverändert.
+const MD_KIT_FACTORY = (typeof MDX !== 'undefined' && MDX.kits ? MDX.kits : []).map(k => {
+  const R = (DrumKits.KITS && DrumKits.KITS['Rom Pop']) || {}, slots = {};
+  for (const id of MDX.ORDER) slots[id] = Object.assign(JSON.parse(JSON.stringify(R[id] || {})), {md: Object.assign({}, k.slots[id], {src: 'md'})});
+  return {id: kitId(k.name), name: k.name, cat: 'drums', engine: 'drum', ev: 1, base: null, demo: 'drums', ref: MD_NAME + ' · ' + k.info,
+    tip: 'Kit der Drum-Synthese ' + MD_NAME + ': ' + k.info + '. Jedes Pad ist ein ' + MD_NAME + '-Kanal; im Drum-Editor SOUND lässt sich jedes Pad einzeln auf die Drum-Stimme zurückschalten.',
+    p: slots, md: k.md, fx: {drive: 0, chorus: {mode: 'off', mix: 1, rate: 1, depth: 1}, rev: 0, dly: 0, vol: .85, pan: 0}};
+});
+DRUM_FACTORY.push(...MD_KIT_FACTORY);
+const MD_KIT_NAMES = MD_KIT_FACTORY.map(k => k.name);
 /* V0b (§12.7, A.2): INIT sounds — no routes, neutral effects, sends 0, −18 LUFS on the lead phrase (v3-v0b-init.mjs); not in
    factory() (the 46 stay), chip „Init“. INIT Drums (ev2): each pad its model's basic layer (DEFAULTS alone are silent),
    pad level .85, room / gate 0, no locks (V1a: ev3). */
@@ -20128,91 +20157,72 @@ function drumHit(gm, vel, t, src, ex, o) {
 
 /* ===================== ND4 (Nachtrag 6 §ND4): Einbindung der Drum-Engine MD_NAME =====================
    Jedes Pad hat eine Quelle (Drum-Stimme | MD_NAME, Slot-Feld src). Pads mit src 'md' spielen über einen AudioWorklet-Knoten
-   'synq-md' je Drum-Spur (Ausgang -> Eingang der Drum-Spur). Modul und Knoten entstehen erst, wenn ein Pad 'md' wird oder ein
+   'synq-md' je Drum-Spur (ND1: MDX.load / MDX.node; Ausgang -> Eingang der Drum-Spur). Modul und Knoten entstehen erst, wenn ein Pad 'md' wird oder ein
    Projekt eines hat; ohne Modell-Pad bleibt alles wie bisher (Regel 28). Nachrichten wie §ND1 Punkt 2; zusätzlich (additiv):
    Schlag-Feld id, {t:'cancel', ids}, {t:'lim', level}, {t:'info'} -> {t:'info', ...}. */
-const MD_NAME = 'North';                       // Anzeigename der Engine (§0.4) – nur hier definiert
+// NDSTAGE: MD_NAME und die Engine (MDX: Lader, Knoten, Offline-Render) kommen aus dem ND1-Block; hier nur der Zustand der Einbindung (MDS).
 const MD_LIB = 'mdp';                          // Bibliothek: eigene Programme (§ND4 Punkt 10)
-const MDX = {st: 'off', ctx: null, node: null, dest: null, p: null, q: [], pend: [], sent: {}, kit: '', dirty: true, timer: 0, fq: false,
-  load: 0, late: 0, solo: null, hid: 0, warned: false, info: null, adds: 0, lim: 0};
-const mdSlot = id => { const s = drumSnd(); return s && s.engine === 'drum' && s.p && s.p.slots ? s.p.slots[id] || null : null; };
+const MDS = {st: 'off', ctx: null, E: null, node: null, dest: null, p: null, q: [], pend: [], sent: {}, kit: '', dirty: true, timer: 0, fq: false,
+  solo: null, hid: 0, warned: false};
+// das Programm eines Pads liegt im Slot unter slot.md (Q4: eigener Unterschlüssel, die Drum-Felder bleiben unberührt)
+const mdSlot = id => { const s = drumSnd(), st = s && s.engine === 'drum' && s.p && s.p.slots ? s.p.slots[id] : null; return st && st.md && typeof st.md === 'object' ? st.md : null; };
+function mdSlotMk(id) { const snd = drumSnd(), st = snd.p.slots[id] || (snd.p.slots[id] = slotDiff(slotParams(id))); if (!st.md || typeof st.md !== 'object') st.md = {}; return st.md; }
 const mdIsSrc = id => { const st = mdSlot(id); return !!st && st.src === 'md'; };
 function mdUsed() { for (const v of DRUM_VOICES) if (mdIsSrc(v.id)) return true; return false; }
-function mdCan() { const c = AU.ctx; return !UI.forceNative && !!c && !!c.audioWorklet && typeof AudioWorkletNode === 'function' && MDX.st !== 'failed'; }
+function mdCan() { const c = AU.ctx; return !UI.forceNative && !!c && !!c.audioWorklet && typeof AudioWorkletNode === 'function' && MDS.st !== 'failed'; }
 function mdPlays(id) { return mdIsSrc(id) && mdCan(); }
 function mdBoot() { try { if (AU.ctx && mdUsed()) { if (mdCan()) mdEnsure(); else mdNoWk(); } } catch (e) { logErr(e); } }
-function mdNoWk() { if (MDX.warned) return; MDX.warned = true; toast(MD_NAME + ' braucht AudioWorklet – diese Pads spielen ihre Drum-Stimme'); }
-// Pad-Start (§ND3 Punkt 2 ersetzt diese Funktion beim Zusammenführen): INIT SOUND
-function mdFirstProgram(id) { return MDN.init(); }
-// das Modul (Blob, sonst data-URL; Quelle ASCII) einmal je Kontext
-function mdModule(c) {
-  const to = p => Promise.race([p, new Promise((_, rj) => setTimeout(() => rj(new Error('timeout')), 2500))]);
-  return (async () => {
-    const ways = [() => URL.createObjectURL(new Blob([MD_WK], {type: 'application/javascript'})), () => 'data:application/javascript;base64,' + btoa(MD_WK)];
-    for (const mk of ways) { let u = ''; try { u = mk(); MDX.adds++; await to(c.audioWorklet.addModule(u)); return true; } catch (e) { /* nächster Weg */ } finally { if (u.startsWith('blob:')) { try { URL.revokeObjectURL(u); } catch (e) {} } } }
-    return false;
-  })();
-}
+function mdNoWk() { if (MDS.warned) return; MDS.warned = true; toast(MD_NAME + ' braucht AudioWorklet – diese Pads spielen ihre Drum-Stimme'); }
+// Pad-Start nach Rolle (§ND3 Punkt 2): das Programm der Rolle, sonst INIT SOUND
+function mdFirstProgram(id) { const p = MDX.roleProg(id); return p ? MDN.fromSpec(p) : MDN.init(); }
+// Modul (MDX.load, einmal je Kontext) und ein Knoten je Drum-Spur (MDX.node); neuer AudioContext = neu anlegen
 function mdEnsure() {
   const c = AU.ctx; if (!c) return null;
-  if (MDX.ctx !== c) Object.assign(MDX, {ctx: c, st: 'off', node: null, dest: null, p: null, sent: {}, kit: '', solo: null});   // neuer AudioContext: neu anlegen
-  if (MDX.st === 'off') {
-    MDX.st = 'loading';
-    MDX.p = mdModule(c).then(ok => {
-      if (MDX.ctx !== c) return;
-      try { mdNode(c); MDX.st = 'ready'; mdSync(true); mdFlush(); }   // auch wenn addModule meldet „schon registriert“
-      catch (e) { MDX.st = 'failed'; mdNoWk(); mdFallback(); }
+  if (MDS.ctx !== c) { if (MDS.E) { try { MDS.E.dispose(); } catch (e) {} } Object.assign(MDS, {ctx: c, st: 'off', E: null, node: null, dest: null, p: null, sent: {}, kit: ''}); }
+  if (MDS.st === 'off') {
+    MDS.st = 'loading';
+    MDS.p = MDX.load(c).then(ok => {
+      if (MDS.ctx !== c) return;
+      if (!ok) { MDS.st = 'failed'; mdNoWk(); mdFallback(); return; }
+      try { MDS.E = MDX.node(c, null); MDS.node = MDS.E.node; MDS.dest = null; mdConnect(); MDS.st = 'ready'; mdSync(true); mdFlush(); }
+      catch (e) { logErr(e); MDS.st = 'failed'; mdNoWk(); mdFallback(); }
     });
-  } else if (MDX.st === 'ready') mdConnect();
-  return MDX.p;
-}
-function mdNode(c) {
-  const n = new AudioWorkletNode(c, 'synq-md', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]});
-  n.port.onmessage = e => { try { mdMsg(e.data); } catch (err) { logErr(err); } };
-  MDX.node = n; MDX.dest = null; mdConnect();
-  if (LIM.level) n.port.postMessage({t: 'lim', level: LIM.level});
-  return n;
+  } else if (MDS.st === 'ready') mdConnect();
+  return MDS.p;
 }
 // Ausgang -> Eingang der Drum-Spur (Spur-FX, Sends, Mute/Solo wie bei allen Pads); nach einem Neubau der Spur neu verbunden
 function mdConnect() {
-  const A = AU.tracks[DRUM_T]; if (!MDX.node || !A || !A.trackIn || MDX.dest === A.trackIn) return;
-  try { MDX.node.disconnect(); } catch (e) {}
-  MDX.node.connect(A.trackIn); MDX.dest = A.trackIn;
+  const A = AU.tracks[DRUM_T]; if (!MDS.node || !A || !A.trackIn || MDS.dest === A.trackIn) return;
+  try { MDS.node.disconnect(); } catch (e) {}
+  MDS.node.connect(A.trackIn); MDS.dest = A.trackIn;
 }
-function mdMsg(d) {
-  if (!d || typeof d !== 'object') return;
-  if (d.t === 'load') MDX.load = isNum(d.v) ? d.v : 0;
-  else if (d.t === 'late') MDX.late = d.n | 0;
-  else if (d.t === 'info') MDX.info = d;
-}
-const mdPost = m => { if (MDX.st === 'ready' && MDX.node) { try { MDX.node.port.postMessage(m); } catch (e) { logErr(e); } } };
-const mdLoad = () => (MDX.st === 'ready' ? MDX.load || 0 : 0);
+const mdE = () => (MDS.st === 'ready' && MDS.E && !MDS.E.dead ? MDS.E : null);
 // Programme der Modell-Kanäle ({t:'ch', ch, p}, Spec-Namen) und die Kit-Effekte ({t:'kit', p}); nur Geändertes, höchstens 30/s
 function mdSync(force) {
-  MDX.dirty = false;
-  if (MDX.st !== 'ready') return;
-  if (force) { MDX.sent = {}; MDX.kit = ''; }
+  MDS.dirty = false;
+  const E = mdE(); if (!E) return;
+  if (force) { MDS.sent = {}; MDS.kit = ''; }
   const snd = drumSnd(); if (!snd || snd.engine !== 'drum') return;
   for (const v of DRUM_VOICES) {
     const st = mdSlot(v.id); if (!st || st.src !== 'md') continue;
     const p = MDN.spec(st), j = JSON.stringify(p);
-    if (MDX.sent[v.idx] !== j) { MDX.sent[v.idx] = j; mdPost({t: 'ch', ch: v.idx, p}); }
+    if (MDS.sent[v.idx] !== j) { MDS.sent[v.idx] = j; E.ch(v.idx, p); }
   }
-  if (force && MDX.solo) mdPost({t: 'mute', ch: MDX.solo.ch, solo: MDX.solo.part});
+  if (force && MDS.solo) E.mute(MDS.solo.ch, MDS.solo.part);
   const k = Object.assign(MDN.kitInit(), snd.p.md || {}), kj = JSON.stringify(k);
-  if (MDX.kit !== kj) { MDX.kit = kj; mdPost({t: 'kit', p: k}); }
+  if (MDS.kit !== kj) { MDS.kit = kj; E.kit(k); }
 }
 function mdDirty() {
-  MDX.dirty = true;
-  if (MDX.st === 'ready' && !MDX.timer) MDX.timer = setTimeout(() => { MDX.timer = 0; try { if (MDX.dirty) mdSync(); } catch (e) { logErr(e); } }, 33);
+  MDS.dirty = true;
+  if (MDS.st === 'ready' && !MDS.timer) MDS.timer = setTimeout(() => { MDS.timer = 0; try { if (MDS.dirty) mdSync(); } catch (e) { logErr(e); } }, 33);
 }
 // ein Schlag (§ND4 Punkt 2): Akzent, Locks, Anschlag wie bei der Drum-Stimme; Buchführung wie drumHit
 function mdHit(sl, vel, t, src, ex) {
-  mdEnsure(); if (MDX.dirty) mdSync();
+  mdEnsure(); if (MDS.dirty) mdSync();
   const lk = ex && ex.lk, it = {ch: sl.idx, at: t, v: clamp(+vel || 0, 0, 1), acc: ex && ex.acc ? accentAmt(drumKit().accent) : 0,
-    tune: lk && isNum(lk.tune) ? lk.tune : 0, dec: lk && isNum(lk.dec) ? lk.dec : 1, id: ++MDX.hid};
-  MDX.q.push({it, gm: sl.gm, src, ex});
-  if (!MDX.fq) { MDX.fq = true; Promise.resolve().then(mdFlush); }       // gebündelt je Planungs-Tick
+    tune: lk && isNum(lk.tune) ? lk.tune : 0, dec: lk && isNum(lk.dec) ? lk.dec : 1, id: ++MDS.hid};
+  MDS.q.push({it, gm: sl.gm, src, ex});
+  if (!MDS.fq) { MDS.fq = true; Promise.resolve().then(mdFlush); }       // gebündelt je Planungs-Tick
   const h = {id: ++VSEQ, md: it.id, voice: sl.id, gm: sl.gm, track: DRUM_T, src, start: t, dead: false};
   if (src !== 'preview') h.perf = perfAdd(DRUM_T, sl.gm, t, t + .1 * spb(), vel);
   h.log = logNote({track: DRUM_T, src, clipNote: src === 'clip' ? sl.gm : null, out: sl.gm, time: t, dur: null, vel});
@@ -20220,60 +20230,59 @@ function mdHit(sl, vel, t, src, ex) {
   if (ST.on && src !== 'preview') vsMaskAdd(t, 0.04);
   if (sl.gm === 36 && S.fxBus.pumpSrc === 'kick' && (src === 'clip' || src === 'pad')) onKickScheduled(t);
   const now = AU.ctx ? AU.ctx.currentTime : 0;
-  for (let k = MDX.pend.length - 1; k >= 0; k--) if (MDX.pend[k].start < now - .05 || MDX.pend[k].dead) MDX.pend.splice(k, 1);
-  MDX.pend.push(h);
+  for (let k = MDS.pend.length - 1; k >= 0; k--) if (MDS.pend[k].start < now - .05 || MDS.pend[k].dead) MDS.pend.splice(k, 1);
+  MDS.pend.push(h);
   return h;
 }
 // bis das Modul bereit ist (≤ 300 ms), bleiben Schläge gepuffert; ein verspäteter Schlag spielt in der Engine sofort
 function mdFlush() {
-  MDX.fq = false;
-  if (MDX.st === 'failed') { mdFallback(); return; }
-  if (MDX.st !== 'ready' || !MDX.q.length) return;
-  if (MDX.dirty) mdSync();
-  const list = MDX.q.map(x => x.it); MDX.q = [];
-  mdPost({t: 'hit', list});
+  MDS.fq = false;
+  if (MDS.st === 'failed') { mdFallback(); return; }
+  const E = mdE(); if (!E || !MDS.q.length) return;
+  if (MDS.dirty) mdSync();
+  const list = MDS.q.map(x => x.it); MDS.q = [];
+  E.hit(list);
 }
 // ohne AudioWorklet: gepufferte Schläge spielen die Drum-Stimme des Pads
 function mdFallback() {
-  const q = MDX.q; MDX.q = []; const c = AU.ctx; if (!c) return;
-  for (const x of q) { const h = MDX.pend.find(y => y.md === x.it.id); if (h) { h.dead = true; logDrop(h.log); if (h.perf) h.perf.dead = true; } drumHit(x.gm, x.it.v, Math.max(x.it.at, c.currentTime + .004), x.src, x.ex); }
+  const q = MDS.q; MDS.q = []; const c = AU.ctx; if (!c) return;
+  for (const x of q) { const h = MDS.pend.find(y => y.md === x.it.id); if (h) { h.dead = true; logDrop(h.log); if (h.perf) h.perf.dead = true; } drumHit(x.gm, x.it.v, Math.max(x.it.at, c.currentTime + .004), x.src, x.ex); }
 }
-// Schläge, die noch nicht begonnen haben, fallen weg (Log, Mitschnitt); in der Engine per id
+// Schläge, die noch nicht begonnen haben, fallen weg (Log, Mitschnitt); in der Engine per id ({t:'cancel', ids})
 function mdDrop(hs) {
   if (!hs.length) return;
-  const ids = new Set(), queued = new Set(MDX.q.map(x => x.it.id));
+  const ids = new Set(), queued = new Set(MDS.q.map(x => x.it.id));
   for (const h of hs) { h.dead = true; logDrop(h.log); if (h.perf) h.perf.dead = true; ids.add(h.md); }
-  MDX.q = MDX.q.filter(x => !ids.has(x.it.id));
-  const sent = [...ids].filter(id => !queued.has(id));
-  if (sent.length) mdPost({t: 'cancel', ids: sent});
+  MDS.q = MDS.q.filter(x => !ids.has(x.it.id));
+  const sent = [...ids].filter(id => !queued.has(id)), E = mdE();
+  if (sent.length && E) E.cancel(sent);
 }
-function mdCancelFrom(t) { if (MDX.pend.length) mdDrop(MDX.pend.filter(h => !h.dead && h.src === 'clip' && h.start >= t - 1e-6)); }
+function mdCancelFrom(t) { if (MDS.pend.length) mdDrop(MDS.pend.filter(h => !h.dead && h.src === 'clip' && h.start >= t - 1e-6)); }
 // ■ (silenceAll): Stimmen klingen mit τ aus, Hall-/Echo-Fahnen laufen weiter; noch nicht begonnene Schläge fallen weg
 function mdSilence(now, tau) {
-  if (MDX.st === 'off' && !MDX.q.length) return;
-  mdDrop(MDX.pend.filter(h => !h.dead && h.start > now + .002));
-  mdPost({t: 'stop', at: now, tau});
+  if (MDS.st === 'off' && !MDS.q.length) return;
+  mdDrop(MDS.pend.filter(h => !h.dead && h.start > now + .002));
+  const E = mdE(); if (E) E.stop(now, tau);
 }
 // ■■ / Panik (tailKill): alles inklusive Fahnen still
 function mdPanic() {
-  if (MDX.st === 'off' && !MDX.q.length) return;
+  if (MDS.st === 'off' && !MDS.q.length) return;
   const now = AU.ctx ? AU.ctx.currentTime : 0;
-  mdDrop(MDX.pend.filter(h => !h.dead && h.start > now + .002)); MDX.q = [];
-  mdPost({t: 'panic'});
+  mdDrop(MDS.pend.filter(h => !h.dead && h.start > now + .002)); MDS.q = [];
+  const E = mdE(); if (E) E.panic();
 }
 // SOLO PART (§ND2 Punkt 6; nicht gespeichert): ch = der Kanal, part 'tone'|'noise'|'click'|'all'; aus = ch -1
 function mdSolo(ch, part) {
   const s = ch == null || ch < 0 ? null : {ch, part: part || 'all'};
-  if (JSON.stringify(s) === JSON.stringify(MDX.solo)) return;
-  MDX.solo = s; mdPost(s ? {t: 'mute', ch: s.ch, solo: s.part} : {t: 'mute', ch: -1, solo: ''});
+  if (JSON.stringify(s) === JSON.stringify(MDS.solo)) return;
+  MDS.solo = s; const E = mdE(); if (E) E.mute(s ? s.ch : -1, s ? s.part : null);
 }
-// Quelle eines Pads (§ND4 Punkt 1): zurück auf Drum = alle Drum-Felder unverändert, die Felder der Engine bleiben gemerkt
+// Quelle eines Pads (§ND4 Punkt 1): zurück auf Drum = alle Drum-Felder unverändert, das Programm bleibt in slot.md gemerkt
 function mdSetSrc(id, src) {
   const snd = drumSnd(), sl = DRUM_BY_ID[id]; if (!snd || snd.engine !== 'drum' || !sl || (src !== 'md' && src !== 'drum')) return false;
   if ((mdIsSrc(id) ? 'md' : 'drum') === src) return false;
-  const st = snd.p.slots[id] || (snd.p.slots[id] = slotDiff(slotParams(id)));
-  if (src === 'md') { if (!MDN.has(st)) Object.assign(st, mdFirstProgram(id)); st.src = 'md'; if (!snd.p.md) snd.p.md = MDN.kitInit(); }
-  else delete st.src;
+  if (src === 'md') { const st = mdSlotMk(id); if (!MDN.has(st)) Object.assign(st, mdFirstProgram(id)); st.src = 'md'; if (!snd.p.md) snd.p.md = MDN.kitInit(); }
+  else { const st = mdSlot(id); if (st) delete st.src; }
   drumChanged(id); mdBoot();
   return true;
 }
@@ -20309,36 +20318,35 @@ async function mdLibSave(id, name, cat) {
 }
 // ein Programm (Spec-Namen) in einen Kanal; Mono-Gruppe und Dynamik-Kurve bleiben beim Kanal (Kit-Einstellungen, §1.11/§1.12)
 function mdLoadProgram(id, prog, name) {
-  const snd = drumSnd(), st = mdSlot(id) || (snd.p.slots[id] = slotDiff(slotParams(id))), keep = {mMono: st.mMono, mDcrv: st.mDcrv};
+  const snd = drumSnd(), st = mdSlotMk(id), keep = {mMono: st.mMono, mCrv: st.mCrv};
   const o = MDN.fromSpec(prog); if (name != null) o.mName = String(name).slice(0, 16);
-  Object.assign(st, o); if (isNum(keep.mMono)) st.mMono = keep.mMono; if (keep.mDcrv) st.mDcrv = keep.mDcrv;
+  Object.assign(st, o); if (isNum(keep.mMono)) st.mMono = keep.mMono; if (keep.mCrv) st.mCrv = keep.mCrv;
   st.src = 'md'; if (!snd.p.md) snd.p.md = MDN.kitInit();
   drumChanged(id); mdBoot();
   return true;
 }
-// Offline-Render (Video/Einfrieren, Tests): Modul im OfflineAudioContext, reset, gleiche Nachrichten
+// Offline-Render (Video VV1 / Einfrieren FR1): eigener Knoten im OfflineAudioContext, reset, gleiche Nachrichten.
+// Für deterministische Renders der ganzen Drum-Spur: MDX.render (erste Nachrichten als processorOptions.init).
 async function mdOffline(oc, dest) {
-  await oc.audioWorklet.addModule('data:application/javascript;base64,' + btoa(MD_WK));
-  const n = new AudioWorkletNode(oc, 'synq-md', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]});
-  n.connect(dest || oc.destination);
-  const post = m => n.port.postMessage(m);
-  post({t: 'reset'});
+  if (!(await MDX.load(oc))) throw new Error(MD_NAME + ': Modul nicht geladen');
+  const E = MDX.node(oc, dest || oc.destination); E.reset();
   const snd = drumSnd();
-  for (const v of DRUM_VOICES) { const st = mdSlot(v.id); if (st && st.src === 'md') post({t: 'ch', ch: v.idx, p: MDN.spec(st)}); }
-  post({t: 'kit', p: Object.assign(MDN.kitInit(), (snd && snd.p && snd.p.md) || {})});
-  return {node: n, post};
+  for (const v of DRUM_VOICES) { const st = mdSlot(v.id); if (st && st.src === 'md') E.ch(v.idx, MDN.spec(st)); }
+  E.kit(Object.assign(MDN.kitInit(), (snd && snd.p && snd.p.md) || {}));
+  return {node: E.node, E, post: m => E.node.port.postMessage(m)};
 }
-// Test-API: Schläge [[t, pad, v, acc?, tune?, dec?]] offline rendern (48 kHz), Ergebnis {l, r}
+// Test-API: Schläge [[t, pad, v, acc?, tune?, dec?]] mit den Programmen der Modell-Pads offline rendern ({sr, sec, solo}), Ergebnis {l, r};
+// mit einem Objekt statt der Liste die ND1-Form MDX.render({sr, sec, chans, kit, hits, msgs})
 async function mdRender(hits, o) {
-  o = o || {}; const sr = o.sr || 48000, sec = o.sec || 2;
-  const oc = new OfflineAudioContext(2, Math.round(sec * sr), sr), E = await mdOffline(oc);
-  if (o.solo) E.post({t: 'mute', ch: o.solo.ch, solo: o.solo.part});
-  E.post({t: 'hit', list: (hits || []).map((h, k) => { const sl = resolveDrum(h[1]); return {ch: sl ? sl.idx : 0, at: h[0], v: h[2] == null ? .8 : h[2], acc: h[3] || 0, tune: h[4] || 0, dec: h[5] || 1, id: k + 1}; })});
-  await new Promise(r => setTimeout(r, 20));
-  const b = await oc.startRendering();
-  return {l: b.getChannelData(0), r: b.getChannelData(1)};
+  if (!Array.isArray(hits)) return MDX.render(hits);
+  o = o || {}; const snd = drumSnd(), chans = {};
+  for (const v of DRUM_VOICES) { const st = mdSlot(v.id); if (st && st.src === 'md') chans[v.idx] = MDN.spec(st); }
+  const kit = Object.assign(MDN.kitInit(), (snd && snd.p && snd.p.md) || {});
+  const list = hits.map((h, k) => { const sl = resolveDrum(h[1]); return {ch: sl ? sl.idx : 0, at: h[0], v: h[2] == null ? .8 : h[2], acc: h[3] || 0, tune: h[4] || 0, dec: h[5] || 1, id: k + 1}; });
+  const msgs = o.solo ? [[0, {t: 'mute', ch: o.solo.ch, solo: o.solo.part}]] : [];
+  return MDX.render({sr: o.sr || 48000, sec: o.sec || 2, chans, kit, hits: list, msgs, lim: o.lim});
 }
-function mdEngineInfo() { return {name: MD_NAME, st: MDX.st, adds: MDX.adds, load: MDX.load, late: MDX.late, solo: MDX.solo, pads: DRUM_VOICES.filter(v => mdIsSrc(v.id)).map(v => v.id), info: MDX.info}; }
+function mdEngineInfo() { const E = MDS.E; return Object.assign(MDX.info(), {st: MDS.st, solo: MDS.solo, pads: DRUM_VOICES.filter(v => mdIsSrc(v.id)).map(v => v.id), live: E ? {load: E.load, late: E.late, voices: E.nv} : null}); }
 // Hilfe (U-07-Stil, §ND4 Punkt 11)
 function mdHelp() {
   return [MD_NAME + ' · QUELLE: Im Drum-Editor SOUND → [Quelle ▾] wählt je Pad die Drum-Stimme oder die Drum-Synthese ' + MD_NAME + '. Zurück auf Drum = der alte Klang; die ' + MD_NAME + '-Werte bleiben gemerkt.',
@@ -20351,89 +20359,6 @@ function mdHelp() {
 }
 /* ===================== Ende ND4 ===================== */
 
-/* ND-STUB: Platzhalter-Prozessor 'synq-md' fuer ND4/ND2 (spielt nur TONE A1 mit E1/E2/E3/L/P/Dynamic-Decay, Bend, Pegel, Pan,
-   Mono-Gruppe, SOLO PART, stop/cancel/panic/reset). Beim Zusammenfuehren wird dieser ganze Block durch den Engine-Kern ND1 ersetzt
-   (gleiche Nachrichten, Konstante MD_WK). ASCII only. */
-const MD_WK = `/* ND-STUB synq-md */
-const MDT = x => 0.004 * Math.pow(2500, x / 50);
-const MDG = x => (x / 50) * (x / 50);
-const MDCRV = {Li: v => v, L1: v => Math.log(1 + 3 * v) / Math.log(4), L2: v => Math.log(1 + 15 * v) / Math.log(16), L3: v => Math.log(1 + 63 * v) / Math.log(64), O1: v => 0.6 + 0.4 * v, O2: v => 0.8 + 0.2 * v};
-class SynqMdStub extends AudioWorkletProcessor {
-  constructor() {
-    super();
-    this.P = []; this.V = []; for (let c = 0; c < 12; c++) { this.P.push(null); this.V.push([this.nv(), this.nv()]); }
-    this.pend = []; this.solo = -1; this.part = ''; this.lim = 0; this.late = 0; this.lateSent = 0; this.blk = 0; this.stopAt = -1; this.stopTau = 0.01;
-    this.port.onmessage = e => this.msg(e.data);
-  }
-  nv() { return {on: 0, ph: 0, t: 0, f0: 440, amp: 0, T: 0.1, mode: 'E1', b0: 0, tb: 0.1, v: 0, g: 1, fade: 0, pl: 0.7, pr: 0.7}; }
-  msg(d) {
-    if (!d || typeof d !== 'object') return;
-    if (d.t === 'ch') { if (d.ch >= 0 && d.ch < 12) this.P[d.ch] = d.p; }
-    else if (d.t === 'kit') this.K = d.p;
-    else if (d.t === 'hit') { for (const h of d.list || []) { if (h.at < currentTime) this.late++; this.pend.push(h); } this.pend.sort((a, b) => a.at - b.at); }
-    else if (d.t === 'cancel') { const s = new Set(d.ids || []); this.pend = this.pend.filter(h => !s.has(h.id)); }
-    else if (d.t === 'mute') { this.solo = d.ch == null ? -1 : d.ch; this.part = d.solo || ''; }
-    else if (d.t === 'stop') { this.pend = this.pend.filter(h => h.at <= d.at); this.stopAt = d.at; this.stopTau = Math.max(0.001, d.tau || 0.01); }
-    else if (d.t === 'panic' || d.t === 'reset') { this.pend = []; for (const vs of this.V) for (const v of vs) v.on = 0; this.stopAt = -1; if (d.t === 'reset') { this.late = 0; this.lateSent = 0; } }
-    else if (d.t === 'lim') this.lim = d.level | 0;
-    else if (d.t === 'info') this.port.postMessage({t: 'info', stub: 1, modes: this.lim >= 2 ? 12 : this.lim >= 1 ? 24 : 48, lim: this.lim, chans: this.P.filter(Boolean).length});
-  }
-  start(h) {
-    const c = h.ch | 0, p = this.P[c]; if (!p) return;
-    const vs = this.V[c], old = vs[0].on ? vs[0] : null, v = old ? vs[1] : vs[0];
-    if (old) { old.fade = 1; }
-    if (old) { vs[0] = v; vs[1] = old; }
-    if (p.mMono) for (let k = 0; k < 12; k++) if (k !== c && this.P[k] && this.P[k].mMono) for (const o of this.V[k]) if (o.on) o.fade = 1;
-    const vel = Math.max(0, Math.min(1, (h.v || 0) + 0.3 * (h.acc || 0)));
-    const cv = (MDCRV[p.mCrv] || MDCRV.Li)(Math.max(0, Math.min(1, h.v || 0)));
-    const x = p.mDm === 'D' ? p.mDd + (p.mDec - p.mDd) * vel : p.mDec;
-    v.on = 1; v.ph = 0; v.t = 0; v.fade = 0; v.g = 1; v.t0 = currentTime;
-    v.f0 = 440 * Math.pow(2, ((p.mPit || 0) + (h.tune || 0) - 69) / 12);
-    v.T = MDT(x) * (h.dec || 1); v.mode = p.mDm === 'D' ? 'E1' : p.mDm; v.v = vel;
-    const b = p.mBnd || 0; v.b0 = (b < 0 ? -1 : 1) * 48 * (b / 50) * (b / 50) * (0.3 + 0.7 * vel); v.tb = MDT(p.mBt || 0);
-    v.amp = MDG(p.mTlv) * MDG(p.mLvl) * cv * (1 + 0.6 * (h.acc || 0));
-    const a = ((p.mPan || 0) + 9) / 18 * Math.PI / 2; v.pl = Math.cos(a); v.pr = Math.sin(a);
-  }
-  env(v) {
-    const t = v.t, T = v.T;
-    if (v.mode === 'L') return t >= T ? 0 : 1 - t / T;
-    if (v.mode === 'E2') return Math.pow(10, -3 * Math.pow(t / T, 0.7));
-    if (v.mode === 'E3') return Math.pow(10, -3 * Math.sqrt(t / T));
-    const e = Math.pow(10, -3 * t / T);
-    return v.mode === 'P' ? e * (1 + v.v * Math.exp(-t / 0.006)) : e;
-  }
-  process(ins, outs) {
-    const o = outs[0], L = o[0], R = o[1] || o[0], n = L.length, sr = sampleRate, t0 = currentTime;
-    for (let i = 0; i < n; i++) { L[i] = 0; R[i] = 0; }
-    let k = 0; while (k < this.pend.length && this.pend[k].at < t0 + n / sr) k++;
-    const due = k ? this.pend.splice(0, k) : null;
-    const fadeK = Math.exp(-1 / (0.003 * sr / 5)), stopK = this.stopAt >= 0 ? Math.exp(-1 / (this.stopTau * sr)) : 1;
-    for (let i = 0; i < n; i++) {
-      const t = t0 + i / sr;
-      if (due) for (const h of due) { const off = Math.max(0, Math.round((h.at - t0) * sr)); if (off === i || (i === 0 && off <= 0)) this.start(h); }
-      const stopping = this.stopAt >= 0 && t >= this.stopAt;
-      for (let c = 0; c < 12; c++) {
-        const mute = this.solo >= 0 && (c !== this.solo || (this.part !== 'tone' && this.part !== 'all'));
-        for (const v of this.V[c]) {
-          if (!v.on) continue;
-          const bend = v.t < v.tb ? v.b0 * (Math.exp(-4 * v.t / v.tb) - Math.exp(-4)) / (1 - Math.exp(-4)) : 0;
-          const f = v.f0 * Math.pow(2, bend / 12);
-          if (v.fade) v.g *= fadeK; else if (stopping && v.t0 < this.stopAt) v.g *= stopK;
-          const y = mute ? 0 : Math.sin(2 * Math.PI * v.ph) * v.amp * this.env(v) * v.g;
-          L[i] += y * v.pl; R[i] += y * v.pr;
-          v.ph += f / sr; if (v.ph >= 1) v.ph -= 1; v.t += 1 / sr;
-          if (v.g < 1e-5 || (v.mode === 'L' && v.t >= v.T) || v.t > v.T * 1.6 + 0.02) v.on = 0;
-        }
-      }
-    }
-    if (this.stopAt >= 0 && t0 > this.stopAt + this.stopTau * 12) this.stopAt = -1;
-    if (++this.blk % 375 === 0) { this.port.postMessage({t: 'load', v: 0}); if (this.late !== this.lateSent) { this.lateSent = this.late; this.port.postMessage({t: 'late', n: this.late}); } }
-    return true;
-  }
-}
-registerProcessor('synq-md', SynqMdStub);
-`;
-/* Ende ND-STUB */
 
 /* ---------- metronome ---------- */
 function click(t, accent) {
@@ -20990,7 +20915,7 @@ function stopTrackNow(i) {
   { const A = arpK(); if (A && A.busy()) A.cut(i, now + .005); }  // MK5: the arp of this track stops with its clip
   for (const v of VOICES.slice()) if (!v.dead && v.track === i && v.src === 'clip') v.release(now + .005, .01);
   if (S.tracks[i].kind === 'drum') for (const h of HITS.slice()) if (!h.dead && h.src === 'clip') { try { h.out.gain.setTargetAtTime(0, now, .01); } catch (e) {} hitStopAll(h, now + .06); }
-  if (S.tracks[i].kind === 'drum') mdPost({t: 'stop', at: now, tau: .01});   // ND4: klingende North-Stimmen ebenso
+  if (S.tracks[i].kind === 'drum') { const E = mdE(); if (E) E.stop(now, .01); }   // ND4: klingende North-Stimmen ebenso
   UI.dirty.grid = true;
 }
 // a stop that was queued by a tap on the playing clip (§3.2): cancelled silently when the clip is opened for editing
@@ -33232,7 +33157,7 @@ async function saveSound(t, name, mode) {
 /* ---------- user library (§11.4): KV key 'lib', loaded at start-up; the full library goes into every project file ---------- */
 const LIB = {lib: null, ok: false, ver: 0, wait: null};
 // factory names count as taken for own sounds: no two rows in „Alle“ share a name (§11.3 „Rom-Fläche 2“)
-function factoryNames() { return FACTORY.map(f => f.name).concat(KIT_NAMES, mkLoaded() && window.MKF ? MKF.names() : [], mkLoaded() && window.MKK ? MKK.names() : []); }   // MK8b: Micro
+function factoryNames() { return FACTORY.map(f => f.name).concat(KIT_NAMES, MD_KIT_NAMES, mkLoaded() && window.MKF ? MKF.names() : [], mkLoaded() && window.MKK ? MKK.names() : []); }   // MK8b: Micro
 function libReady() {
   if (LIB.ok) return Promise.resolve(LIB.lib);
   if (!LIB.wait) LIB.wait = (async () => {
@@ -33919,7 +33844,8 @@ function applyDrumSound(snd) {
 // factory id, or an own kit (library id or name). The whole drum sound is replaced (one undo step at the call site)
 function kitSound(q) {
   const s = String(q == null ? '' : q).trim();
-  const n = kitName(s) || (FACTORY_BY_ID.has(s) && FACTORY_BY_ID.get(s).engine === 'drum' ? FACTORY_BY_ID.get(s).name : null) || (s.toLowerCase() === INIT_KIT.name.toLowerCase() ? INIT_KIT.name : null);
+  const n = kitName(s) || (FACTORY_BY_ID.has(s) && FACTORY_BY_ID.get(s).engine === 'drum' ? FACTORY_BY_ID.get(s).name : null) || (s.toLowerCase() === INIT_KIT.name.toLowerCase() ? INIT_KIT.name : null)
+    || MD_KIT_NAMES.find(k => k.toLowerCase() === s.toLowerCase()) || null;   // NDSTAGE: North-Kits per Name
   if (n) return factorySound(kitId(n));
   if (LIB.ok) { const u = LIB.lib.get(s) || LIB.lib.all().find(x => x.engine === 'drum' && x.name.toLowerCase() === s.toLowerCase()); if (u && u.engine === 'drum') return soundCopy(u); }
   return null;
@@ -34062,7 +33988,7 @@ function dKnobs(pg, groups, cls) {
   pg.appendChild(w); return w;
 }
 // kit step ‹ › (factory kits, then own kits)
-function kitList() { const own = LIB.ok ? LIB.lib.all().filter(s => s.engine === 'drum') : []; return KIT_NAMES.map(n => ({id: kitId(n), name: n})).concat(own.map(u => ({id: u.id, name: u.name}))); }
+function kitList() { const own = LIB.ok ? LIB.lib.all().filter(s => s.engine === 'drum') : []; return KIT_NAMES.concat(MD_KIT_NAMES).map(n => ({id: kitId(n), name: n})).concat(own.map(u => ({id: u.id, name: u.name}))); }
 function stepKit(dir) {
   const L = kitList(), cur = drumSnd().origin, k = L.findIndex(x => x.id === cur);
   const nx = L[((k < 0 ? (dir > 0 ? -1 : 0) : k) + dir + L.length) % L.length];
@@ -34402,7 +34328,7 @@ const MD_CELL = {
     if (f === 'H') return 'Neigung ' + mdDec(2 - 1.7 * v / 50, 2); if (f === 'd' || f === 'P') return 'Härte ' + mdDec(4 * Math.pow(.025, v / 50), 2) + ' ms';
     if (w === 'r1') return 'Ringmod ' + Math.round(v * 2) + ' %'; return 'Helligkeit ' + Math.round(v * 2) + ' %'; }, inert: s => s.mWav === 'A1', what: 'Anfangs-Klangfarbe'},
   mDyf: {l: 'DYN FILTER', n: [0, 9], sub: v => (v ? 'Anschlag öffnet' : 'aus'), inert: s => s.mWav === 'A1', what: 'Anschlag öffnet die Klangfarbe'},
-  mTdec: {l: 'DECAY', n: [0, 50], sub: (v, s) => mdTime(mdT(v)), what: 'Länge des Tons'},
+  mDec: {l: 'DECAY', n: [0, 50], sub: (v, s) => mdTime(mdT(v)), what: 'Länge des Tons'},
   mode: {l: 'MODE', vals: ['E1', 'E2', 'E3', 'L', 'P'], dyn: 1, m: 'mDm', d: 'mDd', what: 'Abklingform; Zahl = Dynamic Decay (Länge bei leisem Anschlag)'},
   mBnd: {l: 'BEND', n: [-50, 50], bip: 1, sub: v => (v ? 'beginnt ' + mdDec(48 * (v / 50) * (v / 50), 1) + ' HT ' + (v > 0 ? 'höher' : 'tiefer') : 'aus'), what: 'Tonhöhen-Biegung je Anschlag'},
   mBt: {l: 'TIME', n: [0, 50], sub: v => mdTime(mdT(v)), what: 'Dauer der Biegung'},
@@ -34418,7 +34344,7 @@ const MD_CELL = {
   mClv: {l: 'LEVEL', n: [0, 50], sub: v => mdDb(v), what: 'Pegel des Anschlag-Klicks'},
   mCty: {l: 'TYPE', vals: ['n1', 'n2', 'n3', 'P1', 'P2', 'P3', 'H1', 'H2', 'H3', 'C1', 'C2', 'C3'], sub: v => MD_CTY_S[v], long: v => MD_CTY[v], what: 'Art des Klicks'},
   mNlv: {l: 'NOISE LVL', n: [0, 50], sub: v => mdDb(v), what: 'Pegel des Rauschens'},
-  mChlv: {l: 'CH LEVEL', n: [0, 50], sub: v => mdDb(v), what: 'Pegel des Kanals'},
+  mLvl: {l: 'CH LEVEL', n: [0, 50], sub: v => mdDb(v), what: 'Pegel des Kanals'},
   mTlv: {l: 'TONE LVL', n: [0, 50], sub: v => mdDb(v), what: 'Pegel des Tons'},
   mPan: {l: 'PAN', n: [-9, 9], bip: 1, fmt: mdPan, sub: v => (v === 0 ? 'Mitte' : v < 0 ? 'links' : 'rechts'), what: 'Panorama'},
   mEqf: {l: 'EQ FREQ', n: [0, 50], sub: v => mdHz(mdFE(v)), inert: s => !s.mEqg, what: 'Frequenz des EQ (wirkt nur mit EQ GAIN)'},
@@ -34428,8 +34354,8 @@ const MD_CELL = {
   mRvb: {l: 'REVERB', n: [0, 50], sub: v => (v ? Math.round(v * 2) + ' % Hall' : 'trocken'), what: 'Anteil im gemeinsamen Hall'},
   mDly: {l: 'DELAY', n: [0, 50], sub: v => (v ? Math.round(v * 2) + ' % Echo' : 'aus'), what: 'Anteil im Echo'},
 };
-const MD_PAGES = {tone: [['mSpc', 'mFrq', 'mTdec', 'mBnd', 'mPit'], ['mWav', 'mDyf', 'mode', 'mBt', 'scl']], noise: [['mNres', 'mNfrq', 'mNdec'], ['mNtyp', 'mNdyf', 'nmode']],
-  click: [['mClv'], ['mCty']], mix: [['mNlv', 'mChlv'], ['mTlv', 'mPan']], fx: [['mEqf', 'mDst', 'mRvb'], ['mEqg', 'mDty', 'mDly']]};
+const MD_PAGES = {tone: [['mSpc', 'mFrq', 'mDec', 'mBnd', 'mPit'], ['mWav', 'mDyf', 'mode', 'mBt', 'scl']], noise: [['mNres', 'mNfrq', 'mNdec'], ['mNtyp', 'mNdyf', 'nmode']],
+  click: [['mClv'], ['mCty']], mix: [['mNlv', 'mLvl'], ['mTlv', 'mPan']], fx: [['mEqf', 'mDst', 'mRvb'], ['mEqg', 'mDty', 'mDly']]};
 const mdCurSl = () => DRUM_VOICES[clamp(ED.dVoice | 0, 0, 11)];
 const mdCur = () => mdSlot(mdCurSl().id) || MDN.init();
 const mdChans = () => DRUM_VOICES.filter(v => mdIsSrc(v.id));
@@ -34565,7 +34491,7 @@ function mdHeadSolo() {
   if (!t) { t = el('span', 'mdsoloh', 'SOLO PART'); const tt = r1.querySelector('.sh-title'); if (tt && tt.nextSibling) r1.insertBefore(t, tt.nextSibling); else r1.appendChild(t); }
 }
 // ⋯: Kopieren, Einfügen (ALLE KANÄLE: an alle), Tauschen, Init, Programm sichern – je ein Undo
-const MD_KEEP = ['mMono', 'mDcrv'];             // Kanal-Einstellungen (Kit) bleiben beim Programm-Wechsel am Kanal
+const MD_KEEP = ['mMono', 'mCrv'];             // Kanal-Einstellungen (Kit) bleiben beim Programm-Wechsel am Kanal
 const mdProg = s => { const o = {}; for (const k of MDN.KEYS) if (!MD_KEEP.includes(k)) o[k] = s[k]; return o; };
 function mdMore(anchor) {
   const sl = mdCurSl();
@@ -34604,8 +34530,8 @@ function mdSavePop(anchor) {
     setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 30);
   }, {name: 'mdsave'});
 }
-// Programm ▾ (DRUM SELECT): Kategorie-Chips + Liste (Werk aus ND3: window.MD_PROGRAMS [{name, mCat, …Spec-Werte}], Eigene aus der Bibliothek)
-const mdFactory = () => (Array.isArray(window.MD_PROGRAMS) ? window.MD_PROGRAMS : []);
+// Programm ▾ (DRUM SELECT): Kategorie-Chips + Liste (Werk aus ND3: MDX.progs, Eigene aus der Bibliothek)
+const mdFactory = () => MDX.progs.map(p => Object.assign({name: p.mName}, p));   // NDSTAGE: Werk = ND3 (MDX.progs)
 function mdProgPop(anchor) {
   libReady().then(() => openPop(anchor, p => {
     const sl = mdCurSl();
@@ -34630,7 +34556,7 @@ function mdProgPop(anchor) {
 function pageMdKanal(pg) {
   const sl = mdCurSl(), id = sl.id;
   const head = el('div', 'drow rest'); head.appendChild(drumInstBtn('')); head.appendChild(mdSrcBtn(id)); pg.appendChild(head);
-  const crv = makeSeg(MDN.K.mDcrv[2].map(c => [c, c, MD_CRV[c]]), () => mdCur().mDcrv, v => { mdSet('mDcrv', v); lcdShow('DYNAMICS', v, '', MD_CRV[v]); }, 'mdcrv', {undo: soundUndo(DRUM_T), label: 'DYNAMICS'});
+  const crv = makeSeg(MDN.K.mCrv[2].map(c => [c, c, MD_CRV[c]]), () => mdCur().mCrv, v => { mdSet('mCrv', v); lcdShow('DYNAMICS', v, '', MD_CRV[v]); }, 'mdcrv', {undo: soundUndo(DRUM_T), label: 'DYNAMICS'});
   const mono = el('button', 'tgl rb mdmono', '<i class="led"></i><span>MONO-GRUPPE</span>'); mono.setAttribute('role', 'switch');
   const mu = () => { const v = !!mdCur().mMono; mono.classList.toggle('on', v); mono.setAttribute('aria-checked', String(v)); };
   onTap(mono, () => { soundEdit(DRUM_T, 'Mono-Gruppe ' + (mdCur().mMono ? 'aus' : 'an'), () => mdSet('mMono', mdCur().mMono ? 0 : 1)); mu(); ov(); lcdShow('MONO-GRUPPE', mdCur().mMono ? 'an – ein Schlag bringt die anderen Pads der Gruppe zum Schweigen' : 'aus'); }); mu();
@@ -43919,7 +43845,7 @@ const SYNQUENZER = {
   // ND4/ND2: Drum-Engine MD_NAME (Quelle je Pad, Offline-Render, Zustand, SOLO PART)
   setPadSource: (pad, src) => setPadSource(pad, src), padSource: pad => { const sl = resolveDrum(pad); return sl ? (mdIsSrc(sl.id) ? 'md' : 'drum') : null; },
   mdRender: (hits, o) => mdRender(hits, o), mdInfo: () => mdEngineInfo(), mdName: () => MD_NAME,
-  mdQuery: () => new Promise(r => { if (MDX.st !== 'ready') return r(null); MDX.info = null; mdPost({t: 'info'}); let k = 0; const w = () => (MDX.info || ++k > 50 ? r(MDX.info) : setTimeout(w, 20)); w(); }),
+  mdQuery: async () => { const E = mdE(); if (!E) return null; const r = await E.test({q: 'modes'}); return r ? Object.assign({}, r, {t: 'info'}) : null; },   // ND4-10: Moden je Kanal
   // VS0 Mikro-Check: Stand, Öffnen/Schließen, Start (Tests: {driftSec, noStore}), Ergebnis-JSON, Schätzer (N7V-02)
   micCheck: () => ({avail: micAvail(), gum: MIC.gum, open: MIC.open, running: !!MIC.run, phase: MIC.res ? MIC.res.phase : null, hold: SYNC.hold,
     menu: !!document.querySelector('#menu .mmic'), result: MIC.res ? JSON.parse(JSON.stringify(MIC.res)) : null}),
@@ -44153,7 +44079,7 @@ const SYNQUENZER = {
   // MK1 (Nachtrag 3 B.7): the AM engine
   mkGet: t => { const s_ = sndOf(t); return s_ && s_.p.mk ? deep(s_.p.mk) : null; },
   mkSet: (t, path, v) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'mk') throw new Error('Keine ' + MK_LABEL + '-Spur: ' + t); return soundEdit(t, MK_LABEL + ' ' + path, () => mkSetP(t, path, v, false)); },
-  mdInfo: () => MDX.info(), mdRender: o => MDX.render(o), mdTest: m => Promise.all([...MDX.nodes].map(E => E.test(m))),   /* ND1 test API */
+  mdTest: m => Promise.all([...MDX.nodes].map(E => E.test(m))),   /* ND1 test API (mdInfo/mdRender: ND4-Einträge oben, beide Formen) */
   mkRender: (sound, ev, o) => mkRender(sound, ev, o), mkScope: t => mkScopeOf(t), mkInfo: () => mkInfo(),
   mkWheel: (t, w, v) => mkWheelApi(t, w, v), mkPanel: () => (mkLoaded() ? MKUI.panelInfo() : null), perfProbe: cases => mkLoad().probe(cases),
   arpLog: t => (arpK() ? ARPC.arpLog(t) : []), arpClear: t => { if (arpK()) ARPC.clearLog(t); }, arpInfo: t => (arpK() ? ARPC.info(t) : null),   // MK5 (B.7)

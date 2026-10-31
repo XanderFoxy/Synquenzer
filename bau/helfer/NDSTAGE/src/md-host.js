@@ -5,7 +5,8 @@
    MDX.load(ctx) -> Promise<bool>        addModule (Blob URL, then data: URL; source is ASCII), once per context
    MDX.node(ctx, dest) -> E               one AudioWorkletNode per drum track (0 inputs, 1 stereo output -> dest); on an
                                           OfflineAudioContext the node gets no CPU-limiter stage and is not counted in cpuLoad
-     E.ch(i, p) · E.kit(p) · E.hit(list) (batched per task) · E.mute(ch, solo) · E.stop(at, tau) · E.panic() · E.reset()
+     E.ch(i, p) · E.kit(p) · E.hit(list) (batched per task; item {ch, at, v, acc, tune, dec, id?}) · E.cancel(ids) · E.mute(ch, solo)
+     E.stop(at, tau) · E.panic() · E.reset()
      E.lim(stage) · E.test(msg) -> Promise(reply|null, by id, 2 s) · E.dispose(); E.load / E.nv / E.late (once per second)
      live hits: send at most 4096 ahead (worklet queue); MDX.render splits long patterns by itself
    MDX.render(o) -> Promise<{l, r}>       offline render through the same module (tests, video VV1, freeze FR1); a node for an
@@ -116,6 +117,8 @@ const MDX = (() => {
     E.mute = (ch, solo) => post({t: 'mute', ch, solo: solo || null});
     E.stop = (at, tau) => { E.flush(); post({t: 'stop', at, tau}); };
     E.panic = () => { E.q = []; post({t: 'panic'}); };
+    // NDSTAGE (ND4): drop planned hits by id - still batched here, or already queued in the worklet
+    E.cancel = ids => { if (!ids || !ids.length) return; const S = new Set(ids); E.q = E.q.filter(h => !S.has(h.id)); post({t: 'cancel', ids: [...S]}); };
     E.reset = () => { E.flush(); post({t: 'reset'}); };
     E.lim = s => { if (E.offline) return; E.lastLim = s | 0; post({t: 'lim', s: s | 0}); };
     // test API: every request carries an id, the worklet always answers with it; null after 2 s, on a closed context or after dispose

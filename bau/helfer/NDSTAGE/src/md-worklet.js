@@ -10,6 +10,7 @@
                                 tune = semitones (TUNE lock); dec = factor (DECAY lock)
      {t:'mute', ch, solo}       SOLO PART: solo 'tone'|'noise'|'click'|'all' on channel ch, other channels silent; solo null = off
      {t:'stop', at, tau}        voices fade with tau from at (tails keep ringing); queued hits at or after at are dropped
+     {t:'cancel', ids:[id]}     queued hits with these ids are dropped (hit items may carry an integer id)
      {t:'panic'}                everything incl. echo and hall tails silent within 10 ms; queued hits are dropped
      {t:'reset'}                voices off, noise sequences, echoes, hall and smoothers to their start (offline render, tests)
      {t:'lim', s}               CPU limiter stage 0..3 (modal models: s>=1 24 modes, s>=2 12 modes and no early reflections)
@@ -22,6 +23,13 @@
    Determinism: no Math.random; noise = xorshift32 per channel from a fixed seed; reset restarts everything. */
 'use strict';
 const SR = sampleRate, ISR = 1 / SR, CR = 16, NCH = 12, NV = 2, MAXM = 48, LN1K = 6.907755278982137;
+// mode limits (NDSTAGE, Q3: constants so they can be changed quickly after the iPhone test): modal models / harmonic family H
+// at CPU-limiter stage 0 / >=1 / >=2
+const M_LIM1 = 24, M_LIM2 = 12, H_MAX = 32, H_LIM1 = 16, H_LIM2 = 12;
+// level guard (NDSTAGE, Q2): soft clip after the channel sum + hall, transparent up to +6 dBFS, peak below +12 dBFS (ND1-27)
+const LG_T = 2, LG_C = 3.9810717055349722, LG_W = LG_C - LG_T;
+// resonance centre (NDSTAGE, Q1): H family fc = f0 * 2^(H_FC * S / 99); P family resonator width in octaves
+const H_FC = 5, P_SIG = 0.08;
 const PI = Math.PI, TAU = 2 * Math.PI;
 const NYQ = 0.45 * SR;
 /* ---------- tables (built once when the module loads) ---------- */
@@ -281,7 +289,7 @@ class Voice {
     const F0 = this.fEff(0, this.frq, this.dfT);
     this.ph.fill(0); this.ph2.fill(0);
     const bmax = this.b0 > 0 ? Math.pow(2, this.b0 / 12) : 1;
-    let cap = E.lim >= 2 ? 12 : E.lim >= 1 ? 24 : MAXM;
+    let cap = E.lim >= 2 ? M_LIM2 : E.lim >= 1 ? M_LIM1 : MAXM;
     this.inc = Math.min(f0 * this.bm, NYQ) * ISR; this.dinc = 0;
     if (fam === FAM_A) {
       this.det = s >= 2 && s <= 5 ? Math.pow(2, VERST[this.spc] / 12) : 1;
@@ -315,15 +323,15 @@ class Voice {
       this.setupModalDecay(); this.modal = true;
       this.nm = 0; this.cap = cap; this.bmax = bmax; this.gmax = 1;
       if (fam === FAM_H) {
-        const al = 2 - 1.7 * F0 / 50, fc = f0 * Math.pow(2, 8 * this.spc / 99);
+        const al = 2 - 1.7 * F0 / 50, fc = f0 * Math.pow(2, H_FC * this.spc / 99);
         let ss = 0; const kmax = s === 6 ? 24 : 64; let cnt = 0;
-        const hcap = Math.min(cap, E.lim >= 1 ? (E.lim >= 2 ? 12 : 16) : 32);
-        for (let k = 1; k <= kmax && cnt < 32; k++) {
+        const hcap = Math.min(cap, E.lim >= 1 ? (E.lim >= 2 ? H_LIM2 : H_LIM1) : H_MAX);
+        for (let k = 1; k <= kmax && cnt < H_MAX; k++) {
           if (s === 2 && k % 2 === 0) continue; if (s === 3 && k % 3 === 0) continue; if (s === 4 && k > 1 && k % 2 === 1) continue;
           cnt++; const a = Math.pow(k, -al); ss += a * a;
         }
         const nrm = 1 / Math.sqrt(ss); cnt = 0; this.cap = hcap;
-        for (let k = 1; k <= kmax && cnt < 32; k++) {
+        for (let k = 1; k <= kmax && cnt < H_MAX; k++) {
           if (s === 2 && k % 2 === 0) continue; if (s === 3 && k % 3 === 0) continue; if (s === 4 && k > 1 && k % 2 === 1) continue;
           cnt++; const f = s === 6 ? k * f0 * Math.sqrt(1 + 0.0008 * k * k) : k * f0;
           this.add(f, Math.pow(k, -al) * this.wH(f, fc, s === 5) * nrm, Math.pow(k, -0.5));
@@ -346,7 +354,7 @@ class Voice {
       } else if (fam === FAM_P) {
         const B = PMOD[s - 1], fR = f0 * Math.pow(2, (this.spc - 24) / 25), tc = 0.004 * Math.pow(0.025, F0 / 50);
         for (let k = 0; k < B.r.length; k++) {
-          const f = f0 * B.r[k], l = Math.log2(f / fR), W = 1 + 3 * Math.exp(-l * l / (2 * 0.08 * 0.08));
+          const f = f0 * B.r[k], l = Math.log2(f / fR), W = 1 + 3 * Math.exp(-l * l / (2 * P_SIG * P_SIG));
           this.add(f, B.a[k] * B.nrm * hard(f, tc) * W, B.g[k] * (1 + 0.5 * (W - 1) / 3));
         }
       } else if (fam === FAM_C1) {
@@ -749,7 +757,7 @@ class MdProc extends AudioWorkletProcessor {
     this.mskT = new Float64Array(NCH); this.mskN = new Float64Array(NCH); this.mskC = new Float64Array(NCH);
     this.soloCh = -1; this.soloP = 0; this.lim = 0; this.tap = 0; this.sent = true; this.errAt = -1e12; this.qover = 0; this.dcOn = true; this.dcA = 1 - TAU * 5 / SR; this.dcX = 0.1; this.dcY = 0.1; this.dcW = 0.1; this.dcZ = 0.1;
     // hit queue (preallocated)
-    this.QN = 4096; this.q = []; for (let i = 0; i < this.QN; i++) this.q.push({fr: 0, ch: 0, v: 0, acc: 0, tune: 0, dec: 1}); this.qn = 0;
+    this.QN = 4096; this.q = []; for (let i = 0; i < this.QN; i++) this.q.push({fr: 0, ch: 0, v: 0, acc: 0, tune: 0, dec: 1, id: 0}); this.qn = 0;
     this.late = 0; this.lateSent = 0;
     this.stopFr = -1; this.stopTau = 0.02; this.pan = 0;
     // kit
@@ -820,6 +828,8 @@ class MdProc extends AudioWorkletProcessor {
       case 'all': { const L = m.list || []; for (const x of L) this.onMsg(x); break; }   // several messages of one render quantum (offline)
       case 'mute': { const s = m.solo; this.soloCh = s ? (m.ch | 0) : -1; this.soloP = s === 'tone' ? 1 : s === 'noise' ? 2 : s === 'click' ? 3 : 0; for (const C of this.chs) this.levels(C); break; }
       case 'stop': { this.stopFr = Math.round((+m.at || 0) * SR); this.stopTau = Math.max(0.001, +m.tau || 0.02); break; }
+      case 'cancel': { const ids = m.ids || []; if (!ids.length) break; const S = new Set(ids); let j = 0;   // NDSTAGE (ND4): queued hits by id are dropped (scene change, cancelTrackFrom)
+        for (let i = 0; i < this.qn; i++) { if (!S.has(this.q[i].id)) { const t = this.q[j]; this.q[j] = this.q[i]; this.q[i] = t; j++; } } this.qn = j; break; }
       case 'panic': { this.qn = 0; this.pan = Math.max(1, Math.round(0.01 * SR)); this.panN = this.pan; break; }
       case 'reset': { this.resetAll(); break; }
       case 'lim': { this.lim = Math.max(0, Math.min(3, m.s | 0)); break; }
@@ -840,7 +850,7 @@ class MdProc extends AudioWorkletProcessor {
     let j = this.qn; const q = this.q, rec = q[j];
     while (j > 0 && q[j - 1].fr > fr) { q[j] = q[j - 1]; j--; }
     q[j] = rec; this.qn++;
-    rec.fr = fr; rec.ch = ch; rec.v = clampN(h.v, 0, 1, 0.8); rec.acc = clampN(h.acc, 0, 1, 0); rec.tune = clampN(h.tune, -48, 48, 0); rec.dec = clampN(h.dec, 0.05, 20, 1);
+    rec.fr = fr; rec.ch = ch; rec.v = clampN(h.v, 0, 1, 0.8); rec.acc = clampN(h.acc, 0, 1, 0); rec.tune = clampN(h.tune, -48, 48, 0); rec.dec = clampN(h.dec, 0.05, 20, 1); rec.id = (+h.id || 0) | 0;
   }
   renderTo(C, s) { for (let j = 0; j < NV; j++) { const v = C.v[j]; if (v.on && v.bp < s) { v.render(C.buf, v.bp, s); v.bp = s; } } }
   hit(h, off) {
@@ -908,6 +918,9 @@ class MdProc extends AudioWorkletProcessor {
     if (this.dcOn) { const a = this.dcA; let x1 = this.dcX, y1 = this.dcY, x2 = this.dcW, y2 = this.dcZ;
       for (let i = 0; i < N; i++) { const l = L[i], r = R[i]; y1 = l - x1 + a * y1; x1 = l; L[i] = y1; y2 = r - x2 + a * y2; x2 = r; R[i] = y2; }
       if (y1 < 1e-15 && y1 > -1e-15) y1 = 0; if (y2 < 1e-15 && y2 > -1e-15) y2 = 0; this.dcX = x1; this.dcY = y1; this.dcW = x2; this.dcZ = y2; }
+    // level guard (Q2): soft clip, bit-exact below LG_T
+    for (let i = 0; i < N; i++) { const l = L[i]; if (l > LG_T) L[i] = LG_T + LG_W * Math.tanh((l - LG_T) / LG_W); else if (l < -LG_T) L[i] = -LG_T - LG_W * Math.tanh((-l - LG_T) / LG_W); }
+    if (R !== L) for (let i = 0; i < N; i++) { const r = R[i]; if (r > LG_T) R[i] = LG_T + LG_W * Math.tanh((r - LG_T) / LG_W); else if (r < -LG_T) R[i] = -LG_T - LG_W * Math.tanh((-r - LG_T) / LG_W); }
     // panic: 10 ms fade, then everything cleared
     if (this.pan > 0) {
       for (let i = 0; i < N; i++) { const g = this.pan > 0 ? this.pan / this.panN : 0; L[i] *= g; if (R !== L) R[i] *= g; if (this.pan > 0) this.pan--; }
