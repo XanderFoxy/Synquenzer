@@ -16,4 +16,7 @@ export const FIXTURE_KARTE = [
   ['arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs?was=%C3%9Cbersetzer+Arabisch', 'ba-arabisch.json'],
   ['rss/gruppe/freebies', 'mydealz-freebies.xml'],
   ['rss/gruppe/gewinnspiele', 'mydealz-gewinnspiele.xml'],
+  ['search?q=Kontowechselpr', 'mydealz-praemien-konto.xml'],
+  ['search?q=Geld%20zur', 'mydealz-praemien-gzg.xml'],
+  ['search?q=Wechselbonus', '!fehler'],
 ];

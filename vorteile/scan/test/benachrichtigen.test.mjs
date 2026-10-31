@@ -57,11 +57,31 @@ test('Gesamtlauf mit Fixtures: Erstlauf still, zweiter Lauf meldet nur Neues', a
     assert.equal(r1.plan.sofort.length, 0);
     assert.ok(r1.alleEintraege.length >= 10);
     const a = JSON.parse(await readFile(join(dir, 'aktuell.json'), 'utf8'));
-    assert.deepEqual(Object.keys(a.kategorien), ['deals', 'erleben', 'reisen', 'musik', 'nebenverdienst', 'tests']);
+    assert.deepEqual(Object.keys(a.kategorien), ['deals', 'erleben', 'reisen', 'musik', 'nebenverdienst', 'tests', 'praemien']);
     assert.ok(a.sofort.length > 0);
     assert.equal(a.status.reisen.ok, false);
     const r2 = await main(['--fixtures', '--data', dir, '--jetzt', '2026-10-31T20:00:00Z']);
     assert.equal(r2.plan.sofort.length, 0, 'alles schon bekannt');
     assert.equal(r2.plan.digest, null);
+    // Prämien sortiert nach Netto pro Stunde Aufwand
+    const pr = a.kategorien.praemien.map(e => e.extra.proStunde);
+    assert.deepEqual(pr, [...pr].sort((x, y) => y - x));
+  } finally { console.log = log; }
+});
+
+test('Neues Modul in laufendem Radar: erster Lauf meldet nichts nach (keine Push-Flut)', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'vorteile-'));
+  const log = console.log; console.log = () => {};
+  try {
+    await main(['--fixtures', '--data', dir, '--jetzt', '2026-10-31T19:00:00Z']);
+    // so tun, als hätte es das Prämien-Modul vorher nicht gegeben
+    const zp = join(dir, 'zustand.json');
+    const z = JSON.parse(await readFile(zp, 'utf8'));
+    delete z.lauf.praemien; z.gemeldet = {}; z.digestTag = '2026-10-31';
+    const { writeFile } = await import('node:fs/promises');
+    await writeFile(zp, JSON.stringify(z));
+    const r = await main(['--fixtures', '--data', dir, '--jetzt', '2026-10-31T20:00:00Z', '--modus', 'digest']);
+    assert.ok(!r.plan.sofort.some(s => s.e.kategorie === 'praemien'));
+    assert.ok(!(r.plan.digest?.liste || []).some(e => e.kategorie === 'praemien'));
   } finally { console.log = log; }
 });

@@ -19,6 +19,7 @@ Adresse `…/vorteile/` leitet dorthin weiter.
 | **Musik** | Wunsch-Synths unter Zielpreis oder auf Tiefstpreis; „Bands gesucht“ und Open Calls mit Frist | mydealz-Suche, optional Geizhals, Google-News-RSS |
 | **Nebenverdienst** | Deutschunterricht/Nachhilfe (auch online), Übersetzung Deutsch↔Arabisch/Englisch, KI-Bild/Video, kleine kreative Jobs – von zu Hause | Jobsuche-API der Arbeitsagentur |
 | **Tests & Gewinnspiele** | Produkttests (Technik, Snacks) und Gewinnspiele mit attraktivem Preis und echten Chancen – Fallen (Gewinnspiel-Services, Abos, SMS, Kosten) fliegen raus | mydealz, Google-News-RSS |
+| **Prämien & Freunde werben** | Werbeprämien (Freunde werben), Konto-/Neukundenprämien, Cashback, Strom-/Gas-/Handy-Wechselbonus, Payback-/Coupon-Extrapunkte, Gratis-Produkte, Geld-zurück-Aktionen, App-Startprämien. Pro Eintrag: Prämie, Kosten (Gebühr × Laufzeit, Versand), **netto**, Aufwand in Minuten, Haken (Mindestumsatz, Geldeingang, Laufzeit, Kündigung, Schufa). Sortiert nach **netto pro Stunde Aufwand**. Strikt raus: Schneeball/MLM, Krypto/Trading, Glücksspiel, Abo-Fallen, Vorkasse, fremde Daten, Umfrage-Seiten, Kredite | mydealz-RSS (Freebies + Suchen), gepflegte Liste in `config.json` |
 | **Spar-Tipps** | kurze Anleitung: [spartipps.html](spartipps.html) | – |
 
 Jeder Eintrag hat einen direkten Link und eine Zeile **„So geht's“**. Auf der Seite gibt es außerdem
@@ -37,10 +38,12 @@ Gleicher Kanal wie der Schnäppchen-Wecker – du brauchst nur **ein** Abo:
 Zwei Stufen:
 
 - **Sofort** – nur Seltenes: Preisfehler, Geräte unter deinem Zielpreis oder auf Tiefstpreis, Band-Aufrufe mit Frist,
-  außergewöhnliche Reise-Deals. **Höchstens 3 pro Tag.**
+  außergewöhnliche Reise-Deals, Prämien ab 25 € netto oder Gratis-Produkte ohne Haken ab 10 € Wert
+  (Prämien: höchstens 1 pro Lauf). **Höchstens 3 pro Tag.**
 - **Zusammenfassung** – alles andere **einmal am Tag ab 18 Uhr**, als eine einzige Nachricht. Wenn nichts Neues da ist, kommt nichts.
 
 Jede Sache wird nur einmal gemeldet. Beim allerersten Lauf kommt nur eine Nachricht „Vorteils-Radar ist aktiv“.
+Kommt ein neuer Bereich dazu (z. B. Prämien), wird beim ersten Lauf nichts nachgemeldet – die Einträge stehen nur auf der Seite.
 
 **Ein Kanal für alle drei Wecker:** Wenn du lieber ein eigenes, geheimes Thema willst, lege im Repo unter
 *Settings → Secrets and variables → Actions* das Secret `NTFY_TOPIC` an. Schnäppchen-Wecker, Konzert-Alarm und
@@ -60,6 +63,9 @@ Alles in normalen Textdateien – auf GitHub die Datei öffnen, auf den Stift ti
   - `module.musik.aufrufe` – Suchen für „Bands gesucht“,
   - `module.nebenverdienst.ba.suchen` – Job-Suchen (`arbeitszeit: "ho"` = Homeoffice, `"mj"` = Minijob),
   - `module.tests.fallenWoerter` – was nie vorkommen darf,
+  - `module.praemien.programme` – gepflegte Liste seriöser Programme (Prämie als **Richtwert**, Aufwand, Haken, Link) –
+    vor dem Abschluss immer die aktuellen Bedingungen auf der Seite prüfen,
+  - `module.praemien.ausschluss` – was bei Prämien nie vorkommen darf; `sofortAbNetto` (25 €) und `gratisSofortAbWert` (10 €) für Pushes,
   - `ntfy.maxSofortProTag` und `ntfy.digestStunde`,
   - `module.<bereich>.aktiv: false` schaltet einen Bereich aus.
   `"a|b"` heißt in allen Wort-Listen: a oder b.

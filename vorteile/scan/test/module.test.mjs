@@ -13,6 +13,7 @@ import reisen, { abflugArt } from '../module/reisen.mjs';
 import musik, { geizhalsPreis, merkePreis } from '../module/musik.mjs';
 import nebenverdienst, { baUrl } from '../module/nebenverdienst.mjs';
 import tests, { bewerteTest } from '../module/tests.mjs';
+import praemien, { bewertePraemie, praemieAus, hakenAus, ausschlussGrund } from '../module/praemien.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 const cfg = JSON.parse(await readFile(join(HIER, '..', '..', 'config.json'), 'utf8'));
@@ -23,7 +24,7 @@ const ctx = () => ({ holeText, cfg, wunschliste, zustand: {}, jetzt });
 const titel = r => r.eintraege.map(e => e.titel);
 
 test('jeder Eintrag hat Link und „So geht’s“', async () => {
-  for (const fn of [deals, erleben, reisen, musik, nebenverdienst, tests]) {
+  for (const fn of [deals, erleben, reisen, musik, nebenverdienst, tests, praemien]) {
     const r = await fn(ctx());
     assert.ok(r.eintraege.length > 0, fn.name);
     for (const e of r.eintraege) {
@@ -109,6 +110,49 @@ test('tests: Fallen und unattraktive Gewinnspiele raus', async () => {
   const m = cfg.module.tests;
   assert.equal(bewerteTest('Gewinnspiel: iPhone gewinnen, nur per SMS', m, cfg), null);
   assert.equal(bewerteTest('Probanden für klinische Studie gesucht, Produkttest', m, cfg), null);
+});
+
+test('praemien: Netto, Aufwand, Haken; sortiert nach € pro Stunde; Unseriöses raus; höchstens 1 Sofort', async () => {
+  const r = await praemien(ctx());
+  const t = titel(r);
+  const k = r.eintraege.find(e => /Musterbank$/.test(e.titel));
+  assert.equal(k.extra.praemie, 100, 'Geldeingang von 1.000 € ist Bedingung, nicht Prämie');
+  assert.equal(k.extra.netto, 100);
+  assert.equal(k.extra.aufwandMin, 45);
+  assert.ok(k.extra.haken.includes('Schufa-Abfrage'));
+  assert.ok(k.extra.haken.some(h => /Geldeingang 1\.000/.test(h)));
+  assert.equal(k.sofort, true);
+  assert.equal(r.eintraege.filter(e => e.sofort).length, 1, 'keine Push-Flut');
+  assert.equal(r.eintraege.find(e => /Duschgel/.test(e.titel)).extra.praemie, 15);
+  assert.equal(r.eintraege.find(e => /Payback für/.test(e.titel)).extra.netto, 20);
+  assert.ok(!t.some(x => /Bitcoin|Casino|Umfragen|Depot|Netflix|passives|Musterbank Plus|Handytarif|Altes Konto|Kugelschreiber/.test(x)), t.join(' / '));
+  assert.ok(t.some(x => /Strom\/Gas: Anbieter wechseln/.test(x)), 'gepflegte Liste');
+  assert.ok(r.eintraege.filter(e => e.quelle === 'gepflegte Liste').every(e => !e.sofort), 'Liste nie als Push');
+  const ps = r.eintraege.map(e => e.extra.proStunde);
+  assert.deepEqual(ps, [...ps].sort((a, b) => b - a));
+  assert.ok(r.fehler.some(f => /Wechselbonus/.test(f)), 'kaputter Feed gemeldet, Rest läuft');
+});
+
+test('praemien: Rechen- und Ausschluss-Regeln', () => {
+  const m = cfg.module.praemien;
+  assert.deepEqual(praemieAus('Bis zu 200 € Prämie'), { praemie: 200, bisZu: true });
+  assert.equal(bewertePraemie('Girokonto: bis zu 200 € Prämie', m).praemie, 100, '„bis zu“ nur halb');
+  const h = hakenAus('Kontoführung 2 € pro Monat, Laufzeit 12 Monate', 'konto', m);
+  assert.equal(h.kosten, 24);
+  assert.equal(bewertePraemie('Stromanbieter wechseln: 120 € Wechselbonus, Abschlag 80 € pro Monat, Laufzeit 12 Monate', m).netto, 120, 'Strom brauchst du sowieso');
+  assert.equal(bewertePraemie('Gratis Probe, Versandkosten 4,95 €', m), null, 'Versand frisst Gratis-Probe');
+  assert.equal(bewertePraemie('Gratis Kugelschreiber', m, { preisText: '2,99€' }), null, 'nicht gratis');
+  assert.ok(bewertePraemie('Gratis Rucksack im Wert von 20 €', m, { preisText: '0€' }).sofort, 'gratis ohne Haken ab 10 €');
+  assert.equal(bewertePraemie('Gratis Probe Shampoo', m, { preisText: '0€' }).sofort, false);
+  assert.equal(bewertePraemie('Konto: 20 € Prämie', m).sofort, false, 'unter 25 € netto kein Push');
+  for (const [text, grund] of [
+    ['Krypto-Börse: 30 € Bonus', 'trading'], ['ETF-Depot: 50 € Prämie ab 1.000 € Einzahlung', 'trading'],
+    ['Sportwetten: 100 € Wettbonus', 'gluecksspiel'], ['Probemonat gratis, danach kostenpflichtig', 'abofalle'],
+    ['Network Marketing: 50 € Bonus pro Partner', 'schneeball'], ['Gratis-Handy gegen Vorkasse der Versandgebühr', 'vorkasse'],
+    ['Freunde werben: lade dein Telefonbuch hoch und erhalte 10 €', 'fremdeDaten'], ['Bezahlte Umfragen: 5 € Bonus', 'umfrage'],
+    ['Ratenkredit mit 100 € Prämie', 'kredit'],
+  ]) assert.equal(ausschlussGrund(text, m), grund, text);
+  assert.equal(ausschlussGrund('Freunde werben bei der Sparkasse: 50 € Prämie', m), null);
 });
 
 test('Helfer: Fristen, Mengen, Wortsuche, RSS', () => {

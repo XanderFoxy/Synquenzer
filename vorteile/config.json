@@ -118,6 +118,67 @@
       "themaWoerter": ["synth", "synthesizer", "kopfhörer|kopfhoerer", "lautsprecher", "mikrofon", "audio", "musik", "technik", "laptop", "tablet", "ipad", "iphone", "kamera", "software", "chips", "snack", "schokolade", "süßigkeiten|suessigkeiten", "kaffee", "reise", "konzert", "tickets", "therme", "gutschein"],
       "leichtWoerter": ["ohne anmeldung", "nur e-mail|nur email", "kurzes formular", "kommentar", "einfach teilnehmen", "regional", "leser"],
       "fallenWoerter": ["gewinnspielservice|gewinnspiel-service|gewinnspieleintrag", "abo|abonnement", "kostenpflichtig", "0900|0137", "sms", "lotto|lotterie|losnummer", "glücksrad|gluecksrad", "gewinnbenachrichtigung", "sie haben gewonnen", "versandkosten", "probanden|klinisch|medikament|studie", "umfrage gegen", "paysafe", "krypto"]
+    },
+    "praemien": {
+      "aktiv": true,
+      "intervallStunden": 3,
+      "_hinweis": "Prämien & Freunde werben. Netto = Prämie − Kosten (Gebühren × Laufzeit, Versand). Sortiert nach Netto pro Stunde Aufwand. Sofort-Push nur ab sofortAbNetto € netto oder Gratis-Produkt ohne Haken ab gratisSofortAbWert €, höchstens maxSofortProLauf pro Lauf.",
+      "feeds": [
+        { "name": "mydealz Freebies", "url": "https://www.mydealz.de/rss/gruppe/freebies", "maxAlterTage": 7 }
+      ],
+      "suchen": ["Kontowechselprämie", "Neukundenprämie Girokonto", "Freunde werben Prämie", "Geld zurück Aktion", "Gratis testen", "Cashback Aktion", "Wechselbonus Strom", "Payback Extrapunkte", "Startguthaben App"],
+      "maxAlterTage": 14,
+      "minTemperatur": 0,
+      "minNetto": 3,
+      "lohntAbNetto": 10,
+      "sofortAbNetto": 25,
+      "gratisSofortAbWert": 10,
+      "maxSofortProLauf": 1,
+      "bisZuFaktor": 0.5,
+      "haltenMonate": 6,
+      "gratisStandardWert": 3,
+      "aufwandMin": {
+        "konto": 45,
+        "energie": 20,
+        "handy": 30,
+        "freunde": 5,
+        "gzg": 10,
+        "cashback": 5,
+        "punkte": 3,
+        "app": 10,
+        "gratis": 5
+      },
+      "artWoerter": {
+        "freunde": ["freunde werben|freundschaftswerbung|freunde-werben|kunden werben kunden|kwk|werbeprämie|werbepraemie|empfehlungsprämie|empfehlungspraemie|weiterempfehlen"],
+        "gzg": ["geld zurück|geld-zurück|geld zurueck|gzg|gratis testen|kostenlos testen|100 % cashback|100% cashback"],
+        "punkte": ["payback|deutschlandcard|extrapunkte|extra-punkte|lidl plus|kaufland card|bahnbonus"],
+        "handy": ["handyvertrag|handytarif|mobilfunk|simkarte|sim-karte|rufnummernmitnahme|sim only"],
+        "energie": ["stromanbieter|gasanbieter|stromtarif|gastarif|strom|gas|wechselbonus|energieversorger|ökostrom|oekostrom"],
+        "konto": ["girokonto|kontowechsel|konto|tagesgeld|kreditkarte|neukundenprämie|neukundenpraemie|bank"],
+        "app": ["startguthaben|app-prämie|app-praemie|willkommensbonus|neuanmeldung|registrierung"],
+        "cashback": ["cashback|shoop|igraal|topcashback"],
+        "gratis": ["gratis|kostenlos|freebie|geschenkt|gratisprobe|produktprobe|umsonst"]
+      },
+      "ausschluss": {
+        "schneeball": ["schneeball|mlm|multi-level|network marketing|networkmarketing|strukturvertrieb|empfehlungsmarketing|passives einkommen|downline|vertriebspartner werden"],
+        "trading": ["krypto|crypto|bitcoin|btc|ethereum|coin|nft|trading|trader|cfd|forex|devisen|binance|bybit|bitpanda|etoro|plus500|libertex|kraken"],
+        "gluecksspiel": ["casino|wetten|sportwette|wettbonus|tipico|bwin|bet365|poker|slots|freispiele|lotto|lotterie|rubbellos|glücksspiel|gluecksspiel"],
+        "abofalle": ["abo|abos|abonnement|probeabo|testabo|probemonat|abofalle|danach kostenpflichtig|kostenpflichtig|verlängert sich|verlaengert sich|automatisch verlängert|automatisch verlaengert|sms|0900|0137|mehrwertnummer"],
+        "vorkasse": ["vorkasse|vorab überweisen|vorab ueberweisen|bearbeitungsgebühr|bearbeitungsgebuehr|gebühr vorab|gebuehr vorab|paysafe|western union"],
+        "fremdeDaten": ["daten deiner freunde|adresse deines freundes|adressen von freunden|adressen deiner freunde|kontakte hochladen|telefonbuch|freunde eintragen|daten des geworbenen"],
+        "umfrage": ["umfrage|umfragen|survey|meinungsportal|meinungsumfrage|paidmail|paid4|mails lesen|klickverdienst|werbung schauen"],
+        "kredit": ["ratenkredit|privatkredit|sofortkredit|kleinkredit|minikredit|darlehen|kredit ohne schufa|finanzierung|ratenkauf|buy now pay later"],
+        "gesundheit": ["probanden|klinisch|medikament|studie|plasmaspende|blutspende"]
+      },
+      "programme": [
+        { "id": "strom-wechsel", "name": "Strom/Gas: Anbieter wechseln mit Neukundenbonus", "art": "energie", "praemie": 80, "kosten": 0, "aufwandMin": 25, "richtwert": true, "einheit": "pro Wechsel", "link": "https://www.verivox.de/strom/", "haken": ["Bonus meist nur im 1. Jahr", "Laufzeit oft 12 Monate", "rechtzeitig kündigen (Erinnerung nach 11 Monaten)", "Gesamtpreis inkl. Bonus vergleichen, nicht nur den Bonus"] },
+        { "id": "kontowechsel", "name": "Girokonto mit Wechsel-/Neukundenprämie (Vergleich)", "art": "konto", "praemie": 75, "kosten": 0, "aufwandMin": 60, "richtwert": true, "einheit": "pro Konto", "link": "https://www.check24.de/girokonto/", "haken": ["Schufa-Abfrage", "Geldeingang/Kartenzahlungen nötig", "nur Neukunden", "nur kostenlose Konten nehmen (0 € Kontoführung)"] },
+        { "id": "freunde-werben-eigene", "name": "Freunde werben bei deinen eigenen Anbietern (Bank, Strom, Handy)", "art": "freunde", "praemie": 25, "kosten": 0, "aufwandMin": 5, "richtwert": true, "einheit": "pro Werbung", "link": "https://www.verbraucherzentrale.de/", "soGehts": "Im eigenen Kundenkonto nach „Freunde werben“ suchen, Link kopieren und nur an Leute schicken, die wirklich wechseln wollen. Nie Daten anderer selbst eintragen.", "haken": ["nur wenn der Freund wirklich wechseln will", "Prämie oft erst nach Wochen"] },
+        { "id": "payback-coupons", "name": "Payback-Coupons aktivieren (Extrapunkte beim normalen Einkauf)", "art": "punkte", "praemie": 15, "kosten": 0, "aufwandMin": 5, "richtwert": true, "einheit": "pro Jahr", "link": "https://www.payback.de/coupons", "haken": ["nur bei Einkäufen, die du sowieso machst"] },
+        { "id": "markt-apps", "name": "Lidl Plus / Kaufland Card: Coupons in der App", "art": "punkte", "praemie": 20, "kosten": 0, "aufwandMin": 5, "richtwert": true, "einheit": "pro Jahr", "link": "https://www.lidl.de/", "haken": ["nur bei Einkäufen, die du sowieso machst"] },
+        { "id": "cashback-lebensmittel", "name": "Cashback auf Lebensmittel (Scondoo/Marktguru): Kassenbon hochladen", "art": "cashback", "praemie": 15, "kosten": 0, "aufwandMin": 10, "richtwert": true, "einheit": "pro Jahr", "link": "https://www.scondoo.de/", "haken": ["Kassenbon fotografieren", "Auszahlung erst ab Mindestguthaben", "lohnt nur bei Produkten, die du sowieso kaufst"] },
+        { "id": "cashback-portal", "name": "Cashback-Portal (z. B. Shoop) vor Online-Einkäufen", "art": "cashback", "praemie": 20, "kosten": 0, "aufwandMin": 5, "richtwert": true, "einheit": "pro Jahr", "link": "https://www.shoop.de/", "haken": ["Cashback kommt erst nach Wochen", "Werbeblocker/Cookies können die Gutschrift verhindern", "lohnt nur, wenn du das sowieso kaufst"] }
+      ]
     }
   }
 }

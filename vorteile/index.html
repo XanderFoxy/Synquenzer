@@ -95,6 +95,7 @@
   .zeile { margin: 0 0 6px; font-weight: 600; color: var(--akzent); overflow-wrap: anywhere; }
   .sogehts { margin: 0 0 12px; font-size: 15px; color: var(--text); }
   .sogehts b { color: var(--leise); font-weight: 600; }
+  .haken { margin: -4px 0 10px; font-size: 14px; color: var(--leise); }
   .schritte { margin: -6px 0 12px; padding-left: 18px; font-size: 14px; color: var(--leise); }
   .aktionen { display: flex; gap: 8px; }
   a.los {
@@ -215,10 +216,11 @@ const QUELLEN = {
   schnaeppchen: RAW('schnaeppchen-daten', 'schnaeppchen/data/current.json'),
   konzerte: RAW('konzerte-daten', 'konzerte/data/konzerte.json'),
 };
-const NAMEN = { deals: 'Deals', erleben: 'Erleben', reisen: 'Reisen', musik: 'Musik', nebenverdienst: 'Nebenverdienst', tests: 'Tests & Gewinnspiele' };
+const NAMEN = { deals: 'Deals', erleben: 'Erleben', reisen: 'Reisen', musik: 'Musik', nebenverdienst: 'Nebenverdienst', tests: 'Tests & Gewinnspiele', praemien: 'Prämien & Freunde werben' };
 const UNTER = {
   deals: 'echt durchgerechnet', erleben: 'Therme, Kino, Feste', reisen: 'ab Leipzig, Dresden, Berlin',
   musik: 'Geräte & Auftritte', nebenverdienst: 'von zu Hause', tests: 'ohne Fallen',
+  praemien: 'netto pro Stunde Aufwand',
 };
 const SICHTBAR = 4;
 
@@ -236,11 +238,14 @@ $('topic').textContent = TOPIC;
 
 function karte(e) {
   const schritte = e.extra?.schritte?.length > 1 ? `<ul class="schritte">${e.extra.schritte.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : '';
+  const haken = e.kategorie === 'praemien' && e.extra
+    ? `<p class="haken"><b>Haken:</b> ${e.extra.haken?.length ? esc(e.extra.haken.join(' · ')) : 'keine bekannten'}</p>` : '';
   return `<article class="karte${e.sofort ? ' sofort' : ''}" data-id="${esc(e.id)}">
     <div class="oben"><span class="marke">${esc(NAMEN[e.kategorie] || '')}</span>${e.frist ? `<span class="marke frist">bis ${esc(datum(e.frist))}</span>` : ''}<span>${esc(e.quelle)}</span></div>
     <h3>${esc(e.titel)}</h3>
     ${e.zeile ? `<p class="zeile">${esc(e.zeile)}</p>` : ''}
     <p class="sogehts"><b>So geht's:</b> ${esc(e.soGehts)}</p>
+    ${haken}
     ${schritte}
     <div class="aktionen"><a class="los" href="${esc(sicher(e.link))}" target="_blank" rel="noopener">Öffnen</a><button class="weg" data-id="${esc(e.id)}" aria-label="Ausblenden">Ausblenden</button></div>
   </article>`;
