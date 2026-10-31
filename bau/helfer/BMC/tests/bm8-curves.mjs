@@ -31,8 +31,9 @@ const r1 = await p.evaluate(({inLog}) => {
     // Eingabe = what the app received (its own history, straight lines between the events), at the 10-ms sampling points
     // (§5.4: Abtastung ≤ 100/s, then thinned); devRaw: at the raw events themselves (information)
     const H = BMC.h[0], st = BMC.ST / spb(); let dev = 0, devRaw = 0;
-    for (let bb = 0; bb < Math.min(L, H[k][H[k].length - 1][0]); bb += st) dev = Math.max(dev, Math.abs(cvAt(a, bb) - bmcVal(H, k, bb)));
-    for (const q of H[k]) if (!q[3] && q[0] >= 0 && q[0] < L) devRaw = Math.max(devRaw, Math.abs(cvAt(a, q[0]) - q[1]));
+    for (let j = 0, bb = 0; bb < Math.min(L, H[k][H[k].length - 1][0]); bb = ++j * st) dev = Math.max(dev, Math.abs(cvAt(a, bb) - bmcVal(H, k, bb)));
+    const first = H[k].find(q => !q[3])[0];   // ohne den Sprung beim ersten Griff (Ruhewert → erster Wert in einem Ereignis)
+    for (const q of H[k]) if (!q[3] && q[0] >= 0 && q[0] < L && q[0] > first + .03 / spb()) devRaw = Math.max(devRaw, Math.abs(cvAt(a, q[0]) - q[1]));
     out.dev[k] = +dev.toFixed(5); (out.devRaw || (out.devRaw = {}))[k] = +devRaw.toFixed(5);
     // points per second (max in any 1-s window)
     const sp = spb(); let mx = 0; for (let j = 0; j < a.length; j++) { let n = 0; for (let q = j; q < a.length && (a[q][0] - a[j][0]) * sp < 1; q++) n++; mx = Math.max(mx, n); } out.rate[k] = mx;
@@ -43,7 +44,7 @@ const r1 = await p.evaluate(({inLog}) => {
 ok('BM8-01 cv.bd/mw/at im Behälter', r1.keys.join() === 'bd,mw,at', r1.keys);
 ok('BM8-01 Startpunkt bei t = 0', Object.values(r1.start).every(x => x === 0), r1.start);
 ok('BM8-01 ≤ 100 Punkte/s', Object.values(r1.rate).every(x => x <= 101), r1.rate);
-ok('BM8-01 Abweichung zur Eingabe ≤ 0,005 (an den Abtastpunkten)', Object.values(r1.dev).every(x => x <= .005), {dev: r1.dev, anRohEreignissen: r1.devRaw});
+ok('BM8-01 Abweichung zur Eingabe ≤ 0,005 (an den Abtastpunkten)', Object.values(r1.dev).every(x => x <= .005), {dev: r1.dev, anRohEreignissenOhneErstenGriff: r1.devRaw});
 ok('BM8-01 aufsteigend', r1.sorted);
 const u1 = await p.evaluate(() => SYNQUENZER.undoInfo());
 ok('BM8-07 eine Aufnahme = ein Undo (mit Noten)', u1.n === u0 + 1 && /Aufnahme/.test(u1.top.label), u1.top);
