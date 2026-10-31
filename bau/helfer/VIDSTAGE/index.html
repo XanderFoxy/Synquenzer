@@ -1271,6 +1271,7 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .pop.plpick .plp.vvsp{grid-template-columns:repeat(4,minmax(44px,1fr))}   /* VV2-fix: a short range – each track ≥ 44 px wide */
 /* VV2: the sheet „Video“ has one row more (9:16 [Kamera] [Ganz mit Balken]); quer passt die Bedienung ohne Rollen in 375 px Höhe */
 @media (orientation:landscape){.vvctl{gap:4px}.vvacts,.vvprog,.vvdone,.vvsheet .vvbtn{height:44px}}
+@media (orientation:landscape) and (max-height:400px){.vvsheet.sel .vvctl{gap:2px}}
 #menu .mh{flex:none;display:flex;align-items:center;gap:12px;padding:6px 10px;border-bottom:1px solid var(--panel-edge);background:linear-gradient(#1b1d22,#121418)}
 .mlogo{flex:none;display:flex;align-items:center;pointer-events:none}
 .mlogo svg{height:64px}
@@ -43197,7 +43198,7 @@ async function vvSync() {
   const rg = vvRange(true);
   const hs = !!rg && vvHasSel();
   u.rng.textContent = !rg ? 'Noch kein Song – erst ● SONG' : 'ganzer Song';
-  u.rng.style.display = hs ? 'none' : ''; u.segR.style.display = hs ? '' : 'none'; u.rowR.classList.toggle('txt', !hs);
+  u.rng.style.display = hs ? 'none' : ''; u.segR.style.display = hs ? '' : 'none'; u.rowR.classList.toggle('txt', !hs); u.sh.classList.toggle('sel', hs);   // short landscape: the 44-px choice row fits without scrolling
   u.segR.update();
   const busy = VV.busy;
   u.sh.classList.toggle('busy', busy); u.sh.classList.toggle('has', !!(VV.res && VV.res.blob) && !busy);

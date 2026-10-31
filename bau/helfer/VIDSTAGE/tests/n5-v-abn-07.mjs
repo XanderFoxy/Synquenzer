@@ -59,7 +59,7 @@ for (const n of sizes) {
   // done: a short selection (bar 1)
   await p.evaluate(() => { SYNQUENZER.songSelect(0, 0); SYNQUENZER.vvPrefs({}); });
   await p.waitForTimeout(200);
-  r.selText = await p.evaluate(() => document.querySelector('#vvSheet .vvrow.txt .vvtxt').textContent);
+  r.selText = await p.evaluate(() => (document.querySelector('#vvSheet .vvrow.txt .vvtxt') || document.querySelector('#vvSheet .vvrng .seg button.on') || {}).textContent /* VIDSTAGE: mit Auswahl jetzt Wahl [Ganzer Song]/[Auswahl] */);
   await p.tap('.vvacts .go');
   await p.waitForFunction(() => !SYNQUENZER.vvInfo().busy && SYNQUENZER.vvInfo().res, null, {timeout: 120000});
   await p.waitForTimeout(400);

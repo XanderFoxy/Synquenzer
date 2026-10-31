@@ -1,0 +1,156 @@
+{
+ "Z1-qualitaet": {
+  "levelsDuringRender": [
+   0
+  ],
+  "levelAfter": 3,
+  "dur": 6.5935600907029475,
+  "ok": true
+ },
+ "Z3-ausklang-auswahl": {
+  "auswahl": {
+   "songSec": 8.571,
+   "tail": 5.64,
+   "capped": false,
+   "songEndDb": -5.1,
+   "tailMidDb": -10.1,
+   "endDb": -58.9
+  },
+  "ganz": {
+   "songSec": 17.143,
+   "tail": 4.978,
+   "capped": false,
+   "songEndDb": -12.9,
+   "tailMidDb": -15.2,
+   "endDb": -59.9
+  },
+  "ok": true
+ },
+ "Z2-bereich": {
+  "ohne": {
+   "segShown": false,
+   "txt": "ganzer Song",
+   "btns": [],
+   "range": {
+    "a": 0,
+    "b": 8,
+    "sel": false
+   }
+  },
+  "mit": {
+   "segShown": true,
+   "txt": null,
+   "btns": [
+    {
+     "t": "Ganzer Song",
+     "w": 98.5,
+     "h": 44,
+     "on": false,
+     "out": false
+    },
+    {
+     "t": "Auswahl",
+     "w": 72.4,
+     "h": 44,
+     "on": true,
+     "out": false
+    }
+   ],
+   "range": {
+    "a": 2,
+    "b": 4,
+    "sel": true
+   }
+  },
+  "nachTippGanzerSong": {
+   "range": {
+    "a": 0,
+    "b": 8,
+    "sel": false
+   },
+   "on": [
+    "9:16",
+    "Auto",
+    "Kamera",
+    "Ganzer Song"
+   ]
+  },
+  "ok": true
+ },
+ "Z4-teilname": {
+  "proben": [
+   {
+    "port": true,
+    "bar": 2,
+    "x": 74,
+    "labW": 66,
+    "inView": true
+   },
+   {
+    "port": true,
+    "bar": 7,
+    "x": 72,
+    "labW": 66,
+    "inView": true
+   },
+   {
+    "port": true,
+    "bar": 11,
+    "x": 72,
+    "labW": 66,
+    "inView": true
+   },
+   {
+    "port": true,
+    "bar": 15,
+    "x": 72,
+    "labW": 66,
+    "inView": true
+   },
+   {
+    "port": true,
+    "bar": 16.5,
+    "x": 72,
+    "labW": 66,
+    "inView": true
+   },
+   {
+    "port": false,
+    "bar": 2,
+    "x": 86,
+    "labW": 78,
+    "inView": true
+   },
+   {
+    "port": false,
+    "bar": 7,
+    "x": 84,
+    "labW": 78,
+    "inView": true
+   },
+   {
+    "port": false,
+    "bar": 11,
+    "x": 84,
+    "labW": 78,
+    "inView": true
+   },
+   {
+    "port": false,
+    "bar": 15,
+    "x": 84,
+    "labW": 78,
+    "inView": true
+   },
+   {
+    "port": false,
+    "bar": 16.5,
+    "x": 84,
+    "labW": 78,
+    "inView": true
+   }
+  ],
+  "ok": true
+ },
+ "errors": []
+}
