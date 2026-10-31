@@ -1,0 +1,90 @@
+{
+ "test": "bm6-golden",
+ "id": "BM6-01",
+ "pass": true,
+ "checks": {
+  "a_worklet_src_byte_equal": {
+   "ok": true,
+   "len": 305467
+  },
+  "b_factory_deepEqual": {
+   "ok": true,
+   "n": 71,
+   "diff": []
+  },
+  "b_demo_file_equal": true,
+  "b_roundtrip_new": true,
+  "b_roundtrip_old": true,
+  "b_new_factory_only_bm_init": {
+   "ok": true,
+   "bm": [
+    "f-init-bm",
+    "f-init-bm-2osz",
+    "f-init-bm-anschlag"
+   ]
+  },
+  "c_offline_factory": {
+   "ok": true,
+   "n": 59,
+   "bitgleich": 58,
+   "gleichWieAltAlt": 1,
+   "stumm": 0,
+   "bad": []
+  },
+  "d_no_bm_module_no_worker": {
+   "ok": true,
+   "adds": 2,
+   "bmModule": 0,
+   "workers": 0,
+   "playing": true,
+   "bmx": {
+    "adds": 0,
+    "st": "off",
+    "block": false
+   }
+  },
+  "d_same_modules_as_old": {
+   "ok": true,
+   "neu": 2,
+   "alt": 2
+  },
+  "no_page_errors": {
+   "ok": true,
+   "neu": [],
+   "alt": []
+  },
+  "e_start_time": {
+   "ok": true,
+   "neu_ms": 509,
+   "alt_ms": 513,
+   "neu": [
+    487,
+    436,
+    509,
+    524,
+    481,
+    523,
+    564,
+    510,
+    484
+   ],
+   "alt": [
+    693,
+    461,
+    540,
+    510,
+    508,
+    542,
+    513,
+    575,
+    492
+   ]
+  },
+  "e_size_start_le_25KB": {
+   "ok": true,
+   "start": 22125,
+   "beiBedarf": 21689,
+   "gesamt": 43814
+  }
+ }
+}
