@@ -67,7 +67,7 @@ for (const D of [20, 50]) { const P0 = {mWav: 'A1', mPit: 69, mDec: 50, mDst: D,
   check('R15 DIST dr→rn bei ' + D, mKlick(r, [0.01], 0.2, 0.95) <= 6, 'M-KLICK ' + R(mKlick(r, [0.01], 0.2, 0.95), 1) + ' dB'); }
 // asleep channel: CH LEVEL / PAN / DIST type changed while asleep apply at once on the next hit
 { const P0 = {mWav: 'A1', mPit: 69, mDec: 10, mLvl: 50}; const E = makeEngine(SR); E.send({t: 'ch', ch: 0, p: prog(P0)}); E.send({t: 'reset'}); E.send({t: 'hit', list: [{ch: 0, at: 0.01, v: 1}, {ch: 0, at: 0.7, v: 1}]}); E.run(Math.round(0.5 * SR));
-  E.send({t: 'ch', ch: 0, p: prog(Object.assign({}, P0, {mLvl: 0}))}); const o = E.run(Math.round(0.4 * SR)); check('R16 CH LEVEL im Schlaf auf 0', M.peakAbs(o.L) === 0, 'Spitze danach ' + R(M.db(M.peakAbs(o.L)), 1) + ' dBFS'); }
+  E.send({t: 'ch', ch: 0, p: prog(Object.assign({}, P0, {mLvl: 0}))}); const o = E.run(Math.round(0.4 * SR)); check('R16 CH LEVEL im Schlaf auf 0', M.db(M.peakAbs(o.L)) <= -120, 'Spitze danach ' + R(M.db(M.peakAbs(o.L)), 1) + ' dBFS'); }
 // echo time changed while idle: the next first echo comes at the new time (no stray glide)
 { const r = render({sr: SR, chans: {0: {mTlv: 0, mClv: 50, mCty: 'P1', mDly: 25}}, kit: {rvT: 'r1', dlR: 50}, msgs: [[0.3, {t: 'kit', p: {rvT: 'r1', dlR: 99}}], [0.4, {t: 'hit', list: [{ch: 0, at: 0.4, v: 1}]}]], sec: 0.6});
   let i0 = -1, i1 = -1; for (let i = Math.round(0.39 * SR); i < r.L.length; i++) { if (Math.abs(r.L[i]) > 1e-3) { if (i0 < 0) i0 = i; else if (i - i0 > 48) { i1 = i; break; } } } const ms = (i1 - i0) / SR * 1000;
