@@ -111,11 +111,11 @@ test('Gesamtlauf mit Fixtures: Deals, Technik, Fehlerliste, Dedupe', async () =>
   const r = await scan({ cfg, watchlist: wl, holeText: fehlerHole, env: { KEEPA_KEY: 'x' }, jetzt: JETZT,
     sent: {}, history: null });
   const p = id => r.current.produkte.find(x => x.id === id);
-  // PENNY 1,11 €: 44 % unter regulär (1,99 €), aber teurer als üblich im Angebot (0,99 €) -> kein Deal
+  // PENNY 1,11 €: 44 % unter regulär (1,99 €), aber teurer als üblich im Angebot (1,00 €); Kaufland Mannheim zählt nicht -> kein Deal
   assert.equal(p('crunchips').deal, false);
   assert.equal(p('crunchips').bestes.einheitspreis, 0.74);
   assert.equal(p('crunchips').ersparnis, 0.442);
-  assert.equal(p('crunchips').preise.zeile, 'Jetzt 1,11 € · Regulär 1,99 € · Üblich im Angebot 0,99 € · Tiefst 12 Mon. 0,88 € (Kaufland, Okt. 2026)');
+  assert.equal(p('crunchips').preise.zeile, 'Jetzt 1,11 € · Regulär 1,99 € · Üblich im Angebot 1,00 € · Tiefst 12 Mon. 0,88 € (Kaufland, Juli 2026)');
   assert.equal(p('crunchips-xcut').bestes.shop, 'REWE');
   assert.equal(p('crunchips-xcut').deal, true, '1,49 € = Tiefst 12 Mon. (Action) = üblich');
   assert.equal(p('crunchips-xcut').grund, 'so günstig wie das 12-Monats-Tief');
@@ -130,7 +130,7 @@ test('Gesamtlauf mit Fixtures: Deals, Technik, Fehlerliste, Dedupe', async () =>
   assert.equal(k.preise.regulaer.umgerechnet, true);
   assert.equal(k.preise.regulaer.packungQuelle, '8 Stück');
   // ohne Angebot: Orientierung „Gerade kein Angebot · Üblich … · Tiefst … (Händler, Monat)“
-  assert.equal(p('choco-crossies').preise.zeile, 'Gerade kein Angebot · Üblich 2,11 € · Tiefst 1,69 € (Kaufland, März 2026) · je 150 g');
+  assert.equal(p('choco-crossies').preise.zeile, 'Gerade kein Angebot · Üblich 1,99 € · Tiefst 1,69 € (Kaufland, März 2026) · je 150 g');
   assert.equal(p('softys-fruchtmix').bestes, null, 'rote Tüte ist nicht die gelbe');
   assert.equal(r.current.produkte[0].deal, true, 'Deals stehen oben');
   // Technik: PS5 + Samsung laufen (Deal-Seite), AirPods laut Seite abgelaufen, Xbox älter als 24 h (Seite nicht geladen)

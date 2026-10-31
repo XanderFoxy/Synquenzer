@@ -1,6 +1,6 @@
 // Preis-Kontext je Produkt: Regulär · Üblich im Angebot · Tiefst 12 Monate · Jetzt – aus den recherchierten
 // Referenzpreisen (referenzpreise.json, je Wert mit Quelle) und dem eigenen Verlauf (history.json).
-// Verglichen wird immer mit derselben Packungsgröße (± 15 %, z. B. 300/340 g „XXL“); gibt es dafür keinen Wert,
+// Verglichen wird immer mit derselben Packungsgröße (± 18 %, z. B. 300/340 g „XXL“); gibt es dafür keinen Wert,
 // wird über den Grundpreis (€/Stück, €/100 g, €/100 ml) auf die Packung umgerechnet und das so beschriftet.
 // Nie „unbekannt“: fehlt eine Stufe, nimmt die nächste (andere Packung → andere Läden → recherchierter Einzelwert).
 import { norm, round, euroKurz } from './text.mjs';
@@ -22,7 +22,7 @@ const KETTEN = [
   ['Markant', /\bmarkant\b/, 3], ['CENTERSHOP', /centershop/, 3],
 ];
 // Nicht in Döbeln / Großhandel / nur zum Vergleich: zählt nie (höchstens als allerletzte Rückfallstufe)
-const NICHT_HIER = /nicht in doebeln|nicht in sachsen|aldi sued|wasgau|stavenhagen|scottie|mit dem hund|foodservice|grosshaendler|grosshandel|\bmetro\b|\bcitti\b|nur vergleich|nur zum vergleich|\btesco\b|polonia|irland|markt in bayern/;
+const NICHT_HIER = /nicht in doebeln|nicht fuer doebeln|nur fuer berlin|regional mannheim|markt bamberg|region sued|nicht in sachsen|aldi sued|wasgau|stavenhagen|scottie|mit dem hund|foodservice|grosshaendler|grosshandel|\bmetro\b|\bcitti\b|nur vergleich|nur zum vergleich|\btesco\b|polonia|irland|markt in bayern/;
 
 /** Laden aus dem Freitext → { kette, rang (1 Döbeln, 2 erlaubt/online, 3 sonst, 9 nicht hier), app, uvp, schaetzung } */
 export function ladenAus(text) {
@@ -36,7 +36,7 @@ export function ladenAus(text) {
   return {
     kette: best?.kette || String(text || '').split(/[(,;]/)[0].trim() || '?',
     rang: nichtHier ? 9 : best?.rang ?? 3,
-    app: /(?<!ohne )\bapp\b|kaufland ?card|nur mit .*karte/.test(t),
+    app: /nur mit|kaufland ?card/.test(t), // „mit App zusätzlich 0,10 € Bonus“ ist kein App-Preis
     uvp: /\buvp\b|kein regalpreis|hersteller/.test(t),
     schaetzung: /schaetzung/.test(t),
   };
@@ -127,6 +127,8 @@ export function ladeReferenz(json, watchlist) {
       const laden = ladenAus(e.shop);
       const d = datumAus(art === 'regal' ? e.stand : e.datum);
       if (/schaetzung|schätzung/i.test(art === 'regal' ? e.stand : '')) laden.schaetzung = true;
+      // UVP steht oft nur im Stand/in der Quelle („von kaufDA als UVP markiert“) – dann kein Regalpreis
+      if (art === 'regal' && /(?<!kein )\buvp\b/.test(norm(`${e.stand} ${e.quelle}`))) laden.uvp = true;
       return { art, p: e.p, menge, einheit: e.p / (basis === 'stueck' ? menge : menge / 100), shop: e.shop, ...laden,
         tag: d?.tag || null, genau: d?.genau || null, ...quelleVon(e) };
     };
@@ -147,8 +149,8 @@ export function ladeReferenz(json, watchlist) {
 }
 
 const passend = (a, b) => a > 0 && b > 0 && Math.max(a, b) / Math.min(a, b) <= TOLERANZ;
-/** Packungspreis eines Werts für die Kontext-Packung: gleiche Packung → wie gemeldet, sonst über den Grundpreis */
-const wertFuer = (e, menge, basis) => (passend(e.menge, menge) ? e.p : round(e.einheit * (basis === 'stueck' ? menge : menge / 100), 2));
+/** Wert für die Kontext-Packung, immer über den Grundpreis (€/Stück, €/100 g/ml): 400 ml für 3,79 € ist teurer als 465 ml */
+const wertFuer = (e, menge, basis) => (e.menge === menge ? e.p : round(e.einheit * (basis === 'stueck' ? menge : menge / 100), 2));
 export function packungKurz(menge, basis) {
   if (!(menge > 0)) return '';
   if (basis === 'stueck') return `${menge} Stück`;
@@ -156,17 +158,20 @@ export function packungKurz(menge, basis) {
 }
 const kurzLaden = e => `${e.kette}${e.app ? (e.kette === 'Kaufland' ? ' mit Card' : ' mit App') : ''}`;
 
-/** Eigener Verlauf → Einträge wie die Referenz (nur Punkte mit Packung, je Laden/Preis/Woche einmal) */
+/** Eigener Verlauf → Einträge wie die Referenz (nur Punkte mit Packung). Eine Aktion = gleicher Laden, gleiche
+ *  Packung, gleicher Preis an Tagen mit höchstens 2 Tagen Lücke – eine Mo–Sa- oder Do–Mi-Woche zählt einmal. */
 export function verlaufEintraege(gruppeHist, basis) {
-  const out = [], gesehen = new Set();
-  for (const x of gruppeHist?.punkte || []) {
-    if (!(x.m > 0) || !(x.p > 0)) continue;
-    const pp = x.pp > 0 ? x.pp : round(x.p * (basis === 'stueck' ? x.m : x.m / 100), 2);
-    const woche = Math.floor(tagMs(x.tag) / (7 * TAG_MS));
-    const k = `${norm(x.shop)}|${pp}|${woche}`;
-    if (gesehen.has(k)) continue;
-    gesehen.add(k);
-    out.push({ art: 'angebot', p: pp, menge: x.m, einheit: x.p, shop: x.shop, ...ladenAus(x.shop), rang: ladenAus(x.shop).rang === 9 ? 9 : 1,
+  const punkte = (gruppeHist?.punkte || []).filter(x => x.m > 0 && x.p > 0)
+    .map(x => ({ ...x, pp: x.pp > 0 ? x.pp : round(x.p * (basis === 'stueck' ? x.m : x.m / 100), 2) }))
+    .sort((a, b) => norm(a.shop).localeCompare(norm(b.shop)) || a.m - b.m || a.pp - b.pp || a.tag.localeCompare(b.tag));
+  const out = [];
+  let letzt = null;
+  for (const x of punkte) {
+    const gleich = letzt && norm(letzt.shop) === norm(x.shop) && letzt.m === x.m && letzt.pp === x.pp && tagMs(x.tag) - tagMs(letzt.tag) <= 3 * TAG_MS;
+    letzt = x;
+    if (gleich) continue;
+    const laden = ladenAus(x.shop);
+    out.push({ art: 'angebot', p: x.pp, menge: x.m, einheit: x.p, shop: x.shop, ...laden, rang: laden.rang === 9 ? 9 : 1,
       tag: x.tag, genau: 'tag', quelle: 'eigener Verlauf', url: null, eigen: true });
   }
   return out;
@@ -187,7 +192,7 @@ export function preisKontext({ ref, basis, verlauf = [], angebot = null, jetztMs
   const alt = tag => !tag || jetztMs - tagMs(tag) > altTage * TAG_MS;
   const standText = (tag, genau) => (!tag ? 'Meldung ohne Datum' : alt(tag) ? `Stand ${genau === 'tag' || genau === 'monat' ? monatText(tag) : tag.slice(0, 4)}` : '');
   const mitWert = (e, extra = {}) => ({ pack: wertFuer(e, menge, basis), einheit: round(e.einheit, 4), shop: kurzLaden(e), tag: e.tag, monat: e.tag ? monatText(e.tag) : null,
-    umgerechnet: !passend(e.menge, menge), packungQuelle: packungKurz(e.menge, basis), quelle: e.quelle, url: e.url, eigen: !!e.eigen, ...extra });
+    umgerechnet: e.menge !== menge, packungQuelle: packungKurz(e.menge, basis), quelle: e.quelle, url: e.url, eigen: !!e.eigen, ...extra });
 
   if (angebot?.preis > 0) res.jetzt = { pack: round(angebot.preis, 2), shop: angebot.shop || '' };
 
@@ -197,8 +202,9 @@ export function preisKontext({ ref, basis, verlauf = [], angebot = null, jetztMs
     e => passend(e.menge, menge) && e.rang === 1 && !e.uvp && !e.schaetzung,
     e => passend(e.menge, menge) && e.rang <= 2 && !e.uvp && !e.schaetzung,
     e => passend(e.menge, menge) && e.rang <= 3 && !e.uvp && !e.schaetzung,
+    e => passend(e.menge, menge) && e.rang <= 3 && !e.schaetzung, // UVP (so beschriftet), gleiche Packung
+    e => passend(e.menge, menge) && e.rang <= 3, // Schätzung aus der Recherche (so beschriftet)
     e => e.rang <= 2 && !e.uvp && !e.schaetzung, // andere Packung, umgerechnet
-    e => passend(e.menge, menge) && e.rang <= 3, // UVP / Schätzung (so beschriftet)
     e => e.rang <= 3, () => true,
   ];
   for (const f of regalStufen) {
@@ -235,7 +241,7 @@ export function preisKontext({ ref, basis, verlauf = [], angebot = null, jetztMs
     const werte = c.map(e => wertFuer(e, menge, basis));
     const neuestes = c.reduce((a, b) => ((b.tag || '') > (a.tag || '') ? b : a));
     const namen = [...new Set(c.map(e => e.quelle))];
-    res.ueblich = { pack: round(median(werte), 2), anzahl: c.length, umgerechnet: c.some(e => !passend(e.menge, menge)),
+    res.ueblich = { pack: round(median(werte), 2), anzahl: c.length, umgerechnet: c.some(e => e.menge !== menge),
       tag: neuestes.tag, stand: alt(neuestes.tag) ? `Stand ${monatText(neuestes.tag)}` : '',
       quelle: namen.length > 2 ? `${namen.slice(0, 2).join(', ')} u. a.` : namen.join(', '), url: c.find(e => e.url)?.url || null };
     break;

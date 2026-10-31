@@ -95,8 +95,9 @@ test('Knoppers: 15er vs. 8er getrennt; Kaufland 2,79 € (15er) ist kein Deal, w
   assert.equal(k.deal, false);
   assert.equal(k.stufe, 'ueblich');
   const acht = kontext('knoppers-schnitte', { preis: 1.49, menge: 8, shop: 'Kaufland' });
-  assert.equal(acht.zeile, 'Jetzt 1,49 € · Regulär 2,49 € · Üblich im Angebot 1,69 € · Tiefst 12 Mon. 1,49 € (Kaufland, Sep. 2026)');
-  assert.equal(acht.regulaer.shop, 'Netto Marken-Discount', 'kein Kaufland-Regalpreis -> Median der Döbelner Ketten, der datierte Wert');
+  assert.equal(acht.zeile, 'Jetzt 1,49 € · Regulär 2,79 € · Üblich im Angebot 1,59 € · Tiefst 12 Mon. 1,49 € (Kaufland, Sep. 2026)');
+  assert.equal(acht.regulaer.shop, 'REWE', 'kein Kaufland-Regalpreis; Netto 2,49 € ist eine UVP -> REWE/EDEKA 2,79 €');
+  assert.equal(acht.ueblich.anzahl, 4, 'REWE „nur für Berlin, nicht für Döbeln“ zählt nicht');
   assert.equal(acht.deal, true);
   assert.equal(acht.stufe, 'tiefst');
   // 24er: kein recherchierter Wert dieser Packung aus Döbeln -> umgerechnet über den Preis pro Stück (so markiert)
@@ -119,7 +120,7 @@ test('Eigener Verlauf zählt mit (nur gleiche Packung): neuer Tiefstpreis aus D�
   // 7 Tage dieselbe Aktion = 1 Angebot (nicht 7)
   const h2 = leereHistorie();
   for (let d = 0; d < 7; d++) eintragen(h2, 'g', '100ml', { p: 0.73, shop: 'Kaufland', m: 465, pp: 3.39 }, Date.parse('2026-10-19T10:00:00Z') + d * 864e5);
-  assert.ok(verlaufEintraege(h2.gruppen.g, '100ml').length <= 2);
+  assert.equal(verlaufEintraege(h2.gruppen.g, '100ml').length, 1);
 });
 
 test('Ältere Referenzwerte (> 90 Tage) bekommen ein „Stand …“; Tiefst immer mit Händler und Monat', () => {
@@ -139,4 +140,24 @@ test('Crunchips X-Cut: keine Döbelner Werte recherchiert -> Action (mit Quelle)
   assert.deepEqual([k.regulaer.shop, k.regulaer.quelle], ['Action', 'action.com']);
   assert.equal(k.tiefst12.shop, 'Action');
   assert.ok(k.ueblich.recherche, 'üblich: recherchierter Wert (zu wenige Angebote)');
+});
+
+test('Prüfer-Funde: Grundpreis statt Packungspreis, UVP aus Stand/Quelle, Mo–Sa-Aktion einmal, nicht für Döbeln', () => {
+  // 400 ml für 3,79 € = 0,95 €/100 ml ist NICHT das Tief (465 ml für 3,79 € = 0,815 €/100 ml)
+  const klein = kontext('ben-jerrys', { preis: 3.79, menge: 400, shop: 'EDEKA' });
+  assert.equal(klein.tiefst12.pack, 3.26, 'Tief umgerechnet auf 400 ml');
+  assert.equal(klein.tiefst12.umgerechnet, true);
+  assert.equal(klein.neuesTief, false);
+  assert.equal(klein.deal, false);
+  assert.equal(kontext('haribo-colorado', { preis: 0.99, menge: 300, shop: 'Lidl' }).stufe === 'tiefst', false, '300 g für 0,99 € ist teurer als 340 g für 0,99 €');
+  // „von kaufDA als UVP markiert“ steht nur in der Quelle -> als UVP beschriftet
+  const nuss = kontext('knoppers-nussriegel', { preis: 1.69, menge: 5, shop: 'REWE' });
+  assert.equal(nuss.regulaer.uvp, true);
+  // Netto Mo–Sa täglich gescannt = 1 Aktion; Kaufland Do–Mi ebenso
+  const h = leereHistorie();
+  for (let d = 0; d < 6; d++) eintragen(h, 'g', '100g', { p: 0.489, shop: 'Netto Marken-Discount', m: 225, pp: 1.1 }, Date.parse('2026-10-26T10:00:00Z') + d * 864e5);
+  for (let d = 0; d < 7; d++) eintragen(h, 'g', '100g', { p: 0.391, shop: 'Kaufland', m: 225, pp: 0.88 }, Date.parse('2026-10-15T10:00:00Z') + d * 864e5);
+  assert.equal(verlaufEintraege(h.gruppen.g, '100g').length, 2);
+  assert.equal(ladenAus('REWE (bei marktguru nur für Berlin 10115, nicht für Döbeln 04720 gelistet)').rang, 9);
+  assert.equal(ladenAus('REWE (mit App zusätzlich 0,10 € REWE Bonus)').app, false);
 });

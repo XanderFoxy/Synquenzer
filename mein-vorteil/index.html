@@ -654,7 +654,9 @@ function produktZeile(p) {
     const alle = [...new Set(namen)];
     const quellen = alle.length > 3 ? [...alle.slice(0, 3), 'u. a.'] : alle;
     const reg = k.regulaer ? `Regulär ${euro(k.regulaer.pack)} (${woZeile({ ...k.regulaer, quelle: '' }, false)})` : '';
-    return `<li><div class="reihe"><div class="haupt"><b>${esc(produktName(p, null))}</b><span class="kx-zeile">${esc(keinAngebotKontext(k))}</span>`
+    const b = p.bestes; // lief beim letzten Lauf noch, ist inzwischen vorbei
+    const zuletzt = b && zahl(b.preis) != null ? ` · zuletzt ${euro(b.preis)} bei ${b.shop}` : '';
+    return `<li><div class="reihe"><div class="haupt"><b>${esc(produktName(p, null))}</b><span class="kx-zeile">${esc(keinAngebotKontext(k) + zuletzt)}</span>`
       + `<span>${esc([reg, quellen.length ? `Quellen: ${quellen.join(', ').replace(', u. a.', ' u. a.')}` : ''].filter(Boolean).join(' · '))}</span></div></div></li>`;
   }
   const geschaetzt = p.normalGeschaetzt === true || p.normalQuelle === 'schaetzung';

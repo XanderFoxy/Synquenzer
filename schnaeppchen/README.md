@@ -44,7 +44,7 @@ bleiben, ein eigenes Thema als Actions-Secret `NTFY_TOPIC` hinterlegen und in de
   „Menge unklar“ da – dann gibt es **keine Prozentangabe und keine Nachricht**.
 - **Preis-Kontext zu jedem Angebot** (`scan/referenz.mjs`, Daten in `referenzpreise.json` – recherchiert, je Wert mit
   Quelle und Datum): **Jetzt · Regulär · Üblich im Angebot · Tiefst 12 Mon.** Keine Schätzungen mehr.
-  - Verglichen wird nur **dieselbe Packung** (± 15 %, z. B. Haribo XXL 300/340 g, aber Knoppers 8er ≠ 15er). Gibt es
+  - Verglichen wird nur **dieselbe Packung** (± 18 %, Vergleich immer über den Grundpreis, z. B. Haribo XXL 300/340 g, aber Knoppers 8er ≠ 15er). Gibt es
     für eine Packung keinen Wert, wird über den Grundpreis (€/Stück, €/100 g, €/100 ml) umgerechnet und so beschriftet.
   - **Regulär** = Regalpreis, zuerst der Laden des Angebots, sonst Median der Ketten in Döbeln (Kaufland, Lidl,
     Netto MD, Penny, Aldi Nord, EDEKA/Marktkauf, REWE), dann Globus/Norma/Amazon. UVP und Schätzungen nur als letzte Stufe.

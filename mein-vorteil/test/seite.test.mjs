@@ -195,7 +195,7 @@ test('Preis-Kontext (v3): Jetzt · Regulär · Üblich im Angebot · Tiefst 12 M
   assert.match(b, /Deal\s*Unter dem üblichen Angebotspreis, nah am 12-Monats-Tief/);
   // ohne Angebot: Orientierung in der Liste
   const liste = nbsp(await page.locator('#p-angebote .liste').innerText());
-  assert.match(liste, /Nestlé Choco Crossies\s*Gerade kein Angebot · Üblich 2,11 € · Tiefst 1,69 € \(Kaufland, März 2026\) · je 150 g/);
+  assert.match(liste, /Nestlé Choco Crossies\s*Gerade kein Angebot · Üblich 1,99 € · Tiefst 1,69 € \(Kaufland, März 2026\) · je 150 g/);
   assert.match(liste, /Lorenz Crunchips X-Cut\s*Gerade kein Angebot · Üblich 1,49 € · Tiefst 1,49 € \(Action, Okt\. 2026\) · je 130 g/);
   assert.equal((liste.match(/Gerade kein Angebot · Üblich [\d,]+ € · Tiefst [\d,]+ € \([^)]+ 20\d\d\)/g) || []).length, 8, '8 Produkte ohne Angebot, alle mit Üblich + Tiefst');
   assert.doesNotMatch(liste, /unbekannt|geschätzt/);

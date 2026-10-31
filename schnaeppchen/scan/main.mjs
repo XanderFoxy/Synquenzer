@@ -162,8 +162,10 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
     // Prozent nur gegen den recherchierten regulären Preis. Unsichere Menge/unplausibel: Kontext ja, Bewertung nein.
     for (const a of angebote) {
       const m = mengeInBasis(a.menge, item.basis);
-      const ok = a.mengeSicher && !a.unsicher && m > 0;
-      a.preise = preisKontext({ ref, basis: item.basis, verlauf, angebot: ok ? { preis: a.preis, menge: m, shop: a.shop } : null, jetztMs, cfg });
+      const sicher = a.mengeSicher && m > 0;
+      const ok = sicher && !a.unsicher;
+      a.preise = preisKontext({ ref, basis: item.basis, verlauf, angebot: sicher ? { preis: a.preis, menge: m, shop: a.shop } : null, jetztMs, cfg });
+      if (!ok) { a.preise.deal = false; a.preise.ersparnis = null; }
       a.deal = ok && a.preise.deal;
       a.ersparnis = ok ? a.preise.ersparnis : null;
       a.grund = a.deal ? GRUND[a.preise.stufe] || '' : '';

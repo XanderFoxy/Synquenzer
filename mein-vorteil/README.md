@@ -44,7 +44,7 @@ Oben: „Stand“ je Quelle (rot, wenn der letzte Lauf zu lange her ist oder kei
   je mit Laden, Monat und Quellenname; „Quellen der Preise“ klappt die Links auf (Tippflächen ≥ 44 px). Neben dem Preis
   „statt regulär 3,49 €“, oben rechts „−20 %“ – **nur gegen den recherchierten regulären Preis** (grün nur bei einem Deal,
   sonst grau). Darunter das Urteil: „Deal“ (≤ üblich und nah am 12-Monats-Tief), „üblich“ oder „teurer“.
-- **Ohne Angebot** steht in „Deine Liste“: „Gerade kein Angebot · Üblich 2,11 € · Tiefst 1,69 € (Kaufland, März 2026)
+- **Ohne Angebot** steht in „Deine Liste“: „Gerade kein Angebot · Üblich 1,99 € · Tiefst 1,69 € (Kaufland, März 2026)
   · je 150 g“, darunter Regulär und Quellen.
 - Ältere Daten (ohne `preise`): wie bisher **„Tiefstpreis?“** mit ja / nein / unklar und dem ehrlichen Satz aus den Daten (`tiefst.text`). Steht auf derselben
   Karte ein im Ganzen billigeres Angebot (z. B. mit unklarer Packung), sagt die Seite nie „ja“ oder „Einziges
