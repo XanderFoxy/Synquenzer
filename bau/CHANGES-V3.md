@@ -5301,3 +5301,36 @@ S1-02 (zweiter Teil-Durchlauf) scheitert auch auf `G-T-merge.html` gleich: der T
 (−2,95 Schläge); die Fassung selbst klingt an den richtigen Stellen.
 
 Snapshot: `synq-snapshots/G-T-merge-fix.html`.
+
+## 4.24.1 — Phasen-Start wie vorher · App **4.24.1** (`APP_CODE` 4 024 001) · Format bleibt 5 · kein Supabase-Aufruf
+
+**Zurückgenommen:** K1-Entscheidung 1 aus G-T-merge („Key-Reset: jeder VA-/WT-Klang startet Osz 1/2/3 und den Sub bei jeder Note bei
+Phase 0“). Xander (31.10. ~19:30): Er hat nie verlangt, dass die Oszillatoren anders als üblich schwingen; er hatte nur gefragt, wie
+Sample & Hold funktioniert und warum ein zugeschalteter Oszillator manchmal „nicht da“ wirkt. „Ich will nicht, dass etwas anderes
+klingt. Ich möchte, dass du das so machst, wie man es macht.“ Das Entscheidung-1-Verhalten war also ein Missverständnis.
+
+Jetzt wieder wie in 4.23.0 (und wie bei üblichen Synthesizern): Der Schalter **„Phasen-Reset“** (OSZ → STIMME) entscheidet je Klang –
+an = Start bei Phase 0, aus = freie Startphase je Note. Damit ist Frage 1 aus G-T-merge beantwortet: der Schalter bleibt und wirkt.
+Dass zwei Oszillatoren auf gleicher Tonhöhe je Note etwas anders laut sind (0 … +5,5 dB), ist bei freier Phase normal und hat nichts
+mit der Polyphonie zu tun.
+
+Geändert sind nur drei Stellen (Worklet `startVoice`, Ersatzklang ohne Worklet: Osz und Sub) – Code wieder wortgleich zu 4.23.0;
+`hotfix-4241/revert.patch` (für die spätere Zusammenführung mit 4.25.0). Alles andere aus 4.24.0 bleibt: S0–S2, N1/N2, D1 (+ Fixes), K2,
+K1 „Auto ändert den Klang nie“, leiseste MS-2000-Stimme unter Last, Tonhöhen-Routen in Cent, S&H unverändert.
+
+**Ergebnis:** Die 35 VA-/WT-Werksklänge mit Phasen-Reset aus (Mini-Lead, Rom-Fläche, Supersaw-Hymne, alle WT-Klänge mit 2 Osz, …)
+klingen wieder wie in 4.23.0, ebenso die Demo-Spuren Rom-Fläche, Mini-Lead, Melodie-Lead.
+
+| Prüfung (gegen 4.23.0 = `G-MK8b-merge-fix.html`, Zufall gesät wie in K1) | Ergebnis |
+|---|---|
+| `n5-k-golden` (320 Werksklänge, Browser) | 319/320 ≤ −90 dB; nur INIT Analog anders (K1, gewollt: 0 ct) |
+| `n5-k-golden-node` (64 VA/WT/FM, Worklet in Node) | 64/64 gegen 4.23.0 und 4.3.0; VA/WT 44/44 und FM 20/20 bitgleich (max \|Δ\| = 0); gegen 4.24.0: genau die 35 Klänge anders |
+| `n5-k-05old` (Demo + Leer (Init) aus 4.23.0, 4.22.0, 4.17.0, 4.9.0) | alle Spuren ≤ −324,7 dB, „geändert“ wie dort |
+| `n5-k-sh` / `gt/n5-k-sh-reset1` | bestanden: VA −328,1/−328,5 dB, MS 2000 −319,5/−319,5/−320,9 dB; Stufen 14–15/15 und 23 456–23 472/23 467 |
+| `k2-gleich` | FM und VA max \|Δ\| = 0 |
+| `n5-k-osc3` | bestanden; gleiche Tonhöhe 0 … +5,5 dB je Note, dieselben 16 Werte wie 4.23.0 |
+| `n5-k-ladder` · `n5-k-path` | 0 NaN/Inf, Spitze 4,97, 6 Einträge (wie K1) · VA −331,9 / MS 2000 −331,1 dB |
+| `gt/gt-k1dec` · `gt/mk-steal` · `gt/k1cents` | 9/9 · OK · „±11 ct“ / „±7,2 ct“ |
+| `smoke` · `orch-mk-check` · `v3-mk2-wellen` | ohne Fehler (Version 4.24.1) · alles PASS |
+
+Datei: `hotfix-4241/index.html` (Ausgaben `hotfix-4241/out/`). Zeile `  live: true,` unverändert.

@@ -9753,11 +9753,9 @@ class AnalogCore extends AudioWorkletProcessor {
     v.aSt = 1; v.aOut = 0; v.fSt = 1; v.fOut = 0; v.mSt = 1; v.mOut = 0; v.fade = 0; v.fadeG = 1; v.t0 = 0;
     v.s1 = v.s2 = v.s3 = v.s4 = v.r1 = v.r2 = v.r3 = v.r4 = 0;
     const rnd = () => { let x = v.rng; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; v.rng = x >>> 0; return (x >>> 0) / 4294967296; };
-    // G-T-merge (K1 decision, Xander 31.10.): Key-Reset for every sound - each oscillator and the sub start at phase 0 on a new
-    // note, so equal pitches always give the same level; the unison copies keep their own phases. The random draws stay as
-    // before (Phasen-Reset off still draws them), so drift, pan and unison phases are the same numbers as in 4.23.0.
-    for (let k = 0; k < NOSC * MAXU; k++) { const r = (P.reset && k % MAXU === 0) ? 0 : rnd(); v.ph[k] = k % MAXU === 0 ? 0 : r; }
-    if (!P.reset) rnd(); v.subPh = 0; v.sp.fill(0);
+    // 4.24.1 (Xander 31.10.): start phases as in 4.23.0 - Phasen-Reset on = phase 0, off = free (random) start phase per note
+    for (let k = 0; k < NOSC * MAXU; k++) v.ph[k] = (P.reset && k % MAXU === 0) ? 0 : rnd();
+    v.subPh = P.reset ? 0 : rnd(); v.sp.fill(0);
     v.dP = (rnd() * 2 - 1) * P.analog * .08; v.dC = (rnd() * 2 - 1) * P.analog * 1.5; v.rnd = rnd() * 2 - 1;
     for (let o = 0; o < NOSC; o++) { v.dO[o] = (rnd() * 2 - 1) * P.analog * .05; v.dR[o] = Math.pow(2, v.dO[o] / 12); }
     v.pan0 = (v.idx % 2 ? 1 : -1) * P.spread * (0.5 + 0.5 * rnd()); v.panL0 = Math.sqrt(1 - v.pan0); v.panR0 = Math.sqrt(1 + v.pan0);
@@ -14847,12 +14845,12 @@ const MK_LABEL = 'MS 2000';
         const ratio = Math.pow(2, (P['o' + k + 'oct'] | 0) + (P['o' + k + 'semi'] | 0) / 12), det = +P['o' + k + 'fine'] || 0;
         const nP = Math.max(1, Math.min(7, P['o' + k + 'uni'] | 0 || 1)), n = k === 1 ? Math.min(3, nP) : 1;   // native: ≤ 3 voices, osc 1 only
         const gf = (WAVEG[P['o' + k + 'w'] | 0] || 1) * (nP > 1 ? UNIG : 1) / Math.sqrt(n), g = G_(lvl * .5 * gf), xs = [];
-        for (let u = 0; u < n; u++) { const x = osc(P['o' + k + 'w'] | 0, f * ratio, det + uniOff(u, n, P.uniDet), P['o' + k + 'pw'], phase(f * ratio, u === 0)); x.connect(g); xs.push(x); }   // G-T-merge: Key-Reset (K1 decision)
+        for (let u = 0; u < n; u++) { const x = osc(P['o' + k + 'w'] | 0, f * ratio, det + uniOff(u, n, P.uniDet), P['o' + k + 'pw'], phase(f * ratio, P.reset && u === 0)); x.connect(g); xs.push(x); }
         g.connect(mix); oscs.push({k, xs, g, n, f, gf});
       }
       if (P.subLvl > .001) {
         const s = c.createOscillator(); s.type = P.subW === 1 ? 'sine' : 'square'; s.frequency.value = f / (P.subOct >= 2 ? 4 : 2);
-        if (cvOut) cvOut.connect(s.detune); nodes.push(s); srcs.push(s); starts.push([s, 0, phase(s.frequency.value, true)]);   // G-T-merge: Key-Reset (K1 decision)
+        if (cvOut) cvOut.connect(s.detune); nodes.push(s); srcs.push(s); starts.push([s, 0, phase(s.frequency.value, P.reset)]);
         const gf = P.subW === 1 ? 1 : SQG, g = G_(P.subLvl * .5 * gf); s.connect(g); g.connect(mix); oscs.push({k: 'sub', xs: [s], g, gf});
       }
       if (P.noise > .001 && o.noise) {
@@ -16527,7 +16525,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.24.0';
+const VERSION = '4.24.1';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
