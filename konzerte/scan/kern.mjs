@@ -1,17 +1,26 @@
 // Reine Logik: Ergebnisse der Quellen zusammenführen, Distanz filtern, Dedupe gegen "gesehen", Pushes bestimmen.
-import { norm, titelSchluessel, distanzKm, datumDe, tageZwischen } from './lib.mjs';
+import { norm, titelSchluessel, distanzKm, datumDe, tageZwischen, berlinIso, berlinKurz } from './lib.mjs';
 
 export const konzertKey = k => k.quelle.startsWith('seite:')
   ? `s|${k.quelle.slice(6)}|${norm(k.band)}`
   : `k|${norm(k.band)}|${k.datum}|${norm(k.stadt)}`;
 export const releaseKey = r => `r|${norm(r.band)}|${titelSchluessel(r.titel)}`;
 
-/** Bei Ausfall einer Quelle die alten Einträge dieser Quelle behalten (nichts verschwindet wegen eines Fehlers). */
+/** Bei Ausfall einer Quelle die alten Einträge dieser Quelle behalten (nichts verschwindet wegen eines Fehlers).
+ *  quelleKaputt(quelle, eintrag) – mit dem Eintrag lässt sich auch „nur diese Band ist ausgefallen“ prüfen. */
 export function mitAltbestand(neu, alt, quelleKaputt) {
-  return [...neu, ...(alt || []).filter(x => quelleKaputt(x.quelle))];
+  return [...neu, ...(alt || []).filter(x => quelleKaputt(x.quelle, x))];
 }
 
-export function verarbeite({ konzerte, releases, gesehen, config, heute, seitenGeprueft = [] }) {
+/** Nächster noch offener Vorverkauf als kurze Zeile (für den Push) oder '' */
+export function vorverkaufZeile(vv = [], jetzt) {
+  const v = (vv || []).find(x => !x.bis || x.bis >= jetzt);
+  if (!v) return '';
+  if (v.ab && v.ab > jetzt) return `${v.name} ab ${berlinKurz(v.ab)} Uhr`;
+  return v.bis ? `${v.name} läuft bis ${berlinKurz(v.bis)} Uhr` : `${v.name} läuft`;
+}
+
+export function verarbeite({ konzerte, releases, gesehen, config, heute, jetzt = `${heute}T00:00:00.000Z`, seitenGeprueft = [] }) {
   const erstlauf = !gesehen;
   gesehen = gesehen || { konzerte: {}, releases: {} };
   const z = config.zuhause, pushes = [];
@@ -20,6 +29,12 @@ export function verarbeite({ konzerte, releases, gesehen, config, heute, seitenG
   const km = new Map();
   for (const k of konzerte) {
     if (k.datum && k.datum < heute) continue;
+    // Ende: nach dem Konzerttag (bzw. letzten Festivaltag) vorbei; vorbei -> raus
+    const bis = k.bis || (k.datum ? berlinIso(k.datum) : null);
+    if (bis && bis < jetzt) continue;
+    k.bis = bis;
+    // beendete Vorverkäufe raus
+    if (k.vorverkauf) k.vorverkauf = k.vorverkauf.filter(v => !v.bis || v.bis >= jetzt);
     const dist = k.lat != null && k.lon != null ? distanzKm(z, { lat: k.lat, lon: k.lon }) : null;
     if (dist != null && dist > config.listenRadiusKm) continue;
     const e = { ...k, km: dist, key: konzertKey(k) };
@@ -36,7 +51,7 @@ export function verarbeite({ konzerte, releases, gesehen, config, heute, seitenG
       pushes.push({
         key: k.key, art: 'konzerte',
         titel: `${k.festival ? 'Festival' : 'Konzert'}: ${k.band}`,
-        text: `${k.datum ? datumDe(k.datum) + (k.zeit ? ' ' + k.zeit : '') + ' · ' : ''}${wo}${k.km != null ? ` (${k.km} km)` : ''}${k.titel && norm(k.titel) !== norm(k.band) ? '\n' + k.titel : ''}${k.status ? '\n' + k.status : ''}`,
+        text: `${k.datum ? datumDe(k.datum) + (k.zeit ? ' ' + k.zeit : '') + ' · ' : ''}${wo}${k.km != null ? ` (${k.km} km)` : ''}${k.titel && norm(k.titel) !== norm(k.band) ? '\n' + k.titel : ''}${k.status ? '\n' + k.status : ''}${vorverkaufZeile(k.vorverkauf, jetzt) ? '\n' + vorverkaufZeile(k.vorverkauf, jetzt) : ''}`,
         link: k.link, tags: ['ticket'], prio: 4,
       });
     } else gesehen.konzerte[k.key] = heute; // zu weit: nur Liste, kein Push

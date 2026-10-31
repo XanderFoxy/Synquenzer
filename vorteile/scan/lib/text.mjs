@@ -1,4 +1,5 @@
 // Text-Helfer. norm/parsePrice wie schnaeppchen/scan/text.mjs (gleiches Verhalten), dazu Wortsuche und Fristen.
+import { endeAus } from './ende.mjs';
 
 export function norm(s) {
   return String(s ?? '')
@@ -36,30 +37,10 @@ export function enthaelt(text, woerter = []) {
 }
 export const zaehle = (text, woerter = []) => woerter.filter(w => enthaelt(text, [w])).length;
 
-const MONATE = { jan: 1, feb: 2, mae: 3, mar: 3, apr: 4, mai: 5, jun: 6, jul: 7, aug: 8, sep: 9, okt: 10, oct: 10, nov: 11, dez: 12, dec: 12 };
-
-// Frist aus Text: "bis 15.11.2026", "Bewerbungsschluss: 30. November", "Einsendeschluss 1.12." -> "YYYY-MM-DD" | null
+// Frist aus Text: "bis 15.11.2026", "Bewerbungsschluss: 30. November", "Einsendeschluss 1.12." -> "YYYY-MM-DD" (Berlin) | null
+// (Regeln in lib/ende.mjs: Reise-/Aufenthaltszeiträume zählen nicht, ohne Jahr -> dieses oder nächstes Jahr)
 export function fristAus(text, jetzt = new Date()) {
-  const t = norm(text);
-  const sig = /(bewerbungsschluss|einsendeschluss|anmeldeschluss|teilnahmeschluss|deadline|frist|bewerben bis|bewerbung bis|anmeldung bis|teilnahme bis|endet am|laeuft bis|gueltig bis|bis zum|bis)\s*:?\s*(?:zum\s*|am\s*|einschliesslich\s*)?/g;
-  const jahrJetzt = jetzt.getUTCFullYear();
-  let m;
-  while ((m = sig.exec(t))) {
-    const rest = t.slice(m.index + m[0].length, m.index + m[0].length + 30);
-    let d = rest.match(/^(\d{1,2})\s?\.\s?(\d{1,2})\s?\.?\s?(\d{2,4})?/);
-    let tag, monat, jahr;
-    if (d) { tag = +d[1]; monat = +d[2]; jahr = d[3] ? +d[3] : null; }
-    else if ((d = rest.match(/^(\d{1,2})\s?\.?\s?([a-z]{3})[a-z]*\s?(\d{4})?/)) && MONATE[d[2]]) { tag = +d[1]; monat = MONATE[d[2]]; jahr = d[3] ? +d[3] : null; }
-    else continue;
-    if (!(tag >= 1 && tag <= 31 && monat >= 1 && monat <= 12)) continue;
-    if (jahr != null && jahr < 100) jahr += 2000;
-    if (jahr == null) {
-      jahr = jahrJetzt;
-      if (Date.UTC(jahr, monat - 1, tag) < jetzt.getTime() - 864e5 * 60) jahr++; // "bis 15. Januar" im November -> nächstes Jahr
-    }
-    return `${jahr}-${String(monat).padStart(2, '0')}-${String(tag).padStart(2, '0')}`;
-  }
-  return null;
+  return endeAus(text, jetzt)?.tag ?? null;
 }
 
 export const datumDe = iso => (iso && /^\d{4}-\d{2}-\d{2}/.test(iso) ? iso.slice(0, 10).split('-').reverse().join('.') : '');

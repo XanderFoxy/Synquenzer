@@ -1,0 +1,13 @@
+{"_hinweis":"Aufbau laut Ticketmaster Discovery API v2 (dates.end, sales.public, sales.presales). Keine echten Daten: TM_KEY ist (Stand 31.10.2026) nicht gesetzt.",
+ "_embedded":{"events":[
+ {"name":"Alphaville – Heute Abend","url":"https://www.ticketmaster.de/event/heute","dates":{"start":{"localDate":"2026-10-31","localTime":"20:00:00"},"status":{"code":"onsale"}},
+  "sales":{"public":{"startDateTime":"2026-06-01T08:00:00Z","endDateTime":"2026-10-31T19:00:00Z"}},
+  "_embedded":{"venues":[{"name":"Haus Auensee","city":{"name":"Leipzig"},"country":{"countryCode":"DE"},"location":{"latitude":"51.3698","longitude":"12.3205"}}],"attractions":[{"name":"Alphaville"}]}},
+ {"name":"Alphaville – Tour 2027","url":"https://www.ticketmaster.de/event/dresden-2027","dates":{"start":{"localDate":"2027-04-10","localTime":"19:30:00"},"status":{"code":"offsale"}},
+  "sales":{"public":{"startDateTime":"2026-11-06T09:00:00Z","endDateTime":"2027-04-10T17:30:00Z"},
+           "presales":[{"name":"Fanclub-Vorverkauf","startDateTime":"2026-10-20T08:00:00Z","endDateTime":"2026-10-25T21:59:00Z"},
+                       {"name":"Magenta-Vorverkauf","startDateTime":"2026-11-02T09:00:00Z","endDateTime":"2026-11-04T22:59:00Z"}]},
+  "_embedded":{"venues":[{"name":"Alter Schlachthof","city":{"name":"Dresden"},"country":{"countryCode":"DE"},"location":{"latitude":"51.0700","longitude":"13.7300"}}],"attractions":[{"name":"Alphaville"}]}},
+ {"name":"Synth Weekender","url":"https://www.ticketmaster.de/event/weekender","dates":{"start":{"localDate":"2027-05-14"},"end":{"localDate":"2027-05-16"},"status":{"code":"onsale"}},
+  "_embedded":{"venues":[{"name":"Agra","city":{"name":"Leipzig"},"country":{"countryCode":"DE"},"location":{"latitude":"51.30","longitude":"12.37"}}],"attractions":[{"name":"Alphaville"},{"name":"Camouflage"}]}}
+ ]},"page":{"size":100,"totalElements":3}}

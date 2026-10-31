@@ -5,6 +5,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { aufraeumen } from './lib/ende.mjs';
 import { macheAbruf, macheFixtureAbruf } from './lib/http.mjs';
 import { rohOrdner, macheMitschnitt } from './lib/roh.mjs';
 import { tageBis } from './lib/text.mjs';
@@ -55,6 +56,9 @@ export async function lauf({ cfg, wunschliste, vorher, zustand, holeText, env = 
     }
     log(`${name}: ${status[name].ok ? 'ok' : 'FEHLER'} ${kategorien[name].length} Einträge ${(status[name].fehler || []).slice(0, 2).join(' | ')}`);
   }
+  // Enddaten: was vorbei ist (bis/sichtbarBis), fliegt raus – auch Übernommenes; gleicher Link nur in einer Kategorie
+  aufraeumen(kategorien, new Date(jetztMs));
+
   // abgelaufene Fristen und zu alte Einträge raus, sortieren
   for (const [name, liste] of Object.entries(kategorien)) {
     kategorien[name] = liste

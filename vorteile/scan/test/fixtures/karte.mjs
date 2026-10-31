@@ -4,6 +4,7 @@ export const FIXTURE_KARTE = [
   ['rss/gruppe/lebensmittel', 'mydealz-lebensmittel.xml'],
   ['rss/gruppe/drogerie', '!fehler'],
   ['rss/gruppe/preisfehler', 'mydealz-preisfehler.xml'],
+  ['mydealz.de/deals/waschmittel-preisfehler-2861999', 'mydealz-deal-waschmittel.html'],
   ['search?q=Therme', 'mydealz-therme.xml'],
   ['q=D%C3%B6beln%20Stadtfest', 'news-doebeln-stadtfest.xml'],
   ['rss/gruppe/reisen', 'mydealz-reisen.xml'],

@@ -1,6 +1,8 @@
 // Modul "musik": (1) Wunsch-Geräte (wunschliste.json) – Preisstürze und Tiefstpreise über mydealz-Suche und optional Geizhals,
 // eigene Preis-Historie im Zustand. (2) "Bands gesucht"/Open Calls für elektronische Acts (Google-News-Suche).
-import { enthaelt, zaehle, parsePrice, euro, norm, fristAus, tageBis, datumDe, round } from '../lib/text.mjs';
+import { enthaelt, zaehle, parsePrice, euro, norm, tageBis, datumDe, round } from '../lib/text.mjs';
+import { berlinTag } from '../lib/ende.mjs';
+import { preisAngaben } from '../lib/mydealz.mjs';
 import { sammleFeeds, eintrag, mydealzSuche, googleNews, istRegional } from './gemeinsam.mjs';
 
 const heuteVon = d => new Date(d).toISOString().slice(0, 10);
@@ -39,7 +41,7 @@ export async function geraete({ holeText, cfg, wunschliste, zustand, jetzt }) {
       for (const it of items) {
         const preis = parsePrice(it.preisText);
         if (preis == null || !geraetePasst(it.titel, g, wunschliste)) continue;
-        funde.push({ preis, link: it.link, shop: it.shop || 'Online', titel: it.titel, quelle: 'mydealz', datum: it.datum, temperatur: it.temperatur });
+        funde.push({ preis, link: it.link, shop: it.shop || 'Online', titel: it.titel, quelle: 'mydealz', datum: it.datum, temperatur: it.temperatur, bis: it.bis });
       }
     } catch (e) { fehler.push(`${g.name}: ${e.message}`); }
     if (g.geizhals) {
@@ -58,7 +60,9 @@ export async function geraete({ holeText, cfg, wunschliste, zustand, jetzt }) {
     const rabatt = g.normalpreis ? round(1 - b.preis / g.normalpreis, 2) : null;
     if (!(unterZiel || tiefstpreis || rabatt >= 0.15)) continue;
     eintraege.push(eintrag({
-      kategorie: 'musik', titel: `${g.name}: ${euro(b.preis)} bei ${b.shop}`, link: b.link, quelle: b.quelle, datum: b.datum,
+      kategorie: 'musik', titel: `${g.name}: ${euro(b.preis)} bei ${b.shop}`, link: b.link, quelle: b.quelle, datum: b.datum, jetzt,
+      bis: b.bis || null, art: 'deal',
+      preise: preisAngaben({ preis: b.preis, preisVorher: g.normalpreis, vorherQuelle: g.normalpreis ? 'deine Schätzung (wunschliste.json)' : null }),
       zeile: [g.normalpreis ? `sonst ca. ${euro(g.normalpreis)}` : '', rabatt > 0 ? `−${Math.round(rabatt * 100)} %` : '', tiefstpreis ? 'Tiefstpreis' : '', unterZiel ? 'unter deinem Zielpreis' : ''].filter(Boolean).join(' · '),
       soGehts: 'Link öffnen, Versand und Händler prüfen (Thomann/Musicstore/Just Music sind sicher), mit PayPal oder Rechnung zahlen – 30 Tage Rückgabe nutzen, wenn er nicht gefällt.',
       wert: 55 + (unterZiel ? 25 : 0) + (tiefstpreis ? 15 : 0) + Math.max(0, (rabatt ?? 0) * 40),
@@ -77,13 +81,13 @@ export async function aufrufe({ holeText, cfg, jetzt }) {
     const text = `${it.titel} ${it.beschreibung}`;
     if (!enthaelt(text, m.aufrufWoerter) || !enthaelt(text, ['band', 'bands', 'musiker', 'künstler|kuenstler', 'act', 'acts', 'artists', 'musikerinnen'])) continue;
     if (enthaelt(text, m.nichtWoerter)) continue;
-    const frist = fristAus(text, jetzt);
+    const frist = it.bis ? berlinTag(it.bis) : null; // vorbei -> schon in sammleFeeds raus
     const rest = tageBis(frist, jetzt);
-    if (rest != null && rest < 0) continue;
     const regional = istRegional(text, cfg);
     const genre = Math.min(2, zaehle(text, m.genreWoerter));
     eintraege.push(eintrag({
-      kategorie: 'musik', titel: it.titel, quelle: it.herkunft || 'Google News', link: it.link, datum: it.datum, frist,
+      kategorie: 'musik', titel: it.titel, quelle: it.herkunft || 'Google News', link: it.link, datum: it.datum, jetzt,
+      bis: it.bis, ab: it.ab, art: 'aufruf',
       zeile: ['Bands gesucht', regional ? 'in der Region' : 'Deutschland', frist ? `Frist ${datumDe(frist)}` : ''].filter(Boolean).join(' · '),
       soGehts: 'Ausschreibung öffnen und Bedingungen lesen. Bewerbung = 3 Sätze über dich + 1 Hörlink + 1 Foto (Vorlage unten auf der Seite).',
       wert: 40 + (regional ? 20 : 0) + genre * 10 + (frist ? 10 : 0),
