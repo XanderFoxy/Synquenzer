@@ -11,6 +11,7 @@ import { referenz, bewerte, versandkosten, technikBewertung } from './deals.mjs'
 import { nachricht, dedupeKey, senden } from './notify.mjs';
 import { macheAbruf, macheFixtureAbruf } from './http.mjs';
 import { rohOrdner, macheMitschnitt } from './roh.mjs';
+import { leseRss } from './rss.mjs';
 import { marktguru } from './sources/marktguru.mjs';
 import { mydealz } from './sources/mydealz.mjs';
 import { keepa } from './sources/keepa.mjs';
@@ -158,6 +159,18 @@ export async function scan({ cfg, watchlist, history, sent, holeText, env = {}, 
   return { current, history, sent, msgs, zuSenden };
 }
 
+// Nur im Roh-Modus: ein paar Deal-Seiten der Preisfehler-Gruppe mitschneiden (neueste + älteste), weil der Feed
+// weder Altpreis noch „abgelaufen“ als eigenes Feld hat – zum Nachsehen, ob die Seite selbst es liefert.
+export async function rohDealSeiten(holeText, cfg, max = 6) {
+  const feed = cfg.quellen.mydealz.feeds.find(f => f.preisfehler);
+  if (!feed) return 0;
+  let items = [];
+  try { items = leseRss(await holeText(feed.url)); } catch { return 0; }
+  const links = [...new Set([...items.slice(0, max - 2), ...items.slice(-2)].map(it => it.link).filter(Boolean))].slice(0, max);
+  for (const l of links) { try { await holeText(l, { headers: { accept: 'text/html' } }); } catch { /* steht im Mitschnitt */ } }
+  return links.length;
+}
+
 function argWert(args, name) { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; }
 async function leseJson(pfad, fallback) { try { return JSON.parse(await readFile(pfad, 'utf8')); } catch { return fallback; } }
 
@@ -192,6 +205,7 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   await writeFile(join(datenDir, 'history.json'), JSON.stringify(r.history) + '\n');
   await writeFile(join(datenDir, 'sent.json'), JSON.stringify(r.sent, null, 1) + '\n');
   if (roh) {
+    if (!fixtures) await rohDealSeiten(holeText, cfg);
     roh.ausgabe('current.json', JSON.stringify(r.current, null, 1) + '\n');
     roh.ausgabe('history.json', JSON.stringify(r.history) + '\n');
     roh.ausgabe('sent.json', JSON.stringify(r.sent, null, 1) + '\n');

@@ -69,6 +69,7 @@ test('Roh-Modus: jede Antwort + Ergebnis gespeichert, kein Push', async () => {
     for (const a of index.abrufe.filter(x => x.datei)) assert.ok((await stat(join(rohDir, a.datei))).size > 0, a.datei);
     assert.ok(index.abrufe.some(a => a.url.startsWith('https://api.marktguru.de/') && a.datei.endsWith('.json')));
     assert.ok(index.abrufe.some(a => a.url.includes('mydealz.de/rss/gruppe/preisfehler') && a.datei.endsWith('.xml')));
+    assert.ok(index.abrufe.some(a => a.url.startsWith('https://www.mydealz.de/deals/')), 'Deal-Seiten der Preisfehler mitgeschnitten');
     const aus = (await readdir(join(rohDir, 'ausgabe'))).sort();
     assert.deepEqual(aus, ['current.json', 'history.json', 'pushes.json', 'sent.json']);
     assert.equal(await readFile(join(rohDir, 'ausgabe', 'current.json'), 'utf8'), await readFile(join(dir, 'daten', 'current.json'), 'utf8'));
