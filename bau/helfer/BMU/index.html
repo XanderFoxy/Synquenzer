@@ -6955,7 +6955,9 @@ function bmEnsure() {
     if (BMX.ctx !== c) return false;
     try { bmProbeNode(c); BMX.st = 'ready'; } catch (e) { BMX.st = 'failed'; bmNoWk(); }
     BMX.ms = performance.now() - T0;
-    if (BMX.st === 'ready' && !UI.forceNative) { for (const i of synthTracks()) if (S.tracks[i].sound.engine === 'bm') syncEngine(i, true); tickAhead(.3); }
+    for (const i of synthTracks()) if (S.tracks[i].sound.engine === 'bm') { const E = AU.synth[i];   // a worklet node kept for the switch hands its notes over now
+      if (!(BMX.st === 'ready' && !UI.forceNative && E && !E.bm && !E.dead && !E.retiring && bmSwitchX(i, S.tracks[i].sound))) syncEngine(i, true); }
+    if (BMX.st === 'ready') tickAhead(.3);
     wkReport(); return BMX.st === 'ready';
   });
   return BMX.p;
@@ -7024,7 +7026,7 @@ function bmTrack(c, dest, snd) {
 // {t:'end', n, id?}: the proxy with that id, else the oldest released one on that note
 function bmEnd(E, m) {
   let v = m.id != null ? E.proxies.get(m.id) : null;
-  if (!v) for (const x of E.proxies.values()) if (x.out === m.n && isFinite(x.relT) && (!v || x.relT < v.relT)) v = x;
+  if (!v && m.id == null) for (const x of E.proxies.values()) if (x.out === m.n && isFinite(x.relT) && (!v || x.relT < v.relT)) v = x;
   if (v) { E.notes.delete(v.id); E.at0.delete(v.id); if (E.onEnd) E.onEnd(v.id); }
 }
 function bmNew(i) {
@@ -7054,6 +7056,7 @@ function bmSwitchX(i, snd) {
     E.proxies.delete(v.id);
     Object.assign(v, {E: nE, P: snd.p, fm: snd.engine === 'fm6', mkRel: snd.engine === 'mk' && snd.p.mk ? mkRelSec(snd.p.mk) : to ? SQBM.relSec(snd.p.bm) : 0});
     nE.proxies.set(v.id, v); nE.on(v.id, v.out, v.vel, Math.max(v.start, now), -1, v.mask || 0);
+    if (isFinite(v.relT)) nE.off(v.id, Math.max(v.relT, v.start));   // a queued clip note keeps its planned end
   }
   retireE(E);
   rebuildNativeLfos(i); mkInRoute();
@@ -18313,12 +18316,15 @@ function bmNoWk() { if (BMX.warned) return; BMX.warned = true; toast(BM_NAME + '
 function bmSync(i, full) {
   const tr = S.tracks[i], E = AU.synth[i];
   if (tr.sound.engine !== 'bm') { if (E && E.bm) retireEngine(i); return false; }
-  if (E && !E.bm) retireEngine(i);
+  const wait = () => bmCan() && BMX.st !== 'failed' && !bmReady();
+  if (E && !E.bm) { if (wait()) { bmBoot(); return true; } retireEngine(i); }   // the first switch: the old node keeps the held keys until the module is there
   if (!bmReady() || !bmLoad()) { bmBoot(); return true; }
   if (!AU.synth[i]) AU.synth[i] = bmNew(i); else if (full) AU.synth[i].prog(tr.sound);
   return true;
 }
-function bmSwitch(i, snd) { const E = AU.synth[i]; return (snd.engine === 'bm' || !!(E && E.bm)) && bmLoad() ? bmSwitchX(i, snd) : false; }
+function bmSwitch(i, snd) { const E = AU.synth[i];
+  if (snd.engine === 'bm' && E && !E.bm && !E.dead && !E.retiring && bmCan() && BMX.st !== 'failed' && !bmReady()) { bmBoot(); return true; }   // moved by bmEnsure once ready
+  return (snd.engine === 'bm' || !!(E && E.bm)) && bmLoad() ? bmSwitchX(i, snd) : false; }
 // the block sq-bm-src (host, placeholder processor, native image, probe, render, page): evaluated on first need, like sq-mk-src
 const BML = {ok: false, err: null, ms: 0};
 function bmLoad() {
@@ -42643,7 +42649,7 @@ const SYNQUENZER = {
   mkGet: t => { const s_ = sndOf(t); return s_ && s_.p.mk ? deep(s_.p.mk) : null; },
   mkSet: (t, path, v) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'mk') throw new Error('Keine ' + MK_LABEL + '-Spur: ' + t); return soundEdit(t, MK_LABEL + ' ' + path, () => mkSetP(t, path, v, false)); },
   mkRender: (sound, ev, o) => mkRender(sound, ev, o), mkScope: t => mkScopeOf(t), mkInfo: () => mkInfo(),
-  mkWheel: (t, w, v) => mkWheelApi(t, w, v), mkPanel: () => (mkLoaded() ? MKUI.panelInfo() : null), perfProbe: cases => (bmLoad(), perfProbeAll(cases)),   // BM6: case 'bm' = the Bit Mask probe
+  mkWheel: (t, w, v) => mkWheelApi(t, w, v), mkPanel: () => (mkLoaded() ? MKUI.panelInfo() : null), perfProbe: cases => (Array.isArray(cases) && cases.includes('bm') && bmLoad() ? perfProbeAll(cases) : mkLoad().probe(cases)),   // BM6: case 'bm' = the Bit Mask probe
   arpLog: t => (arpK() ? ARPC.arpLog(t) : []), arpClear: t => { if (arpK()) ARPC.clearLog(t); }, arpInfo: t => (arpK() ? ARPC.info(t) : null),   // MK5 (B.7)
   mkIn: (t, which, src, dry) => { if (which != null) { const s_ = typeof src === 'number' ? (S.tracks[src] ? 't:' + S.tracks[src].uid : null) : src; if (!mkInSet(t, which, s_, dry)) throw new Error('mkIn: nicht wählbar'); } return deep(S.tracks[t].mkIn || null); },
   mkInInfo: () => ({tracks: AU.tracks.map(A => { const k = A && A.mkL && A.mkL.k; return A ? {e1: !!(k && k[1]), e2: !!(k && k[2]), dryCut: !!A.dryCut} : null; }),
