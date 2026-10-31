@@ -11701,7 +11701,7 @@ const RecHelpers = (() => {
     function duplicate() {
       const c = clip();
       if (!E.sel.size) {                                            // nothing selected: double the clip (×2 Länge)
-        if (c.len * 2 > 16) { say('max. 16 Takte'); return; }
+        if (c.len * 2 > 64) { say('max. 64 Takte'); return; }   /* G8 */
         model.begin(); const Lb = L(); c.notes = c.notes.concat(c.notes.map(n => Object.assign({...n, t: n.t + Lb}, n.o != null ? {o: +(n.o + Lb).toFixed(4)} : {}))); /* the copy's raw onsets move with it (as clip sheet ×2) */ c.len *= 2; sortNotes(); E.loop = null; model.end(true, 'Clip verdoppeln'); render(); say('×2 → ' + c.len + ' Takte'); return;
       }
       const ns = scope(), t0 = Math.min(...ns.map(n => n.t)), t1 = Math.max(...ns.map(n => n.t + n.d));
@@ -11714,7 +11714,7 @@ const RecHelpers = (() => {
     // a raw onset stays inside the clip when it gets shorter (a note wrapped onto the downbeat keeps o near the end)
     function wrapO(o, nl) { const w = ((o % nl) + nl) % nl; return +(w >= nl - 1e-4 ? 0 : w).toFixed(4); }
     function setLen(bars) {
-      bars = clamp(bars, 1, 16); const c = clip(); if (bars === c.len) return;
+      bars = clamp(bars, 1, 64); const c = clip(); if (bars === c.len) return;   /* G8 */
       model.begin(); const nl = bars * 4, shorter = bars < c.len;
       c.len = bars; if (shorter) trimToLen();                    // V0a K-06: the same trim as the length handle
       E.sel = new Set([...E.sel].filter(n => c.notes.includes(n)));
@@ -11922,7 +11922,7 @@ const RecHelpers = (() => {
     // (whole bars, rounded); the edge zones scroll the frozen view along so the clip can grow / shrink beyond the screen
     function lenDrag(s) {
       const dB = (s.px - s.p0.x) / s.ppb0 + (V.x0 - s.x00), c = clip();
-      const bars = clamp(s.len0 + Math.round(dB / 4), 1, 16);
+      const bars = clamp(s.len0 + Math.round(dB / 4), 1, 64);   /* G8 */
       if (bars !== c.len) { c.len = bars; if (E.loop && E.loop.b >= bars) E.loop = null; say(bars + (bars === 1 ? ' Takt' : ' Takte')); if (opts.onTick) opts.onTick(); }
       render();
     }
@@ -17005,7 +17005,7 @@ function normNoteExtras(src, out, kind) {
 // pk: project key; a clip key without src (format 2 / API) is 'user' if it differs from the project key, else 'auto' (§4.3)
 function normClip(c, kind, pk) {
   if (!c || typeof c !== 'object') return null;
-  const len = isNum(c.len) ? clamp(Math.round(c.len), 1, 16) : 1, L = len * 4;
+  const len = isNum(c.len) ? clamp(Math.round(c.len), 1, 64) : 1, L = len * 4;   /* G8: Clips bis 64 Takte */
   const key = normKey(c.key, {root: 0, scale: 'ionian'});
   const pkey = pk || {root: 0, scale: 'ionian'};
   key.src = c.key && KEY_SRC.includes(c.key.src) ? c.key.src : (key.root === pkey.root && key.scale === pkey.scale ? 'auto' : 'user');
@@ -17079,7 +17079,7 @@ function normalizeProject(obj) {
     d.metroVol = normNum(s.metroVol, 0, 1, d.metroVol);
     d.metroInRec = normBool(s.metroInRec, d.metroInRec);
     d.countIn = s.countIn === true ? 1 : s.countIn === false ? 0 : [0, 1, 2].includes(s.countIn) ? s.countIn : d.countIn;
-    d.recLength = [1, 2, 4, 8].includes(s.recLength) ? s.recLength : 'auto';
+    d.recLength = [1, 2, 4, 8, 16, 32, 64].includes(s.recLength) ? s.recLength : 'auto';   /* G8 */
     d.inQuant = normEnum(s.inQuant, IN_QUANTS, d.inQuant);
     d.kbScale = normEnum(s.kbScale, ['show', 'lock', 'off'], 'show');
     const co = s.coach && typeof s.coach === 'object' ? s.coach : {};
@@ -20871,7 +20871,7 @@ function recTailOpen() { for (const o of rec.open.values()) if (o.kind === 'tail
 function recTick(b0, b1) {
   if ((rec.state === 'countin' || rec.state === 'armed') && rec.startBeat < b1) recBegin();
   if (rec.state === 'recording' && rec.endBeat != null && rec.endBeat < b1) recClose(rec.endBeat);
-  if (rec.state === 'recording' && rec.mode === 'new' && !rec.fixedLen && rec.endBeat == null && rec.startBeat + 64 < b1) recClose(rec.startBeat + 64);
+  if (rec.state === 'recording' && rec.mode === 'new' && !rec.fixedLen && rec.endBeat == null && rec.startBeat + 256 < b1) recClose(rec.startBeat + 256);   /* G8: Aufnahme „auto“ bis 64 Takte */
   if (rec.state === 'overdub' && rec.odEnd != null && AU.ctx && recBeatNow() >= rec.odEnd - 1e-9) { recEndOverdub(rec.odEnd); UI.dirty.all = true; }
   if (rec.tail && AU.ctx) {
     const ab = recBeatNow(), tl = rec.tail;
@@ -20996,7 +20996,7 @@ function recClose(bd) {
   recCommitOpen(bd);
   cancelRecClicks(bd);
   const ti = rec.track, si = rec.scene;
-  const len = clamp(Math.round((bd - rec.startBeat) / 4), 1, 16), L = len * 4, qIn = GRID_STEP[S.settings.inQuant] || 0;
+  const len = clamp(Math.round((bd - rec.startBeat) / 4), 1, 64), L = len * 4, qIn = GRID_STEP[S.settings.inQuant] || 0;   /* G8 */
   const notes = [];
   for (const n of rec.temp) {
     let t = n.t; while (t >= L) t -= L;
@@ -21442,7 +21442,7 @@ function inputUp(id) {
   UI.dirty.kb = true;
 }
 function capPush(o) {
-  CAP.buf.push(o); if (CAP.buf.length > 4096) CAP.buf.splice(0, 1024);
+  CAP.buf.push(o); if (CAP.buf.length > 16384) CAP.buf.splice(0, 4096);   /* G8: Rückblick bis 64 Takte */
   CAP.last[o.track] = performance.now(); UI.dirty.fang = true;
 }
 function releaseInputs(pred) { for (const id of Object.keys(R.inputs)) if (!pred || pred(R.inputs[id].route, id)) inputUp(id); }
@@ -21472,7 +21472,7 @@ function capture() {
   const ti = R.selT, tr = S.tracks[ti];
   // keys still held when FANG is tapped belong to the phrase too (their length so far)
   const ab = R.playing ? audBeat() : 0, held = [...CAP.open.values()].filter(o => o.track === ti).map(o => Object.assign({}, o, {d: Math.max(1 / 32, ab - o.b)}));
-  const ph = R.playing ? RecHelpers.capturePhrase(held.length ? CAP.buf.concat(held) : CAP.buf, ti, ab) : null;
+  const ph = R.playing ? RecHelpers.capturePhrase(held.length ? CAP.buf.concat(held) : CAP.buf, ti, ab, {maxBars: 64}) : null;   /* G8: FANG bis 64 Takte */
   if (!ph || !ph.notes.length) { toast('Nichts zum Einfangen – erst spielen, dann FANG'); return false; }
   const si = !tr.clips[R.selS] ? R.selS : tr.clips.findIndex(c => !c);
   if (si < 0) { toast('Kein freier Platz in dieser Spur'); return false; }
@@ -23089,7 +23089,7 @@ function sceneChunk(s) {
   const row = S.scenes[s] && S.scenes[s].chords; if (row) L = Math.max(L, row.len);
   // V2e-fix: partChunk gets its own copy of the lanes and the matching slots (with slots null, partLanesFix would empty
   // the bar-0 entries in place and the scene would land without its clips)
-  L = clamp(L, 1, 16);
+  L = clamp(L, 1, 64);   /* G8: eine Szene mit langem Clip wird als Teil so lang wie ihr Clip */
   const p = {id: 'S' + (s + 1), lanes: lanes.map(l => l.map(e => Object.assign({}, e))), chords: row || null, xp: null, slots: lanes.map(l => (l[0].slot < 0 ? -1 : {s: l[0].slot}))};
   const ch = partChunk(p, L);
   return Object.assign(ch, {len: L, lanes, marks: [{a: 0, len: L, part: 'S' + (s + 1)}]});
@@ -26176,7 +26176,7 @@ function popRecOpts(anchor) {
     const st = S.settings;
     p.style.maxWidth = '360px';
     p.innerHTML = `<h4>Aufnahme</h4>
-      <div class="grp"><span class="lbl">Länge</span>${segHTML('roLen', [['auto', 'AUTO'], [1, '1'], [2, '2'], [4, '4'], [8, '8']], st.recLength)}</div>
+      <div class="grp"><span class="lbl">Länge</span>${segHTML('roLen', [['auto', 'AUTO'], [1, '1'], [2, '2'], [4, '4'], [8, '8'], [16, '16'], [32, '32'], [64, '64']], st.recLength)}</div>
       <div class="grp" style="margin-top:10px"><span class="lbl">Quantisieren</span>${segHTML('roQ', QOPTS, st.inQuant)}</div>
       <div class="grp" style="margin-top:10px"><span class="lbl">Einzähler</span>${segHTML('roCi', [['0', 'Aus'], ['1', '1 Takt'], ['2', '2 Takte']], String(st.countIn))}</div>
       <button class="opt rb" id="roFang" style="margin-top:12px;min-height:48px"><b>FANG – Gespieltes einfangen</b><span>Was du gerade ohne Aufnahme gespielt hast, wird ein Clip, der im Takt weiterläuft.</span></button>`;
@@ -26188,7 +26188,7 @@ function popRecOpts(anchor) {
 }
 function setRecOptions(o) {
   const st = S.settings;
-  if (o.length !== undefined) st.recLength = [1, 2, 4, 8].includes(+o.length) ? +o.length : 'auto';
+  if (o.length !== undefined) st.recLength = [1, 2, 4, 8, 16, 32, 64].includes(+o.length) ? +o.length : 'auto';   /* G8 */
   if (o.quantize !== undefined) st.inQuant = normEnum(o.quantize, IN_QUANTS, st.inQuant);
   if (o.countIn !== undefined) st.countIn = o.countIn === true ? 1 : o.countIn === false ? 0 : [0, 1, 2].includes(+o.countIn) ? +o.countIn : st.countIn;
   if (o.metroInRec !== undefined) st.metroInRec = !!o.metroInRec;
@@ -33627,7 +33627,7 @@ function setClipKey(t, s, k) {
 // Länge (§3.7): ½ halves, −1/+1 keep the notes (−1 removes notes at/after the new end), ×2 duplicates the content
 function clipLength(t, s, f) {
   const clip = S.tracks[t].clips[s]; if (!clip) return;
-  const nl = f === .5 ? Math.max(1, Math.floor(clip.len / 2)) : f === 2 ? Math.min(16, clip.len * 2) : clamp(clip.len + f, 1, 16);
+  const nl = f === .5 ? Math.max(1, Math.floor(clip.len / 2)) : f === 2 ? Math.min(64, clip.len * 2) : clamp(clip.len + f, 1, 64);   /* G8 */
   if (nl === clip.len) return;
   pushUndo(t, s, clip, 'Länge');
   const L = clip.len * 4;
@@ -33855,7 +33855,7 @@ function openMenu(goto) {
   const bCoach = btn('? So funktioniert’s'); on(bCoach, 'click', () => { closeMenu(); showCoach(); }); row(s3, null, bCoach);
   // 4 Aufnahme
   const s4 = sec('Aufnahme', colR, 5);
-  row(s4, 'Länge', seg([['auto', 'AUTO'], [1, '1'], [2, '2'], [4, '4'], [8, '8']], () => st.recLength, v => setRecOptions({length: v})));
+  row(s4, 'Länge', seg([['auto', 'AUTO'], [1, '1'], [2, '2'], [4, '4'], [8, '8'], [16, '16'], [32, '32'], [64, '64']], () => st.recLength, v => setRecOptions({length: v})));   /* G8 */
   row(s4, 'Quantisieren', seg(QOPTS, () => st.inQuant, v => setRecOptions({quantize: v})));
   row(s4, 'Einzähler', seg([[0, 'Aus'], [1, '1 Takt'], [2, '2 Takte']], () => st.countIn, v => setRecOptions({countIn: v})));
   row(s4, 'Metronom bei Aufnahme', seg([[true, 'An'], [false, 'Aus']], () => st.metroInRec, v => setRecOptions({metroInRec: v})));
@@ -37700,7 +37700,7 @@ function stNudge(d) {
 }
 
 /* ---------- Ringpuffer (2 min, Kontext-Frames) ---------- */
-function stRing(sr) { const len = Math.round(ST_SEC * sr), dl = Math.ceil(len / 3); return {sr, len, dl, mic: new Int16Array(len), ref: new Int16Array(len), d: new Int16Array(dl), end: -1, start: -1}; }
+function stRing(sr) { const len = Math.round(Math.max(ST_SEC, g8RingSec()) * sr) /* G8: 64 Takte */, dl = Math.ceil(len / 3); return {sr, len, dl, mic: new Int16Array(len), ref: new Int16Array(len), d: new Int16Array(dl), end: -1, start: -1}; }
 function stPut(dst, len, at, src) {
   let i = ((at % len) + len) % len, n = src.length, o = 0;
   while (n > 0) { const k = Math.min(n, len - i); dst.set(o === 0 && k === src.length ? src : src.subarray(o, o + k), i); o += k; n -= k; i = 0; }
@@ -37790,7 +37790,7 @@ async function stGot(run, stream, wkP) {
   if (AU.M && AU.M.ceil) AU.M.ceil.connect(node, 0, 1);       // Referenz = was die App spielt (nach dem Master)
   node.port.onmessage = e => { const d = e.data; if (d && d.lit !== undefined) vsLitMsg(run, d); else stBlock(run, d); };   // VS2: Taste an/aus
   run.node = node; run.bus = bus; run.nodes = [src, node, bus, sink];
-  if (!ST.ring || ST.ring.sr !== sr) ST.ring = stRing(sr); else { ST.ring.end = -1; ST.ring.start = -1; ST.ring.miss = 0; }
+  if (!ST.ring || ST.ring.sr !== sr || ST.ring.len < Math.round(g8RingSec() * sr) /* G8 */) ST.ring = stRing(sr); else { ST.ring.end = -1; ST.ring.start = -1; ST.ring.miss = 0; }
   ST.marks = []; ST.drops = []; ST.dropN = 0;
   ST.phase = 'live';
   const cal = run.opts.cal != null ? run.opts.cal : ST.route === 'speaker' ? (P.prof.speaker ? 'kurz' : 'voll') : null;
@@ -38783,7 +38783,7 @@ function vsFang(o) {
   const tapAt = AU.ctx.currentTime, t = isNum(o.beat) ? Math.min(o.beat, audBeat()) : audBeat();
   if (tkAudioOk()) { tkQ('fang', true); tkOriginHint(); }      // VS3: der Take entsteht jetzt – kein Netz bis er gespeichert ist
   const res = fangCompute(Math.max(0, t), tapAt);            // dieselbe Taktstrich-Regel wie FANG TEIL (N2-VS2-01)
-  const E = res.E, until = Math.min(E, t), ls = vsLiveStart(until), from = Math.max(0, E - 68, ls != null ? ls - (ST.route === 'speaker' ? 12.5 : 4.5) : 0);   // die Phrase (live gehört) und 1 Takt davor; VS4: beim Lautsprecher 3 Takte (live hört die Stimme unter der Musik oft erst später, offline entscheidet der Noten-Weg „1E“)
+  const E = res.E, until = Math.min(E, t), ls = vsLiveStart(until), from = Math.max(0, E - 260, ls != null ? ls - (ST.route === 'speaker' ? 12.5 : 4.5) : 0);   // die Phrase (live gehört) und 1 Takt davor; VS4: beim Lautsprecher 3 Takte (live hört die Stimme unter der Musik oft erst später, offline entscheidet der Noten-Weg „1E“)
   VS.busy = 1; haptic('pop');
   const job = {kind: 'fang', res, E, until, from, tapAt, cfg: Object.assign({}, vsCfg()), o};
   VS.job = job;
@@ -38795,7 +38795,7 @@ function vsFang(o) {
 }
 function vsPhrase(ns, E, until) {
   // die Phrase: zurück vom letzten Einsatz bis zu einer Pause ≥ 1 Takt (wie FANG für Tasten), höchstens 16 Takte
-  const s = ns.filter(n => n.b < until - 1e-6 && n.b >= E - 64 - 0.25).sort((a, b) => a.b - b.b);
+  const s = ns.filter(n => n.b < until - 1e-6 && n.b >= E - 256 - 0.25).sort((a, b) => a.b - b.b);   /* G8: bis 64 Takte */
   if (!s.length) return null;
   let i = s.length - 1;
   while (i > 0) { let end = -1e9; for (let k = 0; k < i; k++) end = Math.max(end, s[k].b + s[k].d); if (s[i].b - end >= 4) break; i--; }
@@ -38807,7 +38807,7 @@ function vsFangDone(job, A) {
   const cfg = job.cfg, nt = vsNotesOf(A, {snap: cfg.snap}), ph = vsPhrase(nt.notes, job.E, job.until);
   if (!ph || !ph.length) { toast(cfg.src === 'inst' ? 'Nichts gespielt erkannt – erst spielen, dann FANG' : 'Nichts gesungen erkannt – erst singen, dann FANG'); VS.lastFang = {notes: 0}; return false; }
   const Eb = job.res.Eb, sb0 = Math.max(0, Math.floor((ph[0].b + 0.25) / 4 + 1e-9)), sb = g3FirstBar(ph[0].b) < Eb ? Math.max(0, g3FirstBar(ph[0].b)) : sb0, span = Math.max(1, Eb - sb);   /* G3 Nr. 5: Auftakt ist Vorlauf */
-  let len = 1; while (len < span) len *= 2; len = Math.min(16, len);
+  let len = 1; while (len < span) len *= 2; len = Math.min(64, len);   /* G8 */
   let start = Eb - len; if (start < 0) { start = 0; len = Math.max(1, Eb); }
   if (sb > sb0 && start < sb) { start = sb; len = Eb - sb; }        /* G3: der Clip beginnt am Takt des ersten Worts, nicht einen Takt früher */
   const si = vsMelFree(); if (si < 0) { toast('Kein freier Platz in MELODIE'); return false; }
@@ -38840,11 +38840,11 @@ function vsRecDone(r, A, until) {
   const si = r.scene, tr = S.tracks[MEL_T]; if (!tr) return false;
   const base = tr.clips[si] ? deep(tr.clips[si]) : null;
   const rs = base ? r.start : g3RecStart(r, A);                    /* G3 Nr. 5: Anfang am Takt des ersten Worts */
-  const len = base ? base.len : clamp(Math.round((r.end - rs) / 4), 1, 16);
+  const len = base ? base.len : clamp(Math.round((r.end - rs) / 4), 1, 64);   /* G8 */
   const ph = base && R.slot[MEL_T] === si ? R.cstart[MEL_T] : rs;
   const res = {kind: 'rec', track: MEL_T, si, len, start: rs / 4, phase: ph, A, cfg: r.cfg, oct: 0, snap: r.cfg.snap, grid: r.cfg.grid, base, from: rs - 0.25, to: Math.min(r.end, until), first: true, g3: !base};
   vsApply(res);
-  if (tkAudioOk()) { try { res.tk = tkVoiceTake({kind: 'rec', si, a: rs, b: r.end, cs: rs, len: clamp(Math.round((r.end - rs) / 4), 1, 16), mel: res.count ? tr.clips[si] : null, top: res.count ? UNDO[UNDO.length - 1] : null}); } catch (e) { logErr(e); } }   // VS3: der Take auch ohne erkannte Noten
+  if (tkAudioOk()) { try { res.tk = tkVoiceTake({kind: 'rec', si, a: rs, b: r.end, cs: rs, len: clamp(Math.round((r.end - rs) / 4), 1, 64), mel: res.count ? tr.clips[si] : null, top: res.count ? UNDO[UNDO.length - 1] : null}); } catch (e) { logErr(e); } }   // VS3: der Take auch ohne erkannte Noten
   if (!res.count) { if (!base && tr.clips[si] && !tr.clips[si].notes.length) { /* nichts */ } toast(r.cfg.src === 'inst' ? 'Kein Instrument erkannt' : 'Kein Gesang erkannt'); return false; }
   if (!base && R.playing && R.slot[MEL_T] !== si) switchTrackAt(MEL_T, si, nextBarFromAudible(), rs);
   VS.res = res; markDirty(); UI.dirty.all = true;
@@ -39081,7 +39081,7 @@ function tkNormSeg(a) {
   if (!a || typeof a !== 'object' || typeof a.take !== 'string' || !UID_RE.test(a.take)) return null;
   const i = isNum(a.in) ? Math.max(0, a.in) : 0, o = isNum(a.out) ? Math.min(a.out, 3600) : 0;
   if (!(o > i + 1e-4)) return null;
-  return {take: a.take, in: tkR6(i), out: tkR6(o), at: isNum(a.at) ? tkR6(clamp(a.at, 0, 64)) : 0};
+  return {take: a.take, in: tkR6(i), out: tkR6(o), at: isNum(a.at) ? tkR6(clamp(a.at, 0, 256)) : 0};   /* G8: Stücke in Clips bis 64 Takte */
 }
 function tkNormAudio(a) {
   const s = tkNormSeg(a); if (!s) return null;
@@ -39102,7 +39102,7 @@ function tkNormVox(list) {
     let id = typeof v.id === 'string' && /^V\d{1,6}$/.test(v.id) && !ids.has(v.id) ? v.id : null;
     if (!id) { let n = 1; while (ids.has('V' + n) || list.some(x => x && x.id === 'V' + n && x !== v)) n++; id = 'V' + n; }
     ids.add(id);
-    out.push(Object.assign({id, bar: clamp(Math.round(v.bar), 0, SONG_MAX_BARS - 1), len: clamp(Math.round(v.len), 1, 64)}, a));
+    out.push(Object.assign({id, bar: clamp(Math.round(v.bar), 0, SONG_MAX_BARS - 1), len: clamp(Math.round(v.len), 1, SONG_MAX_BARS)}, a));   /* G8: Song-Stimme ohne Taktgrenze */
   }
   out.sort((x, y) => x.bar - y.bar || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
   return out.length ? out : null;
@@ -39226,6 +39226,7 @@ function tkPersist() {
 /* ein neuer Take: Maße stehen sofort fest (ein Undo-Schritt, deep-equal), der Inhalt kommt aus dem Ringpuffer, sobald das
    Mikrofon bis zum Ende geliefert hat (Latenz + Rand; bei FANG mit Ende in der Zukunft höchstens ein Takt später) */
 function tkMakeTake(aBeat, bBeat, src, done) {
+  if (src === 'song') { const r = g8MakeTake(aBeat, bBeat, done); if (r) return r; }   /* G8: lange Song-Aufnahme aus dem Strom */
   const G = ST.ring; if (!G || G.end < 0 || !AU.ctx) return null;
   const sr = G.sr, Fa = Math.round(b2t(aBeat) * sr), Fb = Math.round(b2t(bBeat) * sr);
   if (Fb - Fa < sr * 0.05) return null;
@@ -39489,7 +39490,7 @@ function tkVoiceTake(o) {
     clip.audio.alt = [prev].concat(clip.audio.alt || []).slice(0, 16);
   } else {
     const k = sceneKeyOf(o.si) || S.key;
-    clip = {len: clamp(Math.round(L / 4), 1, 16), key: {root: k.root, scale: k.scale, src: 'auto'}, notes: [], audio: tkNormAudio(seg)};
+    clip = {len: clamp(Math.round(L / 4), 1, 64), key: {root: k.root, scale: k.scale, src: 'auto'}, notes: [], audio: tkNormAudio(seg)};   /* G8 */
   }
   tr.clips[o.si] = clip;
   if (o.mel && S.tracks[MEL_T] && S.tracks[MEL_T].clips[o.si] === o.mel) o.mel.take = tk.id;
@@ -39511,8 +39512,9 @@ function tkSongBegin(sr) {
   if (!sr || !sr.over || !ST.on || ST.phase === 'off' || !tkAudioOk() || !R.songPlay) return;
   sr.vox = {passes: [{a: sr.from, T: sr.from * 4 + R.songPlay.off}]};
   tkQ('song', true);
+  g8Begin(sr);                                                      /* G8: die Stimme läuft in Stücken mit */
 }
-function tkSongWrap(sr) { if (sr && sr.vox && R.songPlay) sr.vox.passes.push({a: S.song.loop.a, T: S.song.loop.a * 4 + R.songPlay.off}); }
+function tkSongWrap(sr) { if (sr && sr.vox && R.songPlay) { sr.vox.passes.push({a: S.song.loop.a, T: S.song.loop.a * 4 + R.songPlay.off}); g8Wrap(sr); /* G8 */ } }
 // am Ende der Aufnahme: Audio der letzten Runde [a, E) → song.vox (vor dem Undo-Schnappschuss; der Take gehört in denselben Schritt)
 function tkSongCommit(sr, endBar, ins) {
   const v = sr && sr.vox, song = S.song; if (!v || !song) return;
@@ -39867,7 +39869,7 @@ const TK_API = {
     const s = clamp(o.scene | 0, 0, N_SCN - 1), old = S.tracks[st].clips[s], before = old ? cleanClip(old) : null, r = tkAddPcmTake(pcm, sr, 'rec');
     const seg = {take: r.id, in: 0, out: tkR6(pcm.length / sr), at: tkR6(o.at || 0)};
     if (old && old.audio) { const c = deep(old), prev = {take: c.audio.take, in: c.audio.in, out: c.audio.out, at: c.audio.at}; Object.assign(c.audio, seg); c.audio.alt = [prev].concat(c.audio.alt || []).slice(0, 16); S.tracks[st].clips[s] = c; }
-    else { const k = sceneKeyOf(s) || S.key; S.tracks[st].clips[s] = {len: clamp(o.len || 1, 1, 16), key: {root: k.root, scale: k.scale, src: 'auto'}, notes: [], audio: tkNormAudio(seg)}; }
+    else { const k = sceneKeyOf(s) || S.key; S.tracks[st].clips[s] = {len: clamp(o.len || 1, 1, 64), key: {root: k.root, scale: k.scale, src: 'auto'}, notes: [], audio: tkNormAudio(seg)}; }
     undoPush({kind: 'group', label: 'Stimme', items: items.concat([{kind: 'takes', before: tb}, {kind: 'clip', track: st, scene: s, before}]), tk: 1});
     clipChanged(st, s); if (R.playing) tkTrackResync(st); markDirty(); UI.dirty.all = true;
     return r.stored.then(ok => ({id: r.id, track: st, scene: s, stored: ok}));
@@ -42167,6 +42169,151 @@ const G3_API = {
   g3PreSec: (pcm, ia, sr) => g3PreSec(Int16Array.from(pcm), ia, sr), g3PostSec: (pcm, io, sr) => g3PostSec(Int16Array.from(pcm), io, sr),
 };
 
+/* ======================= G8 — Lange Aufnahmen (Nachtrag 5, G8) =======================
+   1. Song (● SONG mit 🎤): die Stimme läuft während der Aufnahme in Stücken (PCM16, 524 288 Samples = 1 MB je Stück) aus dem
+      Ringpuffer in den Audio-Store – ohne Zeitgrenze, bis der Speicher knapp wird. Der Take am Ende besteht aus diesen Stücken (gleiche
+      Schlüssel `<take>:<k>`, VS4-Referenz `<take>:r<k>`); reicht der Ringpuffer noch, bleibt es beim bisherigen Weg (tkMakeTake).
+      Restzeit nur, wenn < 2 min (Toast alle 10 s); bei 0 endet die Aufnahme.
+   2. Szene-Clips und FANG bis 64 Takte: der Ringpuffer hält 64 Takte + Anlauf/Ausklang (beim aktuellen Tempo, 120 … 300 s). */
+const G8_MAX_BARS = 64, G8_RING_MAX = 300, G8_RAM_MB = 480, G8_PUMP_MS = 500, G8_REST_SHOW = 120;
+const G8 = {st: null, timer: 0, est: null, estT: 0, estFake: null, rest: null, restToast: 0, force: false, log: [], last: null, ended: false};
+// Ringpuffer-Länge (s) beim aktuellen Tempo: 64 Takte + 2 Takte Anlauf + 1 Takt Ausklang + Rand
+function g8RingSec() { try { return Math.min(G8_RING_MAX, Math.max(ST_SEC, (G8_MAX_BARS + 4) * 4 * spb() + 4)); } catch (e) { return ST_SEC; } }
+function g8Log(x) { x.t = Math.round(performance.now()); G8.log.push(x); if (G8.log.length > 48) G8.log.shift(); }
+// tkSongBegin: läuft die Stimme mit, beginnt der Strom 2 Takte vor dem Anfang der Aufnahme
+function g8Begin(sr) { g8Drop(); if (sr && sr.vox && sr.vox.passes.length) g8Start(sr.vox.passes[0].T); }
+// tkSongWrap: neue Runde (Schleife) – nur die letzte zählt: der Strom beginnt neu (2 Takte vor ihr), der alte wird gelöscht
+function g8Wrap(sr) { const s = G8.st; if (!s || s.used || !sr || !sr.vox) return; const p = sr.vox.passes[sr.vox.passes.length - 1]; G8.st = null; g8Start(p.T); g8Del(s); }
+function g8Start(T) {
+  const G = ST.ring; if (!G || G.end < 0 || !AU.ctx) return;
+  const sr = G.sr, lo = Math.max(G.start, G.end - G.len + 1), F0 = Math.max(lo, Math.round((b2t(T) - g3PreCap()) * sr)), ref = ST.route === 'speaker';
+  const s = {id: newUid(), sr, F0, F: F0, k: 0, cur: new Int16Array(TK_CHUNK), fill: 0, kept: [], rcur: ref ? new Int16Array(TK_CHUNK) : null, D: ref ? Math.round(CL_LEAD * sr) : 0,
+    writes: 0, werr: null, used: false, lost: 0, until: null, t0: performance.now()};
+  G8.st = s; G8.ended = false; G8.restToast = 0;
+  TK.pend.set(s.id, {stream: 1});                                  // [Aufräumen] lässt die Stücke in Ruhe
+  if (!G8.timer) G8.timer = setInterval(g8Pump, G8_PUMP_MS);
+  g8Log({kind: 'start', id: s.id, F0, T: +T.toFixed(3)});
+  g8Pump();
+}
+// Stücke aus dem Ringpuffer holen (Zeitkarte wie tkReadMic); ein volles Stück geht sofort in den Speicher
+function g8Pump() {
+  const s = G8.st, G = ST.ring;
+  if (!s) { if (G8.timer) { clearInterval(G8.timer); G8.timer = 0; } return; }
+  if (!s.used && !(R.songRec && R.songRec.vox)) { if (!s.idleT) s.idleT = performance.now(); else if (performance.now() - s.idleT > 4000) { g8Log({kind: 'drop', id: s.id}); G8.st = null; g8Del(s); } return; }
+  if (!G || G.sr !== s.sr || G.end < 0) return;
+  const lo = Math.max(G.start, G.end - G.len + 1);
+  if (s.F < lo) s.lost += lo - s.F;                                // (darf nicht passieren: Pumpe zu langsam) – Lücke bleibt still
+  const safe = G.end - 2 - Math.ceil((Math.max(0, stLatAt(G.end)) / 1000 + .03) * s.sr);
+  const hi = Math.min(safe, s.D ? G.end - s.D : safe, s.until != null ? s.until : Infinity);
+  let guard = 0;
+  while (s.F < hi && guard++ < 64) {
+    const n = Math.min(hi - s.F, TK_CHUNK - s.fill);
+    tkReadMic(G, s.F, s.F + n, s.cur, s.F - s.fill);
+    if (s.rcur) { const L = G.len; for (let i = 0; i < n; i++) { const F = s.F + i + s.D; s.rcur[s.fill + i] = F >= lo && F < G.end ? G.ref[F % L] : 0; } }
+    s.fill += n; s.F += n;
+    if (s.fill >= TK_CHUNK) g8Flush(s, false);
+  }
+  g8Rest(s);
+}
+function g8Flush(s, last) {
+  const k = s.k++, a = last ? s.cur.slice(0, s.fill) : s.cur, r = s.rcur ? (last ? s.rcur.slice(0, s.fill) : s.rcur) : null;
+  s.kept.push(a);
+  if (!last) { s.cur = new Int16Array(TK_CHUNK); if (s.rcur) s.rcur = new Int16Array(TK_CHUNK); }
+  s.fill = last ? s.fill : 0;
+  if (!kv || !kv.aput) return;
+  const put = (key, arr) => { s.writes++; TK.writes++; return kv.aput(key, arr.buffer).then(() => { s.writes--; TK.writes--; }, e => { s.writes--; TK.writes--; s.werr = String(e && (e.name || e.message) || e); logErr(e); }); };
+  put(s.id + ':' + k, a);
+  if (r) put(s.id + ':r' + k, r);
+}
+// gelöschter Strom (Aufnahme ohne Take, neue Runde): seine Stücke wieder weg
+function g8Del(s) {
+  if (!s) return;
+  const n = s.k + 1, del = () => { if (s.writes > 0) { setTimeout(del, 200); return; } if (kv && kv.adel) for (let k = 0; k < n; k++) { kv.adel(s.id + ':' + k).catch(() => {}); kv.adel(s.id + ':r' + k).catch(() => {}); } TK.pend.delete(s.id); };
+  s.kept = []; del();
+}
+function g8Drop() { const s = G8.st; if (s && !s.used) { G8.st = null; g8Del(s); } }
+// Restzeit: freier Speicher (IndexedDB, Schätzung alle 10 s) und Arbeitsspeicher (der fertige Take liegt als Float-Puffer im Speicher)
+function g8Rest(s) {
+  if (!s || s.used) return;
+  const now = performance.now();
+  if (now - G8.estT > 10000) { G8.estT = now; try { if (G8.estFake) G8.est = G8.estFake; else navigator.storage.estimate().then(e => { G8.est = e; }, () => {}); } catch (e) {} }
+  const sec = (s.F - s.F0) / s.sr, store = s.sr * 2 * (s.rcur ? 3 : 1);   // Mikro (+ Referenz und gesäuberte Fassung beim Lautsprecher-Weg)
+  let rest = G8_RAM_MB * 1e6 / (s.sr * 6) - sec;                    // 2 B Stücke + 4 B Float-Puffer je Sample
+  const e = G8.est; if (e && e.quota > 0) rest = Math.min(rest, Math.max(0, (e.quota - e.usage) * .9) / store - (G8.estFake ? sec : 0));
+  G8.rest = rest;
+  if (rest < G8_REST_SHOW && R.songRec && R.songRec.vox) {
+    if (rest <= 1 && !G8.ended) { G8.ended = true; g8Log({kind: 'full', sec: +sec.toFixed(1)}); toast('Speicher knapp – Aufnahme beendet'); try { songRecEnd(null); } catch (er) { logErr(er); } return; }
+    if (now - G8.restToast > 10000) { G8.restToast = now; toast('🎤 noch ' + tkFmtDur(rest) + ' Aufnahmezeit'); }
+  }
+}
+// tkMakeTake (Song): der Take aus dem Strom – nur wenn der Ringpuffer den Anfang nicht mehr hat (oder G8.force im Test)
+function g8MakeTake(aBeat, bBeat, done) {
+  const s = G8.st, G = ST.ring; if (!s || s.used || !G || !AU.ctx || G.sr !== s.sr) return null;
+  const sr = s.sr, Fa = Math.round(b2t(aBeat) * sr), Fb = Math.round(b2t(bBeat) * sr);
+  if (Fb - Fa < sr * .05 || Fa < s.F0) return null;
+  const lo = Math.max(G.start, G.end - G.len + 1);
+  if (!G8.force && Fa - Math.round(g3PreCap() * sr) >= lo) return null;   // der Ringpuffer hat noch alles: der bisherige Weg
+  s.used = true;
+  const F0 = s.F0, Fe = Fb + Math.round(g3PostCap() * sr), n = Fe - F0, id = s.id, nc = Math.ceil(n / TK_CHUNK), chunks = [];
+  for (let k = 0; k < nc; k++) chunks.push(id + ':' + k);
+  const m = {sr, len: n, chunks, route: ST.route || 'speaker', latMs: +(+stLatAt(Fa) || 0).toFixed(3), created: Date.now(), src: 'song'};
+  clNewTake(m);
+  if (!S.takes) S.takes = {};
+  S.takes[id] = m;
+  tkPersist();
+  s.until = Fe;
+  g8Log({kind: 'take', id, sec: +(n / sr).toFixed(2), chunks: nc});
+  const t0 = performance.now(), lim = Math.max(0, (Fe / sr - AU.ctx.currentTime) * 1000) + 4000;
+  const need = () => Math.round(Fe + (stLatAt(Fe) / 1000 + 0.03) * sr) + 2 + (s.D || 0);
+  const wait = () => {
+    const g = ST.ring;
+    if (g && g.end < need() && performance.now() - t0 < lim) { setTimeout(wait, 100); return; }
+    g8Pump();
+    while (s.F < Fe) { const k = Math.min(Fe - s.F, TK_CHUNK - s.fill); s.fill += k; s.F += k; if (s.fill >= TK_CHUNK) g8Flush(s, false); }   // Rest (Zeitüberschreitung): still
+    if (s.fill > 0) g8Flush(s, true);
+    G8.st = null;
+    // Puffer in Scheiben bauen (kein langer Block im Hauptfaden), dann Anlauf/Ausklang, dann fertig
+    let b = null; try { b = new AudioBuffer({length: Math.max(1, n), numberOfChannels: 1, sampleRate: sr}); } catch (e) { try { b = AU.ctx.createBuffer(1, Math.max(1, n), sr); } catch (e2) { b = null; } }
+    const d = b ? b.getChannelData(0) : null, parts = s.kept; let k = 0, o = 0;
+    const step = () => {
+      const t1 = performance.now();
+      while (d && k < parts.length && performance.now() - t1 < 8) { const a = parts[k++], q = Math.min(a.length, n - o), f = 1 / 32767; for (let i = 0; i < q; i++) d[o + i] = a[i] * f; o += q; }
+      if (d && k < parts.length) { setTimeout(step, 0); return; }
+      try {
+        const reg = (a, z) => { a = Math.max(0, a); z = Math.min(n, z); const out = new Int16Array(Math.max(0, z - a)); let p = 0; for (const x of parts) { const e = p + x.length; if (e > a && p < z) { const i0 = Math.max(a, p), i1 = Math.min(z, e); out.set(x.subarray(i0 - p, i1 - p), i0 - a); } p = e; } return out; };
+        const ia = Fa - F0, io = Fb - F0, wpre = Math.round(g3PreCap() * sr), w2 = Math.round(2 * sr), wpost = Math.round(g3PostCap() * sr);
+        const r1 = reg(ia - wpre, ia + w2); g3TakePre(id, m, r1, ia - Math.max(0, ia - wpre), sr);
+        const r2 = reg(io - w2, io + wpost), io2 = io - Math.max(0, io - w2), ps = g3PostSec(r2, io2, sr);
+        if (ps > .005) { const v = {out: tkR6(io / sr), sec: tkR6(ps)}; m.post = v; const cur = S.takes && S.takes[id]; if (cur && cur !== m) cur.post = Object.assign({}, v); }
+      } catch (e) { logErr(e); }
+      if (b) TK.buf.set(id, b);
+      TK.last = {id, n, sr, got: n, pre: (Fa - F0) / sr, late: 0, src: 'song', stream: true, lost: s.lost};
+      G8.last = {id, sec: +(n / sr).toFixed(2), chunks: nc, lost: s.lost, werr: s.werr};
+      UI.dirty.grid = UI.dirty.song = true; markDirty();
+      if (R.playing) { tkVoxResync(true); const st = stimmeT(); if (st >= 0) tkTrackResync(st); }
+      const fin = () => { if (s.writes > 0) { setTimeout(fin, 100); return; } TK.pend.delete(id); s.kept = []; if (done) { try { done(!s.werr, id); } catch (e) { logErr(e); } } if (m.cl && S.takes && S.takes[id] === m) clEnsure(id); };
+      fin();
+    };
+    step();
+  };
+  setTimeout(wait, 0);
+  return {id, inSec: (Fa - F0) / sr, lateBeats: 0};
+}
+const G8_API = {
+  g8Info: () => { const s = G8.st; return {ringSec: ST.ring ? +(ST.ring.len / ST.ring.sr).toFixed(2) : null, ringWant: +g8RingSec().toFixed(2), rest: G8.rest, last: G8.last, log: deep(G8.log),
+    st: s ? {id: s.id, F0: s.F0, F: s.F, k: s.k, fill: s.fill, writes: s.writes, used: s.used, lost: s.lost, sec: +((s.F - s.F0) / s.sr).toFixed(2), kept: s.kept.length} : null}; },
+  g8Force: on => { G8.force = !!on; return G8.force; },
+  // Test: Take aus dem Speicher prüfen – je Intervall [a, b) (s) der kleinste RMS (dB) über 20-ms-Fenster; je Punkt [t, f, w] Goertzel-Pegel (dB)
+  g8Scan: async (id, o) => {
+    o = o || {}; const p = await tkPcm(id), m = S.takes && S.takes[id]; if (!p || !m) return null;
+    const sr = m.sr, w = Math.round(sr * .02), rms = (a, b) => { let s = 0; for (let i = a; i < b; i++) s += p[i] * p[i]; return 10 * Math.log10(s / Math.max(1, b - a) / 32767 / 32767 + 1e-20); };
+    const iv = (o.iv || []).map(([a, b]) => { let mn = 0; const A = Math.round(a * sr), B = Math.min(p.length, Math.round(b * sr)); for (let i = A; i + w <= B; i += w) mn = Math.min(mn, rms(i, i + w)); return +mn.toFixed(1); });
+    const gz = (o.gz || []).map(([t, f, d]) => { const A = Math.round(t * sr), B = Math.min(p.length, A + Math.round((d || .2) * sr)), c = 2 * Math.cos(2 * Math.PI * f / sr); let s1 = 0, s2 = 0; for (let i = A; i < B; i++) { const s0 = p[i] / 32767 + c * s1 - s2; s2 = s1; s1 = s0; } return +(10 * Math.log10((s1 * s1 + s2 * s2 - c * s1 * s2) / Math.max(1, (B - A) ** 2) + 1e-20)).toFixed(1); });
+    return {len: p.length, sr, sec: +(p.length / sr).toFixed(3), iv, gz};
+  },
+  g8EstFake: e => { G8.estFake = e || null; G8.estT = 0; G8.est = e || null; return true; },
+};
+
 function voicesInfo() {
   const now = nowT();
   return VOICES.filter(v => !v.dead).map(v => ({id: v.id, track: v.track, src: v.src, out: v.outAt(Math.max(now, v.start)), start: v.start, end: v.end, state: v.state(now)}))
@@ -42575,6 +42722,7 @@ function fxGestureApi(t, g) {
 function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
 Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes
 Object.assign(SYNQUENZER, G3_API);                // G3: Vorlauf/Ausklang
+Object.assign(SYNQUENZER, G8_API);                // G8: lange Aufnahmen
 Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
 Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
 const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
