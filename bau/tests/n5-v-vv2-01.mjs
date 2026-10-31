@@ -22,8 +22,8 @@ const rows = [];
 for (const sh of cuts.shots) {
   for (const at of ['mitte', 'nach Blende']) {
     const bar = at === 'mitte' ? (sh.a + sh.b) / 2 : sh.a + .5 / (4 * spb) * 1;   // 0,5 s after the cut
-    const t = at === 'mitte' ? bar * 4 * spb : sh.a * 4 * spb + .5;
-    const fr = raw(f, 'n5-v-out/v1.raw', t);
+    const t = Math.floor((at === 'mitte' ? bar * 4 * spb : sh.a * 4 * spb + .5) * 30 + 1e-6) / 30;   // a picture's own time
+    const fr = raw(f, 'n5-v-out/v1.raw', t + .5 / 30);
     const d = {};
     for (const v of cands) { const png = await p.evaluate(([t, v, fm, c]) => SYNQUENZER.vvShot(t, v, fm, c), [t, v, FMT, CAM]); fs.writeFileSync('n5-v-out/ref.png', Buffer.from(png, 'base64')); d[v] = diff(fr, raw('n5-v-out/ref.png', 'n5-v-out/ref.raw')); }
     const best = Object.keys(d).filter(k => k !== 'auto').sort((x, y) => d[x] - d[y])[0];
