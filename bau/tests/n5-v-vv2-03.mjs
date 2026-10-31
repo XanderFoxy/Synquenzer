@@ -29,6 +29,8 @@ const runs = [];
 for (let k = 0; k < 2; k++) {
   const m = await p.evaluate(() => SYNQUENZER.vvMake({}));
   const L = await p.evaluate(() => SYNQUENZER.vvRunLog());
+  const pr = await p.evaluate(() => { const P = SYNQUENZER.vvInfo().prof || {}; const o = {}; for (const k of Object.keys(P)) if (P[k] && P[k].n) o[k] = {n: P[k].n, max: Math.round(P[k].max), mittel: +(P[k].sum / P[k].n).toFixed(1)}; o.gross = (P.big || []).length; return o; });
+  (res.prof || (res.prof = [])).push(Object.assign(pr, {ms: m.ms, dur: +m.dur.toFixed(2)}));
   const lh = L.log ? L.log.map(e => [e.ts, e.k, e.cx.toFixed(3), e.cy.toFixed(3), e.z.toFixed(4)].join(',')).join(';') : '';
   runs.push({cuts: m.cuts, dur: m.dur, logN: L.log ? L.log.length : 0, logHash: execSync('sha1sum', {input: lh}).toString().slice(0, 12), L});
   if (k === 0) { const bl = await p.evaluate(() => SYNQUENZER.vvBlob()); fs.writeFileSync(`n5-v-out/vv2-03-${FMT.replace(':', 'x')}.mp4`, Buffer.from(bl.b64, 'base64')); }
@@ -73,7 +75,7 @@ for (const s of sh.slice(1, 4)) {
   bl.push({takt: s.a + 1, zu: s.v + (s.v === 'spur' ? ':' + s.t : ''), diffJeBild: seq, fertigNachBildern: doneAt - 1, monoton: mono});
 }
 res.blende = {schnitte: bl, ok: bl.every(x => x.monoton && x.fertigNachBildern >= 0 && x.fertigNachBildern <= 12)};
-res.ok = Object.values(res).every(x => x.ok);
+res.ok = Object.entries(res).every(([k, x]) => k === 'prof' || x.ok);
 console.log(JSON.stringify(res, null, 1)); console.log('errors', errs);
 fs.writeFileSync(`n5-v-out/vv2-03-${FMT.replace(':', 'x')}.json`, JSON.stringify(res, null, 1));
 await b.close();

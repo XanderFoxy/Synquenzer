@@ -20,7 +20,7 @@ await p.evaluate(() => { const W = window.__W = {}; for (const f of ['vpPump', '
 const sec = BARS * 240 / BPMX * 1.5 + 2; await sleep(sec * 1000);
 const r = await p.evaluate(() => ({lt: window.__lt.map(([a, d]) => [+((a - window.__t0) / 1000).toFixed(2), d]), W: Object.fromEntries(Object.entries(window.__W).map(([k, w]) => [k, {n: w.n, maxMs: +w.max.toFixed(1), sumMs: +w.sum.toFixed(1)}]))}));
 await p.evaluate(() => SYNQUENZER.stop());
-console.log(FILE.split('/').slice(-2).join('/'), await p.evaluate(() => SYNQUENZER.version), BPMX + ' BPM', BARS + ' Takte', (N / sr).toFixed(1) + ' s', 'vp', JSON.stringify(vi && vi.heard));
+console.log(FILE.split('/').slice(-2).join('/'), await p.evaluate(() => SYNQUENZER.version), BPMX + ' BPM', BARS + ' Takte', (N / sr).toFixed(1) + ' s', 'vp', JSON.stringify(vi));
 console.log('  lange Tasks [s nach Start, ms]:', JSON.stringify(r.lt), ' über 50 ms:', r.lt.filter(x => x[1] > 50).length);
 console.log('  App-Funktionen:', JSON.stringify(r.W));
 console.log('  Konsole', JSON.stringify(H.errs.slice(0, 2)));
