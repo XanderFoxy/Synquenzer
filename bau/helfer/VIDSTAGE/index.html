@@ -1235,6 +1235,7 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .vvrow{display:flex;align-items:center;gap:10px;min-height:44px;min-width:0}
 .vvrow .lbl{flex:0 0 64px;font:600 12px/1 var(--font-ui);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase}
 .vvseg{flex:none}
+.vvrng{display:flex;align-items:center;min-width:0}
 .vvsheet .seg.vvseg button{height:44px;min-width:56px}
 .vvtxt{flex:1 1 auto;min-width:0;font:600 13px/1.2 var(--font-ui);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vvacts,.vvprog,.vvdone{display:flex;gap:8px;min-width:0;height:48px;flex:none}
@@ -42525,9 +42526,11 @@ async function vvAddModule(oc) {
 function vvRange(useSel) {
   const song = S.song; if (!song || !song.bars) return null;
   svSelFix();
-  const s = useSel && SV.sel && SV.sel.a < song.bars ? SV.sel : null;
+  const s = useSel && VV.useSel !== false && SV.sel && SV.sel.a < song.bars ? SV.sel : null;   // the sheet's choice [Ganzer Song] / [Auswahl]
   return s ? {a: s.a, b: Math.min(song.bars, s.b + 1), sel: true} : {a: 0, b: song.bars, sel: false};
 }
+// a yellow selection exists (then the sheet offers [Ganzer Song] / [Auswahl])
+function vvHasSel() { const song = S.song; if (!song || !song.bars) return false; svSelFix(); return !!(SV.sel && SV.sel.a < song.bars); }
 // takes the song needs: loaded before the render (live they come in on the fly)
 async function vvTakesReady() {
   if (!tkAudioOk() || !S.takes) return;
@@ -42548,6 +42551,7 @@ async function vvSwapIn(oc, wk, off) {
   clearInterval(AU.timer);
   LOG.n = 0; LOG.buf = new Array(4096);                            // the offline pass logs on its own (noteLog of the render)
   LIM.last = performance.now() + 1e9;                              // no CPU limiter steps from the offline engines' load reports
+  LIM.level = 0; LIM.quietSince = 0;                               // the video always in full sound quality (no limiter, no Eco); live level comes back with vvSwapOut
   const keep = {noise: AU.noise, metal: AU.metal, drumBufs: AU.drumBufs, dcBuf: AU.dcBuf, loopExtra: AU.loopExtra, compLat: AU.compLat, graphLat: AU.graphLat, measured: AU.measured, hint: AU.hint};
   Object.assign(AU, {ctx: oc, masterSum: null, analyser: null, M: null, hall: null, hallKind: 'convolver', hallPre: null, hallIn: null, hallRet: null, hallDuck: null,
     echo: null, echoIn: null, synth: new Array(8).fill(null), tracks: [], kit: null, strips: null, lfoSink: null, lfo0: null, timer: null,
@@ -42755,8 +42759,10 @@ function vvDrawSong(g, LW, LH, st) {
     g.textAlign = 'left'; g.font = '700 11px ' + C.ui; g.fillStyle = '#111';
     const name = markLabel(m).toUpperCase(); let pos = '';
     if (cur >= m.a && cur < m.a + m.len && m.len > 1) pos = (cur - m.a + 1) + '/' + m.len;
-    g.fillText(m.len === 1 ? partShortForm(markLabel(m)).toUpperCase() : name, x0 + 6, y0 + ru / 2 + .5);
-    if (pos && g.measureText(name).width + 34 < x1 - x0) { g.textAlign = 'right'; g.font = '600 10px ' + C.num; g.fillText(pos, x1 - 5, y0 + ru / 2 + .5); }
+    // the name sticks to the left edge of the view while the part runs on (never left of the part start, never past its end)
+    const lab = m.len === 1 ? partShortForm(markLabel(m)).toUpperCase() : name, lw = g.measureText(lab).width, tx = Math.max(x0 + 6, Math.min(labW + 6, x1 - 6 - lw));
+    g.fillText(lab, tx, y0 + ru / 2 + .5);
+    if (pos && tx - x0 - 6 + g.measureText(name).width + 34 < x1 - x0) { g.textAlign = 'right'; g.font = '600 10px ' + C.num; g.fillText(pos, x1 - 5, y0 + ru / 2 + .5); }
     g.restore();
   }
   // lanes: the slot per bar (a launch bar stronger), own clips framed white
@@ -43129,7 +43135,7 @@ function vvOpen() {
   closePop();
   if (UI.toastActs) hideToast();                                  // VV2-fix: an older [Rückgängig] toast never lies on the sheet's rows
   let sh = VV.el; if (!sh) { sh = VV.el = el('section', 'vvsheet'); sh.id = 'vvSheet'; sh.setAttribute('aria-label', 'Video'); document.body.appendChild(sh); }
-  VV.open = true; VV.res = VV.res && VV.res.blob ? VV.res : null;
+  VV.open = true; VV.res = VV.res && VV.res.blob ? VV.res : null; VV.useSel = true;
   sh.innerHTML = '';
   const head = el('div', 'vvh', '<b>Video</b>'), x = el('button', 'sh-x rb', '✕'); x.setAttribute('aria-label', 'Video schließen');
   onTap(x, () => vvClose()); head.appendChild(x);
@@ -43141,14 +43147,16 @@ function vvOpen() {
   const segV = makeSeg([['auto', 'Auto'], ['song', 'Song'], ['matrix', 'Matrix']], () => vvPrefs().view, v => { vvPrefSet('view', v); vvSync(); }, 'vvseg');
   const segC = makeSeg([['kamera', 'Kamera'], ['balken', 'Ganz mit Balken']], () => vvPrefs().cam, v => { vvPrefSet('cam', v); vvSync(); vvStill(); }, 'vvseg');   // VV2: 9:16
   rowOf('Format', segF); rowOf('Bild', segV); rowOf('9:16', segC);
-  const rng = el('span', 'vvtxt'); rowOf('Bereich', rng).classList.add('txt');
+  const rng = el('span', 'vvtxt'), segR = makeSeg([['song', 'Ganzer Song'], ['sel', 'Auswahl']], () => VV.useSel !== false ? 'sel' : 'song', v => { VV.useSel = v === 'sel'; vvSync(); vvStill(); }, 'vvseg');
+  const rngBox = el('span', 'vvrng'); rngBox.append(rng, segR);
+  const rowR = rowOf('Bereich', rngBox); rowR.classList.toggle('txt', !vvHasSel());
   const acts = el('div', 'vvacts'), bPrev = el('button', 'rb vvbtn', '▶ Vorschau'), bMake = el('button', 'rb vvbtn go', 'Video erstellen');
   bPrev.setAttribute('aria-label', 'Vorschau mit Ton'); acts.append(bPrev, bMake); ctl.appendChild(acts);
   const bar = el('div', 'vvprog', '<i></i><span></span>'), bCan = el('button', 'rb vvbtn', 'Abbrechen'); bar.appendChild(bCan);
   const done = el('div', 'vvdone'), bShare = el('button', 'rb vvbtn go', 'Teilen'), bSave = el('button', 'rb vvbtn', 'Sichern');
   done.append(bShare, bSave); ctl.append(bar, done);
   const way = el('div', 'vvway'), wayT = el('span', ''); way.append(wayT); ctl.appendChild(way);
-  Object.assign(VV, {ui: {sh, cv, stage, segF, segV, segC, rng, bPrev, bMake, bar, bCan, done, bShare, bSave, way, wayT}});
+  Object.assign(VV, {ui: {sh, cv, stage, segF, segV, segC, rng, segR, rowR, bPrev, bMake, bar, bCan, done, bShare, bSave, way, wayT}});
   onTap(bPrev, () => { if (VV.prev) vvPrevStop(); else vvPrevStart(); });
   onTap(bMake, () => vvGo());
   onTap(bCan, () => { VV.cancel = true; });
@@ -43187,10 +43195,13 @@ async function vvSync() {
   const u = VV.ui; if (!u) return;
   u.segF.update(); u.segV.update(); u.segC.update();
   const rg = vvRange(true);
-  u.rng.textContent = !rg ? 'Noch kein Song – erst ● SONG' : rg.sel ? 'gelbe Auswahl' : 'ganzer Song';
+  const hs = !!rg && vvHasSel();
+  u.rng.textContent = !rg ? 'Noch kein Song – erst ● SONG' : 'ganzer Song';
+  u.rng.style.display = hs ? 'none' : ''; u.segR.style.display = hs ? '' : 'none'; u.rowR.classList.toggle('txt', !hs);
+  u.segR.update();
   const busy = VV.busy;
   u.sh.classList.toggle('busy', busy); u.sh.classList.toggle('has', !!(VV.res && VV.res.blob) && !busy);
-  for (const b of [...u.segF.children, ...u.segV.children]) b.disabled = busy;
+  for (const b of [...u.segF.children, ...u.segV.children, ...u.segR.children]) b.disabled = busy;
   for (const b of u.segC.children) b.disabled = busy || vvPrefs().fmt !== '9:16';   // VV2: only for 9:16 (stays in place: no layout jump)
   u.bPrev.disabled = busy || !rg; u.bPrev.innerHTML = VV.prev ? '■ Stopp' : '▶ Vorschau';
   const fmt = vvPrefs().fmt, p = await vvPath(fmt);
