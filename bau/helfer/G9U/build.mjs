@@ -51,6 +51,11 @@ rep("function launchScene(s) {\n  ensureAudio(); if (!AU.ctx) return;", "functio
 // 11) Geräteprofil: G9-Teil (§5.4, Lader g9ProfNorm-Muster)
 rep("    if (o.vs && typeof o.vs === 'object') out.vs = {src: o.vs.src === 'inst' ? 'inst' : 'voice', lock: !!o.vs.lock, snap: o.vs.snap !== false, grid: String(o.vs.grid || '1/16')};   // VS2",
   "    if (o.vs && typeof o.vs === 'object') out.vs = {src: o.vs.src === 'inst' ? 'inst' : 'voice', lock: !!o.vs.lock, snap: o.vs.snap !== false, grid: String(o.vs.grid || '1/16')};   // VS2\n    if (o.g9 && typeof o.g9 === 'object') out.g9 = {auto: o.g9.auto !== false, lang: ['auto', 'de', 'en'].includes(o.g9.lang) ? o.g9.lang : 'auto'};   // G9 (§5.4)");
+// 12a) G3-Bereich im Text-Modus (§7.2): Anlauf/Ausklang heller als „außerhalb“ und erreichbar; Ansicht beginnt bei a.in − Anlauf
+rep("  E.va = clamp(E.va, a.in - W * .1, Math.max(a.in - W * .1, a.out - W * .9));",
+  "  const g3a = E.g9 && typeof g3PreOf === 'function' ? g3PreOf(a) : 0, g3b = E.g9 && typeof g3PostOf === 'function' ? g3PostOf(a) : 0;   // G9: G3-Anlauf/Ausklang erreichbar\n  E.va = clamp(E.va, a.in - Math.max(W * .1, g3a), Math.max(a.in - Math.max(W * .1, g3a), a.out + g3b - W * .9));");
+rep("  g.fillStyle = 'rgba(0,0,0,.55)'; const xi = X(a.in), xo = X(a.out); if (xi > 0) g.fillRect(0, 0, xi, Hp); if (xo < Wp) g.fillRect(xo, 0, Wp - xo, Hp);",
+  "  g.fillStyle = 'rgba(0,0,0,.55)'; const xi = X(a.in), xo = X(a.out); if (xi > 0) g.fillRect(0, 0, xi, Hp); if (xo < Wp) g.fillRect(xo, 0, Wp - xo, Hp);\n  if (E.g9 && typeof g9PaintG3 === 'function') g9PaintG3(E, g, a, X, Wp, Hp);   // G9: hörbarer Anlauf/Ausklang heller");
 // 12) Hilfe (§7.11; der Satz zu [Erkennen] kommt mit der Erkennung, Zweig g9-br-E)
 rep("    ...FX_HELP.map(t => 'FM-FELD: ' + t),", "    'TEXT (STIMME): Im Marken-Editor [Text] – auf die Wellenform tippen spielt den Abschnitt bis zur nächsten Marke; einfach losschreiben, Wörter mit mehreren Silben verteilen sich selbst; ein Wort antippen, Feld leeren und Leertaste löscht es, [+] fügt das getippte Wort ein. [Ganzer Text] verteilt einen eingefügten Songtext (Zeilen = Atempausen). Statt tippen geht auch die Diktier-Taste der Tastatur; für einen Tick je Taste in den Einstellungen das Tastatur-Feedback ‚Haptik‘ einschalten.',\n    ...FX_HELP.map(t => 'FM-FELD: ' + t),");
 fs.writeFileSync(path.join(D, 'index.html'), h);

@@ -57,6 +57,7 @@ function g9On(E) {
   g9Field(E, f);
   // Zoom (§7.2): öffnet mit der Stufe des Marken-Modus; Median-Abschnitt < 44 px → eine Stufe feiner, höchstens bis 1 Takt
   G.zoom0 = E.zoom; G.va0 = E.va; G.zoomed = false;
+  { const pre = typeof g3PreOf === 'function' ? g3PreOf(x.a) : 0; if (pre > 0) E.va = x.a.in - pre; }   // §7.2: Ansicht beginnt bei a.in − Anlauf
   G.vvH = () => g9Dock(); if (window.visualViewport) { visualViewport.addEventListener('resize', G.vvH); visualViewport.addEventListener('scroll', G.vvH); } window.addEventListener('resize', G.vvH);
   sh.classList.toggle('hap', !!UI.haptics);
   wpPaint();
@@ -389,6 +390,13 @@ function g9PaintWave(E, g, P, X, Wp, Hp, mk) {
   const lw = performance.now() - G.pulse < G9_PULSE ? 3 : 2;
   g.fillStyle = 'rgba(255,211,90,.18)'; g.fillRect(s[0], 0, s[1] - s[0], Hp);
   g.strokeStyle = '#ffd35a'; g.lineWidth = lw; g.strokeRect(s[0] + lw / 2, lw / 2, Math.max(1, s[1] - s[0] - lw), Hp - lw);
+}
+// G3 (§7.2): der hörbare Anlauf/Ausklang wird wieder aufgehellt (nur noch leicht abgedunkelt) – bearbeitbar wie der Rest
+function g9PaintG3(E, g, a, X, Wp, Hp) {
+  const pre = typeof g3PreOf === 'function' ? g3PreOf(a) : 0, post = typeof g3PostOf === 'function' ? g3PostOf(a) : 0;
+  const lift = (x0, x1) => { x0 = Math.max(0, x0); x1 = Math.min(Wp, x1); if (x1 <= x0) return; g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(28,30,34,.9)'; g.fillRect(x0, 0, x1 - x0, Hp); g.restore(); };
+  if (pre > 0) lift(X(a.in - pre), X(a.in));
+  if (post > 0) lift(X(a.out), X(a.out + post));
 }
 function g9PaintBar(E, mk) {
   const G = E.g9, cv = G.bcv, r = cv.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
