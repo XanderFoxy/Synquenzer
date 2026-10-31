@@ -52,27 +52,15 @@
       "normalpreis": 2.00
     },
     {
-      "id": "knoppers-24",
-      "name": "Knoppers 24er-Pack",
+      "id": "knoppers-schnitte",
+      "name": "Knoppers Schnitte",
+      "_hinweis": "Früher zwei Einträge (24er- und 5er-Pack). Verglichen wird pro Stück, deshalb zählt jede Packungsgröße; welche Packung es ist, steht beim Angebot.",
       "gruppe": "knoppers-schnitte",
       "suche": ["Knoppers"],
       "muss": ["knoppers"],
-      "nicht": ["nussriegel", "nuss riegel", "riegel", "kakaocreme riegel", "eis"],
+      "nicht": ["nussriegel", "nuss riegel", "riegel", "kakaocreme riegel", "mini", "eis", "bites", "keks"],
       "basis": "stueck",
       "stueckGramm": 25,
-      "stueckMin": 15,
-      "normalpreis": 0.38
-    },
-    {
-      "id": "knoppers-5",
-      "name": "Knoppers 5er-Pack",
-      "gruppe": "knoppers-schnitte",
-      "suche": ["Knoppers"],
-      "muss": ["knoppers"],
-      "nicht": ["nussriegel", "nuss riegel", "riegel", "eis"],
-      "basis": "stueck",
-      "stueckGramm": 25,
-      "stueckMax": 14,
       "standardStueck": 5,
       "normalpreis": 0.38
     },
@@ -81,6 +69,7 @@
       "name": "Knoppers NussRiegel",
       "suche": ["Knoppers NussRiegel"],
       "muss": ["knoppers", "nussriegel|nuss riegel"],
+      "nicht": ["mini"],
       "basis": "stueck",
       "stueckGramm": 40,
       "standardStueck": 5,
@@ -88,7 +77,8 @@
     },
     {
       "id": "haribo-colorado",
-      "name": "Haribo XXL Colorado",
+      "name": "Haribo Colorado",
+      "_hinweis": "Früher „Haribo XXL Colorado“. Verglichen wird pro 100 g, jede Tütengröße zählt; die Größe steht beim Angebot.",
       "suche": ["Haribo Colorado"],
       "muss": ["haribo", "colorado"],
       "basis": "100g",
@@ -97,7 +87,8 @@
     },
     {
       "id": "haribo-tropi-frutti",
-      "name": "Haribo XXL Tropi Frutti",
+      "name": "Haribo Tropi Frutti",
+      "_hinweis": "Früher „Haribo XXL Tropi Frutti“. Verglichen wird pro 100 g, jede Tütengröße zählt.",
       "suche": ["Haribo Tropi Frutti"],
       "muss": ["haribo", "tropi"],
       "basis": "100g",
@@ -106,10 +97,10 @@
     },
     {
       "id": "ben-jerrys",
-      "name": "Ben & Jerry's Eis (Becher, alle Sorten)",
+      "name": "Ben & Jerry's Eis (alle Sorten)",
       "suche": ["Ben & Jerry's"],
       "muss": ["ben", "jerry"],
-      "nicht": ["shirt", "tasse"],
+      "nicht": ["shirt", "tasse", "stick", "sandwich"],
       "basis": "100ml",
       "standardMl": 465,
       "normalpreis": 1.50

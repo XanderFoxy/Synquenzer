@@ -1,7 +1,16 @@
 // Price history per group: one point per day and shop (the lowest unit price seen that day).
-// history = { version: 1, gruppen: { [gruppe]: { basis, punkte: [{ tag, p, shop }], tiefst: { p, tag, shop } } } }
+// history = { version: 2, gruppen: { [gruppe]: { basis, punkte: [{ tag, p, shop }], tiefst: { p, tag, shop } } } }
+// Version 2 (31.10.2026): Packungsgrößen werden richtig gelesen. Version-1-Verläufe enthalten falsche Punkte
+// (z. B. Knoppers 0,07 €/Stück aus „1 kg“) und werden deshalb einmal verworfen.
 
-export const leereHistorie = () => ({ version: 1, gruppen: {} });
+export const HISTORIE_VERSION = 2;
+export const leereHistorie = () => ({ version: HISTORIE_VERSION, gruppen: {} });
+
+/** Gültiger Verlauf oder ein neuer leerer (alte Version, kaputt, fehlt). */
+export function pruefeHistorie(h) {
+  if (h && h.version === HISTORIE_VERSION && h.gruppen && typeof h.gruppen === 'object') return { historie: h, neu: false };
+  return { historie: leereHistorie(), neu: !!h };
+}
 
 export const tagVon = d => new Date(d).toISOString().slice(0, 10);
 
@@ -42,4 +51,14 @@ export function statistik(hist, gruppe, fensterTage, jetzt) {
     tage: proTag.size,
     punkte: g.punkte.length,
   };
+}
+
+// Niedrigster Punkt der letzten `tage` Tage (inkl. heute): { p, tag, shop } oder null
+export function tiefstSeit(hist, gruppe, tage, jetzt) {
+  const g = hist.gruppen[gruppe];
+  if (!g) return null;
+  const grenze = tagVon(new Date(jetzt).getTime() - tage * 864e5);
+  let t = null;
+  for (const x of g.punkte) if (x.tag >= grenze && (!t || x.p < t.p || (x.p === t.p && x.tag > t.tag))) t = x;
+  return t ? { ...t } : null;
 }
