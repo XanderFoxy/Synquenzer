@@ -17,7 +17,7 @@ console.log(await p.evaluate(() => SYNQUENZER.version), 'BPM', BPM, 'g', E.g.toF
 for (const from of [0, 1, 2, 3]) {
   await p.evaluate(st => { window.__cap('v', AU.tracks[st].cut); window.__cap('raw', AU.tracks[st].trackIn); }, st);
   // Stück-Infos mitschreiben
-  await p.evaluate(f => { window.__pcs = []; const o = tkStartSrc; window.tkStartSrc = undefined; SYNQUENZER.songPlay(f); }, from);
+  await p.evaluate(f => { SYNQUENZER.songPlay(f); }, from);
   await sleep(700);
   const src = await p.evaluate(() => { const c = window.__ctx; return SYNQUENZER.vpInfo().src.map(s => ({start: +s.start.toFixed(5), G: +(s.G || 0).toFixed(3), lim: s.lim})).concat(TK.src.filter(r => !r.dead).map(r => ({off: +r.off.toFixed(5), when: +r.start.toFixed(5), cur: +c.currentTime.toFixed(4)}))); });
   await sleep((4 - from) * bar * 1000);
