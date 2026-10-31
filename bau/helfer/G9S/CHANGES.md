@@ -26,11 +26,11 @@ Stand 31.10.2026. Grundlage: `spec/dirigent-spec-v3-nachtrag-8.md` (Teil A, B.5,
 | G9-06 getipptes Wort / Vorschau = Ergebnis | ≥ 90 % / 100 % | **99,7 %** (330 Wörter) / **100 %** |
 | G9-07 Verschieben/Verschmelzen/Trennen | Tabellen je 10 (3 mit Ton-Marken) | **70/70** inkl. Undo deep-equal, Toast ohne Marken-Rat |
 | G9-08 Marken-Haken | | **40/40** (Verschieben folgt, Löschen → `j` bzw. `o`, 0 verloren, Setzen bewegt nichts) |
-| G9-09 Rechenzeit ganz (300 Marken × 250 Silben) / lokal | ≤ 60 ms / ≤ 1 ms | **19 ms** (max 37) / **0,10 ms** (max 0,84) – Node, ohne 4×-Drossel |
+| G9-09 Rechenzeit ganz (300 Marken × 250 Silben) / lokal | ≤ 60 ms / ≤ 1 ms | **19–36 ms** je nach Last (max 40) / Median **0,11 ms** (max 1,1 ms, Einzelfall) – Node, ohne 4×-Drossel |
 | G9-10 Überzahl / Normalisieren | 50 `o`, 0 verloren | **9/9** (VS5b-Umwandeln 300→250: 50 `o`; kaputte Datei 5 Silben je Marke + fallende Zeiten: 0 verloren, Reihenfolge gleich, idempotent) |
 | G9-11 Löschen / Einfügen | je 10 | **20/20** |
 | Sicht / Neu-Einrasten (Kern von G9-54) | ≥ 95 % mit Marke, 0 verloren | **96,7 %**, 0 verloren, feste Silben unverändert, `ly` unberührt |
-| G9-55 Tipps (synthetisch, ±25 ms am Vokal) | ≥ 3 Punkte | **0 Punkte** (99,9 % → 99,9 %, kein Raum) → **Tipp-Kosten bleiben aus** (`tipOn` nicht setzen) |
+| G9-55 Tipps (synthetisch, ±25 ms am Vokal) | ≥ 3 Punkte | **−1 bis 0 Punkte** (99,9 % → 98,9 … 99,9 %, kein Raum) → **Tipp-Kosten bleiben aus** (`tipOn` nicht setzen) |
 | Kosten-Abgleich (einmal, ±50 %) | | kein Teil gewinnt > 1 Punkt → **Spec-Werte bleiben**; empfindlich nur `longF` (×0,5: −7, ×1,5: −14 Punkte) |
 | G9b-V Vorstufe 16 kHz (48 / 44,1 / 32 kHz) | Durchlass bis 7,2 kHz, Sperre ≥ 60 dB | Welligkeit **≤ 0,003 dB**, Sperre **82–84 dB**, Zeitlage 0 ms; Hochpass −3,0 dB @ 80 Hz, −12,3 dB @ 40 Hz; Spitze −3,00 dBFS |
 | G9b-V Fenster-Regel | ⌈L/30⌉ ≤ chunks ≤ ⌈L/24⌉, ≤ 30 s | **9/9** (L 5 s … 300 s); 125-s-Take mit 60 s Stille → Strom 62 s, 3 Fenster, `plan` 1,5 s (Worker) |
