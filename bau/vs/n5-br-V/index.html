@@ -1267,6 +1267,8 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .vvdr .rb i{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 4px 0 0;vertical-align:-1px}
 .pop .vvdr{margin-top:8px}
 .msheet .vvdr{margin-top:4px}
+/* VV2: the sheet „Video“ has one row more (9:16 [Kamera] [Ganz mit Balken]); quer passt die Bedienung ohne Rollen in 375 px Höhe */
+@media (orientation:landscape){.vvctl{gap:4px}.vvacts,.vvprog,.vvdone,.vvsheet .vvbtn{height:44px}}
 #menu .mh{flex:none;display:flex;align-items:center;gap:12px;padding:6px 10px;border-bottom:1px solid var(--panel-edge);background:linear-gradient(#1b1d22,#121418)}
 .mlogo{flex:none;display:flex;align-items:center;pointer-events:none}
 .mlogo svg{height:64px}
@@ -42934,13 +42936,14 @@ function vvCamTarget(sh, st, asp) {
     const L = vvMatrixLayout(LW, LH, st); let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     L.rows.forEach((i, r) => { const s = st.slots[i]; if (s == null || s < L.c0 || s >= L.c0 + L.nc) return; const c = L.cell(r, s - L.c0); x0 = Math.min(x0, c.x); y0 = Math.min(y0, c.y); x1 = Math.max(x1, c.x + c.w); y1 = Math.max(y1, c.y + c.h); });
     if (!isFinite(x0)) return {cx: LW / 2, cy: LH / 2, z: 1};
+    if (x1 <= w1 * .95) x0 = 0;                                     // the playing clips near the left: the track names stay in the picture
     const need = Math.max((y1 - y0) * 1.3, (x1 - x0) * 1.3 / asp);
     return {cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, z: clamp(LH / need, 1, 3)};
   }
   if (sh.v === 'spur') {
     const Ly = vvSpurLayout(LW, LH), s = st.slots[sh.t], c = s != null && s >= 0 ? vvClip(sh.t, s, st.own[sh.t]) : null, ph = vvPhase(st, sh.t, c);
-    const z = 1.5, ww = LH / z * asp;
-    return {cx: ph == null ? LW / 2 : Ly.x + 8 + ph * (Ly.w - 16) + ww * .15, cy: Ly.y + Ly.h / 2 - 6, z};
+    // the whole height (head with the track's name and colour, all notes); the window goes with the Laufstrich
+    return {cx: ph == null ? w1 / 2 : Ly.x + 8 + ph * (Ly.w - 16) + w1 * .1, cy: LH / 2, z: 1};
   }
   // song: the Laufband (as vvDrawSong places it) at ~45 % of the window
   const bars = S.song ? S.song.bars : 0, labW = 78, cw = 48, viewW = LW - labW, sb = st.sb == null ? 0 : Math.min(Math.max(0, st.sb), bars * 4), px = sb / 4 * cw;
@@ -42961,7 +42964,7 @@ function vvCamAt(rt, sh, st, ts, asp, frozen) {
   if (!c || ts < c.t - 1e-6 || ts - c.t > 2) { c = cams[sh.k] = vvCamClamp({cx: tg.cx, cy: tg.cy, z: tg.z, vx: 0, vy: 0, vz: 0, t: ts}, asp); return c; }
   if (frozen || ts - c.t < 1e-6) return c;
   const n = Math.max(1, Math.ceil((ts - c.t) * VV_FPS - 1e-6)), h = (ts - c.t) / n, w = 3, ww = VV_AR / c.z * asp;
-  const ax = 2.2 * ww, vmx = .034 * ww * VV_FPS;                 // ≤ 3,4 % of the window per picture, acceleration limited
+  const ax = 2.6 * ww, vmx = .042 * ww * VV_FPS;                 // ≤ 4,2 % of the window per picture (limit 5 %), acceleration limited
   const step = (x, v, T, am, vm) => { const a = clamp(w * w * (T - x) - 2 * w * v, -am, am); v = clamp(v + a * h, -vm, vm); return [x + v * h, v]; };
   for (let k = 0; k < n; k++) {
     [c.cx, c.vx] = step(c.cx, c.vx, tg.cx, ax, vmx);

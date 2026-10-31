@@ -39352,38 +39352,60 @@ function vpStep(J, until) {
   }
   if (J.st === 2) {
     // Hüllkurve: Minimum über die Vorschau (A Punkte), Freigabe exponentiell, dann gleitender Mittelwert über A (≤ Bedarf an jedem Punkt)
+    // VS-P-fix: in Häppchen (je 32 768 Punkte, dann Zeit prüfen) – am Stück kostete das bei 96 s bis 110 ms (langer Task)
     const need = J.need, nb = need.length, A = Math.max(1, Math.round(VP_ATT * J.sr / VP_K)), rk = Math.exp(-VP_K / (VP_REL * J.sr));
-    const e = new Float32Array(nb), env = new Float32Array(nb);
-    let prev = 1;
-    for (let b = 0; b < nb; b++) { let h = 1; for (let j = b; j < b + A && j < nb; j++) if (need[j] < h) h = need[j]; const r = 1 - (1 - prev) * rk; prev = h < r ? h : r; e[b] = prev; }
-    let sum = A, lo = 1;   // Werte vor dem Anfang = 1
-    for (let b = 0; b < nb; b++) { sum += e[b] - (b - A >= 0 ? e[b - A] : 1); const v = sum / A; env[b] = v > 1 ? 1 : v; if (v < lo) lo = v; }
-    const segs = []; let s0 = -1, last = -10;
-    for (let b = 0; b < nb; b++) {
-      if (env[b] >= 1 - 1e-4) continue;
-      if (s0 >= 0 && b - last <= 4) { last = b; continue; }
-      if (s0 >= 0) segs.push([Math.max(0, s0 - 1), Math.min(nb - 1, last + 1)]);
-      s0 = b; last = b;
+    const h = J.h || (J.h = {e: new Float32Array(nb), env: new Float32Array(nb), ph: 0, b: 0, prev: 1, sum: A, lo: 1, segs: [], s0: -1, last: -10, eb: null, sg: 0});
+    const e = h.e, env = h.env;
+    while (h.ph < 3) {
+      const stop = Math.min(nb, h.b + 32768);
+      if (h.ph === 0) {
+        let prev = h.prev;
+        for (let b = h.b; b < stop; b++) { let m = 1; for (let j = b; j < b + A && j < nb; j++) if (need[j] < m) m = need[j]; const r = 1 - (1 - prev) * rk; prev = m < r ? m : r; e[b] = prev; }
+        h.prev = prev;
+      } else if (h.ph === 1) {
+        let sum = h.sum, lo = h.lo, s0 = h.s0, last = h.last;   // Werte vor dem Anfang = 1
+        for (let b = h.b; b < stop; b++) {
+          sum += e[b] - (b - A >= 0 ? e[b - A] : 1); const v = sum / A; env[b] = v > 1 ? 1 : v; if (v < lo) lo = v;
+          if (env[b] >= 1 - 1e-4) continue;
+          if (s0 >= 0 && b - last <= 4) { last = b; continue; }
+          if (s0 >= 0) h.segs.push([Math.max(0, s0 - 1), Math.min(nb - 1, last + 1)]);
+          s0 = b; last = b;
+        }
+        h.sum = sum; h.lo = lo; h.s0 = s0; h.last = last;
+      } else {
+        // Hüllkurve als AudioBuffer: anlegen, dann je Abschnitt füllen
+        if (!h.segs.length) { h.ph = 3; break; }
+        if (!h.eb) h.eb = vpEnvBuf(n, J.sr);
+        const E = h.eb, d = E.d || E.getChannelData(0);
+        while (h.sg < h.segs.length) { vpEnvFill(d, env, h.segs[h.sg++], J.sr); if (performance.now() > until) break; }
+        if (h.sg >= h.segs.length) h.ph = 3;
+        break;
+      }
+      h.b = stop;
+      if (h.b >= nb) { h.b = 0; h.ph++; if (h.ph === 2 && h.s0 >= 0) h.segs.push([Math.max(0, h.s0 - 1), Math.min(nb - 1, h.last + 1)]); }
+      if (performance.now() > until) break;
     }
-    if (s0 >= 0) segs.push([Math.max(0, s0 - 1), Math.min(nb - 1, last + 1)]);
-    J.r.env = env; J.r.segs = segs; J.r.grDb = +(-20 * Math.log10(Math.max(1e-6, lo))).toFixed(2); J.need = null; J.st = 3;
-    J.r.eb = vpEnvBuf(env, segs, n, J.sr);
+    if (h.ph < 3) { J.ms += performance.now() - t0; return false; }
+    J.r.env = env; J.r.segs = h.segs; J.r.grDb = +(-20 * Math.log10(Math.max(1e-6, h.lo))).toFixed(2); J.r.eb = h.eb; J.need = null; J.h = null; J.st = 3;
   }
   J.ms += performance.now() - t0; J.r.ms = +J.ms.toFixed(1); J.r.sec = +(n / J.sr).toFixed(2);
   return true;
 }
 // VS-P-fix: die Hüllkurve als AudioBuffer (Abtastrate sr/D, D | VP_K; Stützstellen genau auf dem 16er-Raster, dazwischen linear wie
 // setValueCurveAtTime) mit Werten env − 1 (außerhalb der Abschnitte 0): an den gain (Grundwert 1) eines GainNode angeschlossen
-function vpEnvBuf(env, segs, n, sr) {
-  const D = sr >= 32000 ? 4 : sr >= 16000 ? 2 : 1, M = VP_K / D, nb = env.length, L = Math.ceil(n / D) + 2 * M + 2;
+const vpEnvD = sr => (sr >= 32000 ? 4 : sr >= 16000 ? 2 : 1);
+function vpEnvBuf(n, sr) {
+  const D = vpEnvD(sr), L = Math.ceil(n / D) + 2 * VP_K + 2;
   let b = null;
   try { b = new AudioBuffer({length: L, numberOfChannels: 1, sampleRate: sr / D}); } catch (e) { try { b = AU.ctx ? AU.ctx.createBuffer(1, L, sr / D) : null; } catch (e2) { b = null; } }
-  const d = b ? b.getChannelData(0) : new Float32Array(L);
-  for (const [s0, s1] of segs) for (let k = s0; k <= s1; k++) {
+  return b || {d: new Float32Array(L), sr: sr / D};
+}
+function vpEnvFill(d, env, sg, sr) {
+  const M = VP_K / vpEnvD(sr), nb = env.length, L = d.length;
+  for (let k = sg[0]; k <= sg[1]; k++) {
     const v0 = env[k] - 1, v1 = (k + 1 < nb ? env[k + 1] : 1) - 1;
     for (let m = 0; m < M; m++) { const j = k * M + m; if (j < L) d[j] = v0 + (v1 - v0) * m / M; }
   }
-  return b || {d, sr: sr / D};
 }
 function vpFinish(J) { VP.m.set(J.b, J.r); VP.runs++; VP.last = J.r; const k = VP.q.indexOf(J); if (k >= 0) VP.q.splice(k, 1); VP.qs.delete(J.b); J.d = null; }
 function vpPump() {
