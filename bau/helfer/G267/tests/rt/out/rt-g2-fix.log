@@ -1,0 +1,30 @@
+Tonart {"ok":true,"key":{"root":3,"scale":"ionian"}}
+✓ Take 44,1 kHz angelegt: sr 44100, 370440 Samples, ohne Bearbeitung = Roh-Take
+Original (Cent neben Basis): 37.7 -36.2 39.6 -33.3 43.7 -32.0 43.1 -39.0 39.0 34.0 34.1 -40.8 30.1 -44.9
+✓ Tipp ♪ Tonhöhe · Noten öffnet den Noten-Editor
+✓ G2-06 Erkannt 14/14 Noten (fehlend 0); Höhe max 2.5 Cent neben dem Gesungenen; Start (Phrasenanfänge/Einzeltöne) max 18.0 ms
+✓ Tipp [Hart]: Feld mode=hard str=1 Tonart {"root":3,"scale":"ionian"} (Es-Dur der Szene), fertig nach 327 ms
+✓ G2-01 Hart 100 % (Es-Dur, 44,1 kHz): je Note am Skalenton ±5 Cent – max 0.34 [0.1 -0.0 0.0 0.1 0.3 0.0 -0.0 0.1 0.1 0.1 -0.1 -0.1 0.0 0.1]
+✓ G2-05 Hart: Zisch-/Plosivlaute bitgleich: s 0 Samples anders, t 0 Samples anders, s 0 Samples anders, t 0 Samples anders
+✓ G2-03 Legato-Grenzen (8, Verschiebung springt z. B. +38→−42 Cent): HP-Spitze über Umgebung max 1.8 dB mehr als im Original [-2.9 0.0 0.0 -3.2 -0.6 1.3 1.8 -0.9]
+✓ G2-03 alle Notengrenzen inkl. Ränder stimmhafter Strecken: max 1.8 dB über Original (bei 3.650 s)
+✓ G2-03 Dauer 370440 = 370440 Samples
+✓ G2-01 Hart 50 %: halber Abstand ±5 Cent – max 0.56 [-0.2 0.0 -0.1 -0.1 -0.1 -0.5 -0.3 -0.4 -0.2 -0.3 -0.6 -0.3 -0.4 -0.4]
+✓ G2-01 Weich 100 %: max 1.79 Cent
+✓ G2-03 Weich Legato-Grenzen: max 1.2 dB über Original
+✓ Hart 100 % erneut (Tipp nach 50 %/Weich): bitgleich zur ersten Hart-Fassung (0 anders, Cache/Determinismus)
+Editor {"w":350,"h":172,"rowH":5.212121212121212,"view":{"a":0,"W":4},"blk":{"k":7,"x0":308.75,"x1":338.5,"y":258.05492424242425}}
+✓ G2 Block gezogen (2 Zeilen ↑, Maus): sh=2, gehört 200.1 Cent über Hart (Soll 200 ±5); andere Noten max 0.00 Cent verändert
+✓ G2-05 Ziehen: Änderungen nur in der stimmhaften Strecke der Note (Legato-Phrase 2.60–4.35 s); außerhalb ±80 ms der Note 27120 Samples anders (3.720–4.335 s; nur Phasenlage der Nachbarnoten, deren Tonhöhe ±0,02 Cent gleich)
+✓ G2-05 +2 HT in Legato-Phrase: Grenzen 0.1 / 2.0 dB über Original
+✓ G2-05 nach dem Ziehen: Konsonanten bitgleich (0,0,0,0)
+✓ G2-04 keine langen Tasks > 50 ms während Blatt/♪/Hart/50 %/Weich/Ziehen: [–]
+Rechnen: worker {"id":"7alk8nudh2","ms":192,"how":"worker","n":14,"key":"a676328c@1"} {"id":"7alk8nudh2","n":14,"ms":699,"how":"worker"}
+✓ G2-04 ↶ (Ziehen) → Feld deep-equal, Klang bitgleich (0 anders)
+✓ G2-04 ↶ ×4 ganz zurück → kein Feld, Klang = Roh-Take bitgleich (0)
+✓ G2-04 ganz zurück: Spuren/Clip-JSON zeichengleich zum Stand vor der Bearbeitung
+✓ G2-04 ↷ ×5 → gezogener Stand deep-equal, Klang bitgleich (0)
+✓ G2-04 Speichern → neu laden → Laden: Feld deep-equal, Klang bitgleich (0)
+✓ nach dem Laden: Take weiterhin 44,1 kHz (44100)
+✓ keine Seitenfehler 
+ALLE GRÜN
