@@ -11702,10 +11702,12 @@ const RecHelpers = (() => {
       x.strokeStyle = C.amber; x.lineWidth = 2; x.strokeRect(fx + 1, Math.max(1, ft), Math.max(4, fw - 2), Math.min(R.h - 2, fb - ft));
     }
     // N2: the finger of the drag on the map: the view glides there (≈ 0,2 s), the held notes go to that beat (pitch kept)
+    // the glide is its own state (GL): it ends at its target even when the finger lifts on the map at once; destroy stops it
+    const GL = {vx: null, vxc: null, raf: 0};
     function mmGlide() {
-      gst.vraf = 0; if (!gst || gst.kind !== 'move' || gst.vx == null || dead) return;
-      const d = gst.vx - V.x0; V.x0 = Math.abs(d) < .02 ? gst.vx : V.x0 + d * .35; clampView(); render();
-      if (Math.abs(gst.vx - V.x0) > .02 && V.x0 !== gst.vxc) { gst.vxc = V.x0; gst.vraf = requestAnimationFrame(mmGlide); }
+      GL.raf = 0; if (GL.vx == null || dead) return;
+      const d = GL.vx - V.x0; V.x0 = Math.abs(d) < .02 ? GL.vx : V.x0 + d * .35; clampView(); render();
+      if (Math.abs(GL.vx - V.x0) > .02 && V.x0 !== GL.vxc) { GL.vxc = V.x0; GL.raf = requestAnimationFrame(mmGlide); } else GL.vx = null;
     }
     function rr(x, a, b, w, h, r) { r = Math.max(0, Math.min(r, w / 2, h / 2)); x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
     let bubbleT = 0;
@@ -11757,7 +11759,7 @@ const RecHelpers = (() => {
       if (!ns.length) return false;
       const H = ns.map(nt => n1Pos(nt.n)), ins = H.filter(h => h % 2 === 0), ref = ins.length ? ins : H;
       const S = Math.min(...ref) + Math.max(...ref), out = H.map(h => n1Note(S - h));
-      if (out.some(n => n < 0 || n > 127)) { say('Außerhalb des Tonumfangs'); return false; }
+      if (out.some(n => n < LO || n > HI)) { say('Außerhalb des Tonumfangs'); return false; }
       if (out.every((n, i) => n === ns[i].n)) { say('Spiegeln: nichts zu ändern'); return false; }
       ns.forEach((nt, i) => { nt.n = out[i]; }); centerIfHidden(ns[0].n); say('Gespiegelt'); return true;
     }
@@ -11901,10 +11903,10 @@ const RecHelpers = (() => {
           if (onMap) {
             const sp = mmSpan(), b = mmBeat(p.x - 0, R, sp), tb = g ? Math.floor(b / g + 1e-6) * g : b;
             dB = tb - gst.t0[ai]; dR = gst.mDR != null ? gst.mDR : gst.dR;
-            const vx = b - V.W / V.ppb / 2; if (gst.vx == null || Math.abs(vx - gst.vx) > 1e-3) { gst.vx = vx; gst.vxc = null; if (!gst.handed) { gst.handed = true; hand('scroll'); } if (!gst.vraf) gst.vraf = requestAnimationFrame(mmGlide); }
+            const vx = b - V.W / V.ppb / 2; if (GL.vx == null || Math.abs(vx - GL.vx) > 1e-3) { GL.vx = vx; GL.vxc = null; if (!gst.handed) { gst.handed = true; hand('scroll'); } if (!GL.raf) GL.raf = requestAnimationFrame(mmGlide); }
             gst.onMap = true;
           } else {
-            if (gst.onMap) { gst.onMap = false; gst.vx = null; }
+            if (gst.onMap) { gst.onMap = false; GL.vx = null; }
             const ddx = p.x - gst.p0.x, ddy = p.y - gst.p0.y;
             if (gst.ax == null && Math.hypot(ddx, ddy) >= AX_ON) { gst.ax = Math.abs(ddx) >= 2 * Math.abs(ddy) ? 'h' : Math.abs(ddy) >= 2 * Math.abs(ddx) ? 'v' : 'free'; if (gst.ax !== 'free' && opts.onTick) opts.onTick(); }
             if (gst.ax === 'h' && Math.abs(ddy) > AX_OFF) { gst.ax = 'free'; gst.mFz = {y: p.y, s: Math.sign(ddy)}; gst.mDR = 0; } else if (gst.ax === 'v' && Math.abs(ddx) > AX_OFF) gst.ax = 'free';
@@ -11947,7 +11949,6 @@ const RecHelpers = (() => {
       if (gst.kind === 'pinch') { if (P.size === 0) { gst = null; } return; }    // the finger still down after a pinch does nothing
       if (e.pointerId !== gst.id) return;
       // a finger that just rested on the screen (> 500 ms, no movement) edits nothing
-      if (gst.vraf) { cancelAnimationFrame(gst.vraf); gst.vraf = 0; }   /* N2 */
       if (gst.kind === 'pending') { if (performance.now() - gst.ms < 500) tap(); } else { if (gst.kind === 'create' || gst.kind === 'move' || gst.kind === 'resize') sortNotes(); model.end(gst.changed, label(gst.kind)); }
       gst = null; render();
     }
@@ -11961,7 +11962,6 @@ const RecHelpers = (() => {
     function cancelAll() { for (const id of P.keys()) { try { cM.releasePointerCapture(id); } catch (_) {} } P.clear(); abort(); gst = null; render(); }
     // end a single-finger gesture without keeping anything (second finger arrived, or the system cancelled the touch)
     function abort() {
-      if (gst && gst.vraf) { cancelAnimationFrame(gst.vraf); gst.vraf = 0; }   /* N2 */
       if (!gst || gst.kind === 'pending' || gst.kind === 'pinch') { if (gst && gst.kind === 'pending') gst = null; return; }
       if (gst.changed) { model.revert(); afterExternal(); } else model.end(false);
       gst = null;
@@ -12141,7 +12141,7 @@ const RecHelpers = (() => {
       centerOn: n => { measure(); centerOn(n); clampView(); render(); },
       get state() { return {tool: E.tool, grid: E.grid, fold: E.fold, sel: E.sel.size, step: E.step, loop: E.loop ? {a: E.loop.a, b: E.loop.b} : null, ask: E.ask, pointers: P.size, gesture: gst && gst.kind, view: {...V, rows: V.rows.length}}; },
       get selection() { return [...E.sel]; },
-      destroy() { dead = true; if (ro) ro.disconnect(); cancelAnimationFrame(raf); raf = 0; for (const id of P.keys()) reg.end(id); P.clear(); gst = null; root.innerHTML = ''; root.classList.remove('pr'); if (bar.parentNode) bar.parentNode.removeChild(bar); },
+      destroy() { dead = true; if (GL.raf) { cancelAnimationFrame(GL.raf); GL.raf = 0; }   /* N2 */ if (ro) ro.disconnect(); cancelAnimationFrame(raf); raf = 0; for (const id of P.keys()) reg.end(id); P.clear(); gst = null; root.innerHTML = ''; root.classList.remove('pr'); if (bar.parentNode) bar.parentNode.removeChild(bar); },
       el: {main: cM, keys: cK, ruler: cR, vel: cV, bar, acts},
       _xy(beat, note) { const r = cM.getBoundingClientRect(); return {x: r.left + xOf(beat), y: r.top + yOfRow(rowOfNote(note)) + V.rowH / 2}; },
       _vel(beat, v) { const r = cV.getBoundingClientRect(); return {x: r.left + xOf(beat) + 2, y: r.top + (1 - v) * V.VH}; },
@@ -32729,6 +32729,10 @@ function d1Tools(tools, clip) {
   lb.setAttribute('aria-label', 'Länge ' + Ls + ', Richtung, ×2: ' + DRUM_VOICES[ED.dVoice].l); lb.disabled = !clip;
   onTap(lb, () => d1Pop(lb));
   tools.append(lb);
+  if (!tools._d1s) { tools._d1s = 1; let d = null;                // the sheet is touch-action:none: the row scrolls by pointer (a drag > 12 px is no tap)
+    tools.addEventListener('pointerdown', e => { d = tools.scrollWidth > tools.clientWidth + 1 ? {id: e.pointerId, x: e.clientX, l: tools.scrollLeft} : null; });
+    tools.addEventListener('pointermove', e => { if (d && d.id === e.pointerId) tools.scrollLeft = d.l - (e.clientX - d.x); });
+    const fin = e => { if (d && d.id === e.pointerId) d = null; }; tools.addEventListener('pointerup', fin); tools.addEventListener('pointercancel', fin); }
 }
 // [×2]: the clip twice as long with its content (lanes keep their length); one undo
 function d1Double() {
@@ -32744,11 +32748,16 @@ function d1Double() {
 function d1Pop(anchor) {
   const s = R.selS, tr = S.tracks[DRUM_T], v = DRUM_VOICES[ED.dVoice], gm = v.gm; if (!tr.clips[s]) return;
   const before = cleanClip(tr.clips[s]);
-  const cur = () => { const c = tr.clips[s]; return Object.assign({len: Math.round(c.len * 16), dir: 'fwd', seed: 1}, c.lanes && c.lanes[gm]); };
-  const put = e => { const c = tr.clips[s]; if (!c) return; const L = c.lanes ? Object.assign({}, c.lanes) : {}; L[gm] = e; const n = d1Norm(L); if (n) c.lanes = n; else delete c.lanes; afterClipEdit(DRUM_T, s); paintSteps(); };
+  const NS = () => Math.round(tr.clips[s].len * 16);
+  const cur = () => { const c = tr.clips[s]; return Object.assign({len: NS(), dir: 'fwd', seed: 1}, c.lanes && c.lanes[gm]); };
+  // only what differs from the standard is stored (a lane as long as the clip has no len: it grows with ×2 / a longer clip)
+  const put = e => { const c = tr.clips[s]; if (!c) return; const L = c.lanes ? Object.assign({}, c.lanes) : {}, o = {};
+    if (e.len !== NS()) o.len = e.len; if (e.dir !== 'fwd') { o.dir = e.dir; if (e.dir === 'rnd') o.seed = e.seed; }
+    if (Object.keys(o).length) L[gm] = o; else delete L[gm];
+    const n = d1Norm(L); if (n) c.lanes = n; else delete c.lanes; afterClipEdit(DRUM_T, s); paintSteps(); };
   openPop(anchor, p => {
     p.classList.add('d1p');
-    const lD = {p: 'len', l: 'Länge', vals: Array.from({length: 64}, (_, i) => i + 1), fmt: 'int'}, sD = {p: 'seed', l: 'Startwert', vals: Array.from({length: 99}, (_, i) => i + 1), fmt: 'int'};
+    const lD = {p: 'len', l: 'Länge', vals: Array.from({length: Math.min(64, Math.max(NS(), cur().len))}, (_, i) => i + 1), fmt: 'int'}, sD = {p: 'seed', l: 'Startwert', vals: Array.from({length: 99}, (_, i) => i + 1), fmt: 'int'};
     const kl = makeCtl(lD, () => cur().len, x => { const e = cur(); e.len = x; put(e); }, {label: 'Länge', fmt: x => x + ' Schr.'});
     const ks = makeCtl(sD, () => cur().seed, x => { const e = cur(); e.seed = x; put(e); }, {label: 'Startwert', fmt: x => String(x)});
     const dirs = el('div', 'plist d1dirs'); dirs.innerHTML = D1_DIRS.map(([k, l]) => `<button class="rb${cur().dir === k ? ' on' : ''}" data-d="${k}">${l}</button>`).join('');

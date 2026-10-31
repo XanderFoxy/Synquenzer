@@ -64,8 +64,10 @@ Tests: `tests/k2-abnahme.mjs`, `tests/k2-click.mjs`, `tests/k2-cpu.mjs`, `tests/
   **[Umdrehen]**, je mit gezeichnetem Symbol (SVG: Pfeile ↑↓ bzw. ←→ über einer gestrichelten Achse, kein Emoji).
   Wirkung auf die Auswahl, sonst auf den ganzen Clip (wie die anderen Aktionen, Anzeige „ALLE“ / „n Noten“). Ein Undo je Tipp.
 - **Spiegeln:** Tonhöhen um die Mitte (tiefster + höchster Ton) in **Tonleiter-Stufen** der Clip-Tonart gespiegelt → alle
-  Töne bleiben in der Skala, Intervalle gespiegelt (C-D-E-G → G-F-E-C in C-Dur). Leiterfremde Töne bleiben leiterfremd
-  (halbe Stufe), so ist zweimal Spiegeln immer die Ausgangslage. Zeit, Länge, Anschlag bleiben.
+  Töne bleiben in der Skala, Intervalle gespiegelt (C-D-E-G → G-F-E-C in C-Dur); zweimal = Ausgangslage. Ein leiterfremder Ton
+  bleibt leiterfremd, wenn gegenüber ein Ganzton-Schritt liegt; landet er gegenüber in einem Halbton-Schritt (E–F, H–C), gibt es dort
+  keinen leiterfremden Ton – er rastet in die Tonart ein (dann ist zweimal nicht mehr die Ausgangslage). Zeit, Länge, Anschlag bleiben.
+  Ergebnis außerhalb C1…C8 (Zeilen der Rolle) → nichts geändert, Blase.
 - **Umdrehen:** zeitlich rückwärts: Start' = a + b − Start − Länge. Bereich: Auswahl = erste Note bis letztes Ende; ganzer Clip
   = 0 … Clip-Länge. Länge, Anschlag, Ton je Note bleiben; der Roh-Einsatz `o` wandert mit (zweimal = deep-equal).
 - Beide nacheinander möglich (rückwärts gespiegelt). Nichts zu ändern → kein Undo-Schritt, kurze Blase.
@@ -75,7 +77,7 @@ Tests: `tests/k2-abnahme.mjs`, `tests/k2-click.mjs`, `tests/k2-cpu.mjs`, `tests/
 |---|---|---|
 | N1-01 | C-D-E-G → Spiegeln → G-F-E-C, alle Töne in C-Dur, Zeit/Länge/Anschlag gleich; Auswahl D,E → E,D | bestanden |
 | N1-02 | Umdrehen ganzer Clip: Starts 0 / 1,25 / 2,75 / 3,5 (Soll), Anschlag/Länge je Note gleich; Auswahl im Bereich 1…2,75 | bestanden |
-| N1-03 | Spiegeln ×2, Umdrehen ×2 = Ausgangslage deep-equal (auch `o`, auch A-Moll mit C♯/F♯); beide + 2× Undo = Ausgangslage | bestanden |
+| N1-03 | Spiegeln ×2, Umdrehen ×2 = Ausgangslage deep-equal (auch `o`, auch A-Moll mit C♯/F♯ gegenüber Ganztönen); beide + 2× Undo = Ausgangslage | bestanden (leiterfremd gegenüber Halbton: rastet ein, s. o.) |
 | Undo | genau ein Undo-Schritt je Tipp | bestanden |
 | Bedienung | 6 Formate: sichtbar (Leiste scrollt), Symbol gezeichnet, nichts abgeschnitten, Breite 92/102 px, Trefferfläche = volle Leistenhöhe | bestanden |
 
@@ -155,7 +157,9 @@ Tests: `tests/n2-abnahme.mjs` (28/28), `tests/roll-regress.mjs` (30/30).
 - **Bedienung (SCHRITTE, gewähltes Instrument):** Im Fuß neben „Euklid…“/„Muster ▾“ ein Knopf mit gezeichneter Loop-Klammer und
   der Länge (z. B. „] 12 ←“). Tipp → Blatt „HH ZU – Länge und Richtung“: Regler Länge (1–64 Schr.), vier Richtungs-Tasten
   (44 px), Regler Startwert (nur bei Zufall), Taste **„×2 – Clip verdoppeln (mit Inhalt)“** (bis 16 Takte, Spuren behalten ihre
-  Länge). Alles sofort hörbar; ein Undo, wenn das Blatt schließt; ×2 = ein Undo.
+  Länge). Alles sofort hörbar; ein Undo, wenn das Blatt schließt (ohne Änderung keins); ×2 = ein Undo. Gespeichert wird nur, was
+  vom Standard abweicht: eine Spur so lang wie der Clip hat keine eigene Länge und wächst mit ×2 mit. Der Länge-Regler reicht bis
+  zur Clip-Länge (max. 64); längere Spuren nach ×2. Die Werkzeug-Zeile lässt sich per Finger seitlich wischen (P2/P3 mit Takt-Wahl).
 - **Im Schritt-Raster:** der letzte Schritt der Spur trägt eine gelbe Klammer, Schritte dahinter sind gedimmt; der Laufpunkt
   zeigt beim Abspielen den Schritt der Spur (auch rückwärts/Pendel/Zufall).
 
@@ -194,3 +198,29 @@ Tests: `tests/d1-abnahme.mjs` (11/11), `tests/d1-layout.mjs` (18/18), `tests/d1-
 - `/* D1 */`-Blöcke: `D1_DIRS`, `d1Norm`, `d1Lane`, `d1Pos`, `d1Map` (vor `cleanClip`), eine Zeile in `cleanClip`, eine in `normClip`;
   `scheduleDrums` (zwei Zeilen) + `d1Sched` (vor `cutTrackAt`); Laufpunkt (eine Zeile im Schritt-Rahmen); `pageDrumSteps`
   (`decorate` + `d1Tools`); `d1Decorate`, `d1Tools`, `d1Double`, `d1Pop`, `D1_ICON` (vor `openEuclid`); CSS nach `.dtools`.
+
+---
+
+## Unabhängiger Nachtest (zweiter Prüfer) und Korrekturen
+
+Ein zweiter Prüfer hat den Diff gelesen und mit eigenen Touch-/Klang-Skripten geprüft. Bestätigte Fehler und was daraus wurde:
+
+| # | Fund | Korrektur | Nachweis |
+|---|---|---|---|
+| 1 | D1: Werkzeug-Zeile in 375×667 (2 Takte) per Finger nicht wischbar (Blatt hat `touch-action:none`), Länge-Knopf unerreichbar | Zeile scrollt per Pointer-Zug (Tipp bleibt Tipp, > 12 px ist kein Tipp) | `qa-fixes.mjs` QA-1: echter Wisch, Knopf ganz sichtbar, Tipp öffnet Blatt |
+| 2/8 | D1: Antippen von Richtung schrieb die Länge fest (nach ×2 / kürzerem Clip schwieg die Spur taktweise) und machte ohne Änderung einen Undo-Schritt | nur Abweichungen speichern; ohne Änderung kein Undo | QA-2 Leerlauf (keine lanes, +0 Undo), QA-2 ×2 (Spur 32) |
+| 3 | N1: Behauptung „leiterfremd bleibt leiterfremd, zweimal = Ausgangslage“ stimmte nicht gegenüber Halbtonschritten | Beschreibung korrigiert (rastet dort in die Tonart ein); Tonumfang auf die Rollen-Zeilen C1…C8 begrenzt | – (Verhalten bewusst, siehe Frage) |
+| 4 | N2: Loslassen direkt auf der Karte → Ansicht blieb auf halbem Weg stehen, abgesetzte Note nicht im Bild | Gleiten läuft nach dem Loslassen zu Ende | QA-4 |
+| 5 | N2: Schließen der Rolle während des Gleitens → TypeError | Gleiten hat eigenen Zustand, `destroy` stoppt es | QA-5 |
+| 6 | D1: Spur länger als der Clip = nur unbearbeitbare Stille | Länge-Regler bis Clip-Länge (64 nach ×2…) | QA-6 |
+| 7 | Trefferflächen < 44 px (Fuß-Knopf D1 28–34 px, N1-Knöpfe = Leistenhöhe 36–44 px) | nicht geändert (bestehende Leisten-/Fußhöhe der App) | offen → Frage |
+
+Nicht bestätigte Verdachtsfälle (offen gelassen): K2 – bei Begrenzer-Stufe 3 können gehaltene Noten jetzt bis zur eigenen Stimmenzahl
+klingen (weniger Aussetzerschutz, CPU nur mit 6 Stimmen gemessen); der Vorhör-Klang (`PV.chain`) bekommt `polyH: 0` nicht zurück
+(wirkt nur, wenn dort poly gesenkt wird); N1 mit automatischer Tonart kann zwischen zwei Tipps die Tonart neu erkennen; Umdrehen einer
+Note, die über das Clip-Ende ragt, schneidet sie auf 0 (zweimal ≠ Ausgangslage).
+
+### Fragen an Xander (Nachtest)
+- N1: Leiterfremder Ton gegenüber einem Halbtonschritt – einrasten (so gebaut) oder chromatisch spiegeln (dann bleibt die Ausgangslage, aber Töne außerhalb der Tonart entstehen)?
+- Allgemein: Editor-Leisten und Drum-Fuß höher machen (44 px Tasten) auf Kosten des Rasters?
+- K2: Soll der Begrenzer auf Stufe 3 gehaltene Noten doch kürzen dürfen (Aussetzerschutz vor vollem Akkord)?
