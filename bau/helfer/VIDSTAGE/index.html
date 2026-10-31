@@ -43266,7 +43266,8 @@ function vvApi() {
   };
 }
 /* VV1-END */
-/* ===================== VV2 (Nachtrag 5): Video-Regie im Song, Auto-Regisseur, Spur-Bild, 9:16-Kamera ==============   song.video = [{a, b, v: 'auto'|'song'|'matrix'|'spur', t?}] (Takte a ≤ x < b, Spur t) – optional und additiv (Format 5 bleibt);
+/* ===================== VV2 (Nachtrag 5): Video-Regie im Song, Auto-Regisseur, Spur-Bild, 9:16-Kamera =====================
+   song.video = [{a, b, v: 'auto'|'song'|'matrix'|'spur', t?}] (Takte a ≤ x < b, Spur t) – optional und additiv (Format 5 bleibt);
    ohne Einträge macht der Auto-Regisseur alles. Einfügen/Löschen/Verschieben von Takten verschiebt bzw. kürzt die Einträge mit
    (wie song.vox; Haken in songShift/songClear/songCut/songWrite/songTidy), Undo wie alle Song-Änderungen. */
 const VV_DIRV = ['auto', 'song', 'matrix', 'spur'], VV_BLEND = .3, VV_AR = 360;   // Blende 300 ms; die quer gezeichnete Ansicht ist 640 × 360
@@ -43650,7 +43651,6 @@ function vv2Api() {
   };
 }
 /* VV2-END */
-=======
 /* ===================== VV3 (Nachtrag 5): Innenleben – das Spur-Bild =====================
    Das Instrument einer Spur, gezeichnet auf der Video-Bühne mit seinen Werten zur Videozeit t. Alle Werte werden aus den
    gespielten Noten (Notenlog des Offline-Durchlaufs), den Parametern des Klangs und dem Tempo BERECHNET – mit denselben Formeln
