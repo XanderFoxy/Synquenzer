@@ -11,7 +11,7 @@ async function open(file) {
   return {p, errs};
 }
 const H = await open(HF), O = await open(A23), N = await open(A24);
-const want = ['INIT Analog', 'Rom-Fläche', 'Mini-Lead', 'Melodie-Lead', 'Supersaw-Hymne', 'Moog-Bass'];
+const want = ['INIT Analog', 'Rom-Fläche', 'Mini-Lead', 'Melodie-Lead', 'Supersaw-Hymne', 'Moog-Bass', 'WT Glas', 'WT Orgel', 'WT Digital', 'INIT Tabelle'];
 const sounds = await O.p.evaluate(want => {
   const out = []; const seen = new Set();
   for (const [id, f] of FACTORY_BY_ID) {
@@ -19,8 +19,6 @@ const sounds = await O.p.evaluate(want => {
     const s = typeof soundCopy === 'function' ? soundCopy(f) : SQStore.soundFromFactory(f);
     if (want.includes(f.name) && !seen.has(f.name)) { seen.add(f.name); out.push({id, name: f.name, eng: f.engine, s}); }
   }
-  // two WT sounds with 2 oscillators (o2lvl > 0, reset 0)
-  let w = 0; for (const [id, f] of FACTORY_BY_ID) { if (w >= 2 || !f || f.engine !== 'wt') continue; const s = soundCopy(f); if ((+s.p.o2lvl || 0) > 0 && !s.p.reset) { out.push({id, name: f.name, eng: 'wt', s}); w++; } }
   return out;
 }, want);
 const ev = [[0, 'on', 48, .9], [0, 'on', 55, .8], [0, 'on', 64, .7], [1.0, 'off', 48], [1.0, 'off', 55], [1.0, 'off', 64], [1.1, 'on', 67, .8], [1.6, 'on', 69, .6], [1.7, 'off', 67], [2.1, 'off', 69],
@@ -33,8 +31,8 @@ const dec = s => new Float32Array(Buffer.from(s, 'base64').buffer.slice(0));
 const cmp = (x, y) => { let s = 0, r = 0, pk = 0; for (let i = 0; i < x.length; i++) { const d = x[i] - y[i]; s += d * d; r += y[i] * y[i]; pk = Math.max(pk, Math.abs(d)); } return {dB: r > 0 ? +(10 * Math.log10(Math.max(1e-30, s) / r)).toFixed(1) : -999, pk}; };
 async function best(P, Q, s) { let o = {dB: 1e9}; for (let k = 0; k < 3 && o.dB > -90; k++) { const c = cmp(dec(await render(P, s)), dec(await render(Q, s))); if (c.dB < o.dB) o = c; } return o; }
 const rows = [];
-for (const z of sounds) for (const v of ['asis', 'r0', 'r1']) {
-  const s = JSON.parse(JSON.stringify(z.s)); if (v === 'r0') s.p.reset = 0; if (v === 'r1') s.p.reset = 1;
+for (const z of sounds) for (const v of ['asis', 'r0', 'r1', 'p8r0']) {
+  const s = JSON.parse(JSON.stringify(z.s)); if (v === 'r0') s.p.reset = 0; if (v === 'r1') s.p.reset = 1; if (v === 'p8r0') { s.p.reset = 0; s.p.poly = 8; }
   const hv23 = await best(H, O, s), hv24 = await best(H, N, s);
   rows.push({name: z.name, eng: z.eng, v, reset: v === 'asis' ? (z.s.p.reset | 0) : (v === 'r1' ? 1 : 0), o2: +z.s.p.o2lvl || 0, vs423: hv23.dB, pk423: hv23.pk, vs424: hv24.dB});
 }
