@@ -1,0 +1,54 @@
+/* G9 (Nachtrag 8, G9c): Text-Modus im Marken-Editor (#wpSheet.g9), Silben-Leiste, Eingabe, Werkzeuge, Tastatur-Dock */
+#wpSheet .g9rec{display:none}
+#wpSheet.g9 .g9rec:not([hidden]){display:block;flex:0 0 72px;height:44px;padding:0;font:700 12px/1 var(--font-ui)}
+#wpSheet.g9 .wpchips,#wpSheet.g9 .wpsl,#wpSheet.g9 .wpf{display:none}
+#wpSheet.g9 .wpcv{min-height:120px}
+#wpSheet .g9bar{position:relative;flex:none;height:44px;border-radius:6px;overflow:hidden;border:1px solid var(--line);touch-action:none;-webkit-user-select:none;user-select:none}
+#wpSheet .g9bar canvas{position:absolute;inset:0;width:100%;height:100%}
+#wpSheet.g9 .wpcv{touch-action:none}
+#wpSheet .g9row{flex:none;display:flex;flex-direction:column;gap:3px}
+#wpSheet .g9in,#wpSheet .g9tl{flex:none;display:flex;gap:4px;height:44px;min-width:0}
+#wpSheet .g9in>button,#wpSheet .g9tl>button,#wpSheet .g9sh>button{position:relative;flex:0 0 44px;width:44px;min-width:44px;height:44px;padding:0;font:700 15px/1 var(--font-ui)}
+#wpSheet .g9f{flex:1 1 auto;min-width:140px;width:0;height:44px;box-sizing:border-box;margin:0;padding:0 10px;border-radius:6px;border:1px solid var(--line);background:#0e1014;color:var(--text);font:600 16px/1 var(--font-ui);outline:none}
+#wpSheet .g9f:focus{border-color:#ffd35a}
+#wpSheet .g9sh{position:relative;flex:2 1 auto;display:flex;gap:4px;min-width:92px}
+#wpSheet .g9sh::before{content:'Text ab hier';position:absolute;left:0;right:0;top:1px;z-index:1;text-align:center;font:600 9px/10px var(--font-ui);color:var(--text-dim);pointer-events:none;white-space:nowrap;overflow:hidden}
+#wpSheet .g9tl>button,#wpSheet .g9sh>button{flex:1 1 auto;width:auto;font:700 12px/1 var(--font-ui);white-space:nowrap;overflow:hidden;padding:0 4px}
+#wpSheet .g9sh>button{padding-top:8px}
+#wpSheet .g9tl .g9x{display:none;flex:0 0 44px}
+#wpSheet .g9tl.short>button,#wpSheet .g9tl.short .g9sh>button{font-size:18px}
+#wpSheet .g9tl.short .g9sh::before{font-size:8px}
+#wpSheet .g9in>button.dis,#wpSheet .g9tl button.dis{opacity:.4}
+#wpSheet .g9hl{display:none;position:absolute;inset:0;z-index:2;margin:0;-webkit-tap-highlight-color:transparent;touch-action:inherit;cursor:pointer}
+#wpSheet .g9hl input{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;visibility:hidden}
+#wpSheet.g9.hap:not(.g9dock) .g9hl{display:block}
+#wpSheet.g9 .wpcv .g9hl{touch-action:none}
+@media (orientation:portrait) and (max-height:600px){#wpSheet.g9 .wpcv{min-height:72px}#wpSheet.g9 .qb{gap:2px;padding:3px 8px 4px}#wpSheet.g9 .g9row{gap:2px}}
+@media (orientation:landscape){#wpSheet.g9 .wpcv{min-height:96px}#wpSheet.g9 .g9rec:not([hidden]){height:38px}#wpSheet.g9 .qb{gap:2px;padding:3px 8px 4px}#wpSheet.g9 .g9row{gap:2px}}
+/* Tastatur-Dock: fest über der Tastatur, volle Breite; Seite dahinter bewegt sich nicht */
+#wpSheet.g9dock{position:fixed;z-index:58;margin:0;max-width:none;max-height:none;border-radius:10px 10px 0 0;border-right:1px solid var(--line);box-sizing:border-box;padding:0 max(0px,env(safe-area-inset-right)) 0 max(0px,env(safe-area-inset-left))}
+#wpSheet.g9dock .qb{gap:1px;padding:1px 8px}
+#wpSheet.g9dock .g9row{gap:1px}
+#wpSheet.g9dock .wpcv{min-height:0;flex:1 1 auto}
+#wpSheet.g9dock.d300 .qh,#wpSheet.g9dock.d250 .qh{height:44px}
+#wpSheet.g9dock.d200 .qh,#wpSheet.g9dock.q118 .qh,#wpSheet.g9dock.q88 .qh{display:none}
+#wpSheet.g9dock.d200 .g9tl .g9x,#wpSheet.g9dock.q118 .g9tl .g9x,#wpSheet.g9dock.q88 .g9tl .g9x{display:block}
+#wpSheet.g9dock.q118 .qb,#wpSheet.g9dock.q88 .qb{gap:0;padding:0 8px}
+#wpSheet.g9dock.q118 .wpcv{flex:0 0 30px;height:30px;border-radius:4px}
+#wpSheet.g9dock.q88 .wpcv{display:none}
+#wpSheet.g9dock.q118 .g9row,#wpSheet.g9dock.q88 .g9row{flex-direction:row;gap:4px}
+#wpSheet.g9dock.q118 .g9in,#wpSheet.g9dock.q88 .g9in{flex:1 1 auto}
+#wpSheet.g9dock.q118 .g9tl,#wpSheet.g9dock.q88 .g9tl{flex:none}
+#wpSheet.g9dock.q118 .g9tl>button,#wpSheet.g9dock.q88 .g9tl>button,#wpSheet.g9dock.q118 .g9sh>button,#wpSheet.g9dock.q88 .g9sh>button{flex:0 0 44px;width:44px}
+#wpSheet.g9dock.q118 .g9sh,#wpSheet.g9dock.q88 .g9sh{flex:none;min-width:0}
+#wpSheet.g9dock .wpinfo{display:none}
+#wpSheet.g9dock.d300 .wpinfo,#wpSheet.g9dock.d250 .wpinfo{display:block}
+/* [Ganzer Text] und [Erkennen] */
+.pop.g9txt{width:min(420px,calc(100vw - 16px))}
+.pop.g9txt .g9ta{display:block;width:100%;box-sizing:border-box;min-height:120px;height:126px;resize:none;margin:6px 0;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:#0e1014;color:var(--text);font:500 16px/19px var(--font-ui)}
+.pop.g9txt .g9lr{display:flex;gap:6px;align-items:center;margin-top:6px}
+.pop.g9txt .g9lang,.pop.g9rs .g9lang{flex:1 1 auto;display:flex;min-width:0}
+.pop.g9txt .g9lang button,.pop.g9rs .g9lang button{flex:1 1 0;min-width:0;height:44px}
+.pop.g9txt .g9ok{flex:0 0 auto;height:44px;padding:0 12px}
+.pop.g9rs .g9auto{display:flex;gap:8px;align-items:center;min-height:44px;font:600 13px/1.2 var(--font-ui)}
+.pop.g9rs .g9rm{height:44px;padding:0 10px;margin-left:6px}
