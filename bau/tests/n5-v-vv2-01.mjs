@@ -17,7 +17,7 @@ const raw = (src, out, t) => { execSync(`ffmpeg -v error -y ${t != null ? '-ss '
 const diff = (x, y) => { let s = 0, n = 0; for (let k = 0; k < x.length; k += 12) { s += Math.abs(x[k] - y[k]); n++; } return +(s / n).toFixed(2); };
 const spb = 60 / (await p.evaluate(() => S.bpm));
 const want = sh => (sh.v === 'spur' ? 'spur:' + sh.t : sh.v);
-const cands = ['song', 'matrix', 'spur:2', 'spur:0'];
+const cands = ['song', 'matrix', 'spur:2', 'spur:0', 'auto'];
 const rows = [];
 for (const sh of cuts.shots) {
   for (const at of ['mitte', 'nach Blende']) {
@@ -26,9 +26,9 @@ for (const sh of cuts.shots) {
     const fr = raw(f, 'n5-v-out/v1.raw', t);
     const d = {};
     for (const v of cands) { const png = await p.evaluate(([t, v, fm, c]) => SYNQUENZER.vvShot(t, v, fm, c), [t, v, FMT, CAM]); fs.writeFileSync('n5-v-out/ref.png', Buffer.from(png, 'base64')); d[v] = diff(fr, raw('n5-v-out/ref.png', 'n5-v-out/ref.raw')); }
-    const best = Object.keys(d).sort((x, y) => d[x] - d[y])[0];
+    const best = Object.keys(d).filter(k => k !== 'auto').sort((x, y) => d[x] - d[y])[0];
     if (at === 'mitte') execSync(`ffmpeg -v error -y -ss ${t.toFixed(4)} -i ${f} -frames:v 1 -vf scale=${W / 4}:${H / 4} n5-v-out/vv2-01-${tag}-${sh.a + 1}.png`);
-    rows.push({takte: (sh.a + 1) + '–' + sh.b, at, t: +t.toFixed(2), soll: want(sh), best, d, ok: best === want(sh) && d[best] < 8});
+    rows.push({takte: (sh.a + 1) + '–' + sh.b, at, t: +t.toFixed(2), soll: want(sh), best, d, ok: best === want(sh) && d.auto < 8});
   }
 }
 const res = {fmt: FMT, cam: CAM, set, cuts: cuts.shots.map(s => [(s.a + 1) + '–' + s.b, want(s), s.why]), hash: cuts.hash, dur: m.dur, rows, ok: rows.every(r => r.ok)};

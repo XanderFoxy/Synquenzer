@@ -43015,7 +43015,13 @@ function vv2Api() {
     vvShot: (t, v, fmt, cam) => {
       const r = VV.last; if (!r) return null; const [W, H] = VV_SIZE[fmt || '16:9'], cv = document.createElement('canvas'); cv.width = W; cv.height = H;
       const g = cv.getContext('2d', {alpha: false}), st = vvStateAt(r, t || 0), rt = vvRun({range: {a: r.a, b: r.b}, bpm: r.bpm, cam: cam || 'kamera'});
-      if (v && v.startsWith('spur:')) vvDrawShot(g, W, H, rt, {k: 0, v: 'spur', t: +v.slice(5)}, st, 0); else vvDrawRun(g, W, H, v || 'auto', st, rt);
+      if (v && v.startsWith('spur:')) vvDrawShot(g, W, H, rt, {k: 0, v: 'spur', t: +v.slice(5)}, st, 0);
+      else {
+        // 'auto' in 9:16 [Kamera]: the camera the job had at that picture (from its log), so the reference is the same picture
+        const L = VV.lastRt && VV.lastRt.log, ts = st.sb * 60 / r.bpm;
+        if ((v || 'auto') === 'auto' && L) { const sh = vvShotAt(rt, st.sb), e = L.find(x => Math.abs(x.ts - ts) < 1e-3 && x.k === sh.k); if (e) rt.cams[sh.k] = {cx: e.cx, cy: e.cy, z: e.z, vx: 0, vy: 0, vz: 0, t: ts}; }
+        vvDrawRun(g, W, H, v || 'auto', st, rt);
+      }
       return cv.toDataURL('image/png').split(',')[1];
     },
     // the camera of a 9:16 picture run frame by frame over the last render (what the encoder draws): [{ts, k, cx, cy, z, ww, wh}]
