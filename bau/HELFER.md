@@ -27,3 +27,4 @@ konzerte: Plastic Autumn bestätigt (Xander) → Vermerk entfernen beim Review.
 K1: n5-br-K fertig (K1-fix?). Minor-Befunde (Liste nach Undo veraltet, Menge ±0 % bei Tonhöhe) im Gesang-Merge mit beheben.
 | session_01LWJYUTTg2qjG38pCtbUbAw | Vorteils-Radar (vorteile/: Deal-Mathe 2-für-1/Coupons, Erleben, Reisen, Musik/Auftritte, Nebenverdienst, Tests/Gewinnspiele, Spar-Tipps; Dach-Seite für schnaeppchen+konzerte) | vorteile | main | → nach Prüfung alles drei nach main |
 WICHTIG: Der Gesang-Merge (B) übernimmt Extra/TestNote aus S/merge-n5-args.json – dort stehen die K1-Entscheidungen von Xander (Phasen-Reset, kein ECO-Umschalten, S&H bleibt, Anschlag nicht listen) + K1-Minor-Fixes.
+Innovations-Workshop läuft: wf_5ccf27af-f8c → S/v3-ideen/innovation-vorschlag.md (dann Xander kurz vorlegen).

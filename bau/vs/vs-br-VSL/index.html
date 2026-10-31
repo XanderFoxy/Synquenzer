@@ -3474,6 +3474,13 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .stpop .st-mel .seg{flex:0 0 auto}
 .stpop .st-mel .seg button{flex:0 0 auto;min-width:56px}
 .stpop .st-melx{margin:0 0 6px;color:var(--text-dim)}
+/* VS-L-fix: quer (niedrig) passt das Mikro-Blatt mit der neuen Zeile nur zweispaltig ganz ins Bild: links Mikrofon/Weg/Verzögerung
+   mit [Einmessen] [Mikro aus], rechts „Stimme → Noten“; hochkant unverändert untereinander */
+@media (orientation:landscape) and (max-height:520px){
+.pop.stpop{width:min(720px,calc(100vw - 16px));display:grid;grid-template-columns:minmax(336px,1fr) minmax(0,300px);grid-template-rows:auto 1fr;grid-template-areas:"a b" "c b";column-gap:16px;align-items:start}
+.stpop .st-c1{grid-area:a}.stpop .st-c2{grid-area:b}.stpop .st-c3{grid-area:c}
+.stpop .st-c2>.st-lbl:first-child{margin-top:0}
+}
 /* VS-L: Länge (AUTO … 16) im Aufnahme-Blatt und in den Einstellungen: Knöpfe ≥ 44 × 44 in allen Formaten */
 #roLen button,.mrow.rlen .seg button{height:44px;min-width:44px}
 .key.vs{box-shadow:inset 0 0 0 3px var(--t6),0 0 12px var(--t6)!important}
@@ -38117,7 +38124,7 @@ function stSheetFill(p) {
   const stat = !ST.on ? (ST.err ? '✗ ' + ST.err.msg : 'Mikrofon aus') : ST.phase === 'start' ? 'Mikrofon startet …' : ST.phase === 'cal' ? 'Einmessen …' : ST.phase === 'stop' ? 'Mikrofon geht aus …' : '● hört zu';
   const steps = cal ? (cal.kind === 'voll' ? [['quiet', 'Stille'], ['chirp', '4 Pieptöne'], ['noise', 'Rauschen 2 s'], ['calc', 'Auswerten']] : [['quiet', 'Stille'], ['chirp', 'Pieptöne'], ['calc', 'Auswerten']]) : null;
   const ord = steps ? steps.map(x => x[0]) : [], ci = cal ? ord.indexOf(cal.step) : -1;
-  let html = `<h4>Mikrofon <small class="st-on">${esc(stat)}</small></h4>`;
+  let html = `<div class="st-c1"><h4>Mikrofon <small class="st-on">${esc(stat)}</small></h4>`;   // VS-L-fix: drei Teile (quer niedrig: zwei Spalten, sonst wie bisher untereinander)
   if (ST.on) html += `<div class="st-lvl"><span class="mr-m"><i style="width:${Math.max(0, Math.min(100, (ST.lvl + 60) / 60 * 100)).toFixed(0)}%"></i></span><b>${ST.lvl > -100 ? '−' + Math.abs(Math.round(ST.lvl)) + ' dB' : '–'}</b></div>`;
   html += '<div class="st-lbl">Weg</div>' + segHTML('stRoute', [['speaker', '🔈 Lautsprecher'], ['wired', '🎧 Kabel'], ['bt', '🎧 Bluetooth']], rt);
   const latTx = ST.latMs != null ? micDe(ST.latMs, 1) + ' ms' : stLatFor(rt).ms != null ? micDe(stLatFor(rt).ms, 1) + ' ms' : '–';
@@ -38132,11 +38139,11 @@ function stSheetFill(p) {
   if (ST.dropN) W.push(ST.dropN + ' Aussetzer markiert');
   if (W.length) html += '<div class="st-warn">' + W.map(x => '⚠ ' + esc(x)).join('<br>') + '</div>';
   const vc = vsCfg();                                          // VS2: Quelle, Einrasten, Oktave sperren (nur Instrument)
-  html += '<div class="st-lbl">Stimme → Noten</div>' + vsMelRowHTML(vc) + segHTML('vsSrc', [['voice', '🎤 Stimme'], ['inst', '🎸 Instrument']], vc.src) +
+  html += '</div><div class="st-c2"><div class="st-lbl">Stimme → Noten</div>' + vsMelRowHTML(vc) + segHTML('vsSrc', [['voice', '🎤 Stimme'], ['inst', '🎸 Instrument']], vc.src) +
     `<div class="st-vs"><button class="rb${vc.snap ? ' on' : ''}" data-vs="snap" aria-pressed="${vc.snap}">${vc.snap ? '✓ In Tonart einrasten' : 'Frei (nicht einrasten)'}</button>` +
-    (vc.src === 'inst' ? `<button class="rb${vc.lock ? ' on' : ''}" data-vs="lock" aria-pressed="${vc.lock}">${vc.lock ? '✓ ' : ''}Oktave sperren</button>` : '') + '</div>';
-  html += `<div class="st-btns"><button class="rb st-cal"${!ST.on || cal || ST.phase !== 'live' ? ' disabled' : ''}>Einmessen</button><button class="rb st-go ${ST.on ? 'off' : ''}">${ST.on ? '✕ Mikro aus' : '🎤 Mikro an'}</button></div>`;
-  html += `<p class="small st-hint">${rt === 'speaker' ? 'Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber.' : 'Zum Einmessen mit Kopfhörern einen Ohrhörer direkt ans Mikrofon halten.'}</p>`;
+    (vc.src === 'inst' ? `<button class="rb${vc.lock ? ' on' : ''}" data-vs="lock" aria-pressed="${vc.lock}">${vc.lock ? '✓ ' : ''}Oktave sperren</button>` : '') + '</div></div>';
+  html += `<div class="st-c3"><div class="st-btns"><button class="rb st-cal"${!ST.on || cal || ST.phase !== 'live' ? ' disabled' : ''}>Einmessen</button><button class="rb st-go ${ST.on ? 'off' : ''}">${ST.on ? '✕ Mikro aus' : '🎤 Mikro an'}</button></div>`;
+  html += `<p class="small st-hint">${rt === 'speaker' ? 'Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber.' : 'Zum Einmessen mit Kopfhörern einen Ohrhörer direkt ans Mikrofon halten.'}</p></div>`;
   if (p._h !== html) { p._h = html; p.innerHTML = html; }
 }
 // VS-L: Zeile „Melodieerkennung“ [An] [Aus]; bei Aus darunter der kurze Satz
