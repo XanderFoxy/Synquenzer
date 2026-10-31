@@ -20582,6 +20582,7 @@ function undoState(e) {
   if (e.kind === 'mkslot') return mkSlotSnap(e.ids);       // MK8: the library records a WRITE / WERKSKLANG ZURÜCK touched
   if (e.kind === 'takes') return S.takes ? JSON.stringify(S.takes) : null;                     // VS3
   if (e.kind === 'tflag') return S.tracks[e.track] && S.tracks[e.track].stimme ? '1' : '0';     // VS3
+  if (e.kind === 'tphase') return tkPhaseOf(e.track, e.scene);                                  // VS-L-fix
   return fxSnapshot();
 }
 // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
@@ -20604,6 +20605,7 @@ function undoApply(e, val) {
   else if (e.kind === 'mkslot') mkSlotPut(JSON.parse(val));
   else if (e.kind === 'takes') { if (val) S.takes = JSON.parse(val); else delete S.takes; if (typeof clSync === 'function') queueMicrotask(clSync); wpUndone(); }      // VS3; VS4: Säubern folgt; VS5a: Zeitkarte und Marken-Editor folgen
   else if (e.kind === 'tflag') tkFlag(e.track, val === '1');
+  else if (e.kind === 'tphase') tkPhaseSet(e.track, e.scene, val);                            // VS-L-fix
   else if (e.kind === 'part') partRestore(JSON.parse(val));
   else restoreFx(JSON.parse(val));
   UI.dirty.all = true; markDirty();
@@ -38896,15 +38898,31 @@ async function vsLevelNotes(ta, tb) {
   const fl = ST.floorDb != null && isFinite(ST.floorDb) ? Math.min(ST.floorDb, pc(0.05)) : pc(0.05), top = pc(0.99);
   const gate = Math.min(top - 10, Math.max(fl + 15, top - 30, -60));
   const beatOf = i => { const M = 3 * (d0 + i * hop + W / 2) + 2 - 23; return t2b((M - lat(M)) / sr); };
+  const rq = vsLevelBleed(x, s, d0, hop, nF, lat), bb = rq ? rq.bb : 0, on = i => db[i] >= gate && (!bb || Math.pow(10, db[i] / 10) >= bb * rq.e[i]);   // VS-L-fix: Musik-Rest im Mikro ist kein Gesang
   const out = [], minF = Math.round(0.06 / 0.01);
   for (let i = 0; i < nF;) {
-    if (db[i] < gate) { i++; continue; }
-    let k = i; while (k < nF && db[k] >= gate) k++;
+    if (!on(i)) { i++; continue; }
+    let k = i; while (k < nF && on(k)) k++;
     if (k - i >= minF) { const b0 = beatOf(i), b1 = beatOf(k - 1); out.push({b: b0, d: Math.max(1 / 32, b1 - b0)}); }
     i = k;
   }
-  VS.lastLevel = {gate: +gate.toFixed(1), floor: +fl.toFixed(1), top: +top.toFixed(1), frames: nF, parts: out.length};
+  VS.lastLevel = {gate: +gate.toFixed(1), floor: +fl.toFixed(1), top: +top.toFixed(1), frames: nF, parts: out.length, bleedDb: bb ? +(10 * Math.log10(bb)).toFixed(1) : null};
   return out;
+}
+/* VS-L-fix: Lautsprecher – was nach dem Echo-Abzug von der Musik im Mikro bleibt, füllte die Pausen (Pausen-Regel brach). Dieselbe
+   Energie-Probe wie die Übersprech-Sperre der Noten (vsBleedNote): Referenz zur selben Zeit (Latenz der Zeitkarte, −U … +max(2, U)
+   × 10 ms, die lauteste) × Kopplung (eingemessen bzw. gemessen) × Rest nach dem Abzug × 3 dB Rand. Kopfhörer: keine Probe (null). */
+function vsLevelBleed(x, s, d0, hop, nF, lat) {
+  const cln = x !== s.d16, gc = cln && CL.notes && CL.notes.coupDb != null ? CL.notes.coupDb : null;
+  const bb = vsBleedPow(VS_BLEED_BB, gc) * (cln ? (CL.resK != null ? CL.resK : CL_RES) : 1), G = ST.ring;
+  if (!(bb > 0) || !G || !nF) return null;
+  const sr = G.sr, L = G.len, lo = Math.max(G.start, G.end - L + 1), Bk = Math.round(0.01 * sr), U = Math.max(1, Math.round(vsLatUnc() / 10)), S2 = 1 / (32767 * 32767);
+  const R = i => { const M = 3 * (d0 + i * hop) + 2 - 23; return M - lat(M); };
+  const rb = Math.floor(R(0)) - (U + 1) * Bk, nk = Math.ceil((R(nF - 1) - rb) / Bk) + Math.max(2, U) + 3, be = new Float64Array(nk);
+  for (let k = 0; k < nk; k++) { const r0 = rb + k * Bk; if (r0 < lo || r0 + Bk > G.end) { be[k] = 0; continue; } let q = 0; for (let j = 0; j < Bk; j++) { const v = G.ref[(r0 + j) % L]; q += v * v; } be[k] = q * S2 / Bk; }
+  const e = new Float32Array(nF);
+  for (let i = 0; i < nF; i++) { const j0 = Math.round((R(i) - rb) / Bk); let m = 0; for (let k = Math.max(0, j0 - U); k <= Math.min(nk - 2, j0 + Math.max(2, U)); k++) { const v = (be[k] + be[k + 1]) / 2; if (v > m) m = v; } e[i] = m; }
+  return {bb, e};
 }
 // schreibt die Noten des Ergebnisses in den Clip (erster Aufruf: ein Undo-Schritt „Stimme“; danach nur ändern)
 function vsApply(res) {
@@ -39490,14 +39508,14 @@ const tkTrackEmpty = i => { const t = S.tracks[i], s = S.song; return !!t && t.k
 // liefert den Index der STIMME-Spur; neue Undo-Teile kommen nach items (Teil der Gruppe des Takes)
 function tkEnsureTrack(items) {
   let st = stimmeT(); if (st >= 0) return st;
-  if (rec.state !== 'off' && rec.state !== 'recording' && rec.state !== 'overdub') return -1;
+  // VS-L-fix: auch wenn ● schon die nächste Aufnahme bereitgestellt hat (bereit/Einzähler) – der Take der vorigen ginge sonst verloren; nur die Spur dieser Aufnahme wird nie STIMME
   if (canAddTrack()) {
     const i = NT(), t = newSynthTrack(i); t.name = 'Stimme'; t.stimme = true;
     restoreTrack(i, JSON.stringify(t)); items.push({kind: 'track', track: i, before: null});
     toast('STIMME-Spur angelegt (' + S.tracks[i].name + ')');
     return i;
   }
-  for (let i = NT() - 1; i >= BASE_T; i--) if (tkTrackEmpty(i)) { items.push({kind: 'tflag', track: i, before: '0'}); tkFlag(i, true); toast(S.tracks[i].name + ' ist jetzt die STIMME-Spur'); return i; }
+  for (let i = NT() - 1; i >= BASE_T; i--) if (tkTrackEmpty(i) && (rec.state === 'off' || i !== rec.track)) { items.push({kind: 'tflag', track: i, before: '0'}); tkFlag(i, true); toast(S.tracks[i].name + ' ist jetzt die STIMME-Spur'); return i; }
   return -1;
 }
 // [＋ STIMME-Spur] im Spur-Blatt (ein Undo)
@@ -39524,9 +39542,10 @@ function tkVoiceTake(o) {
   let a = o.a, at = 0;
   if (old && old.audio) {
     const ph = R.playing && R.slot[st] === o.si && !R.pend[st] ? R.cstart[st] : o.cs; let c0 = ph + Math.floor((o.b - L - ph) / L + 1e-9) * L; if (c0 + L > o.b + 1e-6) c0 -= L;
-    // VS-L (Nachtrag 4 L.1.2): länger als der alte Clip → der Clip wird so lang wie die neue Aufnahme (ganze Takte ab dem Takt ihres Anfangs, ≤ 16), der Take ist die ganze Aufnahme
-    const g0 = ph + Math.floor((o.a - ph) / 4 + 1e-9) * 4, nb = clamp(Math.round((o.b - g0) / 4), 1, 16);
-    if (nb > old.len) { grow = nb; L = nb * 4; gcs = g0; if (o.a - g0 <= 0.25) { a = g0; at = 0; } else { a = o.a; at = o.a - g0; } }
+    // VS-L (Nachtrag 4 L.1.2): länger als der alte Clip → der Clip wird so lang wie die neue Aufnahme (ganze Takte ab dem Taktstrich, der ihrem Anfang am nächsten liegt, ≤ 16), der Take ist die ganze Aufnahme
+    // VS-L-fix: ● kurz vor dem Taktstrich zählt ab diesem Taktstrich (nicht ab dem Takt davor); gleich lang, aber kein voller Durchgang im Clip-Raster → ebenso die ganze Aufnahme (sonst fehlte ihr letzter Takt)
+    const gp = R.playing && R.slot[st] === o.si && !R.pend[st] ? R.cstart[st] : 0, g0 = gp + Math.round((o.a - gp) / 4) * 4, nb = clamp(Math.round((o.b - g0) / 4), 1, 16);
+    if (nb > old.len || (nb === old.len && c0 < o.a - 0.25)) { grow = nb; L = nb * 4; gcs = g0; if (o.a - g0 <= 0.25) { a = g0; at = 0; } else { a = o.a; at = o.a - g0; } }
     else if (c0 >= o.a - 0.25) { a = c0; at = 0; } else { a = o.a; at = ((o.a - ph) % L + L) % L; }
   }
   const b = Math.min(o.b, a + L - at);
@@ -39551,6 +39570,7 @@ function tkVoiceTake(o) {
   const its = items.concat([{kind: 'takes', before: takesBefore}]);
   const top = UNDO[UNDO.length - 1];
   if (o.top && top === o.top) { UNDO.pop(); its.push(o.top); }
+  if (grow) its.push({kind: 'tphase', track: st, scene: o.si, before: tkPhaseOf(st, o.si)});   // VS-L-fix: ↶ stellt auch die Phase der laufenden Schleife wieder her
   its.push({kind: 'clip', track: st, scene: o.si, before});
   undoPush({kind: 'group', label: 'Stimme', items: its, tk: 1});
   // läuft phasengleich weiter (wie der MELODIE-Clip), ein Overdub klingt sofort mit dem neuen Take
@@ -39567,6 +39587,13 @@ function tkVoiceTake(o) {
 function tkGrowPhase(st, si, cs) {
   if (R.slot[st] === si && !R.pend[st]) { R.cstart[st] = cs; memSlot(st, t2b(AU.ctx.currentTime + .006), si, cs, !!R.partApplying, R.own[st]); UI.dirty.grid = true; }
   else switchTrackAt(st, si, nextBarFromAudible(), cs);
+}
+// VS-L-fix: Undo-Teil „tphase“ – die Phase der laufenden STIMME-Schleife (null: Platz läuft nicht, dann gilt der nächste Start)
+const tkPhaseOf = (st, si) => R.playing && R.slot[st] === si && !R.pend[st] ? R.cstart[st] : null;
+function tkPhaseSet(st, si, cs) {
+  if (cs == null || !AU.ctx || tkPhaseOf(st, si) == null || Math.abs(R.cstart[st] - cs) < 1e-9) return;
+  R.cstart[st] = cs; memSlot(st, t2b(AU.ctx.currentTime + .006), si, cs, !!R.partApplying, R.own[st]); UI.dirty.grid = true;
+  tkTrackResync(st);
 }
 
 /* ---------- Punch im Song (S5-Rückfrage: Überschreiben / Einfügen / Ersetzen / Overdub, Bereich) ---------- */
