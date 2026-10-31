@@ -18781,6 +18781,7 @@ function drumHit(gm, vel, t, src, ex, o) {
 
 /* ---------- metronome ---------- */
 function click(t, accent) {
+  if (UI.vvOff) return;                                     // VV1: the practice metronome is not part of the song video
   const c = AU.ctx; if (!c) return;
   const o = c.createOscillator(), g = c.createGain(), L = Math.max(S.settings.metroVol * .3, .0012);
   o.frequency.value = accent ? 1760 : 1100;
@@ -20512,7 +20513,7 @@ async function wakeAcquire() {
     if (e && e.name === 'NotAllowedError' && document.visibilityState !== 'hidden') WAKE.blocked = true;
   } finally { WAKE.pending = false; }
 }
-function wakeReleaseLater() { clearTimeout(WAKE.relT); WAKE.relT = setTimeout(() => (MIC.run || ST.on ? wakeReleaseLater() : wakeRelease()), 60000); }   // VS0/VS1: nicht während Mikro-Check oder 🎤
+function wakeReleaseLater() { clearTimeout(WAKE.relT); WAKE.relT = setTimeout(() => (MIC.run || ST.on || VV.busy ? wakeReleaseLater() : wakeRelease()), 60000); }   // VS0/VS1: nicht während Mikro-Check oder 🎤
 function wakeRelease() {
   clearTimeout(WAKE.relT); WAKE.relT = 0;
   const sn = WAKE.sentinel; WAKE.sentinel = null;
@@ -21404,6 +21405,7 @@ function kbLockNote(note) {
   return n;
 }
 function inputDown(note, id, vel) {
+  if (UI.vvOff) return;                                     // VV1: no played note reaches the offline song pass (MIDI, keys)
   if (!ensureAudio()) return;
   if (PV.on) previewStop();                                 // any key press stops a browser preview (§11.3)
   if (R.inputs[id]) inputUp(id);
@@ -36773,6 +36775,7 @@ function onKeyDown(e) {
   const code = e.code;
   if (code === 'Space' || code === 'Tab' || code === 'Backspace') e.preventDefault();
   if (e.repeat) return;
+  if (VV.open || UI.vvOff) { if (code === 'Escape') vvClose(); return; }   // VV1: the Video sheet blocks the shortcuts like the menu; Esc closes it (§10.5)
   const menuOpen = EL.menu.classList.contains('open');
   if (code === 'Escape') {
     if (MIC.open) { micClose(); return; }
@@ -41948,12 +41951,17 @@ async function vvTakesReady() {
   for (const id of tkActiveIds()) tkLoad(id);
   const w = [...TK.wait.values()]; if (w.length) { try { await Promise.all(w); } catch (e) { logErr(e); } }
 }
-/* the live state the transport touches, taken out before and put back after the offline pass (VV1-06: nothing changes) */
-function vvSwapIn(oc, wk) {
+/* the live state the transport touches, taken out before and put back after the offline pass (VV1-06: nothing changes).
+   The graph is built in slices with a yield between them (VV1-05: no main-thread task > 50 ms); off.sv holds the live state
+   from the first slice on, so a cancel or a fault in between puts it back */
+async function vvSwapIn(oc, wk, off) {
+  let PS = performance.now();
+  const cut = async () => { vvProf('swapIn', performance.now() - PS); await vvYield(); if (VV.cancel) throw new Error('abgebrochen'); PS = performance.now(); };
   const sv = {au: vvSnap(AU), wavesT: WAVES_T, R: vvSnap(R), T: vvSnap(T), XP: vvSnap(XP), MEM: vvSnap(MEM), LOG: vvSnap(LOG), PERF: vvSnap(PERF), TK: vvSnap(TK),
     CAP: vvSnap(CAP), LIM: vvSnap(LIM), MEL: vvSnap(MEL), TICKERR: vvSnap(TICKERR), SONGCAR: vvSnap(SONGCAR), WKSET: WKSET.slice(),
     voices: VOICES.splice(0), hits: HITS.splice(0), clicks: CLICKS.splice(0), recent: RECENT.splice(0), padq: PADQ.map(q => q.splice(0)),
     svStop: SV.lastStop, loop: S.song.loop, tailT: R.tailWinT, timer: AU.timer, songVer: UI.songVer};
+  if (off) off.sv = sv;
   clearInterval(AU.timer);
   LOG.n = 0; LOG.buf = new Array(4096);                            // the offline pass logs on its own (noteLog of the render)
   LIM.last = performance.now() + 1e9;                              // no CPU limiter steps from the offline engines' load reports
@@ -41968,9 +41976,11 @@ function vvSwapIn(oc, wk) {
   // the graph of ensureAudio + measureFx + loadWorklet, built at once on the offline context
   buildFx();
   if (wk) upgradeHall(); else applyHall(S.fxBus.hall, true);
+  await cut();
   AU.echo = FX.Echo(oc, {loopExtra: AU.loopExtra, maxSec: 6}); AU.echo.set(S.fxBus.echo, S.bpm);
   AU.echoIn.connect(AU.echo.input); AU.echo.output.connect(AU.masterSum); AU.echo.toHall.connect(AU.hallIn);
-  for (let i = 0; i < NT(); i++) buildTrack(i);
+  for (let i = 0; i < NT(); i++) { await cut(); buildTrack(i); }
+  await cut();
   if (wk) syncEngines(); else for (const i of synthTracks()) rebuildNativeLfos(i);
   // AM: the stored waves at once (as mkRender), the wheels as they stand live
   for (const i of synthTracks()) {
@@ -41979,6 +41989,7 @@ function vvSwapIn(oc, wk) {
     if (M && M.wv) for (const n of [mkWaveOf(pm), mkWaveOf(pm, null, 1), ...mkSeqWaves(pm, 0), ...mkSeqWaves(pm, 1)]) if (n) { try { M.wv.now(E, n | 0); } catch (e) { logErr(e); } }
     try { mkWheelSync(i, true); } catch (e) { logErr(e); }
   }
+  vvProf('swapIn', performance.now() - PS);
   return sv;
 }
 function vvSwapOut(sv) {
@@ -42017,15 +42028,15 @@ async function vvRenderAudio(o) {
   if (wk && !(await vvAddModule(oc))) throw new Error('Klang-Modul nicht geladen');
   if (VV.cancel) throw new Error('abgebrochen');
   if (R.playing || rec.state !== 'off' || R.songRec) throw new Error('Wiedergabe läuft');
-  const T0 = performance.now(), live = o.live || {}, PS = performance.now(), off = {oc, sv: null, ended: false, endT: null, endB: null, tl: live.tl || (live.tl = []), log: null, prog: 0};
+  const T0 = performance.now(), live = o.live || {}, off = {oc, sv: null, ended: false, endT: null, endB: null, tl: live.tl || (live.tl = []), log: null, prog: 0};
   Object.assign(live, {bpm: S.bpm, a, b, t: -1});
   VV.off = off; UI.vvOff = true;
-  let sv = null;
   try {
-    sv = off.sv = vvSwapIn(oc, wk);
+    await vvSwapIn(oc, wk, off);
+    const PS = performance.now();
     if (!songPlayStart(a)) throw new Error('Song startet nicht');
     vvProf('swapIn', performance.now() - PS);
-  } catch (e) { if (sv) vvSwapOut(sv); VV.off = null; UI.vvOff = false; throw e; }
+  } catch (e) { if (off.sv) vvSwapOut(off.sv); VV.off = null; UI.vvOff = false; throw e; }
   const t0 = R.startTime, endB = b < song.bars ? R.songPlay.off + b * 4 : null, q = t => Math.ceil(t * sr / 128) * 128 / sr;
   const last = [];
   const recSlots = now => {
@@ -42086,11 +42097,14 @@ async function vvRenderAudio(o) {
     out = await new Promise((res, rej) => { off.rej = rej; oc.startRendering().then(res, rej); });
   } finally { finishLive(); VV.off = null; }
   if (fail) throw fail;
-  const PT = performance.now();
+  let PT = performance.now();
   // trim: from the heard song start; the tail ends where the master stays below −60 dBFS (blocks of 512), ≤ 10 s
   const s0 = Math.round((t0 + AU.graphLat) * sr), sEnd = s0 + Math.round(songSec * sr), L = out.getChannelData(0), Rr = out.getChannelData(1);
   let lastLoud = sEnd;
-  for (let k = out.length - 512; k >= sEnd; k -= 512) { let pk = 0; for (let j = k; j < k + 512; j++) { const v = Math.max(Math.abs(L[j]), Math.abs(Rr[j])); if (v > pk) pk = v; } if (pk >= VV_LV60) { lastLoud = k + 512; break; } }
+  for (let k = out.length - 512, nb = 0; k >= sEnd; k -= 512) {
+    let pk = 0; for (let j = k; j < k + 512; j++) { const v = Math.max(Math.abs(L[j]), Math.abs(Rr[j])); if (v > pk) pk = v; } if (pk >= VV_LV60) { lastLoud = k + 512; break; }
+    if (++nb % 96 === 0) { vvProf('trim', performance.now() - PT); await vvYield(); if (VV.cancel) throw new Error('abgebrochen'); PT = performance.now(); }   // ~1 s of sound per slice
+  }
   const capped = lastLoud >= sEnd + VV_TAIL * sr - 1024, eIdx = Math.min(lastLoud, sEnd + Math.round(VV_TAIL * sr), out.length), n = eIdx - s0;
   // no copy (a 3-min song is 2 × 8 M samples): the result keeps the rendered buffer, the song is the window [s0, eIdx)
   const chs = [0, 1].map(ch => out.getChannelData(ch).subarray(s0, eIdx)), fl = Math.min(n, Math.round((capped ? 1 : .03) * sr));
@@ -42212,9 +42226,11 @@ function vvDrawSong(g, LW, LH, st) {
 }
 // the matrix layout in app points: the scene columns (the bank with the playing clips), the track rows
 function vvMatrixLayout(LW, LH, st) {
-  const port = LH > LW, rows = vvRows(), ns = NS(), nc = Math.min(ns, port ? 4 : 6);
-  let hi = 0; rows.forEach(i => { const s = st.slots[i]; if (s != null && s > hi) hi = s; });
-  const c0 = Math.min(Math.max(0, ns - nc), Math.floor(hi / nc) * nc);
+  const port = LH > LW, rows = vvRows(), ns = NS(), nc0 = Math.min(ns, port ? 4 : 6);
+  let lo = Infinity, hi = -1; rows.forEach(i => { const s = st.slots[i]; if (s != null && s >= 0) { if (s < lo) lo = s; if (s > hi) hi = s; } });
+  // the bank of the playing clips; clips from scenes further apart than one bank: the columns from the lowest to the highest (VV1-04)
+  let nc = nc0, c0 = hi < 0 ? 0 : Math.min(Math.max(0, ns - nc), Math.floor(hi / nc) * nc);
+  if (hi >= 0 && lo < c0) { if (hi - lo < nc) c0 = Math.min(lo, ns - nc); else { c0 = lo; nc = hi - lo + 1; } }
   const labW = port ? 70 : 96, head = 34, pad = 6, cw = (LW - labW - pad * 2) / nc;
   const chh = Math.max(28, Math.min(port ? 96 : 60, (LH - head - pad * 3) / rows.length)), y0 = Math.max(pad, (LH - head - rows.length * chh) / 2);
   return {port, rows, nc, c0, labW, head, pad, cw, chh, y0, cell: (r, k) => ({x: labW + pad + k * cw + 2, y: y0 + head + r * chh + 2, w: cw - 4, h: chh - 4})};
@@ -42438,17 +42454,27 @@ async function vvEncodeMR(job) {
   const done = new Promise(res => { mr.onstop = res; });
   try { if (c.state !== 'running') await c.resume(); } catch (e) {}
   const t0 = c.currentTime + .05; mr.start(1000); bs.start(t0, r.off, r.dur);
-  let fl = -1;
+  let fl = -1, tryT = 0;
+  // page hidden (screen lock, app switch) or the context interrupted: the recorder and the sound pause together (no gap in the
+  // file, no idle suspend from outside); with the page visible again the context is resumed and both go on
+  const onVis = () => { if (document.hidden) { try { if (mr.state === 'recording') mr.pause(); } catch (e) {} try { const q = c.suspend(); if (q && q.catch) q.catch(() => {}); } catch (e) {} } };
+  document.addEventListener('visibilitychange', onVis); VV.mrCtx = c;
   await new Promise((res, rej) => {
     const step = () => {
       if (VV.cancel) { rej(new Error('abgebrochen')); return; }
+      if (c.state !== 'running') {
+        try { if (mr.state === 'recording') mr.pause(); } catch (e) {}
+        const n = performance.now(); if (!document.hidden && n - tryT > 500) { tryT = n; c.resume().catch(() => {}); }
+        requestAnimationFrame(step); return;
+      }
+      try { if (mr.state === 'paused') mr.resume(); } catch (e) {}
       const t = c.currentTime - t0, fi = Math.floor(Math.max(0, t) * VV_FPS);
       if (fi !== fl) { fl = fi; vvDraw(g, W, H, job.view, vvStateAt(r, Math.max(0, Math.min(r.dur, t)))); if (vt) vt.requestFrame(); }   // 30 pictures a second
       if (job.onProgress) job.onProgress(Math.max(0, Math.min(1, t / r.dur)));
       if (t >= r.dur) res(); else requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
-  }).finally(() => { try { mr.stop(); } catch (e) {} try { bs.stop(); } catch (e) {} for (const tr of ms.getTracks()) { try { tr.stop(); } catch (e) {} } });
+  }).finally(() => { document.removeEventListener('visibilitychange', onVis); VV.mrCtx = null; try { mr.stop(); } catch (e) {} try { bs.stop(); } catch (e) {} for (const tr of ms.getTracks()) { try { tr.stop(); } catch (e) {} } });
   await done; try { bs.disconnect(); dst.disconnect(); } catch (e) {}
   if (VV.cancel) throw new Error('abgebrochen');
   return new Blob(parts, {type: path.mime.split(';')[0]});
@@ -42461,6 +42487,8 @@ async function vvMake(o) {
   if (VV.job) throw new Error('Läuft schon');
   VV.job = true; VV.busy = true; VV.res = null; VV.cancel = false; VV.prof = {};
   const T0 = performance.now(), prog = o.onProgress || (() => {});
+  const onVis = () => { if (!document.hidden && VV.busy) wakeAcquire(); };   // the screen stays on for the whole job (§1.7.6)
+  wakeAcquire(); document.addEventListener('visibilitychange', onVis);
   try {
     const cv = o.canvas || document.createElement('canvas'); cv.width = W; cv.height = H;
     let blob, r, T1, rP = null;
@@ -42480,7 +42508,7 @@ async function vvMake(o) {
     VV.res = {blob, mime: blob.type, ext: path.ext, how: path.how, why: path.why, fmt, view, W, H, dur: r.dur, songSec: r.songSec, tail: r.tail, a: r.a, b: r.b, size: blob.size,
       msAudio: Math.round(T1 - T0), msVideo: Math.round(T2 - T1), ms: Math.round(T2 - T0)};
     return VV.res;
-  } finally { VV.busy = false; VV.job = false; VV.cancel = false; }
+  } finally { VV.busy = false; VV.job = false; VV.cancel = false; document.removeEventListener('visibilitychange', onVis); wakeReleaseLater(); }
 }
 // Teilen (navigator.share mit Datei, im Tipp) bzw. Sichern; in der Claude-App über downloads (mp4 / webm erlaubt)
 function vvFileName(res) { const nm = String(S.name || 'song').toLowerCase().replace(/[^a-z0-9äöüß]+/gi, '-').replace(/^-|-$/g, '').slice(0, 30) || 'song'; return 'synquenzer-video-' + nm + '-' + res.fmt.replace(':', 'x') + '.' + res.ext; }
@@ -42513,8 +42541,6 @@ function vvMenuRow(sec, row, btn) {
   on(b, 'click', () => { closeMenu(); vvOpen(); });
   row(sec, null, b);
 }
-const vvFmtTime = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
-const vvMB = n => (n / 1048576).toFixed(1).replace('.', ',') + ' MB';
 function vvOpen() {
   if (VV.open) return VV.el;
   closePop();
@@ -42534,16 +42560,17 @@ function vvOpen() {
   const acts = el('div', 'vvacts'), bPrev = el('button', 'rb vvbtn', '▶ Vorschau'), bMake = el('button', 'rb vvbtn go', 'Video erstellen');
   bPrev.setAttribute('aria-label', 'Vorschau mit Ton'); acts.append(bPrev, bMake); ctl.appendChild(acts);
   const bar = el('div', 'vvprog', '<i></i><span></span>'), bCan = el('button', 'rb vvbtn', 'Abbrechen'); bar.appendChild(bCan);
-  const done = el('div', 'vvdone'), bShare = el('button', 'rb vvbtn go', 'Teilen'), bSave = el('button', 'rb vvbtn', 'Sichern'), dInfo = el('span', 'vvtxt');
+  const done = el('div', 'vvdone'), bShare = el('button', 'rb vvbtn go', 'Teilen'), bSave = el('button', 'rb vvbtn', 'Sichern');
   done.append(bShare, bSave); ctl.append(bar, done);
-  const way = el('div', 'vvway'), wayT = el('span', ''); way.append(wayT, dInfo); ctl.appendChild(way);
-  Object.assign(VV, {ui: {sh, cv, stage, segF, segV, rng, bPrev, bMake, bar, bCan, done, bShare, bSave, dInfo, way, wayT}});
+  const way = el('div', 'vvway'), wayT = el('span', ''); way.append(wayT); ctl.appendChild(way);
+  Object.assign(VV, {ui: {sh, cv, stage, segF, segV, rng, bPrev, bMake, bar, bCan, done, bShare, bSave, way, wayT}});
   onTap(bPrev, () => { if (VV.prev) vvPrevStop(); else vvPrevStart(); });
   onTap(bMake, () => vvGo());
   onTap(bCan, () => { VV.cancel = true; });
   onTap(bShare, () => { vvDeliver(VV.res, true); });
   onTap(bSave, () => { vvDeliver(VV.res, false); });
   guardTouch(sh);
+  if (!VV.onTapRs) { VV.onTapRs = () => { const c = VV.mrCtx; if (c && c.state !== 'running') c.resume().catch(() => {}); }; sh.addEventListener('pointerdown', VV.onTapRs, true); }
   sh.classList.add('open'); R.editor = R.editor === 'menu' ? null : R.editor;
   if (!VV.onRs) { VV.onRs = () => { if (VV.open) vvFit(); }; window.addEventListener('resize', VV.onRs); }
   vvSync(); requestAnimationFrame(() => { vvFit(); vvStill(); });
@@ -42574,13 +42601,12 @@ function vvStill() {
 async function vvSync() {
   const u = VV.ui; if (!u) return;
   u.segF.update(); u.segV.update();
-  const rg = vvRange(true), song = S.song;
-  u.rng.textContent = !rg ? 'Noch kein Song – erst ● SONG' : (rg.sel ? 'Auswahl · Takt ' + (rg.a + 1) + (rg.b - rg.a > 1 ? '–' + rg.b : '') : 'ganzer Song · ' + song.bars + (song.bars === 1 ? ' Takt' : ' Takte')) + ' · ' + vvFmtTime((rg.b - rg.a) * 4 * spb());
+  const rg = vvRange(true);
+  u.rng.textContent = !rg ? 'Noch kein Song – erst ● SONG' : rg.sel ? 'gelbe Auswahl' : 'ganzer Song';
   const busy = VV.busy;
   u.sh.classList.toggle('busy', busy); u.sh.classList.toggle('has', !!(VV.res && VV.res.blob) && !busy);
   for (const b of [...u.segF.children, ...u.segV.children]) b.disabled = busy;
   u.bPrev.disabled = busy || !rg; u.bPrev.innerHTML = VV.prev ? '■ Stopp' : '▶ Vorschau';
-  u.dInfo.textContent = VV.res && VV.res.blob && !busy ? vvFmtTime(VV.res.dur) + ' · ' + VV.res.fmt + ' · ' + vvMB(VV.res.size) + (VV.res.ext === 'webm' ? ' · WebM' : '') : '';
   const fmt = vvPrefs().fmt, p = await vvPath(fmt);
   if (!VV.ui || VV.ui !== u) return;
   u.bMake.disabled = busy || !rg || !p.how;
@@ -42623,7 +42649,7 @@ async function vvGo() {
       const q = Math.round(p * 100); if (q === lastP) return; lastP = q;
       i.style.transform = 'scaleX(' + p.toFixed(3) + ')'; s.textContent = (what === 'Ton' ? 'Ton wird berechnet' : what === 'Video' ? 'Video wird erstellt' : 'Bild in Echtzeit') + ' · ' + q + ' %';
     }});
-    void res;                                                     // the result stands in the sheet („0:19 · 9:16 · 2,9 MB“)
+    void res;                                                     // then: [Teilen] [Sichern]
   } catch (e) {
     if (String(e && e.message) !== 'abgebrochen') { logErr(e); toast('Video fehlgeschlagen: ' + (e && e.message || e)); } else toast('Video abgebrochen');
   } finally { VV.busy = false; VV.cancel = false; if (VV.ui === u) { vvSync(); } }

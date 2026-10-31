@@ -1141,6 +1141,15 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .k1mr .k1x{flex:0 0 44px;width:44px;min-height:44px;height:auto;padding:0}
 .k1empty{min-width:220px;padding:6px 2px;color:var(--text-dim)}
 .k1hl{outline:2px solid var(--sel);outline-offset:2px;border-radius:8px}
+/* K1-fix (K1-06, typical defect 4): invisible hit areas. The toast buttons ([Rückgängig], [↷ Wiederholen] …) reach 44 px in height
+   (their width is ≥ 44 already). ⋯ in the editor head (insets count from inside the 1 px border): landscape (edm1) takes the
+   gaps up to its neighbours = 44 × 44; P3 (edm2) sits in a row of 36 × 32 head buttons with 3 px gaps: it takes the gaps (42 × 39).
+   z-index 1: the head row and the tab bar lie above a plain positioned child. Neighbouring hit areas stay as they were. */
+#toast button{position:relative}
+#toast button::after{content:"";position:absolute;left:min(0px,calc((100% - 44px) / 2));right:min(0px,calc((100% - 44px) / 2));top:min(0px,calc((100% - 44px) / 2));bottom:min(0px,calc((100% - 44px) / 2))}
+@media (orientation:portrait) and (min-height:601px) and (max-height:700px){#toast.lcdk button::after{top:-7px;bottom:-5px}}   /* P2: docked in the LCD line, the band between head and tabs (34 px, as ⋯) */
+@media (orientation:landscape){#synthSheet .hb.edm1{position:relative;z-index:1}#synthSheet .hb.edm1::after{content:"";position:absolute;top:-5px;bottom:-8px;left:-6px;right:-3px}}
+@media (orientation:portrait) and (max-height:600px){#synthSheet .hb.edm2{position:relative;z-index:1}#synthSheet .hb.edm2::after{content:"";position:absolute;top:-2px;bottom:-7px;left:-4px;right:-4px}}
 @media (orientation:portrait) and (max-height:700px){#synthSheet .hb.edmL{top:5px;height:20px}}
 @media (orientation:portrait) and (max-height:600px){#synthSheet .hb.edmL{display:none}#synthSheet .hb.edm2{display:inline-flex;align-items:center;justify-content:center}#synthSheet .hb.wia2{display:none}}
 @media (orientation:landscape){#synthSheet .hb.edmL{display:none}#synthSheet .hb.edm1{display:inline-flex;align-items:center;justify-content:center}#synthSheet .lcd{padding-right:44px}}
@@ -20635,6 +20644,7 @@ function undoApply(e, val) {
     else closeRoll();
   }
   if (e.kind === 'clip' && S.tracks[e.track].kind === 'synth') scheduleAutoKey(e.scene);
+  if (UI.pop && UI.pop.k1r && !UI.k1rQ) { UI.k1rQ = true; queueMicrotask(() => { UI.k1rQ = false; if (UI.pop && UI.pop.k1r) UI.pop.k1r(); }); }   // K1-fix: the open Mod-Übersicht follows ↶ ↷
   if ((e.kind === 'clip' || e.kind === 'song' || e.kind === 'takes') && UI.pop && UI.pop.name === 'takes' && !TK.sheetQ) {   // VS3-fix: the open takes sheet follows ↶ ↷
     TK.sheetQ = true; queueMicrotask(() => { TK.sheetQ = false; if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); });
   }
@@ -27043,7 +27053,7 @@ function modFrame() {
   const i = R.selT, tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return;
   const sv = modLive(i);
   for (const k of ED.ctls) if (k.hasMod && k.anim) k.anim(k.dst.startsWith('fx.') ? MLIVE.svN : sv);
-  const k1u = ED.msrc && sndOf(i) ? sndOf(i).mods : null, k1h = s => k1u.some(m => m.src === s);   // K1 (K1-03): a source chip moves only while a route of the sound uses it
+  const k1u = ED.msrc && sndOf(i) ? sndOf(i).mods : null, k1f = !!k1u && k1FmxLfo(i), k1h = s => k1u.some(m => m.src === s) || (k1f && s === 'lfo1');   // K1 (K1-03): a source chip moves only while a route of the sound uses it
   if (ED.msrc) for (const c of ED.msrc) { const v = k1u && !k1h(c.dataset.src) ? 0 : clamp(sv[c.dataset.src] || 0, -1, 1); if (Math.abs(v - (c._v || 0)) > .004) { c._v = v; c._b.style.transform = 'scaleX(' + v.toFixed(3) + ')'; } }
   if (ED.mrows) for (const r of ED.mrows) { const v = Math.abs((String(r.m.dst).startsWith('fx.') ? MLIVE.svN : sv)[r.m.src] || 0), x = (.3 + .7 * clamp(v, 0, 1)).toFixed(2); if (r.x !== x) { r.x = x; r.bar.style.transform = 'scaleX(' + x + ')'; } }
 }
@@ -31618,6 +31628,11 @@ function k1Del(i, key) {
     if (e.kind === 'route') { s.mods = s.mods.filter(m => !(m.src === e.m.src && m.dst === e.m.dst)); modsChanged(i); }
     else if (e.kind === 'p') setP(i, e.p, 0);
     else if (e.kind === 'mk') { mkSetP(i, e.path, 0, false); if (mkLoaded()) MKUI.renderSoon(); }
+    else if (e.kind === 'fpeg') fmSetPeg(i, null);   // K1-fix: as the TONH. page's flat envelope
+    else if (e.kind === 'fmx') {   // K1-fix: as the FELD rows (LFO AM / LFO FM = 0, Tonhöhe Init) on the operators of the row
+      const x = deep(s.p.fmx); for (const k of e.ops) { const o = x.ops[k]; if (e.f === 'pit') { o.pit = null; o.pr = 'dx'; } else o[e.f] = 0; }
+      fmxApply(s.p, FMX.norm(x, false)); fmChanged(i, true, true);
+    }
   });
   toast('Gelöscht: ' + e.src + ' → ' + e.dst, {label: 'Rückgängig', fn: () => undo()});
   return true;
@@ -31627,6 +31642,15 @@ function k1Jump(i, key) {
   const e = k1Mods(i).find(x => x.key === key), s = sndOf(i); if (!e || !s) return null;
   if (R.editor !== 'synth' || R.selT !== i) return null;
   if (e.kind === 'mk') { if (!mkLoad()) return null; return MKUI.k1 ? MKUI.k1.jump(e.path) : null; }
+  // K1-fix: an FM pitch envelope of every operator (DX form) -> the TONH. page; else the FELD page of the first operator of the row
+  if (e.kind === 'fpeg' || (e.kind === 'fmx' && e.f === 'pit' && e.dx && !(s.p.fm6 && s.p.fm6.approx))) { ED.tab = 'env'; ED.sub.env = 'peg'; FXF.big = null; safeRebuild(buildSynthEd); return 'env/peg'; }
+  if (e.kind === 'fmx') {
+    const k = e.ops[0], pg_ = e.f === 'pit' ? 'tonh' : 'mod';
+    ED.tab = 'osc'; ED.sub.osc = 'feld'; fmViewSet(i, 'feld'); FXF.t = i; FXF.focus = null; FXF.big = null; fxSelect(i, k); FXF.page = pg_; FXF.opPage = pg_; safeRebuild(buildSynthEd);
+    const c = e.f === 'pit' ? null : EL.synthSheet.querySelector('.fxr[data-key="fmx.' + (k + 1) + '.' + e.f + '"]');
+    if (c) { c.classList.add('k1hl'); try { c.scrollIntoView({block: 'nearest'}); } catch (_) {} setTimeout(() => c.classList.remove('k1hl'), 1600); }
+    return 'feld/' + pg_ + '/' + (k + 1);
+  }
   const k = e.kind === 'p' ? e.p : K1_RK[e.m.dst] || MDST_PD[e.m.dst], pg = k && K1_PG[k], subs = pg ? subTabsFor(pg[0], s.engine) : null;
   if (!pg || (subs && !subs.some(x => x[0] === pg[1])) || (k === 'analog' && s.engine !== 'analog')) {
     ED.tab = 'mod'; FXF.big = null; ED.modHl = e.kind === 'route' ? e.m.src + ':' + e.m.dst : null; safeRebuild(buildSynthEd); return 'mod';
@@ -31646,6 +31670,7 @@ function openK1Mods(anchor, i) {
       : '<div class="k1empty small">Keine Modulation – die Tonhöhe steht auf 0 Cent.</div>');
   };
   const p = openPop(anchor, render, {name: 'k1mods'});
+  UI.pop.k1r = () => { if (p.isConnected) { render(p); popFit(p); } };   // K1-fix: ↶ ↷ (toast or head) while the list is open: it follows
   guardTouch(p);
   onTap(p, b => {
     if (b.dataset.x) { k1Del(i, b.dataset.x); render(p); popFit(p); return; }
