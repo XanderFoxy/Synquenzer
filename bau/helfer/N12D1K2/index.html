@@ -790,6 +790,11 @@ svg{display:block}
 @media (orientation:landscape) and (max-width:759px){#drumSheet .stab .ll{display:none}#drumSheet .stab .ls{display:inline}#drumSheet .stab{font-size:10px;letter-spacing:0}
   #drumSheet .dk .knob .kl{font-size:9px;letter-spacing:.01em;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 .dtools{display:flex;gap:6px;flex:none}
+.se-cell.d1o{opacity:.35}.se-cell.d1e::after{content:'';position:absolute;right:2px;top:3px;bottom:3px;width:6px;border:3px solid var(--amber);border-left:0;border-radius:0 3px 3px 0;pointer-events:none}   /* D1 */
+@media (orientation:portrait) and (max-height:700px){.pg-dsteps .pgside.haspg .dtools{flex:0 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x}.pg-dsteps .pgside.haspg .dtools::-webkit-scrollbar{display:none}.pg-dsteps .pgside.haspg .pgnav{min-width:96px}}   /* D1: P2 with the bar pager: the tool row scrolls sideways */
+.dtools .mbtn.d1b{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:44px;padding:0 7px;flex:none}.dtools .d1b .d1i{flex:none;color:var(--amber)}.dtools .d1b small{font-size:10px;opacity:.85}
+.dtools .mbtn{white-space:nowrap}
+.pop.d1p{width:min(340px,calc(100vw - 16px))}.plist.d1dirs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.plist.d1dirs button{min-height:44px;padding:0 4px;font-size:12px}.pop.d1p .d1x{width:100%;min-height:44px;margin-top:8px}
 .dtools .mbtn{height:34px;padding:0 10px;font-size:12px}
 .ovw.o12{grid-template-columns:repeat(16,5px);grid-auto-rows:5px;gap:2px 3px;padding:4px}
 .ovw.o12 i{width:5px;height:5px}
@@ -17114,6 +17119,7 @@ function normClip(c, kind, pk) {
   // a drum clip without a seed gets one derived from its notes: the same clip always makes the same chance decisions,
   // and an untouched demo stays equal to a fresh one (isPristine)
   if (kind === 'drum') out.seed = isNum(c.seed) ? Math.abs(Math.round(c.seed)) % 2147483647 : parseInt(SQStore.fnv(JSON.stringify(notes)), 16) % 2147483647;
+  if (kind === 'drum') { const ln = d1Norm(c.lanes); if (ln) out.lanes = ln; }                   /* D1: Länge / Richtung je Spur (additiv) */
   if (kind !== 'drum' && c.audio) { const a = tkNormAudio(c.audio); if (a) out.audio = a; }          // VS3: Audio-Clip der STIMME-Spur
   if (typeof c.take === 'string' && UID_RE.test(c.take)) out.take = c.take;                          // VS3: MELODIE-Clip ↔ Take
   return out;
@@ -17438,11 +17444,53 @@ const demoProject = () => normalizeProject(demoProjectRaw());
 function cleanKey(k) { const o = {root: k.root, scale: k.scale}; if (k.ref != null) o.ref = k.ref; o.src = k.src || 'auto'; return o; }
 const NOTE_X = ['o', 'a', 'p', 'r', 'm'];
 function cleanNote(n) { const o = {t: n.t, d: n.d, n: n.n, v: n.v}; for (const k of NOTE_X) if (n[k] != null) o[k] = n[k]; if (n.lk) o.lk = Object.assign({}, n.lk); return o; }
+/* D1: Drum-Sequencer – Länge je Spur (Polymeter, 1–64 Schritte) und Richtung. clip.lanes = {gm: {len, dir, seed}}; nur Abweichungen
+   vom Standard (len fehlt = Clip-Länge, dir fehlt = vorwärts). Schritt g zählt ab Clip-Start durch (nicht je Clip-Runde): eine Spur mit
+   12 Schritten gegen 16 ist nach 48 Schritten wieder deckungsgleich. Zufall: Schritt = rand01(Startwert, g) – jedes Abspielen gleich. */
+const D1_DIRS = [['fwd', 'vorwärts'], ['rev', 'rückwärts'], ['pend', 'Pendel'], ['rnd', 'Zufall']];
+function d1Norm(x) {
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
+  const o = {};
+  for (const k of Object.keys(x)) {
+    const gm = +k, v = x[k]; if (!DRUM_GMS.includes(gm) || !v || typeof v !== 'object') continue;
+    const e = {}; if (isNum(v.len)) e.len = clamp(Math.round(v.len), 1, 64);
+    if (v.dir === 'rev' || v.dir === 'pend' || v.dir === 'rnd') e.dir = v.dir;
+    if (e.dir === 'rnd') e.seed = isNum(v.seed) ? clamp(Math.round(v.seed), 1, 99) : 1;
+    if (e.len != null || e.dir) o[gm] = e;
+  }
+  return Object.keys(o).length ? o : null;
+}
+// the lane of pad gm when it differs from the plain clip loop (null = plays as before)
+function d1Lane(clip, gm) {
+  const x = clip && clip.lanes && clip.lanes[gm]; if (!x) return null;
+  const NS = Math.round(clip.len * 16), Ls = x.len || NS, dir = x.dir || 'fwd';
+  return Ls === NS && dir === 'fwd' ? null : {Ls, dir, seed: x.seed | 0};
+}
+function d1Pos(l, g, gm) {
+  const Ls = l.Ls; if (Ls <= 1) return 0;
+  if (l.dir === 'rev') return Ls - 1 - (g % Ls);
+  if (l.dir === 'pend') { const m = g % (2 * Ls - 2); return m < Ls ? m : 2 * Ls - 2 - m; }
+  if (l.dir === 'rnd') return Math.min(Ls - 1, Math.floor(DrumSeq.rand01(l.seed, g, 7, gm) * Ls));
+  return g % Ls;
+}
+// gm -> {l, by: lane step -> notes} for the lanes with their own length / direction (null: none)
+function d1Map(clip) {
+  if (!clip || !clip.lanes) return null;
+  let M = null;
+  for (const k of Object.keys(clip.lanes)) {
+    const gm = +k, l = d1Lane(clip, gm); if (!l) continue;
+    const by = new Map();
+    for (const nt of clip.notes) { if (nt.n !== gm || nt.t >= clip.len * 4 - 1e-9) continue; const st = Math.floor(nt.t / .25 + 1e-6); if (st >= l.Ls) continue; if (!by.has(st)) by.set(st, []); by.get(st).push(nt); }
+    (M || (M = new Map())).set(gm, {l, by});
+  }
+  return M;
+}
 function cleanClip(c) {
   if (!c) return null;
   const o = {len: c.len, key: cleanKey(c.key), notes: c.notes.map(cleanNote)};
   if (c.q) o.q = {grid: c.q.grid, swing: c.q.swing, strength: c.q.strength};
   if (c.seed != null) o.seed = c.seed;
+  if (c.lanes) o.lanes = JSON.parse(JSON.stringify(c.lanes));     /* D1 */
   if (c.audio) o.audio = tkCleanAudio(c.audio);                  // VS3
   if (c.take) o.take = c.take;
   return o;
@@ -19270,8 +19318,10 @@ function ownPlaying(i) {
    WP6 (Anhang D.10): the accent and the TUNE / DECAY locks go to the engine (drumHit ex = {acc, lk}) */
 function scheduleDrums(i, clip, from, to, late, lsrc, mu) {
   const L = clip.len * 4, cs = R.cstart[i], now = AU.ctx.currentTime, ev = new Map(), seed = clip.seed | 0;
+  const D1 = d1Map(clip);                                        /* D1: lanes with their own length / direction play below */
   for (const nt of clip.notes) {
     if (nt.t >= L - 1e-9) continue;                              // V0a K-06
+    if (D1 && D1.has(nt.n)) continue;                            /* D1 */
     let k = Math.ceil((from - .35 - cs - nt.t) / L - 1e-9); if (k < 0) k = 0;          // .35: ratchet + late shift reach
     for (let B = cs + nt.t + k * L; B < to + .12 - 1e-9; B += L, k++) {
       if (nt.born != null && nt.bornRun === R.runId && B < nt.born + .5) continue;
@@ -19289,6 +19339,7 @@ function scheduleDrums(i, clip, from, to, late, lsrc, mu) {
       }
     }
   }
+  if (D1) d1Sched(D1, cs, from, to, late, now, mu, seed, ev);   /* D1 */
   // in time order: a pad is monophonic, so a later hit must see (and choke) every earlier one of the window
   const dt = S.settings.harmony.drums;                           // V2c′: Drums mittransponieren (TUNE wie ein Lock)
   for (const e of [...ev.values()].sort((x, y) => x.t - y.t)) {
@@ -19296,6 +19347,29 @@ function scheduleDrums(i, clip, from, to, late, lsrc, mu) {
     if (tu) ex = Object.assign({}, ex, {lk: Object.assign({}, ex && ex.lk, {tune: ((ex && ex.lk && ex.lk.tune) || 0) + tu})});
     const h = drumHit(e.n, e.v, e.t, 'clip', ex);
     if (lsrc && h && h.log) h.log.src = lsrc;
+  }
+}
+/* D1: the steps g of the window (counted from the clip start) -> the lane step d1Pos(g) -> its notes, at cs + g/4 + their offset in the
+   step; chance / ratchet / timing as the plain path (expandStep, loop = lane round); a window is idempotent (a hit belongs to its beat) */
+function d1Sched(D, cs, from, to, late, now, mu, seed, ev) {
+  const g0 = Math.max(0, Math.floor((from - .35 - cs) / .25)), g1 = Math.ceil((to + .12 - cs) / .25);
+  for (const [gm, X] of D) for (let g = g0; g < g1; g++) {
+    const ns = X.by.get(d1Pos(X.l, g, gm)); if (!ns) continue;
+    for (const nt of ns) {
+      const f = nt.t - Math.floor(nt.t / .25 + 1e-6) * .25, B = cs + g * .25 + f;
+      if (nt.born != null && nt.bornRun === R.runId && B < nt.born + .5) continue;
+      if (mu && mutedAt(mu, B)) continue;
+      for (const h of DrumSeq.expandStep(nt, Math.floor(g / X.l.Ls), seed)) {
+        const hb = Math.max(B + h.beat, cs);
+        if (hb < from - 1e-9 || hb >= to - 1e-9) continue;
+        let t = b2t(hb + swingOffset(g * .25 + f));
+        if (t < now - (late ? RETRO_MAX + .02 : .02)) continue;
+        if (t < now) t = now;
+        const key = t.toFixed(4) + ':' + nt.n, o = ev.get(key);
+        if (o) { o.v = Math.max(o.v, h.v); if (h.acc) o.ex = Object.assign({}, o.ex, {acc: 1}); }
+        else ev.set(key, {t, n: nt.n, v: h.v, ex: h.acc || h.lk ? h : null});
+      }
+    }
   }
 }
 function cutTrackAt(i, t) {
@@ -32615,7 +32689,8 @@ function pageDrumSteps(pg) {
   ED.step = StepEditor.create(se, stepModel(), {defVel: .8, lanes: ['vel', 'acc', 'prob', 'rat', 'nud', 'tune', 'dec'], lane: ED.sLane || 'vel', tabsHost: stabs,
     tap: (node, fn, sel) => onTap(node, fn, sel), onLane: k => { ED.sLane = k; lcdShow('Spur', StepEditor.LANES[k].l + (k === 'tune' ? ' – Tonhöhe pro Schritt (±12 HT)' : k === 'dec' ? ' – Ausklang pro Schritt (×¼…×4)' : '')); },
     reg: folReg('steps'),
-    onTap: (i, onS) => { ED.step.flash(i); haptic('tick'); lcdShow(DRUM_VOICES[ED.dVoice].l + ' · Schritt ' + (ED.page * 16 + i + 1), onS ? 'an' : 'aus'); }});
+    onTap: (i, onS) => { ED.step.flash(i); haptic('tick'); lcdShow(DRUM_VOICES[ED.dVoice].l + ' · Schritt ' + (ED.page * 16 + i + 1), onS ? 'an' : 'aus'); },
+    decorate: (c, n, i) => d1Decorate(c, i)});                     /* D1 */
   // the lane tabs carry a short form for narrow screens (P < 360, L < 760): all 7 lanes stay reachable
   const LSH = {vel: 'VEL', acc: 'AKZ.', prob: 'CHANCE', rat: 'WIRB.', nud: 'TIM.', tune: 'TUNE', dec: 'DEC.'};
   for (const b of stabs.querySelectorAll('.se-tabs button[data-lane]')) { const l = b.textContent; b.innerHTML = `<span class="tl">${esc(l)}</span><span class="ts">${esc(LSH[b.dataset.lane] || l)}</span>`; }
@@ -32629,6 +32704,7 @@ function pageDrumSteps(pg) {
   eb.setAttribute('aria-label', 'Euklid-Rhythmus'); mb.setAttribute('aria-label', 'Start-Muster');
   onTap(eb, () => openEuclid(eb)); onTap(mb, () => openPatterns(mb));
   tools.append(eb, mb);
+  d1Tools(tools, clip);                                            /* D1: [Länge n ▾] [×2] */
   ED.dLand = window.matchMedia('(orientation: landscape)').matches;
   foot.append(ov); if (ED.dLand) stabs.appendChild(side); else foot.appendChild(side);
   ED.pgnav = null; ED.runBar = -2;
@@ -32637,6 +32713,59 @@ function pageDrumSteps(pg) {
   pg.append(drumVoiceChips(() => safeRebuild(buildDrumEd)), stabs, se, foot);
   paintSteps();
   lcdShow('Schritte', 'antippen = an/aus · wischen = malen · hoch/runter = Wert · Streifen = zeichnen');
+}
+/* D1: the lane end in the step grid (a bracket on the last step of the lane, steps behind it dimmed) */
+function d1Decorate(c, i) {
+  const clip = S.tracks[DRUM_T].clips[R.selS], l = d1Lane(clip, DRUM_VOICES[ED.dVoice].gm), si = (ED.page | 0) * 16 + i;
+  c.classList.toggle('d1o', !!l && si >= l.Ls); c.classList.toggle('d1e', !!l && si === l.Ls - 1);
+}
+const d1Short = {rev: '←', pend: '↔', rnd: 'Z'};
+// the drawn loop bracket (as in the step grid) + the lane length; a direction other than vorwärts as a small mark
+const D1_ICON = '<svg class="d1i" viewBox="0 0 12 20" width="10" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M3 2h6v16H3"/></svg>';
+function d1Tools(tools, clip) {
+  const gm = DRUM_VOICES[ED.dVoice].gm, x = clip && clip.lanes && clip.lanes[gm], Ls = x && x.len ? x.len : clip ? Math.round(clip.len * 16) : 16;
+  const lb = el('button', 'rb mbtn d1b', D1_ICON + '<b>' + Ls + '</b>' + (x && x.dir ? '<small>' + d1Short[x.dir] + '</small>' : ''));
+  lb.title = 'Länge und Richtung (' + DRUM_VOICES[ED.dVoice].l + ')';
+  lb.setAttribute('aria-label', 'Länge ' + Ls + ', Richtung, ×2: ' + DRUM_VOICES[ED.dVoice].l); lb.disabled = !clip;
+  onTap(lb, () => d1Pop(lb));
+  tools.append(lb);
+}
+// [×2]: the clip twice as long with its content (lanes keep their length); one undo
+function d1Double() {
+  const s = R.selS, tr = S.tracks[DRUM_T], c = tr.clips[s]; if (!c) return;
+  if (c.len * 2 > 16) { toast('max. 16 Takte'); return; }
+  const before = cleanClip(c), L = c.len * 4;
+  c.notes = c.notes.concat(c.notes.filter(n => n.t < L - 1e-9).map(n => Object.assign({}, deep(n), {t: +(n.t + L).toFixed(6)}, n.o != null ? {o: +(n.o + L).toFixed(4)} : {})));
+  c.len *= 2; c.notes.sort((a, b) => a.t - b.t);
+  pushUndo(DRUM_T, s, before, 'Clip verdoppeln'); afterClipEdit(DRUM_T, s); UI.dirty.grid = true;
+  lcdShow('×2', c.len + ' Takte'); safeRebuild(buildDrumEd);
+}
+// [Länge n ▾]: Länge 1–64 Schritte, Richtung, Startwert (Zufall) of the selected pad; heard live; one undo when it closes
+function d1Pop(anchor) {
+  const s = R.selS, tr = S.tracks[DRUM_T], v = DRUM_VOICES[ED.dVoice], gm = v.gm; if (!tr.clips[s]) return;
+  const before = cleanClip(tr.clips[s]);
+  const cur = () => { const c = tr.clips[s]; return Object.assign({len: Math.round(c.len * 16), dir: 'fwd', seed: 1}, c.lanes && c.lanes[gm]); };
+  const put = e => { const c = tr.clips[s]; if (!c) return; const L = c.lanes ? Object.assign({}, c.lanes) : {}; L[gm] = e; const n = d1Norm(L); if (n) c.lanes = n; else delete c.lanes; afterClipEdit(DRUM_T, s); paintSteps(); };
+  openPop(anchor, p => {
+    p.classList.add('d1p');
+    const lD = {p: 'len', l: 'Länge', vals: Array.from({length: 64}, (_, i) => i + 1), fmt: 'int'}, sD = {p: 'seed', l: 'Startwert', vals: Array.from({length: 99}, (_, i) => i + 1), fmt: 'int'};
+    const kl = makeCtl(lD, () => cur().len, x => { const e = cur(); e.len = x; put(e); }, {label: 'Länge', fmt: x => x + ' Schr.'});
+    const ks = makeCtl(sD, () => cur().seed, x => { const e = cur(); e.seed = x; put(e); }, {label: 'Startwert', fmt: x => String(x)});
+    const dirs = el('div', 'plist d1dirs'); dirs.innerHTML = D1_DIRS.map(([k, l]) => `<button class="rb${cur().dir === k ? ' on' : ''}" data-d="${k}">${l}</button>`).join('');
+    const row = el('div', 'eukr'); row.append(kl, ks);
+    const showSeed = () => { ks.style.visibility = cur().dir === 'rnd' ? '' : 'hidden'; };
+    const xb = el('button', 'mbtn rb d1x', '×2 – Clip verdoppeln (mit Inhalt)'); xb.disabled = tr.clips[s].len * 2 > 16;
+    onTap(xb, () => { closePop(); d1Double(); });
+    p.innerHTML = '<h4>' + esc(v.l) + ' – Länge und Richtung</h4>';
+    p.append(row, dirs, xb);
+    guardTouch(p);
+    onTap(dirs, b => { const e = cur(); e.dir = b.dataset.d; put(e); for (const o of dirs.children) o.classList.toggle('on', o === b); showSeed(); }, 'button[data-d]');
+    showSeed();
+  }, {name: 'd1lane', above: true, onClose: () => {
+    const c = tr.clips[s]; if (!c) return;
+    if (JSON.stringify(cleanClip(c)) !== JSON.stringify(before)) { pushUndo(DRUM_T, s, before, 'Länge/Richtung ' + v.l); UI.dirty.grid = true; }
+    safeRebuild(buildDrumEd);
+  }});
 }
 // [Euklid…] (§7.3): instrument, Schläge k 0–16, Drehung 0–15, live preview into the clip; Anwenden = one undo, Abbrechen
 function openEuclid(anchor) {
@@ -32828,6 +32957,7 @@ function drumEdFrame(bAud) {
   if (clip && clip.len > 1) folStep('steps', ph, 4, (ED.page | 0) * 4, x => drumSetPage(Math.round(x / 4))); else FOL.st.steps = folState('steps');
   const run = ph >= 0 ? Math.floor(ph / 4) : -1;
   if (run === ED.page) st = Math.floor((ph % 4) / .25);
+  { const l = ph >= 0 && d1Lane(clip, DRUM_VOICES[ED.dVoice].gm); if (l) { const q = d1Pos(l, Math.floor((bAud - audCstart(DRUM_T, bAud)) / .25 + 1e-6), DRUM_VOICES[ED.dVoice].gm); st = Math.floor(q / 16) === ED.page ? q % 16 : -1; } }   /* D1: the lane's own step */
   if (run !== ED.runBar) { ED.runBar = run; if (ED.pgnav) ED.pgnav._run(run); }
   folChipPaint('steps');
   if (st !== ED.lastStep) {

@@ -1,5 +1,7 @@
 # Helfer N12D1K2 — K2 · N1 · N2 · D1 (Basis App 4.23.0, `vs-base-B.html`)
 
+Stand: alle vier Pakete gebaut, Abnahme grün (Einzelheiten je Paket). Keine Supabase-Aufrufe; „MS 2000“ genau einmal, kein Korg-Wort.
+
 Zweig `helfer-n12d1k2`, Datei `bau/helfer/N12D1K2/index.html`. VERSION-Zeile unverändert (4.23.0). Format 5, nur additive Felder.
 
 ---
@@ -136,3 +138,59 @@ Tests: `tests/n2-abnahme.mjs` (28/28), `tests/roll-regress.mjs` (30/30).
 - Nur im PianoRoll-Block: Konstanten `MMH/MMG/AX_ON/AX_OFF`, CSS `.pr canvas.pr-mm`, Canvas `cMM`, `mmOn/mmRect/mmSpan/mmBeat/mmDraw/mmGlide`
   (vor `rr`), ein Aufruf `mmDraw(C)` in `draw()`, `move`-Zweig in `drag()` (Achse, Karte), zwei Zeilen Animationsende
   (`mainUp`, `abort`), Test-Hook `_mm()`. Markiert mit `/* N2 */`.
+
+---
+
+## D1 — Drum-Sequencer: Länge je Spur, Richtung
+
+### Was neu ist
+- **Daten (Format 5, additiv):** Drum-Clip bekommt `lanes` = `{GM-Nummer: {len 1–64, dir 'rev'|'pend'|'rnd', seed 1–99}}`, nur
+  Abweichungen vom Standard (fehlt `len` = Clip-Länge, fehlt `dir` = vorwärts). In `normClip` (normiert/geprüft) und `cleanClip`
+  (Undo, Kopie, Speichern). Clips ohne `lanes` spielen exakt wie 4.23.0.
+- **Polymeter:** Eine Spur mit eigener Länge zählt ihre Schritte ab Clip-Start durch (nicht je Clip-Runde): Hi-Hat 12 gegen
+  Kick 16 ist nach 48 Schritten wieder deckungsgleich. Schritte hinter der Spur-Länge schweigen (bleiben gespeichert). Der Clip
+  selbst bleibt so lang wie bisher. Chance, Wirbel, Timing, Akzent, Locks und Swing wirken wie bisher (gleiche `expandStep`).
+- **Richtung je Spur:** vorwärts · rückwärts · Pendel (0…n−1…1, ohne doppelte Enden) · Zufall (Schritt = Zufall aus Startwert
+  und Schrittzahl → jedes Abspielen gleich; anderer Startwert = andere Folge).
+- **Bedienung (SCHRITTE, gewähltes Instrument):** Im Fuß neben „Euklid…“/„Muster ▾“ ein Knopf mit gezeichneter Loop-Klammer und
+  der Länge (z. B. „] 12 ←“). Tipp → Blatt „HH ZU – Länge und Richtung“: Regler Länge (1–64 Schr.), vier Richtungs-Tasten
+  (44 px), Regler Startwert (nur bei Zufall), Taste **„×2 – Clip verdoppeln (mit Inhalt)“** (bis 16 Takte, Spuren behalten ihre
+  Länge). Alles sofort hörbar; ein Undo, wenn das Blatt schließt; ×2 = ein Undo.
+- **Im Schritt-Raster:** der letzte Schritt der Spur trägt eine gelbe Klammer, Schritte dahinter sind gedimmt; der Laufpunkt
+  zeigt beim Abspielen den Schritt der Spur (auch rückwärts/Pendel/Zufall).
+
+### Abnahme
+| Punkt | Prüfung | Ergebnis |
+|---|---|---|
+| D1-01 | Clip spielt (240 BPM, echte Planung, gemessene Treffer): Hi-Hat 12 Schritte (Schritte 1, 6, 14) gegen Kick 16 → Treffer bei g mod 12 ∈ {0, 5}, Schritt 14 schweigt, Schritte 0–47 = 48–95 | bestanden |
+| D1-02 | rückwärts (5), Pendel (4), Zufall (8, Startwert 5): Treffer = Definition, zweiter Lauf gleich, Zufall ≠ vorwärts, Startwert 6 anders | bestanden |
+| D1-03 | ×2 per Touch: 1 → 2 Takte, Inhalt doppelt, Spuren bleiben, +1 Undo; Undo deep-equal; Richtung per Touch +1 Undo; Speichern → Laden deep-equal; ungültige Felder normiert | bestanden |
+| D1-03 | alter Clip ohne `lanes` (mit Chance/Wirbel/Timing/Akzent): gleiche Treffer wie 4.23.0 | bestanden |
+| D1-04 | Knopf und Blatt in 6 Formaten im Bild, nichts abgeschnitten, Blatt-Tasten ≥ 44 × 44, Seitenhöhe gleich | 18/18 |
+| Laufpunkt/Klammer | rückwärts 12: Laufpunkt = Spur-Schritt 24/24, Klammer auf Schritt 12, 4 gedimmt | bestanden |
+| Regression | Schritt-Seite ohne `lanes` gegen 4.23.0: Zellen, Leiste, Overview, Seitenhöhe, Tipp-Ergebnis gleich (alle Formate) | gleich; Abweichungen siehe unten |
+
+Tests: `tests/d1-abnahme.mjs` (11/11), `tests/d1-layout.mjs` (18/18), `tests/d1-playhead.mjs` (3/3), `tests/d1-regress.mjs`.
+
+### Abweichungen
+- „Loop-Klammer im Schritt-Raster ziehbar“: gebaut als Länge-Regler im Blatt + gezeichnete Klammer im Raster (Spec: „Länge
+  bzw. Loop-Klammer“). Ein Zug an der Klammer selbst kollidiert mit dem Malen der Schritte (Wischen = malen) und mit dem
+  8×2-Raster hochkant → Frage.
+- Der neue Knopf braucht 50 px im Fuß: quer rücken Euklid/Muster/Takt-Wahl 50 px nach links, die Spur-Tabs werden 50 px
+  schmaler (alle 7 ganz sichtbar außer 667×375 mit mehrtaktigem Clip: dort scrollt die Tab-Zeile wie vorher, TIMING jetzt auch
+  im Scrollbereich). Hochkant P2/P3 mit mehrtaktigem Clip: die Takt-Wahl ist 96 px breit und die Werkzeug-Zeile scrollt seitlich
+  (wie die Werkzeugleisten der Rolle). Fuß-Knöpfe sind 28–34 px hoch wie Euklid/Muster (bestehendes Layout).
+- MIDI-Export schreibt die gespeicherten Schritte (ohne Polymeter/Richtung); der Klang in der App folgt `lanes`.
+
+### Fragen an Xander
+- D1: **Wahrscheinlichkeit je Schritt und Wirbel (Ratchets) gibt es schon** (Reiter CHANCE und WIRBEL in SCHRITTE). Vorschläge
+  für weitere „Spielereien“ (nicht gebaut): Wahrscheinlichkeit je Spur statt je Schritt, Wirbel-Zufall, Spur-Versatz (Start
+  verschieben), „Schritt überspringen“, Swing je Spur.
+- D1: Soll die Klammer im Raster direkt ziehbar sein (dann z. B. nur mit Halten > 0,5 s, damit Wischen weiter malt)?
+- D1: Soll der MIDI-Export die Polymeter-Folge ausschreiben (dann so lang wie bis zur Deckung, z. B. 48 Schritte)?
+- D1: Zählt die Spur bei jedem Neustart des Clips (Szenenwechsel) von vorn (so gebaut) oder soll sie über Szenen weiterlaufen?
+
+### Für das Zusammenführen
+- `/* D1 */`-Blöcke: `D1_DIRS`, `d1Norm`, `d1Lane`, `d1Pos`, `d1Map` (vor `cleanClip`), eine Zeile in `cleanClip`, eine in `normClip`;
+  `scheduleDrums` (zwei Zeilen) + `d1Sched` (vor `cutTrackAt`); Laufpunkt (eine Zeile im Schritt-Rahmen); `pageDrumSteps`
+  (`decorate` + `d1Tools`); `d1Decorate`, `d1Tools`, `d1Double`, `d1Pop`, `D1_ICON` (vor `openEuclid`); CSS nach `.dtools`.
