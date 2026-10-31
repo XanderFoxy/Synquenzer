@@ -306,3 +306,90 @@ VV2 16:9 Song 23,5 / Auto 17,6 ms, 9:16 Kamera Song 14,3 / Auto 14,2 ms – inne
   `vvEncodeWC/vvEncodeMR` (`job.rt`), `vvMake` (`VV.lastRt = vvRun(…)`, `res.cam/cuts`), `vvOpen` (Zeile „9:16“ `segC`), `vvSync`
   (`segC`), `vvStill`/`vvPrevStart` (Run der Vorschau), `vvApi.vvPrefs` (+`cam`).
 - Keine Änderung an Engines, Worklet, Ton, Speichern-Format (nur additiv) oder Server.
+
+## VV2-fix
+
+Stand: Zweig `n5-br-V/index.html` (auf VV2). **Version bleibt 4.25.0** (APP_CODE 4 025 000), **Format 5** (nur `song.video`, additiv),
+CLOUD-Zeile `live: true,` unverändert, kein Supabase-Aufruf (**am Server offen: `max_app ≥ 4025000`**). Alle 8 gemeldeten Fehler
+selbst nachgestellt (alle echt) und behoben.
+
+### Was neu ist (Fehlerbehebungen)
+1. **Regie für STIMME / Spur 7–8 ging beim Laden verloren** (VV2-02, 2 Meldungen): `vvDirNorm` prüfte die Spur gegen die Spurzahl der
+   gerade offenen Sitzung (`curNT()`), nicht gegen die des geladenen Projekts. Jetzt bekommt sie die Spurzahl des Songs (`normSong` gibt
+   `nt` weiter, `vvDirTidy` nimmt `song.lanes.length`). Neu laden und Datei in frischer Sitzung: `[{a:4,b:8,spur,t:6}]` bleibt.
+2. **9:16-Kamera schräg > 5 % je Bild** (VV2-04): Tempo war je Achse begrenzt, schräg + Zoom ergab bis 6,8 %. Jetzt wird je Bild die ganze
+   Bewegung des Bildinhalts (Fensterecken, Zoom eingerechnet, `vvCamDisp`) auf ≤ 4,5 % der Bildbreite begrenzt (Feder und Beschleunigungsgrenze
+   unverändert).
+3. **Auto-Regisseur: Eintrag + gleiches Auto-Bild = bis 17 Takte ohne Schnitt; 1-Takt-Schnitt neben einem Eintrag** (VV2-03): Jeder Schnitt
+   kennt jetzt den Anfang dessen, was als *ein* Bild zu sehen ist (Eintrag und gleiches Auto-Bild davor/danach zählen zusammen). Die 8-Takt-Regel
+   und die 2-Takt-Regel zählen von dort; ein Eintrag direkt dahinter mit gleichem Bild wird mitgezählt. Bleibt vor/nach einem Eintrag nur
+   1 Takt frei, zeigt dieser Takt das Bild des Nachbar-Eintrags (kein 1-Takt-Schnitt). Nach einem Eintrag beginnt Auto mit dem anderen Bild,
+   wenn nichts Neues passiert.
+4. **Teilanfang ohne sichtbaren Schnitt** (VV2-03, Spec „Schnitt … an Teilgrenzen“): steht das Bild an einem Teilanfang schon auf Song,
+   zeigt Auto dort, was neu ist – ≥ 2 Wechsel → Matrix, genau eine neue Spur → Spur-Bild, sonst Matrix (nur die vorhandenen Bilder, keine neue
+   Gestaltung). Damit ist jede Teilgrenze ein sichtbarer Schnitt, wo die 2-Takt-Regel es erlaubt.
+5. **Meldung [Rückgängig] lag über der Zeile „Format“ im Blatt Video** (Hochkant, Tipp auf [16:9] ging verloren): Öffnen des Blatts Video
+   blendet eine noch stehende Meldung mit Knopf aus (`vvOpen`). Rückgängig bleibt über ↶ erreichbar.
+6. **9:16 [Kamera] im Spur-Bild verlor den Laufstrich** (1-Takt-Clips, 112 BPM: nur 35–39 % im Bild): ein 1-Takt-Laufstrich läuft schneller,
+   als eine ruhige Kamera fahren darf, und springt am Clip-Anfang 600 Punkte zurück. Das Spur-Bild wird in 9:16 [Kamera] jetzt im 9:16-Fenster
+   selbst angeordnet (Kopf mit Farbe/Name/Szene, der ganze Clip, Laufstrich) – Laufstrich und klingende Noten immer im Bild, die Kamera steht
+   in dieser Einstellung still. Der Name im Kopf wird bei Bedarf kleiner (17 → 11 px) bzw. mit „…“ gekürzt, nie über „Szene n“.
+   16:9 und [Ganz mit Balken] unverändert.
+7. **„Auf alle „Refrain“ übertragen“ löschte die Regie der anderen Refrains** (ebenso FANG TEIL ⟳ und „Ersetzen durch …“): Ersetzen ändert
+   den Inhalt eines Teils, nicht wohin das Video schaut – die Regie-Einträge der ersetzten Stelle bleiben (auf die neue Länge gekürzt).
+   Gleich behandelt: Ersetzen-Blatt (Teil auf Takte → Ersetzen, `placePart` 'replace').
+8. Typischer Fehler A4 dabei gefunden: die Liste **[Spur …]** für einen kurzen Bereich (z. B. 1 Takt, 4 Spuren) hatte Knöpfe 42,3 px breit →
+   jetzt je Spur ≥ 44 px.
+
+### Abnahme
+Chromium headless, 4 vCPU, Last 1,5–5. Skripte in `dirigent-test/`.
+
+| ID | Ergebnis | Messung / Skript |
+|---|---|---|
+| Fehler 1/4 (VV2-02) | **behoben** | `n5-v-qa2-stimme.mjs`: nach Neuladen und Datei in frischer Sitzung `video = [{a:4,b:8,spur,t:6}]` (vorher `null`). `n5-v-q2-save2.mjs` (APP = Zweig): nach Neuladen beide Einträge (`t:1`, `t:6`). `n5-v-q2-save.mjs` **ALL PASS** (Hash `2cdb1f7b` vor/nach Neuladen gleich). |
+| Fehler 2 (VV2-04) | **behoben** | `n5-v-qa2-cam.mjs diag`: 800 Bilder, **0 über 5 %**, größte Bewegung 4,49 % (vorher 65 Bilder, bis 6,83 %), 0 außerhalb. MP4-Prüfung `n5-v-qa2-reg.mjs` Bilder 273/275/538/540: 3,4–3,7 % (vorher 5,76/5,79 %). |
+| Fehler 3 (VV2-03) | **behoben** | `n5-v-qa2-cuts2.mjs`: A 1–8 Song, 9–13 Matrix (vorher 1–13); B 1–4 Song, 5–12 Matrix, 13–16 Song (vorher 1–12); C 1–8 Matrix, 9–16 Song (kein 1-Takt-Stück mehr). `n5-v-qa2-cuts.mjs 300 {11,7,3} user` und `300 5` (ohne Einträge): je **0 Fehler**, längste Strecke ohne Schnitt in Teilen > 8 Takte **8**. |
+| Fehler 8 (VV2-03) | **behoben** | `n5-v-q2-auto.mjs 12`: 1–2 Song, 3–6 Matrix, 7–8 Song, 9–10 Stimme, 11–12 … (vorher 1–8 Song). `n5-v-q2-auto2.mjs`: 1–4 Song, 5–12 Matrix, 13–20 Song, 21–24 Matrix – Schnitt an jedem Teilanfang. `n5-v-vv2fix.mjs` (300 Zufallssongs): 566 Teilanfänge, 393 mit Schnitt, 173 durch die 2-Takt-Regel gesperrt, **0 verpasst**. |
+| Fehler 5 | **behoben** | `n5-v-q2-toast.mjs P`: keine Meldung über dem Blatt, Tipp [16:9] → `fmt 16:9` (vorher 9:16). (L: das Skript erreicht den Menü-Eintrag „Video“ quer nicht – er liegt unterhalb des sichtbaren Menüs; gleiches Ergebnis mit dem VV2-Stand, kein App-Fehler dieses Pakets.) |
+| Fehler 6 | **behoben** | `n5-v-vv2fix.mjs 112`: SYN 4 (3–6, 257 Bilder) und STIMME (7, 64 Bilder) Laufstrich **100 %** im Bild (vorher 35/39 %), Kamera bewegt 0×; Bilder `n5-v-out/vv2fix-spur-syn4-112.png`, `…-stimme-112.png` (Kopf, ganzer Clip, Laufstrich, klingende Note umrandet). |
+| Fehler 7 | **behoben** | `n5-v-q2-edit.mjs`: „Auf alle Refrain übertragen (from 2nd)“ → Regie unverändert (vorher Matrix [6,10) weg); „Refrain2 Ersetzen durch Strophe“ → Spur-Eintrag bleibt. `n5-v-q2-ui2.mjs P` (Touch): `v2 = [{6,10,matrix}]` nach „Auf alle 2 Refrain übertragen“. Undo → `song.video` gleich (`n5-v-vv2fix-undo.mjs`). |
+| Spur-Liste ≥ 44 | **behoben** | `n5-v-q2-ui2.mjs P`: 1-Takt-Liste 4 × 44,0 × 44,0 (vorher 42,3 breit). |
+| VV2-01 | **bestanden** | `n5-v-vv2-01.mjs` 16:9, 9:16 Kamera, 9:16 Balken: je 10/10 Bilder richtig erkannt (Soll 1,2–2,1 gegen das Bild mit der Kamera des Auftrags, andere ≥ 2,3). Schnittliste jetzt 1–2 Song, 3–6 Spur 3, 7–8 Song (8-Takt-Regel greift jetzt mit dem Eintrag 9–12 zusammen), 9–12 Spur 3, 13–16 Matrix. |
+| VV2-02 | **bestanden** | `n5-v-vv2-02.mjs` alle Schritte ok (Einfügen/Löschen/Teil tauschen/Undo/Redo/Datei/Neuladen/ohne `song.video` zeichengleich). |
+| VV2-03 | **bestanden** | `n5-v-vv2-03.mjs` (9:16): Schnitte 1–4 Song, 5–8 Spur 2, 9–16 Spur 3, 17–24 Song, 25–26 Matrix, 27–28 Song, 29–30 Drums; alle Teilgrenzen geschnitten, kleinster Abstand 2, längste Strecke 8; Hash zweimal `44b13e35`, Kamera in allen 1972 Bildern gleich; Blenden monoton, fertig nach 6–8 Bildern. |
+| VV2-04 | **bestanden** | `n5-v-vv2-03.mjs`: 0 außerhalb, größter Schritt 0,37 %, Sprünge nur an den 6 Schnitten; `n5-v-vv2-04z.mjs` Zoom 1,00 → 1,84, 3,39 %, 0 außerhalb; `n5-v-qa2-cam.mjs diag` s. o. |
+| VV2-05 | **bestanden** | `n5-v-vv2-05.mjs` P1/P2/P3/L1/L2/926×428: 0 Knöpfe < 44, nichts außerhalb, Streifen ok. `n5-v-abn-07.mjs vv2` alle sechs Formate: 0 < 44, nichts außerhalb. |
+
+Weitere Läufe: `smoke.mjs` ohne Fehler (`n5-v-out/vv2fix-smoke.png`); `gmk8b-reg.mjs` (APP = Zweig) **ALL PASS**; Konsole in allen Läufen ohne Fehler.
+
+### Abweichungen
+- **Überholte Test-Erwartung:** `n5-v-q2-cam.mjs` misst den Laufstrich gegen die 640 Punkte breite Ansicht; das Spur-Bild ist in 9:16 [Kamera]
+  jetzt im Fenster selbst angeordnet – gemessen wird mit `n5-v-vv2fix.mjs` (Anordnung in Fensterbreite). Das Kamera-Protokoll schreibt für
+  Spur-Bilder ein festes Fenster mit `fit: 1`.
+- **Schnittlisten ändern sich** gegenüber VV2 (andere Hashes), weil Teilanfänge und die 8-Takt-Regel mit Einträgen jetzt greifen (s. VV2-01/03).
+- Ein Eintrag von 7 Takten mit 1 freien Takt davor wird zu 8 Takten eines Bildes; ein Eintrag länger als 8 Takte bleibt ungeschnitten
+  (Xanders Wahl).
+- `n5-v-q2-save2.mjs`, Teil „Datei in frischer Seite“: das Skript gibt `importProject` einen Text statt eines Objekts (Skriptfehler); derselbe
+  Weg mit `applyProject(normalizeProject(projFromFile(…)))` in `n5-v-qa2-stimme.mjs` behält den Eintrag.
+- Gesehen, nicht Teil dieses Pakets: nach Undo von „Auf alle übertragen“ steht `song.mel[5].len` 17 statt 16 (gleich im VV2-Stand, betrifft
+  keine Regie).
+
+### Fragen an Xander
+1. 9:16 [Kamera], Spur-Bild: die Spur wird jetzt hochkant im Bild gezeigt (Kopf, ganzer Clip, Laufstrich) statt die Kamera über die breite
+   Ansicht fahren zu lassen – so bleibt der Laufstrich immer sichtbar. Passt das, oder lieber anders?
+2. Teilanfang, der schon das Song-Bild zeigt: Auto schneidet jetzt auf Matrix bzw. das Spur-Bild der neuen Spur. Einverstanden?
+3. (offen aus VV2) Fragen 1, 3, 5, 6 von VV2 gelten weiter; Frage 2 von VV2 ist mit Punkt 4 oben beantwortet, falls du zustimmst.
+
+### iPhone (Xander)
+1. Takt-Eintrag auf der STIMME-Spur halten → „Im Video zeigen“ → Speichern, App neu laden: der Streifen ist noch da.
+2. Refrain auf [Matrix], dann beim zweiten Refrain „Auf alle übertragen“: der Streifen über dem ersten Refrain bleibt.
+3. Gleich danach Menü → Video: [16:9] lässt sich sofort tippen.
+4. 9:16 Kamera, Video mit einem 1-Takt-Clip im Spur-Bild: Laufstrich immer zu sehen; Kamera fährt ruhig (auch schräg mit Zoom).
+
+### Für das Zusammenführen
+- Nur im **VV2-Block**: `vvDirNorm` (+Parameter `nt`), `vvDirTidy`, `vvCuts` (neu geschrieben), neu `vvCamDisp`, `vvCamAt` (Begrenzung je Bild),
+  `vvDrawShot` (Zweig Spur-Bild in 9:16 Kamera), `vvDrawSpur` (Kopfzeile passt sich an), `vvDirTap` (Klasse `vvsp`).
+- **VV2-CSS-Block:** eine Zeile `.pop.plpick .plp.vvsp{…}`.
+- **Im VV1-Block:** `vvOpen` eine Zeile (`hideToast`).
+- **Einzeilige Haken in geteilten Funktionen:** `normSong` (`vvDirNorm(o.video, bars, nt)`), `markReplaceAll` (`vvKeep` vor dem Ersetzen,
+  `vvDirWrite` danach), `markAction` Zweig `replaceBy`, `placePart` (`vk` vor/nach `opReplace`).
