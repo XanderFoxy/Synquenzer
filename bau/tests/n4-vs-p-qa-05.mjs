@@ -12,7 +12,11 @@ const inf = await p.evaluate(async id => { if (!SYNQUENZER.vpEnv) return null; S
 console.log('Take', JSON.stringify(inf));
 // Wiedergabe mitschneiden (Ausgang STIMME, links), Ereignisse zu festen Zeiten
 const r = await p.evaluate(async ([st, bursts]) => {
-  const c = window.__ctx; window.__cap('v', AU.tracks[st].cut);
+  const c = window.__ctx;
+  // Mitschnitt: links STIMME (mono), rechts ein Bezugston 330 Hz aus demselben Kontext (Aussetzer der Test-Umgebung treffen beide)
+  const mg = c.createChannelMerger(2), mono = c.createGain(); mono.channelCount = 1; mono.channelCountMode = 'explicit'; mono.channelInterpretation = 'speakers';
+  AU.tracks[st].cut.connect(mono); mono.connect(mg, 0, 0); const osc = c.createOscillator(), og = c.createGain(); osc.frequency.value = 330; og.gain.value = 0.1; osc.connect(og); og.connect(mg, 0, 1); osc.start();
+  const g0 = c.createGain(); mg.connect(g0); window.__cap('v', g0);
   SYNQUENZER.launchScene(2); for (let i = 0; i < NT(); i++) if (i !== st) R.slot[i] = -1;
   await new Promise(r => setTimeout(r, 300));
   const a = S.tracks[st].clips[2].audio, sp = spb(), L = S.tracks[st].clips[2].len * 4 * sp, c0 = b2t(R.cstart[st] + a.at), T0 = c0 - a.in;   // T0 + t = Zeitpunkt von Take-Sekunde t im 1. Durchgang
@@ -28,9 +32,13 @@ const r = await p.evaluate(async ([st, bursts]) => {
   // lokale Amplitude: gleitendes Maximum über ±1 Periode
   const P = Math.ceil(c.sampleRate / 220), N = d.length, amp = new Float32Array(N);
   for (let i = 0; i < N; i++) { let m = 0; for (let j = Math.max(0, i - P); j < Math.min(N, i + P); j += 1) { const v = Math.abs(d[j]); if (v > m) m = v; } amp[i] = m; }
-  let worst = 0, wi = 0; const top = [];
-  for (let i = 2; i < N; i++) { const dd = Math.abs(d[i] - 2 * d[i - 1] + d[i - 2]), ref = Math.max(amp[i], 1e-3) * k2, q = dd / ref; if (q > worst) { worst = q; wi = i; } if (q > 3 && top.length < 200) top.push([+(cap.t0 + i / c.sampleRate - T0).toFixed(4), +q.toFixed(2)]); }
-  return {worst: +worst.toFixed(2), at: +(cap.t0 + wi / c.sampleRate - T0).toFixed(4), ev: ev.map(([k, t]) => [k, +(t - T0).toFixed(4)]), n: top.length, top: top.slice(0, 12), L, gaps: null};
+  const e = cap.R, w2 = 2 * Math.PI * 330 / c.sampleRate, k3 = w2 * w2 * 0.1, bad = new Uint8Array(N);
+  for (let i = 2; i < N; i++) if (Math.abs(e[i] - 2 * e[i - 1] + e[i - 2]) > 3 * k3) for (let j = Math.max(0, i - 96); j < Math.min(N, i + 96); j++) bad[j] = 1;
+  let worst = 0, wi = 0, excl = 0; const top = [];
+  for (let i = 2; i < N; i++) { const dd = Math.abs(d[i] - 2 * d[i - 1] + d[i - 2]), ref = Math.max(amp[i], 1e-3) * k2, q = dd / ref; if (q > 3 && bad[i]) { excl++; continue; } if (q > worst) { worst = q; wi = i; } if (q > 3 && top.length < 200) top.push([+(cap.t0 + i / c.sampleRate - T0).toFixed(4), +q.toFixed(2)]); }
+  const det = []; for (let i = wi - 6; i <= wi + 6; i++) det.push([+(d[i] || 0).toFixed(5), +(amp[i] || 0).toFixed(4)]);
+  const pcs = TK.src.map(x => ({s: +(x.start - T0).toFixed(4), e: +(x.end - T0).toFixed(4), off: +x.off.toFixed(4), lim: !!x.lim}));
+  osc.stop(); return {det, excl, worst: +worst.toFixed(2), at: +(cap.t0 + wi / c.sampleRate - T0).toFixed(4), ev: ev.map(([k, t]) => [k, +(t - T0).toFixed(4)]), n: top.length, top: top.slice(0, 12), L, gaps: null};
 }, [tk.st, bursts]);
 console.log(JSON.stringify(r));
 console.log(r.worst <= 3 ? 'VS-P-05 ✓ (Faktor ' + r.worst + ')' : 'VS-P-05 ✗ Faktor ' + r.worst + ' bei ' + r.at + ' s');

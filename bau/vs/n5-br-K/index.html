@@ -1131,6 +1131,16 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .plist.edmore{display:flex;flex-direction:column;gap:6px;min-width:220px}
 .plist.edmore button{flex-direction:column;align-items:flex-start;gap:3px;height:auto;min-height:48px;padding:6px 12px;text-align:left}
 .plist.edmore small{font:500 11px/1.2 var(--font-ui);color:var(--text-dim)}
+/* K1 Mod-Übersicht: one row per modulation, ✕ 44 × 44, the list scrolls by finger inside the pop */
+.pop.k1pop{width:min(360px,calc(100vw - 16px))}
+.k1ml{display:flex;flex-direction:column;gap:6px;max-height:min(420px,calc(100vh - 120px));overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain}
+.k1mr{display:flex;gap:6px;align-items:stretch}
+.k1mr .k1go{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;height:auto;min-height:48px;padding:6px 10px;text-align:left}
+.k1mr .k1go b{font:700 13px/1.2 var(--font-ui);white-space:normal;overflow-wrap:anywhere}
+.k1mr .k1go small{font:500 11px/1.25 var(--font-ui);color:var(--text-dim);white-space:normal;overflow-wrap:anywhere}
+.k1mr .k1x{flex:0 0 44px;width:44px;min-height:44px;height:auto;padding:0}
+.k1empty{min-width:220px;padding:6px 2px;color:var(--text-dim)}
+.k1hl{outline:2px solid var(--sel);outline-offset:2px;border-radius:8px}
 @media (orientation:portrait) and (max-height:700px){#synthSheet .hb.edmL{top:5px;height:20px}}
 @media (orientation:portrait) and (max-height:600px){#synthSheet .hb.edmL{display:none}#synthSheet .hb.edm2{display:inline-flex;align-items:center;justify-content:center}#synthSheet .hb.wia2{display:none}}
 @media (orientation:landscape){#synthSheet .hb.edmL{display:none}#synthSheet .hb.edm1{display:inline-flex;align-items:center;justify-content:center}#synthSheet .lcd{padding-right:44px}}
@@ -6285,7 +6295,20 @@ pre.mkpr{max-height:40vh;overflow:auto;white-space:pre-wrap;font-size:10px}
 `;
 function ensureCss() { if (document.getElementById('mk-css')) return; const st = document.createElement('style'); st.id = 'mk-css'; st.textContent = css; document.head.appendChild(st); }
 ensureCss();
-window.MKUI = {mkVowel, build, render, renderSoon, wheels, wheelPaint, panelInfo, probe, probeSheet, arpFrame: frame, arp: ARPC, randomize: randomizeMk, P, KN, fmtv, get, range, setv, wv, MKTAB,
+// K1 (Mod-Übersicht, Tipp): the value of a path ('t.1.p.2.i') on screen: its timbre, the GERÄT plate zoomed to the section of
+// its knob (if the plate has one) and the EDIT page that holds it (SEITEN-SPRUNG), the value on the LCD
+function k1JumpPath(path) {
+  const m = /^t\.([01])\./.exec(path); if (m) P.tim = +m[1] === 1 && dualOn() ? 2 : 1;
+  const rel = m ? 't.0.' + path.slice(4) : path;
+  if (P.view) viewClose();
+  if (P.tab !== 'geraet') tabTo('geraet');
+  const e = ELS.find(x => x.act && bindOf(x.id) === path), pg = pageOf(rel);
+  if (pg) { P.mode = 'edit'; goPage(pg[0], pg[1]); }
+  if (e && e.halt) { zoomTo(e.halt, true); P.lastKnob = defOf(e.id); }
+  renderSoon(); const d = pg ? curItem() : P.lastKnob; if (d) lcdOf(d);
+  return {halt: e ? e.halt || null : null, page: pg ? pg[0] : null};
+}
+window.MKUI = {k1: {jump: k1JumpPath}, mkVowel, build, render, renderSoon, wheels, wheelPaint, panelInfo, probe, probeSheet, arpFrame: frame, arp: ARPC, randomize: randomizeMk, P, KN, fmtv, get, range, setv, wv, MKTAB,
   lcdOf, seqInit, seqSwap, seqCopy, seqToolsPop, recArm, recCancel, recDone, knobSim, stepsInfo, stepsPaint, timCopy, timSwap, timInit, timCopyPop, leave, splitArm, splitOff, coverSync, coverOff, viewOpen, viewClose, splitNote, ownInfo,
   press, view, chrome, tabFast, lcdLines, lcdTap, pages, curItem, pageOf, defOf, bindOf, hitAt, haltAt, visRect, panelScript, ELS, SEC, HALTE, PL, mkPanelProg, zoomTo, toOverview, step, compare, note,
   progRefresh: () => { if (!P.el || !P.el.fr || !P.el.fr.isConnected) return; const s_ = sndOf(P.i); if (s_) { P.orig = null; P.origKey = ''; origSync(s_); } renderSoon(); }};
@@ -16594,7 +16617,7 @@ const INIT_VA_P = {o1w: 0, o1oct: 0, o1semi: 0, o1fine: 0, o1lvl: 1, o1uni: 1, o
 const INIT_SYNTH = [
   {id: 'f-init-analog', name: 'INIT Analog', cat: 'init', engine: 'analog', ev: 1, demo: 'lead', ref: 'Neutraler Startklang · Säge, Filter offen',
     tip: 'Ein Oszillator (Säge 8′), Filter ganz offen, keine Hüllkurve auf dem Filter, keine Modulation, keine Effekte. Von hier aus baust du deinen eigenen Klang.',
-    p: Object.assign({}, INIT_VA_P, {level: .457}), mods: [], fx: INIT_FX(), bus: null},
+    p: Object.assign({}, INIT_VA_P, {level: .457, analog: 0, o2fine: 0}), mods: [], fx: INIT_FX(), bus: null},   // K1 (K1-03): no drift, Osz 2 on 0 ct = 0 cent exactly
   {id: 'f-init-fm', name: 'INIT FM', cat: 'init', engine: 'fm6', ev: 1, demo: 'lead', ref: 'Neutraler Startklang · ein Sinus',
     tip: 'Algorithmus 1, nur OP 1 klingt (Sinus, Pegel 99), alle anderen Operatoren auf 0, kein Feedback. Dreh einen Modulator (OP 2) auf und hör, wie Obertöne entstehen.',
     p: {trans: 0, alg: 1, fb: 0, ops: [0, 1, 2, 3, 4, 5].map(k => ({on: 1, fixed: 0, coarse: 1, fine: 0, det: 0, ol: k ? 0 : 99, r: [99, 99, 99, 60], l: [99, 99, 99, 0], vs: 0, rs: 0}))},
@@ -27019,7 +27042,8 @@ function modFrame() {
   const i = R.selT, tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return;
   const sv = modLive(i);
   for (const k of ED.ctls) if (k.hasMod && k.anim) k.anim(k.dst.startsWith('fx.') ? MLIVE.svN : sv);
-  if (ED.msrc) for (const c of ED.msrc) { const v = clamp(sv[c.dataset.src] || 0, -1, 1); if (Math.abs(v - (c._v || 0)) > .004) { c._v = v; c._b.style.transform = 'scaleX(' + v.toFixed(3) + ')'; } }
+  const k1u = ED.msrc && sndOf(i) ? sndOf(i).mods : null, k1h = s => k1u.some(m => m.src === s);   // K1 (K1-03): a source chip moves only while a route of the sound uses it
+  if (ED.msrc) for (const c of ED.msrc) { const v = k1u && !k1h(c.dataset.src) ? 0 : clamp(sv[c.dataset.src] || 0, -1, 1); if (Math.abs(v - (c._v || 0)) > .004) { c._v = v; c._b.style.transform = 'scaleX(' + v.toFixed(3) + ')'; } }
   if (ED.mrows) for (const r of ED.mrows) { const v = Math.abs((String(r.m.dst).startsWith('fx.') ? MLIVE.svN : sv)[r.m.src] || 0), x = (.3 + .7 * clamp(v, 0, 1)).toFixed(2); if (r.x !== x) { r.x = x; r.bar.style.transform = 'scaleX(' + x + ')'; } }
 }
 
@@ -27900,8 +27924,9 @@ function originRec(snd) { const o = snd && snd.origin; if (!o) return null;
 function soundEdited(snd) {
   const rec = originRec(snd); if (!rec) return false;
   const key = snd.origin + ':' + LIB.ver;
-  if (OHASH.key !== key) { OHASH.key = key; const s = FACTORY_BY_ID.has(rec.id) ? factorySound(rec.id) : rec; OHASH.h = SQStore.soundHash(s); }
-  return SQStore.soundHash(snd) !== OHASH.h;
+  if (OHASH.key !== key) { OHASH.key = key; const s = FACTORY_BY_ID.has(rec.id) ? factorySound(rec.id) : rec; OHASH.h = SQStore.soundHash(s);
+    OHASH.h0 = rec.id === 'f-init-analog' ? SQStore.soundHash(Object.assign({}, s, {p: Object.assign({}, s.p, {analog: .15, o2fine: 7})})) : null; }   // K1: an INIT Analog of a project before 4.25.0 (drift 15 %, Osz 2 +7 ct) is not „geändert“
+  const h = SQStore.soundHash(snd); return h !== OHASH.h && h !== OHASH.h0;
 }
 
 // V2c′: „Eine Skala“ je Spur (Menü → Harmonie → Spuren)
@@ -28120,10 +28145,11 @@ function openEdMore(anchor, t) {
     const what = drum ? 'INIT Drums – jedes Pad seine Grundschicht' : (INIT_SYNTH.find(f => f.id === (INIT_IDS[engKey(tr.sound.engine)] || INIT_IDS.analog)) || INIT_SYNTH[0]).name + ' – neutraler Startklang';
     p.innerHTML = `<h4>${esc(tr.name)}</h4><div class="plist edmore"><button class="rb" data-a="init"><b>Init</b><small>${esc(what)}</small></button>` +
       (wiaHere ? `<button class="rb${UI.wia ? ' on' : ''}" data-a="wia"><b>◎ Was ist anders?</b><small>zeigt, welche Regler diesen Sound machen</small></button>` : '') +
+      (!drum ? `<button class="rb" data-a="k1m"><b>Modulationen (${k1Mods(t).length})</b><small>jede aktive Modulation · Tipp = zum Regler, ✕ = löschen</small></button>` : '') +   // K1
       (!drum && kbFest() ? `<button class="rb" data-a="kbpos"><b>Anschlag POSITION</b><small>Tastatur spielt fest 0,8 – Anschlag-Regler wirken nur bei Noten mit eigener VEL</small></button>` : '') +
       (!drum && tr.sound.engine === 'mk' && mkLoaded() ? '<button class="rb" data-a="tcopy"><b>Timbre kopieren ▸</b><small>UTILITY · aus einem gesicherten Sound</small></button><button class="rb" data-a="tswap"><b>Timbre tauschen</b><small>UTILITY · T1 ⇄ T2</small></button><button class="rb" data-a="tinit"><b>Timbre neu</b><small>UTILITY · das gewählte Timbre auf INIT</small></button><button class="rb" data-a="sqtools"><b>Sequenz-Werkzeuge ▸</b><small>UTILITY · neu, kopieren, tauschen</small></button>' : '') + '</div>';   // MK3
     guardTouch(p);
-    onTap(p, b => { closePop(); const a = b.dataset.a; if (a === 'init') initSound(t); else if (a === 'wia') wiaToggle(); else if (a === 'kbpos') kbVelPos();
+    onTap(p, b => { closePop(); const a = b.dataset.a; if (a === 'init') initSound(t); else if (a === 'wia') wiaToggle(); else if (a === 'kbpos') kbVelPos(); else if (a === 'k1m') openK1Mods(anchor, t);
       else if (a === 'tcopy') MKUI.timCopyPop(anchor, t); else if (a === 'tswap') MKUI.timSwap(t); else if (a === 'tinit') MKUI.timInit(t); else if (a === 'sqtools') MKUI.seqToolsPop(anchor, t); }, 'button[data-a]');
   }, {name: 'edmore'});
 }
@@ -31478,6 +31504,100 @@ function openModAdd(anchor, i) {
       if (!routeActive(i, {src: srcSel, dst: b.dataset.d})) toast('Gespeichert – hörbar nur mit dem Studio-Klang (Worklet)');
     }
   }, 'button');
+}
+
+/* ===== K1 (Nachtrag 5 K1, Punkt 3): Mod-Übersicht. Jede aktive Modulation des Klangs als eine Zeile Quelle → Ziel · Menge:
+   die Routen der Matrix, die fest eingebauten (Filter-Hüllkurve, Keytrack, Anschlag, Analog-Zufall je Note) und beim
+   AM-Klang (eng 3) Vibrato (LFO 2 × Mod-Rad), PATCH 1–4, die Intensitäten von Filter und Amp und die Mod-Sequenz. Tipp = zum Ziel-
+   Regler, ✕ = löschen (ein Undo-Schritt). Die Liste bewegt sich nicht: was sich bewegt, hat eine Zeile (K1-03). ===== */
+const k1Num = (v, d) => (Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d).replace('.', ',');
+const k1Sgn = (v, d, u) => (v > 0 ? '+' : v < 0 ? MINUS : '±') + k1Num(Math.abs(v), d) + (u ? ' ' + u : '');
+// the page of a flat key in the VA / FM / WT editor [tab, sub-tab]; a key without a page (or not on this engine) opens MOD
+const K1_PG = {fenv: ['filter', 'ctl'], kt: ['filter', 'ctl'], fvel: ['filter', 'ctl'], cutoff: ['filter', 'ctl'], res: ['filter', 'ctl'], drive: ['filter', 'ctl'],
+  analog: ['osc', 'mix'], o1lvl: ['osc', 'mix'], o2lvl: ['osc', 'mix'], o3lvl: ['osc', 'mix'], noise: ['osc', 'mix'], ampVel: ['osc', 'voice'], uniDet: ['osc', 'voice'],
+  o1pw: ['osc', 'o1'], o2semi: ['osc', 'o2'], fmBright: ['osc', 'makro'], 'fx.rev': ['fx', 'spur'], 'fx.dly': ['fx', 'spur'], 'fx.pan': ['fx', 'spur'], 'fx.vol': ['fx', 'spur']};
+const K1_RK = {o2pitch: 'o2semi', fmbright: 'fmBright'};   // route destination -> its knob (else MDST_PD)
+const K1_PSRC = ['EG 1', 'EG 2', 'LFO 1', 'LFO 2', 'Anschlag', 'Keytrack', 'Bend', 'Mod-Rad'];
+const K1_PDST = ['Tonhöhe', 'Osz 2 Tonhöhe', 'Osz 1 Steuer 1', 'Rauschen', 'Cutoff', 'Amp', 'Pan', 'LFO 2 Freq'];
+const K1_SQT = ['', 'Tonhöhe', 'Schrittlänge', 'Portamento', 'Osz 1 Steuer 1', 'Osz 1 Steuer 2', 'Osz 2 Halbton', 'Osz 2 Fein', 'Mixer Osz 1', 'Mixer Osz 2', 'Mixer Rauschen',
+  'Cutoff', 'Resonanz', 'HK-Int', 'Keytrack', 'Amp Pegel', 'Pan', 'F-HK Attack', 'F-HK Decay', 'F-HK Sustain', 'F-HK Release', 'A-HK Attack', 'A-HK Decay', 'A-HK Sustain', 'A-HK Release',
+  'LFO 1 Freq', 'LFO 2 Freq', 'Patch 1 Intens.', 'Patch 2 Intens.', 'Patch 3 Intens.', 'Patch 4 Intens.'];
+// the list of track i: [{key, src, dst, amt, kind: 'route' | 'p' | 'mk', path, val}], in the order of the engine
+function k1Mods(i) {
+  const s = sndOf(i); if (!s || s._nv) return [];
+  const P = s.p, out = [], add = (key, src, dst, amt, o) => out.push(Object.assign({key, src, dst, amt}, o));
+  if (s.engine === 'mk') {
+    const pm = P.mk; if (!pm || !Array.isArray(pm.t)) return out;
+    const W = SQMK.W(), dual = pm.mode === 1 || pm.mode === 2, voc = pm.mode === 3, mw = clamp(+mkWheelVal(i, 'mod', s) || 0, 0, 1);
+    for (let k = 0; k < (dual ? 2 : 1); k++) {
+      const T = pm.t[k], pre = dual ? 'T' + (k + 1) + ' · ' : '', tp_ = x => 't.' + k + '.' + x, mkI = (path, src, dst, v, amt) => { if (v) add(path, pre + src, dst, amt, {kind: 'mk', path, val: v}); };
+      if (T.vib) add(tp_('vib'), pre + 'LFO 2 × Mod-Rad', 'Tonhöhe', '±' + k1Num(Math.abs(W.vibCt(T.vib, mw)), 1) + ' ct (Mod-Rad ' + Math.round(mw * 100) + ' %, Tiefe ' + T.vib + ')', {kind: 'mk', path: tp_('vib'), val: T.vib});
+      if (!voc) T.p.forEach((q, j) => { if (q.i) add(tp_('p.' + j + '.i'), pre + 'Patch ' + (j + 1) + ': ' + K1_PSRC[q.s], K1_PDST[q.d], k1Sgn(q.i, 0), {kind: 'mk', path: tp_('p.' + j + '.i'), val: q.i}); });
+      mkI(tp_('f.eg'), 'EG 1', 'Cutoff', T.f.eg, k1Sgn(T.f.eg, 0));
+      mkI(tp_('f.kbd'), 'Keytrack', 'Cutoff', T.f.kbd, k1Sgn(T.f.kbd, 0));
+      mkI(tp_('f.vel'), 'Anschlag', 'Cutoff', T.f.vel, k1Sgn(T.f.vel, 0));
+      mkI(tp_('a.vel'), 'Anschlag', 'Amp', T.a.vel, k1Sgn(T.a.vel, 0));
+      mkI(tp_('a.kbd'), 'Keytrack', 'Amp', T.a.kbd, k1Sgn(T.a.kbd, 0));
+      if (!voc && T.seq && T.seq.on) T.seq.q.forEach((q, j) => { if (q.k > 0 && q.v.some(x => x)) add(tp_('seq.q.' + j + '.k'), pre + 'Mod-Sequenz ' + (j + 1), K1_SQT[q.k] || '?', q.v.filter(x => x).length + ' Schritte', {kind: 'mk', path: tp_('seq.q.' + j + '.k'), val: q.k}); });
+    }
+    return out;
+  }
+  const fm = s.engine === 'fm6', wk = isWkEngine(s.engine);
+  for (const m of s.mods) {
+    const src = MSRC[m.src], dst = MDST[m.dst]; if (!src || !dst) continue;
+    const rg = modRangeText(i, m);
+    add('r:' + m.src + ':' + m.dst, src.l, dst.l, fmtVal('bip', toKnobAmt(m.dst, m.amt)) + (rg ? ' · ' + rg : ''), {kind: 'route', m});
+  }
+  const pv = k => +sndGet(s, k) || 0;
+  if (pv('fenv')) add('p:fenv', 'Filter-Hüllk.', 'Cutoff', fmtVal(PD.fenv.fmt, pv('fenv')), {kind: 'p', p: 'fenv'});
+  if (pv('fvel') && pv('fenv')) add('p:fvel', 'Anschlag', 'Filter-Hüllk.-Menge', fmtVal(PD.fvel.fmt, pv('fvel')), {kind: 'p', p: 'fvel'});
+  if (pv('kt')) add('p:kt', 'Keytrack (Taste)', 'Cutoff', fmtVal(PD.kt.fmt, pv('kt')), {kind: 'p', p: 'kt'});
+  if (pv('ampVel')) add('p:ampVel', 'Anschlag', 'Lautstärke', fmtVal(PD.ampVel.fmt, pv('ampVel')), {kind: 'p', p: 'ampVel'});
+  // the worklet's analog drift (startVoice): pitch ±analog·8 ct per note, each oscillator ±analog·5 ct more, cutoff ±analog·1,5 HT
+  if (wk && pv('analog')) add('p:analog', 'Analog (Zufall je Note)', fm ? 'Tonhöhe' : 'Tonhöhe · Cutoff', 'bis ±' + k1Num(pv('analog') * (fm ? 8 : 13), 1) + ' ct' + (fm ? '' : ' · ±' + k1Num(pv('analog') * 1.5, 2) + ' HT'), {kind: 'p', p: 'analog'});
+  return out;
+}
+// ✕: one undo step; the engines get the change like a knob turn
+function k1Del(i, key) {
+  const e = k1Mods(i).find(x => x.key === key); if (!e) return false;
+  soundEdit(i, 'Modulation ' + e.src + ' → ' + e.dst + ' gelöscht', () => {
+    const s = sndOf(i);
+    if (e.kind === 'route') { s.mods = s.mods.filter(m => !(m.src === e.m.src && m.dst === e.m.dst)); modsChanged(i); }
+    else if (e.kind === 'p') setP(i, e.p, 0);
+    else if (e.kind === 'mk') { mkSetP(i, e.path, 0, false); if (mkLoaded()) MKUI.renderSoon(); }
+  });
+  toast('Gelöscht: ' + e.src + ' → ' + e.dst, {label: 'Rückgängig', fn: () => undo()});
+  return true;
+}
+// Tipp: the editor page with the target control (lit for 1,6 s); AM engine: the plate section and the LCD page of the value
+function k1Jump(i, key) {
+  const e = k1Mods(i).find(x => x.key === key), s = sndOf(i); if (!e || !s) return null;
+  if (R.editor !== 'synth' || R.selT !== i) return null;
+  if (e.kind === 'mk') { if (!mkLoad()) return null; return MKUI.k1 ? MKUI.k1.jump(e.path) : null; }
+  const k = e.kind === 'p' ? e.p : K1_RK[e.m.dst] || MDST_PD[e.m.dst], pg = k && K1_PG[k], subs = pg ? subTabsFor(pg[0], s.engine) : null;
+  if (!pg || (subs && !subs.some(x => x[0] === pg[1])) || (k === 'analog' && s.engine !== 'analog')) {
+    ED.tab = 'mod'; FXF.big = null; ED.modHl = e.kind === 'route' ? e.m.src + ':' + e.m.dst : null; safeRebuild(buildSynthEd); return 'mod';
+  }
+  ED.tab = pg[0]; if (subs) ED.sub[pg[0]] = pg[1]; FXF.big = null; safeRebuild(buildSynthEd);
+  const c = EL.synthSheet.querySelector('.sh-body [data-key="' + k + '"]');
+  if (c) { c.classList.add('k1hl'); try { c.scrollIntoView({block: 'nearest'}); } catch (_) {} setTimeout(() => c.classList.remove('k1hl'), 1600); }
+  return pg[0] + '/' + pg[1];
+}
+function openK1Mods(anchor, i) {
+  const render = p => {
+    const L = k1Mods(i), tr = S.tracks[i];
+    p.innerHTML = `<h4>Modulationen · ${esc(tr.name)}</h4>` + (L.length ? '<div class="k1ml pan-y">' + L.map(e =>
+      `<div class="k1mr" data-k="${esc(e.key)}"><button class="rb k1go" data-k="${esc(e.key)}"><b>${esc(e.src)} → ${esc(e.dst)}</b><small>${esc(e.amt)}</small></button>` +
+      `<button class="rb k1x" data-x="${esc(e.key)}" aria-label="Löschen: ${esc(e.src)} → ${esc(e.dst)}">✕</button></div>`).join('') + '</div>'
+      : '<div class="k1empty small">Keine Modulation – die Tonhöhe steht auf 0 Cent.</div>');
+  };
+  const p = openPop(anchor, render, {name: 'k1mods'}); p.classList.add('k1pop');
+  guardTouch(p);
+  onTap(p, b => {
+    if (b.dataset.x) { k1Del(i, b.dataset.x); render(p); popFit(p); return; }
+    if (b.dataset.k) { closePop(); k1Jump(i, b.dataset.k); }
+  }, 'button');
+  return p;
 }
 
 /* ---------- Sichern (§11.3): a user sound -> [Überschreiben] [Als neu]; otherwise straight to a new one, name prefilled ---------- */
@@ -42185,6 +42305,12 @@ const SYNQUENZER = {
   },
   browserRows: () => (R.editor === 'browser' ? brItems().map(f => ({id: f.id, name: f.name, engine: engKey(f.engine), role: f.engine === 'drum' ? 'drums' : soundRole(f)})) : []),
   initSound: t => { initSound(t); },
+  // K1 (Nachtrag 5): Mod-Übersicht (list without the route objects, ✕, Tipp, open), the engine's playing state, what it should play
+  k1Mods: t => k1Mods(t).map(e => ({key: e.key, src: e.src, dst: e.dst, amt: e.amt, kind: e.kind, path: e.path || null})),
+  k1Del: (t, key) => k1Del(t, key), k1Jump: (t, key) => k1Jump(t, key), k1Open: t => !!openK1Mods(null, t),
+  k1Dump: t => new Promise(res => { const E = AU.synth[t]; if (!E || E.dead) { res(null); return; } E.k1Dump = null; E.node.port.postMessage({k1Dump: 1}); const t0 = performance.now();
+    const w = () => { if (E.k1Dump) res(E.k1Dump); else if (performance.now() - t0 > 3000) res(null); else setTimeout(w, 15); }; w(); }),
+  k1Expect: t => { const s_ = sndOf(t); if (!s_) return null; return {flat: Object.assign(wkFlat(s_), {}), mods: wkMods(s_), mk: s_.engine === 'mk' ? deep(s_.p.mk) : null}; },
   // V0d (Nachtrag Teil D, A.4b): FM editor and maths
   fmDefaultOp: t => { const f = fmOf(t); if (!f) throw new Error('Keine Synth-Spur: ' + t); return fmDefaultOp(f); },
   // V4f (KP §7): + form, sus, la, lb, crv, run, zoom (the A.4b editor: of its operator in the graph; else the FELD / big point editor)
@@ -42327,7 +42453,7 @@ function init() {
   document.addEventListener('keyup', e => { try { onKeyUp(e); } catch (err) { logErr(err); } });
   window.addEventListener('blur', releaseEverything);
   // the autosave writes its rescue copy on pagehide / hidden (autosave.install); back in front while playing: wake lock again
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { releaseEverything(); idleSuspendArm(); } else { clearTimeout(UI.suspT); if (R.playing) wakeAcquire(); } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { releaseEverything(); idleSuspendArm(); } else { clearTimeout(UI.suspT); if (R.playing) wakeAcquire(); if (UI.idleSusp && AU.ctx && AU.ctx.state === 'suspended') { try { const q = AU.ctx.resume(); if (q && q.catch) q.catch(() => {}); } catch (e) {} } } });   // K1 (K1-02): resume
   window.addEventListener('pagehide', () => { releaseEverything(); });
   window.addEventListener('resize', () => { UI.kbRelayout = true; UI.dirty.carrier = true; MLIVE.lay++; if (UI.modSrc) requestAnimationFrame(modBannerPlace); if (UI.pop && !(document.activeElement && UI.pop.el.contains(document.activeElement) && document.activeElement.tagName === 'INPUT')) closePop(); });
   window.addEventListener('orientationchange', () => { UI.kbRelayout = true; UI.dirty.carrier = true; });
