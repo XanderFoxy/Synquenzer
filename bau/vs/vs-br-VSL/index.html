@@ -3468,6 +3468,14 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .stpop .st-vs{display:flex;gap:6px;margin-top:6px}
 .stpop .st-vs button{flex:1 1 0;min-width:0;min-height:44px;padding:0 6px;font-size:12px}
 .stpop .st-vs button.on{border-color:var(--t6);color:var(--t6);background:rgba(163,230,53,.12)}
+/* VS-L: Zeile „Melodieerkennung“ [An] [Aus] */
+.stpop .st-mel{display:flex;align-items:center;gap:8px;margin:0 0 6px}
+.stpop .st-mel>span{flex:1 1 auto;min-width:0;font-size:13px}
+.stpop .st-mel .seg{flex:0 0 auto}
+.stpop .st-mel .seg button{flex:0 0 auto;min-width:56px}
+.stpop .st-melx{margin:0 0 6px;color:var(--text-dim)}
+/* VS-L: Länge (AUTO … 16) im Aufnahme-Blatt und in den Einstellungen: Knöpfe ≥ 44 × 44 in allen Formaten */
+#roLen button,.mrow.rlen .seg button{height:44px;min-width:44px}
 .key.vs{box-shadow:inset 0 0 0 3px var(--t6),0 0 12px var(--t6)!important}
 .key.w.vs{background:linear-gradient(180deg,#f4ffe0 0%,#d9f99d 70%)!important}
 .key.b.vs{background:linear-gradient(180deg,#5a7d1c,#36500f)!important}
@@ -16298,7 +16306,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.23.0';
+const VERSION = '4.24.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -17078,7 +17086,7 @@ function normalizeProject(obj) {
     d.metroVol = normNum(s.metroVol, 0, 1, d.metroVol);
     d.metroInRec = normBool(s.metroInRec, d.metroInRec);
     d.countIn = s.countIn === true ? 1 : s.countIn === false ? 0 : [0, 1, 2].includes(s.countIn) ? s.countIn : d.countIn;
-    d.recLength = [1, 2, 4, 8].includes(s.recLength) ? s.recLength : 'auto';
+    d.recLength = [1, 2, 4, 8, 16].includes(s.recLength) ? s.recLength : 'auto';   // VS-L: + 16
     d.inQuant = normEnum(s.inQuant, IN_QUANTS, d.inQuant);
     d.kbScale = normEnum(s.kbScale, ['show', 'lock', 'off'], 'show');
     const co = s.coach && typeof s.coach === 'object' ? s.coach : {};
@@ -26169,7 +26177,7 @@ function popRecOpts(anchor) {
     const st = S.settings;
     p.style.maxWidth = '360px';
     p.innerHTML = `<h4>Aufnahme</h4>
-      <div class="grp"><span class="lbl">Länge</span>${segHTML('roLen', [['auto', 'AUTO'], [1, '1'], [2, '2'], [4, '4'], [8, '8']], st.recLength)}</div>
+      <div class="grp"><span class="lbl">Länge</span>${segHTML('roLen', [['auto', 'AUTO'], [1, '1'], [2, '2'], [4, '4'], [8, '8'], [16, '16']], st.recLength)}</div>
       <div class="grp" style="margin-top:10px"><span class="lbl">Quantisieren</span>${segHTML('roQ', QOPTS, st.inQuant)}</div>
       <div class="grp" style="margin-top:10px"><span class="lbl">Einzähler</span>${segHTML('roCi', [['0', 'Aus'], ['1', '1 Takt'], ['2', '2 Takte']], String(st.countIn))}</div>
       <button class="opt rb" id="roFang" style="margin-top:12px;min-height:48px"><b>FANG – Gespieltes einfangen</b><span>Was du gerade ohne Aufnahme gespielt hast, wird ein Clip, der im Takt weiterläuft.</span></button>`;
@@ -26181,7 +26189,7 @@ function popRecOpts(anchor) {
 }
 function setRecOptions(o) {
   const st = S.settings;
-  if (o.length !== undefined) st.recLength = [1, 2, 4, 8].includes(+o.length) ? +o.length : 'auto';
+  if (o.length !== undefined) st.recLength = [1, 2, 4, 8, 16].includes(+o.length) ? +o.length : 'auto';   // VS-L: + 16
   if (o.quantize !== undefined) st.inQuant = normEnum(o.quantize, IN_QUANTS, st.inQuant);
   if (o.countIn !== undefined) st.countIn = o.countIn === true ? 1 : o.countIn === false ? 0 : [0, 1, 2].includes(+o.countIn) ? +o.countIn : st.countIn;
   if (o.metroInRec !== undefined) st.metroInRec = !!o.metroInRec;
@@ -33848,7 +33856,7 @@ function openMenu(goto) {
   const bCoach = btn('? So funktioniert’s'); on(bCoach, 'click', () => { closeMenu(); showCoach(); }); row(s3, null, bCoach);
   // 4 Aufnahme
   const s4 = sec('Aufnahme', colR, 5);
-  row(s4, 'Länge', seg([['auto', 'AUTO'], [1, '1'], [2, '2'], [4, '4'], [8, '8']], () => st.recLength, v => setRecOptions({length: v})));
+  row(s4, 'Länge', seg([['auto', 'AUTO'], [1, '1'], [2, '2'], [4, '4'], [8, '8'], [16, '16']], () => st.recLength, v => setRecOptions({length: v}))).classList.add('rlen');   // VS-L: + 16, Knöpfe ≥ 44
   row(s4, 'Quantisieren', seg(QOPTS, () => st.inQuant, v => setRecOptions({quantize: v})));
   row(s4, 'Einzähler', seg([[0, 'Aus'], [1, '1 Takt'], [2, '2 Takte']], () => st.countIn, v => setRecOptions({countIn: v})));
   row(s4, 'Metronom bei Aufnahme', seg([[true, 'An'], [false, 'Aus']], () => st.metroInRec, v => setRecOptions({metroInRec: v})));
@@ -37655,7 +37663,7 @@ function stProf() {
     for (const k of Object.keys(ST_ROUTES)) { const p = o.prof[k]; if (p && typeof p.ms === 'number' && isFinite(p.ms) && p.ms > 0 && p.ms < 1000)
       out.prof[k] = {ms: p.ms, spread: +p.spread || 0, at: String(p.at || '').slice(0, 30), how: p.how === 'hand' ? 'hand' : 'gemessen', floorDb: isFinite(+p.floorDb) ? +p.floorDb : null, gainDb: isFinite(+p.gainDb) ? +p.gainDb : null, outMs: isFinite(+p.outMs) ? +p.outMs : null}; }
     if (ST_ROUTES[o.route]) out.route = o.route;
-    if (o.vs && typeof o.vs === 'object') out.vs = {src: o.vs.src === 'inst' ? 'inst' : 'voice', lock: !!o.vs.lock, snap: o.vs.snap !== false, grid: String(o.vs.grid || '1/16')};   // VS2
+    if (o.vs && typeof o.vs === 'object') out.vs = {src: o.vs.src === 'inst' ? 'inst' : 'voice', lock: !!o.vs.lock, snap: o.vs.snap !== false, grid: String(o.vs.grid || '1/16'), mel: o.vs.mel !== false};   // VS2; VS-L: mel = Melodieerkennung (fehlt = An)
   }
   return (ST.prof = out);
 }
@@ -38099,7 +38107,7 @@ function stSheet(anchor) {
   if (!micAvail()) return false;
   if (UI.pop && UI.pop.name === 'stimme') { stSheetFill(UI.pop.el); return true; }
   const a = anchor || (ST.ui.row && !ST.ui.row.hidden ? ST.ui.row : isLand() ? EL.bMicT : EL.segMic);
-  openPop(a, p => { p.classList.add('stpop'); guardTouch(p); stSheetFill(p); bindStSheet(p); }, {name: 'stimme'});
+  openPop(a, p => { p.classList.add('stpop', 'pan-y'); guardTouch(p); stSheetFill(p); bindStSheet(p); }, {name: 'stimme'});
   popFit(UI.pop && UI.pop.el); return true;
 }
 function stSheetFill(p) {
@@ -38122,18 +38130,22 @@ function stSheetFill(p) {
   if (ST.dropN) W.push(ST.dropN + ' Aussetzer markiert');
   if (W.length) html += '<div class="st-warn">' + W.map(x => '⚠ ' + esc(x)).join('<br>') + '</div>';
   const vc = vsCfg();                                          // VS2: Quelle, Einrasten, Oktave sperren (nur Instrument)
-  html += '<div class="st-lbl">Stimme → Noten</div>' + segHTML('vsSrc', [['voice', '🎤 Stimme'], ['inst', '🎸 Instrument']], vc.src) +
+  html += '<div class="st-lbl">Stimme → Noten</div>' + vsMelRowHTML(vc) + segHTML('vsSrc', [['voice', '🎤 Stimme'], ['inst', '🎸 Instrument']], vc.src) +
     `<div class="st-vs"><button class="rb${vc.snap ? ' on' : ''}" data-vs="snap" aria-pressed="${vc.snap}">${vc.snap ? '✓ In Tonart einrasten' : 'Frei (nicht einrasten)'}</button>` +
     (vc.src === 'inst' ? `<button class="rb${vc.lock ? ' on' : ''}" data-vs="lock" aria-pressed="${vc.lock}">${vc.lock ? '✓ ' : ''}Oktave sperren</button>` : '') + '</div>';
   html += `<div class="st-btns"><button class="rb st-cal"${!ST.on || cal || ST.phase !== 'live' ? ' disabled' : ''}>Einmessen</button><button class="rb st-go ${ST.on ? 'off' : ''}">${ST.on ? '✕ Mikro aus' : '🎤 Mikro an'}</button></div>`;
   html += `<p class="small st-hint">${rt === 'speaker' ? 'Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber.' : 'Zum Einmessen mit Kopfhörern einen Ohrhörer direkt ans Mikrofon halten.'}</p>`;
   if (p._h !== html) { p._h = html; p.innerHTML = html; }
 }
+// VS-L: Zeile „Melodieerkennung“ [An] [Aus]; bei Aus darunter der kurze Satz
+const vsMelRowHTML = vc => '<div class="st-mel"><span>Melodieerkennung</span>' + segHTML('vsMel', [['1', 'An'], ['0', 'Aus']], vc.mel ? '1' : '0') + '</div>' +
+  (vc.mel ? '' : '<p class="small st-melx">Aufnahme nur als Gesang auf der STIMME-Spur – keine Noten.</p>');
 const stDate = s => { const d = new Date(s); if (!isFinite(d)) return ''; const z = n => String(n).padStart(2, '0'); return z(d.getDate()) + '.' + z(d.getMonth() + 1) + '. ' + z(d.getHours()) + ':' + z(d.getMinutes()); };
 function bindStSheet(p) {
   onTap(p, b => {
     if (b.closest('#stRoute')) { haptic('tick'); stSetRoute(b.dataset.v, 'gewählt'); return; }
     if (b.closest('#vsSrc')) { haptic('tick'); vsCfgSet({src: b.dataset.v}); return; }      // VS2
+    if (b.closest('#vsMel')) { haptic('tick'); vsCfgSet({mel: b.dataset.v === '1'}); popFit(p); return; }   // VS-L
     if (b.dataset.vs === 'snap') { haptic('tick'); vsCfgSet({snap: !vsCfg().snap}); return; }
     if (b.dataset.vs === 'lock') { haptic('tick'); vsCfgSet({lock: !vsCfg().lock}); return; }
     if (b.dataset.nd) { stNudge(+b.dataset.nd); return; }
@@ -38596,7 +38608,7 @@ const VS_GRIDS = {frei: 0, '1/16': 0.25, '1/8': 0.5};
 function vsCfg() {
   if (VS.cfg) return VS.cfg;
   const v = stProf().vs || {};
-  return (VS.cfg = {src: v.src === 'inst' ? 'inst' : 'voice', lock: !!v.lock, snap: v.snap !== false, grid: VS_GRIDS[v.grid] != null ? v.grid : '1/16'});
+  return (VS.cfg = {src: v.src === 'inst' ? 'inst' : 'voice', lock: !!v.lock, snap: v.snap !== false, grid: VS_GRIDS[v.grid] != null ? v.grid : '1/16', mel: v.mel !== false});
 }
 function vsCfgSet(p) {
   const c = vsCfg(); p = p || {};
@@ -38604,6 +38616,7 @@ function vsCfgSet(p) {
   if (p.lock != null) c.lock = !!p.lock;
   if (p.snap != null) c.snap = !!p.snap;
   if (p.grid != null && VS_GRIDS[p.grid] != null) c.grid = p.grid;
+  if (p.mel != null) c.mel = !!p.mel;                                 // VS-L: Melodieerkennung An │ Aus (Gerät, nicht Projekt)
   stProf().vs = Object.assign({}, c); stProfSave(); vsLiveCfg();
   if (UI.pop && UI.pop.name === 'stimme') stSheetFill(UI.pop.el);
   return Object.assign({}, c);
@@ -38782,6 +38795,7 @@ function vsFang(o) {
   VS.job = job;
   vsWhenData(b2t(until), ok => {
     if (!ok) { VS.busy = 0; toast('Mikrofon liefert gerade nichts – noch mal FANG'); return; }
+    if (job.cfg.mel === false) { vsFangVoice(job).catch(e => { VS.busy = 0; logErr(e); }); return; }   // VS-L: Melodieerkennung Aus
     vsAnalyse(b2t(from), b2t(until), job.cfg).then(A => vsFangDone(job, A)).catch(e => { VS.busy = 0; VS.err = String(e && e.message || e); logErr(e); toast('Auswertung fehlgeschlagen'); });
   });
   return true;
@@ -38824,6 +38838,7 @@ function vsRecEnd(endBeat) {
   const until = Math.min(r.end, R.playing && AU.ctx ? audBeat() + 4 : r.end);
   vsWhenData(b2t(until), ok => {
     if (!ok) { VS.busy = 0; return; }
+    if (r.cfg.mel === false) { vsRecVoice(r); return; }                   // VS-L: Melodieerkennung Aus
     vsAnalyse(b2t(Math.max(0, r.start - 0.5)), b2t(until), r.cfg).then(A => vsRecDone(r, A, until)).catch(e => { VS.busy = 0; logErr(e); });
   });
 }
@@ -38841,6 +38856,55 @@ function vsRecDone(r, A, until) {
   VS.res = res; markDirty(); UI.dirty.all = true;
   vsResSheet();
   return true;
+}
+/* VS-L (Nachtrag 4 L.2): „Melodieerkennung Aus“ – ● REC und Stimme-FANG nehmen nur Gesang auf: STIMME-Take und STIMME-Clip wie
+   heute, kein MELODIE-Clip, keine Noten, kein Ergebnis-Blatt, keine Tonhöhen-Auswertung (VS.runs bleibt); ein Undo (tkVoiceTake) */
+const vsVoiceToast = tk => { if (tk) toast('Gesang aufgenommen · ' + tk.len + (tk.len === 1 ? ' Takt' : ' Takte')); };
+function vsRecVoice(r) {
+  VS.busy = 0; if (!tkAudioOk()) return false;
+  let tk = null; try { tk = tkVoiceTake({kind: 'rec', si: r.scene, a: r.start, b: r.end, cs: r.start, len: clamp(Math.round((r.end - r.start) / 4), 1, 16), mel: null, top: null}); } catch (e) { logErr(e); }
+  vsVoiceToast(tk); VS.lastRecVoice = tk ? {scene: tk.scene, len: tk.len} : null;
+  return !!tk;
+}
+// Stimme-FANG bei Aus: der gesungene Abschnitt nach derselben Pausen-Regel (vsPhrase: Pause ≥ 1 Takt, höchstens 16 Takte), aus dem Pegel der Stimme
+async function vsFangVoice(job) {
+  const ns = await vsLevelNotes(b2t(job.from), b2t(job.until));
+  VS.busy = 0;
+  const ph = ns && ns.length ? vsPhrase(ns, job.E, job.until) : null;
+  if (!ph || !ph.length) { toast('Nichts gesungen erkannt – erst singen, dann FANG'); VS.lastFang = {notes: 0, mel: false}; return false; }
+  const Eb = job.res.Eb, sb = Math.max(0, Math.floor((ph[0].b + 0.25) / 4 + 1e-9)), span = Math.max(1, Eb - sb);   // wie vsFangDone
+  let len = 1; while (len < span) len *= 2; len = Math.min(16, len);
+  let start = Eb - len; if (start < 0) { start = 0; len = Math.max(1, Eb); }
+  const si = vsMelFree(); if (si < 0) { toast('Kein freier Platz in MELODIE'); return false; }
+  if (!tkAudioOk()) return false;
+  let tk = null; try { tk = tkVoiceTake({kind: 'fang', si, a: start * 4, b: (start + len) * 4, cs: start * 4, len, mel: null, top: null}); } catch (e) { logErr(e); }
+  VS.lastVoice = -1e9;
+  VS.lastFang = {si, len, start, Eb, rule: job.res.rule, notes: 0, mel: false, regions: ns.length};
+  vsVoiceToast(tk);
+  return !!tk;
+}
+// Pegel der Stimme (Mikro, beim Lautsprecher nach dem Echo-Abzug wie der Noten-Weg) über [ta, tb) → gesungene Stücke als {b, d} (Schläge)
+async function vsLevelNotes(ta, tb) {
+  const G = ST.ring; if (!G || G.end < 0) return null;
+  const sr = G.sr, lat = F => stLatAt(F) * sr / 1000, Fa = Math.round(ta * sr), Fb = Math.round(tb * sr);
+  const pad = Math.round(0.06 * sr), s = stRead(Fa + lat(Fa) - pad, Fb + lat(Fb) + pad, {d16: true}); if (!s || !s.d16 || s.d16.length < 600) return null;
+  const x = (await clNotes(s)) || s.d16, d0 = s.d0, fs = sr / 3, W = Math.round(fs * 0.02), hop = Math.round(fs * 0.01), nF = Math.max(0, Math.floor((x.length - W) / hop) + 1);
+  if (!nF) return [];
+  const db = new Float32Array(nF);
+  for (let i = 0; i < nF; i++) { let q = 0; const o = i * hop; for (let j = 0; j < W; j++) { const v = x[o + j]; q += v * v; } db[i] = 10 * Math.log10(q / W + 1e-12); }
+  const so = Array.from(db).sort((a, b) => a - b), pc = p => so[Math.min(so.length - 1, Math.floor(p * so.length))];
+  const fl = ST.floorDb != null && isFinite(ST.floorDb) ? Math.min(ST.floorDb, pc(0.05)) : pc(0.05), top = pc(0.99);
+  const gate = Math.min(top - 10, Math.max(fl + 15, top - 30, -60));
+  const beatOf = i => { const M = 3 * (d0 + i * hop + W / 2) + 2 - 23; return t2b((M - lat(M)) / sr); };
+  const out = [], minF = Math.round(0.06 / 0.01);
+  for (let i = 0; i < nF;) {
+    if (db[i] < gate) { i++; continue; }
+    let k = i; while (k < nF && db[k] >= gate) k++;
+    if (k - i >= minF) { const b0 = beatOf(i), b1 = beatOf(k - 1); out.push({b: b0, d: Math.max(1 / 32, b1 - b0)}); }
+    i = k;
+  }
+  VS.lastLevel = {gate: +gate.toFixed(1), floor: +fl.toFixed(1), top: +top.toFixed(1), frames: nF, parts: out.length};
+  return out;
 }
 // schreibt die Noten des Ergebnisses in den Clip (erster Aufruf: ein Undo-Schritt „Stimme“; danach nur ändern)
 function vsApply(res) {
@@ -39455,12 +39519,15 @@ function tkVoiceTake(o) {
   const st = tkEnsureTrack(items);
   if (st < 0) { toast('Kein Platz für die STIMME-Spur – eine Zusatzspur leeren'); return null; }
   const tr = S.tracks[st], old = tr.clips[o.si], before = old ? cleanClip(old) : null;
-  const L = (old && old.audio ? old.len : o.len) * 4, sp = spb();
+  let L = (old && old.audio ? old.len : o.len) * 4, grow = 0, gcs = o.cs; const sp = spb();
   // Overdub auf einem laufenden Audio-Clip: ein voller Durchgang am Clip-Raster (der jüngste), sonst ab dem Anfang der Aufnahme
   let a = o.a, at = 0;
   if (old && old.audio) {
     const ph = R.playing && R.slot[st] === o.si && !R.pend[st] ? R.cstart[st] : o.cs; let c0 = ph + Math.floor((o.b - L - ph) / L + 1e-9) * L; if (c0 + L > o.b + 1e-6) c0 -= L;
-    if (c0 >= o.a - 0.25) { a = c0; at = 0; } else { a = o.a; at = ((o.a - ph) % L + L) % L; }
+    // VS-L (Nachtrag 4 L.1.2): länger als der alte Clip → der Clip wird so lang wie die neue Aufnahme (ganze Takte ab dem Takt ihres Anfangs, ≤ 16), der Take ist die ganze Aufnahme
+    const g0 = ph + Math.floor((o.a - ph) / 4 + 1e-9) * 4, nb = clamp(Math.round((o.b - g0) / 4), 1, 16);
+    if (nb > old.len) { grow = nb; L = nb * 4; gcs = g0; if (o.a - g0 <= 0.25) { a = g0; at = 0; } else { a = o.a; at = o.a - g0; } }
+    else if (c0 >= o.a - 0.25) { a = c0; at = 0; } else { a = o.a; at = ((o.a - ph) % L + L) % L; }
   }
   const b = Math.min(o.b, a + L - at);
   const job = {kind: o.kind};
@@ -39474,6 +39541,7 @@ function tkVoiceTake(o) {
     const prev = {take: clip.audio.take, in: clip.audio.in, out: clip.audio.out, at: clip.audio.at};
     Object.assign(clip.audio, seg);
     clip.audio.alt = [prev].concat(clip.audio.alt || []).slice(0, 16);
+    if (grow) clip.len = grow;                                   // VS-L
   } else {
     const k = sceneKeyOf(o.si) || S.key;
     clip = {len: clamp(Math.round(L / 4), 1, 16), key: {root: k.root, scale: k.scale, src: 'auto'}, notes: [], audio: tkNormAudio(seg)};
@@ -39486,11 +39554,11 @@ function tkVoiceTake(o) {
   its.push({kind: 'clip', track: st, scene: o.si, before});
   undoPush({kind: 'group', label: 'Stimme', items: its, tk: 1});
   // läuft phasengleich weiter (wie der MELODIE-Clip), ein Overdub klingt sofort mit dem neuen Take
-  if (R.playing) { if (R.slot[st] === o.si && !R.pend[st]) tkTrackResync(st); else switchTrackAt(st, o.si, nextBarFromAudible(), old && old.audio ? undefined : o.cs); }
+  if (R.playing) { if (grow) switchTrackAt(st, o.si, nextBarFromAudible(), gcs); else if (R.slot[st] === o.si && !R.pend[st]) tkTrackResync(st); else switchTrackAt(st, o.si, nextBarFromAudible(), old && old.audio ? undefined : o.cs); }   // VS-L: der längere Clip läuft ab dem Takt der Aufnahme
   clipChanged(st, o.si);
   tkOriginHint();
   markDirty(); UI.dirty.all = true;
-  return {track: st, scene: o.si, take: tk.id};
+  return {track: st, scene: o.si, take: tk.id, len: clip.len};
 }
 
 /* ---------- Punch im Song (S5-Rückfrage: Überschreiben / Einfügen / Ersetzen / Overdub, Bereich) ---------- */
@@ -41906,6 +41974,7 @@ const SYNQUENZER = {
   vsResultDrop: () => vsResDrop(),
   vsResultOk: () => { const ok = !!VS.res; VS.res = null; if (UI.pop && UI.pop.name === 'vsres') closePop(); return ok; },
   vsAnalyseRange: (a, b) => vsAnalyse(b2t(a), b2t(b)).then(A => (A ? vsNotesOf(A, {snap: vsCfg().snap}) : null)),
+  vsVoiceOnly: () => ({mel: vsCfg().mel, level: VS.lastLevel || null, rec: VS.lastRecVoice || null}),   // VS-L: Melodieerkennung Aus (Pegel-Phrase, letzter Gesang-Take)
 
   // VO1 Online (online.md §7.6)
   cloud: () => ({state: SYNC.state, where: SYNC.where, live: !!(CLOUD.live || window.__synqFakeSupa), appCode: APP_CODE, user: SYNC.uid && SYNC.me ? {id: SYNC.uid, name: SYNC.me.name, code: SYNC.me.code, admin: !!SYNC.me.admin} : null,

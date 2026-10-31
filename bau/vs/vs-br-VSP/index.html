@@ -16298,7 +16298,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.23.0';
+const VERSION = '4.24.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -39146,7 +39146,7 @@ function tkLoad(id) {
   const p = tkPcm(id).then(pcm => {
     TK.wait.delete(id);
     if (!pcm) { TK.missing.add(id); UI.dirty.grid = UI.dirty.song = true; return; }
-    const b = tkToBuffer(pcm, m.sr); if (b) TK.buf.set(id, b);
+    const b = tkToBuffer(pcm, m.sr); if (b) TK.buf.set(id, vpKick(b));   // VS-P: messen, sobald das Audio geladen ist
     UI.dirty.grid = UI.dirty.song = true;
     if (R.playing) { tkVoxResync(true); const st = stimmeT(); if (st >= 0) tkTrackResync(st); }
   }, e => { TK.wait.delete(id); TK.missing.add(id); logErr(e); });
@@ -39180,8 +39180,8 @@ function tkReadMic(G, a, b, out, base) {
 }
 // der Puffer, der gespielt wird: VS4 / VS5 können je Take einen eigenen liefern (tkExt().proc), sonst der Roh-Take
 function tkPlayBuf(id, a) {
-  for (const f of tkExt().proc) { try { const b = f(id, a); if (b) return b; } catch (e) { logErr(e); } }
-  return tkBuffer(id);
+  for (const f of tkExt().proc) { try { const b = f(id, a); if (b) return vpKick(b); } catch (e) { logErr(e); } }
+  return vpKick(tkBuffer(id));                                    // VS-P: die klingende Fassung wird gemessen (Auto-Pegel)
 }
 // Hüllkurve für die Anzeige (Wellenform): 96 Werte 0…1 (Spitze je Abschnitt), aus dem Cache
 // F1: die Hüllkurve zeigt, was klingt (gesäubert und/oder gedehnt/geschnitten), nicht den Roh-Take
@@ -39260,6 +39260,172 @@ function tkQWatch() {
   if (TK.q.has('fang') && !TK.fangJob && TK.writes === 0) tkQ('fang', false);
 }
 
+/* ---------- VS-P (Nachtrag 4): Stimme im Mix – Auto-Pegel je Take + Spitzen-Schutz ----------
+   Gemessen wird die Fassung, die klingt (Roh, gesäubert, gedehnt: je AudioBuffer einmal, Cache WeakMap): integrierte Lautheit nach
+   ITU-R BS.1770-4 (K-Filter, 400-ms-Blöcke, 75 % Überlappung, Gate −70 LUFS absolut / −10 LU relativ). Der Ausgleich ergibt am Ausgang
+   der STIMME-Spur bei Pegel-Standard (0,8, Mitte) −16 LUFS (Spur-Ausgang stereo L = R: +3,01 dB; Pegel 0,8² = −3,88 dB), −12 … +24 dB.
+   Pegel-Regler, Pan, Mute und Sends wirken wie bisher zusätzlich. Spitzen-Schutz: aus demselben Puffer eine Hüllkurve (alle 16 Samples)
+   – wahre Spitze (4× Überabtastung) des ausgeglichenen Takes ≤ −1,3 dBTP vor dem Pegel-Regler, 2 ms Vorschau, 100 ms Freigabe; weil der
+   Take vorher bekannt ist, wird nichts verzögert (keine Verschiebung gegen die anderen Spuren). Die Hüllkurve wirkt als eigener GainNode
+   nur in Stücken, die eine Spitze enthalten. Nichts davon steht im Projekt; WAV/ZIP bleiben der Roh-Take.
+   Gerechnet wird in Häppchen ≤ 6 ms im Hauptfaden (kein langer Task). Ein Stück, das spät einsetzen würde (Take gerade fertig/geladen),
+   wartet darauf wie ein Take, der noch lädt; eines, das pünktlich beginnen muss, rechnet den Rest sofort. */
+const VP_LUFS = -16, VP_REF = .8, VP_LO = -12, VP_HI = 24, VP_CEIL = Math.pow(10, -1.3 / 20), VP_K = 16, VP_ATT = .002, VP_REL = .1, VP_SLICE = 6;
+const VP = {m: new WeakMap(), q: [], qs: new WeakSet(), t: 0, runs: 0, sync: 0, gated: 0, maxMs: 0, err: 0, last: null};
+function vpKco(fs) {
+  let f0 = 1681.974450955533, G = 3.999843853973347, Q = 0.7071752369554196, K = Math.tan(Math.PI * f0 / fs), Vh = Math.pow(10, G / 20), Vb = Math.pow(Vh, 0.4996667741545416);
+  let a0 = 1 + K / Q + K * K; const s = [(Vh + Vb * K / Q + K * K) / a0, 2 * (K * K - Vh) / a0, (Vh - Vb * K / Q + K * K) / a0, 2 * (K * K - 1) / a0, (1 - K / Q + K * K) / a0];
+  f0 = 38.13547087602444; Q = 0.5003270373238773; K = Math.tan(Math.PI * f0 / fs); a0 = 1 + K / Q + K * K;
+  return s.concat([2 * (K * K - 1) / a0, (1 - K / Q + K * K) / a0]);
+}
+// 4×-Überabtastung (Kaiser-Sinc, 48 Abgriffe je Phase) für die wahre Spitze
+let VP_TP = null;
+function vpTp() {
+  if (VP_TP) return VP_TP;
+  const N = 48, out = [], I0 = x => { let s = 1, t = 1; for (let k = 1; k < 30; k++) { t *= (x / 2 / k) ** 2; s += t; } return s; };
+  for (let ph = 1; ph < 4; ph++) { const h = new Float32Array(N); for (let j = 0; j < N; j++) { const t = j - N / 2 + 1 - ph / 4, w = I0(8 * Math.sqrt(Math.max(0, 1 - (t / (N / 2)) ** 2))) / I0(8); h[j] = (t === 0 ? 1 : Math.sin(Math.PI * t) / (Math.PI * t)) * w; } out.push(h); }
+  return (VP_TP = out);
+}
+function vpJob(b) {
+  const d = b.getChannelData(0), sr = b.sampleRate, Q = Math.max(1, Math.round(sr * .1));
+  return {b, d, sr, n: d.length, Q, nq: Math.floor(d.length / Q), e: new Float64Array(Math.floor(d.length / Q)), q: 0, z: [0, 0, 0, 0, 0, 0], co: vpKco(sr), pk: 0,
+    st: 0, i: 0, lastK: -2, need: null, ms: 0, r: null};
+}
+// ein Häppchen (bis „until“, performance.now()); true = fertig (J.r)
+function vpStep(J, until) {
+  const t0 = performance.now(), d = J.d, n = J.n;
+  if (J.st === 0) {
+    const c = J.co, b0 = c[0], b1 = c[1], b2 = c[2], a1 = c[3], a2 = c[4], c1 = c[5], c2 = c[6], Q = J.Q, z = J.z;
+    let x1 = z[0], x2 = z[1], y1 = z[2], y2 = z[3], z1 = z[4], z2 = z[5], pk = J.pk;
+    while (J.q < J.nq) {
+      let acc = 0; const end = (J.q + 1) * Q;
+      for (let i = J.q * Q; i < end; i++) {
+        const x = d[i], y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = x;
+        const w = y - 2 * y1 + y2 - c1 * z1 - c2 * z2; y2 = y1; y1 = y; z2 = z1; z1 = w; acc += w * w;
+        const ax = x < 0 ? -x : x; if (ax > pk) pk = ax;
+      }
+      J.e[J.q++] = acc / Q;
+      if ((J.q & 3) === 0 && performance.now() > until) break;
+    }
+    z[0] = x1; z[1] = x2; z[2] = y1; z[3] = y2; z[4] = z1; z[5] = z2; J.pk = pk;
+    if (J.q < J.nq) { J.ms += performance.now() - t0; return false; }
+    for (let i = J.nq * J.Q; i < n; i++) { const ax = d[i] < 0 ? -d[i] : d[i]; if (ax > J.pk) J.pk = ax; }
+    // integrierte Lautheit (Blöcke aus 4 Viertelblöcken), Gate −70 absolut, −10 relativ
+    const bl = [], L = v => -0.691 + 10 * Math.log10(v + 1e-30);
+    for (let k = 0; k + 4 <= J.nq; k++) { const v = (J.e[k] + J.e[k + 1] + J.e[k + 2] + J.e[k + 3]) / 4; if (L(v) > -70) bl.push(v); }
+    let lufs = -Infinity;
+    if (bl.length) { const rel = L(bl.reduce((a, v) => a + v, 0) / bl.length) - 10, g2 = bl.filter(v => L(v) > rel); if (g2.length) lufs = L(g2.reduce((a, v) => a + v, 0) / g2.length); }
+    const gDb = isFinite(lufs) ? clamp(VP_LUFS - 10 * Math.log10(2) - 20 * Math.log10(VP_REF * VP_REF) - lufs, VP_LO, VP_HI) : 0;
+    J.r = {lufs: isFinite(lufs) ? +lufs.toFixed(2) : null, gDb: +gDb.toFixed(2), g: Math.pow(10, gDb / 20), pk: J.pk, env: null, segs: [], K: VP_K, grDb: 0};
+    J.e = null; J.st = J.pk * J.r.g > VP_CEIL * .7 ? 1 : 3;
+  }
+  if (J.st === 1) {
+    // Spitzen: wo der ausgeglichene Take über −4 dB unter der Grenze liegt, Abtastwert und Zwischenwerte (wahre Spitze) prüfen
+    const g = J.r.g, thr = VP_CEIL * .7 / g, H = vpTp(), K = VP_K, nb = Math.ceil(n / K) + 2;
+    const need = J.need || (J.need = new Float32Array(nb).fill(1));
+    const put = (i, v) => { const a = v * g; if (a <= VP_CEIL) return; const q = VP_CEIL / a, k = (i / K) | 0; if (q < need[k]) need[k] = q; if (q < need[k + 1]) need[k + 1] = q; };
+    let i = J.i;
+    while (i < n) {
+      const end = Math.min(n, i + 8192);
+      for (; i < end; i++) {
+        const a = d[i] < 0 ? -d[i] : d[i]; if (a < thr) continue;
+        put(i, a);
+        for (let k = Math.max(J.lastK + 1, i - 1); k <= i; k++) {
+          if (k < 23 || k + 24 >= n) continue;
+          let m = 0;
+          for (const h of H) { let s = 0; for (let j = 0; j < 48; j++) s += h[j] * d[k - 23 + j]; const as = s < 0 ? -s : s; if (as > m) m = as; }
+          put(k, m); put(k + 1, m); J.lastK = k;
+        }
+      }
+      if (performance.now() > until) break;
+    }
+    J.i = i;
+    if (i < n) { J.ms += performance.now() - t0; return false; }
+    J.st = 2;
+  }
+  if (J.st === 2) {
+    // Hüllkurve: Minimum über die Vorschau (A Punkte), Freigabe exponentiell, dann gleitender Mittelwert über A (≤ Bedarf an jedem Punkt)
+    const need = J.need, nb = need.length, A = Math.max(1, Math.round(VP_ATT * J.sr / VP_K)), rk = Math.exp(-VP_K / (VP_REL * J.sr));
+    const e = new Float32Array(nb), env = new Float32Array(nb);
+    let prev = 1;
+    for (let b = 0; b < nb; b++) { let h = 1; for (let j = b; j < b + A && j < nb; j++) if (need[j] < h) h = need[j]; const r = 1 - (1 - prev) * rk; prev = h < r ? h : r; e[b] = prev; }
+    let sum = A, lo = 1;   // Werte vor dem Anfang = 1
+    for (let b = 0; b < nb; b++) { sum += e[b] - (b - A >= 0 ? e[b - A] : 1); const v = sum / A; env[b] = v > 1 ? 1 : v; if (v < lo) lo = v; }
+    const segs = []; let s0 = -1, last = -10;
+    for (let b = 0; b < nb; b++) {
+      if (env[b] >= 1 - 1e-4) continue;
+      if (s0 >= 0 && b - last <= 4) { last = b; continue; }
+      if (s0 >= 0) segs.push([Math.max(0, s0 - 1), Math.min(nb - 1, last + 1)]);
+      s0 = b; last = b;
+    }
+    if (s0 >= 0) segs.push([Math.max(0, s0 - 1), Math.min(nb - 1, last + 1)]);
+    J.r.env = env; J.r.segs = segs; J.r.grDb = +(-20 * Math.log10(Math.max(1e-6, lo))).toFixed(2); J.need = null; J.st = 3;
+  }
+  J.ms += performance.now() - t0; J.r.ms = +J.ms.toFixed(1); J.r.sec = +(n / J.sr).toFixed(2);
+  return true;
+}
+function vpFinish(J) { VP.m.set(J.b, J.r); VP.runs++; VP.last = J.r; const k = VP.q.indexOf(J); if (k >= 0) VP.q.splice(k, 1); VP.qs.delete(J.b); J.d = null; }
+function vpPump() {
+  VP.t = 0; const t0 = performance.now(); let done = false;
+  while (VP.q.length && performance.now() - t0 < VP_SLICE) {
+    const J = VP.q[0];
+    try { if (vpStep(J, t0 + VP_SLICE)) { vpFinish(J); done = true; } } catch (e) { VP.err++; logErr(e); vpFinish(Object.assign(J, {r: {lufs: null, gDb: 0, g: 1, pk: 0, env: null, segs: [], K: VP_K, grDb: 0}})); }
+  }
+  const ms = performance.now() - t0; if (ms > VP.maxMs) VP.maxMs = +ms.toFixed(1);
+  if (VP.q.length) VP.t = setTimeout(vpPump, 0);
+  if (done && R.playing && AU.ctx) { try { clResync(); } catch (e) { logErr(e); } }   // wartende Fassungswechsel (Säubern, Dehnen) jetzt
+}
+// den Puffer (sobald er klingen kann) zum Messen anmelden; gibt ihn zurück
+function vpKick(b) {
+  if (b && !VP.m.has(b) && !VP.qs.has(b)) { VP.qs.add(b); VP.q.push(vpJob(b)); if (!VP.t) VP.t = setTimeout(vpPump, 0); }
+  return b;
+}
+// gemessen? now = true: den Rest sofort rechnen (ein Stück muss pünktlich beginnen)
+function vpReady(b, now) {
+  if (!b || VP.m.has(b)) return true;
+  vpKick(b);
+  if (!now) { VP.gated++; return false; }
+  const J = VP.q.find(x => x.b === b); VP.sync++;
+  try { vpStep(J, Infinity); vpFinish(J); } catch (e) { VP.err++; logErr(e); vpFinish(Object.assign(J, {r: {lufs: null, gDb: 0, g: 1, pk: 0, env: null, segs: [], K: VP_K, grDb: 0}})); }
+  return true;
+}
+function vpGet(b) { if (!b) return null; vpReady(b, true); return VP.m.get(b) || null; }
+// Spitzen-Schutz eines Abspiel-Stücks: GainNode mit der Hüllkurve, nur wenn das Stück eine Spitze enthält (sonst null)
+function vpLim(c, V, sr, when, off, end) {
+  if (!V || !V.env || !V.segs.length) return null;
+  const T = V.K / sr, b0 = off / T, b1 = (off + (end - when)) / T, env = V.env;
+  let n = null;
+  for (const [s0, s1] of V.segs) {
+    if (s1 <= b0 || s0 > b1 + 1) continue;
+    if (!n) { n = c.createGain(); n.gain.value = 1; }
+    const p = n.gain, k0 = Math.max(s0, Math.ceil(b0)), k1 = Math.min(s1, Math.ceil(b1) + 1), tc = when + k0 * T - off;
+    try {
+      if (k0 > s0 && tc > when + 1e-6) p.setValueAtTime(Math.min(env[k0 - 1], env[k0]), when);   // Stück beginnt in der Kurve
+      if (k1 > k0) p.setValueCurveAtTime(env.subarray(k0, k1 + 1), tc, (k1 - k0) * T);
+      else p.setValueAtTime(env[k0], tc);
+    } catch (e) {
+      VP.err++; let mn = 1; for (let k = Math.max(0, k0 - 1); k <= k1; k++) if (env[k] < mn) mn = env[k];
+      try { p.cancelScheduledValues(0); p.setValueAtTime(mn, when); } catch (e2) {}
+      break;
+    }
+  }
+  return n;
+}
+const VP_API = {
+  // Test-Info: je Take die Messung der klingenden Fassung (und des Roh-Takes)
+  vpInfo: () => {
+    const takes = {};
+    for (const id of Object.keys(S.takes || {})) {
+      const raw = tkBuffer(id); let pl = null; try { pl = tkPlayBuf(id, null); } catch (e) {}
+      const f = r => r ? {lufs: r.lufs, gDb: r.gDb, pkDb: r.pk > 0 ? +(20 * Math.log10(r.pk)).toFixed(2) : null, lim: r.segs.length, grDb: r.grDb, ms: r.ms, sec: r.sec} : null;
+      takes[id] = {raw: f(raw && VP.m.get(raw)), heard: f(pl && VP.m.get(pl)), heardIsRaw: !!pl && pl === raw};
+    }
+    return {target: VP_LUFS, runs: VP.runs, sync: VP.sync, gated: VP.gated, maxMs: VP.maxMs, err: VP.err, queue: VP.q.length, takes,
+      src: TK.src.filter(r => !r.dead).map(r => ({take: r.take, vox: r.vox, start: r.start, end: r.end, G: r.G, lim: !!r.lim}))};
+  },
+  vpWait: async () => { for (let k = 0; k < 400 && VP.q.length; k++) await new Promise(r => setTimeout(r, 25)); return VP.q.length === 0; }
+};
+
 /* ---------- Abspielen ---------- */
 function tkStartSrc(o) {
   const c = o.ctx || AU.ctx; if (!c || !o.buf) return null;
@@ -39267,7 +39433,8 @@ function tkStartSrc(o) {
   // FP-DSP: liegt der Start schon in der Vergangenheit (Hauptfaden war langsam), beginnt das Stück jetzt – mit Blende und passendem Versatz
   if (!o.ctx) { const lim = c.currentTime + .006; if (o.when < lim) { o = Object.assign({}, o, {off: o.off + (lim - o.when), when: lim, fi: Math.max(o.fi || 0, .005)}); } }
   const dur = o.end - o.when; if (!(dur > .002)) return null;
-  const s = c.createBufferSource(), g = c.createGain(), G = isNum(o.gain) ? o.gain : 1;
+  const V = o.ctx ? null : vpGet(o.buf);                          // VS-P: Auto-Pegel und Spitzen-Schutz der klingenden Fassung (nur live)
+  const s = c.createBufferSource(), g = c.createGain(), G = (isNum(o.gain) ? o.gain : 1) * (V ? V.g : 1);
   s.buffer = o.buf;
   const fi = Math.min(o.fi || 0, dur / 2), fo = Math.min(o.fo || 0, dur / 2);
   // VS5a-fix: Wechsel der Fassung beim Abspielen = Überblendung mit Kurve (tkXf), sonst wie bisher
@@ -39279,9 +39446,11 @@ function tkStartSrc(o) {
     if (fi > 0) g.gain.linearRampToValueAtTime(G, o.when + fi);
   }
   if (fo > 0) { g.gain.setValueAtTime(G, o.end - fo); g.gain.linearRampToValueAtTime(0, o.end); }
-  s.connect(g); g.connect(dest);
+  const lim = V ? vpLim(c, V, o.buf.sampleRate, o.when, Math.max(0, o.off), o.end) : null;
+  if (lim) { s.connect(lim); lim.connect(g); } else s.connect(g);
+  g.connect(dest);
   try { s.start(o.when, Math.max(0, o.off)); s.stop(o.end + .005); } catch (e) { try { s.disconnect(); g.disconnect(); } catch (e2) {} logErr(e); return null; }
-  const r = {i: o.i, s, g, G, start: o.when, end: o.end, off: o.off, key: o.key, vox: !!o.vox, take: o.take, aud: o.aud || null, dead: false, o};   // VS4: o = Plan (Puffer-Tausch beim Säubern); VS5a: G, aud (Fassungswechsel)
+  const r = {i: o.i, s, g, lim, G, start: o.when, end: o.end, off: o.off, key: o.key, vox: !!o.vox, take: o.take, aud: o.aud || null, dead: false, o};   // VS4: o = Plan (Puffer-Tausch beim Säubern); VS5a: G, aud (Fassungswechsel)
   if (!o.ctx) { TK.src.push(r); s.onended = () => tkDrop(r); TK.starts++; }
   return r;
 }
@@ -39312,6 +39481,7 @@ function tkPlace(i, buf, a, A, B, key, vox, lo) {
   let o = {i, buf, a, A, B, key, vox};
   for (const f of tkExt().place) { try { const r = f(o); if (r) o = r; } catch (e) { logErr(e); } }
   a = o.a || a;                                                    // VS5a-fix: ein Verarbeiter darf die Blenden des Stücks ändern
+  if (!vpReady(o.buf, b2t(o.A) >= now + .004)) return;            // VS-P: noch nicht gemessen – spät einsetzen erst danach (wie Laden)
   TK.reg.add(key);
   const X = TK.xf, jt = X ? X.t : now + .004;
   const pieces = vox ? tkUnmuted(o.A, o.B) : tkUncovered(o.A, o.B);
@@ -40462,9 +40632,9 @@ function clResync() {
   }
   for (const r of TK.src.slice()) {
     if (r.dead || !r.o || r.end <= at + T) continue;
-    const nb = tkPlayBuf(r.take, null); if (!nb || nb === r.s.buffer) continue;
+    const nb = tkPlayBuf(r.take, null); if (!nb || nb === r.s.buffer || !vpReady(nb)) continue;   // VS-P: Tausch, sobald die Fassung gemessen ist
     if (r.start > at) { tkKill(r); tkStartSrc(Object.assign({}, r.o, {buf: nb, end: r.end})); continue; }
-    const G = isNum(r.o.gain) ? r.o.gain : 1, fo = r.end < r.o.end - 1e-6 ? .005 : r.o.fo || 0;
+    const G = r.G != null ? r.G : isNum(r.o.gain) ? r.o.gain : 1, fo = r.end < r.o.end - 1e-6 ? .005 : r.o.fo || 0;   // VS-P: r.G = mit Auto-Pegel
     if (at < r.start + (r.o.fi || 0) + .001 || at + T > r.end - fo - .001) continue;    // in einer Blende: das nächste Stück nimmt die neue Fassung
     const o = Object.assign({}, r.o, {buf: nb, when: at, off: r.o.off + (at - r.o.when), end: r.end, fi: T, fo, xc: null, xw: 0});   // G-S7-merge: lineare Blende, nicht die Kurve eines VS5-Wechsels
     if (!tkStartSrc(o)) continue;
@@ -41384,6 +41554,7 @@ function wpSwitch() {
     let nb = null; try { nb = tkPlayBuf(r.take, r.aud); } catch (e) {}
     if (nb && nb !== r.s.buffer && nb.sampleRate === r.s.buffer.sampleRate) pairs.push({r, ob: r.s.buffer, nb});
   }
+  if (pairs.some(p => !vpReady(p.nb))) return;                       // VS-P: neue Fassung erst messen (vpPump ruft clResync → wpSwitch)
   let T = lo, kind = 'eg', rho = 1, best = Infinity, found = false;
   if (pairs.length) {
     for (let t = lo; t <= hi + 1e-9 && !found; t += .001) {
@@ -42267,6 +42438,7 @@ function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
 Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes
 Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
 Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
+Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
 const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

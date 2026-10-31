@@ -2359,10 +2359,17 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .brow .bmore::after{content:'';position:absolute;inset:-3px -4px -3px -2px}   /* MK8b: hit area 44 x 44 without changing the look (typische Fehler A4) */
 .brow .bmain span.bkp{white-space:normal;text-overflow:clip}   /* G-MK8b-merge (A1): two lines where needed (genre │ „NN · Rolle“), never „…“ */
 .brow .bmain span.bkp i{font-style:normal;white-space:nowrap}
-.brcats .chip.brkp,.brcats .chip.brkg{position:relative}
-.brcats .chip.brkp::before,.brcats .chip.brkg::before{content:'';position:absolute;left:-1px;right:0;top:-6px;bottom:-6px}   /* G-MK8b-merge (A4): 36 + 2 x 5 = 46 px hit height in the 48 px row (P1), look unchanged (insets from the padding box, 1 px border) */
-@media (orientation:portrait) and (max-height:700px){.brcats .chip.brkp::before,.brcats .chip.brkg::before{top:-5px;bottom:-5px}}   /* the 41 px row: up to its edge (40 px), never past it */
-@media (orientation:landscape){.brcats .chip.brkp::before,.brcats .chip.brkg::before{top:-3.5px;bottom:-3.5px}}   /* the column: 37 px pitch, the gap shared */
+/* G-MK8b-merge-fix (MK8b-06, ≥ 44 × 44): EVERY chip of the library row (engine segment, Bank ▾, Micro, Alle MS 2000, roles, 8 genre tabs)
+   hits on the full row height and half of the 5 px gap on each side – invisible ::before, insets from the padding box (1 px border):
+   P1 6 + 36 + 6 = 48 px, P2/P3 6 + 32 + 6 = 44 px (row padding 4 → 6, the row 4 px taller); the joined segment keys only up to their seam.
+   Quer (column): 12 px between the 32 px chips = 44 px pitch, the segment keys 44 px high; head and footer keys see below. */
+.brcats .chip{position:relative}
+.brcats .chip::before{content:'';position:absolute;left:-3.5px;right:-3.5px;top:-7px;bottom:-7px}
+.brcats .brseg .chip::before{left:-1px;right:-1px}
+#sndSheet .br-head .r1 .hb,#sndSheet .br-head .r1 .sh-x,#sndSheet .brfoot .mbtn{position:relative}
+#sndSheet .br-head .r1 .hb::after,#sndSheet .br-head .r1 .sh-x::after,#sndSheet .brfoot .mbtn::after{content:'';position:absolute;left:min(0px,calc(50% - 22.5px));right:min(0px,calc(50% - 22.5px));top:min(0px,calc(50% - 22.5px));bottom:min(0px,calc(50% - 22.5px))}   /* 45 × 45 centred, never smaller than the key (A/B 37 → 45 wide: 4 px into the 6 px gap / the sound name) */
+#sndSheet .brfoot .mbtn::after{top:min(0px,calc(50% - 22px));bottom:min(0px,calc(50% - 22px))}   /* P2/P3: 4 + 36 + 4 = 44, exactly the footer padding */
+@media (orientation:landscape){#sndSheet .br-head .r1 .hb::after,#sndSheet .br-head .r1 .sh-x::after{top:-4px;bottom:-8px}.brow .bmore::after{top:-2px;bottom:-4px}.brlist{padding-top:0;margin-top:4px}}   /* quer: 34 px keys in the 40 px head – from the head's top edge (never into the app bar) into the list's empty 4 px top padding = 44 px; the row's ⋯ (40 px in the 44 px row) then hits 2 px down instead of up, still 44 px, and the list's 4 px top gap is a margin (looks the same) so scrolled rows never slide under that strip */
 .btip{font:500 12.5px/1.4 var(--font-ui);color:var(--text);padding:6px 8px 10px 48px;border-bottom:1px solid #1d2026}
 .bacts{display:flex;flex-wrap:wrap;gap:6px;padding:6px 0 10px 48px;border-bottom:1px solid #1d2026;align-items:center}
 .bacts .tin{flex:1 1 140px;height:40px;min-width:0}
@@ -2377,7 +2384,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
   .brfoot{padding:4px 8px}
   .brfoot .mbtn{height:36px;font-size:12px}
   .brfoot .chip.bush{height:32px}
-  .brcats{padding:4px 8px}
+  .brcats{padding:6px 8px}
   .brcats .chip{height:32px}
 }
 .brdl{flex-basis:100%}
@@ -2471,14 +2478,18 @@ a.mbtn[aria-disabled=true]{opacity:.55}
   .brcats .cs{display:none}
   .brcats .cl{display:inline}
   #sndSheet .brcats .chip.brkg{padding:0 4px;letter-spacing:0;font-size:11px}   /* MK8b: HIPHOP/VINTAGE fits the 120 px column */
-  .brcats .brseg{flex-direction:column;margin:0 0 4px;left:auto;top:0;box-shadow:0 0 0 1px var(--line),0 6px 8px -2px var(--chassis)}
+  .brcats .brseg{flex-direction:column;margin:0;left:auto;top:0;box-shadow:0 0 0 1px var(--line),0 6px 8px -2px var(--chassis)}
+  .brcats{gap:12px;padding-bottom:6px}                    /* G-MK8b-merge-fix: 32 + 12 = 44 px pitch, every chip hits 44 high (::before 6 px into each gap) */
+  .brcats .chip::before{left:-1px;right:-1px;top:-7px;bottom:-7px}
+  .brcats .brseg .chip{height:44px}                        /* the joined engine keys cannot share a gap: 44 px each */
+  .brcats .brseg .chip::before{top:-1px;bottom:-1px}
   .brseg .chip:first-child{border-radius:var(--r-s) var(--r-s) 0 0}
   .brseg .chip:last-child{border-radius:0 0 var(--r-s) var(--r-s)}
   .brow{min-height:44px}
   .brow .bpv{height:44px}
   .brow .bmain{flex-direction:row;align-items:center;gap:10px;height:44px}
   .brow .bmain span{flex:1 1 auto}
-  .brfoot{padding:4px 8px}
+  .brfoot{padding:5px 8px}                                /* G-MK8b-merge-fix: 5 + 34 + 5 = 44 px hit (was 4 px: 42) */
   .brfoot .mbtn{height:34px}
   #sndSheet .br-head .r1{height:40px}
 }
