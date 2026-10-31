@@ -302,7 +302,7 @@ async function fangRun(file, mel) {
 async function recRun(file, mel) {
   const H = await start(file, 120, {mel}), p = H.p;
   const m0 = await p.evaluate(() => SYNQUENZER.project().tracks[5]), u0 = await undoN(p), s0 = await snap(p);
-  await recSing(H, {track: 3, scene: 2, startBar: 1, bars: 4, press: true});
+  await recSing(H, {track: 3, scene: 2, startBar: 2, bars: 4, press: true});
   const r = await stInfo(p, 2);
   return {H, r, m0, m1: await p.evaluate(() => SYNQUENZER.project().tracks[5]), u0, u1: await undoN(p), s0, s1: await snap(p), runs: await runs(p), toasts: await toasts(p), res: await p.evaluate(() => SYNQUENZER.vsResult()), sheet: await p.evaluate(() => !!document.querySelector('.vsres'))};
 }

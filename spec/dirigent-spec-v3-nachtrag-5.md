@@ -350,3 +350,13 @@ G2-Technik (nur stimmhafte Teile, formant-erhaltend). Gilt für gehaltene Fläch
 als Voreinstellung die erkannte/eingestellte Tonart der Stelle.
 G7-01 Szene +2 transponiert → Gesang +200 ±5 Cent bzw. diatonisch wie ein Noten-Clip (Tabelle je Note); G7-02 Zischlaute unverändert;
 G7-03 Zurück auf 0 → bitgleich zum Original; G7-04 Rechenzeit: vorberechnet (Cache), kein Aussetzer beim Umschalten.
+
+### G8 — Lange Aufnahmen (Xander 31.10. ~13:55: „länger als 16 Takte … im Song durchgehend einsingen … sind wir an 16 Takte gekoppelt?“)
+Heute: Szene-Clips und FANG höchstens 16 Takte (Grenze aller Clips); Song-Aufnahme mit 🎤 hat keine Taktgrenze, aber der Mikro-
+Ringpuffer hält nur 120 s → bei längerem Durchsingen geht der Anfang verloren.
+1. **Song (● SONG mit 🎤):** durchgehend einsingen ohne Zeitgrenze (bis der Speicher knapp wird; Audio wird während der Aufnahme in
+   Stücken weggeschrieben statt erst am Ende aus dem Ringpuffer), Anzeige der Restzeit nur wenn < 2 min.
+2. **Szene-Clips und FANG:** bis **64 Takte** (Noten und Gesang); „Länge“ zusätzlich 32 und 64; FANG nimmt die Phrase in voller Länge
+   (Rückblick bis 64 Takte). Übersicht bleibt durch Mini-Karte (N2) und Zoom. Rechenlast: Noten kosten fast nichts; Audio ≈ 0,1 MB/s.
+- G8-01 Song-Aufnahme 5 min mit 🎤 → Take vollständig (Anfang da), kein Aussetzer; G8-02 Clip 32/64 Takte aufnehmen, speichern,
+  laden, Schleife phasengleich; G8-03 FANG einer 24-Takt-Phrase → 32-Takt-Clip; G8-04 Speicher/CPU iPhone-Maß im Changelog.
