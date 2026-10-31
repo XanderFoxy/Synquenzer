@@ -1,0 +1,111 @@
+{
+ "Anschlag schnell, Abfall": {
+  "points": 167,
+  "maxErrDb": 0.22,
+  "at": 1.6,
+  "probe": [
+   {
+    "t": 0.25,
+    "ton": -1.1,
+    "bild": -1
+   },
+   {
+    "t": 0.6,
+    "ton": -10.7,
+    "bild": -10.6
+   },
+   {
+    "t": 1.4,
+    "ton": -16.4,
+    "bild": -16.3
+   },
+   {
+    "t": 1.7,
+    "ton": -29.2,
+    "bild": -29.1
+   },
+   {
+    "t": 2.2,
+    "ton": -86.9,
+    "bild": -86.9
+   }
+  ],
+  "ok": true
+ },
+ "Anschlag langsam": {
+  "points": 269,
+  "maxErrDb": 0.15,
+  "at": 1.12,
+  "probe": [
+   {
+    "t": 0.25,
+    "ton": -44.2,
+    "bild": -44.1
+   },
+   {
+    "t": 0.6,
+    "ton": -17.2,
+    "bild": -17.1
+   },
+   {
+    "t": 1.4,
+    "ton": -9.6,
+    "bild": -9.5
+   },
+   {
+    "t": 1.7,
+    "ton": -15.5,
+    "bild": -15.4
+   },
+   {
+    "t": 2.2,
+    "ton": -25.8,
+    "bild": -25.7
+   }
+  ],
+  "ok": true
+ },
+ "Bite/Abfall moduliert (fmDec)": {
+  "points": 163,
+  "maxErrDb": 0.32,
+  "at": 1.6,
+  "probe": [
+   {
+    "t": 0.25,
+    "ton": -0.2,
+    "bild": -0.1
+   },
+   {
+    "t": 0.6,
+    "ton": -0.9,
+    "bild": -0.8
+   },
+   {
+    "t": 1.4,
+    "ton": -2.6,
+    "bild": -2.5
+   },
+   {
+    "t": 1.7,
+    "ton": -22.4,
+    "bild": -22.3
+   },
+   {
+    "t": 2.2,
+    "ton": -182.8,
+    "bild": -90
+   }
+  ],
+  "ok": true
+ },
+ "video": {
+  "frames": 550,
+  "notes": 128,
+  "mismatch": 0,
+  "carrierRises": 128,
+  "carrierFalls": 357,
+  "dur": 18.33,
+  "ok": true
+ },
+ "ok": true
+}

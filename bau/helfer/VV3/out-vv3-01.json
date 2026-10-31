@@ -1,0 +1,137 @@
+{
+ "a: frei, Key Sync aus": {
+  "rateHz": 1.0061,
+  "frames": 138,
+  "maxPhaseErrPct": 0.037,
+  "meanPct": 0.021,
+  "samples": [
+   {
+    "tau": 0.5333333333333333,
+    "model": 0.5366,
+    "engine": 0.537
+   },
+   {
+    "tau": 0.5666666666666667,
+    "model": 0.5701,
+    "engine": 0.5702
+   },
+   {
+    "tau": 0.6,
+    "model": 0.6037,
+    "engine": 0.6038
+   },
+   {
+    "tau": 0.6333333333333333,
+    "model": 0.6372,
+    "engine": 0.6373
+   }
+  ],
+  "ok": true
+ },
+ "a: Tempo-Sync 1/2 (1 Hz bei 120), Key Sync aus": {
+  "rateHz": 1,
+  "frames": 138,
+  "maxPhaseErrPct": 0.032,
+  "meanPct": 0.016,
+  "samples": [
+   {
+    "tau": 0.5333333333333333,
+    "model": 0.2333,
+    "engine": 0.2333
+   },
+   {
+    "tau": 0.5666666666666667,
+    "model": 0.2667,
+    "engine": 0.2663
+   },
+   {
+    "tau": 0.6,
+    "model": 0.3,
+    "engine": 0.2997
+   },
+   {
+    "tau": 0.6333333333333333,
+    "model": 0.3333,
+    "engine": 0.3331
+   }
+  ],
+  "ok": true
+ },
+ "a: Key Sync Timbre": {
+  "rateHz": 1.0061,
+  "frames": 138,
+  "maxPhaseErrPct": 0.041,
+  "meanPct": 0.025,
+  "samples": [
+   {
+    "tau": 0.5333333333333333,
+    "model": 0.0335,
+    "engine": 0.0339
+   },
+   {
+    "tau": 0.5666666666666667,
+    "model": 0.0671,
+    "engine": 0.0672
+   },
+   {
+    "tau": 0.6,
+    "model": 0.1006,
+    "engine": 0.1007
+   },
+   {
+    "tau": 0.6333333333333333,
+    "model": 0.1341,
+    "engine": 0.1343
+   }
+  ],
+  "ok": true
+ },
+ "a: Key Sync Stimme": {
+  "rateHz": 1.0061,
+  "frames": 138,
+  "maxPhaseErrPct": 0.041,
+  "meanPct": 0.025,
+  "samples": [
+   {
+    "tau": 0.5333333333333333,
+    "model": 0.0335,
+    "engine": 0.0339
+   },
+   {
+    "tau": 0.5666666666666667,
+    "model": 0.0671,
+    "engine": 0.0672
+   },
+   {
+    "tau": 0.6,
+    "model": 0.1006,
+    "engine": 0.1007
+   },
+   {
+    "tau": 0.6333333333333333,
+    "model": 0.1341,
+    "engine": 0.1343
+   }
+  ],
+  "ok": true
+ },
+ "b: Tempo-Sync 1 Hz": {
+  "frames": 550,
+  "dur": 18.32,
+  "hz": 1,
+  "maxPhaseErrPct": 0,
+  "maxCutErr": 0,
+  "bad": [],
+  "ok": true
+ },
+ "b: frei 1,01 Hz": {
+  "frames": 550,
+  "dur": 18.33,
+  "hz": 1.0061,
+  "maxPhaseErrPct": 0,
+  "maxCutErr": 0,
+  "bad": [],
+  "ok": true
+ },
+ "ok": true
+}
