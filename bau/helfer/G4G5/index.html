@@ -42059,14 +42059,20 @@ function g4DspMake() {
       out.ra = ra; out.lraOut = +l.toFixed(2);
       if (l <= 4 || (ra >= 2 && lraIn <= 4)) break;
     }
-    // Präsenz: Gesang im Band 2–5 kHz (am Ausgang der STIMME-Spur, wie VS-P ihn stellt) ≥ 3 dB (+0,5 Rand) über der lautesten anderen Spur
-    out.pre = P.pre; out.mix = null;
+    // Maskierung: Gesang im Band 2–5 kHz (am Ausgang der STIMME-Spur, wie VS-P ihn stellt) ≥ 3 dB (+0,5 Rand) über der lautesten anderen
+    // Spur – Präsenz anheben, wenn nötig auch Mitte/Tief absenken (dann zählt die Präsenz mehr zur Lautheit, die VS-P ausgleicht)
+    out.pre = P.pre; out.mid = P.mid; out.lo = P.lo; out.mix = null;
     if (mix && isFinite(mix.band)) {
-      const z = Float32Array.from(y1); comp(z, sr, out.thr, out.ra);
-      const at = pr => { const w = Float32Array.from(z); eq(w, sr, Object.assign({}, P, {pre: pr})); const L = integ(kq(w, sr)); return band(w, sr) - L + (mix.vp ? -19.01 + mix.volDb : r1.Lin + mix.volDb) - mix.band; };
-      let best = 9, m = null;
-      for (let pr = 0; pr <= 9 + 1e-9; pr += 0.5) { const v = at(pr); m = v; if (v >= 3.5) { best = pr; break; } }
-      out.pre = best; out.mix = {margin: +m.toFixed(2), other: +mix.band.toFixed(2), reached: m >= 3.5};
+      const z = Float32Array.from(y1.subarray(0, Math.min(y1.length, sr * 30))); comp(z, sr, out.thr, out.ra);
+      const at = (pr, md, lo) => { const w = Float32Array.from(z); eq(w, sr, Object.assign({}, P, {pre: pr, mid: md, lo})); const L = integ(kq(w, sr)); return band(w, sr) - L + (mix.vp ? -19.01 + mix.volDb : r1.Lin + mix.volDb) - mix.band; };
+      let best = null;
+      for (const md of [P.mid, Math.min(P.mid, -3), Math.min(P.mid, -5)]) for (const lo of [P.lo, Math.min(P.lo, -3)]) {
+        let pr = 0, v = at(0, md, lo); while (v < 3.5 && pr < 9) { pr += 0.5; v = at(pr, md, lo); }
+        const cost = v >= 3.5 ? pr + 0.4 * (P.mid - md) + 0.3 * (P.lo - lo) : 100 - v;      // nicht erreichbar: der größte Abstand
+        if (!best || cost < best.cost) best = {cost, pr, md, lo, v};
+        if (pr === 0 && v >= 3.5) break;
+      }
+      out.pre = best.pr; out.mid = best.md; out.lo = best.lo; out.mix = {margin: +best.v.toFixed(2), other: +mix.band.toFixed(2), reached: best.v >= 3.5};
     }
     return out;
   }
@@ -42188,7 +42194,7 @@ function g4MixMeasure(ms) {
   for (let i = 0; i < NT(); i++) {
     const A = AU.tracks[i]; if (i === st || !A || !A.cut) continue;
     let n = A.cut; const nodes = [];
-    for (const [type, f] of [['highpass', 2000], ['highpass', 2000], ['lowpass', 5000], ['lowpass', 5000]]) { const q = c.createBiquadFilter(); q.type = type; q.frequency.value = f; q.Q.value = Math.SQRT1_2; n.connect(q); n = q; nodes.push(q); }
+    for (const [type, f] of [['highpass', 2000], ['highpass', 2000], ['lowpass', 5000], ['lowpass', 5000]]) { const q = c.createBiquadFilter(); q.type = type; q.frequency.value = f; q.Q.value = -3.0103; /* Q in dB (Web Audio) = Butterworth wie G4D.band */ n.connect(q); n = q; nodes.push(q); }
     const an = c.createAnalyser(); an.fftSize = 2048; n.connect(an); an.connect(sink); nodes.push(an);
     taps.push({i, nodes, an, buf: new Float32Array(2048), p: []});
   }
@@ -42234,7 +42240,7 @@ async function g4Auto() {
     if (!r) { toast('Take zu leise zum Messen'); return null; }
     G4.mixLast = mix;
     const before = g4Snap(st);
-    tr.gfx = g4Norm(Object.assign({}, g, {on: true, thr: r.thr, ra: r.ra, ds: r.ds, pre: r.pre}));
+    tr.gfx = g4Norm(Object.assign({}, g, {on: true, thr: r.thr, ra: r.ra, ds: r.ds, pre: r.pre, mid: r.mid, lo: r.lo}));
     G4.auto = Object.assign({}, r, {mixTop: mix ? mix.top : null, takes: mat.n});
     g4Changed(true); g4Commit(before, 'Effekte: Auto');
     return G4.auto;
