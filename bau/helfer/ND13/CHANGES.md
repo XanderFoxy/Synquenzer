@@ -136,7 +136,9 @@ FM-Stimme 0,42 %):
 17. **Messverfahren** (wo die Spec-Fenster physikalisch nicht reichen, im Test begründet): Bend-Start aus der ersten Halbwelle gegen das Modell
     (3-ms-Fenster < Halbperiode bei 52 Hz); E2/E3 −20-dB-Punkt gegen den Anfangspegel der Hüllkurve (Spitze liegt bei √-Form schon −2 dB tiefer);
     M-MODEN mit 1,36-s-Fenster für kurze Moden; M-AUS mit Hilbert-Hüllkurve (5-ms-RMS-Fenster < Periode eines 50-Hz-Tons); M-BAND mit Rechteckfenster
-    ab dem Anschlag; M-KLICK mit Hochpass 24 dB/Okt bei 5 kHz und tonalen Testklängen (sonst wertet Rauschen/Periodik als Knack).
+    ab dem Anschlag; M-KLICK mit Hochpass 24 dB/Okt bei 5 kHz, tonalen Testklängen (sonst wertet Rauschen/Periodik als Knack) und einem Boden: 2-ms-Fenster unter −80 dBFS
+    (nach dem Hochpass) zählen nicht (bei 44,1 kHz meldete ein Fenster bei −99 dBFS sonst +9 dB über dem Median).
+18. **Neuanschlag/Mono-Gruppe:** die 3-ms-Ausblendung der alten Stimme ist kosinusförmig (statt linear), gleiche Dauer.
 
 ## Fragen an Xander
 
