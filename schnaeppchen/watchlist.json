@@ -1,0 +1,123 @@
+{
+  "_hinweis": "Lieblingsprodukte. Neues Produkt = einen Block kopieren und anpassen. Felder siehe README.md.",
+  "produkte": [
+    {
+      "id": "softys-fruchtmix",
+      "name": "Lachgummi Softys Fruchtmix (gelbe Tüte)",
+      "suche": ["Lachgummi Softys"],
+      "muss": ["lachgummi", "softys"],
+      "sorte": ["fruchtmix|frucht mix|fruchtig"],
+      "nicht": ["rote fruechte", "sauer"],
+      "basis": "100g",
+      "standardGramm": 225,
+      "normalpreis": 0.80
+    },
+    {
+      "id": "softys-rote-fruechte",
+      "name": "Lachgummi Softys Rote Früchte (rote Tüte)",
+      "suche": ["Lachgummi Softys"],
+      "muss": ["lachgummi", "softys"],
+      "sorte": ["rote fruechte|rote frucht"],
+      "nicht": ["sauer"],
+      "basis": "100g",
+      "standardGramm": 225,
+      "normalpreis": 0.80
+    },
+    {
+      "id": "crunchips",
+      "name": "Lorenz Crunchips (klassische Sorten)",
+      "suche": ["Crunchips"],
+      "muss": ["crunchips"],
+      "nicht": ["x cut", "xcut", "roasted", "stapel"],
+      "basis": "100g",
+      "standardGramm": 150,
+      "normalpreis": 1.60
+    },
+    {
+      "id": "crunchips-xcut",
+      "name": "Lorenz Crunchips X-Cut",
+      "suche": ["Crunchips X-Cut"],
+      "muss": ["crunchips", "x cut|xcut"],
+      "basis": "100g",
+      "standardGramm": 130,
+      "normalpreis": 1.80
+    },
+    {
+      "id": "choco-crossies",
+      "name": "Nestlé Choco Crossies",
+      "suche": ["Choco Crossies"],
+      "muss": ["crossies"],
+      "basis": "100g",
+      "standardGramm": 150,
+      "normalpreis": 2.00
+    },
+    {
+      "id": "knoppers-24",
+      "name": "Knoppers 24er-Pack",
+      "gruppe": "knoppers-schnitte",
+      "suche": ["Knoppers"],
+      "muss": ["knoppers"],
+      "nicht": ["nussriegel", "nuss riegel", "riegel", "kakaocreme riegel", "eis"],
+      "basis": "stueck",
+      "stueckGramm": 25,
+      "stueckMin": 15,
+      "normalpreis": 0.38
+    },
+    {
+      "id": "knoppers-5",
+      "name": "Knoppers 5er-Pack",
+      "gruppe": "knoppers-schnitte",
+      "suche": ["Knoppers"],
+      "muss": ["knoppers"],
+      "nicht": ["nussriegel", "nuss riegel", "riegel", "eis"],
+      "basis": "stueck",
+      "stueckGramm": 25,
+      "stueckMax": 14,
+      "standardStueck": 5,
+      "normalpreis": 0.38
+    },
+    {
+      "id": "knoppers-nussriegel",
+      "name": "Knoppers NussRiegel",
+      "suche": ["Knoppers NussRiegel"],
+      "muss": ["knoppers", "nussriegel|nuss riegel"],
+      "basis": "stueck",
+      "stueckGramm": 40,
+      "standardStueck": 5,
+      "normalpreis": 0.46
+    },
+    {
+      "id": "haribo-colorado",
+      "name": "Haribo XXL Colorado",
+      "suche": ["Haribo Colorado"],
+      "muss": ["haribo", "colorado"],
+      "basis": "100g",
+      "standardGramm": 175,
+      "normalpreis": 0.85
+    },
+    {
+      "id": "haribo-tropi-frutti",
+      "name": "Haribo XXL Tropi Frutti",
+      "suche": ["Haribo Tropi Frutti"],
+      "muss": ["haribo", "tropi"],
+      "basis": "100g",
+      "standardGramm": 175,
+      "normalpreis": 0.85
+    },
+    {
+      "id": "ben-jerrys",
+      "name": "Ben & Jerry's Eis (Becher, alle Sorten)",
+      "suche": ["Ben & Jerry's"],
+      "muss": ["ben", "jerry"],
+      "nicht": ["shirt", "tasse"],
+      "basis": "100ml",
+      "standardMl": 465,
+      "normalpreis": 1.50
+    }
+  ],
+  "technik": {
+    "id": "technik-preisfehler",
+    "name": "Technik-Preisfehler",
+    "woerter": ["tv", "fernseher", "oled", "qled", "smart tv", "playstation", "ps5", "xbox", "nintendo switch", "switch 2", "kopfhoerer", "kopfhörer", "airpods", "headphones", "earbuds", "soundbar", "konsole", "ipad", "tablet", "macbook", "laptop", "notebook", "monitor", "iphone", "smartphone", "galaxy", "smartwatch", "apple watch", "beamer", "lautsprecher", "grafikkarte", "ssd"]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "_hinweis": "Einstellungen für den Konzert-Alarm. Änderungen hier wirken beim nächsten Lauf (alle 3 Stunden).",
+  "zuhause": { "name": "Döbeln", "plz": "04720", "lat": 51.1194, "lon": 13.1186 },
+  "pushRadiusKm": 200,
+  "listenRadiusKm": 400,
+  "releaseFensterTage": 120,
+  "releaseListeTage": 365,
+  "ntfy": { "server": "https://ntfy.sh", "topic": "xander-schnaeppchen-b5cbf4442aaa9734f3" },
+  "seiteUrl": "https://xanderfoxy.github.io/synquenzer/konzerte/",
+  "datenRepo": "xanderfoxy/synquenzer",
+  "datenBranch": "konzerte-daten",
+  "seiten": [
+    { "id": "wgt", "name": "Wave-Gotik-Treffen", "art": "festival", "url": "https://www.wave-gotik-treffen.de/", "stadt": "Leipzig", "lat": 51.3397, "lon": 12.3731, "notiz": "Pfingsten, Leipzig" },
+    { "id": "darkstorm", "name": "Dark Storm Festival", "art": "festival", "url": "https://www.darkstorm-festival.de/", "stadt": "Chemnitz", "lat": 50.8322, "lon": 12.9252, "notiz": "25.12., Stadthalle Chemnitz – URL bitte prüfen" },
+    { "id": "ncn", "name": "NCN – Nocturnal Culture Night", "art": "festival", "url": "https://www.ncn-festival.de/", "stadt": "Deutzen", "lat": 51.1050, "lon": 12.4290, "notiz": "Anfang September, Kulturpark Deutzen – URL bitte prüfen" },
+    { "id": "gmk", "name": "Gothic meets Klassik", "art": "festival", "url": "https://www.gothic-meets-klassik.de/", "stadt": "Leipzig", "lat": 51.3397, "lon": 12.3731, "notiz": "November, Leipzig – URL bitte prüfen" }
+  ]
+}

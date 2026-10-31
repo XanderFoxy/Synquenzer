@@ -1,0 +1,60 @@
+{
+  "_hinweis": "Einstellungen für den Schnäppchen-Wecker. Produkte stehen in watchlist.json.",
+  "plz": "04720",
+  "ort": "Döbeln",
+  "ntfy": {
+    "server": "https://ntfy.sh",
+    "topic": "xander-schnaeppchen-b5cbf4442aaa9734f3",
+    "maxProLauf": 8
+  },
+  "seite": "https://xanderfoxy.github.io/Synquenzer/schnaeppchen/",
+  "maerkte": {
+    "_hinweis": "Nur Prospekt-Angebote dieser Ketten zählen (Namen wie bei marktguru, Kleinschreibung egal, Teilwort reicht).",
+    "erlaubt": ["Kaufland", "Lidl", "Aldi Nord", "Netto Marken-Discount", "Penny", "Rewe", "Edeka", "Norma", "Globus", "Marktkauf"]
+  },
+  "deal": {
+    "_hinweis": "Ein Angebot ist ein Deal, wenn der Stückpreis/100-g-Preis mindestens 'rabattMin' unter dem Normalpreis liegt, oder auf/unter dem Tiefstpreis (mit genug Verlauf).",
+    "rabattMin": 0.25,
+    "tiefstpreisMinPunkte": 10,
+    "tiefstpreisMinRabatt": 0.10,
+    "historieMinTage": 5,
+    "normalpreisFensterTage": 56,
+    "historieBehaltenTage": 400,
+    "technikRabattMin": 0.60
+  },
+  "versand": {
+    "_hinweis": "Versandkosten, wenn ein Deal nichts dazu sagt. Amazon: kostenlos ab 'kostenlosAb' (ohne Prime).",
+    "amazonPrime": false,
+    "amazonKostenlosAb": 39,
+    "amazonKosten": 3.99,
+    "standardKosten": 4.95
+  },
+  "quellen": {
+    "marktguru": {
+      "aktiv": true,
+      "startseite": "https://www.marktguru.de/",
+      "api": "https://api.marktguru.de/api/v1/offers/search",
+      "limit": 48
+    },
+    "mydealz": {
+      "aktiv": true,
+      "feeds": [
+        { "name": "mydealz neu", "url": "https://www.mydealz.de/rss/new" },
+        { "name": "mydealz heiß", "url": "https://www.mydealz.de/rss/hot" },
+        { "name": "mydealz Preisfehler", "url": "https://www.mydealz.de/rss/gruppe/preisfehler", "preisfehler": true },
+        { "name": "mydealz Lebensmittel", "url": "https://www.mydealz.de/rss/gruppe/lebensmittel" }
+      ],
+      "suchFeed": "https://www.mydealz.de/rss/search?q={q}"
+    },
+    "keepa": {
+      "aktiv": true,
+      "api": "https://api.keepa.com/product",
+      "domain": 3
+    }
+  },
+  "abruf": {
+    "userAgent": "Schnaeppchen-Wecker/1.0 (privater Preisalarm, 1x pro Stunde; +https://github.com/XanderFoxy/Synquenzer/tree/main/schnaeppchen)",
+    "timeoutMs": 20000,
+    "pauseMs": 1500
+  }
+}
