@@ -9,7 +9,7 @@ await p.evaluate(() => {
   window.__f = (k, x) => k === 'bd' ? .7 * Math.sin(2 * Math.PI * .8 * x) : k === 'mw' ? .5 + .4 * Math.sin(2 * Math.PI * .6 * x) : .5 + .4 * Math.sin(2 * Math.PI * 1.1 * x + 2);
 });
 const dev = `(c, B0, ks) => { const H = BMC.h[0], o = {}; for (const k of ks) { let d = 0; const a = c.cv && c.cv[k]; if (!a) { o[k] = null; continue; }
-  const st = BMC.ST / spb(), last = H[k][H[k].length - 1][0]; for (let bb = Math.max(B0, H[k][1][0]); bb < Math.min(B0 + c.len * 4, last); bb += st) d = Math.max(d, Math.abs(cvAt(a, bb - B0) - bmcVal(H, k, bb))); o[k] = +d.toFixed(5); } return o; }`;
+  const st = BMC.ST / spb(), last = H[k][H[k].length - 1][0]; let wb = null; for (let j = Math.ceil(Math.max(B0, H[k][1][0]) / st); j * st < Math.min(B0 + c.len * 4, last); j++) { const bb = j * st, e = Math.abs(cvAt(a, bb - B0) - bmcVal(H, k, bb)); if (e > d) { d = e; wb = bb; } } o[k] = +d.toFixed(5); if (d > .005) o[k + '@'] = [wb, H[k].slice(0, 3)]; } return o; }`;
 // ---------- automatische Länge: ● bis 2 Takte, Notenlos aber mit Kurven ----------
 await p.evaluate(() => { const s = S.tracks[0].clips.findIndex(c => !c); window.__s = s; SYNQUENZER.selectSlot(0, s); SYNQUENZER.rec(); });
 await p.waitForFunction(() => rec.state === 'recording', null, {timeout: 5000});
@@ -17,6 +17,7 @@ await p.evaluate(() => { SYNQUENZER.keyOn(60, .8, 'k1'); });
 await p.evaluate(() => window.__move(['bd', 'at'], 1.8, window.__f));
 await p.evaluate(() => { SYNQUENZER.keyOff(60, 'k1'); SYNQUENZER.rec(); });
 await p.waitForFunction(() => rec.state === 'off' && S.tracks[0].clips[window.__s], null, {timeout: 6000});
+await p.waitForFunction(() => S.tracks[0].clips[window.__s].cv, null, {timeout: 3000}).catch(() => {});
 const ra = await p.evaluate(`(() => { const c = S.tracks[0].clips[window.__s]; return {len: c.len, keys: Object.keys(c.cv || {}), notes: c.notes.length, dev: (${dev})(c, rec.startBeat, ['bd', 'at']), u: SYNQUENZER.undoInfo().top.label}; })()`);
 ok('BM8-01 ● automatische Länge: Kurven + Noten im Clip, ein Undo', ra.keys.join() === 'bd,at' && ra.notes === 1 && ra.u === 'Aufnahme', ra);
 ok('BM8-01 ● automatische Länge: Abweichung ≤ 0,005', Object.values(ra.dev).every(x => x != null && x <= .005), ra.dev);
@@ -64,6 +65,7 @@ await p.waitForFunction(() => rec.state === 'recording', null, {timeout: 5000});
 await p.evaluate(() => window.__move(['bd', 'mw', 'at'], 15.85, (k, x) => k === 'bd' ? .9 * Math.sin(2 * Math.PI * 1.5 * x) : k === 'mw' ? .5 + .45 * Math.sin(2 * Math.PI * 1.1 * x) : .5 + .45 * Math.sin(2 * Math.PI * 2 * x + 1)));
 await p.evaluate(() => SYNQUENZER.rec());
 await p.waitForFunction(() => rec.state === 'off' && S.tracks[0].clips[window.__s16], null, {timeout: 8000});
+await p.waitForFunction(() => S.tracks[0].clips[window.__s16].cv, null, {timeout: 3000}).catch(() => {});
 const rz = await p.evaluate(() => { const s = window.__s16, c = S.tracks[0].clips[s], f = SQStore.buildProjectFile(S, null, VERSION).project.tracks[0].clips[s];
   return {len: c.len, pts: Object.fromEntries(Object.entries(c.cv).map(([k, a]) => [k, a.length])), bytes: new TextEncoder().encode(JSON.stringify(f)).length, cvBytes: new TextEncoder().encode(JSON.stringify(c.cv)).length}; });
 ok('BM8-11 16 Takte ständige Bewegung ≤ 20 KB je Clip', rz.len === 16 && rz.bytes <= 20480, rz);

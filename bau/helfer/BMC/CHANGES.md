@@ -41,7 +41,7 @@ VERSION-Zeile und CLOUD-Zeile `  live: true,` unverändert. Format 5 nur zusätz
 - **`BmHost.ctl(i, list)`** mit `list = [{k: 'bd'|'mw'|'at', v, at, cut?}]`.
   - Der Platzhalter gibt an den Bit-Mask-Knoten der Spur als `E.ctl({list})` weiter. Das ergibt genau die Nachricht `{t:'ctl', list}` aus §2.1.
   - In helfer-bmu nimmt `E.ctl` heute `{bend, mw}` (sofort, ohne Zeit). Der echte Prozessor (Zweig K) muss die Liste mit `at` verstehen.
-  - `cut: 1` (zusätzlich): Kurven-Ereignisse, die schon hinter `at` geplant sind, fallen weg. Das gilt bei ■, Panik und bei einem Wechsel innerhalb des Planungsfensters.
+  - `cut: 1` (zusätzlich, je Regler): Ereignisse desselben Reglers, die schon hinter `at` geplant sind, fallen weg. Das gilt bei ■, Panik und bei einem Wechsel innerhalb des Planungsfensters.
 - **Live-Eingabe:** `bmcInput(i, k, v, ret)` (Wert in den Verlauf) und `bmcTouch(i, k, an/aus)` (Live gewinnt).
   - Das MOD- und BEND-Rad rufen das schon auf (`mkWheelSet`, Rad-Geste).
   - Die **Druck-Geste aus BM5** muss `bmcInput(i, 'at', v)` und `bmcTouch(i, 'at', …)` aufrufen.
@@ -54,12 +54,26 @@ VERSION-Zeile und CLOUD-Zeile `  live: true,` unverändert. Format 5 nur zusätz
 - Bewegungen, die weniger als 100 ms auseinanderliegen, zählen als eine Spanne. Grund: Touch-Ereignisse kommen manchmal verspätet.
   Eine Pause über 60 ms hält den alten Wert.
 - Ein Regler, der während einer Aufnahme nicht bewegt wurde, bekommt keine Kurve. Im Ersetzen-Modus werden nur bewegte Regler ersetzt.
-- Spielen Song-Melodie und Clip auf derselben Spur gleichzeitig Kurven, senden beide (keine Vorrang-Regel festgelegt).
+- Spielen Song-Melodie und Clip auf derselben Spur gleichzeitig Kurven, hat der Clip Vorrang. So spielt eine Song-Aufnahme ab, wie sie aufgenommen wurde: Takte mit Szenen-Clip → eigener Clip, die anderen → Melodie.
 
 ## Was es in der App nicht gibt (darum nicht gebaut, Regel 27)
 „rückwärts“, „Spiegeln“, „Dehnen“, „Teilen“ und „Zusammenfassen“ als Aktionen am ganzen Behälter gibt es in 4.23.0 nicht. „Teilen“ und „Verbinden“
 im Editor wirken auf Noten. „Szene duplizieren“ und „Teil übernehmen“ kopieren keine Clip-Daten (Teile verweisen nur auf Szenen-Plätze).
 Die Helfer `cvReverse` und `cvScale` liegen bereit, sind aber nirgends angebunden.
+
+## Unabhängige Prüfung (eigener Prüfer-Agent) – Befunde und Korrekturen
+| Nr. | Befund | Korrektur | Test |
+|---|---|---|---|
+| 1 | Die Kurven-Helfer ließen am Ende eines Stücks den Haltewert weg. Bei ×2, Zuschneiden, Kürzen, Song-Bereichen und „Ganzer Block“ entstanden Rampen statt Stufen. | Jedes Stück hält seinen Wert bis zu seinem Ende (Punkt 1/10000 Schlag davor). | `bm8-helfer.mjs` 22/22 gegen die Bedeutung, nicht gegen die Helfer; Clip-Blatt ×2/½ abgetastet |
+| 2 | Eigener Clip mit neuen Kurven: `cv` stand hinter `from`, deshalb war `historyCheck()` falsch. | `cvSet` schreibt `cv` vor `from` (wie `ownNorm`). | `bm8-review` #2 |
+| 3 | Ersetzen ohne Reglerbewegung ließ die alte Kurve stehen. | Im Bereich wird ersetzt, auch wo nichts bewegt wurde (nur wo schon eine Kurve war, kein neuer Behälter). | #3 |
+| 4 | Die feste Aufnahme schloss einen Planungsvorlauf zu früh: Die letzten ~100 ms Bewegung fehlten. | Die Kurven werden geschrieben, sobald das Ende gehört ist. Gleicher Undo-Schritt. Das Ende selbst gehört nicht mehr dazu. | #4 |
+| 5 | Melodie-Kurve und Clip-Kurve derselben Spur sendeten gleichzeitig. | Die Clip-Kurve hat Vorrang. Die Melodie-Kurve endet vor einem anstehenden Clip mit dieser Kurve und setzt danach mit ihrem Wert sofort fort. | #5 |
+| 6 | Das Abtasten des Startwerts legte im Song einen leeren eigenen Clip an. | Abtasten legt nie einen Behälter an. | #6 |
+| 7 | Der Startwert des Rads im Verlauf war der Wert nach der ersten Bewegung. | Der Verlauf beginnt vor der Bewegung. | #7 |
+| 9 | Die Meldung nach der Aufnahme zählte die Kurven als Note. | Es werden nur die Noten gezählt. | – |
+| 10 | Song-Schlag nahe einem Schleifen-Sprung ungenau. | Jeder Sprung des Songs wird gemerkt; jeder Schlag wird genau umgerechnet. | #6, Song-Aufnahme in `bm8-rec2` |
+| 8 | „Melodie-Spur wechseln (mitnehmen)“: Hat das Ziel schon eine Kurve desselben Reglers, bleibt dessen Kurve; die mitgenommene fällt weg (zwei Kurven lassen sich nicht zusammenlegen). | nicht geändert | Frage 5 |
 
 ## Abnahme (echte Läufe, Chromium headless, Platzhalter-Host)
 | Punkt | Ergebnis |
@@ -81,7 +95,8 @@ Die Helfer `cvReverse` und `cvScale` liegen bereit, sind aber nirgends angebunde
 | Regel 1/4/5 | „Kurven löschen“ in 428×926, 926×428, 390×844, 375×667, 320×568, 844×390, 667×375: sichtbar, trifft, nicht abgeschnitten, keine Seitenhöhen-Änderung ✔ |
 
 Testskripte: `tests/bm8-curves.mjs` (17/17), `tests/bm8-copy.mjs` (39/39), `tests/bm8-rec2.mjs` (7/7), `tests/bm8-regel28.mjs` (7/7),
-`tests/bm8-layout.mjs` (22/22). Bilder: `bm8-shots/clip-menue-*.png`.
+`tests/bm8-layout.mjs` (22/22), `tests/bm8-helfer.mjs` (22/22), `tests/bm8-review.mjs` (7/7). Alle nach den Korrekturen erneut gelaufen, die
+zeitkritischen mehrfach hintereinander. Bilder: `bm8-shots/clip-menue-*.png`.
 
 **Nicht geprüft (braucht den echten Prozessor):** das hörbare Ergebnis von BM8-02 (Offline-Render gegen Echtzeit-Mitschnitt) und die 10-ms-Glättung
 in der Engine. Geprüft ist der Strom der `ctl`-Ereignisse. Nach dem Zusammenführen mit BM1/BM2/BM6 erneut prüfen.
@@ -94,8 +109,9 @@ Bei den rohen Eingabe-Ereignissen liegt die Abweichung bei 0,005–0,01. Das lie
 ## Fragen an Xander
 1. Zwischen den Punkten gilt die Gerade, gesendet wird alle 10 ms ein Wert. Passt das?
 2. Regler, die während einer Aufnahme nicht bewegt wurden, bekommen keine Kurve. Im Ersetzen-Modus wird nur ersetzt, was bewegt wurde. Passt das?
-3. Song-Melodie und Clip auf derselben Spur mit Kurven: Wer hat Vorrang?
+3. Song-Melodie und Clip auf derselben Spur mit Kurven: Der Clip hat Vorrang (so gebaut). Passt das?
 4. Sollen die Clip-Blatt-Tasten im Querformat (heute 34–36 px) auf 44 px wachsen?
+5. Melodie auf eine andere Spur mitnehmen, die schon eine Kurve desselben Reglers hat: Welche Kurve soll bleiben?
 
 ## Bitte prüfen
 1. Bit-Mask-Spur (nach dem Zusammenführen): ● 4 Takte mit Bend, MOD-Rad und Druck aufnehmen. Klingt die Wiedergabe wie gespielt?

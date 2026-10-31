@@ -24,6 +24,7 @@ await p.evaluate(() => SYNQUENZER.rec());
 await p.waitForFunction(() => rec.state === 'recording', null, {timeout: 5000});
 const inLog = await p.evaluate(`window.__drive(['bd','mw','at'], ${f}, 3.6)`);
 await p.waitForFunction(() => rec.state === 'off', null, {timeout: 8000});
+await p.waitForFunction(() => S.tracks[0].clips[window.__s] && S.tracks[0].clips[window.__s].cv, null, {timeout: 3000});   // geschrieben, sobald das Ende gehört ist
 const r1 = await p.evaluate(({inLog}) => {
   const c = S.tracks[0].clips[window.__s], cv = c && c.cv, B0 = 0, L = c.len * 4, out = {len: c.len, keys: cv ? Object.keys(cv) : [], n: {}, start: {}, dev: {}, rate: {}};
   for (const k of ['bd', 'mw', 'at']) {

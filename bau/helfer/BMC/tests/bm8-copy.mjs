@@ -93,8 +93,9 @@ ok('BM8-03 Server (Fake: Körper → cloudApply)', r3p.server); ok('BM8-03 Proje
 // ---------- BM8-04 Zeit- und Tonhöhen-Aktionen ----------
 const r4 = await p.evaluate(() => {
   const A = SYNQUENZER, s0 = window.__s0, cv = window.__cv, tr = S.tracks[0], J = x => JSON.stringify(x), out = {}, c = () => tr.clips[s0];
-  clipLength(0, s0, 2); out.x2 = J(c().cv) === J(cvRepeat(cv, 8, 2)) && c().len === 4; out.x2v = J(c().cv.mw); A.undo();
-  clipLength(0, s0, .5); out.half = J(c().cv) === J(cvCut(cv, 4)) && c().cv.at.length === 1 && c().cv.mw.length === 2; out.halfV = J(c().cv); A.undo();
+  clipLength(0, s0, 2); out.x2 = J(c().cv) === J(cvRepeat(cv, 8, 2)) && c().len === 4 && CV_K.every(k => { for (let t = 0; t < 8 - 1e-3; t += 1 / 32) if (Math.abs(cvAt(c().cv[k], t) - cvAt(cv[k], t)) > 1 / 2048 || Math.abs(cvAt(c().cv[k], t + 8) - cvAt(cv[k], t)) > 1 / 2048) return false; return true; }); out.x2v = J(c().cv.mw); A.undo();
+  // ½: points behind the end go; a line over the new end holds its value there (sampled against the old curve)
+  clipLength(0, s0, .5); out.half = J(c().cv) === J(cvCut(cv, 4)) && CV_K.every(k => { for (let t = 0; t < 4 - 1e-4; t += 1 / 32) if (Math.abs(cvAt(c().cv[k], t) - cvAt(cv[k], t)) > 1 / 2048) return false; return true; }); out.halfV = J(c().cv); A.undo();
   clipLength(0, s0, -1); out.minus = J(c().cv) === J(cvCut(cv, 4)); A.undo();
   clipLength(0, s0, 1); out.plus = J(c().cv) === J(cv) && c().len === 3; A.undo();
   out.undoBack = J(c().cv) === J(cv) && c().len === 2;

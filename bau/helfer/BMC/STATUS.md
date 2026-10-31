@@ -1,6 +1,6 @@
 # BMC – Stand
 
-- **Paket:** BM8 (Bend, Rad, Druck im Clip). Gebaut und getestet gegen den Platzhalter `BmHost.ctl`. Wartet auf den unabhängigen Prüfer.
+- **Paket:** BM8 (Bend, Rad, Druck im Clip). Gebaut, unabhängig geprüft, Befunde behoben, getestet gegen den Platzhalter `BmHost.ctl`.
 - **Datei:** `bau/helfer/BMC/index.html` (Basis vs-base-B = 4.23.0; VERSION und CLOUD-Zeile unverändert).
 - **Tests:** `node bau/helfer/BMC/tests/<name>.mjs`. Ergebnisse:
   - bm8-curves: 17/17
@@ -8,6 +8,8 @@
   - bm8-rec2: 7/7
   - bm8-regel28: 7/7
   - bm8-layout: 22/22
+  - bm8-helfer: 22/22
+  - bm8-review: 7/7
 - **Zusammenführen:** Reihenfolge laut Spec §6: … BM5 → **BM8** → BM3 …
   - `BmHost.ctl(i, list)` an `E.ctl({list})` des Bit-Mask-Knotens.
   - `bmcIs()` über `engine === 'bm'`.

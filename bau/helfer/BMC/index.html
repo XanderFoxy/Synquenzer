@@ -17440,9 +17440,13 @@ function cvAt(a, t) {
 }
 // time edits (§5.4 „Zeit-Aktionen nehmen die Kurven mit“): each returns a new cv (or null) for a container of the new length
 function cvMap(cv, fn) { if (!cv) return null; const o = {}; for (const k of CV_K) if (cv[k]) { const c = fn(cv[k], k); if (c && c.length) o[k] = c; } return Object.keys(o).length ? o : null; }
+/* a piece of a curve keeps its shape at its end: a line that runs over the end gets a point just before it (the value there), so
+   the piece holds that value up to its end instead of ramping into whatever follows (straight lines between points) */
+const CV_EPS = 1e-4;
+function cvEnd(o, k, v, tEnd, force) { v = cvQv(k, v); const l = o[o.length - 1], t = cvQt(tEnd - CV_EPS); if (l && t > l[0] && (force || l[1] !== v)) o.push([t, v]); }
 // the part [a, b) of the curves, starting at 0 (its start value = the value at a)
 function cvSlice(cv, a, b) {
-  return cvMap(cv, (c, k) => { const o = [[0, cvQv(k, cvAt(c, a))]]; for (const p of c) if (p[0] > a && p[0] < b) o.push([cvQt(p[0] - a), p[1]]); return o; });
+  return cvMap(cv, (c, k) => { const o = [[0, cvQv(k, cvAt(c, a))]]; for (const p of c) if (p[0] > a && p[0] < b) o.push([cvQt(p[0] - a), p[1]]); cvEnd(o, k, cvAt(c, b - CV_EPS), b - a); return o; });
 }
 // several parts one after the other: [[cv, off, len]…] → one cv (a part without a curve holds the value the curve had before it)
 function cvJoin(parts, L) {
@@ -17452,9 +17456,9 @@ function cvJoin(parts, L) {
     const r = []; let last = null;
     for (const [cv, off, len] of parts) {
       const c = cv && cv[k];
-      if (c) { for (const p of c) if (p[0] < len) { const t = cvQt(p[0] + off); if (t < L) r.push([t, p[1]]); } last = cvAt(c, len); }
-      else if (k !== 'mw') r.push([cvQt(off), 0]);                // a part without the curve: Bend / Druck at rest (0)
-      else if (r.length) r.push([cvQt(off), cvQv(k, last)]);       // … the wheel stays where it was
+      if (c) { for (const p of c) if (p[0] < len) { const t = cvQt(p[0] + off); if (t < L) r.push([t, p[1]]); } last = cvAt(c, len - CV_EPS); if (r.length) cvEnd(r, k, last, Math.min(L, off + len), true); }   // held up to the part's end
+      else if (k !== 'mw') { r.push([cvQt(off), 0]); r.push([cvQt(Math.min(L, off + len) - CV_EPS), 0]); }   // a part without the curve: Bend / Druck at rest (0)
+      else if (r.length) { r.push([cvQt(off), cvQv(k, last)]); r.push([cvQt(Math.min(L, off + len) - CV_EPS), cvQv(k, last)]); }   // … the wheel stays where it was
     }
     const c = cvNormCurve(k, r.filter(p => p[1] != null), L); if (c) o[k] = c;
   }
@@ -17485,11 +17489,14 @@ function cvReverse(cv, L) {
   });
 }
 // a new length (kürzen / verlängern ohne Wiederholung): points behind the end go
-function cvCut(cv, L) { return cvMap(cv, (c, k) => cvNormCurve(k, c, L)); }
+function cvCut(cv, L) { return cvMap(cv, (c, k) => { const o = cvNormCurve(k, c, L); if (o && c.some(p => p[0] >= L)) cvEnd(o, k, cvAt(c, L - CV_EPS), L); return o; }); }
 // a time stretch by f (dehnen): t × f
 function cvScale(cv, f, L) { return cvMap(cv, (c, k) => cvNormCurve(k, c.map(p => [p[0] * f, p[1]]), L)); }
 // the container's cv after a time edit; c gets cv or loses it (no empty cv)
-function cvSet(c, cv) { if (!c) return; if (cv && Object.keys(cv).length) c.cv = cv; else delete c.cv; }
+function cvSet(c, cv) {
+  if (!c) return; if (cv && Object.keys(cv).length) c.cv = cv; else delete c.cv;
+  if (c.cv && c.from) { const f = c.from; delete c.from; c.from = f; }      // an own clip: cv before from (as ownNorm writes it, Regel 8/9)
+}
 /* Ausdünnung (§5.4): a point goes when the straight line between its neighbours misses it by ≤ tol (bend 0.002, else 0.004).
    Greedy forward: the kept segment is extended as long as every skipped point stays within tol. */
 function cvThin(k, pts) {
@@ -17551,8 +17558,12 @@ function bmcVal(H, k, b) {
   while (hi - lo > 1) { const m = (lo + hi) >> 1; if (a[m][0] <= b) lo = m; else hi = m; }
   const p = a[lo], q = a[hi]; return q[0] - p[0] < 1e-12 ? q[1] : p[1] + (q[1] - p[1]) * (b - p[0]) / (q[0] - p[0]);
 }
-// the song beat of transport beat b (from the nearest event; null when there was no song)
+// the song's origin per stretch of the run (song start, every loop / jump): transport beat b → song beat exactly, also for passes long gone
+function bmcWrapReset() { const sp = R.songPlay; BMC.wr = sp ? [{at: -Infinity, off: sp.off}] : []; BMC.wrRun = R.runId; }
+function bmcWrapAdd() { const sp = R.songPlay; if (!sp) return; if (BMC.wrRun !== R.runId || !BMC.wr) bmcWrapReset(); else BMC.wr.push({at: sp.wrapAt, off: sp.off}); }
+// the song beat of transport beat b (null when there was no song)
 function bmcSb(H, k, b) {
+  if (BMC.wrRun === R.runId && BMC.wr && BMC.wr.length) { let off = BMC.wr[0].off; for (const w of BMC.wr) { if (w.at <= b + 1e-9) off = w.off; else break; } return b - off; }
   const a = H[k]; if (!a.length) { const s = songBeatOf(b); return s; }
   let best = a[0]; for (let lo = 0, hi = a.length - 1; lo <= hi;) { const m = (lo + hi) >> 1; if (Math.abs(a[m][0] - b) < Math.abs(best[0] - b)) best = a[m]; if (a[m][0] < b) lo = m + 1; else hi = m - 1; }
   return best[2] == null ? null : b - (best[0] - best[2]);
@@ -17567,26 +17578,33 @@ function bmcSpans(H, k, B0, B1) {
   }
   return out;
 }
+// fn once beat B (plus the ± 20 ms of a movement) has been heard: a take that closes a lookahead early still gets its last movement
+function bmcAfter(B, fn) {
+  const run = R.runId, ms = AU.ctx && R.playing ? (B - bmcBeatNow()) * spb() * 1000 + BMC.W * 1000 + 15 : 0;
+  if (ms <= 0) { fn(); return; }
+  setTimeout(() => { if (BMC.run === run || BMC.run == null) fn(); }, ms);
+}
 function bmcTouched(i, B0, B1) { if (!BMC.h[i] || BMC.run !== R.runId) return false; const H = BMC.h[i]; return CV_K.some(k => bmcSpans(H, k, B0, B1).length > 0); }
 /* the takes's regulator movement of [B0, B1) into containers: map(b, sb) → [container, t, L] or null.
    o.fresh: a new container (the curve = what was played); o.replace: the range is replaced (Ersetzen); else Overdub = „Berühren“:
    only inside the spans the regulator moved the new points replace the old ones. Returns the containers that changed. */
 function bmcWrite(i, B0, B1, map, o) {
-  o = o || {}; const H = BMC.h[i], done = new Set();
+  o = o || {}; const H = o.replace && AU.ctx ? bmcHist(i) : BMC.h[i], done = new Set();   // Ersetzen also without any movement in this run
   if (!H || BMC.run !== R.runId || !(B1 > B0)) return done;
   const st = BMC.ST / spb();
   for (const k of CV_K) {
     const spans = bmcSpans(H, k, B0, B1);
     if (!spans.length && !o.replace) continue;
     // the points: grid of 10 ms inside each span (both ends included), mapped; a new piece where the container or the loop turns
-    const segs = o.replace ? (spans.length ? [[B0, B1]] : []) : spans, pieces = [];
-    if (o.replace && !spans.length) continue;
-    for (const [sa, sbE] of segs) {
+    // Ersetzen: the whole range; a regulator that did not move only replaces where a curve already is (need: no new containers)
+    const segs = o.replace ? [[B0, B1]] : spans, pieces = [], mo = o.replace && !spans.length ? {need: k} : {};
+    for (const [sa, sb0] of segs) {
+      const sbE = Math.min(sb0, B1 - CV_EPS); if (sbE <= sa) continue;   // the take's end itself is not inside (a loop would put it on 0)
       let cur = null;
       // sampling points: the span's start, the 10-ms grid of the transport (k · 10 ms), the span's end
       for (let j = Math.floor(sa / st + 1e-9), b = sa, end = false; !end; b = ++j * st) {
         if (b >= sbE - 1e-9) { b = sbE; end = true; }
-        const m = map(b, bmcSb(H, k, b)); if (!m) { cur = null; continue; }
+        const m = map(b, bmcSb(H, k, b), mo); if (!m) { cur = null; continue; }
         const [c, t, L] = m; if (!(t >= 0 && t < L)) { cur = null; continue; }
         if (!cur || cur.c !== c || t < cur.p[cur.p.length - 1][0] - 1e-9) { cur = {c, L, p: [], e0: b === sa, e1: false}; pieces.push(cur); }
         cur.p.push([t, bmcVal(H, k, b)]); cur.e1 = end;
@@ -17598,7 +17616,7 @@ function bmcWrite(i, B0, B1, map, o) {
       if (!seen.has(c)) {
         seen.set(c, !o.fresh && !!(c.cv && c.cv[k]));
         if (o.fresh || !(c.cv && c.cv[k])) {                        // a new curve starts with the value at the start of the take
-          const m0 = map(B0, bmcSb(H, k, B0)), cv = Object.assign({}, c.cv || {});
+          const m0 = map(B0, bmcSb(H, k, B0), {probe: true}), cv = Object.assign({}, c.cv || {});   // probe: never makes a container
           // (a container the take reaches later, e.g. the song melody after an own clip: at rest up to there, then a step)
           const t0 = P[0][0], rest = cvQv(k, k === 'mw' ? bmcVal(H, k, B0) : 0);
           cv[k] = m0 && m0[0] === c && m0[1] >= 0 && m0[1] < m0[2] ? [[cvQt(m0[1]), cvQv(k, bmcVal(H, k, B0))]] : t0 > 1e-4 ? [[0, rest], [cvQt(t0 - 1e-4), rest]] : [[0, rest]];
@@ -17638,14 +17656,14 @@ function bmcSend(i, pts, late) {
   pts.sort((a, b) => a[1] - b[1]);
   const list = [];
   for (const [k, B, v] of pts) { let at = b2t(B); if (late && at < now) at = now; list.push({k, v, at}); }
-  if (late) list[0].cut = 1;                                     // a switch inside the planned window: queued curve events from here on go
+  if (late) { const seen = new Set(); for (const x of list) if (!seen.has(x.k)) { seen.add(x.k); x.cut = 1; } }   // a switch inside the planned window: queued events of that regulator from here on go
   BmHost.ctl(i, list);
 }
 // back to rest: Bend 0, Druck 0, Rad = the wheel's position (§5.4)
 function bmcReset(i, at, src) {
   const a = BMC.act[i]; if (!a) return; const list = [];
   for (const k of CV_K) if (a[k] && (!src || a[k] === src)) { a[k] = null; if (!bmcTouching(i, k)) list.push({k, v: bmcRest(i, k), at}); }
-  if (list.length) { list[0].cut = 1; BmHost.ctl(i, list); }    // cut: curve events queued behind `at` are dropped (■, Panik)
+  if (list.length) { for (const x of list) x.cut = 1; BmHost.ctl(i, list); }    // cut: events of that regulator queued behind `at` are dropped (■, Panik)
 }
 function bmcResetAll(at) { for (const i of Object.keys(BMC.act)) bmcReset(+i, at); BMC.src = {}; }
 // scheduleTrack's part: the clip's curves in [from, to) (every loop pass starts on its start value); a clip without a curve
@@ -17654,7 +17672,12 @@ function bmcSched(i, clip, from, to, late) {
   if (!AU.ctx) return;
   const a = BMC.act[i] || (BMC.act[i] = {}), cv = clip && clip.cv, srcKey = clip ? clip : null, pts = [];
   const fresh = BMC.src[i] !== srcKey; BMC.src[i] = srcKey;
-  for (const k of CV_K) if (a[k] === 'clip' && !(cv && cv[k])) { a[k] = null; if (!bmcTouching(i, k)) pts.push([k, from, bmcRest(i, k)]); }
+  // the clip's curve ends here: back to rest — or straight onto the song melody's curve of this track, when it has one
+  const mc = R.songPlay && S.song && S.song.mel && S.song.mel[i] && S.song.mel[i].cv, sbF = mc ? songBeatOf(from) : null;
+  for (const k of CV_K) if (a[k] === 'clip' && !(cv && cv[k])) {
+    const m = mc && mc[k] && sbF != null && sbF >= 0 && !S.tracks[i].mute; a[k] = m ? 'mel' : null;
+    if (!bmcTouching(i, k)) pts.push([k, from, m ? cvAt(mc[k], sbF) : bmcRest(i, k)]);
+  }
   if (cv) {
     const L = clip.len * 4, cs = R.cstart[i];
     for (const k of CV_K) {
@@ -17674,7 +17697,14 @@ function bmcSchedMel(i, mel, sa, sb, off, first) {
   if (!AU.ctx) return;
   const a = BMC.act[i] || (BMC.act[i] = {}), cv = mel && mel.cv, pts = [];
   for (const k of CV_K) if (a[k] === 'mel' && !(cv && cv[k])) { a[k] = null; if (!bmcTouching(i, k)) pts.push([k, sa + off, bmcRest(i, k)]); }
-  if (cv) for (const k of CV_K) { const c = cv[k]; if (!c || bmcTouching(i, k)) continue; a[k] = 'mel'; bmcPts(pts, k, c, Math.max(0, sa), sb, off, first); }
+  // a clip curve of the same regulator on this track has the say (the song take writes its clip bars into own clips); the melody
+  // takes over again with its value at once
+  const pd = R.pend[i], pc = pd && pd.slot >= 0 ? (pd.own && S.song && S.song.own ? S.song.own[pd.own] : S.tracks[i].clips[pd.slot]) : null;
+  if (cv) for (const k of CV_K) {
+    const c = cv[k]; if (!c || bmcTouching(i, k) || a[k] === 'clip') continue;
+    const e = pc && pc.cv && pc.cv[k] ? Math.min(sb, pd.beat - off) : sb;    // a clip with this curve starts inside the window: up to there
+    const f = first || a[k] !== 'mel'; a[k] = 'mel'; bmcPts(pts, k, c, Math.max(0, sa), e, off, f);
+  }
   bmcSend(i, pts, false);
 }
 const stripReplacer = (k, v) => (k === 'born' || k === 'bornRun' ? undefined : v);
@@ -18158,6 +18188,7 @@ function mkWheelSync(i, reset) {
 }
 function mkWheelSet(i, w, v, ret) {
   const o = mkWheelOf(i); if (!o) return 0;
+  if (R.playing && AU.ctx && bmcIs(i)) bmcHist(i);              // BM8: the history starts with the wheel where it was (before this move)
   if (w === 'bend') o.bend = clamp(+v || 0, -1, 1); else o.mod = clamp(+v || 0, 0, 1);
   const E = AU.synth[i]; if (E && sndOf(i) && sndOf(i).engine === 'mk') E.mkWheel(w === 'bend' ? {bend: o.bend, ret: ret || 0} : {mod: o.mod});
   if (bmcIs(i)) bmcInput(i, w === 'bend' ? 'bd' : 'mw', w === 'bend' ? o.bend : o.mod, ret);   // BM8: in den Verlauf (Aufnahme)
@@ -19789,7 +19820,7 @@ function songPlayStart(fromBar, o) {
   if (has) { R.songApplying = true; try { if (ct) T.recall(ct, nowT(), null); else T.reset(nowT(), null); } finally { R.songApplying = false; } }
   // a clip launched before bar0 plays in phase with its launch bar (startTransport takes cs from here)
   const off = -bar0 * 4;
-  R.songPlay = {off, bar0, cs: S.tracks.map((_, i) => (R.slot[i] >= 0 ? songCs(song, i, bar0) + off : 0))};
+  R.songPlay = {off, bar0, cs: S.tracks.map((_, i) => (R.slot[i] >= 0 ? songCs(song, i, bar0) + off : 0))}; bmcWrapReset();
   songXpAt(song, bar0 * 4, 0);                                    // V2d: song.xp in effect at bar0
   if (o.countIn) startTransport(o.countIn); else play();
   UI.dirty.all = true; UI.dirty.song = true;
@@ -19800,7 +19831,7 @@ function songPlayStartAt(bar0, nb) {
   const song = S.song; bar0 = clamp(bar0 | 0, 0, song.bars - 1);
   const off = nb - bar0 * 4;
   R.songOverride.fill(false); R.carrierLive = false; R.songEndBeat = null; R.melRec = null;
-  R.songPlay = {off, bar0, cs: new Array(8).fill(0)};
+  R.songPlay = {off, bar0, cs: new Array(8).fill(0)}; bmcWrapReset();
   R.songApplying = true;
   try {
     for (let i = 0; i < NT(); i++) {
@@ -19874,7 +19905,7 @@ function songTick(b0, b1) {
 function songJumpApply(j) {
   const sp = R.songPlay, song = S.song; if (!sp || !song) return;
   if (TK.src.length) tkVoxCut(b2t(j.at));                         // VS3: die Song-Stimme springt mit
-  sp.prevOff = sp.off; sp.wrapAt = j.at; sp.off = j.at - j.bar * 4; R.songEndBeat = null;
+  sp.prevOff = sp.off; sp.wrapAt = j.at; sp.off = j.at - j.bar * 4; R.songEndBeat = null; bmcWrapAdd();
   R.songApplying = true;
   try {
     for (let t = 0; t < NT(); t++) {
@@ -19954,7 +19985,7 @@ function songTickInner(b0, b1) {
       try { tkVoxTick(song, b0, b1, off, E, insB, guard && sp.wrapAt != null ? sp.wrapAt : -Infinity); } catch (e) { tickErr(e); }   // VS3: Song-Stimme
       if (!wrap) break;
       const A = lp.a * 4;
-      sp.prevOff = sp.off; sp.wrapAt = eb; sp.off = eb - A;       // ⟲: the next pass starts at the loop start (song: bar 1)
+      sp.prevOff = sp.off; sp.wrapAt = eb; sp.off = eb - A; bmcWrapAdd();       // ⟲: the next pass starts at the loop start (song: bar 1)
       if (song.xp && song.xp.length) songXpAt(song, A, eb);         // V2d
       if (!(loopAll(song) && !recOver)) {
         // a range (or a take over the song): every track jumps to what the song plays at the loop start, in phase with its
@@ -20351,9 +20382,16 @@ function songCommitNotes(sr, A, B, first) {
   for (const k in song.mel) { const m = song.mel[k]; m.notes.sort((a, b) => a.t - b.t); m.len = Math.max(m.len || 1, song.bars || 1); }
   if (bmcIs(t) && AU.ctx) {                                      // BM8: Bend · Rad · Druck des Durchgangs in Melodie bzw. eigene Clips
     const B0 = sr.cvB != null ? sr.cvB : -1e9, B1 = Math.max(B0, audBeat()); sr.cvB = B1;
-    bmcWrite(t, B0, B1, (b, sb) => {
+    bmcWrite(t, B0, B1, (b, sb, mo) => {
       if (sb == null) return null; const x = Math.floor(sb / 4 + 1e-9); if (x < A || x >= B) return null;
-      if (ownAt(x)) { const w = ownEnsure(song, t, x); return w ? [w.c, sb - w.ds, w.c.len * 4] : null; }
+      mo = mo || {};
+      if (ownAt(x)) {
+        if (mo.probe) return null;
+        if (mo.need) { const r = ownRun(song, t, x), src = r && (r.o.own ? song.own && song.own[r.o.own] : S.tracks[t].clips[r.o.slot]); if (!src || !src.cv || !src.cv[mo.need]) return null; }
+        const w = ownEnsure(song, t, x); return w ? [w.c, sb - w.ds, w.c.len * 4] : null;
+      }
+      if ((mo.need || mo.probe) && !song.mel[t]) return null;
+      if (mo.need && !(song.mel[t].cv && song.mel[t].cv[mo.need])) return null;
       const m = song.mel[t] || (song.mel[t] = melEmpty()); m.len = Math.max(m.len || 1, song.bars || 1, x + 1); return [m, sb, m.len * 4];
     }, {replace: repl && first});
   }
@@ -21249,16 +21287,21 @@ function recEndFixed(atBeat, natural) {
   recCommitOpen(Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat));
   cancelRecClicks(Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat));
   if (rec.clip) rec.clip.notes.sort((a, b) => a.t - b.t);
-  if (rec.clip && bmcIs(rec.track)) { const c = rec.clip, L = c.len * 4, B0 = rec.startBeat; bmcWrite(rec.track, B0, Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat), b => [c, (((b - B0) % L) + L) % L, L], {fresh: true}); }   // BM8
+  let cvT = false;
+  if (rec.clip && bmcIs(rec.track)) {                            // BM8: the curves, once the take's end has been heard
+    const c = rec.clip, ti = rec.track, si = rec.scene, L = c.len * 4, B0 = rec.startBeat, B1 = Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat);
+    cvT = bmcTouched(ti, B0, B1) || (B1 > bmcBeatNow() && R.playing);
+    bmcAfter(B1, () => { if (S.tracks[ti].clips[si] !== c) return; if (bmcWrite(ti, B0, B1, b => [c, (((b - B0) % L) + L) % L, L], {fresh: true}).size) { clipChanged(ti, si); markDirty(); UI.dirty.all = true; } });
+  }
   rec.tail = natural && rec.clip ? {track: rec.track, scene: rec.scene, clip: rec.clip, until: rec.endBeat} : null;
-  const n = rec.clip ? rec.clip.notes.length + (cvHas(rec.clip) ? 1 : 0) : 0;
+  const n = rec.clip ? rec.clip.notes.length + (cvT && !rec.clip.notes.length && bmcTouched(rec.track, rec.startBeat, atBeat) ? 1 : 0) : 0;
   rec.state = 'off';
   if (!n) {
     // nothing played: no clip is created (§4.3.6). A natural close happens a lookahead early, so a note played
     // right before the bar line still arrives as 'tail' -> decide when the tail window is over.
     if (natural && rec.tail) rec.tail.emptyCheck = true;
     else { dropEmptyRecClip(rec.track, rec.scene, rec.clip); rec.clip = null; rec.tail = null; if (!VS.busy) toast('Nichts aufgenommen'); }
-  } else { analyseClip(rec.track, rec.scene, true, true); recResultToast(rec.track, rec.scene, n); }
+  } else { analyseClip(rec.track, rec.scene, true, true); recResultToast(rec.track, rec.scene, rec.clip.notes.length); }
   clipChanged(rec.track, rec.scene); markDirty();
   UI.dirty.all = true;                        // ● goes back to idle (also when the take closes by itself)
 }
@@ -21350,7 +21393,7 @@ function recClose(bd) {
   if (S.tracks[ti].kind === 'drum') clip.seed = newSeed();
   pushUndo(ti, si, S.tracks[ti].clips[si], 'Aufnahme');
   S.tracks[ti].clips[si] = clip;
-  if (cvT) { const B0 = rec.startBeat; bmcWrite(ti, B0, bd, b => [clip, (((b - B0) % L) + L) % L, L], {fresh: true}); }
+  if (cvT || (bmcIs(ti) && R.playing && bd > bmcBeatNow())) { const B0 = rec.startBeat; bmcAfter(bd, () => { if (S.tracks[ti].clips[si] !== clip) return; if (bmcWrite(ti, B0, bd, b => [clip, (((b - B0) % L) + L) % L, L], {fresh: true}).size) { clipChanged(ti, si); markDirty(); UI.dirty.all = true; } }); }
   rec.tail = {track: ti, scene: si, clip, until: bd};
   for (const [id, o] of late) { Object.assign(o, {kind: 'tail', clip, scene: si, cs: bd}); rec.open.set(id, o); }
   analyseClip(ti, si, true, true);
