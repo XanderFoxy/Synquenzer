@@ -17,9 +17,10 @@ const res = []; const check = (id, ok, d) => { res.push({id, ok: !!ok}); console
 const R = (x, d = 1) => (+x).toFixed(d), hz = p => 440 * Math.pow(2, (p - 69) / 12);
 const hit = (p, v = 1, sec = 2, o = {}) => render(Object.assign({sr: SR, chans: {0: p}, hits: [{ch: 0, at: 0, v}], sec}, o));
 const pkDb = x => M.db(M.peakAbs(x));
-const band = (x, a, b, f1, f2) => { const S = M.spectrum(x, SR, Math.round(a * SR), Math.round(b * SR), 16384); let e = 0; for (let i = Math.ceil(f1 / S.df); i <= f2 / S.df; i++) e += S.mag[i] ** 2; return 10 * Math.log10(e + 1e-30); };
+const band = (x, a, b, f1, f2) => { const L = Math.round((b - a) * SR), S = rectSpec(x, Math.round(a * SR), L); let e = 0; for (let i = Math.ceil(f1 / S.df); i <= f2 / S.df; i++) e += S.mag[i] ** 2; return 10 * Math.log10(e / L + 1e-30); }; /* mean power in the band */
+function rectSpec(x, a, L) { const N = 16384, re = new Float64Array(N), im = new Float64Array(N); for (let i = 0; i < Math.min(L, N); i++) re[i] = x[a + i]; M.fft(re, im); const mag = new Float64Array(N / 2); for (let i = 0; i < N / 2; i++) mag[i] = Math.hypot(re[i], im[i]); return {mag, df: SR / N}; }   // rectangular window: the hit sits at the window start
 function msp(x, a, b) { let num = 0, den = 0; for (let s = Math.round(a * SR); s + 2048 <= Math.round(b * SR) + 1; s += 1024) { const S = M.spectrum(x, SR, s, s + 2048, 2048); for (let i = 1; i < S.mag.length; i++) { num += S.mag[i] * i * S.df; den += S.mag[i]; } } return num / den; }
-function mAus(x) { const {e, dt} = M.envDb(x, SR, 0.005); let pk = -1e9, pi = 0; e.forEach((v, i) => { if (v > pk) { pk = v; pi = i; } }); for (let i = pi; i < e.length; i++) if (e[i] < pk - 20) return i * dt; return e.length * dt; }
+function mAus(x) { const {e, dt} = M.hilbDb(x, SR, 0.005, 0.001); /* envelope = Hilbert magnitude, 5 ms smoothing (a 40-60 Hz tone has longer periods than a 5 ms RMS window) */ let pk = -1e9, pi = 0; e.forEach((v, i) => { if (v > pk) { pk = v; pi = i; } }); for (let i = pi; i < e.length; i++) if (e[i] < pk - 20) return i * dt; return e.length * dt; }
 function harm(x, a, b) { const S = M.spectrum(x, SR, Math.round(a * SR), Math.round(b * SR)); const P = M.peaks(S, -60).slice(0, 20); if (!P.length) return 0; const low = P.slice().sort((p, q) => p.f - q.f).find(q => q.db > -30) || P[0];
   let e = 0, eh = 0; for (const q of P) { e += q.a * q.a; const h = q.f / low.f; if (Math.abs(h - Math.round(h)) <= 0.01 * h) eh += q.a * q.a; } return eh / e; }
 function lowPeak(x, a, b, fmax) { const S = M.spectrum(x, SR, Math.round(a * SR), Math.round(b * SR)); const P = M.peaks(S, -20, 20, fmax); return P.sort((p, q) => p.f - q.f)[0]; }
@@ -31,7 +32,7 @@ function lufs(L, Rr) { const kw = x => { const y = Float64Array.from(x); const b
   const l = kw(L), r = kw(Rr), B = Math.round(0.4 * SR), H = Math.round(0.1 * SR), z = []; for (let s = 0; s + B <= l.length; s += H) { let a = 0; for (let i = s; i < s + B; i++) a += l[i] * l[i] + r[i] * r[i]; z.push(a / B); }
   const ld = v => -0.691 + 10 * Math.log10(v + 1e-30); let g = z.filter(v => ld(v) > -70); const m1 = g.reduce((s, v) => s + v, 0) / g.length; g = g.filter(v => ld(v) > ld(m1) - 10); return ld(g.reduce((s, v) => s + v, 0) / g.length); }
 // ---- calibration of CH LEVEL (targets: kick -6, snare -3, hats -11.5 dBFS peak at v 1; toms equal to "Fell mitte") ----
-const target = {bd: -6, Sn: -3, HH: -11.5};
+const target = {bd: -6, Sn: -3, HH: -11.5, to: -9, Cy: -9, Pc: -9, Be: -9, Tu: -9, Ef: -9};   // to/Cy/Pc/Be/Tu/Ef: [A] -9 dBFS
 if (CALIB) {
   const LV = {};
   for (const p of MDX.progs) { const t = target[p.mCat]; if (t == null) continue; let x = p.mLvl; for (let k = 0; k < 4; k++) { const q = Object.assign({}, p, {mLvl: x}); const d = t - pkDb(hit(q, 1, 1.5).L); x = Math.max(1, Math.min(50, Math.round(x * Math.sqrt(Math.pow(10, d / 20))))); } LV[p.mName] = x; }
@@ -46,13 +47,14 @@ const P = n => MDX.prog(n);
 // ND3-02 character
 for (const p of MDX.progs.filter(q => q.mCat === 'bd')) { const r = hit(p, 1, 1.5); const lo = lowPeak(r.L, 0.03, 0.5, 200); const ck = band(r.L, 0, 0.005, 2000, 6000), bd = band(r.L, 0.03, 0.15, 30, 150); const aus = mAus(r.L);
   check('ND3-02 bd ' + p.mName, lo && lo.f >= 40 && lo.f <= 70 && ck >= bd - 20 && aus >= 0.05 && aus <= 0.4, 'Grundton ' + (lo ? R(lo.f) : '-') + ' Hz, Klick-Band ' + R(ck - bd) + ' dB zum Körper, M-AUS ' + R(aus * 1000, 0) + ' ms'); }
-for (const p of MDX.progs.filter(q => q.mCat === 'Sn' && q.mName !== 'Rausch-Klatsch')) { const r = hit(p, 1, 1); const tone = hit(Object.assign({}, p, {mNlv: 0, mClv: 0}), 1, 1), nz = hit(Object.assign({}, p, {mTlv: 0, mClv: 0}), 1, 1);
-  const lo = lowPeak(tone.L, 0.005, 0.3, 400); const d = band(nz.L, 0.03, 0.15, 2000, 20000) - band(tone.L, 0.03, 0.15, 20, 20000);
+for (const p of MDX.progs.filter(q => q.mCat === 'Sn' && q.mName !== 'Rausch-Klatsch')) { const r = hit(p, 1, 1); const tone = hit(Object.assign({}, p, {mNlv: 0, mClv: 0, mRvb: 0}), 1, 1), nz = hit(Object.assign({}, p, {mTlv: 0, mClv: 0, mRvb: 0}), 1, 1);   /* dry: the hall would color both parts */
+  const pk = M.peaks(M.spectrum(tone.L, SR, 0, Math.round(0.3 * SR)), -40, 120, 400), lo = pk.filter(q => q.a >= pk[0].a * 0.5).sort((a, b) => a.f - b.f)[0]; /* lowest peak within 6 dB of the strongest below 400 Hz */ const d = band(nz.L, 0.03, 0.15, 2000, 20000) - band(tone.L, 0.03, 0.15, 20, 20000);
   check('ND3-02 Sn ' + p.mName, lo && lo.f >= 150 && lo.f <= 260 && d >= -6 && d <= 6, 'Körper ' + (lo ? R(lo.f) : '-') + ' Hz, Rauschen/Ton ' + R(d) + ' dB'); }
-{ const f = ['Fell tief', 'Fell mitte', 'Fell hoch'].map(n => { const p = P(n), r = hit(p, 0.9, 2), f0 = hz(p.mPit), body = M.bandpass(r.L, SR, f0 * Math.pow(2, (p.mSpc - 33) / 33), 6); return {n, c0: centsAt(r.L, 0, f0 * Math.pow(2, (p.mSpc - 33) / 33)), t60: M.t60(body, SR), lo: lowPeak(r.L, 0.3, 1.5, 400)}; });
+{ const bendOf = (p, v) => { const t = hit(Object.assign({}, p, {mNlv: 0, mClv: 0, mBnd: 0}), v, 1.5), r = hit(Object.assign({}, p, {mNlv: 0, mClv: 0}), v, 1.5); const fs = lowPeak(t.L, 0.02, 1, 2000).f; const y = M.bandpass(r.L, SR, fs * 1.2, 1.2); return {fs, c: centsAt(y, 0.002, fs)}; };
+  const f = ['Fell tief', 'Fell mitte', 'Fell hoch'].map(n => { const p = P(n), r = hit(p, 0.9, 2), b = bendOf(p, 0.9); return {n, c0: b.c, t60: M.t60(r.L, SR), lo: lowPeak(r.L, 0.3, 1.5, 400)}; });
   for (const x of f) check('ND3-02 to ' + x.n, x.c0 / 100 >= 2 && x.c0 / 100 <= 5 && x.t60 >= 0.3 && x.t60 <= 0.9, 'Bend ' + R(x.c0 / 100, 2) + ' HT, T60 ' + R(x.t60 * 1000, 0) + ' ms');
   const st = [1200 * Math.log2(f[1].lo.f / f[0].lo.f), 1200 * Math.log2(f[2].lo.f / f[1].lo.f)]; check('ND3-02 to Abstand', st.every(c => Math.abs(c - 500) <= 10), st.map(c => R(c, 1)).join(' / ') + ' Cent');
-  const e = P('Elektro-Tom'), re = hit(e, 0.9, 1); check('ND3-02 to Elektro-Tom', centsAt(re.L, 0, hz(e.mPit)) / 100 >= 12, 'Bend ' + R(centsAt(re.L, 0, hz(e.mPit)) / 100, 2) + ' HT');
+  const e = P('Elektro-Tom'), be = (() => { const r = hit(Object.assign({}, e, {mNlv: 0, mClv: 0}), 0.9, 0.3); let z = 0; for (let i = 2; i < r.L.length; i++) if (r.L[i - 1] > 0 && r.L[i] <= 0) { z = i - 1 + r.L[i - 1] / (r.L[i - 1] - r.L[i]); break; } return {c: 1200 * Math.log2(0.5 / (z / SR) / hz(e.mPit))}; })(); check('ND3-02 to Elektro-Tom', be.c / 100 >= 12, 'Bend ' + R(be.c / 100, 2) + ' HT (erste Halbwelle; Anfangsversatz laut Modell ' + R(MDX.bendHT(e.mBnd, 0.9), 2) + ')');
   const k = P('Kessel'), rk = hit(k, 0.9, 4); const tk = M.t60(M.bandpass(rk.L, SR, hz(k.mPit), 8), SR); check('ND3-02 to Kessel', Math.abs(centsAt(rk.L, 0, hz(k.mPit))) <= 100 && tk >= 1.2, 'Bend ' + R(centsAt(rk.L, 0, hz(k.mPit)) / 100, 2) + ' HT, T60 ' + R(tk, 2) + ' s'); }
 for (const p of MDX.progs.filter(q => q.mCat === 'HH')) { const r = hit(p, 1, 2); const sp = msp(r.L, 0, 0.1), h = harm(r.L, 0, 0.3), t = M.t60(r.L, SR);
   const okT = p.mName === 'Zu' ? t <= 0.15 : p.mName === 'Offen' ? t >= 0.4 : true;
