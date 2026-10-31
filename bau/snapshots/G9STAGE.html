@@ -4224,7 +4224,8 @@ function g9OpNach(C, k, n) {
   let s = C.ly.s.map(y => Object.assign({}, y));
   if (b + 1 < W.length) { const r = K.apply(Object.assign({}, C.ly, {s}), C.mk, C.F, {op: 'nach', i: b + 1, n}); if (!r.ok) return {err: r.toast || 'Nachrücken geht nicht'}; s = r.s; }
   const V = K.view({s}, C.mk, C.F).V, SL = K.slotsOf(V, K.costs(C.mk, C.F), C.mk.length), p0 = g9Pos(SL, V[a].k);
-  const lim = b + 1 < V.length && V[b + 1].k >= 0 ? g9Pos(SL, V[b + 1].k) : SL.length;
+  let lim = SL.length;   // bis vor die nächste Silbe; eine feste Silbe ohne Marke ist Schranke (nur Plätze vor ihrer Zeit)
+  if (b + 1 < V.length) { const y = V[b + 1]; if (y.k >= 0) lim = g9Pos(SL, y.k); else { lim = 0; while (lim < SL.length && C.mk[SL[lim]].t <= y.t + 1e-9) lim++; } }
   for (let q = a; q <= b; q++) { const p = Math.min(p0 + q - a, lim - 1); if (p >= 0 && SL[p] != null && V[q].k >= 0) { V[q].k = SL[p]; V[q].o = 0; } }
   return {s: K.pack(V, C.mk), i0: a};
 }
@@ -4881,9 +4882,26 @@ function g9RecSheet(anchor) {
       try { if (typeof stProf === 'function') { const P = stProf(); if (P) { P.g9 = Object.assign({}, P.g9, {auto, lang}); if (typeof stProfSave === 'function') stProfSave(); } } } catch (e) { logErr(e); }
       if (a === 'rm') { Promise.resolve(rc.remove && rc.remove()).then(() => toast('Sprachmodell entfernt')); return; }
       if (a === 'no') return;
-      g9RecRun(id, {lang, mode: a === 'fill' ? 'fill' : 'all'});
+      g9RecRunUi(id, {lang, mode: a === 'fill' ? 'fill' : 'all'});
     }, 'button[data-a]');
   }, {name: 'g9rec'});
+}
+// Ergebnis einer angedockten Erkennung ausrichten (§6.6.8), falls sie es nicht selbst getan hat (Schnittstelle G9.rec aus G9c:
+// words = [{w, a, b, p?}] in Take-Sekunden): Wort-Zeiten als Anker, feste Silben bleiben; ein Undo „Erkennen“
+async function g9RecRunUi(id, o) {
+  const rc = g9Rec(); if (!rc) return null;
+  try { G9.saves++; if (typeof saveNow === 'function') saveNow(); } catch (e) {}
+  wpInfoTxt('Erkennen …');
+  let res; try { res = await rc.recognize(id, {lang: o.lang, mode: o.mode}); } catch (e) { logErr(e); wpInfoTxt('Erkennen fehlgeschlagen'); return null; }
+  if (!res || !res.words || res.applied) return res;
+  const C = g9Ctx(id, true); if (!C || !C.mk.length) return res;
+  const L = res.lang === 'en' ? 'en' : 'de', words = res.words.map(w => ({text: w.text != null ? w.text : w.w, start: w.start != null ? w.start : w.a, end: w.end != null ? w.end : w.b, p: w.p}));
+  const s = G9E.silben(g9K(), words, L, C.mk, C.F, C.ly, o.mode === 'fill' ? 'luecken' : 'alles');
+  g9CommitS(C, s, 'Erkennen', {src: 'erkannt', lang: L});
+  const ns = words.filter(w => isNum(w.p) && w.p < .6).length;
+  wpInfoTxt(words.length + ' Wörter erkannt' + (ns ? ' · ' + ns + ' unsicher' : ''));
+  if (WP.ed && WP.ed.g9 && WP.ed.id === id) { g9Fill(WP.ed); wpPaint(); }
+  return res;
 }
 /* ---------- Test-API ---------- */
 function g9InfoApi() {
@@ -4976,7 +4994,7 @@ async function g9RecGo(j) {
 // Ergebnis ausrichten (§6.6.8): Wort-Zeiten als Anker, feste Silben bleiben; [Erkennen] = ein Undo „Erkennen“, automatisch ohne Schritt (§7.8)
 function g9RecEnd(j, err) {
   if (j.done) return; j.done = true; j.running = false;
-  const res = {words: [], ms: Math.round(performance.now() - j.t0), how: G9.sm.how || 'wasm', chunks: j.pl ? j.pl.win.length : 0, lang: j.lang || 'de', err: err || null, stopped: !!j.stop, lo: j.pl ? j.pl.lo : 0, hi: j.pl ? j.pl.hi : 0};
+  const res = {applied: true, words: [], ms: Math.round(performance.now() - j.t0), how: G9.sm.how || 'wasm', chunks: j.pl ? j.pl.win.length : 0, lang: j.lang || 'de', err: err || null, stopped: !!j.stop, lo: j.pl ? j.pl.lo : 0, hi: j.pl ? j.pl.hi : 0};
   try {
     if (j.pl && j.words.length) {
       const z = G9E.zurueck(j.words, j.pl); res.words = z.words; res.drop = z.drop;
@@ -5014,7 +5032,7 @@ function g9RecHold() {
 }
 function g9RecResume() { for (const j of G9.job.values()) if (!j.done) g9RecGo(j); g9AutoPump(); }
 // [Erkennen]-Blatt (ui.js) ruft das: g9RecRun(id, {lang, mode})
-function g9RecRun(id, o) { if (!G9.rec) return Promise.resolve(null); return G9.rec.recognize(id, {lang: o.lang, mode: o.mode}); }
+function g9RecRun(id, o) { return g9RecRunUi(id, o || {}); }
 
 /* ---------- automatisch erkennen (F1, §7.8): nach jeder neuen Aufnahme mit Mikrofon, nur ohne laufendes Mikrofon und bei stehendem ▶,
    höchstens ein Take gleichzeitig, in Aufnahme-Reihenfolge, nur für Takes ohne Text ---------- */

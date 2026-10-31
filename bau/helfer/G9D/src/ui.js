@@ -547,9 +547,26 @@ function g9RecSheet(anchor) {
       try { if (typeof stProf === 'function') { const P = stProf(); if (P) { P.g9 = Object.assign({}, P.g9, {auto, lang}); if (typeof stProfSave === 'function') stProfSave(); } } } catch (e) { logErr(e); }
       if (a === 'rm') { Promise.resolve(rc.remove && rc.remove()).then(() => toast('Sprachmodell entfernt')); return; }
       if (a === 'no') return;
-      g9RecRun(id, {lang, mode: a === 'fill' ? 'fill' : 'all'});
+      g9RecRunUi(id, {lang, mode: a === 'fill' ? 'fill' : 'all'});
     }, 'button[data-a]');
   }, {name: 'g9rec'});
+}
+// Ergebnis einer angedockten Erkennung ausrichten (§6.6.8), falls sie es nicht selbst getan hat (Schnittstelle G9.rec aus G9c:
+// words = [{w, a, b, p?}] in Take-Sekunden): Wort-Zeiten als Anker, feste Silben bleiben; ein Undo „Erkennen“
+async function g9RecRunUi(id, o) {
+  const rc = g9Rec(); if (!rc) return null;
+  try { G9.saves++; if (typeof saveNow === 'function') saveNow(); } catch (e) {}
+  wpInfoTxt('Erkennen …');
+  let res; try { res = await rc.recognize(id, {lang: o.lang, mode: o.mode}); } catch (e) { logErr(e); wpInfoTxt('Erkennen fehlgeschlagen'); return null; }
+  if (!res || !res.words || res.applied) return res;
+  const C = g9Ctx(id, true); if (!C || !C.mk.length) return res;
+  const L = res.lang === 'en' ? 'en' : 'de', words = res.words.map(w => ({text: w.text != null ? w.text : w.w, start: w.start != null ? w.start : w.a, end: w.end != null ? w.end : w.b, p: w.p}));
+  const s = G9E.silben(g9K(), words, L, C.mk, C.F, C.ly, o.mode === 'fill' ? 'luecken' : 'alles');
+  g9CommitS(C, s, 'Erkennen', {src: 'erkannt', lang: L});
+  const ns = words.filter(w => isNum(w.p) && w.p < .6).length;
+  wpInfoTxt(words.length + ' Wörter erkannt' + (ns ? ' · ' + ns + ' unsicher' : ''));
+  if (WP.ed && WP.ed.g9 && WP.ed.id === id) { g9Fill(WP.ed); wpPaint(); }
+  return res;
 }
 /* ---------- Test-API ---------- */
 function g9InfoApi() {

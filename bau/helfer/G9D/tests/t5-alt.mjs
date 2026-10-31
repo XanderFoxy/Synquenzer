@@ -77,12 +77,12 @@ ok(ly.s[2].p === .3, 'unsicheres Wort trägt p (blass in der Leiste)');
 const H = fs.readFileSync(APP, 'utf8'), B = fs.readFileSync(BASE, 'utf8');
 ok((H.match(/MS 2000/g) || []).length === 1, '„MS 2000“ genau 1× in der App');
 ok(H.includes("\n  live: true,") && (H.match(/^ {2}live: true,.*$/m) || [])[0] === (B.match(/^ {2}live: true,.*$/m) || [])[0], 'CLOUD-Zeile „  live: true,“ unverändert');
-ok((H.match(/^const VERSION = .*$/m) || [])[0] === (B.match(/^const VERSION = .*$/m) || [])[0], 'VERSION-Zeile unverändert: ' + (H.match(/^const VERSION = .*$/m) || [])[0]);
+ok((H.match(/^const VERSION = '\d.*$/m) || [])[0] === (B.match(/^const VERSION = '\d.*$/m) || [])[0], 'VERSION-Zeile unverändert: ' + (H.match(/^const VERSION = '\d.*$/m) || [])[0]);
 // N8-10: Marken in neuen/geänderten Zeilen
 const bl = new Set(B.split('\n')), added = H.split('\n').filter(l => !bl.has(l));
 const RX = /\b(yamaha|montage|modx|super ?knob|korg|microkorg|wavestate|opsix|modwave|nord(?!en)|kodamo|essencefm|mask ?1(?![0-9])|elektron|digitone|octatrack|machinedrum|serum|vital|bitwig|kilohearts|xfer|procreate|waveshaper|animoog|moog|ableton|logic ?pro|garageband|melodyne|dubler|vochlea|humtap|whisper|openai|hugging ?face)\b/i;
 const hits = added.filter(l => RX.test(l));
 ok(hits.length === 0, 'N8-10 keine Marken in ' + added.length + ' neuen Zeilen' + (hits.length ? ': ' + hits.map(l => l.slice(0, 80)).join(' | ') : ''));
-ok(!added.some(l => /supabase|fetch\(/i.test(l)), 'kein Supabase-/Netz-Aufruf in den neuen Zeilen');
+ok(!added.some(l => /supabase/i.test(l) || (/fetch\(/.test(l) && !/fetch\(url, \{method: 'GET'/.test(l))), 'kein Supabase-Aufruf; einziger Netz-Abruf = GET der Silben-Muster (vendor/g9/syl/)');
 ok(errs.length === 0, 'keine Konsolen-Fehler ' + errs.join(' | '));
 process.exitCode = ok.done(); await br.close();

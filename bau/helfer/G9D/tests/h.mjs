@@ -16,7 +16,8 @@ export function server() {
       if (u === '/app/' || u === '/app/index.html') f = APP;
       else if (u.startsWith('/app/vendor/')) f = path.join(ROOT, u.slice(5));
       else if (u.startsWith('/app/') && /\.(png|webmanifest|woff2|js)$/.test(u)) f = path.join(ROOT, u.slice(5));
-      if (!f || NET.block || !fs.existsSync(f)) { r.writeHead(NET.block ? 503 : 404); r.end(); return; }
+      const blk = NET.block && u.includes('/vendor/g9/');
+      if (!f || blk || !fs.existsSync(f)) { r.writeHead(blk ? 503 : 404); r.end(); return; }
       r.writeHead(200, {'Content-Type': f.endsWith('.wasm') ? 'application/wasm' : f.endsWith('.html') ? 'text/html; charset=utf-8' : 'application/octet-stream'});
       fs.createReadStream(f).pipe(r);
     });

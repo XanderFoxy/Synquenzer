@@ -75,7 +75,7 @@ async function g9RecGo(j) {
 // Ergebnis ausrichten (§6.6.8): Wort-Zeiten als Anker, feste Silben bleiben; [Erkennen] = ein Undo „Erkennen“, automatisch ohne Schritt (§7.8)
 function g9RecEnd(j, err) {
   if (j.done) return; j.done = true; j.running = false;
-  const res = {words: [], ms: Math.round(performance.now() - j.t0), how: G9.sm.how || 'wasm', chunks: j.pl ? j.pl.win.length : 0, lang: j.lang || 'de', err: err || null, stopped: !!j.stop, lo: j.pl ? j.pl.lo : 0, hi: j.pl ? j.pl.hi : 0};
+  const res = {applied: true, words: [], ms: Math.round(performance.now() - j.t0), how: G9.sm.how || 'wasm', chunks: j.pl ? j.pl.win.length : 0, lang: j.lang || 'de', err: err || null, stopped: !!j.stop, lo: j.pl ? j.pl.lo : 0, hi: j.pl ? j.pl.hi : 0};
   try {
     if (j.pl && j.words.length) {
       const z = G9E.zurueck(j.words, j.pl); res.words = z.words; res.drop = z.drop;
@@ -113,7 +113,7 @@ function g9RecHold() {
 }
 function g9RecResume() { for (const j of G9.job.values()) if (!j.done) g9RecGo(j); g9AutoPump(); }
 // [Erkennen]-Blatt (ui.js) ruft das: g9RecRun(id, {lang, mode})
-function g9RecRun(id, o) { if (!G9.rec) return Promise.resolve(null); return G9.rec.recognize(id, {lang: o.lang, mode: o.mode}); }
+function g9RecRun(id, o) { return g9RecRunUi(id, o || {}); }
 
 /* ---------- automatisch erkennen (F1, §7.8): nach jeder neuen Aufnahme mit Mikrofon, nur ohne laufendes Mikrofon und bei stehendem ▶,
    höchstens ein Take gleichzeitig, in Aufnahme-Reihenfolge, nur für Takes ohne Text ---------- */

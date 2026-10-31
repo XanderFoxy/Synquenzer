@@ -165,7 +165,8 @@ function g9OpNach(C, k, n) {
   let s = C.ly.s.map(y => Object.assign({}, y));
   if (b + 1 < W.length) { const r = K.apply(Object.assign({}, C.ly, {s}), C.mk, C.F, {op: 'nach', i: b + 1, n}); if (!r.ok) return {err: r.toast || 'Nachrücken geht nicht'}; s = r.s; }
   const V = K.view({s}, C.mk, C.F).V, SL = K.slotsOf(V, K.costs(C.mk, C.F), C.mk.length), p0 = g9Pos(SL, V[a].k);
-  const lim = b + 1 < V.length && V[b + 1].k >= 0 ? g9Pos(SL, V[b + 1].k) : SL.length;
+  let lim = SL.length;   // bis vor die nächste Silbe; eine feste Silbe ohne Marke ist Schranke (nur Plätze vor ihrer Zeit)
+  if (b + 1 < V.length) { const y = V[b + 1]; if (y.k >= 0) lim = g9Pos(SL, y.k); else { lim = 0; while (lim < SL.length && C.mk[SL[lim]].t <= y.t + 1e-9) lim++; } }
   for (let q = a; q <= b; q++) { const p = Math.min(p0 + q - a, lim - 1); if (p >= 0 && SL[p] != null && V[q].k >= 0) { V[q].k = SL[p]; V[q].o = 0; } }
   return {s: K.pack(V, C.mk), i0: a};
 }
