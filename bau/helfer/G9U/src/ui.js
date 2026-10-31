@@ -53,7 +53,7 @@ function g9On(E) {
   E.cvw.dataset.g9h = 'welle';
   for (const n of [E.cvw, bar, bp, bi, bn, sl, sr, bm, bs, bt]) g9HapAdd(n);
   // Gesten am Rahmen (Wellenform) und an der Leiste: Tipp = Abschnitt wählen + vorspielen, Ziehen > 8 px = schwenken
-  g9Gest(E.cvw, () => E.cv); g9Gest(bar, () => bcv);
+  if (!E.cvw._g9g) { E.cvw._g9g = 1; g9Gest(E.cvw, () => E.cv); } g9Gest(bar, () => bcv);
   g9Field(E, f);
   // Zoom (§7.2): öffnet mit der Stufe des Marken-Modus; Median-Abschnitt < 44 px → eine Stufe feiner, höchstens bis 1 Takt
   G.zoom0 = E.zoom; G.va0 = E.va; G.zoomed = false;
@@ -68,7 +68,8 @@ function g9On(E) {
 }
 function g9Off(E) {
   const G = E.g9; if (!G) return;
-  if (G.dirty && G.field && document.activeElement === G.field) g9Accept(E, 'blur');
+  if (G.dirty && G.field) g9Accept(E, 'blur');   // auch wenn eine Taste außerhalb den Fokus schon genommen hat
+  if (UI.pop && (UI.pop.name === 'g9text' || UI.pop.name === 'g9rec')) closePop();
   g9StopPlay(true);
   if (G.vvH) { if (window.visualViewport) { visualViewport.removeEventListener('resize', G.vvH); visualViewport.removeEventListener('scroll', G.vvH); } window.removeEventListener('resize', G.vvH); }
   try { if (G.field) G.field.blur(); } catch (e) {}
@@ -227,12 +228,12 @@ function g9Tools(E, C) {
   const st = {
     sl: pick < 0 ? 'Keine Silbe ab hier' : C.W[pick].pi <= 0 ? 'Schon am Anfang' : pick > 0 && C.W[pick - 1].pi === C.W[pick].pi ? 'Schon mit der vorigen Silbe verschmolzen' : '',
     sr: pick < 0 ? 'Keine Silbe ab hier' : '',
-    mg: i < 0 ? 'Keine Silbe in diesem Abschnitt' : grp >= 3 ? 'Höchstens 3 Silben auf einer Marke' : !C.W.some((q, z) => z > i && q.pi != null && q.pi !== C.W[i].pi) ? 'Keine nächste Silbe' : '',
+    mg: i < 0 ? 'Keine Silbe in diesem Abschnitt' : grp >= 3 ? 'Höchstens 3 Silben auf einer Marke' : !(C.W[i + grp] && C.W[i + grp].pi != null) ? 'Keine nächste Silbe' : '',
     sp: i < 0 || grp < 2 ? 'Nur bei verschmolzenen Silben' : C.W[i].pi + 1 >= C.P.length ? 'Keine freie Marke – beide Silben bleiben zusammen.' : '',
   };
   G.why = st;
   for (const [key, b] of [['sl', G.sl], ['sr', G.sr], ['mg', G.bm], ['sp', G.bs]]) { b.classList.toggle('dis', !!st[key]); b.setAttribute('aria-disabled', String(!!st[key])); }
-  const emp = !G.field || !g9Clean(G.field.value); G.bi.classList.toggle('dis', emp); G.bi.setAttribute('aria-disabled', String(emp));
+  const emp = !G.field || !g9Clean(G.field.value) || !G.dirty; G.bi.classList.toggle('dis', emp); G.bi.setAttribute('aria-disabled', String(emp));
 }
 function g9Tool(E, op) {
   const G = E.g9, key = op.op === 'shift' ? (op.d < 0 ? 'sl' : 'sr') : op.op === 'merge' ? 'mg' : 'sp';
@@ -275,12 +276,17 @@ function g9Field(E, f) {
     const t0 = performance.now();
     let v = f.value;
     G.dirty = v !== G.orig;
-    if (!G.typed) { G.typed = true; g9Pulse(E2); if (!(G.last.k === G.sel && performance.now() - G.last.t < G9_REPLAY)) g9Play(E2.id, G.sel); }
+    if (!G.typed) { G.typed = true; G.utop = UNDO[UNDO.length - 1] || null; g9Pulse(E2); if (!(G.last.k === G.sel && performance.now() - G.last.t < G9_REPLAY)) g9Play(E2.id, G.sel); }
     if (/\s/.test(v)) {                                                 // Leertaste: übernehmen; Rest = Anfang des nächsten Worts
-      const at = v.search(/\s/), word = v.slice(0, at), rest = v.slice(at).replace(/^\s+/, '');
-      f.value = word; G.dirty = word !== G.orig || (word === '' && G.orig !== '');
-      g9Accept(E2, 'space');
-      if (rest && WP.ed && WP.ed.g9) { const G2 = WP.ed.g9; G2.field.value = rest; G2.dirty = rest !== G2.orig; G2.typed = true; g9Preview(WP.ed); }
+      // Leertaste (auch Diktat/Einfügen mehrerer Wörter): jedes fertige Wort der Reihe nach übernehmen, das letzte bleibt im Feld
+      const parts = v.split(/\s+/), last = parts.pop();
+      parts.forEach((word, n) => {
+        const E3 = WP.ed, G3 = E3 && E3.g9; if (!G3) return;
+        if (n > 0 && !word) return;
+        G3.field.value = word; G3.dirty = n > 0 ? !!word : (word !== G3.orig || (word === '' && G3.orig !== ''));
+        g9Accept(E3, 'space');
+      });
+      if (last && WP.ed && WP.ed.g9) { const G2 = WP.ed.g9; G2.field.value = last; G2.dirty = last !== G2.orig; G2.typed = true; g9Preview(WP.ed); }
       G9.kt = performance.now() - t0; return;
     }
     g9Preview(E2);
@@ -318,8 +324,10 @@ function g9Accept(E, how) {
   const G = E.g9; if (!G) return false;
   const v = g9Clean(G.field.value);
   let r = null;
+  if (how === 'blur' && G.dirty && G.typed && G.utop !== undefined && (UNDO[UNDO.length - 1] || null) !== G.utop) { g9Fill(E); wpPaint(); return false; }   // dazwischen ↶/↷ eines anderen Schritts
+  if (G.sel < 0) { if (how !== 'blur') toast('Abschnitt antippen'); return false; }
   if (how === 'plus') {
-    if (!v) { toast('Erst ein Wort tippen'); return false; }
+    if (!v || !G.dirty) { toast('Erst ein Wort tippen'); return false; }
     r = g9Set(E.id, {op: 'ins', k: G.sel, text: v});
   } else if (!G.dirty) { if (how !== 'blur') g9Step(E, 1); return false; }
   else if (!v) r = G.word ? g9Set(E.id, {op: 'del', k: G.sel}) : null;
@@ -505,7 +513,8 @@ function g9TextSheet(anchor) {
     seg.addEventListener('click', e => { const b = e.target.closest('button[data-l]'); if (b) { lang = b.dataset.l; paintL(); } });
     ta.addEventListener('pointerdown', e => e.stopPropagation()); ta.addEventListener('touchstart', e => e.stopPropagation(), {passive: true});
     on(ta, 'focus', () => popDock(p, true)); on(ta, 'blur', () => setTimeout(() => popDock(p), 50));
-    onTap(p, () => { const v = ta.value; closePop(); const r = g9Set(id, {op: 'text', text: v, lang}); if (r && r.ok) { if (WP.ed && WP.ed.g9 && WP.ed.id === id) { g9Fill(WP.ed); wpPaint(); } toast(r.toast, {label: 'Rückgängig', fn: () => undo()}); } }, 'button[data-a="ok"]');
+    const lang0 = lang;
+    onTap(p, () => { const v = ta.value; closePop(); if (v === txt && lang === lang0 && C.W.length) return; /* nichts geändert → nichts verloren (§7.7) */ const r = g9Set(id, {op: 'text', text: v, lang}); if (r && r.ok) { if (WP.ed && WP.ed.g9 && WP.ed.id === id) { g9Fill(WP.ed); wpPaint(); } toast(r.toast, {label: 'Rückgängig', fn: () => undo()}); } }, 'button[data-a="ok"]');
   }, {name: 'g9text'});
   popDock(UI.pop && UI.pop.el);
 }

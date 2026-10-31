@@ -14,7 +14,8 @@ function rep(from, to, n = 1) {
 rep("@media (orientation:landscape){#wpSheet .qh .sh-x,#wpSheet .wpab,#wpSheet .wptx{position:relative}",
   rd('g9.css') + "@media (orientation:landscape){#wpSheet .qh .sh-x,#wpSheet .wpab,#wpSheet .wptx{position:relative}");
 // 2) Block sq-g9-src (vor sq-mk-src): Platzhalter-Kern + Text-Modus
-const blk = (rd('kern.js') + rd('g9.js') + rd('ui.js')).replace(/<\/script/gi, '<\\/script');
+const blk0 = rd('kern.js') + rd('g9.js') + rd('ui.js'); new Function(blk0); new Function(rd('start.js').replace(/tkExt\(\)/g, '({take: []})'));   // Syntax-Prüfung: bricht den Bau ab
+const blk = blk0.replace(/<\/script/gi, '<\\/script');
 rep('<script type="text/plain" id="sq-mk-src">', '<script type="text/plain" id="sq-g9-src">\n' + blk + '\n</script>\n<script type="text/plain" id="sq-mk-src">');
 // 3) Start-Pfad nach der WP-Test-API (vor G3)
 rep('/* ======================= G3 — Vorlauf und Ausklang beim Einsingen', rd('start.js') + '\n/* ======================= G3 — Vorlauf und Ausklang beim Einsingen');

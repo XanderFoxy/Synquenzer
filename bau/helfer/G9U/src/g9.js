@@ -8,9 +8,8 @@ function g9AlignApi(syl, marks, feat, o) {
 function g9FeatOf(id) {
   const m = S.takes && S.takes[id], mk = wpMarks(id); if (!m || !mk) return null;
   const sim = G9.featSim && G9.featSim.get(id); if (sim && sim.length === mk.length) return sim;   // nur Tests (g9FeatSim)
-  const key = id + '@' + mk.length + ':' + (mk.length ? mk[0].t + ':' + mk[mk.length - 1].t : '');
-  let f = G9.feat.get(id); if (f && f.key === key) return f.f;
-  f = {key, f: G9K.feat(mk, m.len / m.sr)}; G9.feat.set(id, f); return f.f;
+  let f = G9.feat.get(id); if (f && f.mk === mk) return f.f;
+  f = {mk, f: G9K.feat(mk, m.len / m.sr)}; G9.feat.set(id, f); return f.f;
 }
 
 /* ---------- Arbeits-Form eines Takes: W = [{x, w, u, p, k (Marke), o, nm}] + Silben-Plätze P (§6.1) ---------- */
@@ -24,7 +23,7 @@ function g9Ctx(id) {
   G9.ctx = {id, m, ly: m.ly, lyrics: m.lyrics, mk, F: F0, C};
   return Object.assign({}, C, {P: C.P.slice()});
 }
-function g9Ctx0(id, m, mk) {
+function g9Ctx0(id, m, mk, force) {
   let W = [], lang = 'de', src = 'getippt', vs5b = false;
   if (m.ly && m.ly.s) {
     const v = G9K.view(m.ly.s, mk);
@@ -33,17 +32,18 @@ function g9Ctx0(id, m, mk) {
   } else if (m.lyrics) {                                               // §5.3: VS5b „eine Silbe je Marke von links“
     vs5b = true; src = 'vs5b'; lang = G9K.guess(m.lyrics);
     let i = 0;
-    for (const wd of m.lyrics.trim().split(/\s+/).filter(Boolean)) wd.split('-').filter(Boolean).forEach((x, k) => {
+    // Silben über 24 Zeichen werden geteilt (ly erlaubt 24), damit kein Buchstabe verloren geht
+    for (const wd of m.lyrics.trim().split(/\s+/).filter(Boolean)) wd.split('-').filter(Boolean).flatMap(x => x.match(/[\s\S]{1,24}/g)).forEach((x, k) => {
       W.push({x, w: k ? 0 : 1, u: 0, k: mk.length ? Math.min(i, mk.length - 1) : -1, o: i >= mk.length}); i++;
     });
   }
-  const F = g9FeatOf(id) || [], used = new Set(W.filter(q => !q.o && q.k >= 0).map(q => q.k)), P = [], piOf = new Int32Array(mk.length).fill(-1);
+  const F = g9FeatOf(id) || [], used = new Set(W.filter(q => !q.o && q.k >= 0).map(q => q.k).concat(force != null ? [force] : [])), P = [], piOf = new Int32Array(mk.length).fill(-1);
   mk.forEach((k, j) => { if (used.has(j) || G9K.skipC(F[j] || {conf: k.conf, rise: 6, gap: 0, pj: 0}) >= .5) { piOf[j] = P.length; P.push(j); } });
   // Platz-Index je Silbe; überzählige am Ende bekommen Plätze hinter der letzten Marke (sie kommen beim Verschieben zurück)
   let ext = P.length;
   W.forEach((q, i) => {
     if (q.nm) { q.pi = null; return; }
-    const tail = q.o && W.slice(i).every(z => z.o || z.nm);
+    const tail = q.o && q.k === mk.length - 1 && W.slice(i).every(z => z.o || z.nm);
     q.pi = tail ? ext++ : q.k >= 0 ? (piOf[q.k] >= 0 ? piOf[q.k] : 0) : 0;
   });
   return {id, m, mk, W, P, piOf, lang, src, vs5b, F};
@@ -51,8 +51,15 @@ function g9Ctx0(id, m, mk) {
 // Plätze → Marken: gleiche Marke = verschmolzen (j), ab der 4. Silbe einer Marke und hinter der letzten Marke überzählig (o)
 function g9Place(C, W) {
   const P = C.P, last = P.length ? P[P.length - 1] : -1; let prevK = -2, run = 0;
-  for (const q of W) {
-    if (q.nm) { prevK = -2; continue; }
+  // feste Silben ohne Marke (nm) sind Schranken (§5.1 Nr. 3): davor nur Plätze mit Marke ≤ t, danach nur ≥ t – nichts überholt sie
+  const capAt = t => { let c = -1; for (let p = 0; p < P.length; p++) if (C.mk[P[p]].t <= t + 1e-9) c = p; return c; };
+  const caps = new Array(W.length); let cap = Infinity;
+  for (let i = W.length - 1; i >= 0; i--) { caps[i] = cap; if (W[i].nm) cap = Math.max(0, capAt(W[i].t)); }
+  let floor = -Infinity;
+  for (let i = 0; i < W.length; i++) {
+    const q = W[i];
+    if (q.nm) { const c = capAt(q.t); floor = c + 1; prevK = -2; continue; }
+    if (q.pi != null) { if (q.pi > caps[i]) q.pi = caps[i]; if (q.pi < floor) q.pi = Math.min(floor, caps[i]); }
     const over = q.pi >= P.length || last < 0;
     q.k = over ? last : P[Math.max(0, q.pi)];
     if (over) { q.o = true; continue; }
@@ -61,6 +68,8 @@ function g9Place(C, W) {
   }
   return W;
 }
+// Schranke der nächsten nm-Silbe ab Index i (Platz-Index, bis zu dem Silben davor liegen dürfen)
+function g9NmCap(C, W, i) { for (let z = i; z < W.length; z++) if (W[z].nm) { let c = -1; for (let p = 0; p < C.P.length; p++) if (C.mk[C.P[p]].t <= W[z].t + 1e-9) c = p; return Math.max(0, c); } return Infinity; }
 function g9BuildS(W, mk) {
   const s = []; let prevK = -2;
   for (const q of W) {
@@ -121,9 +130,12 @@ function g9OpWord(C, k, text, dry) {
   const pa = i0 >= 0 ? W[a].pi : C.piOf[k] >= 0 ? C.piOf[k] : null;
   if (pa == null) return {err: 'keine Marke'};
   // frei bis vor das nächste Wort (Ersetzen) bzw. vor die nächste Silbe (neu)
-  let nx = i0 >= 0 ? b + 1 : W.findIndex(q => !q.nm && q.pi != null && q.pi > pa);
+  const tk0 = C.mk[k] ? C.mk[k].t : 0;   // neues Wort: vor die erste Silbe, die später liegt (auch eine feste ohne Marke)
+  let nx = i0 >= 0 ? b + 1 : W.findIndex(q => (q.nm ? q.t > tk0 + 1e-9 : q.pi != null && q.pi > pa));
   if (nx < 0) nx = W.length;
-  const pEnd = nx < W.length && W[nx].pi != null ? W[nx].pi : Math.max(P.length, pa + 1);
+  let nxp = nx; while (nxp < W.length && W[nxp].pi == null && !W[nxp].nm) nxp++;
+  let pEnd = nxp < W.length && W[nxp].pi != null ? W[nxp].pi : Math.max(P.length, pa + 1);
+  pEnd = Math.max(pa + 1, Math.min(pEnd, g9NmCap(C, W, i0 >= 0 ? b + 1 : (nx < 0 ? W.length : nx)) + 1));
   const A = Math.max(1, pEnd - pa);
   // lokale Ausrichtung auf die freien Plätze (erste Silbe fest auf pa); Überzahl verschmolzen auf dem letzten Platz
   const sub = []; for (let p = pa; p < Math.min(pEnd, P.length); p++) sub.push(C.mk[P[p]]);
@@ -154,8 +166,8 @@ function g9OpDel(C, k) {
 function g9OpIns(C, k, text) {
   const W = C.W.map(q => Object.assign({}, q)), word = g9Clean(text); if (!word) return {err: 'leer'};
   const parts = g9Syl(word, C.lang).slice(0, 24), n = parts.length;
-  let i0 = g9SylIdx(W, k); if (i0 >= 0) i0 = g9WordAt(W, i0)[0]; else i0 = g9NextIdx(W, k, false);
-  const pk = i0 >= 0 && W[i0].k === k ? W[i0].pi : C.piOf[k]; if (pk == null || pk < 0) return {err: 'keine Marke'};
+  const hit = g9SylIdx(W, k); let i0 = hit >= 0 ? g9WordAt(W, hit)[0] : g9NextIdx(W, k, false);
+  const pk = hit >= 0 ? W[i0].pi : C.piOf[k];   // mitten im Wort: vor dem Wort, auf dessen ersten Platz if (pk == null || pk < 0) return {err: 'keine Marke'};
   if (i0 < 0) i0 = W.length;
   for (let i = i0; i < W.length; i++) if (W[i].pi != null) W[i].pi += n;
   if (i0 < W.length && !W[i0].w) W[i0].w = 1;
@@ -172,7 +184,10 @@ function g9OpShift(C, k, d) {
     const prevPi = i0 > 0 && W[i0 - 1].pi != null ? W[i0 - 1].pi : -1;
     if (W[i0].pi <= 0 || W[i0].pi <= prevPi) return {err: prevPi >= 0 ? 'Schon mit der vorigen Silbe verschmolzen' : 'Schon am Anfang'};
     for (let i = i0; i < W.length; i++) if (W[i].pi != null) { W[i].pi = Math.max(W[i].pi - 1, 0); if (i > 0 && W[i - 1].pi != null && W[i].pi < W[i - 1].pi) W[i].pi = W[i - 1].pi; }
-  } else for (let i = i0; i < W.length; i++) if (W[i].pi != null) W[i].pi += 1;
+  } else {
+    let s0 = i0; if (W[i0].k === k && i0 + 1 < W.length && W[i0 + 1].pi === W[i0].pi) s0 = i0 + 1;   // §6.5: Verschmelzung löst sich zuerst
+    for (let i = s0; i < W.length; i++) if (W[i].pi != null) W[i].pi += 1;
+  }
   return {W, i0};
 }
 function g9OpMerge(C, k) {
@@ -211,18 +226,21 @@ function g9OpText(C, text, lang) {
     });
   });
   if (!sy.length) return {W: [], lang: L};
+  const cut = sy.length > G9_MAX; if (cut) sy.length = G9_MAX;
   const m = C.m, al = G9K.align(sy, C.mk, C.F, {len: m.len / m.sr});
-  const W = sy.slice(0, G9_MAX).map((q, i) => ({x: q.x, w: q.w, u: 0, p: q.p, k: al[i].k, o: al[i].o}));
+  const W = sy.map((q, i) => ({x: q.x, w: q.w, u: 0, p: q.p, k: al[i].k, o: al[i].o}));
   // Plätze neu: alle bisherigen plus jede Marke, die jetzt eine Silbe trägt (g9Place liest C.P)
   const PS = new Set(C.P); for (const q of W) if (!q.o && q.k >= 0) PS.add(q.k);
   C.P = [...PS].sort((x, y) => x - y); const pm = new Map(C.P.map((j, p) => [j, p]));
   let ext = C.P.length; for (const q of W) q.pi = q.o ? ext++ : pm.get(q.k);
-  return {W, lang: L, n: sy.length};
+  return {W, lang: L, n: sy.length, cut};
 }
 // alles aus der Test-API und der Bedienung: g9Set(id, {op, k, text, d, n, lang})
 function g9Set(id, op) {
   if (!op) return {ok: false};
-  const C = g9Ctx(id); if (!C) return {ok: false, err: 'Kein Take'};
+  let C = g9Ctx(id); if (!C) return {ok: false, err: 'Kein Take'};
+  // Tippen/Einfügen auf einer Marke ohne Silben-Platz (Ton-Marke, unsicher): diese Marke wird zum Platz
+  if ((op.op === 'word' || op.op === 'ins') && C.mk[op.k] && C.piOf[op.k] < 0) { const m = S.takes[id]; C = g9Ctx0(id, m, C.mk, op.k); }
   if (!C.mk.length && op.op !== 'text') return {ok: false, err: 'Marken werden gesucht …'};
   let r, label, tst = null, srcO = null, langO = null;
   switch (op.op) {
@@ -238,7 +256,7 @@ function g9Set(id, op) {
     case 'merge': r = g9OpMerge(C, op.k); if (r.err) break; label = 'Silben verschmolzen'; tst = label; break;
     case 'split': r = g9OpSplit(C, op.k); if (r.err) break; label = 'Silben getrennt'; tst = label; break;
     case 'nach': r = g9OpNach(C, op.k, op.n | 0); if (r.err) break; label = 'Nachgerückt'; tst = label; break;
-    case 'text': r = g9OpText(C, op.text, op.lang); label = r.W.length ? 'Songtext eingefügt' : 'Songtext gelöscht'; tst = label; srcO = 'eingefuegt'; langO = r.lang; break;
+    case 'text': r = g9OpText(C, op.text, op.lang); label = r.W.length ? 'Songtext eingefügt' : 'Songtext gelöscht'; tst = label + (r.cut ? ' · gekürzt auf ' + G9_MAX + ' Silben' : ''); srcO = 'eingefuegt'; langO = r.lang; break;
     default: return {ok: false, err: 'unbekannt'};
   }
   if (r.err) return {ok: false, err: r.err};

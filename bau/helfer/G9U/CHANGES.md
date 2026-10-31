@@ -66,7 +66,24 @@ hoch/quer, `crossOriginIsolated`, WebGPU-Adapter, Ja/Nein je Knopf, [Kopieren]) 
 | Geräte-Probe | ✓ 7 Knöpfe ≥ 88 × 88 in 3 Formaten, Label-Tipp schaltet, Kopier-Text vollständig |
 | F3 / Dock-Fokus | ✓ Tipp bei ▶ hält an und spielt; im Dock behalten ◀ ▶ ‹ › und Leiste den Fokus |
 
-Testläufe: t2 34/34 · t3 41/41 · t4 23/23 · t5 25/25 · t6 15/15 · t7 4/4.
+| §7.2 G3-Bereich | ✓ Ansicht beginnt bei a.in − Anlauf, Auftakt-Silbe wählbar/spielbar, heller als „außerhalb“ |
+
+Testläufe: t2 34/34 · t3 41/41 · t4 23/23 · t5 25/25 · t6 15/15 · t7 4/4 · t8 4/4 · t9 14/14.
+
+## Unabhängige Prüfung (eigener Prüf-Agent) – behoben, mit Test t9
+1. Feste Silbe ohne Marke (gestrichelt) wurde von Ersetzen/Einfügen/Verschieben überholt, verlor ihre Zeit, Nachbarn wurden rot → ist jetzt
+   Schranke (nichts überholt sie), 12/12 Fälle.
+2. Überzählige Silben an einer früheren Marke sprangen bei jeder Aktion ans Take-Ende → bleiben an ihrer Marke.
+3. Diktat/Einfügen mehrerer Wörter ins Feld verlor ab dem dritten Wort alles → jedes Wort wird der Reihe nach übernommen.
+4. Getipptes Wort ohne Leertaste ging beim Schließen über [Text]/✕/■ verloren → wird übernommen.
+5. [+] auf der 2. Silbe eines Worts verschmolz das neue Wort mit dem alten → steht jetzt sauber davor.
+6. Unverändertes [Ganzer Text] + ✓ verwarf alle Handarbeit → ändert nichts (§7.7).
+7. Kleinere: lange VS5b-Silben (> 24 Zeichen) werden geteilt statt gekürzt; > 4000 Silben mit Hinweis; ↶ während des Tippens legt das
+   Getippte nicht mehr darüber (↷ bleibt); [+] ohne Tippen grau; [Silbe ›] auf verschmolzener Silbe löst sie zuerst (§6.5); Tippen auf eine
+   Ton-Marke legt das Wort dort ab; Merkmal-Zwischenspeicher hängt am Marken-Feld; Gesten-Listener nicht doppelt; [Ganzer Text]/[Erkennen]-Blatt
+   schließen mit dem Text-Modus. Der Bau prüft jetzt die Syntax des Lade-Blocks (bricht sonst ab).
+Bekannt, nicht behoben (Platzhalter-Kern): die DP braucht bei sehr langen Takes (4000 Silben × 1500 Marken) viel Speicher – der echte Kern
+aus g9-br-S teilt lange Takes an Pausen (§6.3); bis dahin bitte keinen 5-Minuten-Songtext auf einmal verteilen.
 
 ## Offen / nicht in diesem Zweig
 - **G9-38 automatische Erkennung, „Aufnahme hat Vorrang“, `G9.auto` + `wpUndone`-Haken** → mit g9-br-E / G9d.
