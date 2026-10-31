@@ -12,7 +12,8 @@ const T = (id, f) => { if (only && !only.test(id)) return; try { f(); } catch (e
 const R = (x, d = 1) => Math.round(x * 10 ** d) / 10 ** d;
 const W = 2 * Math.PI / 32;
 const prog = o => ({t: 'prog', ab: 'a', p: o});
-const P1 = (m, extra) => Object.assign({o1: {m, e: {l: 99, a: 0, d: 0, s: 15, r: 0, lp: 0}}, o2: {m: 7, e: {l: 0}}, n: {e: {l: 0}}}, extra || {});
+// the filter as high pass at CUTF 0 (20 Hz): the BM1 path (oscillators, decimator, DC block) without the LP of INIT
+const P1 = (m, extra) => Object.assign({o1: {m, e: {l: 99, a: 0, d: 0, s: 15, r: 0, lp: 0}}, o2: {m: 7, e: {l: 0}}, n: {e: {l: 0}}, f: {md: 'hp', cu: 0}}, extra || {});
 // a held note on a given frequency: note 69 with TUNE = f (the processor takes any number; the host clamps 400-470 Hz)
 const tone = (f, m, sec, sr, extra) => render([[0, prog(P1(m, extra))], [0, {t: 'gl', p: {tn: f}}], [0, on(0, 69)]], {sec, sr});
 // the formula of section 1.2 at the integer phase
@@ -134,9 +135,9 @@ T('BM1-07', () => {
     ph = (ph + inc) >>> 0; const fr = 1000 + Math.floor(i / 16); let st = steps[0]; for (const s of steps) if (s.f <= fr) st = s; else break;
     worst = Math.max(worst, Math.abs(tp[i] - formula(ph, st.m)));
   }
-  for (let k = 1; k < steps.length; k++) { if (steps[k].m !== steps[k - 1].m) { changes++; if ((steps[k].f - 1000) % 48 !== 0) offGrid++; } }
+  for (let k = 1; k < steps.length; k++) { if (steps[k].m !== steps[k - 1].m) { changes++; if (steps[k].f % 48 !== 0) offGrid++; } }
   ok('BM1-07 Maskenwechsel durch Modulation: nur am Steuerschritt (≤ 1 ms + 1 Sample), phasenstetig', worst <= 2e-4 && changes >= 5 && offGrid === 0,
-    changes + ' Wechsel, alle auf dem 48-Sample-Raster der Stimme; 16-fach-Signal gegen Formel mit durchlaufender Phase: max ' + worst.toExponential(2));
+    changes + ' Wechsel, alle auf dem gemeinsamen 48-Sample-Raster; 16-fach-Signal gegen Formel mit durchlaufender Phase: max ' + worst.toExponential(2));
   // (b) by turning MASK (set o1.m 7 -> 8 -> 78 -> 255 at 0.3/0.5/0.7 s): 10 ms crossfade, M-KLICK <= 6 dB
   const msgs = [[0, prog(P1(7))], [0, on(.05, 76)], [.3, {t: 'set', ab: 'a', k: 'o1.m', v: 8}], [.5, {t: 'set', ab: 'a', k: 'o1.m', v: 78}], [.7, {t: 'set', ab: 'a', k: 'o1.m', v: 255}], [.9, {t: 'set', ab: 'a', k: 'o1.m', v: 31}]];
   const rk = render(msgs, {sec: 1.1}), k = mKlick(rk.l, 48000, [.05]);
@@ -155,7 +156,7 @@ T('BM1-08', () => {
   ok('BM1-08 20 Noten O1 = O2: Pegel je Note ± 0,1 dB gleich', sp <= .2, 'größte Spanne je Tonhöhe ' + R(sp, 4) + ' dB (Pegel ' + Object.keys(per).map(n => n + ': ' + R(per[n][0], 2)).join(', ') + ' dB)');
 });
 T('BM1-09', () => {
-  const noise = (fr, sec) => render([[0, prog({o1: {m: 7, e: {l: 0}}, o2: {e: {l: 0}}, n: {fr, e: {l: 99, a: 0, d: 0, s: 15, r: 0}}})], [0, on(0, 60)]], {sec});
+  const noise = (fr, sec) => render([[0, prog({o1: {m: 7, e: {l: 0}}, o2: {e: {l: 0}}, n: {fr, e: {l: 99, a: 0, d: 0, s: 15, r: 0}}, f: {md: 'hp', cu: 0}})], [0, on(0, 60)]], {sec});
   // FREQ 99: third-octave bands 100 Hz .. 16 kHz flat +- 1 dB (Welch PSD, 8192, Hann, 50 %)
   const r = noise(99, 12.2), x = r.l, n = 8192, P = new Float64Array(n / 2); let cnt = 0;
   for (let s = 4800; s + n <= x.length; s += n / 2) { const re = new Float64Array(n), im = new Float64Array(n); for (let i = 0; i < n; i++) re[i] = x[s + i] * (.5 - .5 * Math.cos(2 * Math.PI * i / n)); fft(re, im); for (let k = 0; k < n / 2; k++) P[k] += re[k] ** 2 + im[k] ** 2; cnt++; }
@@ -174,17 +175,17 @@ T('BM1-10', () => {
     const r = render([[0, prog({o1: {m: 7, e: {l: 99, a: 6, d: 7, s: 9, r: 5}}, o2: {e: {l: 99, a: 0, d: 0, s: 8, r: 0}}, n: {e: {l: 50, a: 3, d: 0, s: 15, r: 3, lp: 0}}})],
       [0, {t: 'tap', on: true, k: 'ctl'}], [0, on(t0, 60)], [0, off(toff, 60)], [.2, {t: 'tap', on: false}]], {sec: .21, sr});
     const b = r.msgs.find(m => m.t === 'tap').buf, st = []; for (let i = 0; i + 10 <= b.length; i += 10) st.push(Array.from(b.subarray(i, i + 10)));
-    const f0 = Math.round(t0 * sr); let grid = 0, q = 0; for (let k = 0; k < st.length; k++) { if ((st[k][0] - f0) !== k * N) grid++; for (let j = 1; j <= 4; j++) if (Math.abs(st[k][j] * 1024 - Math.round(st[k][j] * 1024)) > 1e-6) q++; }
+    const f0 = Math.round(t0 * sr); let grid = 0, q = 0; for (let k = 0; k < st.length; k++) { if (k === 0 ? st[0][0] !== f0 : st[k][0] % N !== 0) grid++; for (let j = 1; j <= 4; j++) if (Math.abs(st[k][j] * 1024 - Math.round(st[k][j] * 1024)) > 1e-6) q++; }
     // osc2: A = 0 -> 1 at the first step, D = 0 -> S at the next, R = 0 -> 0 at the first step after the note off
     const S = (8 / 15) ** 2, kOff = st.findIndex(s => s[0] >= Math.round(toff * sr));
     const jump = st[0][2] === 1 && Math.abs(st[1][2] - Math.round(S * 1024) / 1024) < 1e-9 && st[kOff][2] === 0 && st[kOff - 1][2] > 0;
     ok('BM1-10 Steuertakt ' + sr / 1000 + ' kHz: Stufen alle ' + N + ' Samples, ADSR auf 1/1024, A/D/R = 0 → Sprung im nächsten Schritt', grid === 0 && q === 0 && jump,
-      st.length + ' Schritte, ' + grid + ' neben dem Raster, ' + q + ' Werte nicht auf 1/1024; OSC2 ' + st[0][2] + ' → ' + R(st[1][2], 4) + ' … ' + R(st[kOff - 1][2], 4) + ' → ' + st[kOff][2] + ' (Schritt nach dem Loslassen bei +' + (st[kOff][0] - Math.round(toff * sr)) + ' Samples)');
+      st.length + ' Schritte (erster beim Tastendruck, dann das gemeinsame Raster), ' + grid + ' daneben, ' + q + ' Werte nicht auf 1/1024; OSC2 ' + st[0][2] + ' → ' + R(st[1][2], 4) + ' … ' + R(st[kOff - 1][2], 4) + ' → ' + st[kOff][2] + ' (Schritt nach dem Loslassen bei +' + (st[kOff][0] - Math.round(toff * sr)) + ' Samples)');
   }
 });
 T('BM1-11', () => {
   // DC block: -3 dB point by a sweep of very low mask-31 tones re 200 Hz
-  const lev = f => { const r = tone(f, 31, 4.2), n = Math.round(48000 / f * Math.floor(2 * f)); return rms(r.l, 2 * 48000, 2 * 48000 + n); };
+  const lev = f => { const r = tone(f, 31, 4.2, 48000, {f: {md: 'lp', cu: 99}}), n = Math.round(48000 / f * Math.floor(2 * f)); return rms(r.l, 2 * 48000, 2 * 48000 + n); };
   const ref = lev(200); let lo = 3, hi = 20; for (let it = 0; it < 22; it++) { const m = Math.sqrt(lo * hi); if (db(lev(m) / ref) < -3.0103) lo = m; else hi = m; }
   const fc = Math.sqrt(lo * hi); ok('BM1-11 DC-Sperre 8 Hz ± 10 %', Math.abs(fc / 8 - 1) <= .1, R(fc, 2) + ' Hz');
   const r = render([[0, prog(P1(15))], [0, on(0, 48)]], {sec: .6}), P = 48000 / (440 * Math.pow(2, (48 - 69) / 12)), n = Math.round(P * Math.floor(.2 * 48000 / P)); let s = 0; for (let i = 9600; i < 9600 + n; i++) s += r.l[i];
@@ -193,14 +194,14 @@ T('BM1-11', () => {
 });
 T('BM1-12', () => {
   for (const sr of [48000, 44100]) {
-    const msgs = [[0, {t: 'reset'}], [0, prog({o1: {m: 78, e: {l: 99, a: 3, d: 8, s: 10, r: 6}}, o2: {m: 255, st: 7, ds: -40, dv: 15, e: {l: 70, a: 0, d: 9, s: 0, r: 4, lp: 1}}, n: {fr: 60, e: {l: 40, a: 2, d: 6, s: 4, r: 5}}})]];
+    const msgs = [[0, {t: 'reset'}], [0, {t: 'tr', run: true, at: 0}], [0, prog({o1: {m: 78, e: {l: 99, a: 3, d: 8, s: 10, r: 6}}, o2: {m: 255, st: 7, ds: -40, dv: 15, e: {l: 70, a: 0, d: 9, s: 0, r: 4, lp: 1}}, n: {fr: 60, e: {l: 40, a: 2, d: 6, s: 4, r: 5}}})]];
     for (let k = 0; k < 12; k++) msgs.push([0, on(.01 + k * .0731, 48 + 3 * k, .5 + .04 * k, k + 1)], [0, off(.3 + k * .05, 0, k + 1)]);
     const a0 = render(msgs, {sec: 1.2, sr});
     msgs.push([.4, {t: 'set', ab: 'a', k: 'o1.m', v: 300}]);
     const a = render(msgs, {sec: 1.2, sr}), b = render(msgs, {sec: 1.2, sr});
-    // a third run: the same processor, the song again after {t:'reset'} at 1.2 s (other block phase at 44.1 kHz)
+    // a third run: the same processor, the song again after {t:'reset'} and ▶ at 1.2 s (other block phase at 44.1 kHz); the 1 ms grid starts with ▶
     let d = 0, d2 = 0; for (let i = 0; i < a.l.length; i++) d = Math.max(d, Math.abs(a.l[i] - b.l[i]), Math.abs(a.r[i] - b.r[i]));
-    const sh = Math.round(1.2 * sr), c = render(msgs.concat(msgs.filter(([, m]) => m.t !== 'set').map(([t, m]) => [1.2, JSON.parse(JSON.stringify(m).replace(/"at":([0-9.e-]+)/g, (q, x) => '"at":' + (+x + 1.2)))])), {sec: 2.4, sr});
+    const sh = Math.round(1.2 * sr), c = render(msgs.concat(msgs.filter(([, m]) => m.t !== 'set').map(([t, m]) => [1.2, JSON.parse(JSON.stringify(m.t === 'reset' ? m : m).replace(/"at":([0-9.e-]+)/g, (q, x) => '"at":' + (+x + 1.2)))])).concat([[1.2, {t: 'tr', run: false}]]).sort((x, y) => x[0] - y[0] || (y[1].t === 'tr' && !y[1].run ? 1 : 0) - (x[1].t === 'tr' && !x[1].run ? 1 : 0)), {sec: 2.4, sr});
     for (let i = 0; i < a0.l.length && i + sh < c.l.length; i++) d2 = Math.max(d2, Math.abs(a0.l[i] - c.l[i + sh]));
     ok('BM1-12 bitgleich: zwei Offline-Render (' + sr / 1000 + ' kHz) M-NULL = −∞; nach reset im selben Prozessor ebenso', d === 0 && d2 === 0 && rms(a.l) > 1e-3, 'Differenz ' + d + ' / nach reset ' + d2 + ' (Pegel ' + R(db(rms(a.l)), 1) + ' dBFS)');
   }
