@@ -1,0 +1,21 @@
+// QA musiker VV1: is live playback still as fluid after a video job? long tasks / main-thread stalls / timers / heap, before vs after
+import { open, buildSong } from './n5-v-qm-lib.mjs';
+import { execSync } from 'child_process';
+const init = () => { const si = window.setInterval, ci = window.clearInterval; window.__iv = new Set(); window.setInterval = function (f, ms, ...a) { const id = si.call(window, f, ms, ...a); window.__iv.add(id); return id; }; window.clearInterval = function (id) { window.__iv.delete(id); return ci.call(window, id); }; };
+const {b, p, errs} = await open({touch: true, init, args: ['--enable-precise-memory-info']});
+await buildSong(p);
+await p.evaluate(() => { SYNQUENZER.vvTest({opus: true}); SYNQUENZER.songLoop(true); window.__lt = []; new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push([Math.round(e.duration), Math.round(e.startTime)]); }).observe({type: 'longtask'}); });
+const meas = async (tag, sec) => { const l0 = execSync('cat /proc/loadavg').toString().split(' ')[0];
+  const r = await p.evaluate(async sec => { window.__lt = []; const st = []; let last = performance.now(); const hb = setInterval(() => { const t = performance.now(); if (t - last > 50) st.push(Math.round(t - last)); last = t; }, 10);
+    let fr = 0, raf; const rf = () => { fr++; raf = requestAnimationFrame(rf); }; rf();
+    SYNQUENZER.songPlay(0); await new Promise(r => setTimeout(r, sec * 1000)); SYNQUENZER.stop(); clearInterval(hb); cancelAnimationFrame(raf);
+    await new Promise(r => setTimeout(r, 500));
+    return {lt: window.__lt.length, ltMax: Math.max(0, ...window.__lt.map(x => x[0])), stalls: st.length, stallMax: Math.max(0, ...st), fps: +(fr / sec).toFixed(1), intervals: window.__iv.size, heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null, vvLast: !!(VV.last), vvRes: !!(VV.res && VV.res.blob)}; }, sec);
+  console.log(tag.padEnd(14), 'load', l0, JSON.stringify(r)); };
+const vid = async () => { const x = await p.evaluate(async () => { const x = await SYNQUENZER.vvMake({fmt: '9:16', view: 'song'}); return x.how; }); console.log('video', x); };
+await meas('before', 40);
+await vid(); await meas('after 1 video', 40);
+await vid(); await meas('after 2 videos', 40);
+await meas('again', 40);
+console.log('errors', errs);
+await b.close();
