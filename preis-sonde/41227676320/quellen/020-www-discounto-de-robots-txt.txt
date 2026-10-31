@@ -1,0 +1,23 @@
+# www.robotstxt.org/
+# www.google.com/support/webmasters/bin/answer.py?hl=en&answer=156449
+
+User-agent: *
+Disallow: /rpg/
+Disallow: /Suche/
+Disallow: /Prospekte/Angebot-Datum:*
+Allow: /Prospekte/Angebot-Datum:letzte-woche
+Allow: /Prospekte/Angebot-Datum:naechste-woche
+
+User-agent: Nutch
+Disallow: /
+
+User-agent: Cliqzbot
+Disallow: /
+
+User-agent: dotbot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+Sitemap: https://www.discounto.de/sitemap.xml
