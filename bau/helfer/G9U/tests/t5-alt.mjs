@@ -2,7 +2,7 @@
 import {launch, open, clickTake, sleep, report, deq, U, V, LY, SET, DIR} from './h.mjs';
 import fs from 'fs'; import path from 'path';
 const ok = report(), br = await launch();
-const ROOT = path.resolve(DIR, '../../../..'), BASE = path.join(ROOT, '.sicherung/stage-ges2-basis.html'), APP = path.join(DIR, '../index.html');
+const ROOT = path.resolve(DIR, '../../../..'), BASE = path.join(ROOT, 'bau/snapshots/stage-ges2.html'), APP = path.join(DIR, '../index.html');
 const T = Array.from({length: 16}, (_, k) => 0.3 + k * 0.22);
 // ---------- G9-50: Projekt aus dem Vorgänger (VS5b-lyrics und ohne) → Laden + Speichern Zeichen für Zeichen gleich ----------
 let J0;

@@ -1,8 +1,8 @@
-// G9U Bau: Basis (.sicherung/stage-ges2-basis.html = bau/snapshots/stage-ges2.html) + src/* → index.html
+// G9U Bau: Basis (bau/snapshots/stage-ges2.html) + src/* → index.html
 // Jeder Eingriff in fremden Code ist ein genau einmal vorkommender Text-Ersatz (sonst Abbruch).
 import fs from 'fs'; import path from 'path'; import {fileURLToPath} from 'url';
 const D = path.dirname(fileURLToPath(import.meta.url)), ROOT = path.resolve(D, '../../..');
-const base = path.join(ROOT, '.sicherung/stage-ges2-basis.html');
+const base = path.join(ROOT, 'bau/snapshots/stage-ges2.html');
 let h = fs.readFileSync(base, 'utf8');
 const rd = f => fs.readFileSync(path.join(D, 'src', f), 'utf8');
 function rep(from, to, n = 1) {
