@@ -39114,7 +39114,7 @@ function tkNormVox(list) {
 function tkNormProject(obj, p) {
   const tk = tkNormTakes(obj && obj.takes); if (tk) p.takes = tk;
   let st = -1;
-  p.tracks.forEach((t, i) => { if (t.stimme) { if (st < 0 && i >= BASE_T && t.kind === 'synth') st = i; else delete t.stimme; } });
+  p.tracks.forEach((t, i) => { if (t.stimme) { if (st < 0 && i >= BASE_T && t.kind === 'synth') st = i; else { delete t.stimme; delete t.gfx; /* G4: gfx nur an der STIMME-Spur */ } } });
 }
 function tkCleanAudio(a) { return a ? JSON.parse(JSON.stringify(a)) : a; }
 
@@ -41220,7 +41220,7 @@ function wpNormLyr(v) { return typeof v === 'string' ? v.replace(/[\u0000-\u001f
 /* ---------- Quelle, Cache, Worker ---------- */
 function wpProc(id, a) { return wpPlay(id, a); }
 tkExt().proc.unshift(wpProc);                     // zuerst: die Zeitkarte liegt über dem, was die anderen liefern
-function wpBase(id, a) { for (const f of tkExt().proc) { if (f === wpProc) continue; try { const b = f(id, a); if (b) return b; } catch (e) { logErr(e); } } return tkBuffer(id); }
+function wpBase(id, a, noG4) { for (const f of tkExt().proc) { if (f === wpProc || (noG4 && f === g4Proc)) continue; /* G4: Marken nie an der G4-Fassung */ try { const b = f(id, a); if (b) return b; } catch (e) { logErr(e); } } return tkBuffer(id); }
 function wpBid(b) { let k = WP.ids.get(b); if (!k) { k = ++WP.bid; WP.ids.set(b, k); } return k; }
 function wpMapInfo(mp) {
   let r = WP.mi.get(mp); if (r) return r;
@@ -41448,7 +41448,7 @@ function wpDetect(id) {
     const tk = S.takes && S.takes[id], ca = tk ? tk.cl | 0 : 0;
     let b = null;
     if (ca && typeof clEnsure === 'function') { tkLoad(id); const w = TK.wait.get(id); if (w) await w; try { b = await clEnsure(id); } catch (e) { b = null; } }
-    if (!b) b = wpBase(id);
+    if (!b) b = wpBase(id, null, true);                   // G4: Marken an der Quelle, nicht an der G4-Fassung
     if (!b) { tkLoad(id); const w = TK.wait.get(id); if (w) await w; b = wpBase(id); }
     WP.detCl = WP.detCl || new Map();
     WP.detCl.set(id, ca);                               // die Stärke, für die erkannt wurde (auch wenn Säubern nicht ging: kein Dauer-Neustart)
@@ -41983,12 +41983,16 @@ function g4DspMake() {
     for (const x of seg) {
       if (!x.v) { x.g = 0; continue; }
       const mid = (x.a + x.end) / 2, nb = V.filter(z => Math.abs((z.a + z.end) / 2 - mid) <= 3).map(z => z.L);
-      x.g = Math.max(-9, Math.min(9, s * (pct(nb, 0.5) - x.L)));
+      const md = pct(nb, 0.5); x.g = md - x.L > 15 ? 0 : Math.max(-9, Math.min(9, s * (md - x.L)));   // > 15 dB leiser als die Nachbarn: keine Silbe (Rest, Übersprechen) – nicht anheben
     }
     const R = 1000, gm = new Float32Array(Math.ceil(n / sr * R) + 2);   // Kurve je 1 ms
     let cur = 0, pos = 0;
     const ramp = (t0, t1, to) => { const i0 = Math.max(pos, Math.round(t0 * R)), i1 = Math.max(i0 + 1, Math.round(t1 * R)); for (let i = pos; i < i0 && i < gm.length; i++) gm[i] = cur; for (let i = i0; i < i1 && i < gm.length; i++) gm[i] = cur + (to - cur) * (i - i0 + 1) / (i1 - i0); cur = to; pos = Math.min(gm.length, i1); };
-    for (const x of seg) { ramp(x.a - 0.010, x.a - 0.002, x.g); ramp(x.end, x.end + 0.03, 0); }
+    for (let k = 0; k < seg.length; k++) {                                             // Ausklang endet spätestens 10 ms vor der nächsten Silbe
+      const x = seg[k], nx = seg[k + 1], lim = nx ? nx.a - 0.010 : Infinity;
+      ramp(x.a - 0.010, x.a - 0.002, x.g);
+      if (Math.min(x.end + 0.03, lim) > x.end + 0.002) ramp(x.end, Math.min(x.end + 0.03, lim), 0);
+    }
     for (let i = pos; i < gm.length; i++) gm[i] = cur;
     const gl = gm.map(v => db2(v)), st = R / sr;
     for (let i = 0; i < n; i++) { const u = i * st, k = u | 0, g = gl[k] + (gl[Math.min(gl.length - 1, k + 1)] - gl[k]) * (u - k); if (g !== 1) y[i] *= g; }
@@ -42122,7 +42126,7 @@ function g4Proc(id, a) {
   const c = G4.cache.get(id);
   if (mk === null) return c ? c.buf : null;                       // Marken kommen gleich (g4Kick)
   const key = g4Sig(g) + '|' + g4MkSig(mk) + '@' + g4Bid(b);
-  if (c && c.key === key) return c.buf;
+  if (c && c.key === key) return c.buf;                           // c.buf = null: Rechnen fehlgeschlagen – nicht erneut
   if (G4.job.has(id)) { if (G4.job.get(id) !== key) G4.again.add(id); }
   else g4Render(id, key, b, g, mk);
   return c ? c.buf : null;                                        // bis die neue Fassung da ist: die vorige (sonst ohne Effekte)
@@ -42155,19 +42159,21 @@ function g4Render(id, key, b, g, mk) {
   const t0 = performance.now(), P = {}; for (const k of G4_K) P[k] = g[k];
   g4Call({op: 'render', x: b.getChannelData(0), sr: b.sampleRate, P, marks: mk.map(k => ({t: k.t}))}).then(r => {
     G4.job.delete(id);
+    g4Prune();
     const ab = wpToBuf(r.y, b.sampleRate);
-    if (ab) { G4.cache.set(id, {key, buf: ab, info: r.info}); G4.renders++; G4.last = Object.assign({id, ms: Math.round(performance.now() - t0), how: G4.how}, r.info); }
-    const act = tkActiveIds(); for (const k of [...G4.cache.keys()]) if (!act.has(k)) G4.cache.delete(k); for (const k of [...G4.det.keys()]) if (!act.has(k)) G4.det.delete(k);
+    G4.cache.set(id, {key, buf: ab, info: r.info}); if (!ab) G4.err++;
+    if (ab) { G4.renders++; G4.last = Object.assign({id, ms: Math.round(performance.now() - t0), how: G4.how}, r.info); }
     if (G4.again.delete(id)) g4Kick(id);
     g4Switch();
-  }, e => { G4.job.delete(id); G4.err++; logErr(e); g4Paint(); });
+  }, e => { G4.job.delete(id); G4.err++; logErr(e); G4.cache.set(id, {key, buf: null}); g4Paint(); });   // nicht in Schleife neu rechnen
 }
+function g4Prune() { const act = tkActiveIds(); for (const k of [...G4.cache.keys()]) if (!act.has(k)) G4.cache.delete(k); for (const k of [...G4.det.keys()]) if (!act.has(k)) G4.det.delete(k); }
 // neue Fassung hören: an einer passenden Stelle überblenden (VS5a-fix wpSwitch), Wellenform und Blatt nachziehen
 function g4Switch() { UI.dirty.grid = UI.dirty.song = true; try { if (typeof wpSwitch === 'function') wpSwitch(); else tkVoxResync(true); } catch (e) { logErr(e); } g4Paint(); }
 function g4Changed(now) {
   const st = stimmeT(); if (st >= 0) applyTrackParams(st);
   clearTimeout(G4.deb);
-  const go = () => { G4.deb = 0; for (const id of tkActiveIds()) g4Kick(id); g4Switch(); };
+  const go = () => { G4.deb = 0; if (!g4Active() && !G4.ab) G4.cache.clear(); else g4Prune(); for (const id of tkActiveIds()) g4Kick(id); g4Switch(); };   // aus: Speicher frei
   if (now) go(); else G4.deb = setTimeout(go, 150);
 }
 /* ---------- Ändern (je ein Undo), A/B ---------- */
@@ -42239,8 +42245,9 @@ async function g4Auto() {
     const r = await g4Call({op: 'analyze', x: mat.x, sr: mat.sr, P, marks: mat.marks, mix: mix && isFinite(mix.band) ? {band: mix.band, vp, volDb: 20 * Math.log10(Math.max(1e-6, fx.vol * fx.vol) / (vp ? 0.64 : 1))} : null});
     if (!r) { toast('Take zu leise zum Messen'); return null; }
     G4.mixLast = mix;
-    const before = g4Snap(st);
-    tr.gfx = g4Norm(Object.assign({}, g, {on: true, thr: r.thr, ra: r.ra, ds: r.ds, pre: r.pre, mid: r.mid, lo: r.lo}));
+    const s2 = stimmeT(); if (s2 < 0) return null;                  // inzwischen geändert (Regler, ↶, Laden): nur die gemessenen Werte setzen
+    const t2 = S.tracks[s2], g2 = t2.gfx && t2.gfx.on ? t2.gfx : g4Preset(), before = g4Snap(s2);
+    t2.gfx = g4Norm(Object.assign({}, g2, {on: true, thr: r.thr, ra: r.ra, ds: r.ds, pre: r.pre, mid: r.mid, lo: r.lo}));
     G4.auto = Object.assign({}, r, {mixTop: mix ? mix.top : null, takes: mat.n});
     g4Changed(true); g4Commit(before, 'Effekte: Auto');
     return G4.auto;
@@ -42339,12 +42346,13 @@ async function g5Analyse(a, base, key) {
   if (!b) b = tkBuffer(id); if (!b) return null;
   const d = b.getChannelData(0), sr = b.sampleRate, h = clDecH(sr), T = h.length, D = (T - 1) / 2;
   const i0 = Math.max(0, Math.round((a.in - 0.06) * sr)), i1 = Math.min(d.length, Math.round((a.out + 0.06) * sr));
-  const d0 = Math.ceil(i0 / 3), dn = Math.max(0, Math.floor(i1 / 3) - d0); if (dn < 600) return null;
+  const d0 = Math.ceil(i0 / 3), dn = Math.max(0, Math.floor(i1 / 3) - d0); if (dn < 600) return {short: true};
   const x = new Float32Array(dn);
   for (let j = 0; j < dn; j++) { const c = 3 * (d0 + j) + 2 + D; let v = 0; for (let k = 0; k < T; k++) { const q = c - k; if (q >= 0 && q < d.length) v += h[k] * d[q]; } x[j] = v; }
   const fs = sr / 3, hop = Math.max(1, Math.round(fs * 0.005)), sp = spb();
   const tr = await vsPyin(x, {fs, hop, mask: null, octLock: false, fmin: 55, fmax: 1050});
-  const beatOf = sec => base + ((3 * (d0 + sec * fs) + 2) / sr - a.in) / sp;
+  const wm = typeof wpWarp === 'function' ? wpWarp(id) : null, wt = t => (wm && typeof VSM !== 'undefined' ? VSM.warpTime(wm.map, t) : t);   // VS5a/b: Zeitkarte → gehörte Lage
+  const beatOf = sec => base + (wt((3 * (d0 + sec * fs) + 2) / sr) - a.in) / sp;
   return {tr, fs, hop, d0, sr, beatOf, inst: false, masked: 0, x, bleed: null, key};
 }
 async function g5Convert(r) {
@@ -42355,10 +42363,10 @@ async function g5Convert(r) {
   const a = x.a, cfg = Object.assign({}, vsCfg(), {src: 'voice'});
   G5.busy = true; haptic('pop');
   try {
-    const t0 = performance.now(), sk = r.vox ? S.key : sceneKeyOf(r.s) || S.key;
+    const t0 = performance.now(), sk = (r.vox ? songKeyAtBar(a.bar) : sceneKeyOf(r.s)) || S.key;
     const A = await g5Analyse(a, r.vox ? a.bar * 4 + a.at : a.at, {root: sk.root, scale: sk.scale});
     G5.runs++;
-    const y = tkRef(r); if (!A || !y || y.a !== a) { if (!A) toast('Take fehlt auf diesem Gerät'); return false; }
+    const y = tkRef(r); if (!A || A.short || !y || y.a !== a) { if (!A) toast('Take fehlt auf diesem Gerät'); else if (A.short) toast('Take zu kurz'); return false; }
     return r.vox ? g5Song(a, A, cfg, t0) : g5Scene(r, x.clip, A, cfg, t0);
   } catch (e) { logErr(e); toast('Auswertung fehlgeschlagen'); return false; }
   finally { G5.busy = false; }
@@ -42387,8 +42395,9 @@ function g5Song(v, A, cfg, t0) {
   const nt = vsNotesOf(A, {snap: cfg.snap}), add = [];
   for (const n of nt.notes) {
     if (n.b < lo - 1e-6 || n.b >= hi - 1e-6) continue;
-    let o = n.b - v.bar * 4; if (g && GRID_STEP[cfg.grid]) o = qPos(Math.max(0, o), cfg.grid, 0.5, 1, L);
-    add.push({t: +Math.max(0, v.bar * 4 + o).toFixed(4), d: rd4(Math.max(1 / 32, n.d)), n: n.n, v: rv3(n.v)});
+    let o = Math.max(0, n.b - v.bar * 4); if (g) o = Math.round(o / g) * g;                // Raster ohne Umbruch ans Bereichsende
+    if (o >= L - 1e-6) continue;
+    add.push({t: +(v.bar * 4 + o).toFixed(4), d: rd4(Math.max(1 / 32, Math.min(n.d, L - o))), n: n.n, v: rv3(n.v)});
   }
   G5.last = {kind: 'song', bar: v.bar, notes: add.length, track: t, ms: Math.round(performance.now() - t0)};
   if (!add.length) { toast('Kein Gesang erkannt'); return false; }

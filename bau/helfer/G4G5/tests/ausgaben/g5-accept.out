@@ -1,0 +1,17 @@
+App 4.23.0 Tonart {"root":9,"scale":"aeolian"}
+✓ Take 1 (male, 24 Noten, 13.9 s, 6 Takte): Szene 1 hat keinen MELODIE-Clip (Take ohne Noten)
+✓ G5-01 Take 1: 24 Noten erkannt, Noten-F 1.000 (P 1.00, R 1.00) (Soll ≥ 0,9); MELODIE-Clip nennt den Take; 894 ms
+✓ Ergebnis-Blatt wie FANG offen: „GESUNGEN · umgewandelt · T 1–6“
+✓ Take 2 (female, 24 Noten, 15.9 s, 7 Takte): Szene 2 hat keinen MELODIE-Clip (Take ohne Noten)
+✓ G5-01 Take 2: 24 Noten erkannt, Noten-F 1.000 (P 1.00, R 1.00) (Soll ≥ 0,9); MELODIE-Clip nennt den Take; 1004 ms
+✓ Ergebnis-Blatt wie FANG offen: „GESUNGEN · umgewandelt · T 1–7“
+✓ Take 3 (male, 24 Noten, 14.7 s, 7 Takte): Szene 3 hat keinen MELODIE-Clip (Take ohne Noten)
+✓ G5-01 Take 3: 24 Noten erkannt, Noten-F 1.000 (P 1.00, R 1.00) (Soll ≥ 0,9); MELODIE-Clip nennt den Take; 760 ms
+✓ Ergebnis-Blatt wie FANG offen: „GESUNGEN · umgewandelt · T 1–7“
+  Noten-F Mittel 1.000
+✓ G5-02 ein Undo nimmt den umgewandelten MELODIE-Clip zurück (Szene 3 wieder leer)
+✓ Redo bringt ihn wieder (24 Noten)
+✓ vorhandener MELODIE-Clip: Umwandeln ersetzt ihn (24 Noten), [Verwerfen] stellt ihn deep-equal wieder her
+✓ G5-03 Song-Stimme (Takt 3–8) → Song-Melodie (Spur 5): 20 Noten an derselben Stelle, Noten-F 1.000 (Soll ≥ 0,9)
+✓ Song: ein Undo stellt den Song deep-equal wieder her
+ALLE OK

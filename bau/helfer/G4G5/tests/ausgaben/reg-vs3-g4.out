@@ -1,0 +1,75 @@
+✓ vorher keine STIMME-Spur
+✓ Stimme-FANG angenommen
+✓ N7V-35: während des Takes Netz-Ruhe (stQuiet)
+✓ STIMME-Spur angelegt (Index 6)
+✓ gleiche take-ID: MELODIE a16nt557pg = STIMME a16nt557pg
+✓ STIMME-Clip 4 Takte wie MELODIE 4
+✓ Take im Projekt nur mit Maßen und Schlüsseln: {"sr":44100,"len":363825,"chunks":["a16nt557pg:0"],"route":"wired","latMs":54,"created":1793456499027,"src":"fang"}
+✓ der Take enthält den Gesang (RMS -20.6 dBFS in den ersten 2 Takten)
+✓ ein Undo-Schritt „Stimme“ (group: track,takes,clip,clip)
+✓ ein Undo entfernt MELODIE-Clip, STIMME-Clip (+Spur) und den Take: {"mel":null,"st":-1,"tk":false}
+✓ Redo stellt beides her (gleiche ID)
+✓ Netz-Ruhe endet nach dem Speichern, Zähler 0: {"fetch":0,"xhr":0,"beacon":0,"ws":0,"total":0}
+✓ keine Konsolenfehler []
+✓ Loopback App-Ausgang → Mikro (21.37 ms)
+  Einmessen: {"kind":"voll","ms":[34.25,34.25,34.25,34.25],"q":[30554.4,28324.6,30450.4,30413.3],"lvl":[-17.3,-17.3,-17.3,-17.3],"medianMs":34.25,"spreadMs":0,"floorDb":-72.2,"floorOk":true,"floorWhy":"","heard":4
+✓ Einmessen über den Loopback: {"lat":34.25,"how":"gemessen","sr":44100}
+✓ ● REC mit 🎤 (ohne Gesang) legt trotzdem den STIMME-Take an: {"take":"4tngaldaf6","in":0.25,"out":4.25,"at":0,"gain":1,"fadeIn":0.005,"fadeOut":0.005}
+✓ N7V-16 Klicks im Take gegen das Raster nach Latenzausgleich: max 0.002 ms (je Schlag 0.00 0.00 0.00 0.00 0.00 0.00 0.00)
+✓ N7V-16 (Offline-Simulation, Chirp-Schätzer, Bruchteil-Latenz 37,43 ms): geschätzt 37.434 ms, Klick-Abweichung max 0.0054 ms
+✓ N7V-18 Overdub: neuer Take oben, alter in alt (stumm): {"top":"87308ank1g","alt":["4tngaldaf6"]}
+✓ nur der obere Take klingt: ["87308ank1g"]
+✓ Undo („Stimme“) stellt den Clip vorher her (deep-equal)
+✓ keine Konsolenfehler []
+✓ Take gespeichert: {"id":"bk62aoiip5","track":6,"scene":1,"stored":true}
+✓ IndexedDB `synquenzer` Version 2 mit Stores audio, kv
+✓ Stücke ≤ 1 MB: [{"k":"bk62aoiip5:0","bytes":1048576},{"k":"bk62aoiip5:1","bytes":295424}]
+✓ Projekt-JSON enthält nur IDs (15959 Zeichen)
+✓ persist() aufgerufen: best-effort
+✓ N7V-20 WAV 48 kHz / 16 Bit / mono, Daten bitgleich zum Roh-Take: {"sr":48000,"bits":16,"ch":1,"n":672000,"same":true,"hashData":"176fc462:1344000","hashRaw":"176fc462:1344000"}
+✓ Roh-Take = das aufgenommene PCM (176fc462:1344000)
+✓ Roh-Take Stichprobe 5000 Samples bitgleich
+✓ Neuladen: Take und STIMME-Spur da, bitgleich, geladen: {"tk":true,"st":6}
+✓ Take klingt nach dem Neuladen: {"rmsDb":-18.419919067721672,"peakHz":333.7646484375}
+✓ keine Konsolenfehler []
+✓ ZIP: projekt.json 16003, takes/feg2nqn9b8.wav 288044
+✓ in der Claude-App (iframe) kein Audio
+✓ Import des JSON in der Claude-App
+✓ STIMME-Spur grau: {"st":6,"cls":"th vox voxoff sel","sb":"Audio nur auf der eigenen Seite"}
+✓ in der Claude-App bleiben Take-Daten und STIMME-Spur deep-equal
+✓ Import zurück auf der eigenen Seite
+✓ project() deep-equal nach dem Rundweg (ohne id/Name/Ansicht, die der Import neu vergibt)
+✓ der Take ist bitgleich (2cb2c968:288000)
+✓ und er spielt: {"rmsDb":-15.637103479562677,"peakHz":522.18017578125}
+✓ ZIP in der Claude-App: Audio übergangen – nur auf der eigenen Seite
+✓ Projekt aus der ZIP geladen
+✓ [Datei öffnen] mit ZIP in der Claude-App: Toast + Projekt geladen (Audio übergangen – nur auf der eigenen Seite | Projekt geladen)
+✓ Claude-App: kein Konsolenfehler []
+✓ ZIP auf der eigenen Seite (frischer Speicher): Take bitgleich übernommen
+✓ keine Konsolenfehler []
+✓ githack: Hinweis + [WAV/ZIP exportieren]
+✓ githack: der Hinweis erscheint beim Start der Aufnahme (vor dem ersten Take): {"pop":true,"take":0}
+✓ Pages: kein Hinweis {"where":"pages","shown":false,"pop":false}
+✓ keine Konsolenfehler []
+✓ Song mit 8 Takten gesetzt
+✓ erster Punch: Song-Stimme Takt 1–8 [[0,8,"06salhf2oe"]]
+✓ Rückfrage im Bereich: ["replace","overdub"]
+✓ während der Aufnahme schweigt die alte Stimme in Takt 3–4: [8,16]
+✓ Ersetzen Takt 3–4: nur dort neu, davor/danach die alte Stimme an gleicher Stelle: [[0,2,"06sa",0.25],[2,2,"aqgm",0.25],[4,4,"06sa",8.25]]
+✓ Rest ab Takt 5 spielt den alten Take ab derselben Stelle (in +8 s)
+✓ Lanes der anderen Spuren unverändert (die neue STIMME-Spur hat keine Szenen-Einträge)
+✓ Einfügen ab Takt 3 (2 Takte): Song 8 → 10 Takte, alle späteren Lane-Einträge +2
+✓ Song-Stimme: neuer Take in Takt 3–4, die alte ab Takt 3 um 2 Takte nach hinten: [[0,2,"06sa"],[2,2,"03cj"],[4,2,"aqgm"],[6,4,"06sa"]]
+✓ ein Undo-Schritt (Song + Take): {"kind":"group","label":"Song: 2 Takte eingefügt","items":["takes","song"]}
+✓ Undo: Song wie vorher (deep-equal)
+✓ keine Konsolenfehler []
+✓ der obere (neueste) Take klingt: 877 Hz
+✓ Takes-Blatt: {"rows":2,"h":"STIMME · Szene 1 · 2 Takes"}
+✓ A/B: jetzt klingt der ältere Take (441 Hz) – sofort, ohne Neustart
+✓ Daten: oben 5p47, stumm 6l9g
+✓ ein Undo „Take gewählt“
+✓ Löschen des stummen Takes
+✓ Undo holt ihn zurück
+✓ keine Konsolenfehler []
+
+alles grün

@@ -1,0 +1,22 @@
+App 4.24.0 VS-P true bpm 112
+Stimme: gesungener Vokal „a“ (VS-P-Bibliothek)
+    vor Auto  Synth 1      -59.39 dB (2–5 kHz)
+    vor Auto  Synth 2      -38.49 dB (2–5 kHz)
+    vor Auto  Synth 3      -44.57 dB (2–5 kHz)
+    vor Auto  Synth 4      still
+    vor Auto  Drums        -36.67 dB (2–5 kHz)
+    vor Auto  Melodie      still
+    vor Auto  Stimme       -51.07 dB (2–5 kHz)
+  vor Auto: Gesang -51.07 dB, lauteste andere Spur Drums -36.67 dB → -14.40 dB
+  Auto: {"thr":-22,"ra":1.5,"ds":0,"pre":9,"mid":-5,"lo":-3,"lra":[1.69,1.72],"sib":null,"mix":{"margin":-9.05,"other":-36.73,"reached":false},"top":"Drums"}
+✓ Ergebnis sichtbar in den Reglern: Schwelle -22 dB, Verhältnis 1.5:1, Entzischer 0 dB, Tief -3, Mitte -5, Präsenz +9 dB
+    nach Auto Synth 1      -59.53 dB (2–5 kHz)
+    nach Auto Synth 2      -38.42 dB (2–5 kHz)
+    nach Auto Synth 3      -42.97 dB (2–5 kHz)
+    nach Auto Synth 4      still
+    nach Auto Drums        -36.64 dB (2–5 kHz)
+    nach Auto Melodie      still
+    nach Auto Stimme       -45.79 dB (2–5 kHz)
+✗ G4-03 nach Auto: Gesang -45.79 dB, lauteste andere Spur (Drums) -36.64 dB → -9.15 dB (Soll ≥ 3)
+✓ ein Undo nimmt Auto zurück („Gesang Synthpop“)
+FEHLER: 1

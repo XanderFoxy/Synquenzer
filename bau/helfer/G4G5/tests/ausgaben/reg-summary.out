@@ -1,0 +1,12 @@
+gs7-v3-vs4-accept base exit 1 ok 25 fail 1
+gs7-v3-vs4-accept g4 exit 1 ok 23 fail 3
+gs7-v3-vs4-click base exit 0 ok 6 fail 0
+gs7-v3-vs4-click g4 exit 0 ok 6 fail 0
+gs7-v3-vs5a-t1 base exit 0 ok 20 fail 0
+gs7-v3-vs5a-t1 g4 exit 0 ok 14 fail 6
+gs7-v3-vs5a-t3 base exit 1 ok 30 fail 0
+gs7-v3-vs5a-t3 g4 exit 1 ok 30 fail 0
+gs7-v3-vs5b-t1 base exit 0 ok 31 fail 1
+gs7-v3-vs5b-t1 g4 exit 0 ok 23 fail 9
+gs7-v3-vs5b-t3 base exit 0 ok 5 fail 0
+gs7-v3-vs5b-t3 g4 exit 0 ok 5 fail 0

@@ -1,0 +1,22 @@
+App 4.24.0 VS-P true bpm 112
+Stimme: Korpus-Stimme VS2 (female)
+    vor Auto  Synth 1      -59.37 dB (2–5 kHz)
+    vor Auto  Synth 2      -38.42 dB (2–5 kHz)
+    vor Auto  Synth 3      -44.66 dB (2–5 kHz)
+    vor Auto  Synth 4      still
+    vor Auto  Drums        -36.28 dB (2–5 kHz)
+    vor Auto  Melodie      still
+    vor Auto  Stimme       -36.00 dB (2–5 kHz)
+  vor Auto: Gesang -36.00 dB, lauteste andere Spur Drums -36.28 dB → 0.28 dB
+  Auto: {"thr":-22,"ra":1.5,"ds":0,"pre":7,"mid":-5,"lo":-1,"lra":[1.06,1.02],"sib":-29,"mix":{"margin":3.61,"other":-36.43,"reached":true},"top":"Drums"}
+✓ Ergebnis sichtbar in den Reglern: Schwelle -22 dB, Verhältnis 1.5:1, Entzischer 0 dB, Tief -1, Mitte -5, Präsenz +7 dB
+    nach Auto Synth 1      -59.50 dB (2–5 kHz)
+    nach Auto Synth 2      -38.38 dB (2–5 kHz)
+    nach Auto Synth 3      -43.14 dB (2–5 kHz)
+    nach Auto Synth 4      still
+    nach Auto Drums        -36.48 dB (2–5 kHz)
+    nach Auto Melodie      still
+    nach Auto Stimme       -32.77 dB (2–5 kHz)
+✓ G4-03 nach Auto: Gesang -32.77 dB, lauteste andere Spur (Drums) -36.48 dB → 3.72 dB (Soll ≥ 3)
+✓ ein Undo nimmt Auto zurück („Gesang Synthpop“)
+ALLE OK

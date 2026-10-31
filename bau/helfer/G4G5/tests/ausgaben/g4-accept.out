@@ -1,0 +1,25 @@
+App 4.23.0 sr 44100
+— G4-01 Dynamik nach „Gesang Synthpop“ (Kurzzeit-Lautheit 3 s, Spanne 10–95 % = LRA) und Pumpen
+✓ neue STIMME-Spur hat „Gesang Synthpop“ an, es klingt die G4-Fassung (worker, 329 ms für 26.4 s)
+✓ LRA roh 12.30 LU → G4 5.54 LU: 6.77 LU kleiner (Soll ≥ 4) · Lautheit -24.65 → -24.65 LUFS
+✓ kein Pumpen: gehaltener Vokal -22 dBFS → 50-ms-Pegel schwanken 0.000 dB (Soll ≤ 0,5)
+✓ kein Pumpen: gehaltener Vokal -32 dBFS → 50-ms-Pegel schwanken 0.000 dB (Soll ≤ 0,5)
+— G4-02 Zischlaute: Spitzen im Band 5–9 kHz (10-ms-RMS), Kette „Gesang Synthpop“ gegen dieselbe Kette mit Entzischer 0
+✓ Zischlaut-Spitzen 5–9 kHz: -4.09 dB (je Laut -4.1 -4.1 -4.1 -4.1 -4.1 -4.1 -4.1 -4.1 -4.1) (Soll −4 ± 1); gegen roh -0.68 dB (mit Präsenz/Ausgleich)
+✓ Vokale (keine Zischlaute): 5–9 kHz Median 0.06 dB, 10 % 0.06 dB (Soll Median ±0,5)
+— G4-06 Silben-Dynamik (VS5a-Marken): Spanne der Silben-Lautheit, Anschläge
+✓ nur Silben-Dynamik (Kompressor/EQ/Entzischer aus): Silben-Spanne (10–90 %) 10.52 → 3.85 dB = 63 % kleiner (Soll ≥ 50 %; 18 Silben aus Marken)
+✓ nur Silben-Dynamik (Kompressor/EQ/Entzischer aus): Anschläge erhalten – Spitze der ersten 10 ms gegen den Silben-Pegel ändert sich Median -0.03 dB, 90 % |Δ| ≤ 0.60 dB (Soll ±1 / ≤ 2)
+✓ „Gesang Synthpop“ (ganze Kette): Silben-Spanne (10–90 %) 10.52 → 2.61 dB = 75 % kleiner (Soll ≥ 50 %; 53 Silben aus Marken)
+✓ „Gesang Synthpop“ (ganze Kette): Anschläge nicht gedämpft – Spitze der ersten 10 ms gegen den Silben-Pegel Median +1.29 dB, 10 % -0.73 dB (Kompressor-Anstieg 15 ms + Präsenz: „knackig“; Soll Median ≥ −1, 10 % ≥ −2)
+— G4-05 A/B, Undo, Speichern/Laden, altes Projekt
+✓ mit Effekten: G4-Fassung klingt
+✓ A/B „ohne“: sofort der Take ohne Effekte (bitgleich der Roh-Puffer)
+✓ A/B zurück: G4-Fassung sofort (kein Neurechnen)
+✓ Regler ändert gfx, Hall-Send folgt (0.400)
+✓ ein Undo stellt die Effekte wieder her (deep-equal)
+✓ Redo deep-equal
+✓ Speichern → Laden: Spuren deep-equal, gfx erhalten ({"on":true,"hp":100,"ds":4,"sy":80,"thr":-24,"ra":3,"lo":-1,"mid":-2,"pre":6,"rev":0.4,"dly":0.1})
+✓ altes Projekt ohne gfx: keine Effekte, alle Takes klingen roh (bitgleich) – 5 Takes
+✓ Projekt ohne Effekte enthält kein Feld gfx (Format 5, nur additiv)
+ALLE OK
