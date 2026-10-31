@@ -41953,31 +41953,36 @@ function g4DspMake() {
     let es = 0, ef = 0, act = 0;
     for (let i = 0; i < n; i++) {
       es = sib[i] * sib[i] + (es - sib[i] * sib[i]) * c; ef = y[i] * y[i] + (ef - y[i] * y[i]) * c;
-      if (i % H === 0) { const Ls = lg(es), d = Ls - lg(ef); let w = Ls > -65 ? Math.min(1, Math.max(0, (d + 15) / 8)) : 0; gr[i / H] = -amt * DS_K * w; if (w > 0.5) act++; }
+      if (i % H === 0) { const Ls = lg(es), d = Ls - lg(ef); gr[i / H] = Ls > -65 ? Math.min(1, Math.max(0, (d + 15) / 8)) : 0; }
     }
+    // nur Zischlaute (≥ 20 ms), kein kurzer Anschlag („t“, „k“, Plosiv-Knack bleibt knackig)
+    const minR = Math.round(0.02 * sr / H);
+    for (let k = 0; k < m;) { if (gr[k] <= 0.3) { k++; continue; } let j = k; while (j < m && gr[j] > 0.3) j++; if (j - k < minR) for (let q = k; q < j; q++) gr[q] = 0; k = j; }
+    for (let k = 0; k < m; k++) { if (gr[k] > 0.5) act++; gr[k] *= -amt * DS_K; }
     smooth(gr, sr / H, 0.0005, 0.04, 0.002);
     const low = run(y, bq('lp', DS_SPLIT, sr, Math.SQRT1_2)), high = new Float32Array(n); for (let i = 0; i < n; i++) high[i] = y[i] - low[i];
     applyDb(y, gr, H, high);
     let mn = 0; for (let k = 0; k < m; k++) if (gr[k] < mn) mn = gr[k];
     return {maxDb: +mn.toFixed(2), sibMs: Math.round(act * H / sr * 1000)};
   }
-  // Silben-Dynamik (G4 ergänzt 4): je Silbe (Marke → nächste Marke) ein fester Ausgleich zur Mitte der Nachbar-Silben (±1,5 s),
+  // Silben-Dynamik (G4 ergänzt 4): je Silbe (Marke → nächste Marke) ein fester Ausgleich zur Mitte der Nachbar-Silben (±3 s),
   // Stärke s; der Wechsel endet 2 ms vor der Marke (der Anschlag bleibt unverändert), Pausen bleiben ±0 dB
   function syll(y, sr, marks, s) {
-    const n = y.length, F = Math.round(sr * 0.01), nf = Math.floor(n / F), pw = new Float64Array(nf);
-    for (let k = 0; k < nf; k++) { let a = 0; for (let i = k * F, z = i + F; i < z; i++) a += y[i] * y[i]; pw[k] = a / F; }
-    const T = marks.map(m => m.t).filter(t => t >= 0 && t < n / sr).sort((a, b) => a - b), seg = [];
+    const n = y.length, F = Math.round(sr * 0.01), nf = Math.floor(n / F), pw = new Float64Array(nf), pa = new Float64Array(nf), lo = run(y, bq('lp', 3000, sr, Math.SQRT1_2));
+    for (let k = 0; k < nf; k++) { let a = 0, b = 0; for (let i = k * F, z = i + F; i < z; i++) { a += lo[i] * lo[i]; b += y[i] * y[i]; } pw[k] = a / F; pa[k] = b / F; }
+    const T0 = marks.map(m => m.t).filter(t => t >= 0 && t < n / sr).sort((a, b) => a - b), T = [], seg = [];
+    for (const t of T0) if (!T.length || t - T[T.length - 1] >= 0.08) T.push(t);       // Anschlag + Vokal derselben Silbe = eine Silbe
     for (let k = 0; k < T.length; k++) {
       const a = T[k], b = Math.min(k + 1 < T.length ? T[k + 1] : n / sr, a + 0.8), f0 = Math.floor(a * 100), f1 = Math.min(nf, Math.ceil(b * 100));
-      let mx = 0; for (let f = f0; f < f1; f++) if (pw[f] > mx) mx = pw[f];
+      let mx = 0, ea = 0, el = 0; for (let f = f0; f < f1; f++) { if (pw[f] > mx) mx = pw[f]; ea += pa[f]; el += pw[f]; }
       let sm = 0, c = 0, last = f0; for (let f = f0; f < f1; f++) if (pw[f] > mx * 1e-3) { sm += pw[f]; c++; last = f; }
-      seg.push({a, b, L: c ? lg(sm / c) : -200, end: (last + 1) / 100, v: lg(mx) > -55});
+      seg.push({a, b, L: c ? lg(sm / c) : -200, end: (last + 1) / 100, v: lg(mx) > -55 && el > 0.5 * ea});   // stimmlos (Zischlaut, Atem): bleibt
     }
     const V = seg.filter(x => x.v);
     if (V.length < 2) return {n: 0};
     for (const x of seg) {
       if (!x.v) { x.g = 0; continue; }
-      const mid = (x.a + x.end) / 2, nb = V.filter(z => Math.abs((z.a + z.end) / 2 - mid) <= 1.5).map(z => z.L);
+      const mid = (x.a + x.end) / 2, nb = V.filter(z => Math.abs((z.a + z.end) / 2 - mid) <= 3).map(z => z.L);
       x.g = Math.max(-9, Math.min(9, s * (pct(nb, 0.5) - x.L)));
     }
     const R = 1000, gm = new Float32Array(Math.ceil(n / sr * R) + 2);   // Kurve je 1 ms
@@ -41990,12 +41995,13 @@ function g4DspMake() {
     const L0 = V.map(x => x.L), L1 = V.map(x => x.L + x.g);
     return {n: V.length, spanIn: +(pct(L0, 0.9) - pct(L0, 0.1)).toFixed(2), spanOut: +(pct(L1, 0.9) - pct(L1, 0.1)).toFixed(2)};
   }
-  // Kompressor: RMS 10 ms, weiches Knie 6 dB, Anstieg 8 ms, Abfall 150 ms (kein Pumpen), 3 ms Vorlauf
+  // Kompressor: RMS 10 ms über das Signal bis 3 kHz (Zischlaute regeln ihn nicht, das macht der Entzischer), weiches Knie 6 dB,
+  // Anstieg 15 ms (der Anschlag bleibt „knackig“), Abfall 150 ms (kein Pumpen)
   function comp(y, sr, thr, ra) {
-    const n = y.length, H = 8, m = Math.ceil(n / H), c = Math.exp(-1 / (0.010 * sr)), gr = new Float32Array(m), W = 6, sl = 1 - 1 / ra;
+    const n = y.length, H = 8, m = Math.ceil(n / H), c = Math.exp(-1 / (0.010 * sr)), gr = new Float32Array(m), W = 6, sl = 1 - 1 / ra, sc = run(run(y, bq('lp', 3000, sr, 0.5412)), bq('lp', 3000, sr, 1.3066));
     let e = 0;
-    for (let i = 0; i < n; i++) { e = y[i] * y[i] + (e - y[i] * y[i]) * c; if (i % H === 0) { const o = lg(e) - thr; gr[i / H] = o <= -W / 2 ? 0 : o >= W / 2 ? -sl * o : -sl * (o + W / 2) * (o + W / 2) / (2 * W); } }
-    smooth(gr, sr / H, 0.008, 0.15, 0.003);
+    for (let i = 0; i < n; i++) { const v = sc[i]; e = v * v + (e - v * v) * c; if (i % H === 0) { const o = lg(e) - thr; gr[i / H] = o <= -W / 2 ? 0 : o >= W / 2 ? -sl * o : -sl * (o + W / 2) * (o + W / 2) / (2 * W); } }
+    smooth(gr, sr / H, 0.015, 0.15, 0.0002);
     applyDb(y, gr, H, null);
     let mn = 0, sum = 0; for (let k = 0; k < m; k++) { if (gr[k] < mn) mn = gr[k]; sum += gr[k]; }
     return {maxDb: +mn.toFixed(2), avgDb: +(sum / Math.max(1, m)).toFixed(2)};
@@ -42017,16 +42023,19 @@ function g4DspMake() {
   function pre(x, sr, P, marks) {          // bis vor den Kompressor, auf −20 LUFS gestellt
     const Lin = integ(kq(x, sr)); if (!isFinite(Lin)) return null;
     const n = x.length, y = new Float32Array(n), g = db2(REF - Lin); for (let i = 0; i < n; i++) y[i] = x[i] * g;
+    const x0 = Float32Array.from(y);
     if (P.hp > 20) { run(y, bq('hp', P.hp, sr, 0.5412), y); run(y, bq('hp', P.hp, sr, 1.3066), y); }
-    const ds = P.ds > 0.05 ? deess(y, sr, P.ds) : null;
-    const sy = P.sy > 0 && marks && marks.length > 1 ? syll(y, sr, marks, P.sy / 100) : null;
-    return {y, Lin, ds, sy};
+    const sy = P.sy > 0 && marks && marks.length > 1 ? syll(y, sr, marks, P.sy / 100) : null;     // vor Entzischer und Kompressor: hebt keinen
+    const ds = P.ds > 0.05 ? deess(y, sr, P.ds) : null;                                           // gesenkten Zischlaut wieder an
+    return {y, Lin, ds, sy, x0};
   }
   function render(x, sr, P, marks) {
     const t0 = Date.now(), r = pre(x, sr, P, marks); if (!r) return {y: Float32Array.from(x), info: {lin: null}};
     const y = r.y, cp = P.ra > 1.01 ? comp(y, sr, P.thr, P.ra) : null;
     eq(y, sr, P);
-    const Lo = integ(kq(y, sr)), g = isFinite(Lo) ? db2(r.Lin - Lo) : 1; for (let i = 0; i < y.length; i++) y[i] *= g;
+    // Pegel wie vorher, gemessen unterhalb 4 kHz (so ändern Entzischer und Präsenz die Gesamtlautstärke nicht mit)
+    const lp = z => run(run(z, bq('lp', 4000, sr, 0.5412)), bq('lp', 4000, sr, 1.3066)), Lo = integ(kq(lp(y), sr)), Li = integ(kq(lp(r.x0), sr));
+    const g = isFinite(Lo) && isFinite(Li) ? db2(Li - Lo + r.Lin - REF) : 1; for (let i = 0; i < y.length; i++) y[i] *= g;
     return {y, info: {lin: +r.Lin.toFixed(2), ds: r.ds, sy: r.sy, comp: cp, ms: Date.now() - t0}};
   }
   // [Auto]: Dynamik → Schwelle/Verhältnis, Zischlaute → Entzischer, Maskierung (Mix) → Präsenz
@@ -42064,12 +42073,12 @@ function g4DspMake() {
   return {render, analyze, integ: (x, sr) => integ(kq(x, sr)), lra: (x, sr) => lra(kq(x, sr)), band, bq, run, VERSION: 'g4-1'};
 }
 const G4D = g4DspMake();
-const G4P = {on: true, hp: 100, ds: 4, sy: 70, thr: -24, ra: 3, lo: -1, mid: -2, pre: 3, rev: 0.18, dly: 0.1};   // „Gesang Synthpop“
+const G4P = {on: true, hp: 100, ds: 4, sy: 80, thr: -24, ra: 3, lo: -1, mid: -2, pre: 3, rev: 0.18, dly: 0.1};   // „Gesang Synthpop“
 const G4_R = {hp: [40, 300, 5], ds: [0, 12, 0.5], sy: [0, 100, 5], thr: [-40, 0, 1], ra: [1, 10, 0.5], lo: [-12, 12, 0.5], mid: [-12, 12, 0.5], pre: [-12, 12, 0.5], rev: [0, 1, 0.01], dly: [0, 1, 0.01]};
 const G4_K = ['hp', 'ds', 'sy', 'thr', 'ra', 'lo', 'mid', 'pre', 'rev', 'dly'];
 const G4_LBL = {hp: 'Hochpass', ds: 'Entzischer', sy: 'Silben-Dynamik', thr: 'Schwelle', ra: 'Verhältnis', lo: 'Tief', mid: 'Mitte', pre: 'Präsenz', rev: 'Hall', dly: 'Delay'};
 const G4 = {cache: new Map(), job: new Map(), again: new Set(), ab: false, w: null, wid: 0, wq: new Map(), ids: new WeakMap(), bid: 0, renders: 0, last: null, how: null,
-  auto: null, autoBusy: false, mixLast: null, noProc: false, noMk: new Set(), mks: new WeakMap(), deb: 0, err: 0};
+  auto: null, autoBusy: false, mixLast: null, det: new Map(), dq: new Map(), mks: new WeakMap(), deb: 0, err: 0};
 function g4Norm(v) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
   const o = {on: v.on !== false};
@@ -42086,22 +42095,24 @@ const g4Sig = g => G4_K.slice(0, 8).map(k => g[k]).join(',');
 function g4Bid(b) { let k = G4.ids.get(b); if (!k) { k = ++G4.bid; G4.ids.set(b, k); } return k; }
 // die Quelle: was die Verarbeiter hinter G4 liefern (VS4 gesäubert), sonst der Roh-Take
 function g4Base(id, a) { const P = tkExt().proc, k = P.indexOf(g4Proc); for (let j = k + 1; j < P.length; j++) { try { const b = P[j](id, a); if (b) return b; } catch (e) { logErr(e); } } return tkBuffer(id); }
-// Marken (VS5a): von Hand gesetzt/quantisiert, sonst erkannt (am gesäuberten bzw. Roh-Take); null = wird noch gesucht
-function g4Marks(id) {
+// Marken (VS5a): von Hand gesetzt/quantisiert (take.marks), sonst mit dem VS5a-Erkenner (detectMarks im VS5a-Worker) an genau der Quelle
+// erkannt, auf die G4 wirkt (gesäubert bzw. roh) – nie an der G4-Fassung selbst; null = wird noch gesucht (g4Kick, wenn fertig)
+function g4Marks(id, b) {
   const m = S.takes && S.takes[id]; if (m && m.marks) return m.marks;
-  const d = typeof wpMarks === 'function' ? wpMarks(id) : []; if (d) return d;
-  if (typeof wpDetect !== 'function') return [];
-  G4.noProc = true;
-  if (G4.noMk.has(id)) return [];
-  try { wpDetect(id).then(r => { if (!r) G4.noMk.add(id); g4Kick(id); }, e => { logErr(e); G4.err++; G4.noMk.add(id); g4Kick(id); }); } catch (e) { logErr(e); return []; } finally { G4.noProc = false; }
+  if (!b || typeof wpCall !== 'function') return [];
+  const k = g4Bid(b), c = G4.det.get(id); if (c && c.k === k) return c.mk;
+  if (G4.dq.get(id) !== k) {
+    G4.dq.set(id, k);
+    const fin = mk => { if (G4.dq.get(id) === k) G4.dq.delete(id); G4.det.set(id, {k, mk}); g4Kick(id); };
+    wpCall({op: 'det', x: b.getChannelData(0), sr: b.sampleRate}).then(r => fin((typeof wpNormMarks === 'function' ? wpNormMarks(r, b.length / b.sampleRate) : r) || []), e => { logErr(e); G4.err++; fin([]); });
+  }
   return null;
 }
 const g4MkSig = mk => { const c = G4.mks.get(mk); if (c) return c; let h = 0x811c9dc5; for (const k of mk) { const s = k.t.toFixed(4); for (let j = 0; j < s.length; j++) { h ^= s.charCodeAt(j); h = Math.imul(h, 0x01000193) >>> 0; } } const r = mk.length + ':' + h.toString(16); G4.mks.set(mk, r); return r; };
 function g4Proc(id, a) {
-  if (G4.noProc) return null;
   const g = g4Active(); if (!g) return null;
   const b = g4Base(id, a); if (!b) return null;
-  const mk = g.sy > 0 ? g4Marks(id) : [];
+  const mk = g.sy > 0 ? g4Marks(id, b) : [];
   const c = G4.cache.get(id);
   if (mk === null) return c ? c.buf : null;                       // Marken kommen gleich (g4Kick)
   const key = g4Sig(g) + '|' + g4MkSig(mk) + '@' + g4Bid(b);
@@ -42140,7 +42151,7 @@ function g4Render(id, key, b, g, mk) {
     G4.job.delete(id);
     const ab = wpToBuf(r.y, b.sampleRate);
     if (ab) { G4.cache.set(id, {key, buf: ab, info: r.info}); G4.renders++; G4.last = Object.assign({id, ms: Math.round(performance.now() - t0), how: G4.how}, r.info); }
-    const act = tkActiveIds(); for (const k of [...G4.cache.keys()]) if (!act.has(k)) G4.cache.delete(k);
+    const act = tkActiveIds(); for (const k of [...G4.cache.keys()]) if (!act.has(k)) G4.cache.delete(k); for (const k of [...G4.det.keys()]) if (!act.has(k)) G4.det.delete(k);
     if (G4.again.delete(id)) g4Kick(id);
     g4Switch();
   }, e => { G4.job.delete(id); G4.err++; logErr(e); g4Paint(); });
@@ -42202,7 +42213,7 @@ async function g4Material() {
     tkLoad(id); const w = TK.wait.get(id); if (w) await w;
     const b = g4Base(id); if (!b) continue;
     if (!sr) sr = b.sampleRate; if (b.sampleRate !== sr || len > sr * 120) continue;
-    let mk = g4Marks(id); if (mk === null && typeof wpDetect === 'function') { G4.noProc = true; let p; try { p = wpDetect(id); } finally { G4.noProc = false; } try { mk = await p; } catch (e) { mk = []; } }
+    let mk = g4Marks(id, b); for (let t = 0; mk === null && t < 300; t++) { await sleep(50); mk = g4Marks(id, b); }
     for (const k of mk || []) mks.push({t: k.t + len / sr});
     parts.push(b.getChannelData(0)); len += b.length;
   }
@@ -42296,7 +42307,7 @@ const G4_API = {
   g4Off: () => g4Off(),
   g4AB: v => g4AB(v),
   g4Auto: () => g4Auto(),
-  g4Wait: async ms => { const t0 = performance.now(); while (performance.now() - t0 < (ms || 20000)) { if (!G4.job.size && !G4.deb && !(typeof WP !== 'undefined' && WP.job && WP.job.size) && !G4.autoBusy) { await sleep(30); if (!G4.job.size && !G4.deb) return true; } await sleep(30); } return false; },
+  g4Wait: async ms => { const t0 = performance.now(); while (performance.now() - t0 < (ms || 20000)) { if (!G4.job.size && !G4.deb && !(typeof WP !== 'undefined' && ((WP.job && WP.job.size) || (WP.dq && WP.dq.size))) && !G4.dq.size && !G4.autoBusy) { await sleep(30); if (!G4.job.size && !G4.deb) return true; } await sleep(30); } return false; },
   g4Played: id => { let b = null; try { b = tkPlayBuf(id); } catch (e) {} const c = G4.cache.get(id); return {g4: !!(c && b === c.buf), raw: b === tkBuffer(id), len: b ? b.length : 0}; },
   g4PlayRange: (id, a, n) => { const b = tkPlayBuf(id) || tkBuffer(id); if (!b) return null; const d = b.getChannelData(0); return Array.from(d.subarray(a | 0, Math.min(d.length, (a | 0) + (n | 0)))); },
   g4Core: (op, x, sr, P, marks, mix) => { const X = Float32Array.from(x); if (op === 'render') { const r = G4D.render(X, sr, Object.assign(g4Preset(), P || {}), marks || []); return {y: Array.from(r.y), info: r.info}; } return G4D.analyze(X, sr, Object.assign(g4Preset(), P || {}), marks || [], mix || null); },
@@ -42793,10 +42804,10 @@ function fxGestureApi(t, g) {
 }
 // every state-changing API call leaves the UI rendered (no need to wait for the next animation frame)
 function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
+Object.assign(SYNQUENZER, G4_API, G5_API);        // G4: Gesangs-Effekte · G5: Gesang → Melodie
 Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes
 Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
 Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
-Object.assign(SYNQUENZER, G4_API, G5_API);        // G4: Gesangs-Effekte · G5: Gesang → Melodie
 const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
