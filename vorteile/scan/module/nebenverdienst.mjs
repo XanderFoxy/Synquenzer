@@ -47,6 +47,7 @@ export default async function nebenverdienst({ holeText, cfg, jetzt }) {
         eintraege.push(eintrag({
           kategorie: 'nebenverdienst', titel: st.titel || st.beruf, quelle: 'Jobbörse der Arbeitsagentur',
           link: `https://www.arbeitsagentur.de/jobsuche/jobdetail/${encodeURIComponent(st.refnr)}`, datum: st.aktuelleVeroeffentlichungsdatum,
+          jetzt, art: 'job', // die Jobbörse liefert kein Ende -> 21 Tage ab Veröffentlichung
           zeile: [st.arbeitgeber, remote ? 'von zu Hause möglich' : ort, s.arbeitszeit === 'mj' ? 'Minijob' : ''].filter(Boolean).join(' · '),
           soGehts: NAECHSTER_SCHRITT[a], wert: 35 + faehig * 10 + (remote ? 15 : 0), grund: a,
           extra: { art: a },
@@ -61,7 +62,7 @@ export default async function nebenverdienst({ holeText, cfg, jetzt }) {
       const text = `${it.titel} ${it.beschreibung}`;
       if (enthaelt(text, m.nichtWoerter) || !zaehle(text, m.faehigkeitWoerter) || !enthaelt(text, m.remoteWoerter)) continue;
       const a = art(text);
-      eintraege.push(eintrag({ kategorie: 'nebenverdienst', titel: it.titel, quelle: it.feed, link: it.link, datum: it.datum,
+      eintraege.push(eintrag({ kategorie: 'nebenverdienst', titel: it.titel, quelle: it.feed, link: it.link, datum: it.datum, jetzt, bis: it.bis, art: 'job',
         zeile: 'von zu Hause', soGehts: NAECHSTER_SCHRITT[a], wert: 45, grund: a, extra: { art: a } }));
     }
   }

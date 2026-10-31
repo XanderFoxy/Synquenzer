@@ -37,7 +37,7 @@ export async function lauf({ env = process.env, fetchImpl = globalThis.fetch, je
   http = http || macheHttp({ fetchImpl: roh ? roh.fetch(fetchImpl) : fetchImpl, abstandMs: { 'musicbrainz.org': 1100, 'nominatim.openstreetmap.org': 1100, 'app.ticketmaster.com': 250 } });
 
   const ctx = { http, bands, config, env, heute, ids, log: console.log };
-  const status = {}, konzerte = [], releases = [], kaputt = new Set();
+  const status = {}, konzerte = [], releases = [], kaputt = new Set(), bandKaputt = new Set();
   let seitenGeprueft = [];
   for (const [name, fn] of quellen) {
     const t0 = Date.now();
@@ -47,6 +47,7 @@ export async function lauf({ env = process.env, fetchImpl = globalThis.fetch, je
       const n = (r.konzerte || []).length + (r.releases || []).length;
       status[name] = { ok: !r.fehler?.length, treffer: n, fehler: r.fehler || [], uebersprungen: r.uebersprungen || null, ms: Date.now() - t0 };
       if (r.fehler?.length && (r.fehler.length >= bands.length || name === 'seiten')) kaputt.add(name);
+      for (const f of r.fehler || []) { const b = bands.find(x => String(f).startsWith(`${x.name}:`)); if (b) bandKaputt.add(`${name}|${b.name}`); }
       if (r.geprueft) seitenGeprueft = r.geprueft;
     } catch (e) {
       kaputt.add(name);
@@ -54,13 +55,13 @@ export async function lauf({ env = process.env, fetchImpl = globalThis.fetch, je
     }
   }
   // Seiten-Quelle: nur die einzelnen kaputten Seiten aus dem Altbestand übernehmen
-  const quelleKaputt = q => kaputt.has(q) || (q.startsWith('seite:') && !seitenGeprueft.includes(q.slice(6)));
+  const quelleKaputt = (q, x) => kaputt.has(q) || (q.startsWith('seite:') && !seitenGeprueft.includes(q.slice(6))) || bandKaputt.has(`${q}|${x?.band}`);
   const alleK = mitAltbestand(konzerte, vorher.konzerte, quelleKaputt);
   const alleR = mitAltbestand(releases, vorher.releases, quelleKaputt);
 
   for (const k of alleK) if ((k.lat == null || k.lon == null) && k.stadt) Object.assign(k, await koordinaten(k.stadt, k.land, geoCache, http) || {});
 
-  const erg = verarbeite({ konzerte: alleK, releases: alleR, gesehen, config, heute, seitenGeprueft });
+  const erg = verarbeite({ konzerte: alleK, releases: alleR, gesehen, config, heute, jetzt: jetzt.toISOString(), seitenGeprueft });
   const ziel = { server: config.ntfy.server, topic: env.NTFY_TOPIC || config.ntfy.topic, token: env.NTFY_TOKEN };
   const MAX = 8, seiteUrl = config.seiteUrl;
   let gesendet = 0;
