@@ -81,3 +81,24 @@ export function schluessel(...teile) {
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
   return (h >>> 0).toString(36);
 }
+
+// Größte Mengenangabe in g/ml ("150 g", "1,5 kg", "6 x 0,5 l" -> 3000) oder null
+export function grammAus(text) {
+  const t = String(text ?? '').toLowerCase().replace(/×/g, 'x');
+  const n = s => Number(String(s).replace(',', '.'));
+  const basis = (v, u) => (u === 'kg' || u === 'l' || u === 'liter' ? v * 1000 : v);
+  const multi = t.match(/(\d{1,2})\s*x\s*(\d+(?:[.,]\d+)?)\s*-?\s*(kg|g|ml|liter|l)\b/);
+  if (multi) return basis(n(multi[2]) * Number(multi[1]), multi[3]);
+  let best = null;
+  for (const m of t.matchAll(/(?<![+\d])(\d+(?:[.,]\d+)?)\s*-?\s*(kg|g|ml|liter|l)(?![a-z])/g)) {
+    const v = basis(n(m[1]), m[2]);
+    if (v > 0 && (best == null || v > best)) best = v;
+  }
+  return best;
+}
+
+// "statt 299 €", "UVP 299,99", "Vergleichspreis 249€" -> Zahl (wie schnaeppchen/scan/deals.mjs altpreisAus)
+export function altpreisAus(text) {
+  const m = String(text || '').match(/(?:statt|uvp|vergleichspreis|vgp|sonst|regul[aä]r|normalpreis)[:\s]*(?:ca\.?\s*)?(\d[\d.]*(?:,\d{1,2})?)\s*(?:€|eur|euro)?/i);
+  return m ? parsePrice(m[1]) : null;
+}

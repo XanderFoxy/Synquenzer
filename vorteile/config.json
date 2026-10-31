@@ -1,0 +1,121 @@
+{
+  "_hinweis": "Einstellungen für den Vorteils-Radar. Wörter-Listen darfst du frei ändern; 'a|b' heißt: a oder b. Wunsch-Geräte stehen in wunschliste.json.",
+  "ort": "Döbeln",
+  "plz": "04720",
+  "region": ["Döbeln", "Mittelsachsen", "Sachsen", "Leipzig", "Dresden", "Chemnitz", "Riesa", "Meißen", "Freiberg", "Mittweida", "Grimma", "Oschatz", "Waldheim", "Hartha", "Leisnig", "Roßwein", "Rochlitz", "Wurzen", "Torgau", "Borna", "Zwickau", "Halle"],
+  "seite": "https://xanderfoxy.github.io/Synquenzer/vorteile/",
+  "ntfy": {
+    "_hinweis": "Gleicher Kanal wie der Schnäppchen-Wecker. Das GitHub-Secret NTFY_TOPIC (falls gesetzt) gilt für alle drei Wecker.",
+    "server": "https://ntfy.sh",
+    "topic": "xander-schnaeppchen-b5cbf4442aaa9734f3",
+    "maxSofortProTag": 3,
+    "digestStunde": 18,
+    "digestMaxZeilen": 12
+  },
+  "geschwister": {
+    "_hinweis": "Daten der Schwester-Wecker (werden nur gelesen).",
+    "schnaeppchen": "https://raw.githubusercontent.com/XanderFoxy/Synquenzer/schnaeppchen-daten/schnaeppchen/data/current.json",
+    "konzerte": "https://raw.githubusercontent.com/XanderFoxy/Synquenzer/konzerte-daten/konzerte/data/konzerte.json",
+    "releases": "https://raw.githubusercontent.com/XanderFoxy/Synquenzer/konzerte-daten/konzerte/data/releases.json"
+  },
+  "abruf": {
+    "userAgent": "Vorteils-Radar/1.0 (privat, wenige Abrufe pro Stunde; +https://github.com/XanderFoxy/Synquenzer/tree/vorteile/vorteile)",
+    "timeoutMs": 20000,
+    "pauseMs": 2000
+  },
+  "module": {
+    "deals": {
+      "aktiv": true,
+      "intervallStunden": 1,
+      "maxPackungen": 10,
+      "minErsparnis": 0.3,
+      "sofortAbErsparnis": 0.6,
+      "feeds": [
+        { "name": "mydealz Lebensmittel", "url": "https://www.mydealz.de/rss/gruppe/lebensmittel", "maxAlterTage": 7 },
+        { "name": "mydealz Drogerie", "url": "https://www.mydealz.de/rss/gruppe/drogerie", "maxAlterTage": 7 },
+        { "name": "mydealz Preisfehler", "url": "https://www.mydealz.de/rss/gruppe/preisfehler", "maxAlterTage": 3, "preisfehler": true }
+      ],
+      "aktionWoerter": ["für|fuer", "zum preis von", "gratis", "geschenkt", "1+1", "halben preis", "coupon", "cashback", "scondoo", "lidl plus", "kaufland card", "geld zurück|geld zurueck"]
+    },
+    "erleben": {
+      "aktiv": true,
+      "intervallStunden": 6,
+      "minTemperatur": 250,
+      "suchen": ["Therme", "Erlebnisbad", "Kino", "Kinotag", "Freizeitpark", "Konzert Tickets"],
+      "news": ["Döbeln Stadtfest", "Döbeln Veranstaltung", "Mittelsachsen Fest", "Therme Sachsen Angebot"],
+      "gutWoerter": ["gratis", "kostenlos", "freier eintritt|eintritt frei", "2 für 1|2 fuer 1", "halber preis|halben preis", "50 %|50%", "kinotag", "rabatt", "gutschein"],
+      "bundesweitWoerter": ["kino", "cinemaxx", "cineplex", "uci", "cinestar", "kinotag", "kinogutschein"]
+    },
+    "reisen": {
+      "aktiv": true,
+      "intervallStunden": 2,
+      "minTemperatur": 400,
+      "feeds": [
+        { "name": "mydealz Reisen", "url": "https://www.mydealz.de/rss/gruppe/reisen", "maxAlterTage": 4 },
+        { "name": "Urlaubspiraten", "url": "https://www.urlaubspiraten.de/feed", "maxAlterTage": 4 },
+        { "name": "Urlaubsguru", "url": "https://www.urlaubsguru.de/feed/", "maxAlterTage": 4 },
+        { "name": "mydealz Bahn", "url": "https://www.mydealz.de/rss/search?q=bahn%20sparpreis", "maxAlterTage": 7 }
+      ],
+      "abflug": ["Leipzig", "Dresden", "Berlin", "Halle", "LEJ", "DRS", "BER"],
+      "fremdAbflug": ["Frankfurt", "München", "Muenchen", "Hamburg", "Düsseldorf", "Duesseldorf", "Köln", "Koeln", "Stuttgart", "Hannover", "Nürnberg", "Nuernberg", "Wien", "Zürich", "Amsterdam", "Bremen", "Dortmund", "Weeze", "Memmingen", "Karlsruhe", "Paderborn", "Münster", "Basel", "Prag", "Kattowitz", "Breslau", "Posen"],
+      "bahnWoerter": ["deutsche bahn", "db ", "sparpreis", "bahncard", "flexpreis", "ice", "deutschlandticket", "flixtrain", "flixbus"],
+      "knallerWoerter": ["preisfehler", "error fare", "fehlerpreis", "knaller", "mega deal|mega-deal", "wahnsinn", "unschlagbar"],
+      "flugMaxEuro": 60
+    },
+    "musik": {
+      "aktiv": true,
+      "intervallStunden": 6,
+      "geraeteSuche": true,
+      "aufrufe": [
+        "\"Bands gesucht\" Festival",
+        "\"Bands gesucht\" Stadtfest Sachsen",
+        "Bewerbung Bands Stadtfest Leipzig OR Dresden OR Chemnitz",
+        "Newcomer Bands gesucht Sachsen",
+        "\"Musiker gesucht\" Festival elektronisch",
+        "Synthpop Festival Bewerbung",
+        "\"open call\" electronic music festival Germany"
+      ],
+      "aufrufWoerter": ["gesucht", "bewerben", "bewerbung", "open call", "ausschreibung", "bandcontest|band contest", "wettbewerb", "newcomer", "talente", "line-up|lineup", "auftrittsmöglichkeit|auftrittsmoeglichkeit"],
+      "genreWoerter": ["synth", "elektro", "electro", "electronic", "elektronisch", "wave", "pop", "indie", "singer-songwriter|solokünstler|solokuenstler", "alle genres|jedes genre|genreoffen"],
+      "nichtWoerter": ["coverband|cover-band", "blaskapelle", "schlager", "fußball|fussball", "kirchenchor", "gestorben|trauer", "verhaftet|polizei"]
+    },
+    "nebenverdienst": {
+      "aktiv": true,
+      "intervallStunden": 12,
+      "ba": {
+        "api": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs",
+        "key": "jobboerse-jobsuche",
+        "tageZurueck": 14,
+        "suchen": [
+          { "was": "Deutschlehrer", "wo": "Döbeln", "umkreis": 50 },
+          { "was": "Deutsch als Fremdsprache", "arbeitszeit": "ho" },
+          { "was": "Deutschlehrer online", "arbeitszeit": "ho" },
+          { "was": "Nachhilfe Deutsch", "wo": "Döbeln", "umkreis": 30 },
+          { "was": "Übersetzer Arabisch", "arbeitszeit": "ho" },
+          { "was": "Übersetzer Englisch Deutsch", "arbeitszeit": "ho" },
+          { "was": "Bildbearbeitung", "arbeitszeit": "ho" },
+          { "was": "Videoschnitt", "arbeitszeit": "ho" },
+          { "was": "KI Trainer Deutsch", "arbeitszeit": "ho" }
+        ]
+      },
+      "feeds": [],
+      "remoteWoerter": ["homeoffice|home office|home-office", "remote", "online", "von zu hause|von zuhause", "freiberuflich|freelance|freie mitarbeit", "honorar", "minijob", "flexibel"],
+      "faehigkeitWoerter": ["deutsch", "daf|daz", "nachhilfe", "übersetz|uebersetz", "arabisch", "englisch", "bildbearbeitung|photoshop", "video|schnitt", "ki|ai|künstliche intelligenz|kuenstliche intelligenz", "lektorat|korrektur", "text"],
+      "nichtWoerter": ["außendienst|aussendienst", "vertrieb", "callcenter|call center", "provision", "schicht", "führerschein|fuehrerschein", "lager", "fahrer", "pflege", "kommissionier", "vollzeit"]
+    },
+    "tests": {
+      "aktiv": true,
+      "intervallStunden": 6,
+      "feeds": [
+        { "name": "mydealz Freebies", "url": "https://www.mydealz.de/rss/gruppe/freebies", "maxAlterTage": 7 },
+        { "name": "mydealz Gewinnspiele", "url": "https://www.mydealz.de/rss/gruppe/gewinnspiele", "maxAlterTage": 14 }
+      ],
+      "news": ["\"Produkttester gesucht\"", "\"Tester gesucht\" Kopfhörer OR Technik OR Snacks", "Gewinnspiel Synthesizer", "Gewinnspiel Leipzig Tickets"],
+      "testWoerter": ["produkttest", "tester gesucht|testerin gesucht|testpersonen", "testen und behalten", "kostenlos testen", "gratis testen", "produktprobe|gratisprobe"],
+      "gewinnWoerter": ["gewinnspiel", "gewinnen", "verlosung", "verlost"],
+      "themaWoerter": ["synth", "synthesizer", "kopfhörer|kopfhoerer", "lautsprecher", "mikrofon", "audio", "musik", "technik", "laptop", "tablet", "ipad", "iphone", "kamera", "software", "chips", "snack", "schokolade", "süßigkeiten|suessigkeiten", "kaffee", "reise", "konzert", "tickets", "therme", "gutschein"],
+      "leichtWoerter": ["ohne anmeldung", "nur e-mail|nur email", "kurzes formular", "kommentar", "einfach teilnehmen", "regional", "leser"],
+      "fallenWoerter": ["gewinnspielservice|gewinnspiel-service|gewinnspieleintrag", "abo|abonnement", "kostenpflichtig", "0900|0137", "sms", "lotto|lotterie|losnummer", "glücksrad|gluecksrad", "gewinnbenachrichtigung", "sie haben gewonnen", "versandkosten", "probanden|klinisch|medikament|studie", "umfrage gegen", "paysafe", "krypto"]
+    }
+  }
+}
