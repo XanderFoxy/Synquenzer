@@ -686,22 +686,22 @@ class Voice {
       const wL = ty === 0 ? 1 : 0, wB = ty === 2 ? k : ty === 4 ? -k : 0, wH = ty === 4 ? 1 : 0, wV = ty === 4 ? -1 : wL;
       for (let i = 0; i < n; i++) {
         st ^= st << 13; st >>>= 0; st ^= st >>> 17; st ^= st << 5; st >>>= 0;
-        const x = st / 2147483648 - 1;
+        const x = st * 4.656612873077393e-10 - 1;
         const v3 = x - z2, v1 = a1 * z1 + a2 * v3, v2 = z2 + a2 * z1 + a3 * v3; z1 = 2 * v1 - z1; z2 = 2 * v2 - z2;
         NB[i] = wH * x + wB * v1 + wV * v2;
       }
     } else {                                  // two stages: L2 / b2 / H2 / H3
-      const H = ty >= 5, B = ty === 3, nlp = this.nlp;
+      // output mix weights (x, band, low) per stage: L2 (0,0,1) · b2 (0,k,0) · H2/H3 (1,-k,-1)
+      const H = ty >= 5, B = ty === 3, nlp = this.nlp, ux = H ? 1 : 0, ub = H ? -k : B ? k : 0, ul = H ? -1 : B ? 0 : 1, wb = H ? -k2 : B ? k2 : 0;
       for (let i = 0; i < n; i++) {
         st ^= st << 13; st >>>= 0; st ^= st >>> 17; st ^= st << 5; st >>>= 0;
-        const x = st / 2147483648 - 1;
+        const x = st * 4.656612873077393e-10 - 1;
         const v3 = x - z2, v1 = a1 * z1 + a2 * v3, v2 = z2 + a2 * z1 + a3 * v3; z1 = 2 * v1 - z1; z2 = 2 * v2 - z2;
-        const u = H ? x - k * v1 - v2 : B ? k * v1 : v2;
+        const u = ux * x + ub * v1 + ul * v2;
         const w3 = u - y2, w1 = b1 * y1 + b2 * w3, w2 = y2 + b2 * y1 + b3 * w3; y1 = 2 * w1 - y1; y2 = 2 * w2 - y2;
-        let y = H ? u - k2 * w1 - w2 : B ? k2 * w1 : w2;
-        if (ty === 6) { const v = (y - lp) * nlp, o = v + lp; lp = o + v; y = o; }
-        NB[i] = y;
+        NB[i] = ux * u + wb * w1 + ul * w2;
       }
+      if (ty === 6) for (let i = 0; i < n; i++) { const v = (NB[i] - lp) * nlp, o = v + lp; lp = o + v; NB[i] = o; }
     }
     E.nz[ch] = st; this.n1 = z1; this.n2 = z2; this.n3 = y1; this.s7 = y2; this.s8 = lp;
   }
