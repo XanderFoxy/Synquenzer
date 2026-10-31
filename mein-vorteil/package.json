@@ -1,0 +1,11 @@
+{
+  "name": "mein-vorteil",
+  "private": true,
+  "type": "module",
+  "description": "Eine Seite für Angebote, Preisfehler, Vorteile und Konzerte (liest die Daten-Zweige der drei Wecker)",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "fixtures": "node test/fixtures/baue-vertrag.mjs"
+  }
+}
