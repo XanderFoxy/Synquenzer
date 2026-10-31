@@ -48,7 +48,7 @@ test('Normaler Lauf schreibt keine Rohdateien', async () => {
     await stumm(() => main(['--data', join(dir, 'daten'), '--jetzt', JETZT], { DRY_RUN: '1' }, { fetchImpl: n.fetch, abruf: { pauseMs: 0 } }));
     assert.ok(n.abrufe > 5, 'Quellen wurden abgefragt');
     assert.deepEqual(await readdir(dir), ['daten']);
-    assert.deepEqual((await readdir(join(dir, 'daten'))).sort(), ['current.json', 'history.json', 'sent.json']);
+    assert.deepEqual((await readdir(join(dir, 'daten'))).sort(), ['current.json', 'dealseiten.json', 'history.json', 'sent.json']);
   } finally { globalThis.fetch = echtesFetch; await rm(dir, { recursive: true, force: true }); }
 });
 
@@ -71,7 +71,7 @@ test('Roh-Modus: jede Antwort + Ergebnis gespeichert, kein Push', async () => {
     assert.ok(index.abrufe.some(a => a.url.includes('mydealz.de/rss/gruppe/preisfehler') && a.datei.endsWith('.xml')));
     assert.ok(index.abrufe.some(a => a.url.startsWith('https://www.mydealz.de/deals/')), 'Deal-Seiten der Preisfehler mitgeschnitten');
     const aus = (await readdir(join(rohDir, 'ausgabe'))).sort();
-    assert.deepEqual(aus, ['current.json', 'history.json', 'pushes.json', 'sent.json']);
+    assert.deepEqual(aus, ['current.json', 'dealseiten.json', 'history.json', 'pushes.json', 'sent.json']);
     assert.equal(await readFile(join(rohDir, 'ausgabe', 'current.json'), 'utf8'), await readFile(join(dir, 'daten', 'current.json'), 'utf8'));
     assert.equal(JSON.parse(await readFile(join(rohDir, 'ausgabe', 'pushes.json'), 'utf8')).length, r.msgs.length);
   } finally { globalThis.fetch = echtesFetch; await rm(dir, { recursive: true, force: true }); }

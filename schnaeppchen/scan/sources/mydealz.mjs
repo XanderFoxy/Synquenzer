@@ -1,9 +1,23 @@
 // mydealz.de RSS feeds (new, hot, "Preisfehler" group, optional keyword search). Online deals incl. Amazon.
 import { leseRss } from '../rss.mjs';
-import { parsePrice } from '../text.mjs';
+import { parsePrice, norm } from '../text.mjs';
+
+// Läden mit Filialen: ein mydealz-Deal dort („[Penny] …“) gilt im Laden -> kein Versand, Filter wie Prospekt-Angebote.
+const LAEDEN = ['penny', 'rewe', 'edeka', 'kaufland', 'netto', 'norma', 'globus', 'marktkauf', 'aldi', 'lidl'];
+export function istLaden(shop, titel = '') {
+  const s = norm(shop);
+  const klammer = (String(titel).match(/^\s*\[([^\]]{2,40})\]/) || [])[1];
+  return LAEDEN.some(l => s.split(' ').includes(l)) || (!!klammer && LAEDEN.some(l => norm(klammer).split(' ').includes(l)));
+}
+
+export function isoDatum(d) {
+  const t = Date.parse(d || '');
+  return Number.isFinite(t) ? new Date(t).toISOString() : null;
+}
 
 export function mydealzAngebot(it, feed) {
   const preis = parsePrice(it.preisText) ?? parsePrice((it.titel.match(/(\d[\d.,]*)\s?€/) || [])[1]);
+  const laden = istLaden(it.shop, it.titel);
   return {
     quelle: 'mydealz',
     shop: it.shop || 'Online',
@@ -14,9 +28,10 @@ export function mydealzAngebot(it, feed) {
     link: it.link,
     bild: it.bild,
     gueltigBis: null,
-    datum: it.datum,
-    online: true,
-    versand: null,
+    datum: isoDatum(it.datum),
+    temperatur: it.temperatur ?? null,
+    online: !laden,
+    versand: laden ? 0 : null,
     preisfehlerFeed: !!feed.preisfehler,
   };
 }

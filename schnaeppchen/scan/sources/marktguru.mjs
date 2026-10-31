@@ -10,6 +10,29 @@ export async function marktguruKeys(holeText, cfg, env = {}) {
   return { apiKey: api[1], clientKey: client[1] };
 }
 
+// Packungsgröße aus den Feldern der Quelle: volume ist die Packung in kg bzw. l (quantity ist immer 1 = eine Packung).
+// Gegenprobe: Preis ÷ Grundpreis (referencePrice, € pro kg/l) muss dieselbe Menge ergeben (±3 %).
+// Fehlt volume, gilt Preis ÷ Grundpreis allein. Widersprechen sich beide, gibt es keine Packung aus den Feldern.
+// Widersprechen sich volume und Preis ÷ Grundpreis, ist eins davon falsch -> packWiderspruch (Menge gilt als unsicher).
+export function packWiderspruch(r) {
+  const v = typeof r.volume === 'number' && r.volume > 0 ? r.volume : null;
+  const g = r.price > 0 && r.referencePrice > 0 ? r.price / r.referencePrice : null;
+  return !!(v && g && Math.abs(g - v) / v > 0.03 && /^(kg|kilogramm|l|liter)$/i.test(String(r.unit?.shortName || r.unit?.name || '')));
+}
+
+export function packungAusFeldern(r) {
+  const einheit = String(r.unit?.shortName || r.unit?.name || '').toLowerCase();
+  const faktor = einheit === 'kg' || einheit === 'kilogramm' ? 'gramm' : (einheit === 'l' || einheit === 'liter') ? 'ml' : null;
+  if (!faktor) return null;
+  const volume = typeof r.volume === 'number' && r.volume > 0 ? r.volume : null;
+  const ausGrundpreis = typeof r.price === 'number' && r.price > 0 && typeof r.referencePrice === 'number' && r.referencePrice > 0
+    ? r.price / r.referencePrice : null;
+  let menge = null;
+  if (volume && ausGrundpreis) menge = Math.abs(ausGrundpreis - volume) / volume <= 0.03 ? volume : null;
+  else menge = volume ?? ausGrundpreis;
+  return menge ? { [faktor]: Math.round(menge * 1000) } : null;
+}
+
 export function marktguruAngebot(r) {
   const shop = r.advertisers?.[0]?.name || r.advertiser?.name || '';
   const marke = r.brand?.name || '';
@@ -21,10 +44,14 @@ export function marktguruAngebot(r) {
     quelle: 'marktguru',
     shop,
     titel,
-    beschreibung: [r.description, r.volume ? `${r.volume}` : '', einheit && r.quantity ? `${r.quantity} ${einheit}` : ''].filter(Boolean).join(' '),
+    // nur der Text des Prospekts – keine angehängten Zahlen (früher "0.375 1 kg" -> falsche Packung 1 kg)
+    beschreibung: r.description || '',
     preis: typeof r.price === 'number' ? r.price : null,
     preisAlt: typeof r.oldPrice === 'number' && r.oldPrice > 0 ? r.oldPrice : null,
     refPreis: typeof r.referencePrice === 'number' && r.referencePrice > 0 ? { preis: r.referencePrice, einheit } : null,
+    packMenge: packungAusFeldern(r),
+    packWiderspruch: packWiderspruch(r),
+    mehrereSorten: !!r.isMultiProduct,
     gueltigAb: gueltig.from || null,
     gueltigBis: gueltig.to || null,
     link: r.id ? `https://www.marktguru.de/offers/${r.id}` : 'https://www.marktguru.de/',
