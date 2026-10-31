@@ -31534,20 +31534,30 @@ function k1Mods(i) {
     for (let k = 0; k < (dual ? 2 : 1); k++) {
       const T = pm.t[k], pre = dual ? 'T' + (k + 1) + ' · ' : '', tp_ = x => 't.' + k + '.' + x, mkI = (path, src, dst, v, amt) => { if (v) add(path, pre + src, dst, amt, {kind: 'mk', path, val: v}); };
       if (T.vib) add(tp_('vib'), pre + 'LFO 2 × Mod-Rad', 'Tonhöhe', '±' + k1Num(Math.abs(W.vibCt(T.vib, mw)), 1) + ' ct (Mod-Rad ' + Math.round(mw * 100) + ' %, Tiefe ' + T.vib + ')', {kind: 'mk', path: tp_('vib'), val: T.vib});
+      // K1-fix: OSC 1 STEUER 2 is LFO 1's depth on the shape (MKW.form(c1 + LFO 1 x c2), WFM / PWM / X-LFO / BAL-LFO); on the
+      // Speicherwelle it picks the wave and on Rauschen it is the resonance (no modulation)
+      const w1 = Math.round(+T.o1.w || 0); if (T.o1.c2 > 0 && K1_O1C[w1]) mkI(tp_('o1.c2'), 'LFO 1', 'Osz 1 ' + (voc && w1 === 3 ? 'Form' : K1_O1C[w1]), T.o1.c2, 'Steuer 2 · Tiefe +' + Math.round(T.o1.c2));
       if (!voc) T.p.forEach((q, j) => { if (q.i) add(tp_('p.' + j + '.i'), pre + 'Patch ' + (j + 1) + ': ' + K1_PSRC[q.s], K1_PDST[q.d], k1Sgn(q.i, 0), {kind: 'mk', path: tp_('p.' + j + '.i'), val: q.i}); });
-      mkI(tp_('f.eg'), 'EG 1', 'Cutoff', T.f.eg, k1Sgn(T.f.eg, 0));
-      mkI(tp_('f.kbd'), 'Keytrack', 'Cutoff', T.f.kbd, k1Sgn(T.f.kbd, 0));
-      mkI(tp_('f.vel'), 'Anschlag', 'Cutoff', T.f.vel, k1Sgn(T.f.vel, 0));
-      mkI(tp_('a.kbd'), 'Keytrack', 'Amp', T.a.kbd, k1Sgn(T.a.kbd, 0));
+      if (!voc) {   // K1-fix: the vocoder voice skips the filter and the amp of the timbre (MkCore vocAudio)
+        mkI(tp_('f.eg'), 'EG 1', 'Cutoff', T.f.eg, k1Sgn(T.f.eg, 0));
+        mkI(tp_('f.kbd'), 'Keytrack', 'Cutoff', T.f.kbd, k1Sgn(T.f.kbd, 0));
+        mkI(tp_('f.vel'), 'Anschlag', 'Cutoff', T.f.vel, k1Sgn(T.f.vel, 0));
+        mkI(tp_('a.kbd'), 'Keytrack', 'Amp', T.a.kbd, k1Sgn(T.a.kbd, 0));
+      }
       if (!voc && T.seq && T.seq.on) T.seq.q.forEach((q, j) => { if (q.k > 0 && q.v.some(x => x)) add(tp_('seq.q.' + j + '.k'), pre + 'Mod-Sequenz ' + (j + 1), K1_SQT[q.k] || '?', q.v.filter(x => x).length + ' Schritte', {kind: 'mk', path: tp_('seq.q.' + j + '.k'), val: q.k}); });
     }
+    // K1-fix: the vocoder's own modulation (MkVoc: formant shift + INTENSITÄT x QUELLE) and its keytrack on the level
+    const V = pm.voc;
+    if (voc && V && V.mint) add('voc.mint', K1_PSRC[Math.round(+V.msrc || 0)] || '?', 'Vocoder Formant', 'Intensität ' + k1Sgn(V.mint, 0), {kind: 'mk', path: 'voc.mint', val: V.mint});
+    if (voc && V && V.kbd) add('voc.kbd', 'Keytrack', 'Vocoder Pegel', k1Sgn(V.kbd, 0), {kind: 'mk', path: 'voc.kbd', val: V.kbd});
     return out;
   }
   const fm = s.engine === 'fm6', wk = isWkEngine(s.engine);
   for (const m of s.mods) {
     const src = MSRC[m.src], dst = MDST[m.dst]; if (!src || !dst) continue;
     const rg = modRangeText(i, m);
-    add('r:' + m.src + ':' + m.dst, src.l, dst.l, fmtVal('bip', toKnobAmt(m.dst, m.amt)) + (rg ? ' · ' + rg : ''), {kind: 'route', m});
+    const ka = toKnobAmt(m.dst, m.amt), kt_ = ka && !Math.round(ka * 100) ? k1Sgn(ka * 100, 1, '%') : fmtVal('bip', ka);   // K1-fix: no '±0 %' for a small route
+    add('r:' + m.src + ':' + m.dst, src.l, dst.l, kt_ + (rg ? ' · ' + rg : ''), {kind: 'route', m});
   }
   const pv = k => +sndGet(s, k) || 0;
   if (pv('fenv')) add('p:fenv', 'Filter-Hüllk.', 'Cutoff', fmtVal(PD.fenv.fmt, pv('fenv')), {kind: 'p', p: 'fenv'});
@@ -31555,7 +31565,50 @@ function k1Mods(i) {
   if (pv('kt')) add('p:kt', 'Keytrack (Taste)', 'Cutoff', fmtVal(PD.kt.fmt, pv('kt')), {kind: 'p', p: 'kt'});
   // the worklet's analog drift (startVoice): pitch ±analog·8 ct per note, each oscillator ±analog·5 ct more, cutoff ±analog·1,5 HT
   if (wk && pv('analog')) add('p:analog', 'Analog (Zufall je Note)', fm ? 'Tonhöhe' : 'Tonhöhe · Cutoff', 'bis ±' + k1Num(pv('analog') * (fm ? 8 : 13), 1) + ' ct' + (fm ? '' : ' · ±' + k1Num(pv('analog') * 1.5, 2) + ' HT'), {kind: 'p', p: 'analog'});
+  if (fm) k1FmMods(s.p, add);
   return out;
+}
+// K1-fix: FM. With p.fmx the worklet plays the graph (fmxCompile): per operator the pitch envelope (DX form on ratio operators,
+// point form on all), LFO 1 on the pitch (lfoFm x PMD) and on the level (lfoAm, on an output x AMD as the import's route);
+// operators with the same value share one row ('Tonhöhe' when it is every sounding operator). Without a graph: fm6.peg.
+const K1_O1C = ['Form', 'Pulsbreite', 'Form', 'X-Mod', 'Form', '', '', 'Balance'];   // OSC 1 STEUER 2 per wave (O1C), '' = no LFO
+const K1_PMS = [0, 10, 20, 33, 55, 92, 153, 255], K1_PR = {ton: 2, q5: 7, 1: 12, 2: 24, 4: 48, 8: 96, dx: 48};
+const k1Ht = (lo, hi) => (lo > -.005 ? k1Sgn(hi, 1, 'HT') : hi < .005 ? k1Sgn(lo, 1, 'HT') : k1Sgn(lo, 1) + ' … ' + k1Sgn(hi, 1, 'HT'));
+function k1FmPit(o) {
+  const P = o && o.pit; if (!P) return null;
+  if (P.f === 'pt') {
+    if (!Array.isArray(P.y) || !Array.isArray(P.t) || P.y.length < 2) return null;
+    const R = K1_PR[o.pr] || 12, ys = P.y.slice(0, 6).map(y => { y = clamp(Math.round(+y || 0), 0, 99); return (y >= 50 ? (y - 50) / 49 : (y - 50) / 50) * R; });
+    return ys.some(v => Math.abs(v) > 1e-9) ? {lo: Math.min(...ys), hi: Math.max(...ys), dx: false} : null;
+  }
+  if (P.f === 'dx' && !o.fixed && (o.pr == null || o.pr === 'dx') && Array.isArray(P.l) && !P.l.every(x => (x | 0) === 50)) { const h = P.l.map(L => pegHt(L)); return {lo: Math.min(...h), hi: Math.max(...h), dx: true}; }
+  return null;
+}
+function k1FmMods(p, add) {
+  const X = p.fmx;
+  if (!X || !Array.isArray(X.ops) || X.ops.length < 6) {
+    const G = p.fm6 && p.fm6.peg; if (G && Array.isArray(G.l) && !G.l.every(x => (x | 0) === 50)) { const h = G.l.map(L => pegHt(L)); add('f:peg', 'Tonhöhen-Hüllk.', 'Tonhöhe', k1Ht(Math.min(...h), Math.max(...h)), {kind: 'fpeg'}); }
+    return;
+  }
+  const live = X.ops.map(o => !!o && o.on !== 0 && o.ol > 0), outs = new Set((Array.isArray(X.edges) ? X.edges : []).filter(e => e && (e.from | 0) !== (e.to | 0)).map(e => (e.from | 0) - 1));
+  const pmK = X.pmd != null && X.pmd >= 0 ? Math.min(99, +X.pmd) / 99 : 1, amK = X.amd != null && X.amd >= 0 ? Math.min(99, +X.amd) / 99 : -1;
+  const rows = (f, all, mk) => { const G = new Map(); X.ops.forEach((o, k) => { if (!live[k]) return; const v = f(o, k); if (v == null) return; const j = JSON.stringify(v); if (!G.has(j)) G.set(j, {v, ks: []}); G.get(j).ks.push(k); });
+    for (const g of G.values()) mk(g.v, g.ks, all(g.ks)); };
+  const opT = ks => 'OP ' + ks.map(k => k + 1).join(', '), every = ks => ks.length === live.filter(x => x).length;
+  rows(o => { const r = k1FmPit(o); return r && Object.assign(r, {e: o.pit, pr: o.pr || 'dx'}); }, ks => ks.length === X.ops.filter((o, k) => live[k] && (!o.fixed || (o.pit && o.pit.f === 'pt'))).length,
+    (v, ks, all) => add('x:pit:' + ks.join(''), 'Tonhöhen-Hüllk.', all ? 'Tonhöhe' : opT(ks) + ' Tonhöhe', k1Ht(v.lo, v.hi), {kind: 'fmx', f: 'pit', ops: ks, dx: v.dx && all}));
+  rows(o => { const n = clamp(o.lfoFm | 0, 0, 127); if (!n || !pmK) return null; const x = n * 7 / 127, j = Math.min(6, x | 0); return Math.round(1200 * (K1_PMS[j] + (K1_PMS[j + 1] - K1_PMS[j]) * (x - j)) / 255 * pmK * 10) / 10; }, every,
+    (ct, ks, all) => add('x:lfoFm:' + ks.join(''), 'LFO 1', all ? 'Tonhöhe' : opT(ks) + ' Tonhöhe', 'bis ±' + k1Num(ct, 1) + ' ct', {kind: 'fmx', f: 'lfoFm', ops: ks}));
+  rows((o, k) => { const lA = clamp(o.lfoAm | 0, 0, 127); if (!lA) return null; let db;
+    if (amK >= 0 && !outs.has(k)) { const g = amK * .5 * (lA <= 42 ? lA / 42 * .3 : lA <= 85 ? .3 + (lA - 42) / 43 * .3 : .6 + (lA - 85) / 42 * .4); db = -20 * Math.log10(Math.max(1e-6, 1 - g)); }
+    else db = lA * 24 / 127 * (amK >= 0 ? amK : 1);
+    return db > .005 ? Math.round(db * 10) / 10 : null; }, every,
+    (db, ks) => add('x:lfoAm:' + ks.join(''), 'LFO 1', opT(ks) + ' Pegel', 'bis ' + MINUS + k1Num(db, 1) + ' dB', {kind: 'fmx', f: 'lfoAm', ops: ks}));
+}
+// does LFO 1 move an FM graph without a route (the MOD tab's LFO 1 chip, K1-03)?
+function k1FmxLfo(i) {
+  const s = sndOf(i), X = s && s.engine === 'fm6' && s.p.fmx; if (!X || !Array.isArray(X.ops)) return false;
+  return X.ops.some(o => o && o.on !== 0 && o.ol > 0 && (((o.lfoFm | 0) > 0 && !(X.pmd === 0)) || ((o.lfoAm | 0) > 0 && !(X.amd === 0))));
 }
 // ✕: one undo step; the engines get the change like a knob turn
 function k1Del(i, key) {
