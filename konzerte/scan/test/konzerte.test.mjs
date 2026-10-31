@@ -8,7 +8,7 @@ import { distanzKm, geohash, istBand, erwaehnt, titelSchluessel, macheHttp } fro
 import { tmParse, tmUrl } from '../sources/ticketmaster.mjs';
 import { mbWaehle, mbParse } from '../sources/musicbrainz.mjs';
 import { dzWaehle, dzParse } from '../sources/deezer.mjs';
-import { seiteTreffer } from '../sources/seiten.mjs';
+import seiten, { seiteTreffer } from '../sources/seiten.mjs';
 import { verarbeite } from '../kern.mjs';
 import { lauf } from '../run.mjs';
 
@@ -163,4 +163,18 @@ test('Gesamtlauf: kaputte Quelle stoppt nichts, Pushes mit Link, Dedupe über L�
   const liste = JSON.parse(fs.readFileSync(path.join(dir, 'konzerte/data/konzerte.json'), 'utf8'));
   assert.ok(liste.konzerte.some(k => k.stadt === 'Dresden'));
   assert.equal(posts.length, 2);
+});
+
+test('Festival-Seiten: eine von vier gestört -> status.seiten sagt „3 von 4 geprüft“ (echter Lauf 41230376427)', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'konz-seiten-'));
+  const html = fs.readFileSync(new URL('./fixtures/wgt.html', import.meta.url), 'utf8');
+  // wie am 31.10.2026: wgt/darkstorm/ncn antworten (HTTP 200), gothic-meets-klassik.de: „fetch failed“
+  const http = { get: async url => { if (/gothic-meets-klassik/.test(url)) throw new Error('fetch failed'); return html; } };
+  const { status } = await lauf({ env: { DATA_DIR: dir, DRY_RUN: '1' }, http, jetzt: new Date(HEUTE + 'T12:00:00Z'), quellen: [['seiten', seiten]] });
+  assert.equal(status.seiten.ok, false, 'nicht alle Seiten erreichbar');
+  assert.equal(status.seiten.geprueft, 3);
+  assert.equal(status.seiten.gesamt, 4);
+  assert.deepEqual(status.seiten.fehler, ['Gothic meets Klassik: fetch failed']);
+  const datei = JSON.parse(fs.readFileSync(path.join(dir, 'konzerte/data/status.json'), 'utf8'));
+  assert.deepEqual([datei.quellen.seiten.geprueft, datei.quellen.seiten.gesamt], [3, 4]);
 });

@@ -16,12 +16,24 @@
   var r = 'konzerte';
   var ziel = basis + '/mein-vorteil/?von=konzerte#' + r;
   var weg = false, los = function () { if (!weg) { weg = true; location.replace(ziel); } };
-  // Eigener Worker für diesen Ordner (falls noch keiner – auch wenn gerade der SYNQUENZER-Worker der Wurzel übernimmt):
-  // danach sieht der SYNQUENZER-Worker diese Adresse nie mehr
-  var sw = 'serviceWorker' in navigator ? navigator.serviceWorker : null, eigen = /\/konzerte\/sw\.js$/.test((sw && sw.controller && sw.controller.scriptURL) || '');
-  if (i >= 0 && sw && !eigen && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    sw.register('sw.js', { scope: './' }).then(los, los); setTimeout(los, 600);
-  } else los();
+  var sw = 'serviceWorker' in navigator ? navigator.serviceWorker : null;
+  if (!sw || !(location.protocol === 'https:' || location.hostname === 'localhost')) return los();
+  setTimeout(los, 3000); // spätestens dann weiter, auch wenn das Anmelden hängt
+  var eigen = /\/konzerte\/sw\.js$/.test((sw.controller && sw.controller.scriptURL) || ''), mv = basis + '/mein-vorteil/';
+  // 1. Zuerst den Worker von Mein Vorteil anmelden. Sonst übernimmt der SYNQUENZER-Worker der Wurzel den ersten Besuch:
+  //    er speichert dann Mein Vorteil als Offline-Kopie des Synthesizers (und zeigt bei schwachem Netz den Synthesizer).
+  //    Ist die Anmeldung da, geht der Aufruf ans Netz bzw. an diesen Worker – nie mehr an den Wurzel-Worker.
+  var schritte = [sw.register(mv + 'sw.js', { scope: mv }).then(function (reg) {
+    return new Promise(function (fertig) { // kurz warten, bis er übernimmt (dann ist Mein Vorteil gleich offline da)
+      var w = reg.installing || reg.waiting;
+      if (reg.active || !w) return fertig();
+      w.addEventListener('statechange', function () { if (w.state !== 'installing' && w.state !== 'installed') fertig(); });
+      setTimeout(fertig, 1000);
+    });
+  }, function () {})];
+  // 2. Eigener kleiner Worker für diesen Ordner (falls noch keiner): danach sieht der SYNQUENZER-Worker diese Adresse nie mehr
+  if (i >= 0 && !eigen) schritte.push(sw.register('sw.js', { scope: './' }).then(null, function () {}));
+  Promise.all(schritte).then(los);
 })();</script>
 <style>
   body { margin: 0; padding: 24px max(16px, env(safe-area-inset-left)); font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f2ee; color: #1f1d1a; }

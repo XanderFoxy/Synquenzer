@@ -290,13 +290,37 @@ test('Konzerte: Vergangenes fehlt, Umkreis-Schalter, Vorverkauf, Neuerscheinunge
   assert.match(t, /Plastic Autumn/);
   assert.deepEqual(fehler, []);
   await ctx.close();
-  // echte Daten: TM_KEY fehlt und die Festival-Seiten waren gestört -> ehrlich „Konzertsuche aus“, kein Push-Versprechen
+  // echte Daten (31.10., Lauf 41230376427): TM_KEY fehlt, nur 1 von 4 Festival-Seiten gestört (Gothic meets Klassik).
+  // Die anderen drei wurden geprüft (HTTP 200) und melden neue Erwähnungen per Push -> nicht „Konzertsuche aus“.
   const echt = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#konzerte' });
   const kt = nbsp(await echt.page.locator('#p-konzerte').innerText());
-  assert.match(kt, /Konzertsuche gerade aus – Ticketmaster-Schlüssel fehlt, Festival-Seiten gerade nicht erreichbar\. Bis das behoben ist, kommt hier kein Push\./);
-  assert.doesNotMatch(kt, /Sobald etwas angekündigt wird, kommt ein Push|README/);
+  assert.doesNotMatch(kt, /Konzertsuche gerade aus|kein Push|README/);
+  assert.match(kt, /Gerade nichts im Umkreis von 200 km\. Sobald etwas angekündigt wird, kommt ein Push\./);
+  assert.match(kt, /Bis dahin kommen Termine nur von den Festival-Seiten \(Gothic meets Klassik gerade nicht erreichbar\)\./);
   assert.deepEqual(echt.fehler, []);
   await echt.ctx.close();
+});
+
+test('Konzerte: Festival-Seiten einzeln gezählt (status.seiten.geprueft/gesamt) – „aus“ nur, wenn keine Seite geprüft wurde', { skip: ohnePw }, async () => {
+  const status = JSON.parse(readFileSync(join(FIX, 'echt-2026-10-31', 'v1', 'konzerte-status.json'), 'utf8'));
+  const mit = seiten => JSON.stringify({ ...status, quellen: { ...status.quellen, seiten: { ...status.quellen.seiten, ...seiten } } });
+  for (const [seiten, erwartet, nicht] of [
+    // so schreibt der neue Scanner den echten Lauf 41230376427: 3 von 4 Seiten mit HTTP 200 geprüft
+    [{ geprueft: 3, gesamt: 4 }, /nur von den Festival-Seiten \(3 von 4 geprüft – Gothic meets Klassik gerade nicht erreichbar\)\.[\s\S]*Festival-Seiten: 3 von 4 geprüft, 0 Treffer – gestört: Gothic meets Klassik: fetch failed/, /Konzertsuche gerade aus/],
+    [{ geprueft: 0, gesamt: 4, fehler: ['Wave-Gotik-Treffen: HTTP 503', 'Dark Storm Festival: HTTP 503', 'NCN: fetch failed', 'Gothic meets Klassik: fetch failed'] },
+      /Konzertsuche gerade aus – Ticketmaster-Schlüssel fehlt, Festival-Seiten gerade nicht erreichbar\. Bis das behoben ist, kommt hier kein Push\./, /Sobald etwas angekündigt wird/],
+  ]) {
+    const o = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#konzerte' });
+    await o.ctx.route(/^https:\/\/raw\.githubusercontent\.com\/.*\/konzerte\/data\/status\.json/, r => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: mit(seiten) }));
+    await o.page.reload();
+    await geladen(o.page);
+    await o.page.evaluate(() => document.querySelectorAll('#p-konzerte details').forEach(d => (d.open = true)));
+    const kt = nbsp(await o.page.locator('#p-konzerte').innerText());
+    assert.match(kt, erwartet);
+    assert.doesNotMatch(kt, nicht);
+    assert.deepEqual(o.fehler, []);
+    await o.ctx.close();
+  }
 });
 
 test('Reiter: Direktlinks #angebote/#vorteile/#konzerte, letzter Reiter wird gemerkt', { skip: ohnePw }, async () => {
@@ -473,33 +497,72 @@ for (const [ordner, nach, cache, altSeite] of [
   });
 }
 
-test('SYNQUENZER-Worker im Wurzelordner: alte Adressen überschreiben seine Offline-Kopie nicht mehr', { skip: ohnePw }, async () => {
+// SYNQUENZER-Worker der Wurzel (echte sw.js, Scope = Wurzel wie /Synquenzer/ auf GitHub Pages) speichert jede Seite in seinem
+// Bereich als Offline-Kopie des Synthesizers. Ohne Zurücksetzen der Kopie: nach jedem Weg zu Mein Vorteil startet der SYNQUENZER
+// ohne Netz und bei schwachem Netz (> 3 s) wieder als SYNQUENZER.
+const SYNTH = '<!doctype html><meta charset="utf-8"><title>SYNQUENZER</title><p>Synth</p>';
+async function mitWurzelWorker() {
   const ctx = await browser.newContext({ serviceWorkers: 'allow' });
   await ctx.route('https://**', r => r.fulfill({ status: 404, body: '' }));
   const page = await ctx.newPage();
-  const SYNTH = '<!doctype html><meta charset="utf-8"><title>SYNQUENZER</title><p>Synth</p>';
-  const kopie = () => page.evaluate(async () => { const r = await (await caches.open('synq-app-1')).match('/'); return r ? (await r.text()).match(/<title>([^<]*)/)?.[1] || '?' : null; });
-  const setzeKopie = () => page.evaluate(async t => (await caches.open('synq-app-1')).put('/', new Response(t, { headers: { 'content-type': 'text/html' } })), SYNTH);
   ersatz.set('/', { typ: TYP['.html'], text: SYNTH });
+  await page.goto(`${basis}/`);
+  await page.evaluate(async () => { await navigator.serviceWorker.register('/sw.js', { scope: '/' }); await navigator.serviceWorker.ready; });
+  const kopie = () => page.evaluate(async () => { const r = await (await caches.open('synq-app-1')).match('/'); return r ? (await r.text()).match(/<title>([^<]*)/)?.[1] || '?' : null; });
+  await page.waitForFunction(async () => !!(await (await caches.open('synq-app-1')).match('/')));
+  assert.equal(await kopie(), 'SYNQUENZER');
+  const istSynth = async wo => { // die Seite prüft die Kopie 1,5 s nach dem Laden (vorher kann der Wurzel-Worker noch speichern)
+    await page.waitForTimeout(2000);
+    await page.waitForFunction(async () => { const r = await (await caches.open('synq-app-1')).match('/'); return !!r && /<title>SYNQUENZER/.test(await r.text()); }, null, { timeout: 6000 })
+      .catch(async () => assert.fail(`${wo}: Offline-Kopie des SYNQUENZER ist jetzt „${await kopie()}“`));
+  };
+  const synthStart = async (wie, wo) => { // SYNQUENZER-Symbol antippen: ohne Netz bzw. mit Antwort erst nach 5 s
+    if (wie === 'offline') await ctx.setOffline(true);
+    else await ctx.route(`${basis}/`, async r => { await new Promise(x => setTimeout(x, 5000)); r.continue().catch(() => {}); });
+    await page.goto(`${basis}/`, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
+    assert.equal(await page.title(), 'SYNQUENZER', `${wo}: SYNQUENZER ${wie} gestartet`);
+    if (wie === 'offline') await ctx.setOffline(false); else await ctx.unroute(`${basis}/`);
+  };
+  return { ctx, page, kopie, istSynth, synthStart };
+}
+
+test('SYNQUENZER-Worker im Wurzelordner: alte Symbole überschreiben seine Offline-Kopie nicht (ohne Zurücksetzen)', { skip: ohnePw }, async () => {
+  const { ctx, page, istSynth, synthStart } = await mitWurzelWorker();
   try {
-    // Wurzel-Worker wie auf GitHub Pages (Scope = Wurzel), dazu Mein Vorteil mit eigenem Worker
-    await page.goto(`${basis}/mein-vorteil/`);
-    await page.evaluate(async () => { await navigator.serviceWorker.register('/sw.js', { scope: '/' }); });
-    await page.waitForFunction(async () => (await navigator.serviceWorker.getRegistrations()).filter(r => r.active).length >= 2, null, { timeout: 15000 });
-    await setzeKopie();
-    // alte Adressen: der erste Besuch meldet den eigenen kleinen Worker an (konzerte/ hatte nie einen) …
+    // alte Symbole, erster Besuch nach dem Umzug (konzerte/ hatte nie einen eigenen Worker)
     for (const o of ['schnaeppchen', 'vorteile', 'konzerte']) {
       await page.goto(`${basis}/${o}/`);
       await page.waitForURL(u => u.pathname === '/mein-vorteil/');
+      await geladen(page);
+      await istSynth(`erster Besuch /${o}/`);
     }
-    await page.waitForFunction(async () => (await navigator.serviceWorker.getRegistrations()).filter(r => r.active).length >= 5, null, { timeout: 15000 });
-    await setzeKopie();
-    // … danach gehen alte Symbole und Push-Links nie mehr durch den Wurzel-Worker
-    for (const o of ['schnaeppchen', 'vorteile', 'konzerte', 'schnaeppchen']) {
+    // die Weiterleitung meldet Mein Vorteils eigenen Worker zuerst an -> die Seite kommt nie vom Wurzel-Worker
+    assert.match(await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL || ''), /\/mein-vorteil\/sw\.js$/);
+    await synthStart('offline', 'nach den alten Symbolen');
+    await synthStart('langsam', 'nach den alten Symbolen');
+    for (const o of ['schnaeppchen', 'vorteile', 'konzerte']) {
       await page.goto(`${basis}/${o}/`);
       await page.waitForURL(u => u.pathname === '/mein-vorteil/');
-      assert.equal(await kopie(), 'SYNQUENZER', `nach /${o}/`);
+      await istSynth(`wieder /${o}/`);
     }
+  } finally { ersatz.clear(); }
+  await ctx.close();
+});
+
+test('SYNQUENZER-Worker im Wurzelordner: Push-Link direkt auf Mein Vorteil (erster Besuch) – Kopie wird repariert', { skip: ohnePw }, async () => {
+  const { ctx, page, istSynth, synthStart } = await mitWurzelWorker();
+  try {
+    await page.goto(`${basis}/mein-vorteil/#vorteile`);
+    await geladen(page);
+    // dieser erste Aufruf lief über den Wurzel-Worker (Mein Vorteils Worker war noch nicht angemeldet)
+    await istSynth('Push-Link');
+    await synthStart('offline', 'nach dem Push-Link');
+    await synthStart('langsam', 'nach dem Push-Link');
+    // danach übernimmt Mein Vorteils eigener Worker
+    await page.goto(`${basis}/mein-vorteil/#angebote`);
+    await geladen(page);
+    assert.match(await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL || ''), /\/mein-vorteil\/sw\.js$/);
+    await istSynth('zweiter Besuch');
   } finally { ersatz.clear(); }
   await ctx.close();
 });
@@ -510,7 +573,7 @@ test('Weiterleitungsseite an falscher Stelle (als /Synquenzer/ aus einem fremden
     const js = html.match(/<script>([\s\S]*?)<\/script>/)[1];
     for (const [pfad, erwartet] of [['/Synquenzer/', '/Synquenzer/mein-vorteil/'], [`/Synquenzer/${o}/`, '/Synquenzer/mein-vorteil/'], [`/${o}/`, '/mein-vorteil/']]) {
       let ziel = null;
-      new Function('location', 'navigator', 'setTimeout', js)({ pathname: pfad, hash: '', replace: u => { ziel = u; } }, {}, () => {});
+      new Function('location', 'navigator', 'setTimeout', 'document', js)({ pathname: pfad, hash: '', replace: u => { ziel = u; } }, {}, () => {}, { write() {} });
       assert.ok(ziel && ziel.startsWith(erwartet + '?von=' + o + '#'), `${o} als ${pfad}: ${ziel}`);
     }
     assert.match(html, /<noscript><meta http-equiv="refresh" content="0; url=\/Synquenzer\/mein-vorteil\//);

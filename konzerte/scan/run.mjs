@@ -46,6 +46,8 @@ export async function lauf({ env = process.env, fetchImpl = globalThis.fetch, je
       konzerte.push(...(r.konzerte || [])); releases.push(...(r.releases || []));
       const n = (r.konzerte || []).length + (r.releases || []).length;
       status[name] = { ok: !r.fehler?.length, treffer: n, fehler: r.fehler || [], uebersprungen: r.uebersprungen || null, ms: Date.now() - t0 };
+      // Quellen mit mehreren Seiten (Festival-Seiten): wie viele davon wirklich geprüft wurden (ok: false heißt nur „nicht alle“)
+      if (Array.isArray(r.geprueft)) Object.assign(status[name], { geprueft: r.geprueft.length, gesamt: r.gesamt ?? r.geprueft.length + (r.fehler || []).length });
       if (r.fehler?.length && (r.fehler.length >= bands.length || name === 'seiten')) kaputt.add(name);
       for (const f of r.fehler || []) { const b = bands.find(x => String(f).startsWith(`${x.name}:`)); if (b) bandKaputt.add(`${name}|${b.name}`); }
       if (r.geprueft) seitenGeprueft = r.geprueft;

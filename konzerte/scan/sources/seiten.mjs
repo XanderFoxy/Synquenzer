@@ -48,5 +48,6 @@ export default async function seiten(ctx) {
     try { konzerte.push(...seiteTreffer(await ctx.http.get(s.url, { json: false }), s, ctx.bands, ctx.heute)); geprueft.push(s.id); }
     catch (e) { fehler.push(`${s.name}: ${e.message}`); }
   }
-  return { konzerte, fehler, geprueft };
+  // gesamt: so viele Seiten stehen in der config – die Seite sagt dann ehrlich „3 von 4 geprüft“ statt „Festival-Seiten aus“
+  return { konzerte, fehler, geprueft, gesamt: (ctx.config.seiten || []).length };
 }

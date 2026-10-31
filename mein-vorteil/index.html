@@ -805,17 +805,31 @@ function vorverkaufText(k) {
   return '';
 }
 
-// Läuft überhaupt eine Konzert-Quelle? (Ticketmaster ohne Schlüssel + Festival-Seiten gestört = keine Konzertsuche)
+// Festival-Seiten: wie viele geprüft, welche gestört (Fehler „Name: Grund“). „ok: false“ heißt nur „nicht alle erreichbar“ –
+// aus ist die Quelle erst, wenn keine Seite geprüft wurde. Ältere Daten ohne „geprueft“: nur die gestörten Seiten sind bekannt.
+function seitenStand(se) {
+  if (!se) return { aus: true, gestoert: [], geprueft: null, gesamt: null };
+  const gestoert = (se.fehler || []).map(f => String(f).split(':')[0].trim()).filter(Boolean);
+  const geprueft = zahl(se.geprueft), gesamt = zahl(se.gesamt);
+  return { aus: !!se.uebersprungen || (se.ok === false && geprueft === 0), gestoert, geprueft, gesamt };
+}
+function seitenText(st) { // „3 von 4 geprüft – Gothic meets Klassik gerade nicht erreichbar“
+  const teil = [];
+  if (st.gesamt != null && st.geprueft != null) teil.push(`${st.geprueft} von ${st.gesamt} geprüft`);
+  if (st.gestoert.length) teil.push(`${st.gestoert.join(', ')} gerade nicht erreichbar`);
+  return teil.join(' – ');
+}
+// Läuft überhaupt eine Konzert-Quelle? (Ticketmaster ohne Schlüssel + keine Festival-Seite geprüft = keine Konzertsuche)
 function konzertSuche(st) {
   const q = st?.quellen;
-  if (!q) return { an: true, text: '' };
-  const tm = q.ticketmaster, se = q.seiten;
+  if (!q) return { an: true, text: '', seiten: null };
+  const tm = q.ticketmaster, se = seitenStand(q.seiten);
   const tmAus = !tm || !!tm.uebersprungen || tm.ok === false;
-  const seAus = !se || se.ok === false;
-  if (!tmAus || !seAus) return { an: true, text: '' };
+  if (!tmAus || !se.aus) return { an: true, text: '', seiten: se };
   const grund = tm?.uebersprungen && /TM_KEY/i.test(tm.uebersprungen) ? 'Ticketmaster-Schlüssel fehlt' : 'Ticketmaster gestört';
-  return { an: false, text: `${grund}${seAus ? ', Festival-Seiten gerade nicht erreichbar' : ''}` };
+  return { an: false, text: `${grund}, Festival-Seiten gerade nicht erreichbar`, seiten: se };
 }
+const KONZERT_QUELLE = { ticketmaster: 'Ticketmaster', seiten: 'Festival-Seiten', musicbrainz: 'MusicBrainz', deezer: 'Deezer' };
 
 function zeichneKonzerte() {
   const s = S.konzerte, el = $('p-konzerte');
@@ -849,8 +863,11 @@ function zeichneKonzerte() {
   } else {
     teile.push(`<p class="leer">Gerade nichts${nurNah ? ` im Umkreis von ${radius} km` : ''}. Sobald etwas angekündigt wird, kommt ein Push.</p>`);
   }
+  const seiten = suche.seiten && seitenText(suche.seiten);
   if (suche.an && tm?.uebersprungen && /TM_KEY/i.test(tm.uebersprungen)) {
-    teile.push('<p class="hinweis">Konzerttermine von Ticketmaster fehlen noch: der kostenlose Ticketmaster-Schlüssel ist nicht eingerichtet. Bis dahin kommen Termine nur von den Festival-Seiten.</p>');
+    teile.push(`<p class="hinweis">Konzerttermine von Ticketmaster fehlen noch: der kostenlose Ticketmaster-Schlüssel ist nicht eingerichtet. Bis dahin kommen Termine nur von den Festival-Seiten${seiten ? ` (${esc(seiten)})` : ''}.</p>`);
+  } else if (suche.an && suche.seiten?.gestoert.length) {
+    teile.push(`<p class="hinweis">Festival-Seiten: ${esc(seiten)}.</p>`);
   }
   const rel = d.r?.releases || [];
   teile.push(`<h2>Neue Veröffentlichungen <small>${rel.length || ''}</small></h2>`);
@@ -860,8 +877,13 @@ function zeichneKonzerte() {
       <div class="haupt"><b>${esc(x.band)}${x.neu ? '<span class="tag neu">neu</span>' : ''}${x.angekuendigt ? '<span class="tag fest">angekündigt</span>' : ''}</b>
         <span>${esc(x.typ)} „${esc(x.titel)}“</span><span>${esc(tagBerlinAusDatum(x.datum))}</span></div></a></li>`).join('')}</ul>`
     : '<p class="leer">Keine neuen Veröffentlichungen im letzten Jahr.</p>');
-  const quellen = Object.entries(d.s?.quellen || {}).map(([n, q]) =>
-    `<li class="${q.ok || q.uebersprungen ? '' : 'stoerung'}">${esc(n)}: ${q.uebersprungen ? esc(q.uebersprungen) : q.ok ? `${esc(q.treffer ?? 0)} Treffer` : 'gestört – ' + esc((q.fehler || [])[0] || '')}</li>`);
+  const quellen = Object.entries(d.s?.quellen || {}).map(([n, q]) => {
+    const name = KONZERT_QUELLE[n] || n;
+    if (zahl(q.gesamt) != null && zahl(q.geprueft) != null) { // mehrere Seiten: einzeln zählen
+      return `<li class="${q.geprueft > 0 ? '' : 'stoerung'}">${esc(name)}: ${esc(q.geprueft)} von ${esc(q.gesamt)} geprüft, ${esc(q.treffer ?? 0)} Treffer${q.fehler?.length ? ' – gestört: ' + esc(q.fehler.join('; ')) : ''}</li>`;
+    }
+    return `<li class="${q.ok || q.uebersprungen ? '' : 'stoerung'}">${esc(name)}: ${q.uebersprungen ? esc(q.uebersprungen) : q.ok ? `${esc(q.treffer ?? 0)} Treffer` : 'gestört – ' + esc((q.fehler || [])[0] || '')}</li>`;
+  });
   teile.push(quellenKasten('Quellen', quellen));
   el.innerHTML = teile.join('');
   return liste.length;
@@ -977,6 +999,38 @@ document.addEventListener('visibilitychange', () => {
 });
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
+  // Kam diese Seite (oder vorher eine alte Weiterleitung) über den SYNQUENZER-Worker der Wurzel, hat er sie als Offline-Kopie
+  // des Synthesizers gespeichert -> der SYNQUENZER würde ohne Netz bzw. bei schwachem Netz als Mein Vorteil starten.
+  // Dann die echte Startseite des Synthesizers wieder hinlegen (dieselbe Antwort, die sein Worker beim nächsten Start holen würde).
+  window.addEventListener('load', () => {
+    setTimeout(synthKopiePruefen, 1500);
+    if (!/\/mein-vorteil\/sw\.js$/.test(navigator.serviceWorker.controller?.scriptURL || '')) setTimeout(synthKopiePruefen, 8000);
+  });
+}
+const FREMDE_KOPIE = /^(Mein Vorteil|Vorteile|Schnäppchen|Konzert|Spar-Tipps)/; // Seiten dieser Ordner, nie der Synthesizer
+async function titelVon(r) { // nur den Anfang lesen (die Startseite des Synthesizers ist groß)
+  const rd = r.body?.getReader();
+  if (!rd) return '';
+  const dek = new TextDecoder();
+  let s = '';
+  while (s.length < 6000 && !/<\/title>/i.test(s)) { const { value, done } = await rd.read(); if (done) break; s += dek.decode(value, { stream: true }); }
+  rd.cancel().catch(() => {});
+  return (s.match(/<title>([^<]*)/i)?.[1] || '').trim();
+}
+async function synthKopiePruefen() {
+  try {
+    const i = location.pathname.indexOf('/mein-vorteil/');
+    if (i < 0 || !('caches' in window) || !(await caches.has('synq-app-1'))) return;
+    const wurzel = location.origin + location.pathname.slice(0, i + 1);
+    const c = await caches.open('synq-app-1');
+    const kopie = await c.match(wurzel);
+    if (!kopie || !FREMDE_KOPIE.test(await titelVon(kopie))) return;
+    const r = await fetch(wurzel, { cache: 'no-cache' });
+    if (!r.ok || r.type !== 'basic' || r.redirected) return;
+    const ablage = r.clone();
+    if (FREMDE_KOPIE.test(await titelVon(r))) return; // ohne Netz liefert der Wurzel-Worker die falsche Kopie zurück
+    await c.put(wurzel, ablage);
+  } catch {}
 }
 </script>
 </body>
