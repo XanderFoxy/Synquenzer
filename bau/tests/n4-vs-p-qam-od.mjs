@@ -18,10 +18,10 @@ for (const f of files) {
   const r1 = await p.evaluate(() => { const r = SYNQUENZER.vsResult && SYNQUENZER.vsResult(); if (r && SYNQUENZER.vsResultOk) SYNQUENZER.vsResultOk(); return !!r; });
   const t1 = await p.evaluate(() => { const st = SYNQUENZER.tkInfo().stimme, c = SYNQUENZER.getClip(st, 0); return {st, id: c && c.audio && c.audio.take, len: c && c.len}; });
   // nächster Durchgang (Schleife 16 Schläge ab dem STIMME-Clip): Take 2 einen Durchgang später
-  const b = await beat(p), S0 = Math.ceil((b + 2) / 16) * 16 + 4 * 0;   // Taktgrenze
+  const b = await beat(p), S0 = Math.ceil((b + 2 - 12) / 16) * 16 + 12;   // Taktgrenze
   await p.evaluate(([b2, at]) => { const c = SYNQUENZER.vsClock(); window.__fake.play(b2, c.start + at * c.spb - 0.04); }, [b64(y2), S0]);
   await waitBeat(p, S0 - 0.4); await p.evaluate(() => { SYNQUENZER.selectSlot(5, 0); SYNQUENZER.rec(); });
-  await waitBeat(p, S0 + 14);
+  await waitBeat(p, S0 + 15.9); await p.evaluate(() => SYNQUENZER.rec());
   const log = await p.evaluate(async st => { const out = []; let last = '';
     for (let k = 0; k < 2000; k++) { const c = SYNQUENZER.vsClock(), b = (c.now - c.outLat - c.start) / c.spb; const src = SYNQUENZER.tkInfo().src.filter(r => r.i === st).map(r => r.take.slice(-4) + '@' + ((r.start - c.start) / c.spb).toFixed(2) + '-' + ((r.end - c.start) / c.spb).toFixed(2)).join(' ');
       if (src !== last) { out.push(b.toFixed(2) + ' | ' + src); last = src; } if (out.length > 30 || k > 1500) break; if (b > 999) break; await new Promise(r => setTimeout(r, 10)); if (out.length && b > parseFloat(out[0]) + 24) break; }
