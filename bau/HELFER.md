@@ -16,3 +16,8 @@ Drum-Engine-Name (Xander 31.10.): North
 | session_01LWJYUXGaeSK8pmdiYKkFkA | North ND4 (Einbindung) + ND2 (Editor) | helfer-nd42 | vs-base-B |
 North-Spec: spec/dirigent-spec-v3-nachtrag-6-drum.md (≈ 40 h Arbeit; zwei Helfer parallel → ca. 1,5–2 Tage). Zuerst ND13+ND42 untereinander zusammenführen (gleiche Basis), dann in die Hauptlinie.
 SQL max_app: Xander erlaubt (31.10.), zweimal gestartet → Supabase-Bestätigung beim Nutzer kam nicht an (Zeitüberschreitung). Erneut, wenn Xander antwortet.
+SQL erledigt 31.10. 14:50 UTC: max_app 4030000 (geprüft).
+15:30 UTC: FERTIG: helfer-g3g8, helfer-g4g5, helfer-vv3, helfer-s012 (laut STATUS), helfer-n12d1k2 (prüfen); läuft: helfer-g267 (Nachtest), nd13, nd42.
+Dateien geholt: S/helfer-<NAME>.html + S/CHANGES-helfer-<NAME>.md.
+Staging-Merge Gesang läuft: wf_c92749ea-f4e (S/v3-merge-mk.js, Args S/merge-stage-ges-args.json) → S/stage-ges/index.html = 4.23.0 + G3G8 + G4G5.
+Finaler Gesang-Merge danach: Hauptlinie ← VS-L, VS-P, stage-ges (Basis vs-base-B), G267, n5-br-K → 4.25.0 (bzw. 4.24.0 falls N4 nicht vorher eigens).
