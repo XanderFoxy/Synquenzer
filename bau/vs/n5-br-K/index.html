@@ -9325,6 +9325,7 @@ class AnalogCore extends AudioWorkletProcessor {
     if (m.scope != null) { this.scopeOn = !!m.scope; this.scopeNext = 0; }
     if (m.scopeDst != null) { this.scopeDst = !!m.scopeDst; this.scD.fill(0); }
     if (m.dispose) this.alive = false;
+    if (m.k1Dump) this.port.postMessage({k1Dump: {P: Object.assign({}, this.P), mods: Array.from(this.msrc, (s, i) => [s, this.mdst[i], this.mamt[i]]).filter(x => x[0]), mk: this.mk.tm.map(t => JSON.parse(JSON.stringify(t.T))), mkTop: {mode: this.mk.mode, tv: this.mk.tv, split: this.mk.split, scl: this.mk.scl, skey: this.mk.skey}}});   // K1 test (K1-05): what the engine plays now
   }
   enqueue(e) {   // e = [timeSec, type, id, a, b, c]; types: 1 on(note, vel, glideFrom) 2 off 3 pitch(note, tau) 4 kill 5 all-off 6 panic 7 fast-off
     const q = this.q;
@@ -14912,6 +14913,7 @@ const MK_LABEL = 'MS 2000';
       if (m.scope && E.onScope) E.onScope(m);
       if (m.fmxLv) { E.lv = m.fmxLv; E.lvN++; E.lvT = m.t; }        // V4a (N7F-09): live operator levels
       if (m.mkScope) { E.mks = m.mkScope; E.mksN = (E.mksN || 0) + 1; }  // MK1 (B.7 mkScope)
+      if (m.k1Dump) E.k1Dump = m.k1Dump;   // K1 test (K1-05): the engine's playing state
       if (m.mkwNeed != null && typeof mkwPull === 'function') mkwPull(E, m.mkwNeed);   // MK2: a processor asks for a stored wave
       if (m.mkFxMem != null) E.mkFxB = m.mkFxMem;   // MK4: the delay buffer of this engine (bytes)
       if (m.mkRecDone) { E.mkRecN = (E.mkRecN || 0) + 1; E.mkRecLast = m.mkRecDone; if (typeof MKUI !== 'undefined' && MKUI.recDone) MKUI.recDone(E, m.mkRecDone); }   // MK6

@@ -44,7 +44,7 @@ for (const [nm, w, h] of VPS) {
   const first = fr.findIndex((f, i) => i && f.m.some((v, k) => Math.abs(v - fr[0].m[k]) > 0.01));
   const fin = fr[fr.length - 1].m;
   let last = first; for (let i = first; i < fr.length; i++) if (fr[i].m.some((v, k) => Math.abs(v - fin[k]) > 0.01)) last = i + 1;
-  const dur = first >= 0 && last < fr.length ? fr[last].t - fr[first - 1].t : null, mids = first >= 0 ? last - first : 0;
+  const dur = first >= 0 && last < fr.length ? fr[last].t - fr[first].t : null, mids = first >= 0 ? last - first : 0;
   await sleep(300);
   const A1 = await ana();
   const on1 = A1.onLine.filter(d => d <= 1).length;
@@ -55,6 +55,24 @@ for (const [nm, w, h] of VPS) {
   ok(A1.toast === nMoved + ' Einsätze gerückt' && A1.moved === nMoved, `[${nm}] G1-02 Meldung „${A1.toast}“ – gerückt laut Karte: ${nMoved}`);
   ok(A0.strong > 200 && A1.strong > 200 && A1.faint > 2 * A0.faint && A1.faint - A0.faint > 150, `[${nm}] G1-02 Wellenform: vorher kräftig ${A0.strong} px / blass ${A0.faint}; nachher kräftig ${A1.strong} / blass ${A1.faint}`);
   if (nm === 'P1' || only) {
+    // Gesten auf der quantisierten Ansicht: Tipp auf eine leere Stelle = Marke an der Stelle im Take, die dort klingt (ein Undo);
+    // Ziehen einer Marke = ihre Quelle wandert mit dem Finger, das Ziel rastet wieder ein
+    const G0 = await p.evaluate(() => SYNQUENZER.wpGeom()), I0 = await p.evaluate(id => SYNQUENZER.wpInfo(id), id), u0 = await p.evaluate(() => SYNQUENZER.undoInfo().n);
+    const xs = G0.marks.slice().sort((a, b) => a - b), gx = Math.min(G0.x + G0.w - 4, xs[xs.length - 1] + 26), tDisp = G0.view.a + (gx - G0.x) / G0.w * G0.view.W;
+    await p.touchscreen.tap(gx, G0.y + G0.h * 0.5); await sleep(400);
+    const I1 = await p.evaluate(id => SYNQUENZER.wpInfo(id), id), u1 = await p.evaluate(() => SYNQUENZER.undoInfo().n);
+    const inv = (w, t) => { const s = w.map.src, d = w.map.dst; let k = 0; while (k < d.length - 2 && d[k + 1] < t) k++; return s[k] + (t - d[k]) * (s[k + 1] - s[k]) / (d[k + 1] - d[k]); };
+    const added = I1.marks.find(m => !I0.marks.some(o => Math.abs(o.t - m.t) < 1e-6)), want = inv(I0.warp, tDisp);
+    ok(I1.marks.length === I0.marks.length + 1 && u1 === u0 + 1 && added && Math.abs(added.t - want) * 1000 < 1.5, `[${nm}] Tipp leer (quantisiert): neue Marke an der Take-Stelle, die dort klingt (Abweichung ${added ? ((added.t - want) * 1000).toFixed(2) : '–'} ms), ein Undo`);
+    await p.evaluate(() => SYNQUENZER.undo()); await sleep(400);
+    const G1g = await p.evaluate(() => SYNQUENZER.wpGeom()), k5 = 5, mx = G1g.marks[k5], my = G1g.y + G1g.h * 0.5;
+    const I2 = await p.evaluate(id => SYNQUENZER.wpInfo(id), id);
+    await p.mouse.move(mx, my); await p.mouse.down(); for (let i = 1; i <= 8; i++) { await p.mouse.move(mx + i * 1.25, my); await sleep(16); } await p.mouse.up(); await sleep(400);
+    const I3 = await p.evaluate(id => SYNQUENZER.wpInfo(id), id), G3 = await p.evaluate(() => SYNQUENZER.wpGeom());
+    const tTo = G1g.view.a + (mx + 10 - G1g.x) / G1g.w * G1g.view.W, wantS = inv(I2.warp, tTo);
+    const onL = Math.abs(((I3.warp.map.dst[k5 + 1] - I3.t0) / 0.25) - Math.round((I3.warp.map.dst[k5 + 1] - I3.t0) / 0.25)) * 250;
+    ok(Math.abs(I3.marks[k5].t - wantS) * 1000 < 1.5 && I3.marks[k5].user && onL < 0.05, `[${nm}] Ziehen 10 px (quantisiert): Quelle folgt dem Finger (Abweichung ${((I3.marks[k5].t - wantS) * 1000).toFixed(2)} ms), Ziel wieder auf der Linie (${onL.toFixed(3)} ms)`);
+    await p.evaluate(() => SYNQUENZER.undo()); await sleep(300);
     // Wellenform der STIMME-Spur (Matrix-Zelle) = gehörte Fassung (Hüllkurve aus der gespielten Fassung nachgerechnet)
     await p.evaluate(() => SYNQUENZER.wpClose()); await sleep(400);
     // die Zelle zeichnet tkMiniSvg(clip.audio) (STIMME-Spur liegt in P1 auf der 2. Spurbank – dieselbe Funktion, direkt gerufen)
