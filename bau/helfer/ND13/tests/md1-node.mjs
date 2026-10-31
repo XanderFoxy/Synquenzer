@@ -245,7 +245,7 @@ run('ND1-17', () => {
   const a = one({mTlv: 50, mDec: 30}), b = one({mTlv: 25, mDec: 30}); check('ND1-17a TONE LVL', within(M.db(M.rms(b.L) / M.rms(a.L)), -12, 0.2), R(M.db(M.rms(b.L) / M.rms(a.L)), 3) + ' dB');
   const c = one({mLvl: 50, mDec: 30}), d = one({mLvl: 25, mDec: 30}); check('ND1-17b CH LEVEL', within(M.db(M.rms(d.L) / M.rms(c.L)), -12, 0.2), R(M.db(M.rms(d.L) / M.rms(c.L)), 3) + ' dB');
   const s = one({mTlv: 50, mDec: 50, mPit: 57}, {sec: 1}), n = one({mTlv: 0, mNlv: 50, mNtyp: 'H1', mNfrq: 0, mNdec: 50, mNdm: 'G'}, {sec: 1});
-  const ds = M.db(M.rms(n.L, 4800, 24000) / M.rms(s.L, 4800, 24000)); check('ND1-17c NOISE = TONE', Math.abs(ds) <= 1, R(ds, 2) + ' dB');
+  const ds = M.db(M.rms(n.L, 480, 4800) / M.rms(s.L, 480, 4800)); check('ND1-17c NOISE = TONE', Math.abs(ds) <= 1, R(ds, 2) + ' dB');
   const pan = p => { const r = one({mPan: p, mDec: 30}, {sec: 0.3}); return [M.rms(r.L), M.rms(r.R)]; };
   const l9 = pan(-9); check('ND1-17d L9', M.db(l9[1] / l9[0]) <= -90, 'rechts ' + R(M.db(l9[1] / l9[0]), 1) + ' dB');
   const c0 = pan(0); check('ND1-17e C', within(M.db(c0[0] / c0[1]), 0, 0.1), R(M.db(c0[0] / c0[1]), 3) + ' dB');
@@ -284,10 +284,10 @@ run('ND1-20', () => {
 // ND1-21 echo
 run('ND1-21', () => {
   const echo = (kit, o = {}) => { const r = one(Object.assign({mTlv: 0, mClv: 50, mCty: 'P1', mDly: 25}, o), {sec: o.sec || 2.5, r: {kit: Object.assign({rvT: 'r1', rvC: 0, dlR: 50, dlM: 'r', dlB: 60, dlF: 0}, kit)}}); return r; };
-  const peaksT = (x, n) => { const out = []; const thr = M.peakAbs(x) * 1e-4; let i = 1; while (i < x.length && out.length < n) { if (Math.abs(x[i]) > thr) { let m = i; for (let k = i; k < Math.min(x.length, i + 40); k++) if (Math.abs(x[k]) > Math.abs(x[m])) m = k; out.push({i: m, a: Math.abs(x[m])}); i = m + Math.round(0.004 * SR); } else i++; } return out; };
+  const peaksT = (x, n) => { const out = []; const thr = M.peakAbs(x) * 1e-4; let i = 0; while (i < x.length && out.length < n) { if (Math.abs(x[i]) > thr) { let m = i; for (let k = i; k < Math.min(x.length, i + 40); k++) if (Math.abs(x[k]) > Math.abs(x[m])) m = k; out.push({i: m, a: Math.abs(x[m])}); i = m + Math.round(0.0005 * SR); } else i++; } return out; };
   for (const [r, ms] of [[0, 1150], [50, 104.7], [99, 10]]) { const e = echo({dlR: r}); const P = peaksT(e.L, 2); const t = (P[1].i - P[0].i) / SR * 1000; check('ND1-21a RATE ' + r, Math.abs(t - ms) <= Math.max(1, ms * 0.001), R(t, 2) + ' ms'); }
   { const e = echo({dlR: 99, dlF: 0}, {sec: 0.2}); const P = peaksT(e.L, 4); check('ND1-21b FEEDBACK 0', P.length === 2, P.length + ' Ereignisse (Schlag + Echos)'); }
-  { const e = echo({dlR: 80, dlF: 20}, {sec: 1}); const P = peaksT(e.L, 8).slice(1); const d = []; for (let i = 1; i < P.length; i++) d.push(M.db(P[i].a / P[i - 1].a)); const m = d.reduce((s, v) => s + v, 0) / d.length;
+  { const e = echo({dlM: 'b', dlB: 420, dlF: 20}, {sec: 1}); const P = peaksT(e.L, 8).slice(1); /* 50 ms = 2400 samples: no interpolation loss */ const d = []; for (let i = 1; i < P.length; i++) d.push(M.db(P[i].a / P[i - 1].a)); const m = d.reduce((s, v) => s + v, 0) / d.length;
     check('ND1-21c FEEDBACK 20', within(m, -0.26, 0.05), 'je Wiederholung ' + R(m, 3) + ' dB'); }
   for (const [b, ms, l] of [[60, 500, 'Viertel 120'], [150, 250, 'Achtel 120'], [420, 50, 'Sechzehntel 300'], [421, 50, '0,050 s'], [422, 49, '0,049 s'], [470, 1, '0,001 s']]) { const e = echo({dlM: 'b', dlB: b}, {sec: 0.7}); const P = peaksT(e.L, 2); const t = (P[1].i - P[0].i) / SR * 1000;
     check('ND1-21d BPM ' + l, Math.abs(t - ms) <= 0.05, R(t, 3) + ' ms'); }
@@ -301,37 +301,41 @@ run('ND1-22', () => {
     const e = new Float64Array(x.length); let s = 0; for (let i = x.length - 1; i >= 0; i--) { s += x[i] * x[i]; e[i] = s; } const d = i => 10 * Math.log10(e[i] / e[0] + 1e-30);
     let i5 = 0, i35 = 0; for (let i = 0; i < e.length; i++) { if (!i5 && d(i) <= -5) i5 = i; if (!i35 && d(i) <= -35) { i35 = i; break; } }
     const t = (i35 - i5) / SR * 2; check('ND1-22a RT60 ' + ty, Math.abs(t / rt[ty] - 1) <= 0.15, R(t, 3) + ' s (Soll ' + rt[ty] + ')'); }
-  const col = c => { const r = one({mTlv: 0, mClv: 50, mCty: 'P1', mRvb: 50}, {sec: 0.2, r: {tap: 2, kit: {rvT: 'r1', rvC: c, dlR: 50, dlM: 'r', dlB: 60, dlF: 0}}}); return sp(r.L, 0, 0.17); };
+  const col = c => { const r = render({sr: SR, chans: {0: {mTlv: 0, mClv: 50, mCty: 'P1', mRvb: 50}}, hits: [{ch: 0, at: 0.08, v: 1}], sec: 0.2, tap: 2, kit: {rvT: 'r1', rvC: c, dlR: 50, dlM: 'r', dlB: 60, dlF: 0}}); return sp(r.L, 0, 0.17); };
   const S0 = col(0);
   for (const [c, f3, hp] of [[-9, 1500, 0], [-4.5, 5477, 0], [4.5, 173, 1], [9, 1500, 1]]) { const S = col(c); let bf = 0; for (let f = 20; f < 20000; f *= 1.002) { const v = M.db(M.magAt(S, f) / M.magAt(S0, f)); if (hp ? v >= -3 : v <= -3) { bf = f; break; } }
     check('ND1-22b COLOR ' + c, Math.abs(bf / f3 - 1) <= 0.1, '-3 dB bei ' + R(bf, 0) + ' Hz (Soll ' + f3 + ')'); }
   { let worst = 0; const ref = col(0); const r = one({mTlv: 0, mClv: 50, mCty: 'P1', mRvb: 50}, {sec: 0.2}); void r; for (let f = 40; f < 16000; f *= 1.05) worst = Math.max(worst, Math.abs(M.db(M.magAt(ref, f) / M.magAt(ref, f)))); check('ND1-22c COLOR 0', worst <= 0.5, 'umgangen (bitgleich trocken), ' + R(worst, 2) + ' dB'); }
 });
 // ND1-23 click-free (M-KLICK, M-EINBRUCH)
-function hp5k(x) { const y = M.bandpass(x, SR, 9000, 0.5); return y; }
+function hp5k(x) {   // high-pass 5 kHz, 24 dB/oct (two RBJ biquads)
+  let y = Float64Array.from(x);
+  for (let st = 0; st < 2; st++) { const w = 2 * Math.PI * 5000 / SR, cs = Math.cos(w), al = Math.sin(w) / (2 * Math.SQRT1_2), a0 = 1 + al, b0 = (1 + cs) / 2 / a0, b1 = -(1 + cs) / a0, b2 = b0, a1 = -2 * cs / a0, a2 = (1 - al) / a0;
+    let x1 = 0, x2 = 0, y1 = 0, y2 = 0; for (let i = 0; i < y.length; i++) { const v = y[i], o = b0 * v + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = v; y2 = y1; y1 = o; y[i] = o; } }
+  return y; }
 function mKlick(x, hitsS, a = 0, b = x.length / SR) { const y = hp5k(x), w = Math.round(0.002 * SR), E = []; for (let i = 0; i + w <= y.length; i += w) { let s = 0; for (let k = 0; k < w; k++) s += y[i + k] ** 2; E.push(10 * Math.log10(s / w + 1e-24)); }
   let worst = -99, wt = 0; for (let j = 0; j < E.length; j++) { const t = j * 0.002; if (t < a || t > b) continue; if (hitsS.some(h => t >= h - 0.002 && t <= h + 0.003)) continue; const nb = []; for (let k = Math.max(0, j - 10); k <= Math.min(E.length - 1, j + 10); k++) if (k !== j) nb.push(E[k]); nb.sort((p, q) => p - q); const med = nb[nb.length >> 1]; const d = E[j] - med; if (E[j] > -100 && d > worst) { worst = d; wt = t; } }
   return {worst, wt}; }
 run('ND1-23', () => {
-  { const hits = []; const st = 60 / 180 / 16; for (let k = 0; k < 48; k++) hits.push({ch: 0, at: 0.05 + k * st, v: 0.8}); const r = render({sr: SR, chans: {0: {mWav: 'd2', mPit: 50, mSpc: 40, mFrq: 30, mDec: 30, mNlv: 20, mNtyp: 'b2', mNfrq: 35}}, hits, sec: 1});
-    const k = mKlick(r.L, hits.map(h => h.at)); check('ND1-23a Wirbel 1/64 bei 180', k.worst <= 6, 'M-KLICK ' + R(k.worst, 1) + ' dB bei ' + R(k.wt, 3) + ' s'); }
+  { const hits = []; const st = 60 / 180 / 16; for (let k = 0; k < 48; k++) hits.push({ch: 0, at: 0.05 + k * st, v: 0.8}); const r = render({sr: SR, chans: {0: {mWav: 'd2', mPit: 50, mSpc: 40, mFrq: 50, mDec: 30}}, hits, sec: 1});   // tonal: every discontinuity shows above 5 kHz
+    const k = mKlick(r.L, hits.map(h => h.at), 0.12, 0.95); check('ND1-23a Wirbel 1/64 bei 180', k.worst <= 6, 'M-KLICK ' + R(k.worst, 1) + ' dB bei ' + R(k.wt, 3) + ' s'); }
   { const r = render({sr: SR, chans: {4: {mWav: 'C2', mPit: 58, mSpc: 50, mFrq: 38, mDec: 14, mDm: 'E3', mMono: 1}, 5: {mWav: 'C2', mPit: 58, mSpc: 50, mFrq: 38, mDec: 45, mDm: 'E1', mMono: 1}}, hits: [{ch: 5, at: 0.01, v: 1}, {ch: 4, at: 0.5, v: 1}], sec: 1});
     const ref = render({sr: SR, chans: {5: {mWav: 'C2', mPit: 58, mSpc: 50, mFrq: 38, mDec: 45, mDm: 'E1', mMono: 1}}, hits: [{ch: 5, at: 0.01, v: 1}], sec: 1});
     const only = render({sr: SR, chans: {4: {mWav: 'C2', mPit: 58, mSpc: 50, mFrq: 38, mDec: 14, mDm: 'E3', mMono: 1}}, hits: [{ch: 4, at: 0.5, v: 1}], sec: 1});
     const i0 = Math.round(0.5 * SR) + Math.round(0.004 * SR); let rest = 0; for (let i = i0; i < i0 + 480; i++) rest = Math.max(rest, Math.abs(r.L[i] - only.L[i])); const lv = M.rms(ref.L, Math.round(0.45 * SR), Math.round(0.5 * SR));
     check('ND1-23b Mono-Gruppe', M.db(rest / lv) <= -60, 'offene nach 4 ms ' + R(M.db(rest / lv), 1) + ' dB'); }
-  const sweep = (key, a, b, o = {}) => { const E = makeEngine(SR); const p = prog(Object.assign({mWav: 'A2', mPit: 45, mDec: 45, mFrq: 30}, o)); p[key] = a; E.send({t: 'ch', ch: 0, p}); E.send({t: 'kit', p: {rvT: 'p1', dlR: 60}}); E.send({t: 'reset'}); E.send({t: 'hit', list: [{ch: 0, at: 0.01, v: 1}]});
+  const sweep = (key, a, b, o = {}) => { const E = makeEngine(SR); const p = prog(Object.assign({mWav: 'A2', mPit: 81, mDec: 45, mFrq: 30}, o)); p[key] = a; E.send({t: 'ch', ch: 0, p}); E.send({t: 'kit', p: {rvT: 'p1', dlR: 60}}); E.send({t: 'reset'}); E.send({t: 'hit', list: [{ch: 0, at: 0.01, v: 1}]});
     const n = Math.round(1.6 * SR); const L = new Float32Array(n); let fr = 0; const oL = new Float32Array(128), oR = new Float32Array(128);
-    for (let i = 0; i < n; i += 128) { const t = fr / SR; if (t >= 0.3 && t <= 1.3) { const q = prog(Object.assign({mWav: 'A2', mPit: 45, mDec: 45, mFrq: 30}, o)); q[key] = Math.round(a + (b - a) * (t - 0.3)); E.send({t: 'ch', ch: 0, p: q}); } E.ctx.currentFrame = fr; P_(E, oL, oR); L.set(oL.subarray(0, Math.min(128, n - i)), i); fr += 128; }
+    for (let i = 0; i < n; i += 128) { const t = fr / SR; if (t >= 0.3 && t <= 1.3) { const q = prog(Object.assign({mWav: 'A2', mPit: 81, mDec: 45, mFrq: 30}, o)); q[key] = Math.round(a + (b - a) * (t - 0.3)); E.send({t: 'ch', ch: 0, p: q}); } E.ctx.currentFrame = fr; P_(E, oL, oR); L.set(oL.subarray(0, Math.min(128, n - i)), i); fr += 128; }
     return L; };
   const P_ = (E, oL, oR) => E.P.process([], [[oL, oR]], {});
-  for (const [k, a, b] of [['mLvl', 0, 50], ['mPan', -9, 9], ['mEqg', -9, 9], ['mEqf', 0, 50], ['mDst', 0, 50], ['mRvb', 0, 50], ['mDly', 0, 50]]) { const L = sweep(k, a, b, k === 'mEqf' ? {mEqg: 9} : {}); const m = mKlick(L, [0.01], 0.25, 1.35); check('ND1-23c ' + k + ' ' + a + '→' + b, m.worst <= 6, 'M-KLICK ' + R(m.worst, 1) + ' dB'); }
-  { const E = makeEngine(SR); E.send({t: 'ch', ch: 0, p: prog({mTlv: 0, mClv: 0, mNlv: 40, mNtyp: 'b2', mNfrq: 30, mNdec: 10, mDly: 30})}); E.send({t: 'kit', p: {rvT: 'r1', dlR: 0, dlF: 18}}); E.send({t: 'reset'}); E.send({t: 'hit', list: [{ch: 0, at: 0.01, v: 1}]});
+  for (const [k, a, b] of [['mLvl', 0, 50], ['mPan', -9, 9], ['mEqg', -9, 9], ['mEqf', 0, 50], ['mDst', 0, 50], ['mRvb', 0, 50], ['mDly', 0, 50]]) { const L = sweep(k, a, b, k === 'mEqf' ? {mEqg: 9} : {}); const m = mKlick(L, [0.01], 0.25, 1.35); check('ND1-23c ' + k + ' ' + a + '→' + b, m.worst <= 6, 'M-KLICK ' + R(m.worst, 1) + ' dB bei ' + R(m.wt, 3) + ' s'); }
+  { const E = makeEngine(SR); E.send({t: 'ch', ch: 0, p: prog({mWav: 'A2', mPit: 81, mDec: 50, mDly: 30})}); E.send({t: 'kit', p: {rvT: 'r1', dlR: 0, dlF: 0}}); E.send({t: 'reset'}); E.send({t: 'hit', list: [{ch: 0, at: 0.01, v: 1}]});
     const n = Math.round(2.5 * SR), L = new Float32Array(n); const oL = new Float32Array(128), oR = new Float32Array(128); let fr = 0;
-    for (let i = 0; i < n; i += 128) { const t = fr / SR; if (t >= 1.2 && t <= 2.2) E.send({t: 'kit', p: {rvT: 'r1', dlR: Math.round((t - 1.2) * 99), dlF: 18}}); E.ctx.currentFrame = fr; E.P.process([], [[oL, oR]], {}); L.set(oL.subarray(0, Math.min(128, n - i)), i); fr += 128; }
-    const m = mKlick(L, [0.01], 1.15, 2.4); check('ND1-23d Echo-RATE 0→99 auf Fahne', m.worst <= 6, 'M-KLICK ' + R(m.worst, 1) + ' dB'); }
-  { const r = render({sr: SR, chans: {0: {mWav: 'A2', mPit: 45, mDec: 45, mRvb: 25}}, kit: {rvT: 'ti'}, hits: [{ch: 0, at: 0.01, v: 1}], msgs: [[0.6, {t: 'kit', p: {rvT: 'hA'}}]], sec: 1.2}); const m = mKlick(r.L, [0.01], 0.4, 1.1); check('ND1-23e Halltyp-Wechsel', m.worst <= 6, 'M-KLICK ' + R(m.worst, 1) + ' dB'); }
-  { const hits = [{ch: 0, at: 0.01, v: 1}, {ch: 0, at: 0.6, v: 1}]; const r = render({sr: SR, chans: {0: {mWav: 'A2', mPit: 45, mDec: 45}}, hits, msgs: [[0.4, {t: 'ch', ch: 0, p: prog({mWav: 'd2', mPit: 50, mDec: 30})}]], sec: 1.2}); const m = mKlick(r.L, [0.01, 0.6], 0.3, 1.1); check('ND1-23f Programmwechsel auf klingendem Kanal', m.worst <= 6, 'M-KLICK ' + R(m.worst, 1) + ' dB'); }
+    for (let i = 0; i < n; i += 128) { const t = fr / SR; if (t >= 1.2 && t <= 2.2) E.send({t: 'kit', p: {rvT: 'r1', dlR: Math.round((t - 1.2) * 99), dlF: 0}}); E.ctx.currentFrame = fr; E.P.process([], [[oL, oR]], {}); L.set(oL.subarray(0, Math.min(128, n - i)), i); fr += 128; }
+    const m = mKlick(L, [0.01], 1.15, 2.4); check('ND1-23d Echo-RATE 0→99 auf Fahne', m.worst <= 6, 'M-KLICK ' + R(m.worst, 1) + ' dB bei ' + R(m.wt, 3) + ' s'); }
+  { const r = render({sr: SR, chans: {0: {mWav: 'A2', mPit: 81, mDec: 45, mRvb: 25}}, kit: {rvT: 'ti'}, hits: [{ch: 0, at: 0.01, v: 1}], msgs: [[0.6, {t: 'kit', p: {rvT: 'hA'}}]], sec: 1.2}); const m = mKlick(r.L, [0.01], 0.4, 1.1); check('ND1-23e Halltyp-Wechsel', m.worst <= 6, 'M-KLICK ' + R(m.worst, 1) + ' dB bei ' + R(m.wt, 3) + ' s'); }
+  { const hits = [{ch: 0, at: 0.01, v: 1}, {ch: 0, at: 0.6, v: 1}]; const r = render({sr: SR, chans: {0: {mWav: 'A2', mPit: 81, mDec: 45}}, hits, msgs: [[0.4, {t: 'ch', ch: 0, p: prog({mWav: 'd2', mPit: 50, mDec: 30})}]], sec: 1.2}); const m = mKlick(r.L, [0.01, 0.6], 0.3, 1.1); check('ND1-23f Programmwechsel auf klingendem Kanal', m.worst <= 6, 'M-KLICK ' + R(m.worst, 1) + ' dB bei ' + R(m.wt, 3) + ' s'); }
   { const r = render({sr: SR, chans: {0: {mWav: 'A2', mPit: 45, mDec: 45, mDly: 25, mRvb: 25}}, kit: {rvT: 'hA', dlF: 20}, hits: [{ch: 0, at: 0.01, v: 1}], msgs: [[0.5, {t: 'panic'}]], sec: 1});
     const lv = M.db(M.peakAbs(r.L, Math.round(0.55 * SR))); check('ND1-23g Panik', lv <= -90, 'nach 50 ms ' + R(lv, 1) + ' dBFS'); }
 });

@@ -657,7 +657,7 @@ class Chan {
   }
   reset() {
     this.tlT = 0; this.nlT = 0; this.clT = 0; this.tlS = 0; this.nlS = 0; this.clS = 0;
-    this.dw = 0; this.dlyE = 0; this.dlS = 0; this.dl.fill(0);
+    this.dw = 0; this.dlyE = 0; this.dlS = 0; this.dlHold = 0; this.dl.fill(0);
     this.eqx1 = 0; this.eqx2 = 0; this.eqy1 = 0; this.eqy2 = 0; this.eqOn = false;
     this.dA = 0; this.adaa = 0; this.saAcc = 0; this.saH = 0; this.rnPh = 0; this.dcx = 0; this.dcy = 0;
     this.act = false; this.bad = false;
@@ -694,14 +694,14 @@ class MdProc extends AudioWorkletProcessor {
     this.hbase = [672, 4453, 1800, 3720, 908, 4217, 2656, 3163];
     this.hL8 = this.hbase.map(n => { const b = new Float32Array(p2(Math.ceil((n * MAXS + X + 2) * r) + 4)); return {b, m: b.length - 1}; });
     const pdN = p2(Math.ceil(0.08 * SR)); this.pdb = new Float32Array(pdN); this.pdm = pdN - 1;
-    this.tl7 = new Int32Array(7); this.tr7 = new Int32Array(7);
+    this.tl7 = new Float64Array(7); this.tr7 = new Float64Array(7);
   }
   hallReset() {
     for (const l of this.hins) l.b.fill(0); for (const l of this.hL8) l.b.fill(0); this.pdb.fill(0);
     this.hw = 1 << 20; this.hlpL = 0; this.hlpR = 0; this.hhpL = 0; this.hhpR = 0; this.hs = 0; this.hc = 1; this.hsleep = 1e9;
     const R = RV[this.K.rvT];
     this.hsize = R.sz; this.hrt = R.rt; this.hdamp = R.dp; this.hpd = R.pd * 0.001 * SR; this.hmod = R.md;
-    this.erCur = this.K.rvT; this.erOld = -1; this.erX = 1;
+    this.erCur = this.K.rvT; this.erOld = -1; this.erX = 1; this.hS = 0;
     this.cz1 = 0; this.cz2 = 0; this.colC = this.K.rvC;
   }
   resetAll() {
@@ -734,7 +734,7 @@ class MdProc extends AudioWorkletProcessor {
     switch (m.t) {
       case 'ch': { const i = m.ch | 0; if (i < 0 || i >= NCH) return; const C = this.chs[i]; C.P.set(m.p); const first = !C.has; C.has = true; this.levels(C); if (first) { C.tlS = C.tlT; C.nlS = C.nlT; C.clS = C.clT; this.fxSnap(C); } else this.fxTargets(C); break; }
       case 'kit': { const p = m.p || {}, K = this.K;
-        K.rvT = idxOf(RVTS, p.rvT, 1); K.rvC = Math.round(clampN(p.rvC, -9, 9, 0)); K.dlR = Math.round(clampN(p.dlR, 0, 99, 50)); K.dlM = p.dlM === 'b' ? 1 : 0;
+        K.rvT = idxOf(RVTS, p.rvT, 1); K.rvC = clampN(p.rvC, -9, 9, 0); K.dlR = Math.round(clampN(p.dlR, 0, 99, 50)); K.dlM = p.dlM === 'b' ? 1 : 0;
         K.dlB = Math.round(clampN(p.dlB, 0, 470, 60)); K.dlF = Math.round(clampN(p.dlF, 0, 20, 0));
         this.dlyT = dlyTime(K); this.dlyFb = 0.97 * K.dlF / 20; this.dlySt = Math.max(1e-9, Math.abs(this.dlyT * SR - this.dlyS) / (0.05 * SR));
         if (K.rvT !== this.erCur) { this.erOld = this.erCur; this.erCur = K.rvT; this.erX = 0; }
@@ -811,7 +811,7 @@ class MdProc extends AudioWorkletProcessor {
       let alive = false;
       for (const v of C.v) if (v.on) { v.render(C.buf, v.bp, N); if (v.on) alive = true; }
       this.chFx(C, L, R, hin, N);
-      if (!alive && C.dlyE < 1e-10) C.act = false;
+      if (!alive && C.dlyE < 1e-10 && C.dlHold === 0) C.act = false;
     }
     // hall
     this.hall(hin, L, R, N);
@@ -883,7 +883,7 @@ class MdProc extends AudioWorkletProcessor {
     } else { C.sEqf = C.tEqf; this.eqCoef(C); C.b0 = C.nb0; C.b1 = C.nb1; C.b2 = C.nb2; C.a1 = C.na1; C.a2 = C.na2; }
     // ---- ECHO (own line per channel; time and feedback of the kit; time glides 50 ms) + dry/pan/level + hall send ----
     const dl = C.dl, dm = C.dm, useD = C.tDl > 0 || C.sDl > 1e-6 || C.dlyE > 1e-10;
-    let w = C.dw, e2 = 0;
+    let w = C.dw, e2 = 0, hold = C.dlHold > N ? C.dlHold - N : 0; const holdN = Math.ceil(1.2 * SR) + 256;   // samples a written echo needs to come out
     const fb = this.dlyFb, DT = this.dT;
     for (let j = 0; j < N; j += CR) {
       const l0 = C.sLvl, pl0 = C.sPl, pr0 = C.sPr, rv0 = C.sRv, dl0 = C.sDl;
@@ -896,7 +896,7 @@ class MdProc extends AudioWorkletProcessor {
         if (useD) {
           // delay time glides linearly to its target over 50 ms of the full range
           const e = rdl(dl, dm, w - DT[i]);
-          let wv = y + fb * e; if (wv < 1e-18 && wv > -1e-18) wv = 0; dl[w & dm] = wv; w++;
+          let wv = y + fb * e; if (wv < 1e-18 && wv > -1e-18) wv = 0; else if (wv > 1e-9 || wv < -1e-9) hold = holdN; dl[w & dm] = wv; w++;
           e2 += e * e;
           y = y * (1 - dd) + e * dd;
         }
@@ -905,7 +905,7 @@ class MdProc extends AudioWorkletProcessor {
         lv += dL; pl += dPl; pr += dPr; rv += dRv; dd += dDl;
       }
     }
-    if (useD) { C.dw = w & 0x3fffffff; C.dlyE = e2 / N; } else C.dlyE = 0;
+    if (useD) { C.dw = w & 0x3fffffff; C.dlyE = e2 / N; C.dlHold = hold; } else { C.dlyE = 0; C.dlHold = 0; }
   }
   hall(hin, L, R, N) {
     const K = this.K, Rv = RV[K.rvT];
@@ -916,18 +916,19 @@ class MdProc extends AudioWorkletProcessor {
     const gk = this.smK * 8 > 1 ? 1 : this.smK * 8;
     this.hrt += (Rv.rt - this.hrt) * gk; this.hdamp += (Rv.dp - this.hdamp) * gk; this.hmod += (Rv.md - this.hmod) * gk;
     this.hsize += Math.max(-0.002, Math.min(0.002, Rv.sz - this.hsize));
-    const pdT = Rv.pd * 0.001 * SR; this.hpd += (pdT - this.hpd) * gk;
+    const pdT = Rv.pd * 0.001 * SR, pdS = 0.1 * N; this.hpd += Math.max(-pdS, Math.min(pdS, pdT - this.hpd));   // pre-delay glides <= 0.1 sample per sample
     // COLOR (input): -c low-pass 12 dB 20 kHz * (1.5k/20k)^(|c|/9), +c high-pass 12 dB 20 Hz * 75^(c/9)
     const c = K.rvC; let ca1 = 0, ca2 = 0, ca3 = 0;
     if (c !== 0) { const fc = c < 0 ? 20000 * Math.pow(1500 / 20000, -c / 9) : 20 * Math.pow(75, c / 9), g = tanf(fc), kq = 1.4142135623730951; ca1 = 1 / (1 + g * (g + kq)); ca2 = g * ca1; ca3 = g * ca2; }
-    const r = this.hr, S = this.hsize * r, B = this.hbase;
-    const lap1 = B[0] * S, ld1 = B[1] * S, lap2 = B[2] * S, ld2 = B[3] * S, lap3 = B[4] * S, ld3 = B[5] * S, lap4 = B[6] * S, ld4 = B[7] * S;
+    const r = this.hr, S = this.hsize * r, B = this.hbase, S0 = this.hS > 0 ? this.hS : S, dS = (S - S0) / N; this.hS = S;   // size ramps per sample (no steps)
+    let lap1 = B[0] * S, ld1 = B[1] * S, lap2 = B[2] * S, ld2 = B[3] * S, lap3 = B[4] * S, ld3 = B[5] * S, lap4 = B[6] * S, ld4 = B[7] * S;
     const kd = -3 / (SR * this.hrt);
     const gA1 = Math.pow(10, kd * (lap1 + ld1)), gB1 = Math.pow(10, kd * (lap2 + ld2)), gA2 = Math.pow(10, kd * (lap3 + ld3)), gB2 = Math.pow(10, kd * (lap4 + ld4));
     const dampA = 1 - Math.exp(-TAU * Math.min(this.hdamp, NYQ) / SR), lowA = 1 - Math.exp(-TAU * 40 / SR);
     const mod = this.hmod, exc = mod * 16 * r, lfoW = TAU * (0.35 + 0.65 * mod) / SR;
     const tL = this.tl7, tR = this.tr7;
-    for (let k = 0; k < 7; k++) { tL[k] = Math.round(HTL[k] * S); tR[k] = Math.round(HTR[k] * S); }
+    for (let k = 0; k < 7; k++) { tL[k] = HTL[k] * S; tR[k] = HTR[k] * S; }   // fractional taps: no steps while the size glides
+    const tl0 = tL[0], tl1 = tL[1], tl2 = tL[2], tl3 = tL[3], tl4 = tL[4], tl5 = tL[5], tl6 = tL[6], tr0 = tR[0], tr1 = tR[1], tr2 = tR[2], tr3 = tR[3], tr4 = tR[4], tr5 = tR[5], tr6 = tR[6];
     const I = this.hins, n0 = this.hdIn[0], n1 = this.hdIn[1], n2 = this.hdIn[2], n3 = this.hdIn[3];
     const H = this.hL8, AP1 = H[0].b, D1 = H[1].b, AP2 = H[2].b, D2 = H[3].b, AP3 = H[4].b, D3 = H[5].b, AP4 = H[6].b, D4 = H[7].b;
     const mA1 = H[0].m, mD1 = H[1].m, mA2 = H[2].m, mD2 = H[3].m, mA3 = H[4].m, mD3 = H[5].m, mA4 = H[6].m, mD4 = H[7].m;
@@ -949,6 +950,7 @@ class MdProc extends AudioWorkletProcessor {
         if (Po) for (let j = 0; j < Po.length; j++) { const e = Po[j], v = pdb[(w - Math.round(e[0] * 0.001 * SR)) & pdm] * (1 - xf); erL += v * e[1]; erR += v * e[2]; }
       }
       x = this.hpd >= 1 ? rdl(pdb, pdm, w - this.hpd) : x;
+      let q = 1; if (dS !== 0) { const Sx = S0 + dS * (i + 1); q = Sx / S; lap1 = B[0] * Sx; ld1 = B[1] * Sx; lap2 = B[2] * Sx; ld2 = B[3] * Sx; lap3 = B[4] * Sx; ld3 = B[5] * Sx; lap4 = B[6] * Sx; ld4 = B[7] * Sx; }
       s += lfoW * cc; cc -= lfoW * s;
       let d, v;
       d = I[0].b[(w - n0) & I[0].m]; v = x - 0.75 * d; I[0].b[w & I[0].m] = v; x = d + 0.75 * v;
@@ -967,8 +969,8 @@ class MdProc extends AudioWorkletProcessor {
       D3[w & mD3] = bb; bb = rdl(D3, mD3, w - ld3) * gA2;
       lpR += dampA * (bb - lpR); bb = lpR; hpR += lowA * (bb - hpR); bb -= hpR;
       d = rdl(AP4, mA4, w - lap4); v = bb - 0.5 * d; AP4[w & mA4] = v; bb = d + 0.5 * v; D4[w & mD4] = bb;
-      const yl = D3[(w - tL[0]) & mD3] + D3[(w - tL[1]) & mD3] - AP4[(w - tL[2]) & mA4] + D4[(w - tL[3]) & mD4] - D1[(w - tL[4]) & mD1] - AP2[(w - tL[5]) & mA2] - D2[(w - tL[6]) & mD2];
-      const yr = D1[(w - tR[0]) & mD1] + D1[(w - tR[1]) & mD1] - AP2[(w - tR[2]) & mA2] + D2[(w - tR[3]) & mD2] - D3[(w - tR[4]) & mD3] - AP4[(w - tR[5]) & mA4] - D4[(w - tR[6]) & mD4];
+      const yl = rdl(D3, mD3, w - tl0 * q) + rdl(D3, mD3, w - tl1 * q) - rdl(AP4, mA4, w - tl2 * q) + rdl(D4, mD4, w - tl3 * q) - rdl(D1, mD1, w - tl4 * q) - rdl(AP2, mA2, w - tl5 * q) - rdl(D2, mD2, w - tl6 * q);
+      const yr = rdl(D1, mD1, w - tr0 * q) + rdl(D1, mD1, w - tr1 * q) - rdl(AP2, mA2, w - tr2 * q) + rdl(D2, mD2, w - tr3 * q) - rdl(D3, mD3, w - tr4 * q) - rdl(AP4, mA4, w - tr5 * q) - rdl(D4, mD4, w - tr6 * q);
       const ol = (yl + yr) * 0.3 + (yl - yr) * 0.3 + erL, or = (yl + yr) * 0.3 - (yl - yr) * 0.3 + erR;
       L[i] += ol; R[i] += or; en += ol * ol + or * or;
       w++;
