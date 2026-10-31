@@ -14,7 +14,8 @@ async function open(file) {
   return {p, errs};
 }
 const A = await open(NEW), B = await open(OLD);
-const ids = async P => P.p.evaluate(() => {
+const ids = async P => P.p.evaluate(async () => {
+  try { if (typeof mkLoad === 'function') { mkLoad(); for (let i = 0; i < 60 && !(typeof mkLoaded === 'function' && mkLoaded()); i++) await new Promise(r => setTimeout(r, 100)); } } catch (e) {}
   const out = [];
   for (const [id, f] of FACTORY_BY_ID) if (f && f.engine && f.engine !== 'drum') out.push(id);
   return out;

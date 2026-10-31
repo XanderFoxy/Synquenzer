@@ -41705,21 +41705,29 @@ function wpPaint() {
   // Wellenform (Spitze je Pixel). G1: quantisiert = das Original blass, die gehörte Fassung kräftig (die gerechnete; bis sie fertig ist,
   // das Original über die Zeitkarte gelegt)
   const buf = wpBase(id, a), mid = Hp * .58, hh = Hp * .36, live = !!(w && !WP.ab && !wpMapInfo(w.map).ident);
-  const wave = (b, inv) => {
-    const d = b.getChannelData(0), sr = b.sampleRate;
-    for (let px = 0; px < Wp; px++) {
-      let ta = V.a + px / Wp * V.W, tb = V.a + (px + 1) / Wp * V.W; if (inv) { ta = inv(ta); tb = inv(tb); }
-      const i0 = Math.max(0, Math.floor(ta * sr)), i1 = Math.min(d.length, Math.floor(tb * sr));
-      let pk = 0; for (let i = i0, st = Math.max(1, (i1 - i0) >> 7); i < i1; i += st) { const v = d[i] < 0 ? -d[i] : d[i]; if (v > pk) pk = v; }
-      if (pk > 0) { const h = Math.max(1, Math.sqrt(pk) * hh); g.fillRect(px, mid - h, 1, 2 * h); }
+  // die Spitzen je Pixel bleiben für dieselbe Ansicht liegen (die Marken-Animation zeichnet nur neu, rechnet nicht neu – FP-IPHONE)
+  const wave = (b, inv, mk) => {
+    const key = wpBid(b) + '|' + (mk || '') + '|' + V.a + '|' + V.W + '|' + Wp, wc = E.wc || (E.wc = new Map());
+    let pk = wc.get(key);
+    if (!pk) {
+      const d = b.getChannelData(0), sr = b.sampleRate; pk = new Float32Array(Wp);
+      for (let px = 0; px < Wp; px++) {
+        let ta = V.a + px / Wp * V.W, tb = V.a + (px + 1) / Wp * V.W; if (inv) { ta = inv(ta); tb = inv(tb); }
+        const i0 = Math.max(0, Math.floor(ta * sr)), i1 = Math.min(d.length, Math.floor(tb * sr));
+        let m = 0; for (let i = i0, st = Math.max(1, (i1 - i0) >> 7); i < i1; i += st) { const v = d[i] < 0 ? -d[i] : d[i]; if (v > m) m = v; }
+        pk[px] = m;
+      }
+      if (wc.size >= 4) wc.clear();
+      wc.set(key, pk);
     }
+    for (let px = 0; px < Wp; px++) if (pk[px] > 0) { const h = Math.max(1, Math.sqrt(pk[px]) * hh); g.fillRect(px, mid - h, 1, 2 * h); }
   };
   if (buf) {
     g.fillStyle = WP.ab ? '#7d8796' : '#7fb0de';
     if (live) {
       g.globalAlpha = .38; wave(buf); g.globalAlpha = 1;
       const c = WP.cache.get(id), hb = wpReady(id) && c ? c.buf : null;
-      if (hb) wave(hb); else wave(buf, t => VSM.warpInverse(w.map, t));
+      if (hb) wave(hb); else wave(buf, t => VSM.warpInverse(w.map, t), wpMapInfo(w.map).key);
     } else wave(buf);
   }
   // Ziel der quantisierten Marken (bernstein) mit Verbindung zur Quelle

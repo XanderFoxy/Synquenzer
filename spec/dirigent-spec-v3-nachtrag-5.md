@@ -133,6 +133,14 @@ Xander: „ob es möglich wäre … dass wir unsere Vocals einfach ganz easy auc
 2. Verschiebung formant-erhaltend (PSOLA/WSOLA-Familie wie VS5b), nicht zerstörend (Roh-Take bleibt, Render-Cache wie Dehnen),
    im Worker, A/B wie Säubern, gilt in Szene und Song, WAV-Export der hörbaren Fassung wie bei Dehnen.
 
+3. **Gesang als Noten bearbeiten (Xander 31.10. ~13:45):** der Take wird im Noten-Editor als Noten-Blöcke über der Wellenform
+   gezeigt (VS2-Segmente); einzelne Noten lassen sich frei verschieben (Tonhöhe hoch/runter, auch eigene neue Melodie), teilen,
+   verbinden. **Nur stimmhafte Teile werden verschoben**: stimmlose Laute und Plosive/Zischlaute (s, sch, t, p, k, f, Atmer) bleiben
+   unverändert an ihrem Platz und in ihrer Tonhöhe, mit weichen Übergängen – so klingt verschobener Gesang sauber, ohne Artefakte.
+   Voreinstellung der Tonart = die an der Stelle erkannte/eingestellte Tonart (Szene, Träger, Song).
+- G2-05 Note um +3 Halbtöne verschoben → stimmhafter Teil +300 ±5 Cent, Zischlaute/Plosive bitgleich bzw. ≤ −60 dB Abweichung zum
+  Original, kein Klick an den Rändern; G2-06 Blöcke im Editor = gemessene Noten (Start ±10 ms, Tonhöhe ±20 Cent); Undo.
+
 **Abnahme G2**
 - [ ] G2-01 Gesungene Töne 30–45 Cent daneben, Stärke 100 %, Hart → gemessene Tonhöhe je Note ±5 Cent auf dem Skalenton;
       50 % → halber Abstand ±5 Cent.
@@ -333,3 +341,12 @@ gerechnet; in der Matrix taut eine beteiligte Spur einen Takt vorher auf. **Auft
 bei hoher Last schlägt die App vor (bzw. macht automatisch, einstellbar) Spuren einzufrieren, die gerade nichts Lebendiges tun.
 FR1-01 eingefroren vs. live ≤ −90 dB inkl. Ausklang; FR1-02 CPU-Ersparnis gemessen; FR1-03 Note ändern → neu gerechnet ≤ 2 s; FR1-04
 Übergang eingefroren ↔ live ohne Sprung.
+
+
+### G7 — Gesang folgt dem Transponieren (Xander 31.10. ~13:45)
+STIMME-Clips und Song-Stimme werden vom Transponieren der Szene/des Trägers mitgenommen wie Noten-Clips: jede erkannte Note wird
+in ihre neue Lage gerechnet und rastet wie alle anderen Spuren in die Tonleiter ein (dieselbe Regel wie für Noten-Clips), mit der
+G2-Technik (nur stimmhafte Teile, formant-erhaltend). Gilt für gehaltene Flächen („aaah“) und für Worte. Tonhöhen-Quantisieren nimmt
+als Voreinstellung die erkannte/eingestellte Tonart der Stelle.
+G7-01 Szene +2 transponiert → Gesang +200 ±5 Cent bzw. diatonisch wie ein Noten-Clip (Tabelle je Note); G7-02 Zischlaute unverändert;
+G7-03 Zurück auf 0 → bitgleich zum Original; G7-04 Rechenzeit: vorberechnet (Cache), kein Aussetzer beim Umschalten.

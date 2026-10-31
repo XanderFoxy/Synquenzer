@@ -150,7 +150,7 @@ if (want('02')) {
   ok(!A.H.errs.length, 'VS-L-02 keine Konsolenfehler ' + JSON.stringify(A.H.errs.slice(0, 2)));
   await A.H.close();
   // 3 Takte auf 4-Takt-Clip: wie 4.23.0 (deep-equal, neutrale Take-IDs)
-  const B = await overdub(NEW, 3); await B.H.close(); const C = await overdub(OLD, 3); await C.H.close(); const D = await overdub(OLD, 3);
+  const B = await overdub(NEW, 3, 120, 10); await B.H.close(); const C = await overdub(OLD, 3, 120, 10); await C.H.close(); const D = await overdub(OLD, 3, 120, 10);
   const nb = neutral(B.s), nc = neutral(C.s), nd = neutral(D.s), stOf = x => x.tracks.filter(t => t.stimme);
   ok(B.r.len === 4 && deq(stOf(nb), stOf(nc)) && deq(nb.takes, nc.takes) && near(nb, nc), `VS-L-02 neue Aufnahme 3 Takte: Clip ${B.r.len} Takte, STIMME-Spur + Takes deep-equal zu 4.23.0 (${C.H.ver}), Rest deep-equal bis auf Messrauschen der Noten (neu↔alt ${JSON.stringify(jit(nb, nc))}, alt↔alt ${JSON.stringify(jit(nc, nd))}) – Take ${(B.r.audio.out - B.r.audio.in).toFixed(3)} s, at ${B.r.audio.at}`);
   if (!deq(nb, nc)) fs.writeFileSync('n4-vs-l-02-diff.json', JSON.stringify({neu: nb, alt: nc}, null, 1));
