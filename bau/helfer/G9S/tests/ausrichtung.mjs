@@ -34,7 +34,19 @@ const caseRun = (mk, nCase, check) => { let pass = 0, vs = 0; const log = []; fo
 const rightAfter = (truth, marks, s, from) => { for (let i = from; i < truth.length; i++) { let bk = -1, bd = .06; marks.forEach((m, k) => { const d = Math.abs(m.t - truth[i].on); if (d <= bd) { bd = d; bk = k; } }); if (bk < 0) continue; if (!s[i] || Math.abs(s[i].t - marks[bk].t) > 1e-5) return false; } return true; };
 res['G9-03'] = caseRun((lex, q) => { const {P} = phrase(rng(50 + q), lex, 6); const mi = 1 + (q % Math.max(1, P.length - 3)); P[mi].mel = 3; return {P, mi}; }, 40, (c, T, s) => rightAfter(T.S.syl, T.marks, s, c.mi + 1));
 res['G9-03'].pass = res['G9-03'].quote >= 90;
-res['G9-04'] = caseRun((lex, q) => { const {P} = phrase(rng(80 + q), lex, 6); let fi = P.findIndex((y, i) => i > 0 && !y.w); if (fi < 0) fi = 2; P[fi].fuse = 1; P[fi].x = P[fi].x.replace(/^[^aeiouäöüyAEIOUÄÖÜY]+/, '') || 'e'; return {P, fi}; }, 30, (c, T, s) => s[c.fi] && s[c.fi - 1] && s[c.fi].t === s[c.fi - 1].t && rightAfter(T.S.syl, T.marks, s, c.fi + 1));
+{ let ok = 0, vs = 0; const fehl = [];
+  for (let q = 0; q < 30; q++) {
+    const lang = q % 2 ? 'en' : 'de', lex = lexikon(lang); const {P} = phrase(rng(80 + q), lex, 6);
+    let fi = P.findIndex((y, i) => i > 1 && !y.w); if (fi < 0) fi = 3;
+    const T = take(P, 930 + q * 7, {f0: 160 + 10 * (q % 9)});
+    let bk = -1, bd = .06; T.marks.forEach((m, k) => { const d = Math.abs(m.t - T.S.syl[fi].on); if (d <= bd) { bd = d; bk = k; } });
+    if (bk < 0) { q--; continue; }
+    const y0 = T.S.syl[fi], mk = T.marks.filter((m, k) => k !== bk && !(m.t > y0.on && m.t <= y0.von + 0.03)), F = K.feat(T.S.x, T.S.sr, mk);   // Einsatz entfernt (Konsonant- und Vokal-Marke der Silbe)
+    const s = K.align(K.words(textOf(P), lang), mk, F, OPT), v = K.normLy(K.fromVs5b(textOf(P).replace(/\n/g, ' '), mk, lang)).s;
+    const chk = z => z[fi] && z[fi - 1] && z[fi].t === z[fi - 1].t && rightAfter(T.S.syl, mk, z, fi + 1);
+    if (chk(s)) ok++; else { fehl.push(textOf(P) + ' #' + fi); if (process.env.DBG4) console.log('W', T.S.syl.map(y => y.x + '@' + y.on.toFixed(3)).join(' '), '\nE', s.map(y => y.x + '@' + y.t.toFixed(3) + (y.j ? 'j' : '')).join(' '), '\nM', mk.map((m, k) => m.t.toFixed(3) + (F[k].vf ? 'v' : '')).join(' ')); } if (chk(v)) vs++;
+  }
+  res['G9-04'] = {faelle: 30, ok, quote: +(100 * ok / 30).toFixed(1), vs5b: +(100 * vs / 30).toFixed(1), fehl: fehl.slice(0, 5)}; }
 res['G9-04'].pass = res['G9-04'].quote >= 90;
 // G9-05 Zeilen: 8 Zeilen, 8 Atempausen ≥ 300 ms
 { let ok = 0; const lex = lexikon('de'), P = []; const R5 = rng(5);

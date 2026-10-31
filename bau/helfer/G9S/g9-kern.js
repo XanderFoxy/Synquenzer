@@ -74,7 +74,8 @@ function nuclei(s, lang, cut) {
     const last = out[out.length - 1], pc = s[last[0] - 1] || '', vowelBefore = c => VOW.en.indexOf(c) >= 0 && !(c === 'y' && last[0] >= 2 && VOW.en.indexOf(s[last[0] - 2]) >= 0);
     const one = (a, b) => b - a === 1;
     const single = one(last[0], last[1]) && s[last[0]] === 'e';
-    if (single && last[1] === n && !vowelBefore(pc)) {   // stummes End-e, außer -le nach Konsonant
+    if (single && last[1] === n && pc === 'y' && out.length > 1 && out[out.length - 2][1] === last[0]) out.pop();   // bye, eye, goodbye
+    else if (single && last[1] === n && !vowelBefore(pc)) {   // stummes End-e, außer -le nach Konsonant
       if (!(pc === 'l' && s[last[0] - 2] && !vowelBefore(s[last[0] - 2]))) out.pop();
     } else if (single && last[1] === n - 1 && !vowelBefore(pc)) {
       const z = s[n - 1];
@@ -240,14 +241,17 @@ function feat(x, sr, marks) {
 }
 
 // ───────────────────────── Kosten (§6.3) ─────────────────────────
-const C = {skip0: 0.2, skipRise: 1.5, skipGap: 2.0, skipTone: 0.8, skipVow: 0.8, merge: 1.2, mergeWord: 0.6, mergeLong: 0.5, longF: 1.7, over: 3.0,
+const C = {skip0: 0.2, skipRise: 1.5, skipGap: 2.0, skipTone: 0.8, skipVow: 0.8, merge: 1.2, mergeWord: 0.6, mergeLong: 0.5, longF: 1.7, over: 3.0, onWeak: 2.0,
   wordGap: -0.5, inWordGap: 1.0, lineGap: -1.0, lineMiss: 0.5, cons: -0.2, tauS: 0.15, edge: 0.3, tip: -0.8, tipSkip: 1.5, band: 1.5};
 const F0 = {rise: 0, gap: 0, pj: 0, vo: 0, von: 0, uv: 0, dur: 0, conf: 0.5, vf: 0};
 const CONS = /^(sch|st|s|t|k|p|f|z|ch|th|c)/i;
 function costs(marks, feat, o) {
   const m = marks.length, K = Object.assign({}, C, o && o.cost), sk = new Float64Array(m), tip = new Uint8Array(m);
   const fe = k => (feat && feat[k]) || F0;
-  const durs = []; for (let k = 0; k < m; k++) durs.push(fe(k).dur || 0); durs.sort((a, b) => a - b);
+  const weak = k => { const f = fe(k); return f.vf || (f.pj >= 80 && f.rise < 3); };
+  const dS = new Float64Array(m);   // Länge des Abschnitts bis zur nächsten Einsatz-Marke (Vokal-Folge- und reine Ton-Marken zählen mit)
+  for (let k = m - 1; k >= 0; k--) { let q = k + 1; while (q < m && weak(q)) q++; dS[k] = q < m ? +marks[q].t - +marks[k].t : (fe(k).dur || 0) + (q - 1 > k ? +marks[q - 1].t - +marks[k].t : 0); }
+  const durs = []; for (let k = 0; k < m; k++) if (!weak(k)) durs.push(dS[k]); durs.sort((a, b) => a - b);
   const medD = durs.length ? durs[durs.length >> 1] : 0;
   const tips = o && o.tipOn && Array.isArray(o.tips) ? o.tips : null;
   for (let k = 0; k < m; k++) {
@@ -262,11 +266,12 @@ function costs(marks, feat, o) {
     if (y.w) { if (f.gap >= 120) c += K.wordGap; } else if (f.gap >= 250) c += K.inWordGap;
     if (y.w === 2) c += f.gap >= 300 ? K.lineGap : K.lineMiss;
     if (f.uv >= 0.3 && CONS.test(y.x || '')) c += K.cons;
+    if (f.vf || (f.pj >= 80 && f.rise < 3)) c += K.onWeak;   // Silbe auf Vokal-Folge- bzw. reiner Ton-Marke (Abgleich G9a)
     if (tip[k]) c += K.tip;
     return c;
   };
   const tau = (y, k) => (fin(y.tau) ? Math.min(4, Math.pow((marks[k].t - y.tau) / K.tauS, 2)) / 2 : 0);
-  const merge = (y, k) => (K.merge + K.mergeWord * (y.w ? 1 : 0)) * (medD > 0 && fe(k).dur >= K.longF * medD ? K.mergeLong : 1);
+  const merge = (y, k) => (K.merge + K.mergeWord * (y.w ? 1 : 0)) * (medD > 0 && dS[k] >= K.longF * medD ? K.mergeLong : 1);
   const skipSum = (a, b) => (b > a ? P[b] - P[a] : 0);   // Marken a … b−1
   return {K, sk, P, place, tau, merge, skipSum, slot: k => sk[k] >= 0.5};
 }
@@ -275,7 +280,7 @@ function costs(marks, feat, o) {
 // → Feld der Marken-Indizes je Silbe und Zähler (1 … 3, 4 = o)
 function dpSeg(S, marks, CO, L, cL, R, o) {
   const m = marks.length, n = S.length, INF = 1e18, K = CO.K;
-  const a = L >= 0 ? L : 0, b = R >= 0 ? R - 1 : m - 1;
+  const a = L >= 0 ? L : 0, b = R >= 0 ? R - 1 : fin(o && o.bEnd) ? Math.min(m - 1, o.bEnd) : m - 1, open = R < 0 && fin(o && o.bEnd);
   if (!n) return {k: [], c: [], cost: 0};
   if (b < a || m === 0) { const k0 = L >= 0 ? L : R >= 0 ? R : (m ? 0 : -1); return {k: S.map(() => k0), c: S.map(() => 4), cost: n * K.over}; }
   const W = b - a + 1;
@@ -319,7 +324,7 @@ function dpSeg(S, marks, CO, L, cL, R, o) {
   let bv = INF, bj = -1, bc = 1;
   for (let j = lo[n - 1]; j <= hi[n - 1]; j++) for (let c = 1; c <= 4; c++) {
     const v = D[at(n - 1, j, c)]; if (!(v < INF)) continue;
-    const tail = R >= 0 ? CO.skipSum(j + 1, R) : K.edge * (b - j), w = v + tail;
+    const tail = R >= 0 ? CO.skipSum(j + 1, R) : open ? 0 : K.edge * (b - j), w = v + tail;
     if (w < bv) { bv = w; bj = j; bc = c; }
   }
   const kk = new Array(n), cc = new Array(n);
@@ -557,21 +562,24 @@ function apply(ly, marks, feat, op, o) {
     }
     let i = firstAt(V, k), a = -1, b = -1, k0 = k;
     if (i >= 0) { [a, b] = wordAt(V, i); k0 = V[a].k >= 0 ? V[a].k : k; if (V[a].w === 2) S[0].w = 2; }
-    // Bereich: k0 … k0+8, bis vor die nächste feste Silbe (außerhalb des ersetzten Worts) bzw. vor das nächste Wort beim Ersetzen
-    let kE = Math.min(m, k0 + 9);
-    for (let q = 0; q < V.length; q++) { if (a >= 0 && q >= a && q < b) continue; const y = V[q]; if (y.k > k0 || (a >= 0 && q >= b && y.k >= k0)) { if (y.u || a >= 0) { kE = Math.min(kE, Math.max(k0 + 1, y.k)); break; } } }
-    const loc = Object.assign({}, o, {k0: k0, kEnd: kE});
-    const left = V.filter((y, q) => (a >= 0 ? q < a : y.k < k0) && !(a < 0 && y.o));
-    const L = left.length ? left[left.length - 1].k : -1;
-    const r = dpSeg(S, marks, CO, L >= 0 && L < k0 ? -1 : -1, 0, kE, {k0});
+    // Bereich k0 … k0+8. Ersetzen: bis vor das nächste Wort; Überschreiben: bis vor die nächste feste Silbe.
+    // Gibt es dort eine Grenze, sind die übrigen Abschnitte Melisma (Überspring-Kosten); sonst ist das Ende offen.
+    let kE = Math.min(m, k0 + 9), closed = false;
+    if (a >= 0) { if (b < V.length && V[b].k >= 0 && V[b].k <= kE) { kE = Math.max(k0 + 1, V[b].k); closed = true; } }
+    else for (const y of V) if (y.u && y.k > k0 && !y.o) { if (y.k <= kE) { kE = y.k; closed = true; } break; }
+    const r = dpSeg(S, marks, CO, -1, 0, closed ? kE : -1, closed ? {k0} : {k0, bEnd: kE - 1});
     S.forEach((y, q) => { y.k = r.k[q]; y.o = r.c[q] >= 4 ? 1 : 0; });
     const lastK = S[S.length - 1].k;
-    let merged = 0; for (let q = 1; q < S.length; q++) if (S[q].k === S[q - 1].k) merged++;
+    let merged = 0; for (let q = 1; q < S.length; q++) if (S[q].k === S[q - 1].k && !S[q].o) merged++;
     let NV;
     if (a >= 0) NV = V.slice(0, a).concat(S, V.slice(b));
-    else { const keep = V.filter(y => y.u || y.k < k0 || y.k > lastK || (y.o && y.k !== lastK)); const ins = keep.findIndex(y => y.k > lastK || (y.k >= k0 && y.u)); NV = ins < 0 ? keep.concat(S) : keep.slice(0, ins).concat(S, keep.slice(ins)); if (ins >= 0 && NV[ins + S.length] && !NV[ins + S.length].w) NV[ins + S.length].w = 1; }
+    else {
+      const keep = V.filter(y => y.u || y.k < k0 || y.k > lastK);
+      let ins = keep.findIndex(y => y.k >= k0 || y.o); if (ins < 0) ins = keep.length;
+      NV = keep.slice(0, ins).concat(S, keep.slice(ins));
+      const nx = NV[ins + S.length]; if (nx && !nx.w) nx.w = 1;
+    }
     const iS = NV.indexOf(S[S.length - 1]);
-    void loc;
     let missing = 0;
     if (a >= 0 && merged) { const kN = b < V.length ? V[b].k : m; const free = SL.filter(z => z >= k0 && z < kN).length; missing = Math.max(0, S.length - free); }
     const old = a >= 0 ? V.slice(a, b).map(y => y.x).join('') : '';
