@@ -3987,7 +3987,7 @@ function lcdPar() {
   if (d.t === 'slot') { const U = ownList(), r = U[P.wSlot]; lcdShow(sec, fmtV(d) + ' · ' + (r ? 'überschreibt „' + r.name + '“' : 'neuer Platz')); return; }
   const v = valOf(d); lcdShow(sec, d.n + ' · ' + fmtV(d, v).trim() + ' · ' + lcdT(d, v));
 }
-/* ---------- places: P00 … = own start sounds (BM7), U00 … = own saved Bit Mask sounds of the library in save order (§3.3 Voice) ---------- */
+/* ---------- places: P00 … = own start sounds (BM7), U00 … = own saved BM_NAME sounds of the library in save order (§3.3 Voice) ---------- */
 // BM6/BM7-PLATZHALTER: until BM7 brings P00-P39, P00 is INIT (1OSC); BM7 provides window.BMFAC.list() -> [{id, name, p: {bm}}]
 function facList() { try { if (window.BMFAC && BMFAC.list) return BMFAC.list(); } catch (e) { logErr(e); } return [{id: 'bm-p00', name: 'INIT', bm: SQBM.init()}]; }
 function ownList() { return (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine === 'bm').sort((a, b) => (a.ct || 0) - (b.ct || 0)); }
@@ -4179,35 +4179,36 @@ const Z = 44;
 let TOP = 11, LBL = 12;
 function layout(W, H, land) {
   // tight (P3, L2): the print strips 10 / 11 px so that nothing is cut; 2 px edge at least
-  TOP = 11; LBL = 12; const nd = land ? 2 * (TOP + Z + LBL) : 2 * TOP + 4 * (Z + LBL); if (H < nd + 4) { TOP = 10; LBL = 11; }
+  TOP = 11; LBL = 12; let vt = false; const nd = () => (land ? 2 * (TOP + Z + LBL) : 2 * TOP + 4 * (Z + LBL));
+  if (H < nd() + 4) { TOP = 10; LBL = 11; } if (H < nd() + 3) { TOP = 9; LBL = 10; vt = true; }   // very tight (L1 with the safe area): 8.5 px print
   const z = {}, put = (id, x, y, w, h, kind) => { z[id] = {id, x: Math.round(x), y: Math.round(y), w, h, kind}; };
   const extra = {lines: [], texts: [], ov: null};
   if (land) {
-    const cols = 14, wc = c => (c === 12 ? 56 : Z), ovW = W >= 720 ? Math.min(132, W - 13 * Z - 56 - 13 * 2) : 0;
+    const cols = 14, wc = c => (c === 12 ? 56 : Z), ovW = W >= 720 && W - 13 * Z - 56 - 13 * 2 >= 4 * 19 ? Math.min(132, W - 13 * Z - 56 - 13 * 2) : 0;
     const rest = W - 13 * Z - 56 - (ovW ? ovW + 8 : 0), g = Math.max(0, Math.min(8, Math.floor(rest / 14)));
     const tot = 13 * Z + 56 + 13 * g + (ovW ? ovW + Math.max(8, g) : 0), x0 = Math.max(0, Math.floor((W - tot) / 2));
     const cx = []; let x = x0; for (let c = 0; c < cols; c++) { cx.push(x); x += wc(c) + g; }
-    const need = TOP + Z + LBL + TOP + Z + LBL, gy = Math.max(0, Math.min(10, Math.floor((H - need - 4) / 3))), y0 = Math.max(2, Math.floor((H - need - 2 * gy) / 2));
+    const need = TOP + Z + LBL + TOP + Z + LBL, gy = Math.max(0, Math.min(10, Math.floor((H - need - 4) / 3))), y0 = Math.max(1, Math.floor((H - need - 2 * gy) / 2));
     const yA = y0 + TOP, yB = yA + Z + LBL + gy + TOP;
     put('vol', cx[0], yA, Z, Z, 'knob'); put('octL', cx[1], yA, Z, Z, 'key'); put('octR', cx[2], yA, Z, Z, 'key');
     KEYS_A.forEach((k, j) => put(k, cx[3 + j], yA, Z, Z, 'key'));
     put('disp', cx[9], yA, cx[11] + Z - cx[9], Z, 'disp'); put('parL', cx[12] + 6, yA, Z, Z, 'key'); put('parR', cx[13], yA, Z, Z, 'key');
     put('seq', cx[0], yB, Z, Z, 'key'); KEYS_B.forEach((k, j) => put(k, cx[1 + j], yB, Z, Z, 'key')); put('value', cx[12], yB, 56, Z, 'knob'); put('compare', cx[13], yB, Z, Z, 'key');
-    if (ovW) extra.ov = {x: cx[13] + Z + Math.max(8, g), y: yA - TOP, w: ovW, h: yB + Z + LBL - (yA - TOP), rows: 2};
+    if (ovW) extra.ov = {x: cx[13] + Z + Math.max(8, g), y: yA - TOP, w: ovW, h: yB + Z + LBL - (yA - TOP), rows: ovW >= 6 * 20 ? 2 : 3, per: ovW >= 6 * 20 ? 6 : 4};
     extra.H = need + 2 * gy; extra.yA = yA; extra.yB = yB;
   } else {
     const g = Math.max(0, Math.min(8, Math.floor((W - 7 * Z) / 6))), x0 = Math.max(0, Math.floor((W - 7 * Z - 6 * g) / 2)), cx = c => x0 + c * (Z + g);
     const ovH = W >= 312 + 2 && H >= 4 * (Z + LBL) + 2 * TOP + 40 ? 38 : 0;
-    const need = 2 * TOP + 4 * (Z + LBL) + ovH, gy = Math.max(0, Math.min(10, Math.floor((H - need - 4) / 5))), y0 = Math.max(2, Math.floor((H - need - 4 * gy) / 2));
+    const need = 2 * TOP + 4 * (Z + LBL) + ovH, gy = Math.max(0, Math.min(6, Math.floor((H - need - 4) / 5))), y0 = Math.max(2, Math.min(6, Math.floor((H - need - 4 * gy) / 2)));   // portrait: from the top, the plate as tall as the panel
     const y1 = y0 + TOP, y2 = y1 + Z + LBL + gy, y3 = y2 + Z + LBL + gy + TOP, y4 = y3 + Z + LBL + gy;
     put('vol', cx(0), y1, Z, Z, 'knob'); put('octL', cx(1), y1, Z, Z, 'key'); put('octR', cx(2), y1, Z, Z, 'key'); put('voice', cx(3), y1, Z, Z, 'key'); put('layer', cx(4), y1, Z, Z, 'key'); put('split', cx(5), y1, Z, Z, 'key');
     put('init', cx(0), y2, Z, Z, 'key'); put('write', cx(1), y2, Z, Z, 'key'); put('global', cx(2), y2, Z, Z, 'key'); put('disp', cx(3), y2, 2 * Z + g, Z, 'disp'); put('parL', cx(5), y2, Z, Z, 'key'); put('parR', cx(6), y2, Z, Z, 'key');
     ['seq', 'osc1', 'osc2', 'noise', 'filter', 'lfo1', 'lfo2'].forEach((k, j) => put(k, cx(j), y3, Z, Z, 'key'));
     ['fx', 'arp', 'pitch', 'mod', 'general'].forEach((k, j) => put(k, cx(j), y4, Z, Z, 'key')); put('value', cx(5), y4, Z, Z, 'knob'); put('compare', cx(6), y4, Z, Z, 'key');
-    if (ovH) extra.ov = {x: Math.round((W - 312) / 2), y: y4 + Z + LBL + gy, w: 312, h: ovH, rows: 1};
-    extra.H = need + 4 * gy; extra.yA = y1; extra.yB = y3;
+    if (ovH) extra.ov = {x: Math.round((W - 312) / 2), y: y4 + Z + LBL + gy, w: 312, h: ovH, rows: 1, per: 12};
+    extra.H = Math.min(H, 2 * y0 + need + 4 * gy + (ovH ? gy : 0)); extra.yA = y1; extra.yB = y3;
   }
-  return {z, extra, W, H, land};
+  return {z, extra, W, H, land, vt};
 }
 /* ---------- drawing ---------- */
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -4238,7 +4239,7 @@ function build(pg, i) {
   const r = fr.getBoundingClientRect(), W = Math.floor(r.width), H = Math.floor(r.height);
   if (!W || !H) { requestAnimationFrame(() => { if (live(pg, i)) build(pg, i); }); return; }
   const land = window.innerWidth > window.innerHeight, Ly = layout(W, H, land);
-  const plate = el('div', 'bmplate' + (land ? ' q' : ' h')); fr.appendChild(plate);
+  const plate = el('div', 'bmplate' + (land ? ' q' : ' h') + (Ly.vt ? ' vt' : '')); fr.appendChild(plate);
   const U = P.el = {fr, plate, pg, W, H, land, Ly, keys: {}, disp: null, knobs: {}, leds: {}};
   // printed lines and small labels (one SVG)
   const ln = svgEl('svg', {class: 'bmln', width: W, height: H, viewBox: '0 0 ' + W + ' ' + H}); plate.appendChild(ln);
@@ -4247,11 +4248,11 @@ function build(pg, i) {
   for (const id in z) { const q = z[id]; if (LAB[id]) txt(cx(q), q.y + q.h + LBL - 2.5, LAB[id]); }
   txt((cx(z.octL) + cx(z.octR)) / 2, z.octL.y + Z + LBL - 2.5, 'Octave'); txt((cx(z.parL) + cx(z.parR)) / 2, z.parL.y + Z + LBL - 2.5, 'Param');
   // Seq ── ●Rec ── ▶/■ above the Octave keys, the line down to the Seq/Env key; Env ── over Osc1 … Filter (§3.1)
-  const ys = z.octL.y - 3.5, ye = z.osc1.y - 3.5, xs = z.vol.x + 2;
+  const ys = Math.max(8.5, z.octL.y - 2.5), ye = z.osc1.y - 2.5, xs = z.vol.x + 2;
   txt(xs, ys, 'Seq', 'start', 'lt ls'); line(xs + 17, ys - 3, z.octL.x + 6, ys - 3);
-  const rc = el('div', 'bmic'); rc.style.cssText = `left:${cx(z.octL) - 14}px;top:${ys - 9}px`; drawRec(rc); const rt = el('span', '', 'Rec'); rc.appendChild(rt); plate.appendChild(rc);
-  const pc = el('div', 'bmic'); pc.style.cssText = `left:${cx(z.octR) - 11}px;top:${ys - 9}px`; drawPlay(pc); plate.appendChild(pc);
-  txt(xs, ye, 'Env', 'start', 'lt ls'); line(xs + 18, ye - 3, z.filter.x + z.filter.w - 4, ye - 3);
+  const rc = el('div', 'bmic'); rc.style.cssText = `left:${cx(z.octL) - 14}px;top:${ys - 8}px`; drawRec(rc); const rt = el('span', '', 'Rec'); rc.appendChild(rt); plate.appendChild(rc);
+  const pc = el('div', 'bmic'); pc.style.cssText = `left:${cx(z.octR) - 11}px;top:${ys - 8}px`; drawPlay(pc); plate.appendChild(pc);
+  txt(z.osc1.x + 1, ye, 'Env', 'end', 'lt ls'); line(z.osc1.x + 3, ye - 3, z.filter.x + z.filter.w - 4, ye - 3);   // Env right before Osc1: the label of the key above (Vol / Init) keeps its room
   for (const k of ENVK) line(cx(z[k]), ye - 3, cx(z[k]), ye + 1.5);
   if (land) { line(xs - 1.5, ys + 1, xs - 1.5, z.seq.y + 4); line(xs - 1.5, z.seq.y + 4, z.seq.x + 3, z.seq.y + 4); }
   // the zones
@@ -4268,7 +4269,7 @@ function build(pg, i) {
   // the mask overview (own line drawing from the rule §1.2)
   const ov = Ly.extra.ov;
   if (ov) {
-    const o = svgEl('svg', {class: 'bmov', width: ov.w, height: ov.h, viewBox: '0 0 ' + ov.w + ' ' + ov.h}), per = ov.rows === 2 ? 6 : 12, cw = ov.w / per, rh = ov.h / ov.rows;
+    const o = svgEl('svg', {class: 'bmov', width: ov.w, height: ov.h, viewBox: '0 0 ' + ov.w + ' ' + ov.h}), per = ov.per, cw = ov.w / per, rh = ov.h / ov.rows;
     o.style.cssText = `left:${ov.x}px;top:${ov.y}px`;
     MASKS.forEach((m, k) => {
       const r_ = Math.floor(k / per), c = k % per, x0 = c * cw + 2, y0 = r_ * rh, wv = cw - 4, hv = rh - 13, pts = maskPts(m, 48);
@@ -4277,7 +4278,7 @@ function build(pg, i) {
     });
     plate.appendChild(o);
   }
-  plate.style.height = H + 'px';
+  plate.style.bottom = 'auto'; plate.style.height = (land ? H : Ly.extra.H) + 'px';
   dispSet(P.disp.txt || '----'); P.disp.q = null; P.dirty = true; paint();
   shown(!P.seen ? false : false);
   if (!P.seen) { P.seen = true; lcdShow(NM(), 'Modus-Taste + « Param » + Value · Seq/Env schaltet « » und die Hüllkurven'); }
@@ -4338,7 +4339,7 @@ function knobWire(b, id) {
     const r = b.getBoundingClientRect(), d = id === 'value' ? curPar() : null;
     g = {pid: e.pointerId, x0: e.clientX, y0: e.clientY, lx: e.clientX, ly: e.clientY, lt: e.timeStamp, cx: r.left + r.width / 2, cy: r.top + r.height / 2, acc: 0, moved: false, circ: false, ang: null, arc: 0, d,
       before: soundSnapshot(P.i), vol0: null, fine: false};
-    g.ang = Math.atan2(e.clientY - g.cy, e.clientX - g.cx);
+    g.ang = Math.atan2(e.clientY - g.cy, e.clientX - g.cx); g.dist = Math.hypot(e.clientY - g.cy, e.clientX - g.cx);
     b.classList.add('dn'); gestBegin(e.pointerId, () => knobEnd(null));
     if (id === 'vol') { const s_ = sndOf(P.i); g.vol0 = s_.fx.vol == null ? .8 : s_.fx.vol; volShow(g.vol0); }
     else if (d && !(d.t === 'place' || d.t === 'slot')) { dispStop(); dispSet(fmtV(d, valOf(d))); lcdPar(); }
@@ -4350,8 +4351,9 @@ function knobWire(b, id) {
     // circling: once the finger has gone round more than 60° away from the centre, the arc length counts (clockwise = up)
     const ang = Math.atan2(e.clientY - g.cy, e.clientX - g.cx), dist = Math.hypot(e.clientX - g.cx, e.clientY - g.cy);
     let da = ang - g.ang; if (da > Math.PI) da -= 2 * Math.PI; if (da < -Math.PI) da += 2 * Math.PI; g.ang = ang;
-    if (dist > 16) g.arc += da; if (!g.circ && Math.abs(g.arc) > Math.PI / 3 && dist > 16) g.circ = true;
-    let px = g.circ ? da * Math.max(dist, 16) : g.ly - e.clientY;
+    const far = dist > 16 && g.dist > 16; g.dist = dist; if (!far) da = 0;
+    g.arc += da; if (!g.circ && Math.abs(g.arc) > Math.PI / 3) g.circ = true;
+    let px = g.circ ? da * dist : g.ly - e.clientY;
     const dt = Math.max(1, e.timeStamp - g.lt), sp = Math.abs(px) / dt;   // px per ms
     g.fine = !g.circ && Math.abs(dx) > 40;
     const acc = g.fine ? .25 : Math.min(8, Math.max(1, 1 + (sp - .25) * 7));
@@ -4445,6 +4447,7 @@ function css() {
 .bmln line{stroke:var(--bm-ink);stroke-width:1}
 .bmln text,.bmov text{font:700 9.5px var(--font,'Barlow Semi Condensed',system-ui,sans-serif);fill:var(--bm-ink);letter-spacing:.1px}
 .bmln text.ls{font-size:9px}
+.bmplate.vt .bmln text{font-size:8.5px}.bmplate.vt .bmic{font-size:8.5px}
 .bmic{position:absolute;display:flex;align-items:center;gap:2px;height:10px;pointer-events:none;font:700 9px var(--font,'Barlow Semi Condensed',system-ui,sans-serif);color:var(--bm-ink)}
 .bmic .ic{width:8px;height:8px;fill:var(--bm-ink);stroke:var(--bm-ink);stroke-width:1.2}.bmic .ic.w{width:20px}
 .bmz{position:absolute;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -4478,7 +4481,7 @@ function css() {
 function info() {
   const d = curPar(), U = P.el, L = ledState(), z = {};
   if (U) for (const id in U.Ly.z) { const q = U.Ly.z[id]; const b = id === 'disp' ? null : (U.keys[id] || U.knobs[id]); const r = b ? b.getBoundingClientRect() : null; z[id] = {x: q.x, y: q.y, w: q.w, h: q.h, kind: q.kind, rect: r ? [r.left, r.top, r.width, r.height] : null}; }
-  return {i: P.i, mode: P.mode, pi: P.pi, param: d ? d.n : null, path: d ? d.k : null, value: d ? valOf(d) : null, params: pList().map(x => x.n), disp: P.disp.txt, env: P.env, multi: P.multi ? P.multi.slice() : null,
+  return {i: P.i, mode: P.mode, pi: P.pi, view: P.ab, param: d ? d.n : null, path: d ? d.k : null, value: d ? valOf(d) : null, params: pList().map(x => x.n), disp: P.disp.txt, env: P.env, multi: P.multi ? P.multi.slice() : null,
     ab: curAB(), compare: P.cmpOn, leds: L, land: U ? U.land : null, W: U ? U.W : 0, H: U ? U.H : 0, zones: z, ov: U && U.Ly.extra.ov ? Object.assign({}, U.Ly.extra.ov) : null, at: P.atLast || 0, initSel: INITS[P.initSel], wSlot: P.wSlot};
 }
 window.BMUI = {build, wheels, wheelPaint, atDown, atMove, atUp, info, P, params, layout, maskPts, keyDown: (id) => keyDown(id), paint};
@@ -18842,7 +18845,7 @@ function mkWheelFrame() {
   if (want) { const M = mkLoad(); if (M) M.wheels(true); } else if (mkLoaded()) MKUI.wheels(false);
   UI.kbRelayout = true;
 }
-/* ===== BM5 (Nachtrag 7 §3, §5.2): Bit Mask on the main thread. The panel, the wheels and the pressure bar live in block sq-bm-src
+/* ===== BM5 (Nachtrag 7 §3, §5.2): the engine BM_NAME on the main thread. The panel, the wheels and the pressure bar live in block sq-bm-src
    (evaluated on first need, bmLoad). BM6-PLATZHALTER: bmHost / processor 'synq-bm' (block sq-bm-ph-src) only play mask 31 with a
    plain level envelope so that the panel can be tried now; BM1-BM4 / BM6 replace host and processor when merging (interface §2.1). */
 const BML = {loaded: false, ms: 0, err: null};
@@ -18860,7 +18863,7 @@ function bmLoad() {
   BML.ms = performance.now() - t0;
   return typeof BMUI !== 'undefined' ? BMUI : null;
 }
-// BM6-PLATZHALTER: one AudioWorkletNode 'synq-bm' per Bit Mask track (stereo out into the track's chain), messages after §2.1
+// BM6-PLATZHALTER: one AudioWorkletNode 'synq-bm' per BM_NAME track (stereo out into the track's chain), messages after §2.1
 const BMH = {st: 'off', ctx: null, E: [], wait: null};
 function bmHostLoad() {
   const c = AU.ctx; if (!c || !c.audioWorklet) return;
@@ -18903,7 +18906,7 @@ function bmWheelFrame() {
   if (want) { const M = bmLoad(); if (M) M.wheels(true); bmHostLoad(); } else if (bmLoaded()) BMUI.wheels(false);
   UI.kbRelayout = true;
 }
-// the pressure gesture (§3.4): a finger on a held key pushes up; the keyboard's handlers ask these first (Bit Mask tracks only)
+// the pressure gesture (§3.4): a finger on a held key pushes up; the keyboard's handlers ask these first (BM_NAME tracks only)
 const bmKbOn = () => { const tr = S.tracks[R.selT]; return !!(tr && tr.kind === 'synth' && tr.sound.engine === 'bm' && bmLoaded()); };
 function bmKbDown(e, note) { if (note != null && bmKbOn()) BMUI.atDown(e, note); }
 function bmKbMove(e) { return bmLoaded() && BMUI.atMove(e); }
@@ -27334,7 +27337,7 @@ function uiFrame() {
   renderRing(now);
   if (UI.dirty.kb) { UI.dirty.kb = false; kbPaint(); padPaint(); }
   mkWheelFrame();                                            // MK1: BEND / MOD wheels left of the keys on AM tracks
-  bmWheelFrame();                                            // BM5: BEND / MOD wheels on Bit Mask tracks
+  bmWheelFrame();                                            // BM5: BEND / MOD wheels on BM_NAME tracks
   if (R.editor === 'synth' && typeof MKUI !== 'undefined' && MKUI.arpFrame) MKUI.arpFrame(now, bAud);   // MK5: ARP / tempo LED, running step
   paintGhosts(tAud);
   padFlashes(tAud);
@@ -37476,7 +37479,7 @@ function bindUI() {
     const note = kbHit(e.clientX - r.left, e.clientY - r.top);
     KB.ptr.set(e.pointerId, note);
     if (note != null) inputDown(note, 'p' + e.pointerId, kbVelAt(note, e.clientY - r.top));
-    bmKbDown(e, note);                                           // BM5: pressure gesture (Bit Mask)
+    bmKbDown(e, note);                                           // BM5: pressure gesture (BM_NAME)
   });
   on(EL.kb, 'pointermove', e => {
     if (!KB.ptr.has(e.pointerId) || !KB.rect) return;
