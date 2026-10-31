@@ -7065,12 +7065,520 @@ window.MKK = {GL, of, list, rec, names, decodeGenre, decodeAll, writeRec, placeP
 /*@@FORMCLEAN@@*/
 /*@@/FORMCLEAN@@*/
 /*@@FORMUI@@*/
+/* ---------- I3c + I3d (Nachtrag 8 B.3 §5.1, §5.3–5.5, §6.2–6.5, §6.9, §6.10): the form sheet. It lies over the editor area (same
+   grid cell as the synth sheet, own element: an editor rebuild never touches it), the keyboard stays free. One stroke, one wipe,
+   one library pick, one switch of „Aufräumen“ = one undo step (kind 'sound'). Drawing is pointer events with touch-action none;
+   the visible snap is the duty (glide 150 ms, glow 300 ms, quarter line 120 ms), haptic('snap') only on lift (A.8 H3). ---------- */
+const FUI = (() => {
+  'use strict';
+  const TK = 768;
+  let st = null;
+  const css = `
+#formSheet{display:flex;flex-direction:column;z-index:24;gap:2px;padding:2px 16px 2px;touch-action:none}
+#formSheet .fs-head{display:flex;align-items:center;gap:6px;height:44px;flex:none;min-width:0}
+#formSheet .fs-head .fs-tt{flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:8px;overflow:hidden}
+#formSheet .fs-tt b{font:700 13px/1.1 var(--font-ui);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+#formSheet .fs-tt .fs-inf{flex:1 1 auto;min-width:0}
+#formSheet button{min-width:44px;height:44px;padding:0 8px;font-size:14px;white-space:nowrap;flex:none}
+#formSheet .fs-done{padding:0 10px}
+#formSheet .fs-main{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:2px}
+#formSheet .fs-lib{display:flex;gap:6px;flex:none;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;scrollbar-width:none;height:44px}
+#formSheet .fs-lib::-webkit-scrollbar{display:none}
+#formSheet .fs-fld{flex:1 1 auto;min-height:120px;position:relative;border:1px solid var(--line);border-radius:var(--r-s);background:var(--lcd);overflow:hidden}
+#formSheet canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#formSheet .fs-inf{font:500 12px/1.2 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:clip}
+#formSheet .fs-inf.p{height:22px;line-height:22px;flex:none}
+#formSheet .fs-inf.hot{color:var(--amber)}
+#formSheet .fs-ctl{display:flex;gap:6px;flex:none;height:44px;min-width:0}
+#formSheet .fs-ctl .on{border-color:var(--tc);color:var(--tc)}
+#formSheet .grey{opacity:.4}
+#formSheet .fs-ctl .kz{display:none}
+#formSheet.kurz .fs-ctl .lg{display:none}
+#formSheet.kurz .fs-ctl .kz{display:inline}
+#formSheet .fs-head .q{display:none}
+@media (orientation:landscape){
+  #formSheet{padding:2px max(16px,env(safe-area-inset-right)) 2px max(16px,env(safe-area-inset-left))}
+  #formSheet .fs-head .q{display:block}
+  #formSheet .fs-inf.p{display:none}
+  #formSheet .fs-main{flex-direction:row-reverse}
+  #formSheet .fs-lib{flex-direction:column;width:168px;height:auto;overflow-x:hidden;overflow-y:auto;touch-action:pan-y}
+  #formSheet .fs-lib button{width:100%;flex:none}
+}`;
+  const sndI = () => sndOf(st.tg.i);
+  const pre = () => 'l' + st.tg.n;
+  const cur = () => { const s = sndI(); return s ? s.p[pre() + 'f'] || null : null; };
+  const zyk = () => { const s = sndI(); return s && s.p[pre() + 'sync'] > 0 ? s.p[pre() + 'sync'] : 4; };
+  const zykName = () => { const k = LFO_SYNC.findIndex(v => Math.abs(v - zyk()) < 1e-3); return k >= 0 ? LFO_SYNC_LBL[k] : zyk() + ' Schläge'; };
+  const label = () => 'LFO ' + st.tg.n;
+  const now = () => performance.now();
+  const reduced = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+  function tcol() { try { return getComputedStyle(document.documentElement).getPropertyValue('--t' + (st.tg.i + 1)).trim() || '#4cc9f0'; } catch (e) { return '#4cc9f0'; } }
+  function raster() { return FORMCLEAN.raster(zyk(), st.grid); }
+  // the tick and the height of a pointer (§5.1): 8 px margin top and bottom so that ±1 is easy to hit
+  function pos(e) {
+    const r = st.cv.getBoundingClientRect(), u = clamp((e.clientX - r.left) / Math.max(1, r.width) * TK, 0, TK);
+    const y = clamp(((r.top + r.height / 2) - e.clientY) / Math.max(1, r.height / 2 - 8) * 1000, -1000, 1000);
+    return [u, y];
+  }
+  function info(msg, hot) { st.msg = msg || ''; st.msgHot = !!hot; renderInfo(); }
+  function renderInfo() {
+    const R_ = raster(), base = FORMCLEAN.rasterText(zykName(), R_), t = base + (st.msg ? ' · ' + st.msg : '');
+    for (const n of st.infs) { if (n.textContent !== t) n.textContent = t; n.classList.toggle('hot', st.msgHot); }
+    const gn = R_.name || ''; for (const x of st.btn.grid.querySelectorAll('.gv')) if (x.textContent !== gn) x.textContent = gn;
+  }
+  // [≋ Einwischen] only where one heard place exists (§5.5); the reason otherwise
+  function wischWhy() {
+    if (st.tg.kind !== 'lfo') return 'Einwischen geht bei freien Reihen';
+    if (!R.playing) return 'Einwischen geht bei laufendem Loop (▶)';
+    const s = sndI(); if (s && s.p[pre() + 'retrig']) return 'Einwischen geht bei Start FREI';
+    return '';
+  }
+  function updButtons() {
+    const why = wischWhy();
+    st.btn.wisch.classList.toggle('grey', !!why); st.btn.wisch.setAttribute('aria-disabled', why ? 'true' : 'false'); st.btn.wisch.title = why;
+    if (why && st.mode === 'wischen' && !(st.stroke && st.stroke.wisch)) setMode('malen');
+    st.btn.malen.classList.toggle('on', st.mode === 'malen'); st.btn.wisch.classList.toggle('on', st.mode === 'wischen');
+    st.btn.malen.setAttribute('aria-pressed', String(st.mode === 'malen')); st.btn.wisch.setAttribute('aria-pressed', String(st.mode === 'wischen'));
+    st.btn.clean.classList.toggle('on', st.clean); st.btn.clean.setAttribute('aria-pressed', String(st.clean));
+    st.btn.undo.disabled = !UNDO.length; st.btn.redo.disabled = !REDO.length;
+  }
+  function setMode(m) { st.mode = m; updButtons(); }
+  // short labels when a row would not fit (never cut, rule 1)
+  function fit() {
+    const sh = st.el; sh.classList.remove('kurz');
+    const over = n => n.scrollWidth > n.clientWidth + 1;
+    if (over(st.ctl) || over(st.head)) sh.classList.add('kurz');
+  }
+  /* ---------- drawing ---------- */
+  function sizeCanvas() {
+    const r = st.fld.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+    const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+    if (st.cv.width !== w || st.cv.height !== h) { st.cv.width = w; st.cv.height = h; }
+    st.W = r.width; st.H = r.height; st.dpr = dpr; st.dirty = true;
+  }
+  const yPx = y => st.H / 2 - y / 1000 * (st.H / 2 - 8);
+  const uPx = u => u / TK * st.W;
+  function shown() {      // the line that is shown now: the form, or during a stroke the raw stroke over the form
+    const f = cur(), base = f ? FORMCLEAN.sample(f) : new Float32Array(TK + 1);
+    if (st.stroke && st.stroke.raw) { const r = st.stroke.raw; for (let u = 0; u <= TK; u++) if (r[u] === r[u]) base[u] = r[u]; }
+    return base;
+  }
+  function draw() {
+    const t0 = now(), c = st.ctx, W = st.W, H = st.H, col = tcol(), tn = now();
+    c.setTransform(st.dpr, 0, 0, st.dpr, 0, 0); c.clearRect(0, 0, W, H);
+    const R_ = raster(), beat = TK / zyk();
+    // grid: raster lines, the quarters (beats) stronger, the middle line
+    c.lineWidth = 1; c.strokeStyle = 'rgba(255,255,255,.08)'; c.beginPath();
+    for (const x of R_.lines) { const px = Math.round(uPx(x)) + .5; c.moveTo(px, 0); c.lineTo(px, H); } c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.22)'; c.beginPath();
+    for (let b = 0; b * beat <= TK + 1e-6; b++) { const px = Math.round(uPx(Math.round(b * beat))) + .5; c.moveTo(px, 0); c.lineTo(px, H); } c.stroke();
+    // a quarter line the finger crossed: 120 ms double width in the track colour (§5.3)
+    for (const [b, t] of st.qhl) {
+      if (tn - t > 120) { st.qhl.delete(b); continue; }
+      c.strokeStyle = col; c.lineWidth = 2; c.beginPath(); const px = uPx(Math.round(b * beat)); c.moveTo(px, 0); c.lineTo(px, H); c.stroke();
+    }
+    c.lineWidth = 1; c.strokeStyle = 'rgba(255,255,255,.3)'; c.beginPath(); c.moveTo(0, Math.round(H / 2) + .5); c.lineTo(W, Math.round(H / 2) + .5); c.stroke();
+    // the touched area of a wipe, light
+    const sk = st.stroke;
+    if (sk && sk.wisch && sk.u1 >= sk.u0) { c.fillStyle = 'rgba(255,255,255,.07)'; c.fillRect(uPx(sk.u0), 0, uPx(sk.u1) - uPx(sk.u0), H); }
+    // the line: during a stroke the raw stroke 40 % over the form; after lifting it glides into the cleaned form in 150 ms
+    let line = null, a = 1;
+    if (st.anim) {
+      const k = clamp((tn - st.anim.t0) / 150, 0, 1);
+      if (k >= 1) st.anim = null; else { line = new Float32Array(TK + 1); for (let u = 0; u <= TK; u++) line[u] = st.anim.from[u] + (st.anim.to[u] - st.anim.from[u]) * k; a = .4 + .6 * k; }
+    }
+    if (!line) { const f = cur(); line = f ? FORMCLEAN.sample(f) : null; }
+    const path = L => { c.beginPath(); const step = Math.max(1, Math.floor(TK / Math.max(1, W * 2))); for (let u = 0; u <= TK; u += step) { const x = uPx(u), y = yPx(L[u]); if (u) c.lineTo(x, y); else c.moveTo(x, y); } c.lineTo(uPx(TK), yPx(L[TK])); c.stroke(); };
+    if (line) { c.globalAlpha = sk && !sk.wisch ? .55 : a; c.strokeStyle = col; c.lineWidth = 2; c.lineJoin = 'round'; path(line); c.globalAlpha = 1; }
+    if (sk && sk.raw) {       // the raw stroke, faint (40 %)
+      c.globalAlpha = .4; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); let on = false;
+      for (let u = 0; u <= TK; u++) { const v = sk.raw[u]; if (v !== v) { on = false; continue; } const x = uPx(u), y = yPx(v); if (on) c.lineTo(x, y); else { c.moveTo(x, y); on = true; } }
+      c.stroke(); c.globalAlpha = 1;
+    }
+    // recognised straights and stairs light up for 300 ms
+    if (st.glow && tn - st.glow.t0 < 300 && line) {
+      const k = 1 - (tn - st.glow.t0) / 300; c.save(); c.globalAlpha = .35 + .65 * k; c.strokeStyle = col; c.lineWidth = 5; c.shadowColor = col; c.shadowBlur = 10 * k;
+      for (const [x0, x1] of st.glow.hl) { c.beginPath(); for (let u = Math.max(0, x0 | 0); u <= Math.min(TK, x1); u++) { const x = uPx(u), y = yPx(line[u]); if (u === Math.max(0, x0 | 0)) c.moveTo(x, y); else c.lineTo(x, y); } c.stroke(); }
+      c.restore();
+    } else if (st.glow) st.glow = null;
+    // the run line at the heard place (≤ 30 fps), with the finger's height as a dot during a wipe
+    if (st.runU != null) {
+      const x = uPx(st.runU); c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke();
+      if (sk && sk.wisch && sk.y != null) { c.fillStyle = col; c.beginPath(); c.arc(x, yPx(sk.y), 6, 0, 2 * Math.PI); c.fill(); }
+    }
+    st.drawN++; const dt = now() - t0; st.drawMs.push(dt); if (st.drawMs.length > 240) st.drawMs.shift();
+    st.dirty = false;
+  }
+  // the heard place of the LFO (§5.5 table, §4.3: song beat; without a song the transport beat)
+  function heardU(tAud) {
+    const B = t2b(tAud), Bs = R.songPlay ? songBeatOf(B) : B; if (Bs == null) return null;
+    return FORMCLEAN.wischU.lfo(Bs, zyk());
+  }
+  function hoer(e) {
+    if (typeof hoerZeit === 'function') return hoerZeit(e.timeStamp);     // I4b's clock bridge, when it is on the line (A.10)
+    return FORMCLEAN.hoerZeit(e.timeStamp, {ctxNow: AU.ctx.currentTime, perfNow: performance.now(), outLat: AU.outLat || 0});
+  }
+  function loop() {
+    if (!st) return;
+    st.raf = requestAnimationFrame(loop);
+    // the sheet lives only with its editor and track; a stopped transport ends a wipe (§5.5, §6.4)
+    if (!EL.synthSheet.classList.contains('open') || R.editor !== 'synth' || R.selT !== st.tg.i || !sndI()) { close('zu'); return; }
+    if (st.stroke && st.stroke.wisch && !R.playing) { abortStroke(); setMode('malen'); info('Transport angehalten – Einwischen verworfen', true); }
+    const h = FORM.hash(cur()); if (h !== st.h) { st.h = h; st.dirty = true; if (!st.writing) st.last = null; }
+    const tn = now();
+    if (R.playing && AU.ctx) { if (tn - st.runT >= 33) { st.runT = tn; const u = heardU(AU.ctx.currentTime - (AU.outLat || 0)); if (u !== st.runU) { st.runU = u; st.dirty = true; } } }
+    else if (st.runU != null) { st.runU = null; st.dirty = true; }
+    if (st.anim || st.glow || st.qhl.size) st.dirty = true;
+    if (tn - st.btnT > 200) { st.btnT = tn; updButtons(); }
+    if (st.dirty) draw();
+  }
+  /* ---------- strokes ---------- */
+  function down(e) {
+    if (st.stroke || (e.pointerType === 'mouse' && e.button > 0)) return;     // a second finger does nothing (no zoom)
+    if (st.mode === 'wischen') { const why = wischWhy(); if (why) { info(why, true); setMode('malen'); return; } }
+    e.preventDefault();
+    try { st.cv.setPointerCapture(e.pointerId); } catch (x) {}
+    const [u, y] = pos(e), prev = cur();
+    st.stroke = {id: e.pointerId, t0: now(), raw: FORMCLEAN.newRaw(), u0: TK, u1: 0, lu: u, ly: y, y, prev, wisch: st.mode === 'wischen', pvT: 0, ws: null};
+    gestBegin('form' + e.pointerId, () => abortStroke());
+    if (st.stroke.wisch) { st.stroke.ws = {u: null, y: null}; wipe(e); }
+    else { const r = FORMCLEAN.paint(st.stroke.raw, [[u, y]]); grow(r); st.stroke.qb = Math.floor(u / (TK / zyk())); }
+    st.last = null; st.dirty = true;
+  }
+  function grow(r) { if (!r) return; const s = st.stroke; if (r.u0 < s.u0) s.u0 = r.u0; if (r.u1 > s.u1) s.u1 = r.u1; }
+  function evs(e) { let L = null; try { L = e.getCoalescedEvents ? e.getCoalescedEvents() : null; } catch (x) { L = null; } return L && L.length ? L : [e]; }
+  function move(e) {
+    const s = st.stroke; if (!s || e.pointerId !== s.id) return;
+    if (s.wisch) { wipe(e); return; }
+    const beat = TK / zyk(), tn = now();
+    for (const q of evs(e)) {             // the pointerId of coalesced events is not trusted (first iOS version)
+      const [u, y] = pos(q);
+      grow(FORMCLEAN.paint(s.raw, [[s.lu, s.ly], [u, y]]));
+      const qb = Math.floor(u / beat); if (qb !== s.qb) { const b = Math.max(qb, s.qb); if (b > 0 && b < zyk() + .5) st.qhl.set(b, tn); s.qb = qb; }
+      s.lu = u; s.ly = y; s.y = y;
+    }
+    st.dirty = true;
+  }
+  function wipe(e) {
+    const s = st.stroke;
+    for (const q of evs(e)) {
+      const th = hoer(q), u = heardU(th); if (u == null) continue;
+      const y = pos(q)[1];
+      grow(FORMCLEAN.wischPaint(s.raw, s.ws, u, y)); s.y = y; st.runU = u;
+    }
+    // preview (§5.5): at most every 33 ms the raw state (RDP ε 10) to the engine, no undo, the stored form unchanged
+    const tn = now();
+    if (tn - s.pvT >= 33 && s.u1 >= s.u0) { s.pvT = tn; const r = FORMCLEAN.clean(s.raw, s.u0, s.u1, s.prev, Object.assign(rOpt(), {on: false})); if (r && r.f) { s.pv = r.f; wkLf(st.tg.i, st.tg.n, r.f); } }
+    st.dirty = true;
+  }
+  function rOpt() { const R_ = raster(); return {lines: R_.lines, Z: R_.Z}; }
+  function up(e) {
+    const s = st.stroke; if (!s || e.pointerId !== s.id) return;
+    if (e.type === 'pointercancel') { abortStroke(); return; }
+    move(e);
+    st.stroke = null; gestEnd('form' + s.id);
+    try { st.cv.releasePointerCapture(e.pointerId); } catch (x) {}
+    const dur = now() - s.t0;
+    if (s.u1 < s.u0 || (s.u1 - s.u0 < 4 && dur < 150)) { if (s.wisch && s.pv) wkLf(st.tg.i, st.tg.n, s.prev); st.dirty = true; return; }   // a tap changes nothing
+    const res = FORMCLEAN.clean(s.raw, s.u0, s.u1, s.prev, Object.assign(rOpt(), {on: st.clean}));
+    if (!res || !res.f) {
+      if (s.wisch) wkLf(st.tg.i, st.tg.n, s.prev);
+      info(res && res.err === 'zu-viele' ? 'Zu viele Abschnitte – Strich nicht übernommen' : '', true); st.dirty = true; return;
+    }
+    const from = shownFrom(s);
+    commit(res.f, label() + (s.wisch ? ' Form eingewischt' : ' Form gemalt'));
+    st.last = {prev: s.prev, raw: s.raw, u0: s.u0, u1: s.u1};
+    landed(res, from);
+    haptic('snap');                       // a try only; pointerup is a user activation (A.8 H3)
+  }
+  function shownFrom(s) { const f = s.prev, b = f ? FORMCLEAN.sample(f) : new Float32Array(TK + 1); for (let u = 0; u <= TK; u++) if (s.raw[u] === s.raw[u]) b[u] = s.raw[u]; return b; }
+  // after a stroke: glide, glow, info line (counts from the clean-up, hint for very fine forms)
+  function landed(res, from) {
+    const to = FORMCLEAN.sample(res.f);
+    st.anim = reduced() ? null : {from, to, t0: now()};
+    st.glow = res.hl && res.hl.length ? {hl: res.hl, t0: now()} : null;
+    const S_ = res.stats || {}, parts = [];
+    if (S_.rampen) parts.push(S_.rampen + (S_.rampen === 1 ? ' Rampe' : ' Rampen'));
+    if (S_.stufen) parts.push(S_.stufen + (S_.stufen === 1 ? ' Stufe' : ' Stufen'));
+    if (S_.kurven) parts.push(S_.kurven + (S_.kurven === 1 ? ' Kurve' : ' Kurven'));
+    let msg = st.clean ? 'Aufgeräumt' + (parts.length ? ': ' + parts.join(' · ') : '') : 'Nicht aufgeräumt: ' + (res.f.k.length - 1) + ' Abschnitte';
+    const cyc = zyk() * 60 / S.bpm, sr = AU.ctx ? AU.ctx.sampleRate : 48000;
+    if (FORMCLEAN.fine(res.f, cyc, sr)) msg = 'Sehr fein für ' + zykName() + ' bei ' + Math.round(S.bpm) + ' BPM: Kanten werden weicher';
+    info(msg, false); st.dirty = true;
+  }
+  function commit(f, lbl) {
+    const i = st.tg.i, b = soundSnapshot(i);
+    st.writing = true; lfoFormWrite(i, st.tg.n, f); st.h = FORM.hash(cur()); st.writing = false;
+    commitSound(i, b, lbl); updButtons();
+  }
+  function abortStroke() {
+    const s = st && st.stroke; if (!s) return;
+    st.stroke = null; gestEnd('form' + s.id);
+    try { st.cv.releasePointerCapture(s.id); } catch (x) {}
+    if (s.wisch) wkLf(st.tg.i, st.tg.n, s.prev);     // the old state back at once (§5.5)
+    st.runU = null; st.dirty = true; setMode('malen');
+  }
+  /* ---------- the controls ---------- */
+  function toggleClean() {
+    st.clean = !st.clean; setUiPref('formClean', st.clean); updButtons();
+    const L = st.last;        // §5.4: right after a stroke the new choice applies to that stroke (one undo)
+    if (L && FORM.hash(cur()) === st.h) {
+      const res = FORMCLEAN.clean(L.raw, L.u0, L.u1, L.prev, Object.assign(rOpt(), {on: st.clean}));
+      if (res && res.f) { const from = FORMCLEAN.sample(cur()); commit(res.f, st.clean ? 'Aufräumen an' : 'Aufräumen aus'); st.last = L; landed(res, from); return; }
+    }
+    info(st.clean ? 'Aufräumen an (nächste Striche)' : 'Aufräumen aus (nächste Striche)');
+  }
+  function pickLib(name) {
+    const f = FORM.lib()[name]; if (!f) return;
+    abortStroke(); st.last = null;
+    const from = FORMCLEAN.sample(cur() || f);
+    commit(JSON.parse(JSON.stringify(f)), label() + ' Form ' + name);
+    st.anim = reduced() ? null : {from, to: FORMCLEAN.sample(f), t0: now()};
+    info(name); if (ED.lcd) lcdShow(label() + ' Form', name);
+  }
+  function rasterPop() {
+    openPop(st.btn.grid, p => {
+      p.classList.add('fsgrid');
+      for (const [nm, g] of FORMCLEAN.RASTER) {
+        const b = el('button', 'rb' + (Math.abs(g - st.grid) < 1e-9 ? ' on' : ''), esc(nm)); b.style.cssText = 'min-width:64px;height:44px;margin:2px';
+        onTap(b, () => { st.grid = g; setUiPref('formRaster', g); closePop(); st.dirty = true; renderInfo(); }); p.appendChild(b);
+      }
+    }, {above: true});
+  }
+  function doUndo(fn) { abortStroke(); st.last = null; fn(); st.h = FORM.hash(cur()); st.dirty = true; updButtons(); renderInfo(); }
+  /* ---------- open / close ---------- */
+  function open(tg) {
+    if (st) close('neu');
+    if (!tg || tg.kind !== 'lfo' || !sndOf(tg.i)) return false;
+    if (!document.getElementById('formSheetCss')) { const s = document.createElement('style'); s.id = 'formSheetCss'; s.textContent = css; document.head.appendChild(s); }
+    const sh = el('section', 'sheet ed open'); sh.id = 'formSheet'; sh.setAttribute('aria-label', 'Form');
+    sh.style.setProperty('--tc', `var(--t${tg.i + 1})`);
+    const P = uiPrefs();
+    st = {tg, el: sh, mode: 'malen', grid: FORMCLEAN.RASTER.some(r => Math.abs(r[1] - P.formRaster) < 1e-9) ? +P.formRaster : .25, clean: P.formClean !== false,
+      stroke: null, last: null, anim: null, glow: null, qhl: new Map(), msg: '', msgHot: false, runU: null, runT: 0, btnT: 0, drawN: 0, drawMs: [], h: '', infs: [], btn: {}, writing: false, opened: now()};
+    const head = el('div', 'fs-head'), done = el('button', 'rb fs-done', '◂ Fertig'), tt = el('div', 'fs-tt');
+    tt.append(el('b', '', esc('Form · ' + label() + ' · ' + trackNameOf(tg.i))), el('span', 'fs-inf q'));
+    const un = el('button', 'rb', '↶'), re = el('button', 'rb', '↷'); un.setAttribute('aria-label', 'Rückgängig'); re.setAttribute('aria-label', 'Wiederholen');
+    head.append(done, tt, un, re);
+    const main = el('div', 'fs-main'), lib = el('div', 'fs-lib'), fld = el('div', 'fs-fld'), cv = document.createElement('canvas');
+    for (const nm of Object.keys(FORM.lib())) { const b = el('button', 'rb', esc(nm)); b.dataset.lib = nm; lib.appendChild(b); }
+    fld.appendChild(cv); main.append(lib, fld);
+    const inf = el('div', 'fs-inf p'), ctl = el('div', 'fs-ctl');
+    const bM = el('button', 'rb', '✎ Malen'), bW = el('button', 'rb', '≋ <span class="lg">Einwischen</span><span class="kz">Wischen</span>');
+    const bG = el('button', 'rb', '<span class="lg">Raster </span><span class="gv"></span> ▾'), bC = el('button', 'rb', '<span class="lg">Aufräumen</span><span class="kz">Aufr.</span> ✓');
+    bM.setAttribute('aria-label', 'Malen'); bW.setAttribute('aria-label', 'Einwischen'); bG.setAttribute('aria-label', 'Raster'); bC.setAttribute('aria-label', 'Aufräumen');
+    ctl.append(bM, bW, bG, bC);
+    sh.append(head, main, inf, ctl);
+    Object.assign(st, {head, ctl, fld, cv, ctx: cv.getContext('2d'), infs: [inf, tt.querySelector('.fs-inf')], btn: {done, undo: un, redo: re, malen: bM, wisch: bW, grid: bG, clean: bC}});
+    EL.app.appendChild(sh);
+    onTap(done, () => close('fertig'));
+    onTap(un, () => doUndo(undo)); onTap(re, () => doUndo(redo));
+    onTap(lib, b => pickLib(b.dataset.lib), 'button');
+    onTap(bM, () => { abortStroke(); setMode('malen'); });
+    onTap(bW, () => { const why = wischWhy(); if (why) { info(why, true); return; } setMode('wischen'); info('Finger hoch und runter – geschrieben wird an der gehörten Stelle'); });
+    onTap(bG, rasterPop); onTap(bC, toggleClean);
+    cv.addEventListener('pointerdown', down); cv.addEventListener('pointermove', move);
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    cv.addEventListener('contextmenu', e => e.preventDefault());
+    // turning the device rebuilds the layout without data loss; a running gesture is dropped (§6.10)
+    st.ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { if (!st) return; if (st.stroke) abortStroke(); sizeCanvas(); fit(); }) : null;
+    if (st.ro) st.ro.observe(fld); else window.addEventListener('resize', sizeCanvas);
+    sizeCanvas(); fit(); st.h = FORM.hash(cur()); updButtons(); renderInfo(); draw();
+    st.raf = requestAnimationFrame(loop);
+    st.openMs = now() - st.opened;
+    return true;
+  }
+  function close(why) {
+    if (!st) return;
+    abortStroke();
+    cancelAnimationFrame(st.raf); if (st.ro) st.ro.disconnect();
+    if (UI.pop && st.el.contains(document.activeElement)) closePop();
+    st.el.remove(); st = null;
+    void why;
+  }
+  function state() {
+    if (!st) return {open: false};
+    const R_ = raster(), q = st.drawMs.slice().sort((a, b) => a - b);
+    const box = n => { const r = n.getBoundingClientRect(); return {x: r.left, y: r.top, w: r.width, h: r.height}; };
+    return {open: true, tg: Object.assign({}, st.tg), mode: st.mode, grid: st.grid, raster: {g: R_.g, name: R_.name, N: R_.N, rest: R_.rest, auto: R_.auto},
+      clean: st.clean, info: st.infs[0].textContent, infoQ: st.infs[1].textContent, last: !!st.last, stroke: st.stroke ? {wisch: st.stroke.wisch, u0: st.stroke.u0, u1: st.stroke.u1} : null,
+      anim: !!st.anim, glow: !!st.glow, qhl: [...st.qhl.keys()], runU: st.runU, wischWhy: wischWhy(), kurz: st.el.classList.contains('kurz'),
+      drawN: st.drawN, drawMed: q.length ? q[q.length >> 1] : 0, openMs: st.openMs,
+      field: box(st.fld), sheet: box(st.el), buttons: [...st.el.querySelectorAll('button')].map(b => Object.assign(box(b), {t: b.textContent.trim(), sw: b.scrollWidth, cw: b.clientWidth}))};
+  }
+  return {open, close, state, abort: () => abortStroke()};
+})();
 /*@@/FORMUI@@*/
 </script>
 <script type="text/plain" id="sq-sr-src">
 /* ===== I1f (Nachtrag 8 B.1 §6.7, Zweig i3-br-U): block sq-sr-src, evaluated on first need (srLoad): the TILT logic (permission,
    angle, thumb clutch). No visible part yet - the field comes with I1d. ===== */
 /*@@NEIGEN@@*/
+/* ---- I1f TILT logic (Nachtrag 8 B.1 §6.7): permission, sensor check, exact tilt angle, thumb clutch. No visible part; the
+   field of I1d calls tap() in its click handler, attach(el) on its button and open()/close() with the field. Never calls
+   haptic() (A.8 H2). Position goes out through NEIGEN.hooks (I1c: srHand). ---- */
+const NEIGEN = (() => {
+  const TXT = {
+    ok: 'Daumen halten und kippen',
+    denied: 'Bewegung nicht erlaubt. Safari merkt sich das – Tab schließen und die Seite neu öffnen; hilft das nicht, Safari ganz beenden.',
+    nosensor: 'Kein Bewegungssensor',
+    iframe: 'Neigen geht nur auf der Webseite in Safari',
+    noreply: 'Sensor antwortet nicht',
+    asking: '', idle: ''};
+  const D2R = Math.PI / 180, DEAD = 1.5, FULL = 30, TAU = 40, REF_BEFORE = 50, REF_WAIT = 300, PROBE = 500, SEND_MS = 1000 / 60;
+  let st = 'idle', opened = false, listening = false, visL = false, nList = 0, probeT = 0;
+  // rotation work space (no allocation per event)
+  const Rr = new Float64Array(9), Rn = new Float64Array(9), last = new Float64Array(4);   // last valid event: alpha beta gamma time
+  let hasLast = false, oriL = false;
+  const H = {on: false, pid: -1, el: null, refOk: false, ang: 0, xRef: 0, th: 0, ths: 0, tPrev: 0, tSend: -1e9, x: 0, waitT: 0, tickT: 0, tDown: 0};
+  const work = new Float64Array(64); let wi = 0, wn = 0;
+  const cnt = {start: 0, move: 0, end: 0, events: 0};
+
+  const hooks = {
+    _x: 0,
+    get: () => (typeof srGet === 'function' && srGet.length === 0 ? +srGet() || 0 : hooks._x),
+    hand: (x, phase) => { if (typeof srHand === 'function') srHand(x, 'neigen', phase); else hooks._x = x; }};
+
+  // R = Rz(alpha) · Rx(beta) · Ry(gamma) (W3C, intrinsic Z-X'-Y''), row-major into out
+  function rot(a, b, g, out) {
+    a *= D2R; b *= D2R; g *= D2R;
+    const ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b), cg = Math.cos(g), sg = Math.sin(g);
+    out[0] = ca * cg - sa * sb * sg; out[1] = -sa * cb; out[2] = ca * sg + sa * sb * cg;
+    out[3] = sa * cg + ca * sb * sg; out[4] = ca * cb; out[5] = sa * sg - ca * sb * cg;
+    out[6] = -cb * sg;               out[7] = sb;      out[8] = cb * cg;
+    return out;
+  }
+  // θ (degrees): Q = Rrefᵀ·Rnow; u = screen-up in device coordinates at screen angle `ang`; u' = Q·u;
+  // θ = atan2(−u'·z, u'·u) = angle of u' projected onto the plane normal to screen-right. Positive = top edge away from the body.
+  function theta(Rref, Rnow, ang) {
+    const s = Math.sin(ang * D2R), c = Math.cos(ang * D2R);
+    // v = Rnow·u (earth), u' = Rrefᵀ·v
+    const v0 = Rnow[0] * s + Rnow[1] * c, v1 = Rnow[3] * s + Rnow[4] * c, v2 = Rnow[6] * s + Rnow[7] * c;
+    const p0 = Rref[0] * v0 + Rref[3] * v1 + Rref[6] * v2, p1 = Rref[1] * v0 + Rref[4] * v1 + Rref[7] * v2, p2 = Rref[2] * v0 + Rref[5] * v1 + Rref[8] * v2;
+    return Math.atan2(-p2, p0 * s + p1 * c) / D2R;
+  }
+  const mapX = (xRef, th) => { const a = Math.abs(th) - DEAD; const x = xRef + (a > 0 ? Math.sign(th) * a / FULL : 0); return x < 0 ? 0 : x > 1 ? 1 : x; };
+  const scrAngle = () => {
+    try { if (screen.orientation && typeof screen.orientation.angle === 'number') return screen.orientation.angle; } catch (e) {}
+    const w = typeof window !== 'undefined' ? +window.orientation : 0; return isFinite(w) ? (w + 360) % 360 : 0;
+  };
+  const fin = v => typeof v === 'number' && isFinite(v);
+  function foreignFrame() {
+    try { if (window.top === window) return false; void window.top.location.href; return !window.top.location.href; } catch (e) { return true; }
+  }
+  function setSt(s) { st = s; if (s !== 'ok' && H.on) holdEnd(); if (s !== 'ok') unlisten(); else if (opened) listen(); }
+
+  function send(phase) { const x = H.x; try { hooks.hand(x, phase); } catch (e) { if (typeof logErr === 'function') logErr(e); } cnt[phase]++; }
+  function oriChg() { if (H.on && scrAngle() !== H.ang) holdEnd(); }
+  function holdEnd() {
+    if (oriL) { oriL = false; try { if (screen.orientation) screen.orientation.removeEventListener('change', oriChg); } catch (x) {} window.removeEventListener('orientationchange', oriChg); }
+    if (!H.on) return;
+    clearTimeout(H.waitT); clearTimeout(H.tickT); H.on = false;
+    if (H.refOk) send('end');
+    H.refOk = false; H.pid = -1;
+  }
+  function setRef(a, b, g, t) {
+    rot(a, b, g, Rr); H.refOk = true; H.th = H.ths = 0; H.tPrev = t; H.tSend = -1e9;
+    clearTimeout(H.waitT);
+    send('start');
+    clearTimeout(H.tickT); H.tickT = setTimeout(tick, 16);
+  }
+  function onOri(e) {
+    const t0 = performance.now(); cnt.events++;
+    const a = fin(e.alpha) ? e.alpha : 0, b = e.beta, g = e.gamma;
+    if (!fin(b) || !fin(g)) return;
+    const t = e.timeStamp || t0;
+    last[0] = a; last[1] = b; last[2] = g; last[3] = t; hasLast = true;
+    if (H.on) {
+      if (scrAngle() !== H.ang) { holdEnd(); }                 // orientation changed: the hold ends, the position stays
+      else if (!H.refOk) setRef(a, b, g, t);                   // first event after touching down
+      else {
+        rot(a, b, g, Rn); H.th = theta(Rr, Rn, H.ang);
+        step(t);
+      }
+    }
+    work[wi] = performance.now() - t0; wi = (wi + 1) & 63; if (wn < 64) wn++;
+  }
+  // one-pole smoothing, time-correct per event; while the sensor is silent (a still device may send no events) a 16-ms tick
+  // carries the smoothing on to the last angle, so the position settles where the hand is
+  function step(t) {
+    const dt = Math.max(0, t - H.tPrev); H.tPrev = Math.max(H.tPrev, t);
+    H.ths += (H.th - H.ths) * (1 - Math.exp(-dt / TAU));
+    const x = mapX(H.xRef, H.ths), ch = x !== H.x; H.x = x;
+    if (ch && t - H.tSend >= SEND_MS - .5) { H.tSend = t; send('move'); }
+  }
+  function tick() {
+    if (!H.on || !H.refOk) return;
+    if (scrAngle() !== H.ang) { holdEnd(); return; }
+    const t = performance.now(); if (t - H.tPrev > 20) step(t);
+    H.tickT = setTimeout(tick, 16);
+  }
+  function onVis() {
+    if (document.visibilityState === 'hidden') { holdEnd(); unlisten(); }
+    else if (opened && st === 'ok') listen();
+  }
+  function listen() { if (listening) return; window.addEventListener('deviceorientation', onOri); listening = true; nList++; }
+  function unlisten() { if (!listening) return; window.removeEventListener('deviceorientation', onOri); listening = false; nList--; hasLast = false; }
+
+  // first tap on TILT (per page view): call this synchronously in the click handler (no await before it)
+  function tap() {
+    if (st === 'ok' || st === 'asking') return st;
+    if (foreignFrame()) { setSt('iframe'); return st; }
+    const DOE = typeof DeviceOrientationEvent !== 'undefined' ? DeviceOrientationEvent : null;
+    if (DOE && typeof DOE.requestPermission === 'function') {
+      st = 'asking';
+      let p; try { p = DOE.requestPermission(); } catch (e) { setSt('denied'); return st; }
+      Promise.resolve(p).then(r => setSt(r === 'granted' ? 'ok' : 'denied'), () => setSt('denied'));
+      return st;
+    }
+    if (!DOE) { setSt('nosensor'); return st; }
+    // no permission API (desktop, other systems): a sensor counts only with an event with finite beta and gamma within 500 ms
+    st = 'asking';
+    const pr = e => { if (fin(e.beta) && fin(e.gamma)) { done(); setSt('ok'); } };
+    const done = () => { clearTimeout(probeT); window.removeEventListener('deviceorientation', pr); nList--; };
+    window.addEventListener('deviceorientation', pr); nList++;
+    probeT = setTimeout(() => { done(); setSt('nosensor'); }, PROBE);
+    return st;
+  }
+  function open() {
+    opened = true;
+    if (!visL) { document.addEventListener('visibilitychange', onVis); visL = true; }
+    if (st === 'ok' && document.visibilityState !== 'hidden') listen();
+  }
+  function close() {
+    opened = false; holdEnd(); unlisten();
+    if (visL) { document.removeEventListener('visibilitychange', onVis); visL = false; }
+  }
+  // thumb clutch: tilt acts only while the thumb is on el
+  function down(e) {
+    if (st !== 'ok' || !listening || H.on) return;
+    H.on = true; H.pid = e.pointerId; H.ang = scrAngle(); H.xRef = H.x = Math.min(1, Math.max(0, +hooks.get() || 0)); H.tDown = e.timeStamp || performance.now();
+    H.refOk = false;
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (x) {}
+    if (!oriL) { oriL = true; try { if (screen.orientation) screen.orientation.addEventListener('change', oriChg); } catch (x) {} window.addEventListener('orientationchange', oriChg); }
+    if (hasLast && H.tDown - last[3] <= REF_BEFORE && H.tDown - last[3] >= -REF_BEFORE) setRef(last[0], last[1], last[2], last[3]);
+    else H.waitT = setTimeout(() => { if (H.on && !H.refOk) { H.on = false; H.pid = -1; st = 'noreply'; } }, REF_WAIT);
+  }
+  function up(e) { if (H.on && (e.pointerId === H.pid || H.pid < 0)) holdEnd(); }
+  function attach(el) {
+    el.style.touchAction = 'none';
+    el.addEventListener('pointerdown', down); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    el.addEventListener('lostpointercapture', up);
+    return () => { el.removeEventListener('pointerdown', down); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); el.removeEventListener('lostpointercapture', up); };
+  }
+  function medianMs() { if (!wn) return 0; const a = Array.from(work.subarray(0, wn)).sort((p, q) => p - q); return a[wn >> 1]; }
+  // 'noreply' is shown once; the next touch tries again
+  function state() { return {st, txt: TXT[st] || '', listening, listeners: nList, holding: H.on, ref: H.refOk}; }
+  const api = {
+    TXT, hooks, rot, theta, mapX, tap, open, close, attach, state,
+    ref: () => (H.refOk ? {R: Array.from(Rr), angle: H.ang, xRef: H.xRef} : null),
+    angle: () => ({raw: H.th, smooth: H.ths, x: H.x}),
+    info: () => ({listeners: nList, listening, opened, events: cnt.events, start: cnt.start, move: cnt.move, end: cnt.end, medianMs: medianMs()}),
+    _reset: () => { close(); st = 'idle'; cnt.start = cnt.move = cnt.end = cnt.events = 0; wn = wi = 0; H.x = 0; hooks._x = 0; }};
+  // a later state 'noreply' becomes 'ok' again on the next touch
+  api.attach = el => { const off = attach(el); const re = () => { if (st === 'noreply') st = 'ok'; }; el.addEventListener('pointerdown', re, true); return () => { off(); el.removeEventListener('pointerdown', re, true); }; };
+  return api;
+})();
 /*@@/NEIGEN@@*/
 </script>
 <script type="text/plain" id="sq-worklet-src">
@@ -13298,6 +13806,113 @@ const RecHelpers = (() => {
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
+/*@@FORMSTUB@@*/
+/* ===== I3 form core (Nachtrag 8 A.5, B.3 §3.1, §4.1) — PLACEHOLDER of branch i3-br-U (Teil C: I3c + I3d against a FORM
+   placeholder). I3a (branch i3-br-K) brings the real core under the same names and replaces this script when it is merged:
+   FORM.norm (= formNorm), FORM.eval, FORM.lib, wkLf. Until then a drawn LFO (shape 5) sounds as the triangle - the rule of
+   §3.2/§4.2 for „form 5 without its table“; the worklet case 5, the table message lf and the song-beat phase come with I3a.
+   The blocks sq-form-src (FORMCLEAN, the form sheet, the library) and sq-sr-src (TILT logic, I1f) load on first need. ===== */
+const FORM = (function () {
+  'use strict';
+  const TK = 768, KMAX = 65;
+  const fin = x => typeof x === 'number' && isFinite(x);
+  const cl = (x, a, b) => (x < a ? a : x > b ? b : x);
+  // formNorm (§3.1): v 1; x whole ticks 0..768, sorted (stable), at most two knots per x, first 0 / last 768 (a missing end
+  // gets a knot with the neighbour's value); y -1000..1000; t 0 hold / 1 straight / 2 curve (b 0 -> straight); last t 0;
+  // <= 65 knots (the first 64 plus the end); n without control characters, <= 24; key order v, n, k. Invalid -> null
+  function norm(f) {
+    if (!f || typeof f !== 'object' || f.v !== 1 || !Array.isArray(f.k)) return null;
+    let k = [];
+    for (const q of f.k) {
+      if (!Array.isArray(q) || !fin(q[0]) || !fin(q[1])) continue;
+      let t = fin(q[2]) ? Math.round(cl(q[2], 0, 2)) : 1, b = fin(q[3]) ? Math.round(cl(q[3], -100, 100)) : 0;
+      if (t !== 2) b = 0; else if (b === 0) t = 1;
+      k.push([Math.round(cl(q[0], 0, TK)), Math.round(cl(q[1], -1000, 1000)), t, b]);
+    }
+    if (k.length < 2) return null;
+    k = k.map((q, i) => [q, i]).sort((a, b) => a[0][0] - b[0][0] || a[1] - b[1]).map(a => a[0]);
+    const o = [];
+    for (const q of k) { const n = o.length; if (n >= 2 && o[n - 1][0] === q[0] && o[n - 2][0] === q[0]) continue; o.push(q); }
+    if (o[0][0] !== 0) o.unshift([0, o[0][1], 0, 0]);
+    if (o[o.length - 1][0] !== TK) o.push([TK, o[o.length - 1][1], 0, 0]);
+    let r = o.length > KMAX ? o.slice(0, KMAX - 1).concat([o[o.length - 1]]) : o;
+    if (r.length > 2 && r[r.length - 2][0] === TK && r[r.length - 3] && r[r.length - 3][0] === TK) r.splice(r.length - 2, 1);
+    r[r.length - 1][2] = 0; r[r.length - 1][3] = 0;
+    const out = {v: 1};
+    if (typeof f.n === 'string') { const n = f.n.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 24); if (n) out.n = n; }
+    out.k = r;
+    return out;
+  }
+  // §4.1: value at phase ph (0..1) of one cycle; e = edge width in seconds (0 = sharp), o = {wrap, cyc (cycle in s), emin}
+  const g = (s, b) => { const kap = .06 * b; return Math.abs(kap) < 1e-4 ? s : (Math.exp(kap * s) - 1) / (Math.exp(kap) - 1); };
+  function seg(K, i, u) {      // value of section i at tick u (sharp)
+    const a = K[i], c = K[i + 1]; if (!c) return a[1];
+    const L = c[0] - a[0]; if (L <= 0) return c[1];
+    const s = (u - a[0]) / L;
+    return a[2] === 0 ? a[1] : a[2] === 1 ? a[1] + (c[1] - a[1]) * s : a[1] + (c[1] - a[1]) * g(s, a[3]);
+  }
+  function find(K, u) { let lo = 0, hi = K.length - 2; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (K[m][0] <= u) lo = m; else hi = m - 1; } while (lo < K.length - 2 && K[lo + 1][0] <= u) lo++; return lo; }
+  function sharp(K, u) { if (u >= TK) return K[K.length - 1][1]; return seg(K, find(K, u), u); }
+  function evalF(f, ph, e, o) {
+    const K = f && f.k; if (!K || K.length < 2) return 0;
+    o = o || {}; ph = ph - Math.floor(ph); const u = ph * TK;
+    const i = find(K, u), v = seg(K, i, u);
+    if (!(e > 0)) return v / 1000;
+    const cyc = o.cyc > 0 ? o.cyc : 2, emin = o.emin != null ? o.emin : 2 * 16 / 48000;
+    // a jump at the start x0 of the section that holds u: left limit (end of the section before; at 0 only with wrap) vs. start
+    const x0 = K[i][0], here = K[i][1];
+    if (x0 === 0 && !o.wrap) return v / 1000;
+    const left = x0 === 0 ? seg(K, find(K, TK - 1e-9), TK) : seg(K, find(K, x0 - 1e-9), x0);
+    if (left === here) return v / 1000;
+    const Lsec = ((K[i + 1] ? K[i + 1][0] : TK) - x0) / TK * cyc;
+    const ej = Math.min(Lsec, Math.max(emin, Math.min(e, Lsec / 4))), du = (u - x0) / TK * cyc;
+    if (!(ej > 0) || du >= ej) return v / 1000;
+    return (left + (v - left) * (du / ej)) / 1000;
+  }
+  // the library (§6.5): copies, fixed knots
+  function lib() {
+    const P = [], G_ = [], T = [];
+    for (let q = 0; q < 4; q++) P.push([192 * q, -1000, 2, -60], [192 * q + 134, 0, 0, 0]);
+    P.push([TK, 0, 0, 0]);
+    for (const s of [1, 3, 4, 6, 7, 9, 11, 12, 14, 15]) { const i = s - 1; G_.push([48 * i, 0, 0, 0], [48 * i + 41, -1000, 0, 0]); }
+    G_.push([TK, -1000, 0, 0]);
+    for (let j = 0; j < 32; j++) T.push([24 * j, j % 2 ? 1000 : 0, 0, 0]);
+    T.push([TK, 1000, 0, 0]);
+    return {Pumpen: {v: 1, n: 'Pumpen', k: P}, Gate: {v: 1, n: 'Gate', k: G_}, Triller: {v: 1, n: 'Triller', k: T}};
+  }
+  const START = () => ({v: 1, k: [[0, -1000, 1, 0], [384, 1000, 1, 0], [TK, -1000, 0, 0]]});   // §6.2: the start triangle
+  function hash(f) { const s = f ? JSON.stringify(f) : ''; let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); }
+  return {stub: true, TK, norm, eval: evalF, sharp: (f, ph) => sharp(f.k, (ph - Math.floor(ph)) * TK) / 1000, lib, START, hash};
+})();
+window.FORM = FORM;
+function formNorm(f) { return FORM.norm(f); }
+// wkLf (§4.2 b/c): the table of LFO n of track i to the engine. Placeholder: counted for the tests (preview rate, the old state
+// back on abort); I3a sends {lf} in the same message as set
+const FORMSENT = [];
+function wkLf(i, n, f) { FORMSENT.push({i, n, h: f ? FORM.hash(f) : null, t: performance.now()}); if (FORMSENT.length > 600) FORMSENT.splice(0, 300); }
+// sq-form-src / sq-sr-src: evaluated on first need (pattern mkLoad), tickAhead first
+const FORML = {loaded: false, ms: 0, err: null}, SRL = {loaded: false, ms: 0, err: null};
+function blockLoad(id, L, ok) {
+  if (L.loaded && ok()) return true;
+  try { if (typeof tickAhead === 'function') tickAhead(.3); } catch (e) {}
+  const t0 = performance.now(), el = document.getElementById(id);
+  try {
+    if (!el) throw new Error(id + ' fehlt');
+    const sc = document.createElement('script'); sc.textContent = el.textContent; document.head.appendChild(sc); sc.remove();
+    if (!ok()) throw new Error(id + ' nicht geladen');
+    L.loaded = true;
+  } catch (e) { L.err = String(e && e.message || e); if (typeof logErr === 'function') logErr(e); }
+  L.ms = performance.now() - t0;
+  return L.loaded;
+}
+function formLoad() { return blockLoad('sq-form-src', FORML, () => typeof FORMCLEAN !== 'undefined' && typeof FUI !== 'undefined'); }
+function srLoad() { return blockLoad('sq-sr-src', SRL, () => typeof NEIGEN !== 'undefined'); }
+// one call from the existing close paths (sheet closed, panic, scene change, project loaded): a running stroke or wipe is
+// dropped and the old state goes back to the engine (§5.5, §6.3); nothing happens while the block is not loaded
+function formAbort(why) { if (FORML.loaded && typeof FUI !== 'undefined') { try { FUI.close(why || 'zu'); } catch (e) { if (typeof logErr === 'function') logErr(e); } } }
+/*@@/FORMSTUB@@*/
+</script>
+<script>
 /* ===== MK1 (Nachtrag 3 B.1, EN3-14 (1)): the always-loaded part of the engine AM (internal id 'mk'):
    MK_LABEL (EN3-05: the one allowed writing of the engine name), normMk (every field clamped to the device ranges, lists
    integer, unknown keys dropped, missing ones = INIT), INIT, mkToFlat (timbre 1 as the flat patch of the ECO fallback, B.5).
@@ -13496,8 +14111,8 @@ const MK_LABEL = 'MS 2000';
     aA: [.001, 10], aD: [.005, 10], aS: [0, 1], aR: [.005, 15], aCurve: [0, 1], ampVel: [0, 1],
     fA: [.001, 10], fD: [.005, 10], fS: [0, 1], fR: [.005, 15], fCurve: [0, 1],
     mA: [.001, 10], mD: [.005, 10], mS: [0, 1], mR: [.005, 15], mCurve: [0, 1],
-    l1shape: [0, 4, 1], l1rate: [.01, 40], l1sync: [0, 64], l1retrig: [0, 1, 1], l1fade: [0, 10],
-    l2shape: [0, 4, 1], l2rate: [.01, 40], l2sync: [0, 64], l2retrig: [0, 1, 1], l2fade: [0, 10],
+    l1shape: [0, 5, 1], l1rate: [.01, 40], l1sync: [0, 64], l1retrig: [0, 1, 1], l1fade: [0, 10],      // I3: 5 = drawn (needs l1f)
+    l2shape: [0, 5, 1], l2rate: [.01, 40], l2sync: [0, 64], l2retrig: [0, 1, 1], l2fade: [0, 10],
     glide: [0, 2], mode: [0, 2, 1], poly: [1, 8, 1], spread: [0, 1], level: [0, 4], mw: [0, 1], lq: [0, 1, 1],
     fmAmp: [0, 1, 1], fmBright: [-24, 24], fmAtk: [-30, 30], fmDec: [-30, 30], fmRel: [-30, 30], fmBite: [-20, 20],
   };
@@ -13586,6 +14201,9 @@ const MK_LABEL = 'MS 2000';
     // WP7 (§6.2): an FM record without flat keys ({alg, fb, ops} or {fm6}: factory, .syx) starts from FM_BASE
     const bare = engine === 'fm6' && !('cutoff' in flat) && !('o1w' in flat) && !('level' in flat);
     const o = normAnalog(bare ? Object.assign({}, FM_BASE, flat) : flat);
+    // I3 (Nachtrag 8 §3.2): the drawn LFO forms l1f / l2f (formNorm); shape 5 needs its form (else 1) and a TAKT length (else 1/1)
+    for (const n of [1, 2]) { const f = p['l' + n + 'f'] && G.FORM ? G.FORM.norm(p['l' + n + 'f']) : null; if (f) o['l' + n + 'f'] = f;
+      if (o['l' + n + 'shape'] === 5) { if (!f) o['l' + n + 'shape'] = 1; else if (!(o['l' + n + 'sync'] > 0)) o['l' + n + 'sync'] = 4; } }
     if (p.wt || engine === 'wt') o.wt = normWt(p.wt);
     if (p.fm2 || engine === 'fm2') o.fm2 = normFm2(p.fm2);
     if (p.fm6 || engine === 'fm6') { o.fm6 = normFm6(p.fm6 || (Array.isArray(p.ops) ? p : null)); migrateBite(flat, o.fm6); }
@@ -17038,7 +17656,7 @@ pd('fmBite', 'Biss', {min: -20, max: 20, c: 'bip', def: 0, fmt: 'num1'});   // V
 for (const k of ['fx.rev', 'fx.dly', 'fx.pan', 'fx.vol']) Object.assign(PD[k], {mod: k, modSrcs: ['lfo1', 'lfo2']});
 const WAVE_NAME = ['Säge', 'Puls', 'Dreieck', 'Sinus'], WAVE_ICO = ['⟋', '⊓', '∧', '∿'];
 const FTYPE_LBL = ['LP24', 'LP12', 'BP24', 'BP12', 'HP24', 'HP12'];
-const LFO_SHAPE_ICO = ['∿', '∧', '⟋', '⊓', 'S&H'], LFO_SHAPE_NAME = ['Sinus', 'Dreieck', 'Säge', 'Rechteck', 'Sample & Hold'];
+const LFO_SHAPE_ICO = ['∿', '∧', '⟋', '⊓', 'S&H', '✎'], LFO_SHAPE_NAME = ['Sinus', 'Dreieck', 'Säge', 'Rechteck', 'Sample & Hold', 'Gemalt'];   // I3: 5 ✎
 const LFO_FX_SHAPE = ['sine', 'triangle', 'saw', 'square', 'sh'];        // FX.TempoLFO shapes for l*shape 0..4
 // HÜLLK. Form chips (§5.2): A/D/S/R/Kurve of the shown envelope in one undo step
 const ENV_FORMS = [['pluck', 'Pluck', [.001, .35, 0, .3, .6]], ['stab', 'Stab', [.002, .45, 0, .25, .5]], ['orgel', 'Orgel', [.005, .05, 1, .06, .5]],
@@ -18310,8 +18928,6 @@ function mkInSet(i, which, src, dry) {
   undoPush({kind: 'mkin', track: i, before, label: MK_LABEL + ' Eingang'}); markDirty(); mkInRoute(); UI.dirty.edHead = true;
   return true;
 }
-/*@@FORMSTUB@@*/
-/*@@/FORMSTUB@@*/
 // sq-mk-src: evaluated on first need (AM sound in the project, engine key, library filter, probe), tickAhead first (EN3-14)
 const MKL = {loaded: false, ms: 0, err: null};
 function mkLoaded() { return MKL.loaded && typeof MKUI !== 'undefined'; }
@@ -19586,6 +20202,7 @@ function launch(i, slot, atT) {
   switchTrackAt(i, target, nextBarFromAudible(atT));
 }
 function launchScene(s) {
+  formAbort('szene');                                     // I3c (§6.3): a scene change closes the form sheet
   ensureAudio(); if (!AU.ctx) return;
   s = clamp(s | 0, 0, NS() - 1);
   if (UI.mkSplitOff) { try { UI.mkSplitOff(); } catch (e) { logErr(e); } }   // MK-P: a scene change ends Split ← nächste Note
@@ -21887,6 +22504,7 @@ function fadeAll(tau) {
   UI.dirty.all = true;
 }
 function panic() {
+  formAbort('panik');                                     // I3c (§5.5): ■■ / panic drops a running stroke or wipe
   releaseInputs(); arpEndAll();                             // MK5
   if (PV.on) previewStop();                                 // a browser preview phrase stops too (§11.3)
   const c = AU.ctx; if (!c) return;
@@ -27736,6 +28354,7 @@ function dropUntouchedRollClip() {
   return true;
 }
 function closeSheets() {
+  formAbort('zu');                                        // I3c: the form sheet closes with the editor (a running stroke is dropped)
   if (EL.synthSheet.classList.contains('open') && typeof MKUI !== 'undefined' && MKUI.leave) { try { MKUI.leave(); } catch (e) { logErr(e); } }   // MK3-fix: ≡, browser, project switch … end solo / armed split like ✕
   EL.synthSheet.classList.remove('open', 'mkq'); EL.drumSheet.classList.remove('open'); EL.clipSheet.classList.remove('open');
   if (EL.app.classList.contains('mkqkb')) releaseInputs(r => r === 'play' || r === 'pad'); EL.app.classList.remove('mkq', 'mkqkb');   // MK-P
@@ -28689,7 +29308,15 @@ function applyEnvForm(i, pre, id) {
 // LFO n (§5.2): Form · FREI/TAKT · Rate (Hz or divisions) · Start · Einblenden · Mod-Rad · live preview · route chips
 function pageLfo(pg, i, n) {
   const P = () => S.tracks[i].sound.p, pre = 'l' + n;
-  const shape = sSeg(pre + 'shape', LFO_SHAPE_ICO.map((ic, k) => [k, ic, LFO_SHAPE_NAME[k]]), 'wv', 'LFO ' + n + ' Form');
+  // I3c (Nachtrag 8 §6.2): the 6th form ✎ (5 = drawn). First tap without a form: shape 5, TAKT 1/1 if FREI, the start triangle,
+  // one undo, then the form sheet opens; with a form it only switches. The other forms as before (setP)
+  let lfOpen = false;
+  const shape = makeSeg(LFO_SHAPE_ICO.map((ic, k) => [k, ic, LFO_SHAPE_NAME[k]]), () => sndGet(S.tracks[i].sound, pre + 'shape'), v => {
+    if (v !== 5) { setP(i, pre + 'shape', v); return; }
+    lfOpen = !P()[pre + 'f']; lfoDrawn(i, n, lfOpen ? FORM.START() : null);
+  }, 'wv', {undo: {snap: () => soundSnapshot(i), commit: (b, l) => commitSound(i, b, l + (P()[pre + 'shape'] === 5 ? ' Gemalt' : ''))}, label: 'LFO ' + n + ' Form'});
+  shape.dataset.key = pre + 'shape';
+  onTap(shape, () => { if (lfOpen) { lfOpen = false; formOpen({kind: 'lfo', i, n}); } }, 'button');
   const mode = makeSeg([['frei', 'FREI'], ['takt', 'TAKT']], () => (P()[pre + 'sync'] > 0 ? 'takt' : 'frei'), v => {
     const p = P();
     if (v === 'takt') setP(i, pre + 'sync', LFO_SYNC[syncIdx(S.bpm / 60 / Math.max(.01, p[pre + 'rate']))]);
@@ -28701,11 +29328,23 @@ function pageLfo(pg, i, n) {
   const fade = sKnob(pre + 'fade'), mw = sKnob('mw');
   // live preview: the shape and a dot at the current phase (≤ 30 fps while the page is shown)
   const pv = el('div', 'lfopv'), NS = 'http://www.w3.org/2000/svg';
-  pv.innerHTML = `<svg viewBox="0 0 120 56" preserveAspectRatio="none"><line x1="0" y1="28" x2="120" y2="28" class="ax"/><path class="lw"/><circle r="4" class="ld"/></svg>`;
-  const path = pv.querySelector('.lw'), dot = pv.querySelector('.ld');
-  const drawShape = () => { const sh = LFO_FX_SHAPE[P()[pre + 'shape'] | 0]; let d = ''; for (let x = 0; x <= 120; x += 2) { const ph = (x / 120 * 2) % 1, cyc = Math.floor(x / 60); d += (x ? 'L' : 'M') + x + ' ' + (28 - 22 * FX.lfoShape(sh, ph, cyc, 1)).toFixed(1); } path.setAttribute('d', d); };
+  pv.innerHTML = `<svg viewBox="0 0 120 56" preserveAspectRatio="none"><line x1="0" y1="28" x2="120" y2="28" class="ax"/><path class="lw"/><circle r="4" class="ld"/></svg><span class="lfn"></span>`;
+  const path = pv.querySelector('.lw'), dot = pv.querySelector('.ld'), pvName = pv.querySelector('.lfn');
+  // I3c (§6.2): at ✎ the preview shows ONE cycle of the form, its name below, and is a key that opens the form sheet
+  const drawShape = () => {
+    const drawn = (P()[pre + 'shape'] | 0) === 5 && P()[pre + 'f'], f = drawn ? P()[pre + 'f'] : null;
+    const sh = LFO_FX_SHAPE[P()[pre + 'shape'] | 0]; let d = '';
+    for (let x = 0; x <= 120; x += 2) { const ph = (x / 120 * 2) % 1, cyc = Math.floor(x / 60); d += (x ? 'L' : 'M') + x + ' ' + (28 - 22 * (f ? FORM.sharp(f, Math.min(x / 120, .99999)) : FX.lfoShape(sh, ph, cyc, 1))).toFixed(1); }
+    path.setAttribute('d', d); pv.classList.toggle('drawn', !!f);
+    const nm = f ? (f.n || 'Gemalt') : ''; if (pvName.textContent !== nm) pvName.textContent = nm;
+    if (f) { pv.setAttribute('role', 'button'); pv.setAttribute('aria-label', 'LFO ' + n + ' Form öffnen'); } else { pv.removeAttribute('role'); pv.removeAttribute('aria-label'); }
+  };
+  onTap(pv, () => { if ((P()[pre + 'shape'] | 0) === 5 && P()[pre + 'f']) formOpen({kind: 'lfo', i, n}); });
   drawShape();
   ED.lfoPrev = {n, dot, draw: drawShape};
+  const modeUpd = () => { const fb = mode.querySelector('button'), on5 = (P()[pre + 'shape'] | 0) === 5;   // I3c: FREI grey at ✎
+    if (fb && fb.disabled !== on5) { fb.disabled = on5; fb.classList.toggle('inert', on5); fb.title = on5 ? 'Gemalte Formen laufen im Takt' : ''; } };
+  modeUpd(); ED.refreshers.push(modeUpd);
   const chips = el('div', 'routes rest');
   const chipsUpd = () => {
     const ms = S.tracks[i].sound.mods.filter(m => m.src === 'lfo' + n);
@@ -28733,8 +29372,9 @@ function lfoPrevFrame() {
   const L = ED.lfoPrev; if (!L || !L.dot.isConnected || !AU.ctx) return;
   const t = performance.now(); if (t - (L.last || 0) < 33) return; L.last = t;
   const P = S.tracks[R.selT].sound.p, cyc = lfoPhase(P, L.n, AU.ctx.currentTime), ph = cyc - Math.floor(cyc);
-  const sh = LFO_FX_SHAPE[P['l' + L.n + 'shape'] | 0], y = 28 - 22 * FX.lfoShape(sh, ph, Math.floor(cyc), 1);
-  L.dot.setAttribute('cx', (ph * 60).toFixed(1)); L.dot.setAttribute('cy', y.toFixed(1));
+  const f = (P['l' + L.n + 'shape'] | 0) === 5 ? P['l' + L.n + 'f'] : null;     // I3c: one cycle of the drawn form
+  const sh = LFO_FX_SHAPE[P['l' + L.n + 'shape'] | 0], y = 28 - 22 * (f ? FORM.sharp(f, ph) : FX.lfoShape(sh, ph, Math.floor(cyc), 1));
+  L.dot.setAttribute('cx', (ph * (f ? 120 : 60)).toFixed(1)); L.dot.setAttribute('cy', y.toFixed(1));
 }
 function pageWt(pg, i) {
   const t = sSeg('wt.table', [['digital', 'Digital'], ['vocal', 'Vokal'], ['glas', 'Glas'], ['orgel', 'Orgel']], null, 'Tabelle');
@@ -43318,6 +43958,75 @@ for (const k of Object.keys(SYNQUENZER)) {
 const DIRIGENT = SYNQUENZER;              // old name stays as an alias (§16)
 window.SYNQUENZER = SYNQUENZER; window.DIRIGENT = SYNQUENZER;
 /*@@API@@*/
+/* ===== I3c/I3d + I1f (Nachtrag 8, branch i3-br-U): the always-loaded part – the LFO page writes a drawn form, the form sheet and
+   the TILT logic load on first need (formLoad / srLoad), the test API. ===== */
+// PLACEHOLDER until I3a: the worklet and the native LFO know shape 5 only with I3a; here a drawn LFO sounds as the triangle
+// (rule §3.2 / §4.2 „form 5 without its table“). Projects without shape 5 send byte-equal messages (nothing is changed then).
+LFO_FX_SHAPE[5] = 'triangle';
+if (FORM.stub) {
+  const wkFlat0 = wkFlat, wkSet0 = wkSet;
+  wkFlat = snd => { const o = wkFlat0(snd); if (o.l1shape === 5) o.l1shape = 1; if (o.l2shape === 5) o.l2shape = 1; return o; };
+  wkSet = (i, key, v) => wkSet0(i, key, (key === 'l1shape' || key === 'l2shape') && v === 5 ? 1 : v);
+}
+// the form of LFO n of track i (§3.2, §4.2 b): stored as a copy, A/B and dirty marks like setP, the table to the engine
+function lfoFormWrite(i, n, f) {
+  const snd = sndOf(i); if (!snd) return;
+  if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') UI.ab = null;
+  snd.p['l' + n + 'f'] = f; wkLf(i, n, f);
+  UI.sndVer++; UI.dirty.strip = true; markDirty();
+  if (R.editor === 'synth' && i === R.selT) edParamChanged('l' + n + 'f');
+}
+// ✎ on the LFO page (§6.2): shape 5 (TAKT 1/1 when FREI), with the start form when there is none yet; the caller makes the undo
+function lfoDrawn(i, n, start) {
+  const snd = sndOf(i); if (!snd) return; const p = snd.p, pre = 'l' + n;
+  if (start) lfoFormWrite(i, n, start);
+  const wasFree = !(p[pre + 'sync'] > 0);
+  if (wasFree) setP(i, pre + 'sync', 4);
+  if (p[pre + 'shape'] !== 5) {         // setP keeps the stored range 0..4 of the controls; 5 is written here (I3a: PD 0..5)
+    if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') UI.ab = null;
+    p[pre + 'shape'] = 5; liveUpdate(i, pre + 'shape'); UI.sndVer++; UI.dirty.strip = true; markDirty();
+    if (R.editor === 'synth' && i === R.selT) edParamChanged(pre + 'shape');
+  }
+  if (wasFree && R.editor === 'synth' && i === R.selT) safeRebuild(buildSynthEd);   // the Takt knob instead of the rate knob
+}
+// the form sheet for a target ({kind: 'lfo', i, n}); while TEACH-IN (I1) runs, the sheet stays shut (§6.2)
+function formOpen(tg) {
+  if (R.sr && R.sr.cap) { if (ED.lcd) lcdShow('Form', 'Form im Grundklang malen (nach dem Vormachen)'); else toast('Form im Grundklang malen (nach dem Vormachen)'); return false; }
+  if (!formLoad()) { toast('Form-Blatt konnte nicht laden'); return false; }
+  return FUI.open(tg);
+}
+SYNQUENZER.form = {
+  get: (i, n) => { const s = sndOf(i); return s && s.p['l' + n + 'f'] ? JSON.parse(JSON.stringify(s.p['l' + n + 'f'])) : null; },
+  set: (i, n, f) => { const g = FORM.norm(f); if (!g) throw new Error('Form ungültig'); const b = soundSnapshot(i); lfoFormWrite(i, n, g); commitSound(i, b, 'LFO ' + n + ' Form'); return JSON.parse(JSON.stringify(g)); },
+  eval: (f, ph, e, o) => FORM.eval(f, ph, e, o),
+  norm: f => FORM.norm(f),
+  lib: () => FORM.lib(),
+  mine: () => null,                                        // „Meine Formen“ only after F5 = yes
+  put: () => { throw new Error('Einsetzen kommt mit I3e'); },
+  ride: () => { throw new Error('Kurve der Fahrt kommt mit I3f'); },
+  load: () => formLoad(),
+  raster: (zyk, g) => (formLoad() ? FORMCLEAN.raster(zyk, g) : null),
+  // clean (§5.2): points [[u, y], …] of one stroke (u 0..768, y -1000..1000) on the form prev (null = none)
+  clean: (pts, o) => { if (!formLoad()) return null; o = o || {}; const raw = FORMCLEAN.newRaw(), r = FORMCLEAN.paint(raw, pts);
+    const R_ = FORMCLEAN.raster(o.zyk || 4, o.grid || .25); return FORMCLEAN.clean(raw, r.u0, r.u1, o.prev || null, {lines: R_.lines, Z: R_.Z, on: o.on !== false}); },
+  open: (i, n) => formOpen({kind: 'lfo', i: i == null ? R.selT : i, n: n || 1}),
+  abort: () => formAbort('api'),
+  state: () => (FORML.loaded ? FUI.state() : {open: false}),
+  info: () => ({stub: !!FORM.stub, loaded: FORML.loaded, loadMs: FORML.ms, err: FORML.err, sent: FORMSENT.slice(-64)}),
+  // spy on haptic(): kind, time and the event type that called it (A.8 H2: never pointermove / deviceorientation / timers)
+  hapSpy: on => {
+    if (on === false) { if (window.__hapOrig) { haptic = window.__hapOrig; window.__hapOrig = null; } return window.__hapLog || []; }
+    if (!window.__hapOrig) { const h0 = haptic; window.__hapOrig = h0; window.__hapLog = []; haptic = k => { window.__hapLog.push({k, t: performance.now(), ev: window.event ? window.event.type : null, on: !!UI.haptics}); return h0(k); }; }
+    return window.__hapLog;
+  },
+};
+SYNQUENZER.sr = SYNQUENZER.sr || {};
+// I1f (§6.9): the TILT logic for the tests (block sq-sr-src loads on first use); the field itself comes with I1d
+SYNQUENZER.sr.neigen = {
+  load: () => srLoad(),
+  ref: () => (srLoad() ? NEIGEN.ref() : null), angle: () => (srLoad() ? NEIGEN.angle() : null),
+  state: () => (srLoad() ? NEIGEN.state() : null), info: () => (srLoad() ? NEIGEN.info() : null),
+};
 /*@@/API@@*/
 
 /* ---------- init ---------- */
