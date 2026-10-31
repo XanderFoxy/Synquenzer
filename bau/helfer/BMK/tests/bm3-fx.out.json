@@ -1,0 +1,17 @@
+[
+ {
+  "id": "BM3-06 DL1–16 Zeit ± 1 ms (n ≥ 10 ± 0,05 ms), Abfall je Wiederholung ± 0,3 dB, Ping-Pong n ≤ 4, Kammspitzen bei Vielfachen von 1/t",
+  "ok": false,
+  "info": "Zeit (Anteil der Toleranz) max 0.366, Abfall größte Abw. 2.499 dB, Ping-Pong true, Kamm 5/5; DL1 800/800 ms, DL2 512.331/512.331 ms, DL3 328.104/328.104 ms, DL4 210.122/210.122 ms, DL5 134.565/134.565 ms, DL6 86.177/86.177 ms, DL7 55.189/55.189 ms, DL8 35.344/35.344 ms, DL9 22.635/22.635 ms, DL10 14.495/14.496 ms, DL11 9.283/9.283 ms, DL12 5.945/5.945 ms, DL13 3.807/3.807 ms, DL14 2.441/2.438 ms, DL15 1.543/1.561 ms, DL16 1/1 ms"
+ },
+ {
+  "id": "BM3-08 LFO → FX1-/FX2-Typ: Wechsel in der Familie mit 30-ms-Blende, M-KLICK ≤ 6 dB",
+  "ok": false,
+  "info": "FX1 CH: 50.28 dB, FX2 DL: 63.56 dB"
+ },
+ {
+  "id": "BM3-11 SYNC: ON bei 120 BPM DL1–8 = Notenwerte ± 0,1 ms; DL9–16 unverändert; OFF bitgleich ohne Feld; 120 → 90 BPM gleitet, M-KLICK ≤ 6 dB",
+  "ok": false,
+  "info": "DL1 750, DL2 500, DL3 375, DL4 187.5, DL5 125, DL6 93.75, DL7 62.5, DL8 31.25 ms (größte Abw. 0); DL9–16 Abw. 0 ms; OFF Differenz 0.3433014899492264; Tempowechsel M-KLICK 35.37 dB"
+ }
+]

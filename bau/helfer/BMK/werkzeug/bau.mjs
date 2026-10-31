@@ -3,7 +3,7 @@
 import fs from 'fs';
 const D = new URL('..', import.meta.url).pathname, ROOT = new URL('../../../..', import.meta.url).pathname;
 const base = fs.readFileSync(ROOT + 'bau/werkzeug/vs-base-B.html', 'utf8');
-const wk = fs.readFileSync(D + 'src/bm-wk.js', 'utf8'), host = fs.readFileSync(D + 'src/bm-host.js', 'utf8');
+const fx = fs.readFileSync(D + 'src/bm-fx.js', 'utf8'), wk = fs.readFileSync(D + 'src/bm-wk.js', 'utf8').replace('/* @FX */\n', fx), host = fs.readFileSync(D + 'src/bm-host.js', 'utf8');
 const bad = (s, n) => { if (/[^\x00-\x7f]/.test(s)) throw new Error(n + ': nicht ASCII'); if (/`|\$\{|<\/script/i.test(s)) throw new Error(n + ': Backtick/${/script'); };
 bad(wk, 'bm-wk.js'); if (/<\/script/i.test(host)) throw new Error('bm-host.js: script-Ende');
 const block = '<script type="text/plain" id="sq-bm-src">\n' +

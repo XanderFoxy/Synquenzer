@@ -1,0 +1,37 @@
+[
+ {
+  "id": "R1 PARA + Halten: nach dem Pedal klingt alles aus",
+  "ok": true,
+  "info": "gehalten -17.7 dBFS, nach dem Pedal -600.0 dBFS"
+ },
+ {
+  "id": "R2 Pegel-Routen über Faktor 4: kein CIC-Überlauf (Spitze begrenzt, kein Rauschen)",
+  "ok": true,
+  "info": "Spitze 1.083 gegen ohne Routen 0.833"
+ },
+ {
+  "id": "R3 MONO nach schnellem Loslassen (tau): die neue Note klingt",
+  "ok": true,
+  "info": "-20.7 dBFS"
+ },
+ {
+  "id": "R4 Halten: erneut angeschlagene Taste, Pedal los, Taste los → still; je id ein end",
+  "ok": true,
+  "info": "Pegel -600.0 dBFS, end [60,7]"
+ },
+ {
+  "id": "R5 off und on zur selben Zeit: off zuerst (kein Legato, kein Gleiten)",
+  "ok": true,
+  "info": "erster Schritt der neuen Note 67.000"
+ },
+ {
+  "id": "R6 reset + ▶ (ohne vorheriges run:false) bitgleich",
+  "ok": true,
+  "info": "Differenz 0"
+ },
+ {
+  "id": "R10 Zufallsfolge (9 Modi, Halten, tau/kill, Stopp): je id genau ein end, keine fremde id, am Ende nichts hängend",
+  "ok": true,
+  "info": "3597 Noten: doppelt 0, fremd 0, fehlend 0, noch aktiv 0"
+ }
+]

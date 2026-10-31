@@ -1,0 +1,57 @@
+[
+ {
+  "id": "BM2-07 POLY (5 Folgen)",
+  "ok": true,
+  "info": "✓ Akkord: 3 Stimmen, + Einzelton: 4 (3/4); ✓ staccato: neue Stimme (2 klingend); ✓ legato ±4: zweite Stimme (2 gehalten); ✓ Poly-Portamento von der letzten Tonhöhe der Stimme (neue Stimme: keine) (Gleiten 0); ✓ alle los: alles im Release (0 noch gehalten)"
+ },
+ {
+  "id": "BM2-07 PRETRIG (5 Folgen)",
+  "ok": true,
+  "info": "✓ Akkord: 3 Stimmen, + Einzelton: 4 (3/4); ✓ staccato: neue Stimme (2 klingend); ✓ legato ±4: zweite Stimme (2 gehalten); ✓ Poly-Portamento von der letzten Tonhöhe der Stimme (neue Stimme: keine) (Gleiten 0); ✓ alle los: alles im Release (0 noch gehalten)"
+ },
+ {
+  "id": "BM2-07 MONO (5 Folgen)",
+  "ok": true,
+  "info": "✓ eine Stimme (Akkord) (1/1 Stimme, Ton 60); ✓ legato: kein Neustart, Gleiten, gleiche Stimme (Stufe 2, Pegel 0.455, Gleiten -3.073); ✓ Rückkehr zur gehaltenen Taste (Ton 60); ✓ staccato: kein Neustart (Attack vom aktuellen Pegel), Gleiten immer (Pegel beim Anschlag 0.06, Gleiten -3.073); ✓ alle los: alles im Release (0 noch gehalten)"
+ },
+ {
+  "id": "BM2-07 MPORT (5 Folgen)",
+  "ok": true,
+  "info": "✓ eine Stimme (Akkord) (1/1 Stimme, Ton 60); ✓ legato: kein Neustart, Gleiten, gleiche Stimme (Stufe 2, Pegel 0.455, Gleiten -3.073); ✓ Rückkehr zur gehaltenen Taste (Ton 60); ✓ staccato: Neustart, ohne Gleiten (Pegel 0.056, Gleiten 0); ✓ alle los: alles im Release (0 noch gehalten)"
+ },
+ {
+  "id": "BM2-07 MRETRIG (5 Folgen)",
+  "ok": true,
+  "info": "✓ eine Stimme (Akkord) (1/1 Stimme, Ton 60); ✓ legato: Neustart + Gleiten (Stufe 1, Pegel 0.056, Gleiten -2.815); ✓ Rückkehr zur gehaltenen Taste (Ton 60); ✓ staccato: Neustart, ohne Gleiten (Pegel 0.056, Gleiten 0); ✓ alle los: alles im Release (0 noch gehalten)"
+ },
+ {
+  "id": "BM2-07 SLUR (5 Folgen)",
+  "ok": true,
+  "info": "✓ Akkord: 3 Stimmen, + Einzelton: 4 (3/4); ✓ staccato: neue Stimme (2 klingend); ✓ ±2 HT legato: dieselbe Stimme gleitet, alte Taste losgelassen (1 gehalten, Ton 62, Gleiten -1.537, Ende id 1: true); ✓ ±3 HT: neue Stimme (2 gehalten); ✓ alle los: alles im Release (0 noch gehalten)"
+ },
+ {
+  "id": "BM2-07 PARA (5 Folgen)",
+  "ok": true,
+  "info": "✓ Akkord: 3 Stimmen, + Einzelton: 4 (3/4); ✓ staccato: neue Stimme (2 klingend); ✓ legato ±4: zweite Stimme (2 gehalten); ✓ ein ADSR-Satz: die zweite Note setzt beim aktuellen Pegel ein (Pegel 0.456 / 0.456); ✓ alle los: alles im Release (0 noch gehalten)"
+ },
+ {
+  "id": "BM2-07 PSLUR (6 Folgen)",
+  "ok": true,
+  "info": "✓ Akkord: 3 Stimmen, + Einzelton: 4 (3/4); ✓ staccato: neue Stimme (2 klingend); ✓ ±2 HT legato: dieselbe Stimme gleitet, alte Taste losgelassen (1 gehalten, Ton 62, Gleiten -1.537, Ende id 1: true); ✓ ±3 HT: neue Stimme (2 gehalten); ✓ ein ADSR-Satz: die zweite Note setzt beim aktuellen Pegel ein (Pegel 0.456 / 0.456); ✓ alle los: alles im Release (0 noch gehalten)"
+ },
+ {
+  "id": "BM2-07 MOLY (3 Folgen)",
+  "ok": true,
+  "info": "✓ staccato: neue Stimme (2 klingend); ✓ legato: Mono-Verhalten (eine Stimme, kein Neustart, gleitet) (1 gehalten, Stufe 2, Gleiten -3.073); ✓ alle los: alles im Release (0 noch gehalten)"
+ },
+ {
+  "id": "BM2-08 12 Stimmen; die 13. klaut zuerst die am längsten losgelassene, dann die älteste gehaltene",
+  "ok": true,
+  "info": "12 Stimmen; 13. Note nahm die losgelassene (id 3): true; 14. nahm die älteste gehaltene (id 1): true (ihr end folgt mit dem Loslassen der Taste)"
+ },
+ {
+  "id": "BM2-08 Klau mit Blende ≤ 5 ms, M-KLICK ≤ 6 dB",
+  "ok": true,
+  "info": "Blende 2.7 ms (in 128er-Blöcken gezählt; linear 3 ms), M-KLICK 4 dB @ 0.45 s"
+ }
+]

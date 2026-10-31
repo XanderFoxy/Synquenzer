@@ -1,0 +1,122 @@
+[
+ {
+  "id": "BM2-01 LP/HP 12 ± 1 dB/Okt, BP 6 ± 1 dB/Okt je Seite, NOTCH ≥ 30 dB (RESO 0, CUTF 50)",
+  "ok": true,
+  "info": "LP -12.55, HP +12.01, BP oben -6.27 / unten +5.99 dB/Okt, Kerbe -140.8 dB"
+ },
+ {
+  "id": "BM2-01 fc nach §1.3 ± 5 % (CUTF 20/50/80, −3-dB-Punkt LP)",
+  "ok": true,
+  "info": "20: 80.9/80.7 · 50: 655/654.9 · 80: 5312.9/5312.2 Hz, größte Abw. 0.2 %"
+ },
+ {
+  "id": "BM2-01 RESO 99 schwingt bei fc ± 3 %, Spitze ≤ −6 dBFS",
+  "ok": true,
+  "info": "654.9 Hz gegen 654.9 Hz (-0.01 %), Spitze -10.11 dBFS, Dauerpegel -13.1 dBFS"
+ },
+ {
+  "id": "BM2-01 TRK 100 %: fc/f0 über C2–C6 ± 2 % konstant; OSC1-SEMI +12 → fc +1 Okt ± 2 %",
+  "ok": true,
+  "info": "fc/f0 1.246 / 1.246 / 1.246 / 1.246 / 1.246, SEMI +12: × 2"
+ },
+ {
+  "id": "BM2-01 Koeffizienten wechseln stufig je Steuerschritt",
+  "ok": true,
+  "info": "58 Wechsel, alle auf dem 1-ms-Raster"
+ },
+ {
+  "id": "BM2-02 ADSR-Zeiten nach T(x) ± max(10 %, 1 ms); Attack linear (R² ≥ 0,99)",
+  "ok": true,
+  "info": "T(9) = 422.7 ms: A 422 · D 423 · R 423 ms; R² 1"
+ },
+ {
+  "id": "BM2-02 Sustain-/L-Gesetz ± 0,2 dB (S 13 → −2,49 dB, L 70 → −6,01 dB)",
+  "ok": true,
+  "info": "S 13: -2.487 dB, L 70: -6.021 dB"
+ },
+ {
+  "id": "BM2-02 LOOP-Periode ± max(10 %, 1 ms)",
+  "ok": true,
+  "info": "200 ms gegen 199.61 ms (10 Perioden)"
+ },
+ {
+  "id": "BM2-03 Tonhöhen-Δ START +32 SPD 15 → +12,38 HT ± 2 %, 1 % Rest nach 0,30 s ± 10 %; END beim Loslassen",
+  "ok": true,
+  "info": "Start 12.384 HT, 1 % nach 302 ms (Soll 301.4), nach dem Loslassen -12.384 HT (END −32 = -12.384)"
+ },
+ {
+  "id": "BM2-03 Masken-Δ START +24 SPD 20 → ganzzahlige Folge, Ziel nach 0,11 s ± 10 %",
+  "ok": true,
+  "info": "Folge 124 123 122 121 120 119 118 117 116 115 114 113 112 111 110 109 108 107 106 105 104 103 102 101 100; Ziel nach 111 ms (T = 110.6 ms)"
+ },
+ {
+  "id": "BM2-04 LFO 8 Formen (Korrelation ≥ 0,99 zur Form an den Schritten; RAND je Periode ein neuer Wert)",
+  "ok": true,
+  "info": "sin 1, sqr 1, up 1, down 1, saws 1, step 1, hsin 1; rand: 5 Werte, je Periode konstant: true"
+ },
+ {
+  "id": "BM2-04 LFO-Tempo ± 1 % (SPD 50 → 4,7 Hz)",
+  "ok": true,
+  "info": "4.6798 Hz gegen 4.6798 Hz"
+ },
+ {
+  "id": "BM2-04 sample-gleich für alle Stimmen, frei laufend, Phase 0 bei ▶",
+  "ok": true,
+  "info": "262 gemeinsame Schritte, 0 verschieden (Abgriff in float32: Toleranz 1e-5); nach ▶ (0,5003 s) Wert -1 (Phase 0 der Säge = −1)"
+ },
+ {
+  "id": "BM2-04 DLAY (Einsatz nach T, Einblendung im letzten Viertel), MW auf LFO-Menge hebt sie auf, DCAY −60 dB nach T",
+  "ok": true,
+  "info": "DLAY 9: 0 / 0 / 0.605 / 1 bei 0,6/0,74/0,9/1,05 T; aufgehoben true; DCAY bei T -60.04 dB"
+ },
+ {
+  "id": "BM2-09 TEMP-Tabellen ± 0,5 ct (6 Stimmungen × 12 Stufen)",
+  "ok": true,
+  "info": "größte Abw. 0.0001 ct; JMAJ E4 im Ausgang 0 ct"
+ },
+ {
+  "id": "BM2-09 Global-SEMI +2: Stimmung bezogen auf die gespielte Taste (JMAJ, Taste E4 → 386,31 + 200 ct)",
+  "ok": true,
+  "info": "586.31 ct über C4"
+ },
+ {
+  "id": "BM2-09 TUNE 415 Hz → A4 = 415 ± 0,1 Hz",
+  "ok": true,
+  "info": "415 Hz"
+ },
+ {
+  "id": "BM2-09 VEL CURVE / AT CURVE nach Formel ± 1 %",
+  "ok": true,
+  "info": "VEL v0,5/v1: 1:0.5306 2:0.5723 3:0.6274 4:0.7 5:0.7693 6:1; AT bei 0,5: 1:0.25 2:0.3299 3:0.4061 4:0.5 5:0.5743 6:1 none:0"
+ },
+ {
+  "id": "BM2-09 PITCH BEND 2 / 12 HT ± 1 ct",
+  "ok": true,
+  "info": "200 / 1200 ct"
+ },
+ {
+  "id": "BM2-10 PORT 7 → 134 ms ± 10 %; in POLY gleitet die Stimme von ihrer letzten Tonhöhe",
+  "ok": true,
+  "info": "MONO legato: 1 % Rest nach 136 ms (Soll 134.2); POLY: neue Note 67 beginnt bei 60"
+ },
+ {
+  "id": "BM2-10 PANS 15 → abwechselnd L/R (≥ 30 dB Kanalunterschied)",
+  "ok": true,
+  "info": "Infinity / -60.1 / 60.1 / -60.1 dB (L−R)"
+ },
+ {
+  "id": "BM2-10 RATE 15 → Zeiten je Oktave × 0,5 ± 5 %",
+  "ok": true,
+  "info": "× 0.5"
+ },
+ {
+  "id": "BM2-11 Bedien-Glätten: jede stetige Fahrt in 1 s auf klingendem Akkord M-KLICK ≤ 6 dB",
+  "ok": true,
+  "info": "schlimmster 5.89 dB (o2.e.l); o1.e.l 3.4, o2.e.l 5.9, n.e.l 3.2, n.fr 3.1, o1.st 4.5, o1.tu 4.7, o2.st 5.3, o2.tu 5.3, f.cu 4.2, f.re 3.4, f.tk 3.2, f.e.l 3.2, o1.e.s 3.4, g.vo 3.1, g.st 3, l1.sp 3.2"
+ },
+ {
+  "id": "BM2-14 INIT −18 ± 1 LUFS, 0 ± 0,1 ct",
+  "ok": true,
+  "info": "-18 LUFS (C4, Anschlag 0,8), A4 -0.0001 ct"
+ }
+]

@@ -129,7 +129,7 @@ T('BM1-07', () => {
     [0, on(1000 / sr, 69)], [.12, {t: 'tap', on: false}]], {sec: .125});
   const tp = r.msgs.find(m => m.t === 'tap').buf;
   const r2 = render([[0, prog(P1(7, {o1: {m: 7, ds: 24, dv: 30, e: {l: 99, a: 0, d: 0, s: 15, r: 0}}}))], [0, {t: 'gl', p: {tn: 220}}], [0, {t: 'tap', on: true, k: 'ctl'}], [0, on(1000 / sr, 69)], [.12, {t: 'tap', on: false}]], {sec: .125});
-  const ct = r2.msgs.find(m => m.t === 'tap').buf, steps = []; for (let i = 0; i + 10 <= ct.length; i += 10) steps.push({f: ct[i], m: ct[i + 5]});
+  const ct = r2.msgs.find(m => m.t === 'tap').buf, steps = []; for (let i = 0; i + 13 <= ct.length; i += 13) steps.push({f: ct[i], m: ct[i + 6]});
   let worst = 0, changes = 0, offGrid = 0, ph = 0;
   for (let i = 0; i < tp.length; i++) {
     ph = (ph + inc) >>> 0; const fr = 1000 + Math.floor(i / 16); let st = steps[0]; for (const s of steps) if (s.f <= fr) st = s; else break;
@@ -174,7 +174,7 @@ T('BM1-10', () => {
     const N = Math.round(sr / 1000), t0 = 777 / sr, toff = t0 + .0507;
     const r = render([[0, prog({o1: {m: 7, e: {l: 99, a: 6, d: 7, s: 9, r: 5}}, o2: {e: {l: 99, a: 0, d: 0, s: 8, r: 0}}, n: {e: {l: 50, a: 3, d: 0, s: 15, r: 3, lp: 0}}})],
       [0, {t: 'tap', on: true, k: 'ctl'}], [0, on(t0, 60)], [0, off(toff, 60)], [.2, {t: 'tap', on: false}]], {sec: .21, sr});
-    const b = r.msgs.find(m => m.t === 'tap').buf, st = []; for (let i = 0; i + 10 <= b.length; i += 10) st.push(Array.from(b.subarray(i, i + 10)));
+    const b = r.msgs.find(m => m.t === 'tap').buf, st = []; for (let i = 0; i + 13 <= b.length; i += 13) st.push([b[i]].concat(Array.from(b.subarray(i + 2, i + 13))));
     const f0 = Math.round(t0 * sr); let grid = 0, q = 0; for (let k = 0; k < st.length; k++) { if (k === 0 ? st[0][0] !== f0 : st[k][0] % N !== 0) grid++; for (let j = 1; j <= 4; j++) if (Math.abs(st[k][j] * 1024 - Math.round(st[k][j] * 1024)) > 1e-6) q++; }
     // osc2: A = 0 -> 1 at the first step, D = 0 -> S at the next, R = 0 -> 0 at the first step after the note off
     const S = (8 / 15) ** 2, kOff = st.findIndex(s => s[0] >= Math.round(toff * sr));
