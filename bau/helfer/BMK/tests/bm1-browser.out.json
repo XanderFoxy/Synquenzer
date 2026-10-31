@@ -1,0 +1,69 @@
+{
+ "res": [
+  {
+   "id": "BM1-12 Chromium: zwei Offline-Render nach reset bitgleich (48 kHz)",
+   "ok": true,
+   "info": "Differenz 0, Pegel -22.7 dBFS"
+  },
+  {
+   "id": "BM1-12 Chromium: zwei Offline-Render nach reset bitgleich (44.1 kHz)",
+   "ok": true,
+   "info": "Differenz 0, Pegel -22.7 dBFS"
+  },
+  {
+   "id": "BM1-13 Chromium (echter AudioWorklet, nur Messwert): Bit-Mask-Stimme gegen VA-Stimme",
+   "ok": true,
+   "info": "1.25 × (Bit Mask 1 Stimme 0.50 %, 12 Stimmen 6.59 % (max 8.89 %, Quantum max 2 ms), Leerlauf 0.100 %; VA-Stimme 0.40 %)"
+  },
+  {
+   "id": "BM1 Chromium: App startet ohne Konsolenfehler, Block sq-bm-src läuft",
+   "ok": true,
+   "info": "keine Fehler"
+  }
+ ],
+ "raw": {
+  "bit48000": {
+   "d": 0,
+   "rms": 0.07319742039212204
+  },
+  "bit44100": {
+   "d": 0,
+   "rms": 0.07293426383812177
+  },
+  "idle": {
+   "fall": "bm",
+   "app": "4.23.0",
+   "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+   "sr": 44100,
+   "voices": 0,
+   "reports": 6,
+   "load_med": 0.001,
+   "load_max": 0.002,
+   "quantum_max_ms": 1
+  },
+  "bm1": {
+   "fall": "bm",
+   "app": "4.23.0",
+   "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+   "sr": 44100,
+   "voices": 1,
+   "reports": 6,
+   "load_med": 0.006,
+   "load_max": 0.008,
+   "quantum_max_ms": 1
+  },
+  "bm12": {
+   "fall": "bm",
+   "app": "4.23.0",
+   "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+   "sr": 44100,
+   "voices": 12,
+   "reports": 6,
+   "load_med": 0.0669,
+   "load_max": 0.0889,
+   "quantum_max_ms": 2
+  },
+  "va0": 0,
+  "va1": 0.003994565217391304
+ }
+}
