@@ -43693,7 +43693,7 @@ async function g4Auto() {
     if (!mat) { toast('Kein Take auf der STIMME-Spur'); return null; }
     const fx = fxOfSound(tr.sound), vp = typeof vpGet === 'function';
     const P = {}; for (const k of G4_K) P[k] = g[k];
-    const r = await g4Call({op: 'analyze', x: mat.x, sr: mat.sr, P, marks: mat.marks, mix: mix && isFinite(mix.band) ? {band: mix.band, vp, volDb: 20 * Math.log10(Math.max(1e-6, fx.vol * fx.vol) / (vp ? 0.64 : 1))} : null});
+    const r = await g4Call({op: 'analyze', x: mat.x, sr: mat.sr, P, marks: mat.marks, mix: mix && isFinite(mix.band) ? {band: mix.band, vp, volDb: 20 * Math.log10(Math.max(1e-6, fx.vol * fx.vol) / (vp ? (typeof VP_REF === 'number' ? VP_REF * VP_REF : 0.64) : 1))}   /* G-GES: Bezug wie VS-P-fix (−16 LUFS vor dem Pegel, VP_REF 1) */ : null});
     if (!r) { toast('Take zu leise zum Messen'); return null; }
     G4.mixLast = mix;
     const s2 = stimmeT(); if (s2 < 0) return null;                  // inzwischen geändert (Regler, ↶, Laden): nur die gemessenen Werte setzen
