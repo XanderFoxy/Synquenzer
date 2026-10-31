@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { execSync } from 'child_process';
-export const APP = '/home/user/Synquenzer/bau/helfer/VIDSTAGE/index.html';
+export const APP = process.env.APP || '/home/user/Synquenzer/bau/helfer/VIDSTAGE/index.html';
 export const OUT = '/home/user/Synquenzer/bau/helfer/VIDSTAGE/tests/out/n5-v-qa-out/';
 const FD = 'file:///home/user/Synquenzer/fonts/';
 export async function open(o = {}) {
