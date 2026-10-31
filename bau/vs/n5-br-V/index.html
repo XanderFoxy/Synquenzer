@@ -17303,7 +17303,7 @@ function normSong(o, pk, nt) {
   if (Array.isArray(o.xp)) v4.xp = o.xp.filter(x => x && isNum(x.beat) && isNum(x.semi) && x.beat >= 0).map(x => ({beat: +x.beat, semi: clamp(Math.round(x.semi), -12, 12)})).sort((a, b) => a.beat - b.beat);
   if (o.src === 'plan') v4.src = 'plan';
   const vox = tkNormVox(o.vox); if (vox) v4.vox = vox;                                              // VS3: Punch-Audio der STIMME-Spur
-  const vdir = vvDirNorm(o.video, bars); if (vdir) v4.video = vdir;                                 // VV2: Video-Regie im Song
+  const vdir = vvDirNorm(o.video, bars, nt); if (vdir) v4.video = vdir;                                 // VV2: Video-Regie im Song
   return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, mel}, v4);
 }
 function ownNorm(c, pk, nt) {
@@ -23245,7 +23245,9 @@ function placePart(part, bar, mode, o) {
   const ok = songEdit((r.p ? r.p.name : 'Szene ' + (r.scene + 1)) + (mode === 'replace' ? ' ersetzt Takte' : ' eingefügt'), song => {
     const ch = refChunk(r), n = clamp(Math.round(bar) || 0, 0, SONG_MAX_BARS - ch.len);
     if (o && o.gap && n > song.bars) opInsert(song, song.bars, {len: n - song.bars, lanes: song.lanes.map(() => [{bar: 0, slot: -1}]), carrier: [{beat: 0, target: null}], xp: [], mel: {}, marks: []});
+    const vk = mode === 'replace' && n < song.bars ? vvDirCutTo(song, n, Math.min(song.bars, n + ch.len), {}).video : null;   // VV2-fix: Regie stays
     const at = mode === 'replace' ? opReplace(song, n, ch) : opInsert(song, n, ch);
+    if (vk) vvDirWrite(song, at, {len: ch.len, video: vk});
     song.marks.sort((a, b) => a.a - b.a);
     const m = song.marks.find(x => x.a === at && x.part === r.id); id = m ? m.id : null;
   });
@@ -23305,7 +23307,7 @@ function markAction(id, kind, arg) {
     if (kind === 'rep') { const n = clamp(arg | 0 || 2, 2, 16), ch = songCut(song, a, e); for (let k = 1; k < n; k++) opInsert(song, a + k * m.len, ch); }
     else if (kind === 'move') { const ch = songCut(song, a, e); let n = clamp(Math.round(arg) || 0, 0, song.bars); if (n >= a && n <= e) return; opDelete(song, a, e); if (n > a) n -= m.len; opInsert(song, n, ch, true); }
     else if (kind === 'copy') { const n = arg == null ? e : clamp(Math.round(arg), 0, song.bars); opInsert(song, n, songCut(song, a, e)); }
-    else if (kind === 'replaceBy') { const r = partRef(arg); if (!r) return; opDelete(song, a, e); opInsert(song, a, refChunk(r)); }
+    else if (kind === 'replaceBy') { const r = partRef(arg); if (!r) return; const vk = vvDirCutTo(song, a, e, {}).video, ch = refChunk(r); opDelete(song, a, e); opInsert(song, a, ch); if (vk) vvDirWrite(song, a, {len: ch.len, video: vk}); }   // VV2-fix: Regie stays
     else if (kind === 'delete') opDelete(song, a, e);
     else if (kind === 'unname') song.marks = song.marks.filter(x => x.id !== id);
     else if (kind === 'rename') { const v = String((arg && arg.name != null ? arg.name : arg) || '').trim().slice(0, 12); if (v) m.name = v; else delete m.name; }
@@ -23347,8 +23349,9 @@ function markReplaceAll(song, p, skipId) {
       const nx = l[k + 1], end = Math.min(nx ? nx.bar : Infinity, m.a + m.len);
       owns.push({t, rel: e.bar - m.a, relEnd: end - m.a, e: Object.assign({}, e)});
     }));
-    const ch = partChunk(p), a = m.a, id = m.id;
+    const ch = partChunk(p), a = m.a, id = m.id, vvKeep = vvDirCutTo(song, a, a + m.len, {}).video;   // VV2-fix: the Video-Regie stays
     if (ch.len === m.len) opReplace(song, a, ch); else { opDelete(song, a, a + m.len); opInsert(song, a, ch); }
+    if (vvKeep) vvDirWrite(song, a, {len: ch.len, video: vvKeep});
     const nm = song.marks.find(x => x.a === a && x.part === p.id); if (nm && !song.marks.some(x => x.id === id)) nm.id = id;
     for (const o of owns) {
       if (o.rel >= ch.len) continue;
@@ -42562,6 +42565,7 @@ function vvMenuRow(sec, row, btn) {
 function vvOpen() {
   if (VV.open) return VV.el;
   closePop();
+  if (UI.toastActs) hideToast();                                  // VV2-fix: an older [Rückgängig] toast never lies on the sheet's rows
   let sh = VV.el; if (!sh) { sh = VV.el = el('section', 'vvsheet'); sh.id = 'vvSheet'; sh.setAttribute('aria-label', 'Video'); document.body.appendChild(sh); }
   VV.open = true; VV.res = VV.res && VV.res.blob ? VV.res : null;
   sh.innerHTML = '';
@@ -42707,10 +42711,11 @@ function vvApi() {
    (wie song.vox; Haken in songShift/songClear/songCut/songWrite/songTidy), Undo wie alle Song-Änderungen. */
 const VV_DIRV = ['auto', 'song', 'matrix', 'spur'], VV_BLEND = .3, VV_AR = 360;   // Blende 300 ms; die quer gezeichnete Ansicht ist 640 × 360
 const vvDirSame = (p, q) => !!p && !!q && p.v === q.v && (p.v !== 'spur' || p.t === q.t);
-// sanitize (load, undo, after every edit): ints, a < b ≤ bars, sorted, no overlap (the later in the list wins), equal neighbours merged
-function vvDirNorm(list, bars) {
+// sanitize (load, undo, after every edit): ints, a < b ≤ bars, sorted, no overlap (the later in the list wins), equal neighbours merged;
+// nt = the track count of the song being read (VV2-fix: at load that is the loaded project's, not the open session's)
+function vvDirNorm(list, bars, nt) {
   if (!Array.isArray(list)) return null;
-  const nt = curNT(), lim = isNum(bars) && bars > 0 ? Math.min(bars, SONG_MAX_BARS) : SONG_MAX_BARS, out = [];
+  nt = isNum(nt) && nt > 0 ? nt : curNT(); const lim = isNum(bars) && bars > 0 ? Math.min(bars, SONG_MAX_BARS) : SONG_MAX_BARS, out = [];
   for (const e of list.slice(0, 512)) {
     if (!e || typeof e !== 'object' || !isNum(e.a) || !isNum(e.b) || !VV_DIRV.includes(e.v)) continue;
     const a = clamp(Math.round(e.a), 0, lim - 1), b = clamp(Math.round(e.b), a + 1, lim); if (a >= lim) continue;
@@ -42724,7 +42729,7 @@ function vvDirNorm(list, bars) {
   for (let k = out.length - 1; k > 0; k--) if (out[k - 1].b === out[k].a && vvDirSame(out[k - 1], out[k])) { out[k - 1].b = out[k].b; out.splice(k, 1); }
   return out.length ? out : null;
 }
-function vvDirTidy(song) { const v = vvDirNorm(song.video, song.bars); if (v) song.video = v; else delete song.video; }
+function vvDirTidy(song) { const v = vvDirNorm(song.video, song.bars, song.lanes && song.lanes.length); if (v) song.video = v; else delete song.video; }
 // [a, b) loses its entries (an entry over the edge is trimmed, one around it is split)
 function vvDirClear(song, a, b) {
   if (!song.video) return;
@@ -42843,29 +42848,47 @@ function vvCuts(song, A, B) {
   const uAt = x => user.find(e => x >= e.a && x < e.b) || null;
   const hardEnd = x => { let e = B; for (const u of user) if (u.a > x && u.a < e) e = u.a; return e; };
   const key = (t, x) => { if (x < 0) return ''; const o = laneOriginAt(song.lanes[t], x); return laneClipOk(song, t, o) ? o.slot + '|' + (o.own || '') : ''; };
+  const flip = v => (v === 'song' ? 'matrix' : 'song');
+  // VV2-fix: every shot carries s = the start of what is seen as one picture (an entry and an auto stretch with the same picture
+  // are one shot): the 8-bar count and the 2-bar minimum go from there, so a merge never makes a longer uncut stretch
   const shots = []; let cur = null, prev = rows.map(t => key(t, A - 1));
+  const push = (x, v, t, u, why, s) => { cur = {a: x, v, t: v === 'spur' ? t : null, u, why, s: s == null ? x : s}; shots.push(cur); };
   for (let x = A; x < B; x++) {
     const keys = rows.map(t => key(t, x)), u = uAt(x);
     let ch = 0; const enters = [], playing = [];
     rows.forEach((t, k) => { const ev = song.lanes[t] && song.lanes[t].find(q => q.bar === x); if (keys[k] !== prev[k] || (keys[k] && ev && ev.re)) ch++; if (keys[k] && !prev[k]) enters.push(t); if (keys[k]) playing.push(t); });
     prev = keys;
-    if (u) { if (!cur || cur.u !== u) { cur = {a: x, v: u.v, t: u.v === 'spur' ? u.t : null, u, why: 'eintrag'}; shots.push(cur); } continue; }
+    if (u) { if (!cur || cur.u !== u) push(x, u.v, u.t, u, 'eintrag', cur && vvDirSame(u, cur) ? cur.s : x); continue; }
     let want = null;
-    if (x === A || starts.has(x)) want = {v: 'song', why: 'teil'};
+    if (x === A || starts.has(x)) {
+      want = {v: 'song', why: 'teil'};
+      // VV2-fix: a part start is a visible cut – when the picture already is Song, it shows what is new there instead
+      if (cur && vvDirSame(want, cur)) want = ch >= 2 ? {v: 'matrix', why: 'teil'} : enters.length === 1 ? {v: 'spur', t: enters[0], why: 'teil'} : {v: 'matrix', why: 'teil'};
+    }
     else if (ch >= 2) want = {v: 'matrix', why: 'wechsel'};
     else if (enters.length === 1) want = {v: 'spur', t: enters[0], why: 'neu'};
     else if (playing.length === 1) want = {v: 'spur', t: playing[0], why: 'allein'};
     else if (cur && cur.v === 'spur' && !playing.includes(cur.t)) want = {v: 'song', why: 'ende'};
-    if (!cur || cur.u) { cur = {a: x, v: want ? want.v : 'song', t: want && want.v === 'spur' ? want.t : null, u: null, why: want ? want.why : 'start'}; shots.push(cur); continue; }
-    const Ls = x - cur.a, rem = hardEnd(x) - x;
+    const he = hardEnd(x), rem = he - x, nx = he < B ? uAt(he) : null;
+    if (!cur || cur.u) {
+      // a free stretch begins (song start, or right after an entry)
+      if (rem < 2 && (cur || nx)) { const r = cur || nx; push(x, r.v, r.t, null, 'kurz', cur ? cur.s : x); continue; }   // too short for its own shot: the neighbour's picture
+      let v = want ? want.v : cur ? flip(cur.v) : 'song', t = want && want.v === 'spur' ? want.t : null;
+      if (cur && vvDirSame({v, t}, cur) && x - cur.s >= 8) { v = flip(cur.v); t = null; }
+      push(x, v, t, null, want ? want.why : cur ? 'eintrag-ende' : 'start', cur && vvDirSame({v, t}, cur) ? cur.s : x);
+      continue;
+    }
+    const Ls = x - cur.s;
     if (Ls < 2 || rem < 2) continue;                                // never shorter than 2 bars (a shot, and what is left)
-    const must = Ls >= 8 || (rem === 2 && Ls + rem > 8);           // at the latest every 8 bars
-    if (want && !vvDirSame(want, cur)) { cur = {a: x, v: want.v, t: want.v === 'spur' ? want.t : null, u: null, why: want.why}; shots.push(cur); }
-    else if (must) { const v = cur.v === 'song' ? 'matrix' : 'song'; cur = {a: x, v, t: null, u: null, why: '8'}; shots.push(cur); }
+    // at the latest every 8 bars (an entry right behind with the same picture counts on)
+    const tail = nx && vvDirSame(nx, cur) ? nx.b - nx.a : 0;
+    const must = Ls >= 8 || (rem === 2 && Ls + rem + tail > 8);
+    if (want && !vvDirSame(want, cur)) push(x, want.v, want.t, null, want.why);
+    else if (must) push(x, flip(cur.v), null, null, '8');
   }
   // neighbours with the same picture are one shot (the camera goes on)
   for (let k = shots.length - 1; k > 0; k--) if (vvDirSame(shots[k], shots[k - 1])) shots.splice(k, 1);
-  shots.forEach((s, k) => { s.b = k + 1 < shots.length ? shots[k + 1].a : B; delete s.u; });
+  shots.forEach((s, k) => { s.b = k + 1 < shots.length ? shots[k + 1].a : B; delete s.u; delete s.s; });
   return shots;
 }
 const vvCutHash = shots => { let h = 2166136261; for (const c of JSON.stringify(shots.map(s => [s.a, s.b, s.v, s.t]))) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h.toString(16); };
@@ -42896,9 +42919,14 @@ function vvDrawSpur(g, LW, LH, st, t) {
   g.fillStyle = col; g.fillRect(14, 13, 4, Ly.head - 24);
   if (!tr) return;
   const s = st.slots[t], play = s != null && s >= 0, c = play ? vvClip(t, s, st.own[t]) : null;
-  g.textAlign = 'left'; g.font = '700 17px ' + C.ui; g.fillStyle = C.text; g.fillText(String(tr.name || svShort(t)).toUpperCase().slice(0, 24), 26, 6 + (Ly.head - 10) / 2 + .5);
+  const rTxt = play ? (st.own[t] ? 'eigener Clip' : 'Szene ' + (s + 1)) : '–';
+  g.font = '600 12px ' + C.num; const room = LW - 18 - g.measureText(rTxt).width - 8 - 26;          // VV2-fix: the name never runs into it
+  let nm = String(tr.name || svShort(t)).toUpperCase().slice(0, 24), fs = 17;
+  g.font = '700 ' + fs + 'px ' + C.ui; while (fs > 11 && g.measureText(nm).width > room) { fs--; g.font = '700 ' + fs + 'px ' + C.ui; }
+  while (nm.length > 1 && g.measureText(nm).width > room) nm = nm.slice(0, -2) + '…';
+  g.textAlign = 'left'; g.fillStyle = C.text; g.fillText(nm, 26, 6 + (Ly.head - 10) / 2 + .5);
   g.textAlign = 'right'; g.font = '600 12px ' + C.num; g.fillStyle = play ? C.play : C.faint;
-  g.fillText(play ? (st.own[t] ? 'eigener Clip' : 'Szene ' + (s + 1)) : '–', LW - 18, 6 + (Ly.head - 10) / 2 + .5);
+  g.fillText(rTxt, LW - 18, 6 + (Ly.head - 10) / 2 + .5);
   g.fillStyle = C.ch; vvRound(g, Ly.x, Ly.y, Ly.w, Ly.h, 6); g.fill(); g.strokeStyle = play ? C.play : C.line; g.lineWidth = 1; g.stroke();
   if (!c) { g.textAlign = 'center'; g.font = '700 22px ' + C.num; g.fillStyle = C.faint; g.fillText('–', Ly.x + Ly.w / 2, Ly.y + Ly.h / 2); return; }
   const L = Math.max(1, (c.len || 1) * 4), ph = vvPhase(st, t, c), x0 = Ly.x + 8, y0 = Ly.y + 8, w = Ly.w - 16, h = Ly.h - 16;
@@ -42957,6 +42985,15 @@ function vvCamClamp(c, asp) {
   if (fx !== c.cx) { c.cx = fx; c.vx = 0; } if (fy !== c.cy) { c.cy = fy; c.vy = 0; }
   return c;
 }
+// VV2-fix: how far the picture content moves from window p to window q (window corners, zoom included), in picture widths
+function vvCamDisp(p, q, asp) {
+  const wa = VV_AR / p.z * asp, ha = VV_AR / p.z, wb = VV_AR / q.z * asp, hb = VV_AR / q.z; let d = 0;
+  for (const fx of [0, 1]) for (const fy of [0, 1]) {
+    const du = (p.cx - wa / 2 + fx * wa - (q.cx - wb / 2)) / wb - fx, dv = ((p.cy - ha / 2 + fy * ha - (q.cy - hb / 2)) / hb - fy) / asp;
+    d = Math.max(d, Math.hypot(du, dv));
+  }
+  return d;
+}
 // the camera of shot k at time ts (s): integrated in steps ≤ 1/30 s from the shot's start (or the last call); frozen = no step
 function vvCamAt(rt, sh, st, ts, asp, frozen) {
   const cams = rt.cams, tg = vvCamTarget(sh, st, asp);
@@ -42967,10 +43004,17 @@ function vvCamAt(rt, sh, st, ts, asp, frozen) {
   const ax = 2.6 * ww, vmx = .042 * ww * VV_FPS;                 // ≤ 4,2 % of the window per picture (limit 5 %), acceleration limited
   const step = (x, v, T, am, vm) => { const a = clamp(w * w * (T - x) - 2 * w * v, -am, am); v = clamp(v + a * h, -vm, vm); return [x + v * h, v]; };
   for (let k = 0; k < n; k++) {
+    const o = {cx: c.cx, cy: c.cy, z: c.z};
     [c.cx, c.vx] = step(c.cx, c.vx, tg.cx, ax, vmx);
     [c.cy, c.vy] = step(c.cy, c.vy, tg.cy, ax, vmx);
     [c.z, c.vz] = step(c.z, c.vz, tg.z, 1.5, .45);
     vvCamClamp(c, asp);
+    // VV2-fix: the whole move of one picture (across, down and zoom together) stays ≤ 4,5 % of the picture width
+    const lim = .045 * h * VV_FPS;
+    for (let r = 0, d = vvCamDisp(o, c, asp); d > lim && r < 4; r++, d = vvCamDisp(o, c, asp)) {
+      const f = lim / d * .995; c.cx = o.cx + (c.cx - o.cx) * f; c.cy = o.cy + (c.cy - o.cy) * f; c.z = o.z + (c.z - o.z) * f;
+      c.vx = (c.cx - o.cx) / h; c.vy = (c.cy - o.cy) / h; c.vz = (c.z - o.z) / h; vvCamClamp(c, asp);
+    }
   }
   c.t = ts;
   return c;
@@ -42984,6 +43028,12 @@ function vvDrawShot(g, W, H, rt, sh, st, ts, frozen) {
     const k = W / 640, oy = (H - VV_AR * k) / 2;
     g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
     g.save(); g.beginPath(); g.rect(0, oy, W, VV_AR * k); g.clip(); g.setTransform(k, 0, 0, k, 0, oy); vvDrawView(g, 640, VV_AR, sh, st); g.restore();
+  } else if (sh.v === 'spur' && sh.t != null) {
+    // VV2-fix: in 9:16 [Kamera] the Spur picture is laid out in the window itself (head, the whole clip, the Laufstrich always in
+    // the picture – a fast 1-bar Laufstrich cannot be followed by a calm camera); the camera stands still
+    const k = H / VV_AR, lw = W / k;
+    g.setTransform(k, 0, 0, k, 0, 0); vvDrawSpur(g, lw, VV_AR, st, sh.t);
+    if (rt.log && !frozen) rt.log.push({ts: +ts.toFixed(4), k: sh.k, cx: lw / 2, cy: VV_AR / 2, z: 1, ww: lw, wh: VV_AR, fit: 1});
   } else {
     const asp = W / H, c = vvCamAt(rt, sh, st, ts, asp, frozen), wh = VV_AR / c.z, ww = wh * asp, k = H / wh;
     g.setTransform(k, 0, 0, k, -(c.cx - ww / 2) * k, -(c.cy - wh / 2) * k); vvDrawView(g, 640, VV_AR, sh, st);
