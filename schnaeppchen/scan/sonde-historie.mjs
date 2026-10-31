@@ -177,9 +177,14 @@ export function macheSonde({ out, fetchImpl = globalThis.fetch, jetzt = () => Da
     if (robots.has(host)) return robots.get(host);
     const { e, text } = await roh(`https://${host}/robots.txt`, { quelle, zweck: 'robots.txt' });
     let info;
-    if (e.status >= 200 && e.status < 300 && !/<html/i.test(text.slice(0, 500))) info = { status: e.status, gruppen: parseRobots(text) };
-    else if (e.status >= 200 && e.status < 300) info = { status: e.status, gruppen: [], hinweis: 'robots.txt ist HTML (keine Regeln lesbar) – wie „keine Regeln“ behandelt' };
-    else if (e.status >= 400 && e.status < 500) info = { status: e.status, gruppen: [], hinweis: 'robots.txt fehlt (4xx) – laut RFC 9309 keine Einschränkung' };
+    // Lauf 41227676320 hat gezeigt: Bot-Schutz (AWS-WAF „challenge“ mit 202, Cloudflare-Challenge mit 403) liefert
+    // statt robots.txt eine HTML-Seite. Das ist kein „robots.txt fehlt“, sondern ein klares Nein -> alles verboten.
+    const schutz = e.status === 202 || e.status === 401 || e.status === 403 || e.status === 429
+      || /challenge/i.test(`${e.headers?.['x-amzn-waf-action'] || ''} ${e.headers?.['cf-mitigated'] || ''}`)
+      || (e.status >= 200 && e.status < 300 && /<html/i.test(text.slice(0, 500)));
+    if (schutz) info = { status: e.status, gruppen: null, hinweis: 'robots.txt hinter Bot-Schutz (Challenge/HTML/401/403/429) – alles als verboten behandelt' };
+    else if (e.status >= 200 && e.status < 300) info = { status: e.status, gruppen: parseRobots(text) };
+    else if (e.status >= 400 && e.status < 500) info = { status: e.status, gruppen: [], hinweis: 'robots.txt fehlt (404/410) – laut RFC 9309 keine Einschränkung' };
     else info = { status: e.status, gruppen: null, fehler: e.fehler || `HTTP ${e.status}`, hinweis: 'robots.txt nicht erreichbar – laut RFC 9309 alles als verboten behandelt' };
     if (info.gruppen) {
       const cd = robotsEntscheid(info.gruppen, '/').crawlDelay;
