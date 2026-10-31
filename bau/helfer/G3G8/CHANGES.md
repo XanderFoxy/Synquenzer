@@ -61,7 +61,12 @@ Kein Supabase-Aufruf, kein alert/confirm/prompt, keine Marken-Namen.
 
 **G8-04 – Speicher/CPU, iPhone-Maß (Rechnung aus den Messungen, 48 kHz):** Audio-Store 96 kB/s (0,1 MB/s; Lautsprecher-Weg + Referenz + gesäuberte Fassung ≈ 0,29 MB/s) → 5 min ≈ 29 MB. Arbeitsspeicher während der Aufnahme: die Stücke (2 B/Sample) ≈ 0,1 MB/s (5 min: 25 × 1 MB gemessen bei 44,1 kHz); am Ende der Take als Float-Puffer 4 B/Sample (5 min ≈ 58 MB), die Stücke werden danach frei. Ringpuffer 4,67 B/Sample: 120 BPM → 140 s ≈ 31 MB (vorher 120 s ≈ 27 MB), höchstens 300 s ≈ 67 MB. CPU: Nachlesen alle 0,5 s (≈ 24 000 Samples, Zeitkarte je Sample) – im Test keine lange Aufgabe; der Float-Puffer wird am Ende in Scheiben ≤ 8 ms gebaut. Stimme-FANG / ● REC über 64 Takte: die Auswertung (Worker) braucht 5 s (64 s Audio, Chromium) – so lange bleibt der neue Take wie bisher stumm, danach setzt er phasengleich ein. Am iPhone nicht gemessen.
 
-**Regression / Rauchtest:** siehe „Nachtest“.
+**Nachtest auf dem Endstand (frische Läufe, nach G8):** `g3-accept` A–F 60/61, `g3-lay` 19/19, `v3-vs3-accept` A B C E F G 57/57
+(D braucht eine Rahmen-Datei der Dirigenten-Maschine, nicht gelaufen), `v3-vs3-click` grün (M-KLICK 0,00322 ≤ 1,5 × 0,00303), `v3-vs2-accept` 48/49
+(der eine Punkt ist die schwankende Zeit-Vorbedingung des Prüfskripts, siehe Befunde), `g8-accept` S A B C R grün, Rauchtest ohne Fehler.
+**Offen / beobachten:** G3-03 zeigte in **1 von 9** Läufen eine 2. Differenz von 0,084 (sonst 0,0029–0,0037); in 8 weiteren Läufen mit
+Ortsangabe nicht wiederholbar. Wie bei VS3 (FP-DSP 3) eher der Mitschnitt (ScriptProcessor) als die App – nicht belegt, bitte am iPhone
+auf Knacken an Teil-Grenzen mit Anlauf/Ausklang achten.
 
 ## Abweichungen / Auslegung (begründet)
 - **„Hörbar ist, was gesungen wurde“:** der Take hält immer bis 2 Takte / 1 Takt, *klingen* (und gezeichnet werden) nur der gesungene
