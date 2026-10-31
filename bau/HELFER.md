@@ -30,3 +30,4 @@ WICHTIG: Der Gesang-Merge (B) übernimmt Extra/TestNote aus S/merge-n5-args.json
 Innovations-Workshop läuft: wf_5ccf27af-f8c → S/v3-ideen/innovation-vorschlag.md (dann Xander kurz vorlegen).
 16:05 UTC – Xander: „jedes fertige Paket gleich hochladen“. Release-Merge läuft: G-T-merge wf_f7e187ef-cf8 (S/merge-t-args.json: K1 + S012 + N12D1K2 + K1-Entscheidungen + K2-Slap-Check) → 4.24.0 → SOFORT veröffentlichen.
 Versionen verschieben sich: N4 (VS-L/VS-P) → 4.25.0 (merge-n4-args angepasst), Gesang komplett → 4.26.0, Video → 4.27.0, North → 4.28.0. Merges auf mk-wt immer nacheinander.
+Bitmask-Spec: lokaler Agent schreibt S/v3-ideen/dirigent-spec-v3-nachtrag-7-bitmask.md (Handbuch privat S/manuals/mask1/) → danach Helfer-Sitzung(en), Name der Engine von Xander erfragen (keine Marke).

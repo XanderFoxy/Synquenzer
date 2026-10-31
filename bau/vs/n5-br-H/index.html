@@ -20622,6 +20622,7 @@ function undoApply(e, val) {
 }
 function undo() {
   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && UNDO.length && UNDO[UNDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
+  if (HIST && HIST.q.length) histDrain();  // VC2a-fix: mehrere ↶ in einer Aufgabe = je ein Ereignis
   const u = UNDO.pop();
   if (!u) { toast('Nichts rückgängig zu machen'); UI.dirty.strip = true; return false; }
   if (u.kind === 'group') REDO.push(groupSwap(u, true));
@@ -20633,6 +20634,7 @@ function undo() {
 }
 function redo() {
   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && REDO.length && REDO[REDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
+  if (HIST && HIST.q.length) histDrain();  // VC2a-fix
   const r = REDO.pop();
   if (!r) { toast('Nichts zu wiederholen'); UI.dirty.strip = true; return false; }
   if (r.kind === 'group') UNDO.push(Object.assign(groupSwap(r, false), {time: performance.now(), mergeKey: null}));

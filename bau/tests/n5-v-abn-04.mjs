@@ -33,5 +33,5 @@ const mx = await p.evaluate(async () => { await SYNQUENZER.vvRender({range: {a: 
   return o; });
 res.matrixRange = mx.map(x => Object.assign(x, {ok: JSON.stringify(x.got) === JSON.stringify(x.exp)}));
 res.errs = errs;
-console.log(JSON.stringify(res, null, 1));
+console.log(JSON.stringify(res));
 await b.close();
