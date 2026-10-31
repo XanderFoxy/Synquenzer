@@ -12,7 +12,7 @@ const id = await p.evaluate(([N, sr, L]) => { const pc = new Int16Array(N); let 
   return SYNQUENZER.tkInject({pcm: Array.from(pc), sr, scene: 0, len: L}).id; }, [N, sr, BARS]);
 await p.evaluate(() => SYNQUENZER.vpWait && SYNQUENZER.vpWait());
 await sleep(500);
-const vi = await p.evaluate(id => SYNQUENZER.vpInfo ? SYNQUENZER.vpInfo().takes[id] : null, id);
+const vi = await p.evaluate(() => { if (!SYNQUENZER.vpInfo) return null; const v = SYNQUENZER.vpInfo(); return {maxMs: v.maxMs, sync: v.sync, takes: Object.values(v.takes).map(t => t.heard)}; });
 await p.evaluate(() => { const W = window.__W = {}; for (const f of ['vpPump', 'tkStartSrc', 'vpLim', 'tkSched', 'scheduler', 'tick', 'schedTick']) { const o = window[f]; if (typeof o !== 'function') continue;
     window[f] = function () { const t0 = performance.now(); try { return o.apply(this, arguments); } finally { const d = performance.now() - t0; const w = W[f] || (W[f] = {n: 0, max: 0, sum: 0, at: 0}); w.n++; w.sum += d; if (d > w.max) { w.max = d; w.at = t0; } } }; }
   window.__lt = []; new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push([+e.startTime.toFixed(0), +e.duration.toFixed(1)]); }).observe({type: 'longtask'});
