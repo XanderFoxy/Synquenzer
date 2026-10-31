@@ -313,8 +313,9 @@ function hp5k(x) {   // high-pass 5 kHz, 24 dB/oct (two RBJ biquads)
   for (let st = 0; st < 2; st++) { const w = 2 * Math.PI * 5000 / SR, cs = Math.cos(w), al = Math.sin(w) / (2 * Math.SQRT1_2), a0 = 1 + al, b0 = (1 + cs) / 2 / a0, b1 = -(1 + cs) / a0, b2 = b0, a1 = -2 * cs / a0, a2 = (1 - al) / a0;
     let x1 = 0, x2 = 0, y1 = 0, y2 = 0; for (let i = 0; i < y.length; i++) { const v = y[i], o = b0 * v + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = v; y2 = y1; y1 = o; y[i] = o; } }
   return y; }
+// M-KLICK; windows quieter than -80 dBFS after the 5 kHz high-pass are inaudible residue and do not count
 function mKlick(x, hitsS, a = 0, b = x.length / SR) { const y = hp5k(x), w = Math.round(0.002 * SR), E = []; for (let i = 0; i + w <= y.length; i += w) { let s = 0; for (let k = 0; k < w; k++) s += y[i + k] ** 2; E.push(10 * Math.log10(s / w + 1e-24)); }
-  let worst = -99, wt = 0; for (let j = 0; j < E.length; j++) { const t = j * 0.002; if (t < a || t > b) continue; if (hitsS.some(h => t >= h - 0.002 && t <= h + 0.003)) continue; const nb = []; for (let k = Math.max(0, j - 10); k <= Math.min(E.length - 1, j + 10); k++) if (k !== j) nb.push(E[k]); nb.sort((p, q) => p - q); const med = nb[nb.length >> 1]; const d = E[j] - med; if (E[j] > -100 && d > worst) { worst = d; wt = t; } }
+  let worst = -99, wt = 0; for (let j = 0; j < E.length; j++) { const t = j * 0.002; if (t < a || t > b) continue; if (hitsS.some(h => t >= h - 0.002 && t <= h + 0.003)) continue; const nb = []; for (let k = Math.max(0, j - 10); k <= Math.min(E.length - 1, j + 10); k++) if (k !== j) nb.push(E[k]); nb.sort((p, q) => p - q); const med = nb[nb.length >> 1]; const d = E[j] - med; if (E[j] > -80 && d > worst) { worst = d; wt = t; } }
   return {worst, wt}; }
 run('ND1-23', () => {
   { const hits = []; const st = 60 / 180 / 16; for (let k = 0; k < 48; k++) hits.push({ch: 0, at: 0.05 + k * st, v: 0.8}); const r = render({sr: SR, chans: {0: {mWav: 'd2', mPit: 50, mSpc: 40, mFrq: 50, mDec: 30}}, hits, sec: 1});   // tonal: every discontinuity shows above 5 kHz

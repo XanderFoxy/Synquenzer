@@ -10760,24 +10760,14 @@ function cosc(ph) { return sinc(ph + 0.25); }
 const TN = 4096, TANT = new Float64Array(TN + 2);
 for (let i = 0; i < TN + 2; i++) TANT[i] = Math.tan(PI * Math.min(i, TN - 1) / (2 * TN));
 function tanf(f) { let x = f * ISR; if (x > 0.45) x = 0.45; if (x < 0) x = 0; x *= 2 * TN; const i = x | 0, fr = x - i; return TANT[i] + (TANT[i + 1] - TANT[i]) * fr; }
-function fftc(re, im) { const n = re.length; for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
-for (let len = 2; len <= n; len <<= 1) { const a = -2 * PI / len, wr = Math.cos(a), wi = Math.sin(a), h = len >> 1;
-for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let j = 0; j < h; j++) { const k = i + j + h, vr = re[k] * cr - im[k] * ci, vi = re[k] * ci + im[k] * cr;
-re[k] = re[i + j] - vr; im[k] = im[i + j] - vi; re[i + j] += vr; im[i + j] += vi; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } } } }
 const BZ = 16, BOS = 32, BL = 2 * BZ, BRES = new Float64Array(BL * BOS + BOS + 2);
+const BRES_B64 = 'AMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAcABwAHAAsACwAPAA8AEwAXABsAIwAnAC8AOwBDAFMAXwBzAIMAmwC3ANMA8wEbAUMBcwGnAeMCJwJvAsMDHwODA+8AZwTvBX8GHwbLB4cEUwkvCh8LHwg3DV8Onw/3DWcS7xCPFksUJxobGCseWxyrIxshryRfKzMqJy1DMH832zdfOwc+00K/Rs9LA09bU9NUb10nYgNm92gPcT92h3vrfWOG74iTkkOUA53Lo6Olf69bsT+7H7z3xsvIl9JT1//Zl+Mb5IPtz/L79AP85AGcBiwKkA7AEsAWiBocHXQgkCdwJhQoeC6cLHwyHDN8MJQ1cDYINlw2cDZINeA1PDRcN0Ax9DBsMrgs1C7AKIgqKCekIQQiSB90GIwZlBaQE4QMdA1kClgHVABYAW/+l/vT9Sv2m/Av8d/vt+m369vmL+Sr51viM+E/4Hvj59+H31ffV9+D3+Pcb+En4gvjE+BH5Z/nF+Sv6mPoL+4T7AvyE/An9kf0a/qT+Lv+3/z4AwwBEAcIBOgKuAhsDggPhAzkEiQTQBA8FRQVxBZQFrQW9BcMFvwWzBZ0FfgVXBSgF8QSyBG0EIQTPA3kDHQO+AlwC9wGQASgBwABYAPD/iv8n/8b+af4P/rr9a/0g/dz8nvxm/Db8Dfzr+9D7vfuy+677svu++9D76vsK/DH8XvyQ/Mj8Bf1G/Yz91P0g/m3+vf4N/1//sP8BAFAAngDqADMBeQG8AfsBNQJrApsCxgLsAgwDJgM6A0gDUANSA00DQwM0Ax4DAwPkAr8ClgJoAjcCAwLLAZIBVgEYAdkAmQBaABoA2/+d/2H/J//v/rn+h/5Y/i3+Bv7j/cT9qv2U/YP9eP1w/W79cf14/YT9lP2p/cH93v3+/SH+R/5w/pz+yf74/ij/Wv+L/73/7/8gAFAAfwCtANgAAQEoAUwBbgGMAaYBvQHRAeEB7QH1AfoB+wH4AfEB5wHZAcgBtAGdAYMBZgFIAScBBQHhALwAlwBwAEoAIwD9/9f/sv+O/2z/S/8t/xD/9f7d/sf+tP6k/pb+jP6E/oD+fv5//oP+iv6U/qD+r/7A/tP+6P7//hf/Mf9M/2j/hf+i/7//3f/6/xcAMwBOAGgAggCZALAAxADXAOgA9gADAQ0BFgEcAR8BIQEgAR0BGAERAQgB/QDxAOIA0wDBAK8AnACIAHMAXQBIADIAHAAGAPD/2//H/7P/of+P/3//cP9i/1b/S/9C/zr/NP8w/y3/LP8t/y//M/85/0D/SP9R/1z/aP90/4L/kP+f/67/vv/O/97/7v/+/w0AHQArADkARwBTAF8AaQBzAHwAgwCKAI8AkwCVAJcAlwCWAJQAkQCNAIcAgQB6AHIAaQBgAFYATABBADYAKwAfABQACQD+//P/6P/e/9T/y//D/7v/tP+t/6f/o/+f/5v/mf+Y/5f/l/+Z/5r/nf+g/6X/qf+u/7T/u//B/8j/0P/X/9//5//v//b//v8GAA0AFAAbACEAJwAtADIANgA6AD4AQABDAEQARgBGAEYARQBEAEMAQAA+ADsANwAzAC8AKwAmACEAHAAXABIADQAIAAIA/f/5//T/7//r/+f/5P/g/93/2//Y/9b/1f/U/9P/0//T/9P/1P/V/9f/2P/a/93/3//i/+X/6P/r/+7/8v/1//j//P///wIABQAIAAsADgAQABIAFQAWABgAGQAaABsAHAAcABwAHAAcABsAGwAaABgAFwAWABQAEgAQAA4ADAAKAAgABgAEAAIAAAD+//z/+v/4//f/9f/0//P/8v/x//D/7//v/+//7//v/+//7//w//D/8f/y//P/9P/1//b/9//4//n/+//8//3///8AAAEAAgADAAQABQAGAAcACAAJAAkACgAKAAoACgAKAAoACgAKAAoACgAJAAkACAAHAAcABgAFAAUABAADAAIAAgABAAAA//////7//f/9//z//P/7//v/+//6//r/+v/6//r/+v/6//r/+v/7//v/+//7//z//P/9//3//f/+//7//////wAAAAABAAEAAQACAAIAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAIAAgACAAIAAQABAAEAAQAAAAAAAAAAAP////////////////7//v/+//7//v/+//7//v/+//7//v/+//7//v///////////////////wAAAAAAAAAAAAAAAAAAAAABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
 (function () {
-const n = BL * BOS + 1, N = 8192, re = new Float64Array(N), im = new Float64Array(N), fc = 0.45;
-for (let i = 0; i < n; i++) { const x = (i - (n - 1) / 2) / BOS, sn = x === 0 ? 2 * fc : Math.sin(2 * PI * fc * x) / (PI * x), w = 0.42 - 0.5 * Math.cos(2 * PI * i / (n - 1)) + 0.08 * Math.cos(4 * PI * i / (n - 1)); re[i] = sn * w; }
-fftc(re, im);
-for (let i = 0; i < N; i++) { re[i] = Math.log(Math.max(1e-12, Math.hypot(re[i], im[i]))); im[i] = 0; }
-fftc(re, im); for (let i = 0; i < N; i++) { re[i] /= N; im[i] = -im[i] / N; }
-for (let i = 1; i < N / 2; i++) { re[i] *= 2; im[i] *= 2; } for (let i = N / 2 + 1; i < N; i++) { re[i] = 0; im[i] = 0; }
-fftc(re, im);
-for (let i = 0; i < N; i++) { const e = Math.exp(re[i]), a = im[i]; re[i] = e * Math.cos(a); im[i] = -e * Math.sin(a); }
-fftc(re, im);
-let s = 0; for (let i = 0; i < n - 1; i++) s += re[i];
-let c = 0; for (let i = 0; i < BRES.length; i++) { if (i < n - 1) c += re[i] / s; BRES[i] = (i < n - 1 ? c : 1) - 1; }
-for (let i = BL * BOS; i < BRES.length; i++) BRES[i] = 0;
+const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/', V = new Uint8Array(128); for (let i = 0; i < 64; i++) V[A.charCodeAt(i)] = i;
+const s = BRES_B64, by = new Uint8Array(BRES.length * 2); let o = 0;
+for (let i = 0; i < s.length; i += 4) { const a = V[s.charCodeAt(i)], b = V[s.charCodeAt(i + 1)], c = V[s.charCodeAt(i + 2)], d = V[s.charCodeAt(i + 3)];
+if (o < by.length) by[o++] = (a << 2) | (b >> 4); if (o < by.length && s[i + 2] !== '=') by[o++] = ((b & 15) << 4) | (c >> 2); if (o < by.length && s[i + 3] !== '=') by[o++] = ((c & 3) << 6) | d; }
+for (let i = 0; i < BRES.length; i++) { let v = by[2 * i] | (by[2 * i + 1] << 8); if (v > 32767) v -= 65536; BRES[i] = v / 16384; }
 })();
 function blepAdd(R, p, frac, h) { if (!(frac >= 0)) frac = 0; else if (frac > 0.999) frac = 0.999; for (let k = 0; k < BL; k++) { const x = (k + frac) * BOS, j = x | 0; R[(p + 1 + k) & 63] += h * (BRES[j] + (BRES[j + 1] - BRES[j]) * (x - j)); } }
 function Tsec(x) { return 0.004 * Math.pow(2500, x / 50); }
