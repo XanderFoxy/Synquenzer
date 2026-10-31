@@ -1,12 +1,72 @@
 [
  {
+  "id": "BM3-01 BAL 0 → trocken bitgleich (Weg umgangen); 50 → trocken −6,02 ± 0,1 dB; 100 → trocken ≤ −90 dB",
+  "ok": true,
+  "info": "Differenz bei 0: 0; 50: -6.021 dB; 100: -99.8 dB"
+ },
+ {
+  "id": "BM3-02 CH1–14 Tempo und Tiefe ± 5 % (Tonhöhenschwankung eines 1-kHz-Sinus, L und R)",
+  "ok": true,
+  "info": "größte Abw. Tempo 1.8 %, Tiefe 3.79 %; CH1 0.152 Hz/2.35 Hz, CH2 0.253 Hz/4.71 Hz, CH3 0.352 Hz/3.29 Hz, CH4 0.501 Hz/7.78 Hz, CH5 0.707 Hz/5.23 Hz, CH6 0.916 Hz/11.08 Hz, CH7 1.205 Hz/7.53 Hz, CH8 1.488 Hz/16.86 Hz, CH9 1.996 Hz/10.06 Hz, CH10 2.5 Hz/21.92 Hz, CH11 3.2 Hz/12.06 Hz, CH12 4 Hz/25.05 Hz, CH13 5.5 Hz/17.28 Hz, CH14 7 Hz/35.18 Hz"
+ },
+ {
+  "id": "BM3-02 CH15/16 wandernde Kerben 200 Hz – 3 kHz (Kerbe am unteren und oberen Ende ≥ 10 dB unter dem Umfeld)",
+  "ok": true,
+  "info": "CH15 200 Hz -18 dB, 3 kHz -23.7 dB, CH16 200 Hz -10.9 dB, 3 kHz -15.3 dB"
+ },
+ {
+  "id": "BM3-03 DT1–16 (Sinus 220 Hz voll ausgesteuert, VOL 99, Anschlag 1): Klirrfaktor steigt streng (je ungerade / gerade n); ungerade n gerade Obertöne ≤ −50 dB; gerade n 2. Oberton ≥ −30 dB; Pegel ± 3 dB",
+  "ok": true,
+  "info": "streng steigend je Reihe true, ungerade: gerade max -143.8 dB, gerade: 2. min -16.7 dB, Pegel größte Abw. 2.09 dB; THD/Pegel DT1 -27.1/-0.03, DT2 -16.4/-0.21, DT3 -21.1/1.24, DT4 -12.2/0.58, DT5 -16.5/1.94, DT6 -9.3/1.02, DT7 -13.2/2.09, DT8 -7.4/1.12, DT9 -10.9/1.87, DT10 -6.2/0.93, DT11 -9.5/1.43, DT12 -5.5/0.54, DT13 -8.7/0.88, DT14 -5/0.02, DT15 -8.3/0.26, DT16 -4.8/-0.57"
+ },
+ {
+  "id": "BM3-04 BC1–8 Rate nach Tabelle (Spiegelbild ± 2 %), Raster der Auflösung; BC9–16 Rate schwankt mit 0,3 Hz ± 5 % (an BC13)",
+  "ok": true,
+  "info": "Rate größte Abw. 0.02 % (BC1 24001, BC2 16000, BC3 12001, BC4 7999, BC5 6001, BC6 11025.4, BC7 7999, BC8 5511.7); BC5 7 Bit: 4096 Werte, 0 neben dem Raster; BC9 Schwankung 0.299 Hz"
+ },
+ {
+  "id": "BM3-05 RM8–16 Seitenbänder bei f ± fn (± 1 %); RM1–4 L/R 90° ± 5°",
+  "ok": true,
+  "info": "größte Abw. 0.45 % von fn; Phasen L−R 90 / 90 / 90 / 90°"
+ },
+ {
+  "id": "BM3-06 DL1–16 Zeit ± 1 ms (n ≥ 10 ± 0,05 ms), Abfall je Wiederholung ± 0,3 dB, Ping-Pong n ≤ 4, Kammspitzen bei Vielfachen von 1/t",
+  "ok": true,
+  "info": "Zeit (Anteil der Toleranz) max 0, Abfall größte Abw. 0 dB (Soll −6,94 / −4,44 / −2,50 dB), Ping-Pong true, Kamm 5/5; DL1 800 ms/-6.94 dB, DL2 512.331 ms/-6.94 dB, DL3 328.104 ms/-6.94 dB, DL4 210.122 ms/-6.94 dB, DL5 134.565 ms/-6.94 dB, DL6 86.177 ms/-6.94 dB, DL7 55.189 ms/-4.44 dB, DL8 35.344 ms/-4.44 dB, DL9 22.635 ms/-4.44 dB, DL10 14.496 ms/-4.44 dB, DL11 9.283 ms/-2.5 dB, DL12 5.945 ms/-2.5 dB, DL13 3.807 ms/-2.5 dB, DL14 2.438 ms/-2.5 dB, DL15 1.561 ms/-2.5 dB, DL16 1 ms/-2.5 dB"
+ },
+ {
+  "id": "BM3-07 RV1–16 RT60 ± 15 % der Formel (M-T60)",
+  "ok": true,
+  "info": "größte Abw. 6 %; RV1 8.32/8 s, RV2 6.76/6.43 s, RV4 4.4/4.15 s, RV6 2.78/2.68 s, RV8 1.78/1.73 s, RV10 1.14/1.12 s, RV12 0.74/0.72 s, RV14 0.48/0.46 s, RV16 0.32/0.3 s"
+ },
+ {
   "id": "BM3-08 LFO → FX1-/FX2-Typ: Wechsel in der Familie mit 30-ms-Blende, M-KLICK ≤ 6 dB (Säge A5, nach dem Attack)",
   "ok": true,
   "info": "FX1 CH: 3.23 dB, FX2 DL: 1.22 dB"
  },
  {
+  "id": "BM3-09 Panik: Fahne DL16 ≤ −90 dBFS nach 50 ms; ■: Fahne klingt aus",
+  "ok": true,
+  "info": "nach Panik -600 dBFS; nach ■ Fahne -27.2 dBFS"
+ },
+ {
+  "id": "BM3-09 Panik: Fahne RV1 ≤ −90 dBFS nach 50 ms; ■: Fahne klingt aus",
+  "ok": true,
+  "info": "nach Panik -600 dBFS; nach ■ Fahne -15.5 dBFS"
+ },
+ {
   "id": "BM3-11 SYNC: ON bei 120 BPM DL1–8 = Notenwerte ± 0,1 ms; DL9–16 unverändert; OFF bitgleich ohne Feld; 120 → 90 BPM gleitet, M-KLICK ≤ 6 dB",
   "ok": true,
   "info": "DL1 750, DL2 500, DL3 375, DL4 187.5, DL5 125, DL6 93.75, DL7 62.5, DL8 31.25 ms (größte Abw. 0); DL9–16 Abw. 0 ms; OFF Differenz 0; Tempowechsel M-KLICK 0.04 dB"
+ },
+ {
+  "id": "BM2-05 FX-Ziele wirken messbar (fx1t, fx2t, fx1b, fx2b)",
+  "ok": true,
+  "info": "LFO→fx1t -1.1 dB, LFO→fx2t -2.7 dB, LFO→fx2b 4 dB, MW→fx1b -2.8 dB, MW→fx2b 2.1 dB, AT→fx1b -2.8 dB"
+ },
+ {
+  "id": "BM2-09 TIME FX OFF → DL/RV umgangen (bitgleich trocken), DT bleibt",
+  "ok": true,
+  "info": "DL3 Differenz 0, RV2 0, DT6 wirkt (0.137)"
  }
 ]

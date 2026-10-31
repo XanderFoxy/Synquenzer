@@ -1,0 +1,27 @@
+[
+ {
+  "id": "BM4-01 Layer: jede Note A und B; SEMI +12 → +1200 ± 0,5 ct; BAL 0/50/100 → nur A / gleich ± 0,2 dB / nur B; PAN trennt A links, B rechts; TUNE ± 1 ct",
+  "ok": true,
+  "info": "2 Stimmen; B +1200 ct; BAL 0: B still, 50: A−B 0 dB, 100: A still; PAN 100: A R=0.0e+0, B L=2.6e-17; TUNE 37 → 37.001 ct"
+ },
+ {
+  "id": "BM4-02 Split: Note < sp → A, ≥ sp → B (Splitpunkt per „Split halten + Taste“: Bedienfeld BM5)",
+  "ok": true,
+  "info": "59→A, 60→B"
+ },
+ {
+  "id": "BM4-03 FX-Typen aus A; FX1-Anteil je Programm (zwei Instanzen); FX2 einmal (Typ und Anteil aus A)",
+  "ok": true,
+  "info": "FX1 A wirkt 0.321, FX1 B wirkt 0.257, B-eigener Typ ändert nichts (0), FX2 aus B ändert nichts (0), FX2 aus A wirkt"
+ },
+ {
+  "id": "BM4-04 LFOs je Programm: A und B mit eigenen Werten",
+  "ok": true,
+  "info": "49 Zeitpunkte, verschieden 49, B (Rechteck) 2 Werte"
+ },
+ {
+  "id": "BM4-05 Layer braucht 2 Stimmen je Note; die 7. Note klaut (12 Stimmen)",
+  "ok": true,
+  "info": "12 Stimmen, 1. Note geklaut true, 7. Note mit 2 Stimmen"
+ }
+]

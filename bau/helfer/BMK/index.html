@@ -3787,180 +3787,9 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 <input type="file" id="fileIn" accept=".json,application/json,.zip,application/zip" hidden>
 <input type="file" id="sndIn" accept=".json,application/json" hidden>
 <input type="file" id="syxIn" hidden>
-<script type="text/plain" id="sq-mk-src">
-/* ===== MK1 / MK-P (Nachtrag 3 B.3, B.4, MK-P): block sq-mk-src, evaluated on first need (mkLoad). The panel of the AM engine as
-   the front of the original device after the line drawing (blue-silver plate, one knob or key per value, the 2 x 16 display with
-   its pages, SELECT 1-16), shown whole or zoomed in a fixed frame; the PITCH / MOD wheels; the performance probe (Menü → Info).
-   DOM + CSS only (EN3-13), no image data, no new font. Names are composed from MK_LABEL (EN3-05). ===== */
-/*MKT{*/
-/* ---- MK2 (Nachtrag 3 MK2 Umfang 3, B.4, B.6 Nr. 6, Spec §10.1): the stored waves 1-64 (traced from the oscilloscope PDF = the built-in waves, Xander 25.10.; "≈" only for the doubtful 60)
-   and the shared, DOM-free table builder (no window / document; the caller slices the work). MK_WD is written by the build
-   script v3-mk2-wellen.mjs (same source = the same block): 1 salt byte, then per wave 1 byte (bits 0-1 r code: 0 r = 1,
-   1 r = 2, 2 r = 1.49831; bits 2-3 K / 32 - 1) and K partials of 3 bytes (12 bit level: 0 silent, else -(4095 - c) * 0.025 dB
-   against the strongest partial; 12 bit phase c * 2 pi / 4096; x(th) = sum a_k sin(k th + p_k)); every byte after the first is
-   XOR the salt. No names, only computed partial values.
-   A table set = one period, mip chain of 11 levels (sizes 2048 2048 2048 1024 x 8; level L keeps the partials k <= 512 >> L,
-   level 10 = the sine of level 9 as the crossfade partner), each level followed by one guard sample, 14347 floats in one buffer.
-   The sizes differ from Spec §10.1 (2048 ... 64; Teil G Nr. 9: the MK2 sizes are the shared definition now): with linear
-   interpolation a level's images lie (k / N)^2 under its partials, and a wave whose energy sits in its top partials (27, 31 ...)
-   folded -29 dB at C7 with 256 points; >= 1024 points keep B.6 Nr. 12 for every wave. Peak 1 (one factor from level 0 for all levels), no DC. Waves 35 and 61-64 keep their spectrum in Hz:
-   one set per octave C1 ... C8 (the voice blends the two neighbours until its own note table, built in the worklet from env(), is there; MK2-fix). ---- */
-/*MKD{*/const MK_WD = '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';/*}MKD*/
-const MKTAB = (function () {
-  'use strict';
-  const NL = [2048, 2048, 2048, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024], HL = [512, 256, 128, 64, 32, 16, 8, 4, 2, 1, 1];
-  const OFF = []; let SET = 0; for (const n of NL) { OFF.push(SET); SET += n + 1; }
-  const RS = [1, 2, 1.49831], HZ = 220.27, KMAX = 512;
-  // groups (HB-MS family order): first, last, roll-off s in dB per octave over partial 32 of the note band, own name
-  const GRP = [[1, 7, -12, 'Sinus'], [8, 14, -9, 'Bass'], [15, 23, -9, 'Welle'], [24, 26, -9, 'Quinte'], [27, 34, -6, 'Digital'], [35, 35, -8, 'Endlos'],
-    [36, 39, -12, 'E-Piano'], [40, 46, -12, 'Orgel'], [47, 48, -9, 'Clavi'], [49, 51, -9, 'Gitarre'], [52, 56, -9, 'Bass II'], [57, 60, -9, 'Glocke'], [61, 64, -12, 'Stimme']];
-  const grpOf = n => GRP.find(g => n >= g[0] && n <= g[1]) || GRP[0];
-  const isOct = n => n === 35 || n >= 61;
-  // the octave references C1 ... C8 (MIDI 24 ... 108)
-  const OCTF = []; for (let j = 0; j < 8; j++) OCTF.push(440 * Math.pow(2, (24 + 12 * j - 69) / 12));
-  // 35: the envelope in Hz over 110 Hz * 2^j (j 0..6), linear in dB over log f, -6 dB/oct below, -8 dB/oct above
-  const E35 = [-2.0, -1.7, -0.1, 0, -0.6, -0.7, -4.1];
-  let D = null;
-  function b64(s) {
-    if (typeof atob === 'function') { const t = atob(s), u = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) u[i] = t.charCodeAt(i); return u; }
-    return new Uint8Array(Buffer.from(s, 'base64'));   // Node without atob
-  }
-  function data() {
-    if (D) return D;
-    const b = b64(MK_WD); D = [null]; if (!b.length) return D;
-    const salt = b[0]; let i = 1;
-    for (let n = 1; n <= 64; n++) {
-      const h = b[i++] ^ salt, r = RS[h & 3], K = 32 * (((h >> 2) & 3) + 1), a = new Float64Array(K + 1), p = new Float64Array(K + 1);
-      for (let k = 1; k <= K; k++) {
-        const v = ((b[i] ^ salt) << 16) | ((b[i + 1] ^ salt) << 8) | (b[i + 2] ^ salt); i += 3;
-        const cl = v >> 12, cp = v & 4095;
-        a[k] = cl ? Math.pow(10, -(4095 - cl) * .025 / 20) : 0; p[k] = cp * 2 * Math.PI / 4096;
-      }
-      D.push({r, K, a, p});
-    }
-    return D;
-  }
-  const schroeder = k => -Math.PI * k * (k - 1) / 1024;
-  // Abar = rms of the table partials 16 r + 1 ... 32 r (partials 17 - 32 of the note band)
-  function abar(w) { let e = 0, c = 0; for (let k = Math.round(16 * w.r) + 1; k <= Math.round(32 * w.r); k++) { e += w.a[k] * w.a[k]; c++; } return Math.sqrt(e / Math.max(1, c)); }
-  // the partial amplitudes / phases of one table (k 1..512); f = the reference note frequency of an octave table
-  function harm(n, f) {
-    const w = data()[n], A = new Float64Array(KMAX + 1), P = new Float64Array(KMAX + 1); if (!w) return {A, P};
-    const s = grpOf(n)[2], ab = abar(w), roll = ab >= Math.pow(10, -50 / 20);
-    if (isOct(n)) {   // 35: only octave partials (f / 2) * 2^j; 61-64: the traced partials at k * 220.27 Hz are the support points of a fixed envelope in Hz
-      const F = f || HZ, e = env(n);
-      for (let k = 1; k <= KMAX; k++) { const a = envA(e, k, F); if (a || n !== 35) { A[k] = a; P[k] = e.P[k]; } }
-      return {A, P};
-    }
-    for (let k = 1; k <= KMAX; k++) {
-      if (k <= w.K) { A[k] = w.a[k]; P[k] = w.p[k]; }
-      else { A[k] = roll ? ab * Math.pow(k / (22.6 * w.r), s / 6.02) : 0; P[k] = schroeder(k); }
-    }
-    return {A, P};
-  }
-  // MK2-fix: the envelope data of an octave wave (35, 61-64). harm() reads it, and it goes to the worklet with the wave ({mkw}.e):
-  // a voice builds its own note table from it (exact envelope in Hz at its pitch, MK2-12), g = the level factor of each octave set
-  const ENV = {};
-  function env(n) {
-    if (ENV[n]) return ENV[n]; const w = data()[n]; if (!w || !isOct(n)) return null;
-    const P = new Float64Array(KMAX + 1); for (let k = 1; k <= KMAX; k++) P[k] = k <= w.K ? w.p[k] : schroeder(k);
-    if (n === 35) return (ENV[n] = {t: 2, E: E35.slice(), P, r: w.r});
-    const Ld = new Float64Array(w.K + 1); for (let k = 1; k <= w.K; k++) Ld[k] = w.a[k] > 0 ? 20 * Math.log10(w.a[k]) : -100;
-    const ab = abar(w);
-    return (ENV[n] = {t: 1, K: w.K, Ld, ab, s: grpOf(n)[2], roll: ab >= Math.pow(10, -50 / 20) ? 1 : 0, hz: HZ, P, r: w.r});
-  }
-  // the level of table partial k at the reference (played) note frequency F; the worklet has the same text (mkEnvA)
-  function envA(e, k, F) {
-    if (e.t === 2) {
-      if (k & (k - 1)) return 0;
-      const x = k * F / 2, o = Math.log2(x / 110), E = e.E; let L;
-      if (o <= 0) L = E[0] + 6 * o; else if (o >= 6) L = E[6] - 8 * (o - 6); else { const j = Math.floor(o), t = o - j; L = E[j] + (E[j + 1] - E[j]) * t; }
-      return Math.pow(10, L / 20);
-    }
-    const h = k * F / e.hz, Ld = e.Ld, K = e.K;
-    if (h <= 1) return Math.pow(10, (Ld[1] - 12 * Math.log2(1 / h)) / 20);
-    if (h <= K) { const m = Math.min(K - 1, Math.floor(h)), t = Math.log(h / m) / Math.log((m + 1) / m); return Math.pow(10, (Ld[m] + (Ld[m + 1] - Ld[m]) * t) / 20); }
-    return e.roll ? e.ab * Math.pow(h / 22.6, e.s / 6.02) : 0;
-  }
-  // the payload part of the note tables: the envelope, the phases and the level factor of every octave set (35: one)
-  function envMsg(n) {
-    const e = env(n); if (!e) return null;
-    const g = n === 35 ? [norm(35, HZ)] : OCTF.map(f => norm(n, f));
-    return Object.assign({}, e, {E: e.E ? e.E.slice() : null, Ld: e.Ld ? e.Ld.slice() : null, P: e.P.slice(), g, f0: OCTF[0]});
-  }
-  // radix-2 complex FFT (forward sign -1 / inverse +1), twiddles from Math.cos / Math.sin per size (deterministic)
-  const TW = {};
-  function tw(n) { let t = TW[n]; if (t) return t; t = {c: new Float64Array(n / 2), s: new Float64Array(n / 2)}; for (let k = 0; k < n / 2; k++) { t.c[k] = Math.cos(2 * Math.PI * k / n); t.s[k] = Math.sin(2 * Math.PI * k / n); } return (TW[n] = t); }
-  function fft(re, im, sign) {
-    const n = re.length, T = tw(n);
-    for (let i = 1, j = 0; i < n; i++) { let b = n >> 1; for (; j & b; b >>= 1) j ^= b; j ^= b; if (i < j) { let x = re[i]; re[i] = re[j]; re[j] = x; x = im[i]; im[i] = im[j]; im[j] = x; } }
-    for (let len = 2; len <= n; len <<= 1) {
-      const h = len >> 1, st = n / len;
-      for (let i = 0; i < n; i += len) for (let j = 0; j < h; j++) {
-        const c = T.c[j * st], s = sign * T.s[j * st], k = i + j, l = k + h, tr = re[l] * c - im[l] * s, ti = re[l] * s + im[l] * c;
-        re[l] = re[k] - tr; im[l] = im[k] - ti; re[k] += tr; im[k] += ti;
-      }
-    }
-  }
-  // one level: x[i] = sum_{k <= H} A_k sin(2 pi k i / N + P_k)
-  function level(H, L) {
-    const N = NL[L], K = Math.min(HL[L], N / 2 - 1), re = new Float64Array(N), im = new Float64Array(N);
-    for (let k = 1; k <= K; k++) { const a = H.A[k]; if (!a) continue; re[k] = a * Math.sin(H.P[k]); im[k] = -a * Math.cos(H.P[k]); }
-    fft(re, im, 1); return re;
-  }
-  // the peak factor from level 0: one per wave; 35 one for all its octave sets from the set at 220.27 Hz (the Shepard tone stays
-  // level), 61-64 one per octave set (a fixed envelope in Hz holds many more partials at C1 than at C6: each set peaks at 1)
-  const NORM = {};
-  function peak0(n, f) { const x = level(harm(n, f), 0); let p = 0; for (let i = 0; i < x.length; i++) { const a = Math.abs(x[i]); if (a > p) p = a; } return p; }
-  function norm(n, f) {
-    const key = n + '|' + (n >= 61 ? f : 0); if (NORM[key]) return NORM[key];
-    const p = peak0(n, n === 35 ? HZ : f);
-    return (NORM[key] = p > 0 ? 1 / p : 1);
-  }
-  // the mip levels an octave set can be read at: set j plays from one octave under to one octave over its reference (the voice
-  // blends j and j + 1 by pitch), sets 0 and 7 everything under C2 / over C7; one level of margin for 22-96 kHz contexts. A level
-  // outside is not built (zeros; the worklet reads the nearest built one there, which never happens at those pitches)
-  function range(n, f, oct) {
-    if (!isOct(n) || oct == null) return [0, 10];
-    const r = data()[n].r, q = x => Math.log2(x / r * 512 / 11025);
-    const lo = oct === 0 ? 0 : Math.max(0, Math.ceil(q(f / 2) - 2.13) - 1), hi = oct === 7 ? 10 : Math.min(10, Math.ceil(q(2 * f)) + 1);
-    return [lo, Math.max(lo + 1, hi)];
-  }
-  // an incremental builder of one set (one level per step; the level 0 of the set first, it gives the peak factor), so the
-  // main thread can slice the work <= 8 ms; mkTables runs it to the end
-  function builder(spec) {
-    const n = spec.n | 0, oct = isOct(n) && spec.oct != null ? spec.oct : null, f = isOct(n) ? (spec.f || (oct != null ? OCTF[oct] : HZ)) : 0;
-    const [lo, hi] = range(n, f, oct), buf = new Float32Array(SET), out = NL.map((N, L) => buf.subarray(OFF[L], OFF[L] + N + 1));
-    let H = null, g = 0, L = -1;
-    return {lo, hi, out, buf,
-      step() {
-        if (L < 0) { H = harm(n, f); L = lo; return false; }
-        if (L > hi) return true;
-        const N = NL[L], t = out[L];
-        if (L === 10) { const a = out[9], M = a.length - 1; for (let i = 0; i < N; i++) t[i] = a[(i * M / N) | 0]; }   // level 10 = level 9 (one partial)
-        else {
-          const x = level(H, L);
-          if (!g) { const key = n + '|' + (n >= 61 ? f : 0);   // the factor: 35 from its 220.27 Hz set, 61-64 per set, the others from their level 0
-            if (NORM[key]) g = NORM[key]; else if (L === 0 && n !== 35) { let p = 0; for (let i = 0; i < N; i++) { const v = Math.abs(x[i]); if (v > p) p = v; } g = NORM[key] = p > 0 ? 1 / p : 1; } else g = norm(n, f); }
-          for (let i = 0; i < N; i++) t[i] = x[i] * g;
-        }
-        t[N] = t[0]; L++; return L > hi;
-      }};
-  }
-  // mkTables(spec) -> Float32Array[]: the 11 levels of one set (views on one buffer, each with its guard sample).
-  // spec = {n: 1..64, oct?: 0..7 (octave tables: the reference C1 + oct), f?: reference Hz (octave waves; default 220.27)}
-  function mkTables(spec) { const B = builder(spec); while (!B.step()); return B.out; }
-  // the payload of one wave for the worklet ({mkw}): one set, or the 8 octave sets in one buffer (R: the built levels per set)
-  function wave(n) {
-    if (!isOct(n)) return {n, r: data()[n] ? data()[n].r : 1, o: 0, d: mkTables({n})[0].buffer, R: [[0, 10]]};
-    const d = new Float32Array(SET * 8), R = [];
-    for (let j = 0; j < 8; j++) { const B = builder({n, oct: j}); while (!B.step()); d.set(B.buf, j * SET); R.push([B.lo, B.hi]); }
-    return {n, r: data()[n].r, o: 1, d: d.buffer, R, e: envMsg(n)};
-  }
-  return {mkTables, builder, range, wave: n => Object.assign(wave(n), {L: NL}), harm, data, norm, isOct, env, envA, envMsg, r: n => (data()[n] ? data()[n].r : 1), group: n => { const g = grpOf(n); return [g[3], n - g[0] + 1, g[2]]; },
-    NL, HL, OFF, SET, OCTF, HZ, GRP, ready: () => data().length > 1};
-})();
-/*}MKT*/
+<script type="text/plain" id="sq-arp-src">
+/* ===== shared arpeggiator block (Nachtrag 7 section 5.2): ARPC of MK5 (engine mk, unchanged) and BMARP (Bit Mask); evaluated
+   once before the block sq-mk-src (mkLoad) and by the Bit Mask host (arpSrcLoad) ===== */
 /* ---- MK5 (Nachtrag 3 MK5, EN3-11): the step arpeggiator. It sits on the main thread between the note sources of a track (keys,
    chord keys, MIDI in, clip notes, the song melody, recorded takes playing back) and spawnVoice. Every source goes into the
    held set: intervals {source note, on, off} in audio time (live: press time + LIVE_LEAD; clips: their future time stamps), so
@@ -4221,6 +4050,226 @@ const ARPC = (function () {
   const seedOf = i => { const tr = S.tracks[i]; return mix(fnv(String(S.id || '') + '|' + (tr && tr.uid || i)), 7); };
   return {RES, TYP, arpPattern, seedOf, on, live, liveUp, clip, cut, cancelFrom, carrier, rewind, tick, plan, end, endAll, cur, arpLog, clearLog, info, busy: () => ST.size > 0, route};
 })();
+/* ===== BM4 (Nachtrag 7 section 1.14): the Bit Mask arpeggiator core BMARP, next to ARPC in the shared block sq-arp-src.
+   Pure functions (no engine, no track): the 26 patterns in play order, the step length (SPD free / song clock). ARPC's planner
+   (held set, live / clip sources, timing) takes them over once BM6 brings the engine 'bm' (see CHANGES BM4). ===== */
+const BMARP = (function () {
+  'use strict';
+  const T = ['off', '1oct', 'dbl', '2oct', 'alt', '3oct', 'pong', 'pon2', 'pon3', 'rnd', 'rnd2', 'rnd3', 'min', 'maj', 'sus2', 'sus4', '7th', 'min2', 'maj2', 'su22', 'su42', '7th2', '1o', '2o', '3o', '5th', '5th2'];
+  // fixed patterns: semitones over the last key, played ascending and repeated
+  const FIX = {min: [0, 3, 7], maj: [0, 4, 7], sus2: [0, 2, 7], sus4: [0, 5, 7], '7th': [0, 4, 7, 10], '1o': [0], '2o': [0, 12], '3o': [0, 12, 24], '5th': [0, 7], '5th2': [0, 7, 12, 19]};
+  for (const k of ['min', 'maj', 'sus2', 'sus4', '7th']) FIX[k === 'sus2' ? 'su22' : k === 'sus4' ? 'su42' : k + '2'] = FIX[k].concat(FIX[k].map(x => x + 12));
+  const md = (a, n) => ((a % n) + n) % n;
+  const mix = (h, c) => { let x = (h ^ Math.imul(c | 0, 0x9e3779b1)) >>> 0; x ^= x >>> 16; x = Math.imul(x, 0x85ebca6b) >>> 0; x ^= x >>> 13; x = Math.imul(x, 0xc2b2ae35) >>> 0; x ^= x >>> 16; return x >>> 0; };
+  const oct = (keys, n) => { const U = []; for (let o = 0; o < n; o++) for (const k of keys) U.push(k + 12 * o); return U; };
+  const pong = U => (U.length < 2 ? U : U.concat(U.slice(1, -1).reverse()));
+  // the sequence of one cycle for the held keys in play order (t1 ... tn); RND has none (see step)
+  function seq(t, keys) {
+    if (!keys.length) return [];
+    switch (t) {
+      case '1oct': return keys.slice();
+      case 'dbl': { const o = []; for (const k of keys) o.push(k, k); return o; }
+      case '2oct': return oct(keys, 2);
+      case '3oct': return oct(keys, 3);
+      case 'alt': { const o = []; for (const k of keys) o.push(k, k + 12); return o; }
+      case 'pong': return pong(keys);
+      case 'pon2': return pong(oct(keys, 2));
+      case 'pon3': return pong(oct(keys, 3));
+      default: { const f = FIX[t]; if (f) { const last = keys[keys.length - 1]; return f.map(x => last + x); } return []; }
+    }
+  }
+  // the note of step c (0, 1, 2 ...); seed = project id + track uid (RND: + the step counter); null = nothing to play
+  function step(t, keys, c, seed) {
+    if (!keys.length || t === 'off') return null;
+    if (t === 'rnd' || t === 'rnd2' || t === 'rnd3') { const U = oct(keys, t === 'rnd' ? 1 : t === 'rnd2' ? 2 : 3); return U[mix(seed >>> 0, c) % U.length]; }
+    const s = seq(t, keys); if (!s.length) return null; const n = s[md(c, s.length)]; return n <= 127 ? n : null;
+  }
+  // the step length: transport stopped = free sixteenths at SPD BPM; running = the song is the clock, the division nearest (log) to SPD / song BPM
+  const DIV = [[.25, '1/4', 1], [.5, '1/8', .5], [.75, '1/8T', 1 / 3], [1, '1/16', .25], [1.5, '1/16T', 1 / 6], [2, '1/32', .125]];
+  function div(spd, bpm, running) {
+    spd = Math.max(20, Math.min(400, +spd || 120));
+    if (!running) return {sec: 60 / spd / 4, name: 'frei', beats: spd ? bpm / spd / 4 : 0};
+    const r = spd / bpm; let best = DIV[0], bd = Infinity; for (const d of DIV) { const x = Math.abs(Math.log(r / d[0])); if (x < bd - 1e-12) { bd = x; best = d; } }
+    return {sec: best[2] * 60 / bpm, name: best[1], beats: best[2]};
+  }
+  return {T, FIX, seq, step, div};
+})();
+</script>
+<script type="text/plain" id="sq-mk-src">
+/* ===== MK1 / MK-P (Nachtrag 3 B.3, B.4, MK-P): block sq-mk-src, evaluated on first need (mkLoad). The panel of the AM engine as
+   the front of the original device after the line drawing (blue-silver plate, one knob or key per value, the 2 x 16 display with
+   its pages, SELECT 1-16), shown whole or zoomed in a fixed frame; the PITCH / MOD wheels; the performance probe (Menü → Info).
+   DOM + CSS only (EN3-13), no image data, no new font. Names are composed from MK_LABEL (EN3-05). ===== */
+/*MKT{*/
+/* ---- MK2 (Nachtrag 3 MK2 Umfang 3, B.4, B.6 Nr. 6, Spec §10.1): the stored waves 1-64 (traced from the oscilloscope PDF = the built-in waves, Xander 25.10.; "≈" only for the doubtful 60)
+   and the shared, DOM-free table builder (no window / document; the caller slices the work). MK_WD is written by the build
+   script v3-mk2-wellen.mjs (same source = the same block): 1 salt byte, then per wave 1 byte (bits 0-1 r code: 0 r = 1,
+   1 r = 2, 2 r = 1.49831; bits 2-3 K / 32 - 1) and K partials of 3 bytes (12 bit level: 0 silent, else -(4095 - c) * 0.025 dB
+   against the strongest partial; 12 bit phase c * 2 pi / 4096; x(th) = sum a_k sin(k th + p_k)); every byte after the first is
+   XOR the salt. No names, only computed partial values.
+   A table set = one period, mip chain of 11 levels (sizes 2048 2048 2048 1024 x 8; level L keeps the partials k <= 512 >> L,
+   level 10 = the sine of level 9 as the crossfade partner), each level followed by one guard sample, 14347 floats in one buffer.
+   The sizes differ from Spec §10.1 (2048 ... 64; Teil G Nr. 9: the MK2 sizes are the shared definition now): with linear
+   interpolation a level's images lie (k / N)^2 under its partials, and a wave whose energy sits in its top partials (27, 31 ...)
+   folded -29 dB at C7 with 256 points; >= 1024 points keep B.6 Nr. 12 for every wave. Peak 1 (one factor from level 0 for all levels), no DC. Waves 35 and 61-64 keep their spectrum in Hz:
+   one set per octave C1 ... C8 (the voice blends the two neighbours until its own note table, built in the worklet from env(), is there; MK2-fix). ---- */
+/*MKD{*/const MK_WD = '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';/*}MKD*/
+const MKTAB = (function () {
+  'use strict';
+  const NL = [2048, 2048, 2048, 1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024], HL = [512, 256, 128, 64, 32, 16, 8, 4, 2, 1, 1];
+  const OFF = []; let SET = 0; for (const n of NL) { OFF.push(SET); SET += n + 1; }
+  const RS = [1, 2, 1.49831], HZ = 220.27, KMAX = 512;
+  // groups (HB-MS family order): first, last, roll-off s in dB per octave over partial 32 of the note band, own name
+  const GRP = [[1, 7, -12, 'Sinus'], [8, 14, -9, 'Bass'], [15, 23, -9, 'Welle'], [24, 26, -9, 'Quinte'], [27, 34, -6, 'Digital'], [35, 35, -8, 'Endlos'],
+    [36, 39, -12, 'E-Piano'], [40, 46, -12, 'Orgel'], [47, 48, -9, 'Clavi'], [49, 51, -9, 'Gitarre'], [52, 56, -9, 'Bass II'], [57, 60, -9, 'Glocke'], [61, 64, -12, 'Stimme']];
+  const grpOf = n => GRP.find(g => n >= g[0] && n <= g[1]) || GRP[0];
+  const isOct = n => n === 35 || n >= 61;
+  // the octave references C1 ... C8 (MIDI 24 ... 108)
+  const OCTF = []; for (let j = 0; j < 8; j++) OCTF.push(440 * Math.pow(2, (24 + 12 * j - 69) / 12));
+  // 35: the envelope in Hz over 110 Hz * 2^j (j 0..6), linear in dB over log f, -6 dB/oct below, -8 dB/oct above
+  const E35 = [-2.0, -1.7, -0.1, 0, -0.6, -0.7, -4.1];
+  let D = null;
+  function b64(s) {
+    if (typeof atob === 'function') { const t = atob(s), u = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) u[i] = t.charCodeAt(i); return u; }
+    return new Uint8Array(Buffer.from(s, 'base64'));   // Node without atob
+  }
+  function data() {
+    if (D) return D;
+    const b = b64(MK_WD); D = [null]; if (!b.length) return D;
+    const salt = b[0]; let i = 1;
+    for (let n = 1; n <= 64; n++) {
+      const h = b[i++] ^ salt, r = RS[h & 3], K = 32 * (((h >> 2) & 3) + 1), a = new Float64Array(K + 1), p = new Float64Array(K + 1);
+      for (let k = 1; k <= K; k++) {
+        const v = ((b[i] ^ salt) << 16) | ((b[i + 1] ^ salt) << 8) | (b[i + 2] ^ salt); i += 3;
+        const cl = v >> 12, cp = v & 4095;
+        a[k] = cl ? Math.pow(10, -(4095 - cl) * .025 / 20) : 0; p[k] = cp * 2 * Math.PI / 4096;
+      }
+      D.push({r, K, a, p});
+    }
+    return D;
+  }
+  const schroeder = k => -Math.PI * k * (k - 1) / 1024;
+  // Abar = rms of the table partials 16 r + 1 ... 32 r (partials 17 - 32 of the note band)
+  function abar(w) { let e = 0, c = 0; for (let k = Math.round(16 * w.r) + 1; k <= Math.round(32 * w.r); k++) { e += w.a[k] * w.a[k]; c++; } return Math.sqrt(e / Math.max(1, c)); }
+  // the partial amplitudes / phases of one table (k 1..512); f = the reference note frequency of an octave table
+  function harm(n, f) {
+    const w = data()[n], A = new Float64Array(KMAX + 1), P = new Float64Array(KMAX + 1); if (!w) return {A, P};
+    const s = grpOf(n)[2], ab = abar(w), roll = ab >= Math.pow(10, -50 / 20);
+    if (isOct(n)) {   // 35: only octave partials (f / 2) * 2^j; 61-64: the traced partials at k * 220.27 Hz are the support points of a fixed envelope in Hz
+      const F = f || HZ, e = env(n);
+      for (let k = 1; k <= KMAX; k++) { const a = envA(e, k, F); if (a || n !== 35) { A[k] = a; P[k] = e.P[k]; } }
+      return {A, P};
+    }
+    for (let k = 1; k <= KMAX; k++) {
+      if (k <= w.K) { A[k] = w.a[k]; P[k] = w.p[k]; }
+      else { A[k] = roll ? ab * Math.pow(k / (22.6 * w.r), s / 6.02) : 0; P[k] = schroeder(k); }
+    }
+    return {A, P};
+  }
+  // MK2-fix: the envelope data of an octave wave (35, 61-64). harm() reads it, and it goes to the worklet with the wave ({mkw}.e):
+  // a voice builds its own note table from it (exact envelope in Hz at its pitch, MK2-12), g = the level factor of each octave set
+  const ENV = {};
+  function env(n) {
+    if (ENV[n]) return ENV[n]; const w = data()[n]; if (!w || !isOct(n)) return null;
+    const P = new Float64Array(KMAX + 1); for (let k = 1; k <= KMAX; k++) P[k] = k <= w.K ? w.p[k] : schroeder(k);
+    if (n === 35) return (ENV[n] = {t: 2, E: E35.slice(), P, r: w.r});
+    const Ld = new Float64Array(w.K + 1); for (let k = 1; k <= w.K; k++) Ld[k] = w.a[k] > 0 ? 20 * Math.log10(w.a[k]) : -100;
+    const ab = abar(w);
+    return (ENV[n] = {t: 1, K: w.K, Ld, ab, s: grpOf(n)[2], roll: ab >= Math.pow(10, -50 / 20) ? 1 : 0, hz: HZ, P, r: w.r});
+  }
+  // the level of table partial k at the reference (played) note frequency F; the worklet has the same text (mkEnvA)
+  function envA(e, k, F) {
+    if (e.t === 2) {
+      if (k & (k - 1)) return 0;
+      const x = k * F / 2, o = Math.log2(x / 110), E = e.E; let L;
+      if (o <= 0) L = E[0] + 6 * o; else if (o >= 6) L = E[6] - 8 * (o - 6); else { const j = Math.floor(o), t = o - j; L = E[j] + (E[j + 1] - E[j]) * t; }
+      return Math.pow(10, L / 20);
+    }
+    const h = k * F / e.hz, Ld = e.Ld, K = e.K;
+    if (h <= 1) return Math.pow(10, (Ld[1] - 12 * Math.log2(1 / h)) / 20);
+    if (h <= K) { const m = Math.min(K - 1, Math.floor(h)), t = Math.log(h / m) / Math.log((m + 1) / m); return Math.pow(10, (Ld[m] + (Ld[m + 1] - Ld[m]) * t) / 20); }
+    return e.roll ? e.ab * Math.pow(h / 22.6, e.s / 6.02) : 0;
+  }
+  // the payload part of the note tables: the envelope, the phases and the level factor of every octave set (35: one)
+  function envMsg(n) {
+    const e = env(n); if (!e) return null;
+    const g = n === 35 ? [norm(35, HZ)] : OCTF.map(f => norm(n, f));
+    return Object.assign({}, e, {E: e.E ? e.E.slice() : null, Ld: e.Ld ? e.Ld.slice() : null, P: e.P.slice(), g, f0: OCTF[0]});
+  }
+  // radix-2 complex FFT (forward sign -1 / inverse +1), twiddles from Math.cos / Math.sin per size (deterministic)
+  const TW = {};
+  function tw(n) { let t = TW[n]; if (t) return t; t = {c: new Float64Array(n / 2), s: new Float64Array(n / 2)}; for (let k = 0; k < n / 2; k++) { t.c[k] = Math.cos(2 * Math.PI * k / n); t.s[k] = Math.sin(2 * Math.PI * k / n); } return (TW[n] = t); }
+  function fft(re, im, sign) {
+    const n = re.length, T = tw(n);
+    for (let i = 1, j = 0; i < n; i++) { let b = n >> 1; for (; j & b; b >>= 1) j ^= b; j ^= b; if (i < j) { let x = re[i]; re[i] = re[j]; re[j] = x; x = im[i]; im[i] = im[j]; im[j] = x; } }
+    for (let len = 2; len <= n; len <<= 1) {
+      const h = len >> 1, st = n / len;
+      for (let i = 0; i < n; i += len) for (let j = 0; j < h; j++) {
+        const c = T.c[j * st], s = sign * T.s[j * st], k = i + j, l = k + h, tr = re[l] * c - im[l] * s, ti = re[l] * s + im[l] * c;
+        re[l] = re[k] - tr; im[l] = im[k] - ti; re[k] += tr; im[k] += ti;
+      }
+    }
+  }
+  // one level: x[i] = sum_{k <= H} A_k sin(2 pi k i / N + P_k)
+  function level(H, L) {
+    const N = NL[L], K = Math.min(HL[L], N / 2 - 1), re = new Float64Array(N), im = new Float64Array(N);
+    for (let k = 1; k <= K; k++) { const a = H.A[k]; if (!a) continue; re[k] = a * Math.sin(H.P[k]); im[k] = -a * Math.cos(H.P[k]); }
+    fft(re, im, 1); return re;
+  }
+  // the peak factor from level 0: one per wave; 35 one for all its octave sets from the set at 220.27 Hz (the Shepard tone stays
+  // level), 61-64 one per octave set (a fixed envelope in Hz holds many more partials at C1 than at C6: each set peaks at 1)
+  const NORM = {};
+  function peak0(n, f) { const x = level(harm(n, f), 0); let p = 0; for (let i = 0; i < x.length; i++) { const a = Math.abs(x[i]); if (a > p) p = a; } return p; }
+  function norm(n, f) {
+    const key = n + '|' + (n >= 61 ? f : 0); if (NORM[key]) return NORM[key];
+    const p = peak0(n, n === 35 ? HZ : f);
+    return (NORM[key] = p > 0 ? 1 / p : 1);
+  }
+  // the mip levels an octave set can be read at: set j plays from one octave under to one octave over its reference (the voice
+  // blends j and j + 1 by pitch), sets 0 and 7 everything under C2 / over C7; one level of margin for 22-96 kHz contexts. A level
+  // outside is not built (zeros; the worklet reads the nearest built one there, which never happens at those pitches)
+  function range(n, f, oct) {
+    if (!isOct(n) || oct == null) return [0, 10];
+    const r = data()[n].r, q = x => Math.log2(x / r * 512 / 11025);
+    const lo = oct === 0 ? 0 : Math.max(0, Math.ceil(q(f / 2) - 2.13) - 1), hi = oct === 7 ? 10 : Math.min(10, Math.ceil(q(2 * f)) + 1);
+    return [lo, Math.max(lo + 1, hi)];
+  }
+  // an incremental builder of one set (one level per step; the level 0 of the set first, it gives the peak factor), so the
+  // main thread can slice the work <= 8 ms; mkTables runs it to the end
+  function builder(spec) {
+    const n = spec.n | 0, oct = isOct(n) && spec.oct != null ? spec.oct : null, f = isOct(n) ? (spec.f || (oct != null ? OCTF[oct] : HZ)) : 0;
+    const [lo, hi] = range(n, f, oct), buf = new Float32Array(SET), out = NL.map((N, L) => buf.subarray(OFF[L], OFF[L] + N + 1));
+    let H = null, g = 0, L = -1;
+    return {lo, hi, out, buf,
+      step() {
+        if (L < 0) { H = harm(n, f); L = lo; return false; }
+        if (L > hi) return true;
+        const N = NL[L], t = out[L];
+        if (L === 10) { const a = out[9], M = a.length - 1; for (let i = 0; i < N; i++) t[i] = a[(i * M / N) | 0]; }   // level 10 = level 9 (one partial)
+        else {
+          const x = level(H, L);
+          if (!g) { const key = n + '|' + (n >= 61 ? f : 0);   // the factor: 35 from its 220.27 Hz set, 61-64 per set, the others from their level 0
+            if (NORM[key]) g = NORM[key]; else if (L === 0 && n !== 35) { let p = 0; for (let i = 0; i < N; i++) { const v = Math.abs(x[i]); if (v > p) p = v; } g = NORM[key] = p > 0 ? 1 / p : 1; } else g = norm(n, f); }
+          for (let i = 0; i < N; i++) t[i] = x[i] * g;
+        }
+        t[N] = t[0]; L++; return L > hi;
+      }};
+  }
+  // mkTables(spec) -> Float32Array[]: the 11 levels of one set (views on one buffer, each with its guard sample).
+  // spec = {n: 1..64, oct?: 0..7 (octave tables: the reference C1 + oct), f?: reference Hz (octave waves; default 220.27)}
+  function mkTables(spec) { const B = builder(spec); while (!B.step()); return B.out; }
+  // the payload of one wave for the worklet ({mkw}): one set, or the 8 octave sets in one buffer (R: the built levels per set)
+  function wave(n) {
+    if (!isOct(n)) return {n, r: data()[n] ? data()[n].r : 1, o: 0, d: mkTables({n})[0].buffer, R: [[0, 10]]};
+    const d = new Float32Array(SET * 8), R = [];
+    for (let j = 0; j < 8; j++) { const B = builder({n, oct: j}); while (!B.step()); d.set(B.buf, j * SET); R.push([B.lo, B.hi]); }
+    return {n, r: data()[n].r, o: 1, d: d.buffer, R, e: envMsg(n)};
+  }
+  return {mkTables, builder, range, wave: n => Object.assign(wave(n), {L: NL}), harm, data, norm, isOct, env, envA, envMsg, r: n => (data()[n] ? data()[n].r : 1), group: n => { const g = grpOf(n); return [g[3], n - g[0] + 1, g[2]]; },
+    NL, HL, OFF, SET, OCTF, HZ, GRP, ready: () => data().length > 1};
+})();
+/*}MKT*/
+/* ARPC: moved word for word to the block sq-arp-src (Nachtrag 7 BM4, section 5.2) */
 /*MKV{*/
 /* MK7 W-44: glottis -> F1-F4 -> radiation */
 function mkVowel(o, W) {
@@ -7492,7 +7541,7 @@ var BMK = (function () {
     ghostOf(v) {
       if (!v.on) return;
       // its note ends now, unless the key is still held (a mono voice may come back to it; its 'end' follows the key's off)
-      if (!v.ghost && !this.held(v)) this.sendEnd(v);
+      if (!v.ghost && !this.held(v) && !this.twin(v)) this.sendEnd(v);
       if (v.quiet > 2 && !v.gate) return;
       let g = null; for (let i = this.NV; i < this.V.length; i++) if (!this.V[i].on) { g = this.V[i]; break; }
       if (!g) { for (let i = this.NV; i < this.V.length; i++) if (!g || this.V[i].D[11] < g.D[11]) g = this.V[i]; }
@@ -7530,8 +7579,18 @@ var BMK = (function () {
     glideFrom(v, from) { const P = this.P[v.pg] || this.P[0]; v.gld = P.g.po > 0 && from > -1e8 ? from - this.keyPitch(v.n) : 0; }
     heldIdx(S, e) { for (let i = 0; i < S.keys.length; i++) { const k = S.keys[i]; if (e.id >= 0 ? k.id === e.id : k.n === e.n) return i; } return -1; }
     takeKey(v, e) { v.id = e.id; v.key = e.n; v.n = e.n; v.vel = e.v; v.velC = velCurve(this.gl.vc, e.v); v.gate = true; v.susHeld = false; v.endSent = false; v.ord = ++this.ord; this.velRoutes(v, this.P[v.pg] || this.P[0]); }
+    // BM4 layer / split (section 1.13): the programs a key plays. d (BM6 'on.d'): 1 = only A, 2 = only B, 3 = both, 0 = by LAYER / SPLIT
     voiceOn(e) {
-      const pg = 0, P = this.P[pg], S = this.S[pg], mo = P.__d.mo;
+      const two = !!this.P[1], md = this.ly.md, d = e.d & 3;
+      if (two && (d === 3 || (d === 0 && md === 'lay'))) { this.voiceOnPg(e, 0); this.voiceOnPg(e, 1); }
+      else if (two && (d === 2 || (d === 0 && md === 'spl' && e.n >= this.ly.sp))) this.voiceOnPg(e, 1);
+      else this.voiceOnPg(e, 0);
+    }
+    // the level and side of a program in LAYER / SPLIT: BAL 0..100 (A x (1 - b), B x b, as BAL of section 1.3), PAN 0..100 spreads A left, B right
+    lyGain(pg) { if (!this.P[1] || this.ly.md === 'ein') return 1; const b = clamp(this.ly.bal, 0, 100) / 100; return pg ? b : 1 - b; }
+    lyPan(pg) { if (!this.P[1] || this.ly.md === 'ein') return 0; const p = clamp(this.ly.pan, 0, 100) / 100; return pg ? p : -p; }
+    voiceOnPg(e, pg) {
+      const P = this.P[pg], S = this.S[pg], mo = P.__d.mo;
       const legato = S.keys.length > 0;
       if (!legato) { S.lt = 0; S.dlyOff.fill(0); if (mo === 4 || mo === 6) for (let k = 0; k < 4; k++) { if (S.es[k] === 0) S.el[k] = 0; S.es[k] = 1; S.et[k] = 0; } }
       S.keys.push({id: e.id, n: e.n, v: e.v, ord: ++this.ord, ended: false});
@@ -7744,7 +7803,7 @@ var BMK = (function () {
       this.masks(v, mod);
       // pitch (semitones, A4 = 69 = TUNE): key through the temperament, SEMIs, TUNE, deltas, glide, bend, routes
       // the key through the temperament (inline: a returned double of a non-inlined call would be a heap number per step)
-      const TT = TEMP[gl.tm] || TEMP.et, kn = v.n, kr = Math.round(kn), kc = ((kr % 12) + 12) % 12, kp = kr - kc + TT[kc] / 100 + (kn - kr) + gl.st, base = kp + P.g.st + v.dp + v.gld + this.cV[0] * gl.pb + mod[0] + vm[0];
+      const TT = TEMP[gl.tm] || TEMP.et, kn = v.n, kr = Math.round(kn), kc = ((kr % 12) + 12) % 12, kp = kr - kc + TT[kc] / 100 + (kn - kr) + gl.st, base = kp + (v.pg && this.ly.md !== 'ein' ? this.ly.semi + this.ly.tune / 100 : 0) + P.g.st + v.dp + v.gld + this.cV[0] * gl.pb + mod[0] + vm[0];
       const p1 = base + P.o1.st + P.o1.tu / 100 + mod[1], p2 = base + P.o2.st + P.o2.tu / 100 + mod[2];
       const f1 = gl.tn * Math.pow(2, (p1 - 69) / 12), f2 = gl.tn * Math.pow(2, (p2 - 69) / 12), s = 4294967296 / (16 * sr);
       v.lastP = kp + v.gld;
@@ -7766,7 +7825,7 @@ var BMK = (function () {
       D[16] = g; D[17] = k; D[18] = 1 / (1 + g * (g + k)); D[19] = g * D[18]; D[20] = g * D[19]; v.fm = P.__d.fm;
       // level: VOL^2 x velocity (as the other synth engines: 1 - 0.6 + 0.6 v') x routes; pan: PANS + LFO
       const vo = (P.g.vo / 99) * (P.g.vo / 99), vg = (1 - .6 + .6 * v.velC) * v.vVol * Math.max(0, 1 + mod[3] + vm[3]);
-      const pan = clamp(v.pan0 + mod[12], -1, 1), a = (pan + 1) * Math.PI / 4, out = vo * vg * OUTG * 2;   // x 2: the SVF input runs at 0.5
+      const pan = clamp(v.pan0 + mod[12] + this.lyPan(v.pg), -1, 1), a = (pan + 1) * Math.PI / 4, out = vo * vg * OUTG * 2 * this.lyGain(v.pg);   // x 2: the SVF input runs at 0.5
       D[10] = out * Math.cos(a); D[13] = out * Math.sin(a);
       const amp = D[6] + D[7] + D[8];
       if (!v.gate && amp === 0) v.quiet++; else v.quiet = 0;
@@ -7896,7 +7955,10 @@ var BMK = (function () {
     // the held keys without a sounding voice of their own (left by a mono voice) end with a stop / panic
     held(v) { const S = this.S[v.pg] || this.S[0]; for (let i = 0; i < S.keys.length; i++) if (S.keys[i].id === v.id && v.id !== -1) return true; return false; }
     endKeys(S) { for (let i = 0; i < S.keys.length; i++) { const k = S.keys[i]; let has = false; for (const v of this.V) if (v.on && !v.ghost && v.id === k.id) has = true; if (!has) this.endId(k.n, k.id); } }
-    endVoice(v) { if (!v.ghost) this.sendEnd(v); this.clearVoice(v); }
+    twin(v) { if (v.id === -1) return false; for (let k = 0; k < this.NV; k++) { const x = this.V[k]; if (x !== v && x.on && !x.ghost && x.id === v.id) return true; } return false; }
+    endVoice(v) {
+      if (!v.ghost && !this.twin(v)) this.sendEnd(v); this.clearVoice(v);   // a layered key: 'end' when its last voice ends
+    }
     // one 'end' per note id: the ids already ended sit in a ring (the last 512; ids are unique from the host)
     sendEnd(v) { this.endId(v.n, v.id); }
     endId(n, id) {
@@ -19110,10 +19172,18 @@ function mkInSet(i, which, src, dry) {
 // sq-mk-src: evaluated on first need (AM sound in the project, engine key, library filter, probe), tickAhead first (EN3-14)
 const MKL = {loaded: false, ms: 0, err: null};
 function mkLoaded() { return MKL.loaded && typeof MKUI !== 'undefined'; }
+// BM4: the shared arpeggiator block (ARPC for the engine mk, BMARP for Bit Mask), evaluated once
+function arpSrcLoad() {
+  if (typeof ARPC !== 'undefined') return true;
+  const el = document.getElementById('sq-arp-src'); if (!el) return false;
+  try { const sc = document.createElement('script'); sc.textContent = el.textContent; document.head.appendChild(sc); sc.remove(); } catch (e) { logErr(e); }
+  return typeof ARPC !== 'undefined';
+}
 function mkLoad() {
   if (mkLoaded()) return MKUI;
   try { tickAhead(.3); } catch (e) {}
   const t0 = performance.now(), el = document.getElementById('sq-mk-src');
+  arpSrcLoad();   // BM4: ARPC lives in the shared block sq-arp-src
   try {
     if (!el) throw new Error('sq-mk-src fehlt');
     const sc = document.createElement('script'); sc.textContent = el.textContent; document.head.appendChild(sc); sc.remove();

@@ -1,0 +1,56 @@
+PASS MK5-01 Up Range 1 — [60,64,67,60,64,67,60,64]
+PASS MK5-01 Up Range 2 — [60,64,67,72,76,79,60,64,67,72,76,79,60,64]
+PASS MK5-01 Up Range 3 — [60,64,67,72,76,79,84,88,91,60,64,67,72,76,79,84,88,91,60,64]
+PASS MK5-01 Up Range 4 — [60,64,67,72,76,79,84,88,91,96,100,103,60,64,67,72,76,79,84,88,91,96,100,103,60,64]
+PASS MK5-01 Down Range 1 — [67,64,60,67,64,60,67,64]
+PASS MK5-01 Down Range 2 — [79,76,72,67,64,60,79,76,72,67,64,60,79,76]
+PASS MK5-01 Down Range 3 — [91,88,84,79,76,72,67,64,60,91,88,84,79,76,72,67,64,60,91,88]
+PASS MK5-01 Down Range 4 — [103,100,96,91,88,84,79,76,72,67,64,60,103,100,96,91,88,84,79,76,72,67,64,60,103,100]
+PASS MK5-01 Alt 1 Range 1 — [60,64,67,64,60,64,67,64,60]
+PASS MK5-01 Alt 1 Range 2 — [60,64,67,72,76,79,76,72,67,64,60,64,67,72,76,79,76,72,67,64,60,64]
+PASS MK5-01 Alt 1 Range 3 — [60,64,67,72,76,79,84,88,91,88,84,79,76,72,67,64,60,64,67,72,76,79,84,88,91,88]
+PASS MK5-01 Alt 1 Range 4 — [60,64,67,72,76,79,84,88,91,96,100,103,100,96,91,88,84,79,76,72,67,64,60,64,67,72]
+PASS MK5-01 Alt 2 Range 1 — [60,64,67,67,64,60,60,64,67,67,64,60,60]
+PASS MK5-01 Alt 2 Range 2 — [60,64,67,72,76,79,79,76,72,67,64,60,60,64,67,72,76,79,79,76,72,67,64,60,60,64]
+PASS MK5-01 Alt 2 Range 3 — [60,64,67,72,76,79,84,88,91,91,88,84,79,76,72,67,64,60,60,64,67,72,76,79,84,88]
+PASS MK5-01 Alt 2 Range 4 — [60,64,67,72,76,79,84,88,91,96,100,103,103,100,96,91,88,84,79,76,72,67,64,60,60,64]
+PASS MK5-01 Trigger Range 1 (ignoriert) — [[60,64,67],[60,64,67],[60,64,67]] ×9
+PASS MK5-01 Trigger Range 2 (ignoriert) — [[60,64,67],[60,64,67],[60,64,67]] ×9
+PASS MK5-01 Trigger Range 3 (ignoriert) — [[60,64,67],[60,64,67],[60,64,67]] ×9
+PASS MK5-01 Trigger Range 4 (ignoriert) — [[60,64,67],[60,64,67],[60,64,67]] ×9
+PASS MK5-01 Beispiel Range 1: Alt 1 = C E G E, Alt 2 = C E G G E C
+PASS MK5-02 2000 Schritte: jeder Ton 25 % ± 4 % — 25.8 / 25.3 / 24.3 / 24.6
+PASS MK5-02 gleicher Seed → gleiche Folge (deep-equal), anderer Seed → andere
+PASS MK5-02 live zweimal (KEY SYNC an): dieselbe Folge, = Muster ab Zähler 0 — 64 71 67 64 71 60 64 60 67 60 60 67 64 64 71 64 | 64 71 67 64 71 60 64 60 67 60 60 67 64 64 71 64 | 64 71 67 64 71 60 64 60 67 60 60 67 64 64 71 64
+PASS MK5-03 1/16 bei 120 BPM: Abstand 125.0 ms, Einsätze auf dem Song-Raster ± 0,002 Schlag — n=12 Raster-Fehler 0.00000 Schlag, Abstand-Fehler 0.000 ms
+PASS MK5-03 1/24 bei 120 BPM: Abstand 83.3 ms, Einsätze auf dem Song-Raster ± 0,002 Schlag — n=17 Raster-Fehler 0.00003 Schlag, Abstand-Fehler 0.000 ms
+PASS MK5-03 1/12 bei 120 BPM: Abstand 166.7 ms, Einsätze auf dem Song-Raster ± 0,002 Schlag — n=9 Raster-Fehler 0.00003 Schlag, Abstand-Fehler 0.000 ms
+PASS MK5-03 1/8 bei 120 BPM: Abstand 250.0 ms, Einsätze auf dem Song-Raster ± 0,002 Schlag — n=6 Raster-Fehler 0.00000 Schlag, Abstand-Fehler 0.000 ms
+PASS MK5-03 1/6 bei 120 BPM: Abstand 333.3 ms, Einsätze auf dem Song-Raster ± 0,002 Schlag — n=8 Raster-Fehler 0.00003 Schlag, Abstand-Fehler 0.000 ms
+PASS MK5-03 1/4 bei 120 BPM: Abstand 500.0 ms, Einsätze auf dem Song-Raster ± 0,002 Schlag — n=5 Raster-Fehler 0.00000 Schlag, Abstand-Fehler 0.000 ms
+PASS MK5-04 GATE 50 % = ½ Schritt (62,5 ms) ± 1 ms — 62.500 ms
+PASS MK5-04 GATE 100 % = bis zum nächsten Schritt (keine Lücke) — 125.000 ms / 125.000
+PASS MK5-04 GATE 0 % = 3 ms — 3.000 ms
+PASS MK5-05 SWING +50 (1/8): gerade Noten +62.5 ms ± 1, ungerade gerade — 62.50 62.50 62.50 | 0.00 0.00 0.00
+PASS MK5-05 SWING -50 (1/8): gerade Noten -62.5 ms ± 1, ungerade gerade — -62.50 -62.50 -62.50 | 0.00 0.00 0.00
+PASS MK5-05 SWING 0 (1/8): gerade Noten 0.0 ms ± 1, ungerade gerade — 0.00 0.00 0.00 | 0.00 0.00 0.00
+PASS MK5-06 LÄNGE 4, Schritt 2 aus: Note, Pause, Note, Note, alle 4 Schritte; der Zeiger rückt bei der Pause weiter — 1:60 3:67 4:60 1:64 3:60 4:64 1:67 3:64 4:67
+PASS MK5-06 alle Schritte aus: Stille ohne Fehler — 0 Noten
+PASS MK5-07 KEY SYNC an: neuer Akkord nach „alle los“ beginnt bei Schritt 1 mit N₁ — [62,1,0]
+PASS MK5-07 KEY SYNC aus: zwei Läufe mit verschiedenem Anschlag = dasselbe Muster ab dem Takt — [[16,64],[17,67],[18,60],[19,64],[20,67],[21,60]] | [[16,64],[17,67],[18,60],[19,64],[20,67],[21,60]]
+PASS MK5-08 Latch: Loslassen hält den Satz — 64 67 60 64 67 60 64 67 60 64
+PASS MK5-08 neue Tasten nach „alle los“ ersetzen ihn — 62 65 62 65 62 65 62 65 62 65 62 65
+PASS MK5-08 eine weitere Taste beim Halten ergänzt — 65 62 69 62 65 69 62 65 69 62 65 69 62 65
+PASS MK5-08 Latch aus → Stopp ≤ 1 Schritt, keine Stimme — 0 Noten danach, 0 Stimmen
+PASS MK5-09 Transport steht: erste Arp-Note ≤ 10 ms nach dem Tastendruck (geplanter Zeitstempel) — 10.00 / 10.00 / 10.00 / 10.00 / 10.00 ms
+PASS MK5-10 Tempo-Wechsel im Lauf: kein doppelter und kein fehlender Schlag (Abstand immer ¼ Schlag) — 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25
+PASS MK5-10 die nächsten Schritte im neuen Tempo (166,7 ms bei 90 BPM) — 166.67 166.67 166.67 166.67
+PASS MK5-11 Dual + Ziel T1: T1 arpeggiert (1 Note), T2 hält den Akkord — [[1,67],[2,60],[2,64],[2,67]] masks []
+PASS MK5-11 Dual + Ziel Beide: beide Timbres spielen die Arp-Note — [[1,67],[2,67]]
+PASS MK5-11 Split + Ziel T1 + OKTAVEN 3: keine Arp-Note auf T2 (auch über split), T2 hält 72/76 — [[[1,48],[2,72],[2,76]],[[1,52],[2,72],[2,76]],[[1,55],[2,72],[2,76]]] log max 79
+PASS MK5-11 Split + Ziel Beide: die gehaltene Taste bestimmt das Timbre (G → T1 auch oktaviert über split) — [[[1,55]],[[2,72]],[[2,72]],[[1,67]]]
+PASS MK5-12 TYP Akkord mit 6 Tasten bei 4 Stimmen: die 4 tiefsten spielen (ab dem 2. Schritt; der erste kann bei Tasten > 8 ms auseinander unvollständig sein) — [[48,55,60,64],[48,55,60,64]]
+PASS MK5-13 4-Takt-Akkord-Clip durch den Arp (KEY SYNC an, Wechsel 2, 2 Okt.): zwei Durchläufe = dieselbe Folge — 64 / 64 [[0,60],[0.25,64],[0.5,67],[0.75,72]]
+PASS MK5-13 dasselbe mit KEY SYNC aus (Wechsel 1, Musterlänge 4 teilt den Takt-Loop) — 64 / 64
+PASS MK5-13 Spur stoppen am Taktstrich: keine hängende Note (Proxies und Worklet) — 0 / 0
+PASS MK5-13 Szenenwechsel am Taktstrich: ab dort nur der neue Akkord, nichts hängt über den Strich — [62,74,74,62,62,74] über den Strich: 0

@@ -1,0 +1,22 @@
+[
+ {
+  "id": "BM4-06 26 Muster in Spielreihenfolge (E4, C4, G4 gedrückt; Referenztabelle im Test; RND: Saat-gleich, nur Töne der Oktaven)",
+  "ok": true,
+  "info": "26 Muster; alle gleich der Tabelle; rnd 67 60 60 60 67 60…, rnd2 67 72 72 72 79 72…, rnd3 91 60 84 60 91 84…"
+ },
+ {
+  "id": "BM4-07 SPD: Transport aus, SPD 120 → 125 ms; Transport an bei 120 BPM: 120 → 1/16, 60 → 1/8, 90 → 1/8T, 240 → 1/32, 400 → 1/32",
+  "ok": true,
+  "info": "frei 125.000 ms; 1/16, 1/8, 1/8T, 1/32, 1/32"
+ },
+ {
+  "id": "BM4-08 (Prozessor-Teil) TRIG OFF: eine Stimme, nur die Tonhöhe springt; Arp nur auf A (on.d = 1) auch im Layer. HOLD / Arp-Taste 1 s / Klangwechsel: Host + Bedienfeld (BM5/BM6)",
+  "ok": true,
+  "info": "Stimmen max 1, Tonhöhen 64 → 60 → 67; Layer mit d = 1: Programme [0]"
+ },
+ {
+  "id": "BM4-09 sq-arp-src: ARPC wortgleich verschoben, MS-Block ohne ARPC, mkLoad lädt den Block zuerst (MK5-Suiten: tests/mk5/run.sh)",
+  "ok": true,
+  "info": "ARPC-Text gleich true, im MS-Block entfernt true, arpPattern function"
+ }
+]

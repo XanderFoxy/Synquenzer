@@ -297,7 +297,7 @@ var BMK = (function () {
     ghostOf(v) {
       if (!v.on) return;
       // its note ends now, unless the key is still held (a mono voice may come back to it; its 'end' follows the key's off)
-      if (!v.ghost && !this.held(v)) this.sendEnd(v);
+      if (!v.ghost && !this.held(v) && !this.twin(v)) this.sendEnd(v);
       if (v.quiet > 2 && !v.gate) return;
       let g = null; for (let i = this.NV; i < this.V.length; i++) if (!this.V[i].on) { g = this.V[i]; break; }
       if (!g) { for (let i = this.NV; i < this.V.length; i++) if (!g || this.V[i].D[11] < g.D[11]) g = this.V[i]; }
@@ -335,8 +335,18 @@ var BMK = (function () {
     glideFrom(v, from) { const P = this.P[v.pg] || this.P[0]; v.gld = P.g.po > 0 && from > -1e8 ? from - this.keyPitch(v.n) : 0; }
     heldIdx(S, e) { for (let i = 0; i < S.keys.length; i++) { const k = S.keys[i]; if (e.id >= 0 ? k.id === e.id : k.n === e.n) return i; } return -1; }
     takeKey(v, e) { v.id = e.id; v.key = e.n; v.n = e.n; v.vel = e.v; v.velC = velCurve(this.gl.vc, e.v); v.gate = true; v.susHeld = false; v.endSent = false; v.ord = ++this.ord; this.velRoutes(v, this.P[v.pg] || this.P[0]); }
+    // BM4 layer / split (section 1.13): the programs a key plays. d (BM6 'on.d'): 1 = only A, 2 = only B, 3 = both, 0 = by LAYER / SPLIT
     voiceOn(e) {
-      const pg = 0, P = this.P[pg], S = this.S[pg], mo = P.__d.mo;
+      const two = !!this.P[1], md = this.ly.md, d = e.d & 3;
+      if (two && (d === 3 || (d === 0 && md === 'lay'))) { this.voiceOnPg(e, 0); this.voiceOnPg(e, 1); }
+      else if (two && (d === 2 || (d === 0 && md === 'spl' && e.n >= this.ly.sp))) this.voiceOnPg(e, 1);
+      else this.voiceOnPg(e, 0);
+    }
+    // the level and side of a program in LAYER / SPLIT: BAL 0..100 (A x (1 - b), B x b, as BAL of section 1.3), PAN 0..100 spreads A left, B right
+    lyGain(pg) { if (!this.P[1] || this.ly.md === 'ein') return 1; const b = clamp(this.ly.bal, 0, 100) / 100; return pg ? b : 1 - b; }
+    lyPan(pg) { if (!this.P[1] || this.ly.md === 'ein') return 0; const p = clamp(this.ly.pan, 0, 100) / 100; return pg ? p : -p; }
+    voiceOnPg(e, pg) {
+      const P = this.P[pg], S = this.S[pg], mo = P.__d.mo;
       const legato = S.keys.length > 0;
       if (!legato) { S.lt = 0; S.dlyOff.fill(0); if (mo === 4 || mo === 6) for (let k = 0; k < 4; k++) { if (S.es[k] === 0) S.el[k] = 0; S.es[k] = 1; S.et[k] = 0; } }
       S.keys.push({id: e.id, n: e.n, v: e.v, ord: ++this.ord, ended: false});
@@ -549,7 +559,7 @@ var BMK = (function () {
       this.masks(v, mod);
       // pitch (semitones, A4 = 69 = TUNE): key through the temperament, SEMIs, TUNE, deltas, glide, bend, routes
       // the key through the temperament (inline: a returned double of a non-inlined call would be a heap number per step)
-      const TT = TEMP[gl.tm] || TEMP.et, kn = v.n, kr = Math.round(kn), kc = ((kr % 12) + 12) % 12, kp = kr - kc + TT[kc] / 100 + (kn - kr) + gl.st, base = kp + P.g.st + v.dp + v.gld + this.cV[0] * gl.pb + mod[0] + vm[0];
+      const TT = TEMP[gl.tm] || TEMP.et, kn = v.n, kr = Math.round(kn), kc = ((kr % 12) + 12) % 12, kp = kr - kc + TT[kc] / 100 + (kn - kr) + gl.st, base = kp + (v.pg && this.ly.md !== 'ein' ? this.ly.semi + this.ly.tune / 100 : 0) + P.g.st + v.dp + v.gld + this.cV[0] * gl.pb + mod[0] + vm[0];
       const p1 = base + P.o1.st + P.o1.tu / 100 + mod[1], p2 = base + P.o2.st + P.o2.tu / 100 + mod[2];
       const f1 = gl.tn * Math.pow(2, (p1 - 69) / 12), f2 = gl.tn * Math.pow(2, (p2 - 69) / 12), s = 4294967296 / (16 * sr);
       v.lastP = kp + v.gld;
@@ -571,7 +581,7 @@ var BMK = (function () {
       D[16] = g; D[17] = k; D[18] = 1 / (1 + g * (g + k)); D[19] = g * D[18]; D[20] = g * D[19]; v.fm = P.__d.fm;
       // level: VOL^2 x velocity (as the other synth engines: 1 - 0.6 + 0.6 v') x routes; pan: PANS + LFO
       const vo = (P.g.vo / 99) * (P.g.vo / 99), vg = (1 - .6 + .6 * v.velC) * v.vVol * Math.max(0, 1 + mod[3] + vm[3]);
-      const pan = clamp(v.pan0 + mod[12], -1, 1), a = (pan + 1) * Math.PI / 4, out = vo * vg * OUTG * 2;   // x 2: the SVF input runs at 0.5
+      const pan = clamp(v.pan0 + mod[12] + this.lyPan(v.pg), -1, 1), a = (pan + 1) * Math.PI / 4, out = vo * vg * OUTG * 2 * this.lyGain(v.pg);   // x 2: the SVF input runs at 0.5
       D[10] = out * Math.cos(a); D[13] = out * Math.sin(a);
       const amp = D[6] + D[7] + D[8];
       if (!v.gate && amp === 0) v.quiet++; else v.quiet = 0;
@@ -701,7 +711,10 @@ var BMK = (function () {
     // the held keys without a sounding voice of their own (left by a mono voice) end with a stop / panic
     held(v) { const S = this.S[v.pg] || this.S[0]; for (let i = 0; i < S.keys.length; i++) if (S.keys[i].id === v.id && v.id !== -1) return true; return false; }
     endKeys(S) { for (let i = 0; i < S.keys.length; i++) { const k = S.keys[i]; let has = false; for (const v of this.V) if (v.on && !v.ghost && v.id === k.id) has = true; if (!has) this.endId(k.n, k.id); } }
-    endVoice(v) { if (!v.ghost) this.sendEnd(v); this.clearVoice(v); }
+    twin(v) { if (v.id === -1) return false; for (let k = 0; k < this.NV; k++) { const x = this.V[k]; if (x !== v && x.on && !x.ghost && x.id === v.id) return true; } return false; }
+    endVoice(v) {
+      if (!v.ghost && !this.twin(v)) this.sendEnd(v); this.clearVoice(v);   // a layered key: 'end' when its last voice ends
+    }
     // one 'end' per note id: the ids already ended sit in a ring (the last 512; ids are unique from the host)
     sendEnd(v) { this.endId(v.n, v.id); }
     endId(n, id) {
