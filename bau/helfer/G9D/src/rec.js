@@ -31,12 +31,14 @@ function g9Plan(x, sr) {
   if (!w) return Promise.resolve().then(() => G9E.plan(x, sr));
   return new Promise((ok, no) => { const id = ++G9.wid, c = new Float32Array(x); G9.wq.set(id, {ok, no}); try { w.postMessage({id, x: c, sr}, [c.buffer]); } catch (e) { G9.wq.delete(id); no(e); } });
 }
+// Projektwechsel: Aufträge beenden, automatische Ergebnisse und Warteschlange gehören zum alten Projekt
+function g9ProjReset() { g9ErkKill('Projekt'); for (const j of G9.job.values()) { j.stop = true; j.gen++; if (!j.done) { j.done = true; j.res({applied: true, words: [], stopped: true}); } } G9.job.clear(); G9.auto.clear(); if (G9.autoQ) G9.autoQ.length = 0; G9.view.clear(); G9.feat.clear(); G9.ctx = null; }
 const g9RecBusy = () => [...G9.job.values()].some(j => !j.done);
 function g9RecMsg(t) { G9.recMsg = t; const E = WP.ed; if (E && E.g9) wpInfoTxt(g9InfoLine(E, wpMarks(E.id) || [])); }
 // ein Erkennungs-Auftrag je Take: Fenster einzeln; fertige Fenster bleiben bei [Stopp] und bei „Aufnahme hat Vorrang“ (§5.5, §6.6.9/10)
 function g9RecJob(id, o) {
   let j = G9.job.get(id);
-  if (j && !j.done) { j.o = Object.assign(j.o, o); return j.p; }
+  if (j && !j.done) { j.o = Object.assign(j.o, o); if (!o.auto) j.o.auto = false; return j.p; }   // [Erkennen] von Hand übernimmt einen laufenden automatischen Auftrag
   j = {id, o, phase: 'warten', next: 0, words: [], p: null, done: false, gen: 0, t0: performance.now(), pl: null, lang: null};
   j.p = new Promise(res => { j.res = res; });
   G9.job.set(id, j);
@@ -53,6 +55,7 @@ async function g9RecGo(j) {
     if (!j.pl) {
       j.phase = 'vorstufe';
       tkLoad(j.id); const wt = TK.wait.get(j.id); if (wt) await wt;
+      if (gen !== j.gen || j.stop || G9.hold) return;              // inzwischen Mikrofon/Stopp: keine Vorstufe während der Aufnahme
       const b = g9FeatSrc(j.id); if (!b) throw new Error('kein Take');
       j.pl = await g9Plan(b.getChannelData(0), b.sampleRate);
       if (gen !== j.gen) return;
@@ -82,14 +85,15 @@ function g9RecEnd(j, err) {
       const m = S.takes && S.takes[j.id], mk = wpMarks(j.id);
       if (m && mk && mk.length && z.words.length) {
         const C = g9Ctx(j.id, true), K = g9K();
-        if (j.o.auto && (m.ly || m.lyrics)) { res.discard = true; g9RecMsg('Erkennung verworfen – Text schon da'); }
+        const typing = WP.ed && WP.ed.id === j.id && WP.ed.g9 && (WP.ed.g9.dirty || WP.ed.g9.typed);
+        if (j.o.auto && (m.ly || m.lyrics || typing)) { res.discard = true; g9RecMsg('Erkennung verworfen – Text schon da'); }
         else {
           const s = G9E.silben(K, z.words, res.lang, C.mk, C.F, C.ly, j.o.mode === 'fill' ? 'luecken' : 'alles');
           if (j.o.auto) { g9PutLy(m, s, res.lang, 'erkannt'); G9.view.delete(j.id); G9.auto.set(j.id, {ly: m.ly ? JSON.parse(JSON.stringify(m.ly)) : null, lyrics: m.lyrics || null}); markDirty(); UI.dirty.all = true; }
           else g9CommitS(C, s, 'Erkennen', {src: 'erkannt', lang: res.lang});
           const ns = z.words.filter(w => isNum(w.p) && w.p < .6).length;
           g9RecMsg((j.stop ? 'gestoppt · ' : '') + z.words.length + ' Wörter erkannt' + (ns ? ' · ' + ns + ' unsicher' : ''));
-          if (WP.ed && WP.ed.id === j.id) { if (WP.ed.g9) g9Fill(WP.ed); wpPaint(); }
+          if (WP.ed && WP.ed.id === j.id) { if (WP.ed.g9) g9Refill(WP.ed); else wpPaint(); }
         }
       }
     } else g9RecMsg(err ? 'Erkennen fehlgeschlagen' : j.stop ? 'gestoppt' : 'keine Wörter erkannt');

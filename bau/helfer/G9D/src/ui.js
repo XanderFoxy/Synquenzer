@@ -458,6 +458,7 @@ function g9PaintBar(E, mk) {
 function g9InfoLine(E, mk) {
   const G = E.g9, m = S.takes && S.takes[E.id]; if (!m) return '';
   if (!mk.length) return 'Marken werden gesucht …';
+  if (typeof g9RecBusy === 'function' && g9RecBusy() && G9.recMsg) return G9.recMsg;   // Erkennen … 3/5 · 60 % (§7.8)
   const k = G.sel; if (k < 0 || !mk[k]) return 'Abschnitt antippen';
   const x = tkRef(E.r), a = x && x.a, w = m.warp, map = E.map, len = m.len / m.sr;
   const tA = map ? VSM.warpTime(map, mk[k].t) : mk[k].t, tB = map ? VSM.warpTime(map, k + 1 < mk.length ? mk[k + 1].t : len) : (k + 1 < mk.length ? mk[k + 1].t : len);

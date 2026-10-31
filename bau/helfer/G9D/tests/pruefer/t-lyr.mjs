@@ -1,0 +1,15 @@
+import {launch, open, clickTake, sleep, LY, SET} from '../h.mjs';
+const br = await launch(); const {p, errs} = await open(br);
+await p.evaluate(() => { SYNQUENZER.newProject(); SYNQUENZER.setBpm(120); }); await sleep(300);
+const tk = await clickTake(p, Array.from({length: 8}, (_, k) => .3 + k * .3), 4), id = tk.id;
+await SET(p, id, {op: 'text', text: 'alter Text hier', lang: 'de'});
+await p.evaluate(() => SYNQUENZER.save()); await sleep(300);
+await p.reload(); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.version); await sleep(800);
+console.log('marks?', await p.evaluate(id => !!wpMarks(id), id));
+await p.evaluate(id => SYNQUENZER.wpLyrics(id, 'neu-er Text'), id);
+const t = await p.evaluate(id => SYNQUENZER.project().takes[id], id);
+console.log('ly:', t.ly && t.ly.s.map(s => s.x).join(' '), '| lyrics:', t.lyrics);
+await p.evaluate(id => SYNQUENZER.wpDetect(id), id);
+console.log('Anzeige (g9View):', JSON.stringify((await p.evaluate(id => SYNQUENZER.g9View(id), id)).cells.map(c => c.x.join('·'))));
+console.log('errs', errs.join('|'));
+await br.close();

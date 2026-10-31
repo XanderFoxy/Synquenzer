@@ -1,0 +1,15 @@
+import {launch, open, mkTake, sleep, LY} from '../h.mjs';
+const br = await launch(); const {p, errs} = await open(br);
+await p.evaluate(() => { SYNQUENZER.newProject(); SYNQUENZER.setBpm(120); }); await sleep(300);
+const T = [0.5, 0.9, 1.3, 2.4, 2.8, 3.2, 4.4, 4.8];
+const tk = await mkTake(p, T, 6, 0), id = tk.id;
+await p.evaluate(r => { SYNQUENZER.wpOpen(r); SYNQUENZER.g9Text(r, true); }, tk.ref); await sleep(800);
+await p.evaluate(T => SYNQUENZER.g9AsrSim(async (x, o) => { await new Promise(r => setTimeout(r, 700)); return {words: [{text: 'Liebe', start: o.toStream(T[0]) - o.a, end: o.toStream(T[2] + .3) - o.a}], lang: 'de'}; }), T);
+await p.evaluate(id => g9AutoQueue(id), id); await sleep(50);
+await p.evaluate(() => { SYNQUENZER.g9Sel(0); WP.ed.g9.field.focus(); });
+await p.keyboard.type('Mond', {delay: 20});
+console.log('getippt', await p.evaluate(() => WP.ed.g9.field.value));
+await sleep(2000);
+console.log('Feld danach', JSON.stringify(await p.evaluate(() => ({v: WP.ed.g9.field.value, d: WP.ed.g9.dirty}))), 'ly', (await LY(p, id) || {s: []}).s.map(s => s.x).join(' '));
+console.log('errs', errs.join('|'));
+await br.close();

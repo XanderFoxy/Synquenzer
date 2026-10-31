@@ -1,0 +1,16 @@
+import {launch, open, clickTake, sleep, U, LY, SET, deq} from '../h.mjs';
+const br = await launch(); const {p, errs} = await open(br);
+await p.route('**/de-x-syllable.wasm', async r => { await new Promise(z => setTimeout(z, 1500)); await r.continue(); });
+await p.evaluate(() => { SYNQUENZER.newProject(); SYNQUENZER.setBpm(120); }); await sleep(300);
+const T = Array.from({length: 10}, (_, k) => 0.3 + k * 0.3), tk = await clickTake(p, T, 4), id = tk.id;
+await p.evaluate(r => { SYNQUENZER.wpOpen(r); SYNQUENZER.g9Text(r, true); }, tk.ref); await sleep(100);
+await p.evaluate(() => { SYNQUENZER.g9Sel(0); WP.ed.g9.field.focus(); });
+await p.keyboard.type('Hallo', {delay: 30});
+const a = await p.evaluate(() => ({v: WP.ed.g9.field.value, d: WP.ed.g9.dirty, mode: SYNQUENZER.g9SylMode('de')}));
+await sleep(2500);
+const b = await p.evaluate(() => ({v: WP.ed.g9.field.value, d: WP.ed.g9.dirty, mode: SYNQUENZER.g9SylMode('de'), focus: document.activeElement === WP.ed.g9.field}));
+console.log('vor Muster', a, '\nnach Muster', b);
+await p.keyboard.press('Enter'); await sleep(100);
+console.log('ly nach Enter', JSON.stringify(await LY(p, id)));
+console.log('errs', errs.join('|'));
+await br.close();

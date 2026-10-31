@@ -81,6 +81,8 @@ rep("function stStart(opts) {\n  if (ST.on || ST.run || !micAvail()) return fals
 // 18) neue Aufnahme mit Mikrofon → automatisch erkennen (F1), sobald ein Sprachmodell angedockt ist
 rep("    TK.last = {id, n, sr, got, pre: pre / sr, late: late / sr, src};", "    TK.last = {id, n, sr, got, pre: pre / sr, late: late / sr, src};\n    if (G9.loaded && typeof g9AutoQueue === 'function') g9AutoQueue(id);   // G9 (F1)");
 rep("      TK.last = {id, n, sr, got: n, pre: (Fa - F0) / sr, late: 0, src: 'song', stream: true, lost: s.lost};", "      TK.last = {id, n, sr, got: n, pre: (Fa - F0) / sr, late: 0, src: 'song', stream: true, lost: s.lost};\n      if (G9.loaded && typeof g9AutoQueue === 'function') g9AutoQueue(id);   // G9 (F1)");
+// 19) Projektwechsel: G9-Aufträge und automatische Ergebnisse des alten Projekts verwerfen
+rep("function applyProject(p, opts) {\n  opts = opts || {};", "function applyProject(p, opts) {\n  opts = opts || {};\n  if (G9.loaded && typeof g9ProjReset === 'function') g9ProjReset(); else G9.auto.clear();   // G9");
 fs.writeFileSync(path.join(D, 'index.html'), h);
 fs.writeFileSync(path.join(ROOT, 'bau/snapshots/G9STAGE.html'), h);
 console.log('index.html', h.length, 'Bytes (+' + (h.length - fs.statSync(base).size) + ')');

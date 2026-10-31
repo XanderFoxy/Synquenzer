@@ -24,7 +24,8 @@ function g9SylEnsure(lang) {
   const L = lang === 'en' ? 'en' : 'de', K = g9K();
   if (K.sylMode(L) === 'muster') return Promise.resolve('muster');
   if (G9.syl[L]) return G9.syl[L];
-  const d = G9_SYL[L], url = new URL('vendor/g9/syl/' + d.f, document.baseURI).href;
+  const d = G9_SYL[L]; let url = null;
+  try { url = new URL('vendor/g9/syl/' + d.f, document.baseURI).href; } catch (e) { return Promise.resolve('einfach'); }   // about:blank/srcdoc: ohne Muster
   G9.syl[L] = (async () => {
     let buf = null, cache = null;
     try { if (window.caches && window.isSecureContext) cache = await caches.open(G9_CACHE); } catch (e) { cache = null; }
@@ -44,9 +45,12 @@ function g9SylEnsure(lang) {
     G9.ctx = null;
     return 'muster';
   })().catch(e => { G9.sylErr = String(e && e.message || e); G9.syl[L] = null; G9.sylFail = G9.sylFail || {}; G9.sylFail[L] = G9.sylErr; return 'einfach'; });
-  return G9.syl[L].then(r => { if (r === 'muster' && WP.ed && WP.ed.g9) { if (typeof g9Fill === 'function') g9Fill(WP.ed); wpPaint(); } return r; });
+  return G9.syl[L].then(r => { if (r === 'muster' && WP.ed && WP.ed.g9) g9Refill(WP.ed); return r; });
 }
 const g9SylMode = lang => g9K().sylMode(lang === 'en' ? 'en' : 'de');
+
+// nachkommende Ergebnisse (Muster, Merkmale, Erkennung): das Feld nur neu füllen, wenn dort nicht gerade getippt wird
+function g9Refill(E) { const G = E && E.g9; if (!G) return; G9.ctx = null; if (G.dirty || G.typed) { if (G.dirty && typeof g9Preview === 'function') g9Preview(E); wpPaint(); return; } g9Fill(E); wpPaint(); }
 
 /* ---------- Schnittstelle nach außen (Test-API §7.12) ---------- */
 function g9Syl(word, lang) { return g9K().syl(word, g9L(lang, word)); }
@@ -77,7 +81,7 @@ function g9FeatReq(id) {
     G9.fq.delete(key);
     if (wpMarks(id) !== mk || !Array.isArray(f)) return null;
     G9.feat.set(id, {mk, bid, f}); G9.ctx = null;
-    if (WP.ed && WP.ed.id === id && WP.ed.g9) { g9Fill(WP.ed); wpPaint(); }
+    if (WP.ed && WP.ed.id === id && WP.ed.g9) g9Refill(WP.ed);
     return f;
   }, e => { G9.fq.delete(key); logErr(e); return null; });
   G9.fq.set(key, {mk, p});

@@ -67,7 +67,7 @@ function g9MarkHook(id, mk0, mk1) {
     const r = K.apply(ly, mk0, F, op); if (!r || !r.ok) return;
     const before = JSON.stringify(m.ly);
     g9PutLy(m, r.s, ly.lang, ly.src);
-    G9.view.delete(id); G9.auto.delete(id);
+    G9.view.delete(id);
     G9.mkMsg = op.op === 'mkDel' && (r.merged || r.over) ? [r.merged ? r.merged + (r.merged === 1 ? ' Silbe' : ' Silben') + ' verschmolzen' : '', r.over ? r.over + (r.over === 1 ? ' Silbe' : ' Silben') + ' ohne Marke' : ''].filter(Boolean).join(' · ') : null;
     if (G9.mkMsg && JSON.stringify(m.ly) !== before) toast(G9.mkMsg);
   } catch (e) { logErr(e); }
@@ -75,9 +75,10 @@ function g9MarkHook(id, mk0, mk1) {
 // VS5b wpSetLyrics (Test-API wpLyrics, Rückfall-Pop): mit vorhandenem ly schreibt es beides (§8)
 function g9SetLyricsHook(m, v) {
   if (!m.ly) return false;
+  const id = Object.keys(S.takes).find(k => S.takes[k] === m); if (id) { G9.auto.delete(id); G9.view.delete(id); }
   if (!v) { delete m.ly; delete m.lyrics; return true; }
-  const id = Object.keys(S.takes).find(k => S.takes[k] === m), mk = id && wpMarks(id);
-  if (!mk) return false;
+  const mk = id && wpMarks(id);
+  if (!mk || !mk.length) { delete m.ly; m.lyrics = v; return true; }   // Marken noch nicht erkannt: VS5b-Text gilt (ly und lyrics laufen nie auseinander)
   const K = g9K(), r = K.apply(m.ly, mk, typeof g9FeatCached === 'function' ? g9FeatCached(id, mk) : null, {op: 'ganz', text: v, lang: m.ly.lang});
   g9PutLy(m, r && r.s, m.ly.lang, 'eingefuegt'); G9.view.delete(id);
   return true;

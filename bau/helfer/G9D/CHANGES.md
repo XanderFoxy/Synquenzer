@@ -39,7 +39,28 @@ VERSION nicht hochgezählt (beim Merge in die Hauptlinie). Spec: `spec/n8/G9.md`
 | `sw.js`: keine Änderung nötig – er cacht nur `index.html`, `vendor/supabase-js-*.js`, Schriften, Icons, Manifest; `vendor/g9/` geht unberührt ans Netz (§4.5 erfüllt) | – |
 
 ## Messwerte (Chromium headless, Touch-Emulation, dieser Rechner)
-MESSWERTE
+Tests `tests/alle.sh`: t2 34/34 · t3 41/41 · t4 23/23 · t5 25/25 · t6 15/15 · t7 4/4 · t8 4/4 · t9 14/14 (alle G9U-Tests, jetzt auf der
+eingebauten App mit echtem Kern) · t10 48/48 · t11 12/12 · t12 6/6 = **226/226**. Kern: `G9S/tests/alle.mjs` alles grün (unverändert).
+
+| Punkt | Ziel | Ergebnis |
+|---|---|---|
+| G9-01 Worker = Haupt-Faden (Merkmale `g9f`, Ausrichtung mit Muster `g9a`) | 100 % | gleich (t10) |
+| Muster laden | erst beim Text-Modus, nur Take-Sprache | 1 GET `de-x-syllable.wasm` beim ersten [Text], 0 beim Start, 0 nach Neuladen (Cache) |
+| SHA-256 falsch / Server weg / file:// | Abbruch mit Meldung, App läuft | „Prüfsumme falsch: …“, nicht im Cache; Modus `einfach`, Silben p 0,5, Info „Silbentrennung vereinfacht“ |
+| G9-08 Marken-Haken | Silben folgen, 0 verloren, ein Undo | verschieben/löschen/löschen neben 3 Silben (→ `o`)/setzen: ✓, ein `'takes'`-Schritt |
+| G9-09 ganze Ausrichtung 300 Marken × 225 Silben im Worker | ≤ 60 ms (4× ≤ 240 ms) | Median **14,5 ms** (max 20,8); mit 4× Drossel 8,7 ms – die CDP-Drossel wirkt nicht auf Worker, darum nur bedingt aussagekräftig; am Gerät nachmessen |
+| Merkmale 65-s-Take im Worker | – | 384 ms (Haupt-Faden frei) |
+| Tastendruck-Vorschau (64 Takte, Haupt-Faden) | ≤ 2 ms Median, ≤ 6 ms max (4×) | **1,30 ms** Median, **7,6 ms max** (ohne Drossel 0,20 / 0,60 ms); 16-Takt-Fall in t3: Median 1,2 ms, max 3,4 ms |
+| G9-28 [Stopp] | ≤ 0,5 s | 0,4 ms (Worker beendet, fertige Fenster ausgerichtet) |
+| G9-56 Aufnahme hat Vorrang | ≤ 100 ms | 0,2 ms; 2 s nach dem Mikrofon weiter; 90-s-Take mit 4 Fenstern: Fenster 0,1,1,2,3 (nur das angefangene neu) |
+| G9-38 automatisch | wie §7.8 | 5/5 (erscheint ohne Undo-Schritt, älteres Quantisieren ↶ lässt Text stehen, Undo der Aufnahme nimmt ihn mit, Tippen davor → verworfen, Schalter aus → nichts) |
+| G9-57 Undo-Fußabdruck (1200 Silben, 60 Wörter) | ≤ 4 MB | 3,20 MB (ein Take im Projekt; als `'takes'` gleich groß, weil das Projekt nur diesen Take hat – der Vorteil wächst mit jedem weiteren Take) |
+| Regel 28 (Differenz zur Basis, t11) | gleich | VS5a-Marken, VS5b-Songtext, Marken setzen/verschieben/löschen, Quantisieren + Dehnen (Klang-Prüfsumme), Projekt-JSON, Laden + Speichern: **12/12 gleich** |
+| App-Start | ± 3 % | −1,3 % (Rauschen ±5 %) |
+| Markennamen / „MS 2000“ / VERSION / Supabase | | 0 / 1× / unverändert / keiner; einziger neuer Netz-Abruf = GET der Muster |
+
+Basis-Befund (nicht G9): Laden + Speichern ordnet die Schlüssel eines Takes neu (`lyrics` hinter `marks`), wenn `marks` nach `lyrics`
+entstanden sind – in der Basis genauso (t11 vergleicht darum G9D gegen die Basis).
 
 ## Abweichungen und Entscheidungen (Regel 30)
 1. **Kern im Start-Pfad statt im Lade-Block:** Normalisierer und Marken-Haken brauchen ihn beim Laden bzw. im Marken-Modus, der VS5a-Worker
@@ -56,10 +77,28 @@ MESSWERTE
    der Lade-Block (≈ 85 KB) wird beim Start nicht ausgewertet, App-Start gleich schnell (t12).
 
 ## Unabhängige Prüfung
-PRUEFUNG
+Eigener Prüf-Agent (Fehler suchen), 10 Funde, Reproduktionen in `tests/pruefer/` (Aufruf aus diesem Ordner mit `node <datei>`):
+1. **Getipptes Wort gelöscht**, wenn Muster, Merkmale oder ein Erkennungsergebnis während des Tippens ankamen → `g9Refill`: bei
+   bearbeitetem Feld nur neu zeichnen (+ Vorschau), nie das Feld überschreiben; automatisches Ergebnis wird auch bei offenem, bearbeitetem
+   Feld verworfen. ✓ (t-fill, t-feat, t-auto2)
+2. **Gelöschter Text kam zurück** (G9.auto nach `wpLyrics(id, '')`, bei Projektwechsel nie geleert) → Löschen über `wpSetLyrics` entfernt
+   `G9.auto`; `applyProject` beendet Aufträge und leert `G9.auto`/Warteschlange/Sicht/Merkmale. ✓ (t-auto)
+3. **`wpLyrics` vor dem Erkennen der Marken** schrieb nur `lyrics`, `ly` blieb alt → dann gilt der VS5b-Text, `ly` entfällt (nie auseinander). ✓ (t-lyr)
+4. **[Erkennen] von Hand während eines automatischen Auftrags** erbte „automatisch“ → übernimmt den Auftrag als Handschritt (ein Undo). ✓
+5. **`sw.js` löscht bei jedem Update alle `synq-*`-Caches außer `synq-app-1`**, also auch `synq-g9-v1` → **offen, Merge-Schritt** (siehe STATUS;
+   `sw.js` liegt im Pages-Stamm, den dieser Zweig nicht ändert).
+6. **Kein [Stopp] in der Oberfläche / Fortschritt überschrieben** → Fortschritt „Erkennen … 3/5 · 60 %“ steht jetzt in der Info-Zeile,
+   solange ein Auftrag läuft. Die [Stopp]-Taste gehört zur Erkennen-Oberfläche von G9b-2 (ohne Modell gibt es keinen Auftrag) – offen.
+7. `new URL` bei about:blank/srcdoc warf → fängt ab, Modus `einfach`. ✓ (t-base)
+8. Mikrofon während `tkLoad` → keine Vorstufe mehr während der Aufnahme (Prüfung nach dem Warten). ✓
+9. Marken-Haken löschte `G9.auto` → bleibt (Marke ändern ist keine Text-Änderung). ✓
+10. Testlücke „Fenster nicht doppelt“ (nur 1 Fenster) → `tests/pruefer/t-hold.mjs` mit 90 s / 4 Fenstern: 0,1,1,2,3. ✓
+Ohne Fund geprüft: Fuzz 750 Schritte (je Aktion ein Undo, Undo/Redo deep-equal, Zeiten monoton, `normLy` idempotent), Speichern → Laden,
+Regel 28, ohne Worker (Haupt-Faden-Rückfall), Markennamen, Supabase, VERSION, SHA-256, Pfade für `/Synquenzer/`.
 
 ## Offen
-- **G9b-0/1/2 (Sprachmodell)**: Freigabe F0 fehlt. Andock-Stelle `G9.asr` (Fenster → Wörter); Lader/Cache/Weg-Wahl/Diagnose-Zeile kommen mit G9b-2.
+- **`sw.js`** (Merge): in `activate` `synq-g9-` vom Löschen ausnehmen: `ks.filter(k => k.startsWith('synq-') && !k.startsWith('synq-g9-') && k !== CACHE)`.
+- **G9b-0/1/2 (Sprachmodell)**: Freigabe F0 fehlt. Andock-Stelle `G9.asr` (Fenster → Wörter); Lader/Cache/Weg-Wahl/Diagnose-Zeile, [Stopp]-Taste und Download-Fortschritt kommen mit G9b-2.
 - K-G9 (a)/(b) echter Gesang (F0/F7) für G9-02/04/21 nachmessen.
 - Gerätepunkte G9-60…64 (iPhone), Geräte-Probe G9-61 (`probe.html`) → Haptik-Labels im Dock und `g9KbSim`-Höhen.
 - I4 (`take.tp`): Tipp-Kosten bleiben aus (G9-55 in G9S: kein Gewinn).
