@@ -115,3 +115,87 @@ Ein-Zeilen-Haken in vorhandenen Funktionen:
 - `Object.assign(SYNQUENZER, VP_API);` nach der WP_API-Zeile · `VERSION = '4.24.0'`
 VS-P fasst `tkVoiceTake`, `vsRecDone`, `vsFangDone`, `recLength`, `tkMakeTake` und das Mikro-Blatt (VS-L) nicht an.
 Snapshot: `synq-snapshots/VS-P.html`. Testskripte: `dirigent-test/n4-vs-p-*.mjs` (Ausgaben `dirigent-test/n4vsp/`).
+
+## VS-P-fix
+
+Grundlage: `synq-snapshots/VS-P.html`, Fehlerliste der Prüfung (6 Punkte). Alle sechs zuerst mit den Prüf-Skripten nachgestellt
+(alle reproduziert), dann behoben und mit denselben Skripten erneut gemessen. Version bleibt 4.24.0, Format 5, kein neues Feld, `live: true`
+unverändert, keine sichtbare Änderung. **Am Server offen: `max_app` ≥ 4024000.** Dieser Abschnitt gilt vor den Angaben weiter oben
+(Ziel-Pegel, Spitzen-Grenze, Leistung).
+
+### Was geändert ist
+
+1. **Ziel-Pegel mit demselben Bezug wie die Synths (VS-P-02).** Die −18 LUFS der MS-2000-Programme gelten am Klangerzeuger, *vor* dem
+   Pegel-Regler. Der Auto-Pegel bringt die Stimme jetzt auf **−16 LUFS vor dem Pegel-Regler** (Eingang der STIMME-Spur) – „2 dB über einem
+   einzelnen kalibrierten Synth-Programm“ an derselben Stelle gemessen. Am Ausgang: Pegel ganz auf −16 LUFS, Pegel-Standard 0,8 −19,9 LUFS
+   (vorher −16 nach dem Regler = 5 LU über den Synths). Eine Konstante (`VP_REF` 0,8 → 1).
+2. **Spitzen-Schutz für jede Panorama-Stellung (VS-P-03).** Pan ganz außen legt L + R der (stereo L = R geführten) Stimme auf eine Seite
+   (+6,02 dB, Pan-Gesetz der Spur-Kette, unverändert). Grenze vor Pegel und Pan jetzt −7,32 dBTP (`VP_CEIL` = −1,3 dBTP / 2) → am Ausgang
+   ≤ −1,3 dBTP in **jeder Stellung von Lautstärke und Panorama**.
+3. **Spitzen-Schutz ohne Rechenzeit je Stück (Fehler 4, 5, 6).** Statt je Abspiel-Stück `setValueCurveAtTime`-Kurven für alle Abschnitte
+   des restlichen Takes zu bauen (20 … 190 ms im Hauptfaden → Start nach seiner Zeit, Knacken beim A/B, Hüllkurve 12 … 30 ms gegen die
+   Spitzen verschoben, bis +12 dBTP), liegt die Hüllkurve einmal je Puffer als AudioBuffer vor (¼ der Abtastrate, Stützstellen genau auf
+   dem 16er-Raster, dazwischen linear – wertgleich zur Kurve, Abweichung 3·10⁻⁸). Ein AudioBufferSourceNode mit derselben Startzeit und
+   demselben Versatz wie das Stück steuert den `gain` (Grundwert 1, Puffer = Hüllkurve − 1) des Begrenzer-GainNode: sample-genau, Aufwand
+   je Stück fest (0,1 … 1 ms), er läuft nur über die Abschnitte des Stücks und endet mit dem Stück (`tkDrop`).
+4. **Messung beim Fertigwerden (Fehler 3).** Ein Take wird gemessen, sobald sein Puffer entsteht: Aufnahme fertig (`tkMakeTake`),
+   Import (`tkAddPcmTake`), gesäubert (`clEnsure`), gedehnt/geschnitten (`wpRender`) – nicht erst beim ersten Abspielen. Das erste Abspielen
+   nach der Aufnahme beginnt wieder genau am Clip-Anfang.
+5. **Messung ohne langes Häppchen.** Die Hüllkurven-Stufe ist jetzt in Häppchen zerlegt (vorher am Stück: bis 110 ms bei 96 s), die
+   Spitzen-Suche prüft die Zeit alle 1 024 statt 8 192 Samples und rechnet die drei Zwischenwert-Phasen in einer Schleife.
+
+### Abnahme (neu gemessen)
+
+| ID / Fehler | Ergebnis | Messung/Skript |
+|---|---|---|
+| Fehler 1 / VS-P-02 | ✓ Demo + Gesang über das Mikro (● REC mit 🎤, MELODIE Szene 1), alle Regler Standard: Moog-Bass −22,34, FM-Pluck −21,21, Rom-Fläche −22,20, Melodie −23,62, Drums −15,70, **Stimme −20,15 LUFS → +1,06 LU** über der lautesten Synth-Spur (vorher +4,78); Mikro −36 dBFS: −20,21 → **+0,97 LU** | `n4-vs-p-qa-02.mjs "" -28` / `-36` |
+| VS-P-01 | ✓ Mikro −36 / −28 / −20 dBFS RMS → Ausgang STIMME Pegel ganz auf **−16,10 / −16,01 / −16,02 LUFS**, Pegel-Standard −19,89 / −19,89 / −19,89 LUFS | `n4-vs-p-fix-accept.mjs 01` |
+| Fehler 2 / VS-P-03 | ✓ Take −30 dBFS RMS mit Plosiven bei −0,3 dBFS roh: wahre Spitze Ausgang Pegel/Pan 0,8/0 −11,2 · 1/0 −7,32 · 0,8/−1 **−5,18** · 0,8/+1 **−5,18** · 0,8/−0,5 **−6,55** · 1/−1 **−1,30 dBTP** (vorher bis +4,72). Spitzen genau 0 dBFS nach dem Ausgleich: −11,2 / −7,32 dBTP. Natürlicher Gesang ≤ 3 dB Pegelminderung: Vokal −28/−20/−36 100 %, Korpus 100 %, **Vokal mit Konsonanten 95,5 %** (vorher 96,9 %; Soll ≥ 95). Keine Verschiebung: 0,000 ms | `n4-vs-p-qa-03.mjs`, `n4-vs-p-fix-accept.mjs 03` |
+| Fehler 3 | ✓ 8 Takte bei 40 BPM (48 s, zweimal) und bei 60 BPM: erstes Stück **0,0 ms** nach Clip-Anfang, Versatz +0,0 ms (wie 4.23.0; vorher +126 … +558 ms), Take beim Fertigwerden schon gemessen | `n4-vs-p-qa-late.mjs 8 40`, `8 60` |
+| Fehler 4 / VS-P-05 | ✓ 16 Takte, Säubern 100 %, 7 × A/B beim Spielen, 112 und 40 BPM: `tkStartSrc` 0,2 … 0,9 ms (einmal 2,4 / 4,2 / 7,1 ms bei Last 13; vorher 17 … 220 ms), 2. Differenz Faktor höchstens **5,42** (= Boden der Messung, 4.23.0 5,42; vorher bis 481), Plosiv-Abstände **1200 ms** genau. Hinweis: die Plosiv-Schwelle 0,45 des Skripts liegt über der neuen Grenze (−7,32 dBTP = 0,43) – Kopie mit Schwelle 0,38 | `n4-vs-p-fix-ab.mjs` (`PTH=0.38`; `0.2` zeigt ±4 ms nur durch die Erkennung: Roh und Sauber werden an verschiedenen Stellen der Flanke erkannt) |
+| Fehler 5 | ✓ `tkPick` 16 Takte, 3 Läufe: `tkStartSrc` 0,1 … 0,4 ms, Abstände 1000 ms, alle Spitzen **−7,32 dBTP** am Spur-Eingang (Pegel ganz auf = Ausgang); `tkTrackResync` 4 Takte 3 Läufe −7,32, `songPlay` ab Takt 2/3/4 −8,62 dBTP, 0 über −1 | `n4-vs-p-qam-lim11.mjs <app> 3 pick 16`, `3 resync 4`, `3 song 4` |
+| Fehler 6 / VS-P-06 | ✓ 40 BPM, 16 Takte (96 s), Schleife: `tkStartSrc` 0,2 … 2,3 ms (vorher 82 … 195 ms), 99 Spitzen alle −7,32 dBTP, Abstände 1000 ms über den Schleifen-Anfang. Lange Tasks beim Spielen ohne Mitschnitt: App-Funktionen höchstens `tkStartSrc` 1,0 ms / `vpLim` 0,5 ms; die übrigen langen Tasks (1 … 2 je 144 s) gibt es in 4.23.0 genauso (3 im selben Lauf) – Last der Nachbar-Builds (Lastmittel 4 … 13). Messung: längstes Häppchen 20,7 ms (32 s) / 32,4 ms (96 s), 96-s-Take mit 96 Begrenzer-Abschnitten 26 … 29 ms bei Last 13; Häppchen = am Stück gerechnet (bitgleich). CPU 100 s Wiedergabe, je 2 Läufe: 4.23.0 53,53 %, VS-P 54,27 % = **+0,74 Prozentpunkte** | `n4-vs-p-qam-lim11.mjs` (BPM=40, loop 16), `n4-vs-p-fix-lt.mjs`, `n4-vs-p-perf.mjs lt`, `n4-vs-p-fix-slice.mjs`, `n4-vs-p-fix-same.mjs`, `n4-vs-p-perf.mjs cpu 100` |
+| VS-P-04 | ✓ Take aus 4.23.0 nach dem Laden gemessen, bevor er spielt; spielt mit −19,97 LUFS bei Pegel-Standard (Soll jetzt −19,88 ± 1,5); WAV/ZIP bitgleich; Projekte ohne/mit Takes Zeichen für Zeichen gleich | `n4-vs-p-fix-p04.mjs` |
+| Punkt 4 (`song.vox`) | ✓ −19,91 LUFS bei Pegel-Standard; Pegel 0,8 → 0,4 = −12,01 dB; Mute still | `n4-vs-p-fix-vox.mjs` |
+| VS-P-05 (Builder-Skript) | ✓ Schleife + Take-Wechsel + Stopp 1,41; A/B + Säubern 100 → 40 % 1,11 / 1,24; arbeitender Spitzen-Schutz 1,14; neuer Take beim Spielen Stille 30 ms (4.23.0 290 ms) | `n4-vs-p-click.mjs` |
+
+Regression: `v3-vs3-accept` 72 ✓; `gs7-v3-vs4-click` 6 ✓; `gs7-v3-vs4-accept` 25 ✓ / 1 ✗ (bekannt, auch 4.23.0); `gs7-v3-vs5a-t1/t3/t4/t5`
+grün, `-t2` 20 ✓ / 1 ✗ (bekannt, auch 4.23.0); `gs7-v3-vs5b-t2 … t5` grün; `gs7-v3-vs5b-t1` 32 ✓ in 8 von 10 Läufen – in 2 Läufen
+„render cache … (renders 7 → 7)“: die Fassung lag schon im Cache, es musste gar nicht gerechnet werden (die Zählung hängt vom Verlauf des
+Caches ab; `ready` war sofort da). Smoke ohne Fehler.
+
+### Abweichungen
+
+1. VS-P-01 wird mit dem Bezug der Synth-Kalibrierung gelesen (vor dem Pegel = Ausgang bei Pegel ganz auf): −16 LUFS dort, −19,9 LUFS bei
+   Pegel-Standard. So erfüllen VS-P-01 und VS-P-02 beide (Abweichung 1 oben ist damit erledigt). Die Builder-Skripte `n4-vs-p-accept.mjs 01`,
+   `n4-vs-p-p04.mjs`, `n4-vs-p-vox.mjs` prüfen noch −16 bei Pegel-Standard; die Kopien `n4-vs-p-fix-*.mjs` prüfen den neuen Bezug.
+2. Die Spitzen-Grenze gilt für Lautstärke und Panorama. Drive, Chorus und Hall der STIMME-Spur können Spitzen weiter anheben (wie bisher).
+3. Wegen der Pan-Reserve greift der Schutz bei Pan Mitte früher (−7,32 dBTP am Spur-Eingang): Vokal mit Konsonanten 95,5 % der Frames
+   ≤ 3 dB (Soll ≥ 95 %), reine Vokale weiter 100 %.
+4. Speicher (iPhone): nur Takes mit Begrenzer-Abschnitten bekommen den Hüllkurven-Puffer, ¼ der Take-Größe (96 s bei 48 kHz: 4,6 MB, je
+   klingender Fassung). Takes ohne Spitze: kein Puffer, kein Knoten.
+5. Eine Neu-Planung wartet weiter auf die Messung einer *noch nicht* gemessenen Fassung (wird jetzt beim Fertigwerden angestoßen; ein Take von
+   96 s ist nach etwa 0,3 … 0,5 s gemessen). Wer ▶ in dieser Zeit drückt, hört den Take dort erst ab dem Ende der Messung.
+
+### Fragen an Xander
+
+1. Die Stimme liegt jetzt bei Pegel-Standard etwa 1 dB über den Synths und etwa 4,5 dB unter den Drums. Passt das, oder soll sie näher an
+   die Drums? (eine Zeile, `VP_REF`)
+
+### iPhone (Xander)
+
+1. Projekt mit Gesang ▶: die Stimme sitzt jetzt etwas über den Synths (nicht mehr so laut wie die Drums).
+2. Aufnehmen (● REC mit 🎤), Stopp, gleich danach ▶: der Gesang beginnt genau am Anfang, nichts fehlt.
+3. STIMME-Spur → FX / SPUR → Panorama ganz links/rechts, Lautstärke ganz auf, laut „P“/„T“ ins Mikro: nichts übersteuert.
+4. Beim Spielen Roh│Sauber umschalten und einen anderen Take wählen: kein Knacken, die Stimme bleibt im Takt.
+
+### Für das Zusammenführen
+
+Geändert gegenüber `VS-P.html` (alles im VS-P-Block, Ein-Zeilen-Haken außerhalb):
+- VS-P-Block: Kommentar, `VP_REF` (1), `VP_CEIL` (/ 2), `vpStep` (Spitzen-Suche je 1 024 Samples, drei Phasen in einer Schleife; Stufe 2
+  in Häppchen, `J.h`), neu `vpEnvD`, `vpEnvBuf`, `vpEnvFill`, `vpLim` neu geschrieben (AudioBufferSourceNode → `gain`, `n.es`).
+- `tkDrop`: 1 Haken (`r.lim.es` stoppen).
+- `tkMakeTake` (Zeile `TK.buf.set(id, vpKick(b))` im `fill`), `tkAddPcmTake` (dieselbe Zeile), `clEnsure` (`CL.buf.set(id, {a, b: vpKick(b)})`),
+  `wpRender` (`WP.alt.set` / `WP.cache.set` mit `vpKick(ab)`): je 1 Ausdruck. `tkMakeTake` ist auch eine VS-L-Stelle – beim
+  Zusammenführen nur `vpKick(…)` um `b` in der Zeile `const b = tkToBuffer(pcm, sr); if (b) TK.buf.set(id, b);` übernehmen.
+Snapshot: `synq-snapshots/VS-P-fix.html`. Neue Skripte: `dirigent-test/n4-vs-p-fix-{ab,lt,slice,same,accept,p04,vox,vs5b-t1i}.mjs`.
