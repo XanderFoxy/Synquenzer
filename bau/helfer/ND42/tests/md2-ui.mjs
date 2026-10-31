@@ -1,6 +1,6 @@
 // ND2 (Nachtrag 6 §ND2) Abnahme-Test: Editor der Drum-Engine (Chromium, echte Touch-Eingabe über CDP).
 //   NODE_PATH=/opt/node-tools/node_modules node md2-ui.mjs <app index.html> [<old build vs-base-B.html>] [--fmt=P|L|PL]
-// Prüft ND2-01, 03, 05, 06, 07, 08, 09, 10, 11, 12, 13 (ND2-02 = md2-shots.mjs; ND2-04 nur soweit der ND-STUB messbar ist).
+// Prüft ND2-01, 03, 04 (nur was der ND-STUB spielt: TONE A1), 05–13 (ND2-02 = md2-shots.mjs).
 // Ausgabe: eine JSON-Zusammenfassung {ok, pass, fail, checks:[{id, fmt, name, ok, info}]}; Exit-Code 1 bei Fehlern.
 import {createRequire} from 'module'; const {chromium} = createRequire(import.meta.url)('playwright');
 import fs from 'fs'; import os from 'os'; import path from 'path';
@@ -263,6 +263,40 @@ async function nd203(fmt) {
   await ctx.close();
 }
 
+// ======================= ND2-04: Wirkung (nur was der ND-STUB spielt: TONE A1) =======================
+async function nd204(fmt) {
+  const ctx = await newCtx(fmt), page = await openApp(ctx, APP);
+  await setup(page, {md: ['kick']});
+  // Messgrößen im Browser: Spitze, Länge bis −60 dB, Frequenz früh (0–15 ms) / spät (über Nulldurchgänge), Energie L/R
+  const meas = set => page.evaluate(async set => {
+    const s = mdSlot('kick'); Object.assign(s, mdProg(MDN.init()), {mTdec: 25}, set); drumChanged('kick');
+    const r = await SYNQUENZER.mdRender([[.01, 'kick', .8]], {sec: 1.6}); const L = r.l, Rr = r.r, sr = 48000, i0 = Math.round(.01 * sr);
+    let pk = 0, eL = 0, eR = 0; for (let i = 0; i < L.length; i++) { const m = Math.max(Math.abs(L[i]), Math.abs(Rr[i])); if (m > pk) pk = m; eL += L[i] * L[i]; eR += Rr[i] * Rr[i]; }
+    let last = 0; for (let i = 0; i < L.length; i++) if (Math.max(Math.abs(L[i]), Math.abs(Rr[i])) > pk * 1e-3) last = i;
+    const zc = (a, b) => { const x = L.map((v, i) => v + Rr[i]); let n = 0, f = -1, l = -1; for (let i = i0 + a + 1; i < i0 + b; i++) if (x[i - 1] <= 0 && x[i] > 0) { n++; if (f < 0) f = i; l = i; } return n > 1 ? (n - 1) / ((l - f) / sr) : 0; };
+    return {pk, len: (last - i0) / sr, f0: zc(0, 720), f1: zc(4800, 9600), eL, eR, sum: Array.from(L.slice(0, 48000)).concat(Array.from(Rr.slice(0, 48000)))};
+  }, set);
+  const nul = (a, b) => { let n = 0, d = 0; for (let i = 0; i < a.length; i++) { const x = a[i] - b[i]; n += x * x; d += a[i] * a[i]; } return n ? 10 * Math.log10(n / (d || 1e-30)) : -999; };
+  const strip = m => { const o = {...m}; delete o.sum; for (const k in o) o[k] = +(+o[k]).toPrecision(4); return o; };
+  const T = [
+    ['DECAY mTdec', {mTdec: 0}, {mTdec: 50}, (a, b) => b.len > a.len * 4, 'Länge'],
+    ['PITCH mPit', {mPit: 36, mTdec: 40}, {mPit: 84, mTdec: 40}, (a, b) => b.f1 > a.f1 * 15.5 && b.f1 < a.f1 * 16.5, 'Frequenz ×16 (48 HT)'],
+    ['BEND mBnd', {mBnd: -50, mBt: 30, mTdec: 45}, {mBnd: 50, mBt: 30, mTdec: 45}, (a, b) => b.f0 > a.f0 * 2, 'Frequenz früh'],
+    ['TONE LVL mTlv', {mTlv: 0}, {mTlv: 50}, (a, b) => a.pk <= 1e-6 && b.pk > 1e-2, 'Spitze (min = still)'],
+    ['CH LEVEL mChlv', {mChlv: 0}, {mChlv: 50}, (a, b) => a.pk <= 1e-6 && b.pk > 1e-2, 'Spitze (min = still)'],
+    ['PAN mPan', {mPan: -9}, {mPan: 9}, (a, b) => a.eL > 100 * a.eR && b.eR > 100 * b.eL, 'Energie L/R'],
+  ];
+  for (const [n, a, b, ok, what] of T) { const A = await meas(a), B = await meas(b); ck('ND2-04', fmt, `${n}: min → max ändert ${what} (ND-STUB)`, ok(A, B), {min: strip(A), max: strip(B)}); }
+  // graue Zellen (A1: SPECTRA, FREQ, DYN FILTER; EQ FREQ bei GAIN 0) wirken nicht: M-NULL ≤ −120 dB
+  const ref = await meas({});
+  for (const [n, set] of [['SPECTRA (A1)', {mSpc: 99}], ['FREQ (A1)', {mFrq: 0}], ['DYN FILTER (A1)', {mDyf: 9}], ['EQ FREQ (GAIN 0)', {mEqf: 0}]]) {
+    const m = await meas(set), d = nul(ref.sum, m.sum);
+    ck('ND2-04', fmt, `graue Zelle ${n} wirkt nicht (M-NULL ≤ −120 dB)`, d <= -120, {nullDb: +d.toFixed(1)});
+  }
+  ck('ND2-04', fmt, 'keine Seitenfehler', !page._errs.length, page._errs);
+  await ctx.close();
+}
+
 // ======================= ND2-05: ALLE KANÄLE =======================
 async function nd205(fmt) {
   const ctx = await newCtx(fmt), page = await openApp(ctx, APP);
@@ -271,7 +305,7 @@ async function nd205(fmt) {
   const get = k => page.evaluate(([P, k]) => P.map(id => mdSlot(id)[k]), [PADS, k]);
   await page.evaluate(P => { P.forEach((id, i) => { mdSlot(id).mTdec = 10 + 10 * i; mdSlot(id).mPit = [40, 45, 50, 60][i]; drumChanged(id); }); edRefresh(); }, PADS);
   await tap(page, '.mdre .mdall'); await sleep(50);
-  const on = await page.evaluate(() => ({all: MDE.all, aria: document.querySelector('.mdre .mdall').getAttribute('aria-checked'), focus: (UI.padEls || []).filter(p => p && p.classList && p.classList.contains('mdall')).length}));
+  const on = await page.evaluate(() => ({all: MDE.all, aria: document.querySelector('.mdre .mdall').getAttribute('aria-checked'), focus: (UI.padEls || []).filter(p => p && p.classList && (p.classList.contains('mdfoc') || p.classList.contains('mdall'))).length}));
   ck('ND2-05', fmt, 'ALLE KANÄLE: Tipp schaltet an, Fokus-Rahmen auf den 4 Modell-Pads', on.all && on.aria === 'true' && on.focus === 4, on);
   const d0 = await get('mTdec'); await page.evaluate(() => { UNDO.length = 0; });
   const b = await box(page, cellSel('mTdec'));
@@ -296,13 +330,13 @@ async function nd205(fmt) {
   // Ende: Editor schließen, ■, Szenenwechsel
   const ends = {};
   for (const [name, fn] of [['closeEditor', 'closeEditor()'], ['stop', 'stop()'], ['launchScene', 'launchScene(0)']]) {
-    await page.evaluate(() => { if (R.editor !== 'drum') { ED.dTab = 'sound'; openEditor(); } });
+    await page.evaluate(() => { MDE.all = false; mdFocus(); ED.dTab = 'sound'; if (R.editor !== 'drum') openEditor(); else buildDrumEd(); });
     await sleep(80);
     await tap(page, '.mdre .mdall'); await sleep(30);
     const was = await page.evaluate(() => MDE.all);
     await page.evaluate(fn); await sleep(60);
-    ends[name] = await page.evaluate(() => ({all: MDE.all, focus: (UI.padEls || []).filter(p => p && p.classList && p.classList.contains('mdall')).length, btn: document.querySelector('.mdre .mdall') ? document.querySelector('.mdre .mdall').classList.contains('on') : null}));
-    ck('ND2-05', fmt, `ALLE KANÄLE endet mit ${name}`, was && !ends[name].all && ends[name].focus === 0 && ends[name].btn !== true, {was, ...ends[name]});
+    ends[name] = await page.evaluate(() => { if (R.editor !== 'drum') { ED.dTab = 'sound'; openEditor(); } return {all: MDE.all, focus: (UI.padEls || []).filter(p => p && p.classList && (p.classList.contains('mdfoc') || p.classList.contains('mdall'))).length, btn: document.querySelector('.mdre .mdall') ? document.querySelector('.mdre .mdall').classList.contains('on') : null}; });
+    ck('ND2-05', fmt, `ALLE KANÄLE endet mit ${name} (Schalter danach aus)`, was && !ends[name].all && ends[name].focus === 0 && ends[name].btn !== true, {was, ...ends[name]});
   }
   ck('ND2-05', fmt, 'keine Seitenfehler', !page._errs.length, page._errs);
   await ctx.close();
@@ -313,6 +347,7 @@ async function pickList(page, key, v) {
   await tap(page, cellSel(key)); await sleep(420);
   const n = await page.evaluate(() => UI.pop && UI.pop.name);
   if (n !== 'mdlist') return false;
+  await page.evaluate(v => document.querySelector(`.pop button[data-v="${v}"]`).scrollIntoView({block: 'center'}), v); await sleep(120);
   await tap(page, `.pop button[data-v="${v}"]`); await sleep(60);
   return true;
 }
@@ -660,6 +695,7 @@ const run = async (id, fn, fmt) => { if (!want(id)) return; try { await fn(fmt);
 for (const fmt of FMTS) {
   await run('ND2-01', nd201, fmt);
   await run('ND2-03', nd203, fmt);
+  if (fmt === FMTS[0]) await run('ND2-04', nd204, fmt);
   await run('ND2-05', nd205, fmt);
   await run('ND2-06', nd206, fmt);
   await run('ND2-07', nd207, fmt);

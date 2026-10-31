@@ -61,7 +61,9 @@ Tests in `bau/helfer/ND42/tests/` (Aufruf: `NODE_PATH=<playwright> node <test> <
 | ND4-10 CPU-Begrenzer | ✓ Nachricht | `{t:'lim'}`; Moden-Begrenzung ist Sache von ND1 |
 | ND4-11 Marke | ✓ | kein „Nord“ mehr im HTML (7 alte Stellen bereinigt, s. Zusammenführen); `nOrd` ist ein FM-Variablenname; `MD_NAME` einmal |
 | ND4-12 Regression | ✓ Smoke, Golden | DR*/T1–T18-Suiten liegen nur auf dem Dirigenten-Rechner |
-| ND2-01 … ND2-13 | s. `md2-ui.mjs` | Layout (ND2-02) mit `md2-shots.mjs`: alle 6 Formate × SOUND 5 Reiter, KANAL, KIT, North-Block: kein Überlauf, kein waagrechtes Scrollen, eigene Bedienelemente ≥ 44 px |
+| ND2-01, 03, 05–11, 13 | ✓ | `md2-ui.mjs` (echte Touch-Eingabe, P 390×844 + L 844×390): 368 Prüfungen; ND2-10-Fund (RATE/BPM-Umschalter zeigte die alte Zelle) behoben |
+| ND2-02 Layout | ✓ | `md2-shots.mjs`: 6 Formate × SOUND (5 Reiter), KANAL, KIT, North-Block: kein Überlauf, kein waagrechtes Scrollen, eigene Bedienelemente ≥ 44 px |
+| ND2-12 Marke | ✓ bis auf `nOrd` | kein Gerätename; `grep -i nord` trifft nur noch den alten FM-Variablennamen `nOrd` (6×, schon in 4.23.0) – Umbenennen wäre fremder Code, s. Fragen |
 | ND2-04, ND2-07 Klang | nur mit Stub (TONE) | Messung der übrigen Teile nach dem Zusammenführen mit ND1 |
 
 ## Abweichungen
@@ -97,6 +99,7 @@ North-Programme lassen sich nicht per Name auf Synth-Spuren laden.
 3. Die **Unter-Reiter** (TONE … FX) sind 28–32 px hoch wie alle Unter-Reiter der App. Für 44 px müsste die Seite in kleinen Formaten
    Zellen verlieren. So lassen?
 4. **Löschen eigener Programme:** geht über die Bibliothek/API; ein ✕ in der Programm-Liste ist nicht in der Spec. Gewünscht?
+6. Strenges `grep -i nord`: übrig ist nur die FM-Variable `nOrd` (alter Code, kein Markenname). Soll der Dirigent sie umbenennen?
 5. Die alten Texte „FM-Percussion (Nord Drum)“ und „Nord Drum / Waldorf Attack“ (Kit-Vorbilder) und „…, Nord Lead“ (Sync-Lead-Vorbild)
    sind jetzt „FM-Percussion“, „Waldorf Attack“ und ohne „Nord Lead“ (Marken-Regel). In Ordnung?
 

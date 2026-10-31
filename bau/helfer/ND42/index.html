@@ -33406,7 +33406,7 @@ function mdKitBlock(pg) {
   const rv = makeCtl({l: 'REVERB TYPE', vals: RV.map((_, i) => i), def: 1}, () => RV.indexOf(mdKit().rvT), v => mdKitSet('rvT', RV[v]), {undo: soundUndo(DRUM_T), label: 'REVERB TYPE', key: 'md.rvT', fmt: v => RV[v], idle: () => MD_RVT[mdKit().rvT]});
   rv.classList.add('mdc'); { const se = el('span', 'msub'); rv.appendChild(se); const u0 = rv.update; rv.update = () => { u0(); se.textContent = MD_RVT[mdKit().rvT]; }; rv.update(); }
   const col = cell('rvC', 'COLOR', {min: -9, max: 9, c: 'bip', def: 0}, v => mdSgn(Math.round(v)), v => (v < 0 ? 'Höhen weg' : v > 0 ? 'Tiefen weg' : 'neutral'));
-  const mode = makeSeg([['r', 'RATE', 'Echo-Zeit frei'], ['b', 'BPM', 'Echo-Zeit als Tempo']], () => mdKit().dlM, v => mdKitSet('dlM', v), 'mddlm', {undo: soundUndo(DRUM_T), label: 'Echo RATE/BPM'});
+  const mode = makeSeg([['r', 'RATE', 'Echo-Zeit frei'], ['b', 'BPM', 'Echo-Zeit als Tempo']], () => mdKit().dlM, v => { mdKitSet('dlM', v); vis(); }, 'mddlm', {undo: soundUndo(DRUM_T), label: 'Echo RATE/BPM'});
   const rate = cell('dlR', 'RATE', {min: 0, max: 99, c: 'lin', def: 50}, v => String(Math.round(v)), v => mdTime(1.15 * Math.pow(.01 / 1.15, v / 99)));
   const bpm = cell('dlB', 'BPM', {min: 0, max: 470, c: 'lin', def: 60}, v => mdBpmTxt(Math.round(v)), v => mdTime(MD_BPM[v][2]));
   const fb = cell('dlF', 'FEEDBACK', {min: 0, max: 20, c: 'lin', def: 0}, v => String(Math.round(v)), v => (v ? (v === 20 ? 'fast endlos' : v + ' / 20') : 'ein Echo'));
