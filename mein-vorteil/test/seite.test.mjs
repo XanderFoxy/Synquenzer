@@ -111,7 +111,9 @@ async function pruefeLayout(page, wo) {
     return { zuKlein, sw: document.documentElement.scrollWidth, iw: innerWidth, bw: document.body.scrollWidth };
   });
   assert.deepEqual(r.zuKlein, [], `${wo}: Tippflächen unter 44 px`);
-  assert.ok(r.sw <= r.iw && r.bw <= r.iw, `${wo}: seitliches Scrollen (${r.sw}/${r.bw} > ${r.iw})`);
+  // gegen die eingestellte Breite prüfen: auf Mobilgeräten wächst innerWidth mit, wenn etwas übersteht
+  const vw = page.viewportSize().width;
+  assert.ok(r.sw <= vw && r.bw <= vw && r.iw <= vw, `${wo}: seitliches Scrollen (${r.sw}/${r.bw}/${r.iw} > ${vw})`);
   await page.evaluate(() => document.querySelectorAll('details').forEach(d => (d.open = false)));
 }
 

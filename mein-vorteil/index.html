@@ -165,7 +165,8 @@
     display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--linie);
     text-decoration: none; color: inherit; min-height: 44px; font-size: 14px;
   }
-  .weitere li a span:last-child { text-align: right; white-space: nowrap; }
+  .weitere li a > span:first-child { min-width: 0; }
+  .weitere li a > span:last-child { text-align: right; white-space: nowrap; }
 
   /* Listen */
   .liste { list-style: none; margin: 0 0 12px; padding: 0; }
