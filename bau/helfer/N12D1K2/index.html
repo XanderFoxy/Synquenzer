@@ -11410,7 +11410,11 @@ const RecHelpers = (() => {
   const LO = 24, HI = 108;                                        // C1..C8
   const SLOP = 7;                                                 // px before a touch counts as a drag
   const FITK = .88;                                               // ⤢ whole clip: the clip fills 88 %, 12 % room on the right (V0a K-05)
-  const EDGE = 24, EDGE_BPS = 4;                                  // length handle at the ruler's edge: scroll along, ≤ 1 bar (4 beats) per s
+  const EDGE = 24, EDGE_BPS = 4;
+  /* N1: drawn symbols (SVG, currentColor): Spiegeln = arrows up/down across a dashed axis, Umdrehen = arrows left/right across a dashed axis */
+  const N1_SVG = d => '<svg class="n1i" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+  const N1_ICON = {v: N1_SVG('<path d="M10 2v6M7 5l3-3 3 3M10 18v-6M7 15l3 3 3-3"/><path d="M2 10h16" stroke-dasharray="2 2.5" stroke-width="1.5"/>'),
+    h: N1_SVG('<path d="M2 10h6M5 7l-3 3 3 3M18 10h-6M15 7l3 3-3 3"/><path d="M10 2v16" stroke-dasharray="2 2.5" stroke-width="1.5"/>')};                                  // length handle at the ruler's edge: scroll along, ≤ 1 bar (4 beats) per s
 
   const CSS = `
 .pr{display:grid;grid-template-columns:40px minmax(0,1fr);grid-template-rows:auto 26px minmax(0,1fr) var(--pr-vh,56px) auto;height:100%;min-height:0;
@@ -11430,6 +11434,7 @@ const RecHelpers = (() => {
 .pr-bar button.loopb{background:var(--amber,#ffb22e);color:#111}
 .pr-bar button:disabled{opacity:.35}
 .pr-bar button[hidden]{display:none}
+.pr-bar button.n1b{display:inline-flex;align-items:center;gap:5px;position:relative}.pr-bar button.n1b::after{content:'';position:absolute;left:-2px;right:-2px;top:-7px;bottom:-7px}.pr-bar .n1i{flex:none;display:block}
 .pr-bar .sep{flex:none;width:1px;height:24px;background:var(--line,#2d323c);margin:0 2px}
 .pr-bar .ask{flex:none;font-weight:700;color:var(--rec,#ff4538);padding:0 4px;white-space:nowrap}
 .pr-corner{font-size:9px;letter-spacing:.08em;color:var(--text-dim,#9aa0aa);display:flex;align-items:center;justify-content:center}
@@ -11497,6 +11502,9 @@ const RecHelpers = (() => {
     btn(acts, '▼ Stufe', () => act('Transponieren', ns => transposeNotes(ns, -1, true)), 'In der Tonart eine Stufe tiefer');
     btn(acts, '+12', () => act('Oktave', ns => transposeNotes(ns, 12, false)), 'Oktave hoch');
     btn(acts, '−12', () => act('Oktave', ns => transposeNotes(ns, -12, false)), 'Oktave tiefer');
+    /* N1: Noten umdrehen – Spiegeln (Tonhöhen um die Mitte, in der Tonart) / Umdrehen (zeitlich rückwärts); Auswahl, sonst ganzer Clip; ein Undo je Tipp */
+    A.mirror = btn(acts, N1_ICON.v + 'Spiegeln', () => act('Spiegeln', ns => mirrorNotes(ns)), 'Spiegeln: Tonhöhen um die Mitte gespiegelt, in der Tonart', 'n1b');
+    A.reverse = btn(acts, N1_ICON.h + 'Umdrehen', () => act('Umdrehen', ns => reverseNotes(ns)), 'Umdrehen: zeitlich rückwärts, Länge und Anschlag je Note bleiben', 'n1b');
     // VS2 Korrektur-Griffe (wie Tony, r7/stimme.md §11 Skizze 4): Teilen / Verbinden – nur mit Auswahl, je ein Undo
     A.split = btn(acts, 'Teilen', () => { if (!E.sel.size) { say('Erst Noten wählen (⬚)'); return; } act('Teilen', ns => splitNotes(ns)); }, 'Gewählte Noten in der Mitte teilen (am Raster)');
     A.join = btn(acts, 'Verbinden', () => { if (E.sel.size < 2) { say('Mindestens zwei Noten wählen (⬚)'); return; } act('Verbinden', ns => joinNotes(ns)); }, 'Gewählte Noten zu einer Note verbinden');
@@ -11701,6 +11709,29 @@ const RecHelpers = (() => {
       const keep = Object.assign({}, first, {d: +Math.min(end - first.t, L() - first.t).toFixed(6), n: lg.n, v: Math.max(...s.map(n => n.v))});
       const c = clip(), drop = new Set(s); c.notes = c.notes.filter(n => !drop.has(n)); c.notes.push(keep); E.sel = new Set([keep]);
       return true;
+    }
+    /* N1: scale position in half degrees: a scale tone = 2·degree, a tone between two scale tones = the odd number between them
+       (a diatonic gap with a tone in it is always a whole step) -> the mirror d' = S − d is exact and its own inverse */
+    function n1Pos(n) { const s = scaleOf(), k = s.S.length, o = Math.floor((n - s.root) / 12), pc = PC(n - s.root), i = s.S.indexOf(pc);
+      if (i >= 0) return 2 * (o * k + i); let j = 0; while (j < k - 1 && s.S[j + 1] < pc) j++; return 2 * (o * k + j) + 1; }
+    function n1Note(h) { const s = scaleOf(), k = s.S.length, deg = Math.floor(h / 2), o = Math.floor(deg / k), i = deg - o * k, b = s.root + 12 * o + s.S[i];
+      return h % 2 === 0 ? b : b + 1; }
+    function mirrorNotes(ns) {
+      if (!ns.length) return false;
+      const H = ns.map(nt => n1Pos(nt.n)), ins = H.filter(h => h % 2 === 0), ref = ins.length ? ins : H;
+      const S = Math.min(...ref) + Math.max(...ref), out = H.map(h => n1Note(S - h));
+      if (out.some(n => n < 0 || n > 127)) { say('Außerhalb des Tonumfangs'); return false; }
+      if (out.every((n, i) => n === ns[i].n)) { say('Spiegeln: nichts zu ändern'); return false; }
+      ns.forEach((nt, i) => { nt.n = out[i]; }); centerIfHidden(ns[0].n); say('Gespiegelt'); return true;
+    }
+    // N1: rückwärts im Bereich (Auswahl: erste Note bis letztes Ende; ganzer Clip: 0 … Clip-Länge); Länge, Anschlag, Ton je Note bleiben
+    function reverseNotes(ns) {
+      if (!ns.length) return false;
+      const a = E.sel.size ? Math.min(...ns.map(n => n.t)) : 0, b = E.sel.size ? Math.max(...ns.map(n => n.t + n.d)) : L();
+      const out = ns.map(nt => +(a + b - nt.t - nt.d).toFixed(6));
+      if (out.every((t, i) => Math.abs(t - ns[i].t) < 1e-6)) { say('Umdrehen: nichts zu ändern'); return false; }
+      ns.forEach((nt, i) => { const t = clamp(out[i], 0, L() - 1e-6); if (nt.o != null) nt.o = +(nt.o + t - nt.t).toFixed(4); nt.t = t; });
+      say('Umgedreht'); return true;
     }
     function quantizeNotes(ns) { const g = GRID[E.grid]; if (!g) return false; for (const nt of ns) { let t = Math.round((nt.o != null ? nt.o : nt.t) / g) * g; if (t >= L() - 1e-9) t = ((t % L()) + L()) % L(); if (t >= L() - 1e-9) t = 0; nt.t = +t.toFixed(6); } return true; }
     function legato(ns) { const s = ns.slice().sort((a, b) => a.t - b.t); for (let i = 0; i < s.length; i++) { const nx = s.find(o => o.t > s[i].t + 1e-6); s[i].d = nx ? nx.t - s[i].t : Math.max(s[i].d, L() - s[i].t); } return true; }
