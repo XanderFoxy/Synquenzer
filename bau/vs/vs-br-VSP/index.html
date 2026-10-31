@@ -39341,7 +39341,7 @@ function vpStep(J, until) {
     }
     J.i = i;
     if (i < n) { J.ms += performance.now() - t0; return false; }
-    J.st = 2;
+    J.st = need.some(v => v < 1) ? 2 : 3; if (J.st === 3) J.need = null;      // keine Spitze über der Grenze: keine Hüllkurve
   }
   if (J.st === 2) {
     // Hüllkurve: Minimum über die Vorschau (A Punkte), Freigabe exponentiell, dann gleitender Mittelwert über A (≤ Bedarf an jedem Punkt)
@@ -39423,6 +39423,7 @@ const VP_API = {
     return {target: VP_LUFS, runs: VP.runs, sync: VP.sync, gated: VP.gated, maxMs: VP.maxMs, err: VP.err, queue: VP.q.length, takes,
       src: TK.src.filter(r => !r.dead).map(r => ({take: r.take, vox: r.vox, start: r.start, end: r.end, G: r.G, lim: !!r.lim}))};
   },
+  vpEnv: id => { let b = null; try { b = tkPlayBuf(id, null); } catch (e) {} const r = b && VP.m.get(b); return r ? {K: r.K, sr: b.sampleRate, n: b.length, g: r.g, env: r.env ? Array.from(r.env) : null} : null; },
   vpWait: async () => { for (let k = 0; k < 400 && VP.q.length; k++) await new Promise(r => setTimeout(r, 25)); return VP.q.length === 0; }
 };
 

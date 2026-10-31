@@ -1,0 +1,15 @@
+import {chromium} from 'playwright';
+import {INIT as INIT2} from './v3-vs2-h.mjs';
+const file = process.argv[2], tog = process.argv[3] === '1';
+const br = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await br.newContext({viewport: {width: 390, height: 844}}); const p = await ctx.newPage(); await p.addInitScript(INIT2);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+await p.goto('file://' + file); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version); await sleep(400);
+const j0 = JSON.parse(await p.evaluate(() => SYNQUENZER.serialize()));
+if (tog) await p.evaluate(() => SYNQUENZER.vsSet({mel: false}));
+await sleep(1500);
+await p.reload(); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version); await sleep(400);
+const j2 = JSON.parse(await p.evaluate(() => SYNQUENZER.serialize()));
+const diff = (a, b, path = '') => { if (JSON.stringify(a) === JSON.stringify(b)) return []; if (a && b && typeof a === 'object' && typeof b === 'object') { const ks = new Set([...Object.keys(a), ...Object.keys(b)]); return [...ks].flatMap(k => diff(a[k], b[k], path + '.' + k)); } return [path + ': ' + JSON.stringify(a).slice(0, 80) + ' → ' + JSON.stringify(b).slice(0, 80)]; };
+console.log(JSON.stringify(diff(j0, j2).slice(0, 10), null, 1));
+await br.close();

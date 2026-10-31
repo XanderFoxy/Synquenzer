@@ -355,7 +355,7 @@ export const KOMPAKT = [
   {n: 'Voc Bass', i: 'Einstimmiger Puls tief unten, der Arp springt zwischen zwei Oktaven – deine Stimme als Bass-Figur.', arp: ARP({range: 2, gate: 60, res: 1})}),
  VOC({e2: E(10, 70, 120, 50), a: {lvl: 120}}, {res: 40, ...VP([127, 127, 127, 127, 120, 120, 110, 110], [-63, 63, -63, 63, -63, 63, -63, 63])},
   {n: 'Wide Voc', i: 'Die Bänder sind paarweise ganz nach links und rechts verteilt – deine Stimme füllt das ganze Stereobild.', mfx: M(0, 20, 40)}),
- VOC({o1: {w: 2, c1: 30}, e2: E(0, 60, 60, 40), a: {lvl: 120}}, {res: 30, ...VP([120, 127, 127, 120, 110, 110, 100, 100], [-20, 20, -40, 40, -20, 20, -40, 40])},
+ VOC({o1: {w: 2, c1: 30}, e2: E(0, 60, 60, 40), a: {lvl: 120}}, {res: 30, fs: 1, ...VP([120, 127, 127, 120, 110, 110, 100, 100], [-20, 20, -40, 40, -20, 20, -40, 40])},   // G-MK8b-merge-fix: fs +1 (TP ≤ −1 dBTP with natural voice)
   {n: 'Echo Voc', i: 'Dreieck-Träger, der Arp läuft abwärts und das Kreuz-Echo wiederholt jede Silbe.', arp: ARP({type: 1, range: 2, gate: 60, res: 1}), dly: D(1, 1, 7, 50)}),
  VOC({o1: {w: 1, c1: 60}, e2: E(0, 60, 60, 30), a: {lvl: 120}}, {res: 35, fs: 1, ...VP([127, 120, 127, 120, 110, 100, 100, 90], [-30, 30, 30, -30, -30, 30, 30, -30])},
   {n: 'Sing Arp', i: 'Der Arp springt in zufälliger Folge über zwei Oktaven – deine Stimme singt eine Melodie, die du nicht spielst.', arp: ARP({type: 4, range: 2, gate: 70, res: 1}), dly: D(0, 1, 5, 30)}),

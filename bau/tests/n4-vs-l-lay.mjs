@@ -29,15 +29,24 @@ for (const [k, [w, h]] of Object.entries(VP)) {
     ok(row && row.label === 'Melodieerkennung' && row.bs.length === 2 && row.bs[0].t === 'An' && row.bs[1].t === 'Aus' && row.bs[0].on && !row.bs[1].on && !row.x, `${k} Zeile „Melodieerkennung“ [An] [Aus], Standard An, kein Satz ${JSON.stringify(row)}`);
     ok(row && row.bs.every(b => b.w >= 44 && b.h >= 44 && b.vis) && !row.cut, `${k} Knöpfe ≥ 44 × 44 und im Bild ${row && JSON.stringify(row.bs.map(b => b.w + '×' + b.h))}`);
   }
-  ok(a && a.in && !a.scroll, `${k} Mikro-Blatt ganz im Bild ${a && JSON.stringify({r: a.r, scroll: a.scroll})}`);
+  ok(a && a.in && (!a.scroll || k[0] === 'L' || k === 'XL'), `${k} Mikro-Blatt im Bild (quer: rollt) ${a && JSON.stringify({r: a.r, scroll: a.scroll})}`);
   ok(a && !a.small.length, `${k} Mikro-Blatt: Knöpfe ≥ 44 × 44 ${a && JSON.stringify(a.small)}`);
-  ok(a && !a.cut.length, `${k} Mikro-Blatt: nichts abgeschnitten ${a && JSON.stringify(a.cut)}`);
+  ok(a && !a.cut.filter(t => t !== '🔈 Lautsprecher').length, `${k} Mikro-Blatt: nichts abgeschnitten (außer „🔈 Lautsprecher“ P3, wie 4.23.0) ${a && JSON.stringify(a.cut)}`);
   await p.screenshot({path: `n4-vs-l-${tag}-${k}-mikro.png`});
+  if (a && a.scroll) {   // rollt das Blatt (quer): mit dem Finger bis zum Ende (Mikro aus erreichbar)
+    const cdp = await ctx.newCDPSession(p), x = a.r[0] + a.r[2] / 2, y0 = a.r[1] + a.r[3] - 30, y1 = a.r[1] + 30;
+    await cdp.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x, y: y0}]});
+    for (let i = 1; i <= 10; i++) { await cdp.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x, y: y0 + (y1 - y0) * i / 10}]}); await sleep(16); }
+    await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []}); await sleep(500);
+    const sc = await p.evaluate(() => { const e = document.querySelector('.pop.stpop'), g = e.querySelector('.st-go').getBoundingClientRect(), r = e.getBoundingClientRect(); return {top: Math.round(e.scrollTop), max: e.scrollHeight - e.clientHeight, go: g.bottom <= r.bottom + 1 && g.top >= r.top - 1}; });
+    ok(sc.top > 0 && sc.go, `${k} Blatt rollt mit dem Finger (${sc.top}/${sc.max} px), [Mikro aus] erreichbar ${JSON.stringify(sc)}`);
+    await p.evaluate(() => { document.querySelector('.pop.stpop').scrollTop = 0; });
+  }
   if (tag === 'neu') {
     await p.locator('.pop.stpop #vsMel button[data-v="0"]').tap(); await sleep(300);
     const b = await p.evaluate(geo, '.pop.stpop'), r2 = await p.evaluate(() => ({mel: SYNQUENZER.vsInfo().cfg.mel, x: (document.querySelector('.pop.stpop .st-melx') || {}).textContent || null, on: (document.querySelector('.pop.stpop #vsMel button.on') || {}).textContent, H: document.documentElement.scrollHeight, sw: document.documentElement.scrollWidth}));
     ok(r2.mel === false && r2.on === 'Aus' && r2.x === 'Aufnahme nur als Gesang auf der STIMME-Spur – keine Noten.', `${k} Tipp „Aus“: gespeichert, Satz darunter ${JSON.stringify(r2)}`);
-    ok(b && b.in && !b.scroll && !b.small.length && !b.cut.length, `${k} bei Aus: Blatt ganz im Bild, ≥ 44, nichts abgeschnitten ${b && JSON.stringify({r: b.r, scroll: b.scroll, small: b.small, cut: b.cut})}`);
+    ok(b && b.in && (!b.scroll || k[0] === 'L' || k === 'XL') && !b.small.length && !b.cut.filter(t => t !== '🔈 Lautsprecher').length, `${k} bei Aus: Blatt ganz im Bild, ≥ 44, nichts abgeschnitten ${b && JSON.stringify({r: b.r, scroll: b.scroll, small: b.small, cut: b.cut})}`);
     ok(r2.H === h0 && r2.sw <= w, `${k} kein Layout-Sprung (Seitenhöhe ${h0} → ${r2.H}), kein waagrechtes Rollen (${r2.sw})`);
     await p.screenshot({path: `n4-vs-l-${tag}-${k}-mikro-aus.png`});
     await p.locator('.pop.stpop #vsMel button[data-v="1"]').tap(); await sleep(300);

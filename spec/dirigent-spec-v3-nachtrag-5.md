@@ -1,0 +1,172 @@
+# SYNQUENZER v3 — Nachtrag 5: Gesang 2 und Video-Ausgabe (Xander 31.10.)
+
+Status: **gilt für den Bau.** Xander 31.10.: „Der Gesang hat Priorität, aber dann soll das gleich mit dem Video kommen. Oder mach es
+wieder parallel. Credits sind genug da.“ Seine Wünsche wörtlich: `fragen-xander-9.md`, Abschnitt „31.10.“. Abgleich mit der alten
+Roadmap: `roadmap-nachtrag-5-entwurf.md`.
+
+**Regel 27 gilt:** nur bauen, was hier steht; keine eigenen Namen, Zusatzfunktionen oder Gestaltung. Unklares → „Fragen an Xander“
+im Changelog. Nötiges aus der Fehlerliste (Tasten ≥ 44 × 44, nichts abgeschnitten, kein Layout-Sprung, kein Knacken) ohne Rückfrage.
+**Vorrang immer:** schnelle Seite, flüssige Bedienung, kein Aussetzer im Ton (iPhone 12 Pro Max).
+Format bleibt 5 (nur additive Felder). Version der Welle 1: **4.25.0** (`APP_CODE` 4 025 000), Welle 2: **4.26.0**.
+
+## Wellen und Zweige
+
+| Welle | Zweig (Kopie ab 4.23.0 `vs-base-B.html`) | Pakete (nacheinander im Zweig) |
+|---|---|---|
+| 1 | `n5-br-V` | **VV1** Song-Video → **VV2** Video-Regie + 9:16-Kamera → **VV3** Innenleben |
+| 1 | `n5-br-H` | **VC2a** Verlauf-Rekorder (Spec: Nachtrag 1, Abschnitt „VC2a — Verlauf-Rekorder“, unverändert) |
+| 1 | `n5-br-G` | **G1** Quantisieren prüfen + sichtbar → **G2** Tonhöhe quantisieren |
+| 2 | nach 4.24.0 (Nachtrag 4) auf der Hauptlinie | **G3** Vorlauf/Ausklang → **G4** Gesangs-Effekte |
+
+Welle 1 läuft gleichzeitig mit dem Bau von Nachtrag 4 (VS-L, VS-P). Danach führt der Dirigent zusammen.
+
+---
+
+## VV1 — Song-Video (Bild und Ton getrennt)
+
+**Grundsatz.** Ton = der fertige Song, offline gerendert mit derselben Klangerzeugung wie live (Synths, MS 2000, FM, Drums,
+Stimme/Takes, Effekte, Master), dazu der **Ausklang** nach dem letzten Takt (bis der Pegel < −60 dBFS fällt, höchstens 10 s).
+Bild = eine eigene **Video-Bühne** (Canvas), die die Ansichten der App in deren Farben und Schrift zeichnet, berechnet aus dem
+Song-Zeitstrahl zum Zeitpunkt t (Teil, Takt, spielende Clips, Noten). **Nichts wird beim Rendern verstellt; der Klang ändert sich
+nicht.** Kein Bildschirm-Mitschnitt, keine DOM-Kopie.
+
+1. **Menü → „Video“** öffnet das Blatt „Video“: Format **[9:16] [16:9]** (1080 × 1920 bzw. 1920 × 1080, 30 fps), Bild
+   **[Auto] [Song] [Matrix]**, Bereich **ganzer Song** bzw. die gelbe Auswahl, **[▶ Vorschau]** (spielt Bild + Ton im Blatt in
+   Echtzeit, Stopp jederzeit), **[Video erstellen]** mit Fortschritt und [Abbrechen]. Danach: Teilen (`navigator.share` mit Datei)
+   bzw. Sichern; in der Claude-App über die erlaubten Download-Wege (Typen laut `downloads.d.ts`, sonst ZIP).
+2. **Bild „Song“:** Song-Ansicht mit Teilen (gelbe Kopfzeilen), Spuren/Lanes, Laufband (Abspielposition) – das Bild läuft mit.
+   **Bild „Matrix“:** Clip-Matrix (Spuren × Szenen), spielende Clips leuchten im Takt, Noten der spielenden Clips als kleine Rolle.
+   **Bild „Auto“:** wechselt nach dem Auto-Regisseur (VV2).
+3. **Kodierung:** WebCodecs `VideoEncoder` H.264 + `AudioEncoder` AAC in MP4 (kleiner eingebetteter MP4-Muxer, Lizenz im Quelltext),
+   schneller als Echtzeit, Bilder gestreamt (nie alle im Speicher). Fehlt WebCodecs oder AAC: Rückfall MediaRecorder in Echtzeit
+   (Canvas-Stream + Song-Ton) mit Typwahl wie VC2c (`video/mp4…`, sonst `video/webm`); der gewählte Weg steht im Blatt.
+4. **Ton = live:** Der Offline-Ton stimmt mit dem Live-Klang überein (Pegel ±0,5 dB, gleiche Noten/Takes, keine fehlende Spur).
+5. Projekt bleibt unverändert (Video-Einstellungen des Blatts im Geräteprofil, nicht im Projekt; Regie siehe VV2).
+
+**Abnahme VV1**
+- [ ] VV1-01 Demo-Song, 16:9 und 9:16: MP4 (bzw. Rückfall-Typ) mit Bild- und Tonspur, Dauer = Songlänge + Ausklang ±0,1 s, Container
+      geparst, Bildgröße und 30 fps stimmen.
+- [ ] VV1-02 Ausklang: Song endet mit Hall/Delay-Fahne → Video läuft weiter, bis < −60 dBFS (≤ 10 s); kein harter Schnitt im Ton.
+- [ ] VV1-03 Ton = live: Offline-Render gegen Echtzeit-Mitschnitt desselben Songs: Lautheit ±0,5 LU, alle Spuren hörbar (je Spur
+      solo geprüft), Takes/Stimme dabei.
+- [ ] VV1-04 Bild folgt dem Song: Laufband im Bild bei Takt n genau zur Zeit von Takt n (±1 Bild); spielende Clips im Matrix-Bild
+      = `R.slot` zu dieser Zeit.
+- [ ] VV1-05 Geschwindigkeit: 3-min-Song 9:16 mit WebCodecs in Chromium schneller als Echtzeit (Messung im Changelog); kein langer
+      Task > 50 ms im Hauptfaden während des Renderns außer dem Kodieren in Häppchen; Bedienung bleibt (Abbrechen wirkt ≤ 300 ms).
+- [ ] VV1-06 Klang unverändert: Projekt deep-equal vor/nach dem Rendern; Live-Wiedergabe danach bitgleich zur Wiedergabe davor.
+- [ ] VV1-07 Blatt in P1, P2, P3, L1, L2, 926 × 428: alles im Bild, ≥ 44 × 44, kein Layout-Sprung.
+- [ ] VV1-08 Rückfall-Tor: ohne `VideoEncoder` (im Test gelöscht) → MediaRecorder-Weg mit Typ; ohne beides → Knopf grau mit Grund.
+
+## VV2 — Video-Regie (optional, im Song vorbereitet) + 9:16-Kamera
+
+1. **Regie im Song** (zusätzliche, optionale Angaben; ohne sie macht der Auto-Regisseur alles):
+   - Tipp auf die **gelbe Kopfzeile eines Teils** → im vorhandenen Teil-Blatt eine Zeile **„Video“**: [Auto] [Song] [Matrix] [Spur …]
+     (Spur-Wahl öffnet die Liste der Spuren des Teils).
+   - Gelbe **Taktauswahl** im Song → im vorhandenen Bereichs-Blatt dieselbe Zeile „Video“ für genau diese Takte.
+   - **Clip im Teil** (Lane-Eintrag halten → vorhandenes Blatt) → „Im Video zeigen“ = Spur-Bild dieses Clips für seine Takte.
+   - Gespeichert additiv im Song: `song.video = [{a, b, v: 'auto'|'song'|'matrix'|'spur', t?}]` (Takte a ≤ x < b, Spur t).
+     Verschieben/Einfügen/Löschen von Takten im Song verschiebt bzw. kürzt die Einträge mit (wie `song.vox`). Undo wie alle
+     Song-Änderungen.
+   - Sichtbar in der Song-Ansicht als schmaler farbiger Streifen unter der Kopfzeile mit gezeichnetem Kamera-Symbol (kein Emoji),
+     nur wenn Einträge existieren.
+2. **Auto-Regisseur:** Schnitt immer auf Taktstrichen, an Teilgrenzen; in langen Teilen spätestens alle 8 Takte; nie kürzer als
+   2 Takte; zeigt was neu passiert (Teilanfang → Song; viele Clipwechsel → Matrix; neu einsetzende oder allein spielende Spur →
+   Spur-Bild, ab VV3 mit Innenleben). Übergänge weich (Zoom/Blende ≤ 400 ms), kein Flackern. Gleiche Eingabe → gleiches Video.
+3. **9:16:** **[Kamera]** (Standard): eine virtuelle Kamera fährt und zoomt weich (gedämpfte Feder, Zoom 1–3×) über die quer
+   gezeichnete Ansicht zum gerade wichtigen Bereich (Laufband, spielende Clips, gezeigte Spur); zeigt nie leere Fläche außerhalb
+   der Ansicht. **[Ganz mit Balken]**: ganze Ansicht, oben/unten Balken in Hintergrundfarbe.
+
+**Abnahme VV2**
+- [ ] VV2-01 Teil „Refrain“ auf Matrix, Takte 9–12 auf Spur 3: das Video zeigt genau dort diese Bilder (Bildvergleich je Schnitt).
+- [ ] VV2-02 Takte einfügen/löschen vor einem Eintrag verschiebt bzw. kürzt ihn; Undo → deep-equal; Speichern/Laden behält ihn; ein
+      Projekt ohne `song.video` bleibt Zeichen für Zeichen gleich.
+- [ ] VV2-03 Auto: Schnitte nur auf Taktstrichen, Abstand ≥ 2 Takte, ≤ 8 Takte ohne Schnitt in Teilen > 8 Takte; zwei Läufe
+      ergeben dasselbe Video (Hash der Schnittliste).
+- [ ] VV2-04 9:16 Kamera: Bildausschnitt bewegt sich weich (Beschleunigung begrenzt, kein Sprung > 5 % Bildbreite je Bild außer an
+      Schnitten), nie außerhalb der Ansicht.
+- [ ] VV2-05 Bedienung: neue Zeilen in den vorhandenen Blättern ≥ 44 × 44, in allen Formaten im Bild; Streifen in der Song-Ansicht
+      verdeckt nichts.
+
+## VV3 — Innenleben (was intern passiert)
+
+1. **Spur-Bild** zeigt das Instrument der Spur gezeichnet auf der Video-Bühne mit den Werten zum Zeitpunkt t:
+   MS 2000 (Platte mit Reglern wie in der App, Modulation sichtbar, LFO als laufende Welle mit Phasenpunkt, Hüllkurven mit
+   laufender Position, Lauflicht des Mod-Sequenzers), FM-Synth (Operatoren mit Algorithmus und Pegeln), übrige Klangerzeuger
+   (Hauptregler, Filter, Hüllkurve), Drums (Pads blinken), STIMME (Wellenform mit Laufband).
+2. Werte werden aus Noten + Parametern + Tempo **berechnet** (gleiche Formeln wie die Klangerzeugung, z. B. LFO-Phase aus Tempo-
+   Sync und Startzeit), nicht aus dem Audio-Faden gelesen.
+3. Regler-Automation/Bewegungen aus Aufnahmen (falls im Clip) bewegen die gezeichneten Regler mit.
+
+**Abnahme VV3**
+- [ ] VV3-01 LFO 1 Hz auf Cutoff: gezeichnete LFO-Phase und Cutoff-Zeiger stimmen je Bild mit der Rechnung (±2 % Phase).
+- [ ] VV3-02 FM-Spur: Operator-Pegel im Bild folgen den Hüllkurven der gespielten Noten.
+- [ ] VV3-03 Kein Einfluss auf den Klang (VV1-06) und Render-Geschwindigkeit weiter wie VV1-05.
+
+---
+
+## G1 — Quantisieren des Gesangs prüfen und sichtbar machen
+
+Xander: „Es gibt mir gar nicht den Eindruck, dass die Vocals vom Timing her überhaupt auf die Quantisierung einschnappen … kein
+optisches Feedback … ich höre keinen Unterschied.“
+
+1. **Erst prüfen** (echte Läufe, gemessen): wirkt Quantisieren (VS5a, C.5) auf den Take, den man hört (Scheiben und Dehnen,
+   „Audio folgt“ beim MELODIE-Clip)? Einsätze vor/nach in ms gegen das Raster. Jede Ursache, warum es nicht hörbar wird
+   (z. B. Fangfenster, Standard-Stärke, falsche Fassung, Cache), wird behoben und mit Zahlen im Changelog belegt.
+2. **Sichtbar:** im Marken-Editor/Takes-Blatt beim Quantisieren: Rasterlinien deutlich, jede Marke springt sichtbar (≤ 250 ms
+   Animation) auf ihre Linie, die Wellenform zeigt vorher blass / nachher kräftig, kurze Meldung „n Einsätze gerückt“.
+   In der STIMME-Spur (Clip-Ansicht und Song) zeigt die Wellenform die quantisierte Fassung.
+
+**Abnahme G1**
+- [ ] G1-01 Gesang mit Einsätzen ±60 ms neben dem 1/8-Raster, Stärke 100 % → gehörte Einsätze (Onset-Messung am Ausgang) ±5 ms auf
+      dem Raster; bei 50 % halber Abstand ±5 ms.
+- [ ] G1-02 Sichtbar: Marken nach dem Quantisieren auf den Rasterlinien (Pixelvergleich), Meldung mit richtiger Zahl, Wellenform
+      der Spur = gehörte Fassung.
+- [ ] G1-03 Undo stellt Marken und Klang her (deep-equal, Klang bitgleich); kein Knacken an den Schnitten.
+
+## G2 — Tonhöhe quantisieren
+
+Xander: „ob es möglich wäre … dass wir unsere Vocals einfach ganz easy auch auf Tonhöhe quantisieren können“ (kein Vocaloid).
+
+1. Im Takes-Blatt/Marken-Editor neben dem Timing-Quantisieren: **„Tonhöhe“** mit **Stärke 0–100 %** und **[Weich] [Hart]**.
+   Jede erkannte Note (VS2-Segmente) wird zum nächsten Ton der Tonart der Szene (bzw. des Trägers) gezogen; Weich lässt Vibrato und
+   Gleiten, Hart rastet schnell ein. Nur Noten, keine Atmer/Konsonanten.
+2. Verschiebung formant-erhaltend (PSOLA/WSOLA-Familie wie VS5b), nicht zerstörend (Roh-Take bleibt, Render-Cache wie Dehnen),
+   im Worker, A/B wie Säubern, gilt in Szene und Song, WAV-Export der hörbaren Fassung wie bei Dehnen.
+
+**Abnahme G2**
+- [ ] G2-01 Gesungene Töne 30–45 Cent daneben, Stärke 100 %, Hart → gemessene Tonhöhe je Note ±5 Cent auf dem Skalenton;
+      50 % → halber Abstand ±5 Cent.
+- [ ] G2-02 Weich: Vibrato-Tiefe bleibt ≥ 70 % des Originals; Formanten (Spektralhülle) ±1 dB bis 4 kHz.
+- [ ] G2-03 Keine Knackser/Artefakte an Notengrenzen (Klick-Detektor wie VS3); Dauer unverändert (±1 ms).
+- [ ] G2-04 Undo/A-B/Speichern-Laden; Rechnen im Worker ohne langen Task; 16-Takt-Take fertig ≤ 3 s (Chromium).
+
+---
+
+## G3 — Vorlauf und Ausklang beim Einsingen (Welle 2, nach 4.24.0)
+
+Xander: Anlauf vor dem ersten Takt soll erhalten bleiben; im Loop bleibt der Clip in seiner Klammer; im Song sieht man das kleine
+„Schwänzchen“ vor dem Teil; ausklingender Gesang des vorigen Teils und Anlauf dürfen sich überlappen.
+
+1. Der Take behält bis **2 Takte Anlauf** vor dem Clip-Anfang und bis **1 Takt Ausklang** nach dem Clip-Ende (aus dem Ringpuffer),
+   die Quantisierung/Länge des Clips bleibt unverändert (Klammer).
+2. **Szene:** die Schleife bleibt in der Klammer; der Anlauf klingt nur beim Einstieg des Clips (Start am Taktstrich: Anlauf beginnt
+   vorher), nicht bei Wiederholungen.
+3. **Song:** Anlauf klingt vor dem Teil und ist als kleines Schwänzchen vor dem Teil gezeichnet; Ausklang klingt nach dem Teil.
+   Gesang benachbarter Teile darf überlappen (beide klingen); Verschieben eines Teils nimmt Anlauf/Ausklang mit.
+4. Ein-/Ausblenden 5 ms an allen Rändern, kein Knacken.
+
+**Abnahme G3** — G3-01 Anlauf ½ Takt vor Takt 1 aufgenommen → in Szene beim Einstieg hörbar, bei Wiederholung nicht; G3-02 im Song
+vor dem Teil hörbar und gezeichnet, nach Verschieben des Teils mit; G3-03 Überlappung zweier Teile: beide hörbar, kein Knacken;
+G3-04 Undo/Speichern/Laden deep-equal; G3-05 M-PLATZ der Song-Ansicht mit Schwänzchen in allen Formaten.
+
+## G4 — Gesangs-Effekte mit Voreinstellung und „Auto“ (Welle 2)
+
+1. STIMME-Spur → „Effekte“: Kette **Hochpass · Entzischer · Kompressor · EQ (Tief/Mitte/Präsenz) · Hall/Delay (Sends)**,
+   Voreinstellung **„Gesang Synthpop“** an für neue STIMME-Spuren; wenige große Regler, A/B.
+2. **[Auto]** misst Take(s) und Mix (Offline-Render der anderen Spuren): Dynamik → Kompressor (Schwelle/Verhältnis), Zischlaute →
+   Entzischer, Maskierung durch andere Spuren → EQ (Präsenz anheben/Gegenspur-Kerbe nur im Gesang); Ergebnis sichtbar in den Reglern.
+3. Baut auf dem Auto-Pegel/Begrenzer von VS-P auf (Reihenfolge: Hochpass → Entzischer → Kompressor → EQ → Auto-Pegel → Begrenzer).
+
+**Abnahme G4** — G4-01 Dynamik (Kurzzeit-Lautheit, 10–95 %-Spanne) nach „Gesang Synthpop“ ≥ 4 LU kleiner, ohne Pumpen; G4-02 Zischlaute
+(5–9 kHz-Spitzen) −4 dB ±1; G4-03 Auto im Demo-Mix: Gesang im Präsenzband 2–5 kHz ≥ 3 dB über der lautesten anderen Spur in dem Band;
+G4-04 CPU 3 min ≤ +3 %; G4-05 A/B, Undo, Speichern/Laden; Regler ≥ 44 px in allen Formaten.
