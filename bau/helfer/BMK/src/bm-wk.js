@@ -75,6 +75,8 @@ var BMK = (function () {
   // VEL CURVE 1..5 (gamma), 6 / 'max' = always full; AT CURVE 1..5 (gamma), 6 = min(1, 3a), 0 / 7 / 'none' = off
   const velCurve = (vc, v) => { if (vc === 'max' || +vc >= 6) return 1; const g = VELG[clamp(Math.round(+vc || 4), 1, 5) - 1]; return Math.pow(clamp(v, 0, 1), g); };
   const atCurve = (ac, a) => { if (ac === 'none' || +ac === 0 || +ac >= 7) return 0; const k = Math.round(+ac || 4); if (k === 6) return Math.min(1, 3 * a); return Math.pow(clamp(a, 0, 1), ATG[clamp(k, 1, 5) - 1]); };
+  // FX type names by family index and n (made once: no strings in the audio path)
+  const FXF = ['CH', 'DT', 'BC', 'RM', 'DL', 'RV'], FXN = FXF.map(f => { const o = ['']; for (let n = 1; n <= 16; n++) o.push(f + n); return o; });
   // events at the same time: note off, stop, transport start, controllers, retune, then note on
   const QPR = [9, 5, 0, 4, 1, 3, 2];
   const QORD = (a, b) => a.at - b.at || QPR[a.k] - QPR[b.k];
@@ -112,7 +114,7 @@ var BMK = (function () {
   // per program running state: LFOs, PARA envelope, held keys
   class PState {
     constructor() {
-      this.lph = new Float64Array(2); this.lv = new Float64Array(2); this.lrnd = new Float64Array(2); this.lrng = new Int32Array(2);
+      this.lph = new Float64Array(2); this.lphP = new Float64Array(2); this.lrndP = new Float64Array(2); this.lite = 0; this.lv = new Float64Array(2); this.lsp = new Float64Array(2).fill(-1); this.lf = new Float64Array(2); this.lrnd = new Float64Array(2); this.lrng = new Int32Array(2);
       this.lt = 0;                            // seconds since the phrase start (delay / decay of the LFOs)
       this.mod = new Float64Array(NT);        // MW + AT + LFO sums of this control step (in target units)
       this.lfoA = new Float64Array(8);        // LFO slot amounts after l1a / l2a
@@ -134,15 +136,16 @@ var BMK = (function () {
       this.P = [this.prog(null), null]; this.ly = lyInit(); this.gl = glInit();
       this.S = [new PState(), new PState()];
       this.NV = 12; this.V = []; for (let k = 0; k < 18; k++) this.V.push(new Voice(k, this.hl));   // 12 voices + 6 crossfade slots
+      for (const v of this.V) this.clearVoice(v);
       this.q = []; this.late = 0; this.ord = 0; this.noteCnt = 0; this.seed = 0x9e3779b9; this.fi = 0; this.keepEl = new Float64Array(4); this.stole = false; this.endR = new Float64Array(512).fill(-1); this.endP = 0;
-      this.frame = 0; this.busy = 0; this.busyN = 0; this.qMax = 0; this.lastRep = 0;
+      this.frame = 0; this.qn = 0; this.busy = 0; this.busyN = 0; this.qMax = 0; this.lastRep = 0;
       this.hasPerf = typeof performance !== 'undefined' && typeof performance.now === 'function';
       // controllers: target, value, ramp step (10 ms in 1 ms steps); [bend, mw, at]
       this.cT = new Float64Array(3); this.cV = new Float64Array(3); this.cS = new Float64Array(3); this.cMoved = new Uint8Array(3);
       this.sus = false; this.lim = 0; this.trRun = false; this.bpm = 120;
-      this.gc = 0;                            // samples to the next global control step
+      this.gc = 0; this.idle = false;          // samples to the next global control step; idle: see isIdle
       // operator smoothing (rule 12): numeric sets glide 5 ms in 1 ms steps; slots [obj, key, from, to, step]
-      this.sm = []; for (let k = 0; k < 48; k++) this.sm.push({o: null, k: '', a: 0, b: 0, i: 0});
+      this.smN = 0; this.sm = []; for (let k = 0; k < 48; k++) this.sm.push({o: null, k: '', a: 0, b: 0, i: 0});
       this.tapOn = false; this.tapAll = false; this.tapK = ''; this.tapBuf = null; this.tapN = 0; this.tapV = -1;
       // BM3: FX1 per program, FX2 once (from A); the voices of each program sum into its own buffer first
       this.fx1 = [new FxSlot(1, sr), new FxSlot(1, sr)]; this.fx2 = new FxSlot(2, sr);
@@ -159,6 +162,9 @@ var BMK = (function () {
       D.mo = Math.max(0, MODES.indexOf(P.g.mo)); D.w[0] = Math.max(0, WAVES.indexOf(P.l1.w)); D.w[1] = Math.max(0, WAVES.indexOf(P.l2.w));
       this.slotFill(D.slots.v, P.mo.v, OKS.v); this.slotFill(D.slots.mw, P.mo.mw, OKS.mw); this.slotFill(D.slots.at, P.mo.at, OKS.mw); this.slotFill(D.slots.l1, P.l1.t, OKS.lfo); this.slotFill(D.slots.l2, P.l2.t, OKS.lfo);
       D.fm = FMODE[P.f.md] == null ? 0 : FMODE[P.f.md];
+      // FX types as (family, n): FX1 CH DT BC RM = 0..3, FX2 DL RV DT = 4, 5, 1
+      const ft = (t, fams) => { if (typeof t !== 'string' || t.length < 3) return [-1, 0]; const fi = fams.indexOf(t.slice(0, 2)), n = +t.slice(2) | 0; return fi < 0 || n < 1 || n > 16 || String(n) !== t.slice(2) ? [-1, 0] : [FXF.indexOf(t.slice(0, 2)), n]; };
+      const a = ft(P.fx.t1, FAM1), b = ft(P.fx.t2, FAM2); D.f1 = a[0]; D.n1 = a[1]; D.f2 = b[0]; D.n2 = b[1];
     }
     slotFill(o, arr, ok) { for (let i = 0; i < 4; i++) { const s = Array.isArray(arr) ? arr[i] : null, t = s ? TI[s[0]] : undefined; o[2 * i] = t !== undefined && ok[t] ? t : -1; o[2 * i + 1] = s ? num(s[1], 0) : 0; } }
     // ---------------- messages ----------------
@@ -217,11 +223,13 @@ var BMK = (function () {
       let s = null; for (const x of this.sm) if (x.o === o && x.k === k) { s = x; break; }
       if (s) a = o[k]; else { for (const x of this.sm) if (!x.o) { s = x; break; } }
       if (!s) { o[k] = b; return; }
-      s.o = o; s.k = k; s.a = a; s.b = b; s.i = 0;
+      s.o = o; s.k = k; s.a = a; s.b = b; s.i = 0; this.smN++;
     }
     smoothStep() {
-      let any = false;
-      for (let j = 0; j < this.sm.length; j++) { const s = this.sm[j]; if (!s.o) continue; if (Array.isArray(s.o)) any = true; s.i++; if (s.i >= 5) { s.o[s.k] = s.b; s.o = null; } else s.o[s.k] = s.a + (s.b - s.a) * s.i / 5; }
+      if (!this.smN) return;
+      let any = false, n = 0;
+      for (let j = 0; j < this.sm.length; j++) { const s = this.sm[j]; if (!s.o) continue; if (Array.isArray(s.o)) any = true; s.i++; if (s.i >= 5) { s.o[s.k] = s.b; s.o = null; } else { s.o[s.k] = s.a + (s.b - s.a) * s.i / 5; n++; } }
+      this.smN = n;
       if (any) { this.prep(0); this.prep(1); }
     }
     ctl(m) {
@@ -245,11 +253,11 @@ var BMK = (function () {
       this.endR.fill(-1); this.endP = 0;
       for (let i = 0; i < 3; i++) { this.cT[i] = 0; this.cV[i] = 0; this.cS[i] = 0; this.cMoved[i] = 0; }
       for (const S of this.S) { S.keys.length = 0; S.panAlt = 1; S.lastP = -1e9; this.lfoReset(S); S.es.fill(0); S.el.fill(0); S.et.fill(0); S.eq.fill(0); S.mod.fill(0); }
-      for (const s of this.sm) if (s.o) { s.o[s.k] = s.b; s.o = null; }
+      for (const s of this.sm) if (s.o) { s.o[s.k] = s.b; s.o = null; } this.smN = 0;
       this.sus = false; this.gc = 0;
       this.fx1[0].clear(); this.fx1[1].clear(); this.fx2.clear(); this.fx1[0].type = this.fx1[1].type = this.fx2.type = '';
     }
-    lfoReset(S) { S.lph.fill(0); S.lv.fill(0); S.lrng[0] = 0x2545f491; S.lrng[1] = 0x6c8e9cf5; for (let l = 0; l < 2; l++) { let r = S.lrng[l]; r ^= r << 13; r ^= r >>> 17; r ^= r << 5; S.lrng[l] = r; S.lrnd[l] = r * 4.656612873077393e-10; } S.lt = 0; S.dlyOff.fill(0); }
+    lfoReset(S) { S.lph.fill(0); S.lv.fill(0); S.lrng[0] = 0x2545f491; S.lrng[1] = 0x6c8e9cf5; for (let l = 0; l < 2; l++) { let r = S.lrng[l]; r ^= r << 13; r ^= r >>> 17; r ^= r << 5; S.lrng[l] = r; S.lrnd[l] = r * 4.656612873077393e-10; } S.lt = 0; S.dlyOff.fill(0); S.lphP.fill(0); S.lrndP.set(S.lrnd); S.lite = 0; }
     clearVoice(v) {
       v.on = false; v.ghost = false; v.id = -1; v.key = -1; v.gate = false; v.kill = 0; v.susHeld = false; v.paraRel = false; v.relOrd = 0; v.endSent = false;
       v.Z[0] = 0; v.Z[1] = 0; v.D.fill(0); v.D[11] = 1; v.xw1 = v.xw2 = 0;
@@ -408,7 +416,7 @@ var BMK = (function () {
         if (!S.keys.length && (mo === 4 || mo === 6) && !this.sus) for (let k = 0; k < 4; k++) if (S.es[k]) { S.es[k] = 4; S.et[k] = 0; }
       }
     }
-    fadeOut(v, tau) { if (v.gate || !v.relOrd) v.relOrd = ++this.ord; v.gate = false; v.susHeld = false; v.kill = v.kill === 2 ? 2 : 1; if (v.kill === 1) v.D[12] = Math.exp(-1 / (Math.max(tau, 1e-4) * this.sr)); for (let k = 0; k < 4; k++) if (v.es[k]) v.es[k] = 4; }
+    fadeOut(v, tau) { if (v.gate || !v.relOrd) v.relOrd = ++this.ord; v.gate = false; v.susHeld = false; v.kill = v.kill === 2 ? 2 : 1; if (v.kill === 1) v.D[12] = Math.exp(-1 / (Math.max(tau, 1e-4) * this.sr)); }   // the fade alone (time constant tau), the envelope stays
     maskTurn(v, w, m) {
       const n = Math.round(.01 * this.sr);
       if (w === 1) { if (m === v.u1) return; v.ux1 = v.u1; v.u1 = m; v.xw1 = 1; v.xd1 = 1 / n; }
@@ -445,39 +453,66 @@ var BMK = (function () {
       if (v.xw2 > 0) { m = clamp(Math.round(v.ux2 + v.dm2 + mod[9] + mod[11] + vm[9]), 0, 511); v.X2 = m; v.xb2 = bitsOf(m); }
     }
     // ---------------- global control step (1 ms): controllers, operator smoothing, MW / AT / LFO sums, PARA envelope ----------------
-    ctlGlobal() {
+    // the LFO part of the sums of program pi for the last control step (its kept phase and RAND value)
+    lfoSums(pi) {
+      const P = this.P[pi], S = this.S[pi], D = P.__d, mod = S.mod; S.lite = 0;
+      for (let l = 0; l < 2; l++) {
+        const L = l ? P.l2 : P.l1, sl = l ? D.slots.l2 : D.slots.l1, w = this.lfoWave(D.w[l], S.lphP[l], S.lrndP[l]);
+        // DLAY: silent until 3/4 T, fade in over the last quarter; DCAY: -60 dB after T (from the phrase start)
+        let g = 1;
+        if (L.dl > 0 && !S.dlyOff[l]) { const Td = TX(L.dl); g = S.lt >= Td ? 1 : S.lt <= .75 * Td ? 0 : (S.lt - .75 * Td) / (.25 * Td); }
+        if (L.dc > 0) g *= Math.exp(-S.lt * LN1000 / TX(L.dc));
+        const val = w * g; S.lv[l] = val;
+        const da = mod[14 + 2 * l];
+        for (let i = 0; i < 8; i += 2) { const t = sl[i]; let a = sl[i + 1]; if (i === 0 || a) a = clamp(a + da, 0, 99); S.lfoA[4 * l + (i >> 1)] = a; if (t >= 0 && a) mod[t] += val * amtU(a) * TD_[t]; }
+      }
+    }
+    // the LFO phases one control step on (the value of the step before is kept for lfoSums)
+    lfoStep(S, P, mod) {
+      S.lt += this.dt;
+      for (let l = 0; l < 2; l++) {
+        const L = l ? P.l2 : P.l1, spd = clamp(L.sp + mod[15 + 2 * l], 0, 99);
+        if (spd !== S.lsp[l]) { S.lsp[l] = spd; S.lf[l] = 0.05 * Math.pow(8000, spd / 99); }
+        S.lphP[l] = S.lph[l]; S.lrndP[l] = S.lrnd[l];
+        let ph = S.lph[l] + S.lf[l] * this.dt;
+        if (ph >= 1) { ph -= Math.floor(ph); let r = S.lrng[l]; r ^= r << 13; r ^= r >>> 17; r ^= r << 5; S.lrng[l] = r; S.lrnd[l] = r * 4.656612873077393e-10; }
+        S.lph[l] = ph;
+      }
+    }
+    ctlGlobal(lite) {
       this.smoothStep();
       for (let i = 0; i < 3; i++) if (this.cV[i] !== this.cT[i]) { const x = this.cV[i] + this.cS[i]; this.cV[i] = (this.cS[i] > 0 ? x >= this.cT[i] : x <= this.cT[i]) ? this.cT[i] : x; }
       const mw = this.cV[1], at = atCurve(this.gl.ac, this.cV[2]);
       for (let pi = 0; pi < 2; pi++) {
         const P = this.P[pi]; if (!P) continue;
-        const S = this.S[pi], D = P.__d, mod = S.mod; mod.fill(0);
+        const S = this.S[pi], D = P.__d, mod = S.mod;
+        if (lite && S.lite) this.lfoStep(S, P, mod);   // idle: MW / AT stand still (isIdle), the sums are kept
+        else {
+        mod.fill(0);
         // MW and pressure: u * value * D
         let s = D.slots.mw; for (let i = 0; i < 8; i += 2) { const t = s[i]; if (t >= 0 && s[i + 1]) mod[t] += amtU(s[i + 1]) * mw * TD_[t]; }
         s = D.slots.at; for (let i = 0; i < 8; i += 2) { const t = s[i]; if (t >= 0 && s[i + 1]) mod[t] += amtU(s[i + 1]) * at * TD_[t]; }
         // a move of MW / pressure on amount or speed of an LFO lifts its delay (section 1.8)
         if (this.cMoved[1] || this.cMoved[2]) { if (mod[14] || mod[15]) S.dlyOff[0] = 1; if (mod[16] || mod[17]) S.dlyOff[1] = 1; }
-        // LFOs (free running, one for all voices, stepwise per control step)
-        S.lt += this.dt;
-        for (let l = 0; l < 2; l++) {
-          const L = l ? P.l2 : P.l1, sl = l ? D.slots.l2 : D.slots.l1, spd = clamp(L.sp + mod[15 + 2 * l], 0, 99), f = 0.05 * Math.pow(8000, spd / 99);
-          // the value at the current phase (phase 0 at the transport start), then one step on; RAND: a new value per period
-          const w = this.lfoWave(D.w[l], S.lph[l], S.lrnd[l]);
-          let ph = S.lph[l] + f * this.dt;
-          if (ph >= 1) { ph -= Math.floor(ph); let r = S.lrng[l]; r ^= r << 13; r ^= r >>> 17; r ^= r << 5; S.lrng[l] = r; S.lrnd[l] = r * 4.656612873077393e-10; }
-          S.lph[l] = ph;
-          // DLAY: silent until 3/4 T, fade in over the last quarter; DCAY: -60 dB after T (from the phrase start)
-          let g = 1; const Td = TX(L.dl), Tc = TX(L.dc);
-          if (L.dl > 0 && !S.dlyOff[l]) g = S.lt >= Td ? 1 : S.lt <= .75 * Td ? 0 : (S.lt - .75 * Td) / (.25 * Td);
-          if (L.dc > 0) g *= Math.exp(-S.lt * LN1000 / Tc);
-          const val = w * g; S.lv[l] = val;
-          const da = mod[14 + 2 * l];
-          for (let i = 0; i < 8; i += 2) { const t = sl[i]; let a = sl[i + 1]; if (i === 0 || a) a = clamp(a + da, 0, 99); S.lfoA[4 * l + (i >> 1)] = a; if (t >= 0 && a) mod[t] += val * amtU(a) * TD_[t]; }
+        // LFOs (free running, one for all voices, stepwise per control step): the value at the current phase (phase 0 at the
+        // transport start), then one step on; RAND: a new value per period. lite (idle): only the step on; the sums of the
+        // last step are made when an event wakes the processor (lfoSums with the kept phase)
+        this.lfoStep(S, P, mod);
+        if (!lite) this.lfoSums(pi);
+        else S.lite = 1;
         }
         // PARA: one envelope set per program
         if (D.mo === 4 || D.mo === 6) { S.eq[0] = this.envStep(S.es, S.el, S.et, 0, P.o1.e, 1, 1); S.eq[1] = this.envStep(S.es, S.el, S.et, 1, P.o2.e, 1, 1); S.eq[2] = this.envStep(S.es, S.el, S.et, 2, P.n.e, 1, 1); S.eq[3] = this.envStep(S.es, S.el, S.et, 3, P.f.e, 1, 1); }
       }
       this.cMoved[1] = 0; this.cMoved[2] = 0;
+    }
+    wake() { for (let pi = 0; pi < 2; pi++) if (this.P[pi] && this.S[pi].lite) this.lfoSums(pi); }
+    // idle (no voice, every FX asleep, nothing gliding): nothing to render until the next event or control step
+    isIdle() {
+      for (let k = 0; k < this.V.length; k++) if (this.V[k].on) return false;
+      if (this.smN) return false;
+      if (this.cV[0] !== this.cT[0] || this.cV[1] !== this.cT[1] || this.cV[2] !== this.cT[2]) return false;
+      return this.fx2.asleep() && this.fx1[0].asleep() && (!this.P[1] || this.fx1[1].asleep());
     }
     lfoWave(w, ph, rnd) {
       switch (w) {
@@ -513,7 +548,8 @@ var BMK = (function () {
       v.dm1 = this.maskD(v.ds1, P.o1.dv, t); v.dm2 = this.maskD(v.ds2, P.o2.dv, t);
       this.masks(v, mod);
       // pitch (semitones, A4 = 69 = TUNE): key through the temperament, SEMIs, TUNE, deltas, glide, bend, routes
-      const kp = this.keyPitch(v.n), base = kp + P.g.st + v.dp + v.gld + this.cV[0] * gl.pb + mod[0] + vm[0];
+      // the key through the temperament (inline: a returned double of a non-inlined call would be a heap number per step)
+      const TT = TEMP[gl.tm] || TEMP.et, kn = v.n, kr = Math.round(kn), kc = ((kr % 12) + 12) % 12, kp = kr - kc + TT[kc] / 100 + (kn - kr) + gl.st, base = kp + P.g.st + v.dp + v.gld + this.cV[0] * gl.pb + mod[0] + vm[0];
       const p1 = base + P.o1.st + P.o1.tu / 100 + mod[1], p2 = base + P.o2.st + P.o2.tu / 100 + mod[2];
       const f1 = gl.tn * Math.pow(2, (p1 - 69) / 12), f2 = gl.tn * Math.pow(2, (p2 - 69) / 12), s = 4294967296 / (16 * sr);
       v.lastP = kp + v.gld;
@@ -686,30 +722,25 @@ var BMK = (function () {
         if (v.on && !(isFinite(v.D[5]) && isFinite(v.D[14]) && isFinite(v.D[15]))) { for (let i = a; i < b; i++) { if (!isFinite(pL[i])) pL[i] = 0; if (!isFinite(pR[i])) pR[i] = 0; } this.endVoice(v); }
       }
       // FX1 per program (type from A, BAL of the program), the sum, FX2 (type and BAL from A; TIME FX OFF bypasses DL / RV)
-      const A = this.P[0], tA = A.fx.t1;
+      const A = this.P[0];
       for (let p = 0; p < (two ? 2 : 1); p++) {
         const P = this.P[p], mod = this.S[p].mod, pL = this.pbL[p], pR = this.pbR[p];
-        const t = this.fxType(tA, mod[18], FAM1), bal = t ? clamp(num(P.fx.b1, 0) + mod[20], 0, 100) / 100 : 0;
+        const t = this.fxType(A.__d.f1, A.__d.n1, mod[18]), bal = t ? clamp(num(P.fx.b1, 0) + mod[20], 0, 100) / 100 : 0;
         if (t) this.fx1[p].setType(t);
         this.fx1[p].process(pL, pR, a, b, bal);
         for (let i = a; i < b; i++) { L[i] += pL[i]; R[i] += pR[i]; }
       }
-      const mod = this.S[0].mod, t2 = this.fxType(A.fx.t2, mod[19], FAM2);
+      const mod = this.S[0].mod, t2 = this.fxType(A.__d.f2, A.__d.n2, mod[19]);
       let b2 = t2 ? clamp(num(A.fx.b2, 0) + mod[21], 0, 100) / 100 : 0;
-      if (t2 && !this.gl.tf && (t2[0] === 'D' && t2[1] === 'L' || t2[0] === 'R')) b2 = 0;
+      if (t2 && !this.gl.tf && (A.__d.f2 === 4 || A.__d.f2 === 5)) b2 = 0;
       if (t2) { this.fx2.setType(t2); this.fx2.par.sy = A.fx.sy ? 1 : 0; this.fx2.par.bpm = this.bpm; }
       this.fx2.process(L, R, a, b, b2);
     }
-    // the type a FX slot plays: the stored type, LFO steps inside its family (n 1..16); '' = none
-    fxType(t, m, fams) {
-      if (typeof t !== 'string' || t.length < 3) return '';
-      const fam = t.slice(0, 2), n0 = +t.slice(2) | 0; if (fams.indexOf(fam) < 0 || n0 < 1 || n0 > 16) return '';
-      const n = m ? clamp(n0 + Math.round(m), 1, 16) : n0;
-      if (n === n0) return t;
-      const c = this.fxNames || (this.fxNames = {}); const key = fam + n; return c[key] || (c[key] = key);
-    }
+    // the type a FX slot plays: the stored type (parsed in prep), LFO steps inside its family (n 1..16); '' = none
+    fxType(fam, n0, m) { if (fam < 0) return ''; const n = m ? clamp(n0 + Math.round(m), 1, 16) : n0; return FXN[fam][n]; }
     process(ins, outs) {
-      const t0 = this.hasPerf ? performance.now() : Date.now();
+      // the own time is taken every 4th quantum (each clock read makes a heap number: rule 16) and counted 4 times
+      const tq = (this.qn++ & 3) === 0, t0 = tq ? (this.hasPerf ? performance.now() : Date.now()) : 0;
       const o = outs[0], L = o[0], R = o[1] || o[0], N = L.length, sr = this.sr, tb = currentTime;
       let i0 = 0;
       for (;;) {
@@ -718,19 +749,19 @@ var BMK = (function () {
         if (this.q.length && this.q[0].at < tb + (N - .5) / sr) { k = Math.round((this.q[0].at - tb) * sr); k = k < i0 ? i0 : k > N ? N : k; ev = true; }
         const gk = i0 + this.gc;
         if (gk <= k && gk < N) { k = gk; ev = false; }
-        if (k > i0) { this.seg(L, R, i0, k); this.gc -= k - i0; i0 = k; }
+        if (k > i0) { if (!this.idle) this.seg(L, R, i0, k); this.gc -= k - i0; i0 = k; }
         if (ev) {
           const e = this.q.shift();
-          this.fi = i0; this.ev(e);
+          this.fi = i0; if (this.idle) { this.wake(); this.idle = false; } this.ev(e); this.idle = this.isIdle();
           if (e.k === 1 && this.tapOn && this.tapV < 0) for (const v of this.V) if (v.on && !v.ghost && v.ord === this.ord) this.tapV = v.k;
           continue;
         }
         if (i0 >= N) break;
-        if (this.gc <= 0) { this.ctlGlobal(); this.ctlVoices(i0); this.gc = this.ctlN; }
+        if (this.gc <= 0) { const id = this.idle && this.isIdle(); this.ctlGlobal(id); this.idle = id || this.isIdle(); if (!this.idle) { this.wake(); this.ctlVoices(i0); } this.gc = this.ctlN; }
       }
       if (this.late) { this.port.postMessage({t: 'late', n: this.late}); this.late = 0; }
       this.frame += N;
-      const dq = (this.hasPerf ? performance.now() : Date.now()) - t0; this.busy += dq; this.busyN += N; if (dq > this.qMax) this.qMax = dq;
+      if (tq) { const dq = (this.hasPerf ? performance.now() : Date.now()) - t0; this.busy += 4 * dq; if (dq > this.qMax) this.qMax = dq; } this.busyN += N;
       if (this.frame - this.lastRep >= sr) {
         this.port.postMessage({t: 'load', v: this.busy / (this.busyN / sr * 1000), nv: this.countActive(), q: this.qMax});
         this.lastRep = this.frame; this.busy = 0; this.busyN = 0; this.qMax = 0;

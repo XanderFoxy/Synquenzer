@@ -15,7 +15,7 @@ const r = await p.evaluate(async () => {
   const el = document.getElementById('sq-bm-src'), sc = document.createElement('script'); sc.textContent = el.textContent; document.head.appendChild(sc);
   const out = {};
   for (const sr of [48000, 44100]) {
-    const msgs = [[0, {t: 'reset'}], [0, {t: 'prog', ab: 'a', p: {o1: {m: 78, e: {l: 99, a: 3, d: 8, s: 10, r: 6}}, o2: {m: 255, st: 7, ds: -40, dv: 15, e: {l: 70, a: 0, d: 9, s: 0, r: 4, lp: 1}}, n: {fr: 60, e: {l: 40, a: 2, d: 6, s: 4, r: 5}}}}]];
+    const msgs = [[0, {t: 'reset'}], [0, {t: 'prog', ab: 'a', p: {o1: {m: 78, e: {l: 99, a: 3, d: 8, s: 10, r: 6}}, o2: {m: 255, st: 7, ds: -40, dv: 15, e: {l: 70, a: 0, d: 9, s: 0, r: 4, lp: 1}}, n: {fr: 60, e: {l: 40, a: 2, d: 6, s: 4, r: 5}}, f: {md: 'lp', cu: 50, re: 40, e: {l: 30, d: 6}}, l1: {sp: 60, w: 'saws', t: [['o1m', 30], ['flt', 20], ['pan', 50], ['vol', 0]]}, fx: {t1: 'DT6', b1: 40, t2: 'RV4', b2: 40}}}], [0, {t: 'tr', run: true, at: 0, bpm: 120}]];
     for (let k = 0; k < 12; k++) msgs.push([0, {t: 'on', list: [{n: 48 + 3 * k, v: .5 + .04 * k, at: .01 + k * .0731, d: 0, id: k + 1}]}], [0, {t: 'off', list: [{n: 0, at: .3 + k * .05, id: k + 1}]}]);
     msgs.push([.4, {t: 'set', ab: 'a', k: 'o1.m', v: 300}]);
     const a = await bmkRender(msgs, {sr, sec: 1.2}), b = await bmkRender(msgs, {sr, sec: 1.2});
@@ -25,7 +25,7 @@ const r = await p.evaluate(async () => {
   // live load: idle, 1 voice, 12 voices (Bit Mask); one VA voice ('dirigent-analog') in the same context
   ensureAudio(); const c = AU.ctx; const w0 = performance.now(); while (!wkReady() && performance.now() - w0 < 8000) await new Promise(r => setTimeout(r, 100));
   try { await c.resume(); } catch (e) {}
-  out.idle = await bmkProbe({voices: 0, sec: 6}); out.bm1 = await bmkProbe({voices: 1, sec: 6}); out.bm12 = await bmkProbe({voices: 12, sec: 6});
+  out.idle = await bmkProbe({voices: 0, sec: 6}); out.bm1 = await bmkProbe({voices: 1, sec: 6, p: {o1: {m: 78, e: {l: 99}}, o2: {m: 255, st: 7, e: {l: 80}}, n: {fr: 99, e: {l: 40}}}}); out.bm12 = await bmkProbe({voices: 12, sec: 6});
   const va = async nv => {
     const sink = c.createGain(); sink.gain.value = 0; sink.connect(c.destination);
     const node = new AudioWorkletNode(c, 'dirigent-analog', {numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'discrete',
@@ -41,7 +41,7 @@ const r = await p.evaluate(async () => {
 for (const sr of [48000, 44100]) ok('BM1-12 Chromium: zwei Offline-Render nach reset bitgleich (' + sr / 1000 + ' kHz)', r['bit' + sr].d === 0 && r['bit' + sr].rms > 1e-3, 'Differenz ' + r['bit' + sr].d + ', Pegel ' + (20 * Math.log10(r['bit' + sr].rms)).toFixed(1) + ' dBFS');
 const bv = r.bm1.load_med - r.idle.load_med, vv = r.va1 - r.va0;
 ok('BM1-13 Chromium (echter AudioWorklet, nur Messwert): Bit-Mask-Stimme gegen VA-Stimme', true,
-  (bv / Math.max(vv, 1e-9)).toFixed(2) + ' × (Bit Mask 1 Stimme ' + (bv * 100).toFixed(2) + ' %, 12 Stimmen ' + ((r.bm12.load_med - r.idle.load_med) * 100).toFixed(2) + ' % (max ' + (r.bm12.load_max * 100).toFixed(2) + ' %, Quantum max ' + r.bm12.quantum_max_ms + ' ms), Leerlauf ' + (r.idle.load_med * 100).toFixed(3) + ' %; VA-Stimme ' + (vv * 100).toFixed(2) + ' %)');
+  (bv / Math.max(vv, 1e-9)).toFixed(2) + ' × (Bit Mask 1 Stimme ' + (bv * 100).toFixed(2) + ' %, 12 Stimmen + FX1 CH4 + FX2 RV3 ' + ((r.bm12.load_med - r.idle.load_med) * 100).toFixed(2) + ' % (max ' + (r.bm12.load_max * 100).toFixed(2) + ' %, Quantum max ' + r.bm12.quantum_max_ms + ' ms), Leerlauf ' + (r.idle.load_med * 100).toFixed(3) + ' %; VA-Stimme ' + (vv * 100).toFixed(2) + ' %)');
 ok('BM1 Chromium: App startet ohne Konsolenfehler, Block sq-bm-src läuft', errs.length === 0, errs.length ? errs.slice(0, 3).join(' | ') : 'keine Fehler');
 fs.writeFileSync(HERE + 'bm1-browser.out.json', JSON.stringify({res, raw: r}, null, 1));
 await b.close(); process.exit(fails ? 1 : 0);

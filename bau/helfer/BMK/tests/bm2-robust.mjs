@@ -1,6 +1,6 @@
 // BM2-12 robust: 10 minutes (MIN=… to change) of random flight at 48 kHz: random programs (every field of section 5.1 in its range,
 // masks 0..511, all modes, waves, slots), notes (up to 14 at a time), controllers (bend / MW / pressure), set messages, limiter.
-// Every sample finite, DC (mean of each 10 s; sub-audio notes below 1 Hz are sound, not DC) <= 0.005, peak <= +12 dBFS (before the master limiter).
+// FX1 / FX2 random too. Every sample finite, DC (mean of each 10 s; sub-audio notes below 1 Hz are sound, not DC) <= 0.005, peak <= +12 dBFS (before the master limiter).
 import fs from 'fs';
 import {makeScope} from './bm-node.mjs';
 const HERE = new URL('.', import.meta.url).pathname, SR = 48000, MIN = +process.env.MIN || 10;
@@ -13,7 +13,7 @@ const slots = (list, lo) => [0, 1, 2, 3].map(() => [pick(list), rnd() < .5 ? 0 :
 const progR = () => ({o1: osc(), o2: osc(), n: {fr: I(0, 99), e: env()}, f: {cu: I(0, 99), re: I(0, 99), md: pick(['lp', 'hp', 'bp', 'notch']), tk: I(0, 100), e: env()},
   pe: {ds: I(-63, 63), dv: I(1, 40), de: I(-63, 63)}, l1: {sp: I(0, 99), w: pick(['sin', 'sqr', 'up', 'down', 'saws', 'step', 'hsin', 'rand']), dl: I(0, 15), dc: I(0, 15), t: slots(LFO, 0)},
   l2: {sp: I(0, 99), w: pick(['sin', 'sqr', 'up', 'down', 'saws', 'step', 'hsin', 'rand']), dl: I(0, 15), dc: I(0, 15), t: slots(LFO, 0)},
-  mo: {v: slots(V, -99), mw: slots(MW, -99), at: slots(MW, -99)}, fx: {t1: 'CH1', b1: 0, t2: 'RV1', b2: 0, sy: 0},
+  mo: {v: slots(V, -99), mw: slots(MW, -99), at: slots(MW, -99)}, fx: {t1: pick(['CH', 'DT', 'BC', 'RM']) + I(1, 16), b1: rnd() < .4 ? 0 : I(0, 100), t2: pick(['DL', 'RV', 'DT']) + I(1, 16), b2: rnd() < .4 ? 0 : I(0, 100), sy: I(0, 1)},
   g: {mo: pick(['poly', 'mono', 'slur', 'mport', 'para', 'moly', 'pslur', 'mretrig', 'pretrig']), vo: I(0, 99), st: I(-48, 48), po: I(0, 13), ps: I(0, 15), ra: I(0, 15)}});
 const glR = () => ({tm: pick(['et', 'arab', 'jmaj', 'jmin', 'mean', 'pyta']), st: I(-24, 24), tn: I(400, 470), vc: I(1, 6), ac: I(0, 6), pb: I(0, 12), tf: I(0, 1)});
 const {G, procs} = makeScope(SR), P = new procs['synq-bm']({}), send = m => P.port.onmessage({data: m});

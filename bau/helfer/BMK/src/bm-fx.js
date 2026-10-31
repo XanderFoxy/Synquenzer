@@ -12,6 +12,10 @@
   const atB = (b, p) => b[p & (b.length - 1)];
   const lcosh = u => { const a = u < 0 ? -u : u; return a > 20 ? a - Math.LN2 : Math.log(Math.cosh(u)); };
   // the delay time of DL n (ms, section 1.12) and its note value at a tempo (SYNC, DL1-DL8)
+  // RV n: RT60 of the formula; tank scale min(1, max(0.35, RT60 / 1 s)); RV_CAL = the internal decay per type, measured by
+  // werkzeug/rv-cal.mjs so that M-T60 gives the formula (the damping in the loop shortens long halls)
+  const rvT = n => 8 * Math.pow(.3 / 8, (n - 1) / 15), rvSize = n => Math.min(1, Math.max(.35, rvT(n)));
+  const RV_CAL = [1.3377, 1.3045, 1.2739, 1.2476, 1.216, 1.1851, 1.1585, 1.1251, 1.0874, 1.0133, 0.9748, 1.0025, 0.9985, 0.9637, 0.9933, 0.9075];
   const dlMs = n => 800 * Math.pow(1 / 800, (n - 1) / 15);
   function dlSync(n, bpm) {
     const t = dlMs(n) / 1000, b = 60 / bpm; let best = 0, bd = 1e9;
@@ -29,24 +33,25 @@
         const r = sr / DSR; this.rr = r;
         this.ri = RV_IN.map(n => { const b = new Float32Array(p2(Math.round(n * r) + 4)); return b; }); this.rn = RV_IN.map(n => Math.round(n * r));
         this.rl = RV_B.map(n => new Float32Array(p2(Math.ceil((n + 34) * r) + 4)));
-        this.rlen = Float64Array.from(RV_B, x => x * r); this.rg = new Float64Array(4);
-        this.rtl = Int32Array.from(RV_TL, x => Math.round(x * r)); this.rtr = Int32Array.from(RV_TR, x => Math.round(x * r));
+        this.rlen = new Float64Array(8); this.rg = new Float64Array(4); this.rtl = new Int32Array(7); this.rtr = new Int32Array(7); this.rsize(1);
       }
       this.st = new Float64Array(16);                                            // filters, holds, phases
-      this.w = 1 << 20; this.ph = 0; this.lfs = 0; this.lfc = 1; this.tCur = 0; this.tTgt = 0; this.tStep = 0;
+      this.w = 1 << 20; this.ph = 0; this.lfs = 0; this.lfc = 1; this.tCur = 0; this.tTgt = 0; this.tStep = 0; this.t0 = 0;
       this.clear();
     }
     clear() {
       if (this.kind === 1) { this.cb[0].fill(0); this.cb[1].fill(0); this.ap.fill(0); this.fb.fill(0); }
       else { this.db[0].fill(0); this.db[1].fill(0); for (const b of this.ri) b.fill(0); for (const b of this.rl) b.fill(0); }
-      this.st.fill(0); this.ph = 0; this.lfs = 0; this.lfc = 1; this.tCur = 0; this.tTgt = 0; this.tStep = 0; this.e = 0;
+      this.st.fill(0); this.ph = 0; this.lfs = 0; this.lfc = 1; this.tCur = 0; this.tTgt = 0; this.tStep = 0; this.t0 = 0; this.e = 0; this.apA = 0; this.apC = 0; this.inR = 0; this.inN = Math.round(.03 * this.sr);
     }
-    set(fam, n) { this.fam = fam; this.n = n; this.clear(); }
+    set(fam, n) { this.fam = fam; this.n = n; this.clear(); if (fam === 'RV') this.rsize(rvSize(n)); }
+    // the tank scale (as 'size' of dirigent-hall): short halls need a smaller tank, else one loop is longer than the decay
+    rsize(z) { const r = this.rr; for (let k = 0; k < 8; k++) this.rlen[k] = RV_B[k] * r * z; for (let k = 0; k < 7; k++) { this.rtl[k] = Math.round(RV_TL[k] * r * z); this.rtr[k] = Math.round(RV_TR[k] * r * z); } }
     // a type change inside the family: the new unit starts with the old one's input history (lines, tank), so the
     // crossfade has no onset step (rule 12); filters and phases start fresh
     copyHist(o) {
       if (this.kind === 1) { this.cb[0].set(o.cb[0]); this.cb[1].set(o.cb[1]); }
-      else { this.db[0].set(o.db[0]); this.db[1].set(o.db[1]); for (let k = 0; k < 4; k++) this.ri[k].set(o.ri[k]); for (let k = 0; k < 8; k++) this.rl[k].set(o.rl[k]); this.tCur = o.tCur; this.tTgt = o.tTgt; }
+      else { this.db[0].set(o.db[0]); this.db[1].set(o.db[1]); for (let k = 0; k < 4; k++) this.ri[k].set(o.ri[k]); for (let k = 0; k < 8; k++) this.rl[k].set(o.rl[k]); }
       this.w = o.w;
     }
     // wet signal of [i, e) into yL / yR (the input x is not changed)
@@ -68,48 +73,63 @@
         }
         const m = Math.sqrt(s * s + c * c); this.lfs = s / m; this.lfc = c / m; this.w = wi > 0x3f000000 ? wi - 0x20000000 : wi;
       } else if (f === 'CH') {
-        // CH15 / CH16: 6 first-order allpasses, 200 Hz - 3 kHz, feedback, internal 50 / 50
-        const hz = n === 15 ? .25 : .8, fbk = n === 15 ? .3 : .5, w = 2 * Math.PI * hz / sr, A = this.ap, F = this.fb;
-        let s = this.lfs, c = this.lfc;
+        // CH15 / CH16: 6 first-order allpasses, 200 Hz - 3 kHz, feedback, internal 50 / 50 (the coefficient every 8 samples,
+        // linear in between)
+        const hz = n === 15 ? .25 : .8, fbk = n === 15 ? .3 : .5, w = 2 * Math.PI * hz / sr, A = this.ap, F = this.fb, LN15 = Math.log(15);
+        let s = this.lfs, c = this.lfc, a = this.apA, da = 0, cnt = this.apC;
+        let A0 = A[0], A1 = A[1], A2 = A[2], A3 = A[3], A4 = A[4], A5 = A[5], B0 = A[6], B1 = A[7], B2 = A[8], B3 = A[9], B4 = A[10], B5 = A[11], fl = F[0], fr = F[1];
         for (; i < e; i++) {
           s += w * c; c -= w * s;
-          const fc = 200 * Math.pow(15, (1 + s) / 2), t = Math.tan(Math.PI * fc / sr), a = (t - 1) / (t + 1);
-          for (let ch = 0; ch < 2; ch++) {
-            const x = (ch ? xR[i] : xL[i]); let u = x + fbk * F[ch];
-            for (let k = 0; k < 6; k++) { const j = ch * 6 + k, y = a * u + A[j]; A[j] = u - a * y; u = y; }
-            F[ch] = u; const o = .5 * x + .5 * u; if (ch) yR[i] = o; else yL[i] = o; en += o * o;
-          }
+          if (cnt <= 0) { const fc = 200 * Math.exp(LN15 * (1 + s) / 2), t = Math.tan(Math.PI * fc / sr), an = (t - 1) / (t + 1); if (this.apA === 0 && a === 0) a = an; da = (an - a) / 8; cnt = 8; }
+          a += da; cnt--;
+          const xl = xL[i], xr = xR[i];
+          let u = xl + fbk * fl, y;
+          y = a * u + A0; A0 = u - a * y; u = y; y = a * u + A1; A1 = u - a * y; u = y; y = a * u + A2; A2 = u - a * y; u = y;
+          y = a * u + A3; A3 = u - a * y; u = y; y = a * u + A4; A4 = u - a * y; u = y; y = a * u + A5; A5 = u - a * y; u = y; fl = u;
+          let v = xr + fbk * fr;
+          y = a * v + B0; B0 = v - a * y; v = y; y = a * v + B1; B1 = v - a * y; v = y; y = a * v + B2; B2 = v - a * y; v = y;
+          y = a * v + B3; B3 = v - a * y; v = y; y = a * v + B4; B4 = v - a * y; v = y; y = a * v + B5; B5 = v - a * y; v = y; fr = v;
+          const ol = .5 * xl + .5 * u, or = .5 * xr + .5 * v; yL[i] = ol; yR[i] = or; en += ol * ol + or * or;
         }
+        A[0] = A0; A[1] = A1; A[2] = A2; A[3] = A3; A[4] = A4; A[5] = A5; A[6] = B0; A[7] = B1; A[8] = B2; A[9] = B3; A[10] = B4; A[11] = B5; F[0] = fl; F[1] = fr;
+        this.apA = a + da * cnt; this.apC = 0;
         const m = Math.sqrt(s * s + c * c); this.lfs = s / m; this.lfc = c / m;
       } else if (f === 'DT') {
-        // drive +2n dB; odd n symmetric, even n offset 0.25; low pass 12 kHz * 0.8^floor((n-1)/2); level 1 / (1 + 0.1 n); ADAA (1st order)
-        const g = Math.pow(10, 2 * n / 20), off = n % 2 ? 0 : .25, t0 = Math.tanh(off), comp = 1 / (1 + .1 * n), Q = this.st;
+        // drive +2n dB; odd n symmetric, even n offset 0.25 (before the drive: the asymmetry grows with it); low pass
+        // 12 kHz * 0.8^floor((n-1)/2); level 1 / (1 + 0.1 n); ADAA 1st order on the algebraic sigmoid u / sqrt(1 + u^2)
+        // (antiderivative sqrt(1 + u^2): one square root per sample); even n: DC block 5 Hz
+        const g = Math.pow(10, 2 * n / 20), off = n % 2 ? 0 : .25, go = g * off, t0 = go / Math.sqrt(1 + go * go), comp = 1 / (1 + .1 * n), Q = this.st;
         const fl = Math.min(12000 * Math.pow(.8, Math.floor((n - 1) / 2)), .45 * sr), al = 1 - Math.exp(-2 * Math.PI * fl / sr), dcR = Math.exp(-2 * Math.PI * 5 / sr);
+        let ul = Q[0], ur = Q[1], Fl = Math.sqrt(1 + ul * ul), Fr = Math.sqrt(1 + ur * ur), ll = Q[2], lr = Q[3], dxl = Q[4], dxr = Q[5], dyl = Q[6], dyr = Q[7];
         for (; i < e; i++) {
-          for (let ch = 0; ch < 2; ch++) {
-            const u = g * (ch ? xR[i] : xL[i]) + off, u0 = Q[ch], d = u - u0;
-            let y = Math.abs(d) > 1e-6 ? (lcosh(u) - lcosh(u0)) / d : Math.tanh(.5 * (u + u0));
-            Q[ch] = u; y = (y - t0) * comp;
-            Q[2 + ch] += al * (y - Q[2 + ch]); y = Q[2 + ch];
-            if (off) { const z = y - Q[4 + ch] + dcR * Q[6 + ch]; Q[4 + ch] = y; Q[6 + ch] = z; y = z; }
-            if (ch) yR[i] = y; else yL[i] = y; en += y * y;
-          }
+          const a = g * xL[i] + go, b = g * xR[i] + go, Fa = Math.sqrt(1 + a * a), Fb = Math.sqrt(1 + b * b);
+          let ya, yb, d = a - ul;
+          if (d > 1e-5 || d < -1e-5) ya = (Fa - Fl) / d; else { const mm = .5 * (a + ul); ya = mm / Math.sqrt(1 + mm * mm); }
+          d = b - ur; if (d > 1e-5 || d < -1e-5) yb = (Fb - Fr) / d; else { const mm = .5 * (b + ur); yb = mm / Math.sqrt(1 + mm * mm); }
+          ul = a; ur = b; Fl = Fa; Fr = Fb;
+          ya = (ya - t0) * comp; yb = (yb - t0) * comp;
+          ll += al * (ya - ll); lr += al * (yb - lr); ya = ll; yb = lr;
+          if (off) { let z = ya - dxl + dcR * dyl; dxl = ya; dyl = z; ya = z; z = yb - dxr + dcR * dyr; dxr = yb; dyr = z; yb = z; }
+          yL[i] = ya; yR[i] = yb; en += ya * ya + yb * yb;
         }
+        Q[0] = ul; Q[1] = ur; Q[2] = ll; Q[3] = lr; Q[4] = dxl; Q[5] = dxr; Q[6] = Math.abs(dyl) < 1e-15 ? 0 : dyl; Q[7] = Math.abs(dyr) < 1e-15 ? 0 : dyr;
       } else if (f === 'BC') {
         // (bits; rate), even n with a low pass 0.45 x rate; 9-16: rate x (1 +- 0.5 x triangle 0.3 Hz)
-        const k = n > 8 ? n - 8 : n, T = FX_BC[k - 1], bits = T[0], rate0 = T[1] ? T[1] * sr : T[2], q = Math.pow(2, bits - 1), Q = this.st, lp = k % 2 === 0;
-        const fc = Math.min(.45 * rate0, .45 * sr), g1 = Math.tan(Math.PI * fc / sr), A1 = 1 / (1 + g1 * (g1 + Math.SQRT2)), A2 = g1 * A1, A3 = g1 * A2;
+        const k = n > 8 ? n - 8 : n, T = FX_BC[k - 1], bits = T[0], rate0 = T[1] ? T[1] * sr : T[2], q = Math.pow(2, bits - 1), iq = 1 / q, Q = this.st, lp = k % 2 === 0;
+        const fc = Math.min(.45 * rate0, .45 * sr), g1 = Math.tan(Math.PI * fc / sr), A1 = 1 / (1 + g1 * (g1 + Math.SQRT2)), A2 = g1 * A1, A3 = g1 * A2, inc0 = rate0 / sr, tri = n > 8, dph = .3 / sr;
+        let ph = Q[0], hl = Q[1], hr = Q[2], s1 = Q[3], s2 = Q[4], s3 = Q[5], s4 = Q[6], tp = this.ph;
         for (; i < e; i++) {
-          let rate = rate0;
-          if (n > 8) { this.ph += .3 / sr; if (this.ph >= 1) this.ph -= 1; const tri = this.ph < .5 ? 4 * this.ph - 1 : 3 - 4 * this.ph; rate = rate0 * (1 + .5 * tri); }
-          Q[0] += rate / sr; if (Q[0] >= 1) { Q[0] -= Math.floor(Q[0]); Q[1] = Math.round(xL[i] * q) / q; Q[2] = Math.round(xR[i] * q) / q; }
-          let a = Q[1], b = Q[2];
+          let inc = inc0;
+          if (tri) { tp += dph; if (tp >= 1) tp -= 1; inc = inc0 * (1 + .5 * (tp < .5 ? 4 * tp - 1 : 3 - 4 * tp)); }
+          ph += inc; if (ph >= 1) { ph -= Math.floor(ph); hl = Math.round(xL[i] * q) * iq; hr = Math.round(xR[i] * q) * iq; }
+          let a = hl, b = hr;
           if (lp) {   // 2-pole Butterworth (TPT SVF low pass) at 0.45 x rate
-            let v3 = a - Q[4], v1 = A1 * Q[3] + A2 * v3, v2 = Q[4] + A2 * Q[3] + A3 * v3; Q[3] = 2 * v1 - Q[3]; Q[4] = 2 * v2 - Q[4]; a = v2;
-            v3 = b - Q[6]; v1 = A1 * Q[5] + A2 * v3; v2 = Q[6] + A2 * Q[5] + A3 * v3; Q[5] = 2 * v1 - Q[5]; Q[6] = 2 * v2 - Q[6]; b = v2;
+            let v3 = a - s2, v1 = A1 * s1 + A2 * v3, v2 = s2 + A2 * s1 + A3 * v3; s1 = 2 * v1 - s1; s2 = 2 * v2 - s2; a = v2;
+            v3 = b - s4; v1 = A1 * s3 + A2 * v3; v2 = s4 + A2 * s3 + A3 * v3; s3 = 2 * v1 - s3; s4 = 2 * v2 - s4; b = v2;
           }
           yL[i] = a; yR[i] = b; en += a * a + b * b;
         }
+        Q[0] = ph; Q[1] = hl; Q[2] = hr; Q[3] = s1; Q[4] = s2; Q[5] = s3; Q[6] = s4; this.ph = tp;
       } else if (f === 'RM') {
         // sine carrier 0.4 Hz * 2^(0.84 (n - 1)), right 90 degrees later
         const hz = .4 * Math.pow(2, .84 * (n - 1)), w = 2 * Math.PI * hz / sr;
@@ -119,24 +139,25 @@
       } else if (f === 'DL') {
         // time 800 ms * (1/800)^((n-1)/15); feedback 0.45 / 0.6 / 0.75; 5 kHz low pass in the loop (n <= 6); ping-pong (n <= 4); SYNC (DL1-8)
         const want = (P.sy && n <= 8 ? dlSync(n, P.bpm) : dlMs(n) / 1000) * sr, fbk = n <= 6 ? .45 : n <= 10 ? .6 : .75, lp = n <= 6, pp = n <= 4;
-        // a new time (tempo change with SYNC): the read pointer glides there in 50 ms
-        if (this.tCur <= 0) { this.tCur = want; this.tTgt = want; }
-        if (want !== this.tTgt) { this.tTgt = want; this.tStep = Math.abs(want - this.tCur) / (.05 * sr); }
-        const al = 1 - Math.exp(-2 * Math.PI * 5000 / sr), Q = this.st, B0 = this.db[0], B1 = this.db[1], m = this.dm, st = this.tStep;
+        // a new time (tempo change with SYNC): the read pointer glides there in 50 ms (raised cosine: no kink in the speed)
+        if (this.tCur <= 0) { this.tCur = want; this.tTgt = want; this.tStep = 0; }
+        if (want !== this.tTgt) { this.t0 = this.tCur; this.tTgt = want; this.tStep = 1; }
+        const al = 1 - Math.exp(-2 * Math.PI * 5000 / sr), Q = this.st, B0 = this.db[0], B1 = this.db[1], m = this.dm, gn = Math.round(.05 * sr);
         let wi = this.w, t = this.tCur;
         for (; i < e; i++) {
-          if (t !== want) t = t < want ? Math.min(want, t + st) : Math.max(want, t - st);
+          if (this.tStep > 0) { const x = this.tStep / gn; t = x >= 1 ? want : this.t0 + (want - this.t0) * .5 * (1 - Math.cos(Math.PI * x)); this.tStep = x >= 1 ? 0 : this.tStep + 1; }
           let p = wi - t, k = Math.floor(p), fr = p - k;
           const a = B0[k & m] * (1 - fr) + B0[(k + 1) & m] * fr, b = B1[k & m] * (1 - fr) + B1[(k + 1) & m] * fr;
           let fa = a, fb_ = b;
           if (lp) { Q[0] += al * (a - Q[0]); Q[1] += al * (b - Q[1]); fa = Q[0]; fb_ = Q[1]; }
-          if (pp) { B0[wi & m] = .5 * (xL[i] + xR[i]) + fbk * fb_; B1[wi & m] = fbk * fa; }
-          else { B0[wi & m] = xL[i] + fbk * fa; B1[wi & m] = xR[i] + fbk * fb_; }
+          let gi = 1; if (this.inR > 0) { gi = 1 - this.inR / this.inN; this.inR--; }
+          if (pp) { B0[wi & m] = .5 * (xL[i] + xR[i]) * gi + fbk * fb_; B1[wi & m] = fbk * fa; }
+          else { B0[wi & m] = xL[i] * gi + fbk * fa; B1[wi & m] = xR[i] * gi + fbk * fb_; }
           yL[i] = a; yR[i] = b; en += a * a + b * b; wi++;
         }
         this.tCur = t; this.w = wi > 0x3f000000 ? wi - 0x20000000 : wi;
       } else if (f === 'RV') {
-        en = this.reverb(xL, xR, yL, yR, i, e, 8 * Math.pow(.3 / 8, (n - 1) / 15));
+        en = this.reverb(xL, xR, yL, yR, i, e, rvT(n) * RV_CAL[n - 1]);
       } else { for (; i < e; i++) { yL[i] = 0; yR[i] = 0; } }
       this.e = en;
     }
@@ -151,7 +172,7 @@
       let w = this.w, s = this.lfs, c = this.lfc, lpL = Q[0], lpR = Q[1], hpL = Q[2], hpR = Q[3], bw = Q[4], en = 0;
       for (; i < e; i++) {
         s += lw * c; c -= lw * s;
-        let x = .5 * (xL[i] + xR[i]); bw += bwA * (x - bw); x = bw;
+        let x = .5 * (xL[i] + xR[i]); if (this.inR > 0) { x *= 1 - this.inR / this.inN; this.inR--; } bw += bwA * (x - bw); x = bw;
         let d, v;
         for (let k = 0; k < 4; k++) { const b = I[k], m = b.length - 1, gg = k < 2 ? .75 : .625; d = b[(w - N[k]) & m]; v = x - gg * d; b[w & m] = v; x = d + gg * v; }
         x += (w & 1) ? 1e-20 : -1e-20;
@@ -181,10 +202,10 @@
       this.kind = kind; this.sr = sr; this.u = [new FxUnit(kind, sr), new FxUnit(kind, sr)]; this.cur = 0; this.type = '';
       this.xf = 0; this.xn = Math.round(.03 * sr);   // 30 ms crossfade on a type change
       this.wL = new Float32Array(128); this.wR = new Float32Array(128); this.oL = new Float32Array(128); this.oR = new Float32Array(128);
-      this.quiet = 0; this.kill = 0; this.kn = Math.round(.01 * sr); this.par = {sy: 0, bpm: 120}; this.silN = 0;
+      this.quiet = 1e9; this.kill = 0; this.kn = Math.round(.01 * sr); this.par = {sy: 0, bpm: 120}; this.silN = 1e12; this.mute = 0;
     }
     grow(N) { if (this.wL.length < N) { this.wL = new Float32Array(N); this.wR = new Float32Array(N); this.oL = new Float32Array(N); this.oR = new Float32Array(N); } }
-    clear() { this.u[0].clear(); this.u[1].clear(); this.xf = 0; this.quiet = 1e9; this.silN = 1e12; }
+    clear() { this.u[0].clear(); this.u[1].clear(); this.xf = 0; this.quiet = 1e9; this.silN = 1e12; this.mute = 0; this.kill = 0; }
     // samples a silent input still sounds (the sleep must not cut a tail): echo repeats down to -140 dB, reverb 140 / 60 x RT60
     tailN() {
       const U = this.u[this.cur], n = U.n, sr = this.sr;
@@ -197,14 +218,20 @@
       if (t === this.type) return;
       const fam = t.slice(0, 2), n = +t.slice(2) | 0;
       if (!this.type || this.quiet > 4) { this.u[this.cur].set(fam, n); this.type = t; this.xf = 0; return; }
-      const nx = 1 - this.cur, old = this.u[this.cur]; this.u[nx].set(fam, n); if (old.fam === fam) this.u[nx].copyHist(old); this.cur = nx; this.type = t; this.xf = this.xn;
+      // chorus family: the new unit takes the old input history; echo / reverb: a fresh unit whose input fades in over the
+      // crossfade (its first echo then has no onset step)
+      const nx = 1 - this.cur, old = this.u[this.cur]; this.u[nx].set(fam, n); if (old.fam === fam && this.kind === 1) this.u[nx].copyHist(old); else this.u[nx].inR = this.xn; this.cur = nx; this.type = t; this.xf = this.xn;
     }
     // in place over [i, e): x = x (1 - b) + wet b; b = 0 (and no fade running): untouched
     process(L, R, i, e, b) {
-      if (b <= 0 && this.xf === 0) { if (this.kill > 0) { this.clear(); this.kill = 0; } this.quiet = 1e9; return; }
-      let peak = 0; for (let j = i; j < e; j++) { const a = Math.abs(L[j]) + Math.abs(R[j]); if (a > peak) peak = a; }
-      if (peak > 0) this.silN = 0; else this.silN += e - i;
-      if (peak === 0 && this.quiet > 4 && this.xf === 0 && this.silN > this.tailN()) return;   // sleep: silent input, tail done
+      if (this.mute > 0) { this.mute -= e - i; return; }   // after a panic: 60 ms without FX (the voices' own 3 ms fades end meanwhile)
+      if (b <= 0 && this.xf === 0) { if (this.kill > 0) { this.clear(); this.kill = 0; this.mute = Math.round(.05 * this.sr); } this.quiet = 1e9; return; }
+      // sleep: the input silent and the tail done (the input is scanned only while the slot may sleep)
+      let peak = 1;
+      if (this.quiet > 4 && this.xf === 0) {
+        peak = 0; for (let j = i; j < e; j++) if (L[j] !== 0 || R[j] !== 0) { peak = 1; break; }
+        if (peak) this.silN = 0; else { this.silN += e - i; if (this.silN > this.tailN()) return; }
+      }
       this.grow(e);
       const U = this.u[this.cur], wL = this.wL, wR = this.wR;
       U.run(L, R, wL, wR, i, e, this.par);
@@ -217,11 +244,15 @@
       const d = 1 - b;
       if (this.kill > 0) {   // panic / double stop: the wet path fades out in 10 ms, then all tails are cleared
         for (let j = i; j < e; j++) { const k = this.kill > 0 ? this.kill / this.kn : 0; if (this.kill > 0) this.kill--; L[j] = L[j] * d + wL[j] * b * k; R[j] = R[j] * d + wR[j] * b * k; }
-        if (this.kill <= 0) { this.clear(); this.kill = 0; }
+        if (this.kill <= 0) { this.clear(); this.kill = 0; this.mute = Math.round(.05 * this.sr); }
         return;
       }
       for (let j = i; j < e; j++) { L[j] = L[j] * d + wL[j] * b; R[j] = R[j] * d + wR[j] * b; }
-      this.quiet = peak === 0 && en < 1e-14 * (e - i + 1) ? this.quiet + 1 : 0;
+      if (en < 1e-14 * (e - i + 1)) {   // the wet path is silent: is the input too?
+        if (peak === 1 && this.quiet <= 4) { peak = 0; for (let j = i; j < e; j++) if (L[j] !== 0 || R[j] !== 0) { peak = 1; break; } if (!peak) this.silN += e - i; else this.silN = 0; }
+        this.quiet = peak ? 0 : this.quiet + 1;
+      } else { this.quiet = 0; if (peak) this.silN = 0; }
     }
-    panic() { if (this.quiet < 1e9) this.kill = this.kn; else this.clear(); }
+    asleep() { return this.mute > 0 || (this.xf === 0 && this.kill === 0 && this.quiet > 4 && (this.silN > 1e11 || this.silN > this.tailN())); }
+    panic() { if (this.quiet < 1e9) this.kill = this.kn; else { this.clear(); this.mute = Math.round(.06 * this.sr); } }
   }

@@ -3,17 +3,17 @@
   {
    "id": "BM1-12 Chromium: zwei Offline-Render nach reset bitgleich (48 kHz)",
    "ok": true,
-   "info": "Differenz 0, Pegel -22.7 dBFS"
+   "info": "Differenz 0, Pegel -24.0 dBFS"
   },
   {
    "id": "BM1-12 Chromium: zwei Offline-Render nach reset bitgleich (44.1 kHz)",
    "ok": true,
-   "info": "Differenz 0, Pegel -22.7 dBFS"
+   "info": "Differenz 0, Pegel -23.9 dBFS"
   },
   {
    "id": "BM1-13 Chromium (echter AudioWorklet, nur Messwert): Bit-Mask-Stimme gegen VA-Stimme",
    "ok": true,
-   "info": "1.25 × (Bit Mask 1 Stimme 0.50 %, 12 Stimmen 6.59 % (max 8.89 %, Quantum max 2 ms), Leerlauf 0.100 %; VA-Stimme 0.40 %)"
+   "info": "0.45 × (Bit Mask 1 Stimme 0.40 %, 12 Stimmen + FX1 CH4 + FX2 RV3 7.99 % (max 9.99 %, Quantum max 3 ms), Leerlauf 0.400 %; VA-Stimme 0.90 %)"
   },
   {
    "id": "BM1 Chromium: App startet ohne Konsolenfehler, Block sq-bm-src läuft",
@@ -24,46 +24,49 @@
  "raw": {
   "bit48000": {
    "d": 0,
-   "rms": 0.07319742039212204
+   "rms": 0.06336342278552129
   },
   "bit44100": {
    "d": 0,
-   "rms": 0.07293426383812177
+   "rms": 0.06389835996552398
   },
   "idle": {
    "fall": "bm",
+   "fx": "CH4 + RV3",
    "app": "4.23.0",
    "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
    "sr": 44100,
    "voices": 0,
    "reports": 6,
-   "load_med": 0.001,
-   "load_max": 0.002,
+   "load_med": 0.004,
+   "load_max": 0.004,
    "quantum_max_ms": 1
   },
   "bm1": {
    "fall": "bm",
+   "fx": "",
    "app": "4.23.0",
    "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
    "sr": 44100,
    "voices": 1,
    "reports": 6,
-   "load_med": 0.006,
-   "load_max": 0.008,
+   "load_med": 0.008,
+   "load_max": 0.012,
    "quantum_max_ms": 1
   },
   "bm12": {
    "fall": "bm",
+   "fx": "CH4 + RV3",
    "app": "4.23.0",
    "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
    "sr": 44100,
    "voices": 12,
    "reports": 6,
-   "load_med": 0.0669,
-   "load_max": 0.0889,
-   "quantum_max_ms": 2
+   "load_med": 0.0839,
+   "load_max": 0.0999,
+   "quantum_max_ms": 3
   },
   "va0": 0,
-  "va1": 0.003994565217391304
+  "va1": 0.008987771739130434
  }
 }

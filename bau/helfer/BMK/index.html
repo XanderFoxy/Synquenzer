@@ -7013,6 +7013,8 @@ var BMK = (function () {
   // VEL CURVE 1..5 (gamma), 6 / 'max' = always full; AT CURVE 1..5 (gamma), 6 = min(1, 3a), 0 / 7 / 'none' = off
   const velCurve = (vc, v) => { if (vc === 'max' || +vc >= 6) return 1; const g = VELG[clamp(Math.round(+vc || 4), 1, 5) - 1]; return Math.pow(clamp(v, 0, 1), g); };
   const atCurve = (ac, a) => { if (ac === 'none' || +ac === 0 || +ac >= 7) return 0; const k = Math.round(+ac || 4); if (k === 6) return Math.min(1, 3 * a); return Math.pow(clamp(a, 0, 1), ATG[clamp(k, 1, 5) - 1]); };
+  // FX type names by family index and n (made once: no strings in the audio path)
+  const FXF = ['CH', 'DT', 'BC', 'RM', 'DL', 'RV'], FXN = FXF.map(f => { const o = ['']; for (let n = 1; n <= 16; n++) o.push(f + n); return o; });
   // events at the same time: note off, stop, transport start, controllers, retune, then note on
   const QPR = [9, 5, 0, 4, 1, 3, 2];
   const QORD = (a, b) => a.at - b.at || QPR[a.k] - QPR[b.k];
@@ -7033,6 +7035,10 @@ var BMK = (function () {
   const atB = (b, p) => b[p & (b.length - 1)];
   const lcosh = u => { const a = u < 0 ? -u : u; return a > 20 ? a - Math.LN2 : Math.log(Math.cosh(u)); };
   // the delay time of DL n (ms, section 1.12) and its note value at a tempo (SYNC, DL1-DL8)
+  // RV n: RT60 of the formula; tank scale min(1, max(0.35, RT60 / 1 s)); RV_CAL = the internal decay per type, measured by
+  // werkzeug/rv-cal.mjs so that M-T60 gives the formula (the damping in the loop shortens long halls)
+  const rvT = n => 8 * Math.pow(.3 / 8, (n - 1) / 15), rvSize = n => Math.min(1, Math.max(.35, rvT(n)));
+  const RV_CAL = [1.3377, 1.3045, 1.2739, 1.2476, 1.216, 1.1851, 1.1585, 1.1251, 1.0874, 1.0133, 0.9748, 1.0025, 0.9985, 0.9637, 0.9933, 0.9075];
   const dlMs = n => 800 * Math.pow(1 / 800, (n - 1) / 15);
   function dlSync(n, bpm) {
     const t = dlMs(n) / 1000, b = 60 / bpm; let best = 0, bd = 1e9;
@@ -7050,24 +7056,25 @@ var BMK = (function () {
         const r = sr / DSR; this.rr = r;
         this.ri = RV_IN.map(n => { const b = new Float32Array(p2(Math.round(n * r) + 4)); return b; }); this.rn = RV_IN.map(n => Math.round(n * r));
         this.rl = RV_B.map(n => new Float32Array(p2(Math.ceil((n + 34) * r) + 4)));
-        this.rlen = Float64Array.from(RV_B, x => x * r); this.rg = new Float64Array(4);
-        this.rtl = Int32Array.from(RV_TL, x => Math.round(x * r)); this.rtr = Int32Array.from(RV_TR, x => Math.round(x * r));
+        this.rlen = new Float64Array(8); this.rg = new Float64Array(4); this.rtl = new Int32Array(7); this.rtr = new Int32Array(7); this.rsize(1);
       }
       this.st = new Float64Array(16);                                            // filters, holds, phases
-      this.w = 1 << 20; this.ph = 0; this.lfs = 0; this.lfc = 1; this.tCur = 0; this.tTgt = 0; this.tStep = 0;
+      this.w = 1 << 20; this.ph = 0; this.lfs = 0; this.lfc = 1; this.tCur = 0; this.tTgt = 0; this.tStep = 0; this.t0 = 0;
       this.clear();
     }
     clear() {
       if (this.kind === 1) { this.cb[0].fill(0); this.cb[1].fill(0); this.ap.fill(0); this.fb.fill(0); }
       else { this.db[0].fill(0); this.db[1].fill(0); for (const b of this.ri) b.fill(0); for (const b of this.rl) b.fill(0); }
-      this.st.fill(0); this.ph = 0; this.lfs = 0; this.lfc = 1; this.tCur = 0; this.tTgt = 0; this.tStep = 0; this.e = 0;
+      this.st.fill(0); this.ph = 0; this.lfs = 0; this.lfc = 1; this.tCur = 0; this.tTgt = 0; this.tStep = 0; this.t0 = 0; this.e = 0; this.apA = 0; this.apC = 0; this.inR = 0; this.inN = Math.round(.03 * this.sr);
     }
-    set(fam, n) { this.fam = fam; this.n = n; this.clear(); }
+    set(fam, n) { this.fam = fam; this.n = n; this.clear(); if (fam === 'RV') this.rsize(rvSize(n)); }
+    // the tank scale (as 'size' of dirigent-hall): short halls need a smaller tank, else one loop is longer than the decay
+    rsize(z) { const r = this.rr; for (let k = 0; k < 8; k++) this.rlen[k] = RV_B[k] * r * z; for (let k = 0; k < 7; k++) { this.rtl[k] = Math.round(RV_TL[k] * r * z); this.rtr[k] = Math.round(RV_TR[k] * r * z); } }
     // a type change inside the family: the new unit starts with the old one's input history (lines, tank), so the
     // crossfade has no onset step (rule 12); filters and phases start fresh
     copyHist(o) {
       if (this.kind === 1) { this.cb[0].set(o.cb[0]); this.cb[1].set(o.cb[1]); }
-      else { this.db[0].set(o.db[0]); this.db[1].set(o.db[1]); for (let k = 0; k < 4; k++) this.ri[k].set(o.ri[k]); for (let k = 0; k < 8; k++) this.rl[k].set(o.rl[k]); this.tCur = o.tCur; this.tTgt = o.tTgt; }
+      else { this.db[0].set(o.db[0]); this.db[1].set(o.db[1]); for (let k = 0; k < 4; k++) this.ri[k].set(o.ri[k]); for (let k = 0; k < 8; k++) this.rl[k].set(o.rl[k]); }
       this.w = o.w;
     }
     // wet signal of [i, e) into yL / yR (the input x is not changed)
@@ -7089,48 +7096,63 @@ var BMK = (function () {
         }
         const m = Math.sqrt(s * s + c * c); this.lfs = s / m; this.lfc = c / m; this.w = wi > 0x3f000000 ? wi - 0x20000000 : wi;
       } else if (f === 'CH') {
-        // CH15 / CH16: 6 first-order allpasses, 200 Hz - 3 kHz, feedback, internal 50 / 50
-        const hz = n === 15 ? .25 : .8, fbk = n === 15 ? .3 : .5, w = 2 * Math.PI * hz / sr, A = this.ap, F = this.fb;
-        let s = this.lfs, c = this.lfc;
+        // CH15 / CH16: 6 first-order allpasses, 200 Hz - 3 kHz, feedback, internal 50 / 50 (the coefficient every 8 samples,
+        // linear in between)
+        const hz = n === 15 ? .25 : .8, fbk = n === 15 ? .3 : .5, w = 2 * Math.PI * hz / sr, A = this.ap, F = this.fb, LN15 = Math.log(15);
+        let s = this.lfs, c = this.lfc, a = this.apA, da = 0, cnt = this.apC;
+        let A0 = A[0], A1 = A[1], A2 = A[2], A3 = A[3], A4 = A[4], A5 = A[5], B0 = A[6], B1 = A[7], B2 = A[8], B3 = A[9], B4 = A[10], B5 = A[11], fl = F[0], fr = F[1];
         for (; i < e; i++) {
           s += w * c; c -= w * s;
-          const fc = 200 * Math.pow(15, (1 + s) / 2), t = Math.tan(Math.PI * fc / sr), a = (t - 1) / (t + 1);
-          for (let ch = 0; ch < 2; ch++) {
-            const x = (ch ? xR[i] : xL[i]); let u = x + fbk * F[ch];
-            for (let k = 0; k < 6; k++) { const j = ch * 6 + k, y = a * u + A[j]; A[j] = u - a * y; u = y; }
-            F[ch] = u; const o = .5 * x + .5 * u; if (ch) yR[i] = o; else yL[i] = o; en += o * o;
-          }
+          if (cnt <= 0) { const fc = 200 * Math.exp(LN15 * (1 + s) / 2), t = Math.tan(Math.PI * fc / sr), an = (t - 1) / (t + 1); if (this.apA === 0 && a === 0) a = an; da = (an - a) / 8; cnt = 8; }
+          a += da; cnt--;
+          const xl = xL[i], xr = xR[i];
+          let u = xl + fbk * fl, y;
+          y = a * u + A0; A0 = u - a * y; u = y; y = a * u + A1; A1 = u - a * y; u = y; y = a * u + A2; A2 = u - a * y; u = y;
+          y = a * u + A3; A3 = u - a * y; u = y; y = a * u + A4; A4 = u - a * y; u = y; y = a * u + A5; A5 = u - a * y; u = y; fl = u;
+          let v = xr + fbk * fr;
+          y = a * v + B0; B0 = v - a * y; v = y; y = a * v + B1; B1 = v - a * y; v = y; y = a * v + B2; B2 = v - a * y; v = y;
+          y = a * v + B3; B3 = v - a * y; v = y; y = a * v + B4; B4 = v - a * y; v = y; y = a * v + B5; B5 = v - a * y; v = y; fr = v;
+          const ol = .5 * xl + .5 * u, or = .5 * xr + .5 * v; yL[i] = ol; yR[i] = or; en += ol * ol + or * or;
         }
+        A[0] = A0; A[1] = A1; A[2] = A2; A[3] = A3; A[4] = A4; A[5] = A5; A[6] = B0; A[7] = B1; A[8] = B2; A[9] = B3; A[10] = B4; A[11] = B5; F[0] = fl; F[1] = fr;
+        this.apA = a + da * cnt; this.apC = 0;
         const m = Math.sqrt(s * s + c * c); this.lfs = s / m; this.lfc = c / m;
       } else if (f === 'DT') {
-        // drive +2n dB; odd n symmetric, even n offset 0.25; low pass 12 kHz * 0.8^floor((n-1)/2); level 1 / (1 + 0.1 n); ADAA (1st order)
-        const g = Math.pow(10, 2 * n / 20), off = n % 2 ? 0 : .25, t0 = Math.tanh(off), comp = 1 / (1 + .1 * n), Q = this.st;
+        // drive +2n dB; odd n symmetric, even n offset 0.25 (before the drive: the asymmetry grows with it); low pass
+        // 12 kHz * 0.8^floor((n-1)/2); level 1 / (1 + 0.1 n); ADAA 1st order on the algebraic sigmoid u / sqrt(1 + u^2)
+        // (antiderivative sqrt(1 + u^2): one square root per sample); even n: DC block 5 Hz
+        const g = Math.pow(10, 2 * n / 20), off = n % 2 ? 0 : .25, go = g * off, t0 = go / Math.sqrt(1 + go * go), comp = 1 / (1 + .1 * n), Q = this.st;
         const fl = Math.min(12000 * Math.pow(.8, Math.floor((n - 1) / 2)), .45 * sr), al = 1 - Math.exp(-2 * Math.PI * fl / sr), dcR = Math.exp(-2 * Math.PI * 5 / sr);
+        let ul = Q[0], ur = Q[1], Fl = Math.sqrt(1 + ul * ul), Fr = Math.sqrt(1 + ur * ur), ll = Q[2], lr = Q[3], dxl = Q[4], dxr = Q[5], dyl = Q[6], dyr = Q[7];
         for (; i < e; i++) {
-          for (let ch = 0; ch < 2; ch++) {
-            const u = g * (ch ? xR[i] : xL[i]) + off, u0 = Q[ch], d = u - u0;
-            let y = Math.abs(d) > 1e-6 ? (lcosh(u) - lcosh(u0)) / d : Math.tanh(.5 * (u + u0));
-            Q[ch] = u; y = (y - t0) * comp;
-            Q[2 + ch] += al * (y - Q[2 + ch]); y = Q[2 + ch];
-            if (off) { const z = y - Q[4 + ch] + dcR * Q[6 + ch]; Q[4 + ch] = y; Q[6 + ch] = z; y = z; }
-            if (ch) yR[i] = y; else yL[i] = y; en += y * y;
-          }
+          const a = g * xL[i] + go, b = g * xR[i] + go, Fa = Math.sqrt(1 + a * a), Fb = Math.sqrt(1 + b * b);
+          let ya, yb, d = a - ul;
+          if (d > 1e-5 || d < -1e-5) ya = (Fa - Fl) / d; else { const mm = .5 * (a + ul); ya = mm / Math.sqrt(1 + mm * mm); }
+          d = b - ur; if (d > 1e-5 || d < -1e-5) yb = (Fb - Fr) / d; else { const mm = .5 * (b + ur); yb = mm / Math.sqrt(1 + mm * mm); }
+          ul = a; ur = b; Fl = Fa; Fr = Fb;
+          ya = (ya - t0) * comp; yb = (yb - t0) * comp;
+          ll += al * (ya - ll); lr += al * (yb - lr); ya = ll; yb = lr;
+          if (off) { let z = ya - dxl + dcR * dyl; dxl = ya; dyl = z; ya = z; z = yb - dxr + dcR * dyr; dxr = yb; dyr = z; yb = z; }
+          yL[i] = ya; yR[i] = yb; en += ya * ya + yb * yb;
         }
+        Q[0] = ul; Q[1] = ur; Q[2] = ll; Q[3] = lr; Q[4] = dxl; Q[5] = dxr; Q[6] = Math.abs(dyl) < 1e-15 ? 0 : dyl; Q[7] = Math.abs(dyr) < 1e-15 ? 0 : dyr;
       } else if (f === 'BC') {
         // (bits; rate), even n with a low pass 0.45 x rate; 9-16: rate x (1 +- 0.5 x triangle 0.3 Hz)
-        const k = n > 8 ? n - 8 : n, T = FX_BC[k - 1], bits = T[0], rate0 = T[1] ? T[1] * sr : T[2], q = Math.pow(2, bits - 1), Q = this.st, lp = k % 2 === 0;
-        const fc = Math.min(.45 * rate0, .45 * sr), g1 = Math.tan(Math.PI * fc / sr), A1 = 1 / (1 + g1 * (g1 + Math.SQRT2)), A2 = g1 * A1, A3 = g1 * A2;
+        const k = n > 8 ? n - 8 : n, T = FX_BC[k - 1], bits = T[0], rate0 = T[1] ? T[1] * sr : T[2], q = Math.pow(2, bits - 1), iq = 1 / q, Q = this.st, lp = k % 2 === 0;
+        const fc = Math.min(.45 * rate0, .45 * sr), g1 = Math.tan(Math.PI * fc / sr), A1 = 1 / (1 + g1 * (g1 + Math.SQRT2)), A2 = g1 * A1, A3 = g1 * A2, inc0 = rate0 / sr, tri = n > 8, dph = .3 / sr;
+        let ph = Q[0], hl = Q[1], hr = Q[2], s1 = Q[3], s2 = Q[4], s3 = Q[5], s4 = Q[6], tp = this.ph;
         for (; i < e; i++) {
-          let rate = rate0;
-          if (n > 8) { this.ph += .3 / sr; if (this.ph >= 1) this.ph -= 1; const tri = this.ph < .5 ? 4 * this.ph - 1 : 3 - 4 * this.ph; rate = rate0 * (1 + .5 * tri); }
-          Q[0] += rate / sr; if (Q[0] >= 1) { Q[0] -= Math.floor(Q[0]); Q[1] = Math.round(xL[i] * q) / q; Q[2] = Math.round(xR[i] * q) / q; }
-          let a = Q[1], b = Q[2];
+          let inc = inc0;
+          if (tri) { tp += dph; if (tp >= 1) tp -= 1; inc = inc0 * (1 + .5 * (tp < .5 ? 4 * tp - 1 : 3 - 4 * tp)); }
+          ph += inc; if (ph >= 1) { ph -= Math.floor(ph); hl = Math.round(xL[i] * q) * iq; hr = Math.round(xR[i] * q) * iq; }
+          let a = hl, b = hr;
           if (lp) {   // 2-pole Butterworth (TPT SVF low pass) at 0.45 x rate
-            let v3 = a - Q[4], v1 = A1 * Q[3] + A2 * v3, v2 = Q[4] + A2 * Q[3] + A3 * v3; Q[3] = 2 * v1 - Q[3]; Q[4] = 2 * v2 - Q[4]; a = v2;
-            v3 = b - Q[6]; v1 = A1 * Q[5] + A2 * v3; v2 = Q[6] + A2 * Q[5] + A3 * v3; Q[5] = 2 * v1 - Q[5]; Q[6] = 2 * v2 - Q[6]; b = v2;
+            let v3 = a - s2, v1 = A1 * s1 + A2 * v3, v2 = s2 + A2 * s1 + A3 * v3; s1 = 2 * v1 - s1; s2 = 2 * v2 - s2; a = v2;
+            v3 = b - s4; v1 = A1 * s3 + A2 * v3; v2 = s4 + A2 * s3 + A3 * v3; s3 = 2 * v1 - s3; s4 = 2 * v2 - s4; b = v2;
           }
           yL[i] = a; yR[i] = b; en += a * a + b * b;
         }
+        Q[0] = ph; Q[1] = hl; Q[2] = hr; Q[3] = s1; Q[4] = s2; Q[5] = s3; Q[6] = s4; this.ph = tp;
       } else if (f === 'RM') {
         // sine carrier 0.4 Hz * 2^(0.84 (n - 1)), right 90 degrees later
         const hz = .4 * Math.pow(2, .84 * (n - 1)), w = 2 * Math.PI * hz / sr;
@@ -7140,24 +7162,25 @@ var BMK = (function () {
       } else if (f === 'DL') {
         // time 800 ms * (1/800)^((n-1)/15); feedback 0.45 / 0.6 / 0.75; 5 kHz low pass in the loop (n <= 6); ping-pong (n <= 4); SYNC (DL1-8)
         const want = (P.sy && n <= 8 ? dlSync(n, P.bpm) : dlMs(n) / 1000) * sr, fbk = n <= 6 ? .45 : n <= 10 ? .6 : .75, lp = n <= 6, pp = n <= 4;
-        // a new time (tempo change with SYNC): the read pointer glides there in 50 ms
-        if (this.tCur <= 0) { this.tCur = want; this.tTgt = want; }
-        if (want !== this.tTgt) { this.tTgt = want; this.tStep = Math.abs(want - this.tCur) / (.05 * sr); }
-        const al = 1 - Math.exp(-2 * Math.PI * 5000 / sr), Q = this.st, B0 = this.db[0], B1 = this.db[1], m = this.dm, st = this.tStep;
+        // a new time (tempo change with SYNC): the read pointer glides there in 50 ms (raised cosine: no kink in the speed)
+        if (this.tCur <= 0) { this.tCur = want; this.tTgt = want; this.tStep = 0; }
+        if (want !== this.tTgt) { this.t0 = this.tCur; this.tTgt = want; this.tStep = 1; }
+        const al = 1 - Math.exp(-2 * Math.PI * 5000 / sr), Q = this.st, B0 = this.db[0], B1 = this.db[1], m = this.dm, gn = Math.round(.05 * sr);
         let wi = this.w, t = this.tCur;
         for (; i < e; i++) {
-          if (t !== want) t = t < want ? Math.min(want, t + st) : Math.max(want, t - st);
+          if (this.tStep > 0) { const x = this.tStep / gn; t = x >= 1 ? want : this.t0 + (want - this.t0) * .5 * (1 - Math.cos(Math.PI * x)); this.tStep = x >= 1 ? 0 : this.tStep + 1; }
           let p = wi - t, k = Math.floor(p), fr = p - k;
           const a = B0[k & m] * (1 - fr) + B0[(k + 1) & m] * fr, b = B1[k & m] * (1 - fr) + B1[(k + 1) & m] * fr;
           let fa = a, fb_ = b;
           if (lp) { Q[0] += al * (a - Q[0]); Q[1] += al * (b - Q[1]); fa = Q[0]; fb_ = Q[1]; }
-          if (pp) { B0[wi & m] = .5 * (xL[i] + xR[i]) + fbk * fb_; B1[wi & m] = fbk * fa; }
-          else { B0[wi & m] = xL[i] + fbk * fa; B1[wi & m] = xR[i] + fbk * fb_; }
+          let gi = 1; if (this.inR > 0) { gi = 1 - this.inR / this.inN; this.inR--; }
+          if (pp) { B0[wi & m] = .5 * (xL[i] + xR[i]) * gi + fbk * fb_; B1[wi & m] = fbk * fa; }
+          else { B0[wi & m] = xL[i] * gi + fbk * fa; B1[wi & m] = xR[i] * gi + fbk * fb_; }
           yL[i] = a; yR[i] = b; en += a * a + b * b; wi++;
         }
         this.tCur = t; this.w = wi > 0x3f000000 ? wi - 0x20000000 : wi;
       } else if (f === 'RV') {
-        en = this.reverb(xL, xR, yL, yR, i, e, 8 * Math.pow(.3 / 8, (n - 1) / 15));
+        en = this.reverb(xL, xR, yL, yR, i, e, rvT(n) * RV_CAL[n - 1]);
       } else { for (; i < e; i++) { yL[i] = 0; yR[i] = 0; } }
       this.e = en;
     }
@@ -7172,7 +7195,7 @@ var BMK = (function () {
       let w = this.w, s = this.lfs, c = this.lfc, lpL = Q[0], lpR = Q[1], hpL = Q[2], hpR = Q[3], bw = Q[4], en = 0;
       for (; i < e; i++) {
         s += lw * c; c -= lw * s;
-        let x = .5 * (xL[i] + xR[i]); bw += bwA * (x - bw); x = bw;
+        let x = .5 * (xL[i] + xR[i]); if (this.inR > 0) { x *= 1 - this.inR / this.inN; this.inR--; } bw += bwA * (x - bw); x = bw;
         let d, v;
         for (let k = 0; k < 4; k++) { const b = I[k], m = b.length - 1, gg = k < 2 ? .75 : .625; d = b[(w - N[k]) & m]; v = x - gg * d; b[w & m] = v; x = d + gg * v; }
         x += (w & 1) ? 1e-20 : -1e-20;
@@ -7202,10 +7225,10 @@ var BMK = (function () {
       this.kind = kind; this.sr = sr; this.u = [new FxUnit(kind, sr), new FxUnit(kind, sr)]; this.cur = 0; this.type = '';
       this.xf = 0; this.xn = Math.round(.03 * sr);   // 30 ms crossfade on a type change
       this.wL = new Float32Array(128); this.wR = new Float32Array(128); this.oL = new Float32Array(128); this.oR = new Float32Array(128);
-      this.quiet = 0; this.kill = 0; this.kn = Math.round(.01 * sr); this.par = {sy: 0, bpm: 120}; this.silN = 0;
+      this.quiet = 1e9; this.kill = 0; this.kn = Math.round(.01 * sr); this.par = {sy: 0, bpm: 120}; this.silN = 1e12; this.mute = 0;
     }
     grow(N) { if (this.wL.length < N) { this.wL = new Float32Array(N); this.wR = new Float32Array(N); this.oL = new Float32Array(N); this.oR = new Float32Array(N); } }
-    clear() { this.u[0].clear(); this.u[1].clear(); this.xf = 0; this.quiet = 1e9; this.silN = 1e12; }
+    clear() { this.u[0].clear(); this.u[1].clear(); this.xf = 0; this.quiet = 1e9; this.silN = 1e12; this.mute = 0; this.kill = 0; }
     // samples a silent input still sounds (the sleep must not cut a tail): echo repeats down to -140 dB, reverb 140 / 60 x RT60
     tailN() {
       const U = this.u[this.cur], n = U.n, sr = this.sr;
@@ -7218,14 +7241,20 @@ var BMK = (function () {
       if (t === this.type) return;
       const fam = t.slice(0, 2), n = +t.slice(2) | 0;
       if (!this.type || this.quiet > 4) { this.u[this.cur].set(fam, n); this.type = t; this.xf = 0; return; }
-      const nx = 1 - this.cur, old = this.u[this.cur]; this.u[nx].set(fam, n); if (old.fam === fam) this.u[nx].copyHist(old); this.cur = nx; this.type = t; this.xf = this.xn;
+      // chorus family: the new unit takes the old input history; echo / reverb: a fresh unit whose input fades in over the
+      // crossfade (its first echo then has no onset step)
+      const nx = 1 - this.cur, old = this.u[this.cur]; this.u[nx].set(fam, n); if (old.fam === fam && this.kind === 1) this.u[nx].copyHist(old); else this.u[nx].inR = this.xn; this.cur = nx; this.type = t; this.xf = this.xn;
     }
     // in place over [i, e): x = x (1 - b) + wet b; b = 0 (and no fade running): untouched
     process(L, R, i, e, b) {
-      if (b <= 0 && this.xf === 0) { if (this.kill > 0) { this.clear(); this.kill = 0; } this.quiet = 1e9; return; }
-      let peak = 0; for (let j = i; j < e; j++) { const a = Math.abs(L[j]) + Math.abs(R[j]); if (a > peak) peak = a; }
-      if (peak > 0) this.silN = 0; else this.silN += e - i;
-      if (peak === 0 && this.quiet > 4 && this.xf === 0 && this.silN > this.tailN()) return;   // sleep: silent input, tail done
+      if (this.mute > 0) { this.mute -= e - i; return; }   // after a panic: 60 ms without FX (the voices' own 3 ms fades end meanwhile)
+      if (b <= 0 && this.xf === 0) { if (this.kill > 0) { this.clear(); this.kill = 0; this.mute = Math.round(.05 * this.sr); } this.quiet = 1e9; return; }
+      // sleep: the input silent and the tail done (the input is scanned only while the slot may sleep)
+      let peak = 1;
+      if (this.quiet > 4 && this.xf === 0) {
+        peak = 0; for (let j = i; j < e; j++) if (L[j] !== 0 || R[j] !== 0) { peak = 1; break; }
+        if (peak) this.silN = 0; else { this.silN += e - i; if (this.silN > this.tailN()) return; }
+      }
       this.grow(e);
       const U = this.u[this.cur], wL = this.wL, wR = this.wR;
       U.run(L, R, wL, wR, i, e, this.par);
@@ -7238,13 +7267,17 @@ var BMK = (function () {
       const d = 1 - b;
       if (this.kill > 0) {   // panic / double stop: the wet path fades out in 10 ms, then all tails are cleared
         for (let j = i; j < e; j++) { const k = this.kill > 0 ? this.kill / this.kn : 0; if (this.kill > 0) this.kill--; L[j] = L[j] * d + wL[j] * b * k; R[j] = R[j] * d + wR[j] * b * k; }
-        if (this.kill <= 0) { this.clear(); this.kill = 0; }
+        if (this.kill <= 0) { this.clear(); this.kill = 0; this.mute = Math.round(.05 * this.sr); }
         return;
       }
       for (let j = i; j < e; j++) { L[j] = L[j] * d + wL[j] * b; R[j] = R[j] * d + wR[j] * b; }
-      this.quiet = peak === 0 && en < 1e-14 * (e - i + 1) ? this.quiet + 1 : 0;
+      if (en < 1e-14 * (e - i + 1)) {   // the wet path is silent: is the input too?
+        if (peak === 1 && this.quiet <= 4) { peak = 0; for (let j = i; j < e; j++) if (L[j] !== 0 || R[j] !== 0) { peak = 1; break; } if (!peak) this.silN += e - i; else this.silN = 0; }
+        this.quiet = peak ? 0 : this.quiet + 1;
+      } else { this.quiet = 0; if (peak) this.silN = 0; }
     }
-    panic() { if (this.quiet < 1e9) this.kill = this.kn; else this.clear(); }
+    asleep() { return this.mute > 0 || (this.xf === 0 && this.kill === 0 && this.quiet > 4 && (this.silN > 1e11 || this.silN > this.tailN())); }
+    panic() { if (this.quiet < 1e9) this.kill = this.kn; else { this.clear(); this.mute = Math.round(.06 * this.sr); } }
   }
 
   /* ---- one voice ---- */
@@ -7276,7 +7309,7 @@ var BMK = (function () {
   // per program running state: LFOs, PARA envelope, held keys
   class PState {
     constructor() {
-      this.lph = new Float64Array(2); this.lv = new Float64Array(2); this.lrnd = new Float64Array(2); this.lrng = new Int32Array(2);
+      this.lph = new Float64Array(2); this.lphP = new Float64Array(2); this.lrndP = new Float64Array(2); this.lite = 0; this.lv = new Float64Array(2); this.lsp = new Float64Array(2).fill(-1); this.lf = new Float64Array(2); this.lrnd = new Float64Array(2); this.lrng = new Int32Array(2);
       this.lt = 0;                            // seconds since the phrase start (delay / decay of the LFOs)
       this.mod = new Float64Array(NT);        // MW + AT + LFO sums of this control step (in target units)
       this.lfoA = new Float64Array(8);        // LFO slot amounts after l1a / l2a
@@ -7298,15 +7331,16 @@ var BMK = (function () {
       this.P = [this.prog(null), null]; this.ly = lyInit(); this.gl = glInit();
       this.S = [new PState(), new PState()];
       this.NV = 12; this.V = []; for (let k = 0; k < 18; k++) this.V.push(new Voice(k, this.hl));   // 12 voices + 6 crossfade slots
+      for (const v of this.V) this.clearVoice(v);
       this.q = []; this.late = 0; this.ord = 0; this.noteCnt = 0; this.seed = 0x9e3779b9; this.fi = 0; this.keepEl = new Float64Array(4); this.stole = false; this.endR = new Float64Array(512).fill(-1); this.endP = 0;
-      this.frame = 0; this.busy = 0; this.busyN = 0; this.qMax = 0; this.lastRep = 0;
+      this.frame = 0; this.qn = 0; this.busy = 0; this.busyN = 0; this.qMax = 0; this.lastRep = 0;
       this.hasPerf = typeof performance !== 'undefined' && typeof performance.now === 'function';
       // controllers: target, value, ramp step (10 ms in 1 ms steps); [bend, mw, at]
       this.cT = new Float64Array(3); this.cV = new Float64Array(3); this.cS = new Float64Array(3); this.cMoved = new Uint8Array(3);
       this.sus = false; this.lim = 0; this.trRun = false; this.bpm = 120;
-      this.gc = 0;                            // samples to the next global control step
+      this.gc = 0; this.idle = false;          // samples to the next global control step; idle: see isIdle
       // operator smoothing (rule 12): numeric sets glide 5 ms in 1 ms steps; slots [obj, key, from, to, step]
-      this.sm = []; for (let k = 0; k < 48; k++) this.sm.push({o: null, k: '', a: 0, b: 0, i: 0});
+      this.smN = 0; this.sm = []; for (let k = 0; k < 48; k++) this.sm.push({o: null, k: '', a: 0, b: 0, i: 0});
       this.tapOn = false; this.tapAll = false; this.tapK = ''; this.tapBuf = null; this.tapN = 0; this.tapV = -1;
       // BM3: FX1 per program, FX2 once (from A); the voices of each program sum into its own buffer first
       this.fx1 = [new FxSlot(1, sr), new FxSlot(1, sr)]; this.fx2 = new FxSlot(2, sr);
@@ -7323,6 +7357,9 @@ var BMK = (function () {
       D.mo = Math.max(0, MODES.indexOf(P.g.mo)); D.w[0] = Math.max(0, WAVES.indexOf(P.l1.w)); D.w[1] = Math.max(0, WAVES.indexOf(P.l2.w));
       this.slotFill(D.slots.v, P.mo.v, OKS.v); this.slotFill(D.slots.mw, P.mo.mw, OKS.mw); this.slotFill(D.slots.at, P.mo.at, OKS.mw); this.slotFill(D.slots.l1, P.l1.t, OKS.lfo); this.slotFill(D.slots.l2, P.l2.t, OKS.lfo);
       D.fm = FMODE[P.f.md] == null ? 0 : FMODE[P.f.md];
+      // FX types as (family, n): FX1 CH DT BC RM = 0..3, FX2 DL RV DT = 4, 5, 1
+      const ft = (t, fams) => { if (typeof t !== 'string' || t.length < 3) return [-1, 0]; const fi = fams.indexOf(t.slice(0, 2)), n = +t.slice(2) | 0; return fi < 0 || n < 1 || n > 16 || String(n) !== t.slice(2) ? [-1, 0] : [FXF.indexOf(t.slice(0, 2)), n]; };
+      const a = ft(P.fx.t1, FAM1), b = ft(P.fx.t2, FAM2); D.f1 = a[0]; D.n1 = a[1]; D.f2 = b[0]; D.n2 = b[1];
     }
     slotFill(o, arr, ok) { for (let i = 0; i < 4; i++) { const s = Array.isArray(arr) ? arr[i] : null, t = s ? TI[s[0]] : undefined; o[2 * i] = t !== undefined && ok[t] ? t : -1; o[2 * i + 1] = s ? num(s[1], 0) : 0; } }
     // ---------------- messages ----------------
@@ -7381,11 +7418,13 @@ var BMK = (function () {
       let s = null; for (const x of this.sm) if (x.o === o && x.k === k) { s = x; break; }
       if (s) a = o[k]; else { for (const x of this.sm) if (!x.o) { s = x; break; } }
       if (!s) { o[k] = b; return; }
-      s.o = o; s.k = k; s.a = a; s.b = b; s.i = 0;
+      s.o = o; s.k = k; s.a = a; s.b = b; s.i = 0; this.smN++;
     }
     smoothStep() {
-      let any = false;
-      for (let j = 0; j < this.sm.length; j++) { const s = this.sm[j]; if (!s.o) continue; if (Array.isArray(s.o)) any = true; s.i++; if (s.i >= 5) { s.o[s.k] = s.b; s.o = null; } else s.o[s.k] = s.a + (s.b - s.a) * s.i / 5; }
+      if (!this.smN) return;
+      let any = false, n = 0;
+      for (let j = 0; j < this.sm.length; j++) { const s = this.sm[j]; if (!s.o) continue; if (Array.isArray(s.o)) any = true; s.i++; if (s.i >= 5) { s.o[s.k] = s.b; s.o = null; } else { s.o[s.k] = s.a + (s.b - s.a) * s.i / 5; n++; } }
+      this.smN = n;
       if (any) { this.prep(0); this.prep(1); }
     }
     ctl(m) {
@@ -7409,11 +7448,11 @@ var BMK = (function () {
       this.endR.fill(-1); this.endP = 0;
       for (let i = 0; i < 3; i++) { this.cT[i] = 0; this.cV[i] = 0; this.cS[i] = 0; this.cMoved[i] = 0; }
       for (const S of this.S) { S.keys.length = 0; S.panAlt = 1; S.lastP = -1e9; this.lfoReset(S); S.es.fill(0); S.el.fill(0); S.et.fill(0); S.eq.fill(0); S.mod.fill(0); }
-      for (const s of this.sm) if (s.o) { s.o[s.k] = s.b; s.o = null; }
+      for (const s of this.sm) if (s.o) { s.o[s.k] = s.b; s.o = null; } this.smN = 0;
       this.sus = false; this.gc = 0;
       this.fx1[0].clear(); this.fx1[1].clear(); this.fx2.clear(); this.fx1[0].type = this.fx1[1].type = this.fx2.type = '';
     }
-    lfoReset(S) { S.lph.fill(0); S.lv.fill(0); S.lrng[0] = 0x2545f491; S.lrng[1] = 0x6c8e9cf5; for (let l = 0; l < 2; l++) { let r = S.lrng[l]; r ^= r << 13; r ^= r >>> 17; r ^= r << 5; S.lrng[l] = r; S.lrnd[l] = r * 4.656612873077393e-10; } S.lt = 0; S.dlyOff.fill(0); }
+    lfoReset(S) { S.lph.fill(0); S.lv.fill(0); S.lrng[0] = 0x2545f491; S.lrng[1] = 0x6c8e9cf5; for (let l = 0; l < 2; l++) { let r = S.lrng[l]; r ^= r << 13; r ^= r >>> 17; r ^= r << 5; S.lrng[l] = r; S.lrnd[l] = r * 4.656612873077393e-10; } S.lt = 0; S.dlyOff.fill(0); S.lphP.fill(0); S.lrndP.set(S.lrnd); S.lite = 0; }
     clearVoice(v) {
       v.on = false; v.ghost = false; v.id = -1; v.key = -1; v.gate = false; v.kill = 0; v.susHeld = false; v.paraRel = false; v.relOrd = 0; v.endSent = false;
       v.Z[0] = 0; v.Z[1] = 0; v.D.fill(0); v.D[11] = 1; v.xw1 = v.xw2 = 0;
@@ -7572,7 +7611,7 @@ var BMK = (function () {
         if (!S.keys.length && (mo === 4 || mo === 6) && !this.sus) for (let k = 0; k < 4; k++) if (S.es[k]) { S.es[k] = 4; S.et[k] = 0; }
       }
     }
-    fadeOut(v, tau) { if (v.gate || !v.relOrd) v.relOrd = ++this.ord; v.gate = false; v.susHeld = false; v.kill = v.kill === 2 ? 2 : 1; if (v.kill === 1) v.D[12] = Math.exp(-1 / (Math.max(tau, 1e-4) * this.sr)); for (let k = 0; k < 4; k++) if (v.es[k]) v.es[k] = 4; }
+    fadeOut(v, tau) { if (v.gate || !v.relOrd) v.relOrd = ++this.ord; v.gate = false; v.susHeld = false; v.kill = v.kill === 2 ? 2 : 1; if (v.kill === 1) v.D[12] = Math.exp(-1 / (Math.max(tau, 1e-4) * this.sr)); }   // the fade alone (time constant tau), the envelope stays
     maskTurn(v, w, m) {
       const n = Math.round(.01 * this.sr);
       if (w === 1) { if (m === v.u1) return; v.ux1 = v.u1; v.u1 = m; v.xw1 = 1; v.xd1 = 1 / n; }
@@ -7609,39 +7648,66 @@ var BMK = (function () {
       if (v.xw2 > 0) { m = clamp(Math.round(v.ux2 + v.dm2 + mod[9] + mod[11] + vm[9]), 0, 511); v.X2 = m; v.xb2 = bitsOf(m); }
     }
     // ---------------- global control step (1 ms): controllers, operator smoothing, MW / AT / LFO sums, PARA envelope ----------------
-    ctlGlobal() {
+    // the LFO part of the sums of program pi for the last control step (its kept phase and RAND value)
+    lfoSums(pi) {
+      const P = this.P[pi], S = this.S[pi], D = P.__d, mod = S.mod; S.lite = 0;
+      for (let l = 0; l < 2; l++) {
+        const L = l ? P.l2 : P.l1, sl = l ? D.slots.l2 : D.slots.l1, w = this.lfoWave(D.w[l], S.lphP[l], S.lrndP[l]);
+        // DLAY: silent until 3/4 T, fade in over the last quarter; DCAY: -60 dB after T (from the phrase start)
+        let g = 1;
+        if (L.dl > 0 && !S.dlyOff[l]) { const Td = TX(L.dl); g = S.lt >= Td ? 1 : S.lt <= .75 * Td ? 0 : (S.lt - .75 * Td) / (.25 * Td); }
+        if (L.dc > 0) g *= Math.exp(-S.lt * LN1000 / TX(L.dc));
+        const val = w * g; S.lv[l] = val;
+        const da = mod[14 + 2 * l];
+        for (let i = 0; i < 8; i += 2) { const t = sl[i]; let a = sl[i + 1]; if (i === 0 || a) a = clamp(a + da, 0, 99); S.lfoA[4 * l + (i >> 1)] = a; if (t >= 0 && a) mod[t] += val * amtU(a) * TD_[t]; }
+      }
+    }
+    // the LFO phases one control step on (the value of the step before is kept for lfoSums)
+    lfoStep(S, P, mod) {
+      S.lt += this.dt;
+      for (let l = 0; l < 2; l++) {
+        const L = l ? P.l2 : P.l1, spd = clamp(L.sp + mod[15 + 2 * l], 0, 99);
+        if (spd !== S.lsp[l]) { S.lsp[l] = spd; S.lf[l] = 0.05 * Math.pow(8000, spd / 99); }
+        S.lphP[l] = S.lph[l]; S.lrndP[l] = S.lrnd[l];
+        let ph = S.lph[l] + S.lf[l] * this.dt;
+        if (ph >= 1) { ph -= Math.floor(ph); let r = S.lrng[l]; r ^= r << 13; r ^= r >>> 17; r ^= r << 5; S.lrng[l] = r; S.lrnd[l] = r * 4.656612873077393e-10; }
+        S.lph[l] = ph;
+      }
+    }
+    ctlGlobal(lite) {
       this.smoothStep();
       for (let i = 0; i < 3; i++) if (this.cV[i] !== this.cT[i]) { const x = this.cV[i] + this.cS[i]; this.cV[i] = (this.cS[i] > 0 ? x >= this.cT[i] : x <= this.cT[i]) ? this.cT[i] : x; }
       const mw = this.cV[1], at = atCurve(this.gl.ac, this.cV[2]);
       for (let pi = 0; pi < 2; pi++) {
         const P = this.P[pi]; if (!P) continue;
-        const S = this.S[pi], D = P.__d, mod = S.mod; mod.fill(0);
+        const S = this.S[pi], D = P.__d, mod = S.mod;
+        if (lite && S.lite) this.lfoStep(S, P, mod);   // idle: MW / AT stand still (isIdle), the sums are kept
+        else {
+        mod.fill(0);
         // MW and pressure: u * value * D
         let s = D.slots.mw; for (let i = 0; i < 8; i += 2) { const t = s[i]; if (t >= 0 && s[i + 1]) mod[t] += amtU(s[i + 1]) * mw * TD_[t]; }
         s = D.slots.at; for (let i = 0; i < 8; i += 2) { const t = s[i]; if (t >= 0 && s[i + 1]) mod[t] += amtU(s[i + 1]) * at * TD_[t]; }
         // a move of MW / pressure on amount or speed of an LFO lifts its delay (section 1.8)
         if (this.cMoved[1] || this.cMoved[2]) { if (mod[14] || mod[15]) S.dlyOff[0] = 1; if (mod[16] || mod[17]) S.dlyOff[1] = 1; }
-        // LFOs (free running, one for all voices, stepwise per control step)
-        S.lt += this.dt;
-        for (let l = 0; l < 2; l++) {
-          const L = l ? P.l2 : P.l1, sl = l ? D.slots.l2 : D.slots.l1, spd = clamp(L.sp + mod[15 + 2 * l], 0, 99), f = 0.05 * Math.pow(8000, spd / 99);
-          // the value at the current phase (phase 0 at the transport start), then one step on; RAND: a new value per period
-          const w = this.lfoWave(D.w[l], S.lph[l], S.lrnd[l]);
-          let ph = S.lph[l] + f * this.dt;
-          if (ph >= 1) { ph -= Math.floor(ph); let r = S.lrng[l]; r ^= r << 13; r ^= r >>> 17; r ^= r << 5; S.lrng[l] = r; S.lrnd[l] = r * 4.656612873077393e-10; }
-          S.lph[l] = ph;
-          // DLAY: silent until 3/4 T, fade in over the last quarter; DCAY: -60 dB after T (from the phrase start)
-          let g = 1; const Td = TX(L.dl), Tc = TX(L.dc);
-          if (L.dl > 0 && !S.dlyOff[l]) g = S.lt >= Td ? 1 : S.lt <= .75 * Td ? 0 : (S.lt - .75 * Td) / (.25 * Td);
-          if (L.dc > 0) g *= Math.exp(-S.lt * LN1000 / Tc);
-          const val = w * g; S.lv[l] = val;
-          const da = mod[14 + 2 * l];
-          for (let i = 0; i < 8; i += 2) { const t = sl[i]; let a = sl[i + 1]; if (i === 0 || a) a = clamp(a + da, 0, 99); S.lfoA[4 * l + (i >> 1)] = a; if (t >= 0 && a) mod[t] += val * amtU(a) * TD_[t]; }
+        // LFOs (free running, one for all voices, stepwise per control step): the value at the current phase (phase 0 at the
+        // transport start), then one step on; RAND: a new value per period. lite (idle): only the step on; the sums of the
+        // last step are made when an event wakes the processor (lfoSums with the kept phase)
+        this.lfoStep(S, P, mod);
+        if (!lite) this.lfoSums(pi);
+        else S.lite = 1;
         }
         // PARA: one envelope set per program
         if (D.mo === 4 || D.mo === 6) { S.eq[0] = this.envStep(S.es, S.el, S.et, 0, P.o1.e, 1, 1); S.eq[1] = this.envStep(S.es, S.el, S.et, 1, P.o2.e, 1, 1); S.eq[2] = this.envStep(S.es, S.el, S.et, 2, P.n.e, 1, 1); S.eq[3] = this.envStep(S.es, S.el, S.et, 3, P.f.e, 1, 1); }
       }
       this.cMoved[1] = 0; this.cMoved[2] = 0;
+    }
+    wake() { for (let pi = 0; pi < 2; pi++) if (this.P[pi] && this.S[pi].lite) this.lfoSums(pi); }
+    // idle (no voice, every FX asleep, nothing gliding): nothing to render until the next event or control step
+    isIdle() {
+      for (let k = 0; k < this.V.length; k++) if (this.V[k].on) return false;
+      if (this.smN) return false;
+      if (this.cV[0] !== this.cT[0] || this.cV[1] !== this.cT[1] || this.cV[2] !== this.cT[2]) return false;
+      return this.fx2.asleep() && this.fx1[0].asleep() && (!this.P[1] || this.fx1[1].asleep());
     }
     lfoWave(w, ph, rnd) {
       switch (w) {
@@ -7677,7 +7743,8 @@ var BMK = (function () {
       v.dm1 = this.maskD(v.ds1, P.o1.dv, t); v.dm2 = this.maskD(v.ds2, P.o2.dv, t);
       this.masks(v, mod);
       // pitch (semitones, A4 = 69 = TUNE): key through the temperament, SEMIs, TUNE, deltas, glide, bend, routes
-      const kp = this.keyPitch(v.n), base = kp + P.g.st + v.dp + v.gld + this.cV[0] * gl.pb + mod[0] + vm[0];
+      // the key through the temperament (inline: a returned double of a non-inlined call would be a heap number per step)
+      const TT = TEMP[gl.tm] || TEMP.et, kn = v.n, kr = Math.round(kn), kc = ((kr % 12) + 12) % 12, kp = kr - kc + TT[kc] / 100 + (kn - kr) + gl.st, base = kp + P.g.st + v.dp + v.gld + this.cV[0] * gl.pb + mod[0] + vm[0];
       const p1 = base + P.o1.st + P.o1.tu / 100 + mod[1], p2 = base + P.o2.st + P.o2.tu / 100 + mod[2];
       const f1 = gl.tn * Math.pow(2, (p1 - 69) / 12), f2 = gl.tn * Math.pow(2, (p2 - 69) / 12), s = 4294967296 / (16 * sr);
       v.lastP = kp + v.gld;
@@ -7850,30 +7917,25 @@ var BMK = (function () {
         if (v.on && !(isFinite(v.D[5]) && isFinite(v.D[14]) && isFinite(v.D[15]))) { for (let i = a; i < b; i++) { if (!isFinite(pL[i])) pL[i] = 0; if (!isFinite(pR[i])) pR[i] = 0; } this.endVoice(v); }
       }
       // FX1 per program (type from A, BAL of the program), the sum, FX2 (type and BAL from A; TIME FX OFF bypasses DL / RV)
-      const A = this.P[0], tA = A.fx.t1;
+      const A = this.P[0];
       for (let p = 0; p < (two ? 2 : 1); p++) {
         const P = this.P[p], mod = this.S[p].mod, pL = this.pbL[p], pR = this.pbR[p];
-        const t = this.fxType(tA, mod[18], FAM1), bal = t ? clamp(num(P.fx.b1, 0) + mod[20], 0, 100) / 100 : 0;
+        const t = this.fxType(A.__d.f1, A.__d.n1, mod[18]), bal = t ? clamp(num(P.fx.b1, 0) + mod[20], 0, 100) / 100 : 0;
         if (t) this.fx1[p].setType(t);
         this.fx1[p].process(pL, pR, a, b, bal);
         for (let i = a; i < b; i++) { L[i] += pL[i]; R[i] += pR[i]; }
       }
-      const mod = this.S[0].mod, t2 = this.fxType(A.fx.t2, mod[19], FAM2);
+      const mod = this.S[0].mod, t2 = this.fxType(A.__d.f2, A.__d.n2, mod[19]);
       let b2 = t2 ? clamp(num(A.fx.b2, 0) + mod[21], 0, 100) / 100 : 0;
-      if (t2 && !this.gl.tf && (t2[0] === 'D' && t2[1] === 'L' || t2[0] === 'R')) b2 = 0;
+      if (t2 && !this.gl.tf && (A.__d.f2 === 4 || A.__d.f2 === 5)) b2 = 0;
       if (t2) { this.fx2.setType(t2); this.fx2.par.sy = A.fx.sy ? 1 : 0; this.fx2.par.bpm = this.bpm; }
       this.fx2.process(L, R, a, b, b2);
     }
-    // the type a FX slot plays: the stored type, LFO steps inside its family (n 1..16); '' = none
-    fxType(t, m, fams) {
-      if (typeof t !== 'string' || t.length < 3) return '';
-      const fam = t.slice(0, 2), n0 = +t.slice(2) | 0; if (fams.indexOf(fam) < 0 || n0 < 1 || n0 > 16) return '';
-      const n = m ? clamp(n0 + Math.round(m), 1, 16) : n0;
-      if (n === n0) return t;
-      const c = this.fxNames || (this.fxNames = {}); const key = fam + n; return c[key] || (c[key] = key);
-    }
+    // the type a FX slot plays: the stored type (parsed in prep), LFO steps inside its family (n 1..16); '' = none
+    fxType(fam, n0, m) { if (fam < 0) return ''; const n = m ? clamp(n0 + Math.round(m), 1, 16) : n0; return FXN[fam][n]; }
     process(ins, outs) {
-      const t0 = this.hasPerf ? performance.now() : Date.now();
+      // the own time is taken every 4th quantum (each clock read makes a heap number: rule 16) and counted 4 times
+      const tq = (this.qn++ & 3) === 0, t0 = tq ? (this.hasPerf ? performance.now() : Date.now()) : 0;
       const o = outs[0], L = o[0], R = o[1] || o[0], N = L.length, sr = this.sr, tb = currentTime;
       let i0 = 0;
       for (;;) {
@@ -7882,19 +7944,19 @@ var BMK = (function () {
         if (this.q.length && this.q[0].at < tb + (N - .5) / sr) { k = Math.round((this.q[0].at - tb) * sr); k = k < i0 ? i0 : k > N ? N : k; ev = true; }
         const gk = i0 + this.gc;
         if (gk <= k && gk < N) { k = gk; ev = false; }
-        if (k > i0) { this.seg(L, R, i0, k); this.gc -= k - i0; i0 = k; }
+        if (k > i0) { if (!this.idle) this.seg(L, R, i0, k); this.gc -= k - i0; i0 = k; }
         if (ev) {
           const e = this.q.shift();
-          this.fi = i0; this.ev(e);
+          this.fi = i0; if (this.idle) { this.wake(); this.idle = false; } this.ev(e); this.idle = this.isIdle();
           if (e.k === 1 && this.tapOn && this.tapV < 0) for (const v of this.V) if (v.on && !v.ghost && v.ord === this.ord) this.tapV = v.k;
           continue;
         }
         if (i0 >= N) break;
-        if (this.gc <= 0) { this.ctlGlobal(); this.ctlVoices(i0); this.gc = this.ctlN; }
+        if (this.gc <= 0) { const id = this.idle && this.isIdle(); this.ctlGlobal(id); this.idle = id || this.isIdle(); if (!this.idle) { this.wake(); this.ctlVoices(i0); } this.gc = this.ctlN; }
       }
       if (this.late) { this.port.postMessage({t: 'late', n: this.late}); this.late = 0; }
       this.frame += N;
-      const dq = (this.hasPerf ? performance.now() : Date.now()) - t0; this.busy += dq; this.busyN += N; if (dq > this.qMax) this.qMax = dq;
+      if (tq) { const dq = (this.hasPerf ? performance.now() : Date.now()) - t0; this.busy += 4 * dq; if (dq > this.qMax) this.qMax = dq; } this.busyN += N;
       if (this.frame - this.lastRep >= sr) {
         this.port.postMessage({t: 'load', v: this.busy / (this.busyN / sr * 1000), nv: this.countActive(), q: this.qMax});
         this.lastRep = this.frame; this.busy = 0; this.busyN = 0; this.qMax = 0;
@@ -7932,20 +7994,23 @@ async function bmkRender(msgs, o) {
 }
 /* bmkProbe (branch K, for the iPhone gate of section 2.5 until BM6's perfProbe case 'bm' is merged): one unheard 'synq-bm' node
    in the app's AudioContext plays o.voices notes (default 12) for o.sec seconds (default 10); load = the processor's own
-   time per second of audio (its {t:'load'} reports), median and maximum. o.p = program (default: both oscillators + noise). */
+   time per second of audio (its {t:'load'} reports), median and maximum. o.p = program (default: the worst case of section 2.5
+   for one track: both oscillators + noise, resonant filter with envelope, LFO routes, FX1 chorus and FX2 reverb). */
 async function bmkProbe(o) {
   o = o || {}; if (!AU.ctx) ensureAudio(); const c = AU.ctx; if (!c) return {fall: 'bm', err: 'kein AudioContext'};
   try { await bmkModule(c); } catch (e) { return {fall: 'bm', err: String(e && e.message || e)}; }
   const sec = o.sec || 10, nv = o.voices == null ? 12 : o.voices, sink = c.createGain(); sink.gain.value = 0; sink.connect(c.destination);
   const node = new AudioWorkletNode(c, 'synq-bm', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]}); node.connect(sink);
   const rep = []; node.port.onmessage = ev => { const m = ev.data; if (m && m.t === 'load') rep.push(m); };
-  node.port.postMessage({t: 'prog', ab: 'a', p: o.p || {o1: {m: 78, e: {l: 99, a: 0, d: 0, s: 15, r: 3}}, o2: {m: 255, st: 7, e: {l: 80, a: 0, d: 0, s: 15, r: 3}}, n: {fr: 99, e: {l: 40, a: 0, d: 0, s: 15, r: 3}}}});
+  node.port.postMessage({t: 'prog', ab: 'a', p: o.p || {o1: {m: 78, e: {l: 99, a: 2, d: 8, s: 10, r: 6}}, o2: {m: 255, st: 7, tu: 6, e: {l: 80, a: 0, d: 6, s: 12, r: 5}}, n: {fr: 70, e: {l: 30, a: 0, d: 5, s: 4, r: 4}},
+    f: {md: 'lp', cu: 45, re: 60, tk: 50, e: {l: 40, a: 1, d: 7, s: 5, r: 6}}, g: {mo: 'poly', vo: 80, ps: 8}, l1: {sp: 55, w: 'sin', t: [['freq', 10], ['flt', 20], ['o1m', 8], ['vol', 0]]},
+    l2: {sp: 30, w: 'saws', t: [['pan', 40], ['freq', 0], ['mask', 0], ['vol', 0]]}, fx: {t1: 'CH4', b1: 40, t2: 'RV3', b2: 30}}});
   const notes = [36, 43, 48, 52, 55, 59, 60, 62, 64, 67, 71, 72].slice(0, nv), t0 = c.currentTime + .05;
   node.port.postMessage({t: 'on', list: notes.map((n, k) => ({n, v: .8, at: t0, d: 0, id: k + 1}))});
   const w0 = performance.now(); while (performance.now() - w0 < sec * 1000 + 300) await new Promise(r => setTimeout(r, 250));
   node.port.postMessage({t: 'panic'}); await new Promise(r => setTimeout(r, 60)); node.disconnect(); sink.disconnect();
   const v = rep.slice(1).map(m => m.v).sort((a, b) => a - b), q = rep.map(m => m.q).sort((a, b) => a - b);
-  return {fall: 'bm', app: typeof VERSION !== 'undefined' ? VERSION : '', ua: navigator.userAgent, sr: c.sampleRate, voices: nv, reports: rep.length,
+  return {fall: 'bm', fx: o.p ? '' : 'CH4 + RV3', app: typeof VERSION !== 'undefined' ? VERSION : '', ua: navigator.userAgent, sr: c.sampleRate, voices: nv, reports: rep.length,
     load_med: +(v.length ? v[v.length >> 1] : 0).toFixed(4), load_max: +(v.length ? v[v.length - 1] : 0).toFixed(4), quantum_max_ms: +(q.length ? q[q.length - 1] : 0).toFixed(3)};
 }
 
