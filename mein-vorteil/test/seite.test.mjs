@@ -63,7 +63,7 @@ const SATZ = {
   vertragB: n => join(FIX, 'vertrag-b', n), // Sonderfälle der zweiten Prüfung (Versand im Preis, Ende nach 24 h, unplausibel)
 };
 
-async function oeffne({ satz = 'vertrag', jetzt = JETZT, breite = 428, hoehe = 926, pfad = '/mein-vorteil/', dunkel = false, kontext = null, sw = 'block', fehlt = [], uhr = 'fest' } = {}) {
+async function oeffne({ satz = 'vertrag', jetzt = JETZT, breite = 428, hoehe = 926, pfad = '/mein-vorteil/', dunkel = false, kontext = null, sw = 'block', fehlt = [], uhr = 'fest', patch = {}, vorher = null } = {}) {
   const ctx = kontext || await browser.newContext({
     viewport: { width: breite, height: hoehe }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
     locale: 'de-DE', timezoneId: 'Europe/Berlin', colorScheme: dunkel ? 'dark' : 'light', serviceWorkers: sw,
@@ -75,9 +75,12 @@ async function oeffne({ satz = 'vertrag', jetzt = JETZT, breite = 428, hoehe = 9
     const rest = u.pathname.replace(/^\/XanderFoxy\/Synquenzer\//, '');
     const n = DATEI[rest];
     if (!n || zustand.fehlt.has(n)) return route.fulfill({ status: 404, headers: { 'access-control-allow-origin': '*' }, body: '' });
-    return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: readFileSync(SATZ[zustand.satz](n)) });
+    let body = readFileSync(SATZ[zustand.satz](n));
+    if (patch[n]) { const d = JSON.parse(body); body = JSON.stringify(patch[n](d) ?? d); }
+    return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body });
   });
   await ctx.route(/^https:\/\/(?!raw\.githubusercontent\.com)/, route => route.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
+  if (vorher) await ctx.addInitScript(vorher);
   const page = await ctx.newPage();
   const fehler = [];
   page.on('console', m => { if (m.type() === 'error') fehler.push(m.text()); });
@@ -140,7 +143,9 @@ test('echte Daten (neue Scanner, 31.10. 16:35): Knoppers-Karte ist eindeutig', {
   assert.match(bj, /465 ml oder 4 × 100 ml/);
   assert.match(bj, /1,00 € pro 100 ml/);
   // Tiefstpreis-Antwort nennt das billigere PENNY-Angebot statt „Einziges Angebot“ (echter Fall mydealz 2861577)
-  assert.match(bj, /Tiefstpreis\?\s*unklar\s*PENNY hat 3,49 € \(mit App, ab Mo 02\.11\.\) – Packungsgröße dort nicht sicher/);
+  // (die Seite baut den Satz aus dem laufenden Angebot: ein Datumsformat auf der ganzen Karte, „ab Mo 2.11.“)
+  assert.match(bj, /Tiefstpreis\?\s*unklar\s*PENNY hat 3,49 € \(mit App, ab Mo 2\.11\.\) – Packungsgröße dort nicht sicher/);
+  assert.doesNotMatch(bj, /02\.11\./);
   assert.doesNotMatch(bj, /Einziges Angebot/);
   await bjKarte.locator('details.weitere summary').click();
   const reihe = nbsp(await bjKarte.locator('details.weitere li').innerText());
@@ -593,6 +598,149 @@ test('als Home-Bildschirm-App: startet ohne Netz aus dem eigenen Service Worker'
   assert.match(nbsp(await page.locator('[data-produkt="knoppers-schnitte"]').innerText()), /15 × 25 g/);
   assert.equal(await page.evaluate(() => document.title), 'Mein Vorteil');
   assert.deepEqual(fehler.filter(f => !/Failed to load resource|ERR_INTERNET_DISCONNECTED/.test(f)), []);
+  await ctx.close();
+});
+
+test('Tiefstpreis-Satz nennt nie ein abgelaufenes Angebot (PENNY-Fenster vorbei) und kein vergangenes „ab“', { skip: ohnePw }, async () => {
+  const bjText = async page => nbsp(await page.locator('[data-produkt="ben-jerrys"]').innerText());
+  // Di 3.11.: PENNY läuft (seit Mo) -> genannt, aber ohne „ab Mo 2.11.“
+  let o = await oeffne({ satz: 'v2', jetzt: '2026-11-03T10:00:00Z' });
+  let bj = await bjText(o.page);
+  assert.match(bj, /Tiefstpreis\?\s*unklar\s*PENNY hat 3,49 € \(mit App\) – Packungsgröße dort nicht sicher/);
+  assert.doesNotMatch(bj, /ab Mo 0?2\.11\./);
+  await o.ctx.close();
+  // PENNY sichtbarBis (2026-11-04T23:00Z) + 1 min, Daten noch vom letzten Lauf: Zeile weg und Satz neu
+  o = await oeffne({ satz: 'v2', jetzt: '2026-11-04T23:01:00Z' });
+  bj = await bjText(o.page);
+  assert.doesNotMatch(bj, /PENNY|weiteres Angebot/);
+  assert.match(bj, /Tiefstpreis\?\s*unklar\s*Einziges gefundenes Angebot in deiner Nähe · noch kein Preisverlauf/);
+  // die Seite bleibt offen: genau beim Ende wechselt der Satz von selbst
+  await o.ctx.close();
+  o = await oeffne({ satz: 'v2', jetzt: '2026-11-04T22:59:00Z', uhr: 'laeuft' });
+  assert.match(await bjText(o.page), /PENNY hat 3,49 €/);
+  await o.page.clock.fastForward('03:00');
+  await o.page.waitForFunction(() => !/PENNY/.test(document.querySelector('[data-produkt="ben-jerrys"]').textContent));
+  assert.match(await bjText(o.page), /Einziges gefundenes Angebot in deiner Nähe/);
+  assert.deepEqual(o.fehler, []);
+  await o.ctx.close();
+});
+
+test('Grundpreis bei „465 ml oder 4 × 100 ml“: die Karte sagt, für welche Packung er gilt', { skip: ohnePw }, async () => {
+  const patch = { 'schnaeppchen-current.json': d => {
+    const b = d.produkte.find(p => p.id === 'ben-jerrys').bestes;
+    b.einheitspreisVarianten = [{ packung: '4 × 100 ml', einheitspreis: 0.9975 }, { packung: '465 ml', einheitspreis: 0.858 }];
+  } };
+  const { ctx, page, fehler } = await oeffne({ satz: 'v2', patch });
+  const bj = nbsp(await page.locator('[data-produkt="ben-jerrys"] .einheit').innerText());
+  assert.equal(bj, '1,00 € pro 100 ml (bei 4 × 100 ml; 465 ml: 0,86 €)', 'Prospekt: 8,58 €/l = 0,86 € pro 100 ml');
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Preisfehler ohne bekannten Preis: „Preis siehe Angebot“ statt „jetzt ?“', { skip: ohnePw }, async () => {
+  const patch = { 'schnaeppchen-current.json': d => { d.technik.find(t => /RTX/.test(t.titel)).preis = null; } };
+  const { ctx, page, fehler } = await oeffne({ satz: 'vertrag', patch });
+  const rtx = nbsp(await page.locator('#p-angebote [data-preisfehler]', { hasText: 'RTX 5070' }).innerText());
+  assert.match(rtx, /Preis siehe Angebot\s*Originalpreis unbekannt/);
+  assert.doesNotMatch(rtx, /\?|jetzt/);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Aufgeklappte Kästen bleiben offen, wenn die Seite neu zeichnet (Rückkehr aus dem Prospekt, neue Daten)', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'v2' });
+  const weitere = page.locator('[data-produkt="ben-jerrys"] details.weitere');
+  await weitere.locator('summary').click();
+  await page.locator('#p-angebote details.kasten summary').click();
+  assert.equal(await weitere.evaluate(d => d.open), true);
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange'))); // zurück aus dem Prospekt
+  await page.locator('#neu').click(); // neue Daten
+  await geladen(page);
+  await page.waitForFunction(() => !document.getElementById('neu').hasAttribute('aria-busy'));
+  assert.equal(await weitere.evaluate(d => d.open), true, '„1 weiteres Angebot“ bleibt offen');
+  assert.equal(await page.locator('#p-angebote details.kasten').evaluate(d => d.open), true, 'Quellen bleiben offen');
+  assert.equal(await page.locator('[data-produkt="knoppers-schnitte"] details.weitere').count(), 0);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Vorteile-Zähler wie bei den Angeboten: was erst Montag beginnt, zählt nicht mit', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#vorteile' });
+  const ab = await page.locator('#p-vorteile article .marke.warm', { hasText: 'ab Mo 2.11.' }).count();
+  const karten = await page.locator('#p-vorteile article').count();
+  assert.equal(ab, 2, 'Butter und Bonne Maman');
+  assert.equal(await page.locator('#t-vorteile .n').innerText(), String(karten - ab));
+  // die Zeile nennt den Beginn im selben Format wie die Marke
+  assert.match(nbsp(await page.locator('#p-vorteile article', { hasText: 'Président' }).innerText()), /ab Mo 2\.11\./);
+  // am Montag zählen sie mit
+  await page.clock.setFixedTime(new Date('2026-11-02T08:00:00Z'));
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  assert.equal(await page.locator('#t-vorteile .n').innerText(), String(await page.locator('#p-vorteile article').count()));
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Umzug-Hinweis im alten Home-Bildschirm-Symbol: Adresse zum Kopieren statt „in Safari Teilen“', { skip: ohnePw }, async () => {
+  const vorher = () => Object.defineProperty(navigator, 'standalone', { value: true });
+  const { ctx, page, fehler } = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/?von=schnaeppchen#angebote', vorher });
+  const u = page.locator('#umzug');
+  assert.equal(await u.isVisible(), true);
+  assert.match(nbsp(await u.innerText()), /localhost:\d+\/mein-vorteil\/ in Safari öffnen, dann Teilen → Zum Home-Bildschirm/);
+  assert.equal(await u.locator('button').count(), 2);
+  await pruefeLayout(page, 'Umzug als App');
+  await u.getByRole('button', { name: 'Verstanden' }).click();
+  assert.equal(await u.isHidden(), true);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+  // in Safari (kein eigenes Fenster) bleibt der kurze Hinweis
+  const s = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/?von=schnaeppchen#angebote' });
+  assert.match(nbsp(await s.page.locator('#umzug').innerText()), /in Safari Teilen → Zum Home-Bildschirm/);
+  await s.ctx.close();
+});
+
+test('Spar-Tipps: „Zurück“ führt direkt zu Mein Vorteil (nicht über die alte Seite mit Umzug-Hinweis)', { skip: ohnePw }, async () => {
+  const { ctx, page } = await oeffne({ satz: 'v2', pfad: '/mein-vorteil/#vorteile' });
+  await page.locator('#p-vorteile details.kasten summary', { hasText: 'Spar-Tipps' }).click();
+  await page.locator('#p-vorteile a', { hasText: 'Spar-Tipps öffnen' }).click();
+  await page.waitForURL(u => u.pathname === '/vorteile/spartipps.html');
+  await page.locator('a.zurueck').click();
+  await page.waitForURL(u => u.pathname === '/mein-vorteil/');
+  await geladen(page);
+  assert.equal(new URL(page.url()).hash, '#vorteile');
+  assert.equal(await page.locator('#umzug').isHidden(), true);
+  await ctx.close();
+});
+
+test('Alte Vorteils-Adresse baut die alte Seite nicht mehr auf (keine Datenabrufe, kein Aufblitzen)', { skip: ohnePw }, async () => {
+  const ctx = await browser.newContext({ serviceWorkers: 'block' });
+  const abrufe = [];
+  await ctx.route(u => u.protocol === 'https:', r => { abrufe.push(r.request().url()); return r.fulfill({ status: 404, headers: { 'access-control-allow-origin': '*' }, body: '' }); });
+  const page = await ctx.newPage();
+  const html = [];
+  page.on('response', async r => { if (new URL(r.url()).pathname === '/vorteile/') html.push(r.url()); });
+  await page.goto(`${basis}/vorteile/#konzerte`, { waitUntil: 'commit' });
+  await page.waitForURL(u => u.pathname === '/mein-vorteil/');
+  assert.equal(new URL(page.url()).hash, '#konzerte');
+  assert.equal(html.length, 1);
+  // vor dem Weiterleiten: nur Mein Vorteils eigene fünf Datenabrufe, nicht die drei der alten Seite
+  await geladen(page);
+  await page.waitForFunction(() => /gestört|keine Verbindung/.test(document.getElementById('stand').textContent));
+  const daten = abrufe.filter(u => /raw\.githubusercontent\.com/.test(u));
+  assert.equal(daten.length, 5, daten.join('\n'));
+  assert.ok(daten.every(u => /konzerte\/data\/(konzerte|releases|status)\.json|current\.json|aktuell\.json/.test(u)));
+  await ctx.close();
+});
+
+test('Push-Hilfe quer (926 × 428): „In ntfy öffnen“ und „Schließen“ sind ohne Scrollen sichtbar', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ satz: 'v2', breite: 926, hoehe: 428 });
+  await page.locator('#push').click();
+  const d = await page.evaluate(() => { const r = document.getElementById('push-hilfe').getBoundingClientRect(); return { oben: r.top, unten: r.bottom }; });
+  for (const name of ['In ntfy öffnen', 'Schließen']) {
+    const b = await page.locator('#push-hilfe').getByRole(name === 'Schließen' ? 'button' : 'link', { name }).boundingBox();
+    assert.ok(b && b.y >= d.oben && b.y + b.height <= Math.min(428, d.unten) + 0.5, `${name}: ${JSON.stringify(b)} Dialog ${JSON.stringify(d)}`);
+  }
+  await page.screenshot({ path: join(SHOTS, 'push-hilfe-quer.png') });
+  assert.deepEqual(fehler, []);
   await ctx.close();
 });
 

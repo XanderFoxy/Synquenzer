@@ -5,7 +5,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { bestimmeMenge, einheitspreis, passt, stueckPasst, istSammeldeal, sammelTeil, norm, round, euroKurz, BASIS_LABEL } from './text.mjs';
+import { bestimmeMenge, einheitspreis, packungText, passt, stueckPasst, istSammeldeal, sammelTeil, norm, round, euroKurz, BASIS_LABEL } from './text.mjs';
 import { pruefeHistorie, eintragen, aufraeumen, statistik, tiefstSeit } from './history.mjs';
 import { referenz, refFuer, bewerte, versandkosten, technikBewertung, tiefstInfo, schaetzungPlausibel, istGeschaetzt } from './deals.mjs';
 import { pruefeDealSeiten, leereDealseiten, versandImPreis } from './preisfehler.mjs';
@@ -40,6 +40,8 @@ function ansicht(a, item) {
   return {
     shop: a.shop, titel: a.titel, beschreibung: kurz(a.beschreibung, 200),
     preis: a.preis, versand: a.versand, einheitspreis: a.einheitspreis,
+    // „465 ml oder 4 × 100 ml“: einheitspreis gilt für die teurere Packung (erste), die andere steht dabei
+    einheitspreisVarianten: a.mengeSicher && a.einheitspreisVarianten ? a.einheitspreisVarianten : null,
     // geschaetzt: nur für die bisherige Seite (zeigt dann „(geschätzt)“)
     packung: a.packung, menge: a.mengeSicher ? a.menge : { ...a.menge, geschaetzt: true }, mengeSicher: !!a.mengeSicher, mengeQuelle: a.mengeQuelle,
     preisVorher: a.quelle === 'keepa' ? null : a.preisAlt ?? null, // nur ein echter Streichpreis, kein Durchschnitt
@@ -101,7 +103,7 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       if (roh.quelle === 'mydealz' && istSammeldeal(roh.titel)) {
         const teil = sammelTeil(roh.titel, item);
         if (!teil) continue;
-        o = { ...roh, titel: teil.titel, preis: teil.preis ?? roh.preis, beschreibung: '', sammeldeal: true };
+        o = { ...roh, titel: teil.titel, preis: teil.preis ?? roh.preis, beschreibung: '', sammeldeal: true, sammelTitel: roh.titel };
       }
       const text = `${o.titel} ${o.beschreibung || ''}`;
       if (!o.online && !shopErlaubt(o.shop, cfg, text)) continue;
@@ -109,7 +111,8 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       if (o.quelle === 'mydealz') {
         if (!Number.isFinite(Date.parse(o.datum || ''))) continue;
         const z = mydealzZeit(o, item, jetztMs);
-        o = { ...o, gueltigAb: z.ab, gueltigBis: z.bis, sichtbarBis: z.sichtbarBis, nurMitApp: z.nurMitApp, preisOhneApp: z.preisOhneApp, hinweis: z.hinweis };
+        o = { ...o, gueltigAb: z.ab, gueltigBis: z.bis, sichtbarBis: z.sichtbarBis, nurMitApp: z.nurMitApp, preisOhneApp: z.preisOhneApp, hinweis: z.hinweis,
+          preisAlt: o.preisAlt ?? z.preisVorher };
         if (o.sichtbarBis && Date.parse(o.sichtbarBis) <= jetztMs) continue;
       }
       // abgelaufen = weg (kein Nachlauf; die Seite blendet zusätzlich beim Anzeigen aus)
@@ -124,8 +127,16 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       let up = einheitspreis(gesamt, mg.menge, item, versand === 0 ? o.refPreis : null);
       if (up == null) continue;
       // „465/4x100ml“: zum selben Preis gibt es auch 4 × 100 ml -> mit der teureren Variante rechnen (ehrliche Prozent)
-      if (mg.alternativ) { const alt = einheitspreis(gesamt, mg.alternativ, item, null); if (alt > up) up = alt; }
-      const a = { ...o, versand, preis: gesamt, einheitspreis: up, ...mg };
+      // Auf der Karte steht dazu, für welche Packung der Preis gilt und was die andere kostet (Prospekt rechnet oft mit der anderen)
+      let varianten = null;
+      if (mg.alternativ) {
+        const alt = einheitspreis(gesamt, mg.alternativ, item, null);
+        if (alt > up) {
+          varianten = [{ packung: packungText(mg.alternativ), einheitspreis: alt }, { packung: packungText(mg.menge), einheitspreis: up }];
+          up = alt;
+        }
+      }
+      const a = { ...o, versand, preis: gesamt, einheitspreis: up, einheitspreisVarianten: varianten, ...mg };
       // implausible (probably a different product or a parsing error): show, but never alert
       a.unsicher = ref.p > 0 && (up < ref.p * 0.15 || up > ref.p * 6);
       a.laeuft = !a.gueltigAb || Date.parse(a.gueltigAb) <= jetztMs;
@@ -164,6 +175,7 @@ export async function scan({ cfg, watchlist, history, sent, dealseiten, holeText
       kandidaten.push({
         typ: 'produkt', id: item.id, name: item.name, basis: item.basis, titel: bestes.titel, shop: bestes.shop,
         packung: bestes.packung, preis: bestes.preis, versand: bestes.versand, online: bestes.online, einheitspreis: bestes.einheitspreis,
+        einheitspreisVarianten: bestes.einheitspreisVarianten || null,
         normalpreis: rb.p, normalGeschaetzt: p.normalGeschaetzt, tiefstpreis: p.tiefstpreis, tiefstText: tiefst.text,
         ersparnis: bestes.ersparnis, grund: bestes.grund, gueltigAb: bestes.gueltigAb, gueltigBis: bestes.gueltigBis,
         startetSpaeter: !bestes.laeuft, link: bestes.link,

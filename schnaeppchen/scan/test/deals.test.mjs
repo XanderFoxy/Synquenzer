@@ -68,16 +68,16 @@ test('Ist das der Tiefstpreis? – ehrliche Antwort', () => {
   eintragen(h, 'k', 'stueck', { p: 0.186, shop: 'Kaufland' }, T0);
   let st = statistik(h, 'k', 56, T0);
   const eins = tiefstInfo({ bestes: kauf, sichere: [kauf], stats: st, tiefst30: tiefstSeit(h, 'k', 30, T0), basis: 'stueck', cfg });
-  assert.deepEqual(eins, { status: 'unbekannt', text: 'Einziges Angebot in deiner Nähe · Verlauf erst seit 1 Tag', heuteGuenstigstes: true, tage: 1, tiefst30: 0.186, anzahl: 1, anzahlSicher: 1 });
+  assert.deepEqual(eins, { status: 'unbekannt', text: 'Einziges gefundenes Angebot in deiner Nähe · Verlauf erst seit 1 Tag', heuteGuenstigstes: true, tage: 1, tiefst30: 0.186, anzahl: 1, anzahlSicher: 1 });
   const zwei = { einheitspreis: 0.25, mengeSicher: true, online: true };
   assert.match(tiefstInfo({ bestes: kauf, sichere: [kauf, zwei, zwei], stats: st, tiefst30: null, basis: 'stueck', cfg }).text,
-    /^Günstigstes von 3 Angeboten in deiner Nähe und online · /);
+    /^Günstigstes von 3 gefundenen Angeboten in deiner Nähe und online · /);
   // eine Woche Verlauf, nie billiger -> ja
   for (let d = 1; d <= 6; d++) eintragen(h, 'k', 'stueck', { p: 0.3, shop: 'Netto' }, T0 - d * 864e5);
   st = statistik(h, 'k', 56, T0);
   const ja = tiefstInfo({ bestes: kauf, sichere: [kauf], stats: st, tiefst30: tiefstSeit(h, 'k', 30, T0), basis: 'stueck', cfg });
   assert.equal(ja.status, 'ja');
-  assert.equal(ja.text, 'Einziges Angebot in deiner Nähe · so günstig wie nie in 7 Tagen');
+  assert.equal(ja.text, 'Einziges gefundenes Angebot in deiner Nähe · so günstig wie nie in 7 Tagen');
   // vor 3 Tagen gab es das schon billiger -> nein
   eintragen(h, 'k', 'stueck', { p: 0.15, shop: 'Lidl' }, T0 - 3 * 864e5);
   const nein = tiefstInfo({ bestes: kauf, sichere: [kauf], stats: statistik(h, 'k', 56, T0), tiefst30: tiefstSeit(h, 'k', 30, T0), basis: 'stueck', cfg });
@@ -95,17 +95,17 @@ test('Tiefstpreis: ein billigeres Angebot mit unklarer Packung zählt mit – ni
   const st = { tage: 0 };
   const t = tiefstInfo({ bestes: lidl, sichere: [lidl], angebote: [lidl, penny], stats: st, tiefst30: null, basis: '100ml', cfg, jetztMs: J });
   assert.equal(t.status, 'unbekannt');
-  assert.equal(t.text, 'PENNY hat 3,49 € (mit App, ab Mo 02.11.) – Packungsgröße dort nicht sicher');
+  assert.equal(t.text, 'PENNY hat 3,49 € (mit App, ab Mo 2.11.) – Packungsgröße dort nicht sicher');
   assert.equal(t.heuteGuenstigstes, false);
   assert.equal(t.anzahl, 2);
   assert.doesNotMatch(t.text, /Einziges/);
   // teurer und Packung unklar: kein „Einziges Angebot“, sondern „mit bekannter Packungsgröße“
   const teuer = { ...penny, preis: 4.49 };
   assert.equal(tiefstInfo({ bestes: lidl, sichere: [lidl], angebote: [lidl, teuer], stats: st, tiefst30: null, basis: '100ml', cfg, jetztMs: J }).text,
-    'Einziges Angebot mit bekannter Packungsgröße in deiner Nähe · noch kein Preisverlauf');
+    'Einziges gefundenes Angebot mit bekannter Packungsgröße in deiner Nähe · noch kein Preisverlauf');
   // unplausible Treffer (eher ein anderes Produkt) zählen nicht
   assert.equal(tiefstInfo({ bestes: lidl, sichere: [lidl], angebote: [lidl, { ...penny, unsicher: true }], stats: st, tiefst30: null, basis: '100ml', cfg, jetztMs: J }).text,
-    'Einziges Angebot in deiner Nähe · noch kein Preisverlauf');
+    'Einziges gefundenes Angebot in deiner Nähe · noch kein Preisverlauf');
 });
 
 test('Geschätzter Normalpreis je Packungsgröße (Knoppers: 15er-Familienpackung ist pro Stück günstiger als einzeln)', () => {

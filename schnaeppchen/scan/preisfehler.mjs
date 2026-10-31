@@ -72,7 +72,7 @@ const VORHER_MUSTER = [
   { quelle: 'UVP', re: new RegExp(String.raw`\buvp\b(?:\s*(?:von|liegt bei|bei|:|ca\.?|rund))*\s*${Z}(${EURO})?`, 'gi'), euroNoetig: false },
   { quelle: 'Vergleichspreis laut Deal-Text', re: new RegExp(String.raw`\b(?:vergleichspreis|preisvergleich|pvg|vgp|idealo)\b[^0-9€\n]{0,40}?${Z}(${EURO})?`, 'gi'), euroNoetig: false },
   { quelle: 'statt-Preis laut Deal-Text', re: new RegExp(String.raw`\b(?:an)?statt\b(?:\s+(?:der|dem|den|regul[aä]ren|üblichen|ca\.?|rund|bisher|zuvor|von))*\s*${Z}(${EURO})`, 'gi'), euroNoetig: true },
-  { quelle: 'Normalpreis laut Deal-Text', re: new RegExp(String.raw`\b(?:normalerweise|normalpreis|regul[aä]r|ursprünglich)\b[^0-9€\n]{0,30}?${Z}(${EURO})`, 'gi'), euroNoetig: true },
+  { quelle: 'Normalpreis laut Deal-Text', re: new RegExp(String.raw`\b(?:normalerweise|normalpreis|regul[aä]r(?:e[rnms]?)?|ursprünglich)\b(?!\s+uvp\b)[^0-9€\n]{0,30}?${Z}(${EURO})`, 'gi'), euroNoetig: true },
 ];
 const VERSAND_DANACH = /^[^.!?\n]{0,25}(?:versand|vsk|porto|liefer)/i;
 const SPANNE_DANACH = /^\s*(?:€|eur|euro)?\s*(?:bis|-|–)\s*\d/i;

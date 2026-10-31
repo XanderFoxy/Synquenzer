@@ -168,5 +168,5 @@ test('Kurze Suchwörter nur am Wortanfang (Minis ≠ Schnitte, Eis ≠ Preis)', 
 test('Zeitpunkt deutsch (Berliner Zeit)', () => {
   assert.equal(zeitpunktText('2026-10-31T18:00:00Z'), 'Sa 31.10. 19:00');
   assert.equal(zeitpunktText('2026-10-31T22:59:00Z'), 'Sa 31.10.');
-  assert.equal(zeitpunktText('2026-11-01T23:00:00Z'), 'Mo 02.11.');
+  assert.equal(zeitpunktText('2026-11-01T23:00:00Z'), 'Mo 2.11.', 'wie auf der Seite: ohne führende Nullen');
 });

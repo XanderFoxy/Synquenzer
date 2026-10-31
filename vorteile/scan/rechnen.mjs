@@ -98,6 +98,17 @@ export function couponImPreis(text, preis, coupon) {
   return false;
 }
 
+/** Wo gibt es den Coupon? Nur wenn der Text es im Satz mit dem Coupon sagt („Coupon in der EDEKA-App“) – sonst ''. */
+export function couponWo(text) {
+  for (const satz of String(text || '').split(/(?<=[.!?])\s+/)) {
+    if (!/coupon|gutschein/i.test(satz)) continue;
+    const m = satz.match(/\b(?:in|über|ueber|mit|aus)\s+(?:der|dem|die)\s+([A-ZÄÖÜ][\wäöüß]*-?App|App|Kundenkarte|DeutschlandCard|Payback-App|Couponheft|Coupon-Heft|Zeitung|Prospekt)\b/)
+      || satz.match(/\b(?:auf|im)\s+(coupons\.de|Markt|Aufsteller|Prospekt|Couponheft)\b/i);
+    if (m) return /^(Markt|Aufsteller)$/i.test(m[1]) ? 'gibt es im Markt' : `gibt es ${/^(coupons\.de)$/i.test(m[1]) ? 'auf ' : /^(Prospekt|Couponheft)$/i.test(m[1]) && /\bim\b/i.test(m[0]) ? 'im ' : /App|Karte|Card|Heft|Zeitung/.test(m[1]) ? 'in der ' : 'im '}${m[1]}`;
+  }
+  return '';
+}
+
 /** Welche Coupons dürfen zusammen? Ein Markt-Coupon (der beste) + je Anbieter ein Cashback. */
 export function stapelCoupons(coupons, basisBetrag) {
   const markt = coupons.filter(c => c.art === 'markt')
@@ -163,12 +174,18 @@ export function rechne(o) {
   }
 
   const schritte = [];
+  // Coupon steckt schon im Deal-Preis (1 Packung): im Laden steht der Regalpreis -> den zeigen und vorrechnen
+  const regal = imPreis && o.couponAbgezogen && !aktionText && packungen === 1 && einzel && coupons.length
+    ? round(einzel + coupons.reduce((s, c) => s + c.betrag, 0)) : null;
+  const wo = regal ? couponWo(o.text) : '';
   if (aktionText) schritte.push(`${wdh}× „${aktionText}“${a.limit ? ` (max. ${a.limit}${a.limitEinheit === 'stueck' ? ' Stück' : '×'} pro Kunde)` : ''} = ${packungen} Packungen`);
+  else if (regal) schritte.push(`Regalpreis ${euro(regal)} − ${coupons.map(c => `${euro(c.betrag)} ${c.art === 'cashback' ? c.name : 'Coupon'}`).join(' − ')} = ${euro(einzel)}`);
   else schritte.push(`${packungen} Packung${packungen > 1 ? 'en' : ''} zu je ${euro(einzel)}`);
   if (a.extraMenge || a.extraProzent) schritte.push(`Aktionspackung: ${gramm} g statt ${o.gramm} g`);
   for (const c of coupons) {
     const wie = o.couponAbgezogen ? 'im Preis schon abgezogen' : 'nicht eingerechnet';
-    if (imPreis) schritte.push(c.art === 'cashback' ? `${c.name} nutzen (${euro(c.betrag)} – ${wie})` : `${c.name} an der Kasse zeigen (${euro(c.betrag)} – ${wie})`);
+    if (regal) schritte.push(c.art === 'cashback' ? `danach Kassenbon bei ${c.name} hochladen (${euro(c.betrag)} zurück)` : `${c.name}${wo ? ` (${wo})` : ''} an der Kasse zeigen – ohne ${c.name} zahlst du ${euro(regal)}`);
+    else if (imPreis) schritte.push(c.art === 'cashback' ? `${c.name} nutzen (${euro(c.betrag)} – ${wie})` : `${c.name} an der Kasse zeigen (${euro(c.betrag)} – ${wie})`);
     else schritte.push(c.art === 'cashback' ? `danach ${c.name}: ${euro(c.betrag)} zurück (Kassenbon hochladen)` : `${c.name} an der Kasse: −${euro(c.betrag)}`);
   }
   if (versand) schritte.push(`plus ${euro(versand)} Versand${o.versandHinweis ? ` (${o.versandHinweis})` : ''}`);

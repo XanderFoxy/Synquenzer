@@ -96,6 +96,22 @@ test('aufraeumen: Vorbei raus (auch Übernommenes), gleicher Link nur in der spe
   assert.deepEqual(k.reisen.map(e => e.id), ['d']);
 });
 
+test('aufraeumen: gleicher Link als Preisfehler (deals) und normal (tests/reisen) -> die Preisfehler-Kopie bleibt', () => {
+  const L = 'https://www.mydealz.de/deals/mid-you-eckschreibtisch-2860001';
+  const pf = { id: 'pf', link: L, preisfehler: true, sichtbarBis: '2026-11-01T10:00:00Z', preisVorher: 199, preis: 39 };
+  const k = {
+    deals: [pf],
+    tests: [{ id: 'freebie', link: L, preisfehler: false, sichtbarBis: '2026-11-07T10:00:00Z' }],
+    reisen: [{ id: 'reise', link: L, preisfehler: false, sichtbarBis: '2026-11-04T10:00:00Z' }],
+  };
+  aufraeumen(k, new Date('2026-10-31T12:00:00Z'));
+  assert.deepEqual([k.deals.map(e => e.id), k.tests.map(e => e.id), k.reisen.map(e => e.id)], [['pf'], [], []]);
+  // nach 24 h ist der Preisfehler weg – und kommt nicht als normaler Eintrag (7 Tage) zurück
+  const k2 = { deals: [pf], tests: [{ id: 'freebie', link: L, preisfehler: false, sichtbarBis: '2026-11-07T10:00:00Z' }] };
+  aufraeumen(k2, new Date('2026-11-01T10:30:00Z'));
+  assert.deepEqual([k2.deals.length, k2.tests.length], [0, 1], 'abgelaufener Preisfehler zählt nicht mehr – dann darf die andere Kopie bleiben');
+});
+
 test('Deal-Seite (echt): abgelaufen, Vergleichspreis, Versand, Ende', async () => {
   const voll = leseDealSeite(await lies('echt/deal-2861129-lumaland-voll.html'));
   assert.deepEqual([voll.id, voll.preis, voll.vergleichspreis, voll.abgelaufen, voll.ende, voll.haendler],
@@ -162,7 +178,7 @@ test('echte Daten 31.10. 16:30: kein abgelaufener Preisfehler mehr (vorher 3 als
   const pres = d.eintraege.find(e => /Président/.test(e.titel));
   assert.equal(pres.bis, '2026-11-07T22:59:59.000Z');
   assert.equal(pres.ab, '2026-11-01T23:00:00.000Z');
-  assert.match(pres.zeile, /^ab 02\.11\.2026 · /);
+  assert.match(pres.zeile, /^ab Mo 2\.11\. · /);
   const r = await reisen(ctx);
   assert.ok(!r.eintraege.some(e => /HARBR/.test(e.titel)));
   assert.equal(r.eintraege.find(e => /SAS Sale/.test(e.titel)).bis, '2026-11-02T22:59:59.000Z');
@@ -230,7 +246,7 @@ test('Schnäppchen-Daten nach neuem Datenvertrag: bis mit Uhrzeit, ab in der Zuk
   const e = r.eintraege[0];
   assert.equal(e.titel, 'Ben & Jerry\'s bei Lidl', 'Großhandel nicht gewählt, obwohl billiger');
   assert.deepEqual([e.bis, e.bisQuelle, e.ab, e.frist], ['2026-11-07T22:59:00.000Z', 'feld', '2026-11-01T23:00:00.000Z', '2026-11-07']);
-  assert.match(e.zeile, /^ab 02\.11\.2026 · 1 Packung à 465 ml für 3,99\s€ statt 6,98\s€ \(−43 %\)/, 'ohne Mehrkauf-Aktion genau 1 Packung');
+  assert.match(e.zeile, /^ab Mo 2\.11\. · 1 Packung à 465 ml für 3,99\s€ statt 6,98\s€ \(−43 %\)/, 'ohne Mehrkauf-Aktion genau 1 Packung');
   assert.match(e.zeile, /Normalpreis geschätzt$/);
   assert.equal(e.preisVorher, null);
 });

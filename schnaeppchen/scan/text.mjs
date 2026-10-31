@@ -90,7 +90,7 @@ export function parseMenge(text) {
 
 // Mehrere Produkte mit je eigenem Preis in einem Titel ("Ben Jerrys 3,49 / Kartoffeln 7,5KG 4,44 / …"):
 // die Mengen im Text gehören dann zu anderen Produkten.
-const SAMMEL_TRENNER = /\s[\/|;]\s|\s\+\s/;
+export const SAMMEL_TRENNER = /\s[\/|;]\s|\s\+\s/;
 const SAMMEL_PREIS = /\d+,\d{2}(?!\s*(?:kg|g|ml|l)\b)/gi;
 export function istSammeldeal(titel) {
   const teile = String(titel || '').split(SAMMEL_TRENNER);
@@ -236,8 +236,8 @@ export const euroKurz = v => (v == null || !Number.isFinite(v) ? '–'
 export function zeitpunktText(iso) {
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return '';
-  const teile = Object.fromEntries(new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', weekday: 'short', day: '2-digit',
-    month: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d).map(x => [x.type, x.value]));
+  const teile = Object.fromEntries(new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', weekday: 'short', day: 'numeric',
+    month: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d).map(x => [x.type, x.value]));
   const tag = `${teile.weekday.replace('.', '')} ${teile.day}.${teile.month}.`;
   const uhr = `${teile.hour}:${teile.minute}`;
   return uhr === '23:59' || uhr === '00:00' ? tag : `${tag} ${uhr}`;

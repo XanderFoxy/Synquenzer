@@ -11,9 +11,9 @@ import { fileURLToPath } from 'node:url';
 import { abAus, endeAus, bestimmeEnde } from '../lib/ende.mjs';
 import { macheFixtureAbruf } from '../lib/http.mjs';
 import { macheDealPruefer } from '../lib/mydealz.mjs';
-import { parseAktion, couponImPreis, rechne } from '../rechnen.mjs';
+import { parseAktion, couponImPreis, rechne, couponWo } from '../rechnen.mjs';
 import deals, { versandFuer } from '../module/deals.mjs';
-import reisen, { abflugOrt, preisZusatz } from '../module/reisen.mjs';
+import reisen, { abflugOrt, preisZusatz, istAbPreis, preisProPersonAusText } from '../module/reisen.mjs';
 import { artVon } from '../module/tests.mjs';
 import { preisfehlerEintrag } from '../module/gemeinsam.mjs';
 
@@ -65,16 +65,17 @@ test('Ohne Mehrkauf-Aktion genau 1 Packung; mit echter Aktion weiter Vorrat (3 f
   const c = rechne({ aktion: parseAktion(BUTTER), text: BUTTER, einzelpreis: 1.49, normalEinzelpreis: 4.99, couponsImPreis: true, couponAbgezogen: true });
   assert.equal(c.zahlen, 1.49);
   assert.equal(c.proPackung, 1.49);
-  assert.deepEqual(c.schritte.map(nb), ['1 Packung zu je 1,49 €', 'Coupon an der Kasse zeigen (1,00 € – im Preis schon abgezogen)']);
+  // im Laden steht 2,49 € am Regal: vorrechnen, und dass der Coupon nötig ist
+  assert.deepEqual(c.schritte.map(nb), ['Regalpreis 2,49 € − 1,00 € Coupon = 1,49 €', 'Coupon an der Kasse zeigen – ohne Coupon zahlst du 2,49 €']);
 });
 
 test('Echt 17:39: Butter 1 Packung für 1,49 € (−70 %), ROTH mit Vergleichspreis von mydealz und Versand ohne Prime, Bonne Maman ab Montag', async () => {
   const r = await deals({ holeText: abruf(), cfg, zustand: {}, jetzt: JETZT });
   const e = n => r.eintraege.find(x => n.test(x.titel));
   const butter = e(/Président/);
-  assert.equal(nb(butter.zeile), 'ab 02.11.2026 · 1 Packung für 1,49 € statt 4,99 € (−70 %)');
+  assert.equal(nb(butter.zeile), 'ab Mo 2.11. · 1 Packung für 1,49 € statt 4,99 € (−70 %)', 'Datum wie auf der Seite');
   assert.equal(butter.ersparnisProzent, 70, 'Zeile und Daten sagen dasselbe');
-  assert.deepEqual(butter.extra.schritte.map(nb), ['1 Packung zu je 1,49 €', 'Coupon an der Kasse zeigen (1,00 € – im Preis schon abgezogen)']);
+  assert.deepEqual(butter.extra.schritte.map(nb), ['Regalpreis 2,49 € − 1,00 € Coupon = 1,49 €', 'Coupon an der Kasse zeigen – ohne Coupon zahlst du 2,49 €']);
   assert.doesNotMatch(nb(butter.zeile + butter.soGehts), /10 Packungen|1,24|2,49|−75/);
   const roth = e(/ROTH/);
   // nextBestPrice 20,99 € (mydealz) statt UVP 26,99 €; 9,99 € ist ein Prime-Preis -> ohne Prime + 3,99 € Versand
@@ -84,7 +85,7 @@ test('Echt 17:39: Butter 1 Packung für 1,49 € (−70 %), ROTH mit Vergleichsp
   assert.doesNotMatch(nb(roth.zeile + roth.soGehts), /10 Packungen|99,90|269,90|−63/);
   const bm = e(/Bonne Maman/);
   assert.equal(bm.ab, '2026-11-01T23:00:00.000Z', '„ab Montag, dem 02.11.26“');
-  assert.equal(nb(bm.zeile), 'ab 02.11.2026 · 1 Packung für 2,00 € statt 2,99 € (−33 %)');
+  assert.equal(nb(bm.zeile), 'ab Mo 2.11. · 1 Packung für 2,00 € statt 2,99 € (−33 %)');
   assert.equal(bm.vorherQuelle, 'Vergleichspreis laut mydealz');
   // Ende laut Deal-Seite schon vorbei (isExpired noch false) -> nicht zeigen, auch wenn der Text länger klingt
   const h = abruf();
@@ -111,13 +112,27 @@ test('Reisen (echt): nur der gefundene Flughafen, „pro Strecke“/„oneway“
   const r = await reisen({ holeText: abruf(), cfg, zustand: {}, jetzt: JETZT });
   const z = n => nb(r.eintraege.find(x => n.test(x.titel)).zeile);
   assert.equal(z(/SAS Sale/), 'ab 49,00 € pro Strecke · ab Berlin');
-  assert.equal(z(/Ryanair/), '16,99 € oneway · ab Berlin');
-  assert.equal(z(/Eisenstadt/), '109,00 € für 2 Personen statt 233,00 € · −53 %');
+  // „Flüge ab 17€“ (Titel) bzw. „Flüge ab 16,99€“ (Text): ein Ab-Preis, kein fester Flug für 16,99 €
+  assert.equal(z(/Ryanair/), 'ab 16,99 € oneway · ab Berlin');
+  assert.equal(z(/Eisenstadt/), 'ab 109,00 € für 2 Personen statt 233,00 € · −53 %', 'Titel: „ab 54,50€ p.P.“');
   assert.doesNotMatch(r.eintraege.map(e => e.zeile).join(' '), /Leipzig\/Dresden\/Berlin/);
   const m = cfg.module.reisen;
   assert.equal(abflugOrt('Flüge ab LEJ nach Mallorca', m), 'Leipzig');
   assert.equal(abflugOrt('Hotel in Dresden', m), null, 'ohne Flug kein Abflug');
   assert.equal(preisZusatz('Flüge ab 49€/Strecke', '', 49), 'pro Strecke');
+  assert.equal(istAbPreis('Hotel für 99€', 'Zimmer für 99 €', 99), false);
+  // Urlaubspiraten (echter Text 31.10.): Preis nur in der Beschreibung
+  assert.equal(preisProPersonAusText('Ihr bezahlt gerade mal 985 € p.P. für 10 Nächte inklusive Flügen.'), 985);
+  assert.equal(preisProPersonAusText('ab 1.299 € pro Person'), 1299);
+  assert.equal(preisProPersonAusText('Hotel mit 4 Sternen'), null);
+});
+
+test('Coupon: wo es ihn gibt, nur wenn der Text es im Coupon-Satz sagt', () => {
+  assert.equal(couponWo('Den Coupon gibt es in der EDEKA-App.'), 'gibt es in der EDEKA-App');
+  assert.equal(couponWo(BUTTER), '', 'echter Text 2862219 sagt nicht, wo');
+  const t = 'Butter für 2,49 €. Mit dem 1-€-Coupon zahlt ihr nur 1,49 €. Den Coupon gibt es in der EDEKA-App.';
+  const r = rechne({ aktion: parseAktion(t), text: t, einzelpreis: 1.49, normalEinzelpreis: 4.99, couponsImPreis: true, couponAbgezogen: true });
+  assert.equal(nb(r.schritte[1]), 'Coupon (gibt es in der EDEKA-App) an der Kasse zeigen – ohne Coupon zahlst du 2,49 €');
 });
 
 test('Ticket-Verlosungen ohne Teilnahmeschluss: höchstens 6 Tage (DOK Leipzig vom 18.10. ist am 31.10. weg)', () => {

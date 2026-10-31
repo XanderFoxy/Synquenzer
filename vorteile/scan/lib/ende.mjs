@@ -192,7 +192,8 @@ const VORRANG = ['reisen', 'musik', 'erleben', 'tests', 'nebenverdienst'];
 
 /**
  * Vor dem Speichern: Einträge, die vorbei sind (bis oder sichtbarBis < jetzt), entfernen – auch übernommene aus
- * Modulen, die in diesem Lauf nicht dran waren. Gleicher Link in mehreren Kategorien -> nur in der spezielleren.
+ * Modulen, die in diesem Lauf nicht dran waren. Gleicher Link in mehreren Kategorien -> nur in der spezielleren;
+ * ist eine Kopie ein Preisfehler (preisfehler: true, 24-h-Fenster, vorher → jetzt), bleibt immer diese.
  * Ändert kategorien direkt und gibt es zurück.
  */
 export function aufraeumen(kategorien, jetzt = new Date()) {
@@ -206,10 +207,13 @@ export function aufraeumen(kategorien, jetzt = new Date()) {
     });
   }
   const namen = Object.keys(kategorien).sort((a, b) => (VORRANG.indexOf(a) + 1 || 99) - (VORRANG.indexOf(b) + 1 || 99));
-  const gesehen = new Set();
+  const gesehen = new Set(), preisfehlerIn = new Map(); // Link -> Kategorie der Preisfehler-Kopie
+  for (const name of namen) for (const e of kategorien[name]) if (e.preisfehler === true && e.link && !preisfehlerIn.has(e.link)) preisfehlerIn.set(e.link, name);
   for (const name of namen) {
     kategorien[name] = kategorien[name].filter(e => {
       if (!e.link || !/^https?:/.test(e.link) || /\/vorteile\/?$/.test(e.link)) return true;
+      const pf = preisfehlerIn.get(e.link);
+      if (pf && (pf !== name || e.preisfehler !== true)) return false;
       if (gesehen.has(e.link)) return false;
       gesehen.add(e.link);
       return true;

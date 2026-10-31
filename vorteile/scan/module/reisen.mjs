@@ -41,6 +41,20 @@ export function preisZusatz(titel, text, preis) {
 
 // Preis aus Reise-Titeln: "für 19 €", "ab 29€", "nur 9,99 €"
 const preisAusTitel = t => { const m = String(t).match(/(?:ab|für|fuer|nur|je)\s*(\d+(?:[.,]\d{1,2})?)\s*(?:€|euro|eur)/i); return m ? parsePrice(m[1]) : null; };
+// Urlaubspiraten/Urlaubsguru nennen den Preis oft nur im Text: „Ihr bezahlt gerade mal 985 € p.P.“
+export function preisProPersonAusText(text) {
+  const m = String(text || '').match(/(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+)\s*(?:€|euro|eur)\s*(?:p\.\s?p\.|pro person)/i);
+  return m ? parsePrice(m[1].replace(/\.(?=\d{3})/g, '')) : null;
+}
+/** Ist der Preis ein „ab“-Preis? „Flüge ab 17€“ bei 16,99 (gerundet), „ab 54,50€ p.P.“ im Titel, oder der Text sagt „ab 16,99€“. */
+export function istAbPreis(titel, text, preis) {
+  if (preis == null) return false;
+  const ti = String(titel || '');
+  if (new RegExp(`\\bab\\s*(?:${Math.floor(preis)}|${Math.round(preis)})(?![\\d])`, 'i').test(ti)) return true;
+  if (/\bab\s*\d+(?:[.,]\d{1,2})?\s*(?:€|eur|euro)/i.test(ti)) return true;
+  const p = preis.toFixed(2).replace(/\.00$/, '(?:[.,]0{1,2})?').replace('.', '[.,]');
+  return new RegExp(`\\bab\\s*${p}\\s*(?:€|eur|euro)`, 'i').test(String(text || ''));
+}
 
 export default async function reisen({ holeText, cfg, jetzt, zustand }) {
   const m = cfg.module.reisen;
@@ -55,7 +69,9 @@ export default async function reisen({ holeText, cfg, jetzt, zustand }) {
     const bahn = enthaelt(text, m.bahnWoerter);
     const flug = FLUG.test(text);
     const knaller = zaehle(it.titel, m.knallerWoerter);
-    const preis = parsePrice(it.preisText) ?? preisAusTitel(it.titel);
+    const titelPreis = parsePrice(it.preisText) ?? preisAusTitel(it.titel);
+    const ppText = titelPreis == null ? preisProPersonAusText(it.beschreibung) : null;
+    const preis = titelPreis ?? ppText;
     const altInfo = altpreisAusText(text, preis);
     const alt = altInfo?.preis ?? null;
     const rabatt = preis != null && alt ? round(1 - preis / alt, 2) : null;
@@ -82,8 +98,8 @@ export default async function reisen({ holeText, cfg, jetzt, zustand }) {
     if (s.info?.ende && Date.parse(s.info.ende) <= jetztMs) continue; // Ende laut Deal-Seite schon vorbei
     const endeSeite = s.info?.ende || null;
     // „ab 49,00 € pro Strecke statt …“ – was der Preis meint und wovon er abgeht, steht direkt daneben
-    const abPreis = preis != null && new RegExp(`\\bab\\s*${String(Math.floor(preis))}`, 'i').test(it.titel) ? 'ab ' : '';
-    const zusatz = preisZusatz(it.titel, text, preis);
+    const abPreis = istAbPreis(it.titel, text, preis) ? 'ab ' : '';
+    const zusatz = preisZusatz(it.titel, text, preis) || (ppText != null && preis === ppText ? 'pro Person' : '');
     const preisText = preis != null ? `${abPreis}${euro(preis)}${zusatz ? ' ' + zusatz : ''}${alt ? ` statt ${euro(alt)}` : ''}` : '';
     const ort = ab === 'eigen' ? abflugOrt(text, m) : null;
     eintraege.push(eintrag({

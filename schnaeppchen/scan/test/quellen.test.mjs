@@ -119,7 +119,7 @@ test('Gesamtlauf mit Fixtures: Deals, Technik, Fehlerliste, Dedupe', async () =>
   assert.equal(k.bestes.shop, 'Kaufland', 'Aldi Süd liegt nicht in der Liste der Märkte');
   assert.equal(k.bestes.packung, '5 × 25 g');
   assert.deepEqual(k.weitere.map(w => w.shop), ['Netto Marken-Discount', 'Amazon'], '24er und 5er in einer Karte, pro Stück verglichen');
-  assert.equal(k.tiefst.text, 'Günstigstes von 3 Angeboten in deiner Nähe und online · Verlauf erst seit 1 Tag');
+  assert.equal(k.tiefst.text, 'Günstigstes von 3 gefundenen Angeboten in deiner Nähe und online · Verlauf erst seit 1 Tag');
   assert.equal(p('knoppers-nussriegel').bestes.einheitspreis, 0.358);
   assert.equal(p('softys-rote-fruechte').deal, true);
   assert.equal(p('softys-fruchtmix').bestes, null, 'rote Tüte ist nicht die gelbe');
@@ -170,7 +170,7 @@ test('Technik: „vielleicht abgelaufen“ laut Deal-Seite und älter als 24 h =
 test('ntfy-Nachricht enthält Preis, Grundpreis, Ersparnis und direkten Link', () => {
   const m = nachricht({ typ: 'produkt', id: 'knoppers-schnitte', name: 'Knoppers Schnitte', basis: 'stueck', titel: 'Knoppers 24er', shop: 'Netto',
     packung: '24 × 25 g', preis: 5.99, versand: 0, online: false, einheitspreis: 0.25, normalpreis: 0.38, normalGeschaetzt: false, tiefstpreis: 0.25,
-    ersparnis: 0.34, grund: '34 % unter Normalpreis', tiefstText: 'Günstigstes von 2 Angeboten in deiner Nähe · so günstig wie nie in 30 Tagen',
+    ersparnis: 0.34, grund: '34 % unter Normalpreis', tiefstText: 'Günstigstes von 2 gefundenen Angeboten in deiner Nähe · so günstig wie nie in 30 Tagen',
     gueltigBis: '2026-11-01T22:59:00Z', link: 'https://example.org/a' }, cfg);
   assert.equal(m.topic, cfg.ntfy.topic);
   assert.equal(m.click, 'https://example.org/a');
@@ -178,7 +178,7 @@ test('ntfy-Nachricht enthält Preis, Grundpreis, Ersparnis und direkten Link', (
   assert.match(m.message, /0,25 € pro Stück – normal 0,38 €\n/);
   assert.match(m.message, /34 % unter Normalpreis/);
   assert.match(m.message, /so günstig wie nie in 30 Tagen/);
-  assert.match(m.message, /gültig bis So 01\.11\./);
+  assert.match(m.message, /gültig bis So 1\.11\./);
   assert.equal(m.actions[0].url, 'https://example.org/a');
 });
 

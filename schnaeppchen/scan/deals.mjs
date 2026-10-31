@@ -68,7 +68,7 @@ function wo(angebote) {
   return laden && online ? 'in deiner Nähe und online' : online ? 'online' : 'in deiner Nähe';
 }
 
-/** „PENNY hat 3,49 € (mit App, ab Mo 02.11.)“ – ein anderes Angebot mit seinen Bedingungen, kurz */
+/** „PENNY hat 3,49 € (mit App, ab Mo 2.11.)“ – ein anderes Angebot mit seinen Bedingungen, kurz */
 export function angebotKurz(a, jetztMs = Date.now()) {
   const extra = [a.nurMitApp ? 'mit App' : '', a.gueltigAb && Date.parse(a.gueltigAb) > jetztMs ? `ab ${zeitpunktText(a.gueltigAb)}` : ''].filter(Boolean);
   return `${a.shop} hat ${euroKurz(a.preis)}${extra.length ? ` (${extra.join(', ')})` : ''}`;
@@ -98,10 +98,11 @@ export function tiefstInfo({ bestes, sichere, angebote = sichere, stats, tiefst3
   const unklar = glaubhaft.filter(a => a !== bestes && a.mengeSicher !== true);
   const billigerUnklar = unklar.filter(a => a.preis < bestes.preis - 0.005).sort((x, y) => x.preis - y.preis);
   res.heuteGuenstigstes = sichere[0] === bestes && !billigerUnklar.length;
-  const vergleich = glaubhaft.length <= 1 ? `Einziges Angebot ${wo(glaubhaft)}`
-    : !unklar.length ? `Günstigstes von ${glaubhaft.length} Angeboten ${wo(glaubhaft)}`
-    : sichere.length <= 1 ? `Einziges Angebot mit bekannter Packungsgröße ${wo(sichere)}`
-    : `Günstigstes von ${sichere.length} Angeboten mit bekannter Packungsgröße`;
+  // „gefunden“: geprüft sind nur die Prospekte bei marktguru und mydealz, nicht jedes Angebot überall
+  const vergleich = glaubhaft.length <= 1 ? `Einziges gefundenes Angebot ${wo(glaubhaft)}`
+    : !unklar.length ? `Günstigstes von ${glaubhaft.length} gefundenen Angeboten ${wo(glaubhaft)}`
+    : sichere.length <= 1 ? `Einziges gefundenes Angebot mit bekannter Packungsgröße ${wo(sichere)}`
+    : `Günstigstes von ${sichere.length} gefundenen Angeboten mit bekannter Packungsgröße`;
   const verlauf = tage <= 0 ? 'noch kein Preisverlauf' : tage === 1 ? 'Verlauf erst seit 1 Tag' : `Verlauf erst seit ${tage} Tagen`;
   if (tiefst30 && tiefst30.p < bestes.einheitspreis - 0.005) {
     res.status = 'nein';

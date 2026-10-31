@@ -10,10 +10,18 @@ ans Netz weiter (ohne Netz antwortet er selbst mit der Weiterleitung). So sieht 
 Wurzelordner diese Adressen nie und speichert keine Weiterleitung als Offline-Kopie des Synthesizers. Wer über eine
 alte Adresse kommt, sieht einmal den Hinweis „Teilen → Zum Home-Bildschirm“ für das neue Symbol.
 
-**Noch offen (nur mit Xanders OK, außerhalb dieser Ordner):** Der SYNQUENZER-Worker (`sw.js` im Wurzelordner)
-speichert jede Seite unter `/Synquenzer/` als seine Offline-Kopie. Der allererste Besuch von `mein-vorteil/` (bevor
-dessen eigener Worker läuft) überschreibt sie deshalb einmal. Die Ein-Zeilen-Lösung dort: nur speichern, wenn
-`rest === '' || rest === 'index.html'`.
+**SYNQUENZER-Offline-Kopie:** Der SYNQUENZER-Worker (`sw.js` im Wurzelordner) speichert jede Seite unter
+`/Synquenzer/` als seine Offline-Kopie. Deshalb (ohne Änderung an der Wurzel):
+- Die alten Adressen melden **zuerst den Worker von Mein Vorteil** an (höchstens 3 s warten), dann erst leiten sie
+  weiter – der Aufruf von `/mein-vorteil/` geht so nie durch den SYNQUENZER-Worker.
+- Kam Mein Vorteil trotzdem einmal über ihn (Push-Link beim allerersten Besuch), merkt die Seite das 1,5 s nach dem
+  Laden (Titel der Kopie ist „Mein Vorteil“, „Vorteile“, „Schnäppchen…“, „Konzert…“) und legt die echte Startseite
+  des Synthesizers wieder hin (dieselbe Antwort, die sein Worker beim nächsten Start holen würde).
+- Bleibt offen (nur mit Xanders OK): Beim allerersten Besuch über einen Push-Link bei schwachem Netz (> 3 s) zeigt
+  der SYNQUENZER-Worker statt Mein Vorteil seine Kopie. Die Ein-Zeilen-Lösung dort: nur `rest === '' ||
+  rest === 'index.html'` als Seite behandeln.
+- Im alten Home-Bildschirm-Symbol (eigenes Fenster ohne Safari-Leiste) nennt der Umzug-Hinweis die Adresse mit
+  „Adresse kopieren“, weil es dort kein „Teilen“ gibt.
 
 ## Reiter
 

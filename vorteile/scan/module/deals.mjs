@@ -2,19 +2,26 @@
 // Quellen: Daten des Schnäppchen-Weckers (schnaeppchen-daten) + mydealz-Feeds (Lebensmittel, Preisfehler ohne Technik).
 // Enden: Schnäppchen-Angebote bis gueltigBis (mit Uhrzeit), mydealz bis Textende / Deal-Seite, sonst Höchstalter (lib/ende.mjs).
 import { rechne, bestesAngebot, parseAktion, couponImPreis } from '../rechnen.mjs';
-import { parsePrice, grammAus, enthaelt, euro, round, datumDe } from '../lib/text.mjs';
-import { berlinTag } from '../lib/ende.mjs';
+import { parsePrice, grammAus, enthaelt, euro, round } from '../lib/text.mjs';
 import { dealPruefer, preisAngaben, altpreisAusText } from '../lib/mydealz.mjs';
 import { sammleFeeds, eintrag, preisfehlerEintrag, PREISFEHLER } from './gemeinsam.mjs';
 
 const prozent = v => `−${Math.round(v * 100)} %`;
+// „Mo 2.11.“ (Berliner Zeit) – dasselbe Format wie auf der Seite Mein Vorteil
+const TAG_KURZ = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', weekday: 'short', day: 'numeric', month: 'numeric' });
+export function tagKurz(iso) {
+  const t = Date.parse(iso || '');
+  if (!Number.isFinite(t)) return '';
+  const p = Object.fromEntries(TAG_KURZ.formatToParts(new Date(t)).map(x => [x.type, x.value]));
+  return `${p.weekday.replace('.', '')} ${p.day}.${p.month}.`;
+}
 
 export function zeileAus(r, basis = '100g', { geschaetzt = false, packung = null, ab = null } = {}) {
   const teile = [`${r.packungen} Packung${r.packungen > 1 ? 'en' : ''}${packung ? ` à ${packung}` : ''} für ${euro(r.zahlen)}${r.normalGesamt ? ` statt ${euro(r.normalGesamt)}` : ''}${r.ersparnis > 0 ? ` (${prozent(r.ersparnis)})` : ''}`];
   if (r.pro100 != null) teile.push(`${euro(round(r.pro100, 2))} pro 100 ${basis === '100ml' ? 'ml' : 'g'}${r.normalPro100 ? ` statt ${euro(round(r.normalPro100, 2))}` : ''}`);
   else if (r.packungen > 1) teile.push(`${euro(r.proPackung)} pro Packung`);
   if (geschaetzt && r.normalGesamt) teile.push('Normalpreis geschätzt');
-  if (ab) teile.unshift(`ab ${datumDe(berlinTag(ab))}`);
+  if (ab) teile.unshift(`ab ${tagKurz(ab)}`);
   return teile.join(' · ');
 }
 

@@ -29,7 +29,10 @@ export function nachricht(d, cfg, jetztMs = Date.now()) {
   } else {
     const label = BASIS_LABEL[d.basis];
     zeilen.push(`${euroKurz(d.preis)} bei ${d.shop}${d.packung ? ` · ${d.packung}` : ''}${d.online ? ` (inkl. ${euroKurz(d.versand || 0)} Versand)` : ''}`);
-    zeilen.push(`${euroKurz(d.einheitspreis)} ${label} – normal ${d.normalGeschaetzt ? 'ca. ' : ''}${euroKurz(d.normalpreis)}${d.normalGeschaetzt ? ' (geschätzt)' : ''}`);
+    // „465 ml oder 4 × 100 ml“: sagen, für welche Packung der Preis gilt (der Prospekt rechnet oft mit der anderen)
+    const v = d.einheitspreisVarianten;
+    const bei = v?.length > 1 ? ` (bei ${v[0].packung}; ${v[1].packung}: ${euroKurz(v[1].einheitspreis)})` : '';
+    zeilen.push(`${euroKurz(d.einheitspreis)} ${label}${bei} – normal ${d.normalGeschaetzt ? 'ca. ' : ''}${euroKurz(d.normalpreis)}${d.normalGeschaetzt ? ' (geschätzt)' : ''}`);
     if (d.grund) zeilen.push(d.grund);
     if (d.tiefstText) zeilen.push(d.tiefstText);
     if (d.startetSpaeter && d.gueltigAb) zeilen.push(`gilt ab ${zeitpunktText(d.gueltigAb)}${d.gueltigBis ? ` bis ${zeitpunktText(d.gueltigBis)}` : ''}`);

@@ -1,7 +1,8 @@
 // mydealz.de RSS feeds (new, hot, "Preisfehler" group, optional keyword search). Online deals incl. Amazon.
 import { leseRss } from '../rss.mjs';
-import { parsePrice, norm, passt, euroKurz } from '../text.mjs';
-import { abAus, endeAusFuer, HOECHSTALTER_STUNDEN } from '../ende.mjs';
+import { parsePrice, norm, passt, euroKurz, SAMMEL_TRENNER } from '../text.mjs';
+import { abAus, endeAusFuer, berlinIso, HOECHSTALTER_STUNDEN } from '../ende.mjs';
+import { vorherAusText } from '../preisfehler.mjs';
 
 // Läden mit Filialen: ein mydealz-Deal dort („[Penny] …“) gilt im Laden -> kein Versand, Filter wie Prospekt-Angebote.
 const LAEDEN = ['penny', 'rewe', 'edeka', 'kaufland', 'netto', 'norma', 'globus', 'marktkauf', 'aldi', 'lidl'];
@@ -71,7 +72,10 @@ const ZAHL_EURO = String.raw`(\d+(?:[.,]\d{1,2})?)\s*(?:€|euro\b|eur\b)?`;
  * Beginn („Ab Montag den 2.11.“), Ende („bis 7.11.“, „nur am Donnerstag 29.10.“), sonst höchstens 72 Stunden
  * ab Veröffentlichung bzw. ab Beginn. Bei Sammeldeals zählen der eigene Satz und der Einleitungssatz.
  * „3,49 Euro mit App bzw. 3,99 Euro ohne App“ -> nurMitApp, preisOhneApp.
- * -> { ab, bis, sichtbarBis, nurMitApp, preisOhneApp, hinweis }
+ * Laden-Angebot mit Beginn („[Penny] … ab Montag“) ohne Ende: Wochenangebote laufen bis Samstag -> Anzeigefenster bis
+ * Samstag dieser Woche (statt nur 72 h; ein „bis“ wird daraus nicht).
+ * Vorher-Preis („statt 4,99 €“, „Der reguläre Preis sind inzwischen 6,99 Euro“) aus dem eigenen Text bzw. Satz.
+ * -> { ab, bis, sichtbarBis, nurMitApp, preisOhneApp, hinweis, preisVorher, vorherQuelle }
  */
 export function mydealzZeit(o, item, jetztMs) {
   const alle = saetze(o.langtext || o.beschreibung);
@@ -82,7 +86,11 @@ export function mydealzZeit(o, item, jetztMs) {
   const ende = endeAusFuer(o.sammeldeal ? [alle[0] || '', ...eigene].join(' ') : text, o.datum, jetzt);
   const bis = ende?.bis || null;
   const start = Math.max(Date.parse(o.datum || '') || NaN, Date.parse(ab || '') || -Infinity);
-  const sichtbarBis = !bis && Number.isFinite(start) ? new Date(start + HOECHSTALTER_STUNDEN.deal * 36e5).toISOString() : null;
+  let sichtbarBis = !bis && Number.isFinite(start) ? new Date(start + HOECHSTALTER_STUNDEN.deal * 36e5).toISOString() : null;
+  if (sichtbarBis && ab && o.online === false) {
+    const samstag = samstagNach(Date.parse(ab));
+    if (samstag > sichtbarBis) sichtbarBis = samstag;
+  }
   // „mit App“: nur im eigenen Satz (Sammeldeal) bzw. im ganzen Text
   const appText = (o.sammeldeal ? eigene.join(' ') : text).toLowerCase();
   const mitApp = appText.match(new RegExp(`${ZAHL_EURO}\\s*(?:nur\\s*)?mit\\s+(?:der\\s+)?(?:[a-zäöü+-]+[\\s-])?app\\b`));
@@ -91,5 +99,29 @@ export function mydealzZeit(o, item, jetztMs) {
   const nurMitApp = appPreis != null && o.preis != null && Math.abs(appPreis - o.preis) < 0.005;
   const preisOhneApp = nurMitApp && ohneApp ? parsePrice(ohneApp[1]) : null;
   const hinweis = nurMitApp ? `nur mit ${o.shop && o.shop !== 'Online' ? o.shop + '-' : ''}App${preisOhneApp ? ` (ohne App ${euroKurz(preisOhneApp)})` : ''}` : '';
-  return { ab, bis, sichtbarBis, nurMitApp, preisOhneApp, hinweis };
+  const vorher = o.preis > 0 ? vorherAusText(o.sammeldeal ? vorherSaetze(alle, eigene, o) : o.titel, o.sammeldeal ? '' : o.langtext || o.beschreibung || '', o.preis) : null;
+  return { ab, bis, sichtbarBis, nurMitApp, preisOhneApp, hinweis, preisVorher: vorher?.wert ?? null, vorherQuelle: vorher?.quelle ?? null };
+}
+
+// Sammeldeal: die eigenen Sätze und jeweils der nächste, wenn er kein anderes Produkt des Deals nennt
+// („Starten wir mit Ben und Jerrys Eis für 3,49 Euro … Der reguläre Preis sind inzwischen 6,99 Euro.“)
+function vorherSaetze(alle, eigene, o) {
+  const fremd = String(o.sammelTitel || '').split(SAMMEL_TRENNER).map(t => t.trim()).filter(t => t && t !== o.titel)
+    .map(t => (norm(t.replace(/^\s*\[[^\]]*\]\s*/, '')).match(/[a-z]{4,}/) || [])[0]).filter(Boolean);
+  const raus = [];
+  alle.forEach((s, i) => {
+    if (!eigene.includes(s)) return;
+    raus.push(s);
+    const n = alle[i + 1];
+    if (n && !eigene.includes(n) && !fremd.some(w => norm(n).includes(w))) raus.push(n);
+  });
+  return raus.join(' ');
+}
+
+// Samstag 23:59 (Berliner Zeit) der Woche, in der ms liegt (Sonntag zählt zur folgenden Woche)
+const WOCHENTAG = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Berlin', weekday: 'short', year: 'numeric', month: 'numeric', day: 'numeric' });
+export function samstagNach(ms) {
+  const p = Object.fromEntries(WOCHENTAG.formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+  const wt = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.weekday);
+  return berlinIso(+p.year, +p.month, +p.day + (6 - wt), 23, 59, 0);
 }

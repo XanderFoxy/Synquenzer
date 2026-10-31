@@ -118,6 +118,8 @@ Dark Storm liefert nur ein JavaScript-Gerüst (Line-up nicht lesbar), Gothic mee
 konzerte.json { stand: ISO, zuhause: { name, plz, lat, lon }, pushRadiusKm, konzerte: [Konzert …] }   // nach Datum sortiert
 releases.json { stand: ISO, releases: [Release …] }                                                  // neueste zuerst
 status.json   { stand: ISO, quellen: { ticketmaster|seiten|musicbrainz|deezer: { ok, treffer, fehler: [Text], uebersprungen, ms } }, pushes, erstlauf }
+              seiten zusätzlich { geprueft, gesamt }: ok: false heißt nur „nicht alle Seiten erreichbar“; die Seite sagt
+              „3 von 4 geprüft – Gothic meets Klassik gerade nicht erreichbar“ und „Konzertsuche aus“ erst bei 0 geprüften.
 ```
 
 | Feld (Konzert) | Typ | Bedeutung |

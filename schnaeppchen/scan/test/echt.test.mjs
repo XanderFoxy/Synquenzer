@@ -60,7 +60,7 @@ test('Echt: Knoppers = Kaufland 15 × 25 g für 2,79 € = 0,19 € pro Stück (
   assert.equal(k.normalJePackung, true);
   assert.equal(k.deal, true);
   assert.equal(k.grund, '38 % unter geschätztem Normalpreis');
-  assert.deepEqual(k.tiefst, { status: 'unbekannt', text: 'Einziges Angebot in deiner Nähe · Verlauf erst seit 1 Tag', heuteGuenstigstes: true, tage: 1, tiefst30: 0.186, anzahl: 1, anzahlSicher: 1 });
+  assert.deepEqual(k.tiefst, { status: 'unbekannt', text: 'Einziges gefundenes Angebot in deiner Nähe · Verlauf erst seit 1 Tag', heuteGuenstigstes: true, tage: 1, tiefst30: 0.186, anzahl: 1, anzahlSicher: 1 });
   assert.equal(r.current.produkte.filter(p => /knoppers/i.test(p.name)).length, 2, 'Schnitte + NussRiegel, kein „24er“/„5er“ mehr');
 });
 
@@ -97,17 +97,24 @@ test('Echt (mydealz 2861577): PENNY Ben & Jerry\'s 3,49 € nur mit App, ab Mo 2
   assert.equal(penny.preisOhneApp, 3.99);
   assert.equal(penny.hinweis, 'nur mit PENNY-App (ohne App 3,99 €)');
   assert.equal(penny.bis, null, 'kein Ende im Text');
-  assert.equal(penny.sichtbarBis, '2026-11-04T23:00:00.000Z', 'ohne Ende: höchstens 72 h ab Beginn');
+  // Laden-Wochenangebot ohne Ende („ab Montag“): sichtbar bis Samstag dieser Woche, nicht nur 72 h (PENNY verkauft bis Sa)
+  assert.equal(penny.sichtbarBis, '2026-11-07T22:59:00.000Z', 'Sa 7.11. 23:59 Berliner Zeit');
+  // „Der reguläre Preis sind inzwischen 6,99 Euro“ (eigener Satz im Sammeldeal) = Vorher-Preis des Angebots
+  assert.equal(penny.preisVorher, 6.99);
   assert.equal(penny.datum, '2026-10-30T09:33:39.000Z');
   // Tiefstpreis-Antwort zählt das billigere PENNY-Angebot mit
   assert.equal(bj.anzahlAngebote, 2);
   assert.equal(bj.tiefst.anzahl, 2);
   assert.equal(bj.tiefst.status, 'unbekannt');
-  assert.equal(bj.tiefst.text, 'PENNY hat 3,49 € (mit App, ab Mo 02.11.) – Packungsgröße dort nicht sicher');
+  assert.equal(bj.tiefst.text, 'PENNY hat 3,49 € (mit App, ab Mo 2.11.) – Packungsgröße dort nicht sicher');
   assert.doesNotMatch(bj.tiefst.text, /Einziges/);
-  // nach dem Fenster (Beginn + 72 h) ist das PENNY-Angebot weg
-  const spaeter = await lauf('2026-11-05T00:00:00Z');
-  assert.deepEqual(spaeter.karte('ben-jerrys').weitere, []);
+  // Do 5.11.: PENNY läuft noch -> die Antwort nennt es weiter (nicht „Einziges gefundenes Angebot“)
+  const donnerstag = await lauf('2026-11-05T09:00:00Z');
+  assert.equal(donnerstag.karte('ben-jerrys').weitere[0]?.shop, 'PENNY');
+  assert.match(donnerstag.karte('ben-jerrys').tiefst.text, /^PENNY hat 3,49 € \(mit App\)/);
+  // nach Samstag ist das PENNY-Angebot weg
+  const sonntag = await lauf('2026-11-08T00:00:00Z');
+  assert.deepEqual(sonntag.karte('ben-jerrys').weitere, []);
 });
 
 test('mydealz-Angebote für die Merkliste: „nur am Donnerstag 29.10.“ ist am 31.10. weg, ohne Ende höchstens 72 h', async () => {
@@ -148,13 +155,18 @@ test('Echt: Pushes – Knoppers mit Packung, geschätztem Normalpreis und Uhrzei
     '2,79 € bei Kaufland · 15 × 25 g',
     '0,19 € pro Stück – normal ca. 0,30 € (geschätzt)',
     '38 % unter geschätztem Normalpreis',
-    'Einziges Angebot in deiner Nähe · Verlauf erst seit 1 Tag',
+    'Einziges gefundenes Angebot in deiner Nähe · Verlauf erst seit 1 Tag',
     'gültig bis Sa 31.10. 19:00',
     'Storck Knoppers Milch-Haselnuss-Schnitte',
   ].join('\n'));
   assert.equal(k.click, 'https://www.marktguru.de/offers/25495632');
   const bj = r.msgs.find(m => m.title.includes('Ben'));
-  assert.match(bj.message, /gilt ab Mo 02\.11\. bis Sa 07\.11\./);
+  assert.match(bj.message, /gilt ab Mo 2\.11\. bis Sa 7\.11\./);
+  // marktguru: 3,99 € für 465 ml (Prospekt: 8,58 €/l) – gerechnet wird ehrlich mit 4 × 100 ml; beide stehen da
+  assert.match(bj.message, /^1,00 € pro 100 ml \(bei 4 × 100 ml; 465 ml: 0,86 €\) – normal ca\. 1,50 € \(geschätzt\)$/m);
+  const karte = r.karte('ben-jerrys').bestes;
+  assert.deepEqual(karte.einheitspreisVarianten.map(v => [v.packung, Math.round(v.einheitspreis * 100) / 100]), [['4 × 100 ml', 1], ['465 ml', 0.86]]);
+  assert.equal(r.karte('knoppers-schnitte').bestes.einheitspreisVarianten, null, 'nur eine Packung -> keine Varianten');
 });
 
 test('Echt: nach Ende des Kaufland-Angebots (18:01 UTC) ist es sofort weg', async () => {

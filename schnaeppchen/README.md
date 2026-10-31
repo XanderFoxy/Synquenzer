@@ -53,16 +53,19 @@ bleiben, ein eigenes Thema als Actions-Secret `NTFY_TOPIC` hinterlegen und in de
   Normalpreis zählt es nur, wenn es das **günstigste aktuelle Angebot** ist und nicht unglaubwürdig weit darunter
   liegt (> 60 % = eher ein Lesefehler).
 - **„Ist das der Tiefstpreis?“** steht bei jedem Produkt als kurzer Satz (`tiefst.text`), z. B. „Günstigstes von
-  3 Angeboten in deiner Nähe · Verlauf erst seit 1 Tag“, „… · so günstig wie nie in 30 Tagen“ oder
+  3 gefundenen Angeboten in deiner Nähe · Verlauf erst seit 1 Tag“ („gefunden“: geprüft sind nur marktguru und mydealz), „… · so günstig wie nie in 30 Tagen“ oder
   „Schon günstiger gesehen: 0,17 € pro Stück am 12.10. bei Lidl“. marktguru liefert keinen Preisverlauf; der
   eigene Verlauf wächst jede Stunde. Am Anfang heißt die ehrliche Antwort deshalb „unbekannt“. Gezählt werden **alle**
   Angebote: ist eines mit unklarer Packung im Ganzen billiger, steht genau das da („PENNY hat 3,49 € (mit App, ab Mo
-  02.11.) – Packungsgröße dort nicht sicher“), nie „Einziges Angebot“.
+  2.11.) – Packungsgröße dort nicht sicher“), nie „Einziges gefundenes Angebot“. Daten wie auf der Seite: „Mo 2.11.“.
 - **mydealz-Angebote für die Merkliste** (z. B. aus Sammeldeals): Beginn („Ab Montag den 2.11.“), Ende („bis 7.11.“,
   „nur am Donnerstag 29.10.“) und „mit App“ („3,49 Euro mit App bzw. 3,99 Euro ohne App“) werden aus dem Text gelesen;
-  ohne Ende höchstens 72 Stunden ab Veröffentlichung bzw. Beginn (wie beim Vorteils-Radar).
+  ohne Ende höchstens 72 Stunden ab Veröffentlichung bzw. Beginn (wie beim Vorteils-Radar). Laden-Wochenangebote mit
+  Beginn („[Penny] … ab Montag“) bleiben ohne Ende bis Samstag dieser Woche sichtbar. Ein Vorher-Preis aus dem eigenen
+  Satz („Der reguläre Preis sind inzwischen 6,99 Euro“) steht als `preisVorher` dabei.
 - **Zwei Packungen zum selben Preis** („465/4x100ml“): beide werden genannt („465 ml oder 4 × 100 ml“), gerechnet wird
-  mit der teureren pro 100 ml.
+  mit der teureren pro 100 ml; `einheitspreisVarianten` nennt beide Grundpreise (Karte und Push: „1,00 € pro 100 ml
+  (bei 4 × 100 ml; 465 ml: 0,86 €)“ – der Prospekt rechnet mit 465 ml).
 - **Technik-Preisfehler:** Fernseher, Konsolen, Kopfhörer usw. aus mydealz – Nachricht, wenn als Preisfehler
   gemeldet oder **mindestens 60 % unter dem Vergleichspreis** (Titel der Nachricht: „Preisfehler? …“ bzw.
   „Technik-Deal: …“). Immer mit **vorher → jetzt**: „vorher 96,99 € →
