@@ -77,6 +77,13 @@ Tests in `bau/helfer/BMU/tests/` (Aufruf `node <test> [index.html] [vs-base-B.ht
 8. **Name nach Engine-Wechsel** bleibt der des Klangs (wie beim Wechsel zu MS 2000); „INIT Bit Mask“ heißt ein Klang über Init/Bibliothek.
 9. **Layer-Bereiche [A]:** `ly.semi` −48…+48, `ly.pan` 0…100, `ly.tune` −50…+50 Cent, `ly.sp` 0…127 (Spec nennt nur die Felder).
 
+## Regression bestehender Suiten (alt 4.23.0 gegen neu, unabhängiger Lauf)
+Jede Suite besteht in NEU genau dieselben Fälle wie in ALT, mit denselben Meldungen; keine Konsolenfehler nur in NEU:
+gmk8b-reg 18/18 · gmk8b-panik 14/14 · gmk8b-cross 12/12 · gmk567-keysync 4/4 · gs7-v3-qa-vs4-reg 15/15 · gs7-v3-qa-vs5a-reg 13/13 ·
+gs7-v3-vs5b-reg-t2 21/21 · gs7-v3-qab5b-song 3/3 · v3-mk8b-smoke ohne Fehler · gmk8b-daten (128 Micro-Klänge) byte-gleich.
+Schon in ALT rot und in NEU gleich: gs7-v3-qab5b-fang 5/7, v3-qa-gmk7-undo 10/15, gmk567-cross (passt nicht zu 4.23.0).
+(Lauf vor den 4 Prüfer-Fixes; diese ändern nur Bit-Mask-Pfade.)
+
 ## Unabhängige Nachprüfung (Fixes)
 Ein zweiter, unabhängiger Prüflauf fand 4 Punkte, alle behoben und mit seinen Skripten nachgetestet: (1) beim Engine-Wechsel verloren
 vorausgeplante Clip-Noten ihr Ende (klangen bis zum GC-Netz) → das geplante `off` geht mit in den neuen Knoten; (2) der **erste**
