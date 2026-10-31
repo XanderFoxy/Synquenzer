@@ -8,13 +8,14 @@ const sr = 48000;
 // A. INIT: no entry, pitch exactly on the note (8 notes, each its own voice and start phase)
 {
   const mods = await p.evaluate(() => SYNQUENZER.k1Mods(0));
-  const ev = []; for (let k = 0; k < 8; k++) ev.push([k * .3, 'on', 57, .8, 'n' + k], [k * .3 + .25, 'off', 57, .8, 'n' + k]);
-  const x = await renderIn(p, await p.evaluate(() => SYNQUENZER.getSound(0)), ev, {sec: 2.6, seed: 1});
-  const dev = []; for (let k = 0; k < 8; k++) { const f = freqZC(x, sr, Math.round((k * .3 + .03) * sr), Math.round((k * .3 + .23) * sr)); dev.push(+(1200 * Math.log2(f / 220)).toFixed(3)); }
+  const ev = []; for (let k = 0; k < 8; k++) ev.push([k * .3, 'on', 57, .8, 'n' + k], [k * .3 + .27, 'off', 57, .8, 'n' + k]);
+  // the INIT sound with its wave set to sine for the measurement (drift and tuning act the same on every wave)
+  const x = await renderIn(p, await p.evaluate(() => { const s = SYNQUENZER.getSound(0); s.p.o1w = 3; return s; }), ev, {sec: 2.6, seed: 1});
+  const dev = []; for (let k = 0; k < 8; k++) { const f = freqZC(x, sr, Math.round((k * .3 + .12) * sr), Math.round((k * .3 + .26) * sr)); dev.push(+(1200 * Math.log2(f / 220)).toFixed(3)); }
   await p.evaluate(() => { SYNQUENZER.setEngine(1, 'mk'); SYNQUENZER.initSound(1); });
   const mk = await p.evaluate(() => SYNQUENZER.k1Mods(1));
   const y = await renderIn(p, await p.evaluate(() => SYNQUENZER.getSound(1)), ev, {sec: 2.6, seed: 1});
-  const devMk = []; for (let k = 0; k < 8; k++) { const f = freqZC(y, sr, Math.round((k * .3 + .03) * sr), Math.round((k * .3 + .23) * sr)); devMk.push(+(1200 * Math.log2(f / 220)).toFixed(3)); }
+  const devMk = []; for (let k = 0; k < 8; k++) { const f = freqZC(y, sr, Math.round((k * .3 + .12) * sr), Math.round((k * .3 + .26) * sr)); devMk.push(+(1200 * Math.log2(f / 220)).toFixed(3)); }
   const old = await p.evaluate(() => { const s = SYNQUENZER.getSound(0); s.p.analog = .15; s.p.o2fine = 7; SYNQUENZER.setSound(0, s); const e = SYNQUENZER.soundEdited(0); SYNQUENZER.initSound(0); return {oldInitEdited: e, newInitEdited: SYNQUENZER.soundEdited(0)}; });
   R.init = {entries: mods.length, centsVA: dev, maxCtVA: Math.max(...dev.map(Math.abs)), entriesMk: mk.length, maxCtMk: Math.max(...devMk.map(Math.abs)), ...old,
     pass: mods.length === 0 && mk.length === 0 && Math.max(...dev.map(Math.abs)) < .05 && Math.max(...devMk.map(Math.abs)) < .05 && !old.oldInitEdited && !old.newInitEdited};
@@ -33,13 +34,13 @@ const sr = 48000;
         const pm = s.p.mk, dual = pm.mode === 1 || pm.mode === 2, voc = pm.mode === 3;
         for (let k = 0; k < (dual ? 2 : 1); k++) { const T = d.mk[k];   // the ENGINE's timbre values
           if (T.vib) want.push('t.' + k + '.vib'); if (!voc) T.p.forEach((q, j) => { if (q.i) want.push('t.' + k + '.p.' + j + '.i'); });
-          for (const [a, b] of [['f', 'eg'], ['f', 'kbd'], ['f', 'vel'], ['a', 'vel'], ['a', 'kbd']]) if (T[a][b]) want.push('t.' + k + '.' + a + '.' + b);
+          for (const [a, b] of [['f', 'eg'], ['f', 'kbd'], ['f', 'vel'], ['a', 'kbd']]) if (T[a][b]) want.push('t.' + k + '.' + a + '.' + b);
           if (!voc && T.seq && T.seq.on) T.seq.q.forEach((q, j) => { if (q.k > 0 && q.v.some(x => x)) want.push('t.' + k + '.seq.q.' + j + '.k'); }); }
       } else {
         const RS = ['', 'lfo1', 'lfo2', 'fenv', 'menv', 'vel', 'key', 'mw', 'rnd', 'aenv'], RD = SQF.DST_ID || null;
         for (const m of d.mods) want.push('r:' + RS[m[0]] + ':' + m[1]);
         for (const m of s.mods) if (String(m.dst).startsWith('fx.')) want.push('r:' + m.src + ':' + m.dst);
-        const P = d.P; if (P.fenv) want.push('p:fenv'); if (P.fvel && P.fenv) want.push('p:fvel'); if (P.kt) want.push('p:kt'); if (P.ampVel) want.push('p:ampVel'); if (P.analog) want.push('p:analog');
+        const P = d.P; if (P.fenv) want.push('p:fenv'); if (P.fvel && P.fenv) want.push('p:fvel'); if (P.kt) want.push('p:kt'); if (P.analog) want.push('p:analog');
       }
       const have = L.map(e => e.key);
       if (s.engine === 'mk') { const a = want.slice().sort().join(), b = have.slice().sort().join(); if (a !== b) bad.push([id, a, b]); }

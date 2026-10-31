@@ -40,3 +40,11 @@ Gesammelt aus den Fix-Abschnitten in CHANGES-V3.md und CHANGES-MK*.md (Stand 26.
 27. **Nichts selbst bestimmen (Xander 27.10.: „Du sollst einfach nichts anderes machen oder selbst bestimmen, nur das, worüber wir geredet haben“).**
     Keine Zusatzfunktion, kein geändertes Verhalten, kein eigener Name, keine eigene Gestaltung, die nicht in Spec/Fehlerliste steht oder
     von Xander gesagt wurde. Ist etwas offen oder unklar: nicht bauen, sondern im Changelog unter „Fragen an Xander“ auflisten.
+28. **Klang alter Projekte bleibt gleich (Xander 31.10.: „dass sich die alten Sachen, die man schon gebaut hat, niemals verstellen“).**
+    Jede Änderung an Klangerzeugern, Hüllkurven, Filtern, Effekten oder Regler-Kennlinien bringt eine **Umrechnung** mit: Werte alter
+    Projekte/Klänge werden beim Laden so auf die neuen Regler übersetzt, dass der Klang gleich bleibt (Offline-Render alt gegen neu
+    ≤ −90 dB bzw. bitgleich; Golden-Render mit den Snapshots in `synq-snapshots/`). Geht eine genaue Umrechnung nicht, bleibt das
+    alte Verhalten für diesen Klang erhalten („kompatibel“), und beim Öffnen wird gefragt, ob er auf das neue System übersetzt werden
+    soll. Nie still den Klang ändern.
+29. **Arbeitsweise (Xander 31.10.: „ich möchte, dass wir in Zukunft immer so arbeiten“):** Pakete parallel auf mehrere Helfer-Sitzungen
+    (eigene Rechner) verteilen, Zwischenstände laufend in Zweige pushen, der Dirigent führt zusammen und veröffentlicht jede fertige Stufe.

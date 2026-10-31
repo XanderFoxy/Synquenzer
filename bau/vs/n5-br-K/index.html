@@ -31509,7 +31509,8 @@ function openModAdd(anchor, i) {
 /* ===== K1 (Nachtrag 5 K1, Punkt 3): Mod-Übersicht. Jede aktive Modulation des Klangs als eine Zeile Quelle → Ziel · Menge:
    die Routen der Matrix, die fest eingebauten (Filter-Hüllkurve, Keytrack, Anschlag, Analog-Zufall je Note) und beim
    AM-Klang (eng 3) Vibrato (LFO 2 × Mod-Rad), PATCH 1–4, die Intensitäten von Filter und Amp und die Mod-Sequenz. Tipp = zum Ziel-
-   Regler, ✕ = löschen (ein Undo-Schritt). Die Liste bewegt sich nicht: was sich bewegt, hat eine Zeile (K1-03). ===== */
+   Regler, ✕ = löschen (ein Undo-Schritt). Die Liste bewegt sich nicht: was sich bewegt, hat eine Zeile (K1-03). Die Anschlag-
+   Dynamik der Lautstärke (STIMME Anschlag, AMP VELO INT) ist Spielweise, keine Modulation: nicht in der Liste. ===== */
 const k1Num = (v, d) => (Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d).replace('.', ',');
 const k1Sgn = (v, d, u) => (v > 0 ? '+' : v < 0 ? MINUS : '±') + k1Num(Math.abs(v), d) + (u ? ' ' + u : '');
 // the page of a flat key in the VA / FM / WT editor [tab, sub-tab]; a key without a page (or not on this engine) opens MOD
@@ -31536,7 +31537,6 @@ function k1Mods(i) {
       mkI(tp_('f.eg'), 'EG 1', 'Cutoff', T.f.eg, k1Sgn(T.f.eg, 0));
       mkI(tp_('f.kbd'), 'Keytrack', 'Cutoff', T.f.kbd, k1Sgn(T.f.kbd, 0));
       mkI(tp_('f.vel'), 'Anschlag', 'Cutoff', T.f.vel, k1Sgn(T.f.vel, 0));
-      mkI(tp_('a.vel'), 'Anschlag', 'Amp', T.a.vel, k1Sgn(T.a.vel, 0));
       mkI(tp_('a.kbd'), 'Keytrack', 'Amp', T.a.kbd, k1Sgn(T.a.kbd, 0));
       if (!voc && T.seq && T.seq.on) T.seq.q.forEach((q, j) => { if (q.k > 0 && q.v.some(x => x)) add(tp_('seq.q.' + j + '.k'), pre + 'Mod-Sequenz ' + (j + 1), K1_SQT[q.k] || '?', q.v.filter(x => x).length + ' Schritte', {kind: 'mk', path: tp_('seq.q.' + j + '.k'), val: q.k}); });
     }
@@ -31552,7 +31552,6 @@ function k1Mods(i) {
   if (pv('fenv')) add('p:fenv', 'Filter-Hüllk.', 'Cutoff', fmtVal(PD.fenv.fmt, pv('fenv')), {kind: 'p', p: 'fenv'});
   if (pv('fvel') && pv('fenv')) add('p:fvel', 'Anschlag', 'Filter-Hüllk.-Menge', fmtVal(PD.fvel.fmt, pv('fvel')), {kind: 'p', p: 'fvel'});
   if (pv('kt')) add('p:kt', 'Keytrack (Taste)', 'Cutoff', fmtVal(PD.kt.fmt, pv('kt')), {kind: 'p', p: 'kt'});
-  if (pv('ampVel')) add('p:ampVel', 'Anschlag', 'Lautstärke', fmtVal(PD.ampVel.fmt, pv('ampVel')), {kind: 'p', p: 'ampVel'});
   // the worklet's analog drift (startVoice): pitch ±analog·8 ct per note, each oscillator ±analog·5 ct more, cutoff ±analog·1,5 HT
   if (wk && pv('analog')) add('p:analog', 'Analog (Zufall je Note)', fm ? 'Tonhöhe' : 'Tonhöhe · Cutoff', 'bis ±' + k1Num(pv('analog') * (fm ? 8 : 13), 1) + ' ct' + (fm ? '' : ' · ±' + k1Num(pv('analog') * 1.5, 2) + ' HT'), {kind: 'p', p: 'analog'});
   return out;
