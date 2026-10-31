@@ -1,0 +1,14 @@
+{"_embedded":{"events":[
+ {"name":"Alphaville – Eternally Yours Tour","url":"https://www.ticketmaster.de/event/alphaville-leipzig-123","dates":{"start":{"localDate":"2027-03-14","localTime":"20:00:00"},"status":{"code":"onsale"}},
+  "classifications":[{"segment":{"name":"Music"},"genre":{"name":"Pop"},"subGenre":{"name":"Synth Pop"},"type":{"name":"Undefined"}}],
+  "_embedded":{"venues":[{"name":"Haus Auensee","city":{"name":"Leipzig"},"country":{"countryCode":"DE"},"location":{"latitude":"51.3698","longitude":"12.3205"}}],"attractions":[{"name":"Alphaville"}]}},
+ {"name":"Synthpop Festival Berlin 2027","url":"https://www.ticketmaster.de/event/synth-fest-456","dates":{"start":{"localDate":"2027-05-01"},"status":{"code":"onsale"}},
+  "classifications":[{"genre":{"name":"Pop"},"subGenre":{"name":"Festival"}}],
+  "_embedded":{"venues":[{"name":"Columbiahalle","city":{"name":"Berlin"},"country":{"countryCode":"DE"},"location":{"latitude":"52.4836","longitude":"13.3889"}}],"attractions":[{"name":"Alphaville"},{"name":"Camouflage"}]}},
+ {"name":"Alphaville Coverband","url":"https://www.ticketmaster.de/event/cover-789","dates":{"start":{"localDate":"2027-02-02"},"status":{"code":"onsale"}},
+  "_embedded":{"venues":[{"name":"Club","city":{"name":"Dresden"},"location":{"latitude":"51.05","longitude":"13.73"}}],"attractions":[{"name":"Forever Young – Alphaville Tribute"}]}},
+ {"name":"Alphaville","url":"https://www.ticketmaster.de/event/abgesagt","dates":{"start":{"localDate":"2027-01-10"},"status":{"code":"cancelled"}},
+  "_embedded":{"venues":[{"name":"Stadthalle","city":{"name":"Chemnitz"},"location":{"latitude":"50.83","longitude":"12.92"}}],"attractions":[{"name":"Alphaville"}]}},
+ {"name":"Alphaville","url":"https://www.ticketmaster.de/event/hamburg","dates":{"start":{"localDate":"2027-03-20","localTime":"19:30:00"},"status":{"code":"onsale"}},
+  "_embedded":{"venues":[{"name":"Große Freiheit 36","city":{"name":"Hamburg"},"country":{"countryCode":"DE"},"location":{"latitude":"53.5503","longitude":"9.9583"}}],"attractions":[{"name":"Alphaville"}]}}
+]},"page":{"size":100,"totalElements":5}}
