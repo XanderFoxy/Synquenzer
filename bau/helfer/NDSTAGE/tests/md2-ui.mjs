@@ -42,9 +42,9 @@ async function setup(page, {md = ['kick', 'snare', 'hatC', 'hatO'], voice = 0, t
     ensureAudio();
     for (const id of md) SYNQUENZER.setPadSource(id, 'md');
     R.selT = DRUM_T; ED.dVoice = voice; ED.dTab = tab; MDE.sub = sub; openEditor(); buildDrumEd();
-    const t0 = performance.now(); while (MDX.st !== 'ready' && MDX.st !== 'failed' && performance.now() - t0 < 4000) await new Promise(r => setTimeout(r, 50));
+    const t0 = performance.now(); while (MDS.st !== 'ready' && MDS.st !== 'failed' && performance.now() - t0 < 4000) await new Promise(r => setTimeout(r, 50));
     window.__md = [];
-    if (MDX.node && !MDX.node.port.__w) { const pp = MDX.node.port, o = pp.postMessage.bind(pp); pp.postMessage = m => { window.__md.push({t: performance.now(), m: JSON.parse(JSON.stringify(m))}); return o(m); }; pp.__w = 1; }
+    if (MDS.node && !MDS.node.port.__w) { const pp = MDS.node.port, o = pp.postMessage.bind(pp); pp.postMessage = m => { window.__md.push({t: performance.now(), m: JSON.parse(JSON.stringify(m))}); return o(m); }; pp.__w = 1; }
     UNDO.length = 0; REDO.length = 0;
   }, {md, voice, tab, sub});
   await page.waitForTimeout(350);
@@ -120,7 +120,7 @@ const DISP = {
   mSpc: [[{mWav: 'F1', mSpc: 0}, '0'], [{mWav: 'F1', mSpc: 50}, '50'], [{mWav: 'F1', mSpc: 99}, '99'], [{mWav: 'A1', mSpc: 50}, '–']],
   mFrq: [[{mWav: 'F1', mFrq: 0}, '0'], [{mWav: 'F1', mFrq: 25}, '25'], [{mWav: 'F1', mFrq: 50}, '50'], [{mWav: 'A1'}, '–']],
   mDyf: [[{mWav: 'F1', mDyf: 0}, '0'], [{mWav: 'F1', mDyf: 5}, '5'], [{mWav: 'F1', mDyf: 9}, '9'], [{mWav: 'A1'}, '–']],
-  mTdec: [[{mTdec: 0}, '0'], [{mTdec: 25}, '25'], [{mTdec: 50}, '50']],
+  mDec: [[{mDec: 0}, '0'], [{mDec: 25}, '25'], [{mDec: 50}, '50']],
   mBnd: [[{mBnd: -50}, new RegExp('^' + MINUS + '50$')], [{mBnd: 0}, '0'], [{mBnd: 50}, /^\+?50$/], [{mBnd: -26}, new RegExp('^' + MINUS + '26$')]],
   mPit: [[{mPit: 0}, '0.0'], [{mPit: 45}, '45.0'], [{mPit: 63.7}, '63.7'], [{mPit: 127.5}, '127.5']],
   mWav: [[{mWav: 'A1'}, 'A1'], [{mWav: 'd3'}, 'd3'], [{mWav: 'r2'}, 'r2'], [{mWav: 't1'}, 't1']],
@@ -136,7 +136,7 @@ const DISP = {
   mClv: [[{mClv: 0}, '0'], [{mClv: 25}, '25'], [{mClv: 50}, '50']],
   mCty: [[{mCty: 'n1'}, 'n1'], [{mCty: 'P2'}, 'P2'], [{mCty: 'C3'}, 'C3']],
   mNlv: [[{mNlv: 0}, '0'], [{mNlv: 25}, '25'], [{mNlv: 50}, '50']],
-  mChlv: [[{mChlv: 0}, '0'], [{mChlv: 25}, '25'], [{mChlv: 50}, '50']],
+  mLvl: [[{mLvl: 0}, '0'], [{mLvl: 25}, '25'], [{mLvl: 50}, '50']],
   mTlv: [[{mTlv: 0}, '0'], [{mTlv: 25}, '25'], [{mTlv: 50}, '50']],
   mPan: [[{mPan: -9}, 'L9'], [{mPan: -1}, 'L1'], [{mPan: 0}, 'C'], [{mPan: 1}, 'r1'], [{mPan: 9}, 'r9']],
   mEqf: [[{mEqg: 3, mEqf: 0}, '0'], [{mEqg: 3, mEqf: 25}, '25'], [{mEqg: 3, mEqf: 50}, '50'], [{mEqg: 0, mEqf: 25}, '–']],
@@ -224,8 +224,8 @@ async function nd203(fmt) {
   const idx = crvBtn.indexOf('L2');
   if (idx >= 0) {
     await tap(page, `.mdcrv button:nth-child(${idx + 1})`);
-    const r = await page.evaluate(() => ({v: mdSlot(DRUM_VOICES[ED.dVoice].id).mDcrv, u: UNDO.length}));
-    ck('ND2-03', fmt, 'KANAL DYNAMICS: Tipp L2 → mDcrv L2, ein Undo', r.v === 'L2' && r.u === 1, {...r, buttons: crvBtn});
+    const r = await page.evaluate(() => ({v: mdSlot(DRUM_VOICES[ED.dVoice].id).mCrv, u: UNDO.length}));
+    ck('ND2-03', fmt, 'KANAL DYNAMICS: Tipp L2 → mCrv L2, ein Undo', r.v === 'L2' && r.u === 1, {...r, buttons: crvBtn});
   } else ck('ND2-03', fmt, 'KANAL DYNAMICS: Knöpfe Li…O2', false, crvBtn);
   ck('ND2-03', fmt, 'KANAL DYNAMICS: 6 Kurven Li L1 L2 L3 O1 O2', deq(crvBtn, ['Li', 'L1', 'L2', 'L3', 'O1', 'O2']), crvBtn);
   await tap(page, '.mdmono'); await sleep(50);
@@ -269,7 +269,7 @@ async function nd204(fmt) {
   await setup(page, {md: ['kick']});
   // Messgrößen im Browser: Spitze, Länge bis −60 dB, Frequenz früh (0–15 ms) / spät (über Nulldurchgänge), Energie L/R
   const meas = set => page.evaluate(async set => {
-    const s = mdSlot('kick'); Object.assign(s, mdProg(MDN.init()), {mTdec: 25}, set); drumChanged('kick');
+    const s = mdSlot('kick'); Object.assign(s, mdProg(MDN.init()), {mDec: 25}, set); drumChanged('kick');
     const r = await SYNQUENZER.mdRender([[.01, 'kick', .8]], {sec: 1.6}); const L = r.l, Rr = r.r, sr = 48000, i0 = Math.round(.01 * sr);
     let pk = 0, eL = 0, eR = 0; for (let i = 0; i < L.length; i++) { const m = Math.max(Math.abs(L[i]), Math.abs(Rr[i])); if (m > pk) pk = m; eL += L[i] * L[i]; eR += Rr[i] * Rr[i]; }
     let last = 0; for (let i = 0; i < L.length; i++) if (Math.max(Math.abs(L[i]), Math.abs(Rr[i])) > pk * 1e-3) last = i;
@@ -279,11 +279,11 @@ async function nd204(fmt) {
   const nul = (a, b) => { let n = 0, d = 0; for (let i = 0; i < a.length; i++) { const x = a[i] - b[i]; n += x * x; d += a[i] * a[i]; } return n ? 10 * Math.log10(n / (d || 1e-30)) : -999; };
   const strip = m => { const o = {...m}; delete o.sum; for (const k in o) o[k] = +(+o[k]).toPrecision(4); return o; };
   const T = [
-    ['DECAY mTdec', {mTdec: 0}, {mTdec: 50}, (a, b) => b.len > a.len * 4, 'Länge'],
-    ['PITCH mPit', {mPit: 36, mTdec: 40}, {mPit: 84, mTdec: 40}, (a, b) => b.f1 > a.f1 * 15.5 && b.f1 < a.f1 * 16.5, 'Frequenz ×16 (48 HT)'],
-    ['BEND mBnd', {mBnd: -50, mBt: 30, mTdec: 45}, {mBnd: 50, mBt: 30, mTdec: 45}, (a, b) => b.f0 > a.f0 * 2, 'Frequenz früh'],
+    ['DECAY mDec', {mDec: 0}, {mDec: 50}, (a, b) => b.len > a.len * 4, 'Länge'],
+    ['PITCH mPit', {mPit: 36, mDec: 40}, {mPit: 84, mDec: 40}, (a, b) => b.f1 > a.f1 * 15.5 && b.f1 < a.f1 * 16.5, 'Frequenz ×16 (48 HT)'],
+    ['BEND mBnd', {mBnd: -50, mBt: 30, mDec: 45}, {mBnd: 50, mBt: 30, mDec: 45}, (a, b) => b.f0 > a.f0 * 2, 'Frequenz früh'],
     ['TONE LVL mTlv', {mTlv: 0}, {mTlv: 50}, (a, b) => a.pk <= 1e-6 && b.pk > 1e-2, 'Spitze (min = still)'],
-    ['CH LEVEL mChlv', {mChlv: 0}, {mChlv: 50}, (a, b) => a.pk <= 1e-6 && b.pk > 1e-2, 'Spitze (min = still)'],
+    ['CH LEVEL mLvl', {mLvl: 0}, {mLvl: 50}, (a, b) => a.pk <= 1e-6 && b.pk > 1e-2, 'Spitze (min = still)'],
     ['PAN mPan', {mPan: -9}, {mPan: 9}, (a, b) => a.eL > 100 * a.eR && b.eR > 100 * b.eL, 'Energie L/R'],
   ];
   for (const [n, a, b, ok, what] of T) { const A = await meas(a), B = await meas(b); ck('ND2-04', fmt, `${n}: min → max ändert ${what} (ND-STUB)`, ok(A, B), {min: strip(A), max: strip(B)}); }
@@ -303,17 +303,17 @@ async function nd205(fmt) {
   const PADS = ['kick', 'snare', 'hatC', 'hatO'];
   await setup(page, {md: PADS});
   const get = k => page.evaluate(([P, k]) => P.map(id => mdSlot(id)[k]), [PADS, k]);
-  await page.evaluate(P => { P.forEach((id, i) => { mdSlot(id).mTdec = 10 + 10 * i; mdSlot(id).mPit = [40, 45, 50, 60][i]; drumChanged(id); }); edRefresh(); }, PADS);
+  await page.evaluate(P => { P.forEach((id, i) => { mdSlot(id).mDec = 10 + 10 * i; mdSlot(id).mPit = [40, 45, 50, 60][i]; drumChanged(id); }); edRefresh(); }, PADS);
   await tap(page, '.mdre .mdall'); await sleep(50);
   const on = await page.evaluate(() => ({all: MDE.all, aria: document.querySelector('.mdre .mdall').getAttribute('aria-checked'), focus: (UI.padEls || []).filter(p => p && p.classList && (p.classList.contains('mdfoc') || p.classList.contains('mdall'))).length}));
   ck('ND2-05', fmt, 'ALLE KANÄLE: Tipp schaltet an, Fokus-Rahmen auf den 4 Modell-Pads', on.all && on.aria === 'true' && on.focus === 4, on);
-  const d0 = await get('mTdec'); await page.evaluate(() => { UNDO.length = 0; });
-  const b = await box(page, cellSel('mTdec'));
+  const d0 = await get('mDec'); await page.evaluate(() => { UNDO.length = 0; });
+  const b = await box(page, cellSel('mDec'));
   await drag(page, b.cx, b.cy, vline(-50, 5));
-  const d1 = await get('mTdec'), u = await undoN(page);
+  const d1 = await get('mDec'), u = await undoN(page);
   ck('ND2-05', fmt, 'DECAY ziehen → alle 4 gleich, genau ein Undo', d1.every(v => v === d1[0]) && d1[0] !== d0[0] && u === 1, {before: d0, after: d1, undo: u});
   await page.evaluate(() => undo()); await sleep(30);
-  const d2 = await get('mTdec');
+  const d2 = await get('mDec');
   ck('ND2-05', fmt, 'ein Undo stellt alle 4 DECAY-Werte her', deq(d2, d0), {d2, d0});
   // PITCH +3 an einem → alle +3
   const p0 = await get('mPit'); const pb = await box(page, cellSel('mPit'));
@@ -387,10 +387,10 @@ async function nd207(fmt) {
   const render = (hits, solo) => page.evaluate(async ([hits, solo]) => { const r = await SYNQUENZER.mdRender(hits, {sec: .6, solo}); return [Array.from(r.l), Array.from(r.r)]; }, [hits, solo]);
   const ref = await render([[.05, 'kick', .8], [.05, 'snare', .8]], null);
   await tap(page, '.mdsolo'); await sleep(60);
-  const s1 = await page.evaluate(() => ({solo: MDX.solo, md: MDE.solo, head: !!document.querySelector('#drumSheet .mdsoloh, .mdsoloh'), msg: window.__md.filter(x => x.m.t === 'mute').map(x => x.m)}));
-  ck('ND2-07', fmt, 'SOLO PART an (TONE): MDX.solo = {ch 0, tone}, Nachricht mute, Anzeige im Kopf', deq(s1.solo, {ch: 0, part: 'tone'}) && s1.md && s1.head && s1.msg.some(m => m.ch === 0 && m.solo === 'tone'), s1);
+  const s1 = await page.evaluate(() => ({solo: MDS.solo, md: MDE.solo, head: !!document.querySelector('#drumSheet .mdsoloh, .mdsoloh'), msg: window.__md.filter(x => x.m.t === 'mute').map(x => x.m)}));
+  ck('ND2-07', fmt, 'SOLO PART an (TONE): MDS.solo = {ch 0, tone}, Nachricht mute, Anzeige im Kopf', deq(s1.solo, {ch: 0, part: 'tone'}) && s1.md && s1.head && s1.msg.some(m => m.ch === 0 && m.solo === 'tone'), s1);
   const parts = {};
-  for (const sub of ['noise', 'click', 'mix', 'fx', 'tone']) { await tap(page, `.sh-subs .stab[data-sub="${sub}"]`); await sleep(80); parts[sub] = await page.evaluate(() => MDX.solo); }
+  for (const sub of ['noise', 'click', 'mix', 'fx', 'tone']) { await tap(page, `.sh-subs .stab[data-sub="${sub}"]`); await sleep(80); parts[sub] = await page.evaluate(() => MDS.solo); }
   ck('ND2-07', fmt, 'SOLO PART folgt dem Unter-Reiter (noise/click/all/all/tone)', deq(Object.values(parts).map(x => x && x.part), ['noise', 'click', 'all', 'all', 'tone']) && Object.values(parts).every(x => x && x.ch === 0), parts);
   // Render: andere Kanäle stumm; im NOISE-Teil schweigt TONE (≤ −120 dBFS)
   const sn = await render([[.05, 'snare', .8]], {ch: 0, part: 'tone'}), kt = await render([[.05, 'kick', .8]], {ch: 0, part: 'tone'}), kn = await render([[.05, 'kick', .8]], {ch: 0, part: 'noise'});
@@ -399,28 +399,28 @@ async function nd207(fmt) {
   ck('ND2-07', fmt, 'Render SOLO NOISE ch0: TONE ≤ −120 dBFS', pk.kickSoloNoise <= 1e-6, pk);
   // Wechsel des Pads (Chip) → Solo-Kanal folgt
   await page.evaluate(() => { ED.dVoice = 1; if (MDE.solo) mdSoloApply(); buildDrumEd(); });
-  const s2 = await page.evaluate(() => MDX.solo);
+  const s2 = await page.evaluate(() => MDS.solo);
   ck('ND2-07', fmt, 'Solo-Kanal folgt dem gewählten Pad', deq(s2, {ch: 1, part: 'tone'}), s2);
   await page.evaluate(() => { ED.dVoice = 0; mdSoloApply(); buildDrumEd(); });
   // aus → alles wie vorher
   await tap(page, '.mdsolo'); await sleep(60);
-  const s3 = await page.evaluate(() => ({solo: MDX.solo, md: MDE.solo, last: window.__md.filter(x => x.m.t === 'mute').map(x => x.m).at(-1), head: !!document.querySelector('.mdsoloh')}));
+  const s3 = await page.evaluate(() => ({solo: MDS.solo, md: MDE.solo, last: window.__md.filter(x => x.m.t === 'mute').map(x => x.m).at(-1), head: !!document.querySelector('.mdsoloh')}));
   const after = await render([[.05, 'kick', .8], [.05, 'snare', .8]], null);
   let num = 0, den = 0; for (let c = 0; c < 2; c++) for (let i = 0; i < ref[c].length; i++) { const d = ref[c][i] - after[c][i]; num += d * d; den += ref[c][i] * ref[c][i]; }
   const nullDb = num ? 10 * Math.log10(num / den) : -999;
   ck('ND2-07', fmt, 'SOLO PART aus: mute ch -1, Kopf-Anzeige weg, Render = vorher (M-NULL ≤ −90 dB)', s3.solo === null && !s3.md && s3.last && s3.last.ch === -1 && !s3.head && nullDb <= -90, {...s3, nullDb});
   // endet mit Schließen des Editors
   await tap(page, '.mdsolo'); await sleep(40);
-  const was = await page.evaluate(() => MDX.solo);
+  const was = await page.evaluate(() => MDS.solo);
   await page.evaluate(() => closeEditor()); await sleep(60);
-  const s4 = await page.evaluate(() => ({solo: MDX.solo, md: MDE.solo, last: window.__md.filter(x => x.m.t === 'mute').map(x => x.m).at(-1)}));
+  const s4 = await page.evaluate(() => ({solo: MDS.solo, md: MDE.solo, last: window.__md.filter(x => x.m.t === 'mute').map(x => x.m).at(-1)}));
   ck('ND2-07', fmt, 'SOLO PART endet mit Editor-Schließen', was && s4.solo === null && !s4.md && s4.last.ch === -1, {was, ...s4});
   for (const [n, fn] of [['stop', 'stop()'], ['launchScene', 'launchScene(0)']]) {
     await page.evaluate(() => { ED.dTab = 'sound'; openEditor(); }); await sleep(80);
     await tap(page, '.mdsolo'); await sleep(40);
     const w = await page.evaluate(() => MDE.solo);
     await page.evaluate(fn); await sleep(60);
-    const s = await page.evaluate(() => ({solo: MDX.solo, md: MDE.solo}));
+    const s = await page.evaluate(() => ({solo: MDS.solo, md: MDE.solo}));
     ck('ND2-07', fmt, `SOLO PART endet mit ${n}`, w && s.solo === null && !s.md, {was: w, ...s});
   }
   ck('ND2-07', fmt, 'keine Seitenfehler', !page._errs.length, page._errs);
@@ -440,13 +440,13 @@ async function nd208(fmt) {
   const PADS = ['kick', 'snare', 'hatC', 'hatO'];
   await setup(page, {md: PADS});
   await page.evaluate(() => {
-    Object.assign(mdSlot('kick'), {mWav: 'd3', mTdec: 33, mPit: 50.5, mPan: 4, mBnd: -12, mName: 'Kx', mCat: 'bd', mMono: 1, mDcrv: 'L2'});
-    Object.assign(mdSlot('snare'), {mWav: 'H2', mTdec: 7, mPit: 70, mMono: 0, mDcrv: 'O1', mName: 'Sx'});
-    Object.assign(mdSlot('hatC'), {mWav: 'C1', mTdec: 3, mPit: 90, mMono: 1, mDcrv: 'L1', mName: 'Hx'});
+    Object.assign(mdSlot('kick'), {mWav: 'd3', mDec: 33, mPit: 50.5, mPan: 4, mBnd: -12, mName: 'Kx', mCat: 'bd', mMono: 1, mCrv: 'L2'});
+    Object.assign(mdSlot('snare'), {mWav: 'H2', mDec: 7, mPit: 70, mMono: 0, mCrv: 'O1', mName: 'Sx'});
+    Object.assign(mdSlot('hatC'), {mWav: 'C1', mDec: 3, mPit: 90, mMono: 1, mCrv: 'L1', mName: 'Hx'});
     for (const id of ['kick', 'snare', 'hatC']) drumChanged(id); edRefresh();
   });
   const slots = () => page.evaluate(P => Object.fromEntries(P.map(id => [id, JSON.parse(JSON.stringify(mdSlot(id)))])), PADS);
-  const prog = s => { const o = {}; for (const k of KEYS) if (k !== 'mMono' && k !== 'mDcrv') o[k] = s[k]; return o; };
+  const prog = s => { const o = {}; for (const k of KEYS) if (k !== 'mMono' && k !== 'mCrv') o[k] = s[k]; return o; };
   const KEYS = await page.evaluate(() => MDN.KEYS);
   const INIT = await page.evaluate(() => MDN.init());
   const S0 = await slots();
@@ -569,8 +569,8 @@ async function nd211(fmt) {
   const ctx = await newCtx(fmt); let page = await openApp(ctx, APP);
   await setup(page);
   const NAME = 'Test Kick ' + fmt;
-  await page.evaluate(() => { Object.assign(mdSlot('kick'), {mWav: 'd2', mTdec: 31, mPit: 38.4, mBnd: -20, mPan: -2, mRvb: 12}); drumChanged('kick'); edRefresh(); UNDO.length = 0; });
-  const progOf = `(s => { const o = {}; for (const k of MDN.KEYS) if (k !== 'mMono' && k !== 'mDcrv') o[k] = s[k]; return o; })`;
+  await page.evaluate(() => { Object.assign(mdSlot('kick'), {mWav: 'd2', mDec: 31, mPit: 38.4, mBnd: -20, mPan: -2, mRvb: 12}); drumChanged('kick'); edRefresh(); UNDO.length = 0; });
+  const progOf = `(s => { const o = {}; for (const k of MDN.KEYS) if (k !== 'mMono' && k !== 'mCrv') o[k] = s[k]; return o; })`;
   await more(page, 'save'); await sleep(150);
   const sp = await popOpen(page);
   await page.fill('.pop input.tin', NAME);
@@ -594,15 +594,15 @@ async function nd211(fmt) {
   await page.reload(); await page.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version, null, {timeout: 30000}); await page.waitForTimeout(500);
   page._cdp = await ctx.newCDPSession(page); page._errs = []; page.on('pageerror', e => page._errs.push(String(e)));
   await setup(page);
-  await page.evaluate(() => { Object.assign(mdSlot('kick'), mdProg(MDN.init()), {mMono: 1, mDcrv: 'O2'}); drumChanged('kick'); edRefresh(); UNDO.length = 0; });
+  await page.evaluate(() => { Object.assign(mdSlot('kick'), mdProg(MDN.init()), {mMono: 1, mCrv: 'O2'}); drumChanged('kick'); edRefresh(); UNDO.length = 0; });
   const l2 = await ownList();
   ck('ND2-11', fmt, 'nach Neuladen noch unter „Eigene“', l2.includes(NAME), l2);
   const k = l2.indexOf(NAME);
   if (k >= 0) {
     await page.evaluate(k => document.querySelector(`.pop .mdpl button[data-k="${k}"]`).scrollIntoView({block: 'center'}), k);
     await tap(page, `.pop .mdpl button[data-k="${k}"]`); await sleep(120);
-    const got = await page.evaluate(`(${progOf})(mdSlot('kick'))`), keep = await page.evaluate(() => ({mMono: mdSlot('kick').mMono, mDcrv: mdSlot('kick').mDcrv, u: UNDO.length}));
-    ck('ND2-11', fmt, 'Laden: Programm-Felder deep-equal Gesichertem, Mono/Dynamik bleiben, ein Undo', deq(got, saved) && keep.mMono === 1 && keep.mDcrv === 'O2' && keep.u === 1, {keep, diff: Object.keys(saved).filter(x => !deq(saved[x], got[x])).map(x => [x, saved[x], got[x]])});
+    const got = await page.evaluate(`(${progOf})(mdSlot('kick'))`), keep = await page.evaluate(() => ({mMono: mdSlot('kick').mMono, mCrv: mdSlot('kick').mCrv, u: UNDO.length}));
+    ck('ND2-11', fmt, 'Laden: Programm-Felder deep-equal Gesichertem, Mono/Dynamik bleiben, ein Undo', deq(got, saved) && keep.mMono === 1 && keep.mCrv === 'O2' && keep.u === 1, {keep, diff: Object.keys(saved).filter(x => !deq(saved[x], got[x])).map(x => [x, saved[x], got[x]])});
     await page.evaluate(() => { closePop(); undo(); });
     const back = await page.evaluate(`(${progOf})(mdSlot('kick'))`), init = await page.evaluate(`(${progOf})(MDN.init())`);
     ck('ND2-11', fmt, 'Laden: ein Undo stellt her', deq(back, init));
@@ -678,7 +678,7 @@ async function nd213(fmt) {
     await fn(); await sleep(400);
     return page.evaluate(() => { const up = window.__up.at(-1), h = window.__md.filter(x => x.m.t === 'hit' && x.t >= up - 1); return {up: up != null, hits: window.__md.filter(x => x.m.t === 'hit').length, rel: window.__md.filter(x => x.m.t === 'hit').map(x => Math.round(x.t - up)), afterUp: h.length ? Math.round((h[0].t - up) * 10) / 10 : null}; });
   };
-  const b = await box(page, cellSel('mTdec'));
+  const b = await box(page, cellSel('mDec'));
   const dragL = await lat(() => drag(page, b.cx, b.cy, vline(-30, 3), null, 12));
   const dragLong = await lat(async () => { await tStart(page, b.cx, b.cy); for (let i = 1; i <= 8; i++) { await tMove(page, b.cx, b.cy + 3 * i); await sleep(20); } await sleep(500); await tEnd(page); });
   const trig = await lat(() => tap(page, '.mdtrig'));

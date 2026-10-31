@@ -9,9 +9,9 @@ const r = await p.evaluate(async () => {
   R.selT = DRUM_T; openEditor(); ED.dVoice = 0; ED.dTab = 'sound'; buildDrumEd();
   const o = {};
   document.querySelector('.mdsolo').dispatchEvent(new PointerEvent('pointerdown', {bubbles: true})); MDE.solo = true; mdSoloApply();
-  ED.dVoice = 1; buildDrumEd(); o.soloFollows = MDX.solo && MDX.solo.ch === 1;
-  ED.dVoice = 2; SYNQUENZER.setPadSource('rim', 'drum'); buildDrumEd(); o.soloEndsOnDrumPad = !MDE.solo && MDX.solo === null;
-  ED.dVoice = 0; buildDrumEd(); MDE.solo = true; mdSoloApply(); openMenu(); o.soloEndsOnMenu = !MDE.solo && MDX.solo === null; closeMenu();
+  ED.dVoice = 1; buildDrumEd(); o.soloFollows = MDS.solo && MDS.solo.ch === 1;
+  ED.dVoice = 2; SYNQUENZER.setPadSource('rim', 'drum'); buildDrumEd(); o.soloEndsOnDrumPad = !MDE.solo && MDS.solo === null;
+  ED.dVoice = 0; buildDrumEd(); MDE.solo = true; mdSoloApply(); openMenu(); o.soloEndsOnMenu = !MDE.solo && MDS.solo === null; closeMenu();
   R.selT = DRUM_T; openEditor(); ED.dVoice = 0; ED.dTab = 'sound'; buildDrumEd();
   mdScl('h1'); o.sclLed = document.querySelector('.mdall').classList.contains('on');
   const fake = el('button'), t = performance.now();

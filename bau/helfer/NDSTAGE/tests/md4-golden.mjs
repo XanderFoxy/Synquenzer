@@ -2,7 +2,7 @@
 //  (a) Demo-Projekt, INIT Drums, alle Werks-Kits: normierter Drum-Sound (JSON) und slotParams aller 12 Pads deep-equal;
 //      Projekt-Rundreise (projectFileObj -> parseAny) gleich in beiden Builds und gleich dem Original
 //  (b) Offline-Render je Kit (DrumSynth.hit über kitBus + Strips im OfflineAudioContext, Math.random geseedet): bitgleich
-//  (c) ohne Modell-Pad: kein addModule mit 'synq-md' (Hook auf AudioWorklet.prototype.addModule), MDX.adds 0, MDX.st 'off'
+//  (c) ohne Modell-Pad: kein addModule mit 'synq-md' (Hook auf AudioWorklet.prototype.addModule), MDX.info().adds 0, MDS.st 'off'
 //      nach ensureAudio und 2 s Demo-Wiedergabe
 //  (d) Seitengröße neu − alt ≤ 100 KB
 // Aufruf: NODE_PATH=/opt/node-tools/node_modules node md4-golden.mjs <neu.html> <alt.html>
@@ -47,7 +47,8 @@ const data = P => P.p.evaluate(kits => {
     const snd = k === '__demo' ? demoProject().tracks[DRUM_T].sound : kitSound(k);
     applyDrumSound(deep(snd));
     const sp = {}; for (const v of DRUM_VOICES) sp[v.id] = slotParams(v.id);
-    out[k] = JSON.stringify({snd: SQStore.normalizeSound(drumSnd()), sp});
+    const ns = SQStore.normalizeSound(drumSnd()); delete ns.tip;   // NDSTAGE (Q5): Tipp-Texte ohne Markennamen umformuliert – nur Text, Klangdaten bitgleich
+    out[k] = JSON.stringify({snd: ns, sp});
   }
   // zurück zum Demo-Projekt, dann Rundreise der Projektdatei
   switchProject(demoProject(), {first: true});
@@ -123,7 +124,7 @@ const live = async P => {
   return P.p.evaluate(async () => {
     const hits = typeof HITS !== 'undefined' ? HITS.length : -1, playing = R.playing;
     SYNQUENZER.stop(); await new Promise(r => setTimeout(r, 400));
-    return {adds: window.__adds.map(e => ({u: e.u, md: e.md})), mdx: typeof MDX === 'object' ? {adds: MDX.adds, st: MDX.st, node: !!MDX.node} : null, playing, hits, log: (typeof noteLog === 'function' ? 0 : 0)};
+    return {adds: window.__adds.map(e => ({u: e.u, md: e.md})), mdx: typeof MDX === 'object' ? {adds: MDX.info().adds, st: MDS.st, node: !!MDS.node} : null, playing, hits, log: (typeof noteLog === 'function' ? 0 : 0)};
   });
 };
 const la = await live(A), lb = await live(B);

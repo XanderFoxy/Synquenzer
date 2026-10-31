@@ -6077,6 +6077,7 @@ async function probe(cases, o) {
   for (const fall of cases) {
     if (o.onCase) o.onCase(cases.indexOf(fall));
     const sink = c.createGain(); sink.gain.value = 0; sink.connect(c.destination);  // computed, never heard (VS1 pattern)
+    if (fall === 'north') { const r = await mdProbe(c, sink, sec_, o, () => PROBE.stop); try { sink.disconnect(); } catch (e) {} out.cases.push(r); if (PROBE.stop) { r.abgebrochen = true; break; } continue; }   // NDSTAGE (Q3): Drum-Engine North
     // MK2: "Kern" = engines 1 and 3 Speicherwelle (wave 23), 2 and 4 Sinus x (X-MOD 64, OSZ 2 Sync); two active patches each
     const mkSnd = (o1, o2) => { const snd = factorySound(INIT_IDS.mk); snd.p.mk = SQMK.normMk(Object.assign(snd.p.mk, {t: [Object.assign(snd.p.mk.t[0], {o1, o2,
       mix: {o1: 127, o2: 90, n: 30}, f: {type: 0, cut: 80, res: 90, eg: 30, vel: 0, kbd: 24}, a: Object.assign(snd.p.mk.t[0].a, {dist: 1}), vib: 20,
@@ -6138,6 +6139,7 @@ async function probe(cases, o) {
       fps_med: +(fm.length ? fm[fm.length >> 1] : 0).toFixed(1), reports: rep.length};
     if (ios) { r.raf_gaps = gaps; r.raf_capped = r.fps_med < 35; } else r.longtasks = po ? lt : null;
     if (PS_) { PS_.stop(); r.panel = PS_.res; }
+    try { r.north_load = +MDX.cpu().toFixed(4); } catch (e) {}   // NDSTAGE (Q3): Anteil laufender North-Knoten des Projekts
     out.cases.push(r);
     if (PROBE.stop) { r.abgebrochen = true; break; }
   }
@@ -6170,7 +6172,7 @@ function panelScript(ms) {
 function probeSheet() {
   openPop(null, p => {
     p.innerHTML = `<h4>Leistungs-Probe · ${MK_LABEL}</h4><p class="small">4 unhörbare Klangerzeuger spielen je 4 Stimmen, 10 s. Gemessen wird, wie viel Rechenzeit sie brauchen. Kein Netz, kein Mikrofon.</p>` +
-      '<div class="plist"><button class="rb" data-a="go"><b>Probe starten</b><small>Fälle „Kern“ (Speicherwelle, Sinus×), „+FX“ (dazu MOD-FX, DELAY, EQ), „+Arp“ (Arpeggiator 1/24), „+Seq“ (dazu drei Sequenzen je Stimme), „Vocoder“ und „Bedienfeld“ (bei offenem Bedienfeld: Regler, Zoom, alle Halte, Seiten), je 10 s</small></button></div><pre class="mkpr small"></pre>' +
+      '<div class="plist"><button class="rb" data-a="go"><b>Probe starten</b><small>Fälle „Kern“ (Speicherwelle, Sinus×), „+FX“ (dazu MOD-FX, DELAY, EQ), „+Arp“ (Arpeggiator 1/24), „+Seq“ (dazu drei Sequenzen je Stimme), „Vocoder“, „Bedienfeld“ (bei offenem Bedienfeld: Regler, Zoom, alle Halte, Seiten) und „' + MD_NAME + '“ (Drum-Synthese, 12 Kanäle, 16tel), je 10 s</small></button></div><pre class="mkpr small"></pre>' +
       '<div class="plist"><button class="rb" data-a="copy" disabled><b>Ergebnis kopieren</b></button><button class="rb" data-a="file" disabled><b>Als Datei</b></button><button class="rb" data-a="stop"><b>Abbrechen</b></button></div>';
     guardTouch(p); const pre = p.querySelector('.mkpr');
     onTap(p, async b => {
@@ -6179,7 +6181,7 @@ function probeSheet() {
       if (a === 'copy') { try { await navigator.clipboard.writeText(JSON.stringify(PROBE.last, null, 1)); toast('Ergebnis kopiert'); } catch (e) { toast('Kopieren geht hier nicht – „Als Datei“'); } return; }
       if (a === 'file') { try { deliverNow('synquenzer-leistungs-probe', new TextEncoder().encode(JSON.stringify(PROBE.last, null, 1)), 'json', 'Leistungs-Probe'); } catch (e) { logErr(e); } return; }
       b.disabled = true; pre.textContent = 'läuft …';
-      let ci = 0; const r = await probe(['kern', 'fx', 'arp', 'seq', 'voc', 'panel'], {onTick: x => { pre.textContent = 'läuft … ' + Math.round((Math.min(1, x) + ci) / 6 * 100) + ' %'; }, onCase: k => { ci = k; }});   // MK5 + MK6 + MK7 + MK-P
+      let ci = 0; const r = await probe(['kern', 'fx', 'arp', 'seq', 'voc', 'panel', 'north'], {onTick: x => { pre.textContent = 'läuft … ' + Math.round((Math.min(1, x) + ci) / 7 * 100) + ' %'; }, onCase: k => { ci = k; }});   // MK5 + MK6 + MK7 + MK-P
       pre.textContent = JSON.stringify(r, null, 1); p.querySelectorAll('button[data-a="copy"],button[data-a="file"]').forEach(x => { x.disabled = false; }); b.disabled = false;
     }, 'button[data-a]');
   }, {name: 'mkprobe'});
@@ -15532,7 +15534,7 @@ const MK_LABEL = 'MS 2000';
       perc: {model: 'cb', tLvl: 1, wav: 'square', frq: 560, o2: 1, o2w: 'square', o2r: 1.48, tDec: .25, tSpk: .5, tfTyp: 'bandpass', tfFrq: 2600, tfQ: 1.5, lvl: .5, pan: -.2},
       shaker: {model: 'sh', nLvl: 1, nTyp: 'bandpass', nFrq: 9000, nQ: 1.2, nAtk: .004, nDec: .09, nCrv: .2, mLvl: .35, mTun: 1.6, mHp: 9000, mDec: .08, dyn: .7, lvl: .5, pan: -.3},
     },
-    // resonant, tuned percussion (Waldorf Attack flavour): long pitch bends, FM bells, resonant noise snare
+    // resonant, tuned percussion (resonant drum-synth flavour): long pitch bends, FM bells, resonant noise snare
     'Resonanz-Perc': {
       kick: {tLvl: 1, frq: 46, pAmt: 26, pDec: .07, tDec: .7, o2r: 1, fmI: 1.4, fmDec: .02, cLvl: .3, cTyp: 1, drv: .35, dyn: .4},
       snare: {tLvl: .9, frq: 230, pAmt: 3, pDec: .03, tDec: .12, nLvl: 1.7, nTyp: 'bandpass', nFrq: 2800, nQ: 4, nEnv: 1, nEnvDec: .06, nHp: 600, nDec: .2, sRoom: .2},
@@ -15569,7 +15571,7 @@ const MK_LABEL = 'MS 2000';
     {id: 'f-kit-disko-85', name: 'Disko 85', cat: 'drums', engine: 'drum', ev: 1, base: null, p: NEW_KITS['Disko 85'],
       tip: 'Synth-Pop 1985: runder Kick mit „Knock“-Klick, fette Snare mit Raum, Tamburin-Shaker. Shaker auf 1/16 mit Anschlag-Akzenten = Groove.'},
     {id: 'f-kit-resonanz-perc', name: 'Resonanz-Perc', cat: 'drums', engine: 'drum', ev: 1, base: null, p: NEW_KITS['Resonanz-Perc'],
-      tip: 'Wie ein Waldorf Attack: Toms mit langen Pitch-Bends (16 Halbtöne), Snare aus resonantem Rauschfilter (Q 4), FM-Glöckchen. Toms auf Grundton, Quinte, Oktave stimmen (82 / 123 / 164 Hz ≈ E2 H2 E3).'},
+      tip: 'Resonante Trommel-Synth-Klänge: Toms mit langen Pitch-Bends (16 Halbtöne), Snare aus resonantem Rauschfilter (Q 4), FM-Glöckchen. Toms auf Grundton, Quinte, Oktave stimmen (82 / 123 / 164 Hz ≈ E2 H2 E3).'},
   ];
 
   /* ---------- preview phrases ("Vorhören" in the browser): [beat, durBeats, midi, vel] at 112 BPM, transpose to the project key root ---------- */
@@ -17868,7 +17870,7 @@ const KIT_NAMES = ['808', '909', 'Rom Pop', 'Gated 84', 'FM Labor', 'Disko 85', 
 const KIT_OLD = {'Lo-Fi': 'Rom Pop', 'Industrial': 'FM Labor'};                // v2 kit names (old API / tests)
 // the „Vorbild“ line of a kit in the browser (§11.2)
 const KIT_REF = {'808': 'Roland TR-808', '909': 'Roland TR-909', 'Rom Pop': 'Synth-Pop, klingt auch auf dem Handy', 'Gated 84': 'LinnDrum + Gate-Hall (1984)',
-  'FM Labor': 'FM-Percussion', 'Disko 85': 'Linn / DMX, Synth-Pop 1985', 'Resonanz-Perc': 'Waldorf Attack'};
+  'FM Labor': 'FM-Percussion', 'Disko 85': 'Linn / DMX, Synth-Pop 1985', 'Resonanz-Perc': 'Resonante Trommel-Synth-Klänge'};
 const KIT_DATA = () => Object.assign({}, DrumKits.KITS, (window.SQ_FACTORY && window.SQ_FACTORY.NEW_KITS) || {});
 const kitId = name => 'f-kit-' + String(name).toLowerCase().replace(/\s+/g, '-');
 const KIT_DEF = () => ({gate: .34, gateLvl: 4, room: 1.4, accent: .5, padVel: 'pos'});   // §7.4 kit bus block
@@ -20347,10 +20349,29 @@ async function mdRender(hits, o) {
   for (const v of DRUM_VOICES) { const st = mdSlot(v.id); if (st && st.src === 'md') chans[v.idx] = MDN.spec(st); }
   const kit = Object.assign(MDN.kitInit(), (snd && snd.p && snd.p.md) || {});
   const list = hits.map((h, k) => { const sl = resolveDrum(h[1]); return {ch: sl ? sl.idx : 0, at: h[0], v: h[2] == null ? .8 : h[2], acc: h[3] || 0, tune: h[4] || 0, dec: h[5] || 1, id: k + 1}; });
-  const msgs = o.solo ? [[0, {t: 'mute', ch: o.solo.ch, solo: o.solo.part}]] : [];
+  const msgs = (o.solo ? [[0, {t: 'mute', ch: o.solo.ch, solo: o.solo.part}]] : []).concat(o.msgs || []);   // o.msgs: [[t, msg]] (Tests)
   return MDX.render({sr: o.sr || 48000, sec: o.sec || 2, chans, kit, hits: list, msgs, lim: o.lim});
 }
 function mdEngineInfo() { const E = MDS.E; return Object.assign(MDX.info(), {st: MDS.st, solo: MDS.solo, pads: DRUM_VOICES.filter(v => mdIsSrc(v.id)).map(v => v.id), live: E ? {load: E.load, late: E.late, voices: E.nv} : null}); }
+// Leistungs-Probe (Q3, perfProbe(['north'])): Kit „Schräg“ auf 12 Kanälen, 16tel-Muster, unhörbar; Last aus den Berichten der Engine
+async function mdProbe(c, sink, sec, o, stop) {
+  if (!(await MDX.load(c))) return {fall: 'north', err: MD_NAME + ': Modul nicht geladen'};
+  const K = MDX.kits.find(k => k.name === 'Schräg') || MDX.kits[0], E = MDX.node(c, sink), rep = [];
+  MDX.ORDER.forEach((id, i) => E.ch(i, K.slots[id])); E.kit(K.md);
+  const f = E.node.port.onmessage; E.node.port.onmessage = ev => { f(ev); if (ev.data && ev.data.t === 'load') rep.push({v: ev.data.v, nv: ev.data.nv}); };
+  const PAT = [[0, 4, 8], [4, 12], [7, 15], [12], [0, 2, 4, 6, 8, 10, 12, 14], [14], [9], [10], [11], [0], [3, 7, 11, 15], [1, 5, 9, 13]];
+  const st = 15 / (S.bpm || 120), t0 = performance.now(); let tn = c.currentTime + .1, k = 0;
+  while (performance.now() - t0 < sec * 1000 && !stop()) {
+    const L = []; while (tn < c.currentTime + .25) { const z = k % 16; PAT.forEach((P, ch) => { if (P.includes(z)) L.push({ch, at: tn, v: z % 4 ? .7 : 1, acc: 0, tune: 0, dec: 1}); }); tn += st; k++; }
+    if (L.length) E.hit(L);
+    if (o.onTick) o.onTick((performance.now() - t0) / 1000 / sec);
+    await new Promise(r => setTimeout(r, 50));
+  }
+  E.panic(); await new Promise(r => setTimeout(r, 150));
+  const late = E.late, V = rep.map(x => x.v).sort((a, b) => a - b); E.dispose();
+  return {fall: 'north', kit: K.name, channels: 12, load_med: +(V.length ? V[V.length >> 1] : 0).toFixed(4), load_max: +(V.length ? V[V.length - 1] : 0).toFixed(4),
+    voices_max: rep.reduce((m, x) => Math.max(m, x.nv || 0), 0), late, reports: rep.length};
+}
 // Hilfe (U-07-Stil, §ND4 Punkt 11)
 function mdHelp() {
   return [MD_NAME + ' · QUELLE: Im Drum-Editor SOUND → [Quelle ▾] wählt je Pad die Drum-Stimme oder die Drum-Synthese ' + MD_NAME + '. Zurück auf Drum = der alte Klang; die ' + MD_NAME + '-Werte bleiben gemerkt.',
@@ -31352,7 +31373,7 @@ const FX_HELP = ['Operator auf einen anderen ziehen: verbinden – oben modulier
   'Tipp: mit einem Operator anfangen, die anderen per Doppeltipp stumm schalten.',
   'Hüllkurve (Amp/Tonh.): Punkt antippen = Sustain, Loop A/B, ✗, + ; nichts gewählt = Exp/Lin, Skala, Retrig/Frei. Zwei Finger auseinander = Zeit-Zoom.'];
 function fxHelpPop() { openPop(null, p => { p.classList.add('fxlist'); p.innerHTML = '<h4>FM-FELD</h4><ol class="fxhelp">' + FX_HELP.map(t => `<li>${esc(t)}</li>`).join('') + '</ol>'; }, {name: 'fxhelp'}); }
-function fxAbout() { openPop(null, p => { p.classList.add('fxlist'); p.innerHTML = '<h4>ⓘ Vorbild</h4><p>Das FM-FELD folgt der Bedienung des EssenceFM von Kodamo (Handbuch V7.0): Operatoren auf einem Raster, unten die Ausgänge, ziehen = verbinden.</p><p class="small">Marken gehören ihren Inhabern, keine Verbindung.</p>'; }, {name: 'fxabout'}); }
+function fxAbout() { openPop(null, p => { p.classList.add('fxlist'); p.innerHTML = '<h4>ⓘ Vorbild</h4><p>Das FM-FELD folgt der Bedienweise moderner Raster-FM-Synthesizer: Operatoren auf einem Raster, unten die Ausgänge, ziehen = verbinden.</p>'; }, {name: 'fxabout'}); }
 // ---------- Vorlagen (Algorithm Library): the WP7 sheet with 32 pictures; a choice replaces edges and cells, one undo
 function fxAlgSheet(i) {
   const cur = FMX.badge(fxX(i)).match;

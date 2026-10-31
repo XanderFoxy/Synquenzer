@@ -6,18 +6,18 @@ await p.addInitScript(() => { window.__adds = []; const o = AudioWorklet.prototy
 await p.goto('file://' + file); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version, null, {timeout: 30000}); await p.waitForTimeout(800);
 const r = await p.evaluate(async () => {
   ensureAudio(); await new Promise(r => setTimeout(r, 1500));
-  const a0 = MDX.adds;
+  const a0 = MDX.info().adds;
   const before = JSON.stringify(drumSnd().p.slots.kick);
   SYNQUENZER.setPadSource('kick', 'md');
   await new Promise(r => setTimeout(r, 800));
-  const st = MDX.st, slot = deep(drumSnd().p.slots.kick);
+  const st = MDS.st, slot = deep(drumSnd().p.slots.kick);
   drumAudition(0, .9);
   await new Promise(r => setTimeout(r, 300));
   const q = await SYNQUENZER.mdQuery();
   const ren = await SYNQUENZER.mdRender([[0.1, 'kick', 1]], {sec: 1});
   undo(); const afterUndo = JSON.stringify(drumSnd().p.slots.kick);
   SYNQUENZER.setPadSource('kick', 'md'); let pk = 0; for (const x of ren.l) pk = Math.max(pk, Math.abs(x));
-  return {a0, st, srcOk: slot.src, nKeys: Object.keys(slot).filter(k => MDN.KEYS.includes(k)).length, q, undoEq: before === afterUndo, pk, info: mdEngineInfo()};
+  return {a0, st, srcOk: (slot.md || {}).src, nKeys: Object.keys(slot.md || {}).filter(k => MDN.KEYS.includes(k)).length, q, undoEq: before === afterUndo, pk, info: mdEngineInfo()};
 });
 console.log(JSON.stringify(r), 'adds', await p.evaluate(() => window.__adds), 'errs', JSON.stringify(errs));
 await b.close();
