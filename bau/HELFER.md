@@ -28,3 +28,5 @@ K1: n5-br-K fertig (K1-fix?). Minor-Befunde (Liste nach Undo veraltet, Menge ±0
 | session_01LWJYUTTg2qjG38pCtbUbAw | Vorteils-Radar (vorteile/: Deal-Mathe 2-für-1/Coupons, Erleben, Reisen, Musik/Auftritte, Nebenverdienst, Tests/Gewinnspiele, Spar-Tipps; Dach-Seite für schnaeppchen+konzerte) | vorteile | main | → nach Prüfung alles drei nach main |
 WICHTIG: Der Gesang-Merge (B) übernimmt Extra/TestNote aus S/merge-n5-args.json – dort stehen die K1-Entscheidungen von Xander (Phasen-Reset, kein ECO-Umschalten, S&H bleibt, Anschlag nicht listen) + K1-Minor-Fixes.
 Innovations-Workshop läuft: wf_5ccf27af-f8c → S/v3-ideen/innovation-vorschlag.md (dann Xander kurz vorlegen).
+16:05 UTC – Xander: „jedes fertige Paket gleich hochladen“. Release-Merge läuft: G-T-merge wf_f7e187ef-cf8 (S/merge-t-args.json: K1 + S012 + N12D1K2 + K1-Entscheidungen + K2-Slap-Check) → 4.24.0 → SOFORT veröffentlichen.
+Versionen verschieben sich: N4 (VS-L/VS-P) → 4.25.0 (merge-n4-args angepasst), Gesang komplett → 4.26.0, Video → 4.27.0, North → 4.28.0. Merges auf mk-wt immer nacheinander.
