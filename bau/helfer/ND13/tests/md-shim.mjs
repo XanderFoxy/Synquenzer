@@ -34,6 +34,7 @@ export function render(o) {
   if (o.kit) E.send({t: 'kit', p: o.kit});
   for (const k in (o.chans || {})) E.send({t: 'ch', ch: +k, p: prog(o.chans[k])});
   if (o.tap != null) E.send({t: 'test', tap: o.tap});
+  if (o.dc === 0 || o.nodc) E.send({t: 'test', dc: 0});   // measure the sound parts before the 5 Hz output DC blocker
   if (o.lim) E.send({t: 'lim', s: o.lim});
   E.send({t: 'reset'});
   if (o.hits) E.send({t: 'hit', list: o.hits});

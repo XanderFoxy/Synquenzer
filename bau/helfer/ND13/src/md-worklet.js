@@ -15,7 +15,8 @@
      {t:'lim', s}               CPU limiter stage 0..3 (modal models: s>=1 24 modes, s>=2 12 modes and no early reflections)
      processorOptions {init: [messages]} apply in the constructor, before the first block (offline renders)
      {t:'all', list:[messages]} several messages applied in order at once (offline render: one message per suspend point)
-     {t:'test', id, tap, q}     test API: tap 0 normal, 1 = C2/C3 before their filters, 2 = hall input after COLOR;
+     {t:'test', id, tap, q, dc} test API: tap 0 normal, 1 = C2/C3 before their filters, 2 = hall input after COLOR; dc 0 = output
+                                without the 5 Hz DC blocker (sound parts measured before it);
                                 q 'modes' -> modes per channel, q 'state' -> counters; the reply {t:'test', id, ok, modes?, state?} echoes id
    Worklet -> main: {t:'load', v, nv} once per second (fraction of real time), {t:'late', n} count of late hits.
    Determinism: no Math.random; noise = xorshift32 per channel from a fixed seed; reset restarts everything. */
@@ -746,7 +747,7 @@ class MdProc extends AudioWorkletProcessor {
     this.chs = []; for (let i = 0; i < NCH; i++) this.chs.push(new Chan(this, i));
     this.nz = new Uint32Array(NCH);
     this.mskT = new Float64Array(NCH); this.mskN = new Float64Array(NCH); this.mskC = new Float64Array(NCH);
-    this.soloCh = -1; this.soloP = 0; this.lim = 0; this.tap = 0; this.sent = true; this.errAt = -1e12; this.qover = 0;
+    this.soloCh = -1; this.soloP = 0; this.lim = 0; this.tap = 0; this.sent = true; this.errAt = -1e12; this.qover = 0; this.dcOn = true; this.dcA = 1 - TAU * 5 / SR; this.dcX = 0.1; this.dcY = 0.1; this.dcW = 0.1; this.dcZ = 0.1;
     // hit queue (preallocated)
     this.QN = 4096; this.q = []; for (let i = 0; i < this.QN; i++) this.q.push({fr: 0, ch: 0, v: 0, acc: 0, tune: 0, dec: 1}); this.qn = 0;
     this.late = 0; this.lateSent = 0;
@@ -784,7 +785,7 @@ class MdProc extends AudioWorkletProcessor {
     for (let i = 0; i < NCH; i++) { this.chs[i].reset(); this.nz[i] = (0x9E3779B9 ^ Math.imul(i + 1, 2654435761)) >>> 0 || 1; }
     for (let i = 0; i < NCH; i++) { const C = this.chs[i]; this.levels(C); C.tlS = C.tlT; C.nlS = C.nlT; C.clS = C.clT; this.fxSnap(C); }
     this.qn = 0; this.stopFr = -1; this.pan = 0; this.dlyT = dlyTime(this.K); this.dlyS = Math.round(this.dlyT * SR); this.dlyFb = 0.97 * this.K.dlF / 20; this.fbS = this.dlyFb; this.fb0 = this.fbS; this.fb1 = this.fbS;
-    this.hallReset();
+    this.hallReset(); this.dcX = 0; this.dcY = 0; this.dcW = 0; this.dcZ = 0;
   }
   // targets of the live part levels (with SOLO PART masks)
   levels(C) {
@@ -823,7 +824,7 @@ class MdProc extends AudioWorkletProcessor {
       case 'reset': { this.resetAll(); break; }
       case 'lim': { this.lim = Math.max(0, Math.min(3, m.s | 0)); break; }
       case 'test': {   // always one reply with the caller's id
-        if (m.tap != null) this.tap = m.tap | 0;
+        if (m.tap != null) this.tap = m.tap | 0; if (m.dc != null) this.dcOn = !!m.dc;
         const r = {t: 'test', id: m.id, ok: true};
         if (m.q === 'modes') { r.modes = []; for (const C of this.chs) { let n = 0; for (const v of C.v) if (v.on && (v.modal)) n = Math.max(n, v.nm); r.modes.push(n); } }
         if (m.q === 'state') r.state = {late: this.late, qn: this.qn, qover: this.qover, lim: this.lim, voices: this.chs.map(C => C.v.filter(v => v.on).length), hsleep: this.hsleep};
@@ -881,7 +882,7 @@ class MdProc extends AudioWorkletProcessor {
     if (qi > 0) { const q = this.q; for (let i = qi; i < this.qn; i++) { const t = q[i - qi]; q[i - qi] = q[i]; q[i] = t; } this.qn -= qi; }
     // stop after the hits of this block (they started before it): every sounding voice fades with tau
     if (stopK > 0) for (let c = 0; c < NCH; c++) for (let j = 0; j < NV; j++) { const v = this.chs[c].v[j]; if (v.on) v.stpK = stopK; }
-    if (!any && this.hsleep > 0.5 * SR / N && this.pan === 0) { this.dlyS = Math.round(this.dlyT * SR); this.fbS = this.dlyFb; this.cS = this.K.rvC; this.account(t0, N); return true; }   // idle: echo time, feedback, colour settle
+    if (!any && this.hsleep > 0.5 * SR / N && this.pan === 0 && this.dcY === 0 && this.dcZ === 0) { this.dlyS = Math.round(this.dlyT * SR); this.fbS = this.dlyFb; this.cS = this.K.rvC; this.account(t0, N); return true; }   // idle: echo time, feedback, colour settle
     // echo time of this block (glides linearly to a new time within 50 ms)
     let needD = false; for (let c = 0; c < NCH; c++) { const C = this.chs[c]; if (C.act && (C.tDl > 0 || C.sDl > 0 || C.dlHold > 0 || C.dlyE > 0)) needD = true; }
     if (needD) { const tg = Math.round(this.dlyT * SR), st = this.dlySt, DT = this.dT; let d = this.dlyS;
@@ -902,10 +903,15 @@ class MdProc extends AudioWorkletProcessor {
     this.hall(hin, L, R, N);
     // last guard: a non-finite output clears every state (logged once per 5 s by the main thread)
     { let sm = 0; for (let i = 0; i < N; i++) sm += L[i] + R[i]; if (!(sm - sm === 0)) { L.fill(0); if (R !== L) R.fill(0); for (let c = 0; c < NCH; c++) { const C = this.chs[c]; C.v[0].reset0(); C.v[1].reset0(); C.dl.fill(0); C.dlyE = 0; C.dlHold = 0; C.eqx1 = C.eqx2 = C.eqy1 = C.eqy2 = 0; C.adaa = 0.2; C.dcx = C.dcy = 0; } this.hallReset(); this.err(-1); } }
+    // DC blocker at the output, 5 Hz one pole like the app's synth worklets (sub-audio pitches / bends and ring modulation at ratio 1
+    // carry DC); test switch {t:'test', dc:0} measures the sound parts before it
+    if (this.dcOn) { const a = this.dcA; let x1 = this.dcX, y1 = this.dcY, x2 = this.dcW, y2 = this.dcZ;
+      for (let i = 0; i < N; i++) { const l = L[i], r = R[i]; y1 = l - x1 + a * y1; x1 = l; L[i] = y1; y2 = r - x2 + a * y2; x2 = r; R[i] = y2; }
+      if (y1 < 1e-15 && y1 > -1e-15) y1 = 0; if (y2 < 1e-15 && y2 > -1e-15) y2 = 0; this.dcX = x1; this.dcY = y1; this.dcW = x2; this.dcZ = y2; }
     // panic: 10 ms fade, then everything cleared
     if (this.pan > 0) {
       for (let i = 0; i < N; i++) { const g = this.pan > 0 ? this.pan / this.panN : 0; L[i] *= g; if (R !== L) R[i] *= g; if (this.pan > 0) this.pan--; }
-      if (this.pan === 0) { for (let c = 0; c < NCH; c++) { const C = this.chs[c]; C.v[0].reset0(); C.v[1].reset0(); C.dl.fill(0); C.dlyE = 0; C.act = false; C.eqx1 = C.eqx2 = C.eqy1 = C.eqy2 = 0; } this.hallReset(); }
+      if (this.pan === 0) { this.dcX = 0; this.dcY = 0; this.dcW = 0; this.dcZ = 0; for (let c = 0; c < NCH; c++) { const C = this.chs[c]; C.v[0].reset0(); C.v[1].reset0(); C.dl.fill(0); C.dlyE = 0; C.act = false; C.eqx1 = C.eqx2 = C.eqy1 = C.eqy2 = 0; } this.hallReset(); }
     }
     this.account(t0, N);
     return true;

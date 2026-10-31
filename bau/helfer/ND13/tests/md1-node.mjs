@@ -8,7 +8,8 @@ function check(id, ok, detail) { res.push({id, ok: !!ok, detail}); console.log((
 const T = x => 0.004 * Math.pow(2500, x / 50);
 const fN = n => 30 * Math.pow(600, n / 50), fE = n => 40 * Math.pow(400, n / 50);
 const hz = p => 440 * Math.pow(2, (p - 69) / 12);
-const one = (p, o = {}) => render(Object.assign({sr: SR, chans: {0: p}, hits: [{ch: 0, at: 0, v: o.v == null ? 1 : o.v, acc: o.acc || 0, tune: o.tune || 0, dec: o.dec || 1}], sec: o.sec || 1}, o.r || {}));
+let NODC = false;   // sound parts before the 5 Hz output DC blocker (like the synth worklet's test tap); set per test below
+const one = (p, o = {}) => render(Object.assign({sr: SR, nodc: NODC, chans: {0: p}, hits: [{ch: 0, at: 0, v: o.v == null ? 1 : o.v, acc: o.acc || 0, tune: o.tune || 0, dec: o.dec || 1}], sec: o.sec || 1}, o.r || {}));
 const sp = (x, a, b, N, h) => M.spectrum(x, SR, Math.round(a * SR), Math.round(b * SR), N || 65536, h);
 function msp(x, a, b) {   // M-SP: magnitude-weighted centroid, Hann 2048 frames averaged over [a,b)
   let num = 0, den = 0; for (let s = Math.round(a * SR); s + 2048 <= Math.round(b * SR) + 1; s += 1024) { const S = M.spectrum(x, SR, s, s + 2048, 2048); for (let i = 1; i < S.mag.length; i++) { num += S.mag[i] * i * S.df; den += S.mag[i]; } }
@@ -24,7 +25,8 @@ function crossT(x, dbRel, from = 0) { const {e, dt, off} = M.hilbDb(x, SR, 0.001
 function t60band(x, f, q = 8) { return M.t60(M.bandpass(x, SR, f, q), SR); }
 const within = (v, t, tol) => Math.abs(v - t) <= tol;
 const R = (a, d = 2) => (+a).toFixed(d);
-const run = (id, f) => { if (ONLY && !id.startsWith(ONLY)) return; try { f(); } catch (e) { check(id, false, 'Fehler ' + (e && e.stack || e)); } };
+const BEFORE_DC = ['ND1-03', 'ND1-04', 'ND1-16', 'ND1-19', 'ND1-21'];   // waveform details (bend start, gate end, click length, hold rate, echo events)
+const run = (id, f) => { if (ONLY && !id.startsWith(ONLY)) return; NODC = BEFORE_DC.includes(id); try { f(); } catch (e) { check(id, false, 'Fehler ' + (e && e.stack || e)); } NODC = false; };
 
 // ND1-01 signal path
 run('ND1-01', () => {

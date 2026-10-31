@@ -12,7 +12,7 @@ export function spectrum(x, sr, a = 0, b = x.length, N = 65536, half = false) {
 }
 export const db = x => 20 * Math.log10(Math.max(x, 1e-30));
 export function peaks(S, minDb = -50, fmin = 20, fmax = 20000) {
-  const {mag, df} = S; let mx = 0; for (let i = 1; i < mag.length; i++) if (mag[i] > mx) mx = mag[i];
+  const {mag, df} = S; let mx = 0; for (let i = Math.max(1, Math.floor(fmin / df)); i < Math.min(mag.length, fmax / df); i++) if (mag[i] > mx) mx = mag[i];   // reference: strongest bin inside the band
   const out = [];
   for (let i = Math.max(2, Math.floor(fmin / df)); i < Math.min(mag.length - 2, fmax / df); i++) {
     if (mag[i] > mag[i - 1] && mag[i] >= mag[i + 1] && mag[i] > mag[i - 2] && mag[i] >= mag[i + 2] && db(mag[i] / mx) > minDb) {

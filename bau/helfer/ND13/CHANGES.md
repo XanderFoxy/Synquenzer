@@ -132,7 +132,8 @@ FM-Stimme 0,42 %):
 14. **Offline-Render:** `MDX.render` gibt die ersten Nachrichten als `processorOptions.init` mit (im OfflineAudioContext kamen Port-Nachrichten teils erst
     nach Renderbeginn an → verspätete Schläge) und schickt je Suspend-Punkt genau **eine** Nachricht (mehrere als `{t:'all', list}`; Chromium wendete
     von mehreren gleichzeitig nur die erste an). Echtzeit nutzt wie spezifiziert den Port.
-15. **Größe:** Worklet-Quelle in der App ≈ 68 KB (Budget 45 KB): minBLEP-Tabelle (2,8 KB), vorab angelegte Felder (V8: keine Zahlen-Boxen je Block), Kopfkommentar.
+15. **Größe:** Worklet-Quelle in der App ≈ 70 KB (Budget 45 KB): minBLEP-Tabelle (2,8 KB), vorab angelegte Felder (V8: keine Zahlen-Boxen je Block).
+    ND1 + ND3 zusammen +97 KB → mit ND2 (+30) und ND4 (+10) wird ND4-01 „Seitengröße +≤ 100 KB“ überschritten (≈ +137 KB). Frage Q9.
 16. **ND3 nachgestimmt** (Spec: „Startwerte, nachstimmen per Messung“): Rund TONE LVL 46; Brücke TONE LVL 44; Fellkick SPC 36, DEC 28 E1, NOISE LVL 12; FM-Druck DEC 34; Verzerrt TONE LVL 50, DIST 20; Klassisch TONE LVL 46, NOISE LVL 31; Gated DEC 22 E1, TONE LVL 50, NOISE LVL 13;
     FM-Snare TONE LVL 50, NOISE LVL 28; Rausch-Klatsch RES 3, NOISE LVL 50, CLICK 38; Rausch-Hat NOISE LVL 50; Ride P 72.0 SPC 76; Splash DEC 35;
     Gong-Becken FREQ 50, P 62.0; Kristall SPC 45; Doppelglocke SPC 37 (×1,618, sonst rein harmonisch → ND3-02 „≥ 2 unharmonische Spitzen“ unerfüllbar).
@@ -163,6 +164,28 @@ Eine unabhängige Nachprüfung (eigene Messungen, Chromium + Node) bestätigte d
 - Bleibt als Frage (nicht geändert, Regel 27): Modal-Abklingen E1 (Abweichung 1), F2-Rückkopplungseinheit (Abweichung 8), 3-Schläge-in-3-ms (Abweichung 18).
 - Hinweis zur Messung: der Node-Shim gab dem Prozessor das `Math` des Host-Realms; das täuscht Zahlen-Boxen vor → Shim nutzt jetzt das eigene `Math`.
 
+### Zweite Runde: Verifikation mit 26 unabhängigen Prüfern (Gegenprobe je Befund)
+
+Je Korrektur ein Skeptiker, dazu drei frische Fehlersuchen (Spec-Treue der Modelle, Echtzeit/Knackfreiheit, Schnittstelle für ND4); jeder Befund
+wurde von einem weiteren Prüfer nachgemessen (18 bestätigt, 1 widerlegt). Alle 18 behoben, Dauer-Tests in `tests/md1-retest.mjs` (R11–R24):
+- Säge-DC: Konstante mit Trapezregel (blepAdd interpoliert linear) → |DC| ≤ 4·10⁻⁵ bis PITCH 127.5.
+- Stummer TONE (TONE LVL 0 / SOLO PART) lief ohne Phasenumbruch → beim Hörbarwerden Spitzen bis +93 dBFS. Jetzt läuft der Ton immer mit.
+- TONE/NOISE-Pegel und SOLO-Masken glitten in 16-Sample-Stufen (M-KLICK 9–11 dB) → durchgehende Rampen (0,1 dB).
+- Positives BEND warf Moden über 0,45·fs für den ganzen Schlag weg → Moden bleiben, rotieren während des Biegens höchstens mit 0,45·fs.
+- DIST-Typwechsel auf `rn` brach kurz ein → `rn` startet bei Phase ¼ (y = x bei kleiner Menge); schlafende Kanäle übernehmen Pegel/Pan/EQ/DIST
+  (auch den Typ) beim nächsten Schlag sofort statt aus alten Werten zu gleiten.
+- Echo: Zeitwechsel im Leerlauf ließ den nächsten ersten Echo gleiten (36 statt 10 ms) → im Leerlauf rastet die Zeit sofort ein; DLY 0 fror eine
+  klingende Leitung ein, die später wiederkam → bei DLY 0 wird die Leitung geleert. FEEDBACK gleitet (τ 10 ms), COLOR gleitet (τ 30 ms; Tief- und
+  Hochpass laufen immer mit und werden über ihr Gewicht eingeblendet, bei 0 bitgleich umgangen); frühe Reflexionen blenden beim CPU-Begrenzer 40 ms.
+- `control()` gab Zahlen aus nicht eingebetteten Hilfsfunktionen zurück (V8-Boxen → GC) → Ergebnisse über ein Float64-Feld; `tests/md1-gc.mjs`:
+  60 s Render ohne GC-Ereignis, Heap +0,3 MB.
+- Warteschlange 512 → 4096 Schläge, Überlauf wird gemeldet; `MDX.render` schickt lange Muster in 1-s-Paketen (8 Takte × 6 Pads: 128/128 Schritte);
+  Nachrichten mitten in einem Render-Quantum kommen sampelgenau (vorher bis 64 Samples spät); `E.test` ordnet Antworten über eine ID zu (nie hängend);
+  Knoten eines OfflineAudioContext bekommen keine Begrenzer-Stufe und zählen nicht in `cpuLoad()` (ND1 Punkt 7, ND4-10).
+- Widerlegt: „Knoten geschlossener Kontexte bleiben in `MDX.nodes`“ (dispose räumt auf; ND4 muss bei neuem Kontext `dispose()` rufen).
+- Offen/niedrig (dokumentiert, nicht geändert): sehr schnelles Drehen der Echozeit zu **längeren** Zeiten auf klingender Fahne kann knacksen
+  (Lesezeiger ändert die Richtung; die Spec prüft nur 0 → 99, das ist sauber); 3 Schläge in 3 ms (Abweichung 18).
+
 ## Fragen an Xander
 
 - **Q1 (ND1-10, Spec-Widerspruch):** H1–H6 „Resonanz-Mitte“ `fc = f0·2^(8·S/99)` reicht bis 256·f0, die Modelle haben aber nur 32 Teiltöne (bis 32·f0).
@@ -175,12 +198,15 @@ Eine unabhängige Nachprüfung (eigene Messungen, Chromium + Node) bestätigte d
   schlimmster Fall ≈ 13 % statt 8 %. Weitere Senkung ginge nur mit weniger Moden/Qualität (z. B. C1 24 statt 48 Teiltöne ohne Begrenzer).
   Gerätetest auf dem iPhone entscheidet (ND1-30). Soll ich die Moden-Grenzen enger setzen?
 - **Q4 (Datenfelder, wichtig für ND4):** Die Spec-Felder `mDec` (TONE DECAY) und `mLvl` (CH LEVEL) heißen genauso wie bestehende Felder der
-  Drum-Stimme (Metall-Decay `mDec`, Metall-Pegel `mLvl` der Hi-Hat-Slots in `DrumKits`). Flach im selben Slot gespeichert überschreiben sie sich.
+  Drum-Stimme (Metall-Decay `mDec` in Sekunden, Metall-Pegel `mLvl` der Slots HH ZU, HH OFFEN **und BECKEN** in `DrumKits`; in den Werks-Kits
+  13 Slots, auch der DECAY-Lock `Q.mDec *= lk.dec` liest es). `MDX.norm` auf einen Drum-Slot angewandt würde diese Werte zerstören. Flach im selben Slot gespeichert überschreiben sie sich.
   Die Engine nimmt im `ch`-Programm genau die Spec-Namen; die Ablage im Slot (z. B. eigener Unterschlüssel) muss ND4/der Dirigent entscheiden.
 - **Q8 (ND1-27 Gleichanteil):** Im 1-min-Zufallsflug liegt der Gleichanteil bei 48 kHz bei 0,003–0,004, bei 44,1 kHz bei 0,005–0,006 (Grenze 0,005).
   Ursache sind die laut §1.8 einseitigen Rechteck-Clicks P1–P3 (immer positive Fläche) bei 16tel-Schlägen auf 12 Kanälen. Ein Hochpass 3 Hz am Ausgang
   wurde probiert und wieder entfernt (verschiebt tiefe Phasen, langer leiser Nachlauf). Soll die Engine einen Gleichanteil-Filter bekommen (z. B. nur
   im Click-Weg), oder gilt der Gleichanteil-Schutz des Master-Busses?
+- **Q9 (Seitengröße):** ND4-01 erlaubt +100 KB für den ganzen Nachtrag; ND1+ND3 brauchen allein ≈ +97 KB. Budget erhöhen oder soll ich die
+  Worklet-Quelle verdichten (Bezeichner kürzen/minifizieren; die kommentierte Quelle bleibt im Repo)?
 - **Q6 (Abweichung 1):** Modal-Abklingen bei E1 wie gebaut (Moden mit T, ohne Hüllkurve – erfüllt ND1-10 „T60 ×1,5“) oder wie in §1.4 (T_M = 4T,
   Hüllkurve 4T/3 – dann ist ND1-10b nicht erfüllbar und hohe Moden klingen länger)?
 - **Q7 (Abweichung 8):** F2 „Selbst-Rückkopplung β = 0,6“ – in Perioden (gebaut, sehr rau) oder in Radiant (deutlich zahmer)?
@@ -202,7 +228,10 @@ Eine unabhängige Nachprüfung (eigene Messungen, Chromium + Node) bestätigte d
   Offline (VV1/FR1): `MDX.render({sr, sec, chans, kit, hits, msgs})` oder eigener Knoten mit `processorOptions: {init: [...]}`.
 - `MDX.norm(p)` klemmt ein Kanal-Programm (für `normDrum`), `MDX.normKit(p)` die Kit-Effekte; `MDX.INIT` ist INIT SOUND (mit `src:'md'`).
 - ND3 für ND2/ND4: `MDX.progs` (45, `mName`, `mCat`), `MDX.CATS`, `MDX.prog(name)`, `MDX.roleProg(slotId)`, `MDX.kits` (`slots` je Slot-ID, `md`).
-- Test-API: `SYNQUENZER.mdTest({q:'modes'})` → Moden je Kanal (ND4-10), `{tap:1|2}` Messabgriffe, `mdRender(o)`.
+- Test-API: `SYNQUENZER.mdTest({q:'modes'})` → Moden je Kanal (ND4-10), `{q:'state'}` Zähler, `{tap:1|2}` Messabgriffe, `mdRender(o)`;
+  jede Antwort `{t:'test', id, ok, ...}` (null nach 2 s / bei geschlossenem Kontext).
+- Live-Schläge: höchstens 4096 im Voraus (Worklet-Warteschlange); `panic` verwirft geplante Schläge; `{t:'all', list}` bündelt Nachrichten.
+- Bei neuem AudioContext den alten Knoten mit `E.dispose()` abmelden (sonst zählt seine letzte Last weiter in `MDX.info()`).
 - Bekannte Grenzen siehe Abweichungen 15 (Größe) und Q3 (CPU).
 
 ## Bitte prüfen (Xander)
