@@ -435,7 +435,7 @@ function fromVs5b(lyrics, marks, lang) {
 // → {V: [{x, w, p, u, k, o, nm, t}], n: {snap, re, nm}}  (k = Marke, −1 = feste Silbe ohne Marke)
 function view(ly, marks, feat, o) {
   if (!ly || !ly.s) return {V: [], n: {snap: 0, re: 0, nm: 0}};
-  const m = marks.length, S = ly.s, n = S.length, k = new Array(n).fill(-2), CO = costs(marks, feat, o);
+  const m = marks.length, S = ly.s, n = S.length, k = new Array(n).fill(-2), oo = new Uint8Array(n), CO = costs(marks, feat, o);
   let j = 0;
   for (let i = 0; i < n; i++) {   // Marke ≤ 30 ms vom Anker, monoton
     const t = S[i].t; while (j < m && marks[j].t < t - 0.03 - 1e-9) j++;
@@ -453,10 +453,10 @@ function view(ly, marks, feat, o) {
     const L = p >= 0 ? k[p] : -1; let cL = 0; if (L >= 0) for (let z = p; z >= 0 && k[z] === L; z--) cL++;
     const R = q < n ? k[q] : -1;
     const r = dpSeg(S.slice(i, e).map(y => ({x: y.x, w: y.w})), marks, CO, L, cL, R, {});
-    for (let z = 0; z < r.k.length; z++) { k[i + z] = r.k[z]; if (r.c[z] >= 4) S[i + z]._o = 1; }
+    for (let z = 0; z < r.k.length; z++) { k[i + z] = r.k[z]; if (r.c[z] >= 4) oo[i + z] = 1; }
     re += e - i; i = e;
   }
-  const V = S.map((y, i) => { const v = {x: y.x, w: y.w || 0, k: k[i], t: y.t, o: y.o || y._o ? 1 : 0}; delete y._o; if (fin(y.p)) v.p = y.p; if (y.u) v.u = 1; if (k[i] < 0) v.nm = 1; return v; });
+  const V = S.map((y, i) => { const v = {x: y.x, w: y.w || 0, k: k[i], t: y.t, o: y.o || oo[i] ? 1 : 0}; if (fin(y.p)) v.p = y.p; if (y.u) v.u = 1; if (k[i] < 0) v.nm = 1; return v; });
   return {V, n: {snap, re, nm}};
 }
 
@@ -470,9 +470,11 @@ function shiftFrom(V, i, d, SL, m) {
   if (i < 0 || i >= V.length || !d) return false;
   const pos = V.map(y => (y.o || y.k < 0 ? SL.length : posOf(SL, y.k)));
   if (d < 0) { for (let q = i; q < V.length; q++) if (V[q].k >= 0 && !V[q].o) { if (pos[q] + d < 0) return false; break; } }
+  let floor = -1; for (let q = i - 1; q >= 0; q--) if (V[q].k >= 0) { floor = V[q].o ? SL.length : posOf(SL, V[q].k); break; }
   for (let q = i; q < V.length; q++) {
     if (V[q].k < 0 && V[q].u && !V[q].o) continue;   // feste Silbe ohne Marke bleibt
-    const p = pos[q] + d;
+    const p = Math.max(pos[q] + d, floor); floor = p;   // nie vor die vorige Silbe: dort verschmolzen
+    if (p > SL.length) { V[q].k = m - 1; V[q].o = 1; delete V[q].nm; continue; }
     if (p >= SL.length) { V[q].k = m - 1; V[q].o = 1; }
     else { V[q].k = SL[Math.max(0, p)]; V[q].o = 0; }
     delete V[q].nm;
