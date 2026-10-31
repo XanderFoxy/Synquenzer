@@ -1,0 +1,28 @@
+// musiker B: VA-Regler, FM-Fader, Mixer, BPM per Finger → Ereignisse je Geste
+import {open, sleep, OUT, summ} from './n5-h-mu-lib.mjs';
+const VP = (process.argv[2] || '390x844').split('x').map(Number);
+const T = await open({vp: VP});
+const {p, E} = T;
+let n0 = await T.evN();
+const step = async (name, fn, wait = 2600) => { let r; try { r = await fn(); } catch (e) { r = 'ERR ' + e.message; } await sleep(wait); await T.drain(); const evs = await T.evSince(n0); n0 += evs.length; console.log(`## ${name} → ${JSON.stringify(r)}\n   ${summ(evs).join('\n   ') || '(keine)'}`); return evs; };
+const drag = async (x, y, dy, ms = 2000) => { const n = Math.round(ms / 16); await T.down(x, y); await sleep(30); for (let i = 1; i <= n; i++) { await T.move(x, y + dy * i / n); await sleep(16); } await sleep(40); await T.up(); };
+const knobsIn = sel => E(sel => [...document.querySelectorAll(sel)].filter(e => e.offsetWidth && e.getBoundingClientRect().y > 0 && e.getBoundingClientRect().y < innerHeight - 40).map(e => { const r = e.getBoundingClientRect(); return {t: e.textContent.trim().slice(0, 20), x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2)}; }), sel);
+await step('Spur Synth 1 wählen (Kopf)', () => T.tapSel('.th', /^SYNTH 1|^Synth 1/i), 800);
+await step('KLANG', () => T.tapSel('#bKlang'), 1200);
+await step('Tab FILTER', () => T.tapSel('button', /^FILTER$/), 800);
+let ks = await knobsIn('.knob'); console.log('knobs', JSON.stringify(ks));
+await p.screenshot({path: OUT + '/b-filter.png'});
+const v0 = await E(() => JSON.stringify(SYNQUENZER.getSound(0).p.cutoff));
+if (ks[0]) await step('2-s-Zug ' + ks[0].t, () => drag(ks[0].x, ks[0].y, -90));
+console.log('cutoff', v0, '→', await E(() => JSON.stringify(SYNQUENZER.getSound(0).p.cutoff)));
+if (ks[1]) await step('6-s-Zug ' + ks[1].t, () => drag(ks[1].x, ks[1].y, -60, 6000));
+if (ks[2]) await step('2 Züge schnell hintereinander ' + ks[2].t, async () => { await drag(ks[2].x, ks[2].y, -40, 400); await sleep(100); await drag(ks[2].x, ks[2].y, 40, 400); });
+await step('Doppeltipp Regler (Standardwert?) ' + ks[0].t, async () => { await T.tap(ks[0].x, ks[0].y, 60); await T.tap(ks[0].x, ks[0].y, 300); });
+await step('↶ im Editor', () => T.tapSel('#synthSheet button, button', /^↶$/));
+await step('↷ im Editor', () => T.tapSel('#synthSheet button, button', /^↷$/));
+await step('Editor ✕', () => T.tapSel('button', /^✕$/), 800);
+await step('BPM ziehen', async () => { const r = await T.rectOf('#bBpm'); await drag(r.cx, r.cy, -40, 800); return await E(() => S.bpm); });
+await step('M (Mute) tippen', () => T.tapSel('#bMute'));
+await step('M wieder', () => T.tapSel('#bMute'));
+console.log('check', await T.hc(), JSON.stringify(await E(() => SYNQUENZER.history())), 'errs', T.errs);
+await T.b.close();
