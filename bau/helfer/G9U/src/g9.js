@@ -257,8 +257,9 @@ function g9Cells(C, Wv) {
     (q.o ? cells[q.k].over : cells[q.k].s).push(i);
   }
   // „–“ = Melisma der vorigen Silbe, „·“ = leer (vor dem Text oder nach einer Pause)
-  let seen = false;
-  cells.forEach((c, j) => { if (c.s.length) { seen = true; c.kind = 'syl'; } else { c.kind = seen && !(mk[j].word) ? 'mel' : 'empty'; if (mk[j].word) seen = false; } });
+  // „–“ nur zwischen Silben (die vorige klingt weiter); vor dem Text, nach einer Pause und hinter der letzten Silbe „·“
+  let seen = false, lastS = -1; cells.forEach((c, j) => { if (c.s.length) lastS = j; });
+  cells.forEach((c, j) => { if (c.s.length) { seen = true; c.kind = 'syl'; } else { c.kind = seen && j < lastS && !(mk[j].word) ? 'mel' : 'empty'; if (mk[j].word) seen = false; } });
   return {cells, extra, dash};
 }
 // wpPaint (Marken- und Text-Modus): Beschriftung je Marke
