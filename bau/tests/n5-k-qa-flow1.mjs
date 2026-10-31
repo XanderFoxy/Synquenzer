@@ -39,7 +39,7 @@ const un = (await T.find('#synthSheet button', /^↶$/))[0]; if (un) await T.tap
 R_.afterHeadUndo = await st();
 const re = (await T.find('#synthSheet button', /^↷$/))[0]; if (re) await T.tap(re.cx, re.cy, 500);
 R_.afterHeadRedo = await st();
-if (un) await T.tap(un.cx, un.cy, 500);
+{ const un2 = (await T.find('#synthSheet button', /^↶$/))[0]; if (un2) await T.tap(un2.cx, un2.cy, 500); }
 R_.afterHeadUndo2 = await st();
 // row tap: Filter-Hüllk. -> Cutoff
 R_.reopen2 = await openList();
@@ -57,7 +57,7 @@ R_.jumpLfo2 = await E(() => ({tab: ED.tab, modHl: ED.modHl, pop: !!document.quer
 await T.shot('flow1-' + tag + '-jumpLfo2');
 // row tap: Analog
 await openList();
-const g3 = await E(() => { const r = document.querySelector('.pop.k1pop .k1go[data-k="p:analog"]'); if (!r) return null; const b = r.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+const g3 = await E(() => { const r = document.querySelector('.pop.k1pop .k1go[data-k="p:analog"]'); if (!r) return null; r.scrollIntoView({block: 'nearest'}); const b = r.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
 if (g3) await T.tap(g3[0], g3[1], 250);
 R_.jumpAnalog = await E(() => ({tab: ED.tab, sub: ED.sub && ED.sub[ED.tab], lit: [...document.querySelectorAll('.k1hl')].map(e => e.dataset.key)}));
 await T.shot('flow1-' + tag + '-jumpAnalog');

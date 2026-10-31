@@ -27,7 +27,7 @@ const st = await p.evaluate(() => SYNQUENZER.tkInfo().stimme);
 await p.evaluate(st => { SYNQUENZER.setTrackFx(st, 'vol', 1); window.__cap('in', AU.tracks[st].trackIn); SYNQUENZER.launchScene(0); }, st);
 await sleep(sec * 1000 * 1.5 + 1500);
 const I = Float32Array.from(await p.evaluate(() => Array.from(window.__capGet('in').L)));
-const log = await p.evaluate(() => ({log: window.__log, lt: window.__lt}));
+const log = await p.evaluate(() => ({log: window.__log, lt: window.__lt, vp: SYNQUENZER.vpInfo ? (({runs, sync, gated, deferred, maxMs}) => ({runs, sync, gated, deferred, maxMs}))(SYNQUENZER.vpInfo()) : null})); console.log('  VP', JSON.stringify(log.vp));
 await p.evaluate(() => SYNQUENZER.stop());
 console.log('  Stücke (ms in tkStartSrc, Vorlauf ms, zu spät ms):', JSON.stringify(log.log));
 console.log('  lange Tasks (ms):', JSON.stringify(log.lt));

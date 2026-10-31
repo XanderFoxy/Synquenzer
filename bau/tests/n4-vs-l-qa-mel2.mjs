@@ -12,7 +12,7 @@ await waitBeat(p, B - pb); await p.evaluate(() => SYNQUENZER.rec()); await sleep
 const rs = await p.evaluate(() => { const r = SYNQUENZER.runtime().rec; return {state: r.state, startBeat: r.startBeat}; });
 await waitBeat(p, B + 4 * bars + pa); await p.evaluate(() => SYNQUENZER.rec());
 await waitBeat(p, B + 4 * bars + pa + 3); await idle(p);
-const r = await stInfo(p, 0);
+const r = await stInfo(p, 0); await sleep(1500); const rB = await stInfo(p, 0); console.log('cstart später', rB.cstart, 'slot', rB.slot);
 console.log('● bei', B - pb, JSON.stringify(rs));
 console.log('STIMME:', JSON.stringify({len: r.len, audio: r.audio && {in: r.audio.in, out: r.audio.out, at: r.audio.at}, takeSec: r.takeSec, cstart: r.cstart, mel: r.mel}));
 const rows = []; for (let j = 0; j < bars; j++) { const h = await sungBarHeard(p, r, r.cstart, B + 4 * j, B + 4 * j + 4, spb); rows.push([j + 1, h.played, h.db]); }
@@ -30,7 +30,11 @@ const on = await p.evaluate(() => { const c = SYNQUENZER.vsClock(), st = SYNQUEN
   const T0 = c.start + cs * c.spb; let t0 = null; const W = Math.round(sr * 0.005); let acc = [], tt = [];
   for (const [t, x] of window.__cap) { for (let i = 0; i < x.length; i++) { acc.push(x[i]); tt.push(t + i / sr); } }
   let onset = null; for (let i = 0; i + W < acc.length; i += W) { let s = 0; for (let j = 0; j < W; j++) s += acc[i + j] * acc[i + j]; const db = 10 * Math.log10(s / W + 1e-20); if (tt[i] >= T0 - 0.05 && db > -40) { onset = tt[i]; break; } }
+  const env = []; for (let i = 0; i + W < acc.length; i += W) { if (tt[i] < T0 - 0.1 || tt[i] > T0 + 1.2) continue; let q = 0; for (let j = 0; j < W; j++) q += acc[i + j] * acc[i + j]; env.push([Math.round((tt[i] - T0) * 1000), Math.round(10 * Math.log10(q / W + 1e-20))]); }
+  window.__env = env.filter((x, k) => k % 4 === 0);
   return {cs, barT: +T0.toFixed(4), onsetT: onset && +onset.toFixed(4), lateMs: onset != null ? Math.round((onset - T0) * 1000) : null}; });
+console.log('Hüllkurve (ms rel. Taktstrich, dB):', JSON.stringify(await p.evaluate(() => window.__env)));
+console.log('STIMME nach Neustart', JSON.stringify(await stInfo(p, 0)));
 console.log('Ausgang nach Neustart: Takt-Anfang', on.barT, 's, Gesang setzt ein', on.onsetT, 's → ' + on.lateMs + ' ms nach dem Taktstrich (gesungen auf dem Taktstrich)');
 await p.evaluate(() => SYNQUENZER.stop());
 console.log('Fehler:', JSON.stringify(H.errs.slice(0, 3)));

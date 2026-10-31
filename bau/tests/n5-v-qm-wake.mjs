@@ -14,6 +14,7 @@ const sa = await p.evaluate(async () => { const w0 = window.__wake; songAudioSta
 console.log('Song als Audio:', JSON.stringify(sa));
 await p.evaluate(() => { wakeRelease(); });
 // B: Video erstellen (default way here: real-time recorder) from the sheet
+if (process.env.OPUS) await p.evaluate(() => SYNQUENZER.vvTest({opus: true}));
 await p.evaluate(() => SYNQUENZER.vvOpen()); await p.waitForTimeout(400);
 const w0 = await p.evaluate(() => window.__wake);
 const go = await p.$('#vvSheet .vvacts .go'); const q = await go.boundingBox(); await p.touchscreen.tap(q.x + q.width / 2, q.y + q.height / 2);
@@ -26,7 +27,7 @@ await p.waitForTimeout(35000);
 const i2 = await info(); console.log('hidden 35 s:', JSON.stringify(i2));
 await p.evaluate(() => { window.__hid = false; document.dispatchEvent(new Event('visibilitychange')); });
 const tB = Date.now();
-await p.waitForFunction(() => !SYNQUENZER.vvInfo().busy, null, {timeout: 150000, polling: 200}).catch(() => {});
+await p.waitForFunction(() => !SYNQUENZER.vvInfo().busy, null, {timeout: +(process.env.WAITMS || 150000), polling: 200}).catch(() => {});
 const i3 = await info(); console.log('visible again, after', ((Date.now() - tB) / 1000).toFixed(1), 's:', JSON.stringify(Object.assign(i3, {res: await p.evaluate(() => { const r = SYNQUENZER.vvInfo().res; return r && {how: r.how, dur: r.dur, size: r.size}; })})));
 const bl = await p.evaluate(() => SYNQUENZER.vvBlob());
 if (bl) { const f = OUTQ + 'wake-hidden.' + bl.ext; fs.writeFileSync(f, Buffer.from(bl.b64, 'base64')); console.log('file', execSync(`ffprobe -v error -show_entries format=duration -of csv=p=0 ${f}`).toString().trim(), execSync(`node n5-v-qm-aud.mjs ${f}`).toString().trim().slice(0, 400)); }
