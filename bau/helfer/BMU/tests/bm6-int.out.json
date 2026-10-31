@@ -1,0 +1,155 @@
+{
+ "test": "bm6-int",
+ "pass": true,
+ "checks": {
+  "BM6-04_offline_onsets": {
+   "ok": true,
+   "abweichungSamples": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "BM6-06_offline_twice_bitgleich": true,
+  "BM6-04_live_late0": {
+   "ok": true,
+   "takte": 32,
+   "late": 0,
+   "notenEnde": 278,
+   "notizLog": 24
+  },
+  "BM6-04_plan_wie_VA": {
+   "ok": true,
+   "va": [
+    "0:36",
+    "125:36",
+    "250:48",
+    "375:36"
+   ],
+   "bm": [
+    "0:36",
+    "125:36",
+    "250:48",
+    "375:36"
+   ]
+  },
+  "BM6-04_keys_rec_FANG_oneScale": {
+   "ok": true,
+   "va": {
+    "outs": "60,61,63,66,68",
+    "cap": 0,
+    "clipNotes": 5
+   },
+   "bm": {
+    "outs": "60,61,63,66,68",
+    "cap": 0,
+    "clipNotes": 5
+   },
+   "bmPlain": {
+    "outs": "60,61,63,66,68",
+    "cap": 0,
+    "clipNotes": 5
+   },
+   "fangVa": 5,
+   "fangBm": 5
+  },
+  "BM6-06_offline_eq_live": {
+   "ok": true,
+   "korrelation": 1,
+   "lag": 1920
+  },
+  "BM6-02_switch_sounding": {
+   "ok": true,
+   "held": 1,
+   "klickDb": -0.21330643184024248,
+   "afterDb": -18.700634370660445
+  },
+  "BM6-05_stop_panic_mute": {
+   "ok": true,
+   "vorPanik": -10.651327927257633,
+   "nachPanik50ms": -300,
+   "vorStopp": -10.626510294577036,
+   "stopp0bis5ms": -13.703466805337133,
+   "nachStopp300ms": -300,
+   "proxies": 0,
+   "muteDb": -300,
+   "muteClipNotes": 0,
+   "unmuteDb": -17.743183553129562
+  },
+  "BM6-10_routes": {
+   "ok": true,
+   "init": 0,
+   "n": 10,
+   "src": "V>FLT | MW>LFO1 AMT | AT>FLT | LFO1>FREQ | LFO2>FILT | Δ MASKE>O1 MASK | Δ MASKE>O2 MASK | Δ TONHÖHE>FREQ | FILTER-HK>CUTF | PANS>PAN",
+   "unique": true,
+   "cleared": true,
+   "undo": true,
+   "layerB": 10
+  },
+  "BM6-11_perfProbe": {
+   "ok": true,
+   "fall": {
+    "fall": "bm",
+    "voices": 10,
+    "fx": "CH4 + RV3",
+    "load_med": 0,
+    "load_max": 0,
+    "reports": 10,
+    "frames_ok": true,
+    "fps_med": 59.9,
+    "stub": true
+   }
+  },
+  "BM6-12_help_brand": {
+   "ok": true,
+   "zeilen": 8,
+   "name": "Bit Mask",
+   "ms": 1
+  },
+  "BM6-07_native": {
+   "ok": true,
+   "rms": -32.08220250251746,
+   "eco": "Bit Mask braucht AudioWorklet – vereinfacht",
+   "key": true,
+   "toast": true,
+   "node": false,
+   "info": {
+    "geladen": false,
+    "status": "off",
+    "adds": 0,
+    "worker": 0,
+    "tabellen": 0,
+    "poolFertig": false,
+    "speicher": 0,
+    "fallbacks": 0,
+    "late": 0,
+    "knoten": 0,
+    "stimmen": 0,
+    "ms": 0,
+    "err": null,
+    "platzhalter": true
+   }
+  },
+  "BM6-12_no_supabase": {
+   "ok": true,
+   "requests": []
+  },
+  "no_page_errors": {
+   "ok": true,
+   "errs": []
+  }
+ }
+}

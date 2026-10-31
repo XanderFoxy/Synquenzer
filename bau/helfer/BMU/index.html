@@ -6962,9 +6962,9 @@ function bmEnsure() {
 }
 // E: the host of one 'synq-bm' node (the calls of SynthHost.track)
 function bmTrack(c, dest, snd) {
-  const node = new AudioWorkletNode(c, 'synq-bm', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]});
-  node.connect(dest);
-  const E = {bm: true, node, load: 0, nv: 0, dead: false, proxies: new Map(), onEnd: null, onScope: null, sent: {poly: 10}, ons: [], offs: [], fq: false,
+  const node = new AudioWorkletNode(c, 'synq-bm', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]}), fd = c.createGain();
+  node.connect(fd); fd.connect(dest);   // fd: the 30 ms equal-power fade of an engine change (§5.2), else 1
+  const E = {bm: true, node, fd, load: 0, nv: 0, dead: false, proxies: new Map(), onEnd: null, onScope: null, sent: {poly: 10}, ons: [], offs: [], fq: false,
     notes: new Map(), at0: new Map(), lim: -1, run: null, st0: null, bpm: 0, sentJ: '', scopeMsg: null, ends: 0, late: 0};
   const post = m => { if (!E.dead) node.port.postMessage(m); };
   node.port.onmessage = ev => {
@@ -7014,7 +7014,10 @@ function bmTrack(c, dest, snd) {
     E.bpm = bpm;
   };
   E.scope = on => post({t: 'scope', on: !!on});
-  E.dispose = () => { if (E.dead) return; E.flush(); post({t: 'panic'}); E.dead = true; node.port.onmessage = null; try { node.disconnect(); } catch (e) {} };
+  // equal-power fade (sin in / cos out) over dur seconds from at
+  E.fade = (inn, at, dur) => { const n = 32, cv = new Float32Array(n); for (let k = 0; k < n; k++) { const x = k / (n - 1) * Math.PI / 2; cv[k] = inn ? Math.sin(x) : Math.cos(x); }
+    try { fd.gain.cancelScheduledValues(at); fd.gain.setValueCurveAtTime(cv, at, dur); } catch (e) { fd.gain.value = inn ? 1 : 0; } };
+  E.dispose = () => { if (E.dead) return; E.flush(); post({t: 'panic'}); E.dead = true; node.port.onmessage = null; try { node.disconnect(); fd.disconnect(); } catch (e) {} };
   E.prog(snd, true); E.set();
   return E;
 }
@@ -7044,6 +7047,7 @@ function bmSwitchX(i, snd) {
   if (!nE) return false;
   AU.synth[i] = nE; WKSET[i] = null;
   const now = nowT();
+  if (nE.bm) nE.fade(true, now, .03); if (E.bm) E.fade(false, now, .03);   // 30 ms equal power; a worklet engine's voices fade with τ 10 ms
   for (const v of [...E.proxies.values()]) {
     if (v.dead || (isFinite(v.relT) && v.start <= now + .002)) continue;
     if (v.start > now + .002) E.kill(v.id); else E.fastOff(v.id, now, .01);

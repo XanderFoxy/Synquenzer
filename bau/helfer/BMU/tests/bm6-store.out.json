@@ -1,0 +1,88 @@
+{
+ "test": "bm6-store",
+ "pass": true,
+ "checks": {
+  "BM6-03_normBm_1000": {
+   "ok": true,
+   "bad": [],
+   "nbad": 0,
+   "unk": 7267,
+   "unkKept": 7267,
+   "idem": 1000
+  },
+  "BM6-02_engine_switch_data": {
+   "ok": true,
+   "u1": 1,
+   "eng1": "bm",
+   "init": true,
+   "u2": 2,
+   "cleanBack": true,
+   "uBack": 1,
+   "vaFields": true,
+   "kept": true,
+   "back": true,
+   "undoVA": true,
+   "redoBM": true,
+   "bmSetUndo": true
+  },
+  "BM6-03_save_load_copy": {
+   "ok": true,
+   "unknownInSound": true,
+   "fileRT": true,
+   "projRT": true,
+   "copyTrack": true,
+   "libSaved": true,
+   "libDup": true,
+   "libLoad": true,
+   "soundFile": true,
+   "ownId": "u-mvwoa6yu-m59d"
+  },
+  "BM6-09_library": {
+   "ok": true,
+   "engChip": true,
+   "rows": [
+    "INIT Bit Mask",
+    "INIT Bit Mask · 2 OSZ",
+    "INIT Bit Mask · ANSCHLAG",
+    "BM Test",
+    "BM Test 2"
+   ],
+   "roles": [
+    "Alle Bit Mask",
+    "Init",
+    "Eigene"
+   ],
+   "rolesWith": [
+    "Alle Bit Mask",
+    "Bass",
+    "Lead",
+    "Pad",
+    "Keys",
+    "Blech/Streicher",
+    "Pluck/Glocke",
+    "Orgel/Chor",
+    "FX/Arp",
+    "Init",
+    "Eigene"
+   ],
+   "allEngines": true,
+   "delFactory": false,
+   "factoryStill": true,
+   "ownThere": true,
+   "keptAfterReload": true
+  },
+  "BM6-08_older_version": {
+   "ok": true,
+   "imported": true,
+   "lock": true,
+   "nvTrack": true,
+   "leiste": true,
+   "spieltINIT": "analog",
+   "zurueckDeepEqual": true
+  },
+  "no_page_errors": {
+   "ok": true,
+   "errs": []
+  }
+ }
+}
