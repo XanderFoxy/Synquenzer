@@ -16335,7 +16335,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.23.0';
+const VERSION = '4.25.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -41914,6 +41914,8 @@ function resolveDrum(v) { if (typeof v === 'number') return DRUM_BY_GM[v] || DRU
    WebCodecs (H.264 + AAC) in MP4 (eigener kleiner Muxer unten), sonst MediaRecorder in Echtzeit (Typwahl wie VC2c). */
 const VV = {open: false, el: null, off: null, busy: false, cancel: false, prev: null, res: null, last: null, test: {}, info: null, stage: null};
 const VV_FPS = 30, VV_TAIL = 10, VV_LV60 = 0.001;
+// the longest main-thread slices of the last job (ms): swapIn, susp (one scheduler step), frame, trim, mux
+function vvProf(k, ms) { const P = VV.prof || (VV.prof = {}); const o = P[k] || (P[k] = {n: 0, max: 0, sum: 0}); o.n++; o.sum += ms; if (ms > o.max) o.max = ms; if (ms > 30) (P.big || (P.big = [])).push([k, Math.round(performance.now() - ms), Math.round(ms)]); }
 const vvStep = () => (VV.test && VV.test.step) || .25;   // s of audio between two scheduler runs (horizon = step + LOOKAHEAD)
 // the device profile (not the project): format and picture of the sheet
 function vvPrefs() { const p = uiPrefs().vv || {}; return {fmt: p.fmt === '16:9' ? '16:9' : '9:16', view: p.view === 'song' || p.view === 'matrix' ? p.view : 'auto'}; }
@@ -41953,6 +41955,7 @@ function vvSwapIn(oc, wk) {
     voices: VOICES.splice(0), hits: HITS.splice(0), clicks: CLICKS.splice(0), recent: RECENT.splice(0), padq: PADQ.map(q => q.splice(0)),
     svStop: SV.lastStop, loop: S.song.loop, tailT: R.tailWinT, timer: AU.timer, songVer: UI.songVer};
   clearInterval(AU.timer);
+  LOG.n = 0; LOG.buf = new Array(4096);                            // the offline pass logs on its own (noteLog of the render)
   LIM.last = performance.now() + 1e9;                              // no CPU limiter steps from the offline engines' load reports
   const keep = {noise: AU.noise, metal: AU.metal, drumBufs: AU.drumBufs, dcBuf: AU.dcBuf, loopExtra: AU.loopExtra, compLat: AU.compLat, graphLat: AU.graphLat, measured: AU.measured, hint: AU.hint};
   Object.assign(AU, {ctx: oc, masterSum: null, analyser: null, M: null, hall: null, hallKind: 'convolver', hallPre: null, hallIn: null, hallRet: null, hallDuck: null,
@@ -42014,13 +42017,14 @@ async function vvRenderAudio(o) {
   if (wk && !(await vvAddModule(oc))) throw new Error('Klang-Modul nicht geladen');
   if (VV.cancel) throw new Error('abgebrochen');
   if (R.playing || rec.state !== 'off' || R.songRec) throw new Error('Wiedergabe läuft');
-  const T0 = performance.now(), live = o.live || {}, off = {oc, sv: null, ended: false, endT: null, endB: null, tl: live.tl || (live.tl = []), log: null, prog: 0};
+  const T0 = performance.now(), live = o.live || {}, PS = performance.now(), off = {oc, sv: null, ended: false, endT: null, endB: null, tl: live.tl || (live.tl = []), log: null, prog: 0};
   Object.assign(live, {bpm: S.bpm, a, b, t: -1});
   VV.off = off; UI.vvOff = true;
   let sv = null;
   try {
     sv = off.sv = vvSwapIn(oc, wk);
     if (!songPlayStart(a)) throw new Error('Song startet nicht');
+    vvProf('swapIn', performance.now() - PS);
   } catch (e) { if (sv) vvSwapOut(sv); VV.off = null; UI.vvOff = false; throw e; }
   const t0 = R.startTime, endB = b < song.bars ? R.songPlay.off + b * 4 : null, q = t => Math.ceil(t * sr / 128) * 128 / sr;
   const last = [];
@@ -42040,6 +42044,7 @@ async function vvRenderAudio(o) {
   let nextT = q(vvStep() / 2), fail = null;
   const total = len / sr;
   const onSusp = () => {
+    const P0 = performance.now();
     try {
       const now = oc.currentTime;
       if (VV.cancel) { finishLive(); fail = new Error('abgebrochen'); off.rej && off.rej(fail); return; }   // never resumed: the context is dropped
@@ -42073,6 +42078,7 @@ async function vvRenderAudio(o) {
       if (nextT < total - 256 / sr) oc.suspend(nextT).then(onSusp, e => { fail = e; });
       oc.resume().catch(() => {});
     } catch (e) { logErr(e); fail = e; finishLive(); try { oc.resume(); } catch (x) {} }
+    vvProf('susp', performance.now() - P0);
   };
   oc.suspend(nextT).then(onSusp, e => { fail = e; });
   let out;
@@ -42080,18 +42086,18 @@ async function vvRenderAudio(o) {
     out = await new Promise((res, rej) => { off.rej = rej; oc.startRendering().then(res, rej); });
   } finally { finishLive(); VV.off = null; }
   if (fail) throw fail;
+  const PT = performance.now();
   // trim: from the heard song start; the tail ends where the master stays below −60 dBFS (blocks of 512), ≤ 10 s
   const s0 = Math.round((t0 + AU.graphLat) * sr), sEnd = s0 + Math.round(songSec * sr), L = out.getChannelData(0), Rr = out.getChannelData(1);
   let lastLoud = sEnd;
   for (let k = out.length - 512; k >= sEnd; k -= 512) { let pk = 0; for (let j = k; j < k + 512; j++) { const v = Math.max(Math.abs(L[j]), Math.abs(Rr[j])); if (v > pk) pk = v; } if (pk >= VV_LV60) { lastLoud = k + 512; break; } }
   const capped = lastLoud >= sEnd + VV_TAIL * sr - 1024, eIdx = Math.min(lastLoud, sEnd + Math.round(VV_TAIL * sr), out.length), n = eIdx - s0;
-  const buf = new AudioBuffer({length: n, numberOfChannels: 2, sampleRate: sr});
-  for (let ch = 0; ch < 2; ch++) {
-    const d = buf.getChannelData(ch); d.set(out.getChannelData(ch).subarray(s0, eIdx));
-    const fl = Math.min(n, Math.round((capped ? 1 : .03) * sr));    // the end fades (at −60 dBFS it is inaudible; at 10 s a 1-s fade)
-    for (let j = 0; j < fl; j++) d[n - fl + j] *= Math.cos(j / fl * Math.PI / 2);
-  }
-  const r = {buf, sr, dur: n / sr, songSec, tail: (eIdx - sEnd) / sr, capped, a, b, bpm: S.bpm, tl: off.tl, log: off.log, ms: performance.now() - T0, wk};
+  // no copy (a 3-min song is 2 × 8 M samples): the result keeps the rendered buffer, the song is the window [s0, eIdx)
+  const chs = [0, 1].map(ch => out.getChannelData(ch).subarray(s0, eIdx)), fl = Math.min(n, Math.round((capped ? 1 : .03) * sr));
+  for (const d of chs) { for (let j = 0; j < fl; j++) d[n - fl + j] *= Math.cos(j / fl * Math.PI / 2); d.fill(0, n); }   // the end fades (at −60 dBFS inaudible; at 10 s a 1-s fade)
+  for (let ch = 0; ch < 2; ch++) out.getChannelData(ch).fill(0, eIdx);
+  vvProf('trim', performance.now() - PT);
+  const r = {buf: out, ch: chs, off: s0 / sr, n, sr, dur: n / sr, songSec, tail: (eIdx - sEnd) / sr, capped, a, b, bpm: S.bpm, tl: off.tl, log: off.log, ms: performance.now() - T0, wk};
   VV.last = r;
   return r;
 }
@@ -42204,12 +42210,17 @@ function vvDrawSong(g, LW, LH, st) {
   g.fillStyle = C.amber; lab('AKKORDE', 8, y0 + ru + rows.length * rh + rh / 2);
   g.fillStyle = C.text; lab('MELODIE', 8, y0 + ru + (rows.length + 1) * rh + rh / 2);
 }
-function vvDrawMatrix(g, LW, LH, st) {
-  const C = vvCols(), port = LH > LW, rows = vvRows(), ns = NS(), nc = Math.min(ns, port ? 4 : 6);
+// the matrix layout in app points: the scene columns (the bank with the playing clips), the track rows
+function vvMatrixLayout(LW, LH, st) {
+  const port = LH > LW, rows = vvRows(), ns = NS(), nc = Math.min(ns, port ? 4 : 6);
   let hi = 0; rows.forEach(i => { const s = st.slots[i]; if (s != null && s > hi) hi = s; });
   const c0 = Math.min(Math.max(0, ns - nc), Math.floor(hi / nc) * nc);
   const labW = port ? 70 : 96, head = 34, pad = 6, cw = (LW - labW - pad * 2) / nc;
   const chh = Math.max(28, Math.min(port ? 96 : 60, (LH - head - pad * 3) / rows.length)), y0 = Math.max(pad, (LH - head - rows.length * chh) / 2);
+  return {port, rows, nc, c0, labW, head, pad, cw, chh, y0, cell: (r, k) => ({x: labW + pad + k * cw + 2, y: y0 + head + r * chh + 2, w: cw - 4, h: chh - 4})};
+}
+function vvDrawMatrix(g, LW, LH, st) {
+  const C = vvCols(), {port, rows, nc, c0, labW, head, pad, cw, chh, y0} = vvMatrixLayout(LW, LH, st);
   const sp = st.sb == null ? 0 : st.sb, kb = st.sb == null || st.sb < 0 ? 0 : 1 - (st.sb - Math.floor(st.sb));   // the beat pulse (1 on the beat, falls to 0)
   g.fillStyle = C.bg; g.fillRect(0, 0, LW, LH);
   g.textBaseline = 'middle'; g.textAlign = 'center';
@@ -42310,9 +42321,16 @@ const VVMP4 = (() => {
       return box('moov', full('mvhd', 0, 0, u32(0), u32(0), u32(movieTs), u32(dur), u32(0x10000), u16(0x0100), z(10), mat(), z(24), u32(tracks.length + 1)), ...tk.map(x => x.box)); };
     const m0 = moovOf(0), base = ftyp.length + m0.length + 8, moov = moovOf(base);
     if (off + 8 > 4294967295) throw new Error('Video zu groß');
-    return new Blob([ftyp, moov, u32(off + 8), te.encode('mdat'), ...parts], {type: 'video/mp4'});
+    return {head: [ftyp, moov, u32(off + 8), te.encode('mdat')], parts};
   }
-  return {build};
+  // the file as a Blob of Blobs (≈ 4 MB each, a pause between them: no long task while 50–150 MB are copied)
+  async function blob(tracks) {
+    const {head, parts} = build(tracks), bl = [new Blob(head)]; let cur = [], sz = 0;
+    for (const x of parts) { cur.push(x); sz += x.length; if (sz > 4e6) { bl.push(new Blob(cur)); cur = []; sz = 0; await vvYield(); } }
+    if (cur.length) bl.push(new Blob(cur));
+    return new Blob(bl, {type: 'video/mp4'});
+  }
+  return {build, blob};
 })();
 
 /* ---------- Kodierwege: WebCodecs (H.264 + AAC → MP4, schneller als Echtzeit) oder MediaRecorder (Echtzeit) ---------- */
@@ -42360,9 +42378,11 @@ async function vvEncodeWC(job) {
       const nF = r ? Math.max(1, Math.round(r.dur * fps)) : Infinity;
       if (f >= nF) break;
       if (!r && f / fps > live.t - .05) { await Promise.race([rP, new Promise(res => setTimeout(res, 8))]); continue; }
+      const PF = performance.now();
       vvDraw(g, W, H, job.view, vvStateAt(r || live, f / fps));
       const fr = new VideoFrame(cv, {timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps)});
       ve.encode(fr, {keyFrame: f % (fps * 2) === 0}); fr.close(); f++;
+      vvProf('frame', performance.now() - PF);
       if (job.onProgress) job.onProgress(Math.min(.97, f / (fps * (r ? r.dur : live.est || 1))));
       // the encoder works off the main thread: wait while its queue is full, give the page a moment every ~12 ms
       while (ve.encodeQueueSize > 3 && !err && !VV.cancel) await new Promise(res => setTimeout(res, 2));
@@ -42370,11 +42390,12 @@ async function vvEncodeWC(job) {
     }
     await rP; if (err) throw err;
     const asr = opus ? 48000 : r.sr;
-    let src = r.buf;
-    if (asr !== r.sr) { const oc = new OfflineAudioContext(2, Math.ceil(r.dur * asr), asr), bs = oc.createBufferSource(); bs.buffer = r.buf; bs.connect(oc.destination); bs.start(0); src = await oc.startRendering(); }   // Opus (test only) needs 48 kHz
+    let A0 = r.ch[0], A1 = r.ch[1];
+    if (asr !== r.sr) { const oc = new OfflineAudioContext(2, Math.ceil(r.dur * asr), asr), bs = oc.createBufferSource(); bs.buffer = r.buf; bs.connect(oc.destination); bs.start(0, r.off, r.dur); const x = await oc.startRendering(); A0 = x.getChannelData(0); A1 = x.getChannelData(1); }   // Opus (test only) needs 48 kHz
+    const src = {length: A0.length};
     ae = new AudioEncoder({output: (c, m) => { if (!aCfg) aCfg = descOf(m); aS.push({d: copy(c), ts: c.timestamp, dur: c.duration}); }, error: e => { err = e; }});
     ae.configure({codec: path.acodec, sampleRate: asr, numberOfChannels: 2, bitrate: 192000});
-    const A0 = src.getChannelData(0), A1 = src.getChannelData(1), aStep = Math.round(asr / 10);
+    const aStep = Math.round(asr / 10);
     for (let aPos = 0; aPos < src.length;) {
       if (VV.cancel) throw new Error('abgebrochen');
       const n = Math.min(aStep, src.length - aPos), pl = new Float32Array(n * 2); pl.set(A0.subarray(aPos, aPos + n), 0); pl.set(A1.subarray(aPos, aPos + n), n);
@@ -42397,7 +42418,8 @@ async function vvEncodeWC(job) {
   if (!opus && !aCfg) throw new Error('AAC ohne Konfiguration');
   const audio = {kind: 'audio', codec: opus ? 'opus' : 'aac', ts: asr, sr: asr, ch: 2, cfg: aCfg || new Uint8Array(0), durs: ad, sizes: aS.map(x => x.d.length), data: aS.map(x => x.d), elst: prime ? prime : null, preskip: 312};
   job.r = r;
-  return VVMP4.build([video, audio]);
+  const PM = performance.now(), out = await VVMP4.blob([video, audio]); vvProf('mux', performance.now() - PM);
+  return out;
 }
 // fallback: the stage canvas + the rendered song (live context → MediaStreamDestination, not to the speakers) in real time
 async function vvEncodeMR(job) {
@@ -42412,7 +42434,7 @@ async function vvEncodeMR(job) {
   mr.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
   const done = new Promise(res => { mr.onstop = res; });
   try { if (c.state !== 'running') await c.resume(); } catch (e) {}
-  const t0 = c.currentTime + .05; mr.start(1000); bs.start(t0);
+  const t0 = c.currentTime + .05; mr.start(1000); bs.start(t0, r.off, r.dur);
   let fl = -1;
   await new Promise((res, rej) => {
     const step = () => {
@@ -42434,7 +42456,7 @@ async function vvMake(o) {
   const pf = vvPrefs(), fmt = o.fmt || pf.fmt, view = vvViewOf(o.view || pf.view), [W, H] = VV_SIZE[fmt] || VV_SIZE['9:16'];
   const path = await vvPath(fmt); if (!path.how) throw new Error(path.why);
   if (VV.job) throw new Error('Läuft schon');
-  VV.job = true; VV.busy = true; VV.res = null; VV.cancel = false;
+  VV.job = true; VV.busy = true; VV.res = null; VV.cancel = false; VV.prof = {};
   const T0 = performance.now(), prog = o.onProgress || (() => {});
   try {
     const cv = o.canvas || document.createElement('canvas'); cv.width = W; cv.height = H;
@@ -42455,7 +42477,7 @@ async function vvMake(o) {
     VV.res = {blob, mime: blob.type, ext: path.ext, how: path.how, why: path.why, fmt, view, W, H, dur: r.dur, songSec: r.songSec, tail: r.tail, a: r.a, b: r.b, size: blob.size,
       msAudio: Math.round(T1 - T0), msVideo: Math.round(T2 - T1), ms: Math.round(T2 - T0)};
     return VV.res;
-  } finally { VV.busy = false; VV.job = false; }
+  } finally { VV.busy = false; VV.job = false; VV.cancel = false; }
 }
 // Teilen (navigator.share mit Datei, im Tipp) bzw. Sichern; in der Claude-App über downloads (mp4 / webm erlaubt)
 function vvFileName(res) { const nm = String(S.name || 'song').toLowerCase().replace(/[^a-z0-9äöüß]+/gi, '-').replace(/^-|-$/g, '').slice(0, 30) || 'song'; return 'synquenzer-video-' + nm + '-' + res.fmt.replace(':', 'x') + '.' + res.ext; }
@@ -42497,7 +42519,7 @@ function vvOpen() {
   VV.open = true; VV.res = VV.res && VV.res.blob ? VV.res : null;
   sh.innerHTML = '';
   const head = el('div', 'vvh', '<b>Video</b>'), x = el('button', 'sh-x rb', '✕'); x.setAttribute('aria-label', 'Video schließen');
-  on(x, 'click', () => vvClose()); head.appendChild(x);
+  onTap(x, () => vvClose()); head.appendChild(x);
   const body = el('div', 'vvb'), stage = el('div', 'vvstage'), cv = el('canvas', 'vvcv'), ctl = el('div', 'vvctl');
   stage.appendChild(cv); body.append(stage, ctl); sh.append(head, body);
   const pf = vvPrefs();
@@ -42513,11 +42535,11 @@ function vvOpen() {
   done.append(bShare, bSave); ctl.append(bar, done);
   const way = el('div', 'vvway'), wayT = el('span', ''); way.append(wayT, dInfo); ctl.appendChild(way);
   Object.assign(VV, {ui: {sh, cv, stage, segF, segV, rng, bPrev, bMake, bar, bCan, done, bShare, bSave, dInfo, way, wayT}});
-  on(bPrev, 'click', () => { if (VV.prev) vvPrevStop(); else vvPrevStart(); });
-  on(bMake, 'click', () => vvGo());
-  on(bCan, 'click', () => { VV.cancel = true; });
-  on(bShare, 'click', () => { vvDeliver(VV.res, true); });
-  on(bSave, 'click', () => { vvDeliver(VV.res, false); });
+  onTap(bPrev, () => { if (VV.prev) vvPrevStop(); else vvPrevStart(); });
+  onTap(bMake, () => vvGo());
+  onTap(bCan, () => { VV.cancel = true; });
+  onTap(bShare, () => { vvDeliver(VV.res, true); });
+  onTap(bSave, () => { vvDeliver(VV.res, false); });
   guardTouch(sh);
   sh.classList.add('open'); R.editor = R.editor === 'menu' ? null : R.editor;
   if (!VV.onRs) { VV.onRs = () => { if (VV.open) vvFit(); }; window.addEventListener('resize', VV.onRs); }
@@ -42607,14 +42629,14 @@ function vvApi() {
   const meta = r => (r ? Object.assign({}, r, {blob: undefined}) : null);
   return {
     vvOpen: () => !!vvOpen(), vvClose: () => { vvClose(); return true; },
-    vvInfo: () => ({open: VV.open, busy: VV.busy, prev: !!VV.prev, off: !!VV.off, prefs: vvPrefs(), range: vvRange(true), res: meta(VV.res), test: Object.assign({}, VV.test)}),
+    vvInfo: () => ({prof: VV.prof ? JSON.parse(JSON.stringify(VV.prof)) : null, open: VV.open, busy: VV.busy, prev: !!VV.prev, off: !!VV.off, prefs: vvPrefs(), range: vvRange(true), res: meta(VV.res), test: Object.assign({}, VV.test)}),
     vvPath: fmt => vvPath(fmt || vvPrefs().fmt),
     vvTest: o => { VV.test = Object.assign({}, o || {}); VV.pathC = null; if (VV.ui) vvSync(); return Object.assign({}, VV.test); },
     vvPrefs: o => { if (o) for (const k of ['fmt', 'view']) if (o[k]) vvPrefSet(k, o[k]); if (VV.ui) vvSync(); return vvPrefs(); },
-    vvRender: async o => { const r = await vvRenderAudio(o || {}); let pk = 0, ss = 0; for (let c = 0; c < 2; c++) { const d = r.buf.getChannelData(c); for (let k = 0; k < d.length; k++) { const v = d[k]; ss += v * v; if (Math.abs(v) > pk) pk = Math.abs(v); } }
-      return {dur: r.dur, songSec: r.songSec, tail: r.tail, capped: r.capped, a: r.a, b: r.b, sr: r.sr, ms: Math.round(r.ms), wk: r.wk, peak: pk, rms: Math.sqrt(ss / (2 * r.buf.length)), tl: r.tl.map(e => Object.assign({}, e, {b: isFinite(e.b) ? e.b : -1})), log: r.log}; },
+    vvRender: async o => { VV.cancel = false; const r = await vvRenderAudio(o || {}); let pk = 0, ss = 0; for (let c = 0; c < 2; c++) { const d = r.ch[c]; for (let k = 0; k < d.length; k++) { const v = d[k]; ss += v * v; if (Math.abs(v) > pk) pk = Math.abs(v); } }
+      return {dur: r.dur, songSec: r.songSec, tail: r.tail, capped: r.capped, a: r.a, b: r.b, sr: r.sr, ms: Math.round(r.ms), wk: r.wk, peak: pk, rms: Math.sqrt(ss / (2 * r.n)), tl: r.tl.map(e => Object.assign({}, e, {b: isFinite(e.b) ? e.b : -1})), log: r.log}; },
     // the last render as 16-bit PCM (base64, interleaved stereo) for measurements
-    vvPcm: (t0, t1) => { const r = VV.last; if (!r) return null; const sr = r.sr, a = Math.max(0, Math.round((t0 || 0) * sr)), b = Math.min(r.buf.length, t1 == null ? r.buf.length : Math.round(t1 * sr)); const L = r.buf.getChannelData(0), Rr = r.buf.getChannelData(1), o = new Int16Array((b - a) * 2);
+    vvPcm: (t0, t1) => { const r = VV.last; if (!r) return null; const sr = r.sr, a = Math.max(0, Math.round((t0 || 0) * sr)), b = Math.min(r.n, t1 == null ? r.n : Math.round(t1 * sr)); const L = r.ch[0], Rr = r.ch[1], o = new Int16Array((b - a) * 2);
       for (let k = a; k < b; k++) { o[(k - a) * 2] = Math.max(-32768, Math.min(32767, Math.round(L[k] * 32767))); o[(k - a) * 2 + 1] = Math.max(-32768, Math.min(32767, Math.round(Rr[k] * 32767))); }
       const u8 = new Uint8Array(o.buffer); let s = ''; for (let k = 0; k < u8.length; k += 32768) s += String.fromCharCode.apply(null, u8.subarray(k, k + 32768)); return {sr, n: b - a, b64: btoa(s)}; },
     vvMake: async o => meta(await vvMake(o || {})),
@@ -42623,7 +42645,10 @@ function vvApi() {
     vvGo: () => { vvGo(); return true; },
     vvPreview: on => { if (on === false) vvPrevStop(); else vvPrevStart(); return !!VV.prev; },
     vvStateAt: t => (VV.last ? vvStateAt(VV.last, t) : null),
-    vvMux: (tracks) => VVMP4.build(tracks).arrayBuffer().then(b => { const u8 = new Uint8Array(b); let s = ''; for (let k = 0; k < u8.length; k += 32768) s += String.fromCharCode.apply(null, u8.subarray(k, k + 32768)); return btoa(s); }),
+    // the matrix cells (video pixels) of a format at video time t of the last render: {t, s, x, y, w, h}
+    vvMatrixCells: (fmt, t) => { const [W, H] = VV_SIZE[fmt || '9:16'], k = W > H ? W / 640 : W / 360, st = VV.last ? vvStateAt(VV.last, t || 0) : {slots: []}, L = vvMatrixLayout(W / k, H / k, st), o = [];
+      L.rows.forEach((i, r) => { for (let q = 0; q < L.nc; q++) { const c = L.cell(r, q); o.push({t: i, s: L.c0 + q, x: c.x * k, y: c.y * k, w: c.w * k, h: c.h * k}); } }); return o; },
+    vvMux: (tracks) => VVMP4.blob(tracks).then(x => x.arrayBuffer()).then(b => { const u8 = new Uint8Array(b); let s = ''; for (let k = 0; k < u8.length; k += 32768) s += String.fromCharCode.apply(null, u8.subarray(k, k + 32768)); return btoa(s); }),
   };
 }
 /* VV1-END */

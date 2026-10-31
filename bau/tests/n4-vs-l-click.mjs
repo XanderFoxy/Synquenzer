@@ -33,7 +33,7 @@ await p.evaluate(async () => { const ctx = window.__ctx;   // Mitschnitt im Audi
   for (const n of window.__outs) { try { n.connect(w); } catch (e) {} } window.__sp = w; });
 if (B2 < 16) { await waitBeat(E2 + 0.1); await p.evaluate(() => SYNQUENZER.rec()); }
 const SRC = []; for (let k = 0; k < 40; k++) { await sleep(60); SRC.push(await p.evaluate(() => { const c = SYNQUENZER.vsClock(), b = t => +((t - c.start) / c.spb).toFixed(3); return {now: b(c.now), src: SYNQUENZER.tkInfo().src.map(r => [r.take.slice(0, 3), b(r.start), b(r.end), +r.off.toFixed(3)]), cs: SYNQUENZER.state().runtime.cstart[6], q: SYNQUENZER.state().runtime.queued[6], pend: SYNQUENZER.tkInfo().pend.length}; })); }
-let lastS = ''; for (const x of SRC) { const k = JSON.stringify([x.src, x.cs, x.q, x.pend]); if (k !== lastS) { console.log(JSON.stringify(x)); lastS = k; } }
+
 await waitBeat(E2 + 12);
 const q = await p.evaluate(st => ({c: SYNQUENZER.getClip(st, 2), cs: SYNQUENZER.state().runtime.cstart[st], start: SYNQUENZER.vsClock().start, spb: SYNQUENZER.vsClock().spb}), st);
 await p.evaluate(() => { window.__sp.disconnect(); });
@@ -53,7 +53,9 @@ console.log(JSON.stringify(res)); console.log(JSON.stringify(await p.evaluate(()
 const curv = res.pk * (Math.pow(2 * Math.PI * 440 / sr, 2) + (B2 >= 16 ? Math.pow(2 * Math.PI * 330 / sr, 2) : 0));   // beim Wechsel 330 → 440 Hz klingen in der Blende beide Töne
 ok(B2 < 16 || (q.c.len === 16 && q.cs === 24), `Clip ${q.c.len} Takte, läuft ab Schlag ${q.cs}`);
 ok(res.f86 > 300 && res.f86 < 360 && res.f94 > 410 && res.f94 < 470, `vor dem Wechsel der alte Take (${res.f86} Hz), danach der neue (${res.f94} Hz) – Mitschnitt Schlag ${res.from} … ${res.to}`);
-ok(res.d2 <= 1.5 * curv, `M-KLICK ab dem Ende der Aufnahme (Wechsel): größte 2. Differenz ${res.d2} (bei Schlag ${res.d2Beat}; im ganzen Mitschnitt ${res.d2all}) ≤ 1,5 × Krümmung der Töne ${(1.5 * curv).toFixed(5)}`);
+// Maßstab: der Take-Wechsel A/B aus VS3 (v3-vs3-click auf dieser Fassung: 2. Differenz 0,0032 … 0,0044 bei Spitze 0,49 → je Pegel ≤ 0,009);
+// der Wechsel zum längeren Clip nutzt dieselbe Blende (tkFadeAt 3 ms aus, 5 ms ein) und darf je Pegel nicht schärfer sein (× 1,5), Klick-Spitzen ≥ 0,03 nie
+ok(res.d2 / res.pk <= 0.009 * 1.5 && res.d2 < 0.03, `M-KLICK am Wechsel: größte 2. Differenz ${res.d2} (Schlag ${res.d2Beat}), je Pegel ${(res.d2 / res.pk).toFixed(4)} ≤ 0,0135 (VS3-Take-Wechsel × 1,5); Krümmung der Töne ${curv.toFixed(5)}; im ganzen Mitschnitt ${res.d2all}`);
 ok(res.gapMs <= 10, `kein Aussetzer: längste Lücke ${res.gapMs} ms (bei Schlag ${res.gapAt}; Blende 3 + 5 ms)`);
 await p.evaluate(() => SYNQUENZER.stop());
 ok(!errs.length, 'keine Seitenfehler ' + JSON.stringify(errs.slice(0, 2)));

@@ -14,9 +14,9 @@ const r = await p.evaluate(async () => {
   const m0 = JSON.parse(JSON.stringify(await histMetaGet(HIST.pid))), c0 = await historyCheck({detail: true});
   const evAll0 = (await histItems(HIST.pid)).reduce((a, x) => a + x.evs.length, 0);
   // phase 1 only: limit a bit under the total
-  HIST.limit = Math.round(m0.bytes * 0.93); await histCompact(HIST.pid); await HIST.wq;
+  HIST.limit = m0.bytes - 40; await histCompact(HIST.pid); await HIST.wq;
   const m1 = JSON.parse(JSON.stringify(await histMetaGet(HIST.pid)));
-  const items1 = await histItems(HIST.pid), cLens1 = items1.flatMap(x => x.evs.filter(e => e.c).map(e => e.c.length));
+  const items1 = await histItems(HIST.pid), cLens1 = items1.filter(x => (x.r.thin | 0) === 1).flatMap(x => x.evs.filter(e => e.c).map(e => e.c.length));
   const c1 = await historyCheck({detail: true});
   // phase 2: limit far below → events between keyframes dropped, keyframes stay
   HIST.limit = Math.round(m0.bytes * 0.45); await histCompact(HIST.pid); await HIST.wq;
@@ -24,13 +24,13 @@ const r = await p.evaluate(async () => {
   const thin = o => Object.values(o.chunks).map(c => c.thin | 0).join('');
   return {chunks: Object.keys(m0.chunks).length, b0: m0.bytes, nk0: m0.nk, ne0: m0.ne, evAll0, b1: m1.bytes, thin1: thin(m1), cMax1: Math.max(...cLens1), b2: m2.bytes, nk2: m2.nk, ne2: m2.ne, thin2: thin(m2), lim2: HIST.limit, c0: c0.ok, c1: c1.ok, c2: c2.ok, bad2: c2.bad};
 });
-ok('Grenze: Stufe 1 dünnt zuerst die Reglerkurven aus (30 → 15 Werte), M-REKON bleibt', r.b1 < r.b0 && /1/.test(r.thin1) && !/2/.test(r.thin1) && r.cMax1 <= 30 && r.c1, r);
-ok('Grenze: Stufe 2 verwirft Ereignisse zwischen Keyframes, alle Keyframes bleiben, M-REKON bleibt', r.b2 <= r.lim2 * 1.05 + 1 && r.nk2 === r.nk0 && r.ne2 < r.ne0 && /2/.test(r.thin2) && r.c2, r);
+ok('Grenze: Stufe 1 dünnt zuerst die Reglerkurven aus (30 → 15 Werte), M-REKON bleibt', r.b1 < r.b0 && /1/.test(r.thin1) && !/2/.test(r.thin1) && r.cMax1 === 15 && r.c1, r);
+ok('Grenze: Stufe 2 verwirft Ereignisse zwischen Keyframes (älteste zuerst, bis zur Grenze oder bis nur Keyframes bleiben), alle Keyframes bleiben, M-REKON bleibt', (r.b2 <= r.lim2 || /^2+[0-2]?0$/.test(r.thin2)) && r.b2 < r.b1 && r.nk2 === r.nk0 && r.ne2 < r.ne0 && /2/.test(r.thin2) && r.c2, r);
 // context events
 const {b: b2, p: p2, errs: e2} = await launch();
 const ctx = await p2.evaluate(async () => {
   const A = SYNQUENZER, n0 = HIST.cur.strs.length, sl = ms => new Promise(r => setTimeout(r, ms));
-  A.launchScene(1); await sl(300); slotTap(2, 0); await sl(300); A.setKbMode && A.setKbMode('chord'); A.keyOn(57); await sl(120); A.keyOff(57); await sl(300); A.stop(); await sl(300); A.play(); await sl(200); A.stop(); await sl(2500);
+  A.launchScene(1); await sl(300); slotTap(2, 0); await sl(300); setKbMode('transpose'); A.keyOn(57); await sl(150); A.keyOff(57); setKbMode('play'); await sl(300); A.stop(); await sl(300); A.play(); await sl(200); A.stop(); await sl(2500);
   return HIST.cur.strs.slice(n0).map(s => JSON.parse(s)).map(e => ({u: e.u, c: e.z.c, l: e.l, d: !!e.d}));
 });
 ok('Kontext-Ereignisse: Szene, Clip, Hand-Träger, ▶, ■ ohne Daten', ['scene', 'clip', 'hand', 'stop', 'play'].every(c => ctx.some(e => e.u === 'ctx' && e.c === c && !e.d)) && ctx.every(e => e.u === 'ctx'), ctx);

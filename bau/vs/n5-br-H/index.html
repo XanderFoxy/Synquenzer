@@ -1265,6 +1265,7 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .tin{height:44px;min-width:0;flex:1 1 180px;max-width:320px;padding:0 10px;background:var(--lcd);border:1px solid var(--line);border-radius:var(--r-s)}
 .rng{flex:1 1 160px;max-width:320px;accent-color:var(--sel);height:32px}
 .mval{font:700 13px/1 var(--font-num);min-width:52px}
+#menu .mhist .seg button{min-height:44px;min-width:44px}   /* VC2a */
 .help p{margin:0 0 8px;color:var(--text);font-size:14px;line-height:1.35}
 .dlink{color:var(--amber);font-weight:700;text-decoration:none;padding:8px 0;display:inline-block}
 .ver{color:var(--text-faint);font-size:11px;text-align:center;padding:16px 0}
@@ -19269,7 +19270,7 @@ function launchScene(s) {
   try { sceneRowStart(s, rb); } catch (e) { logErr(e); }
   memBound(rb, 'scene');                                        // V2d: ▶n is a Grenzpunkt
   R.selS = s; UI.dirty.all = true;
-  histCtx('scene', {s}, 'Szene ' + (s + 1));                   // VC2a
+  histCtx('scene', {s}, 'Szene ' + (s + 1));  // VC2a
   if (!R.playing) play();
 }
 function launchClip(i, s) {
@@ -19277,7 +19278,7 @@ function launchClip(i, s) {
   if (!S.tracks[i] || !S.tracks[i].clips[s]) return;
   if (R.playing && R.pend[i] && R.pend[i].slot === s) { R.pend[i] = null; songTakeOver(i); UI.dirty.grid = true; return; }   // like a tap: cancels the queued launch
   launch(i, s);
-  histCtx('clip', {t: i, s});                                   // VC2a
+  histCtx('clip', {t: i, s});  // VC2a
   if (!R.playing) play();
 }
 function stopTrack(i) { if (R.playing) launch(i, -1); else { R.slot[i] = -1; R.pend[i] = null; } UI.dirty.grid = true; }
@@ -20422,7 +20423,7 @@ function startTransport(countIn) {
   UI.dirty.all = true;
   tick();
   wakeAcquire();
-  histCtx('play', null, '▶');                                  // VC2a
+  histCtx('play', null, '▶');  // VC2a
 }
 function play() { startTransport(null); }
 function stop() {
@@ -20435,7 +20436,7 @@ function stop() {
   const now = c.currentTime;
   R.stopT = performance.now();
   tailWinSet(true);
-  histCtx('stop', null, '■');                                  // VC2a
+  histCtx('stop', null, '■');  // VC2a
   if (R.songRec) { try { songRecEnd(audBeat()); } catch (e) { logErr(e); } }      // §3.9: stopping the transport ends a song recording
   if (R.songPlay) { R.songPlay.stopping = true; songPlayEnd(false); }
   try { partsOff(true); } catch (e) { logErr(e); }          // V2c: rows and parts end (▶ oben resumes them from bar 1)
@@ -20540,7 +20541,7 @@ function undoPush(e) {
   UNDO.push(e); if (UNDO.length > UNDO_MAX) UNDO.shift();
   REDO.length = 0;
   UI.dirty.strip = true; if (typeof edUndoBtns === 'function') edUndoBtns();
-  histPush(e);                                              // VC2a: Verlauf-Rekorder
+  histPush(e);  // VC2a
 }
 // V0b: a project setting as one undo step (kind 'set': Tastatur-Anschlag, Pad wählt Instrument)
 function settingApply(key, v) {
@@ -20623,7 +20624,7 @@ function undo() {
   if (!u) { toast('Nichts rückgängig zu machen'); UI.dirty.strip = true; return false; }
   if (u.kind === 'group') REDO.push(groupSwap(u, true));
   else { REDO.push(Object.assign({}, u, {before: undoState(u)})); undoApply(u, u.before); }
-  histPush(u, 'undo');                                      // VC2a
+  histPush(u, 'undo');  // VC2a
   if (R.editor === 'roll' || R.editor === 'clip') toast('Rückgängig: ' + u.label);   // the editor and the clip sheet have ↶ ↷ themselves
   else toast('Rückgängig: ' + u.label, {label: '↷ Wiederholen', fn: () => redo()});
   return true;
@@ -20634,26 +20635,16 @@ function redo() {
   if (!r) { toast('Nichts zu wiederholen'); UI.dirty.strip = true; return false; }
   if (r.kind === 'group') UNDO.push(Object.assign(groupSwap(r, false), {time: performance.now(), mergeKey: null}));
   else { UNDO.push(Object.assign({}, r, {before: undoState(r), time: performance.now(), mergeKey: null})); undoApply(r, r.before); }
-  histPush(r, 'redo');                                      // VC2a
+  histPush(r, 'redo');  // VC2a
   if (R.editor === 'roll' || R.editor === 'clip') toast('Wiederholt: ' + r.label);
   else toast('Wiederholt: ' + r.label, {label: '↶ Rückgängig', fn: () => undo()});
   return true;
 }
 
-/* =====================================================================
-   VC2a Verlauf-Rekorder (Nachtrag 1 „VC2a — Verlauf-Rekorder“, Nachtrag 5 Welle 1). Ereignisse statt Video: jede Geste =
-   ein Ereignis {t, u, z, d, c?, l} — t ms seit Sitzungsbeginn, u Undo-Art, z Ziel, d JSON-Patch (RFC 6902) des Teilbaums
-   nach der Geste, c Reglerkurve (10 Hz, ≤ 50 Werte), l Beschriftung. Undo/Redo = das angewendete Ergebnis. Kontext ohne
-   Daten: u 'ctx' (Szenen-/Clip-/Teil-Start, Transport, Hand-Träger). Keyframe (ganzes Projekt mit format und appVersion)
-   beim Öffnen, nach Import, Migration und Neu, nach je 200 Ereignissen. Ablage: IndexedDB „synq-hist“, Schlüssel
-   hist2:<projektId>:<n> je 30 min, gzip über CompressionStream (sonst Text), gebündelt höchstens alle 2 s (setTimeout,
-   I-06); Grenze 20 MB je Projekt: erst die Kurven, dann Ereignisse zwischen Keyframes ausdünnen, Keyframes bleiben.
-   VL-R1: jede Undo-Art meldet ihren Teilbaum mit HIST.kind(name, getSubtree) an (getSubtree(entry) → Pfade); eine
-   datenändernde Geste ohne Undo-Eintrag findet der Abgleich (u 'proj', nach markDirty, höchstens alle 2 s, nie während
-   ein Finger liegt oder aufgenommen wird); Ansichts-/Laufzeitfelder im Projekt stehen in HIST.volatile (M-REKON).
-   ===================================================================== */
+/* ---------- VC2a Verlauf-Rekorder (Nachtrag 1): Ereignis {t, u, z, d, c?, l} je Geste, u 'ctx' = Kontext; Keyframes; IndexedDB
+   synq-hist (hist2:<id>:<n>, 30 min, gzip). VL-R1: HIST.kind(name, getSubtree) je Undo-Art; HIST.volatile = Ansichtsfelder ---------- */
 var HIST = {
-  volatile: ['ui', 'settings.coach'], kinds: new Map(), unknown: new Set(),   // settings.coach = „Hinweis schon gezeigt“ (Ansichtsfeld)
+  volatile: ['ui', 'settings.coach'], kinds: new Map(), unknown: new Set(),
   on: true, avail: null, why: '', init: false, pid: null, sh: null, cache: new Map(),
   q: [], qT: false, ev: new WeakMap(), lastEv: null, cur: null, meta: null, metaP: null, dbP: null,
   ft: 0, lastFlush: -1e9, dirty: false, sinceKf: 0, kfDue: false, ptr: new Set(), ptrT: 0, cv: null, pend: null,
@@ -20661,24 +20652,24 @@ var HIST = {
   z: typeof CompressionStream === 'function' && typeof DecompressionStream === 'function',
   kind(name, getSubtree) { this.kinds.set(name, getSubtree); },
 };
-const HIST_S0 = Math.round(performance.timeOrigin || (Date.now() - performance.now()));   // Sitzungsbeginn (Epoche)
+const HIST_S0 = Math.round(performance.timeOrigin || (Date.now() - performance.now()));
 const histNow = () => Math.round(performance.now());
-// VL-R1: die Undo-Arten der App und ihr Teilbaum im Projekt (Pfade als Schlüssel-Listen)
+// VL-R1: Undo-Arten und ihr Teilbaum
 HIST.kind('clip', e => [['tracks', e.track, 'clips', e.scene]]);
 HIST.kind('sound', e => [['tracks', e.track, 'sound'], ['tracks', e.track, 'onChange']]);
 HIST.kind('fx', () => [['fxBus']]);
-HIST.kind('track', e => [['tracks', e.track], ['song']]);      // restoreTrack legt die Song-Spur an bzw. nimmt sie weg
+HIST.kind('track', e => [['tracks', e.track], ['song']]);
 HIST.kind('set', e => [['settings', e.key]]);
 HIST.kind('part', () => [['parts'], ['scenes']]);
 HIST.kind('kit', e => [['tracks', e.track != null ? e.track : DRUM_T, 'sound']]);
 HIST.kind('song', () => [['song']]);
 HIST.kind('own', e => [['song', 'own', e.id]]);
 HIST.kind('mkin', e => [['tracks', e.track, 'mkIn']]);
-HIST.kind('mkslot', () => []);                    // Programmspeicher = Bibliothek des Geräts, kein Projektteil
+HIST.kind('mkslot', () => []);
 HIST.kind('takes', () => [['takes']]);
 HIST.kind('tflag', e => [['tracks', e.track, 'stimme']]);
 HIST.kind('group', e => (e.items || []).flatMap(histPaths));
-HIST.kind('proj', () => [[]]);                    // Daten-Änderung ohne Undo-Eintrag (Abgleich)
+HIST.kind('proj', () => [[]]);
 function histPaths(e) {
   const f = HIST.kinds.get(e && e.kind);
   if (!f) { HIST.unknown.add(String(e && e.kind)); return [[]]; }
@@ -20698,7 +20689,7 @@ function histEq(a, b) {
   for (const k of ka) if (!histHas(b, k) || !histEq(a[k], b[k])) return false;
   return true;
 }
-// JSON-Patch a → b (add/remove/replace); Felder aus HIST.volatile bleiben draußen
+// JSON-Patch a → b ohne HIST.volatile
 function histDiff(a, b, path, ops) {
   if (a === b) return;
   const ta = histType(a), tb = histType(b);
@@ -20737,7 +20728,6 @@ function histStrip(p) {
   for (const v of HIST.volatile) { const seg = v.split('.'), last = seg.pop(), o = histGet(p, seg, seg.length); if (o && typeof o === 'object') delete o[last]; }
   return p;
 }
-// the string cache of the shadow (Abgleich): one entry per top key, tracks per index ('t3')
 function histInval(ops) {
   for (const o of ops) {
     const seg = o.path.split('/'), top = seg[1];
@@ -20745,7 +20735,6 @@ function histInval(ops) {
     else HIST.cache.delete(top);
   }
 }
-// diff of one subtree path P against the shadow; applies the ops to the shadow and returns them
 function histOpsAt(P, ops) {
   if (!P.length) { histFullOps(ops); return; }
   if (histVol(histPtr(P.slice(0, 1))) || histVol(histPtr(P))) return;
@@ -20762,7 +20751,6 @@ function histOpsAt(P, ops) {
   histDiff(histGet(HIST.sh, P, k), b, histPtr(P.slice(0, k)), ops);
   const nw = ops.slice(n0); histApply(HIST.sh, nw); histInval(nw);
 }
-// Abgleich: the whole project (string compare per top key / per track, diff only where it differs)
 function histFullOps(ops) {
   const sh = HIST.sh, C = HIST.cache, n0 = ops.length;
   const keys = new Set(Object.keys(S).concat(Object.keys(sh)));
@@ -20788,13 +20776,12 @@ function histFullOps(ops) {
   }
   return ops.length - n0;
 }
-// ---- hooks (one line each in the shared functions) ----
 function histPush(e, how) {
   if (!HIST || !HIST.on || !HIST.sh || !e) return;
   HIST.q.push({e, how: how || 'push', t: histNow()});
-  if (!HIST.qT) { HIST.qT = true; setTimeout(histDrain, 0); }   // own task: never lengthens the gesture's task (no longtask by the recorder)
+  if (!HIST.qT) { HIST.qT = true; setTimeout(histDrain, 0); }  // eigene Aufgabe (keine longtask)
 }
-const histMerge = e => histPush(e, 'merge');      // pushUndo: the same gesture again within 2 s (mergeKey)
+const histMerge = e => histPush(e, 'merge');
 function histDirty() { if (!HIST || !HIST.on || !HIST.sh) return; HIST.dirty = true; histSoon(); }
 function histDrain() {
   HIST.qT = false;
@@ -20812,7 +20799,6 @@ function histCapture(it) {
   const e = it.e, cur = histChunk(), L = HIST.lastEv;
   const ops = [], paths = histPaths(e);
   const seen = []; for (const P of paths) { const ps = histPtr(P); if (seen.some(x => ps === x || ps.startsWith(x + '/') || x === '')) continue; seen.push(ps); histOpsAt(P, ops); }
-  // the same gesture: a merge (mergeKey) or a step that replaces the previous one (UNDO.pop → group with it)
   const join = L && L.chunk === cur && L.i === cur.strs.length - 1 && L.how !== 'undo' && L.how !== 'redo' &&
     (it.how === 'merge' ? HIST.ev.get(e) === L : it.how === 'push' && e !== L.e && e.kind === 'group' && (((e.items || []).includes(L.e)) || (e.before != null && e.before === L.e.before)) && !UNDO.includes(L.e));
   const cv = histCurveTake(it.t);
@@ -20843,7 +20829,7 @@ function histCtx(c, z, l) {
   try { HIST.lastEv = null; histAdd({t: histNow(), u: 'ctx', z: Object.assign({c}, z || {}), l: l || c}); } catch (e) { logErr(e); }
 }
 function histHand(entry) { if (!HIST || !HIST.on || !HIST.sh) return; try { if (ROWAP.on || R.songApplying) return; const tg = entry && entry.target; histCtx('hand', {tg: tg ? prettyTarget(tg) : null}, tg ? prettyTarget(tg) : 'ORIGINAL'); } catch (e) { logErr(e); } }
-// Reglerkurve: makeCtl meldet den Wert beim Ziehen; 10 Hz, höchstens 50 Werte (länger: gleichmäßig auf 50)
+// Reglerkurve 10 Hz, ≤ 50 Werte
 function histCurveStart() { if (HIST && HIST.on) HIST.cv = {v: [], t: 0}; }
 function histCurve(v) {
   const c = HIST && HIST.cv; if (!c || !isNum(v)) return;
@@ -20867,7 +20853,6 @@ function histSweep() {
   HIST.lastEv = null;
   histAdd({t: histNow(), u: 'proj', z: {p: tops}, d: ops, l: 'Projekt: ' + tops.join(', ')});
 }
-// ---- chunks, keyframes, writing ----
 function histChunk() {
   const now = Date.now(); let c = HIST.cur;
   if (!c || c.pid !== HIST.pid || now - c.w0 > HIST.chunkMs) {
@@ -20903,7 +20888,7 @@ function histFlush() {
 }
 function histFail(e) {
   if (HIST.avail === false) return;
-  HIST.err = String((e && (e.name || e.message)) || e);                // Speicher fehlt/wirft: still aus (Menü sagt es), kein Fehler
+  HIST.err = String((e && (e.name || e.message)) || e);
   HIST.avail = false; HIST.on = false; HIST.why = 'Speicher nicht verfügbar'; HIST.sh = null; HIST.cur = null; HIST.q.length = 0;
   clearTimeout(HIST.ft); HIST.ft = 0;
 }
@@ -20963,7 +20948,7 @@ async function histChunks(pid) {
   for (const n of ns) { const r = await histRq(db.transaction('c', 'readonly').objectStore('c').get(histKey(pid, n))); if (r) out.push(r); }
   return out;
 }
-// 20 MB je Projekt: 1. Reglerkurven halbieren, 2. Ereignisse eines Stücks verwerfen, wenn danach noch ein Keyframe kommt
+// 20 MB: 1. Kurven halbieren, 2. Ereignisse eines Stücks verwerfen (ein Keyframe folgt)
 async function histCompact(pid) {
   if (HIST.compacting) return; HIST.compacting = true;
   try {
@@ -20989,22 +20974,21 @@ async function histCompact(pid) {
     }
   } finally { HIST.compacting = false; }
 }
-// ---- open / boot / switch ----
 function histInit() {
   if (HIST.init) return; HIST.init = true;
   let pref = true; try { pref = uiPrefs().histOn !== false; } catch (e) {}
   HIST.on = pref;
-  let idb = null; try { idb = window.indexedDB; } catch (e) { idb = null; }        // fehlt oder wirft (Sandbox, privat)
+  let idb = null; try { idb = window.indexedDB; } catch (e) { idb = null; }
   if (!idb) { HIST.avail = false; HIST.on = false; HIST.why = 'Speicher nicht verfügbar'; return; }
   try { addEventListener('pointerdown', e => { HIST.ptr.add(e.pointerId); HIST.ptrT = performance.now(); }, true);
-    const up = e => { HIST.ptr.delete(e.pointerId); if (HIST.cv && HIST.cv.up == null) HIST.cv.up = performance.now(); };   // the curve belongs to the step of this lift only addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
+    const up = e => { HIST.ptr.delete(e.pointerId); if (HIST.cv && HIST.cv.up == null) HIST.cv.up = performance.now(); }; addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
     addEventListener('blur', () => HIST.ptr.clear());
     addEventListener('pagehide', () => histLeave()); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') histLeave(); }); } catch (e) {}
   setTimeout(() => { if (HIST.on) histDb().catch(() => {}); }, 0);
 }
 function histLeave() { if (!HIST.on || !HIST.sh) return; try { histDrainNow(); if (HIST.dirty) histSweep(); } catch (e) { logErr(e); } histFlush(); }
 function histDrainNow() { if (HIST.q.length) histDrain(); }
-// applyProject (Öffnen, Import, Migration, Neu, Laden): neuer Keyframe; ein mitgelieferter Verlauf (Projektdatei) kommt vorher
+// applyProject: Keyframe; ein Verlauf aus der Projektdatei kommt vorher
 function histOpen(p, mig) {
   if (!HIST) return;
   histInit();
@@ -21020,10 +21004,8 @@ function histOpen(p, mig) {
   histKeyframe(w);
   const pid = S.id; HIST.wq = HIST.wq.then(() => histMetaGet(pid)).then(m => { if (HIST.pid === pid) HIST.meta = m; }, () => {});
 }
-// applyProject (Anfang): das bisherige Projekt schließt seinen Verlauf ab (offene Gesten, Abgleich, Schreiben)
 function histClose() { if (!HIST || !HIST.on || !HIST.sh || S.id !== HIST.pid) return; try { histDrainNow(); if (HIST.dirty) histSweep(); } catch (e) { logErr(e); } histFlush(); }
 function histBoot() { if (!HIST) return; histInit(); if (HIST.on && (!HIST.sh || HIST.pid !== S.id)) histOpen(S); }
-// Projektdatei: mitgelieferter Verlauf (Hülle `history`) → beim nächsten applyProject dieses Projekts übernommen
 function histFileIn(bo, pr) {
   if (!HIST || !bo || typeof bo !== 'object' || !pr || !pr.project) return;
   HIST.pend = {pj: pr.project, at: performance.now(), w: (bo.format | 0) && (bo.format | 0) < SQStore.PROJECT_FORMAT ? 'mig' : 'import', h: bo.history && typeof bo.history === 'object' ? bo.history : null};
@@ -21042,7 +21024,7 @@ async function histAdopt(pid, h) {
   if (!h || !Array.isArray(h.chunks)) return;
   const dec = async x => (x && typeof x.t === 'string' ? x.t : x && typeof x.g === 'string' ? histUnzip(histUnB64(x.g)) : null);
   const db = await histDb();
-  const old = await histMetaGet(pid);                  // ein Verlauf derselben Projekt-ID wird ersetzt (die Datei bringt den ihren)
+  const old = await histMetaGet(pid);
   if (Object.keys(old.chunks).length) { const tx = db.transaction(['c', 'm'], 'readwrite'); for (const n in old.chunks) tx.objectStore('c').delete(histKey(pid, n)); tx.objectStore('m').delete(pid); await histTx(tx); }
   const m = {pid, last: 0, chunks: {}};
   for (const ch of h.chunks) {
@@ -21062,7 +21044,6 @@ async function histFileAdd(o) {
   try { const h = await histExport(HIST.pid); if (h) o.history = h; } catch (e) { logErr(e); }
   return o;
 }
-// ---- read back: M-REKON, Stand nach k Ereignissen ----
 async function histItems(pid) {
   const out = [];
   for (const r of await histChunks(pid)) out.push({r, evs: JSON.parse(await histUnzip(r.ev))});
@@ -21077,7 +21058,7 @@ async function histWalk(onKf, onEv) {
       while (ki < r.kf.length && r.kf[ki].at <= i) {
         const K = JSON.parse(await histUnzip(r.kf[ki].b)); st.nKf++;
         if (onKf && onKf(K, r.kf[ki], st) === false) return st;
-        st.s = K.p; st.gap = (r.thin | 0) >= 2; ki++;                   // ausgedünntes Stück: bis zum nächsten Keyframe fehlt etwas
+        st.s = K.p; st.gap = (r.thin | 0) >= 2; ki++;
       }
       if (i < evs.length) { const e = evs[i]; st.nEv++; if (e.d && st.s && !st.gap) st.s = histApply(st.s, e.d); if (onEv && onEv(e, st) === false) return st; }
     }
@@ -21134,14 +21115,14 @@ async function histClear() {
   if (HIST.on) { HIST.mark.set(S, 'clear'); histOpen(S); HIST.mark.delete(S); }
   return true;
 }
-// Menü → Projekt → Verlauf: an/aus, Größe, [Verlauf dieses Projekts löschen]; Projektdatei [mit Verlauf] (Standard aus)
+// Menü → Projekt → Verlauf
 function histMenu(s1, row) {
   if (!HIST) return;
   histInit();
   if (HIST.avail === false) { s1.appendChild(el('div', 'small', 'Verlauf aus (Speicher nicht verfügbar)')); return; }
   const sz = el('span', 'mval', esc(histSizeTxt()));
-  row(s1, 'Verlauf', makeSeg([[true, 'An'], [false, 'Aus']], () => HIST.on, v => { histSetOn(v); sz.textContent = histSizeTxt(); }), sz);
-  row(s1, 'Projektdatei', makeSeg([[false, 'ohne Verlauf'], [true, 'mit Verlauf']], () => !!UI.histFile, v => { UI.histFile = !!v; }));
+  row(s1, 'Verlauf', makeSeg([[true, 'An'], [false, 'Aus']], () => HIST.on, v => { histSetOn(v); sz.textContent = histSizeTxt(); }), sz).classList.add('mhist');
+  row(s1, 'Projektdatei', makeSeg([[false, 'ohne Verlauf'], [true, 'mit Verlauf']], () => !!UI.histFile, v => { UI.histFile = !!v; })).classList.add('mhist');
   const bDel = el('button', 'mbtn rb', 'Verlauf dieses Projekts löschen');
   twoStep(bDel, 'Wirklich löschen?', () => { histClear().then(() => { sz.textContent = histSizeTxt(); }); });
   row(s1, null, bDel);
@@ -23010,7 +22991,7 @@ function launchPart(i, atT) {
   xpSet(beat, p.xp && p.xp.semi ? p.xp.semi : 0);
   R.partPend = {i, beat};
   R.lastScene = null;
-  histCtx('part', {p: i}, 'Teil ' + p.name);                   // VC2a
+  histCtx('part', {p: i}, 'Teil ' + p.name);  // VC2a
   UI.dirty.parts = UI.dirty.grid = UI.dirty.carrier = true;
   haptic('tick');
   if (!R.playing) { play(); return true; }
@@ -26976,7 +26957,7 @@ function slotTap(i, s, atT) {
   const clip = S.tracks[i].clips[s];
   selectSlot(i, s);
   if (!clip) return;
-  histCtx('clip', {t: i, s});                                   // VC2a
+  histCtx('clip', {t: i, s});  // VC2a
   ensureAudio(); if (!AU.ctx) return;
   if (!R.playing) { launch(i, s); play(); return; }
   if (R.pend[i] && R.pend[i].slot === s) {
@@ -27703,7 +27684,7 @@ function makeCtl(d, get, set, o) {
     g = {id: e.pointerId, x0: e.clientX, y0: e.clientY, ya: e.clientY, st: 'down', f: 1, map: null, t: 0, lastV: null, before: o.undo ? o.undo.snap() : null, px: PX_FULL, r: null, travel: 120,
       mode: depth ? 'depth' : 'value', src: depth ? UI.modSrc : null, full: false};
     gestBegin(e.pointerId, why => finish(null, why));
-    histCurveStart();                                     // VC2a: Reglerkurve
+    histCurveStart();  // VC2a
     g.lpT = setTimeout(longPress, LP_MS);
     k.classList.add('press');
     // mod mode: the touched control is the focus at once (the banner names its route)
@@ -27730,7 +27711,7 @@ function makeCtl(d, get, set, o) {
       return;
     }
     if (setVal(fromNorm(d, v)) && stepped) { pulse(); haptic('tick'); }
-    histCurve(get());                                     // VC2a
+    histCurve(get());  // VC2a
     if (dets.length && g.lastV !== null && v !== g.lastV && dets.some(c => Math.abs(v - c) < 1e-9)) { pulse(); haptic('snap'); }   // detent pulse
     g.lastV = v;
     bubble(); lcd();
@@ -34306,7 +34287,7 @@ function openMenu(goto) {
   const projBox = el('div', 'mlist'); projBox.hidden = true; s1.appendChild(projBox); UI.projBox = projBox;
   const histBox = el('div', 'mlist'); histBox.hidden = true; s1.appendChild(histBox); UI.histBox = histBox;
   if (mem) { bProj.disabled = true; bHist.disabled = true; s1.appendChild(el('div', 'small', 'Nur ein Projekt möglich – bitte ‚Als Datei sichern‘')); }
-  histMenu(s1, row);                                        // VC2a: Verlauf
+  histMenu(s1, row);  // VC2a
   // §3.9 P1: [Song als Audio] — the song once in real time through the master into an audio file (MediaRecorder)
   if (typeof MediaRecorder === 'function' && S.song && S.song.bars) {
     const bAud = btn(SREC.on ? 'Aufnahme läuft … (abbrechen)' : 'Song als Audio', SREC.on ? 'arm' : '');
@@ -34632,7 +34613,7 @@ function projectFileObj(p, noTime, lib) {
 function serialize() { return JSON.stringify(projectFileObj(S, true, true)); }
 // marks only; the autosave serializes later (stopped: 800 ms / 4 s, playing: 2 s / 20 s with tickAhead first)
 function markDirty() {
-  histDirty();                                              // VC2a: Abgleich für Änderungen ohne Undo-Eintrag
+  histDirty();  // VC2a
   if (!BOOT.done) { BOOT.dirty = true; return; }
   if (!autosave) return;
   if (R.playing) autosave.markDirtyPlaying(); else autosave.markDirty();
@@ -34665,7 +34646,7 @@ function setUiPref(k, v) { const p = uiPrefs(); p[k] = v; safeSet(UI_KEY, JSON.s
 
 function applyProject(p, opts) {
   opts = opts || {};
-  histClose();                                              // VC2a
+  histClose();  // VC2a
   if (R.playing) stop();
   if (rec.state !== 'off') { rec.state = 'off'; rec.open.clear(); }
   rec.tail = null;
@@ -34714,7 +34695,7 @@ function applyProject(p, opts) {
   const nl = nvLockOf(p); NV.lock = nl ? Object.assign({}, nl, {id: S.id, kv: !!opts.nvKv}) : null; nvBanner();
   NV.raw = nl && nl.fo && nl.fo.project ? nvFileOf(nl.fo, S.id, S.name) : null;   // MK0-fix: the original; stored at once as the open project
   NV.store = NV.lock && NV.raw && !NV.lock.kv ? nvStoreKv() : Promise.resolve(!!(NV.lock && NV.lock.kv));
-  histOpen(p, !!mig);                                       // VC2a: Keyframe beim Öffnen / Import / Migration / Neu
+  histOpen(p, !!mig);  // VC2a
 }
 
 /* ---------- projects (§12.2): the open project lives in the autosave; parked ones under proj:<id>, index in projIndex ---------- */
@@ -35022,7 +35003,7 @@ async function boot() {
   // a project read back unchanged from the store is not written again; a rescue copy or a takeover is
   if (take) applyProject(normalizeProject(p), {first: !!msg && /Version 1/.test(msg), ui: fromStore, nvKv: fromStore, clean: fromStore && !hadRescue && !(autosave && autosave.loadedFallback)});
   else if (BOOT.dirty) markDirty();                         // changed (API, UI) while the store was loading
-  histBoot();                                               // VC2a
+  histBoot();  // VC2a
   if (msg && take) toast(msg);
   if (kv && kv.mode === 'memory') setTimeout(() => toast('Speichern im Browser nicht möglich – bitte „Als Datei sichern“ benutzen'), msg ? 1800 : 0);
   try { await projIndexLoad(); } catch (e) {}
@@ -42470,7 +42451,7 @@ const SYNQUENZER = {
   state: () => ({project: deep(JSON.parse(serializeProject())), runtime: runtimeInfo()}),
   project: () => JSON.parse(serializeProject()),
   runtime: runtimeInfo,
-  // VC2a Verlauf-Rekorder (Nachtrag 1 Teil D): Stand, M-REKON (ohne HIST.volatile), Ansichtsfelder, Stand nach k Ereignissen
+  // VC2a (Nachtrag 1 Teil D)
   history: () => histInfo(), historyCheck: o => historyCheck(o), historyVolatile: () => HIST.volatile.slice(), historyState: k => historyState(k),
   keyOn: (note, vel, id) => inputDown(note, id || 'api' + note, vel == null ? .8 : vel),
   keyOff: (note, id) => inputUp(id || 'api' + note),
@@ -42623,7 +42604,7 @@ const SYNQUENZER = {
   // switching parks the current project (§12.2); the new one is applied synchronously, the Promise resolves when parked
   newProject: o => switchProject(newProject(o), {}), loadDemo: () => switchProject(demoProject(), {first: true}),
   // storage (§16)
-  exportProject: () => saveFile(), projHistory: () => projHistory(), restoreHistory,   // VC2a: history() = Verlauf-Rekorder (Nachtrag 1 D); „Ältere Versionen“ heißt jetzt projHistory()
+  exportProject: () => saveFile(), projHistory: () => projHistory(), restoreHistory,   // VC2a: history() = Rekorder
   projects: () => projectsList(), openProject, deleteProject, renameProject, duplicateProject,
   nvState: () => ({lock: NV.lock && deep(NV.lock), libNewer: NV.libNewer}),   // MK0
   // MK1 (Nachtrag 3 B.7): the AM engine
