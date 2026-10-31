@@ -6,10 +6,20 @@ import {open} from './v3-qa-vs3-h.mjs';
 export const APPG = process.env.G_APP || '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/n5-br-G/index.html';
 export const OUTG = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/dirigent-test/n5g';
 export const openG = (br, o = {}) => open(br, Object.assign({url: 'file://' + APPG}, o));
-// output recording (ScriptProcessor on all destination inputs; __recOut from the VS3 harness)
-export async function recStart(p) { await p.evaluate(() => window.__recOut()); }
-export async function recStop(p) {
-  return p.evaluate(() => { const a = window.__rec; let n = 0; for (const b of a) n += b.length; const y = new Float32Array(n); let o = 0; for (const b of a) { y.set(b, o); o += b.length; } window.__sp.disconnect(); return {y: Array.from(y), sr: window.__ctx.sampleRate}; });
+// output recording: AudioWorklet recorder of VS5a-fix2 (quanta in arrival order – no false 128-sample holes)
+export {recStart, recStop} from './v3-vs5afix2-rec.mjs';
+import {hp} from './gs7-v3-vs5a-h.mjs';
+// M-KLICK (VS3/VS5a: HP 5 kHz, 2-ms windows, worst rise over the median of the windows ±20 ms) with exception ranges [a, b] (s)
+export function mKlickR(y, ranges, sr = 48000) {
+  const h = hp(y, 5000, sr), W = Math.round(0.002 * sr), n = Math.floor(h.length / W), e = new Float64Array(n);
+  for (let k = 0; k < n; k++) { let s = 0; for (let i = k * W; i < (k + 1) * W; i++) s += h[i] * h[i]; e[k] = 10 * Math.log10(s / W + 1e-14); }
+  let worst = -99, at = -1;
+  for (let k = 10; k < n - 10; k++) {
+    const t = k * W / sr; if (ranges.some(([a, b]) => t + W / sr > a && t <= b)) continue;
+    const nb = []; for (let j = k - 10; j <= k + 10; j++) if (j !== k) nb.push(e[j]); nb.sort((a, b) => a - b);
+    const d = e[k] - nb[nb.length >> 1]; if (d > worst) { worst = d; at = t; }
+  }
+  return {worst: +worst.toFixed(2), at: +at.toFixed(4)};
 }
 // syllable onsets by energy rise: 2-ms RMS envelope; onset = first 2-ms frame above 20 % of the max after ≥ 25 ms below 4 %
 export function sylOnsets(y, sr) {

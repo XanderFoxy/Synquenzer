@@ -1,13 +1,18 @@
 // G1-01 / G1-03 (+ Ursachen vorher/nachher): gesungene Silben ±60 ms neben dem 1/8-Raster → Quantisieren wie Xander (Editor-Tipp,
 // Regler, Audio folgt, Song) → Ausgang mitgeschnitten, Einsätze gemessen (Kreuzkorrelation je Silbe am Ausgang).
 // G_APP=<datei> misst eine andere Fassung (z. B. vs-base-B.html = vorher). Ausgabe: Zeilen ✓/✗ und Zahlen.
-import {launch, openG, sleep, toI16, recStart, recStop, sylOnsets, heardShifts, mKlick, SR, deq, APPG} from './n5-g-h.mjs';
+import {launch, openG, sleep, toI16, recStart, recStop, sylOnsets, heardShifts, mKlickR, SR, deq, APPG} from './n5-g-h.mjs';
 import {voice} from '../vs-dsp/test-signals.mjs';
 const BASE = /vs-base-B/.test(APPG);
 let fail = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) fail++; };
 const OFF = [0, 60, -60, 45, -50, 60, -60, 0, 55, -45, 60, -60, 30, -30];
 const notes = OFF.map((o, k) => ({t: 0.5 + k * 0.25 + o / 1000, d: 0.11, f0: [220, 247, 262, 294][k % 4], vowel: 'aeiou'[k % 5], cons: k % 2 === 1}));
-const x = voice(SR, 4, notes, {seed: 3}).x, rawOn = sylOnsets(x, SR);
+const x = voice(SR, 4, notes, {seed: 3}).x;
+{ let sd = 5; for (let i = 0; i < x.length; i++) { sd = (sd * 16807) % 2147483647; x[i] += 0.0005 * (sd / 2147483647 * 2 - 1); } }   // Grundrauschen −66 dBFS wie ein echtes Mikro (keine digitale Stille)
+const rawOn = sylOnsets(x, SR);
+// Ausnahmen für M-KLICK: der gewollte Anschlag jeder Silbe (Konsonant = Rauschstoß bis 40 ms, Vokal 3 ms)
+const exR = ts => ts.map((t, k) => [t - 0.0005, t + (notes[k].cons ? 0.045 : 0.003)]);
+const mapT = (w, t) => { const s = w.map.src, d = w.map.dst; let k = 0; while (k < s.length - 2 && s[k + 1] < t) k++; return d[k] + (t - s[k]) * (d[k + 1] - d[k]) / (s[k + 1] - s[k]); };
 const br = await launch(null);
 const H = await openG(br), p = H.p;
 console.log('App', await p.evaluate(() => SYNQUENZER.version));
@@ -21,6 +26,7 @@ async function heard(how = 'scene') {
   if (how === 'scene') await p.evaluate(() => { SYNQUENZER.launchScene(1); SYNQUENZER.play(); }); else await p.evaluate(() => SYNQUENZER.songPlay(0));
   await sleep(4300); await p.evaluate(() => SYNQUENZER.stop());
   const r = await recStop(p), y = Float32Array.from(r.y), on = sylOnsets(y, r.sr);
+  if (r.frameOff) console.log('  (Aufnehmer: ' + r.frameOff + ' wiederholte Frames neu gelegt)');
   const hs = heardShifts(x, rawOn, y, r.sr, on[0]);
   return {grid: hs.map((h, k) => OFF[k] + h.ms), rho: Math.min(...hs.map(h => h.rho)), y, sr: r.sr, on};
 }
@@ -72,13 +78,14 @@ const h5 = await heard('scene');
 ok(maxErr(h5.grid, () => 0) <= 5, 'G1-03 nach ↷ gehört wieder auf dem Raster: max ' + maxErr(h5.grid, () => 0).toFixed(1) + ' ms');
 // Knacken an den Schnitten: gerenderte Fassung (48 kHz) M-KLICK gegen das Original, Ausnahmen nur an den Einsätzen
 const PL = await p.evaluate(id => SYNQUENZER.wpPlayed(id), id), Y = Float32Array.from(PL.data);
-const dst = Rd.warp.map.dst.slice(1, -1), src = Rd.warp.map.src.slice(1, -1);
-const kq = mKlick(Y, dst.map(t => t - 0.004)), ko = mKlick(x, src.map(t => t - 0.004));
+const truth = notes.map(n => n.t);
+const kq = mKlickR(Y, exR(truth.map(t => mapT(Rd.warp, t)))), ko = mKlickR(x, exR(truth));
 ok(kq.worst <= ko.worst + 1, 'G1-03 kein Knacken an den Schnitten (Dehnen 100 %): M-KLICK ' + kq.worst + ' dB (Original ' + ko.worst + ' dB)');
-const ksl = await (async () => { await p.evaluate(id => SYNQUENZER.wpQuantize(id, {grid: '1/8', strength: 1, mode: 'slice'}), id); const q = await p.evaluate(id => SYNQUENZER.wpPlayed(id), id); const w = (await p.evaluate(id => SYNQUENZER.wpInfo(id), id)).warp; return mKlick(Float32Array.from(q.data), w.map.dst.slice(1, -1).map(t => t - 0.004)); })();
+const ksl = await (async () => { await p.evaluate(id => SYNQUENZER.wpQuantize(id, {grid: '1/8', strength: 1, mode: 'slice'}), id); const q = await p.evaluate(id => SYNQUENZER.wpPlayed(id), id); const w = (await p.evaluate(id => SYNQUENZER.wpInfo(id), id)).warp; return mKlickR(Float32Array.from(q.data), exR(truth.map(t => mapT(w, t)))); })();
 ok(ksl.worst <= ko.worst + 1, 'G1-03 kein Knacken (Scheiben 100 %): M-KLICK ' + ksl.worst + ' dB (Original ' + ko.worst + ' dB)');
 // Ausgang mitgeschnitten (Dehnen): M-KLICK gegen Original-Ausgang
-const kh = mKlick(h5.y, h5.on), k0 = mKlick(h0.y, h0.on);
+const exO = (h, sh) => notes.map((n, k) => { const t = h.on[0] + (n.t - notes[0].t) + sh[k] / 1000; return [t - 0.002, t + (n.cons ? 0.047 : 0.005)]; });
+const kh = mKlickR(h5.y, exO(h5, h5.grid.map((g, k) => g - OFF[k])), h5.sr), k0 = mKlickR(h0.y, exO(h0, h0.grid.map((g, k) => g - OFF[k])), h0.sr);
 ok(kh.worst <= k0.worst + 1.5, 'G1-03 Ausgang (Dehnen, mitgeschnitten): M-KLICK ' + kh.worst + ' dB gegen Original-Ausgang ' + k0.worst + ' dB');
 // 6) Ursache Fangfenster: Audio folgt mit 1/16 (das Raster, das der MELODIE-Clip nach dem Einsingen meist hat)
 await p.evaluate(id => SYNQUENZER.wpQuantize(id, {grid: 'off'}), id);

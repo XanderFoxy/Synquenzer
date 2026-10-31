@@ -278,3 +278,58 @@ S&H-Stufen = Zufall je Takt, Klang gegen 4.23.0 gleich; K1-03 Mod-Übersicht vol
 wirkt hörbar, Undo; INIT/neues Projekt ohne Modulation, 0 Cent; K1-04 Ladder bei Res max und schnellem Drehen: kein NaN, kein
 Aussetzer, Zustandsfreiheit (zwei Wege → gleiche Einstellung → Render gleich ≤ −90 dB); K1-05 Speichern/Laden bitgleich je Engine;
 alte Projekte gegen ihre Snapshots; K1-06 Übersicht ≥ 44 px, alle Formate; CPU ≤ 4.23.0.
+
+---
+
+## Welle 4 (Xander 31.10. ~13:30) — Reihenfolge: Gesang zuerst; K2 klein nebenbei
+
+### K2 — FM-FELD: Hüllkurven bei mehr als 3 Operatoren (kleiner Fix)
+Prüfen, ob Hüllkurven/Klang mit 4–8 aktiven Operatoren falsch werden (Stimmenzahl, Stimmenklau, Rechenzeit-Abbruch, Normierung).
+Ursache messen, beheben; Stimmenzahl muss nicht von Hand erhöht werden. K2-01 1…8 Operatoren aktiv, je gleiche Note: Hüllkurve jedes
+Operators = Sollkurve (±1 dB); K2-02 Akkord mit 6 Tönen ohne Abbruch/Stimmenklau-Knackser; K2-03 CPU im Rahmen (iPhone-Maß).
+
+### G4 ergänzt — Lead „knackig, durchsetzungsfähig“
+4. **Silben-Dynamik:** leise Silben/Wortenden werden angehoben, laute Spitzen gezähmt (Gain-Riding je Silbe aus den VS5a-Marken,
+   vor dem Kompressor), damit jede Silbe ankommt. G4-06: Spanne der Silben-Lautheit ≥ 50 % kleiner, Transienten erhalten.
+
+### G5 — Gesang jederzeit in Melodie umwandeln
+Takes-Blatt/STIMME-Clip → **„In Melodie umwandeln“**: die Noten-Erkennung (VS2) läuft auf dem vorhandenen Take (auch wenn beim
+Aufnehmen „Melodieerkennung Aus“ war) → MELODIE-Clip in derselben Szene bzw. im Song an derselben Stelle, Ergebnis-Blatt wie FANG.
+G5-01 Take ohne Noten → Umwandeln → Noten-F ≥ 0,9 gegen die gesungene Referenz; G5-02 Undo; G5-03 Song-Stimme → Song-Melodie.
+
+### G6 — Chor-Generator (Background-Gesang per Knopf)
+Grundlage (Gesangs-Praxis, im Hilfetext kurz erklärt): Background-Stimmen folgen meist festen Rezepten, nicht nur Eingebung:
+**Terz** (diatonisch, also je nach Ton große oder kleine Terz) über/unter der Melodie, **Sexte**, **Quinte**, **Oktave** (oben/unten),
+**Dreistimmig** (Melodie + Akkordtöne darüber, eng gesetzt), **Falsett-Chor 80er** (Melodie eine Oktave höher im Falsett + Terz,
+mehrfach gedoppelt, viel Hall), **Barbershop/A-cappella 4-stimmig** (enge Lage nach Akkordtönen), **Unisono-Doppel** (gleiche Töne,
+zweite Aufnahme oder künstlich). Gegenmelodien sind die kreative Kür.
+1. STIMME-Clip/Song-Bereich (z. B. Refrain) → **„Chor“** → Rezept wählen → das System berechnet die Noten der Stimmen aus der
+   Lead-Melodie (VS2-Noten) und den Akkorden der Stelle (Tonart/Träger), erzeugt je Stimme eine Spur aus dem eigenen Take per
+   formant-erhaltender Tonhöhen-Verschiebung (G2-Technik) + künstliches Doppeln (10–30 ms, ±5–10 Cent), legt Panorama/Pegel fest
+   (Lead Mitte vorn; Chor links/rechts, −6…−10 dB, mehr Hall).
+2. **Mischung „80er großer Refrain“ / „Pop modern“**: Kompressor/EQ für Lead und Chor (G4), Hall als **Send** (Chor stärker),
+   Delay im Tempo (1/4, 1/8 punktiert), Hall-Vorverzögerung im Tempo; alles als Voreinstellung, nichts muss man einstellen.
+3. Jede Stimme sichtbar als Noten (Noten-Editor), solo hörbar, änderbar; **„Selbst singen“**: das System spielt die Stimme als Führung,
+   man singt sie nach, die gesungene ersetzt die errechnete und wird gleich eingemischt.
+G6-01 Refrain-Melodie in C-Dur, Rezept Terz oben → jede Chornote = diatonische Terz (Tabelle), Tonhöhe gemessen ±10 Cent; G6-02 Falsett-
+Chor: Oktave + Terz, 2 Doppel je Stimme, Lautheit Chor −6…−10 LU unter Lead; G6-03 Hall nur über Send (Chorspur-Pegel 0 → nur Hall);
+G6-04 Selbst-Singen ersetzt die Stimme, Mischung bleibt; G6-05 Undo/Speichern/Laden; CPU iPhone im Rahmen.
+
+### P1 — Projekt mit Audio in einer Datei (wie „Alles sammeln und sichern“)
+Menü → Projekt → **„Als Datei sichern (mit Audio)“** = ZIP mit Projekt + allen Takes (WAV) + Verlauf (falls an) – Standard, wenn Takes
+da sind; **„Datei öffnen“** öffnet sie direkt. P1-01 Rundweg bitgleich (Takes, Projekt deep-equal); P1-02 Claude-App: Audio-Hinweis.
+
+### MI1 — MIDI-Dateien importieren
+SMF Typ 0/1 → Blatt „MIDI importieren“: je MIDI-Spur eine Zuordnung zu einer App-Spur (Synth/Drums/MELODIE), Tempo, Takte, Noten
+und Anschlag; mehr MIDI-Spuren als App-Spuren → wählen bzw. zusammenlegen; Drums (Kanal 10) auf Pads. Mehr Spuren als heute
+(16) nur, wenn die Rechenleistung reicht (mit FR1). MI1-01 Typ-1-Datei mit 16 Spuren → Zuordnung, Noten bitgenau übernommen;
+MI1-02 Drums auf Pads; MI1-03 Undo/Speichern.
+
+### FR1 — Einfrieren (Clips/Spuren)
+Clip/Spur → **„Einfrieren“**: der Klangerzeuger wird je Szene/Klangzustand zu Audio gerechnet (mit Ausklang, Loop nahtlos, Ende klingt
+aus); danach rechnet nur noch Audio → Lautstärke, Pan, Sends, globale Effekte bleiben live. **Noten ändern im eingefrorenen Clip →
+im Hintergrund neu rechnen**; Schneiden/Verschieben bleibt möglich. **Szenen-Übergang (V6a):** im Song bekannte Übergänge werden mit-
+gerechnet; in der Matrix taut eine beteiligte Spur einen Takt vorher auf. **Auftauen = gleicher Klang** (≤ −90 dB). **Energiesparen:**
+bei hoher Last schlägt die App vor (bzw. macht automatisch, einstellbar) Spuren einzufrieren, die gerade nichts Lebendiges tun.
+FR1-01 eingefroren vs. live ≤ −90 dB inkl. Ausklang; FR1-02 CPU-Ersparnis gemessen; FR1-03 Note ändern → neu gerechnet ≤ 2 s; FR1-04
+Übergang eingefroren ↔ live ohne Sprung.

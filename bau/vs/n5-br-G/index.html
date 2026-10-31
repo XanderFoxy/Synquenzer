@@ -41717,7 +41717,7 @@ function wpPaint() {
   if (buf) {
     g.fillStyle = WP.ab ? '#7d8796' : '#7fb0de';
     if (live) {
-      g.globalAlpha = .3; wave(buf); g.globalAlpha = 1;
+      g.globalAlpha = .38; wave(buf); g.globalAlpha = 1;
       const c = WP.cache.get(id), hb = wpReady(id) && c ? c.buf : null;
       if (hb) wave(hb); else wave(buf, t => VSM.warpInverse(w.map, t));
     } else wave(buf);
@@ -41736,7 +41736,7 @@ function wpPaint() {
   // Linie) und springen beim Quantisieren sichtbar dorthin (WP_ANIM)
   const P = wpMarkPos(E, mk, live ? w.map : null);
   mk.forEach((k, i) => {
-    const xx = X(P[i]); if (xx < -6 || xx > Wp + 6) return;
+    const xx = Math.round(X(P[i])) + .5; if (xx < -6 || xx > Wp + 6) return;   // G1: auf dieselbe Pixelspalte wie die Rasterlinie
     const sel = i === E.sel || (E.ghost && E.ghost.k === i);
     g.globalAlpha = sel ? 1 : .45 + .55 * k.conf; g.fillStyle = sel ? '#ffd35a' : '#f2f4f8';
     const lw = k.word ? 3 : 1.5; g.fillRect(xx - lw / 2, 4, lw, Hp - 4);

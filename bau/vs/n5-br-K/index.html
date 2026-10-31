@@ -8345,6 +8345,8 @@ class MkTim {
   /* ---------------- rendering ---------------- */
   // no voice: the free-running LFO phases go on (Key Sync OFF keeps its phase between notes, like the VA global LFOs)
   idle(n, fr) { const T = this.T; this.g1 = (this.g1 + this.lfoRate(T.l1, T.l1.sync >= .5) * n * ISR) % 1; this.g2 = (this.g2 + this.lfoRate(T.l2, T.l2.sync >= .5) * n * ISR) % 1;
+    if (this.smRun && this.sm && !this.par.vocHot()) { this.smTarget(this.sm); this.smRun = false; }   // K1 (K1-04): nothing sounds = nothing to glide; the next note starts on the set values, whatever path the knobs took
+
     const ab = this.sqKs === 0 && this.h.songStart >= 0 && fr >= 0;   // MK6-fix (FP-SONG): the song grid runs on between notes (fr = frame of this block)
     if (this.rec || (this.sqKs === 0 && this.h.songStart < 0) || ab) { this.sqTick(ab ? fr + n : -1, n * ISR * this.h.bpm / 60); if (this.rec) this.recStep(n * ISR * this.h.bpm / 60); } }   // MK6
   lfoRate(L, sync) { const spb = 60 / this.h.bpm; return sync ? 1 / (MKW.LSYNC[Math.max(0, Math.min(14, Math.round(L.note)))] * 4 * spb) : MKW.lfoHz(L.f); }

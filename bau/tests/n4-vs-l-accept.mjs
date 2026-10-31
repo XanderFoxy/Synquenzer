@@ -32,6 +32,7 @@ async function start(file, bpm, o = {}) {
   const sr = await p.evaluate(() => SYNQUENZER.vsClock().sr);
   if (o.demo) await p.evaluate(() => SYNQUENZER.loadDemo());
   await p.evaluate(([bpm, mel]) => { SYNQUENZER.setBpm(bpm); SYNQUENZER.setMetronome(false); SYNQUENZER.setRecOptions({countIn: 0, length: 'auto'}); if (mel != null && SYNQUENZER.vsSet) SYNQUENZER.vsSet({mel}); }, [bpm, o.mel == null ? null : o.mel]);
+  await sleep(2500);   // die Seite kommt nach dem Start zur Ruhe (Worker, Tabellen) – sonst plant der Test den Gesang zu spät
   return {br, ctx, p, errs, sr, bpm, ver: await p.evaluate(() => SYNQUENZER.version), close: async () => { if (!o.br) await br.close(); else await ctx.close(); }};
 }
 const sing = (notes, bpm) => renderVoice(notes.map(([b, d, m], k) => ({on: LEAD + b * 60 / bpm, dur: d * 60 / bpm, midi: m, legato: false, rest: k ? 0.1 : 0})), {voice: 'male', seed: 3, sigma: 12, vib: [20, 40], bpm}).x;
@@ -46,11 +47,13 @@ async function idle(p) { await p.waitForFunction(() => !SYNQUENZER.vsInfo().busy
 async function recSing(H, {track, scene, startBar, bars, notes, press, key}) {
   const p = H.p, k = key || await prep(H, sing(notes || mel16(bars), H.bpm));
   if (!(await p.evaluate(() => SYNQUENZER.vsClock().playing))) await p.evaluate(() => SYNQUENZER.play());
+  else { const cb = await p.evaluate(() => { const c = SYNQUENZER.vsClock(); return (c.now - c.outLat - c.start) / c.spb; }); if (cb > startBar * 4 - 3.5) startBar = Math.ceil((cb + 3.5) / 4); }   // Platz für den Einsatz
   await waitBeat(p, startBar * 4 - 3.5);
   const g = await fire(H, k, startBar * 4); if (g.t < g.now) console.log('! Gesang zu spät geplant', JSON.stringify(g));
   await p.evaluate(([t, s]) => { SYNQUENZER.selectSlot(t, s); SYNQUENZER.rec(); }, [track, scene]);
   if (press) { await waitBeat(p, (startBar + bars) * 4 + 0.1); await p.evaluate(() => SYNQUENZER.rec()); }
   await waitBeat(p, (startBar + bars) * 4 + 1.5); await idle(p);
+  return startBar;
 }
 const stInfo = (p, scene) => p.evaluate(async s => { const I = SYNQUENZER.tkInfo(), st = I.stimme; const c = st >= 0 ? SYNQUENZER.getClip(st, s) : null, m = SYNQUENZER.getClip(5, s); const tk = c && c.audio ? SYNQUENZER.takes()[c.audio.take] : null;
   return {st, len: c && c.len, audio: c && c.audio ? JSON.parse(JSON.stringify(c.audio)) : null, takeSec: tk && +(tk.len / tk.sr).toFixed(3), sr: tk && tk.sr, mel: m && {len: m.len, n: m.notes.length, notes: m.notes.map(n => [n.t, n.n])}, last: I.last && {late: I.last.late, pre: I.last.pre, src: I.last.src}}; }, scene);
@@ -113,16 +116,16 @@ if (want('01')) {
 }
 
 // VS-L-02 + VS-L-11 — Overdub: 4-Takt-STIMME-Clip, neue Aufnahme 16 Takte → Clip 16, neuer Take oben, alter in alt; ein Undo
-async function overdub(file, bars2, bpm = 120, sb2 = 6) {
+async function overdub(file, bars2, bpm = 120, sb2 = 7) {
   const H = await start(file, bpm), p = H.p;
   await p.evaluate(() => { SYNQUENZER.setRecOptions({length: 4}); });
   const k2 = await prep(H, sing(mel16(bars2).map(([b, d, m]) => [b, d, m + 2]), bpm));
-  await recSing(H, {track: 3, scene: 2, startBar: 1, bars: 4});
+  await recSing(H, {track: 3, scene: 2, startBar: 2, bars: 4});
   const r4 = await stInfo(p, 2), s4 = await snap(p), u4 = await undoN(p);
   await p.evaluate(() => SYNQUENZER.setRecOptions({length: 'auto'}));
-  await recSing(H, {track: 3, scene: 2, startBar: sb2, bars: bars2, press: bars2 < 16, key: k2});
+  const sb = await recSing(H, {track: 3, scene: 2, startBar: sb2, bars: bars2, press: bars2 < 16, key: k2});
   const r = await stInfo(p, 2), s = await snap(p), u = await undoN(p);
-  return {H, r4, s4, u4, r, s, u};
+  return {H, r4, s4, u4, r, s, u, sb};
 }
 if (want('02')) {
   const A = await overdub(NEW, 16), p = A.H.p;
@@ -134,7 +137,7 @@ if (want('02')) {
   // läuft phasengleich: Phase der STIMME-Spur = Anfang der Aufnahme (Takt 7 = Schlag 24)
   await p.waitForFunction(st => !SYNQUENZER.state().runtime.queued[st], A.r.st, {timeout: 10000}).catch(() => {});
   const ph = await p.evaluate(st => SYNQUENZER.state().runtime.cstart[st], A.r.st);
-  ok(ph === 24, `VS-L-02 der längere Clip läuft ab dem Takt der Aufnahme (Phase Schlag ${ph})`);
+  ok(ph === A.sb * 4, `VS-L-02 der längere Clip läuft ab dem Takt der Aufnahme (Takt ${A.sb + 1} = Schlag ${A.sb * 4}; Phase ${ph})`);
   ok(A.u === A.u4 + 1, `VS-L-11 Overdub 16 Takte = genau ein Undo-Schritt (${A.u4} → ${A.u})`);
   await p.evaluate(() => SYNQUENZER.stop());
   await p.evaluate(() => SYNQUENZER.undo()); const su = await snap(p);
@@ -212,7 +215,7 @@ if (want('05g')) {   // FANG bei 40 BPM (16-Takt-Phrase)
   await H.close();
 }
 if (want('05o')) {   // Overdub-Wachsen bei 40 BPM: 4-Takt-Clip, dann 16 Takte
-  const A = await overdub(NEW, 16, 40, 7), p = A.H.p, nw = A.r.audio;
+  const A = await overdub(NEW, 16, 40, 8), p = A.H.p, nw = A.r.audio;
   const last = await p.evaluate(() => SYNQUENZER.tkInfo().last), d16 = await takeDb(p, nw.take, nw.in + 94, nw.in + 96);
   ok(A.r.len === 16 && nw.out - nw.in > 95.99 && last.late === 0 && d16 > -40, `VS-L-05 40 BPM Overdub: Clip ${A.r.len} Takte, Take ${(nw.out - nw.in).toFixed(2)} s, late ${last.late}, Takt 16 ${d16} dBFS`);
   await A.H.close();

@@ -35,7 +35,7 @@ await p.evaluate(st => { SYNQUENZER.setTrackFx(st, 'vol', .8); SYNQUENZER.setTra
 for (const [lv, sc] of [[-28, 3], [-20, 4], [-36, 5]]) {
   const n = mysing(9.5, sr, lv, 40 + lv);
   const t2 = await recMic(p, n.y, {len: 4, scene: sc});
-  await p.evaluate(() => SYNQUENZER.vpWait());
+  await p.evaluate(id => SYNQUENZER.vpEnv(id), t2.id); await p.evaluate(() => SYNQUENZER.vpWait());
   const e = await p.evaluate(id => SYNQUENZER.vpEnv(id), t2.id);
   // Frames des Takes: der Take beginnt mit Vorlauf; stimmhaft = Frame-Pegel des Takes höchstens 20 dB unter dem lautesten Frame
   const d = await p.evaluate(id => Array.from(tkBuffer(id).getChannelData(0)), t2.id);
