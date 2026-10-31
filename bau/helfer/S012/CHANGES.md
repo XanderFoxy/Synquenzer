@@ -1,0 +1,74 @@
+# S012 — Teil bearbeiten (S0), Teil überarbeiten im Lauf (S1), Zusammenfassen (S2) · Basis App 4.23.0 (VERSION unverändert)
+
+Grundlage: `spec/dirigent-spec-v3-nachtrag-5.md` Abschnitte S0, S1, S2; `spec/typische-fehler.md` (alle Punkte geprüft, siehe unten).
+Datei: `bau/helfer/S012/index.html` (Kopie von `bau/werkzeug/vs-base-B.html`). Tests: `bau/helfer/S012/tests/` (Chromium, Touch).
+
+## S0 — Teil bearbeiten (Fehler „Strophe ersetzen“)
+
+### Fehler nachgestellt (`tests/repro-s0.mjs`, gegen die Basis)
+Song Strophe (T1–2) · Refrain (T3–4) · Strophe (T5–6), beide Strophen = derselbe Teil. FANG TEIL fängt eine Strophe ohne Drums,
+Name-Chip „Strophe ▾“ → „⟳ Strophe ersetzen“ → **beide** Stellen und die Teil-Vorlage wurden ersetzt (`markReplaceAll` über alle
+Marken), obwohl nur die zweite gemeint war. Bei zwei Teilen „Strophe“ und „Strophe 2“ traf „⟳ Strophe ersetzen“ immer den Teil
+„Strophe“ (Suche nach dem ersten passenden Namen) – „Strophe 2“ ließ sich so gar nicht ersetzen. Ergebnis Basis:
+„1. Strophe (Takt 1) unverändert? false · Vorlage Strophe unverändert? false“.
+
+### Was neu ist
+1. **Ersetzen trifft genau die gewählte Stelle.** Kann „⟳ Strophe ersetzen“ mehr als eine Stelle meinen (Marken „Strophe“, „Strophe 2“ …
+   im Song, gleichnamige Teile ohne Marke), zeigt das FANG-Blatt statt der Zeile „＋ Strophe 2 │ ⟳ Strophe ersetzen“ die Zeile
+   **„Welche: [⟳ Strophe 1 (Takt 1)] [⟳ Strophe 2 (Takt 5)] [‹]“** (Song-Reihenfolge; gleiche Namen nummeriert, ein Teil ohne Marke
+   „(nicht im Song)“). Die gewählte Stelle ist im Song markiert (weißer Rand der Marke). [ALS TEIL ✓] ohne Wahl ersetzt nichts
+   (Hinweis „Welche Strophe? Bitte die Stelle wählen“). Ersetzt wird:
+   - eine Marke, deren Teil nur dort steht (oder ein Teil ohne Marke): Teil-Vorlage + diese Stelle (wie bisher);
+   - eine Marke eines Teils, der öfter im Song steht: **nur diese Stelle** (Melodie und eigene Clips dort bleiben wie bei
+     „Auf alle übertragen“), Vorlage und die anderen Stellen bleiben deep-equal; die Marke behält ihren Namen und zeigt „′“.
+   Eine Stelle = genau eine mögliche Bedeutung → wie bisher ohne Rückfrage. Ein Undo (`group` [part, song]).
+2. **Marken-Blatt → [Bearbeiten]** (Tipp auf die gelbe Kopfzeile = Marke im Song; der Knopf steht in der Zeile von „● Neu aufnehmen …“):
+   dasselbe Blatt zeigt „STROPHE · Bearbeiten · Takt 5–6 [‹]“, [✎ Name: Strophe] (das bestehende Namens-Blatt: Teil überall │ nur
+   hier) und die **Liste der Spuren/Clips dieser Stelle über ihre Länge** (je Spur eine Zeile, je Clip-Abschnitt ein Knopf „Sz1“,
+   „Sz2 T7–8“, „Eigener“ mit „an/aus“). Tipp = **an │ aus für diese Stelle**: „aus“ = die Spur schweigt in diesem Abschnitt, danach
+   geht der Song phasengleich weiter; was dort lag, wird an der Marke gemerkt (`mark.off`) und kommt mit „an“ unverändert zurück
+   (auch eigene Clips). Je Tipp ein Undo (`song`), Toast mit [Rückgängig]. Die Liste rollt per Finger.
+3. Test-API: `fangReplaceWhich()`, `fangReplacePick(j|'back')`, `markSegs(id)`, `markSeg(id, t, b0, on)`, `markEdit(id)`.
+
+### Daten (Format 5, nur additiv)
+`song.marks[].off = [{t, b0, b1, e:[Lane-Einträge relativ], own?:{id: Clip}}]` – nur vorhanden, wenn an dieser Stelle etwas aus ist;
+`marksNorm` übernimmt das Feld (sonst unverändert). Ältere Projekte: kein Feld, nichts ändert sich.
+
+### Abnahme S0 (`tests/s0-acc.mjs` → ALL OK 38/38)
+| ID | Ergebnis |
+|---|---|
+| S0-01 | ✓ ein Teil, zwei Marken: Blatt fragt „⟳ Strophe 1 (Takt 1) · ⟳ Strophe 2 (Takt 5)“ (Knöpfe 163 × 44); ohne Wahl nichts ersetzt; gewählte Marke im Song markiert; nach [ALS TEIL ✓] nur T5–6 geändert (Drums aus), T1–4 und die Vorlage deep-equal, Marke „Strophe′“; ein Undo = alles zurück. Teile „Strophe“/„Strophe 2“: „Strophe 2“ gewählt → nur Strophe 2 (Vorlage + Stelle), „Strophe“ deep-equal |
+| S0-02 | ✓ Bearbeiten → ✎ Name → „Vers“ (Teil überall, alle Marken), Undo → „Strophe“ |
+| S0-03 | ✓ DR aus in T5–6 per Touch: Lanes der anderen Spuren/Takte deep-equal; hörbar (Master-Mitschnitt): Drums T5 −64,5 dB (nur Ausklang des letzten Refrain-Schlags), T6 −84,9 dB, vorher −14 dB; Mischung T1–4 ±0,2 dB gleich; Speichern/Laden (serialize → importProject) deep-equal mit `mark.off`; „an“ → Lanes deep-equal zum Anfang; je Tipp ein Undo |
+| S0-04 | ✓ Bearbeiten-Blatt und Marken-Blatt mit [Bearbeiten] in 390×844, 375×667, 320×568, 844×390, 667×375, 926×428: alle Knöpfe ≥ 44 × 44 (‹ wie ✕: 44 × 32 sichtbar + 12 px Trefferzone = 44 × 44), nichts abgeschnitten, im Bild, kein waagrechtes Rollen; Bilder `s0-04-*.png` |
+
+Smoke (`tests/smoke.mjs`): keine Fehler.
+
+## Abweichungen
+- S0 „gespeichert im Teil“: an/aus wird **an der Stelle** (Marke) gespeichert, nicht in der Teil-Vorlage – sonst würden alle
+  Strophen schweigen, Xanders Beispiel ist aber „im letzten Teil schweigen die Drums“. Siehe Fragen.
+- Der ‹-Knopf im Bearbeiten-Kopf hat dieselbe Form wie das bestehende ✕ des Marken-Blatts (44 × 32 sichtbar, Trefferzone 44 × 44).
+
+## Fragen an Xander
+1. S0: Soll „aus“ im Bearbeiten-Blatt nur an dieser Stelle gelten (so gebaut) oder für alle Stellen des Teils (dann „Auf alle
+   übertragen“ danach)?
+2. S0: Früher ersetzte „⟳ Strophe ersetzen“ Vorlage + alle Strophen auf einmal. Jetzt fragt das Blatt nach der einen Stelle. Brauchst du
+   zusätzlich „alle Strophen“ als Wahl (bisher über Marken-Blatt → „Auf alle übertragen“ erreichbar)?
+
+## Für das Zusammenführen
+- Alles in markierten Blöcken: Code-Block `/* S0 … */ … /* /S0 */` direkt vor `function uiSync()`, CSS nach `.msheet .ms-all{…}`.
+- Ein-Zeilen-Haken: `fangAccept` (Zeile `/* S0 */` am Anfang des Ersetzen-Zweigs), `openFangSheet` paint/onTap/onClose (je eine Zeile
+  `/* S0 */`, `dupx` ruft `s0FangClear()`), `markReplaceAll(song, p, skipId, onlyId)` (neuer optionaler 4. Parameter), `marksNorm`
+  (eine Zeile `mark.off`), `openMarkSheet` paint (eine Zeile `s012MarkSheetPaint(p, m)` nach dem `innerHTML`),
+  `Object.assign(SYNQUENZER, S012_API)` nach `WP_API`.
+- VV2 (Video-Zeile im selben Blatt): unser Haken hängt die Knöpfe hinter `.ms-rec` ein und ersetzt in der Bearbeiten-Ansicht das
+  ganze `innerHTML` – eine Video-Zeile, die VV2 im paint per `innerHTML` mitbaut, verschwindet in der Bearbeiten-Ansicht und ist nach ‹
+  wieder da. Konflikt nur, wenn VV2 dieselbe Zeile `B('rec', …)` umschreibt: dann `s012MarkSheetPaint(p, m);` einfach hinter VV2s
+  Zeile stehen lassen.
+
+## Typische Fehler (spec/typische-fehler.md) – geprüft
+1/4/5 Formate, ≥ 44 px, kein Sprung: S0-04 · 3 Liste rollt per Finger (`pan-y`, `touch-action:pan-y`) · 6 Blatt schließt mit ✕/neben
+das Blatt (bestehendes Marken-Blatt), Bearbeiten → ‹ · 7 geändert-Punkt über `songChanged`/`markDirty` · 8 ein Undo je Aktion ·
+9 Speichern/Laden deep-equal · 10 Wahl im FANG-Blatt endet mit ‹, Verwerfen, Schließen (`s0FangClear`) · 12–17 keine DSP-Änderung ·
+20 kein Supabase-Aufruf (keine neuen Aufrufe, Netz-Wächter im Test leer) · 24 „MS 2000“ genau einmal, kein Markenname · 26 keine
+früheren Tests angepasst · 27 nichts Zusätzliches: offene Punkte unter „Fragen an Xander“.
