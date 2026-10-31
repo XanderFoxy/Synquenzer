@@ -39268,10 +39268,12 @@ function tkQWatch() {
    – wahre Spitze (4× Überabtastung) des ausgeglichenen Takes ≤ −1,3 dBTP vor dem Pegel-Regler, 2 ms Vorschau, 100 ms Freigabe; weil der
    Take vorher bekannt ist, wird nichts verzögert (keine Verschiebung gegen die anderen Spuren). Die Hüllkurve wirkt als eigener GainNode
    nur in Stücken, die eine Spitze enthalten. Nichts davon steht im Projekt; WAV/ZIP bleiben der Roh-Take.
-   Gerechnet wird in Häppchen ≤ 6 ms im Hauptfaden (kein langer Task). Ein Stück, das spät einsetzen würde (Take gerade fertig/geladen),
-   wartet darauf wie ein Take, der noch lädt; eines, das pünktlich beginnen muss, rechnet den Rest sofort. */
+   Gerechnet wird in Häppchen ≤ 6 ms im Hauptfaden (kein langer Task), angestoßen sobald ein Puffer geladen ist oder klingen soll. Eine
+   Neu-Planung (Take fertig, gewählt, gesäubert, gedehnt) wartet, bis die neue Fassung gemessen ist – bis dahin spielt das Alte weiter;
+   ein Stück mit noch ungemessenem Puffer setzt danach ein (wie ein Take, der noch lädt). Nur ein Weg, den das nicht abdeckt, rechnet
+   sofort (vpGet, gezählt in VP.sync). */
 const VP_LUFS = -16, VP_REF = .8, VP_LO = -12, VP_HI = 24, VP_CEIL = Math.pow(10, -1.3 / 20), VP_K = 16, VP_ATT = .002, VP_REL = .1, VP_SLICE = 6;
-const VP = {m: new WeakMap(), q: [], qs: new WeakSet(), t: 0, runs: 0, sync: 0, gated: 0, maxMs: 0, err: 0, last: null};
+const VP = {m: new WeakMap(), q: [], qs: new WeakSet(), t: 0, cb: new Map(), runs: 0, sync: 0, gated: 0, deferred: 0, maxMs: 0, err: 0, last: null};
 function vpKco(fs) {
   let f0 = 1681.974450955533, G = 3.999843853973347, Q = 0.7071752369554196, K = Math.tan(Math.PI * f0 / fs), Vh = Math.pow(10, G / 20), Vb = Math.pow(Vh, 0.4996667741545416);
   let a0 = 1 + K / Q + K * K; const s = [(Vh + Vb * K / Q + K * K) / a0, 2 * (K * K - Vh) / a0, (Vh - Vb * K / Q + K * K) / a0, 2 * (K * K - 1) / a0, (1 - K / Q + K * K) / a0];
@@ -39305,7 +39307,7 @@ function vpStep(J, until) {
         const ax = x < 0 ? -x : x; if (ax > pk) pk = ax;
       }
       J.e[J.q++] = acc / Q;
-      if ((J.q & 3) === 0 && performance.now() > until) break;
+      if (performance.now() > until) break;
     }
     z[0] = x1; z[1] = x2; z[2] = y1; z[3] = y2; z[4] = z1; z[5] = z2; J.pk = pk;
     if (J.q < J.nq) { J.ms += performance.now() - t0; return false; }
@@ -39373,7 +39375,22 @@ function vpPump() {
   }
   const ms = performance.now() - t0; if (ms > VP.maxMs) VP.maxMs = +ms.toFixed(1);
   if (VP.q.length) VP.t = setTimeout(vpPump, 0);
-  if (done && R.playing && AU.ctx) { try { clResync(); } catch (e) { logErr(e); } }   // wartende Fassungswechsel (Säubern, Dehnen) jetzt
+  if (!done) return;
+  const cbs = [...VP.cb.values()]; VP.cb.clear();
+  for (const f of cbs) { try { f(); } catch (e) { logErr(e); } }                     // wartende Neu-Planungen (tkTrackResync, tkVoxResync)
+  if (R.playing && AU.ctx) { try { clResync(); } catch (e) { logErr(e); } }        // wartende Fassungswechsel (Säubern, Dehnen)
+}
+// eine Neu-Planung wartet, bis alle ihre Puffer gemessen sind (true = später, fn läuft dann)
+function vpDefer(key, bufs, fn) {
+  let wait = false;
+  for (const b of bufs) if (b && !VP.m.has(b)) { vpKick(b); wait = true; }
+  if (wait) { VP.cb.set(key, fn); VP.deferred++; }
+  return wait;
+}
+// die Puffer, die eine Spur gleich spielt (Clip der laufenden Szene)
+function vpTrackBufs(i) {
+  const tr = S.tracks[i], c = tr && R.slot[i] >= 0 ? tr.clips[R.slot[i]] : null;
+  return c && c.audio ? [tkPlayBuf(c.audio.take, c.audio)] : [];
 }
 // den Puffer (sobald er klingen kann) zum Messen anmelden; gibt ihn zurück
 function vpKick(b) {
@@ -39420,7 +39437,7 @@ const VP_API = {
       const f = r => r ? {lufs: r.lufs, gDb: r.gDb, pkDb: r.pk > 0 ? +(20 * Math.log10(r.pk)).toFixed(2) : null, lim: r.segs.length, grDb: r.grDb, ms: r.ms, sec: r.sec} : null;
       takes[id] = {raw: f(raw && VP.m.get(raw)), heard: f(pl && VP.m.get(pl)), heardIsRaw: !!pl && pl === raw};
     }
-    return {target: VP_LUFS, runs: VP.runs, sync: VP.sync, gated: VP.gated, maxMs: VP.maxMs, err: VP.err, queue: VP.q.length, takes,
+    return {target: VP_LUFS, runs: VP.runs, sync: VP.sync, gated: VP.gated, deferred: VP.deferred, maxMs: VP.maxMs, err: VP.err, queue: VP.q.length, takes,
       src: TK.src.filter(r => !r.dead).map(r => ({take: r.take, vox: r.vox, start: r.start, end: r.end, G: r.G, lim: !!r.lim}))};
   },
   vpEnv: id => { let b = null; try { b = tkPlayBuf(id, null); } catch (e) {} const r = b && VP.m.get(b); return r ? {K: r.K, sr: b.sampleRate, n: b.length, g: r.g, env: r.env ? Array.from(r.env) : null} : null; },
@@ -39482,7 +39499,7 @@ function tkPlace(i, buf, a, A, B, key, vox, lo) {
   let o = {i, buf, a, A, B, key, vox};
   for (const f of tkExt().place) { try { const r = f(o); if (r) o = r; } catch (e) { logErr(e); } }
   a = o.a || a;                                                    // VS5a-fix: ein Verarbeiter darf die Blenden des Stücks ändern
-  if (!vpReady(o.buf, b2t(o.A) >= now + .004)) return;            // VS-P: noch nicht gemessen – spät einsetzen erst danach (wie Laden)
+  if (!vpReady(o.buf)) return;                                     // VS-P: noch nicht gemessen – setzt danach ein (wie ein Take, der lädt)
   TK.reg.add(key);
   const X = TK.xf, jt = X ? X.t : now + .004;
   const pieces = vox ? tkUnmuted(o.A, o.B) : tkUncovered(o.A, o.B);
@@ -39551,6 +39568,7 @@ function tkSilence(now, tau, keep) {
 // nach einer Änderung (Take gewählt, Take fertig, Undo): die Spur ab jetzt neu planen, laufende Stücke blenden 5 ms aus
 function tkTrackResync(i) {
   if (!AU.ctx || !R.playing || i < 0) return;
+  if (vpDefer('t' + i, vpTrackBufs(i), () => tkTrackResync(i))) return;   // VS-P: das Alte spielt weiter, bis die neue Fassung gemessen ist
   const now = AU.ctx.currentTime, at = TK.xf ? TK.xf.t : now + .006;
   for (const r of TK.src.slice()) if (r.i === i && !r.vox) { TK.reg.delete(r.key); if (r.start > at) tkKill(r); else if (TK.xf) tkXfOut(r); else tkFadeAt(r, at, .003); }
   for (const k of [...TK.reg]) if (k.startsWith('c' + R.runId + ':' + i + ':')) TK.reg.delete(k);
@@ -39576,6 +39594,7 @@ function tkVoxResync(force) {
   if (!force && sig === TK.voxSig) return;
   TK.voxSig = sig;
   if (!AU.ctx || !R.playing) return;
+  if (vpDefer('v', (song && song.vox || []).map(v => tkPlayBuf(v.take, v)), () => tkVoxResync(true))) return;   // VS-P (wie oben)
   const at = TK.xf ? TK.xf.t : AU.ctx.currentTime + .006;
   for (const r of TK.src.slice()) if (r.vox) { TK.reg.delete(r.key); if (r.start > at) tkKill(r); else if (TK.xf) tkXfOut(r); else tkFadeAt(r, at, .003); }
   for (const k of [...TK.reg]) if (k[0] === 'v') TK.reg.delete(k);

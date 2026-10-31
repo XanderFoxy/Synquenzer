@@ -2006,7 +2006,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 /* G-MK8b-merge-fix (≥ 44 × 44, the same kind of raster as the marks editor): the quantize sheet grows to its content in P (it was cut at
    300 / 290 px, [Abbrechen] [Anwenden] lost their lower 7 px); the raster stays 34 px high to see, every key hits 44 px: hochkant 2 rows
    with 10 px between them (5 px up into the empty top padding, 5 px down into the gap / the 5 px under the raster), quer one row of 8 that
-   uses the sheet's side padding (8 × 44,5 px pitch) and hits 10 px down into the gap under it; P3 keeps 34 / 44 / 44 px like P1; ✕ is
+   uses the sheet's side padding (8 × 44,5 px pitch, the hit takes the 3 px gap on its left) and 10 px down into the gap under it; P3 keeps 34 / 44 / 44 px like P1; ✕ is
    44 × 44 also without [Audio folgt] */
 #qSheet .qchips button{position:relative}
 #qSheet .qchips button::after{content:'';position:absolute;left:-1px;right:-1px;top:-6px;bottom:-6px}
@@ -2025,7 +2025,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
   #qSheet .qh .sh-x{width:44px;height:38px}
   #qSheet .qh .sh-x::after{content:'';position:absolute;left:-1px;right:0;top:-2.5px;bottom:-6px}
   #qSheet .qchips{margin:0 -5px 7px;gap:3px}
-  #qSheet .qchips button::after{left:-2.5px;right:-2.5px;top:-1px;bottom:-11px}
+  #qSheet .qchips button::after{left:-4px;right:0;top:-1px;bottom:-11px}   /* the whole 3 px gap on the left, nothing to the right (A1) */
 }
 .tksheet .tk-wp{width:100%;min-height:44px;margin:0 0 6px}
 @media (orientation:portrait){#wpSheet{grid-row:2/5;grid-column:1/-1;align-self:end;justify-self:stretch;margin:0 8px;height:350px;max-height:100%}}
@@ -2385,15 +2385,16 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .brow .bmore::after{content:'';position:absolute;inset:-3px -4px -3px -2px}   /* MK8b: hit area 44 x 44 without changing the look (typische Fehler A4) */
 .brow .bmain span.bkp{white-space:normal;text-overflow:clip}   /* G-MK8b-merge (A1): two lines where needed (genre │ „NN · Rolle“), never „…“ */
 .brow .bmain span.bkp i{font-style:normal;white-space:nowrap}
-/* G-MK8b-merge-fix (MK8b-06, ≥ 44 × 44): EVERY chip of the library row (engine segment, Bank ▾, Micro, Alle MS 2000, roles, 8 genre tabs)
-   hits on the full row height and half of the 5 px gap on each side – invisible ::before, insets from the padding box (1 px border):
+/* G-MK8b-merge-fix (MK8b-06, ≥ 44 × 44): EVERY chip of the library row (engine segment, Bank ▾, Micro, „Alle …“, roles, 8 genre tabs)
+   hits on the full row height and 4 of the 5 px gap on its left (only to the left, so scrollWidth stays = clientWidth, typische Fehler
+   A1: Init 40 → 44 px) – invisible ::before, insets from the padding box (1 px border):
    P1 6 + 36 + 6 = 48 px, P2/P3 6 + 32 + 6 = 44 px (row padding 4 → 6, the row 4 px taller); the joined segment keys only up to their seam.
    Quer (column): 12 px between the 32 px chips = 44 px pitch, the segment keys 44 px high; head and footer keys see below. */
 .brcats .chip{position:relative}
-.brcats .chip::before{content:'';position:absolute;left:-3.5px;right:-3.5px;top:-7px;bottom:-7px}
-.brcats .brseg .chip::before{left:-1px;right:-1px}
+.brcats .chip::before{content:'';position:absolute;left:-5px;right:0;top:-7px;bottom:-7px}
+.brcats .brseg .chip::before{left:-1px;right:0}
 #sndSheet .br-head .r1 .hb,#sndSheet .br-head .r1 .sh-x,#sndSheet .brfoot .mbtn{position:relative}
-#sndSheet .br-head .r1 .hb::after,#sndSheet .br-head .r1 .sh-x::after,#sndSheet .brfoot .mbtn::after{content:'';position:absolute;left:min(0px,calc(50% - 22.5px));right:min(0px,calc(50% - 22.5px));top:min(0px,calc(50% - 22.5px));bottom:min(0px,calc(50% - 22.5px))}   /* 45 × 45 centred, never smaller than the key (A/B 37 → 45 wide: 4 px into the 6 px gap / the sound name) */
+#sndSheet .br-head .r1 .hb::after,#sndSheet .br-head .r1 .sh-x::after,#sndSheet .brfoot .mbtn::after{content:'';position:absolute;left:min(0px,calc(100% - 44px));right:0;top:min(0px,calc(50% - 22.5px));bottom:min(0px,calc(50% - 22.5px))}   /* 45 px high centred; at least 45 px wide, only to the left (A/B 37 → 45: into the sound name / the 5 px gap; A1) */
 #sndSheet .brfoot .mbtn::after{top:min(0px,calc(50% - 22px));bottom:min(0px,calc(50% - 22px))}   /* P2/P3: 4 + 36 + 4 = 44, exactly the footer padding */
 @media (orientation:landscape){#sndSheet .br-head .r1 .hb::after,#sndSheet .br-head .r1 .sh-x::after{top:-4px;bottom:-8px}.brow .bmore::after{top:-2px;bottom:-4px}.brlist{padding-top:0;margin-top:4px}}   /* quer: 34 px keys in the 40 px head – from the head's top edge (never into the app bar) into the list's empty 4 px top padding = 44 px; the row's ⋯ (40 px in the 44 px row) then hits 2 px down instead of up, still 44 px, and the list's 4 px top gap is a margin (looks the same) so scrolled rows never slide under that strip */
 .btip{font:500 12.5px/1.4 var(--font-ui);color:var(--text);padding:6px 8px 10px 48px;border-bottom:1px solid #1d2026}
@@ -2506,7 +2507,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
   #sndSheet .brcats .chip.brkg{padding:0 4px;letter-spacing:0;font-size:11px}   /* MK8b: HIPHOP/VINTAGE fits the 120 px column */
   .brcats .brseg{flex-direction:column;margin:0;left:auto;top:0;box-shadow:0 0 0 1px var(--line),0 6px 8px -2px var(--chassis)}
   .brcats{gap:12px;padding-bottom:6px}                    /* G-MK8b-merge-fix: 32 + 12 = 44 px pitch, every chip hits 44 high (::before 6 px into each gap) */
-  .brcats .chip::before{left:-1px;right:-1px;top:-7px;bottom:-7px}
+  .brcats .chip::before{left:-1px;right:0;top:-7px;bottom:-7px}
   .brcats .brseg .chip{height:44px}                        /* the joined engine keys cannot share a gap: 44 px each */
   .brcats .brseg .chip::before{top:-1px;bottom:-1px}
   .brseg .chip:first-child{border-radius:var(--r-s) var(--r-s) 0 0}
@@ -3733,6 +3734,37 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 #synthSheet .sh-head .seg.eng.eng4 button.eco,#synthSheet .sh-head .seg.eng.engchip button.eco{padding-bottom:7px}
 @media (orientation:landscape){#synthSheet .sh-head .seg.eng.eng4 button.eco::before,#synthSheet .sh-head .seg.eng.engchip button.eco::before{content:''}
   #synthSheet .sh-head .seg.eng.eng4 button.eco,#synthSheet .sh-head .seg.eng.engchip button.eco{padding-bottom:0}}
+/* ---------- G-MK8b-merge-fix: Trefferflächen ≥ 44 × 44 auf dem Hauptbildschirm, in der Song-Ansicht und im ⋯-Menü des Klang-Editors
+   (typische Fehler A4). Unsichtbar per ::before (Aussehen gleich): senkrecht centred 44 px, waagrecht wo möglich nur nach links (A1), nur
+   in den freien Rand bzw. höchstens bis zur Mitte des Spalts – nie über eine Nachbar-Taste. Insets gelten ab der Padding-Box (1 px Rand). Wo die Zeile selbst kleiner als 44 px ist (quer die
+   Spur-Zeilen nach §2.2, die Song-Spuren, die Modus-Wahl), geht es nicht unsichtbar: CHANGES-MK „Fragen an Xander“. ---------- */
+#top > button,.stp,#partBar > button,.sv-top > button,#bHMode,#bLatch,#bOrig,#readout,#strip .sbtn,#modebar .oct{position:relative}
+#top > button::before{content:'';position:absolute;left:max(-5px,min(0px,calc(100% - 43px)));right:0;top:min(0px,calc(50% - 22px));bottom:min(0px,calc(50% - 22px))}
+.stp::before,.szb::before{content:'';position:absolute;top:0;bottom:0;left:max(-4px,min(0px,calc(100% - 43px)));right:min(0px,max(-2px,calc(100% - 41px)))}   /* the 3 px gap on the left, then 1 px into the free edge on the right */
+#partBar > button::before{content:'';position:absolute;left:0;right:0;top:min(0px,calc(50% - 22px));bottom:min(0px,calc(50% - 22px))}
+.sv-top > button::before{content:'';position:absolute;left:0;right:0;top:min(0px,calc(50% - 22px));bottom:min(0px,calc(50% - 22px))}
+#bHMode::before,#bLatch::before,#bOrig::before,#readout::before{content:'';position:absolute;left:0;right:0;top:min(0px,calc(50% - 22px));bottom:min(0px,calc(50% - 22px))}
+#strip .sbtn::before{content:'';position:absolute;top:0;bottom:0;left:max(-4px,min(0px,calc(100% - 43px)));right:0}
+#modebar .oct::before{content:'';position:absolute;left:max(-4px,min(0px,calc(100% - 43px)));right:0;top:min(0px,calc(50% - 22px));bottom:min(0px,calc(50% - 22px))}
+.pop .seg.mkqeng button::before{content:'';position:absolute;left:0;right:0;top:min(0px,calc(50% - 22px));bottom:min(0px,calc(50% - 22px))}
+/* the song tool row clips its text (overflow:hidden), so a ::before cannot reach out: hochkant the row is 44 px high (was 40, the
+   tracks below 4 px shorter); the readout clips like that too: its text lines clip themselves, the box lets the hit area out */
+#songView:not(.side) .sv-top{height:44px}
+#readout{overflow:visible}
+#readout .l1,#readout .l2{overflow:hidden}
+@media (orientation:landscape){
+  #top{border-bottom:0;box-shadow:inset 0 -1px 0 var(--panel-edge),inset 0 -2px 0 var(--hi)}   /* same two lines, drawn inside: the bar's 44 px are all hit area (the border took 1 px of the clipped box: 43) */
+  #partBar > button::before{top:-3px;bottom:-5px}                /* 38 px keys: 2 px up (the gap above), 4 px down (the empty strip edge) */
+  #songView.side .sv-top{flex-basis:91px}                        /* the 2 tool columns 37 → 44 px (3 px gap); the tracks 15 px narrower */
+  #songView.side .sv-top > button::before{content:none}
+}
+@media (orientation:landscape) and (max-height:560px){         /* the 40 px carrier rows with 3 px gaps: readout up to the bar, the gap shared */
+  #readout::before{top:-4px;bottom:-2.5px}
+  #bHMode::before,#bLatch::before,#bOrig::before{top:-2.5px;bottom:-3.5px}
+}
+@media (orientation:landscape) and (min-width:800px){          /* 41 + 3 px gap = 44 px pitch (was 40 + 3); the track name gives the 4 px */
+  #strip #bEdit,#strip #bFolgt,#strip #bMute,#strip #bUndo{width:41px;min-width:41px}
+}
 </style>
 </head>
 <body>

@@ -170,3 +170,75 @@ G3-04 Undo/Speichern/Laden deep-equal; G3-05 M-PLATZ der Song-Ansicht mit Schwä
 **Abnahme G4** — G4-01 Dynamik (Kurzzeit-Lautheit, 10–95 %-Spanne) nach „Gesang Synthpop“ ≥ 4 LU kleiner, ohne Pumpen; G4-02 Zischlaute
 (5–9 kHz-Spitzen) −4 dB ±1; G4-03 Auto im Demo-Mix: Gesang im Präsenzband 2–5 kHz ≥ 3 dB über der lautesten anderen Spur in dem Band;
 G4-04 CPU 3 min ≤ +3 %; G4-05 A/B, Undo, Speichern/Laden; Regler ≥ 44 px in allen Formaten.
+
+---
+
+## Ergänzung 31.10. ~12:10 (Xander, wörtlich in fragen-xander-9.md) — gilt für den Bau
+
+### G3 ergänzt: Einstieg aus dem Loop, Auftakt
+5. **Einsingen aus einem laufenden Loop** (● REC mit 🎤 und Stimme-FANG): der Clip beginnt am Takt des ersten Worts auf bzw. nach dem
+   Taktstrich (Phrasen-Regel wie FANG); was davor gesungen wurde (Auftakt, Ansingen, ≤ 2 Takte) ist **Vorlauf** und wird nicht
+   abgeschnitten – der Loop beginnt deshalb **nicht** einen Takt früher. Gilt für den STIMME-Take und für die erkannten Noten:
+   der MELODIE-Clip bekommt die Auftakt-Noten als Vorlauf (additives Feld), die wie der Audio-Vorlauf nur beim Einstieg und im Song
+   vor dem Teil klingen.
+- G3-06 Auftakt ½ Takt vor Takt 5 aus einem laufenden 4-Takt-Loop gesungen → STIMME- und MELODIE-Clip beginnen bei Takt 5 (nicht 4),
+  Vorlauf hörbar beim Einstieg und im Song vor dem Teil, sichtbar als Schwänzchen.
+
+## Welle 3 (parallel, sobald Rechenplatz frei ist; je ein Zweig)
+
+### S0 — Teil bearbeiten (Fehler „Strophe ersetzen“)
+Xander: „wenn ich … Strophe ersetzen mache, dann weiß ich nicht, welche Strophe der ersetzt, dann macht der mir meistens eine kaputt“.
+1. Erst den Fehler nachstellen und beheben: Ersetzen trifft genau den Teil, den man gewählt hat (bei mehreren gleichnamigen Teilen
+   fragt das Blatt „welche: Strophe 1 (Takt 9) · Strophe 2 (Takt 25)“, die gewählte ist im Song markiert).
+2. Tipp auf die gelbe Kopfzeile → Teil-Blatt bekommt **„Bearbeiten“**: Name ändern; Liste der Spuren/Clips des Teils über seine
+   Länge; je Clip/Spur **an/aus für diesen Teil** (z. B. „im letzten Teil schweigen die Drums“) → gespeichert im Teil; Undo.
+- S0-01 zwei „Strophe“-Teile, Ersetzen der zweiten → nur die zweite geändert (deep-equal der ersten); S0-02 Umbenennen, Undo;
+  S0-03 Drums im Teil aus → im Song dort still, sonst unverändert; Speichern/Laden; S0-04 Blatt ≥ 44 px in allen Formaten.
+
+### S1 — Teil überarbeiten im Lauf (unverbindlich, mit FANG)
+Xander: Songteil antippen zum Hören, „ändere ihn on the fly … so easy, dass es nicht bindend ist, sondern dass ich das mit Fang auch
+wieder einfangen kann“.
+1. Läuft ein Teil (Tipp auf den Teil bzw. seine Kopfzeile), werden Änderungen im Lauf (Clips/Spuren an/aus, Szenenwechsel, Dazuspielen)
+   **nur gemerkt**, nichts wird überschrieben. **FANG** (bzw. FANG TEIL) fängt den letzten Durchlauf mit den Änderungen als
+   **neue Fassung des Teils** ein; Ergebnis-Blatt: [Teil ersetzen] [Als neuen Teil] [Verwerfen]. Ein Undo.
+- S1-01 Teil läuft, Drums in Takt 3 aus, FANG → neue Fassung mit Drums ab Takt 3 aus; alter Teil unverändert bis [Teil ersetzen];
+  S1-02 Dazugespielte Noten landen in der Fassung; S1-03 Undo/Speichern/Laden deep-equal.
+
+### S2 — Zusammenfassen (Teil konsolidieren, zwei Teile verketten)
+1. Tipp auf die gelbe Kopfzeile → **„Zusammenfassen“**: alles im Bereich des Teils (Lanes, im Song dazu Aufgenommenes, Stimme) wird
+   ein neuer Teil. Zwei oder mehr hintereinander liegende Teile auswählen (gelbe Auswahl über beide) → „Zusammenfassen“ → ein Teil.
+- S2-01 Teil + im Song dazugespielte Melodie → neuer Teil klingt gleich (bitgleicher Render des Bereichs); S2-02 zwei Teile →
+  ein Teil mit Summe der Längen, klingt gleich; S2-03 Undo/Speichern/Laden.
+
+### N1 — Noten umdrehen
+Xander: Notenbild „von oben nach unten … invertiert“ oder „von links nach rechts drehen“, „mit einem Klick“.
+1. Im Noten-Editor (Auswahl, sonst ganzer Clip): **[Spiegeln ↕]** (Tonhöhen gespiegelt um die Mitte der Auswahl, in der Tonart
+   eingerastet) und **[Umdrehen ↔]** (zeitlich rückwärts, Längen und Anschlag bleiben je Note), beide zusammen möglich. Ein Undo je
+   Klick. Symbole gezeichnet.
+- N1-01 Lauf C-D-E-G → Spiegeln → G-E-D-C-artig in der Tonart (Intervalle gespiegelt, alle Töne in der Skala); N1-02 Umdrehen:
+  Startzeiten gespiegelt im Bereich, Anschlag je Note erhalten; N1-03 zweimal = Ausgangslage (deep-equal).
+
+### N2 — Weite Wege beim Ziehen: Mini-Karte und Achsen-Einrasten
+Xander: einzelne Note oder Auswahl über einen 16-Takt-Loop nach vorn ziehen „dauert ewig“; „wie bei Spielen … eine Landkarte“;
+„dass das System … erkennt, man will auf dieser Tonhöhe bleiben … so einen Schnappeffekt“.
+1. Sobald man Noten **hält und zieht**, erscheint oben eine **Mini-Karte** des ganzen Clips/Song-Rasters (Noten als Striche, sichtbarer
+   Ausschnitt als Rahmen). Mit dem Finger, der zieht, auf die Mini-Karte → die Ansicht springt dorthin (weich), die Noten bleiben in
+   der Hand und werden dort abgesetzt. Kein Warten auf Randscrollen.
+2. **Achsen-Einrasten:** zieht man klar waagrecht (erste ~12 px überwiegend waagrecht), bleibt die Tonhöhe fest (leichte Haptik beim
+   Einrasten); klar senkrecht → Zeit fest; erst eine deutliche Bewegung in die andere Richtung löst die Sperre. Bestehende Tasten zum
+   Sperren bleiben.
+- N2-01 Note in Takt 16 → Mini-Karte → Takt 1 in < 1,5 s, Anschlag/Länge erhalten, ein Undo; N2-02 waagrechter Zug mit ±20 px
+  Zittern → Tonhöhe unverändert; N2-03 senkrecht → Zeit unverändert; N2-04 Mini-Karte ≥ 44 px hoch, in allen Formaten im Bild,
+  verdeckt nicht die Stelle unter dem Finger.
+
+### D1 — Drum-Sequencer: Länge je Spur, Richtung
+Xander: Hi-Hats sollen länger/abwechslungsreicher sein können, „doppelte Länge“, „Loop-Klammer kleiner … bei den Hi-Hats“, Kick
+kurzer Clip, „rückwärts laufen lassen … diese coolen Sachen, Spielereien“.
+1. Je Drum-Spur (Pad-Zeile) eine eigene **Länge** (1–64 Schritte) bzw. **Loop-Klammer** im Schritt-Raster ziehbar; Spuren laufen
+   unabhängig (Polymeter), der Clip selbst bleibt so lang wie bisher bzw. **[×2]** verdoppelt den Clip mit Inhalt.
+2. **Richtung** je Spur: vorwärts · rückwärts · Pendel · Zufall (Zufall wiederholbar mit Startwert, gleiches Ergebnis bei jedem
+   Abspielen).
+3. Weitere „Spielereien“ (Wahrscheinlichkeit je Schritt, Ratchets) **nicht bauen** – als Vorschlag unter „Fragen an Xander“.
+- D1-01 Hi-Hat 12 Schritte gegen Kick 16 → nach 48 Schritten wieder deckungsgleich (gemessene Treffer); D1-02 rückwärts/Pendel/Zufall
+  hörbar und wiederholbar (zwei Läufe gleiche Treffer); D1-03 ×2 → Inhalt doppelt; Undo/Speichern/Laden; ältere Projekte klingen
+  unverändert; D1-04 Bedienung ≥ 44 px in allen Formaten.

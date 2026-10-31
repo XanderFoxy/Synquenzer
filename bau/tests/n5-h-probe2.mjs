@@ -1,0 +1,20 @@
+import { chromium } from 'playwright';
+const file = process.argv[2];
+const b = await chromium.launch({args:['--autoplay-policy=no-user-gesture-required']}); const p = await b.newPage({viewport:{width:390,height:844}});
+await p.goto('file://'+file); await p.waitForTimeout(2000);
+const r = await p.evaluate(() => {
+  const out = {};
+  const t = (f, n=50) => { const a=[]; for (let i=0;i<n;i++){const t0=performance.now(); f(); a.push(performance.now()-t0);} a.sort((x,y)=>x-y); return +a[n>>1].toFixed(3); };
+  out.size = serializeProject().length;
+  out.ser = t(() => serializeProject());
+  out.serS = t(() => JSON.stringify(S, stripReplacer));
+  out.parse = t(() => JSON.parse(JSON.stringify(S, stripReplacer)));
+  out.perTrack = S.tracks.map(tr => JSON.stringify(tr, stripReplacer).length);
+  out.top = Object.fromEntries(Object.keys(S).map(k => [k, JSON.stringify(S[k], stripReplacer).length]));
+  out.sound3 = typeof soundSnapshot==='function' ? soundSnapshot(3).length : null;
+  out.fx = fxSnapshot().length; out.fxs = fxSnapshot().slice(0,300);
+  out.song = songSnapshot().length; out.kit = kitSnapshot().length; out.part = partSnap().length;
+  return out;
+});
+console.log(JSON.stringify(r, null, 1));
+await b.close();
