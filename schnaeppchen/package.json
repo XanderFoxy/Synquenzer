@@ -1,0 +1,12 @@
+{
+  "name": "schnaeppchen-wecker",
+  "private": true,
+  "type": "module",
+  "description": "Persönlicher Preisalarm (Döbeln + online) mit ntfy-Push",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test scan/test/*.test.mjs",
+    "scan": "node scan/main.mjs",
+    "probe": "node scan/main.mjs --fixtures --data /tmp/schnaeppchen-probe"
+  }
+}
