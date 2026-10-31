@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Geräte-Probe</title>
+<!-- M-PROBE (Nachtrag 8 A.8 H4 = I4-61 = G9-61): Werkstatt-Seite, nicht Teil der App. Sieben Knöpfe ≥ 88 × 88 px, Anzeigen, [Kopieren]. -->
+<style>
+:root{--bg:#121418;--fg:#ece8df;--dim:#9aa0aa;--line:#3a3f4a;--amber:#ffb22e;--ok:#5fd38d;--no:#ff6b6b}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.35 -apple-system,system-ui,sans-serif}
+body{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 40px max(12px,env(safe-area-inset-left))}
+h1{font-size:18px;margin:4px 0 8px}
+p.k{color:var(--dim);margin:4px 0 12px;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.cell{border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.cell b{font-size:13px}
+.pad{position:relative;min-width:88px;min-height:88px;border-radius:10px;border:2px solid var(--amber);background:#1d2026;color:var(--fg);font:700 15px/1.2 inherit;display:flex;align-items:center;justify-content:center;text-align:center;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.pad.hit{background:#3a2c10}
+.pad label{position:absolute;inset:0;-webkit-tap-highlight-color:transparent}
+.pad label input{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;visibility:hidden}
+.ans{display:flex;gap:6px}
+.ans button{flex:1;min-height:44px;border-radius:8px;border:1px solid var(--line);background:#1d2026;color:var(--fg);font:700 14px inherit}
+.ans button.on.y{background:var(--ok);color:#000}.ans button.on.n{background:var(--no);color:#000}
+canvas{display:block;width:100%;height:88px;border-radius:10px;background:#0e1014}
+.bar7{position:relative;width:300px;max-width:100%;height:88px;border-radius:10px;border:2px solid var(--amber);background:repeating-linear-gradient(90deg,#1d2026 0 29px,#3a3f4a 29px 30px);touch-action:none}
+input.tf{width:100%;min-height:44px;font-size:16px;border-radius:8px;border:1px solid var(--line);background:#0e1014;color:var(--fg);padding:0 8px}
+pre{white-space:pre-wrap;background:#0e1014;border:1px solid var(--line);border-radius:8px;padding:8px;font:500 12px/1.4 ui-monospace,monospace}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.row button{min-height:44px;padding:0 14px;border-radius:8px;border:1px solid var(--amber);background:#1d2026;color:var(--fg);font:700 14px inherit}
+</style>
+</head>
+<body>
+<h1>Geräte-Probe</h1>
+<p class="k">Jeden Knopf antippen und bei jedem sagen, ob du einen Tick spürst (Ja/Nein). Bei 5: Bleibt die Tastatur offen? Dann je ein Bildschirmfoto hoch und quer mit offener Tastatur (Feld bei 5 antippen) und unten [Kopieren].</p>
+<div class="grid" id="g"></div>
+<pre id="info"></pre>
+<div class="row"><button id="cp">Kopieren</button><button id="mic">Mikrofon an</button></div>
+<script>
+'use strict';
+const $ = s => document.querySelector(s), A = {}, LOG = [];
+const ios = (navigator.userAgent.match(/OS (\d+)_(\d+)(?:_(\d+))? like Mac OS X/) || []).slice(1).filter(Boolean).join('.') || null;
+const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+let ctx = null, stream = null, gpu = null, vvMax = {hoch: null, quer: null};
+// Code-Klick auf ein verstecktes Schalter-Label (wie haptic() der App)
+const hidden = (() => { const i = document.createElement('input'), l = document.createElement('label'); i.type = 'checkbox'; i.setAttribute('switch', ''); i.id = 'hp'; l.htmlFor = 'hp';
+  for (const n of [i, l]) n.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:.01;pointer-events:none'; document.body.append(i, l); return l; })();
+const codeClick = () => { try { hidden.click(); } catch (e) {} };
+const labelIn = node => { const l = document.createElement('label'), i = document.createElement('input'); l.setAttribute('aria-hidden', 'true'); i.type = 'checkbox'; i.setAttribute('switch', ''); i.tabIndex = -1; i.addEventListener('click', e => e.stopPropagation()); l.append(i); node.append(l); return l; };
+async function micOn() {
+  if (stream) return true;
+  try {
+    if (navigator.audioSession) try { navigator.audioSession.type = 'play-and-record'; } catch (e) {}
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); await ctx.resume();
+    stream = await navigator.mediaDevices.getUserMedia({audio: true}); ctx.createMediaStreamSource(stream).connect(ctx.createGain());
+    $('#mic').textContent = 'Mikrofon aus'; return true;
+  } catch (e) { LOG.push('Mikrofon: ' + (e && e.name)); return false; }
+}
+function micOff() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } if (navigator.audioSession) try { navigator.audioSession.type = 'auto'; } catch (e) {} $('#mic').textContent = 'Mikrofon an'; }
+$('#mic').onclick = () => { if (stream) micOff(); else micOn(); };
+const K = [
+  [1, 'Code-Klick beim Aufsetzen, Mikro aus', n => n.addEventListener('pointerdown', () => { micOff(); codeClick(); })],
+  [2, 'Code-Klick beim Aufsetzen, Mikro an', n => n.addEventListener('pointerdown', () => { micOn(); codeClick(); })],
+  [3, 'Echter Tipp auf ein Label, Mikro aus', n => { labelIn(n); n.addEventListener('click', () => micOff()); }],
+  [4, 'Echter Tipp auf ein Label, Mikro an', n => { labelIn(n); n.addEventListener('pointerdown', () => micOn()); }],
+  [5, 'Label-Tipp, während das Textfeld den Fokus hat', null],
+  [6, 'Label über einer Leinwand', null],
+  [7, 'Ziehen: Code-Klick je 30 px', null],
+];
+for (const [k, txt, bind] of K) {
+  const c = document.createElement('div'); c.className = 'cell'; c.innerHTML = `<b>${k}. ${txt}</b>`; if (k === 7) c.style.gridColumn = '1 / -1';
+  let pad;
+  if (k === 5) { const f = document.createElement('input'); f.className = 'tf'; f.placeholder = 'erst hier tippen (Tastatur)'; c.append(f); pad = document.createElement('div'); pad.className = 'pad'; pad.textContent = '5'; labelIn(pad);
+    pad.addEventListener('mousedown', e => e.preventDefault()); pad.addEventListener('click', () => { A.kb5 = document.activeElement === f ? 'offen' : 'zu'; f.focus({preventScroll: true}); info(); }); }
+  else if (k === 6) { pad = document.createElement('div'); pad.className = 'pad'; pad.style.padding = '0'; const cv = document.createElement('canvas'); pad.append(cv); labelIn(pad); requestAnimationFrame(() => { const g = cv.getContext('2d'); cv.width = cv.clientWidth; cv.height = 88; g.fillStyle = '#7fb0de'; for (let x = 0; x < cv.width; x += 3) { const h = 10 + 30 * Math.abs(Math.sin(x / 9)); g.fillRect(x, 44 - h, 2, 2 * h); } }); }
+  else if (k === 7) { pad = document.createElement('div'); pad.className = 'bar7'; let lx = null;
+    pad.addEventListener('pointerdown', e => { lx = e.clientX; try { pad.setPointerCapture(e.pointerId); } catch (er) {} });
+    pad.addEventListener('pointermove', e => { if (lx == null) return; if (Math.abs(e.clientX - lx) >= 30) { lx = e.clientX; codeClick(); } });
+    pad.addEventListener('pointerup', () => { lx = null; }); }
+  else { pad = document.createElement('div'); pad.className = 'pad'; pad.textContent = String(k); bind(pad); }
+  pad.addEventListener('pointerdown', () => { pad.classList.add('hit'); setTimeout(() => pad.classList.remove('hit'), 150); });
+  const ans = document.createElement('div'); ans.className = 'ans'; ans.innerHTML = '<button class="y">Tick ja</button><button class="n">nein</button>';
+  ans.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; A[k] = b.classList.contains('y') ? 'ja' : 'nein'; ans.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); info(); });
+  c.append(pad, ans); $('#g').append(c);
+}
+function info() {
+  const vv = window.visualViewport, h = vv ? Math.round(vv.height) : innerHeight, land = innerWidth > innerHeight;
+  const kbOpen = vv && vv.height < innerHeight - 120;
+  if (kbOpen) vvMax[land ? 'quer' : 'hoch'] = h;
+  const t = ['Geräte-Probe M-PROBE', 'iOS: ' + (ios || 'nicht erkannt'), 'Ansicht: ' + (standalone ? 'Home-Bildschirm' : 'Safari'),
+    'Fenster: ' + innerWidth + ' × ' + innerHeight + (land ? ' (quer)' : ' (hoch)'), 'sichtbare Höhe jetzt: ' + h + (kbOpen ? ' (Tastatur offen)' : ''),
+    'sichtbare Höhe mit Tastatur hoch: ' + (vvMax.hoch == null ? '–' : vvMax.hoch) + ', quer: ' + (vvMax.quer == null ? '–' : vvMax.quer),
+    'crossOriginIsolated: ' + (window.crossOriginIsolated ? 'ja' : 'nein'), 'WebGPU-Adapter: ' + (gpu == null ? 'prüfe …' : gpu ? 'ja' : 'nein'),
+    'Antworten: ' + [1, 2, 3, 4, 5, 6, 7].map(k => k + '=' + (A[k] || '–')).join(' ') + (A.kb5 ? ' · Tastatur bei 5: ' + A.kb5 : '')].concat(LOG);
+  $('#info').textContent = t.join('\n');
+  return t.join('\n');
+}
+(async () => { try { gpu = !!(navigator.gpu && await navigator.gpu.requestAdapter()); } catch (e) { gpu = false; } info(); })();
+if (window.visualViewport) { visualViewport.addEventListener('resize', info); visualViewport.addEventListener('scroll', info); }
+window.addEventListener('resize', info);
+$('#cp').onclick = async () => { const t = info(); try { await navigator.clipboard.writeText(t); $('#cp').textContent = 'Kopiert ✓'; } catch (e) { const r = document.createRange(); r.selectNodeContents($('#info')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); $('#cp').textContent = 'markiert – Kopieren'; } };
+info();
+</script>
+</body>
+</html>
