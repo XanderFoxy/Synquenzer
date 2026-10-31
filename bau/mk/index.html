@@ -1704,6 +1704,20 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 @media (orientation:portrait) and (max-width:340px){
   #clipGrid{grid-template-columns:minmax(70px,1.5fr) repeat(4,minmax(40px,1fr)) 34px;padding-left:5px;padding-right:5px}
 }
+/* G-GES (Touch ≥ 44, Xander 27.10.): kleine Hochformate (375×667, 320×568) – Spur-Leiste KLANG ✎ ⇅ M ↶ und SPIELEN │ 🎤 │ TRANSPONIEREN,
+   ‹ › 44 px hoch (vorher 36/37 bzw. 41); die 14 px kommen von der Tastatur (27 vh − 14 px, mindestens 140 px), die Clip-Matrix bleibt */
+@media (orientation:portrait) and (max-height:700px){
+  #app{grid-template-rows:50px minmax(0,1fr) 50px 52px 52px clamp(140px,calc(27vh - 14px),220px);
+    grid-template-rows:50px minmax(0,1fr) 50px 52px 52px clamp(140px,calc(27dvh - 14px),220px)}
+  #strip .sbtn{height:44px}
+  .oct{min-height:44px}
+  #modeSeg button{min-height:44px}
+}
+@media (orientation:portrait) and (max-width:389px){
+  #strip #bEdit,#strip #bFolgt,#strip #bMute,#strip #bUndo{flex:0 0 44px;width:44px;min-width:44px;padding:0}   /* G-GES: ≥ 44 breit, der Spurname gibt nach */
+  #strip #bFolgt .ck{display:none}
+}
+@media (orientation:portrait){#songView.side .sv-top{flex-basis:91px}}   /* G-GES: Song-Werkzeugspalte P3 2 × 44 px (vorher 2 × 30), die Spuren 29 px schmaler */
 /* WP2: ✎ joined the strip; at 360–389 px the gaps and KLANG get a little tighter so the track name stays readable */
 @media (orientation:portrait) and (min-width:360px) and (max-width:389px){
   #strip{gap:4px;padding:4px 6px}
@@ -40439,7 +40453,7 @@ function tkVoiceTake(o) {
   undoPush({kind: 'group', label: 'Stimme', items: its, tk: 1});
   // läuft phasengleich weiter (wie der MELODIE-Clip), ein Overdub klingt sofort mit dem neuen Take
   if (R.playing && grow) tkGrowPhase(st, o.si, gcs);                // VS-L: der längere Clip läuft ab dem Takt der Aufnahme
-  else if (R.playing) { if (R.slot[st] === o.si && !R.pend[st]) tkTrackResync(st); else switchTrackAt(st, o.si, nextBarFromAudible(), old && old.audio ? undefined : o.cs); }
+  else if (R.playing) { if (R.slot[st] === o.si && !R.pend[st]) { if (!(old && old.audio)) tkTrackResync(st); } else switchTrackAt(st, o.si, nextBarFromAudible(), old && old.audio ? undefined : o.cs); }   // G-GES (VS-L Frage 5): Overdub lückenlos – der alte Take klingt weiter, bis der neue gelesen ist; tkMakeTake plant dann mit Überblendung neu (wie beim Wachsen)
   clipChanged(st, o.si);
   tkOriginHint();
   markDirty(); UI.dirty.all = true;
