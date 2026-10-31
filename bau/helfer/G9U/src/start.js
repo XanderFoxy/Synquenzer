@@ -75,6 +75,7 @@ const G9_API = {
   g9Text: (r, on) => { if (!WP.ed) { if (on === false) return false; wpOpen(typeof r === 'string' ? null : r || {t: stimmeT(), s: R.selS}); } if (!g9Load()) return false; return g9Toggle(on); },
   g9Sel: k => (g9Mode() ? g9Select(k, {api: true}) : false),
   g9Info: () => (G9.loaded ? g9InfoApi() : {loaded: false, sm: Object.assign({}, G9.sm), hold: G9.hold}),
+  g9FeatSim: (r, f) => { const id = wpId(r); G9.featSim = G9.featSim || new Map(); if (f) G9.featSim.set(id, f); else G9.featSim.delete(id); if (WP.ed) wpPaint(); return !!f; },
   g9KbSim: h => { G9.kb = h == null ? null : +h; if (G9.loaded) g9Dock(); return G9.kb; },
   g9PlayLog: () => G9.play.map(x => Object.assign({}, x)),
   g9HapLog: () => G9.hap.map(x => Object.assign({}, x)),

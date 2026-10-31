@@ -47,3 +47,21 @@ export async function mkTake(p, times, len, scene = 0) {
   return {id: r.id, ref: {t: r.track, s: scene}, marks};
 }
 export function report() { let fail = 0, n = 0; const ok = (c, m) => { n++; console.log((c ? '✓ ' : '✗ ') + m); if (!c) fail++; }; ok.done = () => { console.log(`\n${n - fail}/${n} bestanden`); return fail; }; return ok; }
+// Klick-Folge (wie VS5a-Tests): je Zeitpunkt genau eine Marke
+export function clicks(times, len, a = 0.5) {
+  const n = Math.round(len * SR), y = new Float32Array(n); let seed = 9; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
+  for (let i = 0; i < n; i++) y[i] = 0.0005 * rnd();
+  for (const t of times) { const i0 = Math.round(t * SR); for (let i = 0; i < 0.12 * SR && i0 + i < n; i++) { const u = i / SR; y[i0 + i] += a * Math.exp(-u / 0.025) * (Math.sin(2 * Math.PI * 1500 * u) * 0.7 + Math.sin(2 * Math.PI * 3100 * u) * 0.3) * Math.min(1, i / 24); } }
+  return y;
+}
+export async function clickTake(p, times, len, scene = 0) {
+  const r = await p.evaluate(([pcm, s, L]) => SYNQUENZER.tkInject({pcm, sr: 48000, scene: s, len: L}), [toI16(clicks(times, len)), scene, Math.max(1, Math.ceil(len / 2))]);
+  const marks = await p.evaluate(id => SYNQUENZER.wpDetect(id), r.id);
+  return {id: r.id, ref: {t: r.track, s: scene}, marks};
+}
+export const U = p => p.evaluate(() => SYNQUENZER.undoInfo());
+export const V = (p, id) => p.evaluate(id => SYNQUENZER.g9View(id), id);
+export const LY = (p, id) => p.evaluate(id => SYNQUENZER.g9Ly(id), id);
+export const SET = (p, id, op) => p.evaluate(([id, op]) => SYNQUENZER.g9Set(id, op), [id, op]);
+// Silben → Marken-Index-Liste aus der Sicht
+export const ks = v => v.syl.map(s => (s.o ? 'o' : s.k));

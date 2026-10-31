@@ -7,6 +7,7 @@ function g9AlignApi(syl, marks, feat, o) {
 }
 function g9FeatOf(id) {
   const m = S.takes && S.takes[id], mk = wpMarks(id); if (!m || !mk) return null;
+  const sim = G9.featSim && G9.featSim.get(id); if (sim && sim.length === mk.length) return sim;   // nur Tests (g9FeatSim)
   const key = id + '@' + mk.length + ':' + (mk.length ? mk[0].t + ':' + mk[mk.length - 1].t : '');
   let f = G9.feat.get(id); if (f && f.key === key) return f.f;
   f = {key, f: G9K.feat(mk, m.len / m.sr)}; G9.feat.set(id, f); return f.f;
