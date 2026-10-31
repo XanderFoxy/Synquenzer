@@ -1,36 +1,29 @@
-# Schnäppchen-Wecker: sucht stündlich nach Angeboten (Döbeln + online) und schickt Deals per ntfy aufs iPhone.
-# Code: schnaeppchen/ (main). Daten: Zweig "schnaeppchen-daten" (nicht main -> GitHub Pages baut nicht jede Stunde neu).
+# NUR auf Zweig preis-sonde: einmalige Preis-Sonde statt des Schnäppchen-Weckers.
+# Läuft nur per Hand (workflow_dispatch mit ref preis-sonde). Kein Zeitplan, kein Push-Auslöser, keine ntfy-Nachricht,
+# kein Daten-Zweig: das Ergebnis geht ausschließlich auf den Zweig roh-daten unter preis-sonde/<Lauf-Nr.>/.
 name: Schnäppchen-Wecker
 
 on:
-  schedule:
-    - cron: '17 * * * *'   # jede Stunde um :17 (läuft nur vom Standardzweig aus)
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Nur testen, keine Push-Nachrichten senden'
+        description: '(ohne Wirkung auf diesem Zweig)'
         type: boolean
-        default: false
+        default: true
       roh:
-        description: 'Roh-Mitschnitt: alle Quell-Antworten + Ergebnis auf Zweig roh-daten, ohne Push und ohne Daten-Zweig'
+        description: '(ohne Wirkung auf diesem Zweig)'
         type: boolean
-        default: false
-  push:
-    branches: [main]
-    paths:
-      - 'schnaeppchen/watchlist.json'
-      - 'schnaeppchen/config.json'
-      - 'schnaeppchen/scan/**'
+        default: true
 
 permissions:
   contents: write
 
 concurrency:
-  group: ${{ inputs.roh && 'schnaeppchen-roh' || 'schnaeppchen' }}   # Roh-Läufe stören die stündlichen Läufe nicht
+  group: preis-sonde
   cancel-in-progress: false
 
 jobs:
-  scan:
+  sonde:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -43,66 +36,34 @@ jobs:
         with:
           node-version: 22
 
-      - name: Tests
-        working-directory: schnaeppchen
-        run: npm test
+      - name: Preis-Sonde
+        env:
+          # Nur die Info, ob ein Schlüssel hinterlegt ist – der Schlüssel selbst geht nicht an die Sonde.
+          KEEPA_GESETZT: ${{ secrets.KEEPA_KEY != '' }}
+        run: node schnaeppchen/scan/sonde-historie.mjs --out "$RUNNER_TEMP/sonde"
 
-      - name: Daten-Zweig holen
+      - name: Ergebnis speichern (Zweig roh-daten, Ordner preis-sonde/<Lauf-Nr.>)
+        if: ${{ always() }}
         env:
           GH_TOKEN: ${{ github.token }}
+          QUELLE: ${{ runner.temp }}/sonde
         run: |
-          URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          if git ls-remote --exit-code --heads "$URL" schnaeppchen-daten >/dev/null; then
-            git clone --quiet --depth 1 --branch schnaeppchen-daten "$URL" daten
-          else
-            mkdir daten && git -C daten init --quiet -b schnaeppchen-daten && git -C daten remote add origin "$URL"
-          fi
-
-      - name: Suchen und benachrichtigen
-        env:
-          KEEPA_KEY: ${{ secrets.KEEPA_KEY }}
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          DRY_RUN: ${{ (inputs.dry_run || inputs.roh) && '1' || '0' }}
-          ROH_DIR: ${{ inputs.roh && format('{0}/roh', runner.temp) || '' }}
-        run: node schnaeppchen/scan/main.mjs --data daten/schnaeppchen/data
-
-      - name: Daten speichern
-        if: ${{ !inputs.roh }}
-        working-directory: daten
-        run: |
-          git config user.name "schnaeppchen-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          printf '# Daten des Schnäppchen-Weckers\nAutomatisch erzeugt (stündlich). Code: Zweig main, Ordner schnaeppchen/.\n' > README.md
-          git add -A
-          # Ein einziger Commit (der Verlauf steckt in history.json) -> der Zweig bleibt klein.
-          git checkout --quiet --orphan neu
-          git commit --quiet -m "Daten $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push --quiet --force origin neu:schnaeppchen-daten
-
-      # Nur bei roh: Mitschnitt auf den eigenen Zweig roh-daten unter schnaeppchen/<Lauf-Nr.>/ (nie auf den Daten-Zweig).
-      - name: Rohdaten speichern (Zweig roh-daten)
-        if: ${{ always() && inputs.roh }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ROH_DIR: ${{ runner.temp }}/roh
-        run: |
-          if [ ! -d "$ROH_DIR" ]; then echo "kein Mitschnitt vorhanden"; exit 1; fi
+          if [ ! -d "$QUELLE" ]; then echo "keine Sonden-Daten vorhanden"; exit 1; fi
           URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           if git ls-remote --exit-code --heads "$URL" roh-daten >/dev/null; then
             git clone --quiet --depth 1 --branch roh-daten "$URL" roh-zweig
           else
             mkdir roh-zweig && git -C roh-zweig init --quiet -b roh-daten && git -C roh-zweig remote add origin "$URL"
           fi
-          ZIEL="roh-zweig/schnaeppchen/${GITHUB_RUN_ID}"
-          mkdir -p "$ZIEL" && cp -R "$ROH_DIR"/. "$ZIEL"/
+          ZIEL="roh-zweig/preis-sonde/${GITHUB_RUN_ID}"
+          mkdir -p "$ZIEL" && cp -R "$QUELLE"/. "$ZIEL"/
           cd roh-zweig
           git config user.name "roh-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit --quiet -m "Rohdaten schnaeppchen Lauf ${GITHUB_RUN_ID}"
-          # Andere Wecker können gleichzeitig schreiben -> bei Ablehnung neu aufsetzen und wiederholen
+          git commit --quiet -m "Preis-Sonde Lauf ${GITHUB_RUN_ID}"
           for i in 1 2 3 4 5; do
-            if git push --quiet origin HEAD:roh-daten; then echo "gespeichert: schnaeppchen/${GITHUB_RUN_ID}"; exit 0; fi
+            if git push --quiet origin HEAD:roh-daten; then echo "gespeichert: preis-sonde/${GITHUB_RUN_ID}"; exit 0; fi
             sleep $((i * 4))
             git pull --quiet --rebase origin roh-daten || true
           done
