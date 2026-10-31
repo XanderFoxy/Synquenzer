@@ -204,7 +204,7 @@ function feat(x, sr, marks) {
     if (ap[f] >= 0) return; ap[f] = 1; f0[f] = 0;
     if (sil(f)) return;
     if (!xd) mkXd();
-    const c = Math.round(f * hop / dec), a = c - (W >> 1);
+    const a = Math.round(f * hop / dec);   // Fenster ab dem Rahmen (vorwärts): ein Konsonant direkt nach einem Vokal gilt nicht als stimmhaft
     if (a < 0 || a + W + tMax + 1 >= xd.length) return;
     for (let tau = 1; tau <= tMax + 1; tau++) { let s = 0; for (let k = 0; k < W; k++) { const e = xd[a + k] - xd[a + k + tau]; s += e * e; } d[tau] = s; }
     let run = 0; for (let tau = 1; tau <= tMax + 1; tau++) { run += d[tau]; d[tau] = run > 0 ? d[tau] * tau / run : 1; }
@@ -233,13 +233,16 @@ function feat(x, sr, marks) {
     const dur = k + 1 < marks.length ? R6(marks[k + 1].t - t) : R6(Math.max(0.05, lastAct * hop / sr - t));
     out.push({rise, gap, pj, vo: vn && vc / vn >= 0.5 ? 1 : 0, von, uv: un ? R2(uc / un) : 0, dur, conf: fin(+marks[k].conf) ? +marks[k].conf : 0.5});
   }
+  // vf: Marke ist der Vokal-Einsatz der vorigen (stimmlosen) Konsonant-Marke (Doppel-Marke „s|a“, Abgleich G9a)
+  for (let k = 1; k < out.length; k++) { const p = out[k - 1], dt = +marks[k].t - +marks[k - 1].t; out[k].vf = dt <= 0.16 && !p.vo && Math.abs(+marks[k].t - p.von) <= 0.03 ? 1 : 0; }
+  if (out.length) out[0].vf = 0;
   return out;
 }
 
 // ───────────────────────── Kosten (§6.3) ─────────────────────────
-const C = {skip0: 0.2, skipRise: 1.5, skipGap: 2.0, skipTone: 0.8, merge: 1.2, mergeWord: 0.6, mergeLong: 0.5, longF: 1.7, over: 3.0,
+const C = {skip0: 0.2, skipRise: 1.5, skipGap: 2.0, skipTone: 0.8, skipVow: 0.8, merge: 1.2, mergeWord: 0.6, mergeLong: 0.5, longF: 1.7, over: 3.0,
   wordGap: -0.5, inWordGap: 1.0, lineGap: -1.0, lineMiss: 0.5, cons: -0.2, tauS: 0.15, edge: 0.3, tip: -0.8, tipSkip: 1.5, band: 1.5};
-const F0 = {rise: 0, gap: 0, pj: 0, vo: 0, von: 0, uv: 0, dur: 0, conf: 0.5};
+const F0 = {rise: 0, gap: 0, pj: 0, vo: 0, von: 0, uv: 0, dur: 0, conf: 0.5, vf: 0};
 const CONS = /^(sch|st|s|t|k|p|f|z|ch|th|c)/i;
 function costs(marks, feat, o) {
   const m = marks.length, K = Object.assign({}, C, o && o.cost), sk = new Float64Array(m), tip = new Uint8Array(m);
@@ -249,7 +252,7 @@ function costs(marks, feat, o) {
   const tips = o && o.tipOn && Array.isArray(o.tips) ? o.tips : null;
   for (let k = 0; k < m; k++) {
     const f = fe(k), c = fin(f.conf) ? f.conf : 0.5;
-    let s = K.skip0 + K.skipRise * c * (f.rise >= 6 ? 1 : 0) + K.skipGap * (f.gap >= 120 ? 1 : 0) - K.skipTone * (f.pj >= 80 && f.rise < 3 ? 1 : 0);
+    let s = K.skip0 + K.skipRise * c * (f.rise >= 6 && !f.vf ? 1 : 0) + K.skipGap * (f.gap >= 120 ? 1 : 0) - K.skipTone * (f.pj >= 80 && f.rise < 3 ? 1 : 0) - K.skipVow * (f.vf ? 1 : 0);
     if (tips) { const t = +marks[k].t, v = f.von || t + 0.04; if (tips.some(p => p[0] >= t - 0.04 && p[0] <= v + 0.06)) { tip[k] = 1; s += K.tipSkip; } }
     sk[k] = Math.max(0, s);
   }

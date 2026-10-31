@@ -1,0 +1,61 @@
+{
+ "G9-02": {
+  "silben": 1021,
+  "richtig": 98.5,
+  "medianMs": 6,
+  "marken": 1324,
+  "pass": true
+ },
+ "VS5b-von-links": {
+  "richtig": 23.9
+ },
+ "G9-03": {
+  "faelle": 40,
+  "ok": 39,
+  "quote": 97.5,
+  "vs5b": 0,
+  "fehl": [
+   "the tonight her goodbye begin open"
+  ],
+  "pass": true
+ },
+ "G9-04": {
+  "faelle": 30,
+  "ok": 0,
+  "quote": 0,
+  "vs5b": 0,
+  "fehl": [
+   "er sprach Stile hell dann dort",
+   "the missed moent came faded see",
+   "er Heue Geborgenheit Siehst zerfallen Wind",
+   "the cold think sumer waiting all",
+   "er Aend beachten entfliehen Paradies Küste"
+  ],
+  "pass": false
+ },
+ "G9-05": {
+  "zeilen": 8,
+  "ok": 8,
+  "pass": true
+ },
+ "G9-06": {
+  "woerter": 330,
+  "richtig": 53.9,
+  "vorschauGleich": 100,
+  "pass": false
+ },
+ "G9-55": {
+  "ohne": 98.5,
+  "mit": 35.4,
+  "punkte": -63.2,
+  "pass": false,
+  "folge": "Tipp-Kosten bleiben aus"
+ },
+ "G9-09": {
+  "ganzMs": 22.91,
+  "ganzMaxMs": 29.14,
+  "lokalMedMs": 0.056,
+  "lokalMaxMs": 1.25,
+  "pass": true
+ }
+}
