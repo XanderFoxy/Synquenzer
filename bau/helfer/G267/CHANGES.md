@@ -173,3 +173,52 @@ Daten (additiv am Audio-Stück, Format 5): `audio.chor = {rec, dir, mix, voices:
 - G2-Editor: Stimmen-Modus (`g2Open(r, {voice})`, `g2Voice`, Zweige in Chips/Malen/Ziehen – alles im G2-Block).
 - G2-Worker `g2Run`: gibt mit `kw` die K-bewertete Leistung zurück (`g2Kw`).
 - CSS: Block `/* G6: Blatt „Chor“ … */` nach der G2-CSS-Zeile; `.tksheet .tkedrow` 2 Spalten, quer drei Teile.
+
+## G7 – Gesang folgt dem Transponieren
+
+### Was neu ist
+1. **STIMME-Clips und Song-Stimme werden vom Transponieren mitgenommen wie Noten-Clips:** jede erkannte Note (G2-Analyse, bzw. die
+   Noten des Tonhöhen-Felds mit Quantisieren und eigenen Verschiebungen) wird über **`outPitch` der STIMME-Spur** in ihre neue Lage
+   gerechnet – dieselbe Regel wie für Noten-Clips (Träger, „Eine Skala“, Teil-Transposition, Tonart des Clips); sie rastet also wie
+   alle anderen Spuren in die Tonleiter ein. Verschiebung = neue Lage − gesungener Ton, mit der **G2-Technik** (nur stimmhafte Teile,
+   formant-erhaltend; Zischlaute bitgleich). Gilt für gehaltene Flächen („aaah“) und für Worte. Folgt die STIMME-Spur dem Träger nicht
+   (`follow` aus), bleibt der Gesang.
+2. **Ohne Transponieren** (bzw. zurück auf 0) gibt es keinen Plan → **bitgleich** die Fassung ohne G7.
+3. **Vorberechnet / Cache:** jede gerechnete Lage liegt im Render-Cache (bis 8 je Take) – zurück auf eine schon gehörte Lage ohne
+   Neurechnen. Ein Wechsel (Haken in `applyCarrierChange` und `xpSet`) rechnet die neue Lage **sofort** (auch wenn sie erst ab dem
+   nächsten Schlag/Takt gilt) und schaltet kurz vor dem Wechsel um; beim Abspielen wechselt die Fassung ohne Loch (wpSwitch).
+   Beim ersten Abspielen eines STIMME-Clips werden die Noten im Hintergrund gesucht und die Lagen der **Akkord-Zeile der Szene**
+   vorberechnet. Die Chor-Stimmen (G6) folgen mit, weil sie aus der gehörten Lead-Fassung entstehen.
+4. Tonhöhen-Quantisieren nimmt als Voreinstellung die Tonart der Stelle (siehe G2).
+
+Daten: **kein neues Feld** (der Plan entsteht beim Abspielen aus Transponieren + Noten).
+
+### Abnahme (`tests/g7-app.mjs`, Chromium)
+| ID | Ergebnis | Messung |
+|---|---|---|
+| G7-01 | ✓ | Träger D-Dur (+2): je Note = Lage eines Noten-Clips (Tabelle 60→62, 64→66, 62→64, 65→67, 67→69, 69→71, 71→73, 72→74), gemessen **max 0,72 Cent** daneben; Träger a-Moll (diatonisch, 60→57, 64→60, 62→59, 65→62, 67→64, 69→65, 71→67, 72→69): **max 0,12 Cent** |
+| G7-02 | ✓ | Zischlaute bitgleich (0 Samples anders) |
+| G7-03 | ✓ | zurück auf 0 (Träger C) → Roh-Take **bitgleich** |
+| G7-04 | ✓ | zurück auf +2: aus dem Cache (keine neue Rechnung), sofort bereit; Wechsel auf einer gehaltenen Fläche beim Abspielen: 0 Einbrüche ≥ 6 dB, Überblendung 0,74 dB, gehört +204 Cent (Vibrato); Akkord-Zeile der Szene vorberechnet (Cache 4 Fassungen) |
+
+### Abweichungen
+- Eine **noch nie gehörte** Lage braucht beim ersten Mal die Rechenzeit (4-s-Take: Analyse + Rendern ≈ 1,4–2,4 s inkl. Wartezeit bis
+  zum Schlag); bis dahin klingt die vorige Lage weiter (kein Aussetzer). Vorberechnet werden nur die bekannten Wechsel (Akkord-Zeile der Szene).
+- Gerechnet wird je Clip-Durchgang mit dem Transponieren, das gerade gilt (nicht je Note zu ihrer eigenen Zeit): wechselt der Träger
+  mitten im Clip, wechselt der Gesang dort mit der Überblendung von VS5 (wpSwitch).
+- Getestet in der Szene; die Song-Stimme nutzt denselben Weg (`g7SegOf`, Tonart über die Szene am Takt), aber ohne eigenen Test.
+
+### Fragen an Xander (G7)
+1. Soll der Gesang auch bei „Einzelton“-Trägern (eine Taste im TRANSP-Modus) mitgehen? (So ist es jetzt – wie die Noten-Clips.)
+2. Soll man das Mitgehen je STIMME-Clip ausschalten können (z. B. ein gesprochener Teil)?
+
+### iPhone (Xander)
+1. 2 Takte singen (STIMME-Clip), ▶, auf TRANSP. und einen anderen Akkord spielen: geht der Gesang mit, klingt er sauber?
+2. Zurück auf die Ausgangstonart: ist es wieder genau der gesungene Take?
+3. Mehrmals zwischen zwei Akkorden wechseln: kommt der Wechsel ohne Lücke und ohne Knacken?
+
+### Für das Zusammenführen (G7)
+- Neuer Block `/* G7-BEGIN */ … /* G7-END */` hinter `/* G6-END */`; `Object.assign(SYNQUENZER, G7_API);` hinter der G6-Zeile.
+- `applyCarrierChange`: erste Zeile `g7Changed()`; `xpSet`: eine Zeile `g7Changed()` nach `XP.due = beat;`.
+- `tkSched`: eine Zeile `g7Prefetch` nach der `tkPlayBuf`-Zeile.
+- G2-Block: `g2Plan` nimmt ohne Feld die erkannten Noten (`g7Pitch`) und die Verschiebung `g7Shift`.

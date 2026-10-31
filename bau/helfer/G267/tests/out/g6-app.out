@@ -1,0 +1,32 @@
+Chor gerechnet in 473 ms {"ms":254,"n":8} Renders 2
+✓ G6-01 Terz oben = diatonische Terz je Note (Tabelle): 60→64 62→65 64→67 65→69 67→71 69→72 71→74 72→76
+✓ G6-01 Kopie 1: Tonhöhe je Chornote ±10 Cent – max 6.3 [-5.9 -6.0 -6.0 -6.2 -5.7 -5.6 -6.3 -5.7]
+✓ G6-01 Kopie 2: Tonhöhe je Chornote ±10 Cent – max 8.5 [8.0 7.9 8.1 8.0 8.0 8.5 8.1 7.7]
+✓ Rezept sexte: 69,71,72,74,76,77,79,81
+✓ Rezept quinte: 67,69,71,72,74,76,77,79
+✓ Rezept oktave unten: 48,50,52,53,55,57,59,60
+✓ Rezept drei: 64,67,67,69,72,72,74,76 | 67,71,72,72,76,77,79,79
+✓ Rezept barber: 64,67,67,69,72,72,74,76 | 55,59,60,60,64,65,67,67 | 48,55,48,53,60,53,55,60
+✓ Rezept unisono: 60,62,64,65,67,69,71,72
+✓ G6-02 Falsett: Oktave 72,74,76,77,79,81,83,84 | Terz+Oktave 76,77,79,81,83,84,86,88
+✓ G6-02 Lautheit: Lead -28.5 LUFS, Chor -36.5 LUFS → Chor 8.0 LU unter dem Lead (Soll 6…10)
+✓ G6-02 Lautheit Mischung „Pop modern“: Chor 9.4 LU unter dem Lead (Soll 6…10)
+✓ G6-02 je Stimme 2 Doppel: beim Start 5 Puffer-Quellen (1 Lead + 2 Stimmen × 2 Kopien)
+  Chor Stereo-Balance L/R -0.1 dB (Oktave links, Terz rechts)
+✓ G6-03 Chorpegel 0: Ausgang -44.5 dBFS (Hall), Nachhall nach dem Ende -62.1 dBFS; zusätzlich Send 0 → -132.6 dBFS (Stille)
+  Knoten [{"k":"3g0k00cv6o:0:0:6","g":0,"rev":0,"dly":0,"pan":-0.75},{"k":"3g0k00cv6o:0:1:6","g":0,"rev":0,"dly":0,"pan":-0.44999998807907104}]
+✓ G6-05 ↶ ×4 → Chor wie vorher (deep-equal)
+✓ G6-04 Selbst gesungen: Stimme 2 = Take 3mogaf99l6 (neu 3mogaf99l6), Lead bleibt true, Panorama/Sends gleich true
+✓ G6-04 eingemischt: 1 Lead + Stimme 1 × 2 Kopien + selbst gesungene Stimme 2 = 4 Quellen
+✓ G6-05 Speichern/Laden: Chor deep-equal
+✓ G6-05 Abspielen mit Chor: keine langen Tasks > 50 ms (keine)
+✓ G6-05 Chor löschen → weg; ↶ → wieder da (deep-equal)
+✓ Blatt Chor P1: 58–528 (scroll 468/468); abgeschnitten –; < 44 –
+✓ Blatt Chor P2: 56–526 (scroll 468/468); abgeschnitten –; < 44 –
+✓ Blatt Chor P3: 56–526 (scroll 468/468); abgeschnitten –; < 44 –
+✓ Blatt Chor L1: 50–381 (scroll 329/329); abgeschnitten –; < 44 –
+✓ Blatt Chor L2: 8–339 (scroll 329/329); abgeschnitten –; < 44 –
+✓ Blatt Chor XL: 50–381 (scroll 329/329); abgeschnitten –; < 44 –
+✓ G6 Stimme als Noten: 8 Blöcke, ▲ ändert die Stimme (12 → 13)
+✓ keine Seitenfehler 
+ALLE GRÜN

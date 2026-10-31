@@ -19024,6 +19024,7 @@ function outPitch(i, clipKey, note, time, entry) {
   return o;
 }
 function applyCarrierChange(entry, info) {
+  if (typeof g7Changed === 'function') g7Changed();   // G7: Gesang folgt dem Träger
   UI.dirty.carrier = UI.dirty.kb = UI.dirty.grid = true; OS.tick++;
   const c = AU.ctx; if (!c || !entry) return;
   const now = c.currentTime, eff = Math.max(entry.time, now + .005);
@@ -22397,6 +22398,7 @@ function xpSet(beat, semi) {
   // older steps are not needed any more (the last one before the newest stays)
   while (tl.length > 3 && R.playing && AU.ctx && tl[2].b < t2b(AU.ctx.currentTime) - 8) tl.splice(1, 1);
   XP.due = beat;
+  if (typeof g7Changed === 'function') g7Changed();   // G7: Gesang folgt der Teil-Transposition
   { const A = arpK(); if (A && A.busy() && R.playing && AU.ctx) A.carrier(Math.max(b2t(beat), nowT() + .005), true); }   // MK5: arp steps behind a ⇅ change are mapped again (like the clip notes, sounding ones keep their pitch)
 }
 function xpReset() { { const A = arpK(); if (A && A.busy() && AU.ctx) A.carrier(nowT() + .005, true); } XP.tl = [{b: -Infinity, semi: 0}]; XP.due = null; }
@@ -39377,6 +39379,7 @@ function tkSongMute() {
 function tkSched(i, clip, from, to, late, ownId) {
   const a = clip && clip.audio; if (!a || !tkAudioOk() || !AU.ctx) return;
   const buf = tkPlayBuf(a.take, a); if (!buf) { tkLoad(a.take); return; }
+  if (typeof g7Prefetch === 'function' && !G7.pre.has('s' + a.take)) { G7.pre.add('s' + a.take); setTimeout(() => g7Prefetch(a.take, a), 200); }   // G7: Akkord-Zeile vorberechnen
   const sp = spb(), L = clip.len * 4, cs = R.cstart[i];
   const segA = Math.min(a.at, L), segB = Math.min(L, segA + (a.out - a.in) / sp);
   if (segB <= segA + 1e-6) return;
@@ -42169,8 +42172,8 @@ function g2Snap(m, key) {
 // gehörte Zielhöhe einer Note ohne Transponieren (MIDI, ganz bei Quantisieren 100 %)
 function g2Target(P, n) { const base = P.q ? n.m + P.str * (g2Snap(n.m, P.key) - n.m) : n.m; return base + (n.sh || 0); }
 function g2Plan(id, a) {
-  const m = S.takes && S.takes[id], P = m && m.pitch; if (!P) return null;
-  const xs = typeof g7Shift === 'function' ? g7Shift(id, a, P) : null;                 // G7: Transponieren der Stelle (Halbtöne je Note) oder null
+  const m = S.takes && S.takes[id], P = m && (m.pitch || (typeof g7Pitch === 'function' ? g7Pitch(id) : null)); if (!P) return null;   // G7: auch ohne Feld (erkannte Noten)
+  const xs = typeof g7Shift === 'function' ? g7Shift(id, a || g7SegOf(id), P) : null;                 // G7: Transponieren der Stelle (Halbtöne je Note) oder null
   const plan = {mode: P.mode, notes: P.notes.map((n, k) => ({t0: n.t0, t1: n.t1, m: n.m, to: P.q ? g2Snap(n.m, P.key) : n.m, s: P.q ? P.str : 0, e: 100 * ((n.sh || 0) + (xs ? xs[k] || 0 : 0))}))};
   return G2P.active(plan) ? plan : null;
 }
@@ -42809,6 +42812,82 @@ const G6_API = {
   g6Nodes: () => [...G6.nodes.entries()].map(([k, N]) => ({k, g: N.g.gain.value, rev: N.rev.gain.value, dly: N.dly.gain.value, pan: N.pan ? N.pan.pan.value : 0}))
 };
 /* G6-END */
+/* G7-BEGIN */
+/* =====================================================================================================================
+   G7 (Nachtrag 5): Gesang folgt dem Transponieren. STIMME-Clips und Song-Stimme werden vom Transponieren (Träger, „Eine Skala“,
+   Teil-Transposition) mitgenommen wie Noten-Clips: jede erkannte Note → outPitch der STIMME-Spur (dieselbe Regel wie für Noten-Clips,
+   rastet in die Tonleiter ein), Verschiebung = neue Lage − gesungener Ton, mit der G2-Technik (nur stimmhaft, formant-erhaltend).
+   Ohne Transponieren: kein Plan → die Fassung ohne G7 (bitgleich). Neu gerechnet wird beim Wechsel (Haken in applyCarrierChange und
+   xpSet); fertige Lagen liegen im G2-Cache (bis 8 je Take) – zurück auf eine schon gehörte Lage ohne Neurechnen. Vorberechnet werden
+   die Lagen der Akkord-Zeilen der Szene (die bekannten Wechsel), sobald der Clip spielt.
+   ===================================================================================================================== */
+const G7 = {t: null, n: 0, pre: new Set()};
+// Tonart des Audio-Stücks (wie ein Noten-Clip: die Tonart, in der gesungen wurde)
+function g7Key(a) {
+  const st = stimmeT(); if (st < 0) return null;
+  for (const c of S.tracks[st].clips) if (c && c.audio === a) return c.key || S.key;
+  return g2KeyAt(S.song && S.song.vox && S.song.vox.includes(a) ? {vox: a.id} : null);
+}
+// Verschiebung je Note (Halbtöne) unter dem Transponieren jetzt (bzw. unter einem Eintrag e) – null, wenn keine Note verschoben wird
+function g7Shift(id, a, P, e) {
+  const st = stimmeT(); if (st < 0 || !a) return null;
+  const tr = S.tracks[st]; if (!tr || tr.follow === false) return null;
+  const key = g7Key(a); if (!key) return null;
+  const t = G7.t != null ? G7.t : nowT() + .35;
+  let any = false;
+  const out = P.notes.map(n => { const p = Math.round(g2Target(P, n)); let o = p; try { o = e ? mapOut(st, key, p, t, e) : outPitch(st, key, p, t); } catch (er) { logErr(er); } if (o !== p) any = true; return o - p; });
+  return any ? out : null;
+}
+// ohne eigenes Tonhöhen-Feld: die erkannten Noten der Quelle (G2-Analyse); fehlt sie, wird sie jetzt gesucht
+function g7Pitch(id, force) {
+  const m = S.takes && S.takes[id]; if (!m) return null; if (m.pitch) return m.pitch;
+  const st = stimmeT(); if (st < 0 || (!force && !g7Moves(st))) return null;
+  const A = G2.an.get(id), b = g2Base(id);
+  if (!A || !b || A.key !== id + '@' + wpBid(b)) { if (b) g2Analyse(id).then(() => g7Changed(), logErr); return null; }
+  return {mode: 'soft', str: 1, q: false, notes: A.notes};
+}
+// transponiert gerade etwas die STIMME-Spur? (Probe: ein C und ein E – bleiben beide, ist nichts zu tun)
+function g7Moves(st) { try { const t = G7.t != null ? G7.t : nowT() + .35, k = S.key; for (const p of [60, 62, 64, 65, 67, 69, 71]) if (outPitch(st, k, p, t) !== p) return true; } catch (e) {} return false; }
+// Wechsel des Trägers / der Teil-Transposition: die klingenden Takes neu (aus dem Cache sofort, sonst nach dem Rechnen, Wechsel ohne Loch)
+function g7Changed() {
+  G7.n++;
+  const st = stimmeT(); if (st < 0 || !AU.ctx) return;
+  // gilt der Wechsel erst später (Schlag, Takt, Akkord-Zeile): die neue Lage jetzt schon rechnen, umschalten kurz vor dem Wechsel
+  let tE = nowT(); try { const e = T.current(); if (e && isFinite(e.time)) tE = Math.max(tE, e.time); if (XP.due != null && R.playing) tE = Math.max(tE, b2t(XP.due)); } catch (er) {}
+  try { const e = T.current(); for (const id of tkActiveIds()) { const a = g7SegOf(id), m = S.takes[id], P = m && (m.pitch || g7Pitch(id, true)); if (a && P) g7Pre(id, a, P, e); } } catch (er) { logErr(er); }
+  clearTimeout(G7.tm);
+  G7.tm = setTimeout(() => {
+    for (const id of tkActiveIds()) { try { tkPlayBuf(id, g7SegOf(id)); } catch (e) { logErr(e); } }
+    if (R.playing) wpResync();
+    UI.dirty.grid = UI.dirty.song = true;
+  }, Math.max(0, (tE - nowT() - .3) * 1000));
+}
+// eine Lage (unter Eintrag e) in den Cache rechnen, wenn sie dort fehlt
+function g7Pre(id, a, P, e) {
+  let xs = null; try { xs = g7Shift(id, a, P, e); } catch (er) { xs = null; }
+  const b = g2Base(id, a); if (!b) return;
+  const plan = {mode: P.mode, notes: P.notes.map((n, k) => ({t0: n.t0, t1: n.t1, m: n.m, to: P.q ? g2Snap(n.m, P.key) : n.m, s: P.q ? P.str : 0, e: 100 * ((n.sh || 0) + (xs ? xs[k] : 0))}))};
+  if (!G2P.active(plan)) return;
+  const k = G2P.planKey(plan) + '@' + wpBid(b), C = G2.cache.get(id); if (C && C.has(k)) return;
+  g7Queue(id, k, b, plan);
+}
+function g7SegOf(id) { const st = stimmeT(); if (st >= 0) for (const c of S.tracks[st].clips) if (c && c.audio && c.audio.take === id) return c.audio; return S.song && S.song.vox ? S.song.vox.find(v => v.take === id) || null : null; }
+// vorberechnen: die Lagen der Akkord-Zeile der Szene des Clips (bekannte Wechsel) – einmal je Take und Zeile, im Worker nacheinander
+function g7Prefetch(id, a) {
+  const st = stimmeT(); if (st < 0 || !a || typeof rowOf !== 'function') return;
+  let si = -1; S.tracks[st].clips.forEach((c, k) => { if (c && c.audio === a) si = k; });
+  const m = S.takes[id], P = m && (m.pitch || (G2.an.get(id) ? {mode: 'soft', str: 1, q: false, notes: G2.an.get(id).notes} : null)); if (!P) { if (m && !G7.pre.has('a' + id)) { G7.pre.add('a' + id); g2Analyse(id).then(A => { if (A) g7Prefetch(id, a); }, logErr); } return; }
+  const row = si >= 0 ? rowOf('S' + (si + 1)) : null; if (!row || !row.ch || !row.ch.length) return;
+  for (const c of row.ch) if (c.tg) { const k0 = id + ':' + JSON.stringify(c.tg); if (G7.pre.has(k0)) continue; G7.pre.add(k0); g7Pre(id, a, P, {time: 0, target: c.tg, shift: 0}); }
+}
+// Vorberechnen läuft hinter dem, was gerade gebraucht wird (G2.job je Take)
+function g7Queue(id, k, b, plan) { const go = () => { if (G2.job.has(id)) { setTimeout(go, 120); return; } const C = G2.cache.get(id); if (C && C.has(k)) return; g2Render(id, k, b, plan); }; setTimeout(go, 60); }
+const G7_API = {
+  g7Info: r => { const id = wpId(r), x = typeof r === 'string' ? null : tkRef(r || {t: stimmeT(), s: R.selS}), a = x ? x.a : g7SegOf(id), m = S.takes && S.takes[id], P = m && (m.pitch || g7Pitch(id));
+    return {id, shift: P && a ? g7Shift(id, a, P) : null, notes: P ? P.notes.map(n => ({t0: n.t0, t1: n.t1, m: n.m, p: Math.round(g2Target(P, n))})) : null, ready: id ? g2Ready(id, a) : null, n: G7.n, cache: G2.cache.has(id) ? G2.cache.get(id).size : 0, renders: G2.renders, pre: G7.pre.size}; },
+  g7Changed: () => g7Changed()
+};
+/* G7-END */
 
 function voicesInfo() {
   const now = nowT();
@@ -43221,6 +43300,7 @@ Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
 Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
 Object.assign(SYNQUENZER, G2_API);                // G2: Tonhöhe quantisieren, Gesang als Noten
 Object.assign(SYNQUENZER, G6_API);                // G6: Chor-Generator
+Object.assign(SYNQUENZER, G7_API);                // G7: Gesang folgt dem Transponieren
 const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
