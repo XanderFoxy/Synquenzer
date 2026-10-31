@@ -68,26 +68,26 @@
   },
   "BM6-06_offline_eq_live": {
    "ok": true,
-   "korrelation": 1,
-   "lag": 1920
+   "korrelation": 0.9933,
+   "lag": 1921
   },
   "BM6-02_switch_sounding": {
    "ok": true,
    "held": 1,
-   "klickDb": -0.21330643184024248,
-   "afterDb": -18.700634370660445
+   "klickDb": 0.10148661995302975,
+   "afterDb": -18.66539804897083
   },
   "BM6-05_stop_panic_mute": {
    "ok": true,
-   "vorPanik": -10.651327927257633,
+   "vorPanik": -10.551837438873727,
    "nachPanik50ms": -300,
-   "vorStopp": -10.626510294577036,
-   "stopp0bis5ms": -13.703466805337133,
+   "vorStopp": -10.637138111584568,
+   "stopp0bis5ms": -10.436664076656676,
    "nachStopp300ms": -300,
    "proxies": 0,
    "muteDb": -300,
    "muteClipNotes": 0,
-   "unmuteDb": -17.743183553129562
+   "unmuteDb": -17.810517379719244
   },
   "BM6-10_routes": {
    "ok": true,
@@ -107,7 +107,7 @@
     "fx": "CH4 + RV3",
     "load_med": 0,
     "load_max": 0,
-    "reports": 10,
+    "reports": 9,
     "frames_ok": true,
     "fps_med": 59.9,
     "stub": true
@@ -121,7 +121,7 @@
   },
   "BM6-07_native": {
    "ok": true,
-   "rms": -32.08220250251746,
+   "rms": -32.25949019502038,
    "eco": "Bit Mask braucht AudioWorklet – vereinfacht",
    "key": true,
    "toast": true,

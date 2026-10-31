@@ -43,7 +43,7 @@ Tests in `bau/helfer/BMU/tests/` (Aufruf `node <test> [index.html] [vs-base-B.ht
 
 | ID | Ergebnis | Nachweis |
 |---|---|---|
-| BM6-01 Regel 28 | ✓ | `bm6-golden`: Worklet-Quelle `sq-worklet-src` byte-gleich (305 467 Zeichen); 71 Werks-Klänge + Kits normiert deep-equal; Demo-Datei und Rundreise gleich; Offline-Render aller 59 Werks-Klänge VA/FM/MS 2000: 58 bitgleich, 1 schwankt alt-gegen-alt genauso (Zufallsphase); ohne Bit-Mask-Klang 0 × `synq-bm`, 0 Worker, Block nicht ausgewertet; Start 509 ms neu / 513 ms alt (Median 9); Seite +22,1 KB beim Start (+21,7 KB Block bei Bedarf, gesamt +43,8 KB) |
+| BM6-01 Regel 28 | ✓ | `bm6-golden`: Worklet-Quelle `sq-worklet-src` byte-gleich (305 467 Zeichen); 71 Werks-Klänge + Kits normiert deep-equal; Demo-Datei und Rundreise gleich; Offline-Render aller 59 Werks-Klänge VA/FM/MS 2000: 58 bitgleich, 1 schwankt alt-gegen-alt genauso (Zufallsphase); ohne Bit-Mask-Klang 0 × `synq-bm`, 0 Worker, Block nicht ausgewertet; Start 509 ms neu / 513 ms alt (Median 9); Seite +23,0 KB beim Start (+22,7 KB Block bei Bedarf, gesamt +45,7 KB) |
 | BM6-02 Engine-Wahl | ✓ | `bm6-shots` (7 Formate, Kopf ohne Überlauf, Treffer 44, Namensfeld wie VA) · `bm6-store`: VA → BM → VA je 1 Undo, VA-Felder deep-equal, `p.bm` gemerkt, unberührtes INIT weg · `bm6-int`: Wechsel mit gehaltener Taste → Stimme im neuen Knoten, M-KLICK (HF-Fenster) −0,2 dB |
 | BM6-03 normBm, Speichern/Laden | ✓ | 1000 Zufalls-Programme: 0 Bereichsfehler, 7267/7267 unbekannte Schlüssel erhalten, idempotent; Projektdatei, Projektwechsel, Spur-Kopie, Bibliothek sichern/duplizieren/laden, Klang-Datei: deep-equal |
 | BM6-04 Zeit | ✓ | offline 16 × 1/16: Einsatz ±0 Samples; live 32 Takte (240 BPM): `late` 0, 278 Noten; Notenplan, Tasten, ●, FANG, Eine Skala gleich wie VA |
@@ -64,8 +64,8 @@ Tests in `bau/helfer/BMU/tests/` (Aufruf `node <test> [index.html] [vs-base-B.ht
    **Für helfer-bmk:** diese sechs Felder bitte im echten Prozessor verstehen.
 2. **Worker** (`synq-bm-tab`) gehört zu BM1 und ist hier nicht gebaut; `bmInfo().worker` zählt ihn, sobald BM1 ihn startet.
    `bmMask` rechnet bis dahin im Haupt-Faden aus der Regel §1.2 (gleiche Felder).
-3. **Seitengröße:** gemessen wie beim MS 2000: was beim Start gelesen wird, +22,1 KB (Budget 25); der Block `sq-bm-src` (+21,7 KB, davon
-   ≈ 5,4 KB Platzhalter) zählt als „bei Bedarf“. Gesamt +43,8 KB. Das BM6-Budget „+10 KB“ in §6/§7 ist damit überschritten (Datenteil
+3. **Seitengröße:** gemessen wie beim MS 2000: was beim Start gelesen wird, +23,0 KB (Budget 25); der Block `sq-bm-src` (+22,7 KB, davon
+   ≈ 5,4 KB Platzhalter) zählt als „bei Bedarf“. Gesamt +45,7 KB. Das BM6-Budget „+10 KB“ in §6/§7 ist damit überschritten (Datenteil
    mit allen Listen ≈ 10 KB, Haken + Host ≈ 12 KB, Hilfe/INIT ≈ 3 KB).
 4. **Räder** auf Bit-Mask-Spuren laden den Block `sq-mk-src` (dort liegt das Rad-Bauteil aus MK1).
 5. **🎲 Zufall** auf einer Bit-Mask-Spur ändert nichts (LCD „ZUFALL kommt mit dem Editor“), damit keine unhörbaren VA-Werte verstellt werden.
@@ -76,6 +76,12 @@ Tests in `bau/helfer/BMU/tests/` (Aufruf `node <test> [index.html] [vs-base-B.ht
    (einzige Text-Änderung außerhalb der Pakete; Marken-Regel).
 8. **Name nach Engine-Wechsel** bleibt der des Klangs (wie beim Wechsel zu MS 2000); „INIT Bit Mask“ heißt ein Klang über Init/Bibliothek.
 9. **Layer-Bereiche [A]:** `ly.semi` −48…+48, `ly.pan` 0…100, `ly.tune` −50…+50 Cent, `ly.sp` 0…127 (Spec nennt nur die Felder).
+
+## Unabhängige Nachprüfung (Fixes)
+Ein zweiter, unabhängiger Prüflauf fand 4 Punkte, alle behoben und mit seinen Skripten nachgetestet: (1) beim Engine-Wechsel verloren
+vorausgeplante Clip-Noten ihr Ende (klangen bis zum GC-Netz) → das geplante `off` geht mit in den neuen Knoten; (2) der **erste**
+Wechsel auf Bit Mask (Modul noch nicht geladen) schnitt gehaltene Tasten ab → der alte Knoten bleibt, bis das Modul da ist (≈ 10–50 ms),
+dann wandern die Tasten; (3) `end` mit `id` erklärt keinen fremden Proxy mehr für tot; (4) `perfProbe` wertet `sq-bm-src` nur für den Fall `'bm'` aus.
 
 ## Fragen an Xander
 1. Bit-Mask-Knopf im Kopf: zweizeilig „Bit / Mask“ wie „MS / 2000“ – so in Ordnung?
