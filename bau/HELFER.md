@@ -21,3 +21,4 @@ SQL erledigt 31.10. 14:50 UTC: max_app 4030000 (geprüft).
 Dateien geholt: S/helfer-<NAME>.html + S/CHANGES-helfer-<NAME>.md.
 Staging-Merge Gesang läuft: wf_c92749ea-f4e (S/v3-merge-mk.js, Args S/merge-stage-ges-args.json) → S/stage-ges/index.html = 4.23.0 + G3G8 + G4G5.
 Finaler Gesang-Merge danach: Hauptlinie ← VS-L, VS-P, stage-ges (Basis vs-base-B), G267, n5-br-K → 4.25.0 (bzw. 4.24.0 falls N4 nicht vorher eigens).
+| session_01LWJYUU15fSJA4dbhKHvCc2 | Schnäppchen-Alarm (Ordner schnaeppchen/, Daten-Zweig schnaeppchen-daten, ntfy) | schnaeppchen | main | → nach Prüfung Ordner + Workflow nach main (nur schnaeppchen/ und .github/workflows/schnaeppchen.yml) |
