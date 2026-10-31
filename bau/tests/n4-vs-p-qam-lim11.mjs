@@ -9,7 +9,7 @@ await sleep(300);
 const sr = await p.evaluate(() => window.__ctx.sampleRate), N = Math.round(BARS * 240 / BPMX * sr), y = new Float32Array(N), A0 = 0.02;
 for (let i = 0; i < N; i++) y[i] = A0 * Math.sin(2 * Math.PI * 1000 * i / sr);
 const CL = (() => { let s = 7, z = 0, m = 0; const n = Math.round(0.004 * sr), a = new Float32Array(n); for (let j = 0; j < n; j++) { s = (s * 16807) % 2147483647; const w = s / 2147483647 * 2 - 1; z = z + 0.5 * (w - z); a[j] = z; m = Math.max(m, Math.abs(z)); } for (let j = 0; j < n; j++) a[j] /= m; return a; })();
-const SPT = []; for (let k = 0; k < BARS * 120 / BPMX - 1; k++) { const i0 = Math.round((0.75 + k) * sr); SPT.push(i0); for (let j = 0; j < CL.length; j++) y[i0 + j] += 0.95 * Math.sin(Math.PI * j / CL.length) * CL[j]; }
+const SPT = []; for (let k = 0; k < BARS * 240 / BPMX - 1; k++) { const i0 = Math.round((0.75 + k) * sr); SPT.push(i0); for (let j = 0; j < CL.length; j++) y[i0 + j] += 0.95 * Math.sin(Math.PI * j / CL.length) * CL[j]; }
 const pcm = Array.from(y, v => Math.max(-32768, Math.min(32767, Math.round(v * 32767))));
 const r0 = await p.evaluate(([pc, sr, L]) => SYNQUENZER.tkInject({pcm: pc, sr, scene: 0, len: L}), [pcm, sr, BARS]); const r = await p.evaluate(([pc, sr, L]) => SYNQUENZER.tkInject({pcm: pc, sr, scene: 0, len: L}), [pcm, sr, BARS]);
 await p.evaluate(() => { if (SYNQUENZER.vpInfo) { SYNQUENZER.vpInfo(); return SYNQUENZER.vpWait(); } });
@@ -44,7 +44,7 @@ for (let run = 0; run < RUNS; run++) {
     out.push({t: +(i / sr).toFixed(3), tp, envVsAudioMs: +(best.d / sr * 1000).toFixed(2)});
     i += Math.round(sr * 0.3);
   }
-  console.log(`  Lauf ${run} ${MODE !== 'song' && MODE !== 'scene' ? MODE + ' bei ' + at.toFixed(2) + ' s' : MODE === 'song' ? 'Song ab Takt ' + (2 + run % 3) : 'Szene'} (+ = Hüllkurve kommt später als die Spitze): tkStartSrc [ms, Vorlauf ms]`, JSON.stringify(lg), '\n     Spitzen', JSON.stringify(out.map(o => [o.t, o.tp, o.envVsAudioMs])), '\n     Abstände der Spitzen (ms, Soll 1000):', JSON.stringify(out.slice(1).map((o, k) => Math.round((o.t - out[k].t) * 1000))));
+  console.log(`  Lauf ${run} ${MODE !== 'song' && MODE !== 'scene' ? MODE + ' bei ' + at.toFixed(2) + ' s' : MODE === 'song' ? 'Song ab Takt ' + (2 + run % 3) : 'Szene'} (+ = Hüllkurve kommt später als die Spitze): tkStartSrc [ms, Vorlauf ms]`, JSON.stringify(lg), '\n     Spitzen (Anzahl, max dBTP, über -1)', out.length, Math.max(...out.map(o => o.tp)), out.filter(o => o.tp > -1).length, JSON.stringify(out.filter(o => o.tp > -1).slice(0, 6).map(o => [o.t, o.tp, o.envVsAudioMs])), '\n     Abstände der Spitzen (ms, Soll 1000):', JSON.stringify(out.slice(1).map((o, k) => Math.round((o.t - out[k].t) * 1000))));
 }
 console.log('  Konsole', JSON.stringify(H.errs.slice(0, 2)));
 await H.br.close();
