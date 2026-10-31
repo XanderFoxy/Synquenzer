@@ -243,3 +243,14 @@ test('Preisfehler ohne lesbare Deal-Seite oder älter als 24 h: nicht zeigen, un
   const w = r.eintraege.find(e => /Waschmittel/.test(e.titel));
   assert.deepEqual([w.preis, w.preisVorher, w.vorherQuelle, w.ersparnisProzent], [4.99, 24.99, 'Preis vorher laut Deal-Text', 80]);
 });
+
+test('Preisfehler „vielleicht abgelaufen“ (isMaybeExpired) wird nicht gezeigt', async () => {
+  const { preisfehlerEintrag } = await import('../module/gemeinsam.mjs');
+  const seite = (await lies('echt/deal-2861129-lumaland-laeuft.html')).replace('"isMaybeExpired": false', '"isMaybeExpired": true');
+  assert.ok(seite.includes('"isMaybeExpired": true'));
+  const it = { titel: 'Preisfehler: Pavillon', link: 'https://www.mydealz.de/deals/x-2861129', datum: '2026-10-29T11:26:13Z', preisText: '23,99€', beschreibung: '', feed: 'mydealz Preisfehler' };
+  const pruefer = macheDealPruefer({ holeText: async () => seite, jetzt: AM_29 });
+  const r = await preisfehlerEintrag(it, { kategorie: 'deals', pruefer, jetzt: AM_29 });
+  assert.equal(r.eintrag, undefined);
+  assert.match(r.grund, /vielleicht abgelaufen/);
+});

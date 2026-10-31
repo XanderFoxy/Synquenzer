@@ -90,6 +90,7 @@ export async function preisfehlerEintrag(it, { kategorie, pruefer, jetzt, wert =
     if (s.status !== 'ok') return { grund: 'Deal-Seite nicht lesbar' };
     info = s.info;
     if (info.abgelaufen) return { grund: 'abgelaufen' };
+    if (info.vielleichtAbgelaufen) return { grund: 'laut mydealz vielleicht abgelaufen' };
   }
   const jetztMs = new Date(jetzt).getTime();
   const text = `${it.titel} ${it.beschreibung}`;
