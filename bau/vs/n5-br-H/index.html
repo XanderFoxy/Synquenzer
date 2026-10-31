@@ -5365,6 +5365,7 @@ function frEnd(st, ev, cancel) {
 function knobStart(st, ev) {
   const d = defOf(st.e.id); st.d = d; firstHint(st.e.id); if (!d) return;
   st.before = isSnd(d) ? soundSnapshot(P.i) : null; st.v = get(d); st.v0 = st.v; st.y = ev.clientY; st.st = 'down'; st.path = tp(d.p);
+  histCurveStart();  // VC2a
   for (const o of PT.values()) if (o !== st && o.kind === 'knob') { o.multi = 1; st.multi = 1; }   // MK-P-08: two knobs at once
   if (d.ch != null) P.ch0 = null;
   if (d.p === 'voc.efs') P.efs0 = st.v;
@@ -5383,6 +5384,7 @@ function knobMove(st, ev) {
   if ((list || d.sst != null) && nv === before) return;
   if (P.rec) recTouch(d, st);
   setv(d, nv, !list);
+  histCurve(get(d));  // VC2a
   if (Math.round(get(d)) !== before && (list || d.sst != null || (n > 12 && d.L) || d.wv)) haptic('tick');
   P.lastKnob = d; paintKnob(st.e.id); lcdSoon(d); showVal(d); paintOrig();
 }
@@ -20649,6 +20651,7 @@ var HIST = {
   q: [], qT: false, ev: new WeakMap(), lastEv: null, cur: null, meta: null, metaP: null, dbP: null,
   ft: 0, lastFlush: -1e9, dirty: false, sinceKf: 0, kfDue: false, ptr: new Set(), ptrT: 0, cv: null, pend: null,
   mark: new WeakMap(), wq: Promise.resolve(), limit: 20 * 1048576, chunkMs: 30 * 60000, every: 200, compacting: false,
+  lastData: null, held: false, fp: [], fpQ: false, tkD: false, tkP: false, tkQ: false, legit: false, stray: [],
   z: typeof CompressionStream === 'function' && typeof DecompressionStream === 'function',
   kind(name, getSubtree) { this.kinds.set(name, getSubtree); },
 };
@@ -20778,20 +20781,54 @@ function histFullOps(ops) {
 }
 function histPush(e, how) {
   if (!HIST || !HIST.on || !HIST.sh || !e) return;
-  HIST.q.push({e, how: how || 'push', t: histNow()});
+  HIST.q.push({e, how: how || 'push', t: histNow()}); HIST.tkP = true; histTk();
   if (!HIST.qT) { HIST.qT = true; setTimeout(histDrain, 0); }  // eigene Aufgabe (keine longtask)
 }
 const histMerge = e => histPush(e, 'merge');
-function histDirty() { if (!HIST || !HIST.on || !HIST.sh) return; HIST.dirty = true; histSoon(); }
-function histDrain() {
+function histDirty() { if (!HIST || !HIST.on || !HIST.sh) return; HIST.dirty = true; HIST.tkD = true; histTk(); histSoon(); }
+// VC2a-fix: je Aufgabe merken, ob markDirty ohne Undo-Eintrag kam (dann ist der Abgleich 'proj' rechtmäßig, sonst ein Umweg)
+function histTk() { if (!HIST.tkQ) { HIST.tkQ = true; queueMicrotask(histTkEnd); } }
+function histTkEnd() { HIST.tkQ = false; if (HIST.tkD && !HIST.tkP) HIST.legit = true; HIST.tkD = HIST.tkP = false; }
+// VC2a-fix: eine Aufnahme fester Länge legt ihren Undo-Eintrag beim Start an; ihr Ereignis wartet bis zum Ende (inkl. Nachlauf)
+function histHold() { try { return HIST.q.length > 0 && (rec.state === 'recording' || !!rec.tail) && performance.now() - HIST.q[0].t < 120000; } catch (e) { return false; } }
+function histDrain(force) {
   HIST.qT = false;
-  const q = HIST.q.splice(0);
-  for (const it of q) { try { histCapture(it); } catch (er) { logErr(er); } }
+  if (force !== true && histHold()) { HIST.held = true; histSoon(); return; }
+  const q = HIST.q.splice(0), now = histNow();
+  for (const it of q) { if (HIST.held) it.t = now; try { histCapture(it); } catch (er) { logErr(er); } }
+  HIST.held = false;
+  if (HIST.fp.length) histFollowNow();
   if (HIST.kfDue && !histBusy()) { try { histSweep(); histKeyframe('n'); } catch (er) { logErr(er); } }
+}
+// VC2a-fix: Folge-Änderung einer Geste (automatische Tonart, Nachlauf einer Aufnahme): kommt in das Ereignis der Geste
+function histFollow(paths) {
+  if (!HIST || !HIST.on || !HIST.sh || !paths) return;
+  for (const P of paths) HIST.fp.push(P);
+  if (!HIST.fpQ) { HIST.fpQ = true; queueMicrotask(() => { HIST.fpQ = false; if (!HIST.on || !HIST.sh) { HIST.fp.length = 0; return; } if (HIST.q.length) histDrain(); else histFollowNow(); }); }
+}
+function histFollowNow() {
+  if (HIST.q.length) return;
+  const paths = HIST.fp.splice(0);
+  if (!paths.length || !HIST.on || !HIST.sh || S.id !== HIST.pid) return;
+  try {
+    const ops = [], seen = [];
+    for (const P of paths) { const ps = histPtr(P); if (seen.some(x => ps === x || ps.startsWith(x + '/') || x === '')) continue; seen.push(ps); histOpsAt(P, ops); }
+    if (!ops.length) return;
+    const L = HIST.lastData, cur = HIST.cur;
+    if (L && L.chunk === cur && L.i < cur.strs.length && performance.now() - L.at < 5000 && !cur.kf.some(k => k.at > L.i)) {
+      const o = JSON.parse(cur.strs[L.i]); o.d = (o.d || []).concat(ops); cur.strs[L.i] = JSON.stringify(o); cur.dirty = true; histSoon(); return;
+    }
+    histProj(ops);
+  } catch (e) { logErr(e); }
+}
+function histProj(ops) {
+  const tops = [...new Set(ops.map(o => { const s = o.path.split('/'); return s[1] === 'tracks' && s.length > 2 ? 'tracks/' + s[2] : s[1]; }))];
+  HIST.lastEv = null;
+  const ref = histAdd({t: histNow(), u: 'proj', z: {p: tops}, d: ops, l: 'Projekt: ' + tops.join(', ')}); ref.at = performance.now(); HIST.lastData = ref;
 }
 function histBusy() {
   if (HIST.ptr.size && performance.now() - HIST.ptrT < 30000) return true;
-  try { return rec.state === 'recording' || rec.state === 'overdub' || !!R.songRec || !!ST.on; } catch (e) { return false; }
+  try { return rec.state === 'recording' || rec.state === 'overdub' || !!R.songRec || (!!ST.on && ST.phase !== 'live'); } catch (e) { return false; }
 }
 function histCapture(it) {
   if (!HIST.on || !HIST.sh) return;
@@ -20805,11 +20842,12 @@ function histCapture(it) {
   if (join) {
     const o = JSON.parse(cur.strs[L.i]); o.t = it.t; o.d = (o.d || []).concat(ops); if (it.how !== 'merge') { o.u = e.kind; o.z = histZ(e, paths); o.l = String(e.label || o.l); }
     if (cv) o.c = cv;
-    cur.strs[L.i] = JSON.stringify(o); cur.dirty = true; HIST.ev.set(e, L); L.e = e; histSoon(); return;
+    cur.strs[L.i] = JSON.stringify(o); cur.dirty = true; HIST.ev.set(e, L); L.e = e; L.at = performance.now(); HIST.lastData = L; histSoon(); return;
   }
+  if (!ops.length && it.how === 'push' && !UNDO.includes(e) && !REDO.includes(e)) return;   // VC2a-fix: Eintrag schon wieder entfernt (leere Aufnahme)
   const lb = String(e.label || e.kind), ev = {t: it.t, u: String(e.kind), z: histZ(e, paths), d: ops, l: it.how === 'undo' ? 'Rückgängig: ' + lb : it.how === 'redo' ? 'Wiederholt: ' + lb : lb};
   if (cv) ev.c = cv;
-  const ref = histAdd(ev); ref.e = e; ref.how = it.how === 'merge' ? 'push' : it.how; HIST.ev.set(e, ref); HIST.lastEv = ref;
+  const ref = histAdd(ev); ref.e = e; ref.how = it.how === 'merge' ? 'push' : it.how; ref.at = performance.now(); HIST.ev.set(e, ref); HIST.lastEv = ref; HIST.lastData = ref;
 }
 function histZ(e, paths) {
   const z = {};
@@ -20848,10 +20886,11 @@ function histSweep() {
   HIST.dirty = false;
   if (S.id !== HIST.pid) { histOpen(S); return; }
   const ops = []; histFullOps(ops);
+  const legit = HIST.legit || (HIST.tkD && !HIST.tkP); HIST.legit = false;
   if (!ops.length) return;
-  const tops = [...new Set(ops.map(o => { const s = o.path.split('/'); return s[1] === 'tracks' && s.length > 2 ? 'tracks/' + s[2] : s[1]; }))];
-  HIST.lastEv = null;
-  histAdd({t: histNow(), u: 'proj', z: {p: tops}, d: ops, l: 'Projekt: ' + tops.join(', ')});
+  histProj(ops);
+  // VC2a-fix (M-REKON, VL-R1): Änderung ohne markDirty-Geste ohne Undo = Weg am Rekorder vorbei (falsche/fehlende HIST.kind)
+  if (!legit && HIST.stray.length < 20) HIST.stray.push({t: histNow(), p: [...new Set(ops.map(o => o.path.split('/').slice(1, 3).join('/')))]});
 }
 function histChunk() {
   const now = Date.now(); let c = HIST.cur;
@@ -20871,13 +20910,13 @@ function histKeyframe(w) {
 }
 function histSoon() {
   if (!HIST.on || HIST.ft) return;
-  HIST.ft = setTimeout(histTimer, Math.max(0, 2000 - (performance.now() - HIST.lastFlush)));
+  HIST.ft = setTimeout(histTimer, Math.max(250, 2000 - (performance.now() - HIST.lastFlush)));
 }
 function histTimer() {
   HIST.ft = 0;
   if (!HIST.on || !HIST.sh) return;
-  if (histBusy()) { HIST.ft = setTimeout(histTimer, 400); return; }
-  try { if (HIST.dirty) histSweep(); if (HIST.kfDue) { histSweep(); histKeyframe('n'); } } catch (e) { logErr(e); }
+  if (histBusy() || histHold()) { HIST.ft = setTimeout(histTimer, 400); return; }
+  try { if (HIST.q.length) histDrain(); if (HIST.dirty) histSweep(); if (HIST.kfDue) { histSweep(); histKeyframe('n'); } } catch (e) { logErr(e); }
   histFlush();
 }
 function histFlush() {
@@ -20987,7 +21026,7 @@ function histInit() {
   setTimeout(() => { if (HIST.on) histDb().catch(() => {}); }, 0);
 }
 function histLeave() { if (!HIST.on || !HIST.sh) return; try { histDrainNow(); if (HIST.dirty) histSweep(); } catch (e) { logErr(e); } histFlush(); }
-function histDrainNow() { if (HIST.q.length) histDrain(); }
+function histDrainNow() { if (HIST.q.length) histDrain(true); else if (HIST.fp.length) histFollowNow(); }
 // applyProject: Keyframe; ein Verlauf aus der Projektdatei kommt vorher
 function histOpen(p, mig) {
   if (!HIST) return;
@@ -20997,6 +21036,7 @@ function histOpen(p, mig) {
   const old = HIST.cur;
   if (old && old.dirty && HIST.on) histFlush();
   HIST.cur = null; HIST.sh = null; HIST.q.length = 0; HIST.lastEv = null; HIST.cv = null; HIST.dirty = false; HIST.cache.clear(); HIST.meta = null;
+  HIST.lastData = null; HIST.held = false; HIST.fp.length = 0; HIST.legit = false; HIST.stray.length = 0;
   HIST.pid = S.id;
   if (!HIST.on) return;
   const w = HIST.mark.get(p) || (pend ? pend.w : mig ? 'mig' : 'open');
@@ -21078,6 +21118,7 @@ async function histVerify(o) {
   const now = JSON.parse(serializeProject());
   const fin = st.s && !st.gap && (o.full ? histEq(st.s, now) : histEq(histStrip(st.s), histStrip(now)));
   if (!fin) bad.push({why: 'Endstand ≠ Projekt'});
+  for (const x of HIST.stray) bad.push({why: 'Änderung am Rekorder vorbei', p: x.p});
   return {ok: !bad.length, bad, events: st.nEv, keyframes: st.nKf};
 }
 async function historyCheck(o) { try { const r = await histVerify(o); return o && o.detail ? r : r.ok; } catch (e) { logErr(e); return o && o.detail ? {ok: false, why: String(e)} : false; } }
@@ -21818,7 +21859,7 @@ function applySceneKeys(si) {
     changed = true;
   }
   if (ownKeySync(si)) changed = true;
-  if (changed) { KEYC.ver++; markDirty(); }
+  if (changed) { KEYC.ver++; markDirty(); histFollow(S.tracks.map((_, i) => ['tracks', i, 'clips', si]).concat([['song', 'own']])); }  // VC2a
   UI.dirty.grid = UI.dirty.kb = UI.dirty.carrier = true;
   if (typeof rollHeadUpdate === 'function') rollHeadUpdate();
 }

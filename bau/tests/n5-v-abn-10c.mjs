@@ -17,4 +17,4 @@ for (const run of [1, 2]) {
   res['run' + run] = {keyAtOfflineSec: at, err: await p.evaluate(() => window.__err), rmsPerSecond_first8s_dB: sec, note: 'bars 1–4 (0–8.6 s) of the song are silent', errs};
   await b.close();
 }
-console.log(JSON.stringify(res, null, 1));
+console.log(JSON.stringify(res));

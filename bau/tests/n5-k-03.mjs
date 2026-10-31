@@ -34,17 +34,24 @@ const sr = 48000;
         const pm = s.p.mk, dual = pm.mode === 1 || pm.mode === 2, voc = pm.mode === 3;
         for (let k = 0; k < (dual ? 2 : 1); k++) { const T = d.mk[k];   // the ENGINE's timbre values
           if (T.vib) want.push('t.' + k + '.vib'); if (!voc) T.p.forEach((q, j) => { if (q.i) want.push('t.' + k + '.p.' + j + '.i'); });
-          for (const [a, b] of [['f', 'eg'], ['f', 'kbd'], ['f', 'vel'], ['a', 'kbd']]) if (T[a][b]) want.push('t.' + k + '.' + a + '.' + b);
+          if (!voc) for (const [a, b] of [['f', 'eg'], ['f', 'kbd'], ['f', 'vel'], ['a', 'kbd']]) if (T[a][b]) want.push('t.' + k + '.' + a + '.' + b);   // K1-fix: the vocoder voice has no timbre filter / amp
+          if (T.o1.c2 > 0 && ![5, 6].includes(Math.round(T.o1.w))) want.push('t.' + k + '.o1.c2');   // K1-fix: LFO 1 x STEUER 2 on the shape
           if (!voc && T.seq && T.seq.on) T.seq.q.forEach((q, j) => { if (q.k > 0 && q.v.some(x => x)) want.push('t.' + k + '.seq.q.' + j + '.k'); }); }
+        if (voc && d.voc.mint) want.push('voc.mint'); if (voc && d.voc.kbd) want.push('voc.kbd');   // K1-fix: MkVoc formant x source, keytrack
       } else {
         const RS = ['', 'lfo1', 'lfo2', 'fenv', 'menv', 'vel', 'key', 'mw', 'rnd', 'aenv'], RD = SQF.DST_ID || null;
         for (const m of d.mods) want.push('r:' + RS[m[0]] + ':' + m[1]);
         for (const m of s.mods) if (String(m.dst).startsWith('fx.')) want.push('r:' + m.src + ':' + m.dst);
         const P = d.P; if (P.fenv) want.push('p:fenv'); if (P.fvel && P.fenv) want.push('p:fvel'); if (P.kt) want.push('p:kt'); if (P.analog) want.push('p:analog');
+        // K1-fix: FM graph (worklet gx): per sounding operator LFO 1 on pitch (fmS) / level (am, amG), pitch envelope (pit, point form); fm6 PEG
+        if (s.engine === 'fm6') { const X = d.fmx; if (X) for (let k = 0; k < 6; k++) { if (!X.on[k]) continue; if (X.fmS[k]) want.push('x:lfoFm:' + k); if (X.am[k] || X.amG[k]) want.push('x:lfoAm:' + k); if (X.pit[k] || X.pt[k]) want.push('x:pit:' + k); }
+          else if (d.peg) want.push('f:peg'); }
       }
       const have = L.map(e => e.key);
       if (s.engine === 'mk') { const a = want.slice().sort().join(), b = have.slice().sort().join(); if (a !== b) bad.push([id, a, b]); }
-      else { const nr = have.filter(k => k.startsWith('r:')).length, np = have.filter(k => k.startsWith('p:')).sort().join(), wr = want.filter(k => k.startsWith('r:')).length, wp = want.filter(k => k.startsWith('p:')).sort().join();
+      else { const hx = []; for (const k of have) { const m_ = /^x:(\w+):(\d+)$/.exec(k); if (m_) for (const c of m_[2]) hx.push('x:' + m_[1] + ':' + c); else if (k === 'f:peg') hx.push(k); }
+        const wx = want.filter(k => k.startsWith('x:') || k === 'f:peg').sort().join(); if (hx.sort().join() !== wx) bad.push([id, 'fm ' + wx, hx.join()]);
+        const nr = have.filter(k => k.startsWith('r:')).length, np = have.filter(k => k.startsWith('p:')).sort().join(), wr = want.filter(k => k.startsWith('r:')).length, wp = want.filter(k => k.startsWith('p:')).sort().join();
         if (nr !== wr || np !== wp || new Set(have).size !== have.length) bad.push([id, wr + '|' + wp, nr + '|' + np]); }
     }
     return {n, entries, bad: bad.slice(0, 8), nbad: bad.length};

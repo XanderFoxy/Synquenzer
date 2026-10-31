@@ -9358,7 +9358,7 @@ class AnalogCore extends AudioWorkletProcessor {
     if (m.scope != null) { this.scopeOn = !!m.scope; this.scopeNext = 0; }
     if (m.scopeDst != null) { this.scopeDst = !!m.scopeDst; this.scD.fill(0); }
     if (m.dispose) this.alive = false;
-    if (m.k1Dump) this.port.postMessage({k1Dump: {P: Object.assign({}, this.P), mods: Array.from(this.msrc, (s, i) => [s, this.mdst[i], this.mamt[i]]).filter(x => x[0]), mk: this.mk.tm.map(t => JSON.parse(JSON.stringify(t.T))), mkTop: {mode: this.mk.mode, tv: this.mk.tv, split: this.mk.split, scl: this.mk.scl, skey: this.mk.skey}}});   // K1 test (K1-05): what the engine plays now
+    if (m.k1Dump) this.port.postMessage({k1Dump: {P: Object.assign({}, this.P), mods: Array.from(this.msrc, (s, i) => [s, this.mdst[i], this.mamt[i]]).filter(x => x[0]), mk: this.mk.tm.map(t => JSON.parse(JSON.stringify(t.T))), mkTop: {mode: this.mk.mode, tv: this.mk.tv, split: this.mk.split, scl: this.mk.scl, skey: this.mk.skey}, voc: Object.assign({}, this.mk.vc.P), fmx: this.gx ? {on: Array.from(this.gx.on), fmS: Array.from(this.gx.fmS), am: Array.from(this.gx.am), amG: Array.from(this.gx.amG), pit: this.gx.pit.map(x => !!x), pt: this.gx.pe.slice(6).map(x => !!x && Array.from(x.v).some(y => Math.abs(y) > 1e-9))} : null, peg: !this.gx && !!(this.fm && this.fm.peg && !this.fm.peg.l.every(x => x === 50))}});   // K1 test (K1-05): what the engine plays now; K1-fix: + vocoder, FM graph LFO / pitch envelopes, fm6 PEG
   }
   enqueue(e) {   // e = [timeSec, type, id, a, b, c]; types: 1 on(note, vel, glideFrom) 2 off 3 pitch(note, tau) 4 kill 5 all-off 6 panic 7 fast-off
     const q = this.q;
@@ -31643,12 +31643,15 @@ function k1Jump(i, key) {
   if (R.editor !== 'synth' || R.selT !== i) return null;
   if (e.kind === 'mk') { if (!mkLoad()) return null; return MKUI.k1 ? MKUI.k1.jump(e.path) : null; }
   // K1-fix: an FM pitch envelope of every operator (DX form) -> the TONH. page; else the FELD page of the first operator of the row
-  if (e.kind === 'fpeg' || (e.kind === 'fmx' && e.f === 'pit' && e.dx && !(s.p.fm6 && s.p.fm6.approx))) { ED.tab = 'env'; ED.sub.env = 'peg'; FXF.big = null; safeRebuild(buildSynthEd); return 'env/peg'; }
+  if (e.kind === 'fpeg' || (e.kind === 'fmx' && e.f === 'pit' && e.dx && !(s.p.fm6 && s.p.fm6.approx))) { ED.tab = 'env'; ED.sub.envfm = 'peg'; FXF.big = null; safeRebuild(buildSynthEd); return 'env/peg'; }
   if (e.kind === 'fmx') {
     const k = e.ops[0], pg_ = e.f === 'pit' ? 'tonh' : 'mod';
     ED.tab = 'osc'; ED.sub.osc = 'feld'; fmViewSet(i, 'feld'); FXF.t = i; FXF.focus = null; FXF.big = null; fxSelect(i, k); FXF.page = pg_; FXF.opPage = pg_; safeRebuild(buildSynthEd);
-    const c = e.f === 'pit' ? null : EL.synthSheet.querySelector('.fxr[data-key="fmx.' + (k + 1) + '.' + e.f + '"]');
-    if (c) { c.classList.add('k1hl'); try { c.scrollIntoView({block: 'nearest'}); } catch (_) {} setTimeout(() => c.classList.remove('k1hl'), 1600); }
+    // the FELD builds its rows once more right after the rebuild: the row is lit again on the new element (4 × 80 ms), all for 1,6 s
+    let n = 0; const t0 = performance.now(), hl = () => { const c = EL.synthSheet.querySelector('.fxr[data-key="fmx.' + (k + 1) + '.' + e.f + '"]');
+      if (c && !c.classList.contains('k1hl')) { c.classList.add('k1hl'); try { c.scrollIntoView({block: 'nearest'}); } catch (_) {} setTimeout(() => c.classList.remove('k1hl'), Math.max(0, 1600 - (performance.now() - t0))); }
+      if (++n < 5) setTimeout(hl, 80); };
+    if (e.f !== 'pit') hl();
     return 'feld/' + pg_ + '/' + (k + 1);
   }
   const k = e.kind === 'p' ? e.p : K1_RK[e.m.dst] || MDST_PD[e.m.dst], pg = k && K1_PG[k], subs = pg ? subTabsFor(pg[0], s.engine) : null;

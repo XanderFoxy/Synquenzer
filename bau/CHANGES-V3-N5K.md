@@ -101,3 +101,74 @@ Alle Änderungen sind kurze Einhänger in vorhandenen Funktionen oder ein eigene
 - `VERSION` 4.25.0. Die Zeile `live: true,` ist unverändert.
 - Test-Skripte: `dirigent-test/n5-k-*.mjs` (Hilfen `n5-k-lib.mjs` Node, `n5-k-blib.mjs` Browser), Ausgaben `n5-k-*.out`, Bilder `n5-k-06-*.png`, `n5-k-smoke.png`.
 - Snapshot: `synq-snapshots/K1.html`.
+
+## K1-fix — Mod-Übersicht vollständig (MS 2000 STEUER 2, Vocoder, FM-Feld, FM-Tonhöhen-Hüllkurve), Liste folgt ↶ ↷, Trefferflächen · App 4.25.0 (unverändert) · Format 5 · keine Server-Änderung
+
+Am Server offen wie bei K1: **max_app ≥ 4025000** (kein Supabase-Aufruf). Am Klang ändert sich nichts: Das Worklet hat nur im Test-Zugang `{k1Dump}` drei Felder mehr.
+
+### Was neu ist (die gemeldeten Fehler, jeder zuerst nachgestellt)
+
+1. **MS 2000: LFO 1 → Osz 1 Form (STEUER 2) fehlte** (zwei gleiche Meldungen). Nachgestellt: 0 von 8 Werksprogrammen mit Eintrag, „Streichsatz“ meldete „Keine Modulation“. Die Engine rechnet `MKW.form(c1 + LFO 1 × c2)` für Säge, Puls, Dreieck, Sinus (X-Mod), Stimmwelle und Eingang. Jetzt steht dort je Timbre z. B. **„LFO 1 → Osz 1 Form · Steuer 2 · Tiefe +30“**. Bei Puls heißt das Ziel „Osz 1 Pulsbreite“, bei Sinus „Osz 1 X-Mod“, beim Eingang „Osz 1 Balance“. Bei Speicherwelle und Rauschen wählt STEUER 2 die Welle bzw. die Resonanz. Das ist keine Modulation, deshalb gibt es dort keinen Eintrag (34 solche Programme, 0 Einträge). Tipp öffnet GERÄT mit OSC 1, das LCD zeigt „OSC 1 · STEUER 2 (WFM) 30“. ✕ setzt STEUER 2 auf 0, ein Undo-Schritt. Alle 8 Programme haben jetzt den Eintrag: Streichsatz, Atemfläche, Wogenchor, Pendelbass, Hymn Strings, Haze Pad, Lush Strings und Brass+Bows (T2). Dazu kommt das Vocoder-Programm „Metal Voc“: Auch dort wirkt STEUER 2 auf die Trägerwelle.
+2. **MS 2000 Vocoder: QUELLE × INTENSITÄT fehlte.** Nachgestellt: Vokalwah und Wah Voc zeigten „Modulationen (0)“. Jetzt steht dort **„LFO 1 → Vocoder Formant · Intensität +30“** (die Quelle so, wie sie eingestellt ist). Tipp führt zu FILTER · INTENSITÄT, ✕ setzt sie auf 0 (ein Undo-Schritt). Der Vocoder-KEYTRACK steht als „Keytrack → Vocoder Pegel“ in der Liste, genauso wie AMP KEYTRACK außerhalb des Vocoders. Gemessen: Die Vocoder-Stimme benutzt Filter und Amp des Timbres nicht. EG-Int, Keytrack und Anschlag auf 63 gegenüber dem Programm ergeben **−327 dB** (bitgleich), INTENSITÄT 0 dagegen **+2,7 dB**. Darum zeigt die Liste im Vocoder-Modus keine Zeilen „EG 1 / Keytrack / Anschlag → Cutoff“ und „Keytrack → Amp“ mehr. Sie würden etwas anzeigen, das sich nicht bewegt.
+3. **FM-Feld: LFO FM / LFO AM je Operator fehlten.** Nachgestellt: Mit LFO FM 18 stand „Modulationen (0)“, während die Tonhöhe um ±42 ct schwankte. Jetzt steht dort **„LFO 1 → Tonhöhe · bis ±46,7 ct“**, wenn es alle klingenden Operatoren betrifft, sonst „LFO 1 → OP 1, 2, 3 Tonhöhe“. Der Pegel steht als **„LFO 1 → OP 2, 4, 6 Pegel · bis −16,1 dB“**. Operatoren mit gleichem Wert teilen sich eine Zeile. PMD/AMD aus .syx werden mitgerechnet (PMD 0 = keine Zeile). Ein Operator ohne Pegel oder mit M (stumm) hat keine Zeile. Tipp öffnet FELD → OP n → Seite Mod, die Zeile LFO FM bzw. LFO AM leuchtet. ✕ setzt den Wert der Operatoren der Zeile auf 0 (ein Undo-Schritt). Im MOD-Reiter bewegt sich der Chip „LFO 1“ jetzt auch ohne Route, wenn LFO FM/AM wirkt (10 verschiedene Werte in 1 s, die anderen Chips stehen still).
+4. **FM: Tonhöhen-Hüllkurve fehlte.** Nachgestellt: Nach `setFmPeg` stand „Modulationen (0) … 0 Cent“. Jetzt steht dort **„Tonhöhen-Hüllk. → Tonhöhe · +4,5 HT“** mit dem Bereich der Stufen. Das gilt für die DX-Hüllkurve (fm6.peg ohne Feld) und für die Hüllkurve je Operator im Feld, auch für die Punkt-Form. Diese gilt auch für feste Operatoren, z. B. „Tonhöhen-Hüllk. → OP 5 Tonhöhe · +0,8 HT“. Tipp auf eine Hüllkurve aller Operatoren in DX-Form öffnet HÜLLK. → TONH., sonst FELD → OP n → Tonh. ✕ macht die Hüllkurve flach, wie die TONH.-Seite oder „Tonhöhe Init“ im Feld (ein Undo-Schritt).
+5. **Liste veraltet nach [Rückgängig] im Toast.** Nachgestellt (P und L): 5 Zeilen statt 6. Jetzt zeichnet sich die offene Übersicht nach jedem ↶ ↷ neu, egal ob es aus dem Toast oder vom Kopf kommt (ein Einhänger in `undoApply`, wie beim Takes-Blatt). Gemessen: ✕ → 5, [Rückgängig] → 6, [↷ Wiederholen] → 5 Zeilen.
+6. **Trefferflächen (K1-06 / typischer Fehler 4).** Die Flächen sind unsichtbar vergrößert, an den Knöpfen sieht man nichts.
+   - Toast-Knöpfe ([Rückgängig], [↷ Wiederholen] …) haben jetzt überall 44 px Höhe. Vorher waren es 31/34 px. Gemessen 44 × 44 bzw. 95 × 44/45. Ausnahme: hochkant 601–700 px, wenn der Toast in der LCD-Zeile sitzt. Dort ist die Fläche das ganze Band zwischen Kopf und Reitern, 44 × 34, wie bei ⋯.
+   - ⋯ im Editor-Kopf, Querformat (844×390, 667×375, 926×428): vorher 37 × 35, jetzt **44 × 44**.
+   - ⋯ bei 320×568: vorher 36 × 32, jetzt **42 × 39**.
+   - Die Flächen der Nachbarknöpfe sind gleich geblieben (gemessen vorher/nachher, `n5-k-fix-nb.mjs`).
+7. **„±0 %“ bei kleinen Routen** (beim Nachstellen von Fehler 3 gesehen): Eine Route unter 0,5 % zeigt jetzt eine Nachkommastelle, z. B. „+0,4 %“. Vorher stand dort „±0 %“ neben „±0,11 HT“.
+
+**Neues Projekt „Mit Startsounds“ (Meldung 4):** Nachgestellt, die Meldung stimmt. 4 von 5 Synth-Spuren haben Modulation, z. B. Mini-Lead mit LFO 2 → Tonhöhe ±10 ct und Analog-Drift ±2,6 ct. Das sind die Werksklänge, wie Xander sie kennt. Sie zu ändern wäre neue Klanggestaltung (Regel 27). Deshalb ist nichts geändert und die Frage steht unten. Die Übersicht zeigt jede dieser Modulationen mit ✕. „Leer (Init)“ steht weiter auf 0 Cent.
+
+### Abnahme
+
+| ID | Ergebnis | Messung/Skript |
+|---|---|---|
+| Meldung STEUER 2 (2×) | behoben | 8/8 Programme mit Eintrag (vorher 0/8), 0/34 bei Speicherwelle/Rauschen; ✕ → 0, 1 Undo, Undo → 30; Tipp → GERÄT, LCD „OSC 1 · STEUER 2 (WFM) 30“ — `n5-k-qa-rep2.mjs`, `n5-k-qa-c2.mjs`, `n5-k-fix-mods.mjs`, per Finger `n5-k-qa-mkui.mjs` P/L, `n5-k-fix-finger.mjs` P/L |
+| Meldung Vocoder | behoben | Vokalwah/Wah Voc je 1 Eintrag (vorher 0); ✕ 1 Undo; Tipp → FILTER · INTENSITÄT; Filter/Amp-Int. im Vocoder wirkungslos −327 dB, INTENSITÄT 0 +2,7 dB — `n5-k-qa-voc.mjs`, `n5-k-qa-rep.mjs`, `n5-k-fix-mods.mjs` (d, k) |
+| Meldung FM-Feld LFO FM/AM | behoben | LFO FM 18 / AM 127 / beides: 1/1/2 Einträge (vorher 0); 4 gemischte Graphen gegen das Worklet (`k1Dump.fmx`): gleich; ✕ 1 Undo; Tipp → FELD OP 1 Mod, LFO FM leuchtet (P und L per Finger); LFO-1-Chip bewegt sich (10 Werte), andere still — `n5-k-qa-fmx.mjs`, `n5-k-qa-rep.mjs`, `n5-k-fix-mods.mjs` (e, j, l), `n5-k-fix-finger.mjs` |
+| Meldung FM-Tonhöhen-Hüllk. | behoben | „Tonhöhen-Hüllk. → Tonhöhe +4,5 HT“ (vorher 0 Einträge), auch ohne Feld (fm6.peg); ✕ → flach, 1 Undo; Tipp per Finger → HÜLLK./TONH. (P und L) — `n5-k-qa-hidden2.mjs`, `n5-k-qa-fmpeg.mjs` P/L, `n5-k-fix-mods.mjs` (f, g), `n5-k-fix-finger.mjs` |
+| Meldung Liste nach Toast-Undo | behoben | P und L: ✕ 5 → [Rückgängig] 6 Zeilen = 6 Einträge; ↷ → 5; Kopf-↶ ↷ wie vorher — `n5-k-qa-flow1.mjs` P/L, `n5-k-qa-undo.mjs`, `n5-k-fix-mods.mjs` (h) |
+| Meldung ⋯ / [Rückgängig] < 44 | behoben, Rest siehe Abweichungen | ⋯ Querformat 44 × 44 (vorher 37 × 35), 320×568 42 × 39 (36 × 32), 390×844 44 × 44, 375×667 44 × 34 (unverändert, Band); Toast 44 hoch (31/34) in allen Formaten; Nachbarn unverändert — `n5-k-fix-edm.mjs` (edm, toast), `n5-k-fix-nb.mjs`, `n5-k-qa-rep2.mjs`, `n5-k-qa-06.mjs` |
+| Meldung „Mit Startsounds“ | belegt, Frage an Xander | Mini-Lead/Melodie-Lead ±10 ct (LFO 2), Rom-Fläche ±7 ct, Drift bis ±2,6 ct; alle in der Übersicht — `n5-k-qa-newstd.mjs` |
+| K1-03 vollständig gegen die Engine | bestanden | 315 Klänge, **445** Einträge (vorher 434: +9 STEUER 2, davon 1 im Vocoder „Metal Voc“, +2 Vocoder-INTENSITÄT), 0 Abweichungen; Abgleich jetzt auch für STEUER 2, Vocoder, FM-Feld, fm6-PEG — `n5-k-03.mjs` (complete) |
+| K1-03 Rest (INIT 0 ct, Löschen, Undo, Tipp, Bewegung) | bestanden | wie K1 — `n5-k-03.mjs` |
+| K1-06 alle Formate | bestanden | 12/12 Fälle ok (Blatt im Bildschirm, Zeilen ≥ 48, ✕ 44 × 44, nichts abgeschnitten, Seitenhöhe gleich) — `n5-k-06.mjs`, `n5-k-qa-06.mjs` |
+| Rauchtest | bestanden | `smoke.mjs` ohne Fehler — `n5-k-fix-smoke.png` |
+
+### Abweichungen
+
+- **⋯ hochkant 375×667 (44 × 34) und 320×568 (42 × 39)** erreichen keine 44 px Höhe bzw. Breite. Der Grund ist die Geometrie: Bei 375×667 sitzt ⋯ in der LCD-Zeile, einem 34 px hohen Band zwischen Kopfzeile 2 und Reitern. Bei 320×568 sitzt ⋯ in einer Kopfzeile aus 36 × 32-Knöpfen mit 3 px Abstand, dort sind 39 px Raster möglich. Mehr ginge nur auf Kosten der Nachbarknöpfe oder mit einem anderen Kopf, und das wäre sichtbar anders. Beide Werte liegen über der Untergrenze für dichte Raster (36 × 34, spec v3 L4). Siehe Frage 2.
+- **MS 2000 Querformat ⋯ (mkqmore) 45 × 43:** Die Kopfleiste ist 44 px hoch, davon 1 px Trennlinie, und sie schneidet ab. Für 44 müsste die Kopfleiste 1 px höher werden. Das ist nicht geändert.
+- Im Vocoder-Modus fallen die Zeilen „EG 1 / Keytrack / Anschlag → Cutoff“ und „Keytrack → Amp“ weg, weil sie dort nicht wirken (gemessen −327 dB). Neu ist „Keytrack → Vocoder Pegel“.
+- Test-Zugang `{k1Dump}` meldet zusätzlich `voc`, `fmx` (on, fmS, am, amG, pit, pt) und `peg`. Das wird nur auf Anfrage gesendet, im Audio-Pfad passiert nichts.
+
+### Fragen an Xander
+
+1. **Neues Projekt „Mit Startsounds“:** Mini-Lead und Melodie-Lead haben ab Werk ein leichtes Vibrato (LFO 2 → Tonhöhe ±10 ct), Rom-Fläche ±7 ct, und 4 von 5 Synth-Spuren haben Analog-Drift (bis ±2,6 ct je Note). Mit „Leer (Init)“ ist alles auf 0. Sollen die Startsounds so bleiben (jede Modulation steht in der Übersicht und lässt sich mit ✕ löschen)? Oder sollen sie ohne Vibrato/Drift starten? Das würde ihren Klang ändern.
+2. **⋯ auf kleinen iPhones hochkant (375×667, 320×568):** Die Trefferfläche ist 44 × 34 bzw. 42 × 39. Volle 44 × 44 gehen nur, wenn die LCD-Zeile dort 10 px höher wird (dafür wird der Editor-Körper 10 px kleiner) bzw. wenn die Kopfzeile bei 320 px Breite einen Knopf weniger hat. Soll ich eins davon bauen?
+
+### iPhone (Xander)
+
+- MS 2000: „Streichsatz“ laden, ⋯ → „Modulationen (1)“: „LFO 1 → Osz 1 Form · Steuer 2 · Tiefe +30“. Antippen: OSC 1 STEUER 2 steht im LCD. ✕: die Streicher schweben nicht mehr. [Rückgängig] holt es zurück, die Liste zeigt die Zeile sofort wieder.
+- „Vokalwah“ mit Mikro: ⋯ → Modulationen: „LFO 1 → Vocoder Formant · Intensität +30“. ✕: der Wah-Effekt ist weg.
+- FM-Spur, FELD, OP 1 → Mod → LFO FM hochziehen: ⋯ → Modulationen zeigt „LFO 1 → OP 1 Tonhöhe“. Im MOD-Reiter bewegt sich der Chip LFO 1.
+- FM, HÜLLK. → TONH. eine Hüllkurve ziehen: die Übersicht zeigt „Tonhöhen-Hüllk. → Tonhöhe“.
+- Im Querformat ⋯ am Rand antippen, auch knapp daneben: das Menü öffnet. [Rückgängig] im Toast auch knapp über oder unter dem Knopf.
+
+### Für das Zusammenführen
+
+- Block „K1 (Nachtrag 5 K1, Punkt 3): Mod-Übersicht“:
+  - `k1Mods()`: MS-2000-Zweig mit STEUER 2 (`K1_O1C`), Filter/Amp nur ohne Vocoder, Vocoder `voc.mint`/`voc.kbd`. Routen ohne „±0 %“. FM ruft am Ende `k1FmMods()` auf.
+  - Neu nach `k1Mods()`: `K1_O1C`, `K1_PMS`, `K1_PR`, `k1Ht`, `k1FmPit()`, `k1FmMods()`, `k1FmxLfo()`.
+  - `k1Del()`: Zweige `fpeg` (`fmSetPeg(i, null)`) und `fmx` (`fmxApply` + `fmChanged(i, true, true)`).
+  - `k1Jump()`: Zweige für `fpeg`/`fmx`, also TONH. (`ED.sub.envfm`) bzw. FELD OP n Mod/Tonh. mit Leuchten.
+  - `openK1Mods()`: `UI.pop.k1r` (Neuzeichnen).
+- `undoApply()`: eine Zeile vor dem Takes-Einhänger (`UI.pop.k1r` per Microtask).
+- `modFrame()`: die K1-Zeile `k1u/k1h` bekommt `k1f = k1FmxLfo(i)`.
+- Worklet `AnalogCore.onMsg()` `{k1Dump}`: Felder `voc`, `fmx`, `peg` (nur ASCII geprüft).
+- CSS nach `.k1hl`: `#toast button{position:relative}` + `::after`, P2-Regel `#toast.lcdk`, `.hb.edm1` (Querformat) und `.hb.edm2` (≤ 600 px hochkant) mit `::after` und `z-index:1`.
+- Test-Skript `n5-k-03.mjs` (complete) rechnet die neuen Pfade mit ein. Neue Skripte: `n5-k-fix-mods.mjs`, `n5-k-fix-finger.mjs`, `n5-k-fix-edm.mjs`, `n5-k-fix-nb.mjs`, Bilder `n5-k-fix-*.png`.
+- Snapshot: `synq-snapshots/K1-fix.html`.

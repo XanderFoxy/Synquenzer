@@ -42376,8 +42376,8 @@ async function vvPath(fmt) {
   if (!p) p = {how: null, why: 'Video hier nicht möglich (kein Video-Kodierer im Browser)'};
   VV.pathC = {key, p}; return p;
 }
-// a yield to the event loop without the 4-ms timer clamp
-const vvYield = (() => { let ch = null; return () => new Promise(r => { if (!ch) ch = new MessageChannel(); ch.port1.onmessage = () => r(); ch.port2.postMessage(0); }); })();
+// a yield to the event loop without the 4-ms timer clamp (a queue: the graph build, the trim and the frames may wait at once)
+const vvYield = (() => { let ch = null; const q = []; return () => new Promise(r => { if (!ch) { ch = new MessageChannel(); ch.port1.onmessage = () => { const f = q.shift(); if (f) f(); }; } q.push(r); ch.port2.postMessage(0); }); })();
 async function vvEncodeWC(job) {
   const {W, H, path, live} = job, fps = VV_FPS, cv = job.canvas, g = cv.getContext('2d', {alpha: false});
   const vS = [], aS = []; let vCfg = null, aCfg = null, err = null, r = null;

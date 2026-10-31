@@ -17,4 +17,4 @@ for (const run of [1, 2]) {
   res['run' + run] = {spaceAtRenderedSec: at, end, rmsPerSecond_dB: sec, errs};
   await b.close();
 }
-console.log(JSON.stringify(res, null, 1));
+console.log(JSON.stringify(res));
