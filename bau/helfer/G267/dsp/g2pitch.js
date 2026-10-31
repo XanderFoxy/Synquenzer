@@ -1,7 +1,7 @@
 /* G2 Tonhöhe: DSP-Kern (Nachtrag 5 G2, G6, G7). Läuft im Worker (Quelltext als Blob) und im Hauptfaden (Rückfall, Tests).
    Keine DOM-Zugriffe, keine äußeren Namen außer dem übergebenen VS2-Kern (vsDspMake: pyin, segment).
    analyse(x, sr, V)  → {sr, hop (s), n, f0 (Hz je 5-ms-Frame, fein auf voller Rate; 0 = stimmlos), notes: [{t0, t1, m}]}
-       pYIN (VS2) auf ≈16 kHz, Noten = VS2-Segmente; Periode je Frame auf voller Rate nachgemessen (YIN-Differenz ±6 %,
+       pYIN (VS2) auf ≈16 kHz, Noten = VS2-Segmente; Periode je Frame auf voller Rate nachgemessen (YIN-Differenz ±3 %,
        Parabel), Notenhöhe = Median des Kerns (wie VS2 center) aus der feinen Spur.
    render(x, sr, an, plan) → Float32Array (gleich lang). plan = {mode 'soft'|'hard', notes: [{t0, t1, m, to, s, e}]}
        Verschiebung je Note in Cent: e + s·(to − m)·100 (Weich: konstant, Vibrato bleibt) bzw. e + s·(to − f(t))·100
@@ -18,7 +18,7 @@ const med = a => { if (!a.length) return NaN; const b = Float64Array.from(a).sor
 function decim(x, sr) {
   const D = Math.max(1, Math.round(sr / 16000)), fs = sr / D;
   if (D === 1) return {y: Float32Array.from(x), fs, D};
-  const L = 12 * D, h = new Float64Array(2 * L + 1), fc = 0.45 / D; let s = 0;
+  const L = 8 * D, h = new Float64Array(2 * L + 1), fc = 0.45 / D; let s = 0;
   for (let k = -L; k <= L; k++) { const t = k, sinc = t === 0 ? 2 * fc : Math.sin(2 * Math.PI * fc * t) / (Math.PI * t), w = 0.42 + 0.5 * Math.cos(Math.PI * k / L) + 0.08 * Math.cos(2 * Math.PI * k / L); h[k + L] = sinc * w; s += h[k + L]; }
   for (let k = 0; k < h.length; k++) h[k] /= s;
   const n = Math.floor(x.length / D), y = new Float32Array(n);
@@ -30,11 +30,11 @@ function analyse(x, sr, V) {
   const tr = V.pyin(d.y, {fs, hop, fmin: 55, fmax: 1050});
   const sg = V.segment(tr, {snap: false, tuning: 0});
   const H = hop * d.D / sr, n = tr.n, f0 = new Float32Array(n), ap = new Float32Array(n);
-  // feine Periode je Frame auf voller Rate
+  // feine Periode je Frame auf voller Rate (YIN-Differenz ±3 % um pYIN, Fenster 2 Perioden bzw. 20 ms)
   for (let i = 0; i < n; i++) {
     const f = tr.f0[i]; if (!(f > 0)) continue;
-    const c = Math.round(i * H * sr), t0 = sr / f, lo = Math.max(2, Math.floor(t0 * 0.94)), hi = Math.ceil(t0 * 1.06) + 1;
-    const W = Math.round(Math.max(2.5 * t0, 0.025 * sr)), a = c - (W >> 1) - (hi >> 1);
+    const c = Math.round(i * H * sr), t0 = sr / f, lo = Math.max(2, Math.floor(t0 * 0.97)), hi = Math.ceil(t0 * 1.03) + 1;
+    const W = Math.round(Math.max(2 * t0, 0.02 * sr)), a = c - (W >> 1) - (hi >> 1);
     if (a < 0 || a + W + hi + 1 >= x.length) { f0[i] = f; continue; }
     let best = -1, bv = Infinity; const dv = new Float64Array(hi - lo + 1); let e = 0;
     for (let j = 0; j < W; j++) e += x[a + j] * x[a + j];
@@ -51,7 +51,9 @@ function analyse(x, sr, V) {
     let m = med(v); if (!(m === m)) m = nt.m;
     notes.push({t0: +nt.t0.toFixed(4), t1: +nt.t1.toFixed(4), m: +m.toFixed(3)});
   }
-  return {sr, hop: H, n, f0, ap, notes};
+  const an = {sr, hop: H, n, f0, ap, notes};
+  an.mdl = model(x, sr, an);                       // Teilton-Modell gleich mit (das erste Rendern ist dann nur noch Klang)
+  return an;
 }
 // Verschiebung (Cent) je Frame + aktive stimmhafte Strecken
 function curve(an, plan) {

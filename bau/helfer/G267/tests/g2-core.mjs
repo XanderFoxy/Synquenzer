@@ -3,7 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import {voice, rng, gauss} from '../../../vs-dsp/test-signals.mjs';
+import {voice, rng, gauss} from './vs-dsp/test-signals.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const load = (f, name) => new Function(fs.readFileSync(path.join(here, '../dsp', f), 'utf8') + '\nreturn ' + name + ';')()();
 const V = load('vsdsp.js', 'vsDspMake'), P = load('g2pitch.js', 'g2PitchMake');

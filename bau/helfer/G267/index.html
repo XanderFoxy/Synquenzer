@@ -2004,6 +2004,12 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 @media (orientation:landscape){#qSheet .qh.hasfol .qfol,#qSheet .qh.hasfol .sh-x{position:relative}#qSheet .qh.hasfol .qfol::after,#qSheet .qh.hasfol .sh-x::after{content:'';position:absolute;left:-1px;right:0;top:-2.5px;bottom:-6px}}
 #qSheet .qfol.on{color:var(--ink);background:var(--play);border-color:var(--play)}
 .tksheet .tk-wp{width:100%;min-height:44px;margin:0 0 6px}
+/* G2: Takes-Blatt [♪ Tonhöhe · Noten]; Noten-Editor im Blatt des Marken-Editors (#wpSheet.g2) */
+.tksheet .tkedrow{display:grid;grid-template-columns:1fr;gap:6px;margin:0 0 6px}
+.tksheet .tkedrow .mbtn{width:100%;min-height:44px;margin:0}
+@media (max-height:440px){.tksheet .tk-wp{display:inline-flex;align-items:center;justify-content:center;width:calc(50% - 3px);vertical-align:top;line-height:1.15}.tksheet .tkedrow{display:inline-grid;width:calc(50% - 3px);margin:0 0 4px 6px;vertical-align:top}}   /* quer: ✎ Marken und ♪ Tonhöhe nebeneinander (das Blatt passt weiter ohne Scrollen) */
+#wpSheet.g2 .wpcv{min-height:96px}
+#wpSheet.g2 .qchips{grid-template-columns:repeat(4,minmax(0,1fr))}   /* G2: 8 Tasten in 2 Reihen (Verbinden passt) */
 @media (orientation:portrait){#wpSheet{grid-row:2/5;grid-column:1/-1;align-self:end;justify-self:stretch;margin:0 8px;height:350px;max-height:100%}}
 /* F1 P3: Raster in 2 Reihen (36 px breit), Stärke und Swing nebeneinander – alles ≥ 44 hoch bzw. 36×34, die Wellenform bleibt ≥ 64 px */
 @media (orientation:portrait) and (max-height:600px){#wpSheet{height:292px}#wpSheet .qchips{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}#wpSheet .qrow,#wpSheet .qrow input[type=range]{height:40px}
@@ -39626,6 +39632,7 @@ function tkSheet(r, anchor) {
       if (d.a === 'wav') { const x = tkRef(rr); if (x) tkExportWav(x.a.take); return; }
       if (d.a === 'zip') { tkExportZip(); return; }
       if (d.a === 'wp') { closePop(); wpOpen(rr); return; }      // VS5a: Marken-Editor
+      if (d.a === 'g2') { closePop(); g2Open(rr); return; }      // G2: Tonhöhe · Noten
       if (d.a === 'gc') { tkGc().then(n => { toast(n ? n + (n === 1 ? ' altes Stück' : ' alte Stücke') + ' gelöscht' : 'Nichts aufzuräumen'); if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); }); return; }
       if (d.a === 'x') closePop();
     }, 'button[data-k],button[data-a]');
@@ -39648,9 +39655,11 @@ function tkSheetPaint(p) {
     `<div class="tklist pan-y">${rows}</div>` +
     `<div class="small">${esc(est + per)}</div>` +
     (ok ? '<button class="mbtn rb tk-wp" data-a="wp">✎ Marken · Quantisieren</button>' : '') +
+    (ok ? '<div class="tkedrow"><button class="mbtn rb tk-g2" data-a="g2">♪ Tonhöhe · Noten</button></div>' : '') +   /* G2 */
     `<div class="savrow"><button class="mbtn rb" data-a="ab"${segs.length > 1 ? '' : ' disabled'}>A/B</button><button class="mbtn rb" data-a="wav"${ok ? '' : ' disabled'}>WAV</button><button class="mbtn rb" data-a="zip"${ok ? '' : ' disabled'}>ZIP + Projekt</button><button class="mbtn rb" data-a="gc"${ok ? '' : ' disabled'}>Aufräumen</button></div>` +
     '<div class="small">Oben = der hörbare Take. Ein Tipp holt einen älteren Take nach oben (A/B: die zwei obersten tauschen). ✕ = löschen, ↶ holt ihn zurück.</div>';
   clSheet(p, x);                                                  // VS4: SÄUBERN, A/B Roh │ Sauber
+  if (ok && typeof g2Pre === 'function') g2Pre(x.a.take);         // G2: Töne schon suchen (Worker), bevor ♪ Tonhöhe getippt wird
   if (!TK.est || performance.now() - (TK.estT || 0) > 5000) { TK.estT = performance.now(); try { navigator.storage.estimate().then(e => { TK.est = e; const q = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null; if (q && q === p) tkSheetPaint(p); }, () => {}); } catch (e) {} }
 }
 function tkMB(b) { b = +b || 0; return b >= 1e9 ? fmtDec(b / 1e9, 1) + ' GB' : Math.round(b / 1e6) + ' MB'; }
@@ -41557,6 +41566,7 @@ function wpSetLyrics(id, text) {
 function wpLyr(id) { const m = S.takes && S.takes[id]; if (!m || !m.lyrics) return null; const mk = wpMarks(id) || []; return VSM.assignLyrics(m.lyrics, mk.length); }
 // ↶ ↷ einer 'takes'-Änderung: Wiedergabe und Editor folgen
 function wpUndone() {
+  if (typeof g2Undone === 'function') g2Undone();   // G2
   if (WP.ed && !tkRef(WP.ed.r)) { wpClose(); return; }
   for (const id of tkActiveIds()) if (wpWarp(id)) wpPlay(id);
   wpResync(); wpPaint();
@@ -41904,6 +41914,576 @@ const WP_API = {
   wpMoved: r => wpMovedN(wpId(r)),                                                   // G1: Zahl der gerückten Einsätze
   wpCore: (fn, args) => { const r = VSM[fn](...args.map(v => (Array.isArray(v) && v.length > 64 ? Float32Array.from(v) : v))); return r && r.times ? {times: Array.from(r.times), grid: r.grid, swing: r.swing, moved: Array.from(r.moved)} : ArrayBuffer.isView(r) ? Array.from(r) : r; },
 };
+
+/* G2-BEGIN */
+/* G2 Tonhöhe: DSP-Kern (Nachtrag 5 G2, G6, G7). Läuft im Worker (Quelltext als Blob) und im Hauptfaden (Rückfall, Tests).
+   Keine DOM-Zugriffe, keine äußeren Namen außer dem übergebenen VS2-Kern (vsDspMake: pyin, segment).
+   analyse(x, sr, V)  → {sr, hop (s), n, f0 (Hz je 5-ms-Frame, fein auf voller Rate; 0 = stimmlos), notes: [{t0, t1, m}]}
+       pYIN (VS2) auf ≈16 kHz, Noten = VS2-Segmente; Periode je Frame auf voller Rate nachgemessen (YIN-Differenz ±3 %,
+       Parabel), Notenhöhe = Median des Kerns (wie VS2 center) aus der feinen Spur.
+   render(x, sr, an, plan) → Float32Array (gleich lang). plan = {mode 'soft'|'hard', notes: [{t0, t1, m, to, s, e}]}
+       Verschiebung je Note in Cent: e + s·(to − m)·100 (Weich: konstant, Vibrato bleibt) bzw. e + s·(to − f(t))·100
+       (Hart: folgt der Stimme, Vibrato und Gleiten werden eingerastet). TD-PSOLA (formant-erhaltend: jede Periode behält
+       ihre Form, nur der Abstand ändert sich) NUR in stimmhaften Strecken mit einer verschobenen Note; stimmlose Laute,
+       Zisch- und Plosivlaute, Atmer und alles außerhalb bleiben bitgleich. Übergänge: 15 ms Schutz an jedem Rand der
+       stimmhaften Strecke (dort klingt noch der Konsonant), dann 10-ms-Kosinus-Blende; zwischen Noten gleitet die
+       Verschiebung über 40 ms (Weich) bzw. 15 ms (Hart). Ohne Verschiebung: Ausgabe = Eingabe (bitgleich). */
+function g2PitchMake() {
+'use strict';
+const midi = f => 69 + 12 * Math.log2(f / 440);
+const med = a => { if (!a.length) return NaN; const b = Float64Array.from(a).sort(); const k = b.length >> 1; return b.length % 2 ? b[k] : (b[k - 1] + b[k]) / 2; };
+// Dezimieren um D (gefensterter Sinc, linearphasig, Laufzeit ausgeglichen)
+function decim(x, sr) {
+  const D = Math.max(1, Math.round(sr / 16000)), fs = sr / D;
+  if (D === 1) return {y: Float32Array.from(x), fs, D};
+  const L = 8 * D, h = new Float64Array(2 * L + 1), fc = 0.45 / D; let s = 0;
+  for (let k = -L; k <= L; k++) { const t = k, sinc = t === 0 ? 2 * fc : Math.sin(2 * Math.PI * fc * t) / (Math.PI * t), w = 0.42 + 0.5 * Math.cos(Math.PI * k / L) + 0.08 * Math.cos(2 * Math.PI * k / L); h[k + L] = sinc * w; s += h[k + L]; }
+  for (let k = 0; k < h.length; k++) h[k] /= s;
+  const n = Math.floor(x.length / D), y = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const c = i * D; let v = 0; const a = Math.max(-L, -c), b = Math.min(L, x.length - 1 - c); for (let k = a; k <= b; k++) v += h[k + L] * x[c + k]; y[i] = v; }
+  return {y, fs, D};
+}
+function analyse(x, sr, V) {
+  const d = decim(x, sr), fs = d.fs, hop = Math.max(1, Math.round(fs * 0.01));   // 10-ms-Frames (5 ms kostet doppelt, ohne hörbaren Gewinn)
+  const tr = V.pyin(d.y, {fs, hop, fmin: 55, fmax: 1050});
+  const sg = V.segment(tr, {snap: false, tuning: 0});
+  const H = hop * d.D / sr, n = tr.n, f0 = new Float32Array(n), ap = new Float32Array(n);
+  // feine Periode je Frame auf voller Rate (YIN-Differenz ±3 % um pYIN, Fenster 2 Perioden bzw. 20 ms)
+  for (let i = 0; i < n; i++) {
+    const f = tr.f0[i]; if (!(f > 0)) continue;
+    const c = Math.round(i * H * sr), t0 = sr / f, lo = Math.max(2, Math.floor(t0 * 0.97)), hi = Math.ceil(t0 * 1.03) + 1;
+    const W = Math.round(Math.max(2 * t0, 0.02 * sr)), a = c - (W >> 1) - (hi >> 1);
+    if (a < 0 || a + W + hi + 1 >= x.length) { f0[i] = f; continue; }
+    let best = -1, bv = Infinity; const dv = new Float64Array(hi - lo + 1); let e = 0;
+    for (let j = 0; j < W; j++) e += x[a + j] * x[a + j];
+    for (let t = lo; t <= hi; t++) { let s = 0; for (let j = 0; j < W; j++) { const q = x[a + j] - x[a + j + t]; s += q * q; } dv[t - lo] = s; if (s < bv) { bv = s; best = t; } }
+    let tau = best;
+    if (best > lo && best < hi) { const y0 = dv[best - 1 - lo], y1 = dv[best - lo], y2 = dv[best + 1 - lo], den = y0 - 2 * y1 + y2; if (den > 0) tau = best + Math.max(-1, Math.min(1, 0.5 * (y0 - y2) / den)); }
+    f0[i] = sr / tau; ap[i] = e > 0 ? bv / (2 * e) : 1;
+  }
+  const notes = [];
+  for (const nt of sg.notes) {
+    const a = Math.round(nt.t0 / H), b = Math.round(nt.t1 / H), len = b - a;
+    const s = a + Math.min(12, Math.floor(len * 0.25)), t = b - Math.min(6, Math.floor(len * 0.15)), v = [];
+    for (let k = s; k < Math.max(t, s + 1); k++) if (k >= 0 && k < n && f0[k] > 0) v.push(midi(f0[k]));
+    let m = med(v); if (!(m === m)) m = nt.m;
+    notes.push({t0: +nt.t0.toFixed(4), t1: +nt.t1.toFixed(4), m: +m.toFixed(3)});
+  }
+  const an = {sr, hop: H, n, f0, ap, notes};
+  an.mdl = model(x, sr, an);                       // Teilton-Modell gleich mit (das erste Rendern ist dann nur noch Klang)
+  return an;
+}
+// Verschiebung (Cent) je Frame + aktive stimmhafte Strecken
+function curve(an, plan) {
+  const n = an.n, H = an.hop, f0 = an.f0, c = new Float64Array(n), has = new Uint8Array(n), hard = plan.mode === 'hard';
+  const fm = new Float64Array(n);
+  for (let i = 0; i < n; i++) {   // 3-Frame-Median der Stimme (Hart)
+    const v = []; for (let k = i - 1; k <= i + 1; k++) if (k >= 0 && k < n && f0[k] > 0) v.push(midi(f0[k]));
+    fm[i] = v.length ? med(v) : NaN;
+  }
+  for (const nt of plan.notes || []) {
+    const a = Math.max(0, Math.floor(nt.t0 / H)), b = Math.min(n, Math.ceil(nt.t1 / H)), e = +nt.e || 0, s = +nt.s || 0, to = +nt.to, m = +nt.m;
+    for (let i = a; i < b; i++) {
+      let v = e;
+      if (s && to === to) v += s * 100 * (to - (hard && fm[i] === fm[i] ? fm[i] : m));
+      c[i] = v; has[i] = 1;
+    }
+  }
+  // stimmhafte Strecken; eine Strecke ist aktiv, wenn eine Note darin verschoben wird
+  const runs = [];
+  for (let i = 0; i < n;) {
+    if (!(f0[i] > 0)) { i++; continue; }
+    let j = i; while (j < n && f0[j] > 0) j++;
+    let act = false; for (let k = i; k < j; k++) if (has[k] && Math.abs(c[k]) > 0.05) { act = true; break; }
+    if (act) {
+      // Lücken (Frames ohne Note) mit dem Nachbarn füllen
+      let last = NaN, first = NaN; for (let k = i; k < j; k++) { if (has[k]) { last = c[k]; if (!(first === first)) first = c[k]; } else if (last === last) c[k] = last; }
+      for (let k = i; k < j && !has[k]; k++) c[k] = first;
+      runs.push([i, j]);
+    }
+    i = j;
+  }
+  // Glätten (gleiten zwischen Noten): Weich 40 ms, Hart 15 ms (gleitender Mittelwert in der Strecke)
+  const R = Math.max(1, Math.round((hard ? 0.015 : 0.04) / H / 2)), cs = new Float64Array(n);
+  for (const [i, j] of runs) for (let k = i; k < j; k++) { let s = 0, q = 0; for (let r = Math.max(i, k - R); r <= Math.min(j - 1, k + R); r++) { s += c[r]; q++; } cs[k] = s / q; }
+  return {c: cs, runs};
+}
+// Harmonisches Modell je stimmhafter Strecke (einmal je Take, im Analyse-Ergebnis): Phase Φ(t) = ∫2π f0, alle 5 ms die
+// komplexen Teilton-Amplituden c_h (Hann über 3 Perioden, Chirp-fest über Φ), Teiltöne bis 7 kHz
+const HMAX = 64, FTOP = 7000;
+function model(x, sr, an) {
+  const n = x.length, Hs = an.hop * sr, f0 = an.f0, G = Math.round(0.015 * sr), runs = [];
+  for (let i = 0; i < an.n;) {
+    if (!(f0[i] > 0)) { i++; continue; }
+    let j = i; while (j < an.n && f0[j] > 0) j++;
+    const A = Math.round(i * Hs) + G, B = Math.min(n, Math.round((j - 1) * Hs) - G);
+    if (B - A >= Math.round(0.03 * sr)) {
+      const L = B - A, fs = new Float32Array(L), ph = new Float64Array(L);
+      for (let q = 0; q < L; q++) { const p = Math.min(j - 1, Math.max(i, (A + q) / Hs)), k = Math.floor(p), fr = p - k; fs[q] = k + 1 < j ? f0[k] + (f0[k + 1] - f0[k]) * fr : f0[k]; }
+      let P = 0; for (let q = 0; q < L; q++) { ph[q] = P; P += 2 * Math.PI * fs[q] / sr; }
+      const step = Math.round(0.01 * sr), nf = Math.floor((L - 1) / step) + 1, re = new Float32Array(nf * HMAX), im = new Float32Array(nf * HMAX), H = new Uint8Array(nf);
+      // Φ außerhalb der Strecke (Fenster ragt hinaus): linear fortgesetzt
+      const phA = q => q < 0 ? ph[0] + 2 * Math.PI * fs[0] / sr * q : q >= L ? ph[L - 1] + 2 * Math.PI * fs[L - 1] / sr * (q - L + 1) : ph[q];
+      for (let k = 0; k < nf; k++) {
+        const c = k * step, f = fs[Math.min(L - 1, c)], N = Math.max(16, Math.round(3 * sr / f)), h2 = N >> 1, Hk = Math.min(HMAX, Math.floor(FTOP / f));
+        H[k] = Hk; let sw = 0; const zr = new Float64Array(N), zi = new Float64Array(N), xr = new Float64Array(N), xm = new Float64Array(N);
+        for (let j2 = 0; j2 < N; j2++) { const q = c - h2 + j2, w = 0.5 - 0.5 * Math.cos(2 * Math.PI * (j2 + 0.5) / N), v = A + q >= 0 && A + q < n ? x[A + q] : 0, p = phA(q); zr[j2] = Math.cos(p); zi[j2] = -Math.sin(p); xr[j2] = w * v; xm[j2] = w * v; sw += w; }
+        // xr/xm = gewichtetes Signal mal e^{-i h Φ} (fortlaufend je Teilton)
+        for (let j2 = 0; j2 < N; j2++) xm[j2] = 0;
+        for (let h = 1; h <= Hk; h++) {
+          let sr2 = 0, si2 = 0;
+          for (let j2 = 0; j2 < N; j2++) { const a = xr[j2], b = xm[j2], r2 = a * zr[j2] - b * zi[j2], i2 = a * zi[j2] + b * zr[j2]; xr[j2] = r2; xm[j2] = i2; sr2 += r2; si2 += i2; }
+          const ar = 2 * sr2 / sw, ai = 2 * si2 / sw; re[k * HMAX + h - 1] = Math.log(Math.hypot(ar, ai) + 1e-9); im[k * HMAX + h - 1] = Math.atan2(ai, ar);
+        }
+      }
+      runs.push({i0: i, i1: j, A, B, step, nf, fs, ph, re, im, H});
+    }
+    i = j;
+  }
+  return runs;
+}
+// Teilton-Koeffizient (Betrag/Phase) zwischen den Frames: Betrag linear, Phase auf dem kürzeren Bogen
+function coef(R, q, h, out) {
+  const p = Math.min(R.nf - 1, q / R.step), k = Math.floor(p), fr = p - k, k2 = Math.min(R.nf - 1, k + 1);
+  const hh = h - 1, a = k * HMAX + hh, b = k2 * HMAX + hh, ha = h <= R.H[k], hb = h <= R.H[k2];
+  if (!ha && !hb) { out[0] = -20.7; out[1] = 0; return out; }
+  const la = ha ? R.re[a] : R.re[b] - 9, lb = hb ? R.re[b] : R.re[a] - 9, pa = ha ? R.im[a] : R.im[b], pb = hb ? R.im[b] : R.im[a];
+  let d = pb - pa; d -= 2 * Math.PI * Math.round(d / (2 * Math.PI));
+  out[0] = la + (lb - la) * fr; out[1] = pa + d * fr; return out;
+}
+function render(x, sr, an, plan) {
+  const y = Float32Array.from(x), n = x.length, H = an.hop;
+  const {c, runs} = curve(an, plan);
+  if (!an.mdl) an.mdl = model(x, sr, an);
+  const RMP = Math.round(0.010 * sr), BLK = 64, o2 = [0, 0], o3 = [0, 0];
+  let segs = 0;
+  for (const [i0, i1] of runs) {
+    const R = an.mdl.find(z => z.i0 === i0 && z.i1 === i1); if (!R) continue;
+    const L = R.B - R.A; if (L < 2 * RMP + 8) continue;
+    segs++;
+    // Ziel-Phase Φ'(t) = ∫2π f0(t)·r(t), am Anfang der Strecke = Φ (gleiche Lage → die Blende löscht nichts aus)
+    const ps = new Float64Array(L), rr = new Float32Array(L);
+    { let P = R.ph[0]; for (let q = 0; q < L; q++) { const p = (R.A + q) / (H * sr), k = Math.min(an.n - 1, Math.max(0, Math.floor(p))), fr = Math.min(1, Math.max(0, p - k)), k2 = Math.min(an.n - 1, k + 1);
+      const cc = c[k] + (c[k2] - c[k]) * fr, r = Math.pow(2, cc / 1200); rr[q] = r; ps[q] = P; P += 2 * Math.PI * R.fs[q] * r / sr; } }
+    const Cm = new Float64Array(2 * HMAX), Cm2 = new Float64Array(2 * HMAX), Cs = new Float64Array(2 * HMAX), Cs2 = new Float64Array(2 * HMAX);
+    // Koeffizienten an der Blockgrenze q: Original (h ganz) und verschoben (Hülle an der neuen Frequenz h·f0·r, Phase des nächsten Teiltons)
+    const LM = new Float64Array(HMAX + 2), PH = new Float64Array(HMAX + 2);
+    const setC = (q, M, S) => {
+      const k = Math.min(R.nf - 1, Math.round(q / R.step)), Hk = R.H[k], f = R.fs[Math.min(L - 1, q)], r = rr[Math.min(L - 1, q)];
+      for (let h = 1; h <= Hk; h++) { coef(R, q, h, o2); LM[h] = o2[0]; PH[h] = o2[1]; const m = Math.exp(o2[0]); M[2 * h - 2] = m * Math.cos(o2[1]); M[2 * h - 1] = m * Math.sin(o2[1]); }
+      for (let h = Hk + 1; h <= HMAX; h++) { M[2 * h - 2] = 0; M[2 * h - 1] = 0; }
+      LM[0] = LM[1]; LM[Hk + 1] = LM[Hk] - 3;
+      for (let h = 1; h <= HMAX; h++) {
+        const kk = h * r, F = kk * f; if (F >= FTOP || kk > Hk + 0.5 || F >= 0.45 * sr) { S[2 * h - 2] = 0; S[2 * h - 1] = 0; continue; }
+        const lo = Math.min(Hk, Math.max(1, Math.floor(kk))), t = Math.min(1, Math.max(0, kk - lo));
+        // Hülle über der Teilton-Nummer: Log-Betrag linear zwischen den zwei Nachbar-Teiltönen (keine Spitze, die das Original nicht trägt)
+        const lm = LM[lo] + (LM[Math.min(Hk + 1, lo + 1)] - LM[lo]) * t;
+        const m = Math.exp(lm), p = PH[t < 0.5 ? lo : Math.min(Hk, lo + 1)];
+        S[2 * h - 2] = m * Math.cos(p); S[2 * h - 1] = m * Math.sin(p);
+      }
+    };
+    setC(0, Cm, Cs);
+    for (let b0 = 0; b0 < L; b0 += BLK) {
+      const b1 = Math.min(L, b0 + BLK); setC(Math.min(L - 1, b1), Cm2, Cs2);
+      for (let q = b0; q < b1; q++) {
+        const u = (q - b0) / BLK, P = R.ph[q], Q = ps[q], zr = Math.cos(P), zi = Math.sin(P), wr = Math.cos(Q), wi = Math.sin(Q);
+        let pr = 1, pi = 0, sr_ = 1, si_ = 0, mo = 0, ms = 0;
+        for (let h = 1; h <= HMAX; h++) {
+          const t1 = pr * zr - pi * zi; pi = pr * zi + pi * zr; pr = t1;
+          const t2 = sr_ * wr - si_ * wi; si_ = sr_ * wi + si_ * wr; sr_ = t2;
+          const k2 = 2 * h - 2, ar = Cm[k2] + (Cm2[k2] - Cm[k2]) * u, ai = Cm[k2 + 1] + (Cm2[k2 + 1] - Cm[k2 + 1]) * u, br = Cs[k2] + (Cs2[k2] - Cs[k2]) * u, bi = Cs[k2 + 1] + (Cs2[k2 + 1] - Cs[k2 + 1]) * u;
+          if (ar || ai) mo += ar * pr - ai * pi;
+          if (br || bi) ms += br * sr_ - bi * si_;
+          if (!(ar || ai || br || bi) && h > 2) break;
+        }
+        let w = 1; if (q < RMP) w = 0.5 - 0.5 * Math.cos(Math.PI * (q + 0.5) / RMP); else if (L - q <= RMP) w = 0.5 - 0.5 * Math.cos(Math.PI * (L - q - 0.5) / RMP);
+        y[R.A + q] = x[R.A + q] + w * (ms - mo);
+      }
+      Cm.set(Cm2); Cs.set(Cs2);
+    }
+  }
+  return {y, segs};
+}
+// Schlüssel für den Render-Cache (FNV-1a über den Plan)
+function planKey(plan) {
+  let h = 0x811c9dc5; const s = (plan.mode === 'hard' ? 'h' : 'w') + JSON.stringify((plan.notes || []).map(k => [k.t0, k.t1, k.m, k.to, k.s, k.e]));
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16);
+}
+const active = plan => (plan.notes || []).some(k => Math.abs(+k.e || 0) > 0.05 || ((+k.s || 0) > 0 && Math.abs(+k.to - +k.m) * 100 * k.s > 0.05) || (plan.mode === 'hard' && (+k.s || 0) > 0));
+return {analyse, render, curve, planKey, active, midi, decim, VERSION: 'g2-hr-1'};
+}
+/* =====================================================================================================================
+   G2 (Nachtrag 5): Tonhöhe quantisieren + Gesang als Noten bearbeiten. Kern g2PitchMake (oben, getestet in
+   bau/helfer/G267/tests/g2-core.mjs). Nur stimmhafte Teile werden verschoben (harmonisches Modell: jeder Teilton bekommt
+   die Hülle des Originals an seiner neuen Frequenz = formant-erhaltend; der unverschobene Rest – Hauch, Rauschen – bleibt);
+   Zisch-/Plosivlaute, Atmer und alles außerhalb einer verschobenen Note bleiben bitgleich.
+   Daten (additiv am Take, Format bleibt; ein Take ohne Änderung bleibt Zeichen für Zeichen gleich):
+     take.pitch = {mode 'soft'|'hard', str (0…1, Stärke), q (Tonhöhe quantisieren an), key {root, scale} (Tonart der Stelle),
+                   notes: [{t0, t1 (s im Take), m (gemessene Höhe, MIDI mit Nachkomma), sh? (eigene Verschiebung, Halbtöne)}]}
+   Abspielen: tkExt().proc nach der Zeitkarte (VS5) und vor SÄUBERN (VS4): Quelle = gesäubert bzw. roh, Ergebnis = Quelle der
+   Zeitkarte. Render-Cache je Take + Plan + Quelle (bis 8 Fassungen je Take: ↶ ↷, A/B, Transponieren G7 ohne Neurechnen).
+   ===================================================================================================================== */
+const G2 = {w: null, wid: 0, wq: new Map(), an: new Map(), aq: new Map(), cache: new Map(), cur: new Map(), job: new Map(), next: new Map(),
+  ab: false, ed: null, renders: 0, last: null, lastAn: null, how: null};
+const G2P = g2PitchMake();
+const G2_MODES = ['soft', 'hard'];
+function g2NormPitch(p, len) {
+  if (!p || typeof p !== 'object' || !Array.isArray(p.notes)) return null;
+  const notes = [];
+  for (const n of p.notes.slice(0, 4000)) {
+    if (!n || !isNum(n.t0) || !isNum(n.t1) || !isNum(n.m) || n.t0 < 0 || n.t1 <= n.t0 || n.t1 > len + 1e-6) continue;
+    const o = {t0: tkR6(n.t0), t1: tkR6(n.t1), m: +clamp(n.m, 0, 127).toFixed(3)};
+    if (isNum(n.sh) && Math.round(n.sh)) o.sh = clamp(Math.round(n.sh), -36, 36);
+    notes.push(o);
+  }
+  notes.sort((a, b) => a.t0 - b.t0);
+  const out = {mode: G2_MODES.includes(p.mode) ? p.mode : 'soft', str: isNum(p.str) ? +clamp(p.str, 0, 1).toFixed(2) : 1, q: !!p.q, notes: notes.filter((n, i) => !i || n.t0 >= notes[i - 1].t1 - 1e-6)};
+  if (p.key && isNum(p.key.root) && Harmony.SCALES[p.key.scale]) out.key = {root: clamp(Math.round(p.key.root), 0, 11), scale: p.key.scale};
+  return out.notes.length ? out : null;
+}
+tkExt().take.push((m, o) => { const p = g2NormPitch(m.pitch, o.len / o.sr); if (p) o.pitch = p; });
+
+/* ---------- Plan: je Note Ziel (nächster Ton der Tonart), Stärke, eigene Verschiebung (+ G7 Transponieren) ---------- */
+function g2Snap(m, key) {
+  const SC = Harmony.SCALES[key && key.scale] || Harmony.SCALES.ionian, r = key ? key.root : 0, ins = q => SC.includes(((q - r) % 12 + 12) % 12);
+  let best = null; for (let q = Math.floor(m) - 3; q <= Math.ceil(m) + 3; q++) if (ins(q) && (best == null || Math.abs(q - m) < Math.abs(best - m) - 1e-9)) best = q;
+  return best == null ? Math.round(m) : best;
+}
+// gehörte Zielhöhe einer Note ohne Transponieren (MIDI, ganz bei Quantisieren 100 %)
+function g2Target(P, n) { const base = P.q ? n.m + P.str * (g2Snap(n.m, P.key) - n.m) : n.m; return base + (n.sh || 0); }
+function g2Plan(id, a) {
+  const m = S.takes && S.takes[id], P = m && m.pitch; if (!P) return null;
+  const xs = typeof g7Shift === 'function' ? g7Shift(id, a, P) : null;                 // G7: Transponieren der Stelle (Halbtöne je Note) oder null
+  const plan = {mode: P.mode, notes: P.notes.map((n, k) => ({t0: n.t0, t1: n.t1, m: n.m, to: P.q ? g2Snap(n.m, P.key) : n.m, s: P.q ? P.str : 0, e: 100 * ((n.sh || 0) + (xs ? xs[k] || 0 : 0))}))};
+  return G2P.active(plan) ? plan : null;
+}
+/* ---------- Quelle, Worker, Cache ---------- */
+function g2Proc(id, a) {
+  if (G2.ab) return null;
+  const plan = g2Plan(id, a); if (!plan) return null;
+  const b = g2Base(id, a); if (!b) return null;
+  const k = G2P.planKey(plan) + '@' + wpBid(b), C = G2.cache.get(id), c = C && C.get(k);
+  if (c) { c.t = performance.now(); G2.cur.set(id, c.buf); return c.buf; }
+  g2Render(id, k, b, plan);
+  return G2.cur.get(id) || null;                     // bis die neue Fassung da ist: die vorige (sonst die Quelle)
+}
+{ const P = tkExt().proc, k = P.indexOf(wpProc); P.splice(k < 0 ? 0 : k + 1, 0, g2Proc); }   // nach der Zeitkarte, vor SÄUBERN
+function g2Base(id, a) { for (const f of tkExt().proc) { if (f === wpProc || f === g2Proc) continue; try { const b = f(id, a); if (b) return b; } catch (e) { logErr(e); } } return tkBuffer(id); }
+function g2Worker() {
+  if (G2.w !== null) return G2.w;
+  try {
+    const src = vsDspMake.toString() + '\n' + g2PitchMake.toString() + '\n' + g2Run.toString() + '\nconst V = vsDspMake(), P = g2PitchMake(), C = new Map();onmessage = e => { const m = e.data; try { const r = g2Run(V, P, C, m); postMessage({id: m.id, r}, r && r.y ? [r.y.buffer] : []); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
+    const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+    w.onmessage = e => { const m = e.data, q = G2.wq.get(m.id); if (!q) return; G2.wq.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.r); };
+    w.onerror = e => { for (const q of G2.wq.values()) { clearTimeout(q.to); q.no(new Error('worker')); } G2.wq.clear(); G2.w = false; try { e.preventDefault(); } catch (er) {} };
+    G2.w = w;
+  } catch (e) { G2.w = false; }
+  return G2.w;
+}
+// Worker und Rückfall: Analyse je Quelle (Cache, höchstens 3 Takes), Rendern eines Plans
+function g2Run(V, P, C, m) {
+  let a = C.get(m.key);
+  if (!a) { a = P.analyse(m.x, m.sr, V); a.x = m.x; C.set(m.key, a); while (C.size > 3) C.delete(C.keys().next().value); }
+  if (m.op === 'an') return {notes: a.notes, f0: Array.from(a.f0), hop: a.hop, n: a.n};
+  return {y: P.render(a.x, m.sr, a, m.plan).y};
+}
+const G2_LOCAL = new Map();
+function g2Call(m) {
+  const w = g2Worker(), local = () => { G2.how = 'hauptfaden'; const r = g2Run(VSD, G2P, G2_LOCAL, m); return r.y ? {y: Float32Array.from(r.y)} : r; };
+  if (!w) return Promise.resolve().then(local);
+  return new Promise((ok, no) => {
+    const id = ++G2.wid, x = new Float32Array(m.x);
+    const to = setTimeout(() => { G2.wq.delete(id); try { ok(local()); } catch (e) { no(e); } }, 30000);
+    G2.wq.set(id, {ok: r => { G2.how = 'worker'; ok(r); }, no: e => { try { ok(local()); } catch (er) { no(e); } }, to});
+    try { w.postMessage(Object.assign({}, m, {id, x}), [x.buffer]); } catch (e) { clearTimeout(to); G2.wq.delete(id); try { ok(local()); } catch (er) { no(er); } }
+  });
+}
+// gerendert wird eins nach dem anderen je Take; ist der Plan inzwischen neuer, folgt gleich der neueste
+function g2Render(id, k, b, plan) {
+  if (G2.job.has(id)) { if (G2.job.get(id) !== k) G2.next.set(id, true); return; }
+  G2.job.set(id, k);
+  const t0 = performance.now(), sr = b.sampleRate;
+  g2Call({op: 'render', key: id + '@' + wpBid(b), x: b.getChannelData(0), sr, plan}).then(r => {
+    G2.job.delete(id);
+    const ab = wpToBuf(r.y, sr); if (!ab) return;
+    let C = G2.cache.get(id); if (!C) G2.cache.set(id, (C = new Map()));
+    C.set(k, {buf: ab, t: performance.now()});
+    while (C.size > 8) { let ok = null, ot = Infinity; for (const [kk, v] of C) if (v.t < ot && v.buf !== G2.cur.get(id)) { ot = v.t; ok = kk; } if (!ok) break; C.delete(ok); }
+    G2.renders++; G2.last = {id, ms: Math.round(performance.now() - t0), how: G2.how, n: plan.notes.length, key: k};
+    const act = tkActiveIds(); for (const kk of [...G2.cache.keys()]) if (!act.has(kk) && !(G2.ed && G2.ed.id === kk)) { G2.cache.delete(kk); G2.cur.delete(kk); }
+    if (G2.next.has(id)) { G2.next.delete(id); }
+    g2Heard(id);
+  }, e => { G2.job.delete(id); G2.next.delete(id); logErr(e); });
+}
+// neue Fassung hören: Zeitkarte (VS5) rechnet auf der neuen Quelle nach, dann Wechsel beim Abspielen ohne Loch (wpSwitch)
+function g2Heard(id) {
+  try { tkPlayBuf(id); } catch (e) {}                   // stößt die nächste Fassung an (Plan neuer) bzw. die Zeitkarte
+  if (wpReady(id)) wpResync();
+  UI.dirty.grid = UI.dirty.song = true; g2Paint();
+}
+function g2Ready(id, a) {
+  const plan = g2Plan(id, a); if (!plan || G2.ab) return true;
+  const b = g2Base(id, a); if (!b) return false;
+  const C = G2.cache.get(id); return !!(C && C.get(G2P.planKey(plan) + '@' + wpBid(b)));
+}
+// Noten und Tonhöhen-Spur der Quelle (für den Editor und das erste Quantisieren), einmal je Take + Quelle
+function g2Analyse(id) {
+  const b0 = g2Base(id), key = b0 ? id + '@' + wpBid(b0) : null, c = G2.an.get(id);
+  if (c && c.key === key) return Promise.resolve(c);
+  if (G2.aq.has(key)) return G2.aq.get(key);
+  const p = (async () => {
+    let b = b0; if (!b) { tkLoad(id); const w = TK.wait.get(id); if (w) await w; b = g2Base(id); }
+    if (!b) return null;
+    const k = id + '@' + wpBid(b), t0 = performance.now(), r = await g2Call({op: 'an', key: k, x: b.getChannelData(0), sr: b.sampleRate});
+    const A = {key: k, notes: r.notes, f0: Float32Array.from(r.f0), hop: r.hop, n: r.n};
+    G2.an.set(id, A); G2.lastAn = {id, n: A.notes.length, ms: Math.round(performance.now() - t0), how: G2.how};
+    return A;
+  })();
+  if (key) { G2.aq.set(key, p); p.then(() => G2.aq.delete(key), () => G2.aq.delete(key)); }
+  return p;
+}
+// Takes-Blatt offen: die Analyse läuft schon im Worker (ein Tipp auf Weich/Hart muss dann nur noch rechnen)
+function g2Pre(id) { clearTimeout(G2.preT); G2.preT = setTimeout(() => { if (S.takes && S.takes[id] && tkBuffer(id)) g2Analyse(id).catch(logErr); }, 400); }
+/* ---------- Ändern (je ein Undo, Art 'takes') ---------- */
+// Tonart der Stelle (Voreinstellung): Szene-Clip → Tonart der Szene, Song-Stimme → die der Szene an dem Takt, sonst die des Projekts
+function g2KeyAt(r) {
+  try {
+    if (r && r.t != null) { const k = sceneKeyOf(r.s); if (k) return {root: k.root, scale: k.scale}; }
+    if (r && r.vox && S.song) { const v = (S.song.vox || []).find(z => z.id === r.vox), si = v ? g2SongScene(v.bar) : -1, k = si >= 0 ? sceneKeyOf(si) : null; if (k) return {root: k.root, scale: k.scale}; }
+  } catch (e) { logErr(e); }
+  return {root: S.key.root, scale: S.key.scale};
+}
+// Szene, die im Song an einem Takt klingt (erste Synth-Spur, die dem Träger folgt und dort einen Clip hat)
+function g2SongScene(bar) { for (let i = 0; i < S.tracks.length; i++) { const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || tr.stimme || tr.follow === false || !S.song.lanes || !S.song.lanes[i]) continue; const cs = laneOriginAt(S.song.lanes[i], bar).slot; if (cs != null && cs >= 0 && tr.clips[cs]) return cs; } return -1; }
+function g2Edit(id, label, fn, r) {
+  const m = S.takes && S.takes[id]; if (!m) return Promise.resolve(false);
+  return (m.pitch ? Promise.resolve(null) : g2Analyse(id)).then(A => {
+    const mm = S.takes && S.takes[id]; if (!mm) return false;
+    const before = JSON.stringify(S.takes);
+    if (!mm.pitch) { if (!A || !A.notes.length) { toast('Keine Töne erkannt'); return false; } mm.pitch = {mode: 'soft', str: 1, q: false, key: g2KeyAt(r), notes: A.notes.map(n => ({t0: n.t0, t1: n.t1, m: n.m}))}; }
+    if (fn(mm.pitch) === false) { S.takes = JSON.parse(before); return false; }
+    const P = g2NormPitch(mm.pitch, mm.len / mm.sr);
+    if (!P || (!P.q && !P.notes.some(n => n.sh))) delete mm.pitch; else mm.pitch = P;
+    if (JSON.stringify(S.takes) === before) return false;
+    undoPush({kind: 'takes', before, label}); markDirty(); UI.dirty.all = true; haptic('tick');
+    g2After(id);
+    return true;
+  });
+}
+function g2After(id) { try { tkPlayBuf(id); } catch (e) {} if (g2Ready(id)) wpResync(); g2Paint(); }
+// Quantisieren: o = {q, mode, str}
+function g2SetQ(id, o, r) {
+  return g2Edit(id, 'Tonhöhe · Audio', P => {
+    if (o.q != null) P.q = !!o.q;
+    if (o.mode) P.mode = o.mode === 'hard' ? 'hard' : 'soft';
+    if (isNum(o.str)) P.str = clamp(o.str, 0, 1);
+    if (o.key) P.key = {root: o.key.root, scale: o.key.scale};
+    if (!P.key) P.key = g2KeyAt(r);
+  }, r);
+}
+const g2NoteShift = (id, k, d) => g2Edit(id, 'Note verschoben', P => { const n = P.notes[k]; if (!n || !d) return false; n.sh = (n.sh || 0) + Math.round(d); });
+function g2Split(id, k, t) {
+  return g2Edit(id, 'Note geteilt', P => {
+    const n = P.notes[k]; if (!n) return false; if (!(t > n.t0 + 0.03 && t < n.t1 - 0.03)) t = (n.t0 + n.t1) / 2;
+    if (n.t1 - n.t0 < 0.08) return false;
+    const A = G2.an.get(id), mOf = (a, b) => { if (!A) return n.m; const v = []; for (let i = Math.ceil(a / A.hop); i < Math.min(A.n, b / A.hop); i++) if (A.f0[i] > 0) v.push(G2P.midi(A.f0[i])); return v.length ? +VSD.median(v).toFixed(3) : n.m; };
+    const L = Object.assign({}, n, {t1: tkR6(t), m: mOf(n.t0, t)}), R2 = Object.assign({}, n, {t0: tkR6(t), m: mOf(t, n.t1)});
+    P.notes.splice(k, 1, L, R2);
+  });
+}
+const g2Join = (id, k) => g2Edit(id, 'Noten verbunden', P => {
+  const a = P.notes[k], b = P.notes[k + 1]; if (!a || !b) return false;
+  const da = a.t1 - a.t0, db = b.t1 - b.t0;
+  P.notes.splice(k, 2, Object.assign({}, a, {t1: b.t1, m: +((a.m * da + b.m * db) / (da + db)).toFixed(3)}));
+});
+function g2Undone() {
+  const E = G2.ed; if (E && !tkRef(E.r)) { g2Close(); return; }
+  for (const id of tkActiveIds()) { try { tkPlayBuf(id); } catch (e) {} }
+  g2Paint();
+}
+// WAV der hörbaren Fassung (Tonhöhe, Zeitkarte, Säubern – was klingt), 16 Bit
+function g2Wav(id) {
+  const b = tkHeard(id); if (!b) { toast('Take fehlt auf diesem Gerät'); return false; }
+  const d = b.getChannelData(0), pcm = new Int16Array(d.length); for (let i = 0; i < d.length; i++) { const v = Math.round(d[i] * 32767); pcm[i] = v > 32767 ? 32767 : v < -32768 ? -32768 : v; }
+  const m = S.takes[id], t = new Date(m && m.created || Date.now());
+  return deliver('synquenzer-take-' + t.getFullYear() + z2(t.getMonth() + 1) + z2(t.getDate()) + '-' + z2(t.getHours()) + z2(t.getMinutes()) + '-' + id.slice(0, 4) + '-gehoert', tkWav(pcm, b.sampleRate), 'wav', 'Take (gehörte Fassung) als WAV');
+}
+
+/* ---------- Noten-Editor des Takes (im Blatt des Marken-Editors): Noten-Blöcke über der Wellenform ----------
+   Tipp auf eine Note = wählen; senkrecht ziehen = Halbtöne verschieben (eigene Melodie); waagrecht ziehen auf leerer Fläche =
+   blättern; [▲] [▼] = die gewählte Note ±1; [Teilen] an der zuletzt getippten Stelle; [Verbinden] mit der nächsten Note.
+   [Aus] [Weich] [Hart] + Stärke = Tonhöhe quantisieren auf die Tonart der Stelle; A/B = Original hören; WAV = gehörte Fassung */
+function g2Open(r) {
+  const x = tkRef(r); if (!x || !tkAudioOk()) return false;
+  if (QS.open) closeQuantSheet(false, true);
+  closePop(); if (WP.ed) wpClose(); if (G2.ed) g2Close();
+  const id = x.a.take, segBars = (x.a.out - x.a.in) / spb() / 4;
+  G2.ed = {r, id, zoom: segBars <= 2.05 ? 0 : 2, va: x.a.in, sel: -1, p: null, ghost: null, tapT: null, sb: null};
+  const sh = EL.wpSheet; sh.innerHTML = ''; sh.classList.add('g2');
+  const head = el('div', 'qh', `<b>${wpTitlePieces('Tonhöhe · STIMME · ' + x.label)}</b>`);
+  const wv = el('button', 'rb wptx', 'WAV'); wv.setAttribute('aria-label', 'Gehörte Fassung als WAV'); wv.addEventListener('click', () => { const E = G2.ed; if (E) g2Wav(E.id); });
+  const ab = el('button', 'rb wpab', 'A/B'); ab.setAttribute('aria-label', 'Original hören (A/B)');
+  ab.addEventListener('click', () => { G2.ab = !G2.ab; wpResync(); g2Paint(); });
+  const cl = el('button', 'sh-x rb', '✕'); cl.setAttribute('aria-label', 'Schließen'); cl.addEventListener('click', () => g2Close());
+  head.append(wv, ab, cl);
+  const b = el('div', 'qb wpb'), cvw = el('div', 'wpcv'), cv = el('canvas');
+  cvw.append(cv);
+  const chips = el('div', 'qchips wpchips g2chips');
+  [['off', 'Aus'], ['soft', 'Weich'], ['hard', 'Hart'], ['up', '▲'], ['dn', '▼'], ['split', 'Teilen'], ['join', 'Verbinden'], ['zoom', '']].forEach(([v, l]) => { const bt = el('button', 'rb', l); bt.dataset.v = v; chips.appendChild(bt); });
+  chips.querySelector('[data-v=up]').setAttribute('aria-label', 'Note einen Halbton höher');
+  chips.querySelector('[data-v=dn]').setAttribute('aria-label', 'Note einen Halbton tiefer');
+  chips.addEventListener('click', e => {
+    const bt = e.target.closest('button[data-v]'), E = G2.ed; if (!bt || !E) return;
+    const v = bt.dataset.v, P = S.takes[E.id] && S.takes[E.id].pitch;
+    if (v === 'off') { g2SetQ(E.id, {q: false}, E.r); return; }
+    if (v === 'soft' || v === 'hard') { g2Info('Töne werden gesucht …'); g2SetQ(E.id, {q: true, mode: v, str: P && P.q ? P.str : 1}, E.r).then(ok => { const Q = S.takes[E.id] && S.takes[E.id].pitch; if (ok && Q) toast(g2MovedN(Q) + ' Töne auf die Tonart ' + keyLabel(Q.key) + ' gezogen'); }); return; }
+    if (v === 'zoom') { E.zoom = WP_ZOOM[(WP_ZOOM.indexOf(E.zoom) + 1) % WP_ZOOM.length]; g2Paint(); return; }
+    if (E.sel < 0 || !P || !P.notes[E.sel]) { if (!P && (v === 'up' || v === 'dn' || v === 'split' || v === 'join')) { g2Info('Töne werden gesucht …'); g2Analyse(E.id).then(() => g2Paint()); } toast('Erst eine Note antippen'); return; }
+    if (v === 'up' || v === 'dn') g2NoteShift(E.id, E.sel, v === 'up' ? 1 : -1);
+    else if (v === 'split') g2Split(E.id, E.sel, E.tapT);
+    else if (v === 'join') { if (!P.notes[E.sel + 1]) { toast('Keine Note dahinter'); return; } g2Join(E.id, E.sel); }
+  });
+  const row = el('div', 'qrow'), inp = el('input'), val = el('span', 'mval');
+  row.appendChild(el('span', 'lbl', 'Stärke'));
+  inp.type = 'range'; inp.min = 0; inp.max = 100; inp.step = 1; inp.setAttribute('aria-label', 'Stärke');
+  const sset = (v, fin) => {
+    const E = G2.ed; if (!E) return; const m = S.takes[E.id], P = m && m.pitch; val.textContent = v + ' %';
+    if (!P || !P.q) { if (fin) toast('Erst Weich oder Hart'); return; }
+    if (!E.sb) E.sb = JSON.stringify(S.takes);
+    P.str = v / 100;
+    clearTimeout(E.rt); if (fin) g2After(E.id); else { g2Paint(); const id = E.id; E.rt = setTimeout(() => { if (G2.ed && G2.ed.id === id) g2After(id); }, 150); }
+    if (fin) { const before = E.sb; E.sb = null; if (JSON.stringify(S.takes) !== before) { undoPush({kind: 'takes', before, label: 'Stärke · Tonhöhe'}); markDirty(); } }
+  };
+  inp.addEventListener('input', () => sset(+inp.value, false)); inp.addEventListener('change', () => sset(+inp.value, true));
+  row.append(inp, val); row._g = () => { const E = G2.ed, P = E && S.takes[E.id] && S.takes[E.id].pitch, v = Math.round((P ? P.str : 1) * 100); inp.value = v; val.textContent = v + ' %'; };
+  const info = el('span', 'qnote wpinfo', '');
+  cvw.append(info);
+  const sl = el('div', 'wpsl'); sl.append(row);
+  b.append(cvw, chips, sl);
+  sh.append(head, b);
+  Object.assign(G2.ed, {cv, chips, rs: row, info, ab, cvw});
+  sh.classList.add('open');
+  g2Gest(cv);
+  g2Paint();
+  g2Analyse(id).then(() => g2Paint(), e => { logErr(e); g2Info('Töne nicht gefunden'); });
+  return true;
+}
+function g2Info(t) { if (G2.ed && G2.ed.info) G2.ed.info.textContent = t; }
+function g2Close() {
+  const E = G2.ed; if (!E) return;
+  G2.ed = null; clearTimeout(E.rt);
+  EL.wpSheet.classList.remove('open', 'g2'); EL.wpSheet.innerHTML = '';
+  if (G2.ab) { G2.ab = false; wpResync(); }
+}
+function g2MovedN(P) { let n = 0; for (const x of P.notes) if (Math.abs(g2Target(P, x) - x.m) > 0.005) n++; return n; }
+// die Noten, die der Editor zeigt: gespeichert, sonst die erkannten (noch ohne Änderung)
+function g2Notes(id) { const m = S.takes && S.takes[id]; if (m && m.pitch) return m.pitch.notes; const A = G2.an.get(id); return A ? A.notes : null; }
+function g2Paint() {
+  const E = G2.ed; if (!E || !E.cv) return;
+  const x = tkRef(E.r); if (!x) { g2Close(); return; }
+  const a = x.a, id = E.id, m = S.takes && S.takes[id], P = m && m.pitch, cv = E.cv, wr = cv.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+  const Wp = Math.max(1, Math.round(wr.width)), Hp = Math.max(1, Math.round(wr.height));
+  if (cv.width !== Wp * dpr || cv.height !== Hp * dpr) { cv.width = Wp * dpr; cv.height = Hp * dpr; }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const V = wpView(E, a), X = t => (t - V.a) / V.W * Wp; E.vw = V; E.X = X;
+  const ns = g2Notes(id) || [], A = G2.an.get(id), Pk = P || {q: false, str: 1, notes: ns};
+  const tg = ns.map(n => g2Target(Pk, n));
+  // Tonhöhen-Bereich: alle Noten ± 2 Halbtöne, mindestens eine Oktave
+  let lo = Infinity, hi = -Infinity; ns.forEach((n, k) => { lo = Math.min(lo, n.m, tg[k]); hi = Math.max(hi, n.m, tg[k]); });
+  if (!isFinite(lo)) { lo = 55; hi = 67; }
+  lo = Math.floor(lo) - 2; hi = Math.ceil(hi) + 2; if (hi - lo < 12) { const c = (lo + hi) / 2; lo = Math.floor(c - 6); hi = lo + 12; }
+  const rowH = Hp / (hi - lo + 1), Y = p => Hp - (p - lo + 0.5) * rowH; E.Y = Y; E.rowH = rowH; E.lo = lo;
+  g.fillStyle = '#0e1014'; g.fillRect(0, 0, Wp, Hp);
+  const key = P && P.key || g2KeyAt(E.r), SC = Harmony.SCALES[key.scale] || Harmony.SCALES.ionian;
+  g.font = WP.font || (WP.font = '600 10px ' + getComputedStyle(document.body).fontFamily);
+  for (let p = lo; p <= hi; p++) {
+    const ins = SC.includes(((p - key.root) % 12 + 12) % 12), y = Y(p);
+    if (ins) { g.fillStyle = ((p - key.root) % 12 + 12) % 12 === 0 ? '#1d222c' : '#161a21'; g.fillRect(0, y - rowH / 2, Wp, rowH); }
+    g.fillStyle = '#262c37'; g.fillRect(0, Math.round(y + rowH / 2) + .5, Wp, 1);
+  }
+  // Takte (Rasterbezug wie der Marken-Editor)
+  const sp = spb(), t0 = m && m.warp ? m.warp.t0 : wpT0(id, a);
+  for (let bt = Math.floor((V.a - t0) / sp / 4) * 4; bt <= (V.a + V.W - t0) / sp + 1e-9; bt += 1) { const xx = Math.round(X(t0 + bt * sp)) + .5, bar = bt % 4 === 0; g.fillStyle = bar ? '#4a5466' : '#2a303b'; g.fillRect(xx - (bar ? 1 : .5), 0, bar ? 2 : 1, Hp); }
+  // Wellenform blass dahinter (die gehörte Fassung)
+  const hb = tkHeard(id, a);
+  if (hb) { const d = hb.getChannelData(0), sr = hb.sampleRate; g.fillStyle = 'rgba(120,140,170,.28)';
+    for (let px = 0; px < Wp; px++) { const s0 = Math.max(0, Math.floor((V.a + px / Wp * V.W) * sr)), s1 = Math.min(d.length, Math.floor((V.a + (px + 1) / Wp * V.W) * sr)); let pk = 0; for (let i = s0; i < s1; i += 8) { const v = Math.abs(d[i]); if (v > pk) pk = v; } const h = Math.min(1, Math.sqrt(pk)) * Hp * .45; g.fillRect(px, Hp / 2 - h, 1, 2 * h); } }
+  // Tonhöhen-Spur (gemessen) dünn
+  if (A) { g.strokeStyle = 'rgba(200,210,230,.55)'; g.lineWidth = 1; g.beginPath(); let on = false;
+    const i0 = Math.max(0, Math.floor(V.a / A.hop)), i1 = Math.min(A.n, Math.ceil((V.a + V.W) / A.hop) + 1);
+    for (let i = i0; i < i1; i++) { const f = A.f0[i]; if (!(f > 0)) { on = false; continue; } const xx = X(i * A.hop), yy = Y(G2P.midi(f)); if (on) g.lineTo(xx, yy); else g.moveTo(xx, yy); on = true; }
+    g.stroke(); }
+  // Noten-Blöcke: Umriss = gesungen, Block = gehört
+  E.blk = [];
+  ns.forEach((n, k) => {
+    const x0 = X(n.t0), x1 = X(n.t1), t = (E.ghost && E.ghost.k === k ? tg[k] + E.ghost.d : tg[k]), y = Y(t), w = Math.max(2, x1 - x0), h = Math.max(4, rowH - 2);
+    E.blk.push({k, x0, x1, y});
+    if (x1 < 0 || x0 > Wp) return;
+    if (Math.abs(t - n.m) > 0.02) { g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 1; g.strokeRect(x0 + .5, Y(n.m) - h / 2 + .5, w - 1, h - 1); }
+    g.fillStyle = k === E.sel ? '#ffd27a' : P ? '#f0a531' : '#8a7448'; g.fillRect(x0, y - h / 2, w, h);
+    if (k === E.sel) { g.strokeStyle = '#ffffff'; g.lineWidth = 2; g.strokeRect(x0 + 1, y - h / 2 + 1, w - 2, h - 2); }
+    if (w > 22 && h >= 9) { g.fillStyle = '#16120a'; g.fillText(noteNames()[((Math.round(t) % 12) + 12) % 12] + (Math.floor(Math.round(t) / 12) - 1), x0 + 3, y + 3.5, w - 4); }
+  });
+  // Bedienung
+  const md = !P || !P.q ? 'off' : P.mode;
+  E.chips.querySelectorAll('button[data-v]').forEach(bt => { const v = bt.dataset.v, on = v === md; if (v === 'off' || v === 'soft' || v === 'hard') { bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); } });
+  E.chips.querySelector('[data-v=zoom]').textContent = E.zoom ? E.zoom + (E.zoom === 1 ? ' Takt' : ' Takte') : 'Ganz';
+  E.rs._g();
+  E.ab.classList.toggle('on', G2.ab); E.ab.textContent = G2.ab ? 'Original' : 'A/B';
+  const rd = !A && !P ? 'Töne werden gesucht …' : ns.length + (ns.length === 1 ? ' Note' : ' Noten') + ' · Tonart ' + keyLabel(key) + ' · ' + (P && P.q ? (P.mode === 'hard' ? 'Hart ' : 'Weich ') + Math.round(P.str * 100) + ' %' : 'nicht quantisiert') + (g2Ready(id, a) ? '' : ' · rechnet …');
+  g2Info(rd);
+}
+function g2Hit(E, cx, cy) {
+  let best = -1, bd = 1e9;
+  for (const b of E.blk || []) { if (cx < b.x0 - 6 || cx > b.x1 + 6) continue; const d = Math.abs(cy - b.y); if (d < Math.max(14, E.rowH) && d < bd) { bd = d; best = b.k; } }
+  return best;
+}
+function g2Gest(cv) {
+  const pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  cv.addEventListener('pointerdown', e => {
+    const E = G2.ed; if (!E || E.p || e.button > 0) return;
+    try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+    const [cx, cy] = pos(e); E.p = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), k: g2Hit(E, cx, cy), mode: null, va: E.va};
+  });
+  cv.addEventListener('pointermove', e => {
+    const E = G2.ed, p = E && E.p; if (!p || p.id !== e.pointerId) return;
+    const dx = e.clientX - p.x0, dy = e.clientY - p.y0;
+    if (!p.mode && Math.hypot(dx, dy) > 8) p.mode = p.k >= 0 && Math.abs(dy) >= Math.abs(dx) ? 'move' : 'pan';
+    if (p.mode === 'move') { E.ghost = {k: p.k, d: Math.round(-dy / Math.max(6, E.rowH))}; E.sel = p.k; g2Paint(); }
+    else if (p.mode === 'pan') { E.va = p.va - dx / E.cv.clientWidth * E.vw.W; g2Paint(); }
+  });
+  const end = (e, cancel) => {
+    const E = G2.ed, p = E && E.p; if (!p || p.id !== e.pointerId) return;
+    E.p = null; const gh = E.ghost; E.ghost = null;
+    if (cancel) { g2Paint(); return; }
+    if (p.mode === 'move' && gh) { if (gh.d) g2NoteShift(E.id, gh.k, gh.d); else g2Paint(); return; }
+    if (p.mode) return;
+    const [cx] = pos(e); UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};
+    E.sel = p.k; E.tapT = p.k >= 0 ? E.vw.a + cx / E.cv.clientWidth * E.vw.W : null; g2Paint();
+  };
+  cv.addEventListener('pointerup', e => end(e, false));
+  cv.addEventListener('pointercancel', e => end(e, true));
+}
+/* ---------- Test-API ---------- */
+const G2_API = {
+  g2Info: r => { const id = wpId(r), m = id && S.takes && S.takes[id], A = id && G2.an.get(id);
+    return {id, pitch: m && m.pitch ? deep(m.pitch) : null, an: A ? {notes: deep(A.notes), hop: A.hop, n: A.n} : null, ready: id ? g2Ready(id) : null, renders: G2.renders, last: G2.last, lastAn: G2.lastAn, how: G2.how, ab: G2.ab,
+      targets: m && m.pitch ? m.pitch.notes.map(n => g2Target(m.pitch, n)) : null, editor: G2.ed ? {id: G2.ed.id, sel: G2.ed.sel, zoom: G2.ed.zoom} : null}; },
+  g2Analyse: r => g2Analyse(wpId(r)).then(A => (A ? {notes: deep(A.notes), hop: A.hop, n: A.n, f0: Array.from(A.f0)} : null)),
+  g2Quantize: (r, o) => g2SetQ(wpId(r), o || {q: true, mode: 'hard', str: 1}, typeof r === 'string' ? null : r || {t: stimmeT(), s: R.selS}),
+  g2Note: (r, op, k, v) => { const id = wpId(r); return op === 'shift' ? g2NoteShift(id, k, v) : op === 'split' ? g2Split(id, k, v) : op === 'join' ? g2Join(id, k) : Promise.resolve(false); },
+  g2AB: v => { G2.ab = v == null ? !G2.ab : !!v; wpResync(); g2Paint(); return G2.ab; },
+  g2Open: r => g2Open(r || {t: stimmeT(), s: R.selS}), g2Close: () => { g2Close(); return true; },
+  g2Geom: () => { const E = G2.ed; if (!E || !E.cv) return null; const rc = E.cv.getBoundingClientRect(); return {x: rc.left, y: rc.top, w: rc.width, h: rc.height, view: {a: E.vw.a, W: E.vw.W}, rowH: E.rowH, lo: E.lo,
+    blocks: (E.blk || []).map(b => ({k: b.k, x0: rc.left + b.x0, x1: rc.left + b.x1, y: rc.top + b.y}))}; },
+  g2Played: async (r, a, b) => { const id = wpId(r); for (let n = 0; n < 800 && !(g2Ready(id) && wpReady(id)); n++) { tkPlayBuf(id); await sleep(25); } const x = tkPlayBuf(id), raw = tkBuffer(id);
+    return x ? {raw: x === raw, sr: x.sampleRate, n: x.length, data: Array.from(x.getChannelData(0).subarray(a || 0, b == null ? x.length : b))} : null; },
+  g2Wav: r => g2Wav(wpId(r)),
+  g2Core: () => G2P.VERSION
+};
+/* G2-END */
 
 function voicesInfo() {
   const now = nowT();
@@ -42314,6 +42894,7 @@ function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
 Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes
 Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
 Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
+Object.assign(SYNQUENZER, G2_API);                // G2: Tonhöhe quantisieren, Gesang als Noten
 const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
