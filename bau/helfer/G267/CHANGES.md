@@ -99,3 +99,77 @@ Original + Blende·(Modell verschoben − Modell original), d. h. Hauch/Rauschen
 - `wpUndone`: erste Zeile `g2Undone()`.
 - CSS: Block `/* G2: … */` nach `.tksheet .tk-wp{…}` (4 Zeilen + eine Zeile `#wpSheet.g2 .qchips`).
 - `tkExt().proc`: g2Proc wird hinter wpProc eingefügt (im G2-Block, keine Zeile außerhalb).
+
+## G6 – Chor-Generator (Background-Gesang per Knopf)
+
+### Was neu ist
+1. **Takes-Blatt → [Chor]** (neben [♪ Tonhöhe · Noten]) öffnet das Blatt **„Chor“** mit 8 Rezepten: **Terz, Sexte, Quinte, Oktave,
+   Dreistimmig, Falsett-Chor 80er, Barbershop 4-stimmig, Unisono-Doppel**; bei Terz/Sexte/Quinte/Oktave [oben] [unten].
+   Ohne Chor steht dort der kurze Hilfetext zu den Rezepten (Spec: „im Hilfetext kurz erklärt“).
+2. Ein Tipp auf ein Rezept rechnet die **Noten der Stimmen** aus der Lead-Melodie (Noten der gehörten Fassung, G2-Analyse) und den
+   **Akkorden der Stelle** (Töne der anderen Synth-Spuren der Szene am Schlag der Note; ohne Begleitung der leitereigene Dreiklang,
+   der den Ton enthält, I/IV/V zuerst) in der Tonart der Stelle:
+   Terz/Sexte = leitereigen (groß oder klein je nach Ton), Quinte = rein, wenn leitereigen, sonst leitereigen; Oktave ±12;
+   Dreistimmig = die zwei nächsten Akkordtöne über dem Lead (eng); Falsett = Oktave + (Terz + Oktave); Barbershop = Tenor (Akkordton
+   darüber), Bariton (darunter), Bass (Grundton darunter); Unisono = gleiche Töne.
+3. Jede Stimme wird aus der **gehörten Lead-Fassung** gerechnet (G2-Technik: nur stimmhaft, formant-erhaltend; Tonhöhen-Quantisieren,
+   Zeitkarte und Säubern des Leads gelten also mit) und **künstlich gedoppelt**: 2 Kopien je Stimme, +12 ms/−6 Cent und
+   +24 ms/+8 Cent, leicht auseinander im Panorama; Stimmen links/rechts (3 Stimmen: links, rechts, Mitte), Lead bleibt Mitte vorn.
+4. **Pegel nach Lautheit:** der Chor liegt gesamt (trocken + Hall) **8 LU (80er) bzw. 9 LU (Pop) unter dem Lead** – gemessen an der
+   K-bewerteten Leistung der Puffer (Worker), Hall-Anteil aus Send und Nachhallzeit geschätzt. **Hall und Echo als Send vor dem
+   Chorspur-Pegel:** Chorspur-Pegel 0 → nur noch Hall.
+5. **Mischung** [80er großer Refrain] [Pop modern] (Voreinstellung, beim ersten Chor gleich mit, ein Undo): Hall-/Echo-Send der
+   Chor-Stimmen (80er 75 %/12 %, Pop 40 %/18 %), Lead-Sends der STIMME-Spur (30 %/10 % bzw. 15 %/12 %), **Hall-Vorverzögerung im
+   Tempo** (1/32 bzw. 1/64) und **Echo im Tempo** (1/4 bzw. 1/8 punktiert).
+6. Je Stimme: **[Solo]** (nur diese Stimme, der Lead schweigt), **[♪ Noten]** = die Stimme als Noten im Noten-Editor (Lead-Note +
+   Intervall; ▲ ▼ und Ziehen ändern die Stimme, ein Undo; A/B dort = Solo), **[Selbst singen]**: die Stimme spielt allein als
+   Führung, die nächste Aufnahme (● REC mit 🎤, Overdub in diesem Clip) **ersetzt die errechnete Stimme** und wird gleich mit Panorama,
+   Sends und Pegel eingemischt; oben im Clip bleibt der Lead (gleiches Undo wie die Aufnahme). [Chor löschen].
+7. Abspielen: zu jedem Lead-Stück (Szene und Song) laufen die Stimmen-Stücke mit (gleiche Zeit und Blenden, enden mit ihm);
+   eine neu gerechnete Stimme setzt beim Abspielen mit 10-ms-Blende ein, der Lead läuft durch.
+
+Daten (additiv am Audio-Stück, Format 5): `audio.chor = {rec, dir, mix, voices: [{name, n: [{t0, t1, m, iv}], pan, db, vol, rev, dly, take?}]}`.
+
+### Abnahme (`tests/g6-app.mjs`, Chromium)
+| ID | Ergebnis | Messung |
+|---|---|---|
+| G6-01 | ✓ | Refrain C-Dur C4…C5, Terz oben: Tabelle C→E, D→F, E→G, F→A, G→H, A→C, H→D, C→E (8/8). Gemessene Tonhöhe je Chornote: Kopie 1 max 6,3 Cent, Kopie 2 max 8,5 Cent neben der Terz (die Kopien sind absichtlich −6/+8 Cent verstimmt). Weitere Rezepte als Tabelle geprüft (Sexte, Quinte, Oktave unten, Dreistimmig, Barbershop, Unisono) |
+| G6-02 | ✓ | Falsett: Oktave 72…84 + Terz+Oktave 76…88; je Stimme 2 Doppel (beim Start 1 Lead + 4 Quellen); Lautheit am Ausgang (BS.1770, Stereo): Chor **8,0 LU** unter dem Lead (80er), **9,2 LU** (Pop) |
+| G6-03 | ✓ | Chorspur-Pegel 0: Ausgang −46,4 dBFS, Nachhall nach dem Notenende −63,7 dBFS (nur Hall); Send zusätzlich 0 → −135,6 dBFS (Stille) |
+| G6-04 | ✓ | [Selbst singen] Stimme 2 + Aufnahme → Stimme 2 = der neue Take, Lead bleibt oben, Panorama/Sends gleich; beim Abspielen 1 Lead + 2 Kopien Stimme 1 + selbst gesungene Stimme 2 |
+| G6-05 | ✓ | ↶ (Pegel, Sends) deep-equal; Chor löschen → ↶ → deep-equal; Speichern/Laden deep-equal; Abspielen mit Chor ohne lange Tasks; 2 Stimmen = 4 Puffer-Quellen + 1 Lead (Rechnen im Worker, 2 Renders ≈ 250 ms für 4 s) |
+| Layout | ✓ | Blatt Chor in P1, P2, P3, L1, L2, XL: alle Tasten ≥ 44 × 44, nichts abgeschnitten, quer ohne Scrollen (329/329) |
+| Regression | ✓ | `g2-app.mjs` (alle ✓), `g2-lay.mjs`, smoke |
+
+### Abweichungen
+- **„je Stimme eine Spur“**: Die App hat genau eine STIMME-Spur. Die Chor-Stimmen sind darum eigene Abspiel-Stücke **an der STIMME-Spur**
+  (eigener Pegel, Panorama, Sends je Stimme), keine zusätzlichen Spuren in der Matrix.
+- **G4-Kette** (Hochpass → Entzischer → Kompressor → EQ) und **Auto-Pegel (VS-P)** kommen aus anderen Zweigen: der Chor läuft über die
+  STIMME-Spur (deren Kette gilt dann für Lead und Chor). Haken für das Zusammenführen: Chor-Stimmen gehen in `AU.tracks[i].trackIn`
+  (`g6Node`) – soll der Chor eine eigene G4-Einstellung bekommen, wird dort die Kette eingesetzt.
+- **Pegel-Kalibrierung:** die Lautheits-Rechnung lag am Ausgang 1,9 dB zu leise (Spur-Lautstärke wirkt nur trocken, Sends vorher) →
+  mit der Messung kalibriert (`G6_CAL`).
+- Die Mischung ändert **globale** Einstellungen (Hall-Vorverzögerung, Echo-Teilung) – das wirkt auf alle Spuren (ein Undo).
+- Solo „nur Chor“ / „nur Lead“ gibt es nur in der Test-API (Messung), nicht als Knopf.
+
+### Fragen an Xander (G6)
+1. Sollen die Chor-Stimmen eigene Spuren in der Matrix bekommen (dann mehr als eine STIMME-Spur)?
+2. Sollen die Pegel (8/9 LU unter dem Lead), die Verstimmung der Doppel (−6/+8 Cent) und die Versätze (12/24 ms) einstellbar sein?
+3. Soll die Mischung die globalen Hall/Echo-Einstellungen ändern dürfen, oder nur die Sends?
+4. „Selbst singen“ startet nicht selbst die Aufnahme: man tippt danach ● REC mit 🎤. Soll der Knopf gleich aufnehmen?
+
+### iPhone (Xander)
+1. 2–4 Takte Refrain singen, STIMME-Clip ✎ → [Chor] → [Terz] → abspielen. Klingt die Terz richtig (groß/klein je Ton)?
+2. [Falsett-Chor 80er] + [80er großer Refrain] → klingt es nach großem Refrain? [Pop modern] vergleichen.
+3. [Solo] je Stimme, [♪ Noten] einer Stimme ansehen, eine Note mit ▲ ändern.
+4. [Selbst singen] bei Stimme 2 → ● REC mit 🎤 → nachsingen → klingt deine Stimme jetzt im Chor?
+
+### Für das Zusammenführen (G6)
+- Neuer Block `/* G6-BEGIN */ … /* G6-END */` direkt hinter `/* G2-END */`; `Object.assign(SYNQUENZER, G6_API);` hinter der G2-Zeile.
+- `tkStartSrc`: eine Zeile `g6Start(o, r)` vor `return r;`. `tkDrop`/`tkKill`: je ein Ausdruck `if (r.ch) g6Drop/g6Kill(r);` am Anfang;
+  `tkFadeAt`: erste Zeile `g6Fade`; `tkXfOut`: eine Zeile `g6Fade` nach `r.o = null;`.
+- Aufnahme (`tkRecToClip`-Pfad, Overdub-Zweig): eine Zeile `g6Took(...)` nach `clip.audio.alt = …`; `tkInject` (Test-API): `g6Took` in der Overdub-Zeile.
+- `tkSheetPaint`: `tkedrow` enthält jetzt auch [Chor]; `tkSheet` onTap: eine Zeile `d.a === 'g6'`.
+- G2-Editor: Stimmen-Modus (`g2Open(r, {voice})`, `g2Voice`, Zweige in Chips/Malen/Ziehen – alles im G2-Block).
+- G2-Worker `g2Run`: gibt mit `kw` die K-bewertete Leistung zurück (`g2Kw`).
+- CSS: Block `/* G6: Blatt „Chor“ … */` nach der G2-CSS-Zeile; `.tksheet .tkedrow` 2 Spalten, quer drei Teile.

@@ -1,0 +1,30 @@
+App 4.25.0 Kern g2-hr-1
+Take b3j001s1ec Spur 6 Tonart {"root":0,"scale":"ionian"}
+✓ G2-06 Noten erkannt: 10 von 10
+✓ G2-01 Hart 100 %: je Note am Skalenton ±5 Cent – max 0.16 [0.0 -0.1 -0.1 -0.1 -0.1 0.1 -0.2 0.0 0.0 -0.1] (Quantisieren bis hörbar 1870 ms)
+✓ G2-03 Dauer unverändert: 288000 = 288000 Samples
+✓ G2-03 Klick-Detektor (M-KLICK) 30.5 dB, Original 30.5 dB
+✓ G2-05 Zischlaute bitgleich beim Quantisieren (0 Samples anders)
+✓ G2-01 Hart 50 %: halber Abstand ±5 Cent – max 0.14
+✓ G2-01 Weich 100 %: ±5 Cent – max 0.12
+✓ G2-02 Weich: Vibrato-Tiefe ≥ 70 % – min 99 %
+✓ G2-04 A/B „Original“ = Roh-Take
+✓ G2-04 ↶ → vorige Einstellung (Hart 50 %)
+✓ G2-04 ↶ ganz → kein Feld, Klang = Roh-Take bitgleich (0 anders)
+✓ G2-04 ↷ → deep-equal, Klang bitgleich (0)
+✓ G2-04 Speichern/Laden: Feld deep-equal, Klang bitgleich (0 Samples anders)
+✓ G2-05 Note +3 HT: 300.0 Cent (Soll 300 ±5), Zischlaute anders: 0
+✓ G2-05 außerhalb der verschobenen Note bitgleich (0 anders)
+✓ G2-06 P1: Blöcke Start max 0.0 ms, Höhe max 0.0 Cent; abgeschnitten –; zu klein –
+✓ G2-06 P2: Blöcke Start max 0.0 ms, Höhe max 0.0 Cent; abgeschnitten –; zu klein –
+✓ G2-06 P3: Blöcke Start max 0.0 ms, Höhe max 0.0 Cent; abgeschnitten –; zu klein –
+✓ G2-06 L1: Blöcke Start max 0.0 ms, Höhe max 0.0 Cent; abgeschnitten –; zu klein –
+✓ G2-06 L2: Blöcke Start max 0.0 ms, Höhe max 0.0 Cent; abgeschnitten –; zu klein –
+✓ G2-06 XL: Blöcke Start max 0.0 ms, Höhe max 0.0 Cent; abgeschnitten –; zu klein –
+✓ Editor: Tipp wählt Note (2), ▲ +1 (0→1), Ziehen 2 Zeilen hoch +2 (→3)
+✓ Editor: Teilen 10→11, Verbinden →10
+✓ G2-04 16-Takt-Take: Quantisieren bis hörbar 2960 ms (≤ 3000; Analyse 2276 ms, Rendern 672 ms, worker)
+✓ G2-04 16-Takt-Take wie bedient (Blatt offen, dann [Hart]): bis hörbar 1514 ms (≤ 3000)
+✓ G2-04 keine langen Tasks > 50 ms im Hauptfaden: keine
+✓ keine Seitenfehler 
+ALLE GRÜN
