@@ -28,7 +28,7 @@ export async function songNotesPerBar(p, bars) {
   await p.waitForFunction(([t0, e]) => window.__ctx.currentTime > t0 + e, [t0, (bars - 1.5) * spBar], {timeout: 60000, polling: 50});
   await p.evaluate(() => SYNQUENZER.clearLog());
   await p.waitForFunction(([t0, e]) => window.__ctx.currentTime > t0 + e, [t0, 2 * bars * spBar + 0.3], {timeout: 60000, polling: 50});
-  const log = await p.evaluate(() => SYNQUENZER.noteLog());
+  const log = await p.evaluate(() => SYNQUENZER.noteLog(4096));
   await p.evaluate(() => { SYNQUENZER.stop(); SYNQUENZER.songLoop(false); });
   const out = {};
   for (const e of log) { const b = Math.floor((e.time - t0) / spBar + 1e-6) - bars; if (b < 0 || b >= bars) continue; const k = out[b] || (out[b] = {}); k[e.track] = (k[e.track] | 0) + 1; }

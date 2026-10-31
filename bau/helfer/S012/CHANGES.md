@@ -44,9 +44,43 @@ Marken), obwohl nur die zweite gemeint war. Bei zwei Teilen „Strophe“ und �
 
 Smoke (`tests/smoke.mjs`): keine Fehler.
 
+## S1 — Teil überarbeiten im Lauf (unverbindlich, mit FANG)
+
+### Was neu ist
+1. Läuft ein Teil, den man auf der Teil-Leiste angetippt hat, wird im Lauf **nichts überschrieben**: Clips/Spuren an/aus,
+   Szenenwechsel und Dazuspielen landen wie bisher nur im Song-Gedächtnis bzw. im FANG-Puffer (der Teil bleibt deep-equal).
+2. **FANG bzw. FANG TEIL** fängt dann den **letzten vollständigen Durchlauf** des Teils mit allen Änderungen als **neue Fassung**:
+   Spuren, die man angefasst hat, bekommen ihre Lane aus dem Gedächtnis (z. B. „DR Sz1, aus T3–4“), unberührte behalten ihre
+   Lane; hat der Teil eine Akkord-Zeile, kommt sie aus dem, was wirklich klang; **dazugespielte Noten** (Synth-Spuren, wie gehört)
+   kommen als `Part.mel` in die Fassung und spielen ab dann im Teil mit (auch im Song, wenn der Teil eingesetzt wird).
+3. Ergebnis-Blatt **„TEIL ÜBERARBEITET“** (Platz und Form wie das FANG-Blatt: P über der Tastatur, quer im Seitenfeld): Teil-Chip,
+   „Letzter Durchlauf eingefangen · n Noten dazugespielt“, Zeilen **Neu** / **Bisher**, **[Verwerfen] [Als neuen Teil] [Teil ersetzen]**.
+   Der alte Teil bleibt unverändert bis [Teil ersetzen]. [Als neuen Teil] = nächster freier Platz, Name „Strophe 2“ (N7-R2-Nummer).
+   ✕ / daneben = Verwerfen. Je Aktion ein Undo (`part`).
+4. Noch kein vollständiger Durchlauf seit dem Tipp → FANG/FANG TEIL machen das Bisherige (kein Blatt). Ein mit FANG TEIL gefangener
+   Kreis, der als Teil weiterläuft, ist kein „angetippter“ Teil → FANG TEIL fängt dort wie bisher eine neue Phrase (sonst wäre der
+   zweite Fang aus V2d/V2e′ weg; Regression `v3-qa-v2e2reg-fangui` gleich wie Basis).
+5. Test-API: `s1Fang({beat?})`, `s1Info()`, `s1Accept('replace'|'new')`, `s1Discard()`, `s1Active()`.
+
+### Daten (Format 5, additiv)
+`Part.mel = {Spur: [{t (Schläge ab Teil-Anfang), d, n (gehört), v}]}` – nur wenn Noten dazugespielt wurden. `normPart` liest es
+verlustfrei, `partChunk` schreibt es beim Einsetzen in den Song nach `song.mel` (wie jede Song-Melodie).
+
+### Abnahme S1 (`tests/s1-acc.mjs` → ALL OK 28/28)
+| ID | Ergebnis |
+|---|---|
+| S1-01 | ✓ Teil (4 Takte) per Touch auf der Teil-Leiste gestartet; im 2. Durchlauf Drums am Taktstrich 3 aus → Teil während des Laufs deep-equal; FANG (Touch `#bFang`) → Fassung DR `[{bar 0, Sz1}, {bar 2, aus}]`, andere Spuren wie der Teil; alter Teil unverändert bis [Teil ersetzen]; danach neu gestartet: Drums in T1–2, ab T3 still (noteLog) |
+| S1-02 | ✓ Noten 72 (T1) und 76 (T2) dazugespielt → `mel[3]` t = 1,06 / 5,02; im neu gestarteten Teil erklingen sie an denselben Stellen (±0,01 Schlag) |
+| S1-03 | ✓ [Teil ersetzen] / [Als neuen Teil] je ein Undo → deep-equal; Speichern/Laden deep-equal mit `Part.mel`; [Verwerfen] ändert nichts |
+| Blatt | ✓ 390×844, 375×667, 320×568, 844×390, 667×375, 926×428: im Bild, Knöpfe ≥ 44 px, nichts abgeschnitten (Kopf quer 11 px) |
+
 ## Abweichungen
 - S0 „gespeichert im Teil“: an/aus wird **an der Stelle** (Marke) gespeichert, nicht in der Teil-Vorlage – sonst würden alle
   Strophen schweigen, Xanders Beispiel ist aber „im letzten Teil schweigen die Drums“. Siehe Fragen.
+- S1 gilt für einen Teil, der auf der Teil-Leiste angetippt wurde. Ein Song, der in einer Schleife über eine Marke läuft, wird
+  nicht als „Teil im Lauf“ behandelt (FANG dort wie bisher) – siehe Fragen.
+- S1 nimmt dazugespielte **Synth**-Noten in die Fassung; auf den Pads dazugespielte Drums nicht (Song-Melodien gibt es nur für
+  Synth-Spuren). Der Name „TEIL ÜBERARBEITET“ des Ergebnis-Blatts folgt dem FANG-Blatt („TEIL GEFANGEN“); die Spec nennt keinen.
 - Der ‹-Knopf im Bearbeiten-Kopf hat dieselbe Form wie das bestehende ✕ des Marken-Blatts (44 × 32 sichtbar, Trefferzone 44 × 44).
 
 ## Fragen an Xander
@@ -55,12 +89,20 @@ Smoke (`tests/smoke.mjs`): keine Fehler.
 2. S0: Früher ersetzte „⟳ Strophe ersetzen“ Vorlage + alle Strophen auf einmal. Jetzt fragt das Blatt nach der einen Stelle. Brauchst du
    zusätzlich „alle Strophen“ als Wahl (bisher über Marken-Blatt → „Auf alle übertragen“ erreichbar)?
 
+3. S1: Soll „Teil ersetzen“ auch die Stellen dieses Teils im Song mitnehmen (wie früher ⟳ ersetzen) – oder nur die Vorlage
+   (so gebaut; die Song-Stellen zeigen dann „′“ und lassen sich mit „Auf alle übertragen“ angleichen)?
+4. S1: Soll auch ein Song, der in der Schleife über eine Marke läuft („Songteil antippen zum Hören“ über ▶ Ab hier + Schleife Teil),
+   so eingefangen werden? Dann würde [Teil ersetzen] diese eine Stelle ersetzen.
+5. S1: Sollen auf den Pads dazugespielte Drums auch in die Fassung (als neuer Drum-Clip)?
+
 ## Für das Zusammenführen
 - Alles in markierten Blöcken: Code-Block `/* S0 … */ … /* /S0 */` direkt vor `function uiSync()`, CSS nach `.msheet .ms-all{…}`.
 - Ein-Zeilen-Haken: `fangAccept` (Zeile `/* S0 */` am Anfang des Ersetzen-Zweigs), `openFangSheet` paint/onTap/onClose (je eine Zeile
   `/* S0 */`, `dupx` ruft `s0FangClear()`), `markReplaceAll(song, p, skipId, onlyId)` (neuer optionaler 4. Parameter), `marksNorm`
   (eine Zeile `mark.off`), `openMarkSheet` paint (eine Zeile `s012MarkSheetPaint(p, m)` nach dem `innerHTML`),
   `Object.assign(SYNQUENZER, S012_API)` nach `WP_API`.
+- S1-Haken: `normPart` (eine Zeile `s012PartExtra`), `partChunk` (`mel: s1ChunkMel(p, L)` statt `mel: {}`), `partTick` (eine Zeile
+  `s1PartMelTick`), `fangTap` (eine Zeile vorn), `fangAdopt` (`caught: 1` am übernommenen Kreis). Block `/* S1 … */ … /* /S1 */` hinter S0.
 - VV2 (Video-Zeile im selben Blatt): unser Haken hängt die Knöpfe hinter `.ms-rec` ein und ersetzt in der Bearbeiten-Ansicht das
   ganze `innerHTML` – eine Video-Zeile, die VV2 im paint per `innerHTML` mitbaut, verschwindet in der Bearbeiten-Ansicht und ist nach ‹
   wieder da. Konflikt nur, wenn VV2 dieselbe Zeile `B('rec', …)` umschreibt: dann `s012MarkSheetPaint(p, m);` einfach hinter VV2s
