@@ -13568,9 +13568,39 @@ const MK_LABEL = 'MS 2000';
       return o;
     });
   }
+  /* BM8 (§5.4, BM8-11): the curves of a scene clip in the file as whole numbers, each point as the difference to the one before:
+     t in 1/10000 beat, Bend in 1/4096, Rad/Druck in 1/1024 (exactly the stored rounding) → {bd: [dt, dv, dt, dv, …]}, cz: 1.
+     Written so only if it decodes to exactly the same points, else the plain form stays. */
+  const CZ = {bd: 4096, mw: 1024, at: 1024};
+  function packCv(cv) {
+    const o = {};
+    for (const k of ['bd', 'mw', 'at']) {
+      const a = cv[k]; if (!a) continue; if (!Array.isArray(a)) return null;
+      const r = []; let T = 0, V = 0;
+      for (const p of a) {
+        if (!Array.isArray(p) || typeof p[0] !== 'number' || typeof p[1] !== 'number') return null;
+        const t = Math.round(p[0] * 1e4), v = Math.round(p[1] * CZ[k]);
+        if (t / 1e4 !== p[0] || v / CZ[k] !== p[1]) return null;
+        r.push(t - T, v - V); T = t; V = v;
+      }
+      o[k] = r;
+    }
+    for (const k of Object.keys(cv)) if (!(k in CZ)) return null;
+    return o;
+  }
+  function unpackCv(z) {
+    const o = {};
+    for (const k of ['bd', 'mw', 'at']) {
+      const r = z && z[k]; if (!Array.isArray(r)) continue;
+      const a = []; let T = 0, V = 0;
+      for (let j = 0; j + 1 < r.length; j += 2) { T += r[j]; V += r[j + 1]; a.push([T / 1e4, V / CZ[k]]); }
+      o[k] = a;
+    }
+    return o;
+  }
   function packClipNotes(clip) {
     if (!clip || !Array.isArray(clip.notes)) return clip; const c = Object.assign({}, clip);
-    if (c.cv) { const v = c.cv; delete c.cv; c.cv = v; }       // BM8: cv always last (as normClip writes it), whatever was added later
+    if (c.cv) { const v = c.cv; delete c.cv; const z = packCv(v); if (z && JSON.stringify(unpackCv(z)) === JSON.stringify(v)) { c.cv = z; c.cz = 1; } else c.cv = v; }   // BM8: cv last (as normClip writes it)
     const z = clip.notes.some(n => n && n.o != null) ? packNotesZ(clip.notes) : null;
     if (z) { c.notes = z; c.nz = 1; } else c.notes = clip.notes.map(packNote);
     return c;
@@ -13578,6 +13608,7 @@ const MK_LABEL = 'MS 2000';
   function unpackClipNotes(clip) {
     if (!clip || !Array.isArray(clip.notes)) return clip; const c = Object.assign({}, clip);
     const z = c.nz === 1; delete c.nz;
+    if (c.cz === 1) { delete c.cz; if (c.cv && typeof c.cv === 'object') c.cv = unpackCv(c.cv); }    // BM8
     c.notes = (z ? unpackNotesZ(clip.notes) : clip.notes.map(n => {
       if (!Array.isArray(n)) return n;
       const o = {t: n[0], d: n[1], n: n[2], v: n[3]}, x = n[4];
@@ -17567,7 +17598,9 @@ function bmcWrite(i, B0, B1, map, o) {
         seen.set(c, !o.fresh && !!(c.cv && c.cv[k]));
         if (o.fresh || !(c.cv && c.cv[k])) {                        // a new curve starts with the value at the start of the take
           const m0 = map(B0, bmcSb(H, k, B0)), cv = Object.assign({}, c.cv || {});
-          cv[k] = m0 && m0[0] === c && m0[1] >= 0 && m0[1] < m0[2] ? [[cvQt(m0[1]), cvQv(k, bmcVal(H, k, B0))]] : [];
+          // (a container the take reaches later, e.g. the song melody after an own clip: at rest up to there, then a step)
+          const t0 = P[0][0], rest = cvQv(k, k === 'mw' ? bmcVal(H, k, B0) : 0);
+          cv[k] = m0 && m0[0] === c && m0[1] >= 0 && m0[1] < m0[2] ? [[cvQt(m0[1]), cvQv(k, bmcVal(H, k, B0))]] : t0 > 1e-4 ? [[0, rest], [cvQt(t0 - 1e-4), rest]] : [[0, rest]];
           c.cv = cv;
         }
       }
