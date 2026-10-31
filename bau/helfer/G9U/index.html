@@ -4336,7 +4336,7 @@ function g9On(E) {
   g9Gest(E.cvw, () => E.cv); g9Gest(bar, () => bcv);
   g9Field(E, f);
   // Zoom (§7.2): öffnet mit der Stufe des Marken-Modus; Median-Abschnitt < 44 px → eine Stufe feiner, höchstens bis 1 Takt
-  G.zoom0 = E.zoom; G.zoomed = false;
+  G.zoom0 = E.zoom; G.va0 = E.va; G.zoomed = false;
   G.vvH = () => g9Dock(); if (window.visualViewport) { visualViewport.addEventListener('resize', G.vvH); visualViewport.addEventListener('scroll', G.vvH); } window.addEventListener('resize', G.vvH);
   sh.classList.toggle('hap', !!UI.haptics);
   wpPaint();
@@ -4359,7 +4359,7 @@ function g9Off(E) {
   if (E.cvw) { E.cvw.querySelectorAll('.g9hl').forEach(n => n.remove()); delete E.cvw.dataset.g9h; }
   const tb = sh.querySelector('.qh b'); if (tb && G.title) tb.innerHTML = G.title;
   if (E.tx) E.tx.setAttribute('aria-pressed', 'false');
-  if (G.zoomed && WP.ed === E) E.zoom = G.zoom0;
+  if (WP.ed === E) { E.zoom = G.zoom0; E.va = G.va0; }   // Marken-Modus wieder mit seiner Ansicht
   if (WP.ed === E) wpPaint();
 }
 function g9Undock(sh) { sh.classList.remove('g9dock', 'd300', 'd250', 'd200', 'q118', 'q88'); for (const k of ['top', 'left', 'width', 'height']) sh.style[k] = ''; }
@@ -35030,6 +35030,7 @@ function openMenu(goto) {
     'TRÄGER GEHÖREN DEM SONG: Endet ▶ SONG oder ● SONG, kommt der Träger von vorher zurück (z. B. ORIGINAL) – der Toast bietet [… behalten] an.',
     'MELODIE IM SONG: Die Melodie klingt immer genau wie gespielt und folgt späteren Akkordwechseln nicht („⇅ fest“). Sie nutzt die Stimmen ihrer Spur – teilt sie sich eine MONO-Spur mit Clips, klingt sie abgehackt: dann [Freie Spur nehmen].',
     'DRUMS: 12 Pads – oben antippen = laut, unten = leise. KLANG öffnet den Drum-Editor: SOUND (Modell und Regler), TIEF (alle Schichten), SCHRITTE (Euklid, Muster), KIT (Gate, Raum, Akzent).',
+    'TEXT (STIMME): Im Marken-Editor [Text] – auf die Wellenform tippen spielt den Abschnitt bis zur nächsten Marke; einfach losschreiben, Wörter mit mehreren Silben verteilen sich selbst; ein Wort antippen, Feld leeren und Leertaste löscht es, [+] fügt das getippte Wort ein. [Ganzer Text] verteilt einen eingefügten Songtext (Zeilen = Atempausen). Statt tippen geht auch die Diktier-Taste der Tastatur; für einen Tick je Taste in den Einstellungen das Tastatur-Feedback ‚Haptik‘ einschalten.',
     ...FX_HELP.map(t => 'FM-FELD: ' + t),
     'FM: Klangerzeugung FM = 6 Operatoren wie beim DX7. ALGO zeigt, wer wen moduliert (farbig = Ausgang); Box antippen = Operator wählen, wischen = anderer Algorithmus. Die Regler unten sind die Pegel der Operatoren (Modulator: Helligkeit, Ausgang: Lautstärke). OP stellt Frequenz, Hüllkurve und Skalierung ein, MAKRO macht alles auf einmal heller, bissiger, härter oder länger. Menü → Sounds lädt DX7-Bänke (.syx).',
     'FM-HÜLLKURVEN (OP › HÜLLK. oder HÜLLK. › OPERATOREN): Punkt waagrecht ziehen = Zeit (Anzeige in ms und als DX-Rate R), senkrecht = Pegel L. Ein zweiter Finger oder [FEIN] = fein, Doppeltipp = Init-Wert. Ausgänge machen die Lautstärke, Modulatoren die Klangfarbe. Zu schnelle Stufen knacken: Der Zug hält an der Klick-Grenze, ein zweiter Zug geht darüber hinaus. Vorlagen [Snap] [Pluck] [Pad] [Orgel]; TONHÖHE = Tonhöhen-Hüllkurve ([Ruck], [Fall], [Anstieg]).',

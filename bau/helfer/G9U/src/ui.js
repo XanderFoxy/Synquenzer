@@ -56,7 +56,7 @@ function g9On(E) {
   g9Gest(E.cvw, () => E.cv); g9Gest(bar, () => bcv);
   g9Field(E, f);
   // Zoom (§7.2): öffnet mit der Stufe des Marken-Modus; Median-Abschnitt < 44 px → eine Stufe feiner, höchstens bis 1 Takt
-  G.zoom0 = E.zoom; G.zoomed = false;
+  G.zoom0 = E.zoom; G.va0 = E.va; G.zoomed = false;
   G.vvH = () => g9Dock(); if (window.visualViewport) { visualViewport.addEventListener('resize', G.vvH); visualViewport.addEventListener('scroll', G.vvH); } window.addEventListener('resize', G.vvH);
   sh.classList.toggle('hap', !!UI.haptics);
   wpPaint();
@@ -79,7 +79,7 @@ function g9Off(E) {
   if (E.cvw) { E.cvw.querySelectorAll('.g9hl').forEach(n => n.remove()); delete E.cvw.dataset.g9h; }
   const tb = sh.querySelector('.qh b'); if (tb && G.title) tb.innerHTML = G.title;
   if (E.tx) E.tx.setAttribute('aria-pressed', 'false');
-  if (G.zoomed && WP.ed === E) E.zoom = G.zoom0;
+  if (WP.ed === E) { E.zoom = G.zoom0; E.va = G.va0; }   // Marken-Modus wieder mit seiner Ansicht
   if (WP.ed === E) wpPaint();
 }
 function g9Undock(sh) { sh.classList.remove('g9dock', 'd300', 'd250', 'd200', 'q118', 'q88'); for (const k of ['top', 'left', 'width', 'height']) sh.style[k] = ''; }

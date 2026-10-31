@@ -51,5 +51,7 @@ rep("function launchScene(s) {\n  ensureAudio(); if (!AU.ctx) return;", "functio
 // 11) Geräteprofil: G9-Teil (§5.4, Lader g9ProfNorm-Muster)
 rep("    if (o.vs && typeof o.vs === 'object') out.vs = {src: o.vs.src === 'inst' ? 'inst' : 'voice', lock: !!o.vs.lock, snap: o.vs.snap !== false, grid: String(o.vs.grid || '1/16')};   // VS2",
   "    if (o.vs && typeof o.vs === 'object') out.vs = {src: o.vs.src === 'inst' ? 'inst' : 'voice', lock: !!o.vs.lock, snap: o.vs.snap !== false, grid: String(o.vs.grid || '1/16')};   // VS2\n    if (o.g9 && typeof o.g9 === 'object') out.g9 = {auto: o.g9.auto !== false, lang: ['auto', 'de', 'en'].includes(o.g9.lang) ? o.g9.lang : 'auto'};   // G9 (§5.4)");
+// 12) Hilfe (§7.11; der Satz zu [Erkennen] kommt mit der Erkennung, Zweig g9-br-E)
+rep("    ...FX_HELP.map(t => 'FM-FELD: ' + t),", "    'TEXT (STIMME): Im Marken-Editor [Text] – auf die Wellenform tippen spielt den Abschnitt bis zur nächsten Marke; einfach losschreiben, Wörter mit mehreren Silben verteilen sich selbst; ein Wort antippen, Feld leeren und Leertaste löscht es, [+] fügt das getippte Wort ein. [Ganzer Text] verteilt einen eingefügten Songtext (Zeilen = Atempausen). Statt tippen geht auch die Diktier-Taste der Tastatur; für einen Tick je Taste in den Einstellungen das Tastatur-Feedback ‚Haptik‘ einschalten.',\n    ...FX_HELP.map(t => 'FM-FELD: ' + t),");
 fs.writeFileSync(path.join(D, 'index.html'), h);
 console.log('index.html', h.length, 'Bytes (+' + (h.length - fs.statSync(base).size) + ')');
