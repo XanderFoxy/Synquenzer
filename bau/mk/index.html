@@ -7406,6 +7406,7 @@ function defaults() {
     fmAmp: 0, fmBright: 0, fmAtk: 0, fmDec: 0, fmRel: 0, fmBite: 0,         // FM6 (6.2): DX envelopes = volume | ADSR; brightness dB; rate offsets
     xfLite: 0,                                                   // V4a: 1 = limiter level >= 2: structural changes use the WP4 dip
     mkLim: 0,                                                    // MK1: the limiter level for eng 3 (B.4; only sent with eng 3)
+    mkLimS: 0,                                                   // G-T-merge: the part that changes the sound (unison, vocoder 2x) - only with Qualitaet ECO
     polyH: 0,                                                    /* K2: the stored poly while the limiter caps poly (0 = not capped) */
   };
 }
@@ -8340,7 +8341,8 @@ class MkTim {
     const cap = this.maxV(), G = this.gated(), pr = Math.round(this.T.prio);
     if (G.length >= cap) {
       let victim = null;
-      if (pr === 0) { for (const v of G) if (!victim || v.ord < victim.ord) victim = v; }
+      if (pr === 0 && this.par.lim_ >= 2) { for (const v of G) if (!victim || v.e2 < victim.e2) victim = v; }   // G-T-merge (K1 decision): under CPU load the quietest voice goes
+      else if (pr === 0) { for (const v of G) if (!victim || v.ord < victim.ord) victim = v; }
       else if (pr === 1) { for (const v of G) if (!victim || v.note > victim.note) victim = v; if (victim && k.note >= victim.note) victim = null; }
       else { for (const v of G) if (!victim || v.note < victim.note) victim = v; if (victim && k.note <= victim.note) victim = null; }
       if (!victim) return null;  // the key waits (zurueckgestellt)
@@ -9096,7 +9098,7 @@ class MkVoc {
     this.sIns = sm(this.sIns, P.ins); this.sDir = sm(this.sDir, P.dir); this.sHpl = sm(this.sHpl, P.hpl); this.sLvl = sm(this.sLvl, P.lvl); this.sVel = sm(this.sVel, P.vel); this.sKbd = sm(this.sKbd, P.kbd);
     this.lvG = W.ampG(Math.max(0, Math.min(127, this.sLvl)));
     if (this.cRun) this.chTarget(false);
-    const want4 = c.lim_ < 1;
+    const want4 = (c.limS_ | 0) < 1;   // G-T-merge (K1 decision): the 2x vocoder path only with Qualitaet ECO
     if (this.p4 && this.p2 && !this.warm && (want4 ? this.w4 >= 1 : this.w4 <= 0)) { if (want4) this.p2 = false; else this.p4 = false; this.wv = 0; }   // the crossfade ended with the last block
     if (want4 && !this.p4) { this.p4 = true; this.warm = 2 * MK_VXF; this.wv = 1 / MK_VXF; for (let i = 0; i < 8 * N; i += 8) { this.az.fill(0, i, i + 4); this.sz.fill(0, i, i + 4); } }
     else if (!want4 && !this.p2) { this.p2 = true; this.warm = 2 * MK_VXF; this.wv = -1 / MK_VXF; for (let i = 0; i < 8 * N; i += 8) { this.az.fill(0, i + 4, i + 8); this.sz.fill(0, i + 4, i + 8); } this.dE.fill(0); this.dC.fill(0); this.uL.fill(0); this.uR.fill(0); }
@@ -9229,6 +9231,8 @@ class MkCore {
   set scopeOn(x) { this.tm[0].scopeOn = x; this.tm[1].scopeOn = x; }
   get lim() { return this.lim_; }
   set lim(x) { if (x === this.lim_) return; this.lim_ = x; this.recap(true); }   // the limiter: new notes only
+  get limS() { return this.limS_ | 0; }
+  set limS(x) { if (x === (this.limS_ | 0)) return; this.limS_ = x; this.recap(true); }   // G-T-merge: unison / vocoder quality (ECO only)
   get solo() { return this.solo_; }
   set solo(x) { this.solo_ = x === 1 || x === 2 ? x : 0; this.soloStep(); }   // a silent timbre takes its solo gain at once
   // the program values of p.mk (lists rounded; usc fractions during a gesture); returns [routing changed, scale changed]
@@ -9248,15 +9252,15 @@ class MkCore {
   dual() { return this.mode === 1 || this.mode === 2; }
   // the voices of each timbre (Nachtrag 3 MK3 Umfang 2, B.4 limiter); returns the timbres whose voices / assignment changed
   recap() {
-    const A = this.tm[0], B = this.tm[1], L = this.lim_, ch = [false, false];
+    const A = this.tm[0], B = this.tm[1], L = this.lim_, LS = this.limS_ | 0, ch = [false, false];   // G-T-merge: LS = the sound-changing stage (ECO only)
     const set = (t, k, cv, cu, ea) => { if (t.cv !== cv || t.cu !== cu || t.ea !== ea) ch[k] = true; t.cv = cv; t.cu = cu; t.ea = ea; };
     const as = t => Math.max(0, Math.min(2, Math.round(t.T.asg)));
-    if (!this.dual()) { set(A, 0, L >= 2 ? 2 : 4, L >= 1 ? 2 : 4, as(A)); set(B, 1, L >= 2 ? 2 : 4, L >= 1 ? 2 : 4, as(B)); return ch; }
+    if (!this.dual()) { set(A, 0, L >= 2 ? 2 : 4, LS >= 1 ? 2 : 4, as(A)); set(B, 1, L >= 2 ? 2 : 4, LS >= 1 ? 2 : 4, as(B)); return ch; }
     const a = as(A), b = as(B); let na, nb;
     if (a === 0 || b === 0) { na = a === 0 ? 1 : a === 1 ? 3 : 2; nb = b === 0 ? 1 : b === 1 ? 3 : 2; }   // the mono rule (HB-MS S. 34, HB-MK S. 16)
     else { na = [1, 2, 3][this.tv]; nb = 4 - na; }
     if (L >= 2) { na = 1; nb = 1; }   // limiter stage 2: Dual / Split 1 + 1
-    const ea = (n, x) => (n <= 1 ? 0 : x), cu = n => Math.min(n, L >= 1 ? 2 : 4);
+    const ea = (n, x) => (n <= 1 ? 0 : x), cu = n => Math.min(n, LS >= 1 ? 2 : 4);
     set(A, 0, na, cu(na), ea(na, a)); set(B, 1, nb, cu(nb), ea(nb, b));
     return ch;
   }
@@ -9651,6 +9655,7 @@ class AnalogCore extends AudioWorkletProcessor {
     const P = this.P, mono0 = P.mode > 0, eng0 = P.eng;
     for (const k in o) if (k in P && typeof o[k] === 'number' && isFinite(o[k])) P[k] = o[k];
     if ('mkLim' in o) this.mk.lim = P.mkLim | 0;
+    if ('mkLimS' in o) this.mk.limS = P.mkLimS | 0;   // G-T-merge (K1 decision): Auto never changes the sound
     if (P.eng !== eng0) {                // 6.3.3: changing the engine while voices sound fades them out (crossfade) and ends them
       for (const s of this.stack) if (!this.findId(s.id)) this.ended.push(s.id);
       this.stack.length = 0;
@@ -9748,8 +9753,11 @@ class AnalogCore extends AudioWorkletProcessor {
     v.aSt = 1; v.aOut = 0; v.fSt = 1; v.fOut = 0; v.mSt = 1; v.mOut = 0; v.fade = 0; v.fadeG = 1; v.t0 = 0;
     v.s1 = v.s2 = v.s3 = v.s4 = v.r1 = v.r2 = v.r3 = v.r4 = 0;
     const rnd = () => { let x = v.rng; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; v.rng = x >>> 0; return (x >>> 0) / 4294967296; };
-    for (let k = 0; k < NOSC * MAXU; k++) v.ph[k] = (P.reset && k % MAXU === 0) ? 0 : rnd();
-    v.subPh = P.reset ? 0 : rnd(); v.sp.fill(0);
+    // G-T-merge (K1 decision, Xander 31.10.): Key-Reset for every sound - each oscillator and the sub start at phase 0 on a new
+    // note, so equal pitches always give the same level; the unison copies keep their own phases. The random draws stay as
+    // before (Phasen-Reset off still draws them), so drift, pan and unison phases are the same numbers as in 4.23.0.
+    for (let k = 0; k < NOSC * MAXU; k++) { const r = (P.reset && k % MAXU === 0) ? 0 : rnd(); v.ph[k] = k % MAXU === 0 ? 0 : r; }
+    if (!P.reset) rnd(); v.subPh = 0; v.sp.fill(0);
     v.dP = (rnd() * 2 - 1) * P.analog * .08; v.dC = (rnd() * 2 - 1) * P.analog * 1.5; v.rnd = rnd() * 2 - 1;
     for (let o = 0; o < NOSC; o++) { v.dO[o] = (rnd() * 2 - 1) * P.analog * .05; v.dR[o] = Math.pow(2, v.dO[o] / 12); }
     v.pan0 = (v.idx % 2 ? 1 : -1) * P.spread * (0.5 + 0.5 * rnd()); v.panL0 = Math.sqrt(1 - v.pan0); v.panR0 = Math.sqrt(1 + v.pan0);
@@ -14839,12 +14847,12 @@ const MK_LABEL = 'MS 2000';
         const ratio = Math.pow(2, (P['o' + k + 'oct'] | 0) + (P['o' + k + 'semi'] | 0) / 12), det = +P['o' + k + 'fine'] || 0;
         const nP = Math.max(1, Math.min(7, P['o' + k + 'uni'] | 0 || 1)), n = k === 1 ? Math.min(3, nP) : 1;   // native: ≤ 3 voices, osc 1 only
         const gf = (WAVEG[P['o' + k + 'w'] | 0] || 1) * (nP > 1 ? UNIG : 1) / Math.sqrt(n), g = G_(lvl * .5 * gf), xs = [];
-        for (let u = 0; u < n; u++) { const x = osc(P['o' + k + 'w'] | 0, f * ratio, det + uniOff(u, n, P.uniDet), P['o' + k + 'pw'], phase(f * ratio, P.reset && u === 0)); x.connect(g); xs.push(x); }
+        for (let u = 0; u < n; u++) { const x = osc(P['o' + k + 'w'] | 0, f * ratio, det + uniOff(u, n, P.uniDet), P['o' + k + 'pw'], phase(f * ratio, u === 0)); x.connect(g); xs.push(x); }   // G-T-merge: Key-Reset (K1 decision)
         g.connect(mix); oscs.push({k, xs, g, n, f, gf});
       }
       if (P.subLvl > .001) {
         const s = c.createOscillator(); s.type = P.subW === 1 ? 'sine' : 'square'; s.frequency.value = f / (P.subOct >= 2 ? 4 : 2);
-        if (cvOut) cvOut.connect(s.detune); nodes.push(s); srcs.push(s); starts.push([s, 0, phase(s.frequency.value, P.reset)]);
+        if (cvOut) cvOut.connect(s.detune); nodes.push(s); srcs.push(s); starts.push([s, 0, phase(s.frequency.value, true)]);   // G-T-merge: Key-Reset (K1 decision)
         const gf = P.subW === 1 ? 1 : SQG, g = G_(P.subLvl * .5 * gf); s.connect(g); g.connect(mix); oscs.push({k: 'sub', xs: [s], g, gf});
       }
       if (P.noise > .001 && o.noise) {
@@ -16519,7 +16527,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.25.0';
+const VERSION = '4.24.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -18046,7 +18054,7 @@ function trackEco(i) { const tr = S.tracks[i]; return !!(tr && tr.kind === 'synt
 function wkFlat(snd) {
   const o = {}; for (const k in snd.p) { const v = snd.p[k]; if (typeof v === 'number' && isFinite(v)) o[k] = v; }
   o.eng = snd.engine === 'fm6' ? 1 : snd.engine === 'mk' ? 3 : 0;
-  Object.assign(o, limited(snd.p)); if (o.eng === 3) o.mkLim = LIM.level;   // MK1: mkLim only with eng 3 (VA / FM messages stay byte-equal)
+  Object.assign(o, limited(snd.p)); if (o.eng === 3) { o.mkLim = LIM.level; o.mkLimS = limS(); }   // MK1: mkLim only with eng 3 (VA / FM messages stay byte-equal)
   return o;
 }
 // string routes -> engine numbers (Anhang A.4, D.11); fx.* routes are native (§9.6) and never reach the worklet
@@ -18460,23 +18468,32 @@ function cpuTick() {
   LIM.load = load;
   let want = load > .75 ? 3 : load > .60 ? 2 : load > .45 ? 1 : LIM.level;
   if (q === 'eco') want = Math.max(want, 2); else if (q === 'analog' && want < 3) want = 0;
-  if (want > LIM.level) { LIM.level = want; LIM.quietSince = 0; applyLimiter(); return; }
+  if (want > LIM.level) { LIM.level = want; LIM.quietSince = 0; applyLimiter(); limHint(); return; }
   if (load < .30) {
     if (!LIM.quietSince) LIM.quietSince = nowP;
     else if (nowP - LIM.quietSince > 10000 && LIM.level > (q === 'eco' ? 2 : 0)) { LIM.level = q === 'analog' ? 0 : LIM.level - 1; LIM.quietSince = nowP; applyLimiter(); }
   } else LIM.quietSince = 0;
 }
 // working copy for the worklet; the stored sound is never changed
+// G-T-merge (K1 decision, Xander 31.10.: „Qualität Auto darf den Klang nie ändern“): the ECO ladder and the unison cap only with
+// Qualität ECO (chosen in the menu); under Auto / Analog the load is handled by the voice caps alone (the quietest tails go first,
+// K2: held notes stay) and the hint (limHint)
+const limS = () => (S.settings.quality === 'eco' ? LIM.level : 0);
 function limited(P) {
-  const L = LIM.level, cap = (v, c) => Math.min(v, c);
-  return {lq: L >= 1 && P.poly > 1 && !P.mode ? 0 : P.lq,
-    o1uni: L >= 2 ? cap(P.o1uni, 3) : P.o1uni, o2uni: L >= 2 ? cap(P.o2uni, 3) : P.o2uni, o3uni: L >= 2 ? cap(P.o3uni, 3) : P.o3uni,
+  const L = LIM.level, LS = limS(), cap = (v, c) => Math.min(v, c);
+  return {lq: LS >= 1 && P.poly > 1 && !P.mode ? 0 : P.lq,
+    o1uni: LS >= 2 ? cap(P.o1uni, 3) : P.o1uni, o2uni: LS >= 2 ? cap(P.o2uni, 3) : P.o2uni, o3uni: LS >= 2 ? cap(P.o3uni, 3) : P.o3uni,
     poly: L >= 3 ? cap(P.poly, 4) : L >= 2 ? cap(P.poly, 6) : P.poly,
     xfLite: L >= 2 ? 1 : 0,                     // V4a (Spec V4a): the WP4 dip instead of the 30 ms voice crossfade
     ...(L >= 2 ? {polyH: P.poly | 0} : {})};    /* K2: the stored poly for held notes (the cap only shortens tails) */
 }
+// G-T-merge (K1 decision): the visible hint once the voice caps work under Auto / Analog (the sound itself stays, see limited)
+function limHint() {
+  if (LIM.level < 2 || S.settings.quality === 'eco' || UI.limHinted) return;
+  UI.limHinted = true; try { toast('Viel Rechenlast – die leisesten Stimmen klingen kürzer aus. Der Klang bleibt gleich.'); } catch (e) { logErr(e); }
+}
 function applyLimiter() {
-  for (const i of synthTracks()) if (AU.synth[i]) AU.synth[i].set(Object.assign(limited(S.tracks[i].sound.p), S.tracks[i].sound.engine === 'mk' ? {mkLim: LIM.level} : {}, LIM.level < 2 && AU.synth[i].sent.polyH > 0 ? {polyH: 0} : {}));   /* K2: polyH off again */
+  for (const i of synthTracks()) if (AU.synth[i]) AU.synth[i].set(Object.assign(limited(S.tracks[i].sound.p), S.tracks[i].sound.engine === 'mk' ? {mkLim: LIM.level, mkLimS: limS()} : {}, LIM.level < 2 && AU.synth[i].sent.polyH > 0 ? {polyH: 0} : {}));   /* K2: polyH off again */
   try { const N = PV.chain; if (N && N.E && !N.gone) N.E.set(limited(N.sound.p)); } catch (e) {}
   UI.dirty.top = true; if (UI.menuInfo) renderMenuInfo();
 }
@@ -28205,7 +28222,7 @@ function soundEdited(snd) {
   const rec = originRec(snd); if (!rec) return false;
   const key = snd.origin + ':' + LIB.ver;
   if (OHASH.key !== key) { OHASH.key = key; const s = FACTORY_BY_ID.has(rec.id) ? factorySound(rec.id) : rec; OHASH.h = SQStore.soundHash(s);
-    OHASH.h0 = rec.id === 'f-init-analog' ? SQStore.soundHash(Object.assign({}, s, {p: Object.assign({}, s.p, {analog: .15, o2fine: 7})})) : null; }   // K1: an INIT Analog of a project before 4.25.0 (drift 15 %, Osz 2 +7 ct) is not „geändert“
+    OHASH.h0 = rec.id === 'f-init-analog' ? SQStore.soundHash(Object.assign({}, s, {p: Object.assign({}, s.p, {analog: .15, o2fine: 7})})) : null; }   // K1: an INIT Analog of a project before 4.24.0 (drift 15 %, Osz 2 +7 ct) is not „geändert“
   const h = SQStore.soundHash(snd); return h !== OHASH.h && h !== OHASH.h0;
 }
 
@@ -31836,7 +31853,10 @@ function k1Mods(i) {
     const src = MSRC[m.src], dst = MDST[m.dst]; if (!src || !dst) continue;
     const rg = modRangeText(i, m);
     const ka = toKnobAmt(m.dst, m.amt), kt_ = ka && !Math.round(ka * 100) ? k1Sgn(ka * 100, 1, '%') : fmtVal('bip', ka);   // K1-fix: no '±0 %' for a small route
-    add('r:' + m.src + ':' + m.dst, src.l, dst.l, kt_ + (rg ? ' · ' + rg : ''), {kind: 'route', m});
+    // G-T-merge (K1 finding): a pitch route reads in cents (amount 1 = 24 HT), not in % plus a HT range
+    const ct = (m.dst === 'pitch' || m.dst === 'o2pitch') ? m.amt * 2400 : null;
+    const amt_ = ct != null ? (src.bip ? '±' : ct >= 0 ? '+' : MINUS) + k1Num(Math.abs(ct), Math.abs(ct) < 10 ? 1 : 0) + ' ct' : kt_ + (rg ? ' · ' + rg : '');
+    add('r:' + m.src + ':' + m.dst, src.l, dst.l, amt_, {kind: 'route', m});
   }
   const pv = k => +sndGet(s, k) || 0;
   if (pv('fenv')) add('p:fenv', 'Filter-Hüllk.', 'Cutoff', fmtVal(PD.fenv.fmt, pv('fenv')), {kind: 'p', p: 'fenv'});
@@ -34400,7 +34420,7 @@ function openMenu(goto) {
   row(s5, 'Qualität', makeSeg([['auto', 'Auto'], ['analog', 'Analog'], ['eco', 'Eco']], () => S.settings.quality, v => { setQuality(v); UI.dirty.all = true; }));
   row(s5, 'Puffer', makeSeg([['interactive', 'Interaktiv'], ['playback', 'Stabil']], () => (uiPrefs().buffer || S.settings.buffer || 'interactive'),
     v => { S.settings.buffer = v; setUiPref('buffer', v); markDirty(); if (AU.ctx && AU.hint !== v) toast('Puffer „' + (v === 'playback' ? 'Stabil' : 'Interaktiv') + '“ gilt ab dem nächsten Start der App'); }));
-  s5.appendChild(el('div', 'small', 'Qualität Auto: bei hoher Rechenlast schaltet die App Filter und Unisono kurz einfacher (der Sound bleibt gespeichert, wie er ist). Puffer Stabil: für Geräte, die knacksen (etwas mehr Verzögerung).'));
+  s5.appendChild(el('div', 'small', 'Qualität Auto: der Klang bleibt immer gleich; bei hoher Rechenlast klingen die leisesten Stimmen kürzer aus. Eco: einfachere Filter und weniger Unisono. Puffer Stabil: für Geräte, die knacksen (etwas mehr Verzögerung).'));
   const bPanic = btn('Alle Töne aus'); on(bPanic, 'click', () => { panic(); toast('Alle Töne aus'); });
   row(s5, null, bPanic);
   // 6 Bedienung (WP1)

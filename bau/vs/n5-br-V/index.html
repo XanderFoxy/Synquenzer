@@ -1259,6 +1259,14 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
   .vvctl>:first-child{margin-top:auto}
   .vvctl>:last-child{margin-bottom:auto}
 }
+/* VV2 (Nachtrag 5): Zeile „Video“ im Marken-Blatt und im ⋯ der Bereich-Leiste, „Im Video zeigen“ im Zell-Blatt */
+.vvdr{display:flex;align-items:center;gap:4px;height:44px;min-width:0}
+.vvdr .vvdl{flex:0 0 44px;font:700 10px/1 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}
+.vvdr .rb{flex:1 1 0;min-width:0;height:44px;padding:0 4px;font:700 12px/1.1 var(--font-ui);white-space:nowrap;overflow:hidden}
+.vvdr .rb.on,.plsheet .pl-o.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}
+.vvdr .rb i{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 4px 0 0;vertical-align:-1px}
+.pop .vvdr{margin-top:8px}
+.msheet .vvdr{margin-top:4px}
 #menu .mh{flex:none;display:flex;align-items:center;gap:12px;padding:6px 10px;border-bottom:1px solid var(--panel-edge);background:linear-gradient(#1b1d22,#121418)}
 .mlogo{flex:none;display:flex;align-items:center;pointer-events:none}
 .mlogo svg{height:64px}
@@ -17293,6 +17301,7 @@ function normSong(o, pk, nt) {
   if (Array.isArray(o.xp)) v4.xp = o.xp.filter(x => x && isNum(x.beat) && isNum(x.semi) && x.beat >= 0).map(x => ({beat: +x.beat, semi: clamp(Math.round(x.semi), -12, 12)})).sort((a, b) => a.beat - b.beat);
   if (o.src === 'plan') v4.src = 'plan';
   const vox = tkNormVox(o.vox); if (vox) v4.vox = vox;                                              // VS3: Punch-Audio der STIMME-Spur
+  const vdir = vvDirNorm(o.video, bars); if (vdir) v4.video = vdir;                                 // VV2: Video-Regie im Song
   return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, mel}, v4);
 }
 function ownNorm(c, pk, nt) {
@@ -22070,9 +22079,9 @@ function svLayout() {
   const r = w.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
   if (!r.width || !r.height) return;
   SV.w = r.width; SV.h = r.height; SV.dpr = dpr;
-  SV.rulerH = r.height < 240 ? 16 : 20;
+  SV.vvS = S.song && S.song.video ? 8 : 0; SV.rulerH = (r.height < 240 ? 16 : 20) + SV.vvS;   // VV2: + the stripe of the Video-Regie (only with entries)
   // V2a: all tracks while each row gets ≥ 26 px (song-delta 6.5), else pages of the synth tracks (≥ 4 a page) + DRUMS
-  const ord = trackOrder(), synth = ord.filter(i => !isDrum(i)), avail = r.height - SV.rulerH;
+  const ord = trackOrder(), synth = ord.filter(i => !isDrum(i)), avail = r.height - SV.rulerH + SV.vvS;
   if (avail / (ord.length + 2) >= 26 - .5) { SV.rows = ord.slice(); SV.pages = null; }
   else {
     const per = Math.max(4, Math.floor(avail / 26) - 3), pages = []; for (let k = 0; k < synth.length; k += per) pages.push(synth.slice(k, k + per));
@@ -22821,6 +22830,7 @@ function songShift(song, n, d) {
   for (const k in song.mel) for (const nt of song.mel[k].notes) if (nt.t >= n * 4 - .25 - 1e-9) nt.t = +(nt.t + d * 4).toFixed(6);
   for (const m of song.marks) if (m.a >= n) m.a += d;
   if (song.vox) tkVoxShift(song, n, d);                           // VS3
+  if (song.video) vvDirShift(song, n, d);                         // VV2
 }
 // remove the content of [a, b); marks: inside → gone, overlapping → trimmed, enclosing → split (o.split) or shortened
 function songClear(song, a, b, o) {
@@ -22831,6 +22841,7 @@ function songClear(song, a, b, o) {
   if (!o.keepMel) for (const k in song.mel) song.mel[k].notes = song.mel[k].notes.filter(n => !(n.t >= a * 4 - .25 - 1e-9 && n.t < b * 4 - .25 - 1e-9));
   if (!o.keepMarks) marksCut(song, a, b, o.split);
   if (song.vox && !o.keepMel) tkVoxClear(song, a, b);              // VS3
+  if (song.video && !o.keepMarks) vvDirClear(song, a, b);          // VV2
 }
 function marksCut(song, a, b, split) {
   const out = [];
@@ -22890,6 +22901,7 @@ function songWrite(song, n, ch, keepIds) {
   }
   for (const m of ch.marks || []) { const x = Object.assign({}, m, {a: n + m.a}); if (!keepIds || !x.id || song.marks.some(y => y.id === x.id)) x.id = newMarkId(song); song.marks.push(x); }
   song.marks.sort((a, b) => a.a - b.a);
+  if (ch.video) vvDirWrite(song, n, ch);                           // VV2
 }
 // drop entries that change nothing (-1 after -1, the same clip in the same phase), keep the marks tidy, melody lengths
 function songTidy(song) {
@@ -22911,6 +22923,7 @@ function songTidy(song) {
   song.marks = marksNorm(song.marks, song.bars);
   for (const k in song.mel) { const m = song.mel[k]; m.notes.sort((a, b) => a.t - b.t); m.len = Math.max(1, song.bars); }
   if (song.own) { const used = new Set(); for (const l of song.lanes) for (const e of l) if (e.own) used.add(e.own); for (const id of Object.keys(song.own)) if (!used.has(id)) delete song.own[id]; }
+  if (song.video) vvDirTidy(song);                                 // VV2
 }
 /* ---------- V2d′ eigener Clip (song-delta 9.2, N7-R9; Daten und Wiedergabe – die Gesten kommen mit V2e′): a copy that only holds
    at this song place (`song.own[id]`, lane entry {bar, slot (origin), own:id, ph}). A Durchlauf = one clip length of a block,
@@ -23143,7 +23156,7 @@ function songCut(song, a, b) {
   const mel = {}; for (const k in song.mel) { const ns = song.mel[k].notes.filter(n => n.t >= a * 4 - .25 - 1e-9 && n.t < b * 4 - .25 - 1e-9).map(n => Object.assign({}, n, {t: +(n.t - a * 4).toFixed(6)})); if (ns.length) mel[k] = ns; }
   const marks = song.marks.filter(m => m.a < b && m.a + m.len > a).map(m => { const A = Math.max(m.a, a), E = Math.min(m.a + m.len, b); return Object.assign({}, m, {a: A - a, len: E - A}); });
   const own = {}; for (const l of lanes) for (const e of l) if (e.own && song.own && song.own[e.own]) own[e.own] = deep(song.own[e.own]);
-  return {len: b - a, lanes, carrier, xp, mel, marks, own};
+  return vvDirCutTo(song, a, b, {len: b - a, lanes, carrier, xp, mel, marks, own});   // VV2: + video
 }
 // EINFÜGEN(n, chunk): from n on everything moves by L; at or behind the end = append (snaps to the end, no gap)
 function opInsert(song, n, ch, keepIds) {
@@ -24713,7 +24726,7 @@ function openMarkSheet(id) {
         `</div></div><div class="ms-bb"><div class="ms-r ms-r3">` +
           B('name', '✎ Name') + B('color', `Farbe <i style="background:${pcol}"></i>`, {dis: !isP}) +
           B('tpl', 'Teil-Vorlage ›', {dis: !isP}) + (same >= 2 ? B('all', land || narrow ? 'Auf alle übertragen' : `Auf alle ${same} „${esc(nm)}“ übertragen`, {cls: 'ms-all'}) : B('all', 'Auf alle übertragen', {dis: true})) +
-        `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + `</div></div>`;
+        `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + `</div></div>` + vvDirRow(m.a, m.a + m.len, 'ms-b');   // VV2: Zeile „Video“
       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
     };
     paint(); p._paint = paint;
@@ -24721,6 +24734,7 @@ function openMarkSheet(id) {
       const a = b.dataset.a, m = S.song && S.song.marks.find(x => x.id === id); if (!m) { closePop(); return; }
       const nm = markLabel(m), done = (ok, msg) => { if (ok) { toast(msg, songUndoAct()); svButtons(); } };
       if (a === 'x') { closePop(); return; }
+      if (vvDirTap(a, b, m.a, m.a + m.len, () => { if (UI.pop && UI.pop.el === p) { paint(); popDock(p); } })) return;   // VV2
       if (a === 'play') { closePop(); songPlayFrom(m.a); return; }
       if (a === 'rep2' || a === 'rep4') { const n = a === 'rep2' ? 2 : 4; done(markAction(id, 'rep', n), nm + ' ×' + n); paint(); popDock(p); return; }
       if (a === 'swapL' || a === 'swapR') { done(markAction(id, a), nm + ' getauscht'); paint(); popDock(p); return; }
@@ -25234,9 +25248,11 @@ function openCellSheet(t, bar) {
              `<button class="rb pl-o" data-a="back"><b>Zurück zum Szenen-Clip</b><small>die Kopie fällt weg, hier spielt wieder Szene ${sc}</small></button>`
            : `<button class="rb pl-o" data-a="own"><b>Eigener Clip (dieser Durchlauf)</b><small>${rng} wird eine Kopie, die nur hier gilt</small></button>`) +
       `<button class="rb pl-o" data-a="whole"><b>Ganzer Block</b><small>${Math.min(blk.be, song.bars) - blk.bs > 1 ? 'Takt ' + (blk.bs + 1) + '–' + Math.min(blk.be, song.bars) : 'Takt ' + (blk.bs + 1)} wird ein eigener Clip</small></button>` +
+      vvCellOpt(t, run.bs, Math.min(run.be, song.bars)) +                                    // VV2: „Im Video zeigen“
       `<button class="rb pl-c" data-a="x">Abbrechen</button>`;
     onTap(p, b => {
       const a = b.dataset.a; closePop(); if (a === 'x') return;
+      if (a === 'vvshow') { vvCellTap(t, run.bs, Math.min(run.be, song.bars)); return; }   // VV2
       if (a === 'edit') { openOwnRoll(t, bar); return; }
       if (a === 'back') { if (dropOwn(t, bar)) { toast(tr.name + ' · ' + rng + ': wieder Szene ' + sc, songUndoAct()); svButtons(); } return; }
       const id = makeOwn(t, bar, a === 'whole'), oc = id ? ownClipAt(t, bar) : null;
@@ -25366,9 +25382,10 @@ function openRangeMore(anchor) {
     p.innerHTML = `<h4>Takt ${A + 1}${Bb > A ? '–' + (Bb + 1) : ''}</h4><div class="plist">` +
       (narrow ? '<button class="rb" data-a="part">❖ Als Teil …</button>' : '') +
       '<button class="rb" data-a="clear">○ Leeren</button><button class="rb" data-a="ins">＋ Teil einsetzen ▾</button>' +
-      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button></div>';
+      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button></div>' + vvDirRow(A, Bb + 1, 'vvdb');   // VV2: Zeile „Video“
     onTap(p, b => {
-      const a = b.dataset.a; closePop();
+      const a = b.dataset.a; if (a && a.startsWith('vv-')) { vvDirTap(a, b, A, Bb + 1, () => { if (UI.pop && UI.pop.el === p) closePop(); }); return; }   // VV2
+      closePop();
       if (a === 'part') openAsPart(anchor, A, Bb);
       else if (a === 'clear') { if (songRange('clear', A, Bb)) toast('Takt ' + (A + 1) + (Bb > A ? '–' + (Bb + 1) : '') + ' geleert · die Länge bleibt', songUndoAct()); }
       else if (a === 'ins') openPlacePick(anchor, A);
@@ -25459,6 +25476,7 @@ function svEndClamp() {
 }
 function svDraw(force, sbIn) {
   const g = SV.g, song = S.song; if (!g || !SV.w) return;
+  if (!!(song && song.video) !== !!SV.vvS) svLayout();             // VV2: the stripe comes / goes with the first / last entry
   SV.lastDraw = performance.now();
   svEndClamp();
   const dpr = SV.dpr, W = SV.w, H = SV.h, cw = SV.cellW, rh = SV.rowH, ru = SV.rulerH;
@@ -25474,7 +25492,7 @@ function svDraw(force, sbIn) {
   // ruler + the current bar tinted
   const cur = sb != null ? Math.floor(sb / 4) : -1;
   // V0c N7-R7: the yellow bar selection — a band (35 % over the ruler, 7 % over the rows), each bar an amber chip
-  const sel = song && SV.sel && SV.sel.a < bars ? SV.sel : null, cy = 4, ch = Math.max(8, ru - 5);
+  const sel = song && SV.sel && SV.sel.a < bars ? SV.sel : null, cy = 4, ch = Math.max(8, ru - 5 - (SV.vvS | 0));   // VV2: the header without the stripe
   if (sel) { const xa = X(sel.a), xb = X(Math.min(sel.b, bars - 1) + 1); g.fillStyle = 'rgba(255,178,46,.35)'; g.fillRect(xa, cy, xb - xa, ch); g.fillStyle = 'rgba(255,178,46,.07)'; g.fillRect(xa, ru, xb - xa, H - ru); }
   const sr = R.songRec;
   for (let b = b0; b < b1; b++) {
@@ -25493,7 +25511,8 @@ function svDraw(force, sbIn) {
   }
   // V2e (Xander 24.10. a): behind the end the bar numbers go on, dim — a tap there sets a part at that bar line (bars between stay empty)
   if (song || !bars) { g.fillStyle = '#30343c'; for (let b = Math.max(b0, bars + 1), e = Math.ceil((SV.x + W) / cw) + 1; b < e && b < bars + 64; b++) g.fillText(String(b + 1), X(b) + cw / 2, cy + ch / 2); }
-  if (song || SV.pv) svDrawMarks(g, song || {marks: []}, X, W, H, ru, cur);
+  if (song || SV.pv) svDrawMarks(g, song || {marks: []}, X, W, H, ru - (SV.vvS | 0), cur);
+  if (song && song.video && SV.vvS) vvDrawStripe(g, song, X, W, ru - SV.vvS, SV.vvS);   // VV2
   // track lanes: the scene slot per bar (launch bars stronger), – = stopped there. V2e′: own clips with a white 1,5-px frame and
   // a dot (song-delta 9.1); the cells of a part just placed unfold left to right from amber (N7-R6); ◧ = the glass tiles
   const now = performance.now(), uf = SV.unfold; if (uf && now - uf.t0 > uf.dur) SV.unfold = null; else if (uf) UI.dirty.song = true;
@@ -41921,7 +41940,7 @@ const VV_FPS = 30, VV_TAIL = 10, VV_LV60 = 0.001;
 function vvProf(k, ms) { const P = VV.prof || (VV.prof = {}); const o = P[k] || (P[k] = {n: 0, max: 0, sum: 0}); o.n++; o.sum += ms; if (ms > o.max) o.max = ms; if (ms > 30) (P.big || (P.big = [])).push([k, Math.round(performance.now() - ms), Math.round(ms)]); }
 const vvStep = () => (VV.test && VV.test.step) || .25;   // s of audio between two scheduler runs (horizon = step + LOOKAHEAD)
 // the device profile (not the project): format and picture of the sheet
-function vvPrefs() { const p = uiPrefs().vv || {}; return {fmt: p.fmt === '16:9' ? '16:9' : '9:16', view: p.view === 'song' || p.view === 'matrix' ? p.view : 'auto'}; }
+function vvPrefs() { const p = uiPrefs().vv || {}; return {fmt: p.fmt === '16:9' ? '16:9' : '9:16', view: p.view === 'song' || p.view === 'matrix' ? p.view : 'auto', cam: p.cam === 'balken' ? 'balken' : 'kamera'}; }
 function vvPrefSet(k, v) { const p = Object.assign({}, uiPrefs().vv || {}); p[k] = v; setUiPref('vv', p); }
 // one level deep snapshot of a state object (arrays / Sets / Maps keep their identity and get their content back)
 function vvSnap(o) { const s = new Map(); for (const k of Object.keys(o)) { const v = o[k]; s.set(k, [v, Array.isArray(v) ? v.slice() : v instanceof Set ? new Set(v) : v instanceof Map ? new Map(v) : null]); } return s; }
@@ -42268,12 +42287,8 @@ function vvDrawMatrix(g, LW, LH, st) {
   });
 }
 // one picture of the stage at size W × H (canvas pixels) for state st; view 'song' | 'matrix' ('auto' = the Auto-Regisseur, VV2)
-function vvDraw(g, W, H, view, st) {
-  const k = W > H ? W / 640 : W / 360, LW = W / k, LH = H / k;
-  g.setTransform(k, 0, 0, k, 0, 0);
-  if (view === 'matrix') vvDrawMatrix(g, LW, LH, st); else vvDrawSong(g, LW, LH, st);
-  g.setTransform(1, 0, 0, 1, 0, 0);
-}
+// VV2: Auto = the Auto-Regisseur, 9:16 = [Kamera] / [Ganz mit Balken] over the landscape view (vvDrawRun, VV2 block); rt = the job's run
+function vvDraw(g, W, H, view, st, rt) { vvDrawRun(g, W, H, view, st, rt); }
 // the picture state at video time t (s) of a render result (slot timeline = R.slot as the scheduler set it)
 function vvStateAt(r, t) {
   const sp = 60 / r.bpm, B = t / sp, st = {tB: B, sb: B + r.a * 4, slots: [], cs: [], own: []};
@@ -42288,7 +42303,7 @@ function vvLiveState() {
   for (let i = 0; i < NT(); i++) { const v = visualSlots(i, bA); st.slots[i] = v.playing; st.cs[i] = audCstart(i, bA); st.own[i] = v.playing === R.slot[i] ? R.own[i] : null; }
   return st;
 }
-const vvViewOf = v => (v === 'matrix' ? 'matrix' : 'song');   // VV1: „Auto“ zeigt bis zum Auto-Regisseur (VV2) das Song-Bild
+const vvViewOf = v => (v === 'matrix' || v === 'song' ? v : 'auto');   // VV2: „Auto“ = der Auto-Regisseur
 
 /* ---------- MP4 (ISO BMFF) – eigener kleiner Muxer: H.264 (avcC) + AAC (esds) bzw. Opus (dOps, nur Test), moov vor mdat ---------- */
 const VVMP4 = (() => {
@@ -42398,7 +42413,7 @@ async function vvEncodeWC(job) {
       if (f >= nF) break;
       if (!r && f / fps > live.t - .05) { await Promise.race([rP, new Promise(res => setTimeout(res, 8))]); continue; }
       const PF = performance.now();
-      vvDraw(g, W, H, job.view, vvStateAt(r || live, f / fps));
+      vvDraw(g, W, H, job.view, vvStateAt(r || live, f / fps), job.rt);
       const fr = new VideoFrame(cv, {timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps)});
       ve.encode(fr, {keyFrame: f % (fps * 2) === 0}); fr.close(); f++;
       vvProf('frame', performance.now() - PF);
@@ -42443,7 +42458,7 @@ async function vvEncodeWC(job) {
 // fallback: the stage canvas + the rendered song (live context → MediaStreamDestination, not to the speakers) in real time
 async function vvEncodeMR(job) {
   const {W, H, r, path} = job, cv = job.canvas, g = cv.getContext('2d', {alpha: false}), c = AU.ctx;
-  vvDraw(g, W, H, job.view, vvStateAt(r, 0));
+  vvDraw(g, W, H, job.view, vvStateAt(r, 0), job.rt);
   // frames on request (one per drawn picture) where the browser offers it, else the canvas at 30 fps
   let vs = cv.captureStream(0), vt = vs.getVideoTracks()[0];
   if (!vt || typeof vt.requestFrame !== 'function') { for (const x of vs.getTracks()) x.stop(); vs = cv.captureStream(VV_FPS); vt = null; }
@@ -42469,7 +42484,7 @@ async function vvEncodeMR(job) {
       }
       try { if (mr.state === 'paused') mr.resume(); } catch (e) {}
       const t = c.currentTime - t0, fi = Math.floor(Math.max(0, t) * VV_FPS);
-      if (fi !== fl) { fl = fi; vvDraw(g, W, H, job.view, vvStateAt(r, Math.max(0, Math.min(r.dur, t)))); if (vt) vt.requestFrame(); }   // 30 pictures a second
+      if (fi !== fl) { fl = fi; vvDraw(g, W, H, job.view, vvStateAt(r, Math.max(0, Math.min(r.dur, t))), job.rt); if (vt) vt.requestFrame(); }   // 30 pictures a second
       if (job.onProgress) job.onProgress(Math.max(0, Math.min(1, t / r.dur)));
       if (t >= r.dur) res(); else requestAnimationFrame(step);
     };
@@ -42492,20 +42507,21 @@ async function vvMake(o) {
   try {
     const cv = o.canvas || document.createElement('canvas'); cv.width = W; cv.height = H;
     let blob, r, T1, rP = null;
+    const rt = VV.lastRt = vvRun({view, cam: o.cam || pf.cam, range: o.range, log: true});   // VV2: cut list + camera of this job
     try {
     if (path.how === 'webcodecs') {
       const live = {tl: [], t: -1, est: 0};
       if (S.song) { const rg = o.range || vvRange(false); live.est = (rg.b - rg.a) * 4 * spb() + 2; }
       rP = vvRenderAudio({range: o.range, live}); rP.then(() => { T1 = performance.now(); }, () => {});
-      const job = {W, H, path, view, canvas: cv, live, rP, onProgress: p => prog(p, 'Video')};
+      const job = {W, H, path, view, canvas: cv, live, rP, rt, onProgress: p => prog(p, 'Video')};
       blob = await vvEncodeWC(job); r = job.r;
     } else {
       r = await vvRenderAudio({range: o.range, onProgress: p => prog(.25 * p, 'Ton')}); T1 = performance.now();
-      blob = await vvEncodeMR({W, H, r, path, view, canvas: cv, onProgress: p => prog(.25 + .75 * p, 'Bild')});
+      blob = await vvEncodeMR({W, H, r, path, view, rt, canvas: cv, onProgress: p => prog(.25 + .75 * p, 'Bild')});
     }
     } catch (e) { if (rP && VV.off) { VV.cancel = true; try { await rP; } catch (x) {} } throw e; }   // the offline pass never runs on alone
     const T2 = performance.now();
-    VV.res = {blob, mime: blob.type, ext: path.ext, how: path.how, why: path.why, fmt, view, W, H, dur: r.dur, songSec: r.songSec, tail: r.tail, a: r.a, b: r.b, size: blob.size,
+    VV.res = {blob, mime: blob.type, ext: path.ext, how: path.how, why: path.why, fmt, view, cam: rt.cam, cuts: vvCutHash(rt.shots), W, H, dur: r.dur, songSec: r.songSec, tail: r.tail, a: r.a, b: r.b, size: blob.size,
       msAudio: Math.round(T1 - T0), msVideo: Math.round(T2 - T1), ms: Math.round(T2 - T0)};
     return VV.res;
   } finally { VV.busy = false; VV.job = false; VV.cancel = false; document.removeEventListener('visibilitychange', onVis); wakeReleaseLater(); }
@@ -42555,7 +42571,8 @@ function vvOpen() {
   const rowOf = (label, kid) => { const r = el('div', 'vvrow'); r.appendChild(el('span', 'lbl', esc(label))); r.appendChild(kid); ctl.appendChild(r); return r; };
   const segF = makeSeg([['9:16', '9:16'], ['16:9', '16:9']], () => vvPrefs().fmt, v => { vvPrefSet('fmt', v); vvSync(); }, 'vvseg');
   const segV = makeSeg([['auto', 'Auto'], ['song', 'Song'], ['matrix', 'Matrix']], () => vvPrefs().view, v => { vvPrefSet('view', v); vvSync(); }, 'vvseg');
-  rowOf('Format', segF); rowOf('Bild', segV);
+  const segC = makeSeg([['kamera', 'Kamera'], ['balken', 'Ganz mit Balken']], () => vvPrefs().cam, v => { vvPrefSet('cam', v); vvSync(); vvStill(); }, 'vvseg');   // VV2: 9:16
+  rowOf('Format', segF); rowOf('Bild', segV); rowOf('9:16', segC);
   const rng = el('span', 'vvtxt'); rowOf('Bereich', rng).classList.add('txt');
   const acts = el('div', 'vvacts'), bPrev = el('button', 'rb vvbtn', '▶ Vorschau'), bMake = el('button', 'rb vvbtn go', 'Video erstellen');
   bPrev.setAttribute('aria-label', 'Vorschau mit Ton'); acts.append(bPrev, bMake); ctl.appendChild(acts);
@@ -42563,7 +42580,7 @@ function vvOpen() {
   const done = el('div', 'vvdone'), bShare = el('button', 'rb vvbtn go', 'Teilen'), bSave = el('button', 'rb vvbtn', 'Sichern');
   done.append(bShare, bSave); ctl.append(bar, done);
   const way = el('div', 'vvway'), wayT = el('span', ''); way.append(wayT); ctl.appendChild(way);
-  Object.assign(VV, {ui: {sh, cv, stage, segF, segV, rng, bPrev, bMake, bar, bCan, done, bShare, bSave, way, wayT}});
+  Object.assign(VV, {ui: {sh, cv, stage, segF, segV, segC, rng, bPrev, bMake, bar, bCan, done, bShare, bSave, way, wayT}});
   onTap(bPrev, () => { if (VV.prev) vvPrevStop(); else vvPrevStart(); });
   onTap(bMake, () => vvGo());
   onTap(bCan, () => { VV.cancel = true; });
@@ -42593,19 +42610,20 @@ function vvFit() {
 }
 function vvStill() {
   const u = VV.ui; if (!u || VV.busy) return;
-  const g = u.cv.getContext('2d', {alpha: false}), view = vvViewOf(vvPrefs().view);
+  const g = u.cv.getContext('2d', {alpha: false}), view = vvViewOf(vvPrefs().view), rt = VV.prev && VV.prev.rt ? VV.prev.rt : vvRun({view});
   const st = VV.prev ? vvLiveState() : {sb: vvRange(true) ? vvRange(true).a * 4 : 0, tB: 0, slots: [], cs: [], own: []};
   if (!VV.prev && S.song) { const a = vvRange(true).a; for (let i = 0; i < NT(); i++) { const o = laneOriginAt(S.song.lanes[i], a), ok = laneClipOk(S.song, i, o); st.slots[i] = ok ? o.slot : -1; st.cs[i] = ok ? o.cs - a * 4 : 0; st.own[i] = ok ? o.own : null; } }
-  vvDraw(g, u.cv.width, u.cv.height, view, st);
+  vvDraw(g, u.cv.width, u.cv.height, view, st, rt);
 }
 async function vvSync() {
   const u = VV.ui; if (!u) return;
-  u.segF.update(); u.segV.update();
+  u.segF.update(); u.segV.update(); u.segC.update();
   const rg = vvRange(true);
   u.rng.textContent = !rg ? 'Noch kein Song – erst ● SONG' : rg.sel ? 'gelbe Auswahl' : 'ganzer Song';
   const busy = VV.busy;
   u.sh.classList.toggle('busy', busy); u.sh.classList.toggle('has', !!(VV.res && VV.res.blob) && !busy);
   for (const b of [...u.segF.children, ...u.segV.children]) b.disabled = busy;
+  for (const b of u.segC.children) b.disabled = busy || vvPrefs().fmt !== '9:16';   // VV2: only for 9:16 (stays in place: no layout jump)
   u.bPrev.disabled = busy || !rg; u.bPrev.innerHTML = VV.prev ? '■ Stopp' : '▶ Vorschau';
   const fmt = vvPrefs().fmt, p = await vvPath(fmt);
   if (!VV.ui || VV.ui !== u) return;
@@ -42619,7 +42637,7 @@ function vvPrevStart() {
   if (VV.busy || VV.prev) return;
   const rg = vvRange(true); if (!rg) return;
   if (!songPlayStart(rg.a)) return;
-  VV.prev = {b: rg.b, sel: rg.sel};
+  VV.prev = {b: rg.b, sel: rg.sel, rt: vvRun({view: vvViewOf(vvPrefs().view), range: rg})};   // VV2
   const loop = () => {
     if (!VV.prev || !VV.ui) return;
     if (!R.playing || !R.songPlay) { vvPrevStop(true); return; }
@@ -42661,7 +42679,7 @@ function vvApi() {
     vvInfo: () => ({prof: VV.prof ? JSON.parse(JSON.stringify(VV.prof)) : null, open: VV.open, busy: VV.busy, prev: !!VV.prev, off: !!VV.off, prefs: vvPrefs(), range: vvRange(true), res: meta(VV.res), test: Object.assign({}, VV.test)}),
     vvPath: fmt => vvPath(fmt || vvPrefs().fmt),
     vvTest: o => { VV.test = Object.assign({}, o || {}); VV.pathC = null; if (VV.ui) vvSync(); return Object.assign({}, VV.test); },
-    vvPrefs: o => { if (o) for (const k of ['fmt', 'view']) if (o[k]) vvPrefSet(k, o[k]); if (VV.ui) vvSync(); return vvPrefs(); },
+    vvPrefs: o => { if (o) for (const k of ['fmt', 'view', 'cam']) if (o[k]) vvPrefSet(k, o[k]); if (VV.ui) vvSync(); return vvPrefs(); },
     vvRender: async o => { VV.cancel = false; const r = await vvRenderAudio(o || {}); let pk = 0, ss = 0; for (let c = 0; c < 2; c++) { const d = r.ch[c]; for (let k = 0; k < d.length; k++) { const v = d[k]; ss += v * v; if (Math.abs(v) > pk) pk = Math.abs(v); } }
       return {dur: r.dur, songSec: r.songSec, tail: r.tail, capped: r.capped, a: r.a, b: r.b, sr: r.sr, ms: Math.round(r.ms), wk: r.wk, peak: pk, rms: Math.sqrt(ss / (2 * r.n)), tl: r.tl.map(e => Object.assign({}, e, {b: isFinite(e.b) ? e.b : -1})), log: r.log}; },
     // the last render as 16-bit PCM (base64, interleaved stereo) for measurements
@@ -42681,6 +42699,336 @@ function vvApi() {
   };
 }
 /* VV1-END */
+/* ===================== VV2 (Nachtrag 5): Video-Regie im Song, Auto-Regisseur, Spur-Bild, 9:16-Kamera =====================
+   song.video = [{a, b, v: 'auto'|'song'|'matrix'|'spur', t?}] (Takte a ≤ x < b, Spur t) – optional und additiv (Format 5 bleibt);
+   ohne Einträge macht der Auto-Regisseur alles. Einfügen/Löschen/Verschieben von Takten verschiebt bzw. kürzt die Einträge mit
+   (wie song.vox; Haken in songShift/songClear/songCut/songWrite/songTidy), Undo wie alle Song-Änderungen. */
+const VV_DIRV = ['auto', 'song', 'matrix', 'spur'], VV_BLEND = .3, VV_AR = 360;   // Blende 300 ms; die quer gezeichnete Ansicht ist 640 × 360
+const vvDirSame = (p, q) => !!p && !!q && p.v === q.v && (p.v !== 'spur' || p.t === q.t);
+// sanitize (load, undo, after every edit): ints, a < b ≤ bars, sorted, no overlap (the later in the list wins), equal neighbours merged
+function vvDirNorm(list, bars) {
+  if (!Array.isArray(list)) return null;
+  const nt = curNT(), lim = isNum(bars) && bars > 0 ? Math.min(bars, SONG_MAX_BARS) : SONG_MAX_BARS, out = [];
+  for (const e of list.slice(0, 512)) {
+    if (!e || typeof e !== 'object' || !isNum(e.a) || !isNum(e.b) || !VV_DIRV.includes(e.v)) continue;
+    const a = clamp(Math.round(e.a), 0, lim - 1), b = clamp(Math.round(e.b), a + 1, lim); if (a >= lim) continue;
+    const x = {a, b, v: e.v};
+    if (e.v === 'spur') { if (!isNum(e.t) || Math.round(e.t) < 0 || Math.round(e.t) >= nt) continue; x.t = Math.round(e.t); }
+    // the later entry wins: earlier ones are cut around it
+    for (let k = out.length - 1; k >= 0; k--) { const o = out[k]; if (o.b <= a || o.a >= b) continue; out.splice(k, 1); if (o.a < a) out.push(Object.assign({}, o, {b: a})); if (o.b > b) out.push(Object.assign({}, o, {a: b})); }
+    out.push(x);
+  }
+  out.sort((p, q) => p.a - q.a);
+  for (let k = out.length - 1; k > 0; k--) if (out[k - 1].b === out[k].a && vvDirSame(out[k - 1], out[k])) { out[k - 1].b = out[k].b; out.splice(k, 1); }
+  return out.length ? out : null;
+}
+function vvDirTidy(song) { const v = vvDirNorm(song.video, song.bars); if (v) song.video = v; else delete song.video; }
+// [a, b) loses its entries (an entry over the edge is trimmed, one around it is split)
+function vvDirClear(song, a, b) {
+  if (!song.video) return;
+  const out = [];
+  for (const e of song.video) {
+    if (e.b <= a || e.a >= b) { out.push(e); continue; }
+    if (e.a < a) out.push(Object.assign({}, e, {b: a}));
+    if (e.b > b) out.push(Object.assign({}, e, {a: b}));
+  }
+  if (out.length) song.video = out; else delete song.video;
+}
+// from bar n on everything moves by d bars; an entry across n is split at n (like tkVoxShift)
+function vvDirShift(song, n, d) {
+  if (!song.video) return;
+  const out = [];
+  for (const e of song.video) {
+    if (e.a >= n) { out.push(Object.assign({}, e, {a: e.a + d, b: e.b + d})); continue; }
+    if (e.b > n && d > 0) { out.push(Object.assign({}, e, {b: n})); out.push(Object.assign({}, e, {a: n + d, b: e.b + d})); continue; }
+    if (e.b > n) { out.push(Object.assign({}, e, {b: Math.max(e.a + 1, e.b + d)})); continue; }
+    out.push(e);
+  }
+  song.video = out.filter(e => e.b > 0).map(e => (e.a < 0 ? Object.assign({}, e, {a: 0}) : e));
+  if (!song.video.length) delete song.video;
+}
+// a song chunk (songCut) carries the entries of [a, b) relative to a; songWrite puts them back at n
+function vvDirCutTo(song, a, b, ch) {
+  if (!song.video) return ch;
+  const v = []; for (const e of song.video) if (e.a < b && e.b > a) v.push(Object.assign({}, e, {a: Math.max(e.a, a) - a, b: Math.min(e.b, b) - a}));
+  if (v.length) ch.video = v;
+  return ch;
+}
+function vvDirWrite(song, n, ch) {
+  vvDirClear(song, n, n + ch.len);
+  const l = song.video || []; for (const e of ch.video) if (e.a < ch.len) l.push(Object.assign({}, e, {a: n + e.a, b: n + Math.min(e.b, ch.len)}));
+  if (l.length) song.video = l;
+}
+// the entry valid at bar x (null = auto)
+function vvDirAt(song, x) { if (song && song.video) for (const e of song.video) if (x >= e.a && x < e.b) return e; return null; }
+// what the Video row shows for [a, b): the value when all bars share it ('auto' without entries), else null (mixed)
+function vvDirOf(a, b) {
+  const song = S.song; if (!song) return null;
+  let r; for (let x = a; x < b; x++) { const e = vvDirAt(song, x), k = e ? e.v + (e.v === 'spur' ? ':' + e.t : '') : 'auto'; if (r === undefined) r = k; else if (r !== k) return null; }
+  return r || 'auto';
+}
+// set [a, b) to v (one undo step 'song'); 'auto' = the entries there go (the Auto-Regisseur decides)
+function vvDirSet(a, b, v, t) {
+  const song = S.song; if (!song || !VV_DIRV.includes(v)) return false;
+  a = clamp(Math.round(a) || 0, 0, Math.max(0, song.bars - 1)); b = clamp(Math.round(b) || 0, a + 1, Math.max(a + 1, song.bars));
+  if (v === 'spur' && !(isNum(t) && t >= 0 && t < NT())) return false;
+  const before = songSnapshot();
+  vvDirClear(song, a, b);
+  if (v !== 'auto') { (song.video || (song.video = [])).push(v === 'spur' ? {a, b, v, t} : {a, b, v}); }
+  vvDirTidy(song);
+  if (songSnapshot() === before) return false;
+  const nm = v === 'spur' ? svShort(t) : {auto: 'Auto', song: 'Song', matrix: 'Matrix'}[v];
+  pushSongUndo(before, 'Video ' + (b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1)) + ': ' + nm); songChanged();
+  return true;
+}
+// the tracks that play a clip somewhere in [a, b) (the „Spur …“ list)
+function vvDirTracks(a, b) {
+  const song = S.song; if (!song) return [];
+  return trackOrder().filter(t => { if (!S.tracks[t]) return false; for (let x = a; x < Math.min(b, song.bars); x++) if (svCellRef(t, x)) return true; return false; });
+}
+/* the Zeile „Video“ in the existing sheets: [Auto] [Song] [Matrix] [Spur …] (Marken-Blatt, ⋯ of the Bereich-Leiste) */
+function vvDirRow(a, b, cls) {
+  const cur = vvDirOf(a, b), sp = cur && cur.startsWith('spur:') ? +cur.slice(5) : -1;
+  const B = (k, html, on, aria) => `<button class="rb ${cls}${on ? ' on' : ''}" data-a="vv-${k}" aria-pressed="${on}" aria-label="${esc(aria)}">${html}</button>`;
+  return `<div class="vvdr"><span class="vvdl">Video</span>` + B('auto', 'Auto', cur === 'auto', 'Video hier: Auto') + B('song', 'Song', cur === 'song', 'Video hier: Song') +
+    B('matrix', 'Matrix', cur === 'matrix', 'Video hier: Matrix') + B('spur', sp >= 0 ? `<i style="background:var(--t${sp + 1})"></i>Spur …` : 'Spur …', sp >= 0, 'Video hier: eine Spur zeigen …') + `</div>`;
+}
+// a tap in the row; after(): repaint the sheet. Returns true when it was the row's button
+function vvDirTap(k, btn, a, b, after) {
+  if (!k || !k.startsWith('vv-')) return false;
+  const v = k.slice(3), rng = b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1);
+  if (v !== 'spur') { if (vvDirSet(a, b, v)) toast('Video ' + rng + ': ' + {auto: 'Auto', song: 'Song', matrix: 'Matrix'}[v], songUndoAct()); if (after) after(); return true; }
+  const ts = vvDirTracks(a, b);
+  if (!ts.length) { toast('In ' + rng + ' spielt keine Spur'); return true; }
+  openPop(btn, p => {
+    guardTouch(p); p.classList.add('plpick');
+    p.innerHTML = `<h4>Video · ${esc(rng)} · Spur</h4><div class="plist plp">` + ts.map(t => `<button class="rb" data-t="${t}"><i style="background:var(--t${t + 1})"></i><b>${esc(svShort(t))}</b></button>`).join('') + '</div>';
+    onTap(p, x => { closePop(); const t = +x.dataset.t; if (vvDirSet(a, b, 'spur', t)) toast('Video ' + rng + ': ' + svShort(t), songUndoAct()); }, 'button[data-t]');
+  }, {name: 'vvspur'});
+  return true;
+}
+// Zell-Blatt (Lane-Eintrag halten): „Im Video zeigen“ = Spur-Bild dieses Clips für seine Takte [a, b)
+function vvCellOpt(t, a, b) {
+  const on = vvDirOf(a, b) === 'spur:' + t, rng = b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1);
+  return `<button class="rb pl-o${on ? ' on' : ''}" data-a="vvshow" aria-pressed="${on}"><b>Im Video zeigen</b><small>${on ? rng + ': das Video zeigt diese Spur · antippen = wieder Auto' : rng + ': das Video zeigt diese Spur'}</small></button>`;
+}
+function vvCellTap(t, a, b) {
+  const on = vvDirOf(a, b) === 'spur:' + t, rng = b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1);
+  if (vvDirSet(a, b, on ? 'auto' : 'spur', t)) toast('Video ' + rng + ': ' + (on ? 'Auto' : svShort(t)), songUndoAct());
+}
+// the stripe under the yellow headers (only with entries): colour of the picture, a drawn camera at its start
+function vvDrawStripe(g, song, X, W, y, h) {
+  const C = vvCols();
+  g.save();
+  for (const e of song.video) {
+    const x0 = X(e.a) + 2, x1 = X(e.b) - 2; if (x1 < 0 || x0 > W || x1 - x0 < 2) continue;
+    g.fillStyle = e.v === 'spur' ? (SV.cols && SV.cols[e.t]) || '#888' : e.v === 'matrix' ? C.play : e.v === 'song' ? '#c9ced8' : '#5d636e';
+    vvRound(g, x0, y + 1, x1 - x0, h - 2, 2); g.fill();
+    const cx = Math.max(x0 + 3, 3); if (cx + 12 > x1) continue;
+    // the camera: body + lens (drawn, never a glyph)
+    const by = y + 2, bh = h - 4;
+    g.fillStyle = '#0b0c0f'; vvRound(g, cx, by, 8, bh, 1); g.fill();
+    g.beginPath(); g.moveTo(cx + 8, by + bh / 2); g.lineTo(cx + 11.5, by); g.lineTo(cx + 11.5, by + bh); g.closePath(); g.fill();
+  }
+  g.restore();
+}
+/* ---------- Auto-Regisseur: die Schnittliste aus dem Song (gleiche Eingabe → gleiche Liste). Schnitte nur auf Taktstrichen, an
+   Teilgrenzen; in langen Strecken spätestens alle 8 Takte; nie kürzer als 2 Takte; Teilanfang → Song, viele Clipwechsel → Matrix,
+   eine neu einsetzende oder allein spielende Spur → Spur-Bild. Einträge aus song.video gelten genau für ihre Takte ---------- */
+function vvCuts(song, A, B) {
+  const rows = vvRows(), starts = new Set((song.marks || []).map(m => m.a));
+  const user = (song.video || []).filter(e => e.v !== 'auto' && (e.v !== 'spur' || (e.t < NT() && S.tracks[e.t])));
+  const uAt = x => user.find(e => x >= e.a && x < e.b) || null;
+  const hardEnd = x => { let e = B; for (const u of user) if (u.a > x && u.a < e) e = u.a; return e; };
+  const key = (t, x) => { if (x < 0) return ''; const o = laneOriginAt(song.lanes[t], x); return laneClipOk(song, t, o) ? o.slot + '|' + (o.own || '') : ''; };
+  const shots = []; let cur = null, prev = rows.map(t => key(t, A - 1));
+  for (let x = A; x < B; x++) {
+    const keys = rows.map(t => key(t, x)), u = uAt(x);
+    let ch = 0; const enters = [], playing = [];
+    rows.forEach((t, k) => { const ev = song.lanes[t] && song.lanes[t].find(q => q.bar === x); if (keys[k] !== prev[k] || (keys[k] && ev && ev.re)) ch++; if (keys[k] && !prev[k]) enters.push(t); if (keys[k]) playing.push(t); });
+    prev = keys;
+    if (u) { if (!cur || cur.u !== u) { cur = {a: x, v: u.v, t: u.v === 'spur' ? u.t : null, u, why: 'eintrag'}; shots.push(cur); } continue; }
+    let want = null;
+    if (x === A || starts.has(x)) want = {v: 'song', why: 'teil'};
+    else if (ch >= 2) want = {v: 'matrix', why: 'wechsel'};
+    else if (enters.length === 1) want = {v: 'spur', t: enters[0], why: 'neu'};
+    else if (playing.length === 1) want = {v: 'spur', t: playing[0], why: 'allein'};
+    else if (cur && cur.v === 'spur' && !playing.includes(cur.t)) want = {v: 'song', why: 'ende'};
+    if (!cur || cur.u) { cur = {a: x, v: want ? want.v : 'song', t: want && want.v === 'spur' ? want.t : null, u: null, why: want ? want.why : 'start'}; shots.push(cur); continue; }
+    const Ls = x - cur.a, rem = hardEnd(x) - x;
+    if (Ls < 2 || rem < 2) continue;                                // never shorter than 2 bars (a shot, and what is left)
+    const must = Ls >= 8 || (rem === 2 && Ls + rem > 8);           // at the latest every 8 bars
+    if (want && !vvDirSame(want, cur)) { cur = {a: x, v: want.v, t: want.v === 'spur' ? want.t : null, u: null, why: want.why}; shots.push(cur); }
+    else if (must) { const v = cur.v === 'song' ? 'matrix' : 'song'; cur = {a: x, v, t: null, u: null, why: '8'}; shots.push(cur); }
+  }
+  // neighbours with the same picture are one shot (the camera goes on)
+  for (let k = shots.length - 1; k > 0; k--) if (vvDirSame(shots[k], shots[k - 1])) shots.splice(k, 1);
+  shots.forEach((s, k) => { s.b = k + 1 < shots.length ? shots[k + 1].a : B; delete s.u; });
+  return shots;
+}
+const vvCutHash = shots => { let h = 2166136261; for (const c of JSON.stringify(shots.map(s => [s.a, s.b, s.v, s.t]))) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h.toString(16); };
+// one job's picture state: the cut list (from the song, once), the camera per shot, the blend canvas
+function vvRun(o) {
+  o = o || {};
+  const song = S.song, rg = o.range || vvRange(false) || {a: 0, b: 0}, pf = vvPrefs();
+  return {view: o.view || pf.view, cam: o.cam || pf.cam, A: rg.a, B: rg.b, bpm: o.bpm || S.bpm, shots: song && rg.b > rg.a ? vvCuts(song, rg.a, rg.b) : [], cams: {}, off: null, log: o.log ? [] : null, ver: UI.songVer | 0};
+}
+function vvShotAt(rt, sb) {
+  const sh = rt.shots; if (!sh.length) return {k: -1, v: 'song', t: null, a: 0};
+  const bar = sb == null ? rt.A : Math.floor(sb / 4 + 1e-9);
+  let k = 0; while (k + 1 < sh.length && sh[k + 1].a <= bar) k++;
+  return Object.assign({k}, sh[k]);
+}
+/* ---------- Spur-Bild: die Spur mit ihrem spielenden Clip groß (Kopf: Farbe, Name, Szene; Rolle bzw. Welle mit Laufstrich) ---------- */
+const vvSpurLayout = (LW, LH) => ({head: 44, x: 12, y: 50, w: LW - 24, h: LH - 62});
+function vvPhase(st, i, c) {
+  if (!c || st.sb == null || st.sb < 0) return null;
+  const L = Math.max(1, (c.len || 1) * 4), cs = st.cs[i] || 0, tb = st.tB != null ? st.tB : st.sb;
+  return (((tb - cs) % L) + L) % L / L;
+}
+function vvDrawSpur(g, LW, LH, st, t) {
+  const C = vvCols(), tr = S.tracks[t], col = C.t[t] || '#888', Ly = vvSpurLayout(LW, LH);
+  g.fillStyle = C.bg; g.fillRect(0, 0, LW, LH);
+  g.textBaseline = 'middle';
+  g.fillStyle = C.ch2; vvRound(g, 8, 6, LW - 16, Ly.head - 10, 6); g.fill();
+  g.fillStyle = col; g.fillRect(14, 13, 4, Ly.head - 24);
+  if (!tr) return;
+  const s = st.slots[t], play = s != null && s >= 0, c = play ? vvClip(t, s, st.own[t]) : null;
+  g.textAlign = 'left'; g.font = '700 17px ' + C.ui; g.fillStyle = C.text; g.fillText(String(tr.name || svShort(t)).toUpperCase().slice(0, 24), 26, 6 + (Ly.head - 10) / 2 + .5);
+  g.textAlign = 'right'; g.font = '600 12px ' + C.num; g.fillStyle = play ? C.play : C.faint;
+  g.fillText(play ? (st.own[t] ? 'eigener Clip' : 'Szene ' + (s + 1)) : '–', LW - 18, 6 + (Ly.head - 10) / 2 + .5);
+  g.fillStyle = C.ch; vvRound(g, Ly.x, Ly.y, Ly.w, Ly.h, 6); g.fill(); g.strokeStyle = play ? C.play : C.line; g.lineWidth = 1; g.stroke();
+  if (!c) { g.textAlign = 'center'; g.font = '700 22px ' + C.num; g.fillStyle = C.faint; g.fillText('–', Ly.x + Ly.w / 2, Ly.y + Ly.h / 2); return; }
+  const L = Math.max(1, (c.len || 1) * 4), ph = vvPhase(st, t, c), x0 = Ly.x + 8, y0 = Ly.y + 8, w = Ly.w - 16, h = Ly.h - 16;
+  g.save(); g.beginPath(); g.rect(Ly.x + 1, Ly.y + 1, Ly.w - 2, Ly.h - 2); g.clip();
+  for (let k = 0; k <= L; k++) { g.fillStyle = k % 4 === 0 ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.05)'; g.fillRect(x0 + k / L * w - .5, y0, 1, h); }
+  if (c.audio) {
+    let pk = null; try { pk = tkPeaks(c.audio.take, c.audio, 160); } catch (e) { pk = null; }
+    if (pk) { const bw = w / pk.length; for (let k = 0; k < pk.length; k++) { const on = ph != null && (k + .5) / pk.length <= ph; const a = Math.max(.02, pk[k]) * h * .46; g.fillStyle = col; g.globalAlpha = on ? 1 : .55; g.fillRect(x0 + k * bw, y0 + h / 2 - a, Math.max(.8, bw - .6), a * 2); } g.globalAlpha = 1; }
+  } else if (c.notes && c.notes.length) {
+    let lo = 127, hi = 0; for (const n of c.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
+    if (hi - lo < 11) { const m = Math.floor((lo + hi) / 2); lo = m - 6; hi = m + 6; }
+    const span = hi - lo + 1, rh = h / span, pb = ph == null ? -1 : ph * L;
+    for (let p = lo; p <= hi; p++) if (((p % 12) + 12) % 12 === 0) { g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(x0, y0 + (hi - p) * rh, w, rh); }
+    for (const n of c.notes) {
+      if (n.t >= L) continue;
+      const nx = x0 + n.t / L * w, nw = Math.max(2, Math.min(n.d, L - n.t) / L * w), ny = y0 + (hi - n.n) * rh + rh * .12, nh = Math.max(1.5, rh * .76), on = pb >= n.t && pb < n.t + n.d;
+      g.fillStyle = col; g.globalAlpha = on ? 1 : .72; vvRound(g, nx, ny, nw, nh, Math.min(3, nh / 2)); g.fill(); g.globalAlpha = 1;
+      if (on) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.stroke(); }
+    }
+  }
+  if (ph != null) { g.fillStyle = 'rgba(242,244,248,.9)'; g.fillRect(x0 + ph * w - 1, Ly.y + 2, 2, Ly.h - 4); }
+  g.restore();
+}
+// one picture (v = song | matrix | spur) in app points
+function vvDrawView(g, LW, LH, sh, st) {
+  if (sh.v === 'matrix') vvDrawMatrix(g, LW, LH, st);
+  else if (sh.v === 'spur' && sh.t != null) vvDrawSpur(g, LW, LH, st, sh.t);
+  else vvDrawSong(g, LW, LH, st);
+}
+/* ---------- 9:16 [Kamera]: ein Fenster (Seitenverhältnis des Videos) über der quer gezeichneten Ansicht (640 × 360), gedämpfte
+   Feder auf Mitte und Zoom (1–3×), Beschleunigung und Tempo begrenzt, nie außerhalb der Ansicht; [Ganz mit Balken]: alles ---------- */
+function vvCamTarget(sh, st, asp) {
+  const LW = 640, LH = VV_AR, w1 = LH * asp;
+  if (sh.v === 'matrix') {
+    const L = vvMatrixLayout(LW, LH, st); let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    L.rows.forEach((i, r) => { const s = st.slots[i]; if (s == null || s < L.c0 || s >= L.c0 + L.nc) return; const c = L.cell(r, s - L.c0); x0 = Math.min(x0, c.x); y0 = Math.min(y0, c.y); x1 = Math.max(x1, c.x + c.w); y1 = Math.max(y1, c.y + c.h); });
+    if (!isFinite(x0)) return {cx: LW / 2, cy: LH / 2, z: 1};
+    const need = Math.max((y1 - y0) * 1.3, (x1 - x0) * 1.3 / asp);
+    return {cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, z: clamp(LH / need, 1, 3)};
+  }
+  if (sh.v === 'spur') {
+    const Ly = vvSpurLayout(LW, LH), s = st.slots[sh.t], c = s != null && s >= 0 ? vvClip(sh.t, s, st.own[sh.t]) : null, ph = vvPhase(st, sh.t, c);
+    const z = 1.5, ww = LH / z * asp;
+    return {cx: ph == null ? LW / 2 : Ly.x + 8 + ph * (Ly.w - 16) + ww * .15, cy: Ly.y + Ly.h / 2 - 6, z};
+  }
+  // song: the Laufband (as vvDrawSong places it) at ~45 % of the window
+  const bars = S.song ? S.song.bars : 0, labW = 78, cw = 48, viewW = LW - labW, sb = st.sb == null ? 0 : Math.min(Math.max(0, st.sb), bars * 4), px = sb / 4 * cw;
+  const sx = Math.max(0, Math.min(px - viewW * .35, Math.max(0, (bars + 1) * cw - viewW)));
+  return {cx: labW + px - sx + w1 * .05, cy: LH / 2, z: 1};       // the Laufband a bit left of the middle (at the start: the labels too)
+}
+function vvCamClamp(c, asp) {
+  c.z = clamp(c.z, 1, 3);
+  const wh = VV_AR / c.z, ww = wh * asp;
+  const fx = clamp(c.cx, ww / 2, 640 - ww / 2), fy = clamp(c.cy, wh / 2, VV_AR - wh / 2);
+  if (fx !== c.cx) { c.cx = fx; c.vx = 0; } if (fy !== c.cy) { c.cy = fy; c.vy = 0; }
+  return c;
+}
+// the camera of shot k at time ts (s): integrated in steps ≤ 1/30 s from the shot's start (or the last call); frozen = no step
+function vvCamAt(rt, sh, st, ts, asp, frozen) {
+  const cams = rt.cams, tg = vvCamTarget(sh, st, asp);
+  let c = cams[sh.k];
+  if (!c || ts < c.t - 1e-6 || ts - c.t > 2) { c = cams[sh.k] = vvCamClamp({cx: tg.cx, cy: tg.cy, z: tg.z, vx: 0, vy: 0, vz: 0, t: ts}, asp); return c; }
+  if (frozen || ts - c.t < 1e-6) return c;
+  const n = Math.max(1, Math.ceil((ts - c.t) * VV_FPS - 1e-6)), h = (ts - c.t) / n, w = 3, ww = VV_AR / c.z * asp;
+  const ax = 2.2 * ww, vmx = .034 * ww * VV_FPS;                 // ≤ 3,4 % of the window per picture, acceleration limited
+  const step = (x, v, T, am, vm) => { const a = clamp(w * w * (T - x) - 2 * w * v, -am, am); v = clamp(v + a * h, -vm, vm); return [x + v * h, v]; };
+  for (let k = 0; k < n; k++) {
+    [c.cx, c.vx] = step(c.cx, c.vx, tg.cx, ax, vmx);
+    [c.cy, c.vy] = step(c.cy, c.vy, tg.cy, ax, vmx);
+    [c.z, c.vz] = step(c.z, c.vz, tg.z, 1.5, .45);
+    vvCamClamp(c, asp);
+  }
+  c.t = ts;
+  return c;
+}
+// draw shot sh of run rt into g (W × H canvas pixels)
+function vvDrawShot(g, W, H, rt, sh, st, ts, frozen) {
+  const C = vvCols();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  if (W >= H) { const k = W / 640; g.fillStyle = C.bg; g.fillRect(0, 0, W, H); g.setTransform(k, 0, 0, k, 0, (H - VV_AR * k) / 2); vvDrawView(g, 640, VV_AR, sh, st); }
+  else if (rt.cam === 'balken') {
+    const k = W / 640, oy = (H - VV_AR * k) / 2;
+    g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+    g.save(); g.beginPath(); g.rect(0, oy, W, VV_AR * k); g.clip(); g.setTransform(k, 0, 0, k, 0, oy); vvDrawView(g, 640, VV_AR, sh, st); g.restore();
+  } else {
+    const asp = W / H, c = vvCamAt(rt, sh, st, ts, asp, frozen), wh = VV_AR / c.z, ww = wh * asp, k = H / wh;
+    g.setTransform(k, 0, 0, k, -(c.cx - ww / 2) * k, -(c.cy - wh / 2) * k); vvDrawView(g, 640, VV_AR, sh, st);
+    if (rt.log && !frozen) rt.log.push({ts: +ts.toFixed(4), k: sh.k, cx: c.cx, cy: c.cy, z: c.z, ww, wh});
+  }
+  g.setTransform(1, 0, 0, 1, 0, 0);
+}
+// the whole picture: Auto = the shot of the cut list (a cut blends over 300 ms), else the fixed view
+function vvDrawRun(g, W, H, view, st, rt) {
+  if (!rt) rt = vvRun({view});
+  if (view === 'auto' && rt.ver !== (UI.songVer | 0) && !VV.busy) { const n = vvRun({view, cam: rt.cam, range: {a: rt.A, b: rt.B}}); rt.shots = n.shots; rt.ver = n.ver; rt.cams = {}; }
+  const ts = st.sb == null ? 0 : st.sb * 60 / rt.bpm;
+  if (view !== 'auto') { vvDrawShot(g, W, H, rt, {k: 0, v: view, t: null}, st, ts); return; }
+  const sh = vvShotAt(rt, st.sb), dt = st.sb == null ? 1 : (st.sb - sh.a * 4) * 60 / rt.bpm;
+  rt.cur = sh;
+  if (sh.k > 0 && dt >= 0 && dt < VV_BLEND) {
+    const pv = Object.assign({k: sh.k - 1}, rt.shots[sh.k - 1]);
+    vvDrawShot(g, W, H, rt, pv, st, ts, true);
+    let o = rt.off; if (!o || o.width !== W || o.height !== H) { o = rt.off = document.createElement('canvas'); o.width = W; o.height = H; }
+    const og = o.getContext('2d', {alpha: false});
+    vvDrawShot(og, W, H, rt, sh, st, ts);
+    const e = dt / VV_BLEND; g.globalAlpha = e * e * (3 - 2 * e); g.drawImage(o, 0, 0); g.globalAlpha = 1;
+  } else vvDrawShot(g, W, H, rt, sh, st, ts);
+}
+function vv2Api() {
+  return {
+    vvDirSet: (a, b, v, t) => vvDirSet(a, b, v, t),
+    vvDirGet: () => (S.song && S.song.video ? JSON.parse(JSON.stringify(S.song.video)) : null),
+    vvDirOf: (a, b) => vvDirOf(a, b),
+    vvCuts: o => { o = o || {}; const rg = o.range || vvRange(false); if (!rg || !S.song) return null; const s = vvCuts(S.song, rg.a, rg.b); return {shots: s, hash: vvCutHash(s)}; },
+    // a reference picture: view v (song | matrix | spur:t | auto) at video time t of the last render, fmt, as PNG (base64)
+    vvShot: (t, v, fmt, cam) => {
+      const r = VV.last; if (!r) return null; const [W, H] = VV_SIZE[fmt || '16:9'], cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const g = cv.getContext('2d', {alpha: false}), st = vvStateAt(r, t || 0), rt = vvRun({range: {a: r.a, b: r.b}, bpm: r.bpm, cam: cam || 'kamera'});
+      if (v && v.startsWith('spur:')) vvDrawShot(g, W, H, rt, {k: 0, v: 'spur', t: +v.slice(5)}, st, 0); else vvDrawRun(g, W, H, v || 'auto', st, rt);
+      return cv.toDataURL('image/png').split(',')[1];
+    },
+    // the camera of a 9:16 picture run frame by frame over the last render (what the encoder draws): [{ts, k, cx, cy, z, ww, wh}]
+    vvCamTrace: (view, t0, t1) => {
+      const r = VV.last; if (!r) return null; const W = 108, H = 192, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d', {alpha: false});
+      const rt = vvRun({range: {a: r.a, b: r.b}, bpm: r.bpm, cam: 'kamera', view: view || 'auto', log: true}), n = Math.round(r.dur * VV_FPS);
+      for (let f = Math.round((t0 || 0) * VV_FPS); f < Math.min(n, t1 == null ? n : Math.round(t1 * VV_FPS)); f++) vvDrawRun(g, W, H, view || 'auto', vvStateAt(r, f / VV_FPS), rt);
+      return {log: rt.log, shots: rt.shots};
+    },
+    vvRunLog: () => (VV.lastRt ? {log: VV.lastRt.log, shots: VV.lastRt.shots, cam: VV.lastRt.cam, view: VV.lastRt.view} : null),
+  };
+}
+/* VV2-END */
 
 const SYNQUENZER = {
   // VS0 Mikro-Check: Stand, Öffnen/Schließen, Start (Tests: {driftSec, noStore}), Ergebnis-JSON, Schätzer (N7V-02)
@@ -43085,6 +43433,7 @@ Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes
 Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
 Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
 Object.assign(SYNQUENZER, vvApi());                        // VV1
+Object.assign(SYNQUENZER, vv2Api());                       // VV2
 const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
