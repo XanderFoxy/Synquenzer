@@ -13,6 +13,7 @@
      {t:'panic'}                everything incl. echo and hall tails silent within 10 ms
      {t:'reset'}                voices off, noise sequences, echoes, hall and smoothers to their start (offline render, tests)
      {t:'lim', s}               CPU limiter stage 0..3 (modal models: s>=1 24 modes, s>=2 12 modes and no early reflections)
+     processorOptions {init: [messages]} apply in the constructor, before the first block (offline renders)
      {t:'test', tap, q}         test API: tap 0 normal, 1 = C2/C3 before their filters, 2 = hall input after COLOR;
                                 q 'modes' -> {t:'test', modes:[per channel modes of the sounding voice]}
    Worklet -> main: {t:'load', v, nv} once per second (fraction of real time), {t:'late', n} count of late hits.
@@ -51,7 +52,7 @@ const BZ = 16, BOS = 32, BL = 2 * BZ, BRES = new Float64Array(BL * BOS + BOS + 2
   for (let i = BL * BOS; i < BRES.length; i++) BRES[i] = 0;
 })();
 // add a step of height h that happened frac samples before the next sample (ring position p + 1)
-function blepAdd(R, p, frac, h) { for (let k = 0; k < BL; k++) { const x = (k + frac) * BOS, j = x | 0; R[(p + 1 + k) & 63] += h * (BRES[j] + (BRES[j + 1] - BRES[j]) * (x - j)); } }
+function blepAdd(R, p, frac, h) { if (!(frac >= 0)) frac = 0; else if (frac > 0.999) frac = 0.999; for (let k = 0; k < BL; k++) { const x = (k + frac) * BOS, j = x | 0; R[(p + 1 + k) & 63] += h * (BRES[j] + (BRES[j + 1] - BRES[j]) * (x - j)); } }
 // scales (section 1.2)
 function Tsec(x) { return 0.004 * Math.pow(2500, x / 50); }
 function Glv(x) { const a = x / 50; return a * a; }
@@ -277,7 +278,7 @@ class Voice {
     this.ph.fill(0); this.ph2.fill(0);
     const bmax = this.b0 > 0 ? Math.pow(2, this.b0 / 12) : 1;
     let cap = E.lim >= 2 ? 12 : E.lim >= 1 ? 24 : MAXM;
-    this.inc = f0 * this.bm * ISR; this.dinc = 0;
+    this.inc = Math.min(f0 * this.bm, NYQ) * ISR; this.dinc = 0;
     if (fam === FAM_A) {
       this.det = s >= 2 && s <= 5 ? Math.pow(2, VERST[this.spc] / 12) : 1;
       this.pw0 = 0.5 - 0.45 * this.spc / 99;
@@ -416,7 +417,8 @@ class Voice {
     const bm0 = this.bm, bm1 = this.bendAt(t1);
     this.bm = bm1;
     const f0 = this.f0;
-    this.inc = f0 * bm0 * ISR; this.dinc = f0 * (bm1 - bm0) * ISR / CR;
+    const fA = Math.min(f0 * bm0, NYQ), fB = Math.min(f0 * bm1, NYQ);   // oscillators stay below 0.45 fs (extreme PITCH + TUNE + BEND)
+    this.inc = fA * ISR; this.dinc = (fB - fA) * ISR / CR;
     if ((this.modal || this.fam === FAM_T) && bm1 !== bm0) this.coefModes(this.fam === FAM_T ? 2 : this.nm);
     // timbre controls per family
     const fam = this.fam;
@@ -498,7 +500,7 @@ class Voice {
       const leak = 1 - TAU * 5 * ISR;
       for (let i = 0; i < n; i++) {
         const q = rp & 63; let x;
-        const inc2 = inc * det;
+        const inc2 = inc * det < 0.45 ? inc * det : 0.45;   // detuned oscillator 2 stays below 0.45 fs as well
         if (s === 1) { x = sinc(p1); p1 += inc; if (p1 >= 1) p1 -= 1; }
         else {
           let y1, y2 = 0;
@@ -510,11 +512,11 @@ class Voice {
           if (two) {
             if (s === 3) y2 = 1 - 2 * p2; else y2 = p2 < 0.5 ? 1 : -1;
             y2 += R2[q]; R2[q] = 0;
-            const o2 = p2; p2 += inc2;
+            const o2 = p2; p2 += inc2; if (p2 >= 2) p2 -= Math.floor(p2) - 1;
             if (s !== 3 && o2 < 0.5 && p2 >= 0.5) blepAdd(R2, rp, (p2 - 0.5) / inc2, -2);
             if (p2 >= 1) { p2 -= 1; blepAdd(R2, rp, p2 / inc2, 2); if (s !== 3 && p2 >= 0.5) blepAdd(R2, rp, (p2 - 0.5) / inc2, -2); }
           }
-          if (s === 2) { tri = tri * leak + 4 * inc * y1; tri2 = tri2 * leak + 4 * inc2 * y2; x = 0.5 * (tri + tri2); }
+          if (s === 2) { tri = tri * leak + 4 * inc * y1; tri2 = tri2 * leak + 4 * inc2 * y2; if (tri > 1.2) tri = 1.2; else if (tri < -1.2) tri = -1.2; if (tri2 > 1.2) tri2 = 1.2; else if (tri2 < -1.2) tri2 = -1.2; x = 0.5 * (tri + tri2); }   // bound: near 0.45 fs the integrated square drifts
           else if (s === 6) x = y1 - (2 * w - 1);
           else x = 0.5 * (y1 + y2);
           if (s === 5) { // high-pass 12 dB at f0 (hollow)
@@ -666,7 +668,7 @@ class Chan {
 }
 /* ---------- the processor ---------- */
 class MdProc extends AudioWorkletProcessor {
-  constructor() {
+  constructor(opt) {
     super();
     this.smK = 1 - Math.exp(-CR / (0.01 * SR));       // tau 10 ms per 16 samples
     this.chs = []; for (let i = 0; i < NCH; i++) this.chs.push(new Chan(this, i));
@@ -686,6 +688,8 @@ class MdProc extends AudioWorkletProcessor {
     this.busy = 0; this.busyN = 0; this.hasPerf = typeof performance !== 'undefined' && typeof performance.now === 'function';
     this.resetAll();
     this.port.onmessage = e => this.onMsg(e.data);
+    // offline renders pass their first messages here: they apply before the first block (port messages may come later)
+    const po = opt && opt.processorOptions; if (po && po.init) for (const m of po.init) this.onMsg(m);
   }
   hallInit() {
     const r = SR / DSR, X = 32; this.hr = r;
@@ -778,7 +782,7 @@ class MdProc extends AudioWorkletProcessor {
   }
   process(inputs, outputs) {
     const out = outputs[0], L = out[0], R = out[1] || out[0], N = L.length;
-    const t0 = this.hasPerf ? performance.now() : 0;
+    const t0 = this.hasPerf ? performance.now() : Date.now();   // same measuring as the synth worklets (Date.now where performance is missing)
     L.fill(0); if (R !== L) R.fill(0);
     const fr0 = currentFrame, fr1 = fr0 + N;
     // stop: voices fade with tau, queued hits at or after it are dropped
@@ -815,6 +819,8 @@ class MdProc extends AudioWorkletProcessor {
     }
     // hall
     this.hall(hin, L, R, N);
+    // last guard: a non-finite output clears every state (logged once per 5 s by the main thread)
+    { let sm = 0; for (let i = 0; i < N; i += 4) sm += L[i] + R[i]; if (!(sm - sm === 0)) { L.fill(0); if (R !== L) R.fill(0); for (const C of this.chs) { for (const v of C.v) v.reset0(); C.dl.fill(0); C.dlyE = 0; C.dlHold = 0; C.eqx1 = C.eqx2 = C.eqy1 = C.eqy2 = 0; C.adaa = 0.2; C.dcx = C.dcy = 0; } this.hallReset(); this.port.postMessage({t: 'err', ch: -1, msg: 'NaN'}); } }
     // panic: 10 ms fade, then everything cleared
     if (this.pan > 0) {
       for (let i = 0; i < N; i++) { const g = this.pan > 0 ? this.pan / this.panN : 0; L[i] *= g; if (R !== L) R[i] *= g; if (this.pan > 0) this.pan--; }
@@ -824,7 +830,7 @@ class MdProc extends AudioWorkletProcessor {
     return true;
   }
   account(t0, N) {
-    if (this.hasPerf) this.busy += performance.now() - t0;
+    this.busy += (this.hasPerf ? performance.now() : Date.now()) - t0;
     this.busyN += N;
     if (this.busyN >= SR) {
       const ms = this.busyN / SR * 1000; let nv = 0; for (const C of this.chs) for (const v of C.v) if (v.on) nv++;
