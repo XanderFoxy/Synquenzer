@@ -1,0 +1,76 @@
+{
+ "longNote": {
+  "dur": 34.98122448979592,
+  "notes": [
+   {
+    "a": 0,
+    "n": 48,
+    "v": 0.9,
+    "d": 32,
+    "removed": false
+   }
+  ],
+  "t5": {
+   "e2": 0.787,
+   "cut": 127
+  },
+  "t19": {
+   "e2": 0.787,
+   "cut": 127
+  },
+  "t21": {
+   "e2": 0,
+   "cut": 127
+  },
+  "t25": {
+   "e2": 0,
+   "cut": 127
+  },
+  "t31": {
+   "e2": 0,
+   "cut": 127
+  }
+ },
+ "manyNotes": {
+  "t2": {
+   "from": 0,
+   "ph": 0.289,
+   "phExpected": 0.289,
+   "firstA": 0
+  },
+  "t5": {
+   "from": 5,
+   "ph": 0,
+   "phExpected": 0.221,
+   "firstA": 0
+  },
+  "t7.5": {
+   "from": 7.375,
+   "ph": 0.206,
+   "phExpected": 0.332,
+   "firstA": 0
+  }
+ },
+ "va": {
+  "model": 880,
+  "workletFormula": 2489,
+  "note": 84,
+  "lfo": {
+   "modelPh": 0.6,
+   "workletPh_retrig": 0.6,
+   "noteA": 0
+  }
+ },
+ "serialize": {
+  "same": false,
+  "len": 19212,
+  "err": null,
+  "dur": 5.483537414965986,
+  "diff": {
+   "at": 95,
+   "b": "QUENZER\\\",\\\"kind\\\":\\\"project\\\",\\\"format\\\":5,\\\"appVersion\\\":\\\"4.25.0\\\",\\\"sum\\\":\\\"dabc1229\\\",\\\"project\\\":{\\\"format\\\":4,\\\"id\\\":\\\"p-mvwhha9m-24lb\\\",\\\"name\\\":\\\"Demo\\",
+   "a": "QUENZER\\\",\\\"kind\\\":\\\"project\\\",\\\"format\\\":5,\\\"appVersion\\\":\\\"4.25.0\\\",\\\"sum\\\":\\\"2cde2193\\\",\\\"project\\\":{\\\"format\\\":4,\\\"id\\\":\\\"p-mvwhha9m-24lb\\\",\\\"name\\\":\\\"Demo\\"
+  }
+ },
+ "errs": []
+}

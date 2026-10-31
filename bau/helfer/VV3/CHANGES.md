@@ -56,8 +56,21 @@ Chromium (Playwright, headless, 4 vCPU), Skripte in `bau/helfer/VV3/tests/`, Erg
 | ID | Ergebnis | Messung / Skript |
 |---|---|---|
 | VV3-01 | **bestanden** | `vv3-01.mjs`. (a) **Rechnung des Bildes gegen die Klangerzeugung selbst**: MS-Klang durch das App-Worklet (`mkRender`, Test-Abgriff `lfo` = LFO-1-Wert der klingenden Stimme je Sample), Sägezahn, 1,006 Hz frei bzw. 1 Hz Tempo-Sync (1/2 bei 120 BPM), je 138 Bilder (30 fps): größter Phasenfehler **frei 0,037 %, Tempo-Sync 0,032 %, Key Sync Timbre 0,041 %, Key Sync Stimme 0,041 %** (Grenze ±2 %). (b) **echter Video-Auftrag** (16:9, WebCodecs, 550 Bilder): gezeichnete LFO-Phase je Bild gegen frac(t · Hz) **0,000 %** (Sync 1 Hz und frei 1,006 Hz), gezeichneter Cutoff-Zeiger gegen CUTOFF + 20/63 · 127 · LFO **0,000** Einheiten. |
-| VV3-02 | **bestanden** | `vv3-02.mjs`. **Bild gegen den Ton**: ein Träger-Operator allein (Alg. 32) durch das App-Worklet, Pegel je 10 ms in dB gegen den gezeichneten Operator-Pegel (6,02 dB je 256 Einheiten), drei Hüllkurven (schneller Anschlag + Abfall, langsamer Anschlag, DECAY-Makro), alles oberhalb −50 dB: **größte Abweichung siehe out-vv3-02.json (≤ 0,32 dB)**, Anschlag, Halten, Loslassen folgen. Video-Auftrag FM-Spur 9:16 (550 Bilder, 128 Noten): gezeichnete Pegel = Rechnung aus den mitgenommenen Noten in allen Bildern, Träger steigt 128 × mit den Anschlägen, fällt danach. |
-| VV3-03 | siehe unten | `vv3-03.mjs` |
+| VV3-02 | **bestanden** | `vv3-02.mjs`. **Bild gegen den Ton**: ein Träger-Operator allein (Alg. 32) durch das App-Worklet, Pegel je 10 ms in dB gegen den gezeichneten Operator-Pegel (6,02 dB je 256 Einheiten), drei Hüllkurven (schneller Anschlag + Abfall, langsamer Anschlag, DECAY-Makro), alles oberhalb −50 dB: **größte Abweichung 0,22 / 0,15 / 0,32 dB**, Anschlag, Halten, Loslassen folgen. Video-Auftrag FM-Spur 9:16 (550 Bilder, 128 Noten): gezeichnete Pegel = Rechnung aus den mitgenommenen Noten in allen Bildern, Träger steigt 128 × mit den Anschlägen, fällt danach. |
+| VV3-01 (Nachtest-Fälle) | **bestanden** | `vv3-01b.mjs`, gegen den Abgriff der Klangerzeugung: PATCH Anschlag → LFO2 FREQ (Key Sync aus) **0,62 %**, PATCH EG 2 → LFO2 FREQ (Key Sync Stimme) **0,10 %**, Key Sync Timbre mit Legato-Noten **0,04 %**, eine 32-s-Note bei 60 BPM **0,05 %**. |
+| VV3-03 | **bestanden** | `vv3-03.mjs` (Ergebnisse `out-vv3-03.json`, letzter Lauf): vier ganze Video-Aufträge mit Spur-Bild (MS, FM, VA, Drums; 9:16 und 16:9): `serialize()` vorher/nachher **zeichengleich**, alle Live-Knoten dieselben Objekte, `E.sent` gleich, Takt-Timer da; Live-Wiedergabe davor/danach **248 = 248 gleiche Noten, -16,4 / -16,34 LUFS**; Offline-Ton mit/ohne Spur-Bild: gleiche Noten, ΔRMS 0,003 dB (Rausch-Zufall wie VV1). **Tempo** (3-min-Song, 182 s Video, 9:16, WebCodecs, gleiche Maschine direkt nacheinander): Song-Bild (VV1) **3,28 ×** Echtzeit, Spur-Bild MS **3,18 ×**, Spur-Bild FM **3,55 ×**; Bild-Häppchen im Mittel 7,5 / 9,5 / 7,8 ms; lange Tasks > 50 ms: 1 / 2 / 8 (längster 62 / 73 / 69 ms, wie VV1 im Kodier-Häppchen). Zeichnen eines Spur-Bilds allein: 0,05–0,5 ms (`vv3Ms`). |
+
+Weitere Läufe: `smoke.mjs` ohne Fehler; `frames.mjs` (alle Klangerzeuger inkl. STIMME-Take, beide Formate) ohne Konsolenfehler.
+
+**Unabhängiger Nachtest** (eigener Prüfer, eigene Skripte in `retest/`): fand 8 Fehler, alle behoben und nachgemessen –
+PATCH → LFO2 FREQ und SEQ → LFO-FREQ fehlten im Modell; Noten älter als das Suchfenster (lange gehaltene Note) fielen weg;
+Key Sync Timbre setzte bei Legato-Noten (Ende = nächster Anfang) nicht zurück; VA-Quelle KEY war /60 statt /24 wie im Worklet;
+VA-LFO mit Retrig + Tempo-Sync nahm die Song-Phase statt der Stimmen-Phase; WT bekam Retrig/Einblenden, die es nativ nicht hat;
+STIMME-Laufband in der Farbe der Welle (jetzt weiß mit dunklem Rand); auf der Platte fehlten Drucke der App (OSC 2 PITCH, HOLD,
+ORIGINAL VALUE, CURSOR/PAGE, Oktav-/Typ-Liste, Legenden, Klammern) und der Titel SEQ EDIT / CH PARAM war nicht eingepasst.
+Dazu: ein Fehler beim Mod-Sequenzer mit KEY SYNC vor der ersten Note (Ausnahme, abgefangen) ist behoben. Bestanden im Nachtest:
+keine Konsolenfehler in allen Spuren × Formaten × 17 Zeitpunkten (auch negativ, nach dem Ende, NaN) und 24 MS-Einstellungen;
+EG 2 gegen den `amp`-Abgriff ≤ 0,005; Mod-Sequenzer = Worklet-Logik; Marken-Regel; Projekt unverändert.
 
 ## Abweichungen
 
@@ -72,6 +85,10 @@ Chromium (Playwright, headless, 4 vCPU), Skripte in `bau/helfer/VV3/tests/`, Erg
 - **WT** spielt in der App über native WebAudio-LFOs (ohne Retrig/Einblenden, wie der Hinweis in der App sagt); das Bild nimmt
   dieselbe Formel (`lfoPhase`), für WT also ohne Retrig.
 - **Dual/Split** der MS-Spur: Platte und Werte zeigen Timbre 1.
+- **MS-Arpeggiator mit LFO KEY SYNC Timbre:** die Klangerzeugung setzt die Phase bei laufendem Arp nur bei „KEYS 9“ zurück; das Bild
+  setzt sie je Notengruppe zurück (die Arp-Noten kommen als Noten im Log an). Nicht gemessen.
+- **LFO-FREQ-Modulation** (PATCH → LFO2 FREQ, SEQ-Ziel LFO1/2 FREQ) wird über die Zeit der klingenden Stimmen aufsummiert (1/400 s);
+  eine Quelle LFO 2 → LFO2 FREQ (Selbstmodulation) nimmt dabei die unmodulierte Welle.
 - Eine Ansicht des Spur-Bilds im Blatt gibt es nicht (VV1 hat keine Spur-Ansicht): Auswahl kommt mit VV2 (Regie „Spur …“ /
   Auto-Regisseur). Bis dahin nur über `vvDrawTrackShot` / `vvTest({spur})`.
 

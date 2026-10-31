@@ -1,0 +1,27 @@
+{
+ "PATCH Anschlag → LFO2 FREQ (Key Sync aus)": {
+  "frames": 105,
+  "maxPhaseErrPct": 0.62,
+  "bad": [],
+  "ok": true
+ },
+ "PATCH EG 2 → LFO2 FREQ (Key Sync Stimme)": {
+  "frames": 60,
+  "maxPhaseErrPct": 0.1,
+  "bad": [],
+  "ok": true
+ },
+ "Key Sync Timbre, Legato-Noten": {
+  "frames": 73,
+  "maxPhaseErrPct": 0.04,
+  "bad": [],
+  "ok": true
+ },
+ "lange Note 32 s bei 60 BPM, Key Sync Timbre": {
+  "frames": 954,
+  "maxPhaseErrPct": 0.05,
+  "bad": [],
+  "ok": true
+ },
+ "ok": true
+}

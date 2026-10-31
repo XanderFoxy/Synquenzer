@@ -42671,7 +42671,7 @@ function vv3Cap(live, t0) {
   if (!live) return; const nt = live.nt || (live.nt = []), N = LOG.n; let k = live.vn | 0; if (N - k > 4096) k = N - 4096;
   for (; k < N; k++) {
     const e = LOG.buf[k % 4096]; if (!e || !(e.track >= 0) || e.src === 'retune' || e.src === 'click' || e.src === 'audition') continue;
-    const L = nt[e.track] || (nt[e.track] = []), o = {e, a: e.time - t0};
+    const L = nt[e.track] || (nt[e.track] = []), o = {e, a: e.time - t0}; L.mx = Math.max(L.mx || 0, e.dur || 0);
     let j = L.length; while (j > 0 && L[j - 1].a > o.a) j--; L.splice(j, 0, o);
   }
   live.vn = N; live.t0 = t0;
@@ -42680,8 +42680,9 @@ function vv3Cap(live, t0) {
 function vv3Notes(src, i, t, back) {
   const L = src && src.nt && src.nt[i], out = []; if (!L) return out;
   let hi = L.length; { let lo = 0; while (lo < hi) { const m = (lo + hi) >> 1; if (L[m].a <= t + 1e-9) lo = m + 1; else hi = m; } }
-  for (let j = hi - 1; j >= 0 && out.length < 24; j--) {
-    const o = L[j], e = o.e; if (e.removed) continue; if (o.a < t - (back || 12)) break;
+  const lim = t - (back || 12) - (L.mx || 0);              // a held note older than the window still sounds: back by the longest note
+  for (let j = hi - 1; j >= 0 && out.length < 256; j--) {
+    const o = L[j], e = o.e; if (e.removed) continue; if (o.a < lim) break;
     out.push({n: e.out, v: e.vel == null ? .8 : e.vel, a: o.a, b: e.dur != null ? o.a + e.dur : (i === DRUM_T ? o.a + .05 : Infinity)});
   }
   return out.reverse();
@@ -42689,7 +42690,7 @@ function vv3Notes(src, i, t, back) {
 // live (Vorschau): the same from the live note log (engine time = context time)
 function vv3LiveSrc() {
   if (!AU.ctx) return null; const t0 = R.playing ? R.startTime : 0, nt = [];
-  for (let k = Math.max(0, LOG.n - 512); k < LOG.n; k++) { const e = LOG.buf[k % 4096]; if (!e || !(e.track >= 0) || e.src === 'retune' || e.src === 'click') continue; (nt[e.track] || (nt[e.track] = [])).push({e, a: e.time - t0}); }
+  for (let k = Math.max(0, LOG.n - 512); k < LOG.n; k++) { const e = LOG.buf[k % 4096]; if (!e || !(e.track >= 0) || e.src === 'retune' || e.src === 'click') continue; const L = nt[e.track] || (nt[e.track] = []); L.push({e, a: e.time - t0}); L.mx = Math.max(L.mx || 0, e.dur || 0); }
   return {nt, t0, live: true};
 }
 const vv3Frac = x => ((x % 1) + 1) % 1;
@@ -42709,6 +42710,12 @@ function vv3MkEnv(e, a, b, t) {
   if (t <= b) return at(t - a);
   const l0 = at(b - a), m = (t - b) * K, o = -RD + (l0 + RD) * Math.pow(rC, m); return o <= 0 ? 0 : o;
 }
+// how long a voice keeps sounding after its note off: EG 2 release from its level down to 0 (mkEnvB stage 4 ends there; GATE: 3 ms)
+function vv3MkRel(T, a, b) {
+  if (T.a.gate) return .004; const W = MKW_(), RD = Math.pow(10, -2.25), K = VV3_SR / VV3_CR, Rl = W.dec(T.e2.r);
+  const rC = Math.exp(-1 / (Math.max(1e-5, Rl) * K / -Math.log((.1 + RD) / (1 + RD)))), l0 = isFinite(b) ? vv3MkEnv(T.e2, a, b, b) : 1;
+  return l0 <= 0 ? 0 : Math.log(RD / (l0 + RD)) / Math.log(rC) / K;
+}
 const vv3MkLfoV = (n, w, ph) => (w === 3 ? null : w === 0 ? (ph < .5 ? 2 * ph : 2 * ph - 2) : w === 1 ? (n === 2 ? (ph < .5 ? 1 : 0) : (ph < .5 ? 1 : -1)) : n === 2 ? Math.sin(2 * Math.PI * ph) : (ph < .25 ? 4 * ph : ph < .75 ? 2 - 4 * ph : 4 * ph - 4));
 // the LFO phase of timbre T (n = 1 | 2) at video time t: Tempo Sync + Key Sync aus = locked to the song position; Key Sync
 // Timbre = from the first note after all keys up; Key Sync Stimme = from the note on of the newest voice; else free running
@@ -42720,9 +42727,39 @@ function vv3MkLfo(T, n, t, src, notes, bpm) {
   if (sync && ks === 0) ph = vv3Frac(t / spb / (W.LSYNC[clamp(Math.round(L.note), 0, 14)] * 4));
   else if (ks === 2 && notes.length) { from = notes[notes.length - 1].a; ph = vv3Frac(rate * (t - from)); }
   else if (ks === 1 && notes.length) {                   // the first note of the newest group of overlapping notes
-    let g = notes[notes.length - 1].a; for (let j = notes.length - 2; j >= 0; j--) if (notes[j].b > g - 1e-9 && notes[j].a <= g) g = notes[j].a; from = g; ph = vv3Frac(rate * (t - g));
+    let g = notes[notes.length - 1].a; for (let j = notes.length - 2; j >= 0; j--) if (notes[j].b > g + 1e-6 && notes[j].a <= g) g = notes[j].a; from = g; ph = vv3Frac(rate * (t - g));
   } else ph = vv3Frac(rate * (t + (src && src.t0 != null && !src.live ? src.t0 : 0)));
   return {ph, rate, sync, ks, w: Math.round(L.w), v: vv3MkLfoV(n, Math.round(L.w), ph), from};
+}
+// LFO FREQ moved while a voice sounds (PATCH → LFO2 FREQ, SEQ ZIEL LFO1/2 FREQ): the worklet then advances the phase with
+// mkLHz(FREQ + offset) of the newest voice (block()/voice(): lr2 = l2x(xL2g), mkLHz(f + so[25|26])). The extra phase against the
+// plain rate is integrated here over the time the voices sounded (1/400 s steps; sequential frames continue the last sum)
+function vv3MkLfoMod(i, T, n, t, src, base, bpm) {
+  const L = T['l' + n], W = MKW_(); if (L.sync >= .5) return base;
+  const pv = T.p.filter(c => Math.round(c.d) === 7), sqOn = T.seq && T.seq.on >= .5 && T.seq.q.some(q => Math.round(q.k) === 24 + n);
+  if (!sqOn && (n === 1 || !pv.some(c => c.i))) return base;
+  const all = (src && src.nt && src.nt[i]) || [], r0 = W.lfoHz(L.f), ks = Math.round(L.ks);
+  const S0 = ks === 2 || ks === 1 ? (base.from != null ? base.from : t) : -1e9, key = i + ':' + n + ':' + S0;
+  let c = VV3.ic && VV3.ic[key]; if (!c || c.t > t + 1e-9) c = {t: Math.max(S0, all.length ? all[0].a : t), acc: 0};
+  const dt = 1 / 400; let j = 0;
+  const lim = (all.mx || 0) + 40;                           // the newest sounding voice: from the latest note on backwards
+  const newest = tau => { let k = j; while (k + 1 < all.length && all[k + 1].a <= tau) k++; j = k;
+    for (; k >= 0; k--) { const o = all[k]; if (o.a > tau) continue; if (o.a < tau - lim) break; if (o.e.removed) continue; const b = o.e.dur != null ? o.a + o.e.dur : Infinity; if (tau <= b + vv3MkRel(T, o.a, b)) return {n: o.e.out, v: o.e.vel == null ? .8 : o.e.vel, a: o.a, b}; }
+    return null; };
+  { let lo = 0, hi = all.length; while (lo < hi) { const m = (lo + hi) >> 1; if (all[m].a <= c.t) lo = m + 1; else hi = m; } j = Math.max(0, lo - 1); }
+  for (let tau = c.t; tau < t - 1e-9; tau += dt) {
+    const h = Math.min(dt, t - tau), m = tau + h / 2; let nv = newest(m); if (!nv) continue;
+    if (ks === 2) { const own = newest(t); if (!own || own.a !== nv.a) continue; }
+    let x = 0;
+    if (n === 2) for (const pc of pv) { if (!pc.i) continue; const s_ = pc.s;
+      const v = s_ === 0 ? vv3MkEnv(T.e1, nv.a, nv.b, m) : s_ === 1 ? vv3MkEnv(T.e2, nv.a, nv.b, m) : s_ === 2 ? (vv3MkLfo(T, 1, m, src, [nv], bpm).v || 0) : s_ === 3 ? (vv3MkLfo(T, 2, m, src, [nv], bpm).v || 0) : s_ === 4 ? nv.v : s_ === 5 ? (nv.n - 60) / 60 : s_ === 7 ? 0 : 0;
+      x += pc.i / 63 * 127 * v; }
+    if (sqOn) { const sq = vv3MkSeq(T, m, m / (60 / bpm), [nv], bpm); if (sq && sq.val[24 + n]) x += sq.val[24 + n]; }
+    if (x) c.acc += (W.lfoHz(Math.max(0, Math.min(127, L.f + x))) - r0) * h;
+  }
+  c.t = t; (VV3.ic || (VV3.ic = {}))[key] = c;
+  const ph = vv3Frac(base.ph + c.acc);
+  return Object.assign({}, base, {ph, v: vv3MkLfoV(n, base.w, ph), fm: c.acc});
 }
 // the mod sequencer: order, step lengths (beats), position at song beat sb / time since key sync
 function vv3MkSeq(T, t, sb, notes, bpm) {
@@ -42734,7 +42771,7 @@ function vv3MkSeq(T, t, sb, notes, bpm) {
   const res = Math.round(S_.res), D = []; for (let s = 0; s < 16; s++) D[s] = W.SRES[clamp(res + (sl ? Math.round(clamp(sl.v[s], -6, 6)) : 0), 0, 15)] * 4;
   let C = 0; for (const s of O) C += D[s];
   const loop = S_.run >= .5, ks = clamp(Math.round(S_.ks), 0, 2);
-  let b; if (ks === 0) b = sb; else { if (!notes.length) return {O, D, j: 0, u: 0, step: O[0], val: {}, idle: true}; let g = notes[notes.length - 1].a; if (ks === 1) for (let j = notes.length - 2; j >= 0; j--) if (notes[j].b > g - 1e-9 && notes[j].a <= g) g = notes[j].a; b = (t - g) / (60 / bpm); }
+  let b; if (ks === 0) b = sb; else { if (!notes.length) return {O, D, j: 0, u: 0, step: O[0], val: {}, idle: true}; let g = notes[notes.length - 1].a; if (ks === 1) for (let j = notes.length - 2; j >= 0; j--) if (notes[j].b > g + 1e-6 && notes[j].a <= g) g = notes[j].a; b = (t - g) / (60 / bpm); }
   if (b == null) b = 0;
   let j = 0, u = 0;
   if (!loop && b >= C) { j = O.length - 1; u = D[O[j]]; }
@@ -42753,7 +42790,7 @@ function vv3MkState(i, t, st, src) {
   const voices = notes.filter(x => x.a <= t && (x.b >= t || vv3MkEnv(T.e2, x.a, x.b, t) > .002));
   const nv = voices.length ? voices[voices.length - 1] : null;
   const e1 = nv ? vv3MkEnv(T.e1, nv.a, nv.b, t) : 0, e2 = nv ? vv3MkEnv(T.e2, nv.a, nv.b, t) : 0;
-  const l1 = vv3MkLfo(T, 1, t, src, notes.filter(x => x.a <= t), bpm), l2 = vv3MkLfo(T, 2, t, src, notes.filter(x => x.a <= t), bpm);
+  const nOn = notes.filter(x => x.a <= t), l1 = vv3MkLfoMod(i, T, 1, t, src, vv3MkLfo(T, 1, t, src, nOn, bpm), bpm), l2 = vv3MkLfoMod(i, T, 2, t, src, vv3MkLfo(T, 2, t, src, nOn, bpm), bpm);
   const sq = vv3MkSeq(T, t, st && st.sb != null ? st.sb : t / (60 / bpm), notes.filter(x => x.a <= t), bpm);
   // the virtual patch (W-18): source x intensity / 63 x the span of the destination, here in the units of the plate knobs
   const SPAN = [24, 63, 127, 127, 127, 127, 63, 127], kt = nv ? nv.n : 60, x = {};
@@ -42770,14 +42807,14 @@ function vv3MkState(i, t, st, src) {
   return {pm, T, notes, nv, voices, e1, e2, l1, l2, sq, x, cut, cutKnob: T.f.cut, bpm};
 }
 /* ---------- the analog engine (worklet control(): LFOs, envelopes, mod matrix) and WT (native LFOs) ---------- */
-function vv3VaLfo(p, n, t, src, nv) {
+function vv3VaLfo(p, n, t, src, nv, nat) {   // nat: WT = native LFOs (no retrig, no fade-in)
   const sh = p['l' + n + 'shape'] | 0, sy = +p['l' + n + 'sync'] || 0, rate = +p['l' + n + 'rate'] || 1, bpm = (src && src.bpm) || S.bpm;
   let ph;
-  if (sy > 0) ph = vv3Frac(t * bpm / 60 / sy);
-  else if (p['l' + n + 'retrig'] && nv) ph = vv3Frac(rate * (t - nv.a));
+  if (!nat && p['l' + n + 'retrig'] && nv) ph = vv3Frac((sy > 0 ? bpm / 60 / sy : rate) * (t - nv.a));   // worklet: the voice phase from 0 at its note on
+  else if (sy > 0) ph = vv3Frac(t * bpm / 60 / sy);
   else ph = vv3Frac(rate * (t + (src && src.t0 != null && !src.live ? src.t0 : 0)));
   const v = sh === 0 ? Math.sin(2 * Math.PI * ph) : sh === 1 ? (ph < .5 ? 4 * ph - 1 : 3 - 4 * ph) : sh === 2 ? 2 * ph - 1 : sh === 3 ? (ph < .5 ? 1 : -1) : null;
-  const fd = +p['l' + n + 'fade'] || 0, fade = fd > 0 && nv ? Math.min(1, Math.max(0, t - nv.a) / fd) : 1;
+  const fd = nat ? 0 : +p['l' + n + 'fade'] || 0, fade = fd > 0 && nv ? Math.min(1, Math.max(0, t - nv.a) / fd) : 1;
   return {ph, v, sh, fade, rate: sy > 0 ? bpm / 60 / sy : rate, sync: sy > 0};
 }
 function vv3Adsr(e, a, b, t) {               // envValueAt (the app's ADSR) and the release of the worklet (envCoefs: -rd + (L + rd) e^-dt·ld/R)
@@ -42792,8 +42829,8 @@ function vv3VaState(i, t, src) {
   const ae = {a: p.aA, d: p.aD, s: p.aS, r: p.aR, c: p.aCurve}, fe = {a: p.fA, d: p.fD, s: p.fS, r: p.fR, c: p.fCurve}, me = {a: p.mA, d: p.mD, s: p.mS, r: p.mR, c: p.mCurve};
   const voices = notes.filter(x => x.b >= t || vv3Adsr(ae, x.a, x.b, t) > .002), nv = voices.length ? voices[voices.length - 1] : null;
   const amp = nv ? vv3Adsr(ae, nv.a, nv.b, t) : 0, fo = nv ? vv3Adsr(fe, nv.a, nv.b, t) : 0, mo = nv ? vv3Adsr(me, nv.a, nv.b, t) : 0;
-  const l1 = vv3VaLfo(p, 1, t, src, nv), l2 = vv3VaLfo(p, 2, t, src, nv);
-  const SRCV = {lfo1: (l1.v || 0) * l1.fade, lfo2: (l2.v || 0) * l2.fade, fenv: fo, menv: mo, vel: nv ? nv.v : 0, key: nv ? (nv.n - 60) / 60 : 0, mw: +p.mw || 0, rnd: 0, aenv: amp}, dst = {};
+  const nat = snd.engine === 'wt', l1 = vv3VaLfo(p, 1, t, src, nv, nat), l2 = vv3VaLfo(p, 2, t, src, nv, nat);
+  const SRCV = {lfo1: (l1.v || 0) * l1.fade, lfo2: (l2.v || 0) * l2.fade, fenv: fo, menv: mo, vel: nv ? nv.v : 0, key: nv ? (nv.n - 60) / 24 : 0, mw: +p.mw || 0, rnd: 0, aenv: amp}, dst = {};
   for (const m of snd.mods || []) if (nv && m.src in SRCV && !/^fx\./.test(m.dst)) dst[m.dst] = (dst[m.dst] || 0) + m.amt * SRCV[m.src];
   // cutoff of the worklet (control): cutN0 + kt (pitch - 60) + clamp(fenv + mod) x 72 x env x velF + cutoff-mod x 120 (semitones)
   const cut0 = 69 + 12 * Math.log2((+p.cutoff || 20000) / 440), velF = nv ? 1 - (+p.fvel || 0) + (+p.fvel || 0) * nv.v : 1;
@@ -42849,6 +42886,7 @@ function vv3Knob(g, cx, cy, r, n, lab, C, mod) {
   g.save();
   g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = Math.max(1, r * .14); g.beginPath(); g.arc(cx, cy, r * 1.18, Math.PI * .75, Math.PI * 2.25); g.stroke();
   g.strokeStyle = C.amber; g.beginPath(); g.arc(cx, cy, r * 1.18, Math.PI * .75, Math.PI * (.75 + 1.5 * clamp(n, 0, 1))); g.stroke();
+  if (mod != null && Math.abs(mod - n) < .004) mod = null;
   if (mod != null) { const a0 = Math.PI * (.75 + 1.5 * clamp(n, 0, 1)), a1 = Math.PI * (.75 + 1.5 * clamp(mod, 0, 1)); g.strokeStyle = C.play; g.lineWidth = Math.max(1.5, r * .22); g.beginPath(); g.arc(cx, cy, r * 1.42, Math.min(a0, a1), Math.max(a0, a1) + .001); g.stroke(); }
   g.fillStyle = '#17191c'; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); g.strokeStyle = '#000'; g.lineWidth = 1; g.stroke();
   const pt = (m, col, w) => { const a = (-135 + 270 * clamp(m, 0, 1)) * Math.PI / 180; g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); g.moveTo(cx + Math.sin(a) * r * .25, cy - Math.cos(a) * r * .25); g.lineTo(cx + Math.sin(a) * r * .85, cy - Math.cos(a) * r * .85); g.stroke(); };
@@ -42894,7 +42932,30 @@ function vv3PlateStatic(M, px, C) {
   };
   g.strokeStyle = ink; g.lineWidth = 1.3;
   for (const q of M.SEC) g.strokeRect(q[4] * XU, q[6] * YU, (q[5] - q[4]) * XU, (q[7] - q[6]) * YU);
-  for (const q of M.SEC) if (q[1]) { const [a, b] = q[1].split('|'); if (!b) txt(a, q[2] * XU, q[3] * YU, 11, (q[5] - q[4]) * XU); else { txt(a, q[4] * XU + 4, q[3] * YU, 10, null, false, true); g.font = '650 10px ' + C.ui; txt(b, q[4] * XU + 8 + g.measureText(a).width, q[3] * YU, 10, null, true, true); } }
+  for (const q of M.SEC) if (q[1]) { const [a, b] = q[1].split('|'); if (!b) { txt(a, q[2] * XU, q[3] * YU, 11, (q[5] - q[4]) * XU); continue; }
+    // as buildPlate: both parts fitted into the section, the second inverse
+    g.font = '650 100px ' + C.ui; const wAll = g.measureText(a + b + '  ').width / 100 * 11, max = (q[5] - q[4]) * XU - 6, fs = wAll <= max ? 11 : Math.max(11 * .55, 11 * max / wAll * .98);
+    g.font = '650 ' + fs + 'px ' + C.ui; const w1 = g.measureText(a).width * 1.02, w2 = g.measureText(b).width + 2.8 * fs / 11, x0 = Math.max(q[4] * XU + 2, q[2] * XU - (w1 + w2) / 2);
+    txt(a, x0, q[3] * YU, fs, null, false, true); txt(b, x0 + w1 + 2, q[3] * YU, fs, null, true, true); }
+  // the printed lines and prints of buildPlate (boxes, brackets, OSC 2 PITCH, HOLD, CURSOR, PAGE, lists, legends)
+  { const X = x => x * XU, Y = y => y * YU, ln = (a, b, c, d) => { g.beginPath(); g.moveTo(X(a), Y(b)); g.lineTo(X(c), Y(d)); g.stroke(); }, rc = (x0, x1, y0, y1) => g.strokeRect(X(x0), Y(y0), X(x1 - x0), Y(y1 - y0));
+    const pg = (pts, fill) => { g.beginPath(); pts.forEach(([x, y], k) => (k ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y)))); g.closePath(); if (fill) { g.fillStyle = ink; g.fill(); } else g.stroke(); };
+    rc(55.8, 60.8, 19.1, 34.3); rc(67.4, 75.9, 25.9, 36.9); ln(71.6, 25.9, 71.6, 36.9); rc(73.8, 77.4, 7.8, 14.8);
+    pg([[78.1, 49.3], [88.4, 49.3], [88.4, 68.9], [83.4, 68.9], [83.4, 61.1], [78.1, 61.1]]); pg([[89.0, 49.3], [99.3, 49.3], [99.3, 61.1], [93.9, 61.1], [93.9, 68.9], [89.0, 68.9]]);
+    pg([[88.25, 56.3], [88.95, 57.7], [88.25, 59.1]], true);
+    ln(11.6, 82.7, 99.5, 82.7); ln(99.5, 77.3, 99.5, 82.7); ln(82.3, 37.0, 86.6, 37.0); ln(90.7, 37.0, 95.0, 37.0); ln(82.3, 37.0, 82.3, 38.4); ln(95.0, 37.0, 95.0, 38.4); ln(88.4, 40.1, 89.3, 40.1); ln(92.2, 40.1, 93.2, 40.1);
+    ln(80.4, 68.4, 80.4, 71.4); ln(80.4, 71.4, 97.0, 71.4); ln(18.7, 57.9, 19.8, 57.9); ln(6.3, 74.4, 6.3, 79.4); ln(6.3, 74.4, 6.6, 74.4); ln(6.3, 79.4, 6.6, 79.4);
+    g.fillStyle = ink; g.fillRect(9, Y(48.3) - 4, 14, 8); txt(': VOCODER PARAMETER', 26, Y(48.3), 8.2, 82, false, true);
+    txt('OSC 2 PITCH', X(27.8), Y(36.1), 8.2, 100); txt('HOLD', X(48.2), Y(32.3), 8.2, 40, true);
+    txt('ORIGINAL', X(75.6), Y(9.4), 7.2, 34); txt('VALUE', X(75.6), Y(10.9), 7.2, 34);
+    txt('CURSOR', X(84.25), Y(20.0), 8.2, 80); txt('PAGE', X(84.25), Y(28.8), 8.2, 80); txt('COMPARE', X(88.65), Y(37.0), 8.2, 40); txt('DEMO', X(90.75), Y(40.1), 8.2, 28);
+    ['1 OCTAVE', '2 OCTAVE', '3 OCTAVE', '4 OCTAVE'].forEach((t, k) => txt(t, X(69.5), Y(27.6 + 2.5 * k), 8.2, 38));
+    ['UP', 'DOWN', 'ALT 1', 'ALT 2', 'RANDOM', 'TRIGGER'].forEach((t, k) => txt(t, X(73.75), Y(27.2 + 1.75 * k), 8.2, 38));
+    for (const [xo, xs, y] of [[51.7, 53.7, 39.3], [70.8, 73.2, 59.1]]) {
+      g.strokeStyle = ink; g.lineWidth = .9; g.beginPath(); g.arc(X(xo), Y(y), 2.6, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = ink; g.beginPath(); g.arc(X(xs), Y(y), 1.2, 0, Math.PI * 2); g.fill();
+      for (let r = 0; r < 8; r++) { const a = r * Math.PI / 4; g.beginPath(); g.moveTo(X(xs) + Math.cos(a) * 2, Y(y) + Math.sin(a) * 2); g.lineTo(X(xs) + Math.cos(a) * 3.5, Y(y) + Math.sin(a) * 3.5); g.stroke(); }
+      g.lineWidth = 1.3; } }
   for (const e of M.ELS) {
     const o = e.o || {};
     if (e.art === 'k') {
@@ -43104,7 +43165,7 @@ function vv3DrawVoice(g, x, y, w, h, i, t, st, C) {
   const bw = gw / pk.length; g.fillStyle = col; for (let k = 0; k < pk.length; k++) { const v = Math.max(.02, pk[k]) * gh * .46; g.fillRect(gx + k * bw, mid - v, Math.max(.8, bw - .6), v * 2); }
   // the position in the take: song beat in the clip (cs + k·L), segment at a.at … a.at + (out − in)/spb
   const L = Math.max(1, c.len * 4), cs = st.cs[i] || 0, sp = 60 / ((st.src && st.src.bpm) || S.bpm), x_ = vv3Frac(((st.tB || 0) - cs) / L) * L, sA = Math.min(a.at || 0, L), sB = Math.min(L, sA + (a.out - a.in) / sp);
-  if (st.tB != null && x_ >= sA && x_ < sB) { const f = (x_ - sA) / ((a.out - a.in) / sp); g.fillStyle = C.play; g.fillRect(gx + f * gw - 1, gy - 2, 2, gh + 4); VV3.probe = {kind: 'voice', i, t, f}; }
+  if (st.tB != null && x_ >= sA && x_ < sB) { const f = (x_ - sA) / ((a.out - a.in) / sp); g.fillStyle = '#0b0c0f'; g.fillRect(gx + f * gw - 2.5, gy - 2, 5, gh + 4); g.fillStyle = '#f2f4f8'; g.fillRect(gx + f * gw - 1, gy - 2, 2, gh + 4); VV3.probe = {kind: 'voice', i, t, f}; }
 }
 /* the track shot: header (colour, name, engine) and the instrument, in app points LW × LH */
 function vv3Shot(g, LW, LH, st, i) {
