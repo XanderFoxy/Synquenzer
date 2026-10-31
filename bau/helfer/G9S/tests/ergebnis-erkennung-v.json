@@ -1,0 +1,106 @@
+{
+ "filter-48000": {
+  "welligkeitDb": 0.002,
+  "sperreDb": 83.6,
+  "taps": 0
+ },
+ "Vorstufe": {
+  "n": 6,
+  "ok": 6
+ },
+ "filter-44100": {
+  "welligkeitDb": 0.002,
+  "sperreDb": 82.4,
+  "taps": 0
+ },
+ "filter-32000": {
+  "welligkeitDb": 0.003,
+  "sperreDb": 82.3,
+  "taps": 0
+ },
+ "hochpass": {
+  "db40": -12.3,
+  "db80": -3,
+  "db200": -0.11
+ },
+ "zeitlageMs": 0,
+ "plan": {
+  "takeS": 125.7,
+  "strecken": 12,
+  "L": 62.13,
+  "chunks": 3,
+  "lo": 3,
+  "hi": 3,
+  "ms": 1936
+ },
+ "Fenster": {
+  "n": 9,
+  "ok": 9
+ },
+ "Strecken": {
+  "n": 2,
+  "ok": 2
+ },
+ "karteFehlerMs": 0,
+ "Karte": {
+  "n": 1,
+  "ok": 1
+ },
+ "silbenNachErkennung-0": {
+  "woerter": 69,
+  "behalten": 69,
+  "verworfen": {
+   "stille": 0,
+   "null": 0,
+   "schleife": 0
+  },
+  "richtig": 100
+ },
+ "G9-21-Teil": {
+  "n": 3,
+  "ok": 3
+ },
+ "silbenNachErkennung-0.1": {
+  "woerter": 69,
+  "behalten": 69,
+  "verworfen": {
+   "stille": 0,
+   "null": 0,
+   "schleife": 0
+  },
+  "richtig": 100
+ },
+ "silbenNachErkennung-0.25": {
+  "woerter": 69,
+  "behalten": 68,
+  "verworfen": {
+   "stille": 1,
+   "null": 0,
+   "schleife": 0
+  },
+  "richtig": 98.6
+ },
+ "G9-22": {
+  "erfunden": 23,
+  "geblieben": 0,
+  "verworfen": {
+   "stille": 12,
+   "null": 11,
+   "schleife": 0
+  },
+  "n": null,
+  "ok": null
+ },
+ "Schutz": {
+  "n": 1,
+  "ok": 1
+ },
+ "Luecken": {
+  "n": 2,
+  "ok": 2
+ },
+ "Sprache": {
+  "n": 1,
+  "ok": 1
+ }
+}
