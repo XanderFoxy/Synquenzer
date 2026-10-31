@@ -2041,6 +2041,8 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .cs3 .cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .cs3 .cgrid .hb{height:44px;width:100%;min-width:0;padding:0 8px;overflow:hidden;text-overflow:ellipsis}
 .cs3 .cgrid .big{grid-column:1/-1;font-size:14px;color:var(--ink);background:var(--sel);border-color:var(--sel)}
+.cs3 .cgrid .cvdel{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;white-space:nowrap}   /* BM8 */
+.cs3 .cgrid .cvdel small{font-size:10px;opacity:.75;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .cs3 .lenrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .cs3 .lenrow .hb{flex:1 1 0;min-width:44px;height:44px;padding:0 6px}
 .cs3 .lenrow .lbl{flex:none;margin-right:2px}
@@ -5924,14 +5926,14 @@ function wheelGesture(e) {
   guardTouch(e); let g = null; const w = e.dataset.w;
   on(e, 'pointerdown', ev => { if (ev.button > 0 || g) return; ev.preventDefault(); ev.stopPropagation(); try { e.setPointerCapture(ev.pointerId); } catch (_) {}
     const r = e.querySelector('.mwell').getBoundingClientRect(); g = {id: ev.pointerId, y0: ev.clientY, v0: mkWheelVal(R.selT, w), span: Math.max(20, r.height - 8)};
-    e.classList.add('press'); cancelAnimationFrame(e._ra); });
+    e.classList.add('press'); cancelAnimationFrame(e._ra); if (typeof bmcTouch === 'function') bmcTouch(R.selT, w === 'bend' ? 'bd' : 'mw', true); });
   on(e, 'pointermove', ev => { if (!g || ev.pointerId !== g.id) return;
     const dy = (g.y0 - ev.clientY) / g.span; let v = w === 'bend' ? g.v0 + dy * 2 : g.v0 + dy;
     if (w === 'bend' && Math.abs(v) < .02) v = 0;  // dead zone +-2 % around the centre (W-17)
     mkWheelSet(R.selT, w, v, 0); wheelPaint(R.selT);
     const x = mkWheelVal(R.selT, w); if (ED.lcd) lcdShow(w === 'bend' ? 'PITCH-RAD' : 'MOD-RAD', w === 'bend' ? ft(Math.round(x * 63), 1) : String(Math.round(x * 127)));
     });
-  const end = ev => { if (!g || ev.pointerId !== g.id) return; g = null; e.classList.remove('press');
+  const end = ev => { if (!g || ev.pointerId !== g.id) return; g = null; e.classList.remove('press'); if (typeof bmcTouch === 'function') bmcTouch(R.selT, w === 'bend' ? 'bd' : 'mw', false);
     if (w === 'bend') {  // springs back to the centre in 80 ms (the worklet ramps the pitch)
       const i = R.selT, v0 = mkWheelVal(i, 'bend'), t0 = performance.now(); mkWheelSet(i, 'bend', 0, .08);
       const o = mkWheelOf(i); o.bend = v0; const st = () => { const x = Math.min(1, (performance.now() - t0) / 80); o.bend = v0 * (1 - x); wheelPaint(i); if (x < 1) e._ra = requestAnimationFrame(st); else { o.bend = 0; wheelPaint(i); } }; st();
@@ -17468,6 +17470,168 @@ function cvThin(k, pts) {
   }
   o.push(pts[pts.length - 1]); return o;
 }
+/* BM8 Laufzeit: Live-Verlauf der Regler (je Spur), Aufnahme in den Behälter, Wiedergabe als zeitgestempelte ctl-Ereignisse.
+   BmHost.ctl(i, [{k:'bd'|'mw'|'at', v, at}]) ist die feste Schnittstelle (Nachtrag 7 §2.1: {t:'ctl', list}); bis die Einbindung
+   (BM6) ihren Host bringt, steht hier ein Platzhalter, der an den Bit-Mask-Knoten der Spur weitergibt (E.ctl({list})). */
+const BMC = {fake: new Set(), h: {}, run: null, touch: {}, act: {}, src: {}, log: null, W: .02, ST: .01};
+var BmHost = (typeof window !== 'undefined' && window.BmHost && typeof window.BmHost.ctl === 'function') ? window.BmHost : {
+  ctl(i, list) {
+    if (!list || !list.length) return;
+    if (BMC.log) { for (const x of list) BMC.log.push({i, k: x.k, v: x.v, at: x.at}); if (BMC.log.length > 200000) BMC.log.splice(0, 100000); }
+    const E = AU.synth && AU.synth[i]; if (E && E.bm && typeof E.ctl === 'function') E.ctl({list});
+  }
+};
+// a Bit-Mask track (engine 'bm'); BMC.fake: the test stand-in for tracks while the engine lives in its own branch
+function bmcIs(i) { const tr = S.tracks[i]; return !!tr && tr.kind === 'synth' && !!tr.sound && (tr.sound.engine === 'bm' || BMC.fake.has(i)); }
+const bmcRest = (i, k) => (k === 'mw' ? mkWheelVal(i, 'mod') : 0);
+function bmcHist(i) {
+  if (BMC.run !== R.runId) { BMC.run = R.runId; BMC.h = {}; }
+  return BMC.h[i] || (BMC.h[i] = {bd: [], mw: [], at: [], v0: {bd: 0, mw: bmcRest(i, 'mw'), at: 0}});
+}
+// a live value of a regulator (wheel gesture, pressure gesture, API): kept in the history while the transport runs
+// (raw, every event; ret = a spring-back time in s: the value glides there). A pause > 20 ms first holds the old value.
+function bmcInput(i, k, v, ret) {
+  if (!CV_K.includes(k) || !bmcIs(i) || !R.playing || !AU.ctx) return;
+  const H = bmcHist(i), a = H[k], sp = spb(), b = t2b(AU.ctx.currentTime - AU.outLat), sb = songBeatOf(b);
+  const last = a.length ? a[a.length - 1] : null, prev = last ? last[1] : H.v0[k];
+  if (!last || b - last[0] > BMC.W / sp) a.push([b - BMC.ST / sp, prev, sb == null ? null : sb - BMC.ST / sp, 1]);
+  if (ret > 0) { a.push([b, prev, sb, 0]); a.push([b + ret / sp, +v, sb == null ? null : sb + ret / sp, 0]); }
+  else a.push([b, +v, sb, 0]);
+  if (a.length > 400000) a.splice(0, 200000);
+}
+// a finger on / off a regulator: live wins over the curve while it lasts (§5.4)
+function bmcTouch(i, k, on) { (BMC.touch[i] || (BMC.touch[i] = {}))[k] = !!on; }
+const bmcTouching = (i, k) => !!(BMC.touch[i] && BMC.touch[i][k]);
+// the history's value at beat b (straight lines between the events, the value before the first event = the start value)
+function bmcVal(H, k, b) {
+  const a = H[k]; if (!a.length || b < a[0][0]) return a.length && b >= a[0][0] ? a[0][1] : (a.length ? (a[0][3] ? a[0][1] : H.v0[k]) : H.v0[k]);
+  let lo = 0, hi = a.length - 1; if (b >= a[hi][0]) return a[hi][1];
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (a[m][0] <= b) lo = m; else hi = m; }
+  const p = a[lo], q = a[hi]; return q[0] - p[0] < 1e-12 ? q[1] : p[1] + (q[1] - p[1]) * (b - p[0]) / (q[0] - p[0]);
+}
+// the song beat of transport beat b (from the nearest event; null when there was no song)
+function bmcSb(H, k, b) {
+  const a = H[k]; if (!a.length) { const s = songBeatOf(b); return s; }
+  let best = a[0]; for (let lo = 0, hi = a.length - 1; lo <= hi;) { const m = (lo + hi) >> 1; if (Math.abs(a[m][0] - b) < Math.abs(best[0] - b)) best = a[m]; if (a[m][0] < b) lo = m + 1; else hi = m - 1; }
+  return best[2] == null ? null : b - (best[0] - best[2]);
+}
+// the spans [a, b] of [B0, B1) in which regulator k moved (± 20 ms)
+function bmcSpans(H, k, B0, B1) {
+  const w = BMC.W / spb(), out = [];
+  for (const p of H[k]) {
+    if (p[3] || p[0] < B0 - 1e-9 || p[0] >= B1 - 1e-9) continue;
+    const a = Math.max(B0, p[0] - w), b = Math.min(B1, p[0] + w);
+    if (out.length && a <= out[out.length - 1][1] + 1e-9) out[out.length - 1][1] = Math.max(out[out.length - 1][1], b); else out.push([a, b]);
+  }
+  return out;
+}
+function bmcTouched(i, B0, B1) { if (!BMC.h[i] || BMC.run !== R.runId) return false; const H = BMC.h[i]; return CV_K.some(k => bmcSpans(H, k, B0, B1).length > 0); }
+/* the takes's regulator movement of [B0, B1) into containers: map(b, sb) → [container, t, L] or null.
+   o.fresh: a new container (the curve = what was played); o.replace: the range is replaced (Ersetzen); else Overdub = „Berühren“:
+   only inside the spans the regulator moved the new points replace the old ones. Returns the containers that changed. */
+function bmcWrite(i, B0, B1, map, o) {
+  o = o || {}; const H = BMC.h[i], done = new Set();
+  if (!H || BMC.run !== R.runId || !(B1 > B0)) return done;
+  const st = BMC.ST / spb();
+  for (const k of CV_K) {
+    const spans = bmcSpans(H, k, B0, B1);
+    if (!spans.length && !o.replace) continue;
+    // the points: grid of 10 ms inside each span (both ends included), mapped; a new piece where the container or the loop turns
+    const segs = o.replace ? (spans.length ? [[B0, B1]] : []) : spans, pieces = [];
+    if (o.replace && !spans.length) continue;
+    for (const [sa, sbE] of segs) {
+      let cur = null;
+      for (let b = sa, end = false; !end; b += st) {
+        if (b >= sbE - 1e-9) { b = sbE; end = true; }
+        const m = map(b, bmcSb(H, k, b)); if (!m) { cur = null; continue; }
+        const [c, t, L] = m; if (!(t >= 0 && t < L)) { cur = null; continue; }
+        if (!cur || cur.c !== c || t < cur.p[cur.p.length - 1][0] - 1e-9) { cur = {c, L, p: [], e0: b === sa, e1: false}; pieces.push(cur); }
+        cur.p.push([t, bmcVal(H, k, b)]); cur.e1 = end;
+      }
+    }
+    const seen = new Map();                                       // container → had a curve k before this take
+    for (const pc of pieces) {
+      const c = pc.c, P = pc.p;
+      if (!seen.has(c)) {
+        seen.set(c, !o.fresh && !!(c.cv && c.cv[k]));
+        if (o.fresh || !(c.cv && c.cv[k])) {                        // a new curve starts with the value at the start of the take
+          const m0 = map(B0, bmcSb(H, k, B0)), cv = Object.assign({}, c.cv || {});
+          cv[k] = m0 && m0[0] === c && m0[1] >= 0 && m0[1] < m0[2] ? [[cvQt(m0[1]), cvQv(k, bmcVal(H, k, B0))]] : [];
+          c.cv = cv;
+        }
+      }
+      const had = seen.get(c);
+      let cur = c.cv[k].map(p => [p[0], p[1]]);
+      const ta = P[0][0], tb = P[P.length - 1][0];
+      // Berühren: at the span's edges the old curve goes on (the new points replace the old ones only inside)
+      if (had && !o.replace && cur.length) { if (pc.e0) P[0] = [ta, cvAt(cur, ta)]; if (pc.e1 && P.length > 1) P[P.length - 1] = [tb, cvAt(cur, tb)]; }
+      cur = cur.filter(p => p[0] < ta - 1e-9 || p[0] > tb + 1e-9);
+      for (const p of cvThin(k, P.map(p => [cvQt(p[0]), cvQv(k, p[1])]))) cur.push(p);
+      c.cv[k] = cvNormCurve(k, cur, pc.L) || [];
+      done.add(c);
+    }
+    for (const c of seen.keys()) { const out = {}; for (const kk of CV_K) if (c.cv && c.cv[kk] && c.cv[kk].length) out[kk] = c.cv[kk]; cvSet(c, out); }
+  }
+  return done;
+}
+// ---- Wiedergabe: the curve points of local time [ta, tb) of one container instance (base = beat of its time 0) ----
+function bmcPts(out, k, c, ta, tb, base, first) {
+  if (!c || !c.length || tb <= ta) return;
+  const st = BMC.ST / spb();
+  if (first) out.push([k, base + ta, cvAt(c, ta)]);
+  let j = 0; while (j < c.length - 1 && c[j + 1][0] <= ta) j++;
+  for (; j < c.length; j++) {
+    const p = c[j], q = c[j + 1], t0 = p[0], t1 = q ? q[0] : Infinity;
+    if (t0 >= tb) break;
+    if (t0 >= ta) out.push([k, base + t0, p[1]]);
+    if (q && q[1] !== p[1]) for (let g = (Math.floor(Math.max(ta, t0) / st) + 1) * st; g < Math.min(tb, t1) - 1e-9; g += st) if (g >= ta) out.push([k, base + g, p[1] + (q[1] - p[1]) * (g - t0) / (t1 - t0)]);
+  }
+}
+function bmcSend(i, pts, late) {
+  if (!pts.length) return;
+  const now = AU.ctx.currentTime;
+  pts.sort((a, b) => a[1] - b[1]);
+  const list = [];
+  for (const [k, B, v] of pts) { let at = b2t(B); if (late && at < now) at = now; list.push({k, v, at}); }
+  if (late) list[0].cut = 1;                                     // a switch inside the planned window: queued curve events from here on go
+  BmHost.ctl(i, list);
+}
+// back to rest: Bend 0, Druck 0, Rad = the wheel's position (§5.4)
+function bmcReset(i, at, src) {
+  const a = BMC.act[i]; if (!a) return; const list = [];
+  for (const k of CV_K) if (a[k] && (!src || a[k] === src)) { a[k] = null; if (!bmcTouching(i, k)) list.push({k, v: bmcRest(i, k), at}); }
+  if (list.length) { list[0].cut = 1; BmHost.ctl(i, list); }    // cut: curve events queued behind `at` are dropped (■, Panik)
+}
+function bmcResetAll(at) { for (const i of Object.keys(BMC.act)) bmcReset(+i, at); BMC.src = {}; }
+// scheduleTrack's part: the clip's curves in [from, to) (every loop pass starts on its start value); a clip without a curve
+// that played one before → rest at the window start
+function bmcSched(i, clip, from, to, late) {
+  if (!AU.ctx) return;
+  const a = BMC.act[i] || (BMC.act[i] = {}), cv = clip && clip.cv, srcKey = clip ? clip : null, pts = [];
+  const fresh = BMC.src[i] !== srcKey; BMC.src[i] = srcKey;
+  for (const k of CV_K) if (a[k] === 'clip' && !(cv && cv[k])) { a[k] = null; if (!bmcTouching(i, k)) pts.push([k, from, bmcRest(i, k)]); }
+  if (cv) {
+    const L = clip.len * 4, cs = R.cstart[i];
+    for (const k of CV_K) {
+      const c = cv[k]; if (!c || bmcTouching(i, k)) continue;
+      a[k] = 'clip';
+      let n = Math.floor((from - cs) / L + 1e-9); if (n < 0) n = 0;
+      for (let B = cs + n * L; B < to - 1e-9; B += L) {
+        const ta = Math.max(0, from - B), tb = Math.min(L, to - B); if (tb <= ta) continue;
+        bmcPts(pts, k, c, ta, tb, B, fresh && ta > 1e-9 && B + ta <= from + 1e-9);
+      }
+    }
+  }
+  bmcSend(i, pts, late);
+}
+// the song melody's curves in song beats [sa, sb) (beat = song beat + off)
+function bmcSchedMel(i, mel, sa, sb, off, first) {
+  if (!AU.ctx) return;
+  const a = BMC.act[i] || (BMC.act[i] = {}), cv = mel && mel.cv, pts = [];
+  for (const k of CV_K) if (a[k] === 'mel' && !(cv && cv[k])) { a[k] = null; if (!bmcTouching(i, k)) pts.push([k, sa + off, bmcRest(i, k)]); }
+  if (cv) for (const k of CV_K) { const c = cv[k]; if (!c || bmcTouching(i, k)) continue; a[k] = 'mel'; bmcPts(pts, k, c, Math.max(0, sa), sb, off, first); }
+  bmcSend(i, pts, false);
+}
 const stripReplacer = (k, v) => (k === 'born' || k === 'bornRun' ? undefined : v);
 
 /* ---------------- 40-audio.js ---------------- */
@@ -17951,6 +18115,7 @@ function mkWheelSet(i, w, v, ret) {
   const o = mkWheelOf(i); if (!o) return 0;
   if (w === 'bend') o.bend = clamp(+v || 0, -1, 1); else o.mod = clamp(+v || 0, 0, 1);
   const E = AU.synth[i]; if (E && sndOf(i) && sndOf(i).engine === 'mk') E.mkWheel(w === 'bend' ? {bend: o.bend, ret: ret || 0} : {mod: o.mod});
+  if (bmcIs(i)) bmcInput(i, w === 'bend' ? 'bd' : 'mw', w === 'bend' ? o.bend : o.mod, ret);   // BM8: in den Verlauf (Aufnahme)
   if (w === 'mod') MKECO.delete(sndOf(i) || {});
   return w === 'bend' ? o.bend : o.mod;
 }
@@ -19240,8 +19405,9 @@ function tickAhead(h) { if (AU.ctx && R.playing) tick(h || .3); }
 function scheduleTrack(i, from, to, late) {
   if (to <= from) return;
   OS.tick++;                                                     // V2c′: clip content may have changed since the last look
-  const s = R.slot[i]; if (s < 0) return;
+  const s = R.slot[i]; if (s < 0) { if (BMC.act[i]) bmcSched(i, null, from, to, late); return; }
   const tr = S.tracks[i], oc = ownPlaying(i), clip = oc || tr.clips[s];
+  if (BMC.act[i] || (clip && clip.cv && bmcIs(i))) bmcSched(i, tr.mute || !bmcIs(i) ? null : clip, from, to, late);   // BM8: Bend · Rad · Druck des Clips
   if (tr.stimme) { if (clip && !tr.mute) tkSched(i, clip, from, to, late, oc ? R.own[i] : null); return; }   // VS3: STIMME = Audio
   if (!clip || tr.mute || !clip.notes.length) return;
   const mu = takeMute(i);                                        // V2d′ (K2-21, 7.2): the target track's old notes are silent during the take
@@ -19725,6 +19891,10 @@ function songTickInner(b0, b1) {
       // V2b: every track's song melody on its own track (voices, sound); as heard, never mapped (§v2-3.9, V2b-03)
       for (const k in song.mel) {
         const mi = +k, mel = song.mel[k];
+        if ((mel && mel.cv && bmcIs(mi) && !S.tracks[mi].mute) || (BMC.act[mi] && Object.values(BMC.act[mi]).includes('mel'))) {   // BM8: Kurven der Song-Melodie
+          const lim = Math.min(E, insB); bmcSchedMel(mi, mel && mel.cv && bmcIs(mi) && !S.tracks[mi].mute ? mel : null, b0 - off, Math.min(b1 - off, lim), off, guard > 0 || BMC.src['m' + mi] !== R.runId);
+          BMC.src['m' + mi] = R.runId;
+        }
         if (!mel || !mel.notes.length || !S.tracks[mi] || S.tracks[mi].kind !== 'synth' || S.tracks[mi].mute) continue;
         const mu = takeMute(mi);                                    // V2d′ (K2-21): silent while the take replaces it
         for (const n of mel.notes) {
@@ -19985,7 +20155,7 @@ function songRecStartOver(o) {
   else songPlayStart(Math.min(playFrom, song.bars - 1), {countIn: preroll && from === 0 ? 1 : 0});
   if (!R.songPlay) return false;
   const sr = R.songRec = {over: true, before, pending: false, from, to, tg, mode, nt: noteT, ev: Array.from({length: MAX_T}, () => []), mine: new Map(), pass: 0, nCh: 0, nMel: 0, nClip: 0, recT: new Set(),
-    notes: [], insCh: [], parts: [], nNotes: 0,
+    notes: [], insCh: [], parts: [], nNotes: 0, cvB: R.playing && AU.ctx ? audBeat() : null,
     get startBeat() { return R.songPlay ? from * 4 + R.songPlay.off : null; }};
   // K2-21 / 7.2: Überschreiben ab n and Ersetzen silence the target track's old notes from n (to the end / in the range) while the
   // take runs (first pass); Overdub and Einfügen keep them
@@ -20134,6 +20304,14 @@ function songCommitNotes(sr, A, B, first) {
     m.notes.push({t: +Math.max(0, n.b).toFixed(4), d: n.d, n: n.n, v: n.v}); nMel++;
   }
   for (const k in song.mel) { const m = song.mel[k]; m.notes.sort((a, b) => a.t - b.t); m.len = Math.max(m.len || 1, song.bars || 1); }
+  if (bmcIs(t) && AU.ctx) {                                      // BM8: Bend · Rad · Druck des Durchgangs in Melodie bzw. eigene Clips
+    const B0 = sr.cvB != null ? sr.cvB : -1e9, B1 = Math.max(B0, audBeat()); sr.cvB = B1;
+    bmcWrite(t, B0, B1, (b, sb) => {
+      if (sb == null) return null; const x = Math.floor(sb / 4 + 1e-9); if (x < A || x >= B) return null;
+      if (ownAt(x)) { const w = ownEnsure(song, t, x); return w ? [w.c, sb - w.ds, w.c.len * 4] : null; }
+      const m = song.mel[t] || (song.mel[t] = melEmpty()); m.len = Math.max(m.len || 1, song.bars || 1, x + 1); return [m, sb, m.len * 4];
+    }, {replace: repl && first});
+  }
   sr.nNotes += mine.length; sr.nOwnN = (sr.nOwnN | 0) + nOwn; sr.nMelN = (sr.nMelN | 0) + nMel;
 }
 // V2d′ (7.4): the end of an open take after N7-R1 (S = the take's start). tb = transport beat of the press, tapAt its ctx time
@@ -20266,7 +20444,7 @@ function melNoteOff(id) { const o = MEL.open.get(id); if (o) melCommit(id, o); }
 function melRecStart() {
   if (!R.songPlay || !S.song) { toast('MEL. nimmt auf, während der Song spielt – erst ▶ SONG'); return false; }
   if (R.melRec) return true;
-  R.melRec = {before: songSnapshot(), n: 0, loops: 0};
+  R.melRec = {before: songSnapshot(), n: 0, loops: 0, b0: R.playing && AU.ctx ? audBeat() : 0};
   MEL.open.clear(); MEL.warned = false;
   if (R.selT !== S.song.melodyTrack) selectTrack(S.song.melodyTrack);   // the keys play the melody's sound (heard = stored)
   UI.dirty.song = true;
@@ -20276,6 +20454,8 @@ function melRecEnd() {
   const m = R.melRec; if (!m) return false;
   for (const [id, o] of [...MEL.open]) melCommit(id, o);
   R.melRec = null;
+  const tt = S.song && S.song.melodyTrack;                         // BM8: die Kurven des [● MEL.]-Durchgangs (Overdub = Berühren)
+  if (S.song && bmcIs(tt) && AU.ctx && R.playing) bmcWrite(tt, m.b0, audBeat(), (b, sb) => { if (sb == null || sb < 0) return null; const mm = curMel(S.song); mm.len = Math.max(mm.len || 1, Math.floor(sb / 4) + 1); return [mm, sb, mm.len * 4]; });
   if (!m.n && S.song && songSnapshot() !== m.before) { pushSongUndo(m.before, 'Song bearbeitet'); songChanged(); }   // edits during the pass: one step
   if (m.n) { pushSongUndo(m.before, 'Melodie (' + m.n + (m.n === 1 ? ' Note)' : ' Noten)')); songChanged(); toast('Melodie: ' + m.n + (m.n === 1 ? ' Note' : ' Noten') + ' aufgenommen', {label: 'Rückgängig', fn: () => undo()}); }
   UI.dirty.song = true;
@@ -20549,6 +20729,7 @@ function stop() {
   if (PV.on) previewStop();                                 // ■ also ends a browser preview phrase
   // release everything while the transport still counts beats, so the Mitschnitt (PERF) gets the real end beats
   silenceAll(now, .02);
+  bmcResetAll(now);                                         // BM8: Bend 0, Druck 0, Rad = Radstellung
   releaseInputs(r => r === 'play' || r === 'pad');
   arpEndAll();                                              // MK5 (Umfang 8): stop ends every arp note, also a latched chord
   R.playing = false; R.countIn = false; R.ciRun = false;
@@ -21023,8 +21204,9 @@ function recEndFixed(atBeat, natural) {
   recCommitOpen(Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat));
   cancelRecClicks(Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat));
   if (rec.clip) rec.clip.notes.sort((a, b) => a.t - b.t);
+  if (rec.clip && bmcIs(rec.track)) { const c = rec.clip, L = c.len * 4, B0 = rec.startBeat; bmcWrite(rec.track, B0, Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat), b => [c, (((b - B0) % L) + L) % L, L], {fresh: true}); }   // BM8
   rec.tail = natural && rec.clip ? {track: rec.track, scene: rec.scene, clip: rec.clip, until: rec.endBeat} : null;
-  const n = rec.clip ? rec.clip.notes.length : 0;
+  const n = rec.clip ? rec.clip.notes.length + (cvHas(rec.clip) ? 1 : 0) : 0;
   rec.state = 'off';
   if (!n) {
     // nothing played: no clip is created (§4.3.6). A natural close happens a lookahead early, so a note played
@@ -21082,13 +21264,15 @@ function recEndOverdub(atBeat) {
   for (const [id, o] of [...rec.open]) if (o.kind === 'od' && o.b >= atBeat - 1e-9 && rec.odEnd != null) rec.open.delete(id);   // played after the switch
   recCommitOpen(atBeat);
   rec.state = 'off'; rec.odEnd = null;
-  if (rec.added > 0 && rec.snapshot) {
+  const cvT = rec.snapshot && rec.clip && bmcIs(rec.track) && bmcTouched(rec.track, rec.startBeat, atBeat);   // BM8: Kurven-Overdub
+  if ((rec.added > 0 || cvT) && rec.snapshot) {
     const c = S.tracks[rec.track].clips[rec.scene];
     const take = odTakeOf(c);                                                       // this overdub's notes
     // before = the clip now without the take: editor gestures made during the overdub stay their own undo steps
     const ts = new Set(take), before = c && rec.clip === c ? Object.assign({}, c, {notes: c.notes.filter(n => !ts.has(n))}) : rec.snapshot;
     pushUndo(rec.track, rec.scene, before, 'Overdub');
-    analyseClip(rec.track, rec.scene, true, true, take); recResultToast(rec.track, rec.scene, rec.added, true); markDirty();
+    if (cvT && c && c === rec.clip) { const i = rec.track, L = c.len * 4; bmcWrite(i, rec.startBeat, atBeat, b => { const cs = audCstart(i, b); return [c, (((b - cs) % L) + L) % L, L]; }); }
+    if (rec.added > 0) { analyseClip(rec.track, rec.scene, true, true, take); recResultToast(rec.track, rec.scene, rec.added, true); } else toast('Kurven aufgenommen (Bend · Rad · Druck)'); markDirty();
   }
   else if (!VS.busy) toast('Nichts hinzugefügt');
   rec.snapshot = null; clipChanged(rec.track, rec.scene);
@@ -21114,12 +21298,14 @@ function recClose(bd) {
     notes.push(x);
   }
   rec.state = 'off'; rec.temp = [];
-  if (!notes.length && !late.length) { if (!VS.busy) toast('Nichts aufgenommen'); UI.dirty.all = true; return; }
+  const cvT = bmcIs(ti) && bmcTouched(ti, rec.startBeat, bd);     // BM8: Bend · Rad · Druck dieser Aufnahme
+  if (!notes.length && !late.length && !cvT) { if (!VS.busy) toast('Nichts aufgenommen'); UI.dirty.all = true; return; }
   notes.sort((a, b) => a.t - b.t);
   const clip = {len, key: Object.assign({}, rec.key || {root: S.key.root, scale: S.key.scale, src: 'auto'}), notes};
   if (S.tracks[ti].kind === 'drum') clip.seed = newSeed();
   pushUndo(ti, si, S.tracks[ti].clips[si], 'Aufnahme');
   S.tracks[ti].clips[si] = clip;
+  if (cvT) { const B0 = rec.startBeat; bmcWrite(ti, B0, bd, b => [clip, (((b - B0) % L) + L) % L, L], {fresh: true}); }
   rec.tail = {track: ti, scene: si, clip, until: bd};
   for (const [id, o] of late) { Object.assign(o, {kind: 'tail', clip, scene: si, cs: bd}); rec.open.set(id, o); }
   analyseClip(ti, si, true, true);
@@ -21593,6 +21779,7 @@ function capture() {
   pushUndo(ti, si, null, 'Fang');
   tr.clips[si] = {len: ph.len, key, notes};
   if (tr.kind === 'drum') tr.clips[si].seed = newSeed();
+  if (bmcIs(ti)) { const c = tr.clips[si], L = c.len * 4, B0 = ph.startBeat; bmcWrite(ti, B0, Math.min(ab, B0 + L), b => [c, b - B0, L], {fresh: true}); }   // BM8: FANG nimmt die Kurven mit
   analyseClip(ti, si, true, true);
   switchTrackAt(ti, si, nextBarFromAudible(), ph.startBeat);    // tick(): R.cstart = cs (phrase start) -> in phase
   CAP.last[ti] = -1e9; UI.dirty.fang = true;
@@ -21674,6 +21861,7 @@ function panic() {
   releaseInputs(); arpEndAll();                             // MK5
   if (PV.on) previewStop();                                 // a browser preview phrase stops too (§11.3)
   const c = AU.ctx; if (!c) return;
+  bmcResetAll(c.currentTime);                               // BM8
   for (const v of VOICES.slice()) v.cancel();
   tkSilence(c.currentTime, .003, true);                     // VS3 (VS3-fix: keep the plan keys, no restart)
   for (const E of AU.synth) if (E) E.panic();               // ALL-OFF in the worklet (§5.4), also notes without a proxy
@@ -33695,6 +33883,7 @@ function openClipSheet(t, s, opts) {
     g.append(B('Kopieren', () => { copyClip(t, s); toast('Clip kopiert'); reopen(); }));
     const pb = B('Einfügen', () => { if (pasteClip(t, s)) reopen(); }); pb.disabled = !CLIPBOARD.clip; g.append(pb);
     g.append(B('Duplizieren → frei', () => { const k = duplicateClip(t, s); if (k >= 0) toast('Dupliziert in Szene ' + (k + 1)); }, null, 'Duplizieren → freier Platz'));
+    if (cvHas(clip)) { const kb = B('Kurven löschen<small>Bend · Rad · Druck</small>', () => { clipCurvesClear(t, s); toast('Kurven gelöscht', {label: 'Rückgängig', fn: () => undo()}); reopen(); }, 'cvdel', 'Kurven löschen (Bend · Rad · Druck)'); g.append(kb); }   // BM8 (§5.4): nur bei Clips mit Kurven
     if (playing) g.append(B('■ Stopp', () => { stopTrack(t); closeClipSheet(); }, null, 'Diese Spur zum nächsten Takt stoppen'));
     const del = el('button', 'hb rb delb', '<span class="t">Löschen</span><span class="bar"></span>');
     let armT = 0, armAt = 0;
@@ -33762,6 +33951,35 @@ function clipLength(t, s, f) {
   afterClipEdit(t, s);
   if (R.editor === 'clip') openClipSheet(t, s);
   if (ED.roll && ED.rollAt && ED.rollAt.t === t && ED.rollAt.s === s) ED.roll.refresh();
+}
+// BM8 (§5.4): „Kurven löschen“ — cv of the clip goes completely, one undo
+function clipCurvesClear(t, s) {
+  const clip = S.tracks[t] && S.tracks[t].clips[s]; if (!clip || !clip.cv) return false;
+  pushUndo(t, s, clip, 'Kurven löschen');
+  delete clip.cv;
+  afterClipEdit(t, s);
+  return true;
+}
+// BM8 test API: the container at ort and „setClipCurves“ (normalized, one undo)
+function bmcCont(t, ort) {
+  if (typeof ort === 'number') return S.tracks[t] ? S.tracks[t].clips[ort] : null;
+  if (ort === 'mel') return S.song && S.song.mel ? S.song.mel[t] || null : null;
+  if (ort && ort.own) return S.song && S.song.own ? S.song.own[ort.own] || null : null;
+  return null;
+}
+function bmcSetCurves(t, ort, cv) {
+  const c = bmcCont(t, ort); if (!c) return false;
+  if (typeof ort === 'number') { pushUndo(t, ort, c, 'Kurven'); cvSet(c, cvNorm(cv, c.len * 4)); afterClipEdit(t, ort); return true; }
+  return !!songEdit('Kurven', () => { const d = bmcCont(t, ort); cvSet(d, cvNorm(cv, d.len * 4)); });
+}
+/* historyCheck (Regel 8): every undo step goes back and every redo comes again — undo all, redo all, the project is the same */
+function historyCheck() {
+  if (rec.state !== 'off') return false;
+  const a = serialize(), n = UNDO.length, m = REDO.length;
+  for (let k = 0; k < n; k++) undo();
+  const mid = UNDO.length === 0;
+  for (let k = 0; k < n; k++) redo();
+  return mid && UNDO.length === n && REDO.length === m && serialize() === a;
 }
 function clipQuantize(t, s) { return quantizeClip(t, s, {grid: '1/16'}); }
 // clipboard (§3.7): cleanClip + track kind; drum and synth clips never mix
@@ -42130,6 +42348,16 @@ const SYNQUENZER = {
   rec: () => recPress(), setRecOptions,
   selectSlot, selectTrack, launchScene, launchClip, stopTrack, stopAllClips,
   getClip: (t, s) => cleanClip(S.tracks[t] && S.tracks[t].clips[s]),
+  // BM8 (§5.3): ort = Szene s (Zahl) · 'mel' (Song-Melodie der Spur) · {own: id} (eigener Clip)
+  clipCurves: (t, ort) => { const c = bmcCont(t, ort); return c && c.cv ? cvClone(c.cv) : null; },
+  setClipCurves: (t, ort, cv) => bmcSetCurves(t, ort, cv),
+  clipCurvesClear: (t, s) => clipCurvesClear(t, s),
+  clipMenuItems: (t, s) => { openClipSheet(t, s); return [...EL.clipSheet.querySelectorAll('button')].map(b => b.textContent.trim()).filter(Boolean); },
+  bmcFake: (t, on) => { if (on === false) BMC.fake.delete(t); else BMC.fake.add(t); return bmcIs(t); },
+  bmcLive: (t, k, v, o) => { o = o || {}; if (o.touch != null) bmcTouch(t, k, o.touch); if (v != null) { if (k === 'bd' || k === 'mw') mkWheelSet(t, k === 'bd' ? 'bend' : 'mod', v, o.ret || 0); else bmcInput(t, k, v, o.ret || 0); } return true; },
+  bmcLog: on => { if (on === true) BMC.log = []; else if (on === false) BMC.log = null; return BMC.log ? BMC.log.slice() : null; },
+  bmcState: () => ({act: deep(BMC.act), touch: deep(BMC.touch), fake: [...BMC.fake], run: BMC.run}),
+  historyCheck: () => historyCheck(),
   setClip: (t, s, clip) => {
     const tr = S.tracks[t]; if (!tr || s < 0 || s > NS() - 1) throw new Error('Ungültiger Slot');
     const c = clip == null ? null : normClip(clip, tr.kind, S.key);
@@ -42395,7 +42623,7 @@ function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
 Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes
 Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
 Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
-const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
