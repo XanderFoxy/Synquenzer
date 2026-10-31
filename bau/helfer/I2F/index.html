@@ -11718,11 +11718,13 @@ const RecHelpers = (() => {
     const scaleOf = () => { const k = clip().key || {root: 0, scale: 'ionian'}; return {root: k.root, S: SC[k.scale] || SC.ionian}; };
     const inScale = n => { const s = scaleOf(); return s.S.includes(PC(n - s.root)); };
     function buildRows(keepCenter) {
-      const mid = keepCenter && V.rows.length ? V.rows[clamp(Math.round(V.top + V.H / V.rowH / 2), 0, V.rows.length - 1)] : null;
+      /* I2f (Fehlerliste 5): die Mitte bleibt genau, wo sie war (vorher rutschte die Ansicht nach jeder Änderung um eine Zeile) */
+      const cRow = V.top + V.H / V.rowH / 2, mIdx = clamp(Math.floor(cRow), 0, Math.max(0, V.rows.length - 1));
+      const mid = keepCenter && V.rows.length ? V.rows[mIdx] : null, frac = cRow - mIdx;
       const used = new Set(clip().notes.map(n => n.n));
       V.rows = [];
       for (let n = HI; n >= LO; n--) if (!E.fold || inScale(n) || used.has(n)) V.rows.push(n);
-      if (mid != null) centerOn(mid);
+      if (mid != null) { const r = V.rows.indexOf(mid); if (r >= 0) V.top = clamp(r + frac - V.H / V.rowH / 2, 0, Math.max(0, V.rows.length - V.H / V.rowH)); else centerOn(mid); }
     }
     const rowOfNote = n => { const i = V.rows.indexOf(n); if (i >= 0) return i; let best = 0; for (let k = 0; k < V.rows.length; k++) if (Math.abs(V.rows[k] - n) < Math.abs(V.rows[best] - n)) best = k; return best; };
     const noteOfRow = r => V.rows[clamp(Math.floor(r), 0, V.rows.length - 1)];
