@@ -1267,6 +1267,7 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .vvdr .rb i{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 4px 0 0;vertical-align:-1px}
 .pop .vvdr{margin-top:8px}
 .msheet .vvdr{margin-top:4px}
+.pop.plpick .plp.vvsp{grid-template-columns:repeat(4,minmax(44px,1fr))}   /* VV2-fix: a short range – each track ≥ 44 px wide */
 /* VV2: the sheet „Video“ has one row more (9:16 [Kamera] [Ganz mit Balken]); quer passt die Bedienung ohne Rollen in 375 px Höhe */
 @media (orientation:landscape){.vvctl{gap:4px}.vvacts,.vvprog,.vvdone,.vvsheet .vvbtn{height:44px}}
 #menu .mh{flex:none;display:flex;align-items:center;gap:12px;padding:6px 10px;border-bottom:1px solid var(--panel-edge);background:linear-gradient(#1b1d22,#121418)}
@@ -42809,7 +42810,7 @@ function vvDirTap(k, btn, a, b, after) {
   if (!ts.length) { toast('In ' + rng + ' spielt keine Spur'); return true; }
   openPop(btn, p => {
     guardTouch(p); p.classList.add('plpick');
-    p.innerHTML = `<h4>Video · ${esc(rng)} · Spur</h4><div class="plist plp">` + ts.map(t => `<button class="rb" data-t="${t}"><i style="background:var(--t${t + 1})"></i><b>${esc(svShort(t))}</b></button>`).join('') + '</div>';
+    p.innerHTML = `<h4>Video · ${esc(rng)} · Spur</h4><div class="plist plp vvsp">` + ts.map(t => `<button class="rb" data-t="${t}"><i style="background:var(--t${t + 1})"></i><b>${esc(svShort(t))}</b></button>`).join('') + '</div>';
     onTap(p, x => { closePop(); const t = +x.dataset.t; if (vvDirSet(a, b, 'spur', t)) toast('Video ' + rng + ': ' + svShort(t), songUndoAct()); }, 'button[data-t]');
   }, {name: 'vvspur'});
   return true;

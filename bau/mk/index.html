@@ -812,8 +812,8 @@ svg{display:block}
   #drumSheet .dk .knob .kl{font-size:9px;letter-spacing:.01em;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 .dtools{display:flex;gap:6px;flex:none}
 .se-cell.d1o{opacity:.35}.se-cell.d1e::after{content:'';position:absolute;right:2px;top:3px;bottom:3px;width:6px;border:3px solid var(--amber);border-left:0;border-radius:0 3px 3px 0;pointer-events:none}   /* D1 */
-@media (orientation:portrait) and (max-height:700px){.pg-dsteps .pgside.haspg .dtools{flex:0 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x}.pg-dsteps .pgside.haspg .dtools::-webkit-scrollbar{display:none}.pg-dsteps .pgside.haspg .pgnav{min-width:96px}}   /* D1: P2 with the bar pager: the tool row scrolls sideways */
-.dtools .mbtn.d1b{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:44px;padding:0 7px;flex:none}.dtools .d1b .d1i{flex:none;color:var(--amber)}.dtools .d1b small{font-size:10px;opacity:.85}
+@media (orientation:portrait) and (max-height:700px){.pg-dsteps .pgside.haspg .dtools{flex:0 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;padding:5px 0;margin:-5px 0;scrollbar-width:none;touch-action:pan-x}.pg-dsteps .pgside.haspg .dtools::-webkit-scrollbar{display:none}.pg-dsteps .pgside.haspg .pgnav{min-width:96px}}   /* D1: P2 with the bar pager: the tool row scrolls sideways */
+.dtools .mbtn.d1b{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:44px;padding:0 7px;flex:none;position:relative}.dtools .mbtn.d1b::before{content:'';position:absolute;left:0;right:0;top:min(0px,calc(50% - 22px));bottom:min(0px,calc(50% - 22px));z-index:1}   /* G-T-merge-fix D1-04: invisible 44 px hit zone, the look stays */.dtools .d1b .d1i{flex:none;color:var(--amber)}.dtools .d1b small{font-size:10px;opacity:.85}
 .dtools .mbtn{white-space:nowrap}
 .pop.d1p{width:min(340px,calc(100vw - 16px))}.plist.d1dirs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.plist.d1dirs button{min-height:44px;padding:0 4px;font-size:12px}.pop.d1p .d1x{width:100%;min-height:44px;margin-top:8px}
 .dtools .mbtn{height:34px;padding:0 10px;font-size:12px}
@@ -23077,8 +23077,24 @@ function songEnsure() {
 }
 function songClipBeats(song, t, o) { const c = o && o.own && song.own && song.own[o.own]; return c && isNum(c.len) ? c.len * 4 : clipBeats(t, o ? o.slot : -1); }
 // the whole state at song bar x (before an operation changes it)
+/* G-T-merge-fix (S2 x D1): the phase of a clip with D1 lanes repeats only after the lanes come round with the clip
+   (12 against 16 steps: 48 steps), so it is kept modulo that period (Zufall: no period, the full offset) */
+function songClipPeriod(song, t, o, L) {
+  const c = o && o.own && song.own && song.own[o.own] ? song.own[o.own] : (S.tracks[t] && o && o.slot >= 0 ? S.tracks[t].clips[o.slot] : null);
+  if (!c || !c.lanes) return L;
+  const gcd = (a, b) => { while (b) [a, b] = [b, a % b]; return a; };
+  let P = Math.max(1, Math.round(L / .25)), any = 0;
+  for (const k of Object.keys(c.lanes)) {
+    const l = d1Lane(c, +k); if (!l) continue; any = 1;
+    if (l.dir === 'rnd') return Infinity;
+    const q = l.dir === 'pend' ? Math.max(1, 2 * l.Ls - 2) : Math.max(1, l.Ls);
+    P = P / gcd(P, q) * q;
+  }
+  return any ? P * .25 : L;
+}
+const phMod = (d, L) => L === Infinity ? d : ((d % L) + L) % L;
 function songStateAt(song, x) {
-  const lanes = song.lanes.map((l, t) => { const o = laneOriginAt(l, x); if (o.slot < 0) return {slot: -1}; const L = songClipBeats(song, t, o); return {slot: o.slot, own: o.own, ph: +((((x * 4 - o.cs) % L) + L) % L).toFixed(4)}; });
+  const lanes = song.lanes.map((l, t) => { const o = laneOriginAt(l, x); if (o.slot < 0) return {slot: -1}; const L = songClipPeriod(song, t, o, songClipBeats(song, t, o)); return {slot: o.slot, own: o.own, ph: +phMod(x * 4 - o.cs, L).toFixed(4)}; });
   let car = null; for (const c of song.carrier) { if (c.beat > x * 4 + 1e-6) break; car = c; }
   let xp = 0; for (const v of song.xp || []) { if (v.beat > x * 4 + 1e-6) break; xp = v.semi; }
   return {lanes, car: car ? {target: car.target} : null, xp};
@@ -23264,14 +23280,14 @@ function ownRefCs(song, c) {
 // origin o plays target tg {slot, own, cs} in phase (the same clip, its origin a whole number of clip lengths away)
 function ownSame(song, t, o, tg) {
   if (!o || !tg || o.slot !== tg.slot || (o.own || null) !== (tg.own || null)) return false;
-  const L = songClipBeats(song, t, tg), d = (((o.cs - tg.cs) % L) + L) % L;
-  return d < 1e-6 || L - d < 1e-6;
+  const L = songClipPeriod(song, t, tg, songClipBeats(song, t, tg)), d = phMod(o.cs - tg.cs, L);   /* G-T-merge-fix: D1 period */
+  return Math.abs(d) < 1e-6 || L - d < 1e-6;
 }
 // bar b of lane t plays tg from now on (an entry only when the music before does not go on as tg anyway)
 function ownPlayAs(song, t, b, tg) {
   const lane = song.lanes[t], po = laneOriginAt(lane, b);
   if (b > 0 && ownSame(song, t, po, tg)) return;
-  const L = songClipBeats(song, t, tg), ph = (((b * 4 - tg.cs) % L) + L) % L, e = {bar: b, slot: tg.slot};
+  const L = songClipPeriod(song, t, tg, songClipBeats(song, t, tg)), ph = phMod(b * 4 - tg.cs, L), e = {bar: b, slot: tg.slot};
   if (ph > 1e-6 && L - ph > 1e-6) e.ph = +ph.toFixed(4); else if (po.slot === tg.slot && (po.own || null) === (tg.own || null)) e.re = 1;
   if (tg.own) e.own = tg.own;
   laneInsert(lane, e);
@@ -23360,7 +23376,7 @@ function ownDropId(song, t, id) {
   // other entries that still name this copy (where a looping copy went on) or a copy that is gone: the scene clip there
   for (const e of lane) if (e.own && (e.own === id || !song.own[e.own])) {
     delete e.own; delete e.re;
-    const L = songClipBeats(song, t, {slot: e.slot}), ph = (((e.bar * 4 - scene.cs) % L) + L) % L;
+    const L = songClipPeriod(song, t, {slot: e.slot}, songClipBeats(song, t, {slot: e.slot})), ph = phMod(e.bar * 4 - scene.cs, L);
     if (e.slot === s && ph > 1e-6 && L - ph > 1e-6) e.ph = +ph.toFixed(4); else delete e.ph;
   }
   // the entry at the end of the copy (added with it) goes when the music before it already goes on like it
