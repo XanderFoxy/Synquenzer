@@ -17473,16 +17473,26 @@ function cvThin(k, pts) {
 /* BM8 Laufzeit: Live-Verlauf der Regler (je Spur), Aufnahme in den Behälter, Wiedergabe als zeitgestempelte ctl-Ereignisse.
    BmHost.ctl(i, [{k:'bd'|'mw'|'at', v, at}]) ist die feste Schnittstelle (Nachtrag 7 §2.1: {t:'ctl', list}); bis die Einbindung
    (BM6) ihren Host bringt, steht hier ein Platzhalter, der an den Bit-Mask-Knoten der Spur weitergibt (E.ctl({list})). */
-const BMC = {fake: new Set(), h: {}, run: null, touch: {}, act: {}, src: {}, log: null, W: .02, ST: .01};
+// W: ± 20 ms around a movement (§5.4); ST: 10 ms sampling (≤ 100 points/s); HOLD: a pause longer than this holds the value (a
+// finger that rests); GAP: movements closer than this are one span (a phone delivers touch events every 8–17 ms, sometimes later)
+const BMC = {fake: new Set(), h: {}, run: null, touch: {}, act: {}, src: {}, log: null, W: .02, ST: .01, HOLD: .06, GAP: .1};
 var BmHost = (typeof window !== 'undefined' && window.BmHost && typeof window.BmHost.ctl === 'function') ? window.BmHost : {
   ctl(i, list) {
     if (!list || !list.length) return;
-    if (BMC.log) { for (const x of list) BMC.log.push({i, k: x.k, v: x.v, at: x.at}); if (BMC.log.length > 200000) BMC.log.splice(0, 100000); }
+    if (BMC.log) { for (const x of list) BMC.log.push(Object.assign({i}, x)); if (BMC.log.length > 200000) BMC.log.splice(0, 100000); }
     const E = AU.synth && AU.synth[i]; if (E && E.bm && typeof E.ctl === 'function') E.ctl({list});
   }
 };
 // a Bit-Mask track (engine 'bm'); BMC.fake: the test stand-in for tracks while the engine lives in its own branch
 function bmcIs(i) { const tr = S.tracks[i]; return !!tr && tr.kind === 'synth' && !!tr.sound && (tr.sound.engine === 'bm' || BMC.fake.has(i)); }
+/* the audio clock of a regulator event: currentTime moves in blocks of the output buffer (a phone: 5–20 ms, headless more), so
+   the time between two blocks comes from performance.now() (never behind currentTime, the offset follows the newest block) */
+function bmcNow() {
+  const c = AU.ctx.currentTime, pn = performance.now() / 1000, x = c - pn;
+  if (BMC.off == null || x > BMC.off || pn - BMC.offT > 1) { BMC.off = BMC.off == null || x > BMC.off ? x : Math.max(x, BMC.off - .002); BMC.offT = pn; }
+  return Math.max(c, pn + BMC.off);
+}
+function bmcBeatNow() { return t2b(bmcNow() - AU.outLat); }
 const bmcRest = (i, k) => (k === 'mw' ? mkWheelVal(i, 'mod') : 0);
 function bmcHist(i) {
   if (BMC.run !== R.runId) { BMC.run = R.runId; BMC.h = {}; }
@@ -17492,9 +17502,9 @@ function bmcHist(i) {
 // (raw, every event; ret = a spring-back time in s: the value glides there). A pause > 20 ms first holds the old value.
 function bmcInput(i, k, v, ret) {
   if (!CV_K.includes(k) || !bmcIs(i) || !R.playing || !AU.ctx) return;
-  const H = bmcHist(i), a = H[k], sp = spb(), b = t2b(AU.ctx.currentTime - AU.outLat), sb = songBeatOf(b);
+  const H = bmcHist(i), a = H[k], sp = spb(), b = bmcBeatNow(), sb = songBeatOf(b);
   const last = a.length ? a[a.length - 1] : null, prev = last ? last[1] : H.v0[k];
-  if (!last || b - last[0] > BMC.W / sp) a.push([b - BMC.ST / sp, prev, sb == null ? null : sb - BMC.ST / sp, 1]);
+  if (!last || b - last[0] > BMC.HOLD / sp) a.push([b - BMC.ST / sp, prev, sb == null ? null : sb - BMC.ST / sp, 1]);
   if (ret > 0) { a.push([b, prev, sb, 0]); a.push([b + ret / sp, +v, sb == null ? null : sb + ret / sp, 0]); }
   else a.push([b, +v, sb, 0]);
   if (a.length > 400000) a.splice(0, 200000);
@@ -17521,7 +17531,7 @@ function bmcSpans(H, k, B0, B1) {
   for (const p of H[k]) {
     if (p[3] || p[0] < B0 - 1e-9 || p[0] >= B1 - 1e-9) continue;
     const a = Math.max(B0, p[0] - w), b = Math.min(B1, p[0] + w);
-    if (out.length && a <= out[out.length - 1][1] + 1e-9) out[out.length - 1][1] = Math.max(out[out.length - 1][1], b); else out.push([a, b]);
+    if (out.length && a <= out[out.length - 1][1] + (BMC.GAP - 2 * BMC.W) / spb() + 1e-9) out[out.length - 1][1] = Math.max(out[out.length - 1][1], b); else out.push([a, b]);
   }
   return out;
 }
