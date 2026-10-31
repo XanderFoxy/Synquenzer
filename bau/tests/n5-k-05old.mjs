@@ -19,7 +19,8 @@ for (const OLD of OLDS) {
       const so = await O.evaluate(t => { const tr = S.tracks[t]; return tr && tr.kind === 'synth' ? SYNQUENZER.getSound(t) : null; }, t); if (!so) continue;
       const sn = await NEW.evaluate(t => SYNQUENZER.getSound(t), t);
       let best = 1e9; for (let k = 0; k < 3 && best > -90; k++) best = Math.min(best, dbDiff(Float32Array.from(await rend(NEW, sn)), Float32Array.from(await rend(O, so))));
-      out.tracks.push([kind, t, so.name, +best.toFixed(1), (await NEW.evaluate(t => SYNQUENZER.soundEdited(t), t)) ? 'geändert!' : 'ok']);
+      const eo = await O.evaluate(t => SYNQUENZER.soundEdited(t), t), en = await NEW.evaluate(t => SYNQUENZER.soundEdited(t), t);   // „geändert“ as in its version
+      out.tracks.push([kind, t, so.name, +best.toFixed(1), eo === en ? 'ok' : 'geändert ' + eo + '->' + en]);
     }
   }
   out.pass = out.tracks.every(x => x[3] <= -90 && x[4] === 'ok');
