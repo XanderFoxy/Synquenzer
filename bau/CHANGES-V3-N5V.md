@@ -195,3 +195,114 @@ Weitere Läufe: `smoke.mjs` ohne Fehler; `gmk8b-reg.mjs` (APP = dieser Zweig) **
   `vvOpen` (kein `dInfo`, pointerdown-Fortsetzen), `vvSync` (Bereich-Text, keine Ergebniszeile), `vvGo` (Kommentar);
   `vvFmtTime`/`vvMB` entfernt (unbenutzt).
 - Keine Änderung an CSS, Format, Speichern/Laden, Engines, Worklet oder Server.
+
+## VV2 — Video-Regie (optional, im Song vorbereitet) + 9:16-Kamera · App 4.25.0 · Format 5 bleibt · keine Server-Änderung
+
+Stand: Zweig `n5-br-V/index.html` (auf VV1-fix). **Version bleibt 4.25.0** (APP_CODE 4 025 000), **Format 5** (nur das additive,
+optionale Feld `song.video`), CLOUD-Zeile `live: true,` unverändert, kein Supabase-Aufruf (**am Server offen: `max_app ≥ 4025000`**).
+
+### Was neu ist
+- **Regie im Song** `song.video = [{a, b, v: 'auto'|'song'|'matrix'|'spur', t?}]` (Takte a ≤ x < b, Spur t), nur wenn es Einträge
+  gibt (ein Song ohne Regie bleibt Zeichen für Zeichen gleich). Eine Zeile **„Video“ [Auto] [Song] [Matrix] [Spur …]** in den
+  vorhandenen Blättern:
+  - Tipp auf die **gelbe Kopfzeile eines Teils** → im vorhandenen Blatt dieses Tipps (Marken-Blatt) unten die Zeile „Video“ für die
+    Takte des Teils.
+  - **Gelbe Taktauswahl** → Bereich-Leiste **[⋯]** → dieselbe Zeile für genau diese Takte.
+  - **[Spur …]** öffnet die Liste der Spuren, die in diesen Takten spielen; die gewählte steht als Farbpunkt im Knopf.
+  - **Lane-Eintrag halten** (Zell-Blatt) → **„Im Video zeigen“** = Spur-Bild dieser Spur für die Takte des Eintrags; nochmal = wieder Auto.
+  - [Auto] nimmt die Einträge dort weg (dann entscheidet der Auto-Regisseur); die gewählte Taste ist umrandet. Jede Wahl = ein Undo-Schritt
+    „Video Takt 9–12: Matrix“ (wie alle Song-Änderungen), dazu eine Meldung mit [Rückgängig].
+  - **Takte einfügen/löschen, Teil verschieben/tauschen/kopieren/×2** verschiebt bzw. kürzt die Einträge mit (Haken in `songShift`,
+    `songClear`, `songCut`, `songWrite`, `songTidy`; ein Eintrag über einer Einfügestelle wird dort geteilt wie `song.vox`).
+  - **Streifen in der Song-Ansicht:** nur wenn Einträge existieren ein 8 px schmaler Streifen unter den gelben Kopfzeilen, je Eintrag in
+    der Farbe des Bilds (Song hellgrau, Matrix grün, Spur = Spurfarbe) mit einem **gezeichneten Kamera-Symbol** (Körper + Objektiv, kein
+    Zeichen/Emoji) am Anfang. Die Taktleiste wird dafür um 8 px höher, Kopfzeilen und Spuren rücken darunter (nichts wird verdeckt);
+    die Beschriftungsspalte geht mit.
+- **Auto-Regisseur** (Bild „Auto“ im Blatt Video): Schnittliste aus dem Song (gleiche Eingabe → gleiche Liste, Hash `vvCutHash`).
+  Schnitte nur auf Taktstrichen; Teilanfang → **Song**; ≥ 2 Spuren wechseln → **Matrix**; genau eine Spur setzt neu ein bzw. spielt
+  allein → **Spur-Bild**; die gezeigte Spur hört auf → Song; nie kürzer als 2 Takte (auch der Rest bis zur nächsten festen Grenze);
+  spätestens nach 8 Takten ohne Schnitt wechselt das Bild (Song ↔ Matrix). Einträge aus `song.video` gelten genau für ihre Takte.
+  Zwei gleiche Bilder hintereinander sind ein Schnitt-Stück (kein unsichtbarer Schnitt, die Kamera fährt weiter).
+  **Übergang:** Blende 300 ms ab dem Taktstrich (weich, monoton, kein Flackern).
+- **Spur-Bild** (bis VV3 ohne Innenleben): Kopf mit Spurfarbe, Name und „Szene n“/„eigener Clip“, darunter der spielende Clip groß
+  (Noten als Rolle mit Taktgitter, klingende Noten hell umrandet; STIMME: die Welle) mit Laufstrich.
+- **9:16:** neue Zeile **„9:16“ [Kamera] [Ganz mit Balken]** im Blatt Video (Gerätprofil `uiPrefs().vv.cam`, Standard Kamera; bei 16:9
+  grau, steht aber an ihrem Platz – kein Layout-Sprung). Beide zeichnen die **quer** gezeichnete Ansicht (640 × 360 App-Punkte):
+  - **[Kamera]:** ein 9:16-Fenster fährt mit gedämpfter Feder (ω 3/s) über die Ansicht, Zoom 1–3×; Tempo ≤ 4,2 % der Bildbreite je
+    Bild, Beschleunigung begrenzt; nie außerhalb der Ansicht. Ziel: Song = das Laufband (bei ~45 % des Fensters; am Anfang mit den
+    Spurnamen), Matrix = die spielenden Clips (Zoom so, dass sie hineinpassen; liegen sie links, bleiben die Spurnamen im Bild),
+    Spur-Bild = der Laufstrich (ganze Höhe mit Kopf). Bei einem Schnitt beginnt die neue Kamera auf ihrem Ziel.
+  - **[Ganz mit Balken]:** die ganze Ansicht, oben/unten Balken in der Hintergrundfarbe.
+  - Die frühere hochkant gezeichnete 9:16-Ansicht aus VV1 wird damit nicht mehr benutzt (VV2 legt 9:16 so fest).
+- Vorschau (▶) und Standbild im Blatt zeigen dasselbe (Auto mit Blenden, Kamera).
+- Test-API: `vvDirSet/vvDirGet/vvDirOf/vvCuts/vvShot/vvCamTrace/vvRunLog`, `vvPrefs({cam})`, `vvMake` liefert `cam` und `cuts` (Hash).
+
+### Abnahme
+Chromium headless, 4 vCPU, **Last-Mittel 9–14** (Geschwister-Zweige testen gleichzeitig). Skripte in `dirigent-test/`, Ausgaben in
+`dirigent-test/n5-v-out/`. Bilder werden per Bildnummer aus dem MP4 geholt (ffmpeg `select=eq(n,…)`), Vergleich = mittlere
+Pixel-Abweichung (0–255) gegen von der App gezeichnete Vergleichsbilder.
+
+| ID | Ergebnis | Messung / Skript |
+|---|---|---|
+| VV2-01 | **bestanden** | `n5-v-vv2-01.mjs` (16 Takte, Strophe 1–8, Refrain 9–16; Refrain → Matrix über das Marken-Blatt-API, Takte 9–12 → Spur 3): Schnittliste 1–2 Song, 3–12 Spur 3 (ab Takt 3 neu eingesetzt, 9–12 Eintrag), 13–16 Matrix. Je Schnitt Mitte und 0,5 s nach dem Schnitt: **16:9** Abweichung zum Soll-Bild 1,5–3,3, zu den anderen Bildern 8–35 (immer richtig erkannt); **9:16 Kamera** 1,5–2,1 (gegen das Bild mit der Kamera des Auftrags), andere 8,4–41; **9:16 Balken** 1,2–1,9, andere 3,4–11,8. |
+| VV2-02 | **bestanden** | `n5-v-vv2-02.mjs`: Einfügen 2 Takte vor dem Eintrag → [8,12)/[12,16) wird [10,14)/[14,18); Löschen 2 Takte davor → [6,10)/[10,14); Löschen im Eintrag → gekürzt; Einfügen im Eintrag → geteilt; Teil tauschen → Einträge wandern mit; Teil löschen → weg; [Auto] → weg; nach jedem Schritt Undo → `S.song` zeichengleich, Redo gleich. Datei speichern → laden: `song.video` gleich, Datei-Text gleich; Speichern im Browser → Seite neu laden: gleich. **Ohne `song.video`:** dasselbe Projekt aus der Fassung vor VV2 (`n5-v-pre-vv2.html`) gespeichert, hier geladen und wieder gespeichert → Zeichen für Zeichen gleich (ohne die zufällige Projekt-ID und ihre Prüfsumme), kein Feld `video`. |
+| VV2-03 | **bestanden** | `n5-v-vv2-03.mjs` (30 Takte: Intro 4, Strophe 12, Refrain 10, Outro 4): Schnitte 1–8 Song, 9–16 Spur 3 (neu), 17–24 Song (Teil), 25–26 Matrix (8 Takte), 27–28 Song (Teil), 29–30 Drums (allein); alle auf Taktstrichen, kleinster Abstand 2 Takte, längste Strecke ohne Schnitt in Strophe/Refrain 8 Takte. Hash zweimal `e75d329c`, zwei Video-Aufträge: gleicher Hash, Kamera in allen 1967 Bildern gleich. Erstes Bild jedes Schnitts 0–0,72 Bild nach dem Taktstrich. Blende (16:9 und 9:16): Abweichung zum neuen Bild fällt monoton (z. B. 31,7 → 27,8 → 22,8 → 16,7 → 11,3 → 6,9 → 3,3 → 2,7), fertig nach 7–8 Bildern (≈ 0,27 s ≤ 400 ms). |
+| VV2-04 | **bestanden** | `n5-v-vv2-03.mjs` FMT=9:16: 1967 Bilder, **0 außerhalb** der Ansicht, größter Schritt je Bild **4,2 %** der Bildbreite (Grenze 5 %), größte Änderung des Tempos 2,1 % je Bild, Sprünge nur an den 5 Schnitten. `n5-v-vv2-04z.mjs` (Matrix, ein spielender Clip): Zoom fährt weich 1,00 → 1,84, größter Schritt 3,4 %, 0 außerhalb. |
+| VV2-05 | **bestanden** | `n5-v-vv2-05.mjs` in P1, P2, P3, L1, L2, 926×428 (Touch, dpr 2): Zeile „Video“ im Marken-Blatt und im ⋯ der Bereich-Leiste je 4 Knöpfe, Spur-Liste, „Im Video zeigen“: **0 Knöpfe < 44 × 44**, 0 außerhalb, nichts abgeschnitten, Trefferprobe (Mitte, ±20 px) alle auf dem Knopf, Blätter rollen nicht; Tipp setzt jeweils den Eintrag. Streifen: Kopfzeile bleibt 20 (16) px, Spuren beginnen 8 px tiefer, Beschriftungsspalte bündig, Marken sichtbar. Blatt Video mit der neuen Zeile: `n5-v-abn-07.mjs vv2` alle sechs Formate ruhend/beim Erstellen/fertig/Vorschau/16:9: 0 Knöpfe < 44, nichts außerhalb, Bedienung rollt nicht (quer dafür Abstände 4 px, Knöpfe 44 px), kein Layout-Sprung. |
+
+Weitere Läufe: `smoke.mjs` ohne Fehler; `gmk8b-reg.mjs` (APP = dieser Zweig) **ALL PASS**; VV1-Läufe `n5-v-abn-01.mjs` (16:9 und 9:16
+1920×1080 / 1080×1920, 30/1, 584 Bilder, Soll 19,474 s; Rückfall webm; ohne beides grau), `n5-v-abn-04.mjs` (Laufband kreuzt Takt 2 bei
+2,1417 s / Soll 2,1429 s, Takt 6 bei 10,7133 / 10,7143 s), `n5-v-abn-06.mjs` (Projekt unverändert; Unterschiede nur Laufzeit-Messwerte wie
+vor VV2) – Ergebnisse wie VV1-fix. Bild-Kosten je Bild (`n5-v-vv2-perf.mjs`, gleiche Last, 12 Takte): VV1 16:9 18,3 ms / 9:16 23,5 ms,
+VV2 16:9 Song 23,5 / Auto 17,6 ms, 9:16 Kamera Song 14,3 / Auto 14,2 ms – innerhalb des Lastrauschens gleich. Konsole in allen Läufen ohne Fehler.
+
+### Abweichungen
+- **„Teil-Blatt“:** In der Song-Ansicht öffnet der Tipp auf die gelbe Kopfzeile das **Marken-Blatt**; die Zeile „Video“ steht dort (das
+  Teil-Blatt der Teil-Leiste gilt für die Vorlage, nicht für eine Song-Stelle).
+- **„Bereichs-Blatt“:** Die Bereich-Leiste ist eine feste Leiste mit 6 Knöpfen; eine Zeile darin hätte ihre Höhe geändert. Die Zeile
+  steht deshalb in ihrem vorhandenen Blatt **[⋯]** (gleiche Takte).
+- **„Im Video zeigen“** gilt für die Takte des gehaltenen Lane-Eintrags (vom Eintrag bis zum nächsten), nicht nur für einen Durchlauf.
+- **[Auto]** wird nicht als Eintrag gespeichert, sondern entfernt die Einträge dort (gleiche Wirkung; ein geladenes `'auto'` wird gelesen).
+- **Teilgrenze ohne sichtbaren Schnitt:** folgt auf einen Teil, der schon das Song-Bild zeigt, ein Teilanfang (→ Song), läuft das Bild
+  weiter (ein Schnitt von Song auf Song wäre unsichtbar). Im Test: Intro → Strophe.
+- **Zwei Offline-Renders** sind im Ton nicht bitgleich (Rauschen der Engines, s. VV1); der Ausklang kann um wenige ms abweichen. Schnittliste
+  und Kamera sind in allen gemeinsamen Bildern gleich.
+- **9:16 Kamera bei schnellem Laufstrich:** bei 1-Takt-Clips über 100 BPM läuft der Laufstrich im Spur-Bild schneller als die Kamera
+  fahren darf (≤ 4,2 % je Bild) und kann kurz aus dem Bild laufen; am Clip-Anfang fährt die Kamera weich zurück.
+- Die VV1-Test-API `vvMatrixCells('9:16')` liefert noch die alte Hochkant-Anordnung (nur Test-API; das Matrix-Bild ist jetzt die quer
+  gezeichnete Ansicht unter der Kamera).
+- Der Streifen macht die Taktleiste der Song-Ansicht 8 px höher, sobald es den ersten Eintrag gibt (vorgegeben: „nur wenn Einträge
+  existieren“, „verdeckt nichts“); die Seitenhöhe ändert sich nicht.
+- Unter Last gemessen (Last 9–14): Abbrechen 300–640 ms Wandzeit über das Test-Polling, wie in den VV1-Läufen mit derselben Methode.
+
+### Fragen an Xander
+1. Farben des Streifens: Song hellgrau, Matrix grün, Spur = Spurfarbe – passt das, oder alle in einer Farbe?
+2. Soll an **jedem** Teilanfang sichtbar geschnitten werden (z. B. kurzer Zoom/Blende auch von Song auf Song)?
+3. 9:16 [Kamera] im Song-Bild: die Spurnamen links sind nur am Anfang im Bild (die Kamera folgt dem Laufband). Sollen sie stehen bleiben?
+4. Spur-Bild im 9:16: Fenster folgt dem Laufstrich in voller Höhe. Lieber näher heran (Zoom) und dafür ohne Kopf mit dem Namen?
+5. Wenn das Bild im Blatt auf „Song“ oder „Matrix“ steht, gilt die Regie im Song nicht (nur bei „Auto“). Richtig so?
+6. Bei Einfügen mitten in einem Eintrag wird er geteilt (die neuen Takte bekommen Auto) – oder soll er sich verlängern?
+
+### iPhone (Xander)
+1. Song mit Teilen: auf die gelbe Kopfzeile tippen → unten Zeile „Video“ → [Matrix]; der Streifen mit Kamera erscheint unter der
+   Kopfzeile; Undo nimmt ihn wieder weg.
+2. Takte gelb wählen → [⋯] → Video [Spur …] → Spur wählen. Lane-Eintrag halten → „Im Video zeigen“.
+3. Menü → Video, 9:16, Bild „Auto“, [Kamera]: [▶ Vorschau] – Schnitte auf den Taktstrichen, weiche Blende, die Kamera fährt ruhig;
+   dann [Video erstellen] und in Fotos ansehen. Dasselbe mit [Ganz mit Balken] und mit 16:9.
+4. Blatt Video quer: alles ohne Rollen sichtbar, die neue Zeile „9:16“ gut treffbar.
+
+### Für das Zusammenführen
+- **Neuer Block** direkt nach `/* VV1-END */`: „VV2 (Nachtrag 5): Video-Regie …“ bis `/* VV2-END */` (`vvDirNorm/vvDirTidy/vvDirClear/
+  vvDirShift/vvDirCutTo/vvDirWrite/vvDirAt/vvDirOf/vvDirSet/vvDirTracks/vvDirRow/vvDirTap/vvCellOpt/vvCellTap/vvDrawStripe/vvCuts/
+  vvCutHash/vvRun/vvShotAt/vvSpurLayout/vvPhase/vvDrawSpur/vvDrawView/vvCamTarget/vvCamClamp/vvCamAt/vvDrawShot/vvDrawRun/vv2Api`).
+- **CSS-Block** „VV2 (Nachtrag 5): Zeile „Video“ …“ direkt nach dem VV1-CSS-Block (nach `.vvctl>:last-child{margin-bottom:auto}\n}`).
+- **Einzeilige Haken:** `normSong` (`vvDirNorm(o.video, bars)` nach der vox-Zeile), `songShift` (`vvDirShift`), `songClear`
+  (`vvDirClear`, nicht bei keepMarks), `songCut` (Rückgabe über `vvDirCutTo(…)`), `songWrite` (`vvDirWrite` am Ende), `songTidy`
+  (`vvDirTidy` am Ende), `svLayout` (`SV.vvS`, `SV.rulerH` + Streifen, `avail` ohne Streifen), `svDraw` (1. Zeile nach dem Guard:
+  `svLayout()` wenn der Streifen kommt/geht; `ch` und `svDrawMarks` mit Kopfhöhe ohne Streifen; `vvDrawStripe` nach den Marken),
+  `openMarkSheet` (Zeile `vvDirRow` am Ende des HTML, `vvDirTap` im Tipp), `openRangeMore` (`vvDirRow`, `vvDirTap` vor `closePop`),
+  `openCellSheet` (`vvCellOpt`, `vvCellTap`), Test-API (`Object.assign(SYNQUENZER, vv2Api());` nach der VV1-Zeile).
+- **Im VV1-Block geändert:** `vvPrefs` (+`cam`), `vvDraw` (ruft `vvDrawRun`, Parameter `rt`), `vvViewOf` (Auto bleibt Auto),
+  `vvEncodeWC/vvEncodeMR` (`job.rt`), `vvMake` (`VV.lastRt = vvRun(…)`, `res.cam/cuts`), `vvOpen` (Zeile „9:16“ `segC`), `vvSync`
+  (`segC`), `vvStill`/`vvPrevStart` (Run der Vorschau), `vvApi.vvPrefs` (+`cam`).
+- Keine Änderung an Engines, Worklet, Ton, Speichern-Format (nur additiv) oder Server.
