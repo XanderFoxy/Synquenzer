@@ -74,6 +74,49 @@ verlustfrei, `partChunk` schreibt es beim Einsetzen in den Song nach `song.mel` 
 | S1-03 | ✓ [Teil ersetzen] / [Als neuen Teil] je ein Undo → deep-equal; Speichern/Laden deep-equal mit `Part.mel`; [Verwerfen] ändert nichts |
 | Blatt | ✓ 390×844, 375×667, 320×568, 844×390, 667×375, 926×428: im Bild, Knöpfe ≥ 44 px, nichts abgeschnitten (Kopf quer 11 px) |
 
+## S2 — Zusammenfassen (Teil konsolidieren, Teile verketten)
+
+### Was neu ist
+1. **Marken-Blatt → [Zusammenfassen]** (neben [Bearbeiten]): alles im Bereich der Marke wird **ein neuer Teil** – Lanes (mit
+   Phasen und **eigenen Clips**), Akkorde/Träger, die **im Song dazu aufgenommene Melodie** (`song.mel` aller Spuren) und die
+   **Song-Stimme** (`song.vox`). Der Song selbst bleibt, wie er ist (er klingt unverändert); nur die Marke zeigt jetzt den neuen Teil.
+2. **Gelbe Auswahl über zwei oder mehr Teile → Bereich-Leiste ⋯ → „Zusammenfassen“**: die gewählten Takte werden ein Teil
+   (Länge = Summe), eine Marke ersetzt die bisherigen. Höchstens 16 Takte (Grenze eines Teils, wie „Als Teil …“).
+3. Name wie bei „Als Teil …“ (Namens-Chips N7-R2, ✎ eigener Text); Vorschlag bei einer Marke ihr Name mit Nummer („Strophe 2“),
+   sonst der nächste freie Name. Ein Undo (`group` [part, song]).
+4. Wird der neue Teil woanders eingesetzt (Ziehen, Teil einsetzen, Ersetzen durch), bringt er Melodie, eigene Clips und Stimme mit.
+5. Test-API: `sumMark(id, name?)`, `sumRange(a, b, name?)`, `openSum(a, b)`.
+
+### Daten (Format 5, additiv)
+`Part.mel` (wie S1), `Part.own = {id: Clip}` (eigene Clips, Lane-Einträge mit `own`), `Part.vox = [Stimm-Abschnitte, bar relativ]`,
+bei `src: 'song'` zusätzlich `ph` an späteren Lane-Einträgen (sonst ginge eine Phase nach einem eigenen Clip verloren). `partChunk`
+schreibt alles mit, `songWrite` setzt `vox` an die Stelle. Teile ohne diese Felder: unverändert (FANG-TEIL-Teile behalten ihr
+bisheriges Verhalten, geprüft mit `v3-qa-v2e2reg-fangui` und `v3-qa-reg-fang2`).
+
+### Abnahme S2 (`tests/s2-acc.mjs` → ALL OK 25/25)
+| ID | Ergebnis |
+|---|---|
+| S2-01 | ✓ Song Strophe · Refrain · Strophe mit Song-Melodie (S4, 4 Noten in T1–2), eigenem Clip (S1 T2) und Stimme (330-Hz-Take T1–2); Tipp auf die Marke → [Zusammenfassen] (Touch) → „Strophe 2“: Teil mit Lanes, `mel` (4), `own` (1), `vox` (1); Song deep-equal (ohne Marken), Marke ohne „′“. Teil hinter dem Ende eingesetzt (T7–8): je Takt Clip/Phase/eigener Clip/Träger/Melodie/Stimme gleich; **hörbar**: 87 Noten T1–2 = T7–8 (Spur, Schlag auf 0,001, Ton), Pegel −13,4/−13,8 dB = −14,0/−14,2 dB (±0,6), Stimme 330 Hz −24,1 / −24,4 dB (T3 ohne Stimme −47,4) |
+| S2-02 | ✓ gelbe Auswahl T1–4 über Strophe + Refrain → ⋯ (Touch) → „Zusammenfassen“ → Chip „Refrain“ → Teil „Refrain 2“ mit 4 Takten (2 + 2), eine Marke T1–4, Song deep-equal; eingesetzt an T7–10 = T1–4 je Takt; hörbar 120 Noten gleich |
+| S2-03 | ✓ Undo (Einsetzen, Zusammenfassen) → deep-equal; Speichern/Laden deep-equal mit `Part.mel/own/vox` |
+| Formate | ✓ Namens-Blatt in 6 Formaten ≥ 44 px, nichts abgeschnitten; [Zusammenfassen] im Marken-Blatt ≥ 44 × 44 (bricht als „Zusammen-fassen“ um, nie abgeschnitten) |
+
+„Bitgleicher Render“: Die App hat keinen Offline-Render des Songs; geprüft wird (a) der Song-Inhalt selbst bleibt deep-equal
+(dort also bitgleich), (b) der eingesetzte Teil erzeugt dieselben Ereignisse (Notenprotokoll, Stimm-Abschnitte, Träger) und
+(c) Pegel/330-Hz-Anteil im Master-Mitschnitt gleich. Ein Sample-Vergleich des Echtzeit-Mitschnitts ist wegen freilaufender
+Oszillator-/LFO-Phasen nicht bitgleich möglich (auch nicht zwischen zwei Läufen derselben Stelle).
+
+## Regression (Basis 4.23.0 gegen S012, `tests/reg/`, Kopien der Skripte aus `bau/tests/` mit lokalen Pfaden)
+| Skript | Ergebnis |
+|---|---|
+| `v3-qa-reg-part`, `-part2`, `-part3` (Teil-Lanes, ＋, Akkord-Zeile) | gleich (Bass-Noten je Schlag identisch, keine Fehler) |
+| `v3-qa-reg-loop` (Schleifen-Bereich) | gleich (46 = 46 Noten) |
+| `v3-qa-reg-fang2` (FANG → FANG TEIL) | gleich |
+| `v3-qa-v2e2reg-song` (Import, Rundweg, 30 Undos, Song nach Undo) | gleich |
+| `v3-qa-v2e2reg-fangui` (FANG-Blatt per Touch, ALS TEIL, ＋ Ans Song-Ende, P1/L1) | gleich bis auf die gemessene Tipp-Zeit im Takt (10 % gegen 12 %, Zeitrauschen) – vor dem `caught`-Fix fing der zweite FANG TEIL fälschlich als S1, behoben |
+| `v3-qa-reg-song` (● SONG-Mitschnitt in Echtzeit) | zeitabhängig: auch Basis gegen Basis weicht beim aufgenommenen Song ab; die Notenprotokolle folgen dem jeweils aufgenommenen Song – kein Befund |
+| `tests/smoke.mjs` | keine Fehler |
+
 ## Abweichungen
 - S0 „gespeichert im Teil“: an/aus wird **an der Stelle** (Marke) gespeichert, nicht in der Teil-Vorlage – sonst würden alle
   Strophen schweigen, Xanders Beispiel ist aber „im letzten Teil schweigen die Drums“. Siehe Fragen.
@@ -81,6 +124,10 @@ verlustfrei, `partChunk` schreibt es beim Einsetzen in den Song nach `song.mel` 
   nicht als „Teil im Lauf“ behandelt (FANG dort wie bisher) – siehe Fragen.
 - S1 nimmt dazugespielte **Synth**-Noten in die Fassung; auf den Pads dazugespielte Drums nicht (Song-Melodien gibt es nur für
   Synth-Spuren). Der Name „TEIL ÜBERARBEITET“ des Ergebnis-Blatts folgt dem FANG-Blatt („TEIL GEFANGEN“); die Spec nennt keinen.
+- S2: Ein Teil mit eigenen Clips/Stimme, der auf der **Teil-Leiste** angetippt wird, spielt dort die Szenen-Clips der eigenen Clips
+  und keine Stimme (die Teil-Leiste spielt nur Szenen-Clips; im Song klingt alles). Song-Melodie spielt auch dort (S1-Weg).
+  Eine Teil-Transposition im Song (`song.xp`) innerhalb des Bereichs wird nicht in den Teil übernommen (wie „Als Teil …“).
+- S2: Zusammenfassen fragt nach dem Namen (wie „Als Teil …“); die Spec nennt keinen Namen.
 - Der ‹-Knopf im Bearbeiten-Kopf hat dieselbe Form wie das bestehende ✕ des Marken-Blatts (44 × 32 sichtbar, Trefferzone 44 × 44).
 
 ## Fragen an Xander
@@ -95,6 +142,10 @@ verlustfrei, `partChunk` schreibt es beim Einsetzen in den Song nach `song.mel` 
    so eingefangen werden? Dann würde [Teil ersetzen] diese eine Stelle ersetzen.
 5. S1: Sollen auf den Pads dazugespielte Drums auch in die Fassung (als neuer Drum-Clip)?
 
+6. S2: Soll der zusammengefasste Teil den alten Namen behalten (z. B. „Strophe“ statt „Strophe 2“), wenn nur eine Marke
+   zusammengefasst wird? Dann müsste der alte Teil umbenannt oder ersetzt werden.
+7. S2: Mehr als 16 Takte zusammenfassen (z. B. drei 8-Takt-Teile) geht wegen der Teil-Grenze nicht – mit G8 (64 Takte) anheben?
+
 ## Für das Zusammenführen
 - Alles in markierten Blöcken: Code-Block `/* S0 … */ … /* /S0 */` direkt vor `function uiSync()`, CSS nach `.msheet .ms-all{…}`.
 - Ein-Zeilen-Haken: `fangAccept` (Zeile `/* S0 */` am Anfang des Ersetzen-Zweigs), `openFangSheet` paint/onTap/onClose (je eine Zeile
@@ -103,6 +154,9 @@ verlustfrei, `partChunk` schreibt es beim Einsetzen in den Song nach `song.mel` 
   `Object.assign(SYNQUENZER, S012_API)` nach `WP_API`.
 - S1-Haken: `normPart` (eine Zeile `s012PartExtra`), `partChunk` (`mel: s1ChunkMel(p, L)` statt `mel: {}`), `partTick` (eine Zeile
   `s1PartMelTick`), `fangTap` (eine Zeile vorn), `fangAdopt` (`caught: 1` am übernommenen Kreis). Block `/* S1 … */ … /* /S1 */` hinter S0.
+- S2-Haken: `partChunk` (Lane-Zeile: `ph`/`own`; Rückgabe `Object.assign(…, s2ChunkExtra(p, L))`), `songWrite` (eine Zeile `vox`),
+  `openRangeMore` (Listeneintrag + eine `else if`-Zeile). Block `/* S2 … */ … /* /S2 */` hinter S1; der Knopf im Marken-Blatt kommt
+  über denselben `s012MarkSheetPaint`-Haken wie [Bearbeiten].
 - VV2 (Video-Zeile im selben Blatt): unser Haken hängt die Knöpfe hinter `.ms-rec` ein und ersetzt in der Bearbeiten-Ansicht das
   ganze `innerHTML` – eine Video-Zeile, die VV2 im paint per `innerHTML` mitbaut, verschwindet in der Bearbeiten-Ansicht und ist nach ‹
   wieder da. Konflikt nur, wenn VV2 dieselbe Zeile `B('rec', …)` umschreibt: dann `s012MarkSheetPaint(p, m);` einfach hinter VV2s

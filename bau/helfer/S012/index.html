@@ -654,6 +654,8 @@ svg{display:block}
 .fsheet.s1sheet .fs-t{letter-spacing:.02em}.fsheet.s1sheet.side .fs-t{font-size:11px;letter-spacing:0}
 .fsheet.s1sheet .fs-cl b{color:var(--text);font-weight:700;margin-right:4px}.fsheet.s1sheet .s1-old{opacity:.7}
 .fsheet.s1sheet .fs-bot .rb{white-space:normal;line-height:1.1}.fsheet.s1sheet .fs-bot .rb.tight{font-size:10.5px;letter-spacing:0}
+/* S2 Zusammenfassen */
+.msheet .ms-b.s2-sb{flex:1 1 0;hyphens:manual;-webkit-hyphens:manual}
 /* S0 Teil bearbeiten */
 .fsheet .fs-row.s0-row{height:44px}.fsheet .fs-nm.s0-row .cp-c{height:44px;min-width:44px}.fsheet .fs-nm.s0-row>.rb:not(.cp-c){width:44px;height:44px}
 .msheet .ms-b.s0-eb{flex:1 1 0}
@@ -22872,6 +22874,7 @@ function songWrite(song, n, ch, keepIds) {
   }
   for (const m of ch.marks || []) { const x = Object.assign({}, m, {a: n + m.a}); if (!keepIds || !x.id || song.marks.some(y => y.id === x.id)) x.id = newMarkId(song); song.marks.push(x); }
   song.marks.sort((a, b) => a.a - b.a);
+  if (ch.vox) s2WriteVox(song, n, ch.vox);   /* S2 */
 }
 // drop entries that change nothing (-1 after -1, the same clip in the same phase), keep the marks tidy, melody lengths
 function songTidy(song) {
@@ -23092,13 +23095,13 @@ function partChunk(p, Lf) {
   const L = Lf || partLen(p), lanes = [];
   for (let t = 0; t < NT(); t++) {
     lanes.push(((p.lanes && p.lanes[t]) || []).filter(e => e.bar < L).map(e => {
-      const x = {bar: e.bar, slot: e.slot}; if (e.slot >= 0) { x.re = 1; if (e.bar === 0 && e.ph) x.ph = e.ph; } return x;
+      const x = {bar: e.bar, slot: e.slot}; if (e.slot >= 0) { x.re = 1; if (e.bar === 0 && e.ph) x.ph = e.ph; if (e.bar > 0 && e.ph && p.src === 'song') x.ph = e.ph; if (e.own && p.own && p.own[e.own]) x.own = e.own; } return x;   /* S2: ph / own */
     }));
   }
   const row = p.chords || (p.xp && p.xp.tg ? {len: L, ch: [{b: 0, tg: p.xp.tg}]} : null), carrier = [];
   if (row && row.ch.length) { const cl = row.len * 4; for (let m = 0; m * cl < L * 4 - 1e-9; m++) for (const c of row.ch) { const b = c.b + m * cl; if (b < L * 4 - 1e-9) carrier.push({beat: b, target: c.tg ? carrierCopy(c.tg) : null}); } }
   else carrier.push({beat: 0, target: null});
-  return {len: L, lanes, carrier, xp: [{beat: 0, semi: p.xp && p.xp.semi ? p.xp.semi : 0}], mel: s1ChunkMel(p, L), marks: [{a: 0, len: L, part: p.id}]};   /* S1: mel */
+  return Object.assign({len: L, lanes, carrier, xp: [{beat: 0, semi: p.xp && p.xp.semi ? p.xp.semi : 0}], mel: s1ChunkMel(p, L), marks: [{a: 0, len: L, part: p.id}]}, s2ChunkExtra(p, L));   /* S1: mel, S2: own / vox */
 }
 function sceneChunk(s) {
   let L = 1; const lanes = [];
@@ -25353,7 +25356,7 @@ function openRangeMore(anchor) {
     p.innerHTML = `<h4>Takt ${A + 1}${Bb > A ? '–' + (Bb + 1) : ''}</h4><div class="plist">` +
       (narrow ? '<button class="rb" data-a="part">❖ Als Teil …</button>' : '') +
       '<button class="rb" data-a="clear">○ Leeren</button><button class="rb" data-a="ins">＋ Teil einsetzen ▾</button>' +
-      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button></div>';
+      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + s2RangeItem() + '</div>';   /* S2 */
     onTap(p, b => {
       const a = b.dataset.a; closePop();
       if (a === 'part') openAsPart(anchor, A, Bb);
@@ -25361,6 +25364,7 @@ function openRangeMore(anchor) {
       else if (a === 'ins') openPlacePick(anchor, A);
       else if (a === 'quant') openQuantChords(anchor);
       else if (a === 'loop') { songLoopRange({on: true, a: A, b: Bb + 1}); toast('Schleife ' + loopLabel(S.song)); }
+      else if (a === 's2sum') s2OpenSum(anchor, A, Bb + 1);   /* S2 */
       svButtons();
     }, 'button[data-a]');
   }, {name: 'rangemore'});
@@ -42596,6 +42600,97 @@ Object.assign(S012_API, {
   s1Fang: o => s1Fang(o || {}), s1Info: () => s1Info(), s1Accept: mode => s1Accept(mode === 'new' ? 'new' : 'replace'), s1Discard: () => s1Discard(), s1Active: () => s1Active(),
 });
 /* /S1 */
+/* S2 ---------- Zusammenfassen (Nachtrag 5 S2): a mark (Marken-Blatt) or the yellow selection over chained marks (Bereich-Leiste ⋯)
+   becomes ONE new part with everything in its range: lanes (also own clips and phases), chords, the song melody recorded there,
+   the song voice; the song keeps sounding as it is (only the marks change). One undo group [part, song] ---------- */
+// normPart: own clips (Part.own) with their lane entries, phases of later lane entries, the voice (Part.vox) — Format 5, additive
+function s2PartExtra(p, o, nt) {
+  if (p.own && typeof p.own === 'object' && !Array.isArray(p.own)) {
+    const own = {}; for (const k of Object.keys(p.own).slice(0, 64)) { const c = /^[A-Za-z0-9_-]{1,16}$/.test(k) ? ownNorm(p.own[k], S.key, nt) : null; if (c) own[k] = c; }
+    if (Object.keys(own).length) o.own = own;
+  }
+  if (Array.isArray(p.lanes)) p.lanes.forEach((l, t) => {
+    if (!Array.isArray(l) || !o.lanes[t]) return;
+    for (const e of l) {
+      if (!e || !isNum(e.bar) || !isNum(e.slot) || e.slot < 0) continue;
+      const x = o.lanes[t].find(y => y.bar === Math.round(e.bar) && y.slot === Math.round(e.slot)); if (!x) continue;
+      if (typeof e.own === 'string' && o.own && o.own[e.own]) x.own = e.own;
+      if (x.bar > 0 && o.src === 'song' && isNum(e.ph) && e.ph > 1e-6) x.ph = +(+e.ph).toFixed(4);   // only Zusammenfassen writes these
+    }
+  });
+  const vox = p.vox ? tkNormVox(p.vox) : null; if (vox) o.vox = vox;
+}
+// partChunk: own clips and the voice go along into the song (songWrite gives the own clips fresh ids)
+function s2ChunkExtra(p, L) {
+  const out = {};
+  if (p.own) out.own = deep(p.own);
+  if (p.vox) { const sp = spb(), v = []; for (const x of p.vox) { if (x.bar >= L) continue; v.push(x.bar + x.len > L ? tkVoxTrim(x, x.bar, L, sp) : deep(x)); } if (v.length) out.vox = v; }
+  return out;
+}
+// songWrite: the chunk's voice at bar n
+function s2WriteVox(song, n, list) {
+  if (!list || !list.length) return;
+  const out = (song.vox || []).slice();
+  for (const v of list) out.push(Object.assign(deep(v), {bar: v.bar + n, id: null}));
+  for (const v of out) if (!v.id) v.id = tkVoxId(out.filter(x => x.id));
+  song.vox = tkNormVox(out) || undefined; if (!song.vox) delete song.vox;
+}
+// the part from the song range [a, e): what songCut takes (state at a explicit, phases, own clips, melody) + the voice
+function s2Template(song, a, e) {
+  const ch = songCut(song, a, e);
+  const lanes = ch.lanes.map(l => l.map(x => { const y = {bar: x.bar, slot: x.slot}; if (x.slot >= 0) { if (x.ph) y.ph = x.ph; if (x.bar > 0 && x.re) y.re = 1; if (x.own) y.own = x.own; } return y; }));
+  const row = {len: e - a, ch: []};
+  for (const c of ch.carrier) { if (row.ch.length && sameTg(row.ch[row.ch.length - 1].tg, c.target)) continue; row.ch.push({b: c.beat, tg: c.target}); }
+  const tp = {lanes, slots: partSlotsOf(lanes), chords: row.ch.length ? row : {len: e - a, ch: [{b: 0, tg: null}]}, len: e - a};
+  if (Object.keys(ch.mel).length) tp.mel = ch.mel;
+  if (ch.own && Object.keys(ch.own).length) tp.own = ch.own;
+  if (song.vox) { const sp = spb(), v = []; for (const x of song.vox) { const x0 = Math.max(x.bar, a), x1 = Math.min(x.bar + x.len, e); if (x1 <= x0) continue; const y = x0 > x.bar || x1 < x.bar + x.len ? tkVoxTrim(x, x0, x1, sp) : deep(x); y.bar = x0 - a; v.push(y); } if (v.length) tp.vox = v; }
+  return tp;
+}
+// Zusammenfassen [a, e) → one new part (free place, name), one mark over the range
+function s2Sum(a, e, name) {
+  const song = S.song; if (!song || R.songRec) return false;
+  a = Math.max(0, a | 0); e = Math.min(e | 0, song.bars); if (e <= a) return false;
+  if (e - a > 16) { toast('Ein Teil hat höchstens 16 Takte'); return false; }
+  partsEnsure(); const k = S.parts.findIndex(x => !x); if (k < 0) { toast('Teil-Leiste voll – erst einen Teil löschen'); return false; }
+  const bp = partSnap(), bs = songSnapshot(), tp = s2Template(song, a, e);
+  const nm = partUniq(String(name || '').trim().slice(0, 12) || partSuggest(), k);
+  S.parts[k] = normPart(Object.assign({name: nm, color: PART_COLORS[k % PART_COLORS.length], src: 'song'}, tp), k, NT());
+  S.parts[k].len = partLen(S.parts[k]);
+  marksCut(song, a, e, true);                                            // the content stays as it is; only the marks change
+  const id = newMarkId(song); song.marks.push({id, a, len: e - a, part: S.parts[k].id}); songTidy(song);
+  undoPush({kind: 'group', label: 'Zusammengefasst: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
+  partsChanged(); songChanged();
+  return {part: k, name: nm, mark: (song.marks.find(m => m.a === a && m.part === S.parts[k].id) || {}).id || id};
+}
+// the name (chips after N7-R2, own text) — like „Als Teil …“; suggestion: one mark → its name with a number, else the next free name
+function s2OpenSum(anchor, a, e) {
+  const song = S.song; if (!song) return;
+  if (e - a > 16) { toast('Ein Teil hat höchstens 16 Takte'); return; }
+  const ms = song.marks.filter(m => m.a < e && m.a + m.len > a), one = ms.length === 1 && ms[0].a === a && ms[0].len === e - a;
+  const sug = one ? partUniq(markLabel(ms[0]), -1) : partSuggest();
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('mname', 's2sum');
+    p.innerHTML = `<h4>Zusammenfassen · Takt ${a + 1}${e - a > 1 ? '–' + e : ''}</h4><div class="cp-sc mn-sc">` + PART_NAMES.map(n => `<button class="rb cp-c" data-n="${n}">${n}</button>`).join('') + '</div>' +
+      `<div class="mn-r"><input class="mn-in" type="text" maxlength="12" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${esc(sug)}" aria-label="Eigener Name"><button class="rb mn-ok" data-a="ok" aria-label="Übernehmen">✓</button></div>`;
+    const inp = p.querySelector('.mn-in');
+    const go = v => { closePop(); const r = s2Sum(a, e, String(v || '').trim() || sug); if (r) { SV.sel = null; SV.mark = null; toast('Neuer Teil ' + r.name + ' · Takt ' + (a + 1) + (e - a > 1 ? '–' + e : ''), {label: 'Rückgängig', fn: () => undo()}); } svButtons(); UI.dirty.song = true; };
+    on(inp, 'keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); go(inp.value); } });
+    inp.addEventListener('pointerdown', ev => ev.stopPropagation()); inp.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
+    on(inp, 'focus', () => popDock(p, true)); on(inp, 'blur', () => setTimeout(() => popDock(p), 50));
+    onTap(p, b => { if (b.dataset.n) go(b.dataset.n); else go(inp.value); }, 'button[data-n],button[data-a="ok"]');
+  }, {name: 's2sum'});
+  popDock(UI.pop && UI.pop.el);
+}
+// Marken-Blatt: [Zusammenfassen] next to [Bearbeiten]; Bereich-Leiste ⋯: „Zusammenfassen“
+const s2SumButton = m => `<button class="rb ms-b s2-sb" data-s012="sum" aria-label="Zusammenfassen: alles in Takt ${m.a + 1}${m.len > 1 ? '–' + (m.a + m.len) : ''} wird ein neuer Teil">Zusammen&shy;fassen</button>`;
+function s2SumMark(id) { const m = S.song && S.song.marks.find(x => x.id === id); if (!m) return false; const a = m.a, e = m.a + m.len, anchor = UI.pop && UI.pop.el; closePop(); s2OpenSum(anchor, a, e); return true; }
+const s2RangeItem = () => '<button class="rb" data-a="s2sum">Zusammenfassen</button>';
+Object.assign(S012_API, {
+  sumRange: (a, b, name) => s2Sum(a, (b == null ? a : b) + 1, name), sumMark: (id, name) => { const m = S.song && S.song.marks.find(x => x.id === id); return m ? s2Sum(m.a, m.a + m.len, name) : false; },
+  openSum: (a, b) => s2OpenSum(null, a, (b == null ? a : b) + 1),
+});
+/* /S2 */
 // every state-changing API call leaves the UI rendered (no need to wait for the next animation frame)
 function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
 Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes
