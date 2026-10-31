@@ -96,8 +96,28 @@ const MDX = (() => {
     const tries = [['blob', () => URL.createObjectURL(new Blob([s], {type: 'application/javascript'}))], ['data', () => 'data:application/javascript;base64,' + btoa(s)]];
     const go = i => { if (i >= tries.length) return Promise.reject(new Error('kein Ladeweg')); let url; try { url = tries[i][1](); } catch (e) { return go(i + 1); }
       return ctx.audioWorklet.addModule(url).then(() => { ST.how = tries[i][0]; if (ST.how === 'blob') try { URL.revokeObjectURL(url); } catch (e) {} }, () => go(i + 1)); };
-    const p = go(0).then(() => { ST.state = 'ready'; ST.ms = performance.now() - t0; return true; }, e => { ST.state = 'failed'; ST.err = String(e && e.message || e); CTX.delete(ctx); return false; });
+    const p = go(0).then(() => { ST.state = 'ready'; ST.ms = performance.now() - t0; warm(ctx); return true; }, e => { ST.state = 'failed'; ST.err = String(e && e.message || e); CTX.delete(ctx); return false; });
     CTX.set(ctx, p); return p;
+  }
+  // NDSTAGE: warm-up once per live context. A silent second node (output through a gain 0) strikes every model, noise filter,
+  // click table, dist type, decay shape, the hall and the echo one after the other (3 rounds of 12 channels, ~2 s), then it is
+  // removed. V8 shares the compiled code inside the AudioWorkletGlobalScope, so the first bar of the real node runs warm
+  // (measured in Chromium: 2-3 output underruns ~0.5 s after the first play without it, none with it). The real node's state
+  // is untouched (own instance), offline contexts are never warmed (deterministic renders).
+  function warm(ctx) {
+    if (typeof OfflineAudioContext === 'function' && ctx instanceof OfflineAudioContext) return;
+    try {
+      const g = ctx.createGain(); g.gain.value = 0; g.connect(ctx.destination);
+      const n = new AudioWorkletNode(ctx, 'synq-md', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]}); n.connect(g); ST.warm = 'on';
+      const W = L.mWav, NT = L.mNtyp, CT = L.mCty, DT = L.mDty, DM = L.mDm, NM = L.mNdm, N = ORDER.length, R = 3, gap = 0.045, round = N * gap + 0.15;
+      const prog = (r, i) => { const k = r * N + i; return flat(norm({mWav: W[k % W.length], mSpc: (k * 29) % 100, mFrq: 30, mDec: 12, mDm: DM[k % DM.length], mBnd: k % 2 ? 12 : -8, mBt: 8, mPit: 40 + (k % 40),
+        mNlv: 20, mNtyp: NT[k % NT.length], mNres: 4, mNdyf: 2, mNdec: 10, mNdm: NM[k % NM.length], mClv: 20, mCty: CT[k % CT.length], mDst: 12, mDty: DT[k % DT.length], mEqg: 3, mRvb: 12, mDly: 8, mCrv: L.mCrv[k % L.mCrv.length]})); };
+      const send = r => { if (ST.warm !== 'on') return; for (let i = 0; i < N; i++) n.port.postMessage({t: 'ch', ch: i, p: prog(r, i)});
+        const t = ctx.currentTime + 0.05, list = []; for (let i = 0; i < N; i++) list.push({ch: i, at: t + i * gap, v: 0.6 + 0.1 * (i % 4), acc: i % 3 ? 0 : 0.5, tune: 0, dec: 1}); n.port.postMessage({t: 'hit', list}); };
+      n.port.postMessage({t: 'kit', p: normKit({rvT: 'hA', rvC: 3, dlR: 40, dlF: 10})});
+      for (let r = 0; r < R; r++) setTimeout(() => send(r), r * round * 1000);
+      setTimeout(() => { ST.warm = 'done'; try { n.port.postMessage({t: 'panic'}); n.disconnect(); g.disconnect(); } catch (e) {} }, (R * round + 0.4) * 1000);
+    } catch (e) { ST.warm = 'failed'; }
   }
   function node(ctx, dest) {
     const n = new AudioWorkletNode(ctx, 'synq-md', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]});
@@ -151,7 +171,7 @@ const MDX = (() => {
   }
   const load1 = () => { let s = 0; for (const E of NODES) s += E.load || 0; return s; };
   function setLim(s) { for (const E of NODES) if (E.lastLim !== (s | 0)) E.lim(s); }   // live nodes only (offline nodes are not in NODES)
-  function info() { let late = 0, nv = 0; for (const E of NODES) { late += E.late; nv += E.nv; } return {name: MD_NAME, state: ST.state, how: ST.how, err: ST.err, loadMs: Math.round(ST.ms), adds: ST.adds, nodes: NODES.size, load: +load1().toFixed(4), voices: nv, late}; }
+  function info() { let late = 0, nv = 0; for (const E of NODES) { late += E.late; nv += E.nv; } return {name: MD_NAME, state: ST.state, how: ST.how, err: ST.err, loadMs: Math.round(ST.ms), warm: ST.warm || null, adds: ST.adds, nodes: NODES.size, load: +load1().toFixed(4), voices: nv, late}; }
   return {NAME: MD_NAME, L, R, INIT, KIT0, ORDER, VERH, VERST, SCL, T, G, fN, fE, Q, bendHT, hz, norm, normKit, flat, dlyTime, dlBInfo, dlBForTime, tap, scl,
     load, node, render, info, setLim, nodes: NODES, cpu: load1, src};
 })();
