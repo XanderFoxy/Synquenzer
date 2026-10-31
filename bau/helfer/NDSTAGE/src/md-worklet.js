@@ -28,8 +28,10 @@ const SR = sampleRate, ISR = 1 / SR, CR = 16, NCH = 12, NV = 2, MAXM = 48, LN1K 
 const M_LIM1 = 24, M_LIM2 = 12, H_MAX = 32, H_LIM1 = 16, H_LIM2 = 12;
 // level guard (NDSTAGE, Q2): soft clip after the channel sum + hall, transparent up to +6 dBFS, peak below +12 dBFS (ND1-27)
 const LG_T = 2, LG_C = 3.9810717055349722, LG_W = LG_C - LG_T;
-// resonance centre (NDSTAGE, Q1): H family fc = f0 * 2^(H_FC * S / 99); P family resonator width in octaves
-const H_FC = 5, P_SIG = 0.08;
+// resonance centre (NDSTAGE, Q1): H family fc = f0 * 2^(H_FC * S / 99); P family: resonator width P_SIG (octaves) and a spectral
+// tilt r^(P_TILT * ((S - 24) / 75)^P_TSH) above S 24 on the mode amplitudes (none up to S 24: ND1-09a/ND1-10b unchanged), level
+// never raised; M-SP rises strictly from S 22 on (below, the +12 dB on the fundamental at S 24 lowers it - see CHANGES Q1)
+const H_FC = 5, P_SIG = 0.4, P_TILT = 6, P_TSH = 1;
 const PI = Math.PI, TAU = 2 * Math.PI;
 const NYQ = 0.45 * SR;
 /* ---------- tables (built once when the module loads) ---------- */
@@ -229,7 +231,7 @@ class Voice {
   constructor(eng, ch) {
     this.E = eng; this.ch = ch; this.on = false; this.bp = 0;
     this.zr = new Float64Array(MAXM); this.zi = new Float64Array(MAXM); this.cr = new Float64Array(MAXM); this.ci = new Float64Array(MAXM);
-    this.mf = new Float64Array(MAXM); this.mr = new Float64Array(MAXM); this.nm = 0;
+    this.mf = new Float64Array(MAXM); this.ptl = new Float64Array(MAXM); this.mr = new Float64Array(MAXM); this.nm = 0;
     this.TB = new Float64Array(CR); this.NB = new Float64Array(CR);
     this.ph = new Float64Array(8); this.ph2 = new Float64Array(8); this.R1 = new Float64Array(64); this.R2 = new Float64Array(64); this.rp = 0;
     // every numeric field exists from the start as a double: one hidden class for all voices, no boxing per store
@@ -353,9 +355,13 @@ class Voice {
         if (this.snr) { this.sg = tanf(5000); this.sk = 1; this.sa1 = 1 / (1 + this.sg * (this.sg + this.sk)); this.sa2 = this.sg * this.sa1; this.sa3 = this.sg * this.sa2; this.efk = 1 - Math.exp(-1 / (0.002 * SR)); }
       } else if (fam === FAM_P) {
         const B = PMOD[s - 1], fR = f0 * Math.pow(2, (this.spc - 24) / 25), tc = 0.004 * Math.pow(0.025, F0 / 50);
+        const tk = this.spc > 24 ? P_TILT * Math.pow((this.spc - 24) / 75, P_TSH) : 0, tl = this.ptl;   // Q1: spectral tilt grows with SPECTRA (fundamental weight 1), M-SP rises strictly
+        let e0 = 0, e1 = 0;
+        for (let k = 0; k < B.r.length; k++) { const f = f0 * B.r[k], l = Math.log2(f / fR), a = B.a[k] * hard(f, tc) * (1 + 3 * Math.exp(-l * l / (2 * P_SIG * P_SIG))), t = Math.pow(B.r[k], tk); tl[k] = t; e0 += a * a; e1 += a * a * t * t; }
+        const tn = e1 > e0 ? Math.sqrt(e0 / e1) : 1;   // the tilt never raises the level (S < 24 unchanged: ND1-10b)
         for (let k = 0; k < B.r.length; k++) {
           const f = f0 * B.r[k], l = Math.log2(f / fR), W = 1 + 3 * Math.exp(-l * l / (2 * P_SIG * P_SIG));
-          this.add(f, B.a[k] * B.nrm * hard(f, tc) * W, B.g[k] * (1 + 0.5 * (W - 1) / 3));
+          this.add(f, B.a[k] * B.nrm * hard(f, tc) * W * tl[k] * tn, B.g[k] * (1 + 0.5 * (W - 1) / 3));
         }
       } else if (fam === FAM_C1) {
         const kap = Math.pow(2, (this.spc - 50) / 50), fl = f0 * Math.pow(2, 10 * F0 / 50);

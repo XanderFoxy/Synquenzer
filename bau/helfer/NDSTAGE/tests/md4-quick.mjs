@@ -1,0 +1,23 @@
+import {createRequire} from 'module'; const {chromium} = createRequire(import.meta.url)('playwright');
+const file = process.argv[2];
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']}); const p = await b.newPage({viewport: {width: 390, height: 844}});
+const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.addInitScript(() => { window.__adds = []; const o = AudioWorklet.prototype.addModule; AudioWorklet.prototype.addModule = function (u) { window.__adds.push(String(u).slice(0, 60)); return o.apply(this, arguments); }; });
+await p.goto('file://' + file); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version, null, {timeout: 30000}); await p.waitForTimeout(800);
+const r = await p.evaluate(async () => {
+  ensureAudio(); await new Promise(r => setTimeout(r, 1500));
+  const a0 = MDX.adds;
+  const before = JSON.stringify(drumSnd().p.slots.kick);
+  SYNQUENZER.setPadSource('kick', 'md');
+  await new Promise(r => setTimeout(r, 800));
+  const st = MDX.st, slot = deep(drumSnd().p.slots.kick);
+  drumAudition(0, .9);
+  await new Promise(r => setTimeout(r, 300));
+  const q = await SYNQUENZER.mdQuery();
+  const ren = await SYNQUENZER.mdRender([[0.1, 'kick', 1]], {sec: 1});
+  undo(); const afterUndo = JSON.stringify(drumSnd().p.slots.kick);
+  SYNQUENZER.setPadSource('kick', 'md'); let pk = 0; for (const x of ren.l) pk = Math.max(pk, Math.abs(x));
+  return {a0, st, srcOk: slot.src, nKeys: Object.keys(slot).filter(k => MDN.KEYS.includes(k)).length, q, undoEq: before === afterUndo, pk, info: mdEngineInfo()};
+});
+console.log(JSON.stringify(r), 'adds', await p.evaluate(() => window.__adds), 'errs', JSON.stringify(errs));
+await b.close();

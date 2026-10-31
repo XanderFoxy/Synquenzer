@@ -50,13 +50,13 @@
     C('Be', 'Glocke', {mWav: 'F3', mSpc: 29, mFrq: 26, mDyf: 3, mPit: 72, mDec: 40, mDm: 'E1', mRvb: 12}),
     C('Be', 'Röhre', {mWav: 'P4', mPit: 67, mSpc: 50, mFrq: 32, mDec: 42, mDm: 'E1'}),
     C('Be', 'Ring-Glocke', {mWav: 'r1', mSpc: 15, mFrq: 40, mPit: 76, mDec: 36, mDm: 'E1'}),
-    C('Be', 'Kristall', {mWav: 'H6', mPit: 84, mSpc: 45, mFrq: 34, mDec: 38, mDm: 'E1', mRvb: 14}),
+    C('Be', 'Kristall', {mWav: 'H6', mPit: 84, mSpc: 72, mFrq: 34, mDec: 38, mDm: 'E1', mRvb: 14}),
     C('Be', 'Doppelglocke', {mWav: 'F4', mSpc: 37, mFrq: 22, mPit: 81, mDec: 24, mDm: 'E2'}),
     // Tu - gestimmte Percussion
     C('Tu', 'Marimba', {mWav: 'P1', mPit: 60, mSpc: 24, mFrq: 22, mDyf: 4, mDec: 32, mDm: 'E1'}),
     C('Tu', 'Vibra', {mWav: 'P2', mPit: 65, mSpc: 24, mFrq: 26, mDec: 40, mDm: 'E1', mRvb: 14}),
     C('Tu', 'Xylo', {mWav: 'P3', mPit: 72, mSpc: 24, mFrq: 34, mDec: 22, mDm: 'E2'}),
-    C('Tu', 'Stahltrommel', {mWav: 'H1', mPit: 62, mSpc: 40, mFrq: 30, mDec: 30, mDm: 'E1'}),
+    C('Tu', 'Stahltrommel', {mWav: 'H1', mPit: 62, mSpc: 64, mFrq: 30, mDec: 30, mDm: 'E1'}),
     C('Tu', 'Handtrommel', {mWav: 'd4', mPit: 62, mSpc: 33, mFrq: 28, mDyf: 5, mDec: 28, mDm: 'E1', mBnd: -8, mBt: 20, mCty: 'n3', mClv: 10}),
     // Ef - Effekte
     C('Ef', 'Laser', {mWav: 'A3', mSpc: 36, mFrq: 40, mPit: 84, mDec: 24, mDm: 'L', mBnd: 45, mBt: 26}),
