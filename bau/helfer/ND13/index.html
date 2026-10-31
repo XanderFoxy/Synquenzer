@@ -10729,27 +10729,7 @@ class DirigentHall extends AudioWorkletProcessor {
 registerProcessor('dirigent-hall', DirigentHall);
 </script>
 <script type="text/plain" id="sq-md-src">
-/* SYNQUENZER drum model engine worklet (Nachtrag 6, package ND1): processor 'synq-md'.
-   One node per drum track, 0 inputs, 1 stereo output -> drum track bus. Up to 12 channels (pads with source md),
-   each channel = TONE (34 models) + NOISE (7 filters) + CLICK (12 tables) -> DIST -> EQ -> ECHO -> dry/pan/level,
-   plus a shared hall (send after the echo, with the channel level). ASCII only (loaded through a Blob or data: URL).
-   Globals used: sampleRate, currentFrame (AudioWorkletGlobalScope).
-   Protocol main -> worklet (port.postMessage):
-     {t:'ch', ch, p}            full channel program (flat m* values), structural values apply from the next hit
-     {t:'kit', p}               kit effects {rvT, rvC, dlR, dlM, dlB, dlF}
-     {t:'hit', list:[{ch, at, v, acc, tune, dec}]}   at = context time (s); v 0..1; acc = accent amount 0..1 (accentAmt);
-                                tune = semitones (TUNE lock); dec = factor (DECAY lock)
-     {t:'mute', ch, solo}       SOLO PART: solo 'tone'|'noise'|'click'|'all' on channel ch, other channels silent; solo null = off
-     {t:'stop', at, tau}        voices fade with tau from at (tails keep ringing); queued hits at or after at are dropped
-     {t:'panic'}                everything incl. echo and hall tails silent within 10 ms; queued hits are dropped
-     {t:'reset'}                voices off, noise sequences, echoes, hall and smoothers to their start (offline render, tests)
-     {t:'lim', s}               CPU limiter stage 0..3 (modal models: s>=1 24 modes, s>=2 12 modes and no early reflections)
-     processorOptions {init: [messages]} apply in the constructor, before the first block (offline renders)
-     {t:'all', list:[messages]} several messages applied in order at once (offline render: one message per suspend point)
-     {t:'test', tap, q}         test API: tap 0 normal, 1 = C2/C3 before their filters, 2 = hall input after COLOR;
-                                q 'modes' -> {t:'test', modes:[per channel modes of the sounding voice]}
-   Worklet -> main: {t:'load', v, nv} once per second (fraction of real time), {t:'late', n} count of late hits.
-   Determinism: no Math.random; noise = xorshift32 per channel from a fixed seed; reset restarts everything. */
+/* SYNQUENZER drum model engine worklet 'synq-md' (Nachtrag 6, ND1). The commented source with the message protocol is md-worklet.js in the repo. */
 'use strict';
 const SR = sampleRate, ISR = 1 / SR, CR = 16, NCH = 12, NV = 2, MAXM = 48, LN1K = 6.907755278982137;
 const PI = Math.PI, TAU = 2 * Math.PI;
@@ -10760,6 +10740,8 @@ function sinc(ph) { ph -= Math.floor(ph); const x = ph * SN, i = x | 0, f = x - 
 function cosc(ph) { return sinc(ph + 0.25); }
 const TN = 4096, TANT = new Float64Array(TN + 2);
 for (let i = 0; i < TN + 2; i++) TANT[i] = Math.tan(PI * Math.min(i, TN - 1) / (2 * TN));
+const SC = new Float64Array(4);
+function tanfS(f) { let x = f * ISR; if (x > 0.45) x = 0.45; if (x < 0) x = 0; x *= 2 * TN; const i = x | 0, fr = x - i; SC[0] = TANT[i] + (TANT[i + 1] - TANT[i]) * fr; }
 function tanf(f) { let x = f * ISR; if (x > 0.45) x = 0.45; if (x < 0) x = 0; x *= 2 * TN; const i = x | 0, fr = x - i; return TANT[i] + (TANT[i + 1] - TANT[i]) * fr; }
 const BZ = 16, BOS = 32, BL = 2 * BZ, BRES = new Float64Array(BL * BOS + BOS + 2);
 const BRES_B64 = 'AMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAcABwAHAAsACwAPAA8AEwAXABsAIwAnAC8AOwBDAFMAXwBzAIMAmwC3ANMA8wEbAUMBcwGnAeMCJwJvAsMDHwODA+8AZwTvBX8GHwbLB4cEUwkvCh8LHwg3DV8Onw/3DWcS7xCPFksUJxobGCseWxyrIxshryRfKzMqJy1DMH832zdfOwc+00K/Rs9LA09bU9NUb10nYgNm92gPcT92h3vrfWOG74iTkkOUA53Lo6Olf69bsT+7H7z3xsvIl9JT1//Zl+Mb5IPtz/L79AP85AGcBiwKkA7AEsAWiBocHXQgkCdwJhQoeC6cLHwyHDN8MJQ1cDYINlw2cDZINeA1PDRcN0Ax9DBsMrgs1C7AKIgqKCekIQQiSB90GIwZlBaQE4QMdA1kClgHVABYAW/+l/vT9Sv2m/Av8d/vt+m369vmL+Sr51viM+E/4Hvj59+H31ffV9+D3+Pcb+En4gvjE+BH5Z/nF+Sv6mPoL+4T7AvyE/An9kf0a/qT+Lv+3/z4AwwBEAcIBOgKuAhsDggPhAzkEiQTQBA8FRQVxBZQFrQW9BcMFvwWzBZ0FfgVXBSgF8QSyBG0EIQTPA3kDHQO+AlwC9wGQASgBwABYAPD/iv8n/8b+af4P/rr9a/0g/dz8nvxm/Db8Dfzr+9D7vfuy+677svu++9D76vsK/DH8XvyQ/Mj8Bf1G/Yz91P0g/m3+vf4N/1//sP8BAFAAngDqADMBeQG8AfsBNQJrApsCxgLsAgwDJgM6A0gDUANSA00DQwM0Ax4DAwPkAr8ClgJoAjcCAwLLAZIBVgEYAdkAmQBaABoA2/+d/2H/J//v/rn+h/5Y/i3+Bv7j/cT9qv2U/YP9eP1w/W79cf14/YT9lP2p/cH93v3+/SH+R/5w/pz+yf74/ij/Wv+L/73/7/8gAFAAfwCtANgAAQEoAUwBbgGMAaYBvQHRAeEB7QH1AfoB+wH4AfEB5wHZAcgBtAGdAYMBZgFIAScBBQHhALwAlwBwAEoAIwD9/9f/sv+O/2z/S/8t/xD/9f7d/sf+tP6k/pb+jP6E/oD+fv5//oP+iv6U/qD+r/7A/tP+6P7//hf/Mf9M/2j/hf+i/7//3f/6/xcAMwBOAGgAggCZALAAxADXAOgA9gADAQ0BFgEcAR8BIQEgAR0BGAERAQgB/QDxAOIA0wDBAK8AnACIAHMAXQBIADIAHAAGAPD/2//H/7P/of+P/3//cP9i/1b/S/9C/zr/NP8w/y3/LP8t/y//M/85/0D/SP9R/1z/aP90/4L/kP+f/67/vv/O/97/7v/+/w0AHQArADkARwBTAF8AaQBzAHwAgwCKAI8AkwCVAJcAlwCWAJQAkQCNAIcAgQB6AHIAaQBgAFYATABBADYAKwAfABQACQD+//P/6P/e/9T/y//D/7v/tP+t/6f/o/+f/5v/mf+Y/5f/l/+Z/5r/nf+g/6X/qf+u/7T/u//B/8j/0P/X/9//5//v//b//v8GAA0AFAAbACEAJwAtADIANgA6AD4AQABDAEQARgBGAEYARQBEAEMAQAA+ADsANwAzAC8AKwAmACEAHAAXABIADQAIAAIA/f/5//T/7//r/+f/5P/g/93/2//Y/9b/1f/U/9P/0//T/9P/1P/V/9f/2P/a/93/3//i/+X/6P/r/+7/8v/1//j//P///wIABQAIAAsADgAQABIAFQAWABgAGQAaABsAHAAcABwAHAAcABsAGwAaABgAFwAWABQAEgAQAA4ADAAKAAgABgAEAAIAAAD+//z/+v/4//f/9f/0//P/8v/x//D/7//v/+//7//v/+//7//w//D/8f/y//P/9P/1//b/9//4//n/+//8//3///8AAAEAAgADAAQABQAGAAcACAAJAAkACgAKAAoACgAKAAoACgAKAAoACgAJAAkACAAHAAcABgAFAAUABAADAAIAAgABAAAA//////7//f/9//z//P/7//v/+//6//r/+v/6//r/+v/6//r/+v/7//v/+//7//z//P/9//3//f/+//7//////wAAAAABAAEAAQACAAIAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAIAAgACAAIAAQABAAEAAQAAAAAAAAAAAP////////////////7//v/+//7//v/+//7//v/+//7//v/+//7//v///////////////////wAAAAAAAAAAAAAAAAAAAAABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
@@ -10770,7 +10752,7 @@ for (let i = 0; i < s.length; i += 4) { const a = V[s.charCodeAt(i)], b = V[s.ch
 if (o < by.length) by[o++] = (a << 2) | (b >> 4); if (o < by.length && s[i + 2] !== '=') by[o++] = ((b & 15) << 4) | (c >> 2); if (o < by.length && s[i + 3] !== '=') by[o++] = ((c & 3) << 6) | d; }
 for (let i = 0; i < BRES.length; i++) { let v = by[2 * i] | (by[2 * i + 1] << 8); if (v > 32767) v -= 65536; BRES[i] = v / 16384; }
 })();
-let BINT = 0; for (let j = 0; j < BL * BOS; j++) BINT += BRES[j] / BOS;
+let BINT = 0; for (let j = 0; j < BL * BOS; j++) BINT += (BRES[j] + BRES[j + 1]) * 0.5 / BOS;
 function blepAdd(R, p, frac, h) { if (!(frac >= 0)) frac = 0; else if (frac > 0.999) frac = 0.999; for (let k = 0; k < BL; k++) { const x = (k + frac) * BOS, j = x | 0; R[(p + 1 + k) & 63] += h * (BRES[j] + (BRES[j + 1] - BRES[j]) * (x - j)); } }
 function Tsec(x) { return 0.004 * Math.pow(2500, x / 50); }
 function Glv(x) { const a = x / 50; return a * a; }
@@ -10913,6 +10895,7 @@ case M_P: return Math.exp(-LN1K * x) * (1 + v * Math.exp(-t / 0.006));
 default: return Math.exp(-LN1K * x);
 }
 }
+function envS(m, t, T, v) { SC[0] = envShape(m, t, T, v); }
 function gateShape(t, T) { if (t < T) return 1; const u = (t - T) / 0.002; return u < 1 ? 0.5 * (1 + Math.cos(PI * u)) : 0; }
 function envEnd(m, T) { return m === M_E2 ? 2.7 * T : m === M_E3 ? 4 * T : m === M_L ? T : 2 * T; }
 function tnh(x) { if (x > 3) return 1; if (x < -3) return -1; const x2 = x * x; return x * (27 + x2) / (27 + 9 * x2); }
@@ -11055,7 +11038,7 @@ this.lpk = 1.4142135623730951;
 }
 add(f, a, g, ph) {
 const n = this.nm;
-if (n >= this.cap || f * this.bmax > NYQ || f <= 0 || a === 0) return;
+if (n >= this.cap || f > NYQ || f <= 0 || a === 0) return;
 this.mf[n] = f; this.mr[n] = Math.pow(10, -3 / (this.TM * g * SR)); if (g > this.gmax) this.gmax = g;
 const p = ph || 0; this.zr[n] = a * cosc(p); this.zi[n] = a * sinc(p); this.nm = n + 1;
 }
@@ -11072,7 +11055,8 @@ this.real = true;
 }
 coefModes(n) {
 const bm = this.bm, mf = this.mf, mr = this.mr, cr = this.cr, ci = this.ci;
-for (let k = 0; k < n; k++) { const ph = mf[k] * bm * ISR; cr[k] = mr[k] * cosc(ph); ci[k] = mr[k] * sinc(ph); }
+for (let k = 0; k < n; k++) { let f = mf[k] * bm; if (f > NYQ) f = NYQ; const x = f * ISR * SN, i = x | 0, fr = x - i, sn = SINT[i] + (SINT[i + 1] - SINT[i]) * fr;
+let xc = x + SN / 4; if (xc >= SN) xc -= SN; const ic = xc | 0, fc = xc - ic, cs = SINT[ic] + (SINT[ic + 1] - SINT[ic]) * fc; cr[k] = mr[k] * cs; ci[k] = mr[k] * sn; }
 }
 control() {
 const E = this.E, C = E.chs[this.ch], t = this.age * ISR, t1 = (this.age + CR) * ISR;
@@ -11085,30 +11069,34 @@ const eE0 = this.eE, eE1 = eE0 * this.kE, eP0 = this.eP, eP1 = eP0 * this.kP, eF
 this.eE = eE1; this.eP = eP1; this.eF = eF1;
 let e0, e1;
 if (this.modal || this.fam === FAM_T) {
-if (this.comp > 0) { e0 = envShape(this.tm, t, this.T, this.vk) * Math.exp(this.comp * t); e1 = envShape(this.tm, t1, this.T, this.vk) * Math.exp(this.comp * t1); }
+if (this.comp > 0) { envS(this.tm, t, this.T, this.vk); e0 = SC[0] * Math.exp(this.comp * t); envS(this.tm, t1, this.T, this.vk); e1 = SC[0] * Math.exp(this.comp * t1); }
 else if (this.tm === M_P) { e0 = 1 + this.vk * eP0; e1 = 1 + this.vk * eP1; }
 else { e0 = 1; e1 = 1; }
 } else if (this.tm === M_E1) { e0 = eE0; e1 = eE1; }
 else if (this.tm === M_P) { e0 = eE0 * (1 + this.vk * eP0); e1 = eE1 * (1 + this.vk * eP1); }
-else { e0 = this.eT1 >= 0 ? this.eT1 : envShape(this.tm, t, this.T, this.vk); e1 = envShape(this.tm, t1, this.T, this.vk); this.eT1 = e1; }
+else { if (this.eT1 >= 0) e0 = this.eT1; else { envS(this.tm, t, this.T, this.vk); e0 = SC[0]; } envS(this.tm, t1, this.T, this.vk); e1 = SC[0]; this.eT1 = e1; }
 const gt = this.vg * this.tl;
-this.gT = gt * e0 * this.fade * this.stp * fi0; this.dgT = (gt * e1 * f1 * s1 * fi1 - this.gT) / CR;
+if (this.age === 0) this.gT = gt * e0 * this.fade * this.stp * fi0;
+this.dgT = (gt * e1 * f1 * s1 * fi1 - this.gT) / CR;
 if (this.noiseOn) {
 let n0, n1; const eN0 = this.eEN, eN1 = eN0 * this.kEN, eFN0 = this.eFN; this.eEN = eN1; this.eFN = eFN0 * this.kFN;
-if (this.nm_ === M_G) { n0 = gateShape(t, this.TN); n1 = gateShape(t1, this.TN); } else if (this.nm_ === M_E1) { n0 = eN0; n1 = eN1; }
-else { n0 = this.eN1 >= 0 ? this.eN1 : envShape(this.nm_, t, this.TN, 0); n1 = envShape(this.nm_, t1, this.TN, 0); this.eN1 = n1; }
+if (this.nm_ === M_G) { const T = this.TN; n0 = t < T ? 1 : t < T + 0.002 ? 0.5 * (1 + Math.cos(PI * (t - T) / 0.002)) : 0; n1 = t1 < T ? 1 : t1 < T + 0.002 ? 0.5 * (1 + Math.cos(PI * (t1 - T) / 0.002)) : 0; }
+else if (this.nm_ === M_E1) { n0 = eN0; n1 = eN1; }
+else { if (this.eN1 >= 0) n0 = this.eN1; else { envS(this.nm_, t, this.TN, 0); n0 = SC[0]; } envS(this.nm_, t1, this.TN, 0); n1 = SC[0]; this.eN1 = n1; }
 const gn = this.vg * this.nl * 1.224744871391589;
-this.gN = gn * n0 * this.fade * this.stp; this.dgN = (gn * n1 * f1 * s1 - this.gN) / CR;
+if (this.age === 0) this.gN = gn * n0 * this.fade * this.stp;
+this.dgN = (gn * n1 * f1 * s1 - this.gN) / CR;
 let nf = this.nfrq; if (this.dfN !== 0) { nf += this.dfN * eFN0; nf = nf < 0 ? 0 : nf > 50 ? 50 : nf; }
-if (nf !== this.nfc) { this.nfc = nf; const fc = fNz(nf), g = tanf(fc);
+if (nf !== this.nfc) { this.nfc = nf; const fc = 30 * Math.pow(600, nf / 50); tanfS(fc); const g = SC[0];
 this.ng = g; const kq = 1 / this.nq; this.nk = kq;
 this.na1 = 1 / (1 + g * (g + kq)); this.na2 = g * this.na1; this.na3 = g * this.na2;
 const k2 = 1.4142135623730951; this.nk2 = k2;
 this.nb1 = 1 / (1 + g * (g + k2)); this.nb2 = g * this.nb1; this.nb3 = g * this.nb2;
-if (this.ntyp === 6) { const gl = tanf(Math.max(3 * fc, 6000)); this.nlp = gl / (1 + gl); } }
+if (this.ntyp === 6) { tanfS(Math.max(3 * fc, 6000)); const gl = SC[0]; this.nlp = gl / (1 + gl); } }
 }
 this.gCl = this.accG * this.cl * this.gC * this.fade * this.stp * this.cpol;
-const bm0 = this.bm, bm1 = this.b0 === 0 ? 1 : this.bendAt(t1);
+const bm0 = this.bm; let bm1 = 1;
+if (this.b0 !== 0 && t1 < this.Tb) { const e4 = 0.01831563888873418; bm1 = Math.pow(2, this.b0 * (Math.exp(-4 * t1 / this.Tb) - e4) / (1 - e4) / 12); }
 this.bm = bm1;
 const f0 = this.f0;
 if (bm1 !== bm0 || this.dinc !== 0 || this.age === 0) {
@@ -11116,27 +11104,28 @@ const fA = Math.min(f0 * bm0, NYQ), fB = Math.min(f0 * bm1, NYQ);
 this.inc = fA * ISR; this.dinc = (fB - fA) * ISR / CR;
 }
 if ((this.modal || this.fam === FAM_T) && bm1 !== bm0 && !this.real) { this.coefModes(this.fam === FAM_T ? 2 : this.nm); if (this.modal && bm1 === 1) this.toReal(); }
-const fam = this.fam;
+const fam = this.fam, dfT = this.dfT, frq = this.frq;
+let Fa = frq + dfT * eF0, Fb = frq + dfT * eF1; Fa = Fa < 0 ? 0 : Fa > 50 ? 50 : Fa; Fb = Fb < 0 ? 0 : Fb > 50 ? 50 : Fb;
 if (fam === FAM_A || (fam === FAM_R && this.sub === 2)) {
-const F = this.dfT === 0 ? this.frq : this.Fd(eF0), kq = this.lpk;
-if (F !== this.ckF || bm1 !== this.ckB) { this.ckF = F; this.ckB = bm1; const fc = f0 * bm1 * Math.pow(2, 9 * F / 50), g = tanf(fc); this.la1 = 1 / (1 + g * (g + kq)); this.la2 = g * this.la1; this.la3 = g * this.la2;
-if (fam === FAM_A && this.sub === 5) { const gh = tanf(f0 * bm1); this.ha1 = 1 / (1 + gh * (gh + kq)); this.ha2 = gh * this.ha1; this.ha3 = gh * this.ha2; this.hk = kq; } }
+const F = Fa, kq = this.lpk;
+if (F !== this.ckF || bm1 !== this.ckB) { this.ckF = F; this.ckB = bm1; tanfS(f0 * bm1 * Math.pow(2, 9 * F / 50)); const g = SC[0]; this.la1 = 1 / (1 + g * (g + kq)); this.la2 = g * this.la1; this.la3 = g * this.la2;
+if (fam === FAM_A && this.sub === 5) { tanfS(f0 * bm1); const gh = SC[0]; this.ha1 = 1 / (1 + gh * (gh + kq)); this.ha2 = gh * this.ha1; this.ha3 = gh * this.ha2; this.hk = kq; } }
 if (fam === FAM_A && this.sub === 6) this.pw = 0.5 - (0.5 - this.pw0) * eF0;
 } else if (fam === FAM_F) {
-const F0 = this.dfT === 0 ? this.frq : this.Fd(eF0), F1 = this.dfT === 0 ? this.frq : this.Fd(eF1);
+const F0 = Fa, F1 = Fb;
 const I0 = this.Imax * (F0 / 50) * (F0 / 50), I1 = this.Imax * (F1 / 50) * (F1 / 50);
 this.I = I0 / TAU; this.dI = (I1 - I0) / TAU / CR;
 } else if (fam === FAM_R && this.sub === 1) {
-const m0 = (this.dfT === 0 ? this.frq : this.Fd(eF0)) / 50, m1 = (this.dfT === 0 ? this.frq : this.Fd(eF1)) / 50;
+const m0 = Fa / 50, m1 = Fb / 50;
 this.m = m0; this.dm = (m1 - m0) / CR;
 } else if (fam === FAM_C2 || fam === FAM_C3) {
-const F = this.dfT === 0 ? this.frq : this.Fd(eF0);
+const F = Fa;
 if (F !== this.ckF || bm1 !== this.ckB) { this.ckF = F; this.ckB = bm1;
-const kf = this.kap * f0 * bm1, fb = 16 * kf, gb = tanf(fb), kb = 1 / 1.5;
+const kf = this.kap * f0 * bm1, fb = 16 * kf, kb = 1 / 1.5; tanfS(fb); const gb = SC[0];
 this.ba1 = 1 / (1 + gb * (gb + kb)); this.ba2 = gb * this.ba1; this.ba3 = gb * this.ba2; this.bk = kb;
-const fh = 8 * kf, gh = tanf(fh), kh = 1.4142135623730951;
+const fh = 8 * kf, kh = 1.4142135623730951; tanfS(fh); const gh = SC[0];
 this.ha1 = 1 / (1 + gh * (gh + kh)); this.ha2 = gh * this.ha1; this.ha3 = gh * this.ha2; this.hk = kh;
-const fl = Math.min(fb * Math.pow(20000 / Math.min(fb, 20000), F / 50), NYQ), gl = tanf(fl);
+const fl = Math.min(fb * Math.pow(20000 / Math.min(fb, 20000), F / 50), NYQ); tanfS(fl); const gl = SC[0];
 this.la1 = 1 / (1 + gl * (gl + kh)); this.la2 = gl * this.la1; this.la3 = gl * this.la2; }
 }
 if (this.fadeSt > 0 && f1 <= 0) this.endAfter = true;
@@ -11157,13 +11146,12 @@ if (this.cc === 0 && this.endAfter) { this.on = false; break; }
 }
 chunk(out, s, n) {
 const TB = this.TB, E = this.E, mT = E.mskT[this.ch], mN = E.mskN[this.ch], mC = E.mskC[this.ch];
-if (this.gT !== 0 || this.dgT !== 0) {
 this.tone(TB, n);
-if (E.tap === 1 && (this.fam === FAM_C2 || this.fam === FAM_C3)) {  }
+if (this.gT !== 0 || this.dgT !== 0) {
 let g = this.gT; const dg = this.dgT;
 for (let i = 0; i < n; i++) { out[s + i] += TB[i] * g * mT; g += dg; }
 this.gT = g;
-} else this.skipTone(n);
+}
 if (this.noiseOn) {
 const NB = this.NB; this.noise(NB, n);
 let g = this.gN; const dg = this.dgN;
@@ -11175,10 +11163,6 @@ const T = this.ctab, g = this.gCl * mC; let p = this.cpos; const m = Math.min(n,
 for (let i = 0; i < m; i++) out[s + i] += T[p++] * g;
 this.cpos = p;
 }
-}
-skipTone(n) {
-if (this.modal || this.fam === FAM_T) {  this.tone(this.TB, n); return; }
-let inc = this.inc; for (let i = 0; i < n; i++) inc += this.dinc; this.ph[0] += this.inc * n; this.inc = inc;
 }
 tone(TB, n) {
 const fam = this.fam;
@@ -11408,11 +11392,12 @@ constructor(opt) {
 super();
 this.smK = 0.1; this.soloCh = 0.1; this.soloP = 0.1; this.lim = 0.1; this.tap = 0.1; this.QN = 0.1; this.qn = 0.1; this.late = 0.1; this.lateSent = 0.1; this.stopFr = 0.1; this.stopTau = 0.1; this.pan = 0.1; this.dlyT = 0.1; this.dlyS = 0.1; this.dlyFb = 0.1; this.dlySt = 0.1; this.busy = 0.1; this.busyN = 0.1; this.hasPerf = false; this.hr = 0.1; this.pdm = 0.1; this.hw = 0.1; this.hlpL = 0.1; this.hlpR = 0.1; this.hhpL = 0.1; this.hhpR = 0.1; this.hs = 0.1; this.hc = 0.1; this.hsleep = 0.1; this.hsize = 0.1; this.hrt = 0.1; this.hdamp = 0.1; this.hpd = 0.1; this.hmod = 0.1; this.erCur = 0.1; this.erOld = 0.1; this.erX = 0.1; this.hS = 0.1; this.cz1 = 0.1; this.cz2 = 0.1; this.colC = 0.1; this.panN = 0.1;
 this.smK = 1 - Math.exp(-CR / (0.01 * SR));
+this.smB = 1 - Math.exp(-128 / (0.01 * SR)); this.smCo = 1 - Math.exp(-128 / (0.03 * SR)); this.smC16 = 1 - Math.exp(-16 / (0.03 * SR));
 this.chs = []; for (let i = 0; i < NCH; i++) this.chs.push(new Chan(this, i));
 this.nz = new Uint32Array(NCH);
 this.mskT = new Float64Array(NCH); this.mskN = new Float64Array(NCH); this.mskC = new Float64Array(NCH);
-this.soloCh = -1; this.soloP = 0; this.lim = 0; this.tap = 0; this.sent = true; this.errAt = -1e12;
-this.QN = 512; this.q = []; for (let i = 0; i < this.QN; i++) this.q.push({fr: 0, ch: 0, v: 0, acc: 0, tune: 0, dec: 1}); this.qn = 0;
+this.soloCh = -1; this.soloP = 0; this.lim = 0; this.tap = 0; this.sent = true; this.errAt = -1e12; this.qover = 0;
+this.QN = 4096; this.q = []; for (let i = 0; i < this.QN; i++) this.q.push({fr: 0, ch: 0, v: 0, acc: 0, tune: 0, dec: 1}); this.qn = 0;
 this.late = 0; this.lateSent = 0;
 this.stopFr = -1; this.stopTau = 0.02; this.pan = 0;
 this.K = {rvT: 1, rvC: 0, dlR: 50, dlM: 0, dlB: 60, dlF: 0};
@@ -11439,12 +11424,12 @@ this.hw = 1 << 20; this.hlpL = 0; this.hlpR = 0; this.hhpL = 0; this.hhpR = 0; t
 const R = RV[this.K.rvT];
 this.hsize = R.sz; this.hrt = R.rt; this.hdamp = R.dp; this.hpd = R.pd * 0.001 * SR; this.hmod = R.md;
 this.erCur = this.K.rvT; this.erOld = -1; this.erX = 1; this.hS = 0;
-this.cz1 = 0; this.cz2 = 0; this.colC = this.K.rvC;
+this.cz1 = 0; this.cz2 = 0; this.ch1 = 0; this.ch2 = 0; this.colC = this.K.rvC; this.cS = this.K.rvC; this.erG = this.lim < 2 ? 1 : 0;
 }
 resetAll() {
 for (let i = 0; i < NCH; i++) { this.chs[i].reset(); this.nz[i] = (0x9E3779B9 ^ Math.imul(i + 1, 2654435761)) >>> 0 || 1; }
 for (let i = 0; i < NCH; i++) { const C = this.chs[i]; this.levels(C); C.tlS = C.tlT; C.nlS = C.nlT; C.clS = C.clT; this.fxSnap(C); }
-this.qn = 0; this.stopFr = -1; this.pan = 0; this.dlyT = dlyTime(this.K); this.dlyS = Math.round(this.dlyT * SR); this.dlyFb = 0.97 * this.K.dlF / 20;
+this.qn = 0; this.stopFr = -1; this.pan = 0; this.dlyT = dlyTime(this.K); this.dlyS = Math.round(this.dlyT * SR); this.dlyFb = 0.97 * this.K.dlF / 20; this.fbS = this.dlyFb; this.fb0 = this.fbS; this.fb1 = this.fbS;
 this.hallReset();
 }
 levels(C) {
@@ -11484,13 +11469,16 @@ case 'reset': { this.resetAll(); break; }
 case 'lim': { this.lim = Math.max(0, Math.min(3, m.s | 0)); break; }
 case 'test': {
 if (m.tap != null) this.tap = m.tap | 0;
-if (m.q === 'modes') { const r = []; for (const C of this.chs) { let n = 0; for (const v of C.v) if (v.on && (v.modal)) n = Math.max(n, v.nm); r.push(n); } this.port.postMessage({t: 'test', modes: r}); }
-if (m.q === 'state') this.port.postMessage({t: 'test', state: {late: this.late, qn: this.qn, lim: this.lim, voices: this.chs.map(C => C.v.filter(v => v.on).length), hsleep: this.hsleep}});
+const r = {t: 'test', id: m.id, ok: true};
+if (m.q === 'modes') { r.modes = []; for (const C of this.chs) { let n = 0; for (const v of C.v) if (v.on && (v.modal)) n = Math.max(n, v.nm); r.modes.push(n); } }
+if (m.q === 'state') r.state = {late: this.late, qn: this.qn, qover: this.qover, lim: this.lim, voices: this.chs.map(C => C.v.filter(v => v.on).length), hsleep: this.hsleep};
+if (m.id != null || m.q) this.port.postMessage(r);
 break; }
 }
 }
 enqueue(h) {
-const ch = h.ch | 0; if (ch < 0 || ch >= NCH || this.qn >= this.QN) return;
+const ch = h.ch | 0; if (ch < 0 || ch >= NCH) return;
+if (this.qn >= this.QN) { this.qover++; if (currentFrame - this.errAt >= 5 * SR) { this.errAt = currentFrame; this.port.postMessage({t: 'err', ch: -1, msg: 'queue'}); } return; }
 const fr = Math.round((+h.at || 0) * SR);
 let j = this.qn; const q = this.q, rec = q[j];
 while (j > 0 && q[j - 1].fr > fr) { q[j] = q[j - 1]; j--; }
@@ -11527,16 +11515,17 @@ let qi = 0;
 while (qi < this.qn && this.q[qi].fr < fr1) {
 const h = this.q[qi]; let off = h.fr - fr0;
 if (off < 0) { off = 0; this.late++; }
-const C = this.chs[h.ch]; if (C.has && !C.act) { C.buf.fill(0); C.act = true; any = true; }
+const C = this.chs[h.ch]; if (C.has && !C.act) { C.buf.fill(0); C.act = true; any = true; this.fxSnap(C); C.adaa = 0.2; C.dcx = 0; C.dcy = 0; C.rnPh = 0.25; }
 this.hit(h, off); qi++;
 }
 if (qi > 0) { const q = this.q; for (let i = qi; i < this.qn; i++) { const t = q[i - qi]; q[i - qi] = q[i]; q[i] = t; } this.qn -= qi; }
 if (stopK > 0) for (let c = 0; c < NCH; c++) for (let j = 0; j < NV; j++) { const v = this.chs[c].v[j]; if (v.on) v.stpK = stopK; }
-if (!any && this.hsleep > 0.5 * SR / N && this.pan === 0) { this.account(t0, N); return true; }
+if (!any && this.hsleep > 0.5 * SR / N && this.pan === 0) { this.dlyS = Math.round(this.dlyT * SR); this.fbS = this.dlyFb; this.cS = this.K.rvC; this.account(t0, N); return true; }
 let needD = false; for (let c = 0; c < NCH; c++) { const C = this.chs[c]; if (C.act && (C.tDl > 0 || C.sDl > 0 || C.dlHold > 0 || C.dlyE > 0)) needD = true; }
 if (needD) { const tg = Math.round(this.dlyT * SR), st = this.dlySt, DT = this.dT; let d = this.dlyS;
 for (let i = 0; i < N; i++) { if (d !== tg) { if (d < tg) { d += st; if (d > tg) d = tg; } else { d -= st; if (d < tg) d = tg; } } DT[i] = d; }
 this.dlyS = d; } else this.dlyS = Math.round(this.dlyT * SR);
+this.fb0 = this.fbS; { const d = this.dlyFb - this.fbS; this.fbS = d < 1e-9 && d > -1e-9 ? this.dlyFb : this.fbS + d * this.smB; } this.fb1 = this.fbS;
 const hin = this.hin; if (this.sent) hin.fill(0); this.sent = false;
 for (let c = 0; c < NCH; c++) {
 const C = this.chs[c]; if (!C.act) continue;
@@ -11569,7 +11558,7 @@ chFx(C, L, R, hin, N) {
 const b = C.buf, k = this.smK;
 let sum = 0; for (let i = 0; i < N; i++) sum += b[i];
 if (!(sum - sum === 0)) { b.fill(0); C.v[0].reset0(); C.v[1].reset0(); C.dl.fill(0); C.eqx1 = C.eqx2 = C.eqy1 = C.eqy2 = 0; C.adaa = 0; C.dlyE = 0; this.err(C.i); return; }
-if (C.dtyA !== C.P.dty && C.sDst < 1e-3) { C.dtyA = C.P.dty; C.sDst = 0; C.adaa = 0.2; C.dcx = 0; C.dcy = 0; }
+if (C.dtyA !== C.P.dty && C.sDst < 1e-3) { C.dtyA = C.P.dty; C.sDst = 0; C.adaa = 0.2; C.dcx = 0; C.dcy = 0; C.rnPh = 0.25; }
 const tD = C.dtyA === C.P.dty ? C.tDst : 0;
 if (tD > 0 || C.sDst > 1e-4) {
 const ty = C.dtyA;
@@ -11595,7 +11584,7 @@ y = x * sinc(C.rnPh); C.rnPh += pv; if (C.rnPh >= 1) C.rnPh -= 1;
 const w = D < 1 ? D : 1; b[i] = x + (y - x) * w; D += dd; pv += dp;
 }
 }
-} else { C.adaa = 0.2; C.dcx = 0; C.dcy = 0; }
+} else { C.adaa = 0.2; C.dcx = 0; C.dcy = 0; C.rnPh = 0.25; }
 if (C.tEqg !== 0 || C.sEqg !== 0) {
 for (let j = 0; j < N; j += CR) {
 C.sEqg = sm(C.sEqg, C.tEqg, k); C.sEqf = sm(C.sEqf, C.tEqf, k);
@@ -11611,9 +11600,10 @@ C.b0 = C.nb0; C.b1 = C.nb1; C.b2 = C.nb2; C.a1 = C.na1; C.a2 = C.na2; C.eqx1 = x
 }
 if (C.sEqg === 0) { C.eqx1 = C.eqx2 = C.eqy1 = C.eqy2 = 0; }
 } else { C.sEqf = C.tEqf; this.eqCoef(C); C.b0 = C.nb0; C.b1 = C.nb1; C.b2 = C.nb2; C.a1 = C.na1; C.a2 = C.na2; }
-const dl = C.dl, dm = C.dm, useD = C.tDl > 0 || C.sDl > 1e-6 || C.dlyE > 1e-10;
+const dl = C.dl, dm = C.dm, useD = C.tDl > 0 || C.sDl > 1e-6;
+if (!useD && (C.dlHold > 0 || C.dlyE > 0)) { dl.fill(0); C.dlHold = 0; C.dlyE = 0; }
 let w = C.dw, e2 = 0, hold = C.dlHold > N ? C.dlHold - N : 0; const holdN = Math.ceil(1.2 * SR) + 256;
-const fb = this.dlyFb, DT = this.dT;
+const fbA = this.fb0, fbD = (this.fb1 - this.fb0) / N, DT = this.dT;
 if (!useD && C.sLvl === C.tLvl && C.sPl === C.tPl && C.sPr === C.tPr && C.sRv === C.tRv) {
 const gl = C.sLvl * (1 - C.sRv) * C.sPl, gr = C.sLvl * (1 - C.sRv) * C.sPr, gh = C.sLvl * C.sRv;
 if (gh !== 0) { this.sent = true; for (let i = 0; i < N; i++) { const y = b[i]; L[i] += y * gl; R[i] += y * gr; hin[i] += y * gh; } }
@@ -11631,7 +11621,7 @@ for (let i = j; i < j + CR; i++) {
 let y = b[i];
 if (useD) {
 const e = rdl(dl, dm, w - DT[i]);
-let wv = y + fb * e; if (wv < 1e-18 && wv > -1e-18) wv = 0; else if (wv > 1e-5 || wv < -1e-5) hold = holdN; dl[w & dm] = wv; w++;
+let wv = y + (fbA + fbD * i) * e; if (wv < 1e-18 && wv > -1e-18) wv = 0; else if (wv > 1e-5 || wv < -1e-5) hold = holdN; dl[w & dm] = wv; w++;
 e2 += e * e;
 y = y * (1 - dd) + e * dd;
 }
@@ -11643,15 +11633,15 @@ lv += dL; pl += dPl; pr += dPr; rv += dRv; dd += dDl;
 if (useD) { if (w > 0x3f000000) w -= 0x20000000; C.dw = w; C.dlyE = e2 / N; C.dlHold = hold; } else { C.dlyE = 0; C.dlHold = 0; }
 }
 hall(hin, L, R, N) {
-if (!this.sent && this.hsleep > 0.5 * SR / N) return;
+if (!this.sent && this.hsleep > 0.5 * SR / N) { this.cS = this.K.rvC; return; }
 const K = this.K, Rv = RV[K.rvT];
 let pk = 0; if (this.sent) for (let i = 0; i < N; i++) { const a = hin[i] < 0 ? -hin[i] : hin[i]; if (a > pk) pk = a; }
 const gk = this.smK * 8 > 1 ? 1 : this.smK * 8;
 this.hrt += (Rv.rt - this.hrt) * gk; this.hdamp += (Rv.dp - this.hdamp) * gk; this.hmod += (Rv.md - this.hmod) * gk;
 this.hsize += Math.max(-0.002, Math.min(0.002, Rv.sz - this.hsize));
 const pdT = Rv.pd * 0.001 * SR, pdS = 0.1 * N; this.hpd += Math.max(-pdS, Math.min(pdS, pdT - this.hpd));
-const c = K.rvC; let ca1 = 0, ca2 = 0, ca3 = 0;
-if (c !== 0) { const fc = c < 0 ? 20000 * Math.pow(1500 / 20000, -c / 9) : 20 * Math.pow(75, c / 9), g = tanf(fc), kq = 1.4142135623730951; ca1 = 1 / (1 + g * (g + kq)); ca2 = g * ca1; ca3 = g * ca2; }
+const cT = K.rvC; let c = this.cS, la1 = 0, la2 = 0, la3 = 0, ha1 = 0, ha2 = 0, ha3 = 0, wl = 0, wh = 0; const cMov = c !== cT;
+let h1 = this.ch1, h2 = this.ch2;
 const r = this.hr, S = this.hsize * r, B = this.hbase, S0 = this.hS > 0 ? this.hS : S, dS = (S - S0) / N; this.hS = S;
 let lap1 = B[0] * S, ld1 = B[1] * S, lap2 = B[2] * S, ld2 = B[3] * S, lap3 = B[4] * S, ld3 = B[5] * S, lap4 = B[6] * S, ld4 = B[7] * S;
 const kd = -3 / (SR * this.hrt);
@@ -11668,12 +11658,21 @@ const H = this.hL8, AP1 = H[0].b, D1 = H[1].b, AP2 = H[2].b, D2 = H[3].b, AP3 = 
 const mA1 = H[0].m, mD1 = H[1].m, mA2 = H[2].m, mD2 = H[3].m, mA3 = H[4].m, mD3 = H[5].m, mA4 = H[6].m, mD4 = H[7].m;
 const pdb = this.pdb, pdm = this.pdm;
 let w = this.hw, lpL = this.hlpL, lpR = this.hlpR, hpL = this.hhpL, hpR = this.hhpR, s = this.hs, cc = this.hc, z1 = this.cz1, z2 = this.cz2;
-const erOn = this.lim < 2, Pc = erOn ? ERP[RV[this.erCur].er] : null, Po = erOn && this.erOld >= 0 && this.erX < 1 ? ERP[RV[this.erOld].er] : null, erK = 1 / (0.04 * SR);
+const erT = this.lim < 2 ? 1 : 0, erAct = erT > 0 || this.erG > 0, Pc = erAct ? ERP[RV[this.erCur].er] : null, Po = erAct && this.erOld >= 0 && this.erX < 1 ? ERP[RV[this.erOld].er] : null, erK = 1 / (0.04 * SR);
+let erG = this.erG;
 const tap2 = this.tap === 2;
 let en = 0;
 for (let i = 0; i < N; i++) {
 let x = hin[i];
-if (c !== 0) { const v3 = x - z2, v1 = ca1 * z1 + ca2 * v3, v2 = z2 + ca2 * z1 + ca3 * v3; z1 = 2 * v1 - z1; z2 = 2 * v2 - z2; x = c < 0 ? v2 : x - 1.4142135623730951 * v1 - v2; }
+if ((i & 15) === 0 && (cMov || i === 0)) {
+if (cMov) { c += (cT - c) * this.smC16; if (c - cT < 1e-4 && c - cT > -1e-4) c = cT; }
+wl = c < 0 ? (-c < 0.5 ? -c * 2 : 1) : 0; wh = c > 0 ? (c < 0.5 ? c * 2 : 1) : 0;
+tanfS(c < 0 ? 20000 * Math.pow(1500 / 20000, -c / 9) : 20000); let g = SC[0]; la1 = 1 / (1 + g * (g + 1.4142135623730951)); la2 = g * la1; la3 = g * la2;
+tanfS(c > 0 ? 20 * Math.pow(75, c / 9) : 20); g = SC[0]; ha1 = 1 / (1 + g * (g + 1.4142135623730951)); ha2 = g * ha1; ha3 = g * ha2;
+}
+{ const v3 = x - z2, v1 = la1 * z1 + la2 * v3, v2 = z2 + la2 * z1 + la3 * v3; z1 = 2 * v1 - z1; z2 = 2 * v2 - z2;
+const u3 = x - h2, u1 = ha1 * h1 + ha2 * u3, u2 = h2 + ha2 * h1 + ha3 * u3; h1 = 2 * u1 - h1; h2 = 2 * u2 - h2;
+if (wl !== 0) x += (v2 - x) * wl; else if (wh !== 0) x += (x - 1.4142135623730951 * u1 - u2 - x) * wh; }
 if (tap2) { L[i] = x; R[i] = x; continue; }
 pdb[w & pdm] = x;
 let erL = 0, erR = 0;
@@ -11681,6 +11680,8 @@ if (Pc || Po) {
 const xf = this.erX; if (xf < 1) this.erX = Math.min(1, xf + erK);
 if (Pc) for (let j = 0; j < Pc.length; j++) { const e = Pc[j], v = pdb[(w - Math.round(e[0] * 0.001 * SR)) & pdm] * xf; erL += v * e[1]; erR += v * e[2]; }
 if (Po) for (let j = 0; j < Po.length; j++) { const e = Po[j], v = pdb[(w - Math.round(e[0] * 0.001 * SR)) & pdm] * (1 - xf); erL += v * e[1]; erR += v * e[2]; }
+if (erG !== erT) { erG += erT > erG ? erK : -erK; if (erG > 1) erG = 1; else if (erG < 0) erG = 0; }
+erL *= erG; erR *= erG;
 }
 x = this.hpd >= 1 ? rdl(pdb, pdm, w - this.hpd) : x;
 let q = 1; if (dS !== 0) { const Sx = S0 + dS * (i + 1); q = Sx / S; lap1 = B[0] * Sx; ld1 = B[1] * Sx; lap2 = B[2] * Sx; ld2 = B[3] * Sx; lap3 = B[4] * Sx; ld3 = B[5] * Sx; lap4 = B[6] * Sx; ld4 = B[7] * Sx; }
@@ -11715,7 +11716,7 @@ L[i] += ol; R[i] += or; en += ol * ol + or * or;
 w++;
 }
 if (w > 0x3f000000) w -= 0x20000000;
-this.hw = w; this.hlpL = lpL; this.hlpR = lpR; this.hhpL = hpL; this.hhpR = hpR; this.cz1 = z1; this.cz2 = z2;
+this.cS = c; this.ch1 = h1; this.ch2 = h2; this.erG = erG; this.hw = w; this.hlpL = lpL; this.hlpR = lpR; this.hhpL = hpL; this.hhpR = hpR; this.cz1 = z1; this.cz2 = z2;
 const m = Math.sqrt(s * s + cc * cc); this.hs = s / m; this.hc = cc / m;
 this.hsleep = pk === 0 && en < 1e-10 * N ? this.hsleep + 1 : 0;
 }
@@ -15949,12 +15950,15 @@ const MK_LABEL = 'MS 2000';
    added to an AudioContext only when MDX.load(ctx) is called (ND4: when a pad gets source md or a loaded project has one),
    so projects without model pads load and sound exactly as before (rule 28).
    MDX.load(ctx) -> Promise<bool>        addModule (Blob URL, then data: URL; source is ASCII), once per context
-   MDX.node(ctx, dest) -> E               one AudioWorkletNode per drum track (0 inputs, 1 stereo output -> dest)
+   MDX.node(ctx, dest) -> E               one AudioWorkletNode per drum track (0 inputs, 1 stereo output -> dest); on an
+                                          OfflineAudioContext the node gets no CPU-limiter stage and is not counted in cpuLoad
      E.ch(i, p) · E.kit(p) · E.hit(list) (batched per task) · E.mute(ch, solo) · E.stop(at, tau) · E.panic() · E.reset()
-     E.lim(stage) · E.test(msg) -> Promise(reply) · E.dispose(); E.load / E.nv / E.late (worklet reports, once per second)
+     E.lim(stage) · E.test(msg) -> Promise(reply|null, by id, 2 s) · E.dispose(); E.load / E.nv / E.late (once per second)
+     live hits: send at most 4096 ahead (worklet queue); MDX.render splits long patterns by itself
    MDX.render(o) -> Promise<{l, r}>       offline render through the same module (tests, video VV1, freeze FR1); a node for an
                                           OfflineAudioContext gets its first messages as processorOptions.init (deterministic)
-   MDX.norm(p) / MDX.normKit(p)           every m* value clamped to its range, codes checked, missing = INIT (for normDrum)
+   MDX.norm(p) / MDX.normKit(p)           every m* value clamped to its range, codes checked, missing = INIT; only for model
+                                          programs (src md) - the drum voice uses mDec/mLvl with other meanings (see CHANGES Q4)
    MDX.INIT / MDX.KIT0 / MDX.R            INIT SOUND, kit effects, ranges; scales T G fN fE Q, VERH, VERST, dlyTime, dlBForTime
    MDX.scl(code, start, n)                SCL PRE: the pitches of n model channels from the lowest one (not stored)
    MDX.info()                             state, load (fraction of real time), late hits, nodes (engineInfo().md) */
@@ -16044,11 +16048,13 @@ const MDX = (() => {
   function node(ctx, dest) {
     const n = new AudioWorkletNode(ctx, 'synq-md', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]});
     if (dest) n.connect(dest);
-    const E = {node: n, load: 0, nv: 0, late: 0, dead: false, q: [], queued: false, waits: [], lastLim: 0};
+    // an OfflineAudioContext node (VV1 / FR1) never gets the live CPU limiter and does not count in cpuLoad (ND1 item 7, ND4-10)
+    const offline = typeof OfflineAudioContext === 'function' && ctx instanceof OfflineAudioContext;
+    const E = {node: n, ctx, offline, load: 0, nv: 0, late: 0, dead: false, q: [], queued: false, waits: new Map(), tid: 0, lastLim: 0, errT: -1e9};
     n.port.onmessage = e => { const m = e.data; if (!m) return;
       if (m.t === 'load') { E.load = m.v; E.nv = m.nv; } else if (m.t === 'late') E.late = m.n;
-      else if (m.t === 'test') { const w = E.waits.shift(); if (w) w(m); }
-      else if (m.t === 'err' && typeof logErr === 'function') logErr(new Error(MD_NAME + ': Kanal ' + (m.ch + 1) + ' ' + m.msg)); };
+      else if (m.t === 'test') { const w = E.waits.get(m.id); if (w) { E.waits.delete(m.id); w(m); } }
+      else if (m.t === 'err' && typeof logErr === 'function') { const now = performance.now(); if (now - E.errT >= 5000) { E.errT = now; logErr(new Error(MD_NAME + ': ' + (m.ch >= 0 ? 'Kanal ' + (m.ch + 1) + ' ' : '') + m.msg)); } } };
     const post = m => { if (!E.dead) n.port.postMessage(m); };
     E.flush = () => { E.queued = false; if (E.q.length) { post({t: 'hit', list: E.q}); E.q = []; } };
     E.ch = (i, p) => { E.flush(); post({t: 'ch', ch: i, p: flat(p)}); };
@@ -16058,11 +16064,12 @@ const MDX = (() => {
     E.stop = (at, tau) => { E.flush(); post({t: 'stop', at, tau}); };
     E.panic = () => { E.q = []; post({t: 'panic'}); };
     E.reset = () => { E.flush(); post({t: 'reset'}); };
-    E.lim = s => { E.lastLim = s | 0; post({t: 'lim', s: s | 0}); };
-    E.test = m => new Promise(res => { E.waits.push(res); E.flush(); post(Object.assign({t: 'test'}, m)); });
-    E.dispose = () => { if (E.dead) return; E.flush(); E.dead = true; NODES.delete(E); n.port.onmessage = null; try { n.disconnect(); } catch (e) {} };
-    NODES.add(E);
-    try { if (typeof LIM !== 'undefined' && LIM.level) E.lim(LIM.level); } catch (e) {}
+    E.lim = s => { if (E.offline) return; E.lastLim = s | 0; post({t: 'lim', s: s | 0}); };
+    // test API: every request carries an id, the worklet always answers with it; null after 2 s, on a closed context or after dispose
+    E.test = m => new Promise(res => { if (E.dead || (ctx.state === 'closed')) { res(null); return; } const id = ++E.tid; E.waits.set(id, res); E.flush(); post(Object.assign({t: 'test', id}, m));
+      setTimeout(() => { if (E.waits.has(id)) { E.waits.delete(id); res(null); } }, 2000); });
+    E.dispose = () => { if (E.dead) return; E.flush(); E.dead = true; NODES.delete(E); n.port.onmessage = null; for (const w of E.waits.values()) w(null); E.waits.clear(); try { n.disconnect(); } catch (e) {} };
+    if (!offline) { NODES.add(E); try { if (typeof LIM !== 'undefined' && LIM.level) E.lim(LIM.level); } catch (e) {} }
     return E;
   }
   // offline render: o = {sr, sec, chans: {i: program}, kit, hits: [{ch, at, v, acc, tune, dec}], msgs: [[t, msg]], tap, lim}
@@ -16073,15 +16080,21 @@ const MDX = (() => {
     if (o.kit) init.push({t: 'kit', p: normKit(o.kit)});
     for (const k in (o.chans || {})) init.push({t: 'ch', ch: +k, p: flat(norm(o.chans[k]))});
     if (o.tap != null) init.push({t: 'test', tap: o.tap}); if (o.lim) init.push({t: 'lim', s: o.lim});
-    init.push({t: 'reset'}); if (o.hits) init.push({t: 'hit', list: o.hits});
+    init.push({t: 'reset'});
+    // messages at render-quantum starts: the one containing t (floor), clamped into the render; t 0 goes with the first messages
+    const len = Math.round(sec * sr), last = Math.max(0, Math.floor((len - 1) / 128) * 128), at = new Map();
+    const put = (f, m) => { if (f <= 0) { init.push(m); return; } if (!at.has(f)) at.set(f, []); at.get(f).push(m); };
+    // hits in 1-s windows, each sent half a second ahead (the worklet queue holds 4096; a long pattern never overflows it)
+    if (o.hits && o.hits.length) { const H = o.hits.slice().sort((a, b) => a.at - b.at), W = new Map(); for (const h of H) { const k = Math.max(0, Math.floor(h.at)); if (!W.has(k)) W.set(k, []); W.get(k).push(h); }
+      for (const [k, L] of W) put(k === 0 ? 0 : Math.min(last, Math.floor((k - 0.5) * sr / 128) * 128), {t: 'hit', list: L}); }
+    for (const [t, m] of o.msgs || []) put(Math.min(last, Math.floor(t * sr / 128 + 1e-9) * 128), m);
     const n = new AudioWorkletNode(oc, 'synq-md', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: {init}}); n.connect(oc.destination);
     const post = m => n.port.postMessage(m);
-    const at = new Map(); for (const [t, m] of o.msgs || []) { const f = Math.round(t * sr / 128) * 128; if (!at.has(f)) at.set(f, []); at.get(f).push(m); }   // one suspend per render quantum
     for (const [f, L] of at) oc.suspend(f / sr).then(() => { post(L.length === 1 ? L[0] : {t: 'all', list: L}); oc.resume(); }).catch(() => {});   // one message per suspend (Chromium applied only the first of several)
     const b = await oc.startRendering(); return {l: b.getChannelData(0), r: b.getChannelData(1)};
   }
   const load1 = () => { let s = 0; for (const E of NODES) s += E.load || 0; return s; };
-  function setLim(s) { for (const E of NODES) if (E.lastLim !== (s | 0)) E.lim(s); }
+  function setLim(s) { for (const E of NODES) if (E.lastLim !== (s | 0)) E.lim(s); }   // live nodes only (offline nodes are not in NODES)
   function info() { let late = 0, nv = 0; for (const E of NODES) { late += E.late; nv += E.nv; } return {name: MD_NAME, state: ST.state, how: ST.how, err: ST.err, loadMs: Math.round(ST.ms), adds: ST.adds, nodes: NODES.size, load: +load1().toFixed(4), voices: nv, late}; }
   return {NAME: MD_NAME, L, R, INIT, KIT0, ORDER, VERH, VERST, SCL, T, G, fN, fE, Q, bendHT, hz, norm, normKit, flat, dlyTime, dlBInfo, dlBForTime, tap, scl,
     load, node, render, info, setLim, nodes: NODES, cpu: load1, src};

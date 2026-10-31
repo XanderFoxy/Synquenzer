@@ -3,12 +3,15 @@
    added to an AudioContext only when MDX.load(ctx) is called (ND4: when a pad gets source md or a loaded project has one),
    so projects without model pads load and sound exactly as before (rule 28).
    MDX.load(ctx) -> Promise<bool>        addModule (Blob URL, then data: URL; source is ASCII), once per context
-   MDX.node(ctx, dest) -> E               one AudioWorkletNode per drum track (0 inputs, 1 stereo output -> dest)
+   MDX.node(ctx, dest) -> E               one AudioWorkletNode per drum track (0 inputs, 1 stereo output -> dest); on an
+                                          OfflineAudioContext the node gets no CPU-limiter stage and is not counted in cpuLoad
      E.ch(i, p) · E.kit(p) · E.hit(list) (batched per task) · E.mute(ch, solo) · E.stop(at, tau) · E.panic() · E.reset()
-     E.lim(stage) · E.test(msg) -> Promise(reply) · E.dispose(); E.load / E.nv / E.late (worklet reports, once per second)
+     E.lim(stage) · E.test(msg) -> Promise(reply|null, by id, 2 s) · E.dispose(); E.load / E.nv / E.late (once per second)
+     live hits: send at most 4096 ahead (worklet queue); MDX.render splits long patterns by itself
    MDX.render(o) -> Promise<{l, r}>       offline render through the same module (tests, video VV1, freeze FR1); a node for an
                                           OfflineAudioContext gets its first messages as processorOptions.init (deterministic)
-   MDX.norm(p) / MDX.normKit(p)           every m* value clamped to its range, codes checked, missing = INIT (for normDrum)
+   MDX.norm(p) / MDX.normKit(p)           every m* value clamped to its range, codes checked, missing = INIT; only for model
+                                          programs (src md) - the drum voice uses mDec/mLvl with other meanings (see CHANGES Q4)
    MDX.INIT / MDX.KIT0 / MDX.R            INIT SOUND, kit effects, ranges; scales T G fN fE Q, VERH, VERST, dlyTime, dlBForTime
    MDX.scl(code, start, n)                SCL PRE: the pitches of n model channels from the lowest one (not stored)
    MDX.info()                             state, load (fraction of real time), late hits, nodes (engineInfo().md) */
@@ -98,11 +101,13 @@ const MDX = (() => {
   function node(ctx, dest) {
     const n = new AudioWorkletNode(ctx, 'synq-md', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]});
     if (dest) n.connect(dest);
-    const E = {node: n, load: 0, nv: 0, late: 0, dead: false, q: [], queued: false, waits: [], lastLim: 0};
+    // an OfflineAudioContext node (VV1 / FR1) never gets the live CPU limiter and does not count in cpuLoad (ND1 item 7, ND4-10)
+    const offline = typeof OfflineAudioContext === 'function' && ctx instanceof OfflineAudioContext;
+    const E = {node: n, ctx, offline, load: 0, nv: 0, late: 0, dead: false, q: [], queued: false, waits: new Map(), tid: 0, lastLim: 0, errT: -1e9};
     n.port.onmessage = e => { const m = e.data; if (!m) return;
       if (m.t === 'load') { E.load = m.v; E.nv = m.nv; } else if (m.t === 'late') E.late = m.n;
-      else if (m.t === 'test') { const w = E.waits.shift(); if (w) w(m); }
-      else if (m.t === 'err' && typeof logErr === 'function') logErr(new Error(MD_NAME + ': Kanal ' + (m.ch + 1) + ' ' + m.msg)); };
+      else if (m.t === 'test') { const w = E.waits.get(m.id); if (w) { E.waits.delete(m.id); w(m); } }
+      else if (m.t === 'err' && typeof logErr === 'function') { const now = performance.now(); if (now - E.errT >= 5000) { E.errT = now; logErr(new Error(MD_NAME + ': ' + (m.ch >= 0 ? 'Kanal ' + (m.ch + 1) + ' ' : '') + m.msg)); } } };
     const post = m => { if (!E.dead) n.port.postMessage(m); };
     E.flush = () => { E.queued = false; if (E.q.length) { post({t: 'hit', list: E.q}); E.q = []; } };
     E.ch = (i, p) => { E.flush(); post({t: 'ch', ch: i, p: flat(p)}); };
@@ -112,11 +117,12 @@ const MDX = (() => {
     E.stop = (at, tau) => { E.flush(); post({t: 'stop', at, tau}); };
     E.panic = () => { E.q = []; post({t: 'panic'}); };
     E.reset = () => { E.flush(); post({t: 'reset'}); };
-    E.lim = s => { E.lastLim = s | 0; post({t: 'lim', s: s | 0}); };
-    E.test = m => new Promise(res => { E.waits.push(res); E.flush(); post(Object.assign({t: 'test'}, m)); });
-    E.dispose = () => { if (E.dead) return; E.flush(); E.dead = true; NODES.delete(E); n.port.onmessage = null; try { n.disconnect(); } catch (e) {} };
-    NODES.add(E);
-    try { if (typeof LIM !== 'undefined' && LIM.level) E.lim(LIM.level); } catch (e) {}
+    E.lim = s => { if (E.offline) return; E.lastLim = s | 0; post({t: 'lim', s: s | 0}); };
+    // test API: every request carries an id, the worklet always answers with it; null after 2 s, on a closed context or after dispose
+    E.test = m => new Promise(res => { if (E.dead || (ctx.state === 'closed')) { res(null); return; } const id = ++E.tid; E.waits.set(id, res); E.flush(); post(Object.assign({t: 'test', id}, m));
+      setTimeout(() => { if (E.waits.has(id)) { E.waits.delete(id); res(null); } }, 2000); });
+    E.dispose = () => { if (E.dead) return; E.flush(); E.dead = true; NODES.delete(E); n.port.onmessage = null; for (const w of E.waits.values()) w(null); E.waits.clear(); try { n.disconnect(); } catch (e) {} };
+    if (!offline) { NODES.add(E); try { if (typeof LIM !== 'undefined' && LIM.level) E.lim(LIM.level); } catch (e) {} }
     return E;
   }
   // offline render: o = {sr, sec, chans: {i: program}, kit, hits: [{ch, at, v, acc, tune, dec}], msgs: [[t, msg]], tap, lim}
@@ -127,15 +133,21 @@ const MDX = (() => {
     if (o.kit) init.push({t: 'kit', p: normKit(o.kit)});
     for (const k in (o.chans || {})) init.push({t: 'ch', ch: +k, p: flat(norm(o.chans[k]))});
     if (o.tap != null) init.push({t: 'test', tap: o.tap}); if (o.lim) init.push({t: 'lim', s: o.lim});
-    init.push({t: 'reset'}); if (o.hits) init.push({t: 'hit', list: o.hits});
+    init.push({t: 'reset'});
+    // messages at render-quantum starts: the one containing t (floor), clamped into the render; t 0 goes with the first messages
+    const len = Math.round(sec * sr), last = Math.max(0, Math.floor((len - 1) / 128) * 128), at = new Map();
+    const put = (f, m) => { if (f <= 0) { init.push(m); return; } if (!at.has(f)) at.set(f, []); at.get(f).push(m); };
+    // hits in 1-s windows, each sent half a second ahead (the worklet queue holds 4096; a long pattern never overflows it)
+    if (o.hits && o.hits.length) { const H = o.hits.slice().sort((a, b) => a.at - b.at), W = new Map(); for (const h of H) { const k = Math.max(0, Math.floor(h.at)); if (!W.has(k)) W.set(k, []); W.get(k).push(h); }
+      for (const [k, L] of W) put(k === 0 ? 0 : Math.min(last, Math.floor((k - 0.5) * sr / 128) * 128), {t: 'hit', list: L}); }
+    for (const [t, m] of o.msgs || []) put(Math.min(last, Math.floor(t * sr / 128 + 1e-9) * 128), m);
     const n = new AudioWorkletNode(oc, 'synq-md', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: {init}}); n.connect(oc.destination);
     const post = m => n.port.postMessage(m);
-    const at = new Map(); for (const [t, m] of o.msgs || []) { const f = Math.round(t * sr / 128) * 128; if (!at.has(f)) at.set(f, []); at.get(f).push(m); }   // one suspend per render quantum
     for (const [f, L] of at) oc.suspend(f / sr).then(() => { post(L.length === 1 ? L[0] : {t: 'all', list: L}); oc.resume(); }).catch(() => {});   // one message per suspend (Chromium applied only the first of several)
     const b = await oc.startRendering(); return {l: b.getChannelData(0), r: b.getChannelData(1)};
   }
   const load1 = () => { let s = 0; for (const E of NODES) s += E.load || 0; return s; };
-  function setLim(s) { for (const E of NODES) if (E.lastLim !== (s | 0)) E.lim(s); }
+  function setLim(s) { for (const E of NODES) if (E.lastLim !== (s | 0)) E.lim(s); }   // live nodes only (offline nodes are not in NODES)
   function info() { let late = 0, nv = 0; for (const E of NODES) { late += E.late; nv += E.nv; } return {name: MD_NAME, state: ST.state, how: ST.how, err: ST.err, loadMs: Math.round(ST.ms), adds: ST.adds, nodes: NODES.size, load: +load1().toFixed(4), voices: nv, late}; }
   return {NAME: MD_NAME, L, R, INIT, KIT0, ORDER, VERH, VERST, SCL, T, G, fN, fE, Q, bendHT, hz, norm, normKit, flat, dlyTime, dlBInfo, dlBForTime, tap, scl,
     load, node, render, info, setLim, nodes: NODES, cpu: load1, src};

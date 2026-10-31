@@ -4,7 +4,7 @@ import fs from 'node:fs'; import path from 'node:path'; import url from 'node:ur
 const HERE = path.dirname(url.fileURLToPath(import.meta.url)), ROOT = path.join(HERE, '..', '..', '..', '..');
 const base = fs.readFileSync(path.join(ROOT, 'bau/werkzeug/vs-base-B.html'), 'utf8');
 // the worklet text in the app: block comments after the header, full-line comments and indentation removed (budget)
-const strip = t => { const i = t.indexOf("'use strict';"); const head = t.slice(0, i), body = t.slice(i).replace(/\/\*[\s\S]*?\*\//g, ''); return head + body.split('\n').map(l => l.replace(/\s+\/\/ .*$/, '').trim()).filter(l => l && !l.startsWith('//')).join('\n') + '\n'; };
+const strip = t => { const i = t.indexOf("'use strict';"); const head = "/* SYNQUENZER drum model engine worklet 'synq-md' (Nachtrag 6, ND1). The commented source with the message protocol is md-worklet.js in the repo. */\n", body = t.slice(i).replace(/\/\*[\s\S]*?\*\//g, ''); return head + body.split('\n').map(l => l.replace(/\s+\/\/ .*$/, '').trim()).filter(l => l && !l.startsWith('//')).join('\n') + '\n'; };
 const wk = strip(fs.readFileSync(path.join(HERE, 'md-worklet.js'), 'utf8')), host = fs.readFileSync(path.join(HERE, 'md-host.js'), 'utf8');
 let progs = fs.readFileSync(path.join(HERE, 'md-progs.js'), 'utf8');
 const lvf = path.join(HERE, 'md-levels.json'); if (fs.existsSync(lvf)) progs = progs.replace('  /*LV*/\n', '  Object.assign(LV, ' + JSON.stringify(JSON.parse(fs.readFileSync(lvf, 'utf8'))) + ');\n');
