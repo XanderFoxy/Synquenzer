@@ -32,9 +32,9 @@ const res = await B.p.evaluate(async text => {
   const Q = SYNQUENZER; ensureAudio(); for (let k = 0; k < 50 && !(AU.ctx && AU.ctx.state === 'running'); k++) await new Promise(r => setTimeout(r, 100));
   const imp = Q.importJSON(text); await new Promise(r => setTimeout(r, 500));
   const i1 = Q.g6Info({vox: 'V1'}), i2 = Q.g6Info({vox: 'V2'});
-  return {imp: !!imp, back: serializeProject(), v: [i1.chor.v, i2.chor.v], sty: [i1.chor.style, i2.chor.style], md: DRUM_VOICES.filter(v => mdIsSrc(v.id)).length, mdMod: MDX.info().adds, ver: Q.version};
+  return {imp: !!imp, back: serializeProject(), v: [i1.chor.v, i2.chor.v], sty: [i1.chor.style, i2.chor.style], md: typeof mdIsSrc === 'function' ? DRUM_VOICES.filter(v => mdIsSrc(v.id)).length : 0, mdMod: typeof MDX !== 'undefined' ? MDX.info().adds : 0, ver: Q.version};
 }, made.file);
-res.vv = await vvOf(B.p);
+res.vv = await vvOf(B.p); res.wait = await B.p.evaluate(() => SYNQUENZER.g6phInfo().wait); ok('video_chor_ready', res.wait && res.wait.miss === 0, {wait: res.wait});
 const strip = o => { if (Array.isArray(o)) return o.map(strip); if (o && typeof o === 'object') { const r = {}; for (const k of Object.keys(o).sort()) if (!/^(saved|savedAt|ts|mt|ct|t0|stamp|app|appVersion|version|ver)$/.test(k)) r[k] = strip(o[k]); return r; } return o; };
 const diffs = [];
 const cmp = (a, c, path) => { if (diffs.length > 8) return; if (typeof a !== typeof c || Array.isArray(a) !== Array.isArray(c)) { diffs.push(path + ': Typ'); return; }
