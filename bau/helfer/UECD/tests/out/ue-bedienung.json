@@ -7,7 +7,7 @@
  {
   "name": "UE-08 428x926: Vorhören startet ≤ 50 ms nach dem Tipp (App: Planung + Effekt-Latenz; Gerät getrennt)",
   "ok": true,
-  "info": "{\"ms\":22.9,\"geraetMs\":32,\"treffer\":8}"
+  "info": "{\"ms\":20,\"geraetMs\":32,\"treffer\":8}"
  },
  {
   "name": "UE-09 428x926: Einrasten ±½ Takt im selben Bild (amber), Ablegen = 1 Undo",
@@ -23,6 +23,11 @@
   "name": "Einwurf frei abgelegt, rastet auf 1/16",
   "ok": true,
   "info": "{\"at\":6.25}"
+ },
+ {
+  "name": "Einwurf-Chip halten und ziehen = verschieben (1/16, 1 Undo)",
+  "ok": true,
+  "info": "{\"vorher\":6.25,\"nachher\":9.5}"
  },
  {
   "name": "UE-07 428x926: Chips ≥ 44 × 44 Trefferfläche",
@@ -73,6 +78,11 @@
   "name": "Einwurf frei abgelegt, rastet auf 1/16",
   "ok": true,
   "info": "{\"at\":6.25}"
+ },
+ {
+  "name": "Einwurf-Chip halten und ziehen = verschieben (1/16, 1 Undo)",
+  "ok": true,
+  "info": "{\"vorher\":6.25,\"nachher\":9.5}"
  },
  {
   "name": "UE-07 926x428: Chips ≥ 44 × 44 Trefferfläche",

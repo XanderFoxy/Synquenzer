@@ -1,0 +1,915 @@
+--- bau/snapshots/R-4300.html	2026-11-01 09:14:18.924345999 +0000
++++ bau/helfer/UECD/index.html	2026-11-01 10:07:47.856536748 +0000
+@@ -21440,6 +21440,648 @@
+   const all = loopAll(song); song.bars = n;
+   song.loop = all ? {on: song.loop.on, a: 0, b: n} : normLoop(song.loop, n);
+ }
++/* ===================== UE-C / UE-D (Konzept Übergänge §1.3 D/E, §1.4, §1.5, §1.6): Werks-Übergänge, Breaks, Einwürfe =====================
++   Datenmodell §1.5 (verbindlich): song.ue = [{id, m?, at?, a, len, k, t, notes, mode, stop?, dens, dir, g?, src, kit?, baked?}],
++   alle Zeiten in SCHLÄGEN. Kanten-Übergänge hängen an der Marke des folgenden Teils (m), Einwürfe und freie Breaks am Song-Schlag (at).
++   - UE-C: 12 Werks-Übergänge, je 3 Dichten (0 leicht · 1 mittel · 2 voll) und Richtung (auf/ab/gleich; 'auto' zählt die aktiven
++     Clips vor und nach der Kante). Gespeichert werden nur Noten (Form der Drum-Clip-Noten {t,d,n,v,a?,r?,lk?}) – sie klingen immer mit
++     dem Kit der Spur (auch North-Pads, über drumHit).
++   - UE-D: Breaks (k 'break', stop = Spur-Indizes; mode 'dazu' = [Kick bleibt]) und Einwürfe (k 'adlib', frei auf 1/16).
++   Ohne song.ue läuft kein zusätzlicher Code (jede Stelle prüft zuerst song.ue). */
++const UE_GM = {K: 36, S: 38, R: 37, C: 39, h: 42, o: 46, L: 45, M: 47, H: 50, Y: 49};
++const UE_K = ['fill', 'tom', 'build', 'crash', 'break', 'adlib', 'riser', 'down', 'rev', 'lauf'];
++const UE_DENS = ['leicht', 'mittel', 'voll'];
++const UE_DIRS = {auto: 'Auto', auf: 'aufbauend', ab: 'abbauend', gleich: 'gleich'};
++const UE_ARR = {auf: '↗', ab: '↘', gleich: '→'};          // ↗ ↘ → (Textpfeile, kein Emoji)
++const UE_RAMP = .012;                                                      // Break: Blende 12 ms an Anfang und Ende (kein Klick)
++const UE_SNAP = 2;                                                         // Fangbereich ±½ Takt (in Schlägen)
++// Muster je Dichte: eine Zeile je Instrument, ein Zeichen je Schritt (Standard 1/16): . Pause · x Schlag · X Akzent · g Geist · 2–4 Wirbel
++const UE_FILL_LANG = [
++  {K: 'x.......x.......', S: '..g...g.x.......', H: '............x...', L: '..............X.'},
++  {K: 'x.......x.......', S: 'g.g.g.x.g.x.....', H: '............x...', M: '.............x..', L: '..............X.'},
++  {K: 'x.......x.......', S: 'gggxgggxgxgx....', H: '............xx..', M: '..............X.', L: '...............x'}];
++/* UE_VK: Anschlags-Faktor je Werk und Dichte (leicht, mittel, voll), aus der Messung UE-12 über alle 7 Kits so gesetzt, dass die Mitte
++   zwischen leisestem und lautestem Kit bei 0 LU zum Groove liegt (Pegel der Engine = v², Faktor k = 10^(−LU/40)). */
++const UE_VK = {'w-fill-kurz': [1.12,1.013,0.861],'w-fill-lang': [1.237,1.114,1.071],'w-tom-wirbel': [1.12,1.024,0.928],'w-snare-wirbel': [1.389,0.97,0.902],'w-build': [1.002,0.908,0.805],'w-fill-crash': [1.24,1.118,1.07],'w-crash-eins': [0.856,0.853,0.588],'w-hh-auf': [1.31,1.198,0.98],'w-kick-auftakt': [0.779,0.629,0.64],'w-halbzeit': [1.329,1.281,1.05],'w-clap-treppe': [0.864,0.86,0.836],'w-rim-ping': [0.77,0.739,0.707]};
++const UE_WERK = [
++  // ---- Übergänge (UE-C, §1.4) ----
++  {id: 'w-fill-kurz', tab: 'ue', name: 'Fill kurz', sh: 'Fill', k: 'fill', lens: [2], mode: 'ersetzt', eins: 1, P: [
++    {K: 'x...x...', S: 'x.x.....', H: '....x...', L: '......x.'},
++    {K: 'x.......', S: 'x.xx....', H: '....xx..', M: '......x.', L: '.......x'},
++    {K: 'x...x...', S: 'Xxxx....', H: '....Xx..', M: '......x.', L: '.......X'}]},
++  {id: 'w-fill-lang', tab: 'ue', name: 'Fill lang', sh: 'Fill', k: 'fill', lens: [4], mode: 'ersetzt', eins: 1, P: UE_FILL_LANG},
++  {id: 'w-tom-wirbel', tab: 'ue', name: 'Tom-Wirbel', sh: 'Toms', k: 'tom', lens: [2, 4], mode: 'ersetzt', eins: 1, gen: 'tom'},
++  {id: 'w-snare-wirbel', tab: 'ue', name: 'Snare-Wirbel', sh: 'Wirbel', k: 'fill', lens: [2], mode: 'ersetzt', eins: 1, gen: 'roll'},
++  {id: 'w-build', tab: 'ue', name: 'Build-up', sh: 'Build', k: 'build', lens: [8, 16], mode: 'ersetzt', gen: 'build'},
++  {id: 'w-fill-crash', tab: 'ue', name: 'Fill + Crash', sh: 'Fill+Cr', k: 'fill', lens: [4], mode: 'ersetzt', crash: 1, P: UE_FILL_LANG},
++  {id: 'w-crash-eins', tab: 'ue', name: 'Crash auf die Eins', sh: 'Crash', k: 'crash', lens: [0], mode: 'dazu', P: [{Y: 'x'}, {Y: 'x', K: 'x'}, {Y: 'X', K: 'X'}]},
++  {id: 'w-hh-auf', tab: 'ue', name: 'Hi-Hat öffnen', sh: 'HH auf', k: 'fill', lens: [1], mode: 'ersetzt', P: [
++    {K: 'x...', S: 'x...', o: '..x.'}, {K: 'x...', S: 'x...', h: 'x...', o: '..x.'}, {K: 'x...', S: 'X...', h: 'xx..', o: '..X.'}]},
++  {id: 'w-kick-auftakt', tab: 'ue', name: 'Kick-Auftakt', sh: 'Kick', k: 'fill', lens: [1], mode: 'dazu', P: [{K: '...x'}, {K: '..xx'}, {K: '..xx', h: '..x.'}]},
++  {id: 'w-halbzeit', tab: 'ue', name: 'Halbzeit-Fill', sh: 'Halbz.', k: 'fill', lens: [4], mode: 'ersetzt', eins: 1, P: [
++    {K: 'x.....x.........', S: '........x.......', h: 'x.x.x.x.x.x.....', H: '............x...', L: '..............x.'},
++    {K: 'x.....x.........', S: '........x.......', H: '............x...', M: '.............x..', L: '..............x.'},
++    {K: 'x.....x.x.......', S: '........X.......', h: 'x.x.x.x.x.x.....', H: '............xx..', M: '..............x.', L: '...............X'}]},
++  {id: 'w-clap-treppe', tab: 'ue', name: 'Clap-Treppe', sh: 'Claps', k: 'fill', lens: [2], mode: 'dazu', eins: 1, P: [
++    {C: 'x.x.x.xx'}, {C: 'x.x.xxxx'}, {K: 'x...x...', C: 'X.x.xxxx'}]},
++  {id: 'w-rim-ping', tab: 'ue', name: 'Rim-Ping', sh: 'Rim', k: 'fill', lens: [2], mode: 'dazu', eins: 1, P: [
++    {R: 'g...g...', H: '..x...x.', K: 'x...x...'}, {R: 'g.g.g.g.', H: '.x.x.x.x'}, {K: 'x...x...', R: 'x.g.x.g.', H: '.x.x.xXx'}]},
++  // ---- Breaks (UE-D, §1.3 D) ----
++  {id: 'w-stopp-1', tab: 'brk', name: 'Stopp 1 Schlag', sh: 'Stopp', k: 'break', lens: [1]},
++  {id: 'w-stopp-halb', tab: 'brk', name: 'Stopp ½ Takt', sh: 'Stopp', k: 'break', lens: [2]},
++  {id: 'w-stopp-takt', tab: 'brk', name: 'Stopp 1 Takt', sh: 'Stopp', k: 'break', lens: [4], kick: 1},
++  {id: 'w-breakdown', tab: 'brk', name: 'Breakdown', sh: 'Breakd.', k: 'break', lens: [8], drums: 1},
++  // ---- Einwürfe (UE-D, §1.3 E) ----
++  {id: 'w-tom-doppel', tab: 'adl', name: 'Tom-Doppel', sh: 'Toms', k: 'adlib', lens: [1], mode: 'dazu', P: [{M: 'x...', L: '..x.'}, {M: 'xx..', L: '..xx'}, {K: 'x...', M: 'Xx..', L: '..xX'}]},
++  {id: 'w-becken', tab: 'adl', name: 'Becken', sh: 'Becken', k: 'adlib', lens: [0], mode: 'dazu', P: [{Y: 'x'}, {Y: 'X'}, {Y: 'X', K: 'x'}]},
++  {id: 'w-wirbel-kurz', tab: 'adl', name: 'Wirbel kurz', sh: 'Wirbel', k: 'adlib', lens: [1], mode: 'dazu', P: [{S: '4...'}, {S: '4.4.'}, {S: '44X4'}]},
++  {id: 'w-clap-einwurf', tab: 'adl', name: 'Clap-Einwurf', sh: 'Clap', k: 'adlib', lens: [.5], mode: 'dazu', P: [{C: 'x.'}, {C: 'X.'}, {C: 'Xx'}]},
++];
++const UE_TABS = [['ue', 'Übergänge'], ['brk', 'Breaks'], ['adl', 'Einwürfe']];   // [Verknüpfer] [Eigene] kommen mit UE-G / UE-E
++const UE = {win: null, hk: new Map(), open: false, el: null, tab: 'ue', drag: null, chips: [], css: false, prevT: 0};
++function ueWerk(id) { for (const w of UE_WERK) if (w.id === id) return w; return null; }
++// Anschlags-Kurve über die Länge: aufbauend steigt, abbauend fällt, gleich bleibt
++function ueCurve(x, dir) { return dir === 'auf' ? .76 + .3 * x : dir === 'ab' ? 1.06 - .3 * x : .92; }   // Mittel je Richtung ≈ .92 (gleiche Lautheit)
++function ueNote(t, gm, v, o) { const n = {t: +t.toFixed(4), d: .25, n: gm, v: +clamp(v, .05, 1).toFixed(2)}; if (o) Object.assign(n, o); return n; }
++function uePat(rows, step, L, dir) {
++  const out = [];
++  for (const k of Object.keys(rows)) {
++    const gm = UE_GM[k], p = rows[k];
++    for (let i = 0; i < p.length; i++) {
++      const c = p[i]; if (c === '.') continue;
++      const t = i * step; if (t > L + 1e-9) continue;
++      const x = L > 0 ? t / L : 1, v = ueCurve(x, dir) * (c === 'g' ? .42 : c === 'X' ? 1 : .88);
++      out.push(ueNote(t, gm, v, c === 'X' ? {a: 1} : c >= '2' && c <= '4' ? {r: +c} : null));
++    }
++  }
++  return out;
++}
++const UE_GEN = {
++  // TOM HOCH → MITTE → TIEF (16tel; leicht 8tel), Kick auf jedem Schlag, Akzent je Schlag, letzter Schlag mit Wirbel 2
++  tom(L, dens, dir) {
++    const st = dens ? .25 : .5, n = Math.round(L / st), out = [];
++    for (let i = 0; i < n; i++) {
++      const t = i * st, gm = [UE_GM.H, UE_GM.M, UE_GM.L][Math.min(2, Math.floor(i * 3 / n))], acc = dens === 2 && Math.abs(t % 1) < 1e-9;
++      out.push(ueNote(t, gm, ueCurve(t / L, dir) * (acc ? 1 : .88), acc ? {a: 1} : dens === 2 && t >= L - .5 - 1e-9 ? {r: 2} : null));
++    }
++    for (let b = 0; b < L - 1e-9; b++) out.push(ueNote(b, UE_GM.K, ueCurve(b / L, dir) * .9));   // Kick auf jedem Schlag (gleichmäßiger Pegel über die Kits)
++    return out;
++  },
++  // Snare, Wirbel (Ratsche) 2 → 4, der Anschlag steigt (abbauend: fällt)
++  roll(L, dens, dir) {
++    const st = dens ? .25 : .5, n = Math.round(L / st), out = [];
++    for (let i = 0; i < n; i++) {
++      const x = n > 1 ? i / (n - 1) : 1, r = dens === 0 ? 2 : dens === 1 ? (x < .5 ? 2 : 3) : 2 + Math.min(2, Math.floor(x * 3));
++      const up = dir === 'ab' ? 1 - .45 * x : .5 + .5 * x;
++      out.push(ueNote(i * st, UE_GM.S, up, Object.assign({r}, dens === 2 && i === n - 1 ? {a: 1} : null)));
++    }
++    return out;
++  },
++  // Snare 4tel → 8tel → 16tel → Ratsche 4 (leicht: ohne Ratsche), Tune +0 → +7 Halbtöne; voll: Kick auf jedem Schlag
++  build(L, dens, dir) {
++    const out = [], q = L / 4, top = 1;
++    for (let t = 0; t < L - 1e-9;) {
++      const seg = Math.min(3, Math.floor(t / q + 1e-9)), st = [1, .5, .25, .25][seg], x = t / L, tune = Math.round(7 * x);
++      const o = {}; if (tune) o.lk = {tune}; if (seg === 3 && dens) o.r = 4; if (dens === 2 && Math.abs(t % 1) < 1e-9 && seg >= 2) o.a = 1;
++      out.push(ueNote(t, UE_GM.S, (.5 + .5 * x) * top, Object.keys(o).length ? o : null));
++      t = +(t + st).toFixed(4);
++    }
++    if (dens === 2) for (let b = 0; b < L - 1e-9; b++) out.push(ueNote(b, UE_GM.K, (.6 + .35 * b / L) * top));
++    return out;
++  },
++};
++// die Noten eines Werks-Übergangs für Länge L (Schläge), Dichte und (aufgelöste) Richtung – deterministisch, nach Zeit sortiert
++function ueGen(w, L, dens, dir) {
++  if (!w || w.k === 'break') return [];
++  dens = clamp(dens | 0, 0, 2); if (dir !== 'auf' && dir !== 'ab') dir = 'gleich';
++  const cdir = L <= 1 ? 'gleich' : dir;                          // ≤ 1 Schlag: keine Kurve (die Richtung zeigt der Crash auf der Eins)
++  const out = w.gen ? UE_GEN[w.gen](L, dens, cdir) : uePat(w.P[dens], w.step || .25, L, cdir);
++  const k = UE_VK[w.id] ? UE_VK[w.id][dens] : 1;
++  // auf die Eins des neuen Teils (t = L): „Fill + Crash“ immer; aufbauend (mittel/voll) bei den Fills mit Eins und beim Build-up
++  if (w.crash || ((w.eins || w.gen === 'build') && dir === 'auf' && dens >= 1)) out.push(ueNote(L, UE_GM.Y, dens === 2 ? 1 : .86, dens === 2 ? {a: 1} : null));
++  if (k !== 1) for (const n of out) n.v = +clamp(n.v * k, .05, 1).toFixed(2);
++  return out.sort((a, b) => a.t - b.t || a.n - b.n);
++}
++function ueNotesNorm(list) {
++  const out = [];
++  for (const n of Array.isArray(list) ? list.slice(0, 1024) : []) {
++    if (!n || !isNum(n.t) || !isNum(n.n) || !isNum(n.v)) continue;
++    const o = {t: +clamp(+n.t, 0, 256).toFixed(4), d: isNum(n.d) ? +Math.max(1 / 64, +n.d).toFixed(4) : .25, n: clamp(Math.round(n.n), 0, 127), v: +clamp(+n.v, .05, 1).toFixed(2)};
++    if (n.a) o.a = 1; if (isNum(n.p) && n.p < 1) o.p = +clamp(n.p, .05, 1).toFixed(2); if (isNum(n.r) && n.r > 1) o.r = clamp(Math.round(n.r), 2, 4);
++    if (isNum(n.m) && n.m) o.m = +clamp(n.m, -.45, .45).toFixed(2);
++    if (n.lk && typeof n.lk === 'object') { const lk = {}; if (isNum(n.lk.tune) && n.lk.tune) lk.tune = clamp(Math.round(n.lk.tune), -24, 24); if (isNum(n.lk.dec) && n.lk.dec > 0 && n.lk.dec !== 1) lk.dec = +clamp(n.lk.dec, .25, 4).toFixed(2); if (Object.keys(lk).length) o.lk = lk; }
++    out.push(o);
++  }
++  return out.sort((a, b) => a.t - b.t || a.n - b.n);
++}
++/* ---------- UE-Kern minimal – beim Merge durch UE-A ersetzt: Normieren, Haken (songShift/Clear/Cut/Write/Tidy), Abspielen ---------- */
++// UE-Kern minimal – beim Merge durch UE-A ersetzt
++function ueNorm(list, marks, nt) {
++  if (!Array.isArray(list) || !list.length) return null;
++  nt = nt || MAX_T;
++  const ids = new Set(), mk = new Set((marks || []).map(m => m.id)), out = [];
++  for (const u of list.slice(0, 512)) {
++    if (!u || typeof u !== 'object') continue;
++    let id = typeof u.id === 'string' && /^U\d{1,6}$/.test(u.id) && !ids.has(u.id) ? u.id : null;
++    if (!id) { let n = 1; while (ids.has('U' + n)) n++; id = 'U' + n; }
++    const o = {id};
++    if (typeof u.m === 'string') { if (!mk.has(u.m)) continue; o.m = u.m; }
++    else if (isNum(u.at) && u.at >= 0) o.at = +(+u.at).toFixed(4);
++    else continue;
++    ids.add(id);
++    o.a = isNum(u.a) ? +clamp(+u.a, -64, 64).toFixed(4) : 0;
++    o.len = isNum(u.len) ? +clamp(+u.len, 0, 64).toFixed(4) : 0;
++    o.k = UE_K.includes(u.k) ? u.k : 'fill';
++    o.t = isNum(u.t) ? clamp(Math.round(u.t), 0, nt - 1) : DRUM_T;
++    o.notes = ueNotesNorm(u.notes);
++    o.mode = u.mode === 'dazu' ? 'dazu' : 'ersetzt';
++    if (Array.isArray(u.stop)) o.stop = [...new Set(u.stop.filter(isNum).map(x => Math.round(x)).filter(x => x >= 0 && x < nt))].sort((x, y) => x - y);
++    o.dens = isNum(u.dens) ? clamp(Math.round(u.dens), 0, 2) : 1;
++    o.dir = u.dir === 'auf' || u.dir === 'ab' ? u.dir : 'auto';
++    if (typeof u.g === 'string' && u.g) o.g = u.g.slice(0, 16);
++    if (typeof u.src === 'string' && u.src) o.src = u.src.slice(0, 40);
++    if (u.kit && typeof u.kit === 'object') o.kit = deep(u.kit);         // UE-E (eigenes Kit) – hier nur durchgereicht
++    if (u.baked != null) o.baked = deep(u.baked);                         // UE-H – hier nur durchgereicht
++    out.push(o);
++  }
++  return out.length ? out : null;
++}
++function ueNewId(song) { let n = 0; for (const u of song.ue || []) { const k = +String(u.id).slice(1); if (k > n) n = k; } return 'U' + (n + 1); }
++// Song-Schlag der Kante bzw. des Ankers (null: Marke fehlt)
++function ueAnchor(song, u) { if (u.m == null) return isNum(u.at) ? u.at : null; const m = song.marks.find(x => x.id === u.m); return m ? m.a * 4 : null; }
++// Haken: alles ab Takt n rückt um d Takte (Kanten-Übergänge wandern mit ihrer Marke)
++function ueShift(song, n, d) { for (const u of song.ue) if (u.m == null && u.at >= n * 4 - 1e-6) u.at = +(u.at + d * 4).toFixed(4); }
++function ueClear(song, a, b) { song.ue = song.ue.filter(u => u.m != null || !(u.at >= a * 4 - 1e-6 && u.at < b * 4 - 1e-6)); if (!song.ue.length) delete song.ue; }
++// songCut: Kanten-Übergänge der Marken, die im Bereich beginnen (mi = Index in ch.marks), und freie Einträge im Bereich
++function ueCutTo(song, a, b, ch) {
++  if (!song.ue) return ch;
++  const out = [];
++  for (const u of song.ue) {
++    if (u.m != null) { const mi = (ch.marks || []).findIndex(m => m.id === u.m), m = song.marks.find(x => x.id === u.m); if (mi < 0 || !m || m.a < a || m.a >= b) continue; const c = deep(u); delete c.id; delete c.m; c.mi = mi; out.push(c); }
++    else if (u.at >= a * 4 - 1e-6 && u.at < b * 4 - 1e-6) { const c = deep(u); delete c.id; c.at = +(u.at - a * 4).toFixed(4); out.push(c); }
++  }
++  if (out.length) ch.ue = out;
++  return ch;
++}
++// songWrite: wIds = die Marken-IDs, unter denen ch.marks geschrieben wurden; eine belegte Kante wird ersetzt
++function ueWrite(song, n, ch, wIds) {
++  for (const c of ch.ue) {
++    const u = deep(c); delete u.mi;
++    if (c.mi != null) { const id = wIds[c.mi]; if (!id) continue; u.m = id; song.ue = (song.ue || []).filter(x => !(x.m === id && ueSlot(x) === ueSlot(u))); }
++    else u.at = +(n * 4 + c.at).toFixed(4);
++    u.id = ueNewId(song); (song.ue || (song.ue = [])).push(u);
++  }
++}
++// eine Kante hat einen Platz für einen Übergang und einen für einen Break
++const ueSlot = u => (u.k === 'break' ? 'b' : 'u');
++function ueTidy(song) {
++  const mk = new Map(song.marks.map(m => [m.id, m]));
++  song.ue = song.ue.filter(u => (u.m != null ? mk.has(u.m) : isNum(u.at) && u.at < song.bars * 4 - 1e-9));   // eine Marke auf Takt 1 behält ihren Übergang (er klingt dort nicht)
++  for (const u of song.ue) if (u.dir === 'auto' && u.m != null) ueRegen(song, u);   // Richtung Auto folgt den Clips vor/nach der Kante
++  if (!song.ue.length) delete song.ue;
++}
++// aktive Clips eines Takts (für die Richtung, §1.4: m.off aus S0 steht schon als „aus“ in den Spuren)
++function ueActive(song, x) { if (x < 0) return 0; let n = 0; for (let t = 0; t < song.lanes.length; t++) if (laneClipOk(song, t, laneOriginAt(song.lanes[t], x))) n++; return n; }
++function ueDirOf(song, u) {
++  if (u.dir === 'auf' || u.dir === 'ab') return u.dir;
++  if (u.k === 'adlib' || u.k === 'break' || u.m == null) return 'gleich';
++  const m = song.marks.find(x => x.id === u.m); if (!m) return 'gleich';
++  const b = ueActive(song, m.a - 1), f = ueActive(song, m.a);
++  return f > b ? 'auf' : f < b ? 'ab' : 'gleich';
++}
++// Noten eines Werks-Eintrags neu erzeugen – nur solange sie unverändert einem Werks-Stand entsprechen (eigene Änderungen bleiben)
++function ueRegen(song, u, force) {
++  const w = ueWerk(u.src); if (!w || w.k === 'break') return;
++  const want = ueGen(w, u.len, u.dens, ueDirOf(song, u)), J = JSON.stringify;
++  if (J(want) === J(u.notes)) return;
++  if (!force && !['auf', 'ab', 'gleich'].some(d => J(ueGen(w, u.len, u.dens, d)) === J(u.notes))) return;
++  u.notes = want;
++}
++/* ---------- Abspielen (Scheduler): Fenster je Song-Stand, Treffer in songTickInner, „ersetzt“/Break in scheduleTrack ---------- */
++function ueWin(song) {
++  const key = UI.songVer | 0;
++  if (UE.win && UE.win.song === song && UE.win.key === key && UE.win.ref === song.ue) return UE.win;
++  const W = {song, key, ref: song.ue, ev: [], mute: [], stop: []};
++  for (const u of song.ue || []) {
++    const A = ueAnchor(song, u); if (A == null) continue;
++    const s = A + u.a, e = s + u.len;
++    if (u.k === 'break') { W.stop.push({s, e, tr: new Set(u.stop || []), kick: u.mode === 'dazu'}); continue; }
++    if (u.mode === 'ersetzt' && u.len > 0) W.mute.push({s, e, t: u.t});
++    for (const nt of u.notes) W.ev.push({sb: s + nt.t, nt, t: u.t});
++  }
++  W.ev.sort((x, y) => x.sb - y.sb);
++  return (UE.win = W);
++}
++// Spur i schweigt bei Song-Schlag sb (Break; mit [Kick bleibt] spielt auf der Drum-Spur nur die Kick)
++function ueStopAt(W, i, sb, gm) { for (const w of W.stop) if (sb >= w.s - 1e-9 && sb < w.e - 1e-9 && w.tr.has(i) && !(w.kick && i === DRUM_T && gm === UE_GM.K)) return true; return false; }
++// die Fenster, in denen Spur i (Groove/Clip-Noten) schweigt: „ersetzt“ und Breaks; null = keine (schneller Weg)
++function ueMuteFor(i) {
++  const song = S.song; if (!song || !song.ue || !R.songPlay) return null;
++  const W = ueWin(song); let L = null;
++  for (const w of W.mute) if (w.t === i) (L || (L = [])).push(w);
++  for (const w of W.stop) if (w.tr.has(i)) (L || (L = [])).push(w.kick && i === DRUM_T ? {s: w.s, e: w.e, keep: UE_GM.K, brk: 1} : Object.assign({brk: 1}, w));
++  return L;
++}
++function ueMutedAt(L, B, gm) { const sb = songBeatOf(B); if (sb == null) return false; for (const w of L) if (sb >= w.s - 1e-9 && sb < w.e - 1e-9 && !(w.keep && w.keep === gm)) return true; return false; }
++// eine Synth-Note, die in einen Break hineinklingen würde, endet an seinem Anfang (Schläge)
++function ueDurCut(L, B, d) { const sb = songBeatOf(B); if (sb == null) return d; for (const w of L) if (w.brk && w.s > sb + 1e-9 && w.s < sb + d) d = w.s - sb; return d; }
++// Melodie-Noten des Songs (Song-Schlag)
++function ueMelCut(song, i, sb, d) {
++  const W = ueWin(song); for (const w of W.stop) if (w.tr.has(i)) { if (sb >= w.s - 1e-9 && sb < w.e - 1e-9) return -1; if (w.s > sb + 1e-9 && w.s < sb + d) d = w.s - sb; }
++  return d;
++}
++// derselbe Pad-Treffer zur selben Zeit von Übergang und Groove: nur einmal (der Übergang gewinnt)
++function ueHitMark(gm, t) { let a = UE.hk.get(gm); if (!a) UE.hk.set(gm, a = []); a.push(t); if (a.length > 64) a.splice(0, a.length - 64); }
++function ueDup(gm, t) { const a = UE.hk.get(gm); if (a) for (let k = a.length - 1; k >= 0; k--) if (Math.abs(a[k] - t) < 5e-4) return true; return false; }
++// songTickInner, je Durchgang: Breaks, die im Fenster beginnen (Blende + Ausklingen), und die Treffer der Übergänge/Einwürfe
++function ueSongTick(song, b0, b1, off, E, insB, lo) {
++  const W = ueWin(song), from = Math.max(b0, lo), now = AU.ctx.currentTime;
++  for (const w of W.stop) { const B = w.s + off; if (w.s < E - 1e-9 && w.s < insB - 1e-9 && B >= from - 1e-9 && B < b1 - 1e-9) ueBreakGo(w, b2t(B), b2t(Math.min(w.e, E) + off)); }
++  const dt = S.settings.harmony.drums;
++  for (const x of W.ev) {
++    if (x.sb + off >= b1 + .5) break;
++    if (x.sb + off < from - .5 || x.sb >= E - 1e-9 || x.sb >= insB - 1e-9) continue;
++    const tr = S.tracks[x.t]; if (!tr || tr.kind !== 'drum' || tr.mute) continue;
++    if (ueStopAt(W, x.t, x.sb, x.nt.n)) continue;                 // ein Break gewinnt
++    for (const h of DrumSeq.expandStep(x.nt, 0, 0)) {
++      const hb = x.sb + h.beat + off; if (hb < from - 1e-9 || hb >= b1 - 1e-9) continue;
++      let t = b2t(hb + swingOffset(x.sb + h.beat)); if (t < now - .02) continue; if (t < now) t = now;
++      let ex = h.acc || h.lk ? h : null; const tu = dt ? drumTune(t) : 0;
++      if (tu) ex = Object.assign({}, ex, {lk: Object.assign({}, ex && ex.lk, {tune: ((ex && ex.lk && ex.lk.tune) || 0) + tu})});
++      ueHitMark(x.nt.n, t);
++      drumHit(x.nt.n, h.v, t, 'ue', ex);
++    }
++  }
++}
++// Break: die Spuren werden ab t0 in 12 ms still und ab t1 wieder hörbar (Hall/Echo hängen danach und klingen aus); klingende
++// Clip-/Melodie-Stimmen enden mit ihrem Release; die Chor-Gruppen der Spur schweigen mit
++function ueBreakGo(w, t0, t1) {
++  if (!(t1 > t0 + 2 * UE_RAMP)) t1 = t0 + 2 * UE_RAMP;
++  for (const i of w.tr) {
++    const A = AU.tracks[i]; if (!A) continue;
++    if (!(w.kick && i === DRUM_T) && A.ueB) ueGainHole(A.ueB.gain, t0, t1);
++    if (S.tracks[i] && S.tracks[i].kind !== 'drum') for (const v of VOICES) if (!v.dead && v.track === i && (v.src === 'clip' || v.src === 'melody' || v.src === 'own') && v.start < t0 && v.end > t0) v.release(t0);
++    for (const r of TK.src) if (!r.dead && r.i === i && r.chG && r.chG.ueB) ueGainHole(r.chG.ueB.gain, t0, t1);
++  }
++  (UE.brk || (UE.brk = [])).push({tr: w.tr, kick: w.kick, t0, t1}); if (UE.brk.length > 16) UE.brk.shift();
++}
++function ueGainHole(p, t0, t1) {
++  try { p.cancelScheduledValues(t0); p.setValueAtTime(1, t0); p.linearRampToValueAtTime(0, t0 + UE_RAMP); p.setValueAtTime(0, t1 - UE_RAMP); p.linearRampToValueAtTime(1, t1); } catch (e) { logErr(e); }
++}
++// eine Chor-Gruppe, die während eines geplanten Breaks ihrer Spur entsteht, schweigt mit
++function ueChorJoin(G, i) {
++  if (!UE.brk || !G.ueB) return; const now = G.c.currentTime;
++  for (const b of UE.brk) if (b.t1 > now && b.tr.has(i)) ueGainHole(G.ueB.gain, Math.max(now, b.t0), b.t1);
++}
++// Stopp: jede Break-Blende zurück auf 1
++function ueReset(now) {
++  UE.brk = null; UE.hk.clear();
++  for (const A of AU.tracks) if (A && A.ueB) { try { A.ueB.gain.cancelScheduledValues(0); A.ueB.gain.setValueAtTime(1, now); } catch (e) {} }
++  for (const r of TK.src) if (r.chG && r.chG.ueB) { try { r.chG.ueB.gain.cancelScheduledValues(0); r.chG.ueB.gain.setValueAtTime(1, now); } catch (e) {} }
++}
++/* ---------- Ablegen, Ändern, Entfernen (je 1 Undo über songEdit) ---------- */
++// alle Spuren außer Gesang (STIMME-Spuren) – Standard eines Breaks (§1.3 D); Breakdown: nur die Drums
++function ueStopDefault(w) { if (w && w.drums) return [DRUM_T]; const o = []; for (let i = 0; i < NT(); i++) if (S.tracks[i] && !S.tracks[i].stimme) o.push(i); return o; }
++function ueEdgeMarks(song) { return song ? song.marks.filter(m => m.a > 0) : []; }
++// pl: {m: Marken-ID} (Kante) oder {at: Song-Schlag}; o: {len, dens, dir, mode, stop}
++function ueAdd(src, pl, o) {
++  const w = ueWerk(src); if (!w || !S.song || !pl || R.songRec) return null;
++  o = o || {};
++  const L = isNum(o.len) && w.lens.includes(+o.len) ? +o.len : w.lens[0];
++  if (pl.m != null) { if (w.tab === 'adl') return null; const m = S.song.marks.find(x => x.id === pl.m); if (!m || m.a <= 0) return null; }
++  else if (!(isNum(pl.at) && pl.at >= 0 && pl.at < S.song.bars * 4)) return null;
++  let id = null;
++  const r = songEdit(w.name, song => {
++    const u = {id: ueNewId(song)};
++    if (pl.m != null) u.m = pl.m; else u.at = +(Math.round(pl.at * 4) / 4).toFixed(4);
++    u.a = pl.m != null && w.k !== 'crash' ? -L : 0; u.len = L; u.k = w.k; u.t = DRUM_T; u.notes = [];
++    u.mode = w.k === 'break' ? (o.kick ? 'dazu' : 'ersetzt') : (o.mode === 'dazu' || o.mode === 'ersetzt' ? o.mode : w.mode);
++    if (w.k === 'break') u.stop = Array.isArray(o.stop) ? o.stop.slice() : ueStopDefault(w);
++    u.dens = isNum(o.dens) ? clamp(Math.round(o.dens), 0, 2) : 1;
++    u.dir = o.dir === 'auf' || o.dir === 'ab' ? o.dir : 'auto';
++    u.src = w.id;
++    if (w.k !== 'break') u.notes = ueGen(w, L, u.dens, ueDirOf(song, u));
++    if (u.m != null) song.ue = (song.ue || []).filter(x => !(x.m === u.m && ueSlot(x) === ueSlot(u)));   // belegte Kante: ersetzen
++    (song.ue || (song.ue = [])).push(u); id = u.id;
++  });
++  return r ? id : null;
++}
++function ueGet(id) { return S.song && S.song.ue ? S.song.ue.find(u => u.id === id) || null : null; }
++// Felder ändern: {len, dens, dir, mode, stop, kick}; die Noten folgen (Werks-Eintrag)
++function ueSet(id, p, label) {
++  const u0 = ueGet(id); if (!u0 || R.songRec) return false;
++  return !!songEdit(label || 'Übergang ändern', song => {
++    const u = song.ue.find(x => x.id === id), w = ueWerk(u.src);
++    if (isNum(p.len) && (!w || w.lens.includes(+p.len))) { if (u.m != null && u.a === -u.len) u.a = -(+p.len); u.len = +p.len; }
++    if (isNum(p.dens)) u.dens = clamp(Math.round(p.dens), 0, 2);
++    if (p.dir) u.dir = p.dir === 'auf' || p.dir === 'ab' ? p.dir : 'auto';
++    if (p.mode && u.k !== 'break') u.mode = p.mode === 'dazu' ? 'dazu' : 'ersetzt';
++    if (u.k === 'break') { if (Array.isArray(p.stop)) u.stop = [...new Set(p.stop)].filter(x => x >= 0 && x < NT()).sort((a, b) => a - b); if (p.kick != null) u.mode = p.kick ? 'dazu' : 'ersetzt'; }
++    if (w && u.k !== 'break') ueRegen(song, u, true);
++  });
++}
++function ueDel(id) { if (!ueGet(id) || R.songRec) return false; return !!songEdit('Übergang entfernen', song => { song.ue = song.ue.filter(x => x.id !== id); if (!song.ue.length) delete song.ue; }); }
++// verschieben: Einwurf/freier Break auf einen Song-Schlag (1/16), Kanten-Eintrag auf eine andere Kante
++function ueMove(id, pl) {
++  const u0 = ueGet(id); if (!u0 || !pl || R.songRec) return false;
++  if (pl.m != null) { const m = S.song.marks.find(x => x.id === pl.m); if (!m || m.a <= 0 || u0.k === 'adlib') return false; }
++  else if (!(isNum(pl.at) && pl.at >= 0 && pl.at < S.song.bars * 4)) return false;
++  return !!songEdit('Übergang verschieben', song => {
++    const u = song.ue.find(x => x.id === id);
++    if (pl.m != null) { song.ue = song.ue.filter(x => x === u || !(x.m === pl.m && ueSlot(x) === ueSlot(u))); delete u.at; u.m = pl.m; if (u.a === 0 && u.k !== 'crash' && u.len) u.a = -u.len; ueRegen(song, u); }
++    else { delete u.m; u.at = +(Math.round(pl.at * 4) / 4).toFixed(4); u.a = 0; }
++  });
++}
++// Vorhören einer Kachel mit dem Kit der Spur (≤ 50 ms nach dem Tipp, UE-08)
++function uePreview(src, o) {
++  const w = ueWerk(src); if (!w) return false;
++  o = o || {};
++  if (w.k === 'break') { lcdOrToast(w.name + ' · ' + ueLenTxt(w.lens[0]) + ' · ' + (w.drums ? 'die Drums schweigen' : 'alle außer Gesang schweigen')); return true; }
++  ensureAudio(); const c = AU.ctx; if (!c) return false;
++  const L = isNum(o.len) ? o.len : w.lens[0], dens = isNum(o.dens) ? o.dens : 1, sp = spb(), t0 = c.currentTime + .008;
++  UE.prevT = t0;
++  for (const nt of ueGen(w, L, dens, o.dir || 'gleich')) for (const h of DrumSeq.expandStep(nt, 0, 0)) drumHit(nt.n, h.v, t0 + (nt.t + h.beat) * sp, 'preview', h.acc || h.lk ? h : null);
++  return true;
++}
++const UE_LENT = {0: '–', .5: '⅛', 1: '¼', 2: '½', 4: '1', 8: '2', 16: '4'};
++const ueLenTxt = L => (L === 0 ? 'auf die Eins' : (UE_LENT[L] || String(L / 4)) + (L === 4 ? ' Takt' : L > 4 ? ' Takte' : ' Takt'));
++
++/* ---------- Bedienung (UE-Kern minimal – beim Merge durch UE-A/UE-B ersetzt: Leiste, Ziehen, Chips; UE-D: Break-/Einwurf-Blatt) ---------- */
++const UE_CSS = `
++#songView{position:relative}
++.sv-cw > .sv-ue{position:absolute;right:6px;bottom:6px;z-index:4;width:54px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 2px;color:var(--amber,#ffb22e);opacity:.92}
++.sv-cw > .sv-ue .d{font-size:13px;line-height:1}.sv-cw > .sv-ue .t{font:700 8px/1 var(--font-ui);letter-spacing:.04em;color:var(--text,#ece8df)}
++.sv-cw > .sv-ue[hidden]{display:none}
++.ue-bar{position:absolute;right:8px;bottom:4px;z-index:6;border-radius:8px;background:var(--chassis,#15171b);border-top:1px solid var(--line,#2d323c);touch-action:none;
++  box-shadow:0 -6px 18px rgba(0,0,0,.45);display:flex;flex-direction:column}
++.ue-bar[hidden]{display:none}
++.ue-tabs{display:flex;gap:4px;padding:4px 6px 0;align-items:center}
++.ue-tabs button{height:44px;min-width:44px;padding:0 12px;font:700 13px/1 var(--font-ui);color:var(--text-dim,#9aa0aa);background:none;border:0;border-bottom:2px solid transparent}
++.ue-tabs button.on{color:var(--amber,#ffb22e);border-bottom-color:var(--amber,#ffb22e)}
++.ue-tabs .ue-x{margin-left:auto;font-size:16px;color:var(--text,#ece8df)}
++.ue-row{display:flex;gap:6px;padding:6px;overflow:hidden;white-space:nowrap}
++.ue-tile{flex:0 0 auto;width:96px;height:78px;border-radius:8px;background:var(--chassis-2,#1c1f25);border:1px solid var(--line,#2d323c);color:var(--text,#ece8df);
++  display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;padding:5px 6px;font:600 11px/1.15 var(--font-ui);text-align:left;user-select:none;-webkit-user-select:none}
++.ue-tile.held{border-color:var(--amber,#ffb22e)}
++.ue-tile > span:first-child{white-space:normal;overflow-wrap:anywhere;line-height:1.1}
++.ue-tile svg{width:100%;height:30px;display:block}
++.ue-bar.one{flex-direction:row;align-items:stretch}
++.ue-bar.one .ue-tabs{padding:4px 0 4px 4px;flex:0 0 auto}
++.ue-bar.one .ue-tabs button{padding:0 7px;font-size:12px}
++.ue-bar.one .ue-row{flex:1 1 auto;padding:4px}
++.ue-bar.one .ue-tile{height:52px;width:88px;padding:3px 5px}
++.ue-bar.one .ue-tile svg{height:14px}
++.ue-bar.one .ue-tile .ue-l{display:none}
++.ue-bar.one .ue-tile > span:first-child{font-size:10.5px}
++.ue-bar.one .ue-tabs .ue-x{order:9;margin-left:0}
++.ue-bar.one > .ue-x{flex:0 0 44px}
++.ue-tile .ue-l{color:var(--text-dim,#9aa0aa);font:600 10px/1 var(--font-num)}
++.ue-ghost{position:fixed;z-index:60;pointer-events:none;opacity:.9;transform:translate(-50%,-110%);transition:none}
++.ue-ghost.back{transition:left .22s ease-in,top .22s ease-in,opacity .22s}
++.pop.ue-pop{max-width:min(380px,calc(100vw - 16px))}
++.pop.ue-pop .seg button{min-height:44px;min-width:44px}
++.pop.ue-pop .ue-trk{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
++.pop.ue-pop .ue-trk button{min-height:44px;min-width:56px;padding:0 10px;font:600 12px/1 var(--font-ui)}
++.pop.ue-pop .ue-trk button.on{border-color:var(--amber,#ffb22e);color:var(--amber,#ffb22e)}
++.pop.ue-pop .ue-act{display:flex;gap:6px;margin-top:8px}
++.pop.ue-pop .ue-act button{flex:1 1 0;min-height:44px}
++.pop.ue-pop .ue-k{font:600 11px/1.3 var(--font-ui);color:var(--text-dim,#9aa0aa);margin:4px 0}`;
++function ueCssOnce() { if (UE.css) return; UE.css = true; const s = document.createElement('style'); s.textContent = UE_CSS; document.head.appendChild(s); }
++// Mini-Schrittbild einer Kachel (SVG, eine Zeile je Instrument; gezeichnete Formen, kein Emoji)
++const UE_ROWS = [49, 46, 42, 50, 47, 45, 37, 39, 38, 36];
++function ueSvg(w) {
++  const L = Math.max(1, w.lens[0]), ns = w.k === 'break' ? [] : ueGen(w, w.lens[0], 1, 'gleich');
++  const used = UE_ROWS.filter(g => ns.some(n => n.n === g)), H = 30, rh = used.length ? Math.min(7, H / used.length) : 7, W = 84, span = L + (ns.some(n => n.t >= L - 1e-9) ? .25 : 0);
++  let s = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><rect x="0" y="0" width="${W}" height="${H}" rx="3" fill="rgba(255,255,255,.04)"/>`;
++  if (w.k === 'break') s += `<rect x="6" y="6" width="${W - 12}" height="${H - 12}" fill="none" stroke="#ffb22e" stroke-dasharray="3 3"/><rect x="${W / 2 - 7}" y="9" width="4" height="12" fill="#ffb22e"/><rect x="${W / 2 + 3}" y="9" width="4" height="12" fill="#ffb22e"/>`;
++  for (const n of ns) { const r = used.indexOf(n.n), x = 2 + (span > 0 ? n.t / span : 0) * (W - 8), y = (H - used.length * rh) / 2 + r * rh; s += `<rect x="${x.toFixed(1)}" y="${(y + .5).toFixed(1)}" width="${n.r ? 4 : 3}" height="${(rh - 1).toFixed(1)}" rx="1" fill="${n.n === 49 ? '#ffb22e' : n.a ? '#ece8df' : '#9aa0aa'}" opacity="${(.45 + .55 * n.v).toFixed(2)}"/>`; }
++  return s + '</svg>';
++}
++function ueToggle(on) {
++  on = on == null ? !UE.open : !!on;
++  if (on && !UE.el) ueBuildBar();
++  UE.open = on; if (UE.el) UE.el.hidden = !on;
++  if (SV.btn && SV.btn.bUe) SV.btn.bUe.hidden = on;
++  ueBarPlace();
++  if (!on) ueDragEnd(null);
++  UI.dirty.song = true;
++  return on;
++}
++// die Leiste liegt unten über dem Song-Bereich (rechts der Transport-Spalte); die Song-Zeilen rücken über sie (padding der .sv-body),
++// die Tastatur bleibt sichtbar. Kleine Höhe (< 360 px Song-Bereich) oder quer: eine Zeile (Reiter links, Kacheln daneben)
++function ueBarPlace() {
++  const body = EL.songView && EL.songView.querySelector('.sv-body'); if (!body) return;
++  if (!UE.open || !UE.el) { UE.padH = 0; if (body.style.paddingBottom) { body.style.paddingBottom = ''; } return; }
++  body.style.paddingBottom = '';
++  const one = body.getBoundingClientRect().height < 360 || EL.songView.classList.contains('side');
++  UE.el.classList.toggle('one', one);
++  UE.el.style.left = body.offsetLeft + 'px';
++  UE.padH = UE.el.offsetHeight + 4; body.style.paddingBottom = UE.padH + 'px';
++}
++function ueBuildBar() {
++  ueCssOnce();
++  const b = el('div', 'ue-bar'), tabs = el('div', 'ue-tabs'), row = el('div', 'ue-row');
++  for (const [k, l] of UE_TABS) { const t = el('button', 'rb' + (UE.tab === k ? ' on' : ''), l); t.dataset.tab = k; tabs.appendChild(t); }
++  const x = el('button', 'rb ue-x', '✕︎'); x.setAttribute('aria-label', 'Übergänge schließen'); tabs.appendChild(x);
++  onTap(tabs, t => { if (t.classList.contains('ue-x')) { ueToggle(false); return; } UE.tab = t.dataset.tab; for (const c of tabs.children) c.classList.toggle('on', c === t); ueFillRow(); haptic('tick'); }, 'button');
++  b.append(tabs, row); guardTouch(b);
++  b.addEventListener('pointerdown', e => e.stopPropagation());
++  UE.el = b; UE.row = row; EL.songView.appendChild(b);
++  if (!UE.rs) { UE.rs = true; window.addEventListener('resize', () => requestAnimationFrame(ueBarPlace)); }
++  ueFillRow(); ueBindRow(row);
++}
++function ueFillRow() {
++  const row = UE.row; if (!row) return; row.innerHTML = ''; row.scrollLeft = 0;
++  for (const w of UE_WERK) if (w.tab === UE.tab) {
++    const t = el('div', 'ue-tile', `<span>${esc(w.name)}</span>${ueSvg(w)}<span class="ue-l">${w.lens.map(L => UE_LENT[L] || L / 4).join(' · ')}${w.lens[0] ? ' T' : ''}</span>`);
++    t.dataset.src = w.id; t.setAttribute('role', 'button'); t.setAttribute('aria-label', w.name + ' – antippen: vorhören, halten und ziehen: ablegen'); row.appendChild(t);
++  }
++}
++// Kachelreihe: waagerecht wischen = blättern; Tipp = vorhören; halten (300 ms) und ziehen = ablegen (Geist folgt dem Finger)
++function ueBindRow(row) {
++  let st = null;
++  row.addEventListener('pointerdown', e => {
++    const t = e.target.closest('.ue-tile'); if (!t || e.button > 0) return;
++    try { row.setPointerCapture(e.pointerId); } catch (_) {}
++    const me = st = {id: e.pointerId, t, x0: e.clientX, y0: e.clientY, sl: row.scrollLeft, mode: null};
++    me.timer = setTimeout(() => { if (st === me && !me.mode) { me.mode = 'drag'; t.classList.add('held'); haptic('pop'); ueDragStart(t.dataset.src, e.clientX, e.clientY, t); } }, 300);
++  });
++  row.addEventListener('pointermove', e => {
++    if (!st || e.pointerId !== st.id) return;
++    const dx = e.clientX - st.x0, dy = e.clientY - st.y0;
++    if (!st.mode && Math.hypot(dx, dy) > 10) { clearTimeout(st.timer); st.mode = Math.abs(dx) >= Math.abs(dy) ? 'scroll' : 'drag'; if (st.mode === 'drag') { st.t.classList.add('held'); ueDragStart(st.t.dataset.src, e.clientX, e.clientY, st.t); } }
++    if (st.mode === 'scroll') row.scrollLeft = st.sl - dx;
++    else if (st.mode === 'drag') ueDragMove(e.clientX, e.clientY);
++  });
++  const end = e => {
++    if (!st || e.pointerId !== st.id) return;
++    const s = st; st = null; clearTimeout(s.timer); s.t.classList.remove('held');
++    if (s.mode === 'drag') { ueDragEnd(e.type === 'pointerup' ? {x: e.clientX, y: e.clientY} : null); return; }
++    if (!s.mode && e.type === 'pointerup') { uePreview(s.t.dataset.src); haptic('tick'); }
++  };
++  row.addEventListener('pointerup', end); row.addEventListener('pointercancel', end);
++}
++// Ziel unter dem Finger: Kante im Fangbereich ±½ Takt (amber) bzw. freier Song-Schlag auf 1/16 (Einwurf, Break in einem Teil)
++function ueTargetAt(src, cx, cy, moveId) {
++  const song = S.song, w = ueWerk(src) || (moveId && ueWerk((ueGet(moveId) || {}).src)), wr = SV.wrap; if (!song || !w || !wr || !song.bars) return null;
++  const r = wr.getBoundingClientRect(), bar = UE.el && !UE.el.hidden ? UE.el.getBoundingClientRect().top : r.bottom;
++  if (cx < r.left || cx > r.right || cy < r.top + SV.rulerH || cy > Math.min(r.bottom, bar)) return null;
++  const beat = (cx - r.left + SV.x) / SV.cellW * 4, u = moveId ? ueGet(moveId) : null, adl = u ? u.k === 'adlib' : w.tab === 'adl';
++  if (!adl) {
++    let best = null, bd = UE_SNAP + 1e-9;
++    for (const m of ueEdgeMarks(song)) { const d = Math.abs(beat - m.a * 4); if (d <= bd) { bd = d; best = m; } }
++    if (best) return {m: best.id, edge: best.a * 4};
++    if (w.k !== 'break') return null;
++  }
++  const at = Math.round(beat * 4) / 4; if (at < 0 || at >= song.bars * 4) return null;
++  return {at};
++}
++function ueDragStart(src, x, y, tile, moveId) {
++  ueCssOnce();
++  const w = ueWerk(src); if (!w) return;
++  const g = el('div', 'ue-tile ue-ghost', tile ? tile.innerHTML : `<span>${esc(w.name)}</span>${ueSvg(w)}`);
++  document.body.appendChild(g);
++  const r0 = tile ? tile.getBoundingClientRect() : null;
++  UE.drag = {src, w, g, home: r0 ? {x: r0.left + r0.width / 2, y: r0.top + r0.height} : {x, y}, tgt: null, moveId: moveId || null};
++  ueDragMove(x, y);
++}
++function ueDragMove(x, y) {
++  const d = UE.drag; if (!d) return;
++  d.g.style.left = x + 'px'; d.g.style.top = y + 'px';
++  const t = ueTargetAt(d.src, x, y, d.moveId), k = t ? (t.m || '') + ':' + (t.at != null ? t.at : '') : '';
++  if (k !== d.k) { d.k = k; if (t && t.m) haptic('tick'); }
++  d.tgt = t; UI.dirty.song = true; svDraw(true);                  // im selben Bild sichtbar (UE-09)
++}
++// Loslassen: auf einem Ziel ablegen (1 Undo); daneben: der Geist fliegt zurück, nichts ändert sich
++function ueDragEnd(p) {
++  const d = UE.drag; if (!d) return null;
++  UE.drag = null; UI.dirty.song = true;
++  let id = null;
++  if (p) {
++    const t = ueTargetAt(d.src, p.x, p.y, d.moveId);
++    if (t) { if (d.moveId) { if (ueMove(d.moveId, t)) id = d.moveId; } else id = ueAdd(d.src, t.m ? {m: t.m} : {at: t.at}); }
++    else if (d.moveId && ueOutside(p.x, p.y)) { const u = ueGet(d.moveId); if (u && ueDel(d.moveId)) toast((ueWerk(u.src) || {name: 'Übergang'}).name + ' entfernt', {label: '↶ Rückgängig', fn: () => undo()}); d.g.remove(); svDraw(true); return null; }
++  }
++  if (id) { d.g.remove(); haptic('pop'); }
++  else { const g = d.g; g.classList.add('back'); requestAnimationFrame(() => { g.style.left = d.home.x + 'px'; g.style.top = d.home.y + 'px'; g.style.opacity = '0'; }); setTimeout(() => g.remove(), 260); }
++  svDraw(true);
++  return id;
++}
++// ein Chip, der aus dem Song gezogen wird (über die Leiste oder aus der Song-Fläche hinaus), wird gelöscht
++function ueOutside(x, y) { const wr = SV.wrap; if (!wr) return true; const r = wr.getBoundingClientRect(), bar = UE.el && !UE.el.hidden ? UE.el.getBoundingClientRect().top : r.bottom; return x < r.left || x > r.right || y < r.top || y > bar; }
++/* ---------- Zeichnen in der Song-Fläche (svDraw): Chips in der Drum-Zeile, schraffierte Bereiche, Einrasten ---------- */
++function ueHatch(g, x0, x1, y, h, col) {
++  if (x1 <= x0) return; g.save(); g.beginPath(); g.rect(x0, y, x1 - x0, h); g.clip();
++  g.strokeStyle = col; g.lineWidth = 1.5; g.beginPath(); for (let x = x0 - h; x < x1 + h; x += 6) { g.moveTo(x, y + h); g.lineTo(x + h, y); } g.stroke(); g.restore();
++}
++function ueDraw(g, song, XB, W, H, ru, rh) {
++  g.save(); try { ueDraw0(g, song, XB, W, H, ru, rh); } finally { g.restore(); }   // Schrift/Ausrichtung des Song-Bilds bleiben
++}
++function ueDraw0(g, song, XB, W, H, ru, rh) {
++  UE.chips = [];
++  const rd = SV.rows.indexOf(DRUM_T), d = UE.drag;
++  if (song.ue && rd >= 0 && !UI.svGlass) {
++    const y = ru + rd * rh;
++    g.font = '700 10px ' + (SV.uiFont || (SV.uiFont = getComputedStyle(document.body).getPropertyValue('--font-ui') || 'sans-serif'));
++    for (const u of song.ue) {
++      const A = ueAnchor(song, u); if (A == null) continue;
++      const s = A + u.a, e = s + u.len, x0 = XB(s), x1 = XB(e), w = ueWerk(u.src);
++      if (x1 < -60 || x0 > W + 60) continue;
++      if (u.k === 'break') { for (const i of u.stop || []) { const r = SV.rows.indexOf(i); if (r >= 0) { g.fillStyle = 'rgba(11,12,15,.55)'; g.fillRect(x0, ru + r * rh, x1 - x0, rh); ueHatch(g, x0, x1, ru + r * rh, rh, 'rgba(255,178,46,.35)'); } } }
++      else if (u.len > 0) ueHatch(g, x0, x1, y + 1, rh - 2, u.mode === 'ersetzt' ? 'rgba(255,178,46,.45)' : 'rgba(255,178,46,.22)');
++      const lab = (u.k === 'break' ? '‖ ' : u.k === 'adlib' ? '● ' : '◆ ') + (w ? w.sh : u.k) + (u.m != null && u.k !== 'break' ? ' ' + UE_ARR[ueDirOf(song, u)] : '');
++      const tw = g.measureText(lab).width + 10, ch = Math.min(rh - 4, 18), cy = y + (rh - ch) / 2;
++      const cx = u.m != null && u.k !== 'break' ? Math.max(x0, XB(A) - tw) : x0;
++      g.fillStyle = u.id === UE.sel ? '#ffb22e' : '#2a2416'; g.strokeStyle = '#ffb22e'; g.lineWidth = 1;
++      g.beginPath(); if (g.roundRect) g.roundRect(cx, cy, tw, ch, 4); else g.rect(cx, cy, tw, ch); g.fill(); g.stroke();
++      g.fillStyle = u.id === UE.sel ? '#111' : '#ffd27a'; g.textAlign = 'left'; g.fillText(lab, cx + 5, cy + ch / 2); g.textAlign = 'center';
++      // Trefferfläche ≥ 44 × 44 (UE-07)
++      const hx = cx + tw / 2, hy = cy + ch / 2, hw = Math.max(44, tw), hh = Math.max(44, ch);
++      UE.chips.push({id: u.id, lab, x0: hx - hw / 2, x1: hx + hw / 2, y0: hy - hh / 2, y1: hy + hh / 2});
++    }
++  }
++  // Einrasten beim Ziehen: amber Kante + Schraffur der betroffenen Schläge
++  if (d && d.tgt) {
++    const w = d.moveId ? ueWerk((ueGet(d.moveId) || {}).src) : d.w, u = d.moveId ? ueGet(d.moveId) : null, L = u ? u.len : w ? w.lens[0] : 0;
++    if (d.tgt.m) { const x = XB(d.tgt.edge), s = w && w.k === 'crash' ? d.tgt.edge : d.tgt.edge - L; g.fillStyle = '#ffb22e'; g.fillRect(x - 1.5, ru, 3, H - ru); g.save(); g.shadowColor = 'rgba(255,178,46,.8)'; g.shadowBlur = 8; g.fillRect(x - 1, ru, 2, H - ru); g.restore(); ueHatch(g, XB(s), x, ru, H - ru, 'rgba(255,178,46,.4)'); }
++    else { const x = XB(d.tgt.at); g.fillStyle = 'rgba(255,178,46,.9)'; g.fillRect(x - 1, ru, 2, H - ru); ueHatch(g, x, XB(d.tgt.at + Math.max(L, .25)), ru, H - ru, 'rgba(255,178,46,.35)'); }
++  }
++}
++function ueChipAt(x, y) { for (let k = UE.chips.length - 1; k >= 0; k--) { const c = UE.chips[k]; if (x >= c.x0 && x <= c.x1 && y >= c.y0 && y <= c.y1) return c.id; } return null; }
++/* ---------- Blatt (Tipp auf einen Chip): Länge, Dichte, Richtung, Modus; Break: Spuren + [Kick bleibt]; Entfernen ---------- */
++function ueSheet(id) {
++  const u = ueGet(id); if (!u) return false;
++  const w = ueWerk(u.src), song = S.song; ueCssOnce();
++  UE.sel = id; UI.dirty.song = true;
++  openPop(null, p => {
++    guardTouch(p); p.classList.add('ue-pop');
++    const A = ueAnchor(song, u), m = u.m != null ? song.marks.find(x => x.id === u.m) : null;
++    const where = m ? 'Kante vor ' + esc(markLabel(m)) : 'Takt ' + (Math.floor(A / 4) + 1) + ', Schlag ' + (+(A % 4 + 1).toFixed(2)).toString().replace('.', ',');
++    const kit = esc((S.tracks[DRUM_T].sound && S.tracks[DRUM_T].sound.name) || 'Kit');
++    let h = `<h4>${esc(w ? w.name : u.k)}</h4><div class="ue-k">${where}${u.k !== 'break' ? ' · Kit der Spur: ' + kit : ''}</div>`;
++    if (w && w.lens.length > 1) h += segHTML('ueLen', w.lens.map(L => [L, ueLenTxt(L)]), u.len);
++    if (u.k === 'break') {
++      h += '<div class="ue-k">Diese Spuren schweigen:</div><div class="ue-trk">' + S.tracks.map((t, i) => `<button class="rb${(u.stop || []).includes(i) ? ' on' : ''}" data-tr="${i}" aria-pressed="${(u.stop || []).includes(i)}">${esc(svShort(i))}</button>`).join('') + '</div>';
++      if ((u.stop || []).includes(DRUM_T)) h += `<div class="ue-trk"><button class="rb${u.mode === 'dazu' ? ' on' : ''}" data-kick="1" aria-pressed="${u.mode === 'dazu'}">Kick bleibt</button></div>`;
++      h += '<div class="ue-k">Hall und Echo klingen natürlich aus.</div>';
++    } else {
++      h += segHTML('ueDens', UE_DENS.map((l, k) => [k, l]), u.dens);
++      if (u.m != null && u.k !== 'adlib') h += segHTML('ueDir', [['auto', 'Auto ' + UE_ARR[ueDirOf(song, Object.assign({}, u, {dir: 'auto'}))]], ['auf', UE_ARR.auf + ' auf'], ['ab', UE_ARR.ab + ' ab']], u.dir);
++      if (u.k !== 'adlib' && u.len > 0) h += segHTML('ueMode', [['ersetzt', 'ersetzt'], ['dazu', 'dazu']], u.mode);
++    }
++    h += `<div class="ue-act">${u.k !== 'break' ? '<button class="rb" data-a="hear">Anhören</button>' : ''}<button class="rb" data-a="del">Entfernen</button></div>`;
++    p.innerHTML = h;
++    const re = () => { if (UI.pop && UI.pop.name === 'ue') { closePop(); ueSheet(id); } };
++    bindSeg(p, 'ueLen', v => { ueSet(id, {len: +v}, 'Länge'); re(); });
++    bindSeg(p, 'ueDens', v => { ueSet(id, {dens: +v}, 'Dichte'); });
++    bindSeg(p, 'ueDir', v => { ueSet(id, {dir: v}, 'Richtung'); });
++    bindSeg(p, 'ueMode', v => { ueSet(id, {mode: v}, 'Modus ' + v); });
++    onTap(p, b => {
++      const x = ueGet(id); if (!x) { closePop(); return; }
++      if (b.dataset.tr != null) { const i = +b.dataset.tr, s = new Set(x.stop || []); if (s.has(i)) s.delete(i); else s.add(i); ueSet(id, {stop: [...s]}, 'Break-Spuren'); re(); }
++      else if (b.dataset.kick) { ueSet(id, {kick: x.mode !== 'dazu'}, 'Kick bleibt'); re(); }
++      else if (b.dataset.a === 'hear') { const W = ueWerk(x.src); if (W) { ensureAudio(); const c = AU.ctx, t0 = c.currentTime + .008, sp = spb(); for (const nt of x.notes) for (const hh of DrumSeq.expandStep(nt, 0, 0)) drumHit(nt.n, hh.v, t0 + (nt.t + hh.beat) * sp, 'preview', hh.acc || hh.lk ? hh : null); } }
++      else if (b.dataset.a === 'del') { closePop(); const nm = w ? w.name : 'Übergang'; if (ueDel(id)) toast(nm + ' entfernt', {label: '↶ Rückgängig', fn: () => undo()}); }
++      haptic('tick');
++    }, 'button[data-tr],button[data-kick],button[data-a]');
++  }, {name: 'ue', onClose: () => { UE.sel = null; UI.dirty.song = true; }});
++  return true;
++}
++// Song-Fläche: ein Chip unter dem Finger – Tipp = Blatt, halten (450 ms) und ziehen = verschieben / aus dem Song ziehen = löschen
++function ueChipGesture(w, e, p) {
++  const id = ueChipAt(p.x, p.y); if (!id) return false;
++  const u = ueGet(id); if (!u) return false;
++  try { w.setPointerCapture(e.pointerId); } catch (_) {}
++  const st = {id: e.pointerId, x0: e.clientX, y0: e.clientY, mode: null};
++  st.timer = setTimeout(() => { if (!st.mode) { st.mode = 'drag'; haptic('pop'); ueDragStart(u.src, e.clientX, e.clientY, null, id); UE.drag.home = {x: e.clientX, y: e.clientY}; } }, 450);
++  const mv = ev => { if (ev.pointerId !== st.id) return; if (!st.mode && Math.hypot(ev.clientX - st.x0, ev.clientY - st.y0) > 10) { clearTimeout(st.timer); st.mode = 'none'; } if (st.mode === 'drag') ueDragMove(ev.clientX, ev.clientY); };
++  const up = ev => {
++    if (ev.pointerId !== st.id) return;
++    clearTimeout(st.timer); w.removeEventListener('pointermove', mv, true); w.removeEventListener('pointerup', up, true); w.removeEventListener('pointercancel', up, true);
++    if (st.mode === 'drag') ueDragEnd(ev.type === 'pointerup' ? {x: ev.clientX, y: ev.clientY} : null);
++    else if (!st.mode && ev.type === 'pointerup') ueSheet(id);
++    ev.stopPropagation();
++  };
++  w.addEventListener('pointermove', mv, true); w.addEventListener('pointerup', up, true); w.addEventListener('pointercancel', up, true);
++  e.stopPropagation(); e.preventDefault();
++  return true;
++}
++/* ---------- Test-API (UE-C/D) ---------- */
++const UE_API = {
++  ueLib: tab => UE_WERK.filter(w => !tab || w.tab === tab).map(w => ({id: w.id, tab: w.tab, name: w.name, k: w.k, lens: w.lens.slice(), mode: w.mode || null})),
++  ueGen: (src, len, dens, dir) => { const w = ueWerk(src); return w ? ueGen(w, isNum(len) ? len : w.lens[0], dens == null ? 1 : dens, dir || 'gleich') : null; },
++  ueAdd: (src, pl, o) => ueAdd(src, pl, o), ueSet: (id, p) => ueSet(id, p || {}), ueDel: id => ueDel(id), ueMove: (id, pl) => ueMove(id, pl),
++  ueList: () => (S.song && S.song.ue ? deep(S.song.ue) : []),
++  ueDir: id => { const u = ueGet(id); return u ? ueDirOf(S.song, u) : null; },
++  uePreview: (src, o) => uePreview(src, o), uePrevT: () => UE.prevT,
++  ueOpen: on => ueToggle(on), ueSheet: id => ueSheet(id),
++  ueInfo: () => ({open: UE.open, tab: UE.tab, chips: UE.chips.map(c => Object.assign({}, c)), drag: UE.drag ? {src: UE.drag.src, tgt: UE.drag.tgt} : null, brk: (UE.brk || []).map(b => ({tr: [...b.tr], kick: b.kick, t0: b.t0, t1: b.t1})),
++    gains: AU.tracks.map(A => (A && A.ueB ? A.ueB.gain.value : null))}),
++  ueTab: k => { if (!UE_TABS.some(t => t[0] === k)) return false; UE.tab = k; if (UE.el) { for (const c of UE.el.querySelector('.ue-tabs').children) c.classList.toggle('on', c.dataset.tab === k); ueFillRow(); } return true; },
++  ueDragTest: (src, pts, moveId) => { ueDragStart(src, pts[0].x, pts[0].y, null, moveId); for (const p of pts.slice(1, -1)) ueDragMove(p.x, p.y); const q = pts[pts.length - 1]; ueDragMove(q.x, q.y); const tgt = UE.drag ? UE.drag.tgt : null; return {tgt, id: ueDragEnd(q)}; },
++  ueTargetAt: (src, x, y) => ueTargetAt(src, x, y),
++};
++
+ function normSong(o, pk, nt) {
+   if (!o || typeof o !== 'object') return null;
+   nt = nt || curNT();
+@@ -21483,6 +22125,7 @@
+   const vdir = vvDirNorm(o.video, bars, nt); if (vdir) v4.video = vdir;                                 // VV2: Video-Regie im Song
+   const gb = ggbNorm(o.gb); if (gb) v4.gb = gb;                                                      // G-GB: Daten des letzten Instrumental-Exports
+   konSongNorm(o, v4, bars, pk, nt);                                                                     // KON: Blöcke, Ursprung (konsolidiert)
++  const ue = ueNorm(o.ue, v4.marks, nt); if (ue) v4.ue = ue;                                            // UE: Übergänge, Breaks, Einwürfe (§1.5)
+   return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, mel}, v4);
+ }
+ function ownNorm(c, pk, nt) {
+@@ -21838,6 +22481,7 @@
+ function anyPump() { return S.fxBus.hall.pump > 0 || S.tracks.some(tr => tr.sound && tr.sound.fx.pump > 0); }
+ // transport stop: every duck back to 1 (within 100 ms, FX7)
+ function duckReset(now) {
++  ueReset(now);                                                    // UE: Break-Blenden zurück
+   for (const g of AU.tracks.map(a => a && a.duck).concat([AU.hallDuck])) if (g) { try { g.gain.cancelScheduledValues(now); g.gain.setTargetAtTime(1, now, .02); } catch (e) {} }
+ }
+ 
+@@ -21859,7 +22503,8 @@
+   N.trem.connect(N.duck); N.duck.connect(N.vol);
+   let post = N.vol; if (N.pan) { N.vol.connect(N.pan); post = N.pan; }
+   N.post = post;
+-  N.cut = c.createGain(); post.connect(N.cut); N.dryCut = false;
++  N.ueB = c.createGain(); post.connect(N.ueB);                   // UE: Break-Blende vor den Sends (Hall/Echo klingen aus); 1 = bitgleich
++  N.cut = c.createGain(); N.ueB.connect(N.cut); N.dryCut = false;
+   N.cut.connect(AU.masterSum); N.cut.connect(N.revSend); N.cut.connect(N.dlySend);
+   N.revSend.connect(AU.hallIn); N.dlySend.connect(AU.echoIn);
+   return N;
+@@ -23071,7 +23716,7 @@
+   h.log = logNote({track: DRUM_T, src, clipNote: src === 'clip' ? sl.gm : null, out: sl.gm, time: t, dur: null, vel});
+   padFlashAt(sl.idx, t);
+   if (ST.on && src !== 'preview') vsMaskAdd(t, 0.04);         // VS2 Treffer-Maske (nur Lautsprecher)
+-  if (sl.gm === 36 && S.fxBus.pumpSrc === 'kick' && (src === 'clip' || src === 'pad')) onKickScheduled(t);     // Pumpen (§8.1, §7.5)
++  if (sl.gm === 36 && S.fxBus.pumpSrc === 'kick' && (src === 'clip' || src === 'pad' || src === 'ue')) onKickScheduled(t);     // Pumpen (§8.1, §7.5)
+   return h;
+ }
+ 
+@@ -23148,7 +23793,7 @@
+   h.log = logNote({track: DRUM_T, src, clipNote: src === 'clip' ? sl.gm : null, out: sl.gm, time: t, dur: null, vel});
+   padFlashAt(sl.idx, t);
+   if (ST.on && src !== 'preview') vsMaskAdd(t, 0.04);
+-  if (sl.gm === 36 && S.fxBus.pumpSrc === 'kick' && (src === 'clip' || src === 'pad')) onKickScheduled(t);
++  if (sl.gm === 36 && S.fxBus.pumpSrc === 'kick' && (src === 'clip' || src === 'pad' || src === 'ue')) onKickScheduled(t);
+   const now = AU.ctx ? AU.ctx.currentTime : 0;
+   for (let k = MDS.pend.length - 1; k >= 0; k--) if (MDS.pend[k].start < now - .05 || MDS.pend[k].dead) MDS.pend.splice(k, 1);
+   MDS.pend.push(h);
+@@ -23747,6 +24392,7 @@
+   if (tr.stimme) { if (clip && !tr.mute) tkSched(i, clip, from, to, late, oc ? R.own[i] : null); return; }   // VS3: STIMME = Audio
+   if (!clip || tr.mute || !clip.notes.length) return;
+   const mu = takeMute(i);                                        // V2d′ (K2-21, 7.2): the target track's old notes are silent during the take
++  const um = tr.kind === 'drum' ? null : ueMuteFor(i);           // UE: Break (null ohne song.ue)
+   if (tr.kind === 'drum') { scheduleDrums(i, clip, from, to, late, oc ? 'own' : null, mu); return; }
+   const L = clip.len * 4, cs = R.cstart[i], sp = spb(), now = AU.ctx.currentTime, ev = new Map();
+   for (const nt of clip.notes) {
+@@ -23756,9 +24402,10 @@
+       if (B < from - 1e-9) continue;
+       if (nt.born != null && nt.bornRun === R.runId && B < nt.born + .5) continue;
+       if (mu && mutedAt(mu, B)) continue;
++      if (um && ueMutedAt(um, B, nt.n)) continue;                  // UE
+       let t = b2t(B + swingOffset(nt.t));
+       if (late) { if (t < now - RETRO_MAX - .02) continue; if (t < now) t = now; }
+-      const dur = Math.max(nt.d, 1 / 32) * sp;
++      const dur = Math.max(um ? ueDurCut(um, B, nt.d) : nt.d, 1 / 32) * sp;
+       if (tr.kind === 'drum') {
+         const key = t.toFixed(4) + ':' + nt.n, o = ev.get(key);
+         if (o) o.v = Math.max(o.v, nt.v); else ev.set(key, {t, n: nt.n, v: nt.v});
+@@ -23792,6 +24439,7 @@
+ function scheduleDrums(i, clip, from, to, late, lsrc, mu) {
+   const L = clip.len * 4, cs = R.cstart[i], now = AU.ctx.currentTime, ev = new Map(), seed = clip.seed | 0;
+   const D1 = d1Map(clip);                                        /* D1: lanes with their own length / direction play below */
++  const um = ueMuteFor(i), uk = !!(R.songPlay && S.song && S.song.ue);   // UE: „ersetzt“ / Break; derselbe Treffer nur einmal
+   for (const nt of clip.notes) {
+     if (nt.t >= L - 1e-9) continue;                              // V0a K-06
+     if (D1 && D1.has(nt.n)) continue;                            /* D1 */
+@@ -23799,6 +24447,7 @@
+     for (let B = cs + nt.t + k * L; B < to + .12 - 1e-9; B += L, k++) {
+       if (nt.born != null && nt.bornRun === R.runId && B < nt.born + .5) continue;
+       if (mu && mutedAt(mu, B)) continue;
++      if (um && ueMutedAt(um, B, nt.n)) continue;                  // UE
+       const loopStart = cs + k * L;
+       for (const h of DrumSeq.expandStep(nt, k, seed)) {
+         const hb = Math.max(B + h.beat, loopStart);
+@@ -23812,19 +24461,20 @@
+       }
+     }
+   }
+-  if (D1) d1Sched(D1, cs, from, to, late, now, mu, seed, ev);   /* D1 */
++  if (D1) d1Sched(D1, cs, from, to, late, now, mu, seed, ev, um);   /* D1; UE */
+   // in time order: a pad is monophonic, so a later hit must see (and choke) every earlier one of the window
+   const dt = S.settings.harmony.drums;                           // V2c′: Drums mittransponieren (TUNE wie ein Lock)
+   for (const e of [...ev.values()].sort((x, y) => x.t - y.t)) {
+     let ex = e.ex; const tu = dt ? drumTune(e.t) : 0;
+     if (tu) ex = Object.assign({}, ex, {lk: Object.assign({}, ex && ex.lk, {tune: ((ex && ex.lk && ex.lk.tune) || 0) + tu})});
++    if (uk && ueDup(e.n, e.t)) continue;                         // UE: der Übergang spielt diesen Treffer schon
+     const h = drumHit(e.n, e.v, e.t, 'clip', ex);
+     if (lsrc && h && h.log) h.log.src = lsrc;
+   }
+ }
+ /* D1: the steps g of the window (counted from the clip start) -> the lane step d1Pos(g) -> its notes, at cs + g/4 + their offset in the
+    step; chance / ratchet / timing as the plain path (expandStep, loop = lane round); a window is idempotent (a hit belongs to its beat) */
+-function d1Sched(D, cs, from, to, late, now, mu, seed, ev) {
++function d1Sched(D, cs, from, to, late, now, mu, seed, ev, um) {
+   const g0 = Math.max(0, Math.floor((from - .35 - cs) / .25)), g1 = Math.ceil((to + .12 - cs) / .25);
+   for (const [gm, X] of D) for (let g = g0; g < g1; g++) {
+     const ns = X.by.get(d1Pos(X.l, g, gm)); if (!ns) continue;
+@@ -23832,6 +24482,7 @@
+       const f = nt.t - Math.floor(nt.t / .25 + 1e-6) * .25, B = cs + g * .25 + f;
+       if (nt.born != null && nt.bornRun === R.runId && B < nt.born + .5) continue;
+       if (mu && mutedAt(mu, B)) continue;
++      if (um && ueMutedAt(um, B, nt.n)) continue;                  // UE
+       for (const h of DrumSeq.expandStep(nt, Math.floor(g / X.l.Ls), seed)) {
+         const hb = Math.max(B + h.beat, cs);
+         if (hb < from - 1e-9 || hb >= to - 1e-9) continue;
+@@ -24267,14 +24918,16 @@
+         for (const n of mel.notes) {
+           const bb = n.t + off; if (bb < b0 - 1e-9 || bb >= b1 - 1e-9 || n.t >= E - 1e-9 || n.t >= insB - .25 - 1e-9) continue;
+           if (mu && n.t >= mu.a - 1e-9 && n.t < mu.b - 1e-9) continue;
++          let nd = n.d; if (song.ue) { nd = ueMelCut(song, mi, n.t, n.d); if (nd < 0) continue; }   // UE: Break
+           const t = Math.max(b2t(bb), AU.ctx.currentTime + .003);
+-          let mk_ = null; if (arpOn(mi)) { mk_ = ARPC.clip(mi, n.n, n.n, null, n.v, t, Math.max(n.d, 1 / 32) * spb(), 'melody'); if (mk_ == null) continue; }   // MK5: the melody through the arp (as heard)
++          let mk_ = null; if (arpOn(mi)) { mk_ = ARPC.clip(mi, n.n, n.n, null, n.v, t, Math.max(nd, 1 / 32) * spb(), 'melody'); if (mk_ == null) continue; }   // MK5: the melody through the arp (as heard)
+           const v = spawnVoice(mi, n.n, n.v, t, mk_ ? {src: 'melody', mask: mk_} : {src: 'melody'});
+-          if (v) { const d = Math.max(n.d, 1 / 32) * spb(); v.release(t + d); v.log = logNote({track: mi, src: 'melody', clipNote: null, out: n.n, time: t, dur: d, vel: n.v}); }
++          if (v) { const d = Math.max(nd, 1 / 32) * spb(); v.release(t + d); v.log = logNote({track: mi, src: 'melody', clipNote: null, out: n.n, time: t, dur: d, vel: n.v}); }
+         }
+       }
+       try { tkVoxTick(song, b0, b1, off, E, insB, guard && sp.wrapAt != null ? sp.wrapAt : -Infinity); } catch (e) { tickErr(e); }   // VS3: Song-Stimme
+       try { g3SongTick(song, b0, b1, off, E, insB, guard && sp.wrapAt != null ? sp.wrapAt : -Infinity); } catch (e) { tickErr(e); }   /* G3: Anlauf/Ausklang der Teile */
++      if (song.ue) try { ueSongTick(song, b0, b1, off, E, insB, guard && sp.wrapAt != null ? sp.wrapAt : -Infinity); } catch (e) { tickErr(e); }   // UE: Übergänge, Einwürfe, Breaks
+       if (!guard) try { g6pSongTick(song, b0, off); } catch (e) { tickErr(e); }   /* G6+h: Chor des nächsten Teils vorausrechnen */
+       if (!wrap) break;
+       const A = lp.a * 4;
+@@ -27238,7 +27891,7 @@
+   EL.songView.hidden = !on; hintSideSync(); if (on) pickCancel();
+   if (typeof WP !== 'undefined' && WP.ed) wpClose();          // F1: der Marken-Editor endet mit dem Wechsel der Ansicht
+   if (UI.pop && /^(mark|place|rangemore|aspart|partlist|markname|partcolor|cell)$/.test(UI.pop.name || '')) closePop();   // V2e: song sheets end with the view
+-  if (!on) { SV.mark = null; SV.copy = null; SV.cell = null; svHintFree(); }
++  if (!on) { SV.mark = null; SV.copy = null; SV.cell = null; svHintFree(); if (UE.open) ueToggle(false); }
+   rangeBarSync();
+   folReset(['song']);
+   if (on) { svLayout(); svAutoScroll(true); }
+@@ -27308,11 +27961,15 @@
+   onTap(fol, () => { if (folState('song').follow === 'off') folSet('song', true); FOL.hand.song = false; FOL.jump.song = true; svAutoScroll(false); svDraw(true); });
+   const ban = el('div', 'sv-ban'); ban.hidden = true; SV.ban = ban;           // V0c N7S-02: the take's banner lies over the ruler
+   wrap.append(cv, empty, hint, fol, ban);
++  // UE: [Übergänge] schwebt unten rechts in der Song-Fläche (wie [Folgen]); die Song-Leiste bleibt wie sie ist
++  const bUe = el('button', 'rb sv-ue', '<span class="d">◆</span><span class="t">ÜBERG.</span>'); bUe.setAttribute('aria-label', 'Übergänge, Breaks und Einwürfe'); bUe.setAttribute('aria-pressed', 'false');
++  bUe.addEventListener('pointerdown', e => e.stopPropagation()); UE.el = null; UE.open = false; ueCssOnce();
++  onTap(bUe, () => { if (!songHasContent()) { toast('Noch kein Song'); return; } ueToggle(); haptic('tick'); }); wrap.appendChild(bUe);
+   body.append(labs, wrap);
+   v.append(top, body);
+   guardTouch(top); guardTouch(wrap); guardTouch(labs);
+   SV.cv = cv; SV.g = cv.getContext('2d'); SV.wrap = wrap; SV.empty = empty; SV.labs = labs;
+-  SV.btn = {bRec, bPlay, bMel, bMt, bBack, bHome, bLoop, bGl, sw}; SV.lm = lm; songViewMode();
++  SV.btn = {bRec, bPlay, bMel, bMt, bBack, bHome, bLoop, bGl, bUe, sw}; SV.lm = lm; songViewMode();
+   svBindGestures(wrap);
+   buildRangeBar();
+   // the grid area changes height with sheets, toasts and rotation: keep the canvas in step (rAF: no observer loop)
+@@ -27338,7 +27995,7 @@
+     else { SV.pages = pages; const pg = pages[Math.min(trackBankOf(), pages.length - 1)]; SV.rows = pg.concat(new Array(pages[0].length - pg.length).fill(-1), [DRUM_T]); }
+   }
+   // V2e: [▲▼] stands in every viewport where 8 tracks would not fit (fixed per viewport, nothing moves when tracks come and go)
+-  SV.bankVp = side || avail / (8 + 2) < 26 - .5;
++  SV.bankVp = side || (avail + (UE.open ? UE.padH | 0 : 0)) / (8 + 2) < 26 - .5 || !!SV.pages;   // UE: die offene Übergangs-Leiste ändert die Song-Leiste nicht (nur echte Seiten)
+   if (SV.tbb.hidden === SV.bankVp) SV.tbb.hidden = !SV.bankVp;
+   SV.tbb.disabled = !SV.pages; SV.tbb.lastChild.textContent = SV.pages ? (Math.min(trackBankOf(), SV.pages.length - 1) + 1) + '/' + SV.pages.length : '1/1';
+   svBuildRows();
+@@ -28102,6 +28759,7 @@
+   if (song.vox) tkVoxShift(song, n, d);                           // VS3
+   if (song.video) vvDirShift(song, n, d);                         // VV2
+   if (song.gb) ggbShift(song, n, d);                              // G-GB: der Export-Start wandert mit
++  if (song.ue) ueShift(song, n, d);                               // UE: Einwürfe / freie Breaks rücken mit (Kanten folgen ihrer Marke)
+ }
+ // remove the content of [a, b); marks: inside → gone, overlapping → trimmed, enclosing → split (o.split) or shortened
+ function songClear(song, a, b, o) {
+@@ -28114,6 +28772,7 @@
+   if (song.blocks && !o.keepMarks && !o.split) konBlocksCut(song, a, b);   // KON: Löschen kürzt Blöcke (Ersetzen/Leeren: sie bleiben)
+   if (song.vox && !o.keepMel) tkVoxClear(song, a, b);              // VS3
+   if (song.video && !o.keepMarks) vvDirClear(song, a, b);          // VV2
++  if (song.ue && !o.keepMel) ueClear(song, a, b);                  // UE
+ }
+ function marksCut(song, a, b, split) {
+   const out = [];
+@@ -28173,10 +28832,12 @@
+     for (const nt of ch.mel[k]) m.notes.push(Object.assign({}, nt, {t: +Math.max(0, n * 4 + nt.t).toFixed(6)}));
+     m.notes.sort((a, b) => a.t - b.t);
+   }
+-  for (const m of ch.marks || []) { const x = Object.assign({}, m, {a: n + m.a}); if (!keepIds || !x.id || song.marks.some(y => y.id === x.id)) x.id = newMarkId(song); song.marks.push(x); }
++  const wIds = [];                                                 // UE: unter welcher ID jede Marke des Stücks landet
++  for (const m of ch.marks || []) { const x = Object.assign({}, m, {a: n + m.a}); if (!keepIds || !x.id || song.marks.some(y => y.id === x.id)) x.id = newMarkId(song); song.marks.push(x); wIds.push(x.id); }
+   song.marks.sort((a, b) => a.a - b.a);
+   if (ch.vox) s2WriteVox(song, n, ch.vox);   /* S2; G3: auch die Song-Stimme eines verschobenen/getauschten Teils (g3VoxCut) – nur einmal schreiben */
+   if (ch.video) vvDirWrite(song, n, ch);                           // VV2
++  if (ch.ue) ueWrite(song, n, ch, wIds);                           // UE
+ }
+ // drop entries that change nothing (-1 after -1, the same clip in the same phase), keep the marks tidy, melody lengths
+ function songTidy(song) {
+@@ -28199,6 +28860,7 @@
+   for (const k in song.mel) { const m = song.mel[k]; m.notes.sort((a, b) => a.t - b.t); m.len = Math.max(1, song.bars); }
+   if (song.own) { const used = new Set(); for (const l of song.lanes) for (const e of l) if (e.own) used.add(e.own); for (const id of Object.keys(song.own)) if (!used.has(id)) delete song.own[id]; }
+   if (song.video) vvDirTidy(song);                                 // VV2
++  if (song.ue) ueTidy(song);                                       // UE
+   konTidy(song);                                                   // KON
+ }
+ /* ---------- V2d′ eigener Clip (song-delta 9.2, N7-R9; Daten und Wiedergabe – die Gesten kommen mit V2e′): a copy that only holds
+@@ -28432,7 +29094,7 @@
+   const mel = {}; for (const k in song.mel) { const ns = song.mel[k].notes.filter(n => n.t >= a * 4 - .25 - 1e-9 && n.t < b * 4 - .25 - 1e-9).map(n => Object.assign({}, n, {t: +(n.t - a * 4).toFixed(6)})); if (ns.length) mel[k] = ns; }
+   const marks = song.marks.filter(m => m.a < b && m.a + m.len > a).map(m => { const A = Math.max(m.a, a), E = Math.min(m.a + m.len, b); return Object.assign({}, m, {a: A - a, len: E - A}); });
+   const own = {}; for (const l of lanes) for (const e of l) if (e.own && song.own && song.own[e.own]) own[e.own] = deep(song.own[e.own]);
+-  return vvDirCutTo(song, a, b, {len: b - a, lanes, carrier, xp, mel, marks, own});   // VV2: + video
++  return ueCutTo(song, a, b, vvDirCutTo(song, a, b, {len: b - a, lanes, carrier, xp, mel, marks, own}));   // VV2: + video; UE: + ue
+ }
+ // EINFÜGEN(n, chunk): from n on everything moves by L; at or behind the end = append (snaps to the end, no gap)
+ function opInsert(song, n, ch, keepIds) {
+@@ -29760,6 +30422,7 @@
+     e.preventDefault(); try { w.setPointerCapture(e.pointerId); } catch (_) {}
+     cancelAnimationFrame(SV.mom); SV.vx = 0;
+     const p = xy(e);
++    if (UE.chips.length && ueChipGesture(w, e, p)) return;           // UE: Chip = Blatt / verschieben
+     g = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), sx: SV.x, mode: null, lastX: e.clientX, lastT: performance.now(), p, chip: svChipAt(p.x, p.y)};
+     // V0c S-02: a loop grip (hit zone 36 × 34 around it, from the ruler top): dragging moves that end, the view stays
+     const gr = SV.grips;
+@@ -30930,6 +31593,8 @@
+     g.fillRect(xa, 0, 3, ru); g.fillRect(xb - 3, 0, 3, ru);
+     SV.grips = {a: xa + 1.5, b: xb - 1.5};
+   }
++  if (song && (song.ue || UE.drag)) { try { ueDraw(g, song, XB, W, H, ru, rh); } catch (e) { logErr(e); } } else UE.chips = [];   // UE: Chips, Einrasten
++  if (SV.btn && SV.btn.bUe) { const hb = UE.open || !(song && song.bars); if (SV.btn.bUe.hidden !== hb) SV.btn.bUe.hidden = hb; }   // UE: [Übergänge] nur mit Song
+   // the Positionsmarke: a white ▼ 8×5 at the top of its bar line (▶ starts there)
+   if (song && bars) {
+     const xp = X(songStartBar());
+@@ -51986,7 +52651,7 @@
+ function g6pcGroup(c, a, dest, hall, echo, meas) {
+   const K = g6pGroupNodes(c, a.chor.grp);                         // G6+b: derselbe Gruppen-Klang wie die Lautheits-Messung (HP Butterworth, Glocke, Kuhschwanz)
+   const G = {c, hp: K.nodes[0], mid: K.nodes[1], air: K.nodes[2], lvl: c.createGain(), guide: c.createGain(), pre: c.createDelay(1), rev: c.createGain(), dly: c.createGain(), dest};
+-  G.air.connect(G.lvl); G.lvl.connect(G.guide); G.guide.connect(dest);
++  G.ueB = c.createGain(); G.air.connect(G.lvl); G.lvl.connect(G.ueB); G.ueB.connect(G.guide); G.guide.connect(dest);   // UE: Break-Blende
+   if (!meas) { G.guide.connect(G.pre); G.pre.connect(G.rev); if (hall) G.rev.connect(hall); G.guide.connect(G.dly); if (echo) G.dly.connect(echo); G6PC.nodes += 8; }
+   G.lvl.gain.value = meas ? 1 : 0;
+   g6pcGroupSet(G, a, true, meas);
+@@ -52008,7 +52673,7 @@
+   if (!meas) G6PC.nodes += N.pan ? 3 : 2;
+   return N;
+ }
+-function g6pcGroupDrop(G) { for (const k of ['hp', 'mid', 'air', 'lvl', 'guide', 'pre', 'rev', 'dly']) { try { G[k].disconnect(); } catch (e) {} } G6PC.nodes -= 8; }
++function g6pcGroupDrop(G) { for (const k of ['hp', 'mid', 'air', 'lvl', 'guide', 'pre', 'rev', 'dly']) { try { G[k].disconnect(); } catch (e) {} } if (G.ueB) try { G.ueB.disconnect(); } catch (e) {} G6PC.nodes -= 8; }
+ /* ---------- Abspielen ---------- */
+ // Kennung der laufenden Kopien (Puffer + Versatz): gleich → nur Werte rampen, sonst neu einsetzen
+ const g6pcSig = (a, bufs) => a.chor.voices.map(v => g6pcCopies(v).map(C => C.ms).join(',') + (v.take ? 't' : '')).join(';') + '#' + bufs.map(b => wpBid(b)).join(',');
+@@ -52018,7 +52683,7 @@
+   const bufs = g6pcBufs(a), gA = bufs && g6pcGA(a, bufs); r.ch = [];   // laufende Kopien hängt g6Refresh selbst wieder an
+   if (G6.solo != null && G6.solo !== -2) { try { r.g.gain.cancelScheduledValues(0); r.g.gain.value = g6pgLeadG(r); } catch (e) {} }   // Solo einer Chor-Spur: der Lead schweigt (wie v1; G6+g: beim Selbst-Singen leise)
+   if (!bufs || gA == null) return;
+-  if (!r.chG || r.chG.c !== ctx) { r.chG = g6pcGroup(ctx, a, AU.masterSum, AU.hallIn, AU.echoIn); if (G6PC.tap) try { r.chG.guide.connect(G6PC.tap.chor); r.chG.rev.connect(G6PC.tap.rv); } catch (e) {} }
++  if (!r.chG || r.chG.c !== ctx) { r.chG = g6pcGroup(ctx, a, AU.masterSum, AU.hallIn, AU.echoIn); if (S.song && S.song.ue) ueChorJoin(r.chG, r.i); if (G6PC.tap) try { r.chG.guide.connect(G6PC.tap.chor); r.chG.rev.connect(G6PC.tap.rv); } catch (e) {} }
+   const G = r.chG, V = vpGet(o.buf), Vg = V ? V.g : 1;   // VS-P des Leads (r.G ohne Clip-Pegel: der steckt im Lead-Pegel der Gruppe)
+   g6pcGroupSet(G, a, false, false, gA);
+   r.chSig = g6pcSig(a, bufs); r.chA = a;
+@@ -58183,6 +58848,7 @@
+ Object.assign(SYNQUENZER, vv4aApi());                      // VV4-A
+ Object.assign(SYNQUENZER, vv4Api());                       // VV4-C / VV4-E
+ Object.assign(SYNQUENZER, vv4bdApi());                      // VV4-B/D
++Object.assign(SYNQUENZER, UE_API);                          // UE-C/D: Übergänge, Breaks, Einwürfe
+ const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
+   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

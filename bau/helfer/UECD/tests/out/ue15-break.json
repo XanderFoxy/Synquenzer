@@ -12,7 +12,7 @@
  {
   "name": "UE-15 kein Klick über −40 dBFS an Anfang und Ende",
   "ok": true,
-  "info": "{\"innen\":-400,\"anfang\":-42,\"davor\":-35.7,\"ende\":-400}"
+  "info": "{\"innen\":-400,\"anfang\":-43.2,\"davor\":-37.3,\"ende\":-400}"
  },
  {
   "name": "Break [Kick bleibt]: im Break nur die Kick (4×), Synth 0",
@@ -32,7 +32,7 @@
  {
   "name": "Break stoppt Gesang + Chor (STIMME-Spur), Hall klingt aus, sauberer Wiedereinsatz",
   "ok": true,
-  "info": "{\"ohneChor\":-20.1,\"trockenImBreak\":-200,\"davor\":-18,\"danach\":-18.5,\"hallAnfang\":-26.1,\"hallEnde\":-28.4}"
+  "info": "{\"ohneChor\":-20.6,\"trockenImBreak\":-200,\"davor\":-18,\"danach\":-18.5,\"hallAnfang\":-26.1,\"hallEnde\":-28.4}"
  },
  {
   "name": "Standard-Break (alle außer Gesang): Gesang klingt weiter",
@@ -42,7 +42,7 @@
  {
   "name": "North-Kit: Break schweigt (0 Noten, still), Übergang spielt mit North",
   "ok": true,
-  "info": "{\"kit\":\"Fell & Holz\",\"md\":true,\"noten\":0,\"imBreak\":-200,\"davor\":-26.8,\"ueTreffer\":8}"
+  "info": "{\"kit\":\"Fell & Holz\",\"md\":true,\"noten\":0,\"imBreak\":-200,\"davor\":-26.8,\"ueTreffer\":10}"
  },
  {
   "name": "freier Break in einem Teil (1/16), 0 Noten im Fenster",

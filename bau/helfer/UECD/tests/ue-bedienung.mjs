@@ -52,6 +52,15 @@ for (const vp of [{width: 428, height: 926}, {width: 926, height: 428}]) {
   const xa = geo.l + (1 + 2.3 / 4) * geo.cw - geo.sx; await p.mouse.move(xa, ey, {steps: 5}); await p.mouse.up(); await p.waitForTimeout(150);
   const adl = (await p.evaluate(() => window.SYNQUENZER.ueList())).find(u => u.k === 'adlib');
   R.push(ok(adl && Math.abs(adl.at * 4 - Math.round(adl.at * 4)) < 1e-9 && adl.at >= 4 && adl.at < 8, 'Einwurf frei abgelegt, rastet auf 1/16', {at: adl && adl.at}));
+  // Einwurf-Chip halten und ziehen = verschieben (1/16), 1 Undo
+  {
+    const cs = await p.evaluate(() => window.SYNQUENZER.ueInfo().chips), ca = cs.find(c => c.id === adl.id), ax = geo.l + (ca.x0 + ca.x1) / 2, ay = geo.t + (ca.y0 + ca.y1) / 2;
+    const nU = (await p.evaluate(() => window.SYNQUENZER.undoInfo())).n;
+    await p.mouse.move(ax, ay); await p.mouse.down(); await p.waitForTimeout(520);
+    const tx = geo.l + (2 + 1.5 / 4) * geo.cw - geo.sx; await p.mouse.move(tx, ay - 6, {steps: 6}); await p.mouse.up(); await p.waitForTimeout(150);
+    const mv = (await p.evaluate(() => window.SYNQUENZER.ueList())).find(u => u.id === adl.id), nU2 = (await p.evaluate(() => window.SYNQUENZER.undoInfo())).n;
+    R.push(ok(mv && mv.at >= 8 && mv.at < 12 && Math.abs(mv.at * 4 - Math.round(mv.at * 4)) < 1e-9 && nU2 === nU + 1, 'Einwurf-Chip halten und ziehen = verschieben (1/16, 1 Undo)', {vorher: adl.at, nachher: mv && mv.at}));
+  }
   await p.screenshot({path: `${OUT}/chips-${tag}.png`});
   // Blatt: Tipp auf den Kanten-Chip
   const chips = await p.evaluate(() => window.SYNQUENZER.ueInfo().chips);

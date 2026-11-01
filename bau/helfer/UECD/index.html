@@ -21462,7 +21462,7 @@ const UE_FILL_LANG = [
   {K: 'x.......x.......', S: 'gggxgggxgxgx....', H: '............xx..', M: '..............X.', L: '...............x'}];
 /* UE_VK: Anschlags-Faktor je Werk und Dichte (leicht, mittel, voll), aus der Messung UE-12 über alle 7 Kits so gesetzt, dass die Mitte
    zwischen leisestem und lautestem Kit bei 0 LU zum Groove liegt (Pegel der Engine = v², Faktor k = 10^(−LU/40)). */
-const UE_VK = {'w-fill-kurz': [1.12,1.013,0.861],'w-fill-lang': [1.237,1.114,1.071],'w-tom-wirbel': [1.12,1.078,0.928],'w-snare-wirbel': [1.336,0.97,0.902],'w-build': [1.002,0.908,0.805],'w-fill-crash': [1.24,1.118,1.07],'w-crash-eins': [0.856,0.853,0.588],'w-hh-auf': [1.31,1.198,0.98],'w-kick-auftakt': [0.779,0.699,0.64],'w-halbzeit': [1.329,1.281,1.05],'w-clap-treppe': [0.929,0.925,0.899],'w-rim-ping': [0.856,0.821,0.786]};
+const UE_VK = {'w-fill-kurz': [1.12,1.013,0.861],'w-fill-lang': [1.237,1.114,1.071],'w-tom-wirbel': [1.12,1.024,0.928],'w-snare-wirbel': [1.389,0.97,0.902],'w-build': [1.002,0.908,0.805],'w-fill-crash': [1.24,1.118,1.07],'w-crash-eins': [0.856,0.793,0.588],'w-hh-auf': [1.31,1.198,0.98],'w-kick-auftakt': [0.779,0.629,0.64],'w-halbzeit': [1.329,1.281,1.05],'w-clap-treppe': [0.864,0.86,0.836],'w-rim-ping': [0.77,0.739,0.707]};
 const UE_WERK = [
   // ---- Übergänge (UE-C, §1.4) ----
   {id: 'w-fill-kurz', tab: 'ue', name: 'Fill kurz', sh: 'Fill', k: 'fill', lens: [2], mode: 'ersetzt', eins: 1, P: [
@@ -21474,7 +21474,7 @@ const UE_WERK = [
   {id: 'w-snare-wirbel', tab: 'ue', name: 'Snare-Wirbel', sh: 'Wirbel', k: 'fill', lens: [2], mode: 'ersetzt', eins: 1, gen: 'roll'},
   {id: 'w-build', tab: 'ue', name: 'Build-up', sh: 'Build', k: 'build', lens: [8, 16], mode: 'ersetzt', gen: 'build'},
   {id: 'w-fill-crash', tab: 'ue', name: 'Fill + Crash', sh: 'Fill+Cr', k: 'fill', lens: [4], mode: 'ersetzt', crash: 1, P: UE_FILL_LANG},
-  {id: 'w-crash-eins', tab: 'ue', name: 'Crash auf die Eins', sh: 'Crash', k: 'crash', lens: [0], mode: 'dazu', P: [{Y: 'x'}, {Y: 'x', K: 'x'}, {Y: 'X', K: 'x'}]},
+  {id: 'w-crash-eins', tab: 'ue', name: 'Crash auf die Eins', sh: 'Crash', k: 'crash', lens: [0], mode: 'dazu', P: [{Y: 'x'}, {Y: 'x', K: 'x'}, {Y: 'X', K: 'X'}]},
   {id: 'w-hh-auf', tab: 'ue', name: 'Hi-Hat öffnen', sh: 'HH auf', k: 'fill', lens: [1], mode: 'ersetzt', P: [
     {K: 'x...', S: 'x...', o: '..x.'}, {K: 'x...', S: 'x...', h: 'x...', o: '..x.'}, {K: 'x...', S: 'X...', h: 'xx..', o: '..X.'}]},
   {id: 'w-kick-auftakt', tab: 'ue', name: 'Kick-Auftakt', sh: 'Kick', k: 'fill', lens: [1], mode: 'dazu', P: [{K: '...x'}, {K: '..xx'}, {K: '..xx', h: '..x.'}]},
@@ -21485,7 +21485,7 @@ const UE_WERK = [
   {id: 'w-clap-treppe', tab: 'ue', name: 'Clap-Treppe', sh: 'Claps', k: 'fill', lens: [2], mode: 'dazu', eins: 1, P: [
     {C: 'x.x.x.xx'}, {C: 'x.x.xxxx'}, {K: 'x...x...', C: 'X.x.xxxx'}]},
   {id: 'w-rim-ping', tab: 'ue', name: 'Rim-Ping', sh: 'Rim', k: 'fill', lens: [2], mode: 'dazu', eins: 1, P: [
-    {R: 'g...g...', H: '..x...x.', K: 'x...x...'}, {R: 'g.g.g.g.', H: '.x.x.x.x'}, {K: 'x...x...', R: 'x.g.x.g.', H: '.x.x.xXx'}]},
+    {R: 'g...g...', H: '..x...x.', K: 'x...x...'}, {R: 'g.g.g.g.', H: '.x.x.x.x'}, {K: 'x...x...', R: 'x.g.x.g.', H: '.x.x.xxx'}]},
   // ---- Breaks (UE-D, §1.3 D) ----
   {id: 'w-stopp-1', tab: 'brk', name: 'Stopp 1 Schlag', sh: 'Stopp', k: 'break', lens: [1]},
   {id: 'w-stopp-halb', tab: 'brk', name: 'Stopp ½ Takt', sh: 'Stopp', k: 'break', lens: [2]},
