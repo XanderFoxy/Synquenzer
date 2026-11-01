@@ -1,3 +1,9 @@
+## 4.40.2 — Songteil wieder direkt: Strophe, Refrain …
+
+- **Zusammenfassen ist zurück:** Takte wählen → ⋯ → **Zusammenfassen** (oder im Marken-Blatt neben Bearbeiten) → ein Tipp auf **Intro, Strophe, Pre, Refrain, Bridge, Break, Outro** oder einen eigenen Namen, und der Teil ist da. Das ist das Blatt von vorher.
+- „Zu Teil / Block …“ bleibt daneben für Block und Zurückholen.
+Tests: Regeln (live 1×, MS 2000 1×, Marken 0), acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün; Tipp auf „Refrain“ legt den Teil an.
+
 ## 4.40.1 — ✕ bleibt im Bild
 
 - **Drum-Editor-Kopfzeile:** Spielte ein Pad North, schob die rote Taste „Platte“ auf schmaleren iPhones (375/390 px) das ✕ rechts aus dem Bild. Dort rücken Schalter Drums | North und die Taste jetzt etwas enger zusammen, alle Tasten bleiben mindestens 44 px groß. Auf 428 px (iPhone 12 Pro Max) sieht alles aus wie vorher.

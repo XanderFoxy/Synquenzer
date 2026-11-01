@@ -26436,7 +26436,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.40.1';
+const VERSION = '4.40.2';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -39499,7 +39499,7 @@ function openRangeMore(anchor) {
     p.innerHTML = `<h4>Takt ${A + 1}${Bb > A ? '–' + (Bb + 1) : ''}</h4><div class="plist">` +
       (narrow ? '<button class="rb" data-a="part">❖ Als Teil …</button>' : '') +
       '<button class="rb" data-a="clear">○ Leeren</button><button class="rb" data-a="ins">＋ Teil einsetzen ▾</button>' +
-      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + konuxRangeItem() + '</div>' + vvDirRow(A, Bb + 1, 'vvdb');   /* S2 */   // VV2: Zeile „Video“
+      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + s2RangeItem() + konuxRangeItem() + '</div>' + vvDirRow(A, Bb + 1, 'vvdb');   /* S2 */   // VV2: Zeile „Video“
     onTap(p, b => {
       const a = b.dataset.a; if (a && a.startsWith('vv-')) { vvDirTap(a, b, A, Bb + 1, () => { if (UI.pop && UI.pop.el === p) closePop(); }); return; }   // VV2
       closePop();
@@ -71085,7 +71085,7 @@ function s012MarkSheetPaint(p, m) {
   if (p._s0ed === m.id) { p.innerHTML = s0EditHTML(m); p.classList.add('s0-ed'); return; }
   p.classList.remove('s0-ed'); p._s0ed = null;
   const r = p.querySelector('.ms-rec'); if (!r || !r.parentNode) return;
-  r.insertAdjacentHTML('afterend', `<button class="rb ms-b s0-eb" data-s012="edit">Bearbeiten</button>`);   // KONUX: [Zusammenfassen] bewusst überholt → „Zu Teil / Block …“ (konMarkSheetPaint)
+  r.insertAdjacentHTML('afterend', `<button class="rb ms-b s0-eb" data-s012="edit">Bearbeiten</button>` + s2SumButton(m));   // X2: [Zusammenfassen] wieder da; KONUX: [Zusammenfassen] bewusst überholt → „Zu Teil / Block …“ (konMarkSheetPaint)
 }
 function s012MarkTap(p, b) {
   const a = b.dataset.s012, id = SV.mark, m = S.song && S.song.marks.find(x => x.id === id);
@@ -71294,10 +71294,24 @@ function s2Sum(a, e, name) {
   return {part: k, name: nm, mark: (song.marks.find(m => m.a === a && m.part === S.parts[k].id) || {}).id || id};
 }
 // the name (chips after N7-R2, own text) — like „Als Teil …“; suggestion: one mark → its name with a number, else the next free name
-function s2OpenSum(anchor, a, e, ko) {   // KONUX: Verweis — öffnet das geführte Blatt mit „Zu einem Teil machen“ (Name im selben Blatt)
+function s2OpenSum(anchor, a, e, ko) {   // X2 (Xander 01.11.: „vorher konnte man direkt auswählen, ob Strophe oder Refrain … jetzt zu flach“): wieder das direkte Namens-Blatt
   const song = S.song; if (!song) return;
   if (e - a > 16) { toast('Ein Teil hat höchstens 16 Takte'); return; }
-  konuxOpen({kind: 'range', a, e}, {pick: 'part', sug: ko && ko.sug});
+  const ms = song.marks.filter(m => m.a < e && m.a + m.len > a), one = ms.length === 1 && ms[0].a === a && ms[0].len === e - a;
+  const sug = ko && ko.sug ? partUniq(ko.sug, -1) : one ? partUniq(markLabel(ms[0]), -1) : partSuggest();
+  const kon = !!(ko && ko.kon);                                          /* KON: Konsolidieren — dasselbe Namens-Blatt */
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('mname', 's2sum');
+    p.innerHTML = `<h4>${kon ? 'Als neuen Teil konsolidieren' : 'Zusammenfassen'} · Takt ${a + 1}${e - a > 1 ? '–' + e : ''}</h4><div class="cp-sc mn-sc">` + PART_NAMES.map(n => `<button class="rb cp-c" data-n="${n}">${n}</button>`).join('') + '</div>' +
+      `<div class="mn-r"><input class="mn-in" type="text" maxlength="12" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${esc(sug)}" aria-label="Eigener Name"><button class="rb mn-ok" data-a="ok" aria-label="Übernehmen">✓</button></div>`;
+    const inp = p.querySelector('.mn-in');
+    const go = v => { closePop(); const r = (kon ? konDo : s2Sum)(a, e, String(v || '').trim() || sug); if (r) { SV.sel = null; SV.mark = null; toast((kon ? 'Konsolidiert: neuer Teil ' : 'Neuer Teil ') + r.name + ' · Takt ' + (a + 1) + (e - a > 1 ? '–' + e : ''), {label: 'Rückgängig', fn: () => undo()}); } svButtons(); UI.dirty.song = true; };   /* KON */
+    on(inp, 'keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); go(inp.value); } });
+    inp.addEventListener('pointerdown', ev => ev.stopPropagation()); inp.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
+    on(inp, 'focus', () => popDock(p, true)); on(inp, 'blur', () => setTimeout(() => popDock(p), 50));
+    onTap(p, b => { if (b.dataset.n) go(b.dataset.n); else go(inp.value); }, 'button[data-n],button[data-a="ok"]');
+  }, {name: 's2sum'});
+  popDock(UI.pop && UI.pop.el);
 }
 // Marken-Blatt: [Zusammenfassen] next to [Bearbeiten]; Bereich-Leiste ⋯: „Zusammenfassen“
 // KONUX: überholt — kein eigener Knopf mehr (das geführte Blatt konuxOpen ersetzt ihn); bleibt als Verweis
