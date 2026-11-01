@@ -54,3 +54,5 @@ export async function done(H, name) {
   ok(!e.length, name + ': keine Konsolenfehler' + (e.length ? ' ' + JSON.stringify(e.slice(0, 3)) : ''));
   await H.b.close();
 }
+// deep-equal as text: keys sorted (a loaded project may list the same keys in another order)
+export const canon = x => JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((o, q) => (o[q] = v[q], o), {}) : v));

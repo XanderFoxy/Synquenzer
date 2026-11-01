@@ -1,5 +1,5 @@
 // PINSEL B: Umkehren ↕ (Achse 1. Note / Mitte, in Tonart), Krebs ↔, Tauschen ⇆ – exakt, je ein Undo, über die echten Knöpfe
-import {open, ok, sleep, clipRoll, notes, done, failed} from './lib.mjs';
+import {open, ok, sleep, clipRoll, notes, done, failed, canon} from './lib.mjs';
 const H = await open(428, 926);
 const S = (ns) => JSON.stringify(ns.map(n => [n.t, n.d, n.n]));
 const mk = a => a.map(([t, d, n]) => ({t, d, n, v: .8}));
@@ -73,10 +73,10 @@ await H.tapBtn('.pr-bar button', 'Krebs ↔');
 ok(S(await notes(H)) === S(mk([[0, 1, 60], [1, 1, 64], [2, 1, 62], [3, 1, 65]])), 'Krebs mit Auswahl: nur gewählte Noten');
 // Speichern → Laden deep-equal nach den Block-Werkzeugen
 {
-  const a = await H.E(() => JSON.stringify(window.SYNQUENZER.state().project));
+  const a = canon(await H.E(() => window.SYNQUENZER.state().project));
   await H.E(() => window.SYNQUENZER.save()); await sleep(400);
   await H.E(() => window.SYNQUENZER.load()); await sleep(800);
-  const b = await H.E(() => JSON.stringify(window.SYNQUENZER.state().project));
+  const b = canon(await H.E(() => window.SYNQUENZER.state().project));
   ok(a === b, 'Speichern → Laden deep-equal');
 }
 await done(H, 'Blöcke');

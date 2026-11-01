@@ -12999,7 +12999,7 @@ const RecHelpers = (() => {
     };
     /* MP-BEGIN Melodie-Pinsel: eigene Gruppe in der Werkzeugleiste */
     const MPS = {panel: null};
-    sep(bar);
+    MPS.sep = bar.appendChild(mk('span', 'sep'));
     tb.mpBrush = btn(bar, 'Pinsel', () => setTool('mpBrush'), 'Pinsel: in den Lauf malen, Noten folgen dem Finger');
     if (opts.mp && opts.mp.listen) tb.mpListen = btn(bar, 'Mithören', () => mpPanel(MPS.panel === 'listen' ? null : 'listen'), 'Mithören: welche Spuren beim Bearbeiten mitspielen (nur Abhören)');
     /* MP-END */
@@ -13142,6 +13142,7 @@ const RecHelpers = (() => {
     let pendingOpen = false;
     function draw() {
       raf = 0; if (dead || !clip()) return; measure(); if (!V.W || !V.H) return;
+      mpHostFix();                                                  /* MP */
       if (pendingOpen) { pendingOpen = false; layoutOpen(); }
       clampView();
       const c = clip(), Lb = L(), s = scaleOf(), g = gridStep();
@@ -13760,6 +13761,19 @@ const RecHelpers = (() => {
       const h = (r.b - r.a) / 2, m = r.a + h; if (h <= 1e-9) return false;
       const out = r.ns.map(nt => (nt.t < m - 1e-9 ? nt.t + h : nt.t - h));
       r.ns.forEach((nt, i) => mpShift(nt, out[i])); say('Getauscht'); return true;
+    }
+    // L (toolbar in the header): the neighbours of the toolbar (title …) keep the width they had without the Pinsel group;
+    // measured once per header width with the group hidden, the toolbar scrolls as before
+    let mpHW = -1; const mpHS = new Map();
+    function mpHostFix() {
+      const host = opts.toolbarHost; if (!host || !bar.parentNode) return;
+      const w = host.clientWidth; if (w === mpHW || !w) return; mpHW = w;
+      const grp = [MPS.sep, tb.mpBrush, tb.mpListen].filter(Boolean);
+      for (const [e] of mpHS) e.style.minWidth = ''; mpHS.clear();
+      grp.forEach(e => { e.style.display = 'none'; });
+      const sib = [...host.children].filter(e => e !== bar && e.offsetWidth), ws = sib.map(e => e.getBoundingClientRect().width);
+      grp.forEach(e => { e.style.display = ''; });
+      sib.forEach((e, i) => { mpHS.set(e, 1); e.style.minWidth = Math.floor(ws[i]) + 'px'; });
     }
     function mpPanel(k) { MPS.panel = k; if (k === 'listen') mpChips(); render(); }
     function mpChips() {
