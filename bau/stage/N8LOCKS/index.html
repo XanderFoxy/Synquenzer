@@ -9406,7 +9406,10 @@ for (let i = 0; i < PV_AL; i++) {
   else if (i >= PV_A) b = true;
   PVK[i] = k; PVO[i] = o; PVJ[i] = j; PVb[i] = b ? 1 : 0; PVF.push(f);
 }
-// M-Raum (MS 2000): Timbre, Ziel im geglaetteten Satz MkSm (oder 'e1.a' ..., 'p' Patch, 'porta', 'bend'), Klasse b
+// M-Raum (MK-Engine): Timbre, Ziel im geglaetteten Satz MkSm (oder 'e1.a' ..., 'p' Patch, 'porta', 'bend'), Klasse b
+const PV_OK = [1, 2, 3].map(o => ['oct', 'semi', 'fine', 'lvl', 'pw'].map(k => 'o' + o + k));   // I2c: the oscillator keys (no string building per block)
+// I2c: which derived block values a P key needs (deriveB mask); 0 = read directly from the view in control()
+const PVD = new Uint8Array(PV_AL); for (let i = 0; i < PV_A; i++) { const n = PVA[i]; PVD[i] = n === 'cutoff' ? 16 : n === 'drive' ? 32 : /^o[123](oct|semi|fine|lvl|pw)$/.test(n) ? 64 : n === 'uniDet' ? 128 : 0; }
 const PVMT = new Int8Array(PV_M), PVMb = new Uint8Array(PV_M), PVMF = [], PVMJ = new Int8Array(PV_M);
 { const SMK = {'f.cut': 'cut', 'f.res': 'res', 'f.eg': 'eg', 'f.vel': 'fvel', 'f.kbd': 'kbd', 'o1.c1': 'c1', 'o1.c2': 'c2', 'mix.o1': 'm1', 'mix.o2': 'm2', 'mix.n': 'mn',
     'a.lvl': 'lvl', 'a.pan': 'pan', 'a.vel': 'avel', 'a.kbd': 'akbd', tune: 'tune', trans: 'trans', 'o2.semi': 'semi', 'o2.tune': 'tu', vib: 'vib'};
@@ -11883,7 +11886,7 @@ class AnalogCore extends AudioWorkletProcessor {
       if (ramp) { const b = this.lbBase(p); this.lbT[p] = NaN; if (!(this.lbR[p] > 0)) this.lbRm++; this.lbS[p] = (b - was) / r; this.lb[p] = was - this.lbS[p] * CR; this.lbR[p] = r + CR; }
       else { this.lb[p] = NaN; this.lbN--; if (this.lbR[p] > 0) { this.lbR[p] = 0; this.lbRm--; } }
     } else return;
-    this.lbChanged(p);
+    this.lbChanged(p, 1);
   }
   // the base value of place p (engine units) for a ramp from / to it
   lbBase(p) {
@@ -11896,26 +11899,77 @@ class AnalogCore extends AudioWorkletProcessor {
     return 0;
   }
   lbStep() {
-    const lb = this.lb; let ch = false;
+    const lb = this.lb, L = this.lbCh || (this.lbCh = new Int16Array(PV_AL)); let n = 0;
     for (let p = 0; p < PV_AL; p++) {
       const r = this.lbR[p]; if (!(r > 0)) continue;
       if (r <= CR) { this.lbR[p] = 0; this.lbRm--; const t = this.lbT[p]; if (t === t) lb[p] = t; else { lb[p] = NaN; this.lbN--; }
         if (p < PV_A) for (const v of this.V) if (v.pvR && v.pvR[p] === 2) { v.pvR[p] = 0; v.pv[p] = NaN; v.lkN--; } }
       else { this.lbR[p] = r - CR; lb[p] += this.lbS[p] * CR; }
-      ch = true;
+      L[n++] = p;
     }
-    if (ch) this.lbChanged(-1);
+    if (n) this.lbChanged(-1, n);
   }
-  // after a lane change: the core view of the r values (LFO rate ...), mod depths, every sounding voice's view
-  lbChanged(p) {
-    const lb = this.lb; let r = false;
-    for (let q = PV_A; q < PV_AL; q++) if (lb[q] === lb[q] && PVK[q] === 1) { r = true; break; }
-    if (r) { const PR = this.PR || (this.PR = {}); Object.assign(PR, this.P); for (let q = PV_A; q < PV_AL; q++) if (lb[q] === lb[q] && PVK[q] === 1) PR[PVA[q]] = lb[q]; }
-    this.lbP = r;
-    if (p < 0 || PVK[p] === 9) this.lkModsApply();
-    if (p >= 0 && p < PV_A && !PVb[p]) return;                    // class n: from the next note
-    for (const v of this.V) if (v.on && (v.lkN || this.lbN || v.D)) { if (!this.lbN && !v.lkN) { v.D = null; v.fmP = null; v.gxOn = false; continue; } this.lkView(v); if (this.P.eng === 1) this.fmVoicePatch(v, true); }
-    if (!this.lbN) { let any = false; for (const v of this.V) if (v.on && v.lkN) any = true; if (!any) this.lkOn = false; }
+  // after a lane change (p, or the n places in lbCh): only the changed places of every sounding voice are written again
+  // (lkApply), then its derived block values (deriveB) and the FM operator values (fmVoicePatch); a first lane = the full view
+  lbChanged(p, n) {
+    const L = this.lbCh, one = p >= 0, cnt = one ? 1 : n, at = j => (one ? p : L[j]);
+    let mods = false, any = false;
+    for (let j = 0; j < cnt; j++) { const q = at(j); if (PVK[q] === 9) mods = true; if (q >= PV_A || PVb[q]) any = true; if (q >= PV_A && PVK[q] === 1) this.lkApplyR(q); }
+    if (mods) this.lkModsApply();
+    if (!any) { this.lkOnChk(); return; }                          // class n only: from the next note
+    const fm = this.P.eng === 1;
+    for (const v of this.V) {
+      if (!v.on) continue;
+      if (!this.lbN && !v.lkN) { if (v.D) { v.D = null; v.fmP = null; v.gxOn = false; } continue; }
+      if (!v.D) { this.lkView(v); if (fm) this.fmVoicePatch(v, true); continue; }
+      let need = 0; for (let j = 0; j < cnt; j++) { const q = at(j); if (q < PV_A && !PVb[q]) continue; need |= this.lkApply(v, q); }
+      if (need & 2) { this.lkView(v); if (fm) this.fmVoicePatch(v, true); continue; }
+      if (need & 241) this.deriveB(v.Dv, v.VP, need);
+      if (fm && (need & 4)) this.fmVoicePatch(v, true);
+    }
+    this.lkOnChk();
+  }
+  lkOnChk() { if (this.lbN) return; for (const v of this.V) if (v.on && v.lkN) return; this.lkOn = false; }
+  // the core's view of the class r P keys (LFO rate ...): PR = P with the lanes on top
+  lkApplyR(q) {
+    const x = this.lb[q], k = PVA[q]; let on = false;
+    if (!this.PR) this.PR = Object.assign({}, this.P);
+    this.PR[k] = x === x ? x : this.P[k];
+    for (let r = PV_A; r < PV_AL; r++) if (PVK[r] === 1 && this.lb[r] === this.lb[r]) { on = true; break; }
+    this.lbP = on;
+    for (const v of this.V) if (v.on && v.D) v.VP[k] = this.PR[k];
+  }
+  // one place q of voice v from its pair / the lane / the base; returns what has to follow: 1 derived block values,
+  // 2 the full view (a part not built yet), 4 FM operator values, 8 FELD graph values
+  lkApply(v, q) {
+    const k = PVK[q], x = this.lkVal(v, q), y = x === x;
+    if (k === 1) { if (q >= PV_A) return 0; const P = this.lbP ? this.PR : this.P, nm = PVA[q]; v.VP[nm] = y ? x : P[nm]; return PVD[q]; }
+    if (k === 9) return 0;
+    const X = this.gx;
+    if (k === 6) { if (!v.gxOn || !X) return 2; const G = v.gxv, o = PVO[q], f = PVF[q];
+      if (f === 'fbAmt') G.fbS[o] = y ? (X.fbK[o] >= 0 && x > 0 ? Math.pow(2, Math.min(7, x) - 8) : 0) : X.fbS[o];
+      else if (f === 'lfoFm') G.fmS[o] = y ? LFOFM_HT[Math.max(0, Math.min(127, x | 0))] * (X.pmK == null ? 1 : X.pmK) : X.fmS[o];
+      else if (f === 'lfoAm') { if (!y) { G.am[o] = X.am[o]; G.amG[o] = X.amG[o]; } else { const lA = Math.max(0, Math.min(127, x | 0)), amK = X.amK == null ? -1 : X.amK;
+        if (amK >= 0 && X.car[o]) { G.am[o] = 0; G.amG[o] = amK * .5 * (lA <= 42 ? lA / 42 * .3 : lA <= 85 ? .3 + (lA - 42) / 43 * .3 : .6 + (lA - 85) / 42 * .4); } else G.am[o] = lA * LFOAM_DB * (amK >= 0 ? amK : 1); } }
+      return 8; }
+    if (!v.fmP) return y ? 2 : 0;
+    const F = v.fmP, B = this.fm;
+    if ((k === 2 && !X) || (k === 5 && X)) { const op = F.ops[PVO[q]], b0 = B.ops[PVO[q]]; if (!op || !b0) return 0; const f = PVF[q];
+      if (PVJ[q] >= 0) { if (op[f] && b0[f]) op[f][PVJ[q]] = y ? x : b0[f][PVJ[q]]; } else op[f] = y ? x : b0[f]; return 4; }
+    if ((k === 3 && !X) || (k === 7 && X)) { F.trans = y ? x : B.trans; return 4; }
+    if (k === 4 && !X && F.peg && B.peg) { F.peg[PVF[q]][PVJ[q]] = y ? x : B.peg[PVF[q]][PVJ[q]]; return 4; }
+    return 0;
+  }
+  // the derived values of the class b keys only (the same formulas as deriveInto; per block during a lane ramp, no allocation)
+  // m: 16 cutoff, 32 drive, 64 pitch / level / pulse width of the oscillators, 128 unison detune (only those are computed)
+  deriveB(D, P, m) {
+    if (m & 192) { const det = P.uniDet, semis = (0.25 * det + 0.75 * det * det * det * det) * 1.8;
+      for (let o = 0; o < NOSC; o++) {
+        if (m & 64) { const K = PV_OK[o]; D.oSemi[o] = P[K[0]] * 12 + P[K[1]] + P[K[2]] / 100; D.oRat[o] = Math.pow(2, D.oSemi[o] / 12); D.oLvl[o] = P[K[3]]; D.oPw[o] = P[K[4]]; }
+        if (m & 128) { const n = D.uniN[o], pos = UNI[n]; for (let u = 0; u < n; u++) D.uniR[o * MAXU + u] = Math.pow(2, pos[u] * semis / 12); }
+      } }
+    if (m & 16) D.cutN0 = 69 + 12 * Math.log2(clamp(P.cutoff, 10, 22000) / 440);
+    if (m & 32) { D.drv0 = .6 * Math.pow(2, clamp(P.drive, 0, 1) * 4); D.outG0 = 1 / (1 + clamp(P.drive, 0, 1) * 1.3); }
   }
   // lanes on mod depths: the slot of (source, target) gets the lane value (a free slot when the sound has no such route)
   lkModsApply() {
@@ -14906,7 +14960,7 @@ const RecHelpers = (() => {
 .pr canvas.pr-mm.on{opacity:1}.pr canvas.pr-mm.bot{top:auto;bottom:6px}
 .pr-bar button.n1b{display:inline-flex;align-items:center;gap:5px;position:relative}.pr-bar button.n1b::after{content:'';position:absolute;left:0;right:0;top:-7px;bottom:-7px}.pr-bar .n1i{flex:none;display:block}
 .pr-bar .sep{flex:none;width:1px;height:24px;background:var(--line,#2d323c);margin:0 2px}
-.pr-bar button.vhit{position:relative}#rollSheet .pr-bar button.vhit.vhit{min-width:44px}#rollSheet .pr-bar button.vhit.vfld{min-width:96px}.pr-bar button.vhit::after{content:'';position:absolute;left:0;right:0;top:-7px;bottom:-7px}
+.pr-bar button.vhit{position:relative}#rollSheet .pr-bar button.vhit.vhit{min-width:44px}#rollSheet .pr-bar button.vhit.vfld{min-width:96px}.pr-bar button.vhit::after{content:'';position:absolute;left:0;right:0;top:-7px;bottom:-7px}#rollSheet .pr-bar.velon{overflow:visible}#rollSheet .pr-bar.velon button.vhit::after{top:-12px}
 .pr-bar button.vfld{min-width:96px;font-variant-numeric:tabular-nums;touch-action:none}.pr-bar button.vfld.dis{opacity:.35}
 .pr-bar .ask{flex:none;font-weight:700;color:var(--rec,#ff4538);padding:0 4px;white-space:nowrap}
 .pr-corner{font-size:9px;letter-spacing:.08em;color:var(--text-dim,#9aa0aa);display:flex;align-items:center;justify-content:center}
@@ -15222,7 +15276,7 @@ const RecHelpers = (() => {
       tb.scope.hidden = velOn;
       actsMain.forEach(b => { b.hidden = E.ask || velOn; });
       A.ask.hidden = A.yes.hidden = A.no.hidden = !E.ask;
-      actsVel.forEach(b => { b.hidden = !velOn; });
+      actsVel.forEach(b => { b.hidden = !velOn; }); acts.classList.toggle('velon', velOn);   /* N8LOCKS: Trefferfläche ≥ 44 px auch in der flachen Leiste */
       if (velOn) velBarState();
       if (tb.undo && model.canUndo) tb.undo.disabled = !model.canUndo();
       if (tb.redo && model.canRedo) tb.redo.disabled = !model.canRedo();

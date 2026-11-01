@@ -1,4 +1,4 @@
-// Regel 28 (I2-04, N8-01): ohne Lock / Reihe ist jeder Ton bitgleich zu 4.30.0. Je Werksklang (VA, FM, FELD, MS 2000) eine Phrase
+// Regel 28 (I2-04, N8-01): ohne Lock / Reihe ist jeder Ton bitgleich zu 4.30.0. Je Werksklang (VA, FM, FELD, MK) eine Phrase
 // offline durch das Worklet (mkRender), Hash der Samples alt gegen neu; dazu die Ereignis-Nachrichten (M-MSG) des Demo-Songs.
 import {open, ok, APP, BASE} from './lib.mjs';
 const PH = [[0, 'on', 48, .8], [.25, 'on', 60, .5], [.3, 'on', 64, 1], [.6, 'off', 48], [.7, 'off', 60], [.8, 'on', 67, .7], [1.1, 'off', 64], [1.2, 'off', 67]];
@@ -20,5 +20,5 @@ async function run(file) {
 const A = await run(BASE), A2 = await run(BASE), B = await run(APP);
 const keys = Object.keys(A.r); let same = 0; const diff = [];
 let nd = []; for (const k of keys) { if (A.r[k] !== A2.r[k]) { nd.push(k); continue; } if (A.r[k] === B.r[k] && !String(A.r[k]).startsWith('ERR')) same++; else diff.push(k + ' ' + A.r[k] + ' ' + B.r[k]); }
-ok(keys.length > 20 && diff.length === 0, `I2-04 Regel 28 Render: ${same}/${keys.length - nd.length} deterministische Klänge (VA, FM, FELD, MS 2000) bitgleich zu 4.30.0; nicht deterministisch schon in 4.30.0 (S&H-Zufall): ${nd.join(' ')} ${diff.slice(0, 4).join(' | ')}`);
+ok(keys.length > 20 && diff.length === 0, `I2-04 Regel 28 Render: ${same}/${keys.length - nd.length} deterministische Klänge (VA, FM, FELD, MK) bitgleich zu 4.30.0; nicht deterministisch schon in 4.30.0 (S&H-Zufall): ${nd.join(' ')} ${diff.slice(0, 4).join(' | ')}`);
 ok(!B.errs.length, 'Konsole ohne Fehler (neu): ' + B.errs.slice(0, 3).join(' | '));

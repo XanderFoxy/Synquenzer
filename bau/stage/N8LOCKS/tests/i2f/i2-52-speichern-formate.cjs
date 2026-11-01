@@ -66,14 +66,15 @@ const midiNotes = () => {   // Note-An der Spur-Kanäle aus buildMidi (Szene)
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       const h1 = sh.getBoundingClientRect().height;
       const ab = ED.roll.el.acts.getBoundingClientRect(), on = (e, x, y) => { const hh = document.elementFromPoint(x, y); return !!hh && (hh === e || e.contains(hh)); };
-      const q = s => { const e = ED.roll.el.acts.querySelector(s), r = e.getBoundingClientRect(), cx = r.left + r.width / 2; return {w: r.width, h: r.height, l: r.left, r: r.right, t: r.top, b: r.bottom, hitH: ab.height, top: on(e, cx, r.top + r.height / 2) && on(e, cx, ab.top + 2) && on(e, cx, ab.bottom - 2)}; };
+      const hh = (e, cx, r) => { let n = 0; for (let y = r.top - 12; y <= r.bottom + 12; y += .5) { const x = document.elementFromPoint(cx, y); if (x === e || (x && e.contains(x))) n += .5; } return n; };   // N8LOCKS: die echte Trefferhöhe
+      const q = s => { const e = ED.roll.el.acts.querySelector(s), r = e.getBoundingClientRect(), cx = r.left + r.width / 2; return {w: r.width, h: r.height, l: r.left, r: r.right, t: r.top, b: r.bottom, hitH: hh(e, cx, r), top: on(e, cx, r.top + r.height / 2) && on(e, cx, ab.top + 2) && on(e, cx, ab.bottom - 2)}; };
       const P = q('.vnav[aria-label="Vorige Note"]'), F = q('.vfld'), N = q('.vnav[aria-label="Nächste Note"]');
       return {h0, h1, tw: rb.width, th: rb.height, barH: bar.height, tHit: hit, P, F, N, W: innerWidth, H: innerHeight};
     });
     const inV = o => o.l >= -.5 && o.r <= m.W + .5 && o.t >= -.5 && o.b <= m.H + .5;
     ok('I2-52', m.tw >= 44 && m.tHit,
       `${f}: ⇕ ${m.tw.toFixed(0)} px breit, Trefferfläche über die ganze Leiste (${m.barH.toFixed(0)} px) ${m.tHit} (Bild ${m.th.toFixed(0)} px)`);
-    ok('I2-52', [m.P, m.F, m.N].every(o => inV(o) && o.top) && m.P.w >= 44 && m.N.w >= 44 && m.F.w >= 96,
+    ok('I2-52', [m.P, m.F, m.N].every(o => inV(o) && o.top && o.hitH >= 44) && m.P.w >= 44 && m.N.w >= 44 && m.F.w >= 96,
       `${f}: Leiste ◀ ${m.P.w.toFixed(0)} · VEL ${m.F.w.toFixed(0)} · ▶ ${m.N.w.toFixed(0)} px, Trefferhöhe ${m.P.hitH.toFixed(0)} px (Bild ${m.P.h.toFixed(0)}), im Bild ${[m.P, m.F, m.N].every(inV)}, oben auf ${[m.P, m.F, m.N].every(o => o.top)}`);
     ok('I2-52', Math.abs(m.h1 - m.h0) < .5, `${f}: Blatthöhe vor/nach ⇕ ${m.h0.toFixed(1)} → ${m.h1.toFixed(1)} px`);
     if (p.errs.length) ok('I2-52', false, f + ': Konsolenfehler ' + p.errs.slice(0, 2).join(' | '));

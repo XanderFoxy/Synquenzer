@@ -23,9 +23,9 @@ await p.evaluate(() => {
       else if (e.k === 'raw') E.q.push(e.e);
     }
     E.flush(); await new Promise(r => setTimeout(r, 30));
-    const bf = await oc.startRendering(); await new Promise(r => setTimeout(r, 120));
+    const T0 = performance.now(), bf = await oc.startRendering(), ms = performance.now() - T0; await new Promise(r => setTimeout(r, o.fast ? 0 : 120));
     let info = null; if (o.info) { E.lkInfo = null; E.node.port.postMessage({lkInfo: 1}); await new Promise(r => setTimeout(r, 80)); info = E.lkInfo; }
-    return {l: bf.getChannelData(0), r: bf.getChannelData(1), reps: E.lkReps, info};
+    return {l: bf.getChannelData(0), r: bf.getChannelData(1), reps: E.lkReps, info, ms};
   };
   // max |a - b| relative to the peak of a, in dB (−Infinity = bit-identical); window [t0, t1) s
   window.__cmp = (A, B, t0 = 0, t1 = 1e9) => { const sr = 48000, i0 = Math.round(t0 * sr), i1 = Math.min(A.l.length, Math.round(t1 * sr)); let pk = 1e-12, d = 0;
@@ -36,13 +36,13 @@ await p.evaluate(() => {
   window.__va = () => { const s = __snd('f-init-analog'); Object.assign(s.p, {cutoff: 500, res: .3, fenv: 0, aA: .002, aD: .3, aS: .6, aR: .03, l1rate: 2, mode: 0}); s.mods = []; return s; };
 });
 
-/* ---------- Gleichheit: Lock auf der Note = Klang mit diesem Grundwert (VA, FM DX, FELD, MS 2000), Nachbarnoten bitgleich ---------- */
+/* ---------- Gleichheit: Lock auf der Note = Klang mit diesem Grundwert (VA, FM DX, FELD, MK), Nachbarnoten bitgleich ---------- */
 const eqCases = [
   ['VA cutoff (I2-07)', 'va', 'cutoff', .62], ['VA res', 'va', 'res', .8], ['VA aD Hüllkurve (I2-12)', 'va', 'aD', .7], ['VA level', 'va', 'level', .3],
   ['VA Welle o1w Säge→Puls (I2-63)', 'va', 'o1w', 1 / 3], ['VA Filtertyp ftype (I2-63)', 'va', 'ftype', .4], ['VA Unison o1uni (I2-63)', 'va', 'o1uni', .5], ['VA fenv', 'va', 'fenv', .8],
   ['FM DX OP2 Pegel (I2-10)', 'fm', 'fm6.ops.1.ol', .8], ['FM DX OP1 Level 3 (Hk.)', 'fm', 'fm6.ops.0.l.2', .5], ['FM DX OP2 fein', 'fm', 'fm6.ops.1.fine', .5], ['FM Helligkeit fmBright (I2-10)', 'fm', 'fmBright', .8],
   ['FELD OP2 Pegel (I2-10)', 'fx', 'fmx.ops.1.ol', .8], ['FELD OP1 Hk. Level 3', 'fx', 'fmx.ops.0.amp.l.2', .5], ['FELD OP2 Feedback-Menge', 'fx', 'fmx.ops.1.fbAmt', .9],
-  ['MS 2000 T1 CUTOFF (I2-11)', 'mk', 'mk.t.0.f.cut', .8], ['MS 2000 T1 EG2 DECAY', 'mk', 'mk.t.0.e2.d', .2], ['MS 2000 T1 PATCH 1 INT (I2-11)', 'mk', 'mk.t.0.p.0.i', .9], ['MS 2000 T1 LEVEL', 'mk', 'mk.t.0.a.lvl', .3],
+  ['MK T1 CUTOFF (I2-11)', 'mk', 'mk.t.0.f.cut', .8], ['MK T1 EG2 DECAY', 'mk', 'mk.t.0.e2.d', .2], ['MK T1 PATCH 1 INT (I2-11)', 'mk', 'mk.t.0.p.0.i', .9], ['MK T1 LEVEL', 'mk', 'mk.t.0.a.lvl', .3],
 ];
 for (const [nm, eng, path, x] of eqCases) {
   const r = await p.evaluate(async ([eng, path, x]) => {
@@ -149,7 +149,7 @@ for (const [nm, eng, path, x] of eqCases) {
     const src = document.getElementById('sq-mk-src').textContent, arp = /if \(r\.arp\) add\(i, lk \?/.test(src) && /lk: n\.x\.lk\}/.test(src);
     return {seq: __cmp(B, A), arp};
   });
-  ok(r.seq <= -90 && r.arp, `I2-11 MS 2000 mit Mod-Sequenz auf CUTOFF: Lock = Grundwert-Klang mit derselben Sequenz ${r.seq === -Infinity ? 'bitgleich' : r.seq.toFixed(1) + ' dB'}; Arp übernimmt lk der gehaltenen Clip-Note: ${r.arp}`);
+  ok(r.seq <= -90 && r.arp, `I2-11 MK mit Mod-Sequenz auf CUTOFF: Lock = Grundwert-Klang mit derselben Sequenz ${r.seq === -Infinity ? 'bitgleich' : r.seq.toFixed(1) + ' dB'}; Arp übernimmt lk der gehaltenen Clip-Note: ${r.arp}`);
 }
 
 /* ---------- I2-14 nativer Weg: Sicht PL beim Notenstart, LFO-Anschluss bleibt am Spur-Klang ---------- */

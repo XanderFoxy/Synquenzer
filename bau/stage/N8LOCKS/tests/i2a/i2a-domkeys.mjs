@@ -1,4 +1,4 @@
-// sammelt alle data-key der Klang-Editoren (VA, FM DX, FELD, WT, MS 2000, Drum SOUND/TIEF) für I2-01
+// sammelt alle data-key der Klang-Editoren (VA, FM DX, FELD, WT, MK, Drum SOUND/TIEF) für I2-01
 import {open} from './lib.mjs';
 export async function domKeys(p) {
   return p.evaluate(async () => {

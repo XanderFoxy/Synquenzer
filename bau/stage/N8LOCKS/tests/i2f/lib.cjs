@@ -2,7 +2,7 @@
 const {chromium} = require('playwright');
 const path = require('path');
 const FILE = process.env.I2F_FILE || path.resolve(__dirname, '..', '..', 'index.html');
-const FMT = {P1: [390, 844], P2: [375, 667], P3: [320, 568], L1: [844, 390], L2: [667, 375], W: [926, 428], XH: [428, 926]};
+const FMT = {P1: [390, 844], P2: [375, 667], P3: [320, 568], L1: [844, 390], L2: [667, 375], W: [926, 428], XH: [428, 926], XM: [428, 650]};   // N8LOCKS: + 428 × 650 (Tastatur offen)
 async function launch() { return chromium.launch({args: ['--autoplay-policy=no-user-gesture-required', '--disable-touch-adjustment']}); }
 async function open(browser, f = 'P1', o = {}) {
   const [w, h] = FMT[f] || f;
