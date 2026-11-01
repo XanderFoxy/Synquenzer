@@ -17891,7 +17891,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.26.0';
+const VERSION = '4.26.1';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -19579,6 +19579,7 @@ function micTapGet(user, lazy) {
   MICTAP.p = p.then(st => {
     MICTAP.p = null;
     if (!MICTAP.users.size) { st.getTracks().forEach(t => { try { t.stop(); } catch (e) {} }); return false; }
+    stSessAfter();   // 4.26.1: Route-Kick nach getUserMedia
     if (late) ensureAudio();
     MICTAP.stream = st; MICTAP.at = performance.now(); const t = st.getAudioTracks()[0]; MICTAP.label = t ? String(t.label || '') : '';
     if (t) t.addEventListener('ended', () => { if (MICTAP.stream === st) micTapLost(); });
@@ -40432,7 +40433,10 @@ function stRead(a, b, o) {
 /* ---------- Ablauf ---------- */
 function stToggle() { if (ST.run && ST.run.stopping) return false; return ST.on ? stStop('aus') : stStart(); }
 // H6 (4.25.1): Sitzungsart für 🎤 – 'par' (Standard, play-and-record) | 'auto' | 'none' (nichts setzen); nur per ?stsess= gespeichert
-function stSessType() { const v = UI.stsess || 'par'; return v === 'auto' ? 'auto' : v === 'none' ? null : 'play-and-record'; }
+function stSessType() { const v = UI.stsess || 'kick'; return v === 'auto' || v === 'kick' ? 'auto' : v === 'none' ? null : 'play-and-record'; }
+// 4.26.1 (WebKit Bug 282939, iOS legt beim Öffnen des Mikros den Ton aufs iPhone): Standard 'kick' = vor getUserMedia 'auto',
+// danach 'play-and-record' – das stößt iOS an, die Route (z. B. USB-Pult) neu zu wählen. ?stsess=par|auto|none|kick zum Vergleich.
+function stSessAfter() { if ((UI.stsess || 'kick') === 'kick') micSess('play-and-record'); }
 function stStart(opts) {
   if (ST.on || ST.run || !micAvail()) return false;
   if (typeof g9MicOn === 'function') g9MicOn();   // G9: Aufnahme hat Vorrang
@@ -49615,7 +49619,7 @@ const SYNQUENZER = {
   // H6/H1 (4.25.1, nur Tests): Sitzungsart setzen; Ausgangspegel am Master (AnalyserNode an AU.M.ceil) – ohne Argumente starten, dann RMS in [a, b) Schlägen
   micIn: () => ({id: MICIN.id, label: MICIN.label, ext: MICIN.ext, fb: MICIN.fb, reopen: MICIN.reopen, sessN: MICIN.sessN, sessLog: MICIN.sessLog.slice(), list: MICIN.list.map(d => Object.assign({}, d))}),   // HIF
   micInSet: v => micInSet(v), micInList: () => micInList().then(L => L.map(d => Object.assign({}, d))),
-  stimmeSess: v => { UI.stsess = v === 'auto' || v === 'none' ? v : 'par'; setUiPref('stsess', UI.stsess); return UI.stsess; },
+  stimmeSess: v => { UI.stsess = v === 'auto' || v === 'none' || v === 'par' ? v : 'kick'; setUiPref('stsess2', UI.stsess); return UI.stsess; },
   g10OutRms: (a, b) => {
     const c = AU.ctx; if (!c || !AU.M || !AU.M.ceil) return null;
     if (!UI.g10Out) { const an = c.createAnalyser(); an.fftSize = 2048; AU.M.ceil.connect(an); const buf = new Float32Array(an.fftSize), L = []; UI.g10Out = {an, L, iv: setInterval(() => { an.getFloatTimeDomainData(buf); let q = 0; for (const v of buf) q += v * v; L.push({b: t2b(c.currentTime - AU.outLat), q: q / buf.length}); if (L.length > 20000) L.shift(); }, 40)}; }
@@ -50497,8 +50501,8 @@ function init() {
   UI.leds = $$('#leds i');
   EL.topLogo.innerHTML = LOGO_SVG;
   UI.haptics = uiPrefs().haptics !== false;
-  try { const q = new URLSearchParams(location.search).get('stsess'); if (q === 'par' || q === 'auto' || q === 'none') setUiPref('stsess', q); } catch (e) {}   // H6: Gerätetest
-  UI.stsess = uiPrefs().stsess || 'par'; UI.vocClick = uiPrefs().vocClick === 'always' ? 'always' : 'ci';   // H3
+  try { const q = new URLSearchParams(location.search).get('stsess'); if (q === 'par' || q === 'auto' || q === 'none' || q === 'kick') setUiPref('stsess2', q); } catch (e) {}   // H6: Gerätetest
+  UI.stsess = uiPrefs().stsess2 || 'kick'; UI.vocClick = uiPrefs().vocClick === 'always' ? 'always' : 'ci';   // H3
   hapticInit();
   buildGrid(); buildPads(); buildSongView(); bindUI();
   v2cInit();                                                   // V2c: Teil-Leiste, [↩ TEIL]

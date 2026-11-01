@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required']});
+const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
+await p.addInitScript(() => { const log = []; window.__sessLog = log; let t = 'playback'; navigator.audioSession = {get type() { return t; }, set type(v) { t = v; log.push(v); }}; });
+await p.goto('file://' + process.argv[2]); await p.waitForTimeout(2500);
+await p.evaluate(() => SYNQUENZER.stimmeStart()); await p.waitForTimeout(3500);
+const r = await p.evaluate(() => ({log: window.__sessLog.slice(), on: ST.on, phase: ST.phase, err: ST.err ? String(ST.err.name || ST.err) : null, ver: VERSION, mode: UI.stsess}));
+await p.evaluate(() => SYNQUENZER.stimmeStop && SYNQUENZER.stimmeStop()); await p.waitForTimeout(800);
+r.after = await p.evaluate(() => window.__sessLog.slice());
+console.log(JSON.stringify(r), 'errs', errs.length); await b.close();
