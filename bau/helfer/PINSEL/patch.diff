@@ -1,5 +1,5 @@
 --- bau/snapshots/R-4261.html	2026-11-01 03:55:25.965679908 +0000
-+++ bau/helfer/PINSEL/index.html	2026-11-01 04:14:39.949645855 +0000
++++ bau/helfer/PINSEL/index.html	2026-11-01 04:22:25.373632121 +0000
 @@ -12958,8 +12958,18 @@
  .pr-rd.edge{opacity:1;top:3px;width:auto;height:auto;padding:2px 5px;border-radius:4px;color:#0b0c0f;font:700 10px/1 var(--font-num,monospace);transform:none}
  .pr-rd.edge.l{left:2px}.pr-rd.edge.r{left:auto;right:2px}
@@ -408,13 +408,11 @@
  /* ---------- V0b FOLGEN (§5.1, Nachtrag EN-07 / M-SEITE) ----------
     FOLGT (standard): the editor shows the page with the playhead; the page changes when the playhead crosses into the next
     page — a bar line — or at once after an explicit request (opening, ▶, a tap on the chip). Page width = the visible beats
-@@ -49870,7 +50132,8 @@
-   quantizeClip: (t, s, o) => !!quantizeClip(t, s, o || {}), copyClip: (t, s) => copyClip(t, s), pasteClip: (t, s) => pasteClip(t, s), duplicateClip: (t, s) => duplicateClip(t, s),
+@@ -49871,6 +50133,7 @@
    openRoll: (t, s) => openRoll(t, s), closeRoll: () => closeRoll(),
    roll: () => (ED.roll && ED.rollAt ? Object.assign({t: ED.rollAt.t, s: ED.rollAt.s, own: ED.rollAt.own || null}, (({tool, grid, step, fold, sel, loop}) => ({tool, grid, step, fold, sel, loop}))(ED.roll.state)) : null),
--  rollApi: () => ED.roll,                        // test hook: the editor instance (gesture coordinates _xy, _ruler, _barNum, …)
-+  rollApi: () => ED.roll,
-+  mpListen: () => mpListenInfo(),                // MP Mithören (test hook)                        // test hook: the editor instance (gesture coordinates _xy, _ruler, _barNum, …)
+   rollApi: () => ED.roll,                        // test hook: the editor instance (gesture coordinates _xy, _ruler, _barNum, …)
++  mpListen: () => mpListenInfo(),                // MP Mithören (test hook)
    openQuant: (t, s) => openQuantSheet(t, s), closeQuant: apply => closeQuantSheet(!!apply),
    detectKey: notes => { const k = KeyDetect.detectKey(notes || [], {fallback: S.key}); return {root: k.root, scale: k.scale}; },
    sceneKey: s => { const k = sceneKeyOf(clamp(s | 0, 0, NS() - 1)) || S.key; return {root: k.root, scale: k.scale}; },

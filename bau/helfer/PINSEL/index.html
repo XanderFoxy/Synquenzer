@@ -50132,8 +50132,8 @@ const SYNQUENZER = {
   quantizeClip: (t, s, o) => !!quantizeClip(t, s, o || {}), copyClip: (t, s) => copyClip(t, s), pasteClip: (t, s) => pasteClip(t, s), duplicateClip: (t, s) => duplicateClip(t, s),
   openRoll: (t, s) => openRoll(t, s), closeRoll: () => closeRoll(),
   roll: () => (ED.roll && ED.rollAt ? Object.assign({t: ED.rollAt.t, s: ED.rollAt.s, own: ED.rollAt.own || null}, (({tool, grid, step, fold, sel, loop}) => ({tool, grid, step, fold, sel, loop}))(ED.roll.state)) : null),
-  rollApi: () => ED.roll,
-  mpListen: () => mpListenInfo(),                // MP Mithören (test hook)                        // test hook: the editor instance (gesture coordinates _xy, _ruler, _barNum, …)
+  rollApi: () => ED.roll,                        // test hook: the editor instance (gesture coordinates _xy, _ruler, _barNum, …)
+  mpListen: () => mpListenInfo(),                // MP Mithören (test hook)
   openQuant: (t, s) => openQuantSheet(t, s), closeQuant: apply => closeQuantSheet(!!apply),
   detectKey: notes => { const k = KeyDetect.detectKey(notes || [], {fallback: S.key}); return {root: k.root, scale: k.scale}; },
   sceneKey: s => { const k = sceneKeyOf(clamp(s | 0, 0, NS() - 1)) || S.key; return {root: k.root, scale: k.scale}; },
