@@ -269,6 +269,7 @@ svg{display:block}
 .slot.v6st .kbg{right:15px}
 .hb.v6ab{min-width:44px;height:44px;padding:0 6px;font-size:16px;color:var(--amber);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 auto}
 .hb.v6ab.on{background:var(--amber);color:#1b1408;font-size:10px;line-height:1.05;letter-spacing:0}
+.hb.v6ab.has{box-shadow:inset 0 0 0 2px var(--amber)}
 .hb.v6ab .v6l{display:block}
 .sheet.v6a-ed{box-shadow:inset 0 3px 0 var(--amber)}
 .lcd.v6a .lk{color:var(--amber)}
@@ -22730,6 +22731,7 @@ function v6aGo(i, st1, t0, t1, at, c) {
     for (const kk of V6A_FX) if (Math.abs((fxB[kk] || 0) - (fxA[kk] || 0)) > 1e-9) { a[kk] = fxA[kk]; b[kk] = fxB[kk]; n++; }
     if (n) { R.v6aRun[i] = {t0, t1: Math.max(t1, t0 + .005), c: c ? 1 : 0, a, b}; v6aFxRun(i, fxA.drive || 0); }
   }
+  if (ED.v6aB && ED.v6aB.length) { try { for (const b of ED.v6aB) if (b.isConnected && +b.dataset.t === i) { v6aBtnPaint(b); if (ED.lcd && ED.lcd.isConnected && !ED.lcd._s) lcdHint(); } } catch (e) { logErr(e); } }   // the head key and the hint follow
   return true;
 }
 function v6aParam(N, k) { return k === 'vol' ? N.vol && N.vol.gain : k === 'pan' ? N.pan && N.pan.pan : k === 'rev' ? N.revSend && N.revSend.gain : N.dlySend && N.dlySend.gain; }
@@ -22808,6 +22810,23 @@ function v6aTick(b0, b1) {
       const T_ = v6aTimes(m, B, nb); v6aGo(i, want, T_.t0, T_.t1, T_.at, 0); R.v6aCur[i].at = B;
     }
   }
+}
+// V6A (A7, K1-03 „was sich bewegt, hat eine Zeile“): every value of the state the track plays now – ◆ Szene n: Cutoff 2,4 kHz → 400 Hz
+function v6aK1(i, add) {
+  const st = v6aCurSt(i), tr = S.tracks[i]; if (!st || !tr) return;
+  let where = '◆ Klangzustand';
+  for (let s_ = 0; s_ < tr.clips.length; s_++) if (tr.clips[s_] && tr.clips[s_].st === st) { where = '◆ Szene ' + (s_ + 1); break; }
+  for (const k of Object.keys(st.p || {})) add('st:' + k, where, v6aKeyName(k), v6aValTxt(k, v6aGet(tr.sound, k)) + ' → ' + v6aValTxt(k, st.p[k]), {kind: 'st', path: k});
+  for (const k of Object.keys(st.fx || {})) add('st:fx.' + k, where, v6aKeyName('fx.' + k), v6aValTxt('fx.' + k, fxOfSound(tr.sound)[k]) + ' → ' + v6aValTxt('fx.' + k, st.fx[k]), {kind: 'st', path: 'fx.' + k});
+}
+function v6aK1Del(i, key) {
+  const st = v6aCurSt(i), tr = S.tracks[i]; if (!st || !tr) return false;
+  const s_ = tr.clips.findIndex(c => c && c.st === st); if (s_ < 0) return false;
+  const path = key.slice(3), n = JSON.parse(JSON.stringify(st));
+  if (path.startsWith('fx.')) { if (n.fx) delete n.fx[path.slice(3)]; } else delete n.p[path];
+  v6aSetState(i, s_, Object.keys(n.p || {}).length || (n.fx && Object.keys(n.fx).length) ? n : null);
+  toast('Gelöscht: ◆ ' + v6aKeyName(path), {label: 'Rückgängig', fn: () => undo()});
+  return true;
 }
 /* V6A: normalize (load) – literal lists here: normClip runs during the first load, before the V6A constants */
 function v6aNorm(st) {
@@ -22940,7 +22959,7 @@ function v6aLcdText() {
 }
 function v6aBtnPaint(b) {
   const e = V6A.ed, on = !!(e && e.i === +b.dataset.t);
-  b.classList.toggle('on', on);
+  b.classList.toggle('on', on); b.classList.toggle('has', !on && !!v6aCurSt(+b.dataset.t));
   b.innerHTML = on ? '<span class="v6l">Grund-</span><span class="v6l">klang</span>' : '◆';
   b.setAttribute('aria-label', on ? 'Grundklang: Klangzustand ◆ fertig, zurück zum Grundklang' : 'Klangzustand ◆ des Clips bearbeiten (Szenenwechsel gleitet dorthin)');
   b.title = on ? 'Fertig – zurück zum Grundklang' : '◆ Klangzustand dieses Clips';
@@ -32715,6 +32734,8 @@ function lcdHint() {
   const v6 = V6A.ed && V6A.ed.i === R.selT && R.editor === 'synth' ? v6aLcdText() : null;   // V6A: „Bearbeite ◆ …“ (amber)
   L.classList.toggle('v6a', !!v6);
   if (v6) { L.innerHTML = `<span class="lk">${esc(v6[0])}</span><span class="lv">${esc(v6[1])}</span>`; L._full = v6; lcdFit(L); return; }
+  const v6c = R.editor === 'synth' && !V6A.ed && R.v6aCur && R.v6aCur[R.selT] ? v6aCurSt(R.selT) : null;   // V6A: a state plays, the knobs show the Grundklang
+  if (v6c) { const h = ['◆ Zustand spielt', 'Regler zeigen den Grundklang · [◆] = Zustand bearbeiten']; L.innerHTML = `<span class="lk">${esc(h[0])}</span><span class="lv">${esc(h[1])}</span>`; L._full = h; lcdFit(L); return; }
   L.innerHTML = '<span class="lk">Regler</span><span class="lv">ziehen = ändern · seitlich = fein · 2× tippen = Standard · halten = modulieren</span>';
   L._full = ['Regler', 'ziehen = ändern · seitlich = fein · 2× tippen = Standard · halten = modulieren']; lcdFit(L);
 }
@@ -34049,6 +34070,7 @@ function buildSynthEd() {
   ED.hdr = {pName, ab, save};
   edHeadRefresh();
   const mkQ = mkE && mkLoaded() && MKUI.chrome(sh, i, {pre, ab, save, dice, hear});   // MK-P: ◀ Karte ▶; landscape: one 44 px head
+  if (mkQ) { const hd = sh.querySelector('.mkqh'), mo = hd && hd.querySelector('.mkqmore'), vb = sh.querySelector('.v6ab'); if (hd && mo && vb) hd.insertBefore(vb, mo); }   // V6A: [◆] also in the one-row head of the plate (landscape)
   // the mod-mode banner (§9.3): over the LCD line (P), its place in the tab row (L), header row 2 where the LCD is hidden
   const mbn = el('div', 'mbn', '<i class="dot"></i><span class="mbt"><b></b><small></small></span><button class="mbf rb">Fertig</button>');
   mbn.hidden = true; mbn.setAttribute('role', 'status'); sh.appendChild(mbn);
@@ -37604,6 +37626,7 @@ function k1Mods(i) {
     const V = pm.voc;
     if (voc && V && V.mint) add('voc.mint', K1_PSRC[Math.round(+V.msrc || 0)] || '?', 'Vocoder Formant', 'Intensität ' + k1Sgn(V.mint, 0), {kind: 'mk', path: 'voc.mint', val: V.mint});
     if (voc && V && V.kbd) add('voc.kbd', 'Keytrack', 'Vocoder Pegel', k1Sgn(V.kbd, 0), {kind: 'mk', path: 'voc.kbd', val: V.kbd});
+    v6aK1(i, add);                                                  // V6A (A7): Klangzustand ◆ after the modulations
     return out;
   }
   const fm = s.engine === 'fm6', wk = isWkEngine(s.engine);
@@ -37623,6 +37646,7 @@ function k1Mods(i) {
   // the worklet's analog drift (startVoice): pitch ±analog·8 ct per note, each oscillator ±analog·5 ct more, cutoff ±analog·1,5 HT
   if (wk && pv('analog')) add('p:analog', 'Analog (Zufall je Note)', fm ? 'Tonhöhe' : 'Tonhöhe · Cutoff', 'bis ±' + k1Num(pv('analog') * (fm ? 8 : 13), 1) + ' ct' + (fm ? '' : ' · ±' + k1Num(pv('analog') * 1.5, 2) + ' HT'), {kind: 'p', p: 'analog'});
   if (fm) k1FmMods(s.p, add);
+  v6aK1(i, add);                                                    // V6A (A7): Klangzustand ◆ after the modulations
   return out;
 }
 // K1-fix: FM. With p.fmx the worklet plays the graph (fmxCompile): per operator the pitch envelope (DX form on ratio operators,
@@ -37669,6 +37693,7 @@ function k1FmxLfo(i) {
 }
 // ✕: one undo step; the engines get the change like a knob turn
 function k1Del(i, key) {
+  if (String(key).startsWith('st:')) return v6aK1Del(i, key);          // V6A: ✕ takes this value out of the clip's state (undo 'clip')
   const e = k1Mods(i).find(x => x.key === key); if (!e) return false;
   soundEdit(i, 'Modulation ' + e.src + ' → ' + e.dst + ' gelöscht', () => {
     const s = sndOf(i);
@@ -37686,7 +37711,8 @@ function k1Del(i, key) {
 }
 // Tipp: the editor page with the target control (lit for 1,6 s); AM engine: the plate section and the LCD page of the value
 function k1Jump(i, key) {
-  const e = k1Mods(i).find(x => x.key === key), s = sndOf(i); if (!e || !s) return null;
+  let e = k1Mods(i).find(x => x.key === key); const s = sndOf(i); if (!e || !s) return null;
+  if (e.kind === 'st') { if (!PD[e.path]) return null; e = Object.assign({}, e, {kind: 'p', p: e.path}); }   // V6A: the knob of this value
   if (R.editor !== 'synth' || R.selT !== i) return null;
   if (e.kind === 'mk') { if (!mkLoad()) return null; return MKUI.k1 ? MKUI.k1.jump(e.path) : null; }
   // K1-fix: an FM pitch envelope of every operator (DX form) -> the TONH. page; else the FELD page of the first operator of the row
@@ -57128,6 +57154,7 @@ function vv4El(el, app) { const P = VV4.probe; if (P && !P.els.some(x => x.el ==
 function vv4Real(i, e) {
   if (!e) return false;
   if (e.key === 'p:kt' || e.key === 'p:analog' || e.key === 'p:fvel') return false;
+  if (e.kind === 'st') return false;                                 // V6A: a Klangzustand is no running modulation
   if (e.kind === 'route') return !!(e.m && e.m.amt);
   if (e.kind === 'mk') {
     if (/\.(f\.kbd|f\.vel|a\.kbd)$/.test(e.key) || e.key === 'voc.kbd') return false;
