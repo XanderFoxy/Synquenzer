@@ -69986,7 +69986,7 @@ function vvkCol(col, v, up) {
 // the layout in points (LW × LH, u px per point) for range lo … hi, per context (gradients belong to it); the unlit keyboard is
 // drawn once into its own canvas (pixel-aligned) and copied per picture
 function vvkLayout(g, LW, LH, lo, hi, u, C) {
-  const key = LW.toFixed(2) + 'x' + LH.toFixed(2) + ':' + lo + '-' + hi + ':' + u + ':' + C.num; let c = VVK.lay.get(g); if (c && c.key === key) return c;
+  const key = LW.toFixed(2) + 'x' + LH.toFixed(2) + ':' + lo + '-' + hi + ':' + u + ':' + C.gen;   // C.gen: a web font that arrived later redraws the C names let c = VVK.lay.get(g); if (c && c.key === key) return c;
   const port = LH > LW, headH = port ? 50 : 30, padX = 8, kx = padX, kw = LW - 2 * padX, keys = [];
   let nW = 0; for (let n = lo; n <= hi; n++) if (![1, 3, 6, 8, 10].includes(PCx(n))) nW++;
   const ww = kw / nW, kbH = clamp(ww * 5.4, port ? 60 : 54, LH * (port ? .2 : .27)), kbY = LH - (port ? 12 : 6) - kbH, railH = port ? 15 : 13, railY = kbY - railH - 2;
