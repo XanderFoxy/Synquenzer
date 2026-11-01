@@ -1,0 +1,10 @@
+FAIL Startzeit ohne Bit Mask wie 4.30.0 (Median ± 5 % oder ± 25 ms) · {"alt":411,"neu":440,"altAlle":[429,377,411,432,427,387,380,446,396],"neuAlle":[405,474,423,438,449,458,663,440,379]}
+OK   ohne Bit-Mask-Spur: Block nicht ausgewertet, kein addModule, kein Arp-Block · {"block":false,"panel":false,"arp":false,"info":{"geladen":false,"status":"off","adds":0,"worker":0,"block":false,"err":null},"version":"4.31.0"}
+OK   Video-Render enthält Bit Mask (hörbar) und ist zweimal bitgleich · {"wk":true,"videoDb":-24.8,"bitgleich":0,"ggbDb":-23.4,"ggbN":576000,"liveOk":true}
+OK   GarageBand-Instrumental enthält Bit Mask · {"wk":true,"videoDb":-24.8,"bitgleich":0,"ggbDb":-23.4,"ggbN":576000,"liveOk":true}
+OK   nach dem Render spielt live wieder der Live-Knoten · {"wk":true,"videoDb":-24.8,"bitgleich":0,"ggbDb":-23.4,"ggbN":576000,"liveOk":true}
+OK   Speichern → Laden: Bit-Mask-Klang und Kurven deep-equal · {"bm":true,"cv":true,"again":true,"name":"Weite Fläche","hc":true}
+OK   Konsole ohne Fehler · []
+
+6/7 OK
+rc=1

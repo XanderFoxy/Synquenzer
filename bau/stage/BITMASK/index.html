@@ -39852,6 +39852,10 @@ const K1_SQT = ['', 'Tonhöhe', 'Schrittlänge', 'Portamento', 'Osz 1 Steuer 1',
 function k1Mods(i) {
   const s = sndOf(i); if (!s || s._nv) return [];
   const P = s.p, out = [], add = (key, src, dst, amt, o) => out.push(Object.assign({key, src, dst, amt}, o));
+  if (s.engine === 'bm') {   // BM6-10 (Nachtrag 7 §1.9 K1): every occupied target slot of every source, masks/pitch Δ, filter EG, PANS (program B with Layer/Split)
+    if (P.bm) for (const r of SQBM.routes(P.bm)) add('bm:' + r.path, (r.ab === 'b' ? 'B · ' : '') + r.src, r.dst, k1Sgn(r.amt, 0), {kind: 'bm', path: r.path, clear: r.clear});
+    return out;
+  }
   if (s.engine === 'mk') {
     const pm = P.mk; if (!pm || !Array.isArray(pm.t)) return out;
     const W = SQMK.W(), dual = pm.mode === 1 || pm.mode === 2, voc = pm.mode === 3, mw = clamp(+mkWheelVal(i, 'mod', s) || 0, 0, 1);
@@ -39945,6 +39949,7 @@ function k1Del(i, key) {
     if (e.kind === 'route') { s.mods = s.mods.filter(m => !(m.src === e.m.src && m.dst === e.m.dst)); modsChanged(i); }
     else if (e.kind === 'p') setP(i, e.p, 0);
     else if (e.kind === 'mk') { mkSetP(i, e.path, 0, false); if (mkLoaded()) MKUI.renderSoon(); }
+    else if (e.kind === 'bm') { const snd = deep(s); for (const q of e.clear) SQBM.set(snd.p.bm, q, 0); snd.p.bm = SQBM.normBm(snd.p.bm); applySound(i, snd); if (bmLoaded()) BMUI.paint(); }   // BM6-10
     else if (e.kind === 'fpeg') fmSetPeg(i, null);   // K1-fix: as the TONH. page's flat envelope
     else if (e.kind === 'fmx') {   // K1-fix: as the FELD rows (LFO AM / LFO FM = 0, Tonhöhe Init) on the operators of the row
       const x = deep(s.p.fmx); for (const k of e.ops) { const o = x.ops[k]; if (e.f === 'pit') { o.pit = null; o.pr = 'dx'; } else o[e.f] = 0; }
@@ -39959,6 +39964,7 @@ function k1Jump(i, key) {
   const e = k1Mods(i).find(x => x.key === key), s = sndOf(i); if (!e || !s) return null;
   if (R.editor !== 'synth' || R.selT !== i) return null;
   if (e.kind === 'mk') { if (!mkLoad()) return null; return MKUI.k1 ? MKUI.k1.jump(e.path) : null; }
+  if (e.kind === 'bm') return null;   // Bit Mask: the panel has no page per value (Mode key + Param)
   // K1-fix: an FM pitch envelope of every operator (DX form) -> the TONH. page; else the FELD page of the first operator of the row
   if (e.kind === 'fpeg' || (e.kind === 'fmx' && e.f === 'pit' && e.dx && !(s.p.fm6 && s.p.fm6.approx))) { ED.tab = 'env'; ED.sub.envfm = 'peg'; FXF.big = null; safeRebuild(buildSynthEd); return 'env/peg'; }
   if (e.kind === 'fmx') {
