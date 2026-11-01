@@ -21114,7 +21114,9 @@ HIST.kind('own', e => [['song', 'own', e.id]]);
 HIST.kind('mkin', e => [['tracks', e.track, 'mkIn']]);
 HIST.kind('mkslot', () => []);
 HIST.kind('takes', () => [['takes']]);
-HIST.kind('tflag', e => [['tracks', e.track, 'stimme']]);
+HIST.kind('tflag', e => [['tracks', e.track, 'stimme'], ['tracks', e.track, 'gfx']]);   // G-VID-merge: tkFlag setzt/löscht auch gfx (G4)
+HIST.kind('gfx', e => [['tracks', e.track, 'gfx']]);              // G-VID-merge: G4-Effekte der STIMME-Spur
+HIST.kind('tphase', () => []);                                    // G-VID-merge: VS-L-fix – nur Laufzeit (Phase der laufenden Schleife), kein Projektfeld
 HIST.kind('group', e => (e.items || []).flatMap(histPaths));
 HIST.kind('proj', () => [[]]);
 function histPaths(e) {
