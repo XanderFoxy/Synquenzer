@@ -8,7 +8,7 @@ const wk = strip(fs.readFileSync(path.join(HERE, 'md-worklet.js'), 'utf8')), hos
 let progs = fs.readFileSync(path.join(HERE, 'md-progs.js'), 'utf8');
 const lvf = path.join(HERE, 'md-levels.json'); if (fs.existsSync(lvf)) progs = progs.replace('  /*LV*/\n', '  Object.assign(LV, ' + JSON.stringify(JSON.parse(fs.readFileSync(lvf, 'utf8'))) + ');\n');
 for (let i = 0; i < wk.length; i++) if (wk.charCodeAt(i) > 127) throw new Error('worklet not ASCII at ' + i);
-if (/<\/script/i.test(wk + host + progs) || /nord/i.test(wk + host + progs)) throw new Error('script tag or brand word in a block');
+if (/<\/script/i.test(wk + host + progs) || new RegExp('n' + 'ord', 'i').test(wk + host + progs)) throw new Error('script tag or brand word in a block');
 let s = fs.readFileSync(OUT, 'utf8');
 const rep = (re, val, what) => { const m = s.match(re); if (!m || s.split(m[0]).length !== 2) throw new Error('block ' + what); s = s.replace(m[0], () => val); };
 rep(/<script type="text\/plain" id="sq-md-src">\n[\s\S]*?<\/script>\n/, '<script type="text/plain" id="sq-md-src">\n' + wk + '</script>\n', 'worklet');

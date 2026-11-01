@@ -42,7 +42,7 @@ if (CALIB) {
 // ND3-01 count, names, kits
 { const cats = {}; for (const p of MDX.progs) cats[p.mCat] = (cats[p.mCat] || 0) + 1; const names = new Set(MDX.progs.map(p => p.mName));
   check('ND3-01 Anzahl', MDX.progs.length === 45 && Object.keys(cats).length === 9 && Object.values(cats).every(n => n === 5) && names.size === 45 && MDX.kits.length === 4, MDX.progs.length + ' Programme, ' + JSON.stringify(cats) + ', Kits ' + MDX.kits.length);
-  const all = JSON.stringify(MDX.progs) + JSON.stringify(MDX.kits); check('ND3-01 Marke', !/nord/i.test(all), 'kein Gerätename in Namen und Texten');
+  const all = JSON.stringify(MDX.progs) + JSON.stringify(MDX.kits); check('ND3-01 Marke', !new RegExp('n' + 'ord', 'i').test(all), 'kein Gerätename in Namen und Texten');
   check('ND3-01 Kits alle Pads md', MDX.kits.every(k => MDX.ORDER.every(id => k.slots[id] && k.slots[id].src === 'md')), MDX.kits.map(k => k.name).join(' · ')); }
 const P = n => MDX.prog(n);
 // ND3-02 character

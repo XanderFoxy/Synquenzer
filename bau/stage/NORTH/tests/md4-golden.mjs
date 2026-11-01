@@ -1,4 +1,4 @@
-// ND4-01 (Regel 28): neue Version gegen die alte (bau/snapshots/R-4270.html, 4.26.1) – ohne Modell-Pad bleibt alles bitgleich.
+// ND4-01 (Regel 28): neue Version gegen die alte (bau/snapshots/R-4270.html, 4.27.0) – ohne Modell-Pad bleibt alles bitgleich.
 //  (a) Demo-Projekt, INIT Drums, alle Werks-Kits: normierter Drum-Sound (JSON) und slotParams aller 12 Pads deep-equal;
 //      Projekt-Rundreise (projectFileObj -> parseAny) gleich in beiden Builds und gleich dem Original
 //  (b) Offline-Render je Kit (DrumSynth.hit über kitBus + Strips im OfflineAudioContext, Math.random geseedet): bitgleich

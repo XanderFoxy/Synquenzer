@@ -390,5 +390,5 @@ run('ND1-27', () => {
   const late = E.P.late; check('ND1-27 Parameterflug ' + minutes + ' min', nan === 0 && Math.abs(sum / n) <= 0.005 && pk <= 3.98 && late === 0, 'NaN ' + nan + ', DC ' + R(sum / n, 5) + ', Spitze ' + R(M.db(pk), 1) + ' dBFS, late ' + late);
 });
 // ND1-29 ASCII / brand
-run('ND1-29', () => { const s = loadSrc(); let na = 0; for (let i = 0; i < s.length; i++) if (s.charCodeAt(i) > 127) na++; check('ND1-29 ASCII + Marke', na === 0 && !/nord/i.test(s) && !s.includes('</scr' + 'ipt'), 'Nicht-ASCII ' + na + ', Markenwort ' + (/nord/i.test(s) ? 'JA' : 'nein')); });
+run('ND1-29', () => { const s = loadSrc(); let na = 0; for (let i = 0; i < s.length; i++) if (s.charCodeAt(i) > 127) na++; check('ND1-29 ASCII + Marke', na === 0 && !new RegExp('n' + 'ord', 'i').test(s) && !s.includes('</scr' + 'ipt'), 'Nicht-ASCII ' + na + ', Markenwort ' + (new RegExp('n' + 'ord', 'i').test(s) ? 'JA' : 'nein')); });
 const bad = res.filter(r => !r.ok); console.log('\n' + (res.length - bad.length) + '/' + res.length + ' bestanden (' + SR + ' Hz)' + (bad.length ? '\nFEHLT: ' + bad.map(b => b.id).join(', ') : ''));

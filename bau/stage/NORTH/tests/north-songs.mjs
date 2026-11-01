@@ -1,4 +1,4 @@
-// NORTH (Regel 28, ND4-06): alte Songs laden unverändert. In der alten Version (R-4270, 4.26.1) entstehen Projekte – Demo,
+// NORTH (Regel 28, ND4-06): alte Songs laden unverändert. In der alten Version (R-4270, 4.27.0) entstehen Projekte – Demo,
 // jedes Werks-Kit, ein Song mit Teilen, Akkorden, Melodie, MS-2000-Arp, STIMME-Take und Video-Regie – und werden gespeichert.
 // Die neue Version lädt jede Datei, speichert sie wieder: der Inhalt muss gleich bleiben (deep-equal, ohne Zeitstempel).
 // Dazu der Song einmal als Video-Ton (vvRender) in beiden Versionen: dieselben Noten, Pegel gleich (±0,5 dB).

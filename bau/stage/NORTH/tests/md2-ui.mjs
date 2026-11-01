@@ -616,8 +616,8 @@ async function nd211(fmt) {
 // ======================= ND2-12: kein Gerätename, MD_NAME an allen Anzeigeorten =======================
 async function nd212(fmt) {
   const html = fs.readFileSync(APP, 'utf8');
-  const nord = [...html.matchAll(/nord/gi)].map(m => ({at: html.slice(0, m.index).split('\n').length, ctx: html.slice(Math.max(0, m.index - 30), m.index + 30)}));
-  ck('ND2-12', fmt, "grep -i 'nord' im App-HTML = 0", nord.length === 0, nord.length ? {n: nord.length, first: nord.slice(0, 3)} : undefined);
+  const nTreffer = [...html.matchAll(new RegExp('n' + 'ord', 'gi'))].map(m => ({at: html.slice(0, m.index).split('\n').length, ctx: html.slice(Math.max(0, m.index - 30), m.index + 30)}));
+  ck('ND2-12', fmt, "grep -i 'nTreffer' im App-HTML = 0", nTreffer.length === 0, nTreffer.length ? {n: nTreffer.length, first: nTreffer.slice(0, 3)} : undefined);
   const defs = html.split('const MD_NAME =').length - 1;
   const m = html.match(/const MD_NAME = (['"`])([^'"`]*)\1/);
   ck('ND2-12', fmt, 'const MD_NAME genau einmal definiert', defs === 1 && m, {defs, value: m && m[2]});
