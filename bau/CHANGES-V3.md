@@ -1,3 +1,13 @@
+## 4.38.0 — North-Platte, Anschlag sehen und ziehen, Lock-Kern
+
+Grundlage 4.37.0 + zwei Pakete in einem Durchgang (NDP, N8LOCKS).
+- **North-Platte:** Drum-Spur → Editor → oben **Drums | North** auf North stellen → daneben erscheint die rote Taste **Platte**. Sie öffnet North als eigenes Gerät: rote Front, rotes Ziffern-Display, Kanal-Tasten (antippen = Schlag, oben laut, unten leise), Sektionen TONE · NOISE · CLICK · MIX · FX · HALL/ECHO, großes Rad mit Rasten. Auch im SOUND-Blatt eines North-Pads: Knopf **North / Platte**. Jede Dreh-Geste ist ein Schritt für ↶.
+- **Anschlag sehen und ziehen:** In der Noten-Rolle zeigt jede Note ihren Anschlag als Füllhöhe. Neues Werkzeug **⇕** (zwischen ⬚ und ⌫, Pinsel und Mithören bleiben, wo sie sind): Note senkrecht ziehen = Anschlag, du hörst ihn dabei; unten die Leiste **◀ VEL 96 ⇕ ▶** für die gewählten Noten. In der Drum-Schritt-Ansicht geht das auch.
+- **Lock-Kern (noch ohne Knöpfe):** Die App kann jetzt einzelnen Noten eigene Reglerwerte und freie Reglerreihen im Clip mitgeben – mit Abspielen, Speichern und Video. Zum Bedienen gibt es noch nichts (kommt mit der Lock-Bedienung); deine Projekte ändern sich dadurch nicht.
+- Zusammengeführt: Die Instrument-Wahl macht nur noch der Schalter **Drums | North** (kein zweiter North-Knopf); „Alle Pads North“ in der Platte nimmt denselben Weg. Das Merkmal „Locks“ steht in derselben Prüfliste wie Super-Regler und ◆ (ältere Stände öffnen solche Projekte nur zum Ansehen).
+- Offen: deine Abnahme beider Teile. Die Platte gilt nur für das Drum-Kit, noch nicht für eine Perkussionsspur (North auf einer Synth-Spur). Im Drum-Editor ist die Titelzeile mit **Platte** hochkant enger (der Spurname wird gekürzt) – sag, wenn die Taste woanders hin soll. Die Fragen aus dem Paket (Anschlag nach Tipp-Höhe oder fest, Rot-Ton, Kits im Rad) sind noch offen.
+Tests: Regeln (live 1×, MS 2000 1×, Marken 0), acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün; kurz geprüft: Schalter North → Taste „Platte“ (66 × 44 px, Zeile läuft nicht über), Platte öffnet/schließt ohne Fehler.
+
 ## 4.37.0 — Transponieren sauber, Teile-Blatt geführt, feiner Pinsel, Scrubbing + Verlauf, Vorlage beim Nachsingen
 
 Grundlage 4.36.0 + fünf Pakete in einem Durchgang (HARM, KONUX, PINSEL2, SX714, G10J).
