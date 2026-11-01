@@ -12261,7 +12261,9 @@ registerProcessor('dirigent-hall', DirigentHall);
    synq-meter (VV4-F Maeusekino): ONE meter for all tracks + master. Inputs 0..n-2 = the tracks (post fader, N.cut),
    input n-1 = the master output. Every win blocks (about 30 Hz) it posts [t, peak0, rms0, peak1, rms1, ...] (t = context
    time at the end of the window). Measures only: the output stays silent, the taps are plain fan-outs (sound unchanged).
-   No allocation in process(): the message object and its Float32Array are made once (postMessage copies them).
+   The offline render (video) uses win 1 (one window per 128 frames) and sends batch windows per message; the last block of
+   total frames sends what is left. No allocation in process(): the message object and its Float32Array are made once
+   (postMessage copies them).
    {on: false} stops all work (hidden display, CPU limiter level >= 2); {dispose: true} ends the processor.
    ====================================================================================================================== */
 class SynqMeter extends AudioWorkletProcessor {
@@ -12271,11 +12273,12 @@ class SynqMeter extends AudioWorkletProcessor {
     this.n = Math.max(1, (o && o.numberOfInputs) | 0);
     this.win = Math.max(1, p.win | 0 || Math.round(sampleRate / 30 / 128));
     this.pk = new Float32Array(this.n); this.sq = new Float64Array(this.n);
-    this.out = new Float32Array(1 + 2 * this.n); this.msg = {mtr: this.out, seq: 0};
+    this.W = 1 + 2 * this.n; this.batch = Math.max(1, p.batch | 0 || 1); this.total = +p.total || 0;
+    this.out = new Float32Array(this.batch * this.W); this.msg = {mtr: this.out, seq: 0, n: 0}; this.bi = 0;
     this.k = 0; this.on = p.on !== false; this.alive = true;
     this.port.onmessage = e => {
       const m = e.data; if (!m) return;
-      if (m.on != null) { this.on = !!m.on; this.k = 0; this.pk.fill(0); this.sq.fill(0); }
+      if (m.on != null) { this.on = !!m.on; this.k = 0; this.bi = 0; this.pk.fill(0); this.sq.fill(0); }
       if (m.dispose) this.alive = false;
     };
   }
@@ -12292,10 +12295,11 @@ class SynqMeter extends AudioWorkletProcessor {
       pk[k] = p; sq[k] += s / nc;
     }
     if (++this.k >= this.win) {
-      const out = this.out, N = this.win * 128;
-      out[0] = currentTime + 128 / sampleRate;
-      for (let k = 0; k < n; k++) { const r = Math.sqrt(sq[k] / N), p = pk[k]; out[1 + 2 * k] = p >= 0 && p < 1e9 ? p : 0; out[2 + 2 * k] = r >= 0 && r < 1e9 ? r : 0; pk[k] = 0; sq[k] = 0; }
-      this.msg.seq++; this.port.postMessage(this.msg); this.k = 0;
+      const out = this.out, N = this.win * 128, o = this.bi * this.W;
+      out[o] = currentTime + 128 / sampleRate;
+      for (let k = 0; k < n; k++) { const r = Math.sqrt(sq[k] / N), p = pk[k]; out[o + 1 + 2 * k] = p >= 0 && p < 1e9 ? p : 0; out[o + 2 + 2 * k] = r >= 0 && r < 1e9 ? r : 0; pk[k] = 0; sq[k] = 0; }
+      this.k = 0;
+      if (++this.bi >= this.batch || (this.total && currentFrame + 128 >= this.total)) { this.msg.n = this.bi; this.msg.seq++; this.port.postMessage(this.msg); this.bi = 0; }
     }
     return this.alive;
   }
@@ -33756,8 +33760,8 @@ const MTR_IN = MAX_T + 1, MTR_W = 1 + 2 * MTR_IN, MTR_HOLD = 1.5, MTR_LED = Math
 const MTR = {want: false, chkT: 0, vis: false, els: [], master: [], disp: new Float32Array(MTR_IN * 4), drawn: [], frames: 0, on: false};
 // a time-ordered store of meter windows (live: ring of cap windows; video: all windows of the render)
 function mtrStore(cap) { return {cap, t: new Float64Array(cap), v: new Float32Array(cap * MTR_W), cnt: 0, seq: 0, lost: 0}; }
-function mtrPut(Q, a, seq) {
-  const j = Q.cnt % Q.cap; Q.t[j] = a[0]; Q.v.set(a, j * MTR_W); Q.cnt++;
+function mtrPut(Q, a, seq, n) {
+  for (let w = 0; w < (n || 1); w++) { const j = Q.cnt % Q.cap; Q.t[j] = a[w * MTR_W]; Q.v.set(a.subarray(w * MTR_W, (w + 1) * MTR_W), j * MTR_W); Q.cnt++; }
   if (seq != null) { if (Q.seq && seq !== Q.seq + 1) Q.lost += Math.max(0, seq - Q.seq - 1); Q.seq = seq; }
 }
 // the newest window that ends at or before τ (logical index) or -1
@@ -33769,14 +33773,18 @@ function mtrFind(Q, tau) {
   return lo;
 }
 const mtrDb = x => (x > 1e-6 ? 20 * Math.log10(x) : -120);
-// input k at time τ: [peak, rms, hold (max peak of the last 1.5 s), led (1 = a peak over −0.3 dBFS in the last 1.5 s)]
-function mtrAt(Q, tau, k, o, oi) {
+// input k at time τ: [peak, rms, hold (max peak of the last 1.5 s), led (1 = a peak over −0.3 dBFS in the last 1.5 s)].
+// span = 0: the newest window (live, ≈ 32 ms); span > 0: all windows ending in (τ − span, τ] together (video: one picture)
+function mtrAt(Q, tau, k, o, oi, span) {
   o[oi] = o[oi + 1] = o[oi + 2] = o[oi + 3] = 0;
   const j = mtrFind(Q, tau); if (j < 0 || tau - Q.t[j % Q.cap] > .25) return o;    // nothing measured near τ (stopped meter): empty
-  const b = (j % Q.cap) * MTR_W + 1 + 2 * k; o[oi] = Q.v[b]; o[oi + 1] = Q.v[b + 1];
-  let h = 0; const lo = Math.max(0, Q.cnt - Q.cap);
-  for (let x = j; x >= lo; x--) { const q = x % Q.cap; if (Q.t[q] <= tau - MTR_HOLD) break; const p = Q.v[q * MTR_W + 1 + 2 * k]; if (p > h) h = p; }
-  o[oi + 2] = h; o[oi + 3] = h > MTR_LED ? 1 : 0;
+  let h = 0, pk = 0, ss = 0, m = 0; const lo = Math.max(0, Q.cnt - Q.cap), c = 1 + 2 * k, lim = tau - (span || 0) + 1e-9;
+  for (let x = j; x >= lo; x--) {
+    const q = x % Q.cap, tx = Q.t[q]; if (tx <= tau - MTR_HOLD) break;
+    const p = Q.v[q * MTR_W + c]; if (p > h) h = p;
+    if (!m || tx > lim) { const r = Q.v[q * MTR_W + c + 1]; ss += r * r; m++; if (p > pk) pk = p; }
+  }
+  o[oi] = pk; o[oi + 1] = Math.sqrt(ss / Math.max(1, m)); o[oi + 2] = h; o[oi + 3] = h > MTR_LED ? 1 : 0;
   return o;
 }
 const mtrFrac = x => { const d = mtrDb(x); return d <= MTR_FLOOR ? 0 : d >= 0 ? 1 : (d - MTR_FLOOR) / -MTR_FLOOR; };
@@ -33787,10 +33795,10 @@ function mtrBuild(off) {
   let node;
   try {
     node = new AudioWorkletNode(c, 'synq-meter', {numberOfInputs: MTR_IN, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 2,
-      channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: {on: !!off || MTR.on}});
+      channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: off ? {on: true, win: 1, batch: 16, total: c.length} : {on: MTR.on}});
   } catch (e) { logErr(e); return null; }
   const M = AU.meter = {node, ctx: c, tap: [], off: !!off, Q: off ? mtrStore(Math.ceil(c.length / 128) + 8) : mtrStore(160)};
-  node.port.onmessage = e => { const m = e.data; if (m && m.mtr) mtrPut(M.Q, m.mtr, m.seq); };
+  node.port.onmessage = e => { const m = e.data; if (m && m.mtr) mtrPut(M.Q, m.mtr, m.seq, m.n); };
   node.connect(c.destination);
   for (let i = 0; i < NT(); i++) mtrTap(i);
   try { if (AU.M && AU.M.ceil) AU.M.ceil.connect(node, 0, MAX_T); } catch (e) { logErr(e); }
@@ -48154,6 +48162,7 @@ async function vvRenderAudio(o) {
     vvProf('swapIn', performance.now() - PS);
   } catch (e) { if (off.sv) vvSwapOut(off.sv); VV.off = null; UI.vvOff = false; throw e; }
   const t0 = R.startTime, endB = b < song.bars ? R.songPlay.off + b * 4 : null, q = t => Math.ceil(t * sr / 128) * 128 / sr;
+  if (off.mtr) live.mtr = {Q: off.mtr.Q, gl: AU.graphLat, off: t0 + AU.graphLat};   // VV4-F: the pictures drawn behind the render read the meter too
   const last = [];
   const recSlots = now => {
     for (let i = 0; i < NT(); i++) {
@@ -48215,7 +48224,7 @@ async function vvRenderAudio(o) {
   } finally { finishLive(); VV.off = null; }
   if (fail) throw fail;
   // VV4-F: the meter windows of the render arrive as messages; wait (≤ 1.5 s) until the last expected one is in
-  if (off.mtr) { const Q = off.mtr.Q, want = Math.floor(out.length / 128 / Math.max(1, Math.round(sr / 30 / 128))) - 1, W0 = performance.now();
+  if (off.mtr) { const Q = off.mtr.Q, want = Math.ceil(Math.floor(out.length / 128) / 16), W0 = performance.now();
     while (Q.seq < want && performance.now() - W0 < 1500) await new Promise(r => setTimeout(r, 15)); off.mtr.want = want; }
   let PT = performance.now();
   // trim: from the heard song start; the tail ends where the master stays below −60 dBFS (blocks of 512), ≤ 10 s
@@ -48232,7 +48241,7 @@ async function vvRenderAudio(o) {
   for (let ch = 0; ch < 2; ch++) out.getChannelData(ch).fill(0, eIdx);
   vvProf('trim', performance.now() - PT);
   const r = {buf: out, ch: chs, off: s0 / sr, n, sr, dur: n / sr, songSec, tail: (eIdx - sEnd) / sr, capped, a, b, bpm: S.bpm, tl: off.tl, log: off.log, ms: performance.now() - T0, wk, nt: live.nt || [], t0: live.t0,
-    mtr: off.mtr ? {Q: off.mtr.Q, gl: AU.graphLat, want: off.mtr.want} : null};   // VV4-F: video time t = context time r.off + t (tracks: − gl)
+    mtr: off.mtr ? {Q: off.mtr.Q, gl: AU.graphLat, want: off.mtr.want, off: s0 / sr} : null};   // VV4-F: video time t = context time r.off + t (tracks: − gl)
   VV.last = r;
   return r;
 }
@@ -48417,9 +48426,9 @@ function vvDrawMeters(g, t, rect) {
     const b = Object.assign({}, b0), led = 4;
     if (b.hz) { b.mw = b.w - led - 2; } else { b.mh = b.h - led - 2; }
     let tau = null, Q = null;
-    if (R_) { Q = R_.Q; tau = src.off + (t || 0) - (b.k === MAX_T ? 0 : R_.gl); }
+    if (R_) { Q = R_.Q; tau = R_.off + (t || 0) - (b.k === MAX_T ? 0 : R_.gl); }
     else if (LQ) { Q = LQ; tau = AU.meter.ctx.currentTime - (b.k === MAX_T ? AU.devLat : AU.outLat); }
-    if (Q) mtrAt(Q, tau, b.k, o, 0); else o.fill(0);
+    if (Q) mtrAt(Q, tau, b.k, o, 0, R_ ? 1 / VV_FPS : 0); else o.fill(0);
     // the track: the bar body and the LED cell
     g.fillStyle = 'rgba(255,255,255,.08)';
     if (b.hz) g.fillRect(b.x, b.y, b.mw, b.h); else g.fillRect(b.x, b.y + led + 2, b.w, b.mh);
@@ -48562,6 +48571,7 @@ async function vvEncodeWC(job) {
       const nF = r ? Math.max(1, Math.round(r.dur * fps)) : Infinity;
       if (f >= nF) break;
       if (!r && f / fps > live.t - .05) { await Promise.race([rP, new Promise(res => setTimeout(res, 8))]); continue; }
+      if (!r && live.mtr && !(live.mtr.Q.cnt && live.mtr.Q.t[(live.mtr.Q.cnt - 1) % live.mtr.Q.cap] >= live.mtr.off + f / fps)) { await Promise.race([rP, new Promise(res => setTimeout(res, 8))]); continue; }   // VV4-F: the meter windows of this picture are in
       const PF = performance.now();
       vvDraw(g, W, H, job.view, vvStateAt(r || live, f / fps), job.rt);
       const fr = new VideoFrame(cv, {timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps)});
