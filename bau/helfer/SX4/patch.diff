@@ -1,0 +1,331 @@
+--- bau/snapshots/R-4310.html	2026-11-01 10:42:11.240916781 +0000
++++ bau/helfer/SX4/index.html	2026-11-01 10:54:15.424959829 +0000
+@@ -4263,6 +4263,22 @@
+ .mtr.hz .p,.mtr.hz .r{background:linear-gradient(to right,var(--play) 0,var(--play) 75%,var(--amber) 75%,var(--amber) 95%,#ff4b4b 95%);-webkit-clip-path:inset(0 100% 0 0);clip-path:inset(0 100% 0 0)}
+ .mtr.hz .h{top:0;bottom:0;left:0;width:1px;height:auto}
+ .mtr.hz .l{left:auto;right:0;width:3px}
++/* SX4-CSS-BEGIN – Spurkopf: S-Marke (Solo), gedimmt (nicht im Solo), stumm im Song, Lautstärke-Schieber im Kopf (absolut, nichts verschiebt sich) */
++.th,.sv-l.trk{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
++.sx4b{position:absolute;right:3px;top:3px;min-width:14px;height:14px;padding:0 3px;border-radius:7px;background:var(--amber);color:#0b0c0f;font:800 9px/14px var(--font-ui);text-align:center;pointer-events:none;z-index:2}
++.sx4b[hidden]{display:none}
++.th.sx4so{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
++.sv-l.trk.sx4so{box-shadow:inset 0 0 0 1px var(--amber)}
++.th.sx4dim .nm,.th.sx4dim .sb,.sv-l.trk.sx4dim>i+span{opacity:.4}
++.sv-l.trk.sx4mu>i+span{opacity:.45;text-decoration:line-through}
++.sx4v{position:absolute;left:0;top:0;right:0;bottom:0;display:none;flex-direction:column;justify-content:center;align-items:stretch;gap:5px;padding:0 8px 0 10px;background:#0b0c0f;pointer-events:none;z-index:3}
++.sx4on>.sx4v{display:flex}
++.sx4vl{font:800 13px/1 var(--font-ui);color:var(--text);text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:0}
++.sx4vt{position:relative;height:4px;border-radius:2px;background:rgba(255,255,255,.14)}
++.sx4vf{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--tc,var(--play))}
++.sx4v0{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--text-faint)}
++.sv-l .sx4v{padding:0 3px 0 6px;gap:3px}.sv-l .sx4vl{font-size:10px;letter-spacing:-.01em}.sv-l .sx4vt{height:3px}
++/* SX4-CSS-END */
+ /* ND2 (Nachtrag 6 §ND2): Editor der Drum-Engine – Zellen in Geräte-Paaren (Name, Wert groß, Unterzeile), Zeilen B/E, Listen, KIT-Block */
+ .pg-md,.pg-mdk{display:flex;flex-direction:column;gap:6px;min-height:0}
+ .dsrc{position:relative}
+@@ -21941,7 +21957,8 @@
+   N.trem.connect(N.duck); N.duck.connect(N.vol);
+   let post = N.vol; if (N.pan) { N.vol.connect(N.pan); post = N.pan; }
+   N.post = post;
+-  N.cut = c.createGain(); post.connect(N.cut); N.dryCut = false;
++  N.sx4 = c.createGain(); post.connect(N.sx4);                   // SX4: Solo-Gain (nur live ≠ 1; Offline-Render immer 1)
++  N.cut = c.createGain(); N.sx4.connect(N.cut); N.dryCut = false;
+   N.cut.connect(AU.masterSum); N.cut.connect(N.revSend); N.cut.connect(N.dlySend);
+   N.revSend.connect(AU.hallIn); N.dlySend.connect(AU.echoIn);
+   return N;
+@@ -21967,6 +21984,7 @@
+   AU.tracks[i] = A;
+   if (tr.kind === 'drum') { AU.kit = null; if (AU.drumBufs) drumBusBuild(); }    // WP6: the kit bus feeds trackIn (§1.5)
+   applyTrackParams(i, true);
++  A.sx4.gain.value = sx4Pass(i) ? 1 : 0;                                          // SX4: Solo gilt auch für eine neu gebaute Kette
+   mtrTap(i);                                                                      // VV4-F: the new chain feeds the meter
+ }
+ // the effect values of a track: its sound.fx (WP6: the drum track too, §8.2)
+@@ -25324,6 +25342,7 @@
+   if (e.kind === 'tphase') return tkPhaseOf(e.track, e.scene);                                  // VS-L-fix
+   if (e.kind === 'gfx') return g4Snap(e.track);                                                // G4
+   if (e.kind === 'chorlanes') return g6pLanesSnap(e.track);                                     // G6+a: Chor-Spuren
++  if (e.kind === 'sx4m') return S.tracks[e.track] && S.tracks[e.track].mute ? '1' : '0';       // SX4: stumm per Spurkopf
+   return fxSnapshot();
+ }
+ // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
+@@ -25350,6 +25369,7 @@
+   else if (e.kind === 'tphase') tkPhaseSet(e.track, e.scene, val);                            // VS-L-fix
+   else if (e.kind === 'gfx') g4Restore(e.track, val);            // G4
+   else if (e.kind === 'chorlanes') g6pLanesRestore(e.track, val);   // G6+a
++  else if (e.kind === 'sx4m') { if (S.tracks[e.track]) setMute(e.track, val === '1'); }   // SX4
+   else if (e.kind === 'part') partRestore(JSON.parse(val));
+   else restoreFx(JSON.parse(val));
+   UI.dirty.all = true; markDirty();
+@@ -25423,6 +25443,7 @@
+ HIST.kind('tphase', () => []);                                    // G-VID-merge: VS-L-fix – nur Laufzeit (Phase der laufenden Schleife), kein Projektfeld
+ HIST.kind('group', e => (e.items || []).flatMap(histPaths));
+ HIST.kind('proj', () => [[]]);
++HIST.kind('sx4m', e => [['tracks', e.track, 'mute']]);            // SX4: stumm per Spurkopf
+ function histPaths(e) {
+   const f = HIST.kinds.get(e && e.kind);
+   if (!f) { HIST.unknown.add(String(e && e.kind)); return [[]]; }
+@@ -27110,6 +27131,7 @@
+     const h = el('button', 'th', '<span class="bar"></span><span class="nm"></span><span class="sb"></span><span class="fb"></span>');
+     h.dataset.t = i; h.style.setProperty('--tc', `var(--t${i + 1})`); g.appendChild(h);
+     const mt = mtrEl(); h.appendChild(mt);                                     // VV4-F: the level bar beside the colour bar
++    guardTouch(h); h.setAttribute('aria-label', 'Spur: Tipp = stumm, Halten = Solo, waagrecht schieben = Lautstärke');   // SX4: kein iOS-Scroll/Klick-Nachzügler
+     UI.heads[i] = {el: h, nm: h.children[1], sb: h.children[2], fb: h.children[3], st: {}, mt};
+     UI.cells[i] = [];
+     for (let s = 0; s < N_SCN; s++) {
+@@ -27163,6 +27185,7 @@
+     setCls(H.el, H.st, 'sel', i === R.selT);
+     setCls(H.el, H.st, 'hfix', fcls === 'fb fix');
+     setCls(H.el, H.st, 'muted', !!tr.mute);
++    sx4HeadSync(H.el, i);                                                        // SX4: S / gedimmt
+     for (let k = 0; k < MX.scenes.length; k++) {
+       const s = MX.scenes[k];
+       const C = UI.cells[i][s], clip = tr.clips[s], st = C.st;
+@@ -27309,7 +27332,7 @@
+   SV.rowsKey = key; L._n = rows.length;
+   for (const d of [...L.querySelectorAll('.sv-l.trk')]) d.remove();
+   const before = SV.lc;
+-  for (const i of rows) { const d = el('div', 'sv-l trk', '<i></i><span></span>'); if (i >= 0) { d.style.setProperty('--tc', `var(--t${i + 1})`); d._mt = mtrEl('hz'); d.appendChild(d._mt); } else d.classList.add('blank'); d.dataset.t = i; L.insertBefore(d, before); }   // VV4-F: level bar
++  for (const i of rows) { const d = el('div', 'sv-l trk', '<i></i><span></span>'); if (i >= 0) { d.style.setProperty('--tc', `var(--t${i + 1})`); d._mt = mtrEl('hz'); d.appendChild(d._mt); guardTouch(d); } else d.classList.add('blank');   /* SX4: guardTouch */ d.dataset.t = i; L.insertBefore(d, before); }   // VV4-F: level bar
+   SV.sig = ''; UI.dirty.song = true;
+ }
+ function songViewOn() { return !!UI.songView; }
+@@ -27376,7 +27399,8 @@
+   onTap(lm, () => openMelPop(lm));
+   labs.append(lc, lm); SV.lc = lc;
+   // V2e (N7S-39): a track label selects the track (the keyboard plays it, the NOTEN target shows it)
+-  onTap(labs, d => { const t = +d.dataset.t; if (!(t >= 0) || !S.tracks[t]) return; selectTrack(t); haptic('tick'); lcdOrToast(S.tracks[t].name + ' gewählt'); UI.dirty.song = true; }, '.sv-l.trk');
++  // SX4: am Spurnamen Tipp = stumm (+ wählen), Halten = Solo, waagrecht = Lautstärke (vorher: Tipp = wählen)
++  on(labs, 'pointerdown', e => { const d = e.target.closest('.sv-l.trk'); const t = d ? +d.dataset.t : -1; if (t >= 0 && S.tracks[t]) sx4Down(e, d, t); });
+   const wrap = el('div', 'sv-cw'), cv = el('canvas', 'sv-cv'), empty = el('div', 'sv-empty');
+   // V2e (6.4/6.5): the empty song names both ways in; [＋ Teil einsetzen ▾] also when the song is still empty (Xander 24.10. b)
+   empty.innerHTML = 'Noch kein Song.<br>FANG TEIL beim Spielen, dann den Teil in den Song ziehen – oder <b>● SONG</b>.';
+@@ -31035,7 +31059,8 @@
+     const has = !!(song && song.mel[i] && song.mel[i].notes.length), cho = !!(song && song.melodyTrack === i), mk = has || cho ? (cho ? 'cho' : 'has') : '';
+     const nm = mk ? trackTag(i) + ' ♪' : svShort(i); if (sp.textContent !== nm) sp.textContent = nm;
+     if ((d.dataset.mel || '') !== mk) { d.dataset.mel = mk; d.classList.toggle('mcho', cho); }
+-    const st = i === R.selT; if (d.classList.contains('sel') !== st) { d.classList.toggle('sel', st); d.setAttribute('aria-pressed', String(st)); } } }
++    const st = i === R.selT; if (d.classList.contains('sel') !== st) { d.classList.toggle('sel', st); d.setAttribute('aria-pressed', String(st)); }
++    sx4HeadSync(d, i); } }                                                     // SX4: S / gedimmt / stumm
+ }
+ /* melody lane → the piano roll on the chosen track's song melody (§3.9, V2b: song.mel[melodyTrack]): the clip editor with the melody as its clip; every gesture is one
+    undo step (kind 'song'); notes stay as heard (never mapped). [Als Clip] (P1 „Melodie → Clip“): the selected bar range
+@@ -42767,6 +42792,7 @@
+   try { SREC.dst = c.createMediaStreamDestination(); AU.M.ceil.connect(SREC.dst); mr = new MediaRecorder(SREC.dst.stream, type ? {mimeType: type} : undefined); }
+   catch (e) { try { AU.M.ceil.disconnect(SREC.dst); } catch (e2) {} SREC.dst = null; toast('Audio-Aufnahme ist hier nicht verfügbar'); return false; }
+   Object.assign(SREC, {on: true, mr, chunks: [], type: mr.mimeType || type || 'audio/webm', t: performance.now(), cancel: false, loop: S.song.loop.on});
++  sx4SoloApply();                                             // SX4: die Aufnahme = Mischung ohne Solo
+   mr.ondataavailable = e => { if (e.data && e.data.size) SREC.chunks.push(e.data); };
+   mr.onstop = () => songAudioDone();
+   if (S.song.loop.on) S.song.loop.on = false;                 // one pass
+@@ -42785,6 +42811,7 @@
+ }
+ async function songAudioDone() {
+   const mr = SREC.mr; SREC.mr = null; SREC.on = false;
++  sx4SoloApply();                                             // SX4: Solo wieder hörbar
+   if (S.song && SREC.loop) S.song.loop.on = true;
+   try { if (SREC.dst) AU.M.ceil.disconnect(SREC.dst); } catch (e) {}
+   SREC.dst = null; void mr;
+@@ -43055,9 +43082,12 @@
+       p.timer = setTimeout(() => { if (UI.thPress !== p) return; p.long = true; armLongPressGuard(); openStopSheet(szh); haptic('pop'); }, 450);
+       UI.thPress = p; return;
+     }
+-    if (th && !e.target.closest('.tbb')) {
+-      const i = +th.dataset.t, p = {id: e.pointerId, x: e.clientX, y: e.clientY, long: false};
+-      p.timer = setTimeout(() => { if (UI.thPress !== p) return; p.long = true; armLongPressGuard(); openTrackSheet(i, th); haptic('pop'); }, 450);
++    if (th && !e.target.closest('.tbb')) { sx4Down(e, th, +th.dataset.t); return; }   // SX4: Tipp = stumm, Halten = Solo, waagrecht = Lautstärke
++    // SX4: das Spur-Blatt (vorher: Spurkopf halten) = ■ der Zeile halten (450 ms, ≤ 8 px); der Klick danach wird gegessen (kein Stopp)
++    const sth = e.target.closest('.stp');
++    if (sth && !sth.classList.contains('all')) {
++      const i = +sth.dataset.t, p = {id: e.pointerId, x: e.clientX, y: e.clientY, long: false};
++      p.timer = setTimeout(() => { if (UI.thPress !== p) return; p.long = true; armLongPressGuard(); openTrackSheet(i, sth); haptic('pop'); }, 450);
+       UI.thPress = p; return;
+     }
+     const slot = e.target.closest('.slot');
+@@ -43091,7 +43121,7 @@
+     if (e.target.closest('.szb')) { setSceneBank(1 - sceneBankOf()); haptic('tick'); return; }
+     if (e.target.closest('.tbb')) { setTrackBank(MX.pages ? (trackBankOf() + 1) % MX.pages.length : 0); haptic('tick'); return; }
+     const th = e.target.closest('.th');
+-    if (th) { const i = +th.dataset.t; if (i === R.selT && R.editor !== 'synth' && R.editor !== 'drum') { selectTrack(i); openEditor(); } else selectTrack(i); return; }
++    if (th) { if (e.detail === 0) sx4MuteTap(+th.dataset.t); return; }   // SX4: Zeiger-Gesten macht sx4Down; nur die Tastatur (Enter/Leertaste) schaltet hier stumm
+     const stp = e.target.closest('.stp');
+     if (stp && UI.pick && !stp.classList.contains('all')) { pickTrack(+stp.dataset.t); return; }   // V2c Matrix-Auswahl: aus ↔ bleibt
+     if (stp) {
+@@ -43202,6 +43232,157 @@
+   if (m && AU.ctx) { const now = AU.ctx.currentTime; for (const v of VOICES.slice()) if (v.track === t && v.src === 'clip') { if (v.start > now) v.cancel(); else v.release(now); } if (isDrum(t)) cancelTrackFrom(t, now); }
+   UI.dirty.all = true; markDirty();
+ }
++/* SX4-BEGIN ===========================================================================================================
++   SX4 Spurkopf (Konzept Schnitt/Video „SX4 Spurkopf: Solo + Lautstärke (+ Pegel)“): am Spurnamen in Matrix und Song
++   • Tipp = stumm an/aus (die Spur wird dabei gewählt; 1 Undo, Art 'sx4m')
++   • Halten (450 ms, ≤ 8 px) = Solo an/aus; mehrere Solos gehen; sichtbar als „S“ (die anderen Spuren gedimmt)
++   • waagrecht schieben = Lautstärke (fx.vol) mit dB-Anzeige; 1 Undo je Geste (Sound-Undo). Danach bleibt der Schieber
++     1,6 s stehen: Doppeltipp darauf = 0 dB, noch einmal = Ausgangswert (vor dem Schieben)
++   • der Pegelbalken je Spur ist der von VV4-F (bleibt, wo er ist)
++   Solo ist Laufzeit (nie im Projekt, kein Undo – wie die Bank-Umschalter) und wirkt nur live: ein eigener Gain je Spurkette
++   (N.sx4 zwischen Panorama und N.cut). Offline-Render (Video, WAV, Instrumental) und „Song als Audio“ = Mischung ohne Solo.
++   Die Chor-Gruppe hängt an der STIMME-Spur (g6pcChorOn fragt sx4Pass). Das Spur-Blatt (vorher: Spurkopf halten) liegt
++   jetzt auf ■ der Zeile halten. */
++const SX4 = {solo: new Set(), p: null, vis: null, taps: null, HOLD: 450, DRAG: 10, PX: 240, SHOW: 1600};
++// Solo aktiv und die Mischung ist live (kein Offline-Kontext, keine „Song als Audio“-Aufnahme)?
++function sx4SoloLive() {
++  if (!SX4.solo.size || !AU.ctx) return false;
++  for (const t of [...SX4.solo]) if (!S.tracks.includes(t)) SX4.solo.delete(t);          // anderes Projekt, Spur entfernt
++  if (!SX4.solo.size) return false;
++  const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
++  if (OAC && AU.ctx instanceof OAC) return false;
++  return !(typeof SREC !== 'undefined' && SREC.on);
++}
++const sx4IsSolo = i => !!(S.tracks[i] && SX4.solo.has(S.tracks[i]));
++const sx4Pass = i => !sx4SoloLive() || sx4IsSolo(i);
++// alle Spur-Gains (+ Chor-Gruppe) auf den Solo-Stand; ≈ 15-ms-Rampe, kein Klick
++function sx4SoloApply() {
++  const c = AU.ctx; if (!c) return;
++  const now = c.currentTime;
++  for (let i = 0; i < NT(); i++) {
++    const A = AU.tracks[i]; if (!A || !A.sx4 || A.sx4.context !== c) continue;
++    const g = A.sx4.gain, v = sx4Pass(i) ? 1 : 0;
++    try { g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.setTargetAtTime(v, now, .005); g.setValueAtTime(v, now + .06); } catch (e) { g.value = v; }
++  }
++  if (stimmeT() >= 0 && typeof g6pcApplyAll === 'function') { try { g6pcApplyAll(); } catch (e) { logErr(e); } }
++  UI.dirty.all = true; UI.dirty.song = true;
++}
++function sx4Solo(i, on) {
++  const tr = S.tracks[i]; if (!tr) return false;
++  if (on == null) on = !SX4.solo.has(tr);
++  if (on) SX4.solo.add(tr); else SX4.solo.delete(tr);
++  sx4SoloApply();
++  return on;
++}
++// ein anderes Projekt / eine entfernte Spur: verwaiste Solos weg, Gains zurück (aus den Zeichen-Schleifen, billig)
++function sx4Prune() { if (!SX4.solo.size) return; let ch = false; for (const t of [...SX4.solo]) if (!S.tracks.includes(t)) { SX4.solo.delete(t); ch = true; } if (ch) sx4SoloApply(); }
++function sx4SoloClear() { if (!SX4.solo.size) return; SX4.solo.clear(); sx4SoloApply(); }
++const sx4Say = txt => { if (UI.songView && SV.hint) lcdOrToast(txt); else toast(txt); };
++const sx4Name = i => (UI.songView ? svShort(i) : String(S.tracks[i].name).toUpperCase());
++// Tipp = stumm (eine Geste = ein Undo-Schritt)
++function sx4MuteTap(i) {
++  const tr = S.tracks[i]; if (!tr) return;
++  const before = tr.mute ? '1' : '0';
++  selectTrack(i);
++  setMute(i, !tr.mute);
++  undoPush({kind: 'sx4m', track: i, before, label: (tr.mute ? 'Stumm ' : 'Laut ') + tr.name});
++  haptic('tick');
++  if (UI.songView) lcdOrToast(sx4Name(i) + (tr.mute ? ' stumm' : ' wieder an'));
++}
++// Lautstärke: Wert, Pegel (wie FX › SPUR: vol² / (1 + 1,5 · Drive)), 0-dB-Stelle
++const sx4Snd = i => (S.tracks[i] ? S.tracks[i].sound : null);
++const sx4Vol = i => { const s_ = sx4Snd(i); return s_ && s_.fx && s_.fx.vol != null ? +s_.fx.vol : .8; };
++const sx4Drive = i => { const s_ = sx4Snd(i); return s_ && s_.fx ? +s_.fx.drive || 0 : 0; };
++const sx4V0 = i => Math.min(1, Math.sqrt(1 + 1.5 * sx4Drive(i)));
++function sx4DbTxt(vol, drive) { const g = vol * vol / (1 + 1.5 * (drive || 0)); if (g <= 1e-6) return 'aus'; const db = 20 * Math.log10(g); return (db < -.05 ? MINUS : db > .05 ? '+' : '') + fmtDec(Math.abs(db), 1) + ' dB'; }
++function sx4VolSet(i, v) { v = clamp(v, 0, 1); return S.tracks[i] && S.tracks[i].kind === 'drum' ? drumFxSet('fx.vol', v) : setP(i, 'fx.vol', v); }
++function sx4VolGesture(i, fn, label) { const b = soundSnapshot(i); fn(); return commitSound(i, b, label || 'Lautstärke ' + S.tracks[i].name); }
++// der Schieber im Spurkopf (absolut, pointer-events: none; nichts verschiebt sich)
++function sx4Slider(el, i) {
++  let v = el.querySelector(':scope > .sx4v');
++  if (!v) { v = document.createElement('span'); v.className = 'sx4v'; v.setAttribute('aria-hidden', 'true'); v.innerHTML = '<b class="sx4vl"></b><span class="sx4vt"><span class="sx4vf"></span><span class="sx4v0"></span></span>'; el.appendChild(v); }
++  const vol = sx4Vol(i);
++  v.querySelector('.sx4vl').textContent = sx4DbTxt(vol, sx4Drive(i));
++  v.querySelector('.sx4vf').style.width = (vol * 100).toFixed(1) + '%';
++  v.querySelector('.sx4v0').style.left = (sx4V0(i) * 100).toFixed(1) + '%';
++  return v;
++}
++function sx4SliderShow(el, i, ms) {
++  sx4Slider(el, i); el.classList.add('sx4on');
++  let S_ = SX4.vis;
++  if (!S_ || S_.el !== el) { sx4SliderHide(); sx4Slider(el, i); el.classList.add('sx4on'); S_ = SX4.vis = {el, i, orig: sx4Vol(i), timer: 0}; }
++  clearTimeout(S_.timer);
++  if (ms) S_.timer = setTimeout(() => { if (SX4.vis === S_) sx4SliderHide(); }, ms);
++  return S_;
++}
++function sx4SliderHide() { const S_ = SX4.vis; if (!S_) return; clearTimeout(S_.timer); S_.el.classList.remove('sx4on'); SX4.vis = null; SX4.taps = null; }
++// Doppeltipp auf den stehenden Schieber: 0 dB ↔ Ausgangswert
++function sx4SliderTap(S_) {
++  const now = performance.now(), q = SX4.taps;
++  if (!q || q.el !== S_.el || now - q.t > 350) { SX4.taps = {el: S_.el, t: now}; sx4SliderShow(S_.el, S_.i, SX4.SHOW); return; }
++  SX4.taps = null;
++  const i = S_.i, v0 = sx4V0(i), at0 = Math.abs(sx4Vol(i) - v0) < 1e-3, to = at0 ? S_.orig : v0;
++  if (Math.abs(to - sx4Vol(i)) < 1e-4) { sx4SliderShow(S_.el, i, SX4.SHOW); return; }
++  sx4VolGesture(i, () => sx4VolSet(i, to), (at0 ? 'Lautstärke zurück ' : 'Lautstärke 0 dB ') + S.tracks[i].name);
++  haptic('snap'); sx4SliderShow(S_.el, i, SX4.SHOW);
++}
++// die Geste am Spurkopf (Matrix .th, Song .sv-l.trk): pointerdown → Halten | Schieben | Tipp
++function sx4Down(e, el, i) {
++  if (e.button > 0 || !S.tracks[i]) return;
++  if (SX4.p) sx4End(null);
++  e.preventDefault();
++  try { el.setPointerCapture(e.pointerId); } catch (err) {}
++  const p = SX4.p = {id: e.pointerId, el, i, x: e.clientX, y: e.clientY, mode: '', vol0: sx4Vol(i), before: null, timer: 0};
++  p.timer = setTimeout(() => {
++    if (SX4.p !== p || p.mode) return;
++    p.mode = 'hold';
++    const on = sx4Solo(i); haptic('pop');
++    sx4Say((on ? 'Solo ' : 'Solo aus ') + sx4Name(i) + (SX4.solo.size > 1 ? ' · ' + SX4.solo.size + ' Solos' : ''));
++  }, SX4.HOLD);
++}
++function sx4Move(e) {
++  const p = SX4.p; if (!p || p.id !== e.pointerId) return;
++  const dx = e.clientX - p.x, dy = e.clientY - p.y;
++  if (!p.mode) {
++    if (Math.abs(dx) > SX4.DRAG && Math.abs(dx) > Math.abs(dy) * 1.2) {
++      clearTimeout(p.timer); p.mode = 'vol'; p.x = e.clientX; p.before = soundSnapshot(p.i);
++      sx4SliderShow(p.el, p.i, 0); return;
++    }
++    if (Math.abs(dy) > SX4.DRAG) { clearTimeout(p.timer); p.mode = 'dead'; }
++    return;
++  }
++  if (p.mode !== 'vol') return;
++  e.preventDefault();
++  sx4VolSet(p.i, p.vol0 + dx / SX4.PX);
++  sx4Slider(p.el, p.i);
++}
++function sx4End(e) {
++  const p = SX4.p; if (!p || (e && p.id !== e.pointerId)) return;
++  SX4.p = null; clearTimeout(p.timer);
++  try { p.el.releasePointerCapture(p.id); } catch (err) {}
++  const up = !!e && e.type === 'pointerup';
++  if (p.mode === 'vol') { if (p.before != null) commitSound(p.i, p.before, 'Lautstärke ' + S.tracks[p.i].name); sx4SliderShow(p.el, p.i, SX4.SHOW); return; }
++  if (p.mode || !up) return;
++  const S_ = SX4.vis;
++  if (S_ && S_.el === p.el) { sx4SliderTap(S_); return; }             // der stehende Schieber nimmt den Tipp
++  sx4SliderHide();
++  sx4MuteTap(p.i);
++}
++on(window, 'pointermove', sx4Move, {passive: false});
++on(window, 'pointerup', sx4End); on(window, 'pointercancel', sx4End);
++// Anzeige je Spurkopf: S (Solo), gedimmt (nicht im Solo), stumm (Song: durchgestrichen wie in der Matrix)
++function sx4HeadSync(el, i) {
++  if (!el) return;
++  sx4Prune();
++  const live = SX4.solo.size > 0, so = live && sx4IsSolo(i), dim = live && !so, mu = !!(S.tracks[i] && S.tracks[i].mute);
++  if (el._sx4 === (so ? 1 : 0) + (dim ? 2 : 0) + (mu ? 4 : 0)) return;
++  el._sx4 = (so ? 1 : 0) + (dim ? 2 : 0) + (mu ? 4 : 0);
++  el.classList.toggle('sx4so', so); el.classList.toggle('sx4dim', dim); el.classList.toggle('sx4mu', mu);
++  let b = el.querySelector(':scope > .sx4b');
++  if (so && !b) { b = document.createElement('span'); b.className = 'sx4b'; b.textContent = 'S'; b.setAttribute('aria-hidden', 'true'); el.appendChild(b); }
++  if (b) b.hidden = !so;
++}
++/* SX4-END */
+ 
+ /* ---------- computer keyboard ---------- */
+ function onKeyDown(e) {
+@@ -52658,7 +52839,7 @@
+ const g6pcIs2 = a => !!(a && a.chor && a.chor.v === 2);
+ /* ---------- Spur-Merkmale (S.tracks[st].chor, G6+a) und Laufzeit-Faktoren ---------- */
+ const g6pcTrk = () => { const st = stimmeT(), t = st >= 0 ? S.tracks[st] : null; return t && t.chor && typeof t.chor === 'object' ? t.chor : null; };
+-const g6pcChorOn = () => { const L = g6pcTrk(); return !(L && L.mute); };
++const g6pcChorOn = () => { const L = g6pcTrk(); return !(L && L.mute) && sx4Pass(stimmeT()); };   // SX4: Solo einer anderen Spur → Chor still (live)
+ function g6pcLaneOn(id) { const L = g6pcTrk(), ln = L && Array.isArray(L.lanes) ? L.lanes.find(x => x && x.id === id) : null; return !(ln && ln.mute); }
+ const g6pcSoloOn = (lane, vi) => G6.solo == null || G6.solo === -1 || G6.solo === lane || (vi != null && G6.solo === vi);   // −2 = nur der Lead (Test-API); Index = „Selbst singen“ (g6Arm)
+ const g6pcGuideOf = lane => { const f = G6PC.guide.get(lane); return isNum(f) ? f : 1; };
+@@ -57930,6 +58111,10 @@
+   mtrInfo: () => { const M = AU.meter, D = MTR.disp, ch = []; for (let k = 0; k < MTR_IN; k++) ch.push({pk: mtrDb(D[k * 4]), rms: mtrDb(D[k * 4 + 1]), hold: mtrDb(D[k * 4 + 2]), led: D[k * 4 + 3]});
+     return {built: !!M, on: MTR.on, vis: MTR.vis, lim: LIM.level, n: M ? M.Q.cnt : 0, lost: M ? M.Q.lost : 0, ctxT: M ? M.ctx.currentTime : 0, ch, frames: MTR.frames, ms: MTR.ms || 0, msMax: MTR.msMax || 0, msSum: MTR.msSum || 0, els: document.querySelectorAll('.mtr').length}; },
+   mtrOpenMaster: () => openMasterPage(),
++  // SX4 (Tests): Solo-Stand, Solo-Gains der Spurketten, Lautstärke je Spur
++  sx4Info: () => ({solo: S.tracks.map((t, i) => (sx4IsSolo(i) ? i : -1)).filter(i => i >= 0), live: sx4SoloLive(), gains: AU.tracks.slice(0, NT()).map(A => (A && A.sx4 ? +A.sx4.gain.value.toFixed(3) : null)),
++    vol: S.tracks.map((t, i) => sx4Vol(i)), mute: S.tracks.map(t => !!t.mute), slider: SX4.vis ? SX4.vis.i : -1, chorOn: typeof g6pcChorOn === 'function' ? g6pcChorOn() : null}),
++  sx4Solo: (i, on) => sx4Solo(i, on), sx4SoloClear: () => sx4SoloClear(),
+   arpLog: t => (arpK() ? ARPC.arpLog(t) : []), arpClear: t => { if (arpK()) ARPC.clearLog(t); }, arpInfo: t => (arpK() ? ARPC.info(t) : null),   // MK5 (B.7)
+   mkIn: (t, which, src, dry) => { if (which != null) { const s_ = typeof src === 'number' ? (S.tracks[src] ? 't:' + S.tracks[src].uid : null) : src; if (!mkInSet(t, which, s_, dry)) throw new Error('mkIn: nicht wählbar'); } return deep(S.tracks[t].mkIn || null); },
+   mkInInfo: () => ({tracks: AU.tracks.map(A => { const k = A && A.mkL && A.mkL.k; return A ? {e1: !!(k && k[1]), e2: !!(k && k[2]), dryCut: !!A.dryCut} : null; }),
