@@ -1,0 +1,211 @@
+--- R-4320.html
++++ PINSEL2/index.html
+@@ -16071,10 +16071,14 @@
+ .pr-bar button.mpoff{opacity:.55;box-shadow:inset 0 0 0 1px var(--line,#2d323c)}
+ .pr-bar button.mpfix{background:var(--sel,#f4f1ea);color:#111;opacity:.7}
+ .pr-bar button.mplit{box-shadow:inset 0 -3px 0 var(--amber,#ffb22e)}
+-.pr-bar button.mpb{position:relative}.pr-bar button.mpb::after{content:'';position:absolute;left:0;right:0;top:-7px;bottom:-7px}`;
++.pr-bar button.mpb{position:relative}.pr-bar button.mpb::after{content:'';position:absolute;left:0;right:0;top:-7px;bottom:-7px}
++/* PINSEL2-CSS-BEGIN */
++.pr-bar button.mp2h{min-width:64px;font-variant-numeric:tabular-nums}
++/* PINSEL2-CSS-END */`;
+ 
+   /* MP Melodie-Pinsel: Einstellungen, die das Schließen überleben (Breite, Achse); manuelle Tonart je Clip (nur Sitzung) */
+-  const MPP = {w: 'mittel', axis: 'first'}, MPK = new Map();
++  const MPP = {w: 'schmal', axis: 'first'}, MPK = new Map();   // PINSEL2: Standard = fein (Ziel-Pinsel)
++  const MP2 = {hold: 90, holds: [60, 90, 120, 150], runMax: 8, turn: .6};   // PINSEL2: Verweilzeit (ms), längster Lauf (Raster-Schritte), Wende (Reihen)
+   const MP_R = {schmal: .5, mittel: 1, breit: 2}, MP_TOL = .1;
+   const MP_MODES = [['ionian', 'Dur'], ['aeolian', 'Moll'], ['dorian', 'Dorisch'], ['phrygian', 'Phrygisch'], ['lydian', 'Lydisch'], ['mixolydian', 'Mixolydisch'], ['locrian', 'Lokrisch']];
+   function create(root, model, opts = {}) {
+@@ -16171,9 +16175,11 @@
+     /* MP-BEGIN Pinsel-Optionen (vorn, nur mit Pinsel) und die zwei Leisten Tonart / Mithören (ersetzen die Aktionsleiste) */
+     const MPB = {w: {}, panel: {key: [], listen: []}};
+     for (const k of ['schmal', 'mittel', 'breit']) { MPB.w[k] = btn(acts, k, () => { MPP.w = k; render(); }, 'Pinsel-Breite ' + k); acts.insertBefore(MPB.w[k], A.rest); }
++    MPB.w.schmal.title = 'Pinsel fein: nur die Spalte unter dem Finger, erst nach kurzem Verweilen';   // PINSEL2
++    MPB.hold = btn(acts, MP2.hold + ' ms', () => { const H = MP2.holds; MP2.hold = H[(H.indexOf(MP2.hold) + 1) % H.length]; render(); }, 'Pinsel fein: so lange verweilen, bis eine Note einrastet'); MPB.hold.classList.add('mp2h'); acts.insertBefore(MPB.hold, A.rest);   // PINSEL2
+     MPB.key = btn(acts, 'Tonart: Auto', () => mpPanel(MPS.panel === 'key' ? null : 'key'), 'Tonart für Pinsel und Blöcke (Auto = Tonart der Stelle)'); acts.insertBefore(MPB.key, A.rest);
+     MPB.sep = mk('span', 'sep'); acts.insertBefore(MPB.sep, A.rest);
+-    MPB.opts = [...Object.values(MPB.w), MPB.key, MPB.sep];
++    MPB.opts = [...Object.values(MPB.w), MPB.hold, MPB.key, MPB.sep];   // PINSEL2: + Verweilzeit
+     { const P = MPB.panel.key;
+       P.push(acts.appendChild(mk('span', 'mplab', 'TONART')));
+       MPB.kAuto = btn(acts, 'Auto', () => { MPK.delete(mpId()); render(); }, 'Tonart der Stelle'); P.push(MPB.kAuto);
+@@ -16530,6 +16536,8 @@
+       if (P.size > 2 || gst) return;
+       const p = P.get(e.pointerId), h = hitNote(p.x, p.y);
+       gst = {kind: 'pending', id: e.pointerId, p0: p, hit: h, beat0: beatAt(p.x), row0: rowAt(p.y), moved: false, changed: false, ms: performance.now()};
++      // PINSEL2: der ruhende Finger rastet nach der Verweilzeit ein (ohne erst wischen zu müssen)
++      if (E.tool === 'mpBrush' && mp2On()) { const g0 = gst; setTimeout(() => { if (gst === g0 && gst.kind === 'pending') { promote(); render(); } }, MP2.hold + 2); }
+     }
+     function mainMove(e) {
+       if (!P.has(e.pointerId)) return;
+@@ -16548,6 +16556,7 @@
+       const h = gst.hit, tool = E.tool;
+       if (MS && MS.owns(tool)) { if (!MS.promote(gst)) gst = null; return; }   /* MAGIC */
+       if (tool === 'erase') { begin('erase', {gone: new Set()}); drag(gst.p0); return; }
++      if (tool === 'mpBrush' && mp2On()) { begin('mpBrush'); mp2Start(gst.ms, gst.p0); mp2To(gst.p0); return; }   // PINSEL2
+       if (tool === 'mpBrush') { begin('mpBrush'); mpStart(); mpTo(gst.p0); return; }   /* MP */
+       if (h && h.zone === 'end') {
+         const set = tool === 'select' && E.sel.has(h.note) ? scope() : [h.note];
+@@ -16614,7 +16623,8 @@
+           break;
+         }
+         case 'ms': MS.drag(gst, p); break;                           /* MAGIC */
+-        case 'mpBrush': { mpTo(p); gst.changed = !!(MB && MB.changed); break; }   /* MP */
++        case 'mpBrush': { if (MB && MB.v2) { mp2To(p); gst.changed = !!MB.changed; break; }   // PINSEL2
++          mpTo(p); gst.changed = !!(MB && MB.changed); break; }   /* MP */
+         case 'erase': {
+           const h = hitNote(p.x, p.y);
+           if (h && !gst.gone.has(h.note)) { gst.gone.add(h.note); clip().notes = clip().notes.filter(n => n !== h.note); E.sel.delete(h.note); gst.changed = true; }
+@@ -16646,11 +16656,13 @@
+     function abort() {
+       if (!gst || gst.kind === 'pending' || gst.kind === 'pinch') { if (gst && gst.kind === 'pending') gst = null; return; }
+       if (gst.changed) { model.revert(); afterExternal(); } else model.end(false);
++      if (gst.kind === 'mpBrush') MP2F.length = 0;   // PINSEL2: zurückgenommen = kein Aufleuchten
+       gst = null; MB = null;   /* MP */
+     }
+     function tap() {
+       const h = gst.hit, tool = E.tool;
+       if (MS && MS.owns(tool)) { MS.tap(gst); return; }           /* MAGIC */
++      if (tool === 'mpBrush' && mp2On()) return;   // PINSEL2: kurz getippt = nicht eingerastet = nichts geändert
+       if (tool === 'mpBrush') { model.begin(); mpStart(); mpTo(gst.p0); const ch = !!MB.changed; MB = null; model.end(ch, 'Pinsel'); return; }   /* MP: ein Pinselpunkt */
+       if (tool === 'select') { if (h) { E.sel.has(h.note) ? E.sel.delete(h.note) : E.sel.add(h.note); model.audition && model.audition(h.note.n, h.note.v); } else E.sel.clear(); return; }
+       // (Entscheidung 15) Zeichnen: a tap on a note selects it (only that one) and plays it - a stray finger never deletes a note
+@@ -16858,12 +16870,118 @@
+     }
+     // the brush band (soft edge) and the finger line while painting
+     function mpDraw(x, C) {
+-      if (!MB || !MB.cur) return;
++      mp2Draw(x, C);   // PINSEL2
++      if (!MB || !MB.cur || MB.v2) return;
+       const cx = MB.cur.x, rw = MB.R * V.ppb, gr = x.createLinearGradient(cx - rw, 0, cx + rw, 0);
+       gr.addColorStop(0, 'rgba(255,178,46,0)'); gr.addColorStop(.5, 'rgba(255,178,46,.16)'); gr.addColorStop(1, 'rgba(255,178,46,0)');
+       x.fillStyle = gr; x.fillRect(cx - rw, 0, 2 * rw, V.H);
+       x.strokeStyle = C.amber; x.globalAlpha = .8; x.lineWidth = 1; x.beginPath(); x.moveTo(cx - rw, MB.cur.y + .5); x.lineTo(cx + rw, MB.cur.y + .5); x.stroke(); x.globalAlpha = 1;
+     }
++    // PINSEL2-BEGIN der Ziel-Pinsel (wie eine Swipe-Tastatur): nur die Spalte unter dem Finger; erst Verweilen oder eine Wende setzt eine Note
++    const MP2F = [];                                                // PINSEL2: Aufleuchten nach dem Einrasten {nt | cell, t, w}
++    let mp2Raf = 0;
++    const mp2On = () => MPP.w === 'schmal';
++    const mp2G = () => GRID[E.grid] || .25;
++    const mp2Col = b => Math.floor(b / mp2G() + 1e-6);
++    function mp2Start(t0, p0) {
++      mpStart();
++      Object.assign(MB, {v2: true, cell: null, cellT: t0, t0, tm: 0, done: false, lastLock: null, locked: new Map(), dirX: 0, bentX: false, dirY: 0, pf0: mpPitchAt(p0.y), ext: null, trail: []});
++    }
++    function mp2Cell(p) { const col = mp2Col(beatAt(p.x)), b0 = col * mp2G(); return {col, b0, n: mpSnap(mpPitchAt(p.y), mpKeyAtC(Math.max(0, b0)), 0)}; }
++    // the note of a column: the one the finger already set there, else the one nearest to the pitch (a chord stays a chord)
++    function mp2Note(col, n) {
++      const had = MB.locked.get(col); if (had) return had;
++      let best = null, bd = Infinity;
++      for (const [nt, o] of MB.orig) if (mp2Col(o.t) === col) { const d = Math.abs(o.n - n); if (d < bd) { bd = d; best = nt; } }
++      return best;
++    }
++    function mp2Arm() {
++      const me = MB; clearTimeout(me.tm);
++      me.tm = setTimeout(() => { if (MB !== me || me.done || !gst || gst.kind !== 'mpBrush') return; mp2Lock(me.cell); render(); }, Math.max(0, MP2.hold - (performance.now() - me.cellT)) + 1);
++    }
++    function mp2To(p) {
++      if (!MB) return;
++      const now = performance.now(), c = mp2Cell(p), k = MB.cell, pf = mpPitchAt(p.y);
++      if (!k || k.col !== c.col || k.n !== c.n) {
++        if (k) {
++          if (MB.ext && MB.ext.col === k.col && MB.ext.n === k.n) MB.ext.out = now;
++          MB.trail.push({b0: k.b0, n: k.n, t: now}); if (MB.trail.length > 8) MB.trail.shift();
++          if (k.col !== c.col) {                                      // the finger turned left/right: the cell where it turned is a target (if it slowed there)
++            const dx = Math.sign(c.col - k.col);
++            if (MB.dirX && dx !== MB.dirX) { if (!k.done && now - MB.cellT >= MP2.hold / 2) mp2Lock(k); else MB.bentX = true; }
++            MB.dirX = dx;
++          }
++        }
++        MB.cell = c; MB.cellT = k ? now : MB.t0; MB.done = false; mp2Arm();
++      }
++      // the finger turned up/down by ≥ MP2.turn rows: the highest/lowest cell is a target (if it slowed there)
++      if (!MB.dirY) { if (Math.abs(pf - MB.pf0) >= MP2.turn) { MB.dirY = Math.sign(pf - MB.pf0); MB.ext = {pf, col: c.col, b0: c.b0, n: c.n, in: MB.cellT, out: now}; } }
++      else if ((pf - MB.ext.pf) * MB.dirY > 0) { if (MB.ext.col !== c.col || MB.ext.n !== c.n) MB.ext = {pf, col: c.col, b0: c.b0, n: c.n, in: MB.cellT, out: now}; else { MB.ext.pf = pf; MB.ext.out = now; } }
++      else if ((MB.ext.pf - pf) * MB.dirY >= MP2.turn) {
++        const X = MB.ext; if (X.out - X.in >= MP2.hold / 2 && !(MB.lastLock && MB.lastLock.col === X.col && MB.lastLock.n === X.n)) mp2Lock(X);
++        MB.dirY = -MB.dirY; MB.ext = {pf, col: c.col, b0: c.b0, n: c.n, in: MB.cellT, out: now};
++      }
++      MB.cur = {x: p.x, y: p.y};
++      if (!MB.done && now - MB.cellT >= MP2.hold) mp2Lock(MB.cell);
++      say(nm(c.n) + (MB.done ? ' · gesetzt' : ''));
++      mp2Anim();
++    }
++    // a target: the note of this column takes the pitch; a deliberate run (one direction, ≤ MP2.runMax steps) fills the columns between in the scale
++    function mp2Lock(c) {
++      if (c === MB.cell) MB.done = true;
++      c.done = true;
++      const Lb = L(); if (c.b0 < 0 || c.b0 >= Lb - 1e-9) return;
++      const now = performance.now(), prev = MB.lastLock, g = mp2G(); let ch = false;
++      const nt = mp2Note(c.col, c.n);
++      if (nt) { if (nt.n !== c.n) { nt.n = c.n; ch = true; } MB.locked.set(c.col, nt); MP2F.push({nt, t: now, w: 1}); }
++      else MP2F.push({cell: {b0: c.b0, n: c.n}, t: now, w: .6});
++      const gap = prev ? Math.abs(c.col - prev.col) : 0;
++      if (prev && gap >= 2 && gap <= MP2.runMax && !MB.bentX) {
++        const lo = Math.min(prev.col, c.col), hi = Math.max(prev.col, c.col), took = new Set();
++        for (const [m, o] of MB.orig) {
++          const cl = mp2Col(o.t); if (cl <= lo || cl >= hi || MB.locked.has(cl) || took.has(cl)) continue;
++          const f = (cl - prev.col) / (c.col - prev.col), kk = mpKeyAtC(o.t), ha = mpPos(prev.n, kk), hb = mpPos(c.n, kk);
++          const want = clamp(mpNote(2 * Math.round((ha + (hb - ha) * f) / 2), kk), LO, HI), q = mp2NoteNear(cl, want);
++          if (q !== m) continue;
++          took.add(cl); if (m.n !== want) { m.n = want; ch = true; } MP2F.push({nt: m, t: now, w: .45});
++        }
++      }
++      MB.lastLock = {col: c.col, n: c.n}; MB.bentX = false;
++      if (ch) { MB.changed = true; if (gst) gst.changed = true; }
++      if (opts.onTick) opts.onTick();                                // leiser Tick genau beim Einrasten
++      prHear(c.n, .35);
++      mp2Anim();
++    }
++    function mp2NoteNear(col, n) { let best = null, bd = Infinity; for (const [nt, o] of MB.orig) if (mp2Col(o.t) === col) { const d = Math.abs(o.n - n); if (d < bd) { bd = d; best = nt; } } return best; }
++    function mp2Anim() {
++      if (mp2Raf) return;
++      mp2Raf = requestAnimationFrame(function st() {
++        mp2Raf = 0; const now = performance.now();
++        while (MP2F.length && now - MP2F[0].t > 320) MP2F.shift();
++        render();
++        if (MP2F.length || (MB && MB.v2 && !MB.done)) mp2Raf = requestAnimationFrame(st);
++      });
++    }
++    // ghosts (preview before a target), the dwell filling up, and the short glow of what just snapped in
++    function mp2Draw(x, C) {
++      const now = performance.now(), g = mp2G(), cw = Math.max(4, g * V.ppb - 2), cy = n => yOfRow(rowOfNote(n));
++      if (MB && MB.v2 && MB.cell) {
++        for (const q of MB.trail) { const a = Math.max(0, 1 - (now - q.t) / 260); if (a <= 0) continue; x.globalAlpha = .28 * a; x.fillStyle = C.amber; x.beginPath(); x.arc(xOf(q.b0) + cw / 2 + 1, cy(q.n) + V.rowH / 2, 3, 0, 2 * Math.PI); x.fill(); }
++        const c = MB.cell, cx = xOf(c.b0) + 1, yy = cy(c.n) + 1, hh = V.rowH - 2;
++        const f = MB.done ? 1 : clamp((now - MB.cellT) / MP2.hold, 0, 1);
++        x.globalAlpha = MB.done ? .5 : .35; x.strokeStyle = C.amber; x.lineWidth = 1; x.setLineDash(MB.done ? [] : [3, 3]); x.strokeRect(cx + .5, yy + .5, cw - 1, hh - 1); x.setLineDash([]);
++        x.globalAlpha = MB.done ? .32 : .12 + .22 * f; x.fillStyle = C.amber; x.fillRect(cx, yy + hh * (1 - f), cw, hh * f);
++        x.globalAlpha = 1;
++      }
++      for (const q of MP2F) {
++        const a = Math.max(0, 1 - (now - q.t) / 320) * q.w; if (a <= 0) continue;
++        const r = q.nt ? noteRect(q.nt) : {x: xOf(q.cell.b0), y: cy(q.cell.n), w: cw, h: V.rowH};
++        x.globalAlpha = .55 * a; x.fillStyle = C.amber; x.fillRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
++        x.globalAlpha = a; x.strokeStyle = C.amber; x.lineWidth = 2; x.strokeRect(r.x - 1, r.y - 1, r.w + 2, r.h + 2); x.lineWidth = 1;
++      }
++      x.globalAlpha = 1;
++    }
++    // PINSEL2-END
+     // block range: the ruler bars, else the selection, else the whole clip
+     function mpRange() {
+       const c = clip();
+@@ -16938,6 +17056,7 @@
+       MPB.kMode.forEach((b, i) => b.classList.toggle('on', !!man && kk.scale === MP_MODES[i][0]));
+       A.mpAxis.textContent = MPP.axis === 'first' ? 'Achse: 1. Note' : 'Achse: Mitte';
+       for (const x of MPB.opts) x.hidden = !br || E.ask || !!pn;
++      MPB.hold.textContent = MP2.hold + ' ms'; if (MPP.w !== 'schmal') MPB.hold.hidden = true;   // PINSEL2
+       for (const x of MPB.panelEls) x.hidden = true;
+       if (pn) {
+         for (const x of acts.children) if (!MPB.panelEls.has(x)) x.hidden = true;
+@@ -17001,7 +17120,8 @@
+       _mm() { const r = cM.getBoundingClientRect(), R = mmRect(), sp = mmSpan(); return {on: mmOn(), x: r.left + R.x, y: r.top + R.y, w: R.w, h: R.h, Lb: sp.Lb, ax: gst && gst.ax, onMap: !!(gst && gst.onMap)}; },   /* N2 tests */
+       _key(note) { const r = cK.getBoundingClientRect(); return {x: r.left + V.KW / 2, y: r.top + yOfRow(rowOfNote(note)) + V.rowH / 2}; }};
+     /* MP: test hooks (state, a brush point, the key of a place) */
+-    api.mp = {get state() { return {tool: E.tool, w: MPP.w, R: MP_R[MPP.w], axis: MPP.axis, panel: MPS.panel, key: mpKey(0), manual: !!MPK.get(mpId()), painting: !!MB}; },
++    api.mp = {get state() { return {tool: E.tool, w: MPP.w, R: MP_R[MPP.w], axis: MPP.axis, panel: MPS.panel, key: mpKey(0), manual: !!MPK.get(mpId()), painting: !!MB, hold: MP2.hold, fine: mp2On()}; },   // PINSEL2: hold, fine
++      setHold: ms => { MP2.hold = clamp(Math.round(+ms) || 90, 60, 150); render(); },   // PINSEL2
+       keyAt: b => mpKey(b), panel: k => mpPanel(k || null), setWidth: w => { if (MP_R[w]) { MPP.w = w; render(); } }, setAxis: a => { MPP.axis = a === 'mid' ? 'mid' : 'first'; render(); },
+       setKey: k => { if (k == null) MPK.delete(mpId()); else if (mpKeyOk(k)) MPK.set(mpId(), {root: PC(k.root), scale: k.scale}); render(); }};
+     open();
