@@ -28594,9 +28594,9 @@ function sx9RowHtml(song, t, h) {
   return html;
 }
 // the small sign „v2“ on a song tile (canvas)
-function sx9Badge(g, x, y, v, col) {
+function sx9Badge(g, x, y, v, col, center) {
   const txt = 'v' + v; g.save(); g.font = '800 8px system-ui, -apple-system, sans-serif'; g.textAlign = 'left'; g.textBaseline = 'top';
-  const w = g.measureText(txt).width + 6, h = 11;
+  const w = g.measureText(txt).width + 6, h = 11; if (center) x -= w / 2;
   g.globalAlpha = 1; g.fillStyle = 'rgba(10,12,18,.85)'; g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, 3); else g.rect(x, y, w, h); g.fill();
   g.lineWidth = 1; g.strokeStyle = col; g.stroke(); g.fillStyle = '#f2f4f8'; g.fillText(txt, x + 3, y + 2); g.restore();
 }
@@ -30787,8 +30787,7 @@ function openCellSheet(t, bar) {
       }
       if (a === 'sx9add') {                                                                   // SX9: ＋ = Kopie zum Bearbeiten
         const id = sx9Add(t, bar), c = id ? sx9Ver(S.song, id) : null; if (!c) return;
-        haptic('snap'); svButtons(); openOwnRoll(t, bar);
-        toast(tr.name + ': v' + c.ver + ' neu (Kopie von v' + vh.v + ') – jetzt bearbeiten');
+        haptic('snap'); svButtons(); openOwnRoll(t, bar);                                   // the head shows „v3“ (no toast over it)
         return;
       }
       if (a === 'sx9all') {                                                                   // SX9: [Überall v2]
@@ -31076,8 +31075,10 @@ function svDraw(force, sbIn) {
       const x = X(b) + 2, k = SV.unfold ? svUnfoldK(b, now) : 1; if (k <= 0) continue;
       if (s >= 0) {
         g.globalAlpha = (ev ? .95 : .45) * k; g.fillStyle = k < 1 ? svMix(SV.cols[i], k) : SV.cols[i]; g.fillRect(x, y + 3, cw - 3, rh - 6); g.globalAlpha = k;
-        g.fillStyle = '#0b0c0f'; g.fillText(String(s + 1), x + (cw - 3) / 2, y + rh / 2);
-        if (ow) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.strokeRect(x - .25, y + 2.75, cw - 2.5, rh - 5.5); g.fillStyle = '#f2f4f8'; g.beginPath(); g.arc(x + cw - 8, y + 7.5, 2, 0, Math.PI * 2); g.fill(); }
+        const vq = ow ? sx9Ver(song, ow) : null;                                   // SX9: a version shows „v2“ under the number
+        g.fillStyle = '#0b0c0f'; g.fillText(String(s + 1), x + (cw - 3) / 2, y + rh / 2 - (vq && rh >= 26 ? 5 : 0));
+        if (vq) sx9Badge(g, x + (cw - 3) / 2, y + rh / 2 + (rh >= 26 ? 1 : -5), vq.ver, SV.cols[i], true);
+        if (ow && !vq) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.strokeRect(x - .25, y + 2.75, cw - 2.5, rh - 5.5); g.fillStyle = '#f2f4f8'; g.beginPath(); g.arc(x + cw - 8, y + 7.5, 2, 0, Math.PI * 2); g.fill(); }
         g.globalAlpha = 1;
       } else { g.globalAlpha = k; g.fillStyle = ev ? '#8b919c' : '#3c4049'; g.fillText('–', x + (cw - 3) / 2, y + rh / 2); g.globalAlpha = 1; }
     }
@@ -39370,7 +39371,7 @@ function rollKbApply() {
 }
 function rollHeadUpdate() {
   if (!ED.rollInfo || !ED.rollAt) return;
-  if (ED.rollAt.own) { const c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (!c) return; const txt = 'eigener Clip · ' + c.notes.length + (c.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + c.len + (c.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; } return; }
+  if (ED.rollAt.own) { const c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (!c) return; const txt = (c.ver >= 2 ? 'Version v' + c.ver : 'eigener Clip') /* SX9 */ + ' · ' + c.notes.length + (c.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + c.len + (c.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; } return; }
   if (ED.rollAt.mel) { const m = S.song && curMel(S.song); if (!m) return; const txt = m.notes.length + (m.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + m.len + (m.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; ED.rollInfo.title = txt + ' · wie gespielt (nie umgerechnet)'; } return; }
   const c = S.tracks[ED.rollAt.t].clips[ED.rollAt.s]; if (!c) return;
   if (ED.laufBtn) { const ok = laufCheck(c).ok; ED.laufBtn.classList.toggle('dis', !ok); ED.laufBtn.setAttribute('aria-disabled', String(!ok)); ED.laufBtn.title = ok ? 'LAUF: Schrittansicht für Basslauf und Sequenz' : LAUF_MSG; }
@@ -54930,8 +54931,10 @@ function vvDrawSong(g, LW, LH, st) {
       const x = X(b) + 2;
       if (s >= 0) {
         g.globalAlpha = ev ? .95 : .45; g.fillStyle = C.t[i] || '#888'; g.fillRect(x, y + 3, cw - 3, rh - 6); g.globalAlpha = 1;
-        g.fillStyle = '#0b0c0f'; g.fillText(String(s + 1), x + (cw - 3) / 2, y + rh / 2);
-        if (ow) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.strokeRect(x - .25, y + 2.75, cw - 2.5, rh - 5.5); }
+        const vq = ow ? sx9Ver(song, ow) : null;                                   // SX9: Schild „v2“ (Video-Song-Ansicht)
+        g.fillStyle = '#0b0c0f'; g.fillText(String(s + 1), x + (cw - 3) / 2, y + rh / 2 - (vq && rh >= 26 ? 5 : 0));
+        if (vq) sx9Badge(g, x + (cw - 3) / 2, y + rh / 2 + (rh >= 26 ? 1 : -5), vq.ver, C.t[i] || '#888', true);
+        if (ow && !vq) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.strokeRect(x - .25, y + 2.75, cw - 2.5, rh - 5.5); }
       } else { g.fillStyle = ev ? '#8b919c' : '#3c4049'; g.fillText('–', x + (cw - 3) / 2, y + rh / 2); }
     }
   });

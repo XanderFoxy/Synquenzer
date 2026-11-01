@@ -1,0 +1,357 @@
+--- R-4310.html
++++ SX9/index.html
+@@ -4329,6 +4329,14 @@
+ .pg-md>.vchips .vchip{min-height:44px}
+ #drumSheet .sh-subs:has(.stab[data-sub="tone"]) .stab,#drumSheet .sh-subs:has(.stab[data-sub="md"]) .stab{min-height:44px;height:44px}
+ /* Ende ND2 */
++/* SX9-CSS-BEGIN */
++.plsheet .sx9-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 6px}
++.plsheet .sx9-l{font:600 12px/1 var(--font-ui);color:var(--text-dim);margin-right:2px}
++.plsheet .sx9-v{min-width:44px;height:44px;padding:0 8px;font:800 14px/1 var(--font-ui)}
++.plsheet .sx9-v.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}
++.plsheet .sx9-add svg{width:16px;height:16px;display:block;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;fill:none}
++.rhead .sx9-tag{display:inline-block;margin-left:4px;padding:1px 5px;border-radius:6px;border:1px solid var(--sel);color:var(--sel);font:800 11px/1.2 var(--font-ui)}
++/* SX9-CSS-END */
+ </style>
+ </head>
+ <body>
+@@ -21582,6 +21590,7 @@
+   }
+   if (isNum(c.from.cs)) out.from.cs = +(+c.from.cs).toFixed(4);
+   if (isNum(c.from.e1)) out.from.e1 = clamp(Math.round(c.from.e1), 0, SONG_MAX_BARS);   // key order as ownEnsure / ownWhole write it
++  if (isNum(c.ver) && c.ver >= 2) out.ver = clamp(Math.round(c.ver), 2, sx9Max());   // SX9: a version of the scene clip (v2 …)
+   return out;
+ }
+ /* V2d (song-delta 12.1): a lane entry {bar, slot, re?:1 (restart of the same slot), ph?: beats (the clip's phase at this bar),
+@@ -28244,6 +28253,7 @@
+ function songWrite(song, n, ch, keepIds) {
+   const ownMap = {};
+   if (ch.own) for (const id of Object.keys(ch.own)) {
++    const vh = sx9MapId(song, ch.own[id]); if (vh) { ownMap[id] = vh; continue; }   // SX9: the song's own v2 stays the one v2
+     let nid = id; if (!keepIds || (song.own && song.own[id])) { let k = 1; while (song.own && song.own['o' + k]) k++; nid = 'o' + k; }
+     (song.own || (song.own = {}))[nid] = deep(ch.own[id]); ownMap[id] = nid;
+   }
+@@ -28280,7 +28290,7 @@
+   if (song.xp) { song.xp.sort((a, b) => a.beat - b.beat); let v = 0; song.xp = song.xp.filter(x => { if (x.semi === v) return false; v = x.semi; return true; }); }
+   song.marks = marksNorm(song.marks, song.bars);
+   for (const k in song.mel) { const m = song.mel[k]; m.notes.sort((a, b) => a.t - b.t); m.len = Math.max(1, song.bars); }
+-  if (song.own) { const used = new Set(); for (const l of song.lanes) for (const e of l) if (e.own) used.add(e.own); for (const id of Object.keys(song.own)) if (!used.has(id)) delete song.own[id]; }
++  if (song.own) { const used = new Set(); for (const l of song.lanes) for (const e of l) if (e.own) used.add(e.own); for (const id of Object.keys(song.own)) if (!used.has(id) && !sx9Ver(song, id)) delete song.own[id]; }   // SX9: a version stays in the list without a place
+   if (song.video) vvDirTidy(song);                                 // VV2
+   konTidy(song);                                                   // KON
+ }
+@@ -28313,10 +28323,11 @@
+   const {o, L, ds, d0, d1, bs, be} = r, lane = song.lanes[t];
+   song.own = song.own || {};
+   // already an own clip that is exactly this one Durchlauf (and nowhere else): write into it
+-  if (o.own && song.own[o.own] && bs === d0 && Math.abs(ds - o.cs) < 1e-6 && be * 4 <= o.cs + L + 1e-6 && ownRefs(song, o.own) === 1) return {id: o.own, c: song.own[o.own], ds};
++  if (o.own && song.own[o.own] && !sx9Ver(song, o.own) && bs === d0 && Math.abs(ds - o.cs) < 1e-6 && be * 4 <= o.cs + L + 1e-6 && ownRefs(song, o.own) === 1) return {id: o.own, c: song.own[o.own], ds};
+   if (ownCount(song) >= OWN_MAX) { if (!UI.ownFullWarned) { UI.ownFullWarned = true; toast('Höchstens ' + OWN_MAX + ' eigene Clips je Song'); } return null; }
+   const src = o.own ? song.own[o.own] : S.tracks[t].clips[o.slot]; if (!src) return null;
+   const id = ownNewId(song), c = deep(src), prevE = lane.find(e => e.bar === d0);
++  delete c.ver;                                                    // SX9: a take into a version cell makes an own copy (the version stays)
+   // V2e′-fix: besides the entry that stood here, the origin that played (prev) and the scene clip's origin (cs) — so that
+   // „Zurück zum Szenen-Clip“ still finds the scene clip when the copy it came from is gone
+   const pcs = o.own ? ownRefCs(song, song.own[o.own]) : o.cs;
+@@ -28385,6 +28396,7 @@
+   sim.lanes[t] = deep(song.lanes[t] || []);
+   for (let g = 0; g < 2 * OWN_MAX + 8; g++) {
+     const e = sim.lanes[t].find(x => x.own); if (!e) break;
++    if (sx9Ver(sim, e.own)) { delete e.own; continue; }            // SX9: a version stands for its scene clip (same phase)
+     if (!sim.own[e.own] || !ownDropId(sim, t, e.own)) delete e.own;
+   }
+   return sim;
+@@ -28400,7 +28412,7 @@
+   // room for the pieces (the own clips inside the block go away with it)
+   const n = Math.ceil((be - bs) / 16), inner = new Set(), outer = new Set();
+   for (const e of lane) if (e.own) (e.bar >= bs && e.bar < be ? inner : outer).add(e.own);
+-  let freed = 0; for (const id of inner) if (!outer.has(id) && song.own[id]) freed++;
++  let freed = 0; for (const id of inner) if (!outer.has(id) && song.own[id] && !sx9Ver(song, id)) freed++;   // SX9
+   if (ownCount(song) - freed + n > OWN_MAX) { if (!UI.ownFullWarned) { UI.ownFullWarned = true; toast('Höchstens ' + OWN_MAX + ' eigene Clips je Song'); } return null; }
+   // the notes as they sound now, bar by bar (scene clip or own clip), from c0 on
+   const pieces = [];
+@@ -28421,10 +28433,10 @@
+   }
+   const refE = ref.lanes[t].find(e => e.bar === bs);
+   for (let j = lane.length - 1; j >= 0; j--) if (lane[j].bar >= bs && lane[j].bar < be) lane.splice(j, 1);
+-  for (const id of inner) if (!outer.has(id)) delete song.own[id];
++  for (const id of inner) if (!outer.has(id) && !sx9Ver(song, id)) delete song.own[id];   // SX9: versions stay
+   const ids = [];
+   for (const pc of pieces) {
+-    const c = deep(base), id = ownNewId(song); delete c.from;
++    const c = deep(base), id = ownNewId(song); delete c.from; delete c.ver;   // SX9
+     c.len = pc.c1 - pc.c0; c.notes = pc.notes;
+     c.from = {t, s, bar: pc.c0, e: pc.c0 === bs && refE ? deep(refE) : null, prev: {slot: s, own: null, cs: +o.cs.toFixed(4)}, cs: +o.cs.toFixed(4)};
+     if (pc.c1 < be) c.from.e1 = pc.c1;
+@@ -28477,6 +28489,117 @@
+   return r ? id : (ownClipAt(t, x) ? ownClipAt(t, x).id : null);
+ }
+ function dropOwn(t, x) { if (!S.song) return false; return !!songEdit('Zurück zum Szenen-Clip', song => { ownDrop(song, t | 0, x | 0); }); }
++/* ---------- SX9 Versionen eines Clips (spec SX9; Xander 24.10.: „Refrain 2 mit anderem Bass, ohne das Original zu verlieren“):
++   v1 = the scene clip itself; v2 … v8 are copies in song.own with `ver` and from {t, s, bar: 0}, shared by every lane entry that
++   names them (own:id, like an own clip). So playback, Konsolidieren, Video/WAV, MIDI, Speichern/Laden and the online copy take
++   the chosen version on the path an own clip takes. Version entries keep the scene clip's phase. One undo 'song' per gesture;
++   an edit in ROLLE is one undo 'own' as for an own clip. Without `ver` everything is as before ---------- */
++function sx9Bpb() { return 4; }                                     // SX9: Schläge je Takt (the song grid is 4/4)
++function sx9Max() { return 8; }                                     // SX9: v1 … v8
++function sx9Ver(song, id) { const c = id && song && song.own ? song.own[id] : null; return c && c.ver >= 2 && c.from ? c : null; }
++function sx9List(song, t, s) {
++  const out = []; if (!song || !song.own) return out;
++  for (const id of Object.keys(song.own)) { const c = sx9Ver(song, id); if (c && c.from.t === t && c.from.s === s) out.push({id, v: c.ver}); }
++  return out.sort((a, b) => a.v - b.v);
++}
++function sx9Find(song, t, s, v) { const h = sx9List(song, t, s).find(x => x.v === v); return h ? h.id : null; }
++// a version the song already has stays itself when a chunk / a part brings it back (no second „v2“)
++function sx9MapId(song, c) { return c && c.ver >= 2 && c.from ? sx9Find(song, c.from.t, c.from.s, c.ver) : null; }
++// track t at bar x: {s, v, id} (v 1 = the scene clip, id null) — null for an own clip („eigen“) or when nothing plays
++function sx9At(song, t, x) {
++  const lane = song && song.lanes[t]; if (!lane) return null;
++  const o = laneOriginAt(lane, x); if (!laneClipOk(song, t, o)) return null;
++  if (!o.own) return {s: o.slot, v: 1, id: null};
++  const c = sx9Ver(song, o.own); return c ? {s: o.slot, v: c.ver, id: o.own} : null;
++}
++// „an dieser Stelle“: the bars around x where the same scene clip plays (any version) — inside the Teil-Marke that holds x;
++// without a mark the Durchlauf of the cell
++function sx9Span(song, t, x) {
++  const h = sx9At(song, t, x), r = ownRun(song, t, x); if (!h || !r) return null;
++  const m = (song.marks || []).find(z => x >= z.a && x < z.a + z.len);
++  const lo = m ? m.a : r.d0, hi = Math.min(song.bars, m ? m.a + m.len : r.d1);
++  const ok = b => { const q = sx9At(song, t, b); return !!q && q.s === h.s; };
++  let a = x, b = x + 1;
++  while (a - 1 >= lo && ok(a - 1)) a--;
++  while (b < hi && ok(b)) b++;
++  return {a, b, s: h.s};
++}
++// bar b of lane t plays tg {slot, own, cs} from now on (the entry that stood at b is replaced)
++function sx9Put(song, t, b, tg) {
++  const lane = song.lanes[t], k = lane.findIndex(e => e.bar === b); if (k >= 0) lane.splice(k, 1);
++  ownPlayAs(song, t, b, tg);
++}
++// bars [a, b) of lane t play version id (null = v1, the scene clip) in the scene clip's phase; what follows goes on as before
++function sx9Set(song, t, a, b, id) {
++  const lane = song.lanes[t], bp = sx9Bpb(), o0 = laneOriginAt(lane, a), s = o0.slot; if (s < 0) return;
++  const end = b < song.bars ? laneOriginAt(lane, b) : null;
++  const inner = lane.filter(e => e.bar > a && e.bar < b && e.slot === s && (!e.own || sx9Ver(song, e.own)));
++  const cs0 = inner.map(e => laneOriginAt(lane, e.bar).cs);
++  for (const e of inner) { if (id) e.own = id; else delete e.own; }
++  sx9Put(song, t, a, {slot: s, own: id || null, cs: o0.cs});
++  // an entry inside that went on in phase keeps its origin (before, a change of version there may have started a new one)
++  inner.forEach((e, j) => {
++    if (e.re || e.ph != null || !lane.includes(e)) return;
++    const o = laneOriginAt(lane, e.bar); if (Math.abs(o.cs - cs0[j]) < 1e-6) return;
++    const L = songClipPeriod(song, t, o, songClipBeats(song, t, o)), ph = phMod(e.bar * bp - cs0[j], L);
++    if (ph > 1e-6 && L - ph > 1e-6) e.ph = +ph.toFixed(4); else e.re = 1;
++  });
++  if (end && end.slot >= 0) sx9Put(song, t, b, {slot: end.slot, own: end.own || null, cs: end.cs});
++}
++// every place of lane t where scene clip s plays (any version, not an own clip) plays version id
++function sx9SetAll(song, t, s, id) {
++  for (let x = 0; x < song.bars; x++) {
++    const h = sx9At(song, t, x); if (!h || h.s !== s) continue;
++    let b = x + 1; while (b < song.bars) { const q = sx9At(song, t, b); if (!q || q.s !== s) break; b++; }
++    sx9Set(song, t, x, b, id); x = b - 1;
++  }
++}
++// ＋: a copy of the version that plays at x (scene clip or v-n) becomes the next version and plays at its place
++function sx9New(song, t, x) {
++  const h = sx9At(song, t, x), sp = sx9Span(song, t, x); if (!h || !sp) return null;
++  const v = sx9List(song, t, h.s).reduce((m, q) => Math.max(m, q.v), 1) + 1;
++  if (v > sx9Max()) { toast('Höchstens ' + sx9Max() + ' Versionen je Clip'); return null; }
++  if (ownCount(song) >= OWN_MAX) { toast('Höchstens ' + OWN_MAX + ' eigene Clips je Song'); return null; }
++  const src = h.id ? song.own[h.id] : S.tracks[t].clips[h.s]; if (!src) return null;
++  const c = deep(src), id = ownNewId(song);
++  delete c.from; delete c.ver;
++  for (const n of c.notes || []) { delete n.born; delete n.bornRun; }
++  c.from = {t, s: h.s, bar: 0}; c.ver = v;                            // key order as ownNorm writes it
++  song.own = song.own || {}; song.own[id] = c;
++  sx9Set(song, t, sp.a, sp.b, id);
++  return id;
++}
++function sx9Rng(a, b) { return b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1); }
++// the gestures (one undo 'song' each; null / false: nothing changed)
++function sx9Pick(t, x, id) {
++  const song = S.song; if (!song) return null; const sp = sx9Span(song, t, x); if (!sp) return null;
++  const c = id ? sx9Ver(song, id) : null; if (id && !c) return null;
++  return songEdit('Version ' + (c ? 'v' + c.ver : 'v1') + ' · ' + sx9Rng(sp.a, sp.b), sg => { sx9Set(sg, t, sp.a, sp.b, id || null); }) ? sp : null;
++}
++function sx9PickAll(t, s, id) {
++  const song = S.song; if (!song) return false; const c = id ? sx9Ver(song, id) : null; if (id && !c) return false;
++  return !!songEdit('Überall ' + (c ? 'v' + c.ver : 'v1'), sg => { sx9SetAll(sg, t, s, id || null); });
++}
++function sx9Add(t, x) { let id = null; songEdit('Neue Version', sg => { id = sx9New(sg, t, x); }); return id && S.song && sx9Ver(S.song, id) ? id : null; }
++// the versions row of the Zell-Blatt (h = sx9At at the cell)
++function sx9RowHtml(song, t, h) {
++  const list = sx9List(song, t, h.s);
++  const B = (v, id, on) => `<button class="rb sx9-v${on ? ' on' : ''}" data-a="sx9v" data-id="${id || ''}" aria-label="Version v${v} hier"${on ? ' aria-pressed="true"' : ''}>v${v}</button>`;
++  let html = `<div class="sx9-row" role="group" aria-label="Versionen"><span class="sx9-l">Versionen:</span>` + B(1, null, h.v === 1);
++  for (const q of list) html += B(q.v, q.id, q.v === h.v);
++  if (list.length + 1 < sx9Max()) html += `<button class="rb sx9-v sx9-add" data-a="sx9add" aria-label="Neue Version (Kopie von v${h.v})"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg></button>`;
++  html += `</div>`;
++  if (list.length) html += `<button class="rb pl-o" data-a="sx9all"><b>Überall v${h.v}</b><small>jede Stelle mit Szene ${h.s + 1} spielt v${h.v}</small></button>`;
++  if (h.id) html += `<button class="rb pl-o" data-a="edit"><b>v${h.v} bearbeiten</b><small>gilt überall, wo v${h.v} steht</small></button>`;
++  return html;
++}
++// the small sign „v2“ on a song tile (canvas)
++function sx9Badge(g, x, y, v, col, center) {
++  const txt = 'v' + v; g.save(); g.font = '800 8px system-ui, -apple-system, sans-serif'; g.textAlign = 'left'; g.textBaseline = 'top';
++  const w = g.measureText(txt).width + 6, h = 11; if (center) x -= w / 2;
++  g.globalAlpha = 1; g.fillStyle = 'rgba(10,12,18,.85)'; g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, 3); else g.rect(x, y, w, h); g.fill();
++  g.lineWidth = 1; g.strokeStyle = col; g.stroke(); g.fillStyle = '#f2f4f8'; g.fillText(txt, x + 3, y + 2); g.restore();
++}
+ // a part / a scene as a chunk (N7-R6)
+ function partChunk(p, Lf) {
+   const L = Lf || partLen(p), lanes = [];
+@@ -30602,7 +30725,7 @@
+     while (b < Math.min(b1, bars)) {
+       const run = ownRun(song, t, b);
+       if (!run) { b++; continue; }
+-      const d0 = run.d0, d1 = Math.max(d0 + 1, Math.min(run.d1, bars)), x0 = X(d0) + 2, x1 = X(d1) - 1, w = x1 - x0, own = !!run.o.own;
++      const d0 = run.d0, d1 = Math.max(d0 + 1, Math.min(run.d1, bars)), x0 = X(d0) + 2, x1 = X(d1) - 1, w = x1 - x0, vv = run.o.own ? sx9Ver(song, run.o.own) : null, own = !!run.o.own && !vv;   // SX9: a version is no „eigen“
+       const k = Math.min(svUnfoldK(d0, now), 1);
+       if (k > 0) {
+         g.globalAlpha = k;
+@@ -30617,13 +30740,14 @@
+         if (w >= 16 && th >= 14) {
+           g.save(); g.textAlign = 'left'; g.textBaseline = 'top';
+           if (own) { g.font = '700 8px system-ui, -apple-system, sans-serif'; g.fillStyle = '#f2f4f8'; g.fillText('eigen', x0 + 4, y + 5); }
+-          else { g.font = '700 9px system-ui, -apple-system, sans-serif'; g.fillStyle = 'rgba(242,244,248,.75)'; g.fillText(String(run.o.slot + 1), x0 + 4, y + 5); }
++          else { g.font = '700 9px system-ui, -apple-system, sans-serif'; g.fillStyle = 'rgba(242,244,248,.75)'; g.fillText(String(run.o.slot + 1), x0 + 4, y + 5); if (vv && w >= 30) sx9Badge(g, x0 + 4 + g.measureText(String(run.o.slot + 1)).width + 4, y + 4, vv.ver, col); }   // SX9: Schild „v2“
+           g.restore();
+         }
+         if (cur >= d0 && cur < d1 && R.songPlay) { g.fillStyle = col; g.globalAlpha = .9; g.fillRect(x0, y + 3 + th - 2, Math.max(1, (cur - d0) / (d1 - d0) * w), 2); }
+         g.globalAlpha = 1;
+       }
+       SV.tileGeo.push({t, a: d0, b: d1, n: svTileNotes(song, t, run).n, own, slot: run.o.slot, x0: Math.round(x0 * 10) / 10, x1: Math.round(x1 * 10) / 10});
++      if (vv) SV.tileGeo[SV.tileGeo.length - 1].ver = vv.ver;     // SX9
+       b = Math.max(d1, b + 1);
+     }
+   }
+@@ -30637,13 +30761,14 @@
+ function svCellRef(t, bar) { const s = S.song; if (!s || !s.lanes[t] || bar >= s.bars) return false; const o = laneOriginAt(s.lanes[t], bar); return o.slot >= 0 && laneClipOk(s, t, o); }
+ function openCellSheet(t, bar) {
+   const song = S.song; if (!song || !svCellRef(t, bar) || svRecBusy()) return;
+-  const own = svCellOwnAt(t, bar), run = ownRun(song, t, bar); if (!run) return;
++  const vh = sx9At(song, t, bar), own = vh ? null : svCellOwnAt(t, bar), run = ownRun(song, t, bar); if (!run) return;   // SX9: a version is no „eigener Clip“
+   const blk = ownRefRun(song, t, bar) || run;          // [Ganzer Block] covers the scene clip's block (V2e′-fix)
+   const tr = S.tracks[t], sc = run.o.slot + 1, rng = run.d1 - run.d0 > 1 ? 'Takt ' + (run.d0 + 1) + '–' + run.d1 : 'Takt ' + (run.d0 + 1);
+   SV.cell = {t, a: run.d0, b: run.d1}; UI.dirty.song = true; folEdit('song');
+   openPop(null, p => {
+     p.classList.add('plsheet', 'csheet'); guardTouch(p);
+-    p.innerHTML = `<div class="ms-h"><b>${esc(tr.name.toUpperCase())}</b><span>· ${rng} · ${own ? 'eigener Clip' : 'Szene ' + sc}</span><button class="rb ms-x" data-a="x" aria-label="Schließen">✕</button></div>` +
++    p.innerHTML = `<div class="ms-h"><b>${esc(tr.name.toUpperCase())}</b><span>· ${rng} · ${own ? 'eigener Clip' : 'Szene ' + sc + (vh && vh.v > 1 ? ' · v' + vh.v : '')}</span><button class="rb ms-x" data-a="x" aria-label="Schließen">✕</button></div>` +
++      (vh ? sx9RowHtml(song, t, vh) : '') +                                                  // SX9: Versionen v1 · v2 · ＋
+       (own ? `<button class="rb pl-o" data-a="edit"><b>Bearbeiten</b><small>ROLLE auf diesem eigenen Clip</small></button>` +
+              `<button class="rb pl-o" data-a="back"><b>Zurück zum Szenen-Clip</b><small>die Kopie fällt weg, hier spielt wieder Szene ${sc}</small></button>`
+            : `<button class="rb pl-o" data-a="own"><b>Eigener Clip (dieser Durchlauf)</b><small>${rng} wird eine Kopie, die nur hier gilt</small></button>`) +
+@@ -30654,6 +30779,22 @@
+       const a = b.dataset.a; closePop(); if (a === 'x') return;
+       if (a === 'vvshow') { vvCellTap(t, run.bs, Math.min(run.be, song.bars)); return; }   // VV2
+       if (a === 'edit') { openOwnRoll(t, bar); return; }
++      if (a === 'sx9v') {                                                                     // SX9: diese Version hier
++        const id = b.dataset.id || null, c = id ? sx9Ver(S.song, id) : null, v = c ? c.ver : 1, sp = sx9Pick(t, bar, id);
++        if (!sp) { toast(tr.name + ': hier spielt schon v' + v); return; }
++        toast(tr.name + ' · ' + sx9Rng(sp.a, sp.b) + ': v' + v, c ? [{label: 'Bearbeiten', fn: () => openOwnRoll(t, sp.a)}, songUndoAct()] : songUndoAct());
++        haptic('snap'); svButtons(); return;
++      }
++      if (a === 'sx9add') {                                                                   // SX9: ＋ = Kopie zum Bearbeiten
++        const id = sx9Add(t, bar), c = id ? sx9Ver(S.song, id) : null; if (!c) return;
++        haptic('snap'); svButtons(); openOwnRoll(t, bar);                                   // the head shows „v3“ (no toast over it)
++        return;
++      }
++      if (a === 'sx9all') {                                                                   // SX9: [Überall v2]
++        if (sx9PickAll(t, vh.s, vh.id)) { toast(tr.name + ': überall v' + vh.v + ' (Szene ' + sc + ')', songUndoAct()); haptic('snap'); svButtons(); }
++        else toast(tr.name + ': überall schon v' + vh.v);
++        return;
++      }
+       if (a === 'back') { if (dropOwn(t, bar)) { toast(tr.name + ' · ' + rng + ': wieder Szene ' + sc, songUndoAct()); svButtons(); } return; }
+       const id = makeOwn(t, bar, a === 'whole'), oc = id ? ownClipAt(t, bar) : null;
+       if (!id || !oc) { toast('Hier ist kein Clip'); return; }
+@@ -30678,7 +30819,7 @@
+   return {
+     getClip: cur,
+     begin() { const c = cur(); snap = c ? JSON.stringify(c) : null; },
+-    end(changed, label) { if (changed && snap) { undoPush({kind: 'own', id, before: snap, label: 'Eigener Clip: ' + (label || 'Bearbeiten')}); afterOwnEdit(t, id); folEdit('roll'); } snap = null; },
++    end(changed, label) { if (changed && snap) { undoPush({kind: 'own', id, before: snap, label: (sx9Ver(S.song, id) ? 'Version v' + sx9Ver(S.song, id).ver + ': ' : 'Eigener Clip: ') + (label || 'Bearbeiten')});   /* SX9 */ afterOwnEdit(t, id); folEdit('roll'); } snap = null; },
+     revert() { const c = cur(); if (snap && c) { const d = JSON.parse(snap); Object.keys(c).forEach(k => { if (!(k in d)) delete c[k]; }); Object.assign(c, d); afterOwnEdit(t, id); } snap = null; },
+     undo: () => { undo(); }, redo: () => { redo(); },
+     canUndo: () => UNDO.length > 0, canRedo: () => REDO.length > 0,
+@@ -30706,6 +30847,7 @@
+   const land = window.matchMedia('(orientation: landscape)').matches; ED.rollLand = land;
+   const head = el('div', 'rhead'), ht = el('div', 'rht');
+   const ttl = el('div', 'sh-title', `<span class="dot"></span><b>${esc(tr.name)} · ${esc(ownRollRange(id))}</b>`); ttl.title = tr.name + ' · ' + ownRollRange(id) + ' · eigener Clip (gilt nur an dieser Song-Stelle)'; ht.appendChild(ttl);
++  if (c.ver >= 2 && c.from) { ttl.innerHTML = `<span class="dot"></span><b>${esc(tr.name)} · Szene ${c.from.s + 1}</b><span class="sx9-tag">v${c.ver}</span>`; ttl.title = tr.name + ' · Szene ' + (c.from.s + 1) + ' · Version v' + c.ver + ' (gilt überall, wo v' + c.ver + ' steht)'; }   // SX9
+   const info = el('span', 'rinfo'); ht.appendChild(info); ED.rollInfo = info;
+   const chip = el('span', 'trchip'); chip.hidden = true; ht.appendChild(chip); ED.trChip = chip;
+   head.appendChild(ht); ED.rollHT = ht;
+@@ -30933,8 +31075,10 @@
+       const x = X(b) + 2, k = SV.unfold ? svUnfoldK(b, now) : 1; if (k <= 0) continue;
+       if (s >= 0) {
+         g.globalAlpha = (ev ? .95 : .45) * k; g.fillStyle = k < 1 ? svMix(SV.cols[i], k) : SV.cols[i]; g.fillRect(x, y + 3, cw - 3, rh - 6); g.globalAlpha = k;
+-        g.fillStyle = '#0b0c0f'; g.fillText(String(s + 1), x + (cw - 3) / 2, y + rh / 2);
+-        if (ow) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.strokeRect(x - .25, y + 2.75, cw - 2.5, rh - 5.5); g.fillStyle = '#f2f4f8'; g.beginPath(); g.arc(x + cw - 8, y + 7.5, 2, 0, Math.PI * 2); g.fill(); }
++        const vq = ow ? sx9Ver(song, ow) : null;                                   // SX9: a version shows „v2“ under the number
++        g.fillStyle = '#0b0c0f'; g.fillText(String(s + 1), x + (cw - 3) / 2, y + rh / 2 - (vq && rh >= 26 ? 5 : 0));
++        if (vq) sx9Badge(g, x + (cw - 3) / 2, y + rh / 2 + (rh >= 26 ? 1 : -5), vq.ver, SV.cols[i], true);
++        if (ow && !vq) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.strokeRect(x - .25, y + 2.75, cw - 2.5, rh - 5.5); g.fillStyle = '#f2f4f8'; g.beginPath(); g.arc(x + cw - 8, y + 7.5, 2, 0, Math.PI * 2); g.fill(); }
+         g.globalAlpha = 1;
+       } else { g.globalAlpha = k; g.fillStyle = ev ? '#8b919c' : '#3c4049'; g.fillText('–', x + (cw - 3) / 2, y + rh / 2); g.globalAlpha = 1; }
+     }
+@@ -39183,7 +39327,7 @@
+   sh.innerHTML = ''; sh.style.setProperty('--tc', `var(--t${t + 1})`);
+   const land = window.matchMedia('(orientation: landscape)').matches; ED.rollLand = land;
+   const head = el('div', 'rhead'), ht = el('div', 'rht');
+-  ht.appendChild(el('div', 'sh-title', `<span class="dot"></span><b>${esc(tr.name)} · Szene ${s + 1}</b>`));
++  ht.appendChild(el('div', 'sh-title', `<span class="dot"></span><b>${esc(tr.name)} · Szene ${s + 1}</b>` + (S.song && sx9List(S.song, t, s).length ? '<span class="sx9-tag">v1</span>' : '')));   // SX9: welche Version
+   const info = el('span', 'rinfo'); ht.appendChild(info); ED.rollInfo = info;
+   const chip = el('span', 'trchip'); chip.hidden = true; ht.appendChild(chip); ED.trChip = chip;
+   head.appendChild(ht); ED.rollHT = ht;
+@@ -39227,7 +39371,7 @@
+ }
+ function rollHeadUpdate() {
+   if (!ED.rollInfo || !ED.rollAt) return;
+-  if (ED.rollAt.own) { const c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (!c) return; const txt = 'eigener Clip · ' + c.notes.length + (c.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + c.len + (c.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; } return; }
++  if (ED.rollAt.own) { const c = S.song && S.song.own && S.song.own[ED.rollAt.own]; if (!c) return; const txt = (c.ver >= 2 ? 'Version v' + c.ver : 'eigener Clip') /* SX9 */ + ' · ' + c.notes.length + (c.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + c.len + (c.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; } return; }
+   if (ED.rollAt.mel) { const m = S.song && curMel(S.song); if (!m) return; const txt = m.notes.length + (m.notes.length === 1 ? ' Note' : ' Noten') + ' · ' + m.len + (m.len === 1 ? ' Takt' : ' Takte'); if (ED.rollInfo._t !== txt) { ED.rollInfo._t = txt; ED.rollInfo.textContent = txt; ED.rollInfo.title = txt + ' · wie gespielt (nie umgerechnet)'; } return; }
+   const c = S.tracks[ED.rollAt.t].clips[ED.rollAt.s]; if (!c) return;
+   if (ED.laufBtn) { const ok = laufCheck(c).ok; ED.laufBtn.classList.toggle('dis', !ok); ED.laufBtn.setAttribute('aria-disabled', String(!ok)); ED.laufBtn.title = ok ? 'LAUF: Schrittansicht für Basslauf und Sequenz' : LAUF_MSG; }
+@@ -39588,7 +39732,7 @@
+   const per = LAUF_PER[LAUF.grid], pages = Math.max(1, Math.ceil(laufTot(c) / per));
+   if (LAUF.page >= pages) LAUF.page = 0;
+   const head = el('div', 'rhead'), ht = el('div', 'rht');
+-  ht.appendChild(el('div', 'sh-title', `<span class="dot"></span><b>${esc(tr.name)} · Szene ${s + 1}</b>`));
++  ht.appendChild(el('div', 'sh-title', `<span class="dot"></span><b>${esc(tr.name)} · Szene ${s + 1}</b>` + (S.song && sx9List(S.song, t, s).length ? '<span class="sx9-tag">v1</span>' : '')));   // SX9: welche Version
+   const info = el('span', 'rinfo'); ht.appendChild(info); ED.rollInfo = info;
+   const chip = el('span', 'trchip'); chip.hidden = true; ht.appendChild(chip); ED.trChip = chip;
+   head.appendChild(ht); ED.rollHT = ht;
+@@ -54787,8 +54931,10 @@
+       const x = X(b) + 2;
+       if (s >= 0) {
+         g.globalAlpha = ev ? .95 : .45; g.fillStyle = C.t[i] || '#888'; g.fillRect(x, y + 3, cw - 3, rh - 6); g.globalAlpha = 1;
+-        g.fillStyle = '#0b0c0f'; g.fillText(String(s + 1), x + (cw - 3) / 2, y + rh / 2);
+-        if (ow) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.strokeRect(x - .25, y + 2.75, cw - 2.5, rh - 5.5); }
++        const vq = ow ? sx9Ver(song, ow) : null;                                   // SX9: Schild „v2“ (Video-Song-Ansicht)
++        g.fillStyle = '#0b0c0f'; g.fillText(String(s + 1), x + (cw - 3) / 2, y + rh / 2 - (vq && rh >= 26 ? 5 : 0));
++        if (vq) sx9Badge(g, x + (cw - 3) / 2, y + rh / 2 + (rh >= 26 ? 1 : -5), vq.ver, C.t[i] || '#888', true);
++        if (ow && !vq) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.strokeRect(x - .25, y + 2.75, cw - 2.5, rh - 5.5); }
+       } else { g.fillStyle = ev ? '#8b919c' : '#3c4049'; g.fillText('–', x + (cw - 3) / 2, y + rh / 2); }
+     }
+   });
+@@ -57624,7 +57770,7 @@
+   VV4.probe = {kind: what, i, t, els: []};
+   g.fillStyle = C.bg; g.fillRect(0, 0, LW, LH); if (!tr) return VV4.probe;
+   const s = st.slots[i], c = s != null && s >= 0 ? vvClip(i, s, st.own[i]) : null;
+-  const right = c ? (st.own[i] ? 'eigener Clip' : 'Szene ' + (s + 1)) : '–';
++  const vx = st.own[i] ? sx9Ver(S.song, st.own[i]) : null, right = c ? (st.own[i] && !vx ? 'eigener Clip' : 'Szene ' + (s + 1) + (vx ? ' · v' + vx.ver : '')) : '–';   // SX9
+   const hy = vv4Head(g, LW, st, i, C, right), pad = 10, x = pad, y = hy + 4, w = LW - 2 * pad, h = LH - y - pad, port = LH > LW;
+   try {
+     if (what === 'drum') VV4.probe.drum = vv4DrumIn(g, x, y, w, h, st, i, C, src, t);
+@@ -58222,7 +58368,8 @@
+       const k0 = (m.off || []).findIndex(r => r.t === t && r.b0 === seg.b0); if (k0 < 0) return;
+       const r = m.off.splice(k0, 1)[0]; if (!m.off.length) delete m.off;
+       const map = {};
+-      if (r.own) for (const oid of Object.keys(r.own)) { let nid = oid; if (sg.own && sg.own[nid]) { let n = 1; while (sg.own['o' + n]) n++; nid = 'o' + n; } (sg.own || (sg.own = {}))[nid] = deep(r.own[oid]); map[oid] = nid; }
++      if (r.own) for (const oid of Object.keys(r.own)) { const vh = sx9MapId(sg, r.own[oid]); if (vh) { map[oid] = vh; continue; } let nid = oid;   // SX9
++        if (sg.own && sg.own[nid]) { let n = 1; while (sg.own['o' + n]) n++; nid = 'o' + n; } (sg.own || (sg.own = {}))[nid] = deep(r.own[oid]); map[oid] = nid; }
+       for (let k = lane.length - 1; k >= 0; k--) if (lane[k].bar >= x0 && lane[k].bar < x1) lane.splice(k, 1);
+       for (const x of r.e) if (x.bar < x1 - x0) { const y = Object.assign({}, x, {bar: x0 + x.bar}); if (y.own) y.own = map[y.own] || y.own; laneInsert(lane, y); }
+       s0LaneCont(sg, t, x1, al);
