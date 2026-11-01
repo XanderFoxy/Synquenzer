@@ -7243,3 +7243,135 @@ Ein Hinweis zu t-layout: Laufen alle Tests gleichzeitig, misst der Bildraten-Tes
    - Es gibt zwei Tonart-Wahlen mit gleichem Inhalt (Magic [Auto ▾] und Pinsel). Reicht eine?
 3. **Aus KON:** Ein Teil mit Transpositions-Wechsel in der Mitte nimmt nur die Transposition vom Anfang, wenn er live aus der Teil-Leiste gestartet wird.
 4. Noch nicht auf dem iPhone geprüft. Fertig ist es erst nach Xanders Okay.
+## 4.29.0 — Video zeigt die echte App
+
+App: `rel-4290/index.html`, 4 490 658 B. Das sind +117 KB gegenüber 4.28.0 (4 373 680 B). md5 `4ae337d5…`.
+Die Merge-Fassung vor den zwei Fixes liegt als `index-vor-fix.html` daneben (`70dbba7c…`), die Änderung gegen 4.28.0 als `release.diff`.
+`VERSION = '4.29.0'` (APP_CODE 4029000). Die Zeile `  live: true,` steht 1× da, „MS 2000“ genau 1×, keine Markennamen.
+
+Basis ist 4.28.0 (online). Alles daraus bleibt: Konsolidieren/Block, Magic Scale, Melodie-Pinsel, Chor-Gruppe, Mitlese-Zeile,
+GarageBand-Umweg und Songtext-Erkennung. Dazu kommt die Stage VIDEO mit fünf Paketen: VV4-A, VV4-C/E, VV4-B/D, VV4-F und VV-LOGO.
+Zusammengeführt mit `git merge-file` gegen 4.27.0. Es gab einen echten Konflikt: die Zeile `Object.assign(SYNQUENZER, …)`.
+Dort stehen G-GB (aus 4.27.1) und die drei Video-Schnittstellen jetzt untereinander. VERSION hatten beide Seiten gleich auf 4.28.0
+gesetzt, sie steht jetzt auf 4.29.0. Klänge, Regler und gespeicherte Projekte bleiben gleich.
+
+### Was du siehst
+
+**In der App**
+- **Pegel je Spur („Mäusekino“):** In der Matrix ein schmaler senkrechter Balken neben dem Farbstreifen jeder Spur, im Song ein
+  waagrechter Balken unter dem Spurnamen. Grün, ab −12 dB gelb, ganz oben rot; rote LED bei Übersteuerung. Nichts verschiebt sich.
+- **Master-Balken:** Matrix am linken Rand von „SONG ⇄“, Song neben „TAKT“. Antippen öffnet die MASTER-Seite.
+- **Bild-Menü je Taktbereich:** Takte markieren → ⋯ → Video. Zwei Zeilen: `[Auto] [App] [Song] [Matrix]` und
+  `[Spur …] [Tastatur] [Fokus …]`. „Spur …“ → `[Piano-Roll] [Drum-Sequenzer] [Modulation]` → Spur.
+  „Fokus …“ → `[Clip-Zelle] [Tastatur] [Teil-Kopf] [Übergang]`. Modulation steht nur bei Spuren mit echter Modulation.
+- **Video-Blatt:** bei 9:16 die dritte Wahl **[Ganze App]**; neue Zeile **„Abspann“** mit [Abspann-Logo] (an/aus) und
+  [Andere Datei wählen …].
+
+**Im Video**
+- **Piano-Roll** mit den echten Noten des Clips, klingende Noten umrandet, grüner Laufstrich.
+- **Drum-Sequenzer** wie die SCHRITTE-Seite: Kick und Snare wechseln nur, wenn das andere Instrument trifft (höchstens 1× je Schlag),
+  Hi-Hat-Zeile darunter, Treffer leuchten.
+- **Modulation:** echte App-Regler mit Mod-Ring und Live-Punkt, dazu die Modulations-Liste – nur wenn die Spur wirklich moduliert.
+- **[Ganze App] hochkant:** Kopf, Matrix oder Song, Teil-Leiste, Spur-Zeile, Träger, Modusleiste, Tastatur – bewegt nur durch echte
+  Daten (Takt, spielende Clips, Träger, Transposition, Noten).
+- **Auto-Regie 2:** Neuer Clip → kurz Fokus auf seine Zelle, dann Piano-Roll. Drums neu → Drum-Sequenzer. Teilanfang → ganze App.
+  Transposition → Tastatur. Übergang → Drum-Sequenzer. Deine Wahl im Bild-Menü geht immer vor.
+- **Pegel** auch im Video (Song- und Matrix-Bild), zeitgleich mit dem Ton.
+- **Abspann-Logo (dein Logo, `medien/abspann-logo.mp4`):** genau einmal, mittig, nicht gekachelt. Das letzte Bild dunkelt 1 s ab;
+  ab halber Abdunklung blendet das Logo schon ein. Schwarz ist per Luma-Key herausgenommen – kein Kasten, kein Rand, das Rot bleibt
+  satt. Die Musik ist da ausgeklungen; der Abspann ist still. Danach 0,5 s Schwarz.
+
+### Bei der Zusammenführung behoben
+
+1. **Chor im Video nach dem Laden (Altlast aus 4.27.0, gefunden von Stage NORTH).**
+   - **Ursache:** Der Fehler tritt nur auf, wenn das **Audio des Gesangs auf diesem Gerät fehlt**. Die Projekt-Datei (.json) trägt
+     nur die Kennung des Takes, das Audio liegt im Speicher des Geräts. NORTH hat die Datei in einem neuen Browser-Kontext geladen.
+     Das ist wie ein anderes Gerät: Der Take fehlt dort, die Spur wird grau („Audio nicht auf diesem Gerät“).
+     Das Video hat dann trotzdem auf diesen Take gewartet: erst 30 s auf die Gesangs-Fassungen, dann **180 s auf den Chor**.
+     Danach kam der Fehler „Chor im Video nicht fertig (2)“ und ein Video ohne Gesang **und** ohne Chor (daher −2,4 dB).
+     Der Chor selbst wird nach dem Laden richtig angestoßen: Auf demselben Gerät (neue Seite, neu geladen) und mit
+     **Projekt + Audio (ZIP)** auf einem fremden Gerät ist er in 0,1 … 4 s fertig und im Video zu hören.
+   - **Behoben:** Ein Gesangs-Stück, dessen Take auf diesem Gerät fehlt, bleibt im Video still, so wie live.
+     Darauf wird nicht mehr gewartet, auch nicht im Song beim Vorausrechnen (dort lief bisher alle 250 ms ein neuer Versuch).
+     Ein Video mit fehlendem Take ist jetzt nach 2 s fertig statt nach 3,5 min, ohne Fehlermeldung.
+2. **GarageBand-Instrumental ohne Video-Zusätze:** Der Pegel-Meter (VV4-F) lief auch beim [Instrumental als Datei] mit.
+   Er hat den Klang nicht verändert, kostete aber Rechenzeit und Speicher für nichts. Jetzt läuft er nur beim Video.
+   Das Instrumental hat kein Abspann-Logo und keine Abspann-Länge, ohne Gesang und ohne Chor, und es ist **bit-gleich mit 4.28.0**.
+
+### Bitte prüfen am iPhone (Schritt für Schritt)
+
+1. **Version:** ≡ (Menü) → Info zeigt „SYNQUENZER 4.29.0“.
+2. **Pegel:** Demo abspielen → **Matrix**: Die Balken neben den Spurfarben bewegen sich im Takt. Spur stumm → ihr Balken bleibt leer.
+3. **Master:** Links am Rand von **SONG ⇄** antippen → die MASTER-Seite geht auf. In den **Song** wechseln → Balken unter den
+   Spurnamen, Master neben „TAKT“. Die Block-Zeile über der Taktleiste (4.28.0) liegt frei, nichts überdeckt sich.
+4. **Video 16:9:** Song mit Melodie und Drums → **≡ → Video → 16:9 → Auto → Video erstellen.** Achte auf: Piano-Roll mit deinen Noten,
+   Drum-Sequenzer mit Kick/Snare-Wechsel, Pegel im Song-Bild.
+5. **Abspann:** Am Ende wird das letzte Bild dunkel, schon dabei kommt dein Logo – einmal, in der Mitte, ohne schwarzen Kasten,
+   Rot kräftig. Kein Ton im Abspann.
+6. **9:16 → [Ganze App]:** dasselbe Video hochkant. Die ganze App ist zu sehen (Kopf, Matrix/Song, Teil-Leiste, Tastatur).
+7. **Bild-Menü:** Takte markieren → ⋯ → Video → **[Spur …] → [Modulation]**: Nur Spuren mit echter Modulation stehen dort.
+   Eine wählen → Video: Regler mit Mod-Ring.
+8. **Chor im Video:** Song mit Chor-Gruppe an der STIMME → Video → der Chor ist zu hören (wie in 4.28.0).
+9. **Chor nach dem Laden:** ≡ → Speichern. Die App ganz schließen und neu öffnen, das Projekt laden → Video erstellen.
+   Der Chor ist zu hören, das Video startet ohne lange Pause (kein „Chor im Video nicht ganz fertig“).
+10. **Ohne Audio laden** (nur wenn du magst): die gespeicherte **.json** auf einem anderen Gerät laden (ohne ZIP) → die STIMME ist grau.
+    Video erstellen → es geht nach wenigen Sekunden los, ohne Gesang (wie beim Abspielen). Mit **Projekt + Audio (ZIP)** ist alles da.
+11. **GarageBand:** Takes-Blatt → [Instrumental als Datei] in einem Song mit Chor → die Datei hat keinen Gesang und keinen Chor,
+    keinen Abspann, sie endet mit dem Song. Ein Import danach läuft wie in 4.28.0.
+12. **Abspann aus:** Video-Blatt → **[Abspann-Logo]** aus → Video ohne Abspann. App neu laden → die Wahl bleibt.
+
+### Tests (Chromium mit Touch-Emulation, gegen `rel-4290/index.html`)
+
+Alle Läufe einzeln, je höchstens 5 min. Die Stage-Tests liegen angepasst unter `rel-4290/sim/bau/stage/VIDEO/tests/`
+(Start: `sim/run-stage.sh`). Vergleichsbasis ist jetzt 4.28.0 (`R-4280`) statt 4.27.0, die Versions-Erwartung 4.29.0.
+Die übrigen Tests: `rel-4290/tests/alle.sh` (EDIT + neu) und `rel-4290/run-haupt.sh` (G-GB, G9b, Rauchtests).
+
+| Test | Ergebnis |
+|---|---|
+| **neu** `tests/chor/chor-frisch.mjs`: Chor nach dem Laden in einer frischen Seite – neue Seite, neu geladen, anderes Gerät mit ZIP: Chor-Gruppe da, fertig in < 10 s (0,1 s; Video-Ton 5–6 s), **Chor im Video-Ton** (Abstand zu „mit Chor“ −113 dB, der Chor selbst −7,6 dB); anderes Gerät nur .json: kein Warten (2 s), kein Fehler, Gesang still | **16/16** (4.28.0: Fall .json 2/4 rot – Zeitlimit 30 s, ungekürzt 30 s + 180 s) |
+| **neu** `tests/ggb-video.mjs`: Instrumental-Länge = Vorzähler + Song, kein Logo-Abruf, kein Pegel-Meter, ohne Lead/Chor still, **bit-gleich mit 4.28.0**; Video-Ton mit/ohne Pegel-Meter **bit-gleich** | **9/9** |
+| VV4-A: render WebCodecs 10 · render Aufnahme 10 · kb-live 3 · layout 43 · ui 40 · layer 2 · alt 2 (36 Bilder gegen 4.28.0: gleich bis auf Pegel-Leiste und gewollt neue Auto/Spur-Bilder) | **110/110** |
+| VV4-A perf (3-min-Song, [Ganze App]) | 1,42× Echtzeit (Soll ≥ 1,5×) – siehe Offene Punkte |
+| VV4-C/E: abn 19 · mk 6 · ui 14 | **39/39** |
+| VV4-B/D: regie 7 · menue 21 · layout 7 Formate · bild 12 | **alle „GESAMT GRÜN“**, 0 Konsolenfehler |
+| VV4-F: t-app 24 (428×926) · 24 (926×428) · t-layout 35 (gegen 4.28.0, 7 Formate, inkl. Block-Zeile) · t-video 15 (Bit-Gleichheit mit/ohne Meter) · t-speed 4 | **102/102** |
+| VV-LOGO WebCodecs: 16:9 · 9:16 · 1:1 · .mov | **je 21/21** |
+| VV-LOGO Aufnahme-Weg (MediaRecorder, Echtzeit): 16:9 · 9:16 · 1:1 | **je 21/21** bei ruhiger Maschine; unter Fremdlast rot, Stage-Datei genauso (siehe unten) |
+| VV-LOGO ui 40 · cancel 4 · regress 21/22 bzw. 20/22 (nur Aufnahme-Weg 9:16 unter Last; dort ist auch 4.28.0 rot) | ui **40/40**, cancel **4/4** |
+| Ende-zu-Ende `e2e-video.mjs` WebCodecs (Chor im Video-Ton −9,6 dB gegen Rauschen −114,6 dB, Logo, Pegel, Piano-Roll, Drum) | **26/26** |
+| Ende-zu-Ende Aufnahme-Weg | 25/26 in 3 Läufen (je eine Logo-Zeitprüfung im Echtzeit-Weg 9:16 / einmal 16:9); Stage-Datei unter gleicher Last ebenfalls 25/26 |
+| `bilder-fokus.mjs` | grün, 0 Konsolenfehler |
+| KON: kon-block 41, kon-konsol 42, kon-save 11, kon-layout 24 | **118/118** |
+| MAGIC: ms-funktion 43, ms-layout 38, ms-regress 2 | **83/83** |
+| PINSEL: t-pinsel 39, t-bloecke 20, t-mithoeren 20, t-layout 47, t-alt 18 | **144/144** |
+| EDIT-Zusammenspiel `zusammen.mjs` 48 · G-GB × KON `ggb-kon.mjs` 34 | **82/82** |
+| G-GB: a-export 16, bcd-import 18, f-layout 11, g-befunde 28, h-zusammenspiel 16 | **89/89** |
+| G9b-Rauchtest (WANTV 4.29.0 / WANTC 4029000) | **5/5** |
+| `smoke.mjs`, `v3-mk8-smoke`, `v3-mk8b-smoke` | grün, `errors []` |
+| `orch-mk-check.mjs` | grün, 4.29.0, Klangwerte wie 4.28.0 (initAm rms 0,0705 / peak 0,177) |
+| `v3-mk2-wellen.mjs` | alles PASS |
+| acorn-Doppelprüfung | 20 Skripte, 3 665 Namen, **0 doppelt**, 0 Syntaxfehler |
+
+**Fremdlast:** Auf der Test-Maschine (4 Kerne) liefen zeitgleich Tests anderer Sitzungen (Last 4 … 14). Alle Echtzeit- und
+Tempo-Prüfungen habe ich deshalb im direkten Wechsel gegen die Stage-Datei laufen lassen:
+- Aufnahme-Weg 16:9: neu 19/21, 19/21, 21/21 – Stage 21/21, 19/21, 9/21 (bei Last 13).
+- Aufnahme-Weg 9:16: neu 21/21, 21/21 – Stage 21/21, 21/21. Im vvl-regress war unter Last sogar **4.28.0** selbst zu kurz (Bildspur 10,09 s statt 11,36 s).
+- WebCodecs 9:16 (Logo schon beim Abdunkeln): neu 21/21, 21/21 – Stage 20/21, 21/21.
+- kb-live und t-app quer: beim ersten Lauf 18 statt 20 Messpunkte bzw. Langaufgaben bis 380 ms; allein beide grün (neu und Stage).
+- Ende-zu-Ende Aufnahme-Weg: neu 25/26 (dreimal, jeweils eine Logo-Zeitprüfung), Stage 25/26 (Rot-Prüfung im Logo, ebenfalls Zeitversatz).
+- Audio-Render 92-s-Song (je 2× im Wechsel): neu 22,7 … 25,8 s, Stage 21,7 … 24,8 s, 4.28.0 20,5 … 22,6 s.
+  Der Pegel-Meter im Video-Render kostet also einige Prozent; die Zusammenführung selbst macht nichts langsamer.
+
+### Offene Punkte
+
+1. **iPhone-Prüfung fehlt.** Fertig ist es erst nach Xanders Okay. Wichtig ist der Aufnahme-Weg (MediaRecorder): Er läuft in Echtzeit.
+   Ist das Gerät nebenbei stark beschäftigt, kann das Video am Ende zu kurz werden (Abspann abgeschnitten); im Test-Chromium passiert
+   das unter Fremdlast, mit 4.28.0 genauso. Am iPhone: Schritt 5 und 6 bitte genau ansehen (Logo, 0,5 s Schwarz am Schluss).
+2. **Tempo 3-min-Video [Ganze App]:** hier 1,42× Echtzeit unter Fremdlast, Soll ≥ 1,5× (die Stage maß ruhig 2,11×, die Stage-Datei
+   hier unter gleicher Last 1,55×). Der Pegel-Meter im Render kostet einige Prozent. Am iPhone messen.
+3. **Block-Zeile (4.28.0) im Video:** Das Song-Bild und [Ganze App] im Video zeigen die Block-Zeile über der Taktleiste nicht.
+   Sichtbare Änderung → erst fragen (siehe Fragen).
+4. **Zwei mögliche Klangfassungen:** Schon 4.28.0 rechnet dasselbe Instrumental bzw. denselben Video-Ton je nach Zeitpunkt in einer
+   von zwei Fassungen (im Test mit festem Zufallswert: zwei feste Hashes, in 4.28.0 und 4.29.0 dieselben). Nicht neu, nicht angefasst.
+5. **Fragen aus der Stage VIDEO** bleiben offen: [Ganze App] öfter zeigen? Letztes volles Bild im Ausklang stehen lassen?
+   Musik zusammen mit dem Bild in 1 s ausblenden? Dazu die alten Fragen der Pakete und von 4.28.0 (Block-Zeile 44 px, Tonart-Wahl).
