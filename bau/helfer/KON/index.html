@@ -50667,7 +50667,7 @@ function konBlkAction(id, kind, arg) {
 function konBlkEnter(id) {
   const song = S.song, b = konBlkOf(id); if (!b) return false;
   if (SV.inBlk && SV.inBlk.id !== id) konBlkExit();
-  if (!SV.inBlk) SV.inBlk = {id, loop0: Object.assign({}, song.loop)};
+  if (!SV.inBlk) SV.inBlk = {id, loop0: Object.assign({}, song.loop), proj: S};
   song.loop = normLoop({on: true, a: b.a, b: b.a + b.len}, song.bars);
   if (UI.pop && UI.pop.name === 'block') closePop();
   SV.blk = null; SV.sel = null; SV.mark = null; SV.pos = b.a;
@@ -50685,8 +50685,8 @@ function konBlkExit() {
 }
 function konSelFix() {
   let ch = false;
-  if (SV.blk && !konBlkOf(SV.blk)) { SV.blk = null; ch = true; }
-  if (SV.inBlk && !konBlkOf(SV.inBlk.id)) { SV.inBlk = null; ch = true; konPathSync(); }
+  if (SV.blk && (!konBlkOf(SV.blk) || (SV.inBlk && SV.inBlk.proj !== S))) { SV.blk = null; ch = true; }
+  if (SV.inBlk && (!konBlkOf(SV.inBlk.id) || SV.inBlk.proj !== S)) { SV.inBlk = null; ch = true; konPathSync(); }   // block gone / another project
   return ch;
 }
 // the label cell of the ruler (top left): „Block“ over „Takt“ while there are blocks; inside a block the path button „← Song ›“ / „Block A“
