@@ -21460,10 +21460,13 @@ const UE_FILL_LANG = [
   {K: 'x.......x.......', S: '..g...g.x.......', H: '............x...', L: '..............X.'},
   {K: 'x.......x.......', S: 'g.g.g.x.g.x.....', H: '............x...', M: '.............x..', L: '..............X.'},
   {K: 'x.......x.......', S: 'gggxgggxgxgx....', H: '............xx..', M: '..............X.', L: '...............x'}];
+/* UE_VK: Anschlags-Faktor je Werk und Dichte (leicht, mittel, voll), aus der Messung UE-12 über alle 7 Kits so gesetzt, dass die Mitte
+   zwischen leisestem und lautestem Kit bei 0 LU zum Groove liegt (Pegel der Engine = v², Faktor k = 10^(−LU/40)). */
+const UE_VK = {'w-fill-kurz': [1.12,1.013,0.861],'w-fill-lang': [1.201,1.114,1.071],'w-tom-wirbel': [1.12,1.135,0.928],'w-snare-wirbel': [1.189,0.97,0.902],'w-build': [1.002,0.908,0.86],'w-fill-crash': [1.204,1.118,1.07],'w-crash-eins': [0.856,0.853,0.668],'w-hh-auf': [1.12,1.141,0.98],'w-kick-auftakt': [0.917,0.874,0.821],'w-halbzeit': [1.12,1.22,1.05],'w-clap-treppe': [0.978,0.974,0.946],'w-rim-ping': [0.959,0.92,0.88]};
 const UE_WERK = [
   // ---- Übergänge (UE-C, §1.4) ----
   {id: 'w-fill-kurz', tab: 'ue', name: 'Fill kurz', sh: 'Fill', k: 'fill', lens: [2], mode: 'ersetzt', eins: 1, P: [
-    {S: 'x.x.....', H: '....x...', L: '......x.'},
+    {K: 'x...x...', S: 'x.x.....', H: '....x...', L: '......x.'},
     {K: 'x.......', S: 'x.xx....', H: '....xx..', M: '......x.', L: '.......x'},
     {K: 'x...x...', S: 'Xxxx....', H: '....Xx..', M: '......x.', L: '.......X'}]},
   {id: 'w-fill-lang', tab: 'ue', name: 'Fill lang', sh: 'Fill', k: 'fill', lens: [4], mode: 'ersetzt', eins: 1, P: UE_FILL_LANG},
@@ -21473,10 +21476,10 @@ const UE_WERK = [
   {id: 'w-fill-crash', tab: 'ue', name: 'Fill + Crash', sh: 'Fill+Cr', k: 'fill', lens: [4], mode: 'ersetzt', crash: 1, P: UE_FILL_LANG},
   {id: 'w-crash-eins', tab: 'ue', name: 'Crash auf die Eins', sh: 'Crash', k: 'crash', lens: [0], mode: 'dazu', P: [{Y: 'x'}, {Y: 'x', K: 'x'}, {Y: 'X', K: 'X'}]},
   {id: 'w-hh-auf', tab: 'ue', name: 'Hi-Hat öffnen', sh: 'HH auf', k: 'fill', lens: [1], mode: 'ersetzt', P: [
-    {h: 'x...', o: '..x.'}, {S: 'x...', h: 'x...', o: '..x.'}, {K: 'x...', S: 'X...', h: 'xx..', o: '..X.'}]},
+    {K: 'x...', S: 'g...', h: 'x...', o: '..x.'}, {K: 'x...', S: 'x...', h: 'x...', o: '..x.'}, {K: 'x...', S: 'X...', h: 'xx..', o: '..X.'}]},
   {id: 'w-kick-auftakt', tab: 'ue', name: 'Kick-Auftakt', sh: 'Kick', k: 'fill', lens: [1], mode: 'dazu', P: [{K: '...x'}, {K: '..xx'}, {K: '..xX', h: '..x.'}]},
   {id: 'w-halbzeit', tab: 'ue', name: 'Halbzeit-Fill', sh: 'Halbz.', k: 'fill', lens: [4], mode: 'ersetzt', eins: 1, P: [
-    {K: 'x...............', S: '........x.......', H: '............x...', L: '..............x.'},
+    {K: 'x...............', S: '........x.......', h: 'x...x...x...x...', H: '............x...', L: '..............x.'},
     {K: 'x.....x.........', S: '........x.......', H: '............x...', M: '.............x..', L: '..............x.'},
     {K: 'x.....x.x.......', S: '........X.......', h: 'x.x.x.x.x.x.....', H: '............xx..', M: '..............x.', L: '...............X'}]},
   {id: 'w-clap-treppe', tab: 'ue', name: 'Clap-Treppe', sh: 'Claps', k: 'fill', lens: [2], mode: 'dazu', eins: 1, P: [
@@ -21498,7 +21501,7 @@ const UE_TABS = [['ue', 'Übergänge'], ['brk', 'Breaks'], ['adl', 'Einwürfe']]
 const UE = {win: null, hk: new Map(), open: false, el: null, tab: 'ue', drag: null, chips: [], css: false, prevT: 0};
 function ueWerk(id) { for (const w of UE_WERK) if (w.id === id) return w; return null; }
 // Anschlags-Kurve über die Länge: aufbauend steigt, abbauend fällt, gleich bleibt
-function ueCurve(x, dir) { return dir === 'auf' ? .62 + .38 * x : dir === 'ab' ? 1 - .38 * x : .86; }
+function ueCurve(x, dir) { return dir === 'auf' ? .76 + .3 * x : dir === 'ab' ? 1.06 - .3 * x : .92; }   // Mittel je Richtung ≈ .92 (gleiche Lautheit)
 function ueNote(t, gm, v, o) { const n = {t: +t.toFixed(4), d: .25, n: gm, v: +clamp(v, .05, 1).toFixed(2)}; if (o) Object.assign(n, o); return n; }
 function uePat(rows, step, L, dir) {
   const out = [];
@@ -21514,14 +21517,14 @@ function uePat(rows, step, L, dir) {
   return out;
 }
 const UE_GEN = {
-  // TOM HOCH → MITTE → TIEF (16tel; leicht 8tel), voll: Kick auf jedem Schlag, Akzent je Schlag, letzter Schlag mit Wirbel 2
+  // TOM HOCH → MITTE → TIEF (16tel; leicht 8tel), leicht/voll: Kick auf jedem Schlag, Akzent je Schlag, letzter Schlag mit Wirbel 2
   tom(L, dens, dir) {
     const st = dens ? .25 : .5, n = Math.round(L / st), out = [];
     for (let i = 0; i < n; i++) {
       const t = i * st, gm = [UE_GM.H, UE_GM.M, UE_GM.L][Math.min(2, Math.floor(i * 3 / n))], acc = dens === 2 && Math.abs(t % 1) < 1e-9;
       out.push(ueNote(t, gm, ueCurve(t / L, dir) * (acc ? 1 : .88), acc ? {a: 1} : dens === 2 && t >= L - .5 - 1e-9 ? {r: 2} : null));
     }
-    if (dens === 2) for (let b = 0; b < L - 1e-9; b++) out.push(ueNote(b, UE_GM.K, ueCurve(b / L, dir) * .9));
+    if (dens !== 1) for (let b = 0; b < L - 1e-9; b++) out.push(ueNote(b, UE_GM.K, ueCurve(b / L, dir) * .9));   // leicht und voll: Kick auf jedem Schlag
     return out;
   },
   // Snare, Wirbel (Ratsche) 2 → 4, der Anschlag steigt (abbauend: fällt)
@@ -21552,8 +21555,10 @@ function ueGen(w, L, dens, dir) {
   if (!w || w.k === 'break') return [];
   dens = clamp(dens | 0, 0, 2); if (dir !== 'auf' && dir !== 'ab') dir = 'gleich';
   const out = w.gen ? UE_GEN[w.gen](L, dens, dir) : uePat(w.P[dens], w.step || .25, L, dir);
+  const k = UE_VK[w.id] ? UE_VK[w.id][dens] : 1;
   // auf die Eins des neuen Teils (t = L): „Fill + Crash“ immer; aufbauend (mittel/voll) bei den Fills mit Eins und beim Build-up
   if (w.crash || ((w.eins || w.gen === 'build') && dir === 'auf' && dens >= 1)) out.push(ueNote(L, UE_GM.Y, dens === 2 ? 1 : .86, dens === 2 ? {a: 1} : null));
+  if (k !== 1) for (const n of out) n.v = +clamp(n.v * k, .05, 1).toFixed(2);
   return out.sort((a, b) => a.t - b.t || a.n - b.n);
 }
 function ueNotesNorm(list) {
@@ -21630,7 +21635,7 @@ function ueWrite(song, n, ch, wIds) {
 const ueSlot = u => (u.k === 'break' ? 'b' : 'u');
 function ueTidy(song) {
   const mk = new Map(song.marks.map(m => [m.id, m]));
-  song.ue = song.ue.filter(u => (u.m != null ? mk.has(u.m) && mk.get(u.m).a > 0 : isNum(u.at) && u.at < song.bars * 4 - 1e-9));
+  song.ue = song.ue.filter(u => (u.m != null ? mk.has(u.m) : isNum(u.at) && u.at < song.bars * 4 - 1e-9));   // eine Marke auf Takt 1 behält ihren Übergang (er klingt dort nicht)
   for (const u of song.ue) if (u.dir === 'auto' && u.m != null) ueRegen(song, u);   // Richtung Auto folgt den Clips vor/nach der Kante
   if (!song.ue.length) delete song.ue;
 }
@@ -21960,7 +21965,7 @@ function ueDraw(g, song, XB, W, H, ru, rh) {
       g.fillStyle = u.id === UE.sel ? '#111' : '#ffd27a'; g.textAlign = 'left'; g.fillText(lab, cx + 5, cy + ch / 2); g.textAlign = 'center';
       // Trefferfläche ≥ 44 × 44 (UE-07)
       const hx = cx + tw / 2, hy = cy + ch / 2, hw = Math.max(44, tw), hh = Math.max(44, ch);
-      UE.chips.push({id: u.id, x0: hx - hw / 2, x1: hx + hw / 2, y0: hy - hh / 2, y1: hy + hh / 2});
+      UE.chips.push({id: u.id, lab, x0: hx - hw / 2, x1: hx + hw / 2, y0: hy - hh / 2, y1: hy + hh / 2});
     }
   }
   // Einrasten beim Ziehen: amber Kante + Schraffur der betroffenen Schläge

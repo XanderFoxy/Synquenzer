@@ -1,0 +1,92 @@
+[
+ {
+  "name": "UE-01 Kante 8|9: Schlag 30–32 nur Fill-Treffer, außerhalb identisch",
+  "ok": true,
+  "info": "{\"fill\":8,\"aussenGleich\":true}"
+ },
+ {
+  "name": "Timing sample-genau (Fill-Treffer gegen Raster)",
+  "ok": true,
+  "info": "{\"maxSamples\":0}"
+ },
+ {
+  "name": "UE-02 Kit-Wechsel: UE-Daten gleich, gleiche Treffer, neuer Kit-Klang",
+  "ok": true,
+  "info": "{\"hashGleich\":true,\"rmsA\":0.13513,\"rmsB\":0.1379}"
+ },
+ {
+  "name": "UE-03 Einfügen: Kante 10|11, Übergang folgt (Schlag 38–40)",
+  "ok": true,
+  "info": "{\"kante\":10,\"schlaege\":[38,39.75]}"
+ },
+ {
+  "name": "UE-03 Teil ziehen: der Übergang wandert mit seinem Teil",
+  "ok": true,
+  "info": "{\"vorher\":14,\"nachher\":10,\"schlaege\":[38,39.75]}"
+ },
+ {
+  "name": "UE-03 Teil löschen: Übergang weg, 1 Undo stellt beides bit-gleich her",
+  "ok": true,
+  "info": "{\"weg\":true,\"gleich\":true}"
+ },
+ {
+  "name": "UE-04 Undo/Redo bit-gleich",
+  "ok": true,
+  "info": "{}"
+ },
+ {
+  "name": "UE-04 Speichern → Laden: song.ue gleich",
+  "ok": true,
+  "info": "{\"bytes\":480}"
+ },
+ {
+  "name": "UE-04 Projekt ohne Übergänge: Datei byte-gleich zur Basis (R-4300)",
+  "ok": true,
+  "info": "{\"len\":12900,\"gleich\":true}"
+ },
+ {
+  "name": "UE-05 Video (offline) = live: Anzahl gleich, ±1 ms",
+  "ok": true,
+  "info": "{\"offline\":68,\"live\":68,\"fehlt\":0,\"maxMs\":0,\"ue\":26}"
+ },
+ {
+  "name": "UE-10 belegte Kante = ersetzen, 1 Undo",
+  "ok": true,
+  "info": "{\"eintraege\":1,\"undo\":1}"
+ },
+ {
+  "name": "Kante trägt Übergang + Break",
+  "ok": true,
+  "info": "{\"n\":2}"
+ },
+ {
+  "name": "UE-13 Build-up monoton (Treffer/Schlag, Tune +0 → +7)",
+  "ok": true,
+  "info": "8/0:1,1,2,2,4,4,4,4 tune 0→7 | 8/1:1,1,2,2,4,4,16,16 tune 0→7 | 8/2:1,1,2,2,4,4,16,16 tune 0→7 | 16/0:1,1,1,1,2,2,2,2,4,4,4,4,4,4,4,4 tune 0→7 | 16/1:1,1,1,1,2,2,2,2,4,4,4,4,16,16,16,16 tune 0→7 | 16/2:1,1,1,1,2,2,2,2,4,4,4,4,16,16,16,16 tune 0→7"
+ },
+ {
+  "name": "UE-14 Richtung: 2→5 aufbauend (mit Crash), 5→2 abbauend; Chip zeigt ↗/↘",
+  "ok": true,
+  "info": "{\"da\":\"auf\",\"db\":\"ab\",\"labs\":[\"◆ Fill ↗\",\"◆ Fill ↘\"]}"
+ },
+ {
+  "name": "UE-16 Einwurf: 1/16 genau, wandert beim Einfügen mit",
+  "ok": true,
+  "info": "{\"ms\":0,\"at\":25.75}"
+ },
+ {
+  "name": "Einwurf verschieben + Undo/Redo",
+  "ok": true,
+  "info": "{\"mvd\":6.25,\"und\":25.75,\"red\":6.25}"
+ },
+ {
+  "name": "Teil kopieren: Übergang mit eigener ID an der Kopie",
+  "ok": true,
+  "info": "{\"ue\":[\"U1@M2\",\"U2@M3\"]}"
+ },
+ {
+  "name": "keine Seitenfehler",
+  "ok": true,
+  "info": "[]"
+ }
+]

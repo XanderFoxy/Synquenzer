@@ -158,7 +158,7 @@ function ueDraw(g, song, XB, W, H, ru, rh) {
       g.fillStyle = u.id === UE.sel ? '#111' : '#ffd27a'; g.textAlign = 'left'; g.fillText(lab, cx + 5, cy + ch / 2); g.textAlign = 'center';
       // Trefferfläche ≥ 44 × 44 (UE-07)
       const hx = cx + tw / 2, hy = cy + ch / 2, hw = Math.max(44, tw), hh = Math.max(44, ch);
-      UE.chips.push({id: u.id, x0: hx - hw / 2, x1: hx + hw / 2, y0: hy - hh / 2, y1: hy + hh / 2});
+      UE.chips.push({id: u.id, lab, x0: hx - hw / 2, x1: hx + hw / 2, y0: hy - hh / 2, y1: hy + hh / 2});
     }
   }
   // Einrasten beim Ziehen: amber Kante + Schraffur der betroffenen Schläge
