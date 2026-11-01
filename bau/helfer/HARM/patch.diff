@@ -1,0 +1,160 @@
+--- a/bau/snapshots/R-4300.html
++++ b/bau/helfer/HARM/index.html
+@@ -3901,7 +3901,8 @@
+ .stpop .st-c2>.st-lbl:first-child{margin-top:0}
+ }
+ /* VS-L: Länge (AUTO … 16) im Aufnahme-Blatt und in den Einstellungen: Knöpfe ≥ 44 × 44 in allen Formaten */
+-#roLen button,#roQ button,#roCi button,.mrow.rlen .seg button{height:44px;min-width:44px}   /* G-GES: auch Quantisieren und Einzähler im Aufnahme-Blatt ≥ 44 × 44 */
++#roLen button,#roQ button,#roCi button,.mrow.rlen .seg button{height:44px;min-width:44px}
++.mrow.harm44 .seg button{height:44px;min-width:44px}   /* HARM: Harmonie-Zeilen Wechsel, Oktave, Eine Skala, Durchgangstöne, Drums ≥ 44 × 44 */   /* G-GES: auch Quantisieren und Einzähler im Aufnahme-Blatt ≥ 44 × 44 */
+ .key.vs{box-shadow:inset 0 0 0 3px var(--t6),0 0 12px var(--t6)!important}
+ .key.w.vs{background:linear-gradient(180deg,#f4ffe0 0%,#d9f99d 70%)!important}
+ .key.b.vs{background:linear-gradient(180deg,#5a7d1c,#36500f)!important}
+@@ -21052,8 +21053,10 @@
+   return {
+     metro: false, metroVol: 0.6, metroInRec: true, countIn: 1,
+     recLength: 'auto', inQuant: 'auto', swing: 0, noteNames: 'intl',
+-    harmony: {mode: 'chord', latch: true, change: 'now', octaveMode: 'nearest', single: 'key', minor: 'aeolian', keyAware: true, split: null, gatherMs: 40,
+-      oneScale: false, osAmt: 1, osPass: false, osRef: 'proj', drums: false},   // V2c′: fehlt oneScale = aus (gespeicherte Projekte, Demo); newProjectRaw schaltet an
++    // HARM (Xander 01.11.): die sauberen Werte sind Standard – Wechsel am Takt, Eine Skala an (100 %, Durchgangstöne rasten ein);
++    // harmStd = Merker der einmaligen Umstellung (normalizeProject), danach bleibt jede bewusste Wahl erhalten
++    harmony: {mode: 'chord', latch: true, change: 'bar', octaveMode: 'nearest', single: 'key', minor: 'aeolian', keyAware: true, split: null, gatherMs: 40,
++      oneScale: true, osAmt: 1, osPass: false, osRef: 'proj', drums: false, harmStd: HARM_STD},
+     kbScale: 'show', haptics: true, quality: 'auto', buffer: 'interactive', coach: {trans: false, mod: false, fang: false}, keyModel: 2,
+     hintDismissed: false,
+     kbVel: 'pos', padSel: true,          // V0b: Tastatur-Anschlag POSITION | FEST (E3-29, U-06); Pad wählt Instrument (U-03)
+@@ -21092,6 +21095,8 @@
+    4 DRUMS, 5 MELODIE, 6–7 Synth 5–6 (added with [＋ Spur], removed last-first). NT() = number of tracks, NS() = number of
+    scenes, isDrum(i) / synthTracks(); the drum index is written only here (DRUM_T). Display order S.ui.order: DRUMS last. */
+ const MAX_T = 8, BASE_T = 6, N_SCN = 8, DRUM_T = 4, MEL_T = 5;
++// HARM: Stand des Harmonie-Standards (1 = 01.11.: Wechsel Takt, Eine Skala an, Stärke 100 %, Durchgangstöne einrasten)
++const HARM_STD = 1, HARM_STD_VAL = {change: 'bar', oneScale: true, osAmt: 1, osPass: false}, HARMS = {n: 0, last: null};   // HARMS: Umstellungen (Test/Info)
+ const DEF_ORDER = [0, 1, 2, 3, 5, 6, 7, DRUM_T];
+ const NT = () => S.tracks.length;
+ const NS = () => N_SCN;
+@@ -21152,7 +21157,7 @@
+     fxBus: defaultFxBus(), song: null, ui: {selT: 3, selS: 0, order: orderFor(BASE_T), sceneBank: 0, trackBank: 0},
+   };
+ }
+-// V2c′ (E3-25): „Eine Skala“ ist für neue Projekte an (Neu, [Leer (Init)]); die Demo bleibt aus (alte Harmonie-Tests, I-09)
++// V2c′ (E3-25): „Eine Skala“ ist für neue Projekte an (Neu, [Leer (Init)]); HARM: seit 01.11. auch die Demo (defaultSettings)
+ function newProjectRaw(init) { const p = newProjectRaw0(init); p.settings.harmony.oneScale = true; return p; }
+ function demoProjectRaw() {
+   const p = newProjectRaw0();
+@@ -21330,6 +21335,16 @@
+     hd.oneScale = normBool(h.oneScale, false);                     // V2c′ (E3-25, I-10): ein gespeichertes Projekt ohne das Feld klingt wie bisher
+     hd.osAmt = normNum(h.osAmt, 0, 1, 1); hd.osPass = normBool(h.osPass, false);
+     hd.osRef = normEnum(h.osRef, ['proj', 'auto'], 'proj'); hd.drums = normBool(h.drums, false);
++    // HARM (Xander 01.11., überholt Regel 28 für genau diese Werte): ein Projekt ohne Merker harmStd bekommt EINMAL die sauberen
++    // Werte (Wechsel Takt, Eine Skala an, 100 %, Durchgangstöne einrasten); mit Merker bleibt, was gespeichert ist (bewusste Wahl)
++    const harmS = normNum(h.harmStd, 0, 99, 0) | 0;
++    if (harmS < HARM_STD) {
++      const was = {change: hd.change, oneScale: hd.oneScale, osAmt: hd.osAmt, osPass: hd.osPass};
++      Object.assign(hd, HARM_STD_VAL);
++      const chg = Object.keys(HARM_STD_VAL).filter(k => was[k] !== HARM_STD_VAL[k]);
++      if (chg.length) Object.defineProperty(p, '_harmMig', {value: {from: harmS, was, chg}, enumerable: false, configurable: true});
++    }
++    hd.harmStd = Math.max(harmS, HARM_STD);
+     p.scenes.forEach(sc => { sc.uid = null; });                    // N2-2a-01: missing scene uids are deterministic (below)
+     if (Array.isArray(obj.scenes)) obj.scenes.slice(0, N_SCN).forEach((sc, i) => { if (sc && typeof sc.name === 'string') p.scenes[i].name = sc.name.slice(0, 24); if (sc && typeof sc.uid === 'string' && UID_RE.test(sc.uid)) p.scenes[i].uid = sc.uid; });
+     const warns = [];
+@@ -26571,9 +26586,28 @@
+ const KEYC = {ver: 0, cache: new Array(8).fill(null), timer: 0, pending: new Set()};
+ // V0a K-06: what a clip really plays: its notes before the clip end (a note behind it is ignored by the key detection too)
+ function liveNotes(c) { const L = c.len * 4 - 1e-9; return c.notes.some(n => n.t >= L) ? c.notes.filter(n => n.t < L) : c.notes; }
++/* HARM (Xander 01.11.: „Durchgangsnoten immer auf die Skala, in der wir uns bewegen“): ein chromatischer Durchgangston – ein
++   Ton außerhalb der Projekt-Tonart genau zwischen zwei Tonart-Tönen im Ganztonabstand, die Linie läuft in einer Richtung hindurch
++   (F → F♯ → G in C-Dur) – zählt nicht für die Clip-Tonart (Bezug 'auto'). Sonst machte ein langer Durchgang aus C-Dur C-Lydisch
++   (nach der verzögerten Analyse: 400 ms bzw. nach dem nächsten ORIGINAL), und unter jedem Träger rutschte der Lauf um eine Stufe */
++function harmKeyNotes(ns) {
++  if (!ns || ns.length < 3) return ns;
++  const K = S.key, SC = Harmony.SCALES[K.scale] || Harmony.SCALES.ionian, inK = n => SC.includes(Harmony.PC(n - K.root));
++  const srt = ns.slice().sort((a, b) => a.t - b.t || a.n - b.n), G = [];
++  for (const n of srt) { const g = G[G.length - 1]; if (g && Math.abs(g.t - n.t) < 1e-6) g.ns.push(n); else G.push({t: n.t, ns: [n]}); }
++  if (G.length < 3) return ns;
++  const drop = new Set();
++  for (let k = 0; k < G.length; k++) {
++    const a = G[(k - 1 + G.length) % G.length], x = G[k], b = G[(k + 1) % G.length];   // a clip loops: the line goes round
++    if (a.ns.length !== 1 || x.ns.length !== 1 || b.ns.length !== 1) continue;
++    const pa = a.ns[0].n, px = x.ns[0].n, pb = b.ns[0].n;
++    if (!inK(px) && inK(pa) && inK(pb) && Math.abs(pb - pa) === 2 && Math.abs(px - pa) === 1 && Math.abs(pb - px) === 1) drop.add(x.ns[0]);
++  }
++  return drop.size && drop.size < ns.length ? ns.filter(n => !drop.has(n)) : ns;
++}
+ function scenePartsOf(si) {
+   const parts = [];
+-  for (const i of synthTracks()) { const tr = S.tracks[i], c = tr && tr.follow && tr.clips[si], ns = c ? liveNotes(c) : null; if (ns && ns.length) parts.push({i, c, ns, med: median(ns.map(n => n.n))}); }
++  for (const i of synthTracks()) { const tr = S.tracks[i], c = tr && tr.follow && tr.clips[si], ns = c ? harmKeyNotes(liveNotes(c)) : null; if (ns && ns.length) parts.push({i, c, ns, med: median(ns.map(n => n.n))}); }   // HARM: ohne chromatische Durchgänge
+   return parts;
+ }
+ function sceneKeyOf(si) {
+@@ -38991,7 +39025,7 @@
+ function shownClipKey(si, c) {
+   if (!c || !c.key) return c ? c.key : null;
+   if (c.key.src !== 'auto' || !R.keyPending.has(si)) return c.key;
+-  const ns = liveNotes(c); if (!ns.length) return c.key;
++  const ns = harmKeyNotes(liveNotes(c)); if (!ns.length) return c.key;   // HARM: wie applySceneKeys
+   const k = KeyDetect.resolveClipKey(ns, sceneKeyOf(si), S.key);
+   return {root: k.root, scale: k.scale, src: 'auto'};
+ }
+@@ -39990,15 +40024,17 @@
+   row(s3, 'Modus', makeSeg([['chord', 'AKKORD'], ['scale', 'TONART'], ['chromatic', 'HALBTON']], () => h.mode, v => setHarmony({mode: v})));
+   row(s3, 'Einzelton', makeSeg([['key', 'In Tonart (Standard)'], ['parallel', 'Halbton (CV)']], () => h.single, v => setHarmony({single: v})));
+   row(s3, 'Moll-Akkorde', makeSeg([['aeolian', 'Äolisch'], ['dorian', 'Dorisch']], () => h.minor, v => setHarmony({minor: v})));
+-  row(s3, 'Wechsel', makeSeg([['now', 'Sofort'], ['beat', 'Schlag'], ['bar', 'Takt']], () => h.change, v => setHarmony({change: v})));
+-  row(s3, 'Oktave', makeSeg([['nearest', 'Nächste'], ['absolute', 'Absolut (CV)']], () => h.octaveMode, v => setHarmony({octaveMode: v})));
++  row(s3, 'Wechsel', makeSeg([['now', 'Sofort'], ['beat', 'Schlag'], ['bar', 'Takt']], () => h.change, v => setHarmony({change: v}))).classList.add('harm44');   // HARM
++  s3.appendChild(el('div', 'small harm-help', 'Takt (Standard): ein neuer Akkord wirkt am nächsten Taktstrich – ein laufender Lauf bleibt bis dahin in seiner Skala. Schlag/Sofort nur, wenn du es bewusst willst.'));   // HARM
++  row(s3, 'Oktave', makeSeg([['nearest', 'Nächste'], ['absolute', 'Absolut (CV)']], () => h.octaveMode, v => setHarmony({octaveMode: v}))).classList.add('harm44');   // HARM
+   row(s3, 'Split', makeSeg([[null, 'Aus'], [48, 'C3'], [60, 'C4']], () => h.split, v => setHarmony({split: v})));
+   row(s3, 'Tastatur beim Spielen', makeSeg([['show', 'Tonart zeigen'], ['lock', 'Tonart sperren'], ['off', 'Aus']], () => st.kbScale, v => setKbScale(v)));
+   s3.appendChild(el('div', 'small', 'Tonart zeigen: passende Töne leuchten. Tonart sperren: eine unpassende Taste spielt den nächsten passenden Ton darunter.'));
+   // V2c′ „Eine Skala“ (E3-25; Nachtrag 2, Xander 24.10.: Akkord-Skala-Quantisierer, Brain-Schalter, Drums für Fills)
+-  row(s3, 'Eine Skala', makeSeg([[true, 'An'], [false, 'Aus']], () => !!h.oneScale, v => setHarmony({oneScale: v}))).classList.add('mos');
++  row(s3, 'Eine Skala', makeSeg([[true, 'An'], [false, 'Aus']], () => !!h.oneScale, v => setHarmony({oneScale: v}))).classList.add('mos', 'harm44');   // HARM: ≥ 44
+   const osA = slider(0, 1, .05, () => h.osAmt, v => setHarmony({osAmt: v}), v => Math.round(v * 100) + ' %'); osA.prepend(el('span', 'lbl', 'Stärke')); osA.classList.add('mos-amt'); s3.appendChild(osA);
+-  row(s3, 'Durchgangstöne', makeSeg([[false, 'Einrasten'], [true, 'Erlauben']], () => !!h.osPass, v => setHarmony({osPass: v})));
++  row(s3, 'Durchgangstöne', makeSeg([[false, 'Einrasten'], [true, 'Erlauben']], () => !!h.osPass, v => setHarmony({osPass: v}))).classList.add('harm44');   // HARM
++  s3.appendChild(el('div', 'small harm-help', 'Standard: Eine Skala an, Stärke 100 %, Durchgangstöne einrasten – jeder Ton eines Laufs landet in der Skala des Akkords, der gerade gilt.'));   // HARM
+   row(s3, 'Skala nach', makeSeg([['proj', 'Projekt-Tonart'], ['auto', 'Automatisch']], () => h.osRef, v => setHarmony({osRef: v})));
+   const osT = row(s3, 'Spuren'); osT.classList.add('mos-tr');
+   for (const i of synthTracks()) {
+@@ -40008,7 +40044,7 @@
+     on(b, 'click', () => { setTrackScale(i, tr.os === false); b.classList.toggle('on', tr.os !== false); b.setAttribute('aria-pressed', String(tr.os !== false)); b.title = tr.name + ': Eine Skala ' + (tr.os !== false ? 'an' : 'aus'); });
+     osT.appendChild(b);
+   }
+-  row(s3, 'Drums', makeSeg([[false, 'Bleiben'], [true, 'Mittransponieren']], () => !!h.drums, v => setHarmony({drums: v})));
++  row(s3, 'Drums', makeSeg([[false, 'Bleiben'], [true, 'Mittransponieren']], () => !!h.drums, v => setHarmony({drums: v}))).classList.add('harm44');   // HARM
+   s3.appendChild(el('div', 'small', 'Eine Skala: unter einem Akkord klingen alle Spuren in seiner Tonleiter. Jeder Ton behält seine Stufe, nur unpassende Töne rücken zum nächsten passenden Ton – verschiedene Töne bleiben verschieden. Stärke unter 100 %: kurze Töne bleiben, wie gespielt. Drums mittransponieren: die Pads werden mitgestimmt (für Fills).'));
+   const bCoach = btn('? So funktioniert’s'); on(bCoach, 'click', () => { closeMenu(); showCoach(); }); row(s3, null, bCoach);
+   // 4 Aufnahme
+@@ -40358,8 +40394,11 @@
+   if (UI.coach) { EL.coach.hidden = true; UI.coach = false; }
+   scheduleAutoKey();
+   if (mig && mig.single && !opts.first) setTimeout(() => toast('Transponieren: Ein Ton bleibt jetzt in der Tonart (wie OP-Z). Umstellen: Menü → Harmonie'), 1900);
++  // HARM: die einmalige Umstellung auf den Harmonie-Standard (der Merker harmStd wird mit dem nächsten Sichern gespeichert)
++  const hmig = p._harmMig; if (hmig) { try { delete p._harmMig; } catch (e) {} HARMS.last = hmig; HARMS.n++; }
++  if (hmig && !opts.first) setTimeout(() => toast('Harmonie-Standard: Wechsel am Takt · Eine Skala an. Umstellen: Menü → Harmonie'), mig && mig.single ? 6200 : 1900);
+   UI.dirty.all = true; UI.kbRelayout = true;
+-  if (!opts.clean || mig) markDirty();
++  if (!opts.clean || mig || hmig) markDirty();   // HARM: + hmig (der Merker wird gespeichert)
+   try { if (SYNC.pres.size) cloudPresSoon(); if (SYNC.newer && SYNC.newer.lid !== S.id) SYNC.newer = null; } catch (e) {}   // VO2 Presence-light: anderes Projekt offen
+   const nl = nvLockOf(p); NV.lock = nl ? Object.assign({}, nl, {id: S.id, kv: !!opts.nvKv}) : null; nvBanner();
+   NV.raw = nl && nl.fo && nl.fo.project ? nvFileOf(nl.fo, S.id, S.name) : null;   // MK0-fix: the original; stored at once as the open project
+@@ -57062,6 +57101,7 @@
+   setTrackFollow, setMute,
+   // V2c′ (§16): oneScale(on?) -> boolean; Spur-Schalter; die eine Skala unter einem Träger (Tonklassen, Index 0 = Grundton)
+   oneScale: on => { if (on !== undefined) setHarmony({oneScale: !!on}); return !!S.settings.harmony.oneScale; },
++  harmInfo: () => ({std: HARM_STD, val: Object.assign({}, HARM_STD_VAL), migrated: HARMS.n, last: HARMS.last ? deep(HARMS.last) : null, cur: S.settings.harmony.harmStd}),   // HARM
+   setTrackScale,
+   oneScaleOf: (target, base) => Harmony.oneScale(target, base || S.key, S.settings.harmony.mode, hopts()),
+   kbScaleNow: () => { const Z = kbOneZ(); if (Z) return {root: Z[0], pcs: Z.slice(), one: true}; const r = kbRefKey(), SC = Harmony.SCALES[r.scale] || Harmony.SCALES.ionian; return {root: r.root, pcs: SC.map(x => PCx(x + r.root)), one: false}; },
+@@ -58183,7 +58223,7 @@
+ Object.assign(SYNQUENZER, vv4aApi());                      // VV4-A
+ Object.assign(SYNQUENZER, vv4Api());                       // VV4-C / VV4-E
+ Object.assign(SYNQUENZER, vv4bdApi());                      // VV4-B/D
+-const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
++const NO_SYNC = new Set(['oneScaleOf', 'harmInfo', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',   // HARM: + harmInfo
+   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
+   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
+   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
