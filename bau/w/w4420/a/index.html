@@ -29163,6 +29163,7 @@ function mkWheelApi(t, w, v) { if (w !== 'bend' && w !== 'mod') throw new Error(
 // one value of p.mk (path 't.0.f.cut', 'mfx.dep' ...): stored rounded through normMk; the worklet gets the fraction while a
 // gesture runs (live), the stored value at its end
 function mkSetP(i, path, v, live) {
+  ak1Go(i, 'mk.' + path);                                        // AK1
   const s_ = sndOf(i); if (!s_ || !s_.p.mk) return undefined;
   if (path === 'voc.hold') {
     const before = JSON.stringify(s_.p.mk.voc.hold), pm = deep(s_.p.mk); pm.voc.hold = Array.isArray(v) ? v.slice(0, 16) : null; s_.p.mk = SQMK.normMk(pm);
@@ -30011,6 +30012,7 @@ function v6aDiff(B, W) {
 }
 function v6aEdEnd(quiet) {
   const e = V6A.ed; if (!e) return false;
+  if (e.ak1) return ak1End();                                        // AK1: das automatische ◆ einer Geste
   V6A.ed = null;
   const tr = S.tracks[e.i]; if (!tr) return false;
   const W = tr.sound, B = e.base, df = v6aDiff(B, W);
@@ -30050,6 +30052,7 @@ function v6aEdWrap(fn) {
 // undo / redo while the ◆ editor is open: its own sound steps stay inside; anything else ends it first
 function v6aUndoGate(redo) {
   const e = V6A.ed; if (!e) return;
+  if (e.ak1) { ak1End(); return; }                                   // AK1
   const top = redo ? REDO[REDO.length - 1] : UNDO[UNDO.length - 1];
   if (top && top.kind === 'sound' && top.track === e.i && (redo || UNDO.length > e.undoN)) return;
   v6aEdEnd(true);
@@ -30067,21 +30070,134 @@ function v6aEdUi() {
 }
 function v6aLcdText() {
   const e = V6A.ed; if (!e) return null;
+  if (e.ak1) return null;                                            // AK1: das automatische ◆ hat keine eigene Zeile
   const tr = S.tracks[e.i], df = tr ? v6aDiff(e.base, tr.sound) : null, n = df ? Object.keys(df.p).length + Object.keys(df.fx).length : 0;
   return ['Bearbeite ◆', (e.own ? 'Song-Clip' : 'Clip Szene ' + (e.s + 1)) + ' · ' + n + (n === 1 ? ' Wert' : ' Werte') + ' anders · [Grundklang] = zurück'];
 }
 function v6aBtnPaint(b) {
-  const e = V6A.ed, on = !!(e && e.i === +b.dataset.t);
+  const e = V6A.ed, ed = !!(e && !e.ak1 && e.i === +b.dataset.t), on = ed || !!V6A.gk;     // AK1: an = ◆ bearbeiten (Clip-Blatt) oder Grundklang
   b.classList.toggle('on', on); b.classList.toggle('has', !on && !!v6aCurSt(+b.dataset.t));
   b.innerHTML = on ? '<span class="v6l">Grund-</span><span class="v6l">klang</span>' : '◆';
-  b.setAttribute('aria-label', on ? 'Grundklang: Klangzustand ◆ fertig, zurück zum Grundklang' : 'Klangzustand ◆ des Clips bearbeiten (Szenenwechsel gleitet dorthin)');
-  b.title = on ? 'Fertig – zurück zum Grundklang' : '◆ Klangzustand dieses Clips';
+  b.setAttribute('aria-pressed', !ed && on ? 'true' : 'false');                              // AK1
+  b.setAttribute('aria-label', ed ? 'Grundklang: Klangzustand ◆ fertig, zurück zum Grundklang' : on ? 'Grundklang an: Regler ändern den Klang aller Clips. Antippen: zurück zu ◆ automatisch' : '◆ automatisch: Regler ändern den laufenden Clip. Antippen: Grundklang für alle Clips');
+  b.title = ed ? 'Fertig – zurück zum Grundklang' : on ? 'Grundklang an – Regler gelten für alle Clips' : '◆ automatisch – Regler gehen in den laufenden Clip';
 }
 function v6aHeadBtn(i) {
   const b = el('button', 'hb rb v6ab'); b.dataset.t = String(i); v6aBtnPaint(b);
-  onTap(b, () => { if (V6A.ed && V6A.ed.i === i) v6aEdEnd(); else v6aEdStart(i); });
+  onTap(b, () => { if (V6A.ed && !V6A.ed.ak1 && V6A.ed.i === i) v6aEdEnd(); else ak1Gk(!V6A.gk); });   // AK1: [◆] = Grundklang an / aus (◆ bearbeiten: Clip-Blatt)
   (ED.v6aB || (ED.v6aB = [])).push(b);
   return b;
+}
+/* ---------- AK1 (Xander 01.11.: „ich lege jetzt was ab, öffne es wieder und es klingt gar nicht so, wie ich es eingestellt habe“ – „eigentlich
+   soll das automatisch sein“): ◆ automatisch. Dreht die Hand im offenen Synth-Editor einen Regler, während auf der Spur ein Clip läuft (ohne
+   Wiedergabe: der gewählte bzw. zuletzt gestartete Clip), geht die Änderung als Abweichung in DIESEN Clip (clip.st) – sofort hörbar, ein
+   Undo-Schritt je Geste. Technik: der erste Wert einer Geste öffnet still ein ◆-Bearbeiten (V6A.ed mit ak1: true – ohne Amber-Kante, ohne
+   Toast), das Ende der Geste (commitSound, sonst AK1_MS nach dem letzten Wert) schließt es: v6aDiff → clip.st, track.sound bleibt der
+   Grundklang. Was ein Zustand nicht halten kann (mode, poly, Engine, Routen, wt.tab …), bleibt im Grundklang. [◆] im Kopf schaltet
+   „Grundklang“ (V6A.gk): dann gehen die Regler wie früher in track.sound, für alle Clips. Nicht für Bit Mask (die Engine spielt keine
+   Zustände), Perkussions- und Drum-Spur, nicht im Song-Video-Render (UI.vvOff). ---------- */
+const AK1_MS = 1500;                                                          // ohne Ende-Meldung einer Geste: so lange nach dem letzten Wert
+const AK1_NO = new Set(['mw', 'wt.tab', 'mk.mode', 'mk.voc.hold']);           // dazu V6A_NO: nur im Grundklang
+// can a clip state hold this value? ('fm6' = a value of the FM block; 'fx.k' only Lautstärke / Pan / Hall / Echo)
+function ak1Key(key) {
+  if (key.startsWith('fx.')) return V6A_FX.includes(key.slice(3));
+  return !key.startsWith('fm2.') && !V6A_NO.has(key) && !AK1_NO.has(key);
+}
+// the clip a knob of track i writes to now (null = Grundklang): the open synth editor of the track, not in the Grundklang mode;
+// playing = the clip that sounds or comes (nothing on the track = Grundklang), stopped = the chosen / last started clip (v6aEdRef)
+function ak1Ref(i) {
+  if (V6A.gk || UI.vvOff || R.editor !== 'synth' || R.selT !== i) return null;
+  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound._nv || tr.sound.engine === 'bm' || tr.sound.engine === PERC_ENG) return null;
+  let ref = null;
+  if (R.playing) { const p = R.pend[i]; ref = p && p.slot >= 0 && v6aClip(i, p.slot, p.own) ? {s: p.slot, own: p.own || null} : R.slot[i] >= 0 && v6aClip(i, R.slot[i], R.own[i]) ? {s: R.slot[i], own: R.own[i] || null} : null; }
+  else ref = v6aEdRef(i);
+  const clip = ref && v6aClip(i, ref.s, ref.own);
+  if (!clip || clip.audio || (clip.st && !v6aStOk(i, clip.st))) return null;
+  return {ref, clip};
+}
+// setP / mkSetP / fmSet*: before a value is written – the first value of a gesture opens the automatic ◆ of that clip
+function ak1Go(i, key) {
+  const e = V6A.ed;
+  if (e) { if (!e.ak1) return; if (e.i === i && ak1Key(key)) { e.t = performance.now(); return; } ak1End(); }
+  if (!ak1Key(key)) return;
+  const r = ak1Ref(i); if (!r) return;
+  const tr = S.tracks[i], base = tr.sound, clip = r.clip, st = clip.st || null, cur = R.v6aCur && R.v6aCur[i];
+  const own = r.ref.own ? v6aOwnId(clip) || r.ref.own : null;
+  V6A.ed = {i, s: r.ref.s, own, base, undoN: UNDO.length, x: st ? {x: st.x, n: st.n} : null, ak1: true, snap: soundSnapshot(i), t: performance.now()};
+  tr.sound = deep(st ? v6aApply(base, st) : base);                            // the working copy = what the track plays (Grundklang ⊕ ◆)
+  UI.sndVer++;
+  if ((cur ? cur.st : null) !== st && AU.ctx) { syncEngine(i, true); applyTrackParams(i, false); }   // the engine played another state: this one now
+  ak1Wait(V6A.ed);
+}
+function ak1Wait(e) {
+  const run = () => { if (V6A.ed !== e) return; const age = performance.now() - e.t; if (age >= AK1_MS - 5) ak1End(); else setTimeout(run, AK1_MS - age); };
+  setTimeout(run, AK1_MS);
+}
+// a value at a path of p (as v6aDiff names it: 'cutoff', 'wt.pos', 'fm6.ops.0.ol', 'mk.t.0.f.cut')
+function ak1Put(snd, path, v) {
+  if (!path.includes('.')) { snd.p[path] = v; return; }
+  const q = path.split('.'); let o = snd.p; for (let j = 0; j < q.length - 1 && o != null; j++) o = o[q[j]];
+  if (o != null && typeof o === 'object') o[q[q.length - 1]] = v;
+}
+// the end of the gesture (commitSound, the timer, anything that ends a ◆ editor): the differences go into the clip – one undo step
+function ak1End(label) {
+  const e = V6A.ed; if (!e || !e.ak1) return false;
+  V6A.ed = null;
+  const i = e.i, tr = S.tracks[i]; if (!tr) return false;
+  const W = tr.sound, B = e.base, same = W.engine === B.engine, df = same ? v6aDiff(B, W) : null;
+  let G = W;
+  if (same) {                                                                 // the Grundklang: B and what a state cannot hold
+    G = deep(W);
+    if (df) { for (const p in df.p) ak1Put(G, p, v6aGet(B, p)); for (const k in df.fx) { if (B.fx && Object.prototype.hasOwnProperty.call(B.fx, k)) G.fx[k] = B.fx[k]; else delete G.fx[k]; } }
+    if (JSON.stringify(G) === JSON.stringify(B)) G = B;
+  }
+  tr.sound = G;
+  const clip = v6aClip(i, e.s, e.own), L = '◆ ' + (label || 'Klang') + ' · ' + (e.own ? 'Song-Clip' : trackShort(i) + ' Sz' + (e.s + 1));
+  let st = null, it = null;
+  if (clip) {
+    const old = clip.st || null, was = e.own ? JSON.stringify(clip) : cleanClip(clip), x = old && old.x ? old.x : e.x && e.x.x, nn = old && old.n ? old.n : e.x && e.x.n;
+    st = df ? Object.assign({eng: B.engine, p: df.p}, Object.keys(df.fx).length ? {fx: df.fx} : null, x ? {x} : null, x === 'free' && nn ? {n: nn} : null) : null;
+    if (st) clip.st = st; else delete clip.st;
+    const now = e.own ? JSON.stringify(clip) : cleanClip(clip);
+    if (JSON.stringify(now) !== JSON.stringify(was)) it = e.own ? {kind: 'own', id: e.own, before: was, label: L} : {kind: 'clip', track: i, scene: e.s, before: was, label: L};
+  }
+  const sg = G !== B ? {kind: 'sound', track: i, before: e.snap, label: L} : null;
+  if (it && sg) undoPush({kind: 'group', label: L, items: [sg, it]}); else if (it || sg) undoPush(it || sg);
+  if (it || sg) markDirty();
+  v6aRt(); const ok = v6aStOk(i, st) ? st : null; R.v6aCur[i] = {st: ok, sig: v6aSig(ok)};
+  UI.sndVer++; UI.dirty.strip = UI.dirty.grid = true; if (sg) UI.dirty.edHead = true;
+  if (!clip && AU.ctx) syncEngine(i, true);
+  if (ED.v6aB) for (const b of ED.v6aB) if (b.isConnected) v6aBtnPaint(b);
+  return !!(it || sg);
+}
+// without playback the track plays the state of the clip the knobs go to (opening the editor, ↶ ↷ of a state): heard and shown
+function ak1Sync(i, redraw) {
+  if (R.playing || V6A.ed || UI.vvOff || R.editor !== 'synth' || R.selT !== i) return false;
+  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound._nv || tr.sound.engine === PERC_ENG) return false;
+  const ref = v6aEdRef(i), c = ref && v6aClip(i, ref.s, ref.own), st = c && !c.audio && v6aStOk(i, c.st) ? c.st : null, cur = R.v6aCur && R.v6aCur[i];
+  if ((cur ? cur.st : null) === st) return false;
+  v6aRt(); R.v6aCur[i] = {st, sig: v6aSig(st)}; R.v6aRun[i] = null; KV1.run[i] = null;
+  UI.sndVer++; UI.dirty.strip = true;
+  if (AU.ctx) { syncEngine(i, true); applyTrackParams(i, false); }
+  if (redraw) safeRebuild(buildSynthEd);
+  return true;
+}
+// [◆] im Kopf: Grundklang an / aus (für alle Spuren; nicht im Projekt – nach dem Neuladen wieder ◆ automatisch)
+function ak1Gk(on) {
+  if (V6A.ed && V6A.ed.ak1) ak1End();
+  V6A.gk = !!on;
+  if (ED.v6aB) { ED.v6aB = ED.v6aB.filter(b => b.isConnected); for (const b of ED.v6aB) v6aBtnPaint(b); }
+  if (ED.lcd && ED.lcd.isConnected) lcdHint();
+  toast(V6A.gk ? 'Grundklang: Regler ändern den Klang aller Clips' : '◆ automatisch: Regler ändern den laufenden Clip');
+  return V6A.gk;
+}
+// the LCD line of the synth editor (lcdHint): which way the knobs go
+function ak1Hint(i) {
+  const tr = S.tracks[i]; if (V6A.ed || !tr || tr.kind !== 'synth') return null;
+  if (V6A.gk) return ['Grundklang', 'Regler ändern den Klang aller Clips · [Grundklang] = zurück zu ◆ automatisch'];
+  if (ak1Ref(i)) return ['◆ automatisch', 'Regler ändern den laufenden Clip · [◆] = Grundklang für alle Clips'];
+  if (R.v6aCur && R.v6aCur[i] && v6aCurSt(i)) return ['◆ Zustand spielt', 'Regler zeigen den Klang des Clips'];
+  return null;
 }
 /* V6A Bedienung: Clip-Blatt (◆-Zeile: Bearbeiten · Gleiten · Klartext · Löschen), Teil-Blatt und Marken-Blatt ([Gleiten: Clip|aus|kurz|1 T|2 T|frei]) */
 const V6A_FREE = [1, 2, 3, 4, 6, 8, 12, 16];
@@ -33355,6 +33471,7 @@ function undoApply(e, val) {
     else closeRoll();
   }
   if (e.kind === 'clip' && S.tracks[e.track].kind === 'synth') scheduleAutoKey(e.scene);
+  if (e.kind === 'clip') ak1Sync(e.track, true);                    // AK1: ↶ ↷ eines Zustands – ohne Wiedergabe gleich hörbar und sichtbar
   if (UI.pop && UI.pop.k1r && !UI.k1rQ) { UI.k1rQ = true; queueMicrotask(() => { UI.k1rQ = false; if (UI.pop && UI.pop.k1r) UI.pop.k1r(); }); }   // K1-fix: the open Mod-Übersicht follows ↶ ↷
   if ((e.kind === 'clip' || e.kind === 'song' || e.kind === 'takes') && UI.pop && UI.pop.name === 'takes' && !TK.sheetQ) {   // VS3-fix: the open takes sheet follows ↶ ↷
     TK.sheetQ = true; queueMicrotask(() => { TK.sheetQ = false; if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); });
@@ -41264,6 +41381,8 @@ function lcdHint() {
   const v6 = V6A.ed && V6A.ed.i === R.selT && R.editor === 'synth' ? v6aLcdText() : null;   // V6A: „Bearbeite ◆ …“ (amber)
   L.classList.toggle('v6a', !!v6);
   if (v6) { L.innerHTML = `<span class="lk">${esc(v6[0])}</span><span class="lv">${esc(v6[1])}</span>`; L._full = v6; lcdFit(L); return; }
+  const ak = R.editor === 'synth' ? ak1Hint(R.selT) : null;   // AK1: ◆ automatisch / Grundklang
+  if (ak) { L.innerHTML = `<span class="lk">${esc(ak[0])}</span><span class="lv">${esc(ak[1])}</span>`; L._full = ak; lcdFit(L); return; }
   const v6c = R.editor === 'synth' && !V6A.ed && R.v6aCur && R.v6aCur[R.selT] ? v6aCurSt(R.selT) : null;   // V6A: a state plays (KV1: the knobs show it)
   if (v6c) { const h = ['◆ Zustand spielt', 'Regler zeigen den Klang des Clips · [◆] = Zustand bearbeiten']; L.innerHTML = `<span class="lk">${esc(h[0])}</span><span class="lv">${esc(h[1])}</span>`; L._full = h; lcdFit(L); return; }
   L.innerHTML = '<span class="lk">Regler</span><span class="lv">ziehen = ändern · seitlich = fein · 2× tippen = Standard · halten = modulieren</span>';
@@ -42013,6 +42132,7 @@ function restoreSoundSnapshot(t, o) {
   if (R.editor === 'browser' && t === BR.t) brRefresh();
 }
 function commitSound(t, before, label) {
+  if (V6A.ed && V6A.ed.ak1 && V6A.ed.i === t) return ak1End(label);   // AK1: Ende der Geste = ein Undo-Schritt im Clip ◆
   const j = UI.mkInJoin && UI.mkInJoin.track === t ? UI.mkInJoin : null; if (j) UI.mkInJoin = null;   // G-MKP8: E2 = mic with the switch to Vocoder
   if (before == null || soundSnapshot(t) === before) { if (j) undoPush(j); return false; }      // a tap or a drag back to the start adds nothing
   if (j) undoPush({kind: 'group', label, items: [{kind: 'sound', track: t, before, label}, j]}); else
@@ -42085,6 +42205,7 @@ function clampParam(key, v, cur) {
 /* the one way a sound parameter changes (knobs, faders, segments, XY, envelope editor, API): value, live update of the
    sounding notes, dirty marks. Undo is per gesture (soundUndo / commitSound around it). */
 function setP(i, key, v) {
+  ak1Go(i, key);                                                             // AK1: läuft / gewählt ein Clip -> dessen ◆
   const snd = sndOf(i); if (!snd) return undefined;
   const nv = clampParam(key, v, sndGet(snd, key));
   if (nv === sndGet(snd, key)) return nv;
@@ -42169,6 +42290,7 @@ function fmxLvWant(t, on) {
 // engine is created / kept / retired, track effects and native LFOs follow, the drive curve a moment later.
 function applySound(i, snd, opts) {
   opts = opts || {};
+  if (V6A.ed && V6A.ed.ak1 && V6A.ed.i === i) ak1End();          // AK1: ein ganzer Klang ist Grundklang
   const T = S.tracks[i]; if (!T || T.kind !== 'synth' || !snd) return;
   snd = nvWrap(snd);
   const old = T.sound, other = !old || old.name !== snd.name || old.origin !== snd.origin || old.engine !== snd.engine;
@@ -42532,6 +42654,7 @@ function buildSynthEd() {
   if (tr.kind !== 'synth') return;
   if (R.editor !== 'synth') return;                       // G-MK1-fix: a late rebuild (timer, ResizeObserver, gesture end) never reopens a closed editor
   if (V6A.ed && V6A.ed.i !== i) v6aEdEnd();               // V6A: the ◆ editor belongs to one track
+  ak1Sync(i);                                             // AK1: ohne Wiedergabe spielt die Spur den Zustand des gewählten Clips
   if (UI.modSrc && UI.modT !== i) exitModMode();          // mod mode belongs to one sound: a track switch ends it
   ED.refreshers = []; ED.graph = null; ED.xy = null; ED.env = null; ED.lfoPrev = null; ED.hdr = null;
   ED.ctls = []; ED.msrc = null; ED.mrows = null; ED.mbn = null;
@@ -42971,6 +43094,7 @@ function fmGetOp(i, k, key) { const ov = kv1Ov(i, 'fm6.ops.' + k + (FM_KS.includ
   const op = fmOf(i).ops[k]; return FM_KS.includes(key) ? (op.ks || FM_KS_DEF())[key] : op[key]; }
 // one operator value (Anhang A.2 ranges; ks.* = bp ld rd lc rc); nothing happens when the value does not change
 function fmSetOp(i, k, key, v) {
+  ak1Go(i, 'fm6');                                          // AK1
   const fm = fmOf(i); if (!fm) return undefined;
   const op = fm.ops[k], nv = fmClampV(key, v);
   if (FM_KS.includes(key)) { if (!op.ks) op.ks = FM_KS_DEF(); if (op.ks[key] === nv) return nv; op.ks[key] = nv; }
@@ -42981,10 +43105,12 @@ function fmSetOp(i, k, key, v) {
 }
 // rate ('r') or level ('l') of one envelope stage (0..3)
 function fmSetEnv(i, k, which, stage, v) {
+  ak1Go(i, 'fm6');                                          // AK1
   const a = fmOf(i).ops[k][which], nv = clamp(Math.round(+v || 0), 0, 99);
   if (a[stage] === nv) return nv; a[stage] = nv; fmChanged(i); return nv;
 }
 function fmSetPatch(i, key, v) {
+  ak1Go(i, 'fm6');                                          // AK1
   const fm = fmOf(i); if (!fm) return undefined;
   const nv = fmClampV(key, v); if (fm[key] === nv) return nv;
   fm[key] = nv; fmChanged(i, key === 'alg');
@@ -45013,6 +45139,7 @@ function pegRateFor(g, s, sec) {
 const htTxt = h => (h > .04 ? '+' : h < -.04 ? MINUS : '±') + fmtDec(Math.abs(h), 1);
 const pegNearestL = ht => { let best = 50, bd = Infinity; for (let L = 0; L <= 99; L++) { const d = Math.abs(pegHt(L) - ht); if (d < bd) { bd = d; best = L; } } return best; };
 function fmSetPeg(i, g) {
+  ak1Go(i, 'fm6');                                          // AK1
   const fm = fmOf(i); if (!fm) return;
   if (!g || g.l.every(x => x === 50)) { if (fm.peg) { delete fm.peg; fmChanged(i, true); } return; }
   const n = {r: g.r.map(x => clamp(Math.round(x), 0, 99)), l: g.l.map(x => clamp(Math.round(x), 0, 99))};
@@ -72575,6 +72702,7 @@ const V6A_API = {
   v6aLabels: () => Object.assign({}, V6A_XL),
 };
 Object.assign(SYNQUENZER, V6A_API);                         // V6A: weicher Szenenwechsel
+Object.assign(SYNQUENZER, {ak1Gk: on => ak1Gk(on !== false), ak1Open: () => (V6A.ed && V6A.ed.ak1 ? {i: V6A.ed.i, s: V6A.ed.s, own: V6A.ed.own} : null), ak1Done: () => ak1End()});   // AK1: Test-API
 Object.assign(SYNQUENZER, {                       // BM6 (Nachtrag 7 §5.3): Bit Mask
   bmName: () => BM_NAME,
   bmGet: t => { const s_ = sndOf(t); return s_ && s_.p.bm ? deep(s_.p.bm) : null; },
