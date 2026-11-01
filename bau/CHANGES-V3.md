@@ -1,3 +1,14 @@
+## 4.32.0 — Taktarten, Teile leicht/voll, gemalter LFO, Versionsnummer im Menü
+
+Grundlage 4.31.0 + Stufe B1 (T1 Taktarten, SX11 leicht/voll, N8I134 Super-Regler-Kern und Mal-LFO).
+- **Taktarten:** BPM antippen → Taktart 4/4, 3/4, 2/4, 5/4, 6/8, 7/8, 12/8 für den Song; je Songteil im Marken-Blatt [Taktart ▾], je Clip im Clip-Blatt. Metronom und Einzähler betonen die Eins, TAKT zeigt „Takt.Zählzeit“, [Clips umrechnen] passt die Drums an. Tempo bleibt ♩ = BPM.
+- **Teile leicht/voll:** Song → Marke antippen → [Leicht] dünnt den Teil aus (Hi-Hat höchstens Achtel, Kick/Snare bleiben), [Voll] holt alles exakt zurück; dazu [⧉ Variante] und [Einfügen]. Beim Abspielen wechselt es am nächsten Taktstrich.
+- **Mal-LFO:** Synth → LFO → sechstes Form-Feld ✎ öffnet das Form-Blatt, dort malst du deine eigene LFO-Form. Die sechs Form-Felder sind jetzt 44 px breit.
+- **Versionsnummer:** ≡ antippen – ganz oben steht klein „SYNQUENZER 4.32.0“.
+- Alte Projekte laden und klingen gleich. Projekte mit Taktart oder gemalter Form werden als Format 7 gespeichert.
+- Offen: Super-Regler ist nur im Kern gebaut, die Bedienung wartet auf deine Antworten; eigene Gruppierungen (7/8 als 3+2+2) kommen später; LFO „1 Takt“ zählt auch in 3/4 noch 4 Schläge; „Meine Formen“ fehlt noch.
+Tests: Rauchtest grün, B1-Zusammenspiel 30/31 (der rote Punkt sind fehlende Schriftdateien der Testumgebung, nicht die App), Regeln (live 1×, MS 2000 1×, Marken 0, acorn 0 doppelt / 0 Syntaxfehler).
+
 ## 4.31.0 — Takes-Verwaltung (G10c)
 
 Grundlage 4.30.1. STIMME-Clip antippen → Takes-Blatt (mit dem 4.30.1-Kopf: ⏮ ▶ Schleife, Ablegen, ✕ – genau ein ✕):
