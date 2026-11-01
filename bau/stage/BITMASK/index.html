@@ -2423,6 +2423,8 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .cs3 .cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .cs3 .cgrid .hb{height:44px;width:100%;min-width:0;padding:0 8px;overflow:hidden;text-overflow:ellipsis}
 .cs3 .cgrid .big{grid-column:1/-1;font-size:14px;color:var(--ink);background:var(--sel);border-color:var(--sel)}
+.cs3 .cgrid .cvdel{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;white-space:nowrap}   /* BM8 */
+.cs3 .cgrid .cvdel small{font-size:10px;letter-spacing:0;opacity:.75;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .cs3 .lenrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .cs3 .lenrow .hb{flex:1 1 0;min-width:44px;height:44px;padding:0 6px}
 .cs3 .lenrow .lbl{flex:none;margin-right:2px}
@@ -5875,9 +5877,15 @@ const ARPC = (function () {
     else if (type === 4) return [U[mix(seed, c) % U.length]];
     return [P[md(c, P.length)]];
   }
-  const A_ = i => { const tr = S.tracks[i]; return tr && tr.sound && tr.sound.p && tr.sound.p.mk ? tr.sound.p.mk : null; };
-  function on(i) { const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound.engine !== 'mk') return false; const m = tr.sound.p.mk; return !!(m && m.arp && m.arp.on); }
-  const stepB = m => RES[clamp(m.arp.res | 0, 0, 5)] * 4;
+  /* Bit Mask (Nachtrag 7 §1.14): an adapter in the shape of the AM program: the 26 patterns of BMARP in play order, SPD as free
+     sixteenths (transport stopped) or the song division nearest to SPD / BPM (running), HOLD = latch, TRIG OFF = one voice whose
+     pitch jumps, notes only on program A (d 1), gate 80 % [A]. Pattern counter from the first key of a chord (key sync). */
+  const BMG = 80;
+  const bmA = tr => { const a = tr.sound.p.bm && tr.sound.p.bm.a && tr.sound.p.bm.a.ar; if (!a) return null; const d = BMARP.div(a.sp, S.bpm, R.playing);
+    return {bm: true, mode: 0, split: 60, sb: d.beats, arp: {on: a.t !== 'off', t: a.t, sp: a.sp, tr: a.tr, res: Math.round(d.beats * 96000) + (R.playing ? 1 : 0), latch: a.ho ? 1 : 0, ks: 1, last: 1, steps: 1, type: 0, range: 1, gate: a.tr ? BMG : 100, swing: 0, tgt: 0}}; };
+  const A_ = i => { const tr = S.tracks[i]; if (tr && tr.sound && tr.sound.engine === 'bm') return bmA(tr); return tr && tr.sound && tr.sound.p && tr.sound.p.mk ? tr.sound.p.mk : null; };
+  function on(i) { const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound) return false; if (tr.sound.engine === 'bm') { const m = A_(i); return !!(m && m.arp.on); } if (tr.sound.engine !== 'mk') return false; const m = tr.sound.p.mk; return !!(m && m.arp && m.arp.on); }
+  const stepB = m => (m.bm ? m.sb : RES[clamp(m.arp.res | 0, 0, 5)] * 4);
   // the voices of the timbre(s) a Trigger step plays on (MK3 recap: Timbre Voice, the mono rule; Mono / Unison = one line)
   function voicesOf(m, mask) {
     const as = t => clamp(Math.round(t.asg), 0, 2), a = as(m.t[0]), b = as(m.t[1]), dual = m.mode === 1 || m.mode === 2;
@@ -5890,7 +5898,7 @@ const ARPC = (function () {
   const keyTim = (m, p) => (m.mode === 2 ? (p < m.split ? 1 : 2) : m.mode === 1 ? 3 : 1);
   // a new source note: does the arp take it, and does the other timbre hold it as a normal note (mask; 0 = the mode decides)?
   function route(i, pitch) {
-    const m = A_(i), tg = m.arp.tgt | 0;
+    const m = A_(i), tg = m.arp.tgt | 0; if (m.bm) return {arp: true, hold: null};
     if (m.mode === 1 && tg) return {arp: true, hold: 3 - tg};
     if (m.mode === 2 && tg && keyTim(m, pitch) !== tg) return {arp: false, hold: 0};
     return {arp: true, hold: null};
@@ -5962,7 +5970,7 @@ const ARPC = (function () {
     const A = m.arp, latch = !!A.latch, q = query(s, tq != null ? tq : t, latch), r = {idx, t, tn: nomT(s, idx), pc: s.pc, pg: s.pg, pk: s.kOn, vs: [], le: [], s: -1};
     if (tq != null) r.late = 1;
     r.q = q && q.mem.length ? 1 : 0;
-    if (!r.q) { if (s.kOn) keys(i, s, 10, t); s.pg = null; rec(s, r); return r; }
+    if (!r.q) { if (s.kOn) keys(i, s, 10, t); if (s.tv) { if (!s.tv.dead) s.tv.release(t); s.tv = null; } s.pg = null; rec(s, r); return r; }
     const ng = q.g !== s.pg;
     if (ng) keys(i, s, 9, t);                                     // KEYS 9: a new chord after all keys up (LFO / SEQ key sync "Timbre")
     r.gb = s.gb; if (s.grid.k === 'song' && (ng || s.gb == null)) s.gb = Math.floor(idx * s.sb / 4 + 1e-6) * 4;
@@ -5980,6 +5988,7 @@ const ARPC = (function () {
       if (m.mode === 2 && tg && keyTim(m, p) !== tg) continue;
       const o = byP.get(p); if (!o || x.vel > o.vel) byP.set(p, {p, vel: x.vel, x});
     }
+    if (m.bm) return bmStep(i, s, m, t, idx, r, q, c, byP);
     const N = [...byP.values()].sort((a, b) => a.p - b.p); if (!N.length) { rec(s, r); return r; }
     const seed = seedOf(i);
     let notes;
@@ -5997,6 +6006,26 @@ const ARPC = (function () {
       r.vs.push(v);
       const le = {t, note: v.out, vel: n.vel, dur, step: sp + 1, c}; if (r.late) le.late = 1; r.le.push(le); L.push(le); if (L.length > LOGN) L.splice(0, L.length - LOGN);
     }
+    rec(s, r); return r;
+  }
+  // Bit Mask: one note per step from BMARP (keys in play order = the order they were pressed); TRIG OFF: one voice, its pitch jumps
+  function bmStep(i, s, m, t, idx, r, q, c, byP) {
+    const ks = [], xs = []; for (const x of q.mem) { const e = [...byP.values()].find(o => o.x === x); if (e && !ks.includes(e.p)) { ks.push(e.p); xs.push(e); } }
+    const n = ks.length ? BMARP.step(m.arp.t, ks, c, seedOf(i)) : null;
+    if (n == null) { rec(s, r); return r; }
+    const L = logOf(i), sec = s.sb * spb(), tN = timeOf(s, m, idx + 1), base = xs[xs.length - 1], vel = base.vel;
+    const dur = m.arp.gate >= 100 ? Math.max(.003, tN - t) : Math.max(.003, m.arp.gate / 100 * sec);
+    let v = null;
+    if (!m.arp.tr && s.tv && !s.tv.dead && s.tv.start <= t + 1e-6 && !(s.tv.relT < Infinity)) { v = s.tv; if (v.out !== n) v.retune(n, t); r.rt = v; }
+    else {
+      if (s.tv && !s.tv.dead && !m.arp.tr) s.tv.release(t);
+      v = spawnVoice(i, n, vel, t, {src: 'arp', mask: 1, clipNote: base.x.n, clipKey: base.x.key || null});
+      if (!v) { rec(s, r); return r; }
+      if (m.arp.tr) v.release(t + dur); else s.tv = v;
+      v.arp = {x: base.x, o: (n - base.p) / 12}; r.vs.push(v);
+      v.log = logNote({track: i, src: 'arp', clipNote: base.x.n, out: v.out, time: t, dur, vel, step: 1});
+    }
+    const le = {t, note: n, vel, dur, step: 1, c}; r.le.push(le); L.push(le); if (L.length > LOGN) L.splice(0, L.length - LOGN);
     rec(s, r); return r;
   }
   // plan track i up to now + h
@@ -6041,7 +6070,7 @@ const ARPC = (function () {
     if (k < H.length) {
       const r = H[k];
       const gone = new Set();
-      for (let j = k; j < H.length; j++) { for (const v of H[j].vs) if (!v.dead) v.cancel(); for (const e of H[j].le) gone.add(e); }
+      for (let j = k; j < H.length; j++) { for (const v of H[j].vs) if (!v.dead) { v.cancel(); if (s.tv === v) s.tv = null; } for (const e of H[j].le) gone.add(e); }
       if (gone.size) { const L = logOf(i); for (let j = L.length - 1; j >= 0 && gone.size; j--) if (gone.delete(L[j])) L.splice(j, 1); }   // a cancelled step never sounded: out of arpLog too
       s.next = r.idx; s.pc = r.pc; s.pg = r.pg; if ('gb' in r) s.gb = r.gb; s.kOn = r.pk; H.length = k; s.planT = k ? H[k - 1].t : -Infinity;
     }
@@ -6052,6 +6081,7 @@ const ARPC = (function () {
     const s = ST.get(i); if (!s) return;
     const now = nowT();
     for (const r of s.hist) for (const v of r.vs) if (!v.dead) { if (v.start > now + .002) v.cancel(); else v.release(now); }
+    if (s.tv && !s.tv.dead) s.tv.release(now);   // Bit Mask TRIG OFF
     if (s.kOn) keys(i, s, 10, now);
     ST.delete(i);
     void keepLive;
@@ -6146,8 +6176,9 @@ const BMARP = (function () {
     const r = spd / bpm; let best = DIV[0], bd = Infinity; for (const d of DIV) { const x = Math.abs(Math.log(r / d[0])); if (x < bd - 1e-12) { bd = x; best = d; } }
     return {sec: best[2] * 60 / bpm, name: best[1], beats: best[2]};
   }
-  return {T, FIX, seq, step, div};
+  return {T, FIX, seq, step, div, stop: i => { if (typeof ARPC !== 'undefined') ARPC.end(i); }};
 })();
+window.BMARP = BMARP;
 </script>
 <script type="text/plain" id="sq-mk-src">
 /* ===== MK1 / MK-P (Nachtrag 3 B.3, B.4, MK-P): block sq-mk-src, evaluated on first need (mkLoad). The panel of the AM engine as
@@ -9783,7 +9814,7 @@ var BMK = (function () {
       if (any) { this.prep(0); this.prep(1); }
     }
     ctl(m) {
-      if (Array.isArray(m.list)) { for (const x of m.list) this.q.push({k: 5, at: num(x.at, 0), c: x.k, v: num(x.v, 0)}); this.sortQ(); return; }
+      if (Array.isArray(m.list)) { for (const x of m.list) { if (x.cut) { const a = num(x.at, 0); this.q = this.q.filter(e => !(e.k === 5 && e.c === x.k && e.at >= a)); } this.q.push({k: 5, at: num(x.at, 0), c: x.k, v: num(x.v, 0)}); } this.sortQ(); return; }
       if (m.bend != null) this.ctlSet(0, clamp(num(m.bend, 0), -1, 1));
       if (m.mw != null) this.ctlSet(1, clamp(num(m.mw, 0), 0, 1));
       if (m.pr != null) this.ctlSet(2, clamp(num(m.pr, 0), 0, 1));
@@ -9896,7 +9927,7 @@ var BMK = (function () {
     }
     // the level and side of a program in LAYER / SPLIT: BAL 0..100 (A x (1 - b), B x b, as BAL of section 1.3), PAN 0..100 spreads A left, B right
     // new layer values: nothing sounding -> at once; else they glide (1 ms steps, factor 0.25: 99 % after 16 ms)
-    lyNew() { let any = false; for (const v of this.V) if (v.on) any = true; this.lyG = 1; if (!any) { this.lyS[0] = clamp(this.ly.bal, 0, 100) / 100; this.lyS[1] = clamp(this.ly.pan, 0, 100) / 100; } }
+    lyNew() { let any = false; for (const v of this.V) if (v.on) any = true; this.lyG = 1; if (!any) { this.lyS[0] = clamp(this.ly.bal, 0, 100) / 100; this.lyS[1] = clamp(this.ly.pan, -100, 100) / 100; } }
     // layer gain -> tq[2], layer pan -> tq[3]
     lyGP(pg) {
       const q = this.tq; if (!this.P[1] || this.ly.md === 'ein') { q[2] = 1; q[3] = 0; return; }
@@ -10050,9 +10081,9 @@ var BMK = (function () {
     }
     ctlGlobal(lite) {
       this.smoothStep();
-      if (this.lyG) { this.lyG = 0; for (let i = 0; i < 2; i++) { const L = this.lyS, d = (clamp(i ? this.ly.pan : this.ly.bal, 0, 100) / 100) - L[i]; if (d !== 0) { L[i] = d < 1e-4 && d > -1e-4 ? L[i] + d : L[i] + .25 * d; this.lyG = 1; } } }
+      if (this.lyG) { this.lyG = 0; for (let i = 0; i < 2; i++) { const L = this.lyS, d = (i ? clamp(this.ly.pan, -100, 100) : clamp(this.ly.bal, 0, 100)) / 100 - L[i]; if (d !== 0) { L[i] = d < 1e-4 && d > -1e-4 ? L[i] + d : L[i] + .25 * d; this.lyG = 1; } } }
       for (let i = 0; i < 3; i++) if (this.cV[i] !== this.cT[i]) { const x = this.cV[i] + this.cS[i]; this.cV[i] = (this.cS[i] > 0 ? x >= this.cT[i] : x <= this.cT[i]) ? this.cT[i] : x; }
-      const mw = this.cV[1], at = atCurve(this.gl.ac, this.cV[2]);
+      const mw = this.cV[1], at = this.gl.ac === 0 || this.gl.ac === 'none' ? 0 : this.cV[2];   // the panel shapes AT CURVE (section 3.4)
       for (let pi = 0; pi < 2; pi++) {
         const P = this.P[pi]; if (!P) continue;
         const S = this.S[pi], D = P.__d, mod = S.mod;
@@ -10542,7 +10573,7 @@ function lcdPar() {
   const v = valOf(d); lcdShow(sec, d.n + ' · ' + fmtV(d, v).trim() + ' · ' + lcdT(d, v));
 }
 /* ---------- places: P00 … = own start sounds (BM7), U00 … = own saved BM_NAME sounds of the library in save order (§3.3 Voice) ---------- */
-// BM6/BM7-PLATZHALTER: until BM7 brings P00-P39, P00 is INIT (1OSC); BM7 provides window.BMFAC.list() -> [{id, name, p: {bm}}]
+// BM7: the start sounds P00-P39 (window.BMFAC.list(), factory records); without them P00 is INIT (1OSC)
 function facList() { try { if (window.BMFAC && BMFAC.list) return BMFAC.list(); } catch (e) { logErr(e); } return [{id: 'bm-p00', name: 'INIT', bm: SQBM.init()}]; }
 function ownList() { return (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine === 'bm').sort((a, b) => (a.ct || 0) - (b.ct || 0)); }
 function posOf(snd) { if (!snd) return null; const o = snd.origin; if (!o) return null; const U = ownList(), u = U.findIndex(r => r.id === o); if (u >= 0) return -(u + 1); const F = facList(), f = F.findIndex(r => r.id === o); return f >= 0 ? f : null; }
@@ -10552,7 +10583,7 @@ function placeCode(d) { if (P.mode === 'voice') return codeOf(posOf(sndOf(P.i)))
 function placeCur(d) { if (P.mode === 'voice') return sndOf(P.i); const bm = bmOf(); if (!bm || !bm.b) return null; return recAt(P.bPlace[P.i]) || {name: 'Programm B'}; }
 function soundOfRec(r) {
   const cur = sndOf(P.i); if (!r) return null;
-  if (r.engine === 'bm') return soundCopy(r);
+  if (r.engine === 'bm') return FACTORY_BY_ID.has(r.id) ? factorySound(r.id) : soundCopy(r);   // BM7: a start sound
   const s_ = deep(cur); s_.p.bm = SQBM.normBm(r.bm || SQBM.init()); s_.name = r.name; s_.origin = r.id && !String(r.id).startsWith('bm-p') ? r.id : (r.id || null); return s_;
 }
 function retrigHeld(i) {   // gehaltene Tasten klingen neu an (§3.3 Voice)
@@ -10560,6 +10591,7 @@ function retrigHeld(i) {   // gehaltene Tasten klingen neu an (§3.3 Voice)
   for (const id in R.inputs) { const inp = R.inputs[id]; if (!inp || inp.route !== 'play' || inp.track !== i) continue; const vel = inp.voice && inp.voice.vel || .8; if (inp.voice) inp.voice.release(now, .004); inp.voice = spawnVoice(i, inp.note, vel, now + .01, {src: 'live'}); }
 }
 function loadPlace(x) {
+  try { if (window.BMARP) BMARP.stop(P.i); } catch (e) {}
   const r = recAt(x); if (!r) return false; const s_ = soundOfRec(r); if (!s_) return false;
   UI.ab = null; applySound(P.i, s_); bmSync(true); retrigHeld(P.i); return true;
 }
@@ -10653,7 +10685,7 @@ function keyDown(id, ev) {
     case 'octL': case 'octR': {
       const dir = id === 'octL' ? -1 : 1;
       if (P.env) { ensureAudio(); if (dir < 0) recPress(AU.ctx ? AU.ctx.currentTime : null); else togglePlay(); P.dirty = true; paintSoon(); return; }
-      const o = kbOctave() + dir; if (o < 2 || o > 6) { haptic('snap'); return; }   // ±2 Oktaven [H] around the middle 4 (as the MS 2000)
+      const o = kbOctave() + dir; if (o < 2 || o > 6) { haptic('snap'); return; }   // ±2 Oktaven [H] around the middle 4 (as the AM engine)
       changeOctave(dir); lcdShow('OCTAVE', (o - 4 > 0 ? '+' : '') + (o - 4) + ' Oktave' + (Math.abs(o - 4) === 1 ? '' : 'n')); P.dirty = true; paintSoon(); return;
     }
     case 'parL': case 'parR': {
@@ -10683,7 +10715,7 @@ function splitArm(on) {
 }
 const mkSplitOwned = () => typeof MKUI !== 'undefined' && MKUI.P && MKUI.P.splitArm;
 /* ---------- Init (1OSC / 2OSC / VEL / RAND), Write, Compare ---------- */
-// BM7-PLATZHALTER: the four INIT variants after §4 (BM7 delivers them in the start sounds)
+// the four INIT variants after §4 (1OSC, 2OSC, VEL, RAND)
 function initBm(kind) {
   const bm = SQBM.init(), a = bm.a;
   if (kind === '2osc' || kind === 'vel') { a.o2.m = 7; a.o2.e.l = 99; a.o1.tu = -3; a.o2.tu = 3; }
@@ -10718,7 +10750,7 @@ function writeName() {
 }
 function nameClose() { const W = P.wName; if (!W) return; P.wName = null; try { W.inp.blur(); } catch (e) {} W.box.remove(); }
 function nameDone() { const W = P.wName; if (!W) return; const nm = W.inp.value; nameClose(); writeDo(W.i, W.slot, W.over, nm); }
-// BM6-PLATZHALTER: the write itself (BM6-09 owns the U places in the library); the panel uses the app's saveSound
+// the write itself: the U places are the library's own Bit Mask sounds in save order (BM6-09); the panel uses the app's saveSound
 async function writeDo(i, slot, over, name) {
   const tr = S.tracks[i]; if (!tr) return;
   try {
@@ -10963,14 +10995,14 @@ function wheelGesture(e) {
   guardTouch(e); let g = null; const w = e.dataset.w;
   on(e, 'pointerdown', ev => { if (ev.button > 0 || g) return; ev.preventDefault(); ev.stopPropagation(); try { e.setPointerCapture(ev.pointerId); } catch (_) {}
     const r = e.querySelector('.mwell').getBoundingClientRect(), W = bmWheelOf(R.selT); g = {id: ev.pointerId, y0: ev.clientY, v0: w === 'bend' ? W.bend : W.mod, span: Math.max(20, r.height - 8)};
-    e.classList.add('press'); cancelAnimationFrame(e._ra); });
+    e.classList.add('press'); cancelAnimationFrame(e._ra); bmcTouch(R.selT, w === 'bend' ? 'bd' : 'mw', true); });
   on(e, 'pointermove', ev => { if (!g || ev.pointerId !== g.id) return;
     const dy = (g.y0 - ev.clientY) / g.span; let v = w === 'bend' ? clamp(g.v0 + dy * 2, -1, 1) : clamp(g.v0 + dy, 0, 1);
     if (w === 'bend' && Math.abs(v) < .02) v = 0;
     v = w === 'bend' ? Math.round(v * 4096) / 4096 : Math.round(v * 1024) / 1024;
     bmCtl(R.selT, w === 'bend' ? 'bd' : 'mw', v); wheelPaint();
     if (ED.lcd && R.editor === 'synth') lcdShow(w === 'bend' ? 'BEND-RAD' : 'MOD-RAD', w === 'bend' ? dc(v, 2) : Math.round(v * 100) + ' %'); });
-  const end = ev => { if (!g || ev.pointerId !== g.id) return; g = null; e.classList.remove('press');
+  const end = ev => { if (!g || ev.pointerId !== g.id) return; g = null; e.classList.remove('press'); bmcTouch(R.selT, w === 'bend' ? 'bd' : 'mw', false);
     if (w === 'bend') { const i = R.selT, v0 = bmWheelOf(i).bend, t0 = performance.now();
       const st = () => { const x = Math.min(1, (performance.now() - t0) / 80), v = Math.round(v0 * (1 - x) * 4096) / 4096; bmCtl(i, 'bd', x >= 1 ? 0 : v); wheelPaint(); if (x < 1) e._ra = requestAnimationFrame(st); }; st(); } };
   on(e, 'pointerup', end); on(e, 'pointercancel', end);
@@ -10985,13 +11017,13 @@ function atBar(a) {
   const r = KB.rect || EL.kb.getBoundingClientRect(), h = Math.round(a.v * (r.height - 8));
   b.style.cssText = `left:${Math.round(a.x0 - 3)}px;top:${Math.round(r.bottom - 4 - h)}px;height:${h}px`; b.hidden = !(a.on && h > 0);
 }
-function atDown(e, note) { P.at.set(e.pointerId, {x0: e.clientX, y0: e.clientY, raw: 0, v: 0, on: true, note, bar: null}); }
+function atDown(e, note) { P.at.set(e.pointerId, {x0: e.clientX, y0: e.clientY, raw: 0, v: 0, on: true, note, bar: null}); bmcTouch(R.selT, 'at', true); }
 function atMove(e) {
   const a = P.at.get(e.pointerId); if (!a || !a.on) return false;
   if (Math.abs(e.clientX - a.x0) > 20) { a.on = false; a.v = 0; atBar(a); atSend(); return false; }
   const up = a.y0 - e.clientY; a.raw = clamp((up - 6) / 60, 0, 1); a.v = atShape(a.raw); atBar(a); atSend(); return true;
 }
-function atUp(e) { const a = P.at.get(e.pointerId); if (!a) return; P.at.delete(e.pointerId); if (a.bar) a.bar.remove(); atSend(); }
+function atUp(e) { const a = P.at.get(e.pointerId); if (!a) return; P.at.delete(e.pointerId); if (a.bar) a.bar.remove(); atSend(); if (!P.at.size) bmcTouch(R.selT, 'at', false); }
 /* ---------- CSS (own drawing: white lacquered metal, black print and lines, keys light with a warm white lit face, black display with red
    segments, dark round knobs) ---------- */
 function css() {
@@ -17027,7 +17059,7 @@ const RecHelpers = (() => {
       const c = clip();
       if (!E.sel.size) {                                            // nothing selected: double the clip (×2 Länge)
         if (c.len * 2 > 64) { say('max. 64 Takte'); return; }   /* G8 */
-        model.begin(); const Lb = L(); c.notes = c.notes.concat(c.notes.map(n => Object.assign({...n, t: n.t + Lb}, n.o != null ? {o: +(n.o + Lb).toFixed(4)} : {}))); /* the copy's raw onsets move with it (as clip sheet ×2) */ c.len *= 2; sortNotes(); E.loop = null; model.end(true, 'Clip verdoppeln'); render(); say('×2 → ' + c.len + ' Takte'); return;
+        model.begin(); const Lb = L(); c.notes = c.notes.concat(c.notes.map(n => Object.assign({...n, t: n.t + Lb}, n.o != null ? {o: +(n.o + Lb).toFixed(4)} : {}))); /* the copy's raw onsets move with it (as clip sheet ×2) */ if (c.cv) cvSet(c, cvRepeat(c.cv, Lb, 2)); /* BM8 */ c.len *= 2; sortNotes(); E.loop = null; model.end(true, 'Clip verdoppeln'); render(); say('×2 → ' + c.len + ' Takte'); return;
       }
       const ns = scope(), t0 = Math.min(...ns.map(n => n.t)), t1 = Math.max(...ns.map(n => n.t + n.d));
       const span = Math.max(gridStep(), Math.ceil((t1 - t0) / gridStep() - 1e-6) * gridStep());
@@ -17055,6 +17087,7 @@ const RecHelpers = (() => {
       model.begin();
       c.notes = c.notes.filter(n => n.t >= a - 1e-9 && n.t < b - 1e-9);
       for (const n of c.notes) { n.t = +(n.t - a).toFixed(6); if (n.o != null) n.o = wrapO(Math.max(0, n.o - a), nl); n.d = Math.min(n.d, nl); }
+      if (c.cv) cvSet(c, cvSlice(c.cv, a, b));                   // BM8: die Kurven des Bereichs
       c.len = lp.b - lp.a + 1; E.loop = null; E.sel = new Set([...E.sel].filter(n => c.notes.includes(n)));
       if (E.step != null && E.step >= nl) E.step = 0;
       sortNotes(); model.end(true, 'Zuschneiden'); V.x0 = 0; render(); say(c.len + (c.len === 1 ? ' Takt' : ' Takte'));
@@ -17074,6 +17107,7 @@ const RecHelpers = (() => {
         if (n.t + n.d > nl + 1e-9) { n.d = +(nl - n.t).toFixed(6); ch = true; }
         if (n.o != null) { const w = wrapO(n.o, nl); if (w !== n.o) { n.o = w; ch = true; } }
       }
+      if (c.cv) { const cv = cvCut(c.cv, nl); if (JSON.stringify(cv) !== JSON.stringify(c.cv)) { cvSet(c, cv); ch = true; } }   // BM8: Punkte hinter dem Ende fallen weg
       if (ch) E.sel = new Set([...E.sel].filter(n => c.notes.includes(n)));
       if (E.step != null && E.step >= nl) E.step = 0;
       return ch;
@@ -19699,8 +19733,39 @@ const BM_NAME = 'Bit Mask';
       return o;
     });
   }
+  /* BM8 (§5.4, BM8-11): the curves of a scene clip in the file as whole numbers, each point as the difference to the one before:
+     t in 1/10000 beat, Bend in 1/4096, Rad/Druck in 1/1024 (exactly the stored rounding) → {bd: [dt, dv, dt, dv, …]}, cz: 1.
+     Written so only if it decodes to exactly the same points, else the plain form stays. */
+  const CZ = {bd: 4096, mw: 1024, at: 1024};
+  function packCv(cv) {
+    const o = {};
+    for (const k of ['bd', 'mw', 'at']) {
+      const a = cv[k]; if (!a) continue; if (!Array.isArray(a)) return null;
+      const r = []; let T = 0, V = 0;
+      for (const p of a) {
+        if (!Array.isArray(p) || typeof p[0] !== 'number' || typeof p[1] !== 'number') return null;
+        const t = Math.round(p[0] * 1e4), v = Math.round(p[1] * CZ[k]);
+        if (t / 1e4 !== p[0] || v / CZ[k] !== p[1]) return null;
+        r.push(t - T, v - V); T = t; V = v;
+      }
+      o[k] = r;
+    }
+    for (const k of Object.keys(cv)) if (!(k in CZ)) return null;
+    return o;
+  }
+  function unpackCv(z) {
+    const o = {};
+    for (const k of ['bd', 'mw', 'at']) {
+      const r = z && z[k]; if (!Array.isArray(r)) continue;
+      const a = []; let T = 0, V = 0;
+      for (let j = 0; j + 1 < r.length; j += 2) { T += r[j]; V += r[j + 1]; a.push([T / 1e4, V / CZ[k]]); }
+      o[k] = a;
+    }
+    return o;
+  }
   function packClipNotes(clip) {
     if (!clip || !Array.isArray(clip.notes)) return clip; const c = Object.assign({}, clip);
+    if (c.cv) { const v = c.cv; delete c.cv; const z = packCv(v); if (z && JSON.stringify(unpackCv(z)) === JSON.stringify(v)) { c.cv = z; c.cz = 1; } else c.cv = v; }   // BM8: cv last (as normClip writes it)
     const z = clip.notes.some(n => n && n.o != null) ? packNotesZ(clip.notes) : null;
     if (z) { c.notes = z; c.nz = 1; } else c.notes = clip.notes.map(packNote);
     return c;
@@ -19708,6 +19773,7 @@ const BM_NAME = 'Bit Mask';
   function unpackClipNotes(clip) {
     if (!clip || !Array.isArray(clip.notes)) return clip; const c = Object.assign({}, clip);
     const z = c.nz === 1; delete c.nz;
+    if (c.cz === 1) { delete c.cz; if (c.cv && typeof c.cv === 'object') c.cv = unpackCv(c.cv); }    // BM8
     c.notes = (z ? unpackNotesZ(clip.notes) : clip.notes.map(n => {
       if (!Array.isArray(n)) return n;
       const o = {t: n[0], d: n[1], n: n[2], v: n[3]}, x = n[4];
@@ -22714,7 +22780,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.30.0';
+const VERSION = '4.31.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -23090,8 +23156,82 @@ function soundRole(rec) {
   if (engKey(rec.engine) === 'fm6' && FACTORY_BY_ID.has(rec.id)) return ROLE_OF_DEMO[rec.demo] || 'keys';
   return ROLE_OF_CAT[rec.cat] || null;
 }
+/* ===== BM7 (Nachtrag 7 §4): the own start sounds P00–P39 of BM_NAME (no device data, no factory names), built from INIT by short
+   steps (shorthand of §4: O = mask/SEMI/TUNE/level, H = A·D·S·R, F = CUTF RESO MODE TRK, K = filter envelope L·A·D·S·R, D = Δ START@SPD,
+   T = pitch START@SPD, L1/L2 = LFO dest wave amount/speed (delay), V/M/A = velocity/wheel/pressure slots, X1/X2 = FX, G = mode/port/pans).
+   Library: factory records with engine 'bm' and role (read-only „Werk“); the panel's Voice places P00 … via BMFAC.list(). ===== */
+const BM_FACTORY = (function () {
+  const env = (e, a, d, s, r) => Object.assign(e, {a, d, s, r});
+  const B = {
+    O: (p, k, m, st, tu, l) => { const o = p[k]; o.m = m; o.st = st; o.tu = tu; if (l != null) o.e.l = l; else if (k === 'o2' && !o.e.l) o.e.l = 99; },
+    H: (p, k, a, d, s, r) => env(p[k].e, a, d, s, r),
+    HH: (p, a, d, s, r) => { env(p.o1.e, a, d, s, r); if (p.o2.e.l) env(p.o2.e, a, d, s, r); if (p.n.e.l) env(p.n.e, a, d, s, r); },
+    F: (p, cu, re, md, tk) => Object.assign(p.f, {cu, re, md: md || 'lp', tk: tk || 0}),
+    K: (p, l, a, d, s, r) => Object.assign(env(p.f.e, a, d, s, r), {l}),
+    D: (p, k, ds, dv) => Object.assign(p[k], {ds, dv}),
+    T: (p, ds, dv) => Object.assign(p.pe, {ds, dv}),
+    L: (p, k, dest, w, am, sp, dl) => { p[k].t[0] = [dest, am]; Object.assign(p[k], {w, sp, dl: dl || 0}); },
+    S: (p, src, dest, am) => { const a = src === 'v' ? p.mo.v : src === 'mw' ? p.mo.mw : p.mo.at; const k = a.findIndex(x => !x[1]); a[k < 0 ? 3 : k] = [dest, am]; },
+    X1: (p, t, b) => Object.assign(p.fx, {t1: t, b1: b}),
+    X2: (p, t, b, sy) => Object.assign(p.fx, {t2: t, b2: b, sy: sy ? 1 : 0}),
+    G: (p, mo, po, ps) => Object.assign(p.g, {mo, po: po || 0, ps: ps || 0}),
+    N: (p, fr, l) => Object.assign(p.n, {fr}) && (p.n.e.l = l),
+    AR: (p, t, sp, tr) => Object.assign(p.ar, {t, sp, tr})};
+  const R = [
+    ['bass', 'Säge-Bass', p => { B.G(p, 'mport', 3); B.O(p, 'o1', 7, 0, 0); B.O(p, 'o2', 8, -12, 0, 70); B.F(p, 24, 30, 'lp', 40); B.K(p, 38, 0, 6, 2, 3); B.HH(p, 0, 0, 15, 3); B.S(p, 'v', 'feg', 40); B.X1(p, 'DT3', 25); }],
+    ['bass', 'Gummi-Bass', p => { B.G(p, 'mretrig'); B.O(p, 'o1', 15, 0, 0); B.D(p, 'o1', -8, 26); B.O(p, 'o2', 31, -12, 0, 60); B.F(p, 55, 20); B.HH(p, 0, 7, 9, 3); B.S(p, 'v', 'vol', 30); }],
+    ['bass', 'Puls-Bass', p => { B.G(p, 'mono', 2); B.O(p, 'o1', 56, -12, 0); B.O(p, 'o2', 7, 0, 6, 50); B.F(p, 30, 40, 'lp', 30); B.K(p, 30, 0, 5, 1, 3); }],
+    ['bass', 'Summ-Bass', p => { B.G(p, 'pretrig'); B.O(p, 'o1', 78, 0, 0); B.O(p, 'o2', 78, 0, 7, 80); B.F(p, 35, 25); B.K(p, 25, 0, 6, 3, 4); B.X1(p, 'CH5', 30); }],
+    ['bass', 'Digital-Bass', p => { B.G(p, 'mretrig'); B.O(p, 'o1', 28, 0, 0); B.D(p, 'o1', 36, 28); B.O(p, 'o2', 24, -12, 0, 60); B.F(p, 70, 0); B.X1(p, 'BC4', 30); }],
+    ['bass', 'Sub & Kante', p => { B.O(p, 'o1', 31, -12, 0, 95); B.O(p, 'o2', 7, 0, 0, 55); B.H(p, 'o2', 0, 6, 5, 3); B.F(p, 48, 15, 'lp', 50); B.K(p, 20, 0, 5, 0, 3); B.S(p, 'v', 'feg', 30); }],
+    ['lead', 'Quadrat-Lead', p => { B.G(p, 'mport', 4); B.O(p, 'o1', 8, 0, -4); B.O(p, 'o2', 8, 12, 4, 60); B.F(p, 62, 20, 'lp', 60); B.L(p, 'l1', 'freq', 'sin', 5, 50, 8); B.S(p, 'mw', 'l1a', 60); B.X2(p, 'DL5', 22); }],
+    ['lead', 'Spiegel-Lead', p => { B.G(p, 'mono'); B.O(p, 'o1', 29, 0, 0); B.O(p, 'o2', 30, 12, 3, 50); B.F(p, 80, 10); B.L(p, 'l1', 'freq', 'sin', 4, 48, 9); B.X2(p, 'RV6', 25); }],
+    ['lead', 'Hohl-Lead', p => { B.G(p, 'mport'); B.O(p, 'o1', 24, 0, 0); B.O(p, 'o2', 20, 0, 8, 70); B.F(p, 50, 45, 'bp', 70); B.K(p, 20, 3, 8, 6, 5); B.S(p, 'at', 'flt', 40); }],
+    ['lead', 'Kreisch-Lead', p => { B.G(p, 'mono'); B.O(p, 'o1', 255, -36, 0); B.O(p, 'o2', 7, 0, 5, 60); B.S(p, 'mw', 'o1m', -60); B.S(p, 'at', 'fx1b', 40); B.X1(p, 'DT10', 40); }],
+    ['lead', 'Sägen-Solo', p => { B.G(p, 'moly', 3); B.O(p, 'o1', 7, 0, -6); B.O(p, 'o2', 7, 0, 6); B.F(p, 58, 30, 'lp', 50); B.K(p, 18, 2, 7, 7, 4); B.L(p, 'l1', 'freq', 'sin', 4, 52, 9); B.X1(p, 'CH3', 30); B.X2(p, 'DL4', 20); }],
+    ['pad', 'Weite Fläche', p => { B.G(p, 'poly', 0, 8); B.O(p, 'o1', 7, 0, -5); B.O(p, 'o2', 7, 0, 5, 95); B.HH(p, 9, 0, 15, 10); B.F(p, 55, 10, 'lp', 30); B.X1(p, 'CH2', 50); B.X2(p, 'RV3', 25); }],
+    ['pad', 'Masken-Wandel', p => { B.G(p, 'pslur'); B.O(p, 'o1', 31, 0, 0); B.D(p, 'o1', -24, 6); B.O(p, 'o2', 47, 0, 4, 70); B.D(p, 'o2', 16, 5); B.HH(p, 8, 0, 15, 10); B.L(p, 'l2', 'o1m', 'sin', 25, 20); B.X2(p, 'RV2', 30); }],
+    ['pad', 'Hohl-Chor', p => { B.O(p, 'o1', 24, 0, -3); B.O(p, 'o2', 15, 12, 3, 60); B.F(p, 52, 35, 'bp', 50); B.HH(p, 8, 0, 15, 9); B.L(p, 'l1', 'flt', 'sin', 12, 26); B.X1(p, 'RM13', 25); B.X2(p, 'RV4', 30); }],
+    ['pad', 'Nachtfläche', p => { B.G(p, 'para'); B.O(p, 'o1', 7, 0, -4); B.O(p, 'o2', 24, -12, 4, 70); B.F(p, 38, 25); B.K(p, 35, 10, 11, 6, 10); B.X1(p, 'CH4', 45); B.X2(p, 'RV2', 35); }],
+    ['pad', 'Glimmer', p => { B.O(p, 'o1', 63, -12, 0); B.O(p, 'o2', 95, -24, 6, 60); B.HH(p, 7, 0, 15, 10); B.L(p, 'l2', 'mask', 'sin', 20, 30); B.X1(p, 'CH6', 40); B.X2(p, 'DL3', 25); }],
+    ['pad', 'Kerb-Fläche', p => { B.O(p, 'o1', 7, 0, -4); B.O(p, 'o2', 8, 0, 4, 80); B.F(p, 60, 0, 'notch', 0); B.L(p, 'l1', 'flt', 'sin', 25, 20); B.HH(p, 9, 0, 15, 10); B.X2(p, 'RV5', 25); }],
+    ['keys', 'Masken-Klavier', p => { B.O(p, 'o1', 31, 0, 0); B.D(p, 'o1', 40, 30); B.H(p, 'o1', 0, 10, 4, 6); B.O(p, 'o2', 15, 12, 0, 40); B.H(p, 'o2', 0, 8, 0, 5); B.T(p, 6, 35); B.S(p, 'v', 'vol', 50); B.S(p, 'v', 'mask', 20); B.X2(p, 'RV7', 15); }],
+    ['keys', 'Elektro-Tasten', p => { B.O(p, 'o1', 31, 0, 0); B.H(p, 'o1', 0, 11, 3, 6); B.O(p, 'o2', 30, 12, 3, 50); B.H(p, 'o2', 0, 7, 0, 5); B.L(p, 'l1', 'vol', 'sin', 6, 48); B.X1(p, 'CH3', 30); }],
+    ['keys', 'Clavi-Bit', p => { B.G(p, 'pretrig'); B.O(p, 'o1', 56, -12, 0); B.H(p, 'o1', 0, 8, 0, 3); B.F(p, 45, 30); B.K(p, 30, 0, 5, 0, 3); B.S(p, 'v', 'feg', 50); }],
+    ['keys', 'Glocken-Piano', p => { B.O(p, 'o1', 29, 0, 0); B.H(p, 'o1', 0, 11, 2, 7); B.O(p, 'o2', 31, 12, 0, 45); B.H(p, 'o2', 0, 11, 2, 7); B.S(p, 'v', 'mask', -12); B.X2(p, 'RV6', 20); }],
+    ['keys', 'Samt-Piano', p => { B.O(p, 'o1', 15, 0, 0); B.H(p, 'o1', 0, 10, 3, 6); B.O(p, 'o2', 31, 12, 2, 45); B.H(p, 'o2', 0, 9, 0, 5); B.F(p, 60, 0); B.T(p, 4, 36); B.L(p, 'l1', 'pan', 'sin', 30, 45); B.X1(p, 'CH4', 25); }],
+    ['brass', 'Blech-Stoß', p => { B.G(p, 'poly', 0, 7); B.O(p, 'o1', 7, 0, -5); B.O(p, 'o2', 7, 0, 5); B.F(p, 37, 15, 'lp', 40); B.K(p, 22, 6, 7, 10, 5); B.T(p, -8, 15); B.S(p, 'v', 'feg', 35); }],
+    ['brass', 'Streicher', p => { B.G(p, 'para'); B.O(p, 'o1', 7, 0, -6); B.O(p, 'o2', 24, 0, 6, 70); B.F(p, 62, 5); B.HH(p, 8, 0, 15, 9); B.X1(p, 'CH2', 55); B.X2(p, 'RV3', 25); }],
+    ['brass', 'Solo-Streich', p => { B.G(p, 'mport'); B.O(p, 'o1', 7, 0, 0); B.F(p, 56, 15); B.HH(p, 6, 0, 15, 7); B.L(p, 'l1', 'freq', 'sin', 5, 51, 9); B.S(p, 'at', 'l1a', 50); B.S(p, 'at', 'flt', 25); }],
+    ['brass', 'Blech-Satz', p => { B.G(p, 'slur'); B.O(p, 'o1', 8, 0, -3); B.O(p, 'o2', 24, 0, 3, 80); B.F(p, 40, 10); B.K(p, 24, 5, 8, 8, 5); B.T(p, -6, 17); }],
+    ['pluckg', 'Holz-Pluck', p => { B.O(p, 'o1', 30, 0, 0); B.O(p, 'o2', 15, 19, 0, 40); B.F(p, 45, 20, 'bp', 60); B.HH(p, 0, 7, 0, 5); B.S(p, 'v', 'feg', 40); B.K(p, 20, 0, 6, 0, 4); }],
+    ['pluckg', 'Kristall-Pluck', p => { B.O(p, 'o1', 30, 0, 0); B.O(p, 'o2', 63, 0, 4, 50); B.HH(p, 0, 7, 0, 6); B.X2(p, 'DL6', 25, 1); }],
+    ['pluckg', 'Kalimba-Bit', p => { B.O(p, 'o1', 15, 0, 0); B.D(p, 'o1', -8, 32); B.HH(p, 0, 8, 0, 5); B.T(p, 3, 38); B.X2(p, 'RV9', 15); }],
+    ['pluckg', 'Glocke', p => { B.O(p, 'o1', 29, 0, 0); B.H(p, 'o1', 0, 13, 0, 11); B.O(p, 'o2', 30, 19, 4, 60); B.H(p, 'o2', 0, 11, 0, 9); B.X2(p, 'RV2', 30); }],
+    ['pluckg', 'Harfen-Bit', p => { B.G(p, 'poly', 0, 10); B.O(p, 'o1', 7, 0, 0); B.O(p, 'o2', 31, 12, 0, 50); B.F(p, 50, 10); B.K(p, 30, 0, 6, 0, 6); B.HH(p, 0, 9, 0, 8); }],
+    ['organ', 'Bit-Orgel', p => { B.O(p, 'o1', 31, 0, 0); B.O(p, 'o2', 95, -24, 0, 60); B.HH(p, 0, 0, 15, 2); B.N(p, 99, 10); B.H(p, 'n', 0, 4, 0, 2); B.X1(p, 'CH16', 60); }],
+    ['organ', 'Röhren-Orgel', p => { B.O(p, 'o1', 47, -12, 0); B.O(p, 'o2', 79, -12, 2, 60); B.F(p, 70, 0); B.HH(p, 1, 0, 15, 3); B.X1(p, 'CH15', 50); B.X2(p, 'RV5', 20); }],
+    ['organ', 'Vokal-Chor', p => { B.O(p, 'o1', 24, 0, -4); B.O(p, 'o2', 24, 0, 4); B.F(p, 55, 60, 'bp', 80); B.L(p, 'l1', 'flt', 'sin', 10, 22); B.HH(p, 7, 0, 15, 9); B.X1(p, 'RM14', 30); B.X2(p, 'RV3', 30); }],
+    ['organ', 'Luft-Chor', p => { B.O(p, 'o1', 15, 0, 0); B.N(p, 99, 45); B.HH(p, 7, 0, 15, 9); B.H(p, 'n', 7, 0, 15, 8); B.F(p, 58, 50, 'bp', 60); B.X2(p, 'RV2', 35); }],
+    ['fxarp', 'Arp-Glitzer', p => { B.AR(p, '2oct', 120, 1); B.O(p, 'o1', 63, -12, 0); B.HH(p, 0, 7, 0, 5); B.X2(p, 'DL4', 30, 1); }],
+    ['fxarp', 'Sequenz-Puls', p => { B.AR(p, '1oct', 120, 1); B.O(p, 'o1', 8, 0, 0); B.F(p, 35, 40); B.K(p, 30, 0, 5, 0, 3); B.L(p, 'l1', 'o1m', 'saws', 30, 30); B.X2(p, 'DL5', 25); }],
+    ['fxarp', 'Sturz-Ton', p => { B.O(p, 'o1', 7, 0, 0); B.T(p, 63, 12); B.F(p, 70, 0); B.X2(p, 'DL3', 30); }],
+    ['fxarp', 'Rausch-Welle', p => { B.O(p, 'o1', 7, 0, 0, 0); B.N(p, 70, 90); B.H(p, 'n', 8, 0, 15, 10); B.F(p, 45, 60, 'bp'); B.L(p, 'l1', 'nf', 'sin', 40, 15); B.L(p, 'l2', 'flt', 'sin', 30, 12); B.X2(p, 'RV1', 40); }],
+    ['fxarp', 'Rhythmus-Maske', p => { B.O(p, 'o1', 319, -48, 0); B.O(p, 'o2', 287, -48, 0, 40); B.F(p, 60, 0); B.X2(p, 'DL7', 20); }]];
+  // VOL per sound, measured (offline 48 kHz, 3-note chord, v 0.8): about -18 dB RMS (keys/pluck -22 over 1.5 s), peaks <= -1 dBFS
+  const VO = [79, 99, 63, 70, 53, 43, 73, 59, 70, 85, 85, 80, 59, 72, 63, 70, 64, 89, 70, 80, 75, 90, 53, 70, 85, 46, 99, 90, 88, 48, 83, 44, 59, 63, 99, 96, 70, 73, 99, 59];
+  const list = R.map(([role, name, f], k) => {
+    const bm = SQBM.init(); f(bm.a); bm.a.g.vo = VO[k]; const id = 'f-bm-p' + String(k).padStart(2, '0');
+    return {id, name, cat: 'bm', role, engine: 'bm', ev: 1, demo: role === 'bass' ? 'bass' : role === 'pad' ? 'pad' : role === 'keys' || role === 'pluckg' ? 'keys' : 'lead',
+      ref: 'P' + String(k).padStart(2, '0') + ' · ' + ROLE_LABEL[role], tip: BM_NAME + '-Startklang P' + String(k).padStart(2, '0') + ' (' + ROLE_LABEL[role] + ').',
+      p: Object.assign({}, INIT_VA_P, {level: .457, bm: SQBM.normBm(bm)}), mods: [], fx: INIT_FX(), bus: null};
+  });
+  return list;
+})();
+for (const f of BM_FACTORY) FACTORY_BY_ID.set(f.id, f);
+window.BMFAC = {list: () => BM_FACTORY};   // BM7: the panel's Voice places P00 …
 // every synth record the library lists (factory order, then the INIT sounds)
-const SYNTH_LIB = FACTORY.concat(INIT_SYNTH);
+const SYNTH_LIB = FACTORY.concat(BM_FACTORY, INIT_SYNTH);
 const FCACHE = new Map();
 // a drum sound as a track uses it (§7.4): all 12 slots as full copies (a stored slot lacking model / choke has the slot's
 // own; a missing slot comes from the base kit, else Rom Pop), base = the kit name, the kit bus block always present
@@ -23469,6 +23609,7 @@ function normClip(c, kind, pk) {
   if (kind !== 'drum' && c.audio) { const a = tkNormAudio(c.audio); if (a) out.audio = a; }          // VS3: Audio-Clip der STIMME-Spur
   if (typeof c.take === 'string' && UID_RE.test(c.take)) out.take = c.take;                          // VS3: MELODIE-Clip ↔ Take
   if (kind !== 'drum' && c.pre) { const p = g3NormPre(c.pre); if (p) out.pre = p; }                  /* G3: Auftakt-Noten */
+  if (c.cv) { const cv = cvNorm(c.cv, L); if (cv) out.cv = cv; }                                    // BM8 (§5.4)
   return out;
 }
 function normTrack(t, def, pk, warns) {
@@ -23623,7 +23764,9 @@ function melNorm(m, pk) {
     .map(n => ({t: +n.t, d: Math.min(+n.d, 64), n: clamp(Math.round(n.n), 0, 127), v: clamp(+n.v, .01, 1)})).sort((a, b) => a.t - b.t);
   const len = Math.max(1, isNum(m.len) ? clamp(Math.round(m.len), 1, SONG_MAX_BARS) : 1, ...notes.map(n => Math.ceil((n.t + 1e-6) / 4)));
   const key = normKey(m.key, pk || {root: 0, scale: 'ionian'}); key.src = 'user';
-  return {len: Math.min(len, SONG_MAX_BARS), key, notes};
+  const o = {len: Math.min(len, SONG_MAX_BARS), key, notes};
+  if (m.cv) { const cv = cvNorm(m.cv, o.len * 4); if (cv) o.cv = cv; }                              // BM8 (§5.4)
+  return o;
 }
 // the chosen track's melody (made when missing; normSong / melChoose keep it there)
 function curMel(song) {
@@ -23848,7 +23991,317 @@ function cleanClip(c) {
   if (c.audio) o.audio = tkCleanAudio(c.audio);                  // VS3
   if (c.take) o.take = c.take;
   if (c.pre) o.pre = c.pre.map(n => ({t: n.t, d: n.d, n: n.n, v: n.v}));   /* G3 */
+  if (c.cv) o.cv = cvClone(c.cv);                                // BM8: die Kurven gehen mit jeder Kopie mit
   return o;
+}
+/* ---------------- BM8 (Nachtrag 7 §5.4): Bend, Rad und Druck im Clip ----------------
+   cv = {bd:[[t, v]…], mw:[[t, v]…], at:[[t, v]…]} ist ein Feld des Noten-Behälters (Szenen-Clip, eigener Clip, Song-Melodie);
+   t in Schlägen ab Behälter-Beginn (0 ≤ t < Länge, aufsteigend, Punkt bei t = 0), v Bend −1…+1 (1/4096), Rad/Druck 0…1 (1/1024).
+   Zwischen zwei Punkten gilt die Gerade (die Ausdünnung nach §5.4 setzt das voraus), nach dem letzten Punkt sein Wert.
+   Alle Kopierwege laufen über cleanClip / deep / die Normalisierer und nehmen cv mit. */
+const CV_K = ['bd', 'mw', 'at'], CV_MAX = 4096;
+function cvQv(k, v) { return k === 'bd' ? Math.round(clamp(v, -1, 1) * 4096) / 4096 : Math.round(clamp(v, 0, 1) * 1024) / 1024; }
+function cvQt(t) { return +(+t).toFixed(4); }
+// a curve that is not [[t, v]…] sorted inside [0, L) with a point at 0 is repaired (Grenzen, NaN, Reihenfolge, ≤ 4096 Punkte)
+function cvNormCurve(k, a, L) {
+  if (!Array.isArray(a)) return null;
+  let o = [];
+  for (const p of a) {
+    if (!Array.isArray(p) || !isNum(p[0]) || !isNum(p[1])) continue;
+    const t = cvQt(p[0]); if (t < 0 || !(t < L)) continue;
+    o.push([t, cvQv(k, p[1])]);
+  }
+  if (!o.length) return null;
+  o.sort((x, y) => x[0] - y[0]);
+  const u = []; for (const p of o) { if (u.length && u[u.length - 1][0] === p[0]) u[u.length - 1] = p; else u.push(p); }   // one point per time: the later wins
+  if (u[0][0] > 0) u.unshift([0, u[0][1]]);
+  if (u.length > CV_MAX) { const r = [], n = u.length; for (let i = 0; i < CV_MAX; i++) r.push(u[Math.round(i * (n - 1) / (CV_MAX - 1))]); o = r; } else o = u;
+  return o;
+}
+// cv of a container of L beats: null when there is no curve (an old clip without cv stays without it)
+function cvNorm(cv, L) {
+  if (!cv || typeof cv !== 'object' || Array.isArray(cv) || !(L > 0)) return null;
+  const o = {}; for (const k of CV_K) { const c = cvNormCurve(k, cv[k], L); if (c) o[k] = c; }
+  return Object.keys(o).length ? o : null;
+}
+function cvClone(cv) { if (!cv) return null; const o = {}; for (const k of CV_K) if (cv[k]) o[k] = cv[k].map(p => [p[0], p[1]]); return o; }
+const cvHas = c => !!(c && c.cv && CV_K.some(k => c.cv[k] && c.cv[k].length));
+// the value of curve a at t (straight line between points, the last value after the last point)
+function cvAt(a, t) {
+  if (!a || !a.length) return null;
+  if (t <= a[0][0]) return a[0][1];
+  let lo = 0, hi = a.length - 1; if (t >= a[hi][0]) return a[hi][1];
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (a[m][0] <= t) lo = m; else hi = m; }
+  const p = a[lo], q = a[hi]; return p[1] + (q[1] - p[1]) * (t - p[0]) / (q[0] - p[0]);
+}
+// time edits (§5.4 „Zeit-Aktionen nehmen die Kurven mit“): each returns a new cv (or null) for a container of the new length
+function cvMap(cv, fn) { if (!cv) return null; const o = {}; for (const k of CV_K) if (cv[k]) { const c = fn(cv[k], k); if (c && c.length) o[k] = c; } return Object.keys(o).length ? o : null; }
+/* a piece of a curve keeps its shape at its end: a line that runs over the end gets a point just before it (the value there), so
+   the piece holds that value up to its end instead of ramping into whatever follows (straight lines between points) */
+const CV_EPS = 1e-4;
+function cvEnd(o, k, v, tEnd, force) { v = cvQv(k, v); const l = o[o.length - 1], t = cvQt(tEnd - CV_EPS); if (l && t > l[0] && (force || l[1] !== v)) o.push([t, v]); }
+// the part [a, b) of the curves, starting at 0 (its start value = the value at a)
+function cvSlice(cv, a, b) {
+  return cvMap(cv, (c, k) => { const o = [[0, cvQv(k, cvAt(c, a))]]; for (const p of c) if (p[0] > a && p[0] < b) o.push([cvQt(p[0] - a), p[1]]); cvEnd(o, k, cvAt(c, b - CV_EPS), b - a); return o; });
+}
+// several parts one after the other: [[cv, off, len]…] → one cv (a part without a curve holds the value the curve had before it)
+function cvJoin(parts, L) {
+  const o = {};
+  for (const k of CV_K) {
+    if (!parts.some(x => x[0] && x[0][k])) continue;
+    const r = []; let last = null;
+    for (const [cv, off, len] of parts) {
+      const c = cv && cv[k];
+      if (c) { for (const p of c) if (p[0] < len) { const t = cvQt(p[0] + off); if (t < L) r.push([t, p[1]]); } last = cvAt(c, len - CV_EPS); if (r.length) cvEnd(r, k, last, Math.min(L, off + len), true); }   // held up to the part's end
+      else if (k !== 'mw') { r.push([cvQt(off), 0]); r.push([cvQt(Math.min(L, off + len) - CV_EPS), 0]); }   // a part without the curve: Bend / Druck at rest (0)
+      else if (r.length) { r.push([cvQt(off), cvQv(k, last)]); r.push([cvQt(Math.min(L, off + len) - CV_EPS), cvQv(k, last)]); }   // … the wheel stays where it was
+    }
+    const c = cvNormCurve(k, r.filter(p => p[1] != null), L); if (c) o[k] = c;
+  }
+  return Object.keys(o).length ? o : null;
+}
+// song melody (absolute song beats, §5.4): shift everything from X by D beats, clear [A, B), put a chunk's curves at N
+const cvE = () => SONG_MAX_BARS * 4;
+function cvShiftAbs(cv, X, D) {
+  if (!cv || !D) return cvClone(cv); const E = cvE();
+  return D > 0 ? cvJoin([[cvSlice(cv, 0, X), 0, X], [null, X, D], [cvSlice(cv, X, E), X + D, E - X]], E)
+    : cvJoin([[cvSlice(cv, 0, X + D), 0, X + D], [cvSlice(cv, X, E), X + D, E - X]], E);
+}
+function cvClearAbs(cv, A, B) { if (!cv || B <= A) return cvClone(cv); const E = cvE(); return cvJoin([[cvSlice(cv, 0, A), 0, A], [null, A, B - A], [cvSlice(cv, B, E), B, E - B]], E); }
+function cvPutAbs(cv, part, N, Lc) { if (!part) return cvClone(cv); const E = cvE(); return cvJoin([[cvSlice(cv, 0, N), 0, N], [part, N, Lc], [cvSlice(cv, N + Lc, E), N + Lc, E - N - Lc]], E); }
+// the same curves n times one after the other (Länge ×2: n = 2)
+function cvRepeat(cv, len, n) { const p = []; for (let i = 0; i < n; i++) p.push([cv, i * len, len]); return cvJoin(p, len * n); }
+// shift by dt inside a loop of L beats (wraps, like notes shifted with wrap)
+function cvRotate(cv, dt, L) {
+  dt = ((dt % L) + L) % L; if (!cv || !dt) return cvClone(cv);
+  return cvJoin([[cvSlice(cv, L - dt, L), 0, dt], [cvSlice(cv, 0, L - dt), dt, L - dt]], L);
+}
+// backwards in a container of L beats (the line from p to q runs from q to p)
+function cvReverse(cv, L) {
+  return cvMap(cv, (c, k) => {
+    const o = [[0, cvAt(c, L)]];
+    for (let i = c.length - 1; i >= 0; i--) { const t = cvQt(L - c[i][0]); if (t > 0 && t < L) o.push([t, c[i][1]]); else if (t >= L) o.push([cvQt(L - 1e-4), c[i][1]]); }
+    return cvNormCurve(k, o, L);
+  });
+}
+// a new length (kürzen / verlängern ohne Wiederholung): points behind the end go
+function cvCut(cv, L) { return cvMap(cv, (c, k) => { const o = cvNormCurve(k, c, L); if (o && c.some(p => p[0] >= L)) cvEnd(o, k, cvAt(c, L - CV_EPS), L); return o; }); }
+// a time stretch by f (dehnen): t × f
+function cvScale(cv, f, L) { return cvMap(cv, (c, k) => cvNormCurve(k, c.map(p => [p[0] * f, p[1]]), L)); }
+// the container's cv after a time edit; c gets cv or loses it (no empty cv)
+function cvSet(c, cv) {
+  if (!c) return; if (cv && Object.keys(cv).length) c.cv = cv; else delete c.cv;
+  if (c.cv && c.from) { const f = c.from; delete c.from; c.from = f; }      // an own clip: cv before from (as ownNorm writes it, Regel 8/9)
+}
+/* Ausdünnung (§5.4): a point goes when the straight line between its neighbours misses it by ≤ tol (bend 0.002, else 0.004).
+   Greedy forward: the kept segment is extended as long as every skipped point stays within tol. */
+function cvThin(k, pts) {
+  const tol = k === 'bd' ? .002 : .004; if (pts.length <= 2) return pts.slice();
+  const o = [pts[0]]; let a = 0;
+  for (let j = 2; j < pts.length; j++) {
+    const A = pts[a], B = pts[j]; let ok = true;
+    for (let i = a + 1; i < j; i++) { const P = pts[i], y = A[1] + (B[1] - A[1]) * (P[0] - A[0]) / ((B[0] - A[0]) || 1e-12); if (Math.abs(y - P[1]) > tol) { ok = false; break; } }
+    if (!ok) { o.push(pts[j - 1]); a = j - 1; }
+  }
+  o.push(pts[pts.length - 1]); return o;
+}
+/* BM8 Laufzeit: Live-Verlauf der Regler (je Spur), Aufnahme in den Behälter, Wiedergabe als zeitgestempelte ctl-Ereignisse.
+   BmHost.ctl(i, [{k:'bd'|'mw'|'at', v, at}]) ist die feste Schnittstelle (Nachtrag 7 §2.1: {t:'ctl', list}): sie gibt an den Bit-Mask-Knoten
+   der Spur weiter (E.ctl({list}), BM6). */
+// W: ± 20 ms around a movement (§5.4); ST: 10 ms sampling (≤ 100 points/s); HOLD: a pause longer than this holds the value (a
+// finger that rests); GAP: movements closer than this are one span (a phone delivers touch events every 8–17 ms, sometimes later)
+const BMC = {fake: new Set(), h: {}, run: null, touch: {}, act: {}, src: {}, log: null, W: .02, ST: .01, HOLD: .06, GAP: .1};
+var BmHost = (typeof window !== 'undefined' && window.BmHost && typeof window.BmHost.ctl === 'function') ? window.BmHost : {
+  ctl(i, list) {
+    if (!list || !list.length) return;
+    if (BMC.log) { for (const x of list) BMC.log.push(Object.assign({i}, x)); if (BMC.log.length > 200000) BMC.log.splice(0, 100000); }
+    const E = AU.synth && AU.synth[i]; if (E && E.bm && typeof E.ctl === 'function') E.ctl({list});
+  }
+};
+// a Bit-Mask track (engine 'bm'); BMC.fake: the test stand-in for tracks while the engine lives in its own branch
+function bmcIs(i) { const tr = S.tracks[i]; return !!tr && tr.kind === 'synth' && !!tr.sound && (tr.sound.engine === 'bm' || BMC.fake.has(i)); }
+/* the audio clock of a regulator event: currentTime moves in blocks of the output buffer (a phone: 5–20 ms, headless more), so
+   the time between two blocks comes from performance.now() (never behind currentTime, the offset follows the newest block) */
+function bmcNow() {
+  const c = AU.ctx.currentTime, pn = performance.now() / 1000, x = c - pn;
+  if (BMC.off == null || x > BMC.off || pn - BMC.offT > 1) { BMC.off = BMC.off == null || x > BMC.off ? x : Math.max(x, BMC.off - .002); BMC.offT = pn; }
+  return Math.max(c, pn + BMC.off);
+}
+function bmcBeatNow() { return t2b(bmcNow() - AU.outLat); }
+const bmcRest = (i, k) => (k === 'mw' ? mkWheelVal(i, 'mod') : 0);   // a Bit Mask track: its own wheel (mkWheelVal asks bmWheelOf)
+function bmcHist(i) {
+  if (BMC.run !== R.runId) { BMC.run = R.runId; BMC.h = {}; }
+  return BMC.h[i] || (BMC.h[i] = {bd: [], mw: [], at: [], v0: {bd: 0, mw: bmcRest(i, 'mw'), at: 0}});
+}
+// a live value of a regulator (wheel gesture, pressure gesture, API): kept in the history while the transport runs
+// (raw, every event; ret = a spring-back time in s: the value glides there). A pause > 20 ms first holds the old value.
+function bmcInput(i, k, v, ret) {
+  if (!CV_K.includes(k) || !bmcIs(i) || !R.playing || !AU.ctx) return;
+  const H = bmcHist(i), a = H[k], sp = spb(), b = bmcBeatNow(), sb = songBeatOf(b);
+  const last = a.length ? a[a.length - 1] : null, prev = last ? last[1] : H.v0[k];
+  if (!last || b - last[0] > BMC.HOLD / sp) a.push([b - BMC.ST / sp, prev, sb == null ? null : sb - BMC.ST / sp, 1]);
+  if (ret > 0) { a.push([b, prev, sb, 0]); a.push([b + ret / sp, +v, sb == null ? null : sb + ret / sp, 0]); }
+  else a.push([b, +v, sb, 0]);
+  if (a.length > 400000) a.splice(0, 200000);
+}
+// a finger on / off a regulator: live wins over the curve while it lasts (§5.4)
+function bmcTouch(i, k, on) { (BMC.touch[i] || (BMC.touch[i] = {}))[k] = !!on; }
+const bmcTouching = (i, k) => !!(BMC.touch[i] && BMC.touch[i][k]);
+// the history's value at beat b (straight lines between the events, the value before the first event = the start value)
+function bmcVal(H, k, b) {
+  const a = H[k]; if (!a.length || b < a[0][0]) return a.length && b >= a[0][0] ? a[0][1] : (a.length ? (a[0][3] ? a[0][1] : H.v0[k]) : H.v0[k]);
+  let lo = 0, hi = a.length - 1; if (b >= a[hi][0]) return a[hi][1];
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (a[m][0] <= b) lo = m; else hi = m; }
+  const p = a[lo], q = a[hi]; return q[0] - p[0] < 1e-12 ? q[1] : p[1] + (q[1] - p[1]) * (b - p[0]) / (q[0] - p[0]);
+}
+// the song's origin per stretch of the run (song start, every loop / jump): transport beat b → song beat exactly, also for passes long gone
+function bmcWrapReset() { const sp = R.songPlay; BMC.wr = sp ? [{at: -Infinity, off: sp.off}] : []; BMC.wrRun = R.runId; }
+function bmcWrapAdd() { const sp = R.songPlay; if (!sp) return; if (BMC.wrRun !== R.runId || !BMC.wr) bmcWrapReset(); else BMC.wr.push({at: sp.wrapAt, off: sp.off}); }
+// the song beat of transport beat b (null when there was no song)
+function bmcSb(H, k, b) {
+  if (BMC.wrRun === R.runId && BMC.wr && BMC.wr.length) { let off = BMC.wr[0].off; for (const w of BMC.wr) { if (w.at <= b + 1e-9) off = w.off; else break; } return b - off; }
+  const a = H[k]; if (!a.length) { const s = songBeatOf(b); return s; }
+  let best = a[0]; for (let lo = 0, hi = a.length - 1; lo <= hi;) { const m = (lo + hi) >> 1; if (Math.abs(a[m][0] - b) < Math.abs(best[0] - b)) best = a[m]; if (a[m][0] < b) lo = m + 1; else hi = m - 1; }
+  return best[2] == null ? null : b - (best[0] - best[2]);
+}
+// the spans [a, b] of [B0, B1) in which regulator k moved (± 20 ms)
+function bmcSpans(H, k, B0, B1) {
+  const w = BMC.W / spb(), out = [];
+  for (const p of H[k]) {
+    if (p[3] || p[0] < B0 - 1e-9 || p[0] >= B1 - 1e-9) continue;
+    const a = Math.max(B0, p[0] - w), b = Math.min(B1, p[0] + w);
+    if (out.length && a <= out[out.length - 1][1] + (BMC.GAP - 2 * BMC.W) / spb() + 1e-9) out[out.length - 1][1] = Math.max(out[out.length - 1][1], b); else out.push([a, b]);
+  }
+  return out;
+}
+// fn once beat B (plus the ± 20 ms of a movement) has been heard: a take that closes a lookahead early still gets its last movement
+function bmcAfter(B, fn) {
+  const run = R.runId, ms = AU.ctx && R.playing ? (B - bmcBeatNow()) * spb() * 1000 + BMC.W * 1000 + 15 : 0;
+  if (ms <= 0) { fn(); return; }
+  setTimeout(() => { if (BMC.run === run || BMC.run == null) fn(); }, ms);
+}
+function bmcTouched(i, B0, B1) { if (!BMC.h[i] || BMC.run !== R.runId) return false; const H = BMC.h[i]; return CV_K.some(k => bmcSpans(H, k, B0, B1).length > 0); }
+/* the takes's regulator movement of [B0, B1) into containers: map(b, sb) → [container, t, L] or null.
+   o.fresh: a new container (the curve = what was played); o.replace: the range is replaced (Ersetzen); else Overdub = „Berühren“:
+   only inside the spans the regulator moved the new points replace the old ones. Returns the containers that changed. */
+function bmcWrite(i, B0, B1, map, o) {
+  o = o || {}; const H = o.replace && AU.ctx ? bmcHist(i) : BMC.h[i], done = new Set();   // Ersetzen also without any movement in this run
+  if (!H || BMC.run !== R.runId || !(B1 > B0)) return done;
+  const st = BMC.ST / spb();
+  for (const k of CV_K) {
+    const spans = bmcSpans(H, k, B0, B1);
+    if (!spans.length && !o.replace) continue;
+    // the points: grid of 10 ms inside each span (both ends included), mapped; a new piece where the container or the loop turns
+    // Ersetzen: the whole range; a regulator that did not move only replaces where a curve already is (need: no new containers)
+    const segs = o.replace ? [[B0, B1]] : spans, pieces = [], mo = o.replace && !spans.length ? {need: k} : {};
+    for (const [sa, sb0] of segs) {
+      const sbE = Math.min(sb0, B1 - CV_EPS); if (sbE <= sa) continue;   // the take's end itself is not inside (a loop would put it on 0)
+      let cur = null;
+      // sampling points: the span's start, the 10-ms grid of the transport (k · 10 ms), the span's end
+      for (let j = Math.floor(sa / st + 1e-9), b = sa, end = false; !end; b = ++j * st) {
+        if (b >= sbE - 1e-9) { b = sbE; end = true; }
+        const m = map(b, bmcSb(H, k, b), mo); if (!m) { cur = null; continue; }
+        const [c, t, L] = m; if (!(t >= 0 && t < L)) { cur = null; continue; }
+        if (!cur || cur.c !== c || t < cur.p[cur.p.length - 1][0] - 1e-9) { cur = {c, L, p: [], e0: b === sa, e1: false}; pieces.push(cur); }
+        cur.p.push([t, bmcVal(H, k, b)]); cur.e1 = end;
+      }
+    }
+    const seen = new Map();                                       // container → had a curve k before this take
+    for (const pc of pieces) {
+      const c = pc.c, P = pc.p;
+      if (!seen.has(c)) {
+        seen.set(c, !o.fresh && !!(c.cv && c.cv[k]));
+        if (o.fresh || !(c.cv && c.cv[k])) {                        // a new curve starts with the value at the start of the take
+          const m0 = map(B0, bmcSb(H, k, B0), {probe: true}), cv = Object.assign({}, c.cv || {});   // probe: never makes a container
+          // (a container the take reaches later, e.g. the song melody after an own clip: at rest up to there, then a step)
+          const t0 = P[0][0], rest = cvQv(k, k === 'mw' ? bmcVal(H, k, B0) : 0);
+          cv[k] = m0 && m0[0] === c && m0[1] >= 0 && m0[1] < m0[2] ? [[cvQt(m0[1]), cvQv(k, bmcVal(H, k, B0))]] : t0 > 1e-4 ? [[0, rest], [cvQt(t0 - 1e-4), rest]] : [[0, rest]];
+          c.cv = cv;
+        }
+      }
+      const had = seen.get(c);
+      let cur = c.cv[k].map(p => [p[0], p[1]]);
+      const ta = P[0][0], tb = P[P.length - 1][0];
+      // Berühren: at the span's edges the old curve goes on (the new points replace the old ones only inside)
+      if (had && !o.replace && cur.length) { if (pc.e0) P[0] = [ta, cvAt(cur, ta)]; if (pc.e1 && P.length > 1) P[P.length - 1] = [tb, cvAt(cur, tb)]; }
+      cur = cur.filter(p => p[0] < ta - 1e-9 || p[0] > tb + 1e-9);
+      for (const p of cvThin(k, P.map(p => [cvQt(p[0]), cvQv(k, p[1])]))) cur.push(p);
+      c.cv[k] = cvNormCurve(k, cur, pc.L) || [];
+      done.add(c);
+    }
+    for (const c of seen.keys()) { const out = {}; for (const kk of CV_K) if (c.cv && c.cv[kk] && c.cv[kk].length) out[kk] = c.cv[kk]; cvSet(c, out); }
+  }
+  return done;
+}
+// ---- Wiedergabe: the curve points of local time [ta, tb) of one container instance (base = beat of its time 0) ----
+function bmcPts(out, k, c, ta, tb, base, first) {
+  if (!c || !c.length || tb <= ta) return;
+  const st = BMC.ST / spb();
+  if (first) out.push([k, base + ta, cvAt(c, ta)]);
+  let j = 0; while (j < c.length - 1 && c[j + 1][0] <= ta) j++;
+  for (; j < c.length; j++) {
+    const p = c[j], q = c[j + 1], t0 = p[0], t1 = q ? q[0] : Infinity;
+    if (t0 >= tb) break;
+    if (t0 >= ta) out.push([k, base + t0, p[1]]);
+    if (q && q[1] !== p[1]) for (let g = (Math.floor(Math.max(ta, t0) / st) + 1) * st; g < Math.min(tb, t1) - 1e-9; g += st) if (g >= ta) out.push([k, base + g, p[1] + (q[1] - p[1]) * (g - t0) / (t1 - t0)]);
+  }
+}
+function bmcSend(i, pts, late) {
+  if (!pts.length) return;
+  const now = AU.ctx.currentTime;
+  pts.sort((a, b) => a[1] - b[1]);
+  const list = [];
+  for (const [k, B, v] of pts) { let at = b2t(B); if (late && at < now) at = now; list.push({k, v, at}); }
+  if (late) { const seen = new Set(); for (const x of list) if (!seen.has(x.k)) { seen.add(x.k); x.cut = 1; } }   // a switch inside the planned window: queued events of that regulator from here on go
+  BmHost.ctl(i, list);
+}
+// back to rest: Bend 0, Druck 0, Rad = the wheel's position (§5.4)
+function bmcReset(i, at, src) {
+  const a = BMC.act[i]; if (!a) return; const list = [];
+  for (const k of CV_K) if (a[k] && (!src || a[k] === src)) { a[k] = null; if (!bmcTouching(i, k)) list.push({k, v: bmcRest(i, k), at}); }
+  if (list.length) { for (const x of list) x.cut = 1; BmHost.ctl(i, list); }    // cut: events of that regulator queued behind `at` are dropped (■, Panik)
+}
+function bmcResetAll(at) { for (const i of Object.keys(BMC.act)) bmcReset(+i, at); BMC.src = {}; }
+// scheduleTrack's part: the clip's curves in [from, to) (every loop pass starts on its start value); a clip without a curve
+// that played one before → rest at the window start
+function bmcSched(i, clip, from, to, late) {
+  if (!AU.ctx) return;
+  const a = BMC.act[i] || (BMC.act[i] = {}), cv = clip && clip.cv, srcKey = clip ? clip : null, pts = [];
+  const fresh = BMC.src[i] !== srcKey; BMC.src[i] = srcKey;
+  // the clip's curve ends here: back to rest — or straight onto the song melody's curve of this track, when it has one
+  const mc = R.songPlay && S.song && S.song.mel && S.song.mel[i] && S.song.mel[i].cv, sbF = mc ? songBeatOf(from) : null;
+  for (const k of CV_K) if (a[k] === 'clip' && !(cv && cv[k])) {
+    const m = mc && mc[k] && sbF != null && sbF >= 0 && !S.tracks[i].mute; a[k] = m ? 'mel' : null;
+    if (!bmcTouching(i, k)) pts.push([k, from, m ? cvAt(mc[k], sbF) : bmcRest(i, k)]);
+  }
+  if (cv) {
+    const L = clip.len * 4, cs = R.cstart[i];
+    for (const k of CV_K) {
+      const c = cv[k]; if (!c || bmcTouching(i, k)) continue;
+      a[k] = 'clip';
+      let n = Math.floor((from - cs) / L + 1e-9); if (n < 0) n = 0;
+      for (let B = cs + n * L; B < to - 1e-9; B += L) {
+        const ta = Math.max(0, from - B), tb = Math.min(L, to - B); if (tb <= ta) continue;
+        bmcPts(pts, k, c, ta, tb, B, fresh && ta > 1e-9 && B + ta <= from + 1e-9);
+      }
+    }
+  }
+  bmcSend(i, pts, late);
+}
+// the song melody's curves in song beats [sa, sb) (beat = song beat + off)
+function bmcSchedMel(i, mel, sa, sb, off, first) {
+  if (!AU.ctx) return;
+  const a = BMC.act[i] || (BMC.act[i] = {}), cv = mel && mel.cv, pts = [];
+  for (const k of CV_K) if (a[k] === 'mel' && !(cv && cv[k])) { a[k] = null; if (!bmcTouching(i, k)) pts.push([k, sa + off, bmcRest(i, k)]); }
+  // a clip curve of the same regulator on this track has the say (the song take writes its clip bars into own clips); the melody
+  // takes over again with its value at once
+  const pd = R.pend[i], pc = pd && pd.slot >= 0 ? (pd.own && S.song && S.song.own ? S.song.own[pd.own] : S.tracks[i].clips[pd.slot]) : null;
+  if (cv) for (const k of CV_K) {
+    const c = cv[k]; if (!c || bmcTouching(i, k) || a[k] === 'clip') continue;
+    const e = pc && pc.cv && pc.cv[k] ? Math.min(sb, pd.beat - off) : sb;    // a clip with this curve starts inside the window: up to there
+    const f = first || a[k] !== 'mel'; a[k] = 'mel'; bmcPts(pts, k, c, Math.max(0, sa), e, off, f);
+  }
+  bmcSend(i, pts, false);
 }
 const stripReplacer = (k, v) => (k === 'born' || k === 'bornRun' ? undefined : v);
 
@@ -24370,7 +24823,8 @@ function mkEco(snd, i) {
 // the wheels (H-5, B.1 "Raeder"): live per track, MOD starts on p.mw; BEND springs back
 const MKWH = {};
 function mkWheelOf(i) { const tr = S.tracks[i]; if (!tr) return null; const k = tr.uid || ('t' + i); return MKWH[k] || (MKWH[k] = {bend: 0, mod: null}); }
-function mkWheelVal(i, w, snd) { const o = i == null ? null : mkWheelOf(i); if (w === 'bend') return o ? o.bend : 0; const s_ = snd || sndOf(i); return o && o.mod != null ? o.mod : s_ ? (+s_.p.mw || 0) : 0; }
+function mkWheelVal(i, w, snd) { if (i != null && S.tracks[i] && S.tracks[i].sound && S.tracks[i].sound.engine === 'bm') { const W = bmWheelOf(i); return w === 'bend' ? W.bend : W.mod; }   // BM5: own wheels
+  const o = i == null ? null : mkWheelOf(i); if (w === 'bend') return o ? o.bend : 0; const s_ = snd || sndOf(i); return o && o.mod != null ? o.mod : s_ ? (+s_.p.mw || 0) : 0; }
 // a sound load / track switch: MOD back on the sound's p.mw, BEND in the centre
 function mkWheelSync(i, reset) {
   const o = mkWheelOf(i), E = AU.synth[i], s_ = sndOf(i); if (!o || !s_) return;
@@ -24385,7 +24839,9 @@ function mkWheelSet(i, w, v, ret) {
   if (w === 'mod') MKECO.delete(sndOf(i) || {});
   return w === 'bend' ? o.bend : o.mod;
 }
-function mkWheelApi(t, w, v) { if (w !== 'bend' && w !== 'mod') throw new Error("mkWheel: 'bend' | 'mod'"); if (v != null) { mkWheelSet(t, w, v, 0); if (typeof MKUI !== 'undefined' && MKUI.wheelPaint) MKUI.wheelPaint(t); } return mkWheelVal(t, w); }
+function mkWheelApi(t, w, v) { if (w !== 'bend' && w !== 'mod') throw new Error("mkWheel: 'bend' | 'mod'");
+  if (S.tracks[t] && S.tracks[t].sound && S.tracks[t].sound.engine === 'bm') { if (v != null) { bmCtl(t, w === 'bend' ? 'bd' : 'mw', clamp(+v || 0, w === 'bend' ? -1 : 0, 1)); if (bmLoaded()) BMUI.wheelPaint(); } return mkWheelVal(t, w); }   // BM5
+  if (v != null) { mkWheelSet(t, w, v, 0); if (typeof MKUI !== 'undefined' && MKUI.wheelPaint) MKUI.wheelPaint(t); } return mkWheelVal(t, w); }
 // one value of p.mk (path 't.0.f.cut', 'mfx.dep' ...): stored rounded through normMk; the worklet gets the fraction while a
 // gesture runs (live), the stored value at its end
 function mkSetP(i, path, v, live) {
@@ -24720,7 +25176,7 @@ function bmPost(i, m) { const E = AU.synth[i]; if (!E || !E.bm || E.dead) return
 function bmResend(i) { const E = AU.synth[i], s_ = sndOf(i); if (E && E.bm && !E.dead && s_ && s_.engine === 'bm') E.prog(s_, true); }
 const BMWH = {};
 function bmWheelOf(i) { const tr = S.tracks[i]; const k = tr && tr.uid || ('t' + i); return BMWH[k] || (BMWH[k] = {bend: 0, mod: 0, at: 0}); }
-function bmCtl(i, k, v) { const W = bmWheelOf(i); if (k === 'bd') W.bend = v; else if (k === 'mw') W.mod = v; else W.at = v; const E = AU.synth[i]; if (E && E.bm && !E.dead) E.ctl({list: [{k, v, at: 0}]}); }
+function bmCtl(i, k, v) { if (R.playing && AU.ctx && bmcIs(i)) bmcHist(i); const W = bmWheelOf(i); if (k === 'bd') W.bend = v; else if (k === 'mw') W.mod = v; else W.at = v; const E = AU.synth[i]; if (E && E.bm && !E.dead) E.ctl({list: [{k, v, at: 0}]}); bmcInput(i, k, v, 0); }   // BM8: in den Verlauf
 function bmWheelFrame() {
   const tr = S.tracks[R.selT], want = !!(tr && tr.kind === 'synth' && tr.sound.engine === 'bm' && !EL.app.classList.contains('drumpads'));
   if (want === !!UI.bmWh) return;
@@ -25963,7 +26419,10 @@ function flushQueuedCarrier(now) { for (const e of T.timeline) if (e.time > now)
    planner, patterns) is in block sq-mk-src, which an AM track always has loaded (EN3-14); these hooks cost nothing elsewhere ---------- */
 // sync: a key press (outside the scheduler) may load block sq-mk-src at once; the scheduler never does (mkLoad runs tickAhead)
 function arpOn(i, sync) {
-  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound.engine !== 'mk') return false;
+  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound) return false;
+  if (tr.sound.engine === 'bm') { const a = tr.sound.p.bm && tr.sound.p.bm.a && tr.sound.p.bm.a.ar; if (!a || a.t === 'off') return false;   // BM4: Bit Mask arp
+    if (typeof ARPC !== 'undefined') return true; if (sync) return arpSrcLoad(); if (!UI.arpLoadQ) { UI.arpLoadQ = 1; setTimeout(() => { UI.arpLoadQ = 0; arpSrcLoad(); }, 0); } return false; }
+  if (tr.sound.engine !== 'mk') return false;
   const m = tr.sound.p.mk; if (!(m && m.arp && m.arp.on)) return false;
   if (typeof ARPC !== 'undefined') return true;
   if (sync) { mkLoad(); return typeof ARPC !== 'undefined'; }
@@ -26040,8 +26499,9 @@ function tickAhead(h) { if (AU.ctx && R.playing) tick(h || .3); }
 function scheduleTrack(i, from, to, late) {
   if (to <= from) return;
   OS.tick++;                                                     // V2c′: clip content may have changed since the last look
-  const s = R.slot[i]; if (s < 0) return;
+  const s = R.slot[i]; if (s < 0) { if (BMC.act[i]) bmcSched(i, null, from, to, late); return; }
   const tr = S.tracks[i], oc = ownPlaying(i), clip = oc || tr.clips[s];
+  if (BMC.act[i] || (clip && clip.cv && bmcIs(i))) bmcSched(i, tr.mute || !bmcIs(i) ? null : clip, from, to, late);   // BM8: Bend · Rad · Druck des Clips
   if (tr.stimme) { if (clip && !tr.mute) tkSched(i, clip, from, to, late, oc ? R.own[i] : null); return; }   // VS3: STIMME = Audio
   if (!clip || tr.mute || !clip.notes.length) return;
   const mu = takeMute(i);                                        // V2d′ (K2-21, 7.2): the target track's old notes are silent during the take
@@ -26413,7 +26873,7 @@ function songPlayStart(fromBar, o) {
   if (has) { R.songApplying = true; try { if (ct) T.recall(ct, nowT(), null); else T.reset(nowT(), null); } finally { R.songApplying = false; } }
   // a clip launched before bar0 plays in phase with its launch bar (startTransport takes cs from here)
   const off = -bar0 * 4;
-  R.songPlay = {off, bar0, cs: S.tracks.map((_, i) => (R.slot[i] >= 0 ? songCs(song, i, bar0) + off : 0))};
+  R.songPlay = {off, bar0, cs: S.tracks.map((_, i) => (R.slot[i] >= 0 ? songCs(song, i, bar0) + off : 0))}; bmcWrapReset();
   songXpAt(song, bar0 * 4, 0);                                    // V2d: song.xp in effect at bar0
   if (o.countIn) startTransport(o.countIn); else play();
   UI.dirty.all = true; UI.dirty.song = true;
@@ -26424,7 +26884,7 @@ function songPlayStartAt(bar0, nb) {
   const song = S.song; bar0 = clamp(bar0 | 0, 0, song.bars - 1);
   const off = nb - bar0 * 4;
   R.songOverride.fill(false); R.carrierLive = false; R.songEndBeat = null; R.melRec = null;
-  R.songPlay = {off, bar0, cs: new Array(8).fill(0)};
+  R.songPlay = {off, bar0, cs: new Array(8).fill(0)}; bmcWrapReset();
   R.songApplying = true;
   try {
     for (let i = 0; i < NT(); i++) {
@@ -26498,7 +26958,7 @@ function songTick(b0, b1) {
 function songJumpApply(j) {
   const sp = R.songPlay, song = S.song; if (!sp || !song) return;
   if (TK.src.length) tkVoxCut(b2t(j.at));                         // VS3: die Song-Stimme springt mit
-  sp.prevOff = sp.off; sp.wrapAt = j.at; sp.off = j.at - j.bar * 4; R.songEndBeat = null;
+  sp.prevOff = sp.off; sp.wrapAt = j.at; sp.off = j.at - j.bar * 4; R.songEndBeat = null; bmcWrapAdd();
   R.songApplying = true;
   try {
     for (let t = 0; t < NT(); t++) {
@@ -26560,6 +27020,10 @@ function songTickInner(b0, b1) {
       // V2b: every track's song melody on its own track (voices, sound); as heard, never mapped (§v2-3.9, V2b-03)
       for (const k in song.mel) {
         const mi = +k, mel = song.mel[k];
+        if ((mel && mel.cv && bmcIs(mi) && !S.tracks[mi].mute) || (BMC.act[mi] && Object.values(BMC.act[mi]).includes('mel'))) {   // BM8: Kurven der Song-Melodie
+          const lim = Math.min(E, insB); bmcSchedMel(mi, mel && mel.cv && bmcIs(mi) && !S.tracks[mi].mute ? mel : null, b0 - off, Math.min(b1 - off, lim), off, guard > 0 || BMC.src['m' + mi] !== R.runId);
+          BMC.src['m' + mi] = R.runId;
+        }
         if (!mel || !mel.notes.length || !S.tracks[mi] || S.tracks[mi].kind !== 'synth' || S.tracks[mi].mute) continue;
         const mu = takeMute(mi);                                    // V2d′ (K2-21): silent while the take replaces it
         for (const n of mel.notes) {
@@ -26576,7 +27040,7 @@ function songTickInner(b0, b1) {
       if (!guard) try { g6pSongTick(song, b0, off); } catch (e) { tickErr(e); }   /* G6+h: Chor des nächsten Teils vorausrechnen */
       if (!wrap) break;
       const A = lp.a * 4;
-      sp.prevOff = sp.off; sp.wrapAt = eb; sp.off = eb - A;       // ⟲: the next pass starts at the loop start (song: bar 1)
+      sp.prevOff = sp.off; sp.wrapAt = eb; sp.off = eb - A; bmcWrapAdd();       // ⟲: the next pass starts at the loop start (song: bar 1)
       if (song.xp && song.xp.length) songXpAt(song, A, eb);         // V2d
       if (!(loopAll(song) && !recOver)) {
         // a range (or a take over the song): every track jumps to what the song plays at the loop start, in phase with its
@@ -26828,7 +27292,7 @@ function songRecStartOver(o) {
   else songPlayStart(Math.min(playFrom, song.bars - 1), {countIn: preroll && from === 0 ? 1 : 0});
   if (!R.songPlay) return false;
   const sr = R.songRec = {over: true, before, pending: false, from, to, tg, mode, nt: noteT, ev: Array.from({length: MAX_T}, () => []), mine: new Map(), pass: 0, nCh: 0, nMel: 0, nClip: 0, recT: new Set(),
-    notes: [], insCh: [], parts: [], nNotes: 0,
+    notes: [], insCh: [], parts: [], nNotes: 0, cvB: R.playing && AU.ctx ? audBeat() : null,
     get startBeat() { return R.songPlay ? from * 4 + R.songPlay.off : null; }};
   // K2-21 / 7.2: Überschreiben ab n and Ersetzen silence the target track's old notes from n (to the end / in the range) while the
   // take runs (first pass); Overdub and Einfügen keep them
@@ -26979,6 +27443,21 @@ function songCommitNotes(sr, A, B, first) {
     m.notes.push({t: +Math.max(0, n.b).toFixed(4), d: n.d, n: n.n, v: n.v}); nMel++;
   }
   for (const k in song.mel) { const m = song.mel[k]; m.notes.sort((a, b) => a.t - b.t); m.len = Math.max(m.len || 1, song.bars || 1); }
+  if (bmcIs(t) && AU.ctx) {                                      // BM8: Bend · Rad · Druck des Durchgangs in Melodie bzw. eigene Clips
+    const B0 = sr.cvB != null ? sr.cvB : -1e9, B1 = Math.max(B0, audBeat()); sr.cvB = B1;
+    bmcWrite(t, B0, B1, (b, sb, mo) => {
+      if (sb == null) return null; const x = Math.floor(sb / 4 + 1e-9); if (x < A || x >= B) return null;
+      mo = mo || {};
+      if (ownAt(x)) {
+        if (mo.probe) return null;
+        if (mo.need) { const r = ownRun(song, t, x), src = r && (r.o.own ? song.own && song.own[r.o.own] : S.tracks[t].clips[r.o.slot]); if (!src || !src.cv || !src.cv[mo.need]) return null; }
+        const w = ownEnsure(song, t, x); return w ? [w.c, sb - w.ds, w.c.len * 4] : null;
+      }
+      if ((mo.need || mo.probe) && !song.mel[t]) return null;
+      if (mo.need && !(song.mel[t].cv && song.mel[t].cv[mo.need])) return null;
+      const m = song.mel[t] || (song.mel[t] = melEmpty()); m.len = Math.max(m.len || 1, song.bars || 1, x + 1); return [m, sb, m.len * 4];
+    }, {replace: repl && first});
+  }
   sr.nNotes += mine.length; sr.nOwnN = (sr.nOwnN | 0) + nOwn; sr.nMelN = (sr.nMelN | 0) + nMel;
 }
 // V2d′ (7.4): the end of an open take after N7-R1 (S = the take's start). tb = transport beat of the press, tapAt its ctx time
@@ -27111,7 +27590,7 @@ function melNoteOff(id) { const o = MEL.open.get(id); if (o) melCommit(id, o); }
 function melRecStart() {
   if (!R.songPlay || !S.song) { toast('MEL. nimmt auf, während der Song spielt – erst ▶ SONG'); return false; }
   if (R.melRec) return true;
-  R.melRec = {before: songSnapshot(), n: 0, loops: 0};
+  R.melRec = {before: songSnapshot(), n: 0, loops: 0, b0: R.playing && AU.ctx ? audBeat() : 0};
   MEL.open.clear(); MEL.warned = false;
   if (R.selT !== S.song.melodyTrack) selectTrack(S.song.melodyTrack);   // the keys play the melody's sound (heard = stored)
   UI.dirty.song = true;
@@ -27121,6 +27600,8 @@ function melRecEnd() {
   const m = R.melRec; if (!m) return false;
   for (const [id, o] of [...MEL.open]) melCommit(id, o);
   R.melRec = null;
+  const tt = S.song && S.song.melodyTrack;                         // BM8: die Kurven des [● MEL.]-Durchgangs (Overdub = Berühren)
+  if (S.song && bmcIs(tt) && AU.ctx && R.playing) bmcWrite(tt, m.b0, audBeat(), (b, sb) => { if (sb == null || sb < 0) return null; const mm = curMel(S.song); mm.len = Math.max(mm.len || 1, Math.floor(sb / 4) + 1); return [mm, sb, mm.len * 4]; });
   if (!m.n && S.song && songSnapshot() !== m.before) { pushSongUndo(m.before, 'Song bearbeitet'); songChanged(); }   // edits during the pass: one step
   if (m.n) { pushSongUndo(m.before, 'Melodie (' + m.n + (m.n === 1 ? ' Note)' : ' Noten)')); songChanged(); toast('Melodie: ' + m.n + (m.n === 1 ? ' Note' : ' Noten') + ' aufgenommen', {label: 'Rückgängig', fn: () => undo()}); }
   UI.dirty.song = true;
@@ -27139,6 +27620,7 @@ function setMelodyTrack(t, o) {
   melChoose(song, t);
   if (move) {
     const to = curMel(song); to.notes = to.notes.concat(fm.notes).sort((a, c) => a.t - c.t); to.len = Math.max(to.len, fm.len);
+    if (fm.cv) { const cv = cvClone(to.cv) || {}; for (const k of CV_K) if (fm.cv[k] && !cv[k]) cv[k] = fm.cv[k].map(p => [p[0], p[1]]); cvSet(to, cv); }   // BM8
     delete song.mel[from];
   }
   pushSongUndo(b, (move ? 'Melodie verschoben auf ' : 'Melodie-Spur: ') + S.tracks[t].name); songChanged();
@@ -27398,6 +27880,7 @@ function stop() {
   if (PV.on) previewStop();                                 // ■ also ends a browser preview phrase
   // release everything while the transport still counts beats, so the Mitschnitt (PERF) gets the real end beats
   silenceAll(now, .02);
+  bmcResetAll(now);                                         // BM8: Bend 0, Druck 0, Rad = Radstellung
   releaseInputs(r => r === 'play' || r === 'pad');
   arpEndAll();                                              // MK5 (Umfang 8): stop ends every arp note, also a latched chord
   R.playing = false; R.countIn = false; R.ciRun = false;
@@ -28502,15 +28985,21 @@ function recEndFixed(atBeat, natural) {
   recCommitOpen(Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat));
   cancelRecClicks(Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat));
   if (rec.clip) rec.clip.notes.sort((a, b) => a.t - b.t);
+  let cvT = false;
+  if (rec.clip && bmcIs(rec.track)) {                            // BM8: the curves, once the take's end has been heard
+    const c = rec.clip, ti = rec.track, si = rec.scene, L = c.len * 4, B0 = rec.startBeat, B1 = Math.min(atBeat, rec.endBeat == null ? atBeat : rec.endBeat);
+    cvT = bmcTouched(ti, B0, B1) || (B1 > bmcBeatNow() && R.playing);
+    bmcAfter(B1, () => { if (S.tracks[ti].clips[si] !== c) return; if (bmcWrite(ti, B0, B1, b => [c, (((b - B0) % L) + L) % L, L], {fresh: true}).size) { clipChanged(ti, si); markDirty(); UI.dirty.all = true; } });
+  }
   rec.tail = natural && rec.clip ? {track: rec.track, scene: rec.scene, clip: rec.clip, until: rec.endBeat} : null;
-  const n = rec.clip ? rec.clip.notes.length : 0;
+  const n = rec.clip ? rec.clip.notes.length + (cvT && !rec.clip.notes.length && bmcTouched(rec.track, rec.startBeat, atBeat) ? 1 : 0) : 0;
   rec.state = 'off';
   if (!n) {
     // nothing played: no clip is created (§4.3.6). A natural close happens a lookahead early, so a note played
     // right before the bar line still arrives as 'tail' -> decide when the tail window is over.
     if (natural && rec.tail) rec.tail.emptyCheck = true;
     else { dropEmptyRecClip(rec.track, rec.scene, rec.clip); rec.clip = null; rec.tail = null; if (!VS.busy) toast('Nichts aufgenommen'); }
-  } else { analyseClip(rec.track, rec.scene, true, true); recResultToast(rec.track, rec.scene, n); }
+  } else { analyseClip(rec.track, rec.scene, true, true); recResultToast(rec.track, rec.scene, rec.clip.notes.length); }
   clipChanged(rec.track, rec.scene); markDirty();
   UI.dirty.all = true;                        // ● goes back to idle (also when the take closes by itself)
 }
@@ -28561,13 +29050,15 @@ function recEndOverdub(atBeat) {
   for (const [id, o] of [...rec.open]) if (o.kind === 'od' && o.b >= atBeat - 1e-9 && rec.odEnd != null) rec.open.delete(id);   // played after the switch
   recCommitOpen(atBeat);
   rec.state = 'off'; rec.odEnd = null;
-  if (rec.added > 0 && rec.snapshot) {
+  const cvT = rec.snapshot && rec.clip && bmcIs(rec.track) && bmcTouched(rec.track, rec.startBeat, atBeat);   // BM8: Kurven-Overdub
+  if ((rec.added > 0 || cvT) && rec.snapshot) {
     const c = S.tracks[rec.track].clips[rec.scene];
     const take = odTakeOf(c);                                                       // this overdub's notes
     // before = the clip now without the take: editor gestures made during the overdub stay their own undo steps
     const ts = new Set(take), before = c && rec.clip === c ? Object.assign({}, c, {notes: c.notes.filter(n => !ts.has(n))}) : rec.snapshot;
     pushUndo(rec.track, rec.scene, before, 'Overdub');
-    analyseClip(rec.track, rec.scene, true, true, take); recResultToast(rec.track, rec.scene, rec.added, true); markDirty();
+    if (cvT && c && c === rec.clip) { const i = rec.track, L = c.len * 4; bmcWrite(i, rec.startBeat, atBeat, b => { const cs = audCstart(i, b); return [c, (((b - cs) % L) + L) % L, L]; }); }
+    if (rec.added > 0) { analyseClip(rec.track, rec.scene, true, true, take); recResultToast(rec.track, rec.scene, rec.added, true); } else toast('Kurven aufgenommen (Bend · Rad · Druck)'); markDirty();
   }
   else if (!VS.busy) toast('Nichts hinzugefügt');
   rec.snapshot = null; clipChanged(rec.track, rec.scene);
@@ -28593,12 +29084,14 @@ function recClose(bd) {
     notes.push(x);
   }
   rec.state = 'off'; rec.temp = [];
-  if (!notes.length && !late.length) { if (!VS.busy) toast('Nichts aufgenommen'); UI.dirty.all = true; return; }
+  const cvT = bmcIs(ti) && bmcTouched(ti, rec.startBeat, bd);     // BM8: Bend · Rad · Druck dieser Aufnahme
+  if (!notes.length && !late.length && !cvT) { if (!VS.busy) toast('Nichts aufgenommen'); UI.dirty.all = true; return; }
   notes.sort((a, b) => a.t - b.t);
   const clip = {len, key: Object.assign({}, rec.key || {root: S.key.root, scale: S.key.scale, src: 'auto'}), notes};
   if (S.tracks[ti].kind === 'drum') clip.seed = newSeed();
   pushUndo(ti, si, S.tracks[ti].clips[si], 'Aufnahme');
   S.tracks[ti].clips[si] = clip;
+  if (cvT || (bmcIs(ti) && R.playing && bd > bmcBeatNow())) { const B0 = rec.startBeat; bmcAfter(bd, () => { if (S.tracks[ti].clips[si] !== clip) return; if (bmcWrite(ti, B0, bd, b => [clip, (((b - B0) % L) + L) % L, L], {fresh: true}).size) { clipChanged(ti, si); markDirty(); UI.dirty.all = true; } }); }
   rec.tail = {track: ti, scene: si, clip, until: bd};
   for (const [id, o] of late) { Object.assign(o, {kind: 'tail', clip, scene: si, cs: bd}); rec.open.set(id, o); }
   analyseClip(ti, si, true, true);
@@ -29073,6 +29566,7 @@ function capture() {
   pushUndo(ti, si, null, 'Fang');
   tr.clips[si] = {len: ph.len, key, notes};
   if (tr.kind === 'drum') tr.clips[si].seed = newSeed();
+  if (bmcIs(ti)) { const c = tr.clips[si], L = c.len * 4, B0 = ph.startBeat; bmcWrite(ti, B0, Math.min(ab, B0 + L), b => [c, b - B0, L], {fresh: true}); }   // BM8: FANG nimmt die Kurven mit
   analyseClip(ti, si, true, true);
   switchTrackAt(ti, si, nextBarFromAudible(), ph.startBeat);    // tick(): R.cstart = cs (phrase start) -> in phase
   CAP.last[ti] = -1e9; UI.dirty.fang = true;
@@ -29154,6 +29648,7 @@ function panic() {
   releaseInputs(); arpEndAll();                             // MK5
   if (PV.on) previewStop();                                 // a browser preview phrase stops too (§11.3)
   const c = AU.ctx; if (!c) return;
+  bmcResetAll(c.currentTime);                               // BM8
   for (const v of VOICES.slice()) v.cancel();
   tkSilence(c.currentTime, .003, true);                     // VS3 (VS3-fix: keep the plan keys, no restart)
   for (const E of AU.synth) if (E) E.panic();               // ALL-OFF in the worklet (§5.4), also notes without a proxy
@@ -30396,6 +30891,7 @@ function songShift(song, n, d) {
   for (const c of song.carrier) if (c.beat >= n * 4 - 1e-6) c.beat = +(c.beat + d * 4).toFixed(4);
   for (const v of song.xp || []) if (v.beat >= n * 4 - 1e-6) v.beat = +(v.beat + d * 4).toFixed(4);
   for (const k in song.mel) for (const nt of song.mel[k].notes) if (nt.t >= n * 4 - .25 - 1e-9) nt.t = +(nt.t + d * 4).toFixed(6);
+  for (const k in song.mel) if (song.mel[k].cv) cvSet(song.mel[k], cvShiftAbs(song.mel[k].cv, n * 4, d * 4));     // BM8
   for (const m of song.marks) if (m.a >= n) m.a += d;
   if (song.blocks) for (const k of song.blocks) if (k.a >= n) k.a += d;   // KON
   if (song.vox) tkVoxShift(song, n, d);                           // VS3
@@ -30409,6 +30905,7 @@ function songClear(song, a, b, o) {
   song.carrier = song.carrier.filter(c => !(c.beat >= a * 4 - 1e-6 && c.beat < b * 4 - 1e-6));
   song.xp = (song.xp || []).filter(v => !(v.beat >= a * 4 - 1e-6 && v.beat < b * 4 - 1e-6));
   if (!o.keepMel) for (const k in song.mel) song.mel[k].notes = song.mel[k].notes.filter(n => !(n.t >= a * 4 - .25 - 1e-9 && n.t < b * 4 - .25 - 1e-9));
+  if (!o.keepMel) for (const k in song.mel) if (song.mel[k].cv) cvSet(song.mel[k], cvClearAbs(song.mel[k].cv, a * 4, b * 4));   // BM8
   if (!o.keepMarks) marksCut(song, a, b, o.split);
   if (song.blocks && !o.keepMarks && !o.split) konBlocksCut(song, a, b);   // KON: Löschen kürzt Blöcke (Ersetzen/Leeren: sie bleiben)
   if (song.vox && !o.keepMel) tkVoxClear(song, a, b);              // VS3
@@ -30472,6 +30969,10 @@ function songWrite(song, n, ch, keepIds) {
     for (const nt of ch.mel[k]) m.notes.push(Object.assign({}, nt, {t: +Math.max(0, n * 4 + nt.t).toFixed(6)}));
     m.notes.sort((a, b) => a.t - b.t);
   }
+  for (const k of Object.keys(ch.melCv || {})) {                  // BM8: die Kurven des Stücks an ihre Stelle
+    const t = +k; if (!S.tracks[t] || S.tracks[t].kind !== 'synth') continue;
+    const m = song.mel[t] || (song.mel[t] = melEmpty()); cvSet(m, cvPutAbs(m.cv, ch.melCv[k], n * 4, ch.len * 4));
+  }
   for (const m of ch.marks || []) { const x = Object.assign({}, m, {a: n + m.a}); if (!keepIds || !x.id || song.marks.some(y => y.id === x.id)) x.id = newMarkId(song); song.marks.push(x); }
   song.marks.sort((a, b) => a.a - b.a);
   if (ch.vox) s2WriteVox(song, n, ch.vox);   /* S2; G3: auch die Song-Stimme eines verschobenen/getauschten Teils (g3VoxCut) – nur einmal schreiben */
@@ -30495,7 +30996,7 @@ function songTidy(song) {
   song.carrier.sort((a, b) => a.beat - b.beat);
   if (song.xp) { song.xp.sort((a, b) => a.beat - b.beat); let v = 0; song.xp = song.xp.filter(x => { if (x.semi === v) return false; v = x.semi; return true; }); }
   song.marks = marksNorm(song.marks, song.bars);
-  for (const k in song.mel) { const m = song.mel[k]; m.notes.sort((a, b) => a.t - b.t); m.len = Math.max(1, song.bars); }
+  for (const k in song.mel) { const m = song.mel[k]; m.notes.sort((a, b) => a.t - b.t); m.len = Math.max(1, song.bars); if (m.cv) cvSet(m, cvCut(m.cv, m.len * 4)); }
   if (song.own) { const used = new Set(); for (const l of song.lanes) for (const e of l) if (e.own) used.add(e.own); for (const id of Object.keys(song.own)) if (!used.has(id)) delete song.own[id]; }
   if (song.video) vvDirTidy(song);                                 // VV2
   konTidy(song);                                                   // KON
@@ -30621,11 +31122,16 @@ function ownWhole(song, t, x) {
   // the notes as they sound now, bar by bar (scene clip or own clip), from c0 on
   const pieces = [];
   for (let c0 = bs; c0 < be; c0 += 16) {
-    const c1 = Math.min(be, c0 + 16), notes = [];
+    const c1 = Math.min(be, c0 + 16), notes = [], cvp = []; let anyCv = false;
     for (let b = c0; b < c1; b++) {
-      const ob = laneOriginAt(lane, b); if (!laneClipOk(song, t, ob)) continue;
-      const own = ob.own && song.own[ob.own], src = own || S.tracks[t].clips[ob.slot]; if (!src) continue;
+      const ob = laneOriginAt(lane, b); if (!laneClipOk(song, t, ob)) { cvp.push([null, (b - c0) * 4, 4]); continue; }
+      const own = ob.own && song.own[ob.own], src = own || S.tracks[t].clips[ob.slot]; if (!src) { cvp.push([null, (b - c0) * 4, 4]); continue; }
       const Lb = songClipBeats(song, t, own ? ob : {slot: ob.slot}), ocs = ob.cs;
+      {                                                             // BM8: the curves of this bar as they sound (one or two pieces of the loop)
+        const u = (((b * 4 - ocs) % Lb) + Lb) % Lb, off = (b - c0) * 4; if (src.cv) anyCv = true;
+        if (u + 4 <= Lb + 1e-9) cvp.push([src.cv ? cvSlice(src.cv, u, u + 4) : null, off, 4]);
+        else { cvp.push([src.cv ? cvSlice(src.cv, u, Lb) : null, off, Lb - u]); cvp.push([src.cv ? cvSlice(src.cv, 0, 4 - (Lb - u)) : null, off + Lb - u, 4 - (Lb - u)]); }
+      }
       for (let m = Math.floor((b * 4 - ocs) / Lb) - 1; ocs + m * Lb < b * 4 + 4; m++) for (const nt of src.notes) {
         if (nt.t >= Lb - 1e-9) continue;
         const st = ocs + m * Lb + nt.t; if (st < b * 4 - 1e-9 || st >= b * 4 + 4 - 1e-9) continue;
@@ -30633,7 +31139,7 @@ function ownWhole(song, t, x) {
       }
     }
     notes.sort((a, b) => a.t - b.t);
-    pieces.push({c0, c1, notes});
+    pieces.push({c0, c1, notes, cv: anyCv ? cvJoin(cvp, (c1 - c0) * 4) : null});
   }
   const refE = ref.lanes[t].find(e => e.bar === bs);
   for (let j = lane.length - 1; j >= 0; j--) if (lane[j].bar >= bs && lane[j].bar < be) lane.splice(j, 1);
@@ -30641,7 +31147,7 @@ function ownWhole(song, t, x) {
   const ids = [];
   for (const pc of pieces) {
     const c = deep(base), id = ownNewId(song); delete c.from;
-    c.len = pc.c1 - pc.c0; c.notes = pc.notes;
+    c.len = pc.c1 - pc.c0; c.notes = pc.notes; cvSet(c, pc.cv);
     c.from = {t, s, bar: pc.c0, e: pc.c0 === bs && refE ? deep(refE) : null, prev: {slot: s, own: null, cs: +o.cs.toFixed(4)}, cs: +o.cs.toFixed(4)};
     if (pc.c1 < be) c.from.e1 = pc.c1;
     song.own[id] = c; laneInsert(lane, {bar: pc.c0, slot: s, own: id}); ids.push(id);
@@ -30731,7 +31237,9 @@ function songCut(song, a, b) {
   const mel = {}; for (const k in song.mel) { const ns = song.mel[k].notes.filter(n => n.t >= a * 4 - .25 - 1e-9 && n.t < b * 4 - .25 - 1e-9).map(n => Object.assign({}, n, {t: +(n.t - a * 4).toFixed(6)})); if (ns.length) mel[k] = ns; }
   const marks = song.marks.filter(m => m.a < b && m.a + m.len > a).map(m => { const A = Math.max(m.a, a), E = Math.min(m.a + m.len, b); return Object.assign({}, m, {a: A - a, len: E - A}); });
   const own = {}; for (const l of lanes) for (const e of l) if (e.own && song.own && song.own[e.own]) own[e.own] = deep(song.own[e.own]);
-  return vvDirCutTo(song, a, b, {len: b - a, lanes, carrier, xp, mel, marks, own});   // VV2: + video
+  const o = {len: b - a, lanes, carrier, xp, mel, marks, own};
+  for (const k in song.mel) { const c = song.mel[k].cv && cvSlice(song.mel[k].cv, a * 4, b * 4); if (c) (o.melCv || (o.melCv = {}))[k] = c; }   // BM8: die Kurven des Bereichs
+  return vvDirCutTo(song, a, b, o);   // VV2: + video
 }
 // EINFÜGEN(n, chunk): from n on everything moves by L; at or behind the end = append (snaps to the end, no gap)
 function opInsert(song, n, ch, keepIds) {
@@ -30918,6 +31426,7 @@ function markReplaceAll(song, p, skipId, onlyId) {
   let n = 0;
   for (const m of song.marks.filter(x => x.part === p.id && x.id !== skipId && (!onlyId || x.id === onlyId))   /* S0: onlyId */.sort((a, b) => b.a - a.a)) {
     const mel = {}; for (const k in song.mel) mel[k] = song.mel[k].notes.filter(x => x.t >= m.a * 4 - .25 - 1e-9 && x.t < (m.a + m.len) * 4 - .25 - 1e-9).map(x => Object.assign({}, x, {t: x.t - m.a * 4}));
+    const mcv = {}; for (const k in song.mel) { const c = song.mel[k].cv && cvSlice(song.mel[k].cv, m.a * 4, (m.a + m.len) * 4); if (c) mcv[k] = c; }   // BM8
     // V2e-fix: the own clips inside the mark (relative bar, up to the next lane entry or the mark's end)
     const owns = [];
     song.lanes.forEach((l, t) => l.forEach((e, k) => {
@@ -30940,6 +31449,7 @@ function markReplaceAll(song, p, skipId, onlyId) {
     }
     for (const k of Object.keys(ch.mel || {})) delete mel[k];   /* S1/S2: the template brings its own melody there */
     for (const k in mel) { const t = +k, mm = song.mel[t] || (song.mel[t] = melEmpty()); for (const x of mel[k]) if (x.t < ch.len * 4 - .25) mm.notes.push(Object.assign({}, x, {t: +(x.t + a * 4).toFixed(6)})); mm.notes.sort((u, v) => u.t - v.t); }
+    for (const k in mcv) { const t = +k, mm = song.mel[t] || (song.mel[t] = melEmpty()), Lc = Math.min(m.len, ch.len) * 4; cvSet(mm, cvPutAbs(mm.cv, cvCut(mcv[k], Lc), a * 4, Lc)); }
     n++;
   }
   return n;
@@ -32861,7 +33371,8 @@ function openCellSheet(t, bar) {
     p.classList.add('plsheet', 'csheet'); guardTouch(p);
     p.innerHTML = `<div class="ms-h"><b>${esc(tr.name.toUpperCase())}</b><span>· ${rng} · ${own ? 'eigener Clip' : 'Szene ' + sc}</span><button class="rb ms-x" data-a="x" aria-label="Schließen">✕</button></div>` +
       (own ? `<button class="rb pl-o" data-a="edit"><b>Bearbeiten</b><small>ROLLE auf diesem eigenen Clip</small></button>` +
-             `<button class="rb pl-o" data-a="back"><b>Zurück zum Szenen-Clip</b><small>die Kopie fällt weg, hier spielt wieder Szene ${sc}</small></button>`
+             `<button class="rb pl-o" data-a="back"><b>Zurück zum Szenen-Clip</b><small>die Kopie fällt weg, hier spielt wieder Szene ${sc}</small></button>` +
+             (cvHas(song.own && song.own[own]) ? `<button class="rb pl-o" data-a="cvdel" aria-label="Kurven löschen (Bend · Rad · Druck)"><b>Kurven löschen</b><small>Bend · Rad · Druck</small></button>` : '')   // BM8 (§5.4)
            : `<button class="rb pl-o" data-a="own"><b>Eigener Clip (dieser Durchlauf)</b><small>${rng} wird eine Kopie, die nur hier gilt</small></button>`) +
       `<button class="rb pl-o" data-a="whole"><b>Ganzer Block</b><small>${Math.min(blk.be, song.bars) - blk.bs > 1 ? 'Takt ' + (blk.bs + 1) + '–' + Math.min(blk.be, song.bars) : 'Takt ' + (blk.bs + 1)} wird ein eigener Clip</small></button>` +
       vvCellOpt(t, run.bs, Math.min(run.be, song.bars)) +                                    // VV2: „Im Video zeigen“
@@ -32870,6 +33381,7 @@ function openCellSheet(t, bar) {
       const a = b.dataset.a; closePop(); if (a === 'x') return;
       if (a === 'vvshow') { vvCellTap(t, run.bs, Math.min(run.be, song.bars)); return; }   // VV2
       if (a === 'edit') { openOwnRoll(t, bar); return; }
+      if (a === 'cvdel') { if (songEdit('Kurven löschen', sg => { const c = sg.own && sg.own[own]; if (c) delete c.cv; })) toast('Kurven gelöscht', songUndoAct()); return; }
       if (a === 'back') { if (dropOwn(t, bar)) { toast(tr.name + ' · ' + rng + ': wieder Szene ' + sc, songUndoAct()); svButtons(); } return; }
       const id = makeOwn(t, bar, a === 'whole'), oc = id ? ownClipAt(t, bar) : null;
       if (!id || !oc) { toast('Hier ist kein Clip'); return; }
@@ -33273,7 +33785,7 @@ function melodyModel(t) {
     getClip: cur,
     begin() { snap = songSnapshot(); },
     end(changed, label) { if (changed && snap) { const m = cur(); m.notes.sort((a, b) => a.t - b.t); pushSongUndo(snap, 'Melodie: ' + (label || 'Bearbeiten')); songChanged(); folEdit('mel'); } snap = null; },
-    revert() { if (snap) { const o = JSON.parse(snap), m = cur(), om = o && o.mel && o.mel[S.song.melodyTrack]; if (m) { m.notes = om ? om.notes : []; m.len = om ? om.len : 1; } } snap = null; },
+    revert() { if (snap) { const o = JSON.parse(snap), m = cur(), om = o && o.mel && o.mel[S.song.melodyTrack]; if (m) { m.notes = om ? om.notes : []; m.len = om ? om.len : 1; cvSet(m, om && om.cv ? om.cv : null); } } snap = null; },
     undo: () => { undo(); }, redo: () => { redo(); },
     canUndo: () => UNDO.length > 0, canRedo: () => REDO.length > 0,
     audition(n, v) { const vo = auditionStart(t, n, v == null ? .8 : v); if (vo) vo.release(AU.ctx.currentTime + .18); }
@@ -33293,6 +33805,7 @@ function melodyToClip() {
   const key = tg ? Object.assign(Harmony.keyForRecording(tg, songKeyAtBar(a), h.mode, Object.assign(hopts(), {octaveMode: h.octaveMode})), {src: 'carrier'}) : {root: S.key.root, scale: S.key.scale, src: 'auto'};
   pushUndo(t, si, null, 'Melodie → Clip');
   tr.clips[si] = {len, key, notes: ns.map(x => ({t: +(x.t - t0).toFixed(6), o: +(x.t - t0).toFixed(4), d: Math.min(x.d, t1 - x.t), n: x.n, v: x.v}))};
+  { const m = curMel(song); if (m.cv) cvSet(tr.clips[si], cvSlice(m.cv, t0, t1)); }   // BM8: die Kurven des Bereichs gehen mit
   analyseClip(t, si, true, true);
   clipChanged(t, si); markDirty(); UI.dirty.all = true;
   toast('Clip ' + (si + 1) + ' auf ' + tr.name + ': ' + len + (len === 1 ? ' Takt' : ' Takte') + (tg ? ' · folgt dem Träger' : ''), {label: 'Rückgängig', fn: () => undo()});
@@ -42038,6 +42551,7 @@ function openClipSheet(t, s, opts) {
     g.append(B('Kopieren', () => { copyClip(t, s); toast('Clip kopiert'); reopen(); }));
     const pb = B('Einfügen', () => { if (pasteClip(t, s)) reopen(); }); pb.disabled = !CLIPBOARD.clip; g.append(pb);
     g.append(B('Duplizieren → frei', () => { const k = duplicateClip(t, s); if (k >= 0) toast('Dupliziert in Szene ' + (k + 1)); }, null, 'Duplizieren → freier Platz'));
+    if (cvHas(clip)) { const kb = B('Kurven löschen<small>Bend · Rad · Druck</small>', () => { clipCurvesClear(t, s); toast('Kurven gelöscht', {label: 'Rückgängig', fn: () => undo()}); reopen(); }, 'cvdel', 'Kurven löschen (Bend · Rad · Druck)'); g.append(kb); }   // BM8 (§5.4): nur bei Clips mit Kurven
     if (playing) g.append(B('■ Stopp', () => { stopTrack(t); closeClipSheet(); }, null, 'Diese Spur zum nächsten Takt stoppen'));
     const del = el('button', 'hb rb delb', '<span class="t">Löschen</span><span class="bar"></span>');
     let armT = 0, armAt = 0;
@@ -42101,10 +42615,40 @@ function clipLength(t, s, f) {
     clip.notes.forEach(n => { n.d = Math.min(n.d, NL); if (n.o != null) { const w = ((n.o % NL) + NL) % NL; n.o = +(w >= NL - 1e-4 ? 0 : w).toFixed(4); } });   // raw onsets stay inside the clip
   }
   else if (f === 2) clip.notes = clip.notes.concat(clip.notes.filter(n => n.t + L < nl * 4).map(n => Object.assign(cleanNote(n), {t: n.t + L}, n.o != null ? {o: +(n.o + L).toFixed(4)} : {})));
+  if (clip.cv) cvSet(clip, f === 2 ? cvJoin([[clip.cv, 0, L], [clip.cv, L, L]], nl * 4) : cvCut(clip.cv, nl * 4));   // BM8: Kurven wie die Noten
   clip.len = nl;
   afterClipEdit(t, s);
   if (R.editor === 'clip') openClipSheet(t, s);
   if (ED.roll && ED.rollAt && ED.rollAt.t === t && ED.rollAt.s === s) ED.roll.refresh();
+}
+// BM8 (§5.4): „Kurven löschen“ — cv of the clip goes completely, one undo
+function clipCurvesClear(t, s) {
+  const clip = S.tracks[t] && S.tracks[t].clips[s]; if (!clip || !clip.cv) return false;
+  pushUndo(t, s, clip, 'Kurven löschen');
+  delete clip.cv;
+  afterClipEdit(t, s);
+  return true;
+}
+// BM8 test API: the container at ort and „setClipCurves“ (normalized, one undo)
+function bmcCont(t, ort) {
+  if (typeof ort === 'number') return S.tracks[t] ? S.tracks[t].clips[ort] : null;
+  if (ort === 'mel') return S.song && S.song.mel ? S.song.mel[t] || null : null;
+  if (ort && ort.own) return S.song && S.song.own ? S.song.own[ort.own] || null : null;
+  return null;
+}
+function bmcSetCurves(t, ort, cv) {
+  const c = bmcCont(t, ort); if (!c) return false;
+  if (typeof ort === 'number') { pushUndo(t, ort, c, 'Kurven'); cvSet(c, cvNorm(cv, c.len * 4)); afterClipEdit(t, ort); return true; }
+  return !!songEdit('Kurven', () => { const d = bmcCont(t, ort); cvSet(d, cvNorm(cv, d.len * 4)); });
+}
+/* historyCheck (Regel 8): every undo step goes back and every redo comes again — undo all, redo all, the project is the same */
+function historyCheck() {
+  if (rec.state !== 'off') return false;
+  const a = serialize(), n = UNDO.length, m = REDO.length;
+  for (let k = 0; k < n; k++) undo();
+  const mid = UNDO.length === 0;
+  for (let k = 0; k < n; k++) redo();
+  return mid && UNDO.length === n && REDO.length === m && serialize() === a;
 }
 function clipQuantize(t, s) { return quantizeClip(t, s, {grid: '1/16'}); }
 // clipboard (§3.7): cleanClip + track kind; drum and synth clips never mix
@@ -59367,6 +59911,16 @@ const SYNQUENZER = {
   rec: () => recPress(), setRecOptions,
   selectSlot, selectTrack, launchScene, launchClip, stopTrack, stopAllClips,
   getClip: (t, s) => cleanClip(S.tracks[t] && S.tracks[t].clips[s]),
+  // BM8 (§5.3): ort = Szene s (Zahl) · 'mel' (Song-Melodie der Spur) · {own: id} (eigener Clip)
+  clipCurves: (t, ort) => { const c = bmcCont(t, ort); return c && c.cv ? cvClone(c.cv) : null; },
+  setClipCurves: (t, ort, cv) => bmcSetCurves(t, ort, cv),
+  clipCurvesClear: (t, s) => clipCurvesClear(t, s),
+  clipMenuItems: (t, s) => { openClipSheet(t, s); return [...EL.clipSheet.querySelectorAll('button')].map(b => b.textContent.trim()).filter(Boolean); },
+  bmcFake: (t, on) => { if (on === false) BMC.fake.delete(t); else BMC.fake.add(t); return bmcIs(t); },
+  bmcLive: (t, k, v, o) => { o = o || {}; if (o.touch != null) bmcTouch(t, k, o.touch); if (v != null) { if (o.ret > 0) bmcInput(t, k, v, o.ret); else bmCtl(t, k, v); } return true; },
+  bmcLog: on => { if (on === true) BMC.log = []; else if (on === false) BMC.log = null; return BMC.log ? BMC.log.slice() : null; },
+  bmcState: () => ({act: deep(BMC.act), touch: deep(BMC.touch), fake: [...BMC.fake], run: BMC.run}),
+  historyCheck: () => historyCheck(),
   setClip: (t, s, clip) => {
     const tr = S.tracks[t]; if (!tr || s < 0 || s > NS() - 1) throw new Error('Ungültiger Slot');
     const c = clip == null ? null : normClip(clip, tr.kind, S.key);
@@ -60513,7 +61067,7 @@ Object.assign(SYNQUENZER, {                       // BM6 (Nachtrag 7 §5.3): Bit
   bmRoutes: t => bmRoutes(t), bmRouteClear: (t, k) => (bmLoad(), bmRouteClear(t, k)),
   bmInit: (t, kind) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'bm') throw new Error('Keine ' + BM_NAME + '-Spur: ' + t); return soundEdit(t, 'Init', () => { const snd = deep(s_); snd.p.bm = SQBM.init(kind); applySound(t, snd); return true; }); },
 });
-const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+const NO_SYNC = new Set(['clipCurves', 'bmcLog', 'bmcState', 'oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
