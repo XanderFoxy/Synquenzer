@@ -1,0 +1,15 @@
+Fremde Teile, die die App erst nach Tipp auf [Laden und erkennen] lädt (nicht im Repo, nur im Cache-Speicher synq-g9-asr-v1 des Geräts)
+
+1) Sprachmodell „whisper-base“ (mehrsprachig), ONNX-Export mit Wort-Zeit-Ausgabe
+   Quelle: huggingface.co/onnx-community/whisper-base_timestamped, Revision 608c49e61301901684bc36cac8f74b95ff6b5a8e
+   Ursprung: openai/whisper-base – Lizenz: MIT (Copyright (c) 2022 OpenAI)
+   Dateien: config.json, generation_config.json, preprocessor_config.json, tokenizer.json, tokenizer_config.json,
+            onnx/encoder_model_quantized.onnx (WASM), onnx/encoder_model_fp16.onnx (WebGPU), onnx/decoder_model_merged_quantized.onnx
+
+2) Bibliothek @huggingface/transformers 4.3.1 (dist/transformers.min.js, enthält die JS-Teile von onnxruntime-web)
+   Quelle: cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1 – Lizenz: Apache-2.0 (Copyright Hugging Face)
+
+3) Laufzeit onnxruntime-web 1.31.0-dev.20260914-8d85527a0 (ort-wasm-simd-threaded[.asyncify].mjs/.wasm)
+   Quelle: cdn.jsdelivr.net/npm/onnxruntime-web@1.31.0-dev.20260914-8d85527a0 – Lizenz: MIT (Copyright (c) Microsoft Corporation)
+
+Jede Datei ist mit SHA-256 im Code festgelegt (G9A.FILES); eine Abweichung bricht das Laden mit Meldung ab.

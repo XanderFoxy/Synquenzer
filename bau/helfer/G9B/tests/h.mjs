@@ -15,6 +15,7 @@ export function server() {
       let f = null;
       if (u === '/app/' || u === '/app/index.html') f = APP;
       else if (u === '/app/sw.js') f = path.resolve(DIR, '../sw.js');
+      else if (u === '/app/basis.html') f = path.resolve(DIR, '../basis.html');
       else if (u.startsWith('/app/vendor/')) f = path.join(ROOT, u.slice(5));
       else if (u.startsWith('/app/') && /\.(png|webmanifest|woff2|js)$/.test(u)) f = path.join(ROOT, u.slice(5));
       const blk = NET.block && u.includes('/vendor/g9/');
@@ -40,7 +41,7 @@ export async function open(br, o = {}) {
   p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   p.on('request', r => reqs.push(r.url()));
   await p.addInitScript(INIT);
-  await p.goto((o.file ? 'file://' + APP : await server() + 'index.html') + (o.q || '')); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version);
+  await p.goto((o.file ? 'file://' + APP : await server() + (o.page || 'index.html')) + (o.q || '')); await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version);
   await sleep(400);
   return {ctx, p, errs, reqs};
 }

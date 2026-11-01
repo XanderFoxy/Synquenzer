@@ -209,9 +209,7 @@ async function g9AsrEnsure() {
     try { await g9AsrCall('init', {cache: G9A.CACHE, how, lib: G9A.LIB, ort: G9A.ORT, model: G9A.MODEL, rev: G9A.REV}); }
     catch (e) {
       if (how !== 'webgpu' || !G9A.w) throw e;                       // gestoppt/beendet: nicht umschalten
-      try { localStorage.setItem('synq-g9-asr-how', 'wasm'); } catch (x) {}   // WebGPU klappt hier nicht → WASM-Satz (einmal nachladen)
-      G9A.diag.push('webgpu: ' + String(e && e.message || e).slice(0, 120));
-      g9AsrKill('Weg'); G9.sm = Object.assign({}, G9.sm, {how: 'wasm', state: 'none'}); G9A.loadP = null;
+      G9A.loadP = null; await g9AsrToWasm(e);
       return g9AsrEnsure();
     }
     G9.sm = Object.assign({}, G9.sm, {state: 'ready', initMs: Math.round(performance.now() - t0)}); g9RbPaint();
@@ -222,11 +220,23 @@ async function g9AsrEnsure() {
   catch (e) { if (G9.sm.state === 'loading' || G9.sm.state === 'starting') G9.sm = Object.assign({}, G9.sm, {state: 'none'}); throw e; }
   finally { if (G9A.loadP === p) G9A.loadP = null; g9RbPaint(); }
 }
+// WebGPU klappt auf diesem Gerät nicht → WASM-Satz (einmal nachladen), gemerkt; die nur für WebGPU geladenen Dateien (≈ 68 MB) wieder freigeben
+async function g9AsrToWasm(e) {
+  try { localStorage.setItem('synq-g9-asr-how', 'wasm'); } catch (x) {}
+  G9A.diag.push('webgpu: ' + String(e && e.message || e).slice(0, 120));
+  g9AsrKill('Weg'); G9.sm = Object.assign({}, G9.sm, {how: 'wasm', state: 'none'}); G9A.ready = null;
+  try { const ca = await caches.open(G9A.CACHE); await Promise.all(G9A.FILES.filter(x => x.ways === 'g').map(x => ca.delete(x.u))); } catch (x) {}
+}
 // Andock-Stelle G9.asr (§6.6.5): ein Fenster (16 kHz, schon entzerrt) → Wörter mit Zeiten ab Fenster-Beginn
 async function g9AsrRun(x, o) {
   await g9AsrEnsure();
-  const c = new Float32Array(x);
-  const r = await g9AsrCall('run', {x: c, lang: o.lang}, null, [c.buffer]);
+  let c = new Float32Array(x), r;
+  try { r = await g9AsrCall('run', {x: c, lang: o.lang}, null, [c.buffer]); }
+  catch (e) {                                                         // WebGPU scheitert erst beim Rechnen → einmal auf WASM wechseln
+    if (G9.sm.how !== 'webgpu' || !G9A.w) throw e;
+    await g9AsrToWasm(e); await g9AsrEnsure(); c = new Float32Array(x);
+    r = await g9AsrCall('run', {x: c, lang: o.lang}, null, [c.buffer]);
+  }
   G9A.diag.push(G9.sm.how + ' Fenster ' + (o.k + 1) + ': ' + r.ms + ' ms' + (r.msLang ? ' (Sprache ' + r.msLang + ' ms)' : ''));
   if (G9A.diag.length > 20) G9A.diag.shift();
   G9A.last = r;
