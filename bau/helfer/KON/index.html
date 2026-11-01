@@ -50523,6 +50523,7 @@ function konKonsNorm(list, marks, pk, nt) {
     seen.add(k.mark);
     out.push({mark: k.mark, part: k.part, at: Math.max(0, Math.round(k.at)), len: Math.round(k.len), sig: typeof k.sig === 'string' ? k.sig.slice(0, 32) : '',
       mk: marksNorm(k.mk, 0), cut: Array.isArray(k.cut) ? k.cut.filter(x => typeof x === 'string' && mid.test(x)).slice(0, 16) : [], ch});
+    const ks = Array.isArray(k.ks) ? konKonsNorm(k.ks, out[out.length - 1].mk, pk, nt) : []; if (ks.length) out[out.length - 1].ks = ks;   // nested: the Ursprünge inside
   }
   return out;
 }
@@ -50576,7 +50577,9 @@ function konDo(a, e, name) {
   partsEnsure(); const k = S.parts.findIndex(x => !x); if (k < 0) { toast('Teil-Leiste voll – erst einen Teil löschen'); return false; }
   const bp = partSnap(), bs = songSnapshot();
   const mk = deep(song.marks.filter(m => m.a < e && m.a + m.len > a)), ids0 = new Set(song.marks.map(m => m.id)), ch = konCut(song, a, e);
+  const ks = deep((song.kons || []).filter(k => mk.some(m => m.id === k.mark)));   // a konsolidierter Teil inside: its Ursprung goes along
   const tp = s2Template(song, a, e);
+  if (song.carrier.length && tp.chords && tp.chords.ch.length && tp.chords.ch[0].b > 1e-6) tp.chords.ch.unshift({b: 0, tg: null});   // ORIGINAL at its start stays ORIGINAL wherever the part lands
   { const l = []; for (const x of ch.xp || []) { if (l.length && l[l.length - 1].semi === x.semi) continue; l.push({beat: x.beat, semi: x.semi}); } if (l.some(x => x.semi)) tp.sxp = l; }   // Transposition (song.xp) geht mit
   const nm = partUniq(String(name || '').trim().slice(0, 12) || partSuggest(), k);
   S.parts[k] = normPart(Object.assign({name: nm, color: PART_COLORS[k % PART_COLORS.length], src: 'song'}, tp), k, NT());
@@ -50585,7 +50588,7 @@ function konDo(a, e, name) {
   const cut = song.marks.filter(m => !ids0.has(m.id)).map(m => m.id);
   song.marks.push({id: newMarkId(song), a, len: e - a, part: S.parts[k].id}); songTidy(song);
   const m = song.marks.find(x => x.a === a && x.part === S.parts[k].id);
-  if (m) (song.kons || (song.kons = [])).push({mark: m.id, part: m.part, at: a, len: e - a, sig: konSig(song, a, e), mk, cut, ch});
+  if (m) { const kn = {mark: m.id, part: m.part, at: a, len: e - a, sig: konSig(song, a, e), mk, cut, ch}; if (ks.length) kn.ks = ks; (song.kons || (song.kons = [])).push(kn); }
   undoPush({kind: 'group', label: 'Konsolidiert: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
   partsChanged(); songChanged();
   return {part: k, name: nm, mark: m ? m.id : null};
@@ -50605,6 +50608,7 @@ function konRestore(id) {
     opDelete(song, a, e); opInsert(song, a, ch, true);
     if (vk) vvDirWrite(song, a, {len: ch.len, video: vk});
   }
+  for (const x of kn.ks || []) if (song.marks.some(y => y.id === x.mark) && !song.kons.some(y => y.mark === x.mark)) song.kons.push(deep(x));   // the Ursprünge inside come back
   songTidy(song);
   const k = +kn.part.slice(1) - 1;
   if (S.parts[k] && !song.marks.some(x => x.part === kn.part)) { S.parts[k] = null; if (R.part && !R.part.tmp && R.part.i === k) R.part = null; }

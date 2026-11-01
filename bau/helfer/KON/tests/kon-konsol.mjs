@@ -1,0 +1,113 @@
+// KON 2: Konsolidieren → neuer Teil in der Matrix, Song klingt identisch (Noten-Log), Zurückholen → exakt alter Zustand (JSON),
+// Undo/Redo je ein Schritt, nach Bearbeiten im Teil-Bereich: Zurückholen bringt den Ursprung (klingt wie vorher), der neue Teil klingt woanders gleich
+import { open, buildSong, ok, summary, diff, state, playLog, notesOf, diffNotes, canonCut } from './lib.mjs';
+const {b, p, errs} = await open();
+await buildSong(p);
+await p.evaluate(() => { S.bpm = 240; setSongView(true); });
+const s0 = await state(p);
+const log0 = notesOf(await playLog(p));
+ok(log0.length > 40, 'Song spielt (' + log0.length + ' Noten)');
+
+console.log('Konsolidieren Strophe+Refrain (Takt 3–10)');
+const undo0 = await p.evaluate(() => UNDO.length);
+let r = await p.evaluate(() => SYNQUENZER.konsolidieren(2, 9, 'Kern'));
+ok(r && r.part >= 0 && r.name === 'Kern' && r.mark, 'neuer Teil „Kern“', r);
+let st = await state(p);
+const P = st.parts[r.part];
+ok(P && P.src === 'song' && P.len === 8 && P.name === 'Kern', 'Teil in der Clip-Matrix (Teil-Leiste), 8 Takte', P && {src: P.src, len: P.len});
+ok(P && P.own && Object.keys(P.own).length === 1, 'eigener Clip (Bearbeitung im Song) ist im Teil');
+ok(P && Array.isArray(P.sxp) && P.sxp.some(x => x.semi === 2 && x.beat === 16), 'Transposition +2 ab Takt 7 ist im Teil (sxp)', P && P.sxp);
+ok(P && P.mel && P.mel[5] && P.mel[5].length > 0, 'Song-Melodie ist im Teil');
+const m = st.song.marks.find(x => x.id === r.mark);
+ok(m && m.a === 2 && m.len === 8 && m.part === P.id, 'der Bereich zeigt den neuen Teil (eine Marke Takt 3–10)', m);
+ok(st.song.kons && st.song.kons.length === 1 && st.song.kons[0].mark === r.mark, 'Ursprung gespeichert (song.kons)');
+const d1 = diff(s0.song.lanes, st.song.lanes).concat(diff(s0.song.carrier, st.song.carrier), diff(s0.song.xp, st.song.xp), diff(s0.song.mel, st.song.mel), diff(s0.song.own, st.song.own));
+ok(d1.length === 0, 'Noten/Clips im Song unverändert (nichts eingefroren)', d1.slice(0, 3));
+ok(await p.evaluate(u0 => UNDO.length === u0 + 1 && UNDO[UNDO.length - 1].kind === 'group', undo0), 'ein Undo-Schritt');
+const log1 = notesOf(await playLog(p));
+const dl = diffNotes(log0, log1);
+ok(dl.onlyA.length === 0 && dl.onlyB.length === 0, 'Song klingt identisch (Noten-Log ' + log1.length + ')', dl);
+const s1 = await state(p);
+
+console.log('Neuer Teil woanders = klingt wie der Bereich');
+await p.evaluate(k => SYNQUENZER.placePart('P' + (k + 1), 12, 'insert'), r.part);
+const logP = await playLog(p, 12, 20), logR = await playLog(p, 2, 10);
+const dn = diffNotes(notesOf(logR).filter(n => n[3] < 32 - 1e-3), notesOf(logP).filter(n => n[3] < 32 - 1e-3));
+ok(dn.onlyA.length === 0 && dn.onlyB.length === 0, 'Teil hinten eingesetzt klingt wie Takt 3–10', {a: dn.onlyA.slice(0, 4), b: dn.onlyB.slice(0, 4)});
+await p.evaluate(() => SYNQUENZER.undo());
+ok(diff(s1, await state(p)).length === 0, 'Einsetzen rückgängig');
+
+console.log('Zurückholen (unverändert)');
+ok(await p.evaluate(id => SYNQUENZER.zurueckholen(id), r.mark), 'zurückgeholt');
+let s2 = await state(p);
+let dd = diff(s0, s2);
+ok(dd.length === 0, 'exakt alter Zustand (Song + Teile, JSON)', dd.slice(0, 5));
+ok(JSON.stringify(s0) === JSON.stringify(s2), 'auch byte-gleich (JSON-String)');
+await p.evaluate(() => SYNQUENZER.undo());
+ok(diff(s1, await state(p)).length === 0, 'Undo Zurückholen = konsolidiert');
+await p.evaluate(() => SYNQUENZER.redo());
+ok(diff(s0, await state(p)).length === 0, 'Redo Zurückholen = Ursprung');
+await p.evaluate(() => SYNQUENZER.undo());
+await p.evaluate(() => SYNQUENZER.undo());
+ok(diff(s0, await state(p)).length === 0, 'Undo Konsolidieren = Ursprung');
+await p.evaluate(() => SYNQUENZER.redo());
+ok(diff(s1, await state(p)).length === 0, 'Redo Konsolidieren');
+
+console.log('Im Teil-Bereich bearbeiten, wieder konsolidieren, dann zurückholen');
+await p.evaluate(() => { SYNQUENZER.songCycle(2, 4); });   // a cell in the konsolidierter range changes
+const sEd = await state(p);
+ok(diff(s1.song.lanes, sEd.song.lanes).length > 0, 'Bereich bearbeitet');
+r = await p.evaluate(() => { const m = S.song.marks.find(x => x.a === 2); return SYNQUENZER.konsolidierenMark(m.id, 'Kern neu'); });
+st = await state(p);
+ok(r && st.parts.filter(Boolean).length === 2 && st.song.marks.find(x => x.id === r.mark).part === 'P' + (r.part + 1), 'wieder konsolidiert → zweiter Teil „Kern neu“', r);
+ok(await p.evaluate(id => SYNQUENZER.zurueckholen(id), r.mark), 'Zurückholen (der zweite)');
+{ const d = diff(sEd, await state(p)); ok(d.length === 0, 'exakt Stand vor dem 2. Konsolidieren', d.slice(0, 5)); }
+// now the first Ursprung: the range was changed after konsolidieren → the stored range comes back (sounds like at the start)
+const mk1 = await p.evaluate(() => S.song.kons[0].mark);
+ok(await p.evaluate(id => SYNQUENZER.zurueckholen(id), mk1), 'Zurückholen (der erste, Bereich war bearbeitet)');
+st = await state(p);
+ok(!st.song.kons && st.parts.filter(Boolean).length === 0, 'kein Ursprung, kein Teil mehr übrig', {kons: st.song.kons, parts: st.parts.filter(Boolean).map(x => x.name)});
+const log2 = notesOf(await playLog(p));
+const d2 = diffNotes(log0, log2);
+ok(d2.onlyA.length === 0 && d2.onlyB.length === 0, 'klingt wieder wie vor dem Konsolidieren', {a: d2.onlyA.slice(0, 4), b: d2.onlyB.slice(0, 4)});
+ok(st.song.marks.map(x => (x.name || '') + '@' + x.a + '+' + x.len).join(' ') === 'Intro@0+2 Strophe@2+4 Refrain@6+4 Outro@10+2', 'Marken wie vorher', st.song.marks.map(x => (x.name || '') + '@' + x.a));
+await p.evaluate(() => SYNQUENZER.undo());
+ok(diff(sEd, await state(p)).length === 0, 'Undo Zurückholen (bearbeitet) = Stand davor', diff(sEd, await state(p)).slice(0, 3));
+
+console.log('Marken-Blatt und Block-Menü');
+await p.evaluate(() => { while (UNDO.length) undo(); });
+ok(diff(s0, await state(p)).length === 0, 'alles rückgängig = Anfang', diff(s0, await state(p)).slice(0, 3));
+await p.evaluate(() => { openMarkSheet('M2'); });
+await p.waitForTimeout(200);
+let mb = await p.evaluate(() => [...UI.pop.el.querySelectorAll('button[data-kon]')].map(x => x.textContent));
+ok(mb.length === 1 && mb[0] === 'Als neuen Teil konsolidieren', 'Marken-Blatt: [Als neuen Teil konsolidieren]', mb);
+await p.evaluate(() => UI.pop.el.querySelector('button[data-kon="sol"]').click());
+await p.waitForTimeout(200);
+ok(await p.evaluate(() => UI.pop && UI.pop.name === 's2sum' && /konsolidieren/.test(UI.pop.el.querySelector('h4').textContent)), 'Namens-Blatt „Als neuen Teil konsolidieren · Takt 3–6“');
+await p.evaluate(() => UI.pop.el.querySelector('button[data-a="ok"]').click());
+await p.waitForTimeout(200);
+st = await state(p);
+const km = st.song.kons && st.song.kons[0];
+ok(km && st.parts.some(x => x && x.name === 'Strophe'), 'konsolidiert aus dem Marken-Blatt (Name-Vorschlag „Strophe“)', st.parts.filter(Boolean).map(x => x.name));
+await p.evaluate(id => openMarkSheet(id), km.mark); await p.waitForTimeout(150);
+mb = await p.evaluate(() => [...UI.pop.el.querySelectorAll('button[data-kon]')].map(x => x.textContent));
+ok(mb.includes('Zurückholen'), 'Marken-Blatt: [Zurückholen] beim konsolidierten Teil', mb);
+await p.evaluate(() => UI.pop.el.querySelector('button[data-kon="back"]').click()); await p.waitForTimeout(150);
+ok(diff(s0, await state(p)).length === 0, '[Zurückholen] im Blatt = exakt davor');
+await p.evaluate(() => SYNQUENZER.blockMake(2, 9));
+await p.evaluate(() => SYNQUENZER.blockSheet('B1')); await p.waitForTimeout(150);
+mb = await p.evaluate(() => [...UI.pop.el.querySelectorAll('button[data-kb]')].map(x => x.dataset.kb + ':' + x.textContent));
+ok(mb.join('|') === 'x:✕|kon:Als neuen Teil konsolidieren|name:✎ Umbenennen|in:Hineingehen|dis:Auflösen', 'Block-Menü', mb);
+await p.evaluate(() => UI.pop.el.querySelector('button[data-kb="kon"]').click()); await p.waitForTimeout(150);
+ok(await p.evaluate(() => UI.pop && UI.pop.el.querySelector('.mn-in').placeholder === 'Block A'), 'Name-Vorschlag = Blockname');
+await p.evaluate(() => UI.pop.el.querySelector('button[data-a="ok"]').click()); await p.waitForTimeout(150);
+st = await state(p);
+ok(st.parts.some(x => x && x.name === 'Block A' && x.len === 8) && st.song.blocks.length === 1, 'Block konsolidiert → Teil „Block A“ (Block bleibt)');
+await p.evaluate(() => SYNQUENZER.blockSheet('B1')); await p.waitForTimeout(150);
+ok(await p.evaluate(() => !!UI.pop.el.querySelector('button[data-kb="back"]')), 'Block-Menü: [Zurückholen]');
+await p.evaluate(() => UI.pop.el.querySelector('button[data-kb="back"]').click()); await p.waitForTimeout(150);
+st = await state(p);
+ok(diff({...s0.song, blocks: st.song.blocks}, st.song).length === 0 && diff(s0.parts, st.parts).length === 0, 'Block: Zurückholen = exakt davor (mit Block)');
+ok(errs.length === 0, 'keine Konsolenfehler', errs);
+await b.close();
+process.exit(summary('KON-Konsolidieren') ? 1 : 0);
