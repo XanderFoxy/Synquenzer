@@ -1,0 +1,303 @@
+--- ../../snapshots/R-4252.html	2026-11-01 02:07:25.605643258 +0000
++++ index.html	2026-11-01 02:12:09.101660110 +0000
+@@ -20960,6 +20960,7 @@
+   if (e.kind === 'tflag') return S.tracks[e.track] && S.tracks[e.track].stimme ? '1' : '0';     // VS3
+   if (e.kind === 'tphase') return tkPhaseOf(e.track, e.scene);                                  // VS-L-fix
+   if (e.kind === 'gfx') return g4Snap(e.track);                                                // G4
++  if (e.kind === 'chorlanes') return g6pLanesSnap(e.track);                                    // G6+ (§2.5): Chor-Spuren der STIMME-Spur
+   return fxSnapshot();
+ }
+ // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
+@@ -20984,6 +20985,7 @@
+   else if (e.kind === 'tflag') tkFlag(e.track, val === '1');
+   else if (e.kind === 'tphase') tkPhaseSet(e.track, e.scene, val);                            // VS-L-fix
+   else if (e.kind === 'gfx') g4Restore(e.track, val);            // G4
++  else if (e.kind === 'chorlanes') g6pLanesRestore(e.track, val); // G6+ (§2.5)
+   else if (e.kind === 'part') partRestore(JSON.parse(val));
+   else restoreFx(JSON.parse(val));
+   UI.dirty.all = true; markDirty();
+@@ -44912,6 +44914,276 @@
+   g6Nodes: () => [...G6.nodes.entries()].map(([k, N]) => ({k, g: N.g.gain.value, rev: N.rev.gain.value, dly: N.dly.gain.value, pan: N.pan ? N.pan.pan.value : 0}))
+ };
+ /* G6-END */
++/* G6PD-BEGIN */
++/* =====================================================================================================================
++   G6+d (Nachtrag 10 §3 G6+d): Genre-Stile (Presets) für die Chor-Gruppe v2.
++   Die Stil-Tabelle G6P_STYLE ist feste, eingefrorene Daten (Fassung G6P_STYLE_V, gilt mit chor.v = 2): eine spätere Feinabstimmung ist eine
++   neue Stil-Fassung, gespeicherte Werte werden nie umgeschrieben. g6pApplyStyle setzt an EINER Stelle (Clip bzw. Song-Stück) nur die Felder aus
++   §2.2: chor = {v: 2, style, grp, voices: [{lane, rule, n: [{t0, t1, m, d, o?, x?, iv}], db, pan, w, dbl}]} + Rückfall-Felder (rec, dir, mix,
++   name, vol, rev, dly, n[].iv) und an der STIMME-Spur S.tracks[st].chor.lanes (Spur nach role finden oder anlegen, Namen §2.2).
++   Stimmen mit eigener Aufnahme (take) bleiben unverändert. Ein Tipp = ein Gruppen-Undo (Stelle + Spuren, Element 'chorlanes').
++   Nicht hier: Rechnen (G6+b), Klangweg (G6+c), Blatt (G6+e). Bis G6+a/b/c da sind, spielt die Stelle über die Rückfall-Felder (v1-Weg).
++   ===================================================================================================================== */
++const G6P_STYLE_V = 1;
++const g6pFreeze = o => { if (o && typeof o === 'object') { Object.values(o).forEach(g6pFreeze); Object.freeze(o); } return o; };
++const g6pC = (ms, ct, p) => ({ms, ct, p});
++const G6P_STYLE_ORDER = ['80', 'pop', 'gospel', 'barber', 'rock', 'ballade', 'disco', 'wave'];
++const G6P_STYLE = g6pFreeze({
++  '80': {label: '80er großer Refrain', sub: 'Terz+Okt · viel Hall', echo: '1/4',
++    help: 'Großer Refrain: der Lead gedoppelt, dazu Terz und Oktave oben, breit verteilt, viel Hall mit Vorverzögerung.',
++    voices: [{rule: 'uni', pan: 0, w: 1.0, db: 0, dbl: [g6pC(16, -8, -1), g6pC(29, 9, 1)]},
++      {rule: 'st+2', pan: 0, w: 0.7, db: -1, dbl: [g6pC(12, -6, -1), g6pC(24, 8, 1)]},
++      {rule: 'oct+1', pan: 0, w: 0.4, db: -4, dbl: [g6pC(20, -5, -1), g6pC(33, 7, 1)]}],
++    grp: {below: 8, hp: 180, mid: -3, midF: 400, air: 3, sib: -12, rev: 0.75, pre: '1/32', dly: 0.12}},
++  pop: {label: 'Pop modern', sub: 'Terz · eng gedoppelt', echo: '1/8.',
++    help: 'Moderner Pop: enge Doppel, Terz oben und eine leise Oktave unten, wenig Hall, Zischlaute im Chor ganz weg.',
++    voices: [{rule: 'uni', pan: 0, w: 1.0, db: 0, dbl: [g6pC(8, -4, -1), g6pC(15, 5, 1)]},
++      {rule: 'st+2', pan: 0, w: 0.6, db: -2, dbl: [g6pC(10, -5, -1), g6pC(18, 6, 1)]},
++      {rule: 'oct-1', pan: 0, w: 0.3, db: -7, dbl: [g6pC(8, -4, -1), g6pC(15, 5, 1)]}],
++    grp: {below: 9, hp: 200, mid: -2, midF: 350, air: 4, sib: -60, rev: 0.35, pre: '1/64', dly: 0.18}},
++  gospel: {label: 'Gospel', sub: '3 Akkordtöne · breit', echo: null,
++    help: 'Gospel-Chor: Sopran, Alt und Tenor nach den Akkordtönen, je drei Sänger, nah am Lead.',
++    voices: [{rule: 'ch+1', name: 'Chor Sopran', pan: -0.45, w: 0.25, db: 0, dbl: [g6pC(9, -10, -1), g6pC(21, 5, 0), g6pC(34, 12, 1)]},
++      {rule: 'ch-1', name: 'Chor Alt', pan: 0.45, w: 0.25, db: 0, dbl: [g6pC(11, -10, -1), g6pC(23, 5, 0), g6pC(36, 12, 1)]},
++      {rule: 'ch-2', name: 'Chor Tenor', pan: 0, w: 0.35, db: -1, dbl: [g6pC(13, -10, -1), g6pC(25, 5, 0), g6pC(38, 12, 1)]}],
++    grp: {below: 6, hp: 120, mid: -1, midF: 300, air: 2, sib: -12, rev: 0.5, pre: '1/32', dly: 0}},
++  barber: {label: 'Barbershop', sub: '4-stimmig · trocken', echo: null,
++    help: 'Barbershop: vier Einzelsänger eng nach den Akkordtönen, ohne Doppel, fast trocken und nah am Lead.',
++    voices: [{rule: 'ch+1', name: 'Chor Tenor', pan: -0.3, w: 0, db: -1, dbl: [g6pC(0, 0, 0)]},
++      {rule: 'ch-1', name: 'Chor Bariton', pan: 0.3, w: 0, db: 0, dbl: [g6pC(0, 0, 0)]},
++      {rule: 'root-', name: 'Chor Bass', pan: 0, w: 0, db: 1, dbl: [g6pC(0, 0, 0)]}],
++    grp: {below: 4, hp: 70, mid: 0, midF: 400, air: 1, sib: -6, rev: 0.2, pre: '1/64', dly: 0}},
++  rock: {label: 'Rock-Shout', sub: 'Unisono · 4× dick', echo: null,
++    help: 'Rock-Ruf: viele Stimmen unisono und eine Oktave unten, laut und nah, kaum Hall.',
++    voices: [{rule: 'uni', pan: 0, w: 0.8, db: 0, dbl: [g6pC(17, -14, -1), g6pC(28, 12, 1), g6pC(41, -19, -0.5), g6pC(52, 17, 0.5)]},
++      {rule: 'oct-1', pan: 0, w: 0.6, db: -3, dbl: [g6pC(17, -14, -1), g6pC(28, 12, 1), g6pC(41, -19, -0.5), g6pC(52, 17, 0.5)]}],
++    grp: {below: 5, hp: 250, mid: 2, midF: 1500, air: 0, sib: -12, rev: 0.2, pre: 'aus', dly: 0}},
++  ballade: {label: 'Ballade', sub: 'Terz+Sexte · weit', echo: '1/4.',
++    help: 'Ballade: Terz oben und Sexte unten, weit links und rechts, leise hinter dem Lead, viel Hall.',
++    voices: [{rule: 'st+2', pan: -0.35, w: 0.35, db: -1, dbl: [g6pC(20, -6, -1), g6pC(35, 7, 1)]},
++      {rule: 'st-5', pan: 0.35, w: 0.35, db: -2, dbl: [g6pC(20, -6, -1), g6pC(35, 7, 1)]}],
++    grp: {below: 10, hp: 150, mid: -2, midF: 300, air: -2, sib: -60, rev: 0.85, pre: '1/16', dly: 0.2}},
++  disco: {label: 'Disco/Falsett', sub: 'Falsett · hell', echo: '1/8',
++    help: 'Disco: Oktave und Terz eine Oktave höher (Falsett), hell, links und rechts.',
++    voices: [{rule: 'oct+1', name: 'Chor Falsett Oktave', pan: -0.5, w: 0.3, db: 0, dbl: [g6pC(10, -7, -1), g6pC(18, 7, 1)]},
++      {rule: 'st+2/o+1', name: 'Chor Falsett Terz', pan: 0.5, w: 0.3, db: -2, dbl: [g6pC(10, -7, -1), g6pC(18, 7, 1)]}],
++    grp: {below: 7, hp: 300, mid: -2, midF: 500, air: 5, sib: -18, rev: 0.5, pre: '1/32', dly: 0.15}},
++  wave: {label: 'New Wave dunkel', sub: 'Okt+Quinte · tief', echo: '1/4.',
++    help: 'New Wave: Oktave und Quinte unten, dunkel, je eine Kopie, viel Hall und Echo.',
++    voices: [{rule: 'oct-1', pan: -0.4, w: 0, db: 0, dbl: [g6pC(25, -5, 0)]},
++      {rule: 'st-4', pan: 0.4, w: 0, db: -2, dbl: [g6pC(28, 5, 0)]}],
++    grp: {below: 9, hp: 80, mid: -2, midF: 2500, air: -3, sib: -12, rev: 0.6, pre: '1/32', dly: 0.25}}
++});
++// „Background“ für freie Gegenstimmen (eine Spur, kein Rezept): Pan abwechselnd −0,6/+0,6 je Gegenstimme; Gruppe nur, wenn die Stelle noch keine hat
++const G6P_BG = g6pFreeze({label: 'Background', sub: 'Gegenstimme · breit', echo: '1/4',
++  help: 'Background für deine Gegenstimme: gedoppelt, abwechselnd links und rechts, 9 LU unter dem Lead.',
++  voice: {pan: 0.6, w: 0.15, db: 0, dbl: [g6pC(12, -6, -1), g6pC(24, 8, 1)]},
++  grp: {below: 9, hp: 180, mid: -2, midF: 400, air: 2, sib: -12, rev: 0.5, pre: '1/32', dly: 0.1}});
++const G6P_RULE = /^(?:(st|oct|ch)([+-])([1-7])(?:\/o([+-][12]))?|root-|uni|free)$/;
++const G6P_MAXV = 6, G6P_MAXL = 8;
++/* ---------- Spur-Namen nach Rolle (§2.2) ---------- */
++function g6pRoleName(role, st) {
++  const m = G6P_RULE.exec(role || ''); if (!m) return 'Chor';
++  if (role === 'uni') return 'Chor Unisono'; if (role === 'root-') return 'Chor Grundton';
++  if (role === 'free') { const L = st != null && S.tracks[st] && S.tracks[st].chor ? S.tracks[st].chor.lanes : []; let n = 1; while (L.some(l => l.name === 'Gegenstimme ' + n)) n++; return 'Gegenstimme ' + n; }
++  const up = m[2] === '+', n = +m[3], ud = up ? 'oben' : 'unten', ox = m[4] ? (m[4][0] === '+' ? ' + Oktave' : ' − Oktave') : '';
++  if (m[1] === 'oct') return 'Chor ' + (n === 1 ? 'Oktave ' : '2 Oktaven ') + ud + ox;
++  if (m[1] === 'ch') return 'Chor Akkordton ' + ud + (n > 1 ? ' ' + n : '') + ox;
++  const IV = {1: 'Sekunde', 2: 'Terz', 3: 'Quarte', 4: 'Quinte', 5: 'Sexte', 6: 'Septime', 7: 'Oktave'};
++  return 'Chor ' + IV[n] + (ox ? ox : ' ' + ud);
++}
++/* ---------- Noten je Regel: Lead-Ton L → {d, o, x} (Stufen, Oktaven, chromatisch) und iv (Halbtöne, Rückfall/Anzeige) ---------- */
++function g6pDegOf(L, q, key) {   // Leiterstufen von L bis q (leitereigen gezählt) + chromatischer Rest
++  const sg = q >= L ? 1 : -1; let d = 0, p = g6Step(L, 0, key);
++  while (d < 21 && d > -21 && (sg > 0 ? p < q : p > q)) { const nx = g6Step(L, d + sg, key); if (sg > 0 ? nx > q : nx < q) break; d += sg; p = nx; }
++  return {d, x: q - p};
++}
++function g6pNote(rule, L, tri, key) {
++  const m = G6P_RULE.exec(rule), oo = m && m[4] ? +m[4] : 0; let d = 0, o = 0, x = 0, q = L;
++  if (rule === 'uni' || rule === 'free') { x = L - g6Step(L, 0, key); }
++  else if (rule === 'root-') { const b = g6Below(L, tri); q = b - 1; while ((((q % 12) + 12) % 12) !== tri[0] || q > b - 3) q--; const r = g6pDegOf(L, q, key); d = r.d; x = r.x; }
++  else if (m[1] === 'st') { d = (m[2] === '+' ? 1 : -1) * +m[3]; o = oo; }
++  else if (m[1] === 'oct') { o = (m[2] === '+' ? 1 : -1) * +m[3] + oo; x = L - g6Step(L, 0, key); }
++  else { let k = +m[3]; q = L; while (k-- > 0) q = m[2] === '+' ? g6Above(q, tri) : g6Below(q, tri); const r = g6pDegOf(L, q, key); d = r.d; x = r.x; o = oo; }
++  x = clamp(x, -2, 2); d = clamp(d, -21, 21); o = clamp(o, -2, 2);
++  q = g6Step(L, d, key) + 12 * o + x;
++  return {d, o, x, iv: clamp(q - L, -36, 36)};
++}
++function g6pNotes(r, notes, rule) {
++  const x = tkRef(r), a = x.a, key = g2KeyAt(r), sp = spb();
++  return notes.slice(0, 4000).map(n => {
++    const L = Math.round(n.m), beat = (n.t0 - a.in) / sp + a.at, tri = g6Chord(L, key, r.vox ? null : g6HeardPcs(r, beat)), e = g6pNote(rule, L, tri, key);
++    const o = {t0: tkR6(n.t0), t1: tkR6(n.t1), m: +clamp(n.m, 0, 127).toFixed(3), d: e.d}; if (e.o) o.o = e.o; if (e.x) o.x = e.x; o.iv = e.iv; return o;
++  });
++}
++// Lead-Noten der Stelle (gehörte Fassung, G2-Analyse im Worker) – nur wenn eine Stimme neu gerechnet werden muss
++async function g6pLeadNotes(r) {
++  const x = tkRef(r); if (!x) return null; const a = x.a, b = g6Lead(a); if (!b) { tkLoad(a.take); toast('Take wird geladen …'); return null; }
++  const A = await g2Call({op: 'an', key: 'h:' + a.take + '@' + wpBid(b), x: b.getChannelData(0), sr: b.sampleRate});
++  return (A.notes || []).filter(n => n.t1 > a.in && n.t0 < a.out);
++}
++/* ---------- Chor-Spuren an der STIMME-Spur ---------- */
++const g6pTrackOf = r => (r && r.vox ? stimmeT() : r ? r.t : -1);
++const g6pLanes = st => (S.tracks[st] && S.tracks[st].chor && Array.isArray(S.tracks[st].chor.lanes) ? S.tracks[st].chor.lanes : []);
++function g6pPlaces(st) {   // alle Stellen der STIMME-Spur: [{r, a}]
++  const out = [], tr = S.tracks[st]; if (!tr) return out;
++  tr.clips.forEach((c, s) => { if (c && c.audio) out.push({r: {t: st, s}, a: c.audio}); });
++  if (S.song && Array.isArray(S.song.vox)) for (const v of S.song.vox) out.push({r: {vox: v.id}, a: v});
++  return out;
++}
++const g6pSame = (r1, r2) => (r1.vox || r2.vox ? r1.vox === r2.vox : r1.t === r2.t && r1.s === r2.s);
++function g6pUsed(st, skip) { const u = new Set(); for (const p of g6pPlaces(st)) { if (skip && g6pSame(p.r, skip)) continue; const c = p.a.chor; if (c && c.v === 2) for (const v of c.voices || []) if (v.lane) u.add(v.lane); } return u; }
++const g6pLanesSnap = st => JSON.stringify(S.tracks[st] && S.tracks[st].chor ? S.tracks[st].chor : null);
++function g6pLanesRestore(st, val) { const tr = S.tracks[st]; if (!tr) return; const v = JSON.parse(val); if (v) tr.chor = v; else delete tr.chor; if (G6.sheet) g6SheetPaint(); }
++// Spur für eine Rolle finden oder anlegen (frei: immer neu). used = Spuren, die an anderen Stellen bzw. schon hier vergeben sind. null = Grenze 8
++function g6pLaneFor(st, role, name, used, taken) {
++  const tr = S.tracks[st]; if (!tr.chor) tr.chor = {lanes: []}; if (!Array.isArray(tr.chor.lanes)) tr.chor.lanes = [];
++  const L = tr.chor.lanes;
++  if (role !== 'free') { const l = L.find(z => z.role === role && !taken.has(z.id)); if (l) return l; }
++  const nm = (name || g6pRoleName(role, st)).slice(0, 24);
++  if (L.length < G6P_MAXL) { let k = 1; while (L.some(z => z.id === 'c' + k)) k++; const l = {id: 'c' + k, role, name: nm}; L.push(l); return l; }
++  const g = L.find(z => !used.has(z.id) && !taken.has(z.id)); if (!g) return null;   // graue Spur übernehmen und umbenennen
++  g.role = role; g.name = nm; delete g.mute; return g;
++}
++/* ---------- Rückfall-Felder für ältere Fassungen (§2.2) ---------- */
++function g6pFallback(c) {
++  const v0 = c.voices.find(v => v.rule && v.rule !== 'free') || c.voices[0], m = v0 && G6P_RULE.exec(v0.rule || '');
++  let rec = 'unisono', dir = 'up';
++  if (m && m[1]) { const n = +m[3]; dir = m[2] === '+' ? 'up' : 'down'; rec = m[1] === 'oct' ? 'oktave' : m[1] === 'ch' ? (c.style === 'barber' ? 'barber' : 'drei') : n === 2 ? 'terz' : n === 4 ? 'quinte' : n === 5 ? 'sexte' : 'terz'; }
++  else if (v0 && v0.rule === 'root-') rec = 'barber';
++  c.rec = rec; c.dir = dir; c.mix = '80';
++  for (const v of c.voices) { const l = g6pLanes(c._st).find(z => z.id === v.lane); v.name = l ? l.name : 'Stimme'; v.vol = 1; v.rev = c.grp.rev; v.dly = c.grp.dly; }
++  delete c._st; return c;
++}
++const g6pVoiceOf = (rule, lane, n, sv) => ({lane, rule, n, db: sv.db, pan: sv.pan, w: sv.w, dbl: sv.dbl.map(z => ({ms: z.ms, ct: z.ct, p: z.p}))});
++/* ---------- Normalisieren v2 (Brücke, bis G6+a g6pNorm2 liefert; v1 bleibt unberührt) ---------- */
++function g6pdNorm(c) {
++  if (!c || c.v !== 2 || !Array.isArray(c.voices)) return null;
++  const N = (x, a, b, d, f) => (isNum(x) ? +clamp(x, a, b).toFixed(f) : d), G = c.grp || {}, PRE = ['aus', '1/64', '1/32', '1/16'];
++  const grp = {below: N(G.below, 2, 20, 9, 1), hp: N(G.hp, 20, 1000, 180, 0), mid: N(G.mid, -12, 12, 0, 1), midF: N(G.midF, 100, 8000, 400, 0), air: N(G.air, -12, 12, 0, 1),
++    sib: [0, -6, -12, -18, -60].includes(G.sib) ? G.sib : -12, rev: N(G.rev, 0, 1, 0.5, 2), pre: PRE.includes(G.pre) ? G.pre : '1/32', dly: N(G.dly, 0, 1, 0, 2)};
++  const o = {v: 2, style: G6P_STYLE[c.style] ? c.style : null, grp, voices: []};
++  for (const v of c.voices.slice(0, G6P_MAXV)) {
++    if (!v || typeof v.lane !== 'string' || !G6P_RULE.test(v.rule || '') || !Array.isArray(v.n)) continue;
++    const n = v.n.slice(0, 4000).filter(x => x && isNum(x.t0) && isNum(x.t1) && x.t1 > x.t0 && isNum(x.m) && isNum(x.d)).map(x => {
++      const q = {t0: tkR6(x.t0), t1: tkR6(x.t1), m: +clamp(x.m, 0, 127).toFixed(3), d: clamp(Math.round(x.d), -21, 21)};
++      if (isNum(x.o) && Math.round(x.o)) q.o = clamp(Math.round(x.o), -2, 2); if (isNum(x.x) && Math.round(x.x)) q.x = clamp(Math.round(x.x), -2, 2); q.iv = isNum(x.iv) ? clamp(Math.round(x.iv), -36, 36) : 0; return q; });
++    const dbl = (Array.isArray(v.dbl) ? v.dbl : []).slice(0, 4).filter(z => z && isNum(z.ms)).map(z => ({ms: N(z.ms, 0, 80, 0, 1), ct: N(z.ct, -50, 50, 0, 1), p: N(z.p, -1, 1, 0, 2)}));
++    const q = {lane: v.lane.slice(0, 4), rule: v.rule, n, db: N(v.db, -24, 6, 0, 1), pan: N(v.pan, -1, 1, 0, 2), w: N(v.w, 0, 1, 0, 2), dbl: dbl.length ? dbl : [{ms: 0, ct: 0, p: 0}]};
++    const t = v.take ? tkNormSeg(v.take) : null; if (t) q.take = t; if (v.dblOff === true) q.dblOff = true;
++    q.name = typeof v.name === 'string' ? v.name.slice(0, 40) : 'Stimme'; q.vol = 1; q.rev = grp.rev; q.dly = grp.dly;
++    o.voices.push(q);
++  }
++  if (!o.voices.length) return null;
++  o.rec = G6_REC.some(r => r[0] === c.rec) ? c.rec : 'terz'; o.dir = c.dir === 'down' ? 'down' : 'up'; o.mix = '80';
++  return o;
++}
++tkExt().audio.push((raw, o) => { const c = raw && raw.chor; if (!c || c.v !== 2) return; const n = (typeof g6pNorm2 === 'function' ? g6pNorm2 : g6pdNorm)(c); if (n) o.chor = n; else delete o.chor; });
++/* ---------- Gruppen-Undo: Stelle(n) + Spuren (+ fx) ---------- */
++function g6pCommit(label, items) { undoPush({kind: 'group', label, items}); markDirty(); UI.dirty.all = true; haptic('tick'); g6Refresh(); }
++function g6pEditPlace(r, fn) {   // wie g6Edit, aber das Undo-Element wird zurückgegeben (für die Gruppe); false = nichts geändert
++  const n0 = UNDO.length; if (!g6Edit(r, '', fn)) return null;
++  return UNDO.length === n0 + 1 ? UNDO.pop() : {kind: 'none'};
++}
++const g6pFmt = v => String(v).replace('.', ',');
++/* ---------- Stil auf eine Stelle (ein Tipp, ein Undo) ---------- */
++async function g6pApplyStyle(r, id) {
++  const S0 = G6P_STYLE[id], x0 = tkRef(r), st = g6pTrackOf(r); if (!S0 || !x0 || st < 0) return false;
++  const c0 = x0.a.chor, isV2 = !!(c0 && c0.v === 2), keep = [];
++  // Stimmen mit eigener Aufnahme bleiben (v2: mit Spur; v1: selbst gesungene Stimme → freie Spur mit ihrem Namen)
++  if (c0) for (const v of c0.voices || []) if (v.take) keep.push(isV2 ? deep(v) : {v1: v});
++  const busy = new Set(keep.filter(v => v.lane).map(v => v.rule === 'free' ? '' : v.rule));
++  const want = S0.voices.filter(sv => !busy.has(sv.rule));
++  if (keep.length + want.length > G6P_MAXV) { toast('Höchstens 6 Stimmen – eine Stimme löschen'); return false; }
++  // Noten: gleiche Regel an dieser Stelle schon errechnet → übernehmen (nichts neu rechnen), sonst aus den Lead-Noten
++  const old = new Map(); if (isV2) for (const v of c0.voices) if (!v.take) old.set(v.rule, v.n);
++  let lead = null;
++  if (want.some(sv => !old.has(sv.rule))) { lead = await g6pLeadNotes(r); if (!lead) return false; if (!lead.length) { toast('Keine Töne erkannt'); return false; } }
++  const x = tkRef(r); if (!x) return false;
++  const lanesBefore = g6pLanesSnap(st), used = g6pUsed(st, r), taken = new Set(), voices = [];
++  for (const v of keep) if (v.lane) taken.add(v.lane);
++  const fail = () => { g6pLanesRestore(st, lanesBefore); toast('Höchstens 8 Chor-Spuren – eine Spur löschen'); return false; };
++  for (const sv of want) {
++    const l = g6pLaneFor(st, sv.rule, sv.name, used, taken); if (!l) return fail(); taken.add(l.id);
++    voices.push(g6pVoiceOf(sv.rule, l.id, old.has(sv.rule) ? deep(old.get(sv.rule)) : g6pNotes(r, lead, sv.rule), sv));
++  }
++  for (const v of keep) {
++    if (v.lane) { voices.push(v); continue; }
++    const o = v.v1, l = g6pLaneFor(st, 'free', String(o.name || '').slice(0, 24) || null, used, taken); if (!l) return fail(); taken.add(l.id);
++    voices.push({lane: l.id, rule: 'free', n: (o.n || []).map(n => ({t0: n.t0, t1: n.t1, m: n.m, d: 0, iv: n.iv})), db: isNum(o.db) ? clamp(o.db, -24, 6) : 0, pan: isNum(o.pan) ? o.pan : 0, w: 0, dbl: [{ms: 0, ct: 0, p: 0}], take: deep(o.take), dblOff: true});
++  }
++  const chor = g6pFallback({v: 2, style: id, grp: deep(S0.grp), voices, _st: st});
++  const it = g6pEditPlace(r, au => { au.chor = chor; });
++  if (!it) { g6pLanesRestore(st, lanesBefore); return false; }
++  g6pCommit('Chor · ' + S0.label, [it, {kind: 'chorlanes', track: st, before: lanesBefore}].filter(z => z.kind !== 'none'));
++  const nv = voices.length;
++  toast(S0.label + ': ' + nv + (nv === 1 ? ' Stimme' : ' Stimmen') + ' · ' + g6pFmt(S0.grp.below) + ' LU unter dem Lead' + (c0 && !isV2 ? ' · neue Chor-Fassung – klingt anders' : ''));
++  G6.lastStyle = {id, v: G6P_STYLE_V, analysed: !!lead};
++  return true;
++}
++/* ---------- [Background] auf einer freien Spur: diese Stelle oder alle Stellen der Spur (ein Undo) ---------- */
++function g6pBackground(r, lane, whole) {
++  const st = g6pTrackOf(r); if (st < 0) return false;
++  const free = g6pLanes(st).filter(l => l.role === 'free'), li = free.findIndex(l => l.id === lane); if (li < 0) return false;
++  const pan = (li % 2 ? 1 : -1) * G6P_BG.voice.pan, places = whole ? g6pPlaces(st) : [{r}], items = []; let songIt = null;
++  for (const p of places) {
++    const xx = tkRef(p.r), c = xx && xx.a.chor; if (!c || c.v !== 2 || !c.voices.some(v => v.lane === lane)) continue;
++    const it = g6pEditPlace(p.r, au => {
++      const cc = au.chor, v = cc.voices.find(z => z.lane === lane);
++      Object.assign(v, {db: G6P_BG.voice.db, pan, w: G6P_BG.voice.w, dbl: G6P_BG.voice.dbl.map(z => ({ms: z.ms, ct: z.ct, p: z.p}))}); delete v.dblOff;
++      if (!cc.grp) { cc.grp = deep(G6P_BG.grp); for (const z of cc.voices) { z.rev = cc.grp.rev; z.dly = cc.grp.dly; } }
++    });
++    if (!it || it.kind === 'none') continue;
++    if (it.kind === 'song') { if (!songIt) { songIt = it; items.push(it); } } else items.push(it);   // Song: der erste Schnappschuss gilt
++  }
++  if (!items.length) return false;
++  g6pCommit('Chor · Background', items); toast('Background · ' + (pan < 0 ? 'links' : 'rechts') + (whole ? ' · alle Stellen' : ''));
++  return true;
++}
++/* ---------- Echo-Zeit-Vorschlag des Stils übernehmen (globales Echo, ein Undo 'fx') ---------- */
++const g6pEchoOf = id => (id === 'bg' ? G6P_BG.echo : G6P_STYLE[id] ? G6P_STYLE[id].echo : null);
++function g6pEchoTake(id) {
++  const div = g6pEchoOf(id), E = S.fxBus && S.fxBus.echo; if (!div || !E) return false;
++  if (E.divL === div && (E.divR == null || E.mode === 'st' || E.divR === div)) return false;
++  const before = fxSnapshot(); E.divL = div; if (E.divR != null && E.mode !== 'st') E.divR = div;
++  try { applyEcho(); } catch (e) { logErr(e); }
++  undoPush({kind: 'fx', before, label: 'Echo-Zeit ' + div}); markDirty(); UI.dirty.all = true;
++  toast('Echo-Zeit ' + div + ' – gilt für alle Spuren'); return true;
++}
++/* ---------- [Auf alle Chor-Stellen]: die Gruppe dieser Stelle auf alle v2-Stellen der Spur (ein Undo) ---------- */
++function g6pGrpAll(r) {
++  const x = tkRef(r), c = x && x.a.chor, st = g6pTrackOf(r); if (!c || c.v !== 2 || !c.grp || st < 0) return false;
++  const grp = deep(c.grp), items = []; let songIt = null;
++  for (const p of g6pPlaces(st)) {
++    if (g6pSame(p.r, r)) continue; const cc = p.a.chor; if (!cc || cc.v !== 2 || JSON.stringify(cc.grp) === JSON.stringify(grp)) continue;
++    const it = g6pEditPlace(p.r, au => { au.chor.grp = deep(grp); for (const v of au.chor.voices) { v.rev = grp.rev; v.dly = grp.dly; } });
++    if (!it || it.kind === 'none') continue;
++    if (it.kind === 'song') { if (!songIt) { songIt = it; items.push(it); } } else items.push(it);
++  }
++  if (!items.length) { toast('Alle Chor-Stellen sind schon gleich'); return false; }
++  g6pCommit('Chor · auf alle Stellen', items); toast('Gruppe auf ' + items.length + (items.length === 1 ? ' weitere Stelle' : ' weitere Stellen') + ' übertragen');
++  return true;
++}
++// Stil-Wert für Doppeltipp (G6+e): Gruppe (field) oder Stimme der Rolle (rule, field); null = kein Stil-Wert
++function g6pStyleVal(id, rule, field) {
++  const T = id === 'bg' ? G6P_BG : G6P_STYLE[id]; if (!T) return null;
++  if (rule == null) return T.grp[field] !== undefined ? T.grp[field] : null;
++  const sv = id === 'bg' ? T.voice : T.voices.find(z => z.rule === rule); return sv && sv[field] !== undefined ? deep(sv[field]) : null;
++}
++/* ---------- Test-API ---------- */
++const G6PD_API = {
++  g6pStyles: () => ({v: G6P_STYLE_V, order: G6P_STYLE_ORDER.slice(), styles: deep(G6P_STYLE), bg: deep(G6P_BG)}),
++  g6pStyle: (r, id) => g6pApplyStyle(r || {t: stimmeT(), s: R.selS}, id),
++  g6pBackground: (r, lane, whole) => g6pBackground(r || {t: stimmeT(), s: R.selS}, lane, !!whole),
++  g6pEcho: id => g6pEchoTake(id),
++  g6pGrpAll: r => g6pGrpAll(r || {t: stimmeT(), s: R.selS}),
++  g6pStyleVal: (id, rule, field) => g6pStyleVal(id, rule, field),
++  g6pRoleName: role => g6pRoleName(role, stimmeT()),
++  g6pNoteOf: (rule, L, tri, key) => g6pNote(rule, L, tri || [0, 4, 7], key || {root: 0, scale: 'ionian'}),
++  g6pLanes: () => { const st = stimmeT(); return st >= 0 && S.tracks[st].chor ? deep(S.tracks[st].chor) : null; },
++  g6pLast: () => (G6.lastStyle ? Object.assign({}, G6.lastStyle) : null)
++};
++/* G6PD-END */
+ /* G7-BEGIN */
+ /* =====================================================================================================================
+    G7 (Nachtrag 5): Gesang folgt dem Transponieren. STIMME-Clips und Song-Stimme werden vom Transponieren (Träger, „Eine Skala“,
+@@ -45886,6 +46158,7 @@
+ Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
+ Object.assign(SYNQUENZER, G2_API);                // G2: Tonhöhe quantisieren, Gesang als Noten
+ Object.assign(SYNQUENZER, G6_API);                // G6: Chor-Generator
++Object.assign(SYNQUENZER, G6PD_API);              // G6+d: Genre-Stile der Chor-Gruppe
+ Object.assign(SYNQUENZER, G7_API);                // G7: Gesang folgt dem Transponieren
+ const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
