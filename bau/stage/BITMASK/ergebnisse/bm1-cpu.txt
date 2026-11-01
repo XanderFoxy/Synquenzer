@@ -1,0 +1,4 @@
+PASS BM1-13 Oszillator-Teil einer Stimme ≤ 1,5 × VA-Stimme — 0.86 × (Bit-Mask-Stimme 0.81 % Echtzeit, VA-Stimme 0.95 %; 12 Stimmen 7.42 % = 0.65 × VA je Stimme; Streuung bm1 0.78–1.3 %)
+PASS BM1-13 Leerlauf ≤ 0,1 % — 0.067 % Echtzeit
+PASS BM1-13 60 s, 12 Stimmen: kein GC, Heap ± 1 MB — 0 GC-Läufe, Heap 0.467 MB (60 Meldungen load); ohne Stimmen 2 GC, 5.582 MB
+rc=0
