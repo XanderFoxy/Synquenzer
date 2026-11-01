@@ -6713,3 +6713,164 @@ App: `bau/helfer/G9M/index.html` (3 825 591 B; 4.25.2 3 678 856 B → **+143 KB*
 ### Markennamen
 Der Patch bringt keine neuen. In 4.25.2 schon vorhanden und unverändert: „Kodamo“ (nur im ⓘ mit Pflichtsatz, N2-4b-02) und
 „Nord Drum“ in alten Klang-Beschreibungen (bekannt seit vor 4.23.0); „MS 2000“ genau einmal.
+
+
+# CHANGES – VIDSTAGE (Staging Video-Paket) · App 4.25.0 · Format 5 · keine Server-Änderung
+
+`index.html` = `bau/vs/n5-br-V/index.html` (VV1 + VV2 + Fixes) + VV3 aus `helfer-vv3` (Basis `bau/snapshots/VV1.html`)
++ VC2a aus `bau/vs/n5-br-H/index.html` (Basis `bau/werkzeug/vs-base-B.html`).
+
+## 1. Zusammenführung – Fehler, die dabei entstanden und behoben sind
+
+| Fehler | Behebung |
+|---|---|
+| Syntaxfehler: beim Auflösen eines Konflikts war eine Kommentarzeile abgeschnitten | Konflikt neu und verankert aufgelöst (`a878da8`) |
+| VC2a × VV1: der Verlauf-Rekorder lief während des Offline-Renderns mit (Song ist dabei ausgetauscht, `loop.on` aus) | `histBusy()` ist während `UI.vvOff` wahr – kein Durchlauf, kein Keyframe (`90936b0`) |
+| VV2 × VV3: der Test-Schalter `VV.test.spur` hatte Vorrang vor dem Spur-Schnitt der Regie | der Spur-Schnitt der Regie (`view 'spur'`, `st.spur`) geht vor, Test-Schalter nur ohne Schnitt (wie VV3) (`90936b0`) |
+| Tests: feste Pfade auf die Zweige | alle Test-Bibliotheken nehmen `APP` aus der Umgebung (Standard = Staging-Datei), Gegenprobe gegen Zweige mit `APP=…` |
+
+## 2. Zusatz (Xander 31.10.)
+
+- **Video immer in voller Klangqualität:** beim Offline-Rendern (WebCodecs und Rückfall-Weg, beide nutzen den Offline-Ton) steht der
+  CPU-Begrenzer auf Stufe 0 – auch wenn live gerade Stufe 1–3 oder „Eco“ gilt. Nach dem Rendern kommt die Live-Stufe unverändert zurück
+  (`vvSwapIn` setzt `LIM.level = 0`, `vvSwapOut` stellt `LIM` wieder her). Der Klang alter Projekte ändert sich nicht (live nichts geändert).
+- **Bereich [Ganzer Song] / [Auswahl]:** gibt es eine gelbe Auswahl, zeigt die Zeile „Bereich“ im Video-Blatt die Wahl als zwei Knöpfe
+  (44 px hoch); vorgewählt ist [Auswahl] (bisheriges Verhalten). Ohne Auswahl bleibt der Text „ganzer Song“. Vorschau, Standbild und
+  Video erstellen folgen der Wahl. In niedriger Queransicht (≤ 400 px hoch) mit Auswahl rücken die Zeilen von 4 auf 2 px Abstand, damit
+  die Bedienung nicht rollt.
+- **Ausklang auch bei Auswahl:** war schon so (die Auswahl endet wie ein Song-Ende, Hall/Echo klingen bis < −60 dBFS, ≤ 10 s, aus) –
+  jetzt mit eigenem Nachweis (Z3).
+- **Teilname klebt im Song-Bild:** der gelbe Teil-Kopf zeigt seinen Namen am linken Rand der Ansicht, solange der Teil im Bild ist –
+  nie links vom Teilanfang, nie über sein Ende hinaus; Stellung „3/16“ rechts wie bisher.
+
+## 3. Abnahme (Staging-Datei, Ausgaben in `tests/out/`, `tests/n5-v-out/`)
+
+Rechner: 4 Kerne, Läufe zu dritt parallel; lastempfindliche Läufe allein wiederholt.
+
+| Paket | Ergebnis | Läufe |
+|---|---|---|
+| VC2a-01/02/09 | bestanden | `n5-h-01` ALLE BESTANDEN |
+| VC2a-03/04 | bestanden | `n5-h-03` ALLE BESTANDEN (1000 Ereignisse 19,6 KB gzip) |
+| VC2a-06/07/08 | bestanden | `n5-h-06`, `n5-h-07`, `n5-h-08` ALLE BESTANDEN |
+| VC2a-10 | bestanden | `n5-h-10`, `n5-h-menu` (6 Größen) ALLE BESTANDEN, `n5-h-views` 0 Daten-Ereignisse |
+| VC2a-fix | bestanden | `n5-h-ab-02gate`, `-ab-08mk`, `-ab-race`, `-ab-race2`, `-ab-roll2`, `-ab-key`, `-fx-keystate`: wie im Zweig |
+| VV1-01/08 | bestanden | `n5-v-abn-01`, `n5-v-a1` (16:9/9:16 1920×1080/1080×1920, 30/1, Soll 19,474 s; Rückfall webm; ohne beides grau) |
+| VV1-02 | bestanden | `n5-v-a1` Ausklang 4,98 s, Ende < −55 dBFS |
+| VV1-03/06 | bestanden (allein) | `n5-v-a3`: Live/Offline −14,35/−14,36 LUFS, Noten 254 = 254, Solo-Spuren ok, Projekt/Knoten/Werte gleich |
+| VV1-04 | bestanden | `n5-v-abn-04` Laufband Takt 2/6 auf < 1 Bild; „matrixRange“ s. Abweichungen |
+| VV1-07 | bestanden | `n5-v-abn-07` P1 P2 P3 L1 L2 926×428: 0 Knöpfe < 44, nichts abgeschnitten, Bedienung rollt nicht |
+| VV1-fix | bestanden | `n5-v-abn-10b`, `-10c`, `-10d`, `n5-v-fx-keys`, `n5-v-qm-bank`, `-bank2`, `-metro` wie im Zweig |
+| VV2-01/02/04/05 | bestanden | `n5-v-vv2-01` (alle Bilder erkannt), `-vv2-02` (alle Schritte), `-vv2-04z`, `n5-v-qa2-cam` (0 über 5 %), `-vv2-05` |
+| VV2-03 | bestanden (s. Abweichungen) | `n5-v-vv2-03` 9:16: Schnitte, Hash 2× `44b13e35`, Kamera gleich in 1967 Bildern; Blenden fertig nach 6–8 Bildern |
+| VV2-fix | bestanden | `n5-v-qa2-stimme`, `-q2-save`, `-q2-save2`, `-qa2-cuts2`, `-q2-auto`, `-q2-auto2`, `-vv2fix`, `-q2-edit`, `-q2-ui2`, `-vv2fix-undo`, `-q2-toast` wie im Zweig |
+| VV3-01/01b/02 | bestanden | `vv3/vv3-01`, `-01b`, `-02` (Video: 550 Bilder, 128 Noten, 0 Abweichungen) |
+| VV3-03 | bestanden | `vv3/vv3-03`: Spur-Bild ändert nichts, 3-min-Song 9:16 2,39 × schneller als Echtzeit |
+| Zusatz Z1–Z4 | bestanden | `n5-v-vs-zusatz`: Z1 Render mit Stufe 0, danach live wieder 3 · Z2 Wahl ohne/mit Auswahl, 2 Knöpfe 98×44 / 72×44, Tipp [Ganzer Song] → Takte 1–8 · Z3 Auswahl 1–4: Ausklang 5,64 s, Ende −58,7 dB · Z4 Teilname bei Takt 2…16,5 immer im Bild (hoch und quer). Gegenprobe mit der Datei davor: Z1, Z2, Z4 scheitern, Z3 besteht (war schon so). |
+| Smoke | ohne Fehler | `vv3/smoke` |
+
+### Abweichungen
+- **VV2-03 Blende „monoton“** (Schnitt Takt 9 auf Spur 2): Abweichung 9,1 → 10,6 im 5. Bild. Die Einzelbilder (Bild 515–522) zeigen
+  eine saubere Überblendung ohne Flackern; im ausgeblendeten Spur-Bild schlägt währenddessen eine Note an (VV3 umrandet klingende
+  Noten), das Vergleichsbild des Skripts enthält nur das neue Bild. Im Zweig n5-br-V (ohne VV3-Spur-Bild) monoton. Messartefakt aus
+  VV2-Test × VV3-Bild, kein Fehler.
+- **Überholte Test-Erwartung (Regel 26):** `n5-v-abn-07` las mit Auswahl den Text „gelbe Auswahl“; jetzt steht dort die Wahl
+  [Ganzer Song]/[Auswahl] – das Skript liest den gewählten Knopf („Auswahl“). Es meldet „Layout-Sprung“ im Zustand „fertig“, weil es die
+  Auswahl bei offenem Blatt setzt (Zeile 32 → 44 px); in der App liegt das Blatt über allem, die Auswahl ändert sich bei offenem Blatt nicht.
+- Unter Last (3 Läufe parallel): `n5-v-a1` Rückfall webm 11,44 s gegen 11,26 s und `n5-v-a3` Live-Noten 253/254 – allein wiederholt
+  beide bestanden (11,40 s; 254 = 254). „offlineBitEqual“ false wie im Zweig (VV1-fix Abweichungen).
+- `n5-v-abn-04` „matrixRange“ Takt 4 und `n5-v-q2-save2` „Datei in frischer Seite“ (Skript gibt Text statt Objekt): wie im Zweig dokumentiert.
+- `n5-v-q2-edit`, `n5-v-vv2fix` „undoEq/redoEq false“ an denselben Stellen wie mit `APP=bau/vs/n5-br-V/index.html` (Gegenprobe) – Skript-Vergleich, kein Fehler der Zusammenführung.
+- `n5-v-abn-01` Rückfall webm unter Last nur 22 Bilder – wie im Zweig dokumentiert.
+- VC2a-05 (Leistung) und VV1-05 (3-min-Tempo) hier nicht neu gemessen (Rechner geteilt); VV3-03 misst das Tempo mit Spur-Bild (2,39 ×).
+
+### Fragen an Xander
+- keine.
+
+### iPhone (Xander)
+- Song mit gelber Auswahl → Menü → Video: [Ganzer Song] / [Auswahl] tippen, ▶ Vorschau und Video erstellen folgen der Wahl.
+- Video erstellen, während die CPU-Anzeige „CPU 2/3“ zeigt: das Video klingt voll (wie bei ruhigem Gerät).
+- Song-Bild (Bild: Song) mit langem Teil: der Teilname bleibt links stehen, solange der Teil läuft.
+
+
+## G-VID-merge — Zusammenführung · App 4.26.0 (APP_CODE 4026000) · Format 5 · keine Server-Änderung (CLOUD `live: true` bleibt)
+
+Hauptlinie 4.25.2 (Gesang komplett + Hotfix 4.25.1 H1–H8 + 4.25.2 K1–K4) + VIDSTAGE (VV1 Song-Video, VV2 Regie, VV3 Innenleben,
+VC2a Verlauf-Rekorder; Basis vs-base-B 4.23.0) per `git merge-file` (Basis `vs-base-B.html`). Sicherung vorher:
+`mk-wt/index.html.vor-merge-G-VID-merge.html`, Zwischenstand direkt nach dem Merge: `synq-snapshots/G-VID-zwischen.html`.
+
+### Konflikte (5) und Auflösung
+| Stelle | Auflösung |
+|---|---|
+| `VERSION` 4.25.2 / 4.25.0 | `4.26.0` (höher als alle Seiten) |
+| `songInsert…` Ende (Teil einfügen): `s2WriteVox` (S2/G3) / `vvDirWrite` (VV2) | beide Zeilen: erst die Song-Stimme (S2/G3), dann die Regie (VV2) |
+| Marken-Blatt: `s012MarkSheetPaint` (S0/S2) / Zeile „Video“ `vvDirRow` (VV2) | Zeile „Video“ wird an das Blatt gehängt, danach setzt `s012MarkSheetPaint` „Bearbeiten“/„Zusammenfassen“ ein (im Bearbeiten-Modus ersetzt S0 das Blatt wie bisher) |
+| Takt-Blatt: `s2RangeItem()` (S2) / `vvDirRow` (VV2) | beide: Eintrag „Zusammenfassen“ in der Liste, Zeile „Video“ darunter |
+| `Object.assign(SYNQUENZER, …)`: S012/VP/G2/G6/G7 / vvApi/vv2Api/vv3Api | alle acht APIs |
+
+### Zusammenspiel (Auftrag) und Befunde Xander 01.11.
+- **vvSwapIn/vvSwapOut nehmen auch den Gesang mit:** VS-P (wartende Neu-Planungen des Auto-Pegels `VP.cb`), G3 (Vorlauf/Ausklang-Zustand),
+  G6 (Chor-Knoten je Kontext – vorher hätte der Render die Live-Knoten überschrieben), G7 (vorberechnete Transponier-Fassungen) werden vor
+  dem Offline-Durchlauf herausgenommen und danach zurückgelegt. Vor dem Rendern wartet `vvVocReady` (≤ 30 s), bis jede klingende Fassung
+  fertig ist (G4-Effekte, G2/G7 Tonhöhe/Transposition, VS4/VS5 Säubern/Dehnen, G6-Chorstimmen) – das Video klingt wie der fertige Song.
+  Gemessen: Song live −14,93 / Render −14,90 LUFS (Δ 0,03 LU), nur STIMME (Take mit G4 + G6-Terz-Chor) −17,67 / −17,66 LUFS (Δ 0,01 LU).
+- **VC2a × Gesang (gefunden mit `n5-h-01`):** die Undo-Arten der Hauptlinie `gfx` (G4) und `tphase` (VS-L-fix) waren beim Verlauf-Rekorder
+  nicht angemeldet, und `tflag` (STIMME an/aus setzt seit G4 auch `gfx`) meldete nur `stimme` → „Änderung am Rekorder vorbei“ an
+  `tracks/7`. Jetzt: `gfx` → `tracks/i/gfx`, `tflag` → `stimme` + `gfx`, `tphase` → kein Projektfeld (nur Laufzeit). Der Rekorder läuft
+  während des Offline-Renders weiter nicht (`histBusy` bei `UI.vvOff`).
+- **V-A (kein Ton im ersten iPhone-Video):** nie mehr ein Video ohne Ton. (1) Ohne `AudioEncoder` oder bei `isConfigSupported = false`
+  nimmt die App den Aufnahme-Weg (MediaRecorder mit Bild- UND Tonspur); die Tonquelle läuft zusätzlich stumm zum Ausgang (iOS nimmt die
+  Stream-Spur sonst still auf), weitere MP4-Typangabe `avc1.42E01E, mp4a.40.2`. (2) Liefert der WebCodecs-Ton-Kodierer nichts, Stille oder
+  einen Fehler, wechselt die App mit demselben gerenderten Ton auf den Aufnahme-Weg. (3) Nach dem Rendern wird gemessen: Offline-Ton und
+  (Aufnahme-Weg) die fertige Datei dekodiert – Spitze unter −60 dBFS = still → ein anderer Typ, sonst Meldung „Video ohne Ton – nicht
+  gespeichert. Bitte noch einmal versuchen.“ statt einer stillen Datei. Ergebnis im Video-Ergebnis `aChk` (Weg, Pegel Quelle/Datei).
+- **V-B (nichts Erfundenes zeigen):** ein Regler bewegt sich im Video nur noch, wenn eine echte Modulation (Mod-Matrix/Patch mit Stärke ≠ 0,
+  MOD SEQUENCE) auf genau diesen Parameter wirkt. Die Hüllkurve eines Tons, Key-Tracking und Anschlag drehen keinen Regler mehr (Analog:
+  CUTOFF nur mit Mod-Ziel Cutoff, PEGEL nur mit Mod-Ziel Lautstärke; MS-Spur: CUTOFF-Regler, LCD-Zahl und Platten-Regler ohne EG 1 INT /
+  KBD / Anschlag). Ausgeblendet (gibt es in der App nicht): die laufenden LFO-Wellen („Oszilloskop“) und die Filterkurve. Die Hüllkurven
+  bleiben als beschriftete Kurven („EG · HÜLLKURVE (AMP)“, „EG 1 (FILTER)“, „EG 2 (AMP)“). FM-Operatoren, Drum-Felder, Wellenform unverändert.
+- **V-C** (9:16 ganze App, Auswahl je Taktbereich, Auto-Regie auf Neues, Pegelanzeige erst mit App-Anzeige): gemerkt für das nächste
+  Video-Paket, hier nicht gebaut.
+
+### Abnahme (Chromium 1243 headless, 4 Kerne, zu dritt parallel; Skripte `dirigent-test/vid/`, Pfade auf den Scratchpad umgestellt)
+| Lauf | Ergebnis |
+|---|---|
+| `smoke` | ohne Fehler |
+| `orch-mk-check`, `v3-mk2-wellen` | bestanden |
+| `g-vid-abn` (neu: V-A, V-B, Render = live mit Gesang + Chor) | 18/18 |
+| VC2a `n5-h-01` / `-03` / `-06` / `-07` / `-08` / `-10` / `-menu` | 01: 1 ✗, 03: 1 ✗ (Regel 26, s. u.) · übrige bestanden |
+| VV1 `n5-v-abn-01`, `-a1`, `-abn-04`, `-abn-07`, `-abn-10b` | bestanden |
+| VV2 `n5-v-vv2-01`, `-02`, `-03`, `-04z`, `-05`, `n5-v-qa2-cam` | bestanden bis auf `-02 ohneVideo.gleichAlt` (Regel 26) |
+| VV3 `vv3-01`, `-01b`, `-02`, `-03` | bestanden |
+| Zusatz `n5-v-vs-zusatz` | bestanden |
+| Gesang `interplay` / `g6-app` | ALLE GRÜN / 2 ✗ = bekannt aus G-GES (Puffer-Quellen-Zählung + VS-P-Hüllkurve) |
+
+Regel 26 (überholte Test-Erwartungen, nicht angepasst): `n5-h-01` VC2a-02 und `n5-h-03` VC2a-03 erwarten fest `appVersion '4.25.0'` in den
+Keyframes (jetzt 4.26.0, sonst alles gleich); `n5-v-vv2-02 ohneVideo` vergleicht mit der Datei aus `VV1.html` – Unterschied nur
+`appVersion`. In diesem Chromium gibt es keinen AAC-Kodierer: der normale Weg ist hier der Aufnahme-Weg; der WebCodecs-Weg ist mit Opus
+(`T.opus`) geprüft. Nicht gemessen (Zeit): 3-min-Tempo VV1-05, VC2a-05 Leistung; G7-Transposition im Render nur über `vvVocReady` (kein eigener Lauf).
+
+### Fragen an Xander
+- keine.
+
+### iPhone (Xander)
+- Weihnachtslied → Menü → Video → Video erstellen: das Video hat Ton (ohne AudioEncoder über die Aufnahme in Echtzeit).
+- Innenansicht: Regler stehen still, solange keine Modulation eingebaut ist; keine LFO-/Oszilloskop-Felder mehr.
+
+
+Auf 4.25.2 (`bau/snapshots/R-4252.html`). `VERSION '4.25.4'`, APP_CODE 4 025 004, `live: true` unverändert. Patch
+`bau/helfer/HIF/patch-hif.diff` (17 Stellen, ≈ 130 Zeilen, nur Mikro-Code). Kein neues Projekt-Feld; neu im Geräteprofil `uiPrefs.micIn`.
+
+- **Eingang wählen.** `micInList/micInPick/micInOpen`: Eingänge mit Namen nach der Erlaubnis; externer Eingang (nicht eingebaut, nicht
+  Bluetooth) bevorzugt, `deviceId: {exact}`, Rückfall auf Standard bei OverconstrainedError/NotFoundError; erstes Öffnen ohne Namen →
+  einmal umöffnen. Mikro-Blatt „Eingang: [Name ▾]“ (44 px), `micInSet` merkt per Name, schaltet bei laufendem 🎤 sofort um.
+  Mikro-Check (`micStart`) und `micTapGet` nutzen denselben Weg. Warum: iOS öffnete beim Aufnahmebeginn das iPhone-Mikrofon und legte
+  den Ton aufs iPhone (Xander, USB-Interface).
+- **Route halten.** `micSess(ty)`: Sitzungsart nur bei Änderung, nie 'playback', solange 🎤 an ist (`micTapGet`, `micTapPut`, `stStart`).
+  Interface ⇒ Weg Kopfhörer (`stGot`), kein Kurz-Einmessen; H5 (`recMicStart`) verlangt mit Interface kein Profil.
+- **Einzähl-Bild** `recCiHint`: „🎧 Interface: <Name>“.
+- **Neu öffnen** `stReopen/stTrackBind`: devicechange (Spur auf anderem Eingang, Interface weg/neu) und Spur-Ende → derselbe Eingang
+  wird neu geöffnet (Spur-Ende höchstens 3× je 10 s), Toast; Ringpuffer/Worklet bleiben, nur die Quelle wird getauscht.
+- Gemessen: `bau/tests/hif-iface.mjs` 9/9 (Auswahl, Blatt, Wahl, Rückfall, 0 Sitzungswechsel in 2 Takes, Hinweis, devicechange,
+  Spur-Ende, Smoke). Regel 28: `n5-k-golden.mjs` 4.25.4 gegen 4.25.2 320/320 gleich.
+
+Ausgeliefert auf 4.25.3 (3-Wege-Merge Basis R-4252; einziger Konflikt VERSION). hif-iface.mjs auf der ausgelieferten Datei: ALLE GRÜN; Smoke/orch-mk-check/v3-mk2-wellen PASS.

@@ -3646,6 +3646,8 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .stpop .st-btns button{flex:1 1 0;min-height:44px}
 .stpop .st-go.off{border-color:var(--rec);background:var(--rec-dim);color:#fff}
 .stpop .st-hint{margin:8px 0 0;color:var(--text-dim)}
+.stpop .st-in{display:flex;align-items:center;gap:8px;margin:2px 0 6px;font-size:13px}   /* HIF: Eingang: [Name ▾] */
+.stpop .st-in select{flex:1 1 auto;min-width:0;min-height:44px;font-size:16px;padding:0 8px;border:1px solid var(--line);border-radius:var(--r-s);background:var(--chassis);color:var(--text)}
 /* VS2: Stimme → Noten im Mikro-Blatt, leuchtende gesungene Taste, Ergebnis-Blatt */
 .stpop .st-vs{display:flex;gap:6px;margin-top:6px}
 .stpop .st-vs button{flex:1 1 0;min-width:0;min-height:44px;padding:0 6px;font-size:12px}
@@ -17836,7 +17838,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.25.3';
+const VERSION = '4.25.4';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -19467,6 +19469,48 @@ function mkInCycle(i, j) {
   return false;
 }
 const MICTAP = {stream: null, p: null, src: null, out: null, users: new Set(), gum: 0, label: '', err: null, at: 0};
+/* HIF (4.25.4): Eingang wählen und Weg halten (USB-Interface am iPhone). Nach der Erlaubnis liefert enumerateDevices die Eingänge
+   mit Namen; ein externer Eingang (USB/Interface/Kabel-Headset – nicht das eingebaute Mikrofon, nicht Bluetooth) wird bevorzugt
+   und mit deviceId exact geöffnet (scheitert das: Standard-Eingang). Eigene Wahl im Mikro-Blatt → uiPrefs.micIn (Name; 'auto' =
+   extern bevorzugt). micSess setzt die iOS-Sitzungsart nur, wenn sie sich ändert, und nie auf 'playback', solange 🎤 an ist –
+   jeder Wechsel kann die Route neu wählen (Ton plötzlich aus dem iPhone). */
+const MICIN = {list: [], id: '', label: '', ext: false, fb: false, reopen: 0, sessN: 0, sessLog: []};
+function micSess(ty) {
+  const a = navigator.audioSession; if (!a || !ty) return false;
+  if (ty === 'playback' && ST.on && ST.run && !ST.run.released) return false;
+  let cur = null; try { cur = String(a.type); } catch (e) {}
+  if (cur === ty) return false;
+  try { a.type = ty; MICIN.sessN++; MICIN.sessLog.push(ty); if (MICIN.sessLog.length > 20) MICIN.sessLog.shift(); return true; } catch (e) { return false; }
+}
+const micInBuiltin = l => /iphone|ipad|built-?in|eingebaut|integriert|intern|vorder|rück|unten|front|back|bottom/i.test(String(l || ''));
+const micInExt = l => !!l && !micInBuiltin(l) && stGuessRoute(l) !== 'bt';
+const micInShort = l => String(l || '').replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)\s*$/i, '').slice(0, 40);
+async function micInList() {
+  let ds = []; try { ds = await navigator.mediaDevices.enumerateDevices(); } catch (e) { ds = []; }
+  return (MICIN.list = (ds || []).filter(d => d && d.kind === 'audioinput' && d.label && d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications')
+    .map(d => ({id: d.deviceId, label: String(d.label), ext: micInExt(d.label)})));
+}
+// gewünschter Eingang: eigene Wahl (per Name wiedergefunden) vor „extern bevorzugt“; null = Standard des Systems
+function micInPick(L) {
+  const w = uiPrefs().micIn;
+  if (w && w !== 'auto') { const d = L.find(x => x.label === w); if (d) return d; }
+  return L.find(x => x.ext) || null;
+}
+async function micInOpen(prefId) {
+  const ask = id => navigator.mediaDevices.getUserMedia({audio: Object.assign({}, MIC_ASK, id ? {deviceId: {exact: id}} : {})});
+  const stop = st => st.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
+  const devOf = st => { const t = st.getAudioTracks()[0]; let g = {}; try { g = (t && t.getSettings && t.getSettings()) || {}; } catch (e) {} return {id: g.deviceId || '', label: t ? String(t.label || '') : ''}; };
+  const L = await micInList(); let pick = (prefId && L.find(x => x.id === prefId)) || micInPick(L), st = null; MICIN.fb = false;
+  if (pick) { try { st = await ask(pick.id); } catch (e) { if (!e || (e.name !== 'OverconstrainedError' && e.name !== 'NotFoundError')) throw e; MICIN.fb = true; pick = null; } }
+  if (!st) st = await ask(null);
+  if (!pick && !MICIN.fb) {                                   // erste Erlaubnis: erst jetzt gibt es Namen → ggf. den externen Eingang öffnen
+    const p2 = micInPick(await micInList()), cur = devOf(st);
+    if (p2 && p2.id !== cur.id && p2.label !== cur.label) { stop(st); try { st = await ask(p2.id); pick = p2; } catch (e) { MICIN.fb = true; st = await ask(null); } }
+  }
+  const cur = devOf(st);
+  MICIN.id = pick ? pick.id : cur.id; MICIN.label = (pick && pick.label) || cur.label; MICIN.ext = micInExt(MICIN.label);
+  return st;
+}
 function micTapGet(user, lazy) {
   if (!micAvail()) return Promise.resolve(false);
   if (typeof g9MicOn === 'function') g9MicOn();   // G9: Aufnahme hat Vorrang
@@ -19475,8 +19519,8 @@ function micTapGet(user, lazy) {
   if (MICTAP.p) return MICTAP.p;
   const late = lazy && !AU.ctx;   // G-MK8b-merge: the audio engine starts with the granted stream (vocMicSoon)
   if (!late) ensureAudio(); MICTAP.gum++; MICTAP.err = null;
-  try { const ty = stSessType(); if (navigator.audioSession && ty) navigator.audioSession.type = ty; } catch (e) {}   // H6
-  let p; try { p = navigator.mediaDevices.getUserMedia({audio: Object.assign({}, MIC_ASK)}); } catch (e) { p = Promise.reject(e); }
+  micSess(stSessType());   // H6; HIF: nur bei Änderung
+  let p; try { p = micInOpen(); } catch (e) { p = Promise.reject(e); }   // HIF: externer Eingang bevorzugt
   MICTAP.p = p.then(st => {
     MICTAP.p = null;
     if (!MICTAP.users.size) { st.getTracks().forEach(t => { try { t.stop(); } catch (e) {} }); return false; }
@@ -19484,7 +19528,7 @@ function micTapGet(user, lazy) {
     MICTAP.stream = st; MICTAP.at = performance.now(); const t = st.getAudioTracks()[0]; MICTAP.label = t ? String(t.label || '') : '';
     if (t) t.addEventListener('ended', () => { if (MICTAP.stream === st) micTapLost(); });
     micTapNodes(); mkInRoute(); return true;
-  }, e => { MICTAP.p = null; MICTAP.err = e; MICTAP.users.delete(user); if (!MICTAP.users.size) { try { if (navigator.audioSession && !(ST && ST.run)) navigator.audioSession.type = 'playback'; } catch (x) {} } return false; });
+  }, e => { MICTAP.p = null; MICTAP.err = e; MICTAP.users.delete(user); if (!MICTAP.users.size && !(ST && ST.run)) micSess('playback'); return false; });
   return MICTAP.p;
 }
 function micTapNodes() { const c = AU.ctx; if (!c || !MICTAP.stream || (MICTAP.out && MICTAP.out.context === c)) return; try { MICTAP.src = c.createMediaStreamSource(MICTAP.stream); MICTAP.out = c.createGain(); MICTAP.src.connect(MICTAP.out); } catch (e) { logErr(e); } }
@@ -19494,7 +19538,7 @@ function micTapPut(user) {
   try { if (MICTAP.src) MICTAP.src.disconnect(); } catch (e) {} try { if (MICTAP.out) MICTAP.out.disconnect(); } catch (e) {}
   MICTAP.src = null; MICTAP.out = null;
   if (st) st.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
-  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  micSess('playback');   // HIF: nicht, solange 🎤 an ist
   if (st) mkInRoute();
 }
 function micTapLost() { const had = MICTAP.users.has('voc'); for (const u of [...MICTAP.users]) if (u !== 'st') micTapPut(u); if (had) toast('Mikrofon beendet · in QUELLE neu starten'); }
@@ -22430,6 +22474,7 @@ function recCiTgt() {
 function recCiHint() {
   const vox = (rec.state !== 'off' && rec.vox) || !!(R.songRec && R.songRec.vox);
   if (!vox) return '';
+  if (ST.on && MICIN.ext) return '🎧 Interface: ' + micInShort(MICIN.label);   // HIF
   return ST.route === 'speaker' ? '🔈 Ohne Kopfhörer kommt die Musik leise aus der Hörmuschel – Kabel-Kopfhörer einstecken' : ST.route === 'bt' ? 'Bluetooth: Telefonklang und Verzögerung – besser Kabel-Kopfhörer' : '';
 }
 // H4 (4.25.1): Schläge bis zum Aufnahme-Start (Szene: ● wartet auf den Taktstrich; Song: Vorlauf) – nur Gesangs-Aufnahmen, sonst null
@@ -22454,14 +22499,17 @@ const MICW = {iv: 0, t0: 0, cal: false, calSeen: false, okAt: 0};
 function recMicWaitEnd() { if (MICW.iv) clearInterval(MICW.iv); MICW.iv = 0; UI.dirty.all = true; }
 function recMicStart() {
   if (!micAvail()) { toast('Kein Mikrofon – Gesang braucht 🎤 (Pages-Seite in Safari)'); return; }
-  const P = stProf(), rt = P.route || 'speaker';
-  if (!P.prof[rt]) { stStart({}); toast('Erst einmessen, dann ●'); return; }
+  const P = stProf(), rt = P.route || 'speaker', need = !P.prof[rt] && !MICIN.ext;   // HIF: Interface (Kopfhörer-Weg) braucht kein Einmessen
   if (!stStart({})) { toast('Mikro noch nicht bereit – ● noch einmal'); return; }
   toast('🎤 an – gleich geht\'s los');
-  Object.assign(MICW, {t0: performance.now(), calSeen: false, okAt: 0, S, ti: R.selT, si: R.selS});
+  Object.assign(MICW, {t0: performance.now(), calSeen: false, okAt: 0, S, ti: R.selT, si: R.selS, need});
   MICW.iv = setInterval(() => {
     if (!ST.on || ST.phase === 'off' || !ST.run) { recMicWaitEnd(); return; }       // stFail: dessen Meldung genügt
     if (MICW.S !== S || R.selT !== MICW.ti || R.selS !== MICW.si || rec.state !== 'off') { recMicWaitEnd(); toast('Aufnahme abgebrochen'); return; }   // anderes Projekt / andere Zelle
+    if (MICW.need && (ST.phase === 'live' || ST.phase === 'cal')) {   // HIF: Weg steht fest – ohne Profil und ohne Interface wie bisher
+      if (!MICIN.ext && !stProf().prof[ST.route]) { recMicWaitEnd(); toast('Erst einmessen, dann ●'); return; }
+      MICW.need = false;
+    }
     if (ST.cal) MICW.calSeen = true;
     // Kurz-Einmessung erwartet wie in stGot (der Weg steht erst nach „live“ fest): Lautsprecher mit Profil
     const calExp = ST.route === 'speaker' && !!stProf().prof.speaker;
@@ -39017,7 +39065,7 @@ function micStart(opts) {
   try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) { r.log.push('audioSession: ' + (e && e.name)); }
   if (!c) { micFail(run, 'audio', {name: 'NoAudioContext', message: 'Web Audio fehlt'}); return true; }
   MIC.gum++;
-  let p; try { p = navigator.mediaDevices.getUserMedia({audio: Object.assign({}, MIC_ASK)}); } catch (e) { p = Promise.reject(e); }
+  let p; try { p = micInOpen(); } catch (e) { p = Promise.reject(e); }   // HIF: derselbe Eingang wie 🎤
   const wk = micWorklet(c);
   p.then(stream => micGot(run, stream, wk).catch(e => micFail(run, 'aufbau', e)), e => micFail(run, 'getUserMedia', e));
   run.vis = () => { if (document.hidden && MIC.run === run && !run.stopped && run.stream) micFail(run, 'unterbrochen', {name: 'Interrupted', message: 'Seite verlassen – Messung abgebrochen'}); };
@@ -39763,7 +39811,7 @@ function stStart(opts) {
   const c = ensureAudio();                                    // im selben Tipp: resume (I11)
   const run = ST.run = {opts, t0: performance.now(), nodes: [], srcs: [], timers: [], stream: null, stopped: false, frames: 0, gaps: 0, dz: null, dl: null, flAt: null, flV: false, cal: null};
   ST.on = true; ST.phase = 'start'; ST.err = null; ST.warn = []; ST.starts++; ST.floorDb = null; ST.lastDrift = null;
-  try { const ty = stSessType(); if (navigator.audioSession && ty) navigator.audioSession.type = ty; } catch (e) {}   // H6: ?stsess=par|auto|none
+  micSess(stSessType());   // H6: ?stsess=par|auto|none; HIF: nur bei Änderung
   stRender();
   if (!c) { stFail(run, {name: 'NoAudioContext'}); return true; }
   wakeAcquire();                                              // beim Singen bleibt der Bildschirm an
@@ -39785,17 +39833,16 @@ async function stGot(run, stream, wkP) {
   const tr = stream.getAudioTracks()[0]; let st = {};
   try { st = (tr && tr.getSettings && tr.getSettings()) || {}; } catch (e) {}
   run.track = tr; run.trackRate = st.sampleRate || null; run.label = tr ? String(tr.label || '') : '';
-  if (tr) { tr.onended = () => { if (ST.run === run && !run.releasing) stFail(run, {name: 'TrackEnded'}); };
-    tr.onmute = () => { run.muteAt = ST.ring ? ST.ring.end : -1; }; tr.onunmute = () => { if (run.muteAt >= 0 && ST.ring) stDrop(run.muteAt, ST.ring.end - run.muteAt, 'stumm'); run.muteAt = -1; }; }
-  // Weg: der Name der Spur entscheidet, sonst die letzte eigene Wahl (Kopfhörer ohne Mikrofon ändern den Namen nicht)
-  const g = run.opts.route || stGuessRoute(run.label), P = stProf();
+  stTrackBind(run, tr);
+  // Weg: der Name der Spur entscheidet, sonst die letzte eigene Wahl (Kopfhörer ohne Mikrofon ändern den Namen nicht); HIF: Interface = Kopfhörer-Weg
+  const g = run.opts.route || (MICIN.ext ? 'wired' : stGuessRoute(run.label)), P = stProf();
   if (run.opts.route) stSetRoute(run.opts.route, 'gewählt'); else if (g !== 'speaker') stSetRoute(g, 'erkannt'); else stSetRoute(P.route || 'speaker', P.route ? 'gewählt' : 'geraten');
   if (run.trackRate && run.trackRate !== sr) { ST.warn.push('rate'); toast('Mikrofon ' + micDe(run.trackRate / 1000, 1) + ' kHz, App ' + micDe(sr / 1000, 1) + ' kHz · die App misst nach und gleicht aus'); }
   const ok = await wkP.catch(() => false);
   if (ST.run !== run || run.stopped) return;
   if (!ok) { stFail(run, {name: 'NoWorklet'}); return; }
   const node = new AudioWorkletNode(c, 'synq-stimme', {numberOfInputs: 2, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 1, channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: {block: ST_BLOCK, mpm: vsLiveOpts()}});
-  const src = c.createMediaStreamSource(stream), bus = c.createGain(), sink = c.createGain(); sink.gain.value = 0;
+  const src = c.createMediaStreamSource(run.stream), bus = c.createGain(), sink = c.createGain(); sink.gain.value = 0;   // HIF: run.stream (neu geöffnet?)
   src.connect(node, 0, 0); bus.connect(node, 0, 1); bus.connect(c.destination); node.connect(sink); sink.connect(c.destination);
   if (AU.M && AU.M.ceil) AU.M.ceil.connect(node, 0, 1);       // Referenz = was die App spielt (nach dem Master)
   node.port.onmessage = e => { const d = e.data; if (d && d.lit !== undefined) vsLitMsg(run, d); else stBlock(run, d); };   // VS2: Taste an/aus
@@ -39818,11 +39865,54 @@ async function stGot(run, stream, wkP) {
 // Gerät gewechselt (Kopfhörer ein/aus): Weg neu raten; ohne Profil für den neuen Weg ein Hinweis mit [Einmessen]
 async function stDevChange(run) {
   if (ST.run !== run || run.stopped) return;
+  if (MICIN.id && !run.reBusy && (run.devN || 0) < 6) {      // HIF: gewählter Eingang weg/gewechselt oder Interface neu da → neu öffnen
+    const L = await micInList(), tr = run.track, here = L.find(x => x.id === MICIN.id), want = micInPick(L);
+    if (ST.run !== run || run.stopped) return;
+    const moved = !tr || tr.readyState === 'ended' || (here && tr.label && tr.label !== MICIN.label);
+    if (moved || (!here && MICIN.ext) || (!MICIN.ext && want && want.ext)) { run.devN = (run.devN || 0) + 1; stReopen(run, 'gerät', here ? MICIN.id : want ? want.id : ''); return; }
+    if (MICIN.ext) return;                                    // Interface bleibt: Weg bleibt Kopfhörer
+  }
   let lab = run.track ? String(run.track.label || '') : '';
   try { const ds = await navigator.mediaDevices.enumerateDevices(); const d = ds.find(x => x.kind === 'audioinput' && x.deviceId === 'default') || ds.find(x => x.kind === 'audioinput'); if (d && d.label) lab = d.label; } catch (e) {}
   const g = stGuessRoute(lab); if (g === ST.route) return;
   stSetRoute(g, 'erkannt');
   toast('Weg: ' + ST_ROUTES[g] + (stProf().prof[g] ? '' : ' · noch nicht eingemessen'), stProf().prof[g] ? null : {label: 'Einmessen', fn: () => { stSheet(); stCal('voll'); }});
+}
+// HIF: Mikro-Spur binden (Ende → mit derselben deviceId neu öffnen statt still aufs iPhone zu fallen)
+function stTrackBind(run, tr) {
+  if (!tr) return;
+  tr.onended = () => {                                        // höchstens 3 Neustarts je 10 s, sonst wie bisher aus
+    if (ST.run !== run || run.releasing) return; const t = performance.now(); run.endT = (run.endT || []).filter(x => t - x < 10000);
+    if (MICIN.id && run.endT.length < 3) { run.endT.push(t); stReopen(run, 'ende', MICIN.id); } else stFail(run, {name: 'TrackEnded'}); };
+  tr.onmute = () => { run.muteAt = ST.ring ? ST.ring.end : -1; }; tr.onunmute = () => { if (run.muteAt >= 0 && ST.ring) stDrop(run.muteAt, ST.ring.end - run.muteAt, 'stumm'); run.muteAt = -1; };
+}
+async function stReopen(run, why, prefId) {
+  if (ST.run !== run || run.stopped || run.reBusy) return false;
+  run.reBusy = true;
+  const was = MICIN.label, wasExt = MICIN.ext, old = run.stream;
+  try {
+    if (old) old.getTracks().forEach(t => { t.onended = null; t.onmute = null; t.onunmute = null; try { t.stop(); } catch (e) {} });
+    const st = await micInOpen(prefId);
+    if (ST.run !== run || run.stopped) { st.getTracks().forEach(t => { try { t.stop(); } catch (e) {} }); return false; }
+    const c = AU.ctx, tr = st.getAudioTracks()[0];
+    MICTAP.stream = st; MICTAP.at = performance.now(); MICTAP.label = tr ? String(tr.label || '') : '';
+    if (tr) tr.addEventListener('ended', () => { if (MICTAP.stream === st) micTapLost(); });
+    if (MICTAP.out && MICTAP.out.context === c) { try { if (MICTAP.src) MICTAP.src.disconnect(); } catch (e) {} try { MICTAP.src = c.createMediaStreamSource(st); MICTAP.src.connect(MICTAP.out); } catch (e) { logErr(e); } } else micTapNodes();
+    if (run.node) { const src = c.createMediaStreamSource(st); try { run.nodes[0].disconnect(); } catch (e) {} src.connect(run.node, 0, 0); run.nodes[0] = src; }
+    run.stream = st; run.track = tr; run.label = MICTAP.label; stTrackBind(run, tr);
+    MICIN.reopen++;
+    if (MICIN.ext) { if (ST.route !== 'wired') stSetRoute('wired', 'erkannt'); } else if (wasExt) stSetRoute(stGuessRoute(MICIN.label), 'erkannt');
+    const nm = micInShort(MICIN.label) || 'Mikrofon';
+    toast(why === 'wahl' ? 'Eingang: ' + nm : MICIN.label === was ? '🎧 Eingang neu geöffnet: ' + nm : wasExt && !MICIN.ext ? '⚠ Interface getrennt · jetzt ' + nm : '🎧 Eingang: ' + nm);
+    stRender(); return true;
+  } catch (e) { stFail(run, e); return false; } finally { run.reBusy = false; }
+}
+// HIF: Eingang im Mikro-Blatt wählen ('auto' = extern bevorzugt), per Name gemerkt; bei laufendem 🎤 sofort umschalten
+function micInSet(v) {
+  v = v === 'auto' || !v ? 'auto' : String(v).slice(0, 120); setUiPref('micIn', v);
+  const run = ST.run;
+  if (run && !run.stopped) { const L = MICIN.list, d = v === 'auto' ? micInPick(L) : L.find(x => x.label === v); if (d && d.id !== MICIN.id) stReopen(run, 'wahl', d.id); }
+  stRender(); return v;
 }
 function stFire(run, buf, t) {
   const c = AU.ctx, s = c.createBufferSource(); s.buffer = buf; s.connect(run.bus); s.start(t); run.srcs.push(s);
@@ -40114,6 +40204,7 @@ function stMeter(force) {
 }
 function stSheet(anchor) {
   if (!micAvail()) return false;
+  micInList().then(() => { if (UI.pop && UI.pop.name === 'stimme') stSheetFill(UI.pop.el); });   // HIF: Eingänge (Namen erst nach der Erlaubnis)
   if (UI.pop && UI.pop.name === 'stimme') { stSheetFill(UI.pop.el); return true; }
   const a = anchor || (ST.ui.row && !ST.ui.row.hidden ? ST.ui.row : isLand() ? EL.bMicT : EL.segMic);
   openPop(a, p => { p.classList.add('stpop', 'pan-y'); guardTouch(p); stSheetFill(p); bindStSheet(p); }, {name: 'stimme'});
@@ -40126,6 +40217,9 @@ function stSheetFill(p) {
   const ord = steps ? steps.map(x => x[0]) : [], ci = cal ? ord.indexOf(cal.step) : -1;
   let html = `<div class="st-c1"><h4>Mikrofon <small class="st-on">${esc(stat)}</small></h4>`;   // VS-L-fix: drei Teile (quer niedrig: zwei Spalten, sonst wie bisher untereinander)
   if (ST.on) html += `<div class="st-lvl"><span class="mr-m"><i style="width:${Math.max(0, Math.min(100, (ST.lvl + 60) / 60 * 100)).toFixed(0)}%"></i></span><b>${ST.lvl > -100 ? '−' + Math.abs(Math.round(ST.lvl)) + ' dB' : '–'}</b></div>`;
+  if (MICIN.list.length) { const w = uiPrefs().micIn || 'auto';   // HIF: Eingang: [Name ▾]
+    html += '<div class="st-in"><span>Eingang:</span><select id="stIn" aria-label="Eingang">' + [['auto', 'Automatisch' + (MICIN.label && ST.on ? ' · ' + micInShort(MICIN.label) : ' (extern bevorzugt)')]].concat(MICIN.list.map(d => [d.label, micInShort(d.label) + (d.ext ? ' · extern' : '')]))
+      .map(([v, l]) => `<option value="${esc(v)}"${v === w ? ' selected' : ''}>${esc(l)}</option>`).join('') + '</select></div>'; }
   html += '<div class="st-lbl">Weg</div>' + segHTML('stRoute', [['speaker', '🔈 Lautsprecher'], ['wired', '🎧 Kabel'], ['bt', '🎧 Bluetooth']], rt);
   const latTx = ST.latMs != null ? micDe(ST.latMs, 1) + ' ms' : stLatFor(rt).ms != null ? micDe(stLatFor(rt).ms, 1) + ' ms' : '–';
   const how = P ? (P.how === 'hand' ? 'von Hand' : 'eingemessen ' + stDate(P.at)) : ST.latHow === 'gemessen' ? 'kurz geprüft · noch nicht eingemessen' : 'geschätzt';
@@ -40143,7 +40237,7 @@ function stSheetFill(p) {
     `<div class="st-vs"><button class="rb${vc.snap ? ' on' : ''}" data-vs="snap" aria-pressed="${vc.snap}">${vc.snap ? '✓ In Tonart einrasten' : 'Frei (nicht einrasten)'}</button>` +
     (vc.src === 'inst' ? `<button class="rb${vc.lock ? ' on' : ''}" data-vs="lock" aria-pressed="${vc.lock}">${vc.lock ? '✓ ' : ''}Oktave sperren</button>` : '') + '</div></div>';
   html += `<div class="st-c3"><div class="st-btns"><button class="rb st-cal"${!ST.on || cal || ST.phase !== 'live' ? ' disabled' : ''}>Einmessen</button><button class="rb st-go ${ST.on ? 'off' : ''}">${ST.on ? '✕ Mikro aus' : '🎤 Mikro an'}</button></div>`;
-  html += `<p class="small st-hint">${rt === 'speaker' ? 'Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber.' : 'Zum Einmessen mit Kopfhörern einen Ohrhörer direkt ans Mikrofon halten.'}</p></div>`;
+  html += `<p class="small st-hint">${MICIN.ext && ST.on ? 'Interface: Kopfhörer-Weg, kein Einmessen nötig.' : rt === 'speaker' ? 'Mit Kopfhörer klingt die Musik normal und dein Gesang bleibt sauber.' : 'Zum Einmessen mit Kopfhörern einen Ohrhörer direkt ans Mikrofon halten.'}</p></div>`;
   if (p._h !== html) { p._h = html; p.innerHTML = html; }
 }
 // VS-L: Zeile „Melodieerkennung“ [An] [Aus]; bei Aus darunter der kurze Satz
@@ -40151,6 +40245,7 @@ const vsMelRowHTML = vc => '<div class="st-mel"><span>Melodieerkennung</span>' +
   (vc.mel ? '' : '<p class="small st-melx">Aufnahme nur als Gesang auf der STIMME-Spur – keine Noten.</p>');
 const stDate = s => { const d = new Date(s); if (!isFinite(d)) return ''; const z = n => String(n).padStart(2, '0'); return z(d.getDate()) + '.' + z(d.getMonth() + 1) + '. ' + z(d.getHours()) + ':' + z(d.getMinutes()); };
 function bindStSheet(p) {
+  p.addEventListener('change', e => { const t = e.target; if (t && t.id === 'stIn') { haptic('tick'); micInSet(t.value); } });   // HIF
   onTap(p, b => {
     if (b.closest('#stRoute')) { haptic('tick'); stSetRoute(b.dataset.v, 'gewählt'); return; }
     if (b.closest('#vsSrc')) { haptic('tick'); vsCfgSet({src: b.dataset.v}); return; }      // VS2
@@ -47092,6 +47187,8 @@ const SYNQUENZER = {
     profiles: JSON.parse(JSON.stringify(stProf().prof)), row: !!(ST.ui.row && !ST.ui.row.hidden), rowSv: !!(ST.ui.sv && !ST.ui.sv.hidden), sheet: !!(UI.pop && UI.pop.name === 'stimme')}),
   stimmeStart: o => stStart(o || {}), stimmeStop: why => stStop(why || 'aus'), stimmeToggle: () => stToggle(),
   // H6/H1 (4.25.1, nur Tests): Sitzungsart setzen; Ausgangspegel am Master (AnalyserNode an AU.M.ceil) – ohne Argumente starten, dann RMS in [a, b) Schlägen
+  micIn: () => ({id: MICIN.id, label: MICIN.label, ext: MICIN.ext, fb: MICIN.fb, reopen: MICIN.reopen, sessN: MICIN.sessN, sessLog: MICIN.sessLog.slice(), list: MICIN.list.map(d => Object.assign({}, d))}),   // HIF
+  micInSet: v => micInSet(v), micInList: () => micInList().then(L => L.map(d => Object.assign({}, d))),
   stimmeSess: v => { UI.stsess = v === 'auto' || v === 'none' ? v : 'par'; setUiPref('stsess', UI.stsess); return UI.stsess; },
   g10OutRms: (a, b) => {
     const c = AU.ctx; if (!c || !AU.M || !AU.M.ceil) return null;
