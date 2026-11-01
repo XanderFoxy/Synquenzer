@@ -1,0 +1,40 @@
+OK   ND1-22a RT60 p1 0.877 s (Soll 0.8)
+OK   ND1-22a RT60 p2 1.385 s (Soll 1.3)
+OK   ND1-22a RT60 p3 2.096 s (Soll 2)
+OK   ND1-22a RT60 p4 3.224 s (Soll 3.2)
+OK   ND1-22a RT60 St 1.663 s (Soll 1.6)
+OK   ND1-22a RT60 hA 3.012 s (Soll 3)
+OK   ND1-22b COLOR -9 -3 dB bei 1503 Hz (Soll 1500)
+OK   ND1-22b COLOR -4.5 -3 dB bei 5476 Hz (Soll 5477)
+OK   ND1-22b COLOR 4.5 -3 dB bei 172 Hz (Soll 173)
+OK   ND1-22b COLOR 9 -3 dB bei 1500 Hz (Soll 1500)
+OK   ND1-22c COLOR 0 umgangen (bitgleich trocken), 0.00 dB
+OK   ND1-23a Wirbel 1/64 bei 180 M-KLICK -99.0 dB bei 0.000 s
+OK   ND1-23b Mono-Gruppe offene nach 4 ms -86.2 dB
+OK   ND1-23c mLvl 0→50 M-KLICK 0.9 dB bei 0.500 s
+OK   ND1-23c mPan -9→9 M-KLICK 1.1 dB bei 1.216 s
+OK   ND1-23c mEqg -9→9 M-KLICK 0.7 dB bei 1.316 s
+OK   ND1-23c mEqf 0→50 M-KLICK 1.0 dB bei 1.224 s
+OK   ND1-23c mDst 0→50 M-KLICK 1.1 dB bei 0.308 s
+OK   ND1-23c mRvb 0→50 M-KLICK 0.9 dB bei 0.600 s
+OK   ND1-23c mDly 0→50 M-KLICK 0.9 dB bei 0.370 s
+OK   ND1-23d Echo-RATE 0→99 auf Fahne M-KLICK 2.1 dB bei 1.256 s
+OK   ND1-23e Halltyp-Wechsel M-KLICK 2.7 dB bei 0.928 s
+OK   ND1-23f Programmwechsel auf klingendem Kanal M-KLICK 0.9 dB bei 0.596 s
+OK   ND1-23g Panik nach 50 ms -600.0 dBFS
+OK   ND1-24a Li v 0,5 -6.021 dB
+OK   ND1-24b L1 v 0,35 -5.72 dB (Soll -5.7)
+OK   ND1-24b L2 v 0,35 -3.60 dB (Soll -3.6)
+OK   ND1-24b L3 v 0,35 -2.45 dB (Soll -2.5)
+OK   ND1-24b O1 v 0,35 -2.62 dB (Soll -2.6)
+OK   ND1-24b O2 v 0,35 -1.21 dB (Soll -1.2)
+OK   ND1-24c Klangziel unabhängig 1439.2 / 1439.2 Hz
+OK   ND1-25a Akzent 0,5 3.67 dB
+OK   ND1-25b TUNE +12 1200.00 Cent
+OK   ND1-25c DECAY ×2 ×1.999
+OK   ND1-26 bitgleich 48000 M-NULL = -∞
+OK   ND1-26 bitgleich 44100 M-NULL = -∞
+OK   ND1-27 Parameterflug 1 min NaN 0, DC -0.00002, Spitze 11.0 dBFS, late 0
+OK   ND1-29 ASCII + Marke Nicht-ASCII 0, Markenwort nein
+
+195/195 bestanden (48000 Hz)

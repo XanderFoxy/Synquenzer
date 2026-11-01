@@ -18,7 +18,7 @@ Neu kommt die Drum-Synthese **North** dazu (Paket `north-4261`, gebaut auf 4.26.
 ### Was du hörst
 
 - North-Pads laufen über die Drum-Spur (Spur-FX, Sends, Mute/Solo wie jedes Pad) und kommen zeitgenau (0 verspätete Schläge).
-- North spielt zusammen mit der Chor-Gruppe aus 4.27.0. Im 3-Minuten-Lauf gab es mit beiden zusammen keinen Knackser und keinen Aussetzer.
+- North spielt zusammen mit der Chor-Gruppe aus 4.27.0. Im 3-Minuten-Lauf am Rechner gab es mit beiden zusammen keinen Knackser und keine Lücke. Ob das iPhone mithält, zeigt erst dein Test.
 - Im Song-Video klingen North-Pads wie live.
 - Projekte ohne North-Pad klingen und laden wie in 4.27.0. Das North-Modul wird dann gar nicht geladen.
 
@@ -36,4 +36,5 @@ Neu kommt die Drum-Synthese **North** dazu (Paket `north-4261`, gebaut auf 4.26.
 8. Song mit Stimme und Chor-Gruppe plus Kit „Schräg“ **mindestens 3 Minuten** laufen lassen. Achte auf Knackser,
    Aussetzer und ob das Handy heiß wird.
 9. Speichern, App schließen, wieder öffnen, Projekt laden. North-Pads, Kit und Chor sind wie vorher.
-10. Song-Video von diesem Projekt machen. North und Chor sind im Video zu hören.
+10. Song-Video von diesem Projekt machen. North und Chor müssen im Video zu hören sein. Fehlt der Chor nach dem Neu-Laden,
+    bitte melden. Am Rechner war das auch schon in 4.27.0 so (siehe STATUS, Offen 3).

@@ -2,6 +2,8 @@
 // Alt (R-4270) baut den Song, speichert ihn und rechnet den Video-Ton; neu lädt die Datei, speichert wieder (deep-equal ohne
 // Zeitstempel) und rechnet denselben Video-Ton: gleiche Noten, Pegel ±0,1 dB, kein North-Modul geladen.
 // Aufruf: node north-chor-songs.mjs [neu.html] [alt.html]
+// Befund 01.11.: In 4.27.0 (Gegenlauf alt/alt) genauso: nach importJSON in einer neuen Seite wird der Chor fürs Video nicht fertig
+// (g6pWaitAll 180 s, miss 2) – Altlast 4.27.0, nicht North. Die Prüfung gilt daher im Vergleich neu/alt gegen alt/alt.
 import {createRequire} from 'module'; const {chromium} = createRequire(import.meta.url)('playwright');
 import {setup} from './g6ph-lib.mjs';
 const NEW = process.argv[2] || new URL('../index.html', import.meta.url).pathname;

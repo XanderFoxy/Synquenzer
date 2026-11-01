@@ -1,0 +1,28 @@
+OK   Smoke Fehler [], MD_NAME North, engineInfo().md {"name":"North","state":"idle","how":null,"err":null,"loadMs":0,"warm":null,"adds":0,"nodes":0,"load":0,"voices":0,"late":0}
+OK   Regel 28: kein Modul beim Start addModule synq-md 0, Knoten 0
+OK   Offline = Node-Shim 48000 M-NULL -162.8 dB, gleiche Samples 86535/96000
+OK   ND1-26 Chromium bitgleich 48000 zwei Render gleich
+OK   Offline = Node-Shim 44100 M-NULL -162.1 dB, gleiche Samples 77379/88200
+OK   ND1-26 Chromium bitgleich 44100 zwei Render gleich
+OK   ND1-28 Modul-Laden addModule 5.8 / 4.7 / 5.8 ms (Tabellen + Übersetzen; Spec ≤ 10 ms nur Tabellen)
+FAIL ND1-28 Leerlauf 0.400 %
+FAIL ND1-28 CPU A3 (A2–A5 zwei Osz.) je Stimme 0.375 % (Grenze 0.15 %), 4 Kanäle = 1.50 %, Stimmen 4
+FAIL ND1-28 CPU A6 je Stimme 0.275 % (Grenze 0.15 %), 4 Kanäle = 1.10 %, Stimmen 4
+FAIL ND1-28 CPU t2 je Stimme 0.225 % (Grenze 0.15 %), 4 Kanäle = 0.90 %, Stimmen 4
+FAIL ND1-28 CPU r2 je Stimme 0.275 % (Grenze 0.15 %), 4 Kanäle = 1.10 %, Stimmen 4
+FAIL ND1-28 CPU P4 je Stimme 0.225 % (Grenze 0.15 %), 4 Kanäle = 0.90 %, Stimmen 4
+FAIL ND1-28 CPU F1 je Stimme 0.300 % (Grenze 0.15 %), 4 Kanäle = 1.20 %, Stimmen 4
+FAIL ND1-28 CPU F2 je Stimme 0.350 % (Grenze 0.15 %), 4 Kanäle = 1.40 %, Stimmen 4
+FAIL ND1-28 CPU F4 je Stimme 0.275 % (Grenze 0.15 %), 4 Kanäle = 1.10 %, Stimmen 4
+FAIL ND1-28 CPU F3 je Stimme 0.375 % (Grenze 0.25 %), 4 Kanäle = 1.50 %, Stimmen 4
+FAIL ND1-28 CPU C2 je Stimme 0.475 % (Grenze 0.25 %), 4 Kanäle = 1.90 %, Stimmen 4
+FAIL ND1-28 CPU C3 je Stimme 0.550 % (Grenze 0.25 %), 4 Kanäle = 2.20 %, Stimmen 4
+FAIL ND1-28 CPU d6 (16 Moden) je Stimme 0.350 % (Grenze 0.25 %), 4 Kanäle = 1.40 %, Stimmen 4
+FAIL ND1-28 CPU H1 (32 Moden) je Stimme 0.450 % (Grenze 0.35 %), 4 Kanäle = 1.80 %, Stimmen 4
+FAIL ND1-28 CPU C1 (48 Moden) je Stimme 0.675 % (Grenze 0.5 %), 4 Kanäle = 2.70 %, Stimmen 4
+FAIL ND1-28 CPU NOISE 24 dB je Stimme 0.325 % (Grenze 0.1 %), 4 Kanäle = 1.30 %, Stimmen 4
+FAIL ND1-28 schlimmster Fall (12 × C1 + NOISE + Dist + Echo, Hall) 16.50 %, Stimmen 12, late 0
+FAIL ND1-28 typischer Groove (Kit Fell & Holz, 16tel) 3.80 %, late 0
+
+7/25 bestanden
+FEHLT: ND1-28 Leerlauf, ND1-28 CPU A3 (A2–A5 zwei Osz.), ND1-28 CPU A6, ND1-28 CPU t2, ND1-28 CPU r2, ND1-28 CPU P4, ND1-28 CPU F1, ND1-28 CPU F2, ND1-28 CPU F4, ND1-28 CPU F3, ND1-28 CPU C2, ND1-28 CPU C3, ND1-28 CPU d6 (16 Moden), ND1-28 CPU H1 (32 Moden), ND1-28 CPU C1 (48 Moden), ND1-28 CPU NOISE 24 dB, ND1-28 schlimmster Fall (12 × C1 + NOISE + Dist + Echo, Hall), ND1-28 typischer Groove (Kit Fell & Holz, 16tel)

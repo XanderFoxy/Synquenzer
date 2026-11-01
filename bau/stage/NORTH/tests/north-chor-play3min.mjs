@@ -14,8 +14,8 @@ await p.goto('file://' + file); await p.waitForFunction(() => window.SYNQUENZER 
 await p.evaluate(s => { window.__SEC = s; }, SEC);
 const BARS = Math.ceil(SEC / 2) + 2, AT = [8, 24, 40, 56, 72].filter(x => x + 4 <= BARS);
 await g6setup(p, {bars: BARS, at: AT});
-const STY = ['80', 'gospel', 'pop', 'barber', 'wave'];
-const chor = await p.evaluate(async ([AT, STY]) => { const out = []; for (let k = 0; k < AT.length; k++) { const ok = await SYNQUENZER.g6pStyle({vox: 'V' + (k + 1)}, STY[k]); const i = SYNQUENZER.g6Info({vox: 'V' + (k + 1)}); out.push({ok, v: i.chor.v, style: i.chor.style, n: i.chor.voices.length}); } return out; }, [AT, STY]);
+const STY = ['80', 'gospel', 'pop', 'barber', 'rock'];
+const chor = await p.evaluate(async ([AT, STY]) => { const out = []; for (let k = 0; k < AT.length; k++) { const ok = await SYNQUENZER.g6pStyle({vox: 'V' + (k + 1)}, STY[k]); const i = SYNQUENZER.g6Info({vox: 'V' + (k + 1)}); out.push({ok, vox: 'V' + (k + 1), sty: STY[k], v: i && i.chor ? i.chor.v : null, style: i && i.chor ? i.chor.style : null, n: i && i.chor ? i.chor.voices.length : 0}); } return out; }, [AT, STY]);
 const cdp = await p.context().newCDPSession(p); await cdp.send('Performance.enable');
 const met = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(m => [m.name, m.value]));
 const setup = await p.evaluate(async kit => {

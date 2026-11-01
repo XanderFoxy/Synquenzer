@@ -1,5 +1,5 @@
---- snapshots/R-4270.html	2026-11-01 05:21:58.133486922 +0000
-+++ stage/NORTH/index.html	2026-11-01 05:23:41.377484561 +0000
+--- bau/snapshots/R-4270.html	2026-11-01 05:21:58.133486922 +0000
++++ bau/stage/NORTH/index.html	2026-11-01 05:23:41.377484561 +0000
 @@ -4115,6 +4115,72 @@
  @media (orientation:landscape) and (min-width:800px){          /* 41 + 3 px gap = 44 px pitch (was 40 + 3); the track name gives the 4 px */
    #strip #bEdit,#strip #bFolgt,#strip #bMute,#strip #bUndo{width:41px;min-width:41px}
