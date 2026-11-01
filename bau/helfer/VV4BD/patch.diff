@@ -1,0 +1,430 @@
+--- bau/snapshots/R-4261.html	2026-11-01 03:52:32.642913837 +0000
++++ bau/helfer/VV4BD/index.html	2026-11-01 04:02:56.366950913 +0000
+@@ -1314,6 +1314,9 @@
+ .pop .vvdr{margin-top:8px}
+ .msheet .vvdr{margin-top:4px}
+ .pop.plpick .plp.vvsp{grid-template-columns:repeat(4,minmax(44px,1fr))}   /* VV2-fix: a short range – each track ≥ 44 px wide */
++.vvdr.vv4r2{margin-top:4px}   /* VV4-B: zweite Zeile [Spur …] [Tastatur] [Fokus …] */
++.pop.plpick .plp.vv4l{grid-template-columns:repeat(2,minmax(44px,1fr))}
++.pop.plpick .plp.vv4l button:disabled{opacity:.4}
+ /* VV2: the sheet „Video“ has one row more (9:16 [Kamera] [Ganz mit Balken]); quer passt die Bedienung ohne Rollen in 375 px Höhe */
+ @media (orientation:landscape){.vvctl{gap:4px}.vvacts,.vvprog,.vvdone,.vvsheet .vvbtn{height:44px}}
+ @media (orientation:landscape) and (max-height:400px){.vvsheet.sel .vvctl{gap:2px}}
+@@ -48669,8 +48672,13 @@
+    song.video = [{a, b, v: 'auto'|'song'|'matrix'|'spur', t?}] (Takte a ≤ x < b, Spur t) – optional und additiv (Format 5 bleibt);
+    ohne Einträge macht der Auto-Regisseur alles. Einfügen/Löschen/Verschieben von Takten verschiebt bzw. kürzt die Einträge mit
+    (wie song.vox; Haken in songShift/songClear/songCut/songWrite/songTidy), Undo wie alle Song-Änderungen. */
+-const VV_DIRV = ['auto', 'song', 'matrix', 'spur'], VV_BLEND = .3, VV_AR = 360;   // Blende 300 ms; die quer gezeichnete Ansicht ist 640 × 360
+-const vvDirSame = (p, q) => !!p && !!q && p.v === q.v && (p.v !== 'spur' || p.t === q.t);
++const VV_DIRV = ['auto', 'song', 'matrix', 'spur', 'app', 'tast', 'roll', 'drum', 'mod', 'f-zelle', 'f-tast', 'f-teil', 'f-ue'], VV_BLEND = .3, VV_AR = 360;   // Blende 300 ms; die quer gezeichnete Ansicht ist 640 × 360
++/* VV4-B: neue Werte nur dazu (alte Einträge bleiben gültig): app = ganze App, tast = Tastatur, roll/drum/mod = Spur … Piano-Roll /
++   Drum-Sequenzer / Modulation (mit Spur t), f-zelle (mit Spur t) / f-tast / f-teil / f-ue = Fokus … Clip-Zelle / Tastatur / Teil-Kopf / Übergang */
++const VV4_TRK = ['spur', 'roll', 'drum', 'mod', 'f-zelle'];       // die Werte mit Spur t
++const VV4_NAME = {auto: 'Auto', app: 'App', song: 'Song', matrix: 'Matrix', tast: 'Tastatur', roll: 'Piano-Roll', drum: 'Drum-Sequenzer', mod: 'Modulation',
++  'f-zelle': 'Fokus Clip-Zelle', 'f-tast': 'Fokus Tastatur', 'f-teil': 'Fokus Teil-Kopf', 'f-ue': 'Fokus Übergang'};
++const vvDirSame = (p, q) => !!p && !!q && p.v === q.v && (!VV4_TRK.includes(p.v) || p.t === q.t);
+ // sanitize (load, undo, after every edit): ints, a < b ≤ bars, sorted, no overlap (the later in the list wins), equal neighbours merged;
+ // nt = the track count of the song being read (VV2-fix: at load that is the loaded project's, not the open session's)
+ function vvDirNorm(list, bars, nt) {
+@@ -48680,7 +48688,7 @@
+     if (!e || typeof e !== 'object' || !isNum(e.a) || !isNum(e.b) || !VV_DIRV.includes(e.v)) continue;
+     const a = clamp(Math.round(e.a), 0, lim - 1), b = clamp(Math.round(e.b), a + 1, lim); if (a >= lim) continue;
+     const x = {a, b, v: e.v};
+-    if (e.v === 'spur') { if (!isNum(e.t) || Math.round(e.t) < 0 || Math.round(e.t) >= nt) continue; x.t = Math.round(e.t); }
++    if (VV4_TRK.includes(e.v)) { if (!isNum(e.t) || Math.round(e.t) < 0 || Math.round(e.t) >= nt) continue; x.t = Math.round(e.t); }
+     // the later entry wins: earlier ones are cut around it
+     for (let k = out.length - 1; k >= 0; k--) { const o = out[k]; if (o.b <= a || o.a >= b) continue; out.splice(k, 1); if (o.a < a) out.push(Object.assign({}, o, {b: a})); if (o.b > b) out.push(Object.assign({}, o, {a: b})); }
+     out.push(x);
+@@ -48731,20 +48739,20 @@
+ // what the Video row shows for [a, b): the value when all bars share it ('auto' without entries), else null (mixed)
+ function vvDirOf(a, b) {
+   const song = S.song; if (!song) return null;
+-  let r; for (let x = a; x < b; x++) { const e = vvDirAt(song, x), k = e ? e.v + (e.v === 'spur' ? ':' + e.t : '') : 'auto'; if (r === undefined) r = k; else if (r !== k) return null; }
++  let r; for (let x = a; x < b; x++) { const e = vvDirAt(song, x), k = e ? e.v + (VV4_TRK.includes(e.v) ? ':' + e.t : '') : 'auto'; if (r === undefined) r = k; else if (r !== k) return null; }
+   return r || 'auto';
+ }
+ // set [a, b) to v (one undo step 'song'); 'auto' = the entries there go (the Auto-Regisseur decides)
+ function vvDirSet(a, b, v, t) {
+   const song = S.song; if (!song || !VV_DIRV.includes(v)) return false;
+   a = clamp(Math.round(a) || 0, 0, Math.max(0, song.bars - 1)); b = clamp(Math.round(b) || 0, a + 1, Math.max(a + 1, song.bars));
+-  if (v === 'spur' && !(isNum(t) && t >= 0 && t < NT())) return false;
++  if (VV4_TRK.includes(v) && !(isNum(t) && t >= 0 && t < NT())) return false;
+   const before = songSnapshot();
+   vvDirClear(song, a, b);
+-  if (v !== 'auto') { (song.video || (song.video = [])).push(v === 'spur' ? {a, b, v, t} : {a, b, v}); }
++  if (v !== 'auto') { (song.video || (song.video = [])).push(VV4_TRK.includes(v) ? {a, b, v, t} : {a, b, v}); }
+   vvDirTidy(song);
+   if (songSnapshot() === before) return false;
+-  const nm = v === 'spur' ? svShort(t) : {auto: 'Auto', song: 'Song', matrix: 'Matrix'}[v];
++  const nm = vv4Nm(v, t);
+   pushSongUndo(before, 'Video ' + (b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1)) + ': ' + nm); songChanged();
+   return true;
+ }
+@@ -48753,26 +48761,63 @@
+   const song = S.song; if (!song) return [];
+   return trackOrder().filter(t => { if (!S.tracks[t]) return false; for (let x = a; x < Math.min(b, song.bars); x++) if (svCellRef(t, x)) return true; return false; });
+ }
+-/* the Zeile „Video“ in the existing sheets: [Auto] [Song] [Matrix] [Spur …] (Marken-Blatt, ⋯ of the Bereich-Leiste) */
++/* the Zeile „Video“ in the existing sheets (Marken-Blatt, ⋯ of the Bereich-Leiste). VV4-B: [Auto] [App] [Song] [Matrix] /
++   [Spur …] [Tastatur] [Fokus …] in zwei Zeilen (jede Taste ≥ 44 px); „Spur …“ öffnet [Piano-Roll] [Drum-Sequenzer] [Modulation],
++   „Fokus …“ öffnet Clip-Zelle, Tastatur, Teil-Kopf, Übergang */
++const vv4Nm = (v, t) => (v === 'spur' ? svShort(t) : VV4_TRK.includes(v) ? VV4_NAME[v] + ' · ' + svShort(t) : VV4_NAME[v]);
++const VV4_TYPECOL = {roll: '#f2f4f8', drum: '#ffb22e', mod: '#b9f227'};   // VV4-B: Linie der Bild-Art unter der Spur-Farbe im Streifen
++function vv4StripeCol(e, C) {
++  if (VV4_TRK.includes(e.v)) return (SV.cols && SV.cols[e.t]) || '#888';
++  return e.v === 'matrix' ? C.play : e.v === 'song' ? '#c9ced8' : e.v === 'app' || e.v === 'f-teil' ? C.amber : e.v === 'tast' || e.v === 'f-tast' ? '#3a86ff' : e.v === 'f-ue' ? '#f15bb5' : '#5d636e';
++}
+ function vvDirRow(a, b, cls) {
+-  const cur = vvDirOf(a, b), sp = cur && cur.startsWith('spur:') ? +cur.slice(5) : -1;
++  const cur = vvDirOf(a, b) || '', v = cur.split(':')[0], tt = cur.includes(':') ? +cur.split(':')[1] : -1;
+   const B = (k, html, on, aria) => `<button class="rb ${cls}${on ? ' on' : ''}" data-a="vv-${k}" aria-pressed="${on}" aria-label="${esc(aria)}">${html}</button>`;
+-  return `<div class="vvdr"><span class="vvdl">Video</span>` + B('auto', 'Auto', cur === 'auto', 'Video hier: Auto') + B('song', 'Song', cur === 'song', 'Video hier: Song') +
+-    B('matrix', 'Matrix', cur === 'matrix', 'Video hier: Matrix') + B('spur', sp >= 0 ? `<i style="background:var(--t${sp + 1})"></i>Spur …` : 'Spur …', sp >= 0, 'Video hier: eine Spur zeigen …') + `</div>`;
+-}
++  const dot = tt >= 0 ? `<i style="background:var(--t${tt + 1})"></i>` : '', sp = ['spur', 'roll', 'drum', 'mod'].includes(v), fk = v.startsWith('f-');
++  return `<div class="vvdr"><span class="vvdl">Video</span>` + B('auto', 'Auto', v === 'auto', 'Video hier: Auto') + B('app', 'App', v === 'app', 'Video hier: ganze App') +
++    B('song', 'Song', v === 'song', 'Video hier: Song') + B('matrix', 'Matrix', v === 'matrix', 'Video hier: Matrix') +
++    `</div><div class="vvdr vv4r2"><span class="vvdl"></span>` + B('spur', (sp ? dot : '') + 'Spur …', sp, 'Video hier: eine Spur zeigen …') +
++    B('tast', 'Tastatur', v === 'tast', 'Video hier: Tastatur') + B('fokus', (fk ? dot : '') + 'Fokus …', fk, 'Video hier: Fokus auf …') + `</div>`;
++}
++// the tracks for a kind of picture in [a, b): Piano-Roll = Spuren mit Noten-Clips (keine Drums), Drum-Sequenzer = Drum-Spuren,
++// Modulation / Clip-Zelle / altes Spur-Bild = jede spielende Spur
++function vv4Tracks(v, a, b) { const ts = vvDirTracks(a, b); return v === 'roll' ? ts.filter(t => !isDrum(t)) : v === 'drum' ? ts.filter(t => isDrum(t)) : ts; }
++// a transition (song.ue) lies in [a, b)
++function vv4UeIn(a, b) { const song = S.song; return !!song && vv4UeWin(song, 0, song.bars, true).some(w => w.a < b && w.b > a); }
+ // a tap in the row; after(): repaint the sheet. Returns true when it was the row's button
+ function vvDirTap(k, btn, a, b, after) {
+   if (!k || !k.startsWith('vv-')) return false;
+   const v = k.slice(3), rng = b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1);
+-  if (v !== 'spur') { if (vvDirSet(a, b, v)) toast('Video ' + rng + ': ' + {auto: 'Auto', song: 'Song', matrix: 'Matrix'}[v], songUndoAct()); if (after) after(); return true; }
+-  const ts = vvDirTracks(a, b);
+-  if (!ts.length) { toast('In ' + rng + ' spielt keine Spur'); return true; }
++  if (v === 'spur' || v === 'fokus') { vv4Pick(btn, a, b, v, rng); return true; }
++  if (VV_DIRV.includes(v) && !VV4_TRK.includes(v)) { if (vvDirSet(a, b, v)) toast('Video ' + rng + ': ' + VV4_NAME[v], songUndoAct()); if (after) after(); }
++  return true;
++}
++// VV4-B: „Spur …“ / „Fokus …“: erst die Art, dann (wo nötig) die Spur – im selben Fenster
++function vv4Pick(btn, a, b, kind, rng) {
++  const cur = vvDirOf(a, b) || '', cv = cur.split(':')[0], ct = cur.includes(':') ? +cur.split(':')[1] : -1;
++  const L = kind === 'spur' ? [['roll', 'Piano-Roll'], ['drum', 'Drum-Sequenzer'], ['mod', 'Modulation']] : [['f-zelle', 'Clip-Zelle'], ['f-tast', 'Tastatur'], ['f-teil', 'Teil-Kopf'], ['f-ue', 'Übergang']];
++  const set = (v, t) => { closePop(); if (vvDirSet(a, b, v, t)) toast('Video ' + rng + ': ' + vv4Nm(v, t), songUndoAct()); };
+   openPop(btn, p => {
+     guardTouch(p); p.classList.add('plpick');
+-    p.innerHTML = `<h4>Video · ${esc(rng)} · Spur</h4><div class="plist plp vvsp">` + ts.map(t => `<button class="rb" data-t="${t}"><i style="background:var(--t${t + 1})"></i><b>${esc(svShort(t))}</b></button>`).join('') + '</div>';
+-    onTap(p, x => { closePop(); const t = +x.dataset.t; if (vvDirSet(a, b, 'spur', t)) toast('Video ' + rng + ': ' + svShort(t), songUndoAct()); }, 'button[data-t]');
++    const kinds = () => {
++      p.innerHTML = `<h4>Video · ${esc(rng)} · ${kind === 'spur' ? 'Spur' : 'Fokus'}</h4><div class="plist plp vv4l">` + L.map(([v, nm]) => {
++        const dis = v === 'f-ue' ? !vv4UeIn(a, b) : VV4_TRK.includes(v) && !vv4Tracks(v, a, b).length;
++        return `<button class="rb${cv === v ? ' on' : ''}" data-v="${v}" aria-pressed="${cv === v}"${dis ? ' disabled' : ''}><b>${nm}</b></button>`;
++      }).join('') + '</div>';
++    };
++    const tracks = v => {
++      const ts = vv4Tracks(v, a, b);
++      p.innerHTML = `<h4>Video · ${esc(rng)} · ${esc(VV4_NAME[v])}</h4><div class="plist plp vvsp">` + ts.map(t => `<button class="rb${cv === v && ct === t ? ' on' : ''}" data-t="${t}" data-v="${v}"><i style="background:var(--t${t + 1})"></i><b>${esc(svShort(t))}</b></button>`).join('') + '</div>';
++    };
++    kinds();
++    onTap(p, x => {
++      if (x.disabled) return;
++      const v = x.dataset.v;
++      if (x.dataset.t != null) { set(v, +x.dataset.t); return; }
++      if (VV4_TRK.includes(v)) { const ts = vv4Tracks(v, a, b); if (!ts.length) { toast('In ' + rng + ' spielt keine passende Spur'); return; } tracks(v); return; }
++      set(v);
++    }, 'button[data-v]');
+   }, {name: 'vvspur'});
+-  return true;
+ }
+ // Zell-Blatt (Lane-Eintrag halten): „Im Video zeigen“ = Spur-Bild dieses Clips für seine Takte [a, b)
+ function vvCellOpt(t, a, b) {
+@@ -48789,8 +48834,10 @@
+   g.save();
+   for (const e of song.video) {
+     const x0 = X(e.a) + 2, x1 = X(e.b) - 2; if (x1 < 0 || x0 > W || x1 - x0 < 2) continue;
+-    g.fillStyle = e.v === 'spur' ? (SV.cols && SV.cols[e.t]) || '#888' : e.v === 'matrix' ? C.play : e.v === 'song' ? '#c9ced8' : '#5d636e';
+-    vvRound(g, x0, y + 1, x1 - x0, h - 2, 2); g.fill();
++    const col = vv4StripeCol(e, C);
++    if (e.v.startsWith('f-')) { g.strokeStyle = col; g.lineWidth = 1.5; vvRound(g, x0 + .75, y + 1.75, x1 - x0 - 1.5, h - 3.5, 2); g.stroke(); }   // VV4-B: Fokus = Rahmen in der Farbe
++    else { g.fillStyle = col; vvRound(g, x0, y + 1, x1 - x0, h - 2, 2); g.fill(); }
++    if (e.v === 'roll' || e.v === 'drum' || e.v === 'mod') { g.fillStyle = VV4_TYPECOL[e.v]; g.fillRect(x0 + 1, y + h - 3, x1 - x0 - 2, 2); }   // VV4-B: Spur-Farbe + Linie der Bild-Art
+     const cx = Math.max(x0 + 3, 3); if (cx + 12 > x1) continue;
+     // the camera: body + lens (drawn, never a glyph)
+     const by = y + 2, bh = h - 4;
+@@ -48802,40 +48849,70 @@
+ /* ---------- Auto-Regisseur: die Schnittliste aus dem Song (gleiche Eingabe → gleiche Liste). Schnitte nur auf Taktstrichen, an
+    Teilgrenzen; in langen Strecken spätestens alle 8 Takte; nie kürzer als 2 Takte; Teilanfang → Song, viele Clipwechsel → Matrix,
+    eine neu einsetzende oder allein spielende Spur → Spur-Bild. Einträge aus song.video gelten genau für ihre Takte ---------- */
++/* VV4-D Auto-Regie 2 „erkennt Neues“ (Vorrang von oben nach unten; Schnitte weiter nur auf Taktstrichen, ≥ 2 Takte, ≤ 8 Takte):
++   - Eintrag aus song.video (manuelle Wahl) – gilt genau für seine Takte;
++   - Übergang (song.ue) – Drum-Sequenzer über seine Länge (auf ganze Takte, mindestens 2);
++   - Clip spielt zum ersten Mal – Piano-Roll mit seinen Noten, davor kurz Fokus auf seine Zelle (f: 'zelle'); ein späterer Auftritt
++     desselben Clips ist nicht neu;
++   - Drums setzen ein / Drum-Clip zum ersten Mal – Drum-Sequenzer;
++   - Teilanfang – ganze App;
++   - Transposition (song.xp oder Träger song.carrier) – Tastatur, 2 Takte (das Minimum);
++   - danach wie bisher: viele Clipwechsel → Matrix, eine einsetzende / allein spielende Spur → Spur-Bild, Spur endet → Song.
++   Ein Neues, das wegen der 2-Takt-Grenze nicht sofort geschnitten werden kann, wartet, solange sein Clip ohne Unterbrechung läuft
++   (Transposition: höchstens 2 Takte). */
+ function vvCuts(song, A, B) {
+   const rows = vvRows(), starts = new Set((song.marks || []).map(m => m.a));
+-  const user = (song.video || []).filter(e => e.v !== 'auto' && (e.v !== 'spur' || (e.t < NT() && S.tracks[e.t])));
+-  const uAt = x => user.find(e => x >= e.a && x < e.b) || null;
+-  const hardEnd = x => { let e = B; for (const u of user) if (u.a > x && u.a < e) e = u.a; return e; };
++  const user = (song.video || []).filter(e => e.v !== 'auto' && (!VV4_TRK.includes(e.v) || (e.t < NT() && S.tracks[e.t])));
++  const ueW = vv4UeWin(song, A, B);                               // VV4-D: the transitions – under the user's entries
++  const uAt = x => user.find(e => x >= e.a && x < e.b) || ueW.find(e => x >= e.a && x < e.b) || null;
++  const hardEnd = x => { let e = B; for (const u of user) if (u.a > x && u.a < e) e = u.a; for (const u of ueW) if (u.a > x && u.a < e) e = u.a; return e; };
+   const key = (t, x) => { if (x < 0) return ''; const o = laneOriginAt(song.lanes[t], x); return laneClipOk(song, t, o) ? o.slot + '|' + (o.own || '') : ''; };
+   const flip = v => (v === 'song' ? 'matrix' : 'song');
+   // VV2-fix: every shot carries s = the start of what is seen as one picture (an entry and an auto stretch with the same picture
+   // are one shot): the 8-bar count and the 2-bar minimum go from there, so a merge never makes a longer uncut stretch
+   const shots = []; let cur = null, prev = rows.map(t => key(t, A - 1));
+-  const push = (x, v, t, u, why, s) => { cur = {a: x, v, t: v === 'spur' ? t : null, u, why, s: s == null ? x : s}; shots.push(cur); };
++  const push = (x, v, t, u, why, s, f) => { cur = {a: x, v, t: VV4_TRK.includes(v) ? t : null, u, why, s: s == null ? x : s}; if (f) cur.f = f; shots.push(cur); };
++  // VV4-D: the clips heard before the range are not new in it
++  const seen = new Set(); for (let x = 0; x < A; x++) rows.forEach(t => { const k = key(t, x); if (k) seen.add(t + '#' + k); });
++  let pend = [];
+   for (let x = A; x < B; x++) {
+     const keys = rows.map(t => key(t, x)), u = uAt(x);
+     let ch = 0; const enters = [], playing = [];
+     rows.forEach((t, k) => { const ev = song.lanes[t] && song.lanes[t].find(q => q.bar === x); if (keys[k] !== prev[k] || (keys[k] && ev && ev.re)) ch++; if (keys[k] && !prev[k]) enters.push(t); if (keys[k]) playing.push(t); });
++    // VV4-D: what is new here (waits while its clip plays on; a transposition waits ≤ 2 bars)
++    pend = pend.filter(o => (o.k === 'xp' ? x < o.x0 + 2 : keys[rows.indexOf(o.t)] === o.key));
++    rows.forEach((t, k) => {
++      const ky = keys[k]; if (!ky) return; const id = t + '#' + ky, neu = !seen.has(id); seen.add(id);
++      if (ky === prev[k]) return;
++      if (isDrum(t)) { if (neu || !prev[k]) pend.push({k: 'drum', t, key: ky, x0: x, why: neu ? 'neu-drum' : 'drums'}); }
++      else if (neu) pend.push({k: 'clip', t, key: ky, x0: x, why: 'neu-clip'});
++    });
++    if (vv4Xp(song, x)) { pend = pend.filter(o => o.k !== 'xp'); pend.push({k: 'xp', x0: x, why: 'transposition'}); }
+     prev = keys;
+-    if (u) { if (!cur || cur.u !== u) push(x, u.v, u.t, u, 'eintrag', cur && vvDirSame(u, cur) ? cur.s : x); continue; }
++    if (u) { if (!cur || cur.u !== u) push(x, u.v, u.t, u, u.why || 'eintrag', cur && vvDirSame(u, cur) ? cur.s : x); continue; }
+     let want = null;
+-    if (x === A || starts.has(x)) {
+-      want = {v: 'song', why: 'teil'};
+-      // VV2-fix: a part start is a visible cut – when the picture already is Song, it shows what is new there instead
++    const pc = pend.find(o => o.k === 'clip'), pd = pend.find(o => o.k === 'drum'), px = pend.find(o => o.k === 'xp');
++    if (pc) want = {v: 'roll', t: pc.t, why: 'neu-clip', f: 'zelle', o: pc};
++    else if (pd) want = {v: 'drum', t: pd.t, why: pd.why, o: pd};
++    else if (x === A || starts.has(x)) {
++      want = {v: 'app', why: 'teil'};
++      // VV2-fix: a part start is a visible cut – when the picture already is the App, it shows what is new there instead
+       if (cur && vvDirSame(want, cur)) want = ch >= 2 ? {v: 'matrix', why: 'teil'} : enters.length === 1 ? {v: 'spur', t: enters[0], why: 'teil'} : {v: 'matrix', why: 'teil'};
+     }
++    else if (px) want = {v: 'tast', why: 'transposition', o: px};
+     else if (ch >= 2) want = {v: 'matrix', why: 'wechsel'};
+     else if (enters.length === 1) want = {v: 'spur', t: enters[0], why: 'neu'};
+     else if (playing.length === 1) want = {v: 'spur', t: playing[0], why: 'allein'};
+     else if (cur && cur.v === 'spur' && !playing.includes(cur.t)) want = {v: 'song', why: 'ende'};
++    const done = () => { if (want && want.o) pend = pend.filter(o => o !== want.o); };
+     const he = hardEnd(x), rem = he - x, nx = he < B ? uAt(he) : null;
+     if (!cur || cur.u) {
+       // a free stretch begins (song start, or right after an entry)
+       if (rem < 2 && (cur || nx)) { const r = cur || nx; push(x, r.v, r.t, null, 'kurz', cur ? cur.s : x); continue; }   // too short for its own shot: the neighbour's picture
+-      let v = want ? want.v : cur ? flip(cur.v) : 'song', t = want && want.v === 'spur' ? want.t : null;
+-      if (cur && vvDirSame({v, t}, cur) && x - cur.s >= 8) { v = flip(cur.v); t = null; }
+-      push(x, v, t, null, want ? want.why : cur ? 'eintrag-ende' : 'start', cur && vvDirSame({v, t}, cur) ? cur.s : x);
++      let v = want ? want.v : cur ? flip(cur.v) : 'song', t = want && VV4_TRK.includes(want.v) ? want.t : null, f = want && want.f;
++      if (cur && vvDirSame({v, t}, cur) && x - cur.s >= 8) { v = flip(cur.v); t = null; f = null; }
++      else done();
++      push(x, v, t, null, want ? want.why : cur ? 'eintrag-ende' : 'start', cur && vvDirSame({v, t}, cur) ? cur.s : x, cur && vvDirSame({v, t}, cur) ? null : f);
+       continue;
+     }
+     const Ls = x - cur.s;
+@@ -48843,15 +48920,44 @@
+     // at the latest every 8 bars (an entry right behind with the same picture counts on)
+     const tail = nx && vvDirSame(nx, cur) ? nx.b - nx.a : 0;
+     const must = Ls >= 8 || (rem === 2 && Ls + rem + tail > 8);
+-    if (want && !vvDirSame(want, cur)) push(x, want.v, want.t, null, want.why);
+-    else if (must) push(x, flip(cur.v), null, null, '8');
++    if (want && want.v === 'spur' && cur.t === want.t && VV4_TRK.includes(cur.v)) want = null;   // VV4-D: the track is in the picture already
++    if (want && !vvDirSame(want, cur)) { push(x, want.v, want.t, null, want.why, null, want.f); done(); }
++    else if (want && want.o && !must) done();                        // the new thing is in the picture already (same track)
++    else if (must || (cur.v === 'tast' && cur.why === 'transposition')) push(x, flip(cur.v), null, null, must ? '8' : 'tast-ende');   // VV4-D: Tastatur 2 Takte
+   }
+   // neighbours with the same picture are one shot (the camera goes on)
+   for (let k = shots.length - 1; k > 0; k--) if (vvDirSame(shots[k], shots[k - 1])) shots.splice(k, 1);
+   shots.forEach((s, k) => { s.b = k + 1 < shots.length ? shots[k + 1].a : B; delete s.u; delete s.s; });
+   return shots;
+ }
+-const vvCutHash = shots => { let h = 2166136261; for (const c of JSON.stringify(shots.map(s => [s.a, s.b, s.v, s.t]))) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h.toString(16); };
++// VV4-D: a transposition starts in bar x: an entry of song.xp (Teil-Transposition) or of the Träger (song.carrier) that changes what
++// was in effect before it
++function vv4Xp(song, x) {
++  const lo = x * 4 - 1e-6, hi = x * 4 + 4 - 1e-6;
++  let v = 0; for (const o of song.xp || []) { if (o.beat >= hi) break; if (o.beat >= lo && o.semi !== v) return true; v = o.semi; }
++  const ck = c => (c && c.target ? [c.target.root, c.target.quality, c.target.bass, c.target.name].join('|') : '');
++  let k = ''; for (const o of song.carrier || []) { if (o.beat >= hi) break; const n = ck(o); if (o.beat >= lo && n !== k) return true; k = n; }
++  return false;
++}
++// VV4-D: the bars of the transitions (song.ue, if there): Drum-Sequenzer on their track over their length – whole bars, ≥ 2;
++// all = also outside [A, B) (for the menu)
++function vv4UeWin(song, A, B, all) {
++  if (!song || !Array.isArray(song.ue) || !song.ue.length) return [];
++  const out = [], dr = vvRows().find(t => isDrum(t));
++  for (const u of song.ue) {
++    if (!u || typeof u !== 'object' || !isNum(u.len) || u.len <= 0) continue;
++    let base; if (u.m != null) { const m = (song.marks || []).find(q => q.id === u.m); if (!m) continue; base = m.a * 4; } else if (isNum(u.at)) base = u.at; else continue;
++    const s0 = base + (isNum(u.a) ? u.a : 0), e0 = s0 + u.len;
++    let a = Math.floor(s0 / 4 + 1e-9), b = Math.max(a + 2, Math.ceil(e0 / 4 - 1e-9));
++    if (!all) { a = Math.max(a, A); b = Math.min(b, B); } if (b <= a) continue;
++    const t = isNum(u.t) && S.tracks[u.t] ? u.t : dr; if (t == null) continue;
++    out.push({a, b, v: 'drum', t, why: 'ue'});
++  }
++  out.sort((p, q) => p.a - q.a);
++  for (let k = 1; k < out.length; k++) { out[k].a = Math.max(out[k].a, out[k - 1].b); }
++  return out.filter(w => w.b > w.a);
++}
++const vvCutHash = shots => { let h = 2166136261; for (const c of JSON.stringify(shots.map(s => (s.f ? [s.a, s.b, s.v, s.t, s.f] : [s.a, s.b, s.v, s.t])))) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h.toString(16); };   // VV4-D: f nur wenn gesetzt (alte Listen: gleicher Hash)
+ // one job's picture state: the cut list (from the song, once), the camera per shot, the blend canvas
+ function vvRun(o) {
+   o = o || {};
+@@ -48983,6 +49089,7 @@
+ function vvDrawShot(g, W, H, rt, sh, st, ts, frozen) {
+   const C = vvCols();
+   g.setTransform(1, 0, 0, 1, 0, 0);
++  if (VV4_OWN.has(sh.v)) { vv4DrawShot(g, W, H, rt, sh, st, ts, frozen); return; }   // VV4: App, Tastatur, Spur …, Fokus … füllen das ganze Bild
+   if (W >= H) { const k = W / 640; g.fillStyle = C.bg; g.fillRect(0, 0, W, H); g.setTransform(k, 0, 0, k, 0, (H - VV_AR * k) / 2); vvDrawView(g, 640, VV_AR, sh, st); }
+   else if (rt.cam === 'balken') {
+     const k = W / 640, oy = (H - VV_AR * k) / 2;
+@@ -49049,6 +49156,133 @@
+     vvRunLog: () => (VV.lastRt ? {log: VV.lastRt.log, shots: VV.lastRt.shots, cam: VV.lastRt.cam, view: VV.lastRt.view} : null),
+   };
+ }
++/* ===================== VV4-B/D: Bilder der neuen Wahl (App, Tastatur, Spur … Piano-Roll / Drum-Sequenzer / Modulation, Fokus …) =====================
++   Jedes dieser Bilder füllt das ganze Video-Bild (Leinwand-Pixel), ohne die 640×360-Kamera. Gezeichnet wird über die Namen, die
++   VV4-A (vvDrawApp) und VV4-C/E (vvDrawRoll, vvDrawDrumSeq, vvDrawMod) liefern: (g, t = Videozeit in s, rect = {x, y, w, h} in
++   Leinwand-Pixeln, track). Fokus = die ganze App (vvDrawApp), vergrößert auf das Element (vvAppFocus). */
++const VV4 = {st: null};
++const VV4_OWN = new Set(['app', 'tast', 'roll', 'drum', 'mod', 'f-zelle', 'f-tast', 'f-teil', 'f-ue']), VV4_FB = 2;   // der kurze Fokus vor der Piano-Roll: 2 Schläge
++// the picture state for video time t: the state the director is drawing right now, else from the last render (else live)
++function vv4St(t) {
++  if (VV4.st) return VV4.st;
++  const r = VV.last; if (!r) return vvLiveState();
++  const st = vvStateAt(r, t || 0); st.t = t || 0; return st;
++}
++// one VV4 picture (v, track t) of state st into the whole canvas
++function vv4Pic(g, W, H, v, t, st, bpm) {
++  const vt = st.t != null ? st.t : st.tB != null ? st.tB * 60 / (bpm || S.bpm) : 0, R0 = {x: 0, y: 0, w: W, h: H}, o = VV4.st;
++  VV4.st = st; g.setTransform(1, 0, 0, 1, 0, 0);
++  try {
++    if (v === 'app') vvDrawApp(g, vt, R0);
++    else if (v === 'roll') vvDrawRoll(g, vt, R0, t);
++    else if (v === 'drum') vvDrawDrumSeq(g, vt, R0, t);
++    else if (v === 'mod') vvDrawMod(g, vt, R0, t);
++    else vv4Focus(g, W, H, v === 'tast' ? 'tast' : v.slice(2), t, vt, v === 'tast');
++  } catch (e) { logErr(e); }
++  VV4.st = o; g.setTransform(1, 0, 0, 1, 0, 0);
++}
++// Fokus: the whole App, enlarged on the element (Tastatur: a bit wider than Fokus Tastatur); never outside the App
++function vv4Focus(g, W, H, kind, t, vt, wide) {
++  const F = vvAppFocus(kind, t, vt, {x: 0, y: 0, w: W, h: H}), m = wide ? 1 : 1.25, zmin = wide ? 1.3 : 2;
++  const z = F && F.w > 0 && F.h > 0 ? clamp(Math.min(W / (F.w * m), H / (F.h * m)), zmin, 3) : 1;
++  const cx = F ? F.x + F.w / 2 : W / 2, cy = F ? F.y + F.h / 2 : H / 2;
++  const x = clamp(W / 2 - cx * z, W - W * z, 0), y = clamp(H / 2 - cy * z, H - H * z, 0);
++  g.fillStyle = vvCols().bg; g.fillRect(0, 0, W, H);
++  g.save(); g.beginPath(); g.rect(0, 0, W, H); g.clip(); vvDrawApp(g, vt, {x, y, w: W * z, h: H * z}); g.restore();
++  if (VV4.log) VV4.log.push({kind, t, z: +z.toFixed(3), F});
++}
++// a shot of the cut list: roll with f = 'zelle' starts with the short Fokus on its cell (2 beats), then blends over 300 ms
++function vv4DrawShot(g, W, H, rt, sh, st, ts, frozen) {
++  const bpm = rt.bpm || S.bpm, d = sh.f && st.sb != null ? st.sb - sh.a * 4 : -1, bl = VV_BLEND * bpm / 60;
++  if (sh.f && d >= 0 && d < VV4_FB) vv4Pic(g, W, H, 'f-' + sh.f, sh.t, st, bpm);
++  else if (sh.f && d >= VV4_FB && d < VV4_FB + bl && !frozen) {
++    vv4Pic(g, W, H, 'f-' + sh.f, sh.t, st, bpm);
++    let o = rt.off4; if (!o || o.width !== W || o.height !== H) { o = rt.off4 = document.createElement('canvas'); o.width = W; o.height = H; }
++    vv4Pic(o.getContext('2d', {alpha: false}), W, H, sh.v, sh.t, st, bpm);
++    const e = (d - VV4_FB) / bl; g.globalAlpha = e * e * (3 - 2 * e); g.drawImage(o, 0, 0); g.globalAlpha = 1;
++  } else vv4Pic(g, W, H, sh.v, sh.t, st, bpm);
++  if (rt.log && !frozen) rt.log.push({ts: +ts.toFixed(4), k: sh.k, cx: 320, cy: VV_AR / 2, z: 1, ww: 640, wh: VV_AR, fit: 1, v: sh.v});
++}
++
++/* ---------- Platzhalter für die Zeichner der Geschwister-Pakete (gleiche Namen und Signaturen) ---------- */
++// VV4-Platzhalter – beim Merge ersetzt: Lage der App-Bereiche im Bild (Punkte; k = Leinwand-Pixel je Punkt)
++function vv4AppLay(rect) {
++  const port = rect.h > rect.w, k = port ? rect.w / 360 : rect.w / 640, LW = rect.w / k, LH = rect.h / k;
++  return port ? {k, LW, LH, mx: {x: 0, y: 0, w: LW, h: LH * .4}, sg: {x: 0, y: LH * .4, w: LW, h: LH * .37}, kb: {x: 0, y: LH * .79, w: LW, h: LH * .2}}
++    : {k, LW, LH, mx: {x: 0, y: 0, w: LW * .5, h: LH * .77}, sg: {x: LW * .5, y: 0, w: LW * .5, h: LH * .77}, kb: {x: 0, y: LH * .79, w: LW, h: LH * .2}};
++}
++// VV4-Platzhalter – beim Merge ersetzt: die Tastatur (weiße und schwarze Tasten, zwei Oktaven)
++function vv4Keys(g, r) {
++  const n = 14, w = r.w / n;
++  g.fillStyle = '#ece6d8'; for (let k = 0; k < n; k++) { vvRound(g, r.x + k * w + .5, r.y, w - 1, r.h, 3); g.fill(); }
++  g.fillStyle = '#1a1b1f'; for (let k = 0; k < n; k++) if ([0, 1, 3, 4, 5].includes(k % 7)) { vvRound(g, r.x + (k + 1) * w - w * .3, r.y, w * .6, r.h * .6, 2); g.fill(); }
++}
++// VV4-Platzhalter – beim Merge ersetzt (VV4-A): die ganze App
++function vvDrawApp(g, t, rect) {
++  const st = vv4St(t), L = vv4AppLay(rect), C = vvCols();
++  g.save(); g.setTransform(L.k, 0, 0, L.k, rect.x, rect.y); g.beginPath(); g.rect(0, 0, L.LW, L.LH); g.clip();
++  g.fillStyle = C.bg; g.fillRect(0, 0, L.LW, L.LH);
++  const part = (r, fn) => { g.save(); g.translate(r.x, r.y); g.beginPath(); g.rect(0, 0, r.w, r.h); g.clip(); fn(r.w, r.h); g.restore(); };
++  part(L.mx, (w, h) => vvDrawMatrix(g, w, h, st));
++  part(L.sg, (w, h) => vvDrawSong(g, w, h, st));
++  vv4Keys(g, L.kb);
++  g.restore();
++}
++// VV4-Platzhalter – beim Merge ersetzt (VV4-A): wo ein Element im Bild von vvDrawApp(g, t, rect) liegt (Leinwand-Pixel)
++function vvAppFocus(kind, track, t, rect) {
++  const st = vv4St(t), L = vv4AppLay(rect), k = L.k, P = (r, o) => ({x: rect.x + (o.x + r.x) * k, y: rect.y + (o.y + r.y) * k, w: r.w * k, h: r.h * k});
++  if (kind === 'tast') return P(L.kb, {x: 0, y: 0});
++  if (kind === 'zelle') {
++    const M = vvMatrixLayout(L.mx.w, L.mx.h, st), r = M.rows.indexOf(track), s = st.slots[track];
++    if (r < 0) return P(L.mx, {x: 0, y: 0});
++    if (s == null || s < M.c0 || s >= M.c0 + M.nc) return P({x: 0, y: M.y0 + M.head + r * M.chh, w: M.labW, h: M.chh}, L.mx);
++    return P(M.cell(r, s - M.c0), L.mx);
++  }
++  // Teil-Kopf / Übergang: as vvDrawSong places the yellow headers and the bar lines
++  const song = S.song, sg = L.sg, port = sg.h > sg.w, rows = vvRows(), labW = port ? 66 : 78, ru = port ? 24 : 26, cw = port ? 40 : 48, bars = song ? song.bars : 0;
++  const nr = rows.length + 2, rh = Math.max(20, Math.min(port ? 58 : 34, (sg.h - ru - 16) / nr)), y0 = Math.max(8, (sg.h - ru - nr * rh) / 2), viewW = sg.w - labW;
++  const sb = st.sb == null ? 0 : Math.min(Math.max(0, st.sb), bars * 4), px = sb / 4 * cw, sx = Math.max(0, Math.min(px - viewW * .35, Math.max(0, (bars + 1) * cw - viewW)));
++  const X = b => labW + b * cw - sx, bar = Math.floor(sb / 4), ms = song ? song.marks || [] : [];
++  if (kind === 'teil') {
++    const m = ms.find(q => bar >= q.a && bar < q.a + q.len);
++    if (!m) return P({x: labW, y: y0, w: viewW, h: ru}, sg);
++    const x0 = Math.max(labW, X(m.a) + 2), x1 = Math.min(sg.w, X(m.a + m.len) - 2);
++    return P({x: x0, y: y0 + 2, w: Math.max(cw, x1 - x0), h: ru - 4}, sg);
++  }
++  // Übergang: the edge of the transition (song.ue) at this bar, else the nearest part edge
++  const w = song ? vv4UeWin(song, 0, bars, true).find(q => bar >= q.a && bar < q.b) : null;
++  let e = w ? (song.ue.map(u => { const m = u && ms.find(q => q.id === u.m); return m ? m.a : null; }).find(a => a != null && a >= w.a && a <= w.b)) : null;
++  if (e == null) { let best = null; for (const m of ms) if (best == null || Math.abs(m.a - sb / 4) < Math.abs(best - sb / 4)) best = m.a; e = best != null ? best : bar; }
++  return P({x: X(e) - cw, y: y0, w: cw * 2, h: ru + nr * rh}, sg);
++}
++// VV4-Platzhalter – beim Merge ersetzt (VV4-C): Piano-Roll der Spur
++function vvDrawRoll(g, t, rect, track) {
++  const st = vv4St(t), k = rect.w > rect.h ? rect.w / 640 : rect.w / 360;
++  g.save(); g.setTransform(k, 0, 0, k, rect.x, rect.y); g.beginPath(); g.rect(0, 0, rect.w / k, rect.h / k); g.clip();
++  if (track != null && S.tracks[track]) vvDrawSpur(g, rect.w / k, rect.h / k, st, track); else { g.fillStyle = vvCols().bg; g.fillRect(0, 0, rect.w / k, rect.h / k); }
++  g.restore();
++}
++// VV4-Platzhalter – beim Merge ersetzt (VV4-C): Drum-Sequenzer der Spur
++function vvDrawDrumSeq(g, t, rect, track) { vvDrawRoll(g, t, rect, track); }
++// VV4-Platzhalter – beim Merge ersetzt (VV4-E): Modulation der Spur
++function vvDrawMod(g, t, rect, track) {
++  const st = vv4St(t), k = rect.w > rect.h ? rect.w / 640 : rect.w / 360;
++  g.save(); g.setTransform(k, 0, 0, k, rect.x, rect.y); g.beginPath(); g.rect(0, 0, rect.w / k, rect.h / k); g.clip();
++  if (track != null && S.tracks[track]) vv3Shot(g, rect.w / k, rect.h / k, st, track); else { g.fillStyle = vvCols().bg; g.fillRect(0, 0, rect.w / k, rect.h / k); }
++  g.restore();
++}
++// test API (window.SYNQUENZER): the picture of a shot at video time t of the last render; the Fokus log
++function vv4Api() {
++  return {
++    vv4Pic: (t, v, tr, fmt) => {
++      const r = VV.last, [W, H] = VV_SIZE[fmt || '9:16'], cv = document.createElement('canvas'); cv.width = W; cv.height = H;
++      const st = r ? vvStateAt(r, t || 0) : vvLiveState(); if (r) st.t = t || 0;
++      vv4Pic(cv.getContext('2d', {alpha: false}), W, H, v, tr, st, r ? r.bpm : S.bpm); return cv.toDataURL('image/png').split(',')[1];
++    },
++    vv4FocusLog: on => { const l = VV4.log || []; VV4.log = on ? [] : null; return l; },
++    vv4Tracks: (v, a, b) => vv4Tracks(v, a, b),
++  };
++}
+ /* VV2-END */
+ /* ===================== VV3 (Nachtrag 5): Innenleben – das Spur-Bild =====================
+    Das Instrument einer Spur, gezeichnet auf der Video-Bühne mit seinen Werten zur Videozeit t. Alle Werte werden aus den
+@@ -50467,6 +50701,7 @@
+ Object.assign(SYNQUENZER, vvApi());                        // VV1
+ Object.assign(SYNQUENZER, vv2Api());                       // VV2
+ Object.assign(SYNQUENZER, vv3Api());                       // VV3
++Object.assign(SYNQUENZER, vv4Api());                       // VV4-B/D
+ const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
+   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
