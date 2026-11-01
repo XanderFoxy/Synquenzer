@@ -66,7 +66,14 @@ die Bedienung dafür (LOCK-Taste, Lock-Leiste, Pinsel, Ring) kommt mit I2e. Alte
   nächsten Kick; Pad-Werte `drum.<Pad>.*` je Schlag am Schritt des Schlags (L6 mit Mikro-Timing `m`), Noten-Lock gewinnt.
 - **Ende**: Clip-Wechsel, ■, rückwirkendes Umschalten → Typ 12, danach die Grundwerte (`lnEnd`).
 
-### Schritt 4 — Verlauf, Formate
+### Schritt 4 — Leistung (Messung und Umbau)
+- Kern-Werte in der Klasse `LkD` (wie die eigenen Werte einer Stimme): eine Objektform im heißen Code, keine Verlangsamung mehr für
+  ungelockte Stimmen, nachdem einmal eine gelockte lief. Ohne Locks unverändert bitgleich.
+- MK: feste Überlagerung je Stimme (`lkOvM`, 20 Zahlen) statt Schlüssel-Schleife je Block; eigene Hüllkurven mit derselben Form.
+- Reihen auf VA-Werte über die Kern-Sicht `PR`/`Dc` (eine Rechnung je Schritt für alle ungelockten Stimmen), Rampen-Liste,
+  Mod-Tiefen-Rampen schreiben nur den Platz; `deriveB` rechnet nur, was der Platz braucht.
+
+### Schritt 5 — Verlauf, Formate
 - Verlauf (VC2a): `need` ist abgeleitet (Baustein N) und zählt nicht als Bearbeitung (`HIST.volatile`); `historyCheck()` = true nach allen
   Lock-Aktionen.
 - Anschlag-Leiste: in flachen Leisten (Querformat, 428 × 650) reicht die Trefferfläche von ◀ VEL ▶ jetzt auf ≥ 44 px (vorher 40 px).
@@ -78,7 +85,7 @@ die Bedienung dafür (LOCK-Taste, Lock-Leiste, Pinsel, Ring) kommt mit I2e. Alte
 | `r28-msg.mjs` (M-MSG) | Demo ▶ 2,5 s: 68 Ereignisse an die Worklets byte-gleich, kein Typ 11/12, kein Note-an mit Paaren, übrige Nachrichten gleich |
 | `i2b-abnahme.mjs` | 30/30: 19 Pfade (VA, FM DX, FELD, MK) – Lock = Klang mit diesem Grundwert (bitgleich bzw. ≤ −130 dB), Nachbarnoten bitgleich; I2-07 Cutoff 2004,6 Hz (Soll 2000 ± 0,5 %); I2-08 41 Zahlen, lkBad 0 / 2; I2-09 a; I2-11; I2-13 4,67 ms; I2-14; I2-15; I2-16; I2-17; I2-64 |
 | `i2c-abnahme.mjs` | 10/10: I2-19 Polymeter 12/16; I2-20 0,002 Samples; I2-22 43 % (200 Durchläufe), Fenster egal; I2-23 31,25 ms; I2-24 3,00 ms; I2-25; I2-27; I2-65; I2-66 |
-| `i2-cpu-node.mjs` (I2-18, I2-26) | siehe STATUS.md (Node-Shim, M-PAAR) |
+| `i2-cpu-node.mjs` (I2-18, I2-26) | Mechanik +0,5 … +5,7 % im Mittel; Stufen/FM/FELD in der Grenze, VA/MK/Reihen-Schranke knapp darüber (Tabelle in STATUS.md); Heap ✓ |
 | `i2-video.mjs` | Video-Ton und Instrumental spielen Lock und Reihe; VV3 zeigt den Lock |
 | `i2a/i2a-abnahme.mjs` | 37/37 (I2-01, 02, 03, 04 Daten gegen 4.30.0 61/61, 05 mit `historyCheck`, 06, 61) |
 | `i2f/*` | I2-47 8/8, I2-48 12/12, I2-50 26/26, I2-52 30/30 (+ 428 × 650), A/B 12/12; I2-49 16/17 (s. STATUS) |

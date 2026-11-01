@@ -50,7 +50,7 @@ function scene(eng, feat) {
   });
   if (feat && eng === 'ln') {
     P.onMsg({lkMd: {[pk[7].wi]: D.md}});
-    const sb = 60 / 180 / 8; pk.forEach((q, n) => { for (let st = 0; st * sb < sec - .3; st++) for (let m = 0; m < 4; m++) ev.push([st * sb + m * sb / 4, 11, 0, -1, q.wi, m % 2 ? NaN : q.v[(st + n) % 8], q.vals ? 0 : 144]); });
+    const sb = 60 / 180 / 8; pk.forEach((q, n) => { for (let st = 0; st * sb < sec - .3; st++) for (let m = 0; m < 4; m++) ev.push([st * sb + m * sb / 4, 11, 0, -1, q.wi, m % 2 ? NaN : SAME && typeof q.b === 'number' ? q.b : q.v[(st + n) % 8], q.vals ? 0 : 144]); });
   }
   ev.sort((a, b2) => a[0] - b2[0]);
   P.onMsg({mkSeed: 1, tempo: {bpm: 180, start: 0}});
@@ -69,7 +69,7 @@ const st = a => { const n = a.length, m = a.reduce((x, y) => x + y, 0) / n, sd =
 const scenes = [['VA 8 Stimmen × 8 Locks', 'va', 3], ['Stufige VA-Werte je Stimme (8 Wellen)', 'st', 3], ['FM DX 6 OP 8 Stimmen × 8 Locks', 'fm', 3], ['FELD 6 OP 8 Stimmen × 8 Locks', 'fx', 3],
   ['MK 8 Stimmen (2 Timbres) × 8 Locks', 'mk', 4], ['Freie Reihen 8 × 1/32 Ratsche 4, 180 BPM', 'ln', 5]];
 const res = {};
-for (const [nm0, eng, lim0, same0] of scenes.filter(x => !process.env.SC || process.env.SC.split(',').includes(x[1])).flatMap(x => (x[1] === 'ln' ? [[x[0], x[1], x[2], true]] : [[x[0], x[1], x[2], true], [x[0], x[1], x[2], false]])).map(x => [x[0] + (x[1] === 'ln' ? '' : x[3] ? ' · Mechanik (Lock = Grundwert)' : ' · andere Werte (Klang ändert sich, nur Info)'), x[1], x[3] || x[1] === 'ln' ? x[2] : Infinity, x[3]])) {
+for (const [nm0, eng, lim0, same0] of scenes.filter(x => !process.env.SC || process.env.SC.split(',').includes(x[1])).flatMap(x => [[x[0], x[1], x[2], true], [x[0], x[1], x[2], false]]).map(x => [x[0] + (x[3] ? ' · Mechanik (Wert = Grundwert)' : ' · andere Werte (Klang ändert sich, nur Info)'), x[1], x[3] ? x[2] : Infinity, x[3]])) {
   const nm = nm0, lim = lim0; SAME = same0;
   for (let k = 0; k < 3; k++) { run(eng, false); run(eng, true); }   // JIT warm
   let n = 20, aa = [], ab = [], base = 0;
