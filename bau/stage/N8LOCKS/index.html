@@ -26314,7 +26314,8 @@ function redo() {
 /* ---------- VC2a Verlauf-Rekorder (Nachtrag 1): Ereignis {t, u, z, d, c?, l} je Geste, u 'ctx' = Kontext; Keyframes; IndexedDB
    synq-hist (hist2:<id>:<n>, 30 min, gzip). VL-R1: HIST.kind(name, getSubtree) je Undo-Art; HIST.volatile = Ansichtsfelder ---------- */
 var HIST = {
-  volatile: ['ui', 'settings.coach'], kinds: new Map(), unknown: new Set(),
+  volatile: ['ui', 'settings.coach', 'need'],   // N8LOCKS: need wird beim Speichern aus den Daten gerechnet (Baustein N), keine Bearbeitung
+  kinds: new Map(), unknown: new Set(),
   on: true, avail: null, why: '', init: false, pid: null, sh: null, cache: new Map(),
   q: [], qT: false, ev: new WeakMap(), lastEv: null, cur: null, meta: null, metaP: null, dbP: null,
   ft: 0, lastFlush: -1e9, dirty: false, sinceKf: 0, kfDue: false, ptr: new Set(), ptrT: 0, cv: null, pend: null,

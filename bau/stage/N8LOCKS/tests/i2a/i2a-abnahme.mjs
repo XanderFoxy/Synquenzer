@@ -171,19 +171,20 @@ const {b, p, errs} = await open(FILE);
 
 /* ---------- I2-05 Undo / Redo, geändert-Punkt ---------- */
 {
-  const r = await p.evaluate(() => {
+  const r = await p.evaluate(async () => {
     const D = SYNQUENZER; D.newProject(); D.setClip(0, 0, {len: 1, notes: [{t: 0, d: .25, n: 60, v: .8}, {t: .5, d: .25, n: 62, v: .8}]});
-    const st = () => JSON.stringify(D.getClip(0, 0)), s0 = st(), out = [];
+    const st = () => JSON.stringify(D.getClip(0, 0)), s0 = st(), out = [], mdN = [];
     const acts = [['lkSet', () => D.lkSet(0, 0, 0, 'cutoff', .3)], ['lkSet löschen', () => D.lkSet(0, 0, 0, 'cutoff', null)], ['laneSet', () => D.laneSet(0, 0, {p: 'fx.pan', len: 8, st: [{i: 1, v: .2}]})],
       ['laneSet löschen', () => D.laneSet(0, 0, {p: 'fx.pan', del: true})], ['lanePut', () => D.lanePut(0, 0, 'res', [.1, .2])], ['lockPut', () => D.lockPut(0, 0, 'aD', [.5, .5, .5])]];
     for (const [nm, f] of acts) {
-      const a = st(), n0 = D.undoInfo().n; BOOT.dirty = false; f(); const b = st(), n1 = D.undoInfo().n;
+      const a = st(), n0 = D.undoInfo().n; let md = 0; const M0 = window.markDirty; window.markDirty = () => { md++; return M0(); }; f(); window.markDirty = M0; const b = st(), n1 = D.undoInfo().n; mdN.push(md);
       D.undo(); const c = st(); D.redo(); const d = st();
       out.push([nm, n1 - n0, c === a, d === b]);
     }
-    return {out, s0};
+    const hc = D.historyCheck ? await D.historyCheck({detail: true}) : null, dirty = mdN.every(x => x >= 1);
+    return {out, s0, hc, dirty};
   });
-  ok(r.out.every(x => x[1] === 1 && x[2] && x[3]), `I2-05 je Aktion ein Undo-Schritt, Undo/Redo stellt her: ${r.out.map(x => x[0] + ' ' + x[1] + (x[2] && x[3] ? '✓' : '✗')).join(' · ')} (historyCheck: auf dieser Basis nicht vorhanden)`);
+  ok(r.out.every(x => x[1] === 1 && x[2] && x[3]) && (!r.hc || r.hc.ok) && r.dirty, `I2-05 je Aktion ein Undo-Schritt, Undo/Redo stellt her: ${r.out.map(x => x[0] + ' ' + x[1] + (x[2] && x[3] ? '✓' : '✗')).join(' · ')}; historyCheck() = ${r.hc ? r.hc.ok + ' ' + JSON.stringify(r.hc.why || r.hc.bad || '').slice(0, 300) : 'fehlt'}; „geändert“-Punkt sofort (markDirty je Aktion) ${r.dirty}`);
 }
 
 /* ---------- I2-04 (Daten-Teil): ohne I2-Felder Zeichen für Zeichen wie der Vorgänger ---------- */
@@ -206,11 +207,11 @@ const {b, p, errs} = await open(FILE);
   const reNew = await p.evaluate(c => c.map(([id, j]) => [id, JSON.stringify(normalizeProject(SQStore.parseFile(j, LEGACY_HOOKS).project), stripReplacer)]), corpus);
   const reOld = await p0.evaluate(c => c.map(([id, j]) => [id, JSON.stringify(normalizeProject(SQStore.parseFile(j, LEGACY_HOOKS).project), stripReplacer)]), corpus);
   // auch die Datei selbst: die neue App schreibt dasselbe wie die alte (ohne need)
-  const fileOld = await p0.evaluate(c => c.map(([id, j]) => { const q = normalizeProject(SQStore.parseFile(j, LEGACY_HOOKS).project); return JSON.stringify(SQStore.buildProjectFile(q, null, '4.24.0').project); }), corpus);
-  const fileNew = await p.evaluate(c => c.map(([id, j]) => { const q = normalizeProject(SQStore.parseFile(j, LEGACY_HOOKS).project); needSync(q); return JSON.stringify(SQStore.buildProjectFile(q, null, '4.24.0').project); }), corpus);
+  const fileOld = await p0.evaluate(c => c.map(([id, j]) => { const q = normalizeProject(SQStore.parseFile(j, LEGACY_HOOKS).project); return JSON.stringify(SQStore.buildProjectFile(q, null, '4.30.0').project); }), corpus);
+  const fileNew = await p.evaluate(c => c.map(([id, j]) => { const q = normalizeProject(SQStore.parseFile(j, LEGACY_HOOKS).project); needSync(q); return JSON.stringify(SQStore.buildProjectFile(q, null, '4.30.0').project); }), corpus);
   await b0.close();
   for (let i = 0; i < corpus.length; i++) if (reNew[i][1] !== reOld[i][1] || fileNew[i] !== fileOld[i]) diff.push(corpus[i][0]);
-  ok(diff.length === 0, `I2-04 (Daten) Demo + ${corpus.length - 1} Werksklang-Projekte: normalisiertes JSON und Datei gegen 4.24.0 Zeichen für Zeichen gleich: ${corpus.length - diff.length}/${corpus.length} ${diff.slice(0, 5).join(' ')}`);
+  ok(diff.length === 0, `I2-04 (Daten) Demo + ${corpus.length - 1} Werksklang-Projekte: normalisiertes JSON und Datei gegen 4.30.0 Zeichen für Zeichen gleich: ${corpus.length - diff.length}/${corpus.length} ${diff.slice(0, 5).join(' ')}`);
   const needNo = await p.evaluate(c => c.filter(([id, j]) => JSON.parse(j).project.need != null).length, corpus);
   ok(needNo === 0, `I2-04 kein need-Feld ohne I2-Daten: ${needNo} Projekte mit need`);
 }
@@ -234,11 +235,11 @@ const {b, p, errs} = await open(FILE);
   }, mk.j);
   ok(a.lock && a.ban && a.rawSame && JSON.stringify(a.n) === '["lk"]', `I2-06 (a) Stand ohne 'lk' in KNOWN_NEED: gesperrt ${a.lock}, Hinweisband ${a.ban}, Original unverändert gehalten ${a.rawSame}, n=${JSON.stringify(a.n)}`);
   ok(a.zz, `I2-06 need: ['zz'] → gesperrt: ${a.zz}`);
-  // (b) Stand vor Baustein N (4.24.0) öffnet ohne Fehler (bekannte Lücke: verliert die I2-Felder beim Speichern)
+  // (b) Stand vor Baustein N (4.30.0) öffnet ohne Fehler (bekannte Lücke: verliert die I2-Felder beim Speichern)
   const {b: b0, p: p0, errs: e0} = await open(BASE);
   const bb = await p0.evaluate(async j => { const D = SYNQUENZER; const r = D.importJSON(j); await new Promise(r => setTimeout(r, 400)); const s = JSON.parse(D.serialize()).project; return {r, lock: !!NV.lock, lost: !s.tracks[0].clips[0].notes[0].lk && !s.tracks[0].clips[0].ln}; }, mk.j);
   await b0.close();
-  ok(bb.r && !bb.lock && e0.length === 0, `I2-06 (b) 4.24.0 öffnet ohne Fehler (gesperrt: ${bb.lock}, Konsolenfehler ${e0.length}); verliert lk/ln beim Speichern: ${bb.lost} (bekannte Lücke)`);
+  ok(bb.r && !bb.lock && e0.length === 0, `I2-06 (b) 4.30.0 öffnet ohne Fehler (gesperrt: ${bb.lock}, Konsolenfehler ${e0.length}); verliert lk/ln beim Speichern: ${bb.lost} (bekannte Lücke)`);
   // (c) zurück im neuen Stand deep-equal
   const c = await p.evaluate(async j => { const D = SYNQUENZER; D.needKnown(['lk']); D.importJSON(j); await new Promise(r => setTimeout(r, 400)); return {lock: !!NV.lock, same: JSON.stringify(JSON.parse(D.serialize()).project) === JSON.stringify(JSON.parse(j).project)}; }, mk.j);
   ok(!c.lock && c.same, `I2-06 (c) neuer Stand öffnet frei (${!c.lock}) und schreibt deep-equal zurück: ${c.same}`);
