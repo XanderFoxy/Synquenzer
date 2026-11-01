@@ -12998,7 +12998,7 @@ const RecHelpers = (() => {
     const MS = typeof opts.msKey === 'function' && G.MagicScale ? G.MagicScale.attach({E, V, opts, model, root, bar, mainEl: main, rulerEl: cR, mk, btn, bindTap, GRID, LO, HI,
       clip: () => clip(), L: () => L(), render: () => render(), say: t => say(t), addNote: (t, n, d, v) => addNote(t, n, d, v), sortNotes: () => sortNotes(),
       dropNote: n => { clip().notes = clip().notes.filter(x => x !== n); E.sel.delete(n); }, begin: (k, x) => begin(k, x), gst: () => gst, setTool: t => setTool(t),
-      afterExternal: () => afterExternal(), xOf: b => xOf(b), beatAt: x => beatAt(x), rowAt: y => rowAt(y), noteOfRow: r => noteOfRow(r), rowOfNote: n => rowOfNote(n),
+      afterExternal: () => afterExternal(), xOf: b => xOf(b), beatAt: x => beatAt(x), rowAt: y => rowAt(y), noteOfRow: r => noteOfRow(r), rowOfNote: n => rowOfNote(n), yOfNote: n => yOfRow(rowOfNote(n)), yOfRow: r => yOfRow(r),
       tok: (a, b) => tok(a, b), rr: (...a) => rr(...a), nm: n => nm(n)}) : null;
     sep(bar);
     tb.undo = btn(bar, '↶', () => { if (model.undo) model.undo(); afterExternal(); }, 'Rückgängig');
@@ -13693,7 +13693,8 @@ const RecHelpers = (() => {
 .ms-kp[hidden]{display:none}
 .ms-kp button{min-height:44px;border:0;border-radius:6px;font:700 13px var(--font-ui,system-ui);color:var(--text,#ece8df);background:var(--chassis-2,#1c1f25)}
 .ms-kp button.on{background:var(--sel,#f4f1ea);color:#111}
-.ms-kp .w2{grid-column:span 2}.ms-kp .w3{grid-column:span 3}`;
+.ms-kp .w2{grid-column:span 2}.ms-kp .w3{grid-column:span 3}
+@media (max-width:359px){.ms-kp{grid-template-columns:repeat(4,minmax(0,1fr))}.ms-kp .w3{grid-column:span 4}}`;
 
   function attach(K) {
     const {E, V, opts, model} = K;
@@ -13991,8 +13992,14 @@ const RecHelpers = (() => {
         for (const ch of chords()) {
           const bx = K.xOf(ch.t); if (bx < -60 || bx > V.W) continue;
           const w = x.measureText(ch.name).width + 10, sel = ch.notes.some(n => E.sel.has(n));
-          x.fillStyle = sel ? C.sel : '#000'; x.globalAlpha = sel ? 1 : .7; K.rr(x, bx + 1, 3, w, 18, 4); x.fill(); x.globalAlpha = 1;
-          x.fillStyle = sel ? '#111' : C.text; x.fillText(ch.name, bx + 6, 12.5);
+          // das Schild steht über dem höchsten Ton des Akkords (kein Ton wird verdeckt); oben kein Platz: unter dem tiefsten
+          // sonst in die nächste freie Zeile zwischen den Akkordtönen (nie über einen Akkordton)
+          const ps = ch.notes.map(n => n.n), yt = K.yOfNote(Math.max(...ps)), yb = K.yOfNote(Math.min(...ps)) + V.rowH;
+          let ly = yt - 20 >= 0 ? yt - 20 : yb + 20 <= V.H ? yb + 2 : null;
+          if (ly == null) { const used = new Set(ps.map(n => K.rowOfNote(n))); for (let r = K.rowOfNote(Math.max(...ps)) + 1; r < K.rowOfNote(Math.min(...ps)); r++) { const y = K.yOfRow(r); if (!used.has(r) && y >= 0 && y + 18 <= V.H) { ly = y + (V.rowH - 18) / 2; break; } } }
+          if (ly == null) ly = 2;
+          x.fillStyle = sel ? C.sel : '#000'; x.globalAlpha = sel ? 1 : .75; K.rr(x, bx + 1, ly, w, 18, 4); x.fill(); x.globalAlpha = 1;
+          x.fillStyle = sel ? '#111' : C.text; x.fillText(ch.name, bx + 6, ly + 9.5);
         }
         x.textBaseline = 'alphabetic';
       }

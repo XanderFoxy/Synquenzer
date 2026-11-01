@@ -1,0 +1,478 @@
+--- bau/snapshots/R-4261.html	2026-11-01 03:55:23.329384426 +0000
++++ bau/helfer/MAGIC/index.html	2026-11-01 04:07:50.125428818 +0000
+@@ -12994,6 +12994,12 @@
+     tb.step = btn(bar, 'Schritt', () => { setStep(E.step == null); }, 'Schritt-Eingabe mit der Tastatur');
+     tb.fit = btn(bar, '⤢', () => { fitView(V.ppb > V.W * FITK / L() + 1 ? 'clip' : 'bar'); hand('zoom'); }, 'Ganzer Clip / 1 Takt');
+     for (const x of opts.extraTools || []) { tb[x.id] = btn(bar, x.label, () => x.fn(tb[x.id]), x.title); if (x.cls) tb[x.id].classList.add(x.cls); }
++    /* MAGIC: Magic Scale (eigene Zeile .prms, Präfix ms…) – nur wenn die App opts.msKey gibt (Synth-Clip, Song-Melodie) */
++    const MS = typeof opts.msKey === 'function' && G.MagicScale ? G.MagicScale.attach({E, V, opts, model, root, bar, mainEl: main, rulerEl: cR, mk, btn, bindTap, GRID, LO, HI,
++      clip: () => clip(), L: () => L(), render: () => render(), say: t => say(t), addNote: (t, n, d, v) => addNote(t, n, d, v), sortNotes: () => sortNotes(),
++      dropNote: n => { clip().notes = clip().notes.filter(x => x !== n); E.sel.delete(n); }, begin: (k, x) => begin(k, x), gst: () => gst, setTool: t => setTool(t),
++      afterExternal: () => afterExternal(), xOf: b => xOf(b), beatAt: x => beatAt(x), rowAt: y => rowAt(y), noteOfRow: r => noteOfRow(r), rowOfNote: n => rowOfNote(n), yOfNote: n => yOfRow(rowOfNote(n)), yOfRow: r => yOfRow(r),
++      tok: (a, b) => tok(a, b), rr: (...a) => rr(...a), nm: n => nm(n)}) : null;
+     sep(bar);
+     tb.undo = btn(bar, '↶', () => { if (model.undo) model.undo(); afterExternal(); }, 'Rückgängig');
+     tb.redo = btn(bar, '↷', () => { if (model.redo) model.redo(); afterExternal(); }, 'Wiederholen');
+@@ -13128,6 +13134,7 @@
+         // resize grip
+         if (r.w >= 18) { x.fillStyle = '#0b0c0f'; x.globalAlpha = .5; x.fillRect(r.x + r.w - 5, r.y + r.h * .3, 2, r.h * .4); x.globalAlpha = 1; }
+       }
++      if (MS) MS.draw(x, C);                                        /* MAGIC */
+       mmDraw(C);                                                    /* N2 */
+       if (gst && gst.kind === 'marquee') { const m = gst.rect; x.strokeStyle = C.sel; x.setLineDash([4, 3]); x.strokeRect(m.x + .5, m.y + .5, m.w, m.h); x.setLineDash([]); x.fillStyle = C.sel; x.globalAlpha = .08; x.fillRect(m.x, m.y, m.w, m.h); x.globalAlpha = 1; }
+       // keys
+@@ -13366,6 +13373,7 @@
+     }
+     function promote() {
+       const h = gst.hit, tool = E.tool;
++      if (MS && MS.owns(tool)) { if (!MS.promote(gst)) gst = null; return; }   /* MAGIC */
+       if (tool === 'erase') { begin('erase', {gone: new Set()}); drag(gst.p0); return; }
+       if (h && h.zone === 'end') {
+         const set = tool === 'select' && E.sel.has(h.note) ? scope() : [h.note];
+@@ -13431,6 +13439,7 @@
+           E.sel = new Set(clip().notes.filter(nt => { const q = noteRect(nt); return q.x < R.x + R.w && q.x + q.w > R.x && q.y < R.y + R.h && q.y + q.h > R.y; }));
+           break;
+         }
++        case 'ms': MS.drag(gst, p); break;                           /* MAGIC */
+         case 'erase': {
+           const h = hitNote(p.x, p.y);
+           if (h && !gst.gone.has(h.note)) { gst.gone.add(h.note); clip().notes = clip().notes.filter(n => n !== h.note); E.sel.delete(h.note); gst.changed = true; }
+@@ -13447,7 +13456,7 @@
+       if (gst.kind === 'pinch') { if (P.size === 0) { gst = null; } return; }    // the finger still down after a pinch does nothing
+       if (e.pointerId !== gst.id) return;
+       // a finger that just rested on the screen (> 500 ms, no movement) edits nothing
+-      if (gst.kind === 'pending') { if (performance.now() - gst.ms < 500) tap(); } else { if (gst.kind === 'create' || gst.kind === 'move' || gst.kind === 'resize') sortNotes(); model.end(gst.changed, label(gst.kind)); }
++      if (gst.kind === 'pending') { if (performance.now() - gst.ms < 500) tap(); } else { if (gst.kind === 'ms') { MS.up(gst); sortNotes(); }   /* MAGIC */ if (gst.kind === 'create' || gst.kind === 'move' || gst.kind === 'resize') sortNotes(); model.end(gst.changed, gst.kind === 'ms' ? MS.label(gst) : label(gst.kind)); }
+       gst = null; render();
+     }
+     function mainCancel(e) {
+@@ -13466,6 +13475,7 @@
+     }
+     function tap() {
+       const h = gst.hit, tool = E.tool;
++      if (MS && MS.owns(tool)) { MS.tap(gst); return; }           /* MAGIC */
+       if (tool === 'select') { if (h) { E.sel.has(h.note) ? E.sel.delete(h.note) : E.sel.add(h.note); model.audition && model.audition(h.note.n, h.note.v); } else E.sel.clear(); return; }
+       // (Entscheidung 15) Zeichnen: a tap on a note selects it (only that one) and plays it - a stray finger never deletes a note
+       if (h && tool === 'draw') { if (E.sel.size === 1 && E.sel.has(h.note)) E.sel.clear(); else E.sel = new Set([h.note]); model.audition && model.audition(h.note.n, h.note.v); return; }
+@@ -13534,6 +13544,7 @@
+       s.edgeRaf = requestAnimationFrame(step);
+     }
+     scroller(cR, (s, p) => {
++      if (s.rip == null) s.rip = !!(MS && MS.ripStart(s)); if (s.rip) { MS.ripDrag(s, p); return; }   /* MAGIC: Takt-Leiste halten + ziehen */
+       if (s.len == null) {                                           // decide once: length handle or scroll
+         s.len = Math.abs(s.p0.x - xOf(L())) < 22;
+         if (s.len) {
+@@ -13630,6 +13641,7 @@
+     if (!document.getElementById('pr-css')) { const st = document.createElement('style'); st.id = 'pr-css'; st.textContent = CSS; document.head.appendChild(st); }
+     const api = {open, render, playhead, setTool, setGrid, stepInput, stepRest, stepTie, stepBack, refresh: afterExternal, setStep,
+       fitView, setLen, cropToLoop, cancel: cancelAll, showPage,
++      ms: MS ? MS.api : null,                                       /* MAGIC */
+       // V0b FOLGEN: view + hold conditions (finger, selection / marked bars, tool ≠ ✎), per frame
+       fol: () => ({x0: V.x0, ppb: V.ppb, W: V.W, L: clip() ? L() : 0, busy: P.size > 0 || !!gst || busyN > 0 || !!V.freeze, sel: E.sel.size > 0 || !!E.loop, tool: E.tool !== 'draw' || E.step != null}),
+       setLoop: (a, b) => { const n = clip().len; if (a == null) E.loop = null; else { a = clamp(a | 0, 0, n - 1); b = clamp(b == null ? a : b | 0, 0, n - 1); E.loop = {a: Math.min(a, b), b: Math.max(a, b)}; } render(); },
+@@ -13639,7 +13651,7 @@
+       centerOn: n => { measure(); centerOn(n); clampView(); render(); },
+       get state() { return {tool: E.tool, grid: E.grid, fold: E.fold, sel: E.sel.size, step: E.step, loop: E.loop ? {a: E.loop.a, b: E.loop.b} : null, ask: E.ask, pointers: P.size, gesture: gst && gst.kind, view: {...V, rows: V.rows.length}}; },
+       get selection() { return [...E.sel]; },
+-      destroy() { dead = true; if (GL.raf) { cancelAnimationFrame(GL.raf); GL.raf = 0; }   /* N2 */ if (ro) ro.disconnect(); cancelAnimationFrame(raf); raf = 0; for (const id of P.keys()) reg.end(id); P.clear(); gst = null; root.innerHTML = ''; root.classList.remove('pr'); if (bar.parentNode) bar.parentNode.removeChild(bar); },
++      destroy() { dead = true; if (MS) MS.destroy();   /* MAGIC */ if (GL.raf) { cancelAnimationFrame(GL.raf); GL.raf = 0; }   /* N2 */ if (ro) ro.disconnect(); cancelAnimationFrame(raf); raf = 0; for (const id of P.keys()) reg.end(id); P.clear(); gst = null; root.innerHTML = ''; root.classList.remove('pr'); if (bar.parentNode) bar.parentNode.removeChild(bar); },
+       el: {main: cM, keys: cK, ruler: cR, vel: cV, bar, acts},
+       _xy(beat, note) { const r = cM.getBoundingClientRect(); return {x: r.left + xOf(beat), y: r.top + yOfRow(rowOfNote(note)) + V.rowH / 2}; },
+       _vel(beat, v) { const r = cV.getBoundingClientRect(); return {x: r.left + xOf(beat) + 2, y: r.top + (1 - v) * V.VH}; },
+@@ -13654,6 +13666,372 @@
+ })(typeof window !== 'undefined' ? window : globalThis);
+ </script>
+ <script>
++/* ===== MAGIC (Magic Scale): Wischen im Tonraster, Pause / Pause +, Akkord-Umkehrung, Takt-Leiste halten + ziehen (Ripple) =====
++   Eine eigene Werkzeug-Zeile im Noten-Editor (CSS .prms, Präfix ms…). PianoRoll ruft die Haken nur, wenn opts.msKey gesetzt ist.
++   Wischen: jede Rasterzelle unter dem Finger = eine Note; die Höhe rastet auf erlaubte Töne der Tonart der Stelle (Modus Tonart /
++   Terzen / Terz+Quinte, nächste Lage zur Fingerhöhe); übersprungene Zellen werden aus der Linie gefüllt; nach links = Noten dieses
++   Zugs wieder weg. Ein Undo-Schritt je Geste (über das model von PianoRoll). Keine neuen Felder im Projekt. */
++(function (G) {
++  'use strict';
++  const MSP = {mode: 'scale'};                                     // überlebt das Schließen des Editors (wie ROLLP); Werkzeug und Tonart nicht
++  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
++  const PC = n => ((n % 12) + 12) % 12;
++  const SC0 = {ionian: [0, 2, 4, 5, 7, 9, 11], aeolian: [0, 2, 3, 5, 7, 8, 10]};
++  const NN = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
++  const MODE_DE = {ionian: 'Dur', aeolian: 'Moll', dorian: 'dorisch', phrygian: 'phrygisch', lydian: 'lydisch', mixolydian: 'mixolydisch', locrian: 'lokrisch'};
++  const HOLD_MS = 350, SLOP = 7, CH_TOL = .07, VEL_HEAR = .45;
++  const TOOLS = {msWipe: 'Wischen', msRest: 'Pause', msIns: 'Pause +', msChord: 'Akkorde'};
++  const MODES = [['scale', 'Tonart'], ['third', 'Terzen'], ['triad', 'Terz+Quinte']];
++  const CSS = `
++.pr>.pr-bar.prms{display:none;grid-column:1/-1;grid-row:6;border-top:1px solid var(--line,#2d323c)}
++.pr.ms-on{grid-template-rows:auto 26px minmax(0,1fr) var(--pr-vh,56px) auto auto}
++.pr.ms-on>.pr-bar.prms{display:flex}
++.pr-bar.prms button{min-height:44px;height:44px}
++.pr-bar.prms .ms-lbl{flex:none;font-size:9px;letter-spacing:.08em;color:var(--text-dim,#9aa0aa);padding:0 2px}
++.ms-kp{position:absolute;left:6px;right:6px;bottom:6px;z-index:5;padding:8px;border-radius:8px;background:#0b0c0ff2;box-shadow:0 4px 18px #000a;
++  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;touch-action:manipulation}
++.ms-kp[hidden]{display:none}
++.ms-kp button{min-height:44px;border:0;border-radius:6px;font:700 13px var(--font-ui,system-ui);color:var(--text,#ece8df);background:var(--chassis-2,#1c1f25)}
++.ms-kp button.on{background:var(--sel,#f4f1ea);color:#111}
++.ms-kp .w2{grid-column:span 2}.ms-kp .w3{grid-column:span 3}
++@media (max-width:359px){.ms-kp{grid-template-columns:repeat(4,minmax(0,1fr))}.ms-kp .w3{grid-column:span 4}}`;
++
++  function attach(K) {
++    const {E, V, opts, model} = K;
++    const st = {on: false, manual: null, hold: null, rip: null, chords: null, chSig: ''};
++    const row = K.mk('div', 'pr-bar prms'); row.setAttribute('aria-label', 'Magic Scale');
++    K.root.appendChild(row);
++    if (!document.getElementById('ms-css')) { const s = document.createElement('style'); s.id = 'ms-css'; s.textContent = CSS; document.head.appendChild(s); }
++    const B = {};
++    B.magic = K.btn(K.bar, 'Magic', () => setOn(!st.on), 'Magic Scale: Wischen, Pausen, Akkord-Umkehrung');
++    for (const k in TOOLS) B[k] = K.btn(row, TOOLS[k], () => setTool(k), {msWipe: 'Wischen: Noten im Raster malen, nur Töne der Tonart', msRest: 'Pause: Rasterzelle still machen', msIns: 'Pause einschieben: alles danach rückt eine Zelle weiter', msChord: 'Akkorde erkennen und umkehren'}[k]);
++    B.sep1 = row.appendChild(K.mk('span', 'sep'));
++    B.modes = MODES.map(([m, l]) => { const b = K.btn(row, l, () => { MSP.mode = m; K.render(); }, 'Modus ' + l); b.dataset.msMode = m; return b; });
++    B.key = K.btn(row, 'Auto', () => keyPick(), 'Tonart für das Wischen (Auto = erkannt)');
++    B.inUp = K.btn(row, 'Umk. ▲', () => invert(1), 'Umkehrung nach oben (tiefster Ton eine Oktave höher)');
++    B.inDn = K.btn(row, 'Umk. ▼', () => invert(-1), 'Umkehrung nach unten (höchster Ton eine Oktave tiefer)');
++    B.smooth = K.btn(row, 'Glatt', () => smooth(), 'Umkehrungen mit glatter Stimmführung wählen');
++    // Tonart-Auswahl: Auto · 12 Grundtöne · Dur / Moll (auf der Notenfläche, schließt mit der Wahl oder ✕)
++    const kp = K.mk('div', 'ms-kp'); kp.hidden = true; K.mainEl.appendChild(kp);
++    ['pointerdown', 'pointerup', 'touchstart'].forEach(ev => kp.addEventListener(ev, e => e.stopPropagation()));
++
++    function setOn(on) {
++      st.on = !!on; K.root.classList.toggle('ms-on', st.on);
++      if (st.on) { if (!TOOLS[E.tool]) setTool('msWipe'); }
++      else { if (TOOLS[E.tool]) K.setTool('draw'); kp.hidden = true; }
++      K.render();
++    }
++    function setTool(k) { if (!TOOLS[k]) return; if (!st.on) { st.on = true; K.root.classList.add('ms-on'); } E.tool = k; if (k !== 'msChord' && k !== 'msRest' && E.sel.size > 1) E.sel.clear(); kp.hidden = true; K.render(); }
++    const owns = t => !!TOOLS[t];
++
++    // ---------- Tonart der Stelle ----------
++    const nnames = () => { try { const n = opts.msNoteNames && opts.msNoteNames(); if (n && n.length === 12) return n; } catch (e) {} return NN; };
++    const scaleArr = sc => { const H = typeof Harmony !== 'undefined' && Harmony.SCALES; return (H && H[sc]) || SC0[sc] || SC0.ionian; };
++    function autoKey(beat) { let k = null; try { k = opts.msKey ? opts.msKey(beat) : null; } catch (e) { k = null; } k = k || K.clip().key || {root: 0, scale: 'ionian'}; const H = typeof Harmony !== 'undefined' && Harmony.SCALES; return {root: PC(k.root | 0), scale: (H && H[k.scale]) || SC0[k.scale] ? k.scale : 'ionian'}; }
++    const keyAt = beat => st.manual || autoKey(beat);
++    function keyLabel(k) {
++      if (opts.msKeyName) { try { const s = opts.msKeyName(k); if (s) return s; } catch (e) {} }
++      const r = nnames()[k.root]; return k.scale === 'ionian' ? r + '-Dur' : k.scale === 'aeolian' ? r.toLowerCase() + '-Moll' : r + ' ' + (MODE_DE[k.scale] || k.scale);
++    }
++    function keyPick() {
++      if (!kp.hidden) { kp.hidden = true; return; }
++      const cur = st.manual, ak = autoKey(viewBeat());
++      let h = `<button class="w3${cur ? '' : ' on'}" data-a="auto">Auto · ${esc(keyLabel(ak))}</button><button class="w2${cur && cur.scale === 'ionian' ? ' on' : ''}" data-s="ionian">Dur</button><button class="${cur && cur.scale === 'aeolian' ? 'on' : ''}" data-s="aeolian">Moll</button>`;
++      const nm = nnames(), r0 = cur ? cur.root : ak.root;
++      for (let r = 0; r < 12; r++) h += `<button data-r="${r}" class="${cur && cur.root === r ? 'on' : ''}">${esc(nm[r])}</button>`;
++      kp.innerHTML = h; kp.hidden = false; kp.dataset.r = String(r0);
++      kp.querySelectorAll('button').forEach(b => K.bindTap(b, () => {
++        if (b.dataset.a) { st.manual = null; kp.hidden = true; }
++        else if (b.dataset.s) { st.manual = {root: st.manual ? st.manual.root : +kp.dataset.r, scale: b.dataset.s}; kp.hidden = true; }
++        else { const sc = st.manual ? st.manual.scale : (ak.scale === 'aeolian' ? 'aeolian' : 'ionian'); st.manual = {root: +b.dataset.r, scale: sc}; kp.dataset.r = b.dataset.r; keyPick(); keyPick(); return; }
++        K.render();
++      }));
++    }
++    const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]);
++    const viewBeat = () => clamp(V.x0 + V.W / V.ppb / 2, 0, Math.max(0, K.L() - 1e-6));
++
++    // ---------- erlaubte Töne ----------
++    // Stufe (absolut: Oktave·k + Index) oder null, wenn der Ton nicht in der Tonart liegt
++    function degOf(n, key) { const S = scaleArr(key.scale), i = S.indexOf(PC(n - key.root)); return i < 0 ? null : Math.floor((n - key.root) / 12) * S.length + i; }
++    function allowed(n, key, mode, anchor) {
++      const d = degOf(n, key); if (d == null) return false;
++      if (mode === 'scale' || anchor == null) return true;
++      const k = scaleArr(key.scale).length, r = (((d - anchor) % k) + k) % k;
++      if (mode === 'third') return (((d - anchor) % 2) + 2) % 2 === 0;
++      return r === 0 || r === 2 || r === 4;
++    }
++    // nächster erlaubter Ton zur Fingerhöhe (rf = Zeile als Kommazahl); Gleichstand: obere Zeilenhälfte = der höhere
++    function nearest(rf, key, mode, anchor) {
++      const p0 = K.noteOfRow(rf), up = rf - Math.floor(rf) < .5;
++      for (let d = 0; d <= 24; d++) {
++        const a = p0 + (up ? d : -d), b = p0 - (up ? d : -d);
++        if (a >= K.LO && a <= K.HI && allowed(a, key, mode, anchor)) return a;
++        if (b >= K.LO && b <= K.HI && allowed(b, key, mode, anchor)) return b;
++      }
++      return clamp(p0, K.LO, K.HI);
++    }
++    // mit Hysterese: der Ton wechselt erst, wenn der Finger ⅓ Zeile über die Grenze hinaus ist (kein Flackern, kein Ton-Gewitter)
++    function pitchAt(y, key, mode, anchor, cur) {
++      const rf = K.rowAt(y), c = nearest(rf, key, mode, anchor);
++      if (cur == null || c === cur) return c;
++      const rc = K.rowOfNote(cur) + .5, r2 = rf + Math.sign(rc - rf) * .35;
++      return nearest(r2, key, mode, anchor) === cur ? cur : c;
++    }
++    const stepOf = () => K.GRID[E.grid] || E.noteLen || .25;
++    const hear = (n, v) => { if (model.audition) { try { model.audition(n, v == null ? VEL_HEAR : v); } catch (e) {} } };
++
++    // ---------- Gesten auf der Notenfläche ----------
++    function promote(g) {
++      const tool = E.tool, step = stepOf();
++      if (tool === 'msChord') { K.begin('marquee', {rect: {x: g.p0.x, y: g.p0.y, w: 0, h: 0}}); return true; }
++      const k0 = Math.floor(g.beat0 / step + 1e-6);
++      if (tool === 'msWipe') {
++        if (k0 * step >= K.L() - 1e-9 || k0 < 0) return false;
++        E.sel.clear();
++        K.begin('ms', {ms: 'wipe', step, cells: new Map(), anchor: null, last: k0 - 1, lastBeat: g.beat0, lastY: g.p0.y, mode: MSP.mode});
++        wipeTo(K.gst(), g.p0); return true;
++      }
++      if (tool === 'msRest' || tool === 'msIns') {
++        const c = K.clip();
++        K.begin('ms', {ms: tool === 'msRest' ? 'rest' : 'ins', step, k0, orig: c.notes.slice(), pos: c.notes.map(n => ({t: n.t, o: n.o})), len0: c.len});
++        msDrag(K.gst(), g.p0); return true;
++      }
++      return false;
++    }
++    function wipeCell(g, k, y, hearIt) {
++      const t = +(k * g.step).toFixed(6); if (t < 0 || t >= K.L() - 1e-9) return null;
++      const key = keyAt(t), c = g.cells.get(k);
++      if (c) {
++        const n = pitchAt(y, key, g.mode, g.anchor, c.n); if (n === c.n) return null;
++        c.n = n; if (c.note) { if (dupAt(t, n, c.note)) { K.dropNote(c.note); c.note = null; } else c.note.n = n; } else if (!dupAt(t, n, null)) c.note = K.addNote(t, n, noteD(g), opts.defVel);
++        g.changed = true; return n;
++      }
++      const n = pitchAt(y, key, g.mode, g.anchor, null);
++      if (g.anchor == null) g.anchor = degOf(n, key);
++      const note = dupAt(t, n, null) ? null : K.addNote(t, n, noteD(g), opts.defVel);
++      g.cells.set(k, {n, note}); if (note) g.changed = true;
++      return n;
++    }
++    const noteD = g => (E.noteLen ? Math.min(E.noteLen, g.step) : g.step);
++    const dupAt = (t, n, self) => K.clip().notes.some(x => x !== self && x.n === n && Math.abs(x.t - t) < 1e-6);
++    function wipeTo(g, p) {
++      const beat = K.beatAt(p.x), k = Math.floor(beat / g.step + 1e-6);
++      let heard = null;
++      if (k < g.last) {                                             // zurück: die Noten dieses Zugs rechts vom Finger fallen weg
++        for (const [j, c] of g.cells) if (j > k) { if (c.note) K.dropNote(c.note); g.cells.delete(j); g.changed = true; }
++        g.last = k;
++      }
++      if (k > g.last) {
++        const span = beat - g.lastBeat;
++        for (let j = g.last + 1; j <= k; j++) {
++          const f = j === k || Math.abs(span) < 1e-9 ? 1 : clamp(((j + .5) * g.step - g.lastBeat) / span, 0, 1);
++          const n = wipeCell(g, j, g.lastY + (p.y - g.lastY) * f); if (n != null) heard = n;
++        }
++        g.last = k;
++      } else { const n = wipeCell(g, k, p.y); if (n != null) heard = n; }
++      g.lastBeat = beat; g.lastY = p.y;
++      if (heard != null) { hear(heard); const kk = keyAt(k * g.step); K.say(K.nm(heard) + ' · ' + keyLabel(kk)); }
++    }
++    function msDrag(g, p) {
++      const c = K.clip(), k = Math.floor(K.beatAt(p.x) / g.step + 1e-6);
++      if (g.ms === 'wipe') { wipeTo(g, p); return; }
++      if (g.ms === 'rest') {
++        const a = Math.min(g.k0, k), b = Math.max(g.k0, k), sel = E.sel.size ? E.sel : null;
++        const keep = g.orig.filter(n => { const j = Math.floor(n.t / g.step + 1e-6); return !(j >= a && j <= b && (!sel || sel.has(n))); });
++        c.notes = keep; g.changed = keep.length !== g.orig.length; g.cnt = b - a + 1;
++        K.say(g.changed ? 'Pause · ' + (b - a + 1) + (b - a ? ' Zellen' : ' Zelle') : 'Hier ist schon Pause');
++        return;
++      }
++      // ins: alles ab Zelle k0 rückt um n Zellen (n = 1 + Zellen nach rechts gezogen), im Raster; Clip wächst bis 64 Takte
++      const s0 = g.k0 * g.step; let n = Math.max(1, k - g.k0 + 1);
++      let maxEnd = 0; g.orig.forEach((x, i) => { if (g.pos[i].t >= s0 - 1e-9) maxEnd = Math.max(maxEnd, g.pos[i].t + x.d); });
++      n = Math.max(0, Math.min(n, Math.floor((64 * 4 - maxEnd) / g.step + 1e-6)));
++      const q = n * g.step;
++      g.orig.forEach((x, i) => { const P = g.pos[i]; if (P.t >= s0 - 1e-9) { x.t = +(P.t + q).toFixed(6); if (q) delete x.o; else if (P.o != null) x.o = P.o; } else { x.t = P.t; if (P.o != null) x.o = P.o; } });
++      c.notes = g.orig.slice();
++      const need = maxEnd ? Math.ceil((maxEnd + q) / 4 - 1e-6) : g.len0; c.len = clamp(Math.max(g.len0, need), 1, 64);
++      g.changed = n > 0 && g.orig.some((x, i) => g.pos[i].t >= s0 - 1e-9); g.cnt = n;
++      K.say(g.changed ? 'Pause + ' + n + (n > 1 ? ' Zellen' : ' Zelle') : 'Dahinter liegt nichts');
++    }
++    function up(g) { if (g.ms === 'wipe') { const ns = [...g.cells.values()].filter(c => c.note).map(c => c.note); if (ns.length) E.sel = new Set(ns); } }
++    const label = g => ({wipe: 'Wischen', rest: 'Pause', ins: 'Pause einschieben'})[g.ms] || 'Magic';
++    // Tippen (ohne Ziehen): Wischen = eine Note, Pause / Pause + = eine Zelle, Akkorde = Akkord wählen
++    function tap(g) {
++      const tool = E.tool;
++      if (tool === 'msChord') {
++        const ch = chordAt(g.hit ? g.hit.note : null, g.beat0);
++        if (ch) { E.sel = new Set(ch.notes); ch.notes.forEach(n => hear(n.n, .4)); K.say(ch.name + ' · ' + invName(ch)); } else E.sel.clear();
++        return;
++      }
++      if (!promote(g)) return;                                    // promote → begin(): genau ein model.begin()
++      const gg = K.gst(); if (gg.ms === 'wipe') up(gg);
++      K.sortNotes(); model.end(!!gg.changed, label(gg)); K.afterExternal();
++    }
++
++    // ---------- Akkorde ----------
++    function chords() {
++      const c = K.clip(), sig = c.notes.length + ':' + c.notes.map(n => n.t + '/' + n.n).join(',');
++      if (st.chords && st.chSig === sig) return st.chords;
++      const ns = c.notes.slice().sort((a, b) => a.t - b.t || a.n - b.n), out = [];
++      let cur = null;
++      for (const n of ns) { if (cur && n.t - cur.t <= CH_TOL) cur.notes.push(n); else { cur = {t: n.t, notes: [n]}; out.push(cur); } }
++      st.chords = out.filter(g => g.notes.length >= 3).map(g => Object.assign(g, describe(g.notes))); st.chSig = sig;
++      return st.chords;
++    }
++    function describe(ns) {
++      const H = typeof Harmony !== 'undefined' ? Harmony : null, ps = ns.map(n => n.n), nm = nnames();
++      const d = H ? H.detectChord(ps) : null;
++      if (!d || d.kind !== 'chord') { const lo = Math.min(...ps); return {name: nm[PC(lo)] + '?', inv: 0, det: d}; }
++      const suf = H.SUFFIX[d.quality] || '';
++      return {name: nm[d.root] + suf + (d.bass !== d.root ? '/' + nm[d.bass] : ''), inv: d.inversion, det: d};
++    }
++    const invName = ch => (ch.inv ? ch.inv + '. Umkehrung' : 'Grundstellung');
++    function chordAt(note, beat) {
++      const cs = chords();
++      if (note) { const c = cs.find(x => x.notes.includes(note)); if (c) return c; }
++      return cs.find(x => beat >= x.t - .05 && beat < x.t + Math.max(...x.notes.map(n => n.d))) || null;
++    }
++    function chordScope() {
++      const cs = chords();
++      if (E.sel.size) return cs.filter(c => c.notes.some(n => E.sel.has(n)));
++      if (E.loop) return cs.filter(c => c.t >= E.loop.a * 4 - 1e-9 && c.t < (E.loop.b + 1) * 4 - 1e-9);
++      return cs;
++    }
++    // eine Umkehrung auf Tonhöhen-Feld (gleiche Reihenfolge wie die Noten): ▲ tiefster +12, ▼ höchster −12 (nie auf einen vorhandenen Ton)
++    function invStep(ps, dir) {
++      const q = ps.slice(); let i = 0;
++      for (let k = 1; k < q.length; k++) if (dir > 0 ? q[k] < q[i] : q[k] > q[i]) i = k;
++      let m = q[i] + 12 * dir; while (q.some((x, k) => k !== i && x === m)) m += 12 * dir;
++      if (m < K.LO || m > K.HI) return null;
++      q[i] = m; return q;
++    }
++    function invert(dir) {
++      const cs = chordScope(); if (!cs.length) { K.say('Kein Akkord (mind. 3 Noten zugleich)'); return; }
++      model.begin(); let ok = true;
++      const res = cs.map(c => invStep(c.notes.map(n => n.n), dir));
++      if (res.some(r => !r)) ok = false;
++      else cs.forEach((c, i) => c.notes.forEach((n, j) => { n.n = res[i][j]; }));
++      K.sortNotes(); model.end(ok, dir > 0 ? 'Umkehrung ▲' : 'Umkehrung ▼'); st.chords = null; K.afterExternal();
++      if (!ok) { K.say('Außerhalb des Tonumfangs'); return; }
++      const c0 = chords().find(x => x.notes.includes(cs[0].notes[0]));
++      if (c0) { c0.notes.forEach(n => hear(n.n, .4)); K.say(c0.name + ' · ' + invName(c0)); }
++    }
++    // Abstand zweier Lagen: jede Stimme zum nächsten Ton der anderen (beide Richtungen)
++    function vlCost(a, b) { let s = 0; for (const x of a) s += Math.min(...b.map(y => Math.abs(x - y))); for (const y of b) s += Math.min(...a.map(x => Math.abs(x - y))); return s; }
++    function smooth() {
++      const all = chords(), cs = chordScope(); if (!cs.length) { K.say('Kein Akkord (mind. 3 Noten zugleich)'); return; }
++      const i0 = all.indexOf(cs[0]);
++      let prev = i0 > 0 ? all[i0 - 1].notes.map(n => n.n) : null, n = 0;
++      model.begin();
++      for (const c of cs) {
++        const cur = c.notes.map(x => x.n);
++        if (!prev) { prev = cur; continue; }
++        const cand = [cur];
++        for (const dir of [1, -1]) { let q = cur; for (let k = 0; k < cur.length * 2; k++) { q = invStep(q, dir); if (!q) break; cand.push(q); } }
++        let best = cur, bc = vlCost(cur, prev);
++        for (const q of cand) { const v = vlCost(q, prev); if (v < bc - 1e-9) { bc = v; best = q; } }
++        if (best !== cur) { c.notes.forEach((x, j) => { x.n = best[j]; }); n++; }
++        prev = best;
++      }
++      K.sortNotes(); model.end(n > 0, 'Stimmführung glatt'); st.chords = null; K.afterExternal();
++      K.say(n ? 'Glatt: ' + n + (n > 1 ? ' Akkorde' : ' Akkord') + ' umgekehrt' : 'Schon glatt');
++    }
++
++    // ---------- Takt-Leiste halten + ziehen (Ripple), nur mit offener Magic-Zeile ----------
++    K.rulerEl.addEventListener('pointerdown', e => {
++      if (!st.on) return; clearTimeout(st.hold && st.hold.timer);
++      const r = K.rulerEl.getBoundingClientRect(), h = {id: e.pointerId, x: e.clientX - r.left, y: e.clientY - r.top, armed: false};
++      h.timer = setTimeout(() => {
++        if (st.hold !== h) return; const s0 = ripStart0(h.x); if (s0 == null) { st.hold = null; return; }
++        h.armed = true; h.s0 = s0; if (opts.onTick) opts.onTick(); K.say('Ab Takt ' + (Math.floor(s0 / 4) + 1) + ' verschieben'); K.render();
++      }, HOLD_MS);
++      st.hold = h;
++    });
++    K.rulerEl.addEventListener('pointermove', e => { const h = st.hold; if (!h || h.id !== e.pointerId || h.armed) return; const r = K.rulerEl.getBoundingClientRect(); if (Math.hypot(e.clientX - r.left - h.x, e.clientY - r.top - h.y) >= SLOP) { clearTimeout(h.timer); st.hold = null; } });
++    const holdEnd = e => { const h = st.hold; if (h && h.id === e.pointerId) { clearTimeout(h.timer); setTimeout(() => { if (st.hold === h) st.hold = null; K.render(); }, 0); } };
++    K.rulerEl.addEventListener('pointerup', holdEnd); K.rulerEl.addEventListener('pointercancel', holdEnd);
++    function ripStart0(px) {
++      const bar = Math.floor(K.beatAt(px) / 4), n = K.clip().len; if (bar < 0 || bar >= n) return null;
++      return E.loop && bar >= E.loop.a && bar <= E.loop.b ? E.loop.a * 4 : bar * 4;
++    }
++    function ripStart(s) {
++      const h = st.hold; if (!st.on || !h || !h.armed || h.id !== s.id) return false;
++      const c = K.clip(); model.begin();
++      const R = st.rip = {s0: h.s0, orig: c.notes.slice(), pos: c.notes.map(n => ({t: n.t, o: n.o})), len0: c.len, q: 0, step: stepOf()};
++      s.end = cancel => {
++        st.rip = null; st.hold = null;
++        if (cancel) { model.revert(); K.afterExternal(); }
++        else { K.sortNotes(); model.end(R.q !== 0, 'Takte verschieben'); K.afterExternal(); }
++        K.render();
++      };
++      return true;
++    }
++    function ripDrag(s, p) {
++      const R = st.rip; if (!R) return; const c = K.clip();
++      let q = Math.round((p.x - s.p0.x) / V.ppb / R.step) * R.step;
++      let maxEnd = 0; R.orig.forEach((x, i) => { if (R.pos[i].t >= R.s0 - 1e-9) maxEnd = Math.max(maxEnd, R.pos[i].t + x.d); });
++      q = clamp(q, -R.s0, Math.max(0, 64 * 4 - maxEnd)); q = +q.toFixed(6); R.q = q;
++      const keep = [];
++      R.orig.forEach((x, i) => {
++        const P = R.pos[i];
++        if (P.t >= R.s0 - 1e-9) { x.t = +(P.t + q).toFixed(6); if (q) delete x.o; else if (P.o != null) x.o = P.o; keep.push(x); }
++        else { x.t = P.t; if (P.o != null) x.o = P.o; if (!(q < 0 && P.t >= R.s0 + q - 1e-9)) keep.push(x); }   // nach links: Überschriebenes fällt weg
++      });
++      c.notes = keep;
++      const need = maxEnd ? Math.ceil((maxEnd + q) / 4 - 1e-6) : R.len0; c.len = clamp(Math.max(R.len0, need), 1, 64);
++      const bars = Math.trunc(q / 4), rest = +(q - bars * 4).toFixed(6);
++      K.say((q > 0 ? '→ ' : q < 0 ? '← ' : '') + (q ? (bars ? Math.abs(bars) + (Math.abs(bars) === 1 ? ' Takt' : ' Takte') : '') + (rest ? (bars ? ' ' : '') + Math.round(Math.abs(rest) / .25) + '/16' : '') : 'ab Takt ' + (R.s0 / 4 + 1)));
++      K.render();
++    }
++
++    // ---------- Zeichnen (vom draw() der Rolle) ----------
++    function draw(x, C) {
++      const tool = E.tool;
++      if (st.on && tool === 'msChord') {
++        x.font = '700 11px ' + K.tok('--font-num', 'monospace'); x.textBaseline = 'middle';
++        for (const ch of chords()) {
++          const bx = K.xOf(ch.t); if (bx < -60 || bx > V.W) continue;
++          const w = x.measureText(ch.name).width + 10, sel = ch.notes.some(n => E.sel.has(n));
++          // das Schild steht über dem höchsten Ton des Akkords (kein Ton wird verdeckt); oben kein Platz: unter dem tiefsten
++          // sonst in die nächste freie Zeile zwischen den Akkordtönen (nie über einen Akkordton)
++          const ps = ch.notes.map(n => n.n), yt = K.yOfNote(Math.max(...ps)), yb = K.yOfNote(Math.min(...ps)) + V.rowH;
++          let ly = yt - 20 >= 0 ? yt - 20 : yb + 20 <= V.H ? yb + 2 : null;
++          if (ly == null) { const used = new Set(ps.map(n => K.rowOfNote(n))); for (let r = K.rowOfNote(Math.max(...ps)) + 1; r < K.rowOfNote(Math.min(...ps)); r++) { const y = K.yOfRow(r); if (!used.has(r) && y >= 0 && y + 18 <= V.H) { ly = y + (V.rowH - 18) / 2; break; } } }
++          if (ly == null) ly = 2;
++          x.fillStyle = sel ? C.sel : '#000'; x.globalAlpha = sel ? 1 : .75; K.rr(x, bx + 1, ly, w, 18, 4); x.fill(); x.globalAlpha = 1;
++          x.fillStyle = sel ? '#111' : C.text; x.fillText(ch.name, bx + 6, ly + 9.5);
++        }
++        x.textBaseline = 'alphabetic';
++      }
++      const h = st.hold, R = st.rip;
++      if (st.on && h && h.armed) { const sx = K.xOf((R ? R.s0 + R.q : h.s0)); x.fillStyle = C.amber; x.globalAlpha = .8; x.fillRect(sx - 1, 0, 2, V.H); x.globalAlpha = .08; x.fillRect(sx, 0, V.W - sx, V.H); x.globalAlpha = 1; }
++      paint();
++    }
++    function paint() {
++      B.magic.classList.toggle('on', st.on);
++      for (const k in TOOLS) B[k].classList.toggle('on', E.tool === k);
++      const w = st.on && E.tool === 'msWipe', ch = st.on && E.tool === 'msChord';
++      B.modes.forEach(b => { b.hidden = !w; b.classList.toggle('on', b.dataset.msMode === MSP.mode); });
++      B.key.hidden = !w; B.sep1.hidden = !(w || ch);
++      const t = st.manual ? keyLabel(st.manual) : 'Auto: ' + keyLabel(autoKey(viewBeat()));
++      if (B.key._t !== t) { B.key._t = t; B.key.textContent = t + ' ▾'; }
++      B.key.classList.toggle('on', !!st.manual);
++      B.inUp.hidden = B.inDn.hidden = B.smooth.hidden = !ch;
++    }
++    function destroy() { clearTimeout(st.hold && st.hold.timer); st.hold = null; st.rip = null; }
++    const api = {
++      get state() { return {on: st.on, tool: E.tool, mode: MSP.mode, manual: st.manual ? {...st.manual} : null, key: keyAt(viewBeat()), keyLabel: B.key.textContent, armed: !!(st.hold && st.hold.armed), rip: st.rip ? {s0: st.rip.s0, q: st.rip.q} : null}; },
++      setOn, setTool, setMode: m => { if (MODES.some(x => x[0] === m)) { MSP.mode = m; K.render(); } },
++      setKey: k => { st.manual = k ? {root: PC(k.root | 0), scale: k.scale || 'ionian'} : null; K.render(); },
++      keyAt, chords: () => chords().map(c => ({t: c.t, name: c.name, inv: c.inv, notes: c.notes.map(n => n.n)})), invert, smooth,
++      el: {row, magic: B.magic, kp}
++    };
++    return {owns, promote, drag: msDrag, up, label, tap, draw, ripStart, ripDrag, destroy, api};
++  }
++  G.MagicScale = {attach, CSS};
++})(typeof window !== 'undefined' ? window : globalThis);
++</script>
++<script>
+ /* ===== §1.1 block 6: DrumSeq + StepEditor — embedded from scratchpad/drumresearch/drum-seq.js, step-editor.js ===== */
+ /* Pure helpers for the drum sequencer (no DOM, no audio). Embedded from scratchpad/drumresearch/drum-seq.js (unchanged). */
+ (function (G) {
+@@ -27681,6 +28059,7 @@
+     reg: folReg('roll'), onHand: () => folHand('roll'),
+     onPrefs: p => { ROLLP.grid = p.grid; ROLLP.fold = p.fold; },
+     onStep: () => { STEPQ.notes.length = 0; },
++    msKey: isDrum(t) ? null : () => null, msKeyName: k => keyName(k), msNoteNames: () => noteNames(),   /* MAGIC: eigener Clip (nicht Drum): Clip-Tonart */
+     onTick: () => haptic('tick')});
+   head.append(folChip('roll'), x);
+   rollKbApply(); rollHeadUpdate(); renderEdChip();
+@@ -35523,6 +35902,7 @@
+     onPrefs: p => { ROLLP.grid = p.grid; ROLLP.fold = p.fold; },
+     onStep: on => { if (on) cancelTapStop(t, s); STEPQ.notes.length = 0; },
+     onQuant: sel => openQuantSheet(t, s, sel),
++    msKey: () => shownClipKey(s, S.tracks[t].clips[s]), msKeyName: k => keyName(k), msNoteNames: () => noteNames(),   /* MAGIC */
+     onTick: () => haptic('tick')});
+   head.append(folChip('roll'), x);
+   if (land && ED.roll.el.bar && ROLLP.kb) { const kbB = [...ED.roll.el.bar.children].find(b => b.textContent === '⌨'); if (kbB) kbB.classList.add('on'); }
+@@ -35586,6 +35966,7 @@
+     reg: folReg('mel'), onHand: () => folHand('mel'),
+     onPrefs: p => { ROLLP.grid = p.grid; },
+     onStep: () => { STEPQ.notes.length = 0; },
++    msKey: b => songKeyAtBar(Math.floor(b / 4)), msKeyName: k => keyName(k), msNoteNames: () => noteNames(),   /* MAGIC */
+     onTick: () => haptic('tick')});
+   if (!land) { const ac = el('button', 'hb rb mclip', 'Als Clip'); ac.title = AC_T; ac.setAttribute('aria-label', AC_T); onTap(ac, () => melodyToClip()); head.appendChild(ac); }
+   head.append(folChip('mel'), x);
