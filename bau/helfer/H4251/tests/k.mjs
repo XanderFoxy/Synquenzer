@@ -87,14 +87,21 @@ async function k2(file, n) {
   // K-06: Zug im Streifen → Marke bewegt, genau 1 Undo
   await cdpSwipe(p, cdp, xm, g.y + 12, 30, 6); await sleep(300);
   const m3 = await mk(), u3 = await p.evaluate(() => UNDO.length);
+  // Tipp zwischen zwei nahen Marken (9 px auseinander): wie bisher das Blatt der nächsten Marke, keine neue Marke
+  const g2 = await p.evaluate(() => SYNQUENZER.wpGeom()); const i2 = g2.marks.findIndex((x, i) => i + 1 < g2.marks.length && g2.marks[i + 1] - x < 12 && x > g2.x + 30);
+  const n0 = await p.evaluate(() => (wpMarks(WP.ed.id) || []).length);
+  await p.evaluate(() => { WP.ed.sel = -1; });
+  await cdp.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x: g2.marks[i2] + 4, y: g2.y + 60, id: 1}]}); await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []}); await sleep(300);
+  const tap = await p.evaluate(() => ({n: (wpMarks(WP.ed.id) || []).length, sel: WP.ed.sel}));
   const errs = H.errs.slice(); await H.close();
-  return {n, m0, m1, m2, m3, u0, u1, u2, u3, panned, errs};
+  return {n, m0, m1, m2, m3, u0, u1, u2, u3, panned, errs, tap, n0};
 }
 {
   const r = await k2(FILE, 500);
   ok('K-04 500 Wisch-Gesten auf der Welle: 0 Marken bewegt, Ansicht verschoben', r.m1 === r.m0 && r.u1 === r.u0 && r.panned === r.n, JSON.stringify({bewegt: r.m1 !== r.m0, undo: r.u1 - r.u0, geschwenkt: r.panned}));
   ok('K-05 zweiter Finger während eines Zugs: 0 Marken bewegt, 0 Undo', r.m2 === r.m0 && r.u2 === r.u0, JSON.stringify({bewegt: r.m2 !== r.m0, undo: r.u2 - r.u0}));
   ok('K-06 im Streifen ziehen: Marke bewegt, genau 1 Undo', r.m3 !== r.m0 && r.u3 === r.u0 + 1, JSON.stringify({undo: r.u3 - r.u0}));
+  ok('K-06 Tipp zwischen zwei nahen Marken: Blatt der nächsten Marke, keine neue Marke (wie bisher)', r.tap.n === r.n0 && r.tap.sel >= 0, JSON.stringify(r.tap));
   ok('K-04…06 Konsole', !r.errs.length, r.errs.join('|').slice(0, 200));
   if (PREV) { const o = await k2(PREV, 40); console.log('INFO 4.25.1 (vorher), 40 Wische auf der Welle: Marken bewegt ' + (o.m1 !== o.m0) + ', Undo-Schritte ' + (o.u1 - o.u0)); }
 }

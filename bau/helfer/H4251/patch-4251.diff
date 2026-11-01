@@ -1,5 +1,5 @@
 --- basis.html	2026-11-01 00:17:56.595366043 +0000
-+++ index.html	2026-11-01 00:47:48.691021623 +0000
++++ index.html	2026-11-01 01:07:28.107091731 +0000
 @@ -1461,6 +1461,9 @@
  .rs-m.on{color:#1b1004;background:linear-gradient(#ffc45a,#e89c1c);border-color:#ffd27a}.rs-m.on small{color:#3a2408}
  .rs-n{flex-direction:column;gap:2px}.rs-n b{font:inherit}.rs-n small{font:600 9px/1 var(--font-ui);opacity:.8;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -116,17 +116,18 @@
    const sel = SV.sel;
    let from = isNum(o.from) ? o.from | 0 : sel ? sel.a : songStartBar();
    let to = o.to !== undefined ? (isNum(o.to) ? o.to | 0 : null) : sel ? sel.b + 1 : null;
-@@ -20250,7 +20262,8 @@
+@@ -20250,7 +20262,9 @@
    // take runs (first pass); Overdub and Einfügen keep them
    sr.mute = tg.mel && noteT != null && (mode === 'over' || mode === 'replace') ? {t: noteT, a: from * 4 - .25, b: to != null ? to * 4 - .25 : Infinity} : null;
    if (sr.mute) takeMuteNow(sr.mute);
 -  tkSongBegin(sr); if (sr.vox) { tkOriginHint(); tkVoxResync(true); }   // VS3: mit 🎤 nimmt die Song-Aufnahme die Stimme auf (STIMME-Spur)
 +  sr.guide = !!(UI.recGuide && recMicOn());                        // H7: alte Stimme als Vorlage hörbar
-+  tkSongBegin(sr); if (sr.vox) { tkOriginHint(); tkVoxResync(true); recCdCatchUp(); }   // H4: Vorlauf-Klicks   // VS3: mit 🎤 nimmt die Song-Aufnahme die Stimme auf (STIMME-Spur)
++  tkSongBegin(sr); if (sr.vox) { tkOriginHint(); tkVoxResync(true); recCdCatchUp(); }   // H4: Vorlauf-Klicks
++  else if (tg.vox && recMicOn() && !tg.clips && !tg.chords && !tg.mel) toast('🎤 noch nicht bereit – der Gesang wird nicht aufgenommen');   // H2   // VS3: mit 🎤 nimmt die Song-Aufnahme die Stimme auf (STIMME-Spur)
    MEL.open.clear(); MEL.warned = false;
    if (tg.mel && noteT != null && R.selT !== noteT && S.tracks[noteT].kind === 'synth') selectTrack(noteT);
    if (tg.mel && noteT === song.melodyTrack) melShareHint();
-@@ -20378,7 +20391,7 @@
+@@ -20378,7 +20392,7 @@
    const barOf = b => Math.max(0, Math.floor((b + .25) / 4 + 1e-9));
    const mine = ns.filter(n => { const x = barOf(n.b); return x >= A && x < B; });
    const repl = sr.mode === 'over' || sr.mode === 'replace', clr = new Set();
@@ -135,7 +136,7 @@
    const ownAt = x => t !== song.melodyTrack && laneClipOk(song, t, laneOriginAt(song.lanes[t], x));
    for (const x of [...clr].sort((a, b) => a - b)) {
      const a = x * 4 - .25, b = x * 4 + 4 - .25;
-@@ -20763,7 +20776,7 @@
+@@ -20763,7 +20777,7 @@
    if (!S.song) return false;
    if (R.songRec) songRecEnd();
    if (R.songPlay) songPlayEnd(true);
@@ -144,7 +145,15 @@
    toast('Song gelöscht', {label: 'Rückgängig', fn: () => undo()});
    return true;
  }
-@@ -21135,10 +21148,75 @@
+@@ -20793,6 +20807,7 @@
+ function stop() {
+   const c = AU.ctx;
+   if (UI.mkSplitOff) { try { UI.mkSplitOff(); } catch (e) { logErr(e); } }   // MK-P: ■ ends Split ← nächste Note
++  if (MICW.iv) { recMicWaitEnd(); toast('Aufnahme abgebrochen'); if (!R.playing) return; }   // H5: ■ während „🎤 wird bereit“
+   if (!R.playing) {                                          // ■ twice within 1 s: tails off (§8.1)
+     if (c && tailWinOpen()) { tailKill(); tailWinSet(false); haptic('snap'); toast('Hall und Echo aus'); }
+     return;
+@@ -21135,10 +21150,78 @@
  // (long press opens a menu), but its timing belongs to the press
  function pressTime(atT) { const now = AU.ctx.currentTime; return atT != null && isFinite(atT) && atT <= now && now - atT < 2 ? atT : now; }
  function recClearOpen() { for (const [id, o] of rec.open) if (o.kind !== 'tail') rec.open.delete(id); }
@@ -155,7 +164,7 @@
 +  for (let j = 0; j < NT(); j++) { if (j === ti || !S.tracks[j] || !S.tracks[j].clips[si] || R.slot[j] !== -1 || R.pend[j]) continue; launch(j, si); w.push({t: j, s: si}); }
 +  if (rowOf('S' + (si + 1)) && !R.row && !R.rowPend) { try { sceneRowStart(si, 0); } catch (e) { logErr(e); } }
 +  rec.withScene = w;
-+  if (!recBeglNames().length) toast('Ohne Begleitung – Szene ' + (si + 1) + ' ist leer');
++  if (!recBeglNames().length && !(rec.mode === 'overdub' && S.tracks[ti].stimme)) toast('Ohne Begleitung – Szene ' + (si + 1) + ' ist leer');
 +}
 +function recBeglNames() { const o = []; for (let j = 0; j < NT(); j++) if (j !== rec.track && S.tracks[j] && (R.pend[j] ? R.pend[j].slot : R.slot[j]) >= 0) o.push(S.tracks[j].name); return o; }
 +function recCiTgt() {
@@ -170,7 +179,7 @@
 +}
 +// H6: Ausgang beim Singen – Hinweis bei jeder Gesangs-Aufnahme (Weg „Lautsprecher“ bzw. Bluetooth)
 +function recCiHint() {
-+  const vox = (rec.state !== 'off' && rec.vox) || (R.songRec && recMicOn());
++  const vox = (rec.state !== 'off' && rec.vox) || !!(R.songRec && R.songRec.vox);
 +  if (!vox) return '';
 +  return ST.route === 'speaker' ? '🔈 Ohne Kopfhörer kommt die Musik leise aus der Hörmuschel – Kabel-Kopfhörer einstecken' : ST.route === 'bt' ? 'Bluetooth: Telefonklang und Verzögerung – besser Kabel-Kopfhörer' : '';
 +}
@@ -200,11 +209,14 @@
 +  if (!P.prof[rt]) { stStart({}); toast('Erst einmessen, dann ●'); return; }
 +  if (!stStart({})) { toast('Mikro noch nicht bereit – ● noch einmal'); return; }
 +  toast('🎤 an – gleich geht\'s los');
-+  Object.assign(MICW, {t0: performance.now(), cal: ST.route === 'speaker', calSeen: false, okAt: 0});
++  Object.assign(MICW, {t0: performance.now(), calSeen: false, okAt: 0, S, ti: R.selT, si: R.selS});
 +  MICW.iv = setInterval(() => {
 +    if (!ST.on || ST.phase === 'off' || !ST.run) { recMicWaitEnd(); return; }       // stFail: dessen Meldung genügt
++    if (MICW.S !== S || R.selT !== MICW.ti || R.selS !== MICW.si || rec.state !== 'off') { recMicWaitEnd(); toast('Aufnahme abgebrochen'); return; }   // anderes Projekt / andere Zelle
 +    if (ST.cal) MICW.calSeen = true;
-+    const g = ST.ring, ok = ST.phase === 'live' && g && g.end >= 0 && g.end - g.start >= .5 * g.sr && !ST.cal && (!MICW.cal || MICW.calSeen);
++    // Kurz-Einmessung erwartet wie in stGot (der Weg steht erst nach „live“ fest): Lautsprecher mit Profil
++    const calExp = ST.route === 'speaker' && !!stProf().prof.speaker;
++    const g = ST.ring, ok = ST.phase === 'live' && g && g.end >= 0 && g.end - g.start >= .5 * g.sr && !ST.cal && (!calExp || MICW.calSeen);
 +    if (ok) { if (!MICW.okAt) MICW.okAt = performance.now(); else if (performance.now() - MICW.okAt >= 150) { recMicWaitEnd(); recPress(); return; } }
 +    else MICW.okAt = 0;
 +    if (performance.now() - MICW.t0 > 4000) { recMicWaitEnd(); toast('Mikro noch nicht bereit – ● noch einmal'); }
@@ -220,7 +232,7 @@
    if (rec.tail && rec.tail.emptyCheck) finishTail();
    if (R.kbMode === 'transpose') { setKbMode('play'); toast('Tastatur: SPIELEN'); }
    const ti = R.selT, si = R.selS, tr = S.tracks[ti], clip = tr.clips[si];
-@@ -21147,6 +21225,7 @@
+@@ -21147,6 +21230,7 @@
    const keepTail = new Map([...rec.open].filter(([, o]) => o.kind === 'tail'));
    Object.assign(rec, {track: ti, scene: si, open: keepTail, temp: [], added: 0, endBeat: null, snapshot: null, clip: null, tail: null, key: null, odEnd: null, catchWin: .25});
    rec.fixedLen = S.settings.recLength === 'auto' ? null : +S.settings.recLength;
@@ -228,7 +240,7 @@
    if (clip) {
      rec.mode = 'overdub';
      const vs = visualSlots(ti, t2b(tP));
-@@ -21161,6 +21240,7 @@
+@@ -21161,6 +21245,7 @@
        }
      } else {
        R.slot[ti] = si; R.pend[ti] = null;
@@ -236,7 +248,7 @@
        startTransport(S.settings.countIn || 0);
        rec.startBeat = 0; rec.state = S.settings.countIn ? 'countin' : 'armed';
      }
-@@ -21168,6 +21248,7 @@
+@@ -21168,6 +21253,7 @@
      rec.mode = 'new';
      if (!R.playing) {
        R.slot[ti] = -1; R.pend[ti] = null;
@@ -244,7 +256,7 @@
        startTransport(S.settings.countIn || 0);
        rec.startBeat = 0; rec.state = S.settings.countIn ? 'countin' : 'armed';
      } else {
-@@ -21176,6 +21257,7 @@
+@@ -21176,6 +21262,7 @@
        if (rec.startBeat < R.schedBeat) recBegin();
      }
    }
@@ -252,7 +264,15 @@
    UI.dirty.all = true;
  }
  // the Bezug of a new take: under a Träger the key that makes it play back as played (src 'carrier', never re-detected),
-@@ -24589,11 +24671,13 @@
+@@ -21260,6 +21347,7 @@
+   const bP = t2b(tP - AU.outLat);
+   switch (rec.state) {
+     case 'countin': case 'armed':
++      if (rec.vox && rec.state === 'armed') cancelRecClicks(recBeatNow());   // H4: schon eingeplante Vorzähler-Klicks
+       rec.state = 'off'; recClearOpen(); toast('Aufnahme abgebrochen'); break;
+     case 'recording':
+       if (rec.fixedLen) { recEndFixed(Math.max(bP, rec.startBeat), false); }
+@@ -24589,11 +24677,13 @@
        const rng = to != null ? (to - from === 1 ? 'Takt ' + (from + 1) : 'Takt ' + (from + 1) + '–' + to) : 'ab Takt ' + (from + 1);
        const head = to != null ? (to - from > 1 ? 'AUFNAHME TAKTE ' + (from + 1) + '–' + to : 'AUFNAHME TAKT ' + (from + 1)) : 'AUFNAHME AB TAKT ' + (from + 1);
        p.classList.toggle('one', modes.length === 4); p.classList.toggle('nomode', !modes.length);
@@ -269,7 +289,7 @@
          over: `Was du änderst, ersetzt ${rng}; der Rest spielt weiter.` + (tg.mel ? ` ${esc(nTx)}: jeder Takt neu bis zum Ende, die alten sind stumm.` : ''),
          insert: `Neues kommt dazwischen, ab Takt ${from + 1} rückt alles nach hinten.`,
          replace: `Alles in ${rng} wird ersetzt` + (tg.mel ? `, alte ${esc(nTx)} stumm.` : '.'),
-@@ -24603,16 +24687,19 @@
+@@ -24603,16 +24693,19 @@
          return `<button class="rb rs-m${m === mode ? ' on' : ''}" data-m="${m}" aria-pressed="${m === mode}"><b>${recModeName(m)}</b><small>${r}</small></button>`; };
        const tgRow = pickT
          ? `<div class="rs-tg rs-pk"><span class="lbl">Noten auf</span>` + synthTracks().map(t => `<button class="rb rs-t${t === nt ? ' on' : ''}" data-nt="${t}">${esc(trShort(t))}</button>`).join('') + `</div>`
@@ -291,7 +311,7 @@
      };
      paint();
      onTap(p, b => {
-@@ -26580,13 +26667,17 @@
+@@ -26580,13 +26673,17 @@
        <div class="grp"><span class="lbl">Länge</span>${segHTML('roLen', [['auto', 'AUTO'], [1, '1'], [2, '2'], [4, '4'], [8, '8'], [16, '16'], [32, '32'], [64, '64']], st.recLength)}</div>
        <div class="grp" style="margin-top:10px"><span class="lbl">Quantisieren</span>${segHTML('roQ', QOPTS, st.inQuant)}</div>
        <div class="grp" style="margin-top:10px"><span class="lbl">Einzähler</span>${segHTML('roCi', [['0', 'Aus'], ['1', '1 Takt'], ['2', '2 Takte']], String(st.countIn))}</div>
@@ -309,7 +329,7 @@
  function setRecOptions(o) {
    const st = S.settings;
    if (o.length !== undefined) st.recLength = [1, 2, 4, 8, 16, 32, 64].includes(+o.length) ? +o.length : 'auto';   // VS-L: + 16; G8: + 32, 64
-@@ -26991,19 +27082,29 @@
+@@ -26991,19 +27088,29 @@
      EL.takt.classList.toggle('flash', fl);
      if (fl) setTimeout(() => EL.takt.classList.remove('flash'), 110);
    }
@@ -346,7 +366,7 @@
  }
  function frame() { requestAnimationFrame(frame); try { uiFrame(); } catch (e) { logErr(e); } }
  
-@@ -34496,6 +34597,7 @@
+@@ -34496,6 +34603,7 @@
    row(s4, 'Quantisieren', seg(QOPTS, () => st.inQuant, v => setRecOptions({quantize: v})));
    row(s4, 'Einzähler', seg([[0, 'Aus'], [1, '1 Takt'], [2, '2 Takte']], () => st.countIn, v => setRecOptions({countIn: v})));
    row(s4, 'Metronom bei Aufnahme', seg([[true, 'An'], [false, 'Aus']], () => st.metroInRec, v => setRecOptions({metroInRec: v})));
@@ -354,7 +374,7 @@
    const sw = slider(0, 1, .01, () => st.swing, v => { st.swing = v; }, v => Math.round(v * 100) + ' %'); sw.prepend(el('span', 'lbl', 'Swing')); s4.appendChild(sw);
    const mv = slider(0, 1, .01, () => st.metroVol, v => { st.metroVol = v; }, v => Math.round(v * 100) + ' %'); mv.prepend(el('span', 'lbl', 'Metronom-Lautst.')); s4.appendChild(mv);
    // 5 Klang
-@@ -34808,7 +34910,7 @@
+@@ -34808,7 +34916,7 @@
    syncTransposer();
    UNDO.length = 0; REDO.length = 0;
    UI.drumVer++; R.songRec = null; R.songPlay = null; R.songEndBeat = null; R.melRec = null; R.carrierLive = false; if (R.songOverride) R.songOverride.fill(false);
@@ -363,7 +383,7 @@
    SV.mark = SV.copy = SV.pv = null; svHintFree(); UI.dirty.song = true; rangeBarSync();   // V2e-fix: no Bereich-Leiste / mark of the old project
    R.row = R.rowPend = R.part = R.partPend = null; R.lastScene = R.lastSceneBeat = null; PRT.saved = undefined; PRT.resume = null; xpReset(); UI.pick = null;   // V2c
    partsEnsure(); UI.partPage = S.ui && S.ui.partPage === 1 ? 1 : 0; UI.dirty.parts = true; PB.sig = '';      // V0c: view state of the song and the TA9 state
-@@ -38383,6 +38485,8 @@
+@@ -38383,6 +38491,8 @@
  
  /* ---------- Ablauf ---------- */
  function stToggle() { if (ST.run && ST.run.stopping) return false; return ST.on ? stStop('aus') : stStart(); }
@@ -372,7 +392,7 @@
  function stStart(opts) {
    if (ST.on || ST.run || !micAvail()) return false;
    if (MIC.run) { toast('Erst den Mikro-Check beenden'); return false; }
-@@ -38390,7 +38494,7 @@
+@@ -38390,7 +38500,7 @@
    const c = ensureAudio();                                    // im selben Tipp: resume (I11)
    const run = ST.run = {opts, t0: performance.now(), nodes: [], srcs: [], timers: [], stream: null, stopped: false, frames: 0, gaps: 0, dz: null, dl: null, flAt: null, flV: false, cal: null};
    ST.on = true; ST.phase = 'start'; ST.err = null; ST.warn = []; ST.starts++; ST.floorDb = null; ST.lastDrift = null;
@@ -381,7 +401,7 @@
    stRender();
    if (!c) { stFail(run, {name: 'NoAudioContext'}); return true; }
    wakeAcquire();                                              // beim Singen bleibt der Bildschirm an
-@@ -40302,7 +40406,7 @@
+@@ -40302,7 +40412,7 @@
  // der Song-Bereich (Schläge), in dem die alte Stimme während einer Aufnahme mit 🎤 schweigt (erster Durchgang; Overdub hört sie)
  function tkSongMute() {
    const sr = R.songRec; if (!sr || !sr.over || !sr.vox || sr.pass > 0) return null;
@@ -390,7 +410,7 @@
    return [sr.from * 4, sr.mode === 'insert' || sr.to == null ? Infinity : sr.to * 4];
  }
  // scheduleTrack der STIMME-Spur (statt Noten)
-@@ -40476,7 +40580,7 @@
+@@ -40476,7 +40586,7 @@
  
  /* ---------- Punch im Song (S5-Rückfrage: Überschreiben / Einfügen / Ersetzen / Overdub, Bereich) ---------- */
  function tkSongBegin(sr) {
@@ -399,7 +419,7 @@
    sr.vox = {passes: [{a: sr.from, T: sr.from * 4 + R.songPlay.off}]};
    tkQ('song', true);
    g8Begin(sr);                                                      /* G8: die Stimme läuft in Stücken mit */
-@@ -44911,6 +45015,15 @@
+@@ -44911,6 +45021,15 @@
      ring: ST.ring ? {sr: ST.ring.sr, sec: ST_SEC, start: ST.ring.start, end: ST.ring.end, miss: ST.ring.miss || 0, frames: ST.run ? ST.run.frames : 0, gaps: ST.run ? ST.run.gaps : 0} : null,
      profiles: JSON.parse(JSON.stringify(stProf().prof)), row: !!(ST.ui.row && !ST.ui.row.hidden), rowSv: !!(ST.ui.sv && !ST.ui.sv.hidden), sheet: !!(UI.pop && UI.pop.name === 'stimme')}),
    stimmeStart: o => stStart(o || {}), stimmeStop: why => stStop(why || 'aus'), stimmeToggle: () => stToggle(),
@@ -415,7 +435,7 @@
    stimmeCal: kind => new Promise(res => { if (!stCal(kind || 'voll', res)) res(null); }),
    stimmeRoute: r => stSetRoute(r, 'gewählt'), stimmeNudge: d => stNudge(+d || 0), stimmeSheet: v => (v === false ? (closePop(), false) : stSheet()),
    stimmeRead: (a, b, o) => { const x = stRead(a, b, o); return x ? {a: x.a, b: x.b, sr: x.sr, mic: Array.from(x.mic), ref: Array.from(x.ref), d16: x.d16 ? Array.from(x.d16) : undefined, d0: x.d0} : null; },
-@@ -45766,7 +45879,7 @@
+@@ -45766,7 +45885,7 @@
      'carLabel', 'carVal', 'carShift', 'carLock', 'bLatch', 'bOrig', 'hist', 'strip', 'stDot', 'stName', 'stSub', 'bKlang', 'bFolgt', 'stLock',
      'bMute', 'bUndo', 'modebar', 'octDn', 'octUp', 'segPlay', 'segTr', 'kbArea', 'kb', 'pads', 'kbLabel', 'synthSheet', 'drumSheet', 'clipSheet',
      'menu', 'popLayer', 'toast', 'banner', 'fileIn', 'sndIn', 'syxIn', 'sndSheet', 'topLogo', 'bub',
@@ -424,7 +444,7 @@
    EL.grid = EL.clipGrid; EL.taktLbl = EL.takt.querySelector('.lbl');
    if (micAvail()) EL.app.classList.add('micok');             // VS1: 🎤 nur im obersten Fenster mit getUserMedia (N7V-05)
    // AN10 (§5.7): ?engine=native keeps the synth worklet off (tests of the native fallback)
-@@ -45778,6 +45891,8 @@
+@@ -45778,6 +45897,8 @@
    UI.leds = $$('#leds i');
    EL.topLogo.innerHTML = LOGO_SVG;
    UI.haptics = uiPrefs().haptics !== false;

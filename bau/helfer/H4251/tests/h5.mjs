@@ -25,6 +25,27 @@ const press = p => p.evaluate(() => { for (let i = 0; i < NT(); i++) { R.slot[i]
   ok('H-40 Konsole', !H.errs.length, H.errs.join('|').slice(0, 200));
   await H.close();
 }
+// H-40 Kabel-Weg (Xanders B-1: Kabel-Kopfhörer, App frisch): keine Kurz-Einmessung, Start nach „live“ ohne 4-s-Abbruch
+{
+  const H = await open(FILE, {init: PROF('wired')}), p = H.p; await g10demo(p); await sleep(500);
+  await watch(p); await press(p);
+  const st = await p.waitForFunction(() => SYNQUENZER.runtime().rec.state === 'recording', null, {timeout: 6000}).then(() => true, () => false);
+  const w = await p.evaluate(() => { clearInterval(window.__wIv); return window.__w; });
+  const r = await p.evaluate(() => ({route: SYNQUENZER.stimme().route, t: window.__toasts.slice()}));
+  const fp = w.find(x => x.playing);
+  ok('H-40 Kabel-Weg: Aufnahme startet (< 4 s, kein „Mikro noch nicht bereit“)', st && r.route === 'wired' && !!fp && fp.t - w[0].t < 4000 && !r.t.some(x => /noch nicht bereit/.test(x)), JSON.stringify({st, route: r.route, start: fp && Math.round(fp.t - w[0].t), t: r.t}));
+  await p.evaluate(() => { SYNQUENZER.rec(); SYNQUENZER.stop(); }); await H.close();
+}
+// H-44 ■ während „🎤 wird bereit“ → abgebrochen; H-45 anderes Projekt während des Wartens → abgebrochen
+for (const how of ['stop', 'projekt', 'zelle']) {
+  const H = await open(FILE, {init: PROF('speaker')}), p = H.p; await g10demo(p); await sleep(300);
+  await press(p); await sleep(300);
+  await p.evaluate(how => { if (how === 'stop') SYNQUENZER.stop(); else if (how === 'projekt') switchProject(demoProject(), {first: true}); else SYNQUENZER.selectSlot(0, 1); }, how);
+  await sleep(4500);
+  const r = await p.evaluate(() => ({playing: R.playing, rec: SYNQUENZER.runtime().rec.state, wait: !!MICW.iv, t: window.__toasts.slice()}));
+  ok('H-44 ' + how + ' während „🎤 wird bereit“: keine Aufnahme, kein Transport', !r.playing && r.rec === 'off' && !r.wait && r.t.includes('Aufnahme abgebrochen'), JSON.stringify(r));
+  await H.close();
+}
 // H-41 ohne getUserMedia
 {
   const H = await open(FILE, {init: 'navigator.mediaDevices && (navigator.mediaDevices.getUserMedia = undefined);' + PROF('wired')}), p = H.p; await g10demo(p);

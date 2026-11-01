@@ -20263,7 +20263,8 @@ function songRecStartOver(o) {
   sr.mute = tg.mel && noteT != null && (mode === 'over' || mode === 'replace') ? {t: noteT, a: from * 4 - .25, b: to != null ? to * 4 - .25 : Infinity} : null;
   if (sr.mute) takeMuteNow(sr.mute);
   sr.guide = !!(UI.recGuide && recMicOn());                        // H7: alte Stimme als Vorlage hörbar
-  tkSongBegin(sr); if (sr.vox) { tkOriginHint(); tkVoxResync(true); recCdCatchUp(); }   // H4: Vorlauf-Klicks   // VS3: mit 🎤 nimmt die Song-Aufnahme die Stimme auf (STIMME-Spur)
+  tkSongBegin(sr); if (sr.vox) { tkOriginHint(); tkVoxResync(true); recCdCatchUp(); }   // H4: Vorlauf-Klicks
+  else if (tg.vox && recMicOn() && !tg.clips && !tg.chords && !tg.mel) toast('🎤 noch nicht bereit – der Gesang wird nicht aufgenommen');   // H2   // VS3: mit 🎤 nimmt die Song-Aufnahme die Stimme auf (STIMME-Spur)
   MEL.open.clear(); MEL.warned = false;
   if (tg.mel && noteT != null && R.selT !== noteT && S.tracks[noteT].kind === 'synth') selectTrack(noteT);
   if (tg.mel && noteT === song.melodyTrack) melShareHint();
@@ -20806,6 +20807,7 @@ function play() { startTransport(null); }
 function stop() {
   const c = AU.ctx;
   if (UI.mkSplitOff) { try { UI.mkSplitOff(); } catch (e) { logErr(e); } }   // MK-P: ■ ends Split ← nächste Note
+  if (MICW.iv) { recMicWaitEnd(); toast('Aufnahme abgebrochen'); if (!R.playing) return; }   // H5: ■ während „🎤 wird bereit“
   if (!R.playing) {                                          // ■ twice within 1 s: tails off (§8.1)
     if (c && tailWinOpen()) { tailKill(); tailWinSet(false); haptic('snap'); toast('Hall und Echo aus'); }
     return;
@@ -21155,7 +21157,7 @@ function recWithScene(ti, si) {
   for (let j = 0; j < NT(); j++) { if (j === ti || !S.tracks[j] || !S.tracks[j].clips[si] || R.slot[j] !== -1 || R.pend[j]) continue; launch(j, si); w.push({t: j, s: si}); }
   if (rowOf('S' + (si + 1)) && !R.row && !R.rowPend) { try { sceneRowStart(si, 0); } catch (e) { logErr(e); } }
   rec.withScene = w;
-  if (!recBeglNames().length) toast('Ohne Begleitung – Szene ' + (si + 1) + ' ist leer');
+  if (!recBeglNames().length && !(rec.mode === 'overdub' && S.tracks[ti].stimme)) toast('Ohne Begleitung – Szene ' + (si + 1) + ' ist leer');
 }
 function recBeglNames() { const o = []; for (let j = 0; j < NT(); j++) if (j !== rec.track && S.tracks[j] && (R.pend[j] ? R.pend[j].slot : R.slot[j]) >= 0) o.push(S.tracks[j].name); return o; }
 function recCiTgt() {
@@ -21170,7 +21172,7 @@ function recCiTgt() {
 }
 // H6: Ausgang beim Singen – Hinweis bei jeder Gesangs-Aufnahme (Weg „Lautsprecher“ bzw. Bluetooth)
 function recCiHint() {
-  const vox = (rec.state !== 'off' && rec.vox) || (R.songRec && recMicOn());
+  const vox = (rec.state !== 'off' && rec.vox) || !!(R.songRec && R.songRec.vox);
   if (!vox) return '';
   return ST.route === 'speaker' ? '🔈 Ohne Kopfhörer kommt die Musik leise aus der Hörmuschel – Kabel-Kopfhörer einstecken' : ST.route === 'bt' ? 'Bluetooth: Telefonklang und Verzögerung – besser Kabel-Kopfhörer' : '';
 }
@@ -21200,11 +21202,14 @@ function recMicStart() {
   if (!P.prof[rt]) { stStart({}); toast('Erst einmessen, dann ●'); return; }
   if (!stStart({})) { toast('Mikro noch nicht bereit – ● noch einmal'); return; }
   toast('🎤 an – gleich geht\'s los');
-  Object.assign(MICW, {t0: performance.now(), cal: ST.route === 'speaker', calSeen: false, okAt: 0});
+  Object.assign(MICW, {t0: performance.now(), calSeen: false, okAt: 0, S, ti: R.selT, si: R.selS});
   MICW.iv = setInterval(() => {
     if (!ST.on || ST.phase === 'off' || !ST.run) { recMicWaitEnd(); return; }       // stFail: dessen Meldung genügt
+    if (MICW.S !== S || R.selT !== MICW.ti || R.selS !== MICW.si || rec.state !== 'off') { recMicWaitEnd(); toast('Aufnahme abgebrochen'); return; }   // anderes Projekt / andere Zelle
     if (ST.cal) MICW.calSeen = true;
-    const g = ST.ring, ok = ST.phase === 'live' && g && g.end >= 0 && g.end - g.start >= .5 * g.sr && !ST.cal && (!MICW.cal || MICW.calSeen);
+    // Kurz-Einmessung erwartet wie in stGot (der Weg steht erst nach „live“ fest): Lautsprecher mit Profil
+    const calExp = ST.route === 'speaker' && !!stProf().prof.speaker;
+    const g = ST.ring, ok = ST.phase === 'live' && g && g.end >= 0 && g.end - g.start >= .5 * g.sr && !ST.cal && (!calExp || MICW.calSeen);
     if (ok) { if (!MICW.okAt) MICW.okAt = performance.now(); else if (performance.now() - MICW.okAt >= 150) { recMicWaitEnd(); recPress(); return; } }
     else MICW.okAt = 0;
     if (performance.now() - MICW.t0 > 4000) { recMicWaitEnd(); toast('Mikro noch nicht bereit – ● noch einmal'); }
@@ -21342,6 +21347,7 @@ function recFinishPress(tP) {
   const bP = t2b(tP - AU.outLat);
   switch (rec.state) {
     case 'countin': case 'armed':
+      if (rec.vox && rec.state === 'armed') cancelRecClicks(recBeatNow());   // H4: schon eingeplante Vorzähler-Klicks
       rec.state = 'off'; recClearOpen(); toast('Aufnahme abgebrochen'); break;
     case 'recording':
       if (rec.fixedLen) { recEndFixed(Math.max(bP, rec.startBeat), false); }
@@ -34310,7 +34316,7 @@ function openClipSheet(t, s, opts) {
     const playing = R.playing && AU.ctx && visualSlots(t, audBeat()).playing === s;
     const g = el('div', 'cgrid');
     g.append(B('✎ Bearbeiten', () => { closeClipSheet(); openRoll(t, s); }, 'big'));
-    g.append(B('Quantisieren…', () => (tr.stimme && clip.audio ? (closeClipSheet(), wpOpen({t, s})) : openQuantSheet(t, s))));   // K3: STIMME → Marken-Editor
+    g.append(B('Quantisieren…', () => (tr.stimme && clip.audio ? (wpOpen({t, s}) ? closeClipSheet() : toast('Audio nur auf der eigenen Seite')) : openQuantSheet(t, s))));   // K3: STIMME → Marken-Editor
     g.append(B('Kopieren', () => { copyClip(t, s); toast('Clip kopiert'); reopen(); }));
     const pb = B('Einfügen', () => { if (pasteClip(t, s)) reopen(); }); pb.disabled = !CLIPBOARD.clip; g.append(pb);
     g.append(B('Duplizieren → frei', () => { const k = duplicateClip(t, s); if (k >= 0) toast('Dupliziert in Szene ' + (k + 1)); }, null, 'Duplizieren → freier Platz'));
@@ -42914,11 +42920,11 @@ function wpMarkPos(E, mk, map) {
 }
 // Fingerstelle (wie es klingt) → Stelle im Take (Quelle der Marke)
 const wpSrcT = (E, t) => (E.map ? VSM.warpInverse(E.map, t) : t);
-function wpHit(E, cx) {
+function wpHit(E, cx, tap) {
   const mk = wpMarks(E.id) || [], P = E.mpos && E.mpos.length === mk.length ? E.mpos : mk.map(k => k.t); let best = -1, bd = 16;
   const xs = P.map(t => E.X(t));
   xs.forEach((x, i) => { const d = Math.abs(x - cx); if (d < bd) { bd = d; best = i; } });
-  if (best < 0) return -1;
+  if (best < 0 || tap) return best;                                   // K2: ein Tipp trifft wie bisher die nächste Marke (±16 px)
   // K2 (4.25.2): Fangradius ≤ 16 px und ≤ halber Abstand zum Nachbarn; zwei Kandidaten näher als 6 px → keiner (es wird geschwenkt)
   let nb = Infinity; xs.forEach((x, i) => { if (i !== best) nb = Math.min(nb, Math.abs(x - xs[best])); });
   if (nb < 6 || bd > Math.min(16, nb / 2)) return -1;
@@ -42935,7 +42941,7 @@ function wpGest(cv) {
     try { cv.setPointerCapture(e.pointerId); } catch (er) {}
     // K2 (4.25.2): eine Marke greift man nur im oberen Streifen (44 px, Griff-Dreieck); auf der Welle schwenkt ein Finger immer
     const top = e.clientY - cv.getBoundingClientRect().top < WP_GRIP;
-    E.p = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), k: wpHit(E, xOf(e)), mode: null, va: E.va, grip: top, lx: e.clientX};
+    E.p = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), k: wpHit(E, xOf(e)), kt: wpHit(E, xOf(e), true), mode: null, va: E.va, grip: top, lx: e.clientX};
   });
   // K2: ein zweiter Finger (irgendwo, auch neben der Welle) verwirft den laufenden Zug (kein Verschieben, kein Undo), danach schwenkt der erste
   if (!WP.k2) { WP.k2 = true; document.addEventListener('pointerdown', e => {
@@ -42959,7 +42965,7 @@ function wpGest(cv) {
     if (performance.now() - p.t0 >= 500) { wpPaint(); return; }      // Halten hat im Marken-Editor keine Bedeutung (K2-64)
     const cx = xOf(e);
     UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};   // F1: der Klick desselben Tipps landet nie auf dem Blatt, das jetzt unter dem Finger aufgeht ([✕ Löschen])
-    if (p.k >= 0) wpSelSheet(p.k, cx); else wpMarkAdd(E.id, wpSrcT(E, E.vw.a + cx / E.cv.clientWidth * E.vw.W));
+    if (p.kt >= 0) wpSelSheet(p.kt, cx); else wpMarkAdd(E.id, wpSrcT(E, E.vw.a + cx / E.cv.clientWidth * E.vw.W));
   };
   cv.addEventListener('pointerup', e => end(e, false));
   cv.addEventListener('pointercancel', e => end(e, true));

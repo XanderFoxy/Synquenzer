@@ -19,7 +19,7 @@ async function take(p, scene, bars) {   // STIMME-Zelle der Szene, ● aus dem S
   const L = await log(p), pb = perBar(L), ov = await ovlStop(p);
   const r = await p.evaluate(() => ({rms: SYNQUENZER.g10OutRms(0, 12), takes: SYNQUENZER.takes(), clip: SYNQUENZER.getClip(SYNQUENZER.tkInfo().stimme, 0)}));
   const ci = L.filter(e => e.beat < -1e-6 && e.src !== 'click' && e.track >= 0);
-  const need = [0, 1, 2, 4, 5], miss = []; for (const t of need) for (let b = 0; b < 3; b++) if (!pb[t + ':' + b]) miss.push(t + ':' + b);
+  const need = [0, 1, 2, 4, 5], miss = []; for (const t of need) for (let b = 0; b < 4; b++) if (!pb[t + ':' + b]) miss.push(t + ':' + b);
   const ntk = Object.keys(r.takes).length;
   // Vergleich: dieselbe Szene ohne Aufnahme (▶ 1), gleiche Schläge
   await p.evaluate(() => { SYNQUENZER.stop(); SYNQUENZER.stop(); }); await sleep(1500);
@@ -27,7 +27,7 @@ async function take(p, scene, bars) {   // STIMME-Zelle der Szene, ● aus dem S
   await p.evaluate(() => { for (let i = 0; i < NT(); i++) R.slot[i] = -1; SYNQUENZER.launchScene(0); }); await waitBeat(p, 12.2);
   const ref = await p.evaluate(() => SYNQUENZER.g10OutRms(0, 12));
   ok('H-01 alle R.slot −1 vor ●', s0.every(x => x === -1), JSON.stringify(s0));
-  ok('H-01 M-BEGL Synth 1, Synth 2, Synth 3, Drums, Melodie je Takt ≥ 1 Note (Takt 1–3)', !miss.length, miss.length ? 'fehlt ' + miss.join(',') : '');
+  ok('H-01 M-BEGL Synth 1, Synth 2, Synth 3, Drums, Melodie je Takt ≥ 1 Note (Takt 1–4 = ganzer Take)', !miss.length, miss.length ? 'fehlt ' + miss.join(',') : '');
   ok('H-01 im Einzähler keine Clip-Noten (wie 4.25.0)', ci.length === 0, ci.length + ' Noten < 0');
   ok('H-01 g10OutRms ≥ −30 dBFS und ±1 dB zur Szene ohne Aufnahme', r.rms >= -30 && Math.abs(r.rms - ref) <= 1, r.rms.toFixed(1) + ' / ohne Aufnahme ' + ref.toFixed(1));
   ok('H-01 Take aufgenommen (neuer Eintrag in S.takes, Clip ≥ 4 Takte)', ntk === tk0 + 1 && r.clip && r.clip.audio && r.clip.len >= 4, 'Takes ' + tk0 + '→' + ntk + ' Länge ' + (r.clip && r.clip.len));
