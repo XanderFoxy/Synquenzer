@@ -1,3 +1,9 @@
+## 4.40.1 — ✕ bleibt im Bild
+
+- **Drum-Editor-Kopfzeile:** Spielte ein Pad North, schob die rote Taste „Platte“ auf schmaleren iPhones (375/390 px) das ✕ rechts aus dem Bild. Dort rücken Schalter Drums | North und die Taste jetzt etwas enger zusammen, alle Tasten bleiben mindestens 44 px groß. Auf 428 px (iPhone 12 Pro Max) sieht alles aus wie vorher.
+- Geprüft: Das ✕ ist in Synth-Editor, NORTH, Drum-Editor, Platte und MS 2000 sichtbar, hochkant (375/390/428) und quer (844/926 breit).
+Tests: Regeln (live 1×, MS 2000 1×, Marken 0), acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün.
+
 ## 4.40.0 — Regler drehen mit, North-Platte auf der Perkussionsspur
 
 - **Regler drehen sichtbar mit:** Wechselt ein Clip mit Klangzustand ◆ (Szene, Songteil, Song-Kante), drehen sich die Regler im offenen Editor jetzt mit demselben Tempo wie der Klang zum neuen Wert und zurück. Greifst du selbst an einen Regler, gilt deine Hand.
