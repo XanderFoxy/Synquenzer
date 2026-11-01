@@ -43,6 +43,9 @@ rep("  const g = wpQuant(id, Object.assign({mode: w ? w.mode : 'slice', strength
 rep("  if (m.op === 'det') return M.detectMarks(m.x, m.sr).map(k => ({t: k.t, conf: k.conf, word: !!k.word}));",
     "  if (m.op === 'det') return M.detectMarks(m.x, m.sr).map(k => ({t: k.t, conf: k.conf, word: !!k.word, src: k.src}));   // G10e: Herkunft mitgeben")
 
+rep("for (let k = 2; k <= quiet; k++) if (tf - k >= 0 && active[tf - k]) { word = false; break; }",
+    "for (let k = 6; k <= quiet + 4; k++) if (tf - k >= 0 && active[tf - k]) { word = false; break; }   // G10e: Ruhe vor dem Einschwingen prüfen (vorher ab 10 ms: fast nie ein Wort-Strich)")
+
 # Editor: Aufbau, Zoom-Taste, Schließen, Ansicht, Zeichnen, Gesten, Strich-Blatt
 rep("  zb.addEventListener('click', () => { const E = WP.ed; if (!E) return; E.zoom = WP_ZOOM[(WP_ZOOM.indexOf(E.zoom) + 1) % WP_ZOOM.length]; wpPaint(); });",
     "  zb.addEventListener('click', () => { const E = WP.ed; if (!E) return; g10eZoomBtn(E); });   // G10e: + Stufe „Wort“, aus dem freien Zoom zur nächsten Stufe")

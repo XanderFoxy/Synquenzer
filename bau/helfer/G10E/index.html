@@ -47427,7 +47427,7 @@ const quiet = Math.round(0.12 * sr / hop);
 for (const c of cand) {
 const i = refine(c.t * hop);
 let word = true; const tf = Math.floor(i / hop);
-for (let k = 2; k <= quiet; k++) if (tf - k >= 0 && active[tf - k]) { word = false; break; }
+for (let k = 6; k <= quiet + 4; k++) if (tf - k >= 0 && active[tf - k]) { word = false; break; }   // G10e: Ruhe vor dem Einschwingen prüfen (vorher ab 10 ms: fast nie ein Wort-Strich)
 marks.push({t: i / sr, i, conf: +Math.min(1, c.v / 2).toFixed(3), src: c.src, word, voiced: false});
 }
 if (o.pitch !== false) {
