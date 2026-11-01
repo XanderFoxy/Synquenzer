@@ -64,3 +64,6 @@ vvl-ui rc=0 83s |   FEHLT: 667×375: Ziele ≥ 44 px, nichts abgeschnitten → {
 vvl-regress rc=0 113s |   FEHLT: mr 9:16 neu-aus: keine Konsolenfehler → ["Failed to load resource: net::ERR_PROXY_CONNECTION_FAILED"]
 vvl-cancel rc=0 26s |   FEHLT: keine Konsolenfehler → ["Failed to load resource: net::ERR_PROXY_CONNECTION_FAILED"]
 e2e-wc rc=1 131s | e2e-video wc: 26/28
+e2e-mr rc=1 79s | e2e-video mr: 26/28
+bilder-fokus rc=0 9s | bilder-fokus: Konsolenfehler 0 []
+fertig 11:05:48
