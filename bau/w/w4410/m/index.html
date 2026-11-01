@@ -29735,6 +29735,7 @@ function v6aGo(i, st1, t0, t1, at, c) {
     for (const kk of V6A_FX) if (Math.abs((fxB[kk] || 0) - (fxA[kk] || 0)) > 1e-9) { a[kk] = fxA[kk]; b[kk] = fxB[kk]; n++; }
     if (n) { R.v6aRun[i] = {t0, t1: Math.max(t1, t0 + .005), c: c ? 1 : 0, a, b}; v6aFxRun(i, fxA.drive || 0); }
   }
+  vk2Cap(i, old, st1, t0, t1, at, c);                                // VK2: the glide for the video view Mäusekino (render and live)
   try { kv1Go(i, old, st1, t0, t1, at, c); } catch (e) { logErr(e); }   // KV1: the editor's knobs follow this run (display only)
   if (ED.v6aB && ED.v6aB.length) { try { for (const b of ED.v6aB) if (b.isConnected && +b.dataset.t === i) { v6aBtnPaint(b); if (ED.lcd && ED.lcd.isConnected && !ED.lcd._s) lcdHint(); } } catch (e) { logErr(e); } }   // the head key and the hint follow
   return true;
@@ -30743,6 +30744,7 @@ function drumHit(gm, vel, t, src, ex, o) {
   HITS.push(h);
   if (src !== 'preview') h.perf = perfAdd(DRUM_T, sl.gm, t, t + .1 * spb(), vel);
   h.log = logNote({track: DRUM_T, src, clipNote: src === 'clip' ? sl.gm : null, out: sl.gm, time: t, dur: null, vel});
+  if (ex && ex.acc) h.log.acc = 1;                                   // VK2: Schritt-Akzent (Mäusekino: Akzente glühen)
   padFlashAt(sl.idx, t);
   if (ST.on && src !== 'preview') vsMaskAdd(t, 0.04);         // VS2 Treffer-Maske (nur Lautsprecher)
   if (sl.gm === 36 && S.fxBus.pumpSrc === 'kick' && (src === 'clip' || src === 'pad')) onKickScheduled(t);     // Pumpen (§8.1, §7.5)
@@ -30820,6 +30822,7 @@ function mdHit(sl, vel, t, src, ex) {
   const h = {id: ++VSEQ, md: it.id, voice: sl.id, gm: sl.gm, track: DRUM_T, src, start: t, dead: false};
   if (src !== 'preview') h.perf = perfAdd(DRUM_T, sl.gm, t, t + .1 * spb(), vel);
   h.log = logNote({track: DRUM_T, src, clipNote: src === 'clip' ? sl.gm : null, out: sl.gm, time: t, dur: null, vel});
+  if (ex && ex.acc) h.log.acc = 1;                                   // VK2: Schritt-Akzent (Mäusekino: Akzente glühen)
   padFlashAt(sl.idx, t);
   if (ST.on && src !== 'preview') vsMaskAdd(t, 0.04);
   if (sl.gm === 36 && S.fxBus.pumpSrc === 'kick' && (src === 'clip' || src === 'pad')) onKickScheduled(t);
@@ -68039,12 +68042,12 @@ const GGB_API = {
    song.video = [{a, b, v: 'auto'|'song'|'matrix'|'spur', t?}] (Takte a ≤ x < b, Spur t) – optional und additiv (Format 5 bleibt);
    ohne Einträge macht der Auto-Regisseur alles. Einfügen/Löschen/Verschieben von Takten verschiebt bzw. kürzt die Einträge mit
    (wie song.vox; Haken in songShift/songClear/songCut/songWrite/songTidy), Undo wie alle Song-Änderungen. */
-const VV_DIRV = ['auto', 'song', 'matrix', 'spur', 'app', 'tast', 'roll', 'drum', 'mod', 'f-zelle', 'f-tast', 'f-teil', 'f-ue'], VV_BLEND = .3, VV_AR = 360;   // Blende 300 ms; die quer gezeichnete Ansicht ist 640 × 360
+const VV_DIRV = ['auto', 'song', 'matrix', 'spur', 'app', 'tast', 'roll', 'drum', 'mod', 'f-zelle', 'f-tast', 'f-teil', 'f-ue', 'kino'], VV_BLEND = .3, VV_AR = 360;   // Blende 300 ms; die quer gezeichnete Ansicht ist 640 × 360 · VK2: 'kino' = Mäusekino
 /* VV4-B: neue Werte nur dazu (alte Einträge bleiben gültig): app = ganze App, tast = Tastatur, roll/drum/mod = Spur … Piano-Roll /
    Drum-Sequenzer / Modulation (mit Spur t), f-zelle (mit Spur t) / f-tast / f-teil / f-ue = Fokus … Clip-Zelle / Tastatur / Teil-Kopf / Übergang */
 const VV4_TRK = ['spur', 'roll', 'drum', 'mod', 'f-zelle'];       // die Werte mit Spur t
 const VV4_NAME = {auto: 'Auto', app: 'App', song: 'Song', matrix: 'Matrix', tast: 'Tastatur', roll: 'Piano-Roll', drum: 'Drum-Sequenzer', mod: 'Modulation',
-  'f-zelle': 'Fokus Clip-Zelle', 'f-tast': 'Fokus Tastatur', 'f-teil': 'Fokus Teil-Kopf', 'f-ue': 'Fokus Übergang'};
+  'f-zelle': 'Fokus Clip-Zelle', 'f-tast': 'Fokus Tastatur', 'f-teil': 'Fokus Teil-Kopf', 'f-ue': 'Fokus Übergang', kino: 'Mäusekino'};   // VK2: Mäusekino
 const vvDirSame = (p, q) => !!p && !!q && p.v === q.v && (!VV4_TRK.includes(p.v) || p.t === q.t);
 // sanitize (load, undo, after every edit): ints, a < b ≤ bars, sorted, no overlap (the later in the list wins), equal neighbours merged;
 // nt = the track count of the song being read (VV2-fix: at load that is the loaded project's, not the open session's)
@@ -68135,6 +68138,7 @@ function vvDirTracks(a, b) {
 const vv4Nm = (v, t) => (v === 'spur' ? svShort(t) : VV4_TRK.includes(v) ? VV4_NAME[v] + ' · ' + svShort(t) : VV4_NAME[v]);
 const VV4_TYPECOL = {roll: '#f2f4f8', drum: '#ffb22e', mod: '#b9f227'};   // VV4-B: Linie der Bild-Art unter der Spur-Farbe im Streifen
 function vv4StripeCol(e, C) {
+  if (e.v === VK2_ID) return VK2_COL;   // VK2: Mäusekino
   if (VV4_TRK.includes(e.v)) return (SV.cols && SV.cols[e.t]) || '#888';
   return e.v === 'matrix' ? C.play : e.v === 'song' ? '#c9ced8' : e.v === 'app' || e.v === 'f-teil' ? C.amber : e.v === 'tast' || e.v === 'f-tast' ? '#3a86ff' : e.v === 'f-ue' ? '#f15bb5' : '#5d636e';
 }
@@ -68145,7 +68149,8 @@ function vvDirRow(a, b, cls) {
   return `<div class="vvdr"><span class="vvdl">Video</span>` + B('auto', 'Auto', v === 'auto', 'Video hier: Auto') + B('app', 'App', v === 'app', 'Video hier: ganze App') +
     B('song', 'Song', v === 'song', 'Video hier: Song') + B('matrix', 'Matrix', v === 'matrix', 'Video hier: Matrix') +
     `</div><div class="vvdr vv4r2"><span class="vvdl"></span>` + B('spur', (sp ? dot : '') + 'Spur …', sp, 'Video hier: eine Spur zeigen …') +
-    B('tast', 'Tastatur', v === 'tast', 'Video hier: Tastatur') + B('fokus', (fk ? dot : '') + 'Fokus …', fk, 'Video hier: Fokus auf …') + `</div>`;
+    B('tast', 'Tastatur', v === 'tast', 'Video hier: Tastatur') + B('fokus', (fk ? dot : '') + 'Fokus …', fk, 'Video hier: Fokus auf …') +
+    vk2DirBtn(B, v) + `</div>`;   // VK2: [Mäusekino]
 }
 // the tracks for a kind of picture in [a, b): Piano-Roll = Spuren mit Noten-Clips (keine Drums), Drum-Sequenzer = Drum-Spuren,
 // Modulation / Clip-Zelle / altes Spur-Bild = jede spielende Spur
@@ -68422,6 +68427,7 @@ function vvDrawShot(g, W, H, rt, sh, st, ts, frozen) {
   const C = vvCols();
   g.setTransform(1, 0, 0, 1, 0, 0);
   if (VV4_OWN.has(sh.v)) { vv4DrawShot(g, W, H, rt, sh, st, ts, frozen); return; }   // VV4: App, Tastatur, Spur …, Fokus … füllen das ganze Bild
+  if (sh.v === VK2_ID) { vk2Shot(g, W, H, rt, sh, st, ts, frozen); return; }   // VK2: Mäusekino (ganzes Bild)
   if (W >= H) { const k = W / 640; g.fillStyle = C.bg; g.fillRect(0, 0, W, H); g.setTransform(k, 0, 0, k, 0, (H - VV_AR * k) / 2); vvDrawView(g, 640, VV_AR, sh, st); }
   else if (rt.cam === 'app') vvAppShot(g, W, H, sh, st);   // VV4-A: 9:16 [Ganze App] (P-Raster 428 × 761, no bars; a Spur shot shows the matrix)
   else if (rt.cam === 'balken') {
@@ -68489,6 +68495,505 @@ function vv2Api() {
     vvRunLog: () => (VV.lastRt ? {log: VV.lastRt.log, shots: VV.lastRt.shots, cam: VV.lastRt.cam, view: VV.lastRt.view} : null),
   };
 }
+/* ===================== VK2-BEGIN: Video-Ansicht „Mäusekino“ (Konzept V2) mit sichtbarem Klang-Morph (Konzept V1) =====================
+   Regie-Wert 'kino' (nur von Hand in der Zeile „Video“; die Auto-Regie wählt ihn nie). Ein dichtes Bild, in dem jede Bewegung ein
+   Wert des Songs zur Videozeit t ist – nichts wird erfunden, nichts aus dem Live-Zustand gelesen, was im Offline-Render anders wäre:
+   - je Spur: Pegel (Spitze/RMS/Halten/LED aus dem Meter des Renders wie vvDrawMeters), die klingenden Noten als Lauflicht über 88 Tasten
+     (Helligkeit = Hüllkurve der Stimme × Anschlag, mit den Formeln von VV3), Anzahl der gehaltenen Noten, Anschlag der neuesten Note,
+     die Schritte des laufenden Takts (16tel; gespielte Schritte leuchten, der laufende ist umrandet); Drums/Perkussion: 12 Pads,
+     Akzent = Schritt-Akzent der Drum-Spur (glüht); Synth: Cutoff/Resonanz mit Hüllkurve, Tastatur, Anschlag und Mod-Matrix
+     (vv3VaState0 / vv3MkState0), Glühen bei hoher Resonanz; Summe: Master-Pegel; Kopf: Takt · Schlag · 16tel, Teil, Tempo.
+   - Klang-Morph ◆ (V6A): jeder v6aGo wird mitgeschrieben (eine Zeile dort: vk2Cap) – im Offline-Render je Render (Schlüssel: seine
+     Slot-Zeitleiste off.tl = r.tl, gilt also auch für die Bilder hinter dem Render), live je Spur die letzten Fahrten – in der Form
+     von KV1 {t0, t1, at, c, a, b, m}: dieselbe Formel wie Worklet und Regler (kv1RunV: S-Kurve/linear, Log-Raum, stufig am
+     Taktstrich). Die Ansicht zeigt für die gleitende Spur die Filterkurve (Tiefpass-/Band-/Hochpass-Form mit Resonanz-Spitze) und
+     die Hüllkurven AMP und FILTER als Ist-Kurve, die Ziel-Kurve gestrichelt, den Fortschritt und die gleitenden Werte (Ist → Ziel).
+   Gezeichnet in Punkten (16:9: 640 × 360, 9:16: 360 × 640, × 3 = Video-Pixel). Der ruhende Teil (Felder, unbeleuchtete Punkte,
+   Namen, Raster) liegt je Bildgröße in einem Puffer-Bild, die Glüh-Punkte je Farbe in kleinen Bildern; je Bild kommen nur die
+   leuchtenden Punkte, Kurven und Zahlen dazu. Kein Zufall, keine Uhr: zwei Renders geben dieselben Bilder. */
+const VK2_ID = 'kino', VK2_COL = '#ff6a3d', VK2_HOLD = 1.5, VK2_LO = 21, VK2_NK = 88;   // Lauflicht: 88 Tasten A0 … C8; der Morph bleibt 1,5 s stehen
+const VK2 = {cap: new WeakMap(), live: [], bg: null, spr: new Map(), probe: null};
+const VK2_MK = {'f.cut': 'cutoff', 'f.res': 'res', 'f.type': 'ftype', 'f.eg': 'fenv', 'e2.a': 'aA', 'e2.d': 'aD', 'e2.s': 'aS', 'e2.r': 'aR', 'e1.a': 'fA', 'e1.d': 'fD', 'e1.s': 'fS', 'e1.r': 'fR'};
+const VK2_NM = {cutoff: 'CUTOFF', res: 'RESONANZ', ftype: 'FILTERTYP', fenv: 'FILTER-HK', aA: 'AMP A', aD: 'AMP D', aS: 'AMP S', aR: 'AMP R', fA: 'FILTER A', fD: 'FILTER D', fS: 'FILTER S', fR: 'FILTER R'};
+const VK2_FT = ['LP24', 'LP12', 'BP24', 'BP12', 'HP24', 'HP12'];
+// the button of the Regie row (vvDirRow, second line, at its end)
+function vk2DirBtn(B, v) { return B(VK2_ID, 'Mäusekino', v === VK2_ID, 'Video hier: Mäusekino'); }
+// v6aGo: one glide of track i (old = R.v6aCur[i] before it). Offline render: per render (VV.off.tl); live: the last 8 per track
+function vk2Cap(i, old, st1, t0, t1, at, c) {
+  try {
+    const tr = S.tracks[i]; if (!tr) return;
+    const off = UI.vvOff && VV.off && VV.off.tl ? VV.off : null;
+    let L; if (off) { let M = VK2.cap.get(off.tl); if (!M) VK2.cap.set(off.tl, M = []); L = M[i] || (M[i] = []); } else L = VK2.live[i] || (VK2.live[i] = []);
+    const base = tr.sound, st0 = old ? old.st : null, o = L.length ? L[L.length - 1] : null;
+    const pv = o && o.st1 === st0 && o.snd === base && t0 < o.end ? o : null;      // as kv1Go: the older glide holds its keys until this one starts
+    const E = AU.synth[i], wk = !!(E && !E.dead), eng3 = !!base && base.engine === 'mk';
+    const r = {t0, t1: Math.max(t1, t0), at, c: c ? 1 : 0, a: {}, b: {}, m: {}, prev: pv, end: Math.max(t0, t1, at), s: Math.min(t0, at), snd: base, st0, st1, fx: null, n: 0};
+    r.ea = pv ? Math.max(r.end, pv.ea) : r.end;
+    if (tr.kind === 'synth' && base) for (const k of new Set(Object.keys((st0 && st0.p) || {}).concat(Object.keys((st1 && st1.p) || {})))) {
+      if (V6A_NO.has(k) || k === 'mk.mode') continue;
+      const gv = v6aGet(base, k); if (typeof gv !== 'number' || !isFinite(gv)) continue;
+      const y = st1 && st1.p ? st1.p[k] : undefined, x = st0 && st0.p ? st0.p[k] : undefined, q = pv && kv1Q(pv, k, t0);
+      r.a[k] = q ? kv1RunV(q, k, t0) : typeof x === 'number' && isFinite(x) ? x : gv;
+      r.b[k] = typeof y === 'number' && isFinite(y) ? y : gv;
+      r.m[k] = !wk ? 0 : !k.includes('.') ? (!eng3 && v6aCont(k) ? (v6aLaw(k) ? 2 : 1) : 0) : eng3 && k.startsWith('mk.') && v6aMkCont(k.slice(3)) ? 1 : 0;
+      r.n++;
+    }
+    const fr = R.v6aRun && R.v6aRun[i]; if (fr && fr.t0 === t0) r.fx = {t0: fr.t0, t1: fr.t1, c: fr.c, a: Object.assign({}, fr.a), b: Object.assign({}, fr.b)};   // Spur-Werte (v6aFxAt)
+    L.push(r); if (!off && L.length > 8) L.splice(0, L.length - 8);
+  } catch (e) { logErr(e); }
+}
+// the glide of a track at τ: the newest one (in the order v6aGo sent them) that has started
+function vk2Act(L, tau) { if (!L || tau == null) return null; for (let j = L.length - 1; j >= 0; j--) if (L[j].s <= tau + 1e-9) return L[j]; return null; }
+const vk2V = (r, base, k, tau) => { if (r) { const q = kv1Q(r, k, tau); if (q) return kv1RunV(q, k, tau); if (kv1Has(r.b, k)) return r.b[k]; } return v6aGet(base, k); };
+const vk2Goal = (r, base, k) => (r && kv1Has(r.b, k) ? r.b[k] : v6aGet(base, k));
+// the keys that really move in a glide (start ≠ end), visual ones first; and its progress (time share, 0 … 1)
+function vk2Mv(r) {
+  if (r._mv) return r._mv;
+  const pr = k => { const b = k.startsWith('mk.t.0.') ? VK2_MK[k.slice(7)] : k, j = Object.keys(VK2_NM).indexOf(b); return j < 0 ? 99 : j; };
+  return (r._mv = Object.keys(r.b).filter(k => Math.abs(r.b[k] - r.a[k]) > 1e-9).sort((p, q) => pr(p) - pr(q)));
+}
+const vk2Prog = (r, tau) => (r.t1 > r.t0 ? clamp((tau - r.t0) / (r.t1 - r.t0), 0, 1) : tau >= r.at - 1e-6 ? 1 : 0);
+// the morph shown for track i at τ (a glide that moves something, from its start until VK2_HOLD after its end), else null
+function vk2Morph(X, i) {
+  const r = X.runs ? vk2Act(X.runs[i], X.tau) : null; if (!r || (r.t1 - r.t0 < 1e-6 && r.c)) return null;   // ▶: the state at once (no glide)
+  const fxm = r.fx && Object.keys(r.fx.b).some(k => Math.abs(r.fx.b[k] - r.fx.a[k]) > 1e-9);
+  if (!vk2Mv(r).length && !fxm) return null;
+  if (X.tau > Math.max(r.ea, r.fx ? r.fx.t1 : 0) + VK2_HOLD) return null;
+  return r;
+}
+// the sound of synth track i at τ (Ist) or at the end of its glide (goal): flat p, MK timbre 1 (T) – a copy only while a state acts
+function vk2Eff(i, r, tau, goal) {
+  const base = sndOf(i); if (!base) return null;
+  const eng3 = base.engine === 'mk', T0 = eng3 && base.p.mk && base.p.mk.t ? base.p.mk.t[0] : null;
+  if (!r) return {base, p: base.p, T: T0, raw: true};
+  const fin = goal || tau >= r.ea;
+  if (fin && r._fin && r._fin.base === base) return r._fin;
+  const keys = new Set(); for (let q = r, d = 0; q && d < 4; q = q.prev, d++) { if (q !== r && (fin || tau >= q.end)) continue; for (const k in q.b) keys.add(k); }
+  const p = eng3 ? base.p : Object.assign({}, base.p), T = T0 ? JSON.parse(JSON.stringify(T0)) : null;
+  for (const k of keys) {
+    const v = fin ? vk2Goal(r, base, k) : vk2V(r, base, k, tau); if (typeof v !== 'number' || !isFinite(v)) continue;
+    if (!k.includes('.')) { if (!eng3) p[k] = v; continue; }
+    if (!T || !k.startsWith('mk.t.0.')) continue;
+    const q = k.slice(7).split('.'); let o = T; for (let j = 0; j < q.length - 1 && o; j++) o = o[q[j]];
+    if (o && typeof o[q[q.length - 1]] === 'number') o[q[q.length - 1]] = v;
+  }
+  const out = {base, p, T, raw: false}; if (fin) r._fin = out;
+  return out;
+}
+const vk2Cz = v => { const W = MKW_(); return W && W.cutHz ? W.cutHz(clamp(v, 0, 127)) : 20 * Math.pow(1000, clamp(v, 0, 127) / 127); };
+// the filter as the curves show it: knob values (Ist / Ziel) of a sound copy E – {fc (Hz), res (0 … 1,15), ft (VK2_FT)}
+function vk2Knob(E) {
+  if (!E) return null;
+  if (E.T) { const f = E.T.f || {}; return {fc: vk2Cz(+f.cut || 0), res: 1.1 * clamp(+f.res || 0, 0, 127) / 127, ft: [0, 1, 3, 5][clamp(Math.round(+f.type || 0), 0, 3)]}; }
+  const p = E.p; if (typeof p.cutoff !== 'number') return null;
+  return {fc: clamp(p.cutoff, 20, 20000), res: clamp(+p.res || 0, 0, 1.15), ft: clamp(Math.round(+p.ftype || 0), 0, 5)};
+}
+// the envelopes of a sound copy E: {A: amp, F: filter} as {f(x, a, b) level, ad (s), r (s)}
+function vk2Envs(E) {
+  if (!E) return null;
+  if (E.T) {
+    const W = MKW_(), T = E.T, gate = !!(T.a && T.a.gate), at = v => (W && W.atk ? W.atk(v) : .01), de = v => (W && W.dec ? W.dec(v) : .3);
+    const one = (e, g) => ({f: g ? (x, a, b) => (x >= a && x <= b ? 1 : 0) : (x, a, b) => vv3MkEnv(e, a, b, x), ad: g ? .004 : at(e.a) + de(e.d), r: g ? .004 : de(e.r)});
+    return {A: one(T.e2, gate), F: one(T.e1, false)};
+  }
+  const p = E.p, ae = {a: +p.aA || .005, d: +p.aD || .3, s: p.aS == null ? .8 : +p.aS, r: +p.aR || .25, c: p.aCurve}, fe = {a: +p.fA || .005, d: +p.fD || .3, s: p.fS == null ? .3 : +p.fS, r: +p.fR || .3, c: p.fCurve};
+  return {A: {f: (x, a, b) => vv3Adsr(ae, a, b, x), ad: ae.a + ae.d, r: ae.r}, F: {f: (x, a, b) => vv3Adsr(fe, a, b, x), ad: fe.a + fe.d, r: fe.r}};
+}
+// the picture's source: the render (or the live object drawn behind it): notes, meter, glides; else live (Vorschau / Standbild)
+function vk2Src(st) {
+  const src = st.src || null, bpm = (src && src.bpm) || S.bpm, sp = 60 / bpm, t = st.t != null ? st.t : st.tB != null ? st.tB * sp : 0;
+  if (src) { const lead = src.lead || 0, b0 = barBeat(src.a || 0); return {src, t, sp, bpm, tau: src.t0 != null ? src.t0 + t : null, runs: src.tl ? VK2.cap.get(src.tl) || null : null, nb: a => (a - lead) / sp + b0, live: false}; }
+  const on = !!(R.playing && AU.ctx);
+  return {src: on ? vv3LiveSrc() : null, t, sp, bpm, tau: on ? kv1T() : null, runs: on ? VK2.live : null, nb: a => { const x = songBeatOf(a / sp); return x == null ? -1e9 : x; }, live: true};
+}
+// level of input k (track, MAX_T = Summe) at the picture: [peak, rms, hold, led] – the render's meter, live the app's meter, else 0
+function vk2Mtr(X, k, o) {
+  const M = X.src && X.src.mtr;
+  if (M) return mtrAt(M.Q, M.off + X.t - (k === MAX_T ? 0 : M.gl), k, o, 0, 1 / VV_FPS);
+  if (X.live && AU.meter && !AU.meter.off && MTR.on) return mtrAt(AU.meter.Q, AU.meter.ctx.currentTime - (k === MAX_T ? AU.devLat : AU.outLat), k, o, 0, 0);
+  o.fill(0); return o;
+}
+// the log entries of track i with t − back ≤ a ≤ t (oldest first)
+function vk2Hits(src, i, t, back) {
+  const L = src && src.nt && src.nt[i], out = []; if (!L) return out;
+  let lo = 0, hi = L.length; while (lo < hi) { const m = (lo + hi) >> 1; if (L[m].a <= t + 1e-9) lo = m + 1; else hi = m; }
+  for (let j = hi - 1; j >= 0 && out.length < 256; j--) { const o = L[j]; if (o.a < t - back) break; if (!o.e.removed) out.push(o); }
+  return out.reverse();
+}
+const vk2Kind = i => { const tr = S.tracks[i]; return !tr ? '' : isDrum(i) ? 'drum' : percIs(tr) ? 'perc' : tr.stimme || tr.kind !== 'synth' ? 'voice' : 'syn'; };
+function vk2Rgb(c) { const m = /^#([0-9a-f]{6})$/i.exec(String(c || '').trim()); if (!m) return [255, 255, 255]; const n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+// a glow dot of colour c (64 px, radial, once per colour), added with 'lighter'
+function vk2Spr(c) {
+  let s = VK2.spr.get(c); if (s) return s;
+  s = document.createElement('canvas'); s.width = s.height = 64; const x = s.getContext('2d'), [r, gg, b] = vk2Rgb(c), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, `rgba(${r},${gg},${b},1)`); gr.addColorStop(.28, `rgba(${r},${gg},${b},.42)`); gr.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+  x.fillStyle = gr; x.fillRect(0, 0, 64, 64); VK2.spr.set(c, s); return s;
+}
+function vk2Glow(g, c, cx, cy, rad, a) {
+  if (!(a > .01)) return;
+  g.globalCompositeOperation = 'lighter'; g.globalAlpha = Math.min(1, a); g.drawImage(vk2Spr(c), cx - rad, cy - rad, rad * 2, rad * 2);
+  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+}
+// |H| in dB of the drawn filter at f: cutoff fc, RESONANZ res (0 … 1,15), type ft (0 LP24 ladder, 1 LP12, 2 BP24, 3 BP12, 4 HP24, 5 HP12)
+function vk2Db(f, fc, res, ft) {
+  const x = f / Math.max(1, fc), r = clamp(res || 0, 0, 1.15) / 1.15;
+  if (ft === 0) { const k = 3.6 * r, re = 1 - x * x, im = 2 * x, a = re * re - im * im + k, b = 2 * re * im; return 20 * Math.log10((1 + k) / Math.max(1e-9, Math.hypot(a, b))); }   // 1 / ((1 + jx)^4 + k), DC = 0 dB
+  const Q = .707 + 11 * r * r, den = Math.max(1e-9, Math.hypot(1 - x * x, x / Q));
+  let m = ft === 1 ? 1 / den : ft === 2 || ft === 3 ? x / Q / den : x * x / den; if (ft === 2 || ft === 4) m *= m;
+  return 20 * Math.log10(Math.max(1e-9, m));
+}
+const VK2_DB = [24, -42], vk2L0 = Math.log10(20), vk2L1 = Math.log10(20000);
+// the path of a filter curve in plot P (log 20 Hz … 20 kHz, +24 … −42 dB); the cutoff itself is one of the points (the resonance peak)
+function vk2Path(g, P, F) {
+  const n = 72, fx = clamp((Math.log10(F.fc) - vk2L0) / (vk2L1 - vk2L0), 0, 1), Y = db => P.y + (VK2_DB[0] - clamp(db, VK2_DB[1], VK2_DB[0])) / (VK2_DB[0] - VK2_DB[1]) * P.h;
+  g.beginPath(); let done = false;
+  for (let j = 0; j <= n; j++) {
+    let u = j / n; if (!done && u >= fx) { done = true; if (u > fx + 1e-6) { g.lineTo(P.x + fx * P.w, Y(vk2Db(F.fc, F.fc, F.res, F.ft))); } }
+    const y = Y(vk2Db(Math.pow(10, vk2L0 + (vk2L1 - vk2L0) * u), F.fc, F.res, F.ft)); if (j) g.lineTo(P.x + u * P.w, y); else g.moveTo(P.x + u * P.w, y);
+  }
+  return {x: P.x + fx * P.w, y: Y(vk2Db(F.fc, F.fc, F.res, F.ft))};
+}
+// the layout in points (16:9: rows left, filter / envelopes / morph right; 9:16: rows on top, the panels below)
+function vk2Lay(LW, LH, n) {
+  const port = LH > LW, P = 8, G = 6;
+  if (port) {
+    const w = LW - 2 * P, hd = {x: P, y: 8, w, h: 36}, env = {x: P, y: LH - P - 98, w, h: 98}, fil = {x: P, y: env.y - G - 132, w, h: 132}, inf = {x: P, y: fil.y - G - 34, w, h: 34};
+    const y0 = hd.y + hd.h + G, av = inf.y - G - y0, rh = Math.min(46, av / Math.max(1, n));
+    return {port, hd, env, fil, inf, rows: {x: P, y: y0 + (av - rh * n) / 2, w, rh}, nameW: 52, rightW: 58};
+  }
+  const hd = {x: P, y: 6, w: LW - 2 * P, h: 24}, rw = Math.round((LW - 2 * P - G) * .63), cx = P + rw + G, cw = LW - P - cx, top = hd.y + hd.h + G;
+  const fil = {x: cx, y: top, w: cw, h: 150}, env = {x: cx, y: fil.y + fil.h + G, w: cw, h: 94}, inf = {x: cx, y: env.y + env.h + G, w: cw, h: Math.max(30, LH - P - (env.y + env.h + G))};
+  const av = LH - P - top, rh = Math.min(46, av / Math.max(1, n));
+  return {port, hd, env, fil, inf, rows: {x: P, y: top + (av - rh * n) / 2, w: rw, rh}, nameW: 60, rightW: 64};
+}
+function vk2Row(L, r) {
+  const Q = L.rows, x = Q.x, y = Q.y + r * Q.rh, w = Q.w, h = Q.rh - 3, lx = x + L.nameW + 12, rx = x + w - L.rightW, lw = rx - 6 - lx;
+  const h1 = Math.max(5, h * .4), h2 = Math.max(4, h * .27);
+  return {x, y, w, h, mx: x + L.nameW + 2, lx, lw, rx, rw: L.rightW - 4, y1: y + 4, h1, y2: y + h - 4 - h2, h2};
+}
+const vk2Plot = B => ({x: B.x + 8, y: B.y + 17, w: B.w - 16, h: B.h - 17 - 16});
+function vk2EnvBox(L) { const E = L.env, gw = (E.w - 24) / 2; return [{x: E.x + 8, y: E.y + 17, w: gw, h: E.h - 25}, {x: E.x + 16 + gw, y: E.y + 17, w: gw, h: E.h - 25}]; }
+function vk2Fit(g, s, max, fs, wt, fam) { let f = fs; g.font = wt + ' ' + f + 'px ' + fam; while (f > 5 && g.measureText(s).width > max) { f -= .5; g.font = wt + ' ' + f + 'px ' + fam; } return f; }
+// the resting picture (per size, rows, names, colours): fields, unlit dots, names, grid
+function vk2Bg(W, H, k, L, rows, C) {
+  const kinds = rows.map(i => vk2Kind(i)), key = [W, H, k, rows.join(','), kinds.join(','), rows.map(i => svShort(i) + '=' + (C.t[i] || '')).join('|'), C.bg, C.gen].join('/');
+  if (VK2.bg && VK2.bg.key === key) return VK2.bg.cv;
+  const cv = (VK2.bg && VK2.bg.cv) || document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = C.bg; g.fillRect(0, 0, W, H); g.setTransform(k, 0, 0, k, 0, 0);
+  const box = (b, r) => { vvRound(g, b.x, b.y, b.w, b.h, r || 5); g.fillStyle = '#111317'; g.fill(); g.strokeStyle = '#22262e'; g.lineWidth = 1; g.stroke(); };
+  const lab = (s, x, y, al, col, fs) => { g.font = '700 ' + (fs || 7) + 'px ' + C.ui; g.fillStyle = col || C.faint; g.textAlign = al || 'left'; g.textBaseline = 'middle'; g.fillText(s, x, y); };
+  box(L.hd); box(L.fil); box(L.env); box(L.inf);
+  const hd = L.hd;
+  if (L.port) { lab('TAKT', hd.x + 8, hd.y + 10); lab('SUMME', hd.x + 8, hd.y + 27); }
+  else { lab('TAKT', hd.x + 8, hd.y + hd.h / 2); lab('SUMME', hd.x + hd.w - 236, hd.y + hd.h / 2); }
+  lab('FILTER', L.fil.x + 8, L.fil.y + 9); lab('HÜLLKURVEN', L.env.x + 8, L.env.y + 9); lab('KLANG-MORPH', L.inf.x + 8, L.inf.y + 9);
+  // filter plot: decades and 0 dB as dotted lines
+  const P = vk2Plot(L.fil), Y0 = P.y + VK2_DB[0] / (VK2_DB[0] - VK2_DB[1]) * P.h;
+  g.fillStyle = 'rgba(255,255,255,.10)';
+  for (const f of [100, 1000, 10000]) { const x = P.x + (Math.log10(f) - vk2L0) / (vk2L1 - vk2L0) * P.w; for (let y = P.y; y <= P.y + P.h; y += 3) g.fillRect(x - .3, y, .6, .6); lab(f >= 1000 ? f / 1000 + 'k' : String(f), x, P.y + P.h + 7, 'center', C.faint, 6.5); }
+  for (let x = P.x; x <= P.x + P.w; x += 3) g.fillRect(x, Y0 - .3, .6, .6);
+  lab('0 dB', P.x + P.w, Y0 - 4, 'right', C.faint, 6);
+  const EB = vk2EnvBox(L); lab('AMP', EB[0].x + EB[0].w, L.env.y + 9, 'right'); lab('FILTER', EB[1].x + EB[1].w, L.env.y + 9, 'right');
+  for (const b of EB) { g.fillStyle = 'rgba(255,255,255,.05)'; g.fillRect(b.x, b.y + b.h, b.w, .6); g.fillRect(b.x, b.y, .6, b.h); }
+  // the rows
+  rows.forEach((i, r) => {
+    const Rw = vk2Row(L, r), col = C.t[i] || '#888', kd = kinds[r];
+    vvRound(g, Rw.x, Rw.y, Rw.w, Rw.h, 4); g.fillStyle = '#0f1114'; g.fill(); g.strokeStyle = '#1d2027'; g.lineWidth = .8; g.stroke();
+    g.fillStyle = col; g.fillRect(Rw.x + 3, Rw.y + 4, 2.5, Rw.h - 8);
+    g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = C.text; vk2Fit(g, svShort(i), L.nameW - 12, L.port ? 9.5 : 10, '700', C.ui); g.fillText(svShort(i), Rw.x + 9, Rw.y + Rw.h * .33);
+    const md = (Rw.h - 8) / 8; g.fillStyle = '#1b1e24'; for (let d = 0; d < 8; d++) g.fillRect(Rw.mx, Rw.y + 4 + d * md + .5, 4, md - 1);
+    const cy = Rw.y1 + Rw.h1 / 2, kw = Rw.lw / VK2_NK;
+    if (kd === 'syn') {
+      for (let j = 0; j < VK2_NK; j++) { const n = VK2_LO + j, c = n % 12 === 0; g.fillStyle = c ? '#3a404b' : '#22262d'; g.fillRect(Rw.lx + j * kw + kw / 2 - .6, cy - .6, 1.2, 1.2); if (c) { g.fillStyle = '#2b3038'; g.fillRect(Rw.lx + j * kw + kw / 2 - .3, Rw.y1 + Rw.h1 + .4, .6, 2); } }
+      g.strokeStyle = '#1f232a'; g.lineWidth = .6; g.strokeRect(Rw.rx + 22.5, Rw.y + 4.5, Rw.rw - 23, Rw.h - 9);
+    } else if (kd === 'drum' || kd === 'perc') {
+      const pw = (Rw.lw - 11 * 2) / 12;
+      DRUM_VOICES.slice(0, 12).forEach((d, j) => {
+        const px = Rw.lx + j * (pw + 2); vvRound(g, px, Rw.y1, pw, Rw.h1, 1.5); g.fillStyle = '#171a20'; g.fill();
+        g.fillStyle = '#4a505b'; g.textAlign = 'center'; vk2Fit(g, d.sl, pw - 2, Math.min(6.5, Rw.h1 * .62), '700', C.ui); g.fillText(d.sl, px + pw / 2, cy + .3);
+      });
+      if (kd === 'drum') { lab('AKZENT', Rw.rx + Rw.rw / 2 + 2, Rw.y + Rw.h - 7, 'center', C.faint, 6); }
+    } else { const n = 48, dw = Rw.lw / n; g.fillStyle = '#20242b'; for (let j = 0; j < n; j++) g.fillRect(Rw.lx + j * dw + dw * .2, Rw.y1 + Rw.h1 * .2, dw * .6, Rw.h1 * .6); }
+  });
+  VK2.bg = {key, cv};
+  return cv;
+}
+// the Mäusekino shot (vvDrawShot: one line there): the whole canvas, W × H pixels
+function vk2Shot(g, W, H, rt, sh, st, ts, frozen) {
+  const port = H > W, LW = port ? 360 : 640, k = W / LW, LH = H / k, C = vvCols(), rows = vvRows(), L = vk2Lay(LW, LH, rows.length);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.drawImage(vk2Bg(W, H, k, L, rows, C), 0, 0);
+  g.setTransform(k, 0, 0, k, 0, 0);
+  try { vk2Frame(g, L, rows, st, C); } catch (e) { logErr(e); }
+  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.setLineDash([]);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  if (rt && rt.log && !frozen) rt.log.push({ts: +ts.toFixed(4), k: sh.k, cx: 320, cy: VV_AR / 2, z: 1, ww: 640, wh: VV_AR, fit: 1, v: sh.v});
+}
+// per picture: the values of every row, then the panels
+function vk2Frame(g, L, rows, st, C) {
+  const X = vk2Src(st), t = X.t, sb = st.sb != null && st.sb >= 0 ? st.sb : null, o = VK2.mo || (VK2.mo = new Float32Array(4));
+  let bar = -1, bs = 0, nSt = 16, cur = -1;
+  if (sb != null) { bar = barAt(sb); bs = barBeat(bar); nSt = clamp(Math.round((barBeat(bar + 1) - bs) * 4), 1, 32); cur = clamp(Math.floor((sb - bs) * 4 + 1e-6), 0, nSt - 1); }
+  const stepOf = a => { if (bar < 0) return -1; const s = Math.floor((X.nb(a) - bs) * 4 + .25); return s >= 0 && s < nSt ? s : -1; };
+  const probe = {t, tau: X.tau, bar, step: cur, nSt, rows: [], focus: null, morph: null}, rowS = [];
+  let focus = null, anyM = null, held = 0, voices = 0;
+  g.textBaseline = 'middle';
+  rows.forEach((i, r) => {
+    const Rw = vk2Row(L, r), col = C.t[i] || '#888', kd = vk2Kind(i), pr = {i, kd};
+    // level: vertical dots (RMS solid, peak faint, hold white, LED red)
+    vk2Mtr(X, i, o); const fp = mtrFrac(o[0]), fr = mtrFrac(o[1]), fh = mtrFrac(o[2]), md = (Rw.h - 8) / 8;
+    for (let d = 0; d < 8; d++) {
+      const lv = (d + 1) / 8, on = fr >= lv - 1e-6 ? 1 : fp >= lv - 1e-6 ? .35 : 0; if (!on) continue;
+      g.globalAlpha = on; g.fillStyle = lv > .95 ? '#ff4b4b' : lv > .75 ? '#ffb22e' : '#35d07f'; g.fillRect(Rw.mx, Rw.y + 4 + (7 - d) * md + .5, 4, md - 1);
+    }
+    g.globalAlpha = 1;
+    if (fh > 0) { g.fillStyle = '#f2f4f8'; g.fillRect(Rw.mx - .5, Rw.y + 4 + (1 - fh) * (Rw.h - 8) - .4, 5, .8); }
+    if (o[3]) { g.fillStyle = '#ff3b3b'; g.fillRect(Rw.mx, Rw.y + 1.5, 4, 1.5); }
+    pr.rms = +mtrDb(o[1]).toFixed(1);
+    const steps = new Float32Array(nSt), acc = new Uint8Array(nSt), cy = Rw.y1 + Rw.h1 / 2;
+    let sub = '';
+    if (kd === 'syn') {
+      const S_ = vk2Syn(i, st, X); pr.syn = !!S_;
+      if (S_) {
+        const kw = Rw.lw / VK2_NK; let lit = 0;
+        for (const x of S_.vo) {
+          const j = clamp(x.n - VK2_LO, 0, VK2_NK - 1), e = clamp(x.env, 0, 1) * (.45 + .55 * clamp(x.v, 0, 1)), px = Rw.lx + j * kw + kw / 2;
+          if (e < .02) continue; lit++;
+          vk2Glow(g, col, px, cy, 3 + 5 * e, .25 + .55 * e);
+          g.globalAlpha = .35 + .65 * e; g.fillStyle = col; g.fillRect(px - Math.max(.9, kw * .38), Rw.y1, Math.max(1.8, kw * .76), Rw.h1); g.globalAlpha = 1;
+          if (e > .6) { g.fillStyle = '#f6f7fa'; g.fillRect(px - .5, Rw.y1 + Rw.h1 * .25, 1, Rw.h1 * .5); }
+        }
+        for (const x of S_.notes) { const s = stepOf(x.a); if (s >= 0 && x.v > steps[s]) steps[s] = Math.max(.05, x.v); }
+        held += S_.held; voices += S_.vo.length;
+        const nv = S_.vo.length ? S_.vo[S_.vo.length - 1] : null; if (nv) sub = noteLabel(nv.n) + ' · ' + Math.round(clamp(nv.v, 0, 1) * 127);
+        // count of held notes, velocity of the newest one (dots), the small filter curve (with modulation), resonance glow
+        g.fillStyle = S_.held ? C.text : '#3a3f48'; g.font = '700 ' + (L.port ? 11 : 12) + 'px ' + C.num; g.textAlign = 'center'; g.fillText(String(S_.held), Rw.rx + 9, Rw.y + Rw.h * .36);
+        const vv = nv ? clamp(nv.v, 0, 1) : 0; for (let d = 0; d < 5; d++) { g.fillStyle = vv * 5 >= d + .5 ? col : '#1d2026'; g.fillRect(Rw.rx + 2 + d * 3.6, Rw.y + Rw.h - 8, 2.6, 2.6); }
+        if (S_.mod) {
+          const B = {x: Rw.rx + 23, y: Rw.y + 5, w: Rw.rw - 24, h: Rw.h - 10};
+          g.save(); g.beginPath(); g.rect(B.x, B.y, B.w, B.h); g.clip();
+          const pk = vk2Path(g, {x: B.x, y: B.y + 1, w: B.w, h: B.h - 2}, S_.mod); g.strokeStyle = col; g.lineWidth = 1; g.globalAlpha = .9; g.stroke(); g.globalAlpha = 1;
+          const rg = clamp((S_.mod.res - .45) / .6, 0, 1); vk2Glow(g, col, pk.x, Math.max(B.y + 1, pk.y), 3 + 6 * rg, rg * .9);
+          g.restore();
+          pr.cut = Math.round(S_.mod.fc); pr.res = +S_.mod.res.toFixed(3); pr.glow = +rg.toFixed(3);
+        }
+        pr.lit = lit; pr.held = S_.held; pr.vel = nv ? Math.round(vv * 127) : null;
+        if (!focus && S_.vo.length && S_.envs) focus = {i, S_};
+        rowS[r] = S_;
+      }
+    } else if (kd === 'drum' || kd === 'perc') {
+      const hs = vk2Hits(X.src, i, t, Math.max(nSt / 4, 8) * X.sp + .3), last = [], pw = (Rw.lw - 11 * 2) / 12; let la = null;
+      for (const h of hs) {
+        const n = h.e.out, j = kd === 'drum' ? (DRUM_BY_GM[n] ? DRUM_BY_GM[n].idx : -1) : percCh(n), v = h.e.vel == null ? .8 : h.e.vel, ac = kd === 'drum' && !!h.e.acc;
+        if (j >= 0 && j < 12) last[j] = {a: h.a, v, ac};
+        const s = stepOf(h.a); if (s >= 0) { if (v > steps[s]) steps[s] = Math.max(.05, v); if (ac) acc[s] = 1; }
+        if (ac) la = h;
+      }
+      let lit = 0;
+      for (let j = 0; j < 12; j++) {
+        const h = last[j]; if (!h) continue; const fl = clamp(1 - (t - h.a) / .18, 0, 1) * (.4 + .6 * h.v); if (fl <= 0) continue; lit++;
+        const px = Rw.lx + j * (pw + 2);
+        if (h.ac) vk2Glow(g, '#fff3d6', px + pw / 2, cy, pw * .9, fl);
+        vk2Glow(g, col, px + pw / 2, cy, pw * .75, fl * .7);
+        g.globalAlpha = .25 + .6 * fl; g.fillStyle = h.ac ? '#ffe9c4' : col; vvRound(g, px, Rw.y1, pw, Rw.h1, 1.5); g.fill(); g.globalAlpha = 1;
+      }
+      if (kd === 'drum') {
+        const fa = la ? clamp(1 - (t - la.a) / .25, 0, 1) : 0, ax = Rw.rx + Rw.rw / 2 + 2, ay = Rw.y + Rw.h * .4;
+        g.fillStyle = fa > 0 ? '#ffe9c4' : '#22262d'; g.beginPath(); g.arc(ax, ay, 3.2, 0, Math.PI * 2); g.fill();
+        vk2Glow(g, '#ffb22e', ax, ay, 11, fa); pr.acc = +fa.toFixed(3);
+      }
+      const nl = hs.length ? hs[hs.length - 1] : null; if (nl && t - nl.a < 2 * X.sp * 4) sub = (kd === 'drum' ? (DRUM_BY_GM[nl.e.out] ? DRUM_BY_GM[nl.e.out].sl : '') : percChShort(percCh(nl.e.out))) + ' · ' + Math.round(clamp(nl.e.vel == null ? .8 : nl.e.vel, 0, 1) * 127);
+      pr.lit = lit;
+    } else {
+      const n = 48, dw = Rw.lw / n, on = Math.round(fr * n);
+      for (let j = 0; j < on; j++) { const lv = (j + 1) / n; g.fillStyle = lv > .95 ? '#ff4b4b' : lv > .75 ? '#ffb22e' : col; g.fillRect(Rw.lx + j * dw + dw * .2, Rw.y1 + Rw.h1 * .2, dw * .6, Rw.h1 * .6); }
+      if (on) vk2Glow(g, col, Rw.lx + on * dw, cy, Rw.h1, .35 * fr);
+      pr.lit = on;
+    }
+    // the steps of the running bar (a running light in 16ths; what was played lights up, accents glow)
+    const cw = Rw.lw / nSt;
+    for (let s = 0; s < nSt; s++) {
+      const x0 = Rw.lx + s * cw + .7, w0 = cw - 1.4, v = steps[s];
+      g.fillStyle = v > 0 ? col : s % 4 === 0 ? '#1d2128' : '#16191e'; g.globalAlpha = v > 0 ? .3 + .7 * v : 1; g.fillRect(x0, Rw.y2, w0, Rw.h2); g.globalAlpha = 1;
+      if (acc[s]) { vk2Glow(g, '#ffd28a', x0 + w0 / 2, Rw.y2 + Rw.h2 / 2, cw * .8, .8); g.fillStyle = '#fff6e6'; g.fillRect(x0 + w0 * .3, Rw.y2 + Rw.h2 * .3, w0 * .4, Rw.h2 * .4); }
+      if (s === cur) { g.strokeStyle = C.amber; g.lineWidth = .9; g.strokeRect(x0 - .3, Rw.y2 - .3, w0 + .6, Rw.h2 + .6); }
+    }
+    pr.steps = Array.from(steps, v => +v.toFixed(2)); pr.acc8 = Array.from(acc);
+    // the newest note (name · velocity 0 … 127) under the name
+    if (sub) { g.fillStyle = C.dim; g.textAlign = 'left'; g.font = '600 ' + (L.port ? 7 : 7.5) + 'px ' + C.num; g.fillText(sub, Rw.x + 9, Rw.y + Rw.h * .72); }
+    // a glide of this track: the diamond and the progress under the row
+    const mr = vk2Morph(X, i);
+    if (mr) {
+      const p = vk2Prog(mr, X.tau), dx = Rw.x + L.nameW - 4, dy = Rw.y + Rw.h * .33;
+      g.fillStyle = VK2_COL; g.beginPath(); g.moveTo(dx, dy - 3.2); g.lineTo(dx + 3.2, dy); g.lineTo(dx, dy + 3.2); g.lineTo(dx - 3.2, dy); g.closePath(); g.fill();
+      vk2Glow(g, VK2_COL, dx, dy, 8, p < 1 ? .8 : .35);
+      g.fillStyle = 'rgba(255,106,61,.22)'; g.fillRect(Rw.lx, Rw.y + Rw.h - 1.6, Rw.lw, 1.2); g.fillStyle = VK2_COL; g.fillRect(Rw.lx, Rw.y + Rw.h - 1.6, Rw.lw * p, 1.2);
+      pr.morph = +p.toFixed(4);
+      if (kd === 'syn' && (!focus || !focus.m)) focus = {i, m: mr, S_: rowS[r]};
+      if (!anyM) anyM = {i, m: mr};
+    }
+    probe.rows.push(pr);
+  });
+  vk2Head(g, L, X, st, sb, bar, bs, C, o);
+  vk2Panels(g, L, X, st, C, focus, anyM, rows, rowS, probe, held, voices);
+  VK2.probe = probe;
+}
+// one synth track at the picture: voices (pitch, velocity, amp level), notes of the window, held count, filter (knob + modulation)
+function vk2Syn(i, st, X) {
+  const base = sndOf(i); if (!base) return null;
+  const t = X.t, src = X.src, r = X.runs ? vk2Act(X.runs[i], X.tau) : null, E = vk2Eff(i, r, X.tau, false), eng3 = base.engine === 'mk';
+  let vo = [], notes = [], mod = null, envs = null, nv = null;
+  if (eng3 && E.T) {
+    const ms = E.raw ? vv3MkState(i, t, st, src) : vv3MkState0(i, t, st, src, E.T); if (!ms) return null;
+    const T = ms.T, gate = !!(T.a && T.a.gate);
+    notes = ms.notes.filter(x => x.a <= t); vo = ms.voices.map(x => ({n: x.n, v: x.v, a: x.a, b: x.b, env: gate ? (x.b >= t ? 1 : 0) : vv3MkEnv(T.e2, x.a, x.b, t)}));
+    mod = {fc: vk2Cz(ms.cut), res: 1.1 * clamp(+T.f.res || 0, 0, 127) / 127, ft: [0, 1, 3, 5][clamp(Math.round(+T.f.type || 0), 0, 3)]}; envs = vk2Envs({T}); nv = ms.nv;
+  } else {
+    const vs = E.raw ? vv3VaState(i, t, src) : vv3VaState0(i, t, src, E.p); if (!vs) return null;
+    notes = vs.notes; vo = notes.filter(x => x.b >= t || vv3Adsr(vs.ae, x.a, x.b, t) > .002).map(x => ({n: x.n, v: x.v, a: x.a, b: x.b, env: vv3Adsr(vs.ae, x.a, x.b, t)}));
+    if (typeof vs.p.cutoff === 'number') mod = {fc: vs.cutHz, res: clamp((+vs.p.res || 0) + (vs.dst.res || 0), 0, 1.15), ft: clamp(Math.round(+vs.p.ftype || 0), 0, 5)};
+    envs = vk2Envs({p: vs.p}); nv = vs.nv;
+  }
+  if (vo.length > 64) vo = vo.slice(-64);
+  let held = 0; for (const x of notes) if (x.a <= t && x.b > t) held++;
+  return {i, vo, notes, held, mod, envs, nv, E, r};
+}
+// the head: bar · beat · 16th, part, tempo, Summe
+function vk2Head(g, L, X, st, sb, bar, bs, C, o) {
+  const hd = L.hd, song = S.song, ya = L.port ? hd.y + 10 : hd.y + hd.h / 2, yb = L.port ? hd.y + 27 : ya;
+  g.textAlign = 'left'; g.textBaseline = 'middle';
+  let pos = '---.-.-', part = '';
+  if (bar >= 0) {
+    const q = (sb - bs) * 4, bt = Math.floor(q / 4 + 1e-6) + 1, sx = Math.floor(q + 1e-6) % 4 + 1;
+    pos = String(bar + 1).padStart(3, '0') + '.' + bt + '.' + sx;
+    const m = song && song.marks ? song.marks.find(x => bar >= x.a && bar < x.a + x.len) : null; if (m) part = markLabel(m).toUpperCase() + (m.len > 1 ? '  ' + (bar - m.a + 1) + '/' + m.len : '');
+  }
+  g.font = '700 ' + (L.port ? 14 : 13) + 'px ' + C.num; g.fillStyle = C.amber; g.fillText(pos, hd.x + 32, ya);
+  const px = hd.x + 32 + g.measureText(pos).width + 12;
+  if (part) { g.fillStyle = C.text; vk2Fit(g, part, (L.port ? hd.x + hd.w - 60 : hd.x + hd.w - 290) - px, 10, '700', C.ui); g.fillText(part, px, ya); }
+  g.font = '600 8px ' + C.num; g.fillStyle = C.dim; g.textAlign = 'right'; g.fillText(Math.round(X.bpm) + ' BPM', L.port ? hd.x + hd.w - 8 : hd.x + hd.w - 246, ya);
+  // Summe: 40 dots (RMS solid, peak faint, hold white), LED, dB
+  vk2Mtr(X, MAX_T, o); const fp = mtrFrac(o[0]), fr = mtrFrac(o[1]), fh = mtrFrac(o[2]);
+  const x0 = L.port ? hd.x + 44 : hd.x + hd.w - 200, x1 = hd.x + hd.w - (L.port ? 46 : 44), n = 40, dw = (x1 - x0) / n, hh = 4.5;
+  for (let j = 0; j < n; j++) {
+    const lv = (j + 1) / n, on = fr >= lv - 1e-6 ? 1 : fp >= lv - 1e-6 ? .35 : 0;
+    g.globalAlpha = on || 1; g.fillStyle = !on ? '#1b1e24' : lv > .95 ? '#ff4b4b' : lv > .75 ? '#ffb22e' : '#35d07f'; g.fillRect(x0 + j * dw + .4, yb - hh / 2, dw - .8, hh);
+  }
+  g.globalAlpha = 1;
+  if (fh > 0) { g.fillStyle = '#f2f4f8'; g.fillRect(x0 + fh * (x1 - x0) - .5, yb - hh / 2 - 1, 1, hh + 2); }
+  g.fillStyle = o[3] ? '#ff3b3b' : 'rgba(255,75,75,.2)'; g.fillRect(x1 + 3, yb - hh / 2, 4, hh);
+  const db = mtrDb(o[1]); g.font = '600 8px ' + C.num; g.fillStyle = C.dim; g.textAlign = 'right'; g.fillText(db <= -60 ? '−∞' : (db < 0 ? '−' : '') + fmtDec(Math.abs(db), 1), hd.x + hd.w - 6, yb + (L.port ? 0 : 0));
+}
+// filter, envelopes, morph text
+function vk2Panels(g, L, X, st, C, focus, anyM, rows, rowS, probe, held, voices) {
+  const P = vk2Plot(L.fil), fil = L.fil, m = focus && focus.m ? focus.m : null, fi = focus ? focus.i : -1, fcol = fi >= 0 ? C.t[fi] || '#888' : C.text;
+  g.save(); g.beginPath(); g.rect(P.x, P.y - 2, P.w, P.h + 3); g.clip();
+  // every synth track: its filter now (knob + envelope, keyboard, velocity, mod matrix), glowing with high resonance
+  rows.forEach((i, r) => {
+    const S_ = rowS[r]; if (!S_ || !S_.mod) return;
+    const col = C.t[i] || '#888', dim = m && i !== fi, rg = clamp((S_.mod.res - .45) / .6, 0, 1);
+    const pk = vk2Path(g, P, S_.mod);
+    if (rg > 0 && !dim) { g.strokeStyle = col; g.globalAlpha = .12 + .25 * rg; g.lineWidth = 3 + 4 * rg; g.stroke(); }
+    g.strokeStyle = col; g.globalAlpha = dim ? .28 : m ? .45 : .9; g.lineWidth = m ? 1 : 1.4; g.stroke(); g.globalAlpha = 1;
+    if (!dim) vk2Glow(g, col, pk.x, clamp(pk.y, P.y, P.y + P.h), 4 + 9 * rg, .3 + .6 * rg);
+  });
+  // the glide: the curve of the knobs now (Ist) and at the end (Ziel, dashed)
+  let mi = null;
+  if (m) {
+    const EI = vk2Eff(fi, m, X.tau, false), EZ = vk2Eff(fi, m, X.tau, true), KI = vk2Knob(EI), KZ = vk2Knob(EZ);
+    if (KZ) { vk2Path(g, P, KZ); g.setLineDash([3, 2.5]); g.strokeStyle = '#f2f4f8'; g.globalAlpha = .85; g.lineWidth = 1.1; g.stroke(); g.setLineDash([]); g.globalAlpha = 1; }
+    if (KI) {
+      const pk = vk2Path(g, P, KI), rg = clamp((KI.res - .45) / .6, 0, 1);
+      g.strokeStyle = fcol; g.globalAlpha = .22 + .2 * rg; g.lineWidth = 4 + 3 * rg; g.stroke(); g.globalAlpha = 1; g.lineWidth = 2; g.stroke();
+      vk2Glow(g, fcol, pk.x, clamp(pk.y, P.y, P.y + P.h), 6 + 8 * rg, .5 + .5 * rg); g.fillStyle = '#ffffff'; g.beginPath(); g.arc(pk.x, clamp(pk.y, P.y, P.y + P.h), 1.6, 0, Math.PI * 2); g.fill();
+    }
+    mi = {EI, EZ, KI, KZ};
+  }
+  g.restore();
+  // title right: the gliding track (scene → scene) or the synth tracks' colours
+  g.textBaseline = 'middle'; g.textAlign = 'right';
+  if (m) {
+    const p = vk2Prog(m, X.tau), nm = vk2StName(fi, m.st0) + ' → ' + vk2StName(fi, m.st1);
+    g.font = '700 7.5px ' + C.ui; g.fillStyle = fcol; const w1 = g.measureText(svShort(fi)).width; g.fillText(svShort(fi), fil.x + fil.w - 8, fil.y + 9);
+    g.fillStyle = C.text; vk2Fit(g, nm, fil.w - 60 - w1, 7.5, '700', C.ui); g.fillText(nm, fil.x + fil.w - 14 - w1, fil.y + 9);
+    g.fillStyle = 'rgba(255,106,61,.2)'; g.fillRect(P.x, fil.y + fil.h - 5, P.w, 2.2); g.fillStyle = VK2_COL; g.fillRect(P.x, fil.y + fil.h - 5, P.w * p, 2.2);
+    vk2Glow(g, VK2_COL, P.x + P.w * p, fil.y + fil.h - 4, 6, .8);
+  }
+  // envelopes: during a glide Ist (solid) and Ziel (dashed) with a common time axis; else the newest sounding voice of the first
+  // synth track that sounds, with its running position
+  const EB = vk2EnvBox(L), fo = focus && focus.S_ ? focus.S_ : null;
+  if (m && mi) {
+    const EI = vk2Envs(mi.EI), EZ = vk2Envs(mi.EZ);
+    if (EI && EZ) ['A', 'F'].forEach((kk, j) => {
+      const B = EB[j], a = EI[kk], z = EZ[kk], G = clamp(Math.max(a.ad, z.ad) * 1.15 + .12, .15, 4), span = G + clamp(Math.max(a.r, z.r) * 1.1, .05, 4);
+      g.setLineDash([3, 2.5]); g.globalAlpha = .85; vv3EnvCurve(g, B.x, B.y, B.w, B.h, x => z.f(x, 0, G), span, null, '#f2f4f8', C); g.setLineDash([]); g.globalAlpha = 1;
+      g.lineWidth = 2; vv3EnvCurve(g, B.x, B.y, B.w, B.h, x => a.f(x, 0, G), span, null, fcol, C);
+    });
+  } else if (fo && fo.envs && fo.vo.length) {
+    const nv = fo.vo[fo.vo.length - 1], hold = isFinite(nv.b) ? nv.b - nv.a : null;
+    ['A', 'F'].forEach((kk, j) => {
+      const B = EB[j], e = fo.envs[kk], H = hold != null ? hold : e.ad + .3, span = Math.max(.2, H + Math.min(4, e.r * 1.4));
+      vv3EnvCurve(g, B.x, B.y, B.w, B.h, x => e.f(x, 0, H), span, X.t - nv.a, C.t[fo.i] || C.text, C);
+    });
+  }
+  if (fo || m) { g.textAlign = 'left'; g.font = '700 7px ' + C.ui; g.fillStyle = fcol; g.fillText(svShort(fi), L.env.x + 62, L.env.y + 9); }
+  // the morph text: the moving values Ist → Ziel (the synth in the panels, else the first gliding track); else the sounding notes
+  const inf = L.inf, lh = 10, nL = Math.max(1, Math.floor((inf.h - 16) / lh)), M_ = m ? {i: fi, m} : anyM;
+  g.textAlign = 'left'; g.font = '600 7.5px ' + C.num;
+  if (M_) {
+    const mm = M_.m, p = vk2Prog(mm, X.tau), base = S.tracks[M_.i] ? S.tracks[M_.i].sound : null, lines = [];
+    if (base) for (const k of vk2Mv(mm)) { const tx = vk2KeyTxt(base, k, vk2V(mm, base, k, X.tau), mm.b[k]); if (tx) lines.push(tx); }
+    const F = mm.fx; if (F) for (const k in F.b) if (Math.abs(F.b[k] - F.a[k]) > 1e-9) { const v = X.tau <= F.t0 ? F.a[k] : F.a[k] + (F.b[k] - F.a[k]) * v6aS(F, X.tau); lines.push([v6aKeyName('fx.' + k).toUpperCase(), v6aValTxt('fx.' + k, v), v6aValTxt('fx.' + k, F.b[k])]); }
+    g.font = '700 7.5px ' + C.num; g.fillStyle = VK2_COL; g.textAlign = 'right';
+    const dur = (mm.t1 - mm.t0) / X.sp, hd = (m ? '' : svShort(M_.i) + '  ·  ') + Math.round(p * 100) + ' %  ·  ' + (dur < .02 ? 'aus' : fmtDec(dur, dur < 10 ? 1 : 0) + ' Schläge');
+    g.fillText(hd, inf.x + inf.w - 8, inf.y + 9);
+    g.textAlign = 'left'; g.font = '600 7.5px ' + C.num;
+    const per = L.port ? 2 : 1, cw = (inf.w - 16) / per;
+    lines.slice(0, nL * per).forEach((ln, j) => {
+      const x = inf.x + 8 + (j % per) * cw, y = inf.y + 20 + Math.floor(j / per) * lh;
+      g.fillStyle = C.dim; g.fillText(ln[0], x, y); const w0 = Math.max(46, g.measureText(ln[0]).width + 5);
+      g.fillStyle = C.text; g.fillText(ln[1], x + w0, y); const w1 = g.measureText(ln[1]).width;
+      g.fillStyle = C.faint; g.fillText('→ ' + ln[2], x + w0 + w1 + 5, y);
+    });
+    probe.morph = {i: M_.i, p: +p.toFixed(4), lines: lines.length, top: lines[0] || null, ist: mi && mi.KI ? {fc: Math.round(mi.KI.fc), res: +mi.KI.res.toFixed(3)} : null, ziel: mi && mi.KZ ? {fc: Math.round(mi.KZ.fc), res: +mi.KZ.res.toFixed(3)} : null};
+  } else {
+    g.fillStyle = C.dim; g.fillText('NOTEN ' + held + '   STIMMEN ' + voices, inf.x + 8, inf.y + 20);
+    if (nL > 1) { g.fillStyle = C.faint; g.fillText('kein Klangwechsel', inf.x + 8, inf.y + 20 + lh); }
+  }
+  probe.focus = fi >= 0 ? fi : null; probe.held = held; probe.voices = voices;
+}
+// name of a state of track i (the scene whose clip carries it, an own clip, or the Grundklang)
+function vk2StName(i, st) {
+  if (!st) return 'Grundklang';
+  const tr = S.tracks[i]; if (tr) for (let s = 0; s < tr.clips.length; s++) if (tr.clips[s] && tr.clips[s].st === st) return 'Szene ' + (s + 1);
+  const own = S.song && S.song.own; if (own) for (const k in own) if (own[k] && own[k].st === st) return 'eigener Clip';
+  return 'Zustand';
+}
+// one moving value as text [name, Ist, Ziel] (flat keys and MK timbre 1; other MK values are left out)
+function vk2KeyTxt(base, k, v, z) {
+  let kk = k, cv = x => x;
+  if (k.startsWith('mk.')) {
+    kk = k.startsWith('mk.t.0.') ? VK2_MK[k.slice(7)] : null; if (!kk) return null; const W = MKW_();
+    cv = kk === 'cutoff' ? vk2Cz : kk === 'res' ? x => 1.1 * x / 127 : kk === 'ftype' ? x => [0, 1, 3, 5][clamp(Math.round(x), 0, 3)] : kk === 'fenv' ? x => x / 63 * 60 / 72 :
+      kk === 'aS' || kk === 'fS' ? x => x / 127 : kk === 'aA' || kk === 'fA' ? x => (W && W.atk ? W.atk(x) : x) : x => (W && W.dec ? W.dec(x) : x);
+  } else if (k.includes('.')) return null;
+  const f = x => (kk === 'ftype' ? VK2_FT[clamp(Math.round(cv(x)), 0, 5)] : v6aValTxt(kk, cv(x)));
+  return [VK2_NM[kk] || v6aKeyName(kk).toUpperCase(), f(v), f(z)];
+}
+// Test-API: the values of the last Mäusekino picture; a picture at video time t of the last render; the captured glides
+function vk2Api() {
+  return {
+    vk2Probe: () => (VK2.probe ? JSON.parse(JSON.stringify(VK2.probe)) : null),
+    vk2At: (t, fmt) => {
+      const r = VV.last; if (!r) return null; const [W, H] = VV_SIZE[fmt || '16:9'], cv = document.createElement('canvas'); cv.width = W / 3; cv.height = H / 3;
+      const st = vvStateAt(r, t || 0), T0 = performance.now(); vk2Shot(cv.getContext('2d', {alpha: false}), cv.width, cv.height, null, {k: 0, v: VK2_ID}, st, 0, true);
+      return Object.assign(JSON.parse(JSON.stringify(VK2.probe)), {ms: +(performance.now() - T0).toFixed(2)});
+    },
+    vk2Runs: () => { const r = VV.last, M = r && r.tl ? VK2.cap.get(r.tl) : null; if (!M) return null;
+      return M.map((L, i) => (L || []).map(x => ({i, t0: +(x.t0 - r.t0).toFixed(4), t1: +(x.t1 - r.t0).toFixed(4), at: +(x.at - r.t0).toFixed(4), c: x.c, mv: vk2Mv(x), a: x.a, b: x.b, m: x.m, fx: x.fx ? {a: x.fx.a, b: x.fx.b} : null, st0: vk2StName(i, x.st0), st1: vk2StName(i, x.st1)}))); },
+  };
+}
+/* VK2-END */
 /* ===================== VV4-B/D: Bilder der neuen Wahl (App, Tastatur, Spur … Piano-Roll / Drum-Sequenzer / Modulation, Fokus …) =====================
    Jedes dieser Bilder füllt das ganze Video-Bild (Leinwand-Pixel), ohne die 640×360-Kamera. Gezeichnet wird über die Namen, die
    VV4-A (vvDrawApp) und VV4-C/E (vvDrawRoll, vvDrawDrumSeq, vvDrawMod) liefern: (g, t = Videozeit in s, rect = {x, y, w, h} in
@@ -72537,6 +73042,7 @@ Object.assign(SYNQUENZER, vv4aApi());                      // VV4-A
 Object.assign(SYNQUENZER, vv4Api());                       // VV4-C / VV4-E
 Object.assign(SYNQUENZER, vv4bdApi());                      // VV4-B/D
 Object.assign(SYNQUENZER, SX126_API);                       // SX126: Ausblenden, Klinge, Form-Vorlage
+Object.assign(SYNQUENZER, vk2Api());                        // VK2: Mäusekino
 /* V6A: Test-API (weicher Szenenwechsel). Jede Änderung ist ein Undo-Schritt wie in der Oberfläche */
 function v6aSetState(t, s, st) {
   const tr = S.tracks[t], c = tr && tr.clips[s]; if (!c) throw new Error('Kein Clip: ' + t + '/' + s);
