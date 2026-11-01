@@ -46306,7 +46306,7 @@ async function vvMake(o) {
       rP = vvRenderAudio({range: o.range, live}); rP.then(() => { T1 = performance.now(); }, () => {});
       const job = {W, H, path, view, canvas: cv, live, rP, rt, onProgress: p => prog(p, 'Video')};
       let wcErr = null;
-      try { blob = await vvEncodeWC(job); } catch (e) { if (VV.cancel || /abgebrochen/.test(e && e.message)) throw e; wcErr = e; logErr(e); }
+      try { blob = await vvEncodeWC(job); } catch (e) { if (VV.cancel || /abgebrochen/.test(e && e.message)) throw e; wcErr = e; }   // handled: the recorder way follows (aChk.err)
       r = job.r || (rP ? await rP : null);
       aChk = {how: 'webcodecs', src: r ? vvLevelDb(r) : null, track: job.aTrack || null, err: wcErr ? String(wcErr.message || wcErr) : null};
       // G-VID (V-A): the encoder gave no sound (no audio frames, encoded silence, an error) → the recorder way with the same sound
