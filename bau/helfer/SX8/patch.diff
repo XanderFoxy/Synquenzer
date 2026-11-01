@@ -1,0 +1,445 @@
+--- bau/snapshots/R-4310.html
++++ bau/helfer/SX8/index.html
+@@ -530,6 +530,11 @@
+ .sv-lm b{font-size:11px;color:var(--text-dim)}
+ .sv-cw{position:relative;flex:1 1 auto;min-width:0;min-height:0;border-radius:var(--r-s);background:var(--lcd);box-shadow:inset 0 1px 5px rgba(0,0,0,.9);overflow:hidden;touch-action:none}
+ .sv-cv{position:absolute;left:0;top:0;display:block;touch-action:none}
++/* SX8-CSS-BEGIN */
++.sv-cv{transform-origin:0 0}
++.sx8-mm{position:absolute;z-index:4;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.6);pointer-events:none}
++.sx8-mm[hidden]{display:none}
++/* SX8-CSS-END */
+ .sv-empty{position:absolute;left:12px;right:12px;top:50%;transform:translateY(-50%);text-align:center;font:500 12px/1.35 var(--font-ui);color:var(--text-dim);pointer-events:none}
+ .sv-empty b{color:var(--rec)}
+ .sv-empty .kbtn{display:flex;margin:10px auto 0;height:40px;padding:0 14px;pointer-events:auto;font:700 12px/1 var(--font-ui);color:var(--text)}
+@@ -27434,6 +27439,7 @@
+   const cs = getComputedStyle(document.documentElement);
+   SV.cols = [1, 2, 3, 4, 5, 6, 7, 8].map(k => cs.getPropertyValue('--t' + k).trim() || '#888');
+   SV.sig = ''; UI.dirty.song = true; konPathSync();
++  if (SV.zId !== (S && S.id)) sx8ZoomLoad(); else if (SV.cellW < sx8Min() - 1e-6 || SV.cellW > SX8_MAX) SV.cellW = sx8Clamp(SV.cellW);   // SX8: Zoom des Projekts; Drehen/Größe hält die Grenzen
+ }
+ const svBars = () => (S.song ? Math.max(S.song.bars, 1) : 0);
+ // V2e (Xander 24.10. a): the view rolls 4 bars past the end, so a part can be set behind empty bars there
+@@ -29838,8 +29844,26 @@
+ function svBindGestures(w) {
+   let g = null;
+   const xy = e => { const r = w.getBoundingClientRect(); return {x: e.clientX - r.left, y: e.clientY - r.top}; };
++  const P = new Map();                                                 // SX8: die Finger auf der Leinwand (Pinch)
++  const zAbort = () => { if (SV.pinch) { sx8PinchEnd(); } P.clear(); SV.gOn = false; };   // SX8
++  ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => w.addEventListener(ev, e => e.preventDefault()));   // SX8: iOS-Pinch zoomt nie die Seite
+   w.addEventListener('pointerdown', e => {
++    // SX8: der zweite Finger macht aus der Ein-Finger-Geste (noch ohne Bearbeitung) einen Pinch-Zoom
++    if (e.pointerType !== 'mouse' && !DRG) {
++      if (SV.pinch || P.size >= 2) { e.preventDefault(); return; }       // ein dritter Finger: nichts
++      const can = !g || (g.mode == null || g.mode === 'scroll' || g.mode === 'v' || g.mode === 'clift' || (g.mode === 'lift' && !g.moved));
++      if (g && P.size === 1 && P.has(g.id) && can && !R.songRec) {
++        e.preventDefault(); try { w.setPointerCapture(e.pointerId); } catch (_) {}
++        P.set(e.pointerId, xy(e));
++        const G = g; g = null; clearTimeout(G.lp); if (GEST.has(G.id)) gestEnd(G.id);
++        if (G.mode === 'lift') { SV.mark = null; UI.dirty.song = true; } if (G.mode === 'clift') { SV.cell = null; UI.dirty.song = true; }
++        sx8PinchStart(P); for (const id of P.keys()) gestBegin(id, zAbort);
++        return;
++      }
++      if (!g) { for (const id of P.keys()) if (GEST.has(id)) gestEnd(id); P.clear(); }
++    }
+     if (g || (e.pointerType === 'mouse' && e.button !== 0)) return;
++    if (e.pointerType !== 'mouse') P.set(e.pointerId, xy(e));            // SX8
+     e.preventDefault(); try { w.setPointerCapture(e.pointerId); } catch (_) {}
+     cancelAnimationFrame(SV.mom); SV.vx = 0;
+     const p = xy(e);
+@@ -29857,17 +29881,18 @@
+     // V2e (6.2): holding a mark 450 ms lifts it (haptic „pop“, white frame); released without moving → the Marken-Blatt
+     // (V2e′ adds dragging = move / copy over ⧉)
+     else if (!g.grip && !SV.copy && p.y < SV.rulerH && p.y >= (SV.blS | 0) && S.song) {
+-      const m = svMarkAt(Math.floor((p.x + SV.x) / SV.cellW));
++      const m = sx8MarkHit(p.x);                                       // SX8: schmale Marken: 44-px-Treffer
+       if (m && !svMarkOpen(m)) { const me = g; g.mk = m.id; g.lp = setTimeout(() => { if (g === me && !me.mode) { me.mode = 'lift'; SV.mark = m.id; haptic('pop'); UI.dirty.song = true; } }, 450); }
+     }
+     // V2e′ (K2-24): holding a Verweis-Zelle (or an own clip) 450 ms lifts it; released without moving → the Zell-Blatt
+-    else if (!g.grip && !SV.copy && S.song && p.y >= SV.rulerH) {
++    else if (!g.grip && !SV.copy && S.song && p.y >= SV.rulerH && SV.cellW >= SX8_EDIT) {   // SX8: weit draußen kein Zell-Anheben
+       const row = svRowAt(p.y), bar = Math.floor((p.x + SV.x) / SV.cellW), t = row >= 0 && row < svChordRow() ? SV.rows[row] : -1;
+       if (t >= 0 && svCellRef(t, bar)) { const me = g; g.cell = {t, bar}; g.lp = setTimeout(() => { if (g === me && !me.mode && !R.songRec && svCellRef(t, bar)) { me.mode = 'clift'; const run = ownRun(S.song, t, bar); SV.cell = {t, a: run ? run.d0 : bar, b: run ? run.d1 : bar + 1}; haptic('pop'); UI.dirty.song = true; } }, 450); }
+     }
+     gestBegin(e.pointerId, () => { if (g && g.id === e.pointerId) { clearTimeout(g.lp); g = null; SV.gOn = false; } });
+   });
+   w.addEventListener('pointermove', e => {
++    if (P.has(e.pointerId)) { P.set(e.pointerId, xy(e)); if (SV.pinch) { sx8PinchMove(P); return; } }   // SX8
+     if (!g || e.pointerId !== g.id) return;
+     const dx = e.clientX - g.x0, dy = e.clientY - g.y0;
+     if (g.grip && !g.mode && Math.abs(dx) > 4) { g.mode = 'grip'; clearTimeout(g.lp); g.before = songSnapshot(); }
+@@ -29909,6 +29934,14 @@
+     }
+   });
+   const end = e => {
++    // SX8: der erste Finger, der nach dem Pinch hebt, beendet den Zoom; der andere tut danach nichts mehr
++    if (P.has(e.pointerId) && (SV.pinch || P.size > 1 || !g)) {
++      P.delete(e.pointerId); if (GEST.has(e.pointerId)) gestEnd(e.pointerId);
++      if (SV.pinch) sx8PinchEnd();
++      if (!P.size) SV.gOn = !!g;
++      if (!g || g.id !== e.pointerId) return;
++    }
++    P.delete(e.pointerId);
+     if (!g || e.pointerId !== g.id) return;
+     const G = g; g = null; SV.gOn = false; clearTimeout(G.lp);
+     if (GEST.has(e.pointerId)) gestEnd(e.pointerId);
+@@ -29927,7 +29960,7 @@
+   w.addEventListener('pointerup', end); w.addEventListener('pointercancel', end);
+   w.addEventListener('lostpointercapture', e => { if (g && e.pointerId === g.id) end({type: 'pointercancel', pointerId: e.pointerId}); });
+   w.addEventListener('contextmenu', e => e.preventDefault());
+-  w.addEventListener('wheel', e => { e.preventDefault(); folHand('song'); SV.x = clamp(SV.x + (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY), 0, svMaxX()); SV.lastUser = performance.now(); svDraw(true); }, {passive: false});
++  w.addEventListener('wheel', e => { e.preventDefault(); folHand('song'); if (e.ctrlKey) { const r = w.getBoundingClientRect(); sx8ZoomSet(SV.cellW * Math.exp(-e.deltaY * .01), e.clientX - r.left); svDraw(true); return; }   /* SX8: Trackpad-Pinch */ SV.x = clamp(SV.x + (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY), 0, svMaxX()); SV.lastUser = performance.now(); svDraw(true); }, {passive: false});
+ }
+ function svMomentum() {
+   let last = performance.now();
+@@ -29940,6 +29973,182 @@
+   };
+   SV.mom = requestAnimationFrame(step);
+ }
++/* ---------- SX8 Pinch-Zoom im Song: zwei Finger zoomen SV.cellW von „Schläge sehen“ (192 px/Takt) bis „ganzer Song“; ganz
++   weit draußen (< 10 px/Takt) werden die Teile zu Farbblöcken mit Namen; Doppeltipp mit zwei Fingern = ganzer Song (noch
++   einmal = zurück); während der Geste nur ein CSS-Transform auf der Leinwand, neu gezeichnet am Ende (und nach ×0,8 / ×1,5).
++   Der Zoom ist eine UI-Einstellung je Projekt (uiPrefs().sx8z[S.id]), nie im Projekt ---------- */
++const SX8_DEF = 36, SX8_MAX = 192, SX8_ABS = .75, SX8_BLK = 10, SX8_EDIT = 20;     // SX8: px je Takt; Blöcke darunter; Zellen-Tipp ab 20 px
++const sx8Bpb = () => (grid().beatsPerBar || 4);                                     // SX8: Schläge je Takt (eine Stelle)
++const sx8Fit = () => Math.max(SX8_ABS, Math.min(SX8_MAX, (Math.max(1, SV.w) - 8) / Math.max(1, svBars() + 1)));   // SX8: der ganze Song
++const sx8Min = () => Math.max(SX8_ABS, Math.min(SX8_DEF, sx8Fit()));
++const sx8Clamp = cw => clamp(cw, sx8Min(), SX8_MAX);
++const sx8MaxX = cw => Math.max(0, (svBars() + (S.song && S.song.bars ? 4 : 1)) * cw - SV.w + 8);
++const sx8Blocks = () => SV.cellW < SX8_BLK;
++// SX8: den gemerkten Zoom des Projekts holen (beim Öffnen der Song-Ansicht und bei einem Projektwechsel)
++function sx8ZoomLoad() {
++  const id = S && S.id; if (SV.zId === id) return;
++  SV.zId = id;
++  let cw = SX8_DEF; try { const z = uiPrefs().sx8z; if (z && isNum(z[id])) cw = z[id]; } catch (e) {}
++  SV.cellW = SV.w ? sx8Clamp(cw) : clamp(cw, SX8_ABS, SX8_MAX); SV.x = clamp(SV.x, 0, sx8MaxX(SV.cellW)); SV.sig = ''; UI.dirty.song = true;
++}
++function sx8ZoomSave() {
++  try {
++    const z = Object.assign({}, uiPrefs().sx8z || {}), id = S && S.id; if (!id) return;
++    delete z[id]; if (Math.abs(SV.cellW - SX8_DEF) > .01) z[id] = +SV.cellW.toFixed(3);
++    const k = Object.keys(z); while (k.length > 40) delete z[k.shift()];
++    setUiPref('sx8z', z);
++  } catch (e) {}
++}
++// SX8: den Zoom setzen; px = der Punkt (Leinwand-px), der unter dem Finger bleibt
++function sx8ZoomSet(cw, px, save) {
++  if (!SV.w) return SV.cellW;
++  cw = sx8Clamp(cw); if (px == null) px = SV.w / 2;
++  const bar = (SV.x + px) / SV.cellW;
++  SV.cellW = cw; SV.x = clamp(bar * cw - px, 0, sx8MaxX(cw));
++  FOL.page.song = null; SV.sig = ''; UI.dirty.song = true;
++  if (save !== false) sx8ZoomSave();
++  return cw;
++}
++// SX8: weich zoomen (≈ 220 ms; Doppeltipp, Tipp in den Blöcken): ein Bild je Frame, ohne Geste
++function sx8ZoomTo(cw, px, barAt) {
++  cancelAnimationFrame(SV.zA); if (!SV.w) return;
++  cw = sx8Clamp(cw);
++  const c0 = SV.cellW, x0 = SV.x, t0 = performance.now(), dur = reducedMotion() ? 0 : 220;
++  const p = px == null ? SV.w / 2 : px, b = barAt != null ? barAt : (x0 + p) / c0;
++  const x1 = clamp(b * cw - p, 0, sx8MaxX(cw));
++  const step = () => {
++    const k = dur ? clamp((performance.now() - t0) / dur, 0, 1) : 1, e = 1 - Math.pow(1 - k, 3);
++    SV.cellW = c0 * Math.pow(cw / c0, e); SV.x = clamp(x0 + (x1 - x0) * e, 0, sx8MaxX(SV.cellW));
++    FOL.page.song = null; SV.sig = ''; svDraw(true);
++    if (k < 1) SV.zA = requestAnimationFrame(step); else { SV.zA = 0; SV.cellW = cw; SV.x = x1; sx8ZoomSave(); UI.dirty.song = true; }
++  };
++  SV.zA = requestAnimationFrame(step);
++}
++// SX8: Doppeltipp mit zwei Fingern: ganzer Song ⇄ der Zoom davor
++function sx8FitToggle() {
++  const fit = sx8Fit();
++  if (Math.abs(SV.cellW - fit) < .5) { const z = SV.zBack || {cw: SX8_DEF, bar: 0}; SV.zBack = null; sx8ZoomTo(z.cw, 0, z.bar); lcdOrToast('Zoom zurück'); }
++  else { SV.zBack = {cw: SV.cellW, bar: SV.x / SV.cellW}; sx8ZoomTo(fit, 0, 0); lcdOrToast('Ganzer Song'); }
++  folHand('song'); haptic('tick');
++}
++// SX8: die Leinwand während der Geste nur verschieben/strecken (das Bild gehört zu cw0/x0)
++function sx8Xf(Z, cw, x) {
++  const s = cw / Z.cw0, v = SV.cv; if (!v) return;
++  v.style.transform = 'translate3d(' + (Z.x0 * s - x).toFixed(2) + 'px,0,0) scaleX(' + s.toFixed(5) + ')';
++}
++function sx8XfOff() { const v = SV.cv; if (v && v.style.transform) v.style.transform = ''; }
++// SX8: die Pinch-Geste (zwei Finger auf der Leinwand). P = Map pointerId → {x, y} (Leinwand-px)
++function sx8PinchStart(P) {
++  const [a, b] = [...P.values()], [ia, ib] = [...P.keys()];
++  cancelAnimationFrame(SV.mom); cancelAnimationFrame(SV.zA); SV.zA = 0; SV.vx = 0;
++  const Z = SV.pinch = {ids: [ia, ib], a0: {...a}, b0: {...b}, t0: performance.now(), moved: 0, cw0: SV.cellW, x0: SV.x, cw: SV.cellW, x: SV.x, raf: 0};
++  Z.d0 = sx8Dist(a, b); Z.c0 = (a.x + b.x) / 2; Z.bar = (SV.x + Z.c0) / SV.cellW; Z.cwS = SV.cellW;
++  SV.gOn = true; folHand('song');
++  return Z;
++}
++const sx8Dist = (a, b) => { const dx = Math.abs(a.x - b.x); return dx >= 40 ? dx : Math.max(20, Math.hypot(a.x - b.x, a.y - b.y)); };
++function sx8PinchMove(P) {
++  const Z = SV.pinch; if (!Z) return;
++  const a = P.get(Z.ids[0]), b = P.get(Z.ids[1]); if (!a || !b) return;
++  Z.moved = Math.max(Z.moved, Math.hypot(a.x - Z.a0.x, a.y - Z.a0.y), Math.hypot(b.x - Z.b0.x, b.y - Z.b0.y));
++  if (Z.moved < 6) return;                                            // ein Zwei-Finger-Tipp bewegt nichts
++  const d = sx8Dist(a, b), c = (a.x + b.x) / 2;
++  Z.cw = sx8Clamp(Z.cwS * d / Z.d0);
++  Z.x = clamp(Z.bar * Z.cw - c, 0, sx8MaxX(Z.cw));
++  if (!Z.raf) Z.raf = requestAnimationFrame(() => {
++    Z.raf = 0; if (SV.pinch !== Z) return;
++    const s = Z.cw / Z.cw0;
++    if (s < .8 || s > 1.5) { SV.cellW = Z.cw; SV.x = Z.x; sx8XfOff(); svDraw(true); Z.cw0 = Z.cw; Z.x0 = Z.x; }   // neu gründen: nie viel leere Fläche, nie unscharf
++    else sx8Xf(Z, Z.cw, Z.x);
++  });
++}
++function sx8PinchEnd() {
++  const Z = SV.pinch; if (!Z) return null;
++  SV.pinch = null; cancelAnimationFrame(Z.raf);
++  const tap = Z.moved < 12 && performance.now() - Z.t0 < 320;
++  if (!tap) { SV.cellW = Z.cw; SV.x = Z.x; FOL.page.song = null; SV.zBack = null; sx8ZoomSave(); }
++  sx8XfOff(); SV.sig = ''; svDraw(true); UI.dirty.song = true;
++  if (tap) {                                                            // Doppeltipp mit zwei Fingern (≤ 450 ms zwischen den Tipps)
++    const t = performance.now();
++    if (SV.zTap && t - SV.zTap < 450) { SV.zTap = 0; sx8FitToggle(); } else SV.zTap = t;
++  } else SV.zTap = 0;
++  return Z;
++}
++// SX8: Treffer einer Marke im Lineal: genau im Takt, sonst (schmale Marke < 44 px) die nächste Mitte ≤ 22 px
++function sx8MarkHit(px) {
++  const s = S.song; if (!s) return null;
++  const bar = Math.floor((px + SV.x) / SV.cellW), m = svMarkAt(bar); if (m && m.len * SV.cellW >= 44) return m;
++  let best = m, bd = 1e9;
++  for (const q of s.marks) { const w = q.len * SV.cellW; if (w >= 44) continue; const c = (q.a + q.len / 2) * SV.cellW - SV.x, dd = Math.abs(c - px); if (dd <= 22 && dd < bd) { bd = dd; best = q; } }
++  return best;
++}
++// SX8: ganz weit draußen: jeder Teil ein Farbblock über den Spuren mit seinem Namen (keine Zellen-Ziffern)
++function sx8DrawBlocks(g, song, X, W, ru, rh) {
++  if (!sx8Blocks() || !song || !song.marks.length) return;
++  const nr = SV.rows.length, h = nr * rh - 4, y = ru + 2;
++  g.save(); g.textAlign = 'center'; g.textBaseline = 'middle';
++  for (const m of song.marks) {
++    const x0 = X(m.a) + .5, x1 = X(m.a + m.len) - .5, w = x1 - x0; if (x1 < 0 || x0 > W || w < 1) continue;
++    const col = m.part && m.part[0] === 'P' && S.parts && S.parts[+m.part.slice(1) - 1] ? svPartCol(S.parts[+m.part.slice(1) - 1].color) : '#ffb22e';
++    g.globalAlpha = .82; g.fillStyle = col; g.beginPath(); if (g.roundRect) g.roundRect(x0, y, w, h, Math.min(5, w / 2)); else g.rect(x0, y, w, h); g.fill();
++    g.globalAlpha = 1; g.strokeStyle = 'rgba(11,12,15,.9)'; g.lineWidth = 1; g.stroke();
++    if (w >= 14) {
++      const fs = clamp(Math.round(Math.min(h / 4, w / 4)), 9, 13); g.font = '700 ' + fs + 'px system-ui, -apple-system, "Segoe UI", sans-serif';
++      let t = markLabel(m).toUpperCase(); if (g.measureText(t).width > w - 6) t = partShortForm(markLabel(m)).toUpperCase();
++      if (g.measureText(t).width <= w - 4) { g.fillStyle = '#0b0c0f'; g.fillText(t, x0 + w / 2, y + Math.min(h / 2, 22)); }
++    }
++  }
++  g.restore();
++}
++// SX8: die Mini-Karte beim weiten Ziehen einer Marke (Vorbild N2): der ganze Song, die Teile, der sichtbare Rahmen, die
++// Einfüge-Linie; liegt unten über der Leinwand (oben, wenn der Finger unten ist); der Finger darauf = die Ansicht gleitet hin
++const SX8_MMH = 44;
++function sx8MiniOn(d) {
++  if (!d || (d.src !== 'mark' && d.src !== 'block') || d.st !== 'ready' || !UI.songView || !SV.wrap) return false;
++  if (d.mm) return true;
++  const full = (svBars() + 4) * SV.cellW > SV.w + 1, far = Math.abs(d.x - d.x0) > Math.min(140, SV.w * .35) || !!d.edgeDir;
++  if (full && far) { d.mm = {bot: null}; haptic('tick'); }
++  return !!d.mm;
++}
++function sx8MiniRect() {
++  const H = SV.h, d = DRG, r = SV.wrap.getBoundingClientRect();
++  if (d && d.mm && d.mm.bot == null) d.mm.bot = !(d.y - r.top > H / 2);
++  const bot = !d || !d.mm || d.mm.bot !== false;
++  return {x: 6, y: bot ? H - SX8_MMH - 4 : 4, w: Math.max(40, SV.w - 12), h: SX8_MMH, left: r.left, top: r.top};
++}
++const sx8MiniSpan = () => Math.max(1, svBars() + 4);
++function sx8MiniHit(d) {
++  if (!d || !d.mm) return null;
++  const R = sx8MiniRect(), x = d.x - R.left, y = d.y - R.top;
++  if (x < R.x - 4 || x > R.x + R.w + 4 || y < R.y || y > R.y + R.h) return null;
++  return clamp((x - R.x) / R.w * sx8MiniSpan(), 0, sx8MiniSpan());
++}
++function sx8MiniDraw() {
++  const d = DRG, on = sx8MiniOn(d);
++  let c = SV.mm;
++  if (!on) { if (c && !c.hidden) c.hidden = true; return; }
++  if (!c) { c = SV.mm = el('canvas', 'sx8-mm'); c.setAttribute('aria-hidden', 'true'); SV.wrap.appendChild(c); }
++  const R = sx8MiniRect(), dpr = SV.dpr || 1;
++  if (c.hidden) c.hidden = false;
++  c.style.left = R.x + 'px'; c.style.top = R.y + 'px'; c.style.width = R.w + 'px'; c.style.height = R.h + 'px';
++  if (c.width !== Math.round(R.w * dpr) || c.height !== Math.round(R.h * dpr)) { c.width = Math.round(R.w * dpr); c.height = Math.round(R.h * dpr); }
++  const x = c.getContext('2d'), song = S.song, Lb = sx8MiniSpan(), sx = R.w / Lb, bars = svBars();
++  x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, R.w, R.h);
++  x.fillStyle = 'rgba(11,12,15,.92)'; x.fillRect(0, 0, R.w, R.h);
++  x.fillStyle = 'rgba(255,255,255,.06)'; for (let b = 4; b < Lb; b += 4) x.fillRect(Math.round(b * sx), 0, 1, R.h);
++  x.fillStyle = 'rgba(255,255,255,.05)'; x.fillRect(0, 24, bars * sx, R.h - 30);
++  if (song) for (const m of song.marks) {
++    const col = m.part && m.part[0] === 'P' && S.parts && S.parts[+m.part.slice(1) - 1] ? svPartCol(S.parts[+m.part.slice(1) - 1].color) : '#8b919c';
++    const own = (d.src === 'mark' && d.mark === m.id), x0 = m.a * sx + .5, w = Math.max(1, m.len * sx - 1);
++    x.globalAlpha = own ? .35 : .9; x.fillStyle = '#ffb22e'; x.fillRect(x0, 4, w, 14); x.fillStyle = col; x.fillRect(x0, 24, w, R.h - 30); x.globalAlpha = 1;
++    if (w >= 24) { x.save(); x.beginPath(); x.rect(x0, 4, w, 14); x.clip(); x.fillStyle = '#111'; x.font = '700 9px system-ui, -apple-system, sans-serif'; x.textBaseline = 'middle'; x.fillText(partShortForm(markLabel(m)).toUpperCase(), x0 + 3, 11.5); x.restore(); }
++  }
++  // der sichtbare Teil: ein Rahmen (amber 2 px); die Einfüge-Linie: weiß 2 px
++  const fx = SV.x / SV.cellW * sx, fw = Math.max(6, SV.w / SV.cellW * sx);
++  x.strokeStyle = '#ffb22e'; x.lineWidth = 2; x.strokeRect(fx + 1, 1, Math.min(R.w - fx - 2, fw - 2), R.h - 2);
++  if (d.n >= 0) { x.fillStyle = '#f2f4f8'; x.fillRect(Math.round(d.n * sx) - 1, 0, 2, R.h); }
++}
++function sx8MiniOff() { if (SV.mm && !SV.mm.hidden) SV.mm.hidden = true; }
+ // V2a: a row index → 'track' rows 0 … n-1 (SV.rows), n = AKKORDE, n + 1 = MELODIE (the rows below a short page are AKK/MEL)
+ function svRowAt(y) { if (y < SV.rulerH) return -1; const r = Math.floor((y - SV.rulerH) / SV.rowH), n = SV.rows.length; return Math.min(n + 1, r); }
+ const svChordRow = () => SV.rows.length, svMelRow = () => SV.rows.length + 1;
+@@ -29971,7 +30180,9 @@
+   if (UI.pop && UI.pop.name === 'block') { closePop(); return; }      // KON: the Block-Blatt lets the song through like the Marken-Blatt
+   // the Marken-Blatt lets the song through: a tap anywhere but into the chosen mark only closes it (never edits underneath)
+   if (UI.pop && UI.pop.name === 'mark') { const m = row === -1 ? svMarkAt(bar) : null; if (!(m && !svMarkOpen(m))) { closePop(); return; } }   // another mark: its sheet
+-  if (row === -1) { svRulerTapX(bar); return; }      // V0c N7-R7 + V2e marks: the ruler selects (yellow) and sets the Positionsmarke, never jumps
++  if (row === -1) { const zm = SV.cellW < 44 && !(SV.blS && y < SV.blS) ? sx8MarkHit(x) : null; svRulerTapX(zm && !svMarkOpen(zm) && svMarkAt(bar) !== zm ? zm.a : bar); return; }   // SX8: schmale Marke = 44-px-Treffer
++  // SX8: weit draußen sind Zellen zu schmal zum Tippen: ein Tipp in die Spuren/AKKORDE zoomt dorthin (36 px je Takt)
++  if (SV.cellW < SX8_EDIT && row >= 0 && row <= svChordRow()) { sx8ZoomTo(SX8_DEF, x); folHand('song'); haptic('tick'); return; }      // V0c N7-R7 + V2e marks: the ruler selects (yellow) and sets the Positionsmarke, never jumps
+   if (!song) { toast('Noch kein Song – erst ● SONG'); return; }
+   if (row < svChordRow()) { const t = SV.rows[row]; if (t < 0 || bar > song.bars) return; if (isStimmeT(t) && tkVoxAt(bar)) { tkSheet({vox: tkVoxAt(bar).id}); return; }   // VS3: Song-Stimme → Takes-Blatt
+     if (bar < song.bars && svCellOwnAt(t, bar)) { openOwnRoll(t, bar); return; }   // V2e′ (9.2): a tap on an own clip = ROLLE on it
+@@ -30019,12 +30230,12 @@
+     else {
+       g.fillStyle = '#ffb22e'; g.fill();
+       g.font = '700 ' + fs + 'px system-ui, -apple-system, "Segoe UI", sans-serif';
+-      const dot = w >= 60, tx = x0 + 6 + (dot ? 10 : 0), room = x1 - 4 - tx;
++      const dot = w >= 60, xs = Math.min(Math.max(x0, 0), x1 - 60), tx = Math.max(x0, xs) + 6 + (dot ? 10 : 0), room = x1 - 4 - tx;   // SX8: der Name bleibt am linken Rand sichtbar
+       if (g.measureText(label).width > room || m.len === 1) label = short;
+       // the running mark: „3/4“ at the right when there is room
+       let pos = '';
+       if (cur >= m.a && cur < m.a + m.len && m.len > 1) { pos = (cur - m.a + 1) + '/' + m.len; if (g.measureText(label).width + g.measureText(pos).width + 10 > room) pos = ''; }
+-      if (dot) { g.fillStyle = col; g.beginPath(); g.arc(x0 + 9, cy + chh / 2, 3, 0, Math.PI * 2); g.fill(); if (col === '#ffb22e' || /ffb22e/i.test(col)) { g.strokeStyle = '#111'; g.lineWidth = 1; g.stroke(); } }
++      if (dot) { g.fillStyle = col; g.beginPath(); g.arc(Math.max(x0, xs) + 9, cy + chh / 2, 3, 0, Math.PI * 2);   /* SX8: xs */ g.fill(); if (col === '#ffb22e' || /ffb22e/i.test(col)) { g.strokeStyle = '#111'; g.lineWidth = 1; g.stroke(); } }
+       g.save(); g.beginPath(); g.rect(x0, 0, w, ru); g.clip();
+       g.fillStyle = '#111'; g.fillText(label, tx, cy + chh / 2 + .5);
+       if (pos) { g.textAlign = 'right'; g.font = '600 ' + (fs - 1) + 'px ' + nf; g.fillText(pos, x1 - 4, cy + chh / 2 + .5); g.textAlign = 'left'; }
+@@ -30347,7 +30558,9 @@
+   const r = w.getBoundingClientRect(), inCv = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+   d.over = inCv;
+   if (!inCv) { if (SV.pv && SV.pv.drag) { SV.pv = null; UI.dirty.song = true; } d.n = -1; drgGhostText(d); return; }
+-  const bars = S.song ? S.song.bars : 0, n = clamp(Math.round((x - r.left + SV.x) / SV.cellW), 0, bars + 4);
++  const bars = S.song ? S.song.bars : 0, mb = sx8MiniHit(d);            // SX8: der Finger auf der Mini-Karte: der Takt dort
++  const n = mb != null ? clamp(Math.round(mb), 0, bars + 4) : clamp(Math.round((x - r.left + SV.x) / SV.cellW), 0, bars + 4);
++  if (mb != null) d.mmGo = clamp(n * SV.cellW - SV.w / 2, 0, svMaxX()); else d.mmGo = null;
+   if (n !== d.n || !SV.pv) {
+     const t = performance.now();
+     if (n !== d.n && d.n >= 0 && t - d.nT >= 100) { haptic('tick'); d.nT = t; }
+@@ -30361,13 +30574,16 @@
+   const t = performance.now(), dt = Math.min(50, t - d.lastF); d.lastF = t;
+   // Rand-Rollen (5.1 Schritt 6): ≤ 24 px from the canvas edge → 2 bars/s, after 1 s 6 bars/s; never before bar 1 / past end + 4
+   if (d.st === 'ready' && d.over && SV.wrap) {
+-    const r = SV.wrap.getBoundingClientRect(), dir = d.x - r.left <= DRG_EDGE ? -1 : r.right - d.x <= DRG_EDGE ? 1 : 0;
+-    if (dir !== d.edgeDir) { d.edgeDir = dir; d.edgeT = t; }
++    const r = SV.wrap.getBoundingClientRect(), dir = d.mmGo != null ? 0 : d.x - r.left <= DRG_EDGE ? -1 : r.right - d.x <= DRG_EDGE ? 1 : 0;
++    if (dir !== d.edgeDir) { d.edgeDir = dir; d.edgeT = t; }   // SX8: dir ruht auf der Mini-Karte
+     if (dir) {
+       const v = (t - d.edgeT >= 1000 ? 6 : 2) * SV.cellW / 1000, nx = clamp(SV.x + dir * v * dt, 0, svMaxX());
+       if (nx !== SV.x) { SV.x = nx; FOL.page.song = null; UI.dirty.song = true; drgTarget(d.x, d.y); }
+     }
+   } else d.edgeDir = 0;
++  // SX8: auf der Mini-Karte gleitet die Ansicht zum Ziel (≈ 0,2 s), die Rand-Rolle ruht dann
++  if (d.mmGo != null && d.st === 'ready') { const dx = d.mmGo - SV.x; if (Math.abs(dx) > .5) { SV.x = clamp(SV.x + dx * .35, 0, svMaxX()); FOL.page.song = null; UI.dirty.song = true; } }
++  if (d.src === 'mark' || d.src === 'block') sx8MiniDraw();            // SX8
+   if ((d.src === 'mark' || d.src === 'block') && !d.copy && d.copyT) drgCopyZone(d.x, d.y);
+   d.raf = requestAnimationFrame(drgFrame);
+ }
+@@ -30430,7 +30646,7 @@
+   const d = DRG; if (!d) return;
+   DRG = null;
+   clearTimeout(d.timer); cancelAnimationFrame(d.raf);
+-  drgSpring(false);
++  drgSpring(false); sx8MiniOff();                                      // SX8
+   if (d.srcEl) d.srcEl.classList.remove('lift');
+   if (SV.pv && SV.pv.drag) SV.pv = null;
+   SV.gOn = false; UI.dirty.song = true;
+@@ -30604,6 +30820,7 @@
+       if (!run) { b++; continue; }
+       const d0 = run.d0, d1 = Math.max(d0 + 1, Math.min(run.d1, bars)), x0 = X(d0) + 2, x1 = X(d1) - 1, w = x1 - x0, own = !!run.o.own;
+       const k = Math.min(svUnfoldK(d0, now), 1);
++      if (w < 4) { g.globalAlpha = .5 * k; g.fillStyle = col; g.fillRect(X(d0), y + 3, Math.max(1, X(d1) - X(d0) - .5), th); g.globalAlpha = 1; b = Math.max(d1, b + 1); continue; }   // SX8: weit draußen nur ein Streifen
+       if (k > 0) {
+         g.globalAlpha = k;
+         g.beginPath(); if (g.roundRect) g.roundRect(x0, y + 3, w, th, rad); else g.rect(x0, y + 3, w, th);
+@@ -30861,6 +31078,7 @@
+ function songFrame(bAud) {
+   if (!UI.songView || !SV.g) return;
+   if (!SV.w) svLayout();
++  if (SV.zId !== (S && S.id) && SV.w) { sx8ZoomLoad(); svAutoScroll(true); }   // SX8: ein anderes Projekt → sein Zoom
+   // V2e′ (FP-SONG): another project / track count / order / bank → the rows and the Spurbank pages are laid out again (never stale rows)
+   { const o = trackOrder(), k = o.join() + '|' + trackBankOf(); if (SV.ordK !== k) { SV.ordK = k; svLayout(); } }
+   if (SV.sel || SV.mark || SV.copy || SV.blk || SV.inBlk) svSelFix();                    // V2e-fix: undo / project switch / a shorter song
+@@ -30902,22 +31120,27 @@
+   const sel = song && SV.sel && SV.sel.a < bars ? SV.sel : null, cy = 4 + (SV.blS | 0), ch = Math.max(8, ru - 5 - (SV.vvS | 0) - (SV.blS | 0));   // VV2: the header without the stripe; KON: below the Block-Zeile
+   if (sel) { const xa = X(sel.a), xb = X(Math.min(sel.b, bars - 1) + 1); g.fillStyle = 'rgba(255,178,46,.35)'; g.fillRect(xa, cy, xb - xa, ch); g.fillStyle = 'rgba(255,178,46,.07)'; g.fillRect(xa, ru, xb - xa, H - ru); }
+   const sr = R.songRec;
++  // SX8: weit draußen nur jede n-te Zahl (≥ 24 px Abstand) und Taktstrich; nah dran (≥ 96 px) die Schläge
++  let nst = 1; while (nst * cw < 24 && nst < 4096) nst *= 2;
++  const bpb = sx8Bpb(), beats = cw >= 96, chw = Math.min(30, cw - 2);
+   for (let b = b0; b < b1; b++) {
+     const x = X(b);
+     if (b === cur) { g.fillStyle = 'rgba(53,208,127,.10)'; g.fillRect(x, 0, cw, H); }
++    if (beats && b < bars) { g.fillStyle = 'rgba(255,255,255,.07)'; for (let k = 1; k < bpb; k++) { const xk = x + k * cw / bpb; g.fillRect(xk, ru, 1, H - ru); g.fillRect(xk, cy + ch - 3, 1, 3); } }   // SX8
+     // V2e (6.1): no numbers inside a (closed) mark — its name stands there; before, behind and between them the numbers stay
+     const mk = b < bars ? svMarkAt(b) : null, hide = !!(mk && !svMarkOpen(mk)), first = !!(mk && !hide && b === mk.a);
+     const inSel = sel && b >= sel.a && b <= sel.b && b < bars && !hide;
+-    if (inSel) { g.fillStyle = '#ffb22e'; g.beginPath(); if (g.roundRect) g.roundRect(x + (cw - 30) / 2, cy, 30, ch, 3); else g.rect(x + (cw - 30) / 2, cy, 30, ch); g.fill(); }
+-    if (!hide) {
++    if (inSel && chw >= 4) { g.fillStyle = '#ffb22e'; g.beginPath(); if (g.roundRect) g.roundRect(x + (cw - chw) / 2, cy, chw, ch, 3); else g.rect(x + (cw - chw) / 2, cy, chw, ch); g.fill(); }   // SX8: chw
++    if (!hide && (nst === 1 || b % nst === 0)) {                              // SX8: nst
+       g.fillStyle = inSel ? '#111' : b < bars ? '#8b919c' : '#3a3e47';
+       if (first) { g.textAlign = 'right'; g.fillText(String(b + 1), x + cw - 4, cy + ch / 2); g.textAlign = 'center'; }      // the short name sits left of it
++      else if (beats) { g.textAlign = 'left'; g.fillText(b < bars ? String(b + 1) : '+', x + 5, cy + ch / 2); g.textAlign = 'center'; }   // SX8: nah dran steht die Zahl am Taktstrich
+       else g.fillText(b < bars ? String(b + 1) : '+', x + cw / 2, cy + ch / 2);
+     }
+-    g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(x, ru, 1, H - ru);
++    if (cw >= 6 || b % nst === 0) { g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(x, ru, 1, H - ru); }   // SX8
+   }
+   // V2e (Xander 24.10. a): behind the end the bar numbers go on, dim — a tap there sets a part at that bar line (bars between stay empty)
+-  if (song || !bars) { g.fillStyle = '#30343c'; for (let b = Math.max(b0, bars + 1), e = Math.ceil((SV.x + W) / cw) + 1; b < e && b < bars + 64; b++) g.fillText(String(b + 1), X(b) + cw / 2, cy + ch / 2); }
++  if (song || !bars) { g.fillStyle = '#30343c'; for (let b = Math.max(b0, bars + 1), e = Math.ceil((SV.x + W) / cw) + 1; b < e && b < bars + 64; b++) if (b % nst === 0 || nst === 1) g.fillText(String(b + 1), X(b) + cw / 2, cy + ch / 2); }   // SX8: nst
+   if (song || SV.pv) { const bS = SV.blS | 0; if (bS) { g.save(); g.translate(0, bS); } svDrawMarks(g, song || {marks: []}, X, W, H, ru - (SV.vvS | 0) - bS, cur); if (bS) g.restore(); }   // KON: below the Block-Zeile
+   if (song && SV.blS) konDrawBlocks(g, song, X, W, H, SV.blS);   // KON
+   if (song && song.video && SV.vvS) vvDrawStripe(g, song, X, W, ru - SV.vvS, SV.vvS);   // VV2
+@@ -30928,24 +31151,27 @@
+   else for (let r = 0; r < SV.rows.length; r++) {
+     const i = SV.rows[r], y = ru + r * rh, lane = song && song.lanes[i] ? song.lanes[i] : []; if (i < 0) continue;
+     let s = -1, ow = null; for (const e of lane) { if (e.bar >= b0) break; s = e.slot; ow = e.own || null; }
++    const zo = cw >= 12 ? 2 : cw >= 4 ? .5 : 0, zw = cw >= 12 ? cw - 3 : cw >= 4 ? cw - 1 : cw, ztx = cw >= 14, blk = sx8Blocks() && song;   // SX8: Lücke/Ziffern je Zoom
+     for (let b = b0; b < Math.min(b1, bars); b++) {
+       const ev = lane.find(e => e.bar === b); if (ev) { s = ev.slot; ow = ev.own || null; }
+-      const x = X(b) + 2, k = SV.unfold ? svUnfoldK(b, now) : 1; if (k <= 0) continue;
++      if (blk && svMarkAt(b)) continue;                                 // SX8: dort liegt der Farbblock des Teils
++      const x = X(b) + zo, k = SV.unfold ? svUnfoldK(b, now) : 1; if (k <= 0) continue;
+       if (s >= 0) {
+-        g.globalAlpha = (ev ? .95 : .45) * k; g.fillStyle = k < 1 ? svMix(SV.cols[i], k) : SV.cols[i]; g.fillRect(x, y + 3, cw - 3, rh - 6); g.globalAlpha = k;
+-        g.fillStyle = '#0b0c0f'; g.fillText(String(s + 1), x + (cw - 3) / 2, y + rh / 2);
+-        if (ow) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.strokeRect(x - .25, y + 2.75, cw - 2.5, rh - 5.5); g.fillStyle = '#f2f4f8'; g.beginPath(); g.arc(x + cw - 8, y + 7.5, 2, 0, Math.PI * 2); g.fill(); }
++        g.globalAlpha = (ev ? .95 : .45) * k; g.fillStyle = k < 1 ? svMix(SV.cols[i], k) : SV.cols[i]; g.fillRect(x, y + 3, zw, rh - 6); g.globalAlpha = k;
++        if (ztx) { g.fillStyle = '#0b0c0f'; g.fillText(String(s + 1), x + zw / 2, y + rh / 2); }
++        if (ow && cw >= 12) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.strokeRect(x - .25, y + 2.75, cw - 2.5, rh - 5.5); g.fillStyle = '#f2f4f8'; g.beginPath(); g.arc(x + cw - 8, y + 7.5, 2, 0, Math.PI * 2); g.fill(); }
+         g.globalAlpha = 1;
+-      } else { g.globalAlpha = k; g.fillStyle = ev ? '#8b919c' : '#3c4049'; g.fillText('–', x + (cw - 3) / 2, y + rh / 2); g.globalAlpha = 1; }
++      } else if (ztx) { g.globalAlpha = k; g.fillStyle = ev ? '#8b919c' : '#3c4049'; g.fillText('–', x + zw / 2, y + rh / 2); g.globalAlpha = 1; }
+     }
+   }
+   if (!(song && UI.svGlass)) SV.tileGeo = null;
++  if (song) sx8DrawBlocks(g, song, X, W, ru, rh);                    // SX8: weit draußen die Teile als Farbblöcke
+   // V2e′: the future cells of a part being placed (dragging or the Ersetzen/Einfügen-Blatt), 30 % over the old content (P-3)
+   const pv = SV.pv;
+   if (pv && pv.cells) for (let r = 0; r < SV.rows.length; r++) {
+     const t = SV.rows[r], c = t >= 0 ? pv.cells[t] : null; if (!c) continue;
+     const y = ru + r * rh;
+-    for (let j = 0; j < pv.len; j++) { const sl = c[j]; if (sl == null) continue; const x = X(pv.a + j) + 2; if (x > W || x + cw < 0) continue; g.globalAlpha = .3; g.fillStyle = sl >= 0 ? SV.cols[t] : '#0b0c0f'; g.fillRect(x, y + 3, cw - 3, rh - 6); }
++    for (let j = 0; j < pv.len; j++) { const sl = c[j]; if (sl == null) continue; const x = X(pv.a + j) + (cw >= 12 ? 2 : 0); if (x > W || x + cw < 0) continue; g.globalAlpha = .3; g.fillStyle = sl >= 0 ? SV.cols[t] : '#0b0c0f'; g.fillRect(x, y + 3, Math.max(1, cw >= 12 ? cw - 3 : cw), rh - 6); }   // SX8
+     g.globalAlpha = 1;
+   }
+   // V2e′: the lifted cell / the Durchlauf of the open Zell-Blatt: amber 7 % and a white 2-px frame
+@@ -31010,8 +31236,7 @@
+   if (song && song.loop.on && bars) {
+     const la = song.loop.a, lb = Math.min(song.loop.b, bars), xa = X(la), xb = X(lb);
+     g.fillStyle = '#35d07f'; g.fillRect(xa, 0, xb - xa, 3);
+-    g.fillRect(xa, 0, 3, ru); g.fillRect(xb - 3, 0, 3, ru);
+-    SV.grips = {a: xa + 1.5, b: xb - 1.5};
++    if (xb - xa >= 36) { g.fillRect(xa, 0, 3, ru); g.fillRect(xb - 3, 0, 3, ru); SV.grips = {a: xa + 1.5, b: xb - 1.5}; }   // SX8: zu eng → keine Griffe (statt winzig)
+   }
+   // the Positionsmarke: a white ▼ 8×5 at the top of its bar line (▶ starts there)
+   if (song && bars) {
+@@ -57807,7 +58032,9 @@
+   quantizeChords: o => quantizeChords(o), openChordPick: o => openChordPick(o || {}), openRecStart: () => openRecStart(SV.btn && SV.btn.bRec),
+   carrierRestoreState: () => (SONGCAR.saved ? deep(SONGCAR.saved) : null),
+   // V2e (song-delta 12.2): the song view's geometry; the Marken-Blatt / Teil einsetzen as UI entries for tests
+-  svLayoutInfo: () => svLayoutInfo(), songViewMode: m => songViewMode(m), openMarkSheet: id => openMarkSheet(id), placeAt: (ref, bar) => placeAt(ref, bar), markChordAll: (id, rb, tg, exact) => markChordAll(id, rb, tg, exact !== false),
++  svLayoutInfo: () => svLayoutInfo(), sx8Zoom: (cw, px) => { const r = sx8ZoomSet(cw, px); svDraw(true); return r; }, sx8Fit: () => sx8FitToggle(),   // SX8
++  sx8Info: () => ({cellW: SV.cellW, x: SV.x, min: sx8Min(), max: SX8_MAX, fit: sx8Fit(), blocks: sx8Blocks(), pinch: !!SV.pinch, xf: SV.cv ? SV.cv.style.transform : '', grips: SV.grips ? Object.assign({}, SV.grips) : null, mm: !!(SV.mm && !SV.mm.hidden), pref: (uiPrefs().sx8z || {})[S.id] || null}),   // SX8
++  songViewMode: m => songViewMode(m), openMarkSheet: id => openMarkSheet(id), placeAt: (ref, bar) => placeAt(ref, bar), markChordAll: (id, rb, tg, exact) => markChordAll(id, rb, tg, exact !== false),
+   songView: on => setSongView(on !== false), songCarrierDelete: k => songCarrierDelete(k), clearMelody: () => songClearMelody(),
+   songFromChain: chain => songFromChain(chain), songDelete: () => songDelete(),
+   // V2d (song-delta 12.2): Song-Gedächtnis, FANG TEIL, Zeitleiste und Marken (Daten)
