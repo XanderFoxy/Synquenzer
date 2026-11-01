@@ -1,0 +1,62 @@
+[
+ {
+  "name": "UE-15 Break 1 Takt: gewählte Spuren 0 Noten, Einsatz auf der Eins danach",
+  "ok": true,
+  "info": "{\"stop\":[0,1,2,3,4,5],\"imBreak\":0,\"aufDerEins\":5}"
+ },
+ {
+  "name": "UE-15 Hall/Echo klingen im Break aus (Pegel fällt), trocken = still",
+  "ok": true,
+  "info": "{\"q1\":-34.5,\"q4\":-62.3,\"trocken\":-200}"
+ },
+ {
+  "name": "UE-15 kein Klick über −40 dBFS an Anfang und Ende",
+  "ok": true,
+  "info": "{\"innen\":-400,\"anfang\":-42,\"davor\":-35.7,\"ende\":-400}"
+ },
+ {
+  "name": "Break [Kick bleibt]: im Break nur die Kick (4×), Synth 0",
+  "ok": true,
+  "info": "{\"kick\":4,\"synth\":0}"
+ },
+ {
+  "name": "Break: Undo/Redo und Speichern/Laden bit-gleich",
+  "ok": true,
+  "info": "{}"
+ },
+ {
+  "name": "Breakdown: nur die Drums schweigen",
+  "ok": true,
+  "info": "{\"drums\":0,\"synth\":6}"
+ },
+ {
+  "name": "Break stoppt Gesang + Chor (STIMME-Spur), Hall klingt aus, sauberer Wiedereinsatz",
+  "ok": true,
+  "info": "{\"ohneChor\":-20.1,\"trockenImBreak\":-200,\"davor\":-18,\"danach\":-18.5,\"hallAnfang\":-26.1,\"hallEnde\":-28.4}"
+ },
+ {
+  "name": "Standard-Break (alle außer Gesang): Gesang klingt weiter",
+  "ok": true,
+  "info": "{\"imBreak\":-18.2,\"davor\":-18}"
+ },
+ {
+  "name": "North-Kit: Break schweigt (0 Noten, still), Übergang spielt mit North",
+  "ok": true,
+  "info": "{\"kit\":\"Fell & Holz\",\"md\":true,\"noten\":0,\"imBreak\":-200,\"davor\":-26.8,\"ueTreffer\":8}"
+ },
+ {
+  "name": "freier Break in einem Teil (1/16), 0 Noten im Fenster",
+  "ok": true,
+  "info": "{\"at\":6.5}"
+ },
+ {
+  "name": "live: Break-Blende 0 im Break, nach Stopp überall 1",
+  "ok": true,
+  "info": "{\"mitte\":0,\"nachStopp\":[1,1,1,1,1,1,1]}"
+ },
+ {
+  "name": "keine Seitenfehler",
+  "ok": true,
+  "info": "[]"
+ }
+]

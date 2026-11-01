@@ -12,7 +12,7 @@ let fails = 0;
 for (const kit of KITS) for (const dens of DENS) for (const dir of DIRS) {
   if (dir !== 'auto' && dens !== 1) continue;                     // Richtung: bei mittlerer Dichte; Dichten: bei Auto (= gleich)
   const marks = await song(p, {kit, parts: lib.length + 1, lenBars: 4});
-  await p.evaluate(() => window.SYNQUENZER.setTrackFx(4, 'vol', .6));
+  await p.evaluate(() => window.SYNQUENZER.setTrackFx(4, 'vol', .5));
   const placed = await p.evaluate(([lib, marks, dens, dir]) => lib.map((w, k) => ({src: w.id, id: window.SYNQUENZER.ueAdd(w.id, {m: marks[k + 1].id}, {dens, dir}), edge: marks[k + 1].a * 4})), [lib, marks, dens, dir]);
   const list = await p.evaluate(() => window.SYNQUENZER.ueList());
   const r = await render(p, 0, (lib.length + 1) * 4), spb = 60 / r.bpm;
