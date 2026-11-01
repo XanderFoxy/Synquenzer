@@ -3977,7 +3977,8 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 @media (orientation:landscape) and (min-width:800px){          /* 41 + 3 px gap = 44 px pitch (was 40 + 3); the track name gives the 4 px */
   #strip #bEdit,#strip #bFolgt,#strip #bMute,#strip #bUndo{width:41px;min-width:41px}
 }
-/* VV4-F „Mäusekino“: Pegelbalken je Spur (neben dem Farbstreifen bzw. rechts im Song-Namen) + Master; nichts verschiebt sich */
+/* VV4-F „Mäusekino“: Pegelbalken je Spur (Matrix: senkrecht neben dem Farbstreifen; Song: waagrecht unter dem Namen) + Master
+   (Matrix: am linken Rand der Ecke; Song: in der TAKT-Zelle); absolut gelegt, nichts verschiebt sich */
 .mtr{position:absolute;left:4px;top:5px;bottom:5px;width:3px;pointer-events:none;contain:strict}
 .mtr .mb{position:absolute;left:0;right:0;top:5px;bottom:0;background:rgba(255,255,255,.08);border-radius:1px;overflow:hidden}
 .mtr .p,.mtr .r{position:absolute;left:0;top:0;right:0;bottom:0;background:linear-gradient(to top,var(--play) 0,var(--play) 70%,var(--amber) 80%,var(--amber) 92%,#ff4b4b 97%);clip-path:inset(100% 0 0 0)}
@@ -3986,7 +3987,8 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .mtr .l{position:absolute;left:0;right:0;top:0;height:3px;border-radius:1px;background:rgba(255,75,75,.18)}
 .mtr.clip .l{background:#ff3b3b;box-shadow:0 0 4px rgba(255,59,59,.9)}
 .sv-l{position:relative}
-.sv-l .mtr{left:auto;right:3px}
+.sv-l .mtr.hz{left:8px;right:4px;top:auto;bottom:2px;margin-top:0}
+.mtrm-mx .mtr{left:2px;width:2px}
 .cnw{position:relative}
 .mtrm{position:absolute;left:0;top:0;bottom:0;width:14px;z-index:1;-webkit-tap-highlight-color:transparent}
 .mtrm-sv{left:28px;right:0;width:auto}
@@ -24367,7 +24369,7 @@ function svBuildRows() {
   SV.rowsKey = key; L._n = rows.length;
   for (const d of [...L.querySelectorAll('.sv-l.trk')]) d.remove();
   const before = SV.lc;
-  for (const i of rows) { const d = el('div', 'sv-l trk', '<i></i><span></span>'); if (i >= 0) { d.style.setProperty('--tc', `var(--t${i + 1})`); d._mt = mtrEl(); d.appendChild(d._mt); } else d.classList.add('blank'); d.dataset.t = i; L.insertBefore(d, before); }   // VV4-F: level bar
+  for (const i of rows) { const d = el('div', 'sv-l trk', '<i></i><span></span>'); if (i >= 0) { d.style.setProperty('--tc', `var(--t${i + 1})`); d._mt = mtrEl('hz'); d.appendChild(d._mt); } else d.classList.add('blank'); d.dataset.t = i; L.insertBefore(d, before); }   // VV4-F: level bar
   SV.sig = ''; UI.dirty.song = true;
 }
 function songViewOn() { return !!UI.songView; }
@@ -48344,8 +48346,8 @@ function vvDrawSong(g, LW, LH, st) {
   rows.forEach((i, r) => { const y = y0 + ru + r * rh; g.fillStyle = C.t[i] || '#888'; g.fillRect(4, y + 5, 3, rh - 10); g.fillStyle = C.text; lab(svShort(i), 12, y + rh / 2); });
   g.fillStyle = C.amber; lab('AKKORDE', 8, y0 + ru + rows.length * rh + rh / 2);
   g.fillStyle = C.text; lab('MELODIE', 8, y0 + ru + (rows.length + 1) * rh + rh / 2);
-  // VV4-F: the level bars as in the song view (right in the name cell; master in the TAKT cell, tap target of the app)
-  const mb = rows.map((i, r) => ({k: i, x: labW - 6, y: y0 + ru + r * rh + 5, w: 3, h: rh - 10}));
+  // VV4-F: the level bars as in the song view (under the name; master in the TAKT cell)
+  const mb = rows.map((i, r) => ({k: i, x: 8, y: y0 + ru + (r + 1) * rh - 5, w: labW - 12, h: 3, hz: true}));
   mb.push({k: MAX_T, x: 30, y: y0 + ru / 2 - 1.5, w: labW - 36, h: 3, hz: true});
   vvDrawMeters(g, st.t, {src: st.src, bars: mb});
 }
@@ -48393,7 +48395,7 @@ function vvDrawMatrix(g, LW, LH, st) {
   });
   // VV4-F: the level bars as in the matrix (beside the colour bar; master at the left of the corner row)
   const mb = rows.map((i, r) => ({k: i, x: 8.5, y: y0 + head + r * chh + 6, w: 2.5, h: chh - 12}));
-  mb.push({k: MAX_T, x: 8.5, y: y0 + 4, w: 2.5, h: head - 14});
+  mb.push({k: MAX_T, x: 6, y: y0 + 4, w: 2, h: head - 14});
   vvDrawMeters(g, st.t, {src: st.src, bars: mb});
 }
 /* VV4-F: the level bars of the video at video time t. rect = {src: the render result (r.mtr: the meter windows of the render),
