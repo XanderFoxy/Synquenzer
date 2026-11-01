@@ -6886,3 +6886,89 @@ danach `'play-and-record'` – das stößt iOS an, die Route neu zu wählen. Neu
 `micTapGet`), Einstellung jetzt unter `uiPrefs.stsess2` (alte Testwerte aus `?stsess=` gelten nicht mehr automatisch), Vergleich per
 `?stsess=par|auto|none|kick`. Beim Ausschalten weiter `'playback'`. Gemessen (Chromium, Attrappe): Reihenfolge playback → auto → [gUM] →
 play-and-record → (aus) playback; Smoke, orch-mk-check, v3-mk2-wellen PASS; hif-iface grün (Versions-Erwartung im Test rot). Gerät: offen.
+## 4.27.0 — Chor-Gruppe (G6+0…h) + Songtext-Mitlese-Zeile (G9e)
+
+App: `rel-4270/index.html` (4.26.1 = 4 025 835 B → 4.27.0 = 4 240 936 B, **+215 KB**), md5 `7278741f…`.
+`VERSION = '4.27.0'`, Zeile `  live: true,` unverändert, „MS 2000“ genau 1×, keine neuen Markennamen.
+Stand vor den Abnahme-Korrekturen: `index-4270-vor-fix.html` (md5 `5880b81f…`), Unterschied: `fix4270/fix.diff`.
+
+### Was neu ist für Xander
+
+- **Chor-Gruppe statt einzelner Chorstimmen.** Chor-Blatt (STIMME-Clip → Chor) hat jetzt 8 Stil-Kacheln
+  (80er großer Refrain, Pop modern, Gospel, Barbershop, Rock-Shout, Ballade, Disco/Falsett, New Wave dunkel). Ein Tipp setzt den
+  ganzen Chor: Stimmen, Doppel, Panorama, Abstand zum Lead, Hall, Echo und Klang.
+- **Gruppen-Zeile:** [Chor an], **[Gekoppelt]** (Chor folgt dem STIMME-Regler 1 : 1; aus = Chor bleibt stehen), Regler **Chor**
+  (Abstand zum Lead in dB), Hall, Echo, [Klang ▸] (Tief, Mitte, Luft, Zischlaute, Hall vor), [Auf alle Stellen].
+- **Jede Stimme hat ihre Spur** mit Farbe und Ziffer (Terz rot 3, Quinte grün 5, Sexte blau 6, Oktave violett 8, Quarte orange 4,
+  Gegenstimme gelb): [S] [M] [♪] [⋯], Pegel, Pan. In [⋯]: Doppel 1–4, Versatz/Cent/Breite, **Selbst singen**, Entkoppeln,
+  [Background], Stimme bzw. Spur löschen. [+ Stimme ▾] fügt eine Rolle hinzu.
+- **Als Chor-Stimme duplizieren** (Takes-Blatt → [Diese Stelle] / [Ganze Spur]): eine Kopie des eigenen Gesangs als Gegenstimme,
+  deren Noten man im Editor zieht; dann [⋯] → [Background] für einen breiten Hintergrund-Chor.
+- **Farbige Schatten:** Im Noten-Editor liegen alle Chorstimmen halbtransparent hinter dem Lead, im Wellen-Editor als farbige
+  Linien. Legende oben mit Auge und Solo je Spur; ein Tipp auf einen Schatten öffnet diese Stimme.
+- **Selbst singen (Chor-Gruppe):** Die Zielstimme spielt als Führung, der Lead leise mit (−12 dB, Schalter [Lead leise] in der
+  Legende, aus = stumm). ● nimmt auf und ersetzt die Stimme; Spur, Pan, Pegel bleiben.
+- **Chor im Song und im Video:** Song-Stimmen bekommen den Chor wie Clips, der nächste Teil wird beim Abspielen vorausgerechnet,
+  das Video wartet, bis alle Chor-Stellen fertig sind.
+- **Songtext-Mitlese-Zeile:** Hat ein Take Songtext, steht über der Tastatur die aktuelle Zeile groß, die nächste klein (quer:
+  daneben). Gesungene Silben bernstein, die klingende hell. Läuft beim Abspielen, im Vorzähler und beim Einsingen (dann mit dem
+  Text des alten Takes als Vorlage). [TEXT] links schaltet die Zeile aus/an (bleibt gemerkt). Silben stehen auch unter den Noten.
+- **Chor aus 4.25 bleibt, wie er war:** Er zeigt „Chor (Fassung 4.25)“ mit den alten Knöpfen und klingt bitgleich.
+  [Auf Chor-Gruppe umstellen] wandelt ihn um (ein Undo, Toast sagt, dass sich der Klang ändert).
+
+### Abnahme-Korrekturen in 4.27.0 (nach den Zweig-Tests)
+
+1. **Chor 4.25: Solo, „Selbst singen“ und Regler erreichten laufende Stimmen nicht** (aus G6+0). `g6Apply` suchte die Knoten
+   unter `Stelle:Stimme:Kopie`, `g6Node` legt sie unter `…:Spur` ab. Jetzt mit Spur: beim Selbst-Singen schweigen die anderen
+   Stimmen sofort (gemessen: Stimme 0 = 0,00, Zielstimme = 1,00).
+2. **Chor 4.25 beim Selbst-Singen: Lead wieder stumm wie in 4.25/4.26** (Regel 28, Spec §1.7). „Lead leise −12 dB“ und der
+   Knopf [Lead leise] gelten nur für die Chor-Gruppe.
+3. **Video-Vorbereitung rechnete für Chor-Gruppen überflüssige 4.25-Puffer** (`vvVocReady`). Jetzt nur für Chor 4.25;
+   Probe mit 2 Stimmen: 0 statt 2 überzählige Puffer, fertig nach 0,96 s.
+4. **Chor-Blatt zeichnete beim Wechsel „Stimmen werden gerechnet …“ → fertig alles neu** (ein Tipp oder Regler-Zug in diesem
+   Moment konnte verloren gehen). Jetzt ändert sich nur die Statuszeile.
+5. **320 px: Spur-Name lief unter [S]** („eigene Aufnahme“ ohne Umbruch, „Gegenstim|me“ mitten im Wort getrennt). Zusatz bricht
+   jetzt um, der Name trennt nach Silben (iPhone), sonst wie bisher.
+6. **Toast nach „Als Chor-Stimme duplizieren“** sagt jetzt „… dann [⋯] → [Background]“ (der Knopf sitzt im [⋯]-Menü).
+7. `g6Auto` wieder Zeichen für Zeichen wie 4.25 (der v2-Zusatz war unerreichbar).
+
+### Gemessen (Chromium, Playwright; jeder Lauf < 5 min)
+
+| Prüfung | Ergebnis |
+|---|---|
+| Smoke, orch-mk-check (initAm rms 0,0705 / Spitze 0,177), v3-mk2-wellen (0 Markenwörter, „MS 2000“ 1×) | grün |
+| G6+a (G6P-01…09, K1, Regel 28 gegen 4.25.2) | 40/40 |
+| G6+b (Stufen, G7 24/24, Cent 1,46 ct, Fenster bitgleich, Zeit kalt 4,1 s / warm 2,6 s, 46,9 MB) | grün (Lauf vor den Korrekturen, Rechenweg unverändert) |
+| G6+c: Abstand je Stil ±0,05 LU (Stil 80: 7,96), live −25,91 / offline −25,88 LUFS, Kopplung Sprung 0 dB | grün |
+| G6+d Stile 10/10, Stellen 15/15, Regel 28 gegen 4.26.1 (leer, ohne Chor, Chor 4.25, fxBus, 6 Formate) | grün |
+| G6+e Blatt (78 Prüfpunkte, 6 Formate) | 78/78 |
+| G6+f: Kern 27/27, mehr 29/29, Platz im [⋯]-Menü P1/P3/L1 | grün (P1 320 px jetzt grün) |
+| G6+g Farben, Schatten (p95 1,8 ms/Bild), Legende, Selbst singen v1 + v2 | 24/24 |
+| G6+h Song-Vorausrechnen (Stellen fertig vor Einsatz), Undo, Video mit Chor (2 Renders 1 LSB) | grün bis auf eine überholte Gegenprobe (unten) |
+| G9e Mitlese-Zeile 37/37 (p95 1 ms/Bild), Take abspielen −23,84 dB = 4.26.1 | grün |
+| Video-Abnahme (18 Punkte), Song live −14,91 / Render −14,90 LUFS; Video mit Chor-Gruppe: Ton da, live = Render ±0,08 LU | grün |
+| Klang alt (Golden 320/320, Node 64/64 gegen 4.26.1) | gleich |
+
+### Offen
+
+- **G6P-28 (lange Tasks beim Abspielen) wackelt**, ist aber kein Chor-Problem: Chor-Arbeit beim Abspielen gemessen höchstens
+  4,2 ms je Aufruf (`g6pStart`), zusammen ≈ 70 ms in 30 s. Dasselbe Szenario **ohne** Chor zeigt auch in 4.26.1 gelegentlich
+  einen langen Task (89 ms in 1 von 3 Läufen). Ursache liegt beim Zeichnen/Speicher der App, nicht im Merge.
+  G6P-28 nach den Korrekturen: 3 von 4 Läufen grün; der rote (62/81/134 ms) lief gleichzeitig mit einem anderen Test.
+  Knoten nach dem Stopp immer 0.
+- **[TEXT] quer (926 × 428) nur 46 × 32 px** (aus G9e). 44 px gehen nur mit sichtbarer Änderung: Vorschlag für den Funk —
+  Leiste quer 44 px hoch, Tasten 88 statt 100 px.
+- **[Background]-Knopf:** sitzt im [⋯]-Menü, die Spec sagt „in der Spur-Zeile“. Xander fragen, wo er hin soll.
+- **Zwei Video-Renders mit Chor-Gruppe nicht bitgleich** (−40 dB ab dem Einsatz). Kommt über Hall und Echo der App, die schon
+  in 4.26.1 je Render leicht anders klingen (ganzer Demo-Song −18 dB, alter Chor −32 dB). Nicht örtlich lösbar.
+- Tests, die nur noch alte Erwartungen haben, angepasst bzw. umzustellen: t16 (Lead zweikanalig messen), G6P-06 Verlauf
+  (`projHistory`), G6P-K1 (`g6pCouple`), G6P-27 (`G6P.cache`), G6P-72 (`g6RenderHold`; Gegenprobe „ohne g6pWaitAll“ entfällt,
+  `vvVocReady` rechnet Chor 4.25 schon vorher), G6+e Solo (`'c2'`), G6+f (`g6pBackground(null, 'c1')`, `g6pGA`).
+- Markennamen-Frage: „Waldorf Attack“ und „Nord Drum“ in alten Tipp-Texten, „Kodamo“ 1× (alle schon in 4.26.1).
+- Hörprobe und iPhone-Prüfung (Silbentrennung 320 px, Mitlese-Zeile, Selbst singen) stehen aus.
+
+### Veröffentlichung (01.11. ~05:10 UTC)
+- Markenwörter aus alten Tipp-/Hilfe-Texten neutralisiert (nur Text, kein Klang): „Nord Lead“ → „90er-Lead“, „Nord Drum / Waldorf
+  Attack“ → „Drum-Synth“ (Tipp, Kit-Beschreibungen, Kommentare), FM-FELD-Vorbild ohne Herstellernamen. Danach Kodamo/Nord/Waldorf = 0.
+- Pipeline auf der Endfassung: smoke (keine Fehler), orch-mk-check (4.27.0, rms 0,0705 / Spitze 0,177), v3-mk2-wellen (alles PASS,
+  „MS 2000“ genau 1×), `  live: true,` vorhanden.
