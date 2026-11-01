@@ -1,0 +1,941 @@
+--- bau/snapshots/R-4300.html	2026-11-01 09:14:18.990670406 +0000
++++ bau/helfer/UEAB/index.html	2026-11-01 10:12:19.734590793 +0000
+@@ -457,6 +457,66 @@
+ @media (orientation:portrait) and (min-width:360px) and (max-width:400px){.pad .pn{font-size:11.5px;letter-spacing:.01em}}
+ @media (orientation:landscape) and (max-width:759px){.pad .pn{font-size:11px;letter-spacing:.02em}}
+ 
++
++/* UE-B: Übergänge – Knopf in der Song-Leiste, Bibliothek-Leiste unten, Chips an der Kante, Geist */
++.sv-top > .sv-ue{flex:0 0 58px;flex-direction:column;gap:2px}
++#songView .sv-top > .sv-ue{padding:0}
++.sv-ue .d{font-size:13px;line-height:1;color:#ffb22e}.sv-ue .t{font:700 8px/1 var(--font-ui);letter-spacing:0}
++.sv-ue.on{border-color:#ffb22e;box-shadow:inset 0 0 0 1px rgba(255,178,46,.45)}
++@media (orientation:portrait){#songView:not(.side) .sv-top > .sv-rec,#songView:not(.side) .sv-top > .sv-play{flex-basis:58px}#songView:not(.side) .sv-top > .sv-loop{flex-basis:60px}#songView:not(.side) .sv-top > .sv-ue{flex-basis:60px}}
++@media (orientation:portrait) and (max-width:419px){#songView:not(.side) .sv-top > .sv-rec,#songView:not(.side) .sv-top > .sv-play{flex-basis:48px}#songView:not(.side) .sv-top > .sv-loop{flex-basis:50px}#songView:not(.side) .sv-top > .sv-ue{flex-basis:44px}#songView:not(.side) .sv-ue .tl{display:none}#songView:not(.side) .sv-ue .ts{display:inline}}
++#songView.side .sv-top > .sv-ue{grid-column:span 2;padding:0}
++.sv-ue .ts{display:none}
++@media (orientation:portrait){#songView.bankv:not(.side) .sv-top > .sv-rec,#songView.bankv:not(.side) .sv-top > .sv-play{flex-basis:45px}#songView.bankv:not(.side) .sv-top > .sv-loop{flex-basis:54px}#songView.bankv:not(.side) .sv-top > .sv-ue{flex-basis:44px}#songView.bankv:not(.side) .sv-ue .tl{display:none}#songView.bankv:not(.side) .sv-ue .ts{display:inline}}
++/* ganz schmal mit [▲▼] (375 × 667): acht Knöpfe ≥ 44 passen nicht – [◆] liegt dann unten rechts über dem Raster */
++.sv-uefab{display:none}
++@media (orientation:portrait) and (max-width:389px){#songView.bankv:not(.side) .sv-top > .sv-ue{display:none}#songView.bankv:not(.side) .sv-uefab{display:flex;position:absolute;right:4px;bottom:4px;z-index:2;width:44px;height:44px;padding:0;align-items:center;justify-content:center;border-radius:50%;font-size:16px;color:#ffb22e;background:rgba(20,22,27,.92);border:1px solid #ffb22e}#songView.bankv.uebar:not(.side) .sv-uefab{display:none}}
++#songView{position:relative}
++.sv-body{position:relative}
++.ue-bar{position:absolute;left:0;right:0;bottom:0;z-index:4;display:flex;flex-direction:column;gap:4px;padding:4px;border-radius:var(--r-s);background:rgba(20,22,27,.97);border:1px solid #3a3f4a;box-shadow:0 -6px 18px rgba(0,0,0,.6);transition:opacity .15s,transform .15s}
++.ue-bar[hidden]{display:none}
++.ue-bar.away{opacity:.12;transform:translateY(60%);pointer-events:none}
++.ue-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}.ue-tabs::-webkit-scrollbar{display:none}
++.ue-tab{flex:1 0 auto;min-width:44px;height:44px;padding:0 8px;font:700 11px/1 var(--font-ui);letter-spacing:.02em;color:var(--text-dim)}
++.ue-tab.on{color:#1b1004;background:linear-gradient(#ffc04d,#e8951a);border-color:#ffcf7a}
++.ue-x{flex:0 0 44px;width:44px;height:44px;font-size:14px}
++.ue-bar.one{flex-direction:row;align-items:stretch}
++.ue-bar.one .ue-tabs{display:contents}
++.ue-bar.one .ue-tsel{order:0;flex:0 0 auto;height:auto;min-height:44px;max-width:110px;font-size:10px;white-space:nowrap}
++.ue-bar.one .ue-tiles{order:1;flex:1 1 auto;min-width:0}
++.ue-bar.one .ue-x{order:2;height:auto;min-height:44px}
++.pop.uetabs .plist button{min-height:44px;width:100%}
++.ue-tiles{display:flex;gap:6px;overflow-x:auto;min-height:62px;scrollbar-width:none;touch-action:none}.ue-tiles::-webkit-scrollbar{display:none}
++.ue-tile{flex:0 0 auto;width:auto;min-width:96px;max-width:160px;min-height:62px;height:62px;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;gap:2px;padding:4px 6px;text-align:left;touch-action:none}
++.ue-tile.lift{opacity:.4}
++.ue-tn{font:700 10px/1.1 var(--font-ui);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
++.ue-tl{font:700 10px/1 var(--font-num);color:#ffcf7a;align-self:flex-end}
++.ue-mini{display:block;width:100%;height:22px}
++.ue-mini .b{fill:rgba(255,255,255,.05)}.ue-mini .b.q{fill:rgba(255,255,255,.11)}
++.ue-mini .n{fill:#ffb22e}.ue-mini .n.a{fill:#fff1cf}
++.ue-empty{flex:1;display:flex;align-items:center;justify-content:center;font:600 11px/1.2 var(--font-ui);color:var(--text-dim)}
++.ue-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
++.ue-chip{position:absolute;left:0;top:0;height:44px;min-width:66px;padding:0;display:flex;align-items:center;background:none;border:0;box-shadow:none;pointer-events:auto;touch-action:none;will-change:transform}
++.ue-chip[hidden]{display:none}
++.ue-chip .ue-cl,.ue-chip .ue-grip{height:var(--ch,24px);display:flex;align-items:center;background:rgba(255,178,46,.92);color:#1b1004}
++.ue-chip .ue-grip{position:relative;flex:0 0 14px;border-radius:5px 0 0 5px;border-right:1px solid rgba(27,16,4,.35);justify-content:center}
++.ue-chip .ue-grip i{width:4px;height:50%;border-left:1px solid #1b1004;border-right:1px solid #1b1004}
++.ue-chip .ue-grip::before{content:'';position:absolute;left:-22px;right:-8px;top:calc((44px - var(--ch,24px)) / -2);bottom:calc((44px - var(--ch,24px)) / -2)}
++.ue-chip .ue-cl{flex:1 1 auto;min-width:0;gap:3px;padding:0 5px;border-radius:0 5px 5px 0;font:700 10px/1 var(--font-ui);white-space:nowrap;overflow:hidden}
++.ue-chip .ue-cl b{font-size:10px}
++.ue-chip .ue-cn{overflow:hidden;text-overflow:ellipsis}
++.ue-chip.lnk .ue-cl{box-shadow:inset 0 -2px 0 #1b1004}
++.ue-chip.lift{opacity:.35}
++.ue-ghost{position:fixed;z-index:60;transform:translate(-50%,-100%);display:flex;align-items:center;gap:5px;height:34px;padding:0 10px;border-radius:6px;background:rgba(255,178,46,.55);border:1px solid #ffcf7a;color:#fff;font:700 11px/1 var(--font-ui);white-space:nowrap;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.5)}
++.ue-ghost small{font:700 10px/1 var(--font-num);opacity:.85}
++.ue-ghost.snap{background:rgba(255,178,46,.95);color:#1b1004}
++.ue-ghost.out{background:rgba(255,69,56,.75);border-color:#ff8a80}
++.ue-ghost.fly{transition:left .2s ease-out,top .2s ease-out,opacity .2s;opacity:.2}
++.ue-ghost.gone{transition:opacity .15s;opacity:0}
++.msheet.uesheet .ue-lr{align-items:center}
++.msheet.uesheet .ue-ll{flex:0 0 auto;font:700 10px/1 var(--font-ui);color:var(--text-dim);padding:0 4px}
++.msheet.uesheet .ms-b.on{border-color:#ffb22e;color:#ffcf7a}
++.msheet.uesheet .ms-x{min-height:44px;min-width:44px}
+ /* ---------- song view (§3.9, WP6): replaces the clip grid in the grid area ---------- */
+ .corner.sw{flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 4px;font:700 11px/1 var(--font-ui);letter-spacing:.06em;color:var(--text);min-height:0;height:100%}
+ .corner.sw .swl{white-space:nowrap}
+@@ -21483,6 +21543,7 @@
+   const vdir = vvDirNorm(o.video, bars, nt); if (vdir) v4.video = vdir;                                 // VV2: Video-Regie im Song
+   const gb = ggbNorm(o.gb); if (gb) v4.gb = gb;                                                      // G-GB: Daten des letzten Instrumental-Exports
+   konSongNorm(o, v4, bars, pk, nt);                                                                     // KON: Blöcke, Ursprung (konsolidiert)
++  const ue = ueNorm(o.ue, v4.marks, bars, nt); if (ue) v4.ue = ue;                                         // UE: Übergänge auf den Kanten
+   return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, mel}, v4);
+ }
+ function ownNorm(c, pk, nt) {
+@@ -23714,6 +23775,7 @@
+     if (R.songPlay) { try { songTick(b0, b1); } catch (e) { tickErr(e); } }   // §3.9 (Anhang D.7): the song's launches, Träger, melody
+     try { mkSongSync(); } catch (e) { tickErr(e); }               // MK6-fix (FP-SONG): the AM seq at KEY SYNC aus follows the song beat
+     if (R.row || R.rowPend || R.part || R.partPend || XP.due != null) { try { partTick(b0, b1); } catch (e) { tickErr(e); } }   // V2c: parts, chord rows, R.xp
++    if (R.songPlay && S.song && S.song.ue) { try { ueTick(Math.max(b0, 0), b1); } catch (e) { tickErr(e); } }   // UE: Übergänge vormerken (scheduleDrums mischt sie ein)
+     if (R.songRecEndAt != null) { const te = R.songRecEndAt; R.songRecEndAt = null; try { if (R.songRec && R.songRec.over) songRecEnd(te, {auto: true}); } catch (e) { tickErr(e); } }
+     for (let i = 0; i < NT(); i++) {
+       let from = Math.max(b0, 0);
+@@ -23732,6 +23794,7 @@
+       }
+       try { if (TICKERR.fail === i) throw new Error('__failTrack(' + i + ')'); scheduleTrack(i, from, b1); } catch (e) { tickErr(e); }
+     }
++    if (UE.pend.length) { try { ueFlush(); } catch (e) { tickErr(e); } }   // UE: Treffer auf Spuren ohne laufenden Clip
+     try { if (R.songRec && R.songRec.pending && R.songRec.startBeat < b1) songRecBegin(); } catch (e) { tickErr(e); }
+     try { arpTick(now, h); } catch (e) { tickErr(e); }            // MK5: after the clips of this window are in the held set
+   } catch (e) { tickErr(e); }
+@@ -23747,7 +23810,8 @@
+   if (tr.stimme) { if (clip && !tr.mute) tkSched(i, clip, from, to, late, oc ? R.own[i] : null); return; }   // VS3: STIMME = Audio
+   if (!clip || tr.mute || !clip.notes.length) return;
+   const mu = takeMute(i);                                        // V2d′ (K2-21, 7.2): the target track's old notes are silent during the take
+-  if (tr.kind === 'drum') { scheduleDrums(i, clip, from, to, late, oc ? 'own' : null, mu); return; }
++  const um = R.songPlay && S.song && S.song.ue ? ueMutes(i) : null;   // UE: „ersetzt“ – der Groove schweigt im Übergang
++  if (tr.kind === 'drum') { scheduleDrums(i, clip, from, to, late, oc ? 'own' : null, mu, um); return; }
+   const L = clip.len * 4, cs = R.cstart[i], sp = spb(), now = AU.ctx.currentTime, ev = new Map();
+   for (const nt of clip.notes) {
+     if (nt.t >= L - 1e-9) continue;                              // V0a K-06: a note behind the clip end never plays
+@@ -23756,6 +23820,7 @@
+       if (B < from - 1e-9) continue;
+       if (nt.born != null && nt.bornRun === R.runId && B < nt.born + .5) continue;
+       if (mu && mutedAt(mu, B)) continue;
++      if (um && ueMutedAt(um, B)) continue;                       // UE
+       let t = b2t(B + swingOffset(nt.t));
+       if (late) { if (t < now - RETRO_MAX - .02) continue; if (t < now) t = now; }
+       const dur = Math.max(nt.d, 1 / 32) * sp;
+@@ -23789,7 +23854,7 @@
+    re-scheduling never flips a hit; ratchet repeats at 80 %; timing shift). A hit belongs to the window that contains its
+    own beat, so a window is idempotent; a negative shift is clamped to its loop start (never before the clip starts).
+    WP6 (Anhang D.10): the accent and the TUNE / DECAY locks go to the engine (drumHit ex = {acc, lk}) */
+-function scheduleDrums(i, clip, from, to, late, lsrc, mu) {
++function scheduleDrums(i, clip, from, to, late, lsrc, mu, um) {
+   const L = clip.len * 4, cs = R.cstart[i], now = AU.ctx.currentTime, ev = new Map(), seed = clip.seed | 0;
+   const D1 = d1Map(clip);                                        /* D1: lanes with their own length / direction play below */
+   for (const nt of clip.notes) {
+@@ -23799,6 +23864,7 @@
+     for (let B = cs + nt.t + k * L; B < to + .12 - 1e-9; B += L, k++) {
+       if (nt.born != null && nt.bornRun === R.runId && B < nt.born + .5) continue;
+       if (mu && mutedAt(mu, B)) continue;
++      if (um && ueMutedAt(um, B)) continue;                       // UE
+       const loopStart = cs + k * L;
+       for (const h of DrumSeq.expandStep(nt, k, seed)) {
+         const hb = Math.max(B + h.beat, loopStart);
+@@ -23812,19 +23878,20 @@
+       }
+     }
+   }
+-  if (D1) d1Sched(D1, cs, from, to, late, now, mu, seed, ev);   /* D1 */
++  if (D1) d1Sched(D1, cs, from, to, late, now, mu, seed, ev, um);   /* D1 */
++  if (UE.pend.length) uePull(i, from, to, ev);                   // UE: die Übergangs-Treffer in dieselbe Zeitordnung
+   // in time order: a pad is monophonic, so a later hit must see (and choke) every earlier one of the window
+   const dt = S.settings.harmony.drums;                           // V2c′: Drums mittransponieren (TUNE wie ein Lock)
+   for (const e of [...ev.values()].sort((x, y) => x.t - y.t)) {
+     let ex = e.ex; const tu = dt ? drumTune(e.t) : 0;
+     if (tu) ex = Object.assign({}, ex, {lk: Object.assign({}, ex && ex.lk, {tune: ((ex && ex.lk && ex.lk.tune) || 0) + tu})});
+     const h = drumHit(e.n, e.v, e.t, 'clip', ex);
+-    if (lsrc && h && h.log) h.log.src = lsrc;
++    if (h && h.log && (lsrc || e.ue)) h.log.src = e.ue ? 'ue' : lsrc;
+   }
+ }
+ /* D1: the steps g of the window (counted from the clip start) -> the lane step d1Pos(g) -> its notes, at cs + g/4 + their offset in the
+    step; chance / ratchet / timing as the plain path (expandStep, loop = lane round); a window is idempotent (a hit belongs to its beat) */
+-function d1Sched(D, cs, from, to, late, now, mu, seed, ev) {
++function d1Sched(D, cs, from, to, late, now, mu, seed, ev, um) {
+   const g0 = Math.max(0, Math.floor((from - .35 - cs) / .25)), g1 = Math.ceil((to + .12 - cs) / .25);
+   for (const [gm, X] of D) for (let g = g0; g < g1; g++) {
+     const ns = X.by.get(d1Pos(X.l, g, gm)); if (!ns) continue;
+@@ -23832,6 +23899,7 @@
+       const f = nt.t - Math.floor(nt.t / .25 + 1e-6) * .25, B = cs + g * .25 + f;
+       if (nt.born != null && nt.bornRun === R.runId && B < nt.born + .5) continue;
+       if (mu && mutedAt(mu, B)) continue;
++      if (um && ueMutedAt(um, B)) continue;                       // UE
+       for (const h of DrumSeq.expandStep(nt, Math.floor(g / X.l.Ls), seed)) {
+         const hb = Math.max(B + h.beat, cs);
+         if (hb < from - 1e-9 || hb >= to - 1e-9) continue;
+@@ -23871,7 +23939,10 @@
+     R.prev[i] = {slot: R.slot[i], until: beat, cs: R.cstart[i]};
+     recTrackSwitch(i, slot, beat);
+     R.slot[i] = slot; R.cstart[i] = cs != null ? cs : beat; R.own[i] = own && slot >= 0 ? own : null; R.pend[i] = null;
++    const ueR = R.songPlay && S.song && S.song.ue && S.tracks[i].kind === 'drum';   // UE: die eben gestrichenen Übergangs-Treffer neu
++    if (ueR) ueTick(beat, R.schedBeat, i, true);
+     scheduleTrack(i, beat, R.schedBeat, true);
++    if (ueR) ueFlush();
+     songLog(i, slot, beat);
+     memSlot(i, beat, slot, R.cstart[i], !!R.partApplying, R.own[i]);
+   }
+@@ -24210,6 +24281,7 @@
+     }
+     if (!R.carrierLive) { let ct = null, has = false; for (const c of song.carrier) { if (c.beat > j.bar * 4 + 1e-6) break; ct = c.target; has = true; } if (has) { if (ct) T.recall(ct, b2t(j.at), null); else T.reset(b2t(j.at), null); } }
+     songXpAt(song, j.bar * 4, j.at);
++    if (song.ue && AU.ctx) { const tj = b2t(j.at); for (const h of HITS.slice()) if (!h.dead && h.log && h.log.src === 'ue' && h.start >= tj - 1e-6) hitCancel(h); ueTick(j.at, R.schedBeat, null, true); ueFlush(); }   // UE: die Übergänge springen mit
+   } finally { R.songApplying = false; }
+   UI.dirty.song = UI.dirty.grid = true;
+ }
+@@ -27237,8 +27309,8 @@
+   EL.gridArea.classList.toggle('song', on); EL.app.classList.toggle('songv', on);
+   EL.songView.hidden = !on; hintSideSync(); if (on) pickCancel();
+   if (typeof WP !== 'undefined' && WP.ed) wpClose();          // F1: der Marken-Editor endet mit dem Wechsel der Ansicht
+-  if (UI.pop && /^(mark|place|rangemore|aspart|partlist|markname|partcolor|cell)$/.test(UI.pop.name || '')) closePop();   // V2e: song sheets end with the view
+-  if (!on) { SV.mark = null; SV.copy = null; SV.cell = null; svHintFree(); }
++  if (UI.pop && /^(mark|place|rangemore|aspart|partlist|markname|partcolor|cell|uechip|uetabs)$/.test(UI.pop.name || '')) closePop();   // V2e: song sheets end with the view (UE-B: Chip-Blatt, Reiter-Liste)
++  if (!on) { SV.mark = null; SV.copy = null; SV.cell = null; svHintFree(); if (UE.bar && !UE.bar.hidden) ueBar(false); }
+   rangeBarSync();
+   folReset(['song']);
+   if (on) { svLayout(); svAutoScroll(true); }
+@@ -27263,10 +27335,13 @@
+   const bBank = el('button', 'rb sv-b sv-bank', '<span class="d">▲▼</span><span class="t">1/2</span>'); bBank.setAttribute('aria-label', 'Andere Spuren zeigen'); bBank.hidden = true;
+   // V2e′ (N7-R12, 6.5): [▦│◧] Kästchen │ Glas, 44 × 40 at the right of the row (L / P3: in the transport column)
+   const bGl = el('button', 'rb sv-b sv-gl', '<span class="on">▦</span><i></i><span>◧</span>'); bGl.setAttribute('aria-label', 'Ansicht: Kästchen (antippen: Glas)'); bGl.setAttribute('aria-pressed', 'false');
++  // UE-B: [◆ Übergänge] öffnet unten die Bibliothek-Leiste (über dem Song-Bereich, die Tastatur bleibt)
++  const bUe = el('button', 'rb sv-b sv-ue', '<span class="d">◆</span><span class="t"><span class="tl">ÜBERGÄNGE</span><span class="ts">ÜBERG.</span></span>'); bUe.setAttribute('aria-label', 'Übergänge: Bibliothek öffnen'); bUe.setAttribute('aria-pressed', 'false');
+   // V0c: [● MEL.] leaves the row – ● with the target MELODIE does the same (overdub, punch-in while the song plays; the API
+   // songMel stays); two „● MEL“ side by side would say two different things
+   // V2e (song-delta 6.5, K2-26): [CLIPS ⇄][● ▾][▶ SONG][⟲ Song ▾][⏮ │ ↩ SONG][▲▼]; [S4 ▾] lives in the MELODIE label (V2b chip)
+-  top.append(sw, bRec, bPlay, bLoop, bBack, bHome, bGl, bBank);
++  top.append(sw, bRec, bPlay, bLoop, bUe, bBack, bHome, bGl, bBank);
++  onTap(bUe, () => { ueBar(); haptic('tick'); });
+   onTap(sw, () => setSongView(false));
+   onTap(bGl, () => { songViewMode(UI.svGlass ? 'squares' : 'glass'); haptic('tick'); lcdOrToast(UI.svGlass ? '◧ Glas: Clips mit Noten' : '▦ Kästchen'); });
+   // ● (V0c, Nachtrag 2 B.1 Nr. 8): a song there → the Start-Blatt; while recording → stop; empty song → records at once.
+@@ -27295,6 +27370,7 @@
+   // V2e (N7S-39): a track label selects the track (the keyboard plays it, the NOTEN target shows it)
+   onTap(labs, d => { const t = +d.dataset.t; if (!(t >= 0) || !S.tracks[t]) return; selectTrack(t); haptic('tick'); lcdOrToast(S.tracks[t].name + ' gewählt'); UI.dirty.song = true; }, '.sv-l.trk');
+   const wrap = el('div', 'sv-cw'), cv = el('canvas', 'sv-cv'), empty = el('div', 'sv-empty');
++  const ueFab = el('button', 'rb sv-uefab', '◆'); ueFab.setAttribute('aria-label', 'Übergänge: Bibliothek öffnen'); ueFab.addEventListener('pointerdown', e => e.stopPropagation()); onTap(ueFab, () => { ueBar(true); haptic('tick'); });   // UE-B: Ersatz für [◆] in sehr schmalen Ansichten
+   // V2e (6.4/6.5): the empty song names both ways in; [＋ Teil einsetzen ▾] also when the song is still empty (Xander 24.10. b)
+   empty.innerHTML = 'Noch kein Song.<br>FANG TEIL beim Spielen, dann den Teil in den Song ziehen – oder <b>● SONG</b>.';
+   const kr = el('div', 'kbrow');
+@@ -27307,12 +27383,12 @@
+   fol.addEventListener('pointerdown', e => e.stopPropagation());       // not a song-grid gesture
+   onTap(fol, () => { if (folState('song').follow === 'off') folSet('song', true); FOL.hand.song = false; FOL.jump.song = true; svAutoScroll(false); svDraw(true); });
+   const ban = el('div', 'sv-ban'); ban.hidden = true; SV.ban = ban;           // V0c N7S-02: the take's banner lies over the ruler
+-  wrap.append(cv, empty, hint, fol, ban);
++  wrap.append(cv, empty, hint, fol, ban, ueFab);
+   body.append(labs, wrap);
+   v.append(top, body);
+   guardTouch(top); guardTouch(wrap); guardTouch(labs);
+   SV.cv = cv; SV.g = cv.getContext('2d'); SV.wrap = wrap; SV.empty = empty; SV.labs = labs;
+-  SV.btn = {bRec, bPlay, bMel, bMt, bBack, bHome, bLoop, bGl, sw}; SV.lm = lm; songViewMode();
++  SV.btn = {bRec, bPlay, bMel, bMt, bBack, bHome, bLoop, bGl, bUe, sw}; SV.lm = lm; songViewMode();
+   svBindGestures(wrap);
+   buildRangeBar();
+   // the grid area changes height with sheets, toasts and rotation: keep the canvas in step (rAF: no observer loop)
+@@ -27330,7 +27406,8 @@
+   SV.vvS = S.song && S.song.video ? 8 : 0; SV.rulerH = (r.height < 240 ? 16 : 20) + SV.vvS;   // VV2: + the stripe of the Video-Regie (only with entries)
+   SV.blS = konHasBlocks() ? (r.height < 240 ? 12 : 14) : 0; SV.rulerH += SV.blS;               // KON: + the Block-Zeile above the ruler (only with blocks)
+   // V2a: all tracks while each row gets ≥ 26 px (song-delta 6.5), else pages of the synth tracks (≥ 4 a page) + DRUMS
+-  const ord = trackOrder(), synth = ord.filter(i => !isDrum(i)), avail = r.height - SV.rulerH + SV.vvS + SV.blS;
++  const ubH = ueBarCover(r), RH = r.height - ubH;                // UE-B: die offene Bibliothek-Leiste deckt unten nichts zu – die Zeilen rücken darüber
++  const ord = trackOrder(), synth = ord.filter(i => !isDrum(i)), avail = RH - SV.rulerH + SV.vvS + SV.blS;
+   if (avail / (ord.length + 2) >= 26 - .5) { SV.rows = ord.slice(); SV.pages = null; }
+   else {
+     const per = Math.max(4, Math.floor(avail / 26) - 3), pages = []; for (let k = 0; k < synth.length; k += per) pages.push(synth.slice(k, k + per));
+@@ -27338,12 +27415,13 @@
+     else { SV.pages = pages; const pg = pages[Math.min(trackBankOf(), pages.length - 1)]; SV.rows = pg.concat(new Array(pages[0].length - pg.length).fill(-1), [DRUM_T]); }
+   }
+   // V2e: [▲▼] stands in every viewport where 8 tracks would not fit (fixed per viewport, nothing moves when tracks come and go)
+-  SV.bankVp = side || avail / (8 + 2) < 26 - .5;
++  SV.bankVp = side || (avail + ubH) / (8 + 2) < 26 - .5;          // UE-B: nach der vollen Höhe (die Leiste ändert die Knopfzeile nicht)
+   if (SV.tbb.hidden === SV.bankVp) SV.tbb.hidden = !SV.bankVp;
++  if (EL.songView.classList.contains('bankv') !== SV.bankVp) EL.songView.classList.toggle('bankv', SV.bankVp);   // UE-B: mit [▲▼] rücken die Knöpfe enger
+   SV.tbb.disabled = !SV.pages; SV.tbb.lastChild.textContent = SV.pages ? (Math.min(trackBankOf(), SV.pages.length - 1) + 1) + '/' + SV.pages.length : '1/1';
+   svBuildRows();
+   const nR = SV.rows.length + 2;                                    // a shorter page keeps its rows (empty ones): nothing moves
+-  SV.rowH = Math.max(14, (r.height - SV.rulerH) / nR);
++  SV.rowH = Math.max(14, (RH - SV.rulerH) / nR);
+   SV.cv.width = Math.round(r.width * dpr); SV.cv.height = Math.round(r.height * dpr);
+   SV.cv.style.width = r.width + 'px'; SV.cv.style.height = r.height + 'px';
+   // the label column rows line up with the canvas rows
+@@ -28102,6 +28180,7 @@
+   if (song.vox) tkVoxShift(song, n, d);                           // VS3
+   if (song.video) vvDirShift(song, n, d);                         // VV2
+   if (song.gb) ggbShift(song, n, d);                              // G-GB: der Export-Start wandert mit
++  if (song.ue) ueShift(song, n, d);                               // UE: Einwürfe rücken mit (Kanten hängen an ihrer Marke)
+ }
+ // remove the content of [a, b); marks: inside → gone, overlapping → trimmed, enclosing → split (o.split) or shortened
+ function songClear(song, a, b, o) {
+@@ -28114,6 +28193,7 @@
+   if (song.blocks && !o.keepMarks && !o.split) konBlocksCut(song, a, b);   // KON: Löschen kürzt Blöcke (Ersetzen/Leeren: sie bleiben)
+   if (song.vox && !o.keepMel) tkVoxClear(song, a, b);              // VS3
+   if (song.video && !o.keepMarks) vvDirClear(song, a, b);          // VV2
++  if (song.ue && !o.keepMarks) ueClear(song, a, b);                // UE: Einwürfe im Bereich gehen
+ }
+ function marksCut(song, a, b, split) {
+   const out = [];
+@@ -28200,6 +28280,7 @@
+   if (song.own) { const used = new Set(); for (const l of song.lanes) for (const e of l) if (e.own) used.add(e.own); for (const id of Object.keys(song.own)) if (!used.has(id)) delete song.own[id]; }
+   if (song.video) vvDirTidy(song);                                 // VV2
+   konTidy(song);                                                   // KON
++  if (song.ue) ueTidy(song);                                       // UE: Übergänge nur an vorhandenen Marken
+ }
+ /* ---------- V2d′ eigener Clip (song-delta 9.2, N7-R9; Daten und Wiedergabe – die Gesten kommen mit V2e′): a copy that only holds
+    at this song place (`song.own[id]`, lane entry {bar, slot (origin), own:id, ph}). A Durchlauf = one clip length of a block,
+@@ -28582,7 +28663,7 @@
+     if (kind === 'rep') { const n = clamp(arg | 0 || 2, 2, 16), ch = songCut(song, a, e); for (let k = 1; k < n; k++) opInsert(song, a + k * m.len, ch); }
+     else if (kind === 'move') { const ch = songCut(song, a, e); ch.vox = g3VoxCut(song, a, e); /* G3 */ let n = clamp(Math.round(arg) || 0, 0, song.bars); if (n >= a && n <= e) return; opDelete(song, a, e); if (n > a) n -= m.len; opInsert(song, n, ch, true); }
+     else if (kind === 'copy') { const n = arg == null ? e : clamp(Math.round(arg), 0, song.bars); opInsert(song, n, songCut(song, a, e)); }
+-    else if (kind === 'replaceBy') { const r = partRef(arg); if (!r) return; const vk = vvDirCutTo(song, a, e, {}).video, ch = refChunk(r); opDelete(song, a, e); opInsert(song, a, ch); if (vk) vvDirWrite(song, a, {len: ch.len, video: vk}); }   // VV2-fix: Regie stays
++    else if (kind === 'replaceBy') { const r = partRef(arg); if (!r) return; const vk = vvDirCutTo(song, a, e, {}).video, ch = refChunk(r), uo = song.ue ? deep(song.marks) : null; opDelete(song, a, e); opInsert(song, a, ch); if (vk) vvDirWrite(song, a, {len: ch.len, video: vk}); if (uo) ueReanchor(song, uo); }   // UE: der Übergang bleibt auf der Kante   // VV2-fix: Regie stays
+     else if (kind === 'delete') opDelete(song, a, e);
+     else if (kind === 'unname') song.marks = song.marks.filter(x => x.id !== id);
+     else if (kind === 'rename') { const v = String((arg && arg.name != null ? arg.name : arg) || '').trim().slice(0, 12); if (v) m.name = v; else delete m.name; }
+@@ -30868,6 +30949,7 @@
+   // V2e′: the lifted cell / the Durchlauf of the open Zell-Blatt: amber 7 % and a white 2-px frame
+   const sc = SV.cell, scr = sc ? SV.rows.indexOf(sc.t) : -1;
+   if (scr >= 0) { const y = ru + scr * rh, xa = X(sc.a) + 1, xb = X(sc.b) - 1; g.fillStyle = 'rgba(255,178,46,.07)'; g.fillRect(xa, y + 1, xb - xa, rh - 2); g.strokeStyle = '#f2f4f8'; g.lineWidth = 2; g.strokeRect(xa + 1, y + 2, xb - xa - 2, rh - 4); }
++  if (song && (song.ue || UE.drag)) { try { ueSvDraw(g, song, XB, ru, rh, W, H); } catch (e) { logErr(e); } }   // UE: Schraffur, Einrasten
+   // TRÄGER: chord chips at their beats (long-press = delete)
+   SV.chips = [];
+   if (song) {
+@@ -30953,6 +31035,7 @@
+     const nm = mk ? trackTag(i) + ' ♪' : svShort(i); if (sp.textContent !== nm) sp.textContent = nm;
+     if ((d.dataset.mel || '') !== mk) { d.dataset.mel = mk; d.classList.toggle('mcho', cho); }
+     const st = i === R.selT; if (d.classList.contains('sel') !== st) { d.classList.toggle('sel', st); d.setAttribute('aria-pressed', String(st)); } } }
++  if ((song && song.ue) || UE.chips.size) { try { ueChipsSync(song, ru, rh, W); } catch (e) { logErr(e); } }   // UE: Chips an den Kanten
+ }
+ /* melody lane → the piano roll on the chosen track's song melody (§3.9, V2b: song.mel[melodyTrack]): the clip editor with the melody as its clip; every gesture is one
+    undo step (kind 'song'); notes stay as heard (never mapped). [Als Clip] (P1 „Melodie → Clip“): the selected bar range
+@@ -56893,6 +56976,589 @@
+ /* VV4CE-END */
+ 
+ 
++/* ===================== UE-A + UE-B (Konzept Schnitt/Übergänge §1): Übergänge auf der Schnittkante =====================
++   Daten (nur ergänzt, Format 5 bleibt; ein Song ohne Übergänge speichert nichts Neues) – §1.5, verbindlich auch für UE-C/D:
++   song.ue = [{id:'U1', m (Marke des FOLGENDEN Teils; fehlt bei Einwürfen), at (nur Einwurf/lose: Song-Schlag), a, len (Schläge,
++     a relativ zur Kante bzw. zu at), k, t (Spur), notes (Drum-Clip-Noten {t,d,n,v,a?,p?,r?,m?,lk?}, t relativ zum Start a),
++     mode 'ersetzt'|'dazu', stop? [Spuren], dens 0–2, dir 'auto'|'auf'|'ab', g? (Verknüpfungs-Gruppe), src (Bibliotheks-ID), kit?, baked?}]
++   Anker: ein Kanten-Übergang hängt an der Marke m (Verschieben des Teils = wandert mit; Teil gelöscht = Übergang weg, Undo bringt
++   beides). Einwürfe hängen am Song-Schlag (songShift). Abspielen: der Scheduler mischt die Treffer in die Drum-Spur (drumHit mit
++   dem Kit der Spur); „ersetzt“ = Fenster wie mutedAt. Ohne song.ue läuft kein zusätzlicher Code.
++   Bibliothek (UE_LIB): Einträge {id, tab:'ue'|'break'|'adlib'|'lauf'|'eigen', name, short, k, a, len, mode, notes | dn:[leicht,mittel,voll], stop?}
++   – UE-C/D hängen ihre Einträge mit ueLibAdd() an. ---------- */
++const UE_K = ['fill', 'tom', 'build', 'crash', 'break', 'adlib', 'riser', 'down', 'rev', 'lauf'];
++const UE_TABS = [['ue', 'Übergänge'], ['break', 'Breaks'], ['adlib', 'Einwürfe'], ['lauf', 'Verknüpfer'], ['eigen', 'Eigene']];
++const UE_MAX = 256, UE_SNAP = 2;                                  // höchstens 256 Einträge; Fangbereich ±½ Takt = ±2 Schläge
++// drei einfache Platzhalter (UE-A/B); die Werks-Übergänge, Breaks und Einwürfe bringt UE-C/D
++const UE_LIB = [
++  {id: 'p-tom-kurz', tab: 'ue', name: 'Tom-Wirbel kurz', short: 'Toms', k: 'tom', a: -2, len: 2, mode: 'ersetzt',
++    notes: [50, 50, 50, 47, 47, 47, 45, 45].map((n, i) => ({t: i * .25, d: .25, n, v: +(.62 + i * .05).toFixed(2)}))},
++  {id: 'p-snare-lauf', tab: 'ue', name: 'Snare-Lauf', short: 'Snare', k: 'fill', a: -4, len: 4, mode: 'ersetzt',
++    notes: [0, .5, 1, 1.5].map((t, i) => ({t, d: .25, n: 38, v: +(.5 + i * .04).toFixed(2)})).concat([0, 1, 2, 3, 4, 5, 6, 7].map(i => Object.assign({t: 2 + i * .25, d: .25, n: 38, v: +(.6 + i * .055).toFixed(2)}, i === 7 ? {a: 1} : null)))},
++  {id: 'p-becken-stopp', tab: 'ue', name: 'Becken-Stopp', short: 'Stopp', k: 'crash', a: 0, len: 2, mode: 'ersetzt',
++    notes: [{t: 0, d: .25, n: 49, v: 1}, {t: 0, d: .25, n: 36, v: 1}]},
++];
++const UE = {ref: null, ver: -1, hits: [], mutes: null, pend: [], np: 0, beats: null, prev: [], bar: null, tab: 'ue', drag: null, layer: null, chips: new Map(), sig: ''};
++const ueLib = id => UE_LIB.find(x => x.id === id) || null;
++function ueLibAdd(list) { for (const x of [].concat(list || [])) if (x && x.id && !ueLib(x.id)) UE_LIB.push(x); if (UE.bar && !UE.bar.hidden) uePaintBar(); return UE_LIB.length; }
++const ueLenTxt = beats => ({1: '¼', 2: '½', 4: '1', 8: '2', 16: '4'}[beats] || String(+(beats / 4).toFixed(2))) + ' T';
++const ueLenAria = beats => ({1: 'ein Viertel Takt', 2: 'ein halber Takt', 4: '1 Takt', 8: '2 Takte', 16: '4 Takte'}[beats] || (beats / 4) + ' Takte');
++function ueNewId(song) { let n = 0; for (const e of song.ue || []) { const k = +String(e.id).slice(1); if (k > n) n = k; } return 'U' + (n + 1); }
++// laden, Undo, nach jeder Änderung (songTidy): gültige Felder, Kanten nur mit vorhandener Marke, Einwürfe im Song
++function ueNorm(list, marks, bars, nt) {
++  if (!Array.isArray(list)) return null;
++  nt = isNum(nt) && nt > 0 ? nt : curNT();
++  const ids = new Set(), mk = new Set((marks || []).map(m => m.id)), out = [];
++  for (const e of list.slice(0, UE_MAX)) {
++    if (!e || typeof e !== 'object' || !isNum(e.len) || e.len <= 0) continue;
++    const x = {};
++    let id = typeof e.id === 'string' && /^U\d{1,6}$/.test(e.id) && !ids.has(e.id) ? e.id : null;
++    if (!id) { let n = 1; while (ids.has('U' + n) || list.some(y => y && y.id === 'U' + n && y !== e)) n++; id = 'U' + n; }
++    ids.add(id); x.id = id;
++    if (typeof e.m === 'string' && e.m) { if (!mk.has(e.m)) continue; x.m = e.m; }
++    else if (isNum(e.at)) { const at = +(+e.at).toFixed(4); if (at < 0 || (bars > 0 && at >= bars * 4)) continue; x.at = at; }
++    else continue;
++    x.a = isNum(e.a) ? +clamp(e.a, -64, 64).toFixed(4) : 0;
++    x.len = +clamp(e.len, 1 / 16, 64).toFixed(4);
++    x.k = UE_K.includes(e.k) ? e.k : 'fill';
++    x.t = isNum(e.t) && Math.round(e.t) >= 0 && Math.round(e.t) < nt ? Math.round(e.t) : DRUM_T;
++    x.notes = (Array.isArray(e.notes) ? e.notes : []).filter(n => n && isNum(n.t) && isNum(n.d) && isNum(n.n) && isNum(n.v) && n.t >= 0 && n.t < x.len).slice(0, 1024).map(n => cleanNote(n));
++    x.mode = e.mode === 'dazu' ? 'dazu' : 'ersetzt';
++    if (Array.isArray(e.stop)) { const s = [...new Set(e.stop.filter(k => isNum(k) && k >= 0 && k < nt).map(k => Math.round(k)))].sort((p, q) => p - q); if (s.length) x.stop = s; }
++    x.dens = isNum(e.dens) ? clamp(Math.round(e.dens), 0, 2) : 1;
++    x.dir = e.dir === 'auf' || e.dir === 'ab' ? e.dir : 'auto';
++    if (typeof e.g === 'string' && e.g) x.g = e.g.slice(0, 16);
++    x.src = typeof e.src === 'string' ? e.src.slice(0, 40) : '';
++    if (e.name != null && typeof e.name === 'string' && e.name.trim()) x.name = e.name.trim().slice(0, 24);
++    if (e.kit && typeof e.kit === 'object' && !Array.isArray(e.kit)) x.kit = deep(e.kit);
++    if (e.baked && typeof e.baked === 'object') x.baked = deep(e.baked);
++    out.push(x);
++  }
++  // eine Kante trägt höchstens einen Übergang (der spätere gewinnt, wie beim Ablegen: ersetzen)
++  const seen = new Set(); for (let k = out.length - 1; k >= 0; k--) { const e = out[k]; if (e.m == null || e.k === 'adlib') continue; if (seen.has(e.m)) out.splice(k, 1); else seen.add(e.m); }
++  // eine Gruppe aus nur einem Eintrag ist keine Verknüpfung
++  const gn = {}; for (const e of out) if (e.g) gn[e.g] = (gn[e.g] || 0) + 1; for (const e of out) if (e.g && gn[e.g] < 2) delete e.g;
++  return out.length ? out : null;
++}
++function ueTidy(song) { const u = ueNorm(song.ue, song.marks, song.bars, song.lanes && song.lanes.length); if (u) song.ue = u; else delete song.ue; }
++// Takte einfügen/löschen: Einwürfe (at) rücken mit; Kanten-Übergänge hängen an ihrer Marke (die rückt in songShift selbst)
++function ueShift(song, n, d) { for (const e of song.ue) if (e.at != null && e.at >= n * 4 - 1e-6) e.at = +(e.at + d * 4).toFixed(4); }
++function ueClear(song, a, b) { song.ue = song.ue.filter(e => !(e.at != null && e.at >= a * 4 - 1e-6 && e.at < b * 4 - 1e-6)); if (!song.ue.length) delete song.ue; }
++// Song-Schlag der Kante bzw. von at; der Start = Kante + a
++function ueEdgeBeat(song, e) { if (e.m != null) { const m = song.marks.find(x => x.id === e.m); return m ? m.a * 4 : null; } return isNum(e.at) ? e.at : null; }
++function ueStart(song, e) { const b = ueEdgeBeat(song, e); return b == null ? null : b + (e.a || 0); }
++// die Kanten des Songs: jede Marke, die nicht bei Takt 1 beginnt, mit dem Teil davor (null = Lücke davor)
++function ueEdges(song) {
++  song = song || S.song; if (!song) return [];
++  const ms = song.marks.slice().sort((p, q) => p.a - q.a), out = [];
++  ms.forEach((m, k) => { if (m.a <= 0) return; const pv = k > 0 && ms[k - 1].a + ms[k - 1].len === m.a ? ms[k - 1] : null; out.push({m: m.id, bar: m.a, from: pv ? markLabel(pv) : null, to: markLabel(m)}); });
++  return out;
++}
++/* ---------- Abspielen: Treffer-Liste (Song-Schläge, sortiert) und „ersetzt“-Fenster je Spur, neu gebaut bei jeder Song-Änderung ---------- */
++function ueBuild() {
++  const song = S.song; UE.ref = song ? song.ue : null; UE.ver = UI.songVer | 0; UE.hits = []; UE.mutes = null;
++  if (!UE.ref) return;
++  const mutes = {};
++  for (const e of song.ue) {
++    const s = ueStart(song, e); if (s == null) continue;
++    const E = s + e.len;
++    if (e.mode === 'ersetzt' && e.k !== 'break') (mutes[e.t] || (mutes[e.t] = [])).push([s, E]);
++    if (e.stop) for (const k of e.stop) (mutes[k] || (mutes[k] = [])).push([s, E]);
++    if (!S.tracks[e.t] || S.tracks[e.t].kind !== 'drum' || !e.notes.length) continue;
++    const seed = ((+String(e.id).slice(1)) | 0) * 7919 + 17;
++    for (const nt of e.notes) {
++      if (nt.t >= e.len - 1e-9) continue;
++      for (const h of DrumSeq.expandStep(nt, 0, seed)) {
++        const hb = +(s + nt.t + h.beat).toFixed(6);
++        if (hb < s - 1e-9 || hb >= E - 1e-9 || hb < 0) continue;     // kein Treffer außerhalb der gewählten Länge
++        UE.hits.push({sb: hb, n: nt.n, v: h.v, ex: h.acc || h.lk ? h : null, t: e.t, id: e.id});
++      }
++    }
++  }
++  UE.hits.sort((p, q) => p.sb - q.sb || p.n - q.n);
++  // je Song-Schlag: der erste Treffer ab diesem Schlag (schnelles Nein für Fenster ohne Treffer, kein Suchen)
++  const nb = UE.hits.length ? Math.floor(UE.hits[UE.hits.length - 1].sb) + 2 : 0, ix = new Int32Array(nb + 1);
++  for (let k = UE.hits.length - 1, j = nb; j >= 0; j--) { while (k >= 0 && UE.hits[k].sb >= j - 1e-9) k--; ix[j] = k + 1; }
++  UE.beats = ix;
++  for (const k in mutes) { const l = mutes[k].sort((p, q) => p[0] - q[0]); l.lo = l[0][0]; l.hi = Math.max(...l.map(w => w[1])); }   // sortiert + Hülle (schnelles Nein)
++  UE.mutes = mutes;
++}
++function ueFresh() { if (UE.ref !== (S.song ? S.song.ue : null) || UE.ver !== (UI.songVer | 0)) ueBuild(); }
++// die „ersetzt“-Fenster der Spur i in Transport-Schlägen (nur während ▶ SONG mit Übergängen), sonst null; umgerechnet mit
++// songBeatOf (vor dem Schleifen-/Sprung-Schlag prevOff, danach off) und gemerkt, bis sich Song oder Versatz ändern
++function ueMutes(i) {
++  const sp = R.songPlay, song = S.song; if (!sp || !song || !song.ue) return null;
++  if (UE.ref !== song.ue || UE.ver !== (UI.songVer | 0)) ueBuild();
++  const l = UE.mutes[i]; if (!l) return null;
++  const c = UE.mc || (UE.mc = {t: []}), wr = sp.wrapAt != null ? sp.wrapAt : null, pv = wr != null ? sp.prevOff : null;
++  if (c.ref !== UE.mutes || c.off !== sp.off || c.wr !== wr || c.pv !== pv) { c.ref = UE.mutes; c.off = sp.off; c.wr = wr; c.pv = pv; c.t = []; }
++  let m = c.t[i]; if (m) return m;
++  m = [];
++  for (const w of l) {
++    if (sp.wrapAt != null) { const a = w[0] + sp.prevOff, b = Math.min(w[1] + sp.prevOff, sp.wrapAt); if (b > a) m.push([a, b]); const a2 = Math.max(w[0] + sp.off, sp.wrapAt), b2 = w[1] + sp.off; if (b2 > a2) m.push([a2, b2]); }
++    else m.push([w[0] + sp.off, w[1] + sp.off]);
++  }
++  m.sort((p, q) => p[0] - q[0]); m.lo = m.length ? m[0][0] : Infinity; m.hi = m.length ? Math.max(...m.map(w => w[1])) : -Infinity;
++  return (c.t[i] = m);
++}
++function ueMutedAt(l, B) {
++  if (B < l.lo - 1e-9 || B >= l.hi - 1e-9) return false;
++  for (let k = 0; k < l.length; k++) { const w = l[k]; if (B < w[0] - 1e-9) return false; if (B < w[1] - 1e-9) return true; }
++  return false;
++}
++// die Treffer des Fensters [b0, b1) (Schläge des Transports) vormerken; scheduleDrums nimmt die seiner Spur in seine Zeitordnung
++// (Choke/Monophonie wie Clip-Treffer), ueFlush spielt den Rest (Spur ohne laufenden Clip). only = nur Spur only, late = nachträglich
++function ueTick(b0, b1, only, late) {
++  const sp = R.songPlay, song = S.song; if (!sp || !song || !song.ue || !(b1 > b0) || !AU.ctx) return;
++  if (UE.ref !== song.ue || UE.ver !== (UI.songVer | 0)) ueBuild();
++  if (!UE.hits.length) return;
++  if (sp.wrapAt != null) { ueRun(b0, b1, sp.prevOff, -Infinity, sp.wrapAt, only, late); ueRun(b0, b1, sp.off, sp.wrapAt, Infinity, only, late); }
++  else ueRun(b0, b1, sp.off, -Infinity, Infinity, only, late);
++}
++function ueRun(b0, b1, off, lo, hi, only, late) {
++  const H = UE.hits, nH = H.length, ix = UE.beats, s0 = (b0 > lo ? b0 : lo) - off, s1 = (b1 < hi ? b1 : hi) - off;
++  if (!(s1 > s0) || s1 <= H[0].sb - 1e-9 || s0 > H[nH - 1].sb + 1e-9) return;
++  const j = s0 < 0 ? 0 : Math.floor(s0 + 1e-9); let L = j < ix.length ? ix[j] : nH;
++  while (L < nH && H[L].sb < s0 - 1e-9) L++;
++  if (L >= nH || H[L].sb >= s1 - 1e-9) return;
++  const now = AU.ctx.currentTime, P = UE.pend;
++  for (let k = L; k < nH && H[k].sb < s1 - 1e-9; k++) {
++    const h = H[k]; if (only != null && h.t !== only) continue;
++    const tr = S.tracks[h.t]; if (!tr || tr.mute || R.songOverride[h.t]) continue;
++    const hb = h.sb + off; let t = b2t(hb + swingOffset(h.sb));
++    if (t < now - (late ? RETRO_MAX + .02 : .02)) continue;
++    if (t < now) t = now;
++    P.push(h, hb, t); UE.np++;                                   // flach (Treffer, Schlag, Zeit): keine Objekte je Fenster
++  }
++}
++// scheduleDrums: die vorgemerkten Treffer der Spur i im Fenster [from, to) in ev (gleicher Schlüssel = ein Treffer, lautere Velocity)
++function uePull(i, from, to, ev) {
++  if (!UE.np) return;
++  const P = UE.pend;
++  for (let k = 0; k < P.length; k += 3) {
++    const h = P[k]; if (!h || h.t !== i) continue;
++    const hb = P[k + 1]; if (hb < from - 1e-9 || hb >= to - 1e-9) continue;
++    const t = P[k + 2]; P[k] = null; UE.np--;
++    const key = t.toFixed(4) + ':' + h.n, o = ev.get(key);
++    if (o) { o.v = Math.max(o.v, h.v); if (h.ex && h.ex.acc) o.ex = Object.assign({}, o.ex, {acc: 1}); o.ue = 1; }
++    else ev.set(key, {t, n: h.n, v: h.v, ex: h.ex, ue: 1});
++  }
++  if (!UE.np) P.length = 0;
++}
++function ueFlush() {
++  const P = UE.pend; if (!P.length) return;
++  const l = []; for (let k = 0; k < P.length; k += 3) if (P[k]) l.push({h: P[k], t: P[k + 2]});
++  P.length = 0; UE.np = 0;
++  l.sort((p, q) => p.t - q.t); const dt = S.settings.harmony.drums;
++  for (const {h: x, t} of l) {
++    let ex = x.ex; const tu = dt ? drumTune(t) : 0;
++    if (tu) ex = Object.assign({}, ex, {lk: Object.assign({}, ex && ex.lk, {tune: ((ex && ex.lk && ex.lk.tune) || 0) + tu})});
++    const r = drumHit(x.n, x.v, t, 'clip', ex); if (r && r.log) r.log.src = 'ue';
++  }
++}
++/* ---------- Anker bei Ersetzen / Konsolidieren: die Kante bleibt, nur die Marke ist neu ---------- */
++// nach einer Änderung, die Marken neu macht: ein Übergang, dessen Marke weg ist, nimmt die neue Marke an derselben Stelle;
++// gibt es dort keine Kante mehr (konsolidiert), klingt er lose am Song-Schlag weiter (at) – [Zurückholen] hängt ihn wieder an
++function ueReanchor(song, old) {
++  if (!song.ue) return;
++  const pos = {}; for (const m of old || []) pos[m.id] = m.a;
++  for (const e of song.ue) {
++    if (e.m != null && !song.marks.some(m => m.id === e.m) && pos[e.m] != null) {
++      const nm = song.marks.find(m => m.a === pos[e.m]);
++      if (nm && nm.a > 0) e.m = nm.id; else { e.at = pos[e.m] * 4; delete e.m; }
++    } else if (e.m == null && e.at != null && e.k !== 'adlib' && e.k !== 'break') {
++      const nm = song.marks.find(m => m.a * 4 === e.at && m.a > 0);
++      if (nm && !song.ue.some(x => x !== e && x.m === nm.id)) { e.m = nm.id; delete e.at; }
++    }
++  }
++}
++/* ---------- Bearbeiten (je Aktion ein Undo-Schritt) ---------- */
++function ueFind(id) { return S.song && S.song.ue ? S.song.ue.find(e => e.id === id) || null : null; }
++const ueName = e => e.name || (ueLib(e.src) || {}).name || 'Übergang';
++const ueShort = e => (ueLib(e.src) || {}).short || ueName(e).split(/[\s-]/)[0].slice(0, 8);
++function ueFromLib(L, o) {
++  o = o || {}; const dens = isNum(o.dens) ? clamp(Math.round(o.dens), 0, 2) : 1;
++  const notes = Array.isArray(L.dn) ? (L.dn[dens] || L.dn[1] || L.dn[0] || []) : (L.notes || []);
++  const e = {a: L.a != null ? L.a : -L.len, len: L.len, k: L.k || 'fill', t: L.t != null ? L.t : DRUM_T, notes: deep(notes), mode: L.mode || 'ersetzt', dens, dir: 'auto', src: L.id};
++  if (L.stop) e.stop = L.stop.slice();
++  return e;
++}
++// API uePlace(libId, markId): legt den Übergang auf die Kante vor der Marke; eine belegte Kante wird ersetzt (1 Undo)
++function uePlace(libId, markId, o) {
++  const L = ueLib(libId), song = S.song; if (!L || !song || R.songRec) return null;
++  const m = song.marks.find(x => x.id === markId); if (!m || m.a <= 0) return null;
++  let id = null;
++  const ok = songEdit(L.name + ' auf Kante Takt ' + (m.a + 1), s => {
++    const old = (s.ue || []).find(e => e.m === markId && e.k !== 'adlib');
++    s.ue = (s.ue || []).filter(e => e !== old);
++    const e = Object.assign({id: ueNewId(s), m: markId}, ueFromLib(L, o)); id = e.id;
++    s.ue.push(e);
++  });
++  return ok ? id : null;
++}
++// verschieben auf eine andere Kante (belegt = ersetzen); die Gruppe bleibt (eine Kopie wandert)
++function ueMove(id, markId) {
++  const song = S.song, e0 = ueFind(id); if (!e0 || !song || R.songRec) return false;
++  const m = song.marks.find(x => x.id === markId); if (!m || m.a <= 0 || e0.m === markId) return false;
++  return !!songEdit(ueName(e0) + ' verschoben → Takt ' + (m.a + 1), s => {
++    const e = s.ue.find(x => x.id === id); s.ue = s.ue.filter(x => x === e || !(x.m === markId && x.k !== 'adlib'));
++    e.m = markId; delete e.at;
++  });
++}
++function ueRemove(id) {
++  const e0 = ueFind(id); if (!e0 || R.songRec) return false;
++  return !!songEdit(ueName(e0) + ' entfernt', s => { s.ue = s.ue.filter(x => x.id !== id); });
++}
++// die anderen Kanten mit demselben Paar „Teil davor → Teil danach“
++function ueTwins(id) {
++  const song = S.song, e = ueFind(id); if (!e || e.m == null) return [];
++  const ed = ueEdges(song), me = ed.find(x => x.m === e.m); if (!me) return [];
++  return ed.filter(x => x.m !== e.m && x.from === me.from && x.to === me.to);
++}
++// [Überall]: Kopien an allen gleichen Kanten, verknüpft (g); belegte Kanten werden ersetzt; 1 Undo
++function ueEverywhere(id) {
++  const e0 = ueFind(id), tw = ueTwins(id); if (!e0 || !tw.length || R.songRec) return 0;
++  const ok = songEdit(ueName(e0) + ' an ' + (tw.length + 1) + ' Kanten', s => {
++    const e = s.ue.find(x => x.id === id), g = e.g || e.id; e.g = g;
++    for (const x of tw) {
++      const old = s.ue.find(y => y.m === x.m && y.k !== 'adlib');
++      if (old && old.g === g) continue;
++      if (old) s.ue = s.ue.filter(y => y !== old);
++      const c = deep(e); c.id = ueNewId(s); c.m = x.m; s.ue.push(c);
++    }
++  });
++  return ok ? tw.length : 0;
++}
++// [Nur hier ändern]: die Kopie löst sich aus der Gruppe (1 Undo)
++function ueUnlink(id) {
++  const e0 = ueFind(id); if (!e0 || !e0.g || R.songRec) return false;
++  return !!songEdit(ueName(e0) + ': nur hier', s => { const e = s.ue.find(x => x.id === id); delete e.g; });
++}
++// eine Änderung an einem verknüpften Übergang gilt für alle Kopien der Gruppe
++function ueEditGroup(id, label, fn) {
++  const e0 = ueFind(id); if (!e0 || R.songRec) return false;
++  return !!songEdit(label, s => { const e = s.ue.find(x => x.id === id); for (const x of s.ue) if (x === e || (e.g && x.g === e.g)) fn(x); });
++}
++// Länge (Schläge): ein Übergang, der an der Kante endet (a + len = 0), wächst nach links; die Noten bleiben am Ende (der Wirbel
++// läuft weiter in die Eins), was vorn herausfällt, fällt weg
++function ueSetLen(id, len) {
++  len = clamp(+len || 0, 1 / 16, 64); const e0 = ueFind(id); if (!e0 || Math.abs(e0.len - len) < 1e-9) return false;
++  return ueEditGroup(id, ueName(e0) + ': ' + ueLenTxt(len), x => {
++    const endAt = Math.abs(x.a + x.len) < 1e-9, d = len - x.len;
++    if (endAt) { x.a = -len; x.notes = x.notes.map(n => Object.assign({}, n, {t: +(n.t + d).toFixed(6)})).filter(n => n.t >= -1e-9 && n.t < len - 1e-9); }
++    else x.notes = x.notes.filter(n => n.t < len - 1e-9);
++    x.len = len;
++  });
++}
++/* ---------- Vorhören: einmal mit dem aktuellen Kit, sofort (≤ 50 ms) ---------- */
++function uePreviewStop() { for (const h of UE.prev) if (!h.dead) { try { hitCancel(h); } catch (e) {} } UE.prev = []; }
++function uePreview(x) {
++  ensureAudio(); const c = AU.ctx; if (!c) return null;
++  if (c.state !== 'running') { try { c.resume(); } catch (e) {} }
++  const e = typeof x === 'string' ? (ueLib(x) ? ueFromLib(ueLib(x)) : ueFind(x)) : x; if (!e) return null;
++  uePreviewStop();
++  const t0 = c.currentTime + .012, sp = spb(), seed = 17;
++  let first = null;
++  for (const nt of (e.notes || []).slice().sort((p, q) => p.t - q.t)) {
++    if (nt.t >= e.len - 1e-9) continue;
++    for (const h of DrumSeq.expandStep(nt, 0, seed)) {
++      const b = nt.t + h.beat; if (b < 0 || b >= e.len - 1e-9) continue;
++      const r = drumHit(nt.n, h.v, t0 + b * sp, 'preview', h.acc || h.lk ? h : null);
++      if (r) { UE.prev.push(r); if (first == null || r.start < first) first = r.start; }
++    }
++  }
++  UE.lastPrev = {tap: performance.now(), ctx: c.currentTime, first};
++  return UE.lastPrev;
++}
++/* ---------- UE-B: Bibliothek-Leiste (unten über dem Song-Bereich, die Tastatur bleibt sichtbar) ---------- */
++// Mini-Schrittbild: je Instrument eine Zeile, je 1/16 eine Spalte (gezeichnete Kästchen, kein Zeichen)
++function ueMiniSvg(e) {
++  const steps = Math.max(1, Math.round(e.len * 4)), ns = (e.notes || []).filter(n => n.t < e.len), rows = [...new Set(ns.map(n => n.n))].sort((p, q) => q - p).slice(0, 4);
++  const W = 64, Hh = 22, rh = rows.length ? Hh / Math.max(rows.length, 2) : Hh, cw = W / steps;
++  let s = `<svg class="ue-mini" viewBox="0 0 ${W} ${Hh}" aria-hidden="true">`;
++  for (let k = 0; k < steps; k++) s += `<rect x="${(k * cw + .5).toFixed(2)}" y="0" width="${Math.max(.6, cw - 1).toFixed(2)}" height="${Hh}" class="${k % 4 ? 'b' : 'b q'}"/>`;
++  for (const n of ns) { const r = rows.indexOf(n.n); if (r < 0) continue; const k = Math.min(steps - 1, Math.floor(n.t * 4 + 1e-6)); s += `<rect x="${(k * cw + .8).toFixed(2)}" y="${(r * rh + 1).toFixed(2)}" width="${Math.max(.8, cw - 1.6).toFixed(2)}" height="${Math.max(1.5, rh - 2).toFixed(2)}" class="${n.a ? 'n a' : 'n'}" style="opacity:${(.45 + .55 * n.v).toFixed(2)}"/>`; }
++  return s + '</svg>';
++}
++function ueBuildBar() {
++  if (UE.bar || !EL.songView) return UE.bar;
++  const bar = el('div', 'ue-bar'); bar.hidden = true;
++  bar.innerHTML = '<div class="ue-tabs pan-x" role="tablist"></div><div class="ue-tiles"></div>';
++  guardTouch(bar);
++  for (const n of [bar]) { n.addEventListener('pointerdown', e => e.stopPropagation()); }
++  onTap(bar.firstChild, b => { UE.tab = b.dataset.tab; uePaintBar(); haptic('tick'); }, 'button[data-tab]');
++  onTap(bar.firstChild, b => ueTabPick(b), 'button.ue-tsel');
++  onTap(bar, () => ueBar(false), 'button.ue-x');
++  bar.lastChild.addEventListener('pointerdown', ueTileDown);
++  const body = EL.songView.querySelector('.sv-body') || EL.songView; body.appendChild(bar); UE.bar = bar;
++  return bar;
++}
++function uePaintBar() {
++  const bar = UE.bar; if (!bar) return;
++  // kurze Flächen (quer, 428 × 650): eine Zeile – die Reiter als ein Knopf mit Liste, daneben die Kacheln
++  const one = !!(bar.parentNode && bar.parentNode.clientHeight && bar.parentNode.clientHeight < 380); bar.classList.toggle('one', one);
++  const cur = (UE_TABS.find(x => x[0] === UE.tab) || UE_TABS[0])[1];
++  bar.firstChild.innerHTML = (one ? `<button class="rb ue-tab on ue-tsel" aria-label="Reiter: ${cur} – antippen: anderen Reiter wählen">${cur} ▾</button>` :
++    UE_TABS.map(([k, l]) => `<button class="rb ue-tab${UE.tab === k ? ' on' : ''}" role="tab" aria-selected="${UE.tab === k}" data-tab="${k}">${l}</button>`).join('')) +
++    '<button class="rb ue-x" aria-label="Übergänge schließen">✕</button>';
++  const list = UE_LIB.filter(x => x.tab === UE.tab);
++  bar.lastChild.innerHTML = list.length ? list.map(L => {
++    const e = ueFromLib(L);
++    return `<button class="rb ue-tile" data-id="${esc(L.id)}" aria-label="${esc(L.name)}, ${ueLenAria(L.len)} – antippen: vorhören, nach oben ziehen: auf eine Kante legen">` +
++      `<span class="ue-tn">${esc(L.name)}</span>${ueMiniSvg(e)}<span class="ue-tl">${ueLenTxt(L.len)}</span></button>`;
++  }).join('') : '<div class="ue-empty">Hier ist noch nichts.</div>';
++}
++// die Reiter-Liste der einzeiligen Leiste
++function ueTabPick(anchor) {
++  openPop(anchor, p => {
++    guardTouch(p); p.classList.add('uetabs');
++    p.innerHTML = '<div class="plist">' + UE_TABS.map(([k, l]) => `<button class="rb${UE.tab === k ? ' on' : ''}" data-tab="${k}">${l}</button>`).join('') + '</div>';
++    onTap(p, b => { UE.tab = b.dataset.tab; closePop(); uePaintBar(); haptic('tick'); }, 'button[data-tab]');
++  }, {name: 'uetabs'});
++}
++// wie viel die offene Leiste unten vom Song-Raster (Rechteck r) bedeckt
++function ueBarCover(r) { const b = UE.bar; if (!b || b.hidden || !b.offsetHeight) return 0; return Math.max(0, Math.min(r.height * .6, r.bottom - b.getBoundingClientRect().top + 4)); }
++// API ueBar(open): die Leiste auf/zu (nur in der Song-Ansicht)
++function ueBar(on) {
++  on = on == null ? !(UE.bar && !UE.bar.hidden) : !!on;
++  if (on && !UI.songView) return false;
++  const bar = ueBuildBar(); if (!bar) return false;
++  if (on && UI.pop && /^(mark|uechip)$/.test(UI.pop.name || '')) closePop();
++  else ueDragEnd(true);
++  bar.hidden = !on; EL.songView.classList.toggle('uebar', on);
++  if (on) uePaintBar();
++  svLayout();
++  if (SV.btn && SV.btn.bUe) { SV.btn.bUe.classList.toggle('on', on); SV.btn.bUe.setAttribute('aria-pressed', String(on)); }
++  UI.dirty.song = true;
++  return on;
++}
++/* ---------- Ziehen: Kachel (Bibliothek) oder Chip (verschieben / aus dem Song = löschen) ---------- */
++// die Kante im Fangbereich (±½ Takt um die Teilgrenze) unter dem Finger, sonst null; over = Finger über dem Song-Raster
++function ueSnapAt(x, y) {
++  const w = SV.wrap, song = S.song; if (!w || !song || !UI.songView) return {over: false, m: null};
++  const r = w.getBoundingClientRect(), over = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
++  if (!over) return {over, m: null};
++  const beat = (x - r.left + SV.x) / SV.cellW * 4;
++  let best = null, bd = Infinity;
++  for (const ed of ueEdges(song)) { const d = Math.abs(beat - ed.bar * 4); if (d <= UE_SNAP + 1e-9 && d < bd) { bd = d; best = ed; } }
++  return {over, m: best ? best.m : null};
++}
++function ueGhost(name, len) {
++  const g = el('div', 'ue-ghost', `<b>◆</b><span>${esc(name)}</span><small>${ueLenTxt(len)}</small>`);
++  document.body.appendChild(g); return g;
++}
++function ueGhostPos(d) { const g = d.ghost; if (!g) return; const vw = window.innerWidth, hw = (g.offsetWidth || 120) / 2; g.style.left = Math.round(clamp(d.x, hw + 4, vw - hw - 4)) + 'px'; g.style.top = Math.round(Math.max(g.offsetHeight + 4, d.y - 30)) + 'px'; }
++function ueTileDown(ev) {
++  const t = ev.target.closest && ev.target.closest('.ue-tile'); if (!t || ev.button > 0 || UE.drag) return;
++  ueDragArm({kind: 'tile', lib: t.dataset.id, srcEl: t}, ev);
++}
++// Druck auf Kachel/Chip: Tipp (< 8 px, < 600 ms) = vorhören / Blatt; senkrecht ziehen (Kachel) bzw. ziehen (Chip) = Ziehen
++function ueDragArm(o, ev) {
++  const d = Object.assign({id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, x: ev.clientX, y: ev.clientY, t0: performance.now(), st: 'down', m: null, over: false, ghost: null}, o);
++  const node = o.srcEl;
++  try { node.setPointerCapture(ev.pointerId); } catch (e) {}
++  const mv = e => { if (e.pointerId === d.id) ueDragMove(d, e.clientX, e.clientY); };
++  const up = e => { if (e.pointerId !== d.id) return; off(); ueDragUp(d, e.clientX, e.clientY); };
++  const cc = e => { if (e.pointerId !== d.id) return; off(); if (d.st === 'drag') ueDragCancel(d); else d.st = 'gone'; };
++  const off = () => { node.removeEventListener('pointermove', mv); node.removeEventListener('pointerup', up); node.removeEventListener('pointercancel', cc); try { node.releasePointerCapture(d.id); } catch (e) {} };
++  d.off = off;
++  node.addEventListener('pointermove', mv); node.addEventListener('pointerup', up); node.addEventListener('pointercancel', cc);
++  UE.arm = d;
++}
++function ueDragMove(d, x, y) {
++  d.x = x; d.y = y;
++  if (d.st === 'down') {
++    const dx = x - d.x0, dy = y - d.y0;
++    if (Math.hypot(dx, dy) <= 8) return;
++    if (d.kind === 'tile' && Math.abs(dx) > Math.abs(dy) * 1.5) { const l = d.srcEl.parentNode; if (l && l.scrollWidth > l.clientWidth + 1) { d.st = 'scroll'; d.list = l; d.sl0 = l.scrollLeft + dx; } }   // seitlich in einer vollen Leiste = rollen (von Hand: touch-action none)
++    ueDragBegin(d);
++  }
++  if (d.st === 'scroll') { d.list.scrollLeft = d.sl0 - (x - d.x0); return; }
++  if (d.st !== 'drag') return;
++  const s = ueSnapAt(x, y), was = d.m;
++  d.over = s.over; d.m = s.m;
++  if (d.m !== was) { if (d.m) haptic('tick'); if (d.ghost) d.ghost.classList.toggle('snap', !!d.m); }
++  if (d.ghost) d.ghost.classList.toggle('out', d.kind === 'chip' && !d.over);
++  UE.drag = d; UI.dirty.song = true;
++  ueGhostPos(d);
++}
++function ueDragBegin(d) {
++  if (R.songRec) { svRecBusy(); d.st = 'gone'; return; }
++  d.st = 'drag';
++  if (d.kind === 'tile') { const L = ueLib(d.lib); d.e = ueFromLib(L); d.name = L.name; }
++  else { const e = ueFind(d.ue); if (!e) { d.st = 'gone'; return; } d.e = e; d.name = ueName(e); d.from = e.m; }
++  d.ghost = ueGhost(d.name, d.e.len);
++  if (d.srcEl) d.srcEl.classList.add('lift');
++  if (UE.bar && !UE.bar.hidden) UE.bar.classList.add('away');        // die Leiste tritt beiseite: die Drum-Zeile bleibt sichtbar
++  gestBegin(d.id, () => ueDragCancel(d));
++  if (!(S.song && ueEdges().length)) lcdOrToast('Noch keine Teilgrenze – erst Teile in den Song setzen');
++  UE.drag = d; UI.dirty.song = true;
++}
++function ueDragUp(d, x, y) {
++  if (d.st === 'scroll') { d.st = 'gone'; return; }
++  if (d.st === 'down') {                                         // ein Tipp
++    d.st = 'gone';
++    if (performance.now() - d.t0 > 600) return;
++    if (d.kind === 'tile') { uePreview(d.lib); haptic('tick'); }
++    else ueChipSheet(d.ue);
++    return;
++  }
++  if (d.st !== 'drag') return;
++  ueDragMove(d, x, y);
++  const g = d.ghost; d.ghost = null;
++  ueDragEnd();
++  if (d.kind === 'tile') {
++    if (!d.m) { ueFly(g, d.srcEl); return; }                       // daneben: zurück, 0 Änderungen
++    const id = uePlace(d.lib, d.m);
++    ueGone(g);
++    if (!id) return;
++    const tw = ueTwins(id), ed = ueEdges().find(x => x.m === d.m);
++    UE.lastDrop = id;
++    if (tw.length && ed) toast(`Auch an den ${tw.length === 1 ? 'anderen Kante' : tw.length + ' anderen Kanten'} ${ed.from || 'Anfang'} → ${ed.to}?`, [{label: 'Überall', fn: () => { const n = ueEverywhere(id); if (n) toast(ueName(ueFind(id)) + ' an ' + (n + 1) + ' Kanten · verknüpft', songUndoAct()); }}, {label: 'Nur hier', fn: () => {}}]);
++    else toast(ueName(ueFind(id)) + ' · Kante Takt ' + (ed ? ed.bar + 1 : ''), songUndoAct());
++    haptic('tick');
++  } else {
++    if (!d.over) { const nm = d.name; ueGone(g); if (ueRemove(d.ue)) toast(nm + ' entfernt', songUndoAct()); return; }   // aus dem Song gezogen = löschen
++    if (!d.m || d.m === d.from) { ueFly(g, d.srcEl); return; }
++    ueGone(g); if (ueMove(d.ue, d.m)) { const ed = ueEdges().find(x => x.m === d.m); toast(d.name + ' → Kante Takt ' + (ed ? ed.bar + 1 : ''), songUndoAct()); }
++  }
++}
++function ueDragCancel(d) { if (!d || d.st !== 'drag') return; d.st = 'gone'; const g = d.ghost; d.ghost = null; ueDragEnd(); ueFly(g, d.srcEl); }
++function ueDragEnd(abort) {
++  const d = UE.drag; UE.drag = null;
++  if (UE.bar) UE.bar.classList.remove('away');
++  if (d) { if (d.srcEl) d.srcEl.classList.remove('lift'); if (GEST.has(d.id)) gestEnd(d.id); if (abort) { d.st = 'gone'; if (d.off) d.off(); if (d.ghost) { ueGone(d.ghost); d.ghost = null; } } }
++  UI.ghost = {t: performance.now(), x: d ? d.x : 0, y: d ? d.y : 0, hard: true};
++  UI.dirty.song = true;
++}
++function ueFly(g, src) {
++  if (!g) return;
++  const r = src && src.isConnected && src.offsetWidth ? src.getBoundingClientRect() : null;
++  if (!r) { ueGone(g); return; }
++  g.classList.add('fly'); g.style.left = Math.round(r.left + r.width / 2) + 'px'; g.style.top = Math.round(r.top + r.height / 2 + 12) + 'px';
++  setTimeout(() => g.remove(), 220);
++}
++function ueGone(g) { if (!g) return; g.classList.add('gone'); setTimeout(() => g.remove(), 160); }
++/* ---------- Chips an der Kante (Drum-Zeile): ◆ + Kurzname, Griff links = Länge ---------- */
++function ueLayer() {
++  if (UE.layer && UE.layer.isConnected) return UE.layer;
++  if (!SV.wrap) return null;
++  const L = el('div', 'ue-layer'); SV.wrap.insertBefore(L, SV.cv.nextSibling); UE.layer = L; UE.chips = new Map();
++  L.addEventListener('pointerdown', ev => {
++    const c = ev.target.closest && ev.target.closest('.ue-chip'); if (!c || ev.button > 0 || UE.drag) return;
++    ev.stopPropagation();                                          // keine Song-Raster-Geste
++    if (ev.target.closest('.ue-grip')) ueGripArm(c, ev); else ueDragArm({kind: 'chip', ue: c.dataset.id, srcEl: c}, ev);
++  });
++  return L;
++}
++// Griff: rastet auf ¼ · ½ · 1 · 2 Takte vor der Kante (sichtbar mit Längen-Anzeige); loslassen = 1 Undo (für alle Kopien)
++const UE_GRIP = [1, 2, 4, 8];
++function ueGripArm(c, ev) {
++  const id = c.dataset.id, e = ueFind(id); if (!e || R.songRec) return;
++  const ex = ueEdgeX(e); if (ex == null) return;
++  const d = {id: ev.pointerId, ue: id, len: e.len, len0: e.len, node: c};
++  try { c.setPointerCapture(ev.pointerId); } catch (_) {}
++  const r = SV.wrap.getBoundingClientRect();
++  const mv = q => { if (q.pointerId !== d.id) return; const bars = (ex - (q.clientX - r.left)) / SV.cellW, b = bars * 4; let best = UE_GRIP[0]; for (const v of UE_GRIP) if (Math.abs(v - b) < Math.abs(best - b)) best = v; if (best !== d.len) { d.len = best; haptic('tick'); } UE.grip = d; UI.dirty.song = true; };
++  const end = (q, ok) => { if (q.pointerId !== d.id) return; c.removeEventListener('pointermove', mv); c.removeEventListener('pointerup', upF); c.removeEventListener('pointercancel', ccF); try { c.releasePointerCapture(d.id); } catch (_) {} UE.grip = null; UI.dirty.song = true; gestEnd(d.id); if (ok && d.len !== d.len0 && ueSetLen(id, d.len)) toast(ueName(ueFind(id)) + ' · ' + ueLenTxt(d.len), songUndoAct()); };
++  const upF = q => end(q, true), ccF = q => end(q, false);
++  c.addEventListener('pointermove', mv); c.addEventListener('pointerup', upF); c.addEventListener('pointercancel', ccF);
++  gestBegin(d.id, () => end({pointerId: d.id}, false));
++  UE.grip = d;
++}
++// x der Kante im Raster (Pixel ab dem linken Rand der Fläche), null = nicht im Song
++function ueEdgeX(e) { const b = ueEdgeBeat(S.song, e); return b == null ? null : b / 4 * SV.cellW - SV.x; }
++// svDraw: Schraffur der betroffenen Schläge, amber Kante beim Einrasten; die Chips liegen als Knöpfe darüber (je Bild nachgeführt)
++function ueSvDraw(g, song, XB, ru, rh, W, H) {
++  const dr = SV.rows.indexOf(DRUM_T), d = UE.drag, gp = UE.grip;
++  const hatch = (sbA, sbB, y, h, col) => {
++    const xa = XB(sbA), xb = XB(sbB); if (xb < 0 || xa > W) return;
++    g.save(); g.beginPath(); g.rect(xa, y, xb - xa, h); g.clip();
++    g.fillStyle = col.replace('A', '.14'); g.fillRect(xa, y, xb - xa, h);
++    g.strokeStyle = col.replace('A', '.75'); g.lineWidth = 1.5; g.beginPath();
++    for (let x = xa - h; x < xb; x += 6) { g.moveTo(x, y + h); g.lineTo(x + h, y); }
++    g.stroke(); g.restore();
++  };
++  // die liegenden Übergänge: ihre Schläge leicht schraffiert in der Drum-Zeile
++  if (song.ue && dr >= 0) for (const e of song.ue) {
++    const s = ueStart(song, e); if (s == null || (d && d.kind === 'chip' && d.ue === e.id)) continue;
++    const len = gp && gp.ue === e.id ? gp.len : e.len, s2 = gp && gp.ue === e.id && Math.abs(e.a + e.len) < 1e-9 ? s + e.len - len : s;
++    hatch(s2, s2 + len, ru + dr * rh + 2, rh - 4, gp && gp.ue === e.id ? 'rgba(255,178,46,A)' : 'rgba(200,150,70,A)');
++  }
++  // beim Ziehen: Einrasten im selben Bild sichtbar – Kante amber über die ganze Höhe, die betroffenen Schläge schraffiert
++  if (d && d.st === 'drag' && d.m) {
++    const m = song.marks.find(x => x.id === d.m);
++    if (m) {
++      const eb = m.a * 4, x = XB(eb);
++      if (dr >= 0) hatch(eb + d.e.a, eb + d.e.a + d.e.len, ru + dr * rh + 1, rh - 2, 'rgba(255,178,46,A)');
++      g.fillStyle = '#ffb22e'; g.shadowColor = 'rgba(255,178,46,.8)'; g.shadowBlur = 8; g.fillRect(x - 1.5, 0, 3, H); g.shadowBlur = 0;
++    }
++  }
++}
++// die Chips (DOM-Knöpfe, mindestens 44 × 44) an ihren Kanten nachführen – nur wenn sich etwas geändert hat
++function ueChipsSync(song, ru, rh, W) {
++  const list = song && song.ue && UI.songView ? song.ue.filter(e => e.m != null || e.at != null) : [];
++  if (!list.length && !UE.chips.size) return;
++  const L = ueLayer(); if (!L) return;
++  const dr = SV.rows.indexOf(DRUM_T), seen = new Set(), d = UE.drag, gp = UE.grip;
++  for (const e of list) {
++    const ex = ueEdgeX(e); if (ex == null || dr < 0) continue;
++    seen.add(e.id);
++    let c = UE.chips.get(e.id);
++    if (!c) { c = el('button', 'rb ue-chip', '<span class="ue-grip" aria-hidden="true"><i></i></span><span class="ue-cl"><b>◆</b><span class="ue-cn"></span></span>'); c.dataset.id = e.id; L.appendChild(c); UE.chips.set(e.id, c); }
++    const len = gp && gp.ue === e.id ? gp.len : e.len;
++    const txt = gp && gp.ue === e.id ? ueLenTxt(len) : ueShort(e), w = Math.max(66, Math.min(150, 46 + txt.length * 7));
++    const endAt = e.a + e.len <= 1e-9, left = endAt ? ex - w : ex + e.a / 4 * SV.cellW, top = ru + dr * rh + rh / 2 - 22;
++    const sig = [Math.round(left), Math.round(top), w, txt, e.g ? 1 : 0, Math.round(Math.min(rh - 4, 30)), d && d.ue === e.id ? 1 : 0].join('|');
++    if (c._sig !== sig) {
++      c._sig = sig;
++      c.style.transform = `translate(${Math.round(left)}px,${Math.round(top)}px)`; c.style.width = w + 'px';
++      c.style.setProperty('--ch', Math.round(Math.min(rh - 4, 30)) + 'px');
++      const cn = c.querySelector('.ue-cn'); if (cn.textContent !== txt) cn.textContent = txt;
++      c.classList.toggle('lnk', !!e.g); c.classList.toggle('lift', !!(d && d.ue === e.id));
++      c.setAttribute('aria-label', ueName(e) + ' · ' + ueLenAria(e.len) + (e.g ? ' · verknüpft' : '') + ' – antippen: Blatt, ziehen: verschieben, aus dem Song ziehen: löschen, Griff links: Länge');
++    }
++    const vis = left + w > -44 && left < W + 44; if (c.hidden === vis) c.hidden = !vis;
++  }
++  for (const [id, c] of UE.chips) if (!seen.has(id)) { c.remove(); UE.chips.delete(id); }
++}
++/* ---------- Chip-Blatt (UE-B: Länge, Verknüpfung, Vorhören, Entfernen; das volle Nachbearbeiten bringt UE-E) ---------- */
++function ueChipSheet(id) {
++  const e0 = ueFind(id); if (!e0 || svRecBusy()) return;
++  haptic('tick');
++  openPop(null, p => {
++    p.classList.add('msheet', 'uesheet'); guardTouch(p);
++    const paint = () => {
++      const e = ueFind(id); if (!e) { closePop(); return; }
++      const ed = ueEdges().find(x => x.m === e.m), n = e.g ? S.song.ue.filter(x => x.g === e.g).length : 0, tw = ueTwins(id).length;
++      const B = (a, html, o) => `<button class="rb ms-b${o && o.on ? ' on' : ''}" data-a="${a}"${o && o.dis ? ' disabled' : ''}${o && o.aria ? ' aria-label="' + esc(o.aria) + '"' : ''}>${html}</button>`;
++      p.innerHTML = `<div class="ms-h"><b>◆ ${esc(ueName(e).toUpperCase())}</b><span>· ${ed ? 'Kante Takt ' + (ed.bar + 1) + ' · ' + esc((ed.from || 'Anfang') + ' → ' + ed.to) : 'lose · Schlag ' + (+(e.at + 1).toFixed(2))}</span><button class="rb ms-x" data-a="x" aria-label="Schließen">✕</button></div>` +
++        `<div class="ms-r ue-lr"><span class="ue-ll">Länge</span>` + UE_GRIP.map(v => B('len' + v, ueLenTxt(v), {on: Math.abs(e.len - v) < 1e-9, aria: 'Länge ' + ueLenAria(v)})).join('') + `</div>` +
++        `<div class="ms-r">` + B('prev', '▶ Vorhören') + (n ? B('only', 'Nur hier ändern', {aria: 'Diese Kopie lösen – die anderen ' + (n - 1) + ' bleiben verknüpft'}) : B('all', tw ? 'Überall (' + (tw + 1) + ')' : 'Überall', {dis: !tw, aria: 'An allen gleichen Kanten'})) + B('del', '✕ Entfernen') + `</div>` +
++        (n ? `<div class="kon-tip">Verknüpft mit ${n - 1} ${n - 1 === 1 ? 'Kopie' : 'Kopien'} – eine Änderung gilt für alle.</div>` : '');
++    };
++    paint(); p._paint = paint;
++    onTap(p, b => {
++      const a = b.dataset.a, e = ueFind(id); if (!e) { closePop(); return; }
++      if (a === 'x') { closePop(); return; }
++      if (a === 'prev') { uePreview(id); return; }
++      if (a === 'del') { const nm = ueName(e); closePop(); if (ueRemove(id)) toast(nm + ' entfernt', songUndoAct()); return; }
++      if (a === 'all') { const k = ueEverywhere(id); if (k) toast(ueName(e) + ' an ' + (k + 1) + ' Kanten · verknüpft', songUndoAct()); paint(); return; }
++      if (a === 'only') { if (ueUnlink(id)) toast(ueName(e) + ': nur hier', songUndoAct()); paint(); return; }
++      if (a.startsWith('len')) { const v = +a.slice(3); if (ueSetLen(id, v)) toast(ueName(e) + ' · ' + ueLenTxt(v), songUndoAct()); paint(); }
++    }, 'button[data-a]');
++  }, {name: 'uechip'});
++  popDock(UI.pop && UI.pop.el);
++}
++const UE_API = {
++  ueLib: () => deep(UE_LIB), ueLibAdd: l => ueLibAdd(deep(l)), ueList: () => deep(S.song && S.song.ue ? S.song.ue : []), ueEdges: () => ueEdges(),
++  uePlace: (lib, mark, o) => uePlace(lib, mark, o), ueMove: (id, mark) => ueMove(id, mark), ueRemove: id => ueRemove(id),
++  ueEverywhere: id => ueEverywhere(id), ueUnlink: id => ueUnlink(id), ueSetLen: (id, len) => ueSetLen(id, len), ueTwins: id => ueTwins(id).map(x => x.m),
++  uePreview: x => { const r = uePreview(x); return r ? Object.assign({}, r) : null; }, ueBar: v => ueBar(v), ueSheet: id => ueChipSheet(id),
++  ueHits: () => { ueFresh(); return UE.hits.map(h => ({sb: h.sb, n: h.n, v: h.v, t: h.t, id: h.id})); },
++  ueInfo: () => ({bar: !!(UE.bar && !UE.bar.hidden), tab: UE.tab, drag: UE.drag ? {kind: UE.drag.kind, m: UE.drag.m, over: UE.drag.over} : null, chips: [...UE.chips.keys()], pend: UE.pend.length}),
++};
++
+ const SYNQUENZER = {
+   // ND4/ND2: Drum-Engine MD_NAME (Quelle je Pad, Offline-Render, Zustand, SOLO PART)
+   setPadSource: (pad, src) => setPadSource(pad, src), padSource: pad => { const sl = resolveDrum(pad); return sl ? (mdIsSrc(sl.id) ? 'md' : 'drum') : null; },
+@@ -57689,8 +58355,9 @@
+   const nm = partUniq(String(name || '').trim().slice(0, 12) || partSuggest(), k);
+   S.parts[k] = normPart(Object.assign({name: nm, color: PART_COLORS[k % PART_COLORS.length], src: 'song'}, tp), k, NT());
+   S.parts[k].len = partLen(S.parts[k]);
++  const ueOld = song.ue ? deep(song.marks) : null;                       // UE (wie KON)
+   marksCut(song, a, e, true);                                            // the content stays as it is; only the marks change
+-  const id = newMarkId(song); song.marks.push({id, a, len: e - a, part: S.parts[k].id}); songTidy(song);
++  const id = newMarkId(song); song.marks.push({id, a, len: e - a, part: S.parts[k].id}); if (ueOld) ueReanchor(song, ueOld); songTidy(song);
+   undoPush({kind: 'group', label: 'Zusammengefasst: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
+   partsChanged(); songChanged();
+   return {part: k, name: nm, mark: (song.marks.find(m => m.a === a && m.part === S.parts[k].id) || {}).id || id};
+@@ -57847,9 +58514,10 @@
+   const nm = partUniq(String(name || '').trim().slice(0, 12) || partSuggest(), k);
+   S.parts[k] = normPart(Object.assign({name: nm, color: PART_COLORS[k % PART_COLORS.length], src: 'song'}, tp), k, NT());
+   S.parts[k].len = partLen(S.parts[k]);
++  const ueOld = song.ue ? deep(song.marks) : null;                       // UE: Übergänge klingen weiter (Kante weg → lose am Schlag)
+   marksCut(song, a, e, true);                                            // the content stays as it is (the song sounds the same); only the marks change
+   const cut = song.marks.filter(m => !ids0.has(m.id)).map(m => m.id);
+-  song.marks.push({id: newMarkId(song), a, len: e - a, part: S.parts[k].id}); songTidy(song);
++  song.marks.push({id: newMarkId(song), a, len: e - a, part: S.parts[k].id}); if (ueOld) ueReanchor(song, ueOld); songTidy(song);
+   const m = song.marks.find(x => x.a === a && x.part === S.parts[k].id);
+   if (m) { const kn = {mark: m.id, part: m.part, at: a, len: e - a, sig: konSig(song, a, e), mk, cut, ch}; if (ks.length) kn.ks = ks; (song.kons || (song.kons = [])).push(kn); }
+   undoPush({kind: 'group', label: 'Konsolidiert: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
+@@ -57861,7 +58529,7 @@
+ function konRestore(id) {
+   const song = S.song; if (!song || R.songRec) return false;
+   const kn = konOf(id), m = kn && song.marks.find(x => x.id === id); if (!m) return false;
+-  const bp = partSnap(), bs = songSnapshot(), a = m.a, e = m.a + m.len, nm = markLabel(m);
++  const bp = partSnap(), bs = songSnapshot(), a = m.a, e = m.a + m.len, nm = markLabel(m), ueOld = song.ue ? deep(song.marks) : null;
+   song.kons = song.kons.filter(k => k !== kn);
+   if (a === kn.at && m.len === kn.len && konSig(song, a, e) === kn.sig) {
+     const drop = new Set([kn.mark].concat(kn.cut, kn.mk.map(x => x.id)));
+@@ -57888,6 +58556,7 @@
+     }
+   }
+   for (const x of kn.ks || []) if (song.marks.some(y => y.id === x.mark) && !song.kons.some(y => y.mark === x.mark)) song.kons.push(deep(x));   // the Ursprünge inside come back
++  if (ueOld) ueReanchor(song, ueOld);                                       // UE: die Übergänge hängen wieder an ihren Kanten
+   songTidy(song);
+   const k = +kn.part.slice(1) - 1;
+   if (S.parts[k] && !song.marks.some(x => x.part === kn.part)) { S.parts[k] = null; if (R.part && !R.part.tmp && R.part.i === k) R.part = null; }
+@@ -58161,6 +58830,7 @@
+ Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
+ Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
+ Object.assign(SYNQUENZER, KON_API);               // KON: Block & Konsolidieren
++Object.assign(SYNQUENZER, UE_API);                // UE-A/B: Übergänge auf der Schnittkante
+ Object.assign(SYNQUENZER, S012_API);              // S0/S1/S2: Teil bearbeiten, überarbeiten, zusammenfassen
+ Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
+ Object.assign(SYNQUENZER, G9_API);                // G9: Songtext-Bedienung (Text-Modus)

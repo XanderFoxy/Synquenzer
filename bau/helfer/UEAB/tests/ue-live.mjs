@@ -33,7 +33,7 @@ const PROBE = async pg => pg.evaluate(async () => {
   try {
     for (let rep = 0; rep < 7; rep++) {
       const t0 = performance.now();
-      for (let w = 0; w < 18 * 4 * 4 * 24; w++) {
+      for (let w = 0; w < 18 * 4 * 4 * 24 * 6; w++) {   // ≈ 60 ms je Lauf (Zeitgeber-Raster 0,1 ms fällt weg)
         const a = b0 + (w % (18 * 16)) * .25, e = a + .25;
         if (has && S.song.ue) ueTick(a, e);
         for (let i = 0; i < NT(); i++) scheduleTrack(i, a, e);
@@ -42,26 +42,26 @@ const PROBE = async pg => pg.evaluate(async () => {
       runs.push(performance.now() - t0);
     }
   } finally { window.drumHit = dh; window.spawnClipVoice = sv; SYNQUENZER.songPlay(false); }
-  runs.sort((x, y) => x - y); return {ms: +runs[1].toFixed(3), hits: nh / 7};   // zweitbester von 7 Läufen (ms; Störungen durch GC/Zeitgeber fallen weg)
+  runs.sort((x, y) => x - y); return {ms: +runs[1].toFixed(3), hits: nh / 7 / 6};   // zweitbester von 7 Läufen (ms; Störungen durch GC/Zeitgeber fallen weg)
 });
-process.env.APP = BASE; const LB = await import('./lib.mjs?base'); const ob = await LB.open({});
+const ob = await open({app: BASE, browser: b});   // dieselbe Browser-Instanz (sonst misst man die Instanz mit)
+const o8 = await open({browser: b});                 // eigene Seite mit 8 Übergängen (kein Umschalten während der Messung)
 await ob.p.evaluate(s => SYNQUENZER.setSong(s), SONG18);
 await p.evaluate(s => SYNQUENZER.setSong(s), SONG18);
-// abwechselnd messen (Basis, neu, Basis, neu …), je der beste Wert: Zeitgeber-Raster und GC streuen mehr als der gesuchte Unterschied
+await o8.p.evaluate(s => SYNQUENZER.setSong(s), SONG18);
+await o8.p.evaluate(() => { for (const m of S.song.marks.slice(1)) SYNQUENZER.uePlace(['p-tom-kurz', 'p-snare-lauf'][+m.id.slice(1) % 2], m.id); });
+const n8 = await o8.p.evaluate(() => SYNQUENZER.ueList().length);
+// reihum messen (Basis, neu ohne, neu mit 8), je der beste Wert
 const MB = [], M0 = [], M8 = [];
-for (let r = 0; r < 4; r++) { MB.push(await PROBE(ob.p)); M0.push(await PROBE(p)); }
-await p.evaluate(() => { for (const m of S.song.marks.slice(1)) SYNQUENZER.uePlace(['p-tom-kurz', 'p-snare-lauf'][+m.id.slice(1) % 2], m.id); });
-const n8 = await p.evaluate(() => SYNQUENZER.ueList().length);
-for (let r = 0; r < 4; r++) { M8.push(await PROBE(p)); await p.evaluate(s => { const u = S.song.ue; SYNQUENZER.setSong(s); }, SONG18); M0.push(await PROBE(p)); await p.evaluate(() => SYNQUENZER.undo()); MB.push(await PROBE(ob.p)); }
+for (let r = 0; r < 5; r++) { MB.push(await PROBE(ob.p)); M0.push(await PROBE(p)); M8.push(await PROBE(o8.p)); }
 const best = L => L.reduce((x, y) => (y.ms < x.ms ? y : x));
 const B_ = best(MB), O_ = best(M0), E_ = best(M8), mb = B_.ms, m0 = O_.ms, m8 = E_.ms;
 const per0 = m0 / O_.hits, per8 = m8 / E_.hits;   // ms je geplanter Note
+await o8.p.context().close();
 await ob.p.evaluate(s => SYNQUENZER.setSong(s), SONG16);
 const theirs = await ob.p.evaluate(() => SYNQUENZER.serialize());
-await ob.b.close();
 ok('UE-06 ohne Übergänge gleich zur Basis (±5 %)', Math.abs(m0 - mb) <= mb * .05 && B_.hits === O_.hits, {basis_ms: mb, neu_ms: m0, noten: [B_.hits, O_.hits]});
-// Die Platzhalter-Fills haben mehr Noten als der Groove, den sie ersetzen: der Mehraufwand je Note zählt (die Noten selbst kosten wie Clip-Noten)
-ok('UE-06 mit 8 Übergängen: Scheduler-Zeit je Note höchstens +10 %', n8 === 8 && per8 <= per0 * 1.10, {ohne_ms: m0, mit_ms: m8, noten: [O_.hits, E_.hits], je_note_us: [+(per0 * 1000).toFixed(3), +(per8 * 1000).toFixed(3)], gesamt_plus: +((m8 / m0 - 1) * 100).toFixed(1) + ' %'});
+ok('UE-06 mit 8 Übergängen höchstens +10 % (Stoppuhr, bester von 5 Läufen)', n8 === 8 && m8 <= m0 * 1.10, {ohne_ms: m0, mit_ms: m8, plus: +((m8 / m0 - 1) * 100).toFixed(1) + ' %', noten: [O_.hits, E_.hits], je_note_us: [+(per0 * 1000).toFixed(3), +(per8 * 1000).toFixed(3)]});
 // ---------- North: ein Modell-Pad (Quelle MD) spielt den Übergang
 await p.evaluate(s => SYNQUENZER.setSong(s), SONG16);
 await p.evaluate(() => SYNQUENZER.uePlace('p-tom-kurz', 'M2'));

@@ -8,10 +8,10 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 export const APP = process.env.APP || path.resolve(here, '../index.html');
 export const OUT = process.env.OUT || '/tmp/claude-0/-home-user-Synquenzer/ea285464-00d9-5b38-9850-90ab7dc52da1/scratchpad/ue';
 export async function open(o = {}) {
-  const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
-  const p = await b.newPage({viewport: {width: o.w || 428, height: o.h || 926}, deviceScaleFactor: o.dpr || 1, hasTouch: o.touch !== false, isMobile: o.touch !== false});
+  const b = o.browser || await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+  const p = await (await b.newContext({viewport: {width: o.w || 428, height: o.h || 926}, deviceScaleFactor: o.dpr || 1, hasTouch: o.touch !== false, isMobile: o.touch !== false})).newPage({viewport: {width: o.w || 428, height: o.h || 926}, deviceScaleFactor: o.dpr || 1, hasTouch: o.touch !== false, isMobile: o.touch !== false});
   const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  await p.goto('file://' + APP + (o.q || '')); await p.waitForTimeout(o.wait || 1500);
+  await p.goto('file://' + (o.app || APP) + (o.q || '')); await p.waitForTimeout(o.wait || 1500);
   await p.evaluate(() => { try { ensureAudio(); } catch (e) {} });
   await p.waitForFunction(() => window.SynthHost && SynthHost.state !== 'loading' && AU.ctx, null, {timeout: 10000}).catch(() => {});
   await p.waitForTimeout(300);

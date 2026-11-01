@@ -27309,7 +27309,7 @@ function setSongView(on) {
   EL.gridArea.classList.toggle('song', on); EL.app.classList.toggle('songv', on);
   EL.songView.hidden = !on; hintSideSync(); if (on) pickCancel();
   if (typeof WP !== 'undefined' && WP.ed) wpClose();          // F1: der Marken-Editor endet mit dem Wechsel der Ansicht
-  if (UI.pop && /^(mark|place|rangemore|aspart|partlist|markname|partcolor|cell)$/.test(UI.pop.name || '')) closePop();   // V2e: song sheets end with the view
+  if (UI.pop && /^(mark|place|rangemore|aspart|partlist|markname|partcolor|cell|uechip|uetabs)$/.test(UI.pop.name || '')) closePop();   // V2e: song sheets end with the view (UE-B: Chip-Blatt, Reiter-Liste)
   if (!on) { SV.mark = null; SV.copy = null; SV.cell = null; svHintFree(); if (UE.bar && !UE.bar.hidden) ueBar(false); }
   rangeBarSync();
   folReset(['song']);
@@ -57084,18 +57084,34 @@ function ueBuild() {
   UE.mutes = mutes;
 }
 function ueFresh() { if (UE.ref !== (S.song ? S.song.ue : null) || UE.ver !== (UI.songVer | 0)) ueBuild(); }
-// die „ersetzt“-Fenster der Spur i (nur während ▶ SONG mit Übergängen), sonst null
-function ueMutes(i) { if (!R.songPlay || !S.song || !S.song.ue) return null; ueFresh(); return UE.mutes && UE.mutes[i] || null; }
+// die „ersetzt“-Fenster der Spur i in Transport-Schlägen (nur während ▶ SONG mit Übergängen), sonst null; umgerechnet mit
+// songBeatOf (vor dem Schleifen-/Sprung-Schlag prevOff, danach off) und gemerkt, bis sich Song oder Versatz ändern
+function ueMutes(i) {
+  const sp = R.songPlay, song = S.song; if (!sp || !song || !song.ue) return null;
+  if (UE.ref !== song.ue || UE.ver !== (UI.songVer | 0)) ueBuild();
+  const l = UE.mutes[i]; if (!l) return null;
+  const c = UE.mc || (UE.mc = {t: []}), wr = sp.wrapAt != null ? sp.wrapAt : null, pv = wr != null ? sp.prevOff : null;
+  if (c.ref !== UE.mutes || c.off !== sp.off || c.wr !== wr || c.pv !== pv) { c.ref = UE.mutes; c.off = sp.off; c.wr = wr; c.pv = pv; c.t = []; }
+  let m = c.t[i]; if (m) return m;
+  m = [];
+  for (const w of l) {
+    if (sp.wrapAt != null) { const a = w[0] + sp.prevOff, b = Math.min(w[1] + sp.prevOff, sp.wrapAt); if (b > a) m.push([a, b]); const a2 = Math.max(w[0] + sp.off, sp.wrapAt), b2 = w[1] + sp.off; if (b2 > a2) m.push([a2, b2]); }
+    else m.push([w[0] + sp.off, w[1] + sp.off]);
+  }
+  m.sort((p, q) => p[0] - q[0]); m.lo = m.length ? m[0][0] : Infinity; m.hi = m.length ? Math.max(...m.map(w => w[1])) : -Infinity;
+  return (c.t[i] = m);
+}
 function ueMutedAt(l, B) {
-  const sb = songBeatOf(B); if (sb == null || sb < l.lo - 1e-9 || sb >= l.hi - 1e-9) return false;
-  for (let k = 0; k < l.length; k++) { const w = l[k]; if (sb < w[0] - 1e-9) return false; if (sb < w[1] - 1e-9) return true; }
+  if (B < l.lo - 1e-9 || B >= l.hi - 1e-9) return false;
+  for (let k = 0; k < l.length; k++) { const w = l[k]; if (B < w[0] - 1e-9) return false; if (B < w[1] - 1e-9) return true; }
   return false;
 }
 // die Treffer des Fensters [b0, b1) (Schläge des Transports) vormerken; scheduleDrums nimmt die seiner Spur in seine Zeitordnung
 // (Choke/Monophonie wie Clip-Treffer), ueFlush spielt den Rest (Spur ohne laufenden Clip). only = nur Spur only, late = nachträglich
 function ueTick(b0, b1, only, late) {
   const sp = R.songPlay, song = S.song; if (!sp || !song || !song.ue || !(b1 > b0) || !AU.ctx) return;
-  ueFresh(); if (!UE.hits.length) return;
+  if (UE.ref !== song.ue || UE.ver !== (UI.songVer | 0)) ueBuild();
+  if (!UE.hits.length) return;
   if (sp.wrapAt != null) { ueRun(b0, b1, sp.prevOff, -Infinity, sp.wrapAt, only, late); ueRun(b0, b1, sp.off, sp.wrapAt, Infinity, only, late); }
   else ueRun(b0, b1, sp.off, -Infinity, Infinity, only, late);
 }
@@ -57117,6 +57133,7 @@ function ueRun(b0, b1, off, lo, hi, only, late) {
 }
 // scheduleDrums: die vorgemerkten Treffer der Spur i im Fenster [from, to) in ev (gleicher Schlüssel = ein Treffer, lautere Velocity)
 function uePull(i, from, to, ev) {
+  if (!UE.np) return;
   const P = UE.pend;
   for (let k = 0; k < P.length; k += 3) {
     const h = P[k]; if (!h || h.t !== i) continue;
