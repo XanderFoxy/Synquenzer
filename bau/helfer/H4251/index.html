@@ -1813,7 +1813,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 @keyframes recPulseB{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
 .takt .lbl.recl{color:var(--rec);font-weight:700}
 #countin .ciT{margin-top:2px;color:var(--text-dim);letter-spacing:.08em;max-width:92%;text-align:center;line-height:1.35}
-#countin .ciH{margin-top:8px;font-size:12px;letter-spacing:.02em;line-height:1.3;max-width:min(92%,420px);text-align:center;color:var(--text)}
+#countin .ciH{margin-top:8px;font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;line-height:1.3;max-width:min(calc(100% - 12px),420px);text-align:center;color:var(--text)}
 /* slots: ■ on playing clips, queued stop "stopp in N" dim at 4 Hz, big count digit, red fill while recording */
 .slot .sq{position:absolute;right:3px;bottom:2px;font-size:10px;line-height:1;color:var(--tc);display:none;pointer-events:none;z-index:3}
 .slot.playing .sq{display:block}
@@ -21190,10 +21190,33 @@ function recCdCatchUp() {
   const b0 = Math.ceil(t2b(c.currentTime + .005) - 1e-9);
   for (let b = Math.max(0, b0); b <= R.lastClick && b < R.schedBeat; b++) if (recCdClick(b)) click(b2t(b), b % 4 === 0);
 }
+// H5 (4.25.1): ● auf STIMME ohne 🎤 – das Mikro startet im selben Tipp; Einzähler/Transport erst, wenn es bereit ist
+// (phase 'live', ≥ 0,5 s Ringpuffer, keine Kurz-Einmessung läuft); höchstens 4 s, danach Abbruch statt leerer Aufnahme
+const MICW = {iv: 0, t0: 0, cal: false, calSeen: false, okAt: 0};
+function recMicWaitEnd() { if (MICW.iv) clearInterval(MICW.iv); MICW.iv = 0; UI.dirty.all = true; }
+function recMicStart() {
+  if (!micAvail()) { toast('Kein Mikrofon – Gesang braucht 🎤 (Pages-Seite in Safari)'); return; }
+  const P = stProf(), rt = P.route || 'speaker';
+  if (!P.prof[rt]) { stStart({}); toast('Erst einmessen, dann ●'); return; }
+  if (!stStart({})) { toast('Mikro noch nicht bereit – ● noch einmal'); return; }
+  toast('🎤 an – gleich geht\'s los');
+  Object.assign(MICW, {t0: performance.now(), cal: ST.route === 'speaker', calSeen: false, okAt: 0});
+  MICW.iv = setInterval(() => {
+    if (!ST.on || ST.phase === 'off' || !ST.run) { recMicWaitEnd(); return; }       // stFail: dessen Meldung genügt
+    if (ST.cal) MICW.calSeen = true;
+    const g = ST.ring, ok = ST.phase === 'live' && g && g.end >= 0 && g.end - g.start >= .5 * g.sr && !ST.cal && (!MICW.cal || MICW.calSeen);
+    if (ok) { if (!MICW.okAt) MICW.okAt = performance.now(); else if (performance.now() - MICW.okAt >= 150) { recMicWaitEnd(); recPress(); return; } }
+    else MICW.okAt = 0;
+    if (performance.now() - MICW.t0 > 4000) { recMicWaitEnd(); toast('Mikro noch nicht bereit – ● noch einmal'); }
+  }, 60);
+  UI.dirty.all = true;
+}
 function recPress(atT) {
   ensureAudio(); const c = AU.ctx; if (!c) return;
   const tP = pressTime(atT);
+  if (MICW.iv) { recMicWaitEnd(); toast('Aufnahme abgebrochen'); return; }   // H5: zweiter Druck während „🎤 wird bereit“
   if (rec.state !== 'off') { recFinishPress(tP); return; }
+  if (S.tracks[R.selT] && S.tracks[R.selT].stimme && !ST.on) { recMicStart(); return; }   // H5
   if (rec.tail && rec.tail.emptyCheck) finishTail();
   if (R.kbMode === 'transpose') { setKbMode('play'); toast('Tastatur: SPIELEN'); }
   const ti = R.selT, si = R.selS, tr = S.tracks[ti], clip = tr.clips[si];
@@ -27064,14 +27087,16 @@ function renderTakt(bAud) {
   if (cdOn) UI.cdWas = true; else if (UI.cdWas && !ci0) { UI.cdWas = false; if (recActive() || (R.songRec && R.songRec.over)) UI.cdGo = performance.now() + 500; }
   const go = !ci0 && !cdOn && UI.cdGo && performance.now() < UI.cdGo;
   if (!go) UI.cdGo = 0;
-  const ci = ci0 || cdOn || go;
-  if (ci !== UI.last.ci) {
-    UI.last.ci = ci; EL.countin.classList.toggle('show', ci);
+  const mw = !!MICW.iv;                                                // H5: „🎤 wird bereit …“
+  const ci = ci0 || cdOn || go || mw;
+  if (ci !== UI.last.ci || mw !== !!UI.last.ciMw) {
+    UI.last.ci = ci; UI.last.ciMw = mw; EL.countin.classList.toggle('show', ci);
     // the overlay also names the target of the take: „Synth 4 · Szene 1“ (§3.1)
     if (ci && EL.ciTgt) EL.ciTgt.textContent = recCiTgt();                 // H1: + Begleitung
     if (ci && EL.ciHint) EL.ciHint.textContent = recCiHint();              // H6
   }
-  if (go) { if (UI.last.ciNum !== '●') { UI.last.ciNum = '●'; EL.ciNum.textContent = '●'; EL.ciNum.classList.add('go'); } }
+  if (mw) { if (UI.last.ciNum !== '…') { UI.last.ciNum = '…'; EL.ciNum.textContent = '…'; } if (EL.ciTgt && EL.ciTgt.textContent !== '🎤 wird bereit …') { EL.ciTgt.textContent = '🎤 wird bereit …'; if (EL.ciHint) EL.ciHint.textContent = ''; } }
+  else if (go) { if (UI.last.ciNum !== '●') { UI.last.ciNum = '●'; EL.ciNum.textContent = '●'; EL.ciNum.classList.add('go'); } }
   else if (ci) {
     if (UI.last.ciNum === '●') EL.ciNum.classList.remove('go');
     const d = cdOn ? String(Math.max(1, Math.ceil(cd - 1e-6))) : String(clamp(-Math.floor(bAud), 1, ciMax()));
