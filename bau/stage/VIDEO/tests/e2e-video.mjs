@@ -39,14 +39,14 @@ const setup = await p.evaluate(async () => {
     const env = Math.min(1, t * 20, (4 - t) * 20) * (.6 + .4 * Math.min(1, (t % 1) * 8)); let v = 0; for (let h = 1; h <= 8; h++) v += Math.sin(h * ph) / (h * (h > 2 ? 1.6 : 1)); pcm[i] = Math.round(v * env * 9000); }
   const tk = await A.tkInject({pcm: Array.from(pcm), sr, scene: 0, len: 2});
   const st = tk.track, r = {t: st, s: 0};
-  let style = null; for (const id of ['pop', '80', 'gospel']) { try { if (A.g6pStyle(r, id)) { style = id; break; } } catch (e) {} }
+  let style = null; for (const id of ['pop', '80', 'gospel']) { try { if (await A.g6pStyle(r, id)) { style = id; break; } } catch (e) {} }
   // second drum clip (slot 1): snare on 2 and 4 together with the kick (VV4-C: the shown voice switches only on a hit of the other)
   const D = DRUM_T, nt = NT(), lanes = Array.from({length: nt}, () => []);
-  lanes[1] = [{bar: 0, slot: 0}]; lanes[2] = [{bar: 0, slot: 0}]; lanes[D] = [{bar: 0, slot: 0}, {bar: 2, slot: 1}]; lanes[st] = [{bar: 0, slot: 0}, {bar: 2, slot: 0}];
-  A.setSong({bars: 4, lanes, carrier: [], mel: {}, marks: [{id: 'm1', a: 0, len: 2, name: 'Strophe'}, {id: 'm2', a: 2, len: 2, name: 'Refrain'}]});
-  S.song.xp = [{beat: 8, semi: 2}];                                   // Teil-Transposition +2 ab Takt 3
-  const info = A.g6pInfo ? A.g6pInfo(r) : null;
-  return {st, D, style, chorV: info && info.chor ? info.chor.v : (S.tracks[st].clips[0].audio.chor || {}).v, voices: ((S.tracks[st].clips[0].audio.chor || {}).voices || []).length,
+  lanes[1] = [{bar: 0, slot: 0}]; lanes[2] = [{bar: 2, slot: 0}]; lanes[D] = [{bar: 0, slot: 1}, {bar: 4, slot: 0}]   /* Clip 2 (ohne Snare) zuerst, Clip 1 mit Snare neu ab Takt 5 */; lanes[st] = [{bar: 0, slot: 0}, {bar: 4, slot: 0}];
+  A.setSong({bars: 8, lanes, carrier: [], mel: {}, marks: [{id: 'm1', a: 0, len: 4, name: 'Strophe'}, {id: 'm2', a: 4, len: 4, name: 'Refrain'}]});
+  S.song.xp = [{beat: 24, semi: 2}];                                  // Teil-Transposition +2 ab Takt 7
+  const info = A.g6pInfo(r);
+  return {st, D, style, chorV: info.v, voices: info.chor && info.chor.voices ? info.chor.voices.length : 0, lanes: info.lanes ? info.lanes.lanes.length : 0,
     mel: (S.tracks[2].clips[0] || {notes: []}).notes.length, drum1: !!S.tracks[D].clips[1], bars: S.song.bars};
 });
 ok('Song aufgebaut (Melodie, Drums 2 Clips, STIMME)', setup.mel > 0 && setup.drum1 && setup.st >= 0, setup);
@@ -67,7 +67,7 @@ const diff = (A_, B_) => { let s = 0; for (let i = 0; i < A_.length; i += 3 * 7)
 for (const [fmt, cam] of [['16:9', null], ['9:16', 'app']]) {
   const tag = fmt.replace(':', 'x') + (cam ? '-app' : '') + '-' + WAY;
   await p.evaluate(w => SYNQUENZER.vvTest(w === 'mr' ? {noVE: true} : {opus: true}), WAY);
-  const res = await p.evaluate(o => SYNQUENZER.vvMake(o), {fmt, view: 'auto', cam: cam || undefined, range: {a: 0, b: 4}});
+  const res = await p.evaluate(o => SYNQUENZER.vvMake(o), {fmt, view: 'auto', cam: cam || undefined, range: {a: 0, b: 8}});
   const bl = await p.evaluate(() => SYNQUENZER.vvBlob()), f = OUT + 'e2e-' + tag + '.' + bl.ext; fs.writeFileSync(f, Buffer.from(bl.b64, 'base64'));
   const W = res.W, H = res.H, at = res.logo ? res.logo.at : NaN;
   ok(`${tag}: Video gebaut (${res.how})`, W && H && res.dur > 8, {W, H, dur: res.dur, how: res.how, cam: res.cam, logo: res.logo});
@@ -99,14 +99,14 @@ for (const [fmt, cam] of [['16:9', null], ['9:16', 'app']]) {
   // 3) Pegel (VV4-F): the meters of the render are there and the drawer puts bars into the Song/Matrix picture
   const mt = await p.evaluate(() => { const r = VV.last; return {mtr: !!(r && r.mtr), n: r && r.mtr && r.mtr.Q ? r.mtr.Q.cnt : (r && r.mtr ? 1 : 0)}; });
   const mp = await p.evaluate(([fmt]) => { const [W, H] = VV_SIZE[fmt], c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
-    const st = vvStateAt(VV.last, 1.5); vvDraw(g, W, H, 'song', st, vvRun({view: 'song', range: {a: 0, b: 4}})); const d = g.getImageData(0, 0, W, H).data; let gr = 0;
+    const st = vvStateAt(VV.last, 1.5); vvDraw(g, W, H, 'song', st, vvRun({view: 'song', range: {a: 0, b: 8}})); const d = g.getImageData(0, 0, W, H).data; let gr = 0;
     for (let i = 0; i < d.length; i += 4) if (d[i + 1] > 150 && d[i] < 120 && d[i + 2] < 150) gr++; return {gruen: gr}; }, [fmt]);
   ok(`${tag}: Pegel – Meter-Fenster im Render, Balken im Song-Bild`, mt.mtr && mp.gruen > 50, {mt, mp});
   // 4) Abspann: logo once, centred, keyed over the darkening picture (0.75 s after the song end = 75 % dark), then on black
   if (res.logo) {
-    const S0 = Math.min(W, H) * .6 / 2, cx = W4 / 2, cy = H4 / 2;
-    const fA = frameRgb(f, at - .2, W4, H4), fM = frameRgb(f, at + .8, W4, H4), fL = frameRgb(f, at + .5 + 3, W4, H4);
-    png(f, at + .8, BILD + `e2e-${tag}-logo-ueber-abblende.png`, 540); png(f, at + .5 + 3, BILD + `e2e-${tag}-logo.png`, 540);
+    const S0 = Math.min(W4, H4) * .6 / 2, cx = W4 / 2, cy = H4 / 2;
+    const fA = frameRgb(f, at - .2, W4, H4), fM = frameRgb(f, at + .8, W4, H4), fL = frameRgb(f, at + .5 + 8, W4, H4);
+    png(f, at + .8, BILD + `e2e-${tag}-logo-ueber-abblende.png`, 540); png(f, at + .5 + 8, BILD + `e2e-${tag}-logo.png`, 540);
     const outside = fr => { let s = 0, n = 0; for (let y = 0; y < fr.h; y += 3) for (let x = 0; x < fr.w; x += 3) { if (Math.abs(x - cx) < S0 + 2 && Math.abs(y - cy) < S0 + 2) continue; s += lum(px(fr, x, y)); n++; } return s / n; };
     let bx0 = 1e9, by0 = 1e9, bx1 = -1, by1 = -1, red = 0, redSat = 0;
     for (let y = 0; y < fL.h; y++) for (let x = 0; x < fL.w; x++) { const c = px(fL, x, y); if (lum(c) > 50 || c[0] > 120) { bx0 = Math.min(bx0, x); by0 = Math.min(by0, y); bx1 = Math.max(bx1, x); by1 = Math.max(by1, y); }
@@ -114,7 +114,13 @@ for (const [fmt, cam] of [['16:9', null], ['9:16', 'app']]) {
     const bcx = (bx0 + bx1) / 2, bcy = (by0 + by1) / 2;
     ok(`${tag}: Logo einmal mittig (nicht gekachelt)`, Math.abs(bcx - cx) < W4 * .05 && Math.abs(bcy - cy) < H4 * .05 && bx1 - bx0 <= 2 * S0 + 4 && by1 - by0 <= 2 * S0 + 4, {bbox: [bx0, by0, bx1, by1], mitte: [cx, cy], feld: 2 * S0});
     ok(`${tag}: Logo gekeyt – kein Kasten, außen schwarz`, outside(fL) < 2, {aussen: +outside(fL).toFixed(2)});
-    ok(`${tag}: Rot satt (Luma-Key, nicht ausgewaschen)`, red > 20 && redSat / Math.max(1, red) > .5, {rotPixel: red, saettigung: +(redSat / Math.max(1, red)).toFixed(2)});
+    // the source logo at the same logo time (8 s), scaled like in the video: its red pixels → the video keeps their colour
+    const sz = Math.round(2 * S0), src = {w: sz, h: sz, d: execSync(`ffmpeg -v error -ss 8 -i ${LOGO} -frames:v 1 -vf scale=${sz}:${sz} -f rawvideo -pix_fmt rgb24 -`, {maxBuffer: 1 << 27})};
+    let sr_ = 0, srS = 0, sv = [0, 0, 0], vv = [0, 0, 0], nv = 0;
+    for (let y = 0; y < sz; y++) for (let x = 0; x < sz; x++) { const c = px(src, x, y); if (c[0] > 90 && c[0] > 2 * Math.max(c[1], c[2])) { sr_++; srS += (c[0] - Math.max(c[1], c[2])) / c[0];
+      const q = px(fL, Math.round(cx - S0) + x, Math.round(cy - S0) + y); for (let k = 0; k < 3; k++) { sv[k] += c[k]; vv[k] += q[k]; } nv++; } }
+    sv = sv.map(v => Math.round(v / Math.max(1, nv))); vv = vv.map(v => Math.round(v / Math.max(1, nv)));
+    ok(`${tag}: Rot satt (Luma-Key, Farbe wie in der Logo-Datei)`, nv > 20 && Math.abs(vv[0] - sv[0]) < 30 && vv[1] < sv[1] + 25 && vv[2] < sv[2] + 25, {rotPixel: nv, datei: sv, video: vv});
     const oA = outside(fA), oM = outside(fM), lM = meanL(fM, cx - S0, cy - S0, cx + S0, cy + S0);
     ok(`${tag}: Logo blendet schon während des Abdunkelns ein`, oM > .5 && oM < oA * .5 && lM > 3, {songEnde: +oA.toFixed(1), bei08s: +oM.toFixed(1), logoFeld08s: +lM.toFixed(1)});
   } else ok(`${tag}: Abspann-Logo im Video`, false, res.logo);

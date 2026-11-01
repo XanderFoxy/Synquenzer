@@ -14,21 +14,24 @@ for (const [nm, w, h] of [['P', 428, 926], ['L', 926, 428]]) {
   await p.evaluate(() => SYNQUENZER.songSelect(2, 3)); await p.waitForTimeout(250);
   await p.tap('#rangeBar button[data-a="more"]'); await p.waitForTimeout(300);
   await p.tap('.pop .vvdr button[data-a="vv-spur"]'); await p.waitForTimeout(300);
+  // Stage 4.28.0: Menü aus VV4-B – [Spur …] → [Piano-Roll] [Drum-Sequenzer] [Modulation] → Spur
+  const kinds = await p.evaluate(() => [...document.querySelectorAll('.pop button[data-v]')].map(e => [e.dataset.v, e.disabled]));
+  await p.tap('.pop button[data-v="mod"]'); await p.waitForTimeout(300);
   const m = await p.evaluate(() => {
     const o = {spur: [], mod: [], small: [], hits: [], out: []};
-    for (const e of document.querySelectorAll('.pop button[data-t], .pop button[data-m]')) {
-      const q = e.getBoundingClientRect(), t = e.textContent.trim(); (e.dataset.m != null ? o.mod : o.spur).push(t);
+    for (const e of document.querySelectorAll('.pop button[data-t]')) {
+      const q = e.getBoundingClientRect(), t = e.textContent.trim(); o.mod.push(t);
       if (q.width < 43.5 || q.height < 43.5) o.small.push(t + ' ' + q.width.toFixed(1) + 'x' + q.height.toFixed(1));
       if (q.right > innerWidth || q.bottom > innerHeight || q.left < 0 || q.top < 0) o.out.push(t);
       const cx = q.left + q.width / 2, cy = q.top + q.height / 2;
       for (const [x, y] of [[cx, cy], [cx - 20, cy - 20], [cx + 20, cy + 20]]) { const hh = document.elementFromPoint(x, y); if (!hh || (hh !== e && !e.contains(hh))) o.hits.push(t + ' → ' + (hh ? hh.tagName : 'null')); }
     }
     return o; });
-  ok(nm + ' [Modulation] nur für Spuren mit echter Modulation (SYN 3 ja, SYN 2 FM nein, DRUMS nein)', m.mod.length === 1 && /3/.test(m.mod[0]) && m.spur.length === 3, m);
+  ok(nm + ' [Modulation] nur für Spuren mit echter Modulation (SYN 3 ja, SYN 2 FM nein, DRUMS nein)', m.mod.length === 1 && /3/.test(m.mod[0]) && kinds.length === 3, Object.assign({kinds}, m));
   ok(nm + ' Trefferflächen ≥ 44 px, im Bild, frei', !m.small.length && !m.hits.length && !m.out.length, {small: m.small, hits: m.hits, out: m.out});
   await p.screenshot({path: OUT + '/ui-' + nm + '-spurblatt.png'});
   const u0 = await p.evaluate(() => SYNQUENZER.undoInfo().n);
-  await p.tap('.pop button[data-m="2"]'); await p.waitForTimeout(300);
+  await p.tap('.pop button[data-t="2"][data-v="mod"]'); await p.waitForTimeout(300);
   const r = await p.evaluate(() => ({dir: SYNQUENZER.vvDirGet(), n: SYNQUENZER.undoInfo().n, of: SYNQUENZER.vvDirOf(2, 4)}));
   ok(nm + ' Tipp setzt {a: 2, b: 4, v: mod, t: 2}, 1 Undo-Schritt', JSON.stringify(r.dir) === JSON.stringify([{a: 2, b: 4, v: 'mod', t: 2}]) && r.n === u0 + 1 && r.of === 'mod:2', r);
   const un = await p.evaluate(() => { undo(); const a = SYNQUENZER.vvDirGet(); redo(); return [a, SYNQUENZER.vvDirGet()]; });

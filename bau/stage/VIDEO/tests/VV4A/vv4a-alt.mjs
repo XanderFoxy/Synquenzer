@@ -19,7 +19,9 @@ const res = {checks: {}, n: 0, diff: []};
 for (const k in A.o) { res.n++; if (A.o[k] !== B.o[k]) res.diff.push(k); }
 // Stage 4.28.0 (Regel 26): Auto (Auto-Regie 2, VV4-D) und das Spur-Bild (Piano-Roll/Drum-Sequenzer, VV4-C) sind gewollt neu
 const neu = k => /\|auto\||\|spur:/.test(k);
-res.ueberholt = res.diff.filter(neu); res.diff = res.diff.filter(k => !neu(k));
+// Song/Matrix/Balken: neu ist nur die Pegel-Leiste je Spur (VV4-F, auch leer sichtbar) – Sichtvergleich bilder/vergleich-4270-oben-4280-unten-song.png
+const pegel = k => /\|(song|matrix)\|/.test(k);
+res.ueberholt = res.diff.filter(neu); res.pegel = res.diff.filter(k => !neu(k) && pegel(k)); res.diff = res.diff.filter(k => !neu(k) && !pegel(k));
 res.checks['bilder-gleich ohne Pegel, ohne Auto/Spur (' + res.n + ')'] = res.diff.length === 0 && res.n === CASES.length * TS.length;
 res.checks.konsole = A.errs.length === 0 && B.errs.length === 0; res.errs = [A.errs, B.errs];
 const bad = report('vv4a-alt', res); if (res.diff.length) console.log(res.diff);
