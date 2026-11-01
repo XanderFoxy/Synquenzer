@@ -18103,6 +18103,7 @@ function applyTempoDependents() {
   applyEcho();
   if (typeof S.fxBus.hall.predelay === 'string') applyHall(S.fxBus.hall, false);
   relockLfos();
+  if (typeof g6pcApplyAll === 'function') g6pcApplyAll();   // G6+c: Hall-Vorverzögerung der Chor-Gruppe im Tempo
 }
 
 /* ---------- synth worklet engines (§1.4, §5.4, Anhang D.1, D.11) ---------- */

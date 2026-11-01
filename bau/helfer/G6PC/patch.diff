@@ -1,5 +1,5 @@
 --- ../../snapshots/R-4252.html	2026-11-01 02:03:27.517571390 +0000
-+++ index.html	2026-11-01 02:11:42.421580084 +0000
++++ index.html	2026-11-01 02:17:49.325586530 +0000
 @@ -17994,6 +17994,7 @@
  function applyTrackParams(i, immediate) {
    const A = AU.tracks[i], c = AU.ctx; if (!A || !c) return;
@@ -8,7 +8,15 @@
  }
  /* native LFO 1/2 (§5.5, §9.5): per synth track one FX.TempoLFO per LFO that a route uses (shape, FREI rate or TAKT
     division; Start = FREI only, Einblenden needs the worklet). Routes lfo1/lfo2 -> pitch (cents ×2400 per 1.0 -> each
-@@ -44632,6 +44633,7 @@
+@@ -18102,6 +18103,7 @@
+   applyEcho();
+   if (typeof S.fxBus.hall.predelay === 'string') applyHall(S.fxBus.hall, false);
+   relockLfos();
++  if (typeof g6pcApplyAll === 'function') g6pcApplyAll();   // G6+c: Hall-Vorverzögerung der Chor-Gruppe im Tempo
+ }
+ 
+ /* ---------- synth worklet engines (§1.4, §5.4, Anhang D.1, D.11) ---------- */
+@@ -44632,6 +44634,7 @@
  };
  function g6NormChor(c) {
    if (!c || typeof c !== 'object' || !Array.isArray(c.voices)) return null;
@@ -16,7 +24,7 @@
    const rec = G6_REC.some(r => r[0] === c.rec) ? c.rec : 'terz', voices = [];
    for (const v of c.voices.slice(0, 4)) {
      if (!v || !Array.isArray(v.n)) continue;
-@@ -44724,7 +44726,7 @@
+@@ -44724,7 +44727,7 @@
    }
    return null;
  }
@@ -25,7 +33,7 @@
  /* ---------- Abspielen: Knoten je Stimme (Pegel × Solo → Panorama → Spur; Sends vor dem Pegel an HALL und ECHO) ---------- */
  function g6Node(v, k, i) {
    const c = AU.ctx, key = k + ':' + i; let N = G6.nodes.get(key);
-@@ -44756,6 +44758,7 @@
+@@ -44756,6 +44759,7 @@
  function g6Gain(v, vi) { return g6On(vi) ? 1 : 0; }
  function g6Apply(a, i) {
    const c = a && a.chor; if (!c || !AU.ctx) return;
@@ -33,7 +41,7 @@
    const t = AU.ctx.currentTime;
    const A = g6Auto(a), A0 = A == null ? Math.pow(10, -14 / 20) : A;
    c.voices.forEach((v, vi) => G6_COPY.forEach((C, k) => {
-@@ -44768,6 +44771,7 @@
+@@ -44768,6 +44772,7 @@
  // zu einem Lead-Stück r (tkStartSrc) die Stimmen-Stücke: gleiche Zeit + Versatz der Kopie, gleiche Blenden
  function g6Start(o, r) {
    const a = o.aud, c = a && a.chor; if (!c || o.ctx || !AU.ctx) return;
@@ -41,7 +49,7 @@
    const ctx = AU.ctx, sp = spb(); r.ch = [];
    g6Apply(a, o.i);
    if (G6.solo != null && G6.solo !== -2) { try { r.g.gain.cancelScheduledValues(0); r.g.gain.value = 0; } catch (e) {} }   // Solo einer Stimme: der Lead schweigt
-@@ -44787,7 +44791,10 @@
+@@ -44787,7 +44792,10 @@
    }));
  }
  // mit dem Lead-Stück: enden (tkDrop), sofort stoppen (tkKill), ausblenden (tkFadeAt, tkXfOut)
@@ -53,7 +61,7 @@
  function g6Kill(r) { if (r.ch) for (const x of r.ch) { try { x.s.stop(); } catch (e) {} } }
  function g6Fade(r, t, tau) { if (r.ch) for (const x of r.ch) { try { const p = x.g.gain; if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(t); else p.cancelScheduledValues(t); p.setTargetAtTime(0, t, tau || .004); x.s.stop(t + 10 * (tau || .004) + .01); } catch (e) {} } }
  // neue Stimmen-Fassung (fertig gerechnet, Rezept, Solo): die laufenden Stimmen-Stücke ab jetzt + 30 ms neu (10-ms-Blende), der Lead läuft durch
-@@ -44797,6 +44804,7 @@
+@@ -44797,6 +44805,7 @@
    const at = AU.ctx.currentTime + .03;
    for (const r of TK.src) {
      if (r.dead || !r.o || !r.aud || r.end <= at + .02) continue;
@@ -61,7 +69,7 @@
      if (r.ch) { g6Fade(r, at, .003); }
      if (!r.aud.chor) { r.ch = null; continue; }
      const o = Object.assign({}, r.o, {when: Math.max(at, r.start), off: r.o.off + Math.max(0, at - r.start), fi: .01, end: r.end});
-@@ -44883,7 +44891,7 @@
+@@ -44883,7 +44892,7 @@
        if (d.a === 'del') { g6Del(rr); g6SheetPaint(); return; }
        if (d.a === 'x') closePop();
      }, 'button');
@@ -70,7 +78,7 @@
    return true;
  }
  function g6SheetPaint(p) {
-@@ -44912,6 +44920,281 @@
+@@ -44912,6 +44921,281 @@
    g6Nodes: () => [...G6.nodes.entries()].map(([k, N]) => ({k, g: N.g.gain.value, rev: N.rev.gain.value, dly: N.dly.gain.value, pan: N.pan ? N.pan.pan.value : 0}))
  };
  /* G6-END */
@@ -352,7 +360,7 @@
  /* G7-BEGIN */
  /* =====================================================================================================================
     G7 (Nachtrag 5): Gesang folgt dem Transponieren. STIMME-Clips und Song-Stimme werden vom Transponieren (Träger, „Eine Skala“,
-@@ -45886,6 +46169,7 @@
+@@ -45886,6 +46170,7 @@
  Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
  Object.assign(SYNQUENZER, G2_API);                // G2: Tonhöhe quantisieren, Gesang als Noten
  Object.assign(SYNQUENZER, G6_API);                // G6: Chor-Generator
