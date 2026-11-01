@@ -1,0 +1,557 @@
+--- bau/snapshots/R-4252.html	2026-11-01 02:07:28.557971479 +0000
++++ bau/helfer/G6PF/index.html	2026-11-01 02:31:05.821939063 +0000
+@@ -2095,7 +2095,11 @@
+ /* G2: Takes-Blatt [♪ Tonhöhe · Noten]; Noten-Editor im Blatt des Marken-Editors (#wpSheet.g2) */
+ .tksheet .tkedrow{display:grid;grid-template-columns:3fr 2fr;gap:6px;margin:0 0 6px}
+ .tksheet .tkedrow .mbtn{width:100%;min-height:44px;margin:0}
+-@media (max-height:440px){.tksheet .tk-wp{display:inline-flex;align-items:center;justify-content:center;width:calc(36% - 4px);vertical-align:top;line-height:1.15;padding:0 4px}.tksheet .tkedrow{display:inline-grid;grid-template-columns:3fr 2fr;width:calc(64% - 4px);margin:0 0 4px 8px;vertical-align:top}.tksheet .tkedrow .mbtn{line-height:1.15;padding:0 4px}}   /* quer: ✎ Marken und ♪ Tonhöhe nebeneinander (das Blatt passt weiter ohne Scrollen) */
++.tksheet .tkedrow{grid-template-columns:4fr minmax(50px,2fr) 6fr}.tksheet .tkedrow .mbtn{line-height:1.12;padding:0 3px}
++@media (max-width:400px),(max-height:440px){.tksheet .tkedrow .mbtn{font-size:.86em}}   .tksheet .tkedrow .mbtn.tk-dup{padding:0 2px}   /* G6+f: drei Knöpfe nebeneinander, je höchstens zwei Zeilen */
++.tksheet .tkdup{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 48px;gap:6px;min-width:0}.tksheet .tkdup .mbtn{width:100%;min-height:44px;margin:0;padding:0 4px;line-height:1.12}
++.tksheet .tkof .tk-ofn{flex:1;min-width:0}
++@media (max-height:440px){.tksheet .tk-wp{display:inline-flex;align-items:center;justify-content:center;width:calc(27% - 4px);font-size:.86em;vertical-align:top;line-height:1.15;padding:0 4px}.tksheet .tkedrow{display:inline-grid;grid-template-columns:4fr minmax(50px,2fr) 6fr;width:calc(73% - 4px);margin:0 0 4px 8px;vertical-align:top}.tksheet .tkedrow .mbtn{line-height:1.15;padding:0 4px}}   /* quer: ✎ Marken und ♪ Tonhöhe nebeneinander (das Blatt passt weiter ohne Scrollen) */
+ #wpSheet.g2 .wpcv{min-height:96px}
+ /* G6: Blatt „Chor“ (Rezepte 2 Spalten, Stimmen-Zeilen mit Solo / ♪ Noten / Selbst singen) */
+ .g6sheet .g6rec{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
+@@ -17350,6 +17354,7 @@
+   if (typeof t.uid === 'string' && UID_RE.test(t.uid)) o.uid = t.uid;
+   if (def.kind === 'synth' && t.stimme === true) o.stimme = true;  // VS3: STIMME-Spur (normalizeProject: nur eine, Index ≥ 6)
+   if (o.stimme) { const g = g4Norm(t.gfx); if (g) o.gfx = g; }    // G4: Effekte der STIMME-Spur
++  if (o.stimme && typeof g6pNormLanes === 'function') { const c = g6pNormLanes(t.chor); if (c) o.chor = c; }   // G6+ (§2.2): Chor-Spuren nur an der STIMME-Spur
+   return o;
+ }
+ function normalizeProject(obj) {
+@@ -20960,6 +20965,7 @@
+   if (e.kind === 'tflag') return S.tracks[e.track] && S.tracks[e.track].stimme ? '1' : '0';     // VS3
+   if (e.kind === 'tphase') return tkPhaseOf(e.track, e.scene);                                  // VS-L-fix
+   if (e.kind === 'gfx') return g4Snap(e.track);                                                // G4
++  if (e.kind === 'chorlanes') return g6pLanesSnap(e.track);                                    // G6+: Chor-Spuren
+   return fxSnapshot();
+ }
+ // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
+@@ -20984,6 +20990,7 @@
+   else if (e.kind === 'tflag') tkFlag(e.track, val === '1');
+   else if (e.kind === 'tphase') tkPhaseSet(e.track, e.scene, val);                            // VS-L-fix
+   else if (e.kind === 'gfx') g4Restore(e.track, val);            // G4
++  else if (e.kind === 'chorlanes') g6pLanesRestore(e.track, val);   // G6+: Chor-Spuren
+   else if (e.kind === 'part') partRestore(JSON.parse(val));
+   else restoreFx(JSON.parse(val));
+   UI.dirty.all = true; markDirty();
+@@ -39932,7 +39939,7 @@
+ function tkNormProject(obj, p) {
+   const tk = tkNormTakes(obj && obj.takes); if (tk) p.takes = tk;
+   let st = -1;
+-  p.tracks.forEach((t, i) => { if (t.stimme) { if (st < 0 && i >= BASE_T && t.kind === 'synth') st = i; else { delete t.stimme; delete t.gfx; /* G4: gfx nur an der STIMME-Spur */ } } });
++  p.tracks.forEach((t, i) => { if (t.stimme) { if (st < 0 && i >= BASE_T && t.kind === 'synth') st = i; else { delete t.stimme; delete t.gfx; delete t.chor; /* G4: gfx nur an der STIMME-Spur; G6+: chor ebenso */ } } });
+ }
+ function tkCleanAudio(a) { return a ? JSON.parse(JSON.stringify(a)) : a; }
+ 
+@@ -39974,6 +39981,7 @@
+ function tkLoad(id) {
+   if (TK.buf.has(id) || TK.wait.has(id) || TK.pend.has(id) || TK.missing.has(id)) return;
+   const m = S.takes && S.takes[id]; if (!m) { TK.missing.add(id); UI.dirty.grid = true; return; }
++  if (m.of && g6pfSharedLoad(id)) return;                          // G6+f: dieselben Stücke → derselbe Puffer
+   const p = tkPcm(id).then(pcm => {
+     TK.wait.delete(id);
+     if (!pcm) { TK.missing.add(id); UI.dirty.grid = UI.dirty.song = true; return; }
+@@ -39985,7 +39993,7 @@
+ }
+ // nur die hörbaren Takes (oben in jedem Clip) liegen im Speicher; stumme kommen beim Wählen (FP-IPHONE: ≈ 11,5 MB je Minute)
+ function tkActiveIds() {
+-  const ids = new Set(), add = a => { if (a && a.take) ids.add(a.take); };
++  const ids = new Set(), add = a => { if (a && a.take) { ids.add(a.take); if (a.chor) for (const id of g6pfVoiceIds(a)) ids.add(id); } };   // G6+f: Takes der Chor-Stimmen
+   for (const t of S.tracks) for (const c of t.clips) if (c) add(c.audio);
+   if (S.song) { for (const v of S.song.vox || []) add(v); for (const k in S.song.own || {}) add(S.song.own[k].audio); }
+   return ids;
+@@ -40727,10 +40735,11 @@
+       if (d.a === 'g7') { g7Toggle(rr); if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); return; }   // G-GES: G7 je Take
+       if (d.a === 'g2') { closePop(); g2Open(rr); return; }      // G2: Tonhöhe · Noten
+       if (d.a === 'g6') { closePop(); g6Sheet(rr); return; }     // G6: Chor
++      if (g6pfSheetTap(d, rr)) return;                            // G6+f: Als Chor-Stimme duplizieren, Herkunft
+       if (d.a === 'gc') { tkGc().then(n => { toast(n ? n + (n === 1 ? ' altes Stück' : ' alte Stücke') + ' gelöscht' : 'Nichts aufzuräumen'); if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); }); return; }
+       if (d.a === 'x') closePop();
+     }, 'button[data-k],button[data-a]');
+-  }, {name: 'takes', onClose: clSheetClosed});
++  }, {name: 'takes', onClose: () => { TK.dupAsk = false; clSheetClosed(); }});
+   return true;
+ }
+ function tkSheetPaint(p) {
+@@ -40749,12 +40758,12 @@
+   const per = TK.persist === 'persisted' ? ' · dauerhaft ✓' : TK.persist === 'best-effort' ? ' · nicht dauerhaft – ab und zu exportieren' : '';
+   p.innerHTML = `<h4>STIMME · ${esc(x.label)} · ${segs.length} ${segs.length === 1 ? 'Take' : 'Takes'}</h4>` +
+     (ok ? '' : '<div class="small warn">Audio nur auf der eigenen Seite</div>') +
+-    `<div class="tklist pan-y">${rows}</div>` +
++    `<div class="tklist pan-y">${rows}${g6pfSheetRows(x.a)}</div>` +   /* G6+f: Herkunft der Chor-Stimmen-Takes */
+     `<div class="small">${esc(est + per)}</div>` +
+     (ok ? '<button class="mbtn rb tk-wp" data-a="wp">✎ Marken · Quantisieren</button>' : '') +
+     (ok ? `<div class="tkg57"><button class="mbtn rb tk-g5" data-a="g5"${G5.busy || TK.missing.has(x.a.take) ? ' disabled' : ''}>In Melodie umwandeln</button>` +   // G5
+       `<button class="mbtn rb tk-g7${g7Follows(x.a.take) ? ' on' : ''}" data-a="g7" aria-pressed="${g7Follows(x.a.take)}">${g7Follows(x.a.take) ? '✓ ' : ''}folgt Transponieren</button></div>` : '') +   // G-GES: G7 je Take
+-    (ok ? '<div class="tkedrow"><button class="mbtn rb tk-g2" data-a="g2">♪ Tonhöhe · Noten</button><button class="mbtn rb tk-g6" data-a="g6">Chor</button></div>' : '') +   /* G2 */
++    (ok ? '<div class="tkedrow">' + (TK.dupAsk ? g6pfSheetBtn(x.a) : '<button class="mbtn rb tk-g2" data-a="g2">♪ Tonhöhe · Noten</button><button class="mbtn rb tk-g6" data-a="g6">Chor</button>' + g6pfSheetBtn(x.a)) + '</div>' : '') +   /* G2 */
+     `<div class="savrow"><button class="mbtn rb" data-a="ab"${segs.length > 1 ? '' : ' disabled'}>A/B</button><button class="mbtn rb" data-a="wav"${ok ? '' : ' disabled'}>WAV</button><button class="mbtn rb" data-a="zip"${ok ? '' : ' disabled'}>ZIP + Projekt</button><button class="mbtn rb" data-a="gc"${ok ? '' : ' disabled'}>Aufräumen</button></div>` +
+     '<div class="small">Oben = der hörbare Take. Ein Tipp holt einen älteren Take nach oben (A/B: die zwei obersten tauschen). ✕ = löschen, ↶ holt ihn zurück.</div>';
+   clSheet(p, x);                                                  // VS4: SÄUBERN, A/B Roh │ Sauber
+@@ -40798,7 +40807,7 @@
+ }
+ // ZIP: Projekt-Datei (JSON wie [Speichern]) + takes/<id>.wav je Take, den das Projekt nennt
+ async function tkZipBytes() {
+-  const files = [{name: 'projekt.json', data: new TextEncoder().encode(JSON.stringify(projectFileObj(S, false, true)))}];
++  const files = [{name: 'projekt.json', data: new TextEncoder().encode(JSON.stringify(g6pfZipProject() || projectFileObj(S, false, true)))}];   // G6+f: geteilte Takes mit eigenen Stück-Namen
+   for (const id of tkUsedIds()) { const m = S.takes[id], pcm = await tkPcm(id); if (m && pcm) files.push({name: 'takes/' + id + '.wav', data: tkWav(pcm, m.sr)}); }
+   await clZipAdd(files);                                       // VS4: Referenz je Take (Säubern nach dem Import gleich)
+   return buildZip(files);
+@@ -40808,7 +40817,7 @@
+   return deliver(SQStore.fileName('project', S.name).replace(/\.json$/, '') + '-mit-audio', z, 'zip', 'Projekt + Audio (ZIP)');
+ }
+ function tkUsedIds() {
+-  const ids = new Set(), add = a => { if (a) for (const s of tkSegs(a)) ids.add(s.take); };
++  const ids = new Set(), add = a => { if (a) { for (const s of tkSegs(a)) ids.add(s.take); if (a.chor) for (const id of g6pfVoiceIds(a)) ids.add(id); } };   // G6+f: Chor-Stimmen-Takes ins ZIP
+   for (const t of S.tracks) for (const c of t.clips) if (c) { add(c.audio); if (c.take) ids.add(c.take); }
+   if (S.song) { for (const v of S.song.vox || []) add(v); for (const k in S.song.own || {}) { const c = S.song.own[k]; add(c.audio); if (c.take) ids.add(c.take); } }
+   return [...ids].filter(id => S.takes && S.takes[id]);
+@@ -40848,12 +40857,13 @@
+ // [Aufräumen]: Audio-Stücke, die kein gespeichertes Projekt (auch Verlauf und geparkte) und nicht das offene nennt
+ async function tkGc() {
+   if (!kv || !kv.akeys) return 0;
+-  const keep = new Set(Object.keys(S.takes || {}));
++  const keep = new Set(Object.keys(S.takes || {})), keepCh = new Set();   // G6+f: Stücke nach Namen behalten (geteilte Stücke)
++  for (const id in S.takes || {}) for (const k of S.takes[id].chunks || []) keepCh.add(String(k));
+   for (const u of UNDO.concat(REDO)) { const s = JSON.stringify(u.before || '') + JSON.stringify(u.items || ''); for (const m of s.match(/[0-9a-v]{10}/g) || []) keep.add(m); }
+   const ks = await kv.keys('');
+-  for (const k of ks) { if (!/^(project|proj:|hist:)/.test(k)) continue; let v = null; try { v = await kv.get(k); } catch (e) {} const s = v ? JSON.stringify(v) : ''; const i = s.indexOf('"takes"'); if (i < 0) continue; for (const m of s.match(/"([0-9a-v]{10})":\{"sr"/g) || []) keep.add(m.slice(1, 11)); }
++  for (const k of ks) { if (!/^(project|proj:|hist:)/.test(k)) continue; let v = null; try { v = await kv.get(k); } catch (e) {} const s = v ? JSON.stringify(v) : ''; const i = s.indexOf('"takes"'); if (i < 0) continue; for (const m of s.match(/"([0-9a-v]{10})":\{"sr"/g) || []) keep.add(m.slice(1, 11)); for (const m of s.match(/"[0-9a-v]{10}:\d+"/g) || []) keepCh.add(m.slice(1, -1)); }
+   let n = 0;
+-  for (const k of await kv.akeys()) { const id = String(k).split(':')[0]; if (!keep.has(id) && !TK.pend.has(id)) { await kv.adel(k); n++; } }
++  for (const k of await kv.akeys()) { const id = String(k).split(':')[0]; if (!keep.has(id) && !keepCh.has(String(k)) && !TK.pend.has(id)) { await kv.adel(k); n++; } }
+   TK.gc = {deleted: n, kept: keep.size};
+   return n;
+ }
+@@ -44442,10 +44452,10 @@
+   const vk = o && o.voice != null && x.a.chor && x.a.chor.voices[o.voice] ? o.voice : null;   // G6: Noten einer Chor-Stimme
+   if (QS.open) closeQuantSheet(false, true);
+   closePop(); if (WP.ed) wpClose(); if (G2.ed) g2Close();
+-  const id = x.a.take, segBars = (x.a.out - x.a.in) / spb() / 4;
++  const id = vk == null && o && o.take && S.takes && S.takes[o.take] ? o.take : x.a.take, segBars = (x.a.out - x.a.in) / spb() / 4;   // G6+f: Noten einer entkoppelten/duplizierten Stimme (eigener Take)
+   G2.ed = {r, id, zoom: segBars <= 2.05 ? 0 : 2, va: x.a.in, sel: -1, p: null, ghost: null, tapT: null, sb: null, voice: vk};
+   const sh = EL.wpSheet; sh.innerHTML = ''; sh.classList.add('g2');
+-  const head = el('div', 'qh', `<b>${wpTitlePieces((vk != null ? 'Chor · ' + x.a.chor.voices[vk].name : 'Tonhöhe') + ' · STIMME · ' + x.label)}</b>`);
++  const head = el('div', 'qh', `<b>${wpTitlePieces((vk != null ? 'Chor · ' + x.a.chor.voices[vk].name : id !== x.a.take ? (x.a.chor && x.a.chor.voices.find(v => v.take && v.take.take === id) ? g6pfLaneName(x.a.chor.voices.find(v => v.take && v.take.take === id)) : 'Stimme') : 'Tonhöhe') + ' · STIMME · ' + x.label)}</b>`);
+   const wv = el('button', 'rb wptx', 'WAV'); wv.setAttribute('aria-label', 'Gehörte Fassung als WAV'); wv.addEventListener('click', () => { const E = G2.ed; if (E) g2Wav(E.id); });
+   const ab = el('button', 'rb wpab', 'A/B'); ab.setAttribute('aria-label', 'Original hören (A/B)');
+   ab.addEventListener('click', () => { const E = G2.ed; if (E && E.voice != null) { g6Solo(E.voice); g2Paint(); return; } G2.ab = !G2.ab; wpResync(); g2Paint(); });   // G6: in einer Chor-Stimme = Solo
+@@ -44633,12 +44643,18 @@
+ function g6NormChor(c) {
+   if (!c || typeof c !== 'object' || !Array.isArray(c.voices)) return null;
+   const rec = G6_REC.some(r => r[0] === c.rec) ? c.rec : 'terz', voices = [];
+-  for (const v of c.voices.slice(0, 4)) {
+-    if (!v || !Array.isArray(v.n)) continue;
++  for (const [vi, v] of c.voices.slice(0, 6).entries()) {
++    if (!v || !Array.isArray(v.n) || (vi >= 4 && !(typeof v.lane === 'string' && /^c[1-8]$/.test(v.lane)))) continue;   // G6+f: Stimme 5/6 nur mit Chor-Spur (v1 bleibt bei 4)
+     const n = v.n.slice(0, 4000).filter(x => x && isNum(x.t0) && isNum(x.t1) && x.t1 > x.t0 && isNum(x.m) && isNum(x.iv)).map(x => ({t0: tkR6(x.t0), t1: tkR6(x.t1), m: +clamp(x.m, 0, 127).toFixed(3), iv: clamp(Math.round(x.iv), -36, 36)}));
+     const o = {name: typeof v.name === 'string' ? v.name.slice(0, 40) : 'Stimme', n, pan: isNum(v.pan) ? +clamp(v.pan, -1, 1).toFixed(2) : 0, db: isNum(v.db) ? +clamp(v.db, -60, 12).toFixed(1) : 0, vol: isNum(v.vol) ? +clamp(v.vol, 0, 1).toFixed(2) : 1,
+       rev: isNum(v.rev) ? +clamp(v.rev, 0, 1).toFixed(2) : 0.5, dly: isNum(v.dly) ? +clamp(v.dly, 0, 1).toFixed(2) : 0};
+     const t = v.take ? tkNormSeg(v.take) : null; if (t) o.take = t;
++    // G6+f (additiv, §2.2): Chor-Spur, Regel, eigene Kopien, Breite – fehlen sie, bleibt die Stimme Zeichen für Zeichen wie in 4.25
++    if (typeof v.lane === 'string' && /^c[1-8]$/.test(v.lane)) o.lane = v.lane;
++    if (typeof v.rule === 'string' && G6PF_ROLE.test(v.rule)) o.rule = v.rule;
++    if (Array.isArray(v.dbl)) { const d = v.dbl.filter(q => q && isNum(q.ms) && isNum(q.ct) && isNum(q.p)).slice(0, 4).map(q => ({ms: +clamp(q.ms, 0, 80).toFixed(1), ct: +clamp(q.ct, -50, 50).toFixed(1), p: +clamp(q.p, -1, 1).toFixed(2)})); if (d.length) o.dbl = d; }
++    if (isNum(v.w)) o.w = +clamp(v.w, 0, 1).toFixed(2);
++    if (v.dblOff === true) o.dblOff = true;
+     voices.push(o);
+   }
+   return voices.length ? {rec, dir: c.dir === 'down' ? 'down' : 'up', mix: G6_MIX[c.mix] ? c.mix : '80', voices} : null;
+@@ -44709,6 +44725,7 @@
+ function g6Plan(v, c) { const C = G6_COPY[c]; return {mode: 'soft', notes: v.n.map(n => ({t0: n.t0, t1: n.t1, m: n.m, to: n.m, s: 0, e: n.iv * 100 + C.ct}))}; }
+ // Puffer einer Kopie (oder null, solange er gerechnet wird – dann schweigt diese Kopie)
+ function g6Buf(a, v, c) {
++  if (v.take && g6pfShared(v)) return g6pfBuf(a, v, c);           // G6+f: entkoppelt/dupliziert – eigener Take, eigene Kopien
+   if (v.take) { const b = tkHeard(v.take.take, v.take); if (!b) tkLoad(v.take.take); return b; }
+   const b = g6Lead(a); if (!b) return null;
+   const k = g6Key(v, c, b), hit = G6.cache.get(k); if (hit) { hit.t = performance.now(); return hit.buf; }
+@@ -44724,7 +44741,7 @@
+   }
+   return null;
+ }
+-function g6Ready(a) { const c = a && a.chor; if (!c) return true; for (const v of c.voices) for (let k = 0; k < G6_COPY.length; k++) { if (v.take) { if (!tkHeard(v.take.take, v.take)) return false; continue; } const b = g6Lead(a); if (!b || !G6.cache.has(g6Key(v, k, b))) return false; if (v.take) break; } return true; }
++function g6Ready(a) { const c = a && a.chor; if (!c) return true; for (const v of c.voices) for (let k = 0; k < G6_COPY.length; k++) { if (g6pfShared(v)) { const n = g6pfCopies(v).length; for (let j = 0; j < n; j++) if (!g6pfBuf(a, v, j)) return false; break; } if (v.take) { if (!tkHeard(v.take.take, v.take)) return false; continue; } const b = g6Lead(a); if (!b || !G6.cache.has(g6Key(v, k, b))) return false; if (v.take) break; } return true; }
+ /* ---------- Abspielen: Knoten je Stimme (Pegel × Solo → Panorama → Spur; Sends vor dem Pegel an HALL und ECHO) ---------- */
+ function g6Node(v, k, i) {
+   const c = AU.ctx, key = k + ':' + i; let N = G6.nodes.get(key);
+@@ -44744,9 +44761,11 @@
+ const G6_CAL = 1.9;   // gemessen (BS.1770 am Ausgang, Falsett 80er): die Rechnung oben lag 1,9 dB zu leise (Spur-Lautstärke wirkt nur trocken, Sends vorher)
+ const g6HallK = () => { const h = S.fxBus && S.fxBus.hall || {}; return 2.2 * Math.pow((isNum(h.ret) ? h.ret : .8) / .8, 2) * clamp((isNum(h.decay) ? h.decay : 3.2) / 3.2, .2, 4); };
+ function g6Auto(a) {
+-  const c = a && a.chor, M = G6_MIX[c && c.mix] || G6_MIX['80'], lb = g6Lead(a), el = lb && G6.ke.get(lb); if (!c || !el) return null;
++  const c = a && a.chor, M = G6_MIX[c && c.mix] || G6_MIX['80'], lb = g6Lead(a), el = lb && G6.ke.get(lb);
++  if (c && lb && el == null && c.voices.some(g6pfShared)) g6pfMeasure(lb, a.take);   // G6+f: nur Take-Stimmen → die Lead-Lautheit eigens messen
++  if (!c || !el) return null;
+   let ec = 0, rv = 0, n = 0;
+-  for (const v of c.voices) for (let k = 0; k < (v.take ? 1 : G6_COPY.length); k++) { const b = v.take ? tkHeard(v.take.take, v.take) : (G6.cache.get(g6Key(v, k, lb)) || {}).buf, e = b && G6.ke.get(b); if (e == null) return null; ec += e; rv += v.rev; n++; }
++  for (const v of c.voices) for (let k = 0; k < (g6pfShared(v) ? g6pfCopies(v).length : v.take ? 1 : G6_COPY.length); k++) { const b = g6pfShared(v) ? g6pfBuf(a, v, k) : v.take ? tkHeard(v.take.take, v.take) : (G6.cache.get(g6Key(v, k, lb)) || {}).buf, e = b && G6.ke.get(b); if (e == null) return null; ec += e; rv += v.rev; n++; }   // G6+f: Kopien der Take-Stimmen
+   const K = g6HallK(), st = stimmeT(), lr = st >= 0 && S.tracks[st].sound ? trackFx(S.tracks[st]).rev || 0 : 0, rch = n ? rv / n : 0;
+   const tgt = el * (1 + K * lr * lr) * Math.pow(10, -(M.below - G6_CAL) / 10) / (1 + K * rch * rch);
+   return ec > 0 ? Math.sqrt(tgt / ec) : null;
+@@ -44758,7 +44777,7 @@
+   const c = a && a.chor; if (!c || !AU.ctx) return;
+   const t = AU.ctx.currentTime;
+   const A = g6Auto(a), A0 = A == null ? Math.pow(10, -14 / 20) : A;
+-  c.voices.forEach((v, vi) => G6_COPY.forEach((C, k) => {
++  c.voices.forEach((v, vi) => g6pfCopies(v).forEach((C, k) => {   // G6+f: eigene Kopien (dbl); ohne dbl wie v1
+     const N = g6Node(v, a.take + ':' + vi + ':' + k, i), g = g6Gain(v, vi);
+     N.inp.gain.setTargetAtTime(A0 * Math.pow(10, v.db / 20), t, .01);
+     N.g.gain.setTargetAtTime(g ? (isNum(v.vol) ? v.vol : 1) : 0, t, .01); N.rev.gain.setTargetAtTime(v.rev * (g6On(vi) ? 1 : 0), t, .01); N.dly.gain.setTargetAtTime(v.dly * (g6On(vi) ? 1 : 0), t, .01);
+@@ -44771,17 +44790,18 @@
+   const ctx = AU.ctx, sp = spb(); r.ch = [];
+   g6Apply(a, o.i);
+   if (G6.solo != null && G6.solo !== -2) { try { r.g.gain.cancelScheduledValues(0); r.g.gain.value = 0; } catch (e) {} }   // Solo einer Stimme: der Lead schweigt
+-  c.voices.forEach((v, vi) => G6_COPY.forEach((C, k) => {
+-    if (v.take && k > 0) return;                                  // selbst gesungen: eine Spur, kein künstliches Doppeln
++  c.voices.forEach((v, vi) => g6pfCopies(v).forEach((C, k) => {
++    const own = g6pfOwnDbl(v), sh = g6pfShared(v), one = v.take && !own;   // G6+f: Take-Stimme mit eigenen Kopien (dbl) wird wie errechnet gedoppelt
++    if (one && k > 0) return;                                     // selbst gesungen: eine Spur, kein künstliches Doppeln
+     const b = g6Buf(a, v, k); if (!b) return;
+-    let off = o.off, when = o.when + (v.take ? 0 : C.ms / 1000);
+-    if (v.take) off = v.take.in + (o.off - a.in) + (a.at - v.take.at) * sp;
++    let off = o.off, when = o.when + (one ? 0 : C.ms / 1000);
++    if (v.take && !sh) off = v.take.in + (o.off - a.in) + (a.at - v.take.at) * sp;   // G6+f: geteilte Stücke spielen im Fenster des Lead-Stücks
+     if (off < 0 || off >= b.duration - .002) return;
+-    const end = Math.min(o.end + (v.take ? 0 : C.ms / 1000), when + (b.duration - off)), dur = end - when; if (!(dur > .01)) return;
++    const end = Math.min(o.end + (one ? 0 : C.ms / 1000), when + (b.duration - off)), dur = end - when; if (!(dur > .01)) return;
+     const s = ctx.createBufferSource(), g = ctx.createGain(), G = isNum(r.G) ? r.G : isNum(o.gain) ? o.gain : 1, fi = Math.min(o.fi || 0, dur / 2), fo = Math.min(o.fo || 0, dur / 2);   // G-GES: r.G = Clip-Pegel × VS-P-Ausgleich des Leads – der Chor bleibt im selben Abstand zum Lead
+     s.buffer = b; g.gain.value = fi > 0 ? 0 : G; g.gain.setValueAtTime(fi > 0 ? 0 : G, when); if (fi > 0) g.gain.linearRampToValueAtTime(G, when + fi);
+     if (fo > 0) { g.gain.setValueAtTime(G, end - fo); g.gain.linearRampToValueAtTime(0, end); }
+-    s.connect(g); g.connect(g6Node(v, a.take + ':' + vi + ':' + (v.take ? 0 : k), o.i).inp);
++    s.connect(g); g.connect(g6Node(v, a.take + ':' + vi + ':' + (one ? 0 : k), o.i).inp);
+     try { s.start(when, off); s.stop(end + .005); } catch (e) { try { s.disconnect(); g.disconnect(); } catch (e2) {} return; }
+     r.ch.push({s, g, when, end, G});
+   }));
+@@ -44820,7 +44840,8 @@
+   const notes = (A.notes || []).filter(n => n.t1 > a.in && n.t0 < a.out);
+   if (!notes.length) { toast('Keine Töne erkannt'); return false; }
+   const prevMix = a.chor && a.chor.mix, fresh = !a.chor;
+-  const ok = g6Edit(r, 'Chor · ' + G6_REC.find(q => q[0] === rec)[1], au => { au.chor = {rec, dir: dir || 'up', mix: mix || prevMix || '80', voices: g6Build(r, notes, rec, dir, mix || prevMix || '80')}; });
++  const ok = g6Edit(r, 'Chor · ' + G6_REC.find(q => q[0] === rec)[1], au => { const keep = au.chor ? au.chor.voices.filter(g6pfShared) : [];   /* G6+f: entkoppelte/duplizierte Stimmen bleiben (eigene Aufnahme) */
++    au.chor = {rec, dir: dir || 'up', mix: mix || prevMix || '80', voices: g6Build(r, notes, rec, dir, mix || prevMix || '80').slice(0, Math.max(1, 6 - keep.length)).concat(keep)}; });
+   if (ok && fresh) g6Mix(r, mix || '80', true);   // neu: die Mischung (Lead-Sends, Hall/Echo im Tempo) gleich mit – ein Undo
+   G6.lastMake = {ms: Math.round(performance.now() - t0), n: notes.length};
+   return ok;
+@@ -44878,7 +44899,9 @@
+       if (d.dir && cur) { g6Make(rr, cur.rec, d.dir, cur.mix).then(() => g6SheetPaint()); return; }
+       if (d.mix) { g6Mix(rr, d.mix); g6SheetPaint(); return; }
+       if (d.solo != null) { g6Solo(+d.solo); return; }
+-      if (d.notes != null) { closePop(); g2Open(rr, {voice: +d.notes}); return; }
++      if (d.notes != null) { const vv = cur && cur.voices[+d.notes]; closePop(); if (vv && g6pfShared(vv)) g2Open(rr, {take: vv.take.take}); else g2Open(rr, {voice: +d.notes}); return; }   // G6+f: Take-Stimme → ihr eigener Take
++      if (d.unc != null) { g6pEntkoppeln(rr, +d.unc).then(() => g6SheetPaint()); return; }   // G6+f
++      if (d.bg != null) { if (d.bg) g6pBackground(d.bg); g6SheetPaint(); return; }          // G6+f
+       if (d.self != null) { g6Arm(rr, +d.self); return; }
+       if (d.a === 'del') { g6Del(rr); g6SheetPaint(); return; }
+       if (d.a === 'x') closePop();
+@@ -44892,8 +44915,9 @@
+   const recs = G6_REC.map(([k, l]) => `<button class="mbtn rb" data-rec="${k}"${c && c.rec === k ? ' aria-pressed="true"' : ''}>${esc(l)}</button>`).join('');
+   const dir = c && G6_DIR.has(c.rec) ? `<div class="clab g6dir"><button class="mbtn rb" data-dir="up"${c.dir === 'up' ? ' aria-pressed="true"' : ''}>oben</button><button class="mbtn rb" data-dir="down"${c.dir === 'down' ? ' aria-pressed="true"' : ''}>unten</button></div>` : '';
+   const mix = c ? `<div class="small">Mischung</div><div class="clab">` + Object.keys(G6_MIX).map(k => `<button class="mbtn rb" data-mix="${k}"${c.mix === k ? ' aria-pressed="true"' : ''}>${esc(G6_MIX[k].label)}</button>`).join('') + '</div>' : '';
+-  const vs = c ? '<div class="tklist pan-y">' + c.voices.map((v, k) => `<div class="tkrow g6v"><div class="g6n"><b>${esc(v.name)}</b><small>${v.take ? 'selbst gesungen' : (v.pan < -0.2 ? 'links' : v.pan > 0.2 ? 'rechts' : 'Mitte') + ' · Hall ' + Math.round(v.rev * 100) + ' %'}${G6.arm && G6.arm.k === k ? ' · bereit für ● REC' : ''}</small></div>` +
+-    `<button class="mbtn rb" data-solo="${k}"${G6.solo === k ? ' aria-pressed="true"' : ''}>Solo</button><button class="mbtn rb" data-notes="${k}">♪ Noten</button><button class="mbtn rb" data-self="${k}">Selbst singen</button></div>`).join('') + '</div>' : '';
++  const vs = c ? '<div class="tklist pan-y">' + c.voices.map((v, k) => `<div class="tkrow g6v"><div class="g6n"><b>${esc(g6pfLaneName(v))}</b><small>${g6pfShared(v) ? (S.takes[v.take.take].src === 'dup' ? 'Gegenstimme' : 'entkoppelt') + ' · ' + (v.pan < -0.2 ? 'links' : v.pan > 0.2 ? 'rechts' : 'Mitte') : v.take ? 'selbst gesungen' : (v.pan < -0.2 ? 'links' : v.pan > 0.2 ? 'rechts' : 'Mitte') + ' · Hall ' + Math.round(v.rev * 100) + ' %'}${G6.arm && G6.arm.k === k ? ' · bereit für ● REC' : ''}</small></div>` +
++    `<button class="mbtn rb" data-solo="${k}"${G6.solo === k ? ' aria-pressed="true"' : ''}>Solo</button><button class="mbtn rb" data-notes="${k}">♪ Noten</button>` +
++    (g6pfShared(v) ? (v.rule === 'free' ? `<button class="mbtn rb" data-bg="${esc(v.lane || '')}">Background</button>` : '') : v.take ? `<button class="mbtn rb" data-self="${k}">Selbst singen</button>` : `<button class="mbtn rb" data-self="${k}">Selbst singen</button><button class="mbtn rb" data-unc="${k}"${g6pfComp(x.a) ? ' disabled' : ''}>Entkoppeln</button>`) + `</div>`).join('') + '</div>' : '';   // G6+f
+   p.innerHTML = `<h4>Chor · STIMME · ${esc(x.label)}</h4><div class="g6rec">${recs}</div>${dir}${mix}${vs}` +
+     (c ? `<div class="savrow"><button class="mbtn rb" data-a="del">Chor löschen</button><button class="mbtn rb" data-a="x">OK</button></div>` : '') +
+     `<div class="small">${c ? (rd ? c.voices.length + (c.voices.length === 1 ? ' Stimme' : ' Stimmen') + ' · je 2× gedoppelt' : 'Stimmen werden gerechnet …') : 'Background-Stimmen folgen meist festen Rezepten: Terz (leitereigen, je nach Ton groß oder klein) über oder unter der Melodie, Sexte, Quinte, Oktave; Dreistimmig = Akkordtöne eng darüber; Falsett-Chor 80er = Oktave + Terz hoch, viel Hall; Barbershop = vier Stimmen eng nach den Akkordtönen; Unisono = dieselben Töne gedoppelt.'}</div>`;
+@@ -44912,6 +44936,279 @@
+   g6Nodes: () => [...G6.nodes.entries()].map(([k, N]) => ({k, g: N.g.gain.value, rev: N.rev.gain.value, dly: N.dly.gain.value, pan: N.pan ? N.pan.pan.value : 0}))
+ };
+ /* G6-END */
++/* G6PF-BEGIN */
++/* =====================================================================================================================
++   G6+f (Nachtrag 10 §1.4/§1.5/§2.2 Takes): Entkoppeln einer Chorstimme und „Als Chor-Stimme duplizieren“.
++   Neue Take-Kennung, die die PCM-Stücke des Lead-Takes mitbenutzt (chunks = dieselben Namen, kein PCM-Kopieren):
++     S.takes[neu] = {…Lead-Take ohne lyrics, of: Lead-Kennung, src: 'chor' (entkoppelt) | 'dup' (dupliziert), pitch: Plan der Stimme}
++   Die Stimme bekommt voices[k].take = {take, in, out, at} (Fenster = das des Lead-Stücks; abgespielt wird immer mit dem aktuellen
++   Fenster des Lead-Stücks, das gespeicherte ist nur Rückfall für ältere Fassungen), voices[k].dbl = [{ms, ct, p}] (Kopien),
++   lane (Chor-Spur an der STIMME-Spur), rule ('free' bei Gegenstimmen).
++   Chor-Spuren: S.tracks[st].chor = {lanes: [{id 'c1'…'c8', role, name, mute?}], mute?} (Datenform aus §2.2; Normalisieren hier als
++   schmaler Platzhalter g6pNormLanes – G6+a liefert die endgültige Fassung mit demselben Namen).
++   Aufräumen behält Stücke nach Namen (tkGc), ZIP schreibt jede Kopie als eigenes WAV (eigene Stück-Namen), ↶ entfernt die neue
++   Kennung (die Stücke gehören dem Lead). Undo: ein Gruppen-Schritt (takes + Stück(e) + chorlanes).
++   ===================================================================================================================== */
++const G6PF = {last: null, measuring: new Set()};
++const G6PF_ROLE = /^(st[+-][1-7]|oct[+-][12]|ch[+-][1-3]|root-|uni|free)(\/o[+-][12])?$/;
++const G6PF_NAMES = {'st+2': 'Chor Terz oben', 'st-2': 'Chor Terz unten', 'st+3': 'Chor Quarte oben', 'st-3': 'Chor Quarte unten', 'st+4': 'Chor Quinte oben', 'st-4': 'Chor Quinte unten',
++  'st+5': 'Chor Sexte oben', 'st-5': 'Chor Sexte unten', 'oct+1': 'Chor Oktave oben', 'oct-1': 'Chor Oktave unten', 'st+2/o+1': 'Chor Terz + Oktave', 'ch+1': 'Chor Akkordton oben',
++  'ch-1': 'Chor Akkordton unten', 'ch-2': 'Chor Akkordton unten 2', 'root-': 'Chor Grundton', uni: 'Chor Unisono'};
++// v1-Stimmen (ohne Rolle): Rolle aus dem Namen (nur für die Spur beim Entkoppeln)
++const G6PF_V1ROLE = {'Terz oben': 'st+2', 'Terz unten': 'st-2', 'Sexte oben': 'st+5', 'Sexte unten': 'st-5', 'Quinte oben': 'st+4', 'Quinte unten': 'st-4', 'Oktave oben': 'oct+1', 'Oktave unten': 'oct-1',
++  'Akkordton 1': 'ch+1', 'Akkordton 2': 'ch+2', 'Falsett Oktave': 'oct+1', 'Falsett Terz': 'st+2/o+1', Tenor: 'ch+1', Bariton: 'ch-1', Bass: 'root-', Unisono: 'uni'};
++const G6PF_BG = {dbl: [{ms: 12, ct: -6, p: -1}, {ms: 24, ct: 8, p: 1}], w: 0.15, pan: 0.6, db: 0, rev: 0.5, dly: 0.1};   // Background (G6+d-Tabelle), Gruppe: Hall 0,50 · Echo 0,10
++// G6+a-Schnittstelle (Platzhalter): Spur des Stücks (Song-Stücke gehören der STIMME-Spur)
++function g6pTrackOf(r) { return r && r.t != null ? r.t : stimmeT(); }
++function g6pNormLanes(c) {
++  if (!c || typeof c !== 'object' || !Array.isArray(c.lanes)) return null;
++  const lanes = [], ids = new Set();
++  for (const l of c.lanes.slice(0, 8)) {
++    if (!l || typeof l.id !== 'string' || !/^c[1-8]$/.test(l.id) || ids.has(l.id) || typeof l.role !== 'string' || !G6PF_ROLE.test(l.role)) continue;
++    ids.add(l.id); const o = {id: l.id, role: l.role, name: typeof l.name === 'string' && l.name.trim() ? l.name.slice(0, 24) : (G6PF_NAMES[l.role] || 'Chor')};
++    if (l.mute === true) o.mute = true; lanes.push(o);
++  }
++  if (!lanes.length && c.mute !== true) return null;
++  const o = {lanes}; if (c.mute === true) o.mute = true; return o;
++}
++const g6pLanesSnap = i => JSON.stringify((S.tracks[i] && S.tracks[i].chor) || null);
++function g6pLanesRestore(i, val) { const tr = S.tracks[i]; if (!tr) return; const c = g6pNormLanes(JSON.parse(val)); if (c && tr.stimme) tr.chor = c; else delete tr.chor; if (G6.sheet) try { g6SheetPaint(); } catch (e) {} }
++// Takes: Herkunft und Art (additiv; ältere Fassungen machen aus src 'rec' und verwerfen of)
++tkExt().take.push((m, o) => { if (m.src === 'dup' || m.src === 'chor') { o.src = m.src; if (typeof m.of === 'string' && UID_RE.test(m.of)) o.of = m.of; } });
++const g6pfIsShared = id => { const m = S.takes && S.takes[id]; return !!(m && (m.src === 'dup' || m.src === 'chor')); };
++const g6pfShared = v => !!(v && v.take && g6pfIsShared(v.take.take));
++// Kopien einer Stimme: eigene (dbl, v2-Form) – sonst wie v1 (errechnet 2 Kopien, selbst gesungen eine)
++function g6pfCopies(v) {
++  if (v.dbl && v.dbl.length && !v.dblOff) { const w = isNum(v.w) ? v.w : 1; return v.dbl.map(d => ({ms: d.ms, ct: d.ct, pan: d.p * w})); }
++  if (v.dbl && v.dblOff) return [{ms: 0, ct: 0, pan: 0}];
++  return v.take ? [G6_COPY[0]] : G6_COPY;
++}
++const g6pfOwnDbl = v => !!(v.dbl && v.dbl.length);
++// alle Chor-Stellen der STIMME-Spur: [{a, r}]
++function g6pfStellen() {
++  const st = stimmeT(), out = []; if (st < 0) return out;
++  S.tracks[st].clips.forEach((c, s) => { if (c && c.audio) out.push({a: c.audio, r: {t: st, s}}); });
++  if (S.song) for (const v of S.song.vox || []) out.push({a: v, r: {vox: v.id}});
++  return out;
++}
++// die Stelle (Lead-Stück), zu der ein Stimmen-Take gehört
++function g6pfStelleOf(id) {
++  for (const x of g6pfStellen()) { const c = x.a.chor; if (c) for (let k = 0; k < c.voices.length; k++) { const v = c.voices[k]; if (v.take && v.take.take === id) return Object.assign({vi: k}, x); } }
++  return null;
++}
++// Take-Kopie: dieselben Stücke, Felder des Leads (pitch, marks, warp, follow, cl, rf, pre/post …), ohne lyrics
++function g6pfCloneTake(m, of, src) {
++  const o = deep(m); delete o.lyrics; o.of = of; o.src = src; o.created = Date.now();
++  return tkNormTake(o) || o;                                      // gleiche Form wie nach dem Laden (Speichern → Laden deep-equal)
++}
++function g6pfNewId() { let id; do { id = newUid(); } while (S.takes && S.takes[id]); return id; }
++function g6pfLanes(st, draft) { return draft || deep((S.tracks[st] && S.tracks[st].chor) || {lanes: []}); }
++// Spur mit Rolle suchen/anlegen (8er-Grenze: unbenutzte Spur übernehmen)
++function g6pfUsedLanes(skip) { const u = new Set(); for (const x of g6pfStellen()) if (x.a.chor && x.a !== skip) for (const v of x.a.chor.voices) if (v.lane) u.add(v.lane); return u; }
++function g6pfLaneFor(L, role, name, fresh) {
++  if (!fresh) { const f = L.lanes.find(l => l.role === role); if (f) return f; }
++  const ids = new Set(L.lanes.map(l => l.id));
++  for (let n = 1; n <= 8; n++) if (!ids.has('c' + n)) { const l = {id: 'c' + n, role, name}; L.lanes.push(l); return l; }
++  const used = g6pfUsedLanes(); const free = L.lanes.find(l => !used.has(l.id));
++  if (free) { free.role = role; free.name = name; delete free.mute; return free; }
++  return null;
++}
++function g6pfFreeName(L) { const has = new Set(L.lanes.map(l => l.name)); let n = 1; while (has.has('Gegenstimme ' + n)) n++; return 'Gegenstimme ' + n; }
++// Plan der Stimme als take.pitch: Lead-Plan + (Chor − Lead) je Note als sh, gleiche Quantisier-Einstellung
++function g6pfPitchOf(P, v) {
++  const out = {mode: P.mode || 'soft', str: isNum(P.str) ? P.str : 0, q: !!P.q, notes: []}; if (P.key) out.key = {root: P.key.root, scale: P.key.scale};
++  if (!P.q && !isNum(P.str)) out.str = 0;
++  for (const n of P.notes) {
++    let iv = 0, best = 0;
++    for (const c of v.n) { const ov = Math.min(n.t1, c.t1) - Math.max(n.t0, c.t0); if (ov > best) { best = ov; iv = c.iv; } }
++    if (best < 0.5 * (n.t1 - n.t0)) iv = 0;
++    const o = {t0: n.t0, t1: n.t1, m: n.m}, sh = (n.sh || 0) + iv; if (sh) o.sh = sh; out.notes.push(o);
++  }
++  return out;
++}
++// Gruppen-Undo: Takes + Stücke + Spuren
++function g6pfCommit(label, tb, items, st, lb) {
++  const all = [{kind: 'takes', before: tb}].concat(items); if (st >= 0) all.push({kind: 'chorlanes', track: st, before: lb});
++  undoPush({kind: 'group', label, items: all}); markDirty(); UI.dirty.all = true; haptic('tick');
++}
++function g6pfNormStelle(r) {
++  const x = tkRef(r); if (!x) return;
++  const n = tkNormAudio(x.a); if (n && n.chor) x.a.chor = n.chor; else delete x.a.chor;
++}
++function g6pfSnapStelle(r) { const x = tkRef(r); return r.vox ? null : {kind: 'clip', track: r.t, scene: r.s, before: cleanClip(x.clip)}; }
++function g6pfAfter(rs, ids) {
++  for (const id of ids) tkLoad(id);
++  const st = stimmeT(); let song = false;
++  for (const r of rs) { if (r.vox) song = true; else clipChanged(r.t, r.s); }
++  if (song) songChanged();
++  if (R.playing) { if (st >= 0) tkTrackResync(st); if (song) tkVoxResync(true); }
++  g6Refresh(); if (UI.pop && UI.pop.name === 'takes') try { tkSheetPaint(UI.pop.el); } catch (e) { logErr(e); }
++}
++/* ---------- Entkoppeln (§1.4): errechnete Stimme → eigener Take, klingt gleich, folgt dem Lead nicht mehr ---------- */
++async function g6pEntkoppeln(r, k) {
++  const x = tkRef(r), c = x && x.a.chor, v = c && c.voices[k]; if (!v) return false;
++  if (v.take) { toast('Diese Stimme hat schon eine eigene Aufnahme'); return false; }
++  const lead = x.a.take, m = S.takes && S.takes[lead]; if (!m) { toast('Take fehlt'); return false; }
++  if (Object.keys(S.takes).length + 1 > 512) { toast('Höchstens 512 Takes – erst aufräumen'); return false; }
++  let P = m.pitch; if (!P) { const A = G2.an.get(lead) || await g2Analyse(lead).catch(e => { logErr(e); return null; }); if (!A || !A.notes.length) { toast('Keine Töne erkannt'); return false; } P = {mode: 'soft', str: 0, q: false, notes: A.notes.map(n => ({t0: n.t0, t1: n.t1, m: n.m}))}; }
++  const x2 = tkRef(r), v2 = x2 && x2.a.chor && x2.a.chor.voices[k]; if (v2 !== v || v.take) return false;   // inzwischen geändert
++  const st = stimmeT(), tb = JSON.stringify(S.takes), lb = g6pLanesSnap(st), it = g6pfSnapStelle(r), sb = r.vox ? songSnapshot() : null, t0 = performance.now();
++  const id = g6pfNewId(), T = g6pfCloneTake(m, lead, 'chor'), pp = g2NormPitch(g6pfPitchOf(P, v), T.len / T.sr);
++  if (pp) T.pitch = pp; else delete T.pitch;
++  S.takes[id] = tkNormTake(T) || T;
++  const L = g6pfLanes(st), role = v.rule || G6PF_V1ROLE[v.name] || 'uni';
++  const ln = st >= 0 ? (v.lane && L.lanes.find(l => l.id === v.lane)) || g6pfLaneFor(L, role, G6PF_NAMES[role] || ('Chor ' + v.name).slice(0, 24)) : null;
++  if (st >= 0 && ln) { S.tracks[st].chor = g6pNormLanes(L) || L; v.lane = ln.id; }
++  v.take = {take: id, in: x.a.in, out: x.a.out, at: x.a.at};
++  if (!v.dbl) v.dbl = G6_COPY.map(C => ({ms: C.ms, ct: C.ct, p: C.pan}));   // dieselben Kopien wie vorher (v1-Doppel)
++  g6pfNormStelle(r);
++  g6pfCommit('Chor · entkoppelt', tb, r.vox ? [{kind: 'song', before: sb}] : [it], st, lb);
++  G6PF.last = {op: 'chor', id, ms: Math.round(performance.now() - t0)};
++  g6pfAfter([r], [id]);
++  const nm = (ln && ln.name) || v.name;
++  toast(nm + ' ist jetzt eine eigene Aufnahme – folgt dem Lead nicht mehr', {label: '↶ Rückgängig', fn: () => undo()});
++  return id;
++}
++/* ---------- Als Chor-Stimme duplizieren (§1.5): Kopie des Gesangs als freie Gegenstimme ---------- */
++function g6pfDupAt(r, L, ln, ids) {
++  const x = tkRef(r); if (!x) return 'none';
++  const lead = x.a.take, m = S.takes && S.takes[lead]; if (!m) return 'none';
++  if (g6pfComp(x.a)) return 'comp';
++  const c = x.a.chor; if (c && c.voices.length >= 6) return 'full';
++  if (c && c.voices.some(v => v.lane === ln.id)) return 'has';
++  const id = g6pfNewId(); S.takes[id] = g6pfCloneTake(m, lead, 'dup'); ids.push(id);
++  const fresh = !c, rv = fresh ? G6PF_BG.rev : c.voices[0].rev, dl = fresh ? G6PF_BG.dly : c.voices[0].dly;
++  const v = {name: ln.name, n: [], pan: 0, db: 0, vol: 1, rev: rv, dly: dl, take: {take: id, in: x.a.in, out: x.a.out, at: x.a.at}, dbl: [{ms: 0, ct: 0, p: 0}], lane: ln.id, rule: 'free'};
++  if (fresh) x.a.chor = {rec: 'unisono', dir: 'up', mix: '80', voices: [v]}; else c.voices.push(v);
++  g6pfNormStelle(r);
++  return 'ok';
++}
++// G10c (Comping): solange am Lead comp gesetzt ist, ist Duplizieren/Entkoppeln grau
++function g6pfComp(a) { return !!(a && a.comp); }
++function g6pDuplizieren(r, whole) {
++  const x0 = tkRef(r); if (!x0 || !S.takes || !S.takes[x0.a.take]) return false;
++  const st = stimmeT(), rs = whole ? g6pfStellen().map(s => s.r) : [r];
++  if (Object.keys(S.takes).length + rs.length > 512) { toast('Höchstens 512 Takes – ' + rs.length + ' neue passen nicht (erst aufräumen)'); return false; }
++  const t0 = performance.now(), tb = JSON.stringify(S.takes), lb = g6pLanesSnap(st), sb = S.song ? songSnapshot() : null;
++  const L = g6pfLanes(st), ln = g6pfLaneFor(L, 'free', g6pfFreeName(L), true);
++  if (!ln) { toast('Höchstens 8 Chor-Spuren – eine Spur löschen'); return false; }
++  const items = [], ids = [], done = [], skip = {full: 0, comp: 0}; let song = false;
++  for (const rr of rs) {
++    const it = rr.vox ? null : g6pfSnapStelle(rr), res = g6pfDupAt(rr, L, ln, ids);
++    if (res === 'ok') { done.push(rr); if (rr.vox) song = true; else items.push(it); } else if (skip[res] != null) skip[res]++;
++  }
++  if (!done.length) { S.takes = JSON.parse(tb); toast(skip.comp ? 'Erst Zusammenfügen' : 'Höchstens 6 Stimmen – eine Stimme löschen'); return false; }
++  if (st >= 0) S.tracks[st].chor = g6pNormLanes(L) || L;
++  if (song) items.push({kind: 'song', before: sb});
++  g6pfCommit(whole ? 'Als Chor-Stimme duplizieren · ganze Spur' : 'Als Chor-Stimme duplizieren', tb, items, st, lb);
++  G6PF.last = {op: 'dup', ids: ids.slice(), lane: ln.id, ms: Math.round(performance.now() - t0), skipped: skip.full};
++  g6pfAfter(done, ids);
++  toast(ln.name + ': Kopie deines Gesangs' + (whole ? ' an ' + done.length + (done.length === 1 ? ' Stelle' : ' Stellen') : '') + (skip.full ? ' · ' + skip.full + ' übersprungen (6 Stimmen)' : '') + ' – Noten ziehen, dann [Background]');
++  const own = done.find(z => (z.vox && z.vox === r.vox) || (!z.vox && z.t === r.t && z.s === r.s)) || done[0], xo = tkRef(own), vo = xo && xo.a.chor && xo.a.chor.voices.find(v => v.lane === ln.id);
++  if (vo && tkAudioOk()) { closePop(); g2Open(own, {take: vo.take.take}); }
++  return ids;
++}
++/* ---------- [Background] (§1.5 Nr. 4): Doppel, Panorama, Pegel der Gegenstimme an allen Stellen dieser Spur, ein Undo ---------- */
++function g6pBackground(lane) {
++  const st = stimmeT(); if (st < 0) return false;
++  const L = S.tracks[st].chor, ln = L && L.lanes.find(l => l.id === lane); if (!ln) return false;
++  const frees = L.lanes.filter(l => l.role === 'free').map(l => l.id), side = frees.indexOf(lane) % 2 ? 1 : -1;
++  const items = [], rs = []; let song = false; const sb = S.song ? songSnapshot() : null;
++  for (const x of g6pfStellen()) {
++    const c = x.a.chor, v = c && c.voices.find(z => z.lane === lane); if (!v) continue;
++    if (x.r.vox) song = true; else items.push(g6pfSnapStelle(x.r));
++    const onlyFree = c.voices.every(z => z.rule === 'free');
++    v.dbl = deep(G6PF_BG.dbl); v.w = G6PF_BG.w; v.pan = side * G6PF_BG.pan; v.db = G6PF_BG.db; delete v.dblOff;
++    if (onlyFree) c.voices.forEach(z => { z.rev = G6PF_BG.rev; z.dly = G6PF_BG.dly; });   // Gruppe der Stelle neu (nur Gegenstimmen): Background-Gruppenwerte
++    g6pfNormStelle(x.r); rs.push(x.r);
++  }
++  if (!rs.length) return false;
++  if (song) items.push({kind: 'song', before: sb});
++  undoPush({kind: 'group', label: 'Chor · Background', items}); markDirty(); UI.dirty.all = true; haptic('tick');
++  g6pfAfter(rs, []);
++  return rs.length;
++}
++/* ---------- Abspielen: Puffer der Take-Stimmen mit eigenen Kopien, Lautheit ---------- */
++// K-Leistung eines Puffers (Worker, wie die Analyse) – für den Auto-Pegel der Take-Stimmen
++function g6pfMeasure(b, id) {
++  if (!b || G6.ke.has(b)) return; const k = id + '@' + wpBid(b); if (G6PF.measuring.has(k)) return; G6PF.measuring.add(k);
++  g2Call({op: 'an', key: 'h:' + k, x: b.getChannelData(0), sr: b.sampleRate}).then(r => { G6PF.measuring.delete(k); if (r && isNum(r.kx)) { G6.ke.set(b, r.kx); g6Refresh(); } }, e => { G6PF.measuring.delete(k); logErr(e); });
++}
++// Noten des Takes (gehörte Höhe), für die Verstimmung der Kopien
++function g6pfNotes(id) { const m = S.takes && S.takes[id], P = m && m.pitch; if (P) return P.notes.map(n => ({t0: n.t0, t1: n.t1, m: g2Target(P, n)})); const A = G2.an.get(id); return A ? A.notes : null; }
++function g6pfBuf(a, v, k) {
++  const id = v.take.take; if (!tkBuffer(id)) { tkLoad(id); return null; }
++  const hb = tkHeard(id, a); if (!hb) return null;
++  const C = g6pfCopies(v)[k]; if (!C) return null;
++  if (!C.ct) { g6pfMeasure(hb, id); return hb; }
++  const ns = g6pfNotes(id); if (!ns) { g2Analyse(id).then(() => g6Refresh(), logErr); return null; }
++  const plan = {mode: 'soft', notes: ns.map(n => ({t0: n.t0, t1: n.t1, m: n.m, to: n.m, s: 0, e: C.ct}))}, key = 't:' + id + ':' + G2P.planKey(plan) + '@' + wpBid(hb), hit = G6.cache.get(key);
++  if (hit) { hit.t = performance.now(); return hit.buf; }
++  if (!G6.job.has(key)) {
++    G6.job.set(key, 1); const t0 = performance.now(), sr = hb.sampleRate;
++    g2Call({op: 'render', key: 'h:' + id + '@' + wpBid(hb), x: hb.getChannelData(0), sr, plan, kw: true}).then(r => {
++      G6.job.delete(key); const ab = wpToBuf(r.y, sr); if (!ab) return;
++      G6.cache.set(key, {buf: ab, t: performance.now(), n: ab.length, ke: r.ke}); G6.ke.set(hb, r.kx); G6.ke.set(ab, r.ke);
++      while (G6.cache.size > 24) { let ok = null, ot = Infinity; for (const [kk, x] of G6.cache) if (x.t < ot) { ot = x.t; ok = kk; } G6.cache.delete(ok); }
++      G6.renders++; G6.last = {ms: Math.round(performance.now() - t0), how: G2.how}; g6Refresh();
++    }, e => { G6.job.delete(key); logErr(e); });
++  }
++  return null;
++}
++// gleiche Stücke: ist der Lead (bzw. eine andere Kopie mit denselben Stücken) schon geladen, denselben Puffer benutzen (Speicher)
++function g6pfSharedLoad(id) {
++  const m = S.takes && S.takes[id]; if (!m) return false; const sig = m.chunks.join('|');
++  for (const [k, b] of TK.buf) { const o = S.takes[k]; if (k !== id && o && o.chunks.join('|') === sig && o.sr === m.sr && o.len === m.len) { TK.buf.set(id, b); UI.dirty.grid = UI.dirty.song = true; return true; } }
++  return false;
++}
++// Takes der Stimmen (selbst gesungen, entkoppelt, dupliziert) eines Stücks
++const g6pfVoiceIds = a => (a && a.chor ? a.chor.voices.filter(v => v.take).map(v => v.take.take) : []);
++// ZIP: geteilte Takes bekommen im Projekt der ZIP eigene Stück-Namen (die eigene WAV wird beim Import so abgelegt)
++function g6pfZipProject() {
++  if (!S.takes || !Object.keys(S.takes).some(g6pfIsShared) || (NV.lock && NV.raw)) return null;
++  syncUi(); const tk = deep(S.takes);
++  for (const id in tk) { const m = tk[id], nc = m.chunks.length; if (m.chunks.some(k => String(k).split(':')[0] !== id)) { m.chunks = []; for (let k = 0; k < nc; k++) m.chunks.push(id + ':' + k); } }
++  return SQStore.buildProjectFile(Object.assign({}, S, {takes: tk}), LIB.ok ? LIB.lib.all() : [], VERSION);
++}
++/* ---------- Anzeige: Herkunftszeilen im Takes-Blatt ---------- */
++function g6pfTakeNo(a, id) {
++  const segs = tkSegs(a), cr = sg => (S.takes && S.takes[sg.take] ? +S.takes[sg.take].created || 0 : 0), ord = segs.map((sg, k) => k).sort((i, j) => (cr(segs[i]) - cr(segs[j])) || (segs[i].in - segs[j].in) || (j - i));
++  const k = segs.findIndex(sg => sg.take === id); return k < 0 ? 0 : ord.indexOf(k) + 1;
++}
++function g6pfLaneName(v) { const st = stimmeT(), L = st >= 0 && S.tracks[st].chor, l = L && v.lane ? L.lanes.find(z => z.id === v.lane) : null; return (l && l.name) || v.name; }
++function g6pfOrigins(a) {
++  const c = a && a.chor; if (!c) return [];
++  return c.voices.map((v, k) => ({v, k})).filter(z => g6pfShared(z.v)).map(({v, k}) => { const m = S.takes[v.take.take], no = g6pfTakeNo(a, m.of); return {k, id: v.take.take, label: g6pfLaneName(v) + ' (aus Take ' + (no || '?') + ')', src: m.src}; });
++}
++function g6pfSheetRows(a) {
++  return g6pfOrigins(a).map(o => `<div class="tkrow tkof"><button class="mbtn rb tk-ofn" data-a="ofn" data-id="${o.id}"><b>♪ ${esc(o.label)}</b><small>${o.src === 'dup' ? 'Gegenstimme · eigene Noten' : 'entkoppelt · eigene Noten'}</small></button></div>`).join('');
++}
++// Knopf neben [Chor] und die Wahl [Diese Stelle]/[Ganze Spur]
++function g6pfSheetBtn(a) {
++  const dis = g6pfComp(a) ? ' disabled' : '';
++  if (TK.dupAsk) return `<div class="tkdup"><button class="mbtn rb tk-dup1" data-a="dup1"${dis}>Diese Stelle</button><button class="mbtn rb tk-dupall" data-a="dupall"${dis}>Ganze Spur</button><button class="mbtn rb tk-dupx" data-a="dupx" aria-label="Abbrechen">✕</button></div>`;
++  return `<button class="mbtn rb tk-dup" data-a="dup"${dis}>Als Chor\u2011Stimme duplizieren</button>`;
++}
++function g6pfSheetTap(d, rr) {
++  if (d.a === 'dup') { TK.dupAsk = true; if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); return true; }
++  if (d.a === 'dupx') { TK.dupAsk = false; if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); return true; }
++  if (d.a === 'dup1' || d.a === 'dupall') { TK.dupAsk = false; if (!g6pDuplizieren(rr, d.a === 'dupall') && UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); return true; }
++  if (d.a === 'ofn' && d.id) { closePop(); g2Open(rr, {take: d.id}); return true; }
++  return false;
++}
++/* ---------- Test-API ---------- */
++const G6PF_API = {
++  g6pEntkoppeln: (r, k) => g6pEntkoppeln(r || {t: stimmeT(), s: R.selS}, k | 0),
++  g6pDuplizieren: (r, whole) => g6pDuplizieren(r || {t: stimmeT(), s: R.selS}, !!whole),
++  g6pBackground: lane => g6pBackground(lane),
++  g6pfInfo: r => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r), st = stimmeT(); return {last: G6PF.last, lanes: st >= 0 && S.tracks[st].chor ? deep(S.tracks[st].chor) : null, origins: x ? g6pfOrigins(x.a).map(o => ({k: o.k, id: o.id, label: o.label, src: o.src})) : [], stelle: x && x.a.chor ? deep(x.a.chor) : null, nTakes: S.takes ? Object.keys(S.takes).length : 0}; },
++  g6pfStelleOf: id => { const x = g6pfStelleOf(id); return x ? {r: x.r, vi: x.vi} : null; },
++  g6pfBuf: (r, k, c, a0, b0) => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r), v = x && x.a.chor && x.a.chor.voices[k], b = v && g6Buf(x.a, v, c || 0); return b ? {sr: b.sampleRate, n: b.length, data: Array.from(b.getChannelData(0).subarray(a0 || 0, b0 == null ? b.length : b0))} : null; },
++  g6pfHeard: (id, r, a0, b0) => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r), b = x && tkBuffer(id) ? tkHeard(id, x.a) : null; return b ? {n: b.length, data: Array.from(b.getChannelData(0).subarray(a0 || 0, b0 == null ? b.length : b0))} : null; },
++  g6pfWaitHeard: async (id, r) => { r = r || {t: stimmeT(), s: R.selS}; for (let n = 0; n < 1200; n++) { const x = tkRef(r); if (!tkBuffer(id)) tkLoad(id); else if (g2Ready(id, x && x.a) && wpReady(id)) return true; else tkPlayBuf(id, x && x.a); await sleep(25); } return false; },
++  g6pfSharedBuf: (a, b) => !!(tkBuffer(a) && tkBuffer(a) === tkBuffer(b))
++};
++/* G6PF-END */
+ /* G7-BEGIN */
+ /* =====================================================================================================================
+    G7 (Nachtrag 5): Gesang folgt dem Transponieren. STIMME-Clips und Song-Stimme werden vom Transponieren (Träger, „Eine Skala“,
+@@ -44996,7 +45293,7 @@
+   const k = G2P.planKey(plan) + '@' + wpBid(b), C = G2.cache.get(id); if (C && C.has(k)) return;
+   g7Queue(id, k, b, plan);
+ }
+-function g7SegOf(id) { const st = stimmeT(); if (st >= 0) for (const c of S.tracks[st].clips) if (c && c.audio && c.audio.take === id) return c.audio; return S.song && S.song.vox ? S.song.vox.find(v => v.take === id) || null : null; }
++function g7SegOf(id) { const st = stimmeT(); if (st >= 0) for (const c of S.tracks[st].clips) if (c && c.audio && c.audio.take === id) return c.audio; const v = S.song && S.song.vox ? S.song.vox.find(z => z.take === id) : null; if (v) return v; const x = g6pfIsShared(id) ? g6pfStelleOf(id) : null; return x ? x.a : null; }   // G6+f: Take einer Chor-Stimme → ihre Stelle (Lead-Stück)
+ // vorberechnen: die Lagen der Akkord-Zeile der Szene des Clips (bekannte Wechsel) – einmal je Take und Zeile, im Worker nacheinander
+ function g7Prefetch(id, a) {
+   const st = stimmeT(); if (st < 0 || !a || typeof rowOf !== 'function' || !g7Follows(id)) return;
+@@ -45886,6 +46183,7 @@
+ Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
+ Object.assign(SYNQUENZER, G2_API);                // G2: Tonhöhe quantisieren, Gesang als Noten
+ Object.assign(SYNQUENZER, G6_API);                // G6: Chor-Generator
++Object.assign(SYNQUENZER, G6PF_API);              // G6+f: Entkoppeln, Als Chor-Stimme duplizieren
+ Object.assign(SYNQUENZER, G7_API);                // G7: Gesang folgt dem Transponieren
+ const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',

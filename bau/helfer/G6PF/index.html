@@ -2095,10 +2095,11 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 /* G2: Takes-Blatt [♪ Tonhöhe · Noten]; Noten-Editor im Blatt des Marken-Editors (#wpSheet.g2) */
 .tksheet .tkedrow{display:grid;grid-template-columns:3fr 2fr;gap:6px;margin:0 0 6px}
 .tksheet .tkedrow .mbtn{width:100%;min-height:44px;margin:0}
-.tksheet .tkedrow{grid-template-columns:5fr 3fr 6fr}.tksheet .tkedrow .tk-dup{line-height:1.12;padding:0 6px;font-size:.92em}
+.tksheet .tkedrow{grid-template-columns:4fr minmax(50px,2fr) 6fr}.tksheet .tkedrow .mbtn{line-height:1.12;padding:0 3px}
+@media (max-width:400px),(max-height:440px){.tksheet .tkedrow .mbtn{font-size:.86em}}   .tksheet .tkedrow .mbtn.tk-dup{padding:0 2px}   /* G6+f: drei Knöpfe nebeneinander, je höchstens zwei Zeilen */
 .tksheet .tkdup{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 48px;gap:6px;min-width:0}.tksheet .tkdup .mbtn{width:100%;min-height:44px;margin:0;padding:0 4px;line-height:1.12}
 .tksheet .tkof .tk-ofn{flex:1;min-width:0}
-@media (max-height:440px){.tksheet .tk-wp{display:inline-flex;align-items:center;justify-content:center;width:calc(36% - 4px);vertical-align:top;line-height:1.15;padding:0 4px}.tksheet .tkedrow{display:inline-grid;grid-template-columns:5fr 3fr 6fr;width:calc(64% - 4px);margin:0 0 4px 8px;vertical-align:top}.tksheet .tkedrow .mbtn{line-height:1.15;padding:0 4px}}   /* quer: ✎ Marken und ♪ Tonhöhe nebeneinander (das Blatt passt weiter ohne Scrollen) */
+@media (max-height:440px){.tksheet .tk-wp{display:inline-flex;align-items:center;justify-content:center;width:calc(27% - 4px);font-size:.86em;vertical-align:top;line-height:1.15;padding:0 4px}.tksheet .tkedrow{display:inline-grid;grid-template-columns:4fr minmax(50px,2fr) 6fr;width:calc(73% - 4px);margin:0 0 4px 8px;vertical-align:top}.tksheet .tkedrow .mbtn{line-height:1.15;padding:0 4px}}   /* quer: ✎ Marken und ♪ Tonhöhe nebeneinander (das Blatt passt weiter ohne Scrollen) */
 #wpSheet.g2 .wpcv{min-height:96px}
 /* G6: Blatt „Chor“ (Rezepte 2 Spalten, Stimmen-Zeilen mit Solo / ♪ Noten / Selbst singen) */
 .g6sheet .g6rec{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
@@ -45186,7 +45187,7 @@ function g6pfSheetRows(a) {
 function g6pfSheetBtn(a) {
   const dis = g6pfComp(a) ? ' disabled' : '';
   if (TK.dupAsk) return `<div class="tkdup"><button class="mbtn rb tk-dup1" data-a="dup1"${dis}>Diese Stelle</button><button class="mbtn rb tk-dupall" data-a="dupall"${dis}>Ganze Spur</button><button class="mbtn rb tk-dupx" data-a="dupx" aria-label="Abbrechen">✕</button></div>`;
-  return `<button class="mbtn rb tk-dup" data-a="dup"${dis}>Als Chor-Stimme duplizieren</button>`;
+  return `<button class="mbtn rb tk-dup" data-a="dup"${dis}>Als Chor\u2011Stimme duplizieren</button>`;
 }
 function g6pfSheetTap(d, rr) {
   if (d.a === 'dup') { TK.dupAsk = true; if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); return true; }
