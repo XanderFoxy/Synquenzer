@@ -1,3 +1,14 @@
+## 4.33.0 — North als Instrument, Werkzeuge zusammengelegt, Song-Ende ausblenden, Gesang nach Tonart
+
+Grundlage 4.32.0 + vier Pakete in einem Durchgang (NORTHI, DOPPEL, SX126, G10G).
+- **North als Instrument:** eigener Reiter North und Schalter Drums | North; die North-Kits stehen jetzt immer in der Kit-Liste und beim Blättern. ≡ → Info zeigt die Zeile „North: bereit / lädt / nicht verfügbar (Grund)“.
+- **Werkzeuge zusammengelegt (Piano-Rolle):** nur noch je ein Knopf Spiegeln (mit Schalter „Achse: Mitte / 1. Note“), Umdrehen und Tauschen (gezeichnetes Symbol) – „Umkehren“ und „Krebs“ sind darin aufgegangen.
+- **Song-Ende ausblenden:** Song → letzte Marke antippen → „Ausblenden am Ende“ 2/4/8 Takte (auch im Blatt Video). Im Marken-Blatt [Bei Takt …] teilt einen Teil mit der Klinge; neuer Song kann aus einer Form-Vorlage entstehen.
+- **Gesang nach Tonart:** Takes-Blatt → [♪ Tonhöhe · Noten] → Tonart-Chip oben: Auto, aus dem Gesang oder von Hand; ▲/▼ springen stufenweise in der Tonart, keine Oktav-Ausreißer mehr.
+- Alte Projekte laden und klingen gleich.
+- Offen: Der eigene Update-Hinweis aus dem North-Paket ist bewusst nicht drin – das macht weiter der Versions-Wächter. Deine Abnahme der vier Teile steht noch aus.
+Tests: Regeln (live 1×, MS 2000 1×, Marken 0), acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün.
+
 ## 4.32.0 — Taktarten, Teile leicht/voll, gemalter LFO, Versionsnummer im Menü
 
 Grundlage 4.31.0 + Stufe B1 (T1 Taktarten, SX11 leicht/voll, N8I134 Super-Regler-Kern und Mal-LFO).
