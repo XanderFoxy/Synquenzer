@@ -1,3 +1,11 @@
+## 4.41.0 — Video: Klavier-Ansicht und Mäusekino (erste Fassung)
+
+- **Klavier (Video):** Tastatur unten, die Noten fallen als Balken auf die Jetzt-Linie, jede Spur in ihrer Farbe. Leise Töne sind heller und kühler, laute satter und wärmer, Akzente glühen; die klingende Taste leuchtet mit. Drums sind keine Noten, sondern eine Leiste KICK · TOMS · SNARE · HATS, die bei jedem Schlag aufglüht. Wählen: Video-Regie → **Klavier**; die Auto-Regie nimmt sie bei melodischen Teilen manchmal selbst.
+- **Mäusekino (Video):** Jede Spur als Leuchtzeile mit Pegel, klingenden Tönen (Lauflicht), Anschlag, Schritten im Takt und Drum-Pads, die bei Akzenten glühen. Rechts die Filterkurven aller Synths (Glühen bei hoher Resonanz). Wechselt ein Clip mit ◆-Klangzustand, siehst du Filter- und Hüllkurve vom alten zum neuen Wert gleiten (Ist-Kurve, gestrichelte Ziel-Kurve, Fortschritt in %, Werte). Wählen: Video-Regie → **Mäusekino**.
+- Alles kommt aus echten Werten des Songs, zwei Videos desselben Songs sind gleich.
+- Offen: Clip-Matrix im Video in echten Farben mit Mini-Noten (kommt nach), Gegenprüfung der beiden Ansichten läuft noch.
+Tests: Regeln (live 1×, MS 2000 1×, Marken 0), acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün; Klavier-Test (Standbilder, Grenzfälle, Video 16:9 + 9:16, Auto-Regie) alle OK; Mäusekino-Test ohne Fehler.
+
 ## 4.40.3 — FANG im Songteil fängt die Melodie
 
 - **FANG im laufenden Songteil:** Hast du gerade Töne gespielt, fängt FANG jetzt deine Melodie als Clip (wie überall sonst). Den ganzen Songteil (Teil ersetzen / als neuen Teil) fängt FANG nur noch, wenn du in den letzten 8 Sekunden nichts gespielt hast, sondern nur Clips umgeschaltet hast.
