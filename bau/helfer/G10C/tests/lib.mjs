@@ -2,11 +2,11 @@ import { createRequire } from 'module'; const require = createRequire(import.met
 import path from 'path';
 export const FILE = process.env.G10C_FILE || path.resolve(new URL('..', import.meta.url).pathname, 'index.html');
 export async function boot(vp = {width: 428, height: 926}, opts = {}) {
-  const b = await chromium.launch({args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required']});
+  const b = await chromium.launch({args: [...(opts.args || []), '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required']});
   const ctx = await b.newContext({viewport: vp, hasTouch: true, isMobile: true, deviceScaleFactor: 1});
   const p = await ctx.newPage();
   const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  await p.goto('file://' + FILE); await p.waitForTimeout(1200);
+  await p.goto('file://' + (opts.file || FILE)); await p.waitForTimeout(1200);
   await p.evaluate(() => { try { document.querySelectorAll('.pop').forEach(x => x.remove()); } catch (e) {} });
   return {b, p, errs};
 }

@@ -44411,7 +44411,7 @@ function stSheetFill(p) {
   if (ST.dropN) W.push(ST.dropN + ' Aussetzer markiert');
   if (W.length) html += '<div class="st-warn">' + W.map(x => '⚠ ' + esc(x)).join('<br>') + '</div>';
   const vc = vsCfg();                                          // VS2: Quelle, Einrasten, Oktave sperren (nur Instrument)
-  html += '</div><div class="st-c2"><div class="st-lbl">Stimme → Noten</div>' + vsMelRowHTML(vc) + segHTML('vsSrc', [['voice', '🎤 Stimme'], ['inst', '🎸 Instrument']], vc.src) +
+  html += '</div><div class="st-c2"><div class="st-lbl">Stimme → Noten</div>' + vsMelRowHTML(vc) + g10cPassRow() +   /* G10c */ segHTML('vsSrc', [['voice', '🎤 Stimme'], ['inst', '🎸 Instrument']], vc.src) +
     `<div class="st-vs"><button class="rb${vc.snap ? ' on' : ''}" data-vs="snap" aria-pressed="${vc.snap}">${vc.snap ? '✓ In Tonart einrasten' : 'Frei (nicht einrasten)'}</button>` +
     (vc.src === 'inst' ? `<button class="rb${vc.lock ? ' on' : ''}" data-vs="lock" aria-pressed="${vc.lock}">${vc.lock ? '✓ ' : ''}Oktave sperren</button>` : '') + '</div></div>';
   html += `<div class="st-c3"><div class="st-btns"><button class="rb st-cal"${!ST.on || cal || ST.phase !== 'live' ? ' disabled' : ''}>Einmessen</button><button class="rb st-go ${ST.on ? 'off' : ''}">${ST.on ? '✕ Mikro aus' : '🎤 Mikro an'}</button></div>`;
@@ -44428,6 +44428,7 @@ function bindStSheet(p) {
     if (b.closest('#stRoute')) { haptic('tick'); stSetRoute(b.dataset.v, 'gewählt'); return; }
     if (b.closest('#vsSrc')) { haptic('tick'); vsCfgSet({src: b.dataset.v}); return; }      // VS2
     if (b.closest('#vsMel')) { haptic('tick'); vsCfgSet({mel: b.dataset.v === '1'}); popFit(p); return; }   // VS-L
+    if (b.closest('#g10cPass')) { haptic('tick'); setUiPref('g10cPasses', b.dataset.v === '1'); stSheetFill(p); return; }   // G10c: Durchgänge als Takes
     if (b.dataset.vs === 'snap') { haptic('tick'); vsCfgSet({snap: !vsCfg().snap}); return; }
     if (b.dataset.vs === 'lock') { haptic('tick'); vsCfgSet({lock: !vsCfg().lock}); return; }
     if (b.dataset.nd) { stNudge(+b.dataset.nd); return; }
@@ -46070,29 +46071,33 @@ function tkVoiceTake(o) {
   const tr = S.tracks[st], old = tr.clips[o.si], before = old ? cleanClip(old) : null;
   let L = (old && old.audio ? old.len : o.len) * 4, grow = 0, gcs = o.cs; const sp = spb();
   // Overdub auf einem laufenden Audio-Clip: ein voller Durchgang am Clip-Raster (der jüngste), sonst ab dem Anfang der Aufnahme
-  let a = o.a, at = 0;
+  let a = o.a, at = 0, passes = 1;
   if (old && old.audio) {
     const ph = R.playing && R.slot[st] === o.si && !R.pend[st] ? R.cstart[st] : o.cs; let c0 = ph + Math.floor((o.b - L - ph) / L + 1e-9) * L; if (c0 + L > o.b + 1e-6) c0 -= L;
     // VS-L (Nachtrag 4 L.1.2): länger als der alte Clip → der Clip wird so lang wie die neue Aufnahme (ganze Takte ab dem Taktstrich, der ihrem Anfang am nächsten liegt, ≤ 64 – G8), der Take ist die ganze Aufnahme
     // VS-L-fix: ● kurz vor dem Taktstrich zählt ab diesem Taktstrich (nicht ab dem Takt davor); gleich lang, aber kein voller Durchgang im Clip-Raster → ebenso die ganze Aufnahme (sonst fehlte ihr letzter Takt)
     const gp = R.playing && R.slot[st] === o.si && !R.pend[st] ? R.cstart[st] : 0, g0 = gp + Math.round((o.a - gp) / 4) * 4, nb = clamp(Math.round((o.b - g0) / 4), 1, 64);   /* G-GES: Wachsen bis 64 Takte wie G8-Clips */
-    if (nb > old.len || (nb === old.len && c0 < o.a - 0.25)) { grow = nb; L = nb * 4; gcs = g0; if (o.a - g0 <= 0.25) { a = g0; at = 0; } else { a = o.a; at = o.a - g0; } }
+    const pOn = g10cPassesOn(o);                                  // G10c: Durchgänge als Takes – bei fester Länge wächst der Clip nicht (VS-L gilt bei AUTO)
+    if (!(pOn && rec.fixedLen) && (nb > old.len || (nb === old.len && c0 < o.a - 0.25))) { grow = nb; L = nb * 4; gcs = g0; if (o.a - g0 <= 0.25) { a = g0; at = 0; } else { a = o.a; at = o.a - g0; } }
     else if (c0 >= o.a - 0.25) { a = c0; at = 0; } else { a = o.a; at = ((o.a - ph) % L + L) % L; }
+    if (pOn && !grow) { const cF = ph + Math.ceil((o.a - 0.25 - ph) / L - 1e-9) * L, n = Math.round((c0 - cF) / L) + 1; if (n >= 2 && c0 >= o.a - 0.25) { passes = n; a = cF; at = 0; } }   // G10c: jede volle Runde ein Take
   }
-  const b = Math.min(o.b, a + L - at);
+  const b = Math.min(o.b, a + passes * L - at);
   const job = {kind: o.kind};
   const tk = tkMakeTake(a, b, o.kind, () => { if (o.kind === 'rec') TK.recJob = null; else TK.fangJob = null; });
   if (tk && old && old.audio) G3.noPre.add(tk.id);                 /* G3: Overdub – davor liegt die vorige Runde */
   if (!tk) { for (const it of items.reverse()) undoApply(it, it.before); return null; }
   if (o.kind === 'rec') TK.recJob = job; else TK.fangJob = job;
   const seg = {take: tk.id, in: tkR6(tk.inSec), out: tkR6(tk.inSec + (b - a - tk.lateBeats) * sp), at: tkR6(at + tk.lateBeats)};
+  const runs = passes > 1 ? g10cPassSegs(tk, passes, L, sp) : null;   // G10c: Runden 1…n (gleiche Take-id, je eine Runde am Clip-Raster)
+  if (runs) Object.assign(seg, runs[runs.length - 1]);
   let clip;
   if (old && old.audio) {
     clip = deep(old);
     g10cStamp(clip.audio);                                       // G10c: alte Takes behalten ihre Nummer
     const prev = Object.assign({take: clip.audio.take, in: clip.audio.in, out: clip.audio.out, at: clip.audio.at}, g10cSegF(clip.audio));
     g10cSegSet(clip.audio, null); Object.assign(clip.audio, seg);
-    clip.audio.alt = [prev].concat(clip.audio.alt || []).slice(0, 16);
+    clip.audio.alt = (runs ? runs.slice(0, -1).reverse() : []).concat([prev], clip.audio.alt || []).slice(0, 16);   // G10c: jüngere Runden oben
     if (grow) clip.len = grow;                                   // VS-L
     if (typeof g6Took === 'function') g6Took(st, o.si, clip, prev, seg);   // G6: „Selbst singen“ – der neue Take wird die Chor-Stimme
     g10cStamp(clip.audio);                                       // G10c: der neue Take bekommt die nächste Nummer
@@ -46363,6 +46368,19 @@ function g10cStamp(a) {
   objs.forEach((o, k) => { if (!isNum(o.no)) o.no = no[k]; });
   return a;
 }
+/* Durchgänge als Takes (Geräte-Einstellung, Standard An): ● REC über mehrere Loop-Runden eines Clips mit fester Länge → je Runde ein
+   Segment {take: gleiche id, in, out, at, r}; kein neues Audio. Nicht bei FANG, nicht während „Selbst singen“ (G6) */
+const g10cPassesPref = () => uiPrefs().g10cPasses !== false;
+function g10cPassesOn(o) { return !!o && o.kind === 'rec' && g10cPassesPref() && !(typeof G6 !== 'undefined' && G6.arm); }
+function g10cPassSegs(tk, n, L, sp) {
+  const out = [], late = tk.lateBeats || 0;
+  for (let j = 0; j < n; j++) {
+    const x0 = j * L, x1 = (j + 1) * L; if (x1 <= late + 1e-9) continue;
+    out.push({take: tk.id, in: tkR6(tk.inSec + Math.max(0, x0 - late) * sp), out: tkR6(tk.inSec + (x1 - late) * sp), at: tkR6(Math.max(0, late - x0)), r: j + 1});
+  }
+  return out.length ? out : null;
+}
+const g10cPassRow = () => '<div class="st-mel g10c-pass"><span>Durchgänge als Takes</span>' + segHTML('g10cPass', [['1', 'An'], ['0', 'Aus']], g10cPassesPref() ? '1' : '0') + '</div>';
 // eine Änderung an der Take-Liste einer Stelle: ein Undo (Clip bzw. Song), Blatt neu
 function g10cEdit(r, label, fn) {
   const x = tkRef(r); if (!x) return false;
