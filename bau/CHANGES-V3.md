@@ -6878,3 +6878,11 @@ Ausgeliefert auf 4.25.3 (3-Wege-Merge Basis R-4252; einziger Konflikt VERSION). 
 ## 4.26.0 — Auslieferung Video (01.11.2026, ~02:45 UTC)
 
 G-VID-merge (4.25.2 + VIDSTAGE VV1/VV2/VV3/VC2a, V-A Ton immer, V-B nichts Erfundenes, Gesang+Chor im Render ±0,03 LU) per 3-Wege mit 4.25.4 (Songtext G9 + Interface-Fix HIF; Basis R-4252) zusammengeführt; Konflikte: VERSION, Projektwechsel (histClose + g9ProjReset, beide behalten). Prüfungen auf der Auslieferung: Smoke, orch-mk-check, v3-mk2-wellen PASS; vid/g-vid-abn ALLE BESTANDEN; hif-iface grün (nur Versions-Erwartung 4.25.4 im Test rot); g9Syl ok.
+
+## 4.26.1 — Audio-Interface: iOS-Route-Kick (WebKit Bug 282939) · 01.11.2026
+Xander (AG06 mit Netzteil): beim Start der Gesangsaufnahme geht der Ton vom Pult weg aufs iPhone; App zu → Pult spielt wieder.
+Ursache: bekannter WebKit-Fehler (getUserMedia legt die Ausgabe aufs iPhone). Bekannter Umweg: vor getUserMedia `audioSession.type = 'auto'`,
+danach `'play-and-record'` – das stößt iOS an, die Route neu zu wählen. Neuer Standard `kick` (`stSessType`/`stSessAfter`, nach dem Öffnen in
+`micTapGet`), Einstellung jetzt unter `uiPrefs.stsess2` (alte Testwerte aus `?stsess=` gelten nicht mehr automatisch), Vergleich per
+`?stsess=par|auto|none|kick`. Beim Ausschalten weiter `'playback'`. Gemessen (Chromium, Attrappe): Reihenfolge playback → auto → [gUM] →
+play-and-record → (aus) playback; Smoke, orch-mk-check, v3-mk2-wellen PASS; hif-iface grün (Versions-Erwartung im Test rot). Gerät: offen.
