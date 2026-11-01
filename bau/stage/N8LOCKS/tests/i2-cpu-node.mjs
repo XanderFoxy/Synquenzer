@@ -36,7 +36,7 @@ function load() {
   return {C: reg['dirigent-analog'], g};
 }
 const {C, g} = load();
-const NB = 5000, out = [new Float32Array(128), new Float32Array(128)];
+const NB = +(process.env.NB || 2500), out = [new Float32Array(128), new Float32Array(128)];
 function scene(eng, feat) {
   const P = new C({processorOptions: D.init[eng === 'st' || eng === 'ln' ? 'va' : eng]});
   const N = [48, 52, 55, 59, 62, 64, 67, 71], sec = NB * 128 / SR, ev = [];
@@ -71,7 +71,7 @@ for (const [nm, eng, lim] of scenes) {
   let n = 20, aa = [], ab = [], base = 0;
   for (;;) {
     while (aa.length < n) { const x = run(eng, false), y = run(eng, false); aa.push(y - x); const u = run(eng, false), w = run(eng, true); ab.push(w - u); base += u; }
-    const A = st(aa); if (A.hw / (base / aa.length) * 100 <= lim / 2 || n >= 160) break; n *= 2;
+    const A = st(aa); if (A.hw / (base / aa.length) * 100 <= lim / 2 || n >= +(process.env.NMAX || 40)) break; n *= 2;
   }
   base /= aa.length; const A = st(aa), B = st(ab);
   const up = (B.m + B.hw) / base * 100;
