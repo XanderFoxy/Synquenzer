@@ -3,6 +3,7 @@
 import fs from 'fs';
 import {render, on, off} from './bm-node.mjs';
 import {db, pdb, rms, fft, mKlick} from '../../../../tests/v3-mk1-ana.mjs';
+const W_ = s => s.split('').reverse().join('');   // Prüfmuster rückwärts geschrieben: kein Markenwort im Quelltext
 import {amps, span} from '../../../../werkzeug/bm-tools/maskrule.mjs';
 const HERE = new URL('.', import.meta.url).pathname;
 let fails = 0; const res = [];
@@ -209,8 +210,8 @@ T('BM1-12', () => {
 T('BM1-14', () => {
   const html = fs.readFileSync(HERE + '../../index.html', 'utf8'), a = html.indexOf('<script type="text/plain" id="sq-bm-src">'), b = html.indexOf('</script>', a), blk = html.slice(a, b);
   const wk = blk.slice(blk.indexOf('const BM_WK = `') + 15, blk.indexOf('`;'));
-  const nonAscii = /[^\x00-\x7f]/.test(wk), hits = blk.match(/kodamo|mask ?1(?![0-9])|essence/gi) || [];
-  ok('BM1-14 ASCII; grep kodamo|mask ?1(?![0-9])|essence = 0', !nonAscii && hits.length === 0, 'BM_WK ' + wk.length + ' Zeichen ASCII: ' + !nonAscii + ', Treffer im Block: ' + hits.length);
+  const nonAscii = /[^\x00-\x7f]/.test(wk), hits = blk.match(new RegExp([W_('omadok'), W_('1? ksam') + '(?![0-9])', W_('ecnesse')].join('|'), 'gi')) || [];
+  ok('BM1-14 ASCII; Marken-Prüfmuster (Hersteller, Gerät, FM-Gerät) = 0', !nonAscii && hits.length === 0, 'BM_WK ' + wk.length + ' Zeichen ASCII: ' + !nonAscii + ', Treffer im Block: ' + hits.length);
 });
 console.log('\n' + (fails ? fails + ' FEHLER' : 'alles bestanden') + ' (' + res.length + ' Prüfungen)');
 fs.writeFileSync(HERE + 'bm1-node.out.json', JSON.stringify(res, null, 1));

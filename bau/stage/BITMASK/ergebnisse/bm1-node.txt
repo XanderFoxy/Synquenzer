@@ -24,7 +24,7 @@ PASS BM1-11 DC-Sperre 8 Hz ± 10 % — 7.99 Hz
 PASS BM1-11 Maske 15 gehalten → Gleichanteil ≤ 0,005 nach 200 ms — Gleichanteil 1.32e-6 (ohne Sperre wären es 0.183)
 PASS BM1-12 bitgleich: zwei Offline-Render (48 kHz) M-NULL = −∞; nach reset im selben Prozessor ebenso — Differenz 0 / nach reset 0 (Pegel -22.3 dBFS)
 PASS BM1-12 bitgleich: zwei Offline-Render (44.1 kHz) M-NULL = −∞; nach reset im selben Prozessor ebenso — Differenz 0 / nach reset 0 (Pegel -22.4 dBFS)
-PASS BM1-14 ASCII; grep kodamo|mask ?1(?![0-9])|essence = 0 — BM_WK 87268 Zeichen ASCII: true, Treffer im Block: 0
+PASS BM1-14 ASCII; Marken-Prüfmuster (Hersteller, Gerät, FM-Gerät) = 0 — BM_WK 87268 Zeichen ASCII: true, Treffer im Block: 0
 
 alles bestanden (27 Prüfungen)
 rc=0

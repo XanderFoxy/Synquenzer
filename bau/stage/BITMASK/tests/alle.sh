@@ -16,4 +16,6 @@ for f in XW XP P1 P2 P3 L1 L2; do run bm5-ui-$f $D/BM5/bm5-ui.mjs $f; done
 run bm5-look $D/BM5/bm5-look.mjs; run bm5-regel $D/BM5/bm5-regel.mjs
 for t in bm8-curves bm8-copy bm8-rec2 bm8-helfer bm8-review bm8-layout bm8-regel28; do run $t $D/BMC/$t.mjs; done
 [ -z "$PAT" ] || [[ mk5 =~ $PAT ]] && { echo "== mk5"; bash $D/BMK/mk5/run.sh; for f in v3-mk5-arp v3-mk5-arp-audio; do diff -q $D/BMK/mk5/$f.base.txt $D/BMK/mk5/$f.neu.txt && echo "$f alt = neu"; done > $E/mk5.txt 2>&1; cat $E/mk5.txt; }
+run bm-offline-live $D/STAGE/bm-offline-live.mjs $I
 run chor3min $D/STAGE/bm-north-chor-play3min.mjs $I 180
+run chor3min-basis-4300 $D/STAGE/basis-north-chor-play3min.mjs $R 180

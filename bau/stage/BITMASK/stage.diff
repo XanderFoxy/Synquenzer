@@ -3872,7 +3872,7 @@
    if (nvTr(tr)) return;
    if (tr.kind === 'drum') { randomizeDrumVoice(DRUM_VOICES[ED.dVoice].id); return; }
    if (tr.sound.engine === 'mk') { mkLoad().randomize(t); if (R.editor === 'synth' && t === R.selT) safeRebuild(buildSynthEd); return; }   // MK1 (B.3 🎲)
-+  if (tr.sound.engine === 'bm') { lcdShow(BM_NAME, 'ZUFALL kommt mit dem Editor'); return; }   // BM6: no hidden change of the flat keys (ZUFALL = BM5)
++  if (tr.sound.engine === 'bm') { lcdShow(BM_NAME, 'Zufall: Init → RAND im Bedienfeld'); return; }   // BM6: no hidden change of the flat keys (RAND = Init key of the panel, BM5)
    const snd = deep(tr.sound), p = snd.p, R_ = Math.random, U = (a, b) => a + (b - a) * R_(), E = (a, b) => a * Math.pow(b / a, R_()), pick = a => a[Math.floor(R_() * a.length)];
    // G3-klein: a FELD graph the DX form cannot carry (free graph, other numbers, waves, point envelopes, phases, feedback paths …)
    // is rolled FELD-gerecht: frequencies, DX-form envelopes and levels; the graph, waves and point envelopes stay (nothing is lost

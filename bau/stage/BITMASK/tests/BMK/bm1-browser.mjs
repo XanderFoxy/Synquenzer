@@ -41,7 +41,7 @@ const r = await p.evaluate(async () => {
 for (const sr of [48000, 44100]) ok('BM1-12 Chromium: zwei Offline-Render nach reset bitgleich (' + sr / 1000 + ' kHz)', r['bit' + sr].d === 0 && r['bit' + sr].rms > 1e-3, 'Differenz ' + r['bit' + sr].d + ', Pegel ' + (20 * Math.log10(r['bit' + sr].rms)).toFixed(1) + ' dBFS');
 const bv = r.bm1.load_med - r.idle.load_med, vv = r.va1 - r.va0;
 ok('BM1-13 Chromium (echter AudioWorklet, nur Messwert): Bit-Mask-Stimme gegen VA-Stimme', true,
-  (bv / Math.max(vv, 1e-9)).toFixed(2) + ' × (Bit Mask 1 Stimme ' + (bv * 100).toFixed(2) + ' %, 12 Stimmen + FX1 CH4 + FX2 RV3 ' + ((r.bm12.load_med - r.idle.load_med) * 100).toFixed(2) + ' % (max ' + (r.bm12.load_max * 100).toFixed(2) + ' %, Quantum max ' + r.bm12.quantum_max_ms + ' ms), Leerlauf ' + (r.idle.load_med * 100).toFixed(3) + ' %; VA-Stimme ' + (vv * 100).toFixed(2) + ' %)');
+  (bv / Math.max(vv, 1e-9)).toFixed(2) + ' × (Bit Mask: 1 Stimme ' + (bv * 100).toFixed(2) + ' %, 12 Stimmen + FX1 CH4 + FX2 RV3 ' + ((r.bm12.load_med - r.idle.load_med) * 100).toFixed(2) + ' % (max ' + (r.bm12.load_max * 100).toFixed(2) + ' %, Quantum max ' + r.bm12.quantum_max_ms + ' ms), Leerlauf ' + (r.idle.load_med * 100).toFixed(3) + ' %; VA-Stimme ' + (vv * 100).toFixed(2) + ' %)');
 ok('BM1 Chromium: App startet ohne Konsolenfehler, Block sq-bm-src läuft', errs.length === 0, errs.length ? errs.slice(0, 3).join(' | ') : 'keine Fehler');
 fs.writeFileSync(HERE + 'bm1-browser.out.json', JSON.stringify({res, raw: r}, null, 1));
 await b.close(); process.exit(fails ? 1 : 0);

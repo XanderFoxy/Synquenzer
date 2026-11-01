@@ -1,24 +1,13 @@
 {
  "test": "bm6-store",
- "pass": false,
+ "pass": true,
  "checks": {
   "BM6-03_normBm_1000": {
-   "ok": false,
-   "bad": [
-    "ly.md=ein",
-    "gl.tm=et",
-    "gl.vc=4",
-    "gl.ac=4",
-    "a.f.md=lp",
-    "a.l1.w=sin",
-    "a.l2.w=sin",
-    "a.fx.t1=CH1",
-    "a.fx.t2=RV1",
-    "a.ar.t=off"
-   ],
-   "nbad": 14493,
-   "unk": 17127,
-   "unkKept": 7302,
+   "ok": true,
+   "bad": [],
+   "nbad": 0,
+   "unk": 7636,
+   "unkKept": 7636,
    "idem": 1000
   },
   "BM6-02_engine_switch_data": {
@@ -46,10 +35,10 @@
    "libDup": true,
    "libLoad": true,
    "soundFile": true,
-   "ownId": "u-mvxng4j6-pl23"
+   "ownId": "u-mvxob9u4-vj5i"
   },
   "BM6-09_library": {
-   "ok": false,
+   "ok": true,
    "engChip": true,
    "rows": [
     "Säge-Bass",
@@ -145,4 +134,4 @@
   }
  }
 }
-rc=1
+rc=0

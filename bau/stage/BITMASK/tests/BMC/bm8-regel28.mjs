@@ -33,8 +33,8 @@ const nw = await B.p.evaluate(({file}) => {
 await playLog(B.p); const nwLog = await playLog(B.p);
 const st = await B.p.evaluate(() => ({act: Object.keys(BMC.act).length, h: Object.keys(BMC.h).length, fake: BMC.fake.size}));
 ok('Regel 28: altes Projekt → Datei byte-gleich (Laden, Speichern)', nw.file.replace(/"appVersion":"[^"]*"/, '') === old.file.replace(/"appVersion":"[^"]*"/, ''), nw.file.length + ' / ' + old.file.length);
-{ const a = old.ser, c = nw.ser; let k = 0; while (k < a.length && a[k] === c[k]) k++; console.log('SERDIFF', a.length, c.length, JSON.stringify(a.slice(k - 80, k + 120)), JSON.stringify(c.slice(k - 80, k + 120))); }
-ok('Regel 28: serialize() gleich', nw.ser === old.ser);
+const nv = x => x.replace(/4\.3[01]\.0/g, 'V');   // STAGE: nur die Versionsnummer (4.30.0 / 4.31.0) darf sich unterscheiden
+ok('Regel 28: serialize() gleich (bis auf die Versionsnummer)', nv(nw.ser) === nv(old.ser));
 { const a = JSON.parse(old.demoSer), c = JSON.parse(nw.demoSer), d = []; const walk = (x, y, pa) => { if (JSON.stringify(x) === JSON.stringify(y)) return; if (x && y && typeof x === 'object' && typeof y === 'object') { for (const k of new Set([...Object.keys(x), ...Object.keys(y)])) walk(x[k], y[k], pa + '.' + k); } else d.push(pa + ': ' + JSON.stringify(x) + ' ≠ ' + JSON.stringify(y)); }; walk(a, c, '');
   ok('Regel 28: Demo-Projekt gleich (bis auf zufällige id/uid/Name)', d.every(x => /\.(id|uid|name)(:| )/.test(x)), d.slice(0, 6)); }
 ok('Regel 28: kein cv-Feld entsteht', !nw.hasCv);

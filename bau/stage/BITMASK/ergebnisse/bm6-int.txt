@@ -3,25 +3,27 @@
  "pass": false,
  "checks": {
   "BM6-04_offline_onsets": {
-   "ok": false,
+   "ok": true,
    "abweichungSamples": [
-    -1,
-    -8402,
-    -14402,
-    -20402,
-    -26402,
-    -32402,
-    -38402,
-    -44402,
-    -50402,
-    -56402,
-    -62402,
-    -68402,
-    -74402,
-    -80402,
-    -86402,
-    -92402
-   ]
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "laufzeitSamples": 9,
+   "bitgleich": true
   },
   "BM6-06_offline_twice_bitgleich": true,
   "BM6-04_live_late0": {
@@ -67,27 +69,27 @@
    "fangBm": 5
   },
   "BM6-06_offline_eq_live": {
-   "ok": true,
-   "korrelation": 0.9993,
-   "lag": 1920
+   "ok": false,
+   "korrelation": 0.8992,
+   "lag": 1792
   },
   "BM6-02_switch_sounding": {
-   "ok": false,
+   "ok": true,
    "held": 1,
-   "klickDb": 42.7934215258065,
-   "afterDb": -24.619716885277473
+   "klickDb": -0.017459935792180775,
+   "afterDb": -24.617368522127457
   },
   "BM6-05_stop_panic_mute": {
    "ok": true,
    "vorPanik": -17.03990550693448,
    "nachPanik50ms": -300,
-   "vorStopp": -17.26350403829081,
-   "stopp0bis5ms": -18.84565013909515,
+   "vorStopp": -17.24104520671185,
+   "stopp0bis5ms": -18.04848468693762,
    "nachStopp300ms": -300,
    "proxies": 0,
    "muteDb": -300,
    "muteClipNotes": 0,
-   "unmuteDb": -21.876399878024515
+   "unmuteDb": -21.876395311138236
   },
   "BM6-10_routes": {
    "ok": true,
@@ -105,8 +107,8 @@
     "fall": "bm",
     "voices": 10,
     "fx": "CH4 + RV3",
-    "load_med": 0.032,
-    "load_max": 0.0679,
+    "load_med": 0.0759,
+    "load_max": 0.1318,
     "reports": 10,
     "frames_ok": true,
     "fps_med": 59.9,
@@ -121,7 +123,7 @@
   },
   "BM6-07_native": {
    "ok": true,
-   "rms": -31.897368488425272,
+   "rms": -31.909557831989346,
    "eco": "Bit Mask braucht AudioWorklet – vereinfacht",
    "key": true,
    "toast": true,

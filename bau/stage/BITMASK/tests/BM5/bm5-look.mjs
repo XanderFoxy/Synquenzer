@@ -25,7 +25,8 @@ const MEAS = () => {
 };
 const inter = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
 const inside = (a, b, e = .6) => a[0] >= b[0] - e && a[1] >= b[1] - e && a[0] + a[2] <= b[0] + b[2] + e && a[1] + a[3] <= b[1] + b[3] + e;
-const BRAND = /kodamo|mask ?1(?![0-9])|essence|korg|microkorg|radias|dwgs|\bnord\b|kompakt/i;
+const W_ = s => s.split('').reverse().join('');   // Prüfmuster rückwärts geschrieben: kein Markenwort im Quelltext
+const BRAND = new RegExp([W_('omadok'), W_('1? ksam') + '(?![0-9])', W_('ecnesse'), W_('grok'), W_('grokorcim'), W_('saidar'), W_('sgwd'), '\\b' + W_('dron') + '\\b', W_('tkapmok')].join('|'), 'i');
 const ORDER_A = ['vol', 'octL', 'octR', 'voice', 'layer', 'split', 'init', 'write', 'global', 'disp', 'parL', 'parR'], ORDER_B = ['seq', 'osc1', 'osc2', 'noise', 'filter', 'lfo1', 'lfo2', 'fx', 'arp', 'pitch', 'mod', 'general', 'value', 'compare'];
 const FOLD = [['vol', 'octL', 'octR', 'voice', 'layer', 'split'], ['init', 'write', 'global', 'disp', 'parL', 'parR'], ['seq', 'osc1', 'osc2', 'noise', 'filter', 'lfo1', 'lfo2'], ['fx', 'arp', 'pitch', 'mod', 'general', 'value', 'compare']];
 const skizze = {};

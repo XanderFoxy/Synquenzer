@@ -29,12 +29,15 @@ await P.evaluate(async () => { ensureAudio(); await new Promise(r => setTimeout(
 const t1 = await P.evaluate(async () => {
   const sr = 48000, ev = []; for (let k = 0; k < 16; k++) { const at = .05 + k * .125; ev.push([at, 'on', 60 + (k % 5), .8, 'k' + k], [at + .06, 'off', 60 + (k % 5), 0, 'k' + k]); }
   const r = await SYNQUENZER.bmRender({a: {o1: {m: 31, e: {l: 99, a: 0, d: 0, s: 15, r: 0}}}}, ev, {sec: 2.2, sr});
-  const dev = []; for (let k = 0; k < 16; k++) { const s = Math.round((.05 + k * .125) * sr); let f = -1; for (let i = s - 4; i < s + 20; i++) if (Math.abs(r.l[i]) > 1e-9 && Math.abs(r.l[i - 1]) <= 1e-9) { f = i; break; } dev.push(f - (s + 1)); }
+  // STAGE (echter Prozessor): Einsatz = erstes Sample über −40 dBFS ab Soll; Dezimierer + DC-Sperre klingen nach (nie exakt 0), daher
+  // gilt: alle 16 Einsätze in derselben Lage zum Soll (± 1 Sample, die feste Laufzeit des Dezimierers wird mitgemeldet)
+  const on = []; for (let k = 0; k < 16; k++) { const s = Math.round((.05 + k * .125) * sr); let f = -1; for (let i = s - 8; i < s + 200; i++) if (Math.abs(r.l[i]) > .01) { f = i; break; } on.push(f - s); }
+  const dev = on.map(x => x - on[0]); dev.lat = on[0];
   const r2 = await SYNQUENZER.bmRender({a: {o1: {m: 31, e: {l: 99, a: 0, d: 0, s: 15, r: 0}}}}, ev, {sec: 2.2, sr});
   let same = r.l.length === r2.l.length; for (let i = 0; same && i < r.l.length; i++) if (r.l[i] !== r2.l[i] || r.r[i] !== r2.r[i]) same = false;
-  return {dev, bit: same};
+  return {dev, lat: dev.lat, bit: same};
 });
-ok('BM6-04_offline_onsets', t1.dev.every(d => Math.abs(d) <= 1), {abweichungSamples: t1.dev});
+ok('BM6-04_offline_onsets', t1.dev.every(d => Math.abs(d) <= 1) && t1.lat >= 0 && t1.lat < 96 && t1.bit, {abweichungSamples: t1.dev, laufzeitSamples: t1.lat, bitgleich: t1.bit});
 ok('BM6-06_offline_twice_bitgleich', t1.bit);
 
 // BM6-04 live: Demo, Spur 1 = Bit Mask, BARS Takte bei 240 BPM: late = 0, Notenplan gleich wie VA
