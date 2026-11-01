@@ -1,0 +1,16 @@
+✓ Logo geladen (Xanders Datei, 10 s) {"st":"ok","own":false,"name":"abspann-logo.mp4","dur":10,"w":952,"h":952,"pref":true,"on":true}
+✓ Weg mr ["recorder","recorder"]
+✓ 1 Länge = Song samt Ausklang (nichts angehängt): res.dur = Songlänge + Ausklang {"mit":18.551655328798187,"song":16,"ausklang":2.551655328798186}
+✓ 1 Länge wie ohne Logo (gleich lang wie ein Lauf ohne Logo bzw. innerhalb der Ausklang-Streuung zweier Läufe ohne Logo) {"mit":18.551655328798187,"ohne":[18.551655328798187,18.551655328798187],"streuung":0}
+✓ 1 Echtzeit: Tonspur = Länge (±0,6 s); Bildspur nicht kürzer als ohne Logo (Test-Chromium verliert in der Live-Aufnahme Bilder – mit und ohne Logo) {"bild":{"end":18.509,"frames":544},"ton":18.586,"soll":18.551655328798187,"ohne":{"bild":{"end":18.648,"frames":557},"ton":18.637,"soll":18.551655328798187}}
+✓ 2 res.logo: Ende = Videoende, Start = Ende − 10 s {"name":"abspann-logo.mp4","own":false,"at":8.551655328798187,"fade":2,"len":10,"off":0,"end":18.551655328798187}
+✓ 3 Echtzeit: vor dem Start Bild da, danach dunkler als ohne Logo, ab ~2,5 s schwarz (Datei-Zeit im Test-Chromium ±0,5 s versetzt) [{"dt":-0.4,"mit":19.48,"ohne":23.51},{"dt":0.3,"mit":10.83,"ohne":13.8},{"dt":1,"mit":17.18,"ohne":44.35},{"dt":1.6,"mit":4.54,"ohne":43.62},{"dt":2.6,"mit":0,"ohne":43.61}]
+✓ 3 ab 2 s nach Logo-Start bis zum Ende schwarz (außerhalb des Logos) [0,0,0]
+✓ 4 Echtzeit: letztes Bild der Datei = Logo zu seiner Zeit (Logo ab ~7 s fertig geschrieben) {"mad":0.71,"hellVideo":4407,"hellLogo":4448,"madGegenLogo3s":21.86,"tauLast":9.95}
+✓ 4 Logo einmal mittig, innerhalb 60 % der kürzeren Seite {"bx0":167,"by0":79,"bx1":312,"by1":183,"cx":239.5,"cy":131,"w":146,"h":105,"sq":{"x0":159,"y0":54,"x1":321,"y1":216}}
+✓ 5 kein Kasten (Ecken des Logo-Felds schwarz), Rot satt im Logo {"ecken":0,"rotPixel":32}
+✓ 6 Echtzeit: Ton mit Logo so laut und lang wie ohne (±0,5 dB, ±0,3 s) {"mit":"dbda4f64a794","ohne":"e7494b36d935","ohne2":"751554fd4856","len":[3559680,3559680,3571200],"render":["ab5990a0","fd1cd860","3adca9f8"],"difMitOhne":-19.1,"difOhneOhne2":-19.1,"db":0.01}
+✓ 6 letzte Sekunde Ton wie ohne Logo (kein zusätzliches Ausblenden) {"mit":1.5,"ohne":1.6}
+✓ keine Konsolenfehler []
+logo-mr-16x9-8t: 14/14
+rc=0

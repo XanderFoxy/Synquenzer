@@ -1,0 +1,68 @@
+{
+ "alt×1": {
+  "dcl": 390.3,
+  "load": 426.3,
+  "ready": 351.1,
+  "script": 60,
+  "task": 465,
+  "heap": 5.4,
+  "md": [
+   "0/null/null"
+  ],
+  "errs": 0
+ },
+ "neu×1": {
+  "dcl": 407.6,
+  "load": 435.9,
+  "ready": 367.9,
+  "script": 68,
+  "task": 478.1,
+  "heap": 5.7,
+  "md": [
+   "0/0/idle"
+  ],
+  "errs": 0
+ },
+ "diff×1": {
+  "dcl": 17.3,
+  "load": 9.6,
+  "ready": 16.8,
+  "script": 8,
+  "task": 13.1,
+  "heap": 0.3
+ },
+ "alt×4": {
+  "dcl": 1983.8,
+  "load": 2199.4,
+  "ready": 1768.6,
+  "script": 356.1,
+  "task": 2310,
+  "heap": 5.4,
+  "md": [
+   "0/null/null"
+  ],
+  "errs": 0
+ },
+ "neu×4": {
+  "dcl": 1966,
+  "load": 2175.1,
+  "ready": 1762.4,
+  "script": 346.8,
+  "task": 2307,
+  "heap": 5.6,
+  "md": [
+   "0/0/idle"
+  ],
+  "errs": 0
+ },
+ "diff×4": {
+  "dcl": -17.8,
+  "load": -24.3,
+  "ready": -6.2,
+  "script": -9.3,
+  "task": -3,
+  "heap": 0.2
+ }
+}
+ohne North-Pad kein North-Modul (auch nach ▶): ✓
+rc=0 sek=166

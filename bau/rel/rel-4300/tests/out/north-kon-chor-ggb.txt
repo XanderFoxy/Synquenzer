@@ -1,0 +1,19 @@
+✓ Song: 2 Chor-Gruppe-Stellen (v2, 80 + Gospel) und 12 North-Pads {"sty":[true,true],"setup":{"md":12,"st":"ready","vox":[["V1",2,4,2,"80"],["V2",6,4,2,"gospel"]]}}
+✓ Video-Ton vorher: North-Knoten offline, 0 späte Schläge, Chor fertig {"drum":496,"late":0,"ready":[true,true],"rms":0.0994604754764524}
+✓ Video-Ton zweimal gerechnet: gleiche North-Schläge (496), gleiche Noten, Ton gleich bis auf die Chor-Schwankung {"db":-49.4,"len":[1448464,1448464]}
+✓ Takt 3–10 (beide Chor-Stellen, North-Drums) als Teil „Kern“ konsolidiert {"part":0,"name":"Kern","mark":"M1"}
+✓ der Teil trägt beide Chor-Gruppen und die Drum-Spur {"vox":[[2,"80"],[2,"gospel"]],"drumLane":true}
+✓ konsolidiert: klingt identisch (dieselben North-Schläge, gleiche Noten, Null-Test im Rahmen der Chor-Schwankung, 0 späte Schläge) {"n01":{"db":-49.4,"len":[1448464,1448464]},"TOL":-40,"notes":[544,544],"hits":496,"late":0}
+✓ zurückgeholt
+✓ Song nach Zurückholen exakt wie vorher
+✓ zurückgeholt: klingt identisch {"n02":{"db":-49.4,"len":[1448464,1448464]},"notes":544}
+✓ ↶ (wieder konsolidiert): klingt identisch {"n03":{"db":-49.4,"len":[1448464,1448464]}}
+✓ ↶ (Konsolidieren zurück): Song exakt wie vorher
+✓ Instrumental: North-Knoten im Offline-Kontext, 0 späte Schläge {"g0":{"k":0,"n":1632000,"sr":48000,"offNode":true,"late":0},"g1":{"k":1,"n":1632000,"sr":48000,"offNode":true,"late":0}}
+✓ Instrumental zweimal gerechnet gleich (16 Bit) {"db":-110.8,"len":[3264000,3264000]}
+✓ mit Drum-Stimme statt North klingt das Instrumental anders → North ist im Instrumental {"d02":{"db":5.2,"len":[3264000,3264000]},"offNode":false}
+✓ ↶ 12×: wieder 12 North-Pads
+✓ Instrumental danach wieder gleich dem ersten {"db":-300,"len":[3264000,3264000]}
+✓ keine Konsolenfehler []
+north-kon-chor-ggb: 17/17 grün (74 s)
+rc=0 sek=76

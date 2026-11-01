@@ -1,0 +1,17 @@
+✓ Logo geladen (Xanders Datei, 10 s) {"st":"ok","own":false,"name":"abspann-logo.mp4","dur":10,"w":952,"h":952,"pref":true,"on":true}
+✓ Weg wc ["webcodecs","webcodecs"]
+✓ 1 Länge = Song samt Ausklang (nichts angehängt): res.dur = Songlänge + Ausklang {"mit":18.772244897959183,"song":16,"ausklang":2.7722448979591836}
+✗ 1 Länge wie ohne Logo (gleich lang wie ein Lauf ohne Logo bzw. innerhalb der Ausklang-Streuung zweier Läufe ohne Logo) {"mit":18.772244897959183,"ohne":[18.574875283446712,18.574875283446712],"streuung":0}
+✓ 1 Bildspur = Tonspur = Länge (±1 Bild) {"bild":{"end":18.767,"frames":563},"ton":18.78,"soll":18.772244897959183,"ohne":{"bild":18.567,"ton":18.6,"soll":18.574875283446712}}
+✓ 2 res.logo: Ende = Videoende, Start = Ende − 10 s {"name":"abspann-logo.mp4","own":false,"at":8.766666666666666,"fade":2,"len":10,"off":0,"end":18.766666666666666}
+✓ 3 Bild vor dem Logo-Start = Bild ohne Logo (Abdunkeln beginnt nicht früher) 0.183
+✓ 3 Abdunkeln ab Logo-Start linear über 2 s (außerhalb des Logos: Start ≈ 100 %, 0,5 s ≈ 75 %, 1 s ≈ 50 %, 1,5 s ≈ 25 %) {"vorStart":0.183,"q0":{"t":8.783,"mit":25.53,"ohne":26.62,"q":0.959},"q05":{"t":9.283,"mit":38.28,"ohne":53.38,"q":0.717},"q1":{"t":9.783,"mit":25.8,"ohne":53.89,"q":0.479},"q15":{"t":10.283,"mit":12.21,"ohne":53.23,"q":0.229}}
+✓ 3 ab 2 s nach Logo-Start bis zum Ende schwarz (außerhalb des Logos) [0.98,0.99,0.99]
+✓ 4 letztes Bild = letztes Logo-Bild (mittlere Abweichung klein, viel kleiner als gegen Logo-Sekunde 3) {"mad":0.84,"hellVideo":4451,"hellLogo":4448,"madGegenLogo3s":22.72,"tauLast":9.97}
+✓ 4 Logo einmal mittig, innerhalb 60 % der kürzeren Seite {"bx0":167,"by0":79,"bx1":312,"by1":183,"cx":239.5,"cy":131,"w":146,"h":105,"sq":{"x0":159,"y0":54,"x1":321,"y1":216}}
+✓ 5 kein Kasten (Ecken des Logo-Felds schwarz), Rot satt im Logo {"ecken":1,"rotPixel":473}
+✗ 6 Ton mit Logo = ohne Logo: gleicher Offline-Ton ⇒ dekodiert bitgleich; sonst (der Offline-Ton schwankt je Lauf leicht) Abweichung so klein wie zwischen zwei Läufen ohne Logo {"mit":"4223d3279842","ohne":"1ad6ac0c288b","ohne2":"96b7a59a9217","len":[3604512,3569952,3569952],"render":["78fe995a","71861d55","11241a99"],"difMitOhne":-18.5,"difOhneOhne2":-59.2}
+✓ 6 letzte Sekunde Ton wie ohne Logo (kein zusätzliches Ausblenden) {"mit":-45.4,"ohne":-44.7}
+✓ keine Konsolenfehler []
+logo-wc-16x9-8t: 13/15 – FEHLT: 1 Länge wie ohne Logo (gleich lang wie ein Lauf ohne Logo bzw. innerhalb der Ausklang-Streuung zweier Läufe ohne Logo) | 6 Ton mit Logo = ohne Logo: gleicher Offline-Ton ⇒ dekodiert bitgleich; sonst (der Offline-Ton schwankt je Lauf leicht) Abweichung so klein wie zwischen zwei Läufen ohne Logo
+rc=1

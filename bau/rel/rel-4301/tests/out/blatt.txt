@@ -1,0 +1,29 @@
+--- 428×926
+✓ 428×926 chor: ✕ sichtbar, oben auf, Trefferfläche ≥ 44 px {"x":369,"y":37,"w":44,"h":44,"hitH":44,"inView":true,"top":true}
+✓ 428×926 chor: Tipp auf ✕ schließt
+✓ 428×926 takes: ✕ sichtbar, oben auf, Trefferfläche ≥ 44 px {"x":369,"y":87,"w":44,"h":44,"hitH":44,"inView":true,"top":true}
+✓ 428×926 takes: Tipp auf ✕ schließt
+✓ 428×926 mikro: ✕ sichtbar, oben auf, Trefferfläche ≥ 44 px {"x":333,"y":161,"w":44,"h":44,"hitH":44,"inView":true,"top":true}
+✓ 428×926 mikro: Tipp auf ✕ schließt
+✓ 428×926 wellen: ✕ sichtbar, oben auf, Trefferfläche ≥ 44 px {"x":393,"y":286.5,"w":44,"h":44,"hitH":44,"inView":true,"top":true}
+✓ 428×926 wellen: Tipp auf ✕ schließt
+✓ 428×926 noten: ✕ sichtbar, oben auf, Trefferfläche ≥ 44 px {"x":393,"y":286.5,"w":44,"h":44,"hitH":44,"inView":true,"top":true}
+✓ 428×926 noten: Tipp auf ✕ schließt
+✓ 428×926 video: ✕ sichtbar, oben auf, Trefferfläche ≥ 44 px {"x":402,"y":23.5,"w":44,"h":44,"hitH":45,"inView":true,"top":true}
+✓ 428×926 video: Tipp auf ✕ schließt
+✓ 428×926 chor: Tipp außerhalb schließt [424,922]
+✓ 428×926 chor: Wischen am Kopf: 30 px federt zurück, 140 px schließt
+✓ 428×926 takes: Tipp außerhalb schließt [4,4]
+✓ 428×926 takes: Wischen am Kopf: 30 px federt zurück, 140 px schließt
+✓ 428×926 mikro: Tipp außerhalb schließt [424,922]
+✓ 428×926 mikro: Wischen am Kopf: 30 px federt zurück, 140 px schließt
+✓ 428×926 Chor: passt ohne Scrollen ins Bild (Kopf oben) {"st":0,"max":0,"x":304,"y0":289,"y1":103}
+✓ 428×926 Ablegen: Leiste unten (≤ 60 px, im Bild), keine Ebene mehr über der App {"h":54,"top":866,"bottom":920,"w":412,"vh":926,"pop":false,"layer":false,"t":"Chor · Song · Takt 5–8"}
+✓ 428×926 Ablegen: App bedienbar (Tempo-Fenster öffnet), Leiste bleibt {"tempo":{"pop":"bpm","bar":true},"bpmTop":true}
+✓ 428×926 Zurückholen: Blatt wieder da, Klang ▸ und ⋯ offen, Scroll-Stand gleich {"s0":{"st":120,"kl":true,"dot":true},"s1":{"name":"chor","st":120,"kl":true,"dot":true,"dock":false,"layer":true}}
+✓ 428×926 ein neues hohes Blatt ersetzt das abgelegte (Chor-Zustand aufgeräumt) {"pop":"takes","dock":false,"g6":null}
+✓ 428×926 ✕ auf der Leiste schließt
+✓ 428×926 Kopf: 5 Knöpfe, je ≥ 44 × 44, im Bild [["Von vorn",44,44,true],["Abspielen oder anhalten",44,44,true],["Schleife an oder aus",44,44,true],["Ablegen",44,44,true],["Schließen",44,44,true]]
+✓ Transport ▶: Song-Stimme Takt 5–8 läuft (Schleife 4–8), Chor-Kopien klingen, Pegel (nur STIMME + Chor hörbar) > −40 dB, Blatt bleibt offen, Knopf zeigt ■ {"playing":true,"song":true,"lx":{"on":true,"a":4,"b":8},"sb":19.435782312925177,"copies":6,"rmsSt":-22.543934544675267,"sheet":"chor","icon":"block"}
+✓ Gegenprobe Chor stumm: Pegel um ≥ 0,3 dB kleiner (Chor 8 LU unter dem Lead → erwartet ≈ 0,6 dB) {"mitChor":-22.543934544675267,"chorStumm":-23.105526710415095}
+✓ Transport ⏮: startet die Stelle neu (Takt 5) {"sbA":22.436961451247164,"sbB":{"sb":16.31850340136053,"playing":true}}

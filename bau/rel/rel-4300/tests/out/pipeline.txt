@@ -1,0 +1,13 @@
+title SYNQUENZER errors []
+{"version":"4.30.0","initAm":{"rms":0.0705,"peak":0.177},"placePart":"function","mkKeys":12} errors []
+PASS MK2-12 Block: gleiche Quelle → bitgleicher Block — Salz 0, 9473 Byte, Base64 12632 Zeichen (12.34 KB)
+PASS MK2-12 Block: 0 Markenwörter
+PASS MK2-12 Block: Größe (Prot. 58: alle Teiltöne der Kompaktdatei, ≈ +3 KB gegenüber 9 KB) — 12.34 KB
+PASS MK2-12 Block in index.html = Bau-Ergebnis
+PASS MK2-12 keine Wellennamen in index.html — 64 Namen geprüft, 0 Treffer
+PASS FP-SICHER ganze Datei: micro?korg|radias|dwgs = 0, „MS 2000“-Schreibungen genau 1
+PASS MK2-12 dekodiert: Pegel ± 0,02 dB, Phase ± 0,001 rad, r ∈ {1, 2, 1,49831} — max 0.0125 dB, 0.00077 rad
+PASS MK2-12 Form je Welle ≤ rms32 + 0,1 Prozentpunkte (35: ≤ 5,7 %) — 0 über der Grenze; knappste 60 (-0.098), 50 (-0.174), 16 (-0.178)
+  1:0.24/0.51 2:0.22/0.47 3:0.16/0.46 4:0.29/0.61 5:0.37/0.79 6:0.72/1.17 7:0.55/0.92 8:0.14/0.35 9:0.34/0.69 10:1.82/2.10 11:1.46/1.77 12:1.85/2.11 13:3.80/4.31 14:3.88/4.17 15:3.63/4.04 16:2.54/2.72 17:3.77/4.07 18:4.29/4.56 19:5.17/5.53 20:10.10/10.89 21:11.83/12.36 22:4.90/5.09 23:4.06/4.42 24:0.25/0.57 25:4.81/5.05 26:3.69/3.95 27:0.71/1.29 28:11.64/12.43 29:5.01/5.32 30:4.10/4.36 31:1.96/2.20 32:13.07/13.53 33:3.78/4.00 34:7.75/8.09 35:4.57/5.70 36:0.50/0.88 37:0.23/0.47 38:2.07/2.44 39:1.09/1.50 40:0.24/0.51 41:0.28/0.58 42:0.42/0.79 43:0.58/0.96 44:0.40/0.71 45:0.77/1.04 46:1.22/1.47 47:1.57/1.90 48:6.29/6.59 49:0.19/0.43 50:1.01/1.18 51:5.42/5.82 52:0.21/0.55 53:0.21/0.45 54:0.27/0.52 55:4.73/4.92 56:8.86/9.16 57:0.99/1.46 58:5.32/5.63 59:10.44/11.35 60:0.88/0.98 61:1.24/1.54 62:1.65/1.92 63:3.29/3.54 64:10.76/11.00
+alles PASS
+rc=0

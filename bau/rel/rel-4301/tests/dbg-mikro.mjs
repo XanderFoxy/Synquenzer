@@ -1,0 +1,17 @@
+import {createRequire} from 'module'; const {chromium} = createRequire(import.meta.url)('playwright');
+const APP = process.argv[2];
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream']});
+const ctx = await b.newContext({viewport: {width: 428, height: 650}, hasTouch: true, isMobile: true, permissions: ['microphone']});
+const p = await ctx.newPage();
+await p.goto('file://' + APP); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.version); await p.waitForTimeout(800);
+await p.evaluate(async () => { closePop(); ensureAudio(); });
+await p.evaluate(() => { window._ev = []; ['pointerdown','pointerup','click'].forEach(t => window.addEventListener(t, e => _ev.push(t + ':' + (e.target.id || e.target.className) + ':' + Math.round(e.clientX) + ',' + Math.round(e.clientY)), true)); });
+await p.evaluate(() => SYNQUENZER.stimmeSheet()); await p.waitForTimeout(500);
+console.log('vor', await p.evaluate(() => { const r = UI.pop.el.getBoundingClientRect(), h = UI.pop.el.querySelector('.psh-h').getBoundingClientRect(); return {pop: [r.left, r.top, r.width, r.height], head: [h.left, h.top, h.width, h.height], vv: [visualViewport.width, visualViewport.scale, visualViewport.offsetLeft, visualViewport.offsetTop], sw: document.documentElement.scrollWidth, iw: innerWidth}; }));
+await p.screenshot({path: 'out/dbg-mikro-vor.png'});
+await p.touchscreen.tap(4, 4); await p.waitForTimeout(400);
+console.log('nach 1. Tipp', await p.evaluate(() => ({pop: UI.pop && UI.pop.name, ev: _ev})));
+await p.evaluate(() => SYNQUENZER.stimmeSheet()); await p.waitForTimeout(500);
+console.log(await p.evaluate(() => { const r = UI.pop.el.getBoundingClientRect(); const h = document.elementFromPoint(4, 4); return {r: [r.left, r.top, r.width, r.height], hit: h && (h.id || h.className), sh: UI.pop.el.scrollHeight, ch: UI.pop.el.clientHeight}; }));
+await p.screenshot({path: 'out/dbg-mikro.png'});
+await b.close();

@@ -1,0 +1,2410 @@
+{
+ "ok": true,
+ "app": "/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/rel-4300/index.html",
+ "old": "/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/synq-snapshots/R-4290.html",
+ "formats": [
+  "L"
+ ],
+ "sec": 132,
+ "pass": 195,
+ "fail": 0,
+ "perId": {
+  "ND2-01": {
+   "ok": true,
+   "pass": 11,
+   "fail": 0
+  },
+  "ND2-03": {
+   "ok": true,
+   "pass": 107,
+   "fail": 0
+  },
+  "ND2-04": {
+   "ok": true,
+   "pass": 11,
+   "fail": 0
+  },
+  "ND2-05": {
+   "ok": true,
+   "pass": 9,
+   "fail": 0
+  },
+  "ND2-06": {
+   "ok": true,
+   "pass": 5,
+   "fail": 0
+  },
+  "ND2-07": {
+   "ok": true,
+   "pass": 10,
+   "fail": 0
+  },
+  "ND2-08": {
+   "ok": true,
+   "pass": 10,
+   "fail": 0
+  },
+  "ND2-09": {
+   "ok": true,
+   "pass": 7,
+   "fail": 0
+  },
+  "ND2-10": {
+   "ok": true,
+   "pass": 4,
+   "fail": 0
+  },
+  "ND2-11": {
+   "ok": true,
+   "pass": 7,
+   "fail": 0
+  },
+  "ND2-12": {
+   "ok": true,
+   "pass": 8,
+   "fail": 0
+  },
+  "ND2-13": {
+   "ok": true,
+   "pass": 6,
+   "fail": 0
+  }
+ },
+ "failed": [],
+ "checks": [
+  {
+   "id": "ND2-01",
+   "fmt": "L",
+   "name": "KIT ohne Modell-Pad hat keine Unter-Reiter",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-01",
+   "fmt": "L",
+   "name": "SOUND: Quelle-Knopf .dsrc vorhanden (genau 1)",
+   "ok": true,
+   "info": {
+    "dsrc": 1
+   }
+  },
+  {
+   "id": "ND2-01",
+   "fmt": "L",
+   "name": "TIEF: Quelle-Knopf .dsrc höchstens 1",
+   "ok": true,
+   "info": {
+    "dsrc": 0
+   }
+  },
+  {
+   "id": "ND2-01",
+   "fmt": "L",
+   "name": "KIT: Quelle-Knopf .dsrc fehlt",
+   "ok": true,
+   "info": {
+    "dsrc": 0
+   }
+  },
+  {
+   "id": "ND2-01",
+   "fmt": "L",
+   "name": "SOUND: DOM-Struktur = alter Stand (außer .dsrc)",
+   "ok": true,
+   "info": {
+    "nodes": 196
+   }
+  },
+  {
+   "id": "ND2-01",
+   "fmt": "L",
+   "name": "SOUND: Unter-Reiter wie alter Stand",
+   "ok": true,
+   "info": {
+    "alt": [],
+    "neu": []
+   }
+  },
+  {
+   "id": "ND2-01",
+   "fmt": "L",
+   "name": "TIEF: DOM-Struktur = alter Stand (außer .dsrc)",
+   "ok": true,
+   "info": {
+    "nodes": 187
+   }
+  },
+  {
+   "id": "ND2-01",
+   "fmt": "L",
+   "name": "TIEF: Unter-Reiter wie alter Stand",
+   "ok": true,
+   "info": {
+    "alt": [
+     "ton",
+     "fm",
+     "noise",
+     "metal",
+     "click",
+     "out"
+    ],
+    "neu": [
+     "ton",
+     "fm",
+     "noise",
+     "metal",
+     "click",
+     "out"
+    ]
+   }
+  },
+  {
+   "id": "ND2-01",
+   "fmt": "L",
+   "name": "KIT: DOM-Struktur = alter Stand (außer .dsrc)",
+   "ok": true,
+   "info": {
+    "nodes": 113
+   }
+  },
+  {
+   "id": "ND2-01",
+   "fmt": "L",
+   "name": "KIT: Unter-Reiter wie alter Stand",
+   "ok": true,
+   "info": {
+    "alt": [],
+    "neu": []
+   }
+  },
+  {
+   "id": "ND2-01",
+   "fmt": "L",
+   "name": "keine Seitenfehler",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "TONE: 10 Zellen vorhanden",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mSpc: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 0,
+    "v1": 33,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mSpc: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 0,
+    "init": 0,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mSpc: Anzeige Geräte-Schreibweise (4 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mFrq: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 25,
+    "v1": 42,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mFrq: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 25,
+    "init": 25,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mFrq: Anzeige Geräte-Schreibweise (4 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDec: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 20,
+    "v1": 37,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDec: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 20,
+    "init": 20,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDec: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mBnd: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 0,
+    "v1": 27,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mBnd: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 0,
+    "init": 0,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mBnd: Anzeige Geräte-Schreibweise (4 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mBnd: Mittelraste (px auf 0: 26, ohne Raste ≈ 2.0)",
+   "ok": true,
+   "info": {
+    "at0": 26,
+    "plain": 2,
+    "seq": "-10,-10,-10,-10,-9,-9,-8,-8,-7,-7,-6,-6,-5,-5,-4,-4,-3,-3,-2,-2,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,"
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mPit: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 45,
+    "v1": 87,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mPit: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 45,
+    "init": 45,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mPit: Anzeige Geräte-Schreibweise (4 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "PITCH normal: ganze Halbtöne",
+   "ok": true,
+   "info": {
+    "seq": "45,45,46,48,49,50,51,53,54,55,56,58,59,60,62,63,64,65,67,68"
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "PITCH Fein-Modus (seitlich weg, dann senkrecht): Schritte 0,1",
+   "ok": true,
+   "info": {
+    "after": 47.4,
+    "steps": [
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.1
+    ],
+    "fineon": true
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mWav: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": "A1",
+    "v1": "F4",
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mWav: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": "A1",
+    "init": "A1",
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mWav: Anzeige Geräte-Schreibweise (4 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDyf: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 0,
+    "v1": 3,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDyf: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 0,
+    "init": 0,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDyf: Anzeige Geräte-Schreibweise (4 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mode: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": [
+     "E1",
+     20
+    ],
+    "v1": [
+     "D",
+     13
+    ],
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mode: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": [
+     "E1",
+     13
+    ],
+    "init": [
+     "E1",
+     20
+    ],
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mode: Anzeige Geräte-Schreibweise (8 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mBt: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 10,
+    "v1": 27,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mBt: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 10,
+    "init": 10,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mBt: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "scl: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": "",
+    "v1": "h5",
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "scl: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": "",
+    "init": "",
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "scl: Anzeige Geräte-Schreibweise (4 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "NOISE: 6 Zellen vorhanden",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNres: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 0,
+    "v1": 7,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNres: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 0,
+    "init": 0,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNres: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNfrq: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 30,
+    "v1": 47,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNfrq: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 30,
+    "init": 30,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNfrq: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNdec: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 15,
+    "v1": 32,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNdec: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 15,
+    "init": 15,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNdec: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNtyp: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": "L1",
+    "v1": "b1",
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNtyp: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": "L1",
+    "init": "L1",
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNtyp: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNdyf: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 0,
+    "v1": 5,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNdyf: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 0,
+    "init": 0,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNdyf: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNdyf: Mittelraste (px auf 0: 35, ohne Raste ≈ 11.1)",
+   "ok": true,
+   "info": {
+    "at0": 35,
+    "plain": 11.1,
+    "seq": "-3,-3,-3,-3,-3,-3,-3,-3,-3,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2"
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "nmode: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": [
+     "E1",
+     15
+    ],
+    "v1": [
+     "D",
+     13
+    ],
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "nmode: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": [
+     "E1",
+     13
+    ],
+    "init": [
+     "E1",
+     15
+    ],
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "nmode: Anzeige Geräte-Schreibweise (7 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "CLICK: 2 Zellen vorhanden",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mClv: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 0,
+    "v1": 17,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mClv: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 0,
+    "init": 0,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mClv: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mCty: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": "n1",
+    "v1": "P2",
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mCty: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": "n1",
+    "init": "n1",
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mCty: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "MIX: 4 Zellen vorhanden",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNlv: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 0,
+    "v1": 17,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNlv: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 0,
+    "init": 0,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mNlv: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mLvl: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 40,
+    "v1": 50,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mLvl: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 40,
+    "init": 40,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mLvl: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mTlv: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 40,
+    "v1": 50,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mTlv: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 40,
+    "init": 40,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mTlv: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mPan: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 0,
+    "v1": 5,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mPan: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 0,
+    "init": 0,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mPan: Anzeige Geräte-Schreibweise (5 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mPan: Mittelraste (px auf 0: 35, ohne Raste ≈ 11.1)",
+   "ok": true,
+   "info": {
+    "at0": 35,
+    "plain": 11.1,
+    "seq": "-3,-3,-3,-3,-3,-3,-3,-3,-3,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2"
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "FX: 6 Zellen vorhanden",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mEqf: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 25,
+    "v1": 42,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mEqf: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 25,
+    "init": 25,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mEqf: Anzeige Geräte-Schreibweise (4 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDst: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 0,
+    "v1": 17,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDst: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 0,
+    "init": 0,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDst: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mRvb: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 0,
+    "v1": 17,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mRvb: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 0,
+    "init": 0,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mRvb: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mEqg: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 0,
+    "v1": 5,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mEqg: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 0,
+    "init": 0,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mEqg: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mEqg: Mittelraste (px auf 0: 35, ohne Raste ≈ 11.1)",
+   "ok": true,
+   "info": {
+    "at0": 35,
+    "plain": 11.1,
+    "seq": "-3,-3,-3,-3,-3,-3,-3,-3,-3,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2"
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDty: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": "dr",
+    "v1": "rn",
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDty: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": "dr",
+    "init": "dr",
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDty: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDly: Ziehen ändert den Wert (ein Undo, kein Popover)",
+   "ok": true,
+   "info": {
+    "init": 0,
+    "v1": 17,
+    "undo": 1,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDly: Doppeltipp = INIT",
+   "ok": true,
+   "info": {
+    "v2": 0,
+    "init": 0,
+    "undo": 2,
+    "pop": null
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "mDly: Anzeige Geräte-Schreibweise (3 Werte)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "alle 28 Kanal-Zellen geprüft (TONE 10, NOISE 6, CLICK 2, MIX 4, FX 6)",
+   "ok": true,
+   "info": 28
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "KANAL DYNAMICS: Tipp L2 → mCrv L2, ein Undo",
+   "ok": true,
+   "info": {
+    "v": "L2",
+    "u": 1,
+    "buttons": [
+     "Li",
+     "L1",
+     "L2",
+     "L3",
+     "O1",
+     "O2"
+    ]
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "KANAL DYNAMICS: 6 Kurven Li L1 L2 L3 O1 O2",
+   "ok": true,
+   "info": [
+    "Li",
+    "L1",
+    "L2",
+    "L3",
+    "O1",
+    "O2"
+   ]
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "KANAL MONO-GRUPPE: Tipp an/aus, je ein Undo",
+   "ok": true,
+   "info": {
+    "m1": {
+     "v": 1,
+     "u": 2,
+     "aria": "true"
+    },
+    "m2": {
+     "v": 0,
+     "u": 3
+    }
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "KIT REVERB TYPE: Ziehen ändert, Doppeltipp = INIT, je ein Undo",
+   "ok": true,
+   "info": {
+    "v0": "r1",
+    "v1": "p2",
+    "v2": "r1",
+    "init": "r1",
+    "u1": 1,
+    "u2": 2
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "KIT COLOR: Ziehen ändert, Doppeltipp = INIT, je ein Undo",
+   "ok": true,
+   "info": {
+    "v0": 0,
+    "v1": -4,
+    "v2": 0,
+    "init": 0,
+    "u1": 1,
+    "u2": 2
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "KIT RATE: Ziehen ändert, Doppeltipp = INIT, je ein Undo",
+   "ok": true,
+   "info": {
+    "v0": 50,
+    "v1": 83,
+    "v2": 50,
+    "init": 50,
+    "u1": 1,
+    "u2": 2
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "KIT FEEDBACK: Ziehen ändert, Doppeltipp = INIT, je ein Undo",
+   "ok": true,
+   "info": {
+    "v0": 0,
+    "v1": 7,
+    "v2": 0,
+    "init": 0,
+    "u1": 1,
+    "u2": 2
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "KIT BPM: Ziehen ändert, Doppeltipp = INIT, je ein Undo",
+   "ok": true,
+   "info": {
+    "v0": 60,
+    "v1": 215,
+    "v2": 60,
+    "init": 60,
+    "u1": 1,
+    "u2": 2
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "KIT: Anzeige (REVERB TYPE Codes, COLOR ±, BPM „120 ♩“ „150 ♪“ „200 ♬“ „0.050 s“)",
+   "ok": true
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "KIT: ECHO [RATE│BPM] und TAP (≥ 64 × 44) vorhanden",
+   "ok": true,
+   "info": {
+    "segs": [
+     "RATE",
+     "BPM"
+    ],
+    "tap": {
+     "w": 64,
+     "h": 44
+    }
+   }
+  },
+  {
+   "id": "ND2-03",
+   "fmt": "L",
+   "name": "keine Seitenfehler",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-04",
+   "fmt": "L",
+   "name": "DECAY mDec: min → max ändert Länge (ND-STUB)",
+   "ok": true,
+   "info": {
+    "min": {
+     "pk": 0.03224,
+     "len": 0.1187,
+     "f0": 0,
+     "f1": 0,
+     "eL": 0.04145,
+     "eR": 0.04145
+    },
+    "max": {
+     "pk": 0.2388,
+     "len": 1.59,
+     "f0": 110.3,
+     "f1": 110,
+     "eL": 827.8,
+     "eR": 827.8
+    }
+   }
+  },
+  {
+   "id": "ND2-04",
+   "fmt": "L",
+   "name": "PITCH mPit: min → max ändert Frequenz ×16 (48 HT) (ND-STUB)",
+   "ok": true,
+   "info": {
+    "min": {
+     "pk": 0.2351,
+     "len": 1.589,
+     "f0": 0,
+     "f1": 65.41,
+     "eL": 193.8,
+     "eR": 193.8
+    },
+    "max": {
+     "pk": 0.2309,
+     "len": 1.59,
+     "f0": 1048,
+     "f1": 1047,
+     "eL": 194.7,
+     "eR": 194.7
+    }
+   }
+  },
+  {
+   "id": "ND2-04",
+   "fmt": "L",
+   "name": "BEND mBnd: min → max ändert Frequenz früh (ND-STUB)",
+   "ok": true,
+   "info": {
+    "min": {
+     "pk": 0.2449,
+     "len": 1.59,
+     "f0": 0,
+     "f1": 61.82,
+     "eL": 409.8,
+     "eR": 409.8
+    },
+    "max": {
+     "pk": 0.2314,
+     "len": 1.59,
+     "f0": 1027,
+     "f1": 202.8,
+     "eL": 422.3,
+     "eR": 422.3
+    }
+   }
+  },
+  {
+   "id": "ND2-04",
+   "fmt": "L",
+   "name": "TONE LVL mTlv: min → max ändert Spitze (min = still) (ND-STUB)",
+   "ok": true,
+   "info": {
+    "min": {
+     "pk": 0,
+     "len": -0.01,
+     "f0": 0,
+     "f1": 0,
+     "eL": 0,
+     "eR": 0
+    },
+    "max": {
+     "pk": 0.3214,
+     "len": 0.1987,
+     "f0": 110.1,
+     "f1": 110,
+     "eL": 45.09,
+     "eR": 45.09
+    }
+   }
+  },
+  {
+   "id": "ND2-04",
+   "fmt": "L",
+   "name": "CH LEVEL mLvl: min → max ändert Spitze (min = still) (ND-STUB)",
+   "ok": true,
+   "info": {
+    "min": {
+     "pk": 0,
+     "len": -0.01,
+     "f0": 0,
+     "f1": 0,
+     "eL": 0,
+     "eR": 0
+    },
+    "max": {
+     "pk": 0.3214,
+     "len": 0.1987,
+     "f0": 110.1,
+     "f1": 110,
+     "eL": 45.09,
+     "eR": 45.09
+    }
+   }
+  },
+  {
+   "id": "ND2-04",
+   "fmt": "L",
+   "name": "PAN mPan: min → max ändert Energie L/R (ND-STUB)",
+   "ok": true,
+   "info": {
+    "min": {
+     "pk": 0.2909,
+     "len": 0.1987,
+     "f0": 110.1,
+     "f1": 110,
+     "eL": 36.93,
+     "eR": 0
+    },
+    "max": {
+     "pk": 0.2909,
+     "len": 0.1987,
+     "f0": 110.1,
+     "f1": 110,
+     "eL": 1.199e-31,
+     "eR": 36.93
+    }
+   }
+  },
+  {
+   "id": "ND2-04",
+   "fmt": "L",
+   "name": "graue Zelle SPECTRA (A1) wirkt nicht (M-NULL ≤ −120 dB)",
+   "ok": true,
+   "info": {
+    "nullDb": -999
+   }
+  },
+  {
+   "id": "ND2-04",
+   "fmt": "L",
+   "name": "graue Zelle FREQ (A1) wirkt nicht (M-NULL ≤ −120 dB)",
+   "ok": true,
+   "info": {
+    "nullDb": -999
+   }
+  },
+  {
+   "id": "ND2-04",
+   "fmt": "L",
+   "name": "graue Zelle DYN FILTER (A1) wirkt nicht (M-NULL ≤ −120 dB)",
+   "ok": true,
+   "info": {
+    "nullDb": -999
+   }
+  },
+  {
+   "id": "ND2-04",
+   "fmt": "L",
+   "name": "graue Zelle EQ FREQ (GAIN 0) wirkt nicht (M-NULL ≤ −120 dB)",
+   "ok": true,
+   "info": {
+    "nullDb": -999
+   }
+  },
+  {
+   "id": "ND2-04",
+   "fmt": "L",
+   "name": "keine Seitenfehler",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-05",
+   "fmt": "L",
+   "name": "ALLE KANÄLE: Tipp schaltet an, Fokus-Rahmen auf den 4 Modell-Pads",
+   "ok": true,
+   "info": {
+    "all": true,
+    "aria": "true",
+    "focus": 4
+   }
+  },
+  {
+   "id": "ND2-05",
+   "fmt": "L",
+   "name": "DECAY ziehen → alle 4 gleich, genau ein Undo",
+   "ok": true,
+   "info": {
+    "before": [
+     10,
+     20,
+     30,
+     40
+    ],
+    "after": [
+     22,
+     22,
+     22,
+     22
+    ],
+    "undo": 1
+   }
+  },
+  {
+   "id": "ND2-05",
+   "fmt": "L",
+   "name": "ein Undo stellt alle 4 DECAY-Werte her",
+   "ok": true,
+   "info": {
+    "d2": [
+     10,
+     20,
+     30,
+     40
+    ],
+    "d0": [
+     10,
+     20,
+     30,
+     40
+    ]
+   }
+  },
+  {
+   "id": "ND2-05",
+   "fmt": "L",
+   "name": "PITCH +3 an einem → alle +3 (ein Undo)",
+   "ok": true,
+   "info": {
+    "before": [
+     40,
+     45,
+     50,
+     60
+    ],
+    "after": [
+     43,
+     48,
+     53,
+     63
+    ],
+    "d": [
+     3,
+     3,
+     3,
+     3
+    ],
+    "undo": 1
+   }
+  },
+  {
+   "id": "ND2-05",
+   "fmt": "L",
+   "name": "Gruppe hält am Rand an (max 127.5, Abstände bleiben)",
+   "ok": true,
+   "info": {
+    "after": [
+     122.5,
+     127.5,
+     102.5,
+     112.5
+    ],
+    "exp": [
+     122.5,
+     127.5,
+     102.5,
+     112.5
+    ]
+   }
+  },
+  {
+   "id": "ND2-05",
+   "fmt": "L",
+   "name": "ALLE KANÄLE endet mit closeEditor (Schalter danach aus)",
+   "ok": true,
+   "info": {
+    "was": true,
+    "all": false,
+    "focus": 0,
+    "btn": false
+   }
+  },
+  {
+   "id": "ND2-05",
+   "fmt": "L",
+   "name": "ALLE KANÄLE endet mit stop (Schalter danach aus)",
+   "ok": true,
+   "info": {
+    "was": true,
+    "all": false,
+    "focus": 0,
+    "btn": false
+   }
+  },
+  {
+   "id": "ND2-05",
+   "fmt": "L",
+   "name": "ALLE KANÄLE endet mit launchScene (Schalter danach aus)",
+   "ok": true,
+   "info": {
+    "was": true,
+    "all": false,
+    "focus": 0,
+    "btn": false
+   }
+  },
+  {
+   "id": "ND2-05",
+   "fmt": "L",
+   "name": "keine Seitenfehler",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-06",
+   "fmt": "L",
+   "name": "SCL PRE h1, Start 40.0, 6 Kanäle → 40 44 47 52 56 59 (Tipp-Liste, ein Undo, ALLE KANÄLE an)",
+   "ok": true,
+   "info": {
+    "opened": true,
+    "p": [
+     40,
+     44,
+     47,
+     52,
+     56,
+     59
+    ],
+    "all": true,
+    "scl": "h1",
+    "u": 1
+   }
+  },
+  {
+   "id": "ND2-06",
+   "fmt": "L",
+   "name": "SCL PRE H1 auf 12 Kanälen → Liste H1 (Kurd ab 40)",
+   "ok": true,
+   "info": {
+    "opened2": true,
+    "got": [
+     40,
+     47,
+     48,
+     50,
+     52,
+     54,
+     55,
+     57,
+     59,
+     60,
+     62,
+     64
+    ],
+    "exp": [
+     40,
+     47,
+     48,
+     50,
+     52,
+     54,
+     55,
+     57,
+     59,
+     60,
+     62,
+     64
+    ]
+   }
+  },
+  {
+   "id": "ND2-06",
+   "fmt": "L",
+   "name": "danach PITCH +2 an Kanal 3 → alle +2",
+   "ok": true,
+   "info": {
+    "d": [
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   }
+  },
+  {
+   "id": "ND2-06",
+   "fmt": "L",
+   "name": "kein gespeichertes Feld scl",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-06",
+   "fmt": "L",
+   "name": "keine Seitenfehler",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-07",
+   "fmt": "L",
+   "name": "SOLO PART an (TONE): MDS.solo = {ch 0, tone}, Nachricht mute, Anzeige im Kopf",
+   "ok": true,
+   "info": {
+    "solo": {
+     "ch": 0,
+     "part": "tone"
+    },
+    "md": true,
+    "head": true,
+    "msg": [
+     {
+      "t": "mute",
+      "ch": 0,
+      "solo": "tone"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ND2-07",
+   "fmt": "L",
+   "name": "SOLO PART folgt dem Unter-Reiter (noise/click/all/all/tone)",
+   "ok": true,
+   "info": {
+    "noise": {
+     "ch": 0,
+     "part": "noise"
+    },
+    "click": {
+     "ch": 0,
+     "part": "click"
+    },
+    "mix": {
+     "ch": 0,
+     "part": "all"
+    },
+    "fx": {
+     "ch": 0,
+     "part": "all"
+    },
+    "tone": {
+     "ch": 0,
+     "part": "tone"
+    }
+   }
+  },
+  {
+   "id": "ND2-07",
+   "fmt": "L",
+   "name": "Render SOLO TONE ch0: anderer Kanal ≤ −120 dBFS, ch0 klingt",
+   "ok": true,
+   "info": {
+    "snareSoloTone": 0,
+    "kickSoloTone": 0.42520031332969666,
+    "kickSoloNoise": 0
+   }
+  },
+  {
+   "id": "ND2-07",
+   "fmt": "L",
+   "name": "Render SOLO NOISE ch0: TONE ≤ −120 dBFS",
+   "ok": true,
+   "info": {
+    "snareSoloTone": 0,
+    "kickSoloTone": 0.42520031332969666,
+    "kickSoloNoise": 0
+   }
+  },
+  {
+   "id": "ND2-07",
+   "fmt": "L",
+   "name": "Solo-Kanal folgt dem gewählten Pad",
+   "ok": true,
+   "info": {
+    "ch": 1,
+    "part": "tone"
+   }
+  },
+  {
+   "id": "ND2-07",
+   "fmt": "L",
+   "name": "SOLO PART aus: mute ch -1, Kopf-Anzeige weg, Render = vorher (M-NULL ≤ −90 dB)",
+   "ok": true,
+   "info": {
+    "solo": null,
+    "md": false,
+    "last": {
+     "t": "mute",
+     "ch": -1,
+     "solo": null
+    },
+    "head": false,
+    "nullDb": -999
+   }
+  },
+  {
+   "id": "ND2-07",
+   "fmt": "L",
+   "name": "SOLO PART endet mit Editor-Schließen",
+   "ok": true,
+   "info": {
+    "was": {
+     "ch": 0,
+     "part": "tone"
+    },
+    "solo": null,
+    "md": false,
+    "last": {
+     "t": "mute",
+     "ch": -1,
+     "solo": null
+    }
+   }
+  },
+  {
+   "id": "ND2-07",
+   "fmt": "L",
+   "name": "SOLO PART endet mit stop",
+   "ok": true,
+   "info": {
+    "was": true,
+    "solo": null,
+    "md": false
+   }
+  },
+  {
+   "id": "ND2-07",
+   "fmt": "L",
+   "name": "SOLO PART endet mit launchScene",
+   "ok": true,
+   "info": {
+    "was": true,
+    "solo": null,
+    "md": false
+   }
+  },
+  {
+   "id": "ND2-07",
+   "fmt": "L",
+   "name": "keine Seitenfehler",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-08",
+   "fmt": "L",
+   "name": "Kopieren: Ablage = Programm des Kanals (ohne Mono/Dynamik), kein Undo",
+   "ok": true,
+   "info": {
+    "clip": {
+     "mWav": "d3",
+     "mSpc": 0,
+     "mFrq": 25,
+     "mDyf": 0,
+     "mDec": 33,
+     "mDm": "E1",
+     "mDd": 20,
+     "mBnd": -12,
+     "mBt": 18,
+     "mPit": 50.5,
+     "mNres": 0,
+     "mNtyp": "L1",
+     "mNfrq": 30,
+     "mNdyf": 0,
+     "mNdec": 15,
+     "mNdm": "E1",
+     "mNdd": 15,
+     "mClv": 22,
+     "mCty": "P2",
+     "mNlv": 0,
+     "mTlv": 46,
+     "mLvl": 48,
+     "mPan": 4,
+     "mEqf": 25,
+     "mEqg": 0,
+     "mDst": 6,
+     "mDty": "dr",
+     "mRvb": 0,
+     "mDly": 0,
+     "mName": "Kx",
+     "mCat": "bd"
+    }
+   }
+  },
+  {
+   "id": "ND2-08",
+   "fmt": "L",
+   "name": "Einfügen: Ziel deep-equal Erwartung, ein Undo",
+   "ok": true,
+   "info": {
+    "u1": 1
+   }
+  },
+  {
+   "id": "ND2-08",
+   "fmt": "L",
+   "name": "Einfügen: ein Undo stellt her",
+   "ok": true
+  },
+  {
+   "id": "ND2-08",
+   "fmt": "L",
+   "name": "Tauschen: beide deep-equal Erwartung (Mono/Dynamik bleiben), ein Undo",
+   "ok": true,
+   "info": {
+    "u2": 1
+   }
+  },
+  {
+   "id": "ND2-08",
+   "fmt": "L",
+   "name": "Tauschen: ein Undo stellt her",
+   "ok": true
+  },
+  {
+   "id": "ND2-08",
+   "fmt": "L",
+   "name": "Init: Kanal = INIT-Programm (Mono/Dynamik bleiben), ein Undo",
+   "ok": true,
+   "info": {
+    "u3": 1,
+    "kick": {
+     "mWav": "A1",
+     "mSpc": 0,
+     "mFrq": 25,
+     "mDyf": 0,
+     "mDec": 20,
+     "mDm": "E1",
+     "mDd": 20,
+     "mBnd": 0,
+     "mBt": 10,
+     "mPit": 45,
+     "mNres": 0,
+     "mNtyp": "L1",
+     "mNfrq": 30,
+     "mNdyf": 0,
+     "mNdec": 15,
+     "mNdm": "E1",
+     "mNdd": 15,
+     "mClv": 0,
+     "mCty": "n1",
+     "mNlv": 0,
+     "mTlv": 40,
+     "mLvl": 40,
+     "mPan": 0,
+     "mEqf": 25,
+     "mEqg": 0,
+     "mDst": 0,
+     "mDty": "dr",
+     "mRvb": 0,
+     "mDly": 0,
+     "mMono": 1,
+     "mCrv": "L2",
+     "mName": "",
+     "mCat": "",
+     "src": "md"
+    }
+   }
+  },
+  {
+   "id": "ND2-08",
+   "fmt": "L",
+   "name": "Init: ein Undo stellt her",
+   "ok": true
+  },
+  {
+   "id": "ND2-08",
+   "fmt": "L",
+   "name": "Einfügen mit ALLE KANÄLE → alle 4 Modell-Kanäle, ein Undo",
+   "ok": true,
+   "info": {
+    "u4": 1,
+    "bad": []
+   }
+  },
+  {
+   "id": "ND2-08",
+   "fmt": "L",
+   "name": "Einfügen in alle: ein Undo stellt alle her",
+   "ok": true
+  },
+  {
+   "id": "ND2-08",
+   "fmt": "L",
+   "name": "keine Seitenfehler",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-09",
+   "fmt": "L",
+   "name": "WAVE-Liste: Tipp öffnet Popover mit 34 Feldern in 8 Familienzeilen",
+   "ok": true,
+   "info": {
+    "n": 34,
+    "rows": 8
+   }
+  },
+  {
+   "id": "ND2-09",
+   "fmt": "L",
+   "name": "WAVE-Liste: jedes Feld ≥ 44 × 44",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-09",
+   "fmt": "L",
+   "name": "Wischen in der Liste wählt nicht (Wert und Undo unverändert, Liste bleibt offen)",
+   "ok": true,
+   "info": {
+    "w0": "A1",
+    "w1": "A1",
+    "u0": 0,
+    "u1": 0,
+    "from": "F1"
+   }
+  },
+  {
+   "id": "ND2-09",
+   "fmt": "L",
+   "name": "Wischen in der Liste scrollt",
+   "ok": true,
+   "info": {
+    "scrollTop0": 0,
+    "scrollTop1": 105,
+    "scrollH": 380,
+    "clientH": 242
+   }
+  },
+  {
+   "id": "ND2-09",
+   "fmt": "L",
+   "name": "Tipp auf d3 = Wahl + Vorhören (Transport steht), ein Undo",
+   "ok": true,
+   "info": {
+    "w": "d3",
+    "u": 1,
+    "hits": 1,
+    "on": true,
+    "playing": false
+   }
+  },
+  {
+   "id": "ND2-09",
+   "fmt": "L",
+   "name": "bei laufendem Transport: Tipp wählt (ein Undo), ohne Vorhören",
+   "ok": true,
+   "info": {
+    "w": "A2",
+    "playing": true,
+    "auditions": 0,
+    "u": 1
+   }
+  },
+  {
+   "id": "ND2-09",
+   "fmt": "L",
+   "name": "keine Seitenfehler",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-10",
+   "fmt": "L",
+   "name": "TAP 1–3 zeigt die Schläge",
+   "ok": true,
+   "info": [
+    "TAP 1",
+    "TAP 2",
+    "TAP 3"
+   ]
+  },
+  {
+   "id": "ND2-10",
+   "fmt": "L",
+   "name": "TAP 4 × 500 ms → dlB 60, BPM-Modus, „120 ♩“, ein Undo",
+   "ok": true,
+   "info": {
+    "dlB": 60,
+    "dlM": "b",
+    "btn": "120 ♩",
+    "kn": "120 ♩",
+    "u": 1,
+    "avg": 499.7999999995033,
+    "txt": [
+     "TAP 1",
+     "TAP 2",
+     "TAP 3"
+    ],
+    "attempt": 0
+   }
+  },
+  {
+   "id": "ND2-10",
+   "fmt": "L",
+   "name": "RATE/BPM-Umschalter ändert dlM (r/b), Zelle RATE bzw. BPM sichtbar, je ein Undo, Kit-Nachricht an die Engine",
+   "ok": true,
+   "info": {
+    "r1": {
+     "dlM": "r",
+     "rate": true,
+     "bpm": false,
+     "u": 1,
+     "kit": "r"
+    },
+    "r2": {
+     "dlM": "b",
+     "rate": false,
+     "bpm": true,
+     "u": 2,
+     "kit": "b"
+    },
+    "kitMsg": [
+     "r",
+     "b"
+    ]
+   }
+  },
+  {
+   "id": "ND2-10",
+   "fmt": "L",
+   "name": "keine Seitenfehler",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-11",
+   "fmt": "L",
+   "name": "Programm sichern (Name + Kategorie): Kanal trägt Name/Kategorie, Bibliothek hat es, ein Undo",
+   "ok": true,
+   "info": {
+    "pop": "mdsave",
+    "u": 1,
+    "name": "Test Kick L",
+    "cat": "Pc",
+    "lib": 1
+   }
+  },
+  {
+   "id": "ND2-11",
+   "fmt": "L",
+   "name": "erscheint unter „Eigene“ in Programm ▾",
+   "ok": true,
+   "info": [
+    "Test Kick L"
+   ]
+  },
+  {
+   "id": "ND2-11",
+   "fmt": "L",
+   "name": "nach Neuladen noch unter „Eigene“",
+   "ok": true,
+   "info": [
+    "Test Kick L"
+   ]
+  },
+  {
+   "id": "ND2-11",
+   "fmt": "L",
+   "name": "Laden: Programm-Felder deep-equal Gesichertem, Mono/Dynamik bleiben, ein Undo",
+   "ok": true,
+   "info": {
+    "keep": {
+     "mMono": 1,
+     "mCrv": "O2",
+     "u": 1
+    },
+    "diff": []
+   }
+  },
+  {
+   "id": "ND2-11",
+   "fmt": "L",
+   "name": "Laden: ein Undo stellt her",
+   "ok": true
+  },
+  {
+   "id": "ND2-11",
+   "fmt": "L",
+   "name": "Info: Werk-Programme (ND3) vorhanden – Kategorie-Filter nur damit prüfbar",
+   "ok": true,
+   "info": {
+    "factory": 0
+   }
+  },
+  {
+   "id": "ND2-11",
+   "fmt": "L",
+   "name": "keine Seitenfehler",
+   "ok": true,
+   "info": []
+  },
+  {
+   "id": "ND2-12",
+   "fmt": "L",
+   "name": "grep -i 'nTreffer' im App-HTML = 0",
+   "ok": true
+  },
+  {
+   "id": "ND2-12",
+   "fmt": "L",
+   "name": "const MD_NAME genau einmal definiert",
+   "ok": true,
+   "info": {
+    "defs": 1,
+    "value": "North"
+   }
+  },
+  {
+   "id": "ND2-12",
+   "fmt": "L",
+   "name": "Name „North“ als Literal nur in der Definition",
+   "ok": true,
+   "info": {
+    "literals": 1
+   }
+  },
+  {
+   "id": "ND2-12",
+   "fmt": "L",
+   "name": "MD_NAME ausgetauscht (Zzyx): Quelle-Knopf + Quelle-Popover",
+   "ok": true,
+   "info": {
+    "src": "Zzyx",
+    "aria": "Quelle: Zzyx",
+    "pop": "Drum-StimmeZzyx"
+   }
+  },
+  {
+   "id": "ND2-12",
+   "fmt": "L",
+   "name": "MD_NAME ausgetauscht: KIT-Unter-Reiter „Zzyx · HALL & ECHO“ + LCD",
+   "ok": true,
+   "info": {
+    "kitSub": [
+     "KIT",
+     "Zzyx · HALL & ECHO"
+    ],
+    "lcd": "Zzyx · HALL & ECHOZzyx · HALL & ECHOein Hall und ein Echo für alle Zzyx-Pads · Anteil je Pad: SOUND → FX"
+   }
+  },
+  {
+   "id": "ND2-12",
+   "fmt": "L",
+   "name": "MD_NAME ausgetauscht: SOUND-LCD, KANAL-Übersicht, API",
+   "ok": true,
+   "info": {
+    "lcd": "KICK · ZzyxKICK · Zzyxziehen = Wert · seitlich = fein · 2× tippen = INIT · Liste: antippen",
+    "api": "Zzyx"
+   }
+  },
+  {
+   "id": "ND2-12",
+   "fmt": "L",
+   "name": "MD_NAME ausgetauscht: Hilfe-Zeilen (7) zeigen Zzyx",
+   "ok": true,
+   "info": {
+    "help": 7,
+    "lines": 7
+   }
+  },
+  {
+   "id": "ND2-12",
+   "fmt": "L",
+   "name": "alter Name „North“ nirgends mehr im sichtbaren DOM (Text, Attribute)",
+   "ok": true,
+   "info": {
+    "n": 0
+   }
+  },
+  {
+   "id": "ND2-13",
+   "fmt": "L",
+   "name": "buildDrumEd auf Modell-Pad < 50 ms (jede Messung)",
+   "ok": true,
+   "info": {
+    "ms": [
+     8.4,
+     7.8,
+     5.7,
+     5.1,
+     6.3,
+     7.6,
+     7.2
+    ]
+   }
+  },
+  {
+   "id": "ND2-13",
+   "fmt": "L",
+   "name": "openEditor auf Modell-Pad < 50 ms, keine lange Aufgabe > 50 ms",
+   "ok": true,
+   "info": {
+    "ms": [
+     2.6,
+     3,
+     4.4,
+     3.7,
+     2.4
+    ],
+    "longtasks": []
+   }
+  },
+  {
+   "id": "ND2-13",
+   "fmt": "L",
+   "name": "Vorhören ▶: Schlag ≤ 30 ms nach Loslassen",
+   "ok": true,
+   "info": {
+    "up": true,
+    "hits": 1,
+    "rel": [
+     0
+    ],
+    "afterUp": 0.2
+   }
+  },
+  {
+   "id": "ND2-13",
+   "fmt": "L",
+   "name": "Vorhören nach Ziehen (kurz, < 300 ms): Schlag ≤ 30 ms nach Loslassen",
+   "ok": true,
+   "info": {
+    "up": true,
+    "hits": 3,
+    "rel": [
+     -396,
+     -83,
+     1
+    ],
+    "afterUp": 0.6
+   }
+  },
+  {
+   "id": "ND2-13",
+   "fmt": "L",
+   "name": "Vorhören nach Ziehen (lang, Pause vor dem Loslassen): Schlag ≤ 30 ms nach Loslassen",
+   "ok": true,
+   "info": {
+    "up": true,
+    "hits": 3,
+    "rel": [
+     -834,
+     -532,
+     0
+    ],
+    "afterUp": 0.4
+   }
+  },
+  {
+   "id": "ND2-13",
+   "fmt": "L",
+   "name": "keine Seitenfehler",
+   "ok": true,
+   "info": []
+  }
+ ]
+}
+rc=0 sek=132

@@ -1,0 +1,17 @@
+✓ wc 16:9: Versionen ["4.30.0","4.30.1"]
+✓ wc 16:9: ohne Logo – kein Abspann, Weg wie 4.30.0 ["webcodecs","webcodecs"]
+✓ wc 16:9: Länge wie 4.30.0 (gleich oder innerhalb der Ausklang-Streuung von 4.30.0) {"neu":[14.5865,14.5865],"alt":[14.5865,14.5865],"streuungAlt":0}
+✓ wc 16:9: Bildzahl wie 4.30.0 {"neu":[438,438],"alt":[438,438],"streuungAlt":0}
+✓ wc 16:9: Bilder bei 0,5 / 3 / 6 s wie 4.30.0 (bildgleich bzw. wie alt gegen alt) {"neuAlt":[0.019,0.044,0.068],"altAlt":[0.016,0.031,0.061]}
+✓ wc 16:9: Ton wie 4.30.0 (WebCodecs: Abweichung neu↔alt nicht größer als alt↔alt; Echtzeit: Pegel ±0,5 dB, Länge ±0,3 s) {"neuAlt":-12.7,"altAlt":-13,"neuNeu":-12.6,"pegel":[73.69,73.68,73.68,73.68]}
+✓ wc 16:9: Dateien (md5, Größe) {"neu":[["dab1e7512b53",3378949],["c4b93e5147e5",3369959]],"alt":[["a5a5fabc33ba",3372035],["c9738aadec35",3373646]]}
+✗ wc 16:9: keine Konsolenfehler [["Failed to load resource: net::ERR_PROXY_CONNECTION_FAILED"],["Failed to load resource: net::ERR_PROXY_CONNECTION_FAILED"],["Failed to load resource: net::ERR_PROXY_CONNECTION_FAILED"],["Failed to load resource: net::ERR_PROXY_CONNECTION_FAILED"]]
+✓ mr 9:16: Versionen ["4.30.0","4.30.1"]
+✓ mr 9:16: ohne Logo – kein Abspann, Weg wie 4.30.0 ["recorder","recorder"]
+✓ mr 9:16: Länge wie 4.30.0 (gleich oder innerhalb der Ausklang-Streuung von 4.30.0) {"neu":[14.5865,14.5865],"alt":[14.5865,14.5865],"streuungAlt":0}
+✓ mr 9:16: Bildzahl wie 4.30.0 (Echtzeit: innerhalb der Streuung alt↔alt + 25 %) {"neu":[437,422],"alt":[436,434],"streuungAlt":2}
+✓ mr 9:16: Bilder bei 0,5 / 3 / 6 s wie 4.30.0 (Echtzeit: kleine Abweichung) {"neuAlt":[0.295,0.962,0.462],"altAlt":[0.322,0.507,1.299]}
+✓ mr 9:16: Ton wie 4.30.0 (WebCodecs: Abweichung neu↔alt nicht größer als alt↔alt; Echtzeit: Pegel ±0,5 dB, Länge ±0,3 s) {"neuAlt":-12.8,"altAlt":-12.7,"neuNeu":-12.4,"pegel":[73.7,73.68,73.7,73.71]}
+✓ mr 9:16: Dateien (md5, Größe) {"neu":[["6920c2f9f0f7",4580912],["599630810870",4608307]],"alt":[["d94c73ca7a31",4603210],["a9bb5db8c86b",4752578]]}
+✗ mr 9:16: keine Konsolenfehler [["Failed to load resource: net::ERR_PROXY_CONNECTION_FAILED"],["Failed to load resource: net::ERR_PROXY_CONNECTION_FAILED"],["Failed to load resource: net::ERR_PROXY_CONNECTION_FAILED"],["Failed to load resource: net::ERR_PROXY_CONNECTION_FAILED"]]
+logo-aus-regress: 14/16 – FEHLT: wc 16:9: keine Konsolenfehler | mr 9:16: keine Konsolenfehler

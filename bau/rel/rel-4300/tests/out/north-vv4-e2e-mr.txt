@@ -1,0 +1,36 @@
+PASS Version 4.30.0
+PASS Song aufgebaut (Melodie, Drums 2 Clips, STIMME) — {"st":6,"D":4,"style":"pop","chorV":2,"voices":3,"lanes":3,"mel":7,"drum1":true,"bars":8}
+PASS Chor-Gruppe (G6+, v2) an der STIMME — {"st":6,"D":4,"style":"pop","chorV":2,"voices":3,"lanes":3,"mel":7,"drum1":true,"bars":8}
+PASS North-Kit „Schräg“ geladen: 12 North-Pads, Engine bereit, Drum-Clips unverändert — {"st":"ready","md":12,"clipsGleich":true,"clips":"14,6,,,,,,","kit":"Schräg"}
+PASS Abspann-Logo geladen (echtes Logo 952×952, 10 s) — {"st":"ok","own":false,"name":"abspann-logo.mp4","dur":10,"w":952,"h":952,"pref":true,"on":true}
+PASS 16x9-mr: Video gebaut (recorder) — {"W":1920,"H":1080,"dur":29.56326530612245,"how":"recorder","cam":"kamera","logo":{"name":"abspann-logo.mp4","own":false,"at":18.56326530612245,"fade":1,"in":19.06326530612245,"len":10,"end":0.5}}
+PASS 16x9-mr: North im Video – Offline-Knoten, 0 späte Schläge, Schläge = Noten-Log, live danach wieder bereit — {"offNodes":2,"late":0,"dead":true,"posts":80,"drumLog":80,"liveSt":"ready","liveSame":true,"mtr":{"seq":571,"want":570}}
+PASS 16x9-mr: Pegel-Meter-Fenster im Render vollständig (mit North) — {"seq":571,"want":570}
+PASS 16x9-mr: Auto-Regie 2 – Schnittliste mit neuen Bildern — [{"a":0,"v":"roll","t":1,"f":"zelle","why":"neu-clip"},{"a":2,"v":"roll","t":6,"f":"zelle","why":"neu-clip"},{"a":4,"v":"roll","t":2,"f":"zelle","why":"neu-clip"},{"a":6,"v":"drum","t":4,"why":"neu-drum"}]
+PASS 16x9-mr: Piano-Roll im Video = Zeichner (echte Noten) — {"mad":3.8,"rows":16,"clipNotes":16,"t":1.57,"track":1}
+PASS 16x9-mr: Drum-Sequenzer zeigt die North-Schläge (Treffer-Blitz, belegte Schritte) — {"bilder":121,"blitzMain":48,"blitzHH":60,"schritte":[0,4,8,12]}
+PASS 16x9-mr: Drum-Sequenzer – Kick/Snare-Wechsel (≤ 1 je Schlag) — {"wechsel":[[12.5,"snare"],[13,"kick"],[13.5,"snare"],[14,"kick"],[14.5,"snare"],[15,"kick"],[15.5,"snare"]],"stimmen":["kick","snare"]}
+PASS 16x9-mr: Pegel – Meter-Fenster im Render, Balken im Song-Bild — {"mt":{"mtr":true,"n":9121},"mp":{"gruen":30839}}
+PASS 16x9-mr: Logo einmal mittig (nicht gekachelt) — {"bbox":[334,158,625,367],"mitte":[480,270],"feld":324}
+PASS 16x9-mr: Logo gekeyt – kein Kasten, außen schwarz — {"aussen":0}
+PASS 16x9-mr: Rot satt (Luma-Key, Farbe wie in der Logo-Datei) — {"rotPixel":2019,"datei":[130,2,0],"video":[117,0,0]}
+PASS 16x9-mr: Logo blendet schon während des Abdunkelns ein — {"songEnde":13,"bei08s":2.7,"logoFeld08s":2.3}
+PASS 16x9-mr: Ton vorhanden, Abspann still — {"song":-0.5,"abspann":-200}
+PASS 9x16-app-mr: Video gebaut (recorder) — {"W":1080,"H":1920,"dur":29.56326530612245,"how":"recorder","cam":"app","logo":{"name":"abspann-logo.mp4","own":false,"at":18.56326530612245,"fade":1,"in":19.06326530612245,"len":10,"end":0.5}}
+PASS 9x16-app-mr: North im Video – Offline-Knoten, 0 späte Schläge, Schläge = Noten-Log, live danach wieder bereit — {"offNodes":4,"late":0,"dead":true,"posts":80,"drumLog":80,"liveSt":"ready","liveSame":true,"mtr":{"seq":571,"want":570}}
+PASS 9x16-app-mr: Pegel-Meter-Fenster im Render vollständig (mit North) — {"seq":571,"want":570}
+PASS 9x16-app-mr: Auto-Regie 2 – Schnittliste mit neuen Bildern — [{"a":0,"v":"roll","t":1,"f":"zelle","why":"neu-clip"},{"a":2,"v":"roll","t":6,"f":"zelle","why":"neu-clip"},{"a":4,"v":"roll","t":2,"f":"zelle","why":"neu-clip"},{"a":6,"v":"drum","t":4,"why":"neu-drum"}]
+PASS 9x16-app-mr: Piano-Roll im Video = Zeichner (echte Noten) — {"mad":4.28,"rows":16,"clipNotes":16,"t":1.57,"track":1}
+PASS 9x16-app-mr: Drum-Sequenzer zeigt die North-Schläge (Treffer-Blitz, belegte Schritte) — {"bilder":121,"blitzMain":48,"blitzHH":60,"schritte":[0,4,8,12]}
+PASS 9x16-app-mr: Drum-Sequenzer – Kick/Snare-Wechsel (≤ 1 je Schlag) — {"wechsel":[[12.5,"snare"],[13,"kick"],[13.5,"snare"],[14,"kick"],[14.5,"snare"],[15,"kick"],[15.5,"snare"]],"stimmen":["kick","snare"]}
+PASS 9x16-app-mr: Pegel – Meter-Fenster im Render, Balken im Song-Bild — {"mt":{"mtr":true,"n":9121},"mp":{"gruen":55355}}
+PASS 9x16-app-mr: Logo einmal mittig (nicht gekachelt) — {"bbox":[124,368,415,577],"mitte":[270,480],"feld":324}
+PASS 9x16-app-mr: Logo gekeyt – kein Kasten, außen schwarz — {"aussen":0}
+PASS 9x16-app-mr: Rot satt (Luma-Key, Farbe wie in der Logo-Datei) — {"rotPixel":2019,"datei":[130,2,0],"video":[117,0,0]}
+PASS 9x16-app-mr: Logo blendet schon während des Abdunkelns ein — {"songEnde":10.6,"bei08s":3.7,"logoFeld08s":4.9}
+PASS 9x16-app-mr: Ton vorhanden, Abspann still — {"song":-0.5,"abspann":-200}
+PASS North im Video-Ton (mit Drum-Stimme klar anders als das Rauschen), ↶ 12× wieder 12 North-Pads — {"northVsDrum":-1.8,"rausch":-53.1,"back":12}
+PASS Chor im Video-Ton (Differenz mit/ohne Chor-Gruppe klar über dem Render-Rauschen) — {"chorDb":-9.6,"rausch":-114.3}
+PASS keine Konsolenfehler — []
+north-vv4-e2e mr: 34/34
+rc=0 sek=121
