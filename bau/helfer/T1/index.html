@@ -58492,6 +58492,10 @@ Object.assign(SYNQUENZER, vv2Api());                       // VV2
 Object.assign(SYNQUENZER, vv3Api());                       // VV3
 Object.assign(SYNQUENZER, G6PB_API);              // G6+b: Chor-Rechenweg v2 (Test-API)
 Object.assign(SYNQUENZER, GGB_API);                        // G-GB: Mit GarageBand aufnehmen
+Object.assign(SYNQUENZER, {                                   // T1: Taktarten (Test-API)
+  tsList: () => tsList(), setSongTs: (ts, o) => setSongTs(ts, o), setMarkTs: (id, ts, all) => setMarkTs(id, ts, all), setClipTs: (t, s, ts) => setClipTs(t, s, ts),
+  tkInfo: n => { const m = tkMap(), N = n == null ? Math.max(1, S.song ? S.song.bars : 1) + 1 : n; return {plain: m.plain, ts: S.ts || null, bars: Array.from({length: N}, (_, b) => ({b, beat: barBeat(b), len: barLen(b), ts: tsAtBar(b)})), grid: grid().beatsPerBar}; },
+  tsDef: ts => JSON.parse(JSON.stringify(tsOf(ts))), convClip: (c, ts) => t1ConvClip(deep(c), ts)});
 Object.assign(SYNQUENZER, vv4aApi());                      // VV4-A
 Object.assign(SYNQUENZER, vv4Api());                       // VV4-C / VV4-E
 Object.assign(SYNQUENZER, vv4bdApi());                      // VV4-B/D
