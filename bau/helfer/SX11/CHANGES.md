@@ -1,4 +1,4 @@
-# SX11 · Teil-Fassungen „leicht / voll“ (Basis 4.30.0, VERSION unverändert)
+# SX11 · Teil-Fassungen „leicht / voll“ (Basis 4.30.0, VERSION unverändert, Diff +279/−9)
 
 ## Was Xander sieht
 - **Marken-Blatt** (Marke in der Taktleiste antippen): neue Zeile **[Leicht] [Voll] [⧉ Variante] [Einfügen]**.
@@ -56,5 +56,4 @@ drei und mehr gleichzeitig = Akkord, sonst Phrase). Es bleibt immer mindestens e
 ## Fragen an Xander
 1. Drum-Ausdünnung so richtig (offene Hi-Hat wird zur geschlossenen, statt ganz zu fehlen)?
 2. Die Markierung „·L“ in der Taktleiste: so lassen, oder lieber ohne?
-3. Soll ein späterer Wunsch „Drums in leicht doch voll“ eine eigene Taste bekommen? Heute geht es über [Bearbeiten]: Dünn → aus → an
-   ergibt die dünne Fassung wieder; die Original-Drums in leicht gibt es nur über „Zurück zum Szenen-Clip“ am Drum-Clip.
+3. Soll es eine eigene Taste für „leicht, aber Drums voll“ geben? Heute geht das nur über „Zurück zum Szenen-Clip“ am dünnen Drum-Clip.
