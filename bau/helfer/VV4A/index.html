@@ -49311,6 +49311,13 @@ function vv4Mode(g, C, kb) {
   { const r = VV4A_R.bFang; vvRound(g, r[0], r[1], r[2], r[3], 5); } g.fillStyle = 'rgba(255,178,46,.08)'; g.fill(); g.strokeStyle = C.amber; g.lineWidth = 1; g.stroke();
   vv4Txt(g, 'FANG', 388, y + 16, '700 10px ' + C.ui, C.amber, 'center'); vv4Txt(g, 'TEIL', 388, y + 28, '700 10px ' + C.ui, C.amber, 'center');
 }
+// the ghost dots: notes of following clips that sound at st.t (track colours, ≤ 3 a key; the app's paintGhosts); cached per state
+function vv4Ghosts(st) {
+  if (st._gh) return st._gh;
+  const m = new Map(), t = st.t;
+  if (st.src && t != null) for (const i of synthTracks()) { const L = st.src.nt && st.src.nt[i]; if (!L) continue; for (const o of vv3Notes(st.src, i, t, 8)) { if (o.a <= t && t < o.b) { const a = m.get(o.n) || []; if (a.length < 3 && !a.includes(i)) a.push(i); m.set(o.n, a); } } }
+  const r = {m, sig: [...m].map(([n, a]) => n + ':' + a.join('.')).join(',')}; Object.defineProperty(st, '_gh', {value: r, enumerable: false, configurable: true}); return r;
+}
 // the Tastatur (TRANSPONIEREN look): lit = in the key, pressed = Träger / Teil-Transposition, the tonic dot, C labels, ghost dots
 function vv4Kb(g, C, kb, st) {
   const A = VV4A_L.kbArea, K = VV4A_L.kb;
@@ -49319,8 +49326,7 @@ function vv4Kb(g, C, kb, st) {
   g.strokeStyle = C.amber; g.lineWidth = 1; vvRound(g, K.x - .5, K.y - .5, K.w + 1, K.h + 1, 4); g.stroke();
   g.save(); vvRound(g, K.x, K.y, K.w, K.h, 4); g.clip();
   // ghost dots: notes of following clips that sound now (track colours, ≤ 3 a key; the app's paintGhosts)
-  const gh = new Map(), t = st.t;
-  if (st.src && t != null) for (const i of synthTracks()) { const L = st.src.nt && st.src.nt[i]; if (!L) continue; for (const o of vv3Notes(st.src, i, t, 8)) { if (o.a <= t && t < o.b) { const a = gh.get(o.n) || []; if (a.length < 3 && !a.includes(i)) a.push(i); gh.set(o.n, a); } } }
+  const gh = vv4Ghosts(st).m;
   const dots = (k, x, w, by) => { const a = gh.get(k.note); if (!a) return; const n = a.length, x0 = x + w / 2 - (n * 6 + (n - 1) * 2) / 2; a.forEach((i, j) => vv4Dot(g, x0 + 3 + j * 8, by, 3, C.t[i] || '#888')); };
   for (const k of kb.keys) if (!k.b) {
     const x = K.x + k.x, w = k.w;
@@ -49347,20 +49353,38 @@ function vv4Kb(g, C, kb, st) {
   g.textBaseline = 'middle'; if ('letterSpacing' in g) g.letterSpacing = '0.9px'; vv4Txt(g, 'STUMM · TRÄGER', K.x + 16, K.y + 17.5, g.font, C.amber); if ('letterSpacing' in g) g.letterSpacing = '0px';
 }
 /* the whole app at state st, in the 428 × 761 points of the P-Raster; sh = the shot of the Regie (matrix | song | spur → matrix) */
-function vvAppDraw(g, sh, st) {
+function vvAppDraw(g, sh, st, px) {
   const C = vvCols(), sv = sh && sh.v === 'song', kb = vvAppKbAt(st.sb == null ? 0 : st.sb);
   g.fillStyle = C.bg; g.fillRect(0, 0, VV4A_W, VV4A_H);
   g.textBaseline = 'middle';
-  vv4Top(g, C, st, sv);
-  if (sv) vv4Song(g, C, st); else { vv4Matrix(g, C, st); vv4Parts(g, C); }
-  vv4Strip(g, C); vv4Carrier(g, C, kb); vv4Mode(g, C, kb); vv4Kb(g, C, kb, st);
+  const lay = (name, R, sig, fn) => (px ? vv4Layer(g, px, name, R, sig, fn) : fn(g));
+  const play = st.sb != null && st.sb >= 0, bi = play ? Math.floor(st.sb + 1e-9) : -1, ver = (UI.songVer | 0) + '|' + (R.selT | 0) + '|' + (UI.partsVer | 0);
+  lay('top', VV4A_L.top, [play, bi, sv, VV4A.logoOk, st.bpm || S.bpm].join('|'), q => vv4Top(q, C, st, sv));
+  if (sv) vv4Song(g, C, st); else { vv4Matrix(g, C, st); lay('part', VV4A_L.part, ver, q => vv4Parts(q, C)); }
+  const ro = vvAppReadout(kb);
+  lay('strip', VV4A_L.strip, ver + '|' + JSON.stringify(S.tracks[R.selT | 0] ? [S.tracks[R.selT | 0].name, S.tracks[R.selT | 0].mute, S.tracks[R.selT | 0].follow] : 0), q => vv4Strip(q, C));
+  lay('carrier', VV4A_L.carrier, JSON.stringify([ro, S.settings.harmony.mode, S.settings.harmony.latch]), q => vv4Carrier(q, C, kb));
+  lay('mode', VV4A_L.mode, keyName(kb.ref), q => vv4Mode(q, C, kb));
+  lay('kb', VV4A_L.kbArea, kb.pressed.join() + '|' + kb.lit.join() + '|' + kb.low + '|' + vv4Ghosts(st).sig, q => vv4Kb(q, C, kb, st));
   return kb;
+}
+/* VV4-A speed: an area that did not change since the last picture comes from its own canvas (drawn once per state at the output
+   scale on the same pixel grid, so the picture is the same as drawn directly). px = {k, ox, oy} of the job's picture */
+function vv4Layer(g, px, name, R, sig, fn) {
+  const Lc = VV4A.lay || (VV4A.lay = {}), x0 = Math.floor(px.ox + R.x * px.k), y0 = Math.floor(px.oy + R.y * px.k), w = Math.ceil(px.ox + (R.x + R.w) * px.k) - x0, h = Math.ceil(px.oy + (R.y + R.h) * px.k) - y0;
+  let c = Lc[name]; const key = sig + '#' + px.k + '#' + x0 + ',' + y0 + '#' + (VV.col && VV.col.gen);
+  if (!c || c.cv.width !== w || c.cv.height !== h) { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; c = Lc[name] = {cv, g: cv.getContext('2d'), key: null}; }
+  if (c.key !== key) {
+    const q = c.g; q.setTransform(1, 0, 0, 1, 0, 0); q.clearRect(0, 0, w, h);
+    q.setTransform(px.k, 0, 0, px.k, px.ox - x0, px.oy - y0); q.save(); q.textBaseline = 'middle'; fn(q); q.restore(); c.key = key;
+  }
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(c.cv, x0, y0); g.restore();
 }
 // one picture of the run in W × H pixels (9:16 → 1080 × 1920: the P-Raster fills it, no bars)
 function vvAppShot(g, W, H, sh, st) {
   const k = Math.min(W / VV4A_W, H / VV4A_H), ox = (W - VV4A_W * k) / 2, oy = (H - VV4A_H * k) / 2;
   if (ox > .5 || oy > .5) { g.fillStyle = vvCols().bg; g.fillRect(0, 0, W, H); }
-  g.setTransform(k, 0, 0, k, ox, oy); vvAppDraw(g, sh, st); g.setTransform(1, 0, 0, 1, 0, 0);
+  g.setTransform(k, 0, 0, k, ox, oy); vvAppDraw(g, sh, st, VV.test && VV.test.noLayer ? null : {k, ox, oy}); g.setTransform(1, 0, 0, 1, 0, 0);
 }
 /* for later packages (Menü je Taktbereich, Auto-Regie 2): the whole app at video time t of the last render into rect (pixels).
    o.view: 'song' | 'matrix' | 'auto' (default: the Regie of the last job / the sheet) */
