@@ -4566,7 +4566,7 @@ function g9On(E) {
   if (tb) tb.innerHTML = wpTitlePieces('Text · STIMME · ' + x.label);
   // [Erkennen]: sichtbar, sobald die Erkennung angedockt ist (G9b: Sprachmodell im Browser, lädt erst nach Tipp)
   const rb = el('button', 'rb g9rec', 'Erkennen'); rb.setAttribute('aria-label', 'Worte erkennen'); rb.hidden = !g9Rec();
-  rb.addEventListener('click', () => (typeof g9AsrBusy === 'function' && g9AsrBusy() ? g9AsrStop() : g9RecSheet(rb)));   // G9b: [Stopp] während Laden/Erkennen head.insertBefore(rb, E.tx); G.rb = rb;
+  rb.addEventListener('click', () => (typeof g9AsrBusy === 'function' && g9AsrBusy() ? g9AsrStop() : g9RecSheet(rb))); head.insertBefore(rb, E.tx); G.rb = rb;   // G9b: [Stopp] während Laden/Erkennen
   E.tx.setAttribute('aria-pressed', 'true');
   // Silben-Leiste
   const bar = el('div', 'g9bar'), bcv = el('canvas'); bar.append(bcv); bar.dataset.g9h = 'leiste';
