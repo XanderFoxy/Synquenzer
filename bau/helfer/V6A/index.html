@@ -265,7 +265,7 @@ svg{display:block}
 .slot .ln{position:absolute;left:4px;bottom:3px;font:600 10px/1 var(--font-num);color:var(--text-dim);pointer-events:none}
 .slot .kbg{position:absolute;right:3px;top:3px;z-index:1;font:700 9px/1 var(--font-ui);padding:2px 3px;border-radius:3px;background:rgba(0,0,0,.45);color:var(--text);pointer-events:none}
 /* V6A: ◆ Klangzustand – rechts oben in der Zelle (10 px), das Tonart-Kürzel rückt daneben; Editor im ◆-Modus: Amber-Kante, Kopf-Taste */
-.slot.v6st::after{content:'\25C6';position:absolute;right:3px;top:2px;z-index:1;font:700 10px/1 var(--font-ui);color:var(--amber);pointer-events:none}
+.slot .v6m{position:absolute;right:4px;top:3px;z-index:3;font:700 10px/1 var(--font-ui);color:var(--amber);pointer-events:none}
 .slot.v6st .kbg{right:15px}
 .hb.v6ab{min-width:44px;height:44px;padding:0 6px;font-size:16px;color:var(--amber);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 auto}
 .hb.v6ab.on{background:var(--amber);color:#1b1408;font-size:10px;line-height:1.05;letter-spacing:0}
@@ -2422,6 +2422,24 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .pop.g9rs .g9auto{display:flex;gap:8px;align-items:center;min-height:44px;font:600 13px/1.2 var(--font-ui)}
 .pop.g9rs .g9rm{height:44px;padding:0 10px;margin-left:6px}
 @media (orientation:landscape){#wpSheet .qh .sh-x,#wpSheet .wpab,#wpSheet .wptx{position:relative}#wpSheet .qh .sh-x::after,#wpSheet .wpab::after,#wpSheet .wptx::after{content:'';position:absolute;left:-1px;right:0;top:-2.5px;bottom:-7.5px}}
+/* V6A: ◆-Zeile im Clip-Blatt, Gleiten-Zeilen (Clip-, Teil-, Marken-Blatt): alle Tasten ≥ 44 px */
+.cs3 .cgrid .v6cb{color:var(--amber)}
+.cs3 .cgrid .v6cb.has{border-color:#6b4c16}
+.v6pop{width:min(360px,calc(100vw - 16px));padding:10px 10px 8px}
+.v6pop h4{margin:0 0 6px;color:var(--amber)}
+.v6pop .v6t{margin:0 0 8px;padding:6px 8px;border-radius:6px;background:var(--lcd);font:500 11px/1.35 var(--font-num);color:var(--text);max-height:5.6em;overflow:hidden}
+.v6pop .v6b{display:flex;gap:6px;margin-bottom:6px}
+.v6pop .v6b .hb{flex:1 1 0;height:44px}
+.v6pop .v6e{color:var(--amber)}
+.v6pop .v6hint{margin:4px 0 0;font:500 11px/1.3 var(--font-ui);color:var(--text-dim)}
+.v6gl{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-height:44px}
+.v6gl .lbl{flex:none}
+.v6gl .v6seg{display:flex;flex:1 1 auto;min-width:0}
+.v6gl .v6seg button{flex:1 1 0;min-width:0;height:44px !important;padding:0 2px;font:700 12px/1 var(--font-ui);white-space:nowrap}
+.v6gl .v6n{flex:none;height:44px !important;min-width:48px;padding:0 6px;font:700 12px/1 var(--font-num)}
+@media (orientation:landscape){#synthSheet .hb.v6ab{height:44px}#clipSheet .cs3 .cgrid .hb.v6cb{height:44px;align-self:center}}
+.psheet .v6gl,.msheet .v6gl{padding:0 8px}
+.msheet .v6gl{margin-top:4px}
 /* ---------- clip sheet v3 (§3.7): P bottom sheet with 2 button columns (3 on short screens); L 420 px panel, 3 columns ---------- */
 #clipSheet .sh-body.cs3{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px;padding:8px 8px 10px}
 #clipSheet .sh-body.cs3>*{flex:0 0 auto}            /* rows never shrink into each other (a wrapped key row stays readable) */
@@ -22803,9 +22821,12 @@ function v6aGlNorm(g) {
 function v6aEdRef(i) {
   const tr = S.tracks[i]; if (!tr) return null;
   const p = R.pend[i];
-  if (p && p.slot >= 0 && v6aClip(i, p.slot, p.own)) return {s: p.slot, own: p.own || null};
+  if (R.playing) {                                  // playing: the clip that comes (waiting) or sounds
+    if (p && p.slot >= 0 && v6aClip(i, p.slot, p.own)) return {s: p.slot, own: p.own || null};
+    if (R.slot[i] >= 0 && v6aClip(i, R.slot[i], R.own[i])) return {s: R.slot[i], own: R.own[i] || null};
+  }
+  if (tr.clips[R.selS]) return {s: R.selS, own: null};   // stopped: the selected cell
   if (R.slot[i] >= 0 && v6aClip(i, R.slot[i], R.own[i])) return {s: R.slot[i], own: R.own[i] || null};
-  if (tr.clips[R.selS]) return {s: R.selS, own: null};
   return null;
 }
 function v6aOwnId(clip) { if (!S.song || !S.song.own) return null; for (const k in S.song.own) if (S.song.own[k] === clip) return k; return null; }
@@ -22916,6 +22937,90 @@ function v6aHeadBtn(i) {
   onTap(b, () => { if (V6A.ed && V6A.ed.i === i) v6aEdEnd(); else v6aEdStart(i); });
   (ED.v6aB || (ED.v6aB = [])).push(b);
   return b;
+}
+/* V6A Bedienung: Clip-Blatt (◆-Zeile: Bearbeiten · Gleiten · Klartext · Löschen), Teil-Blatt und Marken-Blatt ([Gleiten: Clip|aus|kurz|1 T|2 T|frei]) */
+const V6A_FREE = [1, 2, 3, 4, 6, 8, 12, 16];
+function v6aKeyName(k) {
+  if (k.startsWith('fx.')) return {vol: 'Lautstärke', pan: 'Panorama', rev: 'Hall', dly: 'Echo'}[k.slice(3)] || k;
+  const d = PD[k]; if (d && d.l) return d.l + (/^o[123]/.test(k) ? ' ' + k[1] : '');
+  if (k.startsWith('mk.')) return MK_LABEL + ' ' + k.slice(3).replace(/^t\.([01])\./, (m, a) => 'T' + (+a + 1) + ' ');
+  if (k.startsWith('fm6.ops.') || k.startsWith('fmx.ops.')) { const q = k.split('.'); return 'OP' + (+q[2] + 1) + ' ' + q.slice(3).join('.'); }
+  return k;
+}
+function v6aValTxt(k, v) {
+  if (typeof v !== 'number') return String(v);
+  if (k.startsWith('fx.')) { const kk = k.slice(3); return kk === 'pan' ? fmtVal('pan', v) : Math.round(v * 100) + ' %'; }
+  const d = PD[k]; if (d && d.fmt) { try { return fmtVal(d.fmt, v); } catch (e) {} }
+  return Math.abs(v) >= 100 ? String(Math.round(v)) : fmtDec(v, 2).replace(/,?0+$/, '');
+}
+// plain text of a state: „Cutoff 2,4 kHz → 400 Hz · Res 10 % → 50 %“ (Grundklang → Zustand)
+function v6aText(i, st, max) {
+  const tr = S.tracks[i]; if (!tr || !st) return '';
+  const L = [], base = tr.sound;
+  for (const k of Object.keys(st.p || {})) L.push(v6aKeyName(k) + ' ' + v6aValTxt(k, v6aGet(base, k)) + ' → ' + v6aValTxt(k, st.p[k]));
+  for (const k of Object.keys(st.fx || {})) L.push(v6aKeyName('fx.' + k) + ' ' + v6aValTxt('fx.' + k, fxOfSound(base)[k]) + ' → ' + v6aValTxt('fx.' + k, st.fx[k]));
+  return max && L.length > max ? L.slice(0, max).join(' · ') + ' · … (' + L.length + ')' : L.join(' · ');
+}
+const v6aGlSeg = (cur, withDef) => (withDef ? [['', 'Clip', 'wie die Clips (je Clip eingestellt)']] : []).concat(V6A_X.map(x => [x, V6A_XL[x], V6A_XH[x]]));
+function v6aGlRow(cls, cur, n, withDef) {
+  return `<div class="v6gl ${cls}"><span class="lbl">Gleiten</span><div class="seg v6seg">` + v6aGlSeg(cur, withDef).map(([v, l, h]) => `<button class="rb${(cur || '') === v ? ' on' : ''}" data-v6x="${v}" aria-label="Gleiten ${esc(l)}: ${esc(h)}" title="${esc(h)}">${esc(l)}</button>`).join('') + `</div>` +
+    (cur === 'free' ? `<button class="hb rb v6n" data-v6n="1" aria-label="Länge des freien Gleitens: ${n} Schläge (tippen = nächste Länge)">${n} S</button>` : '') + `</div>`;
+}
+const v6aNextN = n => V6A_FREE[(V6A_FREE.indexOf(n) + 1) % V6A_FREE.length] || 4;
+// the ◆ key of the clip sheet (synth tracks, note clips): „◆ Klang · 2“ – opens the ◆ sheet
+function v6aClipBtn(t, s, clip, reopen) {
+  const st = clip.st || null, ok_ = v6aStOk(t, st), n = v6aCount(st);
+  const b = el('button', 'hb rb v6cb' + (st ? ' has' : ''), st ? '◆ Klang · ' + (ok_ ? n : '–') : '◆ Klang');
+  b.setAttribute('aria-label', st ? 'Klangzustand ◆: ' + (ok_ ? n + ' Werte anders' : 'inaktiv') + ', Gleiten' : 'Klangzustand ◆ für diesen Clip');
+  on(b, 'click', () => v6aClipPop(t, s, b, reopen));
+  return b;
+}
+// the ◆ sheet of a clip: plain text, [◆ Bearbeiten] [✕ Löschen], [Gleiten: aus|kurz|1 T|2 T|frei]
+function v6aClipPop(t, s, anchor, reopen) {
+  openPop(anchor, p => {
+    p.classList.add('v6pop'); guardTouch(p);
+    const paint = () => {
+      const tr = S.tracks[t], c = tr && tr.clips[s]; if (!c) { closePop(); return; }
+      const st = c.st || null, ok_ = v6aStOk(t, st), n = v6aCount(st), eng = st && st.eng && !ok_ ? (ENGINE_LABEL[st.eng] || st.eng) : '';
+      p.innerHTML = `<h4>◆ Klang · ${esc(tr.name)} · Szene ${s + 1}</h4>` +
+        `<p class="v6t">${st ? (ok_ ? esc(v6aText(t, st, 6)) : 'Inaktiv: gemerkt für ' + esc(eng) + ' (die Spur spielt eine andere Klangerzeugung)') : 'Wie Grundklang. Mit [◆ Bearbeiten] stellst du den Klang für diesen Clip ein – beim Szenenwechsel gleiten die Regler dorthin.'}</p>` +
+        `<div class="v6b"><button class="hb rb v6e" data-v6="ed">◆ Bearbeiten</button>` + (st ? `<button class="hb rb v6x" data-v6="del">✕ Löschen</button>` : '') + `</div>` +
+        (st && ok_ ? v6aGlRow('cs', st.x || 'flow', st.n || 4, false) + `<p class="v6hint">${esc(V6A_XH[st.x || 'flow'] + (st.x === 'free' ? ': ' + (st.n || 4) + ' Schläge' : ''))}</p>` : '');
+      popDock(p);
+    };
+    paint();
+    onTap(p, b => {
+      const a = b.dataset.v6, c = S.tracks[t].clips[s]; if (!c) return;
+      if (a === 'ed') { closePop(); closeClipSheet(); if (R.selT !== t) selectTrack(t); if (v6aEdStart(t, {s, own: null})) openEditor(); return; }
+      if (a === 'del') { v6aSetState(t, s, null); toast('◆ gelöscht', {label: 'Rückgängig', fn: () => undo()}); paint(); if (reopen) reopen(); return; }
+      if (b.dataset.v6x != null) { v6aSetGlide(t, s, {x: b.dataset.v6x, n: c.st && c.st.n || 4}); haptic('tick'); paint(); return; }
+      if (b.dataset.v6n) { v6aSetGlide(t, s, {x: 'free', n: v6aNextN(c.st && c.st.n || 4)}); haptic('tick'); paint(); }
+    }, 'button');
+  }, {name: 'v6a', onClose: () => { if (reopen && R.editor === 'clip') reopen(); }});
+}
+// a long text as a toast (the clip sheet has no LCD line)
+function lcdNote(h, txt) { toast(h + ': ' + txt); }
+// Teil-Blatt: [Gleiten: Clip|aus|kurz|1 T|2 T|frei] – the glide when this part starts
+function v6aPartRow(pt) { return v6aGlRow('ps', pt.gl ? pt.gl.x : '', pt.gl && pt.gl.n || 4, true).replace('class="v6gl ps"', 'class="cp-row v6gl ps"'); }
+function v6aPartTap(i, b) {
+  const pt = S.parts && S.parts[i]; if (!pt) return false;
+  if (b.dataset.v6x != null) { const x = b.dataset.v6x; v6aPartGlide(i, x ? {x, n: pt.gl && pt.gl.n || 4} : null); haptic('tick'); return true; }
+  if (b.dataset.v6n) { v6aPartGlide(i, {x: 'free', n: v6aNextN(pt.gl && pt.gl.n || 4)}); haptic('tick'); return true; }
+  return false;
+}
+// Marken-Blatt: one row below the others – the glide into this song part (its edge at bar m.a)
+function v6aMarkSheetPaint(p, m) {
+  if (p.classList.contains('s0-ed')) return;
+  if (!p._v6a) { p._v6a = true; onTap(p, b => v6aMarkTap(p, b), 'button[data-v6x],button[data-v6n]'); }
+  const anchor = p.querySelector('.kon-r') || p.querySelector('.ms-bb'); if (!anchor) return;
+  anchor.insertAdjacentHTML('afterend', v6aGlRow('ms ms-r', m.gl ? m.gl.x : '', m.gl && m.gl.n || 4, true));
+}
+function v6aMarkTap(p, b) {
+  const id = SV.mark, m = S.song && S.song.marks.find(x => x.id === id); if (!m) return;
+  if (b.dataset.v6x != null) { const x = b.dataset.v6x; v6aMarkGlide(id, x ? {x, n: m.gl && m.gl.n || 4} : null); }
+  else if (b.dataset.v6n) v6aMarkGlide(id, {x: 'free', n: v6aNextN(m.gl && m.gl.n || 4)});
+  else return;
+  haptic('tick'); if (p._paint) p._paint(); popDock(p);
 }
 
 /* ---------- CPU limiter (§14.3, Anhang D.2): once per second from tick() ---------- */
@@ -27525,7 +27630,7 @@ function renderGrid(bAud) {
       setCls(C.el, st, 'od', rs === 'od');
       setCls(C.el, st, 'muted', !!tr.mute && !!clip);
       setCls(C.el, st, 'assigned', !R.playing && !!clip && R.slot[i] === s && !rs);
-      setCls(C.el, st, 'v6st', !!(clip && clip.st));                 // V6A: ◆ (Klangzustand)
+      { const h = !!(clip && clip.st); if (st.v6 !== h) { st.v6 = h; if (!C.v6m) { C.v6m = el('span', 'v6m', '\u25C6'); C.v6m.setAttribute('aria-hidden', 'true'); C.el.appendChild(C.v6m); } C.v6m.hidden = !h; C.el.classList.toggle('v6st', h); } }   // V6A: ◆ (Klangzustand)
       let gl = '', glr = false;
       if (!clip && sel) { if (rs) { gl = '●'; glr = true; } else gl = '+'; }
       else if (!clip && rs) { gl = '●'; glr = true; }
@@ -29643,6 +29748,7 @@ function openPartSheet(i) {
       h += `<div class="cp-row ps-tr"><span class="lbl">Spuren</span><div class="cp-sc">` + trackOrder().map(t => { const sl = pt.slots[t];
         return `<button class="rb cp-c ps-t${sl == null ? ' b' : sl === -1 ? ' a' : ''}" data-t="${t}" aria-label="${esc(S.tracks[t].name)}: ${slotLabel(sl)}"><small>${trackShort(t)}</small>${slotLabel(sl)}</button>`; }).join('') + `</div></div>`;
       h += `<div class="cp-row ps-mx"><button class="rb ps-mxb" data-a="mx">▦ In der Matrix wählen</button></div>`;
+      h += v6aPartRow(pt);                                                  // V6A: Gleiten beim Start dieses Teils
       if (st.xp) {
         const cur = pt.xp && pt.xp.semi ? pt.xp.semi : 0, v = []; for (let s = -12; s <= 12; s++) v.push(s);
         h += `<div class="cp-row ps-ak"><span class="lbl">Transp.</span><div class="cp-sc ps-xps">` + v.map(s => `<button class="rb cp-c${s === cur ? ' on' : ''}" data-x="${s}">${s > 0 ? '+' + s : s < 0 ? '−' + -s : '±0'}</button>`).join('') + `</div><button class="rb" data-a="xpx">‹</button></div>`;
@@ -29664,6 +29770,7 @@ function openPartSheet(i) {
     paint();
     onTap(p, b => {
       const a = b.dataset.a, pt = S.parts[i]; if (!pt) return;
+      if (v6aPartTap(i, b)) return;                                         // V6A
       if (a === 'x') { closePop(); return; }
       if (b.dataset.n) { const nm = partUniq(b.dataset.n, i); partEdit(i, x => { x.name = nm; }, 'Teil ' + pt.name + ' → ' + nm); haptic('tick'); return; }
       if (a === 'nm') { st.nm = true; paint(); const inp = p.querySelector('.ps-in'); if (inp) setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 30); return; }
@@ -30464,6 +30571,7 @@ function openMarkSheet(id) {
         `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + `</div></div>` + vvDirRow(m.a, m.a + m.len, 'ms-b');   // VV2: Zeile „Video“
       s012MarkSheetPaint(p, m);   /* S0/S2 */
       konMarkSheetPaint(p, m);    /* KON: [Als neuen Teil konsolidieren] [Zurückholen] */
+      v6aMarkSheetPaint(p, m);    // V6A: [Gleiten: Clip|aus|kurz|1 T|2 T|frei] an dieser Song-Kante
       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
     };
     paint(); p._paint = paint;
@@ -33214,6 +33322,7 @@ function dropUntouchedRollClip() {
   return true;
 }
 function closeSheets() {
+  if (V6A.ed && EL.synthSheet.classList.contains('open')) { try { v6aEdEnd(); } catch (e) { logErr(e); } }   // V6A: the ◆ editor ends with its sheet
   if (EL.drumSheet.classList.contains('open')) { try { mdEditEnd(true); } catch (e) { logErr(e); } }   // ND2: ALLE KANÄLE / SOLO PART enden
   if (EL.synthSheet.classList.contains('open') && typeof MKUI !== 'undefined' && MKUI.leave) { try { MKUI.leave(); } catch (e) { logErr(e); } }   // MK3-fix: ≡, browser, project switch … end solo / armed split like ✕
   EL.synthSheet.classList.remove('open', 'mkq'); EL.drumSheet.classList.remove('open'); EL.clipSheet.classList.remove('open');
@@ -40172,6 +40281,7 @@ function openClipSheet(t, s, opts) {
       toast('Clip gelöscht', {label: 'Rückgängig', fn: () => undo()});
     });
     g.append(del);
+    if (tr.kind === 'synth' && !clip.audio && !nvTr(tr)) g.append(v6aClipBtn(t, s, clip, reopen));   // V6A: ◆ Klangzustand + Gleiten (eigenes Blatt)
     body.append(g);
     const lr = el('div', 'lenrow');
     lr.append(el('span', 'lbl', 'Länge'));
