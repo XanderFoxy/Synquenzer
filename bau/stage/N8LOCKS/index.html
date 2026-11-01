@@ -9418,6 +9418,17 @@ const PVMT = new Int8Array(PV_M), PVMb = new Uint8Array(PV_M), PVMF = [], PVMJ =
     PVMb[i] = MB.indexOf(' ' + r + ' ') >= 0 || q[3] === 'p' ? 1 : 0;
     PVMF.push(SMK[r] || (q[3] === 'p' ? (PVMJ[i] = +q[4], 'p') : r)); } }
 const PVMI = [{}, {}]; for (let i = 0; i < PV_M; i++) if (PVMF[i] !== 'p') PVMI[PVMT[i]][PVMF[i]] = i;
+// I2b: a set of derived values (the core's Dc, or a locked voice's own): oscillator tables, unison, filter / drive, envelopes
+class LkD {
+  constructor(A, F, M) {
+    this.oW = new Int32Array(NOSC); this.oSemi = new Float64Array(NOSC); this.oRat = new Float64Array(NOSC); this.oLvl = new Float64Array(NOSC); this.oPw = new Float64Array(NOSC);
+    this.uniG = new Float64Array(NOSC * MAXU * 2); this.uniR = new Float64Array(NOSC * MAXU); this.uniN = new Int32Array(NOSC);
+    this.cutN0 = 60; this.drv0 = 1; this.outG0 = 1; this.stereo = false; this.sync = 0; this.mix = FMIX[0]; this.A = A; this.F = F; this.M = M;
+  }
+  // a copy that owns its arrays (the ghost of an engine crossfade: its own frozen set, A / F / M given)
+  copyFor(o) { const d = new LkD(o.A, o.F, o.M); d.oW = o.oW; d.oSemi = o.oSemi; d.oRat = o.oRat; d.oLvl = o.oLvl; d.oPw = o.oPw; d.uniG = o.uniG; d.uniR = o.uniR; d.uniN = o.uniN;
+    d.cutN0 = this.cutN0; d.drv0 = this.drv0; d.outG0 = this.outG0; d.stereo = this.stereo; d.sync = this.sync; d.mix = this.mix; return d; }
+}
 class Voice {
   constructor(i) {
     this.idx = i; this.on = false; this.id = -1; this.gate = false; this.age = 0;
@@ -11437,8 +11448,10 @@ class AnalogCore extends AudioWorkletProcessor {
     this.q = [];                       // pending events [frame, type, id, a, b, c], sorted by frame
     this.stack = [];                   // mono/legato note stack [{id, note, vel}]
     this.bl = new Float64Array(CR); this.br = new Float64Array(CR);
-    this.oW = new Int32Array(NOSC); this.oSemi = new Float64Array(NOSC); this.oRat = new Float64Array(NOSC); this.oLvl = new Float64Array(NOSC); this.oPw = new Float64Array(NOSC); this.cutN0 = 60;
-    this.uniG = new Float64Array(NOSC * MAXU * 2); this.uniR = new Float64Array(NOSC * MAXU); this.uniN = new Int32Array(NOSC);
+    // I2b: the derived values live in Dc (the same class as a locked voice's own set: one shape in the hot code); the arrays are shared
+    this.Dc = new LkD(this.A, this.F, this.M); const Dc = this.Dc;
+    this.oW = Dc.oW; this.oSemi = Dc.oSemi; this.oRat = Dc.oRat; this.oLvl = Dc.oLvl; this.oPw = Dc.oPw; this.cutN0 = 60;
+    this.uniG = Dc.uniG; this.uniR = Dc.uniR; this.uniN = Dc.uniN;
     this.msrc = new Int32Array(NSLOT); this.mdst = new Int32Array(NSLOT); this.mamt = new Float64Array(NSLOT);
     this.src = new Float64Array(NSRC); this.dst = new Float64Array(NDST);
     this.gl1 = 0; this.gl2 = 0;         // global (free-running) LFO phases
@@ -11612,6 +11625,7 @@ class AnalogCore extends AudioWorkletProcessor {
     for (const k of Object.keys(g)) { const x = g[k]; if (ArrayBuffer.isView(x)) g[k] = x.slice(); }
     if (this.fr) { g.fr = {}; for (const k of Object.keys(this.fr)) g.fr[k] = this.fr[k].slice(); }   // V4f: the free-run envelopes
     g.P = Object.assign({}, this.P); g.A = Object.assign({}, this.A); g.F = Object.assign({}, this.F); g.M = Object.assign({}, this.M);
+    g.Dc = this.Dc.copyFor(g);                                   // I2b: the ghost's own derived set (its sliced arrays, its envelopes)
     g.q = []; g.stack = []; g.ended = []; g.tnext = this.tnext.slice(); g.ghosts = null; g.spare = null;
     g.pend = null; g.pendFm = null; g.pendS = null; g.sxfOn = false; g.scopeOn = false; g.scopeDst = false; g.lvOn = false; g.noSpare = false;
     g.xfState = 4; g.xfT = 0; g.xfA = this.xg1; g.xg = g.xg1 = this.xg1;
@@ -11739,7 +11753,8 @@ class AnalogCore extends AudioWorkletProcessor {
     this.fmBypassCalc();
   }
   derive() {
-    this.deriveInto(this, this.P);
+    const Dc = this.Dc; this.deriveInto(Dc, this.P);
+    this.cutN0 = Dc.cutN0; this.drv0 = Dc.drv0; this.outG0 = Dc.outG0; this.stereo = Dc.stereo; this.sync = Dc.sync; this.mix = Dc.mix;
     this.fmBypassCalc();
     if (this.lkOn) this.lkAll(false);                           // I2b: gelockte Stimmen rechnen ihre Sicht mit dem neuen Klang neu
   }
@@ -11790,14 +11805,13 @@ class AnalogCore extends AudioWorkletProcessor {
   lkViews(fm) {
     for (const v of this.V) {
       if (!v.pv) { v.pv = new Float32Array(PV_A).fill(NaN); v.pvR = new Uint8Array(PV_A); v.lkF = new Float64Array(PV_A); }
-      if (!v.VP) { v.VP = Object.assign({}, this.P); const D = v.Dv = {oW: new Int32Array(NOSC), oSemi: new Float64Array(NOSC), oRat: new Float64Array(NOSC), oLvl: new Float64Array(NOSC), oPw: new Float64Array(NOSC),
-        uniG: new Float64Array(NOSC * MAXU * 2), uniR: new Float64Array(NOSC * MAXU), uniN: new Int32Array(NOSC), cutN0: 60, drv0: 1, outG0: 1, stereo: false, sync: 0, mix: FMIX[0], A: newEnv(), F: newEnv(), M: newEnv()}; void D; }
+      if (!v.VP) { v.VP = Object.assign(defaults(), this.P);   /* same shape as P (fast properties) */ v.Dv = new LkD(newEnv(), newEnv(), newEnv()); }
       if (fm && !v.fmPv) { v.fmPv = fmCopy(null, this.fm); v.gxv = {fbS: new Float64Array(6), ph0: new Float64Array(6), phm: new Uint8Array(6), am: new Float64Array(6), amG: new Float64Array(6), fmS: new Float64Array(6)}; }
     }
   }
   lbPrep(c) {
     if (c === -2) { this.mk.lbPrep(); return; }
-    if (!this.lb) { this.lb = new Float32Array(PV_AL).fill(NaN); this.lbT = new Float32Array(PV_AL).fill(NaN); this.lbS = new Float32Array(PV_AL); this.lbR = new Int32Array(PV_AL); this.PR = Object.assign({}, this.P); }
+    if (!this.lb) { this.lb = new Float32Array(PV_AL).fill(NaN); this.lbT = new Float32Array(PV_AL).fill(NaN); this.lbS = new Float32Array(PV_AL); this.lbR = new Int32Array(PV_AL); this.PR = Object.assign(defaults(), this.P); }
     if (this.P.eng !== 3) this.lkViews(this.P.eng === 1);
   }
   // note on: pairs [.., d, c, n, i1, x1, ...] into v.pv (i < 0: a lane start value for place -1 - i), then the view
@@ -11933,7 +11947,7 @@ class AnalogCore extends AudioWorkletProcessor {
   // the core's view of the class r P keys (LFO rate ...): PR = P with the lanes on top
   lkApplyR(q) {
     const x = this.lb[q], k = PVA[q]; let on = false;
-    if (!this.PR) this.PR = Object.assign({}, this.P);
+    if (!this.PR) this.PR = Object.assign(defaults(), this.P);
     this.PR[k] = x === x ? x : this.P[k];
     for (let r = PV_A; r < PV_AL; r++) if (PVK[r] === 1 && this.lb[r] === this.lb[r]) { on = true; break; }
     this.lbP = on;
@@ -11992,7 +12006,7 @@ class AnalogCore extends AudioWorkletProcessor {
   lkProbeRep() {
     const fr = this.curF; if (fr < (this.lkRepT || 0)) return; this.lkRepT = fr + (this.lkRepI || Math.round(SR / 30));   // the frame of this control block
     const out = [];
-    for (const v of this.V) if (v.on) { const D = v.D || this, VP = v.D ? v.VP : this.P, F = v.fmP || this.fm;
+    for (const v of this.V) if (v.on) { const D = v.D || this.Dc, VP = v.D ? v.VP : this.P, F = v.fmP || this.fm;
       out.push({id: v.id, note: v.note, own: !!v.D, cut: 440 * Math.pow(2, (D.cutN0 - 69) / 12), res: VP.res, level: VP.level, aD: VP.aD, o1w: D.oW[0], ftype: VP.ftype, uni: D.uniN[0],
         ol: F.ops ? F.ops.map(o => o.ol) : null, fol: Array.from(v.foutLvl), fmBright: VP.fmBright, n: v.lkN}); }
     this.port.postMessage({lkRep: out, mk: this.P.eng === 3 ? this.mk.lkRep() : null, f: fr});
@@ -12140,7 +12154,7 @@ class AnalogCore extends AudioWorkletProcessor {
     for (const v of this.V) {
       if (!v.on) continue;
       v.t0 += step;
-      const D = v.D || this, VP = v.D ? v.VP : P;                    // I2b: the voice's own values (locks / lanes), else the core's
+      const D = v.D || this.Dc, VP = v.D ? v.VP : P;                    // I2b: the voice's own values (locks / lanes), else the core's
       if (v.lkRm) this.lkRamp(v);
       // envelopes (filter + mod at block rate)
       v.fOut = envBlock(D.F, v.fSt, v.fOut); v.fSt = ENV_ST;
@@ -12200,7 +12214,7 @@ class AnalogCore extends AudioWorkletProcessor {
 
   /* ---------------- audio rate ---------------- */
   renderOsc(v, o, st) {
-    const D = v.D || this, bl = this.bl, br = this.br, nu = D.uniN[o], w = D.oW[o], lv = v.lvl[o], pw = v.pw[o];
+    const D = v.D || this.Dc, bl = this.bl, br = this.br, nu = D.uniN[o], w = D.oW[o], lv = v.lvl[o], pw = v.pw[o];
     const rec = o === 0 && D.sync === 1, wr = v.wr;
     if (lv <= 0) { if (rec) this.masterPhase(v); return; }
     for (let u = 0; u < nu; u++) {
@@ -12245,7 +12259,7 @@ class AnalogCore extends AudioWorkletProcessor {
     }
   }
   masterPhase(v) {   // osc 1 muted but still the sync master: advance phases, record wraps
-    const nu = (v.D || this).uniN[0], wr = v.wr;
+    const nu = (v.D || this.Dc).uniN[0], wr = v.wr;
     for (let u = 0; u < nu; u++) {
       const k = u, dt = v.inc[k], wb = u * CR; let t = v.ph[k]; wr.fill(-1, wb, wb + CR);
       for (let n = 0; n < CR; n++) { t += dt; if (t >= 1) { t -= 1; wr[wb + n] = t / dt; } }
@@ -12255,7 +12269,7 @@ class AnalogCore extends AudioWorkletProcessor {
   /* osc 2 hard-synced to osc 1 (unison voice u follows master voice u mod n1). Every step (own wrap, pulse edge,
      sync reset) gets a 2-sample polyBLEP; the slave runs one sample late so the sample BEFORE the step can be corrected. */
   renderSlave(v, st) {
-    const D = v.D || this, bl = this.bl, br = this.br, nu = D.uniN[1], nm = D.uniN[0], w = D.oW[1], lv = v.lvl[1], pw = v.pw[1], wr = v.wr;
+    const D = v.D || this.Dc, bl = this.bl, br = this.br, nu = D.uniN[1], nm = D.uniN[0], w = D.oW[1], lv = v.lvl[1], pw = v.pw[1], wr = v.wr;
     if (lv <= 0) return;
     const W = w === W_SAW ? (t => 2 * t - 1) : w === W_PULSE ? (t => (t < pw ? 1 : -1)) : w === W_TRI ? (t => (t < .5 ? 4 * t - 1 : 3 - 4 * t))
       : (t => { const x = t * SINE_N, i = x | 0; return SINE[i] + (SINE[i + 1] - SINE[i]) * (x - i); });
@@ -12291,7 +12305,7 @@ class AnalogCore extends AudioWorkletProcessor {
   }
   renderVoice(v, L, R, off) {
     if (this.P.eng === 1) return this.fmRenderVoice(v, L, R, off);
-    const D = v.D || this, bl = this.bl, br = this.br, st = D.stereo;
+    const D = v.D || this.Dc, bl = this.bl, br = this.br, st = D.stereo;
     bl.fill(0); if (st) br.fill(0);
     if (D.sync) { this.renderOsc(v, 0, st); this.renderSlave(v, st); this.renderOsc(v, 2, st); }
     else for (let o = 0; o < NOSC; o++) this.renderOsc(v, o, st);
@@ -12831,7 +12845,7 @@ class AnalogCore extends AudioWorkletProcessor {
     v.pl0 = pl1; v.pr0 = pr1;
     let fg = v.fadeG; const fs = v.fade > 0 ? v.fadeStep : 0;
     if (P.fmAmp >= 1) {                                         // fmAmp 1: the normal amp ADSR on top (it can cut tails)
-      const A = (v.D || this).A; let s = v.aSt, e = v.aOut;
+      const A = (v.D || this.Dc).A; let s = v.aSt, e = v.aOut;
       for (let n = 0; n < CR; n++) {
         pl += dpl; pr += dpr;
         if (s === 1) { e = A.aT + (e - A.aT) * A.aC; if (e >= 1) { e = 1; s = 2; } }
@@ -12867,7 +12881,7 @@ class AnalogCore extends AudioWorkletProcessor {
 
   // zero-delay-feedback transistor ladder; stage nonlinearities linearised around the current state (one solve per sample)
   ladder(v, buf, right) {
-    const mx = (v.D || this).mix, c0 = mx[0], c1 = mx[1], c2 = mx[2], c3 = mx[3], c4 = mx[4];
+    const mx = (v.D || this.Dc).mix, c0 = mx[0], c1 = mx[1], c2 = mx[2], c3 = mx[3], c4 = mx[4];
     let s1, s2, s3, s4;
     if (right) { s1 = v.r1; s2 = v.r2; s3 = v.r3; s4 = v.r4; } else { s1 = v.s1; s2 = v.s2; s3 = v.s3; s4 = v.s4; }
     let g = v.gA, k = v.kA; const dg = (v.gB - v.gA) / CR, dk = (v.kB - v.kA) / CR, drv = v.drv, comp = v.comp, idrv = 1 / Math.sqrt(drv);
@@ -12889,7 +12903,7 @@ class AnalogCore extends AudioWorkletProcessor {
 
   // eco ladder: linear ZDF stages, one nonlinearity on the stage-1 input (input drive + resonance feedback)
   ladderEco(v, buf, right) {
-    const mx = (v.D || this).mix, c0 = mx[0], c1 = mx[1], c2 = mx[2], c3 = mx[3], c4 = mx[4];
+    const mx = (v.D || this.Dc).mix, c0 = mx[0], c1 = mx[1], c2 = mx[2], c3 = mx[3], c4 = mx[4];
     let s1, s2, s3, s4;
     if (right) { s1 = v.r1; s2 = v.r2; s3 = v.r3; s4 = v.r4; } else { s1 = v.s1; s2 = v.s2; s3 = v.s3; s4 = v.s4; }
     let g = v.gA, k = v.kA; const dg = (v.gB - v.gA) / CR, dk = (v.kB - v.kA) / CR, drv = v.drv, comp = v.comp, idrv = 1 / Math.sqrt(drv);

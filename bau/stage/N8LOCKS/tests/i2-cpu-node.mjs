@@ -21,11 +21,13 @@ const D = await p.evaluate(() => {
     fx: ['fmx.ops.0.ol', 'fmx.ops.1.ol', 'fmx.ops.2.ol', 'fmx.ops.3.ol', 'fmx.ops.1.fine', 'fmx.ops.2.det', 'fmx.ops.1.fbAmt', 'fmBright'],
     mk: ['mk.t.0.f.cut', 'mk.t.0.f.res', 'mk.t.0.a.lvl', 'mk.t.0.o1.c1', 'mk.t.0.mix.o1', 'mk.t.0.f.eg', 'mk.t.0.e2.d', 'mk.t.0.p.0.i'],
     ln: ['cutoff', 'res', 'level', 'fenv', 'o1pw', 'noise', 'kt', 'mods.lfo1-cutoff.amt']};
-  const pairs = {}; for (const g in keys) pairs[g] = keys[g].map(k => ({k, ...L(k), v: [0, 1, 2, 3, 4, 5, 6, 7].map(j => eu(k, g === 'st' ? (j % 3) / 2 : .3 + .05 * j))}));
+  const sndOf = g => (g === 'fm' ? fm : g === 'fx' ? fx : g === 'mk' ? mk : va);
+  const pairs = {}; for (const g in keys) pairs[g] = keys[g].map(k => ({k, ...L(k), v: [0, 1, 2, 3, 4, 5, 6, 7].map(j => eu(k, g === 'st' ? (j % 3) / 2 : .3 + .05 * j)), b: lkBase(sndOf(g), k)}));
   const md = SQF.toEngineMods([{src: 'lfo1', dst: 'cutoff', amt: 1}])[0];
   return {src, init: {va: init(va), fm: init(fm), fx: init(fx), mk: init(mk)}, pairs, md: [md.src, md.dst], sr: 128 / 128};
 });
 await b.close();
+if (process.env.DUMP) { fs.writeFileSync(process.env.DUMP, JSON.stringify(D)); process.exit(0); }
 // ---- 2. Shim
 const SR = 48000;
 function load() {
@@ -36,14 +38,14 @@ function load() {
   return {C: reg['dirigent-analog'], g};
 }
 const {C, g} = load();
-const NB = +(process.env.NB || 2500), out = [new Float32Array(128), new Float32Array(128)];
+let SAME = true; const NB = +(process.env.NB || 2500), out = [new Float32Array(128), new Float32Array(128)];
 function scene(eng, feat) {
   const P = new C({processorOptions: D.init[eng === 'st' || eng === 'ln' ? 'va' : eng]});
   const N = [48, 52, 55, 59, 62, 64, 67, 71], sec = NB * 128 / SR, ev = [];
   const pk = D.pairs[eng === 'st' ? 'st' : eng === 'ln' ? 'ln' : eng];
   N.forEach((n, j) => {
     let e = [.01 + j * .002, 1, j + 1, n, .7, -1];
-    if (feat && eng !== 'ln') { const lk = []; for (const q of pk) lk.push(q.wi, q.v[j]); e = e.concat([0, 0, lk.length >> 1], lk); }
+    if (feat && eng !== 'ln') { const lk = []; for (const q of pk) lk.push(q.wi, SAME && typeof q.b === 'number' ? q.b : q.v[j]); e = e.concat([0, 0, lk.length >> 1], lk); }
     ev.push(e, [sec - .3, 2, j + 1]);
   });
   if (feat && eng === 'ln') {
@@ -66,7 +68,8 @@ const st = a => { const n = a.length, m = a.reduce((x, y) => x + y, 0) / n, sd =
 const scenes = [['VA 8 Stimmen × 8 Locks', 'va', 3], ['Stufige VA-Werte je Stimme (8 Wellen)', 'st', 3], ['FM DX 6 OP 8 Stimmen × 8 Locks', 'fm', 3], ['FELD 6 OP 8 Stimmen × 8 Locks', 'fx', 3],
   ['MK 8 Stimmen (2 Timbres) × 8 Locks', 'mk', 4], ['Freie Reihen 8 × 1/32 Ratsche 4, 180 BPM', 'ln', 5]];
 const res = {};
-for (const [nm, eng, lim] of scenes) {
+for (const [nm0, eng, lim0, same0] of scenes.filter(x => !process.env.SC || process.env.SC.split(',').includes(x[1])).flatMap(x => (x[1] === 'ln' ? [[x[0], x[1], x[2], true]] : [[x[0], x[1], x[2], true], [x[0], x[1], x[2], false]])).map(x => [x[0] + (x[1] === 'ln' ? '' : x[3] ? ' · Mechanik (Lock = Grundwert)' : ' · andere Werte (Klang ändert sich, nur Info)'), x[1], x[3] || x[1] === 'ln' ? x[2] : Infinity, x[3]])) {
+  const nm = nm0, lim = lim0; SAME = same0;
   for (let k = 0; k < 3; k++) { run(eng, false); run(eng, true); }   // JIT warm
   let n = 20, aa = [], ab = [], base = 0;
   for (;;) {
@@ -76,12 +79,14 @@ for (const [nm, eng, lim] of scenes) {
   base /= aa.length; const A = st(aa), B = st(ab);
   const up = (B.m + B.hw) / base * 100;
   res[nm] = {base, mean: B.m / base * 100, up, aaHw: A.hw / base * 100, pairs: aa.length};
-  ok(up <= lim, `${nm}: ${base.toFixed(2)} µs/Block ohne; Paar-Differenz ${B.m >= 0 ? '+' : ''}${(B.m / base * 100).toFixed(2)} %, obere 95-%-Schranke ${up >= 0 ? '+' : ''}${up.toFixed(2)} % (Grenze +${lim} %); A/A halbe Breite ${(A.hw / base * 100).toFixed(2)} %; ${aa.length} Paare`);
+  ok(up <= lim, `${nm}: ${base.toFixed(2)} µs/Block ohne; Paar-Differenz ${B.m >= 0 ? '+' : ''}${(B.m / base * 100).toFixed(2)} %, obere 95-%-Schranke ${up >= 0 ? '+' : ''}${up.toFixed(2)} % (Grenze ${isFinite(lim) ? '+' + lim + ' %' : '–'}); A/A halbe Breite ${(A.hw / base * 100).toFixed(2)} %; ${aa.length} Paare`);
 }
 // ohne Merkmal: gleicher Code-Weg (A/A gegen „ohne“ des Vorgängers wird über Regel 28 bitgleich geprüft); Heap in 60 s
 {
-  const P = scene('va', true); g.f = 0; global.gc && global.gc(); const h0 = process.memoryUsage().heapUsed; let mx = 0;
-  for (let k = 0; k < 60 * SR / 128; k++) { P.process([], [out], {}); g.f += 128; if (k % 2000 === 0) { const h = process.memoryUsage().heapUsed - h0; if (h > mx) mx = h; } }
-  ok(mx < 1048576, `I2-18 Heap in 60 s Wiedergabe mit Locks: höchstens +${(mx / 1024).toFixed(0)} KB (Grenze 1 MB)`);
+  if (process.env.NOHEAP) process.exit(process.exitCode || 0);
+  for (const F of [false, true]) {
+  const P = scene('va', F); g.f = 0; global.gc && global.gc(); const h0 = process.memoryUsage().heapUsed; let mx = 0;
+  for (let k = 0; k < 60 * SR / 128; k++) { P.process([], [out], {}); g.f += 128; if (k % 2000 === 0) { global.gc && global.gc(); const h = process.memoryUsage().heapUsed - h0; if (h > mx) mx = h; } }
+  ok(mx < 1048576, `I2-18 Heap in 60 s Wiedergabe ${F ? 'mit' : 'ohne'} Locks: höchstens +${(mx / 1024).toFixed(0)} KB (Grenze 1 MB)`); }
 }
 fs.writeFileSync(new URL('./i2-cpu-ergebnis.json', import.meta.url), JSON.stringify(res, null, 1));
