@@ -1,0 +1,785 @@
+--- a/bau/snapshots/R-4300.html
++++ b/bau/helfer/PERC/index.html
+@@ -4247,6 +4247,29 @@
+ .pg-md>.vchips .vchip{min-height:44px}
+ #drumSheet .sh-subs:has(.stab[data-sub="tone"]) .stab,#drumSheet .sh-subs:has(.stab[data-sub="md"]) .stab{min-height:44px;height:44px}
+ /* Ende ND2 */
++/* PERC-CSS-BEGIN: Perkussionsspur (North auf einer Synth-Spur) – Seite NORTH, Schild „folgt nicht“ am Spurkopf; Tasten ≥ 44 px */
++.th .fb.percfb{font-size:9px;letter-spacing:.02em;text-transform:none;line-height:9px;white-space:nowrap;color:var(--text-dim)}
++@media (orientation:landscape) and (max-height:560px){.th .fb.percfb{white-space:normal;width:min-content;text-align:right;font-size:8px;line-height:8px}.th.hfix.percth{padding-right:26px}}
++@media (orientation:portrait) and (max-height:700px){.th .fb.percfb{white-space:normal;width:min-content;text-align:right;font-size:8px;line-height:8px}}
++.pg.percpg{display:flex;flex-direction:column;gap:8px;padding-bottom:8px}
++.percrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
++.percrow .perckit{height:44px;min-width:120px;max-width:60%}
++.percrow .percfol{height:44px;min-width:120px;text-transform:none;letter-spacing:.02em;font-size:12px}
++.percgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
++.perccell{display:flex;gap:4px;min-width:0}
++.perccell .perchear{flex:0 0 58px;height:44px;min-height:44px;flex-direction:column;gap:1px;padding:2px 3px;border-left:3px solid var(--pc,var(--tc))}
++.perccell .perchear b{font:700 11px/12px var(--font-ui);white-space:nowrap}
++.perccell .perchear small{font:500 9px/10px var(--font-num);color:var(--text-dim)}
++.perccell .perchear.on{box-shadow:inset 0 0 0 2px var(--led-on,#ffb340)}
++.perccell .percprog{flex:1 1 auto;min-width:0;height:44px;min-height:44px;padding:0 6px;gap:4px;justify-content:space-between}
++.perccell .percprog span:first-child{font:600 11px/1.1 var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
++.perccell .percprog .car{flex:none;font-size:10px;color:var(--text-dim)}
++.perchint{font:500 10px/1.3 var(--font-ui);color:var(--text-dim)}
++.perckits .rb{min-height:44px;flex-direction:column;align-items:flex-start;gap:1px;padding:4px 10px;text-align:left}
++.perckits small{font:500 9px/1.2 var(--font-ui);color:var(--text-dim);text-align:left}
++@media (orientation:portrait) and (max-width:430px){.percgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
++@media (orientation:landscape){.percgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
++/* PERC-CSS-END */
+ </style>
+ </head>
+ <body>
+@@ -7654,7 +7677,7 @@
+ function morePop(anchor, i, o) {
+   openPop(anchor, p => {
+     const cur = engKey(S.tracks[i].sound.engine), ab = o.ab && !o.ab.hidden;
+-    p.innerHTML = '<h4>' + esc(S.tracks[i].name) + '</h4><div class="seg mkqeng">' + [['analog', 'VA'], ['fm6', 'FM'], ['wt', 'WT'], ['mk', MK_LABEL]].map(([e, l]) => `<button class="${e === cur ? 'on' : ''}" data-e="${e}">${esc(l)}</button>`).join('') + '</div>' +
++    p.innerHTML = '<h4>' + esc(S.tracks[i].name) + '</h4><div class="seg mkqeng">' + [['analog', 'VA'], ['fm6', 'FM'], ['wt', 'WT'], ['mk', MK_LABEL], ['north', typeof MD_NAME === 'string' ? MD_NAME : 'North']].map(([e, l]) => `<button class="${e === cur ? 'on' : ''}" data-e="${e}">${esc(l)}</button>`).join('') + '</div>' +
+       '<div class="plist edmore">' + (ab ? '<button class="rb" data-a="ab"><b>A/B</b><small>Vergleich mit dem gespeicherten Stand</small></button>' : '') +
+       '<button class="rb" data-a="save"><b>Sichern</b><small>in der Bibliothek</small></button><button class="rb" data-a="dice"><b>🎲 Zufall</b><small>Oszillatoren, Mixer, Filter, Hüllkurven</small></button>' +
+       `<button class="rb${UI.wia ? ' on' : ''}" data-a="wia"><b>◎ Was ist anders?</b><small>Punkte an Reglern und Seiten, die von INIT abweichen</small></button>` +
+@@ -14819,7 +14842,7 @@
+         x.fillStyle = col; x.globalAlpha = .45 + .55 * clamp(nt.v, 0, 1);
+         rr(x, r.x + .5, r.y + 1.5, r.w - 1, r.h - 3, 4); x.fill(); x.globalAlpha = 1;
+         if (selected) { x.strokeStyle = C.sel; x.lineWidth = 2; rr(x, r.x + 1, r.y + 2, r.w - 2, r.h - 4, 4); x.stroke(); x.lineWidth = 1; }
+-        if (r.w > 30 && V.rowH >= 20) { x.fillStyle = '#0b0c0f'; x.font = '700 10px ' + tok('--font-num', 'monospace'); x.fillText(NAMES[PC(nt.n)] + (Math.floor(nt.n / 12) - 1), r.x + 5, r.y + r.h / 2 + 3.5); }
++        if (r.w > 30 && V.rowH >= 20) { x.fillStyle = '#0b0c0f'; x.font = '700 10px ' + tok('--font-num', 'monospace'); x.fillText(opts.rowName ? opts.rowName(nt.n) : NAMES[PC(nt.n)] + (Math.floor(nt.n / 12) - 1), r.x + 5, r.y + r.h / 2 + 3.5, r.w - 8); }   // PERC: rowName
+         // resize grip
+         if (r.w >= 18) { x.fillStyle = '#0b0c0f'; x.globalAlpha = .5; x.fillRect(r.x + r.w - 5, r.y + r.h * .3, 2, r.h * .4); x.globalAlpha = 1; }
+       }
+@@ -14838,6 +14861,7 @@
+       for (let r = r0; r < r1; r++) {
+         const n = V.rows[r], y = yOfRow(r), black = [1, 3, 6, 8, 10].includes(PC(n));
+         x.fillStyle = black ? '#1a1b1f' : '#ece6d8'; x.fillRect(0, y, V.KW - 1, V.rowH - 1);
++        if (opts.rowName) { x.fillStyle = '#ece6d8'; x.fillRect(0, y, V.KW - 1, V.rowH - 1); x.fillStyle = '#222'; x.font = (PC(n) === 0 ? '700 ' : '600 ') + '9px ' + tok('--font-num', 'monospace'); x.fillText(opts.rowName(n), 2, y + V.rowH / 2 + 3, V.KW - 4); continue; }   // PERC: Kanal-Namen statt Noten, keine Skala
+         if (!s.S.includes(PC(n - s.root))) { x.fillStyle = '#000'; x.globalAlpha = .45; x.fillRect(0, y, V.KW - 1, V.rowH - 1); x.globalAlpha = 1; }
+         if (PC(n) === 0 || PC(n - s.root) === 0 || V.rowH >= 24) {
+           x.fillStyle = black ? '#cfc6b2' : '#222'; x.font = (PC(n - s.root) === 0 ? '700 ' : '500 ') + '10px ' + tok('--font-num', 'monospace');
+@@ -17200,7 +17224,7 @@
+     'fx.rev', 'fx.dly', 'fx.pan', 'fx.vol'];                    // §9.6 (P1, WP5): track-FX routes from LFO 1/2 (native, never sent to the worklet)
+   const CHORUS = ['off', 'I', 'II', 'I+II', 'ENS', 'BREIT'];
+   const CATS = ['bass', 'lead', 'poly', 'flaeche', 'pluck', 'sequenz', 'fm', 'glocke', 'wt', 'drums', 'eigene', 'init', 'effekt'];   // V0b: + init (§12.7); V0d: + effekt
+-  const SYNTH_ENGINES = ['analog', 'fm6', 'wt', 'fm2', 'mk'], ENGINES = SYNTH_ENGINES.concat(['drum']);   // MK1: + mk (AM)
++  const SYNTH_ENGINES = ['analog', 'fm6', 'wt', 'fm2', 'mk', 'north'], ENGINES = SYNTH_ENGINES.concat(['drum']);   // MK1: + mk (AM)   // PERC: + north (Perkussionsspur)
+   const WT_TABLES = ['digital', 'vocal', 'glas', 'orgel'], FM2_RATIOS = [.5, 1, 1.41, 2, 3, 3.5, 4, 5, 7];
+   const PUMP_REL = ['1/16', '1/8', '1/4'];
+   const ANALOG_BASE = () => (FACT() ? FACT().ANALOG_BASE : null);
+@@ -17281,6 +17305,8 @@
+     if (p.fmx && typeof p.fmx === 'object' && G.FMX) { const x = G.FMX.norm(p.fmx); if (x) o.fmx = x; }
+     // MK1 (B.1): the AM block, kept for every synth engine (lossless engine switch); the sound's own block always exists
+     if ((p.mk && typeof p.mk === 'object') || engine === 'mk') o.mk = G.SQMK.normMk(p.mk);
++    // PERC: der North-Block einer Perkussionsspur (p.nk = {kit, ch[12], md}); bleibt bei jedem Engine-Wechsel (verlustfrei)
++    if ((p.nk && typeof p.nk === 'object') || engine === 'north') { const N = G.PERCN ? G.PERCN(p.nk) : (p.nk && typeof p.nk === 'object' ? JSON.parse(JSON.stringify(p.nk)) : null); if (N) o.nk = N; }   // PERC
+     return o;
+   }
+   function normDrum(p) {        // flat per-slot params: keep finite numbers and short strings only (engine clamps the rest)
+@@ -20919,8 +20945,8 @@
+ const OLD_PRESETS = {Bass: 'f-moog-bass', Pluck: 'f-pop-pluck', Pad: 'f-juno-pad', Lead: 'f-mini-lead', Brass: 'f-ob-brass', Glocke: 'f-wt-glas', Acid: 'f-acid-303', Arp: 'f-glas-pluck'};
+ const PRESET_NAMES = Object.keys(OLD_PRESETS);
+ // engines: API / UI name <-> stored Sound.engine (WP3–WP6: FM = the legacy 2-operator 'fm2'; WP7: FM = 'fm6', §6, §6.7)
+-const ENG_OF = {va: 'analog', fm: 'fm6', wt: 'wt', mk: 'mk'}, ENG_API = {analog: 'va', fm2: 'fm', fm6: 'fm', wt: 'wt', mk: 'mk'};
+-const ENGINE_LABEL = {va: 'VA', fm: 'FM', wt: 'WT', analog: 'VA', fm2: 'FM', fm6: 'FM', mk: MK_LABEL, drum: 'KIT'};
++const ENG_OF = {va: 'analog', fm: 'fm6', wt: 'wt', mk: 'mk', north: 'north'}, ENG_API = {analog: 'va', fm2: 'fm', fm6: 'fm', wt: 'wt', mk: 'mk', north: 'north'};   // PERC: + north
++const ENGINE_LABEL = {va: 'VA', fm: 'FM', wt: 'WT', analog: 'VA', fm2: 'FM', fm6: 'FM', mk: MK_LABEL, drum: 'KIT', north: MD_NAME};   // PERC: + north
+ const FM2_DEF = () => ({ratio: 2, index: 3, modDecay: .3, modSus: .2}), WT_DEF = () => ({table: 'digital', pos: .3, scan: .3, scanTime: .8});
+ // §5.2: the FM block a sound gets when it is switched to FM without one (the v1 default pair through FMH.fromV1)
+ const FM6_DEF = () => SQStore.normFm6(FMH.fromV1(FM2_DEF()));
+@@ -21260,6 +21286,7 @@
+     o.follow = normBool(t.follow, true);
+     o.onChange = normEnum(t.onChange, ['follow', 'hold'], 'follow');
+     o.os = normBool(t.os, true);                                  // V2c′: „Eine Skala“ je Spur (Standard an)
++    if (t.percF && typeof t.percF === 'object') o.percF = {f: t.percF.f !== false};   // PERC: follow vor dem Wechsel auf North (additiv)
+     // v3: the track owns a full Sound (§15.2); a v2 patch (format 2) is migrated (§5.6)
+     let snd = t.sound && typeof t.sound === 'object' ? SQStore.normalizeSound(t.sound) : null;
+     if (!snd && t.patch && typeof t.patch === 'object') snd = SQStore.migratePatchV2(t.patch, t.preset, t.poly);
+@@ -21683,6 +21710,7 @@
+   measureFx();                                      // loop extra + compressor latency (offline, ≈ 20 ms), then the echo bus
+   loadWorklet();                                    // §1.4: not awaited; notes use the native path until the module is ready
+   mdBoot();                                         // ND4: Engine-Modul nur, wenn ein Pad sie spielt
++  percBoot();                                       // PERC: und nur, wenn eine Spur North spielt
+   drumBufsIdle();                                   // §7.1: the drum buffers in idle steps right after the unlock
+   UI.dirty.all = true;
+   return c;
+@@ -21870,6 +21898,7 @@
+   for (let i = 0; i < MAX_T; i++) {
+     if (i < NT()) { if (!AU.tracks[i] || AU.tracks[i].kindOf !== S.tracks[i].kind) { buildTrack(i); if (S.tracks[i].kind === 'synth') { syncEngine(i, true); } } }
+     else if (AU.synth[i]) retireEngine(i);
++    if (i >= NT() && PERC.st[i]) percDrop(i);                     // PERC
+   }
+ }
+ function buildTrack(i) {
+@@ -21954,6 +21983,7 @@
+   // on the worklet the engine runs the voice routes; the track-FX routes of §9.6 stay native LFOs on every path
+   // MK1 (B.1): AM skips the stored VA routes (fx.* too); its ECO path plays the routes of mkToFlat
+   if (tr.sound.engine === 'mk') { syncLfoSet(A, E ? {p: tr.sound.p, mods: []} : mkEco(tr.sound, i), i * 7); return; }
++  if (tr.sound.engine === PERC_ENG) { syncLfoSet(A, {p: tr.sound.p, mods: tr.sound.mods.filter(fxRoute)}, i * 7); return; }   // PERC: nur die Spur-FX-Routen (§9.6)
+   syncLfoSet(A, E ? {p: tr.sound.p, mods: tr.sound.mods.filter(fxRoute)} : tr.sound, i * 7);
+ }
+ // the LFO set of one chain: A = a track (AU.tracks[i]) or a browser preview chain (pvChain), both with
+@@ -22083,6 +22113,7 @@
+   } else if (AU.synth[i]) retireEngine(i);
+   rebuildNativeLfos(i);
+   mkInRoute();
++  percEngineSync(i);                                              // PERC: North-Knoten der Perkussionsspur
+ }
+ function syncEngines() { for (const i of synthTracks()) syncEngine(i, true); }
+ /* ---------- MK1 (Nachtrag 3): the AM engine on the main thread ----------
+@@ -22423,7 +22454,7 @@
+   lab(); s.update = lab;
+   onTap(b, () => openPop(b, p => {
+     const cur = engKey(S.tracks[i].sound.engine);
+-    p.innerHTML = '<h4>Klangerzeugung</h4><div class="plist">' + [['analog', 'VA'], ['fm6', 'FM'], ['wt', 'WT'], ['mk', MK_LABEL]].map(([e, l]) => `<button class="rb${e === cur ? ' on' : ''}" data-e="${e}">${esc(l)}</button>`).join('') + '</div>';
++    p.innerHTML = '<h4>Klangerzeugung</h4><div class="plist">' + [['analog', 'VA'], ['fm6', 'FM'], ['wt', 'WT'], ['mk', MK_LABEL], ['north', MD_NAME]].map(([e, l]) => `<button class="rb${e === cur ? ' on' : ''}" data-e="${e}">${esc(l)}</button>`).join('') + '</div>';
+     guardTouch(p);
+     onTap(p, x => { closePop(); const e = x.dataset.e; if (e === engKey(S.tracks[i].sound.engine)) return; const bf = soundSnapshot(i); setEngine(i, e); commitSound(i, bf, 'Klangerzeugung'); if (ED.lcd) lcdShow('Klangerzeugung', ENGINE_LABEL[e]); }, 'button[data-e]');
+   }, {name: 'engchip'}));
+@@ -22822,6 +22853,7 @@
+   const c = AU.ctx, tr = S.tracks[i], A = AU.tracks[i];
+   if (!c || !A || !tr || tr.kind !== 'synth') return null;
+   const snd0 = o.sound || tr.sound;
++  if (snd0.engine === PERC_ENG) return snd0 === tr.sound ? percVoice(i, out, vel, t0, o) : null;   // PERC: Perkussionsspur = North-Schlag
+   // MK1 (B.5): AM on the worklet as eng 3; on the native path its timbre 1 as the flat VA patch (mkEco)
+   if (snd0.engine === 'mk') { const E = o.chain ? o.chain.E : snd0 === tr.sound ? AU.synth[i] : null; if (E && !E.dead && !E.retiring) return spawnWkVoice(i, clamp(Math.round(out), 0, 127), vel, t0, o, E, snd0); }
+   if (snd0.engine === 'mk' && o.mask === 2) return null;    // MK5 (B.5): the ECO image is timbre 1 only; a T2-only note does not sound there
+@@ -23374,6 +23406,290 @@
+   return v;
+ }
+ 
++/* ===================== PERC (Xander 01.11.): MD_NAME als Instrument einer Synth-Spur – die Perkussionsspur =====================
++   Keine neue Spur-Klasse: eine Synth-Spur mit sound.engine 'north' spielt ihre Noten über einen eigenen North-Knoten (synq-md,
++   12 Kanäle) statt über eine Synth-Engine. Clips, Rolle/LAUF, Aufnahme, Song, Spur-Effekte (FX › SPUR: Drive, Chorus, Hall-/Echo-Send,
++   Lautstärke, Panorama, Pumpen, LFO-Spur-Routen) bleiben die der Synth-Spur: der Knoten hängt am Eingang der Spur (trackIn).
++   BELEGUNG: Kanal = Tonklasse der Note in der Reihenfolge der Drum-Pads: C = 1 KICK, C♯ = 2 SNARE, D = 3 RIM, D♯ = 4 CLAP, E = 5 HH ZU,
++   F = 6 HH OFFEN, F♯ = 7 TOM TIEF, G = 8 TOM MITTE, G♯ = 9 TOM HOCH, A = 10 BECKEN, A♯ = 11 PERC, H = 12 SHAKER. Die Oktave C4–H4
++   (MIDI 60–71, die Tastatur-Oktave einer Synth-Spur) spielt die Kanäle wie programmiert; jede Oktave darüber/darunter verschiebt die
++   Kanal-Tonhöhe um ±12 HT (höchstens ±48, Grenze der Engine). Folgt die Spur doch (Schild aus), verschiebt eine Transposition nur die
++   Tonhöhe des Kanals, nie den Kanal. MIDI-Export: Kanal 10 mit der GM-Note der Pad-Rolle (wie die Drum-Spur).
++   KLANG: sound.p.nk = {kit, ch: [12 Programme in MDX-Form], md: Kit-Effekte} (additiv, Format 5); die flachen Synth-Werte bleiben im
++   Klang, der Rückweg auf VA, FM, WT oder MK_LABEL ist verlustfrei. Programme und Kits sind dieselben North-Daten wie auf der Drum-Spur
++   (MDX.kits, MDX.progs, eigene Programme der Bibliothek).
++   AUTOMATISCH: der Wechsel auf North setzt tr.follow = false (der vorige Wert steht in tr.percF = {f}); Transponierung, Akkord-Folgen und
++   „Eine Skala“ lassen die Spur dann aus. Der Wechsel zurück stellt follow wieder her. Je Wechsel ein Undo-Schritt (soundSnapshot trägt
++   bei North-Spuren follow/percF mit). Das Modul lädt erst, wenn eine Spur North spielt (MDX.load, einmal je Kontext). */
++const PERC_ENG = 'north', PERC_REF = 5;                                 // floor(n / 12) === 5: C4–H4 ohne Verschiebung
++const PERC = {st: [], log: [], hid: 0, warned: false, n: 0};
++const percIs = tr => !!(tr && tr.kind === 'synth' && tr.sound && tr.sound.engine === PERC_ENG && !tr.sound._nv);
++const percCh = n => ((Math.round(n) % 12) + 12) % 12;
++const percTune = n => clamp((Math.floor(Math.round(n) / 12) - PERC_REF) * 12, -48, 48);
++const percChName = c => (DRUM_VOICES[c] ? DRUM_VOICES[c].l : 'KANAL ' + (c + 1));
++const percChShort = c => (DRUM_VOICES[c] ? DRUM_VOICES[c].sl : String(c + 1));
++const percGm = n => (DRUM_VOICES[percCh(n)] ? DRUM_VOICES[percCh(n)].gm : 36);
++// Name einer Zeile der Rolle / eines LAUF-Schritts: „KICK“, eine Oktave höher „KICK +1“
++function percRowName(n) { const o = Math.floor(Math.round(n) / 12) - PERC_REF; return percChShort(percCh(n)) + (o ? ' ' + (o > 0 ? '+' : MINUS) + Math.abs(o) : ''); }
++// ein Programm in der Form des Klangs: MDX.norm (Bereiche, Codes, unbekannte Felder bleiben), ohne src
++const percProg = p => { const o = MDX.norm(p); delete o.src; return o; };
++function percNkFromKit(K) { K = K || MDX.kits[0]; return {kit: K.name, ch: MDX.ORDER.map(id => percProg(K.slots[id])), md: MDX.normKit(Object.assign({}, MDX.KIT0, K.md))}; }
++// Normalisierung von p.nk (SQStore.normSynthP ruft sie über window.PERCN): fehlende Kanäle = Kanal des ersten Kits
++function percNormNk(nk) {
++  if (typeof MDX === 'undefined' || !MDX.kits || !MDX.kits.length) return nk && typeof nk === 'object' ? JSON.parse(JSON.stringify(nk)) : null;
++  nk = nk && typeof nk === 'object' ? nk : null;
++  const d = percNkFromKit(MDX.kits[0]); if (!nk) return d;
++  const ch = Array.isArray(nk.ch) ? nk.ch : [];
++  return {kit: typeof nk.kit === 'string' ? nk.kit.slice(0, 24) : d.kit, ch: d.ch.map((p, c) => (ch[c] && typeof ch[c] === 'object' ? percProg(ch[c]) : p)),
++    md: MDX.normKit(Object.assign({}, MDX.KIT0, nk.md && typeof nk.md === 'object' ? nk.md : {}))};
++}
++window.PERCN = percNormNk;
++const percNkOf = snd => (snd && snd.p && snd.p.nk ? snd.p.nk : null);
++/* ---------- Knoten je Spur: {ctx, st 'loading'|'ready'|'failed', E, dest, q (Schläge bis bereit), sent [je Kanal], kit, dirty} ---------- */
++function percCan() { const c = AU.ctx; return !UI.forceNative && !!c && !!c.audioWorklet && typeof AudioWorkletNode === 'function'; }
++function percNoWk() { if (PERC.warned) return; PERC.warned = true; toast(MD_NAME + ' braucht AudioWorklet – die Perkussionsspur bleibt hier still'); }
++function percEnsure(i) {
++  const c = AU.ctx, tr = S.tracks[i]; if (!c || !percIs(tr)) return null;
++  let P = PERC.st[i];
++  if (P && (P.ctx !== c || (P.st === 'ready' && (!P.E || P.E.dead)))) { percDrop(i); P = null; }   // neuer Kontext oder Knoten weg: neu
++  if (!P) {
++    if (!percCan()) { percNoWk(); return null; }
++    P = PERC.st[i] = {ctx: c, st: 'loading', E: null, dest: null, q: [], sent: [], kit: '', dirty: true};
++    MDX.load(c).then(ok => {
++      if (PERC.st[i] !== P) return;
++      if (!ok) { P.st = 'failed'; P.q = []; percNoWk(); return; }
++      try { P.E = MDX.node(c, null); P.st = 'ready'; percConnect(i); percSync(i, true); percFlush(i); }
++      catch (e) { logErr(e); P.st = 'failed'; P.q = []; }
++    });
++  } else if (P.st === 'ready') percConnect(i);
++  return P;
++}
++// Ausgang -> Eingang der Spur (Spur-FX, Sends, Mute wie jede Stimme der Spur); nach einem Neubau der Spur neu verbunden
++function percConnect(i) {
++  const P = PERC.st[i], A = AU.tracks[i]; if (!P || !P.E || !A || !A.trackIn || P.dest === A.trackIn) return;
++  try { P.E.node.disconnect(); } catch (e) {}
++  P.E.node.connect(A.trackIn); P.dest = A.trackIn;
++}
++const percE = i => { const P = PERC.st[i]; return P && P.st === 'ready' && P.E && !P.E.dead ? P.E : null; };
++// Programme der 12 Kanäle und die Kit-Effekte: nur Geändertes
++function percSync(i, force) {
++  const P = PERC.st[i], E = percE(i), nk = percNkOf(sndOf(i)); if (!P || !E || !nk) return;
++  P.dirty = false; if (force) { P.sent = []; P.kit = ''; }
++  for (let c = 0; c < 12; c++) { const p = nk.ch[c]; if (!p) continue; const j = JSON.stringify(p); if (P.sent[c] !== j) { P.sent[c] = j; E.ch(c, p); } }
++  const kj = JSON.stringify(nk.md); if (P.kit !== kj) { P.kit = kj; E.kit(nk.md); }
++}
++function percFlush(i) { const P = PERC.st[i], E = percE(i); if (!P || !E || !P.q.length) return; if (P.dirty) percSync(i); const L = P.q; P.q = []; E.hit(L); }
++// Spur verlässt North (oder ist weg): klingende Schläge kurz ausblenden, Knoten frei
++function percDrop(i) {
++  const P = PERC.st[i]; if (!P) return; PERC.st[i] = null; P.q = [];
++  const E = P.E; if (!E) return;
++  try { E.stop(P.ctx.currentTime, .01); } catch (e) {}
++  setTimeout(() => { try { E.dispose(); } catch (e) {} }, 250);
++}
++// Klang der Spur hat sich geändert (applySound, syncEngine, Seite NORTH): Knoten anlegen / abbauen, Programme beim nächsten Schlag
++function percEngineSync(i) {
++  const tr = S.tracks[i];
++  if (percIs(tr) && AU.ctx) { const P = percEnsure(i); if (P) { P.dirty = true; if (P.st === 'ready') percSync(i); } }
++  else if (PERC.st[i]) percDrop(i);
++}
++function percBoot() { try { for (let i = 0; i < MAX_T; i++) { if (i < NT() && percIs(S.tracks[i])) { if (AU.ctx) percEngineSync(i); } else if (PERC.st[i]) percDrop(i); } } catch (e) { logErr(e); } }
++const percUsed = () => S.tracks.some(percIs);
++/* ---------- die Stimme: ein Schlag, verpackt wie eine Worklet-Stimme (release, cancel, retune, state, start, end, relT, stopAt) ---------- */
++const PERC_EH = {kill() {}, cancelRetune() {}, proxies: new Map()};
++const PercVoiceProto = Object.assign(Object.create(VoiceProto), {
++  // ein Schlag hat kein Loslassen: die Note endet für Log und Mitschnitt, der Kanal klingt mit seinem Programm aus
++  release(t, fastTau) {
++    if (this.dead) return; if (t < this.start) t = this.start;
++    if (t < this.relT) this.relT = t; if (t < this.end) this.end = t;
++    this.stopAt = Math.min(this.stopAt, t + 2);
++    if (R.playing) perfCut(this.perfAll, t2b(t));
++    void fastTau;
++  },
++  cancel() {
++    if (this.dead) return;
++    const now = nowT();
++    if (this.start > now + 1e-4) {
++      logDrop(this.log);
++      const P = PERC.st[this.track]; if (P) { P.q = P.q.filter(h => h.id !== this.hid); const E = percE(this.track); if (E) E.cancel([this.hid]); }
++    }
++    if (this.perfAll) { if (R.playing) perfCut(this.perfAll, t2b(now), true); else for (const p of this.perfAll) if (!isFinite(p.endBeat)) p.dead = true; }
++    wkVoiceDead(this);
++  },
++  retune() {},                                                   // ein schon geschlagener Kanal wird nicht umgestimmt
++  ampAt(t) { return t >= this.start && t < this.relT ? .5 : 0; },
++  fenvAt() { return 0; },
++});
++function percVoice(i, out, vel, t0, o) {
++  const tr = S.tracks[i]; if (!percIs(tr)) return null;
++  const P = percEnsure(i);
++  const n0 = o.clipNote != null ? o.clipNote : out, ch = percCh(n0);
++  const tune = clamp(percTune(n0) + (Math.round(out) - Math.round(n0)), -48, 48);
++  const it = {ch, at: t0, v: clamp(+vel || 0, 0, 1), acc: 0, tune, dec: 1, id: ++PERC.hid};
++  if (P && P.st === 'ready') { if (P.dirty) percSync(i); percConnect(i); P.E.hit([it]); }
++  else if (P && P.st === 'loading') P.q.push(it);
++  const v = Object.create(PercVoiceProto);
++  Object.assign(v, {id: ++VSEQ, hid: it.id, track: i, src: o.src, clipNote: o.clipNote == null ? null : o.clipNote, clipKey: o.clipKey || null,
++    out: clamp(Math.round(out), 0, 127), baseOut: clamp(Math.round(out), 0, 127), vel, start: t0, end: Infinity, relT: Infinity, stopAt: t0 + 4, dead: false, stolen: false,
++    E: PERC_EH, wk: true, perc: true, ch, P: tr.sound.p, perf: null, perfAll: [], log: null});
++  VOICES.push(v);
++  if (o.src !== 'preview') { v.perf = perfAdd(i, v.out, t0, null, vel); if (v.perf) v.perfAll.push(v.perf); }
++  PERC.n++; PERC.log.push({track: i, src: o.src, note: Math.round(n0), out: v.out, ch, tune, at: t0, v: it.v}); if (PERC.log.length > 512) PERC.log.splice(0, PERC.log.length - 512);
++  return v;
++}
++// ■ (silenceAll): Stimmen klingen mit τ aus (Hall-/Echo-Fahnen laufen weiter); ■■ / Panik (tailKill): alles still
++function percSilence(now, tau) { for (let i = 0; i < PERC.st.length; i++) { const P = PERC.st[i]; if (!P) continue; P.q = []; const E = percE(i); if (E) E.stop(now, tau); } }
++function percPanic() { for (let i = 0; i < PERC.st.length; i++) { const P = PERC.st[i]; if (!P) continue; P.q = []; const E = percE(i); if (E) E.panic(); } }
++/* ---------- Folgen-Regel: auf North = folgt nicht (gemerkt), zurück = wie vorher; abschaltbar (Schild / Seite NORTH) ---------- */
++function percFollowRule(i, old, snd) {
++  const T_ = S.tracks[i]; if (!T_ || T_.kind !== 'synth' || !snd) return;
++  const was = !!(old && old.engine === PERC_ENG && !old._nv), is = snd.engine === PERC_ENG && !snd._nv;
++  if (was === is) return;
++  if (is) { T_.percF = {f: T_.follow !== false}; T_.follow = false; }
++  else { if (T_.percF) T_.follow = T_.percF.f !== false; delete T_.percF; }
++  UI.dirty.all = true;
++  if (AU.ctx) { try { remapNow(); } catch (e) { logErr(e); } }
++}
++// Undo-Schnappschuss (nur bei North-Spuren oder gemerktem Zustand; alte Spuren: der Schnappschuss bleibt Zeichen für Zeichen gleich)
++function percSnap(tr) { return percIs(tr) || tr.percF ? {pf: {fo: tr.follow !== false, f: tr.percF ? tr.percF.f !== false : null}} : null; }
++function percSnapPut(tr, o) {
++  if (!o || !o.pf) return;
++  tr.follow = !!o.pf.fo; if (o.pf.f == null) delete tr.percF; else tr.percF = {f: !!o.pf.f};
++  if (AU.ctx) { try { remapNow(); } catch (e) { logErr(e); } }
++}
++const percfSnap = i => { const tr = S.tracks[i]; return JSON.stringify(tr ? {fo: tr.follow !== false, f: tr.percF ? tr.percF.f !== false : null} : null); };
++function percfPut(i, val) { const tr = S.tracks[i], o = JSON.parse(val); if (!tr || !o) return; percSnapPut(tr, {pf: o}); UI.dirty.all = true; if (R.editor === 'synth' && R.selT === i) safeRebuild(buildSynthEd); }
++// das Schild „folgt nicht“ abschalten / wieder an: ein Undo-Schritt
++function percSetFollow(i, on) {
++  const tr = S.tracks[i]; if (!percIs(tr)) return false;
++  if ((tr.follow !== false) === !!on) return false;
++  const before = percfSnap(i);
++  tr.follow = !!on; if (AU.ctx) remapNow();
++  UI.dirty.all = true; markDirty();
++  undoPush({kind: 'percf', track: i, before, label: on ? MD_NAME + ' folgt' : MD_NAME + ' folgt nicht'});
++  return true;
++}
++/* ---------- Video / GarageBand (Offline-Durchlauf): eigene Knoten im Offline-Kontext, der Live-Zustand kommt unverändert zurück ---------- */
++function percVvSave() { const sv = PERC.st.slice(); PERC.st = []; return sv; }
++async function percVvBoot(oc) {
++  if (UI.forceNative || !oc.audioWorklet || !percUsed()) return;
++  if (!(await MDX.load(oc))) return;
++  for (let i = 0; i < NT(); i++) {
++    const tr = S.tracks[i]; if (!percIs(tr)) continue;
++    const nk = percNkOf(tr.sound), chans = {}, sent = [];
++    for (let c = 0; c < 12; c++) { chans[c] = nk.ch[c]; sent[c] = JSON.stringify(nk.ch[c]); }
++    // die Programme und Kit-Effekte als erste Nachrichten (processorOptions.init: vor dem ersten Block, deterministisch)
++    const E = MDX.node(oc, null, {chans, kit: nk.md});
++    PERC.st[i] = {ctx: oc, st: 'ready', E, dest: null, q: [], sent, kit: JSON.stringify(nk.md), dirty: false};
++    percConnect(i);
++    mdVvSync(oc, E);                                              // Quittung vor jedem Weiterrechnen (wie die Drum-Spur, 4.30.0)
++  }
++}
++function percVvFlush() { for (let i = 0; i < PERC.st.length; i++) { const E = percE(i); if (E) E.flush(); } }
++function percVvRest(sv) {
++  if (!sv) return;
++  for (const P of PERC.st) if (P && P.E && sv.indexOf(P) < 0) { try { P.E.dispose(); } catch (e) {} }
++  PERC.st = sv;
++}
++/* ---------- Bedienung: Kit laden, Programm je Kanal, Zufall, Init ---------- */
++const percKits = () => (MDX.kits || []);
++function percApplyNk(i, fn, label) {
++  const tr = S.tracks[i]; if (!percIs(tr)) return false;
++  return soundEdit(i, label, () => { const s_ = deep(tr.sound); fn(s_.p.nk, s_); s_.p.nk = percNormNk(s_.p.nk); UI.ab = null; applySound(i, s_); return true; });
++}
++function percLoadKit(i, name) {
++  const K = percKits().find(k => k.name === name) || percKits()[0]; if (!K) return false;
++  const r = percApplyNk(i, nk => { const n = percNkFromKit(K); nk.kit = n.kit; nk.ch = n.ch; nk.md = n.md; }, 'Kit ' + K.name);
++  if (R.editor === 'synth' && R.selT === i) safeRebuild(buildSynthEd);
++  return r;
++}
++function percSetProgram(i, c, prog, name) {
++  c = c | 0; if (c < 0 || c > 11 || !prog) return false;
++  const p = percProg(prog); if (name != null) p.mName = String(name).slice(0, 16);
++  const r = percApplyNk(i, nk => { const keep = nk.ch[c] || {}; if (isNum(keep.mMono)) p.mMono = keep.mMono; if (keep.mCrv) p.mCrv = keep.mCrv; nk.ch[c] = p; }, percChName(c) + ' · ' + (p.mName || 'Programm'));
++  if (R.editor === 'synth' && R.selT === i) safeRebuild(buildSynthEd);
++  return r;
++}
++// 🎲: je Kanal ein Werk-Programm derselben Kategorie (Kick bleibt Kick); Kit-Effekte und Spur-Effekte bleiben
++function percRandom(i) {
++  return percApplyNk(i, nk => { for (let c = 0; c < 12; c++) { const cat = nk.ch[c] && nk.ch[c].mCat, L = MDX.progs.filter(p => p.mCat === cat); const L2 = L.length ? L : MDX.progs; const q = L2[Math.floor(Math.random() * L2.length)]; const keep = nk.ch[c] || {}; const p = percProg(q); if (isNum(keep.mMono)) p.mMono = keep.mMono; nk.ch[c] = p; } }, 'Zufall');
++}
++// ▶ eines Kanals (Seite NORTH): die Note der Bezugs-Oktave
++function percAudition(i, c) { const n = PERC_REF * 12 + (c | 0); R.lastNote[i] = n; return auditionStart(i, n, .85); }
++function percInfo() {
++  const tr = [];
++  for (let i = 0; i < NT(); i++) if (percIs(S.tracks[i])) { const P = PERC.st[i], nk = percNkOf(S.tracks[i].sound); tr.push({i, kit: nk ? nk.kit : null, follow: S.tracks[i].follow !== false, percF: S.tracks[i].percF ? deep(S.tracks[i].percF) : null, st: P ? P.st : 'off', load: P && P.E ? +(P.E.load || 0).toFixed(4) : 0, voices: P && P.E ? P.E.nv : 0, late: P && P.E ? P.E.late : 0, connected: !!(P && P.dest && AU.tracks[i] && P.dest === AU.tracks[i].trackIn)}); }
++  return {eng: PERC_ENG, ref: PERC_REF, tracks: tr, hits: PERC.n, md: MDX.info()};
++}
++
++/* PERC: Seite NORTH im Klang-Editor einer North-Spur – Kit, die 12 Kanäle (▶ hören, Programm ▾), Schalter „folgt nicht“.
++   Kit-Effekte (Hall/Echo der Engine) kommen mit dem Kit; die Spur-Effekte stehen wie bei jeder Synth-Spur unter FX › SPUR. */
++const PERCUI = {cat: 'bd'};
++function percPage(pg, i) {
++  const tr = S.tracks[i], nk = percNkOf(tr.sound); if (!nk) return;
++  pg.classList.add('percpg');
++  const top = el('div', 'drow rest percrow');
++  const kb = el('button', 'rb dsel perckit', `<span class="lbl">Kit</span><b>${esc(nk.kit || MD_NAME)}</b><span class="car">▾</span>`);
++  kb.setAttribute('aria-label', 'Kit: ' + (nk.kit || MD_NAME) + ' – wählen'); onTap(kb, () => percKitPop(kb, i));
++  const fol = tr.follow !== false;
++  const fb = el('button', 'tgl rb percfol' + (fol ? ' on' : ''), `<i class="led"></i><span>${fol ? 'folgt' : 'folgt nicht'}</span>`);
++  fb.setAttribute('role', 'switch'); fb.setAttribute('aria-checked', String(fol));
++  fb.setAttribute('aria-label', fol ? 'Spur folgt Transponierung, Akkorden und Eine Skala – antippen: folgt nicht' : 'Spur folgt nicht (Transponierung, Akkorde, Eine Skala) – antippen: folgt');
++  onTap(fb, () => { percSetFollow(i, !(S.tracks[i].follow !== false)); safeRebuild(buildSynthEd); lcdShow(MD_NAME, S.tracks[i].follow !== false ? 'folgt – Transponierung verschiebt die Tonhöhe der Kanäle' : 'folgt nicht – Transponierung, Akkorde und Eine Skala lassen die Spur aus'); });
++  top.append(kb, fb); pg.appendChild(top);
++  const grid = el('div', 'percgrid');
++  for (let c = 0; c < 12; c++) {
++    const p = nk.ch[c] || {}, cell = el('div', 'perccell');
++    cell.style.setProperty('--pc', `var(--p${c + 1})`);
++    const hb = el('button', 'rb perchear', `<b>${esc(percChShort(c))}</b><small>${esc(noteNames()[c])}</small>`);
++    hb.setAttribute('aria-label', 'Kanal ' + (c + 1) + ' ' + percChName(c) + ' hören (Taste ' + noteNames()[c] + ')');
++    on(hb, 'pointerdown', e => { e.preventDefault(); previewStop(); const v = percAudition(i, c); if (v) v.release(nowT() + .2); hb.classList.add('on'); setTimeout(() => hb.classList.remove('on'), 160); lcdShow(percChName(c), (p.mName || 'Programm') + ' · Taste ' + noteNames()[c]); });
++    const pb = el('button', 'rb percprog', `<span>${esc(p.mName || 'INIT')}</span><span class="car">▾</span>`);
++    pb.setAttribute('aria-label', 'Programm ' + percChName(c) + ': ' + (p.mName || 'INIT') + ' – wählen');
++    onTap(pb, () => percProgPop(pb, i, c));
++    cell.append(hb, pb); grid.appendChild(cell);
++  }
++  pg.appendChild(grid);
++  pg.appendChild(el('div', 'perchint', 'Tasten: C = KICK … H = SHAKER · C4 wie programmiert, jede Oktave ±12 HT · Spur-Effekte unter FX'));
++}
++// Kit ▾: die North-Kits (wie auf der Drum-Spur) und eigene North-Klänge der Bibliothek
++function percKitPop(anchor, i) {
++  libReady().then(() => openPop(anchor, p => {
++    const nk = percNkOf(sndOf(i)) || {}, own = (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine === PERC_ENG);
++    p.innerHTML = '<h4>' + esc(MD_NAME) + ' – Kit</h4><div class="plist perckits pan-y">' +
++      percKits().map((k, x) => `<button class="rb${k.name === nk.kit ? ' on' : ''}" data-k="${x}"><b>${esc(k.name)}</b><small>${esc(k.info || '')}</small></button>`).join('') +
++      own.map((s, x) => `<button class="rb own" data-o="${x}"><b>${esc(s.name)}</b><small>eigener Klang</small></button>`).join('') + '</div>';
++    guardTouch(p);
++    onTap(p, b => {
++      closePop();
++      if (b.dataset.k != null) { const K = percKits()[+b.dataset.k]; if (K) { percLoadKit(i, K.name); lcdShow('Kit', K.name); } return; }
++      const s = own[+b.dataset.o]; if (s) { soundEdit(i, s.name, () => loadPreset(i, s.id || s.name)); lcdShow(MD_NAME, s.name); }
++    }, 'button');
++  }, {name: 'perckit'}));
++}
++// Programm ▾ eines Kanals: Kategorie-Chips + Liste (Werk MDX.progs, Eigene aus der Bibliothek) – wie Programm ▾ der Drum-Spur
++function percProgPop(anchor, i, c) {
++  const cur = (percNkOf(sndOf(i)) || {ch: []}).ch[c] || {};
++  if (cur.mCat && MD_CAT.some(x => x[0] === cur.mCat)) PERCUI.cat = cur.mCat;
++  libReady().then(() => openPop(anchor, p => {
++    const paint = () => {
++      const L = PERCUI.cat === 'own' ? mdLibList().map(u => ({name: u.name, p: u.p, own: true})) : MDX.progs.filter(x => x.mCat === PERCUI.cat).map(x => ({name: x.mName, p: x}));
++      p.querySelector('.mdcats').innerHTML = MD_CAT.concat([['own', 'Eigene']]).map(([k, l]) => `<button class="rb${k === PERCUI.cat ? ' on' : ''}" data-c="${k}"><b>${k === 'own' ? 'Eigene' : k}</b><small>${esc(k === 'own' ? 'gesichert' : l)}</small></button>`).join('');
++      const now = ((percNkOf(sndOf(i)) || {ch: []}).ch[c] || {}).mName;
++      p.querySelector('.mdpl').innerHTML = L.length ? L.map((x, k) => `<button class="rb${x.own ? ' own' : ''}${x.name === now ? ' on' : ''}" data-k="${k}">${esc(x.name)}</button>`).join('') : '<div class="mempty">' + (PERCUI.cat === 'own' ? 'Noch keine eigenen Programme.' : 'Noch keine Programme in dieser Kategorie.') + '</div>';
++      p._L = L;
++    };
++    p.innerHTML = '<h4>Programm – ' + esc(percChName(c)) + '</h4><div class="mdcats pan-x"></div><div class="plist mdpl pan-y"></div>';
++    p.classList.add('mdpop'); guardTouch(p); paint();
++    onTap(p, b => {
++      if (b.dataset.c) { PERCUI.cat = b.dataset.c; paint(); return; }
++      const x = p._L && p._L[+b.dataset.k]; if (!x) return;
++      percSetProgram(i, c, x.p, x.name);
++      for (const o of p.querySelectorAll('button[data-k]')) o.classList.toggle('on', o === b);
++      if (!R.playing) { const v = percAudition(i, c); if (v) v.release(nowT() + .2); }
++    }, 'button');
++  }, {name: 'percprog'}));
++}
++
+ /* ---------- housekeeping ---------- */
+ function gcVoices(now) {
+   try { if (PV_OLD.length) pvChainGc(); } catch (e) {}
+@@ -23382,7 +23698,7 @@
+ }
+ function silenceAll(now, tau) {
+   tkSilence(now, tau);
+-  mdSilence(now, tau);                                           // ND4: Stimmen der Engine klingen mit derselben τ aus                                           // VS3: Takes blenden mit aus
++  mdSilence(now, tau);  percSilence(now, tau);                  // ND4: Stimmen der Engine klingen mit derselben τ aus (PERC: auch die der Perkussionsspuren)                                           // VS3: Takes blenden mit aus
+   for (const v of VOICES.slice()) if (!v.dead) { if (v.start > now + .002) v.cancel(); else v.release(now, tau); }
+   for (const h of HITS.slice()) {
+     if (h.dead) continue;
+@@ -25241,6 +25557,7 @@
+   if (e.kind === 'tphase') return tkPhaseOf(e.track, e.scene);                                  // VS-L-fix
+   if (e.kind === 'gfx') return g4Snap(e.track);                                                // G4
+   if (e.kind === 'chorlanes') return g6pLanesSnap(e.track);                                     // G6+a: Chor-Spuren
++  if (e.kind === 'percf') return percfSnap(e.track);                                            // PERC: Schild „folgt nicht“
+   return fxSnapshot();
+ }
+ // a restored clip that is playing is heard at once (like an editor gesture, §3.3 afterClipEdit)
+@@ -25267,6 +25584,7 @@
+   else if (e.kind === 'tphase') tkPhaseSet(e.track, e.scene, val);                            // VS-L-fix
+   else if (e.kind === 'gfx') g4Restore(e.track, val);            // G4
+   else if (e.kind === 'chorlanes') g6pLanesRestore(e.track, val);   // G6+a
++  else if (e.kind === 'percf') percfPut(e.track, val);             // PERC
+   else if (e.kind === 'part') partRestore(JSON.parse(val));
+   else restoreFx(JSON.parse(val));
+   UI.dirty.all = true; markDirty();
+@@ -25858,6 +26176,7 @@
+     if (R.songOverride) R.songOverride[i] = false;
+     R.slot[i] = -1; R.pend[i] = null; R.prev[i] = null; R.cstart[i] = 0;
+     if (c) { try { cancelTrackFrom(i, now); } catch (e) {} for (const v of VOICES.slice()) if (v.track === i && !v.dead) { if (v.start > now) v.cancel(); else v.release(now); } if (AU.synth[i]) retireEngine(i); }
++    if (PERC.st[i]) percDrop(i);                                     // PERC: der Knoten der entfernten Perkussionsspur
+     if ((ED.rollAt && ED.rollAt.t === i) || (ED.clip && ED.clip.t === i)) closeEditor();
+     if (R.editor && R.selT === i) closeEditor();
+     S.tracks.pop();
+@@ -26876,6 +27195,7 @@
+ function tailKill() {
+   if (!AU.ctx) return; echoKill(); hallClear(); duckReset(AU.ctx.currentTime);
+   mdPanic();                                                     // ND4: Engine inkl. Hall-/Echo-Fahnen still
++  percPanic();                                                   // PERC
+   for (const E of AU.synth) if (E && E.mkFxKill) E.mkFxKill();   // MK4-fix: the AM program delay / Mod-FX tails too
+   try { if (PV.chain && PV.chain.E && PV.chain.E.mkFxKill) PV.chain.E.mkFxKill(); } catch (e) {}
+ }
+@@ -27073,12 +27393,13 @@
+     let fb, fcls = 'fb';
+     if (tr.stimme) fb = '🎤';
+     else if (tr.kind === 'drum') fb = '🔒';
++    else if (percIs(tr) && !tr.follow) { fb = 'folgt nicht'; fcls = 'fb fix percfb'; }   // PERC: Perkussionsspur
+     else if (!tr.follow) { fb = 'fest'; fcls = 'fb fix'; }
+     else { fb = '⇅'; if (T.targetAt(nowT()).target) fcls = 'fb act'; }
+     setTxt(H.fb, H.st, 'fb', fb);
+     if (H.st.fcls !== fcls) { H.st.fcls = fcls; H.fb.className = fcls; }
+     setCls(H.el, H.st, 'sel', i === R.selT);
+-    setCls(H.el, H.st, 'hfix', fcls === 'fb fix');
++    setCls(H.el, H.st, 'hfix', fcls === 'fb fix' || fcls === 'fb fix percfb'); setCls(H.el, H.st, 'percth', fcls === 'fb fix percfb');   // PERC
+     setCls(H.el, H.st, 'muted', !!tr.mute);
+     for (let k = 0; k < MX.scenes.length; k++) {
+       const s = MX.scenes[k];
+@@ -30632,7 +30953,7 @@
+   const col = getComputedStyle(document.documentElement).getPropertyValue('--t' + (t + 1)).trim();
+   const extra = land ? [{id: 'kb', label: '⌨', title: 'Tastatur zeigen / verbergen', fn: b => { ROLLP.kb = !ROLLP.kb; rollKbApply(); b.classList.toggle('on', ROLLP.kb); }}] : [];
+   ED.roll = PianoRoll.create(body, ownModel(t, id), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, toolbarHost: land ? head : null,
+-    extraTools: extra, center: isDrum(t) ? 42 : 12 * ((tr.kbOct || 4) + 1) + 7,
++    extraTools: extra, center: isDrum(t) ? 42 : 12 * ((tr.kbOct || 4) + 1) + 7, rowName: percIs(tr) ? percRowName : null,   // PERC
+     mp: mpRollOpts(t, 'o:' + id, b => songKeyAtBar(mpOwnBar(id) + Math.floor(b / 4))),   /* MP */
+     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
+     reg: folReg('roll'), onHand: () => folHand('roll'),
+@@ -32896,12 +33217,12 @@
+ /* ---------- sound undo: one entry per gesture (§10.4, Anhang D.13) ---------- */
+ function soundSnapshot(t) {
+   const tr = S.tracks[t];
+-  if (tr.kind === 'synth') return JSON.stringify({$: 'trk', sound: tr.sound, onChange: tr.onChange});
++  if (tr.kind === 'synth') return JSON.stringify(Object.assign({$: 'trk', sound: tr.sound, onChange: tr.onChange}, percSnap(tr)));   // PERC: + pf nur bei North-Spuren
+   return JSON.stringify(tr.sound);
+ }
+ function restoreSoundSnapshot(t, o) {
+   const tr = S.tracks[t]; if (!tr || !o) return;
+-  if (o.$ === 'trk' && tr.kind === 'synth') { if (o.onChange) tr.onChange = o.onChange; UI.ab = null; applySound(t, o.sound); }
++  if (o.$ === 'trk' && tr.kind === 'synth') { if (o.onChange) tr.onChange = o.onChange; UI.ab = null; applySound(t, o.sound); percSnapPut(tr, o); }   // PERC
+   else if (o.$ === 'snd' && tr.kind === 'synth') { UI.ab = null; applySound(t, o); }
+   else if (tr.kind === 'drum' && o.$ === 'snd') { applyDrumSound(o); return; }
+   applyTrackParams(t, false);
+@@ -32934,8 +33255,9 @@
+ // block gets its default (WP3: FM = the legacy 2-operator block p.fm2)
+ function setEngineOf(snd, eng) {
+   if (eng === 'fm2') eng = 'fm6';                     // WP7: the legacy 2-operator FM is FM6 now (§6.7)
+-  if (!['analog', 'wt', 'fm6', 'mk'].includes(eng)) return snd;
++  if (!['analog', 'wt', 'fm6', 'mk', 'north'].includes(eng)) return snd;   // PERC: + north
+   snd.engine = eng;
++  if (eng === 'north' && !snd.p.nk) snd.p.nk = percNkFromKit();     // PERC: erstes Kit
+   if (eng === 'mk' && !snd.p.mk) snd.p.mk = SQMK.init();             // MK1 (B.1): from INIT AM, no conversion VA -> AM
+   if (eng === 'wt' && !snd.p.wt) snd.p.wt = WT_DEF();
+   // a missing FM block: the sound's own v2 FM block (a migrated v2 preset kept it) through FMH.fromV1, else the default
+@@ -32944,14 +33266,14 @@
+   // again: VA → FM → WT → VA with no change is the same sound, not „geändert“ (§5.2 lossless switch)
+   let rec = null; try { rec = originRec(snd); } catch (e) {}
+   const fmDef = () => (snd.p.fm2 ? SQStore.normFm6(FMH.fromV1(SQStore.normFm2(snd.p.fm2))) : FM6_DEF());
+-  for (const [k, e, def] of [['wt', 'wt', WT_DEF], ['fm6', 'fm6', fmDef], ['mk', 'mk', SQMK.init]]) {
++  for (const [k, e, def] of [['wt', 'wt', WT_DEF], ['fm6', 'fm6', fmDef], ['mk', 'mk', SQMK.init], ['nk', 'north', () => percNkFromKit()]]) {   // PERC: + nk
+     if (eng === e || !snd.p[k] || (rec && rec.p && rec.p[k])) continue;
+     if (SQStore.canonical(snd.p[k]) === SQStore.canonical(def())) delete snd.p[k];
+   }
+   return snd;
+ }
+ const sndOf = t => S.tracks[t] && S.tracks[t].kind === 'synth' ? S.tracks[t].sound : null;
+-function soundLabel(tr) { return tr.kind === 'synth' ? (ENGINE_LABEL[tr.sound.engine] || 'VA') + ' · ' + tr.sound.name : 'Kit ' + tr.sound.name; }
++function soundLabel(tr) { return tr.kind === 'synth' ? (ENGINE_LABEL[tr.sound.engine] || 'VA') + ' · ' + (percIs(tr) && tr.sound.p.nk ? tr.sound.p.nk.kit : tr.sound.name) : 'Kit ' + tr.sound.name; }   // PERC: North · Kit
+ // where a parameter lives: flat key -> p[key]; 'wt.x' -> p.wt; 'fm2.x' -> p.fm2; 'fx.x' -> fx
+ function sndGet(snd, key) {
+   if (key.startsWith('wt.')) return (snd.p.wt || WT_DEF())[key.slice(3)];
+@@ -33067,6 +33389,7 @@
+   snd = nvWrap(snd);
+   const old = T.sound, other = !old || old.name !== snd.name || old.origin !== snd.origin || old.engine !== snd.engine;
+   T.sound = snd; markDirty(); UI.dirty.strip = UI.dirty.grid = UI.dirty.edHead = true; UI.sndVer++;
++  percFollowRule(i, old, snd);                                   // PERC: auf North = folgt nicht, zurück = wie vorher
+   if (snd.engine === 'mk' && snd.p.mk && snd.p.mk.arp && snd.p.mk.arp.on) arpLoadSoon();   // MK5: a sound with the arp on needs its core
+   if (other && snd.engine === 'fm6') { try { fmInitSel(i, true); } catch (e) { logErr(e); } }   // V0d (A.4b 1): a newly loaded sound resets the choice
+   const c = AU.ctx, A = AU.tracks[i];
+@@ -33122,8 +33445,8 @@
+ }
+ function setEngine(t, eng) {
+   const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth') throw new Error('Keine Synth-Spur: ' + t);
+-  const e = ENG_OF[eng] || (eng === 'fm2' ? 'fm6' : ['analog', 'wt', 'fm6', 'mk'].includes(eng) ? eng : null);
+-  if (!e) throw new Error('Engine muss va, fm, wt oder mk sein');
++  const e = ENG_OF[eng] || (eng === 'fm2' ? 'fm6' : ['analog', 'wt', 'fm6', 'mk', 'north'].includes(eng) ? eng : null);   // PERC: + north
++  if (!e) throw new Error('Engine muss va, fm, wt, mk oder north sein');
+   if (nvTr(tr) || tr.sound.engine === e) return;
+   const snd = deep(tr.sound); setEngineOf(snd, e);
+   applySound(t, snd);
+@@ -33135,6 +33458,7 @@
+   const tr = S.tracks[t]; if (!tr) throw new Error('Keine Spur: ' + t);
+   if (nvTr(tr)) return;
+   if (tr.kind === 'drum') { randomizeDrumVoice(DRUM_VOICES[ED.dVoice].id); return; }
++  if (percIs(tr)) { const s_ = deep(tr.sound), nk = s_.p.nk; for (let c = 0; c < 12; c++) { const cat = nk.ch[c] && nk.ch[c].mCat, L = MDX.progs.filter(p => p.mCat === cat), L2 = L.length ? L : MDX.progs, keep = nk.ch[c] || {}, p = percProg(L2[Math.floor(Math.random() * L2.length)]); if (isNum(keep.mMono)) p.mMono = keep.mMono; nk.ch[c] = p; } UI.ab = null; applySound(t, s_); if (R.editor === 'synth' && t === R.selT) safeRebuild(buildSynthEd); return; }   // PERC: je Kanal ein Programm derselben Kategorie
+   if (tr.sound.engine === 'mk') { mkLoad().randomize(t); if (R.editor === 'synth' && t === R.selT) safeRebuild(buildSynthEd); return; }   // MK1 (B.3 🎲)
+   const snd = deep(tr.sound), p = snd.p, R_ = Math.random, U = (a, b) => a + (b - a) * R_(), E = (a, b) => a * Math.pow(b / a, R_()), pick = a => a[Math.floor(R_() * a.length)];
+   // G3-klein: a FELD graph the DX form cannot carry (free graph, other numbers, waves, point envelopes, phases, feedback paths …)
+@@ -33426,7 +33750,9 @@
+   const eng = tr.sound.engine;
+   const mkE = eng === 'mk';                                        // MK-P (B.3 Rahmen): [GERÄT] [SPIEL] [FX]
+   sh.classList.remove('mkp', 'mkq'); if (!mkE) { EL.app.classList.remove('mkq', 'mkqkb'); if (typeof MKUI !== 'undefined' && MKUI.coverOff) MKUI.coverOff(); }   // MK-P-09: the covered main screen is painted again
++  const percEd = eng === PERC_ENG;                                 // PERC: [NORTH] [FX]
+   if (mkE) { mkLoad(); if (!['geraet', 'spiel', 'fx'].includes(ED.tab)) ED.tab = 'geraet'; }
++  else if (percEd) { if (!['perc', 'fx'].includes(ED.tab)) ED.tab = 'perc'; }   // PERC
+   else if (!['osc', 'filter', 'env', 'lfo', 'mod', 'fx'].includes(ED.tab)) ED.tab = 'osc';
+   let subs = subTabsFor(ED.tab, eng);
+   // N4b-01: the FM page coming back from another engine's sub-page (OSZ 1 …) opens the track's own view, not the first sub-tab
+@@ -33440,12 +33766,12 @@
+   if (subs && bigHere) subs = SK === 'osc' ? subs.map(x => (x[0] === 'feld' ? ['feld', '✕ FELD'] : x)) : SK === 'envfm' ? [['fxback', '✕ FELD']].concat(subs) : subs;
+   if (eng === 'fm6' && ED.fmT !== i) fmInitSel(i, false);
+   if (UI.fmSolo && (UI.fmSolo.t !== i || eng !== 'fm6' || ED.tab !== 'osc' || ED.sub.osc !== 'op')) fmSoloOff();   // §6.5: Solo is monitor-only
+-  const F = sheetFrame(sh, tr.name, mkE ? [['geraet', 'GERÄT'], ['spiel', 'SPIEL'], ['fx', 'FX']] : [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']], ED.tab,
++  const F = sheetFrame(sh, tr.name, percEd ? [['perc', MD_NAME.toUpperCase()], ['fx', 'FX']] : mkE ? [['geraet', 'GERÄT'], ['spiel', 'SPIEL'], ['fx', 'FX']] : [['osc', eng === 'analog' ? 'OSZ' : eng === 'wt' ? 'WT' : 'FM'], ['filter', 'FILTER'], ['env', 'HÜLLK.'], ['lfo', 'LFO'], ['mod', 'MOD'], ['fx', 'FX']], ED.tab,
+     id => { if (mkE && mkLoaded() && MKUI.tabFast(id)) return; ED.tab = id; FXF.big = null; safeRebuild(buildSynthEd); },   // MK-P-09: GERÄT ↔ SPIEL only swaps the frame's content
+     subs ? {list: subs, cur: ED.sub[SK], on: id => { if (bigHere && (id === 'fxback' || (SK === 'osc' && id === 'feld'))) { fxBigBack(); return; } ED.sub[SK] = id; FMEV.fine = false; FXF.big = null; if (eng === 'fm6' && SK === 'osc' && (id === 'feld' || id === 'algo')) fmViewSet(i, id); safeRebuild(buildSynthEd); }} : null);
+   // row 1: ● SYNTH n · [VA | FM | WT] · ⇅ chip · ECO-Klang badge (native fallback, §1.3) · ↶ ↷ · ✕
+   // MK1 (B.3 Zeile 1, H-13): a 4th key with MK_LABEL (two lines where it is narrow); P2/P3: one engine chip with a list
+-  const engSeg = engChipWanted() ? engChip(i) : makeSeg([['analog', 'VA', 'VA'], ['fm6', 'FM', 'FM'], ['wt', 'WT', 'WT'], ['mk', '<span>' + MK_LABEL.replace(' ', '</span> <span>') + '</span>', MK_LABEL]], () => (S.tracks[i].sound.engine === 'fm2' ? 'fm6' : S.tracks[i].sound.engine),
++  const engSeg = engChipWanted() || percEd ? engChip(i) : makeSeg([['analog', 'VA', 'VA'], ['fm6', 'FM', 'FM'], ['wt', 'WT', 'WT'], ['mk', '<span>' + MK_LABEL.replace(' ', '</span> <span>') + '</span>', MK_LABEL]], () => (S.tracks[i].sound.engine === 'fm2' ? 'fm6' : S.tracks[i].sound.engine),
+     v => setEngine(i, v), 'eng', {undo: soundUndo(i), label: 'Klangerzeugung'});
+   F.r1.insertBefore(engSeg, F.r1.querySelector('.sh-title').nextSibling);
+   if (bigHere) { const bk = sh.querySelector('.sh-subs .stab[data-sub="' + (SK === 'osc' ? 'feld' : 'fxback') + '"]'); if (bk) { bk.classList.add('fxbk', 'fxback'); bk.setAttribute('aria-label', 'Zurück zum FELD'); } }
+@@ -33464,8 +33790,10 @@
+   pre.append(pPrev, pName, pNext);
+   const ab = el('button', 'hb rb abb', 'A/B'); ab.setAttribute('aria-label', 'Vergleich mit dem Original');
+   const save = el('button', 'hb rb sv', 'Sichern'); save.setAttribute('aria-label', 'Sound sichern');
+-  onTap(pPrev, () => stepSound(i, -1)); onTap(pNext, () => stepSound(i, 1));
+-  onTap(pName, () => openBrowser(i));
++  if (percEd) { const st = d => { const L = percKits(), k = L.findIndex(x => x.name === (tr.sound.p.nk || {}).kit); const K = L[(k + d + L.length) % L.length]; if (K) { percLoadKit(i, K.name); lcdShow('Kit', K.name); } };   // PERC: ‹ › = Kits, Name = Kit ▾
++    onTap(pPrev, () => st(-1)); onTap(pNext, () => st(1)); onTap(pName, () => percKitPop(pName, i)); }
++  else { onTap(pPrev, () => stepSound(i, -1)); onTap(pNext, () => stepSound(i, 1));
++  onTap(pName, () => openBrowser(i)); }
+   onTap(ab, () => toggleAB(i));
+   onTap(save, () => openSavePop(save, i));
+   const dice = el('button', 'hb big rb', '🎲'); dice.title = 'Zufall'; dice.setAttribute('aria-label', 'Zufall'); onTap(dice, () => soundEdit(i, 'Zufall', () => randomize(i)));
+@@ -33514,6 +33842,7 @@
+ function initSound(t) {
+   const tr = S.tracks[t]; if (!tr) throw new Error('Keine Spur: ' + t);
+   if (tr.kind === 'drum') soundEdit(t, 'Init', () => loadKit(INIT_KIT.id));
++  else if (percIs(tr)) { percLoadKit(t, percKits()[0] && percKits()[0].name); toast('Init: ' + MD_NAME + ' · ' + S.tracks[t].sound.p.nk.kit, {label: 'Rückgängig', fn: () => undo()}); return S.tracks[t].sound.name; }   // PERC
+   else if (tr.sound.engine === 'mk' && tr.sound.p.mk && tr.sound.p.mk.mode === 3) { UI.ab = null; soundEdit(t, 'Init', () => { loadPreset(t, INIT_IDS.mk); const s_ = deep(sndOf(t)); s_.p.mk.mode = 3; s_.p.mk = SQMK.normMk(s_.p.mk); applySound(t, s_); }); }
+   else { UI.ab = null; soundEdit(t, 'Init', () => loadPreset(t, INIT_IDS[engKey(tr.sound.engine)] || INIT_IDS.analog)); }
+   toast('Init: ' + S.tracks[t].sound.name, {label: 'Rückgängig', fn: () => undo()});
+@@ -33527,11 +33856,12 @@
+     const what = drum ? 'INIT Drums – jedes Pad seine Grundschicht' : (INIT_SYNTH.find(f => f.id === (INIT_IDS[engKey(tr.sound.engine)] || INIT_IDS.analog)) || INIT_SYNTH[0]).name + ' – neutraler Startklang';
+     p.innerHTML = `<h4>${esc(tr.name)}</h4><div class="plist edmore"><button class="rb" data-a="init"><b>Init</b><small>${esc(what)}</small></button>` +
+       (wiaHere ? `<button class="rb${UI.wia ? ' on' : ''}" data-a="wia"><b>◎ Was ist anders?</b><small>zeigt, welche Regler diesen Sound machen</small></button>` : '') +
++      (!drum && !percIs(tr) ? `<button class="rb" data-a="north"><b>${esc(MD_NAME)} – Perkussionsspur</b><small>Tasten spielen die 12 Kanäle · folgt nicht der Transponierung</small></button>` : '') +   // PERC
+       (!drum ? `<button class="rb" data-a="k1m"><b>Modulationen (${k1Mods(t).length})</b><small>jede aktive Modulation · Tipp = zum Regler, ✕ = löschen</small></button>` : '') +   // K1
+       (!drum && kbFest() ? `<button class="rb" data-a="kbpos"><b>Anschlag POSITION</b><small>Tastatur spielt fest 0,8 – Anschlag-Regler wirken nur bei Noten mit eigener VEL</small></button>` : '') +
+       (!drum && tr.sound.engine === 'mk' && mkLoaded() ? '<button class="rb" data-a="tcopy"><b>Timbre kopieren ▸</b><small>UTILITY · aus einem gesicherten Sound</small></button><button class="rb" data-a="tswap"><b>Timbre tauschen</b><small>UTILITY · T1 ⇄ T2</small></button><button class="rb" data-a="tinit"><b>Timbre neu</b><small>UTILITY · das gewählte Timbre auf INIT</small></button><button class="rb" data-a="sqtools"><b>Sequenz-Werkzeuge ▸</b><small>UTILITY · neu, kopieren, tauschen</small></button>' : '') + '</div>';   // MK3
+     guardTouch(p);
+-    onTap(p, b => { closePop(); const a = b.dataset.a; if (a === 'init') initSound(t); else if (a === 'wia') wiaToggle(); else if (a === 'kbpos') kbVelPos(); else if (a === 'k1m') openK1Mods(anchor, t);
++    onTap(p, b => { closePop(); const a = b.dataset.a; if (a === 'north') { const bf = soundSnapshot(t); setEngine(t, 'north'); commitSound(t, bf, 'Klangerzeugung'); lcdShow('Klangerzeugung', MD_NAME + ' · folgt nicht'); return; } if (a === 'init') initSound(t); else if (a === 'wia') wiaToggle(); else if (a === 'kbpos') kbVelPos(); else if (a === 'k1m') openK1Mods(anchor, t);
+       else if (a === 'tcopy') MKUI.timCopyPop(anchor, t); else if (a === 'tswap') MKUI.timSwap(t); else if (a === 'tinit') MKUI.timInit(t); else if (a === 'sqtools') MKUI.seqToolsPop(anchor, t); }, 'button[data-a]');
+   }, {name: 'edmore'});
+ }
+@@ -33580,11 +33910,12 @@
+   const tr = S.tracks[R.selT]; if (tr.kind !== 'synth') return;
+   if (ED.eco) { const e = !trackEco(R.selT); if (ED.eco.hidden !== e) { ED.eco.hidden = e; if (ED.ecoB) ED.ecoB.classList.toggle('eco', !e); }
+     const ft = e ? '' : ecoMsg(R.selT); if (ED.eco.title !== ft && !e) ED.eco.title = ft; }
+-  const snd = tr.sound, edited = soundEdited(snd), abOn = !!(UI.ab && UI.ab.t === R.selT);
+-  const key = snd.name + '|' + edited + '|' + abOn + '|' + (abOn ? UI.ab.side : '');
++  const snd = tr.sound, edited = !percIs(tr) && soundEdited(snd), abOn = !!(UI.ab && UI.ab.t === R.selT);   // PERC: kein Vergleich mit dem Synth-Ursprung
++  const pnm = percIs(tr) && snd.p.nk ? snd.p.nk.kit : snd.name;   // PERC: das Kit
++  const key = pnm + '|' + edited + '|' + abOn + '|' + (abOn ? UI.ab.side : '');
+   if (H.key === key) return; H.key = key;
+-  H.pName.innerHTML = `<span class="pn">${esc(snd.name)}</span>` + (edited ? '<i class="chg" title="geändert"></i>' : '');
+-  H.pName.setAttribute('aria-label', snd.name + (edited ? ' (geändert)' : '') + ' – Bibliothek öffnen');
++  H.pName.innerHTML = `<span class="pn">${esc(pnm)}</span>` + (edited ? '<i class="chg" title="geändert"></i>' : '');   // PERC: pnm
++  H.pName.setAttribute('aria-label', pnm + (edited ? ' (geändert)' : '') + (pnm !== snd.name ? ' – Kit wählen' : ' – Bibliothek öffnen'));
+   H.ab.hidden = !(edited || abOn);
+   H.ab.classList.toggle('on', abOn && UI.ab.side === 'B');
+   H.ab.textContent = abOn && UI.ab.side === 'B' ? 'B · Orig.' : 'A/B';
+@@ -33596,7 +33927,8 @@
+ function fillSynthTab(body, i) {
+   const pg = el('div', 'pg rest'); body.appendChild(pg);
+   if (S.tracks[i].sound._nv && !(ED.tab === 'fx' && GLOBAL_SUBS.has(ED.sub.fx))) { nvPage(pg, i); return; }
+-  if (S.tracks[i].sound.engine === 'mk' && ED.tab !== 'fx') { if (mkLoad()) MKUI.build(pg, i); return; }   // MK-P: the plate in its fixed frame (GERÄT, SPIEL)
++  if (S.tracks[i].sound.engine === 'mk' && ED.tab !== 'fx') { if (mkLoad()) MKUI.build(pg, i); return; }
++  if (S.tracks[i].sound.engine === PERC_ENG && ED.tab !== 'fx') { percPage(pg, i); return; }   // PERC   // MK-P: the plate in its fixed frame (GERÄT, SPIEL)
+   const fmE = ED.tab === 'env' && S.tracks[i].sound.engine === 'fm6';
+   const tab = ED.tab, sub = ED.sub[fmE ? 'envfm' : tab];
+   pg.classList.add('pg-' + tab + (sub ? '-' + sub : ''));
+@@ -38951,7 +39283,7 @@
+   if (land) extra.push({id: 'kb', label: '⌨', title: 'Tastatur zeigen / verbergen', fn: b => { ROLLP.kb = !ROLLP.kb; rollKbApply(); b.classList.toggle('on', ROLLP.kb); }});
+   const kAt = () => shownClipKey(s, S.tracks[t].clips[s]);              // EDIT 4.29: Tonart der Stelle (Pinsel + Magic Scale)
+   ED.roll = PianoRoll.create(body, rollModel(t, s), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, toolbarHost: host,
+-    extraTools: extra, center: 12 * ((tr.kbOct || 4) + 1) + 7,
++    extraTools: extra, center: 12 * ((tr.kbOct || 4) + 1) + 7, rowName: percIs(tr) ? percRowName : null,   // PERC: Kanal-Namen
+     mp: mpRollOpts(t, 'c:' + t + ':' + s, kAt),   /* MP */
+     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
+     reg: folReg('roll'), onHand: () => folHand('roll'),
+@@ -39380,7 +39712,7 @@
+       if (i === 0) { let lo = 0, hi = 7; for (const nn of cl.notes) { const p = lsPos(sc, nn.n).idx; if (p < lo) lo = p; if (p > hi) hi = p; } rg = [lo, hi]; }
+       let lb = cell._lb; if (!lb) { lb = cell._lb = el('b', 'ln'); cell.appendChild(lb); }
+       const tied = !!(n && laufTied(cl, n)), p = n ? lsPos(sc, n.n) : null;
+-      const txt = n ? (tied ? '⌒' : '') + noteLabel(n.n) : '–';
++      const txt = n ? (tied ? '⌒' : '') + (percIs(S.tracks[t]) ? percRowName(n.n) : noteLabel(n.n)) : '–';   // PERC
+       if (lb.textContent !== txt) lb.textContent = txt;
+       cell.classList.toggle('tie', tied); cell.classList.toggle('acc', !!(n && n.v >= .995)); cell.classList.toggle('chr', !!(p && p.chroma));
+       if (n && rg) { cell.style.setProperty('--v', (.22 + .78 * clamp((p.idx - rg[0]) / Math.max(1, rg[1] - rg[0]), 0, 1)).toFixed(3)); cell.style.setProperty('--o', (.4 + .6 * n.v).toFixed(2)); }
+@@ -40327,6 +40659,7 @@
+   BOOT.gen++;
+   if (S.tracks.some(t => t && t.kind === 'synth' && t.sound && t.sound.engine === 'mk')) mkLoad();   // MK1 (EN3-14): an AM project loads sq-mk-src now, before the transport can start
+   mdDirty(); mdBoot();                                     // ND4: ein Projekt mit Modell-Pads lädt das Engine-Modul jetzt (vor dem ersten ▶)
++  percBoot();                                              // PERC: ebenso eine Perkussionsspur
+   for (let i = 0; i < MAX_T; i++) { R.slot[i] = S.tracks[i] && S.tracks[i].clips[0] ? 0 : -1; R.own[i] = null; R.pend[i] = null; R.cstart[i] = 0; R.prev[i] = null; }
+   if (opts.first) { R.selT = 3; R.selS = 0; } else if (opts.ui && S.ui) { R.selT = clamp(S.ui.selT | 0, 0, NT() - 1); R.selS = clamp(S.ui.selS | 0, 0, NS() - 1); } else { R.selT = clamp(R.selT, 0, NT() - 1); R.selS = clamp(R.selS, 0, NS() - 1); }
+   UI.sceneBank = S.ui && S.ui.sceneBank === 1 ? 1 : R.selS >= 4 ? 1 : 0; UI.trackBank = S.ui && S.ui.trackBank === 1 ? 1 : 0;   // V2a: the banks (view)
+@@ -42324,7 +42657,7 @@
+   out.arr(mtrk(tempo.concat(marks), 'SYNQUENZER ' + tm[0].bpm + ' BPM', endTk));
+   for (const i of ix) {
+     const tr = S.tracks[i], ev = evs[i].slice();
+-    if (tr.kind === 'synth') ev.push({tk: 0, b: [0xC0 | midiCh(i), GM_PROGRAM[tr.sound.cat] != null ? GM_PROGRAM[tr.sound.cat] : 81], o: -1});
++    if (tr.kind === 'synth' && !percIs(tr)) ev.push({tk: 0, b: [0xC0 | midiCh(i), GM_PROGRAM[tr.sound.cat] != null ? GM_PROGRAM[tr.sound.cat] : 81], o: -1});   // PERC: Kanal 10 ohne Programmwechsel
+     out.arr(mtrk(ev, trackMidiName(tr), endTk));
+   }
+   return {bytes: new Uint8Array(out.a), counts, beats};
+@@ -42349,13 +42682,14 @@
+     marks.push({tk: Math.round(off * PPQ), b: metaText(6, 'Szene ' + (s + 1)), o: -1});
+     S.tracks.forEach((tr, i) => {
+       const c = tr.clips[s]; if (!c || !c.notes.length || i >= MIDI_T) return;
+-      const cL = c.len * 4, ch = tr.kind === 'drum' ? 9 : i, ded = new Map();
++      const cL = c.len * 4, ch = tr.kind === 'drum' || percIs(tr) ? 9 : i, ded = new Map();   // PERC
+       for (let o = 0; o < L - 1e-9; o += cL) for (const nt of c.notes) {
+         if (nt.t >= cL - 1e-9) continue;                         // V0a K-06: behind the clip end = never heard, never exported
+         const st = o + nt.t; if (st >= L - 1e-9) continue;
+         const en = Math.min(L, st + Math.max(nt.d, 1 / 32));
+         let p = nt.n;
+         if (tr.kind === 'synth' && withC) p = mapOut(i, c.key || S.key, nt.n, Infinity);          // V2c′: mit „Eine Skala“ wie gehört
++        if (percIs(tr)) p = percGm(nt.n);                                                           // PERC: GM-Note des Kanals
+         p = clamp(Math.round(p), 0, 127);
+         const v = clamp(Math.round(nt.v * 127), 1, 127), t0 = Math.round((off + st) * PPQ), t1 = Math.max(t0 + 1, Math.round((off + en) * PPQ));
+         // identical (time, pitch) pairs sound once (like the scheduler): degrees that merge under sus/6 Träger, double notes
+@@ -42383,7 +42717,7 @@
+     const sb = Math.max(0, e.startBeat); let eb = isFinite(e.endBeat) ? e.endBeat : Math.max(sb + .25, nowB);
+     if (eb <= sb) eb = sb + 1 / 32;
+     const tr = S.tracks[e.track]; if (!tr || e.track >= MIDI_T) continue;
+-    const ch = tr.kind === 'drum' ? 9 : e.track, p = clamp(Math.round(e.out), 0, 127), v = clamp(Math.round(e.vel * 127), 1, 127);
++    const ch = tr.kind === 'drum' || percIs(tr) ? 9 : e.track, p = percIs(tr) ? percGm(e.out) : clamp(Math.round(e.out), 0, 127), v = clamp(Math.round(e.vel * 127), 1, 127);   // PERC
+     const t0 = Math.round(sb * PPQ), t1 = Math.max(t0 + 1, Math.round(eb * PPQ));
+     evs[e.track].push({tk: t0, b: [0x90 | ch, p, v], o: 1}, {tk: t1, b: [0x80 | ch, p, 0], o: 0});
+     counts[e.track]++; endB = Math.max(endB, eb);
+@@ -42411,7 +42745,7 @@
+     if (x) { x.v = Math.max(x.v, v); x.t1 = Math.max(x.t1, t1); } else ded.set(k, {t0, t1, p, v, ch});
+   };
+   S.tracks.slice(0, MIDI_T).forEach((tr, i) => {
+-    const ded = new Map(), ch = tr.kind === 'drum' ? 9 : i, lane = song.lanes[i];
++    const ded = new Map(), ch = tr.kind === 'drum' || percIs(tr) ? 9 : i, lane = song.lanes[i];   // PERC
+     // V2d: blocks with their clip origin (re / ph; the same clip without re goes on in phase)
+     const blocks = []; let cur = null;
+     for (const e of lane) {
+@@ -42430,10 +42764,10 @@
+         let p = nt.n;
+         if (tr.kind === 'synth' && withC) { const en2 = entAt(st); if (en2 && en2.target) p = mapOut(i, c.key || S.key, nt.n, 0, en2); }
+         if (tr.kind === 'synth' && tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; }   // V2d: song.xp
+-        dedAdd(i, ch, ded, st, en, clamp(Math.round(p), 0, 127), nt.v);
++        dedAdd(i, ch, ded, st, en, percIs(tr) ? percGm(nt.n) : clamp(Math.round(p), 0, 127), nt.v);   // PERC
+       }
+     }
+-    if (song.mel[i]) for (const n of song.mel[i].notes) { if (n.t >= L - 1e-9) continue; dedAdd(i, ch, ded, n.t, Math.min(L, n.t + Math.max(n.d, 1 / 32)), clamp(n.n, 0, 127), n.v); }
++    if (song.mel[i]) for (const n of song.mel[i].notes) { if (n.t >= L - 1e-9) continue; dedAdd(i, ch, ded, n.t, Math.min(L, n.t + Math.max(n.d, 1 / 32)), percIs(tr) ? percGm(n.n) : clamp(n.n, 0, 127), n.v); }   // PERC
+     for (const x of ded.values()) { evs[i].push({tk: x.t0, b: [0x90 | x.ch, x.p, x.v], o: 1}, {tk: x.t1, b: [0x80 | x.ch, x.p, 0], o: 0}); counts[i]++; }
+   });
+   // V2b-fix: the song melody of a track beyond Synth 1–4/DRUMS (MELODIE, the ● SONG default) comes along as its own MIDI track
+@@ -53769,7 +54103,7 @@
+     // G-VID: the vocal state that changes while playing – VS-P (waiting re-plans of the auto level), G3 (lead-in/out), G6 (choir nodes
+     // per context), G7 (transposed versions prefetched) – out before, back after: the render plays the vocals as live, live stays as it was
+     G3: vvSnap(G3), G7: vvSnap(G7), vpCb: new Map(VP.cb), g6Nodes: new Map(G6.nodes),
+-    md: mdVvSave()};                                               // NORTH: Drum-Engine-Zustand (ND4-08)
++    md: mdVvSave(), perc: percVvSave()};                           // NORTH: Drum-Engine-Zustand (ND4-08); PERC: Knoten der Perkussionsspuren
+   VP.cb.clear(); G6.nodes.clear();
+   if (off) off.sv = sv;
+   clearInterval(AU.timer);
+@@ -53794,6 +54128,7 @@
+   await cut();
+   if (wk) syncEngines(); else for (const i of synthTracks()) rebuildNativeLfos(i);
+   await mdVvBoot(oc);                                              // NORTH (ND4-08): Knoten der Drum-Engine im Offline-Kontext
++  await percVvBoot(oc);                                            // PERC: je Perkussionsspur ein Knoten im Offline-Kontext
+   // AM: the stored waves at once (as mkRender), the wheels as they stand live
+   for (const i of synthTracks()) {
+     const tr = S.tracks[i], E = AU.synth[i]; if (!E || tr.sound.engine !== 'mk') continue;
+@@ -53816,6 +54151,7 @@
+   RECENT.length = 0; RECENT.push(...sv.recent); PADQ.forEach((q, k) => { q.length = 0; q.push(...sv.padq[k]); });
+   SV.lastStop = sv.svStop; if (S.song) S.song.loop = sv.loop; UI.songVer = sv.songVer;
+   mdVvRest(sv.md);                                                   // NORTH (ND4-08)
++  percVvRest(sv.perc);                                               // PERC
+   vvRest(G3, sv.G3); vvRest(G7, sv.G7);                              // G-VID: vocal state back (G6 nodes of the offline context dropped)
+   for (const N of G6.nodes.values()) { try { (N.pan || N.g).disconnect(); N.rev.disconnect(); N.dly.disconnect(); } catch (e) {} }
+   G6.nodes.clear(); for (const [k, v] of sv.g6Nodes) G6.nodes.set(k, v);
+@@ -53875,7 +54211,7 @@
+     }
+   };
+   recSlots(0);
+-  const flush = () => { for (const E of AU.synth) if (E && E.flush) E.flush(); mdVvFlush(); };   // NORTH: auch die Drum-Engine
++  const flush = () => { for (const E of AU.synth) if (E && E.flush) E.flush(); mdVvFlush(); percVvFlush(); };   // NORTH: auch die Drum-Engine; PERC: und die Perkussionsspuren
+   const finishLive = () => {                                        // the transport has stopped: the live state comes back
+     if (off.sv && !off.sv.done) { flush(); vv3Cap(live, t0); off.log = noteLog(4096); vvSwapOut(off.sv); } UI.vvOff = false;
+   };
+@@ -56898,6 +57234,11 @@
+   setPadSource: (pad, src) => setPadSource(pad, src), padSource: pad => { const sl = resolveDrum(pad); return sl ? (mdIsSrc(sl.id) ? 'md' : 'drum') : null; },
+   mdRender: (hits, o) => mdRender(hits, o), mdInfo: () => mdEngineInfo(), mdName: () => MD_NAME,
+   mdQuery: async () => { const E = mdE(); if (!E) return null; const r = await E.test({q: 'modes'}); return r ? Object.assign({}, r, {t: 'info'}) : null; },   // ND4-10: Moden je Kanal
++  // PERC: Perkussionsspur (North auf einer Synth-Spur): Zustand, Schlag-Log (Kanal, Tonhöhe), Worklet-Abfrage, Kit, Programm, Schild
++  percInfo: () => percInfo(), percLog: n => deep(PERC.log.slice(-(n || 512))), percLogClear: () => { PERC.log = []; PERC.n = 0; return true; },
++  percQuery: async (t, q) => { const E = percE(t); if (!E) return null; const r = await E.test({q: q || 'state'}); return r ? deep(r) : null; },
++  percKit: (t, name) => percLoadKit(t, name), percProgram: (t, ch, name) => { const p = MDX.prog(name); if (!p) throw new Error('Unbekanntes Programm: ' + name); return percSetProgram(t, ch, p, name); },
++  percFollow: (t, on) => percSetFollow(t, on), percRow: n => percRowName(n), percMap: n => ({ch: percCh(n), name: percChName(percCh(n)), tune: percTune(n), gm: percGm(n)}),
+   // VS0 Mikro-Check: Stand, Öffnen/Schließen, Start (Tests: {driftSec, noStore}), Ergebnis-JSON, Schätzer (N7V-02)
+   micCheck: () => ({avail: micAvail(), gum: MIC.gum, open: MIC.open, running: !!MIC.run, phase: MIC.res ? MIC.res.phase : null, hold: SYNC.hold,
+     menu: !!document.querySelector('#menu .mmic'), result: MIC.res ? JSON.parse(JSON.stringify(MIC.res)) : null}),
