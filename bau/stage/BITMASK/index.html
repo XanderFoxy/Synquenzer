@@ -6178,7 +6178,7 @@ const BMARP = (function () {
   }
   return {T, FIX, seq, step, div, stop: i => { if (typeof ARPC !== 'undefined') ARPC.end(i); }};
 })();
-window.BMARP = BMARP;
+if (typeof window !== 'undefined') window.BMARP = BMARP;
 </script>
 <script type="text/plain" id="sq-mk-src">
 /* ===== MK1 / MK-P (Nachtrag 3 B.3, B.4, MK-P): block sq-mk-src, evaluated on first need (mkLoad). The panel of the AM engine as
@@ -9119,7 +9119,7 @@ function bmTrack(c, dest, snd) {
   node.connect(fd); fd.connect(dest);   // fd: the 30 ms equal-power fade of an engine change (§5.2), else 1
   const E = {bm: true, node, fd, load: 0, nv: 0, dead: false, proxies: new Map(), onEnd: null, onScope: null, sent: {poly: 10}, ons: [], offs: [], fq: false,
     notes: new Map(), at0: new Map(), lim: -1, run: null, st0: null, bpm: 0, sentJ: '', scopeMsg: null, ends: 0, late: 0};
-  const post = m => { if (!E.dead) node.port.postMessage(m); }; E.post = post;
+  const post = m => { if (!E.dead) { E.sentN++; node.port.postMessage(m); } }; E.post = post; E.sentN = 0; E.pings = new Map(); E.pingN = 0;
   node.port.onmessage = ev => {
     const m = ev.data; if (!m || typeof m !== 'object') return;
     if (m.t === 'load') { E.load = +m.v || 0; E.nv = m.nv | 0; }
@@ -9127,6 +9127,7 @@ function bmTrack(c, dest, snd) {
     else if (m.t === 'need') { BMX.need++; BMX.fallbacks++; }
     else if (m.t === 'end') { E.ends++; bmEnd(E, m); }
     else if (m.t === 'scope') { E.scopeMsg = m; if (E.onScope) E.onScope(m); }
+    else if (m.t === 'pong') { const f = E.pings.get(m.id); if (f) { E.pings.delete(m.id); f(true); } }
   };
   const q = () => { if (!E.fq) { E.fq = true; queueMicrotask(E.flush); } };
   E.flush = () => { E.fq = false; if (E.ons.length) { post({t: 'on', list: E.ons}); E.ons = []; } if (E.offs.length) { post({t: 'off', list: E.offs}); E.offs = []; } };
@@ -9165,6 +9166,8 @@ function bmTrack(c, dest, snd) {
     E.bpm = bpm;
   };
   E.scope = on => post({t: 'scope', on: !!on});
+  // the acknowledgement of the processor (offline render: go on only when every message is in, like NORTH 4.30.0); 2 s without = false
+  E.ping = () => new Promise(res => { const id = ++E.pingN; E.pings.set(id, res); post({t: 'ping', id}); setTimeout(() => { if (E.pings.delete(id)) res(false); }, 2000); });
   // equal-power fade (sin in / cos out) over dur seconds from at
   E.fade = (inn, at, dur) => { const n = 32, cv = new Float32Array(n); for (let k = 0; k < n; k++) { const x = k / (n - 1) * Math.PI / 2; cv[k] = inn ? Math.sin(x) : Math.cos(x); }
     try { fd.gain.cancelScheduledValues(at); fd.gain.setValueCurveAtTime(cv, at, dur); } catch (e) { fd.gain.value = inn ? 1 : 0; } };
@@ -9768,6 +9771,7 @@ var BMK = (function () {
         case 'reset': this.reset(); break;
         case 'lim': this.lim = m.level | 0; break;
         case 'seed': this.seed = (m.v >>> 0) || 0x9e3779b9; break;
+        case 'ping': this.port.postMessage({t: 'pong', id: m.id}); break;
         case 'tap': this.tap(m); break;
       }
     }
@@ -56655,8 +56659,13 @@ async function vvSwapIn(oc, wk, off) {
   AU.echoIn.connect(AU.echo.input); AU.echo.output.connect(AU.masterSum); AU.echo.toHall.connect(AU.hallIn);
   for (let i = 0; i < NT(); i++) { await cut(); buildTrack(i); }
   await cut();
+  if (wk && bmUsed() && bmLoad()) {                                // BM6-06: Bit Mask in the render (video, GarageBand): its module in the offline context
+    sv.bmx = Object.assign({}, BMX); const ok = await bmModule(oc, BM_WK);
+    Object.assign(BMX, {ctx: oc, st: ok ? 'ready' : 'failed', p: Promise.resolve(ok)}); if (!ok) toast(BM_NAME + ' im Video nicht verfügbar');
+  }
   if (wk) syncEngines(); else for (const i of synthTracks()) rebuildNativeLfos(i);
   await mdVvBoot(oc);                                              // NORTH (ND4-08): Knoten der Drum-Engine im Offline-Kontext
+  if (sv.bmx) bmVvSync(oc);                                        // BM6-06: Bit Mask quittiert vor jedem Weiterrechnen
   // AM: the stored waves at once (as mkRender), the wheels as they stand live
   for (const i of synthTracks()) {
     const tr = S.tracks[i], E = AU.synth[i]; if (!E || tr.sound.engine !== 'mk') continue;
@@ -56668,11 +56677,23 @@ async function vvSwapIn(oc, wk, off) {
   vvProf('swapIn', performance.now() - PS);
   return sv;
 }
+// BM6-06 (wie NORTH 4.30.0): offline kommen Port-Nachrichten je nach Last erst an, wenn der Kontext schon weiterrechnet. Ging seit
+// der letzten Quittung etwas an einen Bit-Mask-Knoten, rechnet der Offline-Kontext erst nach dessen Quittung weiter (zwei Videos gleich).
+function bmVvSync(oc) {
+  const ack = () => {
+    const w = []; for (const E of AU.synth) if (E && E.bm && !E.dead && !E.mute_) { E.flush(); if (E.sentN !== E.ackN) { E.ackN = E.sentN + 1; w.push(E.ping().then(r => { if (!r) E.mute_ = true; })); } }
+    return w.length ? Promise.all(w) : null;
+  };
+  const res0 = oc.resume.bind(oc), go0 = oc.startRendering.bind(oc);
+  oc.resume = () => { const w = ack(); return w ? w.then(res0) : res0(); };
+  oc.startRendering = () => { const w = ack(); return w ? w.then(go0) : go0(); };
+}
 function vvSwapOut(sv) {
   if (!sv || sv.done) return; sv.done = true;
   try { for (const E of AU.synth) if (E && E.flush) E.flush(); } catch (e) { logErr(e); }
   if (R.tailWinT && R.tailWinT !== sv.tailT) clearTimeout(R.tailWinT);
   vvRest(AU, sv.au); WAVES_T = sv.wavesT;
+  if (sv.bmx) Object.assign(BMX, sv.bmx);                          // BM6-06: the live Bit Mask module state
   for (const [o, s] of [[R, sv.R], [T, sv.T], [XP, sv.XP], [MEM, sv.MEM], [LOG, sv.LOG], [PERF, sv.PERF], [TK, sv.TK], [CAP, sv.CAP], [LIM, sv.LIM], [MEL, sv.MEL], [TICKERR, sv.TICKERR], [SONGCAR, sv.SONGCAR]]) vvRest(o, s);
   for (let i = 0; i < WKSET.length; i++) WKSET[i] = sv.WKSET[i];
   VOICES.length = 0; VOICES.push(...sv.voices); HITS.length = 0; HITS.push(...sv.hits); CLICKS.length = 0; CLICKS.push(...sv.clicks);
