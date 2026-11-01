@@ -1,4 +1,4 @@
-/* ---- SRCore (Nachtrag 8 I1c, B.1 5.1-5.3): the one DOM-free core of the super knob and the scene morph. The same source text is
+/* ---- SRCore (Nachtrag 8 I1c, B.1 5.1-5.3): the one DOM-free core of the super-regler and the scene morph. The same source text is
    placed into the main thread and into the worklet 'dirigent-analog' (build mk.mjs); there is no second version. ASCII only.
    Curves (law) exactly like toNorm/fromNorm of the main thread: lin (also bip and a missing c), exp, db, hdec, pow (kk), bipow (kk).
    path: piecewise linear over the points of Z_k (point 1 at 0 with delta 0 is implicit), constant after the last point.

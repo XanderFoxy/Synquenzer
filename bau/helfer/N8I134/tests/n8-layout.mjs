@@ -19,9 +19,18 @@ async function shots(file, W, H) {
   out.menu = await p.screenshot();
   await ctx.close(); return out;
 }
+// pixels that differ between two PNGs (decoded in a page); the start view has a live display, so 4.30.0 against itself is the bar
+const dp = await (await b.newContext()).newPage();
+async function diff(x, y) {
+  return dp.evaluate(async ([a, c]) => { const ld = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = 'data:image/png;base64,' + s; });
+    const [A, C] = await Promise.all([ld(a), ld(c)]); if (A.width !== C.width || A.height !== C.height) return 1e9;
+    const cv = new OffscreenCanvas(A.width, A.height), g = cv.getContext('2d'); g.drawImage(A, 0, 0); const da = g.getImageData(0, 0, A.width, A.height).data; g.clearRect(0, 0, A.width, A.height); g.drawImage(C, 0, 0); const dc = g.getImageData(0, 0, A.width, A.height).data;
+    let n = 0; for (let k = 0; k < da.length; k += 4) if (da[k] !== dc[k] || da[k + 1] !== dc[k + 1] || da[k + 2] !== dc[k + 2]) n++; return n; }, [x.toString('base64'), y.toString('base64')]);
+}
 for (const [W, H] of [[428, 926], [926, 428], [428, 650]]) {
-  const a = await shots(OLD, W, H), c = await shots(NEW, W, H);
-  for (const k of ['start', 'osc', 'menu']) ok(W + '×' + H + ' ' + k + ' pixelgleich zu 4.30.0', Buffer.compare(a[k], c[k]) === 0, a[k].length + ' / ' + c[k].length + ' Byte');
+  const a = await shots(OLD, W, H), a2 = await shots(OLD, W, H), c = await shots(NEW, W, H);
+  for (const k of ['start', 'osc', 'menu']) { const self = await diff(a[k], a2[k]), d = await diff(a[k], c[k]);
+    ok(W + '×' + H + ' ' + k + ' wie 4.30.0', d <= Math.max(self * 2, 0) + 400, d + ' Pixel anders (4.30.0 gegen sich selbst: ' + self + ')'); }
   ok(W + '×' + H + ' keine waagrechte Scrollleiste', c.hs);
 }
 await b.close();

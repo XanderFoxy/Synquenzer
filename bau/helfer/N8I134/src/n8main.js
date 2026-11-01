@@ -1,7 +1,7 @@
 /* ===== Nachtrag 8 (I1a, I1b, I1c, I3a data, Baustein N) — the always-loaded part on the main thread.
    Baustein N (A.4): S.need = the sorted features a project holds that an older state would lose; computed from the data when
    saving, absent when empty (JSON unchanged); unknown features of a newer version lock the project like VO-R1.
-   I1c: the super knob S.sr {v, x, sc, t?, f?, z: [{p, u: {uid: {c, d}}}]} (B.1 4.1), addresses after A.1, its table to the
+   I1c: the super-regler S.sr {v, x, sc, t?, f?, z: [{p, u: {uid: {c, d}}}]} (B.1 4.1), addresses after A.1, its table to the
    engines as {sr} (one send path, riding with {set} of a full sync), the hand model R.sr, undo kind 'sr', heardAt (A.11).
    I1a/I1b: clip states clip.st {eng, p, fx, slots?, x} and the scene morph {morph} (KZ1-KZ6); native tracks, track values
    (fx.*, gfx.*), FM operators and drums follow on the main thread in steps of 16 ms / per hit.
@@ -140,7 +140,7 @@ function srNorm(o, tracks) {
 // song.sr (4.2, F3): entries are only written after Xander's answer; the normaliser keeps them lossless already
 function srSongNorm(a, bars) {
   if (!Array.isArray(a)) return null;
-  const n = Math.max(1, (bars | 0) || 1) * 4, out = [];
+  const n = Math.max(1, (bars | 0) || 1) * grid().beatsPerBar, out = [];   // A.15: bars only through beatsPerBar
   for (const e of a) {
     if (!e || !isNum(e.a) || !isNum(e.b)) continue;
     const A = clamp(Math.round(e.a), 0, n), B = clamp(Math.round(e.b), A + 1, n + 1);
@@ -287,7 +287,7 @@ function srPathOf(i, k, x) {
   const dc = T.disc.concat(T.main).find(q => q.k === k && (q.disc || q.v)); if (dc) { const idx = SRCORE.stufe(dc.n, x, -1); return idx ? dc.v[idx - 1] : null; }
   return 0;
 }
-// the heard value of a path (A.11): ground, state (moving), super knob at time t; no LFO
+// the heard value of a path (A.11): ground, state (moving), super-regler at time t; no LFO
 function heardAt(i, k, t) {
   const tr = S.tracks[i]; if (!tr) return undefined;
   const D = srDesc(k), c = AU.ctx; if (t == null) t = c ? c.currentTime : 0;
@@ -299,7 +299,7 @@ function heardAt(i, k, t) {
   if (e.d) return SRCORE.endVal(e.law, e.lo, e.hi, e.kk || 1, b, SRCORE.path(e.n, e.d, x));
   const idx = SRCORE.stufe(e.n, x, -1); return idx ? e.v[idx - 1] : b;
 }
-// the effective sound of track i at time t (state + super knob) for the native path and the main-thread keys; the ground
+// the effective sound of track i at time t (state + super-regler) for the native path and the main-thread keys; the ground
 // sound itself when nothing applies (the same object: rule 28)
 const SREFF = new WeakMap();
 function srEffSnd(i, t) {
@@ -362,7 +362,7 @@ function srMainKick() {
   };
   R.sr.t = performance.now(); R.sr.mainT = setTimeout(step, 0);
 }
-// the FM patch of the worklet with the super knob / state on the operators (main-thread keys, 30 Hz through wkFm6)
+// the FM patch of the worklet with the super-regler / state on the operators (main-thread keys, 30 Hz through wkFm6)
 function srFmPatch(i, fp) {
   if (!fp || !S.sr && !R.st[i]) return fp;
   const T = S.sr ? srTabOf(i) : null; if (!T || !T.main.some(e => e.k.startsWith('fm6.') || e.k.startsWith('fmx.'))) return fp;
@@ -381,7 +381,7 @@ function srRestore(o) {
 function srEdit(label, fn) { const before = srSnap(); const r = fn(); if (srSnap() !== before) { undoPush({kind: 'sr', before, label}); markDirty(); srSyncAll(false); } return r; }
 
 /* ---------- teach-in core (6.3; the bar and the amber row come with I1d after question 2) ----------
-   capture: every track in scope plays its working copy = base (+) super knob at p; edits go into the copy (the track's sound
+   capture: every track in scope plays its working copy = base (+) super-regler at p; edits go into the copy (the track's sound
    while the capture runs, so every editor works unchanged); keep: only keys changed in this capture become the target
    (continuous as delta in the knob space, stepped as the copy's value), the ground sound is restored deep-equal and the engine
    gets {set: base, sr: table} in ONE message - at p base + SR = copy, nothing audible changes. One undo step 'sr'. */
@@ -558,7 +558,7 @@ function wkLf(i, n, f) {
   E.lfSig = null; E.n8({lf: a});
 }
 
-/* ---------- Mod-Übersicht (K1, A.11): state rows then super-knob rows, one per key and cause ---------- */
+/* ---------- Mod-Übersicht (K1, A.11): state rows then super-regler rows, one per key and cause ---------- */
 function n8K1Rows(i, out) {
   const tr = S.tracks[i]; if (!tr) return out;
   const fmtV = (k, v) => { const D = srDesc(k); if (!D || !D.d) return typeof v === 'number' ? k1Num(v, 2) : String(v); try { return fmtVal(D.d.fmt, v); } catch (e) { return String(v); } };

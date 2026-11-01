@@ -82,7 +82,7 @@ SYNQUENZER.sr.neigen = {
   state: () => (srLoad() ? NEIGEN.state() : null), info: () => (srLoad() ? NEIGEN.info() : null),
 };
 
-/* ---- I1c (B.1 6.9): test API of the super knob core and the clip states; no surface (the field comes with I1d) ---- */
+/* ---- I1c (B.1 6.9): test API of the super-regler core and the clip states; no surface (the field comes with I1d) ---- */
 const srEngQ = i => new Promise(res => { const E = AU.synth[i]; if (!E) return res(null); E.n8qCb = res; E.n8({n8q: 1}); setTimeout(() => res(E.n8qLast || null), 500); });
 Object.assign(SYNQUENZER.sr, {
   get: () => ({S: S.sr ? JSON.parse(JSON.stringify(S.sr)) : null, x: R.sr.x, xs: R.sr.xs, drive: R.sr.drive ? Object.assign({}, R.sr.drive) : null, hand: R.sr.hand, cap: R.sr.cap ? {p: R.sr.cap.p, sc: R.sr.cap.sc, t: R.sr.cap.t} : null}),

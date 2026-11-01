@@ -1,4 +1,4 @@
-/* ---- Nachtrag 8 I1a + I1c in 'dirigent-analog' (B.1 5.1-5.4, A.3): scene morph {morph}/{morphStop} and the super knob {sr}.
+/* ---- Nachtrag 8 I1a + I1c in 'dirigent-analog' (B.1 5.1-5.4, A.3): scene morph {morph}/{morphStop} and the super-regler {sr}.
    B = the base per key (ground sound or the moving state), P = the end value the voices read. A {set} for such a key writes B
    (onMsg takes lf, morphStop, morph, sr before set). Without a table and without a morph no extra code runs (srOn, mo).
    Work per render quantum: a moving key costs one curve evaluation; the voice derive runs once when a value changed.

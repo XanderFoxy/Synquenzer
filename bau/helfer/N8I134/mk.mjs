@@ -88,12 +88,12 @@ rep("    if (!AU.synth[i]) { AU.synth[i] = newEngine(A.trackIn, tr.sound); if (U
 rep("      AU.synth[i].set(wkFlat(tr.sound), true, fp, wkMods(tr.sound), tr.sound.engine === 'mk' ? tr.sound.p.mk : null);",
   "      AU.synth[i].set(n8Flat(i, wkFlat(tr.sound)), true, fp, wkMods(tr.sound), tr.sound.engine === 'mk' ? tr.sound.p.mk : null, n8Riders(i, true));   // N8 (A2): sr / morph / lf ride along, taken before set", 'syncEngine full');
 rep("  return UI.fmSolo && UI.fmSolo.t === i ? fmSoloPatch(snd.p.fm6, UI.fmSolo.k, snd.p.fmx) : wkFmOf(snd.p);",
-  "  return UI.fmSolo && UI.fmSolo.t === i ? fmSoloPatch(snd.p.fm6, UI.fmSolo.k, snd.p.fmx) : srFmPatch(i, wkFmOf(snd.p));   // N8: operator keys of the super knob", 'wkFm6Patch');
+  "  return UI.fmSolo && UI.fmSolo.t === i ? fmSoloPatch(snd.p.fm6, UI.fmSolo.k, snd.p.fmx) : srFmPatch(i, wkFmOf(snd.p));   // N8: operator keys of the super-regler", 'wkFm6Patch');
 rep("  if ('poly' in d && L.polyH) d.polyH = L.polyH;                         /* K2 */\n  E.set(d);",
   "  if ('poly' in d && L.polyH) d.polyH = L.polyH;                         /* K2 */\n  if (R.st[i]) n8Flat(i, d, true);                                       // N8 I1a: a held state stays the base\n  E.set(d);", 'wkFlush');
 rep("function liveUpdate(i, key) {\n  const c = AU.ctx; if (!c) return;\n  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return;\n  if (key.startsWith('fx.')) { applyTrackParams(i, false); return; }\n  const snd = tr.sound, P = snd.p, now = c.currentTime;",
-  "function liveUpdate(i, key, Pov) {                                   // N8: Pov = the effective values (native steps of the super knob / state)\n  const c = AU.ctx; if (!c) return;\n  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return;\n  if (!Pov && R.st[i]) stHand(i, key);                               // N8 KZ6: who touches, takes over\n  if (key.startsWith('fx.')) { applyTrackParams(i, false); return; }\n  const snd = tr.sound, P = Pov || snd.p, now = c.currentTime;", 'liveUpdate');
-rep("function trackFx(tr) { return g4Fx(tr, fxOfSound(tr.sound)); }", "function trackFx(tr) { return srFx(tr, g4Fx(tr, fxOfSound(tr.sound))); }   // G4; N8: state and super knob on the track values", 'trackFx');
+  "function liveUpdate(i, key, Pov) {                                   // N8: Pov = the effective values (native steps of the super-regler / state)\n  const c = AU.ctx; if (!c) return;\n  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return;\n  if (!Pov && R.st[i]) stHand(i, key);                               // N8 KZ6: who touches, takes over\n  if (key.startsWith('fx.')) { applyTrackParams(i, false); return; }\n  const snd = tr.sound, P = Pov || snd.p, now = c.currentTime;", 'liveUpdate');
+rep("function trackFx(tr) { return g4Fx(tr, fxOfSound(tr.sound)); }", "function trackFx(tr) { return srFx(tr, g4Fx(tr, fxOfSound(tr.sound))); }   // G4; N8: state and super-regler on the track values", 'trackFx');
 rep("  const P0 = o && o.P ? o.P : slotParams(sl.id), P = ex && ex.lk ?", "  const P0 = o && o.P ? o.P : srDrumP(sl.id, slotParams(sl.id), t), P = ex && ex.lk ?", 'drumHit');
 rep("  const snd = snd0.engine === 'mk' ? mkEco(snd0, i) : snd0, P = snd.p, eng = snd.engine === 'fm6' && !P.fm6 ? 'analog' : snd.engine;",
   "  const snd = snd0.engine === 'mk' ? mkEco(snd0, i) : (o.sound || !(S.sr || R.st[i]) || (isWkEngine(snd0.engine) && AU.synth[i]) ? snd0 : srEffSnd(i, t0)), P = snd.p, eng = snd.engine === 'fm6' && !P.fm6 ? 'analog' : snd.engine;   // N8: native = effective sound", 'spawnVoice');
@@ -103,7 +103,7 @@ rep("  for (let i = 0; i < MAX_T; i++) { R.slot[i] = S.tracks[i] && S.tracks[i].
   x => x + "\n  srOnLoad();                                                // N8 I1c: the knob opens at S.sr.x", 'applyProject');
 
 /* ---------- K1 rows (Z7) ---------- */
-rep("function k1Mods(i) {\n  const s = sndOf(i); if (!s || s._nv) return [];", "function k1Mods(i) { const o = k1ModsBase(i); return S.tracks[i] && !(sndOf(i) && sndOf(i)._nv) ? n8K1Rows(i, o) : o; }   // N8 A.11: + state and super-knob rows\nfunction k1ModsBase(i) {\n  const s = sndOf(i); if (!s || s._nv) return [];", 'k1Mods');
+rep("function k1Mods(i) {\n  const s = sndOf(i); if (!s || s._nv) return [];", "function k1Mods(i) { const o = k1ModsBase(i); return S.tracks[i] && !(sndOf(i) && sndOf(i)._nv) ? n8K1Rows(i, o) : o; }   // N8 A.11: + state and super-regler rows\nfunction k1ModsBase(i) {\n  const s = sndOf(i); if (!s || s._nv) return [];", 'k1Mods');
 rep("function k1Del(i, key) {\n  const e = k1Mods(i).find(x => x.key === key); if (!e) return false;", "function k1Del(i, key) {\n  const e = k1Mods(i).find(x => x.key === key); if (!e) return false;\n  if (e.kind === 'sr' || e.kind === 'st') return n8K1Del(i, e);       // N8: one undo ('sr' / 'clip')", 'k1Del');
 
 /* ---------- I3c: LFO page ✎, preview, close paths (ported from i3-br-U) ---------- */
