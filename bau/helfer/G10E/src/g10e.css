@@ -1,5 +1,5 @@
 /* G10e (Nachtrag 9 §2.5): Warp-Editor – Mini-Karte, Werkzeuge im Fuß, Lupe, Haptik-Labels, Studio-Ansicht (nur auf Wunsch) */
-#wpSheet .g10map{position:relative;flex:none;height:48px;border-radius:6px;overflow:hidden;border:1px solid var(--line);touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
+#wpSheet .g10map{order:-1;position:relative;flex:none;height:48px;border-radius:6px;overflow:hidden;border:1px solid var(--line);touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
 #wpSheet .g10map canvas{position:absolute;inset:0;width:100%;height:100%}
 #wpSheet.g9 .g10map,#wpSheet.g9 .g10tool{display:none}
 #wpSheet.g10 .wpsl{flex-direction:row;gap:10px}

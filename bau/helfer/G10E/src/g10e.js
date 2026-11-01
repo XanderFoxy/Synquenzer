@@ -44,7 +44,7 @@ function g10eBuild(E, sh, b, cvw, foot) {
   E.g10o = {wo: false, qr: 0};
   const w0 = S.takes[E.id] && S.takes[E.id].warp; if (w0) { E.g10o.wo = !!w0.wo; E.g10o.qr = w0.qr || 0; }
   const map = el('div', 'g10map'), mc = el('canvas'); map.append(mc); map.setAttribute('aria-label', 'Mini-Karte: Wischen springt dorthin');
-  b.insertBefore(map, cvw);
+  cvw.after(map);                                                      // im DOM hinter der Welle (erste canvas = Welle wie bisher), per CSS oben
   const add = el('button', 'rb g10tool g10add', '+'); add.setAttribute('aria-label', 'Neuer Strich (danach auf die Welle tippen)');
   const more = el('button', 'rb g10tool g10more', '⋯'); more.setAttribute('aria-label', 'Prüfen und Quantisieren fein');
   add.addEventListener('click', () => { const Q = WP.ed; if (!Q) return; Q.g10add = !Q.g10add; g10eRunStop(Q); wpPaint(); });

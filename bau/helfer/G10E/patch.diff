@@ -1,0 +1,817 @@
+--- snapshots/R-4300.html	2026-11-01 09:14:21.044867605 +0000
++++ helfer/G10E/index.html	2026-11-01 10:30:32.353139337 +0000
+@@ -2413,6 +2413,44 @@
+ .pop.g9rs .g9auto{display:flex;gap:8px;align-items:center;min-height:44px;font:600 13px/1.2 var(--font-ui)}
+ .pop.g9rs .g9rm{height:44px;padding:0 10px;margin-left:6px}
+ @media (orientation:landscape){#wpSheet .qh .sh-x,#wpSheet .wpab,#wpSheet .wptx{position:relative}#wpSheet .qh .sh-x::after,#wpSheet .wpab::after,#wpSheet .wptx::after{content:'';position:absolute;left:-1px;right:0;top:-2.5px;bottom:-7.5px}}
++/* G10e (Nachtrag 9 §2.5): Warp-Editor – Mini-Karte, Werkzeuge im Fuß, Lupe, Haptik-Labels, Studio-Ansicht (nur auf Wunsch) */
++#wpSheet .g10map{order:-1;position:relative;flex:none;height:48px;border-radius:6px;overflow:hidden;border:1px solid var(--line);touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
++#wpSheet .g10map canvas{position:absolute;inset:0;width:100%;height:100%}
++#wpSheet.g9 .g10map,#wpSheet.g9 .g10tool{display:none}
++#wpSheet.g10 .wpsl{flex-direction:row;gap:10px}
++/* Raster-Chips: Treffer 44 px ohne in die Welle zu ragen (vorher 9 px nach oben über den Spalt → ein Tipp unten auf der Welle quantisierte) */
++@media (orientation:landscape),(orientation:portrait) and (min-width:390px){#wpSheet.g10 .qchips button{height:44px}#wpSheet.g10 .qchips button::after{left:-3.75px;right:0;top:0;bottom:0}}
++@media (orientation:portrait) and (max-width:389px){#wpSheet.g10 .qchips{margin-top:6px}}   /* 2 Reihen: die Treffer der oberen Reihe (9 px nach oben) enden vor der Welle */
++#wpSheet.g10 .wpsl .qrow{flex:1 1 0;min-width:0;gap:4px}
++#wpSheet.g10 .wpsl .qrow .lbl{flex:0 0 auto}
++#wpSheet.g10 .wpsl .qrow .mval{flex:0 0 40px;min-width:0}
++#wpSheet .g10tool{position:relative;flex:0 0 44px;width:44px;min-width:44px;height:44px;padding:0;font:700 17px/1 var(--font-ui)}
++#wpSheet .g10tool.on{color:var(--ink);background:var(--amber);border-color:var(--amber)}
++#wpSheet .g10hl{display:none;position:absolute;inset:0;z-index:2;margin:0;-webkit-tap-highlight-color:transparent;cursor:pointer}
++#wpSheet .g10hl input{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;visibility:hidden}
++#wpSheet.g10.hap:not(.g9) .g10hl{display:block}
++#wpSheet.g10 .wpab,#wpSheet.g10 .wpz,#wpSheet.g10 .seg button,#wpSheet.g10 .qchips button{position:relative}
++#wpSheet.g10 .qh{touch-action:none}
++#g10lupe{position:fixed;z-index:60;width:144px;height:64px;display:none;pointer-events:none;border-radius:8px;border:1px solid #ffd35a;background:#0e1014;box-shadow:0 4px 14px rgba(0,0,0,.55)}
++#g10lupe.on{display:block}
++.pop.g10opt{width:min(300px,calc(100vw - 16px))}
++.pop.g10opt .g10r{display:flex;align-items:center;gap:8px;min-height:44px}
++.pop.g10opt .g10r>span{flex:1 1 auto;min-width:0;font:600 13px/16px var(--font-ui)}
++.pop.g10opt .g10r>button{flex:0 0 64px;height:44px;padding:0;font:700 12px/1 var(--font-ui)}
++.pop.g10opt .g10r>button.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}
++.pop.g10opt .g10q{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
++.pop.g10opt .g10q button{height:44px;min-width:0;padding:0;font:700 12px/1 var(--font-ui)}
++.pop.g10opt .g10q button.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}
++.pop.g10opt .g10run{width:100%;height:44px;margin-top:4px}
++.pop.wpsel .savrow .mbtn[data-a="play"]{min-width:64px}
++@media (orientation:portrait) and (max-height:700px){#wpSheet .g10map{height:32px}}
++@media (orientation:portrait) and (max-height:600px){#wpSheet .g10map{display:none}}   /* sehr kleine Geräte: Welle vor Karte (Schwenken/Pinch bleiben) */
++@media (max-width:380px){#wpSheet.g10 .wpz{flex:0 0 64px}#wpSheet.g10 .wpmode button{padding:0 2px;font-size:12px}#wpSheet.g10 .wpf{gap:6px}#wpSheet.g10 .g10tool{flex-basis:44px}}
++@media (max-width:340px){#wpSheet.g10 .wpz{flex:0 0 56px;font-size:11px}#wpSheet.g10 .wpmode button{font-size:11px;letter-spacing:0}}
++@media (orientation:landscape){#wpSheet .g10tool{height:44px}}
++/* Studio-Ansicht (Vorschlag §2.5 Nr. 7, nur nach Einschalten im ⋯-Blatt): hochkant Regler eingeklappt, quer volle Breite */
++#wpSheet.g10big .wpchips,#wpSheet.g10big .wpsl{display:none}
++@media (orientation:landscape){#wpSheet.g10big{grid-column:1/-1;width:auto;justify-self:stretch;border-radius:12px 12px 0 0}}
+ /* ---------- clip sheet v3 (§3.7): P bottom sheet with 2 button columns (3 on short screens); L 420 px panel, 3 columns ---------- */
+ #clipSheet .sh-body.cs3{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px;padding:8px 8px 10px}
+ #clipSheet .sh-body.cs3>*{flex:0 0 auto}            /* rows never shrink into each other (a wrapped key row stays readable) */
+@@ -31939,6 +31977,7 @@
+   padFlashes(tAud);
+   recLaneFrame(bAud);
+   lyFrame(bAud);                                             // G9E: Mitlese-Zeile (Songtext)
++  if (typeof g10eFrame === 'function') g10eFrame(bAud);      // G10e: Abspielmarke im Marken-Editor
+   const fm = fangMode(), fl = (fm === 'teil' ? fangTeilLit() : fm === 'stimme' ? vsFangLit() : fangLit()) || (fm !== 'stimme' && s1Lit());   /* S1 */     // V2d: FANG TEIL (§4.7 E3-08, EN7-09); VS2: Stimme
+   if (fm !== UI.last.fangM) {
+     UI.last.fangM = fm; const tl = fm === 'teil', vs = fm === 'stimme';
+@@ -47390,7 +47429,7 @@
+ for (const c of cand) {
+ const i = refine(c.t * hop);
+ let word = true; const tf = Math.floor(i / hop);
+-for (let k = 2; k <= quiet; k++) if (tf - k >= 0 && active[tf - k]) { word = false; break; }
++for (let k = 6; k <= quiet + 4; k++) if (tf - k >= 0 && active[tf - k]) { word = false; break; }   // G10e: Ruhe vor dem Einschwingen prüfen (vorher ab 10 ms: fast nie ein Wort-Strich)
+ marks.push({t: i / sr, i, conf: +Math.min(1, c.v / 2).toFixed(3), src: c.src, word, voiced: false});
+ }
+ if (o.pitch !== false) {
+@@ -47779,6 +47818,7 @@
+     const o = {t: tkR6(k.t), conf: isNum(k.conf) ? +clamp(k.conf, 0, 1).toFixed(2) : 1};
+     if (k.word) o.word = true;
+     if (k.user) o.user = true;
++    if (k.src === 'pitch') o.src = 'pitch'; else if (k.src === 'on' || k.src === 'onset' || k.src === 'start') o.src = 'on';   // G10e: Herkunft (neue Erkennungen)
+     out.push(o);
+   }
+   out.sort((x, y) => x.t - y.t);
+@@ -47788,9 +47828,9 @@
+   const mp = w && typeof w === 'object' && w.map, s = mp && mp.src, d = mp && mp.dst;
+   if (!Array.isArray(s) || !Array.isArray(d) || s.length < 2 || s.length !== d.length || s.length > 4002 || s[0] !== 0 || d[0] !== 0) return null;
+   for (let k = 0; k < s.length; k++) if (!isNum(s[k]) || !isNum(d[k]) || (k && (s[k] <= s[k - 1] || d[k] <= d[k - 1]))) return null;
+-  return {mode: w.mode === 'stretch' ? 'stretch' : 'slice', grid: WP_GRIDS.includes(w.grid) && w.grid !== 'off' ? w.grid : 'auto', res: WP_FIX.has(w.res) ? w.res : '1/16',
++  return g10eNormFine({mode: w.mode === 'stretch' ? 'stretch' : 'slice', grid: WP_GRIDS.includes(w.grid) && w.grid !== 'off' ? w.grid : 'auto', res: WP_FIX.has(w.res) ? w.res : '1/16',
+     strength: isNum(w.strength) ? +clamp(w.strength, 0, 1).toFixed(2) : 1, swing: isNum(w.swing) ? +clamp(w.swing, .5, .75).toFixed(2) : .5,
+-    bpm: isNum(w.bpm) ? +clamp(w.bpm, 20, 400).toFixed(3) : 120, t0: isNum(w.t0) ? tkR6(w.t0) : 0, map: {v: 1, src: s.map(tkR6), dst: d.map(tkR6)}};
++    bpm: isNum(w.bpm) ? +clamp(w.bpm, 20, 400).toFixed(3) : 120, t0: isNum(w.t0) ? tkR6(w.t0) : 0, map: {v: 1, src: s.map(tkR6), dst: d.map(tkR6)}}, w);   // G10e: wo/qr additiv
+ }
+ tkExt().take.push((m, o) => {
+   const mk = wpNormMarks(m.marks, o.len / o.sr); if (mk) o.marks = mk;
+@@ -47843,7 +47883,7 @@
+   const ka = kk(a); return !!ka && ka === kk(b);
+ }
+ function wpRun(M, m) {
+-  if (m.op === 'det') return M.detectMarks(m.x, m.sr).map(k => ({t: k.t, conf: k.conf, word: !!k.word}));
++  if (m.op === 'det') return M.detectMarks(m.x, m.sr).map(k => ({t: k.t, conf: k.conf, word: !!k.word, src: k.src}));   // G10e: Herkunft mitgeben
+   if (m.op === 'stretch') { const r = M.X.stretch(m.x, m.sr, {src: m.src, dst: m.dst}, {lock: m.lock}); return {y: r.y, warn: r.warnings, segs: r.segs.length, wsola: r.segs.filter(g => g.mode === 'wsola').length}; }
+   return M.renderSlices(m.x, m.sr, m.on, m.to);
+ }
+@@ -48076,12 +48116,14 @@
+   const q = VSM.quantizeMarks(times, {bpm, t0, grid: o.grid, strength: str, swing: o.swing, detectGrid: KeyDetect.detectGrid, swingAuto: o.swingAuto, catch: WP_CATCH});
+   if (q.grid === 'off') { delete m.warp; return 'off'; }
+   if (!m.marks) m.marks = mk.map(k => Object.assign({}, k));
+-  const w = VSM.makeWarp(times, Array.from(q.times, t => wpSmp(m, t)), m.len / m.sr);   // VS5a-fix2: Ziele auf ganze Samples (= was gerendert wird)
++  const qt = g10eFine(times, Array.from(q.times), mk, o, q.grid, q.swing, bpm, t0);   // G10e: Q-Bereich, Nur Wortanfänge, Tonwechsel-Marken (ohne Felder: unverändert)
++  const w = VSM.makeWarp(times, qt.map(t => wpSmp(m, t)), m.len / m.sr);   // VS5a-fix2: Ziele auf ganze Samples (= was gerendert wird)
+   m.warp = {mode: o.mode === 'stretch' ? 'stretch' : 'slice', grid: o.keep || o.grid, res: q.grid, strength: +str.toFixed(2), swing: +q.swing.toFixed(2), bpm: +(+bpm).toFixed(3), t0: tkR6(t0),
+     map: {v: 1, src: Array.from(w.src, tkR6), dst: Array.from(w.dst, tkR6)}};
++  if (o.wo) m.warp.wo = true; if (isNum(o.qr) && o.qr > 0) m.warp.qr = Math.round(o.qr);   // G10e
+   return q.grid;
+ }
+-const wpRequant = (id, w) => wpQuant(id, {grid: w.res, keep: w.grid, strength: w.strength, swing: w.swing, bpm: w.bpm, t0: w.t0, mode: w.mode, swingAuto: false});
++const wpRequant = (id, w) => wpQuant(id, {grid: w.res, keep: w.grid, strength: w.strength, swing: w.swing, bpm: w.bpm, t0: w.t0, mode: w.mode, swingAuto: false, wo: w.wo, qr: w.qr});
+ // nach einer Änderung: neu rendern (die Wiedergabe folgt, sobald die Fassung da ist) bzw. sofort neu hören
+ function wpAfter(id) {
+   markDirty(); UI.dirty.all = true;
+@@ -48126,7 +48168,7 @@
+   if (!wpMarks(id) && o.grid !== 'off') await wpDetect(id);
+   if (!S.takes || S.takes[id] !== m) return null;
+   const before = JSON.stringify(S.takes), w = m.warp;
+-  const g = wpQuant(id, Object.assign({mode: w ? w.mode : 'slice', strength: w ? w.strength : 1, swing: w ? w.swing : .5, t0: wpT0(id, a)}, o));
++  const g = wpQuant(id, Object.assign({mode: w ? w.mode : 'slice', strength: w ? w.strength : 1, swing: w ? w.swing : .5, t0: wpT0(id, a), wo: w ? w.wo : g10eDef(id, 'wo'), qr: w ? w.qr : g10eDef(id, 'qr')}, o));
+   if (JSON.stringify(S.takes) !== before) { undoPush({kind: 'takes', before, label: label || 'Quantisieren · Audio'}); wpAfter(id); }
+   return g;
+ }
+@@ -48175,7 +48217,7 @@
+   const go = () => {
+     const m = S.takes && S.takes[id]; if (!m || (merged && UNDO[UNDO.length - 1] !== top)) return false;   // inzwischen ↶ oder ein neuer Schritt: der Take bleibt
+     const before = JSON.stringify(S.takes);
+-    if (fol) { delete m.follow; wpQuant(id, {grid: o.grid, strength: o.strength, swing: o.swing, mode: m.warp ? m.warp.mode : 'stretch', swingAuto: false}); } else m.follow = false;   // VS5b: Gesang → Dehnen
++    if (fol) { delete m.follow; wpQuant(id, {grid: o.grid, strength: o.strength, swing: o.swing, mode: m.warp ? m.warp.mode : 'stretch', swingAuto: false, wo: m.warp && m.warp.wo, qr: m.warp && m.warp.qr}); } else m.follow = false;   // VS5b: Gesang → Dehnen
+     if (JSON.stringify(S.takes) === before) return false;
+     const it = {kind: 'takes', before};
+     if (top) { UNDO.pop(); undoPush({kind: 'group', label: top.label, items: [top, it]}); } else undoPush(Object.assign({label: 'Quantisieren · Audio'}, it));
+@@ -48257,12 +48299,13 @@
+   const foot = el('div', 'wpf'), seg = el('div', 'seg wpmode', '<button data-m="stretch">Dehnen</button><button data-m="slice">Scheiben</button>');
+   seg.addEventListener('click', e => { const bt = e.target.closest('button[data-m]'), E = WP.ed; if (bt && E) wpSetMode(E.id, bt.dataset.m); });
+   const zb = el('button', 'rb wpz', ''), info = el('span', 'qnote wpinfo', '');
+-  zb.addEventListener('click', () => { const E = WP.ed; if (!E) return; E.zoom = WP_ZOOM[(WP_ZOOM.indexOf(E.zoom) + 1) % WP_ZOOM.length]; wpPaint(); });
++  zb.addEventListener('click', () => { const E = WP.ed; if (!E) return; g10eZoomBtn(E); });   // G10e: + Stufe „Wort“, aus dem freien Zoom zur nächsten Stufe
+   foot.append(seg, zb); cvw.append(info);
+   const sl = el('div', 'wpsl'); sl.append(rs, rw);       // F1: in P3 nebeneinander
+   b.append(cvw, chips, sl, foot);
+   sh.append(head, b);
+   Object.assign(WP.ed, {cv, an, chips, rs, rw, zb, info, ab, cvw, seg, tx});
++  g10eBuild(WP.ed, sh, b, cvw, foot);                 // G10e: Mini-Karte, [+], [⋯], Haptik-Labels, Wischen/Tipp außerhalb
+   sh.classList.add('open');
+   wpGest(cv);
+   wpPaint();
+@@ -48279,18 +48322,20 @@
+   WP.ed = null; g6pgClosed();                                      // G6+g: Solo aus der Legende endet mit dem Editor
+   if (UI.pop && (UI.pop.name === 'wpsel' || UI.pop.name === 'wplyr' || UI.pop.name === 'g9text' || UI.pop.name === 'g9rec')) closePop();
+   WP.old.clear();                                   // VS5b: die vorige Fassung nur, solange der Editor offen ist (Speicher am iPhone)
++  g10eClosed(E);                                     // G10e
+   EL.wpSheet.classList.remove('open'); EL.wpSheet.innerHTML = '';
+   if (WP.ab) { WP.ab = false; wpResync(); }
+ }
+ // Ansicht: Sekunden im Take [va, va + W); Zoom in Takten (0 = das ganze Stück)
+ function wpView(E, a) {
+-  const sp = spb(), segL = a.out - a.in, W = E.zoom ? Math.min(E.zoom * 4 * sp, Math.max(segL, sp)) : Math.max(segL, .05);
++  const sp = spb(), segL = a.out - a.in, W = g10eViewW(E, segL, sp) || (E.zoom ? Math.min(E.zoom * 4 * sp, Math.max(segL, sp)) : Math.max(segL, .05));   // G10e: stufenlos / „Wort“
+   const g3a = E.g9 && typeof g3PreOf === 'function' ? g3PreOf(a) : 0, g3b = E.g9 && typeof g3PostOf === 'function' ? g3PostOf(a) : 0;   // G9: G3-Anlauf/Ausklang erreichbar
+   E.va = clamp(E.va, a.in - Math.max(W * .1, g3a), Math.max(a.in - Math.max(W * .1, g3a), a.out + g3b - W * .9));
+   return {a: E.va, W};
+ }
+ function wpPaint() {
+   const E = WP.ed; if (!E || !E.cv) return;
++  const g10t = G10E.perf ? performance.now() : 0;      // G10e: Bildzeit messen
+   const x = tkRef(E.r); if (!x) { wpClose(); return; }
+   const a = x.a, id = E.id, m = S.takes && S.takes[id], cv = E.cv, wr = cv.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+   const Wp = Math.max(1, Math.round(wr.width)), Hp = Math.max(1, Math.round(wr.height));
+@@ -48316,6 +48361,7 @@
+   const buf = wpBase(id, a), mid = Hp * .58, hh = Hp * .36, live = !!(w && !WP.ab && !wpMapInfo(w.map).ident);
+   // die Spitzen je Pixel bleiben für dieselbe Ansicht liegen (die Marken-Animation zeichnet nur neu, rechnet nicht neu – FP-IPHONE)
+   const wave = (b, inv, mk) => {
++    if (E.g10map && V.W * b.sampleRate / Wp < 24) { g.strokeStyle = g.fillStyle; g10eWaveDeep(g, b, inv, V, Wp, mid, hh); return; }   // G10e: tief gezoomt echte Form
+     const key = wpBid(b) + '|' + (mk || '') + '|' + V.a + '|' + V.W + '|' + Wp, wc = E.wc || (E.wc = new Map());
+     let pk = wc.get(key);
+     if (!pk) {
+@@ -48339,6 +48385,7 @@
+       if (hb) wave(hb); else wave(buf, t => VSM.warpInverse(w.map, t), wpMapInfo(w.map).key);
+     } else wave(buf);
+   }
++  if (E.g10map) g10ePaintUnder(E, g, g10eHeardBuf(E, a), live && !(wpReady(id) && WP.cache.get(id)) ? (t => VSM.warpInverse(w.map, t)) : null, V, Wp, Hp);   // G10e: Einsatz-Kurve
+   g6pgPaintWp(g, E, x, Wp, Hp, dpr);   // G6+g: Tonhöhenlinien der Chorstimmen (Bild-Puffer)
+   // Ziel der quantisierten Marken (bernstein) mit Verbindung zur Quelle
+   if (w && !WP.ab && !wpMapInfo(w.map).ident) {
+@@ -48361,6 +48408,7 @@
+     g.beginPath(); g.moveTo(xx - 6, 0); g.lineTo(xx + 6, 0); g.lineTo(xx, 9); g.closePath(); g.fill();
+     g.globalAlpha = 1;
+   });
++  if (E.g10map) g10ePaintOver(E, g, P, X, Wp, Hp, mk);   // G10e: Versatz, Einrasten, Abspielmarke
+   // VS5b Songtext: eine Silbe je Marke (von links), an der Stelle, wo die Marke klingt; überzählige rot am Ende, fehlende „·“
+   E.lyr = null;
+   if (E.g9 && typeof g9PaintWave === 'function') g9PaintWave(E, g, P, X, Wp, Hp, mk);   // G9: gewählter Abschnitt
+@@ -48386,6 +48434,7 @@
+     }
+     g.font = WP.font;
+   }
++  if (E.g10map) { g10eAfterPaint(E, a, mk, P); if (G10E.perf) G10E.frames.push(performance.now() - g10t); if (E.g10fast) return; }   // G10e
+   // Bedienung
+   const md = w ? w.mode : E.mode;
+   E.seg.querySelectorAll('button').forEach(bt => { const on = bt.dataset.m === md; bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); });
+@@ -48393,8 +48442,8 @@
+   const cur = w ? w.grid : 'off';
+   E.chips.querySelectorAll('button').forEach(bt => { const on = bt.dataset.v === cur; bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); });
+   E.rs._g(); E.rw._g();
+-  E.zb.textContent = E.zoom ? E.zoom + (E.zoom === 1 ? ' Takt' : ' Takte') : 'Ganz';
+-  E.ab.classList.toggle('on', WP.ab); E.ab.textContent = WP.ab ? 'Original' : 'A/B';
++  g10eTxt(E.zb, E.g10map ? g10eZoomLbl(E) : E.zoom ? E.zoom + (E.zoom === 1 ? ' Takt' : ' Takte') : 'Ganz');   // G10e: Text ohne das Haptik-Label zu löschen
++  E.ab.classList.toggle('on', WP.ab); g10eTxt(E.ab, WP.ab ? 'Original' : 'A/B');
+   const det = !(m && m.marks) && !WP.det.has(id);
+   const wn = wpWarn(id);
+   wpInfoTxt(det ? 'Marken werden gesucht …' : mk.length + (mk.length === 1 ? ' Marke' : ' Marken') + ' · ' + (w ? (w.grid === 'auto' ? 'Auto ' : '') + w.res + ' · ' + Math.round(w.strength * 100) + ' %' + (wpReady(id) ? '' : ' · rechnet …') : 'Original') +
+@@ -48437,6 +48486,7 @@
+ function wpMovedToast(id) { const n = wpMovedN(id); toast(n + (n === 1 ? ' Einsatz' : ' Einsätze') + ' gerückt'); return n; }
+ const WP_GRIP = 44;                                                  // K2: Griff-Streifen oben (Regel 4)
+ function wpGest(cv) {
++  if (typeof g10eGest === 'function') { g10eGest(cv); return; }   // G10e: Pinch, Doppeltipp, Halten, Lupe (ersetzt die K2-Gesten, K2-Regeln bleiben)
+   const xOf = e => e.clientX - cv.getBoundingClientRect().left;
+   cv.addEventListener('pointerdown', e => {
+     const E = WP.ed; if (!E || E.p || E.g9 || e.button > 0) return;   // G9: Text-Modus = eigene Gesten am Rahmen
+@@ -48479,8 +48529,8 @@
+   E.an.style.left = Math.round(cx) + 'px';
+   openPop(E.an, p => {
+     p.classList.add('wpsel'); guardTouch(p);
+-    p.innerHTML = `<h4>Marke ${k + 1}</h4><div class="savrow"><button class="mbtn rb" data-a="del">✕ Löschen</button><button class="mbtn rb" data-a="no">Abbrechen</button></div>`;
+-    onTap(p, bt => { const a = bt.dataset.a, Q = WP.ed; closePop(); if (a === 'del' && Q && wpMarkDel(Q.id, k)) toast('Marke gelöscht', {label: 'Rückgängig', fn: () => undo()}); }, 'button[data-a]');
++    p.innerHTML = `<h4>Marke ${k + 1}${g10eSelInfo(k)}</h4><div class="savrow"><button class="mbtn rb" data-a="play" aria-label="Hören">▶</button><button class="mbtn rb" data-a="del">✕ Löschen</button><button class="mbtn rb" data-a="no">Abbrechen</button></div>`;
++    onTap(p, bt => { const a = bt.dataset.a, Q = WP.ed; if (a === 'play') { if (Q) g10ePlayMark(Q, k); return; } closePop(); if (a === 'del' && Q && wpMarkDel(Q.id, k)) toast('Marke gelöscht', {label: 'Rückgängig', fn: () => undo()}); }, 'button[data-a]');
+   }, {name: 'wpsel', above: true, onClose: () => { if (WP.ed) { WP.ed.sel = -1; wpPaint(); } }});
+ }
+ // VS5b [Text]: Songtext eintippen, Silben mit Bindestrich („Lie-be ist ein Feu-er“); ✓ = ein Undo, leer = löschen
+@@ -48531,6 +48581,589 @@
+   wpCore: (fn, args) => { const r = VSM[fn](...args.map(v => (Array.isArray(v) && v.length > 64 ? Float32Array.from(v) : v))); return r && r.times ? {times: Array.from(r.times), grid: r.grid, swing: r.swing, moved: Array.from(r.moved)} : ArrayBuffer.isView(r) ? Array.from(r) : r; },
+ };
+ 
++/* ======================= G10e — Warp-Editor: Zoom ins Wort, Gesten ohne Versehen, Kontrolle (Nachtrag 9 §2.5) =======================
++   Gesten auf der Welle: ein Finger schwenkt immer, zwei Finger zoomen stufenlos (der Punkt unter den Fingern bleibt stehen), Doppeltipp
++   zwischen zwei Strichen = diese Silbe (±15 % Rand), zweiter Doppeltipp = zurück. Striche greift man nur in der Griff-Leiste (44 px, K2);
++   beim Ziehen Lupe (±40 ms) über dem Finger und sichtbares Einrasten (Linie, Blase, leiser Einrast-Klick statt Haptik – Safari kann
++   beim Ziehen keine). Neue Marke nur mit [+] oder 450 ms Halten in der Griff-Leiste. Tipp auf einen Strich: [▶ Hören] [✕ Löschen].
++   Mini-Karte oben, Versatz-Zahlen ab 1 Takt, Einsatz-Kurve, Abspielmarke + Folgen, Prüf-Lauf, Quantisieren fein (Nur Wortanfänge,
++   Q-Bereich; Tonwechsel-Marken neuer Erkennungen werden nicht quantisiert). Daten additiv: take.marks[k].src, take.warp.wo / .qr. */
++const G10E = {clicks: 0, plays: [], last: null, lupe: null, frames: [], perf: false};
++const g10eBpb = () => 4;                                             // Schläge je Takt (T1: Taktarten kommen später; nie die Zahl direkt)
++const G10E_ZOOM = [-1, 1, 2, 4, 0];                                    // Wort · 1 · 2 · 4 Takte · Ganz
++const G10E_MSPX = 0.00025;                                             // tiefster Zoom: 0,25 ms je Pixel
++const G10E_STEP = {'1/4': 1, '1/8': .5, '1/8T': 1 / 3, '1/16': .25, '1/16T': 1 / 6, '1/32': .125};
++const g10ePref = (k, d) => { const v = uiPrefs()[k]; return v == null ? d : v; };
++const g10eRec = () => (typeof recActive === 'function' && recActive()) || !!(typeof VS !== 'undefined' && VS.rec) || !!(typeof SREC !== 'undefined' && SREC.on);
++const g10eReq = E => { if (E && !E.g10raf) E.g10raf = requestAnimationFrame(() => { E.g10raf = 0; if (WP.ed === E) wpPaint(); }); };
++
++/* ---------- Ansicht: Breite W (s) ---------- */
++function g10eMinW(E) { const w = E && E.cv ? E.cv.clientWidth : 380; return Math.max(1, w) * G10E_MSPX; }
++function g10eViewW(E, segL, sp) {
++  const maxW = Math.max(segL, .05);
++  if (E.g10W) return clamp(E.g10W, g10eMinW(E), maxW);
++  if (E.zoom === -1) return clamp(sp, g10eMinW(E), maxW);              // Stufe „Wort“: ein Schlag
++  return 0;
++}
++function g10eZoomLbl(E) {
++  if (E.g10W) { const W = E.vw ? E.vw.W : E.g10W; return W < 1 ? Math.max(1, Math.round(W * 1000)) + ' ms' : fmtDec(W, 1) + ' s'; }
++  return E.zoom === -1 ? 'Wort' : E.zoom ? E.zoom + (E.zoom === 1 ? ' Takt' : ' Takte') : 'Ganz';
++}
++// Zoom-Taste: Ganz → Wort → 1 → 2 → 4 → Ganz; aus dem freien Zoom zur nächst gröberen Stufe. Die Mitte bleibt stehen.
++function g10eZoomBtn(E) {
++  const x = tkRef(E.r); if (!x) return;
++  const sp = spb(), segL = x.a.out - x.a.in, c = E.vw ? E.vw.a + E.vw.W / 2 : null;
++  const wOf = z => z === -1 ? clamp(sp, g10eMinW(E), Math.max(segL, .05)) : z ? Math.min(z * g10eBpb() * sp, Math.max(segL, sp)) : Math.max(segL, .05);
++  if (E.g10W) { const cur = E.vw ? E.vw.W : E.g10W; E.zoom = G10E_ZOOM.find(z => z && wOf(z) > cur * 1.01) || 0; E.g10W = null; }
++  else E.zoom = G10E_ZOOM[(G10E_ZOOM.indexOf(E.zoom) + 1) % G10E_ZOOM.length];
++  E.g10prev = null;
++  if (c != null) E.va = c - wOf(E.zoom) / 2;
++  wpPaint();
++}
++
++/* ---------- Aufbau (aus wpOpen) ---------- */
++function g10eBuild(E, sh, b, cvw, foot) {
++  sh.classList.add('g10'); sh.classList.toggle('hap', !!UI.haptics); sh.classList.toggle('g10big', !!g10ePref('g10eBig', false));
++  E.g10o = {wo: false, qr: 0};
++  const w0 = S.takes[E.id] && S.takes[E.id].warp; if (w0) { E.g10o.wo = !!w0.wo; E.g10o.qr = w0.qr || 0; }
++  const map = el('div', 'g10map'), mc = el('canvas'); map.append(mc); map.setAttribute('aria-label', 'Mini-Karte: Wischen springt dorthin');
++  cvw.after(map);                                                      // im DOM hinter der Welle (erste canvas = Welle wie bisher), per CSS oben
++  const add = el('button', 'rb g10tool g10add', '+'); add.setAttribute('aria-label', 'Neuer Strich (danach auf die Welle tippen)');
++  const more = el('button', 'rb g10tool g10more', '⋯'); more.setAttribute('aria-label', 'Prüfen und Quantisieren fein');
++  add.addEventListener('click', () => { const Q = WP.ed; if (!Q) return; Q.g10add = !Q.g10add; g10eRunStop(Q); wpPaint(); });
++  more.addEventListener('click', () => g10eOptPop(more));
++  foot.insertBefore(add, E.zb || null); foot.insertBefore(more, E.zb || null);
++  Object.assign(E, {g10map: map, g10mc: mc, g10addB: add, g10moreB: more});
++  // Haptik nur bei echtem Label-Tipp (Probe G9): Raster-Chips, [A/B], Modus, Werkzeuge als <label> mit Schalter
++  for (const n of [...E.chips.querySelectorAll('button'), E.ab, ...E.seg.querySelectorAll('button'), add, more, E.zb]) g10eHap(n);
++  // bewaffnetes [+] endet mit jedem anderen Tipp im Blatt (Regel 10)
++  sh.addEventListener('click', e => { const Q = WP.ed; if (Q && Q.g10add && !(e.target.closest && (e.target.closest('.g10add') || e.target.closest('.wpcv')))) { Q.g10add = false; wpPaint(); } }, true);
++  g10eMapGest(map);
++  g10eHeadSwipe(sh.querySelector('.qh'));
++  if (!G10E.lupe) { G10E.lupe = el('canvas'); G10E.lupe.id = 'g10lupe'; G10E.lupe.setAttribute('aria-hidden', 'true'); }
++  document.body.append(G10E.lupe);
++}
++function g10eHap(node) {
++  if (!node || node.querySelector(':scope > .g10hl')) return;
++  const lb = el('label', 'g10hl'), inp = el('input'); lb.setAttribute('aria-hidden', 'true');
++  inp.type = 'checkbox'; inp.setAttribute('switch', ''); inp.tabIndex = -1;
++  inp.addEventListener('click', e => e.stopPropagation());
++  lb.addEventListener('mousedown', e => e.preventDefault());
++  lb.append(inp); node.append(lb);
++}
++function g10eClosed(E) {
++  if (E) { g10eRunStop(E); g10ePvStop(E); if (E.p) g10eHoldEnd(E, E.p); }
++  if (G10E.lupe) { G10E.lupe.classList.remove('on'); G10E.lupe.remove(); }
++  EL.wpSheet.classList.remove('g10', 'g10big', 'hap');
++}
++
++/* ---------- Gesten auf der Welle ---------- */
++const G10E_HOLD = 450, G10E_DBL = 320;
++function g10eGest(cv) {
++  const rc = () => cv.getBoundingClientRect();
++  const tOf = (E, cx) => E.vw.a + cx / E.cv.clientWidth * E.vw.W;
++  const P = new Map();                                                 // aktive Zeiger auf der Welle
++  // kein Klick aus einem Tipp auf der Welle (die Touch-Anpassung des Browsers lenkte ihn sonst auf einen nahen Raster-Chip → ungewollt quantisiert)
++  cv.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, {passive: false});
++  cv.addEventListener('click', e => e.preventDefault());              // die Welle gilt als Tipp-Ziel: die Touch-Anpassung wählt nicht den Chip daneben
++  cv.addEventListener('pointerdown', e => {
++    const E = WP.ed; if (!E || E.g9 || e.button > 0) return;
++    try { cv.setPointerCapture(e.pointerId); } catch (er) {}
++    P.set(e.pointerId, {x: e.clientX, y: e.clientY});
++    if (P.size === 1) {
++      const r = rc(), cx = e.clientX - r.left, top = e.clientY - r.top < WP_GRIP;
++      E.p = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), grip: top, k: top ? wpHit(E, cx) : -1, kt: g10eTapHit(E, cx, top), mode: null, va: E.va, lx: e.clientX};
++      if (top && E.p.kt < 0 && !E.g10add) {                            // 450 ms Halten in der Griff-Leiste = neue Marke
++        const p = E.p; E.g10hold = {x: cx, t0: p.t0};
++        p.hold = setTimeout(() => { if (WP.ed !== E || E.p !== p || p.mode) return; p.mode = 'held'; E.g10hold = null; g10eAddAt(E, tOf(E, cx)); }, G10E_HOLD);
++        g10eHoldAnim(E);
++      }
++    } else if (P.size === 2) g10ePinchStart(E, P);
++    else if (E.g10pz) E.g10pz.dead = true;
++  });
++  cv.addEventListener('pointermove', e => {
++    const E = WP.ed; if (!E || !P.has(e.pointerId)) return;
++    P.set(e.pointerId, {x: e.clientX, y: e.clientY});
++    if (E.g10pz) { if (P.size === 2 && !E.g10pz.dead) g10ePinchMove(E, P); return; }
++    const p = E.p; if (!p || p.id !== e.pointerId) return;
++    p.lx = e.clientX;
++    const dx = e.clientX - p.x0;
++    if (!p.mode && Math.hypot(dx, e.clientY - p.y0) > 8) { p.mode = p.k >= 0 && p.grip && !E.g10add ? 'move' : 'pan'; g10eHoldEnd(E, p); if (p.mode === 'move') g10eRunStop(E); }
++    if (p.mode === 'move') { const cx = e.clientX - rc().left; E.ghost = {k: p.k, t: tOf(E, cx)}; g10eSnapLive(E, e.clientX); g10eReq(E); }
++    else if (p.mode === 'pan') { E.va = p.va - dx / E.cv.clientWidth * E.vw.W; E.g10hand = performance.now(); E.g10fast = true; g10eReq(E); }
++  });
++  const end = (e, cancel) => {
++    const E = WP.ed; if (!P.has(e.pointerId)) return; P.delete(e.pointerId);
++    if (!E) return;
++    if (E.g10pz) { if (!P.size) { E.g10pz = null; E.g10fast = false; wpPaint(); } return; }
++    const p = E.p; if (!p || p.id !== e.pointerId) return;
++    E.p = null; E.g10fast = false; g10eHoldEnd(E, p); const gh = E.ghost; E.ghost = null; g10eLupe(E, null);
++    if (cancel || p.mode === 'held') { E.g10snap = null; wpPaint(); return; }
++    if (p.mode === 'move' && gh) { g10eDrop(E, gh); return; }
++    E.g10snap = null;
++    if (p.mode) { wpPaint(); return; }
++    if (performance.now() - p.t0 >= G10E_HOLD) { wpPaint(); return; }   // Halten auf der Welle hat keine Bedeutung
++    const cx = e.clientX - rc().left;
++    UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};      // F1: der Klick desselben Tipps landet nie auf dem Blatt darunter
++    if (E.g10run) { g10eRunStop(E); wpPaint(); return; }              // Tipp beendet den Prüf-Lauf
++    if (E.g10add) { E.g10add = false; g10eAddAt(E, tOf(E, cx)); return; }
++    if (p.kt >= 0) { E.g10tap = null; wpSelSheet(p.kt, cx); return; }
++    const q = E.g10tap, now = performance.now();
++    if (q && now - q.t < G10E_DBL && Math.abs(q.x - e.clientX) < 24 && Math.abs(q.y - e.clientY) < 24) { E.g10tap = null; g10eDbl(E, tOf(E, cx)); return; }
++    E.g10tap = {t: now, x: e.clientX, y: e.clientY};
++  };
++  cv.addEventListener('pointerup', e => end(e, false));
++  cv.addEventListener('pointercancel', e => end(e, true));
++  // K2: ein zweiter Finger irgendwo neben der Welle verwirft den laufenden Zug (kein Verschieben, kein Undo)
++  if (!G10E.k2) { G10E.k2 = true; document.addEventListener('pointerdown', e => {
++    const E = WP.ed, p = E && E.p; if (!p || p.id === e.pointerId || (E.cv && e.target === E.cv)) return;
++    g10eHoldEnd(E, p); E.ghost = null; E.g10snap = null; g10eLupe(E, null); p.mode = 'pan'; p.k = -1; p.x0 = p.lx; p.va = E.va; wpPaint();
++  }, true); }
++}
++// Tipp auf einen Strich: in der Griff-Leiste ±16 px (K2-Regel), auf der Welle nur ±6 px (zwischen dichten Strichen bleibt Platz für den Doppeltipp)
++function g10eTapHit(E, cx, top) {
++  const k = wpHit(E, cx, true); if (k < 0 || top) return k;
++  const mk = wpMarks(E.id) || [], Pp = E.mpos && E.mpos.length === mk.length ? E.mpos : mk.map(m => m.t);
++  return Math.abs(E.X(Pp[k]) - cx) <= 6 ? k : -1;
++}
++function g10eHoldEnd(E, p) { if (p && p.hold) { clearTimeout(p.hold); p.hold = 0; } E.g10hold = null; }
++function g10eHoldAnim(E) { const f = () => { if (WP.ed !== E || !E.g10hold) return; wpPaint(); requestAnimationFrame(f); }; requestAnimationFrame(f); }
++function g10eAddAt(E, t) {
++  const before = UNDO.length, ok = wpMarkAdd(E.id, wpSrcT(E, t));
++  if (ok) { E.g10flash = {ts: [t], t0: performance.now(), mark: true}; g10eClick(); haptic('pop'); g10eFlashAnim(E); }
++  else if (UNDO.length === before) toast('Hier steht schon ein Strich');
++  wpPaint();
++}
++// Pinch (Muster Klavierrolle/Hüllkurve): Zeit unter der Fingermitte bleibt unter der Fingermitte
++function g10ePinchStart(E, P) {
++  const p = E.p; if (p) { g10eHoldEnd(E, p); E.p = null; }
++  E.ghost = null; E.g10snap = null; g10eLupe(E, null);
++  const [a, b] = [...P.values()], r = E.cv.getBoundingClientRect(), mx = (a.x + b.x) / 2 - r.left;
++  E.g10pz = {d0: Math.max(8, Math.abs(a.x - b.x)), W0: E.vw.W, ta: E.vw.a + mx / E.cv.clientWidth * E.vw.W};
++  E.g10fast = true; E.g10prev = null; E.g10hand = performance.now(); g10eRunStop(E);
++}
++function g10ePinchMove(E, P) {
++  const Z = E.g10pz, [a, b] = [...P.values()], r = E.cv.getBoundingClientRect(), mx = (a.x + b.x) / 2 - r.left, d = Math.max(8, Math.abs(a.x - b.x));
++  const x = tkRef(E.r); if (!x) return;
++  const W = clamp(Z.W0 * Z.d0 / d, g10eMinW(E), Math.max(x.a.out - x.a.in, .05));
++  E.g10W = W; E.va = Z.ta - mx / E.cv.clientWidth * W; E.g10hand = performance.now();
++  g10eReq(E);
++}
++// Doppeltipp zwischen zwei Strichen: diese Silbe füllt 70 % (±15 % Rand); der nächste Doppeltipp holt die Ansicht davor zurück
++function g10eDbl(E, t) {
++  if (E.g10prev) { const v = E.g10prev; E.g10prev = null; E.zoom = v.zoom; E.g10W = v.g10W; E.va = v.va; wpPaint(); return; }
++  const x = tkRef(E.r); if (!x) return;
++  const mk = wpMarks(E.id) || [], Pp = (E.mpos && E.mpos.length === mk.length ? E.mpos : mk.map(m => m.t)).slice().sort((u, v) => u - v);
++  let lo = x.a.in, hi = x.a.out;
++  for (const v of Pp) { if (v <= t) lo = Math.max(lo, v); else { hi = Math.min(hi, v); break; } }
++  if (!(hi > lo)) return;
++  E.g10prev = {zoom: E.zoom, g10W: E.g10W, va: E.va};
++  const W = Math.max(g10eMinW(E), (hi - lo) / .7);
++  E.g10W = W; E.va = lo - (W - (hi - lo)) / 2; E.g10hand = performance.now();
++  wpPaint();
++}
++// Mini-Karte: Tippen/Wischen setzt die Mitte des Sichtfensters dorthin
++function g10eMapGest(map) {
++  let id = null;
++  const go = e => { const E = WP.ed, x = E && tkRef(E.r); if (!x || !E.vw) return; const r = map.getBoundingClientRect(), R0 = g10eMapRange(x.a);
++    const t = R0.a + clamp((e.clientX - r.left) / r.width, 0, 1) * R0.W; E.va = t - E.vw.W / 2; E.g10hand = performance.now(); g10eReq(E); };
++  map.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, {passive: false});
++  map.addEventListener('click', e => e.preventDefault());
++  map.addEventListener('pointerdown', e => { const E = WP.ed; if (!E || E.g9) return; id = e.pointerId; try { map.setPointerCapture(id); } catch (er) {} E.g10fast = true; go(e); });
++  map.addEventListener('pointermove', e => { if (e.pointerId === id) go(e); });
++  const up = e => { if (e.pointerId !== id) return; id = null; const E = WP.ed; if (E) { E.g10fast = false; wpPaint(); } };
++  map.addEventListener('pointerup', up); map.addEventListener('pointercancel', up);
++}
++const g10eMapRange = a => { const L = Math.max(a.out - a.in, .05); return {a: a.in - L * .02, W: L * 1.04}; };
++// Kopf nach unten wischen = Blatt schließen (≥ 60 px, eher senkrecht; nicht auf einer Taste begonnen)
++function g10eHeadSwipe(head) {
++  if (!head) return; let s = null;
++  head.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('button')) return; s = {id: e.pointerId, x: e.clientX, y: e.clientY}; try { head.setPointerCapture(e.pointerId); } catch (er) {} });
++  head.addEventListener('pointermove', e => { if (!s || s.id !== e.pointerId) return; const dy = e.clientY - s.y; if (dy > 60 && dy > Math.abs(e.clientX - s.x) * 1.5) { s = null; wpClose(); } });
++  const up = e => { if (s && s.id === e.pointerId) s = null; };
++  head.addEventListener('pointerup', up); head.addEventListener('pointercancel', up);
++  // dasselbe über Touch-Ereignisse (laufen weiter, wenn der Browser den Zeiger abbricht)
++  let ts = null;
++  head.addEventListener('touchstart', e => { const t = e.touches[0]; ts = e.touches.length === 1 && !(e.target.closest && e.target.closest('button')) ? {x: t.clientX, y: t.clientY} : null; }, {passive: true});
++  head.addEventListener('touchmove', e => { if (!ts) return; const t = e.touches[0], dy = t.clientY - ts.y; if (dy > 60 && dy > Math.abs(t.clientX - ts.x) * 1.5) { ts = null; s = null; wpClose(); } }, {passive: true});
++  head.addEventListener('touchend', () => { ts = null; }, {passive: true});
++}
++// Tipp außerhalb des Blatts schließt es (wie ein Blatt im System); die Kopfleiste (▶ ■ …), offene Blättchen und die Meldung bleiben bedienbar.
++// Der Tipp selbst wirkt nicht auf das, was darunter liegt (Schutz wie beim Menü).
++window.addEventListener('pointerdown', e => {
++  const E = WP.ed, sh = EL.wpSheet; if (!E || !sh || !sh.classList.contains('open') || UI.pop) return;
++  if (E.g9 && E.g9.dock) return;
++  const t = e.target; if (!t || !t.closest) return;
++  if (sh.contains(t) || t.closest('#top,#toast,#popLayer,.pop,[data-haptic]') || t === G10E.lupe) return;
++  if (E.p || E.g10pz) return;                                          // ein Finger arbeitet gerade im Editor
++  UI.swallow = e.pointerId; UI.eatClick = performance.now() + 700;
++  if (e.cancelable) e.preventDefault();
++  e.stopImmediatePropagation();
++  wpClose();
++}, true);
++
++/* ---------- Ziehen: Lupe und sichtbares Einrasten ---------- */
++// die Rasterlinie (Sekunden, gehörte Zeit) und ihr Name, auf die ein Einsatz an der Stelle t rastet (wie wpQuant: nächste Linie, Swing)
++function g10eGridAt(E, t) {
++  const m = S.takes && S.takes[E.id], w = m && m.warp, x = tkRef(E.r), sp = w ? 60 / w.bpm : spb(), t0 = w ? w.t0 : wpT0(E.id, x && x.a);
++  const res = w ? w.res : '1/16', step = G10E_STEP[res] || .25, swing = w && !res.endsWith('T') ? w.swing : .5;
++  const b = (t - t0) / sp, k = Math.round(b / step); let q = k * step; if (swing !== .5 && (k & 1)) q += (swing - .5) * 2 * step;
++  const bpb = g10eBpb(), bar = Math.floor(q / bpb + 1e-9), inBar = q - bar * bpb, beat = Math.floor(inBar + 1e-9), sub = Math.round((inBar - beat) / step);
++  return {t: t0 + q * sp, res, q, label: 'Takt ' + (bar + 1) + ' · ' + (beat + 1) + (sub > 0 ? '.' + (sub + 1) : '') + ' · ' + res};
++}
++function g10eSnapLive(E, clientX) {
++  const gh = E.ghost; if (!gh) return;
++  const m = S.takes && S.takes[E.id], w = m && wpWarp(E.id) && !WP.ab ? m.warp : null, g = g10eGridAt(E, gh.t);
++  const fol = w && g10eFollower(E.id, gh.k, w);
++  if (w && !fol) {                                                     // quantisiert: der Strich landet beim Loslassen auf dieser Linie
++    const prev = E.g10snap;
++    E.g10snap = {t: g.t, label: g.label, on: true};
++    if (!prev || !prev.on || Math.abs(prev.t - g.t) > 1e-6) { E.g10snap.t0 = performance.now(); g10eClick(); }
++    else E.g10snap.t0 = prev.t0;
++  } else E.g10snap = {t: g.t, label: (gh.t - g.t >= 0 ? '+' : MINUS) + Math.round(Math.abs(gh.t - g.t) * 1000) + ' ms', on: false};
++  g10eLupe(E, clientX);
++}
++function g10eFollower(id, k, w) {
++  const mk = wpMarks(id) || [], o = mk[k]; if (!o) return false;
++  if (w && w.wo && !o.word) return true;
++  return o.src === 'pitch';
++}
++function g10eDrop(E, gh) {
++  const sn = E.g10snap; E.g10snap = null;
++  const moved = wpMarkMove(E.id, gh.k, wpSrcT(E, gh.t));
++  if (moved && sn && sn.on) { E.g10flash = {ts: [sn.t], t0: performance.now(), label: sn.label}; g10eFlashAnim(E); }
++  wpPaint();
++}
++function g10eFlashAnim(E) { const f = () => { if (WP.ed !== E || !E.g10flash) return; if (performance.now() - E.g10flash.t0 > 700) { E.g10flash = null; wpPaint(); return; } wpPaint(); requestAnimationFrame(f); }; requestAnimationFrame(f); }
++// Lupe ±40 ms über dem Finger
++function g10eLupe(E, clientX) {
++  const L = G10E.lupe; if (!L) return;
++  if (clientX == null || !E || !E.ghost) { L.classList.remove('on'); return; }
++  const x = tkRef(E.r); if (!x) return;
++  const r = E.cv.getBoundingClientRect(), Wl = 144, Hl = 64, dpr = Math.min(3, window.devicePixelRatio || 1);
++  L.style.left = Math.round(clamp(clientX - Wl / 2, 4, window.innerWidth - Wl - 4)) + 'px';
++  L.style.top = Math.round(Math.max(4, r.top - Hl - 6)) + 'px';
++  L.classList.add('on');
++  if (L.width !== Wl * dpr) { L.width = Wl * dpr; L.height = Hl * dpr; }
++  const g = L.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
++  g.fillStyle = '#0e1014'; g.fillRect(0, 0, Wl, Hl);
++  const tc = E.ghost.t, V = {a: tc - .04, W: .08}, X = t => (t - V.a) / V.W * Wl;
++  const sn = E.g10snap;
++  // Raster in der Lupe
++  const m = S.takes[E.id], w = m && m.warp, sp = w ? 60 / w.bpm : spb(), t0 = w ? w.t0 : wpT0(E.id, x.a), step = G10E_STEP[w ? w.res : '1/16'] || .25;
++  for (let q = Math.floor((V.a - t0) / sp / step) * step; t0 + q * sp <= V.a + V.W; q += step) { const xx = Math.round(X(t0 + q * sp)) + .5; g.fillStyle = '#4a5466'; g.fillRect(xx - .5, 0, 1, Hl); }
++  if (sn) { const xs = X(sn.t); if (xs >= 0 && xs <= Wl) { g.fillStyle = sn.on ? '#f0b030' : '#8b93a3'; g.fillRect(Math.round(xs) - 1, 0, 2, Hl); } }
++  const buf = g10eHeardBuf(E, x.a), live = !!(w && !WP.ab && !wpMapInfo(w.map).ident), inv = live && buf === wpBase(E.id, x.a) ? (t => VSM.warpInverse(w.map, t)) : null;
++  if (buf) { g.fillStyle = '#7fb0de'; g.strokeStyle = '#7fb0de'; g10eWaveDeep(g, buf, inv, V, Wl, Hl * .55, Hl * .4); }
++  g.fillStyle = '#ffd35a'; g.fillRect(Wl / 2 - 1, 0, 2, Hl);
++  g.fillStyle = '#8b93a3'; g.font = WP.font || '600 10px sans-serif'; g.fillText('±40 ms', 4, Hl - 4);
++}
++// die gehörte Fassung, sobald sie gerechnet ist, sonst das Original (über die Zeitkarte gelegt)
++function g10eHeardBuf(E, a) {
++  const id = E.id, w = wpWarp(id), c = WP.cache.get(id);
++  if (w && !WP.ab && wpReady(id) && c && c.buf) return c.buf;
++  return wpBase(id, a);
++}
++// Welle tief gezoomt: unter 24 Samples je Pixel echte Form (Min/Max mit Vorzeichen), unter 2 Samples je Pixel als Sample-Linie
++function g10eWaveDeep(g, b, inv, V, Wp, mid, hh) {
++  const d = b.getChannelData(0), sr = b.sampleRate, n = d.length, s = v => (v < 0 ? -Math.sqrt(-v) : Math.sqrt(v)) * hh;
++  const spp = V.W * sr / Wp;
++  const tt = t => (inv ? inv(t) : t) * sr;
++  if (spp <= 2) {
++    g.lineWidth = 1.25; g.beginPath(); let started = false;
++    for (let px = 0; px <= Wp; px++) {
++      const f = tt(V.a + px / Wp * V.W), i = Math.floor(f), u = f - i; if (i < 0 || i + 1 >= n) { started = false; continue; }
++      const v = d[i] + (d[i + 1] - d[i]) * u, y = mid - s(v);
++      if (!started) { g.moveTo(px, y); started = true; } else g.lineTo(px, y);
++    }
++    g.stroke(); return true;
++  }
++  for (let px = 0; px < Wp; px++) {
++    const i0 = Math.max(0, Math.floor(tt(V.a + px / Wp * V.W))), i1 = Math.min(n, Math.ceil(tt(V.a + (px + 1) / Wp * V.W)));
++    if (i1 <= i0) continue;
++    let lo = 0, hi = 0; for (let i = i0; i < i1; i++) { const v = d[i]; if (v < lo) lo = v; else if (v > hi) hi = v; }
++    const y0 = mid - s(hi), y1 = mid - s(lo); g.fillRect(px, y0, 1, Math.max(1, y1 - y0));
++  }
++  return true;
++}
++
++/* ---------- Zeichnen (aus wpPaint) ---------- */
++// über der Welle, unter den Strichen: Einsatz-Kurve (blass, unten)
++function g10ePaintUnder(E, g, buf, inv, V, Wp, Hp) {
++  if (!buf || E.g9) return;
++  const key = wpBid(buf) + '|' + (inv ? 'i' : '') + '|' + V.a + '|' + V.W + '|' + Wp, c = E.g10on;
++  let on = c && c.key === key ? c.v : null;
++  if (!on) {
++    const d = buf.getChannelData(0), sr = buf.sampleRate, n = d.length, win = Math.max(.01, V.W / Wp); on = new Float32Array(Wp);
++    const lv = (t0, t1) => { let i0 = Math.max(0, Math.floor((inv ? inv(t0) : t0) * sr)), i1 = Math.min(n, Math.floor((inv ? inv(t1) : t1) * sr)); if (i1 <= i0) return 0;
++      let s = 0, k = 0; for (let i = i0, st = Math.max(1, (i1 - i0) >> 6); i < i1; i += st, k++) s += d[i] < 0 ? -d[i] : d[i]; return s / Math.max(1, k); };
++    for (let px = 0; px < Wp; px++) { const t = V.a + (px + .5) / Wp * V.W, e1 = lv(t, t + win), e0 = lv(t - win, t); on[px] = clamp(20 * Math.log10((e1 + 1e-5) / (e0 + 1e-5)) / 24, 0, 1); }
++    E.g10on = {key, v: on};
++  }
++  g.fillStyle = 'rgba(240,176,48,.22)';
++  for (let px = 0; px < Wp; px++) if (on[px] > .04) { const h = on[px] * 18; g.fillRect(px, Hp - h, 1, h); }
++}
++// über den Strichen: Versatz-Zahlen (ab 1 Takt), Einrast-Linie + Blase, Aufblitzen, Halte-Ring, Abspielmarke, [+]-Hinweis
++function g10ePaintOver(E, g, Pp, X, Wp, Hp, mk) {
++  if (E.g9) return;
++  const sp = spb(), now = performance.now();
++  E.g10off = null;
++  if (E.vw.W <= g10eBpb() * sp * 1.001 && mk.length) {                // ab Zoom „1 Takt“: Versatz zum Raster je Strich
++    E.g10off = [];
++    g.font = WP.font; g.textBaseline = 'alphabetic';
++    mk.forEach((k, i) => {
++      if (E.ghost && E.ghost.k === i) return;
++      const t = Pp[i], xx = X(t); if (xx < -20 || xx > Wp + 20) return;
++      const gr = g10eGridAt(E, t), ms = Math.round((t - gr.t) * 1000), a = Math.abs(ms);
++      E.g10off.push({k: i, ms, x: xx});
++      const tx = (ms > 0 ? '+' : ms < 0 ? MINUS : '') + a, tw = g.measureText(tx).width, x0 = clamp(xx + 4, 0, Wp - tw - 2);
++      g.fillStyle = 'rgba(14,16,20,.78)'; g.fillRect(x0 - 2, 12, tw + 4, 13);
++      g.fillStyle = a <= 10 ? '#5fd38a' : a <= 40 ? '#f0b030' : '#ff5c5c'; g.fillText(tx, x0, 22);
++    });
++  }
++  const line = (t, col, wd) => { const xx = X(t); if (xx < -4 || xx > Wp + 4) return; g.fillStyle = col; g.fillRect(Math.round(xx) - wd / 2, 0, wd, Hp); };
++  const sn = E.g10snap;
++  if (sn && E.ghost) {
++    const glow = sn.on && now - (sn.t0 || 0) < 150;
++    line(sn.t, sn.on ? (glow ? 'rgba(255,211,90,.95)' : 'rgba(240,176,48,.75)') : 'rgba(139,147,163,.6)', sn.on ? (glow ? 4 : 2) : 1);
++    g10eBubble(g, X(E.ghost.t), Wp, sn.label, sn.on);
++    if (glow) g10eReq(E);
++  }
++  const fl = E.g10flash;
++  if (fl) { const u = (now - fl.t0) / 150; if (u < 1) for (const t of fl.ts) line(t, 'rgba(255,211,90,' + (.95 * (1 - u)).toFixed(2) + ')', 4);
++    if (fl.label && now - fl.t0 < 700) g10eBubble(g, X(fl.ts[0]), Wp, fl.label, true); }
++  const ho = E.g10hold;
++  if (ho) { const u = Math.min(1, (now - ho.t0) / G10E_HOLD); g.strokeStyle = '#ffd35a'; g.lineWidth = 3; g.beginPath(); g.arc(ho.x, 22, 14, -Math.PI / 2, -Math.PI / 2 + u * 2 * Math.PI); g.stroke(); }
++  const ph = E.g10pv ? E.g10pv.h : E.g10tp;
++  if (ph != null && isFinite(ph)) line(ph, '#5fd38a', 2);
++}
++function g10eBubble(g, x, Wp, tx, on) {
++  g.font = WP.lfont || WP.font; const tw = g.measureText(tx).width, bw = tw + 12, x0 = clamp(x - bw / 2, 1, Wp - bw - 1), y0 = 26;
++  g.fillStyle = on ? '#f0b030' : 'rgba(28,31,37,.95)'; g.fillRect(x0, y0, bw, 18);
++  g.fillStyle = on ? '#0e1014' : '#f2f4f8'; g.fillText(tx, x0 + 6, y0 + 13);
++  g.font = WP.font;
++}
++// nach dem Zeichnen: Mini-Karte, Zoom-Taste, [+], Info
++function g10eAfterPaint(E, a, mk, Pp) {
++  if (!E.g10map) return;
++  g10eTxt(E.zb, g10eZoomLbl(E));
++  E.g10addB.classList.toggle('on', !!E.g10add); E.g10addB.setAttribute('aria-pressed', String(!!E.g10add));
++  if (E.g10add) wpInfoTxt('Tippe auf die Welle: dort kommt der neue Strich hin');
++  else if (E.g10run) wpInfoTxt('Prüf-Lauf · Strich ' + (E.g10run.k + 1) + ' von ' + mk.length + ' · Tipp beendet');
++  g10eMapPaint(E, a, mk, Pp);
++}
++function g10eMapPaint(E, a, mk, Pp) {
++  const cv = E.g10mc, wr = cv.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
++  const Wm = Math.max(1, Math.round(wr.width)), Hm = Math.max(1, Math.round(wr.height));
++  if (cv.width !== Wm * dpr || cv.height !== Hm * dpr) { cv.width = Wm * dpr; cv.height = Hm * dpr; }
++  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
++  const R0 = g10eMapRange(a), X = t => (t - R0.a) / R0.W * Wm, buf = g10eHeardBuf(E, a);
++  g.fillStyle = '#0e1014'; g.fillRect(0, 0, Wm, Hm);
++  if (buf) {
++    const key = wpBid(buf) + '|' + R0.a + '|' + R0.W + '|' + Wm; let pk = E.g10mpk && E.g10mpk.key === key ? E.g10mpk.v : null;
++    if (!pk) { const d = buf.getChannelData(0), sr = buf.sampleRate; pk = new Float32Array(Wm);
++      for (let px = 0; px < Wm; px++) { const i0 = Math.max(0, Math.floor((R0.a + px / Wm * R0.W) * sr)), i1 = Math.min(d.length, Math.floor((R0.a + (px + 1) / Wm * R0.W) * sr));
++        let m = 0; for (let i = i0, st = Math.max(1, (i1 - i0) >> 6); i < i1; i += st) { const v = d[i] < 0 ? -d[i] : d[i]; if (v > m) m = v; } pk[px] = m; }
++      E.g10mpk = {key, v: pk}; }
++    g.fillStyle = '#4f6f8f'; const mid = Hm / 2, hh = Hm * .42;
++    for (let px = 0; px < Wm; px++) if (pk[px] > 0) { const h = Math.max(.5, Math.sqrt(pk[px]) * hh); g.fillRect(px, mid - h, 1, 2 * h); }
++  }
++  g.fillStyle = 'rgba(242,244,248,.55)'; for (const t of Pp) { const xx = Math.round(X(t)); g.fillRect(xx, 0, 1, 6); }
++  const v = E.vw, x0 = X(v.a), x1 = X(v.a + v.W), xw = Math.max(3, x1 - x0);
++  g.fillStyle = 'rgba(255,211,90,.16)'; g.fillRect(x0, 0, xw, Hm);
++  g.strokeStyle = '#ffd35a'; g.lineWidth = 1.5; g.strokeRect(x0 + .75, .75, xw - 1.5, Hm - 1.5);
++  const ph = E.g10pv ? E.g10pv.h : E.g10tp; if (ph != null && isFinite(ph)) { g.fillStyle = '#5fd38a'; g.fillRect(Math.round(X(ph)), 0, 2, Hm); }
++}
++
++/* ---------- Prüfen: ▶ Hören, Klick auf der Rasterlinie, Abspielmarke, Prüf-Lauf, Folgen ---------- */
++function g10eClick(force) {                                            // Einrast-Klick: 3 ms, −30 dBFS, nie während einer Aufnahme
++  if (g10eRec() || (!force && !g10ePref('g10eClk', true))) return false;
++  const c = AU.ctx; if (!c || c.state !== 'running' || !AU.masterSum) return false;
++  const t = c.currentTime + .005, o = c.createOscillator(), gn = c.createGain();
++  o.frequency.value = 2400; gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(.0316, t + .0005); gn.gain.setValueAtTime(.0316, t + .0025); gn.gain.linearRampToValueAtTime(0, t + .003);
++  o.connect(gn); gn.connect(AU.masterSum); try { o.start(t); o.stop(t + .01); } catch (e) {}
++  o.onended = () => { try { o.disconnect(); gn.disconnect(); } catch (e) {} };
++  G10E.clicks++; return true;
++}
++function g10eGridClick(c, t) {                                          // Prüf-Klick auf der Rasterlinie (wie das Metronom, kurz)
++  const o = c.createOscillator(), gn = c.createGain();
++  o.frequency.value = 1760; gn.gain.setValueAtTime(.18, t); gn.gain.exponentialRampToValueAtTime(.001, t + .02);
++  o.connect(gn); gn.connect(AU.masterSum); try { o.start(t); o.stop(t + .03); } catch (e) {}
++  o.onended = () => { try { o.disconnect(); gn.disconnect(); } catch (e) {} };
++}
++// [▶] am Strich k: von 80 ms davor bis zum nächsten Strich (gehörte Fassung); Schalter „Klick“: Klick genau auf der Rasterlinie
++function g10ePlayMark(E, k, then, klick) {
++  const x = tkRef(E.r); if (!x || g10eRec()) return null;
++  ensureAudio(); const c = AU.ctx; if (!c || !AU.masterSum) return null;
++  const mk = wpMarks(E.id) || [], Pp = E.mpos && E.mpos.length === mk.length ? E.mpos : mk.map(m => m.t); if (!mk[k]) return null;
++  const buf = g10eHeardBuf(E, x.a); if (!buf) return null;
++  const from = Math.max(0, Pp[k] - .08), to = Math.min(buf.duration, k + 1 < Pp.length ? Pp[k + 1] : x.a.out), dur = Math.max(.02, to - from);
++  g10ePvStop(E);
++  const src = c.createBufferSource(), gn = c.createGain(); src.buffer = buf; gn.gain.value = 1;
++  src.connect(gn); gn.connect(AU.masterSum);
++  const t0 = c.currentTime + .03; src.start(t0, from, dur);
++  const gr = g10eGridAt(E, Pp[k]), clk = (klick || g10ePref('g10eKlick', false)) && gr.t >= from && gr.t <= from + dur ? gr.t : null;
++  if (clk != null) g10eGridClick(c, t0 + (clk - from));
++  const pv = {src, gn, t0, from, dur, ctx: c, h: from, k};
++  E.g10pv = pv; E.sel = k;
++  src.onended = () => { if (E.g10pv === pv) { E.g10pv = null; try { gn.disconnect(); } catch (e) {} if (WP.ed === E) { if (then) then(); else wpPaint(); } } };
++  G10E.last = {k, mark: Pp[k], next: to, from, dur, click: clk, clickAt: clk != null ? t0 + (clk - from) : null, start: t0};
++  G10E.plays.push(G10E.last); if (G10E.plays.length > 50) G10E.plays.shift();
++  const f = () => { if (WP.ed !== E || E.g10pv !== pv) return; pv.h = from + Math.max(0, c.currentTime - t0); g10eFollow(E, pv.h); wpPaint(); requestAnimationFrame(f); };
++  requestAnimationFrame(f);
++  return G10E.last;
++}
++function g10ePvStop(E) { const pv = E && E.g10pv; if (!pv) return; E.g10pv = null; try { pv.src.onended = null; pv.src.stop(); } catch (e) {} try { pv.gn.disconnect(); } catch (e) {} }
++// Folgen: läuft die Abspielmarke aus dem Bild, blättert die Ansicht eine Seite weiter (nicht während ein Finger arbeitet / kurz danach)
++function g10eFollow(E, h) {
++  if (!g10ePref('g10eFol', true) || E.p || E.g10pz || !E.vw || performance.now() - (E.g10hand || 0) < 1500) return false;
++  const v = E.vw; if (h >= v.a && h < v.a + v.W) return false;
++  E.va = h >= v.a + v.W ? v.a + v.W * Math.floor((h - v.a) / v.W) : h - v.W * .1; return true;
++}
++// Prüf-Lauf: ▶ an jedem Strich nacheinander (mit Klick), die Ansicht folgt; Tipp oder [Prüf-Lauf] beendet
++function g10eRun(E) {
++  if (E.g10run) { g10eRunStop(E); wpPaint(); return; }
++  const mk = wpMarks(E.id) || []; if (!mk.length) return;
++  const pick = UI.pop && UI.pop.name === 'wpsel' && E.sel >= 0;     // ab dem gewählten Strich, sonst ab dem ersten sichtbaren
++  let k = pick ? E.sel : 0; const Pp = E.mpos || mk.map(m => m.t);
++  if (!pick && E.vw) { const i = Pp.findIndex(t => t >= E.vw.a); if (i >= 0) k = i; }
++  E.g10run = {k, n: 0};
++  const step = () => { const R0 = E.g10run; if (!R0 || WP.ed !== E) return; const mm = wpMarks(E.id) || []; if (R0.k >= mm.length) { g10eRunStop(E); wpPaint(); return; }
++    const P2 = E.mpos || mm.map(m => m.t);
++    if (E.vw && (P2[R0.k] < E.vw.a || P2[R0.k] > E.vw.a + E.vw.W * .85)) E.va = P2[R0.k] - E.vw.W * .2;
++    const r = g10ePlayMark(E, R0.k, () => { if (E.g10run === R0) { R0.k++; R0.n++; setTimeout(step, 120); } }, true);
++    if (!r) { g10eRunStop(E); wpPaint(); } };
++  step();
++}
++function g10eRunStop(E) { if (E && E.g10run) { E.g10run = null; g10ePvStop(E); } }
++// Abspielmarke beim normalen Abspielen (Hauptschleife): wo steht der Kopf im Take dieses Editors (gehörte Zeit)?
++function g10eWhere(E, bAud) {
++  if (!R.playing || bAud == null) return null;
++  const x = tkRef(E.r); if (!x) return null; const a = x.a, sp = spb(), bpb = g10eBpb();
++  if (E.r.vox) {
++    if (!R.songPlay || typeof songBeatOf !== 'function') return null;
++    const sb = songBeatOf(bAud); if (sb == null) return null;
++    const sa = a.bar * bpb + a.at, se = Math.min((a.bar + a.len) * bpb, sa + (a.out - a.in) / sp);
++    return sb >= sa && sb < se ? a.in + (sb - sa) * sp : null;
++  }
++  const st = E.r.t; if (R.songPlay || R.slot[st] !== E.r.s) return null;
++  const L = x.clip.len * bpb, segA = Math.min(a.at, L), segB = Math.min(L, segA + (a.out - a.in) / sp);
++  let cb = bAud - (R.cstart[st] || 0); if (cb < 0) return null; cb %= L;
++  return cb >= segA && cb < segB ? a.in + (cb - segA) * sp : null;
++}
++function g10eFrame(bAud) {
++  const E = WP.ed; if (!E || E.g9 || !E.cv || E.g10pv) return;
++  let h = null; try { h = g10eWhere(E, bAud); } catch (e) { h = null; }
++  if (h === E.g10tp) return;
++  const was = E.g10tp; E.g10tp = h;
++  const now = performance.now(); if (now - (E.g10tpT || 0) < 33 && h != null && was != null) return;   // ≤ 30 Bilder/s
++  E.g10tpT = now;
++  if (h != null) g10eFollow(E, h);
++  g10eReq(E);
++}
++
++/* ---------- ⋯-Blatt: Prüfen + Quantisieren fein + Ansicht ---------- */
++function g10eOptPop(anchor) {
++  const E = WP.ed; if (!E) return;
++  const tg = (k, on) => `<button class="rb${on ? ' on' : ''}" data-t="${k}" aria-pressed="${on}">${on ? 'An' : 'Aus'}</button>`;
++  openPop(anchor, p => {
++    p.classList.add('g10opt'); guardTouch(p);
++    const o = E.g10o, qr = o.qr || 0;
++    p.innerHTML = `<h4>Prüfen · Quantisieren fein</h4>
++      <div class="g10r"><span>Nur Wortanfänge</span>${tg('wo', !!o.wo)}</div>
++      <div class="g10r"><span>Bereich: nur Einsätze weiter als … neben der Linie</span></div>
++      <div class="g10q">${[0, 10, 15, 25, 40].map(v => `<button class="rb${v === qr ? ' on' : ''}" data-q="${v}" aria-pressed="${v === qr}">${v ? v + ' ms' : 'Aus'}</button>`).join('')}</div>
++      <div class="g10r"><span>Klick auf der Rasterlinie beim Hören</span>${tg('klick', !!g10ePref('g10eKlick', false))}</div>
++      <div class="g10r"><span>Einrast-Klick beim Ziehen</span>${tg('clk', !!g10ePref('g10eClk', true))}</div>
++      <div class="g10r"><span>Ansicht folgt der Abspielmarke</span>${tg('fol', !!g10ePref('g10eFol', true))}</div>
++      <div class="g10r"><span>Große Welle (Regler einklappen)</span>${tg('big', !!g10ePref('g10eBig', false))}</div>
++      <button class="mbtn rb g10run" data-a="run">${E.g10run ? 'Prüf-Lauf beenden' : 'Prüf-Lauf: Strich für Strich hören'}</button>`;
++    onTap(p, bt => {
++      const Q = WP.ed; if (!Q) { closePop(); return; }
++      if (bt.dataset.a === 'run') { closePop(); g10eRun(Q); return; }
++      if (bt.dataset.q != null) { g10eSetFine(Q, {qr: +bt.dataset.q}); p.querySelectorAll('[data-q]').forEach(b => { const on = b === bt; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); return; }
++      const k = bt.dataset.t, on = !bt.classList.contains('on');
++      if (k === 'wo') g10eSetFine(Q, {wo: on});
++      else if (k === 'klick') setUiPref('g10eKlick', on);
++      else if (k === 'clk') setUiPref('g10eClk', on);
++      else if (k === 'fol') setUiPref('g10eFol', on);
++      else if (k === 'big') { setUiPref('g10eBig', on); EL.wpSheet.classList.toggle('g10big', on); requestAnimationFrame(() => { if (WP.ed) wpPaint(); }); }
++      bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); bt.textContent = on ? 'An' : 'Aus';
++      haptic('tick');
++    }, 'button');
++  }, {name: 'g10opt', above: true});
++}
++// Nur Wortanfänge / Q-Bereich: ist der Take quantisiert, gilt es sofort (ein Undo), sonst beim nächsten Quantisieren
++function g10eSetFine(E, patch) {
++  Object.assign(E.g10o, patch);
++  const m = S.takes && S.takes[E.id], w = m && m.warp; if (!w) { wpPaint(); return false; }
++  const before = JSON.stringify(S.takes);
++  if (E.g10o.wo) w.wo = true; else delete w.wo;
++  if (E.g10o.qr > 0) w.qr = E.g10o.qr; else delete w.qr;
++  wpRequant(E.id, w);
++  if (JSON.stringify(S.takes) === before) { wpPaint(); return false; }
++  undoPush({kind: 'takes', before, label: 'Quantisieren fein · Audio'}); wpAfter(E.id); wpMovedToast(E.id);
++  return true;
++}
++// Feinregeln in wpQuant: Q-Bereich (nahe Einsätze bleiben genau stehen), Nur Wortanfänge und Tonwechsel-Marken neuer Erkennungen
++// (folgen anteilig zwischen den gerasteten Nachbarn). Ohne wo/qr/src ändert sich nichts (alte Takes: dieselbe Karte, Regel 28).
++function g10eFine(times, q, mk, o, grid, swing, bpm, t0) {
++  const n = times.length, hasSrc = mk.some(k => k.src === 'pitch'), qr = isNum(o.qr) && o.qr > 0 ? o.qr / 1000 : 0;
++  if (!o.wo && !qr && !hasSrc) return q;
++  const out = Array.from(q), sp = 60 / bpm, step = G10E_STEP[grid] || .25, sw = grid.endsWith('T') ? .5 : swing;
++  if (qr) for (let k = 0; k < n; k++) {
++    const b = (times[k] - t0) / sp, j = Math.round(b / step); let g = j * step; if (sw !== .5 && (j & 1)) g += (sw - .5) * 2 * step;
++    if (Math.abs(t0 + g * sp - times[k]) <= qr + 1e-9) out[k] = times[k];
++  }
++  const fol = mk.map(k => (o.wo && !k.word) || k.src === 'pitch');
++  if (!fol.some(Boolean)) return out;
++  const A = []; for (let k = 0; k < n; k++) if (!fol[k]) A.push(k);
++  if (!A.length) return times.slice();
++  for (let k = 0; k < n; k++) {
++    if (!fol[k]) continue;
++    let i = -1, j = -1; for (const a of A) { if (a < k) i = a; else { j = a; break; } }
++    if (i >= 0 && j >= 0) { const u = (times[k] - times[i]) / (times[j] - times[i]); out[k] = out[i] + u * (out[j] - out[i]); }
++    else { const a = i >= 0 ? i : j; out[k] = times[k] + (out[a] - times[a]); }
++  }
++  return out;
++}
++
++// Text einer Taste setzen, ohne ihr Haptik-Label zu löschen
++function g10eTxt(node, tx) {
++  if (!node) return; let f = node.firstChild;
++  if (!f || f.nodeType !== 3) { if (!node.querySelector(':scope > .g10hl')) { node.textContent = tx; return; } f = document.createTextNode(''); node.insertBefore(f, node.firstChild); }
++  if (f.nodeValue !== tx) f.nodeValue = tx;
++}
++function g10eNormFine(o, w) {
++  if (!o) return o;
++  if (w.wo === true) o.wo = true;
++  if (isNum(w.qr) && w.qr > 0) o.qr = clamp(Math.round(w.qr), 1, 200);
++  return o;
++}
++function g10eDef(id, k) { const E = WP.ed; return E && E.id === id && E.g10o ? E.g10o[k] || undefined : undefined; }
++function g10eSelInfo(k) {
++  const E = WP.ed, o = E && E.g10off && E.g10off.find(q => q.k === k);
++  return o ? ' · ' + (o.ms > 0 ? '+' : o.ms < 0 ? MINUS : '') + Math.abs(o.ms) + ' ms' : '';
++}
++
++/* ---------- Test-API ---------- */
++Object.assign(WP_API, {
++  g10Info: () => { const E = WP.ed; return {clicks: G10E.clicks, last: G10E.last ? Object.assign({}, G10E.last) : null, plays: G10E.plays.length,
++    ed: E ? {zoom: E.zoom, W: E.vw ? E.vw.W : null, va: E.vw ? E.vw.a : null, free: E.g10W || null, prev: !!E.g10prev, add: !!E.g10add, run: E.g10run ? Object.assign({}, E.g10run) : null,
++      snap: E.g10snap ? {t: E.g10snap.t, label: E.g10snap.label, on: E.g10snap.on} : null, flash: !!E.g10flash, off: E.g10off ? E.g10off.map(o => Object.assign({}, o)) : null,
++      tp: E.g10tp, pv: E.g10pv ? E.g10pv.h : null, fine: Object.assign({}, E.g10o), lupe: !!(G10E.lupe && G10E.lupe.classList.contains('on')), minW: g10eMinW(E), sel: E.sel} : null}; },
++  g10Grid: t => { const E = WP.ed; return E ? g10eGridAt(E, t) : null; },
++  g10Play: k => { const E = WP.ed; return E ? g10ePlayMark(E, k) : null; },
++  g10Run: () => { const E = WP.ed; if (E) g10eRun(E); return !!(E && E.g10run); },
++  g10Fine: patch => { const E = WP.ed; return E ? g10eSetFine(E, patch) : false; },
++  g10View: (va, W) => { const E = WP.ed; if (!E) return null; if (W === 0) { E.g10W = null; E.zoom = 0; } else if (W === 'w') { E.g10W = null; E.zoom = -1; } else if (W) E.g10W = W; if (va != null) E.va = va; wpPaint(); return {a: E.vw.a, W: E.vw.W}; },
++  g10Zoom: () => { const E = WP.ed; if (E) g10eZoomBtn(E); return E ? g10eZoomLbl(E) : null; },
++  g10Click: () => g10eClick(true),
++  g10Pop: () => { const n = UI.pop ? UI.pop.name : null; closePop(); return n; },
++  g10Perf: on => { G10E.perf = !!on; const f = G10E.frames.slice(); if (on) G10E.frames.length = 0; return f; },
++});
++
++
+ /* ======================= G9 — Songtext aus Gesang (Nachtrag 8, Paket G9; G9d = Einbau G9a-Kern + G9c-Text-Modus + G9b-V) =======================
+    Start-Pfad (A.13): Kern-Fabrik g9Make (G9a, DOM-frei, erst beim ersten Bedarf ausgeführt; auch im VS5a-Worker über toString),
+    Normalisierer (Take-Feld `ly`, Format 5 additiv), Undo-Art 'ly' (§5.6), Marken-Haken in wpEdit (§6.5), Haken „Aufnahme hat Vorrang“
