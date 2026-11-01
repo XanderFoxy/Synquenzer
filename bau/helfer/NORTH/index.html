@@ -37087,7 +37087,7 @@ const MD_CELL = {
   mDyf: {l: 'DYN FILTER', n: [0, 9], sub: v => (v ? 'Anschlag öffnet' : 'aus'), inert: s => s.mWav === 'A1', what: 'Anschlag öffnet die Klangfarbe'},
   mDec: {l: 'DECAY', n: [0, 50], sub: (v, s) => mdTime(mdT(v)), what: 'Länge des Tons'},
   mode: {l: 'MODE', vals: ['E1', 'E2', 'E3', 'L', 'P'], dyn: 1, m: 'mDm', d: 'mDd', what: 'Abklingform; Zahl = Dynamic Decay (Länge bei leisem Anschlag)'},
-  mBnd: {l: 'BEND', n: [-50, 50], bip: 1, sub: v => (v ? 'Start ' + (v > 0 ? '+' : '−') + mdDec(48 * (v / 50) * (v / 50), 1) + ' HT' : 'aus'), what: 'Tonhöhen-Biegung je Anschlag'},
+  mBnd: {l: 'BEND', n: [-50, 50], bip: 1, sub: v => (v ? (v > 0 ? '+' : '−') + mdDec(48 * (v / 50) * (v / 50), 1) + ' HT' : 'aus'), what: 'Tonhöhen-Biegung je Anschlag'},
   mBt: {l: 'TIME', n: [0, 50], sub: v => mdTime(mdT(v)), what: 'Dauer der Biegung'},
   mPit: {l: 'PITCH', n: [0, 127.5], pit: 1, sub: v => mdNote(v), what: 'Grundtonhöhe'},
   mWav: {l: 'WAVE', vals: MDN.WAVES, list: 'wave', sub: v => (MD_WAVE[v] || [''])[0], what: 'Synthesemodell'},
