@@ -73,12 +73,13 @@ rep("    const nvE = p.tracks.filter(t => t.sound && t.sound._nv).map(t => t.sou
 rep("  const gb = ggbNorm(o.gb); if (gb) v4.gb = gb; ", "  const gb = ggbNorm(o.gb); if (gb) v4.gb = gb; { const ss = srSongNorm(o.sr, bars); if (ss) v4.sr = ss; }   /* N8 I1e: Fahrten im Song (F3) */ ", 'normSong');
 rep("function nvLockOf(p) { const N = p && p._newer; return N && (N.f > SQStore.PROJECT_FORMAT_READ || (N.e.length && !nvOld(N.w))) ? N : null; }",
   "function nvLockOf(p) { const N = p && p._newer; return N && (N.f > SQStore.PROJECT_FORMAT_READ || (N.e.length && !nvOld(N.w)) || (N.n && N.n.length)) ? N : null; }   // N8 A.4: + unknown S.need", 'nvLockOf');
-rep("function serializeProject() { syncUi(); return JSON.stringify(S, stripReplacer); }", "function serializeProject() { syncUi(); needSync(S); return JSON.stringify(S, stripReplacer); }", 'serializeProject');
-rep("  if (p === S) syncUi();\n  const o = SQStore.buildProjectFile(", "  if (p === S) syncUi();\n  needSync(p);                                                   // N8 A.4\n  const o = SQStore.buildProjectFile(", 'projectFileObj');
+rep("function serializeProject() { syncUi(); return JSON.stringify(S, stripReplacer); }", "function serializeProject() { syncUi(); return needWith(S, () => JSON.stringify(S, stripReplacer)); }   // N8 A.4: need from the data, S unchanged", 'serializeProject');
+rep("  const o = SQStore.buildProjectFile(p, lib ? (LIB.ok ? LIB.lib.all() : []) : null, VERSION);", "  const o = needWith(p, () => SQStore.buildProjectFile(p, lib ? (LIB.ok ? LIB.lib.all() : []) : null, VERSION));   // N8 A.4", 'projectFileObj');
 
 /* ---------- undo 'sr' (Z8) ---------- */
 rep("  if (e.kind === 'group') return null;                     // V2a: the items carry their own states\n", x => x + "  if (e.kind === 'sr') return srSnap();                   // N8 I1c\n", 'undoState');
 rep("  else if (e.kind === 'part') partRestore(JSON.parse(val));\n", x => "  else if (e.kind === 'sr') srRestore(JSON.parse(val));            // N8 I1c\n" + x, 'undoApply');
+rep("  volatile: ['ui', 'settings.coach'], kinds: new Map(),", "  volatile: ['ui', 'settings.coach', 'need'], kinds: new Map(),   // N8 A.4: need is derived from the data", 'HIST volatile');
 rep("HIST.kind('fx', () => [['fxBus']]);\n", x => x + "HIST.kind('sr', () => [['sr']]);                            // N8 I1c\n", 'HIST sr');
 
 /* ---------- engines (Z2) ---------- */

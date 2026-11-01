@@ -27,6 +27,12 @@ function needSync(p) {
   if (all.length) { if (JSON.stringify(p.need) !== JSON.stringify(all)) { delete p.need; p.need = all; } }
   else if ('need' in p) delete p.need;
 }
+// the written copy carries need; the open project itself stays as it is (the history recorder compares it, VC2a)
+function needWith(p, fn) {
+  if (!p || typeof p !== 'object') return fn();
+  const had = 'need' in p, old = p.need; needSync(p);
+  try { return fn(); } finally { if (had) { delete p.need; p.need = old; } else delete p.need; }
+}
 // normalizeProject (A.4): the known features are recomputed, unknown ones lock the project (returned for _newer.n)
 function needNorm(obj, p) {
   const raw = obj && Array.isArray(obj.need) ? obj.need.filter(x => typeof x === 'string' && /^[a-z][a-z0-9]{0,15}$/.test(x)) : [];
@@ -390,11 +396,12 @@ function srCapture(scope, t) {
   const cap = {p: near ? near.p : x, sc, t: ti, base: {}, copy0: {}, undo0: UNDO.length, keys: {}};
   for (let i = 0; i < NT(); i++) {
     const tr = S.tracks[i]; if (!tr || (sc === 'track' && i !== ti)) continue;
+    if (tr.kind === 'synth') wkFlush(i);                              // pending knob values of the ground first
     cap.base[i] = {sound: JSON.stringify(tr.sound), gfx: tr.gfx ? JSON.stringify(tr.gfx) : null};
     const eff = srEffSnd(i, AU.ctx ? AU.ctx.currentTime : 0), fk = SREFF.get(eff);
     if (eff !== tr.sound) { tr.sound = eff; if (fk && fk.gfx && tr.gfx) Object.assign(tr.gfx, fk.gfx); }
     cap.copy0[i] = {}; for (const k of srKeysOf(tr)) cap.copy0[i][k] = JSON.stringify(srGet(tr, k));
-    if (tr.kind === 'synth' && AU.synth[i]) { R.sr.sent[i] = false; AU.synth[i].set(wkFlat(tr.sound), false, null, null, null, {sr: null}); }
+    if (tr.kind === 'synth' && AU.synth[i]) { R.sr.sent[i] = false; AU.synth[i].set(wkFlat(tr.sound), false, tr.sound.engine === 'fm6' ? wkFm6Patch(i) : null, null, tr.sound.engine === 'mk' ? tr.sound.p.mk : null, {sr: null}); }
   }
   R.sr.cap = cap;
   return {ok: true, p: cap.p};
@@ -434,7 +441,8 @@ function srCapEnd(keep) {
   // one message per engine: base without force and the table (6.3 point 6)
   for (const i in cap.base) {
     const ii = +i, tr = S.tracks[ii]; if (!tr) continue;
-    if (tr.kind === 'synth' && AU.synth[ii]) { const m = srMsgOf(ii, false); R.sr.sent[ii] = m != null; AU.synth[ii].set(wkFlat(tr.sound), false, null, null, null, m === undefined ? undefined : {sr: m}); }
+    if (tr.kind === 'synth') { WKSET[ii] = null; clearTimeout(WKFM[ii]); WKFM[ii] = 0; }   // late knob values of the copy never reach the engine
+    if (tr.kind === 'synth' && AU.synth[ii]) { const m = srMsgOf(ii, false); R.sr.sent[ii] = m != null; AU.synth[ii].set(wkFlat(tr.sound), false, tr.sound.engine === 'fm6' ? wkFm6Patch(ii) : null, null, tr.sound.engine === 'mk' ? tr.sound.p.mk : null, m === undefined ? undefined : {sr: m}); }
     applyTrackParams(ii, false);
   }
   srMainKick();
