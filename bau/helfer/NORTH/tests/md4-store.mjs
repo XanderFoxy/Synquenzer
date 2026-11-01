@@ -3,7 +3,7 @@
 import {createRequire} from 'module';
 const {chromium} = createRequire(import.meta.url)('playwright');
 const NEW = process.argv[2] || new URL('../index.html', import.meta.url).pathname;
-const OLD = process.argv[3] || '/home/user/Synquenzer/bau/werkzeug/vs-base-B.html';
+const OLD = process.argv[3] || new URL('../../../snapshots/R-4261.html', import.meta.url).pathname;
 const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
 const checks = {}; const ok = (k, v, info) => { checks[k] = info === undefined ? !!v : {ok: !!v, ...info}; };
 async function open(file) {
@@ -15,7 +15,7 @@ async function open(file) {
 const A = await open(NEW);
 
 // ---- ND4-02 / ND4-07: jedes Pad Drum -> md -> Drum -> md, je ein Undo, Undo bis vorher, Redo ----
-const r2 = await A.p.evaluate(() => {
+const r2 = await A.p.evaluate(async () => {
   const Q = SYNQUENZER, J = JSON.stringify, KEYS = MDN.KEYS;
   const drumPart = o => { const x = {}; for (const k in o) if (k !== 'md') x[k] = o[k]; return x; };   // NDSTAGE (Q4): Programm in slot.md
   const mPart = o => { const x = {}; const m = o && o.md; for (const k of KEYS) if (m && k in m) x[k] = m[k]; return x; };
@@ -66,10 +66,10 @@ const r2 = await A.p.evaluate(() => {
     if (J(s4) !== J(s3)) F(id, 'redo != nach zweitem wechsel');
     if (n() !== n0 + 4) F(id, 'undo-zahl nach redo', n() - n0);
   }
-  return {fails, md: DRUM_VOICES.filter(v => Q.padSource(v.id) === 'md').length, hc: typeof historyCheck === 'function' ? historyCheck() : 'fehlt'};
+  return {fails, md: DRUM_VOICES.filter(v => Q.padSource(v.id) === 'md').length, hc: typeof historyCheck === 'function' ? await historyCheck({detail: true}) : 'fehlt'};
 });
 ok('ND4-02_pads_switch_undo_redo', !r2.fails.length && r2.md === 12, {fails: r2.fails.slice(0, 6), md: r2.md});
-ok('ND4-07_historyCheck', r2.hc === true || r2.hc === 'fehlt', {historyCheck: r2.hc, note: r2.hc === 'fehlt' ? 'historyCheck() gibt es in dieser Version nicht (VL-R1 nicht gebaut) – nur Undo-Zählung geprüft' : undefined});
+ok('ND4-07_historyCheck', r2.hc === 'fehlt' || !!(r2.hc && r2.hc.ok), {historyCheck: r2.hc, note: r2.hc === 'fehlt' ? 'historyCheck() gibt es in dieser Version nicht (VL-R1 nicht gebaut) – nur Undo-Zählung geprüft' : undefined});
 
 // ---- ND4-06: Projekt mit 12 Modell-Pads + p.md -> Datei -> laden: deep-equal ----
 const r6 = await A.p.evaluate(async () => {

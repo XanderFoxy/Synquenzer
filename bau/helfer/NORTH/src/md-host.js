@@ -119,8 +119,10 @@ const MDX = (() => {
       setTimeout(() => { ST.warm = 'done'; try { n.port.postMessage({t: 'panic'}); n.disconnect(); g.disconnect(); } catch (e) {} }, (R * round + 0.4) * 1000);
     } catch (e) { ST.warm = 'failed'; }
   }
-  function node(ctx, dest) {
-    const n = new AudioWorkletNode(ctx, 'synq-md', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]});
+  // init (optional, NORTH for the video render): {chans: {i: program}, kit} applied in the constructor before the first block
+  function node(ctx, dest, init) {
+    const po = init ? {init: [...(init.kit ? [{t: 'kit', p: normKit(init.kit)}] : []), ...Object.keys(init.chans || {}).map(k => ({t: 'ch', ch: +k, p: flat(init.chans[k])}))]} : undefined;
+    const n = new AudioWorkletNode(ctx, 'synq-md', Object.assign({numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]}, po ? {processorOptions: po} : {}));
     if (dest) n.connect(dest);
     // an OfflineAudioContext node (VV1 / FR1) never gets the live CPU limiter and does not count in cpuLoad (ND1 item 7, ND4-10)
     const offline = typeof OfflineAudioContext === 'function' && ctx instanceof OfflineAudioContext;

@@ -1,4 +1,4 @@
-// ND4-01 (Regel 28): neue Version gegen die alte (vs-base-B.html, 4.23.0) – ohne Modell-Pad bleibt alles bitgleich.
+// ND4-01 (Regel 28): neue Version gegen die alte (bau/snapshots/R-4261.html, 4.26.1) – ohne Modell-Pad bleibt alles bitgleich.
 //  (a) Demo-Projekt, INIT Drums, alle Werks-Kits: normierter Drum-Sound (JSON) und slotParams aller 12 Pads deep-equal;
 //      Projekt-Rundreise (projectFileObj -> parseAny) gleich in beiden Builds und gleich dem Original
 //  (b) Offline-Render je Kit (DrumSynth.hit über kitBus + Strips im OfflineAudioContext, Math.random geseedet): bitgleich
@@ -9,7 +9,7 @@
 import {createRequire} from 'module'; import fs from 'fs';
 const {chromium} = createRequire(import.meta.url)('playwright');
 const NEW = process.argv[2] || new URL('../index.html', import.meta.url).pathname;
-const OLD = process.argv[3] || '/home/user/Synquenzer/bau/werkzeug/vs-base-B.html';
+const OLD = process.argv[3] || new URL('../../../snapshots/R-4261.html', import.meta.url).pathname;
 const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
 const checks = {}; const ok = (k, v, info) => { checks[k] = info === undefined ? !!v : {ok: !!v, ...info}; };
 

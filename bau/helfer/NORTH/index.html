@@ -17818,8 +17818,10 @@ const MDX = (() => {
       setTimeout(() => { ST.warm = 'done'; try { n.port.postMessage({t: 'panic'}); n.disconnect(); g.disconnect(); } catch (e) {} }, (R * round + 0.4) * 1000);
     } catch (e) { ST.warm = 'failed'; }
   }
-  function node(ctx, dest) {
-    const n = new AudioWorkletNode(ctx, 'synq-md', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]});
+  // init (optional, NORTH for the video render): {chans: {i: program}, kit} applied in the constructor before the first block
+  function node(ctx, dest, init) {
+    const po = init ? {init: [...(init.kit ? [{t: 'kit', p: normKit(init.kit)}] : []), ...Object.keys(init.chans || {}).map(k => ({t: 'ch', ch: +k, p: flat(init.chans[k])}))]} : undefined;
+    const n = new AudioWorkletNode(ctx, 'synq-md', Object.assign({numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]}, po ? {processorOptions: po} : {}));
     if (dest) n.connect(dest);
     // an OfflineAudioContext node (VV1 / FR1) never gets the live CPU limiter and does not count in cpuLoad (ND1 item 7, ND4-10)
     const offline = typeof OfflineAudioContext === 'function' && ctx instanceof OfflineAudioContext;
@@ -22086,8 +22088,16 @@ async function mdVvBoot(oc) {
   const ok = await MDX.load(oc);
   if (MDS.ctx !== oc) return;
   if (!ok) { MDS.st = 'failed'; return; }
-  MDS.E = MDX.node(oc, null); MDS.node = MDS.E.node; MDS.dest = null; mdConnect(); MDS.st = 'ready'; MDS.p = Promise.resolve(true); mdSync(true);
+  // the programs and kit effects as the node's first messages (processorOptions.init: before the first block, deterministic)
+  const snd = drumSnd(), chans = {}, sent = {};
+  for (const v of DRUM_VOICES) { const st = mdSlot(v.id); if (st && st.src === 'md') { chans[v.idx] = MDN.spec(st); sent[v.idx] = JSON.stringify(chans[v.idx]); } }
+  const kit = Object.assign(MDN.kitInit(), (snd && snd.p && snd.p.md) || {});
+  MDS.E = MDX.node(oc, null, {chans, kit}); MDS.node = MDS.E.node; MDS.dest = null; mdConnect();
+  Object.assign(MDS, {st: 'ready', p: Promise.resolve(true), sent, kit: JSON.stringify(kit), dirty: false});
+  if (MDS.solo) MDS.E.mute(MDS.solo.ch, MDS.solo.part);
 }
+// before every resume of the offline pass: the batched hits go out now (they are batched in microtasks, resume comes first)
+function mdVvFlush() { if (MDS.q.length) mdFlush(); const E = mdE(); if (E) E.flush(); }
 function mdVvRest(sv) {
   if (!sv) return;
   if (MDS.timer) clearTimeout(MDS.timer);
@@ -50028,7 +50038,7 @@ async function vvRenderAudio(o) {
     }
   };
   recSlots(0);
-  const flush = () => { for (const E of AU.synth) if (E && E.flush) E.flush(); };
+  const flush = () => { for (const E of AU.synth) if (E && E.flush) E.flush(); mdVvFlush(); };   // NORTH: auch die Drum-Engine
   const finishLive = () => {                                        // the transport has stopped: the live state comes back
     if (off.sv && !off.sv.done) { flush(); vv3Cap(live, t0); off.log = noteLog(4096); vvSwapOut(off.sv); } UI.vvOff = false;
   };
