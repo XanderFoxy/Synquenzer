@@ -46427,13 +46427,15 @@ function g10cPkKey(id, a) {
   const m = S.takes && S.takes[id], w = typeof wpWarp === 'function' ? wpWarp(id) : null;
   return 'pk:' + id + ':' + a.in + ':' + a.out + (w ? ':' + wpMapInfo(w.map).key : '') + (m ? ':' + m.len : '');
 }
-// gehörte Sekunde → Quell-Sekunde (Zeitkarte: src → dst, wie tkHeardMap; ohne Karte gleich)
-function g10cSrcAt(mp, t) {
-  if (!mp) return t;
+// gehörte Sekunde → Quell-Sekunde (Zeitkarte src → dst wie tkHeardMap). Dehnen: linear; Scheiben: jede Scheibe läuft ab dst[k] in
+// Original-Tempo bis zu ihrem Ende (danach Lücke = null), wie die gerenderte Fassung
+function g10cSrcAt(w, t) {
+  const mp = w && w.map; if (!mp) return t;
   const s = mp.src, d = mp.dst, n = d.length;
   if (t <= d[0]) return s[0] + (t - d[0]);
   if (t >= d[n - 1]) return s[n - 1] + (t - d[n - 1]);
   let lo = 0, hi = n - 1; while (hi - lo > 1) { const md = (lo + hi) >> 1; if (d[md] <= t) lo = md; else hi = md; }
+  if (w.mode !== 'stretch') { const x = s[lo] + (t - d[lo]); return x <= s[hi] + 1e-9 ? x : null; }
   const f = (t - d[lo]) / (d[hi] - d[lo] || 1); return s[lo] + f * (s[hi] - s[lo]);
 }
 function g10cPeaks(id, a) { return G10C.pk.get(g10cPkKey(id, a)) || null; }
@@ -46458,23 +46460,29 @@ async function g10cPkRun() {
 }
 async function g10cPkCalc(id, a) {
   const m = S.takes && S.takes[id]; if (!m || !kv || !kv.aget) return null;
-  const w = typeof wpWarp === 'function' ? wpWarp(id) : null, mp = w ? w.map : null, sr = m.sr, N = G10C_PK_N;
-  const lo = new Float64Array(N), hi = new Float64Array(N), dt = (a.out - a.in) / N;
-  for (let k = 0; k < N; k++) { lo[k] = Math.max(0, g10cSrcAt(mp, a.in + k * dt) * sr); hi[k] = Math.min(m.len, g10cSrcAt(mp, a.in + (k + 1) * dt) * sr); }
-  const out = new Uint8Array(N), pk = new Float32Array(N);
-  const s0 = Math.floor(Math.min(...lo)), s1 = Math.ceil(Math.max(...hi));
-  for (let c = 0; c < m.chunks.length; c++) {
+  const w = typeof wpWarp === 'function' ? wpWarp(id) : null, sr = m.sr, N = G10C_PK_N, U = w ? 8 : 1, M = N * U;   // mit Zeitkarte: 8 Teilstücke je Punkt
+  const lo = new Float64Array(M), hi = new Float64Array(M), dt = (a.out - a.in) / M;
+  for (let k = 0; k < M; k++) {
+    const x0 = g10cSrcAt(w, a.in + k * dt), x1 = g10cSrcAt(w, a.in + (k + 1) * dt - 1e-9);
+    if (x0 == null || x1 == null) { lo[k] = hi[k] = -1; continue; }   // Lücke zwischen Scheiben (Teilstücke sind fein genug)
+    const p0 = x0, p1 = x1;
+    lo[k] = clamp(Math.min(p0, p1) * sr, 0, m.len); hi[k] = clamp(Math.max(p0, p1) * sr, 0, m.len);
+  }
+  const pk = new Float32Array(M), out = new Uint8Array(N);
+  let s0 = Infinity, s1 = -Infinity; for (let k = 0; k < M; k++) if (hi[k] > lo[k]) { s0 = Math.min(s0, lo[k]); s1 = Math.max(s1, hi[k]); }
+  for (let c = 0; c < m.chunks.length && s1 > s0; c++) {
     const c0 = c * TK_CHUNK, c1 = Math.min(m.len, c0 + TK_CHUNK); if (c1 <= s0 || c0 >= s1) continue;
     const b = await kv.aget(m.chunks[c]); if (!b) return null;
     const d = b instanceof ArrayBuffer ? new Int16Array(b) : ArrayBuffer.isView(b) ? new Int16Array(b.buffer, b.byteOffset, b.byteLength >> 1) : null; if (!d) return null;
     const tA = performance.now();
-    for (let k = 0; k < N; k++) {
+    for (let k = 0; k < M; k++) {
+      if (!(hi[k] > lo[k])) continue;
       const i0 = Math.max(c0, Math.floor(lo[k])), i1 = Math.min(c1, Math.ceil(hi[k])); if (i1 <= i0) continue;
       let p = pk[k]; for (let i = i0; i < i1; i += 2) { const v = d[i - c0]; const av = v < 0 ? -v : v; if (av > p) p = av; } pk[k] = p;
     }
     if (performance.now() - tA > 4) await g10cYield(); else await Promise.resolve();
   }
-  for (let k = 0; k < N; k++) out[k] = Math.round(255 * Math.sqrt(Math.min(1, pk[k] / 32767)));
+  for (let k = 0; k < N; k++) { let p = 0; for (let u = 0; u < U; u++) p = Math.max(p, pk[k * U + u]); out[k] = Math.round(255 * Math.sqrt(Math.min(1, p / 32767))); }
   return out;
 }
 function g10cDraw(cv, pk, on, tag) {
@@ -46637,7 +46645,8 @@ function g10cFoot(x, segs, ok) {
   const gl = e ? (e.bytes > 0 ? 'Aufräumen · ' + tkMB(e.bytes) : 'Aufräumen · 0 MB') : 'Aufräumen · …';
   let h = `<div class="g10c-foot"><button class="mbtn rb g10c-oth" data-a="g10c-oth"${nOth ? '' : ' disabled'}>Andere Takes löschen (★ bleiben)</button>` +
     `<button class="mbtn rb g10c-gc" data-a="gc"${ok ? '' : ' disabled'}>${esc(gl)}</button></div>`;
-  if (G10C.gcAsk) h += `<div class="g10c-ask"><div class="small">Gelöschte Takes endgültig entfernen${e ? ' (' + tkMB(e.bytes) + ')' : ''}? Der Verlauf (↶) wird dabei geleert.</div>` +
+  if (G10C.gcAsk) h += `<div class="g10c-ask"><div class="small">Gelöschte Takes endgültig entfernen${e ? ' (' + tkMB(e.bytes) + ')' : ''}? Der Verlauf (↶) wird dabei geleert.` +
+    (e && e.drop && !e.bytes ? ' Die gelöschten Takes stecken noch in gespeicherten Versionen oder Projekten – dort bleiben sie.' : '') + '</div>' +
     '<div class="g10c-askr"><button class="mbtn rb" data-a="g10c-gcno">Abbrechen</button><button class="mbtn rb g10c-gcyes" data-a="g10c-gcyes">Endgültig löschen</button></div></div>';
   return h;
 }
