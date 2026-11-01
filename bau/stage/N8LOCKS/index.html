@@ -9418,6 +9418,8 @@ const PVMT = new Int8Array(PV_M), PVMb = new Uint8Array(PV_M), PVMF = [], PVMJ =
     PVMb[i] = MB.indexOf(' ' + r + ' ') >= 0 || q[3] === 'p' ? 1 : 0;
     PVMF.push(SMK[r] || (q[3] === 'p' ? (PVMJ[i] = +q[4], 'p') : r)); } }
 const PVMI = [{}, {}]; for (let i = 0; i < PV_M; i++) if (PVMF[i] !== 'p') PVMI[PVMT[i]][PVMF[i]] = i;
+// the place's index in the MkSm order (lkOvM), -1 = not a smoothed value
+const PVMS = new Int8Array(PV_M); { const O = 'cut res eg fvel kbd c1 c2 m1 m2 mn lvl pan avel akbd tune trans semi fine vib tu'.split(' '); for (let i = 0; i < PV_M; i++) PVMS[i] = O.indexOf(PVMF[i]); }
 // I2b: a set of derived values (the core's Dc, or a locked voice's own): oscillator tables, unison, filter / drive, envelopes
 class LkD {
   constructor(A, F, M) {
@@ -10012,7 +10014,7 @@ class MkVoice {
     this.ntOk = false; this.ntP0 = 0; this.ntP1 = 0; this.ntP2 = 0; this.ntP3 = 0;   // ntOk: its own table alone, for these pitch inputs
     this.rn = 1; this.ns1 = 0; this.ns2 = 0; this.ngA = -1; this.ngB = 0; this.nkA = 0; this.nkB = 0; this.nnA = 0; this.nnB = 0;
     this.xL2 = 0; this.pPan = 0;
-    this.pvM = null; this.lkS = null; this.lkC = null; this.lkE1 = null; this.lkE2 = null; this.lkPi = null; this.lkBend = NaN;   // I2b: Je-Stimme-Werte (Raum M)
+    this.pvM = null; this.lkS = null; this.lkC = null; this.lkO = null; this.lkE1 = null; this.lkE2 = null; this.lkPi = null; this.lkBend = NaN;   // I2b: Je-Stimme-Werte (Raum M)
     // MK6: own seq position, glide flag, seq PORTAM., latched EGs
     this.sq = null; this.gl = false; this.sqPv = -1; this.sqE1 = null; this.sqE2 = null; this.sqS1 = -1; this.sqS2 = -1; this.sqU1 = 0; this.sqU2 = 0; this.sqO1 = false; this.sqO2 = false; this.qso = null; this.qE1 = null; this.qE2 = null; this.qr1 = -1; this.qr2 = -1;
     this.vm = 0; this.vaA = -1; this.vaB = 0;
@@ -10085,6 +10087,7 @@ class MkTim {
     v.pvM = pv; v.lkE1 = v.lkE2 = null; v.lkPi = null; v.lkBend = NaN;
     if (!pv && !this.lbN) { v.lkS = null; return; }
     if (!v.lkS) { v.lkS = new MkSm(); v.lkC = new Float64Array(9).fill(NaN); }
+    this.lkOvM(v);
     const T = this.T, W = MKW, I = PVMI[ti], val = (f, b) => { const p = I[f]; if (p == null) return b; const x = this.lkVM(v, p); return x === x ? x : b; };
     let e1 = false, e2 = false;
     for (let p = 0; p < PV_M; p++) { if (PVMT[p] !== ti) continue; const x = this.lkVM(v, p); if (!(x === x)) continue; const f = PVMF[p];
@@ -10092,21 +10095,26 @@ class MkTim {
       else if (f === 'p') (v.lkPi || (v.lkPi = new Float64Array(4).fill(NaN)))[PVMJ[p]] = Math.max(-63, Math.min(63, x));
       else if (f === 'bend') v.lkBend = x;
       else if (f === 'porta' && from >= 0) { const pt = W.porta(Math.round(x)); v.gc = pt > 0 ? 1 - Math.exp(-CR / (pt / Math.LN10 * SR)) : 1; } }
-    if (e1) { v.lkE1 = {}; mkEnvC(v.lkE1, W.atk(val('e1.a', T.e1.a)), W.dec(val('e1.d', T.e1.d)), W.sus(val('e1.s', T.e1.s)), W.dec(val('e1.r', T.e1.r))); }
-    if (e2) { v.lkE2 = {}; mkEnvC(v.lkE2, W.atk(val('e2.a', T.e2.a)), W.dec(val('e2.d', T.e2.d)), W.sus(val('e2.s', T.e2.s)), W.dec(val('e2.r', T.e2.r))); }
+    if (e1) { v.lkE1 = Object.assign({}, this.E1); mkEnvC(v.lkE1, W.atk(val('e1.a', T.e1.a)), W.dec(val('e1.d', T.e1.d)), W.sus(val('e1.s', T.e1.s)), W.dec(val('e1.r', T.e1.r))); }
+    if (e2) { v.lkE2 = Object.assign({}, this.E2); mkEnvC(v.lkE2, W.atk(val('e2.a', T.e2.a)), W.dec(val('e2.d', T.e2.d)), W.sus(val('e2.s', T.e2.s)), W.dec(val('e2.r', T.e2.r))); }
   }
   // the smoothed values of the timbre with this voice's locks / the lanes on top, and their derived values (cached like the timbre's)
   lkSmV(v) {
-    const S = v.lkS, s = this.sm, C = v.lkC, ti = this.ti;
-    S.cut = s.cut; S.res = s.res; S.eg = s.eg; S.fvel = s.fvel; S.kbd = s.kbd; S.c1 = s.c1; S.c2 = s.c2; S.m1 = s.m1; S.m2 = s.m2; S.mn = s.mn;
-    S.lvl = s.lvl; S.pan = s.pan; S.avel = s.avel; S.akbd = s.akbd; S.tune = s.tune; S.trans = s.trans; S.semi = s.semi; S.fine = s.fine; S.vib = s.vib; S.tu = s.tu;
-    if (v.pvM || this.lbN) for (let p = ti ? PV_M / 2 : 0, e = ti ? PV_M : PV_M / 2; p < e; p++) { const x = this.lkVM(v, p); if (!(x === x)) continue; const f = PVMF[p];
-      if (f === 'tu') { S.tu = x; S.fine = MKW.fine2(x); } else if (f in S) S[f] = x; }
+    const S = v.lkS, s = this.sm, C = v.lkC, o = v.lkO;
+    S.cut = o[0] === o[0] ? o[0] : s.cut; S.res = o[1] === o[1] ? o[1] : s.res; S.eg = o[2] === o[2] ? o[2] : s.eg; S.fvel = o[3] === o[3] ? o[3] : s.fvel; S.kbd = o[4] === o[4] ? o[4] : s.kbd;
+    S.c1 = o[5] === o[5] ? o[5] : s.c1; S.c2 = o[6] === o[6] ? o[6] : s.c2; S.m1 = o[7] === o[7] ? o[7] : s.m1; S.m2 = o[8] === o[8] ? o[8] : s.m2; S.mn = o[9] === o[9] ? o[9] : s.mn;
+    S.lvl = o[10] === o[10] ? o[10] : s.lvl; S.pan = o[11] === o[11] ? o[11] : s.pan; S.avel = o[12] === o[12] ? o[12] : s.avel; S.akbd = o[13] === o[13] ? o[13] : s.akbd; S.tune = o[14] === o[14] ? o[14] : s.tune;
+    S.trans = o[15] === o[15] ? o[15] : s.trans; S.semi = o[16] === o[16] ? o[16] : s.semi; S.fine = o[17] === o[17] ? o[17] : s.fine; S.vib = o[18] === o[18] ? o[18] : s.vib; S.tu = o[19] === o[19] ? o[19] : s.tu;
     if (S.cut !== C[0]) { C[0] = S.cut; C[1] = 69 + 12 * Math.log2(MKW.cutHz(S.cut) / 440); }
     if (S.res !== C[2]) { C[2] = S.res; C[3] = MKW.resK(Math.max(0, Math.min(127, S.res))); }
     if (S.lvl !== C[4]) { C[4] = S.lvl; C[5] = MKW.ampG(Math.max(0, S.lvl)); }
     if (S.pan !== C[6]) { C[6] = S.pan; const px = (Math.max(-63, Math.min(63, S.pan)) + 63) / 126 * 1.5707963267948966; C[7] = Math.cos(px); C[8] = Math.sin(px); }
     return S;
+  }
+  // the overlay of the voice (its pairs, else the timbre's lanes) in MkSm order; NaN = the timbre's smoothed value. At the note start and after a lane change only
+  lkOvM(v) {
+    const o = v.lkO || (v.lkO = new Float64Array(20)); o.fill(NaN);
+    for (let p = this.ti ? PV_M / 2 : 0, e = this.ti ? PV_M : PV_M / 2; p < e; p++) { const j = PVMS[p]; if (j < 0) continue; const x = this.lkVM(v, p); if (!(x === x)) continue; o[j] = x; if (j === 19) o[17] = MKW.fine2(x); }
   }
   // I2c: a lane value of this timbre (M place p); NaN = back to the base; class b ramps r samples (in blocks)
   lbEvM(p, x, r) {
@@ -10118,12 +10126,13 @@ class MkTim {
     else if (was === was) { if (ramp) { if (!(this.lbR[p] > 0)) this.lbRm++; this.lbT[p] = NaN; this.lbR[p] = r; this.lbS[p] = (base() - was) / r; } else { this.lb[p] = NaN; this.lbN--; if (this.lbR[p] > 0) { this.lbR[p] = 0; this.lbRm--; } } }
     else return;
     if (PVMF[p] === 'p') for (const v of this.V) if (v.on && !v.ghost) { const y = this.lkVM(v, p); if (y === y || v.lkPi) (v.lkPi || (v.lkPi = new Float64Array(4).fill(NaN)))[PVMJ[p]] = y; }
-    if (PVMb[p]) for (const v of this.V) if (v.on && !v.ghost && !v.lkS) { v.lkS = new MkSm(); v.lkC = new Float64Array(9).fill(NaN); }
+    if (PVMb[p]) for (const v of this.V) if (v.on && !v.ghost) { if (!v.lkS) { v.lkS = new MkSm(); v.lkC = new Float64Array(9).fill(NaN); } this.lkOvM(v); }
   }
   lbStepM() {
     const lb = this.lb;
     for (let p = 0; p < PV_M; p++) { const r = this.lbR[p]; if (!(r > 0)) continue;
       if (r <= CR) { this.lbR[p] = 0; this.lbRm--; const t = this.lbT[p]; if (t === t) lb[p] = t; else { lb[p] = NaN; this.lbN--; } } else { this.lbR[p] = r - CR; lb[p] += this.lbS[p] * CR; } }
+    for (const v of this.V) if (v.on && !v.ghost && v.lkS) this.lkOvM(v);
   }
   lkRepM() { const o = []; for (const v of this.V) if (v.on && !v.ghost) { const S = v.lkS ? v.lkS : this.sm; o.push({ti: this.ti, id: v.id, note: v.note, own: !!v.lkS, cut: S.cut, cutHz: MKW.cutHz(S.cut), lvl: S.lvl, pi: v.lkPi ? Array.from(v.lkPi) : null, e2: !!v.lkE2}); } return o; }
   /* ---------------- MK2: PATCH 1-4 (W-18) ---------------- */

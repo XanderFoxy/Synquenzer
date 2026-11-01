@@ -54,14 +54,15 @@ function scene(eng, feat) {
   }
   ev.sort((a, b2) => a[0] - b2[0]);
   P.onMsg({mkSeed: 1, tempo: {bpm: 180, start: 0}});
-  for (let i = 0; i < ev.length; i += 64) P.onMsg({ev: ev.slice(i, i + 64)});   // in the message path, before the render
+  P.__ev = ev; P.__i = 0;                                         // sent like the app's planner: 0,1 s ahead, in the message path
   return P;
 }
+function feed(P) { const E = P.__ev, h = g.f / SR + .1; let j = P.__i; if (j >= E.length || E[j][0] >= h) return; const o = []; while (j < E.length && E[j][0] < h) o.push(E[j++]); P.__i = j; P.onMsg({ev: o}); }
 function run(eng, feat) {
   const P = scene(eng, feat); g.f = 0;
   const t0 = process.hrtime.bigint();
-  for (let k = 0; k < NB; k++) { P.process([], [out], {}); g.f += 128; }
-  return Number(process.hrtime.bigint() - t0) / 1000 / NB;   // µs per block
+  for (let k = 0; k < NB; k++) { feed(P); P.process([], [out], {}); g.f += 128; }
+  return Number(process.hrtime.bigint() - t0) / 1000 / NB;   // µs per block (message handling included)
 }
 const tq = n => (n >= 120 ? 1.98 : n >= 60 ? 2.0 : n >= 40 ? 2.02 : n >= 30 ? 2.045 : 2.09);
 const st = a => { const n = a.length, m = a.reduce((x, y) => x + y, 0) / n, sd = Math.sqrt(a.reduce((x, y) => x + (y - m) * (y - m), 0) / (n - 1)); return {m, hw: tq(n) * sd / Math.sqrt(n)}; };
@@ -86,7 +87,7 @@ for (const [nm0, eng, lim0, same0] of scenes.filter(x => !process.env.SC || proc
   if (process.env.NOHEAP) process.exit(process.exitCode || 0);
   for (const F of [false, true]) {
   const P = scene('va', F); g.f = 0; global.gc && global.gc(); const h0 = process.memoryUsage().heapUsed; let mx = 0;
-  for (let k = 0; k < 60 * SR / 128; k++) { P.process([], [out], {}); g.f += 128; if (k % 2000 === 0) { global.gc && global.gc(); const h = process.memoryUsage().heapUsed - h0; if (h > mx) mx = h; } }
+  for (let k = 0; k < 60 * SR / 128; k++) { feed(P); P.process([], [out], {}); g.f += 128; if (k % 2000 === 0) { global.gc && global.gc(); const h = process.memoryUsage().heapUsed - h0; if (h > mx) mx = h; } }
   ok(mx < 1048576, `I2-18 Heap in 60 s Wiedergabe ${F ? 'mit' : 'ohne'} Locks: höchstens +${(mx / 1024).toFixed(0)} KB (Grenze 1 MB)`); }
 }
 fs.writeFileSync(new URL('./i2-cpu-ergebnis.json', import.meta.url), JSON.stringify(res, null, 1));
