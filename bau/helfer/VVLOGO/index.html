@@ -1320,12 +1320,19 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 /* VV-LOGO: Zeile „Abspann“ im Blatt „Video“ – Schalter [Abspann-Logo] (zweite Zeile: an / aus / Logo fehlt) und [Andere Datei wählen …] */
 .vvlogo{display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0}
 .vvsheet .vvlogo .rb{height:44px;min-width:44px;padding:0 8px;font:700 12px/1.1 var(--font-ui);white-space:nowrap;overflow:hidden}
-.vvsheet .vvlogo .vvlt{flex:1 1 0;flex-direction:column;gap:2px;min-width:0}
+.vvsheet .vvlogo .vvlt{flex:1 1 0;flex-direction:column;gap:2px;min-width:96px}
 .vvlogo .vvlt b{font:700 12px/1 var(--font-ui)}
 .vvlogo .vvlt small{max-width:100%;overflow:hidden;text-overflow:ellipsis;font:500 10px/1 var(--font-ui);color:var(--text-dim)}
 .vvlogo .vvlt.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}
 .vvlogo .vvlt.on small{color:var(--sel)}
-.vvsheet .vvlogo .vvlf{flex:0 1 auto}
+.vvsheet .vvlogo .vvlf{flex:0 1 auto;min-width:72px;white-space:normal;line-height:1.1;text-align:center}
+/* quer: die Zeile liegt unter der Vorschau (die Bedienspalte rechts passt weiter ohne Rollen) */
+@media (orientation:landscape){
+  .vvsheet .vvb.vvlq{display:grid;grid-template-columns:minmax(0,1fr) 320px;grid-template-rows:minmax(0,1fr) auto;column-gap:14px;row-gap:6px}
+  .vvb.vvlq>.vvstage{grid-column:1;grid-row:1}
+  .vvb.vvlq>.vvctl{grid-column:2;grid-row:1 / span 2;min-height:0}
+  .vvb.vvlq>.vvrow{grid-column:1;grid-row:2}
+}
 .vvlinp{position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none}
 #menu .mh{flex:none;display:flex;align-items:center;gap:12px;padding:6px 10px;border-bottom:1px solid var(--panel-edge);background:linear-gradient(#1b1d22,#121418)}
 .mlogo{flex:none;display:flex;align-items:center;pointer-events:none}
@@ -48703,14 +48710,14 @@ function vvOpen() {
   const rowR = rowOf('Bereich', rngBox); rowR.classList.toggle('txt', !vvHasSel());
   const lgBox = el('span', 'vvlogo'), bLogo = el('button', 'rb vvlt', '<b>Abspann-Logo</b><small></small>'), bFile = el('button', 'rb vvlf', 'Andere Datei wählen …');   // VV-LOGO
   bLogo.setAttribute('aria-label', 'Abspann-Logo an oder aus'); bFile.setAttribute('aria-label', 'Andere Datei für das Abspann-Logo wählen');
-  lgBox.append(bLogo, bFile); rowOf('Abspann', lgBox);
+  lgBox.append(bLogo, bFile); const rowL = rowOf('Abspann', lgBox);
   const acts = el('div', 'vvacts'), bPrev = el('button', 'rb vvbtn', '▶ Vorschau'), bMake = el('button', 'rb vvbtn go', 'Video erstellen');
   bPrev.setAttribute('aria-label', 'Vorschau mit Ton'); acts.append(bPrev, bMake); ctl.appendChild(acts);
   const bar = el('div', 'vvprog', '<i></i><span></span>'), bCan = el('button', 'rb vvbtn', 'Abbrechen'); bar.appendChild(bCan);
   const done = el('div', 'vvdone'), bShare = el('button', 'rb vvbtn go', 'Teilen'), bSave = el('button', 'rb vvbtn', 'Sichern');
   done.append(bShare, bSave); ctl.append(bar, done);
   const way = el('div', 'vvway'), wayT = el('span', ''); way.append(wayT); ctl.appendChild(way);
-  Object.assign(VV, {ui: {sh, cv, stage, segF, segV, segC, rng, segR, rowR, bPrev, bMake, bar, bCan, done, bShare, bSave, way, wayT, bLogo, bFile}});
+  Object.assign(VV, {ui: {sh, cv, stage, segF, segV, segC, rng, segR, rowR, bPrev, bMake, bar, bCan, done, bShare, bSave, way, wayT, bLogo, bFile, rowL, acts, ctl, body}});
   onTap(bLogo, () => vvlToggle()); onTap(bFile, () => vvlPick()); vvlLoad();   // VV-LOGO
   onTap(bPrev, () => { if (VV.prev) vvPrevStop(); else vvPrevStart(); });
   onTap(bMake, () => vvGo());
@@ -48734,6 +48741,11 @@ function vvClose() {
 // the stage canvas fits its box (aspect of the format); preview size = box × dpr, the encoder draws its own full size
 function vvFit() {
   const u = VV.ui; if (!u) return;
+  if (u.rowL) {                                                     // VV-LOGO: the row „Abspann“ – portrait in the controls, landscape under the stage
+    let lq = false; try { lq = matchMedia('(orientation:landscape)').matches; } catch (e) {}
+    if (lq && u.rowL.parentNode !== u.body) u.body.appendChild(u.rowL); else if (!lq && u.rowL.parentNode !== u.ctl) u.ctl.insertBefore(u.rowL, u.acts);
+    u.body.classList.toggle('vvlq', lq);
+  }
   const [W, H] = VV_SIZE[vvPrefs().fmt], bw = Math.floor(u.stage.clientWidth), bh = Math.floor(u.stage.clientHeight), k = Math.min(bw / W, bh / H) || .1;
   const cw = Math.max(10, Math.min(bw, Math.round(W * k))), ch = Math.max(10, Math.min(bh, Math.round(H * k)));
   u.cv.style.width = cw + 'px'; u.cv.style.height = ch + 'px';

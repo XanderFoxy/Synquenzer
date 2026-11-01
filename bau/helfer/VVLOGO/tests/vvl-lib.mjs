@@ -19,6 +19,7 @@ export function serve(mode, app = 'index.html') {
       if (mode === 'mov' && nm === 'abspann-logo.mov') f = path.join(DIR, 'tests', 'test-logo.mov');
       if (mode === 'bad' && nm === 'abspann-logo.mp4') { s.writeHead(200, {'content-type': 'video/mp4'}); s.end('kein video'); return; }
     } else if (u.startsWith('/fonts/')) f = path.join(FONTS, u.slice(7));
+    else if (u === '/R-4261.html') f = path.resolve(DIR, '../../snapshots/R-4261.html');   // the base for comparisons
     else f = path.join(DIR, u === '/' ? app : u.slice(1));
     if (!f || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { s.writeHead(404, {'content-type': 'text/plain'}); s.end('404'); return; }
     s.writeHead(200, {'content-type': TYPES[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-store'}); fs.createReadStream(f).pipe(s);
