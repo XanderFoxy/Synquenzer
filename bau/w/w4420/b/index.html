@@ -10229,7 +10229,7 @@ function frame(now, bAud) {
   const want = !voc() && (ct().seq.on || !!P.rec); try { const E = AU.synth[P.i]; if (E && want && !E.mksOn) E.mkScope(true); } catch (e) {}
   const k = want ? runStep(tA) : 0; P.runTA = tA;   // the audio time this frame shows (test API: light against the worklet's clock)
   if (k !== P.run) { P.run = k; P.runN = (P.runN || 0) + 1; const lit = k ? 0 : litOf(); if (PL.ui) for (let j = 1; j <= 16; j++) setLed('s' + j, k ? (k === j ? 'on run' : '') : stepBase(j, lit)); spielPaint(); }
-  ma1Frame(now);   // MA1: VIRTUAL PATCH on the plate knobs
+  ma1Frame();   // MA1: VIRTUAL PATCH on the plate knobs
 }
 /* ---------- MA1: modulation on the plate knobs. The VIRTUAL PATCH routes of the shown timbre (source x INT / 63 x the span of the
    destination, W-18, exactly as the worklet sums them) get the Mod-Bogen of the app knobs around the destination knob: a ring in
@@ -10247,8 +10247,8 @@ function ma1Arc(n0, n1) {
   return 'M' + f(16.5 + R_ * Math.sin(a0)) + ' ' + f(16.5 - R_ * Math.cos(a0)) + 'A' + R_ + ' ' + R_ + ' 0 ' + (a1 - a0 > Math.PI ? 1 : 0) + ' 1 ' + f(16.5 + R_ * Math.sin(a1)) + ' ' + f(16.5 - R_ * Math.cos(a1));
 }
 function ma1Off(id) { const K_ = PL.ui && PL.ui.knob[id]; if (K_ && K_.ma1) { K_.ma1.svg.remove(); K_.ma1 = null; } MA1.ids.delete(id); }
-function ma1Frame(now) {
-  if (now - MA1.last < 33) return; MA1.last = now;
+function ma1Frame() {
+  const now = performance.now(); if (now - MA1.last < 33) return; MA1.last = now;
   const want = new Map();
   if (PL.ui && P.tab !== 'spiel' && !P.view && !voc()) {
     const T = ct();

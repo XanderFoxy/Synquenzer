@@ -1,0 +1,21 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { buildSong } = await import('/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/dirigent-test/n5-v-qm-lib.mjs');
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const p = await b.newPage({viewport: {width: 926, height: 428}});
+await p.goto('file://' + process.argv[2]); await p.waitForTimeout(1500); await p.mouse.click(5, 300);
+await p.waitForFunction(() => window.SynthHost && SynthHost.state !== 'loading' && AU.ctx, null, {timeout: 15000}).catch(() => {});
+await buildSong(p);
+console.log(JSON.stringify(await p.evaluate(async () => {
+  SYNQUENZER.v6aSetState(1, 0, {p: {cutoff: 4000, res: .15}}); SYNQUENZER.v6aSetState(1, 1, {p: {cutoff: 300, res: 1.0, aA: .25, aR: 1.4}, x: 'bar2'});
+  await SYNQUENZER.vvRender({range: {a: 4, b: 10}});
+  const r = VV.last, out = {}, W = 1920, H = 1080, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d', {alpha: false}), rt = vvRun({range: {a: r.a, b: r.b}, bpm: r.bpm});
+  const run = (nm, f) => { f(0); const T0 = performance.now(); for (let k = 0; k < 90; k++) f(4.3 + k / 30); g.getImageData(0, 0, 1, 1); out[nm] = +((performance.now() - T0) / 90).toFixed(2); };
+  run('kino', t => vvDrawShot(g, W, H, rt, {k: 0, v: 'kino'}, vvStateAt(r, t), t));
+  run('song', t => vvDrawShot(g, W, H, rt, {k: 0, v: 'song'}, vvStateAt(r, t), t));
+  const C = vvCols(), rows = vvRows(), L = vk2Lay(640, 360, rows.length);
+  run('bgOnly', t => { g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(vk2Bg(W, H, 3, L, rows, C), 0, 0); });
+  run('syn', t => { const st = vvStateAt(r, t), X = vk2Src(st); for (const i of rows) if (vk2Kind(i) === 'syn') vk2Syn(i, st, X); });
+  const G0 = window.vk2Glow; window.vk2Glow = () => {}; run('kinoNoGlow', t => vvDrawShot(g, W, H, rt, {k: 0, v: 'kino'}, vvStateAt(r, t), t)); window.vk2Glow = G0;
+  return out;
+})));
+await b.close();

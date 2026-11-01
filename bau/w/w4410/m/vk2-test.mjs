@@ -21,6 +21,9 @@ res.song = await buildSong(p);
 // SYN 4 (MK) scene 1 → scene 2 at bar 7 over 1 bar (cutoff down, resonance up)
 res.states = await p.evaluate(() => {
   const Q = SYNQUENZER, out = {eng1: S.tracks[1].sound.engine, eng3: S.tracks[3].sound.engine};
+  // drum accents on the snare steps of the drum clip played in bars 3–12 (Schritt-Akzent = the engine's accent flag)
+  const dc = S.tracks[4].clips[0]; out.akz = 0; if (dc && dc.notes) for (const n of dc.notes) if (n.n === 38 || n.n === 39) { n.a = 1; out.akz++; }
+  if (dc && !out.akz && dc.notes.length) { dc.notes[0].a = 1; out.akz = 1; }
   Q.v6aSetState(1, 0, {p: {cutoff: 4000, res: .15}});
   Q.v6aSetState(1, 1, {p: {cutoff: 300, res: 1.0, aA: .25, aR: 1.4, fD: 1.2, fS: .6}, x: 'bar2'});
   if (S.tracks[3].sound.engine === 'mk') { Q.v6aSetState(3, 0, {p: {'mk.t.0.f.cut': 100, 'mk.t.0.f.res': 20}}); Q.v6aSetState(3, 1, {p: {'mk.t.0.f.cut': 35, 'mk.t.0.f.res': 118}, x: 'bar1'}); }
@@ -49,6 +52,18 @@ res.formel = await p.evaluate(ts => {
   }
   return out;
 }, [0, .25, .5, .75, 1].map(f => T(2) + f * 2 * 4 * spb));
+// the MK glide (SYN 4, linear in knob units, 1 bar): Ist cutoff = cutHz(100 + (35 − 100)·s)
+res.formelMk = await p.evaluate(ts => {
+  const r = VV.last, L = VK2.cap.get(r.tl)[3], out = [];
+  for (const t of ts) { const tau = r.t0 + t, g = L.filter(x => x.s <= tau + 1e-9).pop(), K = vk2Knob(vk2Eff(3, g, tau, false)), x = Math.min(1, Math.max(0, (tau - g.t0) / (g.t1 - g.t0))), s = x * x * (3 - 2 * x);
+    out.push({t: +t.toFixed(3), m: g.m['mk.t.0.f.cut'], ist: Math.round(K.fc), want: Math.round(vk2Cz(100 + (35 - 100) * s)), res: +K.res.toFixed(3), resWant: +(1.1 * (20 + (118 - 20) * s) / 127).toFixed(3)}); }
+  return out;
+}, [0, .5, 1].map(f => T(2) + f * 4 * spb));
+// accents: hits with the flag in the captured notes, and a picture where one glows
+res.akzent = await p.evaluate(() => { const r = VV.last, L = r.nt[4] || []; const a = L.filter(o => o.e.acc).map(o => +o.a.toFixed(3)); let best = null;
+  for (const t0 of a.slice(0, 6)) { const q = SYNQUENZER.vk2At(t0 + .02, '16:9'), d = q.rows.find(x => x.i === 4); if (d && d.acc > 0) { best = {t: t0 + .02, acc: d.acc, acc8: d.acc8.reduce((x, y) => x + y, 0)}; break; } }
+  return {n: a.length, first: a.slice(0, 4), best}; });
+if (res.akzent.best) fs.writeFileSync(DIR + 'vk2-16x9-akzent.png', Buffer.from(await p.evaluate(t => SYNQUENZER.vvShot(t, 'kino', '16:9'), res.akzent.best.t), 'base64'));
 // stills (vvShot = the same path as the video frames), 16:9 and 9:16
 const shots = [['16x9-vor', times.vor, '16:9'], ['16x9-morph', T(2.9), '16:9'], ['16x9-morph-mk', T(2.45), '16:9'], ['9x16-vor', times.vor, '9:16'], ['9x16-morph', T(2.9), '9:16'], ['9x16-nach', times.nach, '9:16']];
 for (const [nm, t, fmt] of shots) { const png = await p.evaluate(([t, fmt]) => SYNQUENZER.vvShot(t, 'kino', fmt), [t, fmt]); fs.writeFileSync(DIR + 'vk2-' + nm + '.png', Buffer.from(png, 'base64')); }
@@ -94,6 +109,13 @@ try {
   try { res.ffprobe = execSync(`ffprobe -v error -show_entries stream=codec_name,width,height,nb_frames,duration -of compact ${f}`).toString().trim(); } catch (e) { res.ffprobe = 'ffprobe fehlt'; }
   try { execSync(`ffmpeg -v error -y -ss 2.2 -i ${f} -frames:v 1 ${DIR}vk2-video-frame.png`); res.videoFrame = DIR + 'vk2-video-frame.png'; } catch (e) { res.videoFrame = 'ffmpeg fehlt'; }
 } catch (e) { res.videoErr = String(e && e.message || e); }
+// live (▶ Vorschau in the video sheet): the Mäusekino from the live notes, meter and glides
+res.live = await p.evaluate(async () => {
+  const Q = SYNQUENZER; delete S.song.video; Q.vvDirSet(0, S.song.bars, 'kino'); Q.songSelect(null); Q.vvPrefs({fmt: '9:16', view: 'auto', cam: 'kamera'});
+  vvOpen(); await new Promise(r => setTimeout(r, 300)); VK2.probe = null; vvPrevStart(); await new Promise(r => setTimeout(r, 2500));
+  const pr = VK2.probe; vvPrevStop(); vvClose();
+  return pr ? {bar: pr.bar, step: pr.step, held: pr.held, voices: pr.voices, rms: pr.rows.map(x => x.rms), lit: pr.rows.map(x => x.lit)} : null;
+});
 res.errs = errs;
 console.log(JSON.stringify(res, null, 1));
 await b.close();

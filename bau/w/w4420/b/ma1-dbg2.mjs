@@ -1,0 +1,24 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const APP = process.argv[2];
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const ctx = await b.newContext({viewport: {width: 428, height: 926}, hasTouch: true, isMobile: true});
+const p = await ctx.newPage();
+const errs = []; p.on('pageerror', e => errs.push('PAGEERR ' + String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('file://' + APP); await p.waitForTimeout(1200);
+await p.touchscreen.tap(5, 300);
+await p.waitForFunction(() => window.SynthHost && SynthHost.state !== 'loading' && AU.ctx, null, {timeout: 15000}).catch(() => {});
+await p.waitForTimeout(300);
+console.log(JSON.stringify(await p.evaluate(() => {
+  const A = SYNQUENZER; try { if (R.editor) closeEditor(); } catch (e) {} A.setMetronome && A.setMetronome(false);
+  const notes = []; for (let k = 0; k < 8; k++) notes.push({t: k, d: .5, n: 57 + (k % 4) * 3, v: .9});
+  A.setClip(0, 0, {len: 2, notes});
+  A.setEngine(0, 'mk');
+  for (const [k, v] of [['t.0.p.0.s', 2], ['t.0.p.0.d', 4], ['t.0.p.0.i', 45]]) A.mkSet(0, k, v);
+  A.selectTrack(0); A.openEditor(); ED.tab = 'geraet'; safeRebuild(buildSynthEd);
+  A.launchClip(0, 0); A.play();
+  return {ed: R.editor, tab: ED.tab, Pi: MKUI.P.i, ptab: MKUI.P.tab, view: MKUI.P.view, ui: !!MKUI.PL.ui, knobs: MKUI.PL.ui ? Object.keys(MKUI.PL.ui.knob).slice(0, 60) : null};
+})));
+await p.waitForTimeout(800);
+console.log(JSON.stringify(await p.evaluate(() => { const E = AU.synth[0]; const K = MKUI.PL.ui.knob['f.cut']; return {keys: Object.keys(MKUI.PL.ui.knob).join(" "), uiSame: MKUI.PL.ui === MKUI.PL.ui, mksOn: E && E.mksOn, mks: E && E.mks ? {t: E.mks.t, now: AU.ctx.currentTime, v: E.mks.voices} : null, ma1: !!(K && K.ma1), svg: K && K.n.querySelector('.ma1mk') ? K.n.querySelector('.ma1mk').outerHTML.slice(0, 300) : null}; })));
+console.log('errs', JSON.stringify(errs));
+await b.close();
