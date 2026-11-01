@@ -4653,7 +4653,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .knob.mdc .msub{font:500 9px/11px var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 2px}
 .knob.mdc.press{border-color:var(--tc,var(--t5))}
 .knob.mdc.kidle{opacity:1}
-.knob.mdc.inert .kn,.knob.mdc.inert .kl{color:var(--text-dim);opacity:.55}
+.knob.mdc.mdin .kn,.knob.mdc.mdin .kl{color:var(--text-dim);opacity:.55}
 .knob.mdc .fine{bottom:auto;top:-2px}
 .mdre{gap:6px;margin-top:auto}.mdre .tgl{flex:1 1 0;min-width:0;justify-content:center;padding:0 6px}.mdre .tgl span{white-space:nowrap;line-height:14px}
 .mdre .mdtrig,.mdre .mdmore{flex:none;width:52px;font-size:16px}
@@ -4886,7 +4886,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
       <button id="bKlang" class="sbtn rb">KLANG</button>
       <button id="bEdit" class="sbtn rb" aria-label="Clip bearbeiten" title="Clip bearbeiten">✎</button>
       <button id="bFolgt" class="sbtn rb on" aria-label="Folgt dem Träger" title="Folgt dem Träger (TRANSPONIEREN)">⇅<span class="ck">✓</span></button>
-      <span id="stLock" hidden title="Drums folgen nie">🔒</span>
+      <span id="stLock" hidden title="Drums folgen nicht (Menü → Harmonie → Drums)">🔒</span>
       <button id="bMute" class="sbtn rb" aria-label="Stumm">M</button>
       <button id="bUndo" class="sbtn rb" aria-label="Rückgängig">↶</button>
     </div>
@@ -26282,7 +26282,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.38.0';
+const VERSION = '4.39.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -35021,12 +35021,13 @@ function buildGrid() {
   const saw = el('div', 'saw'); UI.saw = saw;
   const sa = el('button', 'stp all rb', '■'); sa.setAttribute('aria-label', 'Alle stoppen (2× = sofort)'); sa.title = 'Alle stoppen zum nächsten Takt (2× = sofort)'; saw.appendChild(sa); g.appendChild(saw); UI.stopAll = sa;
   const tbb = el('button', 'tbb rb', '<b>▲▼</b><small>1/2</small><i class="bdot"></i>'); tbb.setAttribute('aria-label', 'Andere Spuren zeigen'); UI.tbb = tbb;
+  onTap(tbb, () => { setTrackBank(MX.pages ? (trackBankOf() + 1) % MX.pages.length : 0); haptic('tick'); });   // northfix: Zeiger-Tipp (iOS: kein Klick im geschützten Spurkopf)
   UI.cells = []; UI.heads = []; UI.stops = []; UI.fill = [];
   for (const i of trackOrder()) {
     const h = el('button', 'th', '<span class="bar"></span><span class="nm"></span><span class="sb"></span><span class="fb"></span>');
     h.dataset.t = i; h.style.setProperty('--tc', `var(--t${i + 1})`); g.appendChild(h);
     const mt = mtrEl(); h.appendChild(mt);                                     // VV4-F: the level bar beside the colour bar
-    guardTouch(h); h.setAttribute('aria-label', 'Spur: Tipp = stumm, Halten = Solo, waagrecht schieben = Lautstärke');   // SX4: kein iOS-Scroll/Klick-Nachzügler
+    guardTouch(h); h.setAttribute('aria-label', 'Spur: Tipp = wählen, Halten = Solo, waagrecht schieben = Lautstärke');   // SX4: kein iOS-Scroll/Klick-Nachzügler
     UI.heads[i] = {el: h, nm: h.children[1], sb: h.children[2], fb: h.children[3], st: {}, mt};
     UI.cells[i] = [];
     for (let s = 0; s < N_SCN; s++) {
@@ -35074,7 +35075,7 @@ function renderGrid(bAud) {
     setCls(H.el, H.st, 'vox', !!tr.stimme); setCls(H.el, H.st, 'voxoff', !!tr.stimme && !tkAudioOk());   // VS3
     let fb, fcls = 'fb';
     if (tr.stimme) fb = '🎤';
-    else if (tr.kind === 'drum') fb = '🔒';
+    else if (tr.kind === 'drum') { if (S.settings.harmony.drums) { fb = '⇅'; if (T.targetAt(nowT()).target) fcls = 'fb act'; } else fb = '🔒'; }   // northfix: Drums mittransponieren = folgt
     else if (percIs(tr) && !tr.follow) { fb = 'folgt nicht'; fcls = 'fb fix percfb'; }   // PERC: Perkussionsspur
     else if (!tr.follow) { fb = 'fest'; fcls = 'fb fix'; }
     else { fb = '⇅'; if (T.targetAt(nowT()).target) fcls = 'fb act'; }
@@ -39616,7 +39617,7 @@ function renderStrip() {
   EL.stName.textContent = tr.name;
   const sl = tr.stimme ? (tkAudioOk() ? '🎤 Audio · Takes: ✎' : 'Audio nur auf der eigenen Seite') : soundLabel(tr); if (EL.stSub.textContent !== sl) EL.stSub.textContent = sl;   // VS3
   EL.bFolgt.hidden = tr.kind !== 'synth';
-  EL.stLock.hidden = tr.kind === 'synth';
+  EL.stLock.hidden = tr.kind === 'synth' || !!S.settings.harmony.drums;   // northfix: Drums mittransponieren = kein Schloss
   EL.bFolgt.classList.toggle('on', tr.kind === 'synth' && tr.follow);
   EL.bFolgt.querySelector('.ck').textContent = tr.follow ? '✓' : ' fest';
   EL.bFolgt.setAttribute('aria-label', tr.follow ? 'Folgt dem Träger (an)' : 'Folgt nicht (fest)');
@@ -46980,6 +46981,8 @@ function buildDrumEd() {
   if (!FX_SUBS.some(x => x[0] === ED.dFx)) ED.dFx = 'spur';
   if (!DLAYERS.some(x => x[0] === ED.dLayer)) ED.dLayer = 'ton';
   ED.dVoice = clamp(ED.dVoice | 0, 0, 11);
+  if (MDE.all && MDE.allV != null && MDE.allV !== ED.dVoice) { MDE.all = false; MDE.scl = ''; mdFocus(); }   // northfix: anderes Pad = nur dieses Pad
+  MDE.allV = ED.dVoice;
   sh.style.setProperty('--tc', 'var(--t5)');
   const sl = DRUM_VOICES[ED.dVoice], P = slotParams(sl.id), mdp = mdIsSrc(sl.id);   // ND2: Modell-Pad
   const subs = mdp && ED.dTab === 'sound' ? {list: MD_SUBS, cur: MDE.sub, on: id => { MDE.sub = id; if (MDE.solo) mdSoloApply(); safeRebuild(buildDrumEd); }} : mdp && ED.dTab === 'tief' ? null : ED.dTab === 'kit' && mdUsed() ? {list: [['kit', 'KIT'], ['md', esc(MD_NAME) + ' · HALL &amp; ECHO']], cur: MDE.kitSub, on: id => { MDE.kitSub = id; safeRebuild(buildDrumEd); }} : ED.dTab === 'fx' ? {list: FX_SUBS, cur: ED.dFx, on: id => { ED.dFx = id; safeRebuild(buildDrumEd); }}
@@ -47478,12 +47481,12 @@ function mdCell(key) {
   const inert = () => !!(C.inert && C.inert(mdCur()));
   const what = () => { const v = get(); return inert() ? 'ohne Wirkung bei ' + (key === 'mEqf' ? 'EQ GAIN 0' : 'WAVE ' + mdCur().mWav) : (key === 'mWav' ? (MD_WAVE[mdCur().mWav] || ['', ''])[1] : long ? long(v) : sub(v) || C.what); };
   let tapT = 0;
-  const k = makeCtl(d, get, set, {undo: mdUndo, label: C.l, key: 'md.' + key, fmt: v => (inert() ? '–' : fmt(v)), idle: what,
+  const k = makeCtl(d, get, set, {undo: mdUndo, label: C.l, key: 'md.' + key, fmt: v => fmt(v), idle: what,   /* northfix: immer der Wert (vorher „–“) */
     onTouch: () => { clearTimeout(tapT); }, onChange: () => { upd(); mdAudition(); },
     onTap: C.list || C.vals || C.dyn ? () => { clearTimeout(tapT); tapT = setTimeout(() => mdList(key, k), DBL_MS + 20); } : null});
   k.classList.add('mdc'); if (C.bip) k.classList.add('mdbip');
   const se = el('span', 'msub'); k.appendChild(se);
-  const upd = () => { const t = inert() ? '' : sub(get()) || ''; if (se.textContent !== t) se.textContent = t; };
+  const upd = () => { const x = inert(), t = x ? (key === 'mEqf' ? 'erst mit EQ GAIN' : 'ohne Wirkung · ' + mdCur().mWav) : sub(get()) || ''; if (se.textContent !== t) se.textContent = t; if (k.classList.contains('mdin') !== x) k.classList.toggle('mdin', x); };   // northfix: gedimmt, bedienbar
   const u0 = k.update; k.update = () => { u0(); upd(); }; upd();
   return k;
 }
@@ -51884,7 +51887,7 @@ function bindUI() {
     // SX4: das Spur-Blatt (vorher: Spurkopf halten) = ■ der Zeile halten (450 ms, ≤ 8 px); der Klick danach wird gegessen (kein Stopp)
     const sth = e.target.closest('.stp');
     if (sth && !sth.classList.contains('all')) {
-      const i = +sth.dataset.t, p = {id: e.pointerId, x: e.clientX, y: e.clientY, long: false};
+      const i = +sth.dataset.t, p = {id: e.pointerId, x: e.clientX, y: e.clientY, long: false, stp: e.pointerType !== 'mouse' ? sth : null};   // northfix
       p.timer = setTimeout(() => { if (UI.thPress !== p) return; p.long = true; armLongPressGuard(); openTrackSheet(i, sth); haptic('pop'); }, 450);
       UI.thPress = p; return;
     }
@@ -51899,7 +51902,9 @@ function bindUI() {
     }
   });
   on(EL.grid, 'pointermove', e => { const q = UI.thPress; if (q && q.id === e.pointerId && (Math.abs(e.clientX - q.x) > 8 || Math.abs(e.clientY - q.y) > 8)) { clearTimeout(q.timer); UI.thPress = null; } });
-  const thEnd = e => { const q = UI.thPress; if (!q || q.id !== e.pointerId) return; UI.thPress = null; clearTimeout(q.timer); if (q.long) releaseLongPressGuard(); };
+  const thEnd = e => { const q = UI.thPress; if (!q || q.id !== e.pointerId) return; UI.thPress = null; clearTimeout(q.timer); if (q.long) releaseLongPressGuard();
+    else if (q.stp && e.type === 'pointerup') { UI.ghost = null; q.stp.click(); UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY, hard: true}; }   // northfix: Tipp = Stopp (Klick des Systems gegessen)
+  };
   on(EL.grid, 'pointerup', thEnd); on(EL.grid, 'pointercancel', thEnd);
   on(EL.grid, 'pointermove', e => { const p = UI.slotPress; if (p && p.id === e.pointerId && !p.dead && (Math.abs(e.clientX - p.x) > 8 || Math.abs(e.clientY - p.y) > 8)) { p.dead = true; clearTimeout(p.timer); slotProvRevert(p); } });
   const slotEnd = e => {
@@ -51918,9 +51923,9 @@ function bindUI() {
   on(EL.grid, 'click', e => {
     // V2a: the bank switches (view only)
     if (e.target.closest('.szb')) { setSceneBank(1 - sceneBankOf()); haptic('tick'); return; }
-    if (e.target.closest('.tbb')) { setTrackBank(MX.pages ? (trackBankOf() + 1) % MX.pages.length : 0); haptic('tick'); return; }
+    if (e.target.closest('.tbb')) return;                       // northfix: [▲▼] schaltet per onTap (Zeiger und Tastatur)
     const th = e.target.closest('.th');
-    if (th) { if (e.detail === 0) sx4MuteTap(+th.dataset.t); return; }   // SX4: Zeiger-Gesten macht sx4Down; nur die Tastatur (Enter/Leertaste) schaltet hier stumm
+    if (th) { if (e.detail === 0) sx4SelTap(+th.dataset.t); return; }   /* northfix: wählen */   // SX4: Zeiger-Gesten macht sx4Down; nur die Tastatur (Enter/Leertaste) schaltet hier stumm
     const stp = e.target.closest('.stp');
     if (stp && UI.pick && !stp.classList.contains('all')) { pickTrack(+stp.dataset.t); return; }   // V2c Matrix-Auswahl: aus ↔ bleibt
     if (stp) {
@@ -51928,7 +51933,7 @@ function bindUI() {
       const key = stp.classList.contains('all') ? 'all' : stp.dataset.t, now = performance.now(), last = UI.stpTap;
       const dbl = !!(last && last.key === key && now - last.t < 400);
       UI.stpTap = dbl ? null : {key, t: now};
-      if (key === 'all') { if (!R.playing) { panic(); toast('Alle Töne aus'); } else if (dbl) { for (let i = 0; i < NT(); i++) stopTrackNow(i); haptic('snap'); } else { stopAllClips(); haptic('tick'); } }
+      if (key === 'all') { if (!R.playing) { stopAllClips(); panic(); toast('Alle Clips und Töne aus'); }   /* northfix: alle Spuren ohne Clip */ else if (dbl) { for (let i = 0; i < NT(); i++) stopTrackNow(i); haptic('snap'); } else { stopAllClips(); haptic('tick'); } }
       else if (dbl) { stopTrackNow(+key); haptic('snap'); }
       else { stopTrack(+key); if (R.playing) haptic('tick'); }
     }
@@ -52145,7 +52150,7 @@ function sx4Move(e) {
   const p = SX4.p; if (!p || p.id !== e.pointerId) return;
   const dx = e.clientX - p.x, dy = e.clientY - p.y;
   if (!p.mode) {
-    if (Math.abs(dx) > SX4.DRAG && Math.abs(dx) > Math.abs(dy) * 1.2) {
+    if (Math.abs(dx) > SX4.DRAG && Math.abs(dx) > Math.abs(dy) * 2) {   // northfix: nur eindeutig waagrecht
       clearTimeout(p.timer); p.mode = 'vol'; p.x = e.clientX; p.before = soundSnapshot(p.i);
       sx4SliderShow(p.el, p.i, 0); return;
     }
@@ -52167,7 +52172,13 @@ function sx4End(e) {
   const S_ = SX4.vis;
   if (S_ && S_.el === p.el) { sx4SliderTap(S_); return; }             // der stehende Schieber nimmt den Tipp
   sx4SliderHide();
-  sx4MuteTap(p.i);
+  sx4SelTap(p.i);                                                    // northfix: Tipp = wählen (wie vor 4.35)
+}
+// northfix: Tipp auf den Spurnamen wählt die Spur – Matrix: die gewählte noch einmal = Editor (wie 4.34); stumm nur über [M]
+function sx4SelTap(i) {
+  if (!S.tracks[i]) return;
+  if (UI.songView) { selectTrack(i); haptic('tick'); lcdOrToast(S.tracks[i].name + ' gewählt'); UI.dirty.song = true; return; }
+  if (i === R.selT && R.editor !== 'synth' && R.editor !== 'drum') { selectTrack(i); openEditor(); } else selectTrack(i);
 }
 on(window, 'pointermove', sx4Move, {passive: false});
 on(window, 'pointerup', sx4End); on(window, 'pointercancel', sx4End);
