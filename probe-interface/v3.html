@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Probe AG06-Ausgang 3</title>
+<style>
+:root{--bg:#121418;--fg:#ece8df;--dim:#9aa0aa;--line:#3a3f4a;--amber:#ffb22e;--ok:#5fd38d;--no:#ff6b6b}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--fg);font:500 16px/1.4 -apple-system,system-ui,sans-serif}
+body{padding:max(12px,env(safe-area-inset-top)) 12px 40px}
+h1{font-size:19px;margin:4px 0 6px}p{color:var(--dim);margin:4px 0 12px;font-size:14px}
+.v{border:1px solid var(--line);border-radius:12px;padding:10px;margin:10px 0}
+.v b.t{display:block;margin-bottom:6px}.v .hint{color:var(--amber);font-size:14px;margin:6px 0}
+.v button.go,.v button.ex{width:100%;min-height:64px;border-radius:10px;border:2px solid var(--amber);background:#1d2026;color:var(--fg);font:700 17px inherit;margin-top:6px}
+.v button.ex{border-color:var(--ok)}
+.row{display:flex;gap:8px;margin-top:8px}.row button{flex:1;min-height:48px;border-radius:8px;border:1px solid var(--line);background:#1d2026;color:var(--fg);font:700 15px inherit}
+.row button.on.y{background:var(--ok);color:#000}.row button.on.n{background:var(--no);color:#000}
+.top{display:flex;gap:8px}.top button{flex:1;min-height:56px;border-radius:10px;border:1px solid var(--amber);background:#1d2026;color:var(--fg);font:700 16px inherit}
+pre{white-space:pre-wrap;background:#0e1014;border:1px solid var(--line);border-radius:8px;padding:8px;font:500 12px/1.4 ui-monospace,monospace;max-height:40vh;overflow:auto}
+.meter{height:10px;background:#0e1014;border-radius:5px;overflow:hidden;margin-top:6px}.meter i{display:block;height:100%;width:0;background:var(--ok)}
+</style>
+</head>
+<body>
+<h1>Probe 3: Ausgang zurückholen</h1>
+<p>Erst die zwei Fragen F1/F2 beantworten. Dann V17–V23 der Reihe nach: antippen, die gelbe Anweisung machen, dann Ja/Nein: Hörst du den Ton im Kopfhörer? Am Ende [Ergebnis kopieren].</p>
+<div class="top"><button id="stop">Alles stoppen</button><button id="cp">Ergebnis kopieren</button></div>
+<div id="vs"></div>
+<pre id="log"></pre>
+<script>
+'use strict';
+const L = []; const log = s => { const t = new Date().toTimeString().slice(0, 8); L.push('[' + t + '] ' + s); document.getElementById('log').textContent = L.slice(-60).join('\n'); };
+const A = {}; let ctx = null, st = null, el = null, osc = [], an = null, raf = 0, wavUrl = null;
+const sup = {picker: 'webkitShowPlaybackTargetPicker' in HTMLMediaElement.prototype, elSink: 'setSinkId' in HTMLMediaElement.prototype, sess: !!navigator.audioSession};
+log('iOS-UA: ' + navigator.userAgent); log('Unterstützt: AirPlay-Auswahl=' + sup.picker + ' · Audio-Element.setSinkId=' + sup.elSink + ' · audioSession=' + sup.sess);
+async function devs() { let d = []; try { d = await navigator.mediaDevices.enumerateDevices(); } catch (e) {} return d; }
+async function ag06(kind) { const d = await devs(); return d.find(o => o.kind === kind && /ag0?6|ag0?3|yamaha|usb/i.test(o.label)) || null; }
+async function logOut(tag) { const d = await devs(); log(tag + ' Ausgänge: ' + d.filter(o => o.kind === 'audiooutput').map(o => o.label + (o.deviceId === 'default' ? '*' : '')).join(' | ') + ' · session=' + (navigator.audioSession ? navigator.audioSession.type : '–')); }
+async function stopAll() { cancelAnimationFrame(raf); an = null; osc.forEach(o => { try { o.stop(); } catch (e) {} }); osc = []; if (st) st.getTracks().forEach(t => t.stop()); st = null; if (el) { try { el.pause(); } catch (e) {} el.removeAttribute('src'); el.srcObject = null; el.remove(); el = null; } if (ctx) { try { await ctx.close(); } catch (e) {} } ctx = null; }
+function wav() { if (wavUrl) return wavUrl; const sr = 44100, n = sr * 2, b = new ArrayBuffer(44 + n * 2), v = new DataView(b); const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); }; w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true); for (let i = 0; i < n; i++) { const s = 0.12 * (Math.sin(2 * Math.PI * 220 * i / sr) + Math.sin(2 * Math.PI * 330 * i / sr)); v.setInt16(44 + i * 2, s * 32767, true); } wavUrl = URL.createObjectURL(new Blob([b], {type: 'audio/wav'})); return wavUrl; }
+async function fileTone() { el = document.createElement('audio'); el.setAttribute('x-webkit-airplay', 'allow'); el.playsInline = true; el.loop = true; el.src = wav(); document.body.appendChild(el); try { await el.play(); log('Datei-Ton spielt (Audio-Element, keine Web-Audio)'); } catch (e) { log('play Fehler ' + e.name); } }
+function ctxTone() { const g = ctx.createGain(); g.gain.value = 0.1; [220, 330].forEach(f => { const o = ctx.createOscillator(); o.frequency.value = f; o.connect(g); o.start(); osc.push(o); }); g.connect(ctx.destination); log('Web-Audio-Ton spielt'); }
+async function mic(sess, cons) { if (sess !== undefined && navigator.audioSession) { try { navigator.audioSession.type = sess; } catch (e) {} } let inp = await ag06('audioinput'); const c = cons === 'leer' ? true : Object.assign(cons === 'echo' ? {} : {echoCancellation: false, noiseSuppression: false, autoGainControl: false}, inp ? {deviceId: {exact: inp.deviceId}} : {}); st = await navigator.mediaDevices.getUserMedia({audio: c}); let t = st.getAudioTracks()[0]; if (cons !== 'leer' && !inp && !/ag0?6|ag0?3/i.test(t.label)) { inp = await ag06('audioinput'); if (inp) { st.getTracks().forEach(x => x.stop()); const c2 = Object.assign(cons === 'echo' ? {} : {echoCancellation: false, noiseSuppression: false, autoGainControl: false}, {deviceId: {exact: inp.deviceId}}); st = await navigator.mediaDevices.getUserMedia({audio: c2}); t = st.getAudioTracks()[0]; } } log('Mikro: ' + (t && t.label) + ' · Filter=' + (cons || 'aus') + ' · session=' + (navigator.audioSession ? navigator.audioSession.type : '–')); }
+function meter(box) { if (!st) return; if (!ctx) ctx = new AudioContext(); an = ctx.createAnalyser(); ctx.createMediaStreamSource(st).connect(an); const i = box.querySelector('.meter i'); const d = new Float32Array(1024); const f = () => { if (!an) return; an.getFloatTimeDomainData(d); let p = 0; for (const x of d) p = Math.max(p, Math.abs(x)); i.style.width = Math.min(100, p * 300) + '%'; raf = requestAnimationFrame(f); }; f(); }
+const Q = [
+  ['F1', 'Seite zu, nur AG06: Hörst du dich selbst im Kopfhörer (CH1-Regler am AG06 auf)?'],
+  ['F2', 'GarageBand mit AG06 aufnehmen: Hörst du Begleitung UND dich im Kopfhörer?'],
+];
+const V = [
+  ['V17', 'Mikro AG06, Ton als Datei, dann iOS-Ausgabe-Menü', 'Nach dem Start: grünen Knopf tippen → im Menü „AG06/AG03“ wählen.', async () => { await mic('play-and-record'); await fileTone(); }, ['iOS-Ausgabe-Menü öffnen', () => { if (el && el.webkitShowPlaybackTargetPicker) { el.webkitShowPlaybackTargetPicker(); log('Ausgabe-Menü geöffnet'); } else log('Ausgabe-Menü nicht verfügbar'); }]],
+  ['V18', 'Mikro AG06, Ton als Datei, dann Kontrollzentrum', 'Nach dem Start: Kontrollzentrum aufziehen → Musik-Kachel → AirPlay-Symbol (Dreieck mit Kreisen) → „AG06/AG03“ wählen → zurück zur Seite.', async () => { await mic('play-and-record'); await fileTone(); }],
+  ['V19', 'Mikro AG06 + Web-Audio-Ton, dann Kontrollzentrum', 'Wie V18: Kontrollzentrum → AirPlay-Symbol → „AG06/AG03“.', async () => { await mic('play-and-record'); ctx = new AudioContext(); await ctx.resume(); ctxTone(); }],
+  ['V20', 'Mikro AG06 + Ton, dann USB-Stecker neu einstecken', 'Nach dem Start: USB-Kabel am Kamera-Adapter kurz ziehen, 2 s warten, wieder einstecken.', async () => { await mic('play-and-record'); ctx = new AudioContext(); await ctx.resume(); ctxTone(); }],
+  ['V21', 'Mikro mit iOS-Filtern (Echo-Unterdrückung an)', 'Nur zuhören.', async () => { await mic('play-and-record', 'echo'); ctx = new AudioContext(); await ctx.resume(); ctxTone(); }],
+  ['V22', 'Mikro ganz ohne Vorgaben (audio: true)', 'Nur zuhören.', async () => { await mic(undefined, 'leer'); ctx = new AudioContext(); await ctx.resume(); ctxTone(); }],
+  ['V23', 'Mikro AG06, danach Sitzung auf „playback“', 'Nur zuhören (Pegel beobachten: bewegt er sich noch?).', async () => { await mic('play-and-record'); ctx = new AudioContext(); await ctx.resume(); ctxTone(); await new Promise(r => setTimeout(r, 500)); try { navigator.audioSession.type = 'playback'; log('session → playback'); } catch (e) { log('playback Fehler ' + e.name); } }],
+];
+const vs = document.getElementById('vs');
+function answers(box, id, yes, no) { box.querySelectorAll('.row button').forEach(b => b.onclick = () => { A[id] = b.dataset.a === 'y' ? 'JA' : 'NEIN'; box.querySelectorAll('.row button').forEach(x => x.classList.remove('on', 'y', 'n')); b.classList.add('on', b.dataset.a); log('ANTWORT ' + id + ' = ' + A[id]); }); }
+for (const [id, txt] of Q) { const box = document.createElement('div'); box.className = 'v'; box.innerHTML = `<b class="t">${id}: ${txt}</b><div class="row"><button data-a="y">Ja</button><button data-a="n">Nein</button></div>`; answers(box, id); vs.appendChild(box); }
+for (const [id, txt, hint, fn, extra] of V) {
+  const box = document.createElement('div'); box.className = 'v';
+  box.innerHTML = `<button class="go">${id}: ${txt}</button><div class="hint">${hint}</div>${extra ? '<button class="ex">' + extra[0] + '</button>' : ''}<div class="meter"><i></i></div><div class="row"><button data-a="y">Ton im Kopfhörer: Ja</button><button data-a="n">Nein</button></div>`;
+  box.querySelector('.go').onclick = async () => { await stopAll(); log('════ ' + id + ' ════'); try { await fn(); meter(box); } catch (e) { log(id + ' Fehler: ' + (e && e.name) + ' ' + (e && e.message)); } setTimeout(() => logOut(id), 600); };
+  if (extra) box.querySelector('.ex').onclick = () => { extra[1](); setTimeout(() => logOut(id + ' nach Menü'), 3000); };
+  answers(box, id); vs.appendChild(box);
+}
+navigator.mediaDevices && navigator.mediaDevices.addEventListener && navigator.mediaDevices.addEventListener('devicechange', () => logOut('Gerätewechsel'));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) logOut('zurück auf Seite'); });
+document.getElementById('stop').onclick = () => { stopAll(); log('gestoppt'); };
+document.getElementById('cp').onclick = async () => { const txt = 'PROBE-3 AG06-Ausgang\n' + Object.entries(A).map(([k, v]) => k + '=' + v).join(' ') + '\n\n' + L.join('\n'); try { await navigator.clipboard.writeText(txt); document.getElementById('cp').textContent = 'Kopiert ✓'; } catch (e) { const t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); document.getElementById('cp').textContent = 'Kopiert ✓'; } };
+</script>
+</body>
+</html>
