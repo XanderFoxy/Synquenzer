@@ -7150,3 +7150,96 @@ Prüf-Tests: `scratchpad/pruef-4271k/` (`t-start`, `t-erk`, `t-auto`, `t-auto2`,
   Knackt es dabei? Das Modell rechnet im Worker, der Haupt-Faden bleibt frei.
 - Im seltenen Fall „Merker sagt Modell da, Cache ist vom System geräumt“ während der Sitzung meldet die Automatik einmal einen Konsolenfehler
   („Sprachmodell nicht auf dem Gerät“). Es wird nichts geladen.
+## 4.28.0 — Konsolidieren, Magic Scale, Melodie-Pinsel
+
+App: `rel-4280/index.html`, 4 373 680 B. Das sind +83 KB gegenüber 4.27.2 (4 289 956 B). md5 `df896f3c…`.
+Die ungeprüfte Merge-Fassung (`4bcbfd22…`) liegt als `index-vor-pruef.html` daneben.
+`VERSION = '4.28.0'` (APP_CODE 4028000). Die Zeile `  live: true,` steht 1× da, „MS 2000“ genau 1×, keine Markennamen.
+
+Basis ist 4.27.2. Alles daraus bleibt: Chor-Gruppe, Mitlese-Zeile, GarageBand-Umweg und Songtext-Erkennung.
+Dazu kommen die drei Pakete aus der Stage EDIT (`git merge-file` gegen 4.27.0). Es gab zwei Konflikte: VERSION und `normSong`.
+In `normSong` bleiben `ggbNorm` und `konSongNorm` beide drin.
+
+- **Block und Konsolidieren:** Mehrere Takte als Block über der Taktleiste zusammenfassen und hineingehen.
+  Den Bereich als neuen Teil konsolidieren: Der Song klingt genau gleich, auch mit Chor-Gruppe und GarageBand-Gesang. Mit [Zurückholen] kommt der alte Zustand jederzeit wieder.
+- **Magic Scale:** [Magic] im Noten-Editor öffnet eine Zeile mit diesen Knöpfen:
+  - [Wischen]: Läufe im Tonraster malen
+  - **[Leiter]** / [Terzen] / [Terz+Quinte]
+  - [Pause] und [Pause +]
+  - [Akkorde] mit Umkehrung ▲ ▼
+  - [Glatt]
+- **Melodie-Pinsel:** [Pinsel] mit weichem Einzug (schmal / mittel / breit). Dazu [Umkehren ↕], [Krebs ↔], [Tauschen ⇆] und [Mithören].
+- **Werkzeugleiste:** ✎ ⬚ ⌫ | **Pinsel · Magic · Mithören** | Raster … Pinsel und Magic schalten sich gegenseitig um.
+  Beide nutzen dieselbe Tonart der Stelle und dieselbe Tonart-Handwahl je Clip.
+- Keine Klänge geändert. Neue Felder gibt es nur von KON (`song.blocks`, `song.kons`, `Part.sxp`). Ein Song ohne Blöcke speichert nichts Neues.
+
+**Bei der Prüfung behoben:**
+1. **[Zurückholen] nach einer Änderung im Bereich.** Vorher ging dabei Folgendes kaputt:
+   - Ein GarageBand-Gesang, der vor dem Bereich anfängt, fehlte danach im Bereich (Stille).
+   - Beim nächsten Import kam fälschlich der Hinweis „Achtung: seit dem Export Takte eingefügt/gelöscht“.
+   - Der Block über dem Bereich verschwand.
+   - Die Marken blieben in Stücke geteilt („Strophe“ zweimal).
+
+   Jetzt gilt: Gesang, Export-Daten und Blöcke bleiben unverändert, und die Marken sind wieder wie vor dem Konsolidieren.
+   Hat der Teil inzwischen eine andere Länge, bleibt es beim alten Verhalten. ↶ und ↷ gehen wie vorher in je einem Schritt.
+2. **Magic-Modus „Tonart“ heißt jetzt „Leiter“.** So gibt es nicht mehr dreimal „Tonart“ im Editor.
+   [Tonart] (nur Tonart-Töne zeigen) und [Tonart: Auto] im Pinsel heißen weiter so. Die Breite des Knopfs bleibt gleich.
+
+### Bitte prüfen am iPhone (Schritt für Schritt)
+
+1. **Version:** ≡ (Menü) → Info zeigt „SYNQUENZER 4.28.0“.
+2. **Block:** In der Song-Ansicht die Takte 3–6 in der Taktleiste antippen → ⋯ Mehr → [▣ Als Block]. Über der Taktleiste steht jetzt „▣ BLOCK A“.
+   Doppeltipp auf den Block → oben steht „← Song › Block A“. Darauf tippen → du bist wieder draußen.
+3. **Konsolidieren:** Block antippen → [Als neuen Teil konsolidieren] → Namen eingeben.
+   Abspielen: Klingt der Song genau wie vorher? Der neue Teil steht in der Teil-Leiste.
+4. **Mit Chor:** In einem Song mit Chor-Gruppe auf der STIMME den Bereich konsolidieren → Der Chor klingt weiter.
+   Block antippen → [Zurückholen] → Alles ist wie vorher, der Chor bleibt.
+5. **Mit GarageBand-Gesang:**
+   1. Song exportieren und den Gesang importieren.
+   2. Takte 3–6 konsolidieren und dort einen Akkord ändern.
+   3. [Zurückholen] tippen.
+   4. Prüfen: Der Gesang läuft durch, ohne Loch. Der Block ist noch da. Ein neuer Import zeigt keinen „Achtung“-Hinweis.
+6. **Magic:** Clip öffnen (✎) → [Magic] → [Wischen] → mit einem Finger schräg nach rechts wischen.
+   Die Noten liegen im Raster, nur Töne der Tonart. Dann [Leiter] und [Terzen] probieren. [↶] nimmt den ganzen Zug zurück.
+7. **Pinsel:** [Pinsel] antippen → die Magic-Zeile geht zu. Über einen Lauf malen: Die Noten folgen weich. [schmal] und [breit] probieren.
+8. **Umschalten:** [Magic] antippen → Wischen ist wieder aktiv, der Pinsel ist aus. Nichts liegt übereinander, alle Knöpfe sind gut zu treffen.
+9. **Querformat:** Telefon drehen → Kopfzeile: Titel, dann ✎ ⬚ ⌫ | Pinsel Magic Mithören | … Die Leiste scrollt seitlich.
+10. **Undo/Redo:** Im konsolidierten Teil (Song-Melodie) wischen und malen, dann dreimal [↶] → Auch das Konsolidieren ist zurück.
+    Dreimal [↷] → Alles ist wieder da.
+11. **Speichern/Laden:** Speichern und die App neu laden → Block, Teil, Chor und Noten sind da. [Zurückholen] geht auch nach dem Laden.
+
+### Tests (Chromium mit Touch-Emulation, gegen `rel-4280/index.html`)
+
+| Test | Ergebnis |
+|---|---|
+| KON: kon-block 41, kon-konsol 42, kon-save 11, kon-layout 24 | **118/118** |
+| MAGIC: ms-funktion 43, ms-layout 38 (4 Formate, Bildrate), ms-regress 2 (alt = neu gegen **4.27.2**, hoch + quer) | **83/83** |
+| PINSEL: t-pinsel 39, t-bloecke 20, t-mithoeren 20, t-layout 47, t-alt 18 (alt = neu gegen **4.27.2**) | **144/144** |
+| Zusammenspiel der drei Pakete (`zusammen.mjs`) | **48/48** |
+| **neu** G-GB × KON (`ggb-kon.mjs`): Einfügen/Löschen verschiebt Export-Start **und** Block, mit ↶ ↷; Block kopieren; Konsolidieren/Zurückholen (unverändert und geändert) mit GarageBand-Take: Gesang je Takt gleich, Export-Daten, Block, Marken, ↶ ↷, zweiter Import ohne falschen Hinweis, Speichern/Laden | **34/34** (vor dem Fix 5 rot) |
+| G-GB: a-export 16, bcd-import 18, f-layout 11, g-befunde 28, h-zusammenspiel 16 | **89/89** |
+| G9b-Rauchtest (Version 4.28.0 / 4028000) | **5/5** |
+| Rauchtest `smoke.mjs` | grün, `errors []` |
+| `orch-mk-check.mjs` | grün, `errors []`, Klangwerte (initAm rms 0.0705) |
+| `v3-mk2-wellen.mjs` | alles PASS |
+| acorn-Doppelprüfung | 20 Skripte, 3 532 Namen, **0 doppelt**, 0 Syntaxfehler |
+
+Ein Hinweis zu t-layout: Laufen alle Tests gleichzeitig, misst der Bildraten-Test zu wenig (einmal 53,5 fps). Allein ergibt er 59,5/60 fps.
+`tests/alle.sh` lässt die beiden Bildraten-Tests deshalb jetzt am Ende allein laufen.
+
+### Offene Punkte
+
+1. **Block-Zeile: Trefferfläche ≥ 44 px geht nicht unsichtbar.** Die Block-Zeile ist hochkant 14 px hoch, quer 12 px.
+   - Hochkant: Darüber liegen 4 px Luft, dann die Transport-Knöpfe (selbst genau 44 px). Darunter liegt direkt die Taktleiste mit den Marken-Chips (20 px).
+   - Quer: Darüber liegen 3 px Luft, dann die Kopfzeile. Die Taktleiste ist 16 px hoch.
+
+   Luft, Block-Zeile und Taktleiste zusammen sind nur 38 px (quer 31 px), also schon zusammen unter 44 px.
+   Jede unsichtbare Vergrößerung würde Transport-Knöpfe oder Taktleiste/Marken-Chips überdecken. Deshalb ist **nichts geändert**.
+   Vorschlag an Xander (wäre sichtbar, also erst fragen):
+   - (a) Block-Zeile 22 px hoch, solange es Blöcke gibt, oder
+   - (b) im Marken-Blatt / in der Bereich-Leiste ein Knopf [▣ Block …] (44 px), der das Block-Blatt öffnet.
+2. **Fragen an Xander aus der Stage EDIT:**
+   - Tonart im eigenen Song-Clip: Jetzt gilt für Pinsel und Magic die Tonart des Song-Takts. Passt das?
+   - Es gibt zwei Tonart-Wahlen mit gleichem Inhalt (Magic [Auto ▾] und Pinsel). Reicht eine?
+3. **Aus KON:** Ein Teil mit Transpositions-Wechsel in der Mitte nimmt nur die Transposition vom Anfang, wenn er live aus der Teil-Leiste gestartet wird.
+4. Noch nicht auf dem iPhone geprüft. Fertig ist es erst nach Xanders Okay.
