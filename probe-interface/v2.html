@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Probe AG06-Ausgang 2</title>
+<style>
+:root{--bg:#121418;--fg:#ece8df;--dim:#9aa0aa;--line:#3a3f4a;--amber:#ffb22e;--ok:#5fd38d;--no:#ff6b6b}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--fg);font:500 16px/1.4 -apple-system,system-ui,sans-serif}
+body{padding:max(12px,env(safe-area-inset-top)) 12px 40px}
+h1{font-size:19px;margin:4px 0 6px}p{color:var(--dim);margin:4px 0 12px;font-size:14px}
+.v{border:1px solid var(--line);border-radius:12px;padding:10px;margin:10px 0}
+.v button.go{width:100%;min-height:72px;border-radius:10px;border:2px solid var(--amber);background:#1d2026;color:var(--fg);font:700 17px inherit}
+.row{display:flex;gap:8px;margin-top:8px}.row button{flex:1;min-height:48px;border-radius:8px;border:1px solid var(--line);background:#1d2026;color:var(--fg);font:700 15px inherit}
+.row button.on.y{background:var(--ok);color:#000}.row button.on.n{background:var(--no);color:#000}
+.top{display:flex;gap:8px}.top button{flex:1;min-height:56px;border-radius:10px;border:1px solid var(--amber);background:#1d2026;color:var(--fg);font:700 16px inherit}
+pre{white-space:pre-wrap;background:#0e1014;border:1px solid var(--line);border-radius:8px;padding:8px;font:500 12px/1.4 ui-monospace,monospace;max-height:40vh;overflow:auto}
+.meter{height:10px;background:#0e1014;border-radius:5px;overflow:hidden;margin-top:6px}.meter i{display:block;height:100%;width:0;background:var(--ok)}
+</style>
+</head>
+<body>
+<h1>Probe 2: Ausgang aufs AG06 zwingen</h1>
+<p>Die erste Probe zeigte: Sobald das Mikro an ist, stellt iOS den Standard-Ausgang auf „Lautsprecher“, obwohl das AG06 als Eingang läuft. Hier wird der Ton gezielt aufs AG06 geschickt. Jede Variante antippen, kurz warten, dann antworten: Hörst du den Ton im Kopfhörer? Am Ende [Ergebnis kopieren].</p>
+<div class="top"><button id="stop">Alles stoppen</button><button id="cp">Ergebnis kopieren</button></div>
+<div id="vs"></div>
+<pre id="log"></pre>
+<script>
+'use strict';
+const L = []; const log = s => { const t = new Date().toTimeString().slice(0, 8); L.push('[' + t + '] ' + s); document.getElementById('log').textContent = L.slice(-60).join('\n'); };
+const A = {}; let ctx = null, st = null, el = null, dst = null, osc = [], an = null, raf = 0;
+const sup = {ctxSink: typeof AudioContext !== 'undefined' && 'setSinkId' in AudioContext.prototype, elSink: 'setSinkId' in HTMLMediaElement.prototype, sess: !!navigator.audioSession, sel: !!(navigator.mediaDevices && navigator.mediaDevices.selectAudioOutput)};
+log('iOS-UA: ' + navigator.userAgent); log('Unterstützt: AudioContext.setSinkId=' + sup.ctxSink + ' · Audio-Element.setSinkId=' + sup.elSink + ' · audioSession=' + sup.sess + ' · selectAudioOutput=' + sup.sel);
+async function devs() { let d = []; try { d = await navigator.mediaDevices.enumerateDevices(); } catch (e) {} return d; }
+async function ag06(kind) { const d = await devs(); const x = d.find(o => o.kind === kind && /ag0?6|ag0?3|yamaha|usb/i.test(o.label)); return x || null; }
+async function logOut(tag) { const d = await devs(); log(tag + ' Ausgänge: ' + d.filter(o => o.kind === 'audiooutput').map(o => o.label + (o.deviceId === 'default' ? '*' : '')).join(' | ')); }
+async function stopAll() { cancelAnimationFrame(raf); osc.forEach(o => { try { o.stop(); } catch (e) {} }); osc = []; if (st) st.getTracks().forEach(t => t.stop()); st = null; if (el) { try { el.pause(); } catch (e) {} el.srcObject = null; el.remove(); el = null; } if (ctx) { try { await ctx.close(); } catch (e) {} } ctx = null; }
+function tone(dest) { const g = ctx.createGain(); g.gain.value = 0.1; [220, 330].forEach(f => { const o = ctx.createOscillator(); o.frequency.value = f; o.connect(g); o.start(); osc.push(o); }); g.connect(dest); }
+function meter(box) { const i = box.querySelector('.meter i'); const d = new Float32Array(1024); const f = () => { if (!an) return; an.getFloatTimeDomainData(d); let p = 0; for (const v of d) p = Math.max(p, Math.abs(v)); i.style.width = Math.min(100, p * 300) + '%'; raf = requestAnimationFrame(f); }; f(); }
+async function mic(sess) { if (sess !== undefined && navigator.audioSession) { try { navigator.audioSession.type = sess; } catch (e) {} } const inp = await ag06('audioinput'); const c = {echoCancellation: false, noiseSuppression: false, autoGainControl: false}; if (inp) c.deviceId = {exact: inp.deviceId}; st = await navigator.mediaDevices.getUserMedia({audio: c}); const t = st.getAudioTracks()[0]; log('Mikro: ' + (t && t.label) + ' · session=' + (navigator.audioSession ? navigator.audioSession.type : '–')); }
+async function viaEl(box) { const out = await ag06('audiooutput'); dst = ctx.createMediaStreamDestination(); tone(dst.stream ? dst : ctx.destination); el = document.createElement('audio'); el.playsInline = true; el.autoplay = true; el.srcObject = dst.stream; document.body.appendChild(el); if (out && el.setSinkId) { try { await el.setSinkId(out.deviceId); log('Audio-Element setSinkId → ' + out.label + ' ok'); } catch (e) { log('Audio-Element setSinkId Fehler: ' + e.name + ' ' + e.message); } } else log('Audio-Element: kein setSinkId oder kein AG06-Ausgang'); try { await el.play(); log('Audio-Element spielt'); } catch (e) { log('play Fehler ' + e.name); } }
+const V = [
+  ['V11', 'Mikro AG06, dann AudioContext.setSinkId(AG06)', async box => { await mic('play-and-record'); ctx = new AudioContext(); await ctx.resume(); const out = await ag06('audiooutput'); if (sup.ctxSink && out) { try { await ctx.setSinkId(out.deviceId); log('ctx.setSinkId → ' + out.label + ' ok'); } catch (e) { log('ctx.setSinkId Fehler: ' + e.name + ' ' + e.message); } } else log('ctx.setSinkId nicht da'); tone(ctx.destination); }],
+  ['V12', 'Mikro AG06, Ton über Audio-Element mit setSinkId(AG06)', async box => { await mic('play-and-record'); ctx = new AudioContext(); await ctx.resume(); await viaEl(box); }],
+  ['V13', 'Wie V12, aber audioSession nicht anfassen', async box => { await mic(undefined); ctx = new AudioContext(); await ctx.resume(); await viaEl(box); }],
+  ['V14', 'Erst Ton übers Audio-Element aufs AG06, DANN Mikro', async box => { ctx = new AudioContext(); await ctx.resume(); await viaEl(box); await new Promise(r => setTimeout(r, 800)); await mic('play-and-record'); }],
+  ['V15', 'Mikro AG06 + Audio-Element ohne setSinkId (nur Element statt Context)', async box => { await mic('play-and-record'); ctx = new AudioContext(); await ctx.resume(); dst = ctx.createMediaStreamDestination(); tone(dst); el = document.createElement('audio'); el.playsInline = true; el.srcObject = dst.stream; document.body.appendChild(el); try { await el.play(); } catch (e) { log('play ' + e.name); } }],
+  ['V16', 'Mikro AG06 mit „auto“, Audio-Element setSinkId(AG06)', async box => { await mic('auto'); ctx = new AudioContext(); await ctx.resume(); await viaEl(box); }],
+];
+const vs = document.getElementById('vs');
+for (const [id, txt, fn] of V) {
+  const box = document.createElement('div'); box.className = 'v';
+  box.innerHTML = `<button class="go">${id}: ${txt}</button><div class="meter"><i></i></div><div class="row"><button data-a="y">Ton im Kopfhörer: Ja</button><button data-a="n">Nein</button></div>`;
+  box.querySelector('.go').onclick = async () => { await stopAll(); log('════ ' + id + ' ════'); try { await fn(box); if (st && ctx) { an = ctx.createAnalyser(); ctx.createMediaStreamSource(st).connect(an); meter(box); } } catch (e) { log(id + ' Fehler: ' + (e && e.name) + ' ' + (e && e.message)); } setTimeout(() => logOut(id), 600); };
+  box.querySelectorAll('.row button').forEach(b => b.onclick = () => { A[id] = b.dataset.a === 'y' ? 'JA' : 'NEIN'; box.querySelectorAll('.row button').forEach(x => x.classList.remove('on', 'y', 'n')); b.classList.add('on', b.dataset.a); log('ANTWORT ' + id + ' = ' + A[id]); });
+  vs.appendChild(box);
+}
+document.getElementById('stop').onclick = () => { stopAll(); log('gestoppt'); };
+document.getElementById('cp').onclick = async () => { const txt = 'PROBE-2 AG06-Ausgang\n' + Object.entries(A).map(([k, v]) => k + '=' + v).join(' ') + '\n\n' + L.join('\n'); try { await navigator.clipboard.writeText(txt); document.getElementById('cp').textContent = 'Kopiert ✓'; } catch (e) { const t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); document.getElementById('cp').textContent = 'Kopiert ✓'; } };
+</script>
+</body>
+</html>
