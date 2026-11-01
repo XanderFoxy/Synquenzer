@@ -22263,7 +22263,7 @@ function mkSetP(i, path, v, live) {
   const before = SQMK.mkPathGet(s_.p.mk, path);
   s_.p.mk = SQMK.mkPathSet(s_.p.mk, path, x);
   const after = SQMK.mkPathGet(s_.p.mk, path);
-  const E = AU.synth[i]; if (E && s_.engine === 'mk') { const wm = /^t\.([01])\.(o1\.(w|c2)|seq\.)/.exec(path); if (wm) mkwFeed(E, s_, live && wm[3] === 'c2' ? x : null, +wm[1]); else if (path === 'mode') mkwFeed(E, s_, null, 1); E.mkSet({[path]: live ? x : after}); }   // MK3: both timbres
+  const E = AU.synth[i]; if (E && s_.engine === 'mk') { const wm = /^t\.([01])\.(o1\.(w|c2)|seq\.)/.exec(path); if (wm) mkwFeed(E, s_, live && wm[3] === 'c2' ? x : null, +wm[1]); else if (path === 'mode') mkwFeed(E, s_, null, 1); const v6 = R.v6aCur && R.v6aCur[i] ? v6aCurSt(i) : null; E.mkSet({[path]: v6 && typeof v6.p['mk.' + path] === 'number' ? v6.p['mk.' + path] : live ? x : after}); }   // MK3: both timbres; V6A: under a state its value stays
   if (after !== before) { if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') UI.ab = null; UI.sndVer++; UI.dirty.strip = UI.dirty.edHead = true; markDirty(); MKECO.delete(s_); if (!E) rebuildNativeLfos(i); }   // G-MK2a-fix: header dot + [A/B] at once (§11.3), like edParamChanged
   return after;
 }

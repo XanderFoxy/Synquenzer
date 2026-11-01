@@ -1,0 +1,978 @@
+--- bau/snapshots/R-4300.html	2026-11-01 09:33:24.942829351 +0000
++++ bau/helfer/V6A/index.html	2026-11-01 10:26:07.195017324 +0000
+@@ -264,6 +264,16 @@
+ .slot .gl.rd,.slot.sel:not(.filled) .gl.rd{color:var(--rec);font-size:16px}
+ .slot .ln{position:absolute;left:4px;bottom:3px;font:600 10px/1 var(--font-num);color:var(--text-dim);pointer-events:none}
+ .slot .kbg{position:absolute;right:3px;top:3px;z-index:1;font:700 9px/1 var(--font-ui);padding:2px 3px;border-radius:3px;background:rgba(0,0,0,.45);color:var(--text);pointer-events:none}
++/* V6A: ◆ Klangzustand – rechts oben in der Zelle (10 px), das Tonart-Kürzel rückt daneben; Editor im ◆-Modus: Amber-Kante, Kopf-Taste */
++.slot .v6m{position:absolute;right:4px;top:3px;z-index:3;font:700 10px/1 var(--font-ui);color:var(--amber);pointer-events:none}
++.slot.v6st .kbg{right:15px}
++.hb.v6ab{min-width:44px;height:44px;padding:0 6px;font-size:16px;color:var(--amber);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 auto}
++.hb.v6ab.on{background:var(--amber);color:#1b1408;font-size:10px;line-height:1.05;letter-spacing:0}
++.hb.v6ab.has{box-shadow:inset 0 0 0 2px var(--amber)}
++.hb.v6ab .v6l{display:block}
++.sheet.v6a-ed{box-shadow:inset 0 3px 0 var(--amber)}
++.lcd.v6a .lk{color:var(--amber)}
++.lcd.v6a{box-shadow:inset 0 0 0 1px var(--amber),inset 0 1px 5px rgba(0,0,0,.9)}
+ .slot .tx{position:absolute;right:4px;bottom:3px;font:700 10px/1 var(--font-num);color:var(--text);pointer-events:none;white-space:nowrap}
+ .slot.rec .tx{color:var(--rec)}
+ .slot .pg{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--tc);transform-origin:0 50%;transform:scaleX(0);pointer-events:none;will-change:transform;z-index:3}
+@@ -2413,6 +2423,24 @@
+ .pop.g9rs .g9auto{display:flex;gap:8px;align-items:center;min-height:44px;font:600 13px/1.2 var(--font-ui)}
+ .pop.g9rs .g9rm{height:44px;padding:0 10px;margin-left:6px}
+ @media (orientation:landscape){#wpSheet .qh .sh-x,#wpSheet .wpab,#wpSheet .wptx{position:relative}#wpSheet .qh .sh-x::after,#wpSheet .wpab::after,#wpSheet .wptx::after{content:'';position:absolute;left:-1px;right:0;top:-2.5px;bottom:-7.5px}}
++/* V6A: ◆-Zeile im Clip-Blatt, Gleiten-Zeilen (Clip-, Teil-, Marken-Blatt): alle Tasten ≥ 44 px */
++.cs3 .cgrid .v6cb{color:var(--amber)}
++.cs3 .cgrid .v6cb.has{border-color:#6b4c16}
++.v6pop{width:min(360px,calc(100vw - 16px));padding:10px 10px 8px}
++.v6pop h4{margin:0 0 6px;color:var(--amber)}
++.v6pop .v6t{margin:0 0 8px;padding:6px 8px;border-radius:6px;background:var(--lcd);font:500 11px/1.35 var(--font-num);color:var(--text);max-height:5.6em;overflow:hidden}
++.v6pop .v6b{display:flex;gap:6px;margin-bottom:6px}
++.v6pop .v6b .hb{flex:1 1 0;height:44px}
++.v6pop .v6e{color:var(--amber)}
++.v6pop .v6hint{margin:4px 0 0;font:500 11px/1.3 var(--font-ui);color:var(--text-dim)}
++.v6gl{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-height:44px}
++.v6gl .lbl{flex:none}
++.v6gl .v6seg{display:flex;flex:1 1 auto;min-width:0}
++.v6gl .v6seg button{flex:1 1 0;min-width:0;height:44px !important;padding:0 2px;font:700 12px/1 var(--font-ui);white-space:nowrap}
++.v6gl .v6n{flex:none;height:44px !important;min-width:48px;padding:0 6px;font:700 12px/1 var(--font-num)}
++@media (orientation:landscape){#synthSheet .hb.v6ab{height:44px}#clipSheet .cs3 .cgrid .hb.v6cb{height:44px;align-self:center}}
++.psheet .v6gl,.msheet .v6gl{padding:0 8px}
++.msheet .v6gl{margin-top:4px}
+ /* ---------- clip sheet v3 (§3.7): P bottom sheet with 2 button columns (3 on short screens); L 420 px panel, 3 columns ---------- */
+ #clipSheet .sh-body.cs3{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px;padding:8px 8px 10px}
+ #clipSheet .sh-body.cs3>*{flex:0 0 auto}            /* rows never shrink into each other (a wrapped key row stays readable) */
+@@ -11390,6 +11418,8 @@
+     if (m.mkFxKill) this.mk.fx.kill();                           // MK4-fix: tail kill (double stop): echo repeats and Mod-FX tail out
+     if (m.mkFxFrz != null) this.mk.fx.frz = m.mkFxFrz >= 0 ? m.mkFxFrz % 1 : -1;            // MK4 test: Mod-FX LFO frozen at a phase (-1 = runs)
+     if (m.mkw) mkwAdd(m.mkw);                                   // MK2: a stored wave for every processor of this context
++    if (m.v6a) this.v6aMsg(m.v6a);                             // V6A: weicher Szenenwechsel (morph before set, Nachtrag 8 A.3)
++    if (m.v6aProbe !== undefined) this.v6pr = m.v6aProbe || null;  // V6A test hook (__morphProbe): keys reported per block
+     if (m.set) this.setReq(m.set, !!m.xf, m.fm6 || null);      // V4a: a whole sound = params + FM patch in one crossfade
+     if (m.mods) this.setMods(m.mods);
+     if (m.fm6 && !m.set) this.fmMsg(m.fm6);
+@@ -12560,6 +12590,92 @@
+ 
+   // deferred tempo changes: the one due at or before this audio frame becomes current (beat position stays continuous,
+   // because the main thread re-anchors start for the same instant)
++  /* V6A (weicher Szenenwechsel; spec v3 6.4, Nachtrag 8 I1a): {v6a: {t0, t1, at, c, k, v, l, h, d, fm, mk, mkv, mkd}} is one morph.
++     The flat keys k glide from where they stand at t0 to v (c 0 = S-curve x*x*(3-2x), c 1 = linear; l[j] 1 = in log space), h[j] 1 = a
++     hot key (every 16-sample control block, else once per 128 frames through setParams); mk/mkv = timbre paths of eng 3 (per 128 frames,
++     MkCore smooths 5 ms). d / fm / mkd = values that step: taken at frame 'at' (sounding notes: the 30 ms voice crossfade, never a cut).
++     A newer morph takes over the keys of an older one at its start, from where they stand (no step). {v6a: {stop: [keys]}} = the hand
++     takes over these keys (KZ6). Without a morph not one extra line runs (v6q null). */
++  v6aMsg(o) {
++    const q = this.v6q;
++    if (o.stop) { if (q) for (const m of q) for (const k of o.stop) this.v6aDrop(m, k); return; }
++    if (o.off) { this.v6q = null; return; }
++    const k = Array.isArray(o.k) ? o.k : [], n = k.length, mk = Array.isArray(o.mk) && o.mk.length ? o.mk : null;
++    const m = {f0: Math.round(+o.t0 * SR), f1: Math.round(+o.t1 * SR), fa: Math.round((o.at == null ? +o.t1 : +o.at) * SR), c: o.c | 0,
++      k, v: Float64Array.from(o.v || []), l: Uint8Array.from(o.l || []), h: Uint8Array.from(o.h || []), a: null, x: new Uint8Array(n),
++      mk, mv: mk ? Float64Array.from(o.mkv || []) : null, ma: null, mx: mk ? new Uint8Array(mk.length) : null,
++      d: o.d && typeof o.d === 'object' ? o.d : null, fm: o.fm || null, md: o.mkd && typeof o.mkd === 'object' ? o.mkd : null, dd: false, hot: false, o: {}, mo: {}};
++    if (!(m.f1 >= m.f0)) m.f1 = m.f0;
++    for (let i = 0; i < n; i++) { if (m.h[i]) m.hot = true; m.o[k[i]] = m.v[i]; }
++    if (mk) for (let i = 0; i < mk.length; i++) m.mo[mk[i]] = m.mv[i];
++    (q || (this.v6q = [])).push(m);
++  }
++  v6aDrop(m, key) {
++    let z = m.k.indexOf(key); if (z >= 0 && !m.x[z]) { m.x[z] = 1; delete m.o[key]; }
++    z = m.mk ? m.mk.indexOf(key) : -1; if (z >= 0 && !m.mx[z]) { m.mx[z] = 1; delete m.mo[key]; }
++  }
++  // what derive() makes of the hot keys (the same formulas), every 16 samples during a glide; the rest once per 128 frames
++  v6aHot() {
++    const P = this.P;
++    for (let o = 0; o < NOSC; o++) {
++      const on = 'o' + (o + 1);
++      this.oSemi[o] = P[on + 'oct'] * 12 + P[on + 'semi'] + P[on + 'fine'] / 100; this.oRat[o] = Math.pow(2, this.oSemi[o] / 12);
++      this.oLvl[o] = P[on + 'lvl']; this.oPw[o] = P[on + 'pw'];
++    }
++    this.cutN0 = 69 + 12 * Math.log2(clamp(P.cutoff, 10, 22000) / 440);
++    this.drv0 = .6 * Math.pow(2, clamp(P.drive, 0, 1) * 4); this.outG0 = 1 / (1 + clamp(P.drive, 0, 1) * 1.3);
++    this.fmBypassCalc();
++  }
++  v6aMkGet(path) {
++    const q = String(path).split('.'); if (q[0] !== 't') return NaN;
++    const tm = this.mk.tm[+q[1]]; let o = tm && tm.T; for (let i = 2; o != null && i < q.length; i++) o = o[q[i]];
++    return typeof o === 'number' ? o : NaN;
++  }
++  v6aStep(f, full) {
++    const q = this.v6q, P = this.P; let hot = false;
++    for (let j = 0; j < q.length; j++) {
++      const m = q[j];
++      if (f < m.f0) continue;
++      if (!m.a) {                                   // the start: from where the keys stand now; older morphs give these keys up
++        m.a = new Float64Array(m.k.length);
++        for (let i = 0; i < m.k.length; i++) { const x = P[m.k[i]]; m.a[i] = typeof x === 'number' && isFinite(x) ? x : m.v[i]; }
++        if (m.mk) { m.ma = new Float64Array(m.mk.length); for (let i = 0; i < m.mk.length; i++) { const x = this.v6aMkGet(m.mk[i]); m.ma[i] = isFinite(x) ? x : m.mv[i]; } }
++        for (let jj = 0; jj < j; jj++) { const o = q[jj]; for (const k of m.k) this.v6aDrop(o, k); if (m.mk) for (const k of m.mk) this.v6aDrop(o, k); }
++      }
++      if (full || m.hot) {
++        const n = m.f1 > m.f0 ? (f - m.f0) / (m.f1 - m.f0) : 1, x = n >= 1 ? 1 : n <= 0 ? 0 : n, s = m.c ? x : x * x * (3 - 2 * x), end = x >= 1;
++        const fl = full || end;                     // the end (also inside a 128 block): every key exactly on its value
++        let any = false;
++        for (let i = 0; i < m.k.length; i++) {
++          if (m.x[i] || (!fl && !m.h[i])) continue;
++          const a = m.a[i], b = m.v[i];
++          let v = end ? b : m.l[i] && a > 0 && b > 0 ? a * Math.pow(b / a, s) : a + (b - a) * s;
++          if (!(v === v) || !isFinite(v)) v = b;
++          if (v < 1e-30 && v > -1e-30) v = 0;   // no subnormal values (Regel 17)
++          if (fl) { m.o[m.k[i]] = v; any = true; } else { P[m.k[i]] = v; hot = true; }
++        }
++        if (fl && any) this.setParams(m.o);
++        if (fl && m.mk) {
++          let mn = false;
++          for (let i = 0; i < m.mk.length; i++) { if (m.mx[i]) continue; const a = m.ma[i], b = m.mv[i]; m.mo[m.mk[i]] = end ? b : a + (b - a) * s; mn = true; }
++          if (mn) this.mk.set(m.mo);
++        }
++        if (!m.dd && f >= m.fa) {                   // the stepping values at the bar line: new notes take them, sounding ones cross-fade
++          m.dd = true;
++          if (m.d || m.fm) this.setReq(m.d || {}, !!(m.d && Object.keys(m.d).length), m.fm);
++          if (m.md) this.mk.set(m.md);
++        }
++        if (end && m.dd) { q.splice(j, 1); j--; }
++      }
++    }
++    if (hot) this.v6aHot();
++    if (this.v6pr && (full || !q.length)) {
++      const k = this.v6pr, v = new Array(k.length);
++      for (let i = 0; i < k.length; i++) { const x = k[i]; v[i] = x.charCodeAt(0) === 116 && x.charCodeAt(1) === 46 ? this.v6aMkGet(x) : +P[x]; }
++      this.port.postMessage({v6aPr: {f, v, n: q.length}});
++    }
++    if (!q.length) this.v6q = null;
++  }
+   dcOut(x, k, N) {
+     const c = this.dcC, s = this.dcS; let x1 = s[k], y1 = s[k + 1];
+     for (let n = 0; n < N; n++) { const xi = x[n], y = xi - x1 + c * y1; x1 = xi; y1 = y; x[n] = y; }
+@@ -12575,6 +12691,7 @@
+     const out = outputs[0], L = out[0], R = out[1] || out[0], N = L.length, f0 = currentFrame;
+     const t0 = this.hasPerf ? performance.now() : Date.now();
+     L.fill(0); if (R !== L) R.fill(0);
++    if (this.v6q) this.v6aStep(f0, true);                      // V6A: a running morph (every 128 frames all keys, hot keys every 16)
+     if (this.xfHeld && this.xfNeedFm && --this.xfWait <= 0) { this.xfNeedFm = false; this.xfTry(); }   // the FM patch did not come: start with the current one
+     let any = this.q.length > 0 || this.ghosts.length > 0; for (const v of this.V) if (v.on) { any = true; break; }
+     if (this.P.eng === 3) this.mk.inSet(inputs && inputs[0]); else if (this.mk.inE1 || this.mk.inE2) this.mk.inSet(null);
+@@ -12586,6 +12703,7 @@
+     if (any) {
+       for (let off = 0; off < N; off += CR) {
+         this.curF = f0 + off;
++        if (off && this.v6q) this.v6aStep(f0 + off, false);
+         this.runEvents(f0 + off + CR);
+         this.xfBlock();
+         this.control(f0 + off);
+@@ -18843,6 +18961,7 @@
+       if (m.fmxLv) { E.lv = m.fmxLv; E.lvN++; E.lvT = m.t; }        // V4a (N7F-09): live operator levels
+       if (m.mkScope) { E.mks = m.mkScope; E.mksN = (E.mksN || 0) + 1; }  // MK1 (B.7 mkScope)
+       if (m.k1Dump) E.k1Dump = m.k1Dump;   // K1 test (K1-05): the engine's playing state
++      if (m.v6aPr) { (E.v6aPr || (E.v6aPr = [])).push(m.v6aPr); if (E.v6aLog) E.v6aLog.push(m.v6aPr); }   // V6A test hook
+       if (m.mkwNeed != null && typeof mkwPull === 'function') mkwPull(E, m.mkwNeed);   // MK2: a processor asks for a stored wave
+       if (m.mkFxMem != null) E.mkFxB = m.mkFxMem;   // MK4: the delay buffer of this engine (bytes)
+       if (m.mkRecDone) { E.mkRecN = (E.mkRecN || 0) + 1; E.mkRecLast = m.mkRecDone; if (typeof MKUI !== 'undefined' && MKUI.recDone) MKUI.recDone(E, m.mkRecDone); }   // MK6
+@@ -18864,6 +18983,8 @@
+     // queued note events first, then the params; xf: a whole sound -> the worklet fades sounding voices through the change
+     E.set = (diff, xf, fm6, mods, mk) => { Object.assign(E.sent, diff); E.flush(); const m = xf ? {set: diff, xf: true} : {set: diff}; if (mods) m.mods = mods; if (fm6) m.fm6 = fm6; if (mk) m.mk = mk; post(m); };
+     E.mkSet = o => { E.flush(); post({mkSet: o}); };              // MK1: gesture values (fractions during the gesture, EN3-03)
++    E.v6a = o => { E.flush(); post({v6a: o}); };                    // V6A: a morph (weicher Szenenwechsel) or {stop}/{off}
++    E.v6aProbe = keys => post({v6aProbe: keys || null});           // V6A test hook (__morphProbe)
+     E.mkFxKill = () => { E.flush(); post({mkFxKill: 1}); };       // MK4-fix: the AM effect tails out (tailKill)
+     E.mkLed = on => { on = !!on; if (on === !!E.mkLedOn) return; E.mkLedOn = on; post({mkLed: on}); };
+     E.mkHoldGet = () => new Promise(res => { (E.holdQ || (E.holdQ = [])).push(res); E.flush(); post({mkHoldGet: 1}); });
+@@ -21248,6 +21369,7 @@
+   if (kind !== 'drum' && c.audio) { const a = tkNormAudio(c.audio); if (a) out.audio = a; }          // VS3: Audio-Clip der STIMME-Spur
+   if (typeof c.take === 'string' && UID_RE.test(c.take)) out.take = c.take;                          // VS3: MELODIE-Clip ↔ Take
+   if (kind !== 'drum' && c.pre) { const p = g3NormPre(c.pre); if (p) out.pre = p; }                  /* G3: Auftakt-Noten */
++  if (kind !== 'drum' && c.st) { const st = v6aNorm(c.st); if (st) out.st = st; }                    // V6A: Klangzustand ◆
+   return out;
+ }
+ function normTrack(t, def, pk, warns) {
+@@ -21528,6 +21650,7 @@
+     const o = {id, a: A, len: L, part: typeof m.part === 'string' && /^[PS][1-8]$/.test(m.part) ? m.part : null};
+     if (typeof m.name === 'string' && m.name.trim()) o.name = m.name.trim().slice(0, 12);
+     if (m.off) { const off = s0OffNorm(m.off); if (off) o.off = off; }   /* S0 */
++    { const g = v6aGlNorm(m.gl); if (g) o.gl = g; }                       // V6A: Gleiten an dieser Song-Kante
+     out.push(o); end = A + L;
+   }
+   return out;
+@@ -21627,6 +21750,7 @@
+   if (c.audio) o.audio = tkCleanAudio(c.audio);                  // VS3
+   if (c.take) o.take = c.take;
+   if (c.pre) o.pre = c.pre.map(n => ({t: n.t, d: n.d, n: n.n, v: n.v}));   /* G3 */
++  if (c.st) o.st = JSON.parse(JSON.stringify(c.st));             // V6A
+   return o;
+ }
+ const stripReplacer = (k, v) => (k === 'born' || k === 'bornRun' ? undefined : v);
+@@ -21888,7 +22012,7 @@
+   mtrTap(i);                                                                      // VV4-F: the new chain feeds the meter
+ }
+ // the effect values of a track: its sound.fx (WP6: the drum track too, §8.2)
+-function trackFx(tr) { return g4Fx(tr, fxOfSound(tr.sound)); }   // G4: Hall/Delay der STIMME-Spur
++function trackFx(tr) { const f = fxOfSound(tr.sound); if (R.v6aCur) { const i = S.tracks.indexOf(tr); if (i >= 0 && (R.v6aCur[i] || (R.v6aRun && R.v6aRun[i]))) v6aFxAt(i, f, nowT()); } return g4Fx(tr, f); }   // G4: Hall/Delay der STIMME-Spur; V6A: Zustand / Fahrt
+ function fxOfSound(snd) { const f = snd.fx || {}; return {drive: f.drive || 0, rev: f.rev || 0, dly: f.dly || 0, vol: f.vol == null ? .8 : f.vol, pan: f.pan || 0, chorus: f.chorus || null, pump: f.pump || 0, pumpRel: f.pumpRel || '1/8'}; }
+ // chorus insert (§8.1): FX.Chorus exists only while its mode is not AUS; switching crossfades dry <-> chorus in ≈ 30 ms and
+ // tears the chorus down completely afterwards
+@@ -22066,6 +22190,7 @@
+ function newEngine(dest, snd) {
+   const E = SynthHost.track(AU.ctx, dest, wkFlat(snd), wkMods(snd), snd.engine === 'fm6' && snd.p.fm6 ? wkFmOf(snd.p) : null, snd.engine === 'mk' ? snd.p.mk : null);
+   E.onEnd = id => { const v = E.proxies.get(id); if (v) wkVoiceDead(v); };
++  if (V6A.probe) { const i = AU.tracks.findIndex(A => A && A.trackIn === dest); if (i >= 0 && V6A.probe[i]) { E.v6aLog = V6A.probe[i].log; E.v6aProbe(V6A.probe[i].keys); } }   // V6A test hook (also the render's engines)
+   if (snd.engine === 'mk') { E.mkWheel({mw0: +snd.p.mw || 0, reset: true}); mkwFeed(E, snd); }
+   E.tempo(S.bpm, R.playing ? R.startTime : null);
+   return E;
+@@ -22074,10 +22199,11 @@
+ function syncEngine(i, full) {
+   const A = AU.tracks[i], tr = S.tracks[i]; if (!A || !tr || tr.kind !== 'synth') return;
+   if (wkWanted(i)) {
+-    if (!AU.synth[i]) { AU.synth[i] = newEngine(A.trackIn, tr.sound); if (UI.fmxLvT === i) AU.synth[i].fmxLv(true); }
++    const es = v6aSnd(i);       // V6A: the effective sound (Grundklang ⊕ Zustand; without a state tr.sound itself)
++    if (!AU.synth[i]) { AU.synth[i] = newEngine(A.trackIn, es); if (UI.fmxLvT === i) AU.synth[i].fmxLv(true); }
+     else if (full) {          // V0b-fix: routes and FM patch ride in the same message (an engine change restarts held keys with them at once)
+       WKSET[i] = null; const fp = tr.sound.engine === 'fm6' ? wkFm6Patch(i) : null;
+-      AU.synth[i].set(wkFlat(tr.sound), true, fp, wkMods(tr.sound), tr.sound.engine === 'mk' ? tr.sound.p.mk : null); if (fp) { clearTimeout(WKFM[i]); WKFM[i] = 0; WKFM_AT[i] = performance.now(); }
++      AU.synth[i].set(wkFlat(es), true, fp, wkMods(tr.sound), tr.sound.engine === 'mk' ? es.p.mk : null); if (fp) { clearTimeout(WKFM[i]); WKFM[i] = 0; WKFM_AT[i] = performance.now(); }
+       if (tr.sound.engine === 'mk') { mkWheelSync(i, true); mkwFeed(AU.synth[i], tr.sound); }
+     }
+   } else if (AU.synth[i]) retireEngine(i);
+@@ -22137,7 +22263,7 @@
+   const before = SQMK.mkPathGet(s_.p.mk, path);
+   s_.p.mk = SQMK.mkPathSet(s_.p.mk, path, x);
+   const after = SQMK.mkPathGet(s_.p.mk, path);
+-  const E = AU.synth[i]; if (E && s_.engine === 'mk') { const wm = /^t\.([01])\.(o1\.(w|c2)|seq\.)/.exec(path); if (wm) mkwFeed(E, s_, live && wm[3] === 'c2' ? x : null, +wm[1]); else if (path === 'mode') mkwFeed(E, s_, null, 1); E.mkSet({[path]: live ? x : after}); }   // MK3: both timbres
++  const E = AU.synth[i]; if (E && s_.engine === 'mk') { const wm = /^t\.([01])\.(o1\.(w|c2)|seq\.)/.exec(path); if (wm) mkwFeed(E, s_, live && wm[3] === 'c2' ? x : null, +wm[1]); else if (path === 'mode') mkwFeed(E, s_, null, 1); const v6 = R.v6aCur && R.v6aCur[i] ? v6aCurSt(i) : null; E.mkSet({[path]: v6 && typeof v6.p['mk.' + path] === 'number' ? v6.p['mk.' + path] : live ? x : after}); }   // MK3: both timbres; V6A: under a state its value stays
+   if (after !== before) { if (UI.ab && UI.ab.t === i && UI.ab.side === 'B') UI.ab = null; UI.sndVer++; UI.dirty.strip = UI.dirty.edHead = true; markDirty(); MKECO.delete(s_); if (!E) rebuildNativeLfos(i); }   // G-MK2a-fix: header dot + [A/B] at once (§11.3), like edParamChanged
+   return after;
+ }
+@@ -22476,7 +22602,7 @@
+ // edits (the worklet re-targets the running envelope stages of the sounding notes); now = at once (a whole sound, a note)
+ const WKFM = new Array(8).fill(0), WKFM_AT = new Array(8).fill(0);
+ function wkFm6Patch(i) {
+-  const snd = sndOf(i); if (!snd || snd.engine !== 'fm6' || !snd.p.fm6) return null;
++  const snd = R.v6aCur && R.v6aCur[i] ? v6aSnd(i) : sndOf(i); if (!snd || snd.engine !== 'fm6' || !snd.p.fm6) return null;   // V6A: the Endwert
+   return UI.fmSolo && UI.fmSolo.t === i ? fmSoloPatch(snd.p.fm6, UI.fmSolo.k, snd.p.fmx) : wkFmOf(snd.p);
+ }
+ // V4a: the FM patch for the worklet: p.fm6, with p.fmx (the graph) riding along as .x when the sound has one
+@@ -22498,8 +22624,436 @@
+   const L = limited(S.tracks[i].sound.p);
+   for (const k of LIM_KEYS) if (k in d) d[k] = L[k];                     // the limiter's working values (§14.3, D.2)
+   if ('poly' in d && L.polyH) d.polyH = L.polyH;                         /* K2 */
++  if (R.v6aCur && R.v6aCur[i]) v6aWkFix(i, d);                           // V6A: under a state the engine keeps its Endwert
+   E.set(d);
+ }
++/* ---------- V6A: weicher Szenenwechsel (Nachtrag 8 I1a/I1b nach spec v3 §6; Xander 01.11.: „Die Übergänge gehen von den einen
++   Reglerwerten in die anderen“). Ein Clip kann einen Klangzustand ◆ tragen: clip.st = {eng, p: {Pfad: Wert}, fx: {vol?, pan?, rev?, dly?},
++   x?: 'jump'|'flow'|'bar1'|'bar2'|'free', n?: Schläge (bei 'free')} – nur die Abweichungen vom Grundklang (track.sound). Wechselt die Spur den
++   Clip (Szene, Teil, Song-Kante), fahren die Regler vom alten in den neuen Endwert: im Worklet je 16 Samples (heiße Regler) bzw. 128 Samples,
++   stufige Werte am Taktstrich (klingende Töne: 30-ms-Stimmen-Überblendung, nie ein Schnitt), Spur-Werte (Lautstärke, Pan, Hall, Echo) als
++   AudioParam-Stufen alle 16 ms. Wie lange: je Clip (x), je Teil (part.gl) und je Song-Kante (mark.gl) – aus · kurz · 1 T · 2 T · frei.
++   Ohne clip.st läuft kein neuer Rechenweg: jede Nachricht bleibt byte-gleich (Regel 28). Laufzeit: R.v6aCur[i] = {st, sig} = der Zustand,
++   auf den Spur i zuletzt geschickt wurde; R.v6aRun[i] = die laufende Fahrt der Spur-Werte. ---------- */
++const V6A = {ed: null, pp: null, sig: new WeakMap(), cache: []};
++const V6A_X = ['jump', 'flow', 'bar1', 'bar2', 'free'];
++const V6A_XL = {jump: 'aus', flow: 'kurz', bar1: '1 T', bar2: '2 T', free: 'frei'};
++const V6A_XH = {jump: 'kein Gleiten: wechselt am Taktstrich (10 ms, ohne Knacks)', flow: 'gleitet bis zum Taktstrich (mind. 1 Schlag)', bar1: 'gleitet 1 Takt ab dem Taktstrich', bar2: 'gleitet 2 Takte ab dem Taktstrich', free: 'gleitet frei wählbar ab dem Taktstrich'};
++const V6A_FX = ['vol', 'pan', 'rev', 'dly'];
++const V6A_NO = new Set(['mode', 'poly', 'polyH', 'mkLim', 'mkLimS', 'xfLite']);      // KZ3: nur im Grundklang
++const V6A_HOT = new Set(['cutoff', 'res', 'drive', 'level', 'o1lvl', 'o2lvl', 'o3lvl', 'o1pw', 'o2pw', 'o3pw', 'o1fine', 'o2fine', 'o3fine', 'subLvl', 'noise', 'fenv', 'spread', 'fmBright']);
++const V6A_MKST = /\.(o1\.w|o2\.w|o2\.mod|f\.type|a\.gate)$/;                          // eng 3: Struktur-Werte (stufig)
++const v6aRt = () => { if (!R.v6aCur) R.v6aCur = []; if (!R.v6aRun) R.v6aRun = []; return R; };
++function v6aSig(st) { if (!st) return ''; let s = V6A.sig.get(st); if (s == null) { s = JSON.stringify(st); V6A.sig.set(st, s); } return s; }
++// the state a clip plays on track i (only for the track's own engine; a state of another engine stays stored, inactive)
++function v6aStOk(i, st) { const tr = S.tracks[i]; return !!(st && tr && st.p && (st.eng == null || st.eng === tr.sound.engine)); }
++function v6aClip(i, slot, own) { if (slot == null || slot < 0) return null; if (own && S.song && S.song.own && S.song.own[own]) return S.song.own[own]; const tr = S.tracks[i]; return tr ? tr.clips[slot] || null : null; }
++function v6aSt(i, slot, own) { const c = v6aClip(i, slot, own), st = c && c.st; return v6aStOk(i, st) ? st : null; }
++// the state the engine of track i plays now (null = Grundklang; the ◆ editor has its values in track.sound)
++function v6aCurSt(i) { if (V6A.ed && V6A.ed.i === i) return null; const c = R.v6aCur && R.v6aCur[i]; return c ? c.st : null; }
++// a value at a path of a sound: flat key → p[key]; 'fx.k'; 'wt.k'; nested 'fm6.ops.2.ol', 'fmx.…', 'mk.t.0.f.cut' → in p
++function v6aGet(snd, path) {
++  if (path.startsWith('fx.')) return snd.fx ? snd.fx[path.slice(3)] : undefined;
++  if (!path.includes('.')) return snd.p[path];
++  const q = path.split('.'); let o = snd.p; for (const k of q) { if (o == null || typeof o !== 'object') return undefined; o = o[k]; }
++  return o;
++}
++// a copy of snd with the state's values (copy on write along each path; a path the sound does not have is ignored, spec v3 §6.7)
++function v6aApply(snd, st) {
++  const o = Object.assign({}, snd, {p: Object.assign({}, snd.p), fx: Object.assign({}, snd.fx)}), own = new Set();
++  for (const path in st.p || {}) {
++    const v = st.p[path];
++    if (!path.includes('.')) { if (typeof snd.p[path] === typeof v) o.p[path] = v; continue; }
++    const q = path.split('.'), r = q[0];
++    if (!snd.p[r] || typeof snd.p[r] !== 'object') continue;
++    if (!own.has(r)) { o.p[r] = deep(snd.p[r]); own.add(r); }
++    let x = o.p[r]; for (let j = 1; j < q.length - 1 && x != null; j++) x = x[q[j]];
++    if (x != null && typeof x === 'object' && typeof x[q[q.length - 1]] === typeof v) x[q[q.length - 1]] = v;
++  }
++  for (const k of V6A_FX) if (st.fx && typeof st.fx[k] === 'number') o.fx[k] = st.fx[k];
++  return o;
++}
++// the effective sound of synth track i (Grundklang ⊕ Zustand); without a state the track's own object (byte-equal messages)
++function v6aSnd(i) {
++  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return null;
++  const st = v6aCurSt(i); if (!st) return tr.sound;
++  const c = V6A.cache[i], ver = UI.sndVer | 0;
++  if (c && c.snd === tr.sound && c.st === st && c.ver === ver) return c.out;
++  const out = v6aApply(tr.sound, st); V6A.cache[i] = {snd: tr.sound, st, ver, out}; return out;
++}
++// wkFlush: a knob of the Grundklang under an active state – the state's value stays (the engine plays the Endwert)
++function v6aWkFix(i, d) { const st = v6aCurSt(i); if (!st) return; for (const k in d) if (Object.prototype.hasOwnProperty.call(st.p, k) && typeof st.p[k] === 'number') d[k] = st.p[k]; }
++// the track values (fx) of track i at audio time t: Grundklang ⊕ Zustand, during a run the value of the S-curve (one formula for all)
++function v6aFxAt(i, fx, t) {
++  const st = v6aCurSt(i); if (st && st.fx) for (const k of V6A_FX) if (typeof st.fx[k] === 'number') fx[k] = st.fx[k];
++  const r = R.v6aRun && R.v6aRun[i];
++  if (r && t < r.t1) { const s = v6aS(r, t); for (const k in r.b) { const a = r.a[k]; fx[k] = t <= r.t0 ? a : a + (r.b[k] - a) * s; } }
++  return fx;
++}
++function v6aS(r, t) { const n = r.t1 > r.t0 ? (t - r.t0) / (r.t1 - r.t0) : 1, x = n >= 1 ? 1 : n <= 0 ? 0 : n; return r.c ? x : x * x * (3 - 2 * x); }
++// what is continuous on the worklet: flat keys with a range (no list of values, no XF key, not „nur im Grundklang“)
++const V6A_XFK = new Set(['o1w', 'o2w', 'o3w', 'o1uni', 'o2uni', 'o3uni', 'o2sync', 'ftype', 'subW', 'subOct', 'lq', 'mode', 'eng', 'fmAmp']);
++function v6aCont(k) { const d = PD[k]; return !!(d && !d.vals && !V6A_XFK.has(k)); }
++function v6aLaw(k) { const d = PD[k]; return d && (d.c === 'exp' || d.c === 'db') ? 1 : 0; }
++function v6aMkCont(path) { const r = SQMK.mkRange(path); return !!(r && r[1] - r[0] >= 16 && !V6A_MKST.test('.' + path) && /^t\.[01]\./.test(path)); }
++/* one morph of track i to the state st1 (null = Grundklang) over [t0, t1] (audio s), stepping values at 'at', c 1 = linear. The keys are
++   the union of the old and the new state: a key the new state does not hold goes back to the Grundklang. */
++function v6aGo(i, st1, t0, t1, at, c) {
++  v6aRt();
++  const tr = S.tracks[i]; if (!tr) return false;
++  const old = R.v6aCur[i], st0 = old ? old.st : null, fxA = tr.kind === 'synth' || tr.kind === 'drum' ? v6aFxAt(i, fxOfSound(tr.sound), t0) : null;
++  R.v6aCur[i] = {st: st1, sig: v6aSig(st1)};
++  const keys = new Set(Object.keys(st0 && st0.p || {}).concat(Object.keys(st1 && st1.p || {})));
++  const E = AU.synth[i];
++  if (E && !E.dead && tr.kind === 'synth' && keys.size) {
++    const base = tr.sound, to = st1 ? v6aApply(base, st1) : base, eng3 = base.engine === 'mk';
++    const k = [], v = [], l = [], h = [], d = {}, mk = [], mkv = [], mkd = {}; let fm = null, nd = 0;
++    const L = limited(to.p);
++    for (const key of keys) {
++      const x = v6aGet(to, key); if (typeof x !== 'number' || !isFinite(x)) continue;
++      if (!key.includes('.')) {
++        if (V6A_NO.has(key)) continue;
++        if (!eng3 && v6aCont(key)) { k.push(key); v.push(x); l.push(v6aLaw(key)); h.push(V6A_HOT.has(key) ? 1 : 0); }
++        else { d[key] = key in L ? L[key] : x; nd++; }
++      } else if (key.startsWith('mk.') && eng3) { const p = key.slice(3); if (p === 'mode') continue; if (v6aMkCont(p)) { mk.push(p); mkv.push(x); } else mkd[p] = x; }
++      else if ((key.startsWith('fm6.') || key.startsWith('fmx.')) && base.engine === 'fm6' && to.p.fm6) fm = wkFmOf(to.p);
++    }
++    if (k.length || nd || fm || mk.length || Object.keys(mkd).length) {
++      const o = {t0, t1, at, c: c ? 1 : 0, k, v, l, h};
++      if (nd) o.d = d; if (fm) o.fm = fm; if (mk.length) { o.mk = mk; o.mkv = mkv; } if (Object.keys(mkd).length) o.mkd = mkd;
++      E.v6a(o);
++    }
++  }
++  // the track values (native AudioParams, every path): steps every 16 ms (spec v3 §6.4 „Nativ“), never a value curve
++  if (fxA) {
++    R.v6aRun[i] = null;
++    const fxB = v6aFxAt(i, fxOfSound(tr.sound), t1 + 1), a = {}, b = {}; let n = 0;
++    for (const kk of V6A_FX) if (Math.abs((fxB[kk] || 0) - (fxA[kk] || 0)) > 1e-9) { a[kk] = fxA[kk]; b[kk] = fxB[kk]; n++; }
++    if (n) { R.v6aRun[i] = {t0, t1: Math.max(t1, t0 + .005), c: c ? 1 : 0, a, b}; v6aFxRun(i, fxA.drive || 0); }
++  }
++  if (ED.v6aB && ED.v6aB.length) { try { for (const b of ED.v6aB) if (b.isConnected && +b.dataset.t === i) { v6aBtnPaint(b); if (ED.lcd && ED.lcd.isConnected && !ED.lcd._s) lcdHint(); } } catch (e) { logErr(e); } }   // the head key and the hint follow
++  return true;
++}
++function v6aParam(N, k) { return k === 'vol' ? N.vol && N.vol.gain : k === 'pan' ? N.pan && N.pan.pan : k === 'rev' ? N.revSend && N.revSend.gain : N.dlySend && N.dlySend.gain; }
++function v6aFxRun(i, drive) {
++  const N = AU.tracks[i], r = R.v6aRun[i], c = AU.ctx; if (!N || !r || !c) return;
++  const dur = r.t1 - r.t0, step = Math.max(.016, dur / 400), now = c.currentTime;
++  for (const k in r.b) {
++    const P = v6aParam(N, k); if (!P) continue;
++    const val = x => (k === 'vol' ? x * x / (1 + drive * 1.5) : x), t0 = Math.max(r.t0, now);
++    try {
++      P.cancelScheduledValues(t0);
++      for (let t = t0; t < r.t1 - 1e-6; t += step) P.setTargetAtTime(val(r.a[k] + (r.b[k] - r.a[k]) * v6aS(r, t + step)), t, step / 2);
++      P.setTargetAtTime(val(r.b[k]), r.t1, .004);
++    } catch (e) { logErr(e); }
++  }
++}
++// KZ6: a track-value knob of track i during a run – the hand takes this value over (its automation ends now)
++function v6aFxHand(i, key) {
++  const r = R.v6aRun && R.v6aRun[i], N = AU.tracks[i], c = AU.ctx; if (!r || !N || !c) return;
++  const k = key.slice(3); if (!(k in r.b)) return;
++  delete r.a[k]; delete r.b[k]; const P = v6aParam(N, k); if (P) { try { P.cancelScheduledValues(c.currentTime); } catch (e) {} }
++}
++// KZ6 on the worklet: the knob of a key that is gliding – this key follows the hand
++function v6aHand(i, key) { const E = AU.synth[i]; if (E && !E.dead && R.v6aCur && R.v6aCur[i]) E.v6a({stop: [key.startsWith('mk.') ? key.slice(3) : key]}); }
++// the glide of a change: song edge (mark.gl) > part (part.gl) > the arriving clip (st.x) > the leaving clip > 'flow'
++function v6aMode(i, p, st1, st0) {
++  const one = o => (o && V6A_X.includes(o.x) ? {x: o.x, n: o.x === 'free' ? clamp(Math.round(o.n) || 4, 1, 32) : 0} : null);
++  if (p && p.song && S.song && R.songPlay) {
++    const sb = songBeatOf(p.beat), bar = sb == null ? -1 : Math.round(sb / 4);
++    const m = S.song.marks.find(x => x.a === bar && x.gl); if (m) { const g = one(m.gl); if (g) return g; }
++  }
++  if (p && V6A.pp && Math.abs(V6A.pp.beat - p.beat) < 1e-6) { const g = one(V6A.pp.gl); if (g) return g; }
++  return one(st1) || one(st0) || {x: 'flow', n: 0};
++}
++// the times of a change at transport beat B (bar line); hand = started now by a tap (flow starts at once)
++function v6aTimes(m, B, nb) {
++  if (m.x === 'jump') { const t = b2t(Math.max(B, nb)); return {t0: t, t1: t + .01, at: t, c: 0}; }   // „aus“: 10 ms at the bar line (Regel: Rampe ≥ 10 ms)
++  if (m.x === 'flow') { const s = Math.max(nb, B - 1), e = B - s < 1 ? s + 1 : B; return {t0: b2t(s), t1: b2t(e), at: b2t(Math.max(B, nb)), c: 0}; }
++  const s = Math.max(B, nb), len = m.x === 'bar1' ? 4 : m.x === 'bar2' ? 8 : m.n || 4;
++  return {t0: b2t(s), t1: b2t(s + len), at: b2t(s), c: 0};
++}
++// tick(): before partTick – the part waiting for its bar line (its glide)
++function v6aPre() { const pp = R.partPend; V6A.pp = pp && pp.i >= 0 && S.parts && S.parts[pp.i] && S.parts[pp.i].gl ? {beat: pp.beat, gl: S.parts[pp.i].gl} : (V6A.pp && pp ? V6A.pp : V6A.pp && R.pend.some(x => x && Math.abs(x.beat - V6A.pp.beat) < 1e-6) ? V6A.pp : null); }
++// tick(), before the per-track loop: every track gets the state it will play – song edges 'flow' one beat before the bar line
++function v6aTick(b0, b1) {
++  v6aRt();
++  const c = AU.ctx; if (!c) return;
++  const nb = Math.max(b0, t2b(c.currentTime)), fresh = R.v6aRunId !== R.runId;
++  if (fresh) { R.v6aRunId = R.runId; V6A.start = {t: R.startTime, spb: spb(), sr: c.sampleRate, off: R.songPlay ? R.songPlay.off : 0}; }
++  for (let i = 0; i < NT(); i++) {
++    if (V6A.ed && V6A.ed.i === i) continue;
++    const p = R.pend[i], want = p ? v6aSt(i, p.slot, p.own) : v6aSt(i, R.slot[i], R.own[i]), cur = R.v6aCur[i], sig = v6aSig(want);
++    if (fresh && (cur || want)) { const t = c.currentTime; v6aGo(i, want, t, t, t, 1); continue; }   // ▶: the state at once (also ends a glide the ■ left)
++    if (cur ? cur.sig === sig : !want) continue;
++    if (!p && cur && cur.at != null && cur.at > nb - 1e-6 && !fresh) continue;              // a song edge already gliding toward its bar line
++    if (fresh || (!p && !cur)) { const t = c.currentTime; v6aGo(i, want, t, t, t, 1); continue; }      // ▶: the state at once (nothing sounds yet)
++    const st0 = cur ? cur.st : null, m = v6aMode(i, p, want, st0), T_ = v6aTimes(m, p ? p.beat : nb, nb);
++    v6aGo(i, want, T_.t0, T_.t1, T_.at, T_.c);
++  }
++  // song: a 'flow' edge starts one beat before its bar line (KZ1 „Song/Kette“) – the next song bar seen one beat ahead
++  const sp = R.songPlay, song = S.song;
++  if (sp && song && !sp.jump && !fresh) {
++    const sb0 = songBeatOf(b1); if (sb0 == null) return;
++    const k = Math.ceil(sb0 / 4 - 1e-9), B = b1 + (k * 4 - sb0);                // the next song bar line after the window
++    if (B - 1 >= b1 - 1e-9 || B <= b0 + 1e-9) return;
++    const lp = song.loop, looping = lp && lp.on && lp.b > lp.a;
++    let bar = k; if (looping && bar >= lp.b) bar = lp.a; if (!looping && bar >= song.bars) return;
++    const mk = song.marks.find(x => x.a === bar && x.gl);
++    for (let i = 0; i < NT(); i++) {
++      if ((V6A.ed && V6A.ed.i === i) || R.songOverride[i] || R.pend[i]) continue;
++      const o = laneOriginAt(song.lanes[i], bar); if (!o) continue;
++      const want = laneClipOk(song, i, o) ? v6aSt(i, o.slot, o.own) : null, cur = R.v6aCur[i];
++      if (cur ? cur.sig === v6aSig(want) : !want) continue;
++      const m = mk && V6A_X.includes(mk.gl.x) ? {x: mk.gl.x, n: mk.gl.n} : v6aMode(i, null, want, cur ? cur.st : null);
++      if (m.x !== 'flow') continue;
++      const T_ = v6aTimes(m, B, nb); v6aGo(i, want, T_.t0, T_.t1, T_.at, 0); R.v6aCur[i].at = B;
++    }
++  }
++}
++// V6A (A7, K1-03 „was sich bewegt, hat eine Zeile“): every value of the state the track plays now – ◆ Szene n: Cutoff 2,4 kHz → 400 Hz
++function v6aK1(i, add) {
++  const st = v6aCurSt(i), tr = S.tracks[i]; if (!st || !tr) return;
++  let where = '◆ Klangzustand';
++  for (let s_ = 0; s_ < tr.clips.length; s_++) if (tr.clips[s_] && tr.clips[s_].st === st) { where = '◆ Szene ' + (s_ + 1); break; }
++  for (const k of Object.keys(st.p || {})) add('st:' + k, where, v6aKeyName(k), v6aValTxt(k, v6aGet(tr.sound, k)) + ' → ' + v6aValTxt(k, st.p[k]), {kind: 'st', path: k});
++  for (const k of Object.keys(st.fx || {})) add('st:fx.' + k, where, v6aKeyName('fx.' + k), v6aValTxt('fx.' + k, fxOfSound(tr.sound)[k]) + ' → ' + v6aValTxt('fx.' + k, st.fx[k]), {kind: 'st', path: 'fx.' + k});
++}
++function v6aK1Del(i, key) {
++  const st = v6aCurSt(i), tr = S.tracks[i]; if (!st || !tr) return false;
++  const s_ = tr.clips.findIndex(c => c && c.st === st); if (s_ < 0) return false;
++  const path = key.slice(3), n = JSON.parse(JSON.stringify(st));
++  if (path.startsWith('fx.')) { if (n.fx) delete n.fx[path.slice(3)]; } else delete n.p[path];
++  v6aSetState(i, s_, Object.keys(n.p || {}).length || (n.fx && Object.keys(n.fx).length) ? n : null);
++  toast('Gelöscht: ◆ ' + v6aKeyName(path), {label: 'Rückgängig', fn: () => undo()});
++  return true;
++}
++/* V6A: normalize (load) – literal lists here: normClip runs during the first load, before the V6A constants */
++function v6aNorm(st) {
++  if (!st || typeof st !== 'object' || !st.p || typeof st.p !== 'object' || Array.isArray(st.p)) return null;
++  const o = {}; let n = 0, nf = 0;
++  if (typeof st.eng === 'string' && /^[a-z0-9]{1,8}$/.test(st.eng)) o.eng = st.eng;
++  o.p = {};
++  for (const k of Object.keys(st.p)) {
++    if (n >= 256) break;
++    if (!/^[A-Za-z0-9_][A-Za-z0-9_.\-]{0,63}$/.test(k)) continue;
++    const v = st.p[k];
++    if (typeof v === 'number' ? isFinite(v) : typeof v === 'string' ? v.length <= 32 : typeof v === 'boolean') { o.p[k] = v; n++; }
++  }
++  if (st.fx && typeof st.fx === 'object') { const fx = {}; for (const k of ['vol', 'pan', 'rev', 'dly']) if (typeof st.fx[k] === 'number' && isFinite(st.fx[k])) { fx[k] = clamp(st.fx[k], -1, 2); nf++; } if (nf) o.fx = fx; }
++  if (!n && !nf) return null;
++  const g = v6aGlNorm(st); if (g) { o.x = g.x; if (g.n) o.n = g.n; }
++  return o;
++}
++function v6aGlNorm(g) {
++  if (!g || typeof g !== 'object' || !['jump', 'flow', 'bar1', 'bar2', 'free'].includes(g.x)) return null;
++  return g.x === 'free' ? {x: 'free', n: clamp(Math.round(+g.n) || 4, 1, 32)} : {x: g.x};
++}
++/* ◆ bearbeiten (spec v3 §6.2, Nachtrag 8 A9): while the ◆ editor is open on track i, track.sound is the working copy (Grundklang ⊕ the
++   clip's state) – every editor (VA, FM, WT, eng 3) works on it as it is and the engine plays it. [Grundklang] (or closing, another
++   track, undo past the start, saving) writes the differences into clip.st and puts the Grundklang back: one undo step 'clip'. */
++function v6aEdRef(i) {
++  const tr = S.tracks[i]; if (!tr) return null;
++  const p = R.pend[i];
++  if (R.playing) {                                  // playing: the clip that comes (waiting) or sounds
++    if (p && p.slot >= 0 && v6aClip(i, p.slot, p.own)) return {s: p.slot, own: p.own || null};
++    if (R.slot[i] >= 0 && v6aClip(i, R.slot[i], R.own[i])) return {s: R.slot[i], own: R.own[i] || null};
++  }
++  if (tr.clips[R.selS]) return {s: R.selS, own: null};   // stopped: the selected cell
++  if (R.slot[i] >= 0 && v6aClip(i, R.slot[i], R.own[i])) return {s: R.slot[i], own: R.own[i] || null};
++  return null;
++}
++function v6aOwnId(clip) { if (!S.song || !S.song.own) return null; for (const k in S.song.own) if (S.song.own[k] === clip) return k; return null; }
++function v6aEdStart(i, ref) {
++  if (V6A.ed) v6aEdEnd();
++  const tr = S.tracks[i]; if (!tr || (tr.kind !== 'synth' && tr.kind !== 'drum') || nvTr(tr)) return false;
++  ref = ref || v6aEdRef(i);
++  const clip = ref && v6aClip(i, ref.s, ref.own); if (!clip) { toast('◆ braucht einen Clip: erst einen Clip dieser Spur starten oder wählen'); return false; }
++  if (clip.audio) { toast('◆ gilt für Noten-Clips'); return false; }
++  const base = tr.sound, st = v6aStOk(i, clip.st) ? clip.st : null;
++  const own = ref.own ? v6aOwnId(clip) || ref.own : null;
++  V6A.ed = {i, s: ref.s, own, base, undoN: UNDO.length, before: own ? JSON.stringify(clip) : cleanClip(clip), x: clip.st ? {x: clip.st.x, n: clip.st.n} : null};
++  tr.sound = deep(st ? v6aApply(base, st) : base);                   // a running glide goes on; a knob that is turned follows the hand (KZ6)
++  UI.sndVer++; UI.dirty.strip = UI.dirty.grid = UI.dirty.edHead = true;
++  if (tr.kind === 'synth') { syncEngine(i, true); applyTrackParams(i, false); } else applyTrackParams(i, false);
++  v6aEdUi();
++  return true;
++}
++// the differences W − B as a state (paths, only what differs; mode / poly / engine stay Grundklang)
++function v6aDiff(B, W) {
++  const p = {}, fx = {}; let n = 0;
++  const walk = (a, b, pre, d) => {
++    for (const k of Object.keys(b)) {
++      const path = pre ? pre + '.' + k : k, x = a ? a[k] : undefined, y = b[k];
++      if (!pre && V6A_NO.has(k)) continue;
++      if (path === 'mk.mode' || path === 'mk.voc.hold' || path === 'wt.tab') continue;
++      if (typeof y === 'number' || typeof y === 'string' || typeof y === 'boolean') { if (typeof x === typeof y && x !== y && n < 256) { p[path] = y; n++; } }
++      else if (y && typeof y === 'object' && x && typeof x === 'object' && d < 6) walk(x, y, path, d + 1);
++    }
++  };
++  if (B.engine === W.engine) walk(B.p, W.p, '', 0);
++  const fa = fxOfSound(B), fb = fxOfSound(W);
++  for (const k of V6A_FX) if (typeof fb[k] === 'number' && Math.abs(fb[k] - fa[k]) > 1e-9) { fx[k] = fb[k]; n++; }
++  return n ? {p, fx} : null;
++}
++function v6aEdEnd(quiet) {
++  const e = V6A.ed; if (!e) return false;
++  V6A.ed = null;
++  const tr = S.tracks[e.i]; if (!tr) return false;
++  const W = tr.sound, B = e.base, df = v6aDiff(B, W);
++  tr.sound = B;
++  const clip = v6aClip(e.i, e.s, e.own);
++  for (let k = UNDO.length - 1; k >= Math.min(e.undoN, UNDO.length); k--) if (UNDO[k].kind === 'sound' && UNDO[k].track === e.i) UNDO.splice(k, 1);
++  for (let k = REDO.length - 1; k >= 0; k--) if (REDO[k].kind === 'sound' && REDO[k].track === e.i) REDO.splice(k, 1);
++  let st = null;
++  if (clip) {
++    const old = clip.st || null, x = old && old.x ? old.x : e.x && e.x.x, nn = old && old.n ? old.n : e.x && e.x.n;
++    st = df ? Object.assign({eng: B.engine, p: df.p}, Object.keys(df.fx).length ? {fx: df.fx} : null, x ? {x} : null, x === 'free' && nn ? {n: nn} : null) : null;
++    if (st) clip.st = st; else delete clip.st;
++    const now = e.own ? JSON.stringify(clip) : cleanClip(clip), was = e.own ? e.before : e.before;
++    if (JSON.stringify(now) !== JSON.stringify(was)) {
++      if (e.own) undoPush({kind: 'own', id: e.own, before: was, label: '◆ Klangzustand'});
++      else undoPush({kind: 'clip', track: e.i, scene: e.s, before: was, label: '◆ Klangzustand ' + trackShort(e.i) + ' Sz' + (e.s + 1)});
++      markDirty();
++    }
++  }
++  v6aRt(); R.v6aCur[e.i] = {st: v6aStOk(e.i, st) ? st : null, sig: v6aSig(v6aStOk(e.i, st) ? st : null)};
++  UI.sndVer++; UI.dirty.strip = UI.dirty.grid = UI.dirty.edHead = true;
++  if (AU.ctx) { if (tr.kind === 'synth') syncEngine(e.i, true); applyTrackParams(e.i, false); }
++  if (!quiet) toast(st ? '◆ gemerkt: ' + v6aCount(st) + ' Werte anders' : '◆ ohne Abweichung – kein Zustand');
++  v6aEdUi();
++  return true;
++}
++const v6aCount = st => (st ? Object.keys(st.p || {}).length + Object.keys(st.fx || {}).length : 0);
++// serialize while the ◆ editor is open: the file holds the Grundklang and the state as it is now (nothing is lost, nothing doubled)
++function v6aEdWrap(fn) {
++  const e = V6A.ed; if (!e) return fn();
++  const tr = S.tracks[e.i], clip = tr && v6aClip(e.i, e.s, e.own); if (!tr || !clip) return fn();
++  const W = tr.sound, had = Object.prototype.hasOwnProperty.call(clip, 'st'), st0 = clip.st, df = v6aDiff(e.base, W);
++  tr.sound = e.base;
++  if (df) clip.st = Object.assign({eng: e.base.engine, p: df.p}, Object.keys(df.fx).length ? {fx: df.fx} : null, st0 && st0.x ? {x: st0.x} : null, st0 && st0.x === 'free' && st0.n ? {n: st0.n} : null); else delete clip.st;
++  try { return fn(); } finally { tr.sound = W; if (had) clip.st = st0; else delete clip.st; }
++}
++// undo / redo while the ◆ editor is open: its own sound steps stay inside; anything else ends it first
++function v6aUndoGate(redo) {
++  const e = V6A.ed; if (!e) return;
++  const top = redo ? REDO[REDO.length - 1] : UNDO[UNDO.length - 1];
++  if (top && top.kind === 'sound' && top.track === e.i && (redo || UNDO.length > e.undoN)) return;
++  v6aEdEnd(true);
++}
++// the ◆ editor's marks: the sheet's class, the head key, the LCD line
++function v6aEdUi() {
++  try {
++    const sh = EL.synthSheet, e = V6A.ed;
++    for (const x of [EL.synthSheet, EL.drumSheet]) if (x) x.classList.toggle('v6a-ed', !!(e && x.classList.contains('open')));
++    if (ED.v6aB) { ED.v6aB = ED.v6aB.filter(b => b.isConnected); for (const b of ED.v6aB) v6aBtnPaint(b); }
++    if (ED.lcd && ED.lcd.isConnected) lcdHint();
++    void sh;
++  } catch (er) { logErr(er); }
++  UI.dirty.grid = true;
++}
++function v6aLcdText() {
++  const e = V6A.ed; if (!e) return null;
++  const tr = S.tracks[e.i], df = tr ? v6aDiff(e.base, tr.sound) : null, n = df ? Object.keys(df.p).length + Object.keys(df.fx).length : 0;
++  return ['Bearbeite ◆', (e.own ? 'Song-Clip' : 'Clip Szene ' + (e.s + 1)) + ' · ' + n + (n === 1 ? ' Wert' : ' Werte') + ' anders · [Grundklang] = zurück'];
++}
++function v6aBtnPaint(b) {
++  const e = V6A.ed, on = !!(e && e.i === +b.dataset.t);
++  b.classList.toggle('on', on); b.classList.toggle('has', !on && !!v6aCurSt(+b.dataset.t));
++  b.innerHTML = on ? '<span class="v6l">Grund-</span><span class="v6l">klang</span>' : '◆';
++  b.setAttribute('aria-label', on ? 'Grundklang: Klangzustand ◆ fertig, zurück zum Grundklang' : 'Klangzustand ◆ des Clips bearbeiten (Szenenwechsel gleitet dorthin)');
++  b.title = on ? 'Fertig – zurück zum Grundklang' : '◆ Klangzustand dieses Clips';
++}
++function v6aHeadBtn(i) {
++  const b = el('button', 'hb rb v6ab'); b.dataset.t = String(i); v6aBtnPaint(b);
++  onTap(b, () => { if (V6A.ed && V6A.ed.i === i) v6aEdEnd(); else v6aEdStart(i); });
++  (ED.v6aB || (ED.v6aB = [])).push(b);
++  return b;
++}
++/* V6A Bedienung: Clip-Blatt (◆-Zeile: Bearbeiten · Gleiten · Klartext · Löschen), Teil-Blatt und Marken-Blatt ([Gleiten: Clip|aus|kurz|1 T|2 T|frei]) */
++const V6A_FREE = [1, 2, 3, 4, 6, 8, 12, 16];
++function v6aKeyName(k) {
++  if (k.startsWith('fx.')) return {vol: 'Lautstärke', pan: 'Panorama', rev: 'Hall', dly: 'Echo'}[k.slice(3)] || k;
++  const d = PD[k]; if (d && d.l) return d.l + (/^o[123]/.test(k) ? ' ' + k[1] : '');
++  if (k.startsWith('mk.')) return MK_LABEL + ' ' + k.slice(3).replace(/^t\.([01])\./, (m, a) => 'T' + (+a + 1) + ' ');
++  if (k.startsWith('fm6.ops.') || k.startsWith('fmx.ops.')) { const q = k.split('.'); return 'OP' + (+q[2] + 1) + ' ' + q.slice(3).join('.'); }
++  return k;
++}
++function v6aValTxt(k, v) {
++  if (typeof v !== 'number') return String(v);
++  if (k.startsWith('fx.')) { const kk = k.slice(3); return kk === 'pan' ? fmtVal('pan', v) : Math.round(v * 100) + ' %'; }
++  const d = PD[k]; if (d && d.fmt) { try { return fmtVal(d.fmt, v); } catch (e) {} }
++  return Math.abs(v) >= 100 ? String(Math.round(v)) : fmtDec(v, 2).replace(/,?0+$/, '');
++}
++// plain text of a state: „Cutoff 2,4 kHz → 400 Hz · Res 10 % → 50 %“ (Grundklang → Zustand)
++function v6aText(i, st, max) {
++  const tr = S.tracks[i]; if (!tr || !st) return '';
++  const L = [], base = tr.sound;
++  for (const k of Object.keys(st.p || {})) L.push(v6aKeyName(k) + ' ' + v6aValTxt(k, v6aGet(base, k)) + ' → ' + v6aValTxt(k, st.p[k]));
++  for (const k of Object.keys(st.fx || {})) L.push(v6aKeyName('fx.' + k) + ' ' + v6aValTxt('fx.' + k, fxOfSound(base)[k]) + ' → ' + v6aValTxt('fx.' + k, st.fx[k]));
++  return max && L.length > max ? L.slice(0, max).join(' · ') + ' · … (' + L.length + ')' : L.join(' · ');
++}
++const v6aGlSeg = (cur, withDef) => (withDef ? [['', 'Clip', 'wie die Clips (je Clip eingestellt)']] : []).concat(V6A_X.map(x => [x, V6A_XL[x], V6A_XH[x]]));
++function v6aGlRow(cls, cur, n, withDef) {
++  return `<div class="v6gl ${cls}"><span class="lbl">Gleiten</span><div class="seg v6seg">` + v6aGlSeg(cur, withDef).map(([v, l, h]) => `<button class="rb${(cur || '') === v ? ' on' : ''}" data-v6x="${v}" aria-label="Gleiten ${esc(l)}: ${esc(h)}" title="${esc(h)}">${esc(l)}</button>`).join('') + `</div>` +
++    (cur === 'free' ? `<button class="hb rb v6n" data-v6n="1" aria-label="Länge des freien Gleitens: ${n} Schläge (tippen = nächste Länge)">${n} S</button>` : '') + `</div>`;
++}
++const v6aNextN = n => V6A_FREE[(V6A_FREE.indexOf(n) + 1) % V6A_FREE.length] || 4;
++// the ◆ key of the clip sheet (synth tracks, note clips): „◆ Klang · 2“ – opens the ◆ sheet
++function v6aClipBtn(t, s, clip, reopen) {
++  const st = clip.st || null, ok_ = v6aStOk(t, st), n = v6aCount(st);
++  const b = el('button', 'hb rb v6cb' + (st ? ' has' : ''), st ? '◆ Klang · ' + (ok_ ? n : '–') : '◆ Klang');
++  b.setAttribute('aria-label', st ? 'Klangzustand ◆: ' + (ok_ ? n + ' Werte anders' : 'inaktiv') + ', Gleiten' : 'Klangzustand ◆ für diesen Clip');
++  on(b, 'click', () => v6aClipPop(t, s, b, reopen));
++  return b;
++}
++// the ◆ sheet of a clip: plain text, [◆ Bearbeiten] [✕ Löschen], [Gleiten: aus|kurz|1 T|2 T|frei]
++function v6aClipPop(t, s, anchor, reopen) {
++  openPop(anchor, p => {
++    p.classList.add('v6pop'); guardTouch(p);
++    const paint = () => {
++      const tr = S.tracks[t], c = tr && tr.clips[s]; if (!c) { closePop(); return; }
++      const st = c.st || null, ok_ = v6aStOk(t, st), n = v6aCount(st), eng = st && st.eng && !ok_ ? (ENGINE_LABEL[st.eng] || st.eng) : '';
++      p.innerHTML = `<h4>◆ Klang · ${esc(tr.name)} · Szene ${s + 1}</h4>` +
++        `<p class="v6t">${st ? (ok_ ? esc(v6aText(t, st, 6)) : 'Inaktiv: gemerkt für ' + esc(eng) + ' (die Spur spielt eine andere Klangerzeugung)') : 'Wie Grundklang. Mit [◆ Bearbeiten] stellst du den Klang für diesen Clip ein – beim Szenenwechsel gleiten die Regler dorthin.'}</p>` +
++        `<div class="v6b"><button class="hb rb v6e" data-v6="ed">◆ Bearbeiten</button>` + (st ? `<button class="hb rb v6x" data-v6="del">✕ Löschen</button>` : '') + `</div>` +
++        (st && ok_ ? v6aGlRow('cs', st.x || 'flow', st.n || 4, false) + `<p class="v6hint">${esc(V6A_XH[st.x || 'flow'] + (st.x === 'free' ? ': ' + (st.n || 4) + ' Schläge' : ''))}</p>` : '');
++      popDock(p);
++    };
++    paint();
++    onTap(p, b => {
++      const a = b.dataset.v6, c = S.tracks[t].clips[s]; if (!c) return;
++      if (a === 'ed') { closePop(); closeClipSheet(); if (R.selT !== t) selectTrack(t); if (v6aEdStart(t, {s, own: null})) openEditor(); return; }
++      if (a === 'del') { v6aSetState(t, s, null); toast('◆ gelöscht', {label: 'Rückgängig', fn: () => undo()}); paint(); if (reopen) reopen(); return; }
++      if (b.dataset.v6x != null) { v6aSetGlide(t, s, {x: b.dataset.v6x, n: c.st && c.st.n || 4}); haptic('tick'); paint(); return; }
++      if (b.dataset.v6n) { v6aSetGlide(t, s, {x: 'free', n: v6aNextN(c.st && c.st.n || 4)}); haptic('tick'); paint(); }
++    }, 'button');
++  }, {name: 'v6a', onClose: () => { if (reopen && R.editor === 'clip') reopen(); }});
++}
++// a long text as a toast (the clip sheet has no LCD line)
++function lcdNote(h, txt) { toast(h + ': ' + txt); }
++// Teil-Blatt: [Gleiten: Clip|aus|kurz|1 T|2 T|frei] – the glide when this part starts
++function v6aPartRow(pt) { return v6aGlRow('ps', pt.gl ? pt.gl.x : '', pt.gl && pt.gl.n || 4, true).replace('class="v6gl ps"', 'class="cp-row v6gl ps"'); }
++function v6aPartTap(i, b) {
++  const pt = S.parts && S.parts[i]; if (!pt) return false;
++  if (b.dataset.v6x != null) { const x = b.dataset.v6x; v6aPartGlide(i, x ? {x, n: pt.gl && pt.gl.n || 4} : null); haptic('tick'); return true; }
++  if (b.dataset.v6n) { v6aPartGlide(i, {x: 'free', n: v6aNextN(pt.gl && pt.gl.n || 4)}); haptic('tick'); return true; }
++  return false;
++}
++// Marken-Blatt: one row below the others – the glide into this song part (its edge at bar m.a)
++function v6aMarkSheetPaint(p, m) {
++  if (p.classList.contains('s0-ed')) return;
++  if (!p._v6a) { p._v6a = true; onTap(p, b => v6aMarkTap(p, b), 'button[data-v6x],button[data-v6n]'); }
++  const anchor = p.querySelector('.kon-r') || p.querySelector('.ms-bb'); if (!anchor) return;
++  anchor.insertAdjacentHTML('afterend', v6aGlRow('ms ms-r', m.gl ? m.gl.x : '', m.gl && m.gl.n || 4, true));
++}
++function v6aMarkTap(p, b) {
++  const id = SV.mark, m = S.song && S.song.marks.find(x => x.id === id); if (!m) return;
++  if (b.dataset.v6x != null) { const x = b.dataset.v6x; v6aMarkGlide(id, x ? {x, n: m.gl && m.gl.n || 4} : null); }
++  else if (b.dataset.v6n) v6aMarkGlide(id, {x: 'free', n: v6aNextN(m.gl && m.gl.n || 4)});
++  else return;
++  haptic('tick'); if (p._paint) p._paint(); popDock(p);
++}
+ 
+ /* ---------- CPU limiter (§14.3, Anhang D.2): once per second from tick() ---------- */
+ const LIM = {level: 0, quietSince: 0, last: 0, load: 0};
+@@ -22821,7 +23375,7 @@
+ function spawnVoice(i, out, vel, t0, o) {
+   const c = AU.ctx, tr = S.tracks[i], A = AU.tracks[i];
+   if (!c || !A || !tr || tr.kind !== 'synth') return null;
+-  const snd0 = o.sound || tr.sound;
++  const snd0 = o.sound || (R.v6aCur && R.v6aCur[i] && !AU.synth[i] ? v6aSnd(i) || tr.sound : tr.sound);   // V6A: native path – the state from the next note
+   // MK1 (B.5): AM on the worklet as eng 3; on the native path its timbre 1 as the flat VA patch (mkEco)
+   if (snd0.engine === 'mk') { const E = o.chain ? o.chain.E : snd0 === tr.sound ? AU.synth[i] : null; if (E && !E.dead && !E.retiring) return spawnWkVoice(i, clamp(Math.round(out), 0, 127), vel, t0, o, E, snd0); }
+   if (snd0.engine === 'mk' && o.mask === 2) return null;    // MK5 (B.5): the ECO image is timbre 1 only; a T2-only note does not sound there
+@@ -22910,8 +23464,9 @@
+ function liveUpdate(i, key) {
+   const c = AU.ctx; if (!c) return;
+   const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return;
+-  if (key.startsWith('fx.')) { applyTrackParams(i, false); return; }
++  if (key.startsWith('fx.')) { if (R.v6aRun && R.v6aRun[i]) v6aFxHand(i, key); applyTrackParams(i, false); return; }
+   const snd = tr.sound, P = snd.p, now = c.currentTime;
++  if (V6A.ed && V6A.ed.i === i && R.v6aCur && R.v6aCur[i]) v6aHand(i, key);     // V6A (KZ6): the hand takes over a gliding key
+   // worklet track (§5.4): every flat key goes to the engine (coalesced per animation frame); its sounding notes follow there
+   const lfoKey = /^l[12](shape|rate|sync)$/.test(key);
+   if (AU.synth[i]) {
+@@ -23713,8 +24268,10 @@
+     try { g3Tick(b0, b1); } catch (e) { tickErr(e); }            /* G3: Anlauf vor dem Einstieg eines Clips */
+     if (R.songPlay) { try { songTick(b0, b1); } catch (e) { tickErr(e); } }   // §3.9 (Anhang D.7): the song's launches, Träger, melody
+     try { mkSongSync(); } catch (e) { tickErr(e); }               // MK6-fix (FP-SONG): the AM seq at KEY SYNC aus follows the song beat
++    try { v6aPre(); } catch (e) { tickErr(e); }                   // V6A: the glide of a waiting part
+     if (R.row || R.rowPend || R.part || R.partPend || XP.due != null) { try { partTick(b0, b1); } catch (e) { tickErr(e); } }   // V2c: parts, chord rows, R.xp
+     if (R.songRecEndAt != null) { const te = R.songRecEndAt; R.songRecEndAt = null; try { if (R.songRec && R.songRec.over) songRecEnd(te, {auto: true}); } catch (e) { tickErr(e); } }
++    try { v6aTick(b0, b1); } catch (e) { tickErr(e); }            // V6A: weicher Szenenwechsel (Zustände je Clip, Fahrt bis zum Taktstrich)
+     for (let i = 0; i < NT(); i++) {
+       let from = Math.max(b0, 0);
+       const p = R.pend[i];
+@@ -25286,6 +25843,7 @@
+ function undo() {
+   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && UNDO.length && UNDO[UNDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
+   if (HIST && HIST.q.length) histDrain();  // VC2a-fix: mehrere ↶ in einer Aufgabe = je ein Ereignis
++  v6aUndoGate(false);                      // V6A: ◆ editor – its own steps inside, anything else ends it first
+   const u = UNDO.pop();
+   if (!u) { toast('Nichts rückgängig zu machen'); UI.dirty.strip = true; return false; }
+   if (u.kind === 'group') REDO.push(groupSwap(u, true));
+@@ -25298,6 +25856,7 @@
+ function redo() {
+   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && REDO.length && REDO[REDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
+   if (HIST && HIST.q.length) histDrain();  // VC2a-fix
++  v6aUndoGate(true);                       // V6A
+   const r = REDO.pop();
+   if (!r) { toast('Nichts zu wiederholen'); UI.dirty.strip = true; return false; }
+   if (r.kind === 'group') UNDO.push(Object.assign(groupSwap(r, false), {time: performance.now(), mergeKey: null}));
+@@ -27103,6 +27662,7 @@
+       setCls(C.el, st, 'od', rs === 'od');
+       setCls(C.el, st, 'muted', !!tr.mute && !!clip);
+       setCls(C.el, st, 'assigned', !R.playing && !!clip && R.slot[i] === s && !rs);
++      { const h = !!(clip && clip.st); if (st.v6 !== h) { st.v6 = h; if (!C.v6m) { C.v6m = el('span', 'v6m', '\u25C6'); C.v6m.setAttribute('aria-hidden', 'true'); C.el.appendChild(C.v6m); } C.v6m.hidden = !h; C.el.classList.toggle('v6st', h); } }   // V6A: ◆ (Klangzustand)
+       let gl = '', glr = false;
+       if (!clip && sel) { if (rs) { gl = '●'; glr = true; } else gl = '+'; }
+       else if (!clip && rs) { gl = '●'; glr = true; }
+@@ -27521,6 +28081,7 @@
+     len: chords ? chords.len : isNum(p.len) ? clamp(Math.round(p.len), 1, 16) : 1, start: p.start === 'end' ? 'end' : 'bar', slots, chords, xp,
+     src: ['manual', 'fang', 'rec', 'song'].includes(p.src) ? p.src : 'manual'};
+   if (p.st && typeof p.st === 'object') o.st = deep(p.st);            // §6.5 Teil-Klang (V6b): kept as it is
++  { const g = v6aGlNorm(p.gl); if (g) o.gl = g; }                       // V6A: Gleiten beim Start dieses Teils
+   o.lanes = partLanesNorm(p.lanes, slots, nt);                           // V2d (song-delta 12.1): Part.lanes; slots = the state at bar 0
+   s012PartExtra(p, o, nt);   /* S1/S2: Part.mel (+ own, vox) */
+   return o;
+@@ -29219,6 +29780,7 @@
+       h += `<div class="cp-row ps-tr"><span class="lbl">Spuren</span><div class="cp-sc">` + trackOrder().map(t => { const sl = pt.slots[t];
+         return `<button class="rb cp-c ps-t${sl == null ? ' b' : sl === -1 ? ' a' : ''}" data-t="${t}" aria-label="${esc(S.tracks[t].name)}: ${slotLabel(sl)}"><small>${trackShort(t)}</small>${slotLabel(sl)}</button>`; }).join('') + `</div></div>`;
+       h += `<div class="cp-row ps-mx"><button class="rb ps-mxb" data-a="mx">▦ In der Matrix wählen</button></div>`;
++      h += v6aPartRow(pt);                                                  // V6A: Gleiten beim Start dieses Teils
+       if (st.xp) {
+         const cur = pt.xp && pt.xp.semi ? pt.xp.semi : 0, v = []; for (let s = -12; s <= 12; s++) v.push(s);
+         h += `<div class="cp-row ps-ak"><span class="lbl">Transp.</span><div class="cp-sc ps-xps">` + v.map(s => `<button class="rb cp-c${s === cur ? ' on' : ''}" data-x="${s}">${s > 0 ? '+' + s : s < 0 ? '−' + -s : '±0'}</button>`).join('') + `</div><button class="rb" data-a="xpx">‹</button></div>`;
+@@ -29240,6 +29802,7 @@
+     paint();
+     onTap(p, b => {
+       const a = b.dataset.a, pt = S.parts[i]; if (!pt) return;
++      if (v6aPartTap(i, b)) return;                                         // V6A
+       if (a === 'x') { closePop(); return; }
+       if (b.dataset.n) { const nm = partUniq(b.dataset.n, i); partEdit(i, x => { x.name = nm; }, 'Teil ' + pt.name + ' → ' + nm); haptic('tick'); return; }
+       if (a === 'nm') { st.nm = true; paint(); const inp = p.querySelector('.ps-in'); if (inp) setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 30); return; }
+@@ -30040,6 +30603,7 @@
+         `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + `</div></div>` + vvDirRow(m.a, m.a + m.len, 'ms-b');   // VV2: Zeile „Video“
+       s012MarkSheetPaint(p, m);   /* S0/S2 */
+       konMarkSheetPaint(p, m);    /* KON: [Als neuen Teil konsolidieren] [Zurückholen] */
++      v6aMarkSheetPaint(p, m);    // V6A: [Gleiten: Clip|aus|kurz|1 T|2 T|frei] an dieser Song-Kante
+       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
+     };
+     paint(); p._paint = paint;
+@@ -32167,6 +32731,11 @@
+ function lcdHint() {
+   const L = ED.lcd; if (!L) return;
+   L._s = null;
++  const v6 = V6A.ed && V6A.ed.i === R.selT && R.editor === 'synth' ? v6aLcdText() : null;   // V6A: „Bearbeite ◆ …“ (amber)
++  L.classList.toggle('v6a', !!v6);
++  if (v6) { L.innerHTML = `<span class="lk">${esc(v6[0])}</span><span class="lv">${esc(v6[1])}</span>`; L._full = v6; lcdFit(L); return; }
++  const v6c = R.editor === 'synth' && !V6A.ed && R.v6aCur && R.v6aCur[R.selT] ? v6aCurSt(R.selT) : null;   // V6A: a state plays, the knobs show the Grundklang
++  if (v6c) { const h = ['◆ Zustand spielt', 'Regler zeigen den Grundklang · [◆] = Zustand bearbeiten']; L.innerHTML = `<span class="lk">${esc(h[0])}</span><span class="lv">${esc(h[1])}</span>`; L._full = h; lcdFit(L); return; }
+   L.innerHTML = '<span class="lk">Regler</span><span class="lv">ziehen = ändern · seitlich = fein · 2× tippen = Standard · halten = modulieren</span>';
+   L._full = ['Regler', 'ziehen = ändern · seitlich = fein · 2× tippen = Standard · halten = modulieren']; lcdFit(L);
+ }
+@@ -32787,6 +33356,7 @@
+   return true;
+ }
+ function closeSheets() {
++  if (V6A.ed && EL.synthSheet.classList.contains('open')) { try { v6aEdEnd(); } catch (e) { logErr(e); } }   // V6A: the ◆ editor ends with its sheet
+   if (EL.drumSheet.classList.contains('open')) { try { mdEditEnd(true); } catch (e) { logErr(e); } }   // ND2: ALLE KANÄLE / SOLO PART enden
+   if (EL.synthSheet.classList.contains('open') && typeof MKUI !== 'undefined' && MKUI.leave) { try { MKUI.leave(); } catch (e) { logErr(e); } }   // MK3-fix: ≡, browser, project switch … end solo / armed split like ✕
+   EL.synthSheet.classList.remove('open', 'mkq'); EL.drumSheet.classList.remove('open'); EL.clipSheet.classList.remove('open');
+@@ -32827,7 +33397,8 @@
+   setSheetOpen(true);
+   UI.dirty.all = true;
+ }
+-function closeEditor() { if (typeof MKUI !== 'undefined' && MKUI.leave) { try { MKUI.leave(); } catch (e) { logErr(e); } }   // MK3: solo / Edit Sync / armed split end with the editor
++function closeEditor() { if (V6A.ed) { try { v6aEdEnd(); } catch (e) { logErr(e); } }   // V6A: closing the editor = ◆ fertig
++  if (typeof MKUI !== 'undefined' && MKUI.leave) { try { MKUI.leave(); } catch (e) { logErr(e); } }   // MK3: solo / Edit Sync / armed split end with the editor
+   try { mdEditEnd(true); } catch (e) { logErr(e); }           // ND2: ALLE KANÄLE / SOLO PART enden
+   if (EL.synthSheet.classList.contains('open') || EL.drumSheet.classList.contains('open') || EL.clipSheet.classList.contains('open') || EL.rollSheet.classList.contains('open') || EL.sndSheet.classList.contains('open')) shieldTap(); closeSheets(); R.editor = null; UI.dirty.all = true; }
+ function edRefresh() { for (const f of ED.refreshers) { try { f(); } catch (e) { logErr(e); } } }
+@@ -33104,6 +33675,7 @@
+   return {rec: null, old: false};
+ }
+ function loadPreset(t, idOrName) {
++  if (V6A.ed && V6A.ed.i === t) v6aEdEnd();                           // V6A: a preset is Grundklang
+   const tr = S.tracks[t];
+   if (tr && tr.kind === 'drum') return loadKit(idOrName);           // WP6: kits (and own kits) on the drum track
+   if (!tr || tr.kind !== 'synth') throw new Error('Keine Synth-Spur: ' + t);
+@@ -33121,6 +33693,7 @@
+   return snd.name;
+ }
+ function setEngine(t, eng) {
++  if (V6A.ed && V6A.ed.i === t) v6aEdEnd();                           // V6A: the engine is Grundklang (KZ3)
+   const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth') throw new Error('Keine Synth-Spur: ' + t);
+   const e = ENG_OF[eng] || (eng === 'fm2' ? 'fm6' : ['analog', 'wt', 'fm6', 'mk'].includes(eng) ? eng : null);
+   if (!e) throw new Error('Engine muss va, fm, wt oder mk sein');
+@@ -33419,6 +33992,7 @@
+   const sh = EL.synthSheet, i = R.selT, tr = S.tracks[i];
+   if (tr.kind !== 'synth') return;
+   if (R.editor !== 'synth') return;                       // G-MK1-fix: a late rebuild (timer, ResizeObserver, gesture end) never reopens a closed editor
++  if (V6A.ed && V6A.ed.i !== i) v6aEdEnd();               // V6A: the ◆ editor belongs to one track
+   if (UI.modSrc && UI.modT !== i) exitModMode();          // mod mode belongs to one sound: a track switch ends it
+   ED.refreshers = []; ED.graph = null; ED.xy = null; ED.env = null; ED.lfoPrev = null; ED.hdr = null;
+   ED.ctls = []; ED.msrc = null; ED.mrows = null; ED.mbn = null;
+@@ -33491,10 +34065,12 @@
+   F.r2.append(pre, ab, save, dice, wia, em2, hear);
+   sheetButtons(F.r1, F.r2, true);
+   F.r1.insertBefore(em1, F.r1.querySelector('.hb.ur'));
++  if (!nvTr(tr)) F.r1.insertBefore(v6aHeadBtn(i), em1);                // V6A: [◆] / [Grundklang] (A9: Kopfzeile r1 vor ↶ ↷)
+   if (!engSeg.classList.contains('engchip')) { engSeg.classList.add('eng4'); if (engSeg.lastChild) engSeg.lastChild.classList.add('mkeb'); }
+   ED.hdr = {pName, ab, save};
+   edHeadRefresh();
+   const mkQ = mkE && mkLoaded() && MKUI.chrome(sh, i, {pre, ab, save, dice, hear});   // MK-P: ◀ Karte ▶; landscape: one 44 px head
++  if (mkQ) { const hd = sh.querySelector('.mkqh'), mo = hd && hd.querySelector('.mkqmore'), vb = sh.querySelector('.v6ab'); if (hd && mo && vb) hd.insertBefore(vb, mo); }   // V6A: [◆] also in the one-row head of the plate (landscape)
+   // the mod-mode banner (§9.3): over the LCD line (P), its place in the tab row (L), header row 2 where the LCD is hidden
+   const mbn = el('div', 'mbn', '<i class="dot"></i><span class="mbt"><b></b><small></small></span><button class="mbf rb">Fertig</button>');
+   mbn.hidden = true; mbn.setAttribute('role', 'status'); sh.appendChild(mbn);
+@@ -37050,6 +37626,7 @@
+     const V = pm.voc;
+     if (voc && V && V.mint) add('voc.mint', K1_PSRC[Math.round(+V.msrc || 0)] || '?', 'Vocoder Formant', 'Intensität ' + k1Sgn(V.mint, 0), {kind: 'mk', path: 'voc.mint', val: V.mint});
+     if (voc && V && V.kbd) add('voc.kbd', 'Keytrack', 'Vocoder Pegel', k1Sgn(V.kbd, 0), {kind: 'mk', path: 'voc.kbd', val: V.kbd});
++    v6aK1(i, add);                                                  // V6A (A7): Klangzustand ◆ after the modulations
+     return out;
+   }
+   const fm = s.engine === 'fm6', wk = isWkEngine(s.engine);
+@@ -37069,6 +37646,7 @@
+   // the worklet's analog drift (startVoice): pitch ±analog·8 ct per note, each oscillator ±analog·5 ct more, cutoff ±analog·1,5 HT
+   if (wk && pv('analog')) add('p:analog', 'Analog (Zufall je Note)', fm ? 'Tonhöhe' : 'Tonhöhe · Cutoff', 'bis ±' + k1Num(pv('analog') * (fm ? 8 : 13), 1) + ' ct' + (fm ? '' : ' · ±' + k1Num(pv('analog') * 1.5, 2) + ' HT'), {kind: 'p', p: 'analog'});
+   if (fm) k1FmMods(s.p, add);
++  v6aK1(i, add);                                                    // V6A (A7): Klangzustand ◆ after the modulations
+   return out;
+ }
+ // K1-fix: FM. With p.fmx the worklet plays the graph (fmxCompile): per operator the pitch envelope (DX form on ratio operators,
+@@ -37115,6 +37693,7 @@
+ }
+ // ✕: one undo step; the engines get the change like a knob turn
+ function k1Del(i, key) {
++  if (String(key).startsWith('st:')) return v6aK1Del(i, key);          // V6A: ✕ takes this value out of the clip's state (undo 'clip')
+   const e = k1Mods(i).find(x => x.key === key); if (!e) return false;
+   soundEdit(i, 'Modulation ' + e.src + ' → ' + e.dst + ' gelöscht', () => {
+     const s = sndOf(i);
+@@ -37132,7 +37711,8 @@
+ }
+ // Tipp: the editor page with the target control (lit for 1,6 s); AM engine: the plate section and the LCD page of the value
+ function k1Jump(i, key) {
+-  const e = k1Mods(i).find(x => x.key === key), s = sndOf(i); if (!e || !s) return null;
++  let e = k1Mods(i).find(x => x.key === key); const s = sndOf(i); if (!e || !s) return null;
++  if (e.kind === 'st') { if (!PD[e.path]) return null; e = Object.assign({}, e, {kind: 'p', p: e.path}); }   // V6A: the knob of this value
+   if (R.editor !== 'synth' || R.selT !== i) return null;
+   if (e.kind === 'mk') { if (!mkLoad()) return null; return MKUI.k1 ? MKUI.k1.jump(e.path) : null; }
+   // K1-fix: an FM pitch envelope of every operator (DX form) -> the TONH. page; else the FELD page of the first operator of the row
+@@ -39740,6 +40320,7 @@
+       toast('Clip gelöscht', {label: 'Rückgängig', fn: () => undo()});
+     });
+     g.append(del);
++    if (tr.kind === 'synth' && !clip.audio && !nvTr(tr)) g.append(v6aClipBtn(t, s, clip, reopen));   // V6A: ◆ Klangzustand + Gleiten (eigenes Blatt)
+     body.append(g);
+     const lr = el('div', 'lenrow');
+     lr.append(el('span', 'lbl', 'Länge'));
+@@ -40265,13 +40846,13 @@
+ const idle = window.requestIdleCallback ? (f => window.requestIdleCallback(f, {timeout: 2000})) : (f => setTimeout(f, 50));   // §1.7.7
+ // the selection is saved with the project (§12.6 ui) and restored when the app starts or a project is opened
+ function syncUi() { if (S) S.ui = Object.assign({selT: R.selT, selS: R.selS, order: trackOrder().slice(), sceneBank: sceneBankOf(), trackBank: trackBankOf()}, S.ui && S.ui.follow ? {follow: S.ui.follow} : null, S.ui && S.ui.fmv ? {fmv: S.ui.fmv} : null, UI.partPage === 1 ? {partPage: 1} : null); }   // V4b: + fmv (FELD / DX per track, a view field)   // V0b: + follow (a view field)
+-function serializeProject() { syncUi(); return JSON.stringify(S, stripReplacer); }
++function serializeProject() { syncUi(); return v6aEdWrap(() => JSON.stringify(S, stripReplacer)); }
+ /* project file v3 (§12.1): {app:'SYNQUENZER', kind:'project', format:3, saved, appVersion, sum, project (compact notes),
+    sounds:[the user library]}. lib = false for the parked projects of [Projekte] (stored without the library, §12.2) */
+ function projectFileObj(p, noTime, lib) {
+   if (p === S && NV.lock && NV.raw) { const o = nvWithLib(nvFileOf(NV.raw, S.id), lib); if (o) { if (noTime) delete o.saved; return o; } }   // MK0-fix
+   if (p === S) syncUi();
+-  const o = SQStore.buildProjectFile(p, lib ? (LIB.ok ? LIB.lib.all() : []) : null, VERSION);
++  const o = p === S ? v6aEdWrap(() => SQStore.buildProjectFile(p, lib ? (LIB.ok ? LIB.lib.all() : []) : null, VERSION)) : SQStore.buildProjectFile(p, lib ? (LIB.ok ? LIB.lib.all() : []) : null, VERSION);
+   if (noTime) delete o.saved;
+   return o;
+ }
+@@ -40328,6 +40909,7 @@
+   if (S.tracks.some(t => t && t.kind === 'synth' && t.sound && t.sound.engine === 'mk')) mkLoad();   // MK1 (EN3-14): an AM project loads sq-mk-src now, before the transport can start
+   mdDirty(); mdBoot();                                     // ND4: ein Projekt mit Modell-Pads lädt das Engine-Modul jetzt (vor dem ersten ▶)
+   for (let i = 0; i < MAX_T; i++) { R.slot[i] = S.tracks[i] && S.tracks[i].clips[0] ? 0 : -1; R.own[i] = null; R.pend[i] = null; R.cstart[i] = 0; R.prev[i] = null; }
++  V6A.ed = null; V6A.pp = null; V6A.cache = []; if (R.v6aCur) R.v6aCur = []; if (R.v6aRun) R.v6aRun = [];   // V6A: no state of the old project
+   if (opts.first) { R.selT = 3; R.selS = 0; } else if (opts.ui && S.ui) { R.selT = clamp(S.ui.selT | 0, 0, NT() - 1); R.selS = clamp(S.ui.selS | 0, 0, NS() - 1); } else { R.selT = clamp(R.selT, 0, NT() - 1); R.selS = clamp(R.selS, 0, NS() - 1); }
+   UI.sceneBank = S.ui && S.ui.sceneBank === 1 ? 1 : R.selS >= 4 ? 1 : 0; UI.trackBank = S.ui && S.ui.trackBank === 1 ? 1 : 0;   // V2a: the banks (view)
+   if (AU.ctx) syncTrackChains();
+@@ -53792,6 +54374,7 @@
+   AU.echoIn.connect(AU.echo.input); AU.echo.output.connect(AU.masterSum); AU.echo.toHall.connect(AU.hallIn);
+   for (let i = 0; i < NT(); i++) { await cut(); buildTrack(i); }
+   await cut();
++  if (R.v6aCur) { R.v6aCur = []; R.v6aRun = []; R.v6aRunId = -1; }    // V6A: the render starts like ▶ (states at once, then the same glides)
+   if (wk) syncEngines(); else for (const i of synthTracks()) rebuildNativeLfos(i);
+   await mdVvBoot(oc);                                              // NORTH (ND4-08): Knoten der Drum-Engine im Offline-Kontext
+   // AM: the stored waves at once (as mkRender), the wheels as they stand live
+@@ -53836,6 +54419,7 @@
+ /* G6PH-VIDEO-END */
+ async function vvRenderAudio0(o) {
+   o = o || {};
++  if (V6A.ed) v6aEdEnd(true);                                         // V6A: the render plays the stored states
+   const song = S.song; if (!song || !song.bars) throw new Error('Noch kein Song');
+   if (VV.off) throw new Error('Läuft schon');
+   if (rec.state !== 'off' || R.songRec) throw new Error('Erst Aufnahme beenden');
+@@ -56570,6 +57154,7 @@
+ function vv4Real(i, e) {
+   if (!e) return false;
+   if (e.key === 'p:kt' || e.key === 'p:analog' || e.key === 'p:fvel') return false;
++  if (e.kind === 'st') return false;                                 // V6A: a Klangzustand is no running modulation
+   if (e.kind === 'route') return !!(e.m && e.m.amt);
+   if (e.kind === 'mk') {
+     if (/\.(f\.kbd|f\.vel|a\.kbd)$/.test(e.key) || e.key === 'voc.kbd') return false;
+@@ -58183,6 +58768,44 @@
+ Object.assign(SYNQUENZER, vv4aApi());                      // VV4-A
+ Object.assign(SYNQUENZER, vv4Api());                       // VV4-C / VV4-E
+ Object.assign(SYNQUENZER, vv4bdApi());                      // VV4-B/D
++/* V6A: Test-API (weicher Szenenwechsel). Jede Änderung ist ein Undo-Schritt wie in der Oberfläche */
++function v6aSetState(t, s, st) {
++  const tr = S.tracks[t], c = tr && tr.clips[s]; if (!c) throw new Error('Kein Clip: ' + t + '/' + s);
++  if (V6A.ed) v6aEdEnd(true);
++  const before = cleanClip(c), n = st ? v6aNorm(Object.assign({eng: tr.sound.engine}, st)) : null;
++  if (n) c.st = n; else delete c.st;
++  if (JSON.stringify(cleanClip(c)) === JSON.stringify(before)) return !!n;
++  pushUndo(t, s, before, n ? '◆ Klangzustand' : '◆ gelöscht'); clipChanged(t, s); markDirty(); UI.dirty.grid = true;
++  return !!n;
++}
++function v6aSetGlide(t, s, gl) {
++  const c = S.tracks[t] && S.tracks[t].clips[s]; if (!c || !c.st) return false;
++  const g = v6aGlNorm(gl), before = cleanClip(c);
++  if (g) { c.st.x = g.x; if (g.n) c.st.n = g.n; else delete c.st.n; } else { delete c.st.x; delete c.st.n; }
++  V6A.sig.delete(c.st); const st2 = JSON.parse(JSON.stringify(c.st)); c.st = st2;   // a new object: the running state sees the change
++  if (JSON.stringify(cleanClip(c)) !== JSON.stringify(before)) { pushUndo(t, s, before, '◆ Gleiten ' + (g ? V6A_XL[g.x] : 'wie Teil')); clipChanged(t, s); markDirty(); }
++  return true;
++}
++function v6aPartGlide(i, gl) { const g = v6aGlNorm(gl), p = S.parts && S.parts[i]; if (!p) return false; return partEdit(i, x => { if (g) x.gl = g; else delete x.gl; }, 'Teil ' + p.name + ': Gleiten ' + (g ? V6A_XL[g.x] : 'wie Clips')); }
++function v6aMarkGlide(id, gl) {
++  const g = v6aGlNorm(gl), song = S.song, m0 = song && song.marks.find(m => m.id === id); if (!m0) return false;
++  return !!songEdit('Gleiten ' + markLabel(m0) + ': ' + (g ? V6A_XL[g.x] + (g.n ? ' ' + g.n : '') : 'wie Clips'), sg => { const m = sg.marks.find(x => x.id === id); if (!m) return; if (g) m.gl = g; else delete m.gl; });
++}
++const V6A_API = {
++  v6aSetState, v6aSetGlide, v6aPartGlide, v6aMarkGlide,
++  v6aState: (t, s) => { const c = S.tracks[t] && S.tracks[t].clips[s]; return c && c.st ? JSON.parse(JSON.stringify(c.st)) : null; },
++  v6aEdit: t => v6aEdStart(t), v6aDone: () => v6aEdEnd(true), v6aEditing: () => (V6A.ed ? {i: V6A.ed.i, s: V6A.ed.s, own: V6A.ed.own} : null),
++  v6aInfo: () => ({cur: (R.v6aCur || []).map(c => (c ? {sig: c.sig, n: c.st ? v6aCount(c.st) : 0} : null)), run: (R.v6aRun || []).map(r => (r ? {t0: r.t0, t1: r.t1, c: r.c, a: Object.assign({}, r.a), b: Object.assign({}, r.b)} : null)), now: nowT(), sr: AU.ctx ? AU.ctx.sampleRate : 0}),
++  v6aEff: t => { const s_ = v6aSnd(t); return s_ ? JSON.parse(JSON.stringify({p: s_.p, fx: s_.fx})) : null; },
++  v6aProbe: (t, keys) => { const E = AU.synth[t]; if (!E) return false; E.v6aPr = []; E.v6aProbe(keys || null); return true; },
++  // every engine of track t made from now on (live and in the render) reports keys per block into one log; null = off
++  v6aProbeAll: (t, keys) => { if (!keys) { if (V6A.probe) delete V6A.probe[t]; return true; } V6A.probe = V6A.probe || {}; V6A.probe[t] = {keys, log: []}; const E = AU.synth[t]; if (E) { E.v6aLog = V6A.probe[t].log; E.v6aProbe(keys); } return true; },
++  v6aProbeLog: t => (V6A.probe && V6A.probe[t] ? V6A.probe[t].log.splice(0) : null),
++  v6aStart: () => (V6A.start ? Object.assign({}, V6A.start) : null),
++  v6aProbeData: t => { const E = AU.synth[t]; if (!E) return null; const d = E.v6aPr || []; E.v6aPr = []; return d; },
++  v6aLabels: () => Object.assign({}, V6A_XL),
++};
++Object.assign(SYNQUENZER, V6A_API);                         // V6A: weicher Szenenwechsel
+ const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
+   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
