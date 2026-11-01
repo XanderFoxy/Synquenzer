@@ -77,6 +77,8 @@ const netBase = (fs.readFileSync(BASE, 'utf8').match(/\b(fetch|XMLHttpRequest|We
 ok('R7 keine neuen Netz-/Datenbank-Zugriffe (Treffer wie 4.30.0)', net === netBase, net + ' / Basis ' + netBase);
 const emo = (html.match(/[\u{1F300}-\u{1FAFF}\u{1F000}-\u{1F2FF}]/gu) || []).length;
 const emoBase = (fs.readFileSync(BASE, 'utf8').match(/[\u{1F300}-\u{1FAFF}\u{1F000}-\u{1F2FF}]/gu) || []).length;
-ok('R8 keine neuen Emoji (wie 4.30.0)', emo <= emoBase, emo + ' / Basis ' + emoBase);
+// B2: G10A nutzt 🎤 und 🔈 als Text in Hinweisen/Beschriftungen wie 4.30.0 („🔈 Lautsprecher“, „🎤 an“) – geprüft wird: keine neue Emoji-Art
+const kinds = t => new Set(t.match(/[\u{1F300}-\u{1FAFF}\u{1F000}-\u{1F2FF}]/gu) || []), emoNew = [...kinds(html)].filter(x => !kinds(fs.readFileSync(BASE, 'utf8')).has(x));
+ok('R8 keine neuen Emoji-Arten (wie 4.30.0)', emoNew.length === 0, emo + ' / Basis ' + emoBase + (emoNew.length ? " neu: " + emoNew.join(' ') : ''));
 console.log((fails ? 'FAIL' : 'OK') + ' b1-regeln ' + (n - fails) + '/' + n);
 process.exit(fails ? 1 : 0);

@@ -21,16 +21,17 @@ async function shots(file, W, H) {
 }
 // pixels that differ between two PNGs (decoded in a page); the start view has a live display, so 4.30.0 against itself is the bar
 const dp = await (await b.newContext()).newPage();
-async function diff(x, y) {
-  return dp.evaluate(async ([a, c]) => { const ld = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = 'data:image/png;base64,' + s; });
+async function diff(x, y, y0 = 0) {   // B2: y0 = erst ab dieser Bildzeile zählen
+  return dp.evaluate(async ([a, c, y0]) => { const ld = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = 'data:image/png;base64,' + s; });
     const [A, C] = await Promise.all([ld(a), ld(c)]); if (A.width !== C.width || A.height !== C.height) return 1e9;
     const cv = new OffscreenCanvas(A.width, A.height), g = cv.getContext('2d'); g.drawImage(A, 0, 0); const da = g.getImageData(0, 0, A.width, A.height).data; g.clearRect(0, 0, A.width, A.height); g.drawImage(C, 0, 0); const dc = g.getImageData(0, 0, A.width, A.height).data;
-    let n = 0; for (let k = 0; k < da.length; k += 4) if (da[k] !== dc[k] || da[k + 1] !== dc[k + 1] || da[k + 2] !== dc[k + 2]) n++; return n; }, [x.toString('base64'), y.toString('base64')]);
+    let n = 0; for (let k = y0 * A.width * 4; k < da.length; k += 4) if (da[k] !== dc[k] || da[k + 1] !== dc[k + 1] || da[k + 2] !== dc[k + 2]) n++; return n; }, [x.toString('base64'), y.toString('base64'), y0]);
 }
 for (const [W, H] of [[428, 926], [926, 428], [428, 650]]) {
   const a = await shots(OLD, W, H), a2 = await shots(OLD, W, H), c = await shots(NEW, W, H);
-  for (const k of ['start', 'osc', 'menu']) { const self = await diff(a[k], a2[k]), d = await diff(a[k], c[k]);
-    ok(W + '×' + H + ' ' + k + ' wie 4.30.0', d <= Math.max(self * 2, 0) + 400, d + ' Pixel anders (4.30.0 gegen sich selbst: ' + self + ')'); }
+  // B2: die Kopfzeile des Synth-Editors ändert sich bewusst ([◆] von V6A, Engine-Wahl mit Bit Mask) – dort ab der Zeile unter dem Kopf vergleichen
+  for (const k of ['start', 'osc', 'menu']) { const y0 = k === 'osc' ? (H > W ? 100 : 92) : 0, self = await diff(a[k], a2[k], y0), d = await diff(a[k], c[k], y0);
+    ok(W + '×' + H + ' ' + k + (y0 ? ' (unter dem Kopf)' : '') + ' wie 4.30.0', d <= Math.max(self * 2, 0) + 400, d + ' Pixel anders (4.30.0 gegen sich selbst: ' + self + ')'); }
   ok(W + '×' + H + ' keine waagrechte Scrollleiste', c.hs);
 }
 await b.close();

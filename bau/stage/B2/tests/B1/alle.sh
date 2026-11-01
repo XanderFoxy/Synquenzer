@@ -5,7 +5,7 @@ T="$(cd "$(dirname "$0")" && pwd)"
 APP="$(cd "$T/../.." && pwd)/index.html"
 ROOT="$(cd "$T/../../../../.." && pwd)"
 OLD="$ROOT/bau/snapshots/R-4300.html"
-OUT="${B1_OUT:-$(mktemp -d)}"
+OUT="${B1_OUT:-$(mktemp -d)}"; mkdir -p "$OUT"
 cd "$ROOT" || exit 1
 # playwright/acorn: ESM-Importe suchen node_modules neben den Dateien – vorübergehend auf die globalen Module zeigen
 LINK=""
