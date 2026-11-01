@@ -6065,6 +6065,14 @@ const FORMCLEAN = (() => {
       if (x <= A || x >= B) continue;
       edges.push({x, p, q});
     }
+    // a vertical finger move writes a one-tick jump into the paint buffer (paint: the last stroke wins on one tick): such a jump
+    // of >= 100 is an edge as well (Treppen, Gate, Triller with short sections), unless one was found within 3 ticks
+    for (let k = A + 1; k <= B; k++) {
+      if (isNaN(raw[k]) || isNaN(raw[k - 1]) || Math.abs(d[k] - d[k - 1]) < 100) continue;
+      if (k <= A || k >= B || edges.some(e => Math.abs(e.x - k) <= 3)) continue;
+      edges.push({x: k, p: k - 1, q: k});
+    }
+    edges.sort((a, b) => a.x - b.x);
     // pieces between edges, each fitted top-down (steps 4, 5)
     const cuts = [{x: A, q: A}].concat(edges).concat([{x: B, p: B}]);
     for (let i = 0; i < cuts.length - 1; i++) {
