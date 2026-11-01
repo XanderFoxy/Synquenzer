@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const f = process.argv[2];
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const p = await b.newPage({viewport: {width: 428, height: 926}, hasTouch: true});
+const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('file://' + f); await p.waitForTimeout(1500);
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.selectTrack(2); Q.openEditor(); });
+await p.waitForTimeout(600);
+const r = await p.evaluate(() => ({keys: [...document.querySelectorAll('#synthSheet [data-key]')].map(e => e.dataset.key + (e.offsetParent ? '' : '(h)')).join(' '), tabs: [...document.querySelectorAll('#synthSheet button')].map(b => b.textContent.trim()).filter(Boolean).slice(0, 40).join('|')}));
+console.log(JSON.stringify(r, null, 1));
+await p.screenshot({path: 'explore-ed.png'});
+console.log('errors', JSON.stringify(errs));
+await b.close();

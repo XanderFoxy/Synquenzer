@@ -1,0 +1,26 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const file = process.argv[2];
+const b = await chromium.launch();
+const p = await b.newPage({viewport: {width: 428, height: 926}, hasTouch: true, isMobile: true});
+const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('file://' + file); await p.waitForTimeout(1500);
+const perc = process.argv[3] === 'perc';
+await p.evaluate(async (perc) => { const D = window.SYNQUENZER; if (perc) { D.selectTrack(0); D.setParam(0, 'engine', 'north'); D.openEditor(); await new Promise(r => setTimeout(r, 300)); D.ndpOpen({perc: 0, c: 2}); } else { D.ndpChoose(); D.ndpOpen(); } await new Promise(r => setTimeout(r, 800)); }, perc);
+const box = async sel => (await p.$(sel)).boundingBox();
+const tap = async (sel, fy) => { const r = await box(sel); await p.touchscreen.tap(r.x + r.width / 2, r.y + r.height * (fy == null ? .5 : fy)); await p.waitForTimeout(250); };
+const cur = () => p.evaluate(() => { const D = NDP.desc('mode'); return {mode: D.str(D.get()), enc: NDP.info().enc, seg: NDP.info().seg}; });
+await p.evaluate(() => SYNQUENZER.ndpView({sec: 'tone', focus: 'mode'}));
+await tap('#ndp [data-a="enter"]'); await p.waitForTimeout(300);
+console.log('pop', await p.evaluate(() => [...document.querySelectorAll('.mdpop button[data-v]')].map(b => b.dataset.v + (b.classList.contains('on') ? '*' : '')).join(' ')));
+const r = await box('.mdpop button[data-v="L"]'); console.log('Lbox', r, await p.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e && (e.closest('button') || e).outerHTML.slice(0, 80); }, [r.x + r.width / 2, r.y + r.height / 2]));
+await tap('.mdpop button[data-v="L"]');
+console.log('after L', await cur());
+await p.evaluate(() => closePop()); await p.waitForTimeout(200);
+await tap('#ndp [data-a="kit"]'); console.log('after kit key', await cur());
+await tap('#ndp [data-a="enter"]'); await p.waitForTimeout(300);
+console.log('kitpop', await p.evaluate(() => [...document.querySelectorAll('button[data-k]')].map(b => b.textContent + (b.classList.contains('on') ? '*' : '')).slice(0, 6).join('|')));
+if (await p.$('button[data-k="1"]')) await tap('button[data-k="1"]');
+console.log('after kit', await cur(), await p.evaluate(() => perc => perc, perc), await p.evaluate(() => (S.tracks[0].sound.p.nk || {}).kit));
+if (perc) { await p.evaluate(() => SYNQUENZER.setParam(0, 'engine', 'analog')); await p.waitForTimeout(300); console.log('guard', await p.evaluate(() => ({open: SYNQUENZER.ndpInfo().open, src: NDP.src()}))); }
+console.log('errs', errs);
+await b.close();
