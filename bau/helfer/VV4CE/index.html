@@ -1314,6 +1314,7 @@ body[data-mod] #synthSheet .sh-body .pg:not(.pg-mod) .qcell .seg{opacity:1}
 .pop .vvdr{margin-top:8px}
 .msheet .vvdr{margin-top:4px}
 .pop.plpick .plp.vvsp{grid-template-columns:repeat(4,minmax(44px,1fr))}   /* VV2-fix: a short range – each track ≥ 44 px wide */
+.pop.plpick .plp.vvsp + h4{margin-top:14px}   /* VV4-E: the [Modulation] row keeps the track keys' 44 px free */
 /* VV2: the sheet „Video“ has one row more (9:16 [Kamera] [Ganz mit Balken]); quer passt die Bedienung ohne Rollen in 375 px Höhe */
 @media (orientation:landscape){.vvctl{gap:4px}.vvacts,.vvprog,.vvdone,.vvsheet .vvbtn{height:44px}}
 @media (orientation:landscape) and (max-height:400px){.vvsheet.sel .vvctl{gap:2px}}
@@ -49809,15 +49810,19 @@ function vv4K1Rows(g, x, y, w, h, i, C) {
   g.fillStyle = C.dim; g.font = '700 11px ' + C.ui; g.textAlign = 'left'; g.textBaseline = 'top';
   const ls = 'letterSpacing' in g; if (ls) g.letterSpacing = '1.3px'; g.fillText(('Modulationen · ' + String((tr && tr.name) || '')).toUpperCase(), x + 12, y + 12); if (ls) g.letterSpacing = '0px';
   vv4El('Mod-Übersicht', 'K1 .pop.k1pop (Modulationen · Spur)');
-  const rh = 48, gap = 6, xw = 44; let yy = y + 32; const rows = [];
+  const gap = 6, xw = 44; let yy = y + 32; const rows = [];
+  // .k1go b / small wrap (white-space: normal): words into lines that fit the key
+  const wrap = (txt, font, mw) => { g.font = font; const out = []; let cur = ''; for (const wd of String(txt).split(' ')) { const t_ = cur ? cur + ' ' + wd : wd; if (cur && g.measureText(t_).width > mw) { out.push(cur); cur = wd; } else cur = t_; } if (cur) out.push(cur); return out; };
   for (const e of L) {
+    const bx = x + 12, bw = w - 24 - xw - gap, l1 = wrap(e.src + ' → ' + e.dst, '700 13px ' + C.ui, bw - 20), l2 = wrap(String(e.amt), '500 11px ' + C.ui, bw - 20);
+    const rh = Math.max(48, 12 + l1.length * 15.6 + 3 + l2.length * 13.75);
     if (yy + rh > y + h - 8) break;
-    const bx = x + 12, bw = w - 24 - xw - gap;
     const btn = (X0, W0) => { vvRound(g, X0, yy, W0, rh, 5); const gb = g.createLinearGradient(0, yy, 0, yy + rh); gb.addColorStop(0, C.ch2); gb.addColorStop(1, C.ch); g.fillStyle = gb; g.fill(); g.strokeStyle = C.line; g.stroke(); };
     btn(bx, bw); btn(bx + bw + gap, xw);
     g.save(); g.beginPath(); g.rect(bx, yy, bw, rh); g.clip();
-    g.fillStyle = C.text; g.font = '700 13px ' + C.ui; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(e.src + ' → ' + e.dst, bx + 10, yy + 17);
-    g.fillStyle = C.dim; g.font = '500 11px ' + C.ui; g.fillText(String(e.amt), bx + 10, yy + 34);
+    const y0 = yy + (rh - (l1.length * 15.6 + 3 + l2.length * 13.75)) / 2; g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillStyle = C.text; g.font = '700 13px ' + C.ui; l1.forEach((ln, k) => g.fillText(ln, bx + 10, y0 + 7.8 + k * 15.6));
+    g.fillStyle = C.dim; g.font = '500 11px ' + C.ui; l2.forEach((ln, k) => g.fillText(ln, bx + 10, y0 + l1.length * 15.6 + 3 + 6.9 + k * 13.75));
     g.restore();
     const qx = bx + bw + gap + xw / 2, qy = yy + rh / 2; g.strokeStyle = C.text; g.lineWidth = 1.6; g.lineCap = 'round'; g.beginPath(); g.moveTo(qx - 5, qy - 5); g.lineTo(qx + 5, qy + 5); g.moveTo(qx + 5, qy - 5); g.lineTo(qx - 5, qy + 5); g.stroke();
     rows.push({key: e.key, src: e.src, dst: e.dst, amt: e.amt, real: vv4Real(i, e)});

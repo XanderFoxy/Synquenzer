@@ -1,0 +1,536 @@
+--- bau/snapshots/R-4261.html	2026-11-01 03:52:31.474730166 +0000
++++ bau/helfer/VV4CE/index.html	2026-11-01 04:17:28.454819151 +0000
+@@ -1314,6 +1314,7 @@
+ .pop .vvdr{margin-top:8px}
+ .msheet .vvdr{margin-top:4px}
+ .pop.plpick .plp.vvsp{grid-template-columns:repeat(4,minmax(44px,1fr))}   /* VV2-fix: a short range – each track ≥ 44 px wide */
++.pop.plpick .plp.vvsp + h4{margin-top:14px}   /* VV4-E: the [Modulation] row keeps the track keys' 44 px free */
+ /* VV2: the sheet „Video“ has one row more (9:16 [Kamera] [Ganz mit Balken]); quer passt die Bedienung ohne Rollen in 375 px Höhe */
+ @media (orientation:landscape){.vvctl{gap:4px}.vvacts,.vvprog,.vvdone,.vvsheet .vvbtn{height:44px}}
+ @media (orientation:landscape) and (max-height:400px){.vvsheet.sel .vvctl{gap:2px}}
+@@ -48669,8 +48670,8 @@
+    song.video = [{a, b, v: 'auto'|'song'|'matrix'|'spur', t?}] (Takte a ≤ x < b, Spur t) – optional und additiv (Format 5 bleibt);
+    ohne Einträge macht der Auto-Regisseur alles. Einfügen/Löschen/Verschieben von Takten verschiebt bzw. kürzt die Einträge mit
+    (wie song.vox; Haken in songShift/songClear/songCut/songWrite/songTidy), Undo wie alle Song-Änderungen. */
+-const VV_DIRV = ['auto', 'song', 'matrix', 'spur'], VV_BLEND = .3, VV_AR = 360;   // Blende 300 ms; die quer gezeichnete Ansicht ist 640 × 360
+-const vvDirSame = (p, q) => !!p && !!q && p.v === q.v && (p.v !== 'spur' || p.t === q.t);
++const VV_DIRV = ['auto', 'song', 'matrix', 'spur', 'mod'], VV_BLEND = .3, VV_AR = 360;   // Blende 300 ms; die quer gezeichnete Ansicht ist 640 × 360
++const vvDirSame = (p, q) => !!p && !!q && p.v === q.v && ((p.v !== 'spur' && p.v !== 'mod') || p.t === q.t);   // VV4-E: 'mod' = Modulation of track t
+ // sanitize (load, undo, after every edit): ints, a < b ≤ bars, sorted, no overlap (the later in the list wins), equal neighbours merged;
+ // nt = the track count of the song being read (VV2-fix: at load that is the loaded project's, not the open session's)
+ function vvDirNorm(list, bars, nt) {
+@@ -48680,7 +48681,7 @@
+     if (!e || typeof e !== 'object' || !isNum(e.a) || !isNum(e.b) || !VV_DIRV.includes(e.v)) continue;
+     const a = clamp(Math.round(e.a), 0, lim - 1), b = clamp(Math.round(e.b), a + 1, lim); if (a >= lim) continue;
+     const x = {a, b, v: e.v};
+-    if (e.v === 'spur') { if (!isNum(e.t) || Math.round(e.t) < 0 || Math.round(e.t) >= nt) continue; x.t = Math.round(e.t); }
++    if (e.v === 'spur' || e.v === 'mod') { if (!isNum(e.t) || Math.round(e.t) < 0 || Math.round(e.t) >= nt) continue; x.t = Math.round(e.t); }
+     // the later entry wins: earlier ones are cut around it
+     for (let k = out.length - 1; k >= 0; k--) { const o = out[k]; if (o.b <= a || o.a >= b) continue; out.splice(k, 1); if (o.a < a) out.push(Object.assign({}, o, {b: a})); if (o.b > b) out.push(Object.assign({}, o, {a: b})); }
+     out.push(x);
+@@ -48731,20 +48732,21 @@
+ // what the Video row shows for [a, b): the value when all bars share it ('auto' without entries), else null (mixed)
+ function vvDirOf(a, b) {
+   const song = S.song; if (!song) return null;
+-  let r; for (let x = a; x < b; x++) { const e = vvDirAt(song, x), k = e ? e.v + (e.v === 'spur' ? ':' + e.t : '') : 'auto'; if (r === undefined) r = k; else if (r !== k) return null; }
++  let r; for (let x = a; x < b; x++) { const e = vvDirAt(song, x), k = e ? e.v + (e.v === 'spur' || e.v === 'mod' ? ':' + e.t : '') : 'auto'; if (r === undefined) r = k; else if (r !== k) return null; }
+   return r || 'auto';
+ }
+ // set [a, b) to v (one undo step 'song'); 'auto' = the entries there go (the Auto-Regisseur decides)
+ function vvDirSet(a, b, v, t) {
+   const song = S.song; if (!song || !VV_DIRV.includes(v)) return false;
+   a = clamp(Math.round(a) || 0, 0, Math.max(0, song.bars - 1)); b = clamp(Math.round(b) || 0, a + 1, Math.max(a + 1, song.bars));
+-  if (v === 'spur' && !(isNum(t) && t >= 0 && t < NT())) return false;
++  if ((v === 'spur' || v === 'mod') && !(isNum(t) && t >= 0 && t < NT())) return false;
++  if (v === 'mod' && !vv4HasMod(t)) return false;   // VV4-E: only a track with a real modulation
+   const before = songSnapshot();
+   vvDirClear(song, a, b);
+-  if (v !== 'auto') { (song.video || (song.video = [])).push(v === 'spur' ? {a, b, v, t} : {a, b, v}); }
++  if (v !== 'auto') { (song.video || (song.video = [])).push(v === 'spur' || v === 'mod' ? {a, b, v, t} : {a, b, v}); }
+   vvDirTidy(song);
+   if (songSnapshot() === before) return false;
+-  const nm = v === 'spur' ? svShort(t) : {auto: 'Auto', song: 'Song', matrix: 'Matrix'}[v];
++  const nm = v === 'spur' ? svShort(t) : v === 'mod' ? 'Modulation ' + svShort(t) : {auto: 'Auto', song: 'Song', matrix: 'Matrix'}[v];
+   pushSongUndo(before, 'Video ' + (b - a > 1 ? 'Takt ' + (a + 1) + '–' + b : 'Takt ' + (a + 1)) + ': ' + nm); songChanged();
+   return true;
+ }
+@@ -48755,7 +48757,7 @@
+ }
+ /* the Zeile „Video“ in the existing sheets: [Auto] [Song] [Matrix] [Spur …] (Marken-Blatt, ⋯ of the Bereich-Leiste) */
+ function vvDirRow(a, b, cls) {
+-  const cur = vvDirOf(a, b), sp = cur && cur.startsWith('spur:') ? +cur.slice(5) : -1;
++  const cur = vvDirOf(a, b), sp = cur && /^(spur|mod):/.test(cur) ? +cur.split(':')[1] : -1;
+   const B = (k, html, on, aria) => `<button class="rb ${cls}${on ? ' on' : ''}" data-a="vv-${k}" aria-pressed="${on}" aria-label="${esc(aria)}">${html}</button>`;
+   return `<div class="vvdr"><span class="vvdl">Video</span>` + B('auto', 'Auto', cur === 'auto', 'Video hier: Auto') + B('song', 'Song', cur === 'song', 'Video hier: Song') +
+     B('matrix', 'Matrix', cur === 'matrix', 'Video hier: Matrix') + B('spur', sp >= 0 ? `<i style="background:var(--t${sp + 1})"></i>Spur …` : 'Spur …', sp >= 0, 'Video hier: eine Spur zeigen …') + `</div>`;
+@@ -48769,8 +48771,11 @@
+   if (!ts.length) { toast('In ' + rng + ' spielt keine Spur'); return true; }
+   openPop(btn, p => {
+     guardTouch(p); p.classList.add('plpick');
+-    p.innerHTML = `<h4>Video · ${esc(rng)} · Spur</h4><div class="plist plp vvsp">` + ts.map(t => `<button class="rb" data-t="${t}"><i style="background:var(--t${t + 1})"></i><b>${esc(svShort(t))}</b></button>`).join('') + '</div>';
+-    onTap(p, x => { closePop(); const t = +x.dataset.t; if (vvDirSet(a, b, 'spur', t)) toast('Video ' + rng + ': ' + svShort(t), songUndoAct()); }, 'button[data-t]');
++    const tm = ts.filter(t => vv4HasMod(t));   // VV4-E: [Modulation] only for a track with a real modulation
++    p.innerHTML = `<h4>Video · ${esc(rng)} · Spur</h4><div class="plist plp vvsp">` + ts.map(t => `<button class="rb" data-t="${t}"><i style="background:var(--t${t + 1})"></i><b>${esc(svShort(t))}</b></button>`).join('') + '</div>' +
++      (tm.length ? `<h4>Modulation</h4><div class="plist plp vvsp">` + tm.map(t => `<button class="rb" data-m="${t}" aria-label="Video: Modulation ${esc(svShort(t))}"><i style="background:var(--t${t + 1})"></i><b>${esc(svShort(t))}</b></button>`).join('') + '</div>' : '');
++    onTap(p, x => { closePop(); if (x.dataset.m != null) { const t = +x.dataset.m; if (vvDirSet(a, b, 'mod', t)) toast('Video ' + rng + ': Modulation ' + svShort(t), songUndoAct()); return; }
++      const t = +x.dataset.t; if (vvDirSet(a, b, 'spur', t)) toast('Video ' + rng + ': ' + svShort(t), songUndoAct()); }, 'button[data-t],button[data-m]');
+   }, {name: 'vvspur'});
+   return true;
+ }
+@@ -48789,7 +48794,7 @@
+   g.save();
+   for (const e of song.video) {
+     const x0 = X(e.a) + 2, x1 = X(e.b) - 2; if (x1 < 0 || x0 > W || x1 - x0 < 2) continue;
+-    g.fillStyle = e.v === 'spur' ? (SV.cols && SV.cols[e.t]) || '#888' : e.v === 'matrix' ? C.play : e.v === 'song' ? '#c9ced8' : '#5d636e';
++    g.fillStyle = e.v === 'spur' || e.v === 'mod' ? (SV.cols && SV.cols[e.t]) || '#888' : e.v === 'matrix' ? C.play : e.v === 'song' ? '#c9ced8' : '#5d636e';
+     vvRound(g, x0, y + 1, x1 - x0, h - 2, 2); g.fill();
+     const cx = Math.max(x0 + 3, 3); if (cx + 12 > x1) continue;
+     // the camera: body + lens (drawn, never a glyph)
+@@ -48804,7 +48809,7 @@
+    eine neu einsetzende oder allein spielende Spur → Spur-Bild. Einträge aus song.video gelten genau für ihre Takte ---------- */
+ function vvCuts(song, A, B) {
+   const rows = vvRows(), starts = new Set((song.marks || []).map(m => m.a));
+-  const user = (song.video || []).filter(e => e.v !== 'auto' && (e.v !== 'spur' || (e.t < NT() && S.tracks[e.t])));
++  const user = (song.video || []).filter(e => e.v !== 'auto' && ((e.v !== 'spur' && e.v !== 'mod') || (e.t < NT() && S.tracks[e.t])));
+   const uAt = x => user.find(e => x >= e.a && x < e.b) || null;
+   const hardEnd = x => { let e = B; for (const u of user) if (u.a > x && u.a < e) e = u.a; return e; };
+   const key = (t, x) => { if (x < 0) return ''; const o = laneOriginAt(song.lanes[t], x); return laneClipOk(song, t, o) ? o.slot + '|' + (o.own || '') : ''; };
+@@ -48812,7 +48817,7 @@
+   // VV2-fix: every shot carries s = the start of what is seen as one picture (an entry and an auto stretch with the same picture
+   // are one shot): the 8-bar count and the 2-bar minimum go from there, so a merge never makes a longer uncut stretch
+   const shots = []; let cur = null, prev = rows.map(t => key(t, A - 1));
+-  const push = (x, v, t, u, why, s) => { cur = {a: x, v, t: v === 'spur' ? t : null, u, why, s: s == null ? x : s}; shots.push(cur); };
++  const push = (x, v, t, u, why, s) => { cur = {a: x, v, t: v === 'spur' || v === 'mod' ? t : null, u, why, s: s == null ? x : s}; shots.push(cur); };
+   for (let x = A; x < B; x++) {
+     const keys = rows.map(t => key(t, x)), u = uAt(x);
+     let ch = 0; const enters = [], playing = [];
+@@ -48871,49 +48876,13 @@
+   const L = Math.max(1, (c.len || 1) * 4), cs = st.cs[i] || 0, tb = st.tB != null ? st.tB : st.sb;
+   return (((tb - cs) % L) + L) % L / L;
+ }
+-function vvDrawSpur(g, LW, LH, st, t) {
+-  const C = vvCols(), tr = S.tracks[t], col = C.t[t] || '#888', Ly = vvSpurLayout(LW, LH);
+-  g.fillStyle = C.bg; g.fillRect(0, 0, LW, LH);
+-  g.textBaseline = 'middle';
+-  g.fillStyle = C.ch2; vvRound(g, 8, 6, LW - 16, Ly.head - 10, 6); g.fill();
+-  g.fillStyle = col; g.fillRect(14, 13, 4, Ly.head - 24);
+-  if (!tr) return;
+-  const s = st.slots[t], play = s != null && s >= 0, c = play ? vvClip(t, s, st.own[t]) : null;
+-  const rTxt = play ? (st.own[t] ? 'eigener Clip' : 'Szene ' + (s + 1)) : '–';
+-  g.font = '600 12px ' + C.num; const room = LW - 18 - g.measureText(rTxt).width - 8 - 26;          // VV2-fix: the name never runs into it
+-  let nm = String(tr.name || svShort(t)).toUpperCase().slice(0, 24), fs = 17;
+-  g.font = '700 ' + fs + 'px ' + C.ui; while (fs > 11 && g.measureText(nm).width > room) { fs--; g.font = '700 ' + fs + 'px ' + C.ui; }
+-  while (nm.length > 1 && g.measureText(nm).width > room) nm = nm.slice(0, -2) + '…';
+-  g.textAlign = 'left'; g.fillStyle = C.text; g.fillText(nm, 26, 6 + (Ly.head - 10) / 2 + .5);
+-  g.textAlign = 'right'; g.font = '600 12px ' + C.num; g.fillStyle = play ? C.play : C.faint;
+-  g.fillText(rTxt, LW - 18, 6 + (Ly.head - 10) / 2 + .5);
+-  g.fillStyle = C.ch; vvRound(g, Ly.x, Ly.y, Ly.w, Ly.h, 6); g.fill(); g.strokeStyle = play ? C.play : C.line; g.lineWidth = 1; g.stroke();
+-  if (!c) { g.textAlign = 'center'; g.font = '700 22px ' + C.num; g.fillStyle = C.faint; g.fillText('–', Ly.x + Ly.w / 2, Ly.y + Ly.h / 2); return; }
+-  const L = Math.max(1, (c.len || 1) * 4), ph = vvPhase(st, t, c), x0 = Ly.x + 8, y0 = Ly.y + 8, w = Ly.w - 16, h = Ly.h - 16;
+-  g.save(); g.beginPath(); g.rect(Ly.x + 1, Ly.y + 1, Ly.w - 2, Ly.h - 2); g.clip();
+-  for (let k = 0; k <= L; k++) { g.fillStyle = k % 4 === 0 ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.05)'; g.fillRect(x0 + k / L * w - .5, y0, 1, h); }
+-  if (c.audio) {
+-    let pk = null; try { pk = tkPeaks(c.audio.take, c.audio, 160); } catch (e) { pk = null; }
+-    if (pk) { const bw = w / pk.length; for (let k = 0; k < pk.length; k++) { const on = ph != null && (k + .5) / pk.length <= ph; const a = Math.max(.02, pk[k]) * h * .46; g.fillStyle = col; g.globalAlpha = on ? 1 : .55; g.fillRect(x0 + k * bw, y0 + h / 2 - a, Math.max(.8, bw - .6), a * 2); } g.globalAlpha = 1; }
+-  } else if (c.notes && c.notes.length) {
+-    let lo = 127, hi = 0; for (const n of c.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
+-    if (hi - lo < 11) { const m = Math.floor((lo + hi) / 2); lo = m - 6; hi = m + 6; }
+-    const span = hi - lo + 1, rh = h / span, pb = ph == null ? -1 : ph * L;
+-    for (let p = lo; p <= hi; p++) if (((p % 12) + 12) % 12 === 0) { g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(x0, y0 + (hi - p) * rh, w, rh); }
+-    for (const n of c.notes) {
+-      if (n.t >= L) continue;
+-      const nx = x0 + n.t / L * w, nw = Math.max(2, Math.min(n.d, L - n.t) / L * w), ny = y0 + (hi - n.n) * rh + rh * .12, nh = Math.max(1.5, rh * .76), on = pb >= n.t && pb < n.t + n.d;
+-      g.fillStyle = col; g.globalAlpha = on ? 1 : .72; vvRound(g, nx, ny, nw, nh, Math.min(3, nh / 2)); g.fill(); g.globalAlpha = 1;
+-      if (on) { g.strokeStyle = '#f2f4f8'; g.lineWidth = 1.5; g.stroke(); }
+-    }
+-  }
+-  if (ph != null) { g.fillStyle = 'rgba(242,244,248,.9)'; g.fillRect(x0 + ph * w - 1, Ly.y + 2, 2, Ly.h - 4); }
+-  g.restore();
+-}
++// VV4-C: the Spur picture of VV2 again, in the look of the app's roll editor (head, ruler, keys, notes, Laufstrich, sounding notes framed)
++function vvDrawSpur(g, LW, LH, st, t) { return vv4Shot(g, LW, LH, st, t, 'roll'); }
+ // one picture (v = song | matrix | spur) in app points
+ function vvDrawView(g, LW, LH, sh, st) {
+   if (sh.v === 'matrix') vvDrawMatrix(g, LW, LH, st);
+-  else if (sh.v === 'spur' && sh.t != null) vv3Shot(g, LW, LH, st, sh.t);   // VV3: Spur-Bild = Innenleben (VV2: „ab VV3 mit Innenleben“)
++  else if (sh.v === 'spur' && sh.t != null) vv4SpurShot(g, LW, LH, st, sh.t);   // VV4-C: Spur-Bild wie in der App (Roll / Drum-Sequenzer, Modulation nur wenn echt)
++  else if (sh.v === 'mod' && sh.t != null) vv4ModShot(g, LW, LH, st, sh.t);      // VV4-E: Modulation (Regler mit Mod-Ring, K1-Übersicht)
+   else vvDrawSong(g, LW, LH, st);
+ }
+ /* ---------- 9:16 [Kamera]: ein Fenster (Seitenverhältnis des Videos) über der quer gezeichneten Ansicht (640 × 360), gedämpfte
+@@ -48988,11 +48957,11 @@
+     const k = W / 640, oy = (H - VV_AR * k) / 2;
+     g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+     g.save(); g.beginPath(); g.rect(0, oy, W, VV_AR * k); g.clip(); g.setTransform(k, 0, 0, k, 0, oy); vvDrawView(g, 640, VV_AR, sh, st); g.restore();
+-  } else if (sh.v === 'spur' && sh.t != null) {
++  } else if ((sh.v === 'spur' || sh.v === 'mod') && sh.t != null) {
+     // VV2-fix: in 9:16 [Kamera] the Spur picture is laid out in the window itself (head, the whole clip, the Laufstrich always in
+     // the picture – a fast 1-bar Laufstrich cannot be followed by a calm camera); the camera stands still
+     const k = H / VV_AR, lw = W / k, kp = W / 360;
+-    g.setTransform(kp, 0, 0, kp, 0, 0); vv3Shot(g, 360, H / kp, st, sh.t);   // VV3: the instrument laid out upright (360 points wide, as VV3)
++    g.setTransform(kp, 0, 0, kp, 0, 0); if (sh.v === 'mod') vv4ModShot(g, 360, H / kp, st, sh.t); else vv4SpurShot(g, 360, H / kp, st, sh.t);   // VV4: laid out upright (360 points wide)
+     if (rt.log && !frozen) rt.log.push({ts: +ts.toFixed(4), k: sh.k, cx: lw / 2, cy: VV_AR / 2, z: 1, ww: lw, wh: VV_AR, fit: 1});
+   } else {
+     const asp = W / H, c = vvCamAt(rt, sh, st, ts, asp, frozen), wh = VV_AR / c.z, ww = wh * asp, k = H / wh;
+@@ -49030,7 +48999,7 @@
+     vvShot: (t, v, fmt, cam) => {
+       const r = VV.last; if (!r) return null; const [W, H] = VV_SIZE[fmt || '16:9'], cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+       const g = cv.getContext('2d', {alpha: false}), st = vvStateAt(r, t || 0), rt = vvRun({range: {a: r.a, b: r.b}, bpm: r.bpm, cam: cam || 'kamera'});
+-      if (v && v.startsWith('spur:')) vvDrawShot(g, W, H, rt, {k: 0, v: 'spur', t: +v.slice(5)}, st, 0);
++      if (v && /^(spur|mod):/.test(v)) vvDrawShot(g, W, H, rt, {k: 0, v: v.split(':')[0], t: +v.split(':')[1]}, st, 0);
+       else {
+         // 'auto' in 9:16 [Kamera]: the camera the job had at that picture (from its log), so the reference is the same picture
+         const L = VV.lastRt && VV.lastRt.log, ts = st.sb * 60 / r.bpm;
+@@ -49592,6 +49561,344 @@
+   };
+ }
+ /* VV3-END */
++/* ===================== VV4-C / VV4-E (Konzept 2.2): Spur-Bild wie in der App =====================
++   VV4-C: Piano-Roll-Bild (die echten Noten des laufenden Clips im Look des Roll-Editors, Laufstrich, klingende Noten umrandet) und
++   Drum-Sequenzer-Bild (das Schritt-Raster der SCHRITTE-Seite; gezeigtes Instrument Kick/Snare wechselt nur bei einem Treffer und
++   höchstens 1× je Schlag, die Hi-Hat-Zeile läuft darunter mit). VV4-E: Modulation (die App-Regler mit Mod-Ring .kmr und Live-Punkt,
++   die K1-Mod-Übersicht) – nur bei einer Spur mit echter Modulation (Regel 2.1: sound.mods amt ≠ 0, Filter-HK-Intensität ≠ 0,
++   Geräte-Patch, Mod-Sequenz). Werte aus derselben Rechnung wie VV3 (LFO-Phase, Hüllkurven); nichts am Projekt wird verändert.
++   Zeichner: vvDrawRoll / vvDrawDrumSeq / vvDrawMod (g, t, rect, track); Sonde: VV4.probe (jedes Element mit App-Gegenstück). */
++const VV4 = {probe: null, sw: new WeakMap()};
++const VV4_SCALES = {ionian: [0, 2, 4, 5, 7, 9, 11], dorian: [0, 2, 3, 5, 7, 9, 10], phrygian: [0, 1, 3, 5, 7, 8, 10], lydian: [0, 2, 4, 6, 7, 9, 11], mixolydian: [0, 2, 4, 5, 7, 9, 10],
++  aeolian: [0, 2, 3, 5, 7, 8, 10], locrian: [0, 1, 3, 5, 6, 8, 10]};
++const VV4_NAMES = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];   // as the roll editor
++const vv4PC = n => ((n % 12) + 12) % 12;
++const vv4Pad = idx => { if (!VV4.pads) { let cs = null; try { cs = getComputedStyle(document.documentElement); } catch (e) {} VV4.pads = DRUM_VOICES.map((_, k) => ((cs && cs.getPropertyValue('--p' + (k + 1))) || '').trim() || '#e879f9'); } return VV4.pads[idx] || '#e879f9'; };
++// the probe: every drawn element with its app counterpart (2.1 Nr. 4)
++function vv4El(el, app) { const P = VV4.probe; if (P && !P.els.some(x => x.el === el)) P.els.push({el, app}); }
++// is k1 entry e a real modulation (2.1 Nr. 2)? Key tracking, velocity on the filter, analog drift and a vibrato without mod wheel move nothing
++function vv4Real(i, e) {
++  if (!e) return false;
++  if (e.key === 'p:kt' || e.key === 'p:analog' || e.key === 'p:fvel') return false;
++  if (e.kind === 'route') return !!(e.m && e.m.amt);
++  if (e.kind === 'mk') {
++    if (/\.(f\.kbd|f\.vel|a\.kbd)$/.test(e.key) || e.key === 'voc.kbd') return false;
++    if (/\.vib$/.test(e.key)) { try { const s = sndOf(i), T = s.p.mk.t[+e.key.split('.')[1]], mw = clamp(+mkWheelVal(i, 'mod', s) || 0, 0, 1); return Math.abs(SQMK.W().vibCt(T.vib, mw)) > 1e-9; } catch (er) { return false; } }
++  }
++  return true;
++}
++function vv4Mods(i) { try { return k1Mods(i); } catch (e) { return []; } }
++function vv4HasMod(i) { const tr = S.tracks[i]; if (!tr || tr.kind === 'drum' || tr.stimme) return false; return vv4Mods(i).some(e => vv4Real(i, e)); }
++// the shot's head (as the Spur-Bild of VV2/VV3): colour, NAME, right: Szene / engine
++function vv4Head(g, LW, st, i, C, right) {
++  const tr = S.tracks[i], col = C.t[i] || '#888', hh = 34;
++  g.fillStyle = C.ch2; vvRound(g, 8, 6, LW - 16, hh - 8, 6); g.fill();
++  g.fillStyle = col; g.fillRect(14, 12, 4, hh - 20);
++  g.textBaseline = 'middle'; g.font = '600 12px ' + C.num; const room = LW - 18 - g.measureText(right || '').width - 8 - 26;
++  let nm = String((tr && tr.name) || svShort(i)).toUpperCase().slice(0, 24), fs = 15;
++  g.font = '700 ' + fs + 'px ' + C.ui; while (fs > 11 && g.measureText(nm).width > room) { fs--; g.font = '700 ' + fs + 'px ' + C.ui; }
++  while (nm.length > 1 && g.measureText(nm).width > room) nm = nm.slice(0, -2) + '…';
++  g.textAlign = 'left'; g.fillStyle = C.text; g.fillText(nm, 26, 6 + (hh - 8) / 2 + .5);
++  if (right) { g.textAlign = 'right'; g.font = '600 12px ' + C.num; g.fillStyle = C.dim; g.fillText(right, LW - 18, 6 + (hh - 8) / 2 + .5); }
++  vv4El('Kopf', '.sh-title (Spurname, Farbpunkt)');
++  return hh + 4;
++}
++/* ---------- VV4-C Piano-Roll (PianoRoll.draw: Zeilen in/außerhalb der Skala, Grundton-Zeile in Spurfarbe, Raster, Takt-Chips,
++   Tasten, Noten mit Anschlag-Deckkraft, Laufstrich .pr-ph); klingende Note = Rahmen wie eine gewählte Note ---------- */
++function vv4RollIn(g, x, y, w, h, st, i, c, C, src) {
++  const col = C.t[i] || '#4cc9f0';
++  vv4El('Roll-Fläche', 'PianoRoll .pr (Hauptfläche)');
++  g.fillStyle = C.bg; g.fillRect(x, y, w, h);
++  if (!c) { g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '700 22px ' + C.num; g.fillStyle = C.faint; g.fillText('–', x + w / 2, y + h / 2); return null; }
++  const L = Math.max(1, (c.len || 1) * 4), ph = vvPhase(st, i, c), pb = ph == null ? -1 : ph * L;
++  if (c.audio) {   // an audio clip: the take's peaks with the Laufstrich (as VV2)
++    let pk = null; try { pk = tkPeaks(c.audio.take, c.audio, 160); } catch (e) { pk = null; }
++    if (pk) { const bw = w / pk.length; for (let k = 0; k < pk.length; k++) { const on = ph != null && (k + .5) / pk.length <= ph, a = Math.max(.02, pk[k]) * h * .46; g.fillStyle = col; g.globalAlpha = on ? 1 : .55; g.fillRect(x + k * bw, y + h / 2 - a, Math.max(.8, bw - .6), a * 2); } g.globalAlpha = 1; }
++    if (ph != null) { g.fillStyle = C.play; g.fillRect(x + ph * w - 1, y, 2, h); }
++    vv4El('Welle', 'Spur-Zelle Take-Welle');
++    return {ph};
++  }
++  const RH = 22, KW = Math.min(44, Math.max(30, w * .08)), NUMW = 22, gx = x + KW, gw = w - KW, gy = y + RH, gh = h - RH;
++  // FOLGEN (V0b): the page = the visible beats rounded down to whole bars (≥ 1 bar), x0 = floor(beat / width) · width
++  const vis = Math.max(4, Math.floor(gw / 34 / 4) * 4), pw = Math.min(L, vis), x0 = pb >= 0 ? Math.floor(pb / pw) * pw : 0, ppb = gw / pw;
++  const key = c.key || {root: S.key ? S.key.root : 0, scale: 'ionian'}, SCL = (typeof SCALES !== 'undefined' && SCALES[key.scale]) || VV4_SCALES[key.scale] || VV4_SCALES.ionian, root = key.root | 0;
++  let lo = 127, hi = 0; for (const n of c.notes) { if (n.n < lo) lo = n.n; if (n.n > hi) hi = n.n; }
++  if (!c.notes.length) { lo = 54; hi = 66; }
++  lo -= 1; hi += 1; if (hi - lo < 11) { const m = Math.floor((lo + hi) / 2); lo = m - 6; hi = lo + 12; }
++  const rows = hi - lo + 1, rh = gh / rows, yOf = n => gy + (hi - n) * rh, xOf = b => gx + (b - x0) * ppb;
++  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
++  for (let n = lo; n <= hi; n++) {
++    const yy = yOf(n), ins = SCL.includes(vv4PC(n - root));
++    g.fillStyle = ins ? C.ch2 : C.ch; g.fillRect(gx, yy, gw, rh - 1);
++    if (vv4PC(n - root) === 0) { g.fillStyle = col; g.globalAlpha = .18; g.fillRect(gx, yy, gw, rh - 1); g.globalAlpha = 1; }
++  }
++  vv4El('Zeilen', 'PianoRoll Zeilen (Skala / Grundton)');
++  const gs = ppb >= 64 ? .25 : ppb >= 24 ? .5 : 1;
++  for (let b = x0; b <= x0 + pw + 1e-9; b += gs) {
++    const bx = Math.round(xOf(b)) + .5, isBar = Math.abs(b / 4 - Math.round(b / 4)) < 1e-6, isBeat = Math.abs(b - Math.round(b)) < 1e-6;
++    g.strokeStyle = isBar ? C.dim : C.line; g.globalAlpha = isBar ? .55 : isBeat ? .9 : .45; g.lineWidth = 1; g.beginPath(); g.moveTo(bx, gy); g.lineTo(bx, gy + gh); g.stroke();
++  }
++  g.globalAlpha = 1; vv4El('Raster', 'PianoRoll Rasterlinien');
++  const shown = [];
++  for (const nt of c.notes) {
++    if (nt.t >= L || nt.t + nt.d <= x0 || nt.t >= x0 + pw) continue;
++    const nx = xOf(nt.t), nw = Math.max(3, Math.min(nt.d, L - nt.t) * ppb), ny = yOf(nt.n), on = pb >= nt.t && pb < nt.t + nt.d;
++    g.fillStyle = col; g.globalAlpha = .45 + .55 * clamp(nt.v == null ? .8 : nt.v, 0, 1);
++    vvRound(g, nx + .5, ny + 1.5, nw - 1, Math.max(1, rh - 3), Math.min(4, rh / 3)); g.fill(); g.globalAlpha = 1;
++    if (on) { g.strokeStyle = C.sel || '#f4f1ea'; g.lineWidth = 2; vvRound(g, nx + 1, ny + 2, nw - 2, Math.max(1, rh - 4), Math.min(4, rh / 3)); g.stroke(); g.lineWidth = 1; }
++    if (nw > 30 && rh >= 16) { g.fillStyle = '#0b0c0f'; g.font = '700 10px ' + C.num; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(VV4_NAMES[vv4PC(nt.n)] + (Math.floor(nt.n / 12) - 1), nx + 5, ny + rh / 2); }
++    shown.push({n: nt.n, t: nt.t, d: nt.d, x: nx, y: ny, w: nw, h: rh, on});
++  }
++  vv4El('Noten', 'PianoRoll Noten (clip.notes)');
++  if (shown.some(s => s.on)) vv4El('Rahmen', 'PianoRoll gewählte Note (Rahmen --sel)');
++  // keys (white / black, out of the scale darker, names at C and the root)
++  g.fillStyle = C.bg; g.fillRect(x, gy, KW, gh);
++  for (let n = lo; n <= hi; n++) {
++    const yy = yOf(n), blk = [1, 3, 6, 8, 10].includes(vv4PC(n));
++    g.fillStyle = blk ? '#1a1b1f' : '#ece6d8'; g.fillRect(x, yy, KW - 1, rh - 1);
++    if (!SCL.includes(vv4PC(n - root))) { g.fillStyle = '#000'; g.globalAlpha = .45; g.fillRect(x, yy, KW - 1, rh - 1); g.globalAlpha = 1; }
++    if ((vv4PC(n) === 0 || vv4PC(n - root) === 0 || rh >= 24) && rh >= 9) {
++      g.fillStyle = blk ? '#cfc6b2' : '#222'; g.font = (vv4PC(n - root) === 0 ? '700 ' : '500 ') + Math.min(10, rh * .8).toFixed(1) + 'px ' + C.num; g.textAlign = 'left'; g.textBaseline = 'middle';
++      g.fillText(VV4_NAMES[vv4PC(n)] + (Math.floor(n / 12) - 1), x + 3, yy + rh / 2);
++    }
++  }
++  vv4El('Tasten', 'PianoRoll Tastenleiste');
++  // ruler: bar-number chips
++  g.fillStyle = C.ch; g.fillRect(x, y, w, RH);
++  for (let b = Math.floor(x0); b <= x0 + pw; b++) {
++    const bx = Math.round(xOf(b)) + .5, isBar = b % 4 === 0;
++    g.strokeStyle = isBar ? C.dim : C.line; g.beginPath(); g.moveTo(bx, y + (isBar ? 4 : RH - 8)); g.lineTo(bx, y + RH); g.stroke();
++    if (isBar && b < L) { g.fillStyle = C.ch2; vvRound(g, bx + 1, y + 3, NUMW - 4, RH - 6, 4); g.fill(); g.fillStyle = C.text; g.font = '700 11px ' + C.num; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(String(b / 4 + 1), bx + 5, y + RH / 2 + .5); }
++  }
++  vv4El('Lineal', 'PianoRoll Lineal (Takt-Chips)');
++  if (pb >= 0) { g.fillStyle = C.play; g.fillRect(xOf(pb) - 1, gy, 2, gh); vv4El('Laufstrich', 'PianoRoll .pr-ph'); }
++  g.restore();
++  return {ph, pb, x0, pw, lo, hi, rows: shown, L, gx, gy, gw, gh, ppb, rh};
++}
++/* ---------- VV4-C Drum-Sequenzer (SCHRITTE: Instrument-Chips .vchips v12, StepEditor .se-row mit .se-cell, Laufschritt .ph,
++   Antippen-Blitz .fl; darunter die Hi-Hat-Zeile) ---------- */
++// the shown instrument at video time t: from the hits of the note log; a change only at a hit of the other one, ≤ 1 per beat
++function vv4DrumSw(src, bpm) {
++  const L = (src && src.nt && src.nt[DRUM_T]) || [];
++  let c = VV4.sw.get(src || VV4); if (c && c.n === L.length && c.bpm === bpm) return c.sw;
++  const sp = 60 / bpm, hits = [];
++  for (const o of L) { const e = o.e; if (!e || e.removed) continue; const v = e.out === 36 ? 'kick' : e.out === 38 ? 'snare' : null; if (v) hits.push({a: o.a, v}); }
++  hits.sort((p, q) => p.a - q.a);
++  const sw = []; let cur = null, swB = -1e9;
++  for (let k = 0; k < hits.length;) {
++    let j = k; const grp = new Set(); while (j < hits.length && hits[j].a - hits[k].a < 1e-4) { grp.add(hits[j].v); j++; }
++    const a = hits[k].a, beat = Math.floor(a / sp + 1e-6);
++    if (cur == null) { cur = grp.has('kick') ? 'kick' : 'snare'; sw.push({a: -Infinity, v: cur, hit: a}); }
++    else { const oth = cur === 'kick' ? 'snare' : 'kick'; if (grp.has(oth) && beat !== swB) { cur = oth; sw.push({a, v: cur}); swB = beat; } }   // the other one hits (also together with this one)
++    k = j;
++  }
++  if (src && typeof src === 'object') VV4.sw.set(src, {n: L.length, bpm, sw});
++  return sw;
++}
++function vv4DrumVoice(src, t, bpm, clip) {
++  const sw = vv4DrumSw(src, bpm); let v = null;
++  for (const s of sw) { if (s.a <= t + 1e-9) v = s.v; else break; }
++  if (v) return v;
++  if (clip && !clip.notes.some(n => n.n === 36) && clip.notes.some(n => n.n === 38)) return 'snare';
++  return 'kick';
++}
++function vv4DrumIn(g, x, y, w, h, st, i, C, src, t) {
++  const s = st.slots[i], c = s != null && s >= 0 ? vvClip(i, s, st.own[i]) : null, bpm = (src && src.bpm) || S.bpm, port = h > w;
++  const vId = vv4DrumVoice(src, t, bpm, c), V = DRUM_VOICES.find(d => d.id === vId) || DRUM_VOICES[0];
++  const hhId = c && !c.notes.some(n => n.n === 42) && c.notes.some(n => n.n === 46) ? 'hatO' : 'hatC', HV = DRUM_VOICES.find(d => d.id === hhId);
++  // chips (12 instruments, the shown one .on)
++  const cols = port ? 6 : 12, chH = port ? 30 : 30, cgap = 4, cw = (w - cgap * (cols - 1)) / cols, chRows = Math.ceil(DRUM_VOICES.length / cols);
++  DRUM_VOICES.forEach((d, k) => {
++    const cx = x + (k % cols) * (cw + cgap), cy = y + Math.floor(k / cols) * (chH + cgap), on = d.id === V.id;
++    vvRound(g, cx, cy, cw, chH, 5); const gr = g.createLinearGradient(0, cy, 0, cy + chH); gr.addColorStop(0, C.ch2); gr.addColorStop(1, C.ch); g.fillStyle = gr; g.fill();
++    g.strokeStyle = C.line; g.lineWidth = 1; g.stroke();
++    g.save(); vvRound(g, cx, cy, cw, chH, 5); g.clip(); g.fillStyle = vv4Pad(d.idx); g.fillRect(cx, cy, 3, chH);
++    if (on) { g.fillStyle = C.sel || '#f4f1ea'; g.fillRect(cx, cy + chH - 2, cw, 2); }
++    g.restore();
++    g.fillStyle = on ? C.text : C.dim; g.font = '700 ' + (cw < 46 ? 9 : 10) + 'px ' + C.ui; g.textAlign = 'left'; g.textBaseline = 'middle';
++    let lb = d.sl; while (lb.length > 2 && g.measureText(lb).width > cw - 10) lb = lb.slice(0, -1); g.fillText(lb, cx + 7, cy + chH / 2 + .5);
++  });
++  vv4El('Instrument-Chips', '.vchips.v12 .vchip (.on = gezeigtes Instrument)');
++  let yy = y + chRows * (chH + cgap) + 6;
++  // the step rows: the shown instrument (vel fill), the hi-hat row below; portrait 8 × 2 per row (as .se-row in P)
++  const per = port ? 8 : 16, rowsPer = 16 / per, gap = 3, rest = y + h - yy, labH = 16;
++  const cellH = Math.min(port ? 56 : 72, (rest - 2 * labH - 14 - (rowsPer * 2 - 2) * 6) / (rowsPer * 2)), cellW = (w - gap * (per - 1)) / per;
++  const L = c ? Math.max(1, c.len * 4) : 4, ph = vvPhase(st, i, c), pos = ph == null ? -1 : ph * L;
++  const stepOf = gm => {   // the lane's step (D1: own length / direction) and its page
++    if (pos < 0) return {page: 0, st: -1};
++    const l = c && d1Lane(c, gm);
++    if (l) { const tb = st.tB != null ? st.tB : st.sb, q = d1Pos(l, Math.floor((tb - (st.cs[i] || 0)) / .25 + 1e-6), gm); return {page: Math.floor(q / 16), st: q % 16}; }
++    return {page: Math.floor(pos / 4), st: Math.floor((pos % 4) / .25 + 1e-6)};
++  };
++  const lastHit = gm => { const L_ = (src && src.nt && src.nt[i]) || []; let lo = 0, hi = L_.length; while (lo < hi) { const m = (lo + hi) >> 1; if (L_[m].a <= t + 1e-9) lo = m + 1; else hi = m; }
++    for (let k = lo - 1; k >= 0 && k >= lo - 512; k--) { const o = L_[k]; if (o.e.removed || o.e.out !== gm) continue; return o.a; } return null; };
++  const out = {};
++  const row = (d, y0, key) => {
++    const S_ = stepOf(d.gm), pc = vv4Pad(d.idx), NS = Math.round(L / .25), lit = [];
++    g.fillStyle = C.dim; g.font = '600 11px ' + C.ui; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(d.l + (c && c.len > 1 ? '  ·  TAKT ' + (S_.page + 1) + ' / ' + c.len : ''), x, y0 + labH / 2);
++    const ha = lastHit(d.gm), fl = ha != null && t - ha >= -1e-9 && t - ha < .2 ? 1 - (t - ha) / .2 : 0;
++    for (let k = 0; k < 16; k++) {
++      const cx = x + (k % per) * (cellW + gap), cy = y0 + labH + Math.floor(k / per) * (cellH + 6), si = S_.page * 16 + k;
++      let nv = null; if (c) for (const n of c.notes) if (n.n === d.gm && Math.round(n.t / .25) % NS === si) { nv = n; break; }
++      vvRound(g, cx, cy, cellW, cellH, 6); g.fillStyle = k % 4 === 0 ? '#2a2d34' : '#22252b'; g.fill();
++      if (nv) { g.save(); vvRound(g, cx, cy, cellW, cellH, 6); g.clip(); const vh = cellH * clamp(nv.v == null ? .8 : nv.v, 0, 1); g.fillStyle = pc; g.fillRect(cx, cy + cellH - vh, cellW, vh);
++        if (nv.a) { g.fillStyle = '#fff'; vvRound(g, cx + 3, cy + 3, cellW - 6, 4, 2); g.fill(); } g.restore(); lit.push(k); }
++      g.fillStyle = nv ? 'rgba(0,0,0,.45)' : C.faint; g.font = '500 8px ' + C.num; g.textAlign = 'left'; g.textBaseline = 'top'; g.fillText(String(k + 1), cx + 3, cy + 3);
++      if (k === S_.st) {
++        if (fl > 0 && nv) { const sp = 3 * fl; g.strokeStyle = '#f4f1ea'; g.globalAlpha = fl; g.lineWidth = sp; vvRound(g, cx - sp / 2, cy - sp / 2, cellW + sp, cellH + sp, 6 + sp / 2); g.stroke(); g.globalAlpha = 1; }   // .se-cell.fl: box-shadow 0 0 0 3px var(--sel) → 0 in 0,2 s
++        g.strokeStyle = '#fff'; g.lineWidth = 2; vvRound(g, cx + 1, cy + 1, cellW - 2, cellH - 2, 5); g.stroke(); g.lineWidth = 1;
++      }
++    }
++    out[key] = {id: d.id, gm: d.gm, page: S_.page, step: S_.st, on: lit, flash: +fl.toFixed(3), hit: ha};
++    return y0 + labH + rowsPer * (cellH + 6);
++  };
++  yy = row(V, yy, 'main') + 8;
++  row(HV, yy, 'hh');
++  vv4El('Schritt-Raster', 'StepEditor .se-row / .se-cell (Anschlag-Füllung, Akzent)');
++  vv4El('Laufschritt', 'StepEditor .se-cell.ph');
++  vv4El('Hi-Hat-Zeile', 'StepEditor .se-row (HH ZU) / Übersicht .ovw');
++  if (out.main.flash > 0 || out.hh.flash > 0) vv4El('Treffer-Blitz', 'StepEditor .se-cell.fl');
++  return Object.assign({voice: V.id}, out);
++}
++/* ---------- VV4-E Modulation: App-Regler (makeCtl: Bogen r 22, Kappe, Zeiger, Mod-Ring .kmr r 26,5 in der Farbe der Quelle,
++   Überstand .kmx, Live-Punkt .kdg) und die K1-Mod-Übersicht (.k1mr) ---------- */
++function vv4Knob(g, cx, top, sc, n, rings, dot, col, lab, val, C) {
++  const ang = m => (135 + 270 * m) * Math.PI / 180, kx = cx, ky = top + 14 * Math.min(1.2, sc) + 30 * sc;
++  g.fillStyle = C.dim; g.font = '600 ' + (11 * Math.min(1.2, sc)).toFixed(1) + 'px ' + C.ui; g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(String(lab).toUpperCase(), cx, top);
++  const arc = (r, a0, a1, colr, wd, cap) => { if (a1 - a0 < 1e-4) return; g.strokeStyle = colr; g.lineWidth = wd * sc; g.lineCap = cap || 'round'; g.beginPath(); g.arc(kx, ky, r * sc, ang(a0), ang(a1)); g.stroke(); };
++  arc(22, 0, 1, '#2a2e36', 4);
++  arc(22, 0, clamp(n, 0, 1), col, 4);
++  for (const R_ of rings) {      // the ring: in range at .95, beyond (≤ 45° into the gap) at .35 (.kmx)
++    const a = Math.min(R_.lo, R_.hi), b = Math.max(R_.lo, R_.hi);
++    g.globalAlpha = .35; arc(26.5, Math.max(-1 / 6, a), Math.min(0, b), R_.c, 2.5, 'butt'); arc(26.5, Math.max(1, a), Math.min(7 / 6, b), R_.c, 2.5, 'butt');
++    g.globalAlpha = .95; arc(26.5, clamp(a, 0, 1), clamp(b, 0, 1), R_.c, 2.5); g.globalAlpha = 1;
++  }
++  g.fillStyle = '#2a2e36'; g.beginPath(); g.arc(kx, ky, 15 * sc, 0, Math.PI * 2); g.fill(); g.strokeStyle = '#0a0b0d'; g.lineWidth = 1.5 * sc; g.stroke();
++  g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = sc; g.beginPath(); g.arc(kx, ky, 12.5 * sc, 0, Math.PI * 2); g.stroke();
++  const pa = ang(clamp(n, 0, 1)); g.strokeStyle = C.text; g.lineWidth = 2.5 * sc; g.lineCap = 'round'; g.beginPath(); g.moveTo(kx, ky); g.lineTo(kx + Math.cos(pa) * 13 * sc, ky + Math.sin(pa) * 13 * sc); g.stroke();
++  if (dot != null && rings.length) { const da = ang(dot), dx = kx + Math.cos(da) * 26.5 * sc, dy = ky + Math.sin(da) * 26.5 * sc;
++    g.fillStyle = rings[0].c; g.globalAlpha = .35; g.beginPath(); g.arc(dx, dy, 5 * sc, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1;
++    g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = .8 * sc; g.beginPath(); g.arc(dx, dy, 2.8 * sc, 0, Math.PI * 2); g.fill(); g.stroke(); }
++  g.fillStyle = C.text; g.font = '500 ' + (12 * Math.min(1.2, sc)).toFixed(1) + 'px ' + C.num; g.textBaseline = 'top'; g.fillText(val, cx, ky + 30 * sc);
++  return {cx: kx, cy: ky};
++}
++// the values the knobs show at t (sources as the worklet's control(): VV3 maths, vv3VaState / vv3VaLfo / vv3Adsr)
++function vv4VaSrc(i, t, src) {
++  const vs = vv3VaState(i, t, src); if (!vs) return null; const p = vs.p, nv = vs.nv;
++  const me = {a: p.mA, d: p.mD, s: p.mS, r: p.mR, c: p.mCurve}, mo = nv ? vv3Adsr(me, nv.a, nv.b, t) : 0;
++  const sv = {lfo1: (vs.l1.v || 0) * vs.l1.fade, lfo2: (vs.l2.v || 0) * vs.l2.fade, fenv: vs.fo, menv: mo, vel: nv ? nv.v : 0, key: nv ? (nv.n - 60) / 24 : 0, mw: +p.mw || 0, rnd: 0, aenv: vs.amp};
++  return {vs, sv};
++}
++function vv4KnobKey(dst) { if (K1_RK[dst]) return K1_RK[dst]; if (MDST_PD[dst]) return MDST_PD[dst]; for (const k in PD) if (PD[k].mod === dst) return k; return null; }
++function vv4Knobs(i, t, src) {
++  const s = sndOf(i); if (!s || s.engine === 'mk' || !Array.isArray(s.mods)) return [];
++  const by = {}; for (const m of s.mods) { if (!m.amt || !MSRC[m.src] || !MDST[m.dst] || /^fx\./.test(m.dst)) continue; const k = vv4KnobKey(m.dst); if (!k || !PD[k]) continue; (by[k] || (by[k] = {key: k, dst: m.dst, routes: []})).routes.push(m); }
++  const L = Object.values(by); if (!L.length) return [];
++  const VS = vv4VaSrc(i, t, src), sv = VS ? VS.sv : {};
++  return L.map(o => {
++    const d = PD[o.key], v = +sndGet(s, o.key), n = toNorm(d, v), K = ringK(o.dst);
++    const sN = (nn, off) => (d.c === 'bipow' || d.c === 'pow' ? toNorm(d, clamp(fromNorm(d, nn) + off * (d.max - d.min), d.min, d.max)) : nn + off);
++    let lo = 0, hi = 0; for (const m of o.routes) { const a = m.amt / K; if (MSRC[m.src].bip) { lo -= Math.abs(a); hi += Math.abs(a); } else { lo += Math.min(0, a); hi += Math.max(0, a); } }
++    let off = 0; for (const m of o.routes) off += (m.amt / K) * (sv[m.src] || 0);
++    const main = o.routes.reduce((b, m) => (Math.abs(m.amt) > Math.abs(b.amt) ? m : b));
++    return {key: o.key, dst: o.dst, lab: d.l, val: fmtVal(d.fmt, v), n, lo: sN(n, lo), hi: sN(n, hi), dot: clamp(sN(n, off), 0, 1), c: MSRC[main.src].c, src: o.routes.map(m => m.src)};
++  });
++}
++function vv4K1Rows(g, x, y, w, h, i, C) {
++  const L = vv4Mods(i), tr = S.tracks[i];
++  vvRound(g, x, y, w, h, 10); const gr = g.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, C.ch2); gr.addColorStop(1, C.ch); g.fillStyle = gr; g.fill(); g.strokeStyle = C.line; g.lineWidth = 1; g.stroke();
++  g.fillStyle = C.dim; g.font = '700 11px ' + C.ui; g.textAlign = 'left'; g.textBaseline = 'top';
++  const ls = 'letterSpacing' in g; if (ls) g.letterSpacing = '1.3px'; g.fillText(('Modulationen · ' + String((tr && tr.name) || '')).toUpperCase(), x + 12, y + 12); if (ls) g.letterSpacing = '0px';
++  vv4El('Mod-Übersicht', 'K1 .pop.k1pop (Modulationen · Spur)');
++  const gap = 6, xw = 44; let yy = y + 32; const rows = [];
++  // .k1go b / small wrap (white-space: normal): words into lines that fit the key
++  const wrap = (txt, font, mw) => { g.font = font; const out = []; let cur = ''; for (const wd of String(txt).split(' ')) { const t_ = cur ? cur + ' ' + wd : wd; if (cur && g.measureText(t_).width > mw) { out.push(cur); cur = wd; } else cur = t_; } if (cur) out.push(cur); return out; };
++  for (const e of L) {
++    const bx = x + 12, bw = w - 24 - xw - gap, l1 = wrap(e.src + ' → ' + e.dst, '700 13px ' + C.ui, bw - 20), l2 = wrap(String(e.amt), '500 11px ' + C.ui, bw - 20);
++    const rh = Math.max(48, 12 + l1.length * 15.6 + 3 + l2.length * 13.75);
++    if (yy + rh > y + h - 8) break;
++    const btn = (X0, W0) => { vvRound(g, X0, yy, W0, rh, 5); const gb = g.createLinearGradient(0, yy, 0, yy + rh); gb.addColorStop(0, C.ch2); gb.addColorStop(1, C.ch); g.fillStyle = gb; g.fill(); g.strokeStyle = C.line; g.stroke(); };
++    btn(bx, bw); btn(bx + bw + gap, xw);
++    g.save(); g.beginPath(); g.rect(bx, yy, bw, rh); g.clip();
++    const y0 = yy + (rh - (l1.length * 15.6 + 3 + l2.length * 13.75)) / 2; g.textAlign = 'left'; g.textBaseline = 'middle';
++    g.fillStyle = C.text; g.font = '700 13px ' + C.ui; l1.forEach((ln, k) => g.fillText(ln, bx + 10, y0 + 7.8 + k * 15.6));
++    g.fillStyle = C.dim; g.font = '500 11px ' + C.ui; l2.forEach((ln, k) => g.fillText(ln, bx + 10, y0 + l1.length * 15.6 + 3 + 6.9 + k * 13.75));
++    g.restore();
++    const qx = bx + bw + gap + xw / 2, qy = yy + rh / 2; g.strokeStyle = C.text; g.lineWidth = 1.6; g.lineCap = 'round'; g.beginPath(); g.moveTo(qx - 5, qy - 5); g.lineTo(qx + 5, qy + 5); g.moveTo(qx + 5, qy - 5); g.lineTo(qx - 5, qy + 5); g.stroke();
++    rows.push({key: e.key, src: e.src, dst: e.dst, amt: e.amt, real: vv4Real(i, e)});
++    yy += rh + gap;
++  }
++  if (rows.length) vv4El('Mod-Zeile', 'K1 .k1mr (.k1go Quelle → Ziel, .k1x)');
++  return rows;
++}
++function vv4ModIn(g, x, y, w, h, i, st, C, src, t) {
++  const s = sndOf(i), port = h > w * .9, res = {i, t, knobs: [], rows: [], plate: false};
++  if (!s) return res;
++  let ky = y, kh = 0;
++  if (s.engine === 'mk') {   // the device plate of the app (its knobs move only by real modulations: VV3 / V-B)
++    const ms = vv3MkState(i, t, st, src);
++    if (ms) { ms.i = i; const pw = Math.min(w, (port ? h * .42 : h * .5) * 1.95); if (vv3DrawPlate(g, x + (w - pw) / 2, y, pw, ms, C)) { kh = pw / 1.95 + 8; res.plate = true; res.cutMod = ms.cutMod; res.cutKnob = ms.T.f.cut; vv4El('Geräte-Platte', 'MKUI Platte (#mkPlate, Regler mit Mod-Bogen)'); } }
++  } else {
++    const K = vv4Knobs(i, t, src);
++    if (K.length) {
++      const per = Math.max(1, Math.min(K.length, Math.floor(w / 76))), sc = clamp(Math.min(w / per / 76, (port ? h * .36 : h * .46) / 110), .8, 1.6);
++      kh = 110 * sc;
++      K.slice(0, per).forEach((k, j) => { const cx = x + w / per * (j + .5); const p_ = vv4Knob(g, cx, ky, sc, k.n, [{lo: k.lo, hi: k.hi, c: k.c}], k.dot, C.t[i] || C.text, k.lab, k.val, C); res.knobs.push(Object.assign({}, k, p_)); });
++      vv4El('Regler', 'makeCtl .knob (.kt .kv .kc .kp)'); vv4El('Mod-Ring', '.knob .kmr / .kmx'); vv4El('Live-Punkt', '.knob .kdg .kd');
++    }
++  }
++  res.rows = vv4K1Rows(g, x, y + kh, w, h - kh, i, C);
++  return res;
++}
++// a whole shot: head + picture, in app points LW × LH (landscape 640 × 360, portrait 360 × …)
++function vv4Shot(g, LW, LH, st, i, what) {
++  const C = vvCols(), tr = S.tracks[i], src = st.src || vv3LiveSrc(), bpm = (src && src.bpm) || S.bpm, t = st.t != null ? st.t : st.tB != null ? st.tB * 60 / bpm : 0;
++  VV4.probe = {kind: what, i, t, els: []};
++  g.fillStyle = C.bg; g.fillRect(0, 0, LW, LH); if (!tr) return VV4.probe;
++  const s = st.slots[i], c = s != null && s >= 0 ? vvClip(i, s, st.own[i]) : null;
++  const right = c ? (st.own[i] ? 'eigener Clip' : 'Szene ' + (s + 1)) : '–';
++  const hy = vv4Head(g, LW, st, i, C, right), pad = 10, x = pad, y = hy + 4, w = LW - 2 * pad, h = LH - y - pad, port = LH > LW;
++  try {
++    if (what === 'drum') VV4.probe.drum = vv4DrumIn(g, x, y, w, h, st, i, C, src, t);
++    else if (what === 'mod') VV4.probe.mod = vv4ModIn(g, x, y, w, h, i, st, C, src, t);
++    else if (what === 'voice') { vv3DrawVoice(g, x, y, w, h, i, t, st, C); vv4El('Welle', 'Spur-Zelle Take-Welle (STIMME)'); }
++    else {   // roll, with the real modulation next to it (only a track with a real one: 2.1)
++      const m = what === 'roll+mod';
++      if (m && port) { const rh = Math.round(h * .5); VV4.probe.roll = vv4RollIn(g, x, y, w, rh, st, i, c, C, src); VV4.probe.mod = vv4ModIn(g, x, y + rh + 8, w, h - rh - 8, i, st, C, src, t); }
++      else if (m) { const rw = Math.round(w * .6); VV4.probe.roll = vv4RollIn(g, x, y, rw, h, st, i, c, C, src); VV4.probe.mod = vv4ModIn(g, x + rw + 10, y, w - rw - 10, h, i, st, C, src, t); }
++      else VV4.probe.roll = vv4RollIn(g, x, y, w, h, st, i, c, C, src);
++    }
++  } catch (e) { logErr(e); }
++  if (VV.test && VV.test.probe) (VV4.log || (VV4.log = [])).push(JSON.parse(JSON.stringify(VV4.probe)));
++  return VV4.probe;
++}
++// which picture the Spur shot of track i shows (Auto-Regie „Spur“): Drums → Drum-Sequenzer, STIMME → Welle, else Roll (+ Modulation)
++function vv4SpurKind(i) { const tr = S.tracks[i]; if (!tr) return 'roll'; if (tr.stimme) return 'voice'; if (tr.kind === 'drum') return 'drum'; return vv4HasMod(i) ? 'roll+mod' : 'roll'; }
++function vv4SpurShot(g, LW, LH, st, i) { return vv4Shot(g, LW, LH, st, i, vv4SpurKind(i)); }
++function vv4ModShot(g, LW, LH, st, i) { return vv4HasMod(i) ? vv4Shot(g, LW, LH, st, i, 'mod') : vv4SpurShot(g, LW, LH, st, i); }
++// the drawers for the director: rect {x, y, w, h} in canvas pixels, t = video time of a render (default: the last), track i
++function vv4Into(g, t, rect, i, fn, src) {
++  const r = src || VV.last, st = r ? vvStateAt(r, t) : vvLiveState(); if (r) { st.t = t; st.src = r; }
++  const R_ = rect || {x: 0, y: 0, w: g.canvas.width, h: g.canvas.height}, k = R_.w > R_.h ? R_.w / 640 : R_.w / 360;
++  g.save(); g.setTransform(k, 0, 0, k, R_.x, R_.y); g.beginPath(); g.rect(0, 0, R_.w / k, R_.h / k); g.clip(); const pr = fn(g, R_.w / k, R_.h / k, st, i); g.restore();
++  return pr;
++}
++function vvDrawRoll(g, t, rect, track, src) { return vv4Into(g, t, rect, track, (g_, w, h, st, i) => vv4Shot(g_, w, h, st, i, 'roll'), src); }
++function vvDrawDrumSeq(g, t, rect, track, src) { return vv4Into(g, t, rect, track == null ? DRUM_T : track, (g_, w, h, st, i) => vv4Shot(g_, w, h, st, i, 'drum'), src); }
++function vvDrawMod(g, t, rect, track, src) { return vv4Into(g, t, rect, track, (g_, w, h, st, i) => vv4ModShot(g_, w, h, st, i), src); }
++function vv4Api() {
++  const cv = () => VV4.cv || (VV4.cv = document.createElement('canvas'));
++  const run = (fn, i, t, fmt) => { const [W, H] = VV_SIZE[fmt || '16:9'], c = cv(); c.width = W; c.height = H; const pr = fn(c.getContext('2d', {alpha: false}), t, null, i); return {pr, c}; };
++  const FN = {roll: vvDrawRoll, drum: vvDrawDrumSeq, mod: vvDrawMod, spur: (g, t, r, i) => vv4Into(g, t, r, i, vv4SpurShot)};
++  return {
++    vv4Probe: (kind, i, t, fmt) => { const x = run(FN[kind] || FN.spur, i, t, fmt); return x.pr ? JSON.parse(JSON.stringify(x.pr)) : null; },
++    vv4Png: (kind, i, t, fmt) => run(FN[kind] || FN.spur, i, t, fmt).c.toDataURL('image/png').split(',')[1],
++    vv4HasMod: i => vv4HasMod(i), vv4SpurKind: i => vv4SpurKind(i),
++    vv4DrumSw: () => { const r = VV.last; return r ? vv4DrumSw(r, r.bpm).map(s => ({a: isFinite(s.a) ? s.a : null, v: s.v})) : null; },
++    vv4Log: on => { const l = VV4.log || []; if (on != null) VV4.log = []; return l; },
++  };
++}
++/* VV4CE-END */
+ 
+ 
+ const SYNQUENZER = {
+@@ -50467,6 +50774,7 @@
+ Object.assign(SYNQUENZER, vvApi());                        // VV1
+ Object.assign(SYNQUENZER, vv2Api());                       // VV2
+ Object.assign(SYNQUENZER, vv3Api());                       // VV3
++Object.assign(SYNQUENZER, vv4Api());                       // VV4-C / VV4-E
+ const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
+   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
