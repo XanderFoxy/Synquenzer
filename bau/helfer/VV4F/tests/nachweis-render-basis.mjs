@@ -1,3 +1,4 @@
+// Nachweis: der Song-Render der App ist schon in der Basis nicht reproduzierbar (APP=…/R-4261.html): Hash je Lauf, eine Spur je Song
 import { open } from './lib.mjs';
 const {b, p} = await open({w: 428, h: 926});
 await p.evaluate(() => { const el = document.getElementById('sq-worklet-src'); window._wsrc = el.textContent;

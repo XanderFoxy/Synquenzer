@@ -1,0 +1,412 @@
+--- ../../snapshots/R-4261.html
++++ index.html
+@@ -3977,6 +3977,26 @@
+ @media (orientation:landscape) and (min-width:800px){          /* 41 + 3 px gap = 44 px pitch (was 40 + 3); the track name gives the 4 px */
+   #strip #bEdit,#strip #bFolgt,#strip #bMute,#strip #bUndo{width:41px;min-width:41px}
+ }
++/* VV4-F „Mäusekino“: Pegelbalken je Spur (Matrix: senkrecht neben dem Farbstreifen; Song: waagrecht unter dem Namen) + Master
++   (Matrix: am linken Rand der Ecke; Song: in der TAKT-Zelle); absolut gelegt, nichts verschiebt sich */
++.mtr{position:absolute;left:4px;top:5px;bottom:5px;width:3px;pointer-events:none;contain:strict}
++.mtr .mb{position:absolute;left:0;right:0;top:5px;bottom:0;background:rgba(255,255,255,.08);border-radius:1px;overflow:hidden}
++.mtr .p,.mtr .r{position:absolute;left:0;top:0;right:0;bottom:0;background:linear-gradient(to top,var(--play) 0,var(--play) 75%,var(--amber) 75%,var(--amber) 95%,#ff4b4b 95%);-webkit-clip-path:inset(100% 0 0 0);clip-path:inset(100% 0 0 0)}
++.mtr .p{opacity:.4}
++.mtr .h{position:absolute;left:0;right:0;bottom:0;height:1px;background:#f2f4f8;opacity:0}
++.mtr .l{position:absolute;left:0;right:0;top:0;height:3px;border-radius:1px;background:rgba(255,75,75,.18)}
++.mtr.clip .l{background:#ff3b3b;box-shadow:0 0 4px rgba(255,59,59,.9)}
++.sv-l{position:relative}
++.sv-l .mtr.hz{left:8px;right:4px;top:auto;bottom:2px;margin-top:0}
++.mtrm-mx .mtr{left:2px;width:2px}
++.cnw{position:relative}
++.mtrm{position:absolute;left:0;top:0;bottom:0;width:14px;z-index:1;-webkit-tap-highlight-color:transparent}
++.mtrm-sv{left:28px;right:0;width:auto}
++.mtr.hz{left:2px;right:4px;top:50%;bottom:auto;width:auto;height:3px;margin-top:-1.5px}
++.mtr.hz .mb{top:0;bottom:0;left:0;right:5px}
++.mtr.hz .p,.mtr.hz .r{background:linear-gradient(to right,var(--play) 0,var(--play) 75%,var(--amber) 75%,var(--amber) 95%,#ff4b4b 95%);-webkit-clip-path:inset(0 100% 0 0);clip-path:inset(0 100% 0 0)}
++.mtr.hz .h{top:0;bottom:0;left:0;width:1px;height:auto}
++.mtr.hz .l{left:auto;right:0;width:3px}
+ </style>
+ </head>
+ <body>
+@@ -12236,6 +12256,55 @@
+   }
+ }
+ registerProcessor('dirigent-hall', DirigentHall);
++
++/* ======================================================================================================================
++   synq-meter (VV4-F Maeusekino): ONE meter for all tracks + master. Inputs 0..n-2 = the tracks (post fader, N.cut),
++   input n-1 = the master output. Every win blocks (about 30 Hz) it posts [t, peak0, rms0, peak1, rms1, ...] (t = context
++   time at the end of the window). Measures only: the output stays silent, the taps are plain fan-outs (sound unchanged).
++   The offline render (video) uses win 1 (one window per 128 frames) and sends batch windows per message; the last block of
++   total frames sends what is left. No allocation in process(): the message object and its Float32Array are made once
++   (postMessage copies them).
++   {on: false} stops all work (hidden display, CPU limiter level >= 2); {dispose: true} ends the processor.
++   ====================================================================================================================== */
++class SynqMeter extends AudioWorkletProcessor {
++  constructor(o) {
++    super();
++    const p = (o && o.processorOptions) || {};
++    this.n = Math.max(1, (o && o.numberOfInputs) | 0);
++    this.win = Math.max(1, p.win | 0 || Math.round(sampleRate / 30 / 128));
++    this.pk = new Float32Array(this.n); this.sq = new Float64Array(this.n);
++    this.W = 1 + 2 * this.n; this.batch = Math.max(1, p.batch | 0 || 1); this.total = +p.total || 0;
++    this.out = new Float32Array(this.batch * this.W); this.msg = {mtr: this.out, seq: 0, n: 0}; this.bi = 0;
++    this.k = 0; this.on = p.on !== false; this.alive = true;
++    this.port.onmessage = e => {
++      const m = e.data; if (!m) return;
++      if (m.on != null) { this.on = !!m.on; this.k = 0; this.bi = 0; this.pk.fill(0); this.sq.fill(0); }
++      if (m.dispose) this.alive = false;
++    };
++  }
++  process(inputs) {
++    if (!this.on) return this.alive;
++    const n = this.n, pk = this.pk, sq = this.sq;
++    for (let k = 0; k < n; k++) {
++      const chs = inputs[k], nc = chs ? chs.length : 0; if (!nc) continue;
++      let p = pk[k], s = 0;
++      for (let c = 0; c < nc; c++) {
++        const d = chs[c], L = d.length;
++        for (let i = 0; i < L; i++) { const x = d[i], a = x < 0 ? -x : x; if (a > p) p = a; s += x * x; }
++      }
++      pk[k] = p; sq[k] += s / nc;
++    }
++    if (++this.k >= this.win) {
++      const out = this.out, N = this.win * 128, o = this.bi * this.W;
++      out[o] = currentTime + 128 / sampleRate;
++      for (let k = 0; k < n; k++) { const r = Math.sqrt(sq[k] / N), p = pk[k]; out[o + 1 + 2 * k] = p >= 0 && p < 1e9 ? p : 0; out[o + 2 + 2 * k] = r >= 0 && r < 1e9 ? r : 0; pk[k] = 0; sq[k] = 0; }
++      this.k = 0;
++      if (++this.bi >= this.batch || (this.total && currentFrame + 128 >= this.total)) { this.msg.n = this.bi; this.msg.seq++; this.port.postMessage(this.msg); this.bi = 0; }
++    }
++    return this.alive;
++  }
++}
++registerProcessor('synq-meter', SynqMeter);
+ </script>
+ <script>
+ /* ===== §1.1 block 2: Harmony + Transposer (unchanged from the DIRIGENT build) ===== */
+@@ -19011,7 +19080,7 @@
+    of outLat everywhere (TAKT, launch boundaries, recording). */
+ const AU = {ctx: null, outLat: 0, devLat: 0, graphLat: .012, compLat: .006, loopExtra: 0, measured: false, hint: 'interactive',
+   masterSum: null, analyser: null, M: null, hall: null, hallKind: 'convolver', hallPre: null, hallIn: null, hallRet: null, hallDuck: null,
+-  echo: null, echoIn: null, synth: new Array(8).fill(null), tracks: [], noise: null, metal: null, dcBuf: null, timer: null};
++  echo: null, echoIn: null, synth: new Array(8).fill(null), tracks: [], noise: null, metal: null, dcBuf: null, timer: null, meter: null};
+ const VOICES = [];   // synth voices (live, clip, audition), removed on cleanup; worklet voices are proxies (v.wk)
+ const HITS = [];     // drum hits, removed on cleanup
+ let VSEQ = 0;
+@@ -19254,6 +19323,7 @@
+   AU.tracks[i] = A;
+   if (tr.kind === 'drum') { AU.kit = null; if (AU.drumBufs) drumBusBuild(); }    // WP6: the kit bus feeds trackIn (§1.5)
+   applyTrackParams(i, true);
++  mtrTap(i);                                                                      // VV4-F: the new chain feeds the meter
+ }
+ // the effect values of a track: its sound.fx (WP6: the drum track too, §8.2)
+ function trackFx(tr) { return g4Fx(tr, fxOfSound(tr.sound)); }   // G4: Hall/Delay der STIMME-Spur
+@@ -19824,7 +19894,7 @@
+   const el = document.getElementById('sq-worklet-src'), src = el ? el.textContent : '';
+   if (!src) { SynthHost.state = 'failed'; SynthHost.err = 'Quelltext fehlt'; convWarm(); return; }
+   SynthHost.load(AU.ctx, src).then(ok => {
+-    if (ok && !UI.forceNative) { try { upgradeHall(); } catch (e) { logErr(e); } syncEngines(); }
++    if (ok && !UI.forceNative) { try { upgradeHall(); } catch (e) { logErr(e); } syncEngines(); mtrBuild(); }   // VV4-F: the meter
+     else convWarm();
+     wkReport();
+   });
+@@ -24086,6 +24156,7 @@
+   const cnw = el('div', 'cnw'); UI.cnw = cnw;
+   const cn = el('button', 'corner rb sw', '<span class="clogo">' + LOGO_SVG + '</span><span class="swl">SONG ⇄</span>');      // §2.1 / §3.9: the view switch
+   cn.setAttribute('aria-label', 'Song-Ansicht'); cnw.appendChild(cn); g.appendChild(cnw); UI.corner = cn;
++  UI.mtrM = mtrMasterBtn('mx'); cnw.appendChild(UI.mtrM);                  // VV4-F: the master bar (tap: MASTER page)
+   // V2a: [SZ 1–4 │ 5–8] (scene bank) and [▲▼ 1/2] (track bank); a dot = a clip runs in the hidden part
+   const szb = el('button', 'szb rb', '<small>SZ</small><b>1–4</b><i class="bdot"></i>'); szb.setAttribute('aria-label', 'Szenen 5–8 zeigen'); UI.szb = szb;
+   cnw.appendChild(szb);
+@@ -24102,7 +24173,8 @@
+   for (const i of trackOrder()) {
+     const h = el('button', 'th', '<span class="bar"></span><span class="nm"></span><span class="sb"></span><span class="fb"></span>');
+     h.dataset.t = i; h.style.setProperty('--tc', `var(--t${i + 1})`); g.appendChild(h);
+-    UI.heads[i] = {el: h, nm: h.children[1], sb: h.children[2], fb: h.children[3], st: {}};
++    const mt = mtrEl(); h.appendChild(mt);                                     // VV4-F: the level bar beside the colour bar
++    UI.heads[i] = {el: h, nm: h.children[1], sb: h.children[2], fb: h.children[3], st: {}, mt};
+     UI.cells[i] = [];
+     for (let s = 0; s < N_SCN; s++) {
+       const c = el('div', 'slot', '<span class="rfill"></span><span class="mini"></span><span class="gl"></span><span class="ln"></span><span class="kbg" hidden></span><span class="tx"></span><span class="pg"></span><span class="sq">■</span><span class="big"></span>');
+@@ -24301,7 +24373,7 @@
+   SV.rowsKey = key; L._n = rows.length;
+   for (const d of [...L.querySelectorAll('.sv-l.trk')]) d.remove();
+   const before = SV.lc;
+-  for (const i of rows) { const d = el('div', 'sv-l trk', '<i></i><span></span>'); if (i >= 0) d.style.setProperty('--tc', `var(--t${i + 1})`); else d.classList.add('blank'); d.dataset.t = i; L.insertBefore(d, before); }
++  for (const i of rows) { const d = el('div', 'sv-l trk', '<i></i><span></span>'); if (i >= 0) { d.style.setProperty('--tc', `var(--t${i + 1})`); d._mt = mtrEl('hz'); d.appendChild(d._mt); } else d.classList.add('blank'); d.dataset.t = i; L.insertBefore(d, before); }   // VV4-F: level bar
+   SV.sig = ''; UI.dirty.song = true;
+ }
+ function songViewOn() { return !!UI.songView; }
+@@ -24356,6 +24428,7 @@
+   const body = el('div', 'sv-body');
+   const labs = el('div', 'sv-labs');
+   const lr = el('div', 'sv-lr', '<span class="lbl">Takt</span>');
++  SV.mtrM = mtrMasterBtn('sv'); lr.appendChild(SV.mtrM);                    // VV4-F: the master bar (tap: MASTER page)
+   SV.tbb = bBank;
+   onTap(bBank, () => { if (!SV.pages) return; setTrackBank((trackBankOf() + 1) % SV.pages.length); svLayout(); haptic('tick'); });
+   labs.appendChild(lr);
+@@ -28987,6 +29060,7 @@
+   modScopeSync();                                           // §9.4: {scope} only while the editor of a worklet track is open
+   if (R.editor === 'synth') { if (UI.dirty.edHead) { UI.dirty.edHead = false; edHeadRefresh(); } if (ED.lfoPrev) lfoPrevFrame(); modFrame(); }
+   if (ED.grm && (R.editor === 'synth' || R.editor === 'drum')) grmFrame();
++  mtrFrame();                                                // VV4-F: the level bars (off when hidden / limiter ≥ 2)
+   if (R.editor === 'browser' && UI.dirty.br) { UI.dirty.br = false; brRefresh(); }
+   if (ED.roll && ED.rollAt) rollFrame(bAud);
+   else if (ED.lauf && ED.rollAt) laufFrame(bAud);
+@@ -33677,6 +33751,125 @@
+   if (pk > .97) G.ledT = now;
+   const on = now - G.ledT < 400; if (on !== G.on) { G.on = on; G.led.classList.toggle('on', on); }
+ }
++/* ---------- VV4-F „Mäusekino“: Pegel je Spur + Master (Konzept Schnitt/Video §2.2 VV4-F, Abnahme VV4-11/12) ----------
++   Ein Meter-Worklet (synq-meter, im selben Modul wie der Synth) für alle Spuren: Eingang i = Spur i nach dem Fader (N.cut),
++   Eingang MAX_T = Master-Ausgang (AU.M.ceil). ≈ 30 Hz Spitze/RMS; der Hauptthread legt die Werte nur in einen Ring und zeichnet
++   im vorhandenen rAF (nur geänderte Werte). Aus bei verdeckter Anzeige oder CPU-Begrenzer ≥ 2. Messen ändert den Klang nicht
++   (reine Abzweigung; der stumme Ausgang des Meters geht an destination, damit WebKit/Chromium ihn sicher rechnen). */
++const MTR_IN = MAX_T + 1, MTR_W = 1 + 2 * MTR_IN, MTR_HOLD = 1.5, MTR_LED = Math.pow(10, -.3 / 20), MTR_FLOOR = -48;
++const MTR = {want: false, chkT: 0, vis: false, els: [], master: [], disp: new Float32Array(MTR_IN * 4), drawn: [], frames: 0, on: false};
++// a time-ordered store of meter windows (live: ring of cap windows; video: all windows of the render)
++function mtrStore(cap) { return {cap, t: new Float64Array(cap), v: new Float32Array(cap * MTR_W), cnt: 0, seq: 0, lost: 0}; }
++function mtrPut(Q, a, seq, n) {
++  for (let w = 0; w < (n || 1); w++) { const j = Q.cnt % Q.cap; Q.t[j] = a[w * MTR_W]; Q.v.set(a.subarray(w * MTR_W, (w + 1) * MTR_W), j * MTR_W); Q.cnt++; }
++  if (seq != null) { if (Q.seq && seq !== Q.seq + 1) Q.lost += Math.max(0, seq - Q.seq - 1); Q.seq = seq; }
++}
++// the newest window that ends at or before τ (logical index) or -1
++function mtrFind(Q, tau) {
++  let lo = Math.max(0, Q.cnt - Q.cap), hi = Q.cnt - 1;
++  if (hi < lo || Q.t[lo % Q.cap] > tau) return -1;
++  if (Q.t[hi % Q.cap] <= tau) return hi;
++  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (Q.t[m % Q.cap] <= tau) lo = m; else hi = m; }
++  return lo;
++}
++const mtrDb = x => (x > 1e-6 ? 20 * Math.log10(x) : -120);
++// input k at time τ: [peak, rms, hold (max peak of the last 1.5 s), led (1 = a peak over −0.3 dBFS in the last 1.5 s)].
++// span = 0: the newest window (live, ≈ 32 ms); span > 0: all windows ending in (τ − span, τ] together (video: one picture)
++function mtrAt(Q, tau, k, o, oi, span) {
++  o[oi] = o[oi + 1] = o[oi + 2] = o[oi + 3] = 0;
++  const j = mtrFind(Q, tau); if (j < 0 || tau - Q.t[j % Q.cap] > .25) return o;    // nothing measured near τ (stopped meter): empty
++  let h = 0, pk = 0, ss = 0, m = 0; const lo = Math.max(0, Q.cnt - Q.cap), c = 1 + 2 * k, lim = tau - (span || 0) + 1e-9;
++  for (let x = j; x >= lo; x--) {
++    const q = x % Q.cap, tx = Q.t[q]; if (tx <= tau - MTR_HOLD) break;
++    const p = Q.v[q * MTR_W + c]; if (p > h) h = p;
++    if (!m || tx > lim) { const r = Q.v[q * MTR_W + c + 1]; ss += r * r; m++; if (p > pk) pk = p; }
++  }
++  o[oi] = pk; o[oi + 1] = Math.sqrt(ss / Math.max(1, m)); o[oi + 2] = h; o[oi + 3] = h > MTR_LED ? 1 : 0;
++  return o;
++}
++const mtrFrac = x => { const d = mtrDb(x); return d <= MTR_FLOOR ? 0 : d >= 0 ? 1 : (d - MTR_FLOOR) / -MTR_FLOOR; };
++// builds the meter on the current context (live after the worklet loaded; the offline render in vvSwapIn). off = the video job
++function mtrBuild(off) {
++  const c = AU.ctx; if (!c || AU.meter || typeof AudioWorkletNode !== 'function') return null;
++  if (!off && SynthHost.state !== 'ready') return null;
++  let node;
++  try {
++    node = new AudioWorkletNode(c, 'synq-meter', {numberOfInputs: MTR_IN, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 2,
++      channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: off ? {on: true, win: 1, batch: 16, total: c.length} : {on: MTR.on}});
++  } catch (e) { logErr(e); return null; }
++  const M = AU.meter = {node, ctx: c, tap: [], off: !!off, Q: off ? mtrStore(Math.ceil(c.length / 128) + 8) : mtrStore(160)};
++  node.port.onmessage = e => { const m = e.data; if (m && m.mtr) mtrPut(M.Q, m.mtr, m.seq, m.n); };
++  node.connect(c.destination);
++  for (let i = 0; i < NT(); i++) mtrTap(i);
++  try { if (AU.M && AU.M.ceil) AU.M.ceil.connect(node, 0, MAX_T); } catch (e) { logErr(e); }
++  return M;
++}
++function mtrTap(i) {
++  const M = AU.meter, A = AU.tracks[i]; if (!M || !A || !A.cut || A.cut.context !== M.ctx) return;
++  const old = M.tap[i]; if (old === A.cut) return;
++  if (old) { try { old.disconnect(M.node, 0, i); } catch (e) {} }
++  try { A.cut.connect(M.node, 0, i); M.tap[i] = A.cut; } catch (e) { logErr(e); }
++}
++function mtrSend(on) { MTR.on = on; const M = AU.meter; if (M && !M.off) { try { M.node.port.postMessage({on}); } catch (e) {} } }
++// the elements: one per track head (matrix) and song label, the master in the matrix corner and in the TAKT cell of the song
++function mtrEl(cls) { const m = el('span', 'mtr' + (cls ? ' ' + cls : ''), '<span class="mb"><b class="p"></b><b class="r"></b><i class="h"></i></span><i class="l"></i>'); m.setAttribute('aria-hidden', 'true'); m._st = {r: -1, p: -1, h: -1, l: -1}; return m; }
++function mtrMasterBtn(where) {
++  const b = el('button', 'mtrm mtrm-' + where); b.setAttribute('aria-label', 'Master-Pegel – MASTER-Seite öffnen'); b.title = 'Master-Pegel (antippen: MASTER)';
++  b.appendChild(mtrEl(where === 'sv' ? 'hz' : '')); guardTouch(b);
++  b.addEventListener('pointerdown', e => e.stopPropagation());       // never a grid / song gesture
++  onTap(b, () => { haptic('tick'); openMasterPage(); });
++  return b;
++}
++// Tipp auf den Master-Balken: der Klang-Editor der gewählten Spur auf FX › MASTER (Drums: FX › MASTER des Drum-Editors)
++function openMasterPage() {
++  let i = R.selT; if (!S.tracks[i] || S.tracks[i].stimme) { const k = trackOrder().find(t => S.tracks[t] && !S.tracks[t].stimme); if (k == null) return false; selectTrack(k); i = k; }
++  const tr = S.tracks[i];
++  if (tr.kind === 'drum') { ED.dTab = 'fx'; ED.dFx = 'master'; } else { ED.tab = 'fx'; ED.sub.fx = 'master'; FXF.big = null; }
++  openEditor();
++  return true;
++}
++function mtrPaint(m, f) {   // f = [peak, rms, hold, led] linear; only changed values are written
++  const s = m._st, hz = m.classList.contains('hz');
++  const r = Math.round(mtrFrac(f[1]) * 100), p = Math.round(mtrFrac(f[0]) * 100), h = Math.round(mtrFrac(f[2]) * 100), l = f[3] ? 1 : 0;
++  const ins = v => (hz ? 'inset(0 ' + (100 - v) + '% 0 0)' : 'inset(' + (100 - v) + '% 0 0 0)');
++  if (r !== s.r) { s.r = r; const st = m.firstChild.children[1].style; st.clipPath = st.webkitClipPath = ins(r); }
++  if (p !== s.p) { s.p = p; const st = m.firstChild.children[0].style; st.clipPath = st.webkitClipPath = ins(p); }
++  if (h !== s.h) { s.h = h; const e = m.firstChild.children[2]; e.style[hz ? 'left' : 'bottom'] = 'calc(' + h + '% - ' + (h ? 1 : 0) + 'px)'; e.style.opacity = h ? 1 : 0; }
++  if (l !== s.l) { s.l = l; m.classList.toggle('clip', !!l); }
++}
++// on screen and not covered (checked ≤ 4× per second): the master button or a track meter is hit-tested at its centre
++function mtrVisible() {
++  if (document.hidden) return false;
++  const row = UI.songView ? (SV.labs && SV.labs.querySelector('.sv-l.trk:not(.blank)')) : ((UI.heads.find(h => h && h.mt && h.el.offsetParent) || {}).el);
++  const cand = [UI.songView ? SV.mtrM : UI.mtrM, row];
++  for (const e of cand) {
++    if (!e || !e.isConnected) continue;
++    const r = e.getBoundingClientRect(); if (r.width < 1 || r.height < 1 || r.bottom < 0 || r.top > innerHeight) continue;
++    const x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
++    if (x && (x === e || e.contains(x))) return true;
++  }
++  return false;
++}
++function mtrFrame() {
++  const M = AU.meter, P0 = performance.now();
++  if (!M || M.off) { if (MTR.vis) mtrBlank(); return; }
++  if (LIM.level >= 2) { if (MTR.on) { mtrSend(false); mtrBlank(); } return; }       // CPU-Begrenzer ≥ 2: aus (0 ms)
++  if (P0 - MTR.chkT > 250) { MTR.chkT = P0; MTR.vis = mtrVisible(); }
++  if (MTR.vis !== MTR.on) { mtrSend(MTR.vis); if (!MTR.vis) { mtrBlank(); return; } }
++  if (!MTR.on) return;
++  // what is heard now: the master output is device-latency behind the context, the tracks also the master compressors (graphLat)
++  const now = M.ctx.currentTime, tm = now - AU.devLat, tt = now - AU.outLat, D = MTR.disp;
++  for (let k = 0; k < MTR_IN; k++) mtrAt(M.Q, k === MAX_T ? tm : tt, k, D, k * 4);
++  const f = MTR.f || (MTR.f = new Float32Array(4));
++  const paintK = (m, k) => { f[0] = D[k * 4]; f[1] = D[k * 4 + 1]; f[2] = D[k * 4 + 2]; f[3] = D[k * 4 + 3]; mtrPaint(m, f); };
++  if (UI.songView) { if (SV.labs) for (const d of SV.labs.children) if (d._mt && d.dataset.t >= 0) paintK(d._mt, +d.dataset.t); if (SV.mtrM) paintK(SV.mtrM.firstChild, MAX_T); }
++  else { for (let i = 0; i < UI.heads.length; i++) { const H = UI.heads[i]; if (H && H.mt) paintK(H.mt, i); } if (UI.mtrM) paintK(UI.mtrM.firstChild, MAX_T); }
++  MTR.frames++; const ms = performance.now() - P0; MTR.ms = ms; if (ms > (MTR.msMax || 0)) MTR.msMax = ms; MTR.msSum = (MTR.msSum || 0) + ms;
++}
++function mtrBlank() {
++  MTR.vis = false; const z = new Float32Array(4);
++  for (const m of document.querySelectorAll('.mtr')) mtrPaint(m, z);
++}
+ // „Hall/Echo wie im Preset“ (§11.3): appears after loading a sound that has a bus hint; applies only on tap, one undo
+ function busHintChip(i) {
+   const h = UI.busHint; if (!h || h.t !== i) return null;
+@@ -47894,7 +48087,7 @@
+   const keep = {noise: AU.noise, metal: AU.metal, drumBufs: AU.drumBufs, dcBuf: AU.dcBuf, loopExtra: AU.loopExtra, compLat: AU.compLat, graphLat: AU.graphLat, measured: AU.measured, hint: AU.hint};
+   Object.assign(AU, {ctx: oc, masterSum: null, analyser: null, M: null, hall: null, hallKind: 'convolver', hallPre: null, hallIn: null, hallRet: null, hallDuck: null,
+     echo: null, echoIn: null, synth: new Array(8).fill(null), tracks: [], kit: null, strips: null, lfoSink: null, lfo0: null, timer: null,
+-    hallClrT: 0, hallClrT2: 0, echoKillT: 0, devLat: 0, outLat: keep.graphLat}, keep);
++    hallClrT: 0, hallClrT2: 0, echoKillT: 0, devLat: 0, outLat: keep.graphLat, meter: null}, keep);
+   WAVES_T = null;
+   for (let i = 0; i < WKSET.length; i++) WKSET[i] = null;
+   S.song.loop = Object.assign({}, S.song.loop, {on: false});    // one pass (like „Song als Audio“); the object comes back unchanged
+@@ -47915,6 +48108,7 @@
+     if (M && M.wv) for (const n of [mkWaveOf(pm), mkWaveOf(pm, null, 1), ...mkSeqWaves(pm, 0), ...mkSeqWaves(pm, 1)]) if (n) { try { M.wv.now(E, n | 0); } catch (e) { logErr(e); } }
+     try { mkWheelSync(i, true); } catch (e) { logErr(e); }
+   }
++  if (wk && off && !VV.noMtr) { const M = mtrBuild(off); if (M) off.mtr = M; }   // VV4-F: the same meter in the render (video bars)
+   vvProf('swapIn', performance.now() - PS);
+   return sv;
+ }
+@@ -47968,6 +48162,7 @@
+     vvProf('swapIn', performance.now() - PS);
+   } catch (e) { if (off.sv) vvSwapOut(off.sv); VV.off = null; UI.vvOff = false; throw e; }
+   const t0 = R.startTime, endB = b < song.bars ? R.songPlay.off + b * 4 : null, q = t => Math.ceil(t * sr / 128) * 128 / sr;
++  if (off.mtr) live.mtr = {Q: off.mtr.Q, gl: AU.graphLat, off: t0 + AU.graphLat};   // VV4-F: the pictures drawn behind the render read the meter too
+   const last = [];
+   const recSlots = now => {
+     for (let i = 0; i < NT(); i++) {
+@@ -48028,6 +48223,9 @@
+     out = await new Promise((res, rej) => { off.rej = rej; oc.startRendering().then(res, rej); });
+   } finally { finishLive(); VV.off = null; }
+   if (fail) throw fail;
++  // VV4-F: the meter windows of the render arrive as messages; wait (≤ 1.5 s) until the last expected one is in
++  if (off.mtr) { const Q = off.mtr.Q, want = Math.ceil(Math.floor(out.length / 128) / 16), W0 = performance.now();
++    while (Q.seq < want && performance.now() - W0 < 1500) await new Promise(r => setTimeout(r, 15)); off.mtr.want = want; }
+   let PT = performance.now();
+   // trim: from the heard song start; the tail ends where the master stays below −60 dBFS (blocks of 512), ≤ 10 s
+   const s0 = Math.round((t0 + AU.graphLat) * sr), sEnd = s0 + Math.round(songSec * sr), L = out.getChannelData(0), Rr = out.getChannelData(1);
+@@ -48042,7 +48240,8 @@
+   for (const d of chs) { for (let j = 0; j < fl; j++) d[n - fl + j] *= Math.cos(j / fl * Math.PI / 2); d.fill(0, n); }   // the end fades (at −60 dBFS inaudible; at 10 s a 1-s fade)
+   for (let ch = 0; ch < 2; ch++) out.getChannelData(ch).fill(0, eIdx);
+   vvProf('trim', performance.now() - PT);
+-  const r = {buf: out, ch: chs, off: s0 / sr, n, sr, dur: n / sr, songSec, tail: (eIdx - sEnd) / sr, capped, a, b, bpm: S.bpm, tl: off.tl, log: off.log, ms: performance.now() - T0, wk, nt: live.nt || [], t0: live.t0};
++  const r = {buf: out, ch: chs, off: s0 / sr, n, sr, dur: n / sr, songSec, tail: (eIdx - sEnd) / sr, capped, a, b, bpm: S.bpm, tl: off.tl, log: off.log, ms: performance.now() - T0, wk, nt: live.nt || [], t0: live.t0,
++    mtr: off.mtr ? {Q: off.mtr.Q, gl: AU.graphLat, want: off.mtr.want, off: s0 / sr} : null};   // VV4-F: video time t = context time r.off + t (tracks: − gl)
+   VV.last = r;
+   return r;
+ }
+@@ -48156,6 +48355,11 @@
+   rows.forEach((i, r) => { const y = y0 + ru + r * rh; g.fillStyle = C.t[i] || '#888'; g.fillRect(4, y + 5, 3, rh - 10); g.fillStyle = C.text; lab(svShort(i), 12, y + rh / 2); });
+   g.fillStyle = C.amber; lab('AKKORDE', 8, y0 + ru + rows.length * rh + rh / 2);
+   g.fillStyle = C.text; lab('MELODIE', 8, y0 + ru + (rows.length + 1) * rh + rh / 2);
++  // VV4-F: the level bars as in the song view (under the name; master in the TAKT cell)
++  const mb = rows.map((i, r) => ({k: i, x: 8, y: y0 + ru + (r + 1) * rh - 5, w: labW - 12, h: 3, hz: true}));
++  g.font = '700 11px ' + C.ui; const mx = Math.ceil(8 + g.measureText('TAKT').width + 6);   // right of the word TAKT
++  mb.push({k: MAX_T, x: mx, y: y0 + ru / 2 - 1.5, w: Math.max(12, labW - mx - 4), h: 3, hz: true});
++  vvDrawMeters(g, st.t, {src: st.src, bars: mb});
+ }
+ // the matrix layout in app points: the scene columns (the bank with the playing clips), the track rows
+ function vvMatrixLayout(LW, LH, st) {
+@@ -48199,6 +48403,46 @@
+       g.restore();
+     }
+   });
++  // VV4-F: the level bars as in the matrix (beside the colour bar; master at the left of the corner row)
++  const mb = rows.map((i, r) => ({k: i, x: 8.5, y: y0 + head + r * chh + 6, w: 2.5, h: chh - 12}));
++  mb.push({k: MAX_T, x: 6, y: y0 + 4, w: 2, h: head - 14});
++  vvDrawMeters(g, st.t, {src: st.src, bars: mb});
++}
++/* VV4-F: the level bars of the video at video time t. rect = {src: the render result (r.mtr: the meter windows of the render),
++   bars: [{k: input (track index, MAX_T = master), x, y, w, h, hz?}]}. Values = the same meter as in the app, measured in the offline
++   render: peak (faint), RMS (solid), hold line (max peak of the last 1.5 s), red LED (a peak over −0.3 dBFS in the last 1.5 s).
++   Without measurements (live preview without meter, worklet missing) the bars stay empty: nothing is made up. */
++function vvDrawMeters(g, t, rect) {
++  const src = rect && rect.src, R_ = src && src.mtr, LQ = !R_ && AU.meter && !AU.meter.off && MTR.on ? AU.meter.Q : null;
++  const o = VV.mtrO || (VV.mtrO = new Float32Array(4)), probe = [];
++  const seg = (b, f, a) => {           // green to 70 %, amber to 95 %, red above (like the app gradient)
++    if (f <= 0) return; g.globalAlpha = a;
++    for (const [f0, f1, c] of [[0, .75, '#35d07f'], [.75, .95, '#ffb22e'], [.95, 1, '#ff4b4b']]) {
++      const e = Math.min(f, f1); if (e <= f0) break;
++      if (b.hz) { g.fillStyle = c; g.fillRect(b.x + f0 * b.mw, b.y, (e - f0) * b.mw, b.h); } else { g.fillStyle = c; g.fillRect(b.x, b.y + b.mh - e * b.mh, b.w, (e - f0) * b.mh); }
++    }
++    g.globalAlpha = 1;
++  };
++  for (const b0 of (rect && rect.bars) || []) {
++    const b = Object.assign({}, b0), led = 4;
++    if (b.hz) { b.mw = b.w - led - 2; } else { b.mh = b.h - led - 2; }
++    let tau = null, Q = null;
++    if (R_) { Q = R_.Q; tau = R_.off + (t || 0) - (b.k === MAX_T ? 0 : R_.gl); }
++    else if (LQ) { Q = LQ; tau = AU.meter.ctx.currentTime - (b.k === MAX_T ? AU.devLat : AU.outLat); }
++    if (Q) mtrAt(Q, tau, b.k, o, 0, R_ ? 1 / VV_FPS : 0); else o.fill(0);
++    // the track: the bar body and the LED cell
++    g.fillStyle = 'rgba(255,255,255,.08)';
++    if (b.hz) g.fillRect(b.x, b.y, b.mw, b.h); else g.fillRect(b.x, b.y + led + 2, b.w, b.mh);
++    if (b.hz) { b.x0 = b.x; } else { b.y += led + 2; }
++    const fp = mtrFrac(o[0]), fr = mtrFrac(o[1]), fh = mtrFrac(o[2]);
++    seg(b, fp, .4); seg(b, fr, 1);
++    if (fh > 0) { g.fillStyle = '#f2f4f8'; if (b.hz) g.fillRect(b.x + fh * b.mw - 1, b.y, 1, b.h); else g.fillRect(b.x, b.y + b.mh - fh * b.mh, b.w, 1); }
++    g.fillStyle = o[3] ? '#ff3b3b' : 'rgba(255,75,75,.18)';
++    if (b.hz) g.fillRect(b.x + b.w - led + 1, b.y, led - 1, b.h); else g.fillRect(b.x, b.y - led - 2, b.w, led - 1);
++    probe.push({k: b.k, tau, pk: mtrDb(o[0]), rms: mtrDb(o[1]), hold: mtrDb(o[2]), led: o[3], fr, x: b0.x, y: b0.y, w: b0.w, h: b0.h, hz: !!b.hz});
++  }
++  VV.mtrProbe = probe;
++  return probe;
+ }
+ // one picture of the stage at size W × H (canvas pixels) for state st; view 'song' | 'matrix' ('auto' = the Auto-Regisseur, VV2)
+ // VV2: Auto = the Auto-Regisseur, 9:16 = [Kamera] / [Ganz mit Balken] over the landscape view (vvDrawRun, VV2 block); rt = the job's run
+@@ -48328,6 +48572,7 @@
+       const nF = r ? Math.max(1, Math.round(r.dur * fps)) : Infinity;
+       if (f >= nF) break;
+       if (!r && f / fps > live.t - .05) { await Promise.race([rP, new Promise(res => setTimeout(res, 8))]); continue; }
++      if (!r && live.mtr && !(live.mtr.Q.cnt && live.mtr.Q.t[(live.mtr.Q.cnt - 1) % live.mtr.Q.cap] >= live.mtr.off + f / fps)) { await Promise.race([rP, new Promise(res => setTimeout(res, 8))]); continue; }   // VV4-F: the meter windows of this picture are in
+       const PF = performance.now();
+       vvDraw(g, W, H, job.view, vvStateAt(r || live, f / fps), job.rt);
+       const fr = new VideoFrame(cv, {timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps)});
+@@ -49844,6 +50089,10 @@
+   mkSet: (t, path, v) => { const s_ = sndOf(t); if (!s_ || s_.engine !== 'mk') throw new Error('Keine ' + MK_LABEL + '-Spur: ' + t); return soundEdit(t, MK_LABEL + ' ' + path, () => mkSetP(t, path, v, false)); },
+   mkRender: (sound, ev, o) => mkRender(sound, ev, o), mkScope: t => mkScopeOf(t), mkInfo: () => mkInfo(),
+   mkWheel: (t, w, v) => mkWheelApi(t, w, v), mkPanel: () => (mkLoaded() ? MKUI.panelInfo() : null), perfProbe: cases => mkLoad().probe(cases),
++  // VV4-F (Tests): Stand des Mäusekinos (an, sichtbar, Anzeige je Eingang [Spitze, RMS, Halten, LED] in dBFS, Rahmenzeit), MASTER öffnen
++  mtrInfo: () => { const M = AU.meter, D = MTR.disp, ch = []; for (let k = 0; k < MTR_IN; k++) ch.push({pk: mtrDb(D[k * 4]), rms: mtrDb(D[k * 4 + 1]), hold: mtrDb(D[k * 4 + 2]), led: D[k * 4 + 3]});
++    return {built: !!M, on: MTR.on, vis: MTR.vis, lim: LIM.level, n: M ? M.Q.cnt : 0, lost: M ? M.Q.lost : 0, ctxT: M ? M.ctx.currentTime : 0, ch, frames: MTR.frames, ms: MTR.ms || 0, msMax: MTR.msMax || 0, msSum: MTR.msSum || 0, els: document.querySelectorAll('.mtr').length}; },
++  mtrOpenMaster: () => openMasterPage(),
+   arpLog: t => (arpK() ? ARPC.arpLog(t) : []), arpClear: t => { if (arpK()) ARPC.clearLog(t); }, arpInfo: t => (arpK() ? ARPC.info(t) : null),   // MK5 (B.7)
+   mkIn: (t, which, src, dry) => { if (which != null) { const s_ = typeof src === 'number' ? (S.tracks[src] ? 't:' + S.tracks[src].uid : null) : src; if (!mkInSet(t, which, s_, dry)) throw new Error('mkIn: nicht wählbar'); } return deep(S.tracks[t].mkIn || null); },
+   mkInInfo: () => ({tracks: AU.tracks.map(A => { const k = A && A.mkL && A.mkL.k; return A ? {e1: !!(k && k[1]), e2: !!(k && k[2]), dryCut: !!A.dryCut} : null; }),
+@@ -50472,7 +50721,7 @@
+   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
+   'modState', 'modLive', 'scopeMsg', 'lauf', 'laufApi', 'song', 'kits', 'patterns', 'drumSlot', 'fmUi', 'tickErrors', 'viewState', 'carrierShown', 'browserRows',
+   'fmDefaultOp', 'fmEnvView', 'fmxEnvAction', 'fmAuditions', 'fmFader', 'fmBrightFader', 'syxHint', 'getFmx', 'fmxLevels', 'dxLayout', 'fmxDx', 'fmxFromFm6',
+-  'fmxPredict', 'fmxPredictX', 'fmxRaster', 'syxVoiceOf', 'buildSyx', 'parseSyx', 'mkGet', 'mkScope', 'mkInfo', 'mkRender', 'perfProbe', 'mkInInfo', 'mkVowel', 'mkHold', 'mkVocMic', 'memory', 'fangPart', 'fangClose', 'songMarks', 'lastOpMs', 'vsInfo', 'vsResult', 'vsAnalyseSignal', 'vsClock']);
++  'fmxPredict', 'fmxPredictX', 'fmxRaster', 'syxVoiceOf', 'buildSyx', 'parseSyx', 'mkGet', 'mkScope', 'mkInfo', 'mkRender', 'perfProbe', 'mtrInfo', 'mkInInfo', 'mkVowel', 'mkHold', 'mkVocMic', 'memory', 'fangPart', 'fangClose', 'songMarks', 'lastOpMs', 'vsInfo', 'vsResult', 'vsAnalyseSignal', 'vsClock']);
+ for (const k of Object.keys(SYNQUENZER)) {
+   const f = SYNQUENZER[k]; if (typeof f !== 'function' || NO_SYNC.has(k)) continue;
+   SYNQUENZER[k] = function () { const r = f.apply(this, arguments); uiSync(); if (r && typeof r.then === 'function') return r.then(v => { uiSync(); return v; }); return r; };

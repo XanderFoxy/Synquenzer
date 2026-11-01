@@ -1,3 +1,4 @@
+// Nachweis: Chromium summiert ab 3 klingenden Eingängen eines Knotens in wechselnder Reihenfolge (Rundung) – reine Web-Audio-Knoten, ohne App
 import { open } from './lib.mjs';
 const {b, p} = await open({w: 428, h: 926});
 const r = await p.evaluate(async () => {

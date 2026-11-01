@@ -3981,7 +3981,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
    (Matrix: am linken Rand der Ecke; Song: in der TAKT-Zelle); absolut gelegt, nichts verschiebt sich */
 .mtr{position:absolute;left:4px;top:5px;bottom:5px;width:3px;pointer-events:none;contain:strict}
 .mtr .mb{position:absolute;left:0;right:0;top:5px;bottom:0;background:rgba(255,255,255,.08);border-radius:1px;overflow:hidden}
-.mtr .p,.mtr .r{position:absolute;left:0;top:0;right:0;bottom:0;background:linear-gradient(to top,var(--play) 0,var(--play) 70%,var(--amber) 80%,var(--amber) 92%,#ff4b4b 97%);clip-path:inset(100% 0 0 0)}
+.mtr .p,.mtr .r{position:absolute;left:0;top:0;right:0;bottom:0;background:linear-gradient(to top,var(--play) 0,var(--play) 75%,var(--amber) 75%,var(--amber) 95%,#ff4b4b 95%);-webkit-clip-path:inset(100% 0 0 0);clip-path:inset(100% 0 0 0)}
 .mtr .p{opacity:.4}
 .mtr .h{position:absolute;left:0;right:0;bottom:0;height:1px;background:#f2f4f8;opacity:0}
 .mtr .l{position:absolute;left:0;right:0;top:0;height:3px;border-radius:1px;background:rgba(255,75,75,.18)}
@@ -3994,7 +3994,7 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .mtrm-sv{left:28px;right:0;width:auto}
 .mtr.hz{left:2px;right:4px;top:50%;bottom:auto;width:auto;height:3px;margin-top:-1.5px}
 .mtr.hz .mb{top:0;bottom:0;left:0;right:5px}
-.mtr.hz .p,.mtr.hz .r{background:linear-gradient(to right,var(--play) 0,var(--play) 70%,var(--amber) 80%,var(--amber) 92%,#ff4b4b 97%);clip-path:inset(0 100% 0 0)}
+.mtr.hz .p,.mtr.hz .r{background:linear-gradient(to right,var(--play) 0,var(--play) 75%,var(--amber) 75%,var(--amber) 95%,#ff4b4b 95%);-webkit-clip-path:inset(0 100% 0 0);clip-path:inset(0 100% 0 0)}
 .mtr.hz .h{top:0;bottom:0;left:0;width:1px;height:auto}
 .mtr.hz .l{left:auto;right:0;width:3px}
 </style>
@@ -33832,8 +33832,8 @@ function mtrPaint(m, f) {   // f = [peak, rms, hold, led] linear; only changed v
   const s = m._st, hz = m.classList.contains('hz');
   const r = Math.round(mtrFrac(f[1]) * 100), p = Math.round(mtrFrac(f[0]) * 100), h = Math.round(mtrFrac(f[2]) * 100), l = f[3] ? 1 : 0;
   const ins = v => (hz ? 'inset(0 ' + (100 - v) + '% 0 0)' : 'inset(' + (100 - v) + '% 0 0 0)');
-  if (r !== s.r) { s.r = r; m.firstChild.children[1].style.clipPath = ins(r); }
-  if (p !== s.p) { s.p = p; m.firstChild.children[0].style.clipPath = ins(p); }
+  if (r !== s.r) { s.r = r; const st = m.firstChild.children[1].style; st.clipPath = st.webkitClipPath = ins(r); }
+  if (p !== s.p) { s.p = p; const st = m.firstChild.children[0].style; st.clipPath = st.webkitClipPath = ins(p); }
   if (h !== s.h) { s.h = h; const e = m.firstChild.children[2]; e.style[hz ? 'left' : 'bottom'] = 'calc(' + h + '% - ' + (h ? 1 : 0) + 'px)'; e.style.opacity = h ? 1 : 0; }
   if (l !== s.l) { s.l = l; m.classList.toggle('clip', !!l); }
 }
@@ -48357,7 +48357,8 @@ function vvDrawSong(g, LW, LH, st) {
   g.fillStyle = C.text; lab('MELODIE', 8, y0 + ru + (rows.length + 1) * rh + rh / 2);
   // VV4-F: the level bars as in the song view (under the name; master in the TAKT cell)
   const mb = rows.map((i, r) => ({k: i, x: 8, y: y0 + ru + (r + 1) * rh - 5, w: labW - 12, h: 3, hz: true}));
-  mb.push({k: MAX_T, x: 30, y: y0 + ru / 2 - 1.5, w: labW - 36, h: 3, hz: true});
+  g.font = '700 11px ' + C.ui; const mx = Math.ceil(8 + g.measureText('TAKT').width + 6);   // right of the word TAKT
+  mb.push({k: MAX_T, x: mx, y: y0 + ru / 2 - 1.5, w: Math.max(12, labW - mx - 4), h: 3, hz: true});
   vvDrawMeters(g, st.t, {src: st.src, bars: mb});
 }
 // the matrix layout in app points: the scene columns (the bank with the playing clips), the track rows
@@ -48418,7 +48419,7 @@ function vvDrawMeters(g, t, rect) {
     if (f <= 0) return; g.globalAlpha = a;
     for (const [f0, f1, c] of [[0, .75, '#35d07f'], [.75, .95, '#ffb22e'], [.95, 1, '#ff4b4b']]) {
       const e = Math.min(f, f1); if (e <= f0) break;
-      if (b.hz) { g.fillStyle = c; g.fillRect(b.x + f0 * b.mw, b.y, (e - f0) * b.mw, b.h); } else { g.fillStyle = c; g.fillRect(b.x, b.y + b.h - e * b.mh, b.w, (e - f0) * b.mh); }
+      if (b.hz) { g.fillStyle = c; g.fillRect(b.x + f0 * b.mw, b.y, (e - f0) * b.mw, b.h); } else { g.fillStyle = c; g.fillRect(b.x, b.y + b.mh - e * b.mh, b.w, (e - f0) * b.mh); }
     }
     g.globalAlpha = 1;
   };

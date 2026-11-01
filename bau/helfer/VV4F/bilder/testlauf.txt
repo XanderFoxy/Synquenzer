@@ -1,0 +1,107 @@
+OK   Meter gebaut (ein Worklet, 9 Eingänge)  {"els":8}
+OK   Sinus −6 dBFS auf Spur 1 zeigt −6 ±0,5 dB (Spitze)  {"pk":-6.02,"rms":-9.05}
+OK   RMS des Sinus −9 ±0,5 dB  "-9.05"
+OK   andere Spuren 0 (leer)  [-120,-120,-120,-120,-120,-120,-120]
+OK   Master zeigt Pegel  "-10.8"
+OK   Balken im DOM gefüllt (RMS-Schnitt)  {"clip":"inset(19% 0px 0px)","hold":"calc(87% - 1px)"}
+OK   LED an bei −0,1 dBFS (Wert und rote LED im DOM)  {"led":1,"dom":true,"pk":-0.1}
+OK   LED aus bei −0,5 dBFS  {"led":0,"dom":false,"pk":-0.5}
+OK   Spitzenhalten 1,5 ±0,1 s  {"s":1.515,"haltDb":-3}
+OK   Haltelinie steht nach 1,0 s noch (Spitze ist schon gefallen)  [7.2,-3,-30.01]
+OK   Szene spielt: Spur 1 hat Pegel  [-31,-27,-26,-120,-27,-120]
+OK   Spur 1 stumm → 0 (leer), andere spielen weiter  [-120,-24,-28,-120,-11,-120]
+OK   Hauptthread: keine Langaufgabe ≥ 50 ms (6 s Spielen)  {"longtasks":[]}
+OK   Meter-Arbeit je Bild im Mittel ≤ 0,3 ms (Chromium)  {"avgMs":0.0944,"maxMs":0.9,"frames":360}
+OK   Keine verlorenen Meter-Fenster  0
+OK   CPU-Stufe 2: Meter aus (0 Nachrichten, 0 Bild-Arbeit, Balken leer)  {"c0":{"n":609,"f":361,"on":false},"c1":{"n":609,"f":361,"on":false,"filled":0}}
+OK   CPU-Stufe 0: Meter wieder an  {"n":634,"on":true}
+OK   Seite verdeckt (hidden) → Meter aus  {"h1":{"on":false,"n":641},"h2":641}
+OK   Seite wieder sichtbar → an
+OK   Matrix: Tipp Master → MASTER-Seite  {"ed":"synth","tab":"fx","sub":"master","grm":true,"song":false}
+OK   Song: Tipp Master → MASTER-Seite  {"ed":"synth","sub":"master","grm":true,"song":true}
+OK   Song: Spur-Name wählt weiter die Spur
+OK   Matrix: SONG ⇄ schaltet weiter um (Tipp neben dem Balken)
+OK   Keine Konsolenfehler  []
+ERGEBNIS 24/24
+OK   Meter gebaut (ein Worklet, 9 Eingänge)  {"els":8}
+OK   Sinus −6 dBFS auf Spur 1 zeigt −6 ±0,5 dB (Spitze)  {"pk":-6.02,"rms":-9.05}
+OK   RMS des Sinus −9 ±0,5 dB  "-9.05"
+OK   andere Spuren 0 (leer)  [-120,-120,-120,-120,-120,-120,-120]
+OK   Master zeigt Pegel  "-10.8"
+OK   Balken im DOM gefüllt (RMS-Schnitt)  {"clip":"inset(19% 0px 0px)","hold":"calc(87% - 1px)"}
+OK   LED an bei −0,1 dBFS (Wert und rote LED im DOM)  {"led":1,"dom":true,"pk":-0.1}
+OK   LED aus bei −0,5 dBFS  {"led":0,"dom":false,"pk":-0.5}
+OK   Spitzenhalten 1,5 ±0,1 s  {"s":1.526,"haltDb":-3}
+OK   Haltelinie steht nach 1,0 s noch (Spitze ist schon gefallen)  [7.17,-3,-30.01]
+OK   Szene spielt: Spur 1 hat Pegel  [-31,-27,-27,-120,-27,-120]
+OK   Spur 1 stumm → 0 (leer), andere spielen weiter  [-120,-24,-28,-120,-11,-120]
+OK   Hauptthread: keine Langaufgabe ≥ 50 ms (6 s Spielen)  {"longtasks":[]}
+OK   Meter-Arbeit je Bild im Mittel ≤ 0,3 ms (Chromium)  {"avgMs":0.0936,"maxMs":1.1,"frames":360}
+OK   Keine verlorenen Meter-Fenster  0
+OK   CPU-Stufe 2: Meter aus (0 Nachrichten, 0 Bild-Arbeit, Balken leer)  {"c0":{"n":608,"f":360,"on":false},"c1":{"n":608,"f":360,"on":false,"filled":0}}
+OK   CPU-Stufe 0: Meter wieder an  {"n":632,"on":true}
+OK   Seite verdeckt (hidden) → Meter aus  {"h1":{"on":false,"n":640},"h2":640}
+OK   Seite wieder sichtbar → an
+OK   Matrix: Tipp Master → MASTER-Seite  {"ed":"synth","tab":"fx","sub":"master","grm":true,"song":false}
+OK   Song: Tipp Master → MASTER-Seite  {"ed":"synth","sub":"master","grm":true,"song":true}
+OK   Song: Spur-Name wählt weiter die Spur
+OK   Matrix: SONG ⇄ schaltet weiter um (Tipp neben dem Balken)
+OK   Keine Konsolenfehler  []
+ERGEBNIS 24/24
+OK   428×926 Matrix: nichts verschoben  []
+OK   428×926 Song: nichts verschoben  []
+OK   428×926 Namen nicht stärker gekürzt als vorher  {"cutM":0,"cutS":0}
+OK   428×926 Balken in der Zelle, über keinem Text (Matrix 7, Song 7)  {"m":[],"s":[]}
+OK   428×926 keine Konsolenfehler  []
+OK   926×428 Matrix: nichts verschoben  []
+OK   926×428 Song: nichts verschoben  []
+OK   926×428 Namen nicht stärker gekürzt als vorher  {"cutM":0,"cutS":0}
+OK   926×428 Balken in der Zelle, über keinem Text (Matrix 6, Song 7)  {"m":[],"s":[]}
+OK   926×428 keine Konsolenfehler  []
+OK   390×844 Matrix: nichts verschoben  []
+OK   390×844 Song: nichts verschoben  []
+OK   390×844 Namen nicht stärker gekürzt als vorher  {"cutM":0,"cutS":0}
+OK   390×844 Balken in der Zelle, über keinem Text (Matrix 7, Song 7)  {"m":[],"s":[]}
+OK   390×844 keine Konsolenfehler  []
+OK   844×390 Matrix: nichts verschoben  []
+OK   844×390 Song: nichts verschoben  []
+OK   844×390 Namen nicht stärker gekürzt als vorher  {"cutM":0,"cutS":0}
+OK   844×390 Balken in der Zelle, über keinem Text (Matrix 6, Song 6)  {"m":[],"s":[]}
+OK   844×390 keine Konsolenfehler  []
+OK   375×667 Matrix: nichts verschoben  []
+OK   375×667 Song: nichts verschoben  []
+OK   375×667 Namen nicht stärker gekürzt als vorher  {"cutM":0,"cutS":0}
+OK   375×667 Balken in der Zelle, über keinem Text (Matrix 6, Song 7)  {"m":[],"s":[]}
+OK   375×667 keine Konsolenfehler  []
+OK   667×375 Matrix: nichts verschoben  []
+OK   667×375 Song: nichts verschoben  []
+OK   667×375 Namen nicht stärker gekürzt als vorher  {"cutM":0,"cutS":0}
+OK   667×375 Balken in der Zelle, über keinem Text (Matrix 6, Song 6)  {"m":[],"s":[]}
+OK   667×375 keine Konsolenfehler  []
+OK   320×568 Matrix: nichts verschoben  []
+OK   320×568 Song: nichts verschoben  []
+OK   320×568 Namen nicht stärker gekürzt als vorher  {"cutM":0,"cutS":0}
+OK   320×568 Balken in der Zelle, über keinem Text (Matrix 6, Song 6)  {"m":[],"s":[]}
+OK   320×568 keine Konsolenfehler  []
+ERGEBNIS 35/35
+OK   (a) App-Graph, 2 Spuren, ohne Meter reproduzierbar (Grundlage)  [2806282981,2806282981,2806282981]
+OK   (a) Ausgabe bit-gleich mit/ohne Meter (2 Spuren laut, Begrenzer arbeitet)  {"ohne":2806282981,"mit":2806282981,"unterschiedlich":0,"pk":0.946,"fenster":1379,"hall":"worklet"}
+OK   (b) alle Spuren + Hall/Echo: mit/ohne Meter nicht weiter weg als ohne/ohne (Chromium-Rundung)  {"ohneOhne":{"db":-109.5,"nd":182805},"mitOhne":{"db":-108.9,"nd":186732},"mitOhne2":{"db":-109.5,"nd":180481},"pk":0.964}
+OK   Meter-Fenster im Song-Render vollständig (je 128er-Block eins, keine verloren)  {"cnt":9515,"want":595,"seq":595,"lost":0,"blocks":9515}
+OK   VV4-12 Master-Balken = Offline-RMS je Bild ±1 dB (24 Bilder)  {"max":0.79,"bsp":[{"t":0.5,"bar":-25.26,"off":-25.27,"d":0},{"t":1.267,"bar":-17.17,"off":-17.55,"d":0.38},{"t":2.033,"bar":-18.44,"off":-18.32,"d":-0.11},{"t":2.8,"bar":-14.46,"off":-14.06,"d":-0.39}]}
+OK   Spur 3 setzt im Video zur Zeit ihres Einsatzes ein (Takt 3, ±2 Bilder)  {"soll":4.286,"ist":4.333}
+OK   Leere Spur 4 bleibt im ganzen Video leer
+OK   Spur 1 spielt im Video (Pegel in ≥ 20 % der Bilder)  "244/585"
+OK   Video-Bild song 16:9: Balken gezeichnet (Sonde 7, mit Pegel 3, grüne Pixel 6285)  {"view":"song","fmt":"16:9","lit":3,"bars":7,"greenPx":6285}
+OK   Video-Bild matrix 16:9: Balken gezeichnet (Sonde 7, mit Pegel 3, grüne Pixel 16176)  {"view":"matrix","fmt":"16:9","lit":3,"bars":7,"greenPx":16176}
+OK   Video-Bild song 9:16: Balken gezeichnet (Sonde 7, mit Pegel 3, grüne Pixel 15880)  {"view":"song","fmt":"9:16","lit":3,"bars":7,"greenPx":15880}
+OK   Video-Bild matrix 9:16: Balken gezeichnet (Sonde 7, mit Pegel 3, grüne Pixel 50137)  {"view":"matrix","fmt":"9:16","lit":3,"bars":7,"greenPx":50137}
+OK   MP4: Song-Bild zeigt Balken in der Namen-Spalte  {"song":2927,"matrix":781}
+OK   MP4: Matrix-Bild zeigt Balken in der Namen-Spalte  {"song":2927,"matrix":781}
+OK   Keine Konsolenfehler  []
+ERGEBNIS 15/15
+OK   16:9: neu ≥ 1,5× Echtzeit  {"ms":7049,"dur":19.47392290249433,"x":2.76,"frameAvg":9.018,"frameMax":34.5}
+OK   9:16: neu ≥ 1,5× Echtzeit  {"ms":7588,"dur":19.47392290249433,"x":2.57,"frameAvg":8.741,"frameMax":27.7}
+OK   vvDrawMeters je Bild ≤ 0,2 ms (7 Balken, mit 1,5-s-Halten)  {"ms":0.034,"bilder":584}
+OK   Keine Konsolenfehler  []
+ERGEBNIS 4/4
