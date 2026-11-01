@@ -49065,7 +49065,14 @@ const VV4A = {logo: null, logoOk: false, logoP: null, probe: null};
 const VV4A_W = 428, VV4A_H = 761;
 // the areas of the app (pt, portrait 428 × 761): measured with getBoundingClientRect (Testsong, 6 Spuren, Matrix bzw. Song)
 const VV4A_L = {top: {x: 0, y: 0, w: 428, h: 52}, grid: {x: 0, y: 52, w: 428, h: 277}, part: {x: 8, y: 331, w: 412, h: 40}, song: {x: 0, y: 52, w: 428, h: 325},
-  strip: {x: 0, y: 377, w: 428, h: 48}, carrier: {x: 0, y: 425, w: 428, h: 56}, mode: {x: 0, y: 481, w: 428, h: 52}, kbArea: {x: 0, y: 533, w: 428, h: 228}, kb: {x: 6, y: 539, w: 416, h: 217}};
+  strip: {x: 0, y: 377, w: 428, h: 48}, carrier: {x: 0, y: 425, w: 428, h: 56}, mode: {x: 0, y: 481, w: 428, h: 52}, kbArea: {x: 0, y: 533, w: 428, h: 228}, kb: {x: 6, y: 539.7, w: 416, h: 216.3}};
+// the buttons (pt, same measurement): drawn from this table; the test compares it with the app (±2 pt)
+const VV4A_R = {bPlay: [62, 4, 44, 44], bRec: [110, 4, 44, 44], takt: [158, 4, 76, 44], bBpm: [238, 4, 52, 44], bMetro: [294, 4, 40, 44], bMenu: [338, 4, 40, 44],
+  corner: [8, 56, 63, 44], szb: [74, 56, 40, 44], stopAll: [380, 56, 40, 44], svSw: [8, 56, 64, 44], svRec: [76, 56, 76, 44], svPlay: [156, 56, 76, 44], svLoop: [236, 56, 40, 44], svHome: [280, 56, 44, 44], svGl: [328, 56, 44, 44], svBank: [376, 56, 44, 44],
+  bKlang: [148, 379, 64, 44], bEdit: [218, 379, 44, 44], bFolgt: [268, 379, 52, 44], bMute: [326, 379, 44, 44], bUndo: [376, 379, 44, 44],
+  bHMode: [8, 432, 72, 44], readout: [86, 430, 194, 48], bLatch: [286, 432, 56, 44], bOrig: [348, 432, 72, 44],
+  octDn: [8, 486, 44, 44], modeSeg: [58, 486, 244, 44], segTr: [222, 486, 80, 44], octUp: [307, 486, 44, 44], bFang: [356, 488, 64, 40]};
+const vv4B = (g, n, C, o) => { const r = VV4A_R[n]; vv4Btn(g, r[0], r[1], r[2], r[3], C, o); return r; };
 // the logo of the head (LOGO_SVG as an image; loaded once, before the first picture)
 function vvAppPrep() {
   if (VV4A.logoP) return VV4A.logoP;
@@ -49143,24 +49150,24 @@ function vv4Top(g, C, st, sv) {
   const gr = g.createLinearGradient(0, 0, 0, L.h); gr.addColorStop(0, '#191b20'); gr.addColorStop(1, '#111316'); g.fillStyle = gr; g.fillRect(0, 0, L.w, L.h);
   g.fillStyle = '#000'; g.fillRect(0, L.h - 1, L.w, 1);
   if (VV4A.logoOk) { const im = VV4A.logo, h = 36, w = im.naturalWidth && im.naturalHeight ? Math.min(50, h * im.naturalWidth / im.naturalHeight) : 50; try { g.drawImage(im, 8 + (50 - w) / 2, 8, w, h); } catch (e) {} }
-  vv4Btn(g, 62, 4, 44, 44, C, play ? {on: true, line: '#1b4d34'} : null);
+  vv4B(g, 'bPlay', C, play ? {on: true, line: '#1b4d34'} : null);
   if (play) vv4Sq(g, 84, 26, 13, C.text); else vv4Tri(g, 84, 26, 16, C.play);
   if (sv) { g.textBaseline = 'alphabetic'; vv4Txt(g, 'SONG', 84, 45, '700 7px ' + C.ui, play ? C.dim : C.play, 'center'); }
-  vv4Btn(g, 110, 4, 44, 44, C); vv4Dot(g, 132, 20, 6.5, '#ff4538'); g.textBaseline = 'middle'; vv4Txt(g, 'AUTO', 132, 36, '600 8px ' + C.num, C.dim, 'center');
+  vv4B(g, 'bRec', C); vv4Dot(g, 132, 20, 6.5, '#ff4538'); g.textBaseline = 'middle'; vv4Txt(g, 'AUTO', 132, 36, '600 8px ' + C.num, C.dim, 'center');
   // TAKT: the LCD with the beat LEDs and „Takt.Schlag“ (the song position)
-  vvRound(g, 158, 4, 76, 44, 5); g.fillStyle = '#08090b'; g.fill(); g.strokeStyle = '#000'; g.lineWidth = 1; g.stroke();
+  { const r = VV4A_R.takt; vvRound(g, r[0], r[1], r[2], r[3], 5); } g.fillStyle = '#08090b'; g.fill(); g.strokeStyle = '#000'; g.lineWidth = 1; g.stroke();
   g.textBaseline = 'middle'; vv4Txt(g, 'TAKT', 165, 12.5, '600 9px ' + C.ui, C.faint);
   const bi = play ? Math.floor(st.sb + 1e-9) : -1, bt = bi >= 0 ? bi % 4 : -1;
-  [[194.5, 5.5], [207, 4], [220, 4], [233 - 7, 4]].forEach(([x, r], j) => { const xx = j === 3 ? 222 + 9 : x; vv4Dot(g, xx - (j === 3 ? 9 : 0), 12, r, bt === j ? (j === 0 ? '#ff4538' : C.play) : '#2a2e36', bt === j ? (j === 0 ? '#ff4538' : C.play) : null); });
+  [[194, 5], [204.5, 3.5], [213.5, 3.5], [222.5, 3.5]].forEach(([x, r], j) => { const on = bt === j, col = j === 0 ? '#ff4538' : C.play; vv4Dot(g, x, 12, r, on ? col : '#2a2e36', on ? col : null); });
   const tv = play ? (Math.floor(bi / 4) + 1) + '.' + (bt + 1) : '1.1';
-  vv4Txt(g, tv, 164, 33, '700 28px ' + C.num, play ? C.text : C.faint);
-  vv4Btn(g, 238, 4, 52, 44, C); vv4Txt(g, 'BPM', 264, 15, '600 9px ' + C.ui, C.dim, 'center'); vv4Txt(g, String(Math.round(st.bpm || S.bpm)), 264, 32, '700 18px ' + C.num, C.text, 'center');
-  vv4Btn(g, 294, 4, 40, 44, C); vv4Txt(g, '♩', 314, 27, '500 18px ' + C.ui, C.text, 'center');
-  vv4Btn(g, 338, 4, 40, 44, C); vv4Txt(g, '≡', 358, 27, '500 22px ' + C.ui, C.text, 'center');
+  if ('letterSpacing' in g) g.letterSpacing = '-0.84px'; vv4Txt(g, tv, 165, 33, '700 28px ' + C.num, play ? C.text : C.faint); if ('letterSpacing' in g) g.letterSpacing = '0px';
+  vv4B(g, 'bBpm', C); vv4Txt(g, 'BPM', 264, 15, '600 9px ' + C.ui, C.dim, 'center'); vv4Txt(g, String(Math.round(st.bpm || S.bpm)), 264, 32, '700 18px ' + C.num, C.text, 'center');
+  vv4B(g, 'bMetro', C); vv4Txt(g, '♩', 314, 27, '500 18px ' + C.ui, C.text, 'center');
+  vv4B(g, 'bMenu', C); vv4Txt(g, '≡', 358, 27, '500 22px ' + C.ui, C.text, 'center');
 }
 // the matrix (app look: SONG ⇄ / SZ, scene launchers, track heads, cells with mini roll and length, ■ column)
 function vvAppMatrixLayout(st) {
-  const ord = trackOrder(), synth = ord.filter(i => !isDrum(i)), Hh = VV4A_L.grid.h - 4 - 44 - 3, gap = 3;
+  const ord = trackOrder(), synth = ord.filter(i => !isDrum(i)), Hh = VV4A_L.grid.h - 4 - 44 - 3 - 4.5, gap = 3;   // padding 4 / 4.5, head row 44, gap 3
   const lastFit = Math.max(5, Math.floor((Hh + gap) / (40 + gap)));
   let rows = ord.slice(), pages = null, pg = 0;
   if ((Hh - ord.length * gap) / ord.length < 40 - .5) {
@@ -49172,25 +49179,25 @@ function vvAppMatrixLayout(st) {
   let hi = -1; rows.forEach(i => { const s = st.slots[i]; if (s != null && s > hi) hi = s; });
   const c0 = hi >= 4 ? 4 : 0, hidden = (pages ? pages.flat().filter(i => !rows.includes(i)) : []).some(i => st.slots[i] != null && st.slots[i] >= 0);
   const hiddenS = ord.some(i => { const s = st.slots[i]; return s != null && s >= 0 && (s < c0 || s >= c0 + 4); });
-  return {rows, pages, pg, nr, rh, c0, y0: VV4A_L.grid.y + 4 + 44 + 3, hidden, hiddenS, cell: (r, k) => ({x: 117 + k * 66, y: VV4A_L.grid.y + 4 + 44 + 3 + r * (rh + gap), w: 63, h: rh})};
+  return {rows, pages, pg, nr, rh, c0, y0: VV4A_L.grid.y + 4 + 44 + 3, hidden, hiddenS, cell: (r, k) => ({x: 117.5 + k * 65.625, y: VV4A_L.grid.y + 4 + 44 + 3 + r * (rh + gap), w: 62.625, h: rh})};
 }
 function vv4Matrix(g, C, st) {
   const M = vvAppMatrixLayout(st), y = VV4A_L.grid.y + 4, play = st.sb != null && st.sb >= 0, sp = st.sb == null ? 0 : st.sb;
-  vv4Btn(g, 8, y, 63, 44, C); g.textBaseline = 'middle'; vv4Txt(g, 'SONG ⇄', 39.5, y + 22, '700 11px ' + C.ui, C.text, 'center');
-  vv4Btn(g, 74, y, 40, 44, C); vv4Txt(g, 'SZ', 94, y + 14, '600 9px ' + C.ui, C.dim, 'center'); vv4Txt(g, (M.c0 + 1) + '–' + (M.c0 + 4), 94, y + 28, '700 12px ' + C.ui, C.text, 'center');
+  vv4B(g, 'corner', C); g.textBaseline = 'middle'; vv4Txt(g, 'SONG ⇄', 39.5, y + 22, '700 11px ' + C.ui, C.text, 'center');
+  vv4B(g, 'szb', C); vv4Txt(g, 'SZ', 94, y + 14, '600 9px ' + C.ui, C.dim, 'center'); vv4Txt(g, (M.c0 + 1) + '–' + (M.c0 + 4), 94, y + 28, '700 12px ' + C.ui, C.text, 'center');
   if (M.hiddenS) vv4Dot(g, 108, y + 6, 2.5, C.play);
   for (let k = 0; k < 4; k++) {
-    const s = M.c0 + k, x = 117 + k * 66;
+    const s = M.c0 + k, x = 117.5 + k * 65.625;
     let any = false, all = true; for (let i = 0; i < NT(); i++) if (S.tracks[i] && S.tracks[i].clips[s]) { any = true; if (st.slots[i] !== s) all = false; }
     const full = any && all && play;
-    vv4Btn(g, x, y, 63, 44, C, full ? {line: C.play} : null);
-    if (full) { vvRound(g, x + 1.5, y + 1.5, 60, 41, 4); g.strokeStyle = C.play; g.lineWidth = 1; g.stroke(); }
+    vv4Btn(g, x, y, 62.625, 44, C, full ? {line: C.play} : null);
+    if (full) { vvRound(g, x + 1.5, y + 1.5, 59.6, 41, 4); g.strokeStyle = C.play; g.lineWidth = 1; g.stroke(); }
     let lab = ''; try { const fk = synthTracks().some(i => S.tracks[i].follow && S.tracks[i].clips[s] && S.tracks[i].clips[s].notes.length); const sk = fk ? sceneKeyOf(s) : null; lab = sk ? keyShort(sk) : ''; } catch (e) { lab = ''; }
     const cy = lab ? y + 17 : y + 22;
     vv4Tri(g, x + 26, cy, 9, C.play); vv4Txt(g, String(s + 1), x + 36, cy + .5, '700 14px ' + C.ui, C.text, 'center');
     if (lab) vv4Txt(g, lab, x + 31.5, y + 33, '600 9px ' + C.ui, C.dim, 'center');
   }
-  vv4Btn(g, 380, y, 40, 44, C); vv4Sq(g, 400, y + 22, 9, C.text);
+  vv4B(g, 'stopAll', C); vv4Sq(g, 400, y + 22, 9, C.text);
   M.rows.forEach((i, r) => {
     const tr = S.tracks[i]; if (!tr) return;
     const ry = M.y0 + r * (M.rh + 3), tc = C.t[i] || '#888', sel = i === R.selT;
@@ -49237,15 +49244,16 @@ function vv4Parts(g, C) {
 // the song view (P): its bar of buttons, then the song grid of VV1 (lanes, part heads, chords, melody, Laufband)
 function vv4Song(g, C, st) {
   const L = VV4A_L.song, y = L.y + 4, play = st.sb != null && st.sb >= 0;
-  vv4Btn(g, 8, y, 63, 44, C); g.textBaseline = 'middle'; vv4Txt(g, 'CLIPS ⇄', 39.5, y + 22, '700 11px ' + C.ui, C.text, 'center');
-  vv4Btn(g, 76, y, 76, 44, C); vv4Dot(g, 114, y + 15, 5, '#ff4538'); vv4Txt(g, 'S' + ((R.selT | 0) + 1) + ' ▾', 114, y + 31, '700 10px ' + C.ui, C.text, 'center');
-  vv4Btn(g, 156, y, 76, 44, C, play ? {on: true, line: '#1b4d34'} : null);
+  vv4B(g, 'svSw', C); g.textBaseline = 'middle'; vv4Txt(g, 'CLIPS ⇄', 40, y + 22, '700 11px ' + C.ui, C.text, 'center');
+  vv4B(g, 'svRec', C); vv4Dot(g, 114, y + 15, 5, '#ff4538'); vv4Txt(g, 'S' + ((R.selT | 0) + 1) + ' ▾', 114, y + 31, '700 10px ' + C.ui, C.text, 'center');
+  vv4B(g, 'svPlay', C, play ? {on: true, line: '#1b4d34'} : null);
   if (play) vv4Sq(g, 194, y + 17, 11, C.text); else vv4Tri(g, 194, y + 17, 14, C.play);
   vv4Txt(g, 'SONG', 194, y + 33, '700 8px ' + C.ui, play ? C.dim : C.play, 'center');
-  vv4Btn(g, 236, y, 40, 44, C); vv4Txt(g, 'SCHLEIFE', 256, y + 15, '600 7px ' + C.ui, C.dim, 'center'); vv4Txt(g, 'aus', 256, y + 30, '700 10px ' + C.ui, C.text, 'center');
-  vv4Btn(g, 280, y, 44, 44, C); vv4Txt(g, '⏮', 302, y + 22, '500 15px ' + C.ui, C.text, 'center');
-  vv4Btn(g, 328, y, 44, 44, C); g.fillStyle = C.amber; g.fillRect(340, y + 15, 9, 14); g.strokeStyle = C.dim; g.lineWidth = 1; g.strokeRect(352.5, y + 15.5, 8, 13);
-  vv4Btn(g, 376, y, 44, 44, C, {bg: C.bg}); vv4Txt(g, '▲▼', 398, y + 16, '700 9px ' + C.ui, C.faint, 'center'); vv4Txt(g, '1/1', 398, y + 30, '600 9px ' + C.ui, C.faint, 'center');
+  const lp = !!(S.song && S.song.loop && S.song.loop.on);
+  vv4B(g, 'svLoop', C); vv4Txt(g, 'SCHLEIFE', 256, y + 15, '600 7px ' + C.ui, C.dim, 'center'); vv4Txt(g, '⟲ ' + (lp ? 'an' : 'aus'), 256, y + 28, '700 10px ' + C.ui, C.text, 'center');
+  vv4B(g, 'svHome', C); vv4Txt(g, '⏮\uFE0E', 302, y + 22, '500 15px ' + C.ui, C.text, 'center');
+  vv4B(g, 'svGl', C); vv4Txt(g, '▦', 340.5, y + 22, '500 15px ' + C.ui, C.amber, 'center'); g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(350, y + 14, 1, 16); vv4Txt(g, '◧', 360.5, y + 22, '500 15px ' + C.ui, C.dim, 'center');
+  vv4B(g, 'svBank', C, {bg: C.bg}); vv4Txt(g, '▲▼', 398, y + 16, '700 9px ' + C.ui, C.faint, 'center'); vv4Txt(g, '1/1', 398, y + 30, '600 9px ' + C.ui, C.faint, 'center');
   const gy = y + 48, gh = L.y + L.h - gy;
   g.save(); g.beginPath(); g.rect(0, gy, L.w, gh); g.clip(); g.translate(0, gy); vvDrawSong(g, L.w, gh, st); g.restore();
 }
@@ -49257,12 +49265,12 @@ function vv4Strip(g, C) {
   vv4Dot(g, 13, L.y + 24, 5, tc, tc); g.textBaseline = 'middle';
   g.font = '700 13px ' + C.ui; vv4Txt(g, vv4Fit(g, String(tr.name).toUpperCase(), 118), 24, L.y + 17, g.font, C.text);
   g.font = '500 11px ' + C.ui; vv4Txt(g, vv4Fit(g, tr.stimme ? 'Audio' : soundLabel(tr), 118), 24, L.y + 32, g.font, C.dim);
-  vv4Btn(g, 148, L.y + 2, 64, 44, C); vv4Txt(g, 'KLANG', 180, L.y + 24, '700 12px ' + C.ui, C.text, 'center');
-  vv4Btn(g, 218, L.y + 2, 44, 44, C); vv4Txt(g, '✎', 240, L.y + 24, '700 15px ' + C.ui, C.text, 'center');
+  vv4B(g, 'bKlang', C); vv4Txt(g, 'KLANG', 180, L.y + 24, '700 12px ' + C.ui, C.text, 'center');
+  vv4B(g, 'bEdit', C); vv4Txt(g, '✎', 240, L.y + 24, '700 15px ' + C.ui, C.text, 'center');
   const fo = tr.kind === 'synth' && tr.follow;
-  if (tr.kind === 'synth') { vv4Btn(g, 268, L.y + 2, 52, 44, C, fo ? {on: true, line: '#6b4c16'} : null); vv4Txt(g, '⇅' + (fo ? '✓' : ''), 294, L.y + 24, '700 14px ' + C.ui, fo ? C.amber : C.text, 'center'); }
-  vv4Btn(g, 326, L.y + 2, 44, 44, C, tr.mute ? {on: true} : null); vv4Txt(g, 'M', 348, L.y + 24, '700 12px ' + C.ui, C.text, 'center');
-  vv4Btn(g, 376, L.y + 2, 44, 44, C); vv4Txt(g, '↶', 398, L.y + 24, '700 15px ' + C.ui, C.text, 'center');
+  if (tr.kind === 'synth') { vv4B(g, 'bFolgt', C, fo ? {on: true, line: '#6b4c16'} : null); vv4Txt(g, '⇅' + (fo ? '✓' : ''), 294, L.y + 24, '700 14px ' + C.ui, fo ? C.amber : C.text, 'center'); }
+  vv4B(g, 'bMute', C, tr.mute ? {on: true} : null); vv4Txt(g, 'M', 348, L.y + 24, '700 12px ' + C.ui, C.text, 'center');
+  vv4B(g, 'bUndo', C); vv4Txt(g, '↶', 398, L.y + 24, '700 15px ' + C.ui, C.text, 'center');
 }
 // the Träger-Zeile: [AKKORD ▾] [readout: TRÄGER / name +shift · → key, lock] [LATCH] [ORIGINAL]
 function vv4Carrier(g, C, kb) {
@@ -49270,8 +49278,8 @@ function vv4Carrier(g, C, kb) {
   g.fillStyle = C.ch; g.fillRect(L.x, L.y, L.w, L.h); g.fillStyle = '#000'; g.fillRect(L.x, L.y, L.w, 1);
   if (!ro.orig) { g.strokeStyle = 'rgba(255,178,46,.25)'; g.lineWidth = 1; g.strokeRect(L.x + .5, L.y + .5, L.w - 1, L.h - 1); }
   g.textBaseline = 'middle';
-  vv4Btn(g, 8, L.y + 7, 72, 44, C); vv4Txt(g, ({chord: 'AKKORD', scale: 'TONART', chromatic: 'HALBTON'})[h.mode] || 'AKKORD', 39.5, L.y + 29, '700 12px ' + C.ui, C.text, 'center'); vv4Txt(g, '▾', 67.5, L.y + 29.5, '700 9px ' + C.ui, C.dim, 'center');
-  vvRound(g, 86, L.y + 5, 194, 48, 5); g.fillStyle = '#08090b'; g.fill(); g.strokeStyle = '#000'; g.lineWidth = 1; g.stroke();
+  vv4B(g, 'bHMode', C); vv4Txt(g, ({chord: 'AKKORD', scale: 'TONART', chromatic: 'HALBTON'})[h.mode] || 'AKKORD', 39.5, L.y + 29, '700 12px ' + C.ui, C.text, 'center'); vv4Txt(g, '▾', 67.5, L.y + 29.5, '700 9px ' + C.ui, C.dim, 'center');
+  { const r = VV4A_R.readout; vvRound(g, r[0], r[1], r[2], r[3], 5); } g.fillStyle = '#08090b'; g.fill(); g.strokeStyle = '#000'; g.lineWidth = 1; g.stroke();
   vv4Txt(g, 'TRÄGER', 95, L.y + 13, '600 9px ' + C.ui, C.faint);
   g.save(); g.beginPath(); g.rect(87, L.y + 6, 192, 46); g.clip();
   if (ro.orig) vv4Txt(g, 'ORIGINAL', 95, L.y + 37, '700 20px ' + C.ui, C.dim);
@@ -49284,9 +49292,9 @@ function vv4Carrier(g, C, kb) {
     g.textBaseline = 'middle';
   }
   g.restore();
-  vv4Btn(g, 286, L.y + 7, 56, 44, C, h.latch ? {on: true, line: '#6b4c16'} : null); vv4Lock(g, 314, L.y + 22, 12, h.latch ? C.amber : C.text);
+  vv4B(g, 'bLatch', C, h.latch ? {on: true, line: '#6b4c16'} : null); vv4Lock(g, 314, L.y + 22, 12, h.latch ? C.amber : C.text);
   vv4Txt(g, 'LATCH', 314, L.y + 38, '600 8px ' + C.ui, h.latch ? C.amber : C.dim, 'center');
-  vv4Btn(g, 348, L.y + 7, 72, 44, C, !ro.orig ? {line: C.faint} : null); vv4Txt(g, 'ORIGINAL', 384, L.y + 29, '700 11px ' + C.ui, C.text, 'center');
+  vv4B(g, 'bOrig', C, !ro.orig ? {line: C.faint} : null); vv4Txt(g, 'ORIGINAL', 384, L.y + 29, '700 11px ' + C.ui, C.text, 'center');
 }
 // the Modusleiste in the TRANSPONIEREN look (the keyboard below shows Tonart and Transposition): ‹ [SPIELEN | SINGEN | ⇅ TRANSP.] › [FANG TEIL]
 function vv4Mode(g, C, kb) {
@@ -49294,13 +49302,13 @@ function vv4Mode(g, C, kb) {
   g.fillStyle = C.ch; g.fillRect(L.x, L.y, L.w, L.h); g.fillStyle = '#000'; g.fillRect(L.x, L.y, L.w, 1);
   g.strokeStyle = C.amber; g.lineWidth = 1; g.strokeRect(L.x + .5, L.y + .5, L.w - 1, L.h - 1);
   g.textBaseline = 'middle';
-  vv4Btn(g, 8, y, 44, 44, C); vv4Txt(g, '‹', 30, y + 21, '500 24px ' + C.ui, C.dim, 'center');
-  vvRound(g, 58, y, 244, 44, 8); g.fillStyle = '#0b0c0e'; g.fill(); g.strokeStyle = '#000'; g.stroke();
+  vv4B(g, 'octDn', C); vv4Txt(g, '‹', 30, y + 21, '500 24px ' + C.ui, C.dim, 'center');
+  { const r = VV4A_R.modeSeg; vvRound(g, r[0], r[1], r[2], r[3], 8); } g.fillStyle = '#0b0c0e'; g.fill(); g.strokeStyle = '#000'; g.stroke();
   vv4Dot(g, 68, y + 22, 4, '#2a2e36'); vv4Txt(g, '♪ SPIELEN', 105, y + 17, '700 13px ' + C.ui, C.dim, 'center'); vv4Txt(g, keyName(kb.ref), 105, y + 31, '600 9px ' + C.ui, C.dim, 'center');
   vv4Mic(g, 154, y + 22, 13, C.dim); vv4Txt(g, 'SINGEN', 189, y + 22, '700 13px ' + C.ui, C.dim, 'center');
-  vvRound(g, 222, y, 80, 44, 7); g.fillStyle = C.amber; g.fill(); vv4Txt(g, '⇅ TRANSP.', 262, y + 22, '700 13px ' + C.ui, '#141416', 'center');
-  vv4Btn(g, 307, y, 44, 44, C); vv4Txt(g, '›', 329, y + 21, '500 24px ' + C.ui, C.dim, 'center');
-  vvRound(g, 356, y + 2, 64, 40, 5); g.fillStyle = 'rgba(255,178,46,.08)'; g.fill(); g.strokeStyle = C.amber; g.lineWidth = 1; g.stroke();
+  { const r = VV4A_R.segTr; vvRound(g, r[0], r[1], r[2], r[3], 7); } g.fillStyle = C.amber; g.fill(); vv4Txt(g, '⇅ TRANSP.', 262, y + 22, '700 13px ' + C.ui, '#141416', 'center');
+  vv4B(g, 'octUp', C); vv4Txt(g, '›', 329, y + 21, '500 24px ' + C.ui, C.dim, 'center');
+  { const r = VV4A_R.bFang; vvRound(g, r[0], r[1], r[2], r[3], 5); } g.fillStyle = 'rgba(255,178,46,.08)'; g.fill(); g.strokeStyle = C.amber; g.lineWidth = 1; g.stroke();
   vv4Txt(g, 'FANG', 388, y + 16, '700 10px ' + C.ui, C.amber, 'center'); vv4Txt(g, 'TEIL', 388, y + 28, '700 10px ' + C.ui, C.amber, 'center');
 }
 // the Tastatur (TRANSPONIEREN look): lit = in the key, pressed = Träger / Teil-Transposition, the tonic dot, C labels, ghost dots
@@ -49379,7 +49387,8 @@ const VV4A_PROBE = [
   ['Tastatur', '#kb'], ['Taste', '#kb .key'], ['Tastatur-Hinweis', '#kbLabel'], ['Geister-Punkt', '#kb .key .gd'], ['Grundton-Punkt', '#kb .key .rf'], ['C-Beschriftung', '#kb .key .cl']];
 function vv4aApi() {
   return {
-    vvAppLayout: () => JSON.parse(JSON.stringify(VV4A_L)),
+    vvAppLayout: () => JSON.parse(JSON.stringify(Object.assign({}, VV4A_L, {R: VV4A_R}))),
+    vvAppMatrix: t => { const r = VV.last, st = r ? vvStateAt(r, t || 0) : {slots: [], cs: [], own: []}, M = vvAppMatrixLayout(st); return {rows: M.rows, c0: M.c0, nr: M.nr, rh: M.rh, cells: M.rows.map((i, q) => [0, 1, 2, 3].map(k => M.cell(q, k)))}; },
     vvAppKb: t => { const r = VV.last; if (!r) return null; const st = vvStateAt(r, t || 0), k = vvAppKbAt(st.sb); return {sb: st.sb, bar: k.bar, ref: k.ref, low: k.low, n: k.n, pressed: k.pressed, lit: k.lit, xp: k.xp, xpNote: k.xpNote, target: k.target ? k.target.name : null, readout: vvAppReadout(k)}; },
     vvAppKbAtBeat: sb => { const k = vvAppKbAt(sb); return {pressed: k.pressed, lit: k.lit, low: k.low, n: k.n, target: k.target ? k.target.name : null, readout: vvAppReadout(k)}; },
     vvAppProbe: () => VV4A_PROBE.map(([n, s]) => ({n, s, dom: !!document.querySelector(s)})),
