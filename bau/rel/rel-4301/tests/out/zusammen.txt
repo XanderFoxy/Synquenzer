@@ -8,3 +8,20 @@
 == logo-mr-9x16-3t: logo-mr-9x16-3t: 15/15
 == logo-aus-regress rc=1 137s | logo-aus-regress: 14/16 – FEHLT: wc 16:9: keine Konsolenfehler | mr 9:16: keine Konsolenfehler
 == blatt rc=0 122s | Blätter: 91/91
+== chor-frisch: 16 ok, 0 fehl | GESAMT 16/16 grün | rc=0
+== ggb-kon: 34 ok, 0 fehl | ALLES GRÜN | rc=0
+== ggb-video: 8 ok, 1 fehl | GESAMT 8/9 ROT | rc=1
+== kon-block: 0 ok, 0 fehl | KON-Block: 41/41 grün | rc=0
+== kon-konsol: 0 ok, 0 fehl | KON-Konsolidieren: 42/42 grün | rc=0
+== kon-layout: 0 ok, 0 fehl | KON-Layout: 24/24 grün | rc=0
+== kon-save: 0 ok, 0 fehl | KON-Speichern: 11/11 grün | rc=0
+== ms-funktion: 43 ok, 0 fehl | == alles grün | rc=0
+== ms-layout: 38 ok, 0 fehl | == alles grün | rc=0
+== ms-regress: 2 ok, 0 fehl | == alles grün | rc=0
+== t-alt: 18 ok, 0 fehl | ✓ keine Konsolenfehler (neu) | rc=0
+== t-bloecke: 20 ok, 0 fehl | ✓ Blöcke: keine Konsolenfehler | rc=0
+== t-layout: 47 ok, 0 fehl | ✓ Layout quer: keine Konsolenfehler | rc=0
+== t-mithoeren: 20 ok, 0 fehl | ✓ Mithören: keine Konsolenfehler | rc=0
+== t-pinsel: 39 ok, 0 fehl | ✓ Pinsel: keine Konsolenfehler | rc=0
+== zusammen: 0 ok, 0 fehl | EDIT-Zusammenspiel: 48/48 grün | rc=0
+== north-smoke rc=0 3s | title SYNQUENZER errors []

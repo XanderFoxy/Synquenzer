@@ -40475,6 +40475,60 @@ function markDirty() {
 }
 // old API save(): synchronous rescue copy + immediate write
 // resolves true only when the project now survives a reload (false in memory mode, like the old API without storage)
+/* VW (Xander 01.11.: „Du musst dich um die Aktualisierung kümmern … dass das erzwungen wird“) – Versions-Wächter.
+   Holt version.json der eigenen Seite (ohne Zwischenspeicher) beim Start, bei jeder Rückkehr in die App und alle 10 min.
+   Liegt dort eine neuere Fassung als diese, lädt die App sie selbst: erst speichern (Gerät + Online-Warteschlange), nie während
+   Wiedergabe, Aufnahme oder Tippen in ein Feld (dann kurz danach). Der neue Aufruf trägt ?v=<Version> – damit kann kein
+   Zwischenspeicher (Safari, In-App-Browser, Service-Worker) die alte Seite liefern. Schutz gegen Schleifen: höchstens 2 Versuche
+   je Version in 5 min, danach nur ein Hinweis. Kein anderer Server als die eigene Pages-Seite. */
+const VW = {t: 0, busy: false, want: null, timer: 0, told: false};
+const vwCode = v => { const p = String(v || '').split('.').map(n => n | 0); return p[0] * 1e6 + (p[1] || 0) * 1e3 + (p[2] || 0); };
+const vwIdle = () => !R.playing && !R.songRec && !(typeof rec !== 'undefined' && rec && rec.state !== 'off') &&
+  !(document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
+async function vwCheck(force) {
+  if (VW.busy || !/^https?:$/.test(location.protocol) || typeof fetch !== 'function') return null;
+  const now = Date.now(); if (!force && now - VW.t < 60000) return null;
+  VW.t = now; VW.busy = true;
+  try {
+    const r = await fetch(location.pathname.replace(/[^/]*$/, '') + 'version.json?t=' + now, {cache: 'no-store'});
+    if (!r.ok) return null;
+    const j = await r.json(), v = j && typeof j.version === 'string' ? j.version : '';
+    if (vwCode(v) > APP_CODE) { VW.want = v; vwGo(); }
+    return v;
+  } catch (e) { return null; } finally { VW.busy = false; }
+}
+function vwTries(v) {
+  let o = {}; try { o = JSON.parse(sessionStorage.getItem('synq.vw') || '{}') || {}; } catch (e) {}
+  if (o.v !== v || Date.now() - (o.t || 0) > 300000) o = {v, n: 0, t: Date.now()};
+  return o;
+}
+function vwGo() {
+  const v = VW.want; if (!v) return;
+  const o = vwTries(v);
+  if (o.n >= 2) { if (!VW.told) { VW.told = true; toast('Neue Version ' + v + ' liegt bereit – App einmal ganz schließen und neu öffnen'); } return; }
+  if (!vwIdle()) {
+    if (!VW.told) { VW.told = true; toast('Neue Version ' + v + ' – lädt nach dem Stopp', {label: 'Jetzt', fn: () => vwReload()}); }
+    clearTimeout(VW.timer); VW.timer = setTimeout(vwGo, 3000); return;
+  }
+  toast('Neue Version ' + v + ' wird geladen …'); vwReload();
+}
+async function vwReload() {
+  const v = VW.want || ''; const o = vwTries(v); o.n++; o.t = Date.now();
+  try { sessionStorage.setItem('synq.vw', JSON.stringify(o)); } catch (e) {}
+  try { await Promise.race([saveNow(), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
+  try { if (typeof cloudFlushNow === 'function') cloudFlushNow(); } catch (e) {}
+  try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.filter(k => /^synq-app-/.test(k)).map(k => caches.delete(k))); } } catch (e) {}
+  try { const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (reg) await Promise.race([reg.update(), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
+  location.replace(location.pathname + '?v=' + encodeURIComponent(v || String(Date.now())) + location.hash);
+}
+function vwStart() {
+  if (VW.on) return; VW.on = true;
+  setTimeout(() => vwCheck(true), 4000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') vwCheck(false); });
+  addEventListener('pageshow', e => { if (e.persisted) vwCheck(true); });     // Safari Zurück-Cache: sofort prüfen
+  setInterval(() => { if (document.visibilityState === 'visible') vwCheck(false); }, 600000);
+}
+setTimeout(() => { try { vwStart(); } catch (e) {} }, 0);   // VW: läuft auf jeder http(s)-Seite der App, nicht aus Dateien (file:)
 function saveNow() {
   if (!autosave) return Promise.resolve(false);
   const ok = autosave.flushSync();

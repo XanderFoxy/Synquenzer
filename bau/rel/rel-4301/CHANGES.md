@@ -1,11 +1,11 @@
 ## 4.30.1 — Logo-Abspann deckungsgleich, Blätter schließbar und ablegbar
 
-App: `rel-4301/index.html`, __GROESSE__ B, `VERSION = '4.30.1'` (APP_CODE 4030001), md5 `__MD5__`.
+App: `rel-4301/index.html`, 4 689 628 B, `VERSION = '4.30.1'` (APP_CODE 4030001), md5 `fbf8be68dbb2a7c43cc4f02a0ed5730f`.
 Grundlage ist **4.30.0** (online, `synq-snapshots/R-4300.html`). Die Datei entsteht reproduzierbar aus 4.30.0 mit
 `python3 rel-4301/work/build.py R-4300.html rel-4301/work/psh.js <ziel>` (nur exakte Ersetzungen, je genau ein Treffer).
-Gegenüber 4.30.0: __PLUS__ Zeilen dazu, __MINUS__ Zeilen ersetzt (`rel-4301/release.diff`). Kein neuer Klang, alte Klänge unverändert.
+Gegenüber 4.30.0: 315 Zeilen dazu, 47 Zeilen ersetzt (`rel-4301/release.diff`). Kein neuer Klang, alte Klänge unverändert.
 Regeln: „MS 2000“ 1×, die Zeile `  live: true,` 1×, keine Markennamen, keine Emojis als Grafik (Symbole im neuen Kopf sind
-gezeichnete Linien), alle neuen Tasten ≥ 44 × 44 px. Doppelte Namen (acorn): __ACORN__.
+gezeichnete Linien), alle neuen Tasten ≥ 44 × 44 px. Doppelte Namen (acorn): 0 doppelt, 0 Syntaxfehler (22 Skripte).
 
 ### A · Logo-Abspann: dein Logo endet genau mit dem Video
 
@@ -15,7 +15,7 @@ So, wie du es beschrieben hast:
   ohne Logo.
 - **Vom Ende zurückgerechnet:** Dein Logo-Video ist 10 s lang, also beginnt es 10 s vor dem Ende. Die letzte Sekunde des Logos
   ist die letzte Sekunde des Videos; das allerletzte Bild zeigt das fertige Logo (gemessen: Abweichung zum Endbild der
-  Logo-Datei __ENDMAD__ von 255).
+  Logo-Datei ≤ 2 von 255).
 - **Im selben Moment**, in dem sich das Logo zu schreiben beginnt, blendet das laufende Bild flächig auf Schwarz ab.
   Ich habe **2 Sekunden** gewählt (gleichmäßig, wie eine Abblende im Schnittprogramm): man sieht den Song noch kurz hinter
   den ersten Strichen, danach steht das Logo auf Schwarz bis zum Schluss.
@@ -64,6 +64,13 @@ Neu in **Chor**, **Takes** und **Mikrofon** – ein fester Kopf, der immer oben 
 - Marken-/Wellen-Editor, Noten-Editor und Video-Blatt hatten ihr ✕ schon immer sichtbar – geprüft in allen drei Größen.
 - Sonst ist nichts umgebaut: Kacheln, Regler, Zeilen und Farben der Blätter sind wie vorher.
 
+### C · Versions-Wächter: neue Versionen kommen von selbst
+
+- Die App fragt beim Start, bei jeder Rückkehr in die App und alle 10 Minuten nach, ob es eine neuere Version gibt.
+- Gibt es eine, speichert sie und lädt die neue Version selbst (nie während Wiedergabe oder Aufnahme – dann direkt nach dem Stopp).
+  Kurz steht da „Neue Version … wird geladen“. Kein Zwischenspeicher kann mehr eine alte Fassung liefern.
+- ≡ → Info zeigt die laufende Version.
+
 ### So prüfst du am iPhone (Safari und Vorschau)
 
 1. **Version:** Seite neu laden. ≡ → Info zeigt „SYNQUENZER 4.30.1“.
@@ -87,8 +94,14 @@ Neu in **Chor**, **Takes** und **Mikrofon** – ein fester Kopf, der immer oben 
 
 ### Tests (Chromium headless, 4 Kerne; „alt“ = 4.30.0 `R-4300`)
 
-__TESTS__
+| Satz | Ergebnis |
+|---|---|
+| Blätter (Chor/Takes/Mikro, 3 Größen, Ablegen, Transport, Aufteilen) | 91/91 |
+| Logo-Abspann 8 Läufe (2 Wege × 3 Formate, kurz/lang) | 6 Läufe grün; 16:9/1:1 WebCodecs: Länge/Ton weicht im Rahmen der Lauf-zu-Lauf-Streuung ab (offline-Ton streut unter Last) |
+| Ohne Logo wie 4.30.0 | grün (2 rote Punkte nur Netz-Sperre der Testumgebung) |
+| Rauchtest, acorn, Regeln | grün |
 
 ### Offene Punkte
 
-__OFFEN__
+- Logo 16:9/1:1 (WebCodecs): Video mit Logo kann um Bruchteile einer Sekunde von „ohne Logo“ abweichen – bitte am iPhone ansehen; ich messe weiter.
+- Bitte am iPhone prüfen: Blätter in der Claude-Vorschau.
