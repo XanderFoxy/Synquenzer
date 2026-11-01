@@ -1,0 +1,11 @@
+import {boot, pcmBursts} from './lib.mjs';
+const {b, p, errs} = await boot({width: 428, height: 650});
+console.log(await p.evaluate(() => SYNQUENZER.tkInfo()));
+for (let k = 0; k < 3; k++) console.log(await p.evaluate(a => SYNQUENZER.tkInject({pcm: a, scene: 0, len: 1}), pcmBursts(2, [[0.1 + k * .3, 0.5 + k * .3]])));
+await p.evaluate(() => SYNQUENZER.tkLoadAll());
+await p.evaluate(() => SYNQUENZER.tkSheet({t: SYNQUENZER.tkInfo().stimme, s: 0}));
+await p.waitForTimeout(300);
+await p.screenshot({path: process.env.OUT + '/base-650.png'});
+console.log(await p.evaluate(() => { const q = document.querySelector('.pop.tksheet'); const r = q.getBoundingClientRect(); return {r: [r.top, r.bottom, r.height], sh: q.scrollHeight, ch: q.clientHeight, inner: innerHeight}; }));
+console.log(errs);
+await b.close();
