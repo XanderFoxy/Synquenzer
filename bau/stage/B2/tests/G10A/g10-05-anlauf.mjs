@@ -1,3 +1,4 @@
+// B2: Prüfzeit wird vor songPlay() gelesen; die Audio-Uhr springt in 128-Sample-Blöcken → Toleranz 2 Blöcke (vorher 1e-6, streute auch in G10A allein)
 // G10-05: Song mit Anlauf vor Takt 1 → ▶ SONG: der Anlauf klingt (RMS im Vorlauf > Rauschboden + 20 dB), Takt 1 liegt genau auf dem Raster.
 // Ohne Anlauf startet es wie 4.30.0 (Basis). Offline-Render (Video/WAV) beginnt ebenso mit dem Vorlauf.
 import {launch, open, sleep, idle, report, voice, BASE} from './lib.mjs';
@@ -31,7 +32,7 @@ const br = await launch();
   R.check('Vorlauf berechnet: ceil(0,95 s / 0,5 s) = 2 Schläge', await p.evaluate(() => SYNQUENZER.g10aInfo().leadNext) === 2);
   const {st, at} = await playSong(p);
   const lead = st.start - st.t, gl = await p.evaluate(() => SYNQUENZER.vsClock().outLat);
-  R.check('Takt 1 genau auf dem Raster: Start = jetzt + 0,06 s + 2 Schläge', Math.abs(lead - (.06 + 2 * st.spb)) < 1e-6 && st.info.lead === 2, {lead: +lead.toFixed(6), lb: st.info.lead});
+  R.check('Takt 1 genau auf dem Raster: Start = jetzt + 0,06 s + 2 Schläge', (lead - (.06 + 2 * st.spb)) > -1e-6 && (lead - (.06 + 2 * st.spb)) < 2 * 128 / 44100 + 1e-6 && st.info.lead === 2, {lead: +lead.toFixed(6), lb: st.info.lead});
   const floor = at(st.t - .25, st.t + .02), inLead = at(st.start - .9, st.start - .05);
   R.check('Anlauf klingt im Vorlauf (> Rauschboden + 20 dB)', inLead != null && inLead > Math.max(floor == null ? -120 : floor, -120) + 20, {floor: floor && +floor.toFixed(1), inLead: inLead && +inLead.toFixed(1)});
   // Vergleich mit der App ohne Vorlauf: der Anlauf fehlt dort (Befund 3b)
