@@ -1,0 +1,10 @@
+import { launch } from './n5-h-ab-lib.mjs';
+const {b, p, errs} = await launch({mobile: true});
+await p.evaluate(() => { SYNQUENZER.setEngine(0, 'mk'); SYNQUENZER.selectTrack(0); SYNQUENZER.openEditor(); });
+await p.waitForFunction(() => window.MKUI && MKUI.PL.ready && SYNQUENZER.mkPanel(), null, {timeout: 10000}); await p.waitForTimeout(400);
+const pn = await p.evaluate(() => SYNQUENZER.mkPanel());
+console.log(Object.keys(pn), JSON.stringify(pn.elements.slice(0, 5)));
+console.log(pn.elements.filter(e => e.art === 'k' || e.kind === 'knob').slice(0, 40).map(e => e.id + ' ' + JSON.stringify(e.px) + ' vis=' + e.vis).join('\n'));
+await p.screenshot({path: '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/dirigent-test/n5-h-ab-mk.png'});
+console.log(errs);
+await b.close();

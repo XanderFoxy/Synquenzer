@@ -20,7 +20,7 @@ async function cas(name, startFn, sec) {
   const t0 = await p.evaluate(startFn);
   await sleep(sec * 1000);
   const o = await p.evaluate(() => { const C = window.__capGet('v'), I = window.__capGet('in'); return {t0: C.t0, L: Array.from(C.L), I: Array.from(I.L), sr: window.__ctx.sampleRate}; });
-  const src = await p.evaluate(() => SYNQUENZER.vpInfo().src);
+  const src = await p.evaluate(() => SYNQUENZER.vpInfo().src); const verr = await p.evaluate(() => SYNQUENZER.vpInfo().err); console.log('    VP.err', verr, 'Stücke', JSON.stringify(src));
   await p.evaluate(() => SYNQUENZER.stop()); await sleep(400);
   const L = Float32Array.from(o.L);
   // Spitzen finden: Fenster 20 ms um jede Stelle, an der der Ausgang > -12 dBFS geht

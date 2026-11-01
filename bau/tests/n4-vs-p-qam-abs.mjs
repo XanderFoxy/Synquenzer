@@ -3,7 +3,7 @@ import {open, sleep, APP} from './n4-vs-p-qa-h.mjs';
 const H = await open({file: APP}), p = H.p;
 await p.evaluate(() => { SYNQUENZER.play(); SYNQUENZER.stop(); });
 await sleep(300);
-for (const lead of [0.006, 0.2, 0.006, 0.2, 0.006]) {
+for (const lead of [0.006, 0.2, 0.0061, 0.05, 0.006]) {
   const r = await p.evaluate(async lead => {
     const c = window.__ctx, sr = c.sampleRate, n = sr * 2, b = c.createBuffer(1, n, sr), d = b.getChannelData(0), U = [];
     for (let k = 1; k < 38; k++) { const i = Math.round(k * 0.05 * sr); d[i] = 1; U.push(i / sr); }
@@ -15,7 +15,7 @@ for (const lead of [0.006, 0.2, 0.006, 0.2, 0.006]) {
     s.start(when, off);
     await new Promise(r => setTimeout(r, 2200));
     sp.onaudioprocess = null; s.stop(); g.disconnect(); sp.disconnect();
-    const all = []; for (const a of cap) for (const v of a) if (v > 0.02) all.push(v);
+    const flat = []; for (const a of cap) for (const v of a) flat.push(v); const all = []; for (let i = 0; i < flat.length; i++) if (flat[i] > 0.002) { let s2 = 0; while (i < flat.length && flat[i] > 0.002) s2 += flat[i++]; all.push(s2); }
     // jedes Impuls-Abbild: Amplitude a = 0.5 + δ/20 ms  →  δ = (a − 0.5) * 20 ms (positiv = Audio später als die Automation)
     const del = all.map(a => +((a - 0.5) * 20).toFixed(2));
     return {n: all.length, deltaMs: del.slice(0, 8), mean: +(del.reduce((x, y) => x + y, 0) / del.length).toFixed(2)};

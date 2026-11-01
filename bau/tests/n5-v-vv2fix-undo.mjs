@@ -1,0 +1,24 @@
+import { open, buildSong } from './n5-v-q2-qmlib.mjs';
+const {b, p, errs} = await open({touch: true});
+await buildSong(p);
+const r = await p.evaluate(async () => {
+  const Q = SYNQUENZER, out = {}, sleep = ms => new Promise(r => setTimeout(r, ms));
+  Q.songRange('asPart', 2, 5, {name: 'Strophe'}); Q.songRange('asPart', 6, 9, {name: 'Refrain'});
+  Q.markAction(S.song.marks.find(m => m.a === 6).id, 'rep', 2);
+  const isR = m => markLabel(m) === 'Refrain';
+  const R = S.song.marks.filter(isR).sort((x, y) => x.a - y.a); out.R = R.map(m => [m.a, m.len, m.part]);
+  Q.vvDirSet(R[0].a, R[0].a + R[0].len, 'matrix'); Q.vvDirSet(R[1].a, R[1].a + 2, 'spur', 1);
+  await sleep(300);
+  const s0 = songSnapshot(), v0 = JSON.stringify(S.song.video);
+  const diff = (x, y) => { x = JSON.parse(x); y = JSON.parse(y); return Object.keys(Object.assign({}, x, y)).filter(k => JSON.stringify(x[k]) !== JSON.stringify(y[k])); };
+  out.aa = Q.markAction(R[1].id, 'applyAll'); await sleep(300); const s1 = songSnapshot();
+  out.applyAll = {v: JSON.stringify(S.song.video) === v0};
+  undo(); await sleep(300); out.applyAll.undoDiff = diff(s0, songSnapshot()); out.melA = JSON.stringify(JSON.parse(s0).mel).slice(0, 300); out.melB = JSON.stringify(JSON.parse(songSnapshot()).mel).slice(0, 300); out.s0type = typeof s0; out.applyAll.undoV = JSON.stringify(S.song.video) === v0;
+  redo(); await sleep(300); out.applyAll.redoDiff = diff(s1, songSnapshot()); undo(); await sleep(300);
+  const R2 = S.song.marks.filter(isR).sort((x, y) => x.a - y.a);
+  Q.markAction(R2[1].id, 'replaceBy', 'Strophe'); await sleep(300); const s2 = songSnapshot();
+  out.replaceBy = {v: JSON.stringify(S.song.video)};
+  undo(); await sleep(300); out.replaceBy.undoDiff = diff(s0, songSnapshot()); redo(); await sleep(300); out.replaceBy.redoDiff = diff(s2, songSnapshot());
+  return out;
+});
+console.log(JSON.stringify(r), errs); await b.close();

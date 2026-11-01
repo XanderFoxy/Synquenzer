@@ -1,0 +1,11 @@
+import {open, sleep, summ} from './n5-h-mu2-lib.mjs';
+const T = await open({vp: [390, 844]}); const {p, E} = T;
+await sleep(2600);
+const demoId = await E(() => S.id);
+await E(() => SYNQUENZER.newProject()); await sleep(2600);
+await E(id => SYNQUENZER.openProject(id), demoId); await sleep(2600); await T.drain();
+let n0 = await T.evN(); console.log('after open: events in cur', n0, JSON.stringify(await E(() => HIST.cur.strs.map(s => JSON.parse(s)).map(e => [e.u, e.l, (e.d || []).map(o => o.op + ' ' + o.path + ' ' + JSON.stringify(o.value).slice(0, 60))]))));
+await E(() => SYNQUENZER.setClip(3, 4, {len: 1, notes: [{t: 0, d: .5, n: 70, v: .8}]})); await sleep(2600); await T.drain();
+const evs = await T.evSince(n0);
+for (const e of evs) console.log(e.u, JSON.stringify(e.l), (e.d || []).map(o => o.op + ' ' + o.path + ' ' + JSON.stringify(o.value).slice(0, 80)).join(' ; '));
+await T.b.close();

@@ -1,0 +1,23 @@
+// "mit Verlauf" file opened in a fresh browser by finger (Menü → Datei öffnen): project equal, history taken over, check true
+import {open, sleep, OUT} from './n5-h-mu2-lib.mjs';
+import fs from 'fs';
+const FILE = process.argv[2] || OUT + '/menu-390x844.json';
+const T = await open({vp: [390, 844]}); const {p, E} = T;
+const find = (sel, re) => E(([sel, src]) => { const rx = src ? new RegExp(src) : null; return [...document.querySelectorAll(sel)].filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && (!rx || rx.test((e.textContent || '').trim())); }).map(e => { const r = e.getBoundingClientRect(); return {cx: r.x + r.width / 2, cy: r.y + r.height / 2, t: (e.textContent || '').trim().slice(0, 50)}; }); }, [sel, re ? re.source : null]);
+const o = JSON.parse(fs.readFileSync(FILE, 'utf8'));
+console.log('file', JSON.stringify({id: o.project.id, name: o.project.name, chunks: o.history && o.history.chunks.map(c => ({ne: c.ne, kf: c.kf.length}))}));
+console.log('fresh', JSON.stringify(await E(() => ({id: S.id, h: SYNQUENZER.history()}))));
+const m = (await find('button', /^≡$/))[0]; await T.tap(m.cx, m.cy, 700);
+await E(() => [...document.querySelectorAll('#menu button')].find(b => /^Datei öffnen$/.test(b.textContent.trim())).scrollIntoView({block: 'center'})); await sleep(300);
+const b = (await find('#menu button', /^Datei öffnen$/))[0];
+const fcP = p.waitForEvent('filechooser', {timeout: 8000}).catch(() => null);
+await T.tap(b.cx, b.cy, 300);
+const fc = await fcP; if (fc) await fc.setFiles(FILE); else console.log('no file chooser');
+await sleep(2500);
+const conf = await find('button', /Öffnen|Ersetzen|Ja/); console.log('confirm buttons', JSON.stringify(conf.slice(0, 4)));
+await sleep(3000);
+const r = await E(() => ({id: S.id, name: S.name, h: SYNQUENZER.history()}));
+console.log('after open', JSON.stringify(r), 'check', JSON.stringify(await E(() => historyCheck({detail: true}))));
+const evs = await E(async () => { const out = []; for (const it of await histItems(HIST.pid)) out.push({ne: it.evs.length, kf: it.r.kf.map(k => k.w)}); return out; });
+console.log('chunks now', JSON.stringify(evs), 'errs', T.errs.slice(0, 3));
+await T.b.close();
