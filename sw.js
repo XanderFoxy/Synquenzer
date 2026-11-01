@@ -10,8 +10,10 @@ self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.add(PAGE)).catch(() => {}));   // usually from the HTTP cache: no second download
   self.skipWaiting();
 });
+// synq-g9-* (Silbenmuster, G9 §6.2) gehört der App selbst (mit SHA-256 geprüft): beim Aktivieren nicht löschen
+const KEEP = k => k === CACHE || k.startsWith('synq-g9-');
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('synq-') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('synq-') && !KEEP(k)).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', e => {
   const rq = e.request; if (rq.method !== 'GET') return;

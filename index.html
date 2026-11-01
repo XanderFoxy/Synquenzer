@@ -2137,6 +2137,60 @@ a.mbtn[aria-disabled=true]{opacity:.55}
   #wpSheet .qchips button:nth-child(-n+4)::after{top:-9px;bottom:-3px}
   #wpSheet .qchips button:nth-child(n+5)::after{top:-5px;bottom:-7px}
 }
+/* G9 (Nachtrag 8, G9c): Text-Modus im Marken-Editor (#wpSheet.g9), Silben-Leiste, Eingabe, Werkzeuge, Tastatur-Dock */
+#wpSheet .g9rec{display:none}
+#wpSheet.g9 .g9rec:not([hidden]){display:block;flex:0 0 72px;height:44px;padding:0;font:700 12px/1 var(--font-ui)}
+#wpSheet.g9 .wpchips,#wpSheet.g9 .wpsl,#wpSheet.g9 .wpf{display:none}
+#wpSheet.g9 .wpcv{min-height:120px}
+#wpSheet .g9bar{position:relative;flex:none;height:44px;border-radius:6px;overflow:hidden;border:1px solid var(--line);touch-action:none;-webkit-user-select:none;user-select:none}
+#wpSheet .g9bar canvas{position:absolute;inset:0;width:100%;height:100%}
+#wpSheet.g9 .wpcv{touch-action:none}
+#wpSheet .g9row{flex:none;display:flex;flex-direction:column;gap:3px}
+#wpSheet .g9in,#wpSheet .g9tl{flex:none;display:flex;gap:4px;height:44px;min-width:0}
+#wpSheet .g9in>button,#wpSheet .g9tl>button,#wpSheet .g9sh>button{position:relative;flex:0 0 44px;width:44px;min-width:44px;height:44px;padding:0;font:700 15px/1 var(--font-ui)}
+#wpSheet .g9f{flex:1 1 auto;min-width:140px;width:0;height:44px;box-sizing:border-box;margin:0;padding:0 10px;border-radius:6px;border:1px solid var(--line);background:#0e1014;color:var(--text);font:600 16px/1 var(--font-ui);outline:none}
+#wpSheet .g9f:focus{border-color:#ffd35a}
+#wpSheet .g9sh{position:relative;flex:2 1 auto;display:flex;gap:4px;min-width:92px}
+#wpSheet .g9sh::before{content:'Text ab hier';position:absolute;left:0;right:0;top:1px;z-index:1;text-align:center;font:600 9px/10px var(--font-ui);color:var(--text-dim);pointer-events:none;white-space:nowrap;overflow:hidden}
+#wpSheet .g9tl>button,#wpSheet .g9sh>button{flex:1 1 auto;width:auto;font:700 12px/1 var(--font-ui);white-space:nowrap;overflow:hidden;padding:0 4px}
+#wpSheet .g9sh>button{padding-top:8px}
+#wpSheet .g9tl .g9x{display:none;flex:0 0 44px}
+#wpSheet .g9tl.short>button,#wpSheet .g9tl.short .g9sh>button{font-size:18px}
+#wpSheet .g9tl.short .g9sh::before{font-size:8px}
+#wpSheet .g9in>button.dis,#wpSheet .g9tl button.dis{opacity:.4}
+#wpSheet .g9hl{display:none;position:absolute;inset:0;z-index:2;margin:0;-webkit-tap-highlight-color:transparent;touch-action:inherit;cursor:pointer}
+#wpSheet .g9hl input{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;visibility:hidden}
+#wpSheet.g9.hap:not(.g9dock) .g9hl{display:block}
+#wpSheet.g9 .wpcv .g9hl{touch-action:none}
+@media (orientation:portrait) and (max-height:600px){#wpSheet.g9 .wpcv{min-height:72px}#wpSheet.g9 .qb{gap:2px;padding:3px 8px 4px}#wpSheet.g9 .g9row{gap:2px}}
+@media (orientation:landscape){#wpSheet.g9 .wpcv{min-height:96px}#wpSheet.g9 .g9rec:not([hidden]){height:38px}#wpSheet.g9 .qb{gap:2px;padding:3px 8px 4px}#wpSheet.g9 .g9row{gap:2px}}
+/* Tastatur-Dock: fest über der Tastatur, volle Breite; Seite dahinter bewegt sich nicht */
+#wpSheet.g9dock{position:fixed;z-index:58;margin:0;max-width:none;max-height:none;border-radius:10px 10px 0 0;border-right:1px solid var(--line);box-sizing:border-box;padding:0 max(0px,env(safe-area-inset-right)) 0 max(0px,env(safe-area-inset-left))}
+#wpSheet.g9dock .qb{gap:1px;padding:1px 8px}
+#wpSheet.g9dock .g9row{gap:1px}
+#wpSheet.g9dock .wpcv{min-height:0;flex:1 1 auto}
+#wpSheet.g9dock.d300 .qh,#wpSheet.g9dock.d250 .qh{height:44px}
+#wpSheet.g9dock.d200 .qh,#wpSheet.g9dock.q118 .qh,#wpSheet.g9dock.q88 .qh{display:none}
+#wpSheet.g9dock.d200 .g9tl .g9x,#wpSheet.g9dock.q118 .g9tl .g9x,#wpSheet.g9dock.q88 .g9tl .g9x{display:block}
+#wpSheet.g9dock.q118 .qb,#wpSheet.g9dock.q88 .qb{gap:0;padding:0 8px}
+#wpSheet.g9dock.q118 .wpcv{flex:0 0 30px;height:30px;border-radius:4px}
+#wpSheet.g9dock.q88 .wpcv{display:none}
+#wpSheet.g9dock.q118 .g9row,#wpSheet.g9dock.q88 .g9row{flex-direction:row;gap:4px}
+#wpSheet.g9dock.q118 .g9in,#wpSheet.g9dock.q88 .g9in{flex:1 1 auto}
+#wpSheet.g9dock.q118 .g9tl,#wpSheet.g9dock.q88 .g9tl{flex:none}
+#wpSheet.g9dock.q118 .g9tl>button,#wpSheet.g9dock.q88 .g9tl>button,#wpSheet.g9dock.q118 .g9sh>button,#wpSheet.g9dock.q88 .g9sh>button{flex:0 0 44px;width:44px}
+#wpSheet.g9dock.q118 .g9sh,#wpSheet.g9dock.q88 .g9sh{flex:none;min-width:0}
+#wpSheet.g9dock .wpinfo{display:none}
+#wpSheet.g9dock.d300 .wpinfo,#wpSheet.g9dock.d250 .wpinfo{display:block}
+/* [Ganzer Text] und [Erkennen] */
+.pop.g9txt{width:min(420px,calc(100vw - 16px))}
+.pop.g9txt .g9ta{display:block;width:100%;box-sizing:border-box;min-height:120px;height:126px;resize:none;margin:6px 0;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:#0e1014;color:var(--text);font:500 16px/19px var(--font-ui)}
+.pop.g9txt .g9lr{display:flex;gap:6px;align-items:center;margin-top:6px}
+.pop.g9txt .g9lang,.pop.g9rs .g9lang{flex:1 1 auto;display:flex;min-width:0}
+.pop.g9txt .g9lang button,.pop.g9rs .g9lang button{flex:1 1 0;min-width:0;height:44px}
+.pop.g9txt .g9ok{flex:0 0 auto;height:44px;padding:0 12px}
+.pop.g9rs .g9auto{display:flex;gap:8px;align-items:center;min-height:44px;font:600 13px/1.2 var(--font-ui)}
+.pop.g9rs .g9rm{height:44px;padding:0 10px;margin-left:6px}
 @media (orientation:landscape){#wpSheet .qh .sh-x,#wpSheet .wpab,#wpSheet .wptx{position:relative}#wpSheet .qh .sh-x::after,#wpSheet .wpab::after,#wpSheet .wptx::after{content:'';position:absolute;left:-1px;right:0;top:-2.5px;bottom:-7.5px}}
 /* ---------- clip sheet v3 (§3.7): P bottom sheet with 2 button columns (3 on short screens); L 420 px panel, 3 columns ---------- */
 #clipSheet .sh-body.cs3{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px;padding:8px 8px 10px}
@@ -3961,6 +4015,1203 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 <input type="file" id="fileIn" accept=".json,application/json,.zip,application/zip" hidden>
 <input type="file" id="sndIn" accept=".json,application/json" hidden>
 <input type="file" id="syxIn" hidden>
+<script type="text/plain" id="sq-g9-src">
+// G9b-V – Erkennung ohne Modell (DOM-frei, für den Modul-Worker). Spec: spec/n8/G9.md §6.6 Schritte 1–8.
+// Alles hier läuft ohne Sprachmodell; das Modell (G9b-2, nach Freigabe F0) bekommt nur die Fenster aus plan() und liefert Wörter
+// {text, start, end, p?} je Fenster zurück. Ohne Modell bleiben Einfügen/Tippen/Korrigieren voll nutzbar (g9-kern.js).
+function g9ErkMake() {
+'use strict';
+const VERSION = 'g9b-v-1', FS = 16000;
+const R6 = v => +(+v).toFixed(6);
+const fin = v => typeof v === 'number' && v === v && v < 1e30 && v > -1e30;
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+const db = v => 10 * Math.log10(v + 1e-20);
+
+// ── 1. Vorstufe: Hochpass 80 Hz (2. Ordnung), 16 kHz (Polyphase, Kaiser-Fenster), Spitze −3 dBFS ──
+function hp80(x, sr) {
+  const w = 2 * Math.PI * 80 / sr, cw = Math.cos(w), al = Math.sin(w) / (2 * Math.SQRT1_2), a0 = 1 + al;
+  const b0 = (1 + cw) / 2 / a0, b1 = -(1 + cw) / a0, b2 = b0, a1 = -2 * cw / a0, a2 = (1 - al) / a0;
+  const y = new Float32Array(x.length); let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  for (let i = 0; i < x.length; i++) { const v = fin(x[i]) ? x[i] : 0, o = b0 * v + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = v; y2 = y1; y1 = o; y[i] = o; }
+  return y;
+}
+function i0(x) { let s = 1, t = 1; for (let k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; if (t < 1e-12 * s) break; } return s; }
+const FIL = {};
+function filt(sr) {   // Prototyp bei L·sr: Durchlass bis 7,2 kHz, Sperre ab 8 kHz, ≥ 60 dB (Kaiser A = 70 dB)
+  if (FIL[sr]) return FIL[sr];
+  const g = gcd(FS, sr), L = FS / g, M = sr / g, fp = L * sr, A = 70, beta = 0.1102 * (A - 8.7);
+  const fc = Math.min(7600, sr / 2 * 0.95), dw = 2 * Math.PI * Math.min(800, sr / 2 - 7200 > 0 ? 800 : 400) / fp;
+  let N = Math.ceil((A - 8) / (2.285 * dw)) | 1, per = Math.ceil(N / L); N = per * L;
+  const h = new Float64Array(N), c = (N - 1) / 2, ib = i0(beta);
+  for (let n = 0; n < N; n++) { const t = n - c, s = t === 0 ? 2 * fc / fp : Math.sin(2 * Math.PI * fc / fp * t) / (Math.PI * t); const r = 2 * n / (N - 1) - 1; h[n] = s * i0(beta * Math.sqrt(Math.max(0, 1 - r * r))) / ib * L; }
+  const ph = []; for (let p = 0; p < L; p++) { const a = new Float64Array(per); for (let k = 0; k < per; k++) a[k] = h[p + k * L]; ph.push(a); }
+  return (FIL[sr] = {L, M, per, ph, delay: c / L});
+}
+function resample(x, sr) {
+  if (sr === FS) return Float32Array.from(x);
+  const {L, M, per, ph, delay} = filt(sr), n = x.length, nOut = Math.floor(n * L / M), y = new Float32Array(nOut), d = delay;
+  // Laufzeit des Filters ausgleichen: Ausgabe j entspricht Eingabe-Zeit j·M/L (gleiche Take-Sekunde)
+  const sh = Math.round(d * L);
+  for (let j = 0; j < nOut; j++) {
+    const u = j * M + sh, base = Math.floor(u / L), p = u - base * L, h = ph[p];
+    let s = 0; for (let k = 0; k < per; k++) { const q = base - k; if (q >= 0 && q < n) s += h[k] * x[q]; }
+    y[j] = s;
+  }
+  return y;
+}
+function prep(x, sr) {
+  const h = hp80(x, sr), y = resample(h, sr);
+  let pk = 0; for (let i = 0; i < y.length; i++) { const a = Math.abs(y[i]); if (a > pk) pk = a; }
+  const g = pk > 0 ? Math.pow(10, -3 / 20) / pk : 1;
+  for (let i = 0; i < y.length; i++) y[i] *= g;
+  return {y, gain: g, peakIn: pk};
+}
+
+// ── 2. Stimm-Strecken (Energie über Grund + 10 dB, Lücken < 400 ms überbrückt, ≥ 100 ms stimmhaft), je 200 ms Rand ──
+function strecken(y, o) {
+  o = o || {};
+  const hop = 160, win = 320, nF = Math.floor(y.length / hop), E = new Float32Array(nF);
+  for (let f = 0; f < nF; f++) { let s = 0; const a = f * hop; for (let i = a; i < Math.min(y.length, a + win); i++) s += y[i] * y[i]; E[f] = db(s / win); }
+  const srt = Array.from(E).filter(v => v > -150).sort((a, b) => a - b);
+  if (!srt.length) return [];
+  const floor = srt[Math.floor(0.03 * (srt.length - 1))], top = srt[Math.floor(0.995 * (srt.length - 1))];
+  const thr = Math.max(floor + 10, top - (o.rel || 30), o.abs != null ? o.abs : -150);
+  const act = new Uint8Array(nF); for (let f = 0; f < nF; f++) act[f] = E[f] > thr ? 1 : 0;
+  // stimmhaft je Rahmen (YIN auf 8 kHz, 70 … 800 Hz)
+  const dec = 2, n8 = Math.floor(y.length / dec), x8 = new Float32Array(n8); for (let i = 0; i < n8; i++) x8[i] = 0.5 * (y[2 * i] + (y[2 * i + 1] || 0));
+  const W = 240, tMin = 10, tMax = 115, d = new Float64Array(tMax + 2);
+  const voiced = f => {
+    const a = Math.floor(f * hop / dec); if (a + W + tMax + 1 >= n8) return false;
+    for (let tau = 1; tau <= tMax + 1; tau++) { let s = 0; for (let k = 0; k < W; k += 2) { const e = x8[a + k] - x8[a + k + tau]; s += e * e; } d[tau] = s; }
+    let run = 0; for (let tau = 1; tau <= tMax + 1; tau++) { run += d[tau]; d[tau] = run > 0 ? d[tau] * tau / run : 1; }
+    for (let tau = tMin; tau <= tMax; tau++) if (d[tau] < 0.25) return true;
+    return false;
+  };
+  const segs = []; let f = 0;
+  while (f < nF) {
+    if (!act[f]) { f++; continue; }
+    let e = f; while (e < nF) { if (act[e]) { e++; continue; } let g = e; while (g < nF && !act[g]) g++; if (g < nF && (g - e) * hop / FS < 0.4) e = g; else break; }
+    let vc = 0; for (let q = f; q < e; q++) if (act[q] && voiced(q)) vc++;
+    if (vc * hop / FS >= (o.minVoiced || 0.1)) segs.push({a: f * hop / FS, b: Math.min(y.length, e * hop + win) / FS});
+    f = e;
+  }
+  const M = 0.2, len = y.length / FS, out = [];
+  for (const s of segs) { const a0 = Math.max(0, s.a - M), b0 = Math.min(len, s.b + M), l = out[out.length - 1]; if (l && a0 <= l.b0) { l.b0 = b0; l.b = s.b; } else out.push({a: R6(s.a), b: R6(s.b), a0: R6(a0), b0: R6(b0)}); }
+  for (const s of out) { s.a = R6(s.a); s.b = R6(s.b); s.b0 = R6(s.b0); }
+  return out;
+}
+// ── 3. Verbinden: Strecken hintereinander, dazwischen 0,3 s Nullen; stückweise Zeit-Karte ──
+function verbinden(y, segs) {
+  const Z = Math.round(0.3 * FS), parts = []; let tot = 0;
+  segs.forEach((s, i) => { const a = Math.round(s.a0 * FS), b = Math.round(s.b0 * FS); if (i) tot += Z; parts.push({s0: tot, a, b}); tot += b - a; });
+  const st = new Float32Array(tot), map = [];
+  for (const p of parts) { st.set(y.subarray(p.a, p.b), p.s0); map.push({s0: R6(p.s0 / FS), t0: R6(p.a / FS), len: R6((p.b - p.a) / FS)}); }
+  return {st, map, L: tot / FS};
+}
+// ── 4. Fenster ≤ 30 s: Schnitt an der letzten Strecken-Grenze in [24, 30] s, sonst im leisesten 200-ms-Stück ──
+function fenster(st, map) {
+  const L = st.length / FS, out = [], gaps = [];
+  for (let i = 1; i < map.length; i++) gaps.push(map[i].s0 - 0.15);
+  let w0 = 0;
+  while (L - w0 > 30 + 1e-9) {
+    let cut = -1; for (const g of gaps) if (g >= w0 + 24 && g <= w0 + 30) cut = g;
+    if (cut < 0) {
+      let best = 1e9; const n2 = Math.round(0.2 * FS);
+      for (let c = w0 + 24; c + 0.2 <= w0 + 30 + 1e-9; c += 0.05) { const a = Math.round(c * FS); let s = 0; for (let i = a; i < a + n2 && i < st.length; i++) s += st[i] * st[i]; if (s < best) { best = s; cut = c + 0.1; } }
+    }
+    out.push({a: R6(w0), b: R6(cut)}); w0 = cut;
+  }
+  if (L > 0) out.push({a: R6(w0), b: R6(L)});
+  return out;
+}
+function plan(x, sr, o) {
+  const P = prep(x, sr), segs = strecken(P.y, o), V = verbinden(P.y, segs), win = fenster(V.st, V.map);
+  return {y: P.y, segs, st: V.st, map: V.map, L: V.L, win, chunks: win.length, lo: Math.ceil(V.L / 30 - 1e-9), hi: Math.ceil(V.L / 24 - 1e-9)};
+}
+// Fenster als Float32Array (für die Pipeline; die Bibliothek füllt selbst auf 30 s auf)
+function fensterDaten(pl, k) { const w = pl.win[k]; return pl.st.subarray(Math.round(w.a * FS), Math.round(w.b * FS)); }
+
+// ── 6./7. Rückrechnung in Take-Sekunden + Schutz gegen Erfundenes ──
+function streamToTake(map, s) { for (const m of map) if (s >= m.s0 - 1e-9 && s <= m.s0 + m.len + 1e-9) return m.t0 + (s - m.s0); return null; }
+function takeToStream(map, t) { for (const m of map) if (t >= m.t0 - 1e-9 && t <= m.t0 + m.len + 1e-9) return m.s0 + (t - m.t0); return null; }
+const norm = w => String(w || '').toLowerCase().replace(/[^\p{L}\p{N}']/gu, '');
+function kuerzeSchleifen(W) {   // Folge aus ≥ 3 Wörtern, die sich > 2× direkt wiederholt → 2×
+  let a = W.slice(), changed = true, n = 0;
+  while (changed) {
+    changed = false;
+    for (let L = 3; L * 3 <= a.length && !changed; L++) for (let i = 0; i + 3 * L <= a.length && !changed; i++) {
+      let r = 1; const eq = (p, q) => { for (let k = 0; k < L; k++) if (norm(a[p + k].text) !== norm(a[q + k].text)) return false; return true; };
+      while (i + (r + 1) * L <= a.length && eq(i, i + r * L)) r++;
+      if (r > 2) { n += (r - 2) * L; a.splice(i + 2 * L, (r - 2) * L); changed = true; }
+    }
+  }
+  return {W: a, cut: n};
+}
+// words: [{text, start, end, p?}] je Fenster (Sekunden relativ zum Fenster) → Take-Sekunden, geprüft
+function zurueck(wordsPerWin, pl) {
+  const out = [], drop = {stille: 0, null: 0, schleife: 0};
+  pl.win.forEach((w, k) => {
+    const ws = wordsPerWin[k] || [];
+    const ps = ws.map(x => x.p).filter(fin), avg = ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : null;
+    for (const x of ws) {
+      if (!x || !String(x.text || '').trim()) continue;
+      let s = w.a + Math.max(0, +x.start || 0), e = w.a + Math.max(+x.start || 0, +x.end || 0);
+      s = Math.min(s, w.b); e = Math.min(e, w.b);
+      const mid = (s + e) / 2, seg = pl.map.find(m => mid >= m.s0 - 1e-9 && mid <= m.s0 + m.len + 1e-9);
+      if (!seg) { drop.null++; continue; }   // Mitte in den 0,3-s-Nullen
+      const cl = v => Math.min(seg.s0 + seg.len, Math.max(seg.s0, v));
+      const ts = R6(seg.t0 + cl(s) - seg.s0), te = R6(seg.t0 + cl(e) - seg.s0), dur = Math.max(0.05, e - s);   // Dauer vor dem Abschneiden: Teil in den Nullen zählt als „nicht Stimme“
+      let inV = 0; for (const g of pl.segs) inV += Math.max(0, Math.min(te + (te === ts ? 0.025 : 0), g.b) - Math.max(ts - (te === ts ? 0.025 : 0), g.a));
+      if (inV < 0.3 * dur) { drop.stille++; continue; }
+      const o = {text: String(x.text).trim(), start: ts, end: te};
+      if (fin(x.p)) o.p = Math.round(Math.max(0, Math.min(1, x.p)) * 100) / 100;
+      if (avg != null && avg < 0.2) o.p = Math.min(o.p != null ? o.p : 1, Math.round(avg * 100) / 100);   // unsicher statt verworfen
+      out.push(o);
+    }
+  });
+  const r = kuerzeSchleifen(out); drop.schleife = r.cut;
+  return {words: r.W, drop};
+}
+// ── Sprache (§6.6.4): nur <|de|> und <|en|> zulassen, das erzeugte Token entscheidet ──
+function sprachFilter(logits, ids) { const keep = new Set(ids); for (let i = 0; i < logits.length; i++) if (!keep.has(i)) logits[i] = -Infinity; return logits; }
+function sprachWahl(logits, idDe, idEn) { return logits[idEn] > logits[idDe] ? 'en' : 'de'; }
+
+// ── 8. Silben: g9Syl je Wort, g9Align mit Wort-Zeiten als Anker; feste Silben bleiben; vorhandener Text: nur Lücken ──
+// K = g9Make()-Kern. mode: 'luecken' (Vorgabe) | 'alles'
+function silben(K, words, lang, marks, feat, ly, mode, o) {
+  const S = [];
+  for (const w of words) {
+    const r = K.sylX(w.text, lang); if (!r.s.length) continue;
+    const wt = r.s.map(x => Math.max(1, (x.toLowerCase().match(/[aeiouäöüy]/g) || []).length)), tot = wt.reduce((a, b) => a + b, 0);
+    let c = 0;
+    r.s.forEach((x, i) => { const y = {x: x.slice(0, 24), tau: R6(w.start + (w.end - w.start) * c / tot)}; c += wt[i]; if (i === 0) y.w = 1; const p = fin(w.p) ? w.p : r.p; if (fin(p)) y.p = p; S.push(y); });
+  }
+  let keep = [];
+  if (ly && ly.s && ly.s.length) {
+    const vw = K.view(ly, marks, feat).V;
+    keep = vw.map((y, i) => ({y: ly.s[i], v: y})).filter(z => mode === 'alles' ? z.y.u : true);
+  }
+  // Abschnitte vorhandener Silben belegen ihre Zeit: erkannte Wörter dort fallen weg
+  const occ = keep.map(z => { const k = z.v.k; const t = k >= 0 ? marks[k].t : z.y.t; let e = t + 0.05; for (let q = k + 1; q < marks.length; q++) if (marks[q].t > t) { e = marks[q].t; break; } return [t, e]; });
+  // ganze Wörter: fällt eine Silbe eines Worts in einen belegten Abschnitt, fällt das Wort weg
+  const inOcc = t => occ.some(([a, b]) => t >= a - 1e-6 && t < b);
+  const free = []; for (let i = 0; i < S.length;) { let e = i + 1; while (e < S.length && !S[e].w) e++; const W = S.slice(i, e); if (!W.some(y => inOcc(y.tau))) free.push(...W); i = e; }
+  const all = keep.map(z => ({x: z.y.x, w: z.y.w, p: z.y.p, u: 1, t: z.v.k >= 0 ? marks[z.v.k].t : z.y.t, _u: z.y.u ? 1 : 0, _key: z.v.k >= 0 ? marks[z.v.k].t : z.y.t}))
+    .concat(free.map(y => Object.assign({}, y, {_key: y.tau})))
+    .sort((a, b) => a._key - b._key);
+  const s = K.align(all.map(y => { const z = Object.assign({}, y); delete z._key; delete z._u; return z; }), marks, feat, o);
+  s.forEach((y, i) => { if (all[i].u && !all[i]._u && !all[i].tau) delete y.u; if (all[i].tau != null) delete y.u; });
+  return s;
+}
+return {VERSION, FS, hp80, resample, prep, strecken, verbinden, fenster, plan, fensterDaten, streamToTake, takeToStream, zurueck, kuerzeSchleifen,
+  sprachFilter, sprachWahl, silben};
+}
+/* ===== G9 (Nachtrag 8, Paket G9): Block sq-g9-src – Text-Modus (G9c), dünne Hüllen um den G9a-Kern g9Make (§7.12),
+   Silben-Muster-Lader (§6.2, Cache synq-g9-v1), Erkennungs-Ablauf ohne Modell (G9b-V, §6.6) ===== */
+
+/* ---------- Sprache raten (Auto, §7.7): Umlaute/ß oder häufige deutsche Wörter → de, häufige englische → en ---------- */
+function g9Guess(text) {
+  const t = ' ' + String(text || '').toLowerCase().replace(/[^a-zäöüß']+/g, ' ') + ' ';
+  if (/[äöüß]/.test(t)) return 'de';
+  const de = (t.match(/ (der|die|das|und|ich|nicht|ist|ein|eine|du|wir|mein|dein|mit|auf|sich|zu|im|es|sch\w*) /g) || []).length;
+  const en = (t.match(/ (the|and|you|i|is|it|my|your|me|love|we|to|of|in|on|be|with|that|this|don't|i'm) /g) || []).length;
+  return en > de ? 'en' : 'de';
+}
+const g9L = (lang, text) => (lang === 'en' ? 'en' : lang === 'de' ? 'de' : g9Guess(text));
+const G9K = {guess: g9Guess};   // Rest des früheren Platzhalters: nur noch die Sprach-Vermutung
+
+/* ---------- Silben-Muster (§6.2): vendor/g9/syl/, SHA-256, Cache synq-g9-v1; ohne Muster Vokalkern-Regel ---------- */
+const G9_SYL = {de: {f: 'de-x-syllable.wasm', h: '085f65beb9c5b8aeb72ae661252f643ab1285bd659586fb2cfb1e93686c0d8dc', n: 94905},
+  en: {f: 'en-us.wasm', h: '92e36e95948c94b68a86c06fcd846fd88bb405933d264071ee76bab2f9be3dc9', n: 21027}};
+const G9_CACHE = 'synq-g9-v1';
+async function g9Sha(buf) {
+  if (!(window.crypto && crypto.subtle)) throw new Error('keine Prüfsumme möglich');
+  const d = new Uint8Array(await crypto.subtle.digest('SHA-256', buf)); return Array.from(d, b => b.toString(16).padStart(2, '0')).join('');
+}
+function g9SylEnsure(lang) {
+  const L = lang === 'en' ? 'en' : 'de', K = g9K();
+  if (K.sylMode(L) === 'muster') return Promise.resolve('muster');
+  if (G9.syl[L]) return G9.syl[L];
+  const d = G9_SYL[L]; let url = null;
+  try { url = new URL('vendor/g9/syl/' + d.f, document.baseURI).href; } catch (e) { return Promise.resolve('einfach'); }   // about:blank/srcdoc: ohne Muster
+  G9.syl[L] = (async () => {
+    let buf = null, cache = null;
+    try { if (window.caches && window.isSecureContext) cache = await caches.open(G9_CACHE); } catch (e) { cache = null; }
+    try { if (cache) { const hit = await cache.match(url); if (hit) { const b = await hit.arrayBuffer(); if (await g9Sha(b) === d.h) buf = b; else await cache.delete(url); } } } catch (e) { buf = null; }
+    if (!buf) {
+      if (!/^https?:/.test(url)) throw new Error('kein Server');
+      const t0 = performance.now(), r = await fetch(url, {method: 'GET', cache: 'no-cache'});
+      G9.net.push({url, method: 'GET', bytes: 0, up: 0, ms: Math.round(performance.now() - t0), st: r.status, kind: 'syl'});
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const b = await r.arrayBuffer(); G9.net[G9.net.length - 1].bytes = b.byteLength;
+      if (await g9Sha(b) !== d.h) throw new Error('Prüfsumme falsch: ' + d.f);
+      buf = b;
+      try { if (cache) await cache.put(url, new Response(b.slice(0), {headers: {'Content-Type': 'application/wasm'}})); } catch (e) {}
+    }
+    if (!K.sylLoad(L, new Uint8Array(buf))) throw new Error('Muster-Modul');
+    G9.sylB[L] = new Uint8Array(buf); G9.wSyl = null;                 // Worker bekommt die Muster mit dem nächsten Auftrag
+    G9.ctx = null;
+    return 'muster';
+  })().catch(e => { G9.sylErr = String(e && e.message || e); G9.syl[L] = null; G9.sylFail = G9.sylFail || {}; G9.sylFail[L] = G9.sylErr; return 'einfach'; });
+  return G9.syl[L].then(r => { if (r === 'muster' && WP.ed && WP.ed.g9) g9Refill(WP.ed); return r; });
+}
+const g9SylMode = lang => g9K().sylMode(lang === 'en' ? 'en' : 'de');
+
+// nachkommende Ergebnisse (Muster, Merkmale, Erkennung): das Feld nur neu füllen, wenn dort nicht gerade getippt wird
+function g9Refill(E) { const G = E && E.g9; if (!G) return; G9.ctx = null; if (G.dirty || G.typed) { if (G.dirty && typeof g9Preview === 'function') g9Preview(E); wpPaint(); return; } g9Fill(E); wpPaint(); }
+
+/* ---------- Schnittstelle nach außen (Test-API §7.12) ---------- */
+function g9Syl(word, lang) { return g9K().syl(word, g9L(lang, word)); }
+function g9AlignApi(syl, marks, feat, o) { return g9K().align(syl.map(q => (typeof q === 'string' ? {x: q} : q)), marks, feat, o || {}); }
+
+/* ---------- Merkmale je Marke (§6.1): im VS5a-Worker (g9f), Cache je Take + Quellpuffer + Marken ---------- */
+function g9FeatSrc(id) { try { return wpBase(id, null, true); } catch (e) { return null; } }
+function g9FeatCached(id, mk) {
+  mk = mk || wpMarks(id); if (!mk) return null;
+  const sim = G9.featSim && G9.featSim.get(id); if (sim && sim.length === mk.length) return sim;   // nur Tests (g9FeatSim)
+  const f = G9.feat.get(id), b = g9FeatSrc(id);
+  return f && f.mk === mk && b && f.bid === wpBid(b) ? f.f : null;
+}
+// sync = true: fehlen die Merkmale, im Haupt-Faden rechnen (nur für einen Schritt in den ersten ≈ 100 ms nach dem Öffnen)
+function g9FeatOf(id, sync) {
+  const mk = wpMarks(id); if (!mk) return null;
+  const c = g9FeatCached(id, mk); if (c) return c;
+  const b = g9FeatSrc(id); if (!b) return null;
+  if (sync) { const f = g9K().feat(b.getChannelData(0), b.sampleRate, mk); G9.feat.set(id, {mk, bid: wpBid(b), f}); return f; }
+  g9FeatReq(id);
+  return null;
+}
+function g9FeatReq(id) {
+  const mk = wpMarks(id), b = g9FeatSrc(id); if (!mk || !b) return Promise.resolve(null);
+  const bid = wpBid(b), key = id + '@' + bid; G9.fq = G9.fq || new Map();
+  const q = G9.fq.get(key); if (q && q.mk === mk) return q.p;
+  const p = g9Call({op: 'g9f', x: b.getChannelData(0), sr: b.sampleRate, marks: mk.map(k => ({t: k.t, conf: k.conf}))}).then(f => {
+    G9.fq.delete(key);
+    if (wpMarks(id) !== mk || !Array.isArray(f)) return null;
+    G9.feat.set(id, {mk, bid, f}); G9.ctx = null;
+    if (WP.ed && WP.ed.id === id && WP.ed.g9) g9Refill(WP.ed);
+    return f;
+  }, e => { G9.fq.delete(key); logErr(e); return null; });
+  G9.fq.set(key, {mk, p});
+  return p;
+}
+async function g9FeatApi(id) { const c = g9FeatCached(id); if (c) return deep(c); await (wpMarks(id) ? null : wpDetect(id)); const f = await g9FeatReq(id); return f ? deep(f) : deep(g9FeatOf(id, true)); }
+
+/* ---------- Arbeits-Form eines Takes: W = Sicht des Kerns (§5.1) + Silben-Plätze P (§6.1) ---------- */
+// VS5b-Text (§5.3): Silbe k → Marke k; Silben über 24 Zeichen werden geteilt (ly erlaubt 24), damit kein Buchstabe verloren geht
+function g9Vs5b(lyrics, mk, lang) { const t = String(lyrics || '').trim().split(/\s+/).map(w => w.split('-').filter(Boolean).flatMap(x => x.match(/[\s\S]{1,24}/g)).join('-')).join(' '); return g9K().fromVs5b(t, mk, lang); }
+function g9Pos(SL, k) { let lo = 0, hi = SL.length - 1; while (lo <= hi) { const h = (lo + hi) >> 1; if (SL[h] === k) return h; if (SL[h] < k) lo = h + 1; else hi = h - 1; } return lo; }
+function g9Ctx(id, sync) {
+  const m = S.takes && S.takes[id], mk = wpMarks(id) || [];
+  if (!m) return null;
+  const F0 = g9FeatOf(id, sync), c = G9.ctx;
+  if (c && c.id === id && c.m === m && c.ly === m.ly && c.lyrics === m.lyrics && c.mk === mk && c.F === F0 && c.sm === g9SylMode('de') + g9SylMode('en')) return c.C;
+  const C = g9Ctx0(id, m, mk, F0);
+  G9.ctx = {id, m, ly: m.ly, lyrics: m.lyrics, mk, F: F0, C, sm: g9SylMode('de') + g9SylMode('en')};
+  return C;
+}
+function g9Ctx0(id, m, mk, F) {
+  const K = g9K(); let ly = null, lang = 'de', src = 'getippt', vs5b = false;
+  if (m.ly && m.ly.s) { ly = m.ly; lang = m.ly.lang; src = m.ly.src; }
+  else if (m.lyrics) { vs5b = true; src = 'vs5b'; lang = g9Guess(m.lyrics); ly = g9Vs5b(m.lyrics, mk, lang); }
+  const V = ly ? K.view(ly, mk, F).V : [];
+  const W = g9WOf(V, mk, F);
+  return Object.assign({id, m, mk, ly, lang, src, vs5b, F}, W);
+}
+// Sicht → W mit Platz-Index pi; überzählige am Ende bekommen Plätze hinter der letzten Marke
+function g9WOf(V, mk, F) {
+  const K = g9K(), CO = K.costs(mk, F), P = K.slotsOf(V, CO, mk.length), piOf = new Int32Array(mk.length).fill(-1);
+  P.forEach((j, p) => { piOf[j] = p; });
+  let ext = P.length;
+  const W = V.map(v => ({x: v.x, w: v.w || 0, u: v.u || 0, p: v.p, k: v.k, o: !!v.o, nm: !!v.nm, t: v.t}));
+  W.forEach((q, i) => {
+    if (q.nm) { q.pi = null; return; }
+    const tail = q.o && q.k === mk.length - 1 && W.slice(i).every(z => z.o || z.nm);
+    q.pi = tail ? ext++ : q.k >= 0 ? (piOf[q.k] >= 0 ? piOf[q.k] : g9Pos(P, q.k)) : 0;
+  });
+  return {W, P, piOf};
+}
+// ly.s → W (für Vorschau und Ergebnis-Auswertung)
+function g9WFromS(C, s) { if (!s) return []; const V = g9K().view({s}, C.mk, C.F).V; return g9WOf(V, C.mk, C.F).W; }
+function g9BuildS(W, mk) { return g9K().pack(W.map(q => Object.assign({}, q, {o: q.o ? 1 : 0})), mk); }
+// Wort um Silbe i: [a, b]
+function g9WordAt(W, i) { if (i < 0 || i >= W.length) return null; let a = i, b = i; while (a > 0 && !W[a].w) a--; while (b + 1 < W.length && !W[b + 1].w) b++; return [a, b]; }
+// erste Silbe auf Marke k (nicht überzählig), sonst -1
+function g9SylIdx(W, k) { for (let i = 0; i < W.length; i++) if (!W[i].nm && !W[i].o && W[i].k === k) return i; for (let i = 0; i < W.length; i++) if (!W[i].nm && W[i].k === k) return i; return -1; }
+function g9NextIdx(W, k, incl) { for (let i = 0; i < W.length; i++) if (!W[i].nm && (incl ? W[i].k >= k : W[i].k > k) && W[i].k >= 0) return i; return -1; }
+const g9Str = (W, a, b) => W.slice(a, b + 1).map(q => q.x);
+// Anzeige eines Worts im Feld: ohne Bindestriche, wenn die Trennung von selbst so herauskäme
+function g9Show(parts, lang) { const j = parts.join(''); const a = g9Syl(j, lang); return a.length === parts.length && a.every((x, i) => x === parts[i]) ? j : parts.join('-'); }
+function g9Clean(text) { return String(text || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().split(/\s+/)[0] || ''; }
+const g9Nsyl = (C, text) => g9K().words(text, C.lang).length;
+
+// eine G9-Änderung schreiben: ly + lyrics, ein Undo (Art 'ly'), „geändert“ sofort
+function g9CommitS(C, s, label, o = {}) {
+  const id = C.id, m = S.takes && S.takes[id]; if (!m) return false;
+  const before = g9LySnap(id);
+  g9PutLy(m, s, o.lang || C.lang, o.src || (C.vs5b ? 'vs5b' : C.src));
+  G9.view.delete(id);
+  if (g9LySnap(id) === before) return false;
+  G9.auto.delete(id);                                                 // der Nutzer hat den Text geändert (§7.8)
+  undoPush({kind: 'ly', id, before, label});
+  markDirty(); UI.dirty.all = true;
+  if (WP.ed && WP.ed.id === id) wpPaint();
+  return true;
+}
+
+/* ---------- Schritte (§6.4, §6.5) → Kern apply; je Druck ein Undo ---------- */
+// Wort an k (ersetzen bzw. neu) – trocken (Vorschau = Ergebnis): {W, first, last, merged, old, parts, sel, missing}
+function g9OpWord(C, k, text) {
+  const word = g9Clean(text); if (!word) return {err: 'leer'};
+  if (!C.mk.length) return {err: 'keine Marke'};
+  const r = g9K().apply(C.ly, C.mk, C.F, {op: 'wort', k, text: word, lang: C.lang});
+  if (!r.ok || !r.s) return {err: r.toast || 'keine Marke'};
+  const n = g9Nsyl(C, word), W = g9WFromS(C, r.s), last = (r.iNext | 0) - 1, first = last - n + 1;
+  return {W, s: r.s, n, first, last, merged: r.merged || 0, missing: r.missing || 0, old: r.old ? [r.old] : null, parts: W.slice(first, last + 1).map(q => q.x), sel: r.sel, word: r.word};
+}
+function g9Pick(C, k) { const i = g9SylIdx(C.W, k); return i >= 0 ? i : g9NextIdx(C.W, k, false); }
+// [Nachrücken] (§6.4): der Rest ab dem nächsten Wort rückt um n Silben-Plätze nach rechts, das Wort verteilt sich auf die frei gewordenen Plätze
+function g9OpNach(C, k, n) {
+  const W = C.W, i0 = g9SylIdx(W, k); if (i0 < 0 || !(n > 0)) return {err: 'Kein Wort'};
+  const [a, b] = g9WordAt(W, i0), K = g9K();
+  let s = C.ly.s.map(y => Object.assign({}, y));
+  if (b + 1 < W.length) { const r = K.apply(Object.assign({}, C.ly, {s}), C.mk, C.F, {op: 'nach', i: b + 1, n}); if (!r.ok) return {err: r.toast || 'Nachrücken geht nicht'}; s = r.s; }
+  const V = K.view({s}, C.mk, C.F).V, SL = K.slotsOf(V, K.costs(C.mk, C.F), C.mk.length), p0 = g9Pos(SL, V[a].k);
+  let lim = SL.length;   // bis vor die nächste Silbe; eine feste Silbe ohne Marke ist Schranke (nur Plätze vor ihrer Zeit)
+  if (b + 1 < V.length) { const y = V[b + 1]; if (y.k >= 0) lim = g9Pos(SL, y.k); else { lim = 0; while (lim < SL.length && C.mk[SL[lim]].t <= y.t + 1e-9) lim++; } }
+  for (let q = a; q <= b; q++) { const p = Math.min(p0 + q - a, lim - 1); if (p >= 0 && SL[p] != null && V[q].k >= 0) { V[q].k = SL[p]; V[q].o = 0; } }
+  return {s: K.pack(V, C.mk), i0: a};
+}
+// alles aus der Test-API und der Bedienung: g9Set(id, {op, k, text, d, n, lang})
+function g9Set(id, op) {
+  if (!op) return {ok: false};
+  const C = g9Ctx(id, true); if (!C) return {ok: false, err: 'Kein Take'};
+  if (!C.mk.length && op.op !== 'text') return {ok: false, err: 'Marken werden gesucht …'};
+  const K = g9K(), W = C.W;
+  let r = null, label, tst = null, srcO = null, langO = null, i0 = null, sel = null, res = {};
+  const run = st => K.apply(C.ly, C.mk, C.F, st);
+  switch (op.op) {
+    case 'word': {
+      const q = g9OpWord(C, op.k, op.text); if (q.err) return {ok: false, err: q.err};
+      r = {ok: true, s: q.s}; label = 'Songtext: ' + q.parts.join('');
+      if (q.old) tst = q.old.join('') + ' → ' + q.parts.join('');
+      if (q.merged > 0) tst = (tst ? tst + ' · ' : '') + (q.merged + 1) + ' Silben auf einer Marke';
+      if (!C.m.ly && !C.vs5b) srcO = 'getippt';
+      res = {merged: q.merged, missing: q.missing, first: q.first, last: q.last, n: q.n}; sel = q.sel; break;
+    }
+    case 'del': { const i = g9SylIdx(W, op.k); if (i < 0) return {ok: false, err: 'kein Wort'}; r = run({op: 'loesch', i}); if (!r.ok) break; label = 'Wort gelöscht: ' + r.word; tst = r.word + ' gelöscht'; break; }
+    case 'ins': {
+      const word = g9Clean(op.text); if (!word) return {ok: false, err: 'leer'};
+      const t0 = C.mk[op.k] ? C.mk[op.k].t : 0, hit = g9SylIdx(W, op.k);
+      // mitten in einem Wort: vor das Wort, auf dessen ersten Platz
+      const k = hit >= 0 ? W[g9WordAt(W, hit)[0]].k : op.k;
+      let ia = W.findIndex(y => (y.k >= 0 && !y.nm ? y.k >= k : y.t >= (C.mk[k] ? C.mk[k].t : t0) - 1e-9)); if (ia < 0) ia = W.length;
+      r = run({op: 'wort', k, text: word, lang: C.lang, ins: true}); if (!r.ok) break;
+      label = 'Wort eingefügt: ' + r.word; tst = r.word + ' eingefügt'; if (!C.m.ly && !C.vs5b) srcO = 'getippt';
+      res = {first: ia, n: r.n, last: ia + r.n - 1}; break;
+    }
+    case 'shift': {
+      let i = g9Pick(C, op.k); if (i < 0) return {ok: false, err: 'Keine Silbe ab hier'};
+      if (op.d > 0 && W[i].k === op.k && i + 1 < W.length && W[i + 1].k === W[i].k && !W[i + 1].o && !W[i + 1].nm) i = i + 1;   // §6.5: Verschmelzung löst sich zuerst
+      if (op.d < 0) { const pv = i > 0 ? W[i - 1] : null; if (W[i].pi <= 0) return {ok: false, err: 'Schon am Anfang'}; if (pv && !pv.nm && pv.pi === W[i].pi) return {ok: false, err: 'Schon mit der vorigen Silbe verschmolzen'}; }
+      r = run({op: op.d < 0 ? 'links' : 'rechts', i}); if (!r.ok) break; i0 = i;
+      label = op.d < 0 ? 'Text ab hier ‹ Silbe' : 'Text ab hier Silbe ›'; tst = label; break;
+    }
+    case 'merge': {
+      const i = g9SylIdx(W, op.k); if (i < 0) return {ok: false, err: 'Keine Silbe in diesem Abschnitt'};
+      let e = i; while (e + 1 < W.length && W[e + 1].k === W[i].k && !W[e + 1].nm && !W[e + 1].o) e++;
+      if (e - i + 1 >= 3) return {ok: false, err: 'Höchstens 3 Silben auf einer Marke'};
+      if (e + 1 >= W.length || W[e + 1].nm) return {ok: false, err: 'Keine nächste Silbe'};
+      r = run({op: 'versch', i: e}); if (!r.ok) break; i0 = i; label = 'Silben verschmolzen'; tst = label; break;
+    }
+    case 'split': {
+      const i = g9SylIdx(W, op.k); if (i < 0) return {ok: false, err: 'Keine Silbe in diesem Abschnitt'};
+      if (!(i + 1 < W.length && W[i + 1].k === W[i].k && !W[i + 1].nm)) return {ok: false, err: 'Nur eine Silbe in diesem Abschnitt'};
+      r = run({op: 'trenn', i}); if (!r.ok) break; i0 = i; label = 'Silben getrennt'; tst = label; break;
+    }
+    case 'nach': { const q = g9OpNach(C, op.k, op.n | 0); if (q.err) return {ok: false, err: q.err}; r = {ok: true, s: q.s}; i0 = q.i0; label = 'Nachgerückt'; tst = label; break; }
+    case 'neu': { if (!C.ly) return {ok: false, err: 'Kein Text'}; r = run({op: 'neu'}); label = 'Neu ausgerichtet'; tst = label; break; }
+    case 'text': {
+      const L = g9L(op.lang, op.text); langO = L; srcO = 'eingefuegt';
+      r = op.s !== undefined ? {ok: true, s: op.s} : K.apply(C.ly, C.mk, C.F, {op: 'ganz', text: op.text, lang: L});
+      const cut = !!(r.s && r.s.length >= G9_MAX && g9WordsCount(op.text) > G9_MAX);
+      label = r.s && r.s.length ? 'Songtext eingefügt' : 'Songtext gelöscht'; tst = label + (cut ? ' · gekürzt auf ' + G9_MAX + ' Silben' : ''); break;
+    }
+    default: return {ok: false, err: 'unbekannt'};
+  }
+  if (!r || !r.ok) return {ok: false, err: (r && r.toast) || 'geht nicht'};
+  const ch = g9CommitS(C, r.s, label, {src: srcO, lang: langO});
+  return Object.assign({ok: ch, label, toast: tst, merged: 0, i0, sel: sel != null ? sel : r.sel}, res);
+}
+// Silbenzahl ohne Kappung (für den Hinweis „gekürzt“)
+function g9WordsCount(text) { let n = 0; for (const w of String(text || '').split(/\s+/)) if (/[\p{L}\p{N}]/u.test(w)) n += Math.max(1, g9Syl(w, 'de').length); return n; }
+// [Ganzer Text] und lange Schritte im Worker (§6.3: ganze Ausrichtung ≤ 60 ms im Worker; kein Haupt-Faden-Task > 50 ms)
+async function g9SetAsync(id, op) {
+  if (op && op.op === 'text') {
+    const L = g9L(op.lang, op.text); await g9SylEnsure(L);
+    const mk = wpMarks(id) || (await wpDetect(id)) || []; if (!S.takes[id]) return {ok: false};
+    let F = g9FeatCached(id, mk); if (!F && mk.length) F = await g9FeatReq(id);
+    const C = g9Ctx(id); if (!C) return {ok: false};
+    const r = await g9Call({op: 'g9a', ly: C.ly, marks: C.mk.map(k => ({t: k.t, conf: k.conf})), feat: C.F, step: {op: 'ganz', text: op.text, lang: L}});
+    if (!S.takes[id] || wpMarks(id) !== C.mk) return g9Set(id, Object.assign({}, op, {lang: L}));   // inzwischen geändert: sofort hier
+    return g9Set(id, Object.assign({}, op, {lang: L, s: r && r.ok ? r.s : null}));
+  }
+  return g9Set(id, op);
+}
+
+/* ---------- Sicht für Anzeige: je Marke {txt, kind} + überzählige ---------- */
+function g9Cells(C, Wv) {
+  const W = Wv || C.W, mk = C.mk, cells = mk.map(() => ({s: [], over: []})), extra = [], dash = [];
+  for (let i = 0; i < W.length; i++) {
+    const q = W[i];
+    if (q.nm) { dash.push({x: q.x, t: q.t, i}); continue; }
+    if (q.k < 0 || !cells[q.k]) { extra.push({x: q.x, i}); continue; }
+    if (q.o && q.k === mk.length - 1 && W.slice(i).every(z => z.o || z.nm)) { extra.push({x: q.x, i, k: q.k}); continue; }
+    (q.o ? cells[q.k].over : cells[q.k].s).push(i);
+  }
+  // „–“ nur zwischen Silben (die vorige klingt weiter); vor dem Text, nach einer Pause und hinter der letzten Silbe „·“
+  let seen = false, lastS = -1; cells.forEach((c, j) => { if (c.s.length) lastS = j; });
+  cells.forEach((c, j) => { if (c.s.length) { seen = true; c.kind = 'syl'; } else { c.kind = seen && j < lastS && !(mk[j].word) ? 'mel' : 'empty'; if (mk[j].word) seen = false; } });
+  return {cells, extra, dash};
+}
+// wpPaint (Marken- und Text-Modus): Beschriftung je Marke
+function g9LabelsOf(id, mk) {
+  const C = g9Ctx(id); if (!C || !C.W.length) return null;
+  const {cells, extra} = g9Cells(C);
+  return {labels: cells.map(c => (c.s.length ? c.s.map(i => C.W[i].x).join('·') : c.kind === 'mel' ? '–' : '·')), extra: extra.map(e => C.W[e.i].x)};
+}
+function g9ViewApi(id) {
+  const C = g9Ctx(id); if (!C) return null;
+  const {cells, extra, dash} = g9Cells(C);
+  return {marks: C.mk.length, places: C.P.slice(), cells: cells.map(c => ({x: c.s.map(i => C.W[i].x), over: c.over.map(i => C.W[i].x), kind: c.kind})), extra: extra.map(e => C.W[e.i].x), dash: dash.map(d => ({x: d.x, t: d.t})),
+    syl: C.W.map(q => ({x: q.x, k: q.k, o: !!q.o, w: q.w || 0, u: !!q.u, pi: q.pi, nm: !!q.nm})), feat: !!C.F, mode: g9SylMode(C.lang)};
+}
+
+/* ---------- Text-Modus im Marken-Editor (§7.1–§7.10) ---------- */
+const G9_PULSE = 150, G9_REPLAY = 1500;
+const g9Rec = () => (G9.rec && typeof G9.rec.recognize === 'function' ? G9.rec : null);   // Andock-Stelle für die Erkennung (Zweig g9-br-E)
+function g9Toggle(on) {
+  const E = WP.ed; if (!E) return false;
+  on = on == null ? !E.g9 : !!on;
+  if (on && !E.g9) g9On(E); else if (!on && E.g9) g9Off(E);
+  return !!E.g9;
+}
+function g9End(why) { const E = WP.ed; if (E && E.g9) g9Off(E); return why; }
+function g9Btn(cls, long, short, aria, fn) {
+  const b = el('button', 'rb ' + cls, '<span class="g9bl">' + esc(long) + '</span>'); b.dataset.l = long; b.dataset.s = short || long; if (aria) b.setAttribute('aria-label', aria);
+  b.addEventListener('mousedown', e => e.preventDefault());              // Fokus bleibt im Feld (Chromium)
+  b.addEventListener('click', e => { const E = WP.ed; if (!E || !E.g9) return; G9.hits = (G9.hits | 0) + 1; try { fn(E, e); } catch (err) { logErr(err); } g9Refocus(E); });
+  return b;
+}
+function g9On(E) {
+  closePop();
+  const sh = EL.wpSheet, b = sh.querySelector('.wpb'), head = sh.querySelector('.qh'), x = tkRef(E.r); if (!b || !head || !x) return;
+  const tb = head.querySelector('b');
+  E.g9 = {sel: -1, fk: -1, orig: '', dirty: false, typed: false, prevW: null, pulse: 0, last: {k: -1, t: -1e9}, src: null, title: tb ? tb.innerHTML : '', sx: [], dock: null, ls: []};
+  const G = E.g9;
+  sh.classList.add('g9');
+  if (tb) tb.innerHTML = wpTitlePieces('Text · STIMME · ' + x.label);
+  // [Erkennen]: nur, wenn die Erkennung angedockt ist (§9 Stopp-Punkt 1: sonst ausgeblendet)
+  const rb = el('button', 'rb g9rec', 'Erkennen'); rb.setAttribute('aria-label', 'Worte erkennen'); rb.hidden = !g9Rec();
+  rb.addEventListener('click', () => g9RecSheet(rb)); head.insertBefore(rb, E.tx); G.rb = rb;
+  E.tx.setAttribute('aria-pressed', 'true');
+  // Silben-Leiste
+  const bar = el('div', 'g9bar'), bcv = el('canvas'); bar.append(bcv); bar.dataset.g9h = 'leiste';
+  // Eingabe: [◀] Feld [+] [▶]
+  const row = el('div', 'g9row'), inr = el('div', 'g9in'), tl = el('div', 'g9tl');
+  const f = el('input', 'g9f'); f.type = 'text'; f.maxLength = 60; f.placeholder = 'Silbe oder Wort'; f.setAttribute('aria-label', 'Silbe oder Wort');
+  for (const [k, v] of [['autocomplete', 'off'], ['autocorrect', 'off'], ['autocapitalize', 'off'], ['spellcheck', 'false'], ['enterkeyhint', 'next'], ['inputmode', 'text']]) f.setAttribute(k, v);
+  const bp = g9Btn('g9prev', '◀', '◀', 'Voriger Abschnitt', E2 => g9Step(E2, -1));
+  const bi = g9Btn('g9ins', '+', '+', 'Wort hier einfügen', E2 => g9Accept(E2, 'plus'));
+  const bn = g9Btn('g9next', '▶', '▶', 'Nächster Abschnitt', E2 => g9Step(E2, 1));
+  inr.append(bp, f, bi, bn);
+  const sg = el('div', 'g9sh');
+  const sl = g9Btn('g9sl', '‹ Silbe', '‹', 'Text ab hier eine Silbe nach links', E2 => g9Tool(E2, {op: 'shift', d: -1}));
+  const sr = g9Btn('g9sr', 'Silbe ›', '›', 'Text ab hier eine Silbe nach rechts', E2 => g9Tool(E2, {op: 'shift', d: 1}));
+  sg.append(sl, sr);
+  const bm = g9Btn('g9mg', 'Verschmelzen', '⌒', 'Mit nächster Silbe verschmelzen', E2 => g9Tool(E2, {op: 'merge'}));
+  const bs = g9Btn('g9sp', 'Trennen', '⌣', 'Trennen', E2 => g9Tool(E2, {op: 'split'}));
+  const bt = g9Btn('g9tx', 'Ganzer Text', '≡', 'Ganzen Text einfügen', E2 => g9TextSheet(bt));
+  const bx = g9Btn('g9x', '✕', '✕', 'Schließen', () => wpClose());
+  tl.append(sg, bm, bs, bt, bx);
+  row.append(inr, tl);
+  b.append(bar, row);
+  Object.assign(G, {bar, bcv, row, inr, tl, field: f, bp, bi, bn, sl, sr, bm, bs, bt, bx, longs: [sl, sr, bm, bs, bt]});
+  // Haptik-Labels (§7.9): je Ziel ein Label mit Schalter-Kästchen, nur im Text-Modus und mit UI.haptics
+  E.cvw.dataset.g9h = 'welle';
+  for (const n of [E.cvw, bar, bp, bi, bn, sl, sr, bm, bs, bt]) g9HapAdd(n);
+  // Gesten am Rahmen (Wellenform) und an der Leiste: Tipp = Abschnitt wählen + vorspielen, Ziehen > 8 px = schwenken
+  if (!E.cvw._g9g) { E.cvw._g9g = 1; g9Gest(E.cvw, () => E.cv); } g9Gest(bar, () => bcv);
+  g9Field(E, f);
+  // Zoom (§7.2): öffnet mit der Stufe des Marken-Modus; Median-Abschnitt < 44 px → eine Stufe feiner, höchstens bis 1 Takt
+  G.zoom0 = E.zoom; G.va0 = E.va; G.zoomed = false;
+  { const pre = typeof g3PreOf === 'function' ? g3PreOf(x.a) : 0; if (pre > 0) E.va = x.a.in - pre; }   // §7.2: Ansicht beginnt bei a.in − Anlauf
+  G.vvH = () => g9Dock(); if (window.visualViewport) { visualViewport.addEventListener('resize', G.vvH); visualViewport.addEventListener('scroll', G.vvH); } window.addEventListener('resize', G.vvH);
+  sh.classList.toggle('hap', !!UI.haptics);
+  wpPaint();
+  g9ZoomRule(E);
+  const C = g9Ctx(E.id), i = C ? C.W.findIndex(q => !q.nm && q.k >= 0) : -1;
+  g9SylEnsure(C ? C.lang : 'de'); g9FeatReq(E.id);   // §6.2: Muster beim ersten Öffnen; §6.1: Merkmale im Worker
+  g9Select(i >= 0 ? C.W[i].k : 0, {silent: true});
+  requestAnimationFrame(() => g9Fit(E));
+}
+function g9Off(E) {
+  const G = E.g9; if (!G) return;
+  if (G.dirty && G.field) g9Accept(E, 'blur');   // auch wenn eine Taste außerhalb den Fokus schon genommen hat
+  if (UI.pop && (UI.pop.name === 'g9text' || UI.pop.name === 'g9rec')) closePop();
+  g9StopPlay(true);
+  if (G.vvH) { if (window.visualViewport) { visualViewport.removeEventListener('resize', G.vvH); visualViewport.removeEventListener('scroll', G.vvH); } window.removeEventListener('resize', G.vvH); }
+  try { if (G.field) G.field.blur(); } catch (e) {}
+  E.g9 = null;
+  const sh = EL.wpSheet;
+  g9Undock(sh);
+  sh.classList.remove('g9', 'hap');
+  for (const n of [G.bar, G.row, G.rb]) if (n && n.parentNode) n.remove();
+  if (E.cvw) { E.cvw.querySelectorAll('.g9hl').forEach(n => n.remove()); delete E.cvw.dataset.g9h; }
+  const tb = sh.querySelector('.qh b'); if (tb && G.title) tb.innerHTML = G.title;
+  if (E.tx) E.tx.setAttribute('aria-pressed', 'false');
+  if (WP.ed === E) { E.zoom = G.zoom0; E.va = G.va0; }   // Marken-Modus wieder mit seiner Ansicht
+  if (WP.ed === E) wpPaint();
+}
+function g9Undock(sh) { sh.classList.remove('g9dock', 'd300', 'd250', 'd200', 'q118', 'q88'); for (const k of ['top', 'left', 'width', 'height']) sh.style[k] = ''; }
+// nach ↶ ↷ (Art 'ly') bzw. 'takes'
+function g9Undone(id) { const E = WP.ed; if (E && E.g9 && (!id || E.id === id)) { g9Fill(E); wpPaint(); } else if (E) wpPaint(); }
+// Zoom-Regel (§7.2, G9-37)
+function g9ZoomRule(E) {
+  const G = E.g9, sx = G.sx.filter(s => s[1] > s[0]); if (!sx.length) return;
+  const w = sx.map(s => s[1] - s[0]).sort((a, b) => a - b), med = w[w.length >> 1];
+  if (med >= 44) return;
+  const ORD = [0, 4, 2, 1], i = ORD.indexOf(E.zoom);           // grob → fein
+  if (i >= 0 && i < ORD.length - 1) { E.zoom = ORD[i + 1]; G.zoomed = true; wpPaint(); }
+}
+// lange oder kurze Namen (§7.2): die langen nur, wenn alle ohne Kürzung passen
+function g9Fit(E) {
+  const G = E && E.g9; if (!G) return;
+  const tl = G.tl; tl.classList.remove('short');
+  const txt = (b, t) => { const sp = b.querySelector('.g9bl'); if (sp) sp.textContent = t; };
+  for (const b of G.longs) txt(b, b.dataset.l);
+  const forced = G.dock && G.dock.H < 250 || EL.wpSheet.classList.contains('g9q');
+  const over = forced || G.longs.some(b => b.scrollWidth > b.clientWidth + .5 || b.clientWidth < 44);
+  if (over) { tl.classList.add('short'); for (const b of G.longs) txt(b, b.dataset.s); }
+}
+
+/* ---------- Haptik-Label im Ziel (§7.9) ---------- */
+function g9HapAdd(node) {
+  if (!node || node.querySelector(':scope > .g9hl')) return;
+  const lb = el('label', 'g9hl'), inp = el('input'); lb.setAttribute('aria-hidden', 'true');
+  inp.type = 'checkbox'; inp.setAttribute('switch', ''); inp.tabIndex = -1;
+  inp.addEventListener('click', e => e.stopPropagation());
+  lb.addEventListener('mousedown', e => e.preventDefault());
+  lb.addEventListener('click', e => {
+    const E = WP.ed, G = E && E.g9;
+    if (!G || (G.dragT && performance.now() - G.dragT < 400)) { e.preventDefault(); e.stopPropagation(); return; }   // nach Ziehen: kein Tick
+    const tg = node.dataset.g9h || node.className;
+    queueMicrotask(() => { G9.hap.push({t: Math.round(performance.now()), el: tg, active: !!(WP.ed && WP.ed.g9 && document.activeElement === WP.ed.g9.field), dock: !!(WP.ed && WP.ed.g9 && WP.ed.g9.dock)}); if (G9.hap.length > 200) G9.hap.shift(); });
+  });
+  lb.append(inp); node.append(lb);
+}
+// Probe-Ergebnis G9-61 (iPhone, iOS 18.7): kein Tick per Code; ein Label-Tipp schließt die Tastatur → bei offener Tastatur (Dock)
+// auf iOS kein haptic() (das wäre ein Label-Klick per Code: ohne Tick, nur Risiko für die Tastatur); sonst wie bisher
+function g9Hap(G, kind) { if (G && G.dock && HAP.ios) return; haptic(kind); }
+// Fokus bleibt beim Feld, wenn das Dock aktiv ist bzw. das Feld den Fokus hatte (§7.9 Nr. 2)
+function g9Refocus(E) { const G = E && E.g9; if (G && G.field && (G.dock || G.hadFocus)) { try { G.field.focus({preventScroll: true}); } catch (e) {} } }
+function g9Focus(E) { const G = E && E.g9; if (!G || !G.field) return; try { G.field.focus({preventScroll: true}); } catch (e) {} if (G.field.value) try { G.field.select(); } catch (e) {} }
+
+/* ---------- Gesten: Tipp = wählen + vorspielen, Ziehen = schwenken ---------- */
+function g9Gest(node, cvOf) {
+  node.addEventListener('mousedown', e => { if (WP.ed && WP.ed.g9) e.preventDefault(); });
+  node.addEventListener('pointerdown', e => {
+    const E = WP.ed, G = E && E.g9; if (!G || G.p || e.button > 0) return;
+    // kein Pointer-Capture beim Tipp: sonst ginge der Klick an den Rahmen statt an das Label (kein Tick, §7.9)
+    G.p = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), va: E.va, mode: null, cv: cvOf()};
+  });
+  node.addEventListener('pointermove', e => {
+    const E = WP.ed, G = E && E.g9, p = G && G.p; if (!p || p.id !== e.pointerId) return;
+    const dx = e.clientX - p.x0;
+    if (!p.mode && Math.hypot(dx, e.clientY - p.y0) > 8) { p.mode = 'pan'; try { node.setPointerCapture(e.pointerId); } catch (er) {} }
+    if (p.mode === 'pan') { E.va = p.va - dx / Math.max(1, p.cv.getBoundingClientRect().width) * E.vw.W; G.follow = null; wpPaint(); }
+  });
+  const end = (e, cancel) => {
+    const E = WP.ed, G = E && E.g9, p = G && G.p; if (!p || p.id !== e.pointerId) return;
+    G.p = null;
+    if (p.mode) { G.dragT = performance.now(); return; }
+    if (cancel || performance.now() - p.t0 >= 500) return;
+    const cr = p.cv.getBoundingClientRect(), cx = e.clientX - cr.left;
+    G.tapT = performance.now();   // (kein UI.ghost: der Klick desselben Tipps gehört dem Haptik-Label)
+    g9Select(g9HitK(E, cx, cr.width), {tap: true});
+    g9Focus(E);
+  };
+  node.addEventListener('pointerup', e => end(e, false));
+  node.addEventListener('pointercancel', e => end(e, true));
+  node.addEventListener('click', () => { const E = WP.ed; if (E && E.g9) g9Focus(E); });
+}
+// Abschnitte in Pixeln einer Fläche der Breite w (Wellenform oder Leiste; im Quer-Dock 88 px ist die Wellenform weg)
+function g9SxFor(E, w) { const G = E.g9, V = E.vw; if (!G.secT || !V) return []; return G.secT.map(([a, b]) => [(a - V.a) / V.W * w, (b - V.a) / V.W * w]); }
+// Treffer-Regel (§7.2): schmale Abschnitte (< 44 px) bekommen links/rechts (44 − b)/2 dazu, nur von einem Nachbarn, der ≥ 44 px behält;
+// schmale Nachbarn teilen sich die Fläche (nächste Mitte gewinnt)
+function g9HitK(E, cx, w) {
+  const sx = w ? g9SxFor(E, w) : E.g9.sx, n = sx.length; if (!n) return 0;
+  const iv = sx.map(s => [s[0], s[1]]);
+  for (let k = 0; k < n; k++) {
+    const w = sx[k][1] - sx[k][0]; if (w >= 44) continue;
+    const want = (44 - w) / 2;
+    if (k > 0) { const wl = sx[k - 1][1] - sx[k - 1][0], g = Math.max(0, Math.min(want, wl - 44)); iv[k][0] -= g; }
+    else iv[k][0] -= want;
+    if (k < n - 1) { const wr = sx[k + 1][1] - sx[k + 1][0], g = Math.max(0, Math.min(want, wr - 44)); iv[k][1] += g; }
+    else iv[k][1] += want;
+  }
+  let best = -1, bd = Infinity;
+  for (let k = 0; k < n; k++) {
+    if (cx < iv[k][0] || cx > iv[k][1]) continue;
+    const c = (sx[k][0] + sx[k][1]) / 2, d = Math.abs(cx - c), narrow = sx[k][1] - sx[k][0] < 44;
+    const inOwn = cx >= sx[k][0] && cx < sx[k][1];
+    const sc = narrow ? d : inOwn ? d + 1e4 : d + 2e4;               // schmale zuerst (nächste Mitte), dann der eigene breite
+    if (sc < bd) { bd = sc; best = k; }
+  }
+  if (best < 0) { for (let k = 0; k < n; k++) { const d = Math.min(Math.abs(cx - sx[k][0]), Math.abs(cx - sx[k][1])); if (d < bd) { bd = d; best = k; } } }
+  return Math.max(0, best);
+}
+
+/* ---------- Wählen, Feld füllen, Nachführen ---------- */
+function g9Select(k, o = {}) {
+  const E = WP.ed, G = E && E.g9; if (!G) return false;
+  const mk = wpMarks(E.id) || []; if (!mk.length) { wpPaint(); return false; }
+  k = clamp(k | 0, 0, mk.length - 1);
+  if (G.dirty && !o.keep) g9Accept(E, 'blur');
+  G.sel = k; G.fk = k; G.prevW = null;
+  g9Fill(E);
+  g9Follow(E, k);
+  wpPaint();
+  if (!o.silent) {
+    g9Play(E.id, k);
+    if (!(UI.haptics && EL.wpSheet.classList.contains('hap') && !G.dock && o.tap)) g9Hap(G, 'tick');   // echter Tipp: der Tick kommt vom Label
+  }
+  return k;
+}
+function g9Fill(E) {
+  const G = E.g9, C = g9Ctx(E.id); if (!C) return;
+  const i = g9SylIdx(C.W, G.sel);
+  let s = '';
+  if (i >= 0) { const [a, b] = g9WordAt(C.W, i); s = g9Show(g9Str(C.W, a, b), C.lang); G.word = [a, b]; } else G.word = null;
+  G.orig = s; G.dirty = false; G.typed = false; G.prevW = null;
+  if (G.field) { G.field.value = s; if (document.activeElement === G.field) try { G.field.select(); } catch (e) {} }
+  g9Tools(E, C);
+}
+// der gewählte Abschnitt bleibt im mittleren Drittel (weiches Nachführen ≤ 200 ms)
+function g9Follow(E, k) {
+  const G = E.g9; if (!E.vw || !G.secT || !G.secT[k]) return;
+  const W = G.bcv.getBoundingClientRect().width || 1, s = g9SxFor(E, W)[k];
+  if (s[0] >= W / 3 && s[1] <= 2 * W / 3 || (s[1] - s[0] > W / 3 && s[0] >= 0 && s[1] <= W)) return;
+  const to = E.va + ((s[0] + s[1]) / 2 - W / 2) / W * E.vw.W, from = E.va, t0 = performance.now();
+  G.follow = {to, from, t0};
+  const step = () => { const H = WP.ed === E && E.g9 && E.g9.follow; if (!H) return; const u = Math.min(1, (performance.now() - H.t0) / 160), e = 1 - (1 - u) ** 3; E.va = H.from + (H.to - H.from) * e; wpPaint(); if (u < 1) requestAnimationFrame(step); else E.g9.follow = null; };
+  requestAnimationFrame(step);
+}
+function g9Step(E, d) {
+  const G = E.g9, mk = wpMarks(E.id) || []; if (!mk.length) return;
+  if (d > 0 && G.dirty) { const r = g9Accept(E, 'next'); if (r) return; }
+  g9Select(clamp(G.sel + d, 0, mk.length - 1));
+}
+// Werkzeug-Tasten: grau mit Grund (Toast beim Antippen)
+function g9Tools(E, C) {
+  const G = E.g9; C = C || g9Ctx(E.id); if (!C) return;
+  const k = G.sel, i = g9SylIdx(C.W, k), pick = i >= 0 ? i : g9NextIdx(C.W, k, false);
+  let grp = 0; if (i >= 0) { const p = C.W[i].pi; for (const q of C.W) if (q.pi === p && !q.nm) grp++; }
+  const st = {
+    sl: pick < 0 ? 'Keine Silbe ab hier' : C.W[pick].pi <= 0 ? 'Schon am Anfang' : pick > 0 && C.W[pick - 1].pi === C.W[pick].pi ? 'Schon mit der vorigen Silbe verschmolzen' : '',
+    sr: pick < 0 ? 'Keine Silbe ab hier' : '',
+    mg: i < 0 ? 'Keine Silbe in diesem Abschnitt' : grp >= 3 ? 'Höchstens 3 Silben auf einer Marke' : !(C.W[i + grp] && C.W[i + grp].pi != null) ? 'Keine nächste Silbe' : '',
+    sp: i < 0 || grp < 2 ? 'Nur bei verschmolzenen Silben' : C.W[i].pi + 1 >= C.P.length ? 'Keine freie Marke – beide Silben bleiben zusammen.' : '',
+  };
+  G.why = st;
+  for (const [key, b] of [['sl', G.sl], ['sr', G.sr], ['mg', G.bm], ['sp', G.bs]]) { b.classList.toggle('dis', !!st[key]); b.setAttribute('aria-disabled', String(!!st[key])); }
+  const emp = !G.field || !g9Clean(G.field.value) || !G.dirty; G.bi.classList.toggle('dis', emp); G.bi.setAttribute('aria-disabled', String(emp));
+}
+function g9Tool(E, op) {
+  const G = E.g9, key = op.op === 'shift' ? (op.d < 0 ? 'sl' : 'sr') : op.op === 'merge' ? 'mg' : 'sp';
+  if (G.dirty) g9Accept(E, 'blur');
+  g9Tools(E);
+  if (G.why && G.why[key]) { toast(G.why[key]); return; }
+  const r = g9Set(E.id, Object.assign({k: G.sel}, op));
+  if (!r.ok) { if (r.err) toast(r.err); return; }
+  // die Auswahl folgt der gewählten Silbe
+  const C = g9Ctx(E.id); if (C && r.i0 != null && C.W[r.i0] && C.W[r.i0].k >= 0) G.sel = G.fk = C.W[r.i0].k;
+  g9Fill(E); wpPaint(); g9Pulse(E);
+  toast(r.toast || r.label, {label: 'Rückgängig', fn: () => undo()});
+}
+
+/* ---------- Schreiben (§6.4, §7.4) ---------- */
+function g9Field(E, f) {
+  f.addEventListener('pointerdown', e => e.stopPropagation());
+  f.addEventListener('touchstart', e => e.stopPropagation(), {passive: true});
+  f.addEventListener('focus', () => { const G = WP.ed && WP.ed.g9; if (G) G.hadFocus = true; g9Dock(); });
+  f.addEventListener('blur', () => setTimeout(() => {
+    const E2 = WP.ed, G = E2 && E2.g9; if (!G || G.field !== f || document.activeElement === f) return;
+    G.hadFocus = false;
+    if (G.dirty) g9Accept(E2, 'blur');                                  // „Fertig“: geändertes Wort übernommen
+    g9Dock();
+  }, 60));
+  f.addEventListener('beforeinput', e => {
+    const E2 = WP.ed, G = E2 && E2.g9; if (!G) return;
+    // Leertaste auf dem unveränderten (markierten) Wort: nur weiter, nichts löschen
+    if (e.inputType === 'insertText' && e.data === ' ' && !G.dirty) { e.preventDefault(); g9Step(E2, 1); }
+  });
+  f.addEventListener('keydown', e => {
+    const E2 = WP.ed, G = E2 && E2.g9; if (!G) return;
+    G.kd = performance.now();
+    if (e.key === 'Enter') { e.preventDefault(); if (G.dirty) g9Accept(E2, 'enter'); else g9Step(E2, 1); return; }
+    if (e.key === 'Backspace' && f.value === '' && !G.dirty) { e.preventDefault(); g9Back(E2); return; }
+    if (e.key === 'Backspace' && f.value === '') { e.preventDefault(); g9Back(E2); return; }
+  });
+  f.addEventListener('input', () => {
+    const E2 = WP.ed, G = E2 && E2.g9; if (!G) return;
+    const t0 = performance.now();
+    let v = f.value;
+    G.dirty = v !== G.orig;
+    if (!G.typed) { G.typed = true; G.utop = UNDO[UNDO.length - 1] || null; g9Pulse(E2); if (!(G.last.k === G.sel && performance.now() - G.last.t < G9_REPLAY)) g9Play(E2.id, G.sel); }
+    if (/\s/.test(v)) {                                                 // Leertaste: übernehmen; Rest = Anfang des nächsten Worts
+      // Leertaste (auch Diktat/Einfügen mehrerer Wörter): jedes fertige Wort der Reihe nach übernehmen, das letzte bleibt im Feld
+      const parts = v.split(/\s+/), last = parts.pop();
+      parts.forEach((word, n) => {
+        const E3 = WP.ed, G3 = E3 && E3.g9; if (!G3) return;
+        if (n > 0 && !word) return;
+        G3.field.value = word; G3.dirty = n > 0 ? !!word : (word !== G3.orig || (word === '' && G3.orig !== ''));
+        g9Accept(E3, 'space');
+      });
+      if (last && WP.ed && WP.ed.g9) { const G2 = WP.ed.g9; G2.field.value = last; G2.dirty = last !== G2.orig; G2.typed = true; g9Preview(WP.ed); }
+      G9.kt = performance.now() - t0; return;
+    }
+    g9Preview(E2);
+    G9.kt = performance.now() - t0;
+    (G9.kts || (G9.kts = [])).push(G9.kt); if (G9.kts.length > 400) G9.kts.shift();
+  });
+}
+// Vorschau = Ergebnis nach der Leertaste (gleiche Rechnung, trocken); Bindestrich: der Rahmen geht zur nächsten Silbe desselben Worts
+function g9Preview(E) {
+  const G = E.g9, v = g9Clean(G.field.value);
+  G.prevW = null;
+  if (v) {
+    const C = g9Ctx(E.id), r = C && g9OpWord(C, G.sel, v);
+    if (r && !r.err) {
+      G.prevW = {W: r.W, first: r.first, last: r.last};
+      const h = (G.field.value.match(/-/g) || []).length;
+      if (h !== G.hy) {
+        // Bindestrich: der Rahmen geht zur nächsten Silbe desselben Worts (nach der Ausrichtung, nicht stur k+1)
+        let z = null;
+        if (/-$/.test(v)) { const r2 = g9OpWord(C, G.sel, v + 'x'); if (r2 && !r2.err) z = r2.W[r2.last]; }
+        else z = r.W[Math.min(r.last, r.first + h)];
+        if (z && z.k >= 0 && z.k !== G.fk) { G.fk = z.k; G.fkMoved = true; g9Pulse(E); g9Play(E.id, z.k); }
+        G.hy = h;
+      }
+    }
+  }
+  else { if (G.fk !== G.sel) G.fkMoved = true; G.fk = G.sel; G.hy = 0; }
+  g9Tools(E);
+  // gezeichnet wird im nächsten Bild (ein Neuzeichnen je Bild; der Tastendruck selbst rechnet nur die Vorschau)
+  if (!G.raf) G.raf = requestAnimationFrame(() => { G.raf = 0; if (WP.ed !== E || !E.g9) return; if (G.fkMoved) { G.fkMoved = false; wpPaint(); } else g9PaintBar(E, wpMarks(E.id) || []); });
+}
+function g9Pulse(E) { const G = E.g9; G.pulse = performance.now(); const tick = () => { if (WP.ed === E && E.g9 && performance.now() - E.g9.pulse < G9_PULSE + 20) { wpPaint(); requestAnimationFrame(tick); } else if (WP.ed === E) wpPaint(); }; requestAnimationFrame(tick); }
+// übernehmen: how = 'space' | 'enter' | 'next' | 'blur' | 'plus'
+function g9Accept(E, how) {
+  const G = E.g9; if (!G) return false;
+  const v = g9Clean(G.field.value);
+  let r = null;
+  if (how === 'blur' && G.dirty && G.typed && G.utop !== undefined && (UNDO[UNDO.length - 1] || null) !== G.utop) { g9Fill(E); wpPaint(); return false; }   // dazwischen ↶/↷ eines anderen Schritts
+  if (G.sel < 0) { if (how !== 'blur') toast('Abschnitt antippen'); return false; }
+  if (how === 'plus') {
+    if (!v || !G.dirty) { toast('Erst ein Wort tippen'); return false; }
+    r = g9Set(E.id, {op: 'ins', k: G.sel, text: v});
+  } else if (!G.dirty) { if (how !== 'blur') g9Step(E, 1); return false; }
+  else if (!v) r = G.word ? g9Set(E.id, {op: 'del', k: G.sel}) : null;
+  else r = g9Set(E.id, {op: 'word', k: G.sel, text: v});
+  G.dirty = false; G.prevW = null; G.hy = 0;
+  if (!r || !r.ok) { if (r && r.err) toast(r.err); g9Fill(E); wpPaint(); return false; }
+  g9Hap(G, 'snap');
+  const C = g9Ctx(E.id);
+  if (r.toast) {
+    const acts = [];
+    if (r.merged > 0) { const k0 = G.sel, n = r.merged; acts.push({label: 'Nachrücken', fn: () => { const r2 = g9Set(E.id, {op: 'nach', k: k0, n}); if (r2.ok) { if (WP.ed && WP.ed.g9) { g9Fill(WP.ed); wpPaint(); } toast('Nachgerückt', {label: 'Rückgängig', fn: () => undo()}); } }}); }
+    acts.push({label: 'Rückgängig', fn: () => undo()});
+    toast(r.toast, acts);
+  }
+  if (how === 'blur') { g9Fill(E); wpPaint(); return true; }
+  // Rahmen springt auf den Abschnitt nach der letzten Silbe (Silben-Platz), der spielt
+  let nk = G.sel;
+  if (C && r.last != null && C.W[r.last]) { const p = C.W[r.last].pi; nk = p + 1 < C.P.length ? C.P[p + 1] : Math.min((wpMarks(E.id) || []).length - 1, C.W[r.last].k + 1); }
+  else if (how !== 'plus' && C) nk = Math.min(C.mk.length - 1, G.sel + 1);
+  if (how === 'plus' && C && r.first != null && C.W[r.first + r.n]) nk = C.W[r.first + r.n].k;
+  g9Select(nk, {keep: true});
+  return true;
+}
+// Lösch-Taste im leeren Feld: zur vorigen Silbe (Abschnitt gewählt, Wort markiert), nichts löschen
+function g9Back(E) {
+  const G = E.g9, C = g9Ctx(E.id); if (!C) return;
+  let j = -1; for (let i = C.W.length - 1; i >= 0; i--) if (!C.W[i].nm && C.W[i].k >= 0 && C.W[i].k < G.sel) { j = C.W[i].k; break; }
+  G.dirty = false;
+  g9Select(j >= 0 ? j : Math.max(0, G.sel - 1));
+}
+
+/* ---------- Vorspielen eines Abschnitts (§6.7) ---------- */
+function g9StopPlay(fast) {
+  const s = G9.src; if (!s) return; G9.src = null;
+  const c = AU.ctx; if (!c) return;
+  try { const t = c.currentTime, p = s.g.gain; if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(t); else p.cancelScheduledValues(t); p.setValueAtTime(p.value, t); p.linearRampToValueAtTime(0, t + .005); s.s.stop(t + .008); } catch (e) {}
+}
+function g9Play(id, k) {
+  const E = WP.ed, x = E && tkRef(E.r), a = x && x.a, m = S.takes && S.takes[id], mk = wpMarks(id) || [];
+  if (!a || !m || !mk[k]) return null;
+  if (R.playing) { G9.ownStop = true; try { stop(); } catch (e) { logErr(e); } finally { G9.ownStop = false; } }   // F3: ▶ hält an
+  ensureAudio(); const c = AU.ctx; if (!c) return null;
+  const ab = WP.ab, buf = ab ? tkBuffer(id) : tkHeard(id, a), map = ab ? null : tkHeardMap(id, a); if (!buf) { tkLoad(id); return null; }
+  const len = m.len / m.sr, t0 = mk[k].t, t1 = k + 1 < mk.length ? mk[k + 1].t : len;
+  const A = map ? VSM.warpTime(map, t0) : t0, B0 = map ? VSM.warpTime(map, t1) : t1;
+  const dur = clamp(B0 - A, .12, 4), B = Math.min(buf.duration, A + dur);
+  const st = stimmeT(), dest = st >= 0 && AU.tracks[st] && AU.tracks[st].trackIn; if (!dest) return null;
+  g9StopPlay();
+  const s = c.createBufferSource(), g = c.createGain(), G = isNum(a.gain) ? a.gain : 1, when = c.currentTime + .01, d = Math.max(.012, B - A);
+  s.buffer = buf; g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(G, when + .005); g.gain.setValueAtTime(G, when + d - .005); g.gain.linearRampToValueAtTime(0, when + d);
+  s.connect(g); g.connect(dest);
+  try { s.start(when, Math.max(0, A)); s.stop(when + d + .005); } catch (e) { logErr(e); return null; }
+  const rec = {s, g}; G9.src = rec; s.onended = () => { try { s.disconnect(); g.disconnect(); } catch (e) {} if (G9.src === rec) G9.src = null; };
+  const ent = {id, k, a: +A.toFixed(6), b: +(A + d).toFixed(6), src: [t0, t1], map: map ? wpMapInfo(map).key : null, raw: buf === tkBuffer(id), ab, when, at: c.currentTime, tap: performance.now()};
+  G9.play.push(ent); if (G9.play.length > 100) G9.play.shift();
+  if (E && E.g9) E.g9.last = {k, t: performance.now()};
+  return ent;
+}
+
+/* ---------- Zeichnen: Rahmen in der Wellenform, Silben-Leiste (§7.2) ---------- */
+function g9PaintWave(E, g, P, X, Wp, Hp, mk) {
+  const G = E.g9, m = S.takes && S.takes[E.id], len = m ? m.len / m.sr : 0, map = E.map;
+  const endT = map ? VSM.warpTime(map, len) : len;
+  G.secT = mk.map((k, j) => [P[j], j + 1 < P.length ? P[j + 1] : endT]);   // Abschnitte in gehörter Zeit (wie gezeichnet, G1)
+  G.sx = G.secT.map(([a, b]) => [X(a), X(b)]);
+  G.X = X;
+  const k = G.fk >= 0 ? G.fk : G.sel, s = G.sx[k]; if (!s) return;
+  const lw = performance.now() - G.pulse < G9_PULSE ? 3 : 2;
+  g.fillStyle = 'rgba(255,211,90,.18)'; g.fillRect(s[0], 0, s[1] - s[0], Hp);
+  g.strokeStyle = '#ffd35a'; g.lineWidth = lw; g.strokeRect(s[0] + lw / 2, lw / 2, Math.max(1, s[1] - s[0] - lw), Hp - lw);
+}
+// G3 (§7.2): der hörbare Anlauf/Ausklang wird wieder aufgehellt (nur noch leicht abgedunkelt) – bearbeitbar wie der Rest
+function g9PaintG3(E, g, a, X, Wp, Hp) {
+  const pre = typeof g3PreOf === 'function' ? g3PreOf(a) : 0, post = typeof g3PostOf === 'function' ? g3PostOf(a) : 0;
+  const lift = (x0, x1) => { x0 = Math.max(0, x0); x1 = Math.min(Wp, x1); if (x1 <= x0) return; g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(28,30,34,.9)'; g.fillRect(x0, 0, x1 - x0, Hp); g.restore(); };
+  if (pre > 0) lift(X(a.in - pre), X(a.in));
+  if (post > 0) lift(X(a.out), X(a.out + post));
+}
+function g9PaintBar(E, mk) {
+  const G = E.g9, cv = G.bcv, r = cv.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+  const Wp = Math.max(1, Math.round(r.width)), Hp = Math.max(1, Math.round(r.height));
+  if (cv.width !== Wp * dpr || cv.height !== Hp * dpr) { cv.width = Wp * dpr; cv.height = Hp * dpr; }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = '#101318'; g.fillRect(0, 0, Wp, Hp);
+  const x = tkRef(E.r), a = x && x.a, V = E.vw; if (!a || !V) return;
+  // Hüllkurve der gehörten Fassung im Hintergrund
+  const buf = WP.ab ? tkBuffer(E.id) : tkHeard(E.id, a);
+  if (buf) {
+    const key = wpBid(buf) + '|' + V.a + '|' + V.W + '|' + Wp; let pk = G.pk && G.pk.key === key ? G.pk.v : null;
+    if (!pk) { const d = buf.getChannelData(0), sr = buf.sampleRate; pk = new Float32Array(Wp); for (let px = 0; px < Wp; px++) { const i0 = Math.max(0, Math.floor((V.a + px / Wp * V.W) * sr)), i1 = Math.min(d.length, Math.floor((V.a + (px + 1) / Wp * V.W) * sr)); let q = 0; for (let i = i0, st = Math.max(1, (i1 - i0) >> 6); i < i1; i += st) { const v = d[i] < 0 ? -d[i] : d[i]; if (v > q) q = v; } pk[px] = q; } G.pk = {key, v: pk}; }
+    g.fillStyle = 'rgba(127,176,222,.30)';
+    for (let px = 0; px < Wp; px++) if (pk[px] > 0) { const h = Math.max(1, Math.sqrt(pk[px]) * (Hp - 6)); g.fillRect(px, Hp - 2 - h, 1, h); }
+  }
+  const C = g9Ctx(E.id); if (!C) return;
+  const W = G.prevW ? G.prevW.W : C.W, pv = G.prevW, {cells, extra, dash} = g9Cells(C, W);
+  const sx = g9SxFor(E, Wp), ff = G9.ff || (G9.ff = getComputedStyle(document.body).fontFamily);
+  const fN = '600 13px ' + ff;
+  const sel = G.fk >= 0 ? G.fk : G.sel;
+  g.textBaseline = 'middle';
+  cells.forEach((c, j) => {
+    const s = sx[j]; if (!s || s[1] < 0 || s[0] > Wp) return;
+    const x0 = Math.round(s[0]), x1 = Math.round(s[1]);
+    g.fillStyle = '#4a5466'; g.fillRect(x0, 0, 1, Hp);
+    if (j === sel) { const lw = performance.now() - G.pulse < G9_PULSE ? 3 : 2; g.fillStyle = 'rgba(255,211,90,.18)'; g.fillRect(x0, 0, x1 - x0, Hp); g.strokeStyle = '#ffd35a'; g.lineWidth = lw; g.strokeRect(x0 + lw / 2, lw / 2, Math.max(1, x1 - x0 - lw), Hp - lw); }
+    g.save(); g.beginPath(); g.rect(x0 + 1, 0, Math.max(0, x1 - x0 - 2), Hp); g.clip();
+    let xx = x0 + 4; const y = Hp / 2;
+    const seg = (txt, col, al, dot) => { g.globalAlpha = al; g.fillStyle = col; g.font = fN; g.fillText(txt, xx, y); const tw = g.measureText(txt).width; if (dot) { g.fillStyle = col; for (let d = 0; d < tw; d += 4) g.fillRect(xx + d, y + 9, 2, 1); } xx += tw; g.globalAlpha = 1; };
+    if (c.s.length) c.s.forEach((i, n) => {
+      const q = W[i], isNew = pv && i >= pv.first && i <= pv.last;
+      if (n) seg('·', '#8b93a3', 1);
+      const unsure = isNum(q.p) && q.p < .6;
+      seg(q.x, isNew ? '#ffe7a6' : q.u ? '#f2f4f8' : '#c7d3e3', isNew ? .6 : unsure ? .55 : 1, unsure);
+    });
+    else seg(c.kind === 'mel' ? '–' : '·', '#6c7484', 1);
+    for (const i of c.over) { seg('·', '#8b93a3', 1); seg(W[i].x, '#ff5c5c', 1); }
+    if (j === cells.length - 1) for (const e of extra) { seg(' ', '#000', 0); seg(W[e.i].x, '#ff5c5c', 1); }
+    g.restore();
+  });
+  // feste Silben ohne Marke: gestrichelt an t
+  for (const d of dash) {
+    const xx = ((E.map ? VSM.warpTime(E.map, d.t) : d.t) - V.a) / V.W * Wp; if (xx < -40 || xx > Wp) continue;
+    g.font = fN; const tw = g.measureText(d.x).width; g.setLineDash([3, 3]); g.strokeStyle = '#f2f4f8'; g.lineWidth = 1; g.strokeRect(xx + .5, 4.5, tw + 8, Hp - 9); g.setLineDash([]);
+    g.fillStyle = '#f2f4f8'; g.fillText(d.x, xx + 4, Hp / 2);
+  }
+}
+// Info-Zeile im Text-Modus (§7.3): „Silbe 7 · Takt 3.2 · 0,42 s · ‹Wort›“
+function g9InfoLine(E, mk) {
+  const G = E.g9, m = S.takes && S.takes[E.id]; if (!m) return '';
+  if (!mk.length) return 'Marken werden gesucht …';
+  if (typeof g9RecBusy === 'function' && g9RecBusy() && G9.recMsg) return G9.recMsg;   // Erkennen … 3/5 · 60 % (§7.8)
+  const k = G.sel; if (k < 0 || !mk[k]) return 'Abschnitt antippen';
+  const x = tkRef(E.r), a = x && x.a, w = m.warp, map = E.map, len = m.len / m.sr;
+  const tA = map ? VSM.warpTime(map, mk[k].t) : mk[k].t, tB = map ? VSM.warpTime(map, k + 1 < mk.length ? mk[k + 1].t : len) : (k + 1 < mk.length ? mk[k + 1].t : len);
+  const t0 = w ? w.t0 : wpT0(E.id, a), bpb = grid().beatsPerBar || 4, beat = (tA - t0) / spb(), bar = Math.floor(beat / bpb + 1e-6), bt = Math.floor(beat - bar * bpb + 1e-6);
+  const C = g9Ctx(E.id), i = C ? g9SylIdx(C.W, k) : -1;
+  let s = 'Silbe ' + (k + 1) + ' · Takt ' + (bar + 1) + '.' + (bt + 1) + ' · ' + (tB - tA).toFixed(2).replace('.', ',') + ' s';
+  if (i >= 0) { const [aa, bb] = g9WordAt(C.W, i), q = C.W[i]; s += ' · ' + (isNum(q.p) && q.p < .6 ? 'unsicher · ' : '') + C.W.slice(aa, bb + 1).map(z => z.x).join(''); }
+  if (C && C.W.length && g9SylMode(C.lang) === 'einfach') s += ' · Silbentrennung vereinfacht';
+  if (C) { const nm = C.W.filter(q => q.nm).length; if (nm) s += ' · ' + nm + (nm === 1 ? ' Silbe' : ' Silben') + ' ohne Marke'; }
+  return s;
+}
+function g9AfterPaint(E, mk) {
+  const G = E.g9; if (!G) return;
+  g9PaintBar(E, mk);
+  wpInfoTxt(g9InfoLine(E, mk));
+  E.tx.classList.add('on');
+}
+
+/* ---------- Tastatur-Dock (§7.10) ---------- */
+function g9Dock() {
+  const E = WP.ed, G = E && E.g9, sh = EL.wpSheet; if (!G) return;
+  const f = G.field, foc = document.activeElement === f, vv = window.visualViewport, ih = window.innerHeight;
+  const vis = G9.kb != null ? G9.kb : vv ? vv.height : ih, top0 = G9.kb != null ? 0 : vv ? vv.offsetTop : 0;
+  const on = foc && vis < ih - 120;
+  if (!on) { if (G.dock) { G.dock = null; g9Undock(sh); sh.classList.toggle('hap', !!UI.haptics); requestAnimationFrame(() => { g9Fit(E); wpPaint(); }); } return; }
+  const land = window.innerWidth > ih, H = land ? (vis >= 118 ? 118 : 88) : (vis >= 300 ? 300 : vis >= 250 ? 250 : 200);
+  const cls = land ? 'q' + H : 'd' + H;
+  if (!G.dock || G.dock.cls !== cls) { g9Undock(sh); sh.classList.add('g9dock', cls); }
+  sh.classList.toggle('hap', false);                                   // Probe G9-61 (5: zu): Label-Tipp schließt die Tastatur → im Dock keine Haptik-Labels
+  Object.assign(sh.style, {top: Math.round(top0 + vis - H) + 'px', left: '0px', width: window.innerWidth + 'px', height: H + 'px'});
+  const was = G.dock; G.dock = {H, cls, vis};
+  try { const se = document.scrollingElement || document.documentElement; if (se.scrollTop) se.scrollTop = 0; if (window.scrollY) window.scrollTo(0, 0); } catch (e) {}
+  if (!was || was.cls !== cls) requestAnimationFrame(() => { g9Fit(E); wpPaint(); });
+}
+
+/* ---------- [Ganzer Text] (§7.7) ---------- */
+function g9TextSheet(anchor) {
+  const E = WP.ed; if (!E || !E.g9) return;
+  const id = E.id, C = g9Ctx(id); if (!C) return;
+  if (E.g9.dirty) g9Accept(E, 'blur');
+  // vorbelegt mit dem vorhandenen Text (Zeilen aus w: 2)
+  const lines = []; let cur = null, wd = null;
+  for (const q of C.W) { if (q.w === 2 || !cur) { cur = []; lines.push(cur); } if (q.w || !wd || !cur.length) { wd = [q.x]; cur.push(wd); } else wd.push(q.x); }
+  const txt = lines.map(l => l.map(w => g9Show(w, C.lang)).join(' ')).join('\n');
+  let lang = C.m.ly ? C.lang : 'auto';
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('g9txt');
+    p.innerHTML = `<h4>Ganzer Text</h4><textarea class="g9ta" rows="6" maxlength="20000" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Songtext" placeholder="Songtext einfügen">${esc(txt)}</textarea>` +
+      `<div class="qnote">Zeilen = Atempausen. Silben trennt die App; eigene Bindestriche gelten.</div>` +
+      `<div class="g9lr"><div class="seg g9lang"><button data-l="de">Deutsch</button><button data-l="en">Englisch</button><button data-l="auto">Auto</button></div>` +
+      `<button class="mbtn rb g9ok" data-a="ok">✓ Verteilen</button></div>`;
+    const ta = p.querySelector('.g9ta'), seg = p.querySelector('.g9lang');
+    const paintL = () => seg.querySelectorAll('button').forEach(b => { const on = b.dataset.l === lang; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+    paintL();
+    seg.addEventListener('click', e => { const b = e.target.closest('button[data-l]'); if (b) { lang = b.dataset.l; paintL(); } });
+    ta.addEventListener('pointerdown', e => e.stopPropagation()); ta.addEventListener('touchstart', e => e.stopPropagation(), {passive: true});
+    on(ta, 'focus', () => popDock(p, true)); on(ta, 'blur', () => setTimeout(() => popDock(p), 50));
+    const lang0 = lang;
+    onTap(p, () => { const v = ta.value; closePop(); if (v === txt && lang === lang0 && C.W.length) return; /* nichts geändert → nichts verloren (§7.7) */ wpInfoTxt('Verteilen …'); g9SetAsync(id, {op: 'text', text: v, lang}).then(r => { if (r && r.ok) { if (WP.ed && WP.ed.g9 && WP.ed.id === id) { g9Fill(WP.ed); wpPaint(); } toast(r.toast, {label: 'Rückgängig', fn: () => undo()}); } else if (WP.ed) wpPaint(); }, e => logErr(e)); }, 'button[data-a="ok"]');
+  }, {name: 'g9text'});
+  popDock(UI.pop && UI.pop.el);
+}
+
+/* ---------- [Erkennen] (§7.8) – Andock-Stelle für Zweig g9-br-E (G9.rec), ohne Modell ausgeblendet ----------
+   G9.rec = {cached(): bool, size(): {how, mb}, load(onMB) → Promise, recognize(id, {lang}) → Promise<{words: [{w, a, b, p?}], lang, ms, how, chunks}>,
+             remove() → Promise, stop()}  (Wort-Zeiten a, b in Take-Sekunden) */
+function g9RecSheet(anchor) {
+  const E = WP.ed, rc = g9Rec(); if (!E || !E.g9 || !rc) return;
+  const id = E.id, C = g9Ctx(id), has = !!(C && C.W.length), first = !(rc.cached && rc.cached());
+  const pf = (typeof stProf === 'function' && stProf()) || {}, pg = pf.g9 || {};
+  let lang = pg.lang || 'auto', auto = pg.auto !== false;
+  openPop(anchor, p => {
+    guardTouch(p); p.classList.add('g9rs');
+    const sz = rc.size ? rc.size() : {mb: 80};
+    p.innerHTML = `<h4>${first ? 'Worte erkennen' : 'Erkennen'}</h4>` +
+      (first ? `<div class="qnote">Worte erkennen: lädt einmal ein Sprachmodell (≈ ${Math.round(sz.mb || 80)} MB) auf dieses Gerät. Danach ohne Internet. Der Gesang bleibt auf dem Gerät.</div>`
+        : `<div class="qnote">Sprachmodell auf diesem Gerät: ${Math.round(sz.mb || 0)} MB <button class="rb g9rm" data-a="rm">Entfernen</button></div>`) +
+      `<div class="seg g9lang"><button data-l="auto">Auto</button><button data-l="de">Deutsch</button><button data-l="en">Englisch</button></div>` +
+      `<label class="g9auto"><input type="checkbox" ${auto ? 'checked' : ''}> Neue Aufnahmen automatisch erkennen</label>` +
+      `<div class="savrow">` + (first ? `<button class="mbtn rb" data-a="go">Laden und erkennen</button><button class="mbtn rb" data-a="no">Abbrechen</button>`
+        : has ? `<button class="mbtn rb" data-a="fill">Lücken füllen</button><button class="mbtn rb" data-a="all">Alles ersetzen</button>` : `<button class="mbtn rb" data-a="all">Erkennen</button>`) + `</div>`;
+    const seg = p.querySelector('.g9lang'), paintL = () => seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
+    paintL(); seg.addEventListener('click', e => { const b = e.target.closest('button[data-l]'); if (b) { lang = b.dataset.l; paintL(); } });
+    const cb = p.querySelector('.g9auto input'); cb.addEventListener('change', () => { auto = cb.checked; });
+    onTap(p, bt => {
+      const a = bt.dataset.a; closePop();
+      try { if (typeof stProf === 'function') { const P = stProf(); if (P) { P.g9 = Object.assign({}, P.g9, {auto, lang}); if (typeof stProfSave === 'function') stProfSave(); } } } catch (e) { logErr(e); }
+      if (a === 'rm') { Promise.resolve(rc.remove && rc.remove()).then(() => toast('Sprachmodell entfernt')); return; }
+      if (a === 'no') return;
+      g9RecRunUi(id, {lang, mode: a === 'fill' ? 'fill' : 'all'});
+    }, 'button[data-a]');
+  }, {name: 'g9rec'});
+}
+// Ergebnis einer angedockten Erkennung ausrichten (§6.6.8), falls sie es nicht selbst getan hat (Schnittstelle G9.rec aus G9c:
+// words = [{w, a, b, p?}] in Take-Sekunden): Wort-Zeiten als Anker, feste Silben bleiben; ein Undo „Erkennen“
+async function g9RecRunUi(id, o) {
+  const rc = g9Rec(); if (!rc) return null;
+  try { G9.saves++; if (typeof saveNow === 'function') saveNow(); } catch (e) {}
+  wpInfoTxt('Erkennen …');
+  let res; try { res = await rc.recognize(id, {lang: o.lang, mode: o.mode}); } catch (e) { logErr(e); wpInfoTxt('Erkennen fehlgeschlagen'); return null; }
+  if (!res || !res.words || res.applied) return res;
+  const C = g9Ctx(id, true); if (!C || !C.mk.length) return res;
+  const L = res.lang === 'en' ? 'en' : 'de', words = res.words.map(w => ({text: w.text != null ? w.text : w.w, start: w.start != null ? w.start : w.a, end: w.end != null ? w.end : w.b, p: w.p}));
+  const s = G9E.silben(g9K(), words, L, C.mk, C.F, C.ly, o.mode === 'fill' ? 'luecken' : 'alles');
+  g9CommitS(C, s, 'Erkennen', {src: 'erkannt', lang: L});
+  const ns = words.filter(w => isNum(w.p) && w.p < .6).length;
+  wpInfoTxt(words.length + ' Wörter erkannt' + (ns ? ' · ' + ns + ' unsicher' : ''));
+  if (WP.ed && WP.ed.g9 && WP.ed.id === id) { g9Fill(WP.ed); wpPaint(); }
+  return res;
+}
+/* ---------- Test-API ---------- */
+function g9InfoApi() {
+  const E = WP.ed, G = E && E.g9;
+  const kts = (G9.kts || []).slice().sort((a, b) => a - b);
+  return {loaded: G9.loaded, ms: +G9.ms.toFixed(2), ph: !!(WP.ed && g9SylMode((g9Ctx(WP.ed.id) || {}).lang) === 'einfach'), syl: {de: g9SylMode('de'), en: g9SylMode('en'), err: G9.sylFail || null}, kern: g9K().VERSION, sm: Object.assign({}, G9.sm), job: G9.job.size, hold: G9.hold, auto: G9.auto.size, rec: !!g9Rec(),
+    mem: {wasm: null, model: null}, kt: {med: kts.length ? kts[kts.length >> 1] : null, max: kts.length ? kts[kts.length - 1] : null, n: kts.length},
+    ed: G ? {sel: G.sel, fk: G.fk, prev: G.prevW ? g9BuildS(G.prevW.W, wpMarks(E.id) || []) : null, dock: G.dock ? Object.assign({}, G.dock) : null, kb: G9.kb, field: G.field.value, dirty: G.dirty, focus: document.activeElement === G.field,
+      short: G.tl.classList.contains('short'), hap: EL.wpSheet.classList.contains('hap'), zoom: E.zoom, why: Object.assign({}, G.why)} : null};
+}
+function g9GeomApi() {
+  const E = WP.ed, G = E.g9, r = E.cv.getBoundingClientRect(), br = G.bcv.getBoundingClientRect(), R2 = n => { const q = n.getBoundingClientRect(); return {x: q.left, y: q.top, w: q.width, h: q.height}; };
+  return {wave: {x: r.left, y: r.top, w: r.width, h: r.height}, bar: {x: br.left, y: br.top, w: br.width, h: br.height}, sheet: R2(EL.wpSheet), field: R2(G.field),
+    sx: G.sx.map(s => [r.left + s[0], r.left + s[1]]), btn: Object.fromEntries([['prev', G.bp], ['ins', G.bi], ['next', G.bn], ['sl', G.sl], ['sr', G.sr], ['mg', G.bm], ['sp', G.bs], ['tx', G.bt], ['x', G.bx], ['rec', G.rb], ['text', E.tx]].map(([k, n]) => [k, n && n.offsetParent ? R2(n) : null]))};
+}
+/* ---------- Erkennung (§6.6, §7.8) – Ablauf ohne Sprachmodell (G9b-V) ----------
+   Vorstufe, Stimm-Strecken, Fenster, Rückrechnung und Schutz-Regeln (g9ErkMake) laufen in einem eigenen Worker (G9.w). Das Sprachmodell
+   selbst (G9b-0/1/2) ist NICHT gebaut (Freigabe F0 fehlt, §9 Stopp-Punkt 1): G9.asr bleibt leer, [Erkennen] ist ausgeblendet, nichts lädt.
+   Andock-Stelle für G9b-2: G9.asr = async (fenster16k: Float32Array, {k, lang, a, b}) → {words: [{text, start, end, p?}], lang?}
+   (Zeiten in Sekunden ab Fenster-Beginn). Tests setzen dafür einen Ersatz (g9AsrSim). */
+const G9E = g9ErkMake();
+function g9AsrSimSet(fn, o) { G9.asr = typeof fn === 'function' ? fn : null; G9.asrO = o || {}; g9RecDock(); return !!G9.asr; }
+function g9RecDock() {
+  G9.rec = G9.asr ? {cached: () => true, size: () => ({how: G9.sm.how || 'wasm', mb: 0}), recognize: (id, o) => g9RecJob(id, o || {}), remove: async () => {}, stop: () => g9RecStop()} : null;
+  if (G9.asr) G9.sm = Object.assign({}, G9.sm, {state: 'ready', how: G9.sm.how || 'wasm'});
+  const E = WP.ed; if (E && E.g9 && E.g9.rb) E.g9.rb.hidden = !G9.rec;
+}
+// eigener Worker für die Vorstufe (Blob, wie VS5a); fehlt er, rechnet der Haupt-Faden
+function g9ErkWorker() {
+  if (G9.w) return G9.w;
+  try {
+    const src = g9ErkMake.toString() + '\nconst E = g9ErkMake();onmessage = e => { const m = e.data; try { const p = E.plan(m.x, m.sr, m.o); const r = {win: p.win, map: p.map, segs: p.segs, L: p.L, chunks: p.chunks, lo: p.lo, hi: p.hi, st: p.st}; postMessage({id: m.id, r}, [p.st.buffer]); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
+    G9.w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+    G9.wq = new Map(); G9.wid = G9.wid | 0;
+    G9.w.onmessage = e => { const q = G9.wq.get(e.data.id); if (!q) return; G9.wq.delete(e.data.id); if (e.data.err) q.no(new Error(e.data.err)); else q.ok(e.data.r); };
+    G9.w.onerror = e => { for (const q of G9.wq.values()) q.no(new Error('worker')); G9.wq.clear(); try { e.preventDefault(); } catch (x) {} };
+  } catch (e) { G9.w = null; }
+  return G9.w;
+}
+function g9ErkKill(why) {
+  if (G9.w) { try { G9.w.terminate(); } catch (e) {} for (const q of (G9.wq || new Map()).values()) q.no(new Error(why || 'gestoppt')); if (G9.wq) G9.wq.clear(); G9.w = null; G9.killAt = performance.now(); }
+}
+function g9Plan(x, sr) {
+  const w = g9ErkWorker();
+  if (!w) return Promise.resolve().then(() => G9E.plan(x, sr));
+  return new Promise((ok, no) => { const id = ++G9.wid, c = new Float32Array(x); G9.wq.set(id, {ok, no}); try { w.postMessage({id, x: c, sr}, [c.buffer]); } catch (e) { G9.wq.delete(id); no(e); } });
+}
+// Projektwechsel: Aufträge beenden, automatische Ergebnisse und Warteschlange gehören zum alten Projekt
+function g9ProjReset() { g9ErkKill('Projekt'); for (const j of G9.job.values()) { j.stop = true; j.gen++; if (!j.done) { j.done = true; j.res({applied: true, words: [], stopped: true}); } } G9.job.clear(); G9.auto.clear(); if (G9.autoQ) G9.autoQ.length = 0; G9.view.clear(); G9.feat.clear(); G9.ctx = null; }
+const g9RecBusy = () => [...G9.job.values()].some(j => !j.done);
+function g9RecMsg(t) { G9.recMsg = t; const E = WP.ed; if (E && E.g9) wpInfoTxt(g9InfoLine(E, wpMarks(E.id) || [])); }
+// ein Erkennungs-Auftrag je Take: Fenster einzeln; fertige Fenster bleiben bei [Stopp] und bei „Aufnahme hat Vorrang“ (§5.5, §6.6.9/10)
+function g9RecJob(id, o) {
+  let j = G9.job.get(id);
+  if (j && !j.done) { j.o = Object.assign(j.o, o); if (!o.auto) j.o.auto = false; return j.p; }   // [Erkennen] von Hand übernimmt einen laufenden automatischen Auftrag
+  j = {id, o, phase: 'warten', next: 0, words: [], p: null, done: false, gen: 0, t0: performance.now(), pl: null, lang: null};
+  j.p = new Promise(res => { j.res = res; });
+  G9.job.set(id, j);
+  g9RecGo(j);
+  return j.p;
+}
+async function g9RecGo(j) {
+  if (j.done || j.running) return;
+  if (G9.hold || g9MicBusy()) { j.phase = 'wartet'; g9RecMsg('Erkennen wartet (Aufnahme)'); if (!G9.hold) g9MicOn(); return; }
+  if (!G9.asr) { g9RecEnd(j, 'kein Sprachmodell'); return; }
+  const gen = ++j.gen; j.running = true;
+  try {
+    try { G9.saves++; if (typeof saveNow === 'function') saveNow(); } catch (e) {}   // §6.6.10: vor jeder Erkennung speichern
+    if (!j.pl) {
+      j.phase = 'vorstufe';
+      tkLoad(j.id); const wt = TK.wait.get(j.id); if (wt) await wt;
+      if (gen !== j.gen || j.stop || G9.hold) return;              // inzwischen Mikrofon/Stopp: keine Vorstufe während der Aufnahme
+      const b = g9FeatSrc(j.id); if (!b) throw new Error('kein Take');
+      j.pl = await g9Plan(b.getChannelData(0), b.sampleRate);
+      if (gen !== j.gen) return;
+    }
+    const pl = j.pl, n = pl.win.length;
+    j.lang = j.lang || (j.o.lang === 'de' || j.o.lang === 'en' ? j.o.lang : null);
+    for (let k = j.next; k < n; k++) {
+      if (gen !== j.gen || j.stop) return;
+      j.phase = 'fenster'; g9RecMsg('Erkennen … ' + (k + 1) + '/' + n + ' · ' + Math.round(k / n * 100) + ' %');
+      const w = pl.win[k], x = pl.st.subarray(Math.round(w.a * G9E.FS), Math.round(w.b * G9E.FS));
+      const r = await G9.asr(x, {k, lang: j.lang || 'auto', a: w.a, b: w.b, toTake: s => G9E.streamToTake(pl.map, s), toStream: t => G9E.takeToStream(pl.map, t)});
+      if (gen !== j.gen || j.stop) return;                          // beendet, während das Fenster rechnete: Ergebnis verworfen (wie terminate)
+      if (!j.lang) j.lang = r && (r.lang === 'en' || r.lang === 'de') ? r.lang : 'de';
+      j.words[k] = (r && r.words) || []; j.next = k + 1;
+    }
+    g9RecEnd(j);
+  } catch (e) { if (gen === j.gen && !j.stop) { logErr(e); g9RecEnd(j, String(e && e.message || e)); } }
+  finally { if (gen === j.gen) j.running = false; }
+}
+// Ergebnis ausrichten (§6.6.8): Wort-Zeiten als Anker, feste Silben bleiben; [Erkennen] = ein Undo „Erkennen“, automatisch ohne Schritt (§7.8)
+function g9RecEnd(j, err) {
+  if (j.done) return; j.done = true; j.running = false;
+  const res = {applied: true, words: [], ms: Math.round(performance.now() - j.t0), how: G9.sm.how || 'wasm', chunks: j.pl ? j.pl.win.length : 0, lang: j.lang || 'de', err: err || null, stopped: !!j.stop, lo: j.pl ? j.pl.lo : 0, hi: j.pl ? j.pl.hi : 0};
+  try {
+    if (j.pl && j.words.length) {
+      const z = G9E.zurueck(j.words, j.pl); res.words = z.words; res.drop = z.drop;
+      const m = S.takes && S.takes[j.id], mk = wpMarks(j.id);
+      if (m && mk && mk.length && z.words.length) {
+        const C = g9Ctx(j.id, true), K = g9K();
+        const typing = WP.ed && WP.ed.id === j.id && WP.ed.g9 && (WP.ed.g9.dirty || WP.ed.g9.typed);
+        if (j.o.auto && (m.ly || m.lyrics || typing)) { res.discard = true; g9RecMsg('Erkennung verworfen – Text schon da'); }
+        else {
+          const s = G9E.silben(K, z.words, res.lang, C.mk, C.F, C.ly, j.o.mode === 'fill' ? 'luecken' : 'alles');
+          if (j.o.auto) { g9PutLy(m, s, res.lang, 'erkannt'); G9.view.delete(j.id); G9.auto.set(j.id, {ly: m.ly ? JSON.parse(JSON.stringify(m.ly)) : null, lyrics: m.lyrics || null}); markDirty(); UI.dirty.all = true; }
+          else g9CommitS(C, s, 'Erkennen', {src: 'erkannt', lang: res.lang});
+          const ns = z.words.filter(w => isNum(w.p) && w.p < .6).length;
+          g9RecMsg((j.stop ? 'gestoppt · ' : '') + z.words.length + ' Wörter erkannt' + (ns ? ' · ' + ns + ' unsicher' : ''));
+          if (WP.ed && WP.ed.id === j.id) { if (WP.ed.g9) g9Refill(WP.ed); else wpPaint(); }
+        }
+      }
+    } else g9RecMsg(err ? 'Erkennen fehlgeschlagen' : j.stop ? 'gestoppt' : 'keine Wörter erkannt');
+  } catch (e) { logErr(e); res.err = String(e && e.message || e); }
+  G9.job.delete(j.id);
+  j.res(res);
+  setTimeout(g9AutoPump, 0);
+}
+// [Stopp] (§6.6.9): Worker beenden – sofort; fertige Fenster bleiben und werden ausgerichtet
+function g9RecStop() {
+  const t0 = performance.now(); g9ErkKill('gestoppt');
+  let n = 0; for (const j of G9.job.values()) if (!j.done) { j.stop = true; j.gen++; n++; g9RecEnd(j); }
+  G9.stopMs = performance.now() - t0;
+  return n > 0;
+}
+// Aufnahme hat Vorrang (§6.6.10): Worker beenden, angefangenes Fenster verwerfen, job.next merkt das nächste
+function g9RecHold() {
+  let any = false; for (const j of G9.job.values()) if (!j.done) { any = true; j.gen++; j.running = false; j.phase = 'wartet'; }
+  g9ErkKill('Aufnahme'); G9.holdKill = performance.now();
+  if (any) g9RecMsg('Erkennen wartet (Aufnahme)');
+}
+function g9RecResume() { for (const j of G9.job.values()) if (!j.done) g9RecGo(j); g9AutoPump(); }
+// [Erkennen]-Blatt (ui.js) ruft das: g9RecRun(id, {lang, mode})
+function g9RecRun(id, o) { return g9RecRunUi(id, o || {}); }
+
+/* ---------- automatisch erkennen (F1, §7.8): nach jeder neuen Aufnahme mit Mikrofon, nur ohne laufendes Mikrofon und bei stehendem ▶,
+   höchstens ein Take gleichzeitig, in Aufnahme-Reihenfolge, nur für Takes ohne Text ---------- */
+function g9AutoOn() { try { const P = typeof stProf === 'function' ? stProf() : null; return !(P && P.g9 && P.g9.auto === false); } catch (e) { return true; } }
+function g9AutoQueue(id) { if (!G9.rec || !g9AutoOn()) return false; (G9.autoQ || (G9.autoQ = [])).push(id); setTimeout(g9AutoPump, 0); return true; }
+function g9AutoPump() {
+  const q = G9.autoQ; if (!q || !q.length || !G9.rec || g9RecBusy()) return;
+  if (G9.hold || g9MicBusy() || R.playing) { clearTimeout(G9.autoT); G9.autoT = setTimeout(g9AutoPump, 500); return; }
+  while (q.length) {
+    const id = q.shift(), m = S.takes && S.takes[id];
+    if (!m || m.ly || m.lyrics || !g9AutoOn()) continue;
+    const pf = (typeof stProf === 'function' && stProf()) || {}, lang = (pf.g9 && pf.g9.lang) || 'auto';
+    g9RecJob(id, {auto: true, lang, mode: 'all'});
+    return;
+  }
+}
+
+</script>
 <script type="text/plain" id="sq-mk-src">
 /* ===== MK1 / MK-P (Nachtrag 3 B.3, B.4, MK-P): block sq-mk-src, evaluated on first need (mkLoad). The panel of the AM engine as
    the front of the original device after the line drawing (blue-silver plate, one knob or key per value, the 2 x 16 display with
@@ -16585,7 +17836,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.25.2';
+const VERSION = '4.25.3';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -18218,6 +19469,7 @@ function mkInCycle(i, j) {
 const MICTAP = {stream: null, p: null, src: null, out: null, users: new Set(), gum: 0, label: '', err: null, at: 0};
 function micTapGet(user, lazy) {
   if (!micAvail()) return Promise.resolve(false);
+  if (typeof g9MicOn === 'function') g9MicOn();   // G9: Aufnahme hat Vorrang
   MICTAP.users.add(user);
   if (MICTAP.stream) { micTapNodes(); return Promise.resolve(true); }
   if (MICTAP.p) return MICTAP.p;
@@ -19634,6 +20886,7 @@ function launch(i, slot, atT) {
 }
 function launchScene(s) {
   ensureAudio(); if (!AU.ctx) return;
+  if (typeof g9OnStop === 'function') g9OnStop();             // G9-39
   s = clamp(s | 0, 0, NS() - 1);
   if (UI.mkSplitOff) { try { UI.mkSplitOff(); } catch (e) { logErr(e); } }   // MK-P: a scene change ends Split ← nächste Note
   const rb = R.playing ? nextBarFromAudible() : 0;                // V2c: the scene's chord row starts with the scene (§4.6)
@@ -20806,6 +22059,7 @@ function startTransport(countIn) {
 function play() { startTransport(null); }
 function stop() {
   const c = AU.ctx;
+  if (typeof g9OnStop === 'function') g9OnStop();             // G9-39
   if (UI.mkSplitOff) { try { UI.mkSplitOff(); } catch (e) { logErr(e); } }   // MK-P: ■ ends Split ← nächste Note
   if (MICW.iv) { recMicWaitEnd(); toast('Aufnahme abgebrochen'); if (!R.playing) return; }   // H5: ■ während „🎤 wird bereit“
   if (!R.playing) {                                          // ■ twice within 1 s: tails off (§8.1)
@@ -20956,6 +22210,7 @@ function undoState(e) {
   if (e.kind === 'own') return S.song && S.song.own && S.song.own[e.id] ? JSON.stringify(S.song.own[e.id]) : null;   // V2e′
   if (e.kind === 'mkin') return S.tracks[e.track] ? JSON.stringify(S.tracks[e.track].mkIn || null) : 'null';
   if (e.kind === 'mkslot') return mkSlotSnap(e.ids);       // MK8: the library records a WRITE / WERKSKLANG ZURÜCK touched
+  if (e.kind === 'ly') return g9LySnap(e.id);                                                   // G9: nur Text eines Takes
   if (e.kind === 'takes') return S.takes ? JSON.stringify(S.takes) : null;                     // VS3
   if (e.kind === 'tflag') return S.tracks[e.track] && S.tracks[e.track].stimme ? '1' : '0';     // VS3
   if (e.kind === 'tphase') return tkPhaseOf(e.track, e.scene);                                  // VS-L-fix
@@ -20980,6 +22235,7 @@ function undoApply(e, val) {
     if (n && (n.e1 === 'mic' || n.e2 === 'mic')) queueMicrotask(() => mkMicResume(e.track)); } }   // G-MKP8-merge-fix: redo brings the mic back (after the whole group)
   else if (e.kind === 'set') settingApply(e.key, JSON.parse(val));
   else if (e.kind === 'mkslot') mkSlotPut(JSON.parse(val));
+  else if (e.kind === 'ly') g9LyPut(e.id, val);                  // G9
   else if (e.kind === 'takes') { if (val) S.takes = JSON.parse(val); else delete S.takes; if (typeof clSync === 'function') queueMicrotask(clSync); wpUndone(); }      // VS3; VS4: Säubern folgt; VS5a: Zeitkarte und Marken-Editor folgen
   else if (e.kind === 'tflag') tkFlag(e.track, val === '1');
   else if (e.kind === 'tphase') tkPhaseSet(e.track, e.scene, val);                            // VS-L-fix
@@ -34692,6 +35948,7 @@ function openMenu(goto) {
     'TRÄGER GEHÖREN DEM SONG: Endet ▶ SONG oder ● SONG, kommt der Träger von vorher zurück (z. B. ORIGINAL) – der Toast bietet [… behalten] an.',
     'MELODIE IM SONG: Die Melodie klingt immer genau wie gespielt und folgt späteren Akkordwechseln nicht („⇅ fest“). Sie nutzt die Stimmen ihrer Spur – teilt sie sich eine MONO-Spur mit Clips, klingt sie abgehackt: dann [Freie Spur nehmen].',
     'DRUMS: 12 Pads – oben antippen = laut, unten = leise. KLANG öffnet den Drum-Editor: SOUND (Modell und Regler), TIEF (alle Schichten), SCHRITTE (Euklid, Muster), KIT (Gate, Raum, Akzent).',
+    'TEXT (STIMME): Im Marken-Editor [Text] – auf die Wellenform tippen spielt den Abschnitt bis zur nächsten Marke; einfach losschreiben, Wörter mit mehreren Silben verteilen sich selbst; ein Wort antippen, Feld leeren und Leertaste löscht es, [+] fügt das getippte Wort ein. [Ganzer Text] verteilt einen eingefügten Songtext (Zeilen = Atempausen). Statt tippen geht auch die Diktier-Taste der Tastatur; für einen Tick je Taste in den Einstellungen das Tastatur-Feedback ‚Haptik‘ einschalten.',
     ...FX_HELP.map(t => 'FM-FELD: ' + t),
     'FM: Klangerzeugung FM = 6 Operatoren wie beim DX7. ALGO zeigt, wer wen moduliert (farbig = Ausgang); Box antippen = Operator wählen, wischen = anderer Algorithmus. Die Regler unten sind die Pegel der Operatoren (Modulator: Helligkeit, Ausgang: Lautstärke). OP stellt Frequenz, Hüllkurve und Skalierung ein, MAKRO macht alles auf einmal heller, bissiger, härter oder länger. Menü → Sounds lädt DX7-Bänke (.syx).',
     'FM-HÜLLKURVEN (OP › HÜLLK. oder HÜLLK. › OPERATOREN): Punkt waagrecht ziehen = Zeit (Anzeige in ms und als DX-Rate R), senkrecht = Pegel L. Ein zweiter Finger oder [FEIN] = fein, Doppeltipp = Init-Wert. Ausgänge machen die Lautstärke, Modulatoren die Klangfarbe. Zu schnelle Stufen knacken: Der Zug hält an der Klick-Grenze, ein zweiter Zug geht darüber hinaus. Vorlagen [Snap] [Pluck] [Pad] [Orgel]; TONHÖHE = Tonhöhen-Hüllkurve ([Ruck], [Fall], [Anstieg]).',
@@ -34897,6 +36154,7 @@ function setUiPref(k, v) { const p = uiPrefs(); p[k] = v; safeSet(UI_KEY, JSON.s
 
 function applyProject(p, opts) {
   opts = opts || {};
+  if (G9.loaded && typeof g9ProjReset === 'function') g9ProjReset(); else G9.auto.clear();   // G9
   if (R.playing) stop();
   if (rec.state !== 'off') { rec.state = 'off'; rec.open.clear(); }
   rec.tail = null;
@@ -37746,6 +39004,7 @@ function micGate(r) {
 /* ---------- Ablauf ---------- */
 function micStart(opts) {
   if (MIC.run || !micAvail()) return false;
+  if (typeof g9MicOn === 'function') g9MicOn();   // G9: Aufnahme hat Vorrang
   opts = opts || {};
   if (ST.run) stRelease(ST.run, 'check');                    // VS1: 🎤 aus, der Mikro-Check braucht das Mikrofon allein
   const c = ensureAudio();                                   // im selben Tipp: resume (I11)
@@ -38410,6 +39669,7 @@ function stProf() {
       out.prof[k] = {ms: p.ms, spread: +p.spread || 0, at: String(p.at || '').slice(0, 30), how: p.how === 'hand' ? 'hand' : 'gemessen', floorDb: isFinite(+p.floorDb) ? +p.floorDb : null, gainDb: isFinite(+p.gainDb) ? +p.gainDb : null, outMs: isFinite(+p.outMs) ? +p.outMs : null}; }
     if (ST_ROUTES[o.route]) out.route = o.route;
     if (o.vs && typeof o.vs === 'object') out.vs = {src: o.vs.src === 'inst' ? 'inst' : 'voice', lock: !!o.vs.lock, snap: o.vs.snap !== false, grid: String(o.vs.grid || '1/16'), mel: o.vs.mel !== false};   // VS2; VS-L: mel = Melodieerkennung (fehlt = An)
+    if (o.g9 && typeof o.g9 === 'object') out.g9 = {auto: o.g9.auto !== false, lang: ['auto', 'de', 'en'].includes(o.g9.lang) ? o.g9.lang : 'auto'};   // G9 (§5.4)
   }
   return (ST.prof = out);
 }
@@ -38497,6 +39757,7 @@ function stToggle() { if (ST.run && ST.run.stopping) return false; return ST.on 
 function stSessType() { const v = UI.stsess || 'par'; return v === 'auto' ? 'auto' : v === 'none' ? null : 'play-and-record'; }
 function stStart(opts) {
   if (ST.on || ST.run || !micAvail()) return false;
+  if (typeof g9MicOn === 'function') g9MicOn();   // G9: Aufnahme hat Vorrang
   if (MIC.run) { toast('Erst den Mikro-Check beenden'); return false; }
   opts = opts || {};
   const c = ensureAudio();                                    // im selben Tipp: resume (I11)
@@ -40072,6 +41333,7 @@ function tkMakeTake(aBeat, bBeat, src, done) {
     const b = tkToBuffer(pcm, sr); if (b) TK.buf.set(id, vpKick(b));   // VS-P-fix: messen, sobald der Take fertig ist
     try { g3TakePre(id, m, pcm, Fa - F0, sr); } catch (e) { logErr(e); }   /* G3: hörbarer Anlauf */
     TK.last = {id, n, sr, got, pre: pre / sr, late: late / sr, src};
+    if (G9.loaded && typeof g9AutoQueue === 'function') g9AutoQueue(id);   // G9 (F1)
     UI.dirty.grid = UI.dirty.song = true;
     const fin = ok => { if (done) { try { done(ok, id); } catch (e) { logErr(e); } } };
     const store = () => { TK.pend.delete(id); Promise.all([tkStore(id, pcm, chunks), clFill(id, ST.ring || g, F0 + late, F0, n, m)]).then(r => { fin(r[0]); if (m.cl && S.takes && S.takes[id] === m) clEnsure(id); }); };   // auch nach ↶ (↷ holt den Take zurück; [Aufräumen] löscht Reste); VS4: Referenz, dann säubern
@@ -42357,7 +43619,7 @@ function wpRun(M, m) {
 function wpWorker() {
   if (WP.w !== null) return WP.w;
   try {
-    const src = vsMarksMake.toString() + '\n' + vsStretchMake.toString() + '\n' + wpRun.toString() + '\nconst M = vsMarksMake();M.X = vsStretchMake();onmessage = e => { const m = e.data; try { const r = wpRun(M, m); postMessage({id: m.id, r}, r instanceof Float32Array ? [r.buffer] : r && r.y instanceof Float32Array ? [r.y.buffer] : []); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
+    const src = vsMarksMake.toString() + '\n' + vsStretchMake.toString() + '\n' + wpRun.toString() + '\n' + g9Make.toString() + '\n' + g9Run.toString() + '\nconst K9 = g9Make();const M = vsMarksMake();M.X = vsStretchMake();onmessage = e => { const m = e.data; if (m.id === -1) { try { g9Run(K9, m); } catch (er) {} return; } try { const r = m.op === "g9f" || m.op === "g9a" || m.op === "g9s" ? g9Run(K9, m) : wpRun(M, m); postMessage({id: m.id, r}, r instanceof Float32Array ? [r.buffer] : r && r.y instanceof Float32Array ? [r.y.buffer] : []); } catch (err) { postMessage({id: m.id, err: String(err && err.message || err)}); } };';
     const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
     const w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
     w.onmessage = e => { const m = e.data, q = WP.wq.get(m.id); if (!q) return; WP.wq.delete(m.id); clearTimeout(q.to); if (m.err) q.no(new Error(m.err)); else q.ok(m.r); };
@@ -42415,14 +43677,14 @@ function wpRender(id, key, b, w, alt) {
     const y = r && r.y ? r.y : r, warn = r && r.warn ? r.warn : [];
     const ab = wpToBuf(y, sr); if (!ab) return;
     if (alt) {
-      WP.alt.set(id, {key, buf: vpKick(ab), warn, mode: w.mode}); WP.altRenders = (WP.altRenders | 0) + 1;
+      WP.alt.set(id, {key, buf: vpKick(ab), warn, mode: w.mode, map: w.map}); WP.altRenders = (WP.altRenders | 0) + 1;
       const nw = wpWarp(id), nb = nw && !WP.ab && wpBase(id);
       if (nb && wpKey(nw, nb) === key) { clResync(); UI.dirty.grid = UI.dirty.song = true; wpPaint(); }   // inzwischen umgeschaltet: jetzt hören
       return;
     }
     const prev = WP.cache.get(id);
     if (prev && prev.key !== key && WP.ed && WP.ed.id === id) WP.old.set(id, prev);
-    WP.cache.set(id, {key, buf: vpKick(ab), warn, mode: w.mode});
+    WP.cache.set(id, {key, buf: vpKick(ab), warn, mode: w.mode, map: w.map});
     WP.renders++; WP.last = {id, ms: Math.round(performance.now() - t0), how: WP.how, n: s.length - 2, key, mode: w.mode, warn: warn.length, wsola: r && r.wsola != null ? r.wsola : undefined};
     if (warn.length && WP.warnK !== key) { WP.warnK = key; toast('Dehnen: ' + warn.length + (warn.length === 1 ? ' Stelle' : ' Stellen') + ' nur verschoben – Faktor außerhalb 0,5–2,0'); }
     const act = tkActiveIds(); for (const k of [...WP.cache.keys()]) if (!act.has(k) && WP.cache.size > 6) WP.cache.delete(k);
@@ -42602,6 +43864,7 @@ function wpEdit(id, label, fn) {
   m.marks = mk.map(k => Object.assign({}, k));
   if (fn(m.marks) === false) { if (had) m.marks = had; else delete m.marks; return false; }
   m.marks.sort((x, y) => x.t - y.t);
+  if (m.ly && typeof g9MarkHook === 'function') g9MarkHook(id, mk, m.marks);   // G9: Silben folgen ihrer Marke
   if (w) wpRequant(id, w);
   if (JSON.stringify(S.takes) === before) return false;
   undoPush({kind: 'takes', before, label});
@@ -42657,7 +43920,7 @@ function wpSetMode(id, mode) {
 function wpSetLyrics(id, text) {
   const m = S.takes && S.takes[id]; if (!m) return false;
   const v = wpNormLyr(text), before = JSON.stringify(S.takes);
-  if (v) m.lyrics = v; else delete m.lyrics;
+  if (!(typeof g9SetLyricsHook === 'function' && g9SetLyricsHook(m, v))) { if (v) m.lyrics = v; else delete m.lyrics; }   // G9
   if (JSON.stringify(S.takes) === before) return false;
   undoPush({kind: 'takes', before, label: v ? 'Songtext' : 'Songtext gelöscht'});
   markDirty(); UI.dirty.all = true; wpPaint(); return true;
@@ -42666,6 +43929,7 @@ function wpSetLyrics(id, text) {
 function wpLyr(id) { const m = S.takes && S.takes[id]; if (!m || !m.lyrics) return null; const mk = wpMarks(id) || []; return VSM.assignLyrics(m.lyrics, mk.length); }
 // ↶ ↷ einer 'takes'-Änderung: Wiedergabe und Editor folgen
 function wpUndone() {
+  if (typeof g9TakesUndone === 'function') g9TakesUndone();   // G9 (§7.8)
   if (typeof g2Undone === 'function') g2Undone();   // G2
   if (WP.ed && !tkRef(WP.ed.r)) { wpClose(); return; }
   for (const id of tkActiveIds()) if (wpWarp(id)) wpPlay(id);
@@ -42715,7 +43979,7 @@ document.addEventListener('mousedown', e => {
 function wpOpen(r) {
   const x = tkRef(r); if (!x || !tkAudioOk()) return false;
   if (QS.open) closeQuantSheet(false, true);
-  closePop(); if (WP.ed) wpClose();
+  closePop(); if (WP.ed) wpClose(); if (typeof G2 !== 'undefined' && G2.ed) g2Close();   // G9: Noten-Editor und Text-/Marken-Editor schließen sich aus
   const id = x.a.take, segBars = (x.a.out - x.a.in) / spb() / 4;
   const w0 = S.takes[id] && S.takes[id].warp, md0 = w0 ? w0.mode : 'stretch';     // VS5b: Gesang → Standard „Dehnen“ (C.5 Nr. 3, 7); G1: 100 %
   WP.ed = {r, id, zoom: segBars <= 2.05 ? 0 : 2, va: x.a.in, sel: -1, p: null, ghost: null, mode: md0, str: w0 ? w0.strength : wpDefStr(md0), sw: w0 ? w0.swing : .5, sb: null};
@@ -42725,7 +43989,8 @@ function wpOpen(r) {
   ab.addEventListener('click', () => { WP.ab = !WP.ab; wpResync(); wpPaint(); });
   const cl = el('button', 'sh-x rb', '✕'); cl.setAttribute('aria-label', 'Schließen'); cl.addEventListener('click', () => wpClose());
   const tx = el('button', 'rb wptx', 'Text'); tx.setAttribute('aria-label', 'Songtext');
-  tx.addEventListener('click', () => wpLyrPop(tx));
+  tx.addEventListener('click', () => { if (g9Load()) g9Toggle(); else wpLyrPop(tx); });   // G9: [Text] = Text-Modus (Pop nur noch als Rückfall)
+  if (S.takes[id] && S.takes[id].ly) g9Load();
   head.append(tx, ab, cl);
   const b = el('div', 'qb wpb'), cvw = el('div', 'wpcv'), cv = el('canvas'), an = el('span', 'wpan');
   cvw.append(cv, an);
@@ -42779,8 +44044,9 @@ function wpCurW() { const E = WP.ed, m = E && S.takes && S.takes[E.id]; return m
 function wpInfoTxt(t) { if (WP.ed && WP.ed.info) WP.ed.info.textContent = t; }
 function wpClose() {
   const E = WP.ed; if (!E) return;
+  if (E.g9 && typeof g9Off === 'function') g9Off(E);              // G9
   WP.ed = null;
-  if (UI.pop && (UI.pop.name === 'wpsel' || UI.pop.name === 'wplyr')) closePop();
+  if (UI.pop && (UI.pop.name === 'wpsel' || UI.pop.name === 'wplyr' || UI.pop.name === 'g9text' || UI.pop.name === 'g9rec')) closePop();
   WP.old.clear();                                   // VS5b: die vorige Fassung nur, solange der Editor offen ist (Speicher am iPhone)
   EL.wpSheet.classList.remove('open'); EL.wpSheet.innerHTML = '';
   if (WP.ab) { WP.ab = false; wpResync(); }
@@ -42788,7 +44054,8 @@ function wpClose() {
 // Ansicht: Sekunden im Take [va, va + W); Zoom in Takten (0 = das ganze Stück)
 function wpView(E, a) {
   const sp = spb(), segL = a.out - a.in, W = E.zoom ? Math.min(E.zoom * 4 * sp, Math.max(segL, sp)) : Math.max(segL, .05);
-  E.va = clamp(E.va, a.in - W * .1, Math.max(a.in - W * .1, a.out - W * .9));
+  const g3a = E.g9 && typeof g3PreOf === 'function' ? g3PreOf(a) : 0, g3b = E.g9 && typeof g3PostOf === 'function' ? g3PostOf(a) : 0;   // G9: G3-Anlauf/Ausklang erreichbar
+  E.va = clamp(E.va, a.in - Math.max(W * .1, g3a), Math.max(a.in - Math.max(W * .1, g3a), a.out + g3b - W * .9));
   return {a: E.va, W};
 }
 function wpPaint() {
@@ -42812,6 +44079,7 @@ function wpPaint() {
   }
   // außerhalb des gespielten Stücks: dunkler
   g.fillStyle = 'rgba(0,0,0,.55)'; const xi = X(a.in), xo = X(a.out); if (xi > 0) g.fillRect(0, 0, xi, Hp); if (xo < Wp) g.fillRect(xo, 0, Wp - xo, Hp);
+  if (E.g9 && typeof g9PaintG3 === 'function') g9PaintG3(E, g, a, X, Wp, Hp);   // G9: hörbarer Anlauf/Ausklang heller
   // Wellenform (Spitze je Pixel). G1: quantisiert = das Original blass, die gehörte Fassung kräftig (die gerechnete; bis sie fertig ist,
   // das Original über die Zeitkarte gelegt)
   const buf = wpBase(id, a), mid = Hp * .58, hh = Hp * .36, live = !!(w && !WP.ab && !wpMapInfo(w.map).ident);
@@ -42863,7 +44131,8 @@ function wpPaint() {
   });
   // VS5b Songtext: eine Silbe je Marke (von links), an der Stelle, wo die Marke klingt; überzählige rot am Ende, fehlende „·“
   E.lyr = null;
-  const LY = m && m.lyrics ? VSM.assignLyrics(m.lyrics, mk.length) : null;
+  if (E.g9 && typeof g9PaintWave === 'function') g9PaintWave(E, g, P, X, Wp, Hp, mk);   // G9: gewählter Abschnitt
+  const LY = m && m.ly ? g9Labels(id, mk) : m && m.lyrics ? VSM.assignLyrics(m.lyrics, mk.length) : null;   // G9: mit ly aus der Sicht (§5.1)
   if (LY) {
     const yb = Hp - 18, pos = P.map(X);
     g.font = WP.lfont || (WP.lfont = '600 11px ' + getComputedStyle(document.body).fontFamily); g.textBaseline = 'alphabetic';
@@ -42888,7 +44157,7 @@ function wpPaint() {
   // Bedienung
   const md = w ? w.mode : E.mode;
   E.seg.querySelectorAll('button').forEach(bt => { const on = bt.dataset.m === md; bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); });
-  E.tx.classList.toggle('on', !!(m && m.lyrics));
+  E.tx.classList.toggle('on', !!(E.g9 || (m && (m.lyrics || m.ly))));
   const cur = w ? w.grid : 'off';
   E.chips.querySelectorAll('button').forEach(bt => { const on = bt.dataset.v === cur; bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); });
   E.rs._g(); E.rw._g();
@@ -42899,6 +44168,7 @@ function wpPaint() {
   wpInfoTxt(det ? 'Marken werden gesucht …' : mk.length + (mk.length === 1 ? ' Marke' : ' Marken') + ' · ' + (w ? (w.grid === 'auto' ? 'Auto ' : '') + w.res + ' · ' + Math.round(w.strength * 100) + ' %' + (wpReady(id) ? '' : ' · rechnet …') : 'Original') +
     (wn ? ' · ⚠ ' + wn.length + ' nur verschoben (Faktor außer 0,5–2)' : ''));
   E.info.classList.toggle('warn', !!wn);
+  if (E.g9 && typeof g9AfterPaint === 'function') g9AfterPaint(E, mk);   // G9: Silben-Leiste, Info-Zeile
 }
 /* G1: wo die Marken gezeichnet werden (Sekunden im Take, wie sie klingen) – quantisiert am Ziel der Zeitkarte, sonst an der Quelle;
    ändert sich das Ziel, gleiten sie in WP_ANIM ms dorthin (ease-out). Ein Griff (Ziehen) steht unter dem Finger. */
@@ -42937,7 +44207,7 @@ const WP_GRIP = 44;                                                  // K2: Grif
 function wpGest(cv) {
   const xOf = e => e.clientX - cv.getBoundingClientRect().left;
   cv.addEventListener('pointerdown', e => {
-    const E = WP.ed; if (!E || E.p || e.button > 0) return;
+    const E = WP.ed; if (!E || E.p || E.g9 || e.button > 0) return;   // G9: Text-Modus = eigene Gesten am Rahmen
     try { cv.setPointerCapture(e.pointerId); } catch (er) {}
     // K2 (4.25.2): eine Marke greift man nur im oberen Streifen (44 px, Griff-Dreieck); auf der Welle schwenkt ein Finger immer
     const top = e.clientY - cv.getBoundingClientRect().top < WP_GRIP;
@@ -43027,6 +44297,782 @@ const WP_API = {
     return {x: rc.left, y: rc.top, w: rc.width, h: rc.height, view: {a: E.vw.a, W: E.vw.W}, marks: P.map(t => rc.left + E.X(t)), src: mk.map(k => rc.left + E.X(k.t)), anim: !!E.anim}; },
   wpMoved: r => wpMovedN(wpId(r)),                                                   // G1: Zahl der gerückten Einsätze
   wpCore: (fn, args) => { const r = VSM[fn](...args.map(v => (Array.isArray(v) && v.length > 64 ? Float32Array.from(v) : v))); return r && r.times ? {times: Array.from(r.times), grid: r.grid, swing: r.swing, moved: Array.from(r.moved)} : ArrayBuffer.isView(r) ? Array.from(r) : r; },
+};
+
+/* ======================= G9 — Songtext aus Gesang (Nachtrag 8, Paket G9; G9d = Einbau G9a-Kern + G9c-Text-Modus + G9b-V) =======================
+   Start-Pfad (A.13): Kern-Fabrik g9Make (G9a, DOM-frei, erst beim ersten Bedarf ausgeführt; auch im VS5a-Worker über toString),
+   Normalisierer (Take-Feld `ly`, Format 5 additiv), Undo-Art 'ly' (§5.6), Marken-Haken in wpEdit (§6.5), Haken „Aufnahme hat Vorrang“
+   (§6.6.10), wpUndone + G9.auto (§7.8), tkHeardMap (§6.7). Text-Modus, Silben-Muster-Lader, Erkennungs-Ablauf: Block sq-g9-src,
+   ausgewertet beim ersten [Text] bzw. beim Öffnen des Marken-Editors für einen Take mit `ly`.
+   ly = {v: 1, lang: 'de'|'en', src: 'erkannt'|'getippt'|'eingefuegt'|'vs5b', s: [{x, t, w?, j?, o?, p?, u?}]} (§5.1) */
+// G9a – Silben & Ausrichtung (DOM-frei). Ein Kern für Haupt-Faden und Worker (über toString(), wie vsMarksMake).
+// Spec: spec/n8/G9.md §5 (Datenmodell), §6.1–§6.5 (Merkmale, Silben, Ausrichtung, Text-Operationen). Schnittstelle: SCHNITTSTELLE.md.
+function g9Make() {
+'use strict';
+const VERSION = 'g9a-1';
+const R6 = v => +(+v).toFixed(6);
+const R2 = v => Math.round(v * 100) / 100;
+const fin = v => typeof v === 'number' && v === v && v < 1e30 && v > -1e30;
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+
+// ───────────────────────── Silbentrennung (§6.2) ─────────────────────────
+const ENG = {};   // lang → {hy(word) → string|null}
+const LANGS = {de: 'de-x-syllable', en: 'en-us'};
+// Muster-Modul direkt (Exporte hyphenate, subst, lmi, rmi, lct, mem); Wort als UTF-16 mit Null-Ende ab Byte 0, ≤ 61 Zeichen.
+function sylLoad(lang, bytes) {
+  try {
+    const inst = new WebAssembly.Instance(new WebAssembly.Module(bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : bytes));
+    const e = inst.exports, buf = e.mem.buffer, al = String.fromCharCode(...new Uint16Array(buf, 1664, e.lct.value));
+    const ws = new Uint16Array(buf, 0, 64);
+    ENG[lang] = {al, hy(w) {
+      if (w.length > 61) return null;
+      for (const c of w.toLowerCase()) if (al.indexOf(c) < 0) return null;
+      const a = []; for (let i = 0; i < w.length; i++) a.push(w.charCodeAt(i)); a.push(0); ws.set(a);
+      const n = e.hyphenate(1, 1, 45);
+      return n > 0 ? String.fromCharCode(...new Uint16Array(buf, 0, n)) : w;
+    }};
+    return true;
+  } catch (err) { delete ENG[lang]; return false; }
+}
+function sylMode(lang) { return ENG[lang === 'en' ? 'en' : 'de'] ? 'muster' : 'einfach'; }
+
+const VOW = {de: 'aeiouäöüyáàéèíóúâêîôû', en: 'aeiouyáàéèíóúâêîôû'};
+const DIPH = {de: ['ei', 'ai', 'au', 'eu', 'äu', 'ie', 'aa', 'ee', 'oo', 'ou', 'ey', 'ay'],
+  en: ['eau', 'ea', 'ee', 'oo', 'ou', 'ai', 'oa', 'ay', 'ey', 'oy', 'ie', 'ei', 'au', 'ue', 'ui', 'oe', 'uy', 'eo', 'oi']};
+const EN_EXC = {every: 'ev-ery', everything: 'ev-ery-thing', everyone: 'ev-ery-one', everybody: 'ev-ery-bod-y', everywhere: 'ev-ery-where',
+  everyday: 'ev-ery-day', evening: 'eve-ning', business: 'busi-ness', area: 'ar-e-a', idea: 'i-de-a', create: 'cre-ate', created: 'cre-a-ted',
+  piano: 'pi-a-no', science: 'sci-ence', lion: 'li-on', violin: 'vi-o-lin', diamond: 'di-a-mond', ocean: 'o-cean', video: 'vi-de-o',
+  someone: 'some-one', somewhere: 'some-where', someday: 'some-day', sometimes: 'some-times', something: 'some-thing', maybe: 'may-be'};
+const CLU = {de: ['sch', 'ck', 'ch', 'ph', 'th', 'qu'], en: ['sch', 'ck', 'ch', 'ph', 'th', 'sh', 'wh', 'gh', 'qu']};
+const DIG_KEEP = ['ng', 'ck', 'sh', 'th', 'ch', 'ph', 'gh', 'wh', 'x'];
+const NUM = {
+  de: ['null', 'eins', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun', 'zehn', 'elf', 'zwölf', 'dreizehn', 'vierzehn',
+    'fünfzehn', 'sechzehn', 'siebzehn', 'achtzehn', 'neunzehn', 'zwanzig'],
+  en: ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen',
+    'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty']};
+const TENS = {de: {30: 'dreißig', 40: 'vierzig', 50: 'fünfzig', 60: 'sechzig', 70: 'siebzig', 80: 'achtzig', 90: 'neunzig'},
+  en: {30: 'thirty', 40: 'forty', 50: 'fifty', 60: 'sixty', 70: 'seventy', 80: 'eighty', 90: 'ninety'}};
+const isL = c => /[\p{L}]/u.test(c);
+const isLD = c => /[\p{L}\p{N}]/u.test(c);
+
+// Vokalkerne als [a, b) im kleingeschriebenen Wort s; cut = Muster-Grenzen (Indizes), die einen Vokal-Lauf teilen dürfen.
+function nuclei(s, lang, cut) {
+  const V = VOW[lang], D = DIPH[lang], n = s.length, isV = new Uint8Array(n);
+  for (let i = 0; i < n; i++) isV[i] = V.indexOf(s[i]) >= 0 ? 1 : 0;
+  for (let i = 1; i < n; i++) if (s[i] === 'u' && s[i - 1] === 'q') isV[i] = 0;
+  if (lang === 'en') {
+    for (let i = 0; i < n; i++) if (s[i] === 'y' && i + 1 < n && isV[i + 1] && (i === 0 || isV[i - 1])) isV[i] = 0;
+    for (let i = 1; i + 1 < n; i++) if (s[i] === 'i' && 'tsc'.indexOf(s[i - 1]) >= 0 && 'oa'.indexOf(s[i + 1]) >= 0 && i + 2 < n && !isV[i + 2] && i > 1) isV[i] = 0;
+    for (let i = 1; i + 1 < n; i++) if (s[i] === 'u' && s[i - 1] === 'g' && isV[i + 1] && 'ia'.indexOf(s[i + 1]) < 0) isV[i] = 0;
+  }
+  const out = [];
+  for (let i = 0; i < n;) {
+    if (!isV[i]) { i++; continue; }
+    let j = i; while (j < n && isV[j]) j++;
+    let p = i;
+    while (p < j) {
+      let q = p + 1;
+      for (const d of D) if (s.startsWith(d, p) && p + d.length <= j) { let ok = true; for (let c = p + 1; c < p + d.length; c++) if (cut && cut.has(c)) ok = false; if (ok) { q = p + d.length; break; } }
+      out.push([p, q]); p = q;
+    }
+    i = j;
+  }
+  if (lang === 'en' && out.length > 1) {
+    const last = out[out.length - 1], pc = s[last[0] - 1] || '', vowelBefore = c => VOW.en.indexOf(c) >= 0 && !(c === 'y' && last[0] >= 2 && VOW.en.indexOf(s[last[0] - 2]) >= 0);
+    const one = (a, b) => b - a === 1;
+    const single = one(last[0], last[1]) && s[last[0]] === 'e';
+    if (single && last[1] === n && pc === 'y' && out.length > 1 && out[out.length - 2][1] === last[0]) out.pop();   // bye, eye, goodbye
+    else if (single && last[1] === n && !vowelBefore(pc)) {   // stummes End-e, außer -le nach Konsonant
+      if (!(pc === 'l' && s[last[0] - 2] && !vowelBefore(s[last[0] - 2]))) out.pop();
+    } else if (single && last[1] === n - 1 && !vowelBefore(pc)) {
+      const z = s[n - 1];
+      if (z === 's') { const p2 = s.slice(last[0] - 2, last[0]); if (!('sxzcg'.indexOf(pc) >= 0 || p2 === 'ch' || p2 === 'sh')) { if (!(pc === 'l' && s[last[0] - 2] && s[last[0] - 2] !== 'l' && !vowelBefore(s[last[0] - 2]))) out.pop(); } }
+      else if (z === 'd') { if ('td'.indexOf(pc) < 0) { if (!(pc === 'l' && s[last[0] - 2] && s[last[0] - 2] !== 'l' && !vowelBefore(s[last[0] - 2]))) out.pop(); } }
+    }
+    for (let k = out.length - 2; k >= 1; k--) {   // stummes e vor -ly/-ful/-ment/-ness/-less
+      const [a, b] = out[k]; if (b - a !== 1 || s[a] !== 'e' || vowelBefore(s[a - 1])) continue;
+      const rest = s.slice(a + 1), pre = s.slice(0, a + 1);
+      if ((!vowelBefore(s[a + 1] || 'a') && ['ly', 'ful', 'fully', 'ment', 'ments', 'ness', 'less', 'liness', 'lier', 'liest'].indexOf(rest) >= 0) ||
+        (/^(some|love|care|home|lone|life|fire|hope|time|safe|space|face|grace|wise|whole|like|nice|base|name|game|bone|stone|rose|wine|moon|sun)$/.test(pre) && !vowelBefore(s[a + 1] || 'a'))) out.splice(k, 1);
+    }
+  }
+  return out;
+}
+// Grenze zwischen zwei Kernen nach der Vokalkern-Regel (V-KV, Bündel bleiben zusammen)
+function vkv(s, lang, e, a) {
+  const C = s.slice(e, a);
+  if (C.length <= 1) return e;
+  for (const c of CLU[lang]) if (C.endsWith(c)) return a - c.length;
+  return a - 1;
+}
+function splitCore(w, lang) {   // w: nur Buchstaben; → {parts, how: 'muster'|'einfach'}
+  const s = w.toLowerCase();
+  if (lang === 'en' && EN_EXC[s]) { const p = EN_EXC[s].split('-'); let i = 0; return {parts: p.map(x => { const r = w.slice(i, i + x.length); i += x.length; return r; }), how: 'muster'}; }
+  const eng = ENG[lang]; let cut = null, how = 'einfach';
+  if (eng) { const h = eng.hy(w); if (h != null) { how = 'muster'; cut = new Set(); let i = 0; for (const c of h) { if (c === '-') cut.add(i); else i++; } } }
+  const N = nuclei(s, lang, cut);
+  if (N.length <= 1) return {parts: [w], how};
+  const bd = [];
+  for (let k = 0; k + 1 < N.length; k++) {
+    const e = N[k][1], a = N[k + 1][0];
+    let b = -1;
+    if (cut) { for (const c of cut) if (c >= e && c <= a && (b < 0 || Math.abs(c - vkv(s, lang, e, a)) < Math.abs(b - vkv(s, lang, e, a)))) b = c; }
+    if (b < 0) b = vkv(s, lang, e, a);
+    if (lang === 'en' && k === N.length - 2 && a === s.length - 1 && s[a] === 'e' && s[a - 1] === 'l' && a - 2 >= e && VOW.en.indexOf(s[a - 2]) < 0) b = a - 2;
+    else if (lang === 'en' && b === a && a > e) {   // gesungen: Konsonant vor Vokal-Silbe hinüber (want-ed → wan-ted)
+      const tail = s.slice(Math.max(e, a - 2), a);
+      if (['th', 'sh', 'ch', 'ph'].indexOf(tail) >= 0 && a - 2 >= e) b = a - 2;
+      else if (!DIG_KEEP.some(d => tail.endsWith(d)) && a - 1 >= e) b = a - 1;
+    }
+    bd.push(b);
+  }
+  const parts = []; let p = 0;
+  for (const b of bd) { if (b > p) { parts.push(w.slice(p, b)); p = b; } }
+  parts.push(w.slice(p));
+  return {parts: parts.filter(Boolean), how};
+}
+function numWord(d, lang) {
+  const n = +d; if (!(n >= 0 && n <= 99) || d.length > 2) return null;
+  if (n <= 20) return NUM[lang][n];
+  if (n % 10 === 0) return TENS[lang][n] || null;
+  return null;
+}
+// → {s: [Silben], p?: Sicherheit} ; Satzzeichen bleiben am Wort
+function sylX(word, lang) {
+  lang = lang === 'en' ? 'en' : 'de';
+  const w = String(word == null ? '' : word).replace(/[\u0000-\u001f\u007f\s]/g, '');
+  if (!w) return {s: []};
+  let a = 0, b = w.length; while (a < b && !isLD(w[a]) && w[a] !== '-') a++; while (b > a && !isLD(w[b - 1])) b--;
+  const lead = w.slice(0, a), trail = w.slice(b); let core = w.slice(a, b);
+  const wrap = (parts, p) => { if (!parts.length) return {s: [w]}; parts[0] = lead + parts[0]; parts[parts.length - 1] += trail; return p == null ? {s: parts} : {s: parts, p}; };
+  if (!core) return {s: [w]};
+  if (core.indexOf('-') >= 0) { const parts = core.split('-').filter(Boolean); if (parts.length > 1 || core.endsWith('-') || core.startsWith('-')) return wrap(parts.length > 1 ? parts : [core]); core = parts[0] || core; }
+  if (/^\p{N}+([.,:]\p{N}+)+$/u.test(core)) return wrap([core], 0.3);   // Zahl mit Trennzeichen: eine Silbe, unsicher
+  if (/^\p{N}+$/u.test(core)) {
+    const nw = numWord(core, lang);
+    if (!nw) return wrap([core], 0.3);
+    return wrap(splitCore(nw, lang).parts);
+  }
+  const apo = []; let letters = '';
+  for (let i = 0; i < core.length; i++) { const c = core[i]; if (c === "'" || c === '’' || !isL(c)) apo.push([letters.length, c]); else letters += c; }
+  if (!letters) return wrap([core]);
+  const r = splitCore(letters, lang);
+  let parts = r.parts;
+  if (apo.length) {   // Apostroph/Sonderzeichen wieder einsetzen
+    const out = parts.slice(); let pos = 0, pi = 0, off = 0, q = 0;
+    const ends = []; for (const x of parts) { pos += x.length; ends.push(pos); }
+    const res = parts.map(() => '');
+    let li = 0;
+    for (let k = 0; k < parts.length; k++) {
+      let t = '';
+      while (li < ends[k]) { while (q < apo.length && apo[q][0] === li) t += apo[q++][1]; t += letters[li]; li++; }
+      if (k === parts.length - 1) while (q < apo.length) t += apo[q++][1];
+      res[k] = t;
+    }
+    parts = res; void out; void pi; void off;
+  }
+  return wrap(parts, r.how === 'einfach' ? 0.5 : undefined);
+}
+function syl(word, lang) { return sylX(word, lang).s; }
+
+// Text → Silben {x, w?, p?} (Zeilen → w: 2). Reine Satzzeichen hängen am vorigen Wort.
+const cp24 = x => [...x].slice(0, 24).join('');   // 24 Zeichen, ohne Surrogat-Paare zu teilen
+function words(text, lang) {
+  let lead = '';
+  const out = [], lines = String(text == null ? '' : text).replace(/\r\n?/g, '\n').split('\n');
+  for (const line of lines) {
+    let first = true;
+    for (const tok of line.split(/[ \t ]+/).filter(Boolean)) {
+      if (!/[\p{L}\p{N}]/u.test(tok)) { if (out.length) { const l = out[out.length - 1]; l.x = cp24(l.x + tok); } else lead += tok; continue; }
+      const r = sylX(lead + tok, lang); lead = '';
+      r.s.forEach((x, i) => { const o = {x: cp24(x)}; if (i === 0) o.w = first ? 2 : 1; if (r.p != null) o.p = r.p; out.push(o); });
+      if (r.s.length) first = false;
+      if (out.length >= 4000) return out.slice(0, 4000);
+    }
+  }
+  return out;
+}
+
+// ───────────────────────── Merkmale je Marke (§6.1) ─────────────────────────
+function feat(x, sr, marks) {
+  const n = x.length, hop = Math.max(1, Math.round(sr * 0.005)), nF = Math.ceil(n / hop) + 1, hw = Math.round(sr * 0.005);
+  const cum = new Float64Array(n + 1); for (let i = 0; i < n; i++) { const v = fin(x[i]) ? x[i] : 0; cum[i + 1] = cum[i] + v * v; }
+  const L = new Float32Array(nF);
+  for (let f = 0; f < nF; f++) { const a = Math.max(0, f * hop - hw), b = Math.min(n, f * hop + hw); L[f] = b > a ? 10 * Math.log10((cum[b] - cum[a]) / (b - a) + 1e-14) : -140; }
+  const val = Array.from(L).filter(v => v > -130).sort((a, b) => a - b);
+  const floor = val.length ? val[Math.floor(0.03 * (val.length - 1))] : -140;
+  const sil = f => L[f] < floor + 10;
+  const fr = t => clamp(Math.round(t * sr / hop), 0, nF - 1);
+  // Aperiodizität (YIN) und Tonhöhe je 5-ms-Rahmen, nur wo gebraucht (Cache)
+  const dec = Math.max(1, Math.round(sr / 12000)), fs = sr / dec, W = Math.round(0.03 * fs), tMin = Math.max(2, Math.floor(fs / 1000)), tMax = Math.ceil(fs / 70);
+  const ap = new Float32Array(nF).fill(-1), f0 = new Float32Array(nF), d = new Float64Array(tMax + 2);
+  let xd = null;
+  const mkXd = () => { const m = Math.floor(n / dec); xd = new Float32Array(m); const st = [0, 0];
+    const w = 2 * Math.PI * (0.42 * fs / 2) / sr, cw = Math.cos(w), sw = Math.sin(w), al = sw / (2 * 0.7071), a0 = 1 + al;
+    const c = [(1 - cw) / 2 / a0, (1 - cw) / a0, (1 - cw) / 2 / a0, -2 * cw / a0, (1 - al) / a0];
+    let j = 0; for (let i = 0; i < n; i++) { const v = fin(x[i]) ? x[i] : 0, y = c[0] * v + st[0]; st[0] = c[1] * v - c[3] * y + st[1]; st[1] = c[2] * v - c[4] * y; if (i % dec === 0 && j < m) xd[j++] = y; } };
+  const yin = f => {
+    if (ap[f] >= 0) return; ap[f] = 1; f0[f] = 0;
+    if (sil(f)) return;
+    if (!xd) mkXd();
+    const a = Math.round(f * hop / dec);   // Fenster ab dem Rahmen (vorwärts): ein Konsonant direkt nach einem Vokal gilt nicht als stimmhaft
+    if (a < 0 || a + W + tMax + 1 >= xd.length) return;
+    for (let tau = 1; tau <= tMax + 1; tau++) { let s = 0; for (let k = 0; k < W; k++) { const e = xd[a + k] - xd[a + k + tau]; s += e * e; } d[tau] = s; }
+    let run = 0; for (let tau = 1; tau <= tMax + 1; tau++) { run += d[tau]; d[tau] = run > 0 ? d[tau] * tau / run : 1; }
+    let best = -1, bv = 1e9;
+    for (let tau = tMin; tau <= tMax; tau++) { if (d[tau] < 0.15) { while (tau + 1 <= tMax && d[tau + 1] < d[tau]) tau++; best = tau; bv = d[tau]; break; } if (d[tau] < bv) { bv = d[tau]; best = tau; } }
+    if (best < 0) return; ap[f] = bv; f0[f] = fs / best;
+  };
+  const voiced = f => { yin(f); return ap[f] < 0.25; };
+  const zcr = f => { const a = Math.max(1, f * hop - hw), b = Math.min(n, f * hop + hw); let z = 0; for (let i = a; i < b; i++) if ((x[i] >= 0) !== (x[i - 1] >= 0)) z++; return z * sr / Math.max(1, b - a); };
+  const cents = (fa, fb) => { const v = []; for (let f = Math.max(0, fa); f <= Math.min(nF - 1, fb); f++) if (voiced(f) && f0[f] > 0) v.push(1200 * Math.log2(f0[f] / 55)); if (v.length < 3) return NaN; v.sort((p, q) => p - q); return v[v.length >> 1]; };
+  let lastAct = nF - 1; while (lastAct > 0 && sil(lastAct)) lastAct--;
+  const out = [];
+  for (let k = 0; k < marks.length; k++) {
+    const t = +marks[k].t, f = fr(t);
+    let mx = -140; for (let g = f; g <= fr(t + 0.04); g++) mx = Math.max(mx, L[g]);
+    let mn = 1e9; for (let g = fr(t - 0.03); g <= f; g++) mn = Math.min(mn, L[g]);
+    const rise = R2(mx - mn);
+    let g = f - 1; while (g >= 0 && !sil(g) && (f - g) * hop / sr < 0.015) g--;
+    let run = 0; while (g >= 0 && sil(g)) { run++; g--; }
+    const gap = Math.round(run * hop / sr * 1000);
+    const pb = cents(fr(t - 0.03), f - 1), pa = cents(f + 1, fr(t + 0.03));
+    const pj = pb === pb && pa === pa ? Math.round(Math.abs(pa - pb)) : 0;
+    let vc = 0, vn = 0; for (let h = fr(t + 0.02); h <= fr(t + 0.06); h++) { vn++; if (voiced(h)) vc++; }
+    let von = R6(t + 0.04); for (let h = f; h <= fr(t + 0.15); h++) if (voiced(h)) { von = R6(h * hop / sr); break; }
+    let uc = 0, un = 0; for (let h = fr(t - 0.06); h <= fr(t + 0.02); h++) { un++; if (L[h] > floor + 6 && zcr(h) > 3000) uc++; }
+    const dur = k + 1 < marks.length ? R6(marks[k + 1].t - t) : R6(Math.max(0.05, lastAct * hop / sr - t));
+    out.push({rise, gap, pj, vo: vn && vc / vn >= 0.5 ? 1 : 0, von, uv: un ? R2(uc / un) : 0, dur, conf: fin(+marks[k].conf) ? +marks[k].conf : 0.5});
+  }
+  // vf: Marke ist der Vokal-Einsatz der vorigen (stimmlosen) Konsonant-Marke (Doppel-Marke „s|a“, Abgleich G9a)
+  for (let k = 1; k < out.length; k++) { const p = out[k - 1], dt = +marks[k].t - +marks[k - 1].t; out[k].vf = dt <= 0.16 && !p.vo && Math.abs(+marks[k].t - p.von) <= 0.03 ? 1 : 0; }
+  if (out.length) out[0].vf = 0;
+  return out;
+}
+
+// ───────────────────────── Kosten (§6.3) ─────────────────────────
+const C = {skip0: 0.2, skipRise: 1.5, skipGap: 2.0, skipTone: 0.8, skipVow: 0.8, merge: 1.2, mergeWord: 0.6, mergeLong: 0.5, longF: 1.7, over: 3.0, onWeak: 2.0,
+  wordGap: -0.5, inWordGap: 1.0, lineGap: -1.0, lineMiss: 0.5, cons: -0.2, tauS: 0.15, edge: 0.3, tip: -0.8, tipSkip: 1.5, band: 1.5};
+const F0 = {rise: 10, gap: 0, pj: 0, vo: 0, von: 0, uv: 0, dur: 0, conf: 0.5, vf: 0};   // ohne Merkmale: jede Marke ein Einsatz
+const CONS = /^(sch|st|s|t|k|p|f|z|ch|th|c)/i;
+function costs(marks, feat, o) {
+  const m = marks.length, K = Object.assign({}, C, o && o.cost), sk = new Float64Array(m), tip = new Uint8Array(m);
+  const fe = k => (feat && feat[k]) || F0;
+  const weak = k => { const f = fe(k); return f.vf || (f.pj >= 80 && f.rise < 3); };
+  const dS = new Float64Array(m);   // Länge des Abschnitts bis zur nächsten Einsatz-Marke (Vokal-Folge- und reine Ton-Marken zählen mit)
+  for (let k = m - 1; k >= 0; k--) { let q = k + 1; while (q < m && weak(q)) q++; dS[k] = q < m ? +marks[q].t - +marks[k].t : (fe(k).dur || 0) + (q - 1 > k ? +marks[q - 1].t - +marks[k].t : 0); }
+  const durs = []; for (let k = 0; k < m; k++) if (!weak(k)) durs.push(dS[k]); durs.sort((a, b) => a - b);
+  const medD = durs.length ? durs[durs.length >> 1] : 0;
+  const tips = o && o.tipOn && Array.isArray(o.tips) ? o.tips : null;
+  for (let k = 0; k < m; k++) {
+    const f = fe(k), c = fin(f.conf) ? f.conf : 0.5;
+    let s = K.skip0 + K.skipRise * c * (f.rise >= 6 && !f.vf ? 1 : 0) + K.skipGap * (f.gap >= 120 ? 1 : 0) - K.skipTone * (f.pj >= 80 && f.rise < 3 ? 1 : 0) - K.skipVow * (f.vf ? 1 : 0);
+    if (tips) { const t = +marks[k].t, v = f.von || t + 0.04; if (tips.some(p => p[0] >= t - 0.04 && p[0] <= v + 0.06)) { tip[k] = 1; s += K.tipSkip; } }
+    sk[k] = Math.max(0, s);
+  }
+  const P = new Float64Array(m + 1); for (let k = 0; k < m; k++) P[k + 1] = P[k] + sk[k];
+  const place = (y, k) => {   // erste Silbe auf Marke k
+    const f = fe(k); let c = 0;
+    if (y.w) { if (f.gap >= 120) c += K.wordGap; } else if (f.gap >= 250) c += K.inWordGap;
+    if (y.w === 2) c += f.gap >= 300 ? K.lineGap : K.lineMiss;
+    if (f.uv >= 0.3 && CONS.test(y.x || '')) c += K.cons;
+    if (f.vf || (f.pj >= 80 && f.rise < 3)) c += K.onWeak;   // Silbe auf Vokal-Folge- bzw. reiner Ton-Marke (Abgleich G9a)
+    if (tip[k]) c += K.tip;
+    return c;
+  };
+  const tau = (y, k) => (fin(y.tau) ? Math.min(4, Math.pow((marks[k].t - y.tau) / K.tauS, 2)) / 2 : 0);
+  const merge = (y, k) => (K.merge + K.mergeWord * (y.w ? 1 : 0)) * (medD > 0 && dS[k] >= K.longF * medD ? K.mergeLong : 1);
+  const skipSum = (a, b) => (b > a ? P[b] - P[a] : 0);   // Marken a … b−1
+  return {K, sk, P, place, tau, merge, skipSum, slot: k => sk[k] >= 0.5};
+}
+
+// Ein Stück freier Silben S auf Marken a … b (inkl.), L = linker Anker (Marke, schon cL Silben), R = rechter Anker (Marke, exklusiv)
+// → Feld der Marken-Indizes je Silbe und Zähler (1 … 3, 4 = o)
+function dpSeg(S, marks, CO, L, cL, R, o) {
+  const m = marks.length, n = S.length, INF = 1e18, K = CO.K;
+  const a = L >= 0 ? L : fin(o && o.aMin) ? Math.max(0, o.aMin) : 0, b = R >= 0 ? R - 1 : fin(o && o.bEnd) ? Math.min(m - 1, o.bEnd) : m - 1, open = R < 0 && fin(o && o.bEnd);
+  if (!n) return {k: [], c: [], cost: 0};
+  if (b < a || m === 0) { const k0 = L >= 0 ? L : R >= 0 ? R : (m ? 0 : -1); return {k: S.map(() => k0), c: S.map(() => 4), cost: n * K.over}; }
+  const W = b - a + 1;
+  const band = o && o.band !== false;
+  const lo = new Int32Array(n), hi = new Int32Array(n);
+  const prop = o && o.diag;
+  for (let i = 0; i < n; i++) {
+    let l = a, h = b;
+    const y = S[i];
+    if (band && fin(y.tau)) { while (l < b && marks[l].t < y.tau - K.band) l++; while (h > l && marks[h].t > y.tau + K.band) h--; }
+    if (prop) { const c = a + Math.round(i * (W - 1) / Math.max(1, n - 1)); l = Math.max(l, c - prop); h = Math.min(h, c + prop); if (h < l) { l = Math.max(a, Math.min(b, c)); h = l; } }
+    if (i === 0 && fin(o && o.k0)) { l = h = clamp(o.k0, a, b); }
+    lo[i] = l; hi[i] = h;
+  }
+  for (let i = 1; i < n; i++) if (lo[i] < lo[i - 1]) lo[i] = lo[i - 1];
+  for (let i = n - 2; i >= 0; i--) if (hi[i] > hi[i + 1]) hi[i] = hi[i + 1];
+  for (let i = 0; i < n; i++) if (hi[i] < lo[i]) return band || prop ? dpSeg(S, marks, CO, L, cL, R, Object.assign({}, o, {band: false, diag: 0})) : {k: S.map(() => a), c: S.map(() => 4), cost: INF};
+  const off = new Int32Array(n + 1); for (let i = 0; i < n; i++) off[i + 1] = off[i] + (hi[i] - lo[i] + 1) * 4;
+  const D = new Float64Array(off[n]).fill(INF), B = new Int32Array(off[n]).fill(-1);
+  const at = (i, j, c) => off[i] + (j - lo[i]) * 4 + (c - 1);
+  const lead = j => (L >= 0 ? CO.skipSum(L + 1, j) : fin(o && o.aMin) ? CO.skipSum(a, j) : K.edge * (j - a));
+  for (let j = lo[0]; j <= hi[0]; j++) {
+    const y = S[0];
+    if (j === L) { const c = Math.min(4, cL + 1); D[at(0, j, c)] = (c >= 4 ? K.over : CO.merge(y, j) + CO.tau(y, j)); }
+    else D[at(0, j, 1)] = lead(j) + CO.place(y, j) + CO.tau(y, j);
+  }
+  for (let i = 1; i < n; i++) {
+    const y = S[i];
+    let best = INF, bj = -1, bc = 0, jp = lo[i - 1];
+    for (let j = lo[i]; j <= hi[i]; j++) {
+      // neue Marke: bester Vorgänger j' < j  (D − P[j'+1]), laufendes Minimum
+      while (jp < j && jp <= hi[i - 1]) { for (let c = 1; c <= 4; c++) { const v = D[at(i - 1, jp, c)]; if (v < INF) { const w = v - CO.P[jp + 1]; if (w < best) { best = w; bj = jp; bc = c; } } } jp++; }
+      if (j !== L && bj >= 0) { const v = best + CO.P[j] + CO.place(y, j) + CO.tau(y, j); const q = at(i, j, 1); if (v < D[q]) { D[q] = v; B[q] = bj * 4 + (bc - 1); } }
+      if (j >= lo[i - 1] && j <= hi[i - 1]) for (let c = 1; c <= 4; c++) {
+        const v = D[at(i - 1, j, c)]; if (!(v < INF)) continue;
+        const c2 = Math.min(4, c + 1), w = v + (c2 >= 4 ? K.over : CO.merge(y, j) + CO.tau(y, j)), q = at(i, j, c2);
+        if (w < D[q]) { D[q] = w; B[q] = j * 4 + (c - 1); }
+      }
+    }
+  }
+  let bv = INF, bj = -1, bc = 1;
+  for (let j = lo[n - 1]; j <= hi[n - 1]; j++) for (let c = 1; c <= 4; c++) {
+    const v = D[at(n - 1, j, c)]; if (!(v < INF)) continue;
+    const tail = R >= 0 ? CO.skipSum(j + 1, R) : open ? 0 : K.edge * 0.999 * (b - j), w = v + tail;   // Gleichstand → links
+    if (w < bv) { bv = w; bj = j; bc = c; }
+  }
+  const kk = new Array(n), cc = new Array(n);
+  for (let i = n - 1, j = bj, c = bc; i >= 0; i--) { kk[i] = j; cc[i] = c; const p = B[at(i, j, c)]; if (i > 0) { j = p >> 2; c = (p & 3) + 1; } }
+  return {k: kk, c: cc, cost: bv};
+}
+
+// Silben → Marken. syl: [{x, w?, p?, u?, t?, tau?}], marks: [{t, conf}], feat: g9Feat-Ergebnis (oder null).
+// o: {k0 (erste Silbe fest auf Marke), kEnd (exklusive Grenze), tips, tipOn, cost, idx: true → {s, k}}
+// Feste Silben (u: 1) sind harte Bedingung: Marke ≤ 30 ms von ihrem t; fehlt sie, bleiben sie an t („ohne Marke“).
+function align(sylIn, marks, feat, o) {
+  o = o || {};
+  const m = marks.length, CO = costs(marks, feat, o), n = sylIn.length;
+  const near = t => { let bk = -1, bd = 0.03 + 1e-9; for (let k = 0; k < m; k++) { const d = Math.abs(marks[k].t - t); if (d <= bd) { bd = d; bk = k; } } return bk; };
+  const k = new Array(n).fill(-2), c = new Array(n).fill(1);
+  const fixed = [];
+  for (let i = 0; i < n; i++) if (sylIn[i].u && fin(sylIn[i].t)) { const q = near(sylIn[i].t); k[i] = q; fixed.push(i); }
+  // feste Silben monoton halten (eine rückwärts liegende feste Marke → ohne Marke)
+  let lastK = -1; for (const i of fixed) { if (k[i] >= 0 && k[i] < lastK) k[i] = -1; if (k[i] >= 0) lastK = k[i]; }
+  const kEnd = fin(o.kEnd) ? Math.min(m, o.kEnd) : -1;
+  const anchors = fixed;   // feste Silben mit und ohne Marke sind Anker (ohne Marke: Grenze nach ihrer Zeit)
+  const geT = t => { let q = 0; while (q < m && marks[q].t < t - 1e-9) q++; return q; }, gtT = t => { let q = 0; while (q < m && marks[q].t <= t + 1e-9) q++; return q; };
+  let prev = -1;
+  const run = (i0, i1) => {   // freie Silben i0 … i1−1 zwischen Ankern
+    if (i1 <= i0) return;
+    const L = prev >= 0 ? k[prev] : -1;
+    let cL = 0; if (L >= 0) for (let q = prev; q >= 0 && k[q] === L; q--) cL++;
+    const nx = anchors.find(i => i >= i1);
+    let R = nx != null ? (k[nx] >= 0 ? k[nx] : gtT(sylIn[nx].t)) : -1;
+    if (kEnd >= 0 && (R < 0 || kEnd < R)) R = kEnd;
+    const opt = Object.assign({}, o);
+    if (prev >= 0 && L < 0) opt.aMin = geT(sylIn[prev].t);
+    if (i0 !== 0 || !fin(o.k0)) delete opt.k0;
+    const r = dpSeg(sylIn.slice(i0, i1), marks, CO, L, cL, R, opt);
+    for (let q = 0; q < r.k.length; q++) { k[i0 + q] = r.k[q]; c[i0 + q] = r.c[q]; }
+  };
+  let i0 = 0;
+  for (const i of anchors) { run(i0, i); prev = i; i0 = i + 1; }
+  run(i0, n);
+  for (let i = 0; i < n; i++) if (k[i] === -2) k[i] = -1;
+  const s = pack(sylIn.map((y, i) => Object.assign({}, y, {k: k[i], o: c[i] >= 4 ? 1 : y.o && k[i] < 0 ? 1 : 0})), marks);
+  return o.idx ? {s, k} : s;
+}
+
+// Arbeitsform → ly.s: t = Marken-Zeit, j/o neu gezählt (je Marke bis 3 über j, ab der 4. o), feste ohne Marke behalten t.
+function pack(V, marks) {
+  const out = []; let pk = -3, cnt = 0, pt = -1;
+  for (const y of V) {
+    const t = y.k >= 0 && marks[y.k] ? R6(marks[y.k].t) : R6(fin(y.t) ? y.t : 0);
+    const s = {x: y.x, t};
+    if (y.w) s.w = y.w === 2 ? 2 : 1;
+    const same = y.k >= 0 ? y.k === pk : t === pt && y.k === pk;
+    if (y.o) { s.o = 1; }
+    else if (same) { cnt++; if (cnt <= 3) s.j = 1; else s.o = 1; }
+    else { cnt = 1; }
+    if (!y.o) { pk = y.k; pt = t; }
+    if (fin(y.p)) s.p = R2(clamp(y.p, 0, 1));
+    if (y.u) s.u = 1;
+    out.push(s);
+  }
+  return out;
+}
+
+// ───────────────────────── Datenmodell (§5.1, §5.2) ─────────────────────────
+const SRC = ['erkannt', 'getippt', 'eingefuegt', 'vs5b'];
+function normLy(ly, len) {
+  if (!ly || typeof ly !== 'object' || !Array.isArray(ly.s)) return null;
+  const L = fin(+len) && +len > 0 ? +len : Infinity, out = [];
+  let pt = -1, run = 0;
+  for (const y of ly.s) {
+    if (!y || typeof y !== 'object') continue;
+    const x = [...String(y.x == null ? '' : y.x).replace(/[\u0000-\u001f\u007f-\u009f\s]/g, '')].slice(0, 24).join('');
+    if (!x) continue;
+    let t = fin(+y.t) && y.t !== null && y.t !== '' ? R6(clamp(+y.t, 0, L)) : (pt >= 0 ? pt : 0), oo = y.o === 1 || y.o === true ? 1 : 0;
+    if (pt >= 0 && t < pt) { t = pt; oo = 1; }
+    const s = {x, t};
+    if (y.w === 1 || y.w === 2) s.w = y.w;
+    if (oo) s.o = 1;
+    else if (t === pt) { run++; if (run > 3) s.o = 1; else if (y.j === 1 || y.j === true) s.j = 1; }   // gleiche Marke: zählt mit, ab der 4. o
+    else run = 1;
+    if (fin(+y.p) && y.p !== null && y.p !== '') s.p = R2(clamp(+y.p, 0, 1));
+    if (y.u === 1 || y.u === true) s.u = 1;
+    out.push(s); pt = t;
+    if (out.length >= 4000) break;
+  }
+  if (!out.length) return null;
+  return {v: 1, lang: ly.lang === 'en' ? 'en' : 'de', src: SRC.indexOf(ly.src) >= 0 ? ly.src : 'getippt', s: out};
+}
+// Klartext für das VS5b-Feld lyrics (Silben mit „-“, Wörter mit Leerzeichen, ≤ 400 Zeichen am Wortende gekürzt)
+function lyText(ly) {
+  if (!ly || !ly.s || !ly.s.length) return '';
+  const W = []; for (const y of ly.s) { if (y.w || !W.length) W.push([y.x]); else W[W.length - 1].push(y.x); }
+  let out = '';
+  for (const w of W) { const t = w.join('-'); const nx = out ? out + ' ' + t : t; if (nx.length > 400) { if (!out) out = [...t].slice(0, 400).join(''); break; } out = nx; }
+  return out;
+}
+// VS5b → ly: Silbe k → Marke k (von links), überzählige o: 1 an der letzten Marke
+function fromVs5b(lyrics, marks, lang) {
+  const W = String(lyrics || '').trim().split(/\s+/).filter(Boolean);
+  const V = [];
+  for (const w of W) w.split('-').filter(Boolean).forEach((x, i) => V.push({x: x.slice(0, 24), w: i === 0 ? 1 : 0}));
+  const m = marks.length;
+  if (!V.length) return null;
+  V.forEach((y, i) => { if (i < m) y.k = i; else { y.k = m - 1; y.o = 1; if (m === 0) { y.k = -1; y.t = 0; } } });
+  return {v: 1, lang: lang === 'en' ? 'en' : 'de', src: 'vs5b', s: pack(V, marks)};
+}
+
+// ───────────────────────── Sicht / Neu-Einrasten (§5.1) ─────────────────────────
+// → {V: [{x, w, p, u, k, o, nm, t}], n: {snap, re, nm}}  (k = Marke, −1 = feste Silbe ohne Marke)
+function view(ly, marks, feat, o) {
+  if (!ly || !ly.s) return {V: [], n: {snap: 0, re: 0, nm: 0}};
+  const m = marks.length, S = ly.s, n = S.length, k = new Array(n).fill(-2), oo = new Uint8Array(n), CO = costs(marks, feat, o);
+  let j = 0, lastFixT = null;
+  for (let i = 0; i < n; i++) {   // Marke ≤ 30 ms vom Anker, monoton
+    const t = S[i].t; while (j < m && marks[j].t < t - 0.03 - 1e-9) j++;
+    let bk = -1, bd = 0.03 + 1e-9; for (let q = j; q < m && marks[q].t <= t + 0.03 + 1e-9; q++) { const d = Math.abs(marks[q].t - t); if (d < bd) { bd = d; bk = q; } }
+    if (bk >= 0 && (i === 0 || (k[i - 1] === -2) || (k[i - 1] >= 0 && bk >= k[i - 1]) || (k[i - 1] === -1 && marks[bk].t >= S[i - 1].t - 1e-9)) && (lastFixT == null || marks[bk].t >= lastFixT - 1e-9)) k[i] = bk;
+    else if (S[i].u) { k[i] = -1; lastFixT = S[i].t; }
+  }
+  let snap = 0, re = 0, nm = 0;
+  for (let i = 0; i < n; i++) { if (k[i] >= 0) snap++; else if (k[i] === -1) nm++; }
+  for (let i = 0; i < n;) {   // nicht feste, nicht eingerastete Stücke lokal neu ausrichten
+    if (k[i] !== -2) { i++; continue; }
+    let e = i; while (e < n && k[e] === -2) e++;
+    const p = i - 1, q = e;   // Nachbarn: eingerastet (k ≥ 0) oder feste Silbe ohne Marke (k = −1, Grenze nach Zeit)
+    const L = p >= 0 && k[p] >= 0 ? k[p] : -1; let cL = 0; if (L >= 0) for (let z = p; z >= 0 && k[z] === L; z--) cL++;
+    let R = -1; if (q < n) { if (k[q] >= 0) R = k[q]; else { R = 0; while (R < m && marks[R].t <= S[q].t + 1e-9) R++; } }
+    const opt = {}; if (p >= 0 && k[p] === -1) { let a = 0; while (a < m && marks[a].t < S[p].t - 1e-9) a++; opt.aMin = a; }
+    const r = dpSeg(S.slice(i, e).map(y => ({x: y.x, w: y.w})), marks, CO, L, cL, R, opt);
+    for (let z = 0; z < r.k.length; z++) { k[i + z] = r.k[z]; if (r.c[z] >= 4) oo[i + z] = 1; }
+    re += e - i; i = e;
+  }
+  const V = S.map((y, i) => { const v = {x: y.x, w: y.w || 0, k: k[i], t: y.t, o: y.o || oo[i] ? 1 : 0}; if (fin(y.p)) v.p = y.p; if (y.u) v.u = 1; if (k[i] < 0) v.nm = 1; return v; });
+  return {V, n: {snap, re, nm}};
+}
+
+// ───────────────────────── Text-Operationen (§6.4, §6.5) ─────────────────────────
+function slotsOf(V, CO, m) { const sl = []; const has = new Uint8Array(m); for (const y of V) if (y.k >= 0 && !y.o) has[y.k] = 1; for (let k = 0; k < m; k++) if (has[k] || CO.slot(k)) sl.push(k); return sl; }
+function posOf(SL, k) { let lo = 0, hi = SL.length - 1; while (lo <= hi) { const h = (lo + hi) >> 1; if (SL[h] === k) return h; if (SL[h] < k) lo = h + 1; else hi = h - 1; } return lo; }
+function wordAt(V, i) { let a = i; while (a > 0 && !V[a].w) a--; let b = i + 1; while (b < V.length && !V[b].w) b++; return [a, b]; }
+function firstAt(V, k) { for (let i = 0; i < V.length; i++) if (V[i].k === k && !V[i].o) return i; return -1; }
+// Verschieben ab Silbe i um d Plätze (Silben-Plätze, §6.1); darüber hinaus → o an der letzten Marke
+function shiftFrom(V, i, d, SL, m, marks) {
+  if (i < 0 || i >= V.length || !d) return false;
+  const pos = V.map(y => (y.k < 0 ? -1 : posOf(SL, y.k)));   // o-Silben zählen an ihrer Marke
+  const slotGe = t => { let z = 0; while (z < SL.length && marks[SL[z]].t < t - 1e-9) z++; return z; };
+  let end = V.length, cap = SL.length - 1, bar = false;   // Barriere: nächste feste Silbe ohne Marke
+  for (let q = i; q < V.length; q++) if (V[q].k < 0) { end = q; bar = true; cap = -1; for (let z = 0; z < SL.length; z++) if (marks[SL[z]].t <= V[q].t + 1e-9) cap = z; break; }
+  if (d < 0) { for (let q = i; q < end; q++) { if (pos[q] + d < 0) return false; break; } }
+  let floor = -1; for (let q = i - 1; q >= 0; q--) { floor = V[q].k >= 0 ? posOf(SL, V[q].k) : slotGe(V[q].t); break; }
+  for (let q = i; q < end; q++) {
+    let p = Math.max(pos[q] + d, floor, 0); floor = p;   // nie vor die vorige Silbe: dort verschmolzen
+    if (p > cap) { if (!bar) { V[q].k = m - 1; V[q].o = 1; delete V[q].nm; continue; } p = Math.max(0, cap); }
+    V[q].k = SL[p]; V[q].o = 0; delete V[q].nm;
+  }
+  return true;
+}
+function ok(V, marks, info) { return Object.assign({ok: true, s: pack(V, marks)}, info); }
+function no(toast) { return {ok: false, toast}; }
+
+// Ein Schritt am Text. ly darf null sein. op:
+//  {op:'wort', k, text, lang, ins?}  tippen/ersetzen (ins: true = [+] Einfügen vor k) · {op:'loesch', k} Wort am Abschnitt k löschen
+//  {op:'links'|'rechts', i} Text ab Silbe i · {op:'versch', i} nächste Silbe auf Marke von i · {op:'trenn', i} · {op:'nach', i, n} Rest ab i n Plätze rechts
+//  {op:'ganz', text, lang} · {op:'neu'} [Neu ausrichten] (auch feste Silben) · {op:'mkMove', tOld, tNew} · {op:'mkDel', t} · {op:'mkAdd', t}
+// → {ok, s (neue ly.s), sel? (nächster Abschnitt), hint?, merged?, missing?, toast?, lost: 0}
+function apply(ly, marks, feat, op, o) {
+  o = o || {};
+  const m = marks.length, CO = costs(marks, feat, o), lang = (op && op.lang) || (ly && ly.lang) || 'de';
+  if (op.op === 'ganz') {
+    const S = words(op.text, lang); if (!S.length) return {ok: true, s: null};
+    return {ok: true, s: align(S, marks, feat, o)};
+  }
+  if (op.op === 'mkMove') {
+    if (!ly) return {ok: true, s: null};
+    const s = ly.s.map(y => (Math.abs(y.t - op.tOld) < 1e-4 ? Object.assign({}, y, {t: R6(op.tNew), _m: 1}) : Object.assign({}, y)));
+    return {ok: true, s: reflag(keepOrder(s, ly.s))};
+  }
+  if (op.op === 'mkDel') {   // marks = Marken VOR dem Löschen
+    if (!ly) return {ok: true, s: null};
+    let q = -1; for (let k = 0; k < m; k++) if (Math.abs(marks[k].t - op.t) < 1e-4) q = k;
+    const tn = q > 0 ? marks[q - 1].t : null;   // ohne vorige Marke: Silben behalten ihre Zeit und rasten über die Sicht neu ein (§5.1)
+    const s0 = ly.s.map(y => (Math.abs(y.t - op.t) < 1e-4 && tn != null ? Object.assign({}, y, {t: R6(tn), j: 1, _m: 1}) : Object.assign({}, y)));
+    const s = keepOrder(s0, ly.s), moved = s.filter((y, i) => y.t !== ly.s[i].t).length;
+    const r = reflag(s, true); const nO = r.filter((y, i) => y.o && !ly.s[i].o).length;
+    return {ok: true, s: r, merged: moved - nO, over: nO, lost: 0};
+  }
+  if (op.op === 'mkAdd') return {ok: true, s: ly ? ly.s.map(y => Object.assign({}, y)) : null};
+  const vw = op.op === 'neu' ? view({s: ly ? ly.s.map(y => Object.assign({}, y, {u: 0})) : []}, marks, feat, o) : view(ly ? {s: ly.s.map(y => Object.assign({}, y))} : null, marks, feat, o);
+  const V = vw.V;
+  if (op.op === 'neu') { const S = V.map((y, i) => Object.assign({x: y.x, w: y.w}, fin(y.p) ? {p: y.p} : {}, ly.s[i].u ? {u: 1} : {})); const r = align(S.map(y => Object.assign({}, y, {u: 0})), marks, feat, o); r.forEach((y, i) => { if (S[i].u) y.u = 1; }); return {ok: true, s: r}; }
+  const SL = slotsOf(V, CO, m);
+  if (op.op === 'links' || op.op === 'rechts') {
+    if (!(op.i >= 0 && op.i < V.length)) return no();
+    if (!shiftFrom(V, op.i, op.op === 'links' ? -1 : 1, SL, m, marks)) return no('Weiter nach links geht es nicht.');
+    return ok(V, marks, {sel: V[op.i].k});
+  }
+  if (op.op === 'nach') { if (!(op.i >= 0 && op.i < V.length)) return no(); for (let r = 0; r < (op.n || 1); r++) { const SL2 = slotsOf(V, CO, m); shiftFrom(V, op.i, 1, SL2, m, marks); } return ok(V, marks, {}); }
+  if (op.op === 'versch') {
+    const i = op.i; if (!(i >= 0 && i + 1 < V.length) || V[i].k < 0 || V[i + 1].k < 0) return no();   // feste Silbe ohne Marke bleibt
+    if (V[i + 1].k === V[i].k && !V[i + 1].o) return no();
+    const p1 = V[i + 1].o ? SL.length : posOf(SL, V[i + 1].k), p0 = posOf(SL, V[i].k), d = p1 - p0;
+    V[i + 1].k = V[i].k; V[i + 1].o = 0;
+    if (i + 2 < V.length) shiftFrom(V, i + 2, -Math.max(1, Math.min(1, d)), SL, m, marks);
+    return ok(V, marks, {sel: V[i].k});
+  }
+  if (op.op === 'trenn') {
+    const i = op.i; if (!(i >= 0 && i < V.length) || V[i].k < 0) return no();
+    const k = V[i].k; let a = i; while (a > 0 && V[a - 1].k === k) a--; let b = i; while (b + 1 < V.length && V[b + 1].k === k) b++;   // Gruppe inkl. o-Silben
+    if (b === a) return no();
+    const p = posOf(SL, k);
+    if (p + 1 >= SL.length) return no('Keine freie Marke – beide Silben bleiben zusammen.');
+    const nk = SL[p + 1], bar = V.find((y, q) => q > b && y.k < 0);
+    if (bar && marks[nk].t > bar.t + 1e-9) return no('Keine freie Marke – beide Silben bleiben zusammen.');   // feste Silbe ohne Marke dazwischen
+    const occ = V.some((y, q) => q > b && y.k === nk && !y.o);
+    if (occ) shiftFrom(V, b + 1, 1, SL, m, marks);
+    V[b].k = nk; V[b].o = 0;
+    return ok(V, marks, {sel: nk});
+  }
+  if (op.op === 'loesch') {
+    const i = fin(op.i) ? op.i : firstAt(V, op.k); if (!(i >= 0 && i < V.length)) return no();   // op.i erreicht auch Wörter ohne eigene Marke (o)
+    const [a, b] = wordAt(V, i), word = V.slice(a, b).map(y => y.x).join('');
+    if (b < V.length && !V[b].w) V[b].w = V[a].w || 1;
+    V.splice(a, b - a);
+    if (!V.length) return {ok: true, s: null, word};
+    return ok(V, marks, {word, sel: op.k});
+  }
+  if (op.op === 'wort') {
+    const k = clamp(op.k | 0, 0, Math.max(0, m - 1));
+    const S = words(op.text, lang).map(y => Object.assign(y, {u: 1}));
+    if (!S.length) return no();
+    if (S[0].w === 2) S[0].w = 1;
+    if (op.ins) {   // [+]: vor Abschnitt k einsetzen, gewählter und folgende rücken um n Plätze
+      if (!m) { S.forEach(y => { y.k = -1; y.t = 0; y.o = 1; }); V.splice(0, 0, ...S); return ok(V, marks, {sel: 0, word: S.map(y => y.x).join(''), n: S.length}); }
+      let SLx = SL.slice(); if (SLx.indexOf(k) < 0) { SLx.push(k); SLx.sort((x, y) => x - y); }
+      let i0 = V.findIndex(y => (y.k >= 0 ? y.k >= k : y.t >= marks[k].t - 1e-9)); if (i0 < 0) i0 = V.length;
+      if (i0 < V.length) shiftFrom(V, i0, S.length, SLx, m, marks);
+      const p = posOf(SLx, k), bar = V.find((y, q) => q >= i0 && y.k < 0);
+      let capP = SLx.length - 1; if (bar) { capP = p; for (let z = p; z < SLx.length; z++) if (marks[SLx[z]].t <= bar.t + 1e-9) capP = z; }
+      S.forEach((y, q) => { if (p + q <= capP) { y.k = SLx[p + q]; y.o = 0; } else if (bar) { y.k = SLx[capP]; y.o = 0; } else { y.k = m - 1; y.o = 1; } });
+      V.splice(i0, 0, ...S);
+      return ok(V, marks, {sel: nextSel(V, i0 + S.length - 1), word: S.map(y => y.x).join(''), n: S.length});
+    }
+    let i = firstAt(V, k), a = -1, b = -1, k0 = k;
+    if (i >= 0) { [a, b] = wordAt(V, i); k0 = V[a].k >= 0 ? V[a].k : k; if (V[a].w === 2) S[0].w = 2; }
+    // Bereich k0 … k0+8. Ersetzen: bis vor das nächste Wort; Überschreiben: bis vor die nächste feste Silbe.
+    // Gibt es dort eine Grenze, sind die übrigen Abschnitte Melisma (Überspring-Kosten); sonst ist das Ende offen.
+    let kE = Math.min(m, k0 + 9), closed = false;
+    if (a >= 0) { if (b < V.length) { let nk = V[b].k; if (nk < 0) { nk = 0; while (nk < m && marks[nk].t <= V[b].t + 1e-9) nk++; } if (nk <= kE) { kE = Math.max(k0 + 1, nk); closed = true; } } }
+    else for (const y of V) { if (!y.u) continue; let yk = y.k; if (yk < 0) { if (!m || y.t <= marks[k0].t) continue; yk = 0; while (yk < m && marks[yk].t <= y.t + 1e-9) yk++; } if (yk > k0) { if (yk <= kE) { kE = yk; closed = true; } break; } }
+    const r = dpSeg(S, marks, CO, -1, 0, closed ? kE : -1, closed ? {k0} : {k0, bEnd: kE - 1});
+    S.forEach((y, q) => { y.k = r.k[q]; y.o = r.c[q] >= 4 ? 1 : 0; });
+    const lastK = S[S.length - 1].k;
+    let merged = 0; for (let q = 1; q < S.length; q++) if (S[q].k === S[q - 1].k && !S[q].o) merged++;
+    let NV;
+    if (a >= 0) NV = V.slice(0, a).concat(S, V.slice(b));
+    else {
+      const keep = V.filter(y => y.u || y.k < k0 || y.k > lastK);
+      const tk0 = m ? marks[k0].t : 0;
+      let ins = keep.findIndex(y => (y.k >= 0 ? y.k >= k0 : y.t >= tk0)); if (ins < 0) ins = keep.length;
+      NV = keep.slice(0, ins).concat(S, keep.slice(ins));
+      const nx = NV[ins + S.length], vi = nx ? V.indexOf(nx) : -1;
+      if (nx && !nx.w && vi > 0 && keep.indexOf(V[vi - 1]) < 0) nx.w = 1;   // Rest eines überschriebenen Worts wird ein eigenes Wort
+    }
+    const iS = NV.indexOf(S[S.length - 1]);
+    let missing = 0;
+    if (a >= 0 && merged) { const kN = b < V.length ? V[b].k : m; const free = SL.filter(z => z >= k0 && z < kN).length; missing = Math.max(0, S.length - free); }
+    const old = a >= 0 ? V.slice(a, b).map(y => y.x).join('') : '';
+    return ok(NV, marks, {sel: nextSel(NV, iS), merged, hint: merged ? merged + 1 + ' Silben auf einer Marke' : '', missing, iNext: iS + 1, old, word: S.map(y => y.x).join('')});
+  }
+  return no();
+}
+// Abschnitt nach der letzten Silbe bzw. nächste schon beschriftete Silbe
+function nextSel(V, i) { const k = V[i] ? V[i].k : -1; for (let q = i + 1; q < V.length; q++) if (V[q].k > k && !V[q].o) return Math.min(V[q].k, k + 1); return k + 1; }
+// Marken-Haken: bricht eine verschobene Silbe die Reihenfolge (feste Silbe ohne Marke dazwischen), behält sie ihre alte Zeit
+function keepOrder(s, orig) {
+  let bad = false; for (let i = 1; i < s.length; i++) if (s[i].t < s[i - 1].t - 1e-9) bad = true;
+  return s.map((y, i) => { const z = Object.assign({}, y); if (bad && z._m) { z.t = orig[i].t; if (!orig[i].j) delete z.j; } delete z._m; return z; });   // dann alle verschobenen zurück
+}
+// j/o nach Zeiten neu setzen (Marken-Haken)
+function reflag(s, mergeMoved) {
+  const out = []; let pt = -1, cnt = 0;
+  for (const y0 of s) {
+    const y = {x: y0.x, t: y0.t}; if (y0.w) y.w = y0.w;
+    if (y0.o && !(mergeMoved && y0.j)) y.o = 1;
+    else if (y.t === pt) { cnt++; if (cnt <= 3) y.j = 1; else y.o = 1; }
+    else cnt = 1;
+    if (fin(y0.p)) y.p = y0.p; if (y0.u) y.u = 1;
+    if (!y.o) pt = y.t;
+    out.push(y);
+  }
+  return out;
+}
+// Lokale Vorschau beim Tippen (§6.4): wie apply 'wort', aber nur die neue Verteilung
+function preview(ly, marks, feat, k, text, lang, o) { const r = apply(ly, marks, feat, {op: 'wort', k, text, lang}, o); return r.ok ? r : null; }
+
+return {VERSION, sylLoad, sylMode, syl, sylX, words, nuclei, feat, align, costs, dpSeg, pack, normLy, lyText, fromVs5b, view, apply, preview,
+  slotsOf, reflag, C};
+}
+
+const G9 = {w: null, job: new Map(), hold: false, feat: new Map(), auto: new Map(), view: new Map(), ed: null, sm: {state: 'none', bytes: 0, how: null, rev: null},
+  loaded: false, ms: 0, err: null, play: [], hap: [], net: [], kb: null, ownStop: false, K: null, syl: {de: null, en: null}, sylB: {}, wSyl: null, mkMsg: null, saves: 0};
+const G9_MAX = 4000;
+// der Kern: einmal erzeugt, erst wenn ihn etwas braucht (Normalisieren eines Takes mit ly, Marken-Haken, Text-Modus)
+function g9K() { if (!G9.K) G9.K = g9Make(); return G9.K; }
+// §5.2: verwirft keine Silbe des Nutzers – klemmt und ordnet nur (Kern normLy)
+function g9NormLy(v, len) { return v ? g9K().normLy(v, len) : null; }
+tkExt().take.push((m, o) => { if (!m.ly) return; const l = g9NormLy(m.ly, o.len / o.sr); if (l) o.ly = l; });
+// Undo-Art 'ly' (§5.6): nur `ly` und `lyrics` eines Takes
+function g9LySnap(id) { const m = S.takes && S.takes[id]; return JSON.stringify(m ? {ly: m.ly || null, lyrics: m.lyrics || null} : null); }
+function g9LyPut(id, val) {
+  const m = S.takes && S.takes[id], v = val ? JSON.parse(val) : null; if (!m || !v) return;
+  if (v.ly) m.ly = v.ly; else delete m.ly;
+  if (v.lyrics) m.lyrics = v.lyrics; else delete m.lyrics;
+  G9.view.delete(id);
+  if (typeof g9Undone === 'function') g9Undone(id); else if (typeof wpPaint === 'function') wpPaint();
+}
+// Block sq-g9-src (Muster sq-mk-src): einmal auswerten
+function g9Load() {
+  if (G9.loaded) return true;
+  const t0 = performance.now(), el = document.getElementById('sq-g9-src');
+  try {
+    if (!el) throw new Error('sq-g9-src fehlt');
+    const sc = document.createElement('script'); sc.textContent = el.textContent; document.head.appendChild(sc); sc.remove();
+    if (typeof g9On !== 'function') throw new Error('G9 nicht geladen');
+    G9.loaded = true;
+  } catch (e) { G9.err = String(e && e.message || e); logErr(e); }
+  G9.ms = performance.now() - t0;
+  return G9.loaded;
+}
+const g9Mode = () => !!(WP.ed && WP.ed.g9);
+function g9OnStop() { if (G9.ownStop || !g9Mode() || typeof g9End !== 'function') return; g9End('stop'); }
+// tkHeardMap(id, a) (§6.7, nur lesend): welche Zeitkarte steckt im Puffer, der jetzt klingt? null = Quell-Zeiten (Roh-/Säubern-Take)
+function tkHeardMap(id, a) {
+  if (WP.ab) return null;
+  const b = tkPlayBuf(id, a); if (!b) return null;
+  for (const M of [WP.cache, WP.old, WP.alt]) { const c = M.get(id); if (c && c.buf === b) return c.map && !wpMapInfo(c.map).ident ? c.map : null; }
+  return null;
+}
+// eine G9-Änderung schreiben ohne Undo (Marken-Haken, automatische Erkennung): ly normalisiert, lyrics = Klartext (§5.3)
+function g9PutLy(m, s, lang, src) {
+  if (!s || !s.length) { delete m.ly; delete m.lyrics; return; }
+  const K = g9K(), ly = K.normLy({v: 1, lang, src, s}, m.len / m.sr);
+  if (!ly) { delete m.ly; delete m.lyrics; return; }
+  m.ly = ly; const pl = wpNormLyr(K.lyText(ly)); if (pl) m.lyrics = pl; else delete m.lyrics;
+}
+// Marken-Haken (§6.5) – läuft in wpEdit, im selben 'takes'-Undo: Marke verschoben → ihre Silben folgen; gelöscht → mit der vorigen
+// verschmolzen (Überzahl o, nichts geht verloren); gesetzt → keine Silbe wandert. mk0 = Marken vor, mk1 = nach der Änderung
+function g9MarkHook(id, mk0, mk1) {
+  const m = S.takes && S.takes[id]; if (!m || !m.ly || !mk0 || !mk1) return;
+  try {
+    const K = g9K(), F = typeof g9FeatCached === 'function' ? g9FeatCached(id, mk0) : null;
+    const ly = Object.assign({}, m.ly, {s: K.pack(K.view(m.ly, mk0, F).V, mk0)});   // zuerst die Sicht (§5.1 Neu-Einrasten) – Anker = Marken-Zeit
+    const t0 = mk0.map(k => k.t), t1 = mk1.map(k => k.t);
+    let op = null;
+    if (t1.length === t0.length + 1) { const t = t1.find(x => !t0.includes(x)); if (t != null) op = {op: 'mkAdd', t}; }
+    else if (t1.length + 1 === t0.length) { const t = t0.find(x => !t1.includes(x)); if (t != null) op = {op: 'mkDel', t}; }
+    else if (t1.length === t0.length) { const d = t0.map((x, i) => i).filter(i => t0[i] !== t1[i]); if (d.length === 1) op = {op: 'mkMove', tOld: t0[d[0]], tNew: t1[d[0]]}; }
+    if (!op) return;
+    const r = K.apply(ly, mk0, F, op); if (!r || !r.ok) return;
+    const before = JSON.stringify(m.ly);
+    g9PutLy(m, r.s, ly.lang, ly.src);
+    G9.view.delete(id);
+    G9.mkMsg = op.op === 'mkDel' && (r.merged || r.over) ? [r.merged ? r.merged + (r.merged === 1 ? ' Silbe' : ' Silben') + ' verschmolzen' : '', r.over ? r.over + (r.over === 1 ? ' Silbe' : ' Silben') + ' ohne Marke' : ''].filter(Boolean).join(' · ') : null;
+    if (G9.mkMsg && JSON.stringify(m.ly) !== before) toast(G9.mkMsg);
+  } catch (e) { logErr(e); }
+}
+// VS5b wpSetLyrics (Test-API wpLyrics, Rückfall-Pop): mit vorhandenem ly schreibt es beides (§8)
+function g9SetLyricsHook(m, v) {
+  if (!m.ly) return false;
+  const id = Object.keys(S.takes).find(k => S.takes[k] === m); if (id) { G9.auto.delete(id); G9.view.delete(id); }
+  if (!v) { delete m.ly; delete m.lyrics; return true; }
+  const mk = id && wpMarks(id);
+  if (!mk || !mk.length) { delete m.ly; m.lyrics = v; return true; }   // Marken noch nicht erkannt: VS5b-Text gilt (ly und lyrics laufen nie auseinander)
+  const K = g9K(), r = K.apply(m.ly, mk, typeof g9FeatCached === 'function' ? g9FeatCached(id, mk) : null, {op: 'ganz', text: v, lang: m.ly.lang});
+  g9PutLy(m, r && r.s, m.ly.lang, 'eingefuegt'); G9.view.delete(id);
+  return true;
+}
+// Aufnahme hat Vorrang (§6.6.10): jeder Mikrofon-Start beendet die Erkennung; 2 s nach dem letzten Mikrofon geht es weiter
+function g9MicBusy() { try { return !!((typeof MIC !== 'undefined' && MIC.run) || (typeof ST !== 'undefined' && (ST.run || ST.on)) || (typeof MICTAP !== 'undefined' && (MICTAP.stream || MICTAP.p || MICTAP.users.size))); } catch (e) { return false; } }
+function g9MicOn() {
+  if (!G9.hold) G9.holdAt = performance.now();
+  G9.hold = true;
+  if (typeof g9RecHold === 'function') g9RecHold();
+  if (!G9.holdT) G9.holdT = setInterval(() => {
+    if (g9MicBusy()) { G9.free = 0; return; }
+    G9.free = G9.free || performance.now();
+    if (performance.now() - G9.free < 2000) return;
+    clearInterval(G9.holdT); G9.holdT = 0; G9.free = 0; G9.hold = false;
+    if (typeof g9RecResume === 'function') g9RecResume();
+  }, 250);
+}
+// ↶ ↷ eines 'takes'-Schritts (wpUndone): ein automatisches Erkennungsergebnis, das der Schnappschuss noch nicht kennt, wieder einsetzen (§7.8)
+function g9TakesUndone() {
+  for (const [id, a] of G9.auto) { const m = S.takes && S.takes[id]; if (m && !m.ly && !m.lyrics && a && a.ly) { m.ly = JSON.parse(JSON.stringify(a.ly)); if (a.lyrics) m.lyrics = a.lyrics; G9.view.delete(id); } }
+}
+// Worker-Ops (VS5a-Worker, §8): g9f Merkmale, g9a ganze Ausrichtung/Schritt, g9s Silben-Muster
+function g9Run(K, m) {
+  if (m.op === 'g9f') return K.feat(m.x, m.sr, m.marks);
+  if (m.op === 'g9a') return K.apply(m.ly, m.marks, m.feat, m.step, m.o);
+  if (m.op === 'g9s') return K.sylLoad(m.lang, m.bytes);
+  return null;
+}
+function g9Call(m) {
+  const w = wpWorker(), local = () => g9Run(g9K(), m);
+  if (!w) return Promise.resolve().then(local);
+  if (G9.wSyl !== w) { G9.wSyl = w; for (const L of Object.keys(G9.sylB)) try { w.postMessage({op: 'g9s', lang: L, bytes: G9.sylB[L], id: -1}); } catch (e) {} }
+  return new Promise((ok, no) => {
+    const id = ++WP.wid, x = m.x ? new Float32Array(m.x) : null;
+    const to = setTimeout(() => { WP.wq.delete(id); try { ok(local()); } catch (e) { no(e); } }, 20000);
+    WP.wq.set(id, {ok, no: e => { try { ok(local()); } catch (er) { no(e); } }, to});
+    try { w.postMessage(Object.assign({}, m, {id}, x ? {x} : {}), x ? [x.buffer] : []); } catch (e) { clearTimeout(to); WP.wq.delete(id); try { ok(local()); } catch (er) { no(er); } }
+  });
+}
+// Beschriftung je Marke für wpPaint (wie VSM.assignLyrics: {labels, extra}); mit `ly` aus der Sicht (§5.1), sonst VS5b
+function g9Labels(id, mk) { if (!g9Load()) return null; return g9LabelsOf(id, mk); }
+const G9_API = {
+  g9Syl: (w, lang) => (g9Load() ? g9Syl(w, lang) : null),
+  g9Align: (syl, marks, feat, o) => (g9Load() ? deep(g9AlignApi(syl, marks, feat, o)) : null),
+  g9Feat: r => (g9Load() ? g9FeatApi(wpId(r)) : Promise.resolve(null)),
+  g9View: r => (g9Load() ? deep(g9ViewApi(wpId(r))) : null),
+  g9Set: (r, op) => (g9Load() ? g9Set(wpId(r), op) : null),
+  g9SetAsync: (r, op) => (g9Load() ? g9SetAsync(wpId(r), op) : Promise.resolve(null)),
+  g9Ly: r => { const m = S.takes && S.takes[wpId(r)]; return m && m.ly ? deep(m.ly) : null; },
+  g9NormLy: (v, len) => g9NormLy(v, len == null ? 1e9 : len),
+  g9Text: (r, on) => { if (!WP.ed) { if (on === false) return false; wpOpen(typeof r === 'string' ? null : r || {t: stimmeT(), s: R.selS}); } if (!g9Load()) return false; return g9Toggle(on); },
+  g9Sel: k => (g9Mode() ? g9Select(k, {api: true}) : false),
+  g9Info: () => (G9.loaded ? g9InfoApi() : {loaded: false, sm: Object.assign({}, G9.sm), hold: G9.hold, kern: G9.K ? G9.K.VERSION : null}),
+  g9FeatSim: (r, f) => { const id = wpId(r); G9.featSim = G9.featSim || new Map(); if (f) G9.featSim.set(id, f); else G9.featSim.delete(id); G9.ctx = null; if (WP.ed) wpPaint(); return !!f; },
+  g9KbSim: h => { G9.kb = h == null ? null : +h; if (G9.loaded) g9Dock(); return G9.kb; },
+  g9PlayLog: () => G9.play.map(x => Object.assign({}, x)),
+  g9HapLog: () => G9.hap.map(x => Object.assign({}, x)),
+  g9Net: () => G9.net.map(x => Object.assign({}, x)),
+  g9Geom: () => (G9.loaded && g9Mode() ? g9GeomApi() : null),
+  g9SylLoad: lang => (g9Load() ? g9SylEnsure(lang) : Promise.resolve('einfach')),
+  g9SylMode: lang => (G9.K ? G9.K.sylMode(lang) : 'einfach'),
+  g9Recognize: (r, o) => (g9Load() && typeof g9RecRun === 'function' ? g9RecRun(wpId(r), o || {}) : Promise.resolve(null)),
+  g9RecStop: () => (G9.loaded && typeof g9RecStop === 'function' ? g9RecStop() : false),
+  g9AsrSim: (fn, o) => (g9Load() ? g9AsrSimSet(fn, o) : false),      // nur Tests: Ersatz für das Sprachmodell (G9b-2 fehlt, §9 Stopp-Punkt 1)
 };
 
 /* ======================= G3 — Vorlauf und Ausklang beim Einsingen (Nachtrag 5: G3, „G3 ergänzt“ Nr. 5, G3-06) =======================
@@ -43447,6 +45493,7 @@ function g8MakeTake(aBeat, bBeat, done) {
       } catch (e) { logErr(e); }
       if (b) TK.buf.set(id, vpKick(b));   // G-GES: VS-P misst den Stück-Take gleich
       TK.last = {id, n, sr, got: n, pre: (Fa - F0) / sr, late: 0, src: 'song', stream: true, lost: s.lost};
+      if (G9.loaded && typeof g9AutoQueue === 'function') g9AutoQueue(id);   // G9 (F1)
       G8.last = {id, sec: +(n / sr).toFixed(2), chunks: nc, lost: s.lost, werr: s.werr};
       UI.dirty.grid = UI.dirty.song = true; markDirty();
       if (R.playing) { tkVoxResync(true); const st = stimmeT(); if (st >= 0) tkTrackResync(st); }
@@ -45884,6 +47931,7 @@ Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
 Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
 Object.assign(SYNQUENZER, S012_API);              // S0/S1/S2: Teil bearbeiten, überarbeiten, zusammenfassen
 Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
+Object.assign(SYNQUENZER, G9_API);                // G9: Songtext-Bedienung (Text-Modus)
 Object.assign(SYNQUENZER, G2_API);                // G2: Tonhöhe quantisieren, Gesang als Noten
 Object.assign(SYNQUENZER, G6_API);                // G6: Chor-Generator
 Object.assign(SYNQUENZER, G7_API);                // G7: Gesang folgt dem Transponieren
