@@ -6972,3 +6972,78 @@ Stand vor den Abnahme-Korrekturen: `index-4270-vor-fix.html` (md5 `5880b81f…`)
   Attack“ → „Drum-Synth“ (Tipp, Kit-Beschreibungen, Kommentare), FM-FELD-Vorbild ohne Herstellernamen. Danach Kodamo/Nord/Waldorf = 0.
 - Pipeline auf der Endfassung: smoke (keine Fehler), orch-mk-check (4.27.0, rms 0,0705 / Spitze 0,177), v3-mk2-wellen (alles PASS,
   „MS 2000“ genau 1×), `  live: true,` vorhanden.
+## 4.27.1 — Mit GarageBand aufnehmen (AG06-Umweg)
+
+App: `rel-427gb/index.html` (4.27.0 = 4 240 866 B → 4.27.1 = 4 267 646 B, **+26,8 KB**), md5 `3bf1cb52…`.
+Basis 4.27.0 (Chor-Gruppe G6+, Mitlese-Zeile G9E) + Paket G-GB (gebaut gegen 4.26.1), per `git merge-file` zusammengeführt
+(1 Konflikt: API-Zeilen am Dateiende – beide behalten, alle 25 `Object.assign(SYNQUENZER, …)` da). `VERSION = '4.27.1'`.
+Stand vor der Prüfung: `rel-427gb/index-vor-pruef.html` (md5 `e8e8c790…`), Unterschied: `ggb427/fix-4271.diff` (2 Stellen).
+
+### Warum
+
+Am iPhone gibt Safari bei offenem Mikro den Ton nicht aufs AG06 (Kopfhörer bleiben stumm). Umweg: in GarageBand singen – dort
+laufen Ein- und Ausgang übers AG06 – und den Gesang danach in den SYNQUENZER zurückholen.
+
+### Was Xander sieht – Schritt für Schritt
+
+1. **Blatt öffnen:** ✎ auf einen STIMME-Take (Takes-Blatt) oder auf einen leeren STIMME-Platz. Gibt es noch keine STIMME-Spur:
+   Spurkopf halten → Zeile **„Mit GarageBand aufnehmen“** (die Spur entsteht beim Import von selbst).
+2. **Abschnitt „Mit GarageBand aufnehmen“:** Vorzähler **0 / 1 / 2** Takte (Vorgabe 1, wird gemerkt). Ist eine gelbe Auswahl da:
+   **[Ganzer Song | Auswahl · Takt x–y]** wie beim Video. Darunter die Anleitung in 4 Zeilen mit dem aktuellen Tempo.
+3. **[Instrumental als Datei]** → der Knopf zeigt „Abbrechen · n %“, danach **„Instrumental teilen“** → Teilen-Blatt → GarageBand.
+   Die Datei heißt `<Songname>-Instrumental-<BPM>bpm.wav`: alle Instrumente, **kein Gesang, kein Chor**, vorne Klicks (Eins höher).
+4. **In GarageBand:** Datei an Takt 1, Tempo wie angezeigt, Metronom aus → neue Spur, mit AG06 singen → Instrumental-Spur stumm →
+   Teilen → Song → Datei.
+5. **Zurück im SYNQUENZER: [Gesang importieren]** → Datei wählen. Der Gesang liegt als Take **„GarageBand hh:mm“** genau dort, wo
+   das Instrumental anfing (Vorzähler wird abgezogen). Was dort vorher lag, bleibt als stummer Take (A/B). Ein ↶ nimmt alles zurück.
+6. **Danach wie ein gesungener Take:** [Chor] → Stil antippen (z. B. „Pop modern“) baut den Chor auf dem GarageBand-Gesang,
+   ♪ Noten, Mitlese-Zeile, Video – alles geht damit.
+- Hinweise erscheinen, wenn sich das Tempo seit dem Export geändert hat, Takte im exportierten Bereich eingefügt/gelöscht wurden
+  oder noch kein Instrumental exportiert war (dann liegt der Gesang am Songanfang).
+
+**Sichtbar anders (für die Funk-Antwort):** ✎ auf einem leeren STIMME-Platz öffnet jetzt ein Blatt („STIMME · Szene n · noch kein
+Take“) statt nur einer Meldung · Spur-Blatt: neue Zeile „Mit GarageBand aufnehmen“ · quer steht die Anleitung zweispaltig.
+
+### Zusammenspiel mit 4.27.0 – geprüft und korrigiert
+
+- **Korrektur: Instrumental wartete auf den Chor.** Vor dem Rechnen lief `g6pWaitAll` (Video: „alle Chor-Stellen fertig rechnen“,
+  bis zu 180 s), obwohl der Chor im Instrumental stumm ist. Jetzt übersprungen, solange `GGB.dry` gilt (Video unverändert).
+  Messung (8 Takte, Chor-Puffer frisch verworfen): v2 3,65 s → 2,47 s, v1 2,89 s → 2,23 s; bei langen Songs mit vielen
+  Chor-Stellen spart es entsprechend mehr. `g6pWaitAll` im Instrumental 1× → 0×, im Video weiter 1×.
+- **Chor im Instrumental stumm – v1 und v2:** Beide hängen am Lead-Stück (`tkStartSrc` → `g6Start` → `g6pStart`), und `GGB.dry`
+  sperrt `tkStartSrc` ganz. Gemessen mit nur der STIMME-Spur hörbar: Instrumental −240 dBFS (digitale Stille), Video derselben
+  Stelle −8,7 dBFS (v2) / −7,8 dBFS (v1). Gleiches für einen Szenen-Take über die Song-Lane: Instrumental 0, Video −19,7 dBFS.
+- **Gesang importieren → Chor:** Takes-Blatt → [Chor] → Stil „Pop modern“ per Finger: 3 Stimmen × 16 Noten am importierten Take,
+  fertig in 2,4 s; live laufen 6 Chor-Kopien in einer Gruppe.
+- **Mitlese-Zeile:** an (Take mit Text) – der Abschnitt im Takes-Blatt bleibt frei: 5 Knöpfe (44×44 bzw. 174×44), alle per
+  Fingertipp erreichbar, Blatt 58–829 px liegt über der Leiste (672–730 px). Export mit Leiste an: läuft, Leiste danach unverändert.
+- Kommentar am G-GB-Block ergänzt (warum der Chor nicht gewartet wird).
+
+### Tests in Zahlen (Chromium, 428×926 Touch)
+
+| Lauf | Ergebnis |
+|---|---|
+| `ggb427/tests/run-all.mjs` (G-GB a, b–d, f, g + Rauchtest) | 73 OK / 0 FEHL, Rauchtest `errors []` – vor und nach der Korrektur |
+| neu `ggb427/tests/ggb-h-zusammenspiel.mjs` (Chor v2/v1, Import → Stil, Mitlese-Zeile) | 16 OK / 0 FEHL (vor der Korrektur 2 FEHL) |
+| Prüferskripte `pruef-ausrichtung` (13) + `pruef-bedienung-regression` (6) + VS3-Abnahme | 20 von 20 Exit 0; VS3-Abnahme 72 ✓ / 0 ✗ |
+| Chor-Abnahme 4.27.0 (`abnahme-4270.mjs`) auf 4.27.1 | 12 von 12 OK (G6P-20…28, K1, v1-Smoke, Konsole leer) |
+| Rauchtest `smoke.mjs` | `errors []` |
+| `orch-mk-check.mjs` | version 4.27.1, `errors []` |
+| `v3-mk2-wellen.mjs` | alles PASS |
+| Regeln | `VERSION '4.27.1'` 1×, `  live: true,` 1× (mit Kommentar), „MS 2000“ 1×, Korg/microKORG/RADIAS/DWGS/Kodamo/Mask1/Nord/Kompakt 0× |
+
+Prüfer-Ausgaben gegen den G-GB-Lauf (4.26.1) verglichen: gleich bis auf Take-Kennungen und Mess-Rauschen (Klick-Einsätze ≤ 0,023 ms
+= 1 Sample bei 44,1 kHz). pr3 meldet den 3-kHz-Rest im Instrumental bei −70,2 dB statt −77,2 dB: das ist der Klang der Instrumente
+(schwankt von Lauf zu Lauf um ±5 dB, auch in 4.26.1 und ohne STIMME-Lane), kein Gesang – Gegenprobe mit nur STIMME hörbar = 0.
+Umgebogen: Pfade `ggb/` → `ggb427/` (Kopie der Tests in `ggb427/`, die alten Ausgaben bleiben), keine Versions-Erwartungen nötig.
+
+### Offen
+
+- Am iPhone mit echter GarageBand-Datei prüfen, vor allem M4A/AAC (Encoder-Verzögerung); WAV/AIFF ist sicher.
+- Marken als Bereich (Vorschlag für den Funk): die zuletzt gewählte Marke als dritte Wahl neben Ganzer Song / Auswahl.
+- **Chor beim Import über eine Stelle mit Chor (Vorschlag für den Funk):** Der neue GarageBand-Take kommt ohne Chor (richtig – die
+  Chor-Noten gehörten zum alten Gesang), die Chor-Spuren bleiben. Holt Xander danach per A/B den alten Take nach oben, kommt dessen
+  Chor aber **nicht** wieder – nur ↶ bringt ihn zurück (gemessen: `ggb427/tests/x-chor-import2.mjs`). Genauso verhält sich schon
+  der Overdub im Song (`tkSongCommit`), also kein neuer Fehler durch G-GB. Vorschlag: den Chor beim Overdub/Import am alten Take
+  merken und bei A/B mitnehmen – oder nach dem Import „Chor-Stil wie vorher (Pop modern) anwenden?“ anbieten.
+- iPhone-CPU beim Instrumental mit vielen Chor-Stellen nicht gemessen (am Rechner jetzt ohne Warten).

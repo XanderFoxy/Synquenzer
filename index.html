@@ -3777,6 +3777,20 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .g4sheet .cllab{min-width:140px}
 @media (orientation:landscape) and (max-height:500px){.pop.g4sheet{max-width:min(660px,calc(100vw - 16px))}.g4sheet .g4grid{grid-template-columns:1fr 1fr}.g4sheet > .small:first-of-type{display:none}}
 .tksheet .clab .mbtn[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--t8)}
+/* G-GB: Abschnitt „Mit GarageBand aufnehmen“ im STIMME-/Takes-Blatt (Ziele ≥ 44 px) */
+.tksheet .ggb{margin:8px 0 6px;padding-top:8px;border-top:1px solid var(--line)}
+.tksheet .ggb h5{margin:0 0 4px;font:700 11px/1.2 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+.tksheet .ggbpre{display:flex;align-items:center;gap:6px;margin:0 0 6px}
+.tksheet .ggbpre .mbtn{flex:0 0 44px;min-width:44px;height:44px;margin:0;padding:0}
+.tksheet .ggbpre .mbtn[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--t8)}
+.tksheet .ggbrow{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 4px}
+.tksheet .ggbrow .mbtn{width:100%;height:auto;min-height:44px;margin:0;line-height:1.15;padding:2px 6px}
+.tksheet .ggbhelp{margin:4px 0 0}
+.trksheet .ggbtr{margin-top:6px}
+.tksheet .ggbrg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 6px}
+.tksheet .ggbrg .mbtn{width:100%;height:auto;min-height:44px;margin:0;line-height:1.15;padding:2px 6px}
+.tksheet .ggbrg .mbtn[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--t8)}
+@media (max-height:440px){.tksheet .ggbhelp{columns:2;column-gap:12px}.tksheet .ggbhelp > div{break-inside:avoid}.tksheet .ggb{margin:4px 0 2px;padding-top:4px}}
 .micb .led{width:8px;height:8px;border-radius:50%;background:var(--led-off);flex:none}
 #segMic.on{background:var(--rec-dim);color:#fff;box-shadow:inset 0 0 0 1px var(--rec)}
 #segMic.on .led{background:var(--rec);box-shadow:0 0 8px var(--rec)}
@@ -18050,7 +18064,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.27.0';
+const VERSION = '4.27.1';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -19015,6 +19029,7 @@ function normSong(o, pk, nt) {
   if (o.src === 'plan') v4.src = 'plan';
   const vox = tkNormVox(o.vox); if (vox) v4.vox = vox;                                              // VS3: Punch-Audio der STIMME-Spur
   const vdir = vvDirNorm(o.video, bars, nt); if (vdir) v4.video = vdir;                                 // VV2: Video-Regie im Song
+  const gb = ggbNorm(o.gb); if (gb) v4.gb = gb;                                                      // G-GB: Daten des letzten Instrumental-Exports
   return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, mel}, v4);
 }
 function ownNorm(c, pk, nt) {
@@ -21230,7 +21245,9 @@ function ownRestore(id, val) {
   if (R.editor === 'roll' && ED.rollAt && ED.rollAt.own === id) { if (song.own[id] && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); } else closeRoll(); }
 }
 function restoreSong(o) {
+  const cur = S.song, gb = cur && cur.gb;                          // G-GB: die Export-Daten sind undo-neutral (ein neuerer Export bleibt bei ↶ ↷ stehen)
   S.song = o ? normSong(o, S.key) : null;
+  if (S.song && cur) { const sg = S.song.gb; if (!gb) delete S.song.gb; else if (!(sg && sg.id && sg.id === gb.id)) S.song.gb = gb; }   // derselbe Export: ↶ ↷ nehmen sein Verschieben mit
   if (!S.song && (R.songPlay || R.songRec)) { R.songPlay = null; R.songRec = null; R.melRec = null; R.songEndBeat = null; }
   songChanged();
   if (R.editor === 'roll' && ED.rollAt && ED.rollAt.mel) { if (S.song && ED.roll) { ED.roll.refresh(); rollHeadUpdate(); } else closeRoll(); }
@@ -23178,6 +23195,7 @@ function openTrackSheet(i, anchor) {
       (tkAudioOk() && stimmeT() < 0 ? `<button class="mbtn rb" data-a="vox">＋ STIMME-Spur</button>` : '') +
       (tr.stimme ? '<button class="mbtn rb" data-a="g4">Effekte</button>' : '') +       // G4
       (rem ? `<button class="mbtn rb warn" data-a="rem">Spur entfernen</button>` : '') + '</div>' +
+      (tkAudioOk() && (stimmeT() < 0 || tr.stimme) ? '<div class="savrow ggbtr"><button class="mbtn rb" data-a="ggb">Mit GarageBand aufnehmen</button></div>' : '') +   // G-GB: eigene Zeile, die Reihe darüber bleibt
       (rem ? '<div class="small">Clips und Song-Melodie dieser Spur gehen mit – ↶ holt alles zurück.</div>'
         : '<div class="small">' + (i >= BASE_T ? 'Entfernen geht nur bei der zuletzt hinzugefügten Spur.' : 'Synth 1–4, MELODIE und DRUMS bleiben immer – einfach leer lassen.') + '</div>');
     guardTouch(p);
@@ -23188,6 +23206,7 @@ function openTrackSheet(i, anchor) {
       else if (a === 'rem') removeTrack(i);
       else if (a === 'vox') tkAddTrack();
       else if (a === 'g4') g4Sheet(anchor);                       // G4
+      else if (a === 'ggb') ggbSheet({t: stimmeT() >= 0 ? stimmeT() : null, track: true}, anchor);   // G-GB
     }, 'button[data-a]');
   }, {name: 'track'});
 }
@@ -25340,6 +25359,7 @@ function songShift(song, n, d) {
   for (const m of song.marks) if (m.a >= n) m.a += d;
   if (song.vox) tkVoxShift(song, n, d);                           // VS3
   if (song.video) vvDirShift(song, n, d);                         // VV2
+  if (song.gb) ggbShift(song, n, d);                              // G-GB: der Export-Start wandert mit
 }
 // remove the content of [a, b); marks: inside → gone, overlapping → trimmed, enclosing → split (o.split) or shortened
 function songClear(song, a, b, o) {
@@ -42485,6 +42505,7 @@ const VP_API = {
 
 /* ---------- Abspielen ---------- */
 function tkStartSrc(o) {
+  if (GGB.dry) return null;                                       // G-GB: Instrumental als Datei – kein Gesang (Takes, Chor) im Offline-Durchlauf
   const c = o.ctx || AU.ctx; if (!c || !o.buf) return null;
   const dest = o.dest || (AU.tracks[o.i] && AU.tracks[o.i].trackIn); if (!dest) return null;
   // FP-DSP: liegt der Start schon in der Vergangenheit (Hauptfaden war langsam), beginnt das Stück jetzt – mit Blende und passendem Versatz
@@ -42876,6 +42897,7 @@ function tkPick(r, k, del) {
 }
 function tkSheet(r, anchor) {
   if (r.t != null && !tkRef(r)) {
+    if (isStimmeT(r.t) && tkAudioOk()) return ggbSheet(r, anchor);   // G-GB: leerer STIMME-Platz → Blatt mit „Mit GarageBand aufnehmen“
     if (isStimmeT(r.t)) toast(tkAudioOk() ? 'STIMME-Spur: mit 🎤 singen, dann FANG 🎤 oder ●' : 'Audio nur auf der eigenen Seite');
     return false;
   }
@@ -42884,6 +42906,7 @@ function tkSheet(r, anchor) {
   openPop(anchor || EL.top, p => { p.classList.add('tksheet'); guardTouch(p); tkSheetPaint(p);
     onTap(p, b => {
       const d = b.dataset, rr = TK.sheet; if (!rr) return;
+      if (d.a && d.a.slice(0, 3) === 'ggb') { ggbTap(b); return; }   // G-GB
       if (d.k != null) { tkPick(rr, +d.k, d.del === '1'); return; }
       if (d.a === 'ab') { tkPick(rr, 1, false); return; }
       if (d.a === 'wav') { const x = tkRef(rr); if (x) tkExportWav(x.a.take); return; }
@@ -42908,7 +42931,7 @@ function tkSheetPaint(p) {
   ord.forEach((k, n) => { no[k] = n + 1; });
   const rows = segs.map((sg, k) => {
     const m = S.takes && S.takes[sg.take], d = new Date(m ? m.created : 0), miss = TK.missing.has(sg.take);
-    const info = (m ? tkFmtDur(sg.out - sg.in) + ' · ' + z2(d.getHours()) + ':' + z2(d.getMinutes()) + ' · ' + (ST_RSHORT[m.route] || '') : '?') + (miss ? ' · fehlt hier' : '');
+    const info = (m ? (m.name ? m.name + ' · ' + tkFmtDur(sg.out - sg.in) : tkFmtDur(sg.out - sg.in) + ' · ' + z2(d.getHours()) + ':' + z2(d.getMinutes()) + ' · ' + (ST_RSHORT[m.route] || '')) : '?') + (miss ? ' · fehlt hier' : '');   // G-GB: Name „GarageBand hh:mm“
     return `<div class="tkrow${k === 0 ? ' on' : ''}"><button class="mbtn rb tk-pick" data-k="${k}"${k === 0 ? ' aria-pressed="true"' : ''}><b>${k === 0 ? '● ' : '○ '}Take ${no[k]}</b><small>${esc(info)}</small></button>` +
       `<button class="mbtn rb tk-del" data-k="${k}" data-del="1" aria-label="Take ${no[k]} löschen">✕</button></div>`;
   }).join('');
@@ -42923,6 +42946,7 @@ function tkSheetPaint(p) {
       `<button class="mbtn rb tk-g7${g7Follows(x.a.take) ? ' on' : ''}" data-a="g7" aria-pressed="${g7Follows(x.a.take)}">${g7Follows(x.a.take) ? '✓ ' : ''}folgt Transponieren</button></div>` : '') +   // G-GES: G7 je Take
     (ok ? '<div class="tkedrow">' + (TK.dupAsk ? g6pfSheetBtn(x.a) : '<button class="mbtn rb tk-g2" data-a="g2">♪ Tonhöhe · Noten</button><button class="mbtn rb tk-g6" data-a="g6">Chor</button>' + g6pfSheetBtn(x.a)) + '</div>' : '') +   /* G2 */
     `<div class="savrow"><button class="mbtn rb" data-a="ab"${segs.length > 1 ? '' : ' disabled'}>A/B</button><button class="mbtn rb" data-a="wav"${ok ? '' : ' disabled'}>WAV</button><button class="mbtn rb" data-a="zip"${ok ? '' : ' disabled'}>ZIP + Projekt</button><button class="mbtn rb" data-a="gc"${ok ? '' : ' disabled'}>Aufräumen</button></div>` +
+    (ok && S.song && S.song.bars ? ggbHtml() : '') +              // G-GB: Mit GarageBand aufnehmen (braucht einen Song)
     '<div class="small">Oben = der hörbare Take. Ein Tipp holt einen älteren Take nach oben (A/B: die zwei obersten tauschen). ✕ = löschen, ↶ holt ihn zurück.</div>';
   clSheet(p, x);                                                  // VS4: SÄUBERN, A/B Roh │ Sauber
   if (ok && typeof g2Pre === 'function') g2Pre(x.a.take);         // G2: Töne schon suchen (Worker), bevor ♪ Tonhöhe getippt wird
@@ -50388,7 +50412,7 @@ function vvRange(useSel) {
 function vvHasSel() { const song = S.song; if (!song || !song.bars) return false; svSelFix(); return !!(SV.sel && SV.sel.a < song.bars); }
 // takes the song needs: loaded before the render (live they come in on the fly)
 async function vvTakesReady() {
-  if (!tkAudioOk() || !S.takes) return;
+  if (!tkAudioOk() || !S.takes || GGB.dry) return;                 // G-GB: Instrumental – der Gesang wird nicht gebraucht
   for (const id of tkActiveIds()) tkLoad(id);
   const w = [...TK.wait.values()]; if (w.length) { try { await Promise.all(w); } catch (e) { logErr(e); } }
   await vvVocReady();
@@ -50508,7 +50532,7 @@ async function vvRenderAudio0(o) {
   drumBufs();                                                       // the drum buffers of the live context (shared, same rate)
   if (SynthHost.state === 'loading' && SynthHost.promise) { try { await SynthHost.promise; } catch (e) {} }
   await vvTakesReady();
-  if (typeof g6pWaitAll === 'function') { const w = await g6pWaitAll({a, b}, {cancel: () => VV.cancel}); if (!w.ok) toast('Chor im Video nicht ganz fertig gerechnet'); }   // G6PH-VIDEO
+  if (typeof g6pWaitAll === 'function' && !GGB.dry) { const w = await g6pWaitAll({a, b}, {cancel: () => VV.cancel}); if (!w.ok) toast('Chor im Video nicht ganz fertig gerechnet'); }   // G6PH-VIDEO (G-GB: Instrumental ohne Chor – nicht auf Chor-Puffer warten)
   const wk = wkReady(), sr = lc.sampleRate, sp = spb(), songSec = (b - a) * 4 * sp;
   const lead = .06, len = Math.ceil((lead + AU.graphLat + songSec + VV_TAIL + .4) * sr);
   const oc = new OfflineAudioContext(2, len, sr);
@@ -51222,6 +51246,299 @@ function vvApi() {
   };
 }
 /* VV1-END */
+/* ===================== G-GB: Mit GarageBand aufnehmen =====================
+   Am iPhone gibt Safari bei offenem Mikro den Ton nicht auf ein USB-Interface (WebKit: VideoChat + DefaultToSpeaker). Umweg: in
+   GarageBand singen (Ein- und Ausgang dort übers Interface) und den Gesang zurückholen.
+   [Instrumental als Datei]: der Song – oder die gelbe Auswahl (Wahl im Abschnitt wie beim Video) – einmal offline wie das Video (vvRenderAudio),
+   alle Gesangs-Takes stumm (GGB.dry: tkStartSrc spielt nichts, auch kein Chor – v1 und die Chor-Gruppe v2 hängen am Lead-Stück; der Render
+   wartet nicht auf Chor-Puffer: g6pWaitAll entfällt), vorne 0/1/2 Takte Klick (Klang wie das Metronom).
+   WAV 48 kHz, 16 Bit, Stereo; Länge = Vorzähler + Song (der Hall-Ausklang bleibt weg, 10 ms Blende). Teilen über deliver() (Teilen-Blatt,
+   sonst Download). Ist die Datei draußen, merkt sich der Song song.gb = {id, tick (Schläge × 480), pre (s), bpm, len (s), bars, moved?} –
+   gespeichert, ohne Undo-Schritt; ein neuerer Export bleibt bei ↶ ↷ stehen (restoreSong). Takte einfügen/löschen davor schiebt tick mit
+   (songShift → ggbShift); trifft es den exportierten Bereich selbst, ist moved gesetzt und der Import warnt.
+   [Gesang importieren]: Datei aus GarageBand (gleicher Nullpunkt wie das Instrumental, inkl. Vorzähler) → decodeAudioData (48 kHz),
+   mono, Vorzähler abziehen, als neuer Take (tkAddPcmTake, Audio-Speicher IDB) auf der STIMME-Spur genau am Export-Start (song.vox;
+   die Stimme, die dort lag, wird zu stummen Takes wie beim Overdub). Gesang im Vorzähler = Anlauf (G3), über das Ende = Ausklang.
+   Ein Undo-Schritt. Ohne Export-Daten: am Songanfang, ohne Abzug, höchstens so lang wie der Song, mit Hinweis. */
+const GGB = {dry: false, busy: false, prog: 0, res: null, imp: false, inp: null, pk: -1, ttl: 0, t0: 0, rc: null};
+const GGB_SR = 48000, GGB_PPQ = 480, GGB_ACCEPT = 'audio/*,.wav,.m4a,.mp3,.aif,.aiff,.caf';
+// song.gb normalisieren (Funktionsdeklaration ohne spätere Konstanten: normSong läuft schon beim Laden)
+function ggbNorm(g) {
+  const n = v => typeof v === 'number' && isFinite(v);
+  if (!g || typeof g !== 'object' || !n(g.tick) || !n(g.pre) || !n(g.bpm) || !n(g.len)) return null;
+  const o = {tick: Math.max(0, Math.min(999 * 4 * 480, Math.round(g.tick))), pre: +Math.max(0, Math.min(60, g.pre)).toFixed(6),
+    bpm: +Math.max(20, Math.min(400, g.bpm)).toFixed(3), len: +Math.max(0, Math.min(36000, g.len)).toFixed(6)};
+  if (n(g.bars)) o.bars = Math.max(1, Math.min(999, Math.round(g.bars)));
+  if (typeof g.id === 'string' && /^[\w-]{1,24}$/.test(g.id)) o.id = g.id;      // Kennung des Exports (restoreSong)
+  if (g.moved === true) o.moved = true;                                           // seit dem Export Takte im Bereich eingefügt/gelöscht
+  return o;
+}
+// songShift(n, d): Takte ab n um d verschoben (d > 0 eingefügt; d < 0: [n + d, n) gelöscht). Der Export-Start wandert mit; trifft es
+// den exportierten Bereich selbst, passt der Gesang dort nicht mehr sicher (moved → Hinweis beim Import). Ohne spätere Konstanten.
+function ggbShift(song, n, d) {
+  const g = song.gb; if (!g || !d) return;
+  const T = 1920, a = g.tick / T, b = a + (g.bars || 1);
+  if (a >= n) { g.tick = Math.max(0, g.tick + d * T); return; }
+  if (d > 0) { if (n < b) g.moved = true; return; }
+  const x = n + d; if (b > x) { g.moved = true; if (a > x) g.tick = x * T; }
+}
+// Name eines Takes („GarageBand 14:32“) bleibt beim Normalisieren
+tkExt().take.push((m, o) => { if (typeof m.name === 'string' && m.name.trim()) o.name = m.name.trim().slice(0, 40); });
+const ggbPre = () => { const v = uiPrefs().ggbPre; return v === 0 || v === 2 ? v : 1; };       // Vorzähler (Takte), Gerät, Vorgabe 1
+const ggbBpmTxt = b => String(+(+b).toFixed(2));
+const ggbBar = g => Math.min(Math.round(g.tick / (4 * GGB_PPQ)), SONG_MAX_BARS - 1);
+// die gelbe Auswahl (b exklusiv) oder null; eine Auswahl über den ganzen Song zählt nicht
+function ggbSel() {
+  const song = S.song; if (!song || !song.bars) return null;
+  svSelFix(); if (!SV.sel || SV.sel.a >= song.bars) return null;
+  const a = SV.sel.a, b = Math.min(song.bars, SV.sel.b + 1);
+  return a === 0 && b === song.bars ? null : {a, b, k: a + '-' + b};
+}
+// der Bereich: [Ganzer Song] oder [Auswahl] (wie beim Video). Ohne ausdrückliche Wahl: die Auswahl ab 2 Takten, ein einzelner Takt
+// ist nur die Startposition (Lineal-Tipp „▶ startet hier“) → ganzer Song. Die Wahl gilt für diese eine Auswahl (GGB.rc).
+function ggbRange() {
+  const song = S.song; if (!song || !song.bars) return null;
+  const s = ggbSel(), use = !!s && (GGB.rc && GGB.rc.k === s.k ? GGB.rc.use : s.b - s.a > 1);
+  return use ? {a: s.a, b: s.b, sel: true} : {a: 0, b: song.bars, sel: false};
+}
+function ggbFileBase() {
+  const nm = String(S.name || '').normalize('NFC').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'Song';
+  return nm + '-Instrumental-' + ggbBpmTxt(S.bpm) + 'bpm';
+}
+// fertige Datei gilt, solange Song, Tempo, Bereich, Vorzähler und Undo-Stand gleich sind
+function ggbSig(rg, pre) { const u = UNDO[UNDO.length - 1]; return [S.id, UI.songVer | 0, S.bpm, rg ? rg.a + '-' + rg.b : '', pre, UNDO.length, u ? u.time : 0, REDO.length].join(':'); }
+function ggbFresh() { const r = GGB.res; if (!r) return null; if (r.sig !== ggbSig(ggbRange(), ggbPre())) { GGB.res = null; return null; } return r; }
+// Ausgabe auf 48 kHz (der Live-Kontext kann 44,1 kHz haben): Neuberechnung durch den Browser, gleicher Nullpunkt
+async function ggbTo48(r, N) {
+  if (r.sr === GGB_SR) return r.ch.map(d => { if (d.length >= N) return d.subarray(0, N); const o = new Float32Array(N); o.set(d); return o; });
+  const nIn = Math.max(1, Math.min(r.n, Math.ceil(N * r.sr / GGB_SR) + 16)), oc = new OfflineAudioContext(2, N, GGB_SR), b = oc.createBuffer(2, nIn, r.sr);
+  for (let c = 0; c < 2; c++) b.getChannelData(c).set(r.ch[c].subarray(0, nIn));
+  const s = oc.createBufferSource(); s.buffer = b; s.connect(oc.destination); s.start(0);
+  const out = await oc.startRendering();
+  return [out.getChannelData(0), out.getChannelData(1)];
+}
+// WAV 48 kHz / 16 Bit / Stereo: Vorzähler (preN Samples, beats Klicks im Abstand sp) + Song
+async function ggbWav(ch, preN, beats, sp) {
+  const N = ch[0].length, n = preN + N, out = new Uint8Array(44 + n * 4), dv = new DataView(out.buffer), w = (o, s) => { for (let i = 0; i < s.length; i++) out[o + i] = s.charCodeAt(i); };
+  w(0, 'RIFF'); dv.setUint32(4, 36 + n * 4, true); w(8, 'WAVE'); w(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 2, true);
+  dv.setUint32(24, GGB_SR, true); dv.setUint32(28, GGB_SR * 4, true); dv.setUint16(32, 4, true); dv.setUint16(34, 16, true); w(36, 'data'); dv.setUint32(40, n * 4, true);
+  const pcm = new Int16Array(out.buffer, 44, n * 2), L0 = .3, cl = Math.round(.04 * GGB_SR);
+  for (let k = 0; k < beats; k++) {                                 // Klick wie click(): 1760 Hz auf der Eins, sonst 1100 Hz, 30 ms auf −50 dB
+    const i0 = Math.round(k * sp * GGB_SR), f = k % 4 === 0 ? 1760 : 1100;
+    for (let j = 0; j < cl && i0 + j < preN; j++) { const t = j / GGB_SR, e = t < .03 ? L0 * Math.pow(.001 / L0, t / .03) : .001, v = Math.round(e * Math.sin(2 * Math.PI * f * t) * 32767); pcm[2 * (i0 + j)] = v; pcm[2 * (i0 + j) + 1] = v; }
+  }
+  const A = ch[0], B = ch[1];
+  for (let i = 0; i < N; i += 262144) {                             // in Stücken (kein langer Block im Hauptfaden)
+    const e = Math.min(N, i + 262144);
+    for (let k = i; k < e; k++) { const a = A[k], b = B[k], o = 2 * (preN + k); pcm[o] = Math.round((a > 1 ? 1 : a < -1 ? -1 : a) * 32767); pcm[o + 1] = Math.round((b > 1 ? 1 : b < -1 ? -1 : b) * 32767); }
+    if (e < N) await vvYield();
+  }
+  return out;
+}
+// der Offline-Durchlauf ohne Gesang → WAV (GGB.res); o: {pre (0|1|2), range {a, b}, onProgress}
+async function ggbRender(o) {
+  o = o || {};
+  if (GGB.busy) throw new Error('Läuft schon');
+  const rg = o.range ? Object.assign({sel: true}, o.range) : ggbRange(); if (!rg) throw new Error('Noch kein Song – erst ● SONG');
+  const pre = [0, 1, 2].includes(o.pre) ? o.pre : ggbPre(), sig = ggbSig(o.range ? null : rg, pre), T0 = performance.now(), keep = VV.last;
+  GGB.busy = true; GGB.prog = 0; GGB.res = null;
+  try {
+    let r;
+    GGB.dry = true; VV.cancel = false;
+    try { r = await vvRenderAudio({range: rg, onProgress: p => { GGB.prog = p; if (o.onProgress) o.onProgress(p); }}); }
+    finally { GGB.dry = false; VV.last = keep; }
+    const sp = 60 / r.bpm, N = Math.round(r.songSec * GGB_SR), preN = Math.round(pre * 4 * sp * GGB_SR);
+    const ch = await ggbTo48(r, N); r = null;
+    const fo = Math.min(N, Math.round(.01 * GGB_SR)); for (const d of ch) for (let j = 0; j < fo; j++) d[N - fo + j] *= (fo - 1 - j) / fo;   // Ende ohne Knacks
+    const bytes = await ggbWav(ch, preN, pre * 4, sp);
+    clearTimeout(GGB.ttl); GGB.ttl = setTimeout(() => { GGB.res = null; ggbPaint(); }, 10 * 60000);   // die Datei (≈ 11 MB je Minute) bleibt 10 min zum Teilen
+    GGB.res = {bytes, name: ggbFileBase(), sr: GGB_SR, n: preN + N, preN, songN: N, pre: preN / GGB_SR, preBars: pre, a: rg.a, b: rg.b, sel: !!rg.sel, bpm: +S.bpm, songSec: N / GGB_SR, sig, ms: Math.round(performance.now() - T0)};
+    return GGB.res;
+  } finally { GGB.busy = false; VV.cancel = false; }
+}
+// nach dem Teilen: Export-Daten in den Song (undo-neutral, gespeichert)
+function ggbRemember(res) {
+  const song = S.song; if (!song || !res) return null;
+  song.gb = ggbNorm({id: 'g' + Date.now().toString(36), tick: res.a * 4 * GGB_PPQ, pre: res.pre, bpm: res.bpm, len: res.songSec, bars: res.b - res.a});
+  markDirty();
+  return song.gb;
+}
+async function ggbShare() {
+  const res = ggbFresh(); if (!res) return 'none';
+  const how = await deliver(res.name, res.bytes, 'wav', 'Instrumental');
+  if (how === 'share' || how === 'download' || how === 'claude') { ggbRemember(res); ggbPaint(); }
+  return how;
+}
+async function ggbGo() {
+  GGB.t0 = performance.now();
+  const job = ggbRender({onProgress: () => ggbProg()}); ggbPaint();     // GGB.busy steht schon (synchroner Anfang von ggbRender)
+  try { await job; toast('Instrumental fertig – jetzt teilen'); haptic('pop'); }
+  catch (e) { const m = String(e && e.message || e); if (m === 'abgebrochen') toast('Instrumental abgebrochen'); else { if (!/Song|Läuft|Aufnahme|Wiedergabe/.test(m)) logErr(e); toast('Instrumental: ' + m); } }
+  finally { ggbPaint(); }
+}
+/* ---------- Gesang importieren ---------- */
+function ggbDecode(ab) {
+  const C = window.OfflineAudioContext || window.webkitOfflineAudioContext, oc = new C(1, 1, GGB_SR);
+  return new Promise((res, rej) => { let p; try { p = oc.decodeAudioData(ab, res, rej); } catch (e) { rej(e); return; } if (p && p.then) p.then(res, rej); });
+}
+async function ggbMono(buf) {
+  const n = buf.length, nc = buf.numberOfChannels, chs = [], pcm = new Int16Array(n), k = 32767 / nc;
+  for (let c = 0; c < nc; c++) chs.push(buf.getChannelData(c));
+  for (let i = 0; i < n; i += 262144) {
+    const e = Math.min(n, i + 262144);
+    for (let j = i; j < e; j++) { let s = 0; for (let c = 0; c < nc; c++) s += chs[c][j]; const v = Math.round(s * k); pcm[j] = v > 32767 ? 32767 : v < -32768 ? -32768 : v; }
+    if (e < n) await vvYield();
+  }
+  return pcm;
+}
+// der Take auf die STIMME-Spur am Export-Start (ein Undo); pcm Int16 mono, sr
+function ggbPlace(pcm, sr, name) {
+  const song = S.song; if (!song || !song.bars) { toast('Noch kein Song – erst ● SONG'); return null; }
+  const g = song.gb || null, sp = spb(), barSec = 4 * sp, ia = g ? Math.min(pcm.length, Math.round(g.pre * sr)) : 0, bar = g ? ggbBar(g) : 0;
+  const dur = (pcm.length - ia) / sr;
+  if (!(dur > .05)) { toast(g ? 'Die Datei endet schon im Vorzähler' : 'Die Datei ist leer'); return null; }
+  let len = Math.max(1, Math.ceil(dur / barSec - 1e-3));
+  len = Math.min(len, g ? g.bars || len : song.bars);             // so lang wie das Instrumental – ohne Export-Daten wie der Song (der Rest: Ausklang bzw. weg)
+  len = Math.max(1, Math.min(len, SONG_MAX_BARS - bar));
+  const songBefore = songSnapshot(), takesBefore = S.takes ? JSON.stringify(S.takes) : null, items = [];
+  const st = tkEnsureTrack(items); if (st < 0) { toast('Kein Platz für die STIMME-Spur – eine Zusatzspur leeren'); return null; }
+  const r = tkAddPcmTake(pcm, sr, 'import'), m = S.takes[r.id];
+  m.route = 'datei'; m.name = name;
+  const inS = tkR6(ia / sr), outS = tkR6(Math.min(pcm.length / sr, inS + len * barSec));
+  try { g3TakePre(r.id, m, pcm, ia, sr); } catch (e) { logErr(e); }                 // G3: Gesang im Vorzähler (Auftakt) = hörbarer Anlauf
+  if (outS < pcm.length / sr - .02) { try { const s = g3PostSec(pcm, Math.round(outS * sr), sr); if (s > .005) m.post = {out: outS, sec: tkR6(s)}; } catch (e) { logErr(e); } }   // … über das Ende = Ausklang
+  // wie ein Overdub im Song: was dort lag – der hörbare und die stummen Takes –, wird zu stummen Takes des neuen Stücks (Takes-Blatt: A/B,
+  // höchstens 16), Ränder bleiben. Ein Stück hält stumme Takes nur bis 256 Schläge nach seinem Anfang (G8, tkNormSeg): liegt ein älteres
+  // Stück weiter hinten, beginnt das neue dort ein weiteres Stück (gleicher Take, nahtlos weiter im Take).
+  const from = bar, E = bar + len, kept = [], old = [];
+  for (const o of song.vox || []) { if (o.bar + o.len <= from || o.bar >= E) kept.push(o); else old.push(o); }
+  old.sort((x, y) => x.bar - y.bar);
+  const cuts = [from];
+  for (const o of old) { const P = cuts[cuts.length - 1], mx = Math.max(...tkSegs(o).map(x => x.at)); if (o.bar > P && mx + (o.bar - P) * 4 > 256 + 1e-6) cuts.push(o.bar); }
+  for (const o of old) {
+    if (o.bar < from) kept.push(tkVoxTrim(o, o.bar, from, sp));
+    if (o.bar + o.len > E) kept.push(tkVoxTrim(o, E, o.bar + o.len, sp));
+  }
+  const ids = [];
+  for (let k = 0; k < cuts.length; k++) {
+    const p0 = cuts[k], p1 = k + 1 < cuts.length ? cuts[k + 1] : E, alt = [];
+    const add = (o, x) => {                                           // x im Stück [p0, p1), so weit das alte Stück reichte
+      const sh = (p0 - o.bar) * 4, at = Math.max(0, x.at - sh), i = x.in + Math.max(0, sh - x.at) * sp;
+      const out = Math.min(x.out, i + ((Math.min(o.bar + o.len, p1) - p0) * 4 - at) * sp);
+      if (!(out > i + 1e-3) || at >= (p1 - p0) * 4 - 1e-6) return;
+      const q = alt.find(y => y.take === x.take && Math.abs(y.out - i) < 1e-4 && Math.abs(y.at + (y.out - y.in) / sp - at) < 1e-4);   // zwei Stücke desselben Takes: wieder eins
+      if (q) q.out = tkR6(out); else alt.push({take: x.take, in: tkR6(i), out: tkR6(out), at: tkR6(at)});
+    };
+    for (const o of old) if (o.bar < p1 && o.bar + o.len > p0) add(o, o);
+    for (const o of old) if (o.bar < p1 && o.bar + o.len > p0) for (const x of o.alt || []) add(o, x);
+    const i0 = tkR6(inS + (p0 - from) * barSec), o0 = k + 1 < cuts.length ? tkR6(Math.min(outS, inS + (p1 - from) * barSec)) : outS;
+    const nv = tkNormAudio({take: r.id, in: i0, out: o0, at: 0, alt: alt.slice(0, 16)});
+    if (!nv) continue;
+    const id = tkVoxId(kept); ids.push(id);
+    kept.push(Object.assign({id, bar: p0, len: p1 - p0}, nv));
+  }
+  if (!ids.length) return null;
+  song.vox = tkNormVox(kept) || undefined; if (!song.vox) delete song.vox;
+  if (E > song.bars) songSetBars(song, Math.min(E, SONG_MAX_BARS));
+  undoPush({kind: 'group', label: 'Gesang importiert', items: items.concat([{kind: 'takes', before: takesBefore}, {kind: 'song', before: songBefore}]), tk: 1});
+  songChanged(); tkVoxResync(true); UI.dirty.all = true;
+  const v = (song.vox || []).find(x => x.take === r.id);
+  let msg = name + ' · Takt ' + (from + 1) + (len > 1 ? '–' + E : '');
+  if (!g) msg += ' · kein Instrumental-Export gemerkt: Gesang liegt am Songanfang' + (dur > len * barSec + 1 ? ' · Datei länger als der Song – Ende abgeschnitten' : '');
+  else if (Math.abs(g.bpm - S.bpm) > .01) msg += ' · Achtung: Tempo seit dem Export ' + ggbBpmTxt(g.bpm) + ' → ' + ggbBpmTxt(S.bpm) + ' BPM';
+  else if (g.moved) msg += ' · Achtung: seit dem Export Takte eingefügt/gelöscht – bitte anhören';
+  toast(msg, {label: 'Rückgängig', fn: () => undo()}); haptic('pop');
+  return {id: r.id, vox: v ? v.id : null, pieces: ids.length, track: st, bar: from, len, in: inS, out: outS, gb: !!g, moved: !!(g && g.moved), stored: r.stored};
+}
+// Datei (ArrayBuffer) → Take; die Blätter folgen
+async function ggbImportBuf(ab, o) {
+  o = o || {};
+  if (GGB.imp) return null;
+  if (GGB.busy || VV.off) { toast('Erst fertig rechnen lassen'); return null; }
+  if (!tkAudioOk()) { toast('Audio nur auf der eigenen Seite'); return null; }
+  if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return null; }
+  if (!S.song || !S.song.bars) { toast('Noch kein Song – erst ● SONG'); return null; }
+  GGB.imp = true; ggbPaint();
+  let pcm = null, sr = GGB_SR;
+  try { const buf = await ggbDecode(ab); sr = buf.sampleRate; pcm = await ggbMono(buf); }
+  catch (e) { pcm = null; }
+  finally { GGB.imp = false; }
+  if (!pcm) { toast('Datei nicht lesbar – bitte WAV, M4A, MP3 oder AIFF'); ggbPaint(); return null; }
+  const d = new Date(), res = ggbPlace(pcm, sr, o.name || 'GarageBand ' + z2(d.getHours()) + ':' + z2(d.getMinutes()));
+  if (res && res.vox) {
+    if (UI.pop && UI.pop.name === 'takes') { TK.sheet = {vox: res.vox}; tkSheetPaint(UI.pop.el); }
+    else if (UI.pop && UI.pop.name === 'ggb') tkSheet({vox: res.vox});
+  } else ggbPaint();
+  if (res) res.stored = await res.stored;
+  return res;
+}
+const ggbReadFile = f => (f.arrayBuffer ? f.arrayBuffer() : new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsArrayBuffer(f); }));
+// Dateiauswahl (im Tipp selbst geöffnet: Safari braucht die Geste)
+function ggbPick() {
+  let inp = GGB.inp;
+  if (!inp || !inp.isConnected) {
+    inp = GGB.inp = document.createElement('input'); inp.type = 'file'; inp.id = 'ggbIn'; inp.accept = GGB_ACCEPT; inp.hidden = true;
+    inp.addEventListener('change', () => { const f = inp.files && inp.files[0]; if (!f) return; ggbReadFile(f).then(ab => { inp.value = ''; return ggbImportBuf(ab); }, e => { inp.value = ''; toast('Datei nicht lesbar'); }); });
+    document.body.appendChild(inp);
+  }
+  inp.value = ''; inp.click();
+}
+/* ---------- Abschnitt im STIMME-/Takes-Blatt ---------- */
+function ggbHtml() {
+  const rg = ggbRange(), pre = ggbPre(), bpm = ggbBpmTxt(S.bpm), res = ggbFresh(), busy = GGB.busy, g = S.song && S.song.gb;
+  const x = busy ? ggbBusyTxt() : res ? 'Instrumental teilen' : 'Instrumental als Datei';
+  const st = !rg ? 'Noch kein Song – erst ● SONG' : (rg.sel ? 'Auswahl' : 'Ganzer Song') + ' · Takt ' + (rg.a + 1) + (rg.b - rg.a > 1 ? '–' + rg.b : '') + ' · ' + bpm + ' BPM' + (res ? ' · ' + res.name + '.wav' : '');
+  const gi = !rg ? '' : g ? 'Gesang kommt an Takt ' + (ggbBar(g) + 1) + (g.moved ? ' (letzter Export – seither Takte eingefügt/gelöscht)' : ' (letzter Export)') : 'Noch kein Export gemerkt – Gesang käme an den Songanfang';
+  const sl = ggbSel(), dis = busy ? ' disabled' : '';
+  const rgc = sl ? '<div class="ggbrg">' + [['song', 'Ganzer Song', !rg.sel], ['sel', 'Auswahl · Takt ' + (sl.a + 1) + (sl.b - sl.a > 1 ? '–' + sl.b : ''), rg.sel]]
+    .map(([v, t, on]) => `<button class="mbtn rb" data-a="ggbr" data-v="${v}" aria-pressed="${on}"${dis}>${esc(t)}</button>`).join('') + '</div>' : '';   // wie beim Video: [Ganzer Song] / [Auswahl]
+  return '<div class="ggb" role="group" aria-label="Mit GarageBand aufnehmen"><h5>Mit GarageBand aufnehmen</h5>' + rgc +
+    '<div class="ggbpre"><span class="small">Vorzähler</span>' + [0, 1, 2].map(v => `<button class="mbtn rb" data-a="ggbp" data-v="${v}" aria-pressed="${v === pre}" aria-label="Vorzähler ${v} ${v === 1 ? 'Takt' : 'Takte'}"${busy ? ' disabled' : ''}>${v}</button>`).join('') +
+    `<span class="small">${pre === 1 ? 'Takt' : 'Takte'} Klick</span></div>` +
+    `<div class="ggbrow"><button class="mbtn rb${res && !busy ? ' go' : ''}" data-a="ggbx"${rg || busy ? '' : ' disabled'}>${esc(x)}</button>` +
+    `<button class="mbtn rb" data-a="ggbi"${rg && !busy && !GGB.imp ? '' : ' disabled'}>${GGB.imp ? 'Lese Datei …' : 'Gesang importieren'}</button></div>` +
+    `<div class="small ggbst">${esc(st)}${gi ? '<br>' + esc(gi) : ''}</div>` +
+    `<div class="small ggbhelp"><div>1. Instrumental als Datei → in GarageBand an Takt 1 legen, Tempo ${esc(bpm)}, Metronom aus.</div><div>2. Neue Spur, mit AG06 singen.</div>` +
+    '<div>3. Instrumental-Spur stumm, Teilen → Song → Datei.</div><div>4. Hier ‚Gesang importieren‘.</div></div></div>';
+}
+const ggbBusyTxt = () => 'Abbrechen · ' + Math.round(GGB.prog * 100) + ' %';
+const ggbPop = () => (UI.pop && (UI.pop.name === 'takes' || UI.pop.name === 'ggb') ? UI.pop.el : null);
+function ggbPaint() {
+  const p = ggbPop(), box = p && p.querySelector('.ggb'); if (!box) return;
+  const t = document.createElement('div'); t.innerHTML = ggbHtml(); box.replaceWith(t.firstChild); popFit(p);
+}
+function ggbProg() {
+  const q = Math.round(GGB.prog * 100); if (q === GGB.pk) return; GGB.pk = q;
+  const p = ggbPop(), b = p && p.querySelector('button[data-a="ggbx"]'); if (b) b.textContent = ggbBusyTxt();
+}
+function ggbTap(b) {
+  const a = b.dataset.a;
+  if (a === 'ggbp') { if (GGB.busy) return; setUiPref('ggbPre', +b.dataset.v); ggbPaint(); haptic('tick'); return; }
+  if (a === 'ggbr') { const sl = ggbSel(); if (GGB.busy || !sl) return; GGB.rc = {k: sl.k, use: b.dataset.v === 'sel'}; ggbPaint(); haptic('tick'); return; }
+  if (a === 'ggbx') { if (GGB.busy) { if (performance.now() - GGB.t0 > 600) VV.cancel = true; return; } if (ggbFresh()) ggbShare(); else ggbGo(); return; }   // ein Doppeltipp bricht nicht gleich wieder ab
+  if (a === 'ggbi') { if (!GGB.busy && !GGB.imp) ggbPick(); }
+}
+// leerer STIMME-Platz, Spur-Blatt (auch ohne STIMME-Spur: sie entsteht beim Import): dasselbe Blatt ohne Takes-Liste
+function ggbSheet(r, anchor) {
+  r = r || {};
+  const t = r.t != null && isStimmeT(r.t), h = !t ? 'STIMME · noch keine Spur' : r.track ? 'STIMME-Spur' : `STIMME · Szene ${(r.s | 0) + 1} · noch kein Take`;
+  openPop(anchor || EL.top, p => {
+    p.classList.add('tksheet', 'ggbsheet'); guardTouch(p);
+    p.innerHTML = `<h4>${esc(h)}</h4><div class="small">${t ? 'Singen: FANG oder ● mit Mikro an – oder mit GarageBand:' : 'Die STIMME-Spur entsteht beim Import.'}</div>` + ggbHtml();
+    onTap(p, b => ggbTap(b), 'button[data-a]');
+  }, {name: 'ggb'});
+  return true;
+}
+const GGB_API = {
+  ggbInfo: () => ({busy: GGB.busy, dry: GGB.dry, imp: GGB.imp, pre: ggbPre(), range: ggbRange(), gb: S.song && S.song.gb ? Object.assign({}, S.song.gb) : null, fresh: !!ggbFresh(),
+    res: GGB.res ? Object.assign({}, GGB.res, {bytes: GGB.res.bytes.length}) : null}),
+  // o: {pre, range {a, b}, remember (Vorgabe ja: wie nach dem Teilen)}
+  ggbExport: async o => { o = o || {}; const r = await ggbRender(o); if (o.remember !== false) ggbRemember(r); return Object.assign({}, r, {bytes: r.bytes.length, gb: S.song && S.song.gb ? Object.assign({}, S.song.gb) : null}); },
+  ggbWav: () => { const r = GGB.res; if (!r) return null; let s = ''; for (let k = 0; k < r.bytes.length; k += 32768) s += String.fromCharCode.apply(null, r.bytes.subarray(k, k + 32768)); return {name: r.name + '.wav', b64: btoa(s)}; },
+  ggbShare: () => ggbShare(),
+  ggbImport: (b64, o) => { const s = atob(b64), u8 = new Uint8Array(s.length); for (let k = 0; k < s.length; k++) u8[k] = s.charCodeAt(k); return ggbImportBuf(u8.buffer, o || {}); },
+  ggbSheet: () => (stimmeT() >= 0 ? tkSheet({t: stimmeT(), s: R.selS}) : tkAudioOk() ? ggbSheet({t: null}) : false),
+};
 /* ===================== VV2 (Nachtrag 5): Video-Regie im Song, Auto-Regisseur, Spur-Bild, 9:16-Kamera =====================
    song.video = [{a, b, v: 'auto'|'song'|'matrix'|'spur', t?}] (Takte a ≤ x < b, Spur t) – optional und additiv (Format 5 bleibt);
    ohne Einträge macht der Auto-Regisseur alles. Einfügen/Löschen/Verschieben von Takten verschiebt bzw. kürzt die Einträge mit
@@ -53033,6 +53350,7 @@ Object.assign(SYNQUENZER, vvApi());                        // VV1
 Object.assign(SYNQUENZER, vv2Api());                       // VV2
 Object.assign(SYNQUENZER, vv3Api());                       // VV3
 Object.assign(SYNQUENZER, G6PB_API);              // G6+b: Chor-Rechenweg v2 (Test-API)
+Object.assign(SYNQUENZER, GGB_API);                        // G-GB: Mit GarageBand aufnehmen
 const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',
