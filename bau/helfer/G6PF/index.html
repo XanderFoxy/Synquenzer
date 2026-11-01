@@ -44998,7 +44998,7 @@ function g6pfStelleOf(id) {
 // Take-Kopie: dieselben Stücke, Felder des Leads (pitch, marks, warp, follow, cl, rf, pre/post …), ohne lyrics
 function g6pfCloneTake(m, of, src) {
   const o = deep(m); delete o.lyrics; o.of = of; o.src = src; o.created = Date.now();
-  return o;
+  return tkNormTake(o) || o;                                      // gleiche Form wie nach dem Laden (Speichern → Laden deep-equal)
 }
 function g6pfNewId() { let id; do { id = newUid(); } while (S.takes && S.takes[id]); return id; }
 function g6pfLanes(st, draft) { return draft || deep((S.tracks[st] && S.tracks[st].chor) || {lanes: []}); }
@@ -45054,7 +45054,7 @@ async function g6pEntkoppeln(r, k) {
   const st = stimmeT(), tb = JSON.stringify(S.takes), lb = g6pLanesSnap(st), it = g6pfSnapStelle(r), sb = r.vox ? songSnapshot() : null, t0 = performance.now();
   const id = g6pfNewId(), T = g6pfCloneTake(m, lead, 'chor'), pp = g2NormPitch(g6pfPitchOf(P, v), T.len / T.sr);
   if (pp) T.pitch = pp; else delete T.pitch;
-  S.takes[id] = T;
+  S.takes[id] = tkNormTake(T) || T;
   const L = g6pfLanes(st), role = v.rule || G6PF_V1ROLE[v.name] || 'uni';
   const ln = st >= 0 ? (v.lane && L.lanes.find(l => l.id === v.lane)) || g6pfLaneFor(L, role, G6PF_NAMES[role] || ('Chor ' + v.name).slice(0, 24)) : null;
   if (st >= 0 && ln) { S.tracks[st].chor = g6pNormLanes(L) || L; v.lane = ln.id; }
