@@ -70117,10 +70117,16 @@ function vvkAuto(song, x, A) {
   for (const m of song.marks.filter(q => q && q.len > 0).sort((p, q) => p.a - q.a)) { if (!has(m)) continue; if (m.a === x) return k % 2 === 1 ? {v: 'klav', why: 'melodie'} : null; k++; }
   return null;
 }
-// the video job: a picture that shows Klavier waits until the notes of its next seconds are rendered (else they would be missing)
+// the video job: a picture that shows Klavier (its shot, or the 300-ms blend out of it) waits until the notes of its next seconds
+// are rendered (else they would be missing); every other picture runs as before
 function vvkWait(job, f) {
-  if (job.vk == null) job.vk = job.view === 'klav' || !!(job.rt && job.rt.shots && job.rt.shots.some(s => s.v === 'klav'));
-  return job.vk && !!job.live && job.live.t < f / VV_FPS + vvkFut(job.live.bpm || S.bpm) + .1;
+  const rt = job.rt, live = job.live; if (!rt || !live) return false;
+  if (job.vk == null) job.vk = job.view === 'klav' || (job.view === 'auto' && !!(rt.shots && rt.shots.some(s => s.v === 'klav')));
+  const t = f / VV_FPS, bpm = live.bpm || S.bpm; if (!job.vk || live.t >= t + vvkFut(bpm) + .1) return false;
+  if (job.view === 'klav') return true;
+  const st = vvStateAt(live, t), sh = vvShotAt(rt, st.sb); if (sh.v === 'klav') return true;
+  const pv = sh.k > 0 ? rt.shots[sh.k - 1] : null;
+  return !!pv && pv.v === 'klav' && st.sb != null && (st.sb - sh.a * 4) * 60 / bpm < VV_BLEND + .05;
 }
 function vvkApi() {
   return {

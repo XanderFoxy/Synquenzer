@@ -55,10 +55,17 @@ for (const [nm, t, fmt] of shots) { const png = await p.evaluate(([t, fmt]) => S
 // determinism: a second render, the same probes and the same pictures
 const h = s => { let x = 2166136261; for (let i = 0; i < s.length; i += 7) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619) >>> 0; } return x.toString(16); };
 const pics = async () => { const o = []; for (const t of Object.values(times)) o.push(h(await p.evaluate(t => SYNQUENZER.vvShot(t, 'kino', '16:9'), t))); return o; };
-const P1 = await pics(), J1 = JSON.stringify(await p.evaluate(() => SYNQUENZER.vk2Runs()));
+// (the offline sound itself varies a little from render to render – also in the base file, see the Song view – so the meter values
+// differ; everything the Mäusekino computes itself must be equal, and with the meter off the pictures must be identical)
+const probes = async () => { const o = []; for (const t of Object.values(times)) o.push(await p.evaluate(t => JSON.stringify(SYNQUENZER.vk2At(t, '16:9'), (k, v) => (k === 'ms' || k === 'rms' ? undefined : v)), t)); return o.join('|'); };
+const Q1 = await probes(), J1 = JSON.stringify(await p.evaluate(() => SYNQUENZER.vk2Runs()));
 res.r2 = await render();
-const P2 = await pics(), J2 = JSON.stringify(await p.evaluate(() => SYNQUENZER.vk2Runs()));
-res.gleich = {bilder: P1.join() === P2.join(), fahrten: J1 === J2, P1, P2};
+const Q2 = await probes(), J2 = JSON.stringify(await p.evaluate(() => SYNQUENZER.vk2Runs()));
+await p.evaluate(() => { VV.noMtr = true; });
+await render(); const P1 = await pics(); await render(); const P2 = await pics();
+await p.evaluate(() => { VV.noMtr = false; });
+res.gleich = {fahrten: J1 === J2, werteOhnePegel: Q1 === Q2, bilderOhneMeter: P1.join() === P2.join(), P1, P2};
+await render();
 // drawing time per picture at full size (1920 × 1080 and 1080 × 1920), 120 pictures through the glide, against the Song view
 res.zeichnen = await p.evaluate(spb => {
   const r = VV.last, out = {};
