@@ -1,0 +1,464 @@
+--- bau/snapshots/R-4310.html	2026-11-01 10:42:15.794513463 +0000
++++ bau/helfer/G10J/index.html	2026-11-01 10:58:49.258572517 +0000
+@@ -3904,6 +3904,36 @@
+ .tksheet .savrow.g10c-sav{grid-template-columns:1fr 1fr 1fr}
+ @media (max-height:440px){.pop.tksheet.g10c{scroll-padding-top:56px}.tksheet .g10c-pick{min-height:88px}}
+ /* G10C-CSS-END */
++/* G10J-CSS-BEGIN: Vorlage-Zeile (Aufnahme-Blätter) und Vorlage-Leiste (fest über der Modus-Zeile, nichts verschiebt sich) */
++.g10j{margin-top:8px;min-width:0}
++.g10j-r{display:flex;align-items:center;gap:6px;min-width:0;margin-top:4px}
++.g10j-r .lbl{flex:0 0 46px;font-size:9px}
++.g10j-s{display:flex;gap:4px;flex:1 1 auto;min-width:0}
++.g10j .rb{min-height:44px;min-width:44px;padding:2px 8px;font-size:11px;line-height:1.1;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;flex:1 1 0;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
++.g10j .rb small{font-size:9px;opacity:.75}
++.g10j .rb.on{border-color:var(--play);color:var(--play)}
++.g10j .rb:disabled{opacity:.4}
++.g10j-s .g10j-sp{flex:1.4 1 0}
++.g10j-o{padding-left:52px}
++.g10j-ls{overflow-x:auto;overflow-y:hidden;touch-action:pan-x;-webkit-overflow-scrolling:touch;padding-left:52px;scrollbar-width:none}
++.g10j-ls::-webkit-scrollbar{display:none}
++.g10j-ls .rb{flex:0 0 auto;min-width:72px;max-width:140px}
++.g10j-no{font-size:11px;color:var(--text-dim)}
++.g10j-hp{margin:4px 0 0 52px;font-size:10px;line-height:1.3;color:var(--text-dim)}
++.g10j-hp.warn{color:var(--amber)}
++.g10j-bar{position:fixed;left:0;right:0;height:52px;z-index:56;display:flex;align-items:center;gap:6px;padding:4px 8px;box-sizing:border-box;background:#0d0f13;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12)}
++[data-theme="light"] .g10j-bar{background:#f6f7f9;border-color:rgba(0,0,0,.12)}
++.g10j-bar[hidden]{display:none}
++.g10j-cv{flex:1 1 auto;min-width:0;height:44px;border-radius:6px;background:rgba(127,127,127,.1)}
++.g10j-ar{flex:0 0 18px;text-align:center;font:700 18px/1 var(--font-ui)}
++.g10j-ar[data-c="mid"]{color:var(--amber)}.g10j-ar[data-c="off"]{color:#ff5f5f}
++.g10j-pg{position:relative;flex:0 0 96px;height:44px;font-size:9px;color:var(--text-dim)}
++.g10j-pg small{position:absolute;left:0;right:0;top:0;text-align:center;pointer-events:none;line-height:1}
++.g10j-pg input{display:block;width:96px;height:44px;margin:0;padding-top:8px;box-sizing:border-box}
++.g10j-lq{flex:0 0 52px;width:52px;min-height:44px;height:44px;padding:0;font-size:11px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
++.g10j-lq small{font-size:9px;opacity:.75}
++.g10j-lq.on{border-color:var(--play);color:var(--play)}
++/* G10J-CSS-END */
+ .micb .led{width:8px;height:8px;border-radius:50%;background:var(--led-off);flex:none}
+ #segMic.on{background:var(--rec-dim);color:#fff;box-shadow:inset 0 0 0 1px var(--rec)}
+ #segMic.on .led{background:var(--rec);box-shadow:0 0 8px var(--rec)}
+@@ -21941,7 +21971,8 @@
+   N.trem.connect(N.duck); N.duck.connect(N.vol);
+   let post = N.vol; if (N.pan) { N.vol.connect(N.pan); post = N.pan; }
+   N.post = post;
+-  N.cut = c.createGain(); post.connect(N.cut); N.dryCut = false;
++  N.guide = c.createGain(); post.connect(N.guide);                              // G10j: Vorlage-Verstärkung je Spur (Wert 1 = bitgleich), vor den Post-Fader-Sends
++  N.cut = c.createGain(); N.guide.connect(N.cut); N.dryCut = false;
+   N.cut.connect(AU.masterSum); N.cut.connect(N.revSend); N.cut.connect(N.dlySend);
+   N.revSend.connect(AU.hallIn); N.dlySend.connect(AU.echoIn);
+   return N;
+@@ -24619,7 +24650,7 @@
+   // take runs (first pass); Overdub and Einfügen keep them
+   sr.mute = tg.mel && noteT != null && (mode === 'over' || mode === 'replace') ? {t: noteT, a: from * 4 - .25, b: to != null ? to * 4 - .25 : Infinity} : null;
+   if (sr.mute) takeMuteNow(sr.mute);
+-  sr.guide = !!(UI.recGuide && recMicOn());                        // H7: alte Stimme als Vorlage hörbar
++  sr.guide = !!((UI.recGuide || (typeof g10jArmVox === 'function' && g10jArmVox())) && recMicOn());   // H7: alte Stimme als Vorlage hörbar · G10j: Selbst singen (Song) braucht den Lead-Weg
+   tkSongBegin(sr); if (sr.vox) { tkOriginHint(); tkVoxResync(true); recCdCatchUp(); }   // H4: Vorlauf-Klicks
+   else if (tg.vox && recMicOn() && !tg.clips && !tg.chords && !tg.mel) toast('🎤 noch nicht bereit – der Gesang wird nicht aufgenommen');   // H2   // VS3: mit 🎤 nimmt die Song-Aufnahme die Stimme auf (STIMME-Spur)
+   MEL.open.clear(); MEL.warned = false;
+@@ -25180,6 +25211,7 @@
+   if (R.songPlay) { R.songPlay.stopping = true; songPlayEnd(false); }
+   try { partsOff(true); } catch (e) { logErr(e); }          // V2c: rows and parts end (▶ oben resumes them from bar 1)
+   recOnStop();
++  try { g10jSync(true); } catch (e) { logErr(e); }           // G10j: ■ setzt die Vorlage exakt zurück
+   if (PV.on) previewStop();                                 // ■ also ends a browser preview phrase
+   // release everything while the transport still counts beats, so the Mitschnitt (PERF) gets the real end beats
+   silenceAll(now, .02);
+@@ -26239,6 +26271,7 @@
+ }
+ function recTailOpen() { for (const o of rec.open.values()) if (o.kind === 'tail') return true; return false; }
+ function recTick(b0, b1) {
++  if (G10J.on || rec.state !== 'off' || R.songRec) { try { g10jSync(true); } catch (e) { logErr(e); } }   // G10j: auch bei gesperrtem Bildschirm (kein Bild-Takt)
+   if ((rec.state === 'countin' || rec.state === 'armed') && rec.startBeat < b1) recBegin();
+   if (rec.state === 'recording' && rec.endBeat != null && rec.endBeat < b1) recClose(rec.endBeat);
+   if (rec.state === 'recording' && rec.mode === 'new' && !rec.fixedLen && rec.endBeat == null && rec.startBeat + 256 < b1) recClose(rec.startBeat + 256);   /* G8: Aufnahme „auto“ bis 64 Takte */
+@@ -29620,7 +29653,7 @@
+         overdub: 'Neues kommt dazu, das Alte bleibt.',
+       }[mode] + (own ? ' Noten → eigener Clip.' : '') + ' Szenen bleiben unberührt.';
+       const mb = m => { const r = m === 'replace' || m === 'overdub' ? (rTo != null && rTo - from > 1 ? 'Takt ' + (from + 1) + '–' + rTo : 'nur Takt ' + (from + 1)) : 'ab Takt ' + (from + 1);
+-        return `<button class="rb rs-m${m === mode ? ' on' : ''}" data-m="${m}" aria-pressed="${m === mode}"><b>${recModeName(m)}</b><small>${r}</small></button>`; };
++        return `<button class="rb rs-m${m === mode ? ' on' : ''}" data-m="${m}" aria-pressed="${m === mode}"><b>${voxOnly && m === 'replace' && UI.recGuide ? 'Ersetzen (Vorlage hörbar)' : recModeName(m)}</b><small>${r}</small></button>`; };   // G10j
+       const tgRow = pickT
+         ? `<div class="rs-tg rs-pk"><span class="lbl">Noten auf</span>` + synthTracks().map(t => `<button class="rb rs-t${t === nt ? ' on' : ''}" data-nt="${t}">${esc(trShort(t))}</button>`).join('') + `</div>`
+         : `<div class="rs-tg${mic ? ' v4' : ''}"><span class="lbl">Ziele</span>` + [['clips', 'CLIPS'], ['chords', 'AKKORDE']].map(([k, l]) => `<button class="rb rs-t${tg[k] ? ' on' : ''}" data-t="${k}" aria-pressed="${tg[k]}">${tg[k] ? '✓' : ''}${l}</button>`).join('') +
+@@ -29631,21 +29664,23 @@
+         (modes.length ? `<div class="rs-md">${modes.map(mb).join('')}</div>` : '') +
+         `<div class="rs-mode">${mTx}</div>` +
+         `<div class="rs-pre${oldV ? ' gd' : ''}"><span class="lbl">Vorlauf</span>${segHTML('rsPre', [['1', '1 Takt'], ['0', 'aus']], pre ? '1' : '0')}<span class="rs-ov">${esc(ovTx)}</span>` +
+-        (oldV ? `<div class="rs-gd"><span class="lbl">Alte Stimme</span>${segHTML('rsGd', [['0', 'stumm'], ['1', 'hören']], UI.recGuide ? '1' : '0')}</div>` : '') + `</div>` +
++        (oldV && !vox ? `<div class="rs-gd"><span class="lbl">Alte Stimme</span>${segHTML('rsGd', [['0', 'stumm'], ['1', 'hören']], UI.recGuide ? '1' : '0')}</div>` : '') + `</div>` +
++        (vox ? g10jRowHTML(oldV) : '') +   // G10j: Vorlage-Zeile (ersetzt „Alte Stimme“, alte Stimme = H7)
+         `<button class="rb rs-go" data-a="go"${any ? '' : ' disabled'}><span class="d">●</span> START</button>`;
+       p._st = {from, to, mode};
+       bindSegTap(p, 'rsPre', v => { UI.recPre = v === '1'; paint(); popDock(p); });
+-      if (oldV) bindSegTap(p, 'rsGd', v => { UI.recGuide = v === '1'; haptic('tick'); paint(); popDock(p); });   // H7
++      if (oldV && !vox) bindSegTap(p, 'rsGd', v => { UI.recGuide = v === '1'; haptic('tick'); paint(); popDock(p); });   // H7 · G10j: mit 🎤 die Vorlage-Zeile
+     };
+     paint();
+     onTap(p, b => {
++      if (g10jTap(b)) { paint(); popDock(p); return; }               // G10j: Vorlage
+       if (b.dataset.t) { const tg = recTargets(); tg[b.dataset.t] = !tg[b.dataset.t]; setRecTargets(tg); haptic('tick'); paint(); popDock(p); return; }
+       if (b.dataset.m) { mode = b.dataset.m; haptic('tick'); paint(); popDock(p); return; }
+       if (b.dataset.nt != null) { const t = +b.dataset.nt; if (isSynthT(t) && R.selT !== t) selectTrack(t); const tg = recTargets(); if (!tg.mel) { tg.mel = true; setRecTargets(tg); } pickT = false; haptic('tick'); paint(); popDock(p); return; }
+       if (b.dataset.a === 'nt') { pickT = true; haptic('tick'); paint(); popDock(p); return; }
+       if (b.dataset.a === 'x') { closePop(); return; }
+       if (b.dataset.a === 'go') { const st = p._st || {}; closePop(); songRecStart({from: st.from, to: st.to, mode: st.mode}); svButtons(); }
+-    }, 'button[data-t],button[data-a],button[data-m],button[data-nt]');
++    }, 'button[data-t],button[data-a],button[data-m],button[data-nt],button[data-g10j]');   // G10j: + Vorlage
+   }, {name: 'recstart'});
+   popDock(UI.pop && UI.pop.el);
+ }
+@@ -31806,12 +31841,14 @@
+       <div class="grp" style="margin-top:10px"><span class="lbl">Quantisieren</span>${segHTML('roQ', QOPTS, st.inQuant)}</div>
+       <div class="grp" style="margin-top:10px"><span class="lbl">Einzähler</span>${segHTML('roCi', [['0', 'Aus'], ['1', '1 Takt'], ['2', '2 Takte']], String(st.countIn))}</div>
+       <div class="grp" style="margin-top:10px"><span class="lbl">Klick beim Singen</span>${segHTML('roVc', [['ci', 'Nur Einzähler'], ['always', 'Immer']], UI.vocClick || 'ci')}</div>
++      <div id="g10jW">${g10jRowHTML(g10jOldScene())}</div>
+       <button class="opt rb" id="roFang" style="margin-top:12px;min-height:48px"><b>FANG – Gespieltes einfangen</b><span>Was du gerade ohne Aufnahme gespielt hast, wird ein Clip, der im Takt weiterläuft.</span></button>`;
+     bindSeg(p, 'roLen', v => setRecOptions({length: v === 'auto' ? 'auto' : +v}));
+     bindSeg(p, 'roQ', v => setRecOptions({quantize: v}));
+     bindSeg(p, 'roCi', v => setRecOptions({countIn: +v}));
+     bindSeg(p, 'roVc', v => setVocClick(v));                     // H3
+     on(p.querySelector('#roFang'), 'click', () => { closePop(); capture(); });
++    onTap(p, b => { if (g10jTap(b)) { const w = p.querySelector('#g10jW'); if (w) w.innerHTML = g10jRowHTML(g10jOldScene()); } }, 'button[data-g10j]');   // G10j: Vorlage
+   }, {name: 'rec'});
+ }
+ // H3 (4.25.1): Klick beim Singen – Geräte-Einstellung (nicht im Projekt)
+@@ -32153,6 +32190,7 @@
+ let lastLatUpd = 0;
+ function uiFrame() {
+   if (UI.vvOff) return;                                      // VV1: the offline song pass runs (the views wait)
++  if (G10J.on || G10J.test || rec.state !== 'off' || R.songRec || (G10J.bar && !G10J.bar.hidden)) { try { g10jSync(); } catch (e) { logErr(e); } }   // G10j: Vorlage nur während des Takes
+   const c = AU.ctx, now = c ? c.currentTime : 0, tAud = now - AU.outLat;
+   const bAud = R.playing ? t2b(tAud) : 0;
+   if (performance.now() - lastLatUpd > 1000) { lastLatUpd = performance.now(); updateOutLat(); }
+@@ -39338,7 +39376,7 @@
+   for (let i = 0; i < MAX_T; i++) {
+     const A = AU.tracks[i]; if (!A || !A.post || !A.cut) continue;
+     const want = off && off.has(i) ? 0 : 1;
+-    if (!A.mpG) { if (want) continue; const g = AU.ctx.createGain(); g.gain.value = 1; try { A.post.disconnect(A.cut); } catch (e) {} A.post.connect(g); g.connect(A.cut); A.mpG = g; }
++    if (!A.mpG) { if (want) continue; const g = AU.ctx.createGain(), q = A.guide || A.post; g.gain.value = 1; try { q.disconnect(A.cut); } catch (e) {} q.connect(g); g.connect(A.cut); A.mpG = g; }   // G10j: hinter dem Vorlage-Knoten
+     const p = A.mpG.gain; try { p.cancelScheduledValues(now); p.setValueAtTime(p.value, now); p.linearRampToValueAtTime(want, now + .02); } catch (e) { p.value = want; }
+   }
+ }
+@@ -43999,6 +44037,7 @@
+       const en = pe ? this.pE / W : 0; this.lv = this.lit >= 0 ? 0.8 * this.lv + 0.2 * en : en;
+       hh.push(mm); if (hh.length > 3) hh.shift();
+       const sm = hh.length === 3 ? this.med(hh) : mm; rh.push(sm); if (rh.length > 40) rh.shift(); this.zz(sm);
++      if (cf.pp) { this.ppOn = 1; this.port.postMessage({g10p: sm, f: Math.max(F, currentFrame)}); }   // G10j: Live-Punkt der Vorlage-Leiste (nur wenn angefordert)
+       const span = (A, n) => { let lo = 1e9, hi = -1e9; for (let i = A.length - n; i < A.length; i++) { if (A[i] < lo) lo = A[i]; if (A[i] > hi) hi = A[i]; } return hi - lo; };
+       const lite = (note, from, on) => { this.age = on ? 0 : 99; this.since = 0; this.cnt = 0; cv.length = 0; for (const v of from) cv.push(v); dv.length = 0; this.lh = this.hc;
+         if (note !== this.lit) { this.lit = note; this.port.postMessage({lit: note, f: Math.max(F, currentFrame), c: Math.round(cl * 100) / 100}); } };
+@@ -44042,6 +44081,7 @@
+     } else {
+       // kurze Aussetzer ohne Pegel-Einbruch (Vibrato-Umkehrpunkte: weniger klar, gleich laut) halten die Taste und ihre Mitte
+       // bis 50 ms; mit Einbruch >= 6 dB (Pause, Konsonant zwischen zwei Toenen) geht sie wie bisher nach 30 ms aus
++      if (cf.pp && this.ppOn) { this.ppOn = 0; this.port.postMessage({g10p: -1, f: Math.max(F, currentFrame)}); }   // G10j
+       this.cand = -1; this.cn = 0; if (this.lit < 0) { this.hh.length = 0; this.rh.length = 0; this.dv.length = 0; this.zr(); }
+       if ((pe ? this.pE / W : 0) < 0.25 * this.lv) this.gp = true;
+       if (++this.off >= (this.gp ? 3 : 5) && this.lit >= 0) { this.lit = -1; this.hh.length = 0; this.rh.length = 0; this.dv.length = 0; this.zr(); this.port.postMessage({lit: -1, f: Math.max(F, currentFrame)}); }
+@@ -44268,7 +44308,7 @@
+   const src = c.createMediaStreamSource(run.stream), bus = c.createGain(), sink = c.createGain(); sink.gain.value = 0;   // HIF: run.stream (neu geöffnet?)
+   src.connect(node, 0, 0); bus.connect(node, 0, 1); bus.connect(c.destination); node.connect(sink); sink.connect(c.destination);
+   if (AU.M && AU.M.ceil) AU.M.ceil.connect(node, 0, 1);       // Referenz = was die App spielt (nach dem Master)
+-  node.port.onmessage = e => { const d = e.data; if (d && d.lit !== undefined) vsLitMsg(run, d); else stBlock(run, d); };   // VS2: Taste an/aus
++  node.port.onmessage = e => { const d = e.data; if (d && d.g10p !== undefined) { g10jPitch(d); return; } if (d && d.lit !== undefined) vsLitMsg(run, d); else stBlock(run, d); };   // G10j: Live-Punkt   // VS2: Taste an/aus
+   run.node = node; run.bus = bus; run.nodes = [src, node, bus, sink];
+   if (!ST.ring || ST.ring.sr !== sr || ST.ring.len < Math.round(g8RingSec() * sr) /* G8 */) ST.ring = stRing(sr); else { ST.ring.end = -1; ST.ring.start = -1; ST.ring.miss = 0; }
+   ST.marks = []; ST.drops = []; ST.dropN = 0;
+@@ -45150,7 +45190,7 @@
+   if (UI.pop && UI.pop.name === 'stimme') stSheetFill(UI.pop.el);
+   return Object.assign({}, c);
+ }
+-const vsLiveOpts = () => { const c = vsCfg(); return {src: c.src, lock: c.lock, bl: vsBleedPow(), bb: vsBleedPow(VS_BLEED_BB), lat: ST.latMs || 0, unc: vsLatUnc()}; };
++const vsLiveOpts = () => { const c = vsCfg(), o = {src: c.src, lock: c.lock, bl: vsBleedPow(), bb: vsBleedPow(VS_BLEED_BB), lat: ST.latMs || 0, unc: vsLatUnc()}; if (typeof G10J !== 'undefined' && G10J.pp) o.pp = 1; return o; };   // G10j: pp = Live-Punkt melden
+ // Unsicherheit der Latenz (ms): eingemessen ±10, sonst (geschätzt) ±50 – so weit sucht die Sperre die Referenz ab
+ const vsLatUnc = () => (ST.latHow === 'gemessen' ? 10 : 50);
+ /* VS2-fix Übersprech-Sperre: über den Lautsprecher hört das Mikro die App selbst (Xanders iPhone −31/−32 dB). Eine erkannte
+@@ -46407,6 +46447,7 @@
+   const sp = spb(), clip = {bar: from, len: E - from, take: tk.id, in: tkR6(tk.inSec), out: tkR6(tk.inSec + ((E - from) * 4 - tk.lateBeats) * sp), at: tkR6(tk.lateBeats)};
+   const vx = song.vox ? song.vox.slice() : [];
+   const lostTake = [];
++  if (typeof g10jSongTook === 'function' && g10jSongTook(vx, clip, from, E, sp)) { song.vox = tkNormVox(vx) || undefined; if (!song.vox) delete song.vox; sr.voxUndo = {items, takesBefore}; return; }   // G10j: Selbst singen (Song-Stimme) – der neue Take wird die Chorstimme, der Lead bleibt
+   // Überschreiben / Ersetzen: alte Stimme in [from, E) weg (Ränder werden gekürzt); Overdub: die alten Stücke dort werden die stummen Takes
+   const kept = [];
+   for (const o of vx) {
+@@ -52129,9 +52170,9 @@
+ function g6LeadMute() { if (!AU.ctx) return; const t = AU.ctx.currentTime; for (const r of TK.src) if (!r.dead && r.aud && r.aud.chor) { try { r.g.gain.cancelScheduledValues(t); r.g.gain.setTargetAtTime(G6.solo == null || G6.solo === -2 ? r.G : g6pgLeadG(r), t, .01); } catch (e) {} } }
+ // „Selbst singen“: die Stimme spielt allein als Führung; die nächste Aufnahme (● REC mit 🎤) in diesem Clip ersetzt sie
+ function g6Arm(r, k) {
+-  const x = tkRef(r); if (!x || r.vox || !x.a.chor || !x.a.chor.voices[k]) return false;
+-  G6.arm = {t: r.t, s: r.s, k}; if (G6.solo !== k) g6Solo(k);
+-  toast('● REC mit 🎤: ' + x.a.chor.voices[k].name + ' läuft als Führung – nachsingen'); if (G6.sheet) g6SheetPaint();
++  const x = tkRef(r); if (!x || !x.a.chor || !x.a.chor.voices[k]) return false;   // G10j: auch Song-Stimmen (r.vox)
++  G6.arm = r.vox ? {vox: r.vox, k} : {t: r.t, s: r.s, k}; if (G6.solo !== k) g6Solo(k);   // G10j
++  toast((r.vox ? '● SONG halten · Ersetzen mit 🎤: ' : '● REC mit 🎤: ') + x.a.chor.voices[k].name + ' läuft als Führung – nachsingen');   // G10j if (G6.sheet) g6SheetPaint();
+   return true;
+ }
+ // G6+0: „Selbst singen“ ist nach dem Schließen des Blatts ausgesetzt (Lead hörbar); beim Start der Aufnahme in dieser Szene spielt die
+@@ -52319,7 +52360,8 @@
+   return B;
+ }
+ // Hervorhebung beim Selbst-Singen: die Spur der scharfen Stimme dieser Stelle
+-function g6pgHl(r, G) { const A = G6.arm; if (!A || !G || r.vox || A.t !== r.t || A.s !== r.s) return null; const l = G.lanes[A.k]; return l ? l.id : null; }
++function g6pgHl(r, G) { const A = G6.arm; if (!A || !G || !g10jArmIs(r)) return null;   // G10j: auch Song-Stimme
++  const l = G.lanes[A.k]; return l ? l.id : null; }
+ // Noten-Editor: Schatten (hinter den Lead-Blöcken). lead = Lead-Noten grau, wenn eine Chorstimme bearbeitet wird
+ function g6pgPaintG2(g, E, x, Wp, Hp, dpr, lead, G0) {
+   const G = G0 !== undefined ? G0 : g6pgGeo(E.r, x.a); E.g6hit = null; if (!G) return;
+@@ -52394,7 +52436,7 @@
+   if (!E || !E.legHost) return; const x = tkRef(E.r), has = !!(x && x.a.chor && Array.isArray(x.a.chor.voices) && x.a.chor.voices.length);
+   if (!has) { if (E.leg) { E.leg.remove(); E.leg = null; } return; }
+   if (!E.leg) g6pgLegMake(E); const d = E.leg;
+-  const L = g6pgLanes(E.r, x.a), so = g6pgSoloId(E.r, x.a), arm = G6.arm && !E.r.vox && G6.arm.t === E.r.t && G6.arm.s === E.r.s && x.a.chor.v === 2;   // [Lead leise] nur bei der Chor-Gruppe
++  const L = g6pgLanes(E.r, x.a), so = g6pgSoloId(E.r, x.a), arm = G6.arm && g10jArmIs(E.r) && x.a.chor.v === 2;   // G10j: auch Song-Stimme   // [Lead leise] nur bei der Chor-Gruppe
+   const st = L.map(l => l.id + l.c + l.dig + l.name + (G6PG.hide.has(l.id) ? 'h' : '') + (so === l.id ? 's' : '') + (E.voice === l.k ? 'e' : '')).join(',') + (arm ? '|a' + G6.arm.k + G6PG.leadQ : '');
+   if (st === E.legSt) return; E.legSt = st;
+   d.innerHTML = (arm ? `<button class="rb g6pglq${G6PG.leadQ ? ' on' : ''}" data-a="lq" aria-pressed="${G6PG.leadQ}" aria-label="Lead leise mithören">Lead leise</button>` : '') + L.map(l => `<span class="g6pgc${G6PG.hide.has(l.id) ? ' off' : ''}${E.voice === l.k ? ' cur' : ''}" style="--cc:var(--chor${l.c.slice(1).toLowerCase()})"><i class="g6pgsw">${esc(l.dig)}</i><b>${esc(l.name)}</b>` +
+@@ -52418,7 +52460,7 @@
+ }
+ /* ---------- „Selbst singen“ v2 ---------- */
+ // Lead-Pegel während Solo/Selbst singen: scharf + „Lead leise“ = −12 dB, sonst stumm (Solo)
+-function g6pgLeadG(r) { return G6.arm && G6PG.leadQ && G6.solo === G6.arm.k && !r.vox && G6.arm.t != null && r.aud && r.aud.chor && r.aud.chor.v === 2 ? r.G * G6PG_LEADQ : 0; }   // nur Chor-Gruppe; Chor 4.25: Lead stumm wie bisher (Regel 28)
++function g6pgLeadG(r) { return G6.arm && G6PG.leadQ && G6.solo === G6.arm.k && (G6.arm.vox ? r.vox : !r.vox && G6.arm.t != null) && r.aud && r.aud.chor && r.aud.chor.v === 2 ? r.G * G6PG_LEADQ : 0; }   // nur Chor-Gruppe; Chor 4.25: Lead stumm wie bisher (Regel 28) · G10j: auch Song-Stimme
+ function g6pgSing(r, k, o) {
+   o = o || {}; if (o.leadQ != null) G6PG.leadQ = !!o.leadQ;
+   const ok = g6Arm(r, k); if (!ok) return false;
+@@ -52442,6 +52484,230 @@
+ };
+ /* G6PG-END */
+ /* G6-END */
++/* G10J-BEGIN */
++/* =====================================================================================================================
++   G10j (Nachtrag 9 §2.10): Vorlage-Spur beim Nachsingen und Ersetzen.
++   • Zeile „Vorlage [aus] [alte Stimme] [Spur ▾]“ + „Vorlage lauter“ (+6 dB) / „Rest leiser“ (−10 dB) im Blatt von ● halten (Szene)
++     und im Start-Blatt von ● SONG halten (nur mit 🎤 GESANG). „alte Stimme“ im Song = H7 (UI.recGuide), der Modus heißt dann
++     „Ersetzen (Vorlage hörbar)“.
++   • Nichts kommt ins Projekt. Die Vorlage ist eine vorübergehende Verstärkung am eigenen Knoten `guide` jeder Spur (buildChain,
++     zwischen post und cut, vor den Post-Fader-Sends) bzw. an den Führungs-Faktoren der Chor-Gruppe (g6pGuide). Sie gilt nur, solange
++     ein Take mit 🎤 läuft (Szene: rec.vox, Song: R.songRec.vox); danach und nach ■ steht jeder Knoten wieder exakt auf 1.
++     Prüfung je Bild (uiFrame) und je Planungs-Schritt (recTick), dazu direkt in stop(). Video/WAV: Render nur ohne Take → alles 1.
++   • Pegel im Geräteprofil (uiPrefs g10jUp in dB, g10jRest), die Quelle nur für die Sitzung (G10J.src).
++   • Selbst singen (G6.arm) auch für Song-Stimmen; im Take zeigt die Vorlage-Leiste Zielstimme (Farbe wie G10i), Lead grau,
++     Abspielkopf und den Live-Punkt der eigenen Tonhöhe (Worklet „synq-stimme“, MPM, Meldung pp nur solange die Leiste offen ist).
++   ===================================================================================================================== */
++var G10J = {src: 'off', pick: false, on: false, sig: '', nodes: [], lane: null, pp: false, live: null, bar: null, dot: null, tgt: null, test: null, n: 0, last: null};
++const G10J_REST_DB = -10, G10J_UP_DB = 6;
++const g10jBpb = () => grid().beatsPerBar;                                   // Schläge je Takt (eine Stelle, T1)
++const g10jDb = d => Math.pow(10, d / 20);
++function g10jUp() { const v = +uiPrefs().g10jUp; return isNum(v) ? clamp(Math.round(v), -12, 12) : 0; }
++const g10jRestOn = () => !!uiPrefs().g10jRest;
++// Quelle (Sitzung): 'off' | 'old' | 't:<Spur>' | 'c:<Chor-Spur>' – eine verschwundene Spur zählt als aus
++function g10jSrc() {
++  const s = G10J.src;
++  if (s[0] === 't') { const i = +s.slice(2); return S.tracks[i] && i < NT() && i !== stimmeT() ? s : 'off'; }
++  if (s[0] === 'c') return g10jLanes().some(l => l.id === s.slice(2)) ? s : 'off';
++  return s === 'old' ? s : 'off';
++}
++function g10jLanes() { const L = typeof g6pcTrk === 'function' ? g6pcTrk() : null; return L && Array.isArray(L.lanes) ? L.lanes.filter(l => l && l.id) : []; }
++function g10jSrcName(s) {
++  if (s[0] === 't') { const t = S.tracks[+s.slice(2)]; return t ? t.name : 'Spur'; }
++  if (s[0] === 'c') { const l = g10jLanes().find(x => x.id === s.slice(2)); return l ? (l.name || 'Chorstimme') : 'Chorstimme'; }
++  return 'Spur';
++}
++// „Selbst singen“ ist scharf für diese Stelle (Szene-Clip oder Song-Stimme)
++function g10jArmIs(r) { const A = G6.arm; return !!(A && r && (r.vox ? A.vox === r.vox : !A.vox && A.t === r.t && A.s === r.s)); }
++const g10jArmVox = () => !!(G6.arm && G6.arm.vox && tkRef({vox: G6.arm.vox}));
++// der laufende Take mit 🎤 (Count-in gehört dazu)
++function g10jTake() {
++  if (rec.state !== 'off' && rec.vox) return {own: null, t: rec.track, scene: rec.scene, song: false};   // own: nur im Song (NOTEN-Spur, die man spielt)
++  const sr = R.songRec; if (sr && sr.over && sr.vox && R.playing) return {own: sr.nt, song: true};
++  return null;
++}
++function g10jArmFor(tk) {
++  const A = G6.arm; if (!A || !tk) return null;
++  if (tk.song ? !A.vox : (A.vox || A.s !== tk.scene)) return null;   // Szene: der Take landet auf der STIMME-Spur dieser Szene (wie g6Took)
++  const x = tkRef(A.vox ? {vox: A.vox} : {t: A.t, s: A.s}), v = x && x.a.chor && x.a.chor.voices[A.k];
++  return v ? {A, a: x.a, v, lane: x.a.chor.v === 2 && v.lane ? v.lane : null} : null;
++}
++// gewünschte Faktoren: je Spur, Chor-Gruppe, eine Chor-Spur; null = alles 1
++function g10jWant() {
++  const tk = g10jTake(); if (!tk) return null;
++  const arm = g10jArmFor(tk), src = g10jSrc(); if (!arm && src === 'off') return null;
++  const up = g10jDb(g10jUp()), rest = g10jRestOn() ? g10jDb(G10J_REST_DB) : 1, st = stimmeT();
++  let tgT = -1, lane = null;
++  if (arm) lane = arm.lane; else if (src === 'old') tgT = st; else if (src[0] === 't') tgT = +src.slice(2); else if (src[0] === 'c') lane = src.slice(2);
++  const own = tk.own != null && tk.own !== st ? tk.own : -1, tr = [];       // die gespielte Spur (Noten/Instrument) bleibt, wie sie ist
++  for (let i = 0; i < MAX_T; i++) tr.push(i === tgT ? up : i === own || (arm && i === st) ? 1 : rest);   // Selbst singen: der Lead folgt Solo / „Lead leise“
++  const laneF = lane ? up / rest : 1;
++  return {tr, gG: rest, lane, laneF, tk, arm, sig: tr.map(f => f.toFixed(5)).join(',') + '|' + rest.toFixed(5) + '|' + lane + ':' + laneF.toFixed(5)};
++}
++function g10jRamp(p, v, now) {
++  try { p.cancelScheduledValues(now); p.setValueAtTime(p.value, now); p.linearRampToValueAtTime(v, now + .03); p.setValueAtTime(v, now + .031); } catch (e) { p.value = v; }
++}
++function g10jSync(noBar) {   // noBar: nur Pegel (Planungs-Schritt), die Leiste zeichnet der Bild-Takt
++  if (!AU.ctx || UI.vvOff) return;
++  const W = g10jWant(), sig = W ? W.sig : '';
++  if (W && !G10J.on) g10jBegin(W);
++  let same = sig === G10J.sig;
++  if (same && W) for (let i = 0; i < MAX_T; i++) { const A = AU.tracks[i]; if (A && A.guide && G10J.nodes[i] !== A.guide) { same = false; break; } }   // neu gebaute Kette
++  if (!noBar || !W) g10jBarSync(W);                                         // ohne Take: Leiste sofort weg (auch aus stop/recTick)
++  if (same) return;
++  G10J.sig = sig; G10J.on = !!W; G10J.n++;
++  const now = AU.ctx.currentTime;
++  for (let i = 0; i < MAX_T; i++) { const A = AU.tracks[i]; if (!A || !A.guide) { G10J.nodes[i] = null; continue; } G10J.nodes[i] = A.guide; const v = W ? W.tr[i] : 1; if (A.guide.gain.value !== v || W) g10jRamp(A.guide.gain, v, now); }
++  if (typeof g6pGuide === 'function') {
++    if (G10J.lane && (!W || W.lane !== G10J.lane)) g6pGuide(G10J.lane, 1);
++    if ((W ? W.gG : 1) !== G6PC.gGuide) g6pGuide(null, W ? W.gG : 1);
++    if (W && W.lane) g6pGuide(W.lane, W.laneF);
++    G10J.lane = W ? W.lane : null;
++  }
++  if (!W) setTimeout(g10jExact, 60);
++}
++// nach dem Abklingen der 30-ms-Rampe: jeder Knoten exakt 1 (bitgleich zum Ausgangswert)
++function g10jExact() {
++  if (G10J.on || !AU.ctx) return;
++  for (let i = 0; i < MAX_T; i++) { const A = AU.tracks[i]; if (A && A.guide && A.guide.gain.value !== 1) { try { A.guide.gain.cancelScheduledValues(0); } catch (e) {} A.guide.gain.value = 1; } }
++}
++// Take beginnt: Zielstimme allein als Führung (G6+0), Hinweis über Lautsprecher
++function g10jBegin(W) {
++  if (W.arm && G6.solo !== W.arm.A.k) g6Solo(W.arm.A.k);
++  if (ST.route === 'speaker' && (W.arm || g10jSrc() !== 'off')) toast('Vorlage über Lautsprecher singt ins Mikro – Kopfhörer nehmen');
++}
++/* ---------- Zeile im Aufnahme-Blatt (Szene: ● halten, Song: ● SONG halten) ---------- */
++function g10jRowHTML(old) {
++  if (UI.recGuide && G10J.src === 'off') G10J.src = 'old';
++  const src = g10jSrc(), up = g10jUp(), rest = g10jRestOn(), sp = src[0] === 't' || src[0] === 'c', spk = ST.route === 'speaker';
++  const b = (v, l, on, dis, cls) => `<button class="rb${cls ? ' ' + cls : ''}${on ? ' on' : ''}" data-g10j="${esc(v)}" aria-pressed="${!!on}"${dis ? ' disabled' : ''}>${l}</button>`;
++  let h = `<div class="g10j" id="g10jRow"><div class="g10j-r"><span class="lbl">Vorlage</span><div class="g10j-s">` +
++    b('off', 'aus', src === 'off') + b('old', 'alte Stimme', src === 'old', !old) + b('pick', esc(sp ? g10jSrcName(src) : 'Spur') + ' ▾', sp || G10J.pick, false, 'g10j-sp') + '</div></div>';
++  if (G10J.pick) {
++    const st = stimmeT(), L = [];
++    for (let i = 0; i < NT(); i++) if (S.tracks[i] && i !== st) L.push(b('t:' + i, esc(S.tracks[i].name), src === 't:' + i));
++    for (const l of g10jLanes()) L.push(b('c:' + l.id, '<small>Chorstimme</small>' + esc(l.name || l.id), src === 'c:' + l.id, false, 'g10j-ch'));
++    h += `<div class="g10j-r g10j-ls">${L.join('') || '<span class="g10j-no">keine Spur</span>'}</div>`;
++  } else {
++    h += `<div class="g10j-r g10j-o">` + b('up', 'Vorlage lauter<small>+6 dB</small>', up > 0, src === 'off') + b('rest', 'Rest leiser<small>−10 dB</small>', rest, src === 'off') + '</div>';
++  }
++  return h + `<p class="g10j-hp${spk ? ' warn' : ''}">Vorlage nur mit Kopfhörer: über den Lautsprecher singt sie ins Mikro mit.${spk ? ' Gerade: Lautsprecher.' : ''} Aufgenommen wird nur deine Stimme.</p></div>`;
++}
++// Tipp in der Zeile; false = nicht unseres
++function g10jTap(b) {
++  const v = b && b.dataset ? b.dataset.g10j : null; if (v == null) return false;
++  if (v === 'pick') G10J.pick = !G10J.pick;
++  else if (v === 'up') setUiPref('g10jUp', g10jUp() > 0 ? 0 : G10J_UP_DB);
++  else if (v === 'rest') setUiPref('g10jRest', !g10jRestOn());
++  else { G10J.src = v; G10J.pick = false; UI.recGuide = v === 'old'; }
++  haptic('tick'); return true;
++}
++// alte Stimme in der Szene: ein STIMME-Clip mit Take in der gewählten Szene (● darauf = Overdub, der alte Take läuft)
++function g10jOldScene() { const st = stimmeT(), c = st >= 0 ? S.tracks[st].clips[R.selS] : null; return !!(c && c.audio); }
++/* ---------- Selbst singen mit Song-Stimme (Haken in tkSongCommit): der neue Take wird die Chorstimme, der Lead bleibt ---------- */
++function g10jSongTook(vx, clip, from, E, sp) {
++  const A = G6.arm; if (!A || !A.vox) return false;
++  const k = vx.findIndex(o => o && o.id === A.vox), o = k >= 0 ? vx[k] : null, bpb = g10jBpb();
++  if (!o || !o.chor || !Array.isArray(o.chor.voices) || !o.chor.voices[A.k] || o.bar + o.len <= from || o.bar >= E) return false;
++  const sh = (o.bar - from) * bpb;
++  const seg = sh >= 0 ? Object.assign({take: clip.take, out: clip.out}, tkSegTrim(clip, sh, sp)) : {take: clip.take, in: clip.in, out: clip.out, at: tkR6(clip.at - sh)};
++  const n = deep(o), v = n.chor.voices[A.k];
++  v.take = {take: seg.take, in: seg.in, out: seg.out, at: seg.at};
++  if (n.chor.v === 2) v.dblOff = true;                                       // wie G6+g: Doppel aus, Spur/Pan/Pegel bleiben
++  vx[k] = n; G6.arm = null; if (G6.solo != null) g6Solo(G6.solo);
++  const nm = v.name || 'Chorstimme'; setTimeout(() => toast(nm + ': selbst gesungen – eingemischt'), 50);
++  return true;
++}
++/* ---------- Vorlage-Leiste (Selbst singen / Chorstimme als Vorlage) ---------- */
++const G10J_BAR_H = 52, G10J_WIN = 4;                                        // Höhe px; sichtbares Fenster in s
++function g10jPitch(d) { const p = +d.g10p; G10J.live = p > 0 ? {p, f: d.f, t: performance.now(), lat: AU.ctx ? Math.max(0, AU.ctx.currentTime - d.f / AU.ctx.sampleRate) * 1000 + 20 : null} : null; }
++// Punkt: grün bei ±25 ct, gelb bis 1 Halbton, sonst rot; Pfeil = wohin singen
++function g10jDot(live, tgt) {
++  if (!isNum(live) || !isNum(tgt)) return null;
++  const ct = Math.round((live - tgt) * 100), a = Math.abs(ct);
++  return {ct, cls: a <= 25 ? 'ok' : a <= 100 ? 'mid' : 'off', arrow: a <= 25 ? '' : ct > 0 ? '↓' : '↑'};
++}
++function g10jPP(on) { if (G10J.pp === on) return; G10J.pp = on; if (!on) G10J.live = null; if (typeof vsLiveCfg === 'function') vsLiveCfg(); }
++function g10jBarEl() {
++  if (G10J.bar) return G10J.bar;
++  const e = el('div', 'g10j-bar'); e.id = 'g10jBar'; e.hidden = true; e.setAttribute('role', 'group'); e.setAttribute('aria-label', 'Vorlage-Leiste');
++  e.innerHTML = '<canvas class="g10j-cv" aria-hidden="true"></canvas><b class="g10j-ar"></b><label class="g10j-pg"><small>Vorlage-Pegel</small><input type="range" min="-12" max="12" step="1" aria-label="Vorlage-Pegel in dB"></label><button class="rb g10j-lq" aria-label="Lead leise mithören"><small>Lead</small>leise</button>';
++  document.body.appendChild(e);
++  const inp = e.querySelector('input');
++  on(inp, 'input', () => { setUiPref('g10jUp', clamp(Math.round(+inp.value), -12, 12)); g10jSync(); });
++  onTap(e.querySelector('.g10j-lq'), () => { G6PG.leadQ = !G6PG.leadQ; g6LeadMute(); haptic('tick'); });
++  return (G10J.bar = e);
++}
++// das gerade klingende Lead-Stück mit Chor (Szene-Clip bzw. Song-Stimme): Take-Zeit am Abspielkopf
++function g10jPiece(a) {
++  if (!AU.ctx) return null; const now = AU.ctx.currentTime - AU.outLat;
++  for (const r of TK.src) if (!r.dead && r.aud === a && r.start <= now && r.end > now) return {r, tt: r.off + (now - r.start)};
++  return null;
++}
++function g10jBarSync(W) {
++  let k = -1, a = null, r = null;
++  if (W && W.arm) { a = W.arm.a; k = W.arm.A.k; r = W.arm.A.vox ? {vox: W.arm.A.vox} : {t: W.arm.A.t, s: W.arm.A.s}; }
++  else if (W && W.lane) {
++    for (const q of TK.src) if (!q.dead && q.aud && q.aud.chor && Array.isArray(q.aud.chor.voices)) { const j = q.aud.chor.voices.findIndex(v => v && v.lane === W.lane); if (j >= 0) { a = q.aud; k = j; r = q.vox ? {vox: q.aud.id} : {t: q.i, s: R.slot[q.i]}; break; } }
++  }
++  const show = (!!(W && a) || !!G10J.test) && !UI.vvOff;
++  g10jPP(show);
++  if (!show) { if (G10J.bar && !G10J.bar.hidden) G10J.bar.hidden = true; G10J.dot = null; return; }
++  const e = g10jBarEl(), kb = EL.kbArea ? EL.kbArea.getBoundingClientRect() : null, top = Math.max(0, Math.round((kb ? kb.top : window.innerHeight) - G10J_BAR_H));
++  if (e.hidden) { e.style.top = top + 'px'; e.hidden = false; } else if (e._top !== top) e.style.top = top + 'px';
++  e._top = top;
++  const inp = e.querySelector('input'), u = g10jUp(); if (+inp.value !== u && document.activeElement !== inp) inp.value = String(u);
++  const lq = e.querySelector('.g10j-lq'); if (lq.classList.contains('on') !== !!G6PG.leadQ) { lq.classList.toggle('on', !!G6PG.leadQ); lq.setAttribute('aria-pressed', String(!!G6PG.leadQ)); }
++  g10jBarDraw(e, G10J.test ? null : a, k, r);
++}
++function g10jBarDraw(e, a, k, r) {
++  const cv = e.querySelector('canvas'), dpr = Math.min(3, window.devicePixelRatio || 1), w = Math.max(40, cv.clientWidth), h = Math.max(20, cv.clientHeight);
++  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
++  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
++  const T = G10J.test, P = T ? {tt: T.tt != null ? T.tt : 0} : a ? g10jPiece(a) : null, tt = P ? P.tt : null;
++  const G = !T && a && r && typeof g6pgGeo === 'function' ? g6pgGeo(r, a) : null, lead = !T && a ? (g2Notes(a.take) || []) : [];
++  let tgt = T ? T.tgt : null, lo = T ? T.tgt - 6 : Infinity, hi = T ? T.tgt + 6 : -Infinity;
++  const mine = G ? G.notes.filter(n => n.k === k) : [];
++  for (const n of mine) { lo = Math.min(lo, n.p); hi = Math.max(hi, n.p); if (tt != null && n.t0 <= tt && n.t1 > tt) tgt = n.p; }
++  for (const n of lead) { lo = Math.min(lo, n.m); hi = Math.max(hi, n.m); }
++  if (!isFinite(lo)) { lo = 57; hi = 69; } lo -= 2; hi += 2; if (hi - lo < 8) { const m = (hi + lo) / 2; lo = m - 4; hi = m + 4; }
++  const x0 = w * .3, sx = w / G10J_WIN, Y = p => h - 3 - (p - lo) / (hi - lo) * (h - 6), dark = document.documentElement.dataset.theme !== 'light';
++  const pal = g6pgPal() || {}, col = mine.length && pal[mine[0].c] ? pal[mine[0].c] : (dark ? '#3ddc84' : '#1b7f3b');
++  if (tt != null) {
++    const X = t => x0 + (t - tt) * sx, vis = n => X(n.t1) > 0 && X(n.t0) < w;
++    g.fillStyle = dark ? 'rgba(170,176,186,.45)' : 'rgba(80,86,96,.4)';
++    for (const n of lead) if (vis(n)) g.fillRect(X(n.t0), Y(n.m) - 1.5, Math.max(1, (n.t1 - n.t0) * sx), 3);
++    g.fillStyle = col;
++    for (const n of mine) if (vis(n)) g.fillRect(X(n.t0), Y(n.p) - 2.5, Math.max(2, (n.t1 - n.t0) * sx), 5);
++  }
++  g.fillStyle = dark ? 'rgba(255,255,255,.75)' : 'rgba(0,0,0,.7)'; g.fillRect(Math.round(x0), 0, 1, h);   // Abspielkopf
++  const L = G10J.live && performance.now() - G10J.live.t < 250 ? G10J.live.p : null, D = g10jDot(L, tgt);
++  G10J.tgt = tgt; G10J.dot = D ? Object.assign({live: +L.toFixed(3), tgt, lat: G10J.live.lat != null ? Math.round(G10J.live.lat) : null}, D) : null;
++  if (L != null) {
++    const yc = clamp(Y(L), 5, h - 5);
++    g.beginPath(); g.arc(x0, yc, 5, 0, Math.PI * 2); g.fillStyle = !D ? (dark ? '#a2a8b3' : '#5d636e') : D.cls === 'ok' ? (dark ? '#3ddc84' : '#1b7f3b') : D.cls === 'mid' ? (dark ? '#ffd23f' : '#806500') : (dark ? '#ff5f5f' : '#c62828'); g.fill();
++  }
++  const ar = e.querySelector('.g10j-ar'), at = D ? D.arrow : '', ac = D ? D.cls : '';
++  if (ar.textContent !== at) ar.textContent = at; if (ar.dataset.c !== ac) ar.dataset.c = ac;
++}
++/* ---------- Test-API ---------- */
++const G10J_API = {
++  g10j: {
++    info: () => ({src: g10jSrc(), on: G10J.on, sig: G10J.sig, n: G10J.n, up: g10jUp(), rest: g10jRestOn(), take: !!g10jTake(), arm: G6.arm ? Object.assign({}, G6.arm) : null,
++      gains: AU.tracks.slice(0, NT()).map(A => (A && A.guide ? A.guide.gain.value : null)), gGuide: typeof G6PC !== 'undefined' ? G6PC.gGuide : null,
++      lanes: typeof G6PC !== 'undefined' ? [...G6PC.guide] : [], pp: G10J.pp, live: G10J.live ? Object.assign({}, G10J.live) : null, dot: G10J.dot, bar: !!(G10J.bar && !G10J.bar.hidden), recGuide: !!UI.recGuide}),
++    set: o => { o = o || {}; if (o.src != null) { G10J.src = String(o.src); UI.recGuide = G10J.src === 'old'; } if (o.up != null) setUiPref('g10jUp', +o.up); if (o.rest != null) setUiPref('g10jRest', !!o.rest); g10jSync(); return G10J_API.g10j.info(); },
++    sync: () => { g10jSync(); return G10J_API.g10j.info(); },
++    dot: (l, t) => g10jDot(l, t),
++    test: o => { G10J.test = o || null; g10jBarSync(g10jWant()); return G10J_API.g10j.info(); },
++    draw: () => { if (G10J.bar && !G10J.bar.hidden) g10jBarDraw(G10J.bar, null, -1, null); return G10J.dot; },
++    songTook: (vx, clip, from, E) => { const ok = g10jSongTook(vx, clip, from, E, spb()); return {ok, vx}; },
++    arm: a => { G6.arm = a || null; return G6.arm; },
++    armIs: r => g10jArmIs(r),
++    bpb: () => g10jBpb()
++  }
++};
++/* G10J-END */
+ /* G6PA-BEGIN */
+ /* =====================================================================================================================
+    G6+a (Nachtrag 10 §2.2, §2.5, §2.6): Fundament der Chor-Gruppe.
+@@ -58951,6 +59217,7 @@
+ Object.assign(SYNQUENZER, G6PD_API);              // G6+d: Genre-Stile der Chor-Gruppe
+ Object.assign(SYNQUENZER, G6PE_API);              // G6+e: Blatt „Chor“ neu
+ Object.assign(SYNQUENZER, G6PF_API);              // G6+f: Entkoppeln, Als Chor-Stimme duplizieren
++Object.assign(SYNQUENZER, G10J_API);              // G10j: Vorlage-Spur
+ Object.assign(SYNQUENZER, G6PG_API);              // G6+g: farbige Schatten, Legende, Selbst singen v2
+ Object.assign(SYNQUENZER, G6PH_API);              // G6+h: Chor im Song und im Video
+ Object.assign(SYNQUENZER, G7_API);                // G7: Gesang folgt dem Transponieren
