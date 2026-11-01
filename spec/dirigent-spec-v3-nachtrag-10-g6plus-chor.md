@@ -664,3 +664,8 @@ deshalb parallel. Stile, Blatt, Takes und Schatten bauen darauf auf.
 - `CHANGES-helfer-G267.md` (G6 Abnahme, Fragen, Nachprüfung D2: `below` 8 → 9, 44,1-kHz-Hinweis), Nachtrag 5 §G6, Nachtrag 9 §2.8–2.10, §3.
 - Studio-Praxis [W], nur zum Vergleich: Background-Gesang als eigene Spuren mit Sammel-Bus und gemeinsamem Hall/Echo-Send, Doppeln durch Versatz und leichte Verstimmung,
   Zischlaute in Background-Spuren absenken, Abstand Lead–Chor 6–12 dB, tiefe Stimmen mittig, Doppel außen, Vorverzögerung im Tempo für Klarheit.
+
+## Nachtrag Xander 01.11. ~02:00 UTC – Kopplung Lead ↔ Chor (verbindlich)
+- Schalter **[Gekoppelt]** (Standard AN) an der Chor-Gruppe: Lead-Lautstärke (Spur-Regler, auch je Songteil/Refrain-Block) ändert den Chor prozentual mit (gleicher dB-Schritt), Mix bleibt stehen – kein Nachregeln.
+- **Chor als Ganzes** lauter/leiser: Gruppen-Regler „Chor“ (Abstand zum Lead in dB), wirkt immer; bei [Gekoppelt] AUS wird der Chor vom Lead-Regler getrennt; wieder AN → ab dann wieder gemeinsam (aktueller Abstand bleibt erhalten).
+- Abnahme G6P-K1: Lead −6 dB bei Kopplung an → alle Chorstimmen −6 dB ±0,1; Kopplung aus → Chor unverändert; wieder an → Abstand bleibt.
