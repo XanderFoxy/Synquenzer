@@ -21462,7 +21462,7 @@ const UE_FILL_LANG = [
   {K: 'x.......x.......', S: 'gggxgggxgxgx....', H: '............xx..', M: '..............X.', L: '...............x'}];
 /* UE_VK: Anschlags-Faktor je Werk und Dichte (leicht, mittel, voll), aus der Messung UE-12 über alle 7 Kits so gesetzt, dass die Mitte
    zwischen leisestem und lautestem Kit bei 0 LU zum Groove liegt (Pegel der Engine = v², Faktor k = 10^(−LU/40)). */
-const UE_VK = {'w-fill-kurz': [1.12,1.013,0.861],'w-fill-lang': [1.201,1.114,1.071],'w-tom-wirbel': [1.12,1.135,0.928],'w-snare-wirbel': [1.272,0.97,0.902],'w-build': [1.002,0.908,0.83],'w-fill-crash': [1.204,1.118,1.07],'w-crash-eins': [0.856,0.853,0.588],'w-hh-auf': [1.31,1.198,0.98],'w-kick-auftakt': [0.779,0.699,0.64],'w-halbzeit': [1.254,1.22,1.05],'w-clap-treppe': [0.929,0.925,0.899],'w-rim-ping': [0.93,0.892,0.854]};
+const UE_VK = {'w-fill-kurz': [1.12,1.013,0.861],'w-fill-lang': [1.237,1.114,1.071],'w-tom-wirbel': [1.12,1.078,0.928],'w-snare-wirbel': [1.336,0.97,0.902],'w-build': [1.002,0.908,0.805],'w-fill-crash': [1.24,1.118,1.07],'w-crash-eins': [0.856,0.853,0.588],'w-hh-auf': [1.31,1.198,0.98],'w-kick-auftakt': [0.779,0.699,0.64],'w-halbzeit': [1.329,1.281,1.05],'w-clap-treppe': [0.929,0.925,0.899],'w-rim-ping': [0.856,0.821,0.786]};
 const UE_WERK = [
   // ---- Übergänge (UE-C, §1.4) ----
   {id: 'w-fill-kurz', tab: 'ue', name: 'Fill kurz', sh: 'Fill', k: 'fill', lens: [2], mode: 'ersetzt', eins: 1, P: [
@@ -21474,12 +21474,12 @@ const UE_WERK = [
   {id: 'w-snare-wirbel', tab: 'ue', name: 'Snare-Wirbel', sh: 'Wirbel', k: 'fill', lens: [2], mode: 'ersetzt', eins: 1, gen: 'roll'},
   {id: 'w-build', tab: 'ue', name: 'Build-up', sh: 'Build', k: 'build', lens: [8, 16], mode: 'ersetzt', gen: 'build'},
   {id: 'w-fill-crash', tab: 'ue', name: 'Fill + Crash', sh: 'Fill+Cr', k: 'fill', lens: [4], mode: 'ersetzt', crash: 1, P: UE_FILL_LANG},
-  {id: 'w-crash-eins', tab: 'ue', name: 'Crash auf die Eins', sh: 'Crash', k: 'crash', lens: [0], mode: 'dazu', P: [{Y: 'x'}, {Y: 'x', K: 'x'}, {Y: 'X', K: 'X'}]},
+  {id: 'w-crash-eins', tab: 'ue', name: 'Crash auf die Eins', sh: 'Crash', k: 'crash', lens: [0], mode: 'dazu', P: [{Y: 'x'}, {Y: 'x', K: 'x'}, {Y: 'X', K: 'x'}]},
   {id: 'w-hh-auf', tab: 'ue', name: 'Hi-Hat öffnen', sh: 'HH auf', k: 'fill', lens: [1], mode: 'ersetzt', P: [
-    {K: 'x...', S: 'g...', h: 'x...', o: '..x.'}, {K: 'x...', S: 'x...', h: 'x...', o: '..x.'}, {K: 'x...', S: 'X...', h: 'xx..', o: '..X.'}]},
+    {K: 'x...', S: 'x...', o: '..x.'}, {K: 'x...', S: 'x...', h: 'x...', o: '..x.'}, {K: 'x...', S: 'X...', h: 'xx..', o: '..X.'}]},
   {id: 'w-kick-auftakt', tab: 'ue', name: 'Kick-Auftakt', sh: 'Kick', k: 'fill', lens: [1], mode: 'dazu', P: [{K: '...x'}, {K: '..xx'}, {K: '..xx', h: '..x.'}]},
   {id: 'w-halbzeit', tab: 'ue', name: 'Halbzeit-Fill', sh: 'Halbz.', k: 'fill', lens: [4], mode: 'ersetzt', eins: 1, P: [
-    {K: 'x...............', S: '........x.......', h: 'x.x.x.x.x.x.....', H: '............x...', L: '..............x.'},
+    {K: 'x.....x.........', S: '........x.......', h: 'x.x.x.x.x.x.....', H: '............x...', L: '..............x.'},
     {K: 'x.....x.........', S: '........x.......', H: '............x...', M: '.............x..', L: '..............x.'},
     {K: 'x.....x.x.......', S: '........X.......', h: 'x.x.x.x.x.x.....', H: '............xx..', M: '..............x.', L: '...............X'}]},
   {id: 'w-clap-treppe', tab: 'ue', name: 'Clap-Treppe', sh: 'Claps', k: 'fill', lens: [2], mode: 'dazu', eins: 1, P: [
@@ -21517,14 +21517,14 @@ function uePat(rows, step, L, dir) {
   return out;
 }
 const UE_GEN = {
-  // TOM HOCH → MITTE → TIEF (16tel; leicht 8tel), leicht/voll: Kick auf jedem Schlag, Akzent je Schlag, letzter Schlag mit Wirbel 2
+  // TOM HOCH → MITTE → TIEF (16tel; leicht 8tel), Kick auf jedem Schlag, Akzent je Schlag, letzter Schlag mit Wirbel 2
   tom(L, dens, dir) {
     const st = dens ? .25 : .5, n = Math.round(L / st), out = [];
     for (let i = 0; i < n; i++) {
       const t = i * st, gm = [UE_GM.H, UE_GM.M, UE_GM.L][Math.min(2, Math.floor(i * 3 / n))], acc = dens === 2 && Math.abs(t % 1) < 1e-9;
       out.push(ueNote(t, gm, ueCurve(t / L, dir) * (acc ? 1 : .88), acc ? {a: 1} : dens === 2 && t >= L - .5 - 1e-9 ? {r: 2} : null));
     }
-    if (dens !== 1) for (let b = 0; b < L - 1e-9; b++) out.push(ueNote(b, UE_GM.K, ueCurve(b / L, dir) * .9));   // leicht und voll: Kick auf jedem Schlag
+    for (let b = 0; b < L - 1e-9; b++) out.push(ueNote(b, UE_GM.K, ueCurve(b / L, dir) * .9));   // Kick auf jedem Schlag (gleichmäßiger Pegel über die Kits)
     return out;
   },
   // Snare, Wirbel (Ratsche) 2 → 4, der Anschlag steigt (abbauend: fällt)
@@ -21798,7 +21798,7 @@ function uePreview(src, o) {
   o = o || {};
   if (w.k === 'break') { lcdOrToast(w.name + ' · ' + ueLenTxt(w.lens[0]) + ' · ' + (w.drums ? 'die Drums schweigen' : 'alle außer Gesang schweigen')); return true; }
   ensureAudio(); const c = AU.ctx; if (!c) return false;
-  const L = isNum(o.len) ? o.len : w.lens[0], dens = isNum(o.dens) ? o.dens : 1, sp = spb(), t0 = c.currentTime + .025;
+  const L = isNum(o.len) ? o.len : w.lens[0], dens = isNum(o.dens) ? o.dens : 1, sp = spb(), t0 = c.currentTime + .008;
   UE.prevT = t0;
   for (const nt of ueGen(w, L, dens, o.dir || 'gleich')) for (const h of DrumSeq.expandStep(nt, 0, 0)) drumHit(nt.n, h.v, t0 + (nt.t + h.beat) * sp, 'preview', h.acc || h.lk ? h : null);
   return true;
@@ -21808,7 +21808,11 @@ const ueLenTxt = L => (L === 0 ? 'auf die Eins' : (UE_LENT[L] || String(L / 4)) 
 
 /* ---------- Bedienung (UE-Kern minimal – beim Merge durch UE-A/UE-B ersetzt: Leiste, Ziehen, Chips; UE-D: Break-/Einwurf-Blatt) ---------- */
 const UE_CSS = `
-.ue-bar{position:absolute;left:0;right:0;bottom:0;z-index:6;background:var(--chassis,#15171b);border-top:1px solid var(--line,#2d323c);touch-action:none;
+#songView{position:relative}
+.sv-cw > .sv-ue{position:absolute;right:6px;bottom:6px;z-index:4;width:54px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 2px;color:var(--amber,#ffb22e);opacity:.92}
+.sv-cw > .sv-ue .d{font-size:13px;line-height:1}.sv-cw > .sv-ue .t{font:700 8px/1 var(--font-ui);letter-spacing:.04em;color:var(--text,#ece8df)}
+.sv-cw > .sv-ue[hidden]{display:none}
+.ue-bar{position:absolute;right:8px;bottom:4px;z-index:6;border-radius:8px;background:var(--chassis,#15171b);border-top:1px solid var(--line,#2d323c);touch-action:none;
   box-shadow:0 -6px 18px rgba(0,0,0,.45);display:flex;flex-direction:column}
 .ue-bar[hidden]{display:none}
 .ue-tabs{display:flex;gap:4px;padding:4px 6px 0;align-items:center}
@@ -21819,7 +21823,18 @@ const UE_CSS = `
 .ue-tile{flex:0 0 auto;width:96px;height:78px;border-radius:8px;background:var(--chassis-2,#1c1f25);border:1px solid var(--line,#2d323c);color:var(--text,#ece8df);
   display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;padding:5px 6px;font:600 11px/1.15 var(--font-ui);text-align:left;user-select:none;-webkit-user-select:none}
 .ue-tile.held{border-color:var(--amber,#ffb22e)}
+.ue-tile > span:first-child{white-space:normal;overflow-wrap:anywhere;line-height:1.1}
 .ue-tile svg{width:100%;height:30px;display:block}
+.ue-bar.one{flex-direction:row;align-items:stretch}
+.ue-bar.one .ue-tabs{padding:4px 0 4px 4px;flex:0 0 auto}
+.ue-bar.one .ue-tabs button{padding:0 7px;font-size:12px}
+.ue-bar.one .ue-row{flex:1 1 auto;padding:4px}
+.ue-bar.one .ue-tile{height:52px;width:88px;padding:3px 5px}
+.ue-bar.one .ue-tile svg{height:14px}
+.ue-bar.one .ue-tile .ue-l{display:none}
+.ue-bar.one .ue-tile > span:first-child{font-size:10.5px}
+.ue-bar.one .ue-tabs .ue-x{order:9;margin-left:0}
+.ue-bar.one > .ue-x{flex:0 0 44px}
 .ue-tile .ue-l{color:var(--text-dim,#9aa0aa);font:600 10px/1 var(--font-num)}
 .ue-ghost{position:fixed;z-index:60;pointer-events:none;opacity:.9;transform:translate(-50%,-110%);transition:none}
 .ue-ghost.back{transition:left .22s ease-in,top .22s ease-in,opacity .22s}
@@ -21846,10 +21861,22 @@ function ueToggle(on) {
   on = on == null ? !UE.open : !!on;
   if (on && !UE.el) ueBuildBar();
   UE.open = on; if (UE.el) UE.el.hidden = !on;
-  if (SV.btn && SV.btn.bUe) { SV.btn.bUe.classList.toggle('on', on); SV.btn.bUe.setAttribute('aria-pressed', String(on)); }
+  if (SV.btn && SV.btn.bUe) SV.btn.bUe.hidden = on;
+  ueBarPlace();
   if (!on) ueDragEnd(null);
   UI.dirty.song = true;
   return on;
+}
+// die Leiste liegt unten über dem Song-Bereich (rechts der Transport-Spalte); die Song-Zeilen rücken über sie (padding der .sv-body),
+// die Tastatur bleibt sichtbar. Kleine Höhe (< 360 px Song-Bereich) oder quer: eine Zeile (Reiter links, Kacheln daneben)
+function ueBarPlace() {
+  const body = EL.songView && EL.songView.querySelector('.sv-body'); if (!body) return;
+  if (!UE.open || !UE.el) { UE.padH = 0; if (body.style.paddingBottom) { body.style.paddingBottom = ''; } return; }
+  body.style.paddingBottom = '';
+  const one = body.getBoundingClientRect().height < 360 || EL.songView.classList.contains('side');
+  UE.el.classList.toggle('one', one);
+  UE.el.style.left = body.offsetLeft + 'px';
+  UE.padH = UE.el.offsetHeight + 4; body.style.paddingBottom = UE.padH + 'px';
 }
 function ueBuildBar() {
   ueCssOnce();
@@ -21860,6 +21887,7 @@ function ueBuildBar() {
   b.append(tabs, row); guardTouch(b);
   b.addEventListener('pointerdown', e => e.stopPropagation());
   UE.el = b; UE.row = row; EL.songView.appendChild(b);
+  if (!UE.rs) { UE.rs = true; window.addEventListener('resize', () => requestAnimationFrame(ueBarPlace)); }
   ueFillRow(); ueBindRow(row);
 }
 function ueFillRow() {
@@ -21947,10 +21975,14 @@ function ueHatch(g, x0, x1, y, h, col) {
   g.strokeStyle = col; g.lineWidth = 1.5; g.beginPath(); for (let x = x0 - h; x < x1 + h; x += 6) { g.moveTo(x, y + h); g.lineTo(x + h, y); } g.stroke(); g.restore();
 }
 function ueDraw(g, song, XB, W, H, ru, rh) {
+  g.save(); try { ueDraw0(g, song, XB, W, H, ru, rh); } finally { g.restore(); }   // Schrift/Ausrichtung des Song-Bilds bleiben
+}
+function ueDraw0(g, song, XB, W, H, ru, rh) {
   UE.chips = [];
   const rd = SV.rows.indexOf(DRUM_T), d = UE.drag;
   if (song.ue && rd >= 0 && !UI.svGlass) {
     const y = ru + rd * rh;
+    g.font = '700 10px ' + (SV.uiFont || (SV.uiFont = getComputedStyle(document.body).getPropertyValue('--font-ui') || 'sans-serif'));
     for (const u of song.ue) {
       const A = ueAnchor(song, u); if (A == null) continue;
       const s = A + u.a, e = s + u.len, x0 = XB(s), x1 = XB(e), w = ueWerk(u.src);
@@ -21958,7 +21990,6 @@ function ueDraw(g, song, XB, W, H, ru, rh) {
       if (u.k === 'break') { for (const i of u.stop || []) { const r = SV.rows.indexOf(i); if (r >= 0) { g.fillStyle = 'rgba(11,12,15,.55)'; g.fillRect(x0, ru + r * rh, x1 - x0, rh); ueHatch(g, x0, x1, ru + r * rh, rh, 'rgba(255,178,46,.35)'); } } }
       else if (u.len > 0) ueHatch(g, x0, x1, y + 1, rh - 2, u.mode === 'ersetzt' ? 'rgba(255,178,46,.45)' : 'rgba(255,178,46,.22)');
       const lab = (u.k === 'break' ? '‖ ' : u.k === 'adlib' ? '● ' : '◆ ') + (w ? w.sh : u.k) + (u.m != null && u.k !== 'break' ? ' ' + UE_ARR[ueDirOf(song, u)] : '');
-      g.font = '700 10px ' + (getComputedStyle(document.body).getPropertyValue('--font-ui') || 'sans-serif');
       const tw = g.measureText(lab).width + 10, ch = Math.min(rh - 4, 18), cy = y + (rh - ch) / 2;
       const cx = u.m != null && u.k !== 'break' ? Math.max(x0, XB(A) - tw) : x0;
       g.fillStyle = u.id === UE.sel ? '#ffb22e' : '#2a2416'; g.strokeStyle = '#ffb22e'; g.lineWidth = 1;
@@ -22009,7 +22040,7 @@ function ueSheet(id) {
       const x = ueGet(id); if (!x) { closePop(); return; }
       if (b.dataset.tr != null) { const i = +b.dataset.tr, s = new Set(x.stop || []); if (s.has(i)) s.delete(i); else s.add(i); ueSet(id, {stop: [...s]}, 'Break-Spuren'); re(); }
       else if (b.dataset.kick) { ueSet(id, {kick: x.mode !== 'dazu'}, 'Kick bleibt'); re(); }
-      else if (b.dataset.a === 'hear') { const W = ueWerk(x.src); if (W) { ensureAudio(); const c = AU.ctx, t0 = c.currentTime + .025, sp = spb(); for (const nt of x.notes) for (const hh of DrumSeq.expandStep(nt, 0, 0)) drumHit(nt.n, hh.v, t0 + (nt.t + hh.beat) * sp, 'preview', hh.acc || hh.lk ? hh : null); } }
+      else if (b.dataset.a === 'hear') { const W = ueWerk(x.src); if (W) { ensureAudio(); const c = AU.ctx, t0 = c.currentTime + .008, sp = spb(); for (const nt of x.notes) for (const hh of DrumSeq.expandStep(nt, 0, 0)) drumHit(nt.n, hh.v, t0 + (nt.t + hh.beat) * sp, 'preview', hh.acc || hh.lk ? hh : null); } }
       else if (b.dataset.a === 'del') { closePop(); const nm = w ? w.name : 'Übergang'; if (ueDel(id)) toast(nm + ' entfernt', {label: '↶ Rückgängig', fn: () => undo()}); }
       haptic('tick');
     }, 'button[data-tr],button[data-kick],button[data-a]');
@@ -27888,11 +27919,7 @@ function buildSongView() {
   // V0c: [● MEL.] leaves the row – ● with the target MELODIE does the same (overdub, punch-in while the song plays; the API
   // songMel stays); two „● MEL“ side by side would say two different things
   // V2e (song-delta 6.5, K2-26): [CLIPS ⇄][● ▾][▶ SONG][⟲ Song ▾][⏮ │ ↩ SONG][▲▼]; [S4 ▾] lives in the MELODIE label (V2b chip)
-  // UE: [Übergänge] öffnet die Leiste (Übergänge · Breaks · Einwürfe) über dem Song-Bereich, die Tastatur bleibt sichtbar
-  const bUe = el('button', 'rb sv-b sv-ue', '<span class="d">◆</span><span class="t">ÜBERG.</span>'); bUe.setAttribute('aria-label', 'Übergänge, Breaks und Einwürfe'); bUe.setAttribute('aria-pressed', 'false');
-  UE.el = null; UE.open = false;
-  onTap(bUe, () => { if (!songHasContent()) { toast('Noch kein Song'); return; } ueToggle(); haptic('tick'); });
-  top.append(sw, bRec, bPlay, bLoop, bBack, bHome, bGl, bUe, bBank);
+  top.append(sw, bRec, bPlay, bLoop, bBack, bHome, bGl, bBank);
   onTap(sw, () => setSongView(false));
   onTap(bGl, () => { songViewMode(UI.svGlass ? 'squares' : 'glass'); haptic('tick'); lcdOrToast(UI.svGlass ? '◧ Glas: Clips mit Noten' : '▦ Kästchen'); });
   // ● (V0c, Nachtrag 2 B.1 Nr. 8): a song there → the Start-Blatt; while recording → stop; empty song → records at once.
@@ -27934,6 +27961,10 @@ function buildSongView() {
   onTap(fol, () => { if (folState('song').follow === 'off') folSet('song', true); FOL.hand.song = false; FOL.jump.song = true; svAutoScroll(false); svDraw(true); });
   const ban = el('div', 'sv-ban'); ban.hidden = true; SV.ban = ban;           // V0c N7S-02: the take's banner lies over the ruler
   wrap.append(cv, empty, hint, fol, ban);
+  // UE: [Übergänge] schwebt unten rechts in der Song-Fläche (wie [Folgen]); die Song-Leiste bleibt wie sie ist
+  const bUe = el('button', 'rb sv-ue', '<span class="d">◆</span><span class="t">ÜBERG.</span>'); bUe.setAttribute('aria-label', 'Übergänge, Breaks und Einwürfe'); bUe.setAttribute('aria-pressed', 'false');
+  bUe.addEventListener('pointerdown', e => e.stopPropagation()); UE.el = null; UE.open = false; ueCssOnce();
+  onTap(bUe, () => { if (!songHasContent()) { toast('Noch kein Song'); return; } ueToggle(); haptic('tick'); }); wrap.appendChild(bUe);
   body.append(labs, wrap);
   v.append(top, body);
   guardTouch(top); guardTouch(wrap); guardTouch(labs);
@@ -27964,7 +27995,7 @@ function svLayout() {
     else { SV.pages = pages; const pg = pages[Math.min(trackBankOf(), pages.length - 1)]; SV.rows = pg.concat(new Array(pages[0].length - pg.length).fill(-1), [DRUM_T]); }
   }
   // V2e: [▲▼] stands in every viewport where 8 tracks would not fit (fixed per viewport, nothing moves when tracks come and go)
-  SV.bankVp = side || avail / (8 + 2) < 26 - .5;
+  SV.bankVp = side || (avail + (UE.open ? UE.padH | 0 : 0)) / (8 + 2) < 26 - .5 || !!SV.pages;   // UE: die offene Übergangs-Leiste ändert die Song-Leiste nicht (nur echte Seiten)
   if (SV.tbb.hidden === SV.bankVp) SV.tbb.hidden = !SV.bankVp;
   SV.tbb.disabled = !SV.pages; SV.tbb.lastChild.textContent = SV.pages ? (Math.min(trackBankOf(), SV.pages.length - 1) + 1) + '/' + SV.pages.length : '1/1';
   svBuildRows();
@@ -31563,6 +31594,7 @@ function svDraw(force, sbIn) {
     SV.grips = {a: xa + 1.5, b: xb - 1.5};
   }
   if (song && (song.ue || UE.drag)) { try { ueDraw(g, song, XB, W, H, ru, rh); } catch (e) { logErr(e); } } else UE.chips = [];   // UE: Chips, Einrasten
+  if (SV.btn && SV.btn.bUe) { const hb = UE.open || !(song && song.bars); if (SV.btn.bUe.hidden !== hb) SV.btn.bUe.hidden = hb; }   // UE: [Übergänge] nur mit Song
   // the Positionsmarke: a white ▼ 8×5 at the top of its bar line (▶ starts there)
   if (song && bars) {
     const xp = X(songStartBar());

@@ -75,19 +75,22 @@ rep("  if (!r.chG || r.chG.c !== ctx) { r.chG = g6pcGroup(ctx, a, AU.masterSum, 
 # Song-Fläche: Zeichnen, Gesten
 rep("  // the Positionsmarke: a white ▼ 8×5 at the top of its bar line (▶ starts there)\n",
     "  if (song && (song.ue || UE.drag)) { try { ueDraw(g, song, XB, W, H, ru, rh); } catch (e) { logErr(e); } } else UE.chips = [];   // UE: Chips, Einrasten\n"
+    "  if (SV.btn && SV.btn.bUe) { const hb = UE.open || !(song && song.bars); if (SV.btn.bUe.hidden !== hb) SV.btn.bUe.hidden = hb; }   // UE: [Übergänge] nur mit Song\n"
     "  // the Positionsmarke: a white ▼ 8×5 at the top of its bar line (▶ starts there)\n")
 rep("    const p = xy(e);\n    g = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), sx: SV.x, mode: null, lastX: e.clientX, lastT: performance.now(), p, chip: svChipAt(p.x, p.y)};",
     "    const p = xy(e);\n    if (UE.chips.length && ueChipGesture(w, e, p)) return;           // UE: Chip = Blatt / verschieben\n    g = {id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), sx: SV.x, mode: null, lastX: e.clientX, lastT: performance.now(), p, chip: svChipAt(p.x, p.y)};")
-rep("  top.append(sw, bRec, bPlay, bLoop, bBack, bHome, bGl, bBank);\n",
-    "  // UE: [Übergänge] öffnet die Leiste (Übergänge · Breaks · Einwürfe) über dem Song-Bereich, die Tastatur bleibt sichtbar\n"
-    "  const bUe = el('button', 'rb sv-b sv-ue', '<span class=\"d\">◆</span><span class=\"t\">ÜBERG.</span>'); bUe.setAttribute('aria-label', 'Übergänge, Breaks und Einwürfe'); bUe.setAttribute('aria-pressed', 'false');\n"
-    "  UE.el = null; UE.open = false;\n"
-    "  onTap(bUe, () => { if (!songHasContent()) { toast('Noch kein Song'); return; } ueToggle(); haptic('tick'); });\n"
-    "  top.append(sw, bRec, bPlay, bLoop, bBack, bHome, bGl, bUe, bBank);\n")
+rep("  wrap.append(cv, empty, hint, fol, ban);\n",
+    "  wrap.append(cv, empty, hint, fol, ban);\n"
+    "  // UE: [Übergänge] schwebt unten rechts in der Song-Fläche (wie [Folgen]); die Song-Leiste bleibt wie sie ist\n"
+    "  const bUe = el('button', 'rb sv-ue', '<span class=\"d\">◆</span><span class=\"t\">ÜBERG.</span>'); bUe.setAttribute('aria-label', 'Übergänge, Breaks und Einwürfe'); bUe.setAttribute('aria-pressed', 'false');\n"
+    "  bUe.addEventListener('pointerdown', e => e.stopPropagation()); UE.el = null; UE.open = false; ueCssOnce();\n"
+    "  onTap(bUe, () => { if (!songHasContent()) { toast('Noch kein Song'); return; } ueToggle(); haptic('tick'); }); wrap.appendChild(bUe);\n")
 rep("  SV.btn = {bRec, bPlay, bMel, bMt, bBack, bHome, bLoop, bGl, sw};", "  SV.btn = {bRec, bPlay, bMel, bMt, bBack, bHome, bLoop, bGl, bUe, sw};")
 rep("  if (!on) { SV.mark = null; SV.copy = null; SV.cell = null; svHintFree(); }",
     "  if (!on) { SV.mark = null; SV.copy = null; SV.cell = null; svHintFree(); if (UE.open) ueToggle(false); }")
 rep("Object.assign(SYNQUENZER, vv4bdApi());                      // VV4-B/D\n",
     "Object.assign(SYNQUENZER, vv4bdApi());                      // VV4-B/D\nObject.assign(SYNQUENZER, UE_API);                          // UE-C/D: Übergänge, Breaks, Einwürfe\n")
+rep("  SV.bankVp = side || avail / (8 + 2) < 26 - .5;",
+    "  SV.bankVp = side || (avail + (UE.open ? UE.padH | 0 : 0)) / (8 + 2) < 26 - .5 || !!SV.pages;   // UE: die offene Übergangs-Leiste ändert die Song-Leiste nicht (nur echte Seiten)")
 open(out, 'w', encoding='utf-8').write(s)
 print('ok', len(s))

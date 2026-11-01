@@ -1,0 +1,97 @@
+[
+ {
+  "name": "UE-07 428x926: Knopf, Reiter und Kacheln ≥ 44, nichts abgeschnitten, nichts rollt, Tastatur sichtbar",
+  "ok": true,
+  "info": "{\"knopf\":[54,44],\"kacheln\":12,\"zuKlein\":[],\"kbH\":248,\"kbVis\":true,\"scroll\":false,\"leisteAbgeschnitten\":false}"
+ },
+ {
+  "name": "UE-08 428x926: Vorhören startet ≤ 50 ms nach dem Tipp (App: Planung + Effekt-Latenz; Gerät getrennt)",
+  "ok": true,
+  "info": "{\"ms\":22.9,\"geraetMs\":32,\"treffer\":8}"
+ },
+ {
+  "name": "UE-09 428x926: Einrasten ±½ Takt im selben Bild (amber), Ablegen = 1 Undo",
+  "ok": true,
+  "info": "{\"ziel\":{\"m\":\"M2\",\"edge\":16},\"pixel\":[255,178,46,255],\"undo\":1}"
+ },
+ {
+  "name": "UE-09 428x926: daneben loslassen = Kachel fliegt zurück, 0 Änderungen",
+  "ok": true,
+  "info": "{\"ziel\":null,\"gleich\":true}"
+ },
+ {
+  "name": "Einwurf frei abgelegt, rastet auf 1/16",
+  "ok": true,
+  "info": "{\"at\":6.25}"
+ },
+ {
+  "name": "UE-07 428x926: Chips ≥ 44 × 44 Trefferfläche",
+  "ok": true,
+  "info": "[[49,44],[48,44]]"
+ },
+ {
+  "name": "Blatt: öffnet per Tipp, Ziele ≥ 44, „Kit der Spur: <Name>“",
+  "ok": true,
+  "info": "{\"name\":\"ue\",\"segs\":[[53,44],[54,44],[44,44],[63,44],[52,44],[47,44],[63,44],[49,44],[174,44],[174,44]],\"txt\":\"FILL KURZ Kante vor Szene 2 · Kit der Spur: Gated 84 leicht mittel voll Auto → ↗ auf ↘ ab ersetzt dazu Anhören Entfernen\"}"
+ },
+ {
+  "name": "UE-11 428x926: Chip herausziehen = löschen + Toast „Rückgängig“, zurück bit-gleich",
+  "ok": true,
+  "info": "{\"n\":1,\"toast\":\"Fill kurz entfernt\\n↶ Rückgängig\"}"
+ },
+ {
+  "name": "Break-Blatt: Spuren an/aus und [Kick bleibt] (je 1 Undo)",
+  "ok": true,
+  "info": "{\"stop\":[0,2,3,4,5],\"kick\":true}"
+ },
+ {
+  "name": "keine Seitenfehler 428x926",
+  "ok": true,
+  "info": "[]"
+ },
+ {
+  "name": "UE-07 926x428: Knopf, Reiter und Kacheln ≥ 44, nichts abgeschnitten, nichts rollt, Tastatur sichtbar",
+  "ok": true,
+  "info": "{\"knopf\":[54,44],\"kacheln\":12,\"zuKlein\":[],\"kbH\":134,\"kbVis\":true,\"scroll\":false,\"leisteAbgeschnitten\":false}"
+ },
+ {
+  "name": "UE-08 926x428: Vorhören startet ≤ 50 ms nach dem Tipp (App: Planung + Effekt-Latenz; Gerät getrennt)",
+  "ok": true,
+  "info": "{\"ms\":20,\"geraetMs\":32,\"treffer\":8}"
+ },
+ {
+  "name": "UE-09 926x428: Einrasten ±½ Takt im selben Bild (amber), Ablegen = 1 Undo",
+  "ok": true,
+  "info": "{\"ziel\":{\"m\":\"M2\",\"edge\":16},\"pixel\":[255,178,46,255],\"undo\":1}"
+ },
+ {
+  "name": "UE-09 926x428: daneben loslassen = Kachel fliegt zurück, 0 Änderungen",
+  "ok": true,
+  "info": "{\"ziel\":null,\"gleich\":true}"
+ },
+ {
+  "name": "Einwurf frei abgelegt, rastet auf 1/16",
+  "ok": true,
+  "info": "{\"at\":6.25}"
+ },
+ {
+  "name": "UE-07 926x428: Chips ≥ 44 × 44 Trefferfläche",
+  "ok": true,
+  "info": "[[49,44],[48,44]]"
+ },
+ {
+  "name": "Blatt: öffnet per Tipp, Ziele ≥ 44, „Kit der Spur: <Name>“",
+  "ok": true,
+  "info": "{\"name\":\"ue\",\"segs\":[[53,44],[54,44],[44,44],[63,44],[52,44],[47,44],[63,44],[49,44],[174,44],[174,44]],\"txt\":\"FILL KURZ Kante vor Szene 2 · Kit der Spur: Gated 84 leicht mittel voll Auto → ↗ auf ↘ ab ersetzt dazu Anhören Entfernen\"}"
+ },
+ {
+  "name": "UE-11 926x428: Chip herausziehen = löschen + Toast „Rückgängig“, zurück bit-gleich",
+  "ok": true,
+  "info": "{\"n\":1,\"toast\":\"Fill kurz entfernt\\n↶ Rückgängig\"}"
+ },
+ {
+  "name": "keine Seitenfehler 926x428",
+  "ok": true,
+  "info": "[]"
+ }
+]

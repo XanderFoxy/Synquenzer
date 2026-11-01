@@ -1,6 +1,10 @@
 /* ---------- Bedienung (UE-Kern minimal – beim Merge durch UE-A/UE-B ersetzt: Leiste, Ziehen, Chips; UE-D: Break-/Einwurf-Blatt) ---------- */
 const UE_CSS = `
-.ue-bar{position:absolute;left:0;right:0;bottom:0;z-index:6;background:var(--chassis,#15171b);border-top:1px solid var(--line,#2d323c);touch-action:none;
+#songView{position:relative}
+.sv-cw > .sv-ue{position:absolute;right:6px;bottom:6px;z-index:4;width:54px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 2px;color:var(--amber,#ffb22e);opacity:.92}
+.sv-cw > .sv-ue .d{font-size:13px;line-height:1}.sv-cw > .sv-ue .t{font:700 8px/1 var(--font-ui);letter-spacing:.04em;color:var(--text,#ece8df)}
+.sv-cw > .sv-ue[hidden]{display:none}
+.ue-bar{position:absolute;right:8px;bottom:4px;z-index:6;border-radius:8px;background:var(--chassis,#15171b);border-top:1px solid var(--line,#2d323c);touch-action:none;
   box-shadow:0 -6px 18px rgba(0,0,0,.45);display:flex;flex-direction:column}
 .ue-bar[hidden]{display:none}
 .ue-tabs{display:flex;gap:4px;padding:4px 6px 0;align-items:center}
@@ -11,7 +15,18 @@ const UE_CSS = `
 .ue-tile{flex:0 0 auto;width:96px;height:78px;border-radius:8px;background:var(--chassis-2,#1c1f25);border:1px solid var(--line,#2d323c);color:var(--text,#ece8df);
   display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;padding:5px 6px;font:600 11px/1.15 var(--font-ui);text-align:left;user-select:none;-webkit-user-select:none}
 .ue-tile.held{border-color:var(--amber,#ffb22e)}
+.ue-tile > span:first-child{white-space:normal;overflow-wrap:anywhere;line-height:1.1}
 .ue-tile svg{width:100%;height:30px;display:block}
+.ue-bar.one{flex-direction:row;align-items:stretch}
+.ue-bar.one .ue-tabs{padding:4px 0 4px 4px;flex:0 0 auto}
+.ue-bar.one .ue-tabs button{padding:0 7px;font-size:12px}
+.ue-bar.one .ue-row{flex:1 1 auto;padding:4px}
+.ue-bar.one .ue-tile{height:52px;width:88px;padding:3px 5px}
+.ue-bar.one .ue-tile svg{height:14px}
+.ue-bar.one .ue-tile .ue-l{display:none}
+.ue-bar.one .ue-tile > span:first-child{font-size:10.5px}
+.ue-bar.one .ue-tabs .ue-x{order:9;margin-left:0}
+.ue-bar.one > .ue-x{flex:0 0 44px}
 .ue-tile .ue-l{color:var(--text-dim,#9aa0aa);font:600 10px/1 var(--font-num)}
 .ue-ghost{position:fixed;z-index:60;pointer-events:none;opacity:.9;transform:translate(-50%,-110%);transition:none}
 .ue-ghost.back{transition:left .22s ease-in,top .22s ease-in,opacity .22s}
@@ -38,10 +53,22 @@ function ueToggle(on) {
   on = on == null ? !UE.open : !!on;
   if (on && !UE.el) ueBuildBar();
   UE.open = on; if (UE.el) UE.el.hidden = !on;
-  if (SV.btn && SV.btn.bUe) { SV.btn.bUe.classList.toggle('on', on); SV.btn.bUe.setAttribute('aria-pressed', String(on)); }
+  if (SV.btn && SV.btn.bUe) SV.btn.bUe.hidden = on;
+  ueBarPlace();
   if (!on) ueDragEnd(null);
   UI.dirty.song = true;
   return on;
+}
+// die Leiste liegt unten über dem Song-Bereich (rechts der Transport-Spalte); die Song-Zeilen rücken über sie (padding der .sv-body),
+// die Tastatur bleibt sichtbar. Kleine Höhe (< 360 px Song-Bereich) oder quer: eine Zeile (Reiter links, Kacheln daneben)
+function ueBarPlace() {
+  const body = EL.songView && EL.songView.querySelector('.sv-body'); if (!body) return;
+  if (!UE.open || !UE.el) { UE.padH = 0; if (body.style.paddingBottom) { body.style.paddingBottom = ''; } return; }
+  body.style.paddingBottom = '';
+  const one = body.getBoundingClientRect().height < 360 || EL.songView.classList.contains('side');
+  UE.el.classList.toggle('one', one);
+  UE.el.style.left = body.offsetLeft + 'px';
+  UE.padH = UE.el.offsetHeight + 4; body.style.paddingBottom = UE.padH + 'px';
 }
 function ueBuildBar() {
   ueCssOnce();
@@ -52,6 +79,7 @@ function ueBuildBar() {
   b.append(tabs, row); guardTouch(b);
   b.addEventListener('pointerdown', e => e.stopPropagation());
   UE.el = b; UE.row = row; EL.songView.appendChild(b);
+  if (!UE.rs) { UE.rs = true; window.addEventListener('resize', () => requestAnimationFrame(ueBarPlace)); }
   ueFillRow(); ueBindRow(row);
 }
 function ueFillRow() {
@@ -139,10 +167,14 @@ function ueHatch(g, x0, x1, y, h, col) {
   g.strokeStyle = col; g.lineWidth = 1.5; g.beginPath(); for (let x = x0 - h; x < x1 + h; x += 6) { g.moveTo(x, y + h); g.lineTo(x + h, y); } g.stroke(); g.restore();
 }
 function ueDraw(g, song, XB, W, H, ru, rh) {
+  g.save(); try { ueDraw0(g, song, XB, W, H, ru, rh); } finally { g.restore(); }   // Schrift/Ausrichtung des Song-Bilds bleiben
+}
+function ueDraw0(g, song, XB, W, H, ru, rh) {
   UE.chips = [];
   const rd = SV.rows.indexOf(DRUM_T), d = UE.drag;
   if (song.ue && rd >= 0 && !UI.svGlass) {
     const y = ru + rd * rh;
+    g.font = '700 10px ' + (SV.uiFont || (SV.uiFont = getComputedStyle(document.body).getPropertyValue('--font-ui') || 'sans-serif'));
     for (const u of song.ue) {
       const A = ueAnchor(song, u); if (A == null) continue;
       const s = A + u.a, e = s + u.len, x0 = XB(s), x1 = XB(e), w = ueWerk(u.src);
@@ -150,7 +182,6 @@ function ueDraw(g, song, XB, W, H, ru, rh) {
       if (u.k === 'break') { for (const i of u.stop || []) { const r = SV.rows.indexOf(i); if (r >= 0) { g.fillStyle = 'rgba(11,12,15,.55)'; g.fillRect(x0, ru + r * rh, x1 - x0, rh); ueHatch(g, x0, x1, ru + r * rh, rh, 'rgba(255,178,46,.35)'); } } }
       else if (u.len > 0) ueHatch(g, x0, x1, y + 1, rh - 2, u.mode === 'ersetzt' ? 'rgba(255,178,46,.45)' : 'rgba(255,178,46,.22)');
       const lab = (u.k === 'break' ? '‖ ' : u.k === 'adlib' ? '● ' : '◆ ') + (w ? w.sh : u.k) + (u.m != null && u.k !== 'break' ? ' ' + UE_ARR[ueDirOf(song, u)] : '');
-      g.font = '700 10px ' + (getComputedStyle(document.body).getPropertyValue('--font-ui') || 'sans-serif');
       const tw = g.measureText(lab).width + 10, ch = Math.min(rh - 4, 18), cy = y + (rh - ch) / 2;
       const cx = u.m != null && u.k !== 'break' ? Math.max(x0, XB(A) - tw) : x0;
       g.fillStyle = u.id === UE.sel ? '#ffb22e' : '#2a2416'; g.strokeStyle = '#ffb22e'; g.lineWidth = 1;
@@ -201,7 +232,7 @@ function ueSheet(id) {
       const x = ueGet(id); if (!x) { closePop(); return; }
       if (b.dataset.tr != null) { const i = +b.dataset.tr, s = new Set(x.stop || []); if (s.has(i)) s.delete(i); else s.add(i); ueSet(id, {stop: [...s]}, 'Break-Spuren'); re(); }
       else if (b.dataset.kick) { ueSet(id, {kick: x.mode !== 'dazu'}, 'Kick bleibt'); re(); }
-      else if (b.dataset.a === 'hear') { const W = ueWerk(x.src); if (W) { ensureAudio(); const c = AU.ctx, t0 = c.currentTime + .025, sp = spb(); for (const nt of x.notes) for (const hh of DrumSeq.expandStep(nt, 0, 0)) drumHit(nt.n, hh.v, t0 + (nt.t + hh.beat) * sp, 'preview', hh.acc || hh.lk ? hh : null); } }
+      else if (b.dataset.a === 'hear') { const W = ueWerk(x.src); if (W) { ensureAudio(); const c = AU.ctx, t0 = c.currentTime + .008, sp = spb(); for (const nt of x.notes) for (const hh of DrumSeq.expandStep(nt, 0, 0)) drumHit(nt.n, hh.v, t0 + (nt.t + hh.beat) * sp, 'preview', hh.acc || hh.lk ? hh : null); } }
       else if (b.dataset.a === 'del') { closePop(); const nm = w ? w.name : 'Übergang'; if (ueDel(id)) toast(nm + ' entfernt', {label: '↶ Rückgängig', fn: () => undo()}); }
       haptic('tick');
     }, 'button[data-tr],button[data-kick],button[data-a]');

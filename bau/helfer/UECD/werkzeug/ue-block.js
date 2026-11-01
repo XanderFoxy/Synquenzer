@@ -20,7 +20,7 @@ const UE_FILL_LANG = [
   {K: 'x.......x.......', S: 'gggxgggxgxgx....', H: '............xx..', M: '..............X.', L: '...............x'}];
 /* UE_VK: Anschlags-Faktor je Werk und Dichte (leicht, mittel, voll), aus der Messung UE-12 über alle 7 Kits so gesetzt, dass die Mitte
    zwischen leisestem und lautestem Kit bei 0 LU zum Groove liegt (Pegel der Engine = v², Faktor k = 10^(−LU/40)). */
-const UE_VK = {'w-fill-kurz': [1.12,1.013,0.861],'w-fill-lang': [1.201,1.114,1.071],'w-tom-wirbel': [1.12,1.135,0.928],'w-snare-wirbel': [1.272,0.97,0.902],'w-build': [1.002,0.908,0.83],'w-fill-crash': [1.204,1.118,1.07],'w-crash-eins': [0.856,0.853,0.588],'w-hh-auf': [1.31,1.198,0.98],'w-kick-auftakt': [0.779,0.699,0.64],'w-halbzeit': [1.254,1.22,1.05],'w-clap-treppe': [0.929,0.925,0.899],'w-rim-ping': [0.93,0.892,0.854]};
+const UE_VK = {'w-fill-kurz': [1.12,1.013,0.861],'w-fill-lang': [1.237,1.114,1.071],'w-tom-wirbel': [1.12,1.078,0.928],'w-snare-wirbel': [1.336,0.97,0.902],'w-build': [1.002,0.908,0.805],'w-fill-crash': [1.24,1.118,1.07],'w-crash-eins': [0.856,0.853,0.588],'w-hh-auf': [1.31,1.198,0.98],'w-kick-auftakt': [0.779,0.699,0.64],'w-halbzeit': [1.329,1.281,1.05],'w-clap-treppe': [0.929,0.925,0.899],'w-rim-ping': [0.856,0.821,0.786]};
 const UE_WERK = [
   // ---- Übergänge (UE-C, §1.4) ----
   {id: 'w-fill-kurz', tab: 'ue', name: 'Fill kurz', sh: 'Fill', k: 'fill', lens: [2], mode: 'ersetzt', eins: 1, P: [
@@ -32,12 +32,12 @@ const UE_WERK = [
   {id: 'w-snare-wirbel', tab: 'ue', name: 'Snare-Wirbel', sh: 'Wirbel', k: 'fill', lens: [2], mode: 'ersetzt', eins: 1, gen: 'roll'},
   {id: 'w-build', tab: 'ue', name: 'Build-up', sh: 'Build', k: 'build', lens: [8, 16], mode: 'ersetzt', gen: 'build'},
   {id: 'w-fill-crash', tab: 'ue', name: 'Fill + Crash', sh: 'Fill+Cr', k: 'fill', lens: [4], mode: 'ersetzt', crash: 1, P: UE_FILL_LANG},
-  {id: 'w-crash-eins', tab: 'ue', name: 'Crash auf die Eins', sh: 'Crash', k: 'crash', lens: [0], mode: 'dazu', P: [{Y: 'x'}, {Y: 'x', K: 'x'}, {Y: 'X', K: 'X'}]},
+  {id: 'w-crash-eins', tab: 'ue', name: 'Crash auf die Eins', sh: 'Crash', k: 'crash', lens: [0], mode: 'dazu', P: [{Y: 'x'}, {Y: 'x', K: 'x'}, {Y: 'X', K: 'x'}]},
   {id: 'w-hh-auf', tab: 'ue', name: 'Hi-Hat öffnen', sh: 'HH auf', k: 'fill', lens: [1], mode: 'ersetzt', P: [
-    {K: 'x...', S: 'g...', h: 'x...', o: '..x.'}, {K: 'x...', S: 'x...', h: 'x...', o: '..x.'}, {K: 'x...', S: 'X...', h: 'xx..', o: '..X.'}]},
+    {K: 'x...', S: 'x...', o: '..x.'}, {K: 'x...', S: 'x...', h: 'x...', o: '..x.'}, {K: 'x...', S: 'X...', h: 'xx..', o: '..X.'}]},
   {id: 'w-kick-auftakt', tab: 'ue', name: 'Kick-Auftakt', sh: 'Kick', k: 'fill', lens: [1], mode: 'dazu', P: [{K: '...x'}, {K: '..xx'}, {K: '..xx', h: '..x.'}]},
   {id: 'w-halbzeit', tab: 'ue', name: 'Halbzeit-Fill', sh: 'Halbz.', k: 'fill', lens: [4], mode: 'ersetzt', eins: 1, P: [
-    {K: 'x...............', S: '........x.......', h: 'x.x.x.x.x.x.....', H: '............x...', L: '..............x.'},
+    {K: 'x.....x.........', S: '........x.......', h: 'x.x.x.x.x.x.....', H: '............x...', L: '..............x.'},
     {K: 'x.....x.........', S: '........x.......', H: '............x...', M: '.............x..', L: '..............x.'},
     {K: 'x.....x.x.......', S: '........X.......', h: 'x.x.x.x.x.x.....', H: '............xx..', M: '..............x.', L: '...............X'}]},
   {id: 'w-clap-treppe', tab: 'ue', name: 'Clap-Treppe', sh: 'Claps', k: 'fill', lens: [2], mode: 'dazu', eins: 1, P: [
@@ -75,14 +75,14 @@ function uePat(rows, step, L, dir) {
   return out;
 }
 const UE_GEN = {
-  // TOM HOCH → MITTE → TIEF (16tel; leicht 8tel), leicht/voll: Kick auf jedem Schlag, Akzent je Schlag, letzter Schlag mit Wirbel 2
+  // TOM HOCH → MITTE → TIEF (16tel; leicht 8tel), Kick auf jedem Schlag, Akzent je Schlag, letzter Schlag mit Wirbel 2
   tom(L, dens, dir) {
     const st = dens ? .25 : .5, n = Math.round(L / st), out = [];
     for (let i = 0; i < n; i++) {
       const t = i * st, gm = [UE_GM.H, UE_GM.M, UE_GM.L][Math.min(2, Math.floor(i * 3 / n))], acc = dens === 2 && Math.abs(t % 1) < 1e-9;
       out.push(ueNote(t, gm, ueCurve(t / L, dir) * (acc ? 1 : .88), acc ? {a: 1} : dens === 2 && t >= L - .5 - 1e-9 ? {r: 2} : null));
     }
-    if (dens !== 1) for (let b = 0; b < L - 1e-9; b++) out.push(ueNote(b, UE_GM.K, ueCurve(b / L, dir) * .9));   // leicht und voll: Kick auf jedem Schlag
+    for (let b = 0; b < L - 1e-9; b++) out.push(ueNote(b, UE_GM.K, ueCurve(b / L, dir) * .9));   // Kick auf jedem Schlag (gleichmäßiger Pegel über die Kits)
     return out;
   },
   // Snare, Wirbel (Ratsche) 2 → 4, der Anschlag steigt (abbauend: fällt)
@@ -356,7 +356,7 @@ function uePreview(src, o) {
   o = o || {};
   if (w.k === 'break') { lcdOrToast(w.name + ' · ' + ueLenTxt(w.lens[0]) + ' · ' + (w.drums ? 'die Drums schweigen' : 'alle außer Gesang schweigen')); return true; }
   ensureAudio(); const c = AU.ctx; if (!c) return false;
-  const L = isNum(o.len) ? o.len : w.lens[0], dens = isNum(o.dens) ? o.dens : 1, sp = spb(), t0 = c.currentTime + .025;
+  const L = isNum(o.len) ? o.len : w.lens[0], dens = isNum(o.dens) ? o.dens : 1, sp = spb(), t0 = c.currentTime + .008;
   UE.prevT = t0;
   for (const nt of ueGen(w, L, dens, o.dir || 'gleich')) for (const h of DrumSeq.expandStep(nt, 0, 0)) drumHit(nt.n, h.v, t0 + (nt.t + h.beat) * sp, 'preview', h.acc || h.lk ? h : null);
   return true;
