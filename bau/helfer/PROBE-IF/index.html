@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Probe AG06-Route</title>
+<style>
+:root{
+  --bg:#0f1115; --card:#181b22; --card2:#20242d; --line:#2c313c;
+  --text:#eef1f6; --dim:#9aa3b2; --acc:#4fb3ff; --ok:#3ecf7a; --bad:#ff6363; --warn:#ffc94d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font:17px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  -webkit-text-size-adjust:100%}
+body{padding:0 max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+h1{font-size:20px;margin:14px 0 4px}
+p.hint{color:var(--dim);margin:4px 0 12px;font-size:15px}
+button{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--line);
+  border-radius:12px;min-height:44px;min-width:44px;padding:8px 14px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:active{filter:brightness(1.3)}
+button:disabled{opacity:.45}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0 10px;
+  padding-top:max(10px,env(safe-area-inset-top));border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#tonBtn{font-size:20px;font-weight:700;min-height:60px;padding:0 22px}
+#tonBtn.an{background:#123d27;border-color:var(--ok)}
+.meterbox{flex:1 1 180px;min-width:160px}
+.meterlbl{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
+.meter{height:22px;background:#0a0c10;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ok),var(--warn) 70%,var(--bad))}
+#status{width:100%;font-size:14px;color:var(--dim);min-height:1.4em}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+select{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--line);
+  border-radius:10px;min-height:44px;padding:0 10px;max-width:100%;flex:1 1 220px}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:700px){.grid{grid-template-columns:1fr 1fr}}
+@media (orientation:landscape) and (min-width:560px){.grid{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px}
+.card.aktiv{border-color:var(--acc);box-shadow:0 0 0 2px #4fb3ff40}
+.vbtn{width:100%;min-height:88px;text-align:left;display:block;padding:10px 14px;border-radius:12px;background:#1d2a3a;border-color:#2f4a68}
+.vbtn b{font-size:24px;display:block}
+.vbtn span{font-size:14px;color:#c4cede;display:block}
+.q{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.q .qt{flex:1 1 150px;font-size:15px}
+.q button{min-width:72px;font-weight:600}
+.q button.sel.ja{background:#123d27;border-color:var(--ok)}
+.q button.sel.nein{background:#4a1717;border-color:var(--bad)}
+.vres{font-size:13px;color:var(--dim);margin-top:6px;min-height:1.2em}
+.bottom{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px}
+#copyBtn{font-size:20px;font-weight:700;min-height:64px;flex:1 1 240px;background:#1d3a2a;border-color:var(--ok)}
+#log{margin-top:12px;background:#07080b;border:1px solid var(--line);border-radius:12px;padding:10px;
+  font:12px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-all;
+  max-height:50vh;overflow:auto;color:#cfd6e2}
+#log .e{color:var(--bad)} #log .w{color:var(--warn)} #log .h{color:var(--acc)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <button id="tonBtn" type="button">Ton an</button>
+  <div class="meterbox">
+    <div class="meterlbl"><span>Mikro-Pegel</span><span id="meterTxt">–</span></div>
+    <div class="meter"><i id="meterBar"></i></div>
+  </div>
+  <div id="status">Bereit. Erst „Ton an“, Kopfhörer am AG06 prüfen, dann Varianten.</div>
+</div>
+
+<h1>Probe: Bleibt der Ton auf dem AG06?</h1>
+<p class="hint">Jede Variante beendet vorher alles (Mikro, AudioContext) und startet neu.
+Nach jeder Variante beide Fragen beantworten. Tipp: V3 am saubersten direkt nach „Seite neu laden“
+(audioSession-Typ bleibt sonst von der vorigen Variante stehen). Antworten bleiben beim Neuladen erhalten.</p>
+
+<div class="row">
+  <select id="devSel" aria-label="Eingang für exact"><option value="">(Eingang für „exact“ – noch unbekannt)</option></select>
+  <button id="devBtn" type="button">Geräte lesen</button>
+  <button id="stopBtn" type="button">Alles stoppen</button>
+  <button id="reloadBtn" type="button">Seite neu laden</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="bottom">
+  <button id="copyBtn" type="button">Ergebnis kopieren</button>
+  <button id="clearBtn" type="button">Protokoll + Antworten löschen</button>
+</div>
+<div id="log" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+var T0 = performance.now();
+var KEY = 'probe-if-v1';
+
+/* ---------- Speicher (optional) ---------- */
+var saved = { answers:{}, log:[] };
+try { var s = localStorage.getItem(KEY); if (s) saved = JSON.parse(s) || saved; } catch(e){}
+saved.answers = saved.answers || {}; saved.log = saved.log || [];
+function persist(){ try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch(e){} }
+
+/* ---------- Protokoll ---------- */
+var logEl = $('log');
+function ts(){
+  var d = new Date();
+  function p(n,l){ n=String(n); while(n.length<(l||2)) n='0'+n; return n; }
+  return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())+'.'+p(d.getMilliseconds(),3);
+}
+function log(msg, cls){
+  var line = '['+ts()+'] '+msg;
+  saved.log.push((cls?'('+cls+') ':'')+line);
+  if (saved.log.length > 3000) saved.log.splice(0, saved.log.length-3000);
+  persist();
+  var div = document.createElement('div');
+  if (cls) div.className = cls;
+  div.textContent = line;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function status(t){ $('status').textContent = t; }
+saved.log.forEach(function(l){
+  var m = /^\((e|w|h)\) (.*)$/.exec(l); var div=document.createElement('div');
+  if (m){ div.className=m[1]; div.textContent=m[2]; } else div.textContent=l;
+  logEl.appendChild(div);
+});
+function short(id){ return id ? (id.length>10 ? id.slice(0,6)+'…'+id.slice(-4) : id) : '(leer)'; }
+function errTxt(e){ return e ? ((e.name||'Error')+': '+(e.message||e)) : 'unbekannt'; }
+
+/* ---------- Umgebung ---------- */
+function iosVersion(){
+  var m = /OS (\d+)[_.](\d+)(?:[_.](\d+))?/.exec(navigator.userAgent);
+  return m ? (m[1]+'.'+m[2]+(m[3]?'.'+m[3]:'')) : '(kein iOS erkannt)';
+}
+var AC = window.AudioContext || window.webkitAudioContext;
+var hasSession = !!(navigator.audioSession);
+function sessType(){ try { return hasSession ? String(navigator.audioSession.type) : '(navigator.audioSession fehlt)'; } catch(e){ return '(Fehler '+errTxt(e)+')'; } }
+function setSess(type){
+  if (!hasSession){ log('audioSession.type = '+type+' → nicht möglich (API fehlt)','w'); return; }
+  try { navigator.audioSession.type = type; log('audioSession.type = '+type+' gesetzt → jetzt '+sessType()); }
+  catch(e){ log('audioSession.type = '+type+' FEHLER '+errTxt(e),'e'); }
+}
+if (hasSession){
+  try {
+    navigator.audioSession.addEventListener('statechange', function(){
+      log('audioSession statechange → state='+navigator.audioSession.state+' type='+sessType(),'w');
+    });
+  } catch(e){}
+}
+
+/* ---------- Zustand ---------- */
+var ctx = null, osc = [], toneGain = null, toneOn = false;
+var stream = null, srcNode = null, analyser = null, monGain = null, meterRAF = 0;
+var currentVariant = null, busy = false;
+
+/* ---------- Geräte ---------- */
+var lastDevices = [];
+function findAG06(list){
+  for (var i=0;i<list.length;i++){
+    var d=list[i]; if (d.kind==='audioinput' && /AG0?6|AG03|Yamaha/i.test(d.label)) return d;
+  }
+  return null;
+}
+async function listDevices(tag){
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices){ log('enumerateDevices fehlt','e'); return []; }
+  try {
+    var list = await navigator.mediaDevices.enumerateDevices();
+    lastDevices = list;
+    log('Geräte '+tag+' ('+list.length+'):','h');
+    list.forEach(function(d){ log('   '+d.kind+' | '+(d.label||'(ohne Name)')+' | id '+short(d.deviceId)); });
+    fillSelect(list);
+    return list;
+  } catch(e){ log('enumerateDevices FEHLER '+errTxt(e),'e'); return []; }
+}
+function fillSelect(list){
+  var sel = $('devSel'), prev = sel.value;
+  var ins = list.filter(function(d){ return d.kind==='audioinput' && d.deviceId; });
+  if (!ins.length) return;
+  sel.innerHTML = '';
+  ins.forEach(function(d){
+    var o=document.createElement('option'); o.value=d.deviceId;
+    o.textContent=(d.label||'(ohne Name)')+' · '+short(d.deviceId); sel.appendChild(o);
+  });
+  var ag = findAG06(list);
+  if (prev && ins.some(function(d){return d.deviceId===prev;})) sel.value = prev;
+  else if (ag) sel.value = ag.deviceId;
+}
+async function ag06Id(){
+  var sel = $('devSel');
+  if (sel.value) return sel.value;
+  var list = await listDevices('(Suche AG06)');
+  var ag = findAG06(list);
+  if (ag) { sel.value = ag.deviceId; return ag.deviceId; }
+  return '';
+}
+if (navigator.mediaDevices && navigator.mediaDevices.addEventListener){
+  navigator.mediaDevices.addEventListener('devicechange', function(){
+    log('EREIGNIS devicechange','w'); listDevices('nach devicechange');
+  });
+}
+document.addEventListener('visibilitychange', function(){ log('EREIGNIS visibilitychange → '+document.visibilityState,'w'); });
+window.addEventListener('pagehide', function(){ log('EREIGNIS pagehide','w'); });
+window.addEventListener('pageshow', function(e){ log('EREIGNIS pageshow persisted='+e.persisted); });
+
+/* ---------- AudioContext + Ton ---------- */
+function ctxInfo(){
+  if (!ctx) return 'AudioContext: keiner';
+  return 'AudioContext: state='+ctx.state+' sampleRate='+ctx.sampleRate+
+    ' baseLatency='+(ctx.baseLatency!==undefined?ctx.baseLatency.toFixed(4):'n/a')+
+    ' outputLatency='+(ctx.outputLatency!==undefined?Number(ctx.outputLatency).toFixed(4):'n/a')+
+    ' | audioSession.type='+sessType();
+}
+function makeCtx(){
+  if (!AC){ log('Kein AudioContext verfügbar','e'); return null; }
+  ctx = new AC();
+  var c = ctx;
+  c.onstatechange = function(){ log('EREIGNIS AudioContext statechange → '+c.state+(c===ctx?'':' (alter Context)'),'w'); };
+  toneGain = c.createGain(); toneGain.gain.value = 0;
+  toneGain.connect(c.destination);
+  osc = [220,330].map(function(f){
+    var o=c.createOscillator(); o.type='sine'; o.frequency.value=f;
+    var g=c.createGain(); g.gain.value=0.05; /* 2×0,05 = 0,1 ≈ −20 dB */
+    o.connect(g); g.connect(toneGain); o.start(); return o;
+  });
+  log('AudioContext neu. '+ctxInfo());
+  return c;
+}
+async function resumeCtx(){
+  if (!ctx) return;
+  if (ctx.state !== 'running'){
+    try { await ctx.resume(); } catch(e){ log('ctx.resume FEHLER '+errTxt(e),'e'); }
+  }
+  log('nach resume: '+ctxInfo());
+}
+function rampTone(on){
+  if (!ctx || !toneGain) return;
+  var t = ctx.currentTime, g = toneGain.gain;
+  try { g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); } catch(e){}
+  g.linearRampToValueAtTime(on?1:0, t + (on?0.25:0.15));  /* weicher Ein/Aus, kein Klick */
+}
+function setToneUI(){
+  var b=$('tonBtn'); b.textContent = toneOn ? 'Ton aus' : 'Ton an'; b.classList.toggle('an', toneOn);
+}
+async function startTone(){
+  if (!ctx) makeCtx();
+  await resumeCtx();
+  toneOn = true; rampTone(true); setToneUI();
+  log('Ton AN (220+330 Hz, −20 dB)');
+}
+function stopToneUI(){ toneOn=false; rampTone(false); setToneUI(); log('Ton AUS'); }
+$('tonBtn').addEventListener('click', async function(){
+  if (toneOn) stopToneUI(); else await startTone();
+});
+
+/* ---------- Mikro ---------- */
+function trackInfo(tr){
+  var s = {}; try { s = tr.getSettings ? tr.getSettings() : {}; } catch(e){}
+  return 'Track: label="'+tr.label+'" readyState='+tr.readyState+' muted='+tr.muted+
+    ' | deviceId='+short(s.deviceId)+' sampleRate='+s.sampleRate+' channelCount='+s.channelCount+
+    ' echoCancellation='+s.echoCancellation+' noiseSuppression='+s.noiseSuppression+' autoGainControl='+s.autoGainControl;
+}
+async function openMic(constraints){
+  log('getUserMedia '+JSON.stringify(constraints));
+  var st = await navigator.mediaDevices.getUserMedia(constraints);
+  stream = st;
+  st.getAudioTracks().forEach(function(tr){
+    log(trackInfo(tr));
+    tr.addEventListener('ended', function(){ log('EREIGNIS track ended ('+tr.label+')','w'); });
+    tr.addEventListener('mute', function(){ log('EREIGNIS track mute ('+tr.label+')','w'); });
+    tr.addEventListener('unmute', function(){ log('EREIGNIS track unmute ('+tr.label+')','w'); });
+  });
+  return st;
+}
+function hookMeter(withMonitor){
+  if (!ctx || !stream) return;
+  srcNode = ctx.createMediaStreamSource(stream);
+  analyser = ctx.createAnalyser(); analyser.fftSize = 1024;
+  srcNode.connect(analyser);
+  if (withMonitor){
+    monGain = ctx.createGain(); monGain.gain.value = 0.5;
+    srcNode.connect(monGain); monGain.connect(ctx.destination);
+    log('Mikro → MediaStreamAudioSourceNode → Analyser + Mithören (Gain 0,5) → Ausgang');
+  } else {
+    log('Mikro → MediaStreamAudioSourceNode → Analyser (nicht zum Ausgang)');
+  }
+  runMeter();
+}
+var buf = null;
+function runMeter(){
+  cancelAnimationFrame(meterRAF);
+  var bar=$('meterBar'), txt=$('meterTxt');
+  function f(){
+    if (!analyser){ bar.style.width='0'; return; }
+    if (!buf || buf.length!==analyser.fftSize) buf = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(buf);
+    var m=0; for (var i=0;i<buf.length;i++){ var a=Math.abs(buf[i]); if(a>m)m=a; }
+    var db = m>0 ? 20*Math.log10(m) : -100;
+    var pct = Math.max(0, Math.min(100, (db+60)/60*100));
+    bar.style.width = pct.toFixed(0)+'%';
+    txt.textContent = (db<-99?'−∞':db.toFixed(0))+' dB';
+    meterRAF = requestAnimationFrame(f);
+  }
+  f();
+}
+
+/* ---------- Aufräumen ---------- */
+async function teardown(){
+  cancelAnimationFrame(meterRAF);
+  $('meterBar').style.width='0'; $('meterTxt').textContent='–';
+  try { if (srcNode) srcNode.disconnect(); } catch(e){}
+  try { if (monGain) monGain.disconnect(); } catch(e){}
+  srcNode = analyser = monGain = null;
+  if (stream){
+    stream.getTracks().forEach(function(t){ try{ t.stop(); }catch(e){} });
+    log('Mikro-Stream gestoppt');
+    stream = null;
+  }
+  if (ctx){
+    var c = ctx; ctx = null;
+    osc.forEach(function(o){ try{ o.stop(); }catch(e){} }); osc=[]; toneGain=null;
+    try { await c.close(); log('AudioContext geschlossen'); } catch(e){ log('ctx.close FEHLER '+errTxt(e),'e'); }
+  }
+  toneOn = false; setToneUI();
+}
+$('stopBtn').addEventListener('click', async function(){ log('— Alles stoppen —','h'); await teardown(); markActive(null); status('Alles gestoppt.'); });
+$('devBtn').addEventListener('click', function(){ listDevices('(manuell)'); });
+$('reloadBtn').addEventListener('click', function(){ log('— Seite neu laden —','h'); location.reload(); });
+
+/* ---------- Varianten ---------- */
+var OFF = { echoCancellation:false, noiseSuppression:false, autoGainControl:false };
+function aud(extra){ var o={}; for (var k in OFF) o[k]=OFF[k]; for (var j in extra) o[j]=extra[j]; return o; }
+
+/* order: 'ctxFirst' (Ton → Session → gUM), 'sessFirst' (Session → Ton → gUM), 'ctxAfter' (Session → gUM → Ton) */
+var VARS = [
+  { id:'V1',  t:'play-and-record · Standard-Eingang · EC/NS/AGC aus', sess:'play-and-record', exact:false, a:function(){return aud({});}, order:'ctxFirst', node:true },
+  { id:'V2',  t:'play-and-record · exact AG06 · EC/NS/AGC aus', sess:'play-and-record', exact:true, a:function(id){return aud({deviceId:{exact:id}});}, order:'ctxFirst', node:true },
+  { id:'V3',  t:'audioSession NICHT setzen · exact AG06 · EC/NS/AGC aus', sess:null, exact:true, a:function(id){return aud({deviceId:{exact:id}});}, order:'ctxFirst', node:true },
+  { id:'V4',  t:"'auto' · exact AG06 · EC/NS/AGC aus", sess:'auto', exact:true, a:function(id){return aud({deviceId:{exact:id}});}, order:'ctxFirst', node:true },
+  { id:'V5',  t:'play-and-record · exact AG06 · EC/NS/AGC AN (Sprache)', sess:'play-and-record', exact:true, a:function(id){return {deviceId:{exact:id}, echoCancellation:true, noiseSuppression:true, autoGainControl:true};}, order:'ctxFirst', node:true },
+  { id:'V6',  t:'wie V2 + channelCount 2 + sampleRate 48000', sess:'play-and-record', exact:true, a:function(id){return aud({deviceId:{exact:id}, channelCount:2, sampleRate:48000});}, order:'ctxFirst', node:true },
+  { id:'V7',  t:'wie V2 + channelCount 2 + sampleRate 44100', sess:'play-and-record', exact:true, a:function(id){return aud({deviceId:{exact:id}, channelCount:2, sampleRate:44100});}, order:'ctxFirst', node:true },
+  { id:'V8',  t:'wie V2, aber AudioContext ERST NACH getUserMedia', sess:'play-and-record', exact:true, a:function(id){return aud({deviceId:{exact:id}});}, order:'ctxAfter', node:true },
+  { id:'V9',  t:'play-and-record VOR dem Ton setzen, dann gUM exact AG06', sess:'play-and-record', exact:true, a:function(id){return aud({deviceId:{exact:id}});}, order:'sessFirst', node:true },
+  { id:'V10a',t:'wie V2 · Mikro in denselben Context + Mithören im Kopfhörer', sess:'play-and-record', exact:true, a:function(id){return aud({deviceId:{exact:id}});}, order:'ctxFirst', node:true, monitor:true },
+  { id:'V10b',t:'wie V2 · nur Stream offen, KEIN Source-Node (Pegel bleibt leer)', sess:'play-and-record', exact:true, a:function(id){return aud({deviceId:{exact:id}});}, order:'ctxFirst', node:false }
+];
+var Q = [ {k:'kopfhoerer', t:'Ton bleibt im Kopfhörer?'}, {k:'mikro', t:'Höre ich mich / Pegel bewegt sich?'} ];
+
+var grid = $('grid'), cards = {};
+VARS.forEach(function(v){
+  var c = document.createElement('div'); c.className='card'; cards[v.id]=c;
+  var b = document.createElement('button'); b.type='button'; b.className='vbtn';
+  b.innerHTML = '<b></b><span></span>'; b.firstChild.textContent=v.id; b.lastChild.textContent=v.t;
+  b.addEventListener('click', function(){ runVariant(v); });
+  c.appendChild(b);
+  Q.forEach(function(q){
+    var r=document.createElement('div'); r.className='q';
+    var l=document.createElement('span'); l.className='qt'; l.textContent=q.t; r.appendChild(l);
+    ['ja','nein'].forEach(function(val){
+      var a=document.createElement('button'); a.type='button'; a.className=val;
+      a.textContent = val==='ja'?'Ja':'Nein'; a.dataset.v=v.id; a.dataset.q=q.k; a.dataset.val=val;
+      a.addEventListener('click', function(){ answer(v.id,q.k,val); });
+      r.appendChild(a);
+    });
+    c.appendChild(r);
+  });
+  var res=document.createElement('div'); res.className='vres'; res.id='res-'+v.id; c.appendChild(res);
+  grid.appendChild(c);
+});
+function paintAnswers(){
+  var bs = grid.querySelectorAll('.q button');
+  for (var i=0;i<bs.length;i++){
+    var b=bs[i], a=saved.answers[b.dataset.v]||{};
+    b.classList.toggle('sel', a[b.dataset.q]===b.dataset.val);
+  }
+}
+function answer(vid,q,val){
+  saved.answers[vid] = saved.answers[vid] || {};
+  saved.answers[vid][q] = val; persist(); paintAnswers();
+  log('ANTWORT '+vid+' '+q+' = '+val.toUpperCase(),'h');
+}
+function markActive(vid){
+  for (var k in cards) cards[k].classList.toggle('aktiv', k===vid);
+  currentVariant = vid;
+}
+function setRes(vid, txt){ var e=$('res-'+vid); if(e) e.textContent=txt; saved.answers[vid]=saved.answers[vid]||{}; saved.answers[vid].technik=txt; persist(); }
+
+async function runVariant(v){
+  if (busy){ log('Bitte warten – Variante läuft noch','w'); return; }
+  busy = true; markActive(v.id); status(v.id+' läuft …');
+  var allBtns = document.querySelectorAll('.vbtn'); for (var i=0;i<allBtns.length;i++) allBtns[i].disabled=true;
+  log('════ '+v.id+': '+v.t+' ════','h');
+  try {
+    await teardown();
+    await listDevices('vorher');
+    var id = '';
+    if (v.exact){
+      id = await ag06Id();
+      if (!id){
+        log('AG06-deviceId unbekannt (keine Gerätenamen) → Vorab-gUM nur zum Lesen der Namen, wird sofort gestoppt','w');
+        var pre = await navigator.mediaDevices.getUserMedia({audio:true});
+        pre.getTracks().forEach(function(t){ t.stop(); });
+        await listDevices('nach Vorab-gUM');
+        id = await ag06Id();
+        if (!id){ var sel=$('devSel'); id = sel.value || ''; }
+      }
+      var ag = findAG06(lastDevices);
+      log('exact deviceId = '+short(id)+(ag && ag.deviceId===id ? ' (AG06 erkannt: '+ag.label+')' : ' (KEIN AG06-Name gefunden – Auswahl oben nutzen)'), ag?'':'w');
+    }
+    var constraints = { audio: v.a(id), video:false };
+
+    if (v.order==='sessFirst'){
+      setSess(v.sess);
+      await startTone();
+      await openMic(constraints);
+    } else if (v.order==='ctxAfter'){
+      if (v.sess) setSess(v.sess);
+      await openMic(constraints);
+      await startTone();
+    } else {
+      await startTone();
+      if (v.sess) setSess(v.sess); else log('audioSession NICHT gesetzt → aktuell '+sessType());
+      await openMic(constraints);
+    }
+    if (v.node) hookMeter(!!v.monitor);
+    else log('Kein Source-Node: Stream bleibt nur offen');
+    await resumeCtx();
+    await listDevices('nachher');
+    log(ctxInfo());
+    var tr = stream && stream.getAudioTracks()[0];
+    var s = {}; try { s = tr ? tr.getSettings() : {}; } catch(e){}
+    setRes(v.id, 'OK · '+(tr?tr.label:'?')+' · '+(s.sampleRate||'?')+' Hz/'+(s.channelCount||'?')+' ch · ctx '+(ctx?ctx.sampleRate+' Hz '+ctx.state:'–')+' · session '+sessType());
+    status(v.id+' läuft. Wo kommt der Ton raus? Bewegt sich der Pegel? → Ja/Nein antworten.');
+    setTimeout(function(){ if (currentVariant===v.id){ log('+2 s '+v.id+': '+ctxInfo()); if (stream) stream.getAudioTracks().forEach(function(t){ log('+2 s '+trackInfo(t)); }); } }, 2000);
+  } catch(e){
+    log(v.id+' FEHLER '+errTxt(e),'e');
+    setRes(v.id, 'FEHLER · '+errTxt(e));
+    status(v.id+' Fehler: '+errTxt(e));
+  } finally {
+    busy = false;
+    for (var j=0;j<allBtns.length;j++) allBtns[j].disabled=false;
+  }
+}
+
+/* ---------- Ergebnis ---------- */
+function report(){
+  var L = [];
+  L.push('PROBE-IF Ergebnis · '+new Date().toString());
+  L.push('iOS: '+iosVersion());
+  L.push('UA: '+navigator.userAgent);
+  L.push('audioSession-API: '+(hasSession?'ja':'nein')+' · aktueller Typ: '+sessType());
+  L.push('');
+  L.push('ANTWORTEN (Kopfhörer / Mikro / Technik):');
+  VARS.forEach(function(v){
+    var a = saved.answers[v.id]||{};
+    L.push(v.id+'  Kopfhörer='+(a.kopfhoerer||'–')+'  Mikro='+(a.mikro||'–')+'  | '+v.t+(a.technik?'\n      '+a.technik:''));
+  });
+  L.push('');
+  L.push('PROTOKOLL:');
+  saved.log.forEach(function(l){ L.push(l); });
+  return L.join('\n');
+}
+$('copyBtn').addEventListener('click', async function(){
+  var txt = report(), ok = false;
+  try { if (navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(txt); ok = true; } } catch(e){ log('clipboard.writeText FEHLER '+errTxt(e),'w'); }
+  if (!ok){
+    var ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly','');
+    ta.style.position='fixed'; ta.style.top='0'; ta.style.opacity='0'; document.body.appendChild(ta);
+    ta.select(); ta.setSelectionRange(0, txt.length);
+    try { ok = document.execCommand('copy'); } catch(e){}
+    document.body.removeChild(ta);
+  }
+  $('copyBtn').textContent = ok ? 'Kopiert ✓ ('+txt.length+' Zeichen)' : 'Kopieren fehlgeschlagen';
+  setTimeout(function(){ $('copyBtn').textContent='Ergebnis kopieren'; }, 2500);
+});
+$('clearBtn').addEventListener('click', function(){
+  if (!confirm('Protokoll und Antworten wirklich löschen?')) return;
+  saved = {answers:{}, log:[]}; persist(); logEl.innerHTML=''; paintAnswers();
+  VARS.forEach(function(v){ var e=$('res-'+v.id); if(e) e.textContent=''; });
+  log('Gelöscht.');
+});
+
+/* ---------- Start ---------- */
+paintAnswers();
+VARS.forEach(function(v){ var a=saved.answers[v.id]; if(a&&a.technik){ var e=$('res-'+v.id); if(e) e.textContent=a.technik; } });
+log('Seite geladen · iOS '+iosVersion()+' · audioSession '+(hasSession?'vorhanden, type='+sessType():'fehlt')+' · AudioContext '+(AC?'ja':'nein'),'h');
+listDevices('beim Laden');
+window.__probe = { runVariant:function(id){ return runVariant(VARS.filter(function(v){return v.id===id;})[0]); }, report:report, teardown:teardown };
+})();
+</script>
+</body>
+</html>
