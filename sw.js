@@ -1,10 +1,10 @@
-/* SYNQUENZER service worker (VO1, online.md §2.7): scope /Synquenzer/ only.
+/* SYNQUENZER service worker (VO1, online.md §2.7): scope /Synquenzer/ only. VW 01.11.: Cache-Name synq-app-2 – beim Aktivieren fällt die alte Kopie (synq-app-1) weg, der normale Link holt die aktuelle Fassung.
    index.html: network first, the last good copy from the cache when offline (reload without network starts the app).
    The network request goes through the browser's HTTP cache (ETag/max-age: 0 bytes or a cheap 304, as without a service worker);
    if it has not answered after 3 s and a copy is cached, that copy starts the app and the answer refreshes the cache (FP-IPHONE).
    vendor/, fonts/, icons, manifest: cache first (file names carry the version). Nothing else is touched
    (Supabase, jsDelivr, Turnstile and every other host go straight to the network). */
-const CACHE = 'synq-app-1', PAGE = new URL('./', self.registration.scope).href, SLOW = 3000;
+const CACHE = 'synq-app-2', PAGE = new URL('./', self.registration.scope).href, SLOW = 3000;
 const STATIC = /\/(vendor\/supabase-js-[\d.]+\.umd\.js|fonts\/[a-z0-9-]+\.woff2|icon-\d+\.png|manifest\.webmanifest)$/;
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.add(PAGE)).catch(() => {}));   // usually from the HTTP cache: no second download
