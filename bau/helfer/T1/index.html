@@ -14454,7 +14454,7 @@ const RecHelpers = (() => {
      Every launch/stop in the app lands on a bar line (launch quantization), so a bar grid is exact. */
   function newSong(nTracks = 5) { return {bars: 0, lanes: Array.from({length: nTracks}, () => []), carrier: [], melody: []}; }
   function logLaunch(song, track, slot, beat) {
-    const bar = Math.round(beat / 4), lane = song.lanes[track];
+    const bar = barRound(beat), lane = song.lanes[track];         // T1: Taktkarte
     for (let k = lane.length - 1; k >= 0; k--) if (lane[k].bar === bar) lane.splice(k, 1);   // a later decision for the same bar wins
     const prev = slotAt(song, track, bar);
     if (prev !== slot) lane.push({bar, slot});
@@ -14479,9 +14479,10 @@ const RecHelpers = (() => {
     const out = [];
     song.lanes.forEach((lane, track) => {
       if (overridden[track]) return;                               // the user took this track over live ("↩ SONG" returns it)
-      for (const e of lane) { const beat = e.bar * 4; if (beat >= b0 - 1e-9 && beat < b1 - 1e-9) out.push({track, slot: e.slot, beat}); }
+      for (const e of lane) { const beat = barBeat(e.bar); if (beat >= b0 - 1e-9 && beat < b1 - 1e-9) out.push({track, slot: e.slot, beat}); }
     });
-    if (song.bars && song.bars * 4 >= b0 - 1e-9 && song.bars * 4 < b1 - 1e-9) out.push({end: true, beat: song.bars * 4});
+    const E = barBeat(song.bars);
+    if (song.bars && E >= b0 - 1e-9 && E < b1 - 1e-9) out.push({end: true, beat: E});
     return out;
   }
   // Grid view for the phone editor: cells[track][bar] = {slot, start: is a launch bar}
@@ -14504,7 +14505,7 @@ const RecHelpers = (() => {
   // Scene chain ("Kette": 1×4, 2×4, 3×8 …) -> song lanes, so the same playback/editor serves both
   function fromChain(chain, nTracks, hasClip) {
     const song = newSong(nTracks); let bar = 0;
-    for (const {scene, bars} of chain) { for (let t = 0; t < nTracks; t++) logLaunch(song, t, hasClip(t, scene) ? scene : -1, bar * 4); bar += bars; }
+    for (const {scene, bars} of chain) { for (let t = 0; t < nTracks; t++) logLaunch(song, t, hasClip(t, scene) ? scene : -1, barBeat(bar)); bar += bars; }
     song.bars = bar; return song;
   }
   return {capturePhrase, newSong, logLaunch, logCarrier, slotAt, blockStart, eventsIn, toGrid, cycleCell, fromChain};
@@ -21291,6 +21292,7 @@ function barAt(x, eps) {
 // der nächstgelegene Taktstrich (wie Math.round(x / 4))
 function barRound(x) { const m = tkMap(); if (m.plain) return Math.round(x / 4); const b = barAt(x, 0), a = barBeat(b), z = barBeat(b + 1); return x - a < z - x ? b : b + 1; }
 // Taktzahl als Bruch (Takt + Anteil), wie x / 4
+function barCeil(x) { const m = tkMap(); if (m.plain) return Math.ceil(x / 4 - 1e-9); const b = barAt(x, 0); return barBeat(b) >= x - 4e-9 ? b : b + 1; }   // wie Math.ceil(x / 4 - 1e-9)
 function barFrac(x) { const m = tkMap(); if (m.plain) return x / 4; const b = barAt(x, 0), a = barBeat(b); return b + (x - a) / (barBeat(b + 1) - a); }
 /* Transport-Takte: ohne Song ab Schlag 0 in der Song-Taktart (S.ts); während ▶ SONG die Taktkarte (Transport = Song-Schlag + off) */
 function tSongOff(b) { const sp = R.songPlay; if (!sp) return null; return sp.wrapAt != null && b < sp.wrapAt - 1e-9 ? sp.prevOff : sp.off; }
@@ -21307,6 +21309,38 @@ function tTsAt(b) { if (tkPlain()) return '4/4'; const off = tSongOff(b); return
 function tCountBeats(n) { if (tkPlain()) return 4 * n; const sp = R.songPlay; return n * (sp && sp.bar0 != null ? barLen(sp.bar0) : tsBeats(S.ts)); }
 // Taktart beim Speichern/Laden eines Takt-Abschnitts (Marke)
 function tsAllUsed() { const o = new Set(); if (S.ts) o.add(S.ts); for (const m of (S.song && S.song.marks) || []) if (m.ts) o.add(m.ts); return o; }
+/* Schlag-Ereignisse des Songs (Träger, Teil-Transposition, Melodie) an ihren Takt binden: [obj, key, bar, off]; nach einer Änderung
+   der Takte (Verschieben, Taktart) mit der neuen Taktkarte zurück in Schläge. Melodie-Noten gehören wie bisher ab ¼ Schlag vor dem
+   Taktstrich zum nächsten Takt. */
+function t1Pins(song, from) {
+  const out = [], pin = (o, k, early) => { const x = o[k], b = barAt(x + early), a = barBeat(b); if (b >= from) out.push([o, k, b, x - a]); };
+  for (const c of song.carrier) pin(c, 'beat', 0);
+  for (const v of song.xp || []) pin(v, 'beat', 0);
+  for (const k in song.mel) for (const nt of song.mel[k].notes) pin(nt, 't', .25);
+  return out;
+}
+// zurück in Schläge; was im (kürzeren) Takt keinen Platz mehr hat: Noten fallen weg, Träger/Transposition rücken auf den nächsten Taktstrich
+function t1Unpin(song, pins, d) {
+  tkBump(); const drop = new Set();
+  for (const [o, k, b, off] of pins) {
+    const L = barLen(b + d), a = barBeat(b + d);
+    if (off >= L - 1e-9 && off > -1e-9) { if (k === 't') { drop.add(o); continue; } o[k] = +(barBeat(b + d + 1)).toFixed(4); continue; }
+    o[k] = k === 't' ? +(a + off).toFixed(6) : +(a + off).toFixed(4);
+  }
+  if (drop.size) for (const kk in song.mel) song.mel[kk].notes = song.mel[kk].notes.filter(x => !drop.has(x));
+  song.carrier.sort((p, q) => p.beat - q.beat); for (let i = song.carrier.length - 1; i > 0; i--) if (Math.abs(song.carrier[i].beat - song.carrier[i - 1].beat) < 1e-6) song.carrier.splice(i - 1, 1);
+  if (song.xp) { song.xp.sort((p, q) => p.beat - q.beat); for (let i = song.xp.length - 1; i > 0; i--) if (Math.abs(song.xp[i].beat - song.xp[i - 1].beat) < 1e-6) song.xp.splice(i - 1, 1); }
+}
+function t1Shift(song, n, d) {
+  const pins = t1Pins(song, n);
+  for (const l of song.lanes) for (const e of l) if (e.bar >= n) e.bar += d;
+  for (const m of song.marks) if (m.a >= n) m.a += d;
+  if (song.blocks) for (const k of song.blocks) if (k.a >= n) k.a += d;   // KON
+  if (song.vox) tkVoxShift(song, n, d);                           // VS3
+  if (song.video) vvDirShift(song, n, d);                         // VV2
+  if (song.gb) ggbShift(song, n, d);                              // G-GB
+  t1Unpin(song, pins, d);
+}
 /* ===================== Ende T1-Kern ===================== */
 function normClip(c, kind, pk) {
   if (!c || typeof c !== 'object') return null;
@@ -23439,10 +23473,10 @@ function mdHelp() {
 
 
 /* ---------- metronome ---------- */
-function click(t, accent) {
+function click(t, accent, soft) {
   if (UI.vvOff) return;                                     // VV1: the practice metronome is not part of the song video
   const c = AU.ctx; if (!c) return;
-  const o = c.createOscillator(), g = c.createGain(), L = Math.max(S.settings.metroVol * .3, .0012);
+  const o = c.createOscillator(), g = c.createGain(), L = Math.max(S.settings.metroVol * .3 * (soft ? .5 : 1), .0012);   // T1: soft = Zwischen-Zählzeit (halber Pegel)
   o.frequency.value = accent ? 1760 : 1100;
   g.gain.setValueAtTime(L, t); g.gain.exponentialRampToValueAtTime(.001, t + .03);
   o.connect(g); g.connect(AU.masterSum);
@@ -23454,6 +23488,21 @@ function click(t, accent) {
   if (ST.on) vsMaskAdd(t, 0.035);                             // VS2 Klick-Maske (nur Lautsprecher)
 }
 
+// T1: Klicks im Fenster [b0, b1) – je Zählzeit (♩ oder ♪), Betonung 2 = Eins (1760 Hz), 1 = Schlag/Gruppe, 0 = leise Zwischen-Zählzeit
+function t1Clicks(b0, b1) {
+  let a = tBarFloor(b0); if (a < 0 && R.countIn) { const cb = R.ciB || tCountBeats(1); a = -cb; }   // Einzähler: ab dem ersten Einzähl-Takt
+  for (let guard = 0; guard < 64 && a < b1 - 1e-9; guard++) {
+    const ci = a < -1e-9, ts = ci ? t1CountTs() : tTsAt(a + 1e-6), d = tsOf(ts), L = ci ? d.b : tBarLen(a + 1e-6);
+    for (let k = 0; k < d.n && k * d.u < L - 1e-9; k++) {
+      const b = a + k * d.u; if (b < b0 - 1e-9 || b >= b1 - 1e-9 || b <= R.lastClick + 1e-9) continue;
+      R.lastClick = b; const lv = d.acc[k];
+      if (b < -1e-9) { if (R.countIn) click(b2t(b), lv === 2, lv === 0); }
+      else if (S.settings.metro || (recClickOn(b) && (rec.vox ? UI.vocClick === 'always' : S.settings.metroInRec)) || recCdClick(b)) click(b2t(b), lv === 2, lv === 0);
+    }
+    a += L;
+  }
+}
+function t1CountTs() { const sp = R.songPlay; return sp && sp.bar0 != null ? tsAtBar(sp.bar0) : (S.ts || '4/4'); }
 /* ---------- audition (KLANG ▶ Hören, API) ---------- */
 function auditionStart(i, note, vel) {
   ensureAudio(); const c = AU.ctx; if (!c) return null;
@@ -23520,7 +23569,7 @@ const t2b = t => (t - R.startTime) / spb();
 const b2t = b => R.startTime + b * spb();
 const beatOf = t => (R.playing ? t2b(t) : 0);
 function nowT() { return AU.ctx ? AU.ctx.currentTime : 0; }
-function grid() { return {running: R.playing, secPerBeat: spb(), beatsPerBar: 4, songStart: R.startTime}; }
+function grid() { return {running: R.playing, secPerBeat: spb(), beatsPerBar: tkPlain() ? 4 : tBarLen(R.playing && AU.ctx ? t2b(AU.ctx.currentTime) : 0), songStart: R.startTime}; }   // T1: Schläge des laufenden Takts
 function hopts() { const h = S.settings.harmony; return {keyAware: h.keyAware, single: h.single, minor: h.minor}; }
 function transposerOpts() {
   const h = S.settings.harmony;
@@ -23787,7 +23836,8 @@ function tick(h) {
     b1 = bEnd;
     if (b2t(b0) < now - .2) b0 = Math.max(b0, t2b(now));        // fell behind (throttled timer): skip, never burst
     try {
-      for (let b = Math.ceil(b0 - 1e-9); b < b1 - 1e-9; b++) {
+      if (!tkPlain()) t1Clicks(b0, b1);                            // T1: ein Klick je Zählzeit mit dem Betonungsmuster der Taktart
+      else for (let b = Math.ceil(b0 - 1e-9); b < b1 - 1e-9; b++) {
         if (b <= R.lastClick) continue;                            // never click the same beat twice (float edges)
         R.lastClick = b;
         if (b < 0) { if (R.countIn) click(b2t(b), ((b % 4) + 4) % 4 === 0); }    // count-in: the first beat of each bar accented
@@ -23973,6 +24023,11 @@ function audBeat() { return t2b(AU.ctx.currentTime - AU.outLat); }
 const RETRO_MAX = .2;
 function nextBarFromAudible(atT) {
   const c = AU.ctx, tRef = atT != null && c ? atT : (c ? c.currentTime : 0);
+  if (!tkPlain()) {                                               // T1: Taktstriche der Taktart (Szenen: S.ts, Song: Taktkarte)
+    let bar = Math.max(0, tBarNext(t2b(tRef - AU.outLat)));
+    if (R.playing && c) { const lim = atT != null ? c.currentTime - RETRO_MAX : c.currentTime + .004; while (b2t(bar) < lim) bar = tBarNext(bar); }
+    return bar;
+  }
   let bar = Math.max(0, Math.floor(t2b(tRef - AU.outLat) / 4 + 1e-9) * 4 + 4);
   // the audible bar line may already be in the past on the audio clock (output latency): a boundary must never lie
   // behind ctx time, otherwise notes that already sound get cut and the new clip starts late -> take the next bar
@@ -24162,12 +24217,12 @@ function songRecEnd(atBeat, o) {
     songChanged(); toast('Song-Aufnahme abgebrochen'); carrierRestoreIfIdle(); return false;
   }
   // V2d′ (7.4): the length after N7-R1 with S = the take's start (replaces the ¼-beat window)
-  const Sb = Math.round(sr.startBeat / 4), k = Math.floor(ab / 4 + 1e-9), e7 = n7r1(fangBars(Sb, k, ab, tapAt), Sb, k, ab / 4 - k);
+  const Sb = barRound(sr.startBeat), k = barAt(ab), e7 = n7r1(fangBars(Sb, k, ab, tapAt), Sb, k, ab / 4 - k);
   sr.end = {bar: e7.Eb - Sb, rule: e7.rule, f: +(ab / 4 - k).toFixed(4)}; UI.lastTakeEnd = Object.assign({endBar: e7.Eb - Sb, mode: 'new', from: 0}, sr.end);
   songSetBars(song, clamp(e7.Eb - Sb, 1, SONG_MAX_BARS));
   for (const lane of song.lanes) for (let k = lane.length - 1; k >= 0; k--) if (lane[k].bar >= song.bars) lane.splice(k, 1);
-  song.carrier = song.carrier.filter(c => c.beat < song.bars * 4 - 1e-6);
-  for (const k of Object.keys(song.mel)) { const m = song.mel[k]; m.notes = m.notes.filter(n => n.t < song.bars * 4 - 1e-6).sort((a, b) => a.t - b.t); m.len = song.bars; }
+  song.carrier = song.carrier.filter(c => c.beat < barBeat(song.bars) - 1e-6);
+  for (const k of Object.keys(song.mel)) { const m = song.mel[k]; m.notes = m.notes.filter(n => n.t < barBeat(song.bars) - 1e-6).sort((a, b) => a.t - b.t); m.len = song.bars; }
   pushSongUndo(sr.before, 'Song aufgenommen');
   songChanged();
   const mn = curMel(song).notes.length;
@@ -24201,12 +24256,12 @@ function songPlayStart(fromBar, o) {
     R.slot[i] = ok ? og.slot : -1; R.own[i] = ok ? og.own : null; R.pend[i] = null; R.prev[i] = null;
   }
   // the Träger in effect at that bar
-  let ct = null, has = false; for (const c of song.carrier) { if (c.beat > bar0 * 4 + 1e-6) break; ct = c.target; has = true; }
+  let ct = null, has = false; for (const c of song.carrier) { if (c.beat > barBeat(bar0) + 1e-6) break; ct = c.target; has = true; }
   if (has) { R.songApplying = true; try { if (ct) T.recall(ct, nowT(), null); else T.reset(nowT(), null); } finally { R.songApplying = false; } }
   // a clip launched before bar0 plays in phase with its launch bar (startTransport takes cs from here)
-  const off = -bar0 * 4;
+  const off = -barBeat(bar0);
   R.songPlay = {off, bar0, cs: S.tracks.map((_, i) => (R.slot[i] >= 0 ? songCs(song, i, bar0) + off : 0))};
-  songXpAt(song, bar0 * 4, 0);                                    // V2d: song.xp in effect at bar0
+  songXpAt(song, barBeat(bar0), 0);                                    // V2d: song.xp in effect at bar0
   if (o.countIn) startTransport(o.countIn); else play();
   UI.dirty.all = true; UI.dirty.song = true;
   return true;
@@ -24214,7 +24269,7 @@ function songPlayStart(fromBar, o) {
 // V0c: the song starts at song bar bar0 on the transport bar line nb, the transport keeps running (clips → song)
 function songPlayStartAt(bar0, nb) {
   const song = S.song; bar0 = clamp(bar0 | 0, 0, song.bars - 1);
-  const off = nb - bar0 * 4;
+  const off = nb - barBeat(bar0);
   R.songOverride.fill(false); R.carrierLive = false; R.songEndBeat = null; R.melRec = null;
   R.songPlay = {off, bar0, cs: new Array(8).fill(0)};
   R.songApplying = true;
@@ -24224,9 +24279,9 @@ function songPlayStartAt(bar0, nb) {
       switchTrackAt(i, ok ? og.slot : -1, nb, ok ? og.cs + off : null, ok ? og.own : null);
       if (R.pend[i]) R.pend[i].song = 1;
     }
-    let ct = null, has = false; for (const c of song.carrier) { if (c.beat > bar0 * 4 + 1e-6) break; ct = c.target; has = true; }
+    let ct = null, has = false; for (const c of song.carrier) { if (c.beat > barBeat(bar0) + 1e-6) break; ct = c.target; has = true; }
     if (has) { if (ct) T.recall(ct, b2t(nb), null); else T.reset(b2t(nb), null); }
-    songXpAt(song, bar0 * 4, nb);                                 // V2d
+    songXpAt(song, barBeat(bar0), nb);                                 // V2d
   } finally { R.songApplying = false; }
   UI.dirty.all = true; UI.dirty.song = true;
   return true;
@@ -24239,7 +24294,7 @@ function songPlayEnd(stopTransport, why) {
   if (R.songRec) songRecEnd();
   try {
     const sb = R.playing && AU.ctx ? songBeatOf(audBeat()) : null;
-    SV.lastStop = why === 'end' || sb == null || !S.song ? null : clamp(Math.floor(sb / 4 + 1e-9), 0, Math.max(0, S.song.bars - 1));
+    SV.lastStop = why === 'end' || sb == null || !S.song ? null : clamp(barAt(sb), 0, Math.max(0, S.song.bars - 1));
   } catch (e) { SV.lastStop = null; }
   R.songPlay = null; R.songEndBeat = null; R.songOverride.fill(false); R.carrierLive = false;
   if (TK.src.length && AU.ctx) tkVoxCut(AU.ctx.currentTime + .004);   // VS3
@@ -24258,7 +24313,7 @@ function songBack(only) {
   try {
     for (let i = 0; i < NT(); i++) {
       if (!R.songOverride[i] || (only && !only.includes(i))) continue;
-      const bar = Math.floor(sb / 4 + 1e-9), og = laneOriginAt(S.song.lanes[i], bar), ok = laneClipOk(S.song, i, og);
+      const bar = barAt(sb), og = laneOriginAt(S.song.lanes[i], bar), ok = laneClipOk(S.song, i, og);
       const cs = og.cs + off;
       switchTrackAt(i, ok ? og.slot : -1, nb, ok ? cs : null, ok ? og.own : null);
       if (R.pend[i]) R.pend[i].song = 1;
@@ -24290,7 +24345,7 @@ function songTick(b0, b1) {
 function songJumpApply(j) {
   const sp = R.songPlay, song = S.song; if (!sp || !song) return;
   if (TK.src.length) tkVoxCut(b2t(j.at));                         // VS3: die Song-Stimme springt mit
-  sp.prevOff = sp.off; sp.wrapAt = j.at; sp.off = j.at - j.bar * 4; R.songEndBeat = null;
+  sp.prevOff = sp.off; sp.wrapAt = j.at; sp.off = j.at - barBeat(j.bar); R.songEndBeat = null;
   R.songApplying = true;
   try {
     for (let t = 0; t < NT(); t++) {
@@ -24298,8 +24353,8 @@ function songJumpApply(j) {
       const o = laneOriginAt(song.lanes[t], j.bar);
       laneSwitch(t, laneClipOk(song, t, o) ? o.slot : -1, j.at, o.cs + sp.off, true, o.own);
     }
-    if (!R.carrierLive) { let ct = null, has = false; for (const c of song.carrier) { if (c.beat > j.bar * 4 + 1e-6) break; ct = c.target; has = true; } if (has) { if (ct) T.recall(ct, b2t(j.at), null); else T.reset(b2t(j.at), null); } }
-    songXpAt(song, j.bar * 4, j.at);
+    if (!R.carrierLive) { let ct = null, has = false; const jb = barBeat(j.bar); for (const c of song.carrier) { if (c.beat > jb + 1e-6) break; ct = c.target; has = true; } if (has) { if (ct) T.recall(ct, b2t(j.at), null); else T.reset(b2t(j.at), null); } }
+    songXpAt(song, barBeat(j.bar), j.at);
   } finally { R.songApplying = false; }
   UI.dirty.song = UI.dirty.grid = true;
 }
@@ -24308,7 +24363,7 @@ function songJumpApply(j) {
 function partTapSong(i, atT) {
   const song = S.song, sp = R.songPlay, p = S.parts[i]; if (!song || !sp || !p) return false;
   const ms = song.marks.filter(m => m.part === p.id).sort((a, b) => a.a - b.a); if (!ms.length) return false;
-  const nb = nextBarFromAudible(atT != null ? pressTime(atT) : undefined), sb = songBeatOf(nb), bar = sb == null ? 0 : Math.floor(sb / 4 + 1e-9);
+  const nb = nextBarFromAudible(atT != null ? pressTime(atT) : undefined), sb = songBeatOf(nb), bar = sb == null ? 0 : barAt(sb);
   const m = ms.find(x => x.a >= bar) || ms[0];
   sp.jump = {at: nb, bar: m.a};
   if (nb < R.schedBeat - 1e-9) { const j = sp.jump; sp.jump = null; songJumpApply(j); }
@@ -24323,20 +24378,20 @@ function songTickInner(b0, b1) {
     for (let guard = 0; guard < 4; guard++) {
       const off = sp.off, lp = song.loop, sr = R.songRec, recOver = !!(sr && sr.over);
       // V2d′ Einfügen (7.2): from bar n on the take holds the song back — the state of bar n−1 runs on, no loop, no end
-      const insB = recOver && sr.mode === 'insert' ? sr.from * 4 : Infinity;
+      const insB = recOver && sr.mode === 'insert' ? barBeat(sr.from) : Infinity;
       // V0c S-02: a pass ends at the loop range end (or at the song end); played from behind the range, at the song end
       const looping = lp.on && song.bars > 0 && lp.b > lp.a && insB === Infinity;
-      let E = looping ? lp.b * 4 : song.bars * 4;
-      if (looping && b0 - off > E + 1e-6) E = song.bars * 4;
+      let E = looping ? barBeat(lp.b) : barBeat(song.bars);
+      if (looping && b0 - off > E + 1e-6) E = barBeat(song.bars);
       let wrap = false;
       for (const e of RecHelpers.eventsIn(song, b0 - off, b1 - off, R.songOverride)) {
         if (e.end || e.beat >= E - 1e-9 || e.beat >= insB - 1e-9) continue;
-        songLaneApply(song, e.track, Math.round(e.beat / 4), e.beat + off, off);   // V2d: re / ph; the same clip in phase = no restart
+        songLaneApply(song, e.track, barRound(e.beat), e.beat + off, off);   // V2d: re / ph; the same clip in phase = no restart
       }
       if (song.xp && song.xp.length) for (const x of song.xp) { const bb = x.beat + off; if (bb >= b0 - 1e-9 && bb < b1 - 1e-9 && x.beat < E - 1e-9 && x.beat < insB - 1e-9) xpSet(bb, x.semi); }   // V2d: Teil-Transposition
       const eb = E + off;
       // V0c: a take with a range end (selection) punches out at its bar line (unless that is the loop end: passes go on)
-      if (recOver && sr.to != null && !(looping && lp.b === sr.to)) { const te = sr.to * 4 + off; if (te >= b0 - 1e-9 && te < b1 - 1e-9 && te <= eb + 1e-9) R.songRecEndAt = te; }
+      if (recOver && sr.to != null && !(looping && lp.b === sr.to)) { const te = barBeat(sr.to) + off; if (te >= b0 - 1e-9 && te < b1 - 1e-9 && te <= eb + 1e-9) R.songRecEndAt = te; }
       // the song got shorter behind the playhead (or a take ran past its end and nothing was kept): it ends now
       if (!looping && !recOver && R.songEndBeat == null && b0 - off > E + 1e-6) { R.songEndBeat = b0; for (let i = 0; i < NT(); i++) if (!R.songOverride[i]) R.pend[i] = {slot: -1, beat: b0, song: 1}; }
       if (eb >= b0 - 1e-9 && eb < b1 - 1e-9) {
@@ -24367,7 +24422,7 @@ function songTickInner(b0, b1) {
       try { g3SongTick(song, b0, b1, off, E, insB, guard && sp.wrapAt != null ? sp.wrapAt : -Infinity); } catch (e) { tickErr(e); }   /* G3: Anlauf/Ausklang der Teile */
       if (!guard) try { g6pSongTick(song, b0, off); } catch (e) { tickErr(e); }   /* G6+h: Chor des nächsten Teils vorausrechnen */
       if (!wrap) break;
-      const A = lp.a * 4;
+      const A = barBeat(lp.a);
       sp.prevOff = sp.off; sp.wrapAt = eb; sp.off = eb - A;       // ⟲: the next pass starts at the loop start (song: bar 1)
       if (song.xp && song.xp.length) songXpAt(song, A, eb);         // V2d
       if (!(loopAll(song) && !recOver)) {
@@ -24396,17 +24451,17 @@ function laneOriginAt(lane, bar) {
   if (lane) for (const e of lane) {
     if (e.bar > bar) break;
     if (e.slot < 0) { slot = -1; own = null; continue; }
-    if (e.slot !== slot || e.re || e.ph != null || (e.own || null) !== own) { slot = e.slot; cs = e.bar * 4 - (e.ph || 0); own = e.own || null; }
+    if (e.slot !== slot || e.re || e.ph != null || (e.own || null) !== own) { slot = e.slot; cs = barBeat(e.bar) - (e.ph || 0); own = e.own || null; }
   }
   return {slot, cs, own};
 }
 function songCs(song, t, bar) { return laneOriginAt(song.lanes[t], bar).cs; }
 // the clip length (beats) a track plays with slot s (a missing clip: 4)
-function clipBeats(t, s) { const c = S.tracks[t] && s >= 0 ? S.tracks[t].clips[s] : null; return c ? clipB(c) : 4; }
+function clipBeats(t, s) { const c = S.tracks[t] && s >= 0 ? S.tracks[t].clips[s] : null; return c ? clipB(c) : tkPlain() ? 4 : tsBeats(S.ts); }
 // the clip's phase (beats) at song bar x (0 when nothing plays)
 function songPhaseAt(song, t, x) {
   const o = laneOriginAt(song.lanes[t], x); if (o.slot < 0) return 0;
-  const L = clipBeats(t, o.slot), ph = ((x * 4 - o.cs) % L + L) % L;
+  const L = clipBeats(t, o.slot), ph = ((barBeat(x) - o.cs) % L + L) % L;
   return +ph.toFixed(4);
 }
 // a song lane event at transport beat B (bar line, song bar `bar`): starts / stops the track unless it already plays that
@@ -24613,7 +24668,7 @@ function songRecStartOver(o) {
     // punch in while the song plays: from the bar that sounds now at the earliest (a melody starts at once; launches and
     // chords land on their bar lines anyway); Einfügen begins at the next bar line (the bar that sounds is already planned)
     const cb = songBeatOf(audBeat());
-    if (cb != null) { const cur = Math.max(0, Math.floor(cb / 4 + 1e-9)); from = Math.max(from, mode === 'insert' && cb > from * 4 + 1e-6 ? cur + 1 : cur); }
+    if (cb != null) { const cur = Math.max(0, barAt(cb)); from = Math.max(from, mode === 'insert' && cb > barBeat(from) + 1e-6 ? cur + 1 : cur); }
     if (to != null && to <= from) { to = null; mode = 'over'; }
     if (mode === 'insert' && from >= song.bars) mode = 'over';
   } else if (R.playing) songPlayStart(Math.min(playFrom, song.bars - 1), {next: true});
@@ -24621,10 +24676,10 @@ function songRecStartOver(o) {
   if (!R.songPlay) return false;
   const sr = R.songRec = {over: true, before, pending: false, from, to, tg, mode, nt: noteT, ev: Array.from({length: MAX_T}, () => []), mine: new Map(), pass: 0, nCh: 0, nMel: 0, nClip: 0, recT: new Set(),
     notes: [], insCh: [], parts: [], nNotes: 0,
-    get startBeat() { return R.songPlay ? from * 4 + R.songPlay.off : null; }};
+    get startBeat() { return R.songPlay ? barBeat(from) + R.songPlay.off : null; }};
   // K2-21 / 7.2: Überschreiben ab n and Ersetzen silence the target track's old notes from n (to the end / in the range) while the
   // take runs (first pass); Overdub and Einfügen keep them
-  sr.mute = tg.mel && noteT != null && (mode === 'over' || mode === 'replace') ? {t: noteT, a: from * 4 - .25, b: to != null ? to * 4 - .25 : Infinity} : null;
+  sr.mute = tg.mel && noteT != null && (mode === 'over' || mode === 'replace') ? {t: noteT, a: barBeat(from) - .25, b: to != null ? barBeat(to) - .25 : Infinity} : null;
   if (sr.mute) takeMuteNow(sr.mute);
   sr.guide = !!(UI.recGuide && recMicOn());                        // H7: alte Stimme als Vorlage hörbar
   tkSongBegin(sr); if (sr.vox) { tkOriginHint(); tkVoxResync(true); recCdCatchUp(); }   // H4: Vorlauf-Klicks
@@ -24656,8 +24711,8 @@ function takeMuteNow(mu) {
 function songRecLaunch(i, slot, beat) {
   const sr = R.songRec; if (!sr.tg.clips) return;
   const sb = songBeatOf(beat); if (sb == null) return;
-  if (sb < sr.from * 4 - 1e-6 || (sr.to != null && sb >= sr.to * 4 - 1e-6)) return;
-  sr.ev[i].push({bar: Math.round(sb / 4), slot}); sr.nClip++; sr.recT.add(i);
+  if (sb < barBeat(sr.from) - 1e-6 || (sr.to != null && sb >= barBeat(sr.to) - 1e-6)) return;
+  sr.ev[i].push({bar: barRound(sb), slot}); sr.nClip++; sr.recT.add(i);
   UI.dirty.song = true;
 }
 // 7.2: a part key during a take with CLIPS writes its lanes from the next bar line (its launches are recorded like clip
@@ -24691,15 +24746,15 @@ function songRecChord(entry, info) {
   const hand = !!(info && isFinite(info.press) && Math.abs(entry.time - info.now) < 1e-9);
   const tb = hand ? Math.min(t2b(info.press - AU.outLat), t2b(entry.time)) : t2b(entry.time);
   let sb = songBeatOf(tb); if (sb == null) return;
-  if (hand) { const n = Math.round(sb / 4) * 4; if (sb - n > 0 && sb - n <= fangLateB() + 1e-9) sb = n; }
-  if (sb < sr.from * 4 - .25 - 1e-9 || (sr.to != null && sb >= sr.to * 4 - .25)) return;
-  const bar = Math.max(0, Math.floor((sb + .25) / 4 + 1e-9)), beat = +Math.max(bar * 4, sb).toFixed(4);
+  if (hand) { const n = barBeat(barRound(sb)); if (sb - n > 0 && sb - n <= fangLateB() + 1e-9) sb = n; }
+  if (sb < barBeat(sr.from) - .25 - 1e-9 || (sr.to != null && sb >= barBeat(sr.to) - .25)) return;
+  const bar = Math.max(0, barAt(sb + .25)), beat = +Math.max(barBeat(bar), sb).toFixed(4);
   if (sr.mode === 'insert') {
-    sr.insCh = sr.insCh.filter(c => !(c.beat >= bar * 4 - 1e-6 && c.beat < bar * 4 + 4 - 1e-6 && c.beat <= beat + 1e-6 && c.mine)).filter(c => Math.abs(c.beat - beat) > 1e-6);
+    sr.insCh = sr.insCh.filter(c => !(c.beat >= barBeat(bar) - 1e-6 && c.beat < barBeat(bar + 1) - 1e-6 && c.beat <= beat + 1e-6 && c.mine)).filter(c => Math.abs(c.beat - beat) > 1e-6);
     sr.insCh.push({beat, target: carrierCopy(entry.target, entry.shift), mine: 1}); sr.insCh.sort((a, b) => a.beat - b.beat); sr.nCh++;
     UI.dirty.song = true; return;
   }
-  song.carrier = song.carrier.filter(c => !(c.beat >= bar * 4 - 1e-6 && c.beat < bar * 4 + 4 - 1e-6 && sr.mine.get(c) !== sr.pass));
+  song.carrier = song.carrier.filter(c => !(c.beat >= barBeat(bar) - 1e-6 && c.beat < barBeat(bar + 1) - 1e-6 && sr.mine.get(c) !== sr.pass));
   const ce = carrierPut(song, {beat, target: carrierCopy(entry.target, entry.shift)});
   sr.mine.set(ce, sr.pass); sr.nCh++;
   UI.dirty.song = true;
@@ -24753,13 +24808,13 @@ function songRecWrap(passEnd) {
 function songCommitNotes(sr, A, B, first) {
   const song = S.song, t = sr.nt, ns = sr.notes; sr.notes = [];
   if (!song || t == null || !sr.tg.mel || B <= A) return;
-  const barOf = b => Math.max(0, Math.floor((b + .25) / 4 + 1e-9));
+  const barOf = b => Math.max(0, barAt(b + .25));
   const mine = ns.filter(n => { const x = barOf(n.b); return x >= A && x < B; });
   const repl = sr.mode === 'over' || sr.mode === 'replace', clr = new Set();
   if (repl) { if (first && !(sr.vox && !mine.length)) for (let x = A; x < B; x++) clr.add(x); else for (const n of mine) clr.add(barOf(n.b)); }   // H2: Gesang ohne gespielte Note löscht nichts
   const ownAt = x => t !== song.melodyTrack && laneClipOk(song, t, laneOriginAt(song.lanes[t], x));
   for (const x of [...clr].sort((a, b) => a - b)) {
-    const a = x * 4 - .25, b = x * 4 + 4 - .25;
+    const a = barBeat(x) - .25, b = barBeat(x + 1) - .25;
     if (song.mel[t]) song.mel[t].notes = song.mel[t].notes.filter(n => !(n.t >= a - 1e-9 && n.t < b - 1e-9));
     if (ownAt(x)) ownClearBar(song, t, x, a, b);
   }
@@ -24778,7 +24833,7 @@ function takeEndBar(sr, tb, tapAt) {
   const sp = R.songPlay, sb = songBeatOf(tb);
   if (sb == null || !sp) return {bar: sr.from, rule: 'min1', f: 0};
   const lp = S.song.loop, pass0 = sr.pass > 0 && lp.on && lp.b > lp.a ? lp.a : sr.from;
-  const kS = Math.floor(sb / 4 + 1e-9), k = Math.floor(tb / 4 + 1e-9), Sb = k - (kS - pass0);       // the take's start as a transport bar
+  const kS = barAt(sb), k = Math.floor(tb / 4 + 1e-9), Sb = k - (kS - pass0);       // the take's start as a transport bar
   const r = n7r1(fangBars(Math.max(0, Sb), k, tb, tapAt), Math.max(0, Sb), k, tb / 4 - k);
   return {bar: kS + (r.Eb - k), rule: r.rule, f: +(tb / 4 - k).toFixed(4), period: r.period};
 }
@@ -24809,7 +24864,7 @@ function songRecEndOver(sr, atBeat, o) {
         const m = new Map(); for (const e of sr.ev[t]) if (e.bar >= n && e.bar < endBar) m.set(e.bar, e.slot);
         ch.lanes[t] = [...m].map(([bar, slot]) => ({bar: bar - n, slot})).sort((a, b) => a.bar - b.bar);
       }
-      for (const c of sr.insCh) if (c.beat >= n * 4 - 1e-6 && c.beat < endBar * 4 - 1e-6) ch.carrier.push({beat: +(c.beat - n * 4).toFixed(4), target: c.target});
+      for (const c of sr.insCh) if (c.beat >= barBeat(n) - 1e-6 && c.beat < barBeat(endBar) - 1e-6) ch.carrier.push({beat: +(c.beat - barBeat(n)).toFixed(4), target: c.target});
       opInsert(song, n, ch);
       if (sr.parts.length) songCommitPartMarks(song, sr.parts, endBar);
       songCommitNotes(sr, n, endBar, true);
@@ -24819,8 +24874,8 @@ function songRecEndOver(sr, atBeat, o) {
     songCommitLanes(sr.ev, endBar);
     if (sr.parts.length) songCommitPartMarks(song, sr.parts, endBar);
     // the take ran past the song end („Bandmaschine“): the song grows when something was recorded there
-    const past = sr.ev.some(ev => ev.some(e => e.bar >= oldBars)) || song.carrier.some(c => c.beat >= oldBars * 4 - 1e-6 && sr.mine.has(c)) ||
-      sr.notes.some(n => n.b >= oldBars * 4 - .25 - 1e-6);
+    const past = sr.ev.some(ev => ev.some(e => e.bar >= oldBars)) || song.carrier.some(c => c.beat >= barBeat(oldBars) - 1e-6 && sr.mine.has(c)) ||
+      sr.notes.some(n => n.b >= barBeat(oldBars) - .25 - 1e-6);
     if (past && endBar > oldBars) songSetBars(song, Math.min(endBar, SONG_MAX_BARS));
     songCommitNotes(sr, sr.pass === 0 ? sr.from : lp.a, endBar, sr.pass === 0);
   }
@@ -24873,10 +24928,10 @@ function melNoteOn(id, track, n, vel) {
   // overdub over a looping song: the scheduler moves the song's origin a little before the audible loop point
   if (R.songPlay && (R.melRec || over) && S.song.bars) {
     b = songBeatOf(audBeat());
-    const lp = S.song.loop, A = lp.on && lp.b > lp.a ? lp.a * 4 : 0, B = lp.on && lp.b > lp.a ? lp.b * 4 : S.song.bars * 4;
+    const lp = S.song.loop, A = lp.on && lp.b > lp.a ? barBeat(lp.a) : 0, B = lp.on && lp.b > lp.a ? barBeat(lp.b) : barBeat(S.song.bars);
     if (lp.on && !(over && sr.mode === 'insert') && b >= B && b - (B - A) >= A - .25) b -= B - A;
   }
-  if (over && (b < sr.from * 4 - .25 || (sr.to != null && b >= sr.to * 4 - .25))) return;   // V0c: outside the take
+  if (over && (b < barBeat(sr.from) - .25 || (sr.to != null && b >= barBeat(sr.to) - .25))) return;   // V0c: outside the take
   if (b < -.25) return;
   const o = {n, v: vel, b: Math.max(0, b), org, ab: audBeat()};
   if (over) {
@@ -25013,12 +25068,12 @@ function songSetChord(bar, chord, o) {
   let beat;
   if (o && isNum(o.k) && song.carrier[o.k]) { const c = song.carrier[o.k]; beat = c.beat; c.target = tg ? carrierCopy(tg) : null; }
   else {
-    bar = clamp(bar | 0, 0, song.bars - 1); beat = bar * 4;
+    bar = clamp(bar | 0, 0, song.bars - 1); beat = barBeat(bar);
     song.carrier = song.carrier.filter(c => !(c.beat >= beat - 1e-6 && c.beat < beat + 4 - 1e-6));
     carrierPut(song, {beat, target: tg ? carrierCopy(tg) : null});
   }
   if (songSnapshot() === b) return true;
-  const nm = tg ? prettyTarget(tg) : 'ORIGINAL', bi = Math.floor(beat / 4 + 1e-9), sb = +(beat - bi * 4 + 1).toFixed(2);
+  const nm = tg ? prettyTarget(tg) : 'ORIGINAL', bi = barAt(beat), sb = +(beat - barBeat(bi) + 1).toFixed(2);
   pushSongUndo(b, 'Akkord ' + nm + ' in Takt ' + (bi + 1)); songChanged(); folEdit('song'); haptic('tick');
   toast('Takt ' + (bi + 1) + (sb !== 1 ? ', Schlag ' + String(sb).replace('.', ',') : '') + ': ' + nm, songUndoAct());
   return true;
@@ -25027,7 +25082,7 @@ function songSetChord(bar, chord, o) {
    the one played last wins; then of equal chords in a row the later goes; ORIGINAL counts as a chord. a/b = bars (b inclusive):
    only entries in that range move, the others stay as they are. grid in beats (4 Takt, 2 ½ Takt, 1 Schlag) */
 function quantizeChordList(list, grid, a, b) {
-  const lo = a != null ? a * 4 : -Infinity, hi = b != null ? (b + 1) * 4 : Infinity;
+  const lo = a != null ? barBeat(a) : -Infinity, hi = b != null ? barBeat(b + 1) : Infinity;
   const inR = c => c.beat >= lo - 1e-6 && c.beat < hi - 1e-6;
   let moved = 0, merged = 0;
   const items = list.map((c, k) => {
@@ -25062,7 +25117,7 @@ function quantizeChords(o) {
   const grid = [4, 2, 1].includes(+o.grid) ? +o.grid : 4;
   const a = isNum(o.a) ? o.a | 0 : null, b = isNum(o.b) ? o.b | 0 : (a != null ? a : null);
   const r = quantizeChordList(song.carrier, grid, a, b);
-  if (o.dry) return {moved: r.moved, merged: r.merged, n: song.carrier.filter(c => (a == null || (c.beat >= a * 4 - 1e-6 && c.beat < (b + 1) * 4 - 1e-6))).length};
+  if (o.dry) return {moved: r.moved, merged: r.merged, n: song.carrier.filter(c => (a == null || (c.beat >= barBeat(a) - 1e-6 && c.beat < barBeat(b + 1) - 1e-6))).length};
   if (r.moved || r.merged) {
     const before = songSnapshot(); song.carrier = r.list;
     pushSongUndo(before, 'Akkorde quantisiert'); songChanged(); folEdit('song');
@@ -25155,7 +25210,7 @@ function startTransport(countIn) {
   const ci = countIn === true ? 1 : isNum(countIn) ? clamp(countIn | 0, 0, 2) : 0;
   R.playing = true; R.lastClick = -Infinity; R.lastPump = -Infinity; R.ciRun = ci > 0; R.ciBars = ci;
   folReset();                                                  // V0b FOLGEN: a transport (re)start ends „von Hand“
-  if (ci) { R.startTime = now + .1 + 4 * ci * spb(); R.schedBeat = -4 * ci; R.countIn = true; }
+  if (ci) { const cb = tCountBeats(ci); R.ciB = cb; R.startTime = now + .1 + cb * spb(); R.schedBeat = -cb; R.countIn = true; }   // T1: Takte der Taktart am Start
   else { R.startTime = now + (countIn == null ? .06 : .1); R.schedBeat = 0; R.countIn = false; }
   for (let i = 0; i < NT(); i++) { if (R.pend[i]) { R.slot[i] = R.pend[i].slot; R.own[i] = R.pend[i].own || null; R.pend[i] = null; } R.cstart[i] = R.songPlay && R.songPlay.cs ? R.songPlay.cs[i] : R.startCs && isNum(R.startCs[i]) ? R.startCs[i] : 0; R.prev[i] = null; }
   R.startCs = null; memStart();                                   // V2d: a part's phases (ph) from the stand; Song-Gedächtnis from beat 0
@@ -26102,7 +26157,7 @@ function recCdStart() {
 }
 function recCdLeft(bAud) { const sb = recCdStart(); return sb == null ? null : sb - bAud; }
 // H4: Klick im Vorzähler bei laufender Musik / im Song-Vorlauf (Einzähler-Takte vor dem Start, Einzähler „Aus“ = keiner)
-function recCdClick(b) { const sb = recCdStart(); if (sb == null) return false; const n = R.songRec ? Math.min(1, S.settings.countIn | 0) : S.settings.countIn | 0; return n > 0 && b >= sb - 4 * n - 1e-9 && b < sb - 1e-9; }
+function recCdClick(b) { const sb = recCdStart(); if (sb == null) return false; const n = R.songRec ? Math.min(1, S.settings.countIn | 0) : S.settings.countIn | 0; return n > 0 && b >= sb - (tkPlain() ? 4 * n : n * tBarLen(sb + 1e-6)) - 1e-9 && b < sb - 1e-9; }   // T1: Takte der Taktart am Einsatz
 // H4: schon eingeplante Schläge bis zum Planungs-Horizont bekommen ihren Vorzähler-Klick sofort (der Tick ist an ihnen vorbei)
 function recCdCatchUp() {
   const c = AU.ctx; if (!c || !R.playing || S.settings.metro) return;
@@ -26996,7 +27051,7 @@ function songChipName(c) {
   const t = c && c.target; if (!t) return 'ORIGINAL';
   if (t.kind === 'chord') return prettyTarget(t);
   try {
-    const h = S.settings.harmony, ref = songKeyAtBar(Math.floor(c.beat / 4 + 1e-9));
+    const h = S.settings.harmony, ref = songKeyAtBar(barAt(c.beat));
     return keyShort(Harmony.keyForRecording(t, ref, h.mode, Object.assign(hopts(), {octaveMode: h.octaveMode})));
   } catch (e) { return prettyTarget(t); }
 }
@@ -28175,9 +28230,9 @@ function songClipPeriod(song, t, o, L) {
 }
 const phMod = (d, L) => L === Infinity ? d : ((d % L) + L) % L;
 function songStateAt(song, x) {
-  const lanes = song.lanes.map((l, t) => { const o = laneOriginAt(l, x); if (o.slot < 0) return {slot: -1}; const L = songClipPeriod(song, t, o, songClipBeats(song, t, o)); return {slot: o.slot, own: o.own, ph: +phMod(x * 4 - o.cs, L).toFixed(4)}; });
-  let car = null; for (const c of song.carrier) { if (c.beat > x * 4 + 1e-6) break; car = c; }
-  let xp = 0; for (const v of song.xp || []) { if (v.beat > x * 4 + 1e-6) break; xp = v.semi; }
+  const lanes = song.lanes.map((l, t) => { const o = laneOriginAt(l, x); if (o.slot < 0) return {slot: -1}; const L = songClipPeriod(song, t, o, songClipBeats(song, t, o)); return {slot: o.slot, own: o.own, ph: +phMod(barBeat(x) - o.cs, L).toFixed(4)}; });
+  let car = null; for (const c of song.carrier) { if (c.beat > barBeat(x) + 1e-6) break; car = c; }
+  let xp = 0; for (const v of song.xp || []) { if (v.beat > barBeat(x) + 1e-6) break; xp = v.semi; }
   return {lanes, car: car ? {target: car.target} : null, xp};
 }
 const newMarkId = song => { let n = 0; for (const m of song.marks || []) { const k = +String(m.id).slice(1); if (k > n) n = k; } return 'M' + (n + 1); };
@@ -28185,6 +28240,7 @@ const laneInsert = (lane, e) => { const k = lane.findIndex(x => x.bar === e.bar)
 function xpPut(song, x) { const l = song.xp || (song.xp = []); const k = l.findIndex(v => Math.abs(v.beat - x.beat) < 1e-6); if (k >= 0) l.splice(k, 1); l.push(x); l.sort((a, b) => a.beat - b.beat); }
 // everything from bar n on moves by d bars (melody: a note up to ¼ beat before the bar line is an upbeat to it, TA5)
 function songShift(song, n, d) {
+  if (!tkPlain() && song === S.song) { t1Shift(song, n, d); return; }   // T1: Ereignisse bleiben an ihrem Takt
   for (const l of song.lanes) for (const e of l) if (e.bar >= n) e.bar += d;
   for (const c of song.carrier) if (c.beat >= n * 4 - 1e-6) c.beat = +(c.beat + d * 4).toFixed(4);
   for (const v of song.xp || []) if (v.beat >= n * 4 - 1e-6) v.beat = +(v.beat + d * 4).toFixed(4);
@@ -28199,9 +28255,9 @@ function songShift(song, n, d) {
 function songClear(song, a, b, o) {
   o = o || {};
   for (const l of song.lanes) for (let k = l.length - 1; k >= 0; k--) if (l[k].bar >= a && l[k].bar < b) l.splice(k, 1);
-  song.carrier = song.carrier.filter(c => !(c.beat >= a * 4 - 1e-6 && c.beat < b * 4 - 1e-6));
-  song.xp = (song.xp || []).filter(v => !(v.beat >= a * 4 - 1e-6 && v.beat < b * 4 - 1e-6));
-  if (!o.keepMel) for (const k in song.mel) song.mel[k].notes = song.mel[k].notes.filter(n => !(n.t >= a * 4 - .25 - 1e-9 && n.t < b * 4 - .25 - 1e-9));
+  song.carrier = song.carrier.filter(c => !(c.beat >= barBeat(a) - 1e-6 && c.beat < barBeat(b) - 1e-6));
+  song.xp = (song.xp || []).filter(v => !(v.beat >= barBeat(a) - 1e-6 && v.beat < barBeat(b) - 1e-6));
+  if (!o.keepMel) for (const k in song.mel) song.mel[k].notes = song.mel[k].notes.filter(n => !(n.t >= barBeat(a) - .25 - 1e-9 && n.t < barBeat(b) - .25 - 1e-9));
   if (!o.keepMarks) marksCut(song, a, b, o.split);
   if (song.blocks && !o.keepMarks && !o.split) konBlocksCut(song, a, b);   // KON: Löschen kürzt Blöcke (Ersetzen/Leeren: sie bleiben)
   if (song.vox && !o.keepMel) tkVoxClear(song, a, b);              // VS3
@@ -28243,32 +28299,33 @@ function songCont(song, x, alt) {
     }
     laneInsert(l, e);
   });
-  if (!song.carrier.some(c => Math.abs(c.beat - x * 4) < 1e-6)) {
+  if (!song.carrier.some(c => Math.abs(c.beat - barBeat(x)) < 1e-6)) {
     const at = alt.car ? alt.car.target : null, cur = now.car ? now.car.target : null;
-    if ((alt.car || now.car) && !(sameTg(at, cur) && !!alt.car === !!now.car)) carrierPut(song, {beat: x * 4, target: at ? deep(at) : null});
+    if ((alt.car || now.car) && !(sameTg(at, cur) && !!alt.car === !!now.car)) carrierPut(song, {beat: barBeat(x), target: at ? deep(at) : null});
   }
-  if (alt.xp !== now.xp && !(song.xp || []).some(v => Math.abs(v.beat - x * 4) < 1e-6)) xpPut(song, {beat: x * 4, semi: alt.xp});
+  if (alt.xp !== now.xp && !(song.xp || []).some(v => Math.abs(v.beat - barBeat(x)) < 1e-6)) xpPut(song, {beat: barBeat(x), semi: alt.xp});
 }
 // write a chunk at bar n (keepIds: a moved mark keeps its id)
 function songWrite(song, n, ch, keepIds) {
-  const ownMap = {};
+  const ownMap = {}, pins = song === S.song && ch.len && (!tkPlain() || (ch.marks || []).some(m => m.ts)) ? t1Pins(song, n + ch.len) : null;   // T1: was dahinter liegt, bleibt an seinem Takt
   if (ch.own) for (const id of Object.keys(ch.own)) {
     let nid = id; if (!keepIds || (song.own && song.own[id])) { let k = 1; while (song.own && song.own['o' + k]) k++; nid = 'o' + k; }
     (song.own || (song.own = {}))[nid] = deep(ch.own[id]); ownMap[id] = nid;
   }
   ch.lanes.forEach((l, t) => { if (!song.lanes[t]) return; for (const e of l || []) { const x = Object.assign({}, e, {bar: n + e.bar}); if (x.own) x.own = ownMap[x.own] || x.own; laneInsert(song.lanes[t], x); } });
-  for (const c of ch.carrier || []) carrierPut(song, {beat: +(n * 4 + c.beat).toFixed(4), target: c.target ? deep(c.target) : null});
-  for (const v of ch.xp || []) xpPut(song, {beat: +(n * 4 + v.beat).toFixed(4), semi: v.semi});
+  for (const c of ch.carrier || []) carrierPut(song, {beat: +(barBeat(n) + c.beat).toFixed(4), target: c.target ? deep(c.target) : null});
+  for (const v of ch.xp || []) xpPut(song, {beat: +(barBeat(n) + v.beat).toFixed(4), semi: v.semi});
   for (const k of Object.keys(ch.mel || {})) {
     const t = +k; if (!S.tracks[t] || S.tracks[t].kind !== 'synth') continue;
     const m = song.mel[t] || (song.mel[t] = melEmpty());
-    for (const nt of ch.mel[k]) m.notes.push(Object.assign({}, nt, {t: +Math.max(0, n * 4 + nt.t).toFixed(6)}));
+    for (const nt of ch.mel[k]) m.notes.push(Object.assign({}, nt, {t: +Math.max(0, barBeat(n) + nt.t).toFixed(6)}));
     m.notes.sort((a, b) => a.t - b.t);
   }
   for (const m of ch.marks || []) { const x = Object.assign({}, m, {a: n + m.a}); if (!keepIds || !x.id || song.marks.some(y => y.id === x.id)) x.id = newMarkId(song); song.marks.push(x); }
   song.marks.sort((a, b) => a.a - b.a);
   if (ch.vox) s2WriteVox(song, n, ch.vox);   /* S2; G3: auch die Song-Stimme eines verschobenen/getauschten Teils (g3VoxCut) – nur einmal schreiben */
   if (ch.video) vvDirWrite(song, n, ch);                           // VV2
+  if (pins) t1Unpin(song, pins, 0);                                // T1
 }
 // drop entries that change nothing (-1 after -1, the same clip in the same phase), keep the marks tidy, melody lengths
 function songTidy(song) {
@@ -28280,7 +28337,7 @@ function songTidy(song) {
     for (let k = 0; k < l.length; k++) {
       const e = l[k];
       if (e.slot < 0) { if (slot < 0) { l.splice(k--, 1); continue; } slot = -1; own = null; continue; }
-      const ncs = e.bar * 4 - (e.ph || 0), same = e.slot === slot && (e.own || null) === own;
+      const ncs = barBeat(e.bar) - (e.ph || 0), same = e.slot === slot && (e.own || null) === own;
       if (same && ((!e.re && e.ph == null) || Math.abs(ncs - cs) < 1e-6)) { l.splice(k--, 1); continue; }   // goes on in phase anyway
       slot = e.slot; cs = ncs; own = e.own || null;
     }
@@ -28308,8 +28365,8 @@ function ownRun(song, t, x) {
     if (e.slot < 0) { slot = -1; own = null; continue; }
     if (e.slot !== slot || e.re || e.ph != null || (e.own || null) !== own) { slot = e.slot; own = e.own || null; bs = e.bar; }
   }
-  const L = songClipBeats(song, t, o), k = Math.floor((x * 4 - o.cs) / L + 1e-9), ds = o.cs + k * L;
-  const d0 = Math.max(bs, Math.floor(ds / 4 + 1e-9)), d1 = Math.max(x + 1, Math.min(be, Math.ceil((ds + L) / 4 - 1e-9)));
+  const L = songClipBeats(song, t, o), k = Math.floor((barBeat(x) - o.cs) / L + 1e-9), ds = o.cs + k * L;
+  const d0 = Math.max(bs, barAt(ds)), d1 = Math.max(x + 1, Math.min(be, barCeil(ds + L)));
   return {o, L, bs, be, ds, d0, d1};
 }
 const ownRefs = (song, id) => { let n = 0; for (const l of song.lanes) for (const e of l) if (e.own === id) n++; return n; };
@@ -28322,7 +28379,7 @@ function ownEnsure(song, t, x) {
   const {o, L, ds, d0, d1, bs, be} = r, lane = song.lanes[t];
   song.own = song.own || {};
   // already an own clip that is exactly this one Durchlauf (and nowhere else): write into it
-  if (o.own && song.own[o.own] && bs === d0 && Math.abs(ds - o.cs) < 1e-6 && be * 4 <= o.cs + L + 1e-6 && ownRefs(song, o.own) === 1) return {id: o.own, c: song.own[o.own], ds};
+  if (o.own && song.own[o.own] && bs === d0 && Math.abs(ds - o.cs) < 1e-6 && barBeat(be) <= o.cs + L + 1e-6 && ownRefs(song, o.own) === 1) return {id: o.own, c: song.own[o.own], ds};
   if (ownCount(song) >= OWN_MAX) { if (!UI.ownFullWarned) { UI.ownFullWarned = true; toast('Höchstens ' + OWN_MAX + ' eigene Clips je Song'); } return null; }
   const src = o.own ? song.own[o.own] : S.tracks[t].clips[o.slot]; if (!src) return null;
   const id = ownNewId(song), c = deep(src), prevE = lane.find(e => e.bar === d0);
@@ -28333,11 +28390,11 @@ function ownEnsure(song, t, x) {
   if (pcs != null) c.from.cs = +pcs.toFixed(4);
   for (const n of c.notes) { delete n.born; delete n.bornRun; }
   song.own[id] = c;
-  const ent = {bar: d0, slot: o.slot, own: id}, ph = d0 * 4 - ds; if (ph > 1e-6) ent.ph = +ph.toFixed(4);
+  const ent = {bar: d0, slot: o.slot, own: id}, ph = barBeat(d0) - ds; if (ph > 1e-6) ent.ph = +ph.toFixed(4);
   laneInsert(lane, ent);
   // after the Durchlauf the origin goes on in phase (the scene clip, or the own clip that played before)
   if (d1 < be && d1 < song.bars && !lane.some(e => e.bar === d1)) {
-    const ph1 = (((d1 * 4 - o.cs) % L) + L) % L, e1 = {bar: d1, slot: o.slot};
+    const ph1 = (((barBeat(d1) - o.cs) % L) + L) % L, e1 = {bar: d1, slot: o.slot};
     if (ph1 > 1e-6) e1.ph = +ph1.toFixed(4); if (o.own) e1.own = o.own;
     laneInsert(lane, e1); c.from.e1 = d1;
   }
@@ -28362,7 +28419,7 @@ function ownAddNote(w, n) {
 function ownRefCs(song, c) {
   const f = c && c.from; if (!f) return null;
   if (isNum(f.cs)) return f.cs;
-  if (f.e && !f.e.own && f.e.slot === f.s) return f.bar * 4 - (f.e.ph || 0);
+  if (f.e && !f.e.own && f.e.slot === f.s) return barBeat(f.bar) - (f.e.ph || 0);
   if (f.prev && !f.prev.own && f.prev.slot === f.s && isNum(f.prev.cs)) return f.prev.cs;
   return null;
 }
@@ -28376,7 +28433,7 @@ function ownSame(song, t, o, tg) {
 function ownPlayAs(song, t, b, tg) {
   const lane = song.lanes[t], po = laneOriginAt(lane, b);
   if (b > 0 && ownSame(song, t, po, tg)) return;
-  const L = songClipPeriod(song, t, tg, songClipBeats(song, t, tg)), ph = phMod(b * 4 - tg.cs, L), e = {bar: b, slot: tg.slot};
+  const L = songClipPeriod(song, t, tg, songClipBeats(song, t, tg)), ph = phMod(barBeat(b) - tg.cs, L), e = {bar: b, slot: tg.slot};
   if (ph > 1e-6 && L - ph > 1e-6) e.ph = +ph.toFixed(4); else if (po.slot === tg.slot && (po.own || null) === (tg.own || null)) e.re = 1;
   if (tg.own) e.own = tg.own;
   laneInsert(lane, e);
@@ -28385,7 +28442,7 @@ function ownPlayAs(song, t, b, tg) {
 function ownTidyAt(song, t, b) {
   const lane = song.lanes[t], j = lane.findIndex(e => e.bar === b); if (j < 0 || b <= 0) return;
   const n = lane[j]; if (n.slot < 0 || n.re) return;
-  if (ownSame(song, t, laneOriginAt(lane, b - 1), {slot: n.slot, own: n.own || null, cs: n.bar * 4 - (n.ph || 0)})) lane.splice(j, 1);
+  if (ownSame(song, t, laneOriginAt(lane, b - 1), {slot: n.slot, own: n.own || null, cs: barBeat(n.bar) - (n.ph || 0)})) lane.splice(j, 1);
 }
 /* lane t as it is without any own clip (each one back to what it stood for) — on a copy of the song; [Ganzer Block] takes its
    block from here, so that a hold on an own clip covers the whole scene-clip block and not only that copy (V2e′-fix) */
@@ -28419,10 +28476,10 @@ function ownWhole(song, t, x) {
       const ob = laneOriginAt(lane, b); if (!laneClipOk(song, t, ob)) continue;
       const own = ob.own && song.own[ob.own], src = own || S.tracks[t].clips[ob.slot]; if (!src) continue;
       const Lb = songClipBeats(song, t, own ? ob : {slot: ob.slot}), ocs = ob.cs;
-      for (let m = Math.floor((b * 4 - ocs) / Lb) - 1; ocs + m * Lb < b * 4 + 4; m++) for (const nt of src.notes) {
+      for (let m = Math.floor((barBeat(b) - ocs) / Lb) - 1; ocs + m * Lb < barBeat(b + 1); m++) for (const nt of src.notes) {
         if (nt.t >= Lb - 1e-9) continue;
-        const st = ocs + m * Lb + nt.t; if (st < b * 4 - 1e-9 || st >= b * 4 + 4 - 1e-9) continue;
-        const x2 = Object.assign({}, nt, {t: +(st - c0 * 4).toFixed(4)}); delete x2.born; delete x2.bornRun; notes.push(x2);
+        const st = ocs + m * Lb + nt.t; if (st < barBeat(b) - 1e-9 || st >= barBeat(b + 1) - 1e-9) continue;
+        const x2 = Object.assign({}, nt, {t: +(st - barBeat(c0)).toFixed(4)}); delete x2.born; delete x2.bornRun; notes.push(x2);
       }
     }
     notes.sort((a, b) => a.t - b.t);
@@ -28457,7 +28514,7 @@ function ownDropId(song, t, id) {
   // an own clip it came from still counts only while it exists and stands for the same track and scene clip (ids get reused)
   const alive = v => { if (!v || !v.own) return true; const q = v.own !== id && song.own[v.own]; return !!q && (!q.from || ((q.from.t == null || q.from.t === t) && (q.from.s == null || q.from.s === s))); };
   const po = laneOriginAt(lane, bar), rcs = ownRefCs(song, c);
-  const scene = {slot: s, own: null, cs: rcs != null ? rcs : (po.slot === s && !po.own ? po.cs : bar * 4)};
+  const scene = {slot: s, own: null, cs: rcs != null ? rcs : (po.slot === s && !po.own ? po.cs : barBeat(bar))};
   if (f.e && alive(f.e)) laneInsert(lane, Object.assign(deep(f.e), {bar}));
   else if (f.e || (f.prev && !alive(f.prev))) ownPlayAs(song, t, bar, scene);
   else if (f.prev) ownPlayAs(song, t, bar, {slot: f.prev.slot, own: f.prev.own || null, cs: f.prev.cs});
@@ -28465,7 +28522,7 @@ function ownDropId(song, t, id) {
   // other entries that still name this copy (where a looping copy went on) or a copy that is gone: the scene clip there
   for (const e of lane) if (e.own && (e.own === id || !song.own[e.own])) {
     delete e.own; delete e.re;
-    const L = songClipPeriod(song, t, {slot: e.slot}, songClipBeats(song, t, {slot: e.slot})), ph = phMod(e.bar * 4 - scene.cs, L);
+    const L = songClipPeriod(song, t, {slot: e.slot}, songClipBeats(song, t, {slot: e.slot})), ph = phMod(barBeat(e.bar) - scene.cs, L);
     if (e.slot === s && ph > 1e-6 && L - ph > 1e-6) e.ph = +ph.toFixed(4); else delete e.ph;
   }
   // the entry at the end of the copy (added with it) goes when the music before it already goes on like it
@@ -28519,9 +28576,9 @@ function songCut(song, a, b) {
   });
   const carrier = [];
   if (st.car) carrier.push({beat: 0, target: st.car.target ? deep(st.car.target) : null});
-  for (const c of song.carrier) if (c.beat > a * 4 + 1e-6 && c.beat < b * 4 - 1e-6) carrier.push({beat: +(c.beat - a * 4).toFixed(4), target: c.target ? deep(c.target) : null});
-  const xp = [{beat: 0, semi: st.xp}]; for (const v of song.xp || []) if (v.beat > a * 4 + 1e-6 && v.beat < b * 4 - 1e-6) xp.push({beat: v.beat - a * 4, semi: v.semi});
-  const mel = {}; for (const k in song.mel) { const ns = song.mel[k].notes.filter(n => n.t >= a * 4 - .25 - 1e-9 && n.t < b * 4 - .25 - 1e-9).map(n => Object.assign({}, n, {t: +(n.t - a * 4).toFixed(6)})); if (ns.length) mel[k] = ns; }
+  for (const c of song.carrier) if (c.beat > barBeat(a) + 1e-6 && c.beat < barBeat(b) - 1e-6) carrier.push({beat: +(c.beat - barBeat(a)).toFixed(4), target: c.target ? deep(c.target) : null});
+  const xp = [{beat: 0, semi: st.xp}]; for (const v of song.xp || []) if (v.beat > barBeat(a) + 1e-6 && v.beat < barBeat(b) - 1e-6) xp.push({beat: v.beat - barBeat(a), semi: v.semi});
+  const mel = {}; for (const k in song.mel) { const ns = song.mel[k].notes.filter(n => n.t >= barBeat(a) - .25 - 1e-9 && n.t < barBeat(b) - .25 - 1e-9).map(n => Object.assign({}, n, {t: +(n.t - barBeat(a)).toFixed(6)})); if (ns.length) mel[k] = ns; }
   const marks = song.marks.filter(m => m.a < b && m.a + m.len > a).map(m => { const A = Math.max(m.a, a), E = Math.min(m.a + m.len, b); return Object.assign({}, m, {a: A - a, len: E - A}); });
   const own = {}; for (const l of lanes) for (const e of l) if (e.own && song.own && song.own[e.own]) own[e.own] = deep(song.own[e.own]);
   return vvDirCutTo(song, a, b, {len: b - a, lanes, carrier, xp, mel, marks, own});   // VV2: + video
@@ -28564,7 +28621,7 @@ function opClear(song, a, b) {
   const alt = b < song.bars ? songStateAt(song, b) : null;
   songClear(song, a, b, {keepMarks: true});
   song.lanes.forEach(l => laneInsert(l, {bar: a, slot: -1}));
-  carrierPut(song, {beat: a * 4, target: null}); xpPut(song, {beat: a * 4, semi: 0});
+  carrierPut(song, {beat: barBeat(a), target: null}); xpPut(song, {beat: barBeat(a), semi: 0});
   if (alt) songCont(song, b, alt);
 }
 // one undo step 'song' around fn(song); returns fn's result (null: nothing changed)
@@ -28581,17 +28638,17 @@ function songEdit(label, fn) {
 function songResync(all) {
   if (!R.songPlay || !S.song || !R.playing || !AU.ctx) return;
   const nb = nextBarFromAudible(), sb = songBeatOf(nb); if (sb == null) return;
-  const bar = Math.floor(sb / 4 + 1e-9); if (bar >= S.song.bars) return;
+  const bar = barAt(sb); if (bar >= S.song.bars) return;
   R.songApplying = true;
   try {
     for (let t = 0; t < NT(); t++) {
       if (R.songOverride[t]) continue;
       const o = laneOriginAt(S.song.lanes[t], bar), ok = laneClipOk(S.song, t, o);       // V2d′: own clips too
-      laneSwitch(t, ok ? o.slot : -1, nb, o.cs + (nb - bar * 4), false, ok ? o.own : null);
+      laneSwitch(t, ok ? o.slot : -1, nb, o.cs + (nb - barBeat(bar)), false, ok ? o.own : null);
     }
     // V2d′ (after Einfügen): the Träger and the Teil-Transposition the song has there come back at that bar line as well
-    if (all && !R.carrierLive) { let ct = null, has = false; for (const c of S.song.carrier) { if (c.beat > bar * 4 + 1e-6) break; ct = c.target; has = true; } if (has) { if (ct) T.recall(ct, b2t(nb), null); else T.reset(b2t(nb), null); } }
-    if (all) songXpAt(S.song, bar * 4, nb);
+    if (all && !R.carrierLive) { let ct = null, has = false; for (const c of S.song.carrier) { if (c.beat > barBeat(bar) + 1e-6) break; ct = c.target; has = true; } if (has) { if (ct) T.recall(ct, b2t(nb), null); else T.reset(b2t(nb), null); } }
+    if (all) songXpAt(S.song, barBeat(bar), nb);
   } finally { R.songApplying = false; }
 }
 // the part a reference means: 0..7 / 'P1'..'P8' / 'S1'..'S8' / a part name
@@ -28637,10 +28694,10 @@ function markDev(song, m) {
     let slot = -1, cs = 0;
     for (let j = 0; j < m.len; j++) {
       const e = l.find(x => x.bar === j);
-      if (e) { if (e.slot < 0) slot = -1; else if (e.re || e.slot !== slot) { slot = e.slot; cs = j * 4 - (e.ph || 0); } }
+      if (e) { if (e.slot < 0) slot = -1; else if (e.re || e.slot !== slot) { slot = e.slot; cs = barBeat(m.a + j) - barBeat(m.a) - (e.ph || 0); } }
       const o = laneOriginAt(song.lanes[t], m.a + j);
       if (o.slot !== slot) return true;
-      if (slot >= 0) { const L = clipBeats(t, slot), p1 = ((j * 4 - cs) % L + L) % L, p2 = (((m.a + j) * 4 - o.cs) % L + L) % L; if (Math.abs(p1 - p2) > 1e-6) return true; }
+      if (slot >= 0) { const L = clipBeats(t, slot), p1 = ((barBeat(m.a + j) - barBeat(m.a) - cs) % L + L) % L, p2 = ((barBeat(m.a + j) - o.cs) % L + L) % L; if (Math.abs(p1 - p2) > 1e-6) return true; }
     }
   }
   const got = songCut(song, m.a, m.a + m.len).carrier, want = ch.carrier;
@@ -28710,7 +28767,7 @@ function markApplyAll(m) {
 function markReplaceAll(song, p, skipId, onlyId) {
   let n = 0;
   for (const m of song.marks.filter(x => x.part === p.id && x.id !== skipId && (!onlyId || x.id === onlyId))   /* S0: onlyId */.sort((a, b) => b.a - a.a)) {
-    const mel = {}; for (const k in song.mel) mel[k] = song.mel[k].notes.filter(x => x.t >= m.a * 4 - .25 - 1e-9 && x.t < (m.a + m.len) * 4 - .25 - 1e-9).map(x => Object.assign({}, x, {t: x.t - m.a * 4}));
+    const mel = {}; for (const k in song.mel) mel[k] = song.mel[k].notes.filter(x => x.t >= barBeat(m.a) - .25 - 1e-9 && x.t < barBeat(m.a + m.len) - .25 - 1e-9).map(x => Object.assign({}, x, {t: x.t - barBeat(m.a)}));
     // V2e-fix: the own clips inside the mark (relative bar, up to the next lane entry or the mark's end)
     const owns = [];
     song.lanes.forEach((l, t) => l.forEach((e, k) => {
@@ -28732,7 +28789,7 @@ function markReplaceAll(song, p, skipId, onlyId) {
       if (alt) songCont(song, E, alt);                                     // after the own clip the template goes on
     }
     for (const k of Object.keys(ch.mel || {})) delete mel[k];   /* S1/S2: the template brings its own melody there */
-    for (const k in mel) { const t = +k, mm = song.mel[t] || (song.mel[t] = melEmpty()); for (const x of mel[k]) if (x.t < ch.len * 4 - .25) mm.notes.push(Object.assign({}, x, {t: +(x.t + a * 4).toFixed(6)})); mm.notes.sort((u, v) => u.t - v.t); }
+    for (const k in mel) { const t = +k, mm = song.mel[t] || (song.mel[t] = melEmpty()); for (const x of mel[k]) if (x.t < barBeat(a + ch.len) - barBeat(a) - .25) mm.notes.push(Object.assign({}, x, {t: +(x.t + barBeat(a)).toFixed(6)})); mm.notes.sort((u, v) => u.t - v.t); }
     n++;
   }
   return n;
@@ -29608,7 +29665,7 @@ function openRecStart(anchor) {
     const paint = () => {
       const song = S.song; if (!song) { closePop(); return; }
       const tg = recTargets(), sel = SV.sel, pre = UI.recPre !== false, cb = R.songPlay && R.playing ? songBeatOf(audBeat()) : null;
-      let from = sel ? sel.a : songStartBar(); if (cb != null) from = Math.max(from, Math.floor(cb / 4 + 1e-9));
+      let from = sel ? sel.a : songStartBar(); if (cb != null) from = Math.max(from, barAt(cb));
       const one = !!sel && sel.a === sel.b && sel.b + 1 > from, rTo = sel && sel.b + 1 > from ? sel.b + 1 : null;
       const modes = recModesFor(from, rTo, one);
       if (!modes.includes(mode)) mode = modes[0] || 'over';
@@ -29665,7 +29722,7 @@ function openLoopPop(anchor) {
     guardTouch(p);
     const sel = SV.sel, ra = sel ? sel.a : songStartBar(), rb = sel ? sel.b + 1 : ra + 1;
     // V2e (6.4): „Teil“ = the mark under the playhead (stopped: under the Positionsmarke)
-    const pb = R.songPlay && R.playing ? songBeatOf(audBeat()) : null, tm = svMarkAt(pb != null ? Math.floor(pb / 4 + 1e-9) : songStartBar());
+    const pb = R.songPlay && R.playing ? songBeatOf(audBeat()) : null, tm = svMarkAt(pb != null ? barAt(pb) : songStartBar());
     const curM = song.loop.on && tm && song.loop.a === tm.a && song.loop.b === tm.a + tm.len;
     const cur = !song.loop.on ? 'off' : loopAll(song) ? 'song' : curM ? 'part' : 'range';
     p.innerHTML = '<h4>Schleife</h4><div class="plist lpl">' +
@@ -29703,7 +29760,7 @@ const CP_ARTS = [['maj', 'Dur'], ['min', 'm'], ['7', '7'], ['maj7', 'maj7'], ['m
 function openChordPick(o) {
   const song = S.song; if (!song || !song.bars) return;
   const k = o && isNum(o.k) && song.carrier[o.k] ? o.k : null, c = k != null ? song.carrier[k] : null;
-  const beat = c ? c.beat : clamp((o && o.bar) | 0, 0, song.bars - 1) * 4, bar = Math.floor(beat / 4 + 1e-9), sb = +(beat - bar * 4 + 1).toFixed(2);
+  const beat = c ? c.beat : barBeat(clamp((o && o.bar) | 0, 0, song.bars - 1)), bar = barAt(beat), sb = +(beat - barBeat(bar) + 1).toFixed(2);
   let cur = c ? c.target : null; if (!c) for (const e of song.carrier) { if (e.beat > beat + 1e-6) break; cur = e.target; }
   const key = songKeyAtBar(bar), N = noteNames();
   const st = {frei: false, tab: 'art', root: cur ? cur.root : key.root, q: cur && cur.kind === 'chord' && cur.quality ? cur.quality : 'maj', bass: cur && cur.kind === 'chord' && cur.bass !== cur.root ? cur.bass : null};
@@ -29774,7 +29831,7 @@ function openChordMenu(anchor) {
       closePop();
       if (b.dataset.a === 'q') openQuantChords(anchor);
       else {
-        const before = songSnapshot(), lo = sel ? sel.a * 4 : -1, hi = sel ? (sel.b + 1) * 4 : Infinity;
+        const before = songSnapshot(), lo = sel ? barBeat(sel.a) : -1, hi = sel ? barBeat(sel.b + 1) : Infinity;
         const n0 = song.carrier.length; song.carrier = song.carrier.filter(c => !(c.beat >= lo - 1e-6 && c.beat < hi - 1e-6));
         const n = n0 - song.carrier.length;
         if (n) { pushSongUndo(before, 'Akkorde gelöscht'); songChanged(); toast(n + (n === 1 ? ' Akkord' : ' Akkorde') + ' gelöscht', songUndoAct()); }
@@ -30217,8 +30274,8 @@ function openPlacePick(anchor, bar) {
 function songHasFrom(song, n) {
   if (!song || n >= song.bars) return false;
   for (let t = 0; t < song.lanes.length; t++) for (let b = n; b < song.bars; b++) { const o = laneOriginAt(song.lanes[t], b); if (o.slot >= 0) return true; }
-  if (song.carrier.some(c => c.beat >= n * 4 - 1e-6 && c.target)) return true;
-  for (const k in song.mel) if (song.mel[k].notes.some(x => x.t >= n * 4 - .25)) return true;
+  if (song.carrier.some(c => c.beat >= barBeat(n) - 1e-6 && c.target)) return true;
+  for (const k in song.mel) if (song.mel[k].notes.some(x => x.t >= barBeat(n) - .25)) return true;
   return song.marks.some(m => m.a + m.len > n);
 }
 function placeAt(ref, bar, o) {
@@ -30831,22 +30888,22 @@ function openAsPart(anchor, A, Bb) {
 /* ---------- Akkord in einer Marke (N7-R10, N7S-38): the change counts only here; [Für alle „Strophe“] puts it at the same
    relative place of every mark of the part and into the template (one undo group [part, song]) ---------- */
 function chordMarkToast(beat, exact, tg) {
-  const song = S.song, bar = Math.floor(beat / 4 + 1e-9), m = svMarkAt(bar);
-  const nm = tg ? prettyTarget(tg) : 'ORIGINAL', sb = +(beat - bar * 4 + 1).toFixed(2), msg = 'Takt ' + (bar + 1) + (sb !== 1 ? ', Schlag ' + String(sb).replace('.', ',') : '') + ': ' + nm;
+  const song = S.song, bar = barAt(beat), m = svMarkAt(bar);
+  const nm = tg ? prettyTarget(tg) : 'ORIGINAL', sb = +(beat - barBeat(bar) + 1).toFixed(2), msg = 'Takt ' + (bar + 1) + (sb !== 1 ? ', Schlag ' + String(sb).replace('.', ',') : '') + ': ' + nm;
   if (!song || !m || !m.part || m.part[0] !== 'P' || !S.parts[+m.part.slice(1) - 1]) return false;
   const pn = markLabel(m);
-  toast(msg, [{label: 'Für alle „' + pn + '“', fn: () => markChordAll(m.id, beat - m.a * 4, tg, exact)}, songUndoAct()]);
+  toast(msg, [{label: 'Für alle „' + pn + '“', fn: () => markChordAll(m.id, beat - barBeat(m.a), tg, exact)}, songUndoAct()]);
   return true;
 }
 function markChordAll(id, rb, tg, exact) {
   const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || !m0.part || m0.part[0] !== 'P') return false;
   const i = +m0.part.slice(1) - 1, p = S.parts[i]; if (!p) return false;
   const bp = partSnap(), bs = songSnapshot(), t = tg ? normTarget(tg) : null;
-  const cut = (list, at, key) => (exact ? list.filter(c => Math.abs(c[key] - at) > 1e-6) : list.filter(c => !(c[key] >= Math.floor(at / 4 + 1e-9) * 4 - 1e-6 && c[key] < Math.floor(at / 4 + 1e-9) * 4 + 4 - 1e-6)));
+  const cut = (list, at, key) => (exact ? list.filter(c => Math.abs(c[key] - at) > 1e-6) : list.filter(c => !(c[key] >= barBeat(barAt(at)) - 1e-6 && c[key] < barBeat(barAt(at) + 1) - 1e-6)));
   let n = 0;
   for (const m of song.marks) {
     if (m.part !== m0.part || rb >= m.len * 4 - 1e-9) continue;
-    const beat = m.a * 4 + rb; song.carrier = cut(song.carrier, beat, 'beat');
+    const beat = barBeat(m.a) + rb; song.carrier = cut(song.carrier, beat, 'beat');
     carrierPut(song, {beat, target: t ? carrierCopy(t) : null}); n++;
   }
   const L = partLen(p);
@@ -31076,7 +31133,7 @@ function melodyToClip() {
   const song = S.song, roll = ED.roll; if (!song || !roll) return false;
   const lp = roll.state && roll.state.loop, t = song.melodyTrack, tr = S.tracks[t];
   const a = lp ? lp.a : 0, n = clamp(lp ? lp.b - lp.a + 1 : 1, 1, 16);
-  const len = n <= 1 ? 1 : n <= 2 ? 2 : n <= 4 ? 4 : n <= 8 ? 8 : 16, t0 = a * 4, t1 = t0 + len * 4;
+  const len = n <= 1 ? 1 : n <= 2 ? 2 : n <= 4 ? 4 : n <= 8 ? 8 : 16, cts = tsNorm(tsAtBar(a)), t0 = barBeat(a), t1 = t0 + len * tsBeats(cts);   // T1: der Clip bekommt die Taktart seiner Stelle
   const si = tr.clips.findIndex(c => !c); if (si < 0) { toast('Kein freier Platz auf ' + tr.name); return false; }
   const ns = curMel(song).notes.filter(x => x.t >= t0 - 1e-6 && x.t < t1 - 1e-6);
   if (!ns.length) { toast('In diesen Takten ist keine Melodie'); return false; }
@@ -31085,7 +31142,7 @@ function melodyToClip() {
   const h = S.settings.harmony;
   const key = tg ? Object.assign(Harmony.keyForRecording(tg, songKeyAtBar(a), h.mode, Object.assign(hopts(), {octaveMode: h.octaveMode})), {src: 'carrier'}) : {root: S.key.root, scale: S.key.scale, src: 'auto'};
   pushUndo(t, si, null, 'Melodie → Clip');
-  tr.clips[si] = {len, key, notes: ns.map(x => ({t: +(x.t - t0).toFixed(6), o: +(x.t - t0).toFixed(4), d: Math.min(x.d, t1 - x.t), n: x.n, v: x.v}))};
+  tr.clips[si] = Object.assign({len, key, notes: ns.map(x => ({t: +(x.t - t0).toFixed(6), o: +(x.t - t0).toFixed(4), d: Math.min(x.d, t1 - x.t), n: x.n, v: x.v}))}, cts ? {ts: cts} : null);
   analyseClip(t, si, true, true);
   clipChanged(t, si); markDirty(); UI.dirty.all = true;
   toast('Clip ' + (si + 1) + ' auf ' + tr.name + ': ' + len + (len === 1 ? ' Takt' : ' Takte') + (tg ? ' · folgt dem Träger' : ''), {label: 'Rückgängig', fn: () => undo()});
@@ -32051,18 +32108,28 @@ function uiFrame() {
   if (UI.toastActs) toastPlace();                           // sheets opened/closed/rebuilt under an action toast
 }
 // the count-in shows the remaining beats: 4…1 (1 bar) or 8…1 (2 bars), never the few ms of start lead
-const ciMax = () => 4 * Math.max(1, R.ciBars || 1);
+const ciMax = () => tkPlain() ? 4 * Math.max(1, R.ciBars || 1) : Math.ceil(R.ciB || tCountBeats(Math.max(1, R.ciBars || 1)));   // T1
+// T1: Anzeige „Takt.Zählzeit“ und die LED (Zählzeit bei ♩, Gruppe bei ♪; nur 4 LEDs); 0 = Eins
+function t1BarPos(b) {
+  const a = tBarFloor(b), off = tSongOff(b), ts = tTsAt(b), d = tsOf(ts);
+  const bar = off == null ? Math.floor(a / tsBeats(S.ts) + 1e-9) : barAt(a - off);
+  const k = Math.min(d.n - 1, Math.floor((b - a) / d.u + 1e-9)); let g = 0, p = 0; for (let j = 0; j < d.grp.length; j++) { p += d.grp[j]; if (k < p) { g = j; break; } }
+  return {bar, k, g: d.grp.every(x => x === 1) ? k : g};
+}
+function t1TaktTxt(b) { const q = t1BarPos(b); return (q.bar + 1) + '.' + (q.k + 1); }
+function t1Led(b) { const q = t1BarPos(b); return q.g === 0 ? 0 : 1 + ((q.g - 1) % 3); }
 function renderTakt(bAud) {
   let txt, cls = '';
   // plain ▶ starts a few ms in the future: until the audible beat reaches 0 show 1.1 (no count-in look)
   if (R.playing && bAud < 0 && !R.ciRun) bAud = 0;
   if (!R.playing) { txt = '1.1'; cls = 'dim'; }
   else if (bAud < 0) { txt = String(clamp(-Math.floor(bAud), 1, ciMax())); cls = 'ci'; }
+  else if (!tkPlain()) txt = t1TaktTxt(bAud);                     // T1: Takt.Zählzeit der Taktart
   else txt = (Math.floor(bAud / 4) + 1) + '.' + (Math.floor(bAud) % 4 + 1);
   if (txt.length > 4) cls += (cls ? ' ' : '') + 'long';          // bar 100+: the 76 px TAKT block keeps its width (P)
   if (txt !== UI.last.takt) { EL.taktVal.textContent = txt; UI.last.takt = txt; }
   if (cls !== UI.last.taktCls) { EL.taktVal.className = cls; UI.last.taktCls = cls; }
-  const led = R.playing ? ((Math.floor(bAud) % 4) + 4) % 4 : -1;
+  const led = !R.playing ? -1 : tkPlain() ? ((Math.floor(bAud) % 4) + 4) % 4 : t1Led(bAud);
   if (led !== UI.last.led) {
     UI.last.led = led;
     UI.leds.forEach((l, k) => l.classList.toggle('on', k === led));
@@ -32071,7 +32138,7 @@ function renderTakt(bAud) {
     if (fl) setTimeout(() => EL.takt.classList.remove('flash'), 110);
   }
   const ci0 = R.playing && R.ciRun && bAud < 0, cd = R.playing ? recCdLeft(bAud) : null;   // H4: auch bei laufender Musik / im Song-Vorlauf
-  const cdOn = !ci0 && cd != null && cd > 0 && cd <= 4 * Math.max(1, S.settings.countIn | 0);
+  const cdOn = !ci0 && cd != null && cd > 0 && cd <= (tkPlain() ? 4 : tBarLen(bAud + cd + 1e-6)) * Math.max(1, S.settings.countIn | 0);
   if (cdOn) UI.cdWas = true; else if (UI.cdWas && !ci0) { UI.cdWas = false; if (recActive() || (R.songRec && R.songRec.over)) UI.cdGo = performance.now() + 500; }
   const go = !ci0 && !cdOn && UI.cdGo && performance.now() < UI.cdGo;
   if (!go) UI.cdGo = 0;
@@ -42490,7 +42557,7 @@ function buildMidiLog() {
    the melody lane on the melody track's channel as played */
 function buildMidiSong(withC) {
   const song = S.song; if (!song || !song.bars) return null;
-  const PPQ = 480, L = song.bars * 4, {evs, counts} = midiArrs();
+  const PPQ = 480, L = barBeat(song.bars), {evs, counts} = midiArrs();
   // the Träger entries of the song with their shifts (as the Transposer computes them, §old-7)
   const pk = S.key, h = S.settings.harmony, ents = [];
   let prev = 0;
@@ -42510,8 +42577,8 @@ function buildMidiSong(withC) {
     for (const e of lane) {
       const og = laneOriginAt(lane, e.bar);
       if (cur && og.slot === cur.slot && Math.abs(og.cs - cur.cs) < 1e-6 && (og.own || null) === cur.own) continue;
-      if (cur) cur.end = e.bar * 4;
-      cur = og.slot >= 0 ? {slot: og.slot, own: og.own || null, cs: og.cs, start: e.bar * 4, end: song.bars * 4} : null; if (cur) blocks.push(cur);
+      if (cur) cur.end = barBeat(e.bar);
+      cur = og.slot >= 0 ? {slot: og.slot, own: og.own || null, cs: og.cs, start: barBeat(e.bar), end: barBeat(song.bars)} : null; if (cur) blocks.push(cur);
     }
     for (const bk of blocks) {
       const c = bk.own && song.own && song.own[bk.own] ? song.own[bk.own] : tr.clips[bk.slot]; if (!c || !c.notes.length) continue;   // V2d′: own clips
@@ -45971,7 +46038,7 @@ function tkUncovered(A, B) {
   const sp = R.songPlay, song = S.song; if (!sp || !song) return [[A, B]];
   const sbA = songBeatOf(A); if (sbA == null) return [[A, B]];
   const off = A - sbA, cut = [];
-  if (song.vox) for (const v of song.vox) cut.push([v.bar * 4 + off, (v.bar + v.len) * 4 + off]);
+  if (song.vox) for (const v of song.vox) cut.push([barBeat(v.bar) + off, barBeat(v.bar + v.len) + off]);
   const mu = tkSongMute(); if (mu) cut.push([mu[0] + off, mu[1] + off]);
   return tkSubtract([[A, B]], cut);
 }
@@ -45992,7 +46059,7 @@ function tkSubtract(list, cut) {
 function tkSongMute() {
   const sr = R.songRec; if (!sr || !sr.over || !sr.vox || sr.pass > 0) return null;
   if (sr.mode === 'overdub' || sr.guide) return null;               // H7: „Alte Stimme hören“
-  return [sr.from * 4, sr.mode === 'insert' || sr.to == null ? Infinity : sr.to * 4];
+  return [barBeat(sr.from), sr.mode === 'insert' || sr.to == null ? Infinity : barBeat(sr.to)];
 }
 // scheduleTrack der STIMME-Spur (statt Noten)
 function tkSched(i, clip, from, to, late, ownId) {
@@ -46035,7 +46102,7 @@ function tkVoxTick(song, b0, b1, off, E, insB, lo) {
   const hi = Math.min(E, insB), sp = spb(), L0 = Math.max(b0, lo);
   for (const v0 of vx) {
     const v = g3VoxSeg(v0, sp, off);                              /* G3: Anlauf / Ausklang */
-    const sa = v.bar * 4 + v.at, sb = Math.min((v.bar + v.len) * 4 + (v.g3pb || 0), sa + (v.out - v.in) / sp, hi);
+    const sa = barBeat(v.bar) + v.at, sb = Math.min(barBeat(v.bar + v.len) + (v.g3pb || 0), sa + (v.out - v.in) / sp, hi);
     if (sb <= sa + 1e-6) continue;
     const A = sa + off, B = sb + off;
     if (B <= L0 + 1e-9 || A >= b1 - 1e-9) continue;
@@ -46053,7 +46120,7 @@ function tkVoxResync(force) {
   const at = TK.xf ? TK.xf.t : AU.ctx.currentTime + .006;
   for (const r of TK.src.slice()) if (r.vox) { TK.reg.delete(r.key); if (r.start > at) tkKill(r); else if (TK.xf) tkXfOut(r); else tkFadeAt(r, at, .003); }
   for (const k of [...TK.reg]) if (k[0] === 'v') TK.reg.delete(k);
-  if (R.songPlay && song) { try { const b0 = t2b(at), sp = R.songPlay; tkVoxTick(song, b0, R.schedBeat, sp.off, song.bars * 4, Infinity, sp.wrapAt != null && sp.wrapAt <= b0 ? sp.wrapAt : -Infinity); } catch (e) { logErr(e); } }
+  if (R.songPlay && song) { try { const b0 = t2b(at), sp = R.songPlay; tkVoxTick(song, b0, R.schedBeat, sp.off, barBeat(song.bars), Infinity, sp.wrapAt != null && sp.wrapAt <= b0 ? sp.wrapAt : -Infinity); } catch (e) { logErr(e); } }
   const st = stimmeT(); if (st >= 0) tkTrackResync(st);
 }
 function tkVoxCut(t) { for (const r of TK.src.slice()) if (r.vox) { TK.reg.delete(r.key); if (r.start >= t - 1e-6) tkKill(r); else if (r.end > t) tkFadeAt(r, t, .003); } }
@@ -46166,25 +46233,25 @@ function tkPhaseSet(st, si, cs) {
 /* ---------- Punch im Song (S5-Rückfrage: Überschreiben / Einfügen / Ersetzen / Overdub, Bereich) ---------- */
 function tkSongBegin(sr) {
   if (!sr || !sr.over || !ST.on || ST.phase === 'off' || !tkAudioOk() || !R.songPlay || (sr.tg && sr.tg.vox === false)) return;   // H2: Ziel „Gesang“ abgewählt
-  sr.vox = {passes: [{a: sr.from, T: sr.from * 4 + R.songPlay.off}]};
+  sr.vox = {passes: [{a: sr.from, T: barBeat(sr.from) + R.songPlay.off}]};
   tkQ('song', true);
   g8Begin(sr);                                                      /* G8: die Stimme läuft in Stücken mit */
 }
-function tkSongWrap(sr) { if (sr && sr.vox && R.songPlay) { sr.vox.passes.push({a: S.song.loop.a, T: S.song.loop.a * 4 + R.songPlay.off}); g8Wrap(sr); /* G8 */ } }
+function tkSongWrap(sr) { if (sr && sr.vox && R.songPlay) { sr.vox.passes.push({a: S.song.loop.a, T: barBeat(S.song.loop.a) + R.songPlay.off}); g8Wrap(sr); /* G8 */ } }
 // am Ende der Aufnahme: Audio der letzten Runde [a, E) → song.vox (vor dem Undo-Schnappschuss; der Take gehört in denselben Schritt)
 function tkSongCommit(sr, endBar, ins) {
   const v = sr && sr.vox, song = S.song; if (!v || !song) return;
   const p = v.passes[v.passes.length - 1], from = sr.mode === 'insert' ? sr.from : Math.max(p.a, sr.from), E = endBar;
   if (E <= from) return;
-  const T = p.T + (from - p.a) * 4;
+  const T = p.T + (barBeat(from) - barBeat(p.a));
   const takesBefore = S.takes ? JSON.stringify(S.takes) : null;
   const items = [], st = tkEnsureTrack(items);
   if (st < 0) { toast('Kein Platz für die STIMME-Spur – eine Zusatzspur leeren'); return; }
   TK.songJob = {};
-  const tk = tkMakeTake(T, T + (E - from) * 4, 'song', () => { TK.songJob = null; });
+  const tk = tkMakeTake(T, T + (barBeat(E) - barBeat(from)), 'song', () => { TK.songJob = null; });
   if (!tk) { TK.songJob = null; return; }
   if (v.passes.length > 1 && from === p.a) G3.noPre.add(tk.id);    /* G3: spätere Runde – davor liegt die vorige */
-  const sp = spb(), clip = {bar: from, len: E - from, take: tk.id, in: tkR6(tk.inSec), out: tkR6(tk.inSec + ((E - from) * 4 - tk.lateBeats) * sp), at: tkR6(tk.lateBeats)};
+  const sp = spb(), clip = {bar: from, len: E - from, take: tk.id, in: tkR6(tk.inSec), out: tkR6(tk.inSec + ((barBeat(E) - barBeat(from)) - tk.lateBeats) * sp), at: tkR6(tk.lateBeats)};
   const vx = song.vox ? song.vox.slice() : [];
   const lostTake = [];
   // Überschreiben / Ersetzen: alte Stimme in [from, E) weg (Ränder werden gekürzt); Overdub: die alten Stücke dort werden die stummen Takes
@@ -46192,7 +46259,7 @@ function tkSongCommit(sr, endBar, ins) {
   for (const o of vx) {
     const a0 = o.bar, a1 = o.bar + o.len;
     if (a1 <= from || a0 >= E) { kept.push(o); continue; }
-    if (sr.mode === 'overdub') { const sh = (from - a0) * 4; lostTake.push({take: o.take, in: tkR6(o.in + Math.max(0, sh - o.at) * sp), out: o.out, at: tkR6(Math.max(0, o.at - sh))}); }
+    if (sr.mode === 'overdub') { const sh = (barBeat(from) - barBeat(a0)); lostTake.push({take: o.take, in: tkR6(o.in + Math.max(0, sh - o.at) * sp), out: o.out, at: tkR6(Math.max(0, o.at - sh))}); }
     if (a0 < from) kept.push(tkVoxTrim(o, a0, from, sp));
     if (a1 > E) kept.push(tkVoxTrim(o, E, a1, sp));
   }
@@ -46211,9 +46278,9 @@ function tkSegTrim(g, sh, sp) {
   return {in: tkR6(Math.min(g.out, g.in + cut)), at: tkR6(at)};
 }
 function tkVoxTrim(o, x0, x1, sp) {
-  const sh = (x0 - o.bar) * 4, r = Object.assign({}, o, {bar: x0, len: x1 - x0}, tkSegTrim(o, sh, sp));
+  const sh = (barBeat(x0) - barBeat(o.bar)), r = Object.assign({}, o, {bar: x0, len: x1 - x0}, tkSegTrim(o, sh, sp));
   if (Array.isArray(o.alt)) r.alt = o.alt.map(g => Object.assign({}, g, tkSegTrim(g, sh, sp)));
-  const cut = g => { const m = tkR6(g.in + ((x1 - x0) * 4 - g.at) * sp); if (g.out > m + 1e-6) g.out = Math.max(g.in, m); };   // K1 (4.25.2): out endet mit dem Stück
+  const cut = g => { const m = tkR6(g.in + ((barBeat(x1) - barBeat(x0)) - g.at) * sp); if (g.out > m + 1e-6) g.out = Math.max(g.in, m); };   // K1 (4.25.2): out endet mit dem Stück
   cut(r); if (Array.isArray(r.alt)) r.alt.forEach(cut);
   return r;
 }
@@ -46470,7 +46537,7 @@ function tkSvDraw(g, song, XB, ru, rh, W) {
   const r = SV.rows.indexOf(st); if (r < 0) return;
   const y = ru + r * rh, col = SV.cols[st] || '#9ad', ok = tkAudioOk();
   for (const v of vx) {
-    const x0 = XB(v.bar * 4), x1 = XB((v.bar + v.len) * 4); if (x1 < 0 || x0 > W) continue;
+    const x0 = XB(barBeat(v.bar)), x1 = XB(barBeat(v.bar + v.len)); if (x1 < 0 || x0 > W) continue;
     g.globalAlpha = ok ? .28 : .14; g.fillStyle = col; g.fillRect(x0 + 1, y + 3, x1 - x0 - 3, rh - 6);
     g.globalAlpha = ok ? .9 : .35; g.strokeStyle = '#f2f4f8'; g.lineWidth = 1; g.strokeRect(x0 + 1.5, y + 3.5, x1 - x0 - 4, rh - 7);
     const pk = ok ? tkPeaks(v.take, v, Math.max(8, Math.min(160, Math.round((x1 - x0) / 3)))) : null;
@@ -49353,7 +49420,7 @@ function lyPrep(id, a) {
 // Wo steht der Song-/Clip-Kopf im Take? → {id, a, h (s im klingenden Puffer), d (Schläge bis zum Einsatz, > 0 = davor)}
 function lyWhere(bAud) {
   const st = stimmeT(); if (st < 0) return null;
-  const sp = spb(), LA = Math.max(4, 4 * (R.ciBars | 0)) + .01;
+  const sp = spb(), LA = (tkPlain() ? Math.max(4, 4 * (R.ciBars | 0)) : Math.max(tCountBeats(1), R.ciB || 0)) + .01;   // T1
   const recHere = rec.state !== 'off' && rec.track === st;
   if (R.playing && R.songPlay && S.song && S.song.vox && S.song.vox.length) {
     const sb = songBeatOf(bAud);
@@ -49361,7 +49428,7 @@ function lyWhere(bAud) {
       let best = null;
       for (const v of S.song.vox) {
         if (!lyHas(S.takes && S.takes[v.take])) continue;
-        const sa = v.bar * 4 + v.at, se = Math.min((v.bar + v.len) * 4, sa + (v.out - v.in) / sp);
+        const sa = barBeat(v.bar) + v.at, se = Math.min(barBeat(v.bar + v.len), sa + (v.out - v.in) / sp);
         if (sb >= sa - 1e-9 && sb < se) { best = {id: v.take, a: v, h: v.in + (sb - sa) * sp, d: 0}; break; }
         const d = sa - sb; if (d > 0 && d <= LA && (!best || d < best.d)) best = {id: v.take, a: v, h: v.in - d * sp, d};
       }
@@ -49450,7 +49517,7 @@ function lySylScene(s) {
 function lySylSong() {
   const song = S.song; if (!song || !song.vox || !song.vox.length) return null;
   const out = [], sp = spb();
-  for (const v of song.vox) { const P = lyPrep(v.take, v); if (!P || !P.S.length) continue; const n0 = out.length; lySylGroups(P, v.bar * 4 + v.at, v, sp, out); for (let i = n0; i < out.length; i++) out[i].i = -1; }
+  for (const v of song.vox) { const P = lyPrep(v.take, v); if (!P || !P.S.length) continue; const n0 = out.length; lySylGroups(P, barBeat(v.bar) + v.at, v, sp, out); for (let i = n0; i < out.length; i++) out[i].i = -1; }
   return out.sort((p, q) => p.b - q.b);
 }
 // Note ↔ Silbe über die Zeit: je Silbe die nächste freie Note, deren Anfang ≤ tol Schläge entfernt ist; gespeicherte Silbe (sy, aus G5) geht vor
@@ -49779,12 +49846,12 @@ function g3Watch() {
 // songTickInner, je Durchgang (Song-Schläge ↔ Transport + off): Einstiege bis 2 Takte voraus, Ausstiege im Fenster
 function g3SongTick(song, b0, b1, off, E, insB, lo) {
   if (!AU.ctx || !R.playing || !G3.run) return;
-  const ahead = G3_PRE_BARS * 4 + 1, lp = song.loop, SP = R.songPlay, wrapA = SP && SP.wrapAt != null ? lp.a * 4 : null;
+  const ahead = G3_PRE_BARS * 4 + 1, lp = song.loop, SP = R.songPlay, wrapA = SP && SP.wrapAt != null ? barBeat(lp.a) : null;
   for (let t = 0; t < NT(); t++) {
     const tr = S.tracks[t]; if (!tr || tr.mute || R.songOverride[t]) continue;
     const lane = song.lanes[t]; if (!lane || !lane.length) continue;
     for (const e of lane) {
-      const sB = e.bar * 4, B = sB + off;
+      const sB = barBeat(e.bar), B = sB + off;
       if (B - ahead >= b1) break;
       if (sB >= E - 1e-9 || sB >= insB - 1e-9) break;
       if (B < b0 - 1e-9 || B < lo - 1e-9) continue;                 // schon vorbei (Anlauf und Ausklang liegen dann auch hinter uns)
@@ -49797,7 +49864,7 @@ function g3SongTick(song, b0, b1, off, E, insB, lo) {
       if (e.slot >= 0 && o.slot === e.slot && Math.abs(o.cs - sB) < 1e-6 && laneClipOk(song, t, o) && !(wrapA != null && sB === wrapA && SP.wrapAt <= B + 1e-6)) g3Entry(t, o.slot, B, o.own || null, b0, b1, true);
     }
     // Song-Ende (ohne Schleife): der letzte Clip klingt aus
-    if (tr.stimme && E === song.bars * 4 && !(lp.on && lp.b >= song.bars)) { const B = E + off; if (B >= b0 - 1e-9 && B < b1 + .25) { const pv = laneOriginAt(lane, song.bars - 1); if (pv.slot >= 0) g3Exit(t, song, pv, song.bars, B, off); } }
+    if (tr.stimme && E === barBeat(song.bars) && !(lp.on && lp.b >= song.bars)) { const B = E + off; if (B >= b0 - 1e-9 && B < b1 + .25) { const pv = laneOriginAt(lane, song.bars - 1); if (pv.slot >= 0) g3Exit(t, song, pv, song.bars, B, off); } }
   }
 }
 function g3Exit(t, song, pv, bar, B, off) {
@@ -49806,7 +49873,7 @@ function g3Exit(t, song, pv, bar, B, off) {
   const L = clipB(clip), segA = Math.min(a.at, L), segB = Math.min(L, segA + (a.out - a.in) / sp);
   if (Math.abs(segB - L) > 1e-3) return;                            // der Take endet vor dem Clip-Ende: kein Anschluss
   if (Math.abs(segA + (a.out - a.in) / sp - L) > 1e-3) return;      // K1 (4.25.2): Take ragt über das (gekürzte) Clip-Ende – sein Ausklang gehört nicht hierher
-  const ph = ((bar * 4 - pv.cs) % L + L) % L; if (ph > 1e-6 && L - ph > 1e-6) return;   // mitten im Clip abgebrochen: kein Ausklang
+  const ph = ((barBeat(bar) - pv.cs) % L + L) % L; if (ph > 1e-6 && L - ph > 1e-6) return;   // mitten im Clip abgebrochen: kein Ausklang
   const key = 'g3p' + R.runId + ':' + t + ':' + B.toFixed(4); if (TK.reg.has(key)) return;
   const buf = tkPlayBuf(a.take, a); if (!buf) { tkLoad(a.take); return; }
   const x = .005;                                                   // beginnt 5 ms vor dem Taktstrich: Überblendung mit dem Ende des Durchgangs
@@ -49815,11 +49882,11 @@ function g3Exit(t, song, pv, bar, B, off) {
 }
 // tkVoxTick: ein Stück der Song-Stimme mit Anlauf (wenn es am Take-Anfang beginnt) und Ausklang (wenn der Take bis an sein Ende reicht)
 function g3VoxSeg(v, sp, off) {
-  const pre = v.at < 1e-6 ? g3PreOf(v) : 0, full = Math.abs(v.at + (v.out - v.in) / sp - v.len * 4) <= 1e-3, post = full ? g3PostOf(v) : 0;   // K1: genau bis zum Ende, nicht darüber
+  const pre = v.at < 1e-6 ? g3PreOf(v) : 0, full = Math.abs(v.at + (v.out - v.in) / sp - (barBeat(v.bar + v.len) - barBeat(v.bar))) <= 1e-3, post = full ? g3PostOf(v) : 0;   // K1: genau bis zum Ende, nicht darüber
   if (!(pre > .003) && !(post > .003)) return v;
-  const preB = pre > .003 && (!G3.run || v.bar * 4 + off - pre / sp >= G3.run.b0 - 1e-6) ? pre / sp : 0, postB = post > .003 ? post / sp : 0;
+  const preB = pre > .003 && (!G3.run || barBeat(v.bar) + off - pre / sp >= G3.run.b0 - 1e-6) ? pre / sp : 0, postB = post > .003 ? post / sp : 0;
   if (!preB && !postB) return v;
-  return Object.assign({}, v, {in: v.in - preB * sp, at: v.at - preB, out: v.out + postB * sp, g3pb: postB, g3e: preB ? b2t(v.bar * 4 + off) : undefined});
+  return Object.assign({}, v, {in: v.in - preB * sp, at: v.at - preB, out: v.out + postB * sp, g3pb: postB, g3e: preB ? b2t(barBeat(v.bar) + off) : undefined});
 }
 function g3Log(x) { x.t = AU.ctx ? +AU.ctx.currentTime.toFixed(4) : 0; G3.log.push(x); if (G3.log.length > 64) G3.log.shift(); }
 
@@ -49843,10 +49910,10 @@ function g3SvDraw(g, song, XB, ru, rh, W) {
     const tr = S.tracks[t], lane = song.lanes[t]; if (!tr || !lane || !lane.length) continue;
     for (const e of lane) {
       if (e.bar >= song.bars) break;
-      const xe = XB(e.bar * 4); if (xe < -W || xe > 2 * W) continue;  // nur, was im Bild (oder knapp daneben) liegt
+      const xe = XB(barBeat(e.bar)); if (xe < -W || xe > 2 * W) continue;  // nur, was im Bild (oder knapp daneben) liegt
       const o = laneOriginAt(lane, e.bar), pv = e.bar > 0 ? laneOriginAt(lane, e.bar - 1) : {slot: -1, cs: 0, own: null};
       if (o.slot === pv.slot && (o.own || null) === (pv.own || null)) continue;
-      const B = e.bar * 4;
+      const B = barBeat(e.bar);
       if (e.slot >= 0 && Math.abs(o.cs - B) < 1e-6) {
         const c = (o.own && song.own && song.own[o.own]) || tr.clips[o.slot];
         if (c && tr.stimme && c.audio && ok) { const pre = g3PreOf(c.audio); if (pre > .003 && c.audio.at < 1e-6) put(t, XB(B - pre / sp), XB(B), -1, 'pre'); }
@@ -49858,18 +49925,18 @@ function g3SvDraw(g, song, XB, ru, rh, W) {
   }
   const st = stimmeT();
   if (st >= 0 && ok && song.vox) for (const v of song.vox) {
-    const pre = v.at < 1e-6 ? g3PreOf(v) : 0, post = v.at + (v.out - v.in) / sp >= v.len * 4 - 1e-3 ? g3PostOf(v) : 0;
-    if (pre > .003) put(st, XB(v.bar * 4 - pre / sp), XB(v.bar * 4), -1, 'vox-pre');
-    if (post > .003) put(st, XB((v.bar + v.len) * 4), XB((v.bar + v.len) * 4 + post / sp), 1, 'vox-post');
+    const pre = v.at < 1e-6 ? g3PreOf(v) : 0, post = v.at + (v.out - v.in) / sp >= barBeat(v.bar + v.len) - barBeat(v.bar) - 1e-3 ? g3PostOf(v) : 0;
+    if (pre > .003) put(st, XB(barBeat(v.bar) - pre / sp), XB(barBeat(v.bar)), -1, 'vox-pre');
+    if (post > .003) put(st, XB(barBeat(v.bar + v.len)), XB(barBeat(v.bar + v.len) + post / sp), 1, 'vox-post');
   }
 }
 function g3PostDraw(put, t, song, pv, bar, XB, sp) {
   const c = (pv.own && song.own && song.own[pv.own]) || S.tracks[t].clips[pv.slot], a = c && c.audio; if (!a) return;
   const post = g3PostOf(a); if (!(post > .003)) return;
-  const L = clipB(c), segB = Math.min(L, Math.min(a.at, L) + (a.out - a.in) / sp), ph = ((bar * 4 - pv.cs) % L + L) % L;
+  const L = clipB(c), segB = Math.min(L, Math.min(a.at, L) + (a.out - a.in) / sp), ph = ((barBeat(bar) - pv.cs) % L + L) % L;
   if (Math.abs(segB - L) > 1e-3 || (ph > 1e-6 && L - ph > 1e-6)) return;
   if (Math.abs(Math.min(a.at, L) + (a.out - a.in) / sp - L) > 1e-3) return;   // K1 (wie g3Exit)
-  put(t, XB(bar * 4), XB(bar * 4 + post / sp), 1, 'post');
+  put(t, XB(barBeat(bar)), XB(barBeat(bar) + post / sp), 1, 'post');
 }
 
 /* ---------- Teil verschieben: die Song-Stimme des Teils (mit Anlauf/Ausklang) geht mit ---------- */
@@ -50536,7 +50603,7 @@ async function g5Convert(r) {
   G5.busy = true; haptic('pop');
   try {
     const t0 = performance.now(), sk = (r.vox ? songKeyAtBar(a.bar) : sceneKeyOf(r.s)) || S.key;
-    const A = await g5Analyse(a, r.vox ? a.bar * 4 + a.at : a.at, {root: sk.root, scale: sk.scale});
+    const A = await g5Analyse(a, r.vox ? barBeat(a.bar) + a.at : a.at, {root: sk.root, scale: sk.scale});
     G5.runs++;
     const y = tkRef(r); if (!A || A.short || !y || y.a !== a) { if (!A) toast('Take fehlt auf diesem Gerät'); else if (A.short) toast('Take zu kurz'); return false; }
     return r.vox ? g5Song(a, A, cfg, t0) : g5Scene(r, x.clip, A, cfg, t0);
@@ -50564,15 +50631,15 @@ const vsResultApiOk = () => { VS.res = null; if (UI.pop && UI.pop.name === 'vsre
 function g5Song(v, A, cfg, t0) {
   const song = S.song; if (!song) return false;
   const t = song.melodyTrack != null && S.tracks[song.melodyTrack] && S.tracks[song.melodyTrack].kind === 'synth' ? song.melodyTrack : MEL_T;
-  const lo = v.bar * 4 - 0.25, hi = (v.bar + v.len) * 4 - 0.25, g = VS_GRIDS[cfg.grid] || 0, L = v.len * 4;
+  const lo = barBeat(v.bar) - 0.25, hi = barBeat(v.bar + v.len) - 0.25, g = VS_GRIDS[cfg.grid] || 0, L = barBeat(v.bar + v.len) - barBeat(v.bar);
   const nt = vsNotesOf(A, {snap: cfg.snap}), add = [];
   for (const n of nt.notes) {
     if (n.b < lo - 1e-6 || n.b >= hi - 1e-6) continue;
-    let o = Math.max(0, n.b - v.bar * 4); if (g) o = Math.round(o / g) * g;                // Raster ohne Umbruch ans Bereichsende
+    let o = Math.max(0, n.b - barBeat(v.bar)); if (g) o = Math.round(o / g) * g;                // Raster ohne Umbruch ans Bereichsende
     if (o >= L - 1e-6) continue;
-    add.push({t: +(v.bar * 4 + o).toFixed(4), d: rd4(Math.max(1 / 32, Math.min(n.d, L - o))), n: n.n, v: rv3(n.v)});
+    add.push({t: +(barBeat(v.bar) + o).toFixed(4), d: rd4(Math.max(1 / 32, Math.min(n.d, L - o))), n: n.n, v: rv3(n.v)});
   }
-  try { const P = lyPrep(v.take, v); if (P && P.S.length) lyG5Give(add, lySylGroups(P, v.bar * 4 + v.at, v, spb(), [])); } catch (e) { logErr(e); }   // G9E: Silben mitgeben
+  try { const P = lyPrep(v.take, v); if (P && P.S.length) lyG5Give(add, lySylGroups(P, barBeat(v.bar) + v.at, v, spb(), [])); } catch (e) { logErr(e); }   // G9E: Silben mitgeben
   G5.last = {kind: 'song', bar: v.bar, notes: add.length, track: t, ms: Math.round(performance.now() - t0)};
   if (!add.length) { toast('Kein Gesang erkannt'); return false; }
   const before = songSnapshot(), m = song.mel[t] || (song.mel[t] = melEmpty());
@@ -52949,13 +53016,13 @@ function g6pLaneClip(song, i, bar) {
 }
 // Tonklassen der Begleitung an Song-Schlag sb (absolut, ab Takt 1 = 0); null bei weniger als 2 Tönen (wie g6HeardPcs)
 function g6pSongPcsAt(sb) {
-  const song = S.song; if (!song || !isNum(sb) || sb < 0 || sb >= song.bars * 4) return null;
-  const bar = Math.floor(sb / 4 + 1e-9), out = new Set(), hit = (nb, nd, b) => isNum(nb) && isNum(nd) && b >= nb - 1e-6 && b < nb + nd;
+  const song = S.song; if (!song || !isNum(sb) || sb < 0 || sb >= barBeat(song.bars)) return null;
+  const bar = barAt(sb), out = new Set(), hit = (nb, nd, b) => isNum(nb) && isNum(nd) && b >= nb - 1e-6 && b < nb + nd;
   for (let i = 0; i < S.tracks.length; i++) {
     const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || tr.stimme || tr.mute || i === MEL_T) continue;
     const x = g6pLaneClip(song, i, bar);
     if (x && x.c.notes && x.c.notes.length) {
-      const L = Math.max(1, x.c.len || 1) * 4, b = (((sb - x.cs) % L) + L) % L;
+      const L = Math.max(1, x.c.len || 1) * clipBarB(x.c), b = (((sb - x.cs) % L) + L) % L;
       for (const n of x.c.notes) if (hit(isNum(n.b) ? n.b : n.t, isNum(n.d) ? n.d : n.len, b)) out.add(((Math.round(n.n) % 12) + 12) % 12);
     }
     const m = song.mel && song.mel[i];                                 // V2b: Song-Melodie dieser Spur (absolute Song-Schläge)
@@ -52964,11 +53031,11 @@ function g6pSongPcsAt(sb) {
   return out.size >= 2 ? out : null;
 }
 // Spec-Schnittstelle: Takt (0-basiert) + Schlag im Takt
-function g6pSongPcs(bar, beat) { return g6pSongPcsAt(bar * 4 + (beat || 0)); }
+function g6pSongPcs(bar, beat) { return g6pSongPcsAt(barBeat(bar) + (beat || 0)); }
 // für g6HeardPcs: beat = Schlag ab Takt der Song-Stimme (g6Build: (t0 − in)/spb + at). Abgetastet wird ¼ Schlag nach dem erkannten
 // Noten-Anfang: die Analyse setzt t0 oft einige ms vor den Einsatz, und ein Ton auf dem Akkordwechsel bekäme sonst den alten Akkord
 const G6P_PROBE = 0.25;
-function g6pVoxPcs(r, beat) { const v = S.song && (S.song.vox || []).find(z => z.id === r.vox); return v ? g6pSongPcsAt(v.bar * 4 + beat + G6P_PROBE) : null; }
+function g6pVoxPcs(r, beat) { const v = S.song && (S.song.vox || []).find(z => z.id === r.vox); return v ? g6pSongPcsAt(barBeat(v.bar) + beat + G6P_PROBE) : null; }
 /* ---------- 2. Vorausrechnen ---------- */
 // Lead-Fassung fertig (Roh-Take geladen, G2/Zeitkarte gerechnet, VS-P gemessen und zweimal hintereinander dieselbe Fassung)
 function g6pLeadReady(id, a) {
@@ -53941,7 +54008,7 @@ async function vvRenderAudio0(o) {
   if (SynthHost.state === 'loading' && SynthHost.promise) { try { await SynthHost.promise; } catch (e) {} }
   await vvTakesReady();
   if (typeof g6pWaitAll === 'function' && !GGB.dry) { const w = await g6pWaitAll({a, b}, {cancel: () => VV.cancel}); if (!w.ok) toast('Chor im Video nicht ganz fertig gerechnet'); }   // G6PH-VIDEO (G-GB: Instrumental ohne Chor – nicht auf Chor-Puffer warten)
-  const wk = wkReady(), sr = lc.sampleRate, sp = spb(), songSec = (b - a) * 4 * sp;
+  const wk = wkReady(), sr = lc.sampleRate, sp = spb(), songSec = (barBeat(b) - barBeat(a)) * sp;   // T1
   const lead = .06, len = Math.ceil((lead + AU.graphLat + songSec + VV_TAIL + .4) * sr);
   const oc = new OfflineAudioContext(2, len, sr);
   if (wk && !(await vvAddModule(oc))) throw new Error('Klang-Modul nicht geladen');
@@ -53956,7 +54023,7 @@ async function vvRenderAudio0(o) {
     if (!songPlayStart(a)) throw new Error('Song startet nicht');
     vvProf('swapIn', performance.now() - PS);
   } catch (e) { if (off.sv) vvSwapOut(off.sv); VV.off = null; UI.vvOff = false; throw e; }
-  const t0 = R.startTime, endB = b < song.bars ? R.songPlay.off + b * 4 : null, q = t => Math.ceil(t * sr / 128) * 128 / sr;
+  const t0 = R.startTime, endB = b < song.bars ? R.songPlay.off + barBeat(b) : null, q = t => Math.ceil(t * sr / 128) * 128 / sr;
   if (off.mtr) live.mtr = {Q: off.mtr.Q, gl: AU.graphLat, off: t0 + AU.graphLat};   // VV4-F: the pictures drawn behind the render read the meter too
   const last = [];
   const recSlots = now => {
@@ -53997,7 +54064,7 @@ async function vvRenderAudio0(o) {
           if (TK.src.length) { tkVoxCut(tE); for (const r of TK.src.slice()) if (!r.vox && r.start >= tE) { TK.reg.delete(r.key); tkKill(r); } }
         }
         recSlots(now);
-        if (!R.playing) { off.ended = true; off.endT = now; off.endB = endB != null ? endB : (b - a) * 4; finishLive(); }
+        if (!R.playing) { off.ended = true; off.endT = now; off.endB = endB != null ? endB : (barBeat(b) - barBeat(a)); finishLive(); }
       }
       off.prog = now / total; live.t = now - t0 - AU.graphLat;
       if (o.onProgress) { try { o.onProgress(off.prog); } catch (e) {} }
@@ -54075,7 +54142,7 @@ function vvDrawSong(g, LW, LH, st) {
   const C = vvCols(), song = S.song, bars = song ? song.bars : 0, port = LH > LW;
   const rows = vvRows(), labW = port ? 66 : 78, ru = port ? 24 : 26, cw = port ? 40 : 48;
   const nr = rows.length + 2, rh = Math.max(20, Math.min(port ? 58 : 34, (LH - ru - 16) / nr)), y0 = Math.max(8, (LH - ru - nr * rh) / 2);
-  const viewW = LW - labW, sb = st.sb == null ? 0 : Math.min(Math.max(0, st.sb), bars * 4), px = sb / 4 * cw;
+  const viewW = LW - labW, sb = st.sb == null ? 0 : Math.min(Math.max(0, st.sb), barBeat(bars)), px = barFrac(sb) * cw;
   const sx = Math.max(0, Math.min(px - viewW * .35, Math.max(0, (bars + 1) * cw - viewW)));
   const X = b => labW + b * cw - sx, cur = st.sb != null && st.sb >= 0 && st.sb < bars * 4 ? Math.floor(st.sb / 4) : -1;
   g.fillStyle = C.bg; g.fillRect(0, 0, LW, LH);
@@ -54460,7 +54527,7 @@ async function vvlOutro(o) {
   const L = await vvlLoad(); if (!L || !L.v) return null;
   const v = L.v; try { await v.play(); } catch (e) {} try { v.pause(); v.currentTime = 0; } catch (e) {}   // primed (iOS draws a never-played video late)
   let songSec = 0; const rg = o.range || vvRange(false), song = S.song;
-  if (rg && song && song.bars) { const a = clamp(rg.a | 0, 0, song.bars - 1), b = clamp(rg.b | 0, a + 1, song.bars); songSec = (b - a) * 4 * spb(); }
+  if (rg && song && song.bars) { const a = clamp(rg.a | 0, 0, song.bars - 1), b = clamp(rg.b | 0, a + 1, song.bars); songSec = (barBeat(b) - barBeat(a)) * spb(); }
   return {v, L: L.dur, own: L.own, name: L.name, songSec, extra: Math.max(VVL_FADE, VVL_AT + L.dur) + VVL_END};
 }
 function vvlDark(g, W, H, a) { if (a <= 0) return; g.save(); g.globalCompositeOperation = 'source-over'; g.globalAlpha = Math.min(1, a); g.fillStyle = '#000'; g.fillRect(0, 0, W, H); g.restore(); }
@@ -54661,7 +54728,7 @@ async function vvMake(o) {
     try {
     if (path.how === 'webcodecs') {
       const live = {tl: [], t: -1, est: 0};
-      if (S.song) { const rg = o.range || vvRange(false); live.est = (rg.b - rg.a) * 4 * spb() + 2; }
+      if (S.song) { const rg = o.range || vvRange(false); live.est = (barBeat(rg.b) - barBeat(rg.a)) * spb() + 2; }
       rP = vvRenderAudio({range: o.range, live}); rP.then(() => { T1 = performance.now(); }, () => {});
       const job = {W, H, path, view, canvas: cv, live, rP, rt, outro, onProgress: p => prog(p, 'Video')};
       let wcErr = null;
@@ -54963,14 +55030,15 @@ async function ggbTo48(r, N) {
   return [out.getChannelData(0), out.getChannelData(1)];
 }
 // WAV 48 kHz / 16 Bit / Stereo: Vorzähler (preN Samples, beats Klicks im Abstand sp) + Song
-async function ggbWav(ch, preN, beats, sp) {
+async function ggbWav(ch, preN, beats, sp, ts) {
   const N = ch[0].length, n = preN + N, out = new Uint8Array(44 + n * 4), dv = new DataView(out.buffer), w = (o, s) => { for (let i = 0; i < s.length; i++) out[o + i] = s.charCodeAt(i); };
   w(0, 'RIFF'); dv.setUint32(4, 36 + n * 4, true); w(8, 'WAVE'); w(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 2, true);
   dv.setUint32(24, GGB_SR, true); dv.setUint32(28, GGB_SR * 4, true); dv.setUint16(32, 4, true); dv.setUint16(34, 16, true); w(36, 'data'); dv.setUint32(40, n * 4, true);
   const pcm = new Int16Array(out.buffer, 44, n * 2), L0 = .3, cl = Math.round(.04 * GGB_SR);
-  for (let k = 0; k < beats; k++) {                                 // Klick wie click(): 1760 Hz auf der Eins, sonst 1100 Hz, 30 ms auf −50 dB
-    const i0 = Math.round(k * sp * GGB_SR), f = k % 4 === 0 ? 1760 : 1100;
-    for (let j = 0; j < cl && i0 + j < preN; j++) { const t = j / GGB_SR, e = t < .03 ? L0 * Math.pow(.001 / L0, t / .03) : .001, v = Math.round(e * Math.sin(2 * Math.PI * f * t) * 32767); pcm[2 * (i0 + j)] = v; pcm[2 * (i0 + j) + 1] = v; }
+  const td = ts ? tsOf(ts) : null, nk = td ? Math.round(beats / td.u) : beats;   // T1: je Zählzeit, Betonungsmuster wie das Metronom
+  for (let k = 0; k < nk; k++) {                                    // Klick wie click(): 1760 Hz auf der Eins, sonst 1100 Hz, 30 ms auf −50 dB
+    const lv = td ? td.acc[k % td.n] : (k % 4 === 0 ? 2 : 1), i0 = Math.round(k * (td ? td.u : 1) * sp * GGB_SR), f = lv === 2 ? 1760 : 1100, L1 = lv === 0 ? Math.max(L0 * .5, .0012) : L0;
+    for (let j = 0; j < cl && i0 + j < preN; j++) { const t = j / GGB_SR, e = t < .03 ? L1 * Math.pow(.001 / L1, t / .03) : .001, v = Math.round(e * Math.sin(2 * Math.PI * f * t) * 32767); pcm[2 * (i0 + j)] = v; pcm[2 * (i0 + j) + 1] = v; }
   }
   const A = ch[0], B = ch[1];
   for (let i = 0; i < N; i += 262144) {                             // in Stücken (kein langer Block im Hauptfaden)
@@ -54992,10 +55060,11 @@ async function ggbRender(o) {
     GGB.dry = true; VV.cancel = false;
     try { r = await vvRenderAudio({range: rg, onProgress: p => { GGB.prog = p; if (o.onProgress) o.onProgress(p); }}); }
     finally { GGB.dry = false; VV.last = keep; }
-    const sp = 60 / r.bpm, N = Math.round(r.songSec * GGB_SR), preN = Math.round(pre * 4 * sp * GGB_SR);
+    const pts = tkPlain() ? null : tsAtBar(rg.a), preB = pts ? pre * tsBeats(pts) : pre * 4;   // T1: Vorzähler in der Taktart des ersten Takts
+    const sp = 60 / r.bpm, N = Math.round(r.songSec * GGB_SR), preN = Math.round(preB * sp * GGB_SR);
     const ch = await ggbTo48(r, N); r = null;
     const fo = Math.min(N, Math.round(.01 * GGB_SR)); for (const d of ch) for (let j = 0; j < fo; j++) d[N - fo + j] *= (fo - 1 - j) / fo;   // Ende ohne Knacks
-    const bytes = await ggbWav(ch, preN, pre * 4, sp);
+    const bytes = await ggbWav(ch, preN, preB, sp, pts);
     clearTimeout(GGB.ttl); GGB.ttl = setTimeout(() => { GGB.res = null; ggbPaint(); }, 10 * 60000);   // die Datei (≈ 11 MB je Minute) bleibt 10 min zum Teilen
     GGB.res = {bytes, name: ggbFileBase(), sr: GGB_SR, n: preN + N, preN, songN: N, pre: preN / GGB_SR, preBars: pre, a: rg.a, b: rg.b, sel: !!rg.sel, bpm: +S.bpm, songSec: N / GGB_SR, sig, ms: Math.round(performance.now() - T0)};
     return GGB.res;
@@ -55004,7 +55073,7 @@ async function ggbRender(o) {
 // nach dem Teilen: Export-Daten in den Song (undo-neutral, gespeichert)
 function ggbRemember(res) {
   const song = S.song; if (!song || !res) return null;
-  song.gb = ggbNorm({id: 'g' + Date.now().toString(36), tick: res.a * 4 * GGB_PPQ, pre: res.pre, bpm: res.bpm, len: res.songSec, bars: res.b - res.a});
+  song.gb = ggbNorm({id: 'g' + Date.now().toString(36), tick: barBeat(res.a) * GGB_PPQ, pre: res.pre, bpm: res.bpm, len: res.songSec, bars: res.b - res.a});
   markDirty();
   return song.gb;
 }
@@ -55483,7 +55552,7 @@ function vvRun(o) {
 }
 function vvShotAt(rt, sb) {
   const sh = rt.shots; if (!sh.length) return {k: -1, v: 'song', t: null, a: 0};
-  const bar = sb == null ? rt.A : Math.floor(sb / 4 + 1e-9);
+  const bar = sb == null ? rt.A : barAt(sb);
   let k = 0; while (k + 1 < sh.length && sh[k + 1].a <= bar) k++;
   return Object.assign({k}, sh[k]);
 }
@@ -55521,7 +55590,7 @@ function vvCamTarget(sh, st, asp) {
     return {cx: ph == null ? w1 / 2 : Ly.x + 8 + ph * (Ly.w - 16) + w1 * .1, cy: LH / 2, z: 1};
   }
   // song: the Laufband (as vvDrawSong places it) at ~45 % of the window
-  const bars = S.song ? S.song.bars : 0, labW = 78, cw = 48, viewW = LW - labW, sb = st.sb == null ? 0 : Math.min(Math.max(0, st.sb), bars * 4), px = sb / 4 * cw;
+  const bars = S.song ? S.song.bars : 0, labW = 78, cw = 48, viewW = LW - labW, sb = st.sb == null ? 0 : Math.min(Math.max(0, st.sb), barBeat(bars)), px = barFrac(sb) * cw;
   const sx = Math.max(0, Math.min(px - viewW * .35, Math.max(0, (bars + 1) * cw - viewW)));
   return {cx: labW + px - sx + w1 * .05, cy: LH / 2, z: 1};       // the Laufband a bit left of the middle (at the start: the labels too)
 }
@@ -55705,7 +55774,7 @@ function vvAppFocus(kind, track, t, rect) {
   const L = VV4A_L.song, gy = L.y + 4 + 48, sg = {x: 0, y: gy, w: L.w, h: L.y + L.h - gy};
   const song = S.song, rows = vvRows(), labW = 66, ru = 24, cw = 40, bars = song ? song.bars : 0;   // portrait, as vvDrawSong (LH > LW)
   const nr = rows.length + 2, rh = Math.max(20, Math.min(58, (sg.h - ru - 16) / nr)), y0 = Math.max(8, (sg.h - ru - nr * rh) / 2), viewW = sg.w - labW;
-  const sb = st.sb == null ? 0 : Math.min(Math.max(0, st.sb), bars * 4), px = sb / 4 * cw, sx = Math.max(0, Math.min(px - viewW * .35, Math.max(0, (bars + 1) * cw - viewW)));
+  const sb = st.sb == null ? 0 : Math.min(Math.max(0, st.sb), barBeat(bars)), px = barFrac(sb) * cw, sx = Math.max(0, Math.min(px - viewW * .35, Math.max(0, (bars + 1) * cw - viewW)));
   const X = b => labW + b * cw - sx, bar = Math.floor(sb / 4), ms = song ? song.marks || [] : [];
   const S_ = r => P({x: sg.x + r.x, y: sg.y + r.y, w: r.w, h: r.h}, 'song');
   if (kind === 'teil') {
