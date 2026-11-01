@@ -526,6 +526,7 @@ svg{display:block}
 .msheet .ms-b.sx-f.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}
 .msheet .ms-b.sx-f.on small{color:#e6c48a}
 .msheet .ms-b.sx-c{flex:.8 1 0}
+@media (orientation:landscape){.msheet .sx-kw{display:flex;gap:4px;height:44px;margin-top:4px}.msheet .sx-kw>.ms-r{display:contents}.msheet .sx-kw .kon-r .ms-b{flex:1.6 1 0}}
 .sv-tbb{position:absolute;inset:0;width:100%;height:100%;padding:0 4px;font:700 9px/1 var(--font-num);text-align:left;justify-content:flex-start;border-radius:3px;color:var(--text)}   /* V2a: Spurbank of the song view (V2e moves it into the transport) */
 .sv-l.blank{opacity:0}
 .sv-l{flex:0 0 var(--svh,30px);display:flex;align-items:center;gap:5px;padding:0 4px;font:700 10px/1 var(--font-ui);letter-spacing:.05em;color:var(--text-dim);min-width:0;overflow:hidden;white-space:nowrap;border-top:1px solid rgba(255,255,255,.05)}
@@ -58355,11 +58356,13 @@ function sx11MarkSheetPaint(p, m) {
   const bb = p.querySelector('.ms-bb'); if (!bb) return;
   const inf = sx11Info(S.song, m), l = inf.c === 'l', ls = sx11Sum(inf.l), vs = sx11Sum(inf.v), cp = SX.clip;
   const lsub = ls || 'alles an', vsub = vs || 'alles an';
-  bb.insertAdjacentHTML('afterend', `<div class="ms-r sx-r" role="group" aria-label="Fassung">` +
+  bb.insertAdjacentHTML('afterend', `<div class="sx-kw"><div class="ms-r sx-r" role="group" aria-label="Fassung">` +
     `<button class="rb ms-b sx-f${l ? ' on' : ''}" data-sx="l" aria-pressed="${l}" aria-label="${esc('Fassung leicht: ' + lsub + (inf.vorschlag ? ' (Vorschlag)' : ''))}">Leicht<small>${esc(lsub)}</small></button>` +
     `<button class="rb ms-b sx-f${l ? '' : ' on'}" data-sx="v" aria-pressed="${!l}" aria-label="${esc('Fassung voll: ' + vsub)}">Voll<small>${esc(vsub)}</small></button>` +
     `<button class="rb ms-b sx-c" data-sx="cp" aria-label="Variante kopieren">⧉ Variante</button>` +
-    `<button class="rb ms-b sx-c" data-sx="pa"${cp ? ` aria-label="${esc('Variante einfügen: ' + cp.name + (cp.f === 'l' ? ' leicht' : ' voll'))}"` : ' disabled aria-label="Variante einfügen – erst bei einem Teil kopieren"'}>Einfügen</button></div>`);
+    `<button class="rb ms-b sx-c" data-sx="pa"${cp ? ` aria-label="${esc('Variante einfügen: ' + cp.name + (cp.f === 'l' ? ' leicht' : ' voll'))}"` : ' disabled aria-label="Variante einfügen – erst bei einem Teil kopieren"'}>Einfügen</button></div></div>`);
+  // quer: the row shares its line with [Als neuen Teil konsolidieren] (the sheet is not higher than before)
+  const w = p.querySelector('.sx-kw'), k = p.querySelector('.kon-r'); if (w && k) w.appendChild(k);
 }
 function sx11Tap(p, b) {
   const id = SV.mark, m = S.song && S.song.marks.find(x => x.id === id); if (!m) { closePop(); return; }

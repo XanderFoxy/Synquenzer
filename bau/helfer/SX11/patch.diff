@@ -1,0 +1,405 @@
+--- bau/snapshots/R-4300.html	2026-11-01 09:14:20.150516124 +0000
++++ bau/helfer/SX11/index.html	2026-11-01 09:46:18.078472257 +0000
+@@ -520,6 +520,13 @@
+ .msheet.konsheet .ms-h b{color:#e6e9ef}
+ .msheet .kon-tip{font:600 10px/1.25 var(--font-ui);color:var(--text-dim);padding:6px 2px 2px}
+ .msheet .kon-r{margin-top:4px}
++.msheet .sx-r{margin-top:4px}   /* SX11: Fassung [Leicht] [Voll] [⧉ Variante] [Einfügen] */
++.msheet .ms-b.sx-f{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
++.msheet .ms-b.sx-f small{display:block;max-width:100%;font:600 9.5px/1.1 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
++.msheet .ms-b.sx-f.on{color:#ffcf7a;border-color:#6b4c16;box-shadow:inset 0 0 0 1px #6b4c16}
++.msheet .ms-b.sx-f.on small{color:#e6c48a}
++.msheet .ms-b.sx-c{flex:.8 1 0}
++@media (orientation:landscape){.msheet .sx-kw{display:flex;gap:4px;height:44px;margin-top:4px}.msheet .sx-kw>.ms-r{display:contents}.msheet .sx-kw .kon-r .ms-b{flex:1.6 1 0}}
+ .sv-tbb{position:absolute;inset:0;width:100%;height:100%;padding:0 4px;font:700 9px/1 var(--font-num);text-align:left;justify-content:flex-start;border-radius:3px;color:var(--text)}   /* V2a: Spurbank of the song view (V2e moves it into the transport) */
+ .sv-l.blank{opacity:0}
+ .sv-l{flex:0 0 var(--svh,30px);display:flex;align-items:center;gap:5px;padding:0 4px;font:700 10px/1 var(--font-ui);letter-spacing:.05em;color:var(--text-dim);min-width:0;overflow:hidden;white-space:nowrap;border-top:1px solid rgba(255,255,255,.05)}
+@@ -21528,6 +21535,7 @@
+     const o = {id, a: A, len: L, part: typeof m.part === 'string' && /^[PS][1-8]$/.test(m.part) ? m.part : null};
+     if (typeof m.name === 'string' && m.name.trim()) o.name = m.name.trim().slice(0, 12);
+     if (m.off) { const off = s0OffNorm(m.off); if (off) o.off = off; }   /* S0 */
++    if (m.vr) { const vr = sx11Norm(m.vr, L); if (vr) o.vr = vr; }        /* SX11: Fassung leicht/voll */
+     out.push(o); end = A + L;
+   }
+   return out;
+@@ -23781,8 +23789,8 @@
+ /* V2d′ (song-delta 9.2, 12.1): the own clip track i plays now (R.own, a copy that only holds at this song place), else null.
+    The copy names its scene slot (from.s): it only counts while that slot plays */
+ function ownPlaying(i) {
+-  const id = R.own[i]; if (!id || !S.song || !S.song.own) return null;
+-  const c = S.song.own[id];
++  const id = R.own[i]; if (!id || !S.song) return null;
++  const c = (S.song.own && S.song.own[id]) || sx11Held(i, id);   // SX11: a thinned copy plays on until the bar line of the switch
+   return c && c.from && c.from.s === R.slot[i] ? c : null;
+ }
+ /* drum branch (§3.4): every stored step expands to 0..4 hits (DrumSeq.expandStep: chance by a hash of seed/loop/step, so
+@@ -25284,6 +25292,7 @@
+   }
+ }
+ function undo() {
++  sx11HoldFor(UNDO[UNDO.length - 1]);   // SX11
+   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && UNDO.length && UNDO[UNDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
+   if (HIST && HIST.q.length) histDrain();  // VC2a-fix: mehrere ↶ in einer Aufgabe = je ein Ereignis
+   const u = UNDO.pop();
+@@ -25291,11 +25300,13 @@
+   if (u.kind === 'group') REDO.push(groupSwap(u, true));
+   else { REDO.push(Object.assign({}, u, {before: undoState(u)})); undoApply(u, u.before); }
+   histPush(u, 'undo');  // VC2a
++  sx11AfterUndo(u);       // SX11: im Lauf ab dem nächsten Taktstrich
+   if (R.editor === 'roll' || R.editor === 'clip') toast('Rückgängig: ' + u.label);   // the editor and the clip sheet have ↶ ↷ themselves
+   else toast('Rückgängig: ' + u.label, {label: '↷ Wiederholen', fn: () => redo()});
+   return true;
+ }
+ function redo() {
++  sx11HoldFor(REDO[REDO.length - 1]);   // SX11
+   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && REDO.length && REDO[REDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
+   if (HIST && HIST.q.length) histDrain();  // VC2a-fix
+   const r = REDO.pop();
+@@ -25303,6 +25314,7 @@
+   if (r.kind === 'group') UNDO.push(Object.assign(groupSwap(r, false), {time: performance.now(), mergeKey: null}));
+   else { UNDO.push(Object.assign({}, r, {before: undoState(r), time: performance.now(), mergeKey: null})); undoApply(r, r.before); }
+   histPush(r, 'redo');  // VC2a
++  sx11AfterUndo(r);       // SX11
+   if (R.editor === 'roll' || R.editor === 'clip') toast('Wiederholt: ' + r.label);
+   else toast('Wiederholt: ' + r.label, {label: '↶ Rückgängig', fn: () => undo()});
+   return true;
+@@ -28117,7 +28129,7 @@
+ }
+ function marksCut(song, a, b, split) {
+   const out = [];
+-  for (const m of song.marks) if (m.off) m.a0 = m.a;   /* S0 */
++  for (const m of song.marks) if (m.off || m.vr) m.a0 = m.a;   /* S0, SX11 */
+   for (const m of song.marks) {
+     const me = m.a + m.len;
+     if (me <= a || m.a >= b) { out.push(m); continue; }
+@@ -28131,7 +28143,7 @@
+     else out.push(Object.assign({}, m, {a: b, len: me - b}));
+   }
+   song.marks = out;
+-  for (const m of song.marks) if (m.a0 != null) { const d = m.a - m.a0; delete m.a0; s0OffShift(m, d); }   /* S0 */
++  for (const m of song.marks) if (m.a0 != null) { const d = m.a - m.a0; delete m.a0; s0OffShift(m, d); sx11Shift(m, d); }   /* S0, SX11 */
+   for (const m of song.marks) if (!m.id) m.id = newMarkId(song);
+ }
+ // Fortsetzung (5.3 EINFÜGEN 3): at bar x the old content goes on in phase (only where it would sound different otherwise)
+@@ -29928,7 +29940,7 @@
+   g.save(); g.textBaseline = 'middle'; g.textAlign = 'left';
+   for (const m of song.marks) {
+     const x0 = X(m.a) + 2, x1 = X(m.a + m.len) - 2; if (x1 < 0 || x0 > W) continue;
+-    const name = markLabel(m).toUpperCase() + (devs[m.id] ? '′' : ''), short = partShortForm(markLabel(m)).toUpperCase() + (devs[m.id] ? '′' : ''), open = svMarkOpen(m), w = x1 - x0;
++    const name = markLabel(m).toUpperCase() + (devs[m.id] ? '′' : '') + (m.vr && m.vr.c === 'l' ? ' ·L' : ''), short = partShortForm(markLabel(m)).toUpperCase() + (devs[m.id] ? '′' : ''), open = svMarkOpen(m), w = x1 - x0;
+     const col = m.part && m.part[0] === 'P' && S.parts && S.parts[+m.part.slice(1) - 1] ? svPartCol(S.parts[+m.part.slice(1) - 1].color) : '#8b919c';
+     let label = name;
+     g.beginPath(); if (g.roundRect) g.roundRect(x0, cy, w, chh, 4); else g.rect(x0, cy, w, chh);
+@@ -30040,6 +30052,7 @@
+         `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + `</div></div>` + vvDirRow(m.a, m.a + m.len, 'ms-b');   // VV2: Zeile „Video“
+       s012MarkSheetPaint(p, m);   /* S0/S2 */
+       konMarkSheetPaint(p, m);    /* KON: [Als neuen Teil konsolidieren] [Zurückholen] */
++      sx11MarkSheetPaint(p, m);   /* SX11: Fassung [Leicht] [Voll] [Kopieren] [Einfügen] */
+       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
+     };
+     paint(); p._paint = paint;
+@@ -57427,7 +57440,11 @@
+   t |= 0; b0 |= 0; if (!song.lanes[t] || b0 < 0 || b0 >= m0.len) return false;
+   const seg = s0Segs(song, m0).find(s => s.t === t && s.b0 === b0); if (!seg || seg.on === !!on) return false;
+   const lab = trackShort(t) + ' ' + (on ? 'an' : 'aus') + ' in ' + markLabel(m0);
+-  return !!songEdit(lab, sg => {
++  return !!songEdit(lab, sg => s0SegApply(sg, id, t, seg, on));
++}
++// SX11: the body of s0SegSet on a song being edited (Fassung leicht/voll switches many segments in one undo step)
++function s0SegApply(sg, id, t, seg, on) {
++  {
+     const m = sg.marks.find(x => x.id === id), x0 = m.a + seg.b0, x1 = m.a + seg.b1, lane = sg.lanes[t];
+     const al = x1 < sg.bars ? songStateAt(sg, x1).lanes[t] : null;
+     if (!on) {
+@@ -57449,7 +57466,7 @@
+       for (const x of r.e) if (x.bar < x1 - x0) { const y = Object.assign({}, x, {bar: x0 + x.bar}); if (y.own) y.own = map[y.own] || y.own; laneInsert(lane, y); }
+       s0LaneCont(sg, t, x1, al);
+     }
+-  });
++  }
+ }
+ // marksNorm: mark.off survives every edit and Speichern/Laden (Format 5, additive)
+ function s0OffNorm(off, len) {
+@@ -57470,13 +57487,13 @@
+ function s0EditHTML(m) {
+   const song = S.song, nm = markLabel(m), segs = s0Segs(song, m), whole = s => s.b0 === 0 && s.b1 === m.len;
+   const rows = {}; for (const s of segs) (rows[s.t] || (rows[s.t] = [])).push(s);
+-  let h = `<div class="ms-h"><b>${esc(nm.toUpperCase())}</b><span>· Bearbeiten · Takt ${m.a + 1}${m.len > 1 ? '–' + (m.a + m.len) : ''}</span><button class="rb ms-x" data-s012="back" aria-label="Zurück">‹</button></div>`;
++  let h = `<div class="ms-h"><b>${esc(nm.toUpperCase())}</b><span>· Bearbeiten${m.vr ? (m.vr.c === 'l' ? ' · Leicht' : ' · Voll') : ''} · Takt ${m.a + 1}${m.len > 1 ? '–' + (m.a + m.len) : ''}</span><button class="rb ms-x" data-s012="back" aria-label="Zurück">‹</button></div>`;
+   h += `<div class="ms-r"><button class="rb ms-b s0-nm" data-s012="name">✎ Name: ${esc(nm)}</button></div><div class="s0-list pan-y" role="list" aria-label="Spuren und Clips dieser Stelle">`;
+   const ord = trackOrder().filter(t => rows[t]);
+   if (!ord.length) h += `<div class="s0-empty">Hier spielt keine Spur.</div>`;
+   for (const t of ord) {
+     h += `<div class="s0-tr" role="listitem"><span class="s0-tn">${esc(trackShort(t))}</span><div class="s0-cs">` + rows[t].map(s => {
+-      const nmS = s.own ? 'Eigener' : s.slot >= 0 ? 'Sz' + (s.slot + 1) : '–', rg = whole(s) ? '' : ' T' + (m.a + s.b0 + 1) + (s.b1 - s.b0 > 1 ? '–' + (m.a + s.b1) : '');
++      const nmS = s.own ? (s.on && sx11IsThin(m, s) ? 'Dünn' : 'Eigener') : s.slot >= 0 ? 'Sz' + (s.slot + 1) : '–', rg = whole(s) ? '' : ' T' + (m.a + s.b0 + 1) + (s.b1 - s.b0 > 1 ? '–' + (m.a + s.b1) : '');
+       return `<button class="rb s0-c${s.on ? ' on' : ' off'}" data-s012="seg" data-t="${s.t}" data-b="${s.b0}" aria-pressed="${s.on}" aria-label="${esc(trackShort(t) + ' ' + nmS + rg + (s.on ? ', an' : ', aus'))}">${esc(nmS + rg)}<small>${s.on ? 'an' : 'aus'}</small></button>`;
+     }).join('') + `</div></div>`;
+   }
+@@ -58115,6 +58132,258 @@
+   kons: () => (S.song && S.song.kons ? S.song.kons.map(k => ({mark: k.mark, part: k.part, at: k.at, len: k.len})) : []),
+ };
+ /* /KON */
++/* SX11 ---------- Teil-Fassungen „leicht/voll“ (Konzept Schnitt/Übergänge SX11): eine Stelle (Marke) hat eine leichte und eine volle
++   Fassung. Ein Tipp im Marken-Blatt setzt die gespeicherte Auswahl, welche Clips dort an sind (S0, mark.off) – ein Undo-Schritt, im
++   Lauf ab dem nächsten Taktstrich (songEdit → songResync, derselbe Weg wie jeder Spurwechsel im Song). Die Drums der leichten Fassung
++   werden ausgedünnt: ein eigener Clip ohne Becken, Hi-Hat und Shaker höchstens Achtel, offene Hi-Hat als geschlossene. Die Originale
++   liegen an der Marke (vr.dn, wie mark.off) und kommen mit [Voll] genau zurück. Nichts wird gerendert: Video, Konsolidieren, Export und
++   MIDI sehen dieselben Spuren und Clips wie die Wiedergabe.
++   mark.vr (additiv, ohne Feld byte-gleich): {c?: 'l' (die leichte Fassung ist an, sonst die volle), l?: [{t, b0, b1, k}], v?: [...],
++   dn?: [S0-Einträge]} – k 'x' = aus, 'd' = ausgedünnt (Drums). Die gerade nicht gespielte Fassung steht in l bzw. v. ---------- */
++const SX = {clip: null, held: [], lab: new Set()};
++/* im Lauf: the own clip a track plays now stays playable until its switch at the next bar line (the edit removes it from song.own
++   at once; without this the scene clip would take over in the middle of the bar). Only for SX11 steps (the tap, its undo / redo) */
++function sx11Hold() {
++  SX.held = [];
++  if (!R.playing || !S.song || !S.song.own) return;
++  for (let i = 0; i < NT(); i++) { const id = R.own[i]; if (id && S.song.own[id]) SX.held[i] = {id, c: S.song.own[id]}; }
++}
++function sx11HoldFor(u) { if (u && u.kind === 'song' && SX.lab.has(u.label)) sx11Hold(); }
++function sx11AfterUndo(u) { if (u && u.kind === 'song' && SX.lab.has(u.label)) songResync(); }
++function sx11Held(i, id) { const h = SX.held[i]; return h && h.id === id && R.pend[i] && R.pend[i].beat > R.schedBeat - 4 ? h.c : null; }
++const SX_ON8 = t => Math.abs(t * 2 - Math.round(t * 2)) < .02;
++function sx11MaskNorm(a, len) {
++  if (!Array.isArray(a)) return null;
++  const out = [];
++  for (const r of a.slice(0, 64)) {
++    if (!r || !isNum(r.t) || !isNum(r.b0) || !isNum(r.b1)) continue;
++    const b0 = Math.max(0, Math.round(r.b0)), b1 = Math.max(b0 + 1, Math.round(r.b1));
++    if (len && b0 >= len) continue;
++    out.push({t: clamp(Math.round(r.t), 0, MAX_T - 1), b0, b1: len ? Math.min(b1, len) : b1, k: r.k === 'd' ? 'd' : 'x'});
++  }
++  return out;
++}
++function sx11Norm(vr, len) {
++  if (!vr || typeof vr !== 'object' || Array.isArray(vr)) return null;
++  const o = {};
++  if (vr.c === 'l') o.c = 'l';
++  const l = sx11MaskNorm(vr.l, len), v = sx11MaskNorm(vr.v, len);
++  if (l || o.c) o.l = l || [];                         // „leicht = alles an“ ist auch eine Wahl (leere Liste bleibt)
++  if (v && v.length) o.v = v;
++  if (o.c && vr.dn) { const dn = s0OffNorm(vr.dn); if (dn) o.dn = dn; }
++  return o.c || o.l ? o : null;
++}
++// marksCut: a mark trimmed at its front / split keeps its Fassungen (relative to the mark start, like mark.off)
++function sx11Shift(m, d) {
++  if (!m.vr) return;
++  const o = Object.assign({}, m.vr), sh = a => a.map(r => Object.assign({}, r, {b0: Math.max(0, r.b0 - d), b1: Math.min(r.b1 - d, m.len)})).filter(r => r.b1 > 0 && r.b0 < m.len && r.b1 > r.b0);
++  if (o.l) o.l = sh(o.l); if (o.v) o.v = sh(o.v);
++  if (o.dn) { const q = {off: o.dn, len: m.len}; s0OffShift(q, d); if (q.off) o.dn = q.off; else delete o.dn; }
++  m.vr = o;
++}
++const sx11IsThin = (m, s) => !!(m && m.vr && m.vr.c === 'l' && m.vr.dn && s && s.own && m.vr.dn.some(r => r.t === s.t && r.b0 === s.b0));
++// the clip a segment plays (null for a segment that is off and had an own clip)
++function sx11SegClip(song, s) { return s.own ? (s.on && song.own && song.own[s.own]) || null : s.slot >= 0 && S.tracks[s.t] ? S.tracks[s.t].clips[s.slot] : null; }
++/* the role of a track in an arrangement (Rhythmus, Bass, Akkord, Fläche, Phrase, Melodie): from the sound's category, for FM and own
++   sounds from the notes (low and one at a time = Bass, long = Fläche, three and more at once = Akkord, else Phrase) */
++function sx11Role(t, clip) {
++  const tr = S.tracks[t]; if (!tr) return 'phr';
++  if (tr.kind === 'drum') return 'dr';
++  if (tr.stimme || tr.mel) return 'mel';
++  const cat = tr.sound && tr.sound.cat;
++  if (cat === 'bass') return 'bass';
++  if (cat === 'flaeche') return 'pad';
++  if (cat === 'poly' || cat === 'pluck') return 'chord';
++  if (cat === 'lead' || cat === 'sequenz' || cat === 'glocke' || cat === 'effekt') return 'phr';
++  const ns = (clip && clip.notes || []).slice(0, 256); if (!ns.length) return 'phr';
++  let sp = 0, sd = 0, poly = 0;
++  for (const n of ns) { sp += n.n; sd += n.d; let c = 0; for (const q of ns) if (q.t < n.t + n.d - 1e-6 && q.t + q.d > n.t + 1e-6) c++; if (c >= 3) poly++; }
++  const avg = sp / ns.length, dur = sd / ns.length;
++  if (avg < 48 && !poly) return 'bass';
++  if (poly >= ns.length * .5) return dur >= 2 ? 'pad' : 'chord';
++  return dur >= 2 ? 'pad' : 'phr';
++}
++/* Vorschlag „leicht“ (wie Main A gegen Main B): Drums ausgedünnt, Bass bleibt, Melodie und Gesang (mit Chor) bleiben, von den
++   Akkord-Spuren bleibt die erste (ohne Akkord-Spur die erste Fläche), weitere Akkord-Spuren, Flächen und Phrasen sind aus.
++   Es bleibt immer mindestens eine Spur außer den Drums an */
++function sx11Propose(song, m) {
++  const segs = s0Segs(song, m), roles = {};
++  for (const s of segs) if (roles[s.t] == null) roles[s.t] = sx11Role(s.t, sx11SegClip(song, s));
++  const ord = trackOrder().filter(t => roles[t] != null), keep = new Set(ord.filter(t => ['bass', 'mel', 'dr'].includes(roles[t])));
++  const ch = ord.filter(t => roles[t] === 'chord'), pd = ord.filter(t => roles[t] === 'pad');
++  if (ch.length) keep.add(ch[0]); else if (pd.length) keep.add(pd[0]);
++  if (!ord.some(t => keep.has(t) && roles[t] !== 'dr')) { const f = ord.find(t => roles[t] !== 'dr'); if (f != null) keep.add(f); }
++  const out = [];
++  for (const s of segs) if (roles[s.t] === 'dr') out.push({t: s.t, b0: s.b0, b1: s.b1, k: 'd'}); else if (!keep.has(s.t)) out.push({t: s.t, b0: s.b0, b1: s.b1, k: 'x'});
++  return out;
++}
++// the Fassung as it sounds now (what is off, which drums are thinned)
++function sx11Cur(song, m) {
++  const out = [];
++  for (const s of s0Segs(song, m)) { if (!s.on) out.push({t: s.t, b0: s.b0, b1: s.b1, k: 'x'}); else if (sx11IsThin(m, s)) out.push({t: s.t, b0: s.b0, b1: s.b1, k: 'd'}); }
++  return out;
++}
++function sx11K(mask, s) {
++  const r = mask.find(x => x.t === s.t && x.b0 === s.b0) || mask.find(x => x.t === s.t && x.b0 <= s.b0 && s.b0 < x.b1);
++  return r ? r.k : '';
++}
++// the thinned drum notes (null = nothing to thin): no cymbal, open hat → closed hat, hats / shaker on 1/8 at most, no hat ratchets
++function sx11ThinNotes(c) {
++  const ln = c.lanes || {}, out = [], hat = new Set(); let ch = false;
++  for (const n of c.notes) {
++    let g = n.n;
++    if (g === 49) { ch = true; continue; }
++    if (g === 46) { ch = true; if (ln[46] || ln[42]) continue; g = 42; }
++    if ((g === 42 || g === 70) && !SX_ON8(n.t)) { ch = true; continue; }
++    const x = Object.assign({}, n, {n: g});
++    if (g === 42 || g === 70) {
++      if (x.r) { delete x.r; ch = true; }
++      const k = g + '@' + Math.round(n.t * 2); if (hat.has(k)) { ch = true; continue; } hat.add(k);
++    }
++    out.push(x);
++  }
++  return ch ? out : null;
++}
++// segment s of mark m (song being edited) plays its thinned copy; the original lane entries go to vr.dn (as mark.off does)
++function sx11ThinSeg(sg, m, s) {
++  const t = s.t, x0 = m.a + s.b0, x1 = m.a + s.b1, lane = sg.lanes[t];
++  const st = songStateAt(sg, x0).lanes[t]; if (st.slot < 0) return false;
++  const src = st.own ? sg.own && sg.own[st.own] : S.tracks[t].clips[st.slot]; if (!src) return false;
++  const th = sx11ThinNotes(src); if (!th || ownCount(sg) >= OWN_MAX) return false;
++  const al = x1 < sg.bars ? songStateAt(sg, x1).lanes[t] : null, prevE = lane.find(x => x.bar === x0);
++  const e = [Object.assign({bar: 0, slot: st.slot, re: 1}, st.ph > 1e-6 ? {ph: st.ph} : null, st.own ? {own: st.own} : null)];
++  for (const x of lane) if (x.bar > x0 && x.bar < x1) e.push(Object.assign({}, x, {bar: x.bar - x0}));
++  const own = {}; for (const x of e) if (x.own && sg.own && sg.own[x.own]) own[x.own] = deep(sg.own[x.own]);
++  for (let k = lane.length - 1; k >= 0; k--) if (lane[k].bar >= x0 && lane[k].bar < x1) lane.splice(k, 1);
++  const id = ownNewId(sg), c = deep(src), cs = x0 * 4 - (st.ph || 0), rcs = st.own ? ownRefCs(sg, src) : cs;
++  delete c.from; c.notes = th;
++  c.from = {t, s: st.slot, bar: x0, e: prevE ? deep(prevE) : null, prev: {slot: st.slot, own: st.own || null, cs: +cs.toFixed(4)}};
++  if (rcs != null) c.from.cs = +rcs.toFixed(4);
++  (sg.own || (sg.own = {}))[id] = c;
++  const ent = {bar: x0, slot: st.slot, own: id}; if (st.ph > 1e-6) ent.ph = st.ph;
++  laneInsert(lane, ent);
++  s0LaneCont(sg, t, x1, al);
++  const r = {t, b0: s.b0, b1: s.b1, e}; if (Object.keys(own).length) r.own = own;
++  (m.vr.dn || (m.vr.dn = [])).push(r);
++  return true;
++}
++// a stored S0 entry r back into [x0, x1) (as S0 „an“)
++function sx11Put(sg, m, r) {
++  const t = r.t, x0 = m.a + r.b0, x1 = m.a + Math.min(r.b1, m.len), lane = sg.lanes[t]; if (!lane || x1 <= x0) return;
++  const al = x1 < sg.bars ? songStateAt(sg, x1).lanes[t] : null, map = {};
++  if (r.own) for (const oid of Object.keys(r.own)) { let nid = oid; if (sg.own && sg.own[nid]) nid = ownNewId(sg); (sg.own || (sg.own = {}))[nid] = deep(r.own[oid]); map[oid] = nid; }
++  for (let k = lane.length - 1; k >= 0; k--) if (lane[k].bar >= x0 && lane[k].bar < x1) lane.splice(k, 1);
++  for (const x of r.e) if (x.bar < x1 - x0) { const y = Object.assign({}, x, {bar: x0 + x.bar}); if (y.own) y.own = map[y.own] || y.own; laneInsert(lane, y); }
++  s0LaneCont(sg, t, x1, al);
++}
++// mark id (song being edited) plays mask: first the thinned drums back to their originals, then every segment as the mask says
++function sx11Apply(sg, id, mask) {
++  const m = sg.marks.find(x => x.id === id); if (!m) return;
++  const vr = m.vr || (m.vr = {});
++  for (const r of vr.dn || []) {
++    const k0 = (m.off || []).findIndex(o => o.t === r.t && o.b0 === r.b0);   // a thinned segment that was switched off: the copy goes
++    if (k0 >= 0) { m.off.splice(k0, 1); if (!m.off.length) delete m.off; }
++    sx11Put(sg, m, r);
++  }
++  delete vr.dn;
++  const keys = s0Segs(sg, m).map(s => [s.t, s.b0]);
++  for (const [t, b0] of keys) {
++    const seg = () => s0Segs(sg, m).find(s => s.t === t && s.b0 === b0);
++    let s = seg(); if (!s) continue;
++    const k = sx11K(mask, s);
++    if (k === 'x') { if (s.on) s0SegApply(sg, id, t, s, false); continue; }
++    if (!s.on) { s0SegApply(sg, id, t, s, true); s = seg(); if (!s) continue; }
++    if (k === 'd' && isDrum(t)) sx11ThinSeg(sg, m, s);
++  }
++  // at the mark's edges an entry that only restarts the clip in phase is gone (laneSwitch does not cut there: it sounds the same);
++  // so [Voll] gives back exactly the lanes from before
++  for (const t of new Set(keys.map(k => k[0]))) for (const x of [m.a, m.a + m.len]) {
++    const lane = sg.lanes[t], j = lane.findIndex(e => e.bar === x); if (j < 0 || x <= 0) continue;
++    const n = lane[j], po = laneOriginAt(lane, x - 1); if (n.slot < 0) continue;
++    if (ownSame(sg, t, po, {slot: n.slot, own: n.own || null, cs: n.bar * 4 - (n.ph || 0)})) lane.splice(j, 1);
++    else if (n.re && (po.slot !== n.slot || (po.own || null) !== (n.own || null))) delete n.re;   // „neu starten“ after another clip / silence: no effect
++  }
++}
++// [Leicht] / [Voll]: the Fassung we leave keeps what it is now; the first „leicht“ is the Vorschlag. One undo step ('song')
++function sx11Set(id, f, o) {
++  const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || R.songRec || (f !== 'l' && f !== 'v')) return false;
++  const cur = m0.vr && m0.vr.c === 'l' ? 'l' : 'v', mk = o && o.mask; if (cur === f && !mk) return false;
++  const lab = markLabel(m0) + (f === 'l' ? ' leicht' : ' voll'); SX.lab.add(lab); sx11Hold();
++  return !!songEdit(lab, sg => {
++    const m = sg.marks.find(x => x.id === id), vr = m.vr = m.vr ? deep(m.vr) : {};
++    if (cur !== f) vr[cur] = sx11Cur(sg, m);
++    let mask = mk ? deep(mk) : vr[f] ? deep(vr[f]) : f === 'l' ? sx11Propose(sg, m) : [];
++    sx11Apply(sg, id, mask);
++    if (f === 'l') { vr.c = 'l'; vr.l = mask; } else { delete vr.c; if (mask.length) vr.v = mask; else delete vr.v; }
++  });
++}
++// a short line „S2 S3 aus · DR dünn“ (and the long form for VoiceOver) of a mask
++function sx11Sum(mask) {
++  const off = [], th = [];
++  for (const r of mask) { const n = trackShort(r.t), L = r.k === 'd' ? th : off; if (!L.includes(n)) L.push(n); }
++  const p = []; if (off.length) p.push(off.join(' ') + ' aus'); if (th.length) p.push(th.join(' ') + ' dünn');
++  return p.join(' · ');
++}
++function sx11Info(song, m) {
++  const l = !!(m.vr && m.vr.c === 'l'), now = sx11Cur(song, m);
++  const lm = l ? now : m.vr && m.vr.l ? m.vr.l : sx11Propose(song, m), vm = l ? (m.vr.v || []) : now;
++  return {c: l ? 'l' : 'v', l: lm, v: vm, vorschlag: !l && !(m.vr && m.vr.l)};
++}
++// [⧉ Variante] copies the Fassung that plays now: per track its segments (by bar in the mark) and whether the whole track is so
++function sx11Copy(id) {
++  const song = S.song, m = song && song.marks.find(x => x.id === id); if (!m) return false;
++  const f = m.vr && m.vr.c === 'l' ? 'l' : 'v', cur = sx11Cur(song, m), tr = {};
++  for (const s of s0Segs(song, m)) { const k = sx11K(cur, s), x = tr[s.t] || (tr[s.t] = {segs: [], ks: new Set()}); x.segs.push({b0: s.b0, b1: s.b1, k}); x.ks.add(k); }
++  for (const t in tr) { tr[t].all = tr[t].ks.size === 1 ? [...tr[t].ks][0] : null; delete tr[t].ks; }
++  SX.clip = {f, from: id, name: markLabel(m), tr};
++  return true;
++}
++// [Einfügen] in another mark: the same tracks off / thinned there, that Fassung plays (one undo step)
++function sx11Paste(id) {
++  const c = SX.clip, song = S.song, m = song && song.marks.find(x => x.id === id); if (!c || !m) return false;
++  const mask = [];
++  for (const s of s0Segs(song, m)) {
++    const tr = c.tr[s.t]; if (!tr) continue;
++    const ex = tr.segs.find(x => x.b0 === s.b0), k = ex ? ex.k : tr.all || '';
++    if (k) mask.push({t: s.t, b0: s.b0, b1: s.b1, k});
++  }
++  return sx11Set(id, c.f, {mask});
++}
++// Marken-Blatt (after its paint): one row „Fassung“ under Name/Farbe: [Leicht ‹was aus ist›] [Voll] [⧉ Variante] [Einfügen]
++function sx11MarkSheetPaint(p, m) {
++  if (p.classList.contains('s0-ed')) return;
++  if (!p._sx11) { p._sx11 = true; onTap(p, b => sx11Tap(p, b), 'button[data-sx]'); }
++  const bb = p.querySelector('.ms-bb'); if (!bb) return;
++  const inf = sx11Info(S.song, m), l = inf.c === 'l', ls = sx11Sum(inf.l), vs = sx11Sum(inf.v), cp = SX.clip;
++  const lsub = ls || 'alles an', vsub = vs || 'alles an';
++  bb.insertAdjacentHTML('afterend', `<div class="sx-kw"><div class="ms-r sx-r" role="group" aria-label="Fassung">` +
++    `<button class="rb ms-b sx-f${l ? ' on' : ''}" data-sx="l" aria-pressed="${l}" aria-label="${esc('Fassung leicht: ' + lsub + (inf.vorschlag ? ' (Vorschlag)' : ''))}">Leicht<small>${esc(lsub)}</small></button>` +
++    `<button class="rb ms-b sx-f${l ? '' : ' on'}" data-sx="v" aria-pressed="${!l}" aria-label="${esc('Fassung voll: ' + vsub)}">Voll<small>${esc(vsub)}</small></button>` +
++    `<button class="rb ms-b sx-c" data-sx="cp" aria-label="Variante kopieren">⧉ Variante</button>` +
++    `<button class="rb ms-b sx-c" data-sx="pa"${cp ? ` aria-label="${esc('Variante einfügen: ' + cp.name + (cp.f === 'l' ? ' leicht' : ' voll'))}"` : ' disabled aria-label="Variante einfügen – erst bei einem Teil kopieren"'}>Einfügen</button></div></div>`);
++  // quer: the row shares its line with [Als neuen Teil konsolidieren] (the sheet is not higher than before)
++  const w = p.querySelector('.sx-kw'), k = p.querySelector('.kon-r'); if (w && k) w.appendChild(k);
++}
++function sx11Tap(p, b) {
++  const id = SV.mark, m = S.song && S.song.marks.find(x => x.id === id); if (!m) { closePop(); return; }
++  const a = b.dataset.sx, nm = markLabel(m), re = () => { if (UI.pop && UI.pop.el === p && p._paint) { p._paint(); popDock(p); } };
++  const live = () => (R.playing && R.songPlay ? ' ab dem nächsten Takt' : '');
++  if (svRecBusy()) return;
++  if (a === 'l' || a === 'v') { if (sx11Set(m.id, a)) { haptic('tick'); toast(nm + (a === 'l' ? ' leicht' : ' voll') + live(), songUndoAct()); svButtons(); } re(); return; }
++  if (a === 'cp') { sx11Copy(m.id); haptic('tick'); toast('Variante von ' + nm + ' kopiert – bei einem anderen Teil [Einfügen]'); re(); return; }
++  if (a === 'pa') { const c = SX.clip; if (c && sx11Paste(m.id)) { haptic('tick'); toast(nm + (c.f === 'l' ? ' leicht' : ' voll') + ' wie ' + c.name + live(), songUndoAct()); svButtons(); } re(); }
++}
++const SX11_API = {
++  // Fassung der Marke: 'l' leicht │ 'v' voll (auch für den Fill-Übergang: Richtung aufbauend / abbauend / gleich)
++  markFassung: id => { const m = S.song && S.song.marks.find(x => x.id === id); return m ? (m.vr && m.vr.c === 'l' ? 'l' : 'v') : null; },
++  markFassungSet: (id, f) => sx11Set(id, f === 'leicht' ? 'l' : f === 'voll' ? 'v' : f),
++  markFassungInfo: id => { const m = S.song && S.song.marks.find(x => x.id === id); return m ? deep(sx11Info(S.song, m)) : null; },
++  markRollen: id => { const m = S.song && S.song.marks.find(x => x.id === id); if (!m) return null; const o = {}; for (const s of s0Segs(S.song, m)) if (o[s.t] == null) o[s.t] = sx11Role(s.t, sx11SegClip(S.song, s)); return o; },
++  fassungKopieren: id => sx11Copy(id),
++  fassungEinfuegen: id => sx11Paste(id),
++  fassungAblage: () => (SX.clip ? deep(SX.clip) : null),
++};
++/* /SX11 */
+ /* S0/S1/S2 Nachprüfung (QA-Befunde D1–D7) */
+ // D3 marksCut: a mark trimmed at its front / split keeps its content; mark.off (relative to the mark start) is moved along
+ function s0OffShift(m, d) {
+@@ -58162,6 +58431,7 @@
+ Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
+ Object.assign(SYNQUENZER, KON_API);               // KON: Block & Konsolidieren
+ Object.assign(SYNQUENZER, S012_API);              // S0/S1/S2: Teil bearbeiten, überarbeiten, zusammenfassen
++Object.assign(SYNQUENZER, SX11_API);              // SX11: Teil-Fassungen leicht/voll
+ Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
+ Object.assign(SYNQUENZER, G9_API);                // G9: Songtext-Bedienung (Text-Modus)
+ Object.assign(SYNQUENZER, LY_API);                // G9E: Mitlese-Zeile
