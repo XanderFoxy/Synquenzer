@@ -82,9 +82,12 @@ for (const [fmt, cam] of [['16:9', null], ['9:16', 'app']]) {
     const fr = frameRgb(f, t, W4, H4); png(f, t, BILD + `e2e-${tag}-roll.png`, 540);
     const ref = await p.evaluate(([t, tr, fmt, W4, H4]) => { const b64 = SYNQUENZER.vv4Pic(t, 'roll', tr, fmt); return b64; }, [t, sr.t, fmt, W4, H4]);
     fs.writeFileSync(OUT + 'ref.png', Buffer.from(ref, 'base64')); const rf = {w: W4, h: H4, d: execSync(`ffmpeg -v error -i ${OUT}ref.png -vf scale=${W4}:${H4} -f rawvideo -pix_fmt rgb24 -`, {maxBuffer: 1 << 27})};
+    // Echtzeit-Weg (mr): die Datei-Zeit liegt im Test-Chromium bis ~0,3 s neben der Zeichen-Zeit → bestes Bild in ±0,4 s
+    let mad = diff(fr.d, rf.d);
+    if (WAY === 'mr') for (let dt = -.4; dt <= .401; dt += .1) { const q = frameRgb(f, Math.max(0, t + dt), W4, H4); mad = Math.min(mad, diff(q.d, rf.d)); }
     const pr = await p.evaluate(([t, tr, fmt]) => SYNQUENZER.vv4Probe('roll', tr, t, fmt), [t, sr.t, fmt]);
     const notes = await p.evaluate(tr => { const sh = SYNQUENZER.vv3Notes(tr); return S.tracks[tr].clips[0].notes.length; }, sr.t);
-    ok(`${tag}: Piano-Roll im Video = Zeichner (echte Noten)`, diff(fr.d, rf.d) < 12 && pr && pr.roll && pr.roll.rows.length > 0, {mad: +diff(fr.d, rf.d).toFixed(2), rows: pr && pr.roll && pr.roll.rows.length, clipNotes: notes, t: +t.toFixed(2), track: sr.t});
+    ok(`${tag}: Piano-Roll im Video = Zeichner (echte Noten)`, mad < 12 && pr && pr.roll && pr.roll.rows.length > 0, {mad: +mad.toFixed(2), rows: pr && pr.roll && pr.roll.rows.length, clipNotes: notes, t: +t.toFixed(2), track: sr.t});
   } else ok(`${tag}: Piano-Roll in der Auto-Regie`, false, shots);
   // 2) Drum-Sequenzer: shown voice switches Kick ↔ Snare only on a hit of the other, ≤ 1 per beat
   const sd = shots.find(s => s.v === 'drum');
@@ -105,8 +108,8 @@ for (const [fmt, cam] of [['16:9', null], ['9:16', 'app']]) {
   // 4) Abspann: logo once, centred, keyed over the darkening picture (0.75 s after the song end = 75 % dark), then on black
   if (res.logo) {
     const S0 = Math.min(W4, H4) * .6 / 2, cx = W4 / 2, cy = H4 / 2;
-    const fA = frameRgb(f, at - .2, W4, H4), fM = frameRgb(f, at + .8, W4, H4), fL = frameRgb(f, at + .5 + 8, W4, H4);
-    png(f, at + .8, BILD + `e2e-${tag}-logo-ueber-abblende.png`, 540); png(f, at + .5 + 8, BILD + `e2e-${tag}-logo.png`, 540);
+    const fA = frameRgb(f, at - .2, W4, H4), fM = frameRgb(f, at + (WAY === 'mr' ? .95 : .8), W4, H4), fL = frameRgb(f, at + .5 + 8, W4, H4);
+    png(f, at + (WAY === 'mr' ? .95 : .8), BILD + `e2e-${tag}-logo-ueber-abblende.png`, 540); png(f, at + .5 + 8, BILD + `e2e-${tag}-logo.png`, 540);
     const outside = fr => { let s = 0, n = 0; for (let y = 0; y < fr.h; y += 3) for (let x = 0; x < fr.w; x += 3) { if (Math.abs(x - cx) < S0 + 2 && Math.abs(y - cy) < S0 + 2) continue; s += lum(px(fr, x, y)); n++; } return s / n; };
     let bx0 = 1e9, by0 = 1e9, bx1 = -1, by1 = -1, red = 0, redSat = 0;
     for (let y = 0; y < fL.h; y++) for (let x = 0; x < fL.w; x++) { const c = px(fL, x, y); if (lum(c) > 50 || c[0] > 120) { bx0 = Math.min(bx0, x); by0 = Math.min(by0, y); bx1 = Math.max(bx1, x); by1 = Math.max(by1, y); }

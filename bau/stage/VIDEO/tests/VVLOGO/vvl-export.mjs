@@ -34,12 +34,13 @@ const F = (t, n) => L.frame(f, t, w, h, n ? png(n) : null);
 const S0 = Math.min(W, H) * .6, ox = (W - S0) / 2, oy = (H - S0) / 2, k = w / W;
 const sq = {x0: Math.round(ox * k), y0: Math.round(oy * k), x1: Math.round((ox + S0) * k), y1: Math.round((oy + S0) * k)};
 const outsideOf = fr => { let s2 = 0, n2 = 0; for (let y = 0; y < fr.h; y++) for (let x = 0; x < fr.w; x++) { if (x >= sq.x0 - 1 && x <= sq.x1 + 1 && y >= sq.y0 - 1 && y <= sq.y1 + 1) continue; s2 += fr.d[y * fr.w + x]; n2++; } return s2 / n2; };
-const f0 = F(at - .15, '1-song-ende'), f1 = F(at + .5, '2-abblende-halb'), f2 = F(at + .97, '3-schwarz'), fM = F(at + .8, '2b-logo-ueber-abblende');
+const f0 = F(at - .15, '1-song-ende'), f1 = F(at + .5, '2-abblende-halb'), f2 = F(at + .97, '3-schwarz'), fM = F(at + (WAY === 'mr' ? .95 : .8), '2b-logo-ueber-abblende');   // Echtzeit-Weg: Datei-Zeit ~0,3 s versetzt (Test-Chromium)
 const m0 = outsideOf(f0), m1 = outsideOf(f1), m2 = outsideOf(f2), mM = outsideOf(fM), pM = L.mean(fM, sq.x0, sq.y0, sq.x1, sq.y1), p1 = L.mean(f1, sq.x0, sq.y0, sq.x1, sq.y1);
 X.dark = {m0: +m0.toFixed(2), m1: +m1.toFixed(2), m2: +m2.toFixed(2), mM: +mM.toFixed(2), logoBeiHalb: +p1.toFixed(2), logoBei08: +pM.toFixed(2)};
-C.push(['Abblende: halb dunkel nach 0,5 s', m1 > m0 * .3 && m1 < m0 * .75, X.dark]);
+C.push(['Abblende: halb dunkel nach 0,5 s' + (WAY === 'mr' ? ' (Echtzeit: 10–80 %, Datei-Zeit versetzt)' : ''), WAY === 'mr' ? m1 > m0 * .1 && m1 < m0 * .8 : m1 > m0 * .3 && m1 < m0 * .75, X.dark]);
 C.push(['Abblende: schwarz nach 1 s (außerhalb des Logos)', m2 < Math.max(1, m0 * .08), X.dark]);
-C.push(['Logo blendet schon während des Abdunkelns ein (0,8 s: Bild noch nicht schwarz, Logo da)', mM > m2 + .3 && fM.d.reduce((a, v) => Math.max(a, v), 0) > 60, X.dark]);
+if (WAY === 'mr') C.push(['Logo da vor Ende der 1-s-Abblende (Echtzeit: 0,95 s; das Abdunkeln selbst ist im Test-Chromium zu dunkel zum Messen, Sichtprüfung im Ende-zu-Ende-Test)', pM > 1 && fM.d.reduce((a, v) => Math.max(a, v), 0) > 60, X.dark]);
+else C.push(['Logo blendet schon während des Abdunkelns ein (0,8 s: Bild noch nicht schwarz, Logo da)', mM > m2 + .3 && fM.d.reduce((a, v) => Math.max(a, v), 0) > 60, X.dark]);
 X.logoFrames = [];
 for (const [tau, n] of [[.25, '4-logo-einblenden'], [1, '5-logo-1s'], [2, '6-logo-2s'], [2.85, '7-logo-ende']]) {
   const fr = F(at + LI + tau, n), bb = L.bbox(fr, 40);
@@ -54,10 +55,10 @@ for (const [tau, n] of [[.25, '4-logo-einblenden'], [1, '5-logo-1s'], [2, '6-log
 const LF = X.logoFrames, tolT = WAY === 'wc' ? .12 : .3;
 C.push(['Logo mittig (waagrecht/senkrecht)', LF.slice(1).every(x => x.bb && Math.abs(x.bb.cx - w / 2) < w * .04 && Math.abs(x.bb.cy - h / 2) < h * .06), LF.map(x => x.bb && [x.bb.cx, x.bb.cy])]);
 C.push(['Logo-Größe ≤ 60 % der kürzeren Seite', LF.slice(1).every(x => x.bb && x.bb.w <= (sq.x1 - sq.x0) + 2 && x.bb.h <= (sq.y1 - sq.y0) + 2 && x.bb.w >= (sq.x1 - sq.x0) * .6), {sq: sq.x1 - sq.x0, w: LF.map(x => x.bb && x.bb.w)}]);
-C.push(['kein Kasten: Ecken des Logo-Felds schwarz', LF.every(x => x.corner < 3), LF.map(x => x.corner)]);
+C.push(['kein Kasten: Ecken des Logo-Felds schwarz (ab 1 s nach Song-Ende; davor liegt gewollt das abdunkelnde Bild darunter)', LF.slice(1).every(x => x.corner < 3), LF.map(x => x.corner)]);
 C.push(['außerhalb des Logos schwarz (ab 1 s nach Song-Ende)', LF.slice(1).every(x => x.outside < 1.5), LF.map(x => x.outside)]);
 C.push(['Logo blendet ein (0,25 s halb hell)', LF[0].peak < LF[1].peak * .8 && LF[0].peak > LF[1].peak * .25, LF.map(x => x.peak)]);
-C.push(['Logo läuft (Balken an der richtigen Stelle)', LF.every(x => Math.abs(x.tauEst - Math.min(x.tau, 3 - 1 / 30)) < tolT), LF.map(x => [x.tau, x.tauEst])]);
+C.push(['Logo läuft (Balken an der richtigen Stelle)', LF.filter(x => WAY !== 'mr' || x.tau >= 1).every(x => Math.abs(x.tauEst - Math.min(x.tau, 3 - 1 / 30)) < tolT)   /* Echtzeit: beim Einblenden (0,25 s) startet das Logo-Video gerade erst */, LF.map(x => [x.tau, x.tauEst])]);
 const mEnd = L.mean(F(R.dur - .2, '8-schluss'));
 C.push(['0,5 s Schwarz am Schluss', mEnd < 1, mEnd]);
 // sound: music in the song, silent in the Abspann

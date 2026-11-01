@@ -74,7 +74,7 @@ for (const mode of ['none', 'bad']) {
   await openSheet(p);
   const [fc] = await Promise.all([p.waitForEvent('filechooser', {timeout: 5000}), tapEl(p, bFile)]);
   X.accept = await p.evaluate(() => VVL.inp && VVL.inp.accept);
-  await fc.setFiles(path.join(L.DIR, 'tests', 'test-logo.mov'));
+  await fc.setFiles(path.join(L.DIR, 'tests', 'VVLOGO', 'test-logo.mov'));
   await p.waitForFunction(() => VVL.own, null, {timeout: 15000}).catch(() => {});
   let r = await row(p), inf = await p.evaluate(() => SYNQUENZER.vvLogo());
   C.push(['eigene Datei: gewählt (accept=video/*), an · eigene Datei', X.accept === 'video/*' && inf.own && inf.name === 'test-logo.mov' && r.small === 'an · eigene Datei', {r, inf}]);

@@ -16,7 +16,7 @@ C.push(['Abbruch im Abspann → „abgebrochen“', X.r.err === 'abgebrochen', X
 C.push(['Logo-Video steht, Job frei', X.after.paused && !X.after.busy && !X.after.job, X.after]);
 await p.evaluate(() => SYNQUENZER.vvTest({opus: true}));
 X.again = await p.evaluate(() => SYNQUENZER.vvMake({fmt: '9:16'}).then(x => ({dur: x.dur, logo: x.logo})));
-C.push(['nächstes Video wieder mit Abspann', X.again.logo && Math.abs(X.again.dur - (X.again.logo.at + 4.5)) < 1e-6, X.again]);
+C.push(['nächstes Video wieder mit Abspann', X.again.logo && Math.abs(X.again.dur - (X.again.logo.in + X.again.logo.len + X.again.logo.end)) < 1e-6   /* Stage 4.28.0: Logo ab 50 % Abdunklung */, X.again]);
 C.push(['keine Konsolenfehler', errs.length === 0, errs]);
 L.report('cancel', C, X);
 await b.close(); await s.close();
