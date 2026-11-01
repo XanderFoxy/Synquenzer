@@ -1,0 +1,346 @@
+--- snapshots/R-4261.html	2026-11-01 03:52:34.434425331 +0000
++++ helfer/VVLOGO/index.html	2026-11-01 04:08:55.930483674 +0000
+@@ -1317,6 +1317,23 @@
+ /* VV2: the sheet „Video“ has one row more (9:16 [Kamera] [Ganz mit Balken]); quer passt die Bedienung ohne Rollen in 375 px Höhe */
+ @media (orientation:landscape){.vvctl{gap:4px}.vvacts,.vvprog,.vvdone,.vvsheet .vvbtn{height:44px}}
+ @media (orientation:landscape) and (max-height:400px){.vvsheet.sel .vvctl{gap:2px}}
++/* VV-LOGO: Zeile „Abspann“ im Blatt „Video“ – Schalter [Abspann-Logo] (zweite Zeile: an / aus / Logo fehlt) und [Andere Datei wählen …] */
++.vvlogo{display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0}
++.vvsheet .vvlogo .rb{height:44px;min-width:44px;padding:0 8px;font:700 12px/1.1 var(--font-ui);white-space:nowrap;overflow:hidden}
++.vvsheet .vvlogo .vvlt{flex:1 1 0;flex-direction:column;gap:2px;min-width:96px}
++.vvlogo .vvlt b{font:700 12px/1 var(--font-ui)}
++.vvlogo .vvlt small{max-width:100%;overflow:hidden;text-overflow:ellipsis;font:500 10px/1 var(--font-ui);color:var(--text-dim)}
++.vvlogo .vvlt.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}
++.vvlogo .vvlt.on small{color:var(--sel)}
++.vvsheet .vvlogo .vvlf{flex:0 1 auto;min-width:72px;white-space:normal;line-height:1.1;text-align:center}
++/* quer: die Zeile liegt unter der Vorschau (die Bedienspalte rechts passt weiter ohne Rollen) */
++@media (orientation:landscape){
++  .vvsheet .vvb.vvlq{display:grid;grid-template-columns:minmax(0,1fr) 320px;grid-template-rows:minmax(0,1fr) auto;column-gap:14px;row-gap:6px}
++  .vvb.vvlq>.vvstage{grid-column:1;grid-row:1}
++  .vvb.vvlq>.vvctl{grid-column:2;grid-row:1 / span 2;min-height:0}
++  .vvb.vvlq>.vvrow{grid-column:1;grid-row:2}
++}
++.vvlinp{position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none}
+ #menu .mh{flex:none;display:flex;align-items:center;gap:12px;padding:6px 10px;border-bottom:1px solid var(--panel-edge);background:linear-gradient(#1b1d22,#121418)}
+ .mlogo{flex:none;display:flex;align-items:center;pointer-events:none}
+ .mlogo svg{height:64px}
+@@ -48309,6 +48326,151 @@
+ }
+ // a yield to the event loop without the 4-ms timer clamp (a queue: the graph build, the trim and the frames may wait at once)
+ const vvYield = (() => { let ch = null; const q = []; return () => new Promise(r => { if (!ch) { ch = new MessageChannel(); ch.port1.onmessage = () => { const f = q.shift(); if (f) f(); }; } q.push(r); ch.port2.postMessage(0); }); })();
++/* ===================== VV-LOGO (Xander 01.11.): Abspann-Logo am Ende jedes Videos =====================
++   Quelle fest von der eigenen Seite: medien/abspann-logo.mp4, sonst medien/abspann-logo.mov (relativ zur App, gleiche Herkunft);
++   eine eigene Datei ([Andere Datei wählen …]) liegt in IndexedDB und hat Vorrang. Fehlt das Logo: Schalter ausgegraut, „Logo fehlt“,
++   Video ohne Abspann, kein Fehler. Ablauf nach dem Song (samt Ausklang): das letzte Bild dunkelt in 1 s auf Schwarz ab (der Ton ist
++   dort schon ausgeklungen und bleibt still), dann blendet das Logo mittig ein (0,5 s) und läuft ganz, Größe 60 % der kürzeren
++   Bildseite, Schwarz per Screen-Blend herausgekeyt; danach 0,5 s Schwarz. Das Logo ist stumm (muted). Beide Wege: WebCodecs (Bild
++   für Bild per Suchen im Logo) und Aufnahme in Echtzeit (Logo läuft mit). Videolänge = Song + 1 s + Logo + 0,5 s. */
++const VVL = {st: 'neu', p: null, v: null, url: null, dur: 0, w: 0, h: 0, own: false, name: '', inp: null};
++const VVL_FILES = ['medien/abspann-logo.mp4', 'medien/abspann-logo.mov'], VVL_FADE = 1, VVL_IN = .5, VVL_END = .5, VVL_SIZE = .6;
++function vvLogoPref() { const p = uiPrefs().vv || {}; return p.logo !== false; }   // Vorgabe an (wirkt nur mit vorhandenem Logo)
++function vvlInfo() { return {st: VVL.st, own: VVL.own, name: VVL.name, dur: VVL.dur, w: VVL.w, h: VVL.h, pref: vvLogoPref(), on: VVL.st === 'ok' && vvLogoPref()}; }
++// the own file: a small database of its own (one entry 'logo' = {name, type, buf})
++function vvlDb(mode, fn) {
++  return new Promise((res, rej) => {
++    let idb = null; try { idb = window.indexedDB; } catch (e) { idb = null; }
++    if (!idb) { rej(new Error('kein IndexedDB')); return; }
++    let op; try { op = idb.open('synquenzer-abspann', 1); } catch (e) { rej(e); return; }
++    op.onupgradeneeded = () => { try { op.result.createObjectStore('f'); } catch (e) {} };
++    op.onerror = () => rej(op.error || new Error('IndexedDB'));
++    op.onsuccess = () => {
++      const db = op.result;
++      try { const tx = db.transaction('f', mode), q = fn(tx.objectStore('f')); tx.oncomplete = () => { db.close(); res(q ? q.result : undefined); }; tx.onerror = tx.onabort = () => { db.close(); rej(tx.error || new Error('IndexedDB')); }; }
++      catch (e) { try { db.close(); } catch (x) {} rej(e); }
++    };
++  });
++}
++// a playable, muted, inline video of the blob (or null): metadata with a finite length and a picture size
++function vvlProbe(blob) {
++  return new Promise(res => {
++    let v, url; try { v = document.createElement('video'); url = URL.createObjectURL(blob); } catch (e) { res(null); return; }
++    v.muted = true; v.defaultMuted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.setAttribute('muted', ''); v.preload = 'auto';
++    v.className = 'vvlinp'; v.setAttribute('aria-hidden', 'true');
++    let done = false, to = 0;
++    const fin = ok => {
++      if (done) return; done = true; clearTimeout(to); v.onloadedmetadata = v.onerror = null;
++      if (ok) { document.body.appendChild(v); res({v, url, dur: v.duration, w: v.videoWidth, h: v.videoHeight}); return; }
++      try { v.removeAttribute('src'); v.load(); } catch (e) {} try { URL.revokeObjectURL(url); } catch (e) {} res(null);
++    };
++    to = setTimeout(() => fin(false), 10000);
++    v.onloadedmetadata = () => fin(isFinite(v.duration) && v.duration > .05 && v.duration < 600 && v.videoWidth > 0 && v.videoHeight > 0);
++    v.onerror = () => fin(false);
++    v.src = url;
++  });
++}
++function vvlFree(x) { if (!x || !x.v) return; try { x.v.pause(); x.v.removeAttribute('src'); x.v.load(); x.v.remove(); } catch (e) {} try { URL.revokeObjectURL(x.url); } catch (e) {} }
++// find the logo (own file first, then the files of the site); once per page, again with force (after a new own file)
++function vvlLoad(force) {
++  if (VVL.p && !force) return VVL.p;
++  VVL.st = 'lädt'; vvlSync();
++  const p = VVL.p = (async () => {
++    let got = null;
++    try {
++      const o = await vvlDb('readonly', s => s.get('logo'));
++      if (o && o.buf) { const x = await vvlProbe(new Blob([o.buf], {type: o.type || 'video/mp4'})); if (x) got = Object.assign(x, {own: true, name: o.name || 'eigene Datei'}); }
++    } catch (e) {}
++    // the site's files only over http(s) (a local or framed preview without access: no request, the logo is missing)
++    let http = false; try { http = /^https?:$/.test(location.protocol); } catch (e) { http = false; }
++    if (!got && http) for (const f of VVL_FILES) {
++      try {
++        const rs = await fetch(new URL(f, location.href).href, {cache: 'no-cache'}); if (!rs.ok) continue;
++        const b = await rs.blob(); if (!b || !b.size) continue;
++        const x = await vvlProbe(b); if (x) { got = Object.assign(x, {own: false, name: f.split('/').pop()}); break; }
++      } catch (e) {}
++    }
++    if (VVL.p !== p) { vvlFree(got); return VVL.p; }                  // a newer load runs
++    vvlFree(VVL); Object.assign(VVL, {v: null, url: null, dur: 0, w: 0, h: 0, own: false, name: ''});
++    if (got) Object.assign(VVL, {st: 'ok', v: got.v, url: got.url, dur: got.dur, w: got.w, h: got.h, own: got.own, name: got.name}); else VVL.st = 'fehlt';
++    vvlSync();
++    return got ? VVL : null;
++  })();
++  return p;
++}
++// the row „Abspann“ of the sheet
++function vvlSync() {
++  const u = VV.ui; if (!u || !u.bLogo) return;
++  const ok = VVL.st === 'ok', on = ok && vvLogoPref(), sm = u.bLogo.querySelector('small');
++  u.bLogo.disabled = VV.busy || !ok; u.bLogo.classList.toggle('on', on); u.bLogo.setAttribute('aria-pressed', String(on));
++  sm.textContent = VVL.st === 'ok' ? (on ? 'an' : 'aus') + (VVL.own ? ' · eigene Datei' : '') : VVL.st === 'fehlt' ? 'Logo fehlt' : 'lädt …';
++  u.bLogo.title = ok ? 'Abspann-Logo: ' + VVL.name : 'Logo fehlt';
++  u.bFile.disabled = VV.busy;
++}
++function vvlToggle() { if (VVL.st !== 'ok' || VV.busy) return; vvPrefSet('logo', !vvLogoPref()); vvlSync(); }
++function vvlPick() {
++  if (VV.busy) return;
++  let inp = VVL.inp;
++  if (!inp) {
++    inp = VVL.inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'video/*'; inp.className = 'vvlinp'; inp.tabIndex = -1; inp.setAttribute('aria-hidden', 'true');
++    inp.addEventListener('change', () => { const f = inp.files && inp.files[0]; if (f) vvlOwn(f).catch(logErr); try { inp.value = ''; } catch (e) {} });
++    document.body.appendChild(inp);
++  }
++  inp.click();
++}
++// an own file: checked (plays here?), stored, then it is the logo
++async function vvlOwn(f) {
++  const x = await vvlProbe(f); if (!x) { toast('Diese Datei lässt sich hier nicht abspielen'); return false; }
++  vvlFree(x);
++  try { const buf = await f.arrayBuffer(); await vvlDb('readwrite', s => s.put({name: f.name || 'eigene Datei', type: f.type || 'video/mp4', buf}, 'logo')); }
++  catch (e) { toast('Logo konnte nicht gespeichert werden'); return false; }
++  await vvlLoad(true);
++  if (!VVL.own) { toast('Logo konnte nicht geladen werden'); return false; }
++  vvPrefSet('logo', true); vvlSync(); toast('Abspann-Logo: ' + VVL.name);
++  return true;
++}
++// the job's Abspann (or null: switched off or no logo); songSec = the length of the range without the Ausklang
++async function vvlOutro(o) {
++  if (o.logo === false || (o.logo == null && !vvLogoPref())) return null;
++  const L = await vvlLoad(); if (!L || !L.v) return null;
++  const v = L.v; try { await v.play(); } catch (e) {} try { v.pause(); v.currentTime = 0; } catch (e) {}   // primed (iOS draws a never-played video late)
++  let songSec = 0; const rg = o.range || vvRange(false), song = S.song;
++  if (rg && song && song.bars) { const a = clamp(rg.a | 0, 0, song.bars - 1), b = clamp(rg.b | 0, a + 1, song.bars); songSec = (b - a) * 4 * spb(); }
++  return {v, L: L.dur, own: L.own, name: L.name, songSec, extra: VVL_FADE + L.dur + VVL_END};
++}
++function vvlDark(g, W, H, a) { if (a <= 0) return; g.save(); g.globalCompositeOperation = 'source-over'; g.globalAlpha = Math.min(1, a); g.fillStyle = '#000'; g.fillRect(0, 0, W, H); g.restore(); }
++// the logo centred, 60 % of the shorter side (aspect kept), black keyed out by screen (over black: the logo itself)
++function vvlLogo(g, W, H, v, a) {
++  const S0 = Math.min(W, H) * VVL_SIZE, vw = v.videoWidth || 1, vh = v.videoHeight || 1, k = Math.min(S0 / vw, S0 / vh), w = vw * k, h = vh * k;
++  g.save(); g.globalCompositeOperation = 'screen'; g.globalAlpha = Math.max(0, Math.min(1, a)); g.drawImage(v, (W - w) / 2, (H - h) / 2, w, h); g.restore();
++}
++function vvlSeek(v, t) {
++  t = Math.max(0, Math.min(t, (v.duration || 0) - .001));
++  if (v.readyState >= 2 && !v.seeking && Math.abs(v.currentTime - t) < 5e-4) return Promise.resolve();
++  return new Promise(res => { let to = 0; const f = () => { clearTimeout(to); v.removeEventListener('seeked', f); res(); }; v.addEventListener('seeked', f); to = setTimeout(f, 2000); try { v.currentTime = t; } catch (e) { f(); } });
++}
++// one picture of the Abspann at video time t (> r.dur): WebCodecs (the logo frame by seeking) …
++async function vvlFrame(g, W, H, job, r, t) {
++  const ol = job.outro, u = t - r.dur, tau = u - VVL_FADE;
++  if (u < VVL_FADE) { vvDraw(g, W, H, job.view, vvStateAt(r, r.dur), job.rt); vvlDark(g, W, H, u / VVL_FADE); return; }
++  vvlDark(g, W, H, 1);
++  if (tau < ol.L) { await vvlSeek(ol.v, tau + 1e-3); vvlLogo(g, W, H, ol.v, tau / VVL_IN); }
++}
++// … and in real time (the logo plays along; after a pause it is set to the right place again)
++function vvlFrameRT(g, W, H, job, r, t) {
++  const ol = job.outro, v = ol.v, u = t - r.dur, tau = u - VVL_FADE;
++  if (u < VVL_FADE) { vvDraw(g, W, H, job.view, vvStateAt(r, r.dur), job.rt); vvlDark(g, W, H, u / VVL_FADE); return; }
++  vvlDark(g, W, H, 1);
++  if (tau < ol.L) {
++    if (!v.ended) {
++      try { if (Math.abs(v.currentTime - tau) > .25) v.currentTime = Math.min(tau, ol.L - .001); } catch (e) {}
++      if (v.paused) { const q = v.play(); if (q && q.catch) q.catch(() => {}); }
++    }
++    if (v.readyState >= 2) vvlLogo(g, W, H, v, tau / VVL_IN);
++  } else if (!v.paused) v.pause();
++}
++function vvlRewind(ol) { if (!ol) return; try { ol.v.pause(); ol.v.currentTime = 0; } catch (e) {} }
++/* VV-LOGO-END */
+ async function vvEncodeWC(job) {
+   const {W, H, path, live} = job, fps = VV_FPS, cv = job.canvas, g = cv.getContext('2d', {alpha: false});
+   const vS = [], aS = []; let vCfg = null, aCfg = null, err = null, r = null;
+@@ -48325,11 +48487,13 @@
+     for (;;) {
+       if (VV.cancel) throw new Error('abgebrochen');
+       if (err) throw err;
+-      const nF = r ? Math.max(1, Math.round(r.dur * fps)) : Infinity;
++      const nF = r ? Math.max(1, Math.round((r.dur + (job.outro ? job.outro.extra : 0)) * fps)) : Infinity;   // VV-LOGO: + Abblende, Logo, Schwarz
+       if (f >= nF) break;
+-      if (!r && f / fps > live.t - .05) { await Promise.race([rP, new Promise(res => setTimeout(res, 8))]); continue; }
++      // VV-LOGO: with an Abspann the frames behind the song wait for the trimmed length (the Ausklang end is known only then)
++      if (!r && (f / fps > live.t - .05 || (job.outro && f / fps >= job.outro.songSec - .1))) { await Promise.race([rP, new Promise(res => setTimeout(res, 8))]); continue; }
+       const PF = performance.now();
+-      vvDraw(g, W, H, job.view, vvStateAt(r || live, f / fps), job.rt);
++      if (job.outro && r && f / fps >= r.dur) await vvlFrame(g, W, H, job, r, f / fps);
++      else vvDraw(g, W, H, job.view, vvStateAt(r || live, f / fps), job.rt);
+       const fr = new VideoFrame(cv, {timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps)});
+       ve.encode(fr, {keyFrame: f % (fps * 2) === 0}); fr.close(); f++;
+       vvProf('frame', performance.now() - PF);
+@@ -48342,13 +48506,13 @@
+     const asr = opus ? 48000 : r.sr;
+     let A0 = r.ch[0], A1 = r.ch[1];
+     if (asr !== r.sr) { const oc = new OfflineAudioContext(2, Math.ceil(r.dur * asr), asr), bs = oc.createBufferSource(); bs.buffer = r.buf; bs.connect(oc.destination); bs.start(0, r.off, r.dur); const x = await oc.startRendering(); A0 = x.getChannelData(0); A1 = x.getChannelData(1); }   // Opus (test only) needs 48 kHz
+-    const src = {length: A0.length};
++    const src = {length: A0.length}, aLen = A0.length + (job.outro ? Math.round(job.outro.extra * asr) : 0);   // VV-LOGO: Stille unter dem Abspann
+     ae = new AudioEncoder({output: (c, m) => { if (!aCfg) aCfg = descOf(m); aS.push({d: copy(c), ts: c.timestamp, dur: c.duration}); }, error: e => { err = e; }});
+     ae.configure({codec: path.acodec, sampleRate: asr, numberOfChannels: 2, bitrate: 192000});
+     const aStep = Math.round(asr / 10);
+-    for (let aPos = 0; aPos < src.length;) {
++    for (let aPos = 0; aPos < aLen;) {
+       if (VV.cancel) throw new Error('abgebrochen');
+-      const n = Math.min(aStep, src.length - aPos), pl = new Float32Array(n * 2); pl.set(A0.subarray(aPos, aPos + n), 0); pl.set(A1.subarray(aPos, aPos + n), n);
++      const n = Math.min(aStep, aLen - aPos), m = Math.max(0, Math.min(n, src.length - aPos)), pl = new Float32Array(n * 2); if (m) { pl.set(A0.subarray(aPos, aPos + m), 0); pl.set(A1.subarray(aPos, aPos + m), n); }
+       const ad = new AudioData({format: 'f32-planar', sampleRate: asr, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(aPos / asr * 1e6), data: pl});
+       ae.encode(ad); ad.close(); aPos += n;
+       if (ae.encodeQueueSize > 8) await new Promise(res => setTimeout(res, 1));
+@@ -48376,6 +48540,7 @@
+ // fallback: the stage canvas + the rendered song (live context → MediaStreamDestination, not to the speakers) in real time
+ async function vvEncodeMR(job) {
+   const {W, H, r, path} = job, cv = job.canvas, g = cv.getContext('2d', {alpha: false}), c = AU.ctx;
++  const ol = job.outro, Dt = r.dur + (ol ? ol.extra : 0); vvlRewind(ol);   // VV-LOGO: the recording runs on through the Abspann (the sound is silent there)
+   vvDraw(g, W, H, job.view, vvStateAt(r, 0), job.rt);
+   // frames on request (one per drawn picture) where the browser offers it, else the canvas at 30 fps
+   let vs = cv.captureStream(0), vt = vs.getVideoTracks()[0];
+@@ -48389,6 +48554,7 @@
+   const done = new Promise(res => { mr.onstop = res; });
+   try { if (c.state !== 'running') await c.resume(); } catch (e) {}
+   const t0 = c.currentTime + .05; mr.start(1000); bs.start(t0, r.off, r.dur);
++  let cz = null; if (ol && c.createConstantSource) { try { cz = c.createConstantSource(); cz.offset.value = 0; cz.connect(dst); cz.start(t0); } catch (e) { cz = null; } }   // VV-LOGO: the sound track runs on (silent) under the Abspann
+   let fl = -1, tryT = 0;
+   // page hidden (screen lock, app switch) or the context interrupted: the recorder and the sound pause together (no gap in the
+   // file, no idle suspend from outside); with the page visible again the context is resumed and both go on
+@@ -48399,18 +48565,20 @@
+       if (VV.cancel) { rej(new Error('abgebrochen')); return; }
+       if (c.state !== 'running') {
+         try { if (mr.state === 'recording') mr.pause(); } catch (e) {}
++        if (ol && !ol.v.paused) { try { ol.v.pause(); } catch (e) {} }
+         const n = performance.now(); if (!document.hidden && n - tryT > 500) { tryT = n; c.resume().catch(() => {}); }
+         requestAnimationFrame(step); return;
+       }
+       try { if (mr.state === 'paused') mr.resume(); } catch (e) {}
+       const t = c.currentTime - t0, fi = Math.floor(Math.max(0, t) * VV_FPS);
+-      if (fi !== fl) { fl = fi; vvDraw(g, W, H, job.view, vvStateAt(r, Math.max(0, Math.min(r.dur, t))), job.rt); if (vt) vt.requestFrame(); }   // 30 pictures a second
+-      if (job.onProgress) job.onProgress(Math.max(0, Math.min(1, t / r.dur)));
+-      if (t >= r.dur) res(); else requestAnimationFrame(step);
++      if (fi !== fl) { fl = fi; if (ol && t > r.dur) vvlFrameRT(g, W, H, job, r, t); else vvDraw(g, W, H, job.view, vvStateAt(r, Math.max(0, Math.min(r.dur, t))), job.rt); if (vt) vt.requestFrame(); }   // 30 pictures a second
++      if (job.onProgress) job.onProgress(Math.max(0, Math.min(1, t / Dt)));
++      if (t >= Dt) res(); else requestAnimationFrame(step);
+     };
+     requestAnimationFrame(step);
+-  }).finally(() => { document.removeEventListener('visibilitychange', onVis); VV.mrCtx = null; try { mr.stop(); } catch (e) {} try { bs.stop(); } catch (e) {} for (const tr of ms.getTracks()) { try { tr.stop(); } catch (e) {} } });
++  }).finally(() => { document.removeEventListener('visibilitychange', onVis); VV.mrCtx = null; vvlRewind(ol); try { mr.stop(); } catch (e) {} try { bs.stop(); } catch (e) {} for (const tr of ms.getTracks()) { try { tr.stop(); } catch (e) {} } });
+   await done; try { bs.disconnect(); dst.disconnect(); z.disconnect(); } catch (e) {}
++  if (cz) { try { cz.stop(); } catch (e) {} try { cz.disconnect(); } catch (e) {} }
+   if (VV.cancel) throw new Error('abgebrochen');
+   return new Blob(parts, {type: path.mime.split(';')[0]});
+ }
+@@ -48436,7 +48604,7 @@
+ // the whole job: song audio offline, then the picture frames with the chosen way
+ async function vvMake(o) {
+   o = o || {};
+-  const pf = vvPrefs(), fmt = o.fmt || pf.fmt, view = vvViewOf(o.view || pf.view), [W, H] = VV_SIZE[fmt] || VV_SIZE['9:16'];
++  const pf = vvPrefs(), fmt = o.fmt || pf.fmt, view = vvViewOf(o.view || pf.view), [W, H] = (VV.test && VV.test.size) || VV_SIZE[fmt] || VV_SIZE['9:16'];   // VV-LOGO: test.size (z. B. 1:1)
+   let path = await vvPath(fmt); if (!path.how) throw new Error(path.why);
+   if (VV.job) throw new Error('Läuft schon');
+   VV.job = true; VV.busy = true; VV.res = null; VV.cancel = false; VV.prof = {};
+@@ -48447,12 +48615,14 @@
+     const cv = o.canvas || document.createElement('canvas'); cv.width = W; cv.height = H;
+     let blob, r, T1, rP = null, aChk = null;
+     const rt = VV.lastRt = vvRun({view, cam: o.cam || pf.cam, range: o.range, log: true});   // VV2: cut list + camera of this job
++    const outro = await vvlOutro(o);                                // VV-LOGO: the Abspann (null: off or no logo – the video as before)
++    if (VV.cancel) throw new Error('abgebrochen');
+     try {
+     if (path.how === 'webcodecs') {
+       const live = {tl: [], t: -1, est: 0};
+       if (S.song) { const rg = o.range || vvRange(false); live.est = (rg.b - rg.a) * 4 * spb() + 2; }
+       rP = vvRenderAudio({range: o.range, live}); rP.then(() => { T1 = performance.now(); }, () => {});
+-      const job = {W, H, path, view, canvas: cv, live, rP, rt, onProgress: p => prog(p, 'Video')};
++      const job = {W, H, path, view, canvas: cv, live, rP, rt, outro, onProgress: p => prog(p, 'Video')};
+       let wcErr = null;
+       try { blob = await vvEncodeWC(job); } catch (e) { if (VV.cancel || /abgebrochen/.test(e && e.message)) throw e; wcErr = e; }   // handled: the recorder way follows (aChk.err)
+       r = job.r || (rP ? await rP : null);
+@@ -48471,7 +48641,7 @@
+       // the recorder way (also the fallback): the file is decoded and measured; silent → another type once, then an error
+       const tried = [];
+       for (let k = 0; k < 2; k++) {
+-        blob = await vvEncodeMR({W, H, r, path, view, rt, canvas: cv, onProgress: p => prog(.25 + .75 * p, 'Bild')});
++        blob = await vvEncodeMR({W, H, r, path, view, rt, canvas: cv, outro, onProgress: p => prog(.25 + .75 * p, 'Bild')});
+         aChk.file = await vvBlobDb(blob); aChk.mime = path.mime;
+         if (aChk.file == null || aChk.file >= VV_SILENT || aChk.src < VV_SILENT) break;
+         tried.push(path.mime); const ty = vvMrType(tried); if (!ty) break;
+@@ -48481,7 +48651,8 @@
+     }
+     } catch (e) { if (rP && VV.off) { VV.cancel = true; try { await rP; } catch (x) {} } throw e; }   // the offline pass never runs on alone
+     const T2 = performance.now();
+-    VV.res = {blob, mime: blob.type, ext: path.ext, how: path.how, why: path.why, aChk, fmt, view, cam: rt.cam, cuts: vvCutHash(rt.shots), W, H, dur: r.dur, songSec: r.songSec, tail: r.tail, a: r.a, b: r.b, size: blob.size,
++    VV.res = {blob, mime: blob.type, ext: path.ext, how: path.how, why: path.why, aChk, fmt, view, cam: rt.cam, cuts: vvCutHash(rt.shots), W, H, dur: r.dur + (outro ? outro.extra : 0), songSec: r.songSec, tail: r.tail, a: r.a, b: r.b, size: blob.size,
++      logo: outro ? {name: outro.name, own: outro.own, at: r.dur, fade: VVL_FADE, len: outro.L, end: VVL_END} : null,   // VV-LOGO (dur = ganze Videolänge)
+       msAudio: Math.round(T1 - T0), msVideo: Math.round(T2 - T1), ms: Math.round(T2 - T0)};
+     return VV.res;
+   } finally { VV.busy = false; VV.job = false; VV.cancel = false; document.removeEventListener('visibilitychange', onVis); wakeReleaseLater(); }
+@@ -48537,13 +48708,17 @@
+   const rng = el('span', 'vvtxt'), segR = makeSeg([['song', 'Ganzer Song'], ['sel', 'Auswahl']], () => VV.useSel !== false ? 'sel' : 'song', v => { VV.useSel = v === 'sel'; vvSync(); vvStill(); }, 'vvseg');
+   const rngBox = el('span', 'vvrng'); rngBox.append(rng, segR);
+   const rowR = rowOf('Bereich', rngBox); rowR.classList.toggle('txt', !vvHasSel());
++  const lgBox = el('span', 'vvlogo'), bLogo = el('button', 'rb vvlt', '<b>Abspann-Logo</b><small></small>'), bFile = el('button', 'rb vvlf', 'Andere Datei wählen …');   // VV-LOGO
++  bLogo.setAttribute('aria-label', 'Abspann-Logo an oder aus'); bFile.setAttribute('aria-label', 'Andere Datei für das Abspann-Logo wählen');
++  lgBox.append(bLogo, bFile); const rowL = rowOf('Abspann', lgBox);
+   const acts = el('div', 'vvacts'), bPrev = el('button', 'rb vvbtn', '▶ Vorschau'), bMake = el('button', 'rb vvbtn go', 'Video erstellen');
+   bPrev.setAttribute('aria-label', 'Vorschau mit Ton'); acts.append(bPrev, bMake); ctl.appendChild(acts);
+   const bar = el('div', 'vvprog', '<i></i><span></span>'), bCan = el('button', 'rb vvbtn', 'Abbrechen'); bar.appendChild(bCan);
+   const done = el('div', 'vvdone'), bShare = el('button', 'rb vvbtn go', 'Teilen'), bSave = el('button', 'rb vvbtn', 'Sichern');
+   done.append(bShare, bSave); ctl.append(bar, done);
+   const way = el('div', 'vvway'), wayT = el('span', ''); way.append(wayT); ctl.appendChild(way);
+-  Object.assign(VV, {ui: {sh, cv, stage, segF, segV, segC, rng, segR, rowR, bPrev, bMake, bar, bCan, done, bShare, bSave, way, wayT}});
++  Object.assign(VV, {ui: {sh, cv, stage, segF, segV, segC, rng, segR, rowR, bPrev, bMake, bar, bCan, done, bShare, bSave, way, wayT, bLogo, bFile, rowL, acts, ctl, body}});
++  onTap(bLogo, () => vvlToggle()); onTap(bFile, () => vvlPick()); vvlLoad();   // VV-LOGO
+   onTap(bPrev, () => { if (VV.prev) vvPrevStop(); else vvPrevStart(); });
+   onTap(bMake, () => vvGo());
+   onTap(bCan, () => { VV.cancel = true; });
+@@ -48566,6 +48741,11 @@
+ // the stage canvas fits its box (aspect of the format); preview size = box × dpr, the encoder draws its own full size
+ function vvFit() {
+   const u = VV.ui; if (!u) return;
++  if (u.rowL) {                                                     // VV-LOGO: the row „Abspann“ – portrait in the controls, landscape under the stage
++    let lq = false; try { lq = matchMedia('(orientation:landscape)').matches; } catch (e) {}
++    if (lq && u.rowL.parentNode !== u.body) u.body.appendChild(u.rowL); else if (!lq && u.rowL.parentNode !== u.ctl) u.ctl.insertBefore(u.rowL, u.acts);
++    u.body.classList.toggle('vvlq', lq);
++  }
+   const [W, H] = VV_SIZE[vvPrefs().fmt], bw = Math.floor(u.stage.clientWidth), bh = Math.floor(u.stage.clientHeight), k = Math.min(bw / W, bh / H) || .1;
+   const cw = Math.max(10, Math.min(bw, Math.round(W * k))), ch = Math.max(10, Math.min(bh, Math.round(H * k)));
+   u.cv.style.width = cw + 'px'; u.cv.style.height = ch + 'px';
+@@ -48590,6 +48770,7 @@
+   u.sh.classList.toggle('busy', busy); u.sh.classList.toggle('has', !!(VV.res && VV.res.blob) && !busy);
+   for (const b of [...u.segF.children, ...u.segV.children, ...u.segR.children]) b.disabled = busy;
+   for (const b of u.segC.children) b.disabled = busy || vvPrefs().fmt !== '9:16';   // VV2: only for 9:16 (stays in place: no layout jump)
++  vvlSync();                                                        // VV-LOGO
+   u.bPrev.disabled = busy || !rg; u.bPrev.innerHTML = VV.prev ? '■ Stopp' : '▶ Vorschau';
+   const fmt = vvPrefs().fmt, p = await vvPath(fmt);
+   if (!VV.ui || VV.ui !== u) return;
+@@ -48655,6 +48836,9 @@
+     vvMake: async o => meta(await vvMake(o || {})),
+     vvBlob: async () => { const r = VV.res; if (!r || !r.blob) return null; const u8 = new Uint8Array(await r.blob.arrayBuffer()); let s = ''; for (let k = 0; k < u8.length; k += 32768) s += String.fromCharCode.apply(null, u8.subarray(k, k + 32768)); return {mime: r.mime, ext: r.ext, b64: btoa(s)}; },
+     vvCancel: () => { VV.cancel = true; return true; },
++    // VV-LOGO: {reload, pref} → the logo state {st: 'ok'|'fehlt'|'lädt', own, name, dur, w, h, pref, on}
++    vvLogo: async o => { o = o || {}; await vvlLoad(!!o.reload); if (o.pref != null) vvPrefSet('logo', !!o.pref); if (VV.ui) vvSync(); return vvlInfo(); },
++    vvLogoClear: async () => { try { await vvlDb('readwrite', s => s.delete('logo')); } catch (e) {} await vvlLoad(true); if (VV.ui) vvSync(); return vvlInfo(); },
+     vvGo: () => { vvGo(); return true; },
+     vvPreview: on => { if (on === false) vvPrevStop(); else vvPrevStart(); return !!VV.prev; },
+     vvStateAt: t => (VV.last ? vvStateAt(VV.last, t) : null),
