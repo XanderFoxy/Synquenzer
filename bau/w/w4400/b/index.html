@@ -7823,8 +7823,146 @@ const NEIGEN = (() => {
    Kit-Effekte HALL · ECHO (§1.10). Keine eigene Datenhaltung: jede Bedienung schreibt über dieselben Wege wie der North-Editor
    (mdSet, mdScl, mdKitSet, mdTap, soundSnapshot/commitSound auf DRUM_T) → slot.md und p.md, ein Undo je Geste.
    DOM + CSS (Block NDP-CSS), Siebensegment als SVG, keine Bilddaten, keine neue Schrift. ===== */
-(function () {
+(function (G) {   // NPS: G = die globalen md-Wege der Drum-Spur (Aufruf am Blockende)
 'use strict';
+/* NPS (Xander 01.11.): Datenquelle umschaltbar – die Drum-Spur (wie bisher) oder eine Perkussionsspur Q.t (Synth-Spur mit North,
+   sound.p.nk = {kit, ch[12], md}, Kanal Q.c). Adapter statt Kopie: die Namen hier verdecken in dieser Platte die gleichnamigen
+   globalen md-Wege; ohne Perkussionsspur rufen sie genau diese (G) – die Drum-Spur verhält sich unverändert. Auf der Perkussionsspur
+   schreibt jede Geste in nk.ch[c] bzw. nk.md (in place wie setP), ein Undo je Geste (soundSnapshot/commitSound auf DRUM_T = Ziel-Spur),
+   der Klang geht sofort an den Knoten der Spur (percEngineSync → percSync, nur Geändertes). */
+const Q = {t: -1, c: 0, sub: null, edV: -1, ed: false};
+const QP = () => Q.t >= 0;
+const qNk = () => (QP() && percIs(S.tracks[Q.t]) ? percNkOf(S.tracks[Q.t].sound) : null);
+let DRUM_T = G.DRUM_T, MD_KIT_NAMES = G.MD_KIT_NAMES;             // NPS: Ziel-Spur und Kit-Liste der Platte (qBind)
+const ED = {get dVoice() { return QP() ? Q.c : G.ED.dVoice; }, set dVoice(v) { if (QP()) Q.c = clamp(v | 0, 0, 11); else G.ED.dVoice = v; }};
+const mdCurSl = () => (QP() ? DRUM_VOICES[clamp(Q.c, 0, 11)] : G.mdCurSl());
+const mdCur = () => { if (!QP()) return G.mdCur(); const nk = qNk(); return (nk && nk.ch[Q.c]) || MDN.init(); };
+const mdIsSrc = id => (QP() ? !!qNk() : G.mdIsSrc(id));            // Perkussionsspur: jeder Kanal spielt North
+const mdUsed = () => (QP() ? !!qNk() : G.mdUsed());
+const mdSlot = id => { if (!QP()) return G.mdSlot(id); const nk = qNk(), v = DRUM_BY_ID[id], s = nk && v ? nk.ch[v.idx] : null; return s ? Object.assign({}, s, {src: 'md'}) : null; };   // nur Lesesicht
+const mdKit = () => (QP() ? Object.assign(MDN.kitInit(), (qNk() || {}).md || {}) : G.mdKit());
+const mdSet = (key, v) => (QP() ? qSet(key, v) : G.mdSet(key, v));
+const mdScl = code => (QP() ? qScl(code) : G.mdScl(code));
+const mdKitSet = (k, v) => (QP() ? qKitSet(k, v) : G.mdKitSet(k, v));
+const mdLoadProgram = (id, prog, name) => (QP() ? qProg(DRUM_BY_ID[id].idx, prog, name) : G.mdLoadProgram(id, prog, name));
+const mdProgPop = anchor => (QP() ? percProgPop(anchor, Q.t, Q.c) : G.mdProgPop(anchor));
+const mdList = (key, anchor) => (QP() ? qList(key, anchor) : G.mdList(key, anchor));
+const mdTap = btn => (QP() ? qTap(btn) : G.mdTap(btn));
+const drumAudition = (idx, vel) => (QP() ? percHit(Q.t, idx, vel) : G.drumAudition(idx, vel));
+const mdAudition = force => { if (!QP()) return G.mdAudition(force); if (R.playing && !force) return; const t = performance.now(); if (!force && t - MDE.aud < 300) return; MDE.aud = t; percHit(Q.t, Q.c, .8); };
+const mdSoloApply = () => { if (!QP()) return G.mdSoloApply(); const E = percE(Q.t), s = MDE.sub; if (E) E.mute(MDE.solo ? Q.c : -1, MDE.solo ? (s === 'tone' || s === 'noise' || s === 'click' ? s : 'all') : null); };
+const mdHeadSolo = () => (QP() ? null : G.mdHeadSolo());
+const mdFocus = () => (QP() ? null : G.mdFocus());
+const mdEditEnd = closing => { if (!QP()) return G.mdEditEnd(closing); if (!MDE.all && !MDE.solo && !MDE.rel) return; MDE.all = MDE.solo = MDE.rel = false; MDE.scl = ''; const E = percE(Q.t); if (E) E.mute(-1, null); };
+const drumSnd = () => { if (!QP()) return G.drumSnd(); const k = (qNk() || {}).kit || ''; return {name: k || MD_NAME, origin: 'pk:' + k, pk: 1}; };   // Lesesicht: das Kit der Spur
+const soundEdited = s => (s && s.pk ? qEdited() : G.soundEdited(s));
+const kitId = n => (QP() ? 'pk:' + n : G.kitId(n));
+const loadKit = n => (QP() ? qLoadKit(n) : G.loadKit(n));
+// Quelle binden (open) und lösen (close): o.perc = Spur, o.c = Kanal; der Drum-Editor behält seine Unterseite (MDE.sub)
+function qBind(o) {
+  const t = o.perc != null && percIs(S.tracks[o.perc]) && percNkOf(S.tracks[o.perc].sound) ? o.perc | 0 : -1;
+  if (P.open && t !== Q.t) mdEditEnd(true);
+  if (t < 0) { qUnbind(true); return; }
+  if (!QP()) Q.sub = MDE.sub;
+  Q.t = t; if (o.c != null) Q.c = clamp(o.c | 0, 0, 11);
+  DRUM_T = t; MD_KIT_NAMES = percKits().map(k => k.name); P.root.classList.add('ndpperc');
+}
+function qUnbind(quiet) {
+  if (!QP()) return; const t = Q.t;
+  PERCUI.ch = Q.c; if (Q.sub) MDE.sub = Q.sub; Q.sub = null;
+  Q.t = -1; DRUM_T = G.DRUM_T; MD_KIT_NAMES = G.MD_KIT_NAMES; if (P.root) P.root.classList.remove('ndpperc');
+  if (!quiet && R.editor === 'synth' && R.selT === t) safeRebuild(buildSynthEd);   // zurück auf Seite NORTH mit den neuen Werten
+}
+function qTouch() { UI.sndVer++; UI.dirty.strip = true; UI.dirty.edHead = true; markDirty(); percEngineSync(Q.t); }
+// ein Wert in Kanal Q.c (ALLE KAN.: alle 12; PITCH dann relativ mit Gruppen-Grenze – wie mdSet)
+function qSet(key, v) {
+  const nk = qNk(), st = nk && nk.ch[Q.c]; if (!st) return;
+  const nv = MDN.val(key, v); if (nv === st[key] && !MDE.all) return;
+  if (MDE.all || (key === 'mPit' && MDE.rel)) {
+    const L = nk.ch.filter(Boolean);
+    if (key === 'mPit') { let d = Math.round((nv - st.mPit) * 10) / 10; for (const s of L) d = d > 0 ? Math.min(d, 127.5 - s.mPit) : Math.max(d, -s.mPit); if (!d) return; for (const s of L) s.mPit = MDN.val('mPit', s.mPit + d); }
+    else for (const s of L) s[key] = nv;
+  } else st[key] = nv;
+  qTouch();
+}
+// SCL PRE: Start = PITCH von Kanal 1, Kanal i = Start + Stufe(i), schaltet ALLE KAN. an (wie mdScl)
+function qScl(code) {
+  MDE.scl = code || ''; const nk = qNk(); if (!code || !nk) return;
+  const S0 = nk.ch[0].mPit, st = MD_SCL[code][1], fixed = MD_SCL[code][2];
+  nk.ch.forEach((s, i) => { const off = fixed ? st[Math.min(i, st.length - 1)] + (i >= st.length ? 12 * Math.floor(i / st.length) : 0) : st[i % st.length] + 12 * Math.floor(i / st.length); s.mPit = MDN.val('mPit', S0 + off); });
+  MDE.all = true; qTouch();
+}
+function qKitSet(k, v) { const nk = qNk(); if (!nk) return; const K = nk.md || (nk.md = MDN.kitInit()), nv = MDN.kval(k, v); if (K[k] === nv) return; K[k] = nv; qTouch(); }
+function qProg(c, prog, name) {
+  const nk = qNk(); if (!nk || !prog) return false;
+  const p = percProg(prog); delete p.name; if (name != null) p.mName = String(name).slice(0, 16);
+  const keep = nk.ch[c] || {}; if (isNum(keep.mMono)) p.mMono = keep.mMono; if (keep.mCrv) p.mCrv = keep.mCrv;
+  nk.ch[c] = p; qTouch(); return true;
+}
+function qLoadKit(name) { const nk = qNk(), K = percKits().find(k => k.name === name); if (!nk || !K) return false; const n = percNormNk(percNkFromKit(K)); nk.kit = n.kit; nk.ch = n.ch; nk.md = n.md; qTouch(); return true; }
+// „•“ hinter dem Kit-Namen: Kanäle oder Kit-Effekte weichen vom geladenen Kit ab (einmal je Klang-Stand)
+function qEdited() {
+  if (Q.edV === UI.sndVer) return Q.ed; Q.edV = UI.sndVer;
+  const nk = qNk(), K = nk && percKits().find(k => k.name === nk.kit); if (!nk) return (Q.ed = false); if (!K) return (Q.ed = true);
+  const a = percNormNk(percNkFromKit(K)); return (Q.ed = SQStore.canonical(a.ch) !== SQStore.canonical(nk.ch) || SQStore.canonical(a.md) !== SQStore.canonical(nk.md));
+}
+// Liste eines Code-Reglers (WAVE, MODE, TYPE …, SCL PRE) – wie mdList, Ziel die Perkussionsspur
+function qList(key, anchor) {
+  const C = MD_CELL[key]; if (!anchor.isConnected) return;
+  openPop(anchor, p => {
+    let h;
+    if (key === 'mWav') { const cur = mdCur().mWav;
+      h = '<h4>WAVE – Modell</h4><div class="mdwl pan-y">' + MD_FAM.map(([f, fl]) => `<div class="mdwr"><span class="mdwf">${esc(fl)}</span><div class="mdwb">` +
+        MDN.WAVES.filter(w => w[0] === f).map(w => `<button class="rb mdw${w === cur ? ' on' : ''}" data-v="${w}" aria-label="${esc(w + ' ' + MD_WAVE[w][1])}"><b>${w}</b><small>${esc(MD_WAVE[w][0])}</small></button>`).join('') + '</div></div>').join('') + '</div>';
+    } else {
+      const vals = C.dyn ? C.vals.concat(['D']) : C.vals, s = mdCur(), cur = key === 'scl' ? MDE.scl : C.dyn ? s[C.m] : s[key];
+      const name = v => (key === 'scl' ? (v ? MD_SCL[v][0] : 'aus') : C.dyn ? (v === 'D' ? 'Dynamic Decay (Zahl)' : MD_MODE[v]) : C.sub(v));
+      h = `<h4>${esc(C.l)}</h4><div class="plist mdcl pan-y">` + vals.map(v => `<button class="rb${v === cur ? ' on' : ''}" data-v="${esc(v)}"><b>${esc(v === 'D' ? '0–50' : key === 'nmode' && v === 'E1' ? 'E' : v || '–')}</b> <small>${esc(name(v) || '')}</small></button>`).join('') + '</div>';
+    }
+    p.innerHTML = h; p.classList.add('mdpop'); guardTouch(p);
+    onTap(p, b => {
+      const v = b.dataset.v;
+      soundEdit(DRUM_T, C.l + ' ' + (v || '–'), () => { if (key === 'scl') mdScl(v); else mdSet(C.dyn ? C.m : key, v); });
+      for (const o of p.querySelectorAll('button[data-v]')) o.classList.toggle('on', o === b);
+      mdAudition(); P.ver = ''; paint();
+      if (key !== 'mWav') closePop();
+    }, 'button[data-v]');
+  }, {name: 'mdlist'});
+}
+// TAP: ≥ 4 Schläge, Mittel der letzten 3 Abstände → BPM-Strecke (wie mdTap), ein Undo
+function qTap(btn) {
+  const t = performance.now(), a0 = MDE.taps, last = a0[a0.length - 1];
+  MDE.taps = (last != null && t - last < 2500 ? a0 : []).concat([t]).slice(-4);
+  const n = MDE.taps.length; if (n < 4) { btn.textContent = 'TAP ' + n; return; }
+  const a = MDE.taps, avg = (a[3] - a[0]) / 3000;
+  let bi = 0; for (let i = 1; i < MD_BPM.length; i++) if (Math.abs(MD_BPM[i][2] - avg) < Math.abs(MD_BPM[bi][2] - avg) - 1e-9) bi = i;
+  soundEdit(DRUM_T, 'Echo-Tempo ' + mdBpmTxt(bi), () => { mdKitSet('dlM', 'b'); mdKitSet('dlB', bi); });
+  btn.textContent = mdBpmTxt(bi);
+}
+// ⋯ auf der Perkussionsspur: Programm, Kit, Kanal kopieren / einfügen / Init – je ein Undo
+function qMore(anchor) {
+  const sl = curSl();
+  openPop(anchor, p => {
+    p.innerHTML = '<h4>' + esc(MD_NAME) + ' · ' + esc(sl.l) + '</h4><div class="plist edmore">' +
+      '<button class="rb" data-a="prog"><b>Programm ▾</b><small>Liste nach Kategorie, Tipp = laden + hören</small></button>' +
+      '<button class="rb" data-a="kit"><b>Kit ▾</b><small>alle 12 Kanäle und HALL · ECHO, ein Schritt</small></button>' +
+      '<button class="rb" data-a="copy"><b>Kanal kopieren</b><small>' + esc(sl.l) + ' merken</small></button>' +
+      `<button class="rb" data-a="paste"${MDE.clip ? '' : ' disabled'}><b>${MDE.all ? 'Einfügen in alle' : 'Einfügen'}</b><small>gemerkten Kanal hierher</small></button>` +
+      '<button class="rb" data-a="init"><b>Kanal Init</b><small>' + esc(sl.l) + ' auf INIT</small></button>' +
+      '<button class="rb" data-a="ed"><b>Zur Seite ' + esc(MD_NAME) + '</b><small>Kit, Pads, folgt / folgt nicht</small></button></div>';
+    guardTouch(p);
+    onTap(p, b => {
+      const a = b.dataset.a; closePop();
+      if (a === 'prog') { mdProgPop(anchor); return; }
+      if (a === 'kit') { percKitPop(anchor, Q.t); return; }
+      if (a === 'ed') { close(); return; }
+      if (a === 'copy') { MDE.clip = mdProg(mdCur()); stripTxt('KOPIERT', sl.l); return; }
+      if (a === 'paste' && MDE.clip) soundEdit(DRUM_T, MDE.all ? 'Einfügen in alle' : 'Einfügen', () => { const nk = qNk(); if (!nk) return; for (let c = 0; c < 12; c++) if (MDE.all || c === Q.c) Object.assign(nk.ch[c], deep(MDE.clip)); qTouch(); });
+      if (a === 'init') soundEdit(DRUM_T, 'Init ' + sl.l, () => { const nk = qNk(); if (!nk) return; Object.assign(nk.ch[Q.c], mdProg(MDN.init())); qTouch(); });
+      mdAudition(true); P.ver = ''; paint();
+    }, 'button[data-a]');
+  }, {name: 'ndpmore'});
+}
 const NDP_CSS = `/* NDP-CSS-PLATTE-BEGIN – die Platte selbst; wird mit dem Block sq-ndp-src beim ersten Öffnen eingesetzt */
 #ndp{position:fixed;inset:0;z-index:52;display:flex;flex-direction:column;background:#120607;color:#fff;font-family:var(--font-ui);
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);box-sizing:border-box;overflow:hidden;
@@ -7957,6 +8095,15 @@ const NDP_CSS = `/* NDP-CSS-PLATTE-BEGIN – die Platte selbst; wird mit dem Blo
 .ndppad.sel{box-shadow:0 3px 0 #050505,0 0 0 2px #fff}
 .ndppad.md .led{background:#8c1d10}.ndppad.hit .led{background:#fff;box-shadow:0 0 10px #fff}
 .ndppad.dr{color:#aaa}
+/* NPS: Kanal-Tasten (Bänke) und Spiel-Pads als schwarze Gummi-Schlagflächen – matt, abgerundet, weicher Glanz oben; LED und Zustände bleiben */
+.ndpch .bank .ndpkey,.ndppad{border-radius:12px;border:1px solid #000;color:#ece8e2;
+  background:radial-gradient(130% 85% at 50% 8%,#333335 0%,#19191b 40%,#0b0b0c 76%,#050505 100%);
+  box-shadow:0 2px 0 #000,0 4px 7px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.09),inset 0 -5px 9px rgba(0,0,0,.6)}
+.ndpch .bank .ndpkey.dn{transform:translateY(1px);background:radial-gradient(130% 85% at 50% 14%,#272729 0%,#121213 45%,#050505 100%);box-shadow:0 1px 0 #000,inset 0 1px 0 rgba(255,255,255,.05),inset 0 -2px 6px rgba(0,0,0,.7)}
+.ndpch .bank .ndpkey.sel,.ndppad.sel{box-shadow:0 2px 0 #000,0 0 0 2px #fff,inset 0 1px 0 rgba(255,255,255,.12),inset 0 -5px 9px rgba(0,0,0,.6)}
+.ndpch .bank .ndpkey.foc{box-shadow:0 2px 0 #000,0 0 0 2px var(--ndp-amb),inset 0 -5px 9px rgba(0,0,0,.6)}
+.ndpch .bank .ndpkey.sel.foc{box-shadow:0 2px 0 #000,0 0 0 2px #fff,0 0 0 4px var(--ndp-amb)}
+.ndppad.hit{filter:brightness(1.4)}
 @media (prefers-reduced-motion:reduce){.ndpk .rot,.ndpenc .rot{will-change:auto}}
 /* NDP-CSS-PLATTE-END */
 `;
@@ -8230,6 +8377,7 @@ function paint() { if (!P.open || !P.ui) return; paintKeys(); paintField(); pain
 // jedes Bild: nur ein Vergleich der Zähler (Undo, Kanal, Daten, Transport); Neuzeichnen nur bei Änderung
 function loop() {
   P.raf = 0; if (!P.open) return;
+  if (QP() && !qNk()) { close(); return; }   // NPS: die Spur spielt kein North mehr (z. B. Undo des Wechsels) – Platte zu
   const v = UI.drumVer + '|' + UI.sndVer + '|' + UNDO.length + '|' + REDO.length + '|' + (ED.dVoice | 0) + '|' + MDE.all + MDE.solo + MDE.scl + '|' + !!R.playing + '|' + MDS.st + '|' + drumSnd().name;
   if (v !== P.ver) { P.ver = v; paint(); }
   P.raf = requestAnimationFrame(loop);
@@ -8391,7 +8539,7 @@ function velAt(st, ev) { const r = st.t.getBoundingClientRect(); return clamp(1 
 function flash(i) { P.hitT[i] = 1; paintKeys(); clearTimeout(P['hT' + i]); P['hT' + i] = setTimeout(() => { delete P.hitT[i]; if (P.open) paintKeys(); }, 140); }
 function chDown(st, ev) {
   const i = +st.a.slice(3); st.i = i; st.t.classList.add('dn');
-  if (shiftOn()) { anyShiftUse(); st.shift = 1; return; }
+  if (shiftOn() && !QP()) { anyShiftUse(); st.shift = 1; return; }   // NPS: SHIFT + Kanal = Quelle nur auf der Drum-Spur
   const prev = ED.dVoice | 0; ED.dVoice = i; if (MDE.solo) mdSoloApply();
   drumAudition(i, velAt(st, ev)); flash(i);
   if (prev !== i) { P.ver = ''; paint(); }
@@ -8406,6 +8554,7 @@ function chUp(st, cancel) {
 function padDown(st, ev) { const i = +st.a.slice(4); ED.dVoice = i; drumAudition(i, velAt(st, ev)); flash(i); P.ver = ''; paint(); }
 /* ---------- ⋯ ---------- */
 function morePop(anchor) {
+  if (QP()) { qMore(anchor); return; }   // NPS
   const sl = curSl(), md = isMd(), all = DRUM_VOICES.every(v => mdIsSrc(v.id));
   openPop(anchor, p => {
     p.innerHTML = '<h4>' + esc(MD_NAME) + ' · ' + esc(sl.l) + '</h4><div class="plist edmore">' +
@@ -8429,6 +8578,7 @@ function open(o) {
   o = o || {};
   ensureCss();
   if (!P.root) { const r = el('div', ''); r.id = 'ndp'; r.setAttribute('role', 'dialog'); r.setAttribute('aria-label', MD_NAME + '-Platte'); document.body.appendChild(r); P.root = r; }
+  qBind(o);   // NPS: Datenquelle – o.perc = Perkussionsspur (Kanal o.c), sonst die Drum-Spur
   if (o.view) P.view = o.view === 'spiel' ? 'spiel' : 'geraet';
   if (o.sec && SEC_BY[o.sec]) P.sec = o.sec; if (o.zoom != null) P.zoom = !!o.zoom;
   P.open = true; P.root.hidden = false; EL.app.classList.add('ndpon');
@@ -8448,6 +8598,7 @@ function close(quiet) {
   P.root.hidden = true; P.root.innerHTML = ''; P.ui = null; P.fr = null; EL.app.classList.remove('ndpon');
   try { mdEditEnd(true); } catch (e) { logErr(e); }             // ALLE KANÄLE / SOLO PART enden mit dem Schließen (Regel 6)
   if (!quiet && R.editor === 'drum' && EL.drumSheet.classList.contains('open')) safeRebuild(buildDrumEd);
+  qUnbind(quiet);   // NPS: Perkussionsspur – zurück zur Drum-Quelle, Seite NORTH neu
   return true;
 }
 function onResize() { clearTimeout(P.rsT); P.rsT = setTimeout(() => { if (P.open) build(); }, 80); }
@@ -8467,7 +8618,9 @@ function info() {
 function view(o) { o = o || {}; if (o.sec && SEC_BY[o.sec]) { P.sec = o.sec; secFocus(); } if (o.zoom != null) P.zoom = !!o.zoom; if (o.view) P.view = o.view; if (o.enc) P.enc = o.enc; if (o.focus) P.focus = o.focus; if (o.bank != null) P.bank = o.bank ? 1 : 0; if (o.shift != null) P.shiftLatch = !!o.shift; if (P.open) build(); return info(); }
 function ensureCss() { if (document.getElementById('ndp-css')) return; const st = document.createElement('style'); st.id = 'ndp-css'; st.textContent = NDP_CSS; document.head.appendChild(st); }
 window.NDP = {open, close, isOpen: () => P.open, info, view, desc, SECS, perfReset: () => { P.moves = 0; P.moveMs = 0; P.moveMax = 0; P.moveL = []; }};
-})();
+Object.assign(window.NDP, {src: () => (QP() ? {perc: Q.t, c: Q.c} : null), seg: {digit: segDigit, paint: segPaint}, css: ensureCss});   // NPS: Quelle (Tests), Siebensegment + CSS für Seite NORTH
+})({DRUM_T, MD_KIT_NAMES, ED, mdCurSl, mdCur, mdIsSrc, mdUsed, mdSlot, mdKit, mdSet, mdScl, mdKitSet, mdLoadProgram, mdProgPop, mdList, mdTap,
+  drumAudition, mdAudition, mdSoloApply, mdHeadSolo, mdFocus, mdEditEnd, drumSnd, soundEdited, kitId, loadKit});   // NPS: G
 </script>
 <script type="text/plain" id="sq-mk-src">
 /* ===== MK1 / MK-P (Nachtrag 3 B.3, B.4, MK-P): block sq-mk-src, evaluated on first need (mkLoad). The panel of the AM engine as
