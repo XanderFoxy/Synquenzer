@@ -1,0 +1,13 @@
+import {launch, open, take, sleep, tap, drag, OUT} from './h.mjs';
+const br = await launch();
+const H = await open(br), p = H.p;
+const T = Array.from({length: 12}, (_, k) => 0.5 + k * 0.3);
+const {id, ref} = await take(p, T);
+await p.evaluate(r => SYNQUENZER.wpOpen(r), ref); await sleep(300);
+await tap(H.cdp, 200, 150); await sleep(300);
+console.log('after outside tap open:', await p.evaluate(() => !!SYNQUENZER.wpInfo().editor));
+await p.evaluate(r => SYNQUENZER.wpOpen(r), ref); await sleep(300);
+await drag(H.cdp, 200, 300, 200, 600, 10, 10); await sleep(300);
+console.log('after swipe down head:', await p.evaluate(() => !!SYNQUENZER.wpInfo().editor));
+console.log(await p.evaluate(() => { const e = document.elementFromPoint(200, 40); return e.id + ' ' + e.className + ' / ' + (e.closest('header,#top,.top,#bar') || {}).id; }));
+await br.close();
