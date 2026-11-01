@@ -23788,8 +23788,8 @@ function scheduleTrack(i, from, to, late) {
 /* V2d′ (song-delta 9.2, 12.1): the own clip track i plays now (R.own, a copy that only holds at this song place), else null.
    The copy names its scene slot (from.s): it only counts while that slot plays */
 function ownPlaying(i) {
-  const id = R.own[i]; if (!id || !S.song || !S.song.own) return null;
-  const c = S.song.own[id];
+  const id = R.own[i]; if (!id || !S.song) return null;
+  const c = (S.song.own && S.song.own[id]) || sx11Held(i, id);   // SX11: a thinned copy plays on until the bar line of the switch
   return c && c.from && c.from.s === R.slot[i] ? c : null;
 }
 /* drum branch (§3.4): every stored step expands to 0..4 hits (DrumSeq.expandStep: chance by a hash of seed/loop/step, so
@@ -25291,6 +25291,7 @@ function undoApply(e, val) {
   }
 }
 function undo() {
+  sx11HoldFor(UNDO[UNDO.length - 1]);   // SX11
   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && UNDO.length && UNDO[UNDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
   if (HIST && HIST.q.length) histDrain();  // VC2a-fix: mehrere ↶ in einer Aufgabe = je ein Ereignis
   const u = UNDO.pop();
@@ -25298,11 +25299,13 @@ function undo() {
   if (u.kind === 'group') REDO.push(groupSwap(u, true));
   else { REDO.push(Object.assign({}, u, {before: undoState(u)})); undoApply(u, u.before); }
   histPush(u, 'undo');  // VC2a
+  sx11AfterUndo(u);       // SX11: im Lauf ab dem nächsten Taktstrich
   if (R.editor === 'roll' || R.editor === 'clip') toast('Rückgängig: ' + u.label);   // the editor and the clip sheet have ↶ ↷ themselves
   else toast('Rückgängig: ' + u.label, {label: '↷ Wiederholen', fn: () => redo()});
   return true;
 }
 function redo() {
+  sx11HoldFor(REDO[REDO.length - 1]);   // SX11
   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && REDO.length && REDO[REDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
   if (HIST && HIST.q.length) histDrain();  // VC2a-fix
   const r = REDO.pop();
@@ -25310,6 +25313,7 @@ function redo() {
   if (r.kind === 'group') UNDO.push(Object.assign(groupSwap(r, false), {time: performance.now(), mergeKey: null}));
   else { UNDO.push(Object.assign({}, r, {before: undoState(r), time: performance.now(), mergeKey: null})); undoApply(r, r.before); }
   histPush(r, 'redo');  // VC2a
+  sx11AfterUndo(r);       // SX11
   if (R.editor === 'roll' || R.editor === 'clip') toast('Wiederholt: ' + r.label);
   else toast('Wiederholt: ' + r.label, {label: '↶ Rückgängig', fn: () => undo()});
   return true;
@@ -58135,7 +58139,17 @@ const KON_API = {
    MIDI sehen dieselben Spuren und Clips wie die Wiedergabe.
    mark.vr (additiv, ohne Feld byte-gleich): {c?: 'l' (die leichte Fassung ist an, sonst die volle), l?: [{t, b0, b1, k}], v?: [...],
    dn?: [S0-Einträge]} – k 'x' = aus, 'd' = ausgedünnt (Drums). Die gerade nicht gespielte Fassung steht in l bzw. v. ---------- */
-const SX = {clip: null};
+const SX = {clip: null, held: [], lab: new Set()};
+/* im Lauf: the own clip a track plays now stays playable until its switch at the next bar line (the edit removes it from song.own
+   at once; without this the scene clip would take over in the middle of the bar). Only for SX11 steps (the tap, its undo / redo) */
+function sx11Hold() {
+  SX.held = [];
+  if (!R.playing || !S.song || !S.song.own) return;
+  for (let i = 0; i < NT(); i++) { const id = R.own[i]; if (id && S.song.own[id]) SX.held[i] = {id, c: S.song.own[id]}; }
+}
+function sx11HoldFor(u) { if (u && u.kind === 'song' && SX.lab.has(u.label)) sx11Hold(); }
+function sx11AfterUndo(u) { if (u && u.kind === 'song' && SX.lab.has(u.label)) songResync(); }
+function sx11Held(i, id) { const h = SX.held[i]; return h && h.id === id && R.pend[i] && R.pend[i].beat > R.schedBeat - 4 ? h.c : null; }
 const SX_ON8 = t => Math.abs(t * 2 - Math.round(t * 2)) < .02;
 function sx11MaskNorm(a, len) {
   if (!Array.isArray(a)) return null;
@@ -58280,12 +58294,21 @@ function sx11Apply(sg, id, mask) {
     if (!s.on) { s0SegApply(sg, id, t, s, true); s = seg(); if (!s) continue; }
     if (k === 'd' && isDrum(t)) sx11ThinSeg(sg, m, s);
   }
+  // at the mark's edges an entry that only restarts the clip in phase is gone (laneSwitch does not cut there: it sounds the same);
+  // so [Voll] gives back exactly the lanes from before
+  for (const t of new Set(keys.map(k => k[0]))) for (const x of [m.a, m.a + m.len]) {
+    const lane = sg.lanes[t], j = lane.findIndex(e => e.bar === x); if (j < 0 || x <= 0) continue;
+    const n = lane[j], po = laneOriginAt(lane, x - 1); if (n.slot < 0) continue;
+    if (ownSame(sg, t, po, {slot: n.slot, own: n.own || null, cs: n.bar * 4 - (n.ph || 0)})) lane.splice(j, 1);
+    else if (n.re && (po.slot !== n.slot || (po.own || null) !== (n.own || null))) delete n.re;   // „neu starten“ after another clip / silence: no effect
+  }
 }
 // [Leicht] / [Voll]: the Fassung we leave keeps what it is now; the first „leicht“ is the Vorschlag. One undo step ('song')
 function sx11Set(id, f, o) {
   const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || R.songRec || (f !== 'l' && f !== 'v')) return false;
   const cur = m0.vr && m0.vr.c === 'l' ? 'l' : 'v', mk = o && o.mask; if (cur === f && !mk) return false;
-  return !!songEdit(markLabel(m0) + (f === 'l' ? ' leicht' : ' voll'), sg => {
+  const lab = markLabel(m0) + (f === 'l' ? ' leicht' : ' voll'); SX.lab.add(lab); sx11Hold();
+  return !!songEdit(lab, sg => {
     const m = sg.marks.find(x => x.id === id), vr = m.vr = m.vr ? deep(m.vr) : {};
     if (cur !== f) vr[cur] = sx11Cur(sg, m);
     let mask = mk ? deep(mk) : vr[f] ? deep(vr[f]) : f === 'l' ? sx11Propose(sg, m) : [];
