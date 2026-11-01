@@ -19,7 +19,7 @@ const read = p => p.evaluate(() => {
   const r = KV1.run[2], t = kv1T();
   return {beat: +rt.beat.toFixed(2), txt: k ? k.querySelector('.kn').textContent : '?', n: k ? +(+k.getAttribute('aria-valuenow')).toFixed(3) : -1, amb: !!(k && k.classList.contains('kv1')),
     grund: Q.getParam(2, 'cutoff'), on: KV1.on, ph: r && r.t1 > r.t0 ? +Math.min(1, Math.max(0, (t - r.t0) / (r.t1 - r.t0))).toFixed(2) : null,
-    xy: (document.querySelector('#synthSheet .xy .xv') || {}).textContent || ''};
+    xy: (document.querySelector('#synthSheet .xy .xv') || {}).textContent || '', wk: (() => { const d = Q.v6aProbeData(2) || []; return d.length ? Math.round(d[d.length - 1].v[0]) : null; })()};
 });
 async function follow(p, label, ms, shots) {
   const out = []; const t0 = Date.now(); let k = 0;
@@ -68,6 +68,17 @@ const res = {};
   const up = P.filter(o => o.beat >= 7.5 && o.beat <= 12.5).map(o => o.n), dn = P.filter(o => o.beat >= 15.5 && o.beat <= 20.5).map(o => o.n);
   res.Teil = {kon: !!kon, vorher: P[0].txt, bis8: P.filter(o => o.beat < 7.9).map(o => o.txt).pop(), nach12: P.filter(o => o.beat > 12.3 && o.beat < 15.5).map(o => o.txt).pop(),
     hochMonoton: mono(up, true), hochSchritte: new Set(up).size, runterMonoton: mono(dn, false), runterSchritte: new Set(dn).size};
+  // derselbe Teil im SONG (▶ SONG): Regler und Worklet (V6A-Sonde) fahren im selben Takt-Fenster 300 Hz -> 8 kHz
+  await p.evaluate(() => window.SYNQUENZER.stop()); await p.waitForTimeout(300);
+  await p.evaluate(() => window.SYNQUENZER.songPlay(0)); await p.waitForTimeout(300);
+  await p.evaluate(() => window.SYNQUENZER.v6aProbe(2, ['cutoff']));
+  let wkLast = null; const S2 = []; { const t0 = Date.now(); while (Date.now() - t0 < 11000) { const o = await read(p); if (o.wk != null) wkLast = o.wk; o.wkL = wkLast; S2.push(o); await p.waitForTimeout(90); } }
+  console.log('B Song:', S2.map(o => `${o.beat}|${o.txt}|wk ${o.wkL}`).join('  '));
+  const firstMove = (xs, f) => { const x = xs.find(f); return x ? x.beat : null; };
+  res.Song = {reglerAb: firstMove(S2, o => o.n > .393 && o.beat > 1), reglerZiel: firstMove(S2, o => o.txt === '8 kHz'), worklet300bis: firstMove(S2, o => o.wkL > 305), workletZiel: firstMove(S2, o => o.wkL >= 7999),
+    reglerMonoton: mono(S2.filter(o => o.beat >= 7.5 && o.beat <= 12.5).map(o => o.n), true)};
+  await p.evaluate(() => window.SYNQUENZER.stop()); await p.waitForTimeout(300);
+  await p.evaluate(() => { const Q = window.SYNQUENZER; Q.launchPart(Q.parts().findIndex(x => x && x.name === 'KV1')); }); await p.waitForTimeout(1200);
   // ◆ bearbeiten: die bisherige Anzeige (Arbeitskopie) bleibt, kein Fahren
   await p.evaluate(() => window.SYNQUENZER.v6aEdit(2)); await p.waitForTimeout(300);
   const e1 = await read(p); await p.waitForTimeout(1500); const e2 = await read(p);

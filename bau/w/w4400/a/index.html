@@ -29712,7 +29712,7 @@ function kv1Q(r, k, t) {
 function kv1Go(i, old, st1, t0, t1, at, c) {
   const tr = S.tracks[i], cur = R.v6aCur && R.v6aCur[i], o = KV1.run[i];
   KV1.run[i] = null;
-  if (!tr || tr.kind !== 'synth' || !cur) return;
+  if (!tr || tr.kind !== 'synth' || !cur || UI.vvOff) return;                              // VV1: the offline song pass is not shown
   const base = tr.sound, pv = o && o.cur === old && o.snd === base && t0 < o.end ? o : null;
   if (pv && pv.prev && t0 >= pv.prev.end) pv.prev = null;
   const E = AU.synth[i], wk = !!(E && !E.dead), eng3 = base.engine === 'mk', st0 = old ? old.st : null;
