@@ -6874,3 +6874,7 @@ Auf 4.25.2 (`bau/snapshots/R-4252.html`). `VERSION '4.25.4'`, APP_CODE 4 025 004
   Spur-Ende, Smoke). Regel 28: `n5-k-golden.mjs` 4.25.4 gegen 4.25.2 320/320 gleich.
 
 Ausgeliefert auf 4.25.3 (3-Wege-Merge Basis R-4252; einziger Konflikt VERSION). hif-iface.mjs auf der ausgelieferten Datei: ALLE GRÜN; Smoke/orch-mk-check/v3-mk2-wellen PASS.
+
+## 4.26.0 — Auslieferung Video (01.11.2026, ~02:45 UTC)
+
+G-VID-merge (4.25.2 + VIDSTAGE VV1/VV2/VV3/VC2a, V-A Ton immer, V-B nichts Erfundenes, Gesang+Chor im Render ±0,03 LU) per 3-Wege mit 4.25.4 (Songtext G9 + Interface-Fix HIF; Basis R-4252) zusammengeführt; Konflikte: VERSION, Projektwechsel (histClose + g9ProjReset, beide behalten). Prüfungen auf der Auslieferung: Smoke, orch-mk-check, v3-mk2-wellen PASS; vid/g-vid-abn ALLE BESTANDEN; hif-iface grün (nur Versions-Erwartung 4.25.4 im Test rot); g9Syl ok.
