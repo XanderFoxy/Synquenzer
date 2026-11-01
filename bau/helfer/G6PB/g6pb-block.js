@@ -498,6 +498,7 @@ function g6pPrefetchNext(a) {
 tkExt().place.push(o => { const a = o && o.a; if (a && a.chor && a.chor.v === 2) { g6pPrefetch(a, 0); if (o.vox) g6pPrefetchNext(a); } });
 /* ---------- Test-API ---------- */
 const G6PB_API = {
+  g6pbTone: (L, rule, key, x) => { const R = g6pRule(rule); return R.k === 'd' ? g6pTone(L, R.d, R.o, x || 0, key) : g6pChordTone(L, R, key, null); },
   g6pbSet: (r, chor) => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r); if (!x) return false; if (chor) x.a.chor = deep(chor); else delete x.a.chor; return true; },
   g6pbTones: (r, k) => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r), v = x && x.a.chor && x.a.chor.voices[k]; return v ? g6pTones(x.a, v) : null; },
   g6pbPlan: (r, k, c) => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r), v = x && x.a.chor && x.a.chor.voices[k]; if (!v) return null; const C = g6pCopies(v)[c || 0]; const p = g6pPlan(x.a, v, C.ct); return p === undefined ? 'wait' : p; },
