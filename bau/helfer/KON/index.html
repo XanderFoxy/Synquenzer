@@ -493,7 +493,7 @@ svg{display:block}
 .sv-lr .kon-bl[hidden]{display:none}
 .sv-lr .kon-path{position:absolute;left:0;right:2px;top:0;bottom:0;z-index:3;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-width:0;padding:0 4px;border-radius:4px;background:#2a2f39;border:1px solid #9aa6bb;color:#e6e9ef;font:700 9px/1 var(--font-ui);text-align:left;overflow:visible}
 .sv-lr .kon-path[hidden]{display:none}
-.sv-lr .kon-path::after{content:'';position:absolute;left:0;right:0;top:0;bottom:-10px}
+.sv-lr .kon-path::after{content:'';position:absolute;left:0;right:0;top:-4px;bottom:-12px}
 .sv-lr .kon-path .kp-a{font-size:8px;color:#c3cad6;white-space:nowrap}
 .sv-lr .kon-path .kp-b{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .msheet.konsheet .ms-h b{color:#e6e9ef}
@@ -25637,7 +25637,7 @@ function markDev(song, m) {
     }
   }
   const got = songCut(song, m.a, m.a + m.len).carrier, want = ch.carrier;
-  const norm = l => { const o = []; for (const c of l) { if (o.length && sameTg(o[o.length - 1].target, c.target)) continue; o.push(c); } return o; };
+  const norm = l => { const o = []; for (const c of l) { if (o.length ? sameTg(o[o.length - 1].target, c.target) : !c.target && c.beat < 1e-6) continue; o.push(c); } return o; };   // KON: ORIGINAL at beat 0 = no entry there
   const g = norm(got), w = norm(want); if (g.length !== w.length) return true;
   for (let k = 0; k < g.length; k++) if (Math.abs(g[k].beat - w[k].beat) > 1e-6 || !sameTg(g[k].target, w[k].target)) return true;
   return false;

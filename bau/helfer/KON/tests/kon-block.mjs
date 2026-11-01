@@ -76,7 +76,7 @@ let lp = await p.evaluate(() => ({loop: Object.assign({}, S.song.loop), in: SYNQ
 ok(lp.loop.on && lp.loop.a === 2 && lp.loop.b === 10 && lp.in === 'B1', 'Schleife auf dem Block (Takt 3–10)', lp);
 ok(lp.path && lp.path.includes('Song ›') && lp.path.includes('Block A'), 'Pfad „← Song › Block A“ oben links', lp.path);
 const pb = await p.evaluate(() => { const r = document.querySelector('.kon-path').getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height}; });
-ok(pb.w >= 44 && pb.h + 10 >= 44, 'Pfad-Taste ≥ 44 px Trefferfläche (' + pb.w.toFixed(0) + ' × ' + (pb.h + 10).toFixed(0) + ')');
+ok(pb.w >= 44 && pb.h + 16 >= 44, 'Pfad-Taste ≥ 44 px Trefferfläche (' + pb.w.toFixed(0) + ' × ' + (pb.h + 16).toFixed(0) + ')');
 await p.touchscreen.tap(pb.x, pb.y); await p.waitForTimeout(200);
 lp = await p.evaluate(() => ({loop: Object.assign({}, S.song.loop), in: SYNQUENZER.blockIn(), hid: document.querySelector('.kon-path').hidden}));
 ok(!lp.in && lp.hid && JSON.stringify(lp.loop) === JSON.stringify(loop0), '← führt hinaus, Schleife wie vorher', lp);

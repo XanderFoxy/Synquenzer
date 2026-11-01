@@ -20,6 +20,7 @@ ok(P && Array.isArray(P.sxp) && P.sxp.some(x => x.semi === 2 && x.beat === 16), 
 ok(P && P.mel && P.mel[5] && P.mel[5].length > 0, 'Song-Melodie ist im Teil');
 const m = st.song.marks.find(x => x.id === r.mark);
 ok(m && m.a === 2 && m.len === 8 && m.part === P.id, 'der Bereich zeigt den neuen Teil (eine Marke Takt 3–10)', m);
+ok(await p.evaluate(id => !markDev(S.song, S.song.marks.find(x => x.id === id)), r.mark), 'Marke ohne ′ (Bereich = Teil)');
 ok(st.song.kons && st.song.kons.length === 1 && st.song.kons[0].mark === r.mark, 'Ursprung gespeichert (song.kons)');
 const d1 = diff(s0.song.lanes, st.song.lanes).concat(diff(s0.song.carrier, st.song.carrier), diff(s0.song.xp, st.song.xp), diff(s0.song.mel, st.song.mel), diff(s0.song.own, st.song.own));
 ok(d1.length === 0, 'Noten/Clips im Song unverändert (nichts eingefroren)', d1.slice(0, 3));
