@@ -13,15 +13,17 @@ Gilt in allen drei Noten-Editoren mit Piano-Roll: Szenen-Clip (ROLLE), eigener S
   Noten im **Einzugsbereich** um den Finger folgen mit **weichem Abfall zum Rand** („Zungen“):
   Gewicht `w = ½·(1 + cos(π·d/R))` für `d < R`, sonst 0; `d` = Abstand (Schläge) vom Finger zur Note (0, wenn der Finger über der Note ist).
   Neue Höhe = alte + w·(Finger − alte), danach **in die Tonart gerastet** (nächster Ton der Tonart).
-  Je Note zählt die Stelle des Zugs, an der der Finger ihr am nächsten war (gleich nah: die letzte) – eine Zacke hoch/runter
-  an einer Stelle zieht die Nachbarn live mit; ein Zug quer über den Lauf zeichnet den Verlauf nach.
+  Je Note zählt die Stelle des Zugs, an der der Finger ihr am nächsten war; eine Stelle fast so nah (Gewicht höchstens 0,1
+  darunter, Fingerzittern) ist neuer und gewinnt – eine Zacke hoch/runter an einer Stelle zieht die Nachbarn live mit; ein Zug
+  quer über den Lauf zeichnet den Verlauf nach.
 - Breite in der Aktionsleiste: **[schmal] [mittel] [breit]** = R 0,5 / 1 / 2 Schläge (Standard mittel).
 - **Timing-Raster**: jede berührte Note (w > 0) rastet mit ihrem Anfang auf das Raster (Raster „frei“ = keine Zeitänderung).
 - **Tonart**: Standard „Auto“ = die Tonart der Stelle (Szenen-Clip: Tonart des Clips wie in der Kopfzeile; Song-Melodie / eigener
   Clip: Tonart des Songs an diesem Takt, `songKeyAtBar`). Knopf **[Tonart: …]** öffnet in der Aktionsleiste die Wahl
   [Auto] [C] … [B] und die Modi [Dur] [Moll] [Dorisch] [Phrygisch] [Lydisch] [Mixolydisch] [Lokrisch], [Fertig]. Die Wahl gilt für
   den Pinsel und die Block-Werkzeuge dieses Clips (nur für die Sitzung, nie im Song gespeichert).
-- Nur Noten im Einzugsbereich ändern sich; mit Auswahl (⬚) nur gewählte Noten.
+- Nur Noten im Einzugsbereich ändern sich (der Pinsel braucht keine Auswahl; er löscht und erzeugt keine Noten).
+- Während des Zugs zeigt ein weiches Band (bernsteinfarben) die Breite, eine Linie die Fingerhöhe; die Blase nennt den Zielton.
 - **Live-Vorhören leise** (Anschlag 0,35) der Note unter dem Finger, wenn sie die Höhe wechselt.
 - **Ein Undo-Schritt pro Malzug** („Pinsel“). Zweiter Finger = Zoom wie immer, der angefangene Zug wird verworfen.
 - Antippen ohne Ziehen = ein Pinselpunkt an dieser Stelle (ein Undo-Schritt, wenn sich etwas ändert).
@@ -44,7 +46,9 @@ Bereich = die im Lineal gewählten Takte (Taktnummer antippen, zweite antippen =
 - Nur fürs Abhören: es wird ein eigener Pegel hinter der Spur (vor Hall/Echo-Sends) weich (20 ms) auf 0 gezogen.
   `tr.mute`, Song, Clips und Undo bleiben unverändert. Beim Schließen des Editors klingt sofort wieder alles.
 - **Gemerkt pro Clip** für die Sitzung (Szenen-Clip je Spur/Szene, eigener Clip je Id, Song-Melodie je Spur), nie im Projekt.
-- Der Knopf [Mithören] leuchtet, solange für diesen Clip Spuren ausgenommen sind.
+- Der Knopf [Mithören] leuchtet (Strich unten), solange für diesen Clip Spuren ausgenommen sind.
+- Querformat: Die Werkzeugleiste sitzt im Kopf. Der Kopf-Titel behält die Breite, die er ohne die Pinsel-Gruppe hätte;
+  die Leiste scrollt wie bisher.
 
 ## 2. Daten
 - Song-/Projekt-JSON: **keine** neuen Felder. Pinsel/Blöcke ändern nur `notes[].n`, `notes[].t` (Raster; ein verschobener Anfang

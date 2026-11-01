@@ -1,0 +1,420 @@
+--- bau/snapshots/R-4261.html	2026-11-01 03:55:25.965679908 +0000
++++ bau/helfer/PINSEL/index.html	2026-11-01 04:14:39.949645855 +0000
+@@ -12958,8 +12958,18 @@
+ .pr-rd.edge{opacity:1;top:3px;width:auto;height:auto;padding:2px 5px;border-radius:4px;color:#0b0c0f;font:700 10px/1 var(--font-num,monospace);transform:none}
+ .pr-rd.edge.l{left:2px}.pr-rd.edge.r{left:auto;right:2px}
+ .pr-rd.bl{animation:prRun 1s steps(2,start) infinite}
+-@keyframes prRun{50%{opacity:.15}}`;
+-
++@keyframes prRun{50%{opacity:.15}}
++/* MP Melodie-Pinsel */
++.pr-bar .mplab{flex:none;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--text-dim,#9aa0aa);padding:0 2px;white-space:nowrap}
++.pr-bar button.mpoff{opacity:.55;box-shadow:inset 0 0 0 1px var(--line,#2d323c)}
++.pr-bar button.mpfix{background:var(--sel,#f4f1ea);color:#111;opacity:.7}
++.pr-bar button.mplit{box-shadow:inset 0 -3px 0 var(--amber,#ffb22e)}
++.pr-bar button.mpb{position:relative}.pr-bar button.mpb::after{content:'';position:absolute;left:0;right:0;top:-7px;bottom:-7px}`;
++
++  /* MP Melodie-Pinsel: Einstellungen, die das Schließen überleben (Breite, Achse); manuelle Tonart je Clip (nur Sitzung) */
++  const MPP = {w: 'mittel', axis: 'first'}, MPK = new Map();
++  const MP_R = {schmal: .5, mittel: 1, breit: 2}, MP_TOL = .1;
++  const MP_MODES = [['ionian', 'Dur'], ['aeolian', 'Moll'], ['dorian', 'Dorisch'], ['phrygian', 'Phrygisch'], ['lydian', 'Lydisch'], ['mixolydian', 'Mixolydisch'], ['locrian', 'Lokrisch']];
+   function create(root, model, opts = {}) {
+     const col = opts.color || '#4cc9f0';
+     const E = {tool: 'draw', grid: opts.grid || '1/16', noteLen: null, fold: !!opts.fold, sel: new Set(), step: null /* step-input cursor (beats) or null */,
+@@ -12987,6 +12997,12 @@
+     const tb = {
+       draw: btn(bar, '✎', () => setTool('draw'), 'Zeichnen'), select: btn(bar, '⬚', () => setTool('select'), 'Auswahl'), erase: btn(bar, '⌫', () => setTool('erase'), 'Radieren', 'er'),
+     };
++    /* MP-BEGIN Melodie-Pinsel: eigene Gruppe in der Werkzeugleiste */
++    const MPS = {panel: null};
++    MPS.sep = bar.appendChild(mk('span', 'sep'));
++    tb.mpBrush = btn(bar, 'Pinsel', () => setTool('mpBrush'), 'Pinsel: in den Lauf malen, Noten folgen dem Finger');
++    if (opts.mp && opts.mp.listen) tb.mpListen = btn(bar, 'Mithören', () => mpPanel(MPS.panel === 'listen' ? null : 'listen'), 'Mithören: welche Spuren beim Bearbeiten mitspielen (nur Abhören)');
++    /* MP-END */
+     sep(bar);
+     tb.grid = btn(bar, '1/16', () => { const k = Object.keys(GRID), i = k.indexOf(E.grid); setGrid(k[(i + 1) % k.length]); }, 'Raster');
+     tb.len = btn(bar, '♪ 1/16', () => { const L8 = [null, .25, .5, 1, 2, 4], i = L8.indexOf(E.noteLen); E.noteLen = L8[(i + 1) % L8.length]; render(); }, 'Notenlänge für neue Noten (= Raster, oder fest)');
+@@ -13015,6 +13031,13 @@
+     // VS2 Korrektur-Griffe (wie Tony, r7/stimme.md §11 Skizze 4): Teilen / Verbinden – nur mit Auswahl, je ein Undo
+     A.split = btn(acts, 'Teilen', () => { if (!E.sel.size) { say('Erst Noten wählen (⬚)'); return; } act('Teilen', ns => splitNotes(ns)); }, 'Gewählte Noten in der Mitte teilen (am Raster)');
+     A.join = btn(acts, 'Verbinden', () => { if (E.sel.size < 2) { say('Mindestens zwei Noten wählen (⬚)'); return; } act('Verbinden', ns => joinNotes(ns)); }, 'Gewählte Noten zu einer Note verbinden');
++    /* MP-BEGIN Block-Werkzeuge: Bereich = Lineal-Takte, sonst Auswahl, sonst ganzer Clip; je Tipp ein Undo */
++    sep(acts);
++    A.mpInv = btn(acts, 'Umkehren ↕', () => mpBlock('Umkehren', mpInvert), 'Umkehren: Intervalle um die Achse gespiegelt, in der Tonart');
++    A.mpAxis = btn(acts, 'Achse: 1. Note', () => { MPP.axis = MPP.axis === 'first' ? 'mid' : 'first'; render(); }, 'Achse für Umkehren: erste Note oder Mitte');
++    A.mpCrab = btn(acts, 'Krebs ↔', () => mpBlock('Krebs', mpCrab), 'Krebs: zeitlich rückwärts im Bereich');
++    A.mpSwap = btn(acts, 'Tauschen ⇆', () => mpBlock('Tauschen', mpSwap), 'Links/Rechts tauschen: die zwei Hälften des Bereichs tauschen den Platz');
++    /* MP-END */
+     sep(acts);
+     btn(acts, 'Dupl.', () => duplicate(), 'Duplizieren (hinter die Auswahl / Clip verdoppeln)');
+     btn(acts, 'Quant.', () => { const ns = scope(); if (!ns.length) return; if (opts.onQuant) opts.onQuant(E.sel.size ? ns : null); else act('Quantisieren', x => quantizeNotes(x)); }, 'Quantisieren');
+@@ -13028,6 +13051,30 @@
+     A.yes = btn(acts, 'Löschen', () => { E.ask = false; act('Alle löschen', () => { const c = clip(); c.notes = []; E.sel.clear(); return true; }, true); }, 'Alle Noten löschen', 'warn');
+     A.no = btn(acts, 'Abbrechen', () => { E.ask = false; render(); }, 'Abbrechen');
+     const actsMain = [...acts.children].filter(x => x !== tb.scope && x !== A.ask && x !== A.yes && x !== A.no && x !== A.rest && x !== A.tie && x !== A.back && x !== A.sep0 && x !== A.loop);
++    /* MP-BEGIN Pinsel-Optionen (vorn, nur mit Pinsel) und die zwei Leisten Tonart / Mithören (ersetzen die Aktionsleiste) */
++    const MPB = {w: {}, panel: {key: [], listen: []}};
++    for (const k of ['schmal', 'mittel', 'breit']) { MPB.w[k] = btn(acts, k, () => { MPP.w = k; render(); }, 'Pinsel-Breite ' + k); acts.insertBefore(MPB.w[k], A.rest); }
++    MPB.key = btn(acts, 'Tonart: Auto', () => mpPanel(MPS.panel === 'key' ? null : 'key'), 'Tonart für Pinsel und Blöcke (Auto = Tonart der Stelle)'); acts.insertBefore(MPB.key, A.rest);
++    MPB.sep = mk('span', 'sep'); acts.insertBefore(MPB.sep, A.rest);
++    MPB.opts = [...Object.values(MPB.w), MPB.key, MPB.sep];
++    { const P = MPB.panel.key;
++      P.push(acts.appendChild(mk('span', 'mplab', 'TONART')));
++      MPB.kAuto = btn(acts, 'Auto', () => { MPK.delete(mpId()); render(); }, 'Tonart der Stelle'); P.push(MPB.kAuto);
++      MPB.kRoot = NAMES.map((nm, r) => { const b = btn(acts, nm, () => { const k = mpKey(0); MPK.set(mpId(), {root: r, scale: k.scale}); render(); }, 'Grundton ' + nm); P.push(b); return b; });
++      P.push(acts.appendChild(mk('span', 'sep')));
++      MPB.kMode = MP_MODES.map(([sc, nm]) => { const b = btn(acts, nm, () => { const k = mpKey(0); MPK.set(mpId(), {root: k.root, scale: sc}); render(); }, nm); P.push(b); return b; });
++      P.push(btn(acts, 'Fertig', () => mpPanel(null), 'Tonart-Wahl schließen')); }
++    { const P = MPB.panel.listen;
++      P.push(acts.appendChild(mk('span', 'mplab', 'MITHÖREN')));
++      MPB.lChips = mk('span'); MPB.lChips.style.cssText = 'display:contents'; acts.appendChild(MPB.lChips); P.push(MPB.lChips);
++      P.push(acts.appendChild(mk('span', 'sep')));
++      P.push(btn(acts, 'Ohne Drums', () => { opts.mp.listen.noDrums(); mpChips(); render(); }, 'Alle Spuren außer Drums spielen mit'));
++      P.push(btn(acts, 'Alle ab', () => { opts.mp.listen.none(); mpChips(); render(); }, 'Keine andere Spur spielt mit'));
++      P.push(btn(acts, 'Fertig', () => mpPanel(null), 'Mithören-Leiste schließen (die Wahl bleibt)')); }
++    MPB.panelEls = new Set([...MPB.panel.key, ...MPB.panel.listen]);
++    for (const x of MPB.panelEls) x.hidden = true;
++    for (const x of [tb.mpBrush, tb.mpListen, A.mpInv, A.mpAxis, A.mpCrab, A.mpSwap, ...MPB.opts, ...MPB.panelEls]) if (x && x.tagName === 'BUTTON') x.classList.add('mpb');   // touch target ≥ 44 px (36 + 2 × 7)
++    /* MP-END */
+ 
+     // ---------- model helpers ----------
+     const clip = () => model.getClip();
+@@ -13095,6 +13142,7 @@
+     let pendingOpen = false;
+     function draw() {
+       raf = 0; if (dead || !clip()) return; measure(); if (!V.W || !V.H) return;
++      mpHostFix();                                                  /* MP */
+       if (pendingOpen) { pendingOpen = false; layoutOpen(); }
+       clampView();
+       const c = clip(), Lb = L(), s = scaleOf(), g = gridStep();
+@@ -13128,6 +13176,7 @@
+         // resize grip
+         if (r.w >= 18) { x.fillStyle = '#0b0c0f'; x.globalAlpha = .5; x.fillRect(r.x + r.w - 5, r.y + r.h * .3, 2, r.h * .4); x.globalAlpha = 1; }
+       }
++      mpDraw(x, C);                                                 /* MP */
+       mmDraw(C);                                                    /* N2 */
+       if (gst && gst.kind === 'marquee') { const m = gst.rect; x.strokeStyle = C.sel; x.setLineDash([4, 3]); x.strokeRect(m.x + .5, m.y + .5, m.w, m.h); x.setLineDash([]); x.fillStyle = C.sel; x.globalAlpha = .08; x.fillRect(m.x, m.y, m.w, m.h); x.globalAlpha = 1; }
+       // keys
+@@ -13176,6 +13225,7 @@
+       A.ask.hidden = A.yes.hidden = A.no.hidden = !E.ask;
+       if (tb.undo && model.canUndo) tb.undo.disabled = !model.canUndo();
+       if (tb.redo && model.canRedo) tb.redo.disabled = !model.canRedo();
++      mpRender();                                                   /* MP */
+       if (opts.onRender) opts.onRender(api.state);
+     }
+     /* N2: mini map of the whole clip (notes as strokes, the visible part as a frame), shown while a 'move' gesture runs;
+@@ -13367,6 +13417,7 @@
+     function promote() {
+       const h = gst.hit, tool = E.tool;
+       if (tool === 'erase') { begin('erase', {gone: new Set()}); drag(gst.p0); return; }
++      if (tool === 'mpBrush') { begin('mpBrush'); mpStart(); mpTo(gst.p0); return; }   /* MP */
+       if (h && h.zone === 'end') {
+         const set = tool === 'select' && E.sel.has(h.note) ? scope() : [h.note];
+         begin('resize', {set, d0: set.map(n => n.d), anchor: h.note}); return;
+@@ -13431,6 +13482,7 @@
+           E.sel = new Set(clip().notes.filter(nt => { const q = noteRect(nt); return q.x < R.x + R.w && q.x + q.w > R.x && q.y < R.y + R.h && q.y + q.h > R.y; }));
+           break;
+         }
++        case 'mpBrush': { mpTo(p); gst.changed = !!(MB && MB.changed); break; }   /* MP */
+         case 'erase': {
+           const h = hitNote(p.x, p.y);
+           if (h && !gst.gone.has(h.note)) { gst.gone.add(h.note); clip().notes = clip().notes.filter(n => n !== h.note); E.sel.delete(h.note); gst.changed = true; }
+@@ -13448,7 +13500,7 @@
+       if (e.pointerId !== gst.id) return;
+       // a finger that just rested on the screen (> 500 ms, no movement) edits nothing
+       if (gst.kind === 'pending') { if (performance.now() - gst.ms < 500) tap(); } else { if (gst.kind === 'create' || gst.kind === 'move' || gst.kind === 'resize') sortNotes(); model.end(gst.changed, label(gst.kind)); }
+-      gst = null; render();
++      gst = null; MB = null; render();   /* MP: MB */
+     }
+     function mainCancel(e) {
+       P.delete(e.pointerId); reg.end(e.pointerId);
+@@ -13462,10 +13514,11 @@
+     function abort() {
+       if (!gst || gst.kind === 'pending' || gst.kind === 'pinch') { if (gst && gst.kind === 'pending') gst = null; return; }
+       if (gst.changed) { model.revert(); afterExternal(); } else model.end(false);
+-      gst = null;
++      gst = null; MB = null;   /* MP */
+     }
+     function tap() {
+       const h = gst.hit, tool = E.tool;
++      if (tool === 'mpBrush') { model.begin(); mpStart(); mpTo(gst.p0); const ch = !!MB.changed; MB = null; model.end(ch, 'Pinsel'); return; }   /* MP: ein Pinselpunkt */
+       if (tool === 'select') { if (h) { E.sel.has(h.note) ? E.sel.delete(h.note) : E.sel.add(h.note); model.audition && model.audition(h.note.n, h.note.v); } else E.sel.clear(); return; }
+       // (Entscheidung 15) Zeichnen: a tap on a note selects it (only that one) and plays it - a stray finger never deletes a note
+       if (h && tool === 'draw') { if (E.sel.size === 1 && E.sel.has(h.note)) E.sel.clear(); else E.sel = new Set([h.note]); model.audition && model.audition(h.note.n, h.note.v); return; }
+@@ -13477,7 +13530,7 @@
+       const nt = addNote(t0, noteOfRow(gst.row0), noteLen()); sortNotes();
+       model.audition && model.audition(nt.n, nt.v); model.end(true, 'Note');
+     }
+-    const label = k => ({create: 'Note zeichnen', move: 'Verschieben', resize: 'Länge', erase: 'Radieren', marquee: null})[k];
++    const label = k => ({create: 'Note zeichnen', move: 'Verschieben', resize: 'Länge', erase: 'Radieren', marquee: null, mpBrush: 'Pinsel'})[k];
+     function pinch() {
+       const [a, b] = gst.ids.map(id => P.get(id)); if (!a || !b) return;
+       const v = gst.v0, dx0 = Math.abs(gst.a0.x - gst.b0.x), dy0 = Math.abs(gst.a0.y - gst.b0.y), dx = Math.abs(a.x - b.x), dy = Math.abs(a.y - b.y);
+@@ -13595,6 +13648,164 @@
+     }
+     function setStep(on) { E.step = on ? (E.step == null ? 0 : E.step) : null; if (!on) stepLog.length = 0; if (opts.onStep) opts.onStep(E.step != null); render(); }
+ 
++    /* MP-BEGIN Melodie-Pinsel: Pinsel („Zungen“), Block-Werkzeuge, Leisten */
++    let MB = null;                                                  // the running brush stroke
++    const mpId = () => (opts.mp && opts.mp.id) || '';
++    const mpKeyOk = k => !!(k && SC[k.scale] && isFinite(k.root));
++    // the key of a place (beat): manual choice of this clip, else the app's key of the place, else the clip key
++    function mpKey(beat) {
++      const m = MPK.get(mpId()); if (m) return m;
++      let k = null; try { k = opts.mp && opts.mp.keyAt ? opts.mp.keyAt(beat) : null; } catch (e) { k = null; }
++      if (mpKeyOk(k)) return {root: PC(k.root), scale: k.scale};
++      const c = clip().key; return mpKeyOk(c) ? {root: PC(c.root), scale: c.scale} : {root: 0, scale: 'ionian'};
++    }
++    const mpIn = (n, k) => SC[k.scale].includes(PC(n - k.root));
++    // nearest tone of the key to the (fractional) pitch f; equally near: in the direction dir (≤ 0 = down)
++    function mpSnap(f, k, dir) {
++      const c = Math.round(f); let best = null, bd = Infinity;
++      for (let m = c - 7; m <= c + 7; m++) {
++        if (m < LO || m > HI || !mpIn(m, k)) continue;
++        const d = Math.abs(m - f);
++        if (d < bd - 1e-9 || (Math.abs(d - bd) < 1e-9 && (dir > 0 ? m > best : m < best))) { bd = d; best = m; }
++      }
++      return best == null ? clamp(c, LO, HI) : best;
++    }
++    // continuous pitch at a y (row centres are exact notes; between two rows linear)
++    function mpPitchAt(y) {
++      const r = clamp(rowAt(y) - .5, 0, V.rows.length - 1), r0 = Math.floor(r), f = r - r0, a = V.rows[r0], b = V.rows[Math.min(V.rows.length - 1, r0 + 1)];
++      return a + (b - a) * f;
++    }
++    function mpStart() {
++      const ns = clip().notes, o = new Map();
++      for (const nt of ns) o.set(nt, {n: nt.n, t: nt.t, d: nt.d, o: nt.o, hasO: 'o' in nt});
++      MB = {R: MP_R[MPP.w] || 1, orig: o, inf: new Map(), last: null, keys: new Map(), changed: false, aud: null, audN: null, audT: 0, cur: null};
++    }
++    const mpKeyAtC = b => { const bar = Math.floor(b / 4); let k = MB.keys.get(bar); if (!k) { k = mpKey(bar * 4); MB.keys.set(bar, k); } return k; };
++    // one brush sample at (beat, pitch): every note in reach takes its strongest pull (equal: the latest)
++    function mpSample(beat, pf) {
++      const R = MB.R, g = GRID[E.grid], Lb = L(); let top = null, tw = 0, tmov = false;
++      for (const [nt, o] of MB.orig) {
++        const e = o.t + Math.max(o.d, 1e-6), d = beat < o.t ? o.t - beat : beat > e ? beat - e : 0;
++        if (d >= R) continue;
++        const w = .5 * (1 + Math.cos(Math.PI * d / R)); if (w <= 1e-6) continue;
++        // the strongest pull counts; a sample nearly as strong (finger wobble ≤ MP_TOL) is newer and wins
++        const cur = MB.inf.get(nt); if (cur && w < cur.w - MP_TOL) continue;
++        const wk = cur ? Math.max(cur.w, w) : w; MB.inf.set(nt, {w: wk, p: pf});
++        const n = mpSnap(o.n + wk * (pf - o.n), mpKeyAtC(o.t), pf - o.n);
++        let t = o.t; if (g) { t = Math.round(o.t / g) * g; if (t > Lb - g + 1e-9) t = Math.floor((Lb - 1e-6) / g) * g; t = +Math.max(0, t).toFixed(6); }
++        if (nt.n !== n) { nt.n = n; MB.changed = true; }
++        if (Math.abs(nt.t - t) > 1e-9) { nt.t = t; MB.changed = true; tmov = true; }
++        if (Math.abs(t - o.t) > 1e-9) delete nt.o; else if (o.hasO) nt.o = o.o;
++        if (w > tw) { tw = w; top = nt; }
++      }
++      if (tmov) sortNotes();
++      // live, quiet: the note under the finger when its pitch changes
++      if (top && tw >= .5 && model.audition && (top !== MB.aud || top.n !== MB.audN)) {
++        const now = performance.now(); if (now - MB.audT > 40) { MB.aud = top; MB.audN = top.n; MB.audT = now; try { model.audition(top.n, .35); } catch (e) {} }
++      }
++    }
++    // the finger at p: samples from the last point to here, never further apart than a quarter of the reach / half a grid step
++    function mpTo(p) {
++      if (!MB) return;
++      const beat = beatAt(p.x), pf = mpPitchAt(p.y), l = MB.last;
++      if (l) {
++        const st = Math.max(1 / 64, Math.min(MB.R / 4, (GRID[E.grid] || .25) / 2)), n = Math.min(256, Math.ceil(Math.abs(beat - l.beat) / st));
++        for (let i = 1; i < n; i++) { const f = i / n; mpSample(l.beat + (beat - l.beat) * f, l.pf + (pf - l.pf) * f); }
++      }
++      mpSample(beat, pf); MB.last = {beat, pf}; MB.cur = {x: p.x, y: p.y};
++      say(nm(mpSnap(pf, mpKeyAtC(beat), 0)) + ' · ' + MPP.w);
++      render();
++    }
++    // the brush band (soft edge) and the finger line while painting
++    function mpDraw(x, C) {
++      if (!MB || !MB.cur) return;
++      const cx = MB.cur.x, rw = MB.R * V.ppb, gr = x.createLinearGradient(cx - rw, 0, cx + rw, 0);
++      gr.addColorStop(0, 'rgba(255,178,46,0)'); gr.addColorStop(.5, 'rgba(255,178,46,.16)'); gr.addColorStop(1, 'rgba(255,178,46,0)');
++      x.fillStyle = gr; x.fillRect(cx - rw, 0, 2 * rw, V.H);
++      x.strokeStyle = C.amber; x.globalAlpha = .8; x.lineWidth = 1; x.beginPath(); x.moveTo(cx - rw, MB.cur.y + .5); x.lineTo(cx + rw, MB.cur.y + .5); x.stroke(); x.globalAlpha = 1;
++    }
++    // block range: the ruler bars, else the selection, else the whole clip
++    function mpRange() {
++      const c = clip();
++      if (E.loop) { const a = E.loop.a * 4, b = (E.loop.b + 1) * 4; return {a, b, ns: c.notes.filter(n => n.t >= a - 1e-9 && n.t < b - 1e-9)}; }
++      if (E.sel.size) { const ns = scope(); return {a: Math.min(...ns.map(n => n.t)), b: Math.max(...ns.map(n => n.t + n.d)), ns}; }
++      return {a: 0, b: L(), ns: c.notes.slice()};
++    }
++    function mpBlock(lab, fn) {
++      if (E.ask) return;
++      const r = mpRange(); if (!r.ns.length) { say('Keine Noten im Bereich'); return; }
++      model.begin(); const ok = fn(r) !== false; sortNotes(); model.end(ok, lab); afterExternal();
++    }
++    // scale position in half degrees (as N1, but in the given key): scale tone = 2·degree, a tone between = the odd number
++    function mpPos(n, k) { const S = SC[k.scale], K = S.length, o = Math.floor((n - k.root) / 12), pc = PC(n - k.root), i = S.indexOf(pc);
++      if (i >= 0) return 2 * (o * K + i); let j = 0; while (j < K - 1 && S[j + 1] < pc) j++; return 2 * (o * K + j) + 1; }
++    function mpNote(h, k) { const S = SC[k.scale], K = S.length, deg = Math.floor(h / 2), o = Math.floor(deg / K), i = deg - o * K, b = k.root + 12 * o + S[i];
++      return h % 2 === 0 ? b : b + 1; }
++    function mpInvert(r) {
++      const k = mpKey(r.a), H = r.ns.map(nt => mpPos(nt.n, k));
++      let S2;
++      if (MPP.axis === 'mid') { const ins = H.filter(h => h % 2 === 0), ref = ins.length ? ins : H; S2 = Math.min(...ref) + Math.max(...ref); }
++      else { const f = r.ns.slice().sort((p, q) => p.t - q.t || p.n - q.n)[0]; S2 = 2 * mpPos(f.n, k); }
++      const out = H.map(h => { const m = mpNote(S2 - h, k); return mpIn(m, k) ? m : mpSnap(m, k, -1); });
++      if (out.some(n => n < LO || n > HI)) { say('Außerhalb des Tonumfangs'); return false; }
++      if (out.every((n, i) => n === r.ns[i].n)) { say('Umkehren: nichts zu ändern'); return false; }
++      r.ns.forEach((nt, i) => { nt.n = out[i]; }); centerIfHidden(r.ns[0].n); say('Umgekehrt'); return true;
++    }
++    const mpShift = (nt, t) => { t = +clamp(t, 0, L() - 1e-6).toFixed(6); if (nt.o != null) nt.o = +(nt.o + t - nt.t).toFixed(4); nt.t = t; };
++    function mpCrab(r) {
++      const out = r.ns.map(nt => Math.max(r.a, r.a + r.b - nt.t - Math.min(nt.d, r.b - nt.t)));
++      if (out.every((t, i) => Math.abs(t - r.ns[i].t) < 1e-6)) { say('Krebs: nichts zu ändern'); return false; }
++      r.ns.forEach((nt, i) => mpShift(nt, out[i])); say('Krebs'); return true;
++    }
++    function mpSwap(r) {
++      const h = (r.b - r.a) / 2, m = r.a + h; if (h <= 1e-9) return false;
++      const out = r.ns.map(nt => (nt.t < m - 1e-9 ? nt.t + h : nt.t - h));
++      r.ns.forEach((nt, i) => mpShift(nt, out[i])); say('Getauscht'); return true;
++    }
++    // L (toolbar in the header): the neighbours of the toolbar (title …) keep the width they had without the Pinsel group;
++    // measured once per header width with the group hidden, the toolbar scrolls as before
++    let mpHW = -1; const mpHS = new Map();
++    function mpHostFix() {
++      const host = opts.toolbarHost; if (!host || !bar.parentNode) return;
++      const w = host.clientWidth; if (w === mpHW || !w) return; mpHW = w;
++      const grp = [MPS.sep, tb.mpBrush, tb.mpListen].filter(Boolean);
++      for (const [e] of mpHS) e.style.minWidth = ''; mpHS.clear();
++      grp.forEach(e => { e.style.display = 'none'; });
++      const sib = [...host.children].filter(e => e !== bar && e.offsetWidth), ws = sib.map(e => e.getBoundingClientRect().width);
++      grp.forEach(e => { e.style.display = ''; });
++      sib.forEach((e, i) => { mpHS.set(e, 1); e.style.minWidth = Math.floor(ws[i]) + 'px'; });
++    }
++    function mpPanel(k) { MPS.panel = k; if (k === 'listen') mpChips(); render(); }
++    function mpChips() {
++      const Lh = opts.mp && opts.mp.listen; if (!Lh) return;
++      const st = Lh.state(); MPB.lChips.innerHTML = '';
++      for (const x of st.tracks) {
++        const b = mk('button', 'mpb ' + (x.self ? 'mpfix' : x.on ? 'on' : 'mpoff'), x.tag); b.type = 'button';
++        const tl = x.name + (x.self ? ' (wird bearbeitet, spielt immer)' : x.on ? ' spielt mit' : ' spielt nicht mit'); b.title = tl; b.setAttribute('aria-label', tl); b.dataset.mpT = x.i;
++        bindTap(b, () => { if (x.self) return; Lh.toggle(x.i); mpChips(); render(); });
++        MPB.lChips.appendChild(b);
++      }
++    }
++    function mpRender() {
++      const pn = MPS.panel, br = E.tool === 'mpBrush';
++      tb.mpBrush.classList.toggle('on', br);
++      if (tb.mpListen) { tb.mpListen.classList.toggle('on', pn === 'listen'); tb.mpListen.classList.toggle('mplit', !!opts.mp.listen.active()); }
++      for (const k in MPB.w) MPB.w[k].classList.toggle('on', MPP.w === k);
++      const man = MPK.get(mpId()), kk = mpKey(0);
++      MPB.key.textContent = 'Tonart: ' + (man ? NAMES[kk.root] + ' ' + MP_MODES.find(m => m[0] === kk.scale)[1] : 'Auto');
++      MPB.kAuto.classList.toggle('on', !man);
++      MPB.kRoot.forEach((b, r) => b.classList.toggle('on', !!man && kk.root === r));
++      MPB.kMode.forEach((b, i) => b.classList.toggle('on', !!man && kk.scale === MP_MODES[i][0]));
++      A.mpAxis.textContent = MPP.axis === 'first' ? 'Achse: 1. Note' : 'Achse: Mitte';
++      for (const x of MPB.opts) x.hidden = !br || E.ask || !!pn;
++      for (const x of MPB.panelEls) x.hidden = true;
++      if (pn) {
++        for (const x of acts.children) if (!MPB.panelEls.has(x)) x.hidden = true;
++        for (const x of MPB.panel[pn]) x.hidden = false;
++      }
++    }
++    /* MP-END */
++
+     // ---------- public ----------
+     function setTool(t) { E.tool = t; if (t !== 'select' && E.sel.size > 1) E.sel.clear(); if (t === 'erase') E.sel.clear(); render(); }
+     function setGrid(g) { if (g in GRID) { E.grid = g; E.noteLen = null; render(); if (opts.onPrefs) opts.onPrefs({grid: E.grid, fold: E.fold}); } }
+@@ -13647,6 +13858,10 @@
+       _barNum(bar) { const r = cR.getBoundingClientRect(); return {x: r.left + xOf(bar * 4) + NUMW / 2, y: r.top + V.RH / 2}; },
+       _mm() { const r = cM.getBoundingClientRect(), R = mmRect(), sp = mmSpan(); return {on: mmOn(), x: r.left + R.x, y: r.top + R.y, w: R.w, h: R.h, Lb: sp.Lb, ax: gst && gst.ax, onMap: !!(gst && gst.onMap)}; },   /* N2 tests */
+       _key(note) { const r = cK.getBoundingClientRect(); return {x: r.left + V.KW / 2, y: r.top + yOfRow(rowOfNote(note)) + V.rowH / 2}; }};
++    /* MP: test hooks (state, a brush point, the key of a place) */
++    api.mp = {get state() { return {tool: E.tool, w: MPP.w, R: MP_R[MPP.w], axis: MPP.axis, panel: MPS.panel, key: mpKey(0), manual: !!MPK.get(mpId()), painting: !!MB}; },
++      keyAt: b => mpKey(b), panel: k => mpPanel(k || null), setWidth: w => { if (MP_R[w]) { MPP.w = w; render(); } }, setAxis: a => { MPP.axis = a === 'mid' ? 'mid' : 'first'; render(); },
++      setKey: k => { if (k == null) MPK.delete(mpId()); else if (mpKeyOk(k)) MPK.set(mpId(), {root: PC(k.root), scale: k.scale}); render(); }};
+     open();
+     return api;
+   }
+@@ -27677,6 +27892,7 @@
+   const extra = land ? [{id: 'kb', label: '⌨', title: 'Tastatur zeigen / verbergen', fn: b => { ROLLP.kb = !ROLLP.kb; rollKbApply(); b.classList.toggle('on', ROLLP.kb); }}] : [];
+   ED.roll = PianoRoll.create(body, ownModel(t, id), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, toolbarHost: land ? head : null,
+     extraTools: extra, center: isDrum(t) ? 42 : 12 * ((tr.kbOct || 4) + 1) + 7,
++    mp: mpRollOpts(t, 'o:' + id, b => songKeyAtBar(mpOwnBar(id) + Math.floor(b / 4))),   /* MP */
+     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
+     reg: folReg('roll'), onHand: () => folHand('roll'),
+     onPrefs: p => { ROLLP.grid = p.grid; ROLLP.fold = p.fold; },
+@@ -28990,6 +29206,7 @@
+   if (R.editor === 'browser' && UI.dirty.br) { UI.dirty.br = false; brRefresh(); }
+   if (ED.roll && ED.rollAt) rollFrame(bAud);
+   else if (ED.lauf && ED.rollAt) laufFrame(bAud);
++  mpTick();                                                 /* MP Mithören */
+   if (UI.toastActs) toastPlace();                           // sheets opened/closed/rebuilt under an action toast
+ }
+ // the count-in shows the remaining beats: 4…1 (1 bar) or 8…1 (2 bars), never the few ms of start lead
+@@ -35518,6 +35735,7 @@
+   if (land) extra.push({id: 'kb', label: '⌨', title: 'Tastatur zeigen / verbergen', fn: b => { ROLLP.kb = !ROLLP.kb; rollKbApply(); b.classList.toggle('on', ROLLP.kb); }});
+   ED.roll = PianoRoll.create(body, rollModel(t, s), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: ROLLP.fold, rowH: 22, toolbarHost: host,
+     extraTools: extra, center: 12 * ((tr.kbOct || 4) + 1) + 7,
++    mp: mpRollOpts(t, 'c:' + t + ':' + s, () => shownClipKey(s, S.tracks[t].clips[s])),   /* MP */
+     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
+     reg: folReg('roll'), onHand: () => folHand('roll'),
+     onPrefs: p => { ROLLP.grid = p.grid; ROLLP.fold = p.fold; },
+@@ -35582,6 +35800,7 @@
+   if (land) extra.push({id: 'kb', label: '⌨', title: 'Tastatur zeigen / verbergen', fn: b => { ROLLP.kb = !ROLLP.kb; rollKbApply(); b.classList.toggle('on', ROLLP.kb); }});
+   ED.roll = PianoRoll.create(body, melodyModel(t), {color: col || '#4cc9f0', grid: ROLLP.grid, fold: false, rowH: 22, toolbarHost: land ? head : null,
+     extraTools: extra, center: 12 * ((tr.kbOct || 4) + 1) + 7,
++    mp: mpRollOpts(t, 'm:' + t, b => songKeyAtBar(Math.floor(b / 4))),   /* MP */
+     tap: (b, fn) => b.addEventListener('click', () => { try { fn(); } catch (e) { logErr(e); } }),
+     reg: folReg('mel'), onHand: () => folHand('mel'),
+     onPrefs: p => { ROLLP.grid = p.grid; },
+@@ -35615,6 +35834,49 @@
+   const b = c && vs && vs.playing === s && bAud >= 0 ? ((((bAud - audCstart(t, bAud)) % (c.len * 4)) + c.len * 4) % (c.len * 4)) : -1;
+   folRoll('roll', b); ED.roll.playhead(b);
+ }
++/* MP-BEGIN Mithören (Melodie-Pinsel): beim Bearbeiten nur gewählte Spuren hören. Nur Abhören: ein eigener Pegel je Spur
++   (hinter dem Panorama, vor Summe und Hall/Echo-Sends; erst angelegt, wenn eine Spur ausgenommen wird) geht weich auf 0.
++   Song, tr.mute, Clips und Undo bleiben unberührt; gemerkt je Clip für die Sitzung (nie im Projekt). */
++const MPL = {S: null, off: new Map(), sig: null};
++function mpOwnBar(id) { const song = S.song; if (song) for (const l of song.lanes) for (const e of l) if (e.own === id) return e.bar | 0; return 0; }
++function mpLKey() { const r = ED.rollAt; if (!r) return null; return r.own ? 'o:' + r.own : r.mel ? 'm:' + (S.song ? S.song.melodyTrack : r.t) : 'c:' + r.t + ':' + r.s; }
++function mpLOff(key, make) {
++  if (MPL.S !== S) { MPL.S = S; MPL.off.clear(); }
++  let o = MPL.off.get(key); if (!o && make) { o = new Set(); MPL.off.set(key, o); } return o || null;
++}
++function mpRollOpts(t, id, keyAt) {
++  const self = () => (ED.rollAt && ED.rollAt.mel && S.song ? S.song.melodyTrack : t);
++  const set = (fn) => { const o = mpLOff(id, true); fn(o); o.delete(self()); for (const i of [...o]) if (i >= NT()) o.delete(i); mpTick(); };
++  return {id, keyAt,
++    listen: {
++      state: () => { const o = mpLOff(id) || new Set(), me = self(), out = [];
++        for (const i of trackOrder()) { if (i >= NT() || !S.tracks[i]) continue; out.push({i, tag: trackTag(i), name: S.tracks[i].name, drum: isDrum(i), self: i === me, on: i === me || !o.has(i)}); }
++        return {self: me, tracks: out}; },
++      toggle: i => set(o => { if (o.has(i)) o.delete(i); else o.add(i); }),
++      noDrums: () => set(o => { o.clear(); for (let i = 0; i < NT(); i++) if (isDrum(i)) o.add(i); }),
++      none: () => set(o => { o.clear(); for (let i = 0; i < NT(); i++) o.add(i); }),
++      active: () => { const o = mpLOff(id); return !!(o && o.size); }
++    }};
++}
++// every frame (cheap): the wanted listening gains; applied only on a change (or a rebuilt track chain)
++function mpTick() {
++  if (!AU.ctx) return;
++  const open = !!(ED.roll && ED.rollAt && EL.rollSheet.classList.contains('open')), key = open ? mpLKey() : null, o = key ? mpLOff(key) : null;
++  const off = o && o.size ? o : null, sig = off ? key + ':' + [...off].sort().join(',') : '';
++  if (sig === MPL.sig && (!off || [...off].every(i => !AU.tracks[i] || AU.tracks[i].mpG))) return;
++  MPL.sig = sig; const now = AU.ctx.currentTime;
++  for (let i = 0; i < MAX_T; i++) {
++    const A = AU.tracks[i]; if (!A || !A.post || !A.cut) continue;
++    const want = off && off.has(i) ? 0 : 1;
++    if (!A.mpG) { if (want) continue; const g = AU.ctx.createGain(); g.gain.value = 1; try { A.post.disconnect(A.cut); } catch (e) {} A.post.connect(g); g.connect(A.cut); A.mpG = g; }
++    const p = A.mpG.gain; try { p.cancelScheduledValues(now); p.setValueAtTime(p.value, now); p.linearRampToValueAtTime(want, now + .02); } catch (e) { p.value = want; }
++  }
++}
++function mpListenInfo() {
++  const key = mpLKey(), o = key ? mpLOff(key) : null;
++  return {open: !!(ED.roll && ED.rollAt), key, off: o ? [...o].sort() : [], gains: AU.tracks.map(A => (A && A.mpG ? +A.mpG.gain.value.toFixed(4) : 1)).slice(0, NT())};
++}
++/* MP-END */
+ /* ---------- V0b FOLGEN (§5.1, Nachtrag EN-07 / M-SEITE) ----------
+    FOLGT (standard): the editor shows the page with the playhead; the page changes when the playhead crosses into the next
+    page — a bar line — or at once after an explicit request (opening, ▶, a tap on the chip). Page width = the visible beats
+@@ -49870,7 +50132,8 @@
+   quantizeClip: (t, s, o) => !!quantizeClip(t, s, o || {}), copyClip: (t, s) => copyClip(t, s), pasteClip: (t, s) => pasteClip(t, s), duplicateClip: (t, s) => duplicateClip(t, s),
+   openRoll: (t, s) => openRoll(t, s), closeRoll: () => closeRoll(),
+   roll: () => (ED.roll && ED.rollAt ? Object.assign({t: ED.rollAt.t, s: ED.rollAt.s, own: ED.rollAt.own || null}, (({tool, grid, step, fold, sel, loop}) => ({tool, grid, step, fold, sel, loop}))(ED.roll.state)) : null),
+-  rollApi: () => ED.roll,                        // test hook: the editor instance (gesture coordinates _xy, _ruler, _barNum, …)
++  rollApi: () => ED.roll,
++  mpListen: () => mpListenInfo(),                // MP Mithören (test hook)                        // test hook: the editor instance (gesture coordinates _xy, _ruler, _barNum, …)
+   openQuant: (t, s) => openQuantSheet(t, s), closeQuant: apply => closeQuantSheet(!!apply),
+   detectKey: notes => { const k = KeyDetect.detectKey(notes || [], {fallback: S.key}); return {root: k.root, scale: k.scale}; },
+   sceneKey: s => { const k = sceneKeyOf(clamp(s | 0, 0, NS() - 1)) || S.key; return {root: k.root, scale: k.scale}; },
