@@ -22,7 +22,7 @@ nicht fertig ohne sein Okay.**
 1. **Aufräum-Korpus I3-11: 56 % statt ≥ 90 %.** Gut: Rampen, Dreieck, Säge, Rechteck, Treppe 4, Kurven. Schwach: Treppe 8/16 (Sprung 125 liegt unter
    der Kanten-Schwelle 150 der Spec), Gate, Achtel-Puls, Pumpen, Triller (32 Abschnitte bei 60-Hz-Abtastung), Sinus. I3-13 Treppe 8: 4/10.
    Der Korpus-Generator ist mein eigener (Weglänge-Abtastung, σ 1,5 %); `i3-korpus.json` aus der Spec gab es nicht.
-2. **Stufige Werte je Stimme (`v.pv`)** gibt es noch nicht (Besitzer I2a). Stufige Super-Regler- und Zustands-Werte wechseln darum über die
+2. **Stufige Werte je Stimme (`v.pv`)** gibt es noch nicht (Besitzer I2a). Stufige Super-Regler- und Zustands-Werte (Wechsel und Hysterese geprüft) wechseln darum über die
    vorhandene 30-ms-Stimmen-Überblendung statt „klingende Töne behalten den Wert“ (I1-14, V6a-07 noch nicht erfüllt).
 3. **Heiße Schlüssel**: im Worklet je 128er-Block mit vollem `derive()` statt linear in 16er-Steuerblöcken und Gruppen-`derive` (CPU nicht gemessen, I1-20).
 4. **FM-Operatoren** (`fm6.ops.*`, `fmx.*`) fährt der Haupt-Faden über den vorhandenen 30-Hz-Patch, nicht der Worklet-Kern.

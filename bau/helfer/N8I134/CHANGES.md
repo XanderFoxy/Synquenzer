@@ -77,7 +77,7 @@ Worklet-Haken `{srProbe}`/`{moProbe}` (= `__srProbe`/`__morphProbe`) und `{n8q}`
 | `bau/tests/smoke.mjs` | Start ohne Fehler | grün |
 | `bau/tests/orch-mk-check.mjs` | Version 4.30.0, Init-AM-Pegel, placePart, 12 MK-Tasten | grün |
 | `bau/tests/v3-mk2-wellen.mjs` | MK2-12 | **OFFEN** wie schon bei 4.30.0: Bezugsdaten `bau/dwgs-trace` fehlen am Bau-Ort (Ausgabe „Bezug am Bau-Ort fehlt“, Ausgang 2) |
-| `n8-core.mjs` | Regel 28, Kennlinien (10 001 Punkte, Abweichung 0), srNorm 1000×, Weg, Worklet-Endwert, Glättung, Einrasten, Undo, Speichern/Laden, Sperre, Vormachen-Kern, Szenen-Morph, Form-Tabelle, nativer Weg, Drums, eine Notenquelle | 41/41 grün |
+| `n8-core.mjs` | Regel 28, Kennlinien (10 001 Punkte, Abweichung 0), srNorm 1000×, Weg, Worklet-Endwert, Glättung, Einrasten, Undo, Speichern/Laden, Sperre, Vormachen-Kern, Szenen-Morph, Form-Tabelle, nativer Weg, Drums, eine Notenquelle, stufige Werte mit Hysterese | 44/44 grün |
 | `n8-regel28.mjs` | 4.30.0 gegen N8I134: Engine-Nachrichten, Projekt-JSON, MIDI, MS-2000-Render, North-Render, Chor-Gruppe, Silben (G9), VV4, Video-Render, GarageBand-WAV, Konsolidieren | grün |
 | `n8-layout.mjs` | 428×926 / 926×428 / 428×650: Start, Synth-Editor, Menü wie 4.30.0; keine waagrechte Scrollleiste | grün |
 | `i3c-ui.mjs` | ✎, Form-Blatt, Strich/Abbruch/Tipp, Bibliothek, Undo, Maße in 3 Formaten | grün |

@@ -195,6 +195,22 @@ ok('I4-33 eine Notenquelle: 4 Tipps → 4 Noten in derselben Form', rT.n === 4 &
 ok('I4c Ergebnis je Analyse zwischengespeichert', rT.cached);
 ok('I4-28 ohne Tipps bzw. rh „stimme“: VS2 wie vorher', rT.without && rT.stimme === 2, 'VS2: ' + rT.stimme + ' Noten');
 
+// ---- I1-14 (part) stepped key: wave 3 at target 0.5; x 1 -> 3, x 0 -> base; pendulum +-0.015 around the middle 0.25 (10x) -> at most 1 switch
+const rD = await p.evaluate(async () => {
+  SYNQUENZER.sr.clear(); const uid = S.tracks[0].uid, base = S.tracks[0].sound.p.o1w, w = base === 3 ? 1 : 3;
+  SYNQUENZER.sr.target({p: .5, u: {[uid]: {d: {o1w: w}}}});
+  const q = async x => { SYNQUENZER.sr.set(x); await new Promise(r => setTimeout(r, 250)); return (await SYNQUENZER.sr.eng(0)).P.o1w; };
+  const at1 = await q(1), at0 = await q(0);
+  SYNQUENZER.sr.set(.235); await new Promise(r => setTimeout(r, 250));
+  const seen = []; for (let k = 0; k < 10; k++) { SYNQUENZER.sr.set(k % 2 ? .235 : .265); await new Promise(r => setTimeout(r, 60)); seen.push((await SYNQUENZER.sr.eng(0)).P.o1w); }
+  let sw = 0; for (let k = 1; k < seen.length; k++) if (seen[k] !== seen[k - 1]) sw++;
+  SYNQUENZER.sr.clear(); await new Promise(r => setTimeout(r, 100));
+  return {base, w, at1, at0, sw, after: (await SYNQUENZER.sr.eng(0)).P.o1w};
+});
+ok('I1-14 stufig: bei 100 % der Ziel-Wert, bei 0 % der Grundwert', rD.at1 === rD.w && rD.at0 === rD.base, rD.base + ' → ' + rD.at1 + ' → ' + rD.at0);
+ok('I1-14 Pendeln ± 0,015 um die Mitte (10×) → höchstens 1 Wechsel', rD.sw <= 1, rD.sw + ' Wechsel');
+ok('I1c Super-Regler gelöscht → Grundwert im Worklet', rD.after === rD.base);
+
 ok('Konsole ohne Fehler', errs.length === 0, errs.slice(0, 3).join(' | '));
 await b.close();
 console.log(fails ? 'FEHLER: ' + fails : 'ALLES GRÜN', '(' + res.length + ' Punkte)');
