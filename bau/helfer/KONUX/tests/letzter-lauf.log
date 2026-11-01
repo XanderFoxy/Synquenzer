@@ -1,0 +1,76 @@
+== Regeln (live, Wörter, MS 2000, VERSION, Marken)
+{"test":"regeln","ok":true}
+== Wege per Finger = 4.30.0, 1 Undo, Name im selben Blatt
+{"test":"wege","fall":"Bereich → Zu einem Teil (Chip „Pre“)","ok":true,"fehler":[],"blaetter":["pop","pop msheet konux dock"],"hinweis":"Neuer Teil Pre · Takt 3–6 | Rückgängig","undoWieVorher":"ja"}
+{"test":"wege","fall":"Bereich → Zu einem Teil (eigener Name)","ok":true,"fehler":[],"blaetter":["pop","pop msheet konux dock"],"hinweis":"Neuer Teil Hook · Takt 7–10 | Rückgängig","undoWieVorher":"ja"}
+{"test":"wege","fall":"Bereich → Zu einem Teil (Vorschlag)","ok":true,"fehler":[],"blaetter":["pop","pop msheet konux dock"],"hinweis":"Neuer Teil Strophe · Takt 2–4 | Rückgängig","undoWieVorher":"ja"}
+{"test":"wege","fall":"Bereich → Als Block","ok":true,"fehler":[],"blaetter":["pop","pop msheet konux dock"],"hinweis":"Block A · Takt 3–6 | Rückgängig","undoWieVorher":"ja"}
+{"test":"wege","fall":"Bereich → Als Block (Name „Kern“)","ok":true,"fehler":[],"blaetter":["pop","pop msheet konux dock"],"hinweis":"Kern · Takt 7–10 | Rückgängig","undoWieVorher":"ja"}
+{"test":"wege","fall":"Marke → Zu einem Teil","ok":true,"fehler":[],"blaetter":["pop msheet dock","pop msheet konux dock"],"hinweis":"Neuer Teil Refrain · Takt 7–10 | Rückgängig","undoWieVorher":"ja"}
+{"test":"wege","fall":"Marke → Als Block","ok":true,"fehler":[],"blaetter":["pop msheet dock","pop msheet konux dock"],"hinweis":"Block A · Takt 3–6 | Rückgängig","undoWieVorher":"ja"}
+{"test":"wege","fall":"Marke → Zurückholen","ok":true,"fehler":[],"blaetter":["pop msheet dock","pop msheet konux dock"],"hinweis":"Ursprung zurückgeholt · Hook | Rückgängig","undoWieVorher":"bis auf .song.mel.5.len: 13 ≠ 12"}
+{"test":"wege","fall":"Block → Zu einem Teil","ok":true,"fehler":[],"blaetter":["pop msheet konux dock"],"hinweis":"Neuer Teil Block A · Takt 3–6 | Rückgängig","undoWieVorher":"bis auf .song.mel.5.len: 13 ≠ 12"}
+{"test":"wege","fall":"Block → Umbenennen","ok":true,"fehler":[],"blaetter":["pop msheet konux dock"],"hinweis":"Block heißt jetzt Kern | Rückgängig","undoWieVorher":"bis auf .song.mel.5.len: 13 ≠ 12"}
+{"test":"wege","fall":"Block → Auflösen","ok":true,"fehler":[],"blaetter":["pop msheet konux dock"],"hinweis":"Block A aufgelöst · der Inhalt bleibt | Rückgängig","undoWieVorher":"bis auf .song.mel.5.len: 13 ≠ 12"}
+{"test":"wege","fall":"Block → Zurückholen","ok":true,"fehler":[],"blaetter":["pop msheet konux dock"],"hinweis":"Ursprung zurückgeholt · Block A | Rückgängig","undoWieVorher":"bis auf .song.mel.5.len: 13 ≠ 12"}
+{"test":"wege","fall":"Block → Hineingehen","ok":true,"fehler":[],"blaetter":["pop msheet konux dock"]}
+== Vorschau erscheint / wechselt / verschwindet
+{"test":"vorschau","fall":"Blatt offen → Vorschau „Teil“ da","ok":true,"info":{"k":"part","a":2,"e":6,"col":"#ffb22e","lab":"Teil Strophe"}}
+{"test":"vorschau","fall":"Vorschau tönt den Bereich, daneben unverändert","ok":true,"info":{"vorher":{"in":"255,184,42,18","out":"24,98,90,167"},"mit":{"in":"255,183,44,46","out":"24,98,90,167"}}}
+{"test":"vorschau","fall":"Karte „Als Block“ → Vorschau wechselt sofort","ok":true,"info":{"k":"blk","a":2,"e":6,"col":"#9aa6bb","lab":"Block A"}}
+{"test":"vorschau","fall":"Name gewählt → Vorschau und Hauptknopf folgen","ok":true,"info":{"pv":"Refrain","main":"Block „Refrain“ anlegen"}}
+{"test":"vorschau","fall":"✕ → Blatt und Vorschau weg, Song wie vorher","ok":true,"info":{"in":"255,184,42,18","out":"24,98,90,167"}}
+{"test":"vorschau","fall":"Tipp in den Song daneben → Blatt zu, Vorschau weg, nichts bearbeitet","ok":true}
+{"test":"vorschau","fall":"Block-Tipp → geführtes Blatt mit Vorschau","ok":true,"info":{"k":"part","a":0,"e":2,"col":"#ffb22e","lab":"Teil Block A"}}
+{"test":"vorschau","fall":"Umbenennen → Vorschau zeigt „Kern“, Hauptknopf „Umbenennen in „Kern““","ok":true,"info":{"pv":{"k":"name","a":0,"e":2,"col":"#9aa6bb","lab":"Kern"},"main":"Umbenennen in „Kern“"}}
+{"test":"vorschau","fall":"Umbenennen ohne neuen Namen → Hauptknopf aus","ok":true,"info":"Neuen Namen wählen"}
+{"test":"vorschau","fall":"Schließen → keine Vorschau","ok":true}
+{"test":"vorschau","fall":"keine Konsolen-Fehler","ok":true,"info":[]}
+== Layout 428×926, 926×428, 428×650, 375×667
+{"test":"layout","fall":"428×926 bereich","ok":true,"fehler":[],"blattH":292,"songPx":368}
+{"test":"layout","fall":"428×926 marke","ok":true,"fehler":[],"blattH":362,"songPx":368}
+{"test":"layout","fall":"428×926 block","ok":true,"fehler":[],"blattH":346,"songPx":368}
+{"test":"layout","fall":"428×926 block-umbenennen","ok":true,"fehler":[],"blattH":346,"songPx":368}
+{"test":"layout","fall":"926×428 bereich","ok":true,"fehler":[],"blattH":173,"songPx":180}
+{"test":"layout","fall":"926×428 marke","ok":true,"fehler":[],"blattH":173,"songPx":180}
+{"test":"layout","fall":"926×428 block","ok":true,"fehler":[],"blattH":220,"songPx":133}
+{"test":"layout","fall":"926×428 block-umbenennen","ok":true,"fehler":[],"blattH":220,"songPx":133}
+{"test":"layout","fall":"428×650 bereich","ok":true,"fehler":[],"blattH":292,"songPx":201}
+{"test":"layout","fall":"428×650 marke","ok":true,"fehler":[],"blattH":362,"songPx":158}
+{"test":"layout","fall":"428×650 block","ok":true,"fehler":[],"blattH":346,"songPx":174}
+{"test":"layout","fall":"428×650 block-umbenennen","ok":true,"fehler":[],"blattH":346,"songPx":174}
+{"test":"layout","fall":"375×667 bereich","ok":true,"fehler":[],"blattH":289,"songPx":207}
+{"test":"layout","fall":"375×667 marke","ok":true,"fehler":[],"blattH":359,"songPx":172}
+{"test":"layout","fall":"375×667 block","ok":true,"fehler":[],"blattH":346,"songPx":185}
+{"test":"layout","fall":"375×667 block-umbenennen","ok":true,"fehler":[],"blattH":346,"songPx":185}
+== Animation ≤ 250 ms, Haptik, keine Aufgabe > 50 ms
+{"test":"animation","fall":"Zu einem Teil (Kachel fliegt)","ok":true,"info":{"laengsteAufgabeMs":0,"animMs":240,"eigenschaften":["opacity","transform"],"haptik":["snap"],"reste":0}}
+{"test":"animation","fall":"Als Block (Rahmen rastet ein)","ok":true,"info":{"laengsteAufgabeMs":0,"animMs":240,"eigenschaften":["opacity","transform"],"haptik":["snap"],"reste":0}}
+{"test":"animation","fall":"Zurückholen (Rahmen)","ok":true,"info":{"laengsteAufgabeMs":0,"animMs":240,"eigenschaften":["opacity","transform"],"haptik":["snap"],"reste":0}}
+{"test":"animation","fall":"Zu einem Teil (Kachel fliegt) (CPU ×4, nur Info)","ok":true,"info":{"laengsteAufgabeMs":0,"animMs":240,"eigenschaften":["opacity","transform"],"haptik":["snap"],"reste":0}}
+{"test":"animation","fall":"Als Block (Rahmen rastet ein) (CPU ×4, nur Info)","ok":true,"info":{"laengsteAufgabeMs":0,"animMs":240,"eigenschaften":["opacity","transform"],"haptik":["snap"],"reste":0}}
+{"test":"animation","fall":"Zurückholen (Rahmen) (CPU ×4, nur Info)","ok":true,"info":{"laengsteAufgabeMs":0,"animMs":240,"eigenschaften":["opacity","transform"],"haptik":["snap"],"reste":0}}
+== Format 5, altes Projekt Zeichen für Zeichen gleich
+{"test":"format","fall":"Projekt (Marken, Blöcke, kons) geladen: 4.30.0 und KONUX schreiben es Zeichen für Zeichen gleich","ok":true,"info":{"laenge":17773,"gleich":true}}
+{"test":"format","fall":"Format bleibt 5","ok":true,"info":5}
+{"test":"format","fall":"keine Konsolen-Fehler","ok":true,"info":[]}
+== Rauchtest smoke
+title SYNQUENZER errors []
+== Rauchtest v3-mk8-smoke
+title SYNQUENZER errors []
+== Rauchtest v3-mk8b-smoke
+title SYNQUENZER errors []
+== Rauchtest v3-qa-mk5reg-smoke
+title SYNQUENZER errors []
+
+GRÜN  Regeln (live, Wörter, MS 2000, VERSION, Marken)
+GRÜN  Wege per Finger = 4.30.0, 1 Undo, Name im selben Blatt
+GRÜN  Vorschau erscheint / wechselt / verschwindet
+GRÜN  Layout 428×926, 926×428, 428×650, 375×667
+GRÜN  Animation ≤ 250 ms, Haptik, keine Aufgabe > 50 ms
+GRÜN  Format 5, altes Projekt Zeichen für Zeichen gleich
+GRÜN  Rauchtest smoke
+GRÜN  Rauchtest v3-mk8-smoke
+GRÜN  Rauchtest v3-mk8b-smoke
+GRÜN  Rauchtest v3-qa-mk5reg-smoke
+

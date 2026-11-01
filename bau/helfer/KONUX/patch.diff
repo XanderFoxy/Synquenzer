@@ -1,0 +1,468 @@
+--- R-4300.html
++++ KONUX/index.html
+@@ -520,6 +520,60 @@
+ .msheet.konsheet .ms-h b{color:#e6e9ef}
+ .msheet .kon-tip{font:600 10px/1.25 var(--font-ui);color:var(--text-dim);padding:6px 2px 2px}
+ .msheet .kon-r{margin-top:4px}
++/* KONUX-CSS-BEGIN: das geführte Blatt „Was willst du mit Takt a–e machen?“ (Bereich, Marke, Block) — Bild-Karten ≥ 64 px, ein Hauptknopf */
++.pop.msheet.konux.dock{padding:0 8px calc(8px + env(safe-area-inset-bottom,0px))}
++.pop.msheet.konux .kx-h{height:44px}.pop.msheet.konux .kx-h .ms-x{height:44px}.pop.msheet.konux .kx-h .ms-x::before{top:0}
++.konux .kx-h b{color:var(--text);font-weight:700;letter-spacing:0;font-size:13px}
++.konux .kx-h em{font-style:normal;color:#ffcf7a;font-weight:800}
++.konux .kx-mini{display:flex;align-items:center;gap:8px;height:30px;margin:0 0 6px}
++.konux .kx-tl{flex:1 1 auto;min-width:0;height:26px;background:var(--lcd);border:1px solid var(--line);border-radius:5px;padding:1px}
++.konux .kx-src{flex:none;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;max-width:42%;font:800 11px/1.1 var(--font-ui);letter-spacing:.04em;text-transform:uppercase;color:#ffcf7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
++.konux .kx-src>span{max-width:100%;overflow:hidden;text-overflow:ellipsis}
++.konux .kx-src small{font:600 10px/1.1 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--text-dim)}
++.konux .kx-sq{display:inline-block;width:8px;height:8px;border:1.5px solid #c3cad6;border-radius:2px;margin-right:4px;vertical-align:0}
++.konux .kx-cs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
++.konux .kx-cs.n1{grid-template-columns:minmax(0,1fr)}
++.konux .kx-c{--kx:var(--amber);position:relative;min-height:64px;height:auto;padding:8px 8px 8px 6px;display:flex;align-items:center;justify-content:flex-start;gap:6px;text-align:left;border-radius:10px;white-space:normal}
++.konux .kx-c.kx-blk{--kx:#c3cad6}.konux .kx-c.kx-back{--kx:var(--play)}
++.konux .kx-c .kx-i{flex:none;width:44px;height:30px;color:var(--text-dim)}.konux .kx-c .kx-i svg{display:block;width:44px;height:30px}
++.konux .kx-c .kx-t{display:flex;flex-direction:column;gap:3px;min-width:0}
++.konux .kx-c b{font:700 13.5px/1.1 var(--font-ui);color:var(--text)}
++.konux .kx-c small{font:600 11px/1.2 var(--font-ui);color:var(--text-dim);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
++.konux .kx-c.on{border-color:var(--kx);box-shadow:inset 0 0 0 1px var(--kx),0 0 0 1px rgba(0,0,0,.4);background:linear-gradient(color-mix(in srgb,var(--kx) 16%,var(--chassis-2)),var(--chassis))}
++.konux .kx-c.on .kx-i{color:var(--text)}
++.konux .kx-c.on::after{content:'';position:absolute;right:7px;top:7px;width:8px;height:8px;border-radius:50%;background:var(--kx)}
++.konux .kx-c:disabled{opacity:.45}
++.konux .kx-ws{display:flex;gap:6px;margin:6px 0 0}
++.konux .kx-w{flex:1 1 0;min-width:0;height:44px;padding:0 6px;gap:6px;font:700 12px/1.1 var(--font-ui);color:var(--text-dim);background:transparent;border-color:var(--line);box-shadow:none}
++.konux .kx-w svg{flex:none;width:18px;height:18px}.konux .kx-w span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
++.konux .kx-w.on{color:var(--text);border-color:#c3cad6}
++.konux .kx-tip{margin:4px 2px 0;font:600 10.5px/1.25 var(--font-ui);color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
++.konux .kx-nm{display:flex;gap:6px;height:44px;margin:6px 0 0}
++.konux .kx-sc{flex:1 1 auto;height:44px}.konux .kx-sc .cp-c{flex:none;height:44px;min-width:64px;padding:0 10px;font:700 13px/1 var(--font-ui)}
++.konux .kx-sc .cp-c.on{border-color:var(--amber);color:#ffcf7a;box-shadow:inset 0 0 0 1px var(--amber)}
++.konux .kx-in{flex:0 0 36%;min-width:104px;height:44px;padding:0 10px;font:600 16px/1 var(--font-ui);color:var(--text);background:var(--lcd);border:1px solid var(--line);border-radius:8px}
++.konux .kx-say{min-height:16px;margin:6px 2px 0;font:600 11.5px/1.3 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
++.konux .kx-go{display:flex;width:100%;height:48px;margin-top:6px;border-radius:10px;font:800 15px/1 var(--font-ui);letter-spacing:.02em;color:#141416;background:linear-gradient(#ffc451,#f2a21c);border-color:#a8711a;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 0 var(--shadow);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
++.konux .kx-go.kx-blk,.konux .kx-go.kx-name{background:linear-gradient(#dfe4ec,#b7c0cf);border-color:#7f8899}
++.konux .kx-go.kx-back{background:linear-gradient(#5fe0a0,#2cb46c);border-color:#1f7a4a}
++.konux .kx-go:active{filter:brightness(.92);box-shadow:inset 0 2px 4px rgba(0,0,0,.35)}
++.konux .kx-go:disabled{background:var(--chassis-2);color:var(--text-dim);border-color:var(--line)}
++/* Querformat (niedrig): links Bild + Karten in einer Reihe, rechts Werkzeuge, Name, Hauptknopf */
++@media (orientation:landscape) and (max-height:560px){
++  .konux .kx-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,34%);gap:10px;align-items:end}
++  .konux .kx-cs{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
++  .konux .kx-r .kx-nm:first-child{margin-top:0}
++}
++/* sehr schmal: Karten-Text etwas kleiner */
++@media (max-width:389px){.konux .kx-w{font-size:11.5px;gap:4px;padding:0 4px}.konux .kx-w svg{width:16px;height:16px}.konux .kx-c b{font-size:12.5px}.konux .kx-c small{font-size:10.5px}.konux .kx-c .kx-i,.konux .kx-c .kx-i svg{width:38px;height:26px}}
++/* Rückmeldung: fliegende Kachel / einrastender Rahmen (über allem, nimmt keine Finger) */
++.kx-fx{position:fixed;z-index:200;pointer-events:none;border-radius:6px;transform-origin:0 0;will-change:transform,opacity}
++.kx-fly{background:color-mix(in srgb,var(--kx) 38%,transparent);border:2px solid var(--kx)}
++.kx-frame{border:2px solid var(--kx);transform-origin:50% 50%;box-shadow:0 0 0 3px color-mix(in srgb,var(--kx) 25%,transparent)}
++/* Einstiege (Bereich ⋯, Marken-Blatt): ein Knopf mit Bild */
++.plist .kx-entry,.msheet .ms-b.kx-entry{gap:6px}
++.kx-entry svg{flex:none;width:30px;height:20px}
++/* KONUX-CSS-END */
+ .sv-tbb{position:absolute;inset:0;width:100%;height:100%;padding:0 4px;font:700 9px/1 var(--font-num);text-align:left;justify-content:flex-start;border-radius:3px;color:var(--text)}   /* V2a: Spurbank of the song view (V2e moves it into the transport) */
+ .sv-l.blank{opacity:0}
+ .sv-l{flex:0 0 var(--svh,30px);display:flex;align-items:center;gap:5px;padding:0 4px;font:700 10px/1 var(--font-ui);letter-spacing:.05em;color:var(--text-dim);min-width:0;overflow:hidden;white-space:nowrap;border-top:1px solid rgba(255,255,255,.05)}
+@@ -27237,7 +27291,7 @@
+   EL.gridArea.classList.toggle('song', on); EL.app.classList.toggle('songv', on);
+   EL.songView.hidden = !on; hintSideSync(); if (on) pickCancel();
+   if (typeof WP !== 'undefined' && WP.ed) wpClose();          // F1: der Marken-Editor endet mit dem Wechsel der Ansicht
+-  if (UI.pop && /^(mark|place|rangemore|aspart|partlist|markname|partcolor|cell)$/.test(UI.pop.name || '')) closePop();   // V2e: song sheets end with the view
++  if (UI.pop && /^(mark|place|rangemore|aspart|partlist|markname|partcolor|cell|block|konux)$/.test(UI.pop.name || '')) closePop();   // V2e: song sheets end with the view // KONUX: + block, konux
+   if (!on) { SV.mark = null; SV.copy = null; SV.cell = null; svHintFree(); }
+   rangeBarSync();
+   folReset(['song']);
+@@ -29886,6 +29940,7 @@
+   }
+   if (SV.blS && y < SV.blS) { konBlkTap(bar); return; }            // KON: the Block-Zeile (tap = Block-Blatt, double tap = hineingehen)
+   if (UI.pop && UI.pop.name === 'block') { closePop(); return; }      // KON: the Block-Blatt lets the song through like the Marken-Blatt
++  if (UI.pop && UI.pop.name === 'konux') { closePop(); return; }      // KONUX: das geführte Blatt (Bereich) ebenso — ein Tipp daneben schließt es nur
+   // the Marken-Blatt lets the song through: a tap anywhere but into the chosen mark only closes it (never edits underneath)
+   if (UI.pop && UI.pop.name === 'mark') { const m = row === -1 ? svMarkAt(bar) : null; if (!(m && !svMarkOpen(m))) { closePop(); return; } }   // another mark: its sheet
+   if (row === -1) { svRulerTapX(bar); return; }      // V0c N7-R7 + V2e marks: the ruler selects (yellow) and sets the Positionsmarke, never jumps
+@@ -30702,7 +30757,7 @@
+     p.innerHTML = `<h4>Takt ${A + 1}${Bb > A ? '–' + (Bb + 1) : ''}</h4><div class="plist">` +
+       (narrow ? '<button class="rb" data-a="part">❖ Als Teil …</button>' : '') +
+       '<button class="rb" data-a="clear">○ Leeren</button><button class="rb" data-a="ins">＋ Teil einsetzen ▾</button>' +
+-      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + s2RangeItem() + konRangeItems() + '</div>' + vvDirRow(A, Bb + 1, 'vvdb');   /* S2 */   // VV2: Zeile „Video“
++      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + konuxRangeItem() + '</div>' + vvDirRow(A, Bb + 1, 'vvdb');   /* S2 */   // VV2: Zeile „Video“
+     onTap(p, b => {
+       const a = b.dataset.a; if (a && a.startsWith('vv-')) { vvDirTap(a, b, A, Bb + 1, () => { if (UI.pop && UI.pop.el === p) closePop(); }); return; }   // VV2
+       closePop();
+@@ -30714,6 +30769,7 @@
+       else if (a === 's2sum') s2OpenSum(anchor, A, Bb + 1);   /* S2 */
+       else if (a === 'konblk') konBlkMakeUI(A, Bb + 1);        /* KON */
+       else if (a === 'konsol') s2OpenSum(anchor, A, Bb + 1, {kon: true});   /* KON */
++      else if (a === 'konux') konuxOpen({kind: 'range', a: A, e: Bb + 1});   // KONUX: ein Blatt statt Zusammenfassen / Als Block / Konsolidieren
+       svButtons();
+     }, 'button[data-a]');
+   }, {name: 'rangemore'});
+@@ -30935,6 +30991,7 @@
+     const xp = X(songStartBar());
+     if (xp >= -4 && xp <= W + 4) { g.fillStyle = SV.pos != null ? '#f2f4f8' : 'rgba(242,244,248,.55)'; g.beginPath(); g.moveTo(xp - 4, 0); g.lineTo(xp + 4, 0); g.lineTo(xp, 5); g.closePath(); g.fill(); }
+   }
++  if (song && KX && KX.pv) konuxDrawPv(g, X, W, H, ru);   // KONUX: Vorschau der gewählten Karte (Geister-Rahmen)
+   // the playhead (green 2 px; red while recording)
+   if (sb != null && sb >= 0) {
+     const x = sb / 4 * cw - SV.x;
+@@ -57488,7 +57545,7 @@
+   if (p._s0ed === m.id) { p.innerHTML = s0EditHTML(m); p.classList.add('s0-ed'); return; }
+   p.classList.remove('s0-ed'); p._s0ed = null;
+   const r = p.querySelector('.ms-rec'); if (!r || !r.parentNode) return;
+-  r.insertAdjacentHTML('afterend', `<button class="rb ms-b s0-eb" data-s012="edit">Bearbeiten</button>` + (typeof s2SumButton === 'function' ? s2SumButton(m) : ''));
++  r.insertAdjacentHTML('afterend', `<button class="rb ms-b s0-eb" data-s012="edit">Bearbeiten</button>`);   // KONUX: [Zusammenfassen] bewusst überholt → „Zu Teil / Block …“ (konMarkSheetPaint)
+ }
+ function s012MarkTap(p, b) {
+   const a = b.dataset.s012, id = SV.mark, m = S.song && S.song.marks.find(x => x.id === id);
+@@ -57696,28 +57753,16 @@
+   return {part: k, name: nm, mark: (song.marks.find(m => m.a === a && m.part === S.parts[k].id) || {}).id || id};
+ }
+ // the name (chips after N7-R2, own text) — like „Als Teil …“; suggestion: one mark → its name with a number, else the next free name
+-function s2OpenSum(anchor, a, e, ko) {
++function s2OpenSum(anchor, a, e, ko) {   // KONUX: Verweis — öffnet das geführte Blatt mit „Zu einem Teil machen“ (Name im selben Blatt)
+   const song = S.song; if (!song) return;
+   if (e - a > 16) { toast('Ein Teil hat höchstens 16 Takte'); return; }
+-  const ms = song.marks.filter(m => m.a < e && m.a + m.len > a), one = ms.length === 1 && ms[0].a === a && ms[0].len === e - a;
+-  const sug = ko && ko.sug ? partUniq(ko.sug, -1) : one ? partUniq(markLabel(ms[0]), -1) : partSuggest();
+-  const kon = !!(ko && ko.kon);                                          /* KON: Konsolidieren — dasselbe Namens-Blatt */
+-  openPop(anchor, p => {
+-    guardTouch(p); p.classList.add('mname', 's2sum');
+-    p.innerHTML = `<h4>${kon ? 'Als neuen Teil konsolidieren' : 'Zusammenfassen'} · Takt ${a + 1}${e - a > 1 ? '–' + e : ''}</h4><div class="cp-sc mn-sc">` + PART_NAMES.map(n => `<button class="rb cp-c" data-n="${n}">${n}</button>`).join('') + '</div>' +
+-      `<div class="mn-r"><input class="mn-in" type="text" maxlength="12" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${esc(sug)}" aria-label="Eigener Name"><button class="rb mn-ok" data-a="ok" aria-label="Übernehmen">✓</button></div>`;
+-    const inp = p.querySelector('.mn-in');
+-    const go = v => { closePop(); const r = (kon ? konDo : s2Sum)(a, e, String(v || '').trim() || sug); if (r) { SV.sel = null; SV.mark = null; toast((kon ? 'Konsolidiert: neuer Teil ' : 'Neuer Teil ') + r.name + ' · Takt ' + (a + 1) + (e - a > 1 ? '–' + e : ''), {label: 'Rückgängig', fn: () => undo()}); } svButtons(); UI.dirty.song = true; };   /* KON */
+-    on(inp, 'keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); go(inp.value); } });
+-    inp.addEventListener('pointerdown', ev => ev.stopPropagation()); inp.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
+-    on(inp, 'focus', () => popDock(p, true)); on(inp, 'blur', () => setTimeout(() => popDock(p), 50));
+-    onTap(p, b => { if (b.dataset.n) go(b.dataset.n); else go(inp.value); }, 'button[data-n],button[data-a="ok"]');
+-  }, {name: 's2sum'});
+-  popDock(UI.pop && UI.pop.el);
++  konuxOpen({kind: 'range', a, e}, {pick: 'part', sug: ko && ko.sug});
+ }
+ // Marken-Blatt: [Zusammenfassen] next to [Bearbeiten]; Bereich-Leiste ⋯: „Zusammenfassen“
++// KONUX: überholt — kein eigener Knopf mehr (das geführte Blatt konuxOpen ersetzt ihn); bleibt als Verweis
+ const s2SumButton = m => `<button class="rb ms-b s2-sb" data-s012="sum" aria-label="Zusammenfassen: alles in Takt ${m.a + 1}${m.len > 1 ? '–' + (m.a + m.len) : ''} wird ein neuer Teil">Zusammen&shy;fassen</button>`;
+ function s2SumMark(id) { const m = S.song && S.song.marks.find(x => x.id === id); if (!m) return false; const a = m.a, e = m.a + m.len, anchor = UI.pop && UI.pop.el; closePop(); s2OpenSum(anchor, a, e); return true; }
++// KONUX: überholt — kein eigener Knopf mehr (das geführte Blatt konuxOpen ersetzt ihn); bleibt als Verweis
+ const s2RangeItem = () => '<button class="rb" data-a="s2sum">Zusammenfassen</button>';
+ Object.assign(S012_API, {
+   sumRange: (a, b, name) => s2Sum(a, (b == null ? a : b) + 1, name), sumMark: (id, name) => { const m = S.song && S.song.marks.find(x => x.id === id); return m ? s2Sum(m.a, m.a + m.len, name) : false; },
+@@ -58018,45 +58063,13 @@
+   if (!r) { toast('Dort liegt schon ein Block'); return; }
+   SV.sel = null; SV.blk = null; toast(r.name + ' · Takt ' + (a + 1) + (e - a > 1 ? '–' + e : ''), songUndoAct()); svButtons(); UI.dirty.song = true;
+ }
++// KONUX: überholt — kein eigener Knopf mehr (das geführte Blatt konuxOpen ersetzt ihn); bleibt als Verweis
+ const konRangeItems = () => '<button class="rb" data-a="konblk">▣ Als Block</button><button class="rb" data-a="konsol">Als neuen Teil konsolidieren</button>';
+ // the Block-Blatt (like the Marken-Blatt: the song stays usable above it): konsolidieren, zurückholen, umbenennen, auflösen
++// KONUX: der Tipp auf einen Block öffnet das geführte Blatt (Zu einem Teil machen │ Zurückholen; Umbenennen, Hineingehen, Auflösen)
+ function konBlkSheet(id) {
+   const b0 = konBlkOf(id); if (!b0 || svRecBusy()) return;
+-  if (UI.pop) closePop();
+-  SV.copy = null; svHintFree(); folEdit('song'); haptic('tick'); UI.dirty.song = true;
+-  openPop(null, p => {
+-    p.classList.add('msheet', 'konsheet'); guardTouch(p);
+-    const paint = () => {
+-      const b = konBlkOf(id); if (!b) { closePop(); return; }
+-      const ks = (S.song.kons || []).filter(k => { const m = S.song.marks.find(x => x.id === k.mark); return m && m.a >= b.a && m.a + m.len <= b.a + b.len; });
+-      const B = (a, html, o) => `<button class="rb ms-b${o && o.cls ? ' ' + o.cls : ''}" data-kb="${a}"${o && o.dis ? ' disabled' : ''}${o && o.aria ? ' aria-label="' + esc(o.aria) + '"' : ''}>${html}</button>`;
+-      p.innerHTML = `<div class="ms-h"><b>▣ ${esc(b.name.toUpperCase())}</b><span>· Takt ${b.a + 1}${b.len > 1 ? '–' + (b.a + b.len) : ''}</span><button class="rb ms-x" data-kb="x" aria-label="Schließen">✕</button></div>` +
+-        `<div class="ms-r">` + B('kon', 'Als neuen Teil konsolidieren', {dis: b.len > 16, aria: b.len > 16 ? 'Ein Teil hat höchstens 16 Takte' : 'Alles in ' + b.name + ' wird ein neuer Teil; der Ursprung bleibt zurückholbar'}) +
+-          (ks.length ? B('back', 'Zurückholen', {aria: 'Den Zustand vor dem Konsolidieren zurückholen'}) : '') + `</div>` +
+-        `<div class="ms-r">` + B('name', '✎ Umbenennen') + B('in', 'Hineingehen', {aria: 'Hineingehen: Schleife auf dem Block (auch Doppeltipp)'}) + B('dis', 'Auflösen', {aria: 'Block auflösen – der Inhalt bleibt'}) + `</div>` +
+-        `<div class="kon-tip">Halten = verschieben · über ⧉ ziehen = Kopie · Doppeltipp = hineingehen</div>`;
+-      for (const x of p.querySelectorAll('.ms-b')) if (x.scrollWidth > x.clientWidth + 1) x.classList.add('tight');
+-    };
+-    paint(); p._paint = paint;
+-    onTap(p, x => {
+-      const a = x.dataset.kb, b = konBlkOf(id); if (!b) { closePop(); return; }
+-      if (a === 'x') { closePop(); return; }
+-      if (a === 'kon') { closePop(); s2OpenSum(null, b.a, b.a + b.len, {kon: true, sug: b.name}); return; }
+-      if (a === 'back') {
+-        closePop(); let n = 0;
+-        const u0 = UNDO[UNDO.length - 1];
+-        for (const k of (S.song.kons || []).slice()) { const m = S.song.marks.find(y => y.id === k.mark); if (m && m.a >= b.a && m.a + m.len <= b.a + b.len && konRestore(k.mark)) n++; }
+-        if (n > 1) undoMergeSince(u0, 'Zurückgeholt: ' + b.name);
+-        if (n) { toast('Ursprung zurückgeholt · ' + b.name, songUndoAct()); svButtons(); }
+-        return;
+-      }
+-      if (a === 'name') { konBlkNameSheet(x, id); return; }
+-      if (a === 'in') { konBlkEnter(id); return; }
+-      if (a === 'dis') { closePop(); if (konBlkAction(id, 'dissolve') === true) { toast(b.name + ' aufgelöst · der Inhalt bleibt', songUndoAct()); svButtons(); } }
+-    }, 'button[data-kb]');
+-  }, {name: 'block', onClose: () => { EL.popLayer.classList.remove('pass'); SV.blk = null; UI.dirty.song = true; }});
+-  SV.blk = id; EL.popLayer.classList.add('pass');
+-  popDock(UI.pop && UI.pop.el);
++  konuxOpen({kind: 'block', id});
+ }
+ function konBlkNameSheet(anchor, id) {
+   const b = konBlkOf(id); if (!b) return;
+@@ -58088,19 +58101,19 @@
+   return true;
+ }
+ // Marken-Blatt: a row [Als neuen Teil konsolidieren] (+ [Zurückholen] for a konsolidierter Teil) below the others
+-function konMarkSheetPaint(p, m) {
++function konMarkSheetPaint(p, m) {   // KONUX: eine Zeile mit Bild-Knopf „Zu Teil / Block …“ (+ „Zurückholen …“) → das geführte Blatt
+   if (p.classList.contains('s0-ed')) return;
+   if (!p._kon) { p._kon = true; onTap(p, b => konMarkTap(b), 'button[data-kon]'); }
+   const bb = p.querySelector('.ms-bb'); if (!bb) return;
+-  const kn = konOf(m.id), big = m.len > 16;
+-  bb.insertAdjacentHTML('afterend', `<div class="ms-r kon-r"><button class="rb ms-b" data-kon="sol"${big ? ' disabled aria-label="Ein Teil hat höchstens 16 Takte"' : ''}>Als neuen Teil konsolidieren</button>` +
+-    (kn ? `<button class="rb ms-b" data-kon="back" aria-label="Den Zustand vor dem Konsolidieren zurückholen">Zurückholen</button>` : '') + `</div>`);
++  const kn = konOf(m.id);
++  bb.insertAdjacentHTML('afterend', `<div class="ms-r kon-r"><button class="rb ms-b kx-entry" data-kon="ux" aria-label="Zu einem Teil oder Block machen">${KXI.ent}Zu Teil / Block …</button>` +
++    (kn ? `<button class="rb ms-b kx-entry" data-kon="back" aria-label="Den Zustand vor dem Teil-Machen zurückholen">${KXI.back}Zurückholen …</button>` : '') + `</div>`);
+ }
+-function konMarkTap(b) {
++function konMarkTap(b) {   // KONUX
+   const id = SV.mark, m = S.song && S.song.marks.find(x => x.id === id); if (!m) { closePop(); return; }
+-  const a = b.dataset.kon, nm = markLabel(m);
+-  if (a === 'sol') { const A = m.a, E = m.a + m.len; closePop(); s2OpenSum(null, A, E, {kon: true}); return; }
+-  if (a === 'back') { closePop(); if (konRestore(m.id)) { toast('Ursprung zurückgeholt · ' + nm, songUndoAct()); svButtons(); } }
++  const a = b.dataset.kon;
++  if (a === 'ux' || a === 'sol') { konuxOpen({kind: 'mark', id: m.id}); return; }
++  if (a === 'back') konuxOpen({kind: 'mark', id: m.id}, {pick: 'back'});
+ }
+ const KON_API = {
+   blockMake: (a, b, name) => konBlkMake(a, (b == null ? a : b) + 1, name),          // b inclusive (like songRange)
+@@ -58115,6 +58128,235 @@
+   kons: () => (S.song && S.song.kons ? S.song.kons.map(k => ({mark: k.mark, part: k.part, at: k.at, len: k.len})) : []),
+ };
+ /* /KON */
++/* KONUX ---------- Ein geführtes Blatt „Was willst du mit Takt a–e machen?“ (Xander 01.11.: „trockenes Layout … man muss Rätsel
++   raten“). Ein Weg für Bereich (Bereich-Leiste ⋯), Marke (Marken-Blatt) und Block (Tipp auf die Block-Zeile): oben die Mini-Zeitleiste
++   des Bereichs, darunter Bild-Karten (Zu einem Teil machen │ Als Block gruppieren │ Zurückholen), beim Block eine ruhige Zweit-Reihe
++   (Umbenennen, Hineingehen, Auflösen); der Name wird im selben Blatt gewählt, ein Hauptknopf führt aus. Ein Tipp auf eine Karte zeigt
++   im Song darüber sofort, was passieren wird (Geister-Rahmen, KX.pv). Die Daten-Wege bleiben die von KON: konDo, konBlkMake,
++   konRestore, konBlkAction, konBlkEnter — je Aktion genau ein Undo-Schritt. „Zusammenfassen“ (s2Sum) als eigener Knopf ist bewusst
++   überholt: „Zu einem Teil machen“ = konDo (Zusammenfassen + Ursprung zurückholbar). View state (kein Undo): KX ---------- */
++var KX = {src: null, pick: null, name: null, el: null, pv: null, fx: 0};      // var: svDraw fragt KX.pv schon vor dieser Zeile ab
++// gezeichnete Bilder (SVG, keine Schrift-Zeichen): Spur-Streifen → ein Teil │ Streifen im Rahmen │ Pfeil zurück │ Werkzeuge
++const KXI = {
++  part: '<svg viewBox="0 0 44 30" aria-hidden="true"><rect x="2" y="6" width="13" height="4" rx="1.5" fill="var(--t1)"/><rect x="2" y="13" width="13" height="4" rx="1.5" fill="var(--t2)"/><rect x="2" y="20" width="13" height="4" rx="1.5" fill="var(--t3)"/><path d="M18 15h7m-3-3.5 3.5 3.5-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="29" y="5" width="13" height="20" rx="3.5" fill="var(--amber)"/><rect x="32" y="9" width="7" height="2" rx="1" fill="#0b0c0f" opacity=".55"/></svg>',
++  blk: '<svg viewBox="0 0 44 30" aria-hidden="true"><rect x="3" y="3" width="38" height="24" rx="4" fill="rgba(154,166,187,.18)" stroke="#c3cad6" stroke-width="1.8"/><rect x="8" y="9" width="12" height="3.5" rx="1.5" fill="var(--t1)"/><rect x="21" y="9" width="15" height="3.5" rx="1.5" fill="var(--t2)"/><rect x="8" y="17" width="20" height="3.5" rx="1.5" fill="var(--t3)"/><rect x="29" y="17" width="7" height="3.5" rx="1.5" fill="var(--t4)"/></svg>',
++  back: '<svg viewBox="0 0 44 30" aria-hidden="true"><rect x="27" y="6" width="14" height="4" rx="1.5" fill="var(--t1)"/><rect x="27" y="13" width="14" height="4" rx="1.5" fill="var(--t2)"/><rect x="27" y="20" width="14" height="4" rx="1.5" fill="var(--t3)"/><path d="M21 22.5a8.5 8.5 0 1 1 1.5-11" fill="none" stroke="var(--play)" stroke-width="2" stroke-linecap="round"/><path d="M23.5 6.5v5.5H18" fill="none" stroke="var(--play)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
++  name: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4.5L19 9.5 14.5 5 4 15.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12.5 7 17 11.5" stroke="currentColor" stroke-width="1.8"/></svg>',
++  in: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="4" width="12" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.5 12h10m-3.5-3.5L12.5 12 9 15.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
++  dis: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V5.5A2.5 2.5 0 0 1 5.5 3H8m8 0h2.5A2.5 2.5 0 0 1 21 5.5V8m0 8v2.5a2.5 2.5 0 0 1-2.5 2.5H16m-8 0H5.5A2.5 2.5 0 0 1 3 18.5V16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="7.5" y="9" width="9" height="2.5" rx="1" fill="currentColor"/><rect x="7.5" y="13" width="6" height="2.5" rx="1" fill="currentColor"/></svg>',
++  ent: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="7" height="3" rx="1" fill="var(--t1)"/><rect x="3" y="12" width="7" height="3" rx="1" fill="var(--t2)"/><path d="M12 12h3.5m-2-2 2 2-2 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="17" y="6" width="5" height="11" rx="1.5" fill="var(--amber)"/></svg>',
++};
++const konuxRng = (a, e) => 'Takt ' + (a + 1) + (e - a > 1 ? '–' + e : '');
++// die Quelle (frisch aus dem Song): {kind, id, a, e, label}; null wenn es sie nicht mehr gibt
++function konuxSrc(src) {
++  const song = S.song; if (!song || !src) return null;
++  if (src.kind === 'block') { const b = konBlkOf(src.id); return b ? {kind: 'block', id: b.id, a: b.a, e: b.a + b.len, label: b.name} : null; }
++  if (src.kind === 'mark') { const m = song.marks.find(x => x.id === src.id); return m ? {kind: 'mark', id: m.id, a: m.a, e: m.a + m.len, label: markLabel(m)} : null; }
++  const a = Math.max(0, src.a | 0), e = Math.min(src.e | 0, song.bars); return e > a ? {kind: 'range', a, e, label: 'Auswahl'} : null;
++}
++// die Marken, deren Ursprung zurückkommen kann (Marke: ihr eigener; Block / Bereich: jeder konsolidierte Teil darin)
++function konuxBacks(s) {
++  const song = S.song; if (!s || !song || !song.kons) return [];
++  if (s.kind === 'mark') return konOf(s.id) ? [s.id] : [];
++  return song.kons.filter(k => { const m = song.marks.find(x => x.id === k.mark); return m && m.a >= s.a && m.a + m.len <= s.e; }).map(k => k.mark);
++}
++// die Karten (k, Titel, eine Zeile, ob es geht) — Reihenfolge = Wichtigkeit
++function konuxCards(s) {
++  const song = S.song, n = s.e - s.a; partsEnsure(); const full = S.parts.findIndex(x => !x) < 0;
++  const out = [{k: 'part', t: 'Zu einem Teil machen', x: n > 16 ? 'Geht bis 16 Takte – hier ' + n : full ? 'Teil-Leiste voll' : 'Klingt gleich · Ursprung bleibt', dis: n > 16 || full}];
++  if (s.kind !== 'block') { const occ = (song.blocks || []).some(b => b.a < s.e && b.a + b.len > s.a); out.push({k: 'blk', t: 'Als Block gruppieren', x: occ ? 'Hier liegt schon ein Block' : 'Zusammen schieben · Inhalt bleibt', dis: occ}); }
++  if (konuxBacks(s).length) out.push({k: 'back', t: 'Zurückholen', x: 'Wie vor dem Teil-Machen'});
++  return out;
++}
++// der Vorschlag für den Namen (wie bisher im Namens-Blatt: Block → sein Name, eine Marke genau darüber → ihr Name mit Nummer)
++function konuxSug(s, pick) {
++  const song = S.song;
++  if (pick === 'blk') return konBlkName(song);
++  if (pick === 'name') { const b = konBlkOf(s.id); return b ? b.name : ''; }
++  if (KX.sug) return partUniq(KX.sug, -1);
++  if (s.kind === 'block') return partUniq(s.label, -1);
++  const ms = song.marks.filter(m => m.a < s.e && m.a + m.len > s.a), one = ms.length === 1 && ms[0].a === s.a && ms[0].len === s.e - s.a;
++  return one ? partUniq(markLabel(ms[0]), -1) : partSuggest();
++}
++const konuxNameOf = (s, pick) => { const v = String(KX.name || '').trim(); return (v || konuxSug(s, pick)).slice(0, pick === 'part' ? 12 : 16); };
++// Mini-Zeitleiste: je Spur eine Zeile, je Takt ein Feld in der Spurfarbe (wie im Song-Fenster: Start kräftig, weiter blasser)
++function konuxMini(a, e) {
++  const song = S.song, rows = (SV.rows && SV.rows.length ? SV.rows : S.tracks.map((_, i) => i)).filter(i => i >= 0 && S.tracks[i]);
++  const n = Math.max(1, e - a), cw = 12, rh = 6, H = Math.max(1, rows.length) * rh;
++  let h = '';
++  for (let b = 1; b < n; b++) h += `<rect x="${b * cw - .5}" y="0" width="1" height="${H}" fill="rgba(255,255,255,.07)"/>`;
++  rows.forEach((i, r) => {
++    const lane = song.lanes[i] || [], col = (SV.cols && SV.cols[i]) || '#8b919c'; let s = -1;
++    for (const x of lane) { if (x.bar >= a) break; s = x.slot; }
++    for (let b = a; b < e; b++) {
++      const ev = lane.find(x => x.bar === b); if (ev) s = ev.slot;
++      if (s >= 0) h += `<rect x="${(b - a) * cw + 1}" y="${r * rh + 1}" width="${cw - 2}" height="${rh - 2}" rx="1" fill="${col}" opacity="${ev ? .95 : .5}"/>`;
++    }
++  });
++  return `<svg class="kx-tl" viewBox="0 0 ${n * cw} ${H}" preserveAspectRatio="none" aria-hidden="true">${h}</svg>`;
++}
++const konuxSay = (s, pick, nm) => pick === 'part' ? `Alles in ${konuxRng(s.a, s.e)} wird Teil „${nm}“ in der Teile-Leiste.`
++  : pick === 'blk' ? `${konuxRng(s.a, s.e)} bleibt, wie er ist – gruppiert als „${nm}“.`
++  : pick === 'back' ? 'Holt den Zustand von vor dem Teil-Machen zurück.'
++  : pick === 'name' ? `Nur der Name ändert sich: „${nm}“.` : '';
++const konuxMain = (pick, nm, s) => pick === 'part' ? `Teil „${nm}“ anlegen` : pick === 'blk' ? `Block „${nm}“ anlegen` : pick === 'back' ? 'Ursprung zurückholen' : pick === 'name' ? (s && nm === s.label ? 'Neuen Namen wählen' : `Umbenennen in „${nm}“`) : 'Erst eine Karte wählen';
++const konuxCan = (s, pick, nm) => !!pick && !(pick === 'name' && (!nm || nm === s.label));
++// API konuxOpen(src, o): src = {kind: 'range', a, e} │ {kind: 'mark', id} │ {kind: 'block', id}; o.pick = Karte vorwählen, o.sug = Namens-Vorschlag
++function konuxOpen(src, o) {
++  o = o || {}; const s = konuxSrc(src); if (!s || svRecBusy()) return false;
++  if (UI.pop) closePop();
++  SV.copy = null; svHintFree(); folEdit('song'); haptic('tick'); UI.dirty.song = true;
++  KX.src = {kind: s.kind, id: s.id, a: s.a, e: s.e}; KX.name = null; KX.sug = o.sug || null;
++  const cards = konuxCards(s), want = cards.find(c => c.k === o.pick && !c.dis) || (o.pick === 'name' && s.kind === 'block' ? {k: 'name'} : null);
++  KX.pick = want ? want.k : (cards.find(c => !c.dis) || {}).k || null;
++  const pname = s.kind === 'block' ? 'block' : s.kind === 'mark' ? 'mark' : 'konux';     // block / mark: die Song-Fenster-Regeln dieser Blätter gelten
++  openPop(null, p => {
++    p.classList.add('msheet', 'konux'); guardTouch(p); KX.el = p;
++    konuxPaint(p);
++    onTap(p, b => konuxTap(b), 'button[data-kx]');
++  }, {name: pname, onClose: () => { EL.popLayer.classList.remove('pass'); KX.el = null; KX.pv = null; if (s.kind === 'block') SV.blk = null; if (s.kind === 'mark' && !SV.copy) SV.mark = null; UI.dirty.song = true; }});
++  if (s.kind === 'block') SV.blk = s.id; if (s.kind === 'mark') SV.mark = s.id;
++  EL.popLayer.classList.add('pass');
++  popDock(UI.pop && UI.pop.el); konuxPv();
++  return true;
++}
++function konuxPaint(p) {
++  const s = konuxSrc(KX.src); if (!s) { closePop(); return; }
++  const cards = konuxCards(s); if (KX.pick && KX.pick !== 'name' && !cards.some(c => c.k === KX.pick && !c.dis)) KX.pick = (cards.find(c => !c.dis) || {}).k || null;
++  const pick = KX.pick, nm = konuxNameOf(s, pick), n = s.e - s.a, blk = s.kind === 'block';
++  const srcTag = `<span>${blk ? '<i class="kx-sq"></i>' : ''}${s.kind === 'range' ? 'Auswahl' : esc(s.label)}</span>`;
++  const C = c => `<button class="rb kx-c kx-${c.k}${pick === c.k ? ' on' : ''}" data-kx="card" data-k="${c.k}" aria-pressed="${pick === c.k}"${c.dis ? ' disabled' : ''} aria-label="${esc(c.t + ': ' + c.x)}"><span class="kx-i">${KXI[c.k]}</span><span class="kx-t"><b>${c.t}</b><small>${esc(c.x)}</small></span></button>`;
++  const T = (k, lab, aria) => `<button class="rb kx-w${pick === k ? ' on' : ''}" data-kx="${k}" aria-label="${esc(aria)}">${KXI[k]}<span>${lab}</span></button>`;
++  const names = pick === 'part' ? PART_NAMES : pick === 'blk' ? [konBlkName(S.song)].concat(PART_NAMES) : pick === 'name' ? PART_NAMES : [];
++  const nmRow = pick && pick !== 'back' ? `<div class="kx-nm"><div class="cp-sc kx-sc">` + names.map(x => `<button class="rb cp-c${String(KX.name || '') === x ? ' on' : ''}" data-kx="chip" data-n="${esc(x)}">${esc(x)}</button>`).join('') + `</div>` +
++    `<input class="mn-in kx-in" type="text" maxlength="${pick === 'part' ? 12 : 16}" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${esc(konuxSug(s, pick))}" value="${esc(KX.name != null && !names.includes(KX.name) ? KX.name : pick === 'name' && KX.name == null ? s.label : '')}" aria-label="${pick === 'name' ? 'Neuer Name' : 'Eigener Name'}"></div>` : '';   // KONUX: Umbenennen – der jetzige Name steht zum Ändern im Feld
++  p.innerHTML = `<div class="ms-h kx-h"><b>Was willst du mit <em>${konuxRng(s.a, s.e)}</em> machen?</b><button class="rb ms-x" data-kx="x" aria-label="Schließen">✕</button></div>` +
++    `<div class="kx-body"><div class="kx-l"><div class="kx-mini">${konuxMini(s.a, s.e)}<span class="kx-src">${srcTag}<small>${n} ${n === 1 ? 'Takt' : 'Takte'}</small></span></div>` +
++    `<div class="kx-cs n${cards.length}">` + cards.map(C).join('') + `</div>` +
++    (blk ? `<div class="kx-ws">` + T('name', 'Umbenennen', 'Block umbenennen') + T('in', 'Hineingehen', 'Hineingehen: Schleife auf dem Block (auch Doppeltipp)') + T('dis', 'Auflösen', 'Block auflösen – der Inhalt bleibt') + `</div><div class="kx-tip">Halten = verschieben · über ⧉ ziehen = Kopie · Doppeltipp = hineingehen</div>` : '') +
++    `</div><div class="kx-r">` + nmRow + `<div class="kx-say">${esc(konuxSay(s, pick, nm))}</div>` +
++    `<button class="rb kx-go kx-${pick || 'none'}" data-kx="go"${konuxCan(s, pick, nm) ? '' : ' disabled'}>${esc(konuxMain(pick, nm, s))}</button></div></div>`;
++  const inp = p.querySelector('.kx-in');
++  if (inp) {
++    on(inp, 'input', () => { KX.name = inp.value; konuxSync(p); });
++    on(inp, 'keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); KX.name = inp.value; konuxGo(); } });
++    inp.addEventListener('pointerdown', ev => ev.stopPropagation()); inp.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
++    on(inp, 'focus', () => popDock(p, true)); on(inp, 'blur', () => setTimeout(() => popDock(p), 50));
++  }
++}
++// nach einer Eingabe: nur Hauptknopf, Satz, Chips und Vorschau (das Eingabefeld behält den Fokus)
++function konuxSync(p) {
++  const s = konuxSrc(KX.src); if (!s || !p) return;
++  const nm = konuxNameOf(s, KX.pick), go = p.querySelector('.kx-go'), say = p.querySelector('.kx-say');
++  if (go) { go.textContent = konuxMain(KX.pick, nm, s); go.disabled = !konuxCan(s, KX.pick, nm); } if (say) say.textContent = konuxSay(s, KX.pick, nm);
++  for (const c of p.querySelectorAll('.cp-c')) c.classList.toggle('on', c.dataset.n === KX.name);
++  konuxPv();
++}
++function konuxTap(b) {
++  const a = b.dataset.kx, s = konuxSrc(KX.src), p = KX.el; if (!s) { closePop(); return; }
++  if (a === 'x') { closePop(); return; }
++  if (a === 'card' || a === 'name') { const k = a === 'card' ? b.dataset.k : 'name'; if (KX.pick !== k) { KX.pick = k; KX.name = null; } haptic('tick'); konuxPaint(p); popDock(p); konuxPv(); return; }
++  if (a === 'chip') { KX.name = b.dataset.n; haptic('tick'); const i = p.querySelector('.kx-in'); if (i) i.value = ''; konuxSync(p); return; }
++  if (a === 'go') { const i = p.querySelector('.kx-in'); if (i && i.value.trim()) KX.name = i.value; konuxGo(); return; }
++  if (a === 'in') { konuxFx('in', s, null); konBlkEnter(s.id); return; }
++  if (a === 'dis') { closePop(); const nm = s.label; if (konBlkAction(s.id, 'dissolve') === true) { haptic('snap'); toast(nm + ' aufgelöst · der Inhalt bleibt', songUndoAct()); svButtons(); } }
++}
++// die Vorschau im Song darüber (svDraw → konuxDrawPv): Rahmen über dem Bereich, Schild mit dem, was entsteht
++function konuxPv() {
++  const s = konuxSrc(KX.src); KX.pv = null;
++  if (s && KX.pick && KX.el) {
++    const nm = konuxNameOf(s, KX.pick); let col = '#9aa6bb', lab = nm;
++    if (KX.pick === 'part') { partsEnsure(); const k = S.parts.findIndex(x => !x); col = konuxCss(partColorVar(PART_COLORS[(k < 0 ? 0 : k) % PART_COLORS.length])); lab = 'Teil ' + nm; }
++    else if (KX.pick === 'back') { col = konuxCss('var(--play)'); lab = 'Ursprung zurück'; }
++    KX.pv = {k: KX.pick, a: s.a, e: s.e, col, lab};
++  }
++  UI.dirty.song = true;
++}
++function konuxCss(v) { const m = /^var\((--[\w-]+)\)$/.exec(v); return m ? (getComputedStyle(document.documentElement).getPropertyValue(m[1]).trim() || '#ffb22e') : v; }
++function konuxDrawPv(g, X, W, H, ru) {
++  const v = KX.pv; if (!v) return;
++  const x0 = X(v.a) + 1.5, x1 = X(v.e) - 1.5; if (x1 < 0 || x0 > W) return;
++  const top = (SV.blS | 0) + 1.5, rr = (x, y, w, h, r) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); };
++  g.save();
++  g.globalAlpha = .12; g.fillStyle = v.col; g.fillRect(x0, ru, x1 - x0, H - ru); g.globalAlpha = 1;
++  g.setLineDash(v.k === 'back' ? [3, 3] : [6, 4]); g.lineWidth = 2; g.strokeStyle = v.col; rr(x0, top, x1 - x0, H - top - 1.5, 6); g.stroke(); g.setLineDash([]);
++  // das Schild oben links im Rahmen (Block: ein kleines gezeichnetes Quadrat davor)
++  g.font = '800 10px ' + (getComputedStyle(document.body).getPropertyValue('--font-ui') || 'sans-serif'); g.textBaseline = 'middle'; g.textAlign = 'left';
++  const sq = v.k === 'blk' || v.k === 'name' ? 12 : 0, tx = v.lab.toUpperCase(), tw = Math.min(g.measureText(tx).width + 12 + sq, Math.max(24, x1 - x0 - 6)), lx = Math.max(x0 + 3, 3), ly = ru + 4;
++  rr(lx, ly, tw, 16, 4); g.fillStyle = v.col; g.fill();
++  g.save(); g.beginPath(); g.rect(lx, ly, tw, 16); g.clip();
++  if (sq) { g.strokeStyle = '#0b0c0f'; g.lineWidth = 1.4; g.strokeRect(lx + 5, ly + 4, 8, 8); }
++  g.fillStyle = '#0b0c0f'; g.fillText(tx, lx + 6 + sq, ly + 8.5); g.restore();
++  g.restore();
++}
++// API konuxGo(): der Hauptknopf — führt die gewählte Karte aus (genau ein Undo-Schritt), dann Rückmeldung (Animation, Haptik, Hinweis)
++function konuxGo() {
++  const s = konuxSrc(KX.src), pick = KX.pick; if (!s || !pick) return false;
++  if (pick !== 'name' && !konuxCards(s).some(c => c.k === pick && !c.dis)) return false;
++  if (!konuxCan(s, pick, konuxNameOf(s, pick))) return false;
++  const nm = konuxNameOf(s, pick), rng = konuxRng(s.a, s.e), geo = konuxGeo(s.a, s.e);
++  closePop();
++  let res = false;
++  if (pick === 'part') {
++    res = konDo(s.a, s.e, nm);
++    if (res) { SV.sel = null; SV.mark = null; toast('Neuer Teil ' + res.name + ' · ' + rng, {label: 'Rückgängig', fn: () => undo()}); }
++  } else if (pick === 'blk') {
++    res = konBlkMake(s.a, s.e, nm);
++    if (!res) toast('Dort liegt schon ein Block'); else { SV.sel = null; SV.blk = null; toast(res.name + ' · ' + rng, songUndoAct()); }
++  } else if (pick === 'back') {
++    const u0 = UNDO[UNDO.length - 1]; let n = 0;
++    for (const id of konuxBacks(s)) if (konRestore(id)) n++;
++    if (n > 1) undoMergeSince(u0, 'Zurückgeholt: ' + s.label);
++    if (n) { res = {n}; toast('Ursprung zurückgeholt · ' + s.label, songUndoAct()); }
++  } else if (pick === 'name') {
++    if (konBlkAction(s.id, 'rename', nm) === true) { res = {id: s.id, name: nm}; toast('Block heißt jetzt ' + nm, songUndoAct()); konPathSync(); }
++  }
++  svButtons(); UI.dirty.song = true;
++  if (res) { haptic('snap'); konuxFx(pick, s, res, geo); }
++  return res;
++}
++// der Bereich auf dem Bildschirm (im Song-Fenster sichtbar beschnitten)
++function konuxGeo(a, e) {
++  if (!SV.cv || !UI.songView) return null;
++  const r = SV.cv.getBoundingClientRect(); if (!r.width) return null;
++  const l = Math.max(r.left, r.left + a * SV.cellW - SV.x), rt = Math.min(r.right, r.left + e * SV.cellW - SV.x);
++  return rt - l < 4 ? null : {l, t: r.top, w: rt - l, h: r.height, ru: SV.rulerH, bl: SV.blS | 0};
++}
++// Rückmeldung ≤ 240 ms, nur transform / opacity (Compositor): Teil → die Kachel fliegt in die Teile-Leiste (sichtbar: dort hinein;
++// sonst in die neue Marke im Lineal); Block → der Rahmen rastet ein; Zurückholen / Umbenennen → kurzer Rahmen
++function konuxFx(kind, s, res, geo) {
++  geo = geo || konuxGeo(s.a, s.e); if (!geo || !document.body.animate) return;
++  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
++  const box = (cls, l, t, w, h, css) => { const d = el('div', 'kx-fx ' + cls); d.style.cssText = `left:${l}px;top:${t}px;width:${w}px;height:${h}px;` + (css || ''); document.body.appendChild(d); return d; };
++  const end = (d, a) => { KX.fx++; a.onfinish = a.oncancel = () => { d.remove(); KX.fx--; }; };
++  if (kind === 'part' && res) {
++    const col = konuxCss(partColorVar(PART_COLORS[res.part % PART_COLORS.length]));
++    const d = box('kx-fly', geo.l, geo.t + geo.ru, geo.w, geo.h - geo.ru, `--kx:${col}`);
++    const key = (PB.keys || []).find(k => +k.dataset.i === res.part && k.offsetParent), kr = key && key.getBoundingClientRect();
++    const T = kr && kr.width && kr.bottom > 0 && kr.top < window.innerHeight ? kr : {left: geo.l, top: geo.t + geo.bl, width: geo.w, height: Math.max(12, geo.ru - geo.bl)};
++    const sx = T.width / geo.w, sy = T.height / (geo.h - geo.ru), dx = T.left - geo.l, dy = T.top - (geo.t + geo.ru);
++    end(d, d.animate([{transform: 'translate(0,0) scale(1,1)', opacity: .95}, {transform: `translate(${dx * .55}px,${dy * .55}px) scale(${.5 + sx * .5},${.5 + sy * .5})`, opacity: .9, offset: .55}, {transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})`, opacity: 0}], {duration: 240, easing: 'cubic-bezier(.3,.7,.2,1)'}));
++    return;
++  }
++  const col = kind === 'back' ? konuxCss('var(--play)') : kind === 'in' ? '#e6e9ef' : '#c3cad6';
++  const d = box('kx-frame', geo.l + 1, geo.t + 1, geo.w - 2, geo.h - 2, `--kx:${col}`);
++  end(d, d.animate([{transform: 'scale(1.04)', opacity: 0}, {transform: 'scale(1)', opacity: 1, offset: .45}, {transform: 'scale(1)', opacity: 0}], {duration: 240, easing: 'ease-out'}));
++}
++function konuxInfo() {
++  const s = KX.el && KX.el.isConnected ? konuxSrc(KX.src) : null; if (!s) return {open: false};
++  const go = KX.el.querySelector('.kx-go'), r = KX.el.getBoundingClientRect();
++  return {open: true, pop: UI.pop && UI.pop.name, src: Object.assign({}, KX.src), pick: KX.pick, name: konuxNameOf(s, KX.pick), sug: konuxSug(s, KX.pick),
++    cards: konuxCards(s).map(c => ({k: c.k, dis: !!c.dis, t: c.t, x: c.x})), main: go ? go.textContent : null, say: (KX.el.querySelector('.kx-say') || {}).textContent || '',
++    pv: KX.pv ? Object.assign({}, KX.pv) : null, rect: {x: r.left, y: r.top, w: r.width, h: r.height}, fx: KX.fx};
++}
++const KONUX_API = {
++  konuxOpen: (kind, x, y, o) => konuxOpen(kind === 'range' ? {kind, a: x, e: (y == null ? x : y) + 1} : {kind, id: x}, kind === 'range' ? o : y),   // range: b inclusive (wie songRange)
++  konuxInfo: () => konuxInfo(), konuxPick: k => { const b = KX.el && KX.el.querySelector(k === 'name' ? 'button[data-kx="name"]' : `button[data-kx="card"][data-k="${k}"]`); if (!b || b.disabled) return false; konuxTap(b); return KX.pick === k; },
++  konuxName: n => { if (!KX.el) return false; KX.name = n == null ? null : String(n); const i = KX.el.querySelector('.kx-in'); if (i) i.value = KX.name && !(KX.el.querySelector(`.cp-c[data-n="${CSS.escape(KX.name)}"]`)) ? KX.name : ''; konuxSync(KX.el); return true; },
++  konuxGo: () => konuxGo(), konuxClose: () => { if (KX.el) closePop(); return true; },
++};
++const konuxRangeItem = () => '<button class="rb kx-entry" data-a="konux" aria-label="Zu einem Teil oder Block machen">' + KXI.ent + 'Zu Teil / Block …</button>';
++/* /KONUX */
+ /* S0/S1/S2 Nachprüfung (QA-Befunde D1–D7) */
+ // D3 marksCut: a mark trimmed at its front / split keeps its content; mark.off (relative to the mark start) is moved along
+ function s0OffShift(m, d) {
+@@ -58161,6 +58403,7 @@
+ Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
+ Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
+ Object.assign(SYNQUENZER, KON_API);               // KON: Block & Konsolidieren
++Object.assign(SYNQUENZER, KONUX_API);             // KONUX: das geführte Blatt (Bereich, Marke, Block)
+ Object.assign(SYNQUENZER, S012_API);              // S0/S1/S2: Teil bearbeiten, überarbeiten, zusammenfassen
+ Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
+ Object.assign(SYNQUENZER, G9_API);                // G9: Songtext-Bedienung (Text-Modus)
