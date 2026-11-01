@@ -1,109 +1,16 @@
 {
- "G6P-20": {
-  "pass": true,
-  "rows": [
-   {
-    "s": "80",
-    "below": 8,
-    "d": 7.96
-   },
-   {
-    "s": "pop",
-    "below": 9,
-    "d": 8.98
-   },
-   {
-    "s": "gospel",
-    "below": 6,
-    "d": 6
-   },
-   {
-    "s": "barber",
-    "below": 4,
-    "d": 3.97
-   },
-   {
-    "s": "rock",
-    "below": 5,
-    "d": 5.03
-   },
-   {
-    "s": "ballade",
-    "below": 10,
-    "d": 9.97
-   },
-   {
-    "s": "disco",
-    "below": 7,
-    "d": 7.01
-   },
-   {
-    "s": "wave",
-    "below": 9,
-    "d": 8.96
-   },
-   {
-    "s": "bg",
-    "below": 9,
-    "d": 8.96
-   }
-  ],
-  "hallX2": 8.96
- },
- "G6P-21": {
-  "pass": true,
-  "below12": 11.96,
-  "terzChorTotal": 0,
-  "terzRel": 3,
-  "terzRelSoll": 3,
-  "lead6": -6,
-  "chor6": -6,
-  "mute": {
-   "chor": -240,
-   "hall": -240
-  }
- },
- "G6P-22": {
-  "pass": true,
-  "maxErr": 2.384185793236071e-8,
-  "n": 44,
-  "bgShift05": [
-   0.3499999940395355,
-   0.6499999761581421
-  ]
- },
- "G6P-23": {
-  "pass": true,
-  "maxErrMs": 0,
-  "n": 44
- },
- "G6P-24": {
-  "pass": false,
-  "soloLead": -19.94,
-  "soloVg": "0:0 0:0 1:0.89 1:0.89 2:0 2:0",
-  "muteC1": true,
-  "chorAusPeak": 0,
-  "sheetSolo": [
-   "c1",
-   null
-  ],
-  "guideDb": 6.02,
-  "guideOthers": true,
-  "back": true,
-  "undoLanes": "{\"lanes\":[{\"id\":\"c1\",\"role\":\"uni\",\"name\":\"Chor c1\",\"mute\":true}]}"
- },
  "G6P-25": {
-  "pass": false,
-  "hallOn": -39,
+  "pass": true,
+  "hallOn": -35.96,
   "rev0": -300,
   "preSec": 0.0625,
   "impMs": 62.5,
-  "chorAusHall": -109.98,
+  "chorAusHall": -300,
   "fxBusGleich": true
  },
  "G6P-26": {
-  "pass": false,
-  "hpAtF": 0.707107154609147,
+  "pass": true,
+  "hpAtF": -3.0103001052924827,
   "midAtF": -3.0000002493010487,
   "airAt10k": 1.4999997446509226,
   "airAt16k": 2.886748672371729,
@@ -114,67 +21,12 @@
    "air": 3
   },
   "tot": [
-   -0.022702844705425676,
-   -0.3987271046148424,
-   -2.0748347163323166,
-   1.4976091396179014,
-   2.886280105113061
+   -3.7401101046070555,
+   -0.5630353427761402,
+   -3.174404713277426,
+   1.4964319255571887,
+   2.8860492053446993
   ]
- },
- "G6P-27": {
-  "pass": false,
-  "liveLc": -26.73,
-  "offLc": -22.84,
-  "liveLl": -19.94,
-  "offLl": -16.84,
-  "early": {
-   "zeros": 62,
-   "first": 18,
-   "ramp": {
-    "g0": 0,
-    "when": 131.96026984126982,
-    "now": 131.9328798185941
-   }
-  }
- },
- "G6P-28": {
-  "pass": true,
-  "n0": -19,
-  "max": 51,
-  "after": -19,
-  "longTasks": [],
-  "live": 0,
-  "dauerS": 30,
-  "hinweis": "gekürzt auf 30 s (Spec: 3 min)"
- },
- "G6P-K1": {
-  "pass": true,
-  "an": {
-   "lead": -6,
-   "chor": -6
-  },
-  "aus": {
-   "lead": -6.01,
-   "chor": -0.01
-  },
-  "wiederAn": {
-   "abstandVorher": 5.95,
-   "abstandNachher": 5.95,
-   "chorSprung": 0,
-   "leadPlus6": 6,
-   "chorPlus6": 6
-  },
-  "grp": {
-   "below": 2,
-   "hp": 180,
-   "mid": -3,
-   "midF": 400,
-   "air": 3,
-   "sib": -12,
-   "rev": 0.75,
-   "pre": "1/32",
-   "dly": 0.12
-  }
  },
  "v1-Smoke": {
   "pass": false,
@@ -186,7 +38,7 @@
    "grp": false,
    "v2": false
   },
-  "nodes": -19
+  "nodes": 8
  },
  "Fehler": {
   "pass": true,

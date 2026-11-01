@@ -67,13 +67,13 @@ if (want('25')) {
   const fx0 = await ev(() => JSON.stringify(S.fxBus)); await putStyle(p, '80'); const fx1 = await ev(() => JSON.stringify(S.fxBus));
   const on = await playTap(p);
   await ev(() => SYNQUENZER.g6pGrp(null, {rev: 0})); const r0 = await playTap(p); await ev(() => SYNQUENZER.g6pGrp(null, {rev: .75}));
-  const pre = await ev(async () => { const A = SYNQUENZER; A.launchScene(0); A.play(); await new Promise(q => setTimeout(q, 400)); const r = TK.src.find(q => !q.dead && q.chG), v = r.chG.pre.delayTime.value; A.stop(); return v; });
+  const pre = await ev(async () => { const A = SYNQUENZER; A.launchScene(0); A.play(); await new Promise(q => setTimeout(q, 400)); const r = TK.src.find(q => !q.dead && q.chG), v = r.chG.pre.delayTime.value; A.stop(); await new Promise(q => setTimeout(q, 300)); return v; });   // Pause: Ausblende des alten Stücks ist vorbei
   // Impuls durch die Gruppe (OfflineAudioContext, dieselbe Bau-Funktion): Abstand guide → Hall-Send
   const imp = await ev(async () => { const a = tkRef({t: stimmeT(), s: 0}).a, sr = 48000, oc = new OfflineAudioContext(2, sr, sr), sumL = oc.createGain(), hall = oc.createGain(), m = oc.createChannelMerger(2);
     const G = g6pcGroup(oc, a, sumL, hall, null); G.lvl.gain.value = 1; G.hp.frequency.value = 10; G.mid.gain.value = 0; G.air.gain.value = 0; G.rev.gain.value = 1;
     sumL.connect(m, 0, 0); hall.connect(m, 0, 1); m.connect(oc.destination); const b = oc.createBuffer(1, 64, sr); b.getChannelData(0)[0] = 1; const s = oc.createBufferSource(); s.buffer = b; s.connect(G.hp); s.start(0.1);
     const y = await oc.startRendering(), pk = x => { let k = 0, m2 = 0; for (let i = 0; i < x.length; i++) if (Math.abs(x[i]) > m2) { m2 = Math.abs(x[i]); k = i; } return k; };
-    return (pk(y.getChannelData(1)) - pk(y.getChannelData(0))) / sr * 1000; });
+    g6pcGroupDrop(G); return (pk(y.getChannelData(1)) - pk(y.getChannelData(0))) / sr * 1000; });
   await ev(() => SYNQUENZER.g6pLaneMute(null, true)); const off = await playTap(p); await ev(() => SYNQUENZER.g6pLaneMute(null, false));
   const d = {hallOn: r2(on.Hc), rev0: r2(r0.Hc), preSec: pre, impMs: r2(imp), chorAusHall: r2(off.Hc), fxBusGleich: fx0 === fx1};
   ok('G6P-25', r0.Hc <= -120 && Math.abs(pre - .0625) < 1e-6 && Math.abs(imp - 62.5) <= 1 && off.Hc <= -120 && d.fxBusGleich && on.Hc > -80, d);

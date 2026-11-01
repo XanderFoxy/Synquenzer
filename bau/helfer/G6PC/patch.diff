@@ -1,5 +1,5 @@
 --- ../../snapshots/R-4252.html	2026-11-01 02:03:27.517571390 +0000
-+++ index.html	2026-11-01 02:19:42.881588525 +0000
++++ index.html	2026-11-01 02:25:01.313594120 +0000
 @@ -17994,6 +17994,7 @@
  function applyTrackParams(i, immediate) {
    const A = AU.tracks[i], c = AU.ctx; if (!A || !c) return;
@@ -259,7 +259,7 @@
 +/* ---------- Knoten ---------- */
 +function g6pcGroup(c, a, dest, hall, echo, meas) {
 +  const G = {c, hp: c.createBiquadFilter(), mid: c.createBiquadFilter(), air: c.createBiquadFilter(), lvl: c.createGain(), guide: c.createGain(), pre: c.createDelay(1), rev: c.createGain(), dly: c.createGain(), dest};
-+  G.hp.type = 'highpass'; G.mid.type = 'peaking'; G.air.type = 'highshelf'; G.hp.Q.value = -3.0103;   // Web Audio: Q des Hochpasses in dB → Butterworth (−3 dB bei hp, 12 dB/Okt.) G.mid.Q.value = 1; G.air.frequency.value = 10000;
++  G.hp.type = 'highpass'; G.mid.type = 'peaking'; G.air.type = 'highshelf'; G.hp.Q.value = -3.0103; G.mid.Q.value = 1; G.air.frequency.value = 10000;   // Web Audio: Q des Hochpasses in dB → −3,0103 = Butterworth (−3 dB bei hp, 12 dB/Okt.)
 +  G.hp.connect(G.mid); G.mid.connect(G.air); G.air.connect(G.lvl); G.lvl.connect(G.guide); G.guide.connect(dest);
 +  if (!meas) { G.guide.connect(G.pre); G.pre.connect(G.rev); if (hall) G.rev.connect(hall); G.guide.connect(G.dly); if (echo) G.dly.connect(echo); G6PC.nodes += 8; }
 +  G.lvl.gain.value = meas ? 1 : 0;
