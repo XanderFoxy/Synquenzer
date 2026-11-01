@@ -1,0 +1,720 @@
+--- bau/snapshots/R-4261.html	2026-11-01 03:52:30.578367178 +0000
++++ bau/helfer/KON/index.html	2026-11-01 04:19:54.318329582 +0000
+@@ -488,6 +488,17 @@
+ .sv-lr{flex:0 0 var(--svr,20px);display:flex;align-items:center;padding-left:4px}
+ .sv-lr .lbl{font-size:8px}
+ .sv-lr{position:relative}
++/* KON: Block-Zeile (Etikett „Block“ über „Takt“), Pfad „← Song › Block A“ (Treffer 64 × 44), Block-Blatt */
++.sv-lr .kon-bl{position:absolute;left:4px;top:0;display:flex;align-items:center;font-size:8px;color:var(--text-dim);pointer-events:none}
++.sv-lr .kon-bl[hidden]{display:none}
++.sv-lr .kon-path{position:absolute;left:0;right:2px;top:0;bottom:0;z-index:3;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-width:0;padding:0 4px;border-radius:4px;background:#2a2f39;border:1px solid #9aa6bb;color:#e6e9ef;font:700 9px/1 var(--font-ui);text-align:left;overflow:visible}
++.sv-lr .kon-path[hidden]{display:none}
++.sv-lr .kon-path::after{content:'';position:absolute;left:0;right:0;top:-4px;bottom:-12px}
++.sv-lr .kon-path .kp-a{font-size:8px;color:#c3cad6;white-space:nowrap}
++.sv-lr .kon-path .kp-b{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
++.msheet.konsheet .ms-h b{color:#e6e9ef}
++.msheet .kon-tip{font:600 10px/1.25 var(--font-ui);color:var(--text-dim);padding:6px 2px 2px}
++.msheet .kon-r{margin-top:4px}
+ .sv-tbb{position:absolute;inset:0;width:100%;height:100%;padding:0 4px;font:700 9px/1 var(--font-num);text-align:left;justify-content:flex-start;border-radius:3px;color:var(--text)}   /* V2a: Spurbank of the song view (V2e moves it into the transport) */
+ .sv-l.blank{opacity:0}
+ .sv-l{flex:0 0 var(--svh,30px);display:flex;align-items:center;gap:5px;padding:0 4px;font:700 10px/1 var(--font-ui);letter-spacing:.05em;color:var(--text-dim);min-width:0;overflow:hidden;white-space:nowrap;border-top:1px solid rgba(255,255,255,.05)}
+@@ -18853,6 +18864,7 @@
+   if (o.src === 'plan') v4.src = 'plan';
+   const vox = tkNormVox(o.vox); if (vox) v4.vox = vox;                                              // VS3: Punch-Audio der STIMME-Spur
+   const vdir = vvDirNorm(o.video, bars, nt); if (vdir) v4.video = vdir;                                 // VV2: Video-Regie im Song
++  konSongNorm(o, v4, bars, pk, nt);                                                                     // KON: Blöcke, Ursprung (konsolidiert)
+   return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, mel}, v4);
+ }
+ function ownNorm(c, pk, nt) {
+@@ -24402,8 +24414,9 @@
+   if (!r.width || !r.height) return;
+   SV.w = r.width; SV.h = r.height; SV.dpr = dpr;
+   SV.vvS = S.song && S.song.video ? 8 : 0; SV.rulerH = (r.height < 240 ? 16 : 20) + SV.vvS;   // VV2: + the stripe of the Video-Regie (only with entries)
++  SV.blS = konHasBlocks() ? (r.height < 240 ? 12 : 14) : 0; SV.rulerH += SV.blS;               // KON: + the Block-Zeile above the ruler (only with blocks)
+   // V2a: all tracks while each row gets ≥ 26 px (song-delta 6.5), else pages of the synth tracks (≥ 4 a page) + DRUMS
+-  const ord = trackOrder(), synth = ord.filter(i => !isDrum(i)), avail = r.height - SV.rulerH + SV.vvS;
++  const ord = trackOrder(), synth = ord.filter(i => !isDrum(i)), avail = r.height - SV.rulerH + SV.vvS + SV.blS;
+   if (avail / (ord.length + 2) >= 26 - .5) { SV.rows = ord.slice(); SV.pages = null; }
+   else {
+     const per = Math.max(4, Math.floor(avail / 26) - 3), pages = []; for (let k = 0; k < synth.length; k += per) pages.push(synth.slice(k, k + per));
+@@ -24423,7 +24436,7 @@
+   SV.labs.style.setProperty('--svr', SV.rulerH + 'px'); SV.labs.style.setProperty('--svh', SV.rowH + 'px');
+   const cs = getComputedStyle(document.documentElement);
+   SV.cols = [1, 2, 3, 4, 5, 6, 7, 8].map(k => cs.getPropertyValue('--t' + k).trim() || '#888');
+-  SV.sig = ''; UI.dirty.song = true;
++  SV.sig = ''; UI.dirty.song = true; konPathSync();
+ }
+ const svBars = () => (S.song ? Math.max(S.song.bars, 1) : 0);
+ // V2e (Xander 24.10. a): the view rolls 4 bars past the end, so a part can be set behind empty bars there
+@@ -24865,7 +24878,7 @@
+   memBound(beat, 'part', i);
+   const src = rowOf(p.id) ? p.id : null;
+   if (src || R.row || R.rowPend) R.rowPend = {src, beat};
+-  xpSet(beat, p.xp && p.xp.semi ? p.xp.semi : 0);
++  xpSet(beat, p.xp && p.xp.semi ? p.xp.semi : p.sxp ? p.sxp[0].semi : 0);   // KON: Part.sxp (Transposition aus dem Song)
+   R.partPend = {i, beat};
+   R.lastScene = null;
+   histCtx('part', {p: i}, 'Teil ' + p.name);  // VC2a
+@@ -25171,6 +25184,7 @@
+   for (const v of song.xp || []) if (v.beat >= n * 4 - 1e-6) v.beat = +(v.beat + d * 4).toFixed(4);
+   for (const k in song.mel) for (const nt of song.mel[k].notes) if (nt.t >= n * 4 - .25 - 1e-9) nt.t = +(nt.t + d * 4).toFixed(6);
+   for (const m of song.marks) if (m.a >= n) m.a += d;
++  if (song.blocks) for (const k of song.blocks) if (k.a >= n) k.a += d;   // KON
+   if (song.vox) tkVoxShift(song, n, d);                           // VS3
+   if (song.video) vvDirShift(song, n, d);                         // VV2
+ }
+@@ -25182,6 +25196,7 @@
+   song.xp = (song.xp || []).filter(v => !(v.beat >= a * 4 - 1e-6 && v.beat < b * 4 - 1e-6));
+   if (!o.keepMel) for (const k in song.mel) song.mel[k].notes = song.mel[k].notes.filter(n => !(n.t >= a * 4 - .25 - 1e-9 && n.t < b * 4 - .25 - 1e-9));
+   if (!o.keepMarks) marksCut(song, a, b, o.split);
++  if (song.blocks && !o.keepMarks && !o.split) konBlocksCut(song, a, b);   // KON: Löschen kürzt Blöcke (Ersetzen/Leeren: sie bleiben)
+   if (song.vox && !o.keepMel) tkVoxClear(song, a, b);              // VS3
+   if (song.video && !o.keepMarks) vvDirClear(song, a, b);          // VV2
+ }
+@@ -25269,6 +25284,7 @@
+   for (const k in song.mel) { const m = song.mel[k]; m.notes.sort((a, b) => a.t - b.t); m.len = Math.max(1, song.bars); }
+   if (song.own) { const used = new Set(); for (const l of song.lanes) for (const e of l) if (e.own) used.add(e.own); for (const id of Object.keys(song.own)) if (!used.has(id)) delete song.own[id]; }
+   if (song.video) vvDirTidy(song);                                 // VV2
++  konTidy(song);                                                   // KON
+ }
+ /* ---------- V2d′ eigener Clip (song-delta 9.2, N7-R9; Daten und Wiedergabe – die Gesten kommen mit V2e′): a copy that only holds
+    at this song place (`song.own[id]`, lane entry {bar, slot (origin), own:id, ph}). A Durchlauf = one clip length of a block,
+@@ -25474,7 +25490,7 @@
+   const row = p.chords || (p.xp && p.xp.tg ? {len: L, ch: [{b: 0, tg: p.xp.tg}]} : null), carrier = [];
+   if (row && row.ch.length) { const cl = row.len * 4; for (let m = 0; m * cl < L * 4 - 1e-9; m++) for (const c of row.ch) { const b = c.b + m * cl; if (b < L * 4 - 1e-9) carrier.push({beat: b, target: c.tg ? carrierCopy(c.tg) : null}); } }
+   else carrier.push({beat: 0, target: null});
+-  return Object.assign({len: L, lanes, carrier, xp: [{beat: 0, semi: p.xp && p.xp.semi ? p.xp.semi : 0}], mel: s1ChunkMel(p, L), marks: [{a: 0, len: L, part: p.id}]}, s2ChunkExtra(p, L));   /* S1: mel, S2: own / vox */
++  return Object.assign({len: L, lanes, carrier, xp: p.sxp ? konSxpChunk(p.sxp, L) : [{beat: 0, semi: p.xp && p.xp.semi ? p.xp.semi : 0}], mel: s1ChunkMel(p, L), marks: [{a: 0, len: L, part: p.id}]}, s2ChunkExtra(p, L));   /* S1: mel, S2: own / vox */
+ }
+ function sceneChunk(s) {
+   let L = 1; const lanes = [];
+@@ -25509,6 +25525,7 @@
+   if (n >= old) { n = old; songWrite(song, n, ch, keepIds); songSetBars(song, old + L); return n; }
+   const alt = songStateAt(song, n);
+   for (const m of song.marks.slice()) if (m.a < n && n < m.a + m.len) { const rest = m.a + m.len - n; m.len = n - m.a; song.marks.push(Object.assign({}, m, {id: newMarkId(song), a: n, len: rest})); }
++  if (song.blocks) for (const k of song.blocks) if (k.a < n && n < k.a + k.len) k.len += L;   // KON: Einfügen im Block = der Block wächst
+   songShift(song, n, L);
+   songWrite(song, n, ch, keepIds);
+   songCont(song, n + L, alt);
+@@ -25620,7 +25637,7 @@
+     }
+   }
+   const got = songCut(song, m.a, m.a + m.len).carrier, want = ch.carrier;
+-  const norm = l => { const o = []; for (const c of l) { if (o.length && sameTg(o[o.length - 1].target, c.target)) continue; o.push(c); } return o; };
++  const norm = l => { const o = []; for (const c of l) { if (o.length ? sameTg(o[o.length - 1].target, c.target) : !c.target && c.beat < 1e-6) continue; o.push(c); } return o; };   // KON: ORIGINAL at beat 0 = no entry there
+   const g = norm(got), w = norm(want); if (g.length !== w.length) return true;
+   for (let k = 0; k < g.length; k++) if (Math.abs(g[k].beat - w[k].beat) > 1e-6 || !sameTg(g[k].target, w[k].target)) return true;
+   return false;
+@@ -26834,9 +26851,14 @@
+     if (gr && p.y < Math.max(34, SV.rulerH + 4)) { const da = Math.abs(p.x - gr.a), db = Math.abs(p.x - gr.b); if (Math.min(da, db) <= 18) g.grip = da <= db ? 'a' : 'b'; }
+     SV.gOn = true;
+     if (g.chip != null) { const me = g; g.lp = setTimeout(() => { if (g === me && !me.mode) { me.mode = 'lp'; songCarrierDelete(me.chip); folEdit('song'); } }, 450); }
++    // KON: holding a block 450 ms lifts it; released without moving → the Block-Blatt; moved → move / copy over ⧉ (drag engine)
++    else if (!g.grip && !SV.copy && SV.blS && p.y < SV.blS && S.song) {
++      const k = konBlkAt(Math.floor((p.x + SV.x) / SV.cellW));
++      if (k) { const me = g; g.bk = k.id; g.lp = setTimeout(() => { if (g === me && !me.mode && !R.songRec) { me.mode = 'blift'; SV.blk = k.id; haptic('pop'); UI.dirty.song = true; } }, 450); }
++    }
+     // V2e (6.2): holding a mark 450 ms lifts it (haptic „pop“, white frame); released without moving → the Marken-Blatt
+     // (V2e′ adds dragging = move / copy over ⧉)
+-    else if (!g.grip && !SV.copy && p.y < SV.rulerH && S.song) {
++    else if (!g.grip && !SV.copy && p.y < SV.rulerH && p.y >= (SV.blS | 0) && S.song) {
+       const m = svMarkAt(Math.floor((p.x + SV.x) / SV.cellW));
+       if (m && !svMarkOpen(m)) { const me = g; g.mk = m.id; g.lp = setTimeout(() => { if (g === me && !me.mode) { me.mode = 'lift'; SV.mark = m.id; haptic('pop'); UI.dirty.song = true; } }, 450); }
+     }
+@@ -26869,6 +26891,16 @@
+       }
+       return;
+     }
++    if (g.mode === 'blift') {                                          // KON: a lifted block → the drag engine
++      const dd = Math.hypot(dx, dy); if (dd > 8) g.moved = true;
++      if (dd >= DRG_GUARD && !R.songRec && S.song) {
++        const G = g, k = (S.song.blocks || []).find(x => x.id === G.bk);
++        g = null; SV.gOn = false; clearTimeout(G.lp); if (GEST.has(e.pointerId)) gestEnd(e.pointerId);
++        if (k) { const ch = songCut(S.song, k.a, k.a + k.len); drgStart({src: 'block', blk: k.id, id: e.pointerId, x: e.clientX, y: e.clientY, x0: G.x0, y0: G.y0, open: true, name: k.name, len: k.len, cells: drgCells(ch.lanes, k.len), pc: '#9aa6bb'}); }
++        else { SV.blk = null; UI.dirty.song = true; }
++      }
++      return;
++    }
+     // K2-24: a lifted cell that moves > 8 px scrolls, never an own clip
+     if (g.mode === 'clift') { if (Math.abs(dx) > 8 || Math.abs(dy) > 8) { g.mode = null; SV.cell = null; UI.dirty.song = true; } else return; }
+     if (!g.mode && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) { g.mode = Math.abs(dx) >= Math.abs(dy) ? 'scroll' : 'v'; clearTimeout(g.lp); if (g.mode === 'scroll') folHand('song'); }
+@@ -26884,7 +26916,9 @@
+     if (GEST.has(e.pointerId)) gestEnd(e.pointerId);
+     if (G.mode === 'lift' && (e.type !== 'pointerup' || G.moved)) { if (!(UI.pop && UI.pop.name === 'mark')) SV.mark = null; UI.dirty.song = true; return; }
+     if (G.mode === 'clift' && e.type !== 'pointerup') { SV.cell = null; UI.dirty.song = true; return; }
++    if (G.mode === 'blift' && (e.type !== 'pointerup' || G.moved)) { if (!(UI.pop && UI.pop.name === 'block')) SV.blk = null; UI.dirty.song = true; return; }   // KON
+     if (e.type !== 'pointerup') return;
++    if (G.mode === 'blift') { konBlkSheet(G.bk); return; }             // KON
+     if (G.mode === 'lift') { openMarkSheet(G.mk); return; }
+     if (G.mode === 'clift') { openCellSheet(G.cell.t, G.cell.bar); return; }
+     if (G.mode === 'grip') { if (G.before && songSnapshot() !== G.before) { pushSongUndo(G.before, 'Schleife ' + loopLabel(S.song)); songChanged(); folEdit('song'); } return; }
+@@ -26935,6 +26969,8 @@
+     if (m && markAction(id, 'copy', n)) { svShiftAnim(n, m.len); toast(markLabel(m) + ' kopiert → Takt ' + (n + 1), songUndoAct()); svButtons(); }
+     UI.dirty.song = true; return;
+   }
++  if (SV.blS && y < SV.blS) { konBlkTap(bar); return; }            // KON: the Block-Zeile (tap = Block-Blatt, double tap = hineingehen)
++  if (UI.pop && UI.pop.name === 'block') { closePop(); return; }      // KON: the Block-Blatt lets the song through like the Marken-Blatt
+   // the Marken-Blatt lets the song through: a tap anywhere but into the chosen mark only closes it (never edits underneath)
+   if (UI.pop && UI.pop.name === 'mark') { const m = row === -1 ? svMarkAt(bar) : null; if (!(m && !svMarkOpen(m))) { closePop(); return; } }   // another mark: its sheet
+   if (row === -1) { svRulerTapX(bar); return; }      // V0c N7-R7 + V2e marks: the ruler selects (yellow) and sets the Positionsmarke, never jumps
+@@ -27024,7 +27060,7 @@
+   const rows = ['TAKT'].concat(SV.rows.map(tag), ['AKKORDE', 'MELODIE']);
+   const r = SV.cv ? SV.cv.getBoundingClientRect() : null;
+   return {rulerH: SV.rulerH, rowH: +SV.rowH.toFixed(3), cellW: SV.cellW, x0: SV.x, rows, bank: SV.pages ? Math.min(trackBankOf(), SV.pages.length - 1) : 0, banks: SV.pages ? SV.pages.length : 1,
+-    marks: (SV.markGeo || []).map(m => Object.assign({}, m)), sel: SV.sel ? Object.assign({}, SV.sel) : null, pos: songStartBar(), mark: SV.mark || null,
++    marks: (SV.markGeo || []).map(m => Object.assign({}, m)), blocks: (SV.blkGeo || []).map(m => Object.assign({}, m)), blS: SV.blS | 0, inBlk: SV.inBlk ? SV.inBlk.id : null, blk: SV.blk || null, sel: SV.sel ? Object.assign({}, SV.sel) : null, pos: songStartBar(), mark: SV.mark || null,
+     view: UI.svGlass ? 'glass' : 'squares', tiles: SV.tileGeo ? SV.tileGeo.map(x => Object.assign({}, x)) : null,                 // V2e′
+     pv: SV.pv ? {a: SV.pv.a, len: SV.pv.len, drag: !!SV.pv.drag} : null, unfold: SV.unfold ? {a: SV.unfold.a, len: SV.unfold.len, dur: SV.unfold.dur} : null,
+     drag: DRG ? {src: DRG.src, st: DRG.st, n: DRG.n, over: DRG.over, copy: DRG.copy, why: DRG.why || null, lag: DRG.lag != null ? +DRG.lag.toFixed(1) : null, evLag: DRG.evLag != null ? +DRG.evLag.toFixed(1) : null} : null, cell: SV.cell ? Object.assign({}, SV.cell) : null,
+@@ -27088,6 +27124,7 @@
+           B('tpl', 'Teil-Vorlage ›', {dis: !isP}) + (same >= 2 ? B('all', land || narrow ? 'Auf alle übertragen' : `Auf alle ${same} „${esc(nm)}“ übertragen`, {cls: 'ms-all'}) : B('all', 'Auf alle übertragen', {dis: true})) +
+         `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + `</div></div>` + vvDirRow(m.a, m.a + m.len, 'ms-b');   // VV2: Zeile „Video“
+       s012MarkSheetPaint(p, m);   /* S0/S2 */
++      konMarkSheetPaint(p, m);    /* KON: [Als neuen Teil konsolidieren] [Zurückholen] */
+       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
+     };
+     paint(); p._paint = paint;
+@@ -27252,7 +27289,7 @@
+   drgGhostMake(d);
+   if (d.open) { d.st = 'ready'; d.ox = d.x; d.oy = d.y; }
+   else if (!d.from) { drgSpring(true); d.timer = setTimeout(() => drgOpen('auto'), DRG_OPEN_MS); }
+-  if (d.src === 'mark' && SV.btn) { const sw = SV.btn.sw; if (sw) { sw.classList.add('copyz'); sw._lbl = sw.lastChild.textContent; sw.lastChild.textContent = '⧉ KOPIE'; } }
++  if ((d.src === 'mark' || d.src === 'block') && SV.btn) { const sw = SV.btn.sw; if (sw) { sw.classList.add('copyz'); sw._lbl = sw.lastChild.textContent; sw.lastChild.textContent = '⧉ KOPIE'; } }
+   SV.gOn = !!UI.songView;
+   gestBegin(o.id, () => drgCancel());
+   d.lastF = now; d.raf = requestAnimationFrame(drgFrame);
+@@ -27295,7 +27332,7 @@
+   if ((d.st === 'lift' || d.st === 'drag') && !d.from && drgSpringHit(x, y)) drgOpen('spring');
+   if (d.st === 'guard' && Math.hypot(x - d.ox, y - d.oy) >= DRG_GUARD) d.st = 'ready';
+   if (d.st === 'ready') drgTarget(x, y);
+-  if (d.src === 'mark') drgCopyZone(x, y);
++  if (d.src === 'mark' || d.src === 'block') drgCopyZone(x, y);
+   drgGhostPos(d);
+ }
+ // ⧉ (mark source, K2-26): the field at the place of CLIPS ⇄; ≥ 250 ms over it turns the move into a copy
+@@ -27333,7 +27370,7 @@
+       if (nx !== SV.x) { SV.x = nx; FOL.page.song = null; UI.dirty.song = true; drgTarget(d.x, d.y); }
+     }
+   } else d.edgeDir = 0;
+-  if (d.src === 'mark' && !d.copy && d.copyT) drgCopyZone(d.x, d.y);
++  if ((d.src === 'mark' || d.src === 'block') && !d.copy && d.copyT) drgCopyZone(d.x, d.y);
+   d.raf = requestAnimationFrame(drgFrame);
+ }
+ function drgUp(x, y) {
+@@ -27343,6 +27380,7 @@
+     drgFinish();
+     if (d.src === 'key' && S.parts[d.i]) openPartSheet(d.i);   // (a) Teil-Blatt; (b) nothing; (c) the Marken-Blatt
+     else if (d.src === 'mark') openMarkSheet(d.mark);
++    else if (d.src === 'block') konBlkSheet(d.blk);                  // KON
+     return;
+   }
+   if (d.st === 'drag') { drgCancel(); return; }                 // not open yet: abort
+@@ -27381,6 +27419,7 @@
+   drgFinish();
+   if (!d.from && UI.songView) setSongView(false);
+   if (d.src === 'mark') SV.mark = null;
++  if (d.src === 'block') SV.blk = null;                         // KON
+   if (why === 'guard') { const msg = 'Zum Ablegen den Teil an einen Taktstrich ziehen'; if (UI.songView) lcdOrToast(msg); else toast(msg); }
+   if (g) drgFly(g, d.srcEl && d.srcEl.isConnected && d.srcEl.offsetWidth ? d.srcEl.getBoundingClientRect() : null);
+ }
+@@ -27421,6 +27460,8 @@
+     const r = drgFangDrop(n, d);
+     if (r === 'ask') { if (g) drgFly(g, null); return; }
+     ok = !!r; if (ok) done(n, d.len);
++  } else if (d.src === 'block') {
++    ok = konBlkDrop(d, n, done);                                   // KON
+   } else if (d.src === 'mark') {
+     const song = S.song, m = song && song.marks.find(x => x.id === d.mark);
+     if (m && !svRecBusy()) {
+@@ -27441,7 +27482,7 @@
+     }
+   }
+   if (!ok) {
+-    if (!d.from && UI.songView && d.src !== 'mark') setSongView(false);
++    if (!d.from && UI.songView && d.src !== 'mark' && d.src !== 'block') setSongView(false);
+     if (g) drgFly(g, d.srcEl && d.srcEl.isConnected && d.srcEl.offsetWidth ? d.srcEl.getBoundingClientRect() : null);
+   }
+ }
+@@ -27711,6 +27752,7 @@
+   const has = id => !!(song && song.marks && song.marks.some(m => m.id === id));
+   if (SV.copy && !has(SV.copy)) { SV.copy = null; svHintFree(); ch = true; }
+   if (SV.mark && !has(SV.mark)) { SV.mark = null; ch = true; }
++  if (konSelFix()) ch = true;                                      // KON: SV.blk / SV.inBlk only for a block that exists
+   if (ch) UI.dirty.song = true;
+   return ch;
+ }
+@@ -27743,7 +27785,7 @@
+     p.innerHTML = `<h4>Takt ${A + 1}${Bb > A ? '–' + (Bb + 1) : ''}</h4><div class="plist">` +
+       (narrow ? '<button class="rb" data-a="part">❖ Als Teil …</button>' : '') +
+       '<button class="rb" data-a="clear">○ Leeren</button><button class="rb" data-a="ins">＋ Teil einsetzen ▾</button>' +
+-      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + s2RangeItem() + '</div>' + vvDirRow(A, Bb + 1, 'vvdb');   /* S2 */   // VV2: Zeile „Video“
++      '<button class="rb" data-a="quant">Akkorde quantisieren …</button><button class="rb" data-a="loop">⟲ Als Schleife</button>' + s2RangeItem() + konRangeItems() + '</div>' + vvDirRow(A, Bb + 1, 'vvdb');   /* S2 */   // VV2: Zeile „Video“
+     onTap(p, b => {
+       const a = b.dataset.a; if (a && a.startsWith('vv-')) { vvDirTap(a, b, A, Bb + 1, () => { if (UI.pop && UI.pop.el === p) closePop(); }); return; }   // VV2
+       closePop();
+@@ -27753,6 +27795,8 @@
+       else if (a === 'quant') openQuantChords(anchor);
+       else if (a === 'loop') { songLoopRange({on: true, a: A, b: Bb + 1}); toast('Schleife ' + loopLabel(S.song)); }
+       else if (a === 's2sum') s2OpenSum(anchor, A, Bb + 1);   /* S2 */
++      else if (a === 'konblk') konBlkMakeUI(A, Bb + 1);        /* KON */
++      else if (a === 'konsol') s2OpenSum(anchor, A, Bb + 1, {kon: true});   /* KON */
+       svButtons();
+     }, 'button[data-a]');
+   }, {name: 'rangemore'});
+@@ -27819,7 +27863,7 @@
+   if (!SV.w) svLayout();
+   // V2e′ (FP-SONG): another project / track count / order / bank → the rows and the Spurbank pages are laid out again (never stale rows)
+   { const o = trackOrder(), k = o.join() + '|' + trackBankOf(); if (SV.ordK !== k) { SV.ordK = k; svLayout(); } }
+-  if (SV.sel || SV.mark || SV.copy) svSelFix();                    // V2e-fix: undo / project switch / a shorter song
++  if (SV.sel || SV.mark || SV.copy || SV.blk || SV.inBlk) svSelFix();                    // V2e-fix: undo / project switch / a shorter song
+   const sb = svSongBeat(bAud);
+   svAutoScroll(false);
+   const t = performance.now(), ph = sb == null ? -1 : Math.round(sb * 16) / 16;
+@@ -27839,6 +27883,7 @@
+ function svDraw(force, sbIn) {
+   const g = SV.g, song = S.song; if (!g || !SV.w) return;
+   if (!!(song && song.video) !== !!SV.vvS) svLayout();             // VV2: the stripe comes / goes with the first / last entry
++  if (konHasBlocks() !== !!SV.blS) svLayout();                      // KON: the Block-Zeile comes / goes with the first / last block
+   SV.lastDraw = performance.now();
+   svEndClamp();
+   const dpr = SV.dpr, W = SV.w, H = SV.h, cw = SV.cellW, rh = SV.rowH, ru = SV.rulerH;
+@@ -27854,7 +27899,7 @@
+   // ruler + the current bar tinted
+   const cur = sb != null ? Math.floor(sb / 4) : -1;
+   // V0c N7-R7: the yellow bar selection — a band (35 % over the ruler, 7 % over the rows), each bar an amber chip
+-  const sel = song && SV.sel && SV.sel.a < bars ? SV.sel : null, cy = 4, ch = Math.max(8, ru - 5 - (SV.vvS | 0));   // VV2: the header without the stripe
++  const sel = song && SV.sel && SV.sel.a < bars ? SV.sel : null, cy = 4 + (SV.blS | 0), ch = Math.max(8, ru - 5 - (SV.vvS | 0) - (SV.blS | 0));   // VV2: the header without the stripe; KON: below the Block-Zeile
+   if (sel) { const xa = X(sel.a), xb = X(Math.min(sel.b, bars - 1) + 1); g.fillStyle = 'rgba(255,178,46,.35)'; g.fillRect(xa, cy, xb - xa, ch); g.fillStyle = 'rgba(255,178,46,.07)'; g.fillRect(xa, ru, xb - xa, H - ru); }
+   const sr = R.songRec;
+   for (let b = b0; b < b1; b++) {
+@@ -27873,7 +27918,8 @@
+   }
+   // V2e (Xander 24.10. a): behind the end the bar numbers go on, dim — a tap there sets a part at that bar line (bars between stay empty)
+   if (song || !bars) { g.fillStyle = '#30343c'; for (let b = Math.max(b0, bars + 1), e = Math.ceil((SV.x + W) / cw) + 1; b < e && b < bars + 64; b++) g.fillText(String(b + 1), X(b) + cw / 2, cy + ch / 2); }
+-  if (song || SV.pv) svDrawMarks(g, song || {marks: []}, X, W, H, ru - (SV.vvS | 0), cur);
++  if (song || SV.pv) { const bS = SV.blS | 0; if (bS) { g.save(); g.translate(0, bS); } svDrawMarks(g, song || {marks: []}, X, W, H, ru - (SV.vvS | 0) - bS, cur); if (bS) g.restore(); }   // KON: below the Block-Zeile
++  if (song && SV.blS) konDrawBlocks(g, song, X, W, H, SV.blS);   // KON
+   if (song && song.video && SV.vvS) vvDrawStripe(g, song, X, W, ru - SV.vvS, SV.vvS);   // VV2
+   // track lanes: the scene slot per bar (launch bars stronger), – = stopped there. V2e′: own clips with a white 1,5-px frame and
+   // a dot (song-delta 9.1); the cells of a part just placed unfold left to right from amber (N7-R6); ◧ = the glass tiles
+@@ -50224,6 +50270,7 @@
+ function s012PartExtra(p, o, nt) {
+   const mel = s1MelNorm(p.mel, nt); if (mel) o.mel = mel;
+   if (typeof s2PartExtra === 'function') s2PartExtra(p, o, nt);
++  konPartExtra(p, o);   /* KON: Part.sxp */
+ }
+ // partChunk: the part's melody lands in the song with it (relative beats, < L bars)
+ function s1ChunkMel(p, L) {
+@@ -50386,17 +50433,18 @@
+   return {part: k, name: nm, mark: (song.marks.find(m => m.a === a && m.part === S.parts[k].id) || {}).id || id};
+ }
+ // the name (chips after N7-R2, own text) — like „Als Teil …“; suggestion: one mark → its name with a number, else the next free name
+-function s2OpenSum(anchor, a, e) {
++function s2OpenSum(anchor, a, e, ko) {
+   const song = S.song; if (!song) return;
+   if (e - a > 16) { toast('Ein Teil hat höchstens 16 Takte'); return; }
+   const ms = song.marks.filter(m => m.a < e && m.a + m.len > a), one = ms.length === 1 && ms[0].a === a && ms[0].len === e - a;
+-  const sug = one ? partUniq(markLabel(ms[0]), -1) : partSuggest();
++  const sug = ko && ko.sug ? partUniq(ko.sug, -1) : one ? partUniq(markLabel(ms[0]), -1) : partSuggest();
++  const kon = !!(ko && ko.kon);                                          /* KON: Konsolidieren — dasselbe Namens-Blatt */
+   openPop(anchor, p => {
+     guardTouch(p); p.classList.add('mname', 's2sum');
+-    p.innerHTML = `<h4>Zusammenfassen · Takt ${a + 1}${e - a > 1 ? '–' + e : ''}</h4><div class="cp-sc mn-sc">` + PART_NAMES.map(n => `<button class="rb cp-c" data-n="${n}">${n}</button>`).join('') + '</div>' +
++    p.innerHTML = `<h4>${kon ? 'Als neuen Teil konsolidieren' : 'Zusammenfassen'} · Takt ${a + 1}${e - a > 1 ? '–' + e : ''}</h4><div class="cp-sc mn-sc">` + PART_NAMES.map(n => `<button class="rb cp-c" data-n="${n}">${n}</button>`).join('') + '</div>' +
+       `<div class="mn-r"><input class="mn-in" type="text" maxlength="12" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${esc(sug)}" aria-label="Eigener Name"><button class="rb mn-ok" data-a="ok" aria-label="Übernehmen">✓</button></div>`;
+     const inp = p.querySelector('.mn-in');
+-    const go = v => { closePop(); const r = s2Sum(a, e, String(v || '').trim() || sug); if (r) { SV.sel = null; SV.mark = null; toast('Neuer Teil ' + r.name + ' · Takt ' + (a + 1) + (e - a > 1 ? '–' + e : ''), {label: 'Rückgängig', fn: () => undo()}); } svButtons(); UI.dirty.song = true; };
++    const go = v => { closePop(); const r = (kon ? konDo : s2Sum)(a, e, String(v || '').trim() || sug); if (r) { SV.sel = null; SV.mark = null; toast((kon ? 'Konsolidiert: neuer Teil ' : 'Neuer Teil ') + r.name + ' · Takt ' + (a + 1) + (e - a > 1 ? '–' + e : ''), {label: 'Rückgängig', fn: () => undo()}); } svButtons(); UI.dirty.song = true; };   /* KON */
+     on(inp, 'keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); go(inp.value); } });
+     inp.addEventListener('pointerdown', ev => ev.stopPropagation()); inp.addEventListener('touchstart', ev => ev.stopPropagation(), {passive: true});
+     on(inp, 'focus', () => popDock(p, true)); on(inp, 'blur', () => setTimeout(() => popDock(p), 50));
+@@ -50413,6 +50461,381 @@
+   openSum: (a, b) => s2OpenSum(null, a, (b == null ? a : b) + 1),
+ });
+ /* /S2 */
++/* KON ---------- Block (SX10) und Konsolidieren (UE-H; Xander 01.11.: „jederzeit konsolidieren, nicht einfrieren, Ursprung bleibt
++   zurückholbar, wie ein After-Effects-Container“). Daten (Format bleibt, nur ergänzt; ein Song ohne Blöcke speichert nichts Neues):
++   song.blocks = [{id:'B1', a, len, name}] — eigene Ebene über der Taktleiste (Marken dürfen sich nicht überlappen, Blöcke liegen
++   darüber; Blöcke überlappen sich auch untereinander nicht). song.kons = [{mark, part, at, len, sig, mk, cut, ch}] — der Ursprung eines
++   konsolidierten Bereichs: die Marken davor (mk), die beim Schneiden neu entstandenen Marken (cut) und der Bereich als Chunk (ch,
++   alles Noten/Clips). Konsolidieren = S2 Zusammenfassen + Ursprung; [Zurückholen] stellt ihn wieder her. Eine Aktion = ein Undo-Schritt.
++   View state (kein Undo, wie SV.mark): SV.blk (der gewählte Block), SV.inBlk ({id, loop0}: hineingegangen) ---------- */
++function konSongNorm(o, v4, bars, pk, nt) {
++  if (Array.isArray(o.blocks)) { const bl = konBlocksNorm(o.blocks, bars); if (bl.length) v4.blocks = bl; }
++  if (Array.isArray(o.kons)) { const kn = konKonsNorm(o.kons, v4.marks, pk, nt); if (kn.length) v4.kons = kn; }
++}
++function konBlocksNorm(list, bars) {
++  const out = [], ids = new Set();
++  const ok = (Array.isArray(list) ? list : []).filter(k => k && typeof k === 'object' && isNum(k.a) && isNum(k.len))
++    .map(k => ({k, a: Math.max(0, Math.round(k.a)), len: Math.max(1, Math.round(k.len))})).sort((x, y) => x.a - y.a);
++  let end = 0;
++  for (const {k, a, len} of ok) {
++    if (out.length >= 64) break;
++    const A = Math.max(a, end); let L = a + len - A;
++    if (bars > 0 && A + L > bars) L = bars - A;
++    if (L < 1) continue;
++    let id = typeof k.id === 'string' && /^B\d{1,6}$/.test(k.id) && !ids.has(k.id) ? k.id : null;
++    if (!id) { let n = 1; while (ids.has('B' + n)) n++; id = 'B' + n; }
++    ids.add(id);
++    out.push({id, a: A, len: L, name: typeof k.name === 'string' && k.name.trim() ? k.name.trim().slice(0, 16) : 'Block'}); end = A + L;
++  }
++  return out;
++}
++function konChNorm(c, pk, nt) {
++  if (!c || typeof c !== 'object' || !isNum(c.len) || c.len < 1 || !Array.isArray(c.lanes)) return null;
++  const len = clamp(Math.round(c.len), 1, SONG_MAX_BARS), own = {};
++  if (c.own && typeof c.own === 'object' && !Array.isArray(c.own)) for (const k of Object.keys(c.own).slice(0, 256)) { const x = /^[A-Za-z0-9_-]{1,16}$/.test(k) ? ownNorm(c.own[k], pk, nt) : null; if (x) own[k] = x; }
++  const lanes = Array.from({length: nt}, (_, t) => {
++    const out = [];
++    for (const e of Array.isArray(c.lanes[t]) ? c.lanes[t] : []) {
++      if (!e || !isNum(e.bar) || !isNum(e.slot)) continue;
++      const bar = clamp(Math.round(e.bar), 0, len - 1), slot = clamp(Math.round(e.slot), -1, N_SCN - 1);
++      const k = out.findIndex(x => x.bar === bar); if (k >= 0) out.splice(k, 1);
++      const x = laneEntryNorm(e, bar, slot); if (x.own && !own[x.own]) delete x.own; out.push(x);
++    }
++    return out.sort((a, b) => a.bar - b.bar);
++  });
++  const carrier = (Array.isArray(c.carrier) ? c.carrier : []).filter(x => x && isNum(x.beat)).map(x => ({beat: +clamp(x.beat, 0, len * 4).toFixed(4), target: normTarget(x.target)}));
++  const xp = (Array.isArray(c.xp) ? c.xp : []).filter(x => x && isNum(x.beat) && isNum(x.semi) && x.beat >= 0).map(x => ({beat: +x.beat, semi: clamp(Math.round(x.semi), -12, 12)}));
++  const mel = {};
++  if (c.mel && typeof c.mel === 'object' && !Array.isArray(c.mel)) for (const k of Object.keys(c.mel)) {
++    const t = +k; if (!Number.isInteger(t) || t < 0 || t >= nt || !Array.isArray(c.mel[k])) continue;
++    const ns = c.mel[k].filter(n => n && isNum(n.t) && isNum(n.d) && isNum(n.n) && isNum(n.v)).slice(0, 4096).map(n => cleanNote(n)); if (ns.length) mel[t] = ns;
++  }
++  const o = {len, lanes, carrier, xp, mel, marks: marksNorm(c.marks, len), own};
++  const vox = Array.isArray(c.vox) && c.vox.length ? tkNormVox(c.vox) : null; if (vox) o.vox = vox;
++  return o;
++}
++function konKonsNorm(list, marks, pk, nt) {
++  const out = [], seen = new Set(), mid = /^M\d{1,6}$/;
++  for (const k of Array.isArray(list) ? list.slice(0, 64) : []) {
++    if (!k || typeof k !== 'object' || typeof k.mark !== 'string' || seen.has(k.mark) || !(marks || []).some(m => m.id === k.mark)) continue;
++    if (typeof k.part !== 'string' || !/^P[1-8]$/.test(k.part) || !isNum(k.at) || !isNum(k.len) || k.len < 1) continue;
++    const ch = konChNorm(k.ch, pk, nt); if (!ch) continue;
++    seen.add(k.mark);
++    out.push({mark: k.mark, part: k.part, at: Math.max(0, Math.round(k.at)), len: Math.round(k.len), sig: typeof k.sig === 'string' ? k.sig.slice(0, 32) : '',
++      mk: marksNorm(k.mk, 0), cut: Array.isArray(k.cut) ? k.cut.filter(x => typeof x === 'string' && mid.test(x)).slice(0, 16) : [], ch});
++    const ks = Array.isArray(k.ks) ? konKonsNorm(k.ks, out[out.length - 1].mk, pk, nt) : []; if (ks.length) out[out.length - 1].ks = ks;   // nested: the Ursprünge inside
++  }
++  return out;
++}
++// LÖSCHEN [a, b): a block inside goes, a block around it gets shorter, one that overlaps is trimmed (songShift moves the rest)
++function konBlocksCut(song, a, b) {
++  const out = [];
++  for (const k of song.blocks) {
++    const ke = k.a + k.len;
++    if (ke <= a || k.a >= b) { out.push(k); continue; }
++    if (k.a >= a && ke <= b) continue;
++    if (k.a < a && ke > b) out.push(Object.assign({}, k, {len: k.len - (b - a)}));
++    else if (k.a < a) out.push(Object.assign({}, k, {len: a - k.a}));
++    else out.push(Object.assign({}, k, {a: b, len: ke - b}));
++  }
++  song.blocks = out;
++}
++// songTidy: blocks inside the song and without overlaps; a Ursprung only while its mark (with its part) is there
++function konTidy(song) {
++  if (song.blocks) { song.blocks = konBlocksNorm(song.blocks, song.bars); if (!song.blocks.length) delete song.blocks; }
++  if (song.kons) { song.kons = song.kons.filter(k => song.marks.some(m => m.id === k.mark && m.part === k.part)); if (!song.kons.length) delete song.kons; }
++}
++// Part.sxp (additive): the Teil-Transposition of the song range a part was konsolidiert from — [{beat (from the part start), semi}]
++function konPartExtra(p, o) {
++  if (!Array.isArray(p.sxp)) return;
++  const l = p.sxp.filter(x => x && isNum(x.beat) && isNum(x.semi) && x.beat >= 0 && x.beat < 64).map(x => ({beat: +(+x.beat).toFixed(4), semi: clamp(Math.round(x.semi), -12, 12)})).sort((a, b) => a.beat - b.beat).slice(0, 64);
++  if (!l.length || !l.some(x => x.semi)) return;
++  if (l[0].beat > 1e-6) l.unshift({beat: 0, semi: 0});
++  o.sxp = l;
++}
++const konSxpChunk = (l, L) => l.filter(x => x.beat < L * 4 - 1e-9).map(x => ({beat: x.beat, semi: x.semi}));
++const konHasBlocks = () => !!(S.song && S.song.blocks && S.song.blocks.length);
++const konBlkAt = bar => { const s = S.song; if (!s || !s.blocks) return null; for (const k of s.blocks) if (bar >= k.a && bar < k.a + k.len) return k; return null; };
++const konBlkOf = id => (S.song && S.song.blocks ? S.song.blocks.find(k => k.id === id) : null) || null;
++const konOf = id => (S.song && S.song.kons ? S.song.kons.find(k => k.mark === id) : null) || null;
++// the content of [a, e) without marks / Regie, as a short fingerprint (did anything change there since konsolidieren?)
++function konSig(song, a, e) {
++  const ch = songCut(song, a, e); delete ch.marks; delete ch.video; ch.vox = g3VoxCut(song, a, e);
++  const s = JSON.stringify(ch); let h1 = 0x811c9dc5, h2 = 0x9e3779b9;
++  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619); h2 = Math.imul(h2 ^ c, 2246822507); }
++  return (h1 >>> 0).toString(36) + '.' + (h2 >>> 0).toString(36) + '.' + s.length.toString(36);
++}
++// the Ursprung chunk: the range as it is (state at a explicit, own clips, melody, marks clipped, the song voice); no Video-Regie
++function konCut(song, a, e) { const ch = konChFix(song, songCut(song, a, e)); delete ch.video; const v = g3VoxCut(song, a, e); if (v.length) ch.vox = v; return deep(ch); }
++// a chunk that starts without a chord there (ORIGINAL) says so at its beat 0 — wherever it lands it does not take the chord before it
++function konChFix(song, ch) { if (song.carrier.length && !ch.carrier.some(c => c.beat < 1e-6)) ch.carrier.unshift({beat: 0, target: null}); return ch; }
++// API konsolidieren(a, e, name): [a, e) becomes ONE new part (S2), the range shows it, the Ursprung is kept; one undo group [part, song]
++function konDo(a, e, name) {
++  const song = S.song; if (!song || R.songRec) return false;
++  a = Math.max(0, a | 0); e = Math.min(e | 0, song.bars); if (e <= a) return false;
++  if (e - a > 16) { toast('Ein Teil hat höchstens 16 Takte'); return false; }
++  partsEnsure(); const k = S.parts.findIndex(x => !x); if (k < 0) { toast('Teil-Leiste voll – erst einen Teil löschen'); return false; }
++  const bp = partSnap(), bs = songSnapshot();
++  const mk = deep(song.marks.filter(m => m.a < e && m.a + m.len > a)), ids0 = new Set(song.marks.map(m => m.id)), ch = konCut(song, a, e);
++  const ks = deep((song.kons || []).filter(k => mk.some(m => m.id === k.mark)));   // a konsolidierter Teil inside: its Ursprung goes along
++  const tp = s2Template(song, a, e);
++  if (song.carrier.length && tp.chords && tp.chords.ch.length && tp.chords.ch[0].b > 1e-6) tp.chords.ch.unshift({b: 0, tg: null});   // ORIGINAL at its start stays ORIGINAL wherever the part lands
++  { const l = []; for (const x of ch.xp || []) { if (l.length && l[l.length - 1].semi === x.semi) continue; l.push({beat: x.beat, semi: x.semi}); } if (l.some(x => x.semi)) tp.sxp = l; }   // Transposition (song.xp) geht mit
++  const nm = partUniq(String(name || '').trim().slice(0, 12) || partSuggest(), k);
++  S.parts[k] = normPart(Object.assign({name: nm, color: PART_COLORS[k % PART_COLORS.length], src: 'song'}, tp), k, NT());
++  S.parts[k].len = partLen(S.parts[k]);
++  marksCut(song, a, e, true);                                            // the content stays as it is (the song sounds the same); only the marks change
++  const cut = song.marks.filter(m => !ids0.has(m.id)).map(m => m.id);
++  song.marks.push({id: newMarkId(song), a, len: e - a, part: S.parts[k].id}); songTidy(song);
++  const m = song.marks.find(x => x.a === a && x.part === S.parts[k].id);
++  if (m) { const kn = {mark: m.id, part: m.part, at: a, len: e - a, sig: konSig(song, a, e), mk, cut, ch}; if (ks.length) kn.ks = ks; (song.kons || (song.kons = [])).push(kn); }
++  undoPush({kind: 'group', label: 'Konsolidiert: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
++  partsChanged(); songChanged();
++  return {part: k, name: nm, mark: m ? m.id : null};
++}
++// API zurückholen(markId): the Ursprung comes back — unchanged and in place: exactly the marks from before; else the stored range
++// replaces what is there now (all notes / clips, nothing rendered). The part goes when no mark uses it any more. One undo group
++function konRestore(id) {
++  const song = S.song; if (!song || R.songRec) return false;
++  const kn = konOf(id), m = kn && song.marks.find(x => x.id === id); if (!m) return false;
++  const bp = partSnap(), bs = songSnapshot(), a = m.a, e = m.a + m.len, nm = markLabel(m);
++  song.kons = song.kons.filter(k => k !== kn);
++  if (a === kn.at && m.len === kn.len && konSig(song, a, e) === kn.sig) {
++    const drop = new Set([kn.mark].concat(kn.cut, kn.mk.map(x => x.id)));
++    song.marks = song.marks.filter(x => !drop.has(x.id)).concat(deep(kn.mk)).sort((x, y) => x.a - y.a);
++  } else {
++    const vk = vvDirCutTo(song, a, e, {}).video, ch = deep(kn.ch);                  // the Video-Regie stays (as Ersetzen durch)
++    opDelete(song, a, e); opInsert(song, a, ch, true);
++    if (vk) vvDirWrite(song, a, {len: ch.len, video: vk});
++  }
++  for (const x of kn.ks || []) if (song.marks.some(y => y.id === x.mark) && !song.kons.some(y => y.mark === x.mark)) song.kons.push(deep(x));   // the Ursprünge inside come back
++  songTidy(song);
++  const k = +kn.part.slice(1) - 1;
++  if (S.parts[k] && !song.marks.some(x => x.part === kn.part)) { S.parts[k] = null; if (R.part && !R.part.tmp && R.part.i === k) R.part = null; }
++  undoPush({kind: 'group', label: 'Zurückgeholt: ' + nm, items: [{kind: 'part', before: bp}, {kind: 'song', before: bs}]});
++  partsChanged(); songChanged(); songResync(true);
++  return true;
++}
++// the next free name „Block A“ … „Block Z“, then „Block 27“ …
++function konBlkName(song) {
++  const used = new Set((song.blocks || []).map(b => b.name.toLowerCase()));
++  for (let i = 0; i < 26; i++) { const n = 'Block ' + String.fromCharCode(65 + i); if (!used.has(n.toLowerCase())) return n; }
++  for (let n = 27; ; n++) if (!used.has(('Block ' + n).toLowerCase())) return 'Block ' + n;
++}
++const konBlkNewId = song => { let n = 0; for (const b of song.blocks || []) { const k = +b.id.slice(1); if (k > n) n = k; } return 'B' + (n + 1); };
++// API blockMake(a, e, name): [▣ Als Block] — one undo 'song'; null when a block lies there already
++function konBlkMake(a, e, name) {
++  const song = S.song; if (!song || !song.bars || R.songRec) return null;
++  a = clamp(a | 0, 0, song.bars - 1); e = clamp(e | 0, a + 1, song.bars);
++  if ((song.blocks || []).some(b => b.a < e && b.a + b.len > a)) return null;
++  const nm = String(name || '').trim().slice(0, 16) || konBlkName(song); let id = null;
++  const ok = songEdit(nm + ' angelegt', s => { id = konBlkNewId(s); (s.blocks || (s.blocks = [])).push({id, a, len: e - a, name: nm}); s.blocks.sort((x, y) => x.a - y.a); });
++  return ok ? {id, name: nm} : null;
++}
++// API blockAction(id, kind, arg): 'move' / 'copy' (arg = bar line; with Nachrücken like a mark), 'rename' (arg = name), 'dissolve'
++// (the block goes, the content stays). One undo 'song' each. A string result = why nothing happened
++function konBlkAction(id, kind, arg) {
++  const song = S.song, b0 = konBlkOf(id); if (!b0 || R.songRec) return false;
++  const nm = b0.name, lab = {move: nm + ' verschoben', copy: nm + ' kopiert', rename: nm + ' umbenannt', dissolve: nm + ' aufgelöst'}[kind]; if (!lab) return false;
++  if (kind === 'move' || kind === 'copy') {
++    const n = clamp(Math.round(arg) || 0, 0, song.bars), a = b0.a, e = b0.a + b0.len;
++    if (song.blocks.some(x => x !== b0 && x.a < n && n < x.a + x.len)) return 'in';
++    if (kind === 'move' && n >= a && n <= e) return 'same';
++    if (kind === 'copy' && n > a && n < e) return 'self';
++  }
++  if (kind !== 'rename' && SV.inBlk && SV.inBlk.id === id) konBlkExit();
++  let res = true;
++  const ok = songEdit(lab, s => {
++    const b = s.blocks.find(x => x.id === id), a = b.a, e = b.a + b.len, L = b.len;
++    if (kind === 'rename') { const v = String((arg && arg.name != null ? arg.name : arg) || '').trim().slice(0, 16); if (v) b.name = v; return; }
++    if (kind === 'dissolve') { s.blocks = s.blocks.filter(x => x !== b); return; }
++    let n = clamp(Math.round(arg) || 0, 0, s.bars);
++    if (kind === 'move') {
++      const ch = konChFix(s, songCut(s, a, e)); ch.vox = g3VoxCut(s, a, e);
++      s.blocks = s.blocks.filter(x => x !== b);
++      opDelete(s, a, e); if (n > a) n -= L; opInsert(s, n, ch, true);
++      (s.blocks || (s.blocks = [])).push(Object.assign({}, b, {a: n})); s.blocks.sort((x, y) => x.a - y.a); res = {id, a: n};
++    } else {
++      opInsert(s, n, konChFix(s, songCut(s, a, e)));
++      const nid = konBlkNewId(s); s.blocks.push({id: nid, a: n, len: L, name: konBlkName(s)}); s.blocks.sort((x, y) => x.a - y.a); res = {id: nid, a: n};
++    }
++  });
++  return ok ? res : false;
++}
++// Doppeltipp = hineingehen: the loop on the block, the path „Song › Block A“ at the top left, ← goes out (the loop from before
++// comes back when it is still the block's). Navigation, no undo step
++function konBlkEnter(id) {
++  const song = S.song, b = konBlkOf(id); if (!b) return false;
++  if (SV.inBlk && SV.inBlk.id !== id) konBlkExit();
++  if (!SV.inBlk) SV.inBlk = {id, loop0: Object.assign({}, song.loop), proj: S};
++  song.loop = normLoop({on: true, a: b.a, b: b.a + b.len}, song.bars);
++  if (UI.pop && UI.pop.name === 'block') closePop();
++  SV.blk = null; SV.sel = null; SV.mark = null; SV.pos = b.a;
++  if (SV.w && SV.cellW) { SV.x = clamp(b.a * SV.cellW, 0, svMaxX()); FOL.page.song = null; }
++  folEdit('song'); haptic('tick'); UI.dirty.song = true; markDirty(); konPathSync(); svButtons();
++  lcdOrToast('In ' + b.name + ' · Schleife ' + loopLabel(song));
++  return true;
++}
++function konBlkExit() {
++  const st = SV.inBlk; if (!st) return false; SV.inBlk = null;
++  const song = S.song, b = st && konBlkOf(st.id);
++  if (song) { const l = song.loop; if (!b || (l.on && l.a === b.a && l.b === b.a + b.len)) song.loop = normLoop(st.loop0, song.bars); }
++  haptic('tick'); UI.dirty.song = true; markDirty(); konPathSync(); svButtons();
++  return true;
++}
++function konSelFix() {
++  let ch = false;
++  if (SV.blk && (!konBlkOf(SV.blk) || (SV.inBlk && SV.inBlk.proj !== S))) { SV.blk = null; ch = true; }
++  if (SV.inBlk && (!konBlkOf(SV.inBlk.id) || SV.inBlk.proj !== S)) { SV.inBlk = null; ch = true; konPathSync(); }   // block gone / another project
++  return ch;
++}
++// the label cell of the ruler (top left): „Block“ over „Takt“ while there are blocks; inside a block the path button „← Song ›“ / „Block A“
++function konPathSync() {
++  const lr = SV.labs && SV.labs.querySelector('.sv-lr'); if (!lr) return;
++  let bl = lr.querySelector('.kon-bl'), pb = lr.querySelector('.kon-path');
++  if (!bl) { bl = el('span', 'kon-bl', 'Block'); lr.appendChild(bl); }
++  if (!pb) {
++    pb = el('button', 'rb kon-path', '<span class="kp-a">← Song ›</span><b class="kp-b"></b>'); pb.hidden = true; lr.appendChild(pb);
++    pb.addEventListener('pointerdown', e => e.stopPropagation());
++    onTap(pb, () => { konBlkExit(); lcdOrToast('Zurück im Song'); });
++  }
++  const b = SV.inBlk && konBlkOf(SV.inBlk.id), has = !!SV.blS;
++  bl.hidden = !has || !!b; bl.style.height = (SV.blS | 0) + 'px';
++  const pt = has ? (SV.blS | 0) + 'px' : ''; if (lr.style.paddingTop !== pt) lr.style.paddingTop = pt;
++  pb.hidden = !b; if (b) { const t = pb.querySelector('.kp-b'); if (t.textContent !== b.name) t.textContent = b.name; pb.setAttribute('aria-label', 'Pfad: Song › ' + b.name + ' – antippen: hinaus zum Song'); }
++}
++// the Block-Zeile: a thin chip per block (grey-blue, ▣ name), the chosen one with a white frame, the one we are in brighter
++function konDrawBlocks(g, song, X, W, H, bS) {
++  SV.blkGeo = [];
++  g.save(); g.textBaseline = 'middle'; g.textAlign = 'left'; g.font = '700 ' + (bS < 14 ? 8 : 9) + 'px system-ui, -apple-system, "Segoe UI", sans-serif';
++  for (const k of song.blocks || []) {
++    const x0 = X(k.a) + 1, x1 = X(k.a + k.len) - 1, w = x1 - x0; if (x1 < 0 || x0 > W) continue;
++    const inn = !!(SV.inBlk && SV.inBlk.id === k.id), sel = SV.blk === k.id;
++    g.beginPath(); if (g.roundRect) g.roundRect(x0, 1, w, bS - 2, 3); else g.rect(x0, 1, w, bS - 2);
++    g.fillStyle = inn ? 'rgba(154,166,187,.55)' : 'rgba(154,166,187,.28)'; g.fill();
++    g.strokeStyle = sel ? '#f2f4f8' : 'rgba(154,166,187,.8)'; g.lineWidth = sel ? 2 : 1; g.stroke();
++    let label = '▣ ' + k.name.toUpperCase();
++    g.save(); g.beginPath(); g.rect(x0, 0, w, bS); g.clip();
++    if (g.measureText(label).width > w - 8) label = '▣';
++    g.fillStyle = '#e6e9ef'; g.fillText(label, x0 + 4, bS / 2 + .5); g.restore();
++    if (sel) { g.fillStyle = 'rgba(154,166,187,.07)'; g.fillRect(X(k.a), SV.rulerH, X(k.a + k.len) - X(k.a), H - SV.rulerH); }
++    SV.blkGeo.push({id: k.id, x0: Math.round(x0 * 10) / 10, x1: Math.round(x1 * 10) / 10, label});
++  }
++  g.restore();
++}
++// a tap on the Block-Zeile: a block → chosen + Block-Blatt; the same block again within 400 ms = hineingehen
++function konBlkTap(bar) {
++  const k = konBlkAt(bar), t = performance.now(), last = SV.blkTap;
++  if (UI.pop && (UI.pop.name === 'mark' || UI.pop.name === 'block') && !(k && last && last.id === k.id && t - last.t < 400)) closePop();
++  if (!k) { SV.blkTap = null; return; }
++  if (last && last.id === k.id && t - last.t < 400) { SV.blkTap = null; konBlkEnter(k.id); return; }
++  SV.blkTap = {id: k.id, t};
++  konBlkSheet(k.id);
++}
++// [▣ Als Block] from the Bereich-Leiste ⋯
++function konBlkMakeUI(a, e) {
++  const song = S.song; if (!song || svRecBusy()) return;
++  const r = konBlkMake(a, e);
++  if (!r) { toast('Dort liegt schon ein Block'); return; }
++  SV.sel = null; SV.blk = null; toast(r.name + ' · Takt ' + (a + 1) + (e - a > 1 ? '–' + e : ''), songUndoAct()); svButtons(); UI.dirty.song = true;
++}
++const konRangeItems = () => '<button class="rb" data-a="konblk">▣ Als Block</button><button class="rb" data-a="konsol">Als neuen Teil konsolidieren</button>';
++// the Block-Blatt (like the Marken-Blatt: the song stays usable above it): konsolidieren, zurückholen, umbenennen, auflösen
++function konBlkSheet(id) {
++  const b0 = konBlkOf(id); if (!b0 || svRecBusy()) return;
++  if (UI.pop) closePop();
++  SV.copy = null; svHintFree(); folEdit('song'); haptic('tick'); UI.dirty.song = true;
++  openPop(null, p => {
++    p.classList.add('msheet', 'konsheet'); guardTouch(p);
++    const paint = () => {
++      const b = konBlkOf(id); if (!b) { closePop(); return; }
++      const ks = (S.song.kons || []).filter(k => { const m = S.song.marks.find(x => x.id === k.mark); return m && m.a >= b.a && m.a + m.len <= b.a + b.len; });
++      const B = (a, html, o) => `<button class="rb ms-b${o && o.cls ? ' ' + o.cls : ''}" data-kb="${a}"${o && o.dis ? ' disabled' : ''}${o && o.aria ? ' aria-label="' + esc(o.aria) + '"' : ''}>${html}</button>`;
++      p.innerHTML = `<div class="ms-h"><b>▣ ${esc(b.name.toUpperCase())}</b><span>· Takt ${b.a + 1}${b.len > 1 ? '–' + (b.a + b.len) : ''}</span><button class="rb ms-x" data-kb="x" aria-label="Schließen">✕</button></div>` +
++        `<div class="ms-r">` + B('kon', 'Als neuen Teil konsolidieren', {dis: b.len > 16, aria: b.len > 16 ? 'Ein Teil hat höchstens 16 Takte' : 'Alles in ' + b.name + ' wird ein neuer Teil; der Ursprung bleibt zurückholbar'}) +
++          (ks.length ? B('back', 'Zurückholen', {aria: 'Den Zustand vor dem Konsolidieren zurückholen'}) : '') + `</div>` +
++        `<div class="ms-r">` + B('name', '✎ Umbenennen') + B('in', 'Hineingehen', {aria: 'Hineingehen: Schleife auf dem Block (auch Doppeltipp)'}) + B('dis', 'Auflösen', {aria: 'Block auflösen – der Inhalt bleibt'}) + `</div>` +
++        `<div class="kon-tip">Halten = verschieben · über ⧉ ziehen = Kopie · Doppeltipp = hineingehen</div>`;
++      for (const x of p.querySelectorAll('.ms-b')) if (x.scrollWidth > x.clientWidth + 1) x.classList.add('tight');
++    };
++    paint(); p._paint = paint;
++    onTap(p, x => {
++      const a = x.dataset.kb, b = konBlkOf(id); if (!b) { closePop(); return; }
++      if (a === 'x') { closePop(); return; }
++      if (a === 'kon') { closePop(); s2OpenSum(null, b.a, b.a + b.len, {kon: true, sug: b.name}); return; }
++      if (a === 'back') {
++        closePop(); let n = 0;
++        const u0 = UNDO[UNDO.length - 1];
++        for (const k of (S.song.kons || []).slice()) { const m = S.song.marks.find(y => y.id === k.mark); if (m && m.a >= b.a && m.a + m.len <= b.a + b.len && konRestore(k.mark)) n++; }
++        if (n > 1) undoMergeSince(u0, 'Zurückgeholt: ' + b.name);
++        if (n) { toast('Ursprung zurückgeholt · ' + b.name, songUndoAct()); svButtons(); }
++        return;
++      }
++      if (a === 'name') { konBlkNameSheet(x, id); return; }
++      if (a === 'in') { konBlkEnter(id); return; }
++      if (a === 'dis') { closePop(); if (konBlkAction(id, 'dissolve') === true) { toast(b.name + ' aufgelöst · der Inhalt bleibt', songUndoAct()); svButtons(); } }
++    }, 'button[data-kb]');
++  }, {name: 'block', onClose: () => { EL.popLayer.classList.remove('pass'); SV.blk = null; UI.dirty.song = true; }});
++  SV.blk = id; EL.popLayer.classList.add('pass');
++  popDock(UI.pop && UI.pop.el);
++}
++function konBlkNameSheet(anchor, id) {
++  const b = konBlkOf(id); if (!b) return;
++  openPop(anchor, p => {
++    guardTouch(p); p.classList.add('mname');
++    p.innerHTML = `<h4>Name des Blocks</h4><div class="mn-r"><input class="mn-in" type="text" maxlength="16" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(b.name)}" aria-label="Name"><button class="rb mn-ok" data-a="ok" aria-label="Übernehmen">✓</button></div>`;
++    const inp = p.querySelector('.mn-in');
++    const go = v => { v = String(v || '').trim().slice(0, 16); closePop(); if (!v) return; if (konBlkAction(id, 'rename', v) === true) toast('Block heißt jetzt ' + v, songUndoAct()); svButtons(); UI.dirty.song = true; konPathSync(); };
++    on(inp, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(inp.value); } });
++    inp.addEventListener('pointerdown', e => e.stopPropagation()); inp.addEventListener('touchstart', e => e.stopPropagation(), {passive: true});
++    on(inp, 'focus', () => popDock(p, true)); on(inp, 'blur', () => setTimeout(() => popDock(p), 50));
++    onTap(p, () => go(inp.value), 'button[data-a="ok"]');
++  }, {name: 'blockname'});
++  popDock(UI.pop && UI.pop.el);
++}
++// drop of a lifted block (drag engine): move, or copy after ⧉
++function konBlkDrop(d, n, done) {
++  const song = S.song, b = konBlkOf(d.blk); if (!b || svRecBusy()) return false;
++  const nn = clamp(n, 0, song.bars), nm = b.name, len = b.len, r = konBlkAction(d.blk, d.copy ? 'copy' : 'move', nn);
++  SV.blk = null;
++  if (r === 'same') { lcdOrToast('Gleiche Stelle – nichts verschoben'); return false; }
++  if (r === 'self') { lcdOrToast('Nicht in den Block selbst – Kopie abgebrochen'); return false; }
++  if (r === 'in') { lcdOrToast('Nicht in einen anderen Block'); return false; }
++  if (!r || r === true) return false;
++  SV.mark = null; SV.sel = null; SV.pos = r.a;
++  if (d.copy) svShiftAnim(r.a, len);
++  done(r.a, len);
++  toast(nm + (d.copy ? ' kopiert → Takt ' : ' verschoben → Takt ') + (r.a + 1), songUndoAct()); svButtons();
++  return true;
++}
++// Marken-Blatt: a row [Als neuen Teil konsolidieren] (+ [Zurückholen] for a konsolidierter Teil) below the others
++function konMarkSheetPaint(p, m) {
++  if (p.classList.contains('s0-ed')) return;
++  if (!p._kon) { p._kon = true; onTap(p, b => konMarkTap(b), 'button[data-kon]'); }
++  const bb = p.querySelector('.ms-bb'); if (!bb) return;
++  const kn = konOf(m.id), big = m.len > 16;
++  bb.insertAdjacentHTML('afterend', `<div class="ms-r kon-r"><button class="rb ms-b" data-kon="sol"${big ? ' disabled aria-label="Ein Teil hat höchstens 16 Takte"' : ''}>Als neuen Teil konsolidieren</button>` +
++    (kn ? `<button class="rb ms-b" data-kon="back" aria-label="Den Zustand vor dem Konsolidieren zurückholen">Zurückholen</button>` : '') + `</div>`);
++}
++function konMarkTap(b) {
++  const id = SV.mark, m = S.song && S.song.marks.find(x => x.id === id); if (!m) { closePop(); return; }
++  const a = b.dataset.kon, nm = markLabel(m);
++  if (a === 'sol') { const A = m.a, E = m.a + m.len; closePop(); s2OpenSum(null, A, E, {kon: true}); return; }
++  if (a === 'back') { closePop(); if (konRestore(m.id)) { toast('Ursprung zurückgeholt · ' + nm, songUndoAct()); svButtons(); } }
++}
++const KON_API = {
++  blockMake: (a, b, name) => konBlkMake(a, (b == null ? a : b) + 1, name),          // b inclusive (like songRange)
++  blockAction: (id, kind, arg) => konBlkAction(id, kind, arg),
++  blocks: () => (S.song && S.song.blocks ? deep(S.song.blocks) : []),
++  blockEnter: id => konBlkEnter(id), blockExit: () => konBlkExit(), blockIn: () => (SV.inBlk ? SV.inBlk.id : null),
++  blockSheet: id => { konBlkSheet(id); return !!(UI.pop && UI.pop.name === 'block'); },
++  blockTap: bar => konBlkTap(bar),
++  konsolidieren: (a, b, name) => konDo(a, (b == null ? a : b) + 1, name),
++  konsolidierenMark: (id, name) => { const m = S.song && S.song.marks.find(x => x.id === id); return m ? konDo(m.a, m.a + m.len, name) : false; },
++  zurueckholen: id => konRestore(id),
++  kons: () => (S.song && S.song.kons ? S.song.kons.map(k => ({mark: k.mark, part: k.part, at: k.at, len: k.len})) : []),
++};
++/* /KON */
+ /* S0/S1/S2 Nachprüfung (QA-Befunde D1–D7) */
+ // D3 marksCut: a mark trimmed at its front / split keeps its content; mark.off (relative to the mark start) is moved along
+ function s0OffShift(m, d) {
+@@ -50458,6 +50881,7 @@
+ Object.assign(SYNQUENZER, G8_API);                // G8: lange Aufnahmen
+ Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
+ Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
++Object.assign(SYNQUENZER, KON_API);               // KON: Block & Konsolidieren
+ Object.assign(SYNQUENZER, S012_API);              // S0/S1/S2: Teil bearbeiten, überarbeiten, zusammenfassen
+ Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
+ Object.assign(SYNQUENZER, G9_API);                // G9: Songtext-Bedienung (Text-Modus)
