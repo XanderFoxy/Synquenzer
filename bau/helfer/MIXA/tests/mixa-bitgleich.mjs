@@ -34,7 +34,7 @@ const run = async (file, steps) => {
   await steps(p, render);
   out.errs = errs; await close(); return out;
 };
-const base = await run(BASE, async (p, render) => { await render('voll'); await render('bass', [0]); await render('drums', [4]); await render('drums2', [4]); });
+const base = await run(BASE, async (p, render) => { await render('voll'); await render('bass', [0]); await render('drums', [4]); await render('drums2', [4]); await render('voll2'); });
 const mixa = await run(APP, async (p, render) => {
   await render('voll'); await render('bass', [0]); await render('drums', [4]);
   await p.evaluate(() => window.SYNQUENZER.mixaAnalyze());
@@ -53,18 +53,19 @@ const mixa = await run(APP, async (p, render) => {
 const sig = a => { const m = {}; for (const x of a.log) { if (x[0] === 'd') continue; const k = x[0] === 'c' ? 'connect' + (x.includes('>p') ? 'P' : '') : x.replace(/#\d+/, ''); m[k] = (m[k] || 0) + 1; } return m; };
 const same = (a, b) => JSON.stringify(sig(a)) === JSON.stringify(sig(b));
 const diff = (a, b) => { const A = sig(a), B = sig(b), o = {}; for (const k of new Set([...Object.keys(A), ...Object.keys(B)])) if (A[k] !== B[k]) o[k] = [A[k], B[k]]; return Object.keys(o).length ? o : null; };
+ok('4.30.0: erster und späterer Render (Bezug)', true, diff(base.voll, base.voll2) || 'gleich');
 ok('Graph 4.30.0 = MIX-A (frisch)', same(base.voll, mixa.voll), diff(base.voll, mixa.voll) || base.voll.log.length + ' Ereignisse');
 ok('kein MIX-A-Modul ohne Übernahme', !mixa.voll.mods.some(m => /mixa/.test(m)), mixa.voll.mods);
 ok('Bass solo bitgleich 4.30.0 = MIX-A', base.bass.h === mixa.bass.h && base.bass.n === mixa.bass.n, [base.bass.h, mixa.bass.h]);
 if (base.drums.h === base.drums2.h) ok('Drums solo bitgleich 4.30.0 = MIX-A', base.drums.h === mixa.drums.h, [base.drums.h, mixa.drums.h]);
 else console.log('INFO Drums solo: schon 4.30.0 zweimal verschieden (' + base.drums.h + ' / ' + base.drums2.h + ') – nicht als Bitvergleich geeignet');
-ok('nach Analyse: Graph = 4.30.0', same(base.voll, mixa.nachAnalyse), diff(base.voll, mixa.nachAnalyse));
+ok('nach Analyse: Graph = 4.30.0', same(base.voll2, mixa.nachAnalyse), diff(base.voll2, mixa.nachAnalyse));
 ok('nach Analyse: Bass solo bitgleich', mixa.bassNachAnalyse.h === base.bass.h);
 ok('übernommen: Spur-Knoten im Graph, Bass anders', mixa.uebernommen.mods.filter(m => m === 'Wsynq-mixa').length === 2 && mixa.bassUebernommen.h !== base.bass.h, mixa.uebernommen.mods);
-ok('Zurück: Graph = 4.30.0', same(base.voll, mixa.zurueck), diff(base.voll, mixa.zurueck));
+ok('Zurück: Graph = 4.30.0', same(base.voll2, mixa.zurueck), diff(base.voll2, mixa.zurueck));
 ok('Zurück: Bass solo bitgleich', mixa.bassZurueck.h === base.bass.h, [base.bass.h, mixa.bassZurueck.h]);
 ok('Auto-Master an: Master-Knoten im Graph', mixa.amAn.mods.filter(m => m === 'Wsynq-mixa').length === 1, mixa.amAn.mods);
-ok('Auto-Master aus: Graph = 4.30.0, Bass solo bitgleich', same(base.voll, mixa.amAus) && mixa.bassAmAus.h === base.bass.h, diff(base.voll, mixa.amAus));
+ok('Auto-Master aus: Graph = 4.30.0, Bass solo bitgleich', same(base.voll2, mixa.amAus) && mixa.bassAmAus.h === base.bass.h, diff(base.voll2, mixa.amAus));
 // (c) Durchgang des Spur-Knotens (live nach „Zurück“): Ausgang = Eingang, Bit für Bit
 const {p, close} = await open(APP);
 const pass = await p.evaluate(() => {

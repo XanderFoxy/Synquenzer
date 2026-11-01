@@ -51318,12 +51318,12 @@ function amPaint(full, el0) {
   let h = `<h4>Auto-Master</h4><div class="small">Bus-Kompressor · EQ-Neigung · Pegel · True-Peak-Limiter −1 dBTP – im Video und im GarageBand-Instrumental gleich.</div>` +
     `<div class="mxz" role="group" aria-label="Ziel-Lautheit">${MIXA_ZIELE.map(([v, l]) => `<button class="mbtn rb" data-a="z" data-v="${v}"${MIXA.ziel === v ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}>${esc(l)}</button>`).join('')}</div>` +
     `<div class="mxtop"><button class="mbtn rb" data-a="go"${busy ? ' disabled' : ''}>Messen</button><button class="mbtn rb" data-a="ok"${P && !busy && !same ? '' : ' disabled'}>Übernehmen</button>` +
-    `<button class="mbtn rb" data-a="ab"${on ? '' : ' disabled'}${MIXA.ab ? ' aria-pressed="true"' : ''}>${MIXA.ab ? 'Vorher' : 'Nachher'}</button><button class="mbtn rb" data-a="off"${on ? '' : ' disabled'}>Aus</button></div>` +
+    `<button class="mbtn rb" data-a="ab"${on ? '' : ' disabled'}${MIXA.ab ? ' aria-pressed="true"' : ''}>Vorher/Nachher</button><button class="mbtn rb" data-a="off"${on ? '' : ' disabled'}>Aus</button></div>` +
     `<div class="small mxst">${busy ? '<span class="mxprog">rechnet … ' + Math.round(MIXA.prog * 100) + ' %</span>' : on ? 'An: ' + on.ziel + ' LUFS' + (MIXA.ab ? ' · du hörst VORHER' : '') + (old ? ' · Mix geändert – neu messen' : '') : P ? 'Vorschlag bereit – Übernehmen' : 'Ziel wählen und messen (Song einmal offline)'}</div>`;
   if (P && I) {
     const row = (k, v) => `<div class="mxrow"><span>${k}</span><b>${v}</b></div>`;
     h += '<div class="mxgrid">' + row('Lautheit', mixaF(I.lin) + ' → ' + mixaF(I.lout) + ' LUFS') + row('True-Peak', mixaF(I.tp) + ' dBTP') + row('Dynamik (LRA)', fmtDec(I.lraIn, 1) + ' → ' + fmtDec(I.lraOut, 1) + ' LU') +
-      row('EQ-Neigung', 'Tief ' + (P.lo > 0 ? '+' : '') + mixaF(P.lo) + ' · Hoch ' + (P.hi > 0 ? '+' : '') + mixaF(P.hi) + ' dB') + row('Bus-Kompressor', fmtDec(P.ra, 1) + ' : 1 · ' + mixaF(P.thr) + ' dB · ' + P.at + '/' + P.rl + ' ms · max ' + mixaF(I.compMax) + ' dB') +
+      row('EQ-Neigung', 'Tief ' + (P.lo > 0 ? '+' : '') + mixaF(P.lo) + ' · Hoch ' + (P.hi > 0 ? '+' : '') + mixaF(P.hi) + ' dB') + row('Kompressor', fmtDec(P.ra, 1) + ' : 1 · ' + mixaF(P.thr) + ' dB · ' + P.at + '/' + P.rl + ' ms') + row('Kompressor-Arbeit', 'max ' + mixaF(I.compMax) + ' · Mittel ' + mixaF(I.compAvg) + ' dB') +
       row('Pegel', (P.gain > 0 ? '+' : '') + mixaF(P.gain, 2) + ' dB') + row('Limiter', 'max ' + mixaF(I.limMax) + ' dB · Mittel ' + mixaF(I.limAvg) + ' dB') + '</div>';
     if (I.limAvg > 2) h += '<div class="small mxwarn">Der Limiter arbeitet viel – „Streaming −14“ klingt offener.</div>';
   }

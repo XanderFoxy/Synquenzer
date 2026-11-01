@@ -13,7 +13,7 @@ FX › MASTER bekommt in der Zeile „Pump-Quelle“ zwei Knöpfe (≥ 44 px): *
 öffnen ein Blatt (wie STIMME › Effekte), hochkant und quer bedienbar, Finger-Scrollen.
 
 **Mix-Assistent-Blatt**
-- [Analysieren] → Fortschritt in % (Offline-Durchlauf des Songs; ohne Song: die laufende Szene, 8 Takte).
+- [Analysieren] → Fortschritt in % (Offline-Durchlauf des Songs; ohne Song: Hinweis „Noch kein Song – erst ● SONG“).
 - Je Spur eine Karte: Name · **Rolle** (Bass, Sequenz/Arp, Fläche/Pad, Lead, Drums, Gesang/Chor) · **Charakter**
   (kurz, ausklingend, schwebend) · Kennwerte (Lage, Dichte, Länge, Attack, Schwerpunkt, Tiefen-/Höhenanteil, Crest, LUFS).
 - Darunter die Vorschläge der Spur, jeder mit **[Übernehmen]**; übernommen → **[Zurück]** (stellt genau die Werte vor der
@@ -55,7 +55,8 @@ Auswertung im Worker:
   Songteil-Pegel (vom Scheduler an den Taktgrenzen gesetzt, 20 ms Gleiten). Ein-/Ausblenden 30 ms, Werte gleiten.
 - Master: Worklet `synq-mixa` (Modus Master) parallel zu Limiter/Soft-Ceiling: Tief-Shelf 150 Hz, Hoch-Shelf 5 kHz,
   Bus-Kompressor (RMS, Stereo gekoppelt), Pegel, True-Peak-Limiter (4× überabgetastete Spitzen, Vorausschau = die
-  gemessene Kompressor-Latenz ≈ 6 ms → gleicher Zeitversatz wie bisher, graphLat bleibt), Decke −1 dBTP (intern −1,2).
+  gemessene Kompressor-Latenz ≈ 6 ms → gleicher Zeitversatz wie bisher, graphLat bleibt), Decke −1 dBTP (intern −1,5;
+  Erkennung 4× mit 48 Stützstellen + Parabel-Verfeinerung, damit auch höhenreiche Signale nahe Nyquist sicher bleiben).
 - Die Einstellung wird im Worker mit genau demselben DSP-Code auf das gemessene Signal gerechnet und der Pegel so lange
   nachgeführt, bis die Ziel-Lautheit ±0,1 LU erreicht ist. Live, Video und GarageBand spielen denselben Code.
 

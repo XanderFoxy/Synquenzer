@@ -16,10 +16,12 @@ const CHECK = sel => {
   return {bad, small, cut, h: document.scrollingElement.scrollHeight, vh, fonts: document.fonts ? [...document.fonts].filter(f => f.status === 'loaded').map(f => f.family).join(',') : ''};
 };
 const VPS = [[428, 926], [926, 428], [428, 650], [375, 667], [844, 390]];
-let shared = null;
+import { chromium } from 'playwright';
+const shared = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
 for (const [w, h] of VPS) {
-  const {b, p, errs, close} = await open(FILE, {width: w, height: h}, shared ? {browser: shared} : {});
-  shared = shared || b;
+  const {p, errs, close} = await open(FILE, {width: w, height: h}, {browser: shared});
+  // die App-Schrift wie auf der eigenen Seite (cloudPagesExtras lädt fonts/ nur dort)
+  await p.evaluate(async () => { cloudPagesExtras(); for (const w of ['500', '600', '700']) await document.fonts.load(w + ' 12px "Barlow Semi Condensed"'); await document.fonts.load('500 12px "JetBrains Mono"'); await document.fonts.ready; });
   await p.waitForTimeout(400);
   const h0 = await p.evaluate(() => document.scrollingElement.scrollHeight);
   await p.evaluate(() => openMasterPage()); await p.waitForTimeout(300);
@@ -36,8 +38,7 @@ for (const [w, h] of VPS) {
     await p.evaluate(() => window.SYNQUENZER.mixaClose());
   }
   // mit Ergebnis (einmal gerechnet, dann in jeder Größe)
-  if (w === 428 && h === 926) { await buildSong(p, {}); await p.evaluate(() => window.SYNQUENZER.mixaAnalyze()); await p.evaluate(() => window.SYNQUENZER.mixaMeasureAm(-14)); }
-  else { await buildSong(p, {}); await p.evaluate(() => window.SYNQUENZER.mixaAnalyze()); await p.evaluate(() => window.SYNQUENZER.mixaMeasureAm(-14)); }
+  await buildSong(p, {}); await p.evaluate(() => window.SYNQUENZER.mixaAnalyze()); await p.evaluate(() => window.SYNQUENZER.mixaMeasureAm(-14));
   for (const [name, fn] of [['mix', 'mixaSheet'], ['am', 'amSheet']]) {
     await p.evaluate(fn => window.SYNQUENZER[fn](), fn); await p.waitForTimeout(250);
     const c = await p.evaluate(CHECK, '.pop.mxsheet');
