@@ -1,5 +1,5 @@
 --- bau/snapshots/R-4252.html	2026-11-01 02:07:29.212881313 +0000
-+++ bau/helfer/G6PH/index.html	2026-11-01 02:12:33.112899378 +0000
++++ bau/helfer/G6PH/index.html	2026-11-01 02:16:22.852913034 +0000
 @@ -20002,6 +20002,7 @@
        }
        try { tkVoxTick(song, b0, b1, off, E, insB, guard && sp.wrapAt != null ? sp.wrapAt : -Infinity); } catch (e) { tickErr(e); }   // VS3: Song-Stimme
@@ -41,7 +41,7 @@
    else { const before = cleanClip(x.clip); if (fn(x.clip.audio) === false) return false; const n = tkNormAudio(x.clip.audio); if (n && n.chor) x.clip.audio.chor = n.chor; else delete x.clip.audio.chor; pushUndo(r.t, r.s, before, label); clipChanged(r.t, r.s); }
    markDirty(); UI.dirty.all = true; haptic('tick');
    g6Refresh();
-@@ -44912,6 +44916,173 @@
+@@ -44912,6 +44916,175 @@
    g6Nodes: () => [...G6.nodes.entries()].map(([k, N]) => ({k, g: N.g.gain.value, rev: N.rev.gain.value, dly: N.dly.gain.value, pan: N.pan ? N.pan.pan.value : 0}))
  };
  /* G6-END */
@@ -70,7 +70,7 @@
 +}
 +// Tonklassen der Begleitung an Song-Schlag sb (absolut, ab Takt 1 = 0); null bei weniger als 2 Tönen (wie g6HeardPcs)
 +function g6pSongPcsAt(sb) {
-+  const song = S.song; if (!song || !isNum(sb) || sb < 0) return null;
++  const song = S.song; if (!song || !isNum(sb) || sb < 0 || sb >= song.bars * 4) return null;
 +  const bar = Math.floor(sb / 4 + 1e-9), out = new Set(), hit = (nb, nd, b) => isNum(nb) && isNum(nd) && b >= nb - 1e-6 && b < nb + nd;
 +  for (let i = 0; i < S.tracks.length; i++) {
 +    const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || tr.stimme || tr.mute || i === MEL_T) continue;
@@ -86,8 +86,10 @@
 +}
 +// Spec-Schnittstelle: Takt (0-basiert) + Schlag im Takt
 +function g6pSongPcs(bar, beat) { return g6pSongPcsAt(bar * 4 + (beat || 0)); }
-+// für g6HeardPcs: beat = Schlag ab Takt der Song-Stimme (g6Build: (t0 − in)/spb + at)
-+function g6pVoxPcs(r, beat) { const v = S.song && (S.song.vox || []).find(z => z.id === r.vox); return v ? g6pSongPcsAt(v.bar * 4 + beat) : null; }
++// für g6HeardPcs: beat = Schlag ab Takt der Song-Stimme (g6Build: (t0 − in)/spb + at). Abgetastet wird ¼ Schlag nach dem erkannten
++// Noten-Anfang: die Analyse setzt t0 oft einige ms vor den Einsatz, und ein Ton auf dem Akkordwechsel bekäme sonst den alten Akkord
++const G6P_PROBE = 0.25;
++function g6pVoxPcs(r, beat) { const v = S.song && (S.song.vox || []).find(z => z.id === r.vox); return v ? g6pSongPcsAt(v.bar * 4 + beat + G6P_PROBE) : null; }
 +/* ---------- 2. Vorausrechnen ---------- */
 +// Lead-Fassung fertig (Roh-Take geladen, G2/Zeitkarte gerechnet, VS-P gemessen und zweimal hintereinander dieselbe Fassung)
 +function g6pLeadReady(id, a) {
@@ -215,7 +217,7 @@
  /* G7-BEGIN */
  /* =====================================================================================================================
     G7 (Nachtrag 5): Gesang folgt dem Transponieren. STIMME-Clips und Song-Stimme werden vom Transponieren (Träger, „Eine Skala“,
-@@ -45886,6 +46057,7 @@
+@@ -45886,6 +46059,7 @@
  Object.assign(SYNQUENZER, VP_API);                // VS-P: Stimme im Mix (Auto-Pegel, Spitzen-Schutz)
  Object.assign(SYNQUENZER, G2_API);                // G2: Tonhöhe quantisieren, Gesang als Noten
  Object.assign(SYNQUENZER, G6_API);                // G6: Chor-Generator

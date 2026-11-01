@@ -1,0 +1,25 @@
+--- bau/snapshots/VIDSTAGE.html	2026-11-01 02:07:29.304881318 +0000
++++ bau/snapshots/VIDSTAGE.html (G6+h)	2026-11-01 02:13:08.152901461 +0000
+@@ -42597,7 +42597,14 @@
+ /* the song (bars a … b) once through the app's engine on an OfflineAudioContext. Returns the master, trimmed to the song
+    start (+ the compressors' look-ahead, so video time 0 = song bar a heard) up to the end of the tail (< −60 dBFS, ≤ 10 s),
+    and the slot timeline as the scheduler set it (R.slot, for the picture) */
++/* G6PH-VIDEO-BEGIN (G6+h, Nachtrag 10 §2.7): Solo und „Selbst singen“-Scharf gelten nicht im Video; vor dem Render wird jeder Chor
++   im Bereich fertig gerechnet (g6pWaitAll). Ohne G6+h-Block (typeof) läuft der Render wie bisher. */
+ async function vvRenderAudio(o) {
++  const h = typeof g6pRenderHold === 'function' ? g6pRenderHold() : null;
++  try { return await vvRenderAudio0(o); } finally { if (h) g6pRenderRelease(h); }
++}
++/* G6PH-VIDEO-END */
++async function vvRenderAudio0(o) {
+   o = o || {};
+   const song = S.song; if (!song || !song.bars) throw new Error('Noch kein Song');
+   if (VV.off) throw new Error('Läuft schon');
+@@ -42610,6 +42617,7 @@
+   drumBufs();                                                       // the drum buffers of the live context (shared, same rate)
+   if (SynthHost.state === 'loading' && SynthHost.promise) { try { await SynthHost.promise; } catch (e) {} }
+   await vvTakesReady();
++  if (typeof g6pWaitAll === 'function') { const w = await g6pWaitAll({a, b}, {cancel: () => VV.cancel}); if (!w.ok) toast('Chor im Video nicht ganz fertig gerechnet'); }   // G6PH-VIDEO
+   const wk = wkReady(), sr = lc.sampleRate, sp = spb(), songSec = (b - a) * 4 * sp;
+   const lead = .06, len = Math.ceil((lead + AU.graphLat + songSec + VV_TAIL + .4) * sr);
+   const oc = new OfflineAudioContext(2, len, sr);

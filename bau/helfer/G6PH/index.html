@@ -44941,7 +44941,7 @@ function g6pLaneClip(song, i, bar) {
 }
 // Tonklassen der Begleitung an Song-Schlag sb (absolut, ab Takt 1 = 0); null bei weniger als 2 Tönen (wie g6HeardPcs)
 function g6pSongPcsAt(sb) {
-  const song = S.song; if (!song || !isNum(sb) || sb < 0) return null;
+  const song = S.song; if (!song || !isNum(sb) || sb < 0 || sb >= song.bars * 4) return null;
   const bar = Math.floor(sb / 4 + 1e-9), out = new Set(), hit = (nb, nd, b) => isNum(nb) && isNum(nd) && b >= nb - 1e-6 && b < nb + nd;
   for (let i = 0; i < S.tracks.length; i++) {
     const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || tr.stimme || tr.mute || i === MEL_T) continue;
@@ -44957,8 +44957,10 @@ function g6pSongPcsAt(sb) {
 }
 // Spec-Schnittstelle: Takt (0-basiert) + Schlag im Takt
 function g6pSongPcs(bar, beat) { return g6pSongPcsAt(bar * 4 + (beat || 0)); }
-// für g6HeardPcs: beat = Schlag ab Takt der Song-Stimme (g6Build: (t0 − in)/spb + at)
-function g6pVoxPcs(r, beat) { const v = S.song && (S.song.vox || []).find(z => z.id === r.vox); return v ? g6pSongPcsAt(v.bar * 4 + beat) : null; }
+// für g6HeardPcs: beat = Schlag ab Takt der Song-Stimme (g6Build: (t0 − in)/spb + at). Abgetastet wird ¼ Schlag nach dem erkannten
+// Noten-Anfang: die Analyse setzt t0 oft einige ms vor den Einsatz, und ein Ton auf dem Akkordwechsel bekäme sonst den alten Akkord
+const G6P_PROBE = 0.25;
+function g6pVoxPcs(r, beat) { const v = S.song && (S.song.vox || []).find(z => z.id === r.vox); return v ? g6pSongPcsAt(v.bar * 4 + beat + G6P_PROBE) : null; }
 /* ---------- 2. Vorausrechnen ---------- */
 // Lead-Fassung fertig (Roh-Take geladen, G2/Zeitkarte gerechnet, VS-P gemessen und zweimal hintereinander dieselbe Fassung)
 function g6pLeadReady(id, a) {
