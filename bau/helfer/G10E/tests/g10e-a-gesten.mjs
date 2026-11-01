@@ -127,7 +127,6 @@ g = await geom(p);
   ok((await marksOf(p, id)).length === n0, 'Halten 300 ms in der Leiste: noch keine Marke');
   await tap(c, x, g.y + 12, 560); await sleep(250);
   const I = await info(p);
-  console.log('  Halten:', (await marksOf(p, id)).length - n0, await undoN(p) - u0, I.clicks, !!I.ed);
   ok((await marksOf(p, id)).length === n0 + 1 && await undoN(p) === u0 + 1 && I.clicks >= 1, '450 ms Halten in der Griff-Leiste: neue Marke, 1 Undo, Einrast-Klick (' + I.clicks + ')');
   await p.evaluate(() => SYNQUENZER.undo()); await sleep(100);
   const b = await p.evaluate(() => { const r = document.querySelector('#wpSheet .g10add').getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width, h: r.height}; });

@@ -1,6 +1,6 @@
 --- snapshots/R-4300.html	2026-11-01 09:14:21.044867605 +0000
-+++ helfer/G10E/index.html	2026-11-01 10:30:32.353139337 +0000
-@@ -2413,6 +2413,44 @@
++++ helfer/G10E/index.html	2026-11-01 10:40:11.949173790 +0000
+@@ -2413,6 +2413,45 @@
  .pop.g9rs .g9auto{display:flex;gap:8px;align-items:center;min-height:44px;font:600 13px/1.2 var(--font-ui)}
  .pop.g9rs .g9rm{height:44px;padding:0 10px;margin-left:6px}
  @media (orientation:landscape){#wpSheet .qh .sh-x,#wpSheet .wpab,#wpSheet .wptx{position:relative}#wpSheet .qh .sh-x::after,#wpSheet .wpab::after,#wpSheet .wptx::after{content:'';position:absolute;left:-1px;right:0;top:-2.5px;bottom:-7.5px}}
@@ -41,11 +41,12 @@
 +@media (orientation:landscape){#wpSheet .g10tool{height:44px}}
 +/* Studio-Ansicht (Vorschlag §2.5 Nr. 7, nur nach Einschalten im ⋯-Blatt): hochkant Regler eingeklappt, quer volle Breite */
 +#wpSheet.g10big .wpchips,#wpSheet.g10big .wpsl{display:none}
++@media (orientation:portrait){#wpSheet.g10big .g10map{height:32px}}   /* Welle ≥ 200 px (§2.5 Nr. 7) */
 +@media (orientation:landscape){#wpSheet.g10big{grid-column:1/-1;width:auto;justify-self:stretch;border-radius:12px 12px 0 0}}
  /* ---------- clip sheet v3 (§3.7): P bottom sheet with 2 button columns (3 on short screens); L 420 px panel, 3 columns ---------- */
  #clipSheet .sh-body.cs3{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px;padding:8px 8px 10px}
  #clipSheet .sh-body.cs3>*{flex:0 0 auto}            /* rows never shrink into each other (a wrapped key row stays readable) */
-@@ -31939,6 +31977,7 @@
+@@ -31939,6 +31978,7 @@
    padFlashes(tAud);
    recLaneFrame(bAud);
    lyFrame(bAud);                                             // G9E: Mitlese-Zeile (Songtext)
@@ -53,7 +54,7 @@
    const fm = fangMode(), fl = (fm === 'teil' ? fangTeilLit() : fm === 'stimme' ? vsFangLit() : fangLit()) || (fm !== 'stimme' && s1Lit());   /* S1 */     // V2d: FANG TEIL (§4.7 E3-08, EN7-09); VS2: Stimme
    if (fm !== UI.last.fangM) {
      UI.last.fangM = fm; const tl = fm === 'teil', vs = fm === 'stimme';
-@@ -47390,7 +47429,7 @@
+@@ -47390,7 +47430,7 @@
  for (const c of cand) {
  const i = refine(c.t * hop);
  let word = true; const tf = Math.floor(i / hop);
@@ -62,7 +63,7 @@
  marks.push({t: i / sr, i, conf: +Math.min(1, c.v / 2).toFixed(3), src: c.src, word, voiced: false});
  }
  if (o.pitch !== false) {
-@@ -47779,6 +47818,7 @@
+@@ -47779,6 +47819,7 @@
      const o = {t: tkR6(k.t), conf: isNum(k.conf) ? +clamp(k.conf, 0, 1).toFixed(2) : 1};
      if (k.word) o.word = true;
      if (k.user) o.user = true;
@@ -70,7 +71,7 @@
      out.push(o);
    }
    out.sort((x, y) => x.t - y.t);
-@@ -47788,9 +47828,9 @@
+@@ -47788,9 +47829,9 @@
    const mp = w && typeof w === 'object' && w.map, s = mp && mp.src, d = mp && mp.dst;
    if (!Array.isArray(s) || !Array.isArray(d) || s.length < 2 || s.length !== d.length || s.length > 4002 || s[0] !== 0 || d[0] !== 0) return null;
    for (let k = 0; k < s.length; k++) if (!isNum(s[k]) || !isNum(d[k]) || (k && (s[k] <= s[k - 1] || d[k] <= d[k - 1]))) return null;
@@ -82,7 +83,7 @@
  }
  tkExt().take.push((m, o) => {
    const mk = wpNormMarks(m.marks, o.len / o.sr); if (mk) o.marks = mk;
-@@ -47843,7 +47883,7 @@
+@@ -47843,7 +47884,7 @@
    const ka = kk(a); return !!ka && ka === kk(b);
  }
  function wpRun(M, m) {
@@ -91,7 +92,7 @@
    if (m.op === 'stretch') { const r = M.X.stretch(m.x, m.sr, {src: m.src, dst: m.dst}, {lock: m.lock}); return {y: r.y, warn: r.warnings, segs: r.segs.length, wsola: r.segs.filter(g => g.mode === 'wsola').length}; }
    return M.renderSlices(m.x, m.sr, m.on, m.to);
  }
-@@ -48076,12 +48116,14 @@
+@@ -48076,12 +48117,14 @@
    const q = VSM.quantizeMarks(times, {bpm, t0, grid: o.grid, strength: str, swing: o.swing, detectGrid: KeyDetect.detectGrid, swingAuto: o.swingAuto, catch: WP_CATCH});
    if (q.grid === 'off') { delete m.warp; return 'off'; }
    if (!m.marks) m.marks = mk.map(k => Object.assign({}, k));
@@ -108,7 +109,7 @@
  // nach einer Änderung: neu rendern (die Wiedergabe folgt, sobald die Fassung da ist) bzw. sofort neu hören
  function wpAfter(id) {
    markDirty(); UI.dirty.all = true;
-@@ -48126,7 +48168,7 @@
+@@ -48126,7 +48169,7 @@
    if (!wpMarks(id) && o.grid !== 'off') await wpDetect(id);
    if (!S.takes || S.takes[id] !== m) return null;
    const before = JSON.stringify(S.takes), w = m.warp;
@@ -117,7 +118,7 @@
    if (JSON.stringify(S.takes) !== before) { undoPush({kind: 'takes', before, label: label || 'Quantisieren · Audio'}); wpAfter(id); }
    return g;
  }
-@@ -48175,7 +48217,7 @@
+@@ -48175,7 +48218,7 @@
    const go = () => {
      const m = S.takes && S.takes[id]; if (!m || (merged && UNDO[UNDO.length - 1] !== top)) return false;   // inzwischen ↶ oder ein neuer Schritt: der Take bleibt
      const before = JSON.stringify(S.takes);
@@ -126,7 +127,7 @@
      if (JSON.stringify(S.takes) === before) return false;
      const it = {kind: 'takes', before};
      if (top) { UNDO.pop(); undoPush({kind: 'group', label: top.label, items: [top, it]}); } else undoPush(Object.assign({label: 'Quantisieren · Audio'}, it));
-@@ -48257,12 +48299,13 @@
+@@ -48257,12 +48300,13 @@
    const foot = el('div', 'wpf'), seg = el('div', 'seg wpmode', '<button data-m="stretch">Dehnen</button><button data-m="slice">Scheiben</button>');
    seg.addEventListener('click', e => { const bt = e.target.closest('button[data-m]'), E = WP.ed; if (bt && E) wpSetMode(E.id, bt.dataset.m); });
    const zb = el('button', 'rb wpz', ''), info = el('span', 'qnote wpinfo', '');
@@ -141,7 +142,7 @@
    sh.classList.add('open');
    wpGest(cv);
    wpPaint();
-@@ -48279,18 +48322,20 @@
+@@ -48279,18 +48323,20 @@
    WP.ed = null; g6pgClosed();                                      // G6+g: Solo aus der Legende endet mit dem Editor
    if (UI.pop && (UI.pop.name === 'wpsel' || UI.pop.name === 'wplyr' || UI.pop.name === 'g9text' || UI.pop.name === 'g9rec')) closePop();
    WP.old.clear();                                   // VS5b: die vorige Fassung nur, solange der Editor offen ist (Speicher am iPhone)
@@ -163,7 +164,7 @@
    const x = tkRef(E.r); if (!x) { wpClose(); return; }
    const a = x.a, id = E.id, m = S.takes && S.takes[id], cv = E.cv, wr = cv.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
    const Wp = Math.max(1, Math.round(wr.width)), Hp = Math.max(1, Math.round(wr.height));
-@@ -48316,6 +48361,7 @@
+@@ -48316,6 +48362,7 @@
    const buf = wpBase(id, a), mid = Hp * .58, hh = Hp * .36, live = !!(w && !WP.ab && !wpMapInfo(w.map).ident);
    // die Spitzen je Pixel bleiben für dieselbe Ansicht liegen (die Marken-Animation zeichnet nur neu, rechnet nicht neu – FP-IPHONE)
    const wave = (b, inv, mk) => {
@@ -171,7 +172,7 @@
      const key = wpBid(b) + '|' + (mk || '') + '|' + V.a + '|' + V.W + '|' + Wp, wc = E.wc || (E.wc = new Map());
      let pk = wc.get(key);
      if (!pk) {
-@@ -48339,6 +48385,7 @@
+@@ -48339,6 +48386,7 @@
        if (hb) wave(hb); else wave(buf, t => VSM.warpInverse(w.map, t), wpMapInfo(w.map).key);
      } else wave(buf);
    }
@@ -179,7 +180,7 @@
    g6pgPaintWp(g, E, x, Wp, Hp, dpr);   // G6+g: Tonhöhenlinien der Chorstimmen (Bild-Puffer)
    // Ziel der quantisierten Marken (bernstein) mit Verbindung zur Quelle
    if (w && !WP.ab && !wpMapInfo(w.map).ident) {
-@@ -48361,6 +48408,7 @@
+@@ -48361,6 +48409,7 @@
      g.beginPath(); g.moveTo(xx - 6, 0); g.lineTo(xx + 6, 0); g.lineTo(xx, 9); g.closePath(); g.fill();
      g.globalAlpha = 1;
    });
@@ -187,7 +188,7 @@
    // VS5b Songtext: eine Silbe je Marke (von links), an der Stelle, wo die Marke klingt; überzählige rot am Ende, fehlende „·“
    E.lyr = null;
    if (E.g9 && typeof g9PaintWave === 'function') g9PaintWave(E, g, P, X, Wp, Hp, mk);   // G9: gewählter Abschnitt
-@@ -48386,6 +48434,7 @@
+@@ -48386,6 +48435,7 @@
      }
      g.font = WP.font;
    }
@@ -195,7 +196,7 @@
    // Bedienung
    const md = w ? w.mode : E.mode;
    E.seg.querySelectorAll('button').forEach(bt => { const on = bt.dataset.m === md; bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); });
-@@ -48393,8 +48442,8 @@
+@@ -48393,8 +48443,8 @@
    const cur = w ? w.grid : 'off';
    E.chips.querySelectorAll('button').forEach(bt => { const on = bt.dataset.v === cur; bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); });
    E.rs._g(); E.rw._g();
@@ -206,7 +207,7 @@
    const det = !(m && m.marks) && !WP.det.has(id);
    const wn = wpWarn(id);
    wpInfoTxt(det ? 'Marken werden gesucht …' : mk.length + (mk.length === 1 ? ' Marke' : ' Marken') + ' · ' + (w ? (w.grid === 'auto' ? 'Auto ' : '') + w.res + ' · ' + Math.round(w.strength * 100) + ' %' + (wpReady(id) ? '' : ' · rechnet …') : 'Original') +
-@@ -48437,6 +48486,7 @@
+@@ -48437,6 +48487,7 @@
  function wpMovedToast(id) { const n = wpMovedN(id); toast(n + (n === 1 ? ' Einsatz' : ' Einsätze') + ' gerückt'); return n; }
  const WP_GRIP = 44;                                                  // K2: Griff-Streifen oben (Regel 4)
  function wpGest(cv) {
@@ -214,7 +215,7 @@
    const xOf = e => e.clientX - cv.getBoundingClientRect().left;
    cv.addEventListener('pointerdown', e => {
      const E = WP.ed; if (!E || E.p || E.g9 || e.button > 0) return;   // G9: Text-Modus = eigene Gesten am Rahmen
-@@ -48479,8 +48529,8 @@
+@@ -48479,8 +48530,8 @@
    E.an.style.left = Math.round(cx) + 'px';
    openPop(E.an, p => {
      p.classList.add('wpsel'); guardTouch(p);
@@ -225,7 +226,7 @@
    }, {name: 'wpsel', above: true, onClose: () => { if (WP.ed) { WP.ed.sel = -1; wpPaint(); } }});
  }
  // VS5b [Text]: Songtext eintippen, Silben mit Bindestrich („Lie-be ist ein Feu-er“); ✓ = ein Undo, leer = löschen
-@@ -48531,6 +48581,589 @@
+@@ -48531,6 +48582,589 @@
    wpCore: (fn, args) => { const r = VSM[fn](...args.map(v => (Array.isArray(v) && v.length > 64 ? Float32Array.from(v) : v))); return r && r.times ? {times: Array.from(r.times), grid: r.grid, swing: r.swing, moved: Array.from(r.moved)} : ArrayBuffer.isView(r) ? Array.from(r) : r; },
  };
  

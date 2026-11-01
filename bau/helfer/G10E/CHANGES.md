@@ -69,6 +69,6 @@ Merge mit dem Hotfix 4.30.1 ([Ablegen]-Griff, Transport in allen Blättern) leic
 ## Fragen an Xander
 
 1. **Studio-Ansicht [V-Funk] (§2.5 Nr. 7):** gebaut, aber **aus** (Schalter „Große Welle“ im ⋯-Blatt): hochkant Raster und Regler
-   eingeklappt (Welle ≈ 230 px), quer volle Breite. Soll das der Standard werden?
+   eingeklappt, Mini-Karte 32 px (Welle 212 px statt 108 px), quer volle Breite (Welle 905 × 234 px). Soll das der Standard werden?
 2. **Haptik beim Ziehen** gibt es in Safari nicht (F-2, Apple-Konto) – bis dahin Magnet-Anzeige + Einrast-Klick. Ist der Klick so recht
    (leise, abschaltbar im ⋯-Blatt)?
