@@ -51,12 +51,12 @@ const res = {};
   let o; for (let k = 0; k < 80; k++) { o = await read(p); if (o.ph != null && o.ph >= .4 && o.ph < 1) break; await p.waitForTimeout(60); }
   const bx = await p.evaluate(() => { const r = document.querySelector('#synthSheet .knob[data-key="cutoff"] svg').getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
   const vorGriff = await read(p);
-  await p.mouse.move(bx.x, bx.y); await p.mouse.down(); await p.mouse.move(bx.x, bx.y - 8, {steps: 2}); await p.mouse.move(bx.x, bx.y - 14, {steps: 2});
+  await p.mouse.move(bx.x, bx.y); await p.mouse.down(); await p.mouse.move(bx.x, bx.y - 4); await p.mouse.move(bx.x, bx.y - 6);   // 2 px über die Schwelle
   const imGriff = await read(p);
   const H = await follow(p, 'A Hand', 2600);
   await p.mouse.up();
   const nach = await read(p);
-  res.Hand = {vorGriff: vorGriff.txt + ' (n ' + vorGriff.n + ')', imGriff: imGriff.txt + ' (n ' + imGriff.n + ')', sprungN: +(imGriff.n - vorGriff.n).toFixed(3), haeltWert: new Set(H.map(x => x.txt)).size === 1, nachEnde: nach.txt, grundklangJetzt: nach.grund, amberNachGriff: H.some(x => x.amb)};
+  res.Hand = {grundklangVorher: vorGriff.grund, vorGriff: vorGriff.txt + ' (n ' + vorGriff.n + ')', imGriff: imGriff.txt + ' (n ' + imGriff.n + ')', sprungN: +(imGriff.n - vorGriff.n).toFixed(3), haeltWert: new Set(H.map(x => x.txt)).size === 1, nachEnde: nach.txt, grundklangJetzt: nach.grund, amberNachGriff: H.some(x => x.amb)};
   await p.evaluate(() => window.SYNQUENZER.stop()); await p.close();
 }
 // B: konsolidierter Song-Teil (Kette Szene 1 · 2 Takte, Szene 2 · 2 Takte) als Teil abgespielt

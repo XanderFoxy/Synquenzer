@@ -1,0 +1,21 @@
+import { chromium } from 'playwright';
+const f = process.argv[2];
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const p = await b.newPage({viewport: {width: 428, height: 926}, hasTouch: true});
+const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('file://' + f); await p.waitForTimeout(1500);
+const r0 = await p.evaluate(async () => { const Q = window.SYNQUENZER;
+  const g = S.tracks[1].sound.p.fm6.ops[0].ol;
+  Q.v6aSetState(1, 0, {p: {'fm6.ops.0.ol': 40, cutoff: 500}}); Q.v6aSetState(1, 1, {p: {'fm6.ops.0.ol': 90, cutoff: 6000}}); Q.v6aSetGlide(1, 0, {x: 'bar1'}); Q.v6aSetGlide(1, 1, {x: 'bar1'});
+  Q.selectTrack(1); Q.openEditor(); await new Promise(r => setTimeout(r, 800));
+  return {g, keys: [...document.querySelectorAll('#synthSheet [data-key]')].map(e => e.dataset.key).join(' '), tabs: [...document.querySelectorAll('#synthSheet button')].map(b => b.textContent.trim()).filter(Boolean).slice(10, 40).join('|')}; });
+console.log(JSON.stringify(r0));
+await p.evaluate(() => window.SYNQUENZER.launchScene(0)); await p.waitForTimeout(1500);
+await p.evaluate(() => window.SYNQUENZER.launchScene(1));
+const out = [];
+for (let k = 0; k < 30; k++) { out.push(await p.evaluate(() => { const el = document.querySelector('#synthSheet .knob[data-key="fm.0.ol"], #synthSheet .fader[data-key="fm.0.ol"]');
+  return (+window.SYNQUENZER.state().runtime.beat).toFixed(1) + ':' + kv1Ov(1, 'fm6.ops.0.ol') + ':' + (el ? el.getAttribute('aria-valuenow') : '-'); })); await p.waitForTimeout(200); }
+console.log(out.join('  '));
+await p.screenshot({path: 'dbg-fm.png'});
+console.log('errors', JSON.stringify(errs));
+await b.close();

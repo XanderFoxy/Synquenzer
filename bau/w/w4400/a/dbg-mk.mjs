@@ -1,0 +1,22 @@
+import { chromium } from 'playwright';
+const f = process.argv[2];
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const p = await b.newPage({viewport: {width: 428, height: 926}, hasTouch: true});
+const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('file://' + f); await p.waitForTimeout(1500);
+const r0 = await p.evaluate(async () => { const Q = window.SYNQUENZER; Q.setEngine(2, 'mk'); await new Promise(r => setTimeout(r, 800));
+  const g = S.tracks[2].sound.p.mk.t[0].f.cut;
+  Q.v6aSetState(2, 0, {p: {'mk.t.0.f.cut': 10}}); Q.v6aSetState(2, 1, {p: {'mk.t.0.f.cut': 120}}); Q.v6aSetGlide(2, 0, {x: 'bar1'}); Q.v6aSetGlide(2, 1, {x: 'bar1'});
+  Q.selectTrack(2); Q.openEditor(); await new Promise(r => setTimeout(r, 1200));
+  const el = document.querySelector('#synthSheet [data-id="f.cut"], #synthSheet [data-k="f.cut"]');
+  return {g, eng: S.tracks[2].sound.engine, el: el ? el.outerHTML.slice(0, 300) : null, st: JSON.stringify(Q.v6aState(2, 1))}; });
+console.log(JSON.stringify(r0));
+await p.evaluate(() => window.SYNQUENZER.launchScene(0)); await p.waitForTimeout(1500);
+await p.evaluate(() => window.SYNQUENZER.launchScene(1));
+const out = [];
+for (let k = 0; k < 40; k++) { out.push(await p.evaluate(() => { const d = MKUI.KN ? null : null; const el = document.querySelector('#synthSheet [data-id="f.cut"], #synthSheet [data-k="f.cut"]'); const cap = el && el.querySelector('[style*="rotate"]');
+  return (+window.SYNQUENZER.state().runtime.beat).toFixed(1) + ':' + (kv1Ov(2, 'mk.t.0.f.cut') || 0).toFixed(1) + ':' + (cap ? cap.style.transform : '-'); })); await p.waitForTimeout(150); }
+console.log(out.join('  '));
+await p.screenshot({path: 'dbg-mk.png'});
+console.log('errors', JSON.stringify(errs));
+await b.close();
