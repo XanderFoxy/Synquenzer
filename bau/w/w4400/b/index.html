@@ -4776,6 +4776,34 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 @media (orientation:portrait) and (max-width:430px){.percgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (orientation:landscape){.percgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 /* PERC-CSS-END */
+/* NPS-CSS-BEGIN: Seite NORTH der Perkussionsspur als klassisches Gesicht – rotes Feld, Siebensegment oben, schwarze Schlagflächen
+   (Klassen der Platte: ndpseg, ndpstrip, ndppad, ndpkey aus NDP-CSS-PLATTE), Sektionen, Programm; Tasten ≥ 44 px; die Seite scrollt innen */
+.pg.percpg.pan-y{overflow-y:auto;overflow-x:hidden;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.percrow .percplt{height:44px;min-width:86px;margin-left:auto}
+.percplate{--ndp-red:hsl(355 78% 41%);--ndp-red2:hsl(353 80% 31%);--ndp-led:#ff3a22;--ndp-amb:#ffcf7a;flex:none;position:relative;display:grid;gap:7px;padding:8px;border-radius:14px;
+  grid-template-columns:minmax(0,1fr);grid-template-areas:"disp" "pads" "secs" "prg";color:#fff;
+  background:radial-gradient(120% 70% at 18% 0%,rgba(255,255,255,.16),rgba(255,255,255,0) 55%),linear-gradient(180deg,var(--ndp-red),var(--ndp-red2));
+  box-shadow:inset 0 0 0 2px hsl(355 70% 22%),inset 0 2px 0 rgba(255,255,255,.22),0 4px 12px rgba(0,0,0,.5)}
+.percdisp{grid-area:disp;display:flex;gap:7px;min-width:0}
+.percplate .percseg{flex:none;height:50px;padding:5px 8px;cursor:default}
+.percplate .percstrip{flex:1 1 auto;min-width:0;min-height:50px}
+.percpads{grid-area:pads;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;touch-action:none}
+.percpads .percpad{min-height:58px;gap:4px;font-size:12px;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.percpads .percpad small{font-size:9px}
+.percpads .percpad.sel .led{background:var(--ndp-led);box-shadow:0 0 6px var(--ndp-led)}
+.percsecs{grid-area:secs;display:flex;gap:6px;min-width:0}
+.percsecs .percsec{min-height:44px;padding:0 2px;font-size:10px;letter-spacing:.04em}.percsecs .percsec span{white-space:normal;line-height:1.05}
+.percplate .percprg{grid-area:prg;min-height:44px;flex-direction:row;justify-content:space-between;gap:8px;padding:0 12px;min-width:0}
+.percplate .percprg span{font:700 12px/1.1 var(--font-ui);letter-spacing:.02em;color:var(--ndp-amb)}
+@media (orientation:landscape){
+  .percplate{grid-template-columns:minmax(200px,1fr) auto minmax(150px,auto);grid-template-areas:"disp secs prg" "pads pads pads"}
+  .percplate .percseg{height:44px}.percplate .percstrip{min-height:44px}
+  .percpads{grid-template-columns:repeat(12,minmax(0,1fr));gap:6px}
+  .percpads .percpad{min-height:54px;padding:3px 2px}
+  .percsecs .percsec{flex:0 1 78px}
+}
+@media (orientation:landscape) and (max-height:500px){.percplate+.perchint{display:none}}
+/* NPS-CSS-END */
 /* SX9-CSS-BEGIN */
 .plsheet .sx9-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 6px}
 .plsheet .sx9-l{font:600 12px/1 var(--font-ui);color:var(--text-dim);margin-right:2px}
@@ -29422,6 +29450,7 @@ function ndpLoad() {   // NDP
 }
 // die Platte gehört zum Drum-Editor: er wird geöffnet (Drum-Spur gewählt), die Platte liegt darüber; ✕ führt zurück
 function ndpOpen(o) {   // NDP
+  if (o && o.perc != null) return percPlateOpen(o.perc, o);   // NPS: die Platte für eine Perkussionsspur (Datenquelle sound.p.nk)
   const tr = S.tracks[DRUM_T]; if (!tr || tr.kind !== 'drum' || !drumSnd() || drumSnd().engine !== 'drum') { toast(MD_NAME + '-Platte: nur für ein Drum-Kit'); return false; }
   if (R.selT !== DRUM_T || R.editor !== 'drum' || !EL.drumSheet.classList.contains('open')) { selectTrack(DRUM_T); openEditor(); }
   const M = ndpLoad(); if (!M) { toast(MD_NAME + '-Platte konnte nicht geladen werden'); return false; }
@@ -31181,6 +31210,7 @@ function percPage(pg, i) {
   fb.setAttribute('aria-label', fol ? 'Spur folgt Transponierung, Akkorden und Eine Skala – antippen: folgt nicht' : 'Spur folgt nicht (Transponierung, Akkorde, Eine Skala) – antippen: folgt');
   onTap(fb, () => { percSetFollow(i, !(S.tracks[i].follow !== false)); safeRebuild(buildSynthEd); lcdShow(MD_NAME, S.tracks[i].follow !== false ? 'folgt – Transponierung verschiebt die Tonhöhe der Kanäle' : 'folgt nicht – Transponierung, Akkorde und Eine Skala lassen die Spur aus'); });
   top.append(kb, fb); pg.appendChild(top);
+  if (percPlate(pg, i, nk, top)) return;   // NPS: klassisches Gesicht (Display, schwarze Pads, Sektionen → Platte); ohne Platten-Block die Liste wie bisher
   const grid = el('div', 'percgrid');
   for (let c = 0; c < 12; c++) {
     const p = nk.ch[c] || {}, cell = el('div', 'perccell');
@@ -31233,6 +31263,60 @@ function percProgPop(anchor, i, c) {
       if (!R.playing) { const v = percAudition(i, c); if (v) v.release(nowT() + .2); }
     }, 'button');
   }, {name: 'percprog'}));
+}
+/* NPS (Xander 01.11.: „klassisch sieht die North doch aus mit diesen schwarzen Schlagflächen und oben das digitale Display … ich kann da
+   gar nicht ins Sounddesign reingehen“): Seite NORTH als rotes Feld – oben das Siebensegment-Display (Kanal) mit Streifen (Name ·
+   Programm), darunter die 12 schwarzen Schlagflächen (Tipp = Kanal wählen + schlagen, oben laut, unten leise), die Sektionen
+   TONE · NOISE · CLICK · MIX · FX · HALL · ECHO öffnen die Platte mit allen Reglern des gewählten Kanals, Programm ▾ bleibt eine
+   Möglichkeit; die rote Taste „Platte“ im Kopf wie auf der Drum-Spur. Display und Pads sind die der Platte (Block sq-ndp-src). */
+const PERC_SECS = [['tone', 'TONE'], ['noise', 'NOISE'], ['click', 'CLICK'], ['mix', 'MIX · FX'], ['kit', 'HALL<br>ECHO']];
+// ein Schlag auf Kanal c mit Anschlag vel (Pads der Seite NORTH, Kanal-Tasten der Platte)
+function percHit(i, c, vel) { const n = PERC_REF * 12 + clamp(c | 0, 0, 11); R.lastNote[i] = n; const v = auditionStart(i, n, clamp(+vel || .85, .05, 1)); if (v) v.release(nowT() + .2); return v; }
+// die Platte für Perkussionsspur i öffnen (o.c Kanal, o.sec Sektion, o.view): liegt über dem Klang-Editor der Spur, ✕ führt zurück
+function percPlateOpen(i, o) {
+  o = o || {}; const tr = S.tracks[i];
+  if (!percIs(tr) || !percNkOf(tr.sound)) { toast(MD_NAME + '-Platte: keine Perkussionsspur'); return false; }
+  if (R.selT !== i || R.editor !== 'synth' || !EL.synthSheet.classList.contains('open')) { selectTrack(i); openEditor(); }
+  const M = ndpLoad(); if (!M) { toast(MD_NAME + '-Platte konnte nicht geladen werden'); return false; }
+  const q = Object.assign({}, o, {perc: i, c: o.c != null ? o.c : PERCUI.ch | 0});
+  const fresh = !AU.ctx; ensureAudio(); percEngineSync(i);       // im Tipp (iOS: Audio nur in einer Geste)
+  if (fresh) { requestAnimationFrame(() => { if (R.editor === 'synth' && R.selT === i) M.open(q); }); return true; }
+  return M.open(q);
+}
+function percPlate(pg, i, nk, top) {
+  const M = ndpLoad(); if (!M || !M.seg) return false;
+  M.css(); pg.classList.add('pan-y');
+  const np = el('button', 'rb ndpopen percplt', '<b>' + esc(MD_NAME) + '</b><small>Platte</small>'); np.setAttribute('aria-label', MD_NAME + '-Platte öffnen: alle Regler des Kanals');
+  onTap(np, () => percPlateOpen(i, {c: PERCUI.ch})); top.appendChild(np);
+  const box = el('div', 'percplate');
+  const dsp = el('div', 'percdisp'), seg = el('div', 'ndpseg ndpfld percseg'), dig = [M.seg.digit(), M.seg.digit(), M.seg.digit()]; dig.forEach(s => seg.appendChild(s));
+  const strip = el('div', 'ndpstrip ndpfld percstrip', '<b></b><span></span>'); dsp.append(seg, strip);
+  const pads = el('div', 'percpads'), pe = [];
+  for (let c = 0; c < 12; c++) { const p = el('div', 'ndppad md percpad', `<i class="led"></i><span>${esc(percChShort(c))}</span><small></small>`); p.dataset.c = c; p.setAttribute('role', 'button'); p.setAttribute('aria-label', 'Kanal ' + (c + 1) + ' ' + percChName(c) + ' wählen und spielen (Taste ' + noteNames()[c] + ')'); pads.appendChild(p); pe.push(p); }
+  const secs = el('div', 'percsecs');
+  for (const [id, l] of PERC_SECS) { const b = el('button', 'ndpkey percsec', `<i class="led"></i><span>${l}</span>`); b.dataset.s = id; b.setAttribute('aria-label', 'Platte: ' + l.replace('<br>', ' · ') + ' des gewählten Kanals'); secs.appendChild(b); }
+  const pb = el('button', 'ndpkey percprg', '<small>PROGRAMM</small><span></span>');
+  box.append(dsp, pads, secs, pb); pg.appendChild(box);
+  pg.appendChild(el('div', 'perchint', 'Pad = Kanal wählen + spielen (oben laut, unten leise) · TONE … ECHO = Regler auf der Platte · Tasten C … H spielen die Kanäle'));
+  const paint = () => {
+    const c = clamp(PERCUI.ch | 0, 0, 11), N = percNkOf(sndOf(i)) || nk, p = N.ch[c] || {};
+    M.seg.paint(dig, String(c + 1));
+    strip.children[0].textContent = percChName(c) + ' · Taste ' + noteNames()[c]; strip.children[1].textContent = (p.mName || 'INIT') + ' · ' + ((MD_CAT.find(x => x[0] === p.mCat) || ['', MD_NAME])[1]);
+    pe.forEach((x, k) => { x.classList.toggle('sel', k === c); const t = (N.ch[k] || {}).mName || 'INIT', sm = x.lastChild; if (sm.textContent !== t) sm.textContent = t; });
+    pb.lastChild.textContent = (p.mName || 'INIT') + ' ▾'; pb.setAttribute('aria-label', 'Programm ' + percChName(c) + ': ' + (p.mName || 'INIT') + ' – wählen');
+  };
+  guardTouch(pads);
+  on(pads, 'pointerdown', e => {
+    const p = e.target.closest && e.target.closest('.percpad'); if (!p || e.button > 0) return; e.preventDefault();
+    const c = +p.dataset.c, r = p.getBoundingClientRect(), vel = clamp(1 - (e.clientY - r.top) / Math.max(1, r.height) * .65, .35, 1);
+    PERCUI.ch = c; previewStop(); percHit(i, c, vel); paint();
+    p.classList.add('hit'); clearTimeout(p._t); p._t = setTimeout(() => p.classList.remove('hit'), 140);
+    lcdShow(percChName(c), ((percNkOf(sndOf(i)) || nk).ch[c] || {}).mName || 'INIT');
+  });
+  onTap(secs, b => percPlateOpen(i, {c: PERCUI.ch, sec: b.dataset.s, view: 'geraet', zoom: false}), 'button');
+  onTap(pb, () => percProgPop(pb, i, clamp(PERCUI.ch | 0, 0, 11)));
+  paint();
+  return true;
 }
 
 /* ---------- housekeeping ---------- */
