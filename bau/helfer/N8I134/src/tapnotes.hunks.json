@@ -1,0 +1,7 @@
+[
+ {"file": "tapnotes.js", "op": "before", "at": "  return {fft, pyin, segment, midiOf, median};\n}\n/* VSDSP-END */"},
+ {"at": "  return {fft, pyin, segment, midiOf, median};\n}\n/* VSDSP-END */", "to": "  return {fft, pyin, segment, tapNotes, midiOf, median};\n}\n/* VSDSP-END */", "label": "VSDSP return"},
+ {"at": "  return {tr, fs, hop, d0, sr, beatOf, inst, masked: nm, mic, x, bleed: bl > 0 ? n => vsBleedNote(x, d0, fs, sr, lat, n, bl * rk, bb * rk, vsLatUnc()) : null};", "to": "  // I4c (6.1): secOfH = the inverse of beatOf without t2b (M0 = h sr + lat(h sr), M = h sr + lat(M0)); the taps of the range as A.tips\n  return tipAttach({tr, fs, hop, d0, sr, beatOf, inst, masked: nm, mic, x, bleed: bl > 0 ? n => vsBleedNote(x, d0, fs, sr, lat, n, bl * rk, bb * rk, vsLatUnc()) : null,\n    ta, tb, secOfH: h => { const F0 = h * sr, M0 = F0 + lat(F0), M = F0 + lat(M0); return ((M + 21) / 3 - d0) / fs; }});", "label": "vsAnalyse return"},
+ {"at": "function vsNotesOf(A, o) {\n  o = o || {};\n", "to": "function vsNotesOf(A, o) {\n  o = o || {};\n  if (A.tips && A.tips.length && o.rh !== 'stimme') return tipNotesOf(A, o);   // I4c (6.7): one note source - the taps give the rhythm\n", "label": "vsNotesOf"},
+ {"at": "  h += `<canvas class=\"vs-roll\" aria-label=\"Erkannte Noten\"></canvas>`;", "to": "  if (r.A && r.A.tipInfo) h += `<div class=\"fs-end vs-tip\">${esc(tipLine(r.A.tipInfo))}</div>`;   // I4c (7.4): the count line\n  h += `<canvas class=\"vs-roll\" aria-label=\"Erkannte Noten\"></canvas>`;", "label": "vsResPaint"}
+]
