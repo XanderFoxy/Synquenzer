@@ -2,13 +2,13 @@
 import { createRequire } from 'module'; const { chromium } = createRequire(import.meta.url)('/opt/node22/lib/node_modules/playwright');
 import path from 'path'; import { fileURLToPath } from 'url';
 export const HERE = path.dirname(fileURLToPath(import.meta.url));
-export const APP = process.env.APP || path.resolve(HERE, '../index.html');
+export const APP = () => process.env.APP || path.resolve(HERE, '../index.html');
 export async function open(vp = {width: 390, height: 844}) {
   const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream']});
   const ctx = await b.newContext({viewport: vp, hasTouch: true, deviceScaleFactor: 2});
   const p = await ctx.newPage(); const errs = [];
   p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  await p.goto('file://' + APP); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.tkInject, null, {timeout: 20000});
+  await p.goto('file://' + APP()); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.tkInject, null, {timeout: 20000});
   await p.waitForTimeout(600);
   return {b, p, errs};
 }

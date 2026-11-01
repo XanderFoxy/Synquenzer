@@ -14,9 +14,10 @@ CSS = """#wpSheet .wpz{flex:0 0 88px;height:44px;padding:0;font:700 12px/1 var(-
 :root{--chor3:#ff5f5f;--chor5:#3ddc84;--chor6:#4d9dff;--chor8:#b585ff;--chor4:#ff9d42;--chor2:#c8956a;--chor1:#a2a8b3;--chorF:#ffd23f}
 :root[data-theme="light"]{--chor3:#c62828;--chor5:#1b7f3b;--chor6:#1f5fc4;--chor8:#7b3fd1;--chor4:#b35300;--chor2:#7a4e2a;--chor1:#5d636e;--chorF:#806500}
 /* G6+g: Legende der Chor-Spuren über der Leinwand (eine Zeile, scrollt innen; Treffer 44 × 44) */
-#wpSheet .g6pgleg{flex:none;display:flex;gap:4px;height:44px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x}
+#wpSheet .g6pgleg{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;gap:4px;height:44px;padding:0 2px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x;pointer-events:none}
+#wpSheet .g6pgleg>*{pointer-events:auto}
 #wpSheet .g6pgleg::-webkit-scrollbar{display:none}
-#wpSheet .g6pgc{flex:none;display:flex;align-items:center;gap:0;height:44px;padding-left:9px;border-radius:6px;background:var(--chassis-2);box-shadow:inset 4px 0 0 var(--cc),inset 0 0 0 1px var(--line)}
+#wpSheet .g6pgc{flex:none;display:flex;align-items:center;gap:0;height:44px;padding-left:9px;border-radius:6px;background:rgba(28,31,37,.92);box-shadow:inset 4px 0 0 var(--cc),inset 0 0 0 1px var(--line)}
 #wpSheet .g6pgc.cur{background:var(--chassis-3)}
 #wpSheet .g6pgc .g6pgsw{flex:none;display:grid;place-items:center;min-width:20px;height:20px;padding:0 3px;border-radius:4px;background:var(--cc);color:#0e1014;font:800 11px/1 var(--font-num);font-style:normal}
 #wpSheet .g6pgc b{flex:none;max-width:112px;margin:0 2px 0 6px;font:600 12px/14px var(--font-ui);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:clip}
@@ -29,11 +30,11 @@ CSS = """#wpSheet .wpz{flex:0 0 88px;height:44px;padding:0;font:700 12px/1 var(-
 #wpSheet .g6pglq.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}"""
 rep("#wpSheet .wpz{flex:0 0 88px;height:44px;padding:0;font:700 12px/1 var(--font-ui)}", CSS)
 rep("/* G6-END */", blk.rstrip() + "\n/* G6-END */")
-rep("  Object.assign(G2.ed, {cv, chips, rs: row, info, ab, cvw});", "  Object.assign(G2.ed, {cv, chips, rs: row, info, ab, cvw});\n  g6pgLegend(G2.ed, b, cvw);   // G6+g: Legende der Chor-Spuren")
-rep("  Object.assign(WP.ed, {cv, an, chips, rs, rw, zb, info, ab, cvw, seg, tx});", "  Object.assign(WP.ed, {cv, an, chips, rs, rw, zb, info, ab, cvw, seg, tx});\n  g6pgLegend(WP.ed, b, cvw);   // G6+g: Legende der Chor-Spuren")
+rep("  Object.assign(G2.ed, {cv, chips, rs: row, info, ab, cvw});", "  Object.assign(G2.ed, {cv, chips, rs: row, info, ab, cvw});\n  g6pgLegend(G2.ed, cvw, null);   // G6+g: Legende der Chor-Spuren (Leiste oben in der Leinwand, kein Layout-Sprung)")
 rep("  let lo = Infinity, hi = -Infinity; ns.forEach((n, k) => { lo = Math.min(lo, n.m, tg[k]); hi = Math.max(hi, n.m, tg[k]); });\n",
     "  let lo = Infinity, hi = -Infinity; ns.forEach((n, k) => { lo = Math.min(lo, n.m, tg[k]); hi = Math.max(hi, n.m, tg[k]); });\n"
     "  const SG = g6pgGeo(E.r, a), LN = Vc ? g6pgLeadNs(E) : null; if (SG && isFinite(SG.lo)) { lo = Math.min(lo, SG.lo); hi = Math.max(hi, SG.hi); } if (LN) for (const n of LN.ns) { lo = Math.min(lo, n.p); hi = Math.max(hi, n.p); }   // G6+g: Schatten im Bereich\n")
+rep("  const rowH = Hp / (hi - lo + 1), Y = p => Hp - (p - lo + 0.5) * rowH; E.Y = Y; E.rowH = rowH; E.lo = lo;\n", "  const rowH = (Hp - (E.leg ? 46 : 0)) / (hi - lo + 1), Y = p => Hp - (p - lo + 0.5) * rowH; E.Y = Y; E.rowH = rowH; E.lo = lo;   // G6+g: oben Platz für die Legende\n")
 rep("  // Noten-Blöcke: Umriss = gesungen, Block = gehört\n", "  g6pgPaintG2(g, E, x, Wp, Hp, dpr, LN, SG);   // G6+g: Chorstimmen als farbige Schatten hinter den Lead-Blöcken (Bild-Puffer)\n  // Noten-Blöcke: Umriss = gesungen, Block = gehört\n")
 rep("  g2Info(rd);\n}", "  g2Info(rd);\n  g6pgLegSync(E);\n}")
 rep("    const [cx] = pos(e); UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};\n    E.sel = p.k;",
@@ -41,7 +42,6 @@ rep("    const [cx] = pos(e); UI.ghost = {t: performance.now(), x: e.clientX, y:
 rep("  G2.ed = null; clearTimeout(E.rt);\n", "  G2.ed = null; clearTimeout(E.rt); g6pgClosed();\n")
 rep("  const E = WP.ed; if (!E) return;\n  WP.ed = null;\n", "  const E = WP.ed; if (!E) return;\n  WP.ed = null; g6pgClosed();\n")
 rep("    } else wave(buf);\n  }\n", "    } else wave(buf);\n  }\n  g6pgPaintWp(g, E, x, Wp, Hp, dpr);   // G6+g: Tonhöhenlinien der Chorstimmen (Bild-Puffer)\n")
-rep("  E.rs._g(); E.rw._g();\n", "  E.rs._g(); E.rw._g(); g6pgLegSync(E);\n")
 rep("r.g.gain.setTargetAtTime(G6.solo == null || G6.solo === -2 ? r.G : 0, t, .01);", "r.g.gain.setTargetAtTime(G6.solo == null || G6.solo === -2 ? r.G : g6pgLeadG(r), t, .01);")
 rep("{ try { r.g.gain.cancelScheduledValues(0); r.g.gain.value = 0; } catch (e) {} }   // Solo einer Stimme: der Lead schweigt", "{ try { r.g.gain.cancelScheduledValues(0); r.g.gain.value = g6pgLeadG(r); } catch (e) {} }   // Solo einer Stimme: der Lead schweigt (G6+g: beim Selbst-Singen leise)")
 rep("  v.take = {take: seg.take, in: seg.in, out: seg.out, at: seg.at};\n", "  v.take = {take: seg.take, in: seg.in, out: seg.out, at: seg.at};\n  if (clip.audio.chor.v === 2) v.dblOff = true;   // G6+g: Selbst gesungen v2 – Doppel aus, Spur/Pan/Pegel bleiben\n")

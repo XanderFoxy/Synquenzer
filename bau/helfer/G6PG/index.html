@@ -2062,9 +2062,10 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 :root{--chor3:#ff5f5f;--chor5:#3ddc84;--chor6:#4d9dff;--chor8:#b585ff;--chor4:#ff9d42;--chor2:#c8956a;--chor1:#a2a8b3;--chorF:#ffd23f}
 :root[data-theme="light"]{--chor3:#c62828;--chor5:#1b7f3b;--chor6:#1f5fc4;--chor8:#7b3fd1;--chor4:#b35300;--chor2:#7a4e2a;--chor1:#5d636e;--chorF:#806500}
 /* G6+g: Legende der Chor-Spuren über der Leinwand (eine Zeile, scrollt innen; Treffer 44 × 44) */
-#wpSheet .g6pgleg{flex:none;display:flex;gap:4px;height:44px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x}
+#wpSheet .g6pgleg{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;gap:4px;height:44px;padding:0 2px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x;pointer-events:none}
+#wpSheet .g6pgleg>*{pointer-events:auto}
 #wpSheet .g6pgleg::-webkit-scrollbar{display:none}
-#wpSheet .g6pgc{flex:none;display:flex;align-items:center;gap:0;height:44px;padding-left:9px;border-radius:6px;background:var(--chassis-2);box-shadow:inset 4px 0 0 var(--cc),inset 0 0 0 1px var(--line)}
+#wpSheet .g6pgc{flex:none;display:flex;align-items:center;gap:0;height:44px;padding-left:9px;border-radius:6px;background:rgba(28,31,37,.92);box-shadow:inset 4px 0 0 var(--cc),inset 0 0 0 1px var(--line)}
 #wpSheet .g6pgc.cur{background:var(--chassis-3)}
 #wpSheet .g6pgc .g6pgsw{flex:none;display:grid;place-items:center;min-width:20px;height:20px;padding:0 3px;border-radius:4px;background:var(--cc);color:#0e1014;font:800 11px/1 var(--font-num);font-style:normal}
 #wpSheet .g6pgc b{flex:none;max-width:112px;margin:0 2px 0 6px;font:600 12px/14px var(--font-ui);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:clip}
@@ -42784,7 +42785,6 @@ function wpOpen(r) {
   b.append(cvw, chips, sl, foot);
   sh.append(head, b);
   Object.assign(WP.ed, {cv, an, chips, rs, rw, zb, info, ab, cvw, seg, tx});
-  g6pgLegend(WP.ed, b, cvw);   // G6+g: Legende der Chor-Spuren
   sh.classList.add('open');
   wpGest(cv);
   wpPaint();
@@ -42910,7 +42910,7 @@ function wpPaint() {
   E.tx.classList.toggle('on', !!(m && m.lyrics));
   const cur = w ? w.grid : 'off';
   E.chips.querySelectorAll('button').forEach(bt => { const on = bt.dataset.v === cur; bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); });
-  E.rs._g(); E.rw._g(); g6pgLegSync(E);
+  E.rs._g(); E.rw._g();
   E.zb.textContent = E.zoom ? E.zoom + (E.zoom === 1 ? ' Takt' : ' Takte') : 'Ganz';
   E.ab.classList.toggle('on', WP.ab); E.ab.textContent = WP.ab ? 'Original' : 'A/B';
   const det = !(m && m.marks) && !WP.det.has(id);
@@ -44507,7 +44507,7 @@ function g2Open(r, o) {
   b.append(cvw, chips, sl);
   sh.append(head, b);
   Object.assign(G2.ed, {cv, chips, rs: row, info, ab, cvw});
-  g6pgLegend(G2.ed, b, cvw);   // G6+g: Legende der Chor-Spuren
+  g6pgLegend(G2.ed, cvw, null);   // G6+g: Legende der Chor-Spuren (Leiste oben in der Leinwand, kein Layout-Sprung)
   sh.classList.add('open');
   g2Gest(cv);
   g2Paint();
@@ -44540,7 +44540,7 @@ function g2Paint() {
   const SG = g6pgGeo(E.r, a), LN = Vc ? g6pgLeadNs(E) : null; if (SG && isFinite(SG.lo)) { lo = Math.min(lo, SG.lo); hi = Math.max(hi, SG.hi); } if (LN) for (const n of LN.ns) { lo = Math.min(lo, n.p); hi = Math.max(hi, n.p); }   // G6+g: Schatten im Bereich
   if (!isFinite(lo)) { lo = 55; hi = 67; }
   lo = Math.floor(lo) - 2; hi = Math.ceil(hi) + 2; if (hi - lo < 12) { const c = (lo + hi) / 2; lo = Math.floor(c - 6); hi = lo + 12; }
-  const rowH = Hp / (hi - lo + 1), Y = p => Hp - (p - lo + 0.5) * rowH; E.Y = Y; E.rowH = rowH; E.lo = lo;
+  const rowH = (Hp - (E.leg ? 46 : 0)) / (hi - lo + 1), Y = p => Hp - (p - lo + 0.5) * rowH; E.Y = Y; E.rowH = rowH; E.lo = lo;   // G6+g: oben Platz für die Legende
   g.fillStyle = '#0e1014'; g.fillRect(0, 0, Wp, Hp);
   const key = P && P.key || g2KeyAt(E.r), SC = Harmony.SCALES[key.scale] || Harmony.SCALES.ionian;
   g.font = WP.font || (WP.font = '600 10px ' + getComputedStyle(document.body).fontFamily);
@@ -45104,11 +45104,10 @@ function g6pgTap(E, cx, cy) {
 /* ---------- Legende (Chip je Chor-Spur: Farbfeld + Ziffer, Name, Auge, Solo) ---------- */
 const G6PG_EYE = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M2 12c2.6-4.4 6-6.6 10-6.6S19.4 7.6 22 12c-2.6 4.4-6 6.6-10 6.6S4.6 16.4 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/><path class="g6pgx" d="M4 20L20 4" stroke="currentColor" stroke-width="2.2"/></svg>';
 function g6pgSoloId(r, a) { const c = a && a.chor; if (!c || G6.solo == null || G6.solo < 0) return null; const l = g6pgLanes(r, a)[G6.solo]; return l ? l.id : null; }
-function g6pgLegend(E, host, before) {
-  const x = tkRef(E.r); if (E.leg) { E.leg.remove(); E.leg = null; }
-  if (!x || !x.a.chor || !x.a.chor.voices || !x.a.chor.voices.length) return;
+function g6pgLegend(E, host, before) { E.legHost = host; E.legBefore = before; g6pgLegSync(E); }
+function g6pgLegMake(E) {
   const d = el('div', 'g6pgleg pan-x'); d.setAttribute('role', 'group'); d.setAttribute('aria-label', 'Chorstimmen');
-  host.insertBefore(d, before || host.firstChild); E.leg = d; E.legSt = null;
+  E.legHost.insertBefore(d, E.legBefore || E.legHost.firstChild); E.leg = d; E.legSt = null;
   d.addEventListener('click', e => {
     const bt = e.target.closest('button[data-a]'); if (!bt) return; const ed = G2.ed && G2.ed.leg === d ? G2.ed : WP.ed && WP.ed.leg === d ? WP.ed : null; if (!ed) return;
     const a = bt.dataset.a, id = bt.dataset.id, k = +bt.dataset.k;
@@ -45117,17 +45116,17 @@ function g6pgLegend(E, host, before) {
     else if (a === 'lq') { G6PG.leadQ = !G6PG.leadQ; g6LeadMute(); toast(G6PG.leadQ ? 'Lead leise mithören (−12 dB)' : 'Lead stumm'); }
     if (ed === G2.ed) g2Paint(); else wpPaint();
   });
-  g6pgLegSync(E);
 }
 function g6pgLegSync(E) {
-  const d = E && E.leg; if (!d) return; const x = tkRef(E.r); if (!x || !x.a.chor) { d.remove(); E.leg = null; return; }
+  if (!E || !E.legHost) return; const x = tkRef(E.r), has = !!(x && x.a.chor && Array.isArray(x.a.chor.voices) && x.a.chor.voices.length);
+  if (!has) { if (E.leg) { E.leg.remove(); E.leg = null; } return; }
+  if (!E.leg) g6pgLegMake(E); const d = E.leg;
   const L = g6pgLanes(E.r, x.a), so = g6pgSoloId(E.r, x.a), arm = G6.arm && !E.r.vox && G6.arm.t === E.r.t && G6.arm.s === E.r.s;
   const st = L.map(l => l.id + l.c + l.dig + l.name + (G6PG.hide.has(l.id) ? 'h' : '') + (so === l.id ? 's' : '') + (E.voice === l.k ? 'e' : '')).join(',') + (arm ? '|a' + G6.arm.k + G6PG.leadQ : '');
   if (st === E.legSt) return; E.legSt = st;
-  d.innerHTML = L.map(l => `<span class="g6pgc${G6PG.hide.has(l.id) ? ' off' : ''}${E.voice === l.k ? ' cur' : ''}" style="--cc:var(--chor${l.c.slice(1)})"><i class="g6pgsw">${esc(l.dig)}</i><b>${esc(l.name)}</b>` +
+  d.innerHTML = (arm ? `<button class="rb g6pglq${G6PG.leadQ ? ' on' : ''}" data-a="lq" aria-pressed="${G6PG.leadQ}" aria-label="Lead leise mithören">Lead leise</button>` : '') + L.map(l => `<span class="g6pgc${G6PG.hide.has(l.id) ? ' off' : ''}${E.voice === l.k ? ' cur' : ''}" style="--cc:var(--chor${l.c.slice(1)})"><i class="g6pgsw">${esc(l.dig)}</i><b>${esc(l.name)}</b>` +
     `<button class="rb g6pgeye" data-a="eye" data-id="${esc(l.id)}" data-k="${l.k}" aria-pressed="${G6PG.hide.has(l.id) ? 'false' : 'true'}" aria-label="${esc(l.name)} zeigen">${G6PG_EYE}</button>` +
-    `<button class="rb g6pgso${so === l.id ? ' on' : ''}" data-a="solo" data-id="${esc(l.id)}" data-k="${l.k}" aria-pressed="${so === l.id}" aria-label="${esc(l.name)} solo">S</button></span>`).join('') +
-    (arm ? `<button class="rb g6pglq${G6PG.leadQ ? ' on' : ''}" data-a="lq" aria-pressed="${G6PG.leadQ}" aria-label="Lead leise mithören">Lead leise</button>` : '');
+    `<button class="rb g6pgso${so === l.id ? ' on' : ''}" data-a="solo" data-id="${esc(l.id)}" data-k="${l.k}" aria-pressed="${so === l.id}" aria-label="${esc(l.name)} solo">S</button></span>`).join('');
 }
 // Solo über die Legende (v2: g6pSolo der Spur, falls G6+c/e es liefert; sonst das Solo von G6 v1 je Stimme)
 function g6pgSoloLane(r, k) {

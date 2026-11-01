@@ -166,11 +166,10 @@ function g6pgTap(E, cx, cy) {
 /* ---------- Legende (Chip je Chor-Spur: Farbfeld + Ziffer, Name, Auge, Solo) ---------- */
 const G6PG_EYE = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M2 12c2.6-4.4 6-6.6 10-6.6S19.4 7.6 22 12c-2.6 4.4-6 6.6-10 6.6S4.6 16.4 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/><path class="g6pgx" d="M4 20L20 4" stroke="currentColor" stroke-width="2.2"/></svg>';
 function g6pgSoloId(r, a) { const c = a && a.chor; if (!c || G6.solo == null || G6.solo < 0) return null; const l = g6pgLanes(r, a)[G6.solo]; return l ? l.id : null; }
-function g6pgLegend(E, host, before) {
-  const x = tkRef(E.r); if (E.leg) { E.leg.remove(); E.leg = null; }
-  if (!x || !x.a.chor || !x.a.chor.voices || !x.a.chor.voices.length) return;
+function g6pgLegend(E, host, before) { E.legHost = host; E.legBefore = before; g6pgLegSync(E); }
+function g6pgLegMake(E) {
   const d = el('div', 'g6pgleg pan-x'); d.setAttribute('role', 'group'); d.setAttribute('aria-label', 'Chorstimmen');
-  host.insertBefore(d, before || host.firstChild); E.leg = d; E.legSt = null;
+  E.legHost.insertBefore(d, E.legBefore || E.legHost.firstChild); E.leg = d; E.legSt = null;
   d.addEventListener('click', e => {
     const bt = e.target.closest('button[data-a]'); if (!bt) return; const ed = G2.ed && G2.ed.leg === d ? G2.ed : WP.ed && WP.ed.leg === d ? WP.ed : null; if (!ed) return;
     const a = bt.dataset.a, id = bt.dataset.id, k = +bt.dataset.k;
@@ -179,17 +178,17 @@ function g6pgLegend(E, host, before) {
     else if (a === 'lq') { G6PG.leadQ = !G6PG.leadQ; g6LeadMute(); toast(G6PG.leadQ ? 'Lead leise mithören (−12 dB)' : 'Lead stumm'); }
     if (ed === G2.ed) g2Paint(); else wpPaint();
   });
-  g6pgLegSync(E);
 }
 function g6pgLegSync(E) {
-  const d = E && E.leg; if (!d) return; const x = tkRef(E.r); if (!x || !x.a.chor) { d.remove(); E.leg = null; return; }
+  if (!E || !E.legHost) return; const x = tkRef(E.r), has = !!(x && x.a.chor && Array.isArray(x.a.chor.voices) && x.a.chor.voices.length);
+  if (!has) { if (E.leg) { E.leg.remove(); E.leg = null; } return; }
+  if (!E.leg) g6pgLegMake(E); const d = E.leg;
   const L = g6pgLanes(E.r, x.a), so = g6pgSoloId(E.r, x.a), arm = G6.arm && !E.r.vox && G6.arm.t === E.r.t && G6.arm.s === E.r.s;
   const st = L.map(l => l.id + l.c + l.dig + l.name + (G6PG.hide.has(l.id) ? 'h' : '') + (so === l.id ? 's' : '') + (E.voice === l.k ? 'e' : '')).join(',') + (arm ? '|a' + G6.arm.k + G6PG.leadQ : '');
   if (st === E.legSt) return; E.legSt = st;
-  d.innerHTML = L.map(l => `<span class="g6pgc${G6PG.hide.has(l.id) ? ' off' : ''}${E.voice === l.k ? ' cur' : ''}" style="--cc:var(--chor${l.c.slice(1)})"><i class="g6pgsw">${esc(l.dig)}</i><b>${esc(l.name)}</b>` +
+  d.innerHTML = (arm ? `<button class="rb g6pglq${G6PG.leadQ ? ' on' : ''}" data-a="lq" aria-pressed="${G6PG.leadQ}" aria-label="Lead leise mithören">Lead leise</button>` : '') + L.map(l => `<span class="g6pgc${G6PG.hide.has(l.id) ? ' off' : ''}${E.voice === l.k ? ' cur' : ''}" style="--cc:var(--chor${l.c.slice(1)})"><i class="g6pgsw">${esc(l.dig)}</i><b>${esc(l.name)}</b>` +
     `<button class="rb g6pgeye" data-a="eye" data-id="${esc(l.id)}" data-k="${l.k}" aria-pressed="${G6PG.hide.has(l.id) ? 'false' : 'true'}" aria-label="${esc(l.name)} zeigen">${G6PG_EYE}</button>` +
-    `<button class="rb g6pgso${so === l.id ? ' on' : ''}" data-a="solo" data-id="${esc(l.id)}" data-k="${l.k}" aria-pressed="${so === l.id}" aria-label="${esc(l.name)} solo">S</button></span>`).join('') +
-    (arm ? `<button class="rb g6pglq${G6PG.leadQ ? ' on' : ''}" data-a="lq" aria-pressed="${G6PG.leadQ}" aria-label="Lead leise mithören">Lead leise</button>` : '');
+    `<button class="rb g6pgso${so === l.id ? ' on' : ''}" data-a="solo" data-id="${esc(l.id)}" data-k="${l.k}" aria-pressed="${so === l.id}" aria-label="${esc(l.name)} solo">S</button></span>`).join('');
 }
 // Solo über die Legende (v2: g6pSolo der Spur, falls G6+c/e es liefert; sonst das Solo von G6 v1 je Stimme)
 function g6pgSoloLane(r, k) {

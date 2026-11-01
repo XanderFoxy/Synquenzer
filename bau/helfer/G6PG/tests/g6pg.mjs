@@ -89,7 +89,7 @@ const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .0
     const xx = Math.round((E.X(n.t0) + E.X(n.t1)) / 2 * dpr), col = pal[n.c], c = [1, 3, 5].map(i => parseInt(col.slice(i, i + 2), 16)), H = E.cv.height; let found = 0;
     const d = g.getImageData(xx, 0, 1, H).data; for (let y = 0; y < H; y++) { const e = Math.abs(d[y * 4] - c[0]) + Math.abs(d[y * 4 + 1] - c[1]) + Math.abs(d[y * 4 + 2] - c[2]); if (e < 40) found++; }
     return {n: 1, found, leg: document.querySelectorAll('#wpSheet .g6pgc').length}; });
-  ok('G6P-61 Wellen-Editor', wpo && wl && wl.found >= 2 && wl.leg > 0, JSON.stringify(wl));
+  ok('G6P-61 Wellen-Editor', wpo && wl && wl.found >= 2 && wl.leg === 0, JSON.stringify(wl) + ' (Linien, Legende nur im Noten-Editor)');
   await p.screenshot({path: SHOT + '/wp-linien-P3.png'});
   await p.evaluate(() => wpClose());
   ok('Fehlerfrei (61)', errs.length === 0, JSON.stringify(errs.slice(0, 3)));
