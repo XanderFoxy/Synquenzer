@@ -1,0 +1,337 @@
+--- a/bau/snapshots/R-4300.html
++++ b/bau/helfer/G10A/index.html
+@@ -2329,6 +2329,14 @@
+   .g6sheet .g6pe-kl .g6pe-seg,.g6sheet .g6pe-kl .g6pe-echo{grid-column:1/-1}
+ }
+ /* G6PE-CSS-END */
++/* G10A-CSS-BEGIN: G10a – Einsingen fertig (Pegel der Stimme in der Aufnahme-Leiste, Hörmuschel-Hinweis im 🎤-Blatt) */
++.g10a-lvl{grid-column:1;grid-row:2;position:relative;display:block;min-width:0;min-height:0;background:var(--lcd);border-radius:4px;box-shadow:inset 0 1px 4px rgba(0,0,0,.9);overflow:hidden;pointer-events:none}
++.g10a-lvl[hidden]{display:none}
++.g10a-lvl>i{position:absolute;left:4px;right:4px;top:28%;bottom:28%;border-radius:2px;background:var(--play);transform-origin:0 50%;transform:scaleX(0);will-change:transform}
++.g10a-lvl>b{position:absolute;top:18%;bottom:18%;left:calc(4px + (100% - 8px) * .7);width:1px;background:rgba(236,232,223,.35)}
++.g10a-lvl.g10a-clip>i{background:var(--rec)}
++.g10a-ear{margin:4px 0 2px;font:500 12px/1.3 var(--font-ui);color:var(--amber)}
++/* G10A-CSS-END */
+ #wpSheet.g2 .qchips{grid-template-columns:repeat(4,minmax(0,1fr))}   /* G2: 8 Tasten in 2 Reihen (Verbinden passt) */
+ @media (orientation:portrait){#wpSheet{grid-row:2/5;grid-column:1/-1;align-self:end;justify-self:stretch;margin:0 8px;height:350px;max-height:100%}}
+ /* F1 P3: Raster in 2 Reihen (36 px breit), Stärke und Swing nebeneinander – alles ≥ 44 hoch bzw. 36×34, die Wellenform bleibt ≥ 64 px */
+@@ -24029,7 +24037,7 @@
+   if (!R.playing) { R.songRec = {startBeat: 0, before, pending: true}; play(); }
+   else R.songRec = {startBeat: nextBarFromAudible(), before, pending: true};
+   melShareHint({now: true});                                      // S-04: only when no free track was left
+-  if (recMicOn()) toast('🎤 Gesang wird beim ersten Song-Durchgang nicht aufgenommen – erst den Song anlegen, dann ● SONG zum Einsingen');   // H8
++  if (recMicOn() && !g10aVoxReady()) toast('🎤 noch nicht bereit – der Gesang wird nicht aufgenommen');   // H8 → G10a-2: mit bereitem 🎤 singt der erste Durchgang mit
+   songChanged(); UI.dirty.all = true;
+   wakeAcquire();
+   return true;
+@@ -24041,6 +24049,7 @@
+   if (!sr.hinted) melShareHint({now: true});
+   const ce = T.targetAt(b2t(sr.startBeat)), cur = ce.target;
+   RecHelpers.logCarrier(S.song, 0, cur || null, ce.shift);
++  g10aSongVoxBegin(sr);                                           // G10a-2: 🎤 an → die Stimme läuft ab Song-Takt 1 mit
+   UI.dirty.song = true;
+ }
+ // T.onCommit (Anhang D.7): a Träger change while the song records is logged at its exact beat; while the song plays, a
+@@ -24069,6 +24078,7 @@
+   const song = S.song;
+   if (sr.pending || last < .25 || !song) {                 // never started (pressed again before song bar 1): nothing kept
+     S.song = sr.before ? JSON.parse(sr.before) : null; if (S.song) S.song = normSong(S.song, S.key);
++    g10aSongVoxDrop(sr);                                          // G10a-2: abgebrochen → kein Take
+     songChanged(); toast('Song-Aufnahme abgebrochen'); carrierRestoreIfIdle(); return false;
+   }
+   // V2d′ (7.4): the length after N7-R1 with S = the take's start (replaces the ¼-beat window)
+@@ -24078,10 +24088,12 @@
+   for (const lane of song.lanes) for (let k = lane.length - 1; k >= 0; k--) if (lane[k].bar >= song.bars) lane.splice(k, 1);
+   song.carrier = song.carrier.filter(c => c.beat < song.bars * 4 - 1e-6);
+   for (const k of Object.keys(song.mel)) { const m = song.mel[k]; m.notes = m.notes.filter(n => n.t < song.bars * 4 - 1e-6).sort((a, b) => a.t - b.t); m.len = song.bars; }
++  const g10v = g10aSongVoxCommit(sr, song);                       // G10a-2: Stimme → song.vox vor dem Undo-Schnappschuss
+   pushSongUndo(sr.before, 'Song aufgenommen');
++  if (g10v) tkSongUndoFix(sr, true);                              // G10a-2: Song und Stimme = ein Undo
+   songChanged();
+   const mn = curMel(song).notes.length;
+-  const endMsg = 'Song: ' + song.bars + (song.bars === 1 ? ' Takt' : ' Takte') + (mn ? ' · Melodie: ' + mn + (mn === 1 ? ' Note' : ' Noten') : ''), playAct = {label: '▶ SONG', fn: () => songPlayStart()};
++  const endMsg = 'Song: ' + song.bars + (song.bars === 1 ? ' Takt' : ' Takte') + (mn ? ' · Melodie: ' + mn + (mn === 1 ? ' Note' : ' Noten') : '') + (g10v ? ' · Stimme' : ''), playAct = {label: '▶ SONG', fn: () => songPlayStart()};
+   // S-04: the melody sits on a MONO/LEGATO track that also plays clips in the song: the hint comes with the end message
+   if (!(mn && melShareHint({prefix: endMsg, act: playAct}))) toast(endMsg, playAct);
+   SV.lastStop = null;
+@@ -24117,7 +24129,7 @@
+   const off = -bar0 * 4;
+   R.songPlay = {off, bar0, cs: S.tracks.map((_, i) => (R.slot[i] >= 0 ? songCs(song, i, bar0) + off : 0))};
+   songXpAt(song, bar0 * 4, 0);                                    // V2d: song.xp in effect at bar0
+-  if (o.countIn) startTransport(o.countIn); else play();
++  if (o.countIn) startTransport(o.countIn); else { G10A.leadB = g10aLeadBeats(song, bar0); play(); }   // G10a-5: Anlauf in Takt 1 → stiller Vorlauf
+   UI.dirty.all = true; UI.dirty.song = true;
+   return true;
+ }
+@@ -25066,7 +25078,7 @@
+   R.playing = true; R.lastClick = -Infinity; R.lastPump = -Infinity; R.ciRun = ci > 0; R.ciBars = ci;
+   folReset();                                                  // V0b FOLGEN: a transport (re)start ends „von Hand“
+   if (ci) { R.startTime = now + .1 + 4 * ci * spb(); R.schedBeat = -4 * ci; R.countIn = true; }
+-  else { R.startTime = now + (countIn == null ? .06 : .1); R.schedBeat = 0; R.countIn = false; }
++  else { const g10l = G10A.leadB || 0; G10A.leadB = 0; R.g10aLead = g10l; R.startTime = now + (countIn == null ? .06 : .1) + g10l * spb(); R.schedBeat = -g10l; R.countIn = false; }   // G10a-5: Vorlauf ohne Klicks (0 = wie bisher)
+   for (let i = 0; i < NT(); i++) { if (R.pend[i]) { R.slot[i] = R.pend[i].slot; R.own[i] = R.pend[i].own || null; R.pend[i] = null; } R.cstart[i] = R.songPlay && R.songPlay.cs ? R.songPlay.cs[i] : R.startCs && isNum(R.startCs[i]) ? R.startCs[i] : 0; R.prev[i] = null; }
+   R.startCs = null; memStart();                                   // V2d: a part's phases (ph) from the stand; Song-Gedächtnis from beat 0
+   flushQueuedCarrier(now);
+@@ -31044,6 +31056,7 @@
+   const on = rec.state !== 'off';
+   if (on !== UI.last.recLane) { UI.last.recLane = on; EL.app.classList.toggle('recording', on); RL.last = ''; UI.dirty.carrier = true; }
+   const kr = recActive(); if (kr !== UI.last.kbRec) { UI.last.kbRec = kr; EL.kb.classList.toggle('rec', kr); }
++  const g10v = g10aLvl(rec.state === 'recording' || rec.state === 'overdub');   // G10a-3: Gesangs-Take → Pegel statt Noten
+   if (!on) return;
+   const setTxt2 = txt => { if (txt !== RL.last) { RL.last = txt; EL.recLaneTxt.textContent = txt; } };
+   const cv = EL.recLaneCv, w = cv.clientWidth, h = cv.clientHeight, d = Math.min(3, devicePixelRatio || 1);
+@@ -31057,6 +31070,7 @@
+     return;
+   }
+   RL.blank = false;
++  if (g10v) { setTxt2(g10aLaneTxt(bAud)); return; }               // G10a-3
+   g.clearRect(0, 0, w, h);
+   const od = rec.state === 'overdub', clip = rec.clip, sb = rec.startBeat, ti = rec.track;
+   const L = od || rec.fixedLen ? (clip ? clip.len * 4 : 4) : Math.max(4, Math.ceil((bAud - sb + .01) / 4) * 4);
+@@ -43832,7 +43846,7 @@
+   const out = {v: 1, prof: {}, route: null};
+   if (o && typeof o === 'object' && o.prof && typeof o.prof === 'object') {
+     for (const k of Object.keys(ST_ROUTES)) { const p = o.prof[k]; if (p && typeof p.ms === 'number' && isFinite(p.ms) && p.ms > 0 && p.ms < 1000)
+-      out.prof[k] = {ms: p.ms, spread: +p.spread || 0, at: String(p.at || '').slice(0, 30), how: p.how === 'hand' ? 'hand' : 'gemessen', floorDb: isFinite(+p.floorDb) ? +p.floorDb : null, gainDb: isFinite(+p.gainDb) ? +p.gainDb : null, outMs: isFinite(+p.outMs) ? +p.outMs : null}; }
++      { out.prof[k] = {ms: p.ms, spread: +p.spread || 0, at: String(p.at || '').slice(0, 30), how: p.how === 'hand' ? 'hand' : 'gemessen', floorDb: isFinite(+p.floorDb) ? +p.floorDb : null, gainDb: isFinite(+p.gainDb) ? +p.gainDb : null, outMs: isFinite(+p.outMs) ? +p.outMs : null}; if (p.ear === true) out.prof[k].ear = true; } }   // G10a: Hörmuschel-Merker bleibt nach dem Neustart
+     if (ST_ROUTES[o.route]) out.route = o.route;
+     if (o.vs && typeof o.vs === 'object') out.vs = {src: o.vs.src === 'inst' ? 'inst' : 'voice', lock: !!o.vs.lock, snap: o.vs.snap !== false, grid: String(o.vs.grid || '1/16'), mel: o.vs.mel !== false};   // VS2; VS-L: mel = Melodieerkennung (fehlt = An)
+     if (o.g9 && typeof o.g9 === 'object') out.g9 = {auto: o.g9.auto !== false, lang: ['auto', 'de', 'en'].includes(o.g9.lang) ? o.g9.lang : 'auto'};   // G9 (§5.4)
+@@ -44177,7 +44191,7 @@
+   const P = stProf(), at = new Date().toISOString();
+   if (res.ok) {
+     const f = good && good.length ? good[0].f : ST.ring.end, m = res.medianMs;
+-    if (cal.kind === 'voll') { P.prof[ST.route] = {ms: m, spread: res.spreadMs, at, how: 'gemessen', floorDb: res.floorOk ? res.floorDb : null, gainDb: res.gainDb != null ? res.gainDb : null, outMs: micR(stOutMs(), 1)}; stProfSave(); }
++    if (cal.kind === 'voll') { P.prof[ST.route] = {ms: m, spread: res.spreadMs, at, how: 'gemessen', floorDb: res.floorOk ? res.floorDb : null, gainDb: res.gainDb != null ? res.gainDb : null, outMs: micR(stOutMs(), 1)}; g10aEar(P.prof[ST.route], ST.route, res); stProfSave(); }   // G10a
+     else if (cal.kind === 'kurz' && P.prof[ST.route] && Math.abs(m - P.prof[ST.route].ms) > 0.5) { P.prof[ST.route].ms = m; P.prof[ST.route].at = at; stProfSave(); }
+     ST.latMs = m; ST.latHow = 'gemessen';
+     const prev = ST.marks.length ? ST.marks[ST.marks.length - 1] : null;
+@@ -44341,7 +44355,7 @@
+   if (MICIN.list.length) { const w = uiPrefs().micIn || 'auto';   // HIF: Eingang: [Name ▾]
+     html += '<div class="st-in"><span>Eingang:</span><select id="stIn" aria-label="Eingang">' + [['auto', 'Automatisch' + (MICIN.label && ST.on ? ' · ' + micInShort(MICIN.label) : ' (extern bevorzugt)')]].concat(MICIN.list.map(d => [d.label, micInShort(d.label) + (d.ext ? ' · extern' : '')]))
+       .map(([v, l]) => `<option value="${esc(v)}"${v === w ? ' selected' : ''}>${esc(l)}</option>`).join('') + '</select></div>'; }
+-  html += '<div class="st-lbl">Weg</div>' + segHTML('stRoute', [['speaker', '🔈 Lautsprecher'], ['wired', '🎧 Kabel'], ['bt', '🎧 Bluetooth']], rt);
++  html += '<div class="st-lbl">Weg</div>' + segHTML('stRoute', [['speaker', g10aSpeakerLbl()], ['wired', '🎧 Kabel'], ['bt', '🎧 Bluetooth']], rt) + g10aEarHTML(rt);   // G10a
+   const latTx = ST.latMs != null ? micDe(ST.latMs, 1) + ' ms' : stLatFor(rt).ms != null ? micDe(stLatFor(rt).ms, 1) + ' ms' : '–';
+   const how = P ? (P.how === 'hand' ? 'von Hand' : 'eingemessen ' + stDate(P.at)) : ST.latHow === 'gemessen' ? 'kurz geprüft · noch nicht eingemessen' : 'geschätzt';
+   html += `<div class="st-lat"><span>Verzögerung <b>${latTx}</b> <small>${esc(how)}</small></span><span class="st-nd"><button class="rb" data-nd="-1">−1</button><button class="rb" data-nd="1">+1</button></span></div>`;
+@@ -46027,6 +46041,7 @@
+   if (!tk) { for (const it of items.reverse()) undoApply(it, it.before); return null; }
+   if (o.kind === 'rec') TK.recJob = job; else TK.fangJob = job;
+   const seg = {take: tk.id, in: tkR6(tk.inSec), out: tkR6(tk.inSec + (b - a - tk.lateBeats) * sp), at: tkR6(at + tk.lateBeats)};
++  g10aPostWatch(tk.id, st, o.si);                                   // G10a-4: Ausklang abwarten, dann ggf. „Clip +1 Takt?“
+   let clip;
+   if (old && old.audio) {
+     clip = deep(old);
+@@ -49563,6 +49578,7 @@
+         tkReadMic(g, Fb, Fe, pcm, F0);
+         const s = g3PostSec(pcm, Fb - F0, sr);
+         if (s > .005) { const v = {out: tkR6((Fb - F0) / sr), sec: tkR6(s)}; m.post = v; const cur = S.takes && S.takes[id]; if (cur && cur !== m) cur.post = Object.assign({}, v); markDirty(); }
++        g10aPostCheck(id);                                          // G10a-4
+         if (TK.buf.has(id)) { const b = tkToBuffer(pcm, sr); if (b) TK.buf.set(id, vpKick(b)); TK.peaks.clear(); }   // G-GES: VS-P misst auch die Fassung mit Ausklang gleich
+         UI.dirty.grid = UI.dirty.song = true;
+       }
+@@ -49930,6 +49946,142 @@
+   setTimeout(wait, 0);
+   return {id, inSec: (Fa - F0) / sr, lateBeats: 0};
+ }
++/* ======================= G10a — Einsingen fertig (Nachtrag 9, §2.1) =======================
++   1. Hörmuschel-Erkennung: volles Einmessen auf dem Weg „speaker“ mit Kopplung gainDb < −26 dB → Geräteprofil prof.speaker.ear = true
++      (nicht im Projekt); die Weg-Anzeige im 🎤-Blatt heißt dann „Hörmuschel?“ mit Hinweis. Ohne Merker fehlt das Feld (Profil wie bisher).
++   2. ● SONG auf leerem Song mit 🎤: die Stimme läuft ab Song-Takt 1 mit (eigener Weg, nicht tkSongBegin) und landet mit dem Song in
++      einem Undo in song.vox. Abgebrochen → kein Take.
++   3. Gesangs-Take in der Szene: die Aufnahme-Leiste zeigt den Pegel der Stimme (ST.lvl) als Balken, höchstens 15 Bilder/s, nur transform.
++   4. Ragt der Ausklang nach REC/FANG mehr als ⅓ Takt über das Clip-Ende: Toast „Clip +1 Takt? [Ja]“ (ein Undo).
++   5. Anlauf am Song-Anfang: ▶ SONG ab Takt 1 (und der Offline-Render für Video/WAV) beginnt mit einem stillen Vorlauf von
++      ceil(Anlauf/Schlag) Schlägen (≤ 2 Takte); ohne Anlauf wie bisher. */
++const G10A_EAR_DB = -26, G10A_LVL_MS = 1000 / 15, G10A_CLIP_HOLD = 700;
++const G10A = {leadB: 0, lvl: {el: null, on: false, t: 0, k: -1, clipT: 0, clip: false, log: null, cost: null}, watch: new Map(), post: null, last: null};
++// Schläge je Takt (heute fest; T1 Taktarten setzt sie hier um)
++const g10aBpb = () => grid().beatsPerBar;
++
++/* ---------- 1. Hörmuschel ---------- */
++function g10aEar(p, route, res) {
++  if (!p || route !== 'speaker') return;
++  if (res && res.gainDb != null && isFinite(res.gainDb) && res.gainDb < G10A_EAR_DB) p.ear = true;
++  else delete p.ear;
++}
++const g10aEarOn = () => { const p = stProf().prof.speaker; return !!(p && p.ear); };
++const g10aSpeakerLbl = () => (g10aEarOn() ? '🔈 Hörmuschel?' : '🔈 Lautsprecher');
++const g10aEarHTML = rt => (rt === 'speaker' && g10aEarOn() ? '<div class="g10a-ear">Musik leise aus der Hörmuschel – Kabel-Kopfhörer einstecken</div>' : '');
++
++/* ---------- 2. Gesang beim ersten Song-Durchgang ---------- */
++const g10aVoxReady = () => !!(ST.on && ST.phase !== 'off' && ST.phase !== 'start' && tkAudioOk() && ST.ring);
++function g10aSongVoxBegin(sr) {
++  if (!sr || sr.over || sr.vox || !g10aVoxReady() || !AU.ctx) return false;
++  sr.vox = {passes: [{a: 0, T: sr.startBeat}]}; sr.g10a = true;
++  tkQ('song', true);
++  g8Begin(sr);                                                      // G8: die Stimme läuft in Stücken mit
++  G10A.last = {kind: 'songBegin', T: sr.startBeat};
++  return true;
++}
++function g10aSongVoxDrop(sr) { if (sr && sr.g10a && sr.vox) { sr.vox = null; try { g8Drop(); } catch (e) { logErr(e); } } }
++function g10aSongVoxCommit(sr, song) {
++  if (!sr || !sr.g10a || !sr.vox || !song) return false;
++  sr.mode = 'over'; sr.from = 0;
++  try { tkSongCommit(sr, song.bars, 0); } catch (e) { logErr(e); }
++  G10A.last = {kind: 'songCommit', bars: song.bars, ok: !!sr.voxUndo};
++  return !!sr.voxUndo;
++}
++
++/* ---------- 3. Pegel in der Aufnahme-Leiste ---------- */
++function g10aLvl(running) {
++  const L = G10A.lvl, on = !!(running && rec.vox && ST.on && ST.phase !== 'off' && EL.reclane);
++  if (on && !L.el) {
++    L.el = document.createElement('span'); L.el.className = 'g10a-lvl'; L.el.hidden = true; L.el.setAttribute('aria-hidden', 'true');
++    L.el.innerHTML = '<i></i><b></b>'; L.bar = L.el.firstChild; EL.reclane.insertBefore(L.el, EL.recLaneTxt);
++  }
++  if (on !== L.on) { L.on = on; if (L.el) L.el.hidden = !on; L.k = -1; L.t = 0; }
++  if (!on) return false;
++  const now = performance.now(); if (now - L.t < G10A_LVL_MS - 1) return true;
++  const c0 = performance.now(); L.t = now;
++  const v = ST.phase === 'start' ? -180 : ST.lvl, k = Math.round(clamp((v + 60) / 60, 0, 1) * 1000) / 1000;
++  if (k !== L.k) { L.k = k; L.bar.style.transform = 'scaleX(' + k + ')'; }
++  if (ST.pk > -1) L.clipT = now + G10A_CLIP_HOLD;
++  const cl = now < L.clipT; if (cl !== L.clip) { L.clip = cl; L.el.classList.toggle('g10a-clip', cl); }
++  if (L.log) { L.log.push({t: now, k, lvl: v, end: ST.ring ? ST.ring.end : -1}); if (L.log.length > 4000) L.log.shift(); }
++  if (L.cost) { L.cost.push(performance.now() - c0); if (L.cost.length > 4000) L.cost.shift(); }
++  return true;
++}
++function g10aLaneTxt(bAud) {
++  const od = rec.state === 'overdub', clip = rec.clip, sb = rec.startBeat, bpb = g10aBpb();
++  const L = od || rec.fixedLen ? (clip ? clip.len * bpb : bpb) : Math.max(bpb, Math.ceil((bAud - sb + .01) / bpb) * bpb);
++  const cs = od ? audCstart(rec.track, bAud) : sb, now = od ? (((bAud - cs) % L) + L) % L : clamp(bAud - sb, 0, L);
++  return (od ? 'OVERDUB' : 'AUFNAHME') + ' · Takt ' + (Math.floor(now / bpb) + 1) + (od && clip ? '/' + clip.len : rec.fixedLen ? '/' + rec.fixedLen : '/AUTO') + ' · Stimme' + (G10A.lvl.clip ? ' · zu laut' : '');
++}
++
++/* ---------- 4. Letztes Wort über dem Ende ---------- */
++function g10aPostWatch(id, st, si) { G10A.watch.set(id, {st, si, at: performance.now()}); if (G10A.watch.size > 16) G10A.watch.delete(G10A.watch.keys().next().value); }
++// der Clip, der Take id bis an sein Ende spielt (sonst null)
++function g10aPostClip(id) {
++  const w = G10A.watch.get(id); if (!w) return null;
++  const tr = S.tracks[w.st], clip = tr && tr.stimme ? tr.clips[w.si] : null, a = clip && clip.audio, m = S.takes && S.takes[id];
++  if (!a || a.take !== id || !m || !m.post) return null;
++  const sp = spb(), L = clip.len * g10aBpb(), full = Math.abs(a.at + (a.out - a.in) / sp - L) <= 1e-3;
++  if (!full || Math.abs(m.post.out - a.out) > 1e-4) return null;
++  return {w, clip, a, m, sp};
++}
++function g10aPostCheck(id) {
++  const x = g10aPostClip(id); if (!x) return false;
++  const post = Math.min(x.m.post.sec, x.m.len / x.m.sr - x.a.out), lim = g10aBpb() * x.sp / 3;
++  G10A.post = {id, sec: +post.toFixed(4), lim: +lim.toFixed(4), asked: post > lim && x.clip.len < 64};
++  if (!G10A.post.asked) { G10A.watch.delete(id); return false; }
++  toast('Letztes Wort ragt über das Ende – Clip +1 Takt?', {label: 'Ja', fn: () => g10aPostGrow(id)});
++  return true;
++}
++function g10aPostGrow(id) {
++  const x = g10aPostClip(id); if (!x) return false;
++  const {w, clip, a, m} = x, before = cleanClip(clip), end = tkR6(Math.min(m.len / m.sr, m.post.out + m.post.sec));
++  clip.len = Math.min(64, clip.len + 1); a.out = end;
++  undoPush({kind: 'clip', track: w.st, scene: w.si, before, label: 'Clip +1 Takt'});
++  G10A.watch.delete(id);
++  clipChanged(w.st, w.si);
++  if (R.playing && R.slot[w.st] === w.si) tkTrackResync(w.st);
++  markDirty(); UI.dirty.all = true;
++  G10A.post = Object.assign({}, G10A.post, {grown: true, len: clip.len, out: end});
++  return true;
++}
++
++/* ---------- 5. Anlauf am Song-Anfang ---------- */
++// Schläge stiller Vorlauf für ▶ SONG ab Takt bar0: nur ab Takt 1, wenn dort ein Audio-Stück mit Anlauf am Take-Anfang beginnt
++function g10aLeadBeats(song, bar0) {
++  if (!song || (bar0 | 0) !== 0 || !tkAudioOk()) return 0;
++  let pre = 0;
++  for (let t = 0; t < NT(); t++) {
++    const tr = S.tracks[t]; if (!tr || !tr.stimme || tr.mute) continue;
++    const o = laneOriginAt(song.lanes[t], 0); if (o.slot < 0 || Math.abs(o.cs) > 1e-6 || !laneClipOk(song, t, o)) continue;
++    const c = (o.own && song.own && song.own[o.own]) || tr.clips[o.slot], a = c && c.audio;
++    if (a && a.at < 1e-6) pre = Math.max(pre, g3PreOf(a));
++  }
++  const st = stimmeT(), vt = st >= 0 ? S.tracks[st] : null;
++  if (song.vox && !(vt && vt.mute)) for (const v of song.vox) if (v.bar === 0 && v.at < 1e-6) pre = Math.max(pre, g3PreOf(v));
++  if (!(pre > .003)) return 0;
++  return Math.min(Math.ceil(pre / spb() - 1e-6), 2 * g10aBpb());
++}
++
++const G10A_API = {
++  g10aInfo: () => ({ear: g10aEarOn(), earDb: G10A_EAR_DB, lead: R.g10aLead || 0, leadNext: S.song ? g10aLeadBeats(S.song, 0) : 0, post: G10A.post ? Object.assign({}, G10A.post) : null, last: G10A.last ? Object.assign({}, G10A.last) : null,
++    lvl: {on: G10A.lvl.on, k: G10A.lvl.k, clip: G10A.lvl.clip, el: !!G10A.lvl.el, hidden: G10A.lvl.el ? G10A.lvl.el.hidden : null, transform: G10A.lvl.bar ? G10A.lvl.bar.style.transform : null}}),
++  // Test-Attrappe (G10-01): ein volles Einmessen mit diesem Ergebnis, durch denselben Abschluss wie echt (stCalEnd)
++  g10aCalSim: o => { o = o || {}; const cal = {kind: 'voll'}, run = {cal};
++    stCalEnd(run, cal, {kind: 'voll', ok: true, ms: [], q: [], lvl: [], medianMs: o.ms || 20, spreadMs: .4, floorDb: null, floorOk: false, heard: 4, of: 4, route: ST.route, gainDb: o.gainDb == null ? null : +o.gainDb, why: ''}, [{f: ST.ring ? ST.ring.end : 0}]);
++    return {ear: g10aEarOn(), prof: deep(stProf().prof[ST.route] || null)}; },
++  g10aLvlLog: on => { const L = G10A.lvl; if (on === true) { L.log = []; L.cost = []; return true; } const r = {log: L.log ? L.log.slice() : [], cost: L.cost ? L.cost.slice() : []}; if (on === false) { L.log = null; L.cost = null; } return r; },
++  g10aPostCheck: id => g10aPostCheck(id), g10aPostGrow: id => g10aPostGrow(id),
++  g10aWatch: (id, st, si) => g10aPostWatch(id, st, si),
++  // Testhilfe: Felder eines STIMME-Clips und seines Takes setzen (Anlauf/Ausklang wie nach G3), ohne Undo
++  g10aTestSeg: o => { o = o || {}; const tr = S.tracks[o.track], c = tr && tr.clips[o.scene], a = c && c.audio, m = a && S.takes && S.takes[a.take]; if (!a || !m) return null;
++    for (const k of ['in', 'out', 'at']) if (isNum(o[k])) a[k] = tkR6(o[k]);
++    if (isNum(o.len)) c.len = o.len | 0;
++    if (o.pre) m.pre = {in: tkR6(o.pre.in), sec: tkR6(o.pre.sec)}; if (o.post) m.post = {out: tkR6(o.post.out), sec: tkR6(o.post.sec)};
++    clipChanged(o.track, o.scene); markDirty(); return {audio: deep(a), pre: m.pre || null, post: m.post || null, len: c.len}; },
++  g10aBpb: () => g10aBpb(),
++};
+ const G8_API = {
+   g8Info: () => { const s = G8.st; return {ringSec: ST.ring ? +(ST.ring.len / ST.ring.sr).toFixed(2) : null, ringWant: +g8RingSec().toFixed(2), rest: G8.rest, last: G8.last, log: deep(G8.log),
+     st: s ? {id: s.id, F0: s.F0, F: s.F, k: s.k, fill: s.fill, writes: s.writes, used: s.used, lost: s.lost, sec: +((s.F - s.F0) / s.sr).toFixed(2), kept: s.kept.length} : null}; },
+@@ -53849,13 +54001,14 @@
+   await vvTakesReady();
+   if (typeof g6pWaitAll === 'function' && !GGB.dry) { const w = await g6pWaitAll({a, b}, {cancel: () => VV.cancel}); if (!w.ok) toast('Chor im Video nicht ganz fertig gerechnet'); }   // G6PH-VIDEO (G-GB: Instrumental ohne Chor – nicht auf Chor-Puffer warten)
+   const wk = wkReady(), sr = lc.sampleRate, sp = spb(), songSec = (b - a) * 4 * sp;
+-  const lead = .06, len = Math.ceil((lead + AU.graphLat + songSec + VV_TAIL + .4) * sr);
++  const g10aL = g10aLeadBeats(song, a) * sp;                       // G10a-5: derselbe stille Vorlauf wie ▶ SONG (s)
++  const lead = .06, len = Math.ceil((lead + AU.graphLat + g10aL + songSec + VV_TAIL + .4) * sr);   // G10a
+   const oc = new OfflineAudioContext(2, len, sr);
+   if (wk && !(await vvAddModule(oc))) throw new Error('Klang-Modul nicht geladen');
+   if (VV.cancel) throw new Error('abgebrochen');
+   if (R.playing || rec.state !== 'off' || R.songRec) throw new Error('Wiedergabe läuft');
+   const T0 = performance.now(), live = o.live || {}, off = {oc, sv: null, ended: false, endT: null, endB: null, tl: live.tl || (live.tl = []), log: null, prog: 0};
+-  Object.assign(live, {bpm: S.bpm, a, b, t: -1});
++  Object.assign(live, {bpm: S.bpm, a, b, t: -1}); if (g10aL) live.lead = g10aL;   // G10a-5
+   VV.off = off; UI.vvOff = true;
+   try {
+     await vvSwapIn(oc, wk, off);
+@@ -53863,7 +54016,7 @@
+     if (!songPlayStart(a)) throw new Error('Song startet nicht');
+     vvProf('swapIn', performance.now() - PS);
+   } catch (e) { if (off.sv) vvSwapOut(off.sv); VV.off = null; UI.vvOff = false; throw e; }
+-  const t0 = R.startTime, endB = b < song.bars ? R.songPlay.off + b * 4 : null, q = t => Math.ceil(t * sr / 128) * 128 / sr;
++  const t0 = R.startTime - g10aL, endB = b < song.bars ? R.songPlay.off + b * 4 : null, q = t => Math.ceil(t * sr / 128) * 128 / sr;   // G10a-5: Video-Zeit 0 = Anfang des Vorlaufs
+   if (off.mtr) live.mtr = {Q: off.mtr.Q, gl: AU.graphLat, off: t0 + AU.graphLat};   // VV4-F: the pictures drawn behind the render read the meter too
+   const last = [];
+   const recSlots = now => {
+@@ -53930,7 +54083,7 @@
+     while (Q.seq < want && performance.now() - W0 < 1500) await new Promise(r => setTimeout(r, 15)); off.mtr.want = want; }
+   let PT = performance.now();
+   // trim: from the heard song start; the tail ends where the master stays below −60 dBFS (blocks of 512), ≤ 10 s
+-  const s0 = Math.round((t0 + AU.graphLat) * sr), sEnd = s0 + Math.round(songSec * sr), L = out.getChannelData(0), Rr = out.getChannelData(1);
++  const s0 = Math.round((t0 + AU.graphLat) * sr), sEnd = s0 + Math.round((g10aL + songSec) * sr), L = out.getChannelData(0), Rr = out.getChannelData(1);   // G10a-5
+   let lastLoud = sEnd;
+   for (let k = out.length - 512, nb = 0; k >= sEnd; k -= 512) {
+     let pk = 0; for (let j = k; j < k + 512; j++) { const v = Math.max(Math.abs(L[j]), Math.abs(Rr[j])); if (v > pk) pk = v; } if (pk >= VV_LV60) { lastLoud = k + 512; break; }
+@@ -53942,7 +54095,7 @@
+   for (const d of chs) { for (let j = 0; j < fl; j++) d[n - fl + j] *= Math.cos(j / fl * Math.PI / 2); d.fill(0, n); }   // the end fades (at −60 dBFS inaudible; at 10 s a 1-s fade)
+   for (let ch = 0; ch < 2; ch++) out.getChannelData(ch).fill(0, eIdx);
+   vvProf('trim', performance.now() - PT);
+-  const r = {buf: out, ch: chs, off: s0 / sr, n, sr, dur: n / sr, songSec, tail: (eIdx - sEnd) / sr, capped, a, b, bpm: S.bpm, tl: off.tl, log: off.log, ms: performance.now() - T0, wk, nt: live.nt || [], t0: live.t0,
++  const r = {buf: out, ch: chs, off: s0 / sr, n, sr, dur: n / sr, songSec, tail: (eIdx - sEnd) / sr, capped, a, b, bpm: S.bpm, lead: g10aL || undefined, tl: off.tl,   // G10a-5: lead log: off.log, ms: performance.now() - T0, wk, nt: live.nt || [], t0: live.t0,
+     mtr: off.mtr ? {Q: off.mtr.Q, gl: AU.graphLat, want: off.mtr.want, off: s0 / sr} : null};   // VV4-F: video time t = context time r.off + t (tracks: − gl)
+   VV.last = r;
+   return r;
+@@ -54152,7 +54305,7 @@
+ function vvDraw(g, W, H, view, st, rt) { vvDrawRun(g, W, H, view, st, rt); }
+ // the picture state at video time t (s) of a render result (slot timeline = R.slot as the scheduler set it)
+ function vvStateAt(r, t) {
+-  const sp = 60 / r.bpm, B = t / sp, st = {tB: B, sb: B + r.a * 4, slots: [], cs: [], own: []};
++  const sp = 60 / r.bpm, B = r.lead ? Math.max(0, (t - r.lead) / sp) : t / sp, st = {tB: B, sb: B + r.a * 4, slots: [], cs: [], own: []};   // G10a-5: im Vorlauf zeigt das Bild den Anfang
+   for (const e of r.tl) if (e.b <= B + 1e-9) { st.slots[e.i] = e.s; st.cs[e.i] = e.cs; st.own[e.i] = e.own; }
+   st.t = t; Object.defineProperty(st, 'src', {value: r, enumerable: false});   // VV3: the notes of the render for the track shot
+   return st;
+@@ -58158,6 +58311,7 @@
+ Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes
+ Object.assign(SYNQUENZER, G3_API);                // G3: Vorlauf/Ausklang
+ Object.assign(SYNQUENZER, G8_API);                // G8: lange Aufnahmen
++Object.assign(SYNQUENZER, G10A_API);              // G10a: Einsingen fertig
+ Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
+ Object.assign(SYNQUENZER, WP_API);                // VS5a/b: Marken & Scheiben, Dehnen, Songtext
+ Object.assign(SYNQUENZER, KON_API);               // KON: Block & Konsolidieren
