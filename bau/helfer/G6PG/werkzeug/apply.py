@@ -16,11 +16,11 @@ CSS = """#wpSheet .wpz{flex:0 0 88px;height:44px;padding:0;font:700 12px/1 var(-
 /* G6+g: Legende der Chor-Spuren über der Leinwand (eine Zeile, scrollt innen; Treffer 44 × 44) */
 #wpSheet .g6pgleg{flex:none;display:flex;gap:4px;height:44px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x}
 #wpSheet .g6pgleg::-webkit-scrollbar{display:none}
-#wpSheet .g6pgc{flex:none;display:flex;align-items:center;gap:0;height:44px;padding-left:6px;border:1px solid var(--line);border-left:4px solid var(--cc);border-radius:6px;background:var(--chassis-2)}
+#wpSheet .g6pgc{flex:none;display:flex;align-items:center;gap:0;height:44px;padding-left:9px;border-radius:6px;background:var(--chassis-2);box-shadow:inset 4px 0 0 var(--cc),inset 0 0 0 1px var(--line)}
 #wpSheet .g6pgc.cur{background:var(--chassis-3)}
 #wpSheet .g6pgc .g6pgsw{flex:none;display:grid;place-items:center;min-width:20px;height:20px;padding:0 3px;border-radius:4px;background:var(--cc);color:#0e1014;font:800 11px/1 var(--font-num);font-style:normal}
 #wpSheet .g6pgc b{flex:none;max-width:112px;margin:0 2px 0 6px;font:600 12px/14px var(--font-ui);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:clip}
-#wpSheet .g6pgc button{flex:none;width:44px;height:42px;min-width:0;padding:0;border:0;background:none;color:var(--text);display:grid;place-items:center;font:800 13px/1 var(--font-ui)}
+#wpSheet .g6pgc button{flex:none;width:44px;height:44px;min-width:0;padding:0;border:0;background:none;color:var(--text);display:grid;place-items:center;font:800 13px/1 var(--font-ui)}
 #wpSheet .g6pgc .g6pgx{display:none}
 #wpSheet .g6pgc.off{opacity:.62}
 #wpSheet .g6pgc.off .g6pgx{display:inline}
@@ -34,7 +34,7 @@ rep("  Object.assign(WP.ed, {cv, an, chips, rs, rw, zb, info, ab, cvw, seg, tx})
 rep("  let lo = Infinity, hi = -Infinity; ns.forEach((n, k) => { lo = Math.min(lo, n.m, tg[k]); hi = Math.max(hi, n.m, tg[k]); });\n",
     "  let lo = Infinity, hi = -Infinity; ns.forEach((n, k) => { lo = Math.min(lo, n.m, tg[k]); hi = Math.max(hi, n.m, tg[k]); });\n"
     "  const SG = g6pgGeo(E.r, a), LN = Vc ? g6pgLeadNs(E) : null; if (SG && isFinite(SG.lo)) { lo = Math.min(lo, SG.lo); hi = Math.max(hi, SG.hi); } if (LN) for (const n of LN.ns) { lo = Math.min(lo, n.p); hi = Math.max(hi, n.p); }   // G6+g: Schatten im Bereich\n")
-rep("  // Noten-Blöcke: Umriss = gesungen, Block = gehört\n", "  g6pgPaintG2(g, E, x, Wp, Hp, dpr, LN);   // G6+g: Chorstimmen als farbige Schatten hinter den Lead-Blöcken (Bild-Puffer)\n  // Noten-Blöcke: Umriss = gesungen, Block = gehört\n")
+rep("  // Noten-Blöcke: Umriss = gesungen, Block = gehört\n", "  g6pgPaintG2(g, E, x, Wp, Hp, dpr, LN, SG);   // G6+g: Chorstimmen als farbige Schatten hinter den Lead-Blöcken (Bild-Puffer)\n  // Noten-Blöcke: Umriss = gesungen, Block = gehört\n")
 rep("  g2Info(rd);\n}", "  g2Info(rd);\n  g6pgLegSync(E);\n}")
 rep("    const [cx] = pos(e); UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};\n    E.sel = p.k;",
     "    const [cx, cy] = pos(e); UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};\n    if (p.k < 0 && g6pgTap(E, cx, cy)) return;   // G6+g: Tipp auf einen Schatten öffnet die Stimme\n    E.sel = p.k;")

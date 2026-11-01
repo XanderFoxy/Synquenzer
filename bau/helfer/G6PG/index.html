@@ -2064,11 +2064,11 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 /* G6+g: Legende der Chor-Spuren über der Leinwand (eine Zeile, scrollt innen; Treffer 44 × 44) */
 #wpSheet .g6pgleg{flex:none;display:flex;gap:4px;height:44px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x}
 #wpSheet .g6pgleg::-webkit-scrollbar{display:none}
-#wpSheet .g6pgc{flex:none;display:flex;align-items:center;gap:0;height:44px;padding-left:6px;border:1px solid var(--line);border-left:4px solid var(--cc);border-radius:6px;background:var(--chassis-2)}
+#wpSheet .g6pgc{flex:none;display:flex;align-items:center;gap:0;height:44px;padding-left:9px;border-radius:6px;background:var(--chassis-2);box-shadow:inset 4px 0 0 var(--cc),inset 0 0 0 1px var(--line)}
 #wpSheet .g6pgc.cur{background:var(--chassis-3)}
 #wpSheet .g6pgc .g6pgsw{flex:none;display:grid;place-items:center;min-width:20px;height:20px;padding:0 3px;border-radius:4px;background:var(--cc);color:#0e1014;font:800 11px/1 var(--font-num);font-style:normal}
 #wpSheet .g6pgc b{flex:none;max-width:112px;margin:0 2px 0 6px;font:600 12px/14px var(--font-ui);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:clip}
-#wpSheet .g6pgc button{flex:none;width:44px;height:42px;min-width:0;padding:0;border:0;background:none;color:var(--text);display:grid;place-items:center;font:800 13px/1 var(--font-ui)}
+#wpSheet .g6pgc button{flex:none;width:44px;height:44px;min-width:0;padding:0;border:0;background:none;color:var(--text);display:grid;place-items:center;font:800 13px/1 var(--font-ui)}
 #wpSheet .g6pgc .g6pgx{display:none}
 #wpSheet .g6pgc.off{opacity:.62}
 #wpSheet .g6pgc.off .g6pgx{display:inline}
@@ -44561,7 +44561,7 @@ function g2Paint() {
     const i0 = Math.max(0, Math.floor(V.a / A.hop)), i1 = Math.min(A.n, Math.ceil((V.a + V.W) / A.hop) + 1);
     for (let i = i0; i < i1; i++) { const f = A.f0[i]; if (!(f > 0)) { on = false; continue; } const xx = X(i * A.hop), yy = Y(G2P.midi(f)); if (on) g.lineTo(xx, yy); else g.moveTo(xx, yy); on = true; }
     g.stroke(); }
-  g6pgPaintG2(g, E, x, Wp, Hp, dpr, LN);   // G6+g: Chorstimmen als farbige Schatten hinter den Lead-Blöcken (Bild-Puffer)
+  g6pgPaintG2(g, E, x, Wp, Hp, dpr, LN, SG);   // G6+g: Chorstimmen als farbige Schatten hinter den Lead-Blöcken (Bild-Puffer)
   // Noten-Blöcke: Umriss = gesungen, Block = gehört
   E.blk = [];
   ns.forEach((n, k) => {
@@ -45049,8 +45049,8 @@ function g6pgImg(E, key, Wp, Hp, dpr, draw) {
 // Hervorhebung beim Selbst-Singen: die Spur der scharfen Stimme dieser Stelle
 function g6pgHl(r, G) { const A = G6.arm; if (!A || !G || r.vox || A.t !== r.t || A.s !== r.s) return null; const l = G.lanes[A.k]; return l ? l.id : null; }
 // Noten-Editor: Schatten (hinter den Lead-Blöcken). lead = Lead-Noten grau, wenn eine Chorstimme bearbeitet wird
-function g6pgPaintG2(g, E, x, Wp, Hp, dpr, lead) {
-  const G = g6pgGeo(E.r, x.a); E.g6hit = null; if (!G) return;
+function g6pgPaintG2(g, E, x, Wp, Hp, dpr, lead, G0) {
+  const G = G0 !== undefined ? G0 : g6pgGeo(E.r, x.a); E.g6hit = null; if (!G) return;
   const pal = g6pgPal(), hl = g6pgHl(E.r, G), hide = [...G6PG.hide].join(','), V = E.vw;
   const key = [G.sig, V.a, V.W, Wp, Hp, dpr, E.lo, E.rowH.toFixed(4), hide, hl, E.voice, lead ? lead.sig : ''].join('|');
   const B = g6pgImg(E, key, Wp, Hp, dpr, (q, hit) => {

@@ -111,8 +111,8 @@ function g6pgImg(E, key, Wp, Hp, dpr, draw) {
 // Hervorhebung beim Selbst-Singen: die Spur der scharfen Stimme dieser Stelle
 function g6pgHl(r, G) { const A = G6.arm; if (!A || !G || r.vox || A.t !== r.t || A.s !== r.s) return null; const l = G.lanes[A.k]; return l ? l.id : null; }
 // Noten-Editor: Schatten (hinter den Lead-Blöcken). lead = Lead-Noten grau, wenn eine Chorstimme bearbeitet wird
-function g6pgPaintG2(g, E, x, Wp, Hp, dpr, lead) {
-  const G = g6pgGeo(E.r, x.a); E.g6hit = null; if (!G) return;
+function g6pgPaintG2(g, E, x, Wp, Hp, dpr, lead, G0) {
+  const G = G0 !== undefined ? G0 : g6pgGeo(E.r, x.a); E.g6hit = null; if (!G) return;
   const pal = g6pgPal(), hl = g6pgHl(E.r, G), hide = [...G6PG.hide].join(','), V = E.vw;
   const key = [G.sig, V.a, V.W, Wp, Hp, dpr, E.lo, E.rowH.toFixed(4), hide, hl, E.voice, lead ? lead.sig : ''].join('|');
   const B = g6pgImg(E, key, Wp, Hp, dpr, (q, hit) => {
