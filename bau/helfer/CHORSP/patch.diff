@@ -1,0 +1,966 @@
+--- ../../snapshots/R-4300.html	2026-11-01 09:43:39.842127141 +0000
++++ index.html	2026-11-01 10:27:22.386283033 +0000
+@@ -2178,6 +2178,71 @@
+ #wpSheet .g6pgc.off{opacity:.62}
+ #wpSheet .g6pgc.off .g6pgx{display:inline}
+ #wpSheet .g6pgc .g6pgso.on{color:var(--ink);background:var(--amber);border-radius:0 5px 5px 0}
++/* CHS-CSS-BEGIN – CHORSP: Background-Gruppe (Matrix/Song), Mischpult, Lineal im Gesangs-Editor */
++#clipGrid .chsth{position:relative;min-width:0;min-height:0;height:100%;text-align:left;padding:2px 4px 2px 9px;background:linear-gradient(var(--chassis-2),var(--chassis));border:1px solid var(--line);border-radius:var(--r-s);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:2px;overflow:hidden;color:var(--text)}
++#clipGrid .chsth::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--cc,var(--text-faint))}
++#clipGrid .chsth .chsnm{font:700 11px/13px var(--font-ui);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
++#clipGrid .chsth .chssb{font:600 10px/1 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
++#clipGrid .chsth.chsgrp{flex-direction:row;flex-wrap:wrap;align-items:center;align-content:center;justify-content:flex-start;column-gap:4px;padding-left:6px;background:linear-gradient(var(--chassis-3),var(--chassis-2))}
++#clipGrid .chsth.chsgrp::before{background:repeating-linear-gradient(var(--chor3) 0 25%,var(--chor5) 0 50%,var(--chor6) 0 75%,var(--chor8) 0 100%)}
++#clipGrid .chsth.chsgrp .chssb{flex-basis:100%}
++#clipGrid .chstri{display:inline-grid;place-items:center;width:12px;transition:transform .15s;color:var(--text-dim)}
++#clipGrid .chsth.open .chstri,.sv-l .chstri.open{transform:rotate(90deg)}
++#clipGrid .chsth .chssw{position:absolute;right:3px;top:3px;min-width:16px;height:16px;padding:0 2px;border-radius:4px;background:var(--cc);color:#0e1014;font:800 10px/16px var(--font-num);font-style:normal;text-align:center}
++#clipGrid .chsth:not(.chsgrp) .chsnm{padding-right:18px}
++#clipGrid .chsth.muted .chsnm{opacity:.45;text-decoration:line-through}
++#clipGrid .chsc{position:relative;min-width:0;min-height:0;padding:0;border:1px dashed var(--line);border-radius:6px;overflow:hidden;background:transparent}
++#clipGrid .chsc.filled{border:1px solid rgba(255,255,255,.05);background:color-mix(in srgb,var(--cc,var(--text-faint)) 16%,transparent)}
++#clipGrid .chsc.chsgrp.filled{background:rgba(255,255,255,.04)}
++#clipGrid .chsc.muted{opacity:.45}
++#clipGrid .chsc .chsmini{position:absolute;inset:3px;pointer-events:none}
++#clipGrid .chsc .chsmini svg{width:100%;height:100%;display:block}
++#clipGrid .chsc .chsmini rect{fill:var(--cc,#999)}
++#clipGrid .chse{min-width:0;min-height:0;padding:0;border:1px solid var(--line);border-radius:var(--r-s);background:var(--chassis);color:var(--text-dim);font:800 12px/1 var(--font-ui);display:grid;place-items:center}
++#clipGrid .chse.on{background:var(--amber);color:var(--ink);border-color:var(--amber)}
++.sv-l.chs{cursor:pointer;opacity:1}
++.sv-l.chs.chsgrp{color:var(--text);gap:3px}
++.sv-l.chs .chstri{display:inline-grid;place-items:center;width:12px;transition:transform .15s}
++.sv-l.chs .chsdg{flex:none;min-width:12px;height:12px;padding:0 2px;border-radius:3px;background:var(--tc);color:#0e1014;font:800 9px/12px var(--font-num);text-align:center}
++.sv-l.chs.muted span{opacity:.45;text-decoration:line-through}
++.chsmix{width:min(560px,calc(100vw - 16px))}
++.chsmix .chs-mh{display:flex;align-items:center;gap:6px;margin:0 0 4px}
++.chsmix .chs-mh b{flex:1 1 auto;font:700 13px/1.2 var(--font-ui);letter-spacing:.04em;text-transform:uppercase;min-width:0}
++.chsmix .chs-mh .rb{min-height:44px;min-width:44px;padding:0 10px}
++.chsmix .rb.on{background:var(--amber);color:var(--ink);border-color:var(--amber)}
++.chsmix .chs-mg{display:grid;grid-template-columns:1fr;gap:0}
++.chsmix .chs-note{margin:0 0 6px;font-size:11px;line-height:1.3}
++.chsmix .chs-sl{display:flex;align-items:center;gap:6px;min-width:0;min-height:44px}
++.chsmix .chs-sll{flex:0 0 78px;font:700 10px/1.1 var(--font-ui);color:var(--text-dim)}
++.chsmix .chs-lr .chs-sll{flex-basis:34px}
++.chsmix .chs-sl output{flex:0 0 58px;font:600 11px/1 var(--font-num);text-align:right;white-space:nowrap;color:var(--text)}
++.chsmix .chs-sl input[type=range]{flex:1 1 auto;min-width:44px;width:100%;height:44px;margin:0;background:transparent;-webkit-appearance:none;appearance:none;touch-action:none}
++.chsmix .chs-sl input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--line)}
++.chsmix .chs-sl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-10px;border-radius:50%;background:var(--cc,var(--t8));border:2px solid var(--chassis)}
++.chsmix .chs-lanes{max-height:min(46vh,340px);overflow-y:auto;overscroll-behavior:contain;border-top:1px solid var(--line)}
++.chsmix .chs-lane{padding:2px 0 2px 8px;border-bottom:1px solid var(--line);box-shadow:inset 4px 0 0 var(--cc)}
++.chsmix .chs-lane.hl{background:rgba(255,255,255,.05)}
++.chsmix .chs-lane.muted b{opacity:.5;text-decoration:line-through}
++.chsmix .chs-lt{display:flex;align-items:center;gap:4px;min-height:44px}
++.chsmix .chs-lt b{flex:1 1 auto;min-width:0;font:600 13px/1.2 var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
++.chsmix .chs-chip{flex:none;display:grid;place-items:center;min-width:22px;height:22px;padding:0 3px;border-radius:4px;background:var(--cc);color:#0e1014;font:800 12px/1 var(--font-num);font-style:normal}
++.chsmix .chs-lt .rb{flex:none;width:44px;height:44px;min-width:44px;padding:0;font:800 13px/1 var(--font-ui)}
++.chsmix .chs-lr{display:grid;grid-template-columns:1fr 1fr;column-gap:10px}
++.chsmix .chs-mf{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
++.chsmix .chs-mf .mbtn{width:100%;min-height:44px;margin:0;padding:0 6px;line-height:1.12}
++@media (orientation:portrait){.chsmix .chs-lr{grid-template-columns:1fr}}
++#wpSheet .wpcv .chsov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
++#wpSheet .wpcv .chsrul{position:absolute;left:0;right:0;bottom:0;height:44px;z-index:3;display:flex;align-items:stretch;touch-action:none}
++#wpSheet .wpcv .chsrul .chsrz{flex:1 1 auto;min-width:0;touch-action:none;cursor:pointer}
++#wpSheet .wpcv .chsrul .rb{flex:none;width:44px;height:44px;min-width:44px;padding:0;display:grid;place-items:center;border:0;border-radius:6px;background:rgba(28,31,37,.9);color:var(--text)}
++#wpSheet .wpcv .chsrul .rb.on{background:var(--amber);color:var(--ink)}
++#wpSheet .wpcv .chsrul .chspl.on{background:var(--play,#3ddc84);color:#0e1014}
++#wpSheet .wpcv.chsr .wpinfo{bottom:46px;left:48px;max-width:calc(100% - 100px)}
++#wpSheet .g6pgc .chscur{opacity:.35}
++#wpSheet .g6pgc.chslead .g6pgsw{background:#969eac}
++@media (orientation:landscape) and (max-height:520px){#clipGrid .chsth.chsgrp .chssb{display:none}#clipGrid .chsth{gap:0}}
++@media (orientation:portrait) and (max-height:700px){#clipGrid .chsth.chsgrp .chssb{display:none}}
++/* CHS-CSS-END */
+ #wpSheet .g6pglq{flex:none;height:44px;padding:0 10px;font:700 12px/1 var(--font-ui)}
+ #wpSheet .g6pglq.on{color:var(--ink);background:var(--sel);border-color:var(--sel)}
+ #qSheet .qfol{flex:0 0 auto;height:44px;padding:0 10px;font:700 11px/1 var(--font-ui)}
+@@ -21888,7 +21953,7 @@
+   mtrTap(i);                                                                      // VV4-F: the new chain feeds the meter
+ }
+ // the effect values of a track: its sound.fx (WP6: the drum track too, §8.2)
+-function trackFx(tr) { return g4Fx(tr, fxOfSound(tr.sound)); }   // G4: Hall/Delay der STIMME-Spur
++function trackFx(tr) { return chsFx(tr, g4Fx(tr, fxOfSound(tr.sound))); }   // CHS: Gesang gesamt (STIMME, ohne Wert unverändert)   // G4: Hall/Delay der STIMME-Spur
+ function fxOfSound(snd) { const f = snd.fx || {}; return {drive: f.drive || 0, rev: f.rev || 0, dly: f.dly || 0, vol: f.vol == null ? .8 : f.vol, pan: f.pan || 0, chorus: f.chorus || null, pump: f.pump || 0, pumpRel: f.pumpRel || '1/8'}; }
+ // chorus insert (§8.1): FX.Chorus exists only while its mode is not AUS; switching crossfades dry <-> chorus in ≈ 30 ms and
+ // tears the chorus down completely afterwards
+@@ -26935,17 +27000,17 @@
+   const nt = NT(), ord = trackOrder(), synth = ord.filter(i => !isDrum(i));
+   // pages from an earlier layout (the grid was hidden while a track came or went): same page size, current tracks
+   if (MX.pages && MX.pages.flat().join() !== synth.join()) {
+-    const per = MX.pages[0].length, pg = []; for (let k = 0; k < synth.length; k += per) pg.push(synth.slice(k, k + per));
++    const per = MX.chsPer || MX.pages[0].length, pg = chsPages(synth, per);   // CHS: STIMME zählt mit ihren Background-Zeilen
+     MX.pages = pg.length > 1 ? pg : null; MX.bankT = !!MX.pages; if (!MX.bankT || UI.trackBank >= pg.length) UI.trackBank = 0;
+   }
+-  if (!MX.pages && synth.length + 1 > MX.lastFit) {
+-    const per = Math.max(4, MX.lastFit - 1), pg = []; for (let k = 0; k < synth.length; k += per) pg.push(synth.slice(k, k + per));
++  if (!MX.pages && synth.length + chsMxExtra() + 1 > MX.lastFit) {
++    const per = Math.max(4, MX.lastFit - 1), pg = chsPages(synth, per); MX.chsPer = per;
+     if (pg.length > 1) { MX.pages = pg; MX.bankT = true; }
+   }
+   MX.scenes = MX.bankS ? [0, 1, 2, 3].map(s => s + sceneBankOf() * 4) : [0, 1, 2, 3, 4, 5, 6, 7];
+   if (MX.bankT && MX.pages) { const pg = MX.pages[Math.min(trackBankOf(), MX.pages.length - 1)]; MX.rows = pg.concat([DRUM_T]); }
+   else MX.rows = ord.slice();
+-  MX.nrows = MX.bankT && MX.pages ? MX.pages[0].length + 1 : nt;
++  MX.nrows = MX.bankT && MX.pages ? chsPageRows(MX.pages, MX.chsPer || MX.pages[0].length) + 1 : nt + chsMxExtra();
+   g.style.setProperty('--nsc', MX.cols); g.style.setProperty('--ntr', MX.nrows);
+   g.classList.toggle('bankS', MX.bankS); g.classList.toggle('bankT', MX.bankT); g.classList.toggle('szr', MX.bankS && MX.szAt === 'right');
+   g.classList.toggle('cnarrow', MX.bankS && MX.szAt === 'left' && MX.cornerW < 64);       // SONG ⇄ next to [SZ] in ≈ 50 px (375 px)
+@@ -26960,7 +27025,8 @@
+     for (let s = 0; s < N_SCN; s++) UI.cells[i][s].el.classList.toggle('mxoff', !on || !vs.has(s));
+   }
+   for (let s = 0; s < N_SCN; s++) UI.scenes[s].classList.toggle('mxoff', !vs.has(s));
+-  const pad = MX.nrows - MX.rows.length;
++  chsMxApply(vt, vs);
++  const pad = MX.nrows - MX.rows.length - chsMxVisExtra(vt);
+   UI.fill.forEach((f, k) => f.classList.toggle('mxoff', k >= pad * (MX.cols + 2)));
+   // keep the order: page rows, filler, DRUMS last
+   const drumRow = [UI.heads[DRUM_T].el, ...UI.cells[DRUM_T].map(c => c.el), UI.stops[DRUM_T]];
+@@ -26978,7 +27044,7 @@
+ // measured layout (resize, sheet opened, track added/removed): which banks are needed
+ function mxLayout() {
+   const g = EL.grid; if (!g || !UI.heads || !g.clientHeight) return;
+-  const nt = NT(), key = nt + ':' + g.clientWidth + 'x' + g.clientHeight + ':' + trackOrder().join('');
++  const nt = NT() + chsMxExtra(), key = nt + ':' + g.clientWidth + 'x' + g.clientHeight + ':' + trackOrder().join('');
+   if (key === MX.key) return; MX.key = key;
+   const cs = getComputedStyle(g), gapY = parseFloat(cs.rowGap) || 0, gapX = parseFloat(cs.columnGap) || 0;
+   const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0), padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+@@ -26991,7 +27057,7 @@
+   if (fitRows(nt) >= minR - .5) { MX.bankT = false; MX.pages = null; MX.lastFit = Math.max(MX.lastFit, nt); }
+   else {
+     const per = Math.max(4, Math.floor((H + gapY) / (minR + gapY)) - 1);
+-    const pages = []; for (let k = 0; k < synth.length; k += per) pages.push(synth.slice(k, k + per));
++    const pages = chsPages(synth, per); MX.chsPer = per;
+     MX.bankT = pages.length > 1; MX.pages = MX.bankT ? pages : null;
+     if (!MX.bankT) UI.trackBank = 0; else if (UI.trackBank >= pages.length) UI.trackBank = 0;
+   }
+@@ -27041,6 +27107,7 @@
+   }
+   // filler cells for a shorter last page (empty, inert): up to 3 rows of NS + 2
+   for (let k = 0; k < 3 * (N_SCN + 2); k++) { const f = el('div', 'mxfill mxoff'); f.setAttribute('aria-hidden', 'true'); UI.fill.push(f); g.appendChild(f); }
++  chsMxSync(true);   // CHS: Background-Zeilen unter der STIMME-Spur
+   MX.key = ''; mxApply(); mxLayout();
+ }
+ // [SZ] / [▲▼]: turn the bank (view only: no data, no undo; the clips in the hidden part keep running)
+@@ -27062,6 +27129,7 @@
+   return `<svg viewBox="0 0 100 100" preserveAspectRatio="none">${r}</svg>`;
+ }
+ function renderGrid(bAud) {
++  try { chsMxRender(); } catch (e) { logErr(e); }   // CHS
+   if (UI.heads.length !== NT() || UI.heads.some((h, i) => !h !== !S.tracks[i])) { buildGrid(); }
+   const nt = NT(), VS = S.tracks.map((_, i) => visualSlots(i, bAud));
+   const SK = MX.scenes.map(sceneKeyOf);
+@@ -27293,7 +27361,7 @@
+   onTap(lm, () => openMelPop(lm));
+   labs.append(lc, lm); SV.lc = lc;
+   // V2e (N7S-39): a track label selects the track (the keyboard plays it, the NOTEN target shows it)
+-  onTap(labs, d => { const t = +d.dataset.t; if (!(t >= 0) || !S.tracks[t]) return; selectTrack(t); haptic('tick'); lcdOrToast(S.tracks[t].name + ' gewählt'); UI.dirty.song = true; }, '.sv-l.trk');
++  onTap(labs, d => { if (chsSvLabTap(d)) return; const t = +d.dataset.t; if (!(t >= 0) || !S.tracks[t]) return; selectTrack(t); haptic('tick'); lcdOrToast(S.tracks[t].name + ' gewählt'); UI.dirty.song = true; }, '.sv-l.trk');
+   const wrap = el('div', 'sv-cw'), cv = el('canvas', 'sv-cv'), empty = el('div', 'sv-empty');
+   // V2e (6.4/6.5): the empty song names both ways in; [＋ Teil einsetzen ▾] also when the song is still empty (Xander 24.10. b)
+   empty.innerHTML = 'Noch kein Song.<br>FANG TEIL beim Spielen, dann den Teil in den Song ziehen – oder <b>● SONG</b>.';
+@@ -27331,7 +27399,7 @@
+   SV.blS = konHasBlocks() ? (r.height < 240 ? 12 : 14) : 0; SV.rulerH += SV.blS;               // KON: + the Block-Zeile above the ruler (only with blocks)
+   // V2a: all tracks while each row gets ≥ 26 px (song-delta 6.5), else pages of the synth tracks (≥ 4 a page) + DRUMS
+   const ord = trackOrder(), synth = ord.filter(i => !isDrum(i)), avail = r.height - SV.rulerH + SV.vvS + SV.blS;
+-  if (avail / (ord.length + 2) >= 26 - .5) { SV.rows = ord.slice(); SV.pages = null; }
++  if (avail / (ord.length + chsSvExtra() + 2) >= 26 - .5) { SV.rows = ord.slice(); SV.pages = null; }
+   else {
+     const per = Math.max(4, Math.floor(avail / 26) - 3), pages = []; for (let k = 0; k < synth.length; k += per) pages.push(synth.slice(k, k + per));
+     if (pages.length < 2) { SV.rows = ord.slice(); SV.pages = null; }
+@@ -27341,7 +27409,8 @@
+   SV.bankVp = side || avail / (8 + 2) < 26 - .5;
+   if (SV.tbb.hidden === SV.bankVp) SV.tbb.hidden = !SV.bankVp;
+   SV.tbb.disabled = !SV.pages; SV.tbb.lastChild.textContent = SV.pages ? (Math.min(trackBankOf(), SV.pages.length - 1) + 1) + '/' + SV.pages.length : '1/1';
+-  svBuildRows();
++  chsSvRows();   // CHS: Background-Zeilen nach der STIMME-Zeile
++  svBuildRows(); CHS.svLab = '';
+   const nR = SV.rows.length + 2;                                    // a shorter page keeps its rows (empty ones): nothing moves
+   SV.rowH = Math.max(14, (r.height - SV.rulerH) / nR);
+   SV.cv.width = Math.round(r.width * dpr); SV.cv.height = Math.round(r.height * dpr);
+@@ -29890,7 +29959,7 @@
+   if (UI.pop && UI.pop.name === 'mark') { const m = row === -1 ? svMarkAt(bar) : null; if (!(m && !svMarkOpen(m))) { closePop(); return; } }   // another mark: its sheet
+   if (row === -1) { svRulerTapX(bar); return; }      // V0c N7-R7 + V2e marks: the ruler selects (yellow) and sets the Positionsmarke, never jumps
+   if (!song) { toast('Noch kein Song – erst ● SONG'); return; }
+-  if (row < svChordRow()) { const t = SV.rows[row]; if (t < 0 || bar > song.bars) return; if (isStimmeT(t) && tkVoxAt(bar)) { tkSheet({vox: tkVoxAt(bar).id}); return; }   // VS3: Song-Stimme → Takes-Blatt
++  if (row < svChordRow()) { const t = SV.rows[row]; if (chsSvCode(t) != null) { chsSvTap(t, bar); return; } if (t < 0 || bar > song.bars) return; if (isStimmeT(t) && tkVoxAt(bar)) { tkSheet({vox: tkVoxAt(bar).id}); return; }   // VS3: Song-Stimme → Takes-Blatt
+     if (bar < song.bars && svCellOwnAt(t, bar)) { openOwnRoll(t, bar); return; }   // V2e′ (9.2): a tap on an own clip = ROLLE on it
+     const r = songCycle(t, bar); folEdit('song'); lcdOrToast(S.tracks[t].name + ' · Takt ' + (bar + 1) + ': ' + (r >= 0 ? 'Clip ' + (r + 1) : 'stopp')); return; }
+   if (row === svChordRow()) { if (!song.bars || bar >= song.bars) return; const k = svChipAt(x, y); openChordPick(k != null ? {k} : {bar}); return; }   // N7-R10
+@@ -30903,6 +30972,7 @@
+       if (!ns.length) { g.fillStyle = '#6b7080'; g.textAlign = 'left'; g.fillText(trackTag(song.melodyTrack) + ': leer', Math.max(4, 4 - SV.x), ym + rh / 2); g.textAlign = 'center'; }
+     } else { g.fillStyle = '#4a4e57'; g.textAlign = 'left'; g.fillText(R.melRec || R.songRec ? 'spielen = Melodie' : 'antippen = Melodie bearbeiten', Math.max(4, 4 - SV.x), ym + rh / 2); g.textAlign = 'center'; }
+     try { tkSvDraw(g, song, XB, ru, rh, W); } catch (e) { logErr(e); }   // VS3: Song-Stimme als gläserne Wellen
++    try { chsSvDraw(g, song, XB, ru, rh, W); } catch (e) { logErr(e); }   // CHS: Background-Zeilen
+     try { g3SvDraw(g, song, XB, ru, rh, W); } catch (e) { logErr(e); }   /* G3: Schwänzchen (Anlauf/Ausklang) */
+     // song end
+     const xe = X(bars); g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(xe, ru, 1, H - ru);
+@@ -42783,6 +42853,7 @@
+   const pickEnd = e => { const q = UI.pickPress; if (!q || q.id !== e.pointerId) return; UI.pickPress = null; if (e.type === 'pointerup' && UI.pick && Math.abs(e.clientX - q.x) <= 12 && Math.abs(e.clientY - q.y) <= 12) pickCell(q.t, q.s); };
+   on(EL.grid, 'pointerup', pickEnd); on(EL.grid, 'pointercancel', pickEnd);
+   on(EL.grid, 'contextmenu', e => e.preventDefault());
++  on(EL.grid, 'click', e => { const b = e.target.closest && e.target.closest('[data-chs]'); if (b) { e.stopPropagation(); chsMxTap(b); } });   // CHS: Background-Zeilen
+   onTap(EL.grid, () => setSongView(true), '.corner');
+   on(EL.grid, 'click', e => {
+     // V2a: the bank switches (view only)
+@@ -48276,7 +48347,7 @@
+ function wpClose() {
+   const E = WP.ed; if (!E) return;
+   if (E.g9 && typeof g9Off === 'function') g9Off(E);              // G9
+-  WP.ed = null; g6pgClosed();                                      // G6+g: Solo aus der Legende endet mit dem Editor
++  WP.ed = null; g6pgClosed(); chsEdClosed(E);                                      // G6+g: Solo aus der Legende endet mit dem Editor
+   if (UI.pop && (UI.pop.name === 'wpsel' || UI.pop.name === 'wplyr' || UI.pop.name === 'g9text' || UI.pop.name === 'g9rec')) closePop();
+   WP.old.clear();                                   // VS5b: die vorige Fassung nur, solange der Editor offen ist (Speicher am iPhone)
+   EL.wpSheet.classList.remove('open'); EL.wpSheet.innerHTML = '';
+@@ -48284,7 +48355,7 @@
+ }
+ // Ansicht: Sekunden im Take [va, va + W); Zoom in Takten (0 = das ganze Stück)
+ function wpView(E, a) {
+-  const sp = spb(), segL = a.out - a.in, W = E.zoom ? Math.min(E.zoom * 4 * sp, Math.max(segL, sp)) : Math.max(segL, .05);
++  const sp = spb(), segL = a.out - a.in, W = chsViewW(E, E.zoom ? Math.min(E.zoom * 4 * sp, Math.max(segL, sp)) : Math.max(segL, .05), segL);   // CHS: Zoom mit zwei Fingern
+   const g3a = E.g9 && typeof g3PreOf === 'function' ? g3PreOf(a) : 0, g3b = E.g9 && typeof g3PostOf === 'function' ? g3PostOf(a) : 0;   // G9: G3-Anlauf/Ausklang erreichbar
+   E.va = clamp(E.va, a.in - Math.max(W * .1, g3a), Math.max(a.in - Math.max(W * .1, g3a), a.out + g3b - W * .9));
+   return {a: E.va, W};
+@@ -48401,6 +48472,7 @@
+     (wn ? ' · ⚠ ' + wn.length + ' nur verschoben (Faktor außer 0,5–2)' : ''));
+   E.info.classList.toggle('warn', !!wn);
+   if (E.g9 && typeof g9AfterPaint === 'function') g9AfterPaint(E, mk);   // G9: Silben-Leiste, Info-Zeile
++  chsEdPaint(E);   // CHS
+ }
+ /* G1: wo die Marken gezeichnet werden (Sekunden im Take, wie sie klingen) – quantisiert am Ziel der Zeitkarte, sonst an der Quelle;
+    ändert sich das Ziel, gleiten sie in WP_ANIM ms dorthin (ease-out). Ein Griff (Ziehen) steht unter dem Finger. */
+@@ -50934,12 +51006,12 @@
+   chips.addEventListener('click', e => {
+     const bt = e.target.closest('button[data-v]'), E = G2.ed; if (!bt || !E) return;
+     const v = bt.dataset.v, P = S.takes[E.id] && S.takes[E.id].pitch;
+-    if (E.voice != null) { const V = g2Voice(E); if (v === 'zoom') { E.zoom = WP_ZOOM[(WP_ZOOM.indexOf(E.zoom) + 1) % WP_ZOOM.length]; g2Paint(); return; } if (v !== 'up' && v !== 'dn') return; if (!V || E.sel < 0 || !V.n[E.sel]) { toast('Erst eine Note antippen'); return; } g6NoteShift(E.r, E.voice, E.sel, v === 'up' ? 1 : -1); return; }   // G6
++    if (E.voice != null) { const V = g2Voice(E); if (v === 'zoom') { E.zoom = WP_ZOOM[(WP_ZOOM.indexOf(E.zoom) + 1) % WP_ZOOM.length]; g2Paint(); return; } if (v !== 'up' && v !== 'dn') return; if (!V || E.sel < 0 || !V.n[E.sel]) { toast('Erst eine Note antippen'); return; } g6NoteShift(E.r, E.voice, E.sel, v === 'up' ? 1 : -1); chsAudition(E, E.sel); return; }   // G6
+     if (v === 'off') { g2SetQ(E.id, {q: false}, E.r); return; }
+     if (v === 'soft' || v === 'hard') { g2Info('Töne werden gesucht …'); g2SetQ(E.id, {q: true, mode: v, str: P && P.q ? P.str : 1}, E.r).then(ok => { const Q = S.takes[E.id] && S.takes[E.id].pitch; if (ok && Q) toast(g2MovedN(Q) + ' Töne auf die Tonart ' + keyLabel(Q.key) + ' gezogen'); }); return; }
+     if (v === 'zoom') { E.zoom = WP_ZOOM[(WP_ZOOM.indexOf(E.zoom) + 1) % WP_ZOOM.length]; g2Paint(); return; }
+     if (E.sel < 0 || !P || !P.notes[E.sel]) { if (!P && (v === 'up' || v === 'dn' || v === 'split' || v === 'join')) { g2Info('Töne werden gesucht …'); g2Analyse(E.id).then(() => g2Paint()); } toast('Erst eine Note antippen'); return; }
+-    if (v === 'up' || v === 'dn') g2NoteShift(E.id, E.sel, v === 'up' ? 1 : -1);
++    if (v === 'up' || v === 'dn') { g2NoteShift(E.id, E.sel, v === 'up' ? 1 : -1); chsAudition(E, E.sel); }
+     else if (v === 'split') g2Split(E.id, E.sel, E.tapT);
+     else if (v === 'join') { if (!P.notes[E.sel + 1]) { toast('Keine Note dahinter'); return; } g2Join(E.id, E.sel); }
+   });
+@@ -50972,7 +51044,7 @@
+ function g2Info(t) { if (G2.ed && G2.ed.info) G2.ed.info.textContent = t; }
+ function g2Close() {
+   const E = G2.ed; if (!E) return;
+-  G2.ed = null; clearTimeout(E.rt); g6pgClosed();
++  G2.ed = null; clearTimeout(E.rt); g6pgClosed(); chsEdClosed(E);
+   EL.wpSheet.classList.remove('open', 'g2'); EL.wpSheet.innerHTML = '';
+   if (G2.ab) { G2.ab = false; wpResync(); }
+ }
+@@ -50992,10 +51064,10 @@
+   const tg = Vc ? ns.map(n => n.m + n.iv) : ns.map(n => g2Target(Pk, n));   // G6: Chor-Stimme = Lead-Note + Intervall
+   // Tonhöhen-Bereich: alle Noten ± 2 Halbtöne, mindestens eine Oktave
+   let lo = Infinity, hi = -Infinity; ns.forEach((n, k) => { lo = Math.min(lo, n.m, tg[k]); hi = Math.max(hi, n.m, tg[k]); });
+-  const SG = g6pgGeo(E.r, a), LN = Vc ? g6pgLeadNs(E) : null; if (SG && isFinite(SG.lo)) { lo = Math.min(lo, SG.lo); hi = Math.max(hi, SG.hi); } if (LN) for (const n of LN.ns) { lo = Math.min(lo, n.p); hi = Math.max(hi, n.p); }   // G6+g: Schatten im Bereich
++  const SG = g6pgGeo(E.r, a), LN = Vc || id !== a.take ? g6pgLeadNs(E) : null; E.chsLead = !!LN; E.chsTake = chsTakeK(a, id);   // CHS: Lead grau auch hinter einer Gegenstimme (mit Auge) if (SG && isFinite(SG.lo)) { lo = Math.min(lo, SG.lo); hi = Math.max(hi, SG.hi); } if (LN) for (const n of LN.ns) { lo = Math.min(lo, n.p); hi = Math.max(hi, n.p); }   // G6+g: Schatten im Bereich
+   if (!isFinite(lo)) { lo = 55; hi = 67; }
+   lo = Math.floor(lo) - 2; hi = Math.ceil(hi) + 2; if (hi - lo < 12) { const c = (lo + hi) / 2; lo = Math.floor(c - 6); hi = lo + 12; }
+-  const rowH = (Hp - (E.leg ? 46 : 0)) / (hi - lo + 1), Y = p => Hp - (p - lo + 0.5) * rowH; E.Y = Y; E.rowH = rowH; E.lo = lo;   // G6+g: oben Platz für die Legende
++  const rowH = (Hp - (E.leg ? 46 : 0) - CHS_RH) / (hi - lo + 1), Y = p => Hp - CHS_RH - (p - lo + 0.5) * rowH; /* CHS: unten das Lineal */ E.Y = Y; E.rowH = rowH; E.lo = lo;   // G6+g: oben Platz für die Legende
+   g.fillStyle = '#0e1014'; g.fillRect(0, 0, Wp, Hp);
+   const key = P && P.key || g2KeyAt(E.r), SC = Harmony.SCALES[key.scale] || Harmony.SCALES.ionian;
+   g.font = WP.font || (WP.font = '600 10px ' + getComputedStyle(document.body).fontFamily);
+@@ -51041,6 +51113,7 @@
+   const rd = Vc ? ns.length + ' Noten · ' + Vc.name + (g6Ready(x.a) ? '' : ' · rechnet …') : !A && !P ? 'Töne werden gesucht …' : ns.length + (ns.length === 1 ? ' Note' : ' Noten') + ' · Tonart ' + keyLabel(key) + ' · ' + (P && P.q ? (P.mode === 'hard' ? 'Hart ' : 'Weich ') + Math.round(P.str * 100) + ' %' : 'nicht quantisiert') + (g2Ready(id, a) ? '' : ' · rechnet …');
+   g2Info(rd);
+   g6pgLegSync(E);
++  chsEdPaint(E);   // CHS: Lineal, Loop, Laufstrich
+ }
+ function g2Hit(E, cx, cy) {
+   let best = -1, bd = 1e9;
+@@ -51057,7 +51130,7 @@
+   cv.addEventListener('pointermove', e => {
+     const E = G2.ed, p = E && E.p; if (!p || p.id !== e.pointerId) return;
+     const dx = e.clientX - p.x0, dy = e.clientY - p.y0;
+-    if (!p.mode && Math.hypot(dx, dy) > 8) p.mode = p.k >= 0 && Math.abs(dy) >= Math.abs(dx) ? 'move' : 'pan';
++    if (!p.mode && Math.hypot(dx, dy) > 8) p.mode = p.k >= 0 && Math.abs(dy) >= Math.abs(dx) && chsMayMove(E, p) ? 'move' : 'pan';   // CHS: nur eine gewählte (oder gehaltene) Note verschiebt sich
+     if (p.mode === 'move') { E.ghost = {k: p.k, d: Math.round(-dy / Math.max(6, E.rowH))}; E.sel = p.k; g2Paint(); }
+     else if (p.mode === 'pan') { E.va = p.va - dx / E.cv.clientWidth * E.vw.W; g2Paint(); }
+   });
+@@ -51065,7 +51138,7 @@
+     const E = G2.ed, p = E && E.p; if (!p || p.id !== e.pointerId) return;
+     E.p = null; const gh = E.ghost; E.ghost = null;
+     if (cancel) { g2Paint(); return; }
+-    if (p.mode === 'move' && gh) { if (gh.d) { if (E.voice != null) g6NoteShift(E.r, E.voice, gh.k, gh.d); else g2NoteShift(E.id, gh.k, gh.d); } else g2Paint(); return; }
++    if (p.mode === 'move' && gh) { if (gh.d) { if (E.voice != null) g6NoteShift(E.r, E.voice, gh.k, gh.d); else g2NoteShift(E.id, gh.k, gh.d); chsAudition(E, gh.k); } else g2Paint(); return; }
+     if (p.mode) return;
+     const [cx, cy] = pos(e); UI.ghost = {t: performance.now(), x: e.clientX, y: e.clientY};
+     if (p.k < 0 && g6pgTap(E, cx, cy)) return;   // G6+g: Tipp auf einen Schatten öffnet die Stimme
+@@ -51569,7 +51642,7 @@
+   const key = [G.sig, V.a, V.W, Wp, Hp, dpr, E.lo, E.rowH.toFixed(4), hide, hl, E.voice, lead ? lead.sig : ''].join('|');
+   const B = g6pgImg(E, key, Wp, Hp, dpr, (q, hit) => {
+     const X = E.X, Y = E.Y, h = Math.max(4, E.rowH - 2);
+-    if (lead) { q.fillStyle = 'rgba(150,158,172,.30)'; for (const n of lead.ns) { const x0 = X(n.t0), x1 = X(n.t1); if (x1 < 0 || x0 > Wp) continue; q.fillRect(x0, Y(n.p) - h / 2, Math.max(2, x1 - x0), h); hit.push({k: -1, x0, x1, y: Y(n.p), h}); } }
++    if (lead && !G6PG.hide.has(CHS_LEAD)) { q.fillStyle = 'rgba(150,158,172,.30)'; for (const n of lead.ns) { const x0 = X(n.t0), x1 = X(n.t1); if (x1 < 0 || x0 > Wp) continue; q.fillRect(x0, Y(n.p) - h / 2, Math.max(2, x1 - x0), h); hit.push({k: -1, x0, x1, y: Y(n.p), h}); } }
+     q.font = WP.font || '600 10px sans-serif';
+     for (const n of G.notes) {
+       if (n.k === E.voice || G6PG.hide.has(n.id)) continue;
+@@ -51578,6 +51651,7 @@
+       q.globalAlpha = hl == null ? .34 : strong ? .62 : .12; q.fillStyle = col; q.fillRect(x0, y - h / 2, w, h);
+       q.globalAlpha = hl == null ? .9 : strong ? 1 : .25; q.strokeStyle = col; q.lineWidth = strong && hl != null ? 2 : 1; q.strokeRect(x0 + .5, y - h / 2 + .5, w - 1, h - 1);
+       if (n.dig && w > 12 && h >= 9) { q.fillStyle = col; q.fillText(n.dig, x0 + 2, y + 3.5, Math.max(8, w - 3)); }
++      if (chsOnLead(E, n)) chsHalo(q, x0, y, w, h, col, strong && hl != null);   // CHS: Unisono lag unsichtbar unter dem Lead-Block
+       q.globalAlpha = 1;
+       hit.push({k: n.k, x0, x1, y, h});
+     }
+@@ -51604,7 +51678,8 @@
+ }
+ // Lead-Noten (grau) für den Noten-Editor einer Chorstimme
+ function g6pgLeadNs(E) {
+-  const id = E.id, ns = g2Notes(id) || [], P = S.takes && S.takes[id] && S.takes[id].pitch;
++  const xr = tkRef(E.r), id = xr ? xr.a.take : E.id;   // CHS: auch im Editor einer duplizierten/entkoppelten Stimme der Lead
++  const ns = g2Notes(id) || [], P = S.takes && S.takes[id] && S.takes[id].pitch;
+   const out = ns.map(n => ({t0: n.t0, t1: n.t1, p: P ? g2Target(P, n) : n.m})); let s = 0; for (const n of out) s += n.p * 3 + n.t0;
+   return {ns: out, sig: out.length + ':' + s.toFixed(3)};
+ }
+@@ -51619,7 +51694,7 @@
+ const G6PG_EYE = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M2 12c2.6-4.4 6-6.6 10-6.6S19.4 7.6 22 12c-2.6 4.4-6 6.6-10 6.6S4.6 16.4 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/><path class="g6pgx" d="M4 20L20 4" stroke="currentColor" stroke-width="2.2"/></svg>';
+ function g6pgSoloId(r, a) { const c = a && a.chor; if (!c || G6.solo == null || G6.solo < 0) return null; if (typeof G6.solo === 'string') return G6.solo;   // v2: Spur-Kennung (g6pSolo)
+   const l = g6pgLanes(r, a)[G6.solo]; return l ? l.id : null; }
+-function g6pgLegend(E, host, before) { E.legHost = host; E.legBefore = before; g6pgLegSync(E); }
++function g6pgLegend(E, host, before) { E.legHost = host; E.legBefore = before; G6PG.hide = chsHideOf(E.r); g6pgLegSync(E); }   // CHS: Auge je Clip gemerkt
+ function g6pgLegMake(E) {
+   const d = el('div', 'g6pgleg pan-x'); d.setAttribute('role', 'group'); d.setAttribute('aria-label', 'Chorstimmen');
+   E.legHost.insertBefore(d, E.legBefore || E.legHost.firstChild); E.leg = d; E.legSt = null;
+@@ -51637,11 +51712,11 @@
+   if (!has) { if (E.leg) { E.leg.remove(); E.leg = null; } return; }
+   if (!E.leg) g6pgLegMake(E); const d = E.leg;
+   const L = g6pgLanes(E.r, x.a), so = g6pgSoloId(E.r, x.a), arm = G6.arm && !E.r.vox && G6.arm.t === E.r.t && G6.arm.s === E.r.s && x.a.chor.v === 2;   // [Lead leise] nur bei der Chor-Gruppe
+-  const st = L.map(l => l.id + l.c + l.dig + l.name + (G6PG.hide.has(l.id) ? 'h' : '') + (so === l.id ? 's' : '') + (E.voice === l.k ? 'e' : '')).join(',') + (arm ? '|a' + G6.arm.k + G6PG.leadQ : '');
++  const st = L.map(l => l.id + l.c + l.dig + l.name + (G6PG.hide.has(l.id) ? 'h' : '') + (so === l.id ? 's' : '') + (E.voice === l.k || E.chsTake === l.k ? 'e' : '')).join(',') + (arm ? '|a' + G6.arm.k + G6PG.leadQ : '') + (E.chsLead ? '|L' + G6PG.hide.has(CHS_LEAD) : '');
+   if (st === E.legSt) return; E.legSt = st;
+-  d.innerHTML = (arm ? `<button class="rb g6pglq${G6PG.leadQ ? ' on' : ''}" data-a="lq" aria-pressed="${G6PG.leadQ}" aria-label="Lead leise mithören">Lead leise</button>` : '') + L.map(l => `<span class="g6pgc${G6PG.hide.has(l.id) ? ' off' : ''}${E.voice === l.k ? ' cur' : ''}" style="--cc:var(--chor${l.c.slice(1).toLowerCase()})"><i class="g6pgsw">${esc(l.dig)}</i><b>${esc(l.name)}</b>` +
+-    `<button class="rb g6pgeye" data-a="eye" data-id="${esc(l.id)}" data-k="${l.k}" aria-pressed="${G6PG.hide.has(l.id) ? 'false' : 'true'}" aria-label="${esc(l.name)} zeigen">${G6PG_EYE}</button>` +
+-    `<button class="rb g6pgso${so === l.id ? ' on' : ''}" data-a="solo" data-id="${esc(l.id)}" data-k="${l.k}" aria-pressed="${so === l.id}" aria-label="${esc(l.name)} solo">S</button></span>`).join('');
++  d.innerHTML = (arm ? `<button class="rb g6pglq${G6PG.leadQ ? ' on' : ''}" data-a="lq" aria-pressed="${G6PG.leadQ}" aria-label="Lead leise mithören">Lead leise</button>` : '') + chsLeadChip(E) + L.map(l => { const cur = E.voice === l.k || E.chsTake === l.k; return `<span class="g6pgc${G6PG.hide.has(l.id) && !cur ? ' off' : ''}${cur ? ' cur' : ''}" style="--cc:var(--chor${l.c.slice(1).toLowerCase()})"><i class="g6pgsw">${esc(l.dig)}</i><b>${esc(l.name)}</b>` +
++    (cur ? `<button class="rb g6pgeye chscur" data-a="cur" disabled aria-label="${esc(l.name)} wird bearbeitet">${G6PG_EYE}</button>` : `<button class="rb g6pgeye" data-a="eye" data-id="${esc(l.id)}" data-k="${l.k}" aria-pressed="${G6PG.hide.has(l.id) ? 'false' : 'true'}" aria-label="${esc(l.name)} zeigen">${G6PG_EYE}</button>`) +
++    `<button class="rb g6pgso${so === l.id ? ' on' : ''}" data-a="solo" data-id="${esc(l.id)}" data-k="${l.k}" aria-pressed="${so === l.id}" aria-label="${esc(l.name)} solo">S</button></span>`; }).join('');
+ }
+ // Solo über die Legende (v2: g6pSolo der Spur, falls G6+c/e es liefert; sonst das Solo von G6 v1 je Stimme)
+ function g6pgSoloLane(r, k) {
+@@ -51791,9 +51866,11 @@
+     const role = typeof l.role === 'string' && G6P_RULE.test(l.role) ? l.role : 'free', o = {id: l.id, role, name: ''};
+     o.name = typeof l.name === 'string' && l.name.trim() ? l.name.slice(0, 24) : g6pRoleName(role, lanes);
+     if (l.mute === true) o.mute = true;
++    chsNormLane(l, o);   // CHS: Pegel/Pan der Background-Spur
+     ids.add(l.id); lanes.push(o);
+   }
+   const o = {lanes}; if (ch.mute === true) o.mute = true;
++  chsNormGrp(ch, o);   // CHS: Background, Gesang gesamt, Kopplung
+   return lanes.length || o.mute ? o : null;
+ }
+ // alle v2-Chöre eines Projekts (Clips der STIMME-Spur, Song-Stimmen, eigene Song-Clips)
+@@ -51842,6 +51919,7 @@
+   const n = val ? g6pNormLanes(JSON.parse(val)) : null; if (n && T.stimme) T.chor = n; else delete T.chor;
+   UI.dirty.grid = UI.dirty.song = true; if (G6.sheet) g6SheetPaint();
+   if (typeof g6pcApplyAll === 'function') g6pcApplyAll();          // G6+c: Spur stumm / Chor aus sofort hörbar
++  chsApply();                                                      // CHS: Gesang gesamt / Background nach ↶
+ }
+ // Spur-Daten ändern (Umbenennen, Spur stumm, Chor stumm, Spur löschen, Kopplung): ein Schritt
+ function g6pLanesEdit(label, fn, st) {
+@@ -51906,7 +51984,7 @@
+ const g6pcGuideOf = lane => { const f = G6PC.guide.get(lane); return isNum(f) ? f : 1; };
+ const g6pcCopies = v => g6pCopies(v);                           // G6+b: dieselbe Kopien-Liste wie der Rechenweg
+ const g6pcPanOf = (v, C) => g6pPanOf(v, C);                     // G6+b: dasselbe Pan-Gesetz wie die Messung
+-const g6pcVg = (v, vi) => Math.pow(10, (v.db || 0) / 20) * (g6pcLaneOn(v.lane) && g6pcSoloOn(v.lane, vi) ? 1 : 0) * g6pcGuideOf(v.lane);
++const g6pcVg = (v, vi) => Math.pow(10, (v.db || 0) / 20) * (g6pcLaneOn(v.lane) && g6pcSoloOn(v.lane, vi) ? 1 : 0) * g6pcGuideOf(v.lane) * chsLaneK(v.lane);   // CHS: Pegel der Spur
+ // Lead-Pegel in dB: STIMME-Regler (vol², wie N.vol ohne Drive-Ausgleich) × Pegel des Stücks
+ function g6pcLeadDb(a) {
+   const st = stimmeT(), tr = st >= 0 ? S.tracks[st] : null; let vol = .8;
+@@ -51915,7 +51993,7 @@
+   return 20 * Math.log10(Math.max(1e-6, vol * vol * ag));
+ }
+ const g6pcCoupled = a => !(a.chor.grp && a.chor.grp.cpl === false);
+-const g6pcLeadK = a => Math.pow(10, (g6pcCoupled(a) ? g6pcLeadDb(a) : a.chor.grp.ref) / 20);
++const g6pcLeadK = a => Math.pow(10, (g6pcCoupled(a) ? chsLeadDb(a) : a.chor.grp.ref) / 20);   // CHS: Kopplung der ganzen Gruppe
+ /* ---------- Puffer (G6+b) ---------- */
+ // Fenster einer Take-Stimme: entkoppelt/dupliziert ('chor'/'dup') = Fenster des Lead-Stücks, selbst gesungen = eigenes Fenster (§2.2)
+ function g6pcWin(a, v) { const m = S.takes && S.takes[v.take.take]; return m && (m.src === 'dup' || m.src === 'chor') ? {take: v.take.take, in: a.in, out: a.out, at: a.at, linked: true} : v.take; }
+@@ -51999,11 +52077,11 @@
+   set(G.hp.frequency, g.hp); set(G.mid.frequency, g.midF); set(G.mid.gain, g.mid); set(G.air.gain, g.air);
+   if (meas) return;
+   set(G.pre.delayTime, g6pcPreSec(g.pre)); set(G.rev.gain, g.rev); set(G.dly.gain, g.dly); set(G.guide.gain, G6PC.gGuide);
+-  if (gA != null) set(G.lvl.gain, gA * (g6pcChorOn() ? 1 : 0) * g6pcLeadK(a));
++  if (gA != null) set(G.lvl.gain, gA * (g6pcChorOn() ? 1 : 0) * g6pcLeadK(a) * chsBgK());   // CHS: Background-Regler
+ }
+ function g6pcCopyNodes(c, v, C, G, meas, vi) {
+   const N = {f: c.createGain(), vg: c.createGain(), pan: c.createStereoPanner ? c.createStereoPanner() : null};
+-  N.f.connect(N.vg); if (N.pan) { N.vg.connect(N.pan); N.pan.connect(G.hp); N.pan.pan.value = g6pcPanOf(v, C); } else N.vg.connect(G.hp);
++  N.f.connect(N.vg); if (N.pan) { N.vg.connect(N.pan); N.pan.connect(G.hp); N.pan.pan.value = chsPanOf(v, C, meas); } else N.vg.connect(G.hp);
+   N.vg.gain.value = meas ? Math.pow(10, (v.db || 0) / 20) : g6pcVg(v, vi);
+   if (!meas) G6PC.nodes += N.pan ? 3 : 2;
+   return N;
+@@ -52040,7 +52118,7 @@
+   const a = r.aud, G = r.chG; if (!G || !g6pcIs2(a) || !AU.ctx || G.c !== AU.ctx) return;
+   const bufs = g6pcBufs(a), gA = bufs && g6pcGA(a, bufs); g6pcGroupSet(G, a, false, false, gA);
+   const now = AU.ctx.currentTime, vs = a.chor.voices;
+-  for (const x of r.ch || []) { if (!x.v2 || x.end <= now) continue; const v = vs[x.vi]; if (!v) continue; const C = g6pcCopies(v)[x.k]; g6pcSetP(x.vg.gain, g6pcVg(v, x.vi), now); if (x.pan && C) g6pcSetP(x.pan.pan, g6pcPanOf(v, C), now); }
++  for (const x of r.ch || []) { if (!x.v2 || x.end <= now) continue; const v = vs[x.vi]; if (!v) continue; const C = g6pcCopies(v)[x.k]; g6pcSetP(x.vg.gain, g6pcVg(v, x.vi), now); if (x.pan && C) g6pcSetP(x.pan.pan, chsPanOf(v, C), now); }
+ }
+ function g6pApply(a) { for (const r of TK.src) if (!r.dead && r.chG && r.aud === a) g6pcApplyPiece(r); }
+ const g6pcApplyAll = () => { for (const r of TK.src) if (!r.dead && r.chG) g6pcApplyPiece(r); };
+@@ -52996,6 +53074,551 @@
+   g6pPcsOf: r => { const x = tkRef(r); if (!x || !x.a.chor) return null; return x.a.chor.voices.map(v => v.n.map(n => ((Math.round(n.m) + n.iv) % 12 + 12) % 12)); }
+ };
+ /* G6PH-END */
++/* CHS-BEGIN */
++/* =====================================================================================================================
++   CHOR-SPUREN (Paket CHORSP, Basis 4.30.0): Background-Gruppe als echte Spuren, steuerbarer Gesangs-Editor, Auge der Legende.
++   1. Background-Gruppe in Clip-Matrix und Song: unter der STIMME-Spur eine aufklappbare Zeile „Background“ und je Chor-Spur
++      (S.tracks[st].chor.lanes, G6+a) eine Unterzeile mit Farbfeld/Ziffer, Name, Stumm, Zellen je Szene bzw. Song-Stück
++      (Tipp = Noten der Stimme). Mischpult (Blatt „Background“): Lead, Background (ganzer Chor), Gesang gesamt (Lead + Chor),
++      [Gekoppelt], je Spur S/M/Pegel/Pan/♪, [Spur teilen].
++      Daten nur additiv an S.tracks[st].chor (Felder fehlen = Klang bitgleich, Regel 28):
++        chor.db  (dB, Background-Regler)      chor.sum (dB, Gesang gesamt: Lead-Kette und Chor)
++        chor.cpl = false + chor.ref (dB des Lead-Reglers beim Trennen)    lanes[k].db (dB) · lanes[k].pan (−1…1, zum Pan der Stelle)
++      Gekoppelt (Standard): der Chor folgt dem Lead-Regler im gleichen dB-Schritt (G6+c). Getrennt: der Lead-Anteil steht auf ref.
++      Wieder koppeln: chor.db += ref − Lead jetzt → kein Sprung. Ein Undo-Schritt je Geste (Element 'chorlanes' bzw. 'sound').
++   2. Gesangs-Editor (Noten G2 und Marken WP der STIMME): Lineal unten (Tipp = ab dort spielen mit Begleitung und Chor, Ziehen =
++      Loop, Doppeltipp = Zoom), [▶/■] und [Loop], Laufstrich; zwei Finger = Zoom, Doppeltipp auf leere Fläche = Zoom, ein Finger =
++      schwenken; eine Note verschiebt nur, wer sie vorher gewählt hat (oder ¼ s hält); nach ▲▼/Ziehen kurz vorhören, im Loop live.
++   3. Auge der Legende: gemerkt je Clip (auch nach Neuzeichnen), Lead-Chip (graue Lead-Balken ein/aus), Unisono sichtbar als
++      gestrichelter Rahmen um den Lead-Block (lag vorher genau unter ihm), Chip der gerade bearbeiteten Stimme ohne Auge.
++   Nichts läuft beim App-Start; ohne Chor-Spuren bleiben Matrix und Song pixelgleich.
++   ===================================================================================================================== */
++const CHS = {hide: new Map(), open: null, nLanes: -1, mx: null, mxSig: '', sv: '', run: null, raf: 0, tap: null, pts: new Map(), pinch: null, aud: null, loopT: 0, log: []};
++const CHS_LEAD = '_lead';
++const CHS_RH = 26;                       // Lineal-Band unten im Editor (Trefferfläche 44 px)
++const CHS_SVG = {
++  play: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>',
++  stop: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="5.5" y="5.5" width="13" height="13" rx="1.5" fill="currentColor"/></svg>',
++  loop: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 10a5 5 0 0 1 5-5h7l-2.5-2.5M19 14a5 5 0 0 1-5 5H7l2.5 2.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
++  mix: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 3v18M12 3v18M18 3v18" stroke="currentColor" stroke-width="1.6" opacity=".55"/><rect x="3.5" y="13" width="5" height="3.4" rx="1" fill="currentColor"/><rect x="9.5" y="6" width="5" height="3.4" rx="1" fill="currentColor"/><rect x="15.5" y="10" width="5" height="3.4" rx="1" fill="currentColor"/></svg>',
++  tri: '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3.5 2l5 4-5 4z" fill="currentColor"/></svg>'
++};
++const chsDb = g => 20 * Math.log10(Math.max(1e-6, g));
++const chsK = db => (db ? Math.pow(10, db / 20) : 1);
++const chsTrk = () => { const st = stimmeT(), t = st >= 0 ? S.tracks[st] : null; return t && t.chor && typeof t.chor === 'object' ? t.chor : null; };
++const chsLanes = () => { const L = chsTrk(); return L && Array.isArray(L.lanes) ? L.lanes : []; };
++const chsLane = id => chsLanes().find(l => l && l.id === id) || null;
++const chsFmtDb = v => (v > 0.05 ? '+' : v < -0.05 ? '−' : '±') + fmtDecC(Math.abs(v), 1) + ' dB';
++function fmtDecC(v, n) { return (+v).toFixed(n).replace('.', ','); }
++
++/* ---------- 3. Auge der Legende ---------- */
++const chsHideKey = r => (r ? (r.vox ? 'v' + r.vox : r.t + ':' + r.s) : '-');
++function chsHideOf(r) { const k = chsHideKey(r); let s = CHS.hide.get(k); if (!s) { s = new Set(); CHS.hide.set(k, s); } return s; }
++// Unisono (gleiche Stufe wie der Lead) liegt im Lead-Editor genau unter dem Lead-Block: als gestrichelter Rahmen außen herum zeigen
++const chsOnLead = (E, n) => E.voice == null && n.c === 'c1';
++function chsHalo(q, x0, y, w, h, col, strong) { q.globalAlpha = 1; q.strokeStyle = col; q.lineWidth = strong ? 2.5 : 2; q.setLineDash([4, 3]); q.strokeRect(x0 - 2.5, y - h / 2 - 3.5, w + 5, h + 7); q.setLineDash([]); }
++function chsLeadChip(E) {
++  if (!E.chsLead) return ''; const off = G6PG.hide.has(CHS_LEAD);
++  return `<span class="g6pgc chslead${off ? ' off' : ''}" style="--cc:#969eac"><i class="g6pgsw">L</i><b>Lead</b><button class="rb g6pgeye" data-a="eye" data-id="${CHS_LEAD}" data-k="-1" aria-pressed="${off ? 'false' : 'true'}" aria-label="Lead zeigen">${G6PG_EYE}</button></span>`;
++}
++function chsTakeK(a, id) { const c = a && a.chor; if (!c || !Array.isArray(c.voices) || id === a.take) return null; const k = c.voices.findIndex(v => v && v.take && v.take.take === id); return k < 0 ? null : k; }
++
++/* ---------- 1. Daten: Normalisieren (additiv) ---------- */
++function chsNormLane(l, o) {
++  if (isNum(l.db) && Math.abs(l.db) > 1e-9) o.db = +clamp(l.db, -60, 12).toFixed(2);
++  if (isNum(l.pan) && Math.abs(l.pan) > 1e-9) o.pan = +clamp(l.pan, -1, 1).toFixed(3);
++}
++function chsNormGrp(ch, o) {
++  if (isNum(ch.db) && Math.abs(ch.db) > 1e-9) o.db = +clamp(ch.db, -60, 12).toFixed(2);
++  if (isNum(ch.sum) && Math.abs(ch.sum) > 1e-9) o.sum = +clamp(ch.sum, -60, 12).toFixed(2);
++  if (ch.cpl === false) { o.cpl = false; o.ref = isNum(ch.ref) ? +clamp(ch.ref, -120, 12).toFixed(2) : 0; }
++}
++/* ---------- 1. Klang: Faktoren (ohne Felder genau 1 → bitgleich) ---------- */
++const chsSumDb = () => { const L = chsTrk(); return L && isNum(L.sum) ? L.sum : 0; };
++// Gesang gesamt wirkt auf die Lead-Kette über den Spur-Pegel (vol² × 10^(sum/20)); der gekoppelte Chor folgt damit von selbst
++function chsFx(tr, fx) { if (!tr || !tr.stimme || !tr.chor || !isNum(tr.chor.sum) || !tr.chor.sum) return fx; return Object.assign({}, fx, {vol: fx.vol * Math.pow(10, tr.chor.sum / 40)}); }
++// Lead-Regler allein (ohne Gesang gesamt) in dB
++function chsVolDb() { const st = stimmeT(), tr = st >= 0 ? S.tracks[st] : null; let vol = .8; try { if (tr && tr.sound) vol = fxOfSound(tr.sound).vol; } catch (e) {} return chsDb(vol * vol); }
++// Lead-Pegel, dem der Chor folgt: gekoppelt = live (G6+c); getrennt = Regler-Stand beim Trennen + Gesang gesamt + Pegel des Stücks
++function chsLeadDb(a) {
++  const L = chsTrk(); if (!L || L.cpl !== false) return g6pcLeadDb(a);
++  const ag = a && isNum(a.gain) ? a.gain : 1;
++  return (isNum(L.ref) ? L.ref : chsVolDb()) + chsSumDb() + chsDb(ag);
++}
++const chsBgK = () => { const L = chsTrk(); return L && isNum(L.db) ? chsK(L.db) : 1; };
++const chsLaneK = id => { const l = id ? chsLane(id) : null; return l && isNum(l.db) ? chsK(l.db) : 1; };
++function chsPanOf(v, C, meas) { const p = g6pcPanOf(v, C); if (meas) return p; const l = v && v.lane ? chsLane(v.lane) : null; return l && isNum(l.pan) && l.pan ? clamp(p + l.pan, -1, 1) : p; }
++function chsApply() { const st = stimmeT(); if (st >= 0 && AU.ctx) applyTrackParams(st); else if (typeof g6pcApplyAll === 'function') g6pcApplyAll(); UI.dirty.grid = UI.dirty.song = true; }
++// Faktor der Gruppe einer Stelle ohne gA (für Messung/Test): Chor an × Lead-Anteil × Background
++function chsGrpK(a) { if (!a || !g6pcIs2(a)) return null; return (g6pcChorOn() ? 1 : 0) * g6pcLeadK(a) * chsBgK(); }
++
++/* ---------- 1. Gesten (live ohne Undo, Loslassen = ein Schritt) ---------- */
++function chsLiveBegin() { const st = stimmeT(); if (st < 0) return null; if (!CHS.drag) CHS.drag = {st, before: g6pLanesSnap(st), snd: soundSnapshot(st)}; return CHS.drag; }
++function chsTrkW() { const st = stimmeT(); if (st < 0) return null; const T = S.tracks[st]; if (!T.chor || typeof T.chor !== 'object') T.chor = {lanes: []}; if (!Array.isArray(T.chor.lanes)) T.chor.lanes = []; return T.chor; }
++function chsLiveEnd(label) {
++  const d = CHS.drag; CHS.drag = null; if (!d) return false;
++  const T = S.tracks[d.st]; if (!T) return false;
++  const n = T.chor ? g6pNormLanes(T.chor) : null; if (n) T.chor = n; else delete T.chor;
++  const after = g6pLanesSnap(d.st), sndCh = soundSnapshot(d.st) !== d.snd;
++  if (after === d.before && !sndCh) return false;
++  if (sndCh && after !== d.before) undoPush({kind: 'group', label, items: [{kind: 'sound', track: d.st, before: d.snd, label}, {kind: 'chorlanes', track: d.st, before: d.before, label}]});
++  else if (sndCh) undoPush({kind: 'sound', track: d.st, before: d.snd, label});
++  else undoPush({kind: 'chorlanes', track: d.st, before: d.before, label});
++  markDirty(); UI.dirty.grid = UI.dirty.song = true; return true;
++}
++function chsSet(key, v, fin) {
++  const st = stimmeT(); if (st < 0) return false; chsLiveBegin();
++  if (key === 'lead') { const snd = S.tracks[st].sound; if (!snd.fx) snd.fx = {}; snd.fx.vol = +clamp(Math.pow(10, v / 40), 0, 1).toFixed(4); }
++  else { const L = chsTrkW(); if (key === 'bg') L.db = +clamp(v, -60, 12).toFixed(2); else if (key === 'sum') L.sum = +clamp(v, -60, 12).toFixed(2); }
++  chsApply(); markDirty();
++  if (fin) chsLiveEnd(key === 'lead' ? 'Lead-Pegel' : key === 'bg' ? 'Background-Pegel' : 'Gesang gesamt');
++  return true;
++}
++function chsLaneSet(id, key, v, fin) {
++  const L = chsTrkW(); if (!L) return false; const ln = L.lanes.find(l => l.id === id); if (!ln) return false; chsLiveBegin();
++  if (key === 'db') ln.db = +clamp(v, -60, 12).toFixed(2); else if (key === 'pan') ln.pan = +clamp(v, -1, 1).toFixed(3);
++  if (typeof g6pcApplyAll === 'function') g6pcApplyAll(); markDirty();
++  if (fin) chsLiveEnd(key === 'db' ? 'Background-Spur · Pegel' : 'Background-Spur · Pan');
++  return true;
++}
++// [Gekoppelt] der ganzen Gruppe: aus → ref = Lead-Regler jetzt; wieder an → db += ref − Lead jetzt (hörbarer Abstand bleibt)
++function chsCouple(on) {
++  const st = stimmeT(); if (st < 0) return false; const L0 = chsTrk(), now = !(L0 && L0.cpl === false); if (now === !!on) return true;
++  const v = chsVolDb();
++  const ok = g6pLanesEdit(on ? 'Background gekoppelt' : 'Background vom Lead getrennt', ch => {
++    if (on) { const d = (isNum(ch.ref) ? ch.ref : v) - v; ch.db = +((isNum(ch.db) ? ch.db : 0) + d).toFixed(2); delete ch.cpl; delete ch.ref; }
++    else { ch.cpl = false; ch.ref = +v.toFixed(2); }
++  }, st);
++  chsApply(); return ok;
++}
++function chsLaneMute(id) { const l = chsLane(id); return g6pLaneMute(id, !(l && l.mute)); }
++function chsSolo(id) { g6pSolo(id); if (typeof g6pcApplyAll === 'function') g6pcApplyAll(); UI.dirty.grid = UI.dirty.song = true; return G6.solo; }
++
++/* ---------- 1. Stellen und Stimmen einer Spur ---------- */
++function chsVoiceAt(r, id) { const x = tkRef(r), c = x && x.a.chor; if (!c || c.v !== 2 || !Array.isArray(c.voices)) return null; const k = c.voices.findIndex(v => v && v.lane === id); return k < 0 ? null : {k, v: c.voices[k], a: x.a}; }
++function chsOpenVoice(r, id) {
++  const z = chsVoiceAt(r, id); if (!z) { toast('Hier singt diese Stimme nicht – im Blatt „Chor“ hinzufügen'); return false; }
++  closePop(); return z.v.take && S.takes && S.takes[z.v.take.take] ? g2Open(r, {take: z.v.take.take}) : g2Open(r, {voice: z.k});
++}
++// die Stelle für [♪] im Mischpult: gewählte Szene, sonst die erste Stelle mit dieser Stimme
++function chsPlaceOf(id) { const st = stimmeT(); if (st < 0) return null; const r0 = {t: st, s: R.selS}; if (chsVoiceAt(r0, id)) return r0; const p = g6pfStellen().find(z => chsVoiceAt(z.r, id)); return p ? p.r : null; }
++function chsColor(ln, voice) { const c = g6pLaneColor(ln.role, voice); return {tok: c.tok, dig: c.dig}; }
++function chsLaneVoice(id) { for (const z of g6pfStellen()) { const q = chsVoiceAt(z.r, id); if (q) return q.v; } return null; }
++// eine neue Spur (Stil, [Spur teilen]) klappt die Gruppe auf, damit sie sofort sichtbar ist
++function chsLanesChanged(n) { const was = CHS.nLanes; CHS.nLanes = n; if (was >= 0 && n > was && !chsIsOpen()) { CHS.open = true; try { localStorage.setItem('synq-chs-open', '1'); } catch (e) {} UI.dirty.song = true; CHS.svKey = ''; } }
++function chsIsOpen() { if (CHS.open == null) { try { CHS.open = localStorage.getItem('synq-chs-open') === '1'; } catch (e) { CHS.open = false; } } return CHS.open; }
++function chsSetOpen(on, quiet) { CHS.open = !!on; try { localStorage.setItem('synq-chs-open', on ? '1' : '0'); } catch (e) {} CHS.mxSig = ''; CHS.svKey = ''; MX.key = ''; if (EL.grid && UI.heads) { chsMxSync(true); mxLayout(); mxApply(); if (on) chsMxShow(); } if (UI.songView) svLayout(); UI.dirty.grid = UI.dirty.song = true; if (!quiet) haptic('tick'); return CHS.open; }
++
++/* ---------- 1a. Clip-Matrix: Zeilen unter der STIMME-Spur ---------- */
++// Zahl der Zusatz-Zeilen (Gruppe + Spuren, wenn aufgeklappt)
++function chsMxExtra() { const st = stimmeT(), n = st >= 0 ? chsLanes().length : 0; return n ? 1 + (chsIsOpen() ? n : 0) : 0; }
++// Seiten der Synth-Zeilen mit Gewicht (die STIMME-Zeile zählt mit ihren Zusatz-Zeilen)
++function chsPages(synth, per) {
++  const st = stimmeT(), E = chsMxExtra(), pg = []; let cur = [], used = 0;
++  if (!E || !synth.includes(st)) { for (let k = 0; k < synth.length; k += per) pg.push(synth.slice(k, k + per)); return pg; }
++  for (const i of synth) { const w = i === st ? 1 + E : 1; if (cur.length && used + w > per) { pg.push(cur); cur = []; used = 0; } cur.push(i); used += w; }
++  if (cur.length) pg.push(cur);
++  if (pg.length <= 2) return pg;
++  // die Spur-Bank kennt zwei Seiten: Seite 2 = STIMME mit ihrer Gruppe (+ was daneben passt), Seite 1 = der Rest (Zeilen werden notfalls flacher)
++  const oth = synth.filter(i => i !== st), room = Math.max(0, per - 1 - E), B = [st].concat(oth.slice(oth.length - room)), A = oth.slice(0, oth.length - room);
++  return A.length ? [A, synth.filter(i => B.includes(i))] : [synth.filter(i => B.includes(i))];
++}
++function chsPageRows(pages, per) { const st = stimmeT(), E = chsMxExtra(); let m = per; for (const p of pages) m = Math.max(m, p.length + (p.includes(st) ? E : 0)); return m; }
++function chsMxVis(vt) { const st = stimmeT(); return st >= 0 && vt.has(st) && UI.heads[st] && !UI.heads[st].el.classList.contains('mxoff'); }
++function chsMxRowEls(kind, id) {
++  const g = EL.grid, row = {kind, id, cells: []};
++  const h = el('button', 'chsth rb' + (kind === 'grp' ? ' chsgrp' : ''), kind === 'grp' ? `<span class="chstri">${CHS_SVG.tri}</span><span class="chsnm">BACKGROUND</span><span class="chssb"></span>` : `<i class="chssw"></i><span class="chsnm"></span><span class="chssb"></span>`);
++  h.dataset.chs = kind === 'grp' ? 'grp' : 'lane'; if (id) h.dataset.id = id; row.h = h;
++  for (let s = 0; s < N_SCN; s++) { const c = el('button', 'chsc rb' + (kind === 'grp' ? ' chsgrp' : ''), '<span class="chsmini"></span>'); c.dataset.chs = kind === 'grp' ? 'gcell' : 'cell'; c.dataset.s = s; if (id) c.dataset.id = id; row.cells.push({el: c, sig: null}); }
++  const e = el('button', 'chse rb' + (kind === 'grp' ? ' chsgrp' : ''), kind === 'grp' ? CHS_SVG.mix : 'M'); e.dataset.chs = kind === 'grp' ? 'mix' : 'mute'; if (id) e.dataset.id = id; row.e = e;
++  e.setAttribute('aria-label', kind === 'grp' ? 'Background-Mischpult' : 'Spur stumm');
++  return row;
++}
++function chsMxSync(force) {
++  const g = EL.grid, st = stimmeT(); if (!g || !UI.heads) return false;
++  const L = st >= 0 ? chsLanes() : [], open = chsIsOpen(), key = st + '|' + open + '|' + L.map(l => l.id).join(',');
++  chsLanesChanged(L.length);
++  if (!force && CHS.mx && CHS.mx.key === key && CHS.mx.g === g && (!CHS.mx.rows.length || CHS.mx.rows[0].h.isConnected)) return false;
++  if (CHS.mx) for (const r of CHS.mx.rows) { r.h.remove(); r.e.remove(); for (const c of r.cells) c.el.remove(); }
++  CHS.mx = {key, g, rows: []};
++  if (st < 0 || !L.length || !UI.stops[st]) return true;
++  const rows = [chsMxRowEls('grp', null)]; if (open) for (const l of L) rows.push(chsMxRowEls('lane', l.id));
++  let after = UI.stops[st];
++  for (const r of rows) { for (const n of [r.h, ...r.cells.map(c => c.el), r.e]) { after.after(n); after = n; } }
++  CHS.mx.rows = rows; CHS.mxSig = '';
++  // Füllzellen: eine Seite kann jetzt mehr leere Zeilen brauchen (bis 9 Zusatz-Zeilen)
++  while (UI.fill.length < 12 * (N_SCN + 2)) { const f = el('div', 'mxfill mxoff'); f.setAttribute('aria-hidden', 'true'); UI.fill.push(f); g.appendChild(f); }
++  return true;
++}
++function chsMxApply(vt, vs) {
++  if (!CHS.mx) return; const on = chsMxVis(vt);
++  for (const r of CHS.mx.rows) { r.h.classList.toggle('mxoff', !on); r.e.classList.toggle('mxoff', !on); r.cells.forEach((c, s) => c.el.classList.toggle('mxoff', !on || !vs.has(s))); }
++}
++const chsMxVisExtra = vt => (CHS.mx && CHS.mx.rows.length && chsMxVis(vt) ? CHS.mx.rows.length : 0);
++// Mini-Bild einer Stimme im Clip: Noten (Take-Zeit → Clip-Schlag) bzw. ein Band für eigene Aufnahmen
++function chsMiniSvg(a, v, L) {
++  const sp = spb(), t0 = wpT0(a.take, a), ns = v && Array.isArray(v.n) ? v.n : [];
++  if (!ns.length) { const x0 = clamp(a.at / L * 100, 0, 100), x1 = clamp((a.at + (a.out - a.in) / sp) / L * 100, 0, 100); return `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><rect x="${x0.toFixed(2)}" y="38" width="${Math.max(1, x1 - x0).toFixed(2)}" height="24" rx="2"/></svg>`; }
++  let lo = 127, hi = 0; const P = ns.map(n => n.m + (isNum(n.iv) ? n.iv : 0)); for (const p of P) { if (p < lo) lo = p; if (p > hi) hi = p; }
++  const span = Math.max(hi - lo, 6); let r = '';
++  ns.slice(0, 160).forEach((n, k) => { const b0 = (n.t0 - t0) / sp, b1 = (n.t1 - t0) / sp; if (b1 <= 0 || b0 >= L) return; const x = Math.max(0, b0) / L * 100, w = Math.max(1.2, (Math.min(L, b1) - Math.max(0, b0)) / L * 100), y = (1 - (P[k] - lo) / span) * 78 + 4; r += `<rect x="${x.toFixed(2)}" y="${y.toFixed(1)}" width="${w.toFixed(2)}" height="14" rx="1"/>`; });
++  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none">${r}</svg>`;
++}
++function chsGrpMini(a, L) {
++  const c = a.chor; if (!c || c.v !== 2 || !c.voices.length) return '';
++  const n = c.voices.length, h = Math.min(14, 80 / n), y0 = 50 - n * h / 2, x0 = clamp(a.at / L * 100, 0, 100), x1 = clamp((a.at + (a.out - a.in) / spb()) / L * 100, 0, 100);
++  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none">` + c.voices.map((v, k) => { const ln = chsLane(v.lane), col = ln ? chsColor(ln, v) : {tok: 'chorf'}; return `<rect x="${x0.toFixed(2)}" y="${(y0 + k * h + 1).toFixed(1)}" width="${Math.max(1, x1 - x0).toFixed(2)}" height="${Math.max(2, h - 2).toFixed(1)}" rx="1" style="fill:var(--${col.tok})"/>`; }).join('') + '</svg>';
++}
++// aufgeklappt auf einer anderen Seite (▲▼): zur Seite der STIMME-Spur blättern, damit die Gruppe zu sehen ist
++function chsMxShow() { const st = stimmeT(); if (st < 0 || !MX.bankT || !MX.pages || !chsIsOpen()) return; const pg = MX.pages.findIndex(p => p.includes(st)); if (pg >= 0 && pg !== trackBankOf()) setTrackBank(pg); }
++function chsMxRender() {
++  if (!EL.grid || !UI.heads) return;
++  if (chsMxSync(false)) { MX.key = ''; mxLayout(); mxApply(); chsMxShow(); }
++  const M = CHS.mx; if (!M || !M.rows.length) return;
++  const st = stimmeT(), T = S.tracks[st], L = chsTrk() || {lanes: []}, so = G6.solo;
++  for (const r of M.rows) {
++    if (r.kind === 'grp') {
++      const sb = L.lanes.length + (L.lanes.length === 1 ? ' Stimme' : ' Stimmen') + (L.mute ? ' · aus' : '') + (L.cpl === false ? ' · getrennt' : '') + (isNum(L.db) && L.db ? ' · ' + chsFmtDb(L.db) : '');
++      setTxt(r.h.children[2], r, 'sb', sb); setCls(r.h, r, 'open', chsIsOpen()); r.h.setAttribute('aria-expanded', String(chsIsOpen()));
++      r.h.setAttribute('aria-label', 'Background-Gruppe ' + (chsIsOpen() ? 'zuklappen' : 'aufklappen'));
++      for (let s = 0; s < N_SCN; s++) { const c = T.clips[s], a = c && c.audio, sig = a && a.chor && a.chor.v === 2 ? JSON.stringify([a.at, a.in, a.out, c.len, a.chor.voices.map(v => v.lane)]) + L.lanes.map(l => l.role).join() : ''; const C = r.cells[s]; if (C.sig !== sig) { C.sig = sig; C.el.firstChild.innerHTML = sig ? chsGrpMini(a, c.len * 4) : ''; C.el.classList.toggle('filled', !!sig); C.el.setAttribute('aria-label', sig ? 'Chor in Szene ' + (s + 1) + ' (Blatt Chor)' : 'Kein Chor in Szene ' + (s + 1)); } }
++      continue;
++    }
++    const ln = L.lanes.find(l => l.id === r.id); if (!ln) continue;
++    const v0 = chsLaneVoice(ln.id), col = chsColor(ln, v0);
++    if (r.tok !== col.tok) { r.tok = col.tok; for (const n of [r.h, r.e, ...r.cells.map(c => c.el)]) n.style.setProperty('--cc', 'var(--' + col.tok + ')'); }
++    setTxt(r.h.children[0], r, 'dig', col.dig); setTxt(r.h.children[1], r, 'nm', ln.name);
++    setTxt(r.h.children[2], r, 'sb2', (ln.mute ? 'stumm' : so === ln.id ? 'Solo' : (isNum(ln.db) && ln.db ? chsFmtDb(ln.db) : '0 dB')) + (isNum(ln.pan) && ln.pan ? ' · ' + chsPanTxt(ln.pan) : ''));
++    setCls(r.h, r, 'muted', !!ln.mute || !!L.mute); setCls(r.e, r, 'on', !!ln.mute); r.e.setAttribute('aria-pressed', String(!!ln.mute)); r.e.setAttribute('aria-label', ln.name + ' stumm');
++    r.h.setAttribute('aria-label', ln.name + ' – Mischpult');
++    for (let s = 0; s < N_SCN; s++) {
++      const c = T.clips[s], a = c && c.audio, z = a ? chsVoiceAt({t: st, s}, ln.id) : null, C = r.cells[s];
++      const sig = z ? JSON.stringify([a.at, a.in, a.out, c.len, z.v.n.length, z.v.n.length ? z.v.n[0].t0 + z.v.n[z.v.n.length - 1].t1 : 0, z.v.take ? 1 : 0]) + col.tok : '';
++      if (C.sig !== sig) { C.sig = sig; C.el.firstChild.innerHTML = sig ? chsMiniSvg(a, z.v, c.len * 4) : ''; C.el.classList.toggle('filled', !!sig); C.el.setAttribute('aria-label', ln.name + (sig ? ' · Noten in Szene ' + (s + 1) : ' · leer in Szene ' + (s + 1))); }
++      setCls(C.el, C, 'muted', !!ln.mute || !!L.mute);
++    }
++  }
++}
++const chsPanTxt = p => (Math.abs(p) < .005 ? 'Mitte' : (p < 0 ? 'L ' : 'R ') + Math.round(Math.abs(p) * 100));
++function chsMxTap(b) {
++  const k = b.dataset.chs, id = b.dataset.id, st = stimmeT(); if (st < 0) return;
++  if (k === 'grp') { chsSetOpen(!chsIsOpen()); return; }
++  if (k === 'mix') { chsMixer(b, null); return; }
++  if (k === 'lane') { chsMixer(b, id); return; }
++  if (k === 'mute') { chsLaneMute(id); haptic('tick'); return; }
++  const s = +b.dataset.s, r = {t: st, s}; R.selS = s;
++  if (k === 'gcell') { const x = tkRef(r); if (x && x.a.chor) g6Sheet(r, b); else toast('Kein Chor in Szene ' + (s + 1) + ' – STIMME-Clip ✎ → [Chor]'); return; }
++  if (k === 'cell') chsOpenVoice(r, id);
++}
++
++/* ---------- 1b. Song: Zeilen unter der STIMME-Spur (Codes −100 Gruppe, −101 … Spuren; für die übrige Song-Logik leere Zeilen) ---------- */
++const CHS_SV0 = -100;
++const chsSvCode = r => (isNum(r) && r <= CHS_SV0 ? r : null);
++function chsSvExtra() { return chsMxExtra(); }
++function chsSvRows() {
++  const st = stimmeT(), E = chsSvExtra(); if (E <= 0 || !SV.rows) return;
++  const k = SV.rows.indexOf(st); if (k < 0) return;
++  const add = [CHS_SV0]; if (chsIsOpen()) chsLanes().forEach((l, j) => add.push(CHS_SV0 - 1 - j));
++  SV.rows = SV.rows.slice(0, k + 1).concat(add, SV.rows.slice(k + 1));
++}
++function chsSvLabels() {
++  const Lb = SV.labs; if (!Lb) return; const L = chsLanes(), key = SV.rowsKey + '|' + L.map(l => l.id + l.name + (l.mute ? 1 : 0)).join(',') + (chsIsOpen() ? 'o' : '') + (G6.solo || '');
++  if (CHS.svLab === key) return; CHS.svLab = key;
++  for (const d of Lb.querySelectorAll('.sv-l.trk')) {
++    const t = +d.dataset.t, c = chsSvCode(t); if (c == null) continue;
++    d.classList.remove('blank'); d.classList.add('chs');
++    if (c === CHS_SV0) { d.classList.add('chsgrp'); d.innerHTML = `<span class="chstri${chsIsOpen() ? ' open' : ''}">${CHS_SVG.tri}</span><span>BG ${L.length}</span>`; d.setAttribute('aria-label', 'Background-Gruppe'); d.style.removeProperty('--tc'); continue; }
++    const ln = L[CHS_SV0 - 1 - c]; if (!ln) continue; const col = chsColor(ln, chsLaneVoice(ln.id));
++    d.style.setProperty('--tc', 'var(--' + col.tok + ')'); d.classList.toggle('muted', !!ln.mute);
++    d.innerHTML = `<i></i><b class="chsdg">${esc(col.dig)}</b><span>${esc(ln.name.replace(/^Chor /, ''))}</span>`; d.setAttribute('aria-label', ln.name + ' – Mischpult');
++  }
++}
++function chsSvDraw(g, song, XB, ru, rh, W) {
++  chsLanesChanged(stimmeT() >= 0 ? chsLanes().length : 0);
++  const sk = stimmeT() + '|' + chsIsOpen() + '|' + chsLanes().map(l => l.id).join();
++  if (CHS.svKey !== sk) { CHS.svKey = sk; requestAnimationFrame(() => { if (UI.songView) { svLayout(); UI.dirty.song = true; } }); }
++  chsSvLabels();
++  const st = stimmeT(), vx = song && song.vox; if (st < 0 || !SV.rows) return;
++  const L = chsLanes(); if (!L.length) return;
++  for (let r = 0; r < SV.rows.length; r++) {
++    const c = chsSvCode(SV.rows[r]); if (c == null) continue; const y = ru + r * rh;
++    g.fillStyle = 'rgba(255,255,255,.025)'; g.fillRect(0, y, W, rh);
++    if (!vx) continue;
++    for (const v of vx) {
++      const ch = v.chor; if (!ch || ch.v !== 2 || !ch.voices.length) continue;
++      const x0 = XB(v.bar * 4), x1 = XB((v.bar + v.len) * 4); if (x1 < 0 || x0 > W) continue;
++      if (c === CHS_SV0) { const n = ch.voices.length, h = Math.max(2, Math.min(5, (rh - 8) / n)); ch.voices.forEach((vv, k) => { const ln = chsLane(vv.lane); g.fillStyle = ln ? chsCol(chsColor(ln, vv).tok) : '#888'; g.fillRect(x0 + 2, y + rh / 2 - n * h / 2 + k * h, x1 - x0 - 5, Math.max(1, h - 1)); }); continue; }
++      const ln = L[CHS_SV0 - 1 - c]; if (!ln) continue; const k = ch.voices.findIndex(z => z.lane === ln.id); if (k < 0) continue;
++      const vv = ch.voices[k], col = chsCol(chsColor(ln, vv).tok);
++      g.globalAlpha = ln.mute ? .12 : .26; g.fillStyle = col; g.fillRect(x0 + 1, y + 2, x1 - x0 - 3, rh - 4);
++      g.globalAlpha = ln.mute ? .35 : .95; g.strokeStyle = col; g.lineWidth = 1; g.strokeRect(x0 + 1.5, y + 2.5, x1 - x0 - 4, rh - 5);
++      const ns = vv.n || [], sp = spb(), t0 = wpT0(v.take, v); if (ns.length && rh > 10) { let lo = 127, hi = 0; for (const n of ns) { const p = n.m + (n.iv || 0); if (p < lo) lo = p; if (p > hi) hi = p; } const span = Math.max(6, hi - lo);
++        g.fillStyle = col; for (const n of ns) { const b0 = (n.t0 - t0) / sp, b1 = (n.t1 - t0) / sp, xa = XB(v.bar * 4 + Math.max(0, b0)), xb = XB(v.bar * 4 + Math.min(v.len * 4, b1)); if (xb <= xa) continue; const yy = y + 3 + (1 - (n.m + (n.iv || 0) - lo) / span) * (rh - 8); g.fillRect(xa, yy, Math.max(1, xb - xa - .5), 2); } }
++      g.globalAlpha = 1;
++    }
++  }
++}
++const CHS_COLC = new Map();
++function chsCol(tok) { let c = CHS_COLC.get(tok); if (!c) { c = getComputedStyle(document.documentElement).getPropertyValue('--' + tok).trim() || '#999'; CHS_COLC.set(tok, c); } return c; }
++function chsSvTap(code, bar) {
++  const v = tkVoxAt(bar); if (code === CHS_SV0) { if (v && v.chor) g6Sheet({vox: v.id}, SV.cv); else chsSetOpen(!chsIsOpen()); return; }
++  const ln = chsLanes()[CHS_SV0 - 1 - code]; if (!ln) return;
++  if (!v) { toast('Kein Song-Gesang in Takt ' + (bar + 1)); return; }
++  chsOpenVoice({vox: v.id}, ln.id);
++}
++function chsSvLabTap(d) { const c = chsSvCode(+d.dataset.t); if (c == null) return false; if (c === CHS_SV0) chsSetOpen(!chsIsOpen()); else { const ln = chsLanes()[CHS_SV0 - 1 - c]; if (ln) chsMixer(d, ln.id); } return true; }
++
++/* ---------- 1c. Blatt „Background“ (Mischpult) ---------- */
++function chsSl(k, lab, min, max, step, val, txt, id) { return `<label class="chs-sl"><span class="chs-sll">${esc(lab)}</span><input type="range" class="pan-x" min="${min}" max="${max}" step="${step}" value="${val}" data-k="${k}"${id ? ` data-id="${esc(id)}"` : ''} aria-label="${esc(lab)}"><output>${esc(txt)}</output></label>`; }
++function chsMixPaint(p) {
++  const st = stimmeT(), L = chsTrk() || {lanes: []}; if (st < 0) { p.innerHTML = '<div class="chs-mh"><b>Background</b></div><div class="qnote">Keine STIMME-Spur.</div>'; return; }
++  const cpl = L.cpl !== false, lead = chsVolDb(), so = G6.solo;
++  let h = `<div class="chs-mh"><b>Background</b><button class="rb chs-cpl${cpl ? ' on' : ''}" data-a="cpl" aria-pressed="${cpl}">Gekoppelt</button><button class="rb chs-mute${L.mute ? ' on' : ''}" data-a="chor" aria-pressed="${!L.mute}">${L.mute ? 'Chor aus' : 'Chor an'}</button><button class="rb sh-x chs-x" data-a="x" aria-label="Schließen">✕</button></div>`;
++  h += '<div class="chs-mg">' + chsSl('lead', 'Lead', -40, 0, .5, lead.toFixed(1), chsFmtDb(lead)) + chsSl('bg', 'Background', -24, 12, .5, (L.db || 0).toFixed(1), chsFmtDb(L.db || 0)) + chsSl('sum', 'Gesang gesamt', -24, 12, .5, (L.sum || 0).toFixed(1), chsFmtDb(L.sum || 0)) + '</div>';
++  h += `<div class="qnote chs-note">${cpl ? 'Gekoppelt: der Lead-Regler nimmt den Chor im gleichen Schritt mit.' : 'Getrennt: Lead und Background regeln unabhängig.'} Gesang gesamt = Lead + Background.</div>`;
++  h += '<div class="chs-lanes">';
++  for (const ln of L.lanes) {
++    const col = chsColor(ln, chsLaneVoice(ln.id)), hl = CHS.mixHl === ln.id ? ' hl' : '';
++    h += `<div class="chs-lane${ln.mute ? ' muted' : ''}${hl}" style="--cc:var(--${col.tok})" data-id="${esc(ln.id)}"><div class="chs-lt"><i class="chs-chip">${esc(col.dig)}</i><b>${esc(ln.name)}</b>` +
++      `<button class="rb chs-s${so === ln.id ? ' on' : ''}" data-a="solo" data-id="${esc(ln.id)}" aria-pressed="${so === ln.id}" aria-label="${esc(ln.name)} solo">S</button>` +
++      `<button class="rb chs-m${ln.mute ? ' on' : ''}" data-a="mute" data-id="${esc(ln.id)}" aria-pressed="${!!ln.mute}" aria-label="${esc(ln.name)} stumm">M</button>` +
++      `<button class="rb chs-n" data-a="notes" data-id="${esc(ln.id)}" aria-label="Noten von ${esc(ln.name)}">♪</button></div><div class="chs-lr">` +
++      chsSl('db', 'Pegel', -24, 12, .5, (ln.db || 0).toFixed(1), chsFmtDb(ln.db || 0), ln.id) + chsSl('pan', 'Pan', -100, 100, 1, Math.round((ln.pan || 0) * 100), chsPanTxt(ln.pan || 0), ln.id) + '</div></div>';
++  }
++  h += '</div><div class="chs-mf"><button class="mbtn rb" data-a="dup">Spur teilen · Gegenstimme</button><button class="mbtn rb" data-a="sheet">Blatt „Chor“</button></div>';
++  p.innerHTML = h;
++  if (CHS.mixHl) { const e = p.querySelector('.chs-lane.hl'); if (e) try { e.scrollIntoView({block: 'nearest'}); } catch (er) {} }
++}
++function chsMixer(anchor, hl) {
++  CHS.mixHl = hl || null;
++  openPop(anchor || EL.grid, p => {
++    p.classList.add('tksheet', 'chsmix'); guardTouch(p); chsMixPaint(p);
++    const val = (inp, fin) => {
++      const k = inp.dataset.k, id = inp.dataset.id, v = +inp.value, o = inp.parentNode.querySelector('output');
++      if (k === 'pan') { chsLaneSet(id, 'pan', v / 100, fin); o.textContent = chsPanTxt(v / 100); }
++      else if (k === 'db') { chsLaneSet(id, 'db', v, fin); o.textContent = chsFmtDb(v); }
++      else { chsSet(k, v, fin); o.textContent = chsFmtDb(v); }
++    };
++    p.addEventListener('input', e => { const t = e.target; if (t.matches && t.matches('input[type=range][data-k]')) val(t, false); });
++    p.addEventListener('change', e => { const t = e.target; if (t.matches && t.matches('input[type=range][data-k]')) { val(t, true); } });
++    // Doppeltipp auf einen Regler = 0 dB / Mitte (ein Schritt)
++    p.addEventListener('dblclick', e => { const t = e.target.closest && e.target.closest('input[type=range][data-k]'); if (!t || t.dataset.k === 'lead') return; t.value = 0; val(t, true); });
++    onTap(p, b => {
++      const a = b.dataset.a, id = b.dataset.id;
++      if (a === 'x') { closePop(); return; }
++      if (a === 'cpl') { const L = chsTrk(); chsCouple(L && L.cpl === false); }
++      else if (a === 'chor') { const L = chsTrk(); g6pLaneMute(null, !(L && L.mute)); }
++      else if (a === 'solo') chsSolo(id);
++      else if (a === 'mute') chsLaneMute(id);
++      else if (a === 'notes') { const r = chsPlaceOf(id); if (r) chsOpenVoice(r, id); else toast('Diese Stimme singt noch nirgends'); return; }
++      else if (a === 'dup') { const st = stimmeT(), r = st >= 0 && tkRef({t: st, s: R.selS}) ? {t: st, s: R.selS} : (g6pfStellen()[0] || {}).r; closePop(); if (r) g6pDuplizieren(r, true); else toast('Erst Gesang aufnehmen'); return; }
++      else if (a === 'sheet') { const st = stimmeT(), r = st >= 0 && tkRef({t: st, s: R.selS}) ? {t: st, s: R.selS} : (g6pfStellen()[0] || {}).r; closePop(); if (r) g6Sheet(r, anchor); return; }
++      haptic('tick'); if (UI.pop && UI.pop.name === 'chsmix') chsMixPaint(UI.pop.el);
++    }, 'button[data-a]');
++  }, {name: 'chsmix', onClose: () => { if (CHS.drag) chsLiveEnd('Background'); }});
++}
++
++/* ---------- 2. Gesangs-Editor: Lineal, Abspielen, Loop, Zoom, Vorhören ---------- */
++const chsEdKind = E => (E && G2.ed === E ? 'g2' : E && WP.ed === E ? 'wp' : null);
++const chsEdPaintAll = E => { const k = chsEdKind(E); if (k === 'g2') g2Paint(); else if (k === 'wp') wpPaint(); };
++// Raster: Take-Zeit ↔ Schlag im Clip bzw. im Song-Stück (Bezug wie die Taktlinien der Editoren)
++function chsGrid(E) { const x = tkRef(E.r); if (!x) return null; const a = x.a, sp = spb(); return {a, x, sp, t0: wpT0(a.take, a), L: E.r.vox ? a.len * 4 : x.clip.len * 4}; }
++function chsSnap(E, t) { const G = chsGrid(E); if (!G) return t; const pxB = G.sp / E.vw.W * E.cv.clientWidth, step = E.r.vox ? 4 : pxB >= 18 ? 1 : 4, b = Math.round((t - G.t0) / G.sp / step) * step; return G.t0 + clamp(b, 0, G.L) * G.sp; }
++function chsEdAttach(E) {
++  if (!E || !E.cvw || E.chsOv) return;
++  const cvw = E.cvw, ov = el('canvas', 'chsov'), rul = el('div', 'chsrul');
++  ov.setAttribute('aria-hidden', 'true');
++  rul.innerHTML = `<button class="rb chspl" data-a="play" aria-label="Ab Lineal abspielen">${CHS_SVG.play}</button><span class="chsrz" aria-label="Lineal: tippen = ab hier spielen, ziehen = Loop, Doppeltipp = Zoom"></span><button class="rb chslp" data-a="loop" aria-pressed="false" aria-label="Loop an/aus">${CHS_SVG.loop}</button>`;
++  cvw.append(ov, rul); cvw.classList.add('chsr');
++  Object.assign(E, {chsOv: ov, chsRul: rul, chsLoop: E.chsLoop || null});
++  onTap(rul, b => {
++    if (b.dataset.a === 'play') { if (chsRunning(E)) chsStop(); else chsPlayFrom(E, E.chsLoop && E.chsLoop.on ? E.chsLoop.a : E.chsCur != null ? E.chsCur : E.vw.a); return; }
++    const Lp = E.chsLoop; if (!Lp) { toast('Loop: auf dem Lineal einen Bereich ziehen'); return; } Lp.on = !Lp.on; haptic('tick'); if (chsRunning(E)) chsPlayFrom(E, Lp.on ? Lp.a : chsPlayT(E) || Lp.a); chsEdOverlay(E);
++  }, 'button[data-a]');
++  const zone = rul.querySelector('.chsrz'), tOf = e => { const rc = E.cv.getBoundingClientRect(); return E.vw.a + (e.clientX - rc.left) / rc.width * E.vw.W; };
++  zone.addEventListener('pointerdown', e => { if (e.button > 0) return; try { zone.setPointerCapture(e.pointerId); } catch (er) {} E.chsP = {id: e.pointerId, x0: e.clientX, t0: tOf(e), tm: performance.now(), mode: null}; e.preventDefault(); });
++  zone.addEventListener('pointermove', e => { const P = E.chsP; if (!P || P.id !== e.pointerId) return; if (!P.mode && Math.abs(e.clientX - P.x0) > 8) P.mode = 'loop'; if (P.mode === 'loop') { const a = chsSnap(E, Math.min(P.t0, tOf(e))), b = chsSnap(E, Math.max(P.t0, tOf(e))); E.chsDraft = {a, b}; chsEdOverlay(E); } });
++  const end = (e, cancel) => {
++    const P = E.chsP; if (!P || P.id !== e.pointerId) return; E.chsP = null; const D = E.chsDraft; E.chsDraft = null;
++    if (cancel) { chsEdOverlay(E); return; }
++    if (P.mode === 'loop') { if (D && D.b - D.a > spb() * .9) { E.chsLoop = {a: D.a, b: D.b, on: true}; CHS.loopLast = {a: D.a, b: D.b}; haptic('tick'); toast('Loop ' + chsBeatTxt(E, D.a) + ' – ' + chsBeatTxt(E, D.b)); if (chsRunning(E)) chsPlayFrom(E, D.a); } chsEdOverlay(E); return; }
++    const t = chsSnap(E, P.t0), now = performance.now(), last = CHS.rtap; CHS.rtap = {t: now, x: e.clientX};
++    if (last && now - last.t < 330 && Math.abs(last.x - e.clientX) < 30) { CHS.rtap = null; chsZoomToggle(E, P.t0, e.clientX); return; }
++    E.chsCur = t; chsPlayFrom(E, t);
++  };
++  zone.addEventListener('pointerup', e => end(e, false)); zone.addEventListener('pointercancel', e => end(e, true));
++  // zwei Finger = Zoom (vor den Gesten der Editoren: Erfassung am Rahmen), Doppeltipp leer (Noten-Editor) = Zoom
++  cvw.addEventListener('pointerdown', e => {
++    if (!e.target.closest || e.target.closest('.chsrul,.g6pgleg,button,input')) return; CHS.pts.set(e.pointerId, {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, tm: performance.now()});
++    if (CHS.pts.size === 2) { e.stopPropagation(); chsPinchStart(E); }
++    else if (CHS.pts.size > 2) e.stopPropagation();
++  }, true);
++  cvw.addEventListener('pointermove', e => { const q = CHS.pts.get(e.pointerId); if (!q) return; q.x = e.clientX; q.y = e.clientY; if (CHS.pinch && CHS.pinch.E === E) { e.stopPropagation(); chsPinchMove(E); } }, true);
++  const pend = (e, cancel) => {
++    const q = CHS.pts.get(e.pointerId); if (!q) return; CHS.pts.delete(e.pointerId);
++    if (CHS.pinch && CHS.pinch.E === E) { e.stopPropagation(); if (CHS.pts.size < 2) { CHS.pinch.done = true; if (!CHS.pts.size) CHS.pinch = null; } return; }
++    if (cancel || chsEdKind(E) !== 'g2') return;
++    const tap = Math.hypot(e.clientX - q.x0, e.clientY - q.y0) < 10 && performance.now() - q.tm < 350; if (!tap) { CHS.ctap = null; return; }
++    const rc = E.cv.getBoundingClientRect(), cx = e.clientX - rc.left, cy = e.clientY - rc.top;
++    if (g2Hit(E, cx, cy) >= 0) { CHS.ctap = null; return; }
++    const now = performance.now(), last = CHS.ctap; CHS.ctap = {t: now, x: e.clientX, y: e.clientY};
++    if (last && now - last.t < 330 && Math.hypot(last.x - e.clientX, last.y - e.clientY) < 30) { CHS.ctap = null; e.stopPropagation(); E.p = null; E.ghost = null; chsZoomToggle(E, E.vw.a + cx / rc.width * E.vw.W, e.clientX); }
++  };
++  cvw.addEventListener('pointerup', e => pend(e, false), true); cvw.addEventListener('pointercancel', e => pend(e, true), true);
++  chsEdOverlay(E);
++}
++function chsPinchStart(E) {
++  const [p1, p2] = [...CHS.pts.values()], rc = E.cv.getBoundingClientRect(), cx = (p1.x + p2.x) / 2 - rc.left;
++  E.p = null; E.ghost = null;                                         // der erste Finger verschiebt nichts mehr
++  CHS.pinch = {E, d0: Math.max(20, Math.abs(p1.x - p2.x)), W0: E.vw.W, tc: E.vw.a + cx / rc.width * E.vw.W};
++  chsEdPaintAll(E);
++}
++function chsPinchMove(E) {
++  const P = CHS.pinch; if (!P || P.done || CHS.pts.size < 2) return;
++  const [p1, p2] = [...CHS.pts.values()], rc = E.cv.getBoundingClientRect(), d = Math.max(20, Math.abs(p1.x - p2.x)), cx = (p1.x + p2.x) / 2 - rc.left;
++  const W = P.W0 * P.d0 / d; chsSetView(E, W, P.tc - cx / rc.width * W);
++  if (!E.chsRq) E.chsRq = requestAnimationFrame(() => { E.chsRq = 0; chsEdPaintAll(E); });
++}
++// Ansicht: eigene Breite W (Sekunden) – gilt, bis jemand den Zoom-Knopf tippt
++function chsSetView(E, W, va) { const x = tkRef(E.r); if (!x) return; const a = x.a, segL = Math.max(a.out - a.in, spb()), sp = spb(); E.chsW = clamp(W, sp * .5, segL * 1.1); E.chsZ0 = E.zoom; E.va = va; }
++function chsViewW(E, W, segL) { if (E.chsW && E.chsZ0 === E.zoom) return Math.min(E.chsW, Math.max(segL, spb()) * 1.1); E.chsW = 0; return W; }
++function chsZoomToggle(E, t, clientX) {
++  const rc = E.cv.getBoundingClientRect(), f = clamp((clientX - rc.left) / rc.width, 0, 1), x = tkRef(E.r); if (!x) return;
++  const full = Math.max(x.a.out - x.a.in, .05), W = E.vw.W;
++  if (W > full * .55 || W > spb() * 8.5) chsSetView(E, Math.max(spb() * 2, W / 4), t - f * Math.max(spb() * 2, W / 4));
++  else { E.chsW = 0; E.zoom = 0; E.va = x.a.in; }
++  haptic('tick'); chsEdPaintAll(E);
++}
++const chsBeatTxt = (E, t) => { const G = chsGrid(E); if (!G) return ''; const b = Math.round((t - G.t0) / G.sp), bar = Math.floor(b / 4) + 1 + (E.r.vox ? G.a.bar : 0), be = ((b % 4) + 4) % 4 + 1; return 'Takt ' + bar + (be > 1 ? '.' + be : ''); };
++// eine Note nur verschieben, wenn sie gewählt war oder ¼ s gehalten wird (sonst schwenkt der Finger) – nichts verrutscht versehentlich
++function chsMayMove(E, p) { return p.k === E.sel || performance.now() - p.t0 >= 250; }
++
++/* Abspielen ab Take-Zeit t: Szene des Clips (alle Spuren der Szene im gleichen Takt) bzw. Song ab dem Takt; Loop im Editor */
++function chsRunning(E) { return !!(CHS.run && R.playing && (!E || chsHideKey(CHS.run.r) === chsHideKey(E.r))); }
++function chsStop() {
++  const run = CHS.run; CHS.run = null; clearInterval(CHS.loopT); CHS.loopT = 0;
++  if (run && run.song0 !== undefined && S.song) { S.song.loop = run.song0; UI.dirty.song = true; }
++  if (R.songPlay) songPlayEnd(true); else if (R.playing) stop();
++  for (const E of [G2.ed, WP.ed]) if (E && E.chsOv) chsEdOverlay(E);
++  return true;
++}
++function chsPlayFrom(E, t) {
++  const G = chsGrid(E); if (!G) return false; ensureAudio(); if (!AU.ctx) return false;
++  const Lp = E.chsLoop && E.chsLoop.on ? E.chsLoop : null;
++  let b = (t - G.t0) / G.sp;
++  const lA = Lp ? Math.round((Lp.a - G.t0) / G.sp) : null, lB = Lp ? Math.round((Lp.b - G.t0) / G.sp) : null;
++  if (Lp && !(b >= lA && b < lB)) b = lA;
++  const old = CHS.run; if (old) { CHS.run = null; clearInterval(CHS.loopT); CHS.loopT = 0; if (old.song0 !== undefined && S.song) S.song.loop = old.song0; }
++  if (R.songPlay) songPlayEnd(true); else if (R.playing) stop();
++  if (E.r.vox) {
++    if (!S.song) return false; const run = {r: E.r, mode: 'song', song0: S.song.loop ? deep(S.song.loop) : null};
++    const bar = clamp(G.a.bar + Math.floor(Math.max(0, b) / 4), 0, Math.max(0, S.song.bars - 1));
++    if (Lp) { const a0 = clamp(G.a.bar + Math.floor(lA / 4), 0, S.song.bars - 1), b0 = clamp(G.a.bar + Math.ceil(lB / 4), a0 + 1, S.song.bars); S.song.loop = {on: true, a: a0, b: b0}; }
++    CHS.run = run; if (!songPlayStart(Lp ? S.song.loop.a : bar)) { chsStop(); return false; }
++  } else {
++    const s = E.r.s, L = G.L; b = clamp(b, 0, L - 1e-6);
++    for (let i = 0; i < NT(); i++) { const has = !!S.tracks[i].clips[s]; R.slot[i] = has ? s : -1; R.pend[i] = null; R.prev[i] = null; R.own[i] = null; }
++    R.startCs = new Array(NT()).fill(-b); R.selS = s;
++    CHS.run = {r: E.r, mode: 'clip', s, b0: b, lp: Lp ? {A: lA, B: lB, next: lB - b} : null};
++    play();
++    if (Lp) CHS.loopT = setInterval(chsLoopTick, 40);
++  }
++  CHS.log.push({t: performance.now(), mode: CHS.run.mode, from: +b.toFixed(3), loop: Lp ? [lA, lB] : null}); if (CHS.log.length > 20) CHS.log.shift();
++  haptic('tick'); chsEdRaf(); return true;
++}
++// Loop im Clip: am Ende des Bereichs startet jede Spur der Szene wieder an seinem Anfang (über den Planer, im Takt – kein Neustart)
++function chsLoopTick() {
++  const run = CHS.run; if (!run || run.mode !== 'clip' || !run.lp || !R.playing || !AU.ctx) { clearInterval(CHS.loopT); CHS.loopT = 0; return; }
++  const P = run.lp; if (audBeat() < P.next - 2 || P.q === P.next) return;
++  P.q = P.next;
++  for (let i = 0; i < NT(); i++) if (R.slot[i] === run.s || (R.pend[i] && R.pend[i].slot === run.s)) switchTrackAt(i, run.s, P.next, P.next - P.A);
++  P.next += P.B - P.A;
++}
++// Laufstrich: Take-Zeit, die gerade klingt (oder null)
++function chsPlayT(E) {
++  if (!R.playing || !AU.ctx || !E) return null; const G = chsGrid(E); if (!G) return null;
++  const bA = audBeat(); let pos;
++  if (E.r.vox) { if (!R.songPlay) return null; const sb = songBeatOf(bA); if (sb == null) return null; pos = sb - G.a.bar * 4; if (pos < 0 || pos > G.L) return null; }
++  else { const st = stimmeT(); if (st < 0 || R.slot[st] !== E.r.s) return null; const cs = audCstart(st, bA); pos = ((bA - cs) % G.L + G.L) % G.L; }
++  return G.t0 + pos * G.sp;
++}
++function chsEdRaf() {
++  if (CHS.raf) return;
++  const loop = () => { CHS.raf = 0; let any = false; for (const E of [G2.ed, WP.ed]) if (E && E.chsOv) { chsEdOverlay(E); any = true; } if (any && R.playing) CHS.raf = requestAnimationFrame(loop); else if (any) { for (const E of [G2.ed, WP.ed]) if (E && E.chsOv) chsEdOverlay(E); } };
++  CHS.raf = requestAnimationFrame(loop);
++}
++function chsEdPaint(E) { if (!E || !E.cvw) return; if (!E.chsOv) chsEdAttach(E); else chsEdOverlay(E); }
++// Lineal-Band, Loop-Bereich und Laufstrich auf eigener Leinwand (die Editor-Leinwand bleibt unberührt)
++function chsEdOverlay(E) {
++  const ov = E.chsOv; if (!ov || !E.vw || !E.X) return;
++  const hide = !!E.g9; ov.hidden = hide; E.chsRul.hidden = hide; if (hide) return;
++  const rc = E.cv.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1), Wp = Math.max(1, Math.round(rc.width)), Hp = Math.max(1, Math.round(rc.height));
++  if (ov.width !== Wp * dpr || ov.height !== Hp * dpr) { ov.width = Wp * dpr; ov.height = Hp * dpr; }
++  const g = ov.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, Wp, Hp);
++  const G = chsGrid(E); if (!G) return; const X = t => (t - E.vw.a) / E.vw.W * Wp, y0 = Hp - CHS_RH;
++  // Loop
++  const Lp = E.chsDraft || E.chsLoop;
++  if (Lp) { const on = E.chsDraft || Lp.on, xa = X(Lp.a), xb = X(Lp.b); g.fillStyle = on ? 'rgba(255,178,46,.10)' : 'rgba(255,255,255,.04)'; g.fillRect(xa, 0, xb - xa, y0); g.fillStyle = on ? '#ffb22e' : '#6b7080'; g.fillRect(Math.round(xa), 0, 1.5, Hp); g.fillRect(Math.round(xb) - 1, 0, 1.5, Hp); }
++  // Lineal
++  g.fillStyle = 'rgba(14,16,20,.86)'; g.fillRect(0, y0, Wp, CHS_RH); g.fillStyle = '#2a303b'; g.fillRect(0, y0, Wp, 1);
++  if (Lp) { g.fillStyle = (E.chsDraft || Lp.on) ? 'rgba(255,178,46,.55)' : 'rgba(255,255,255,.14)'; g.fillRect(X(Lp.a), y0 + 3, X(Lp.b) - X(Lp.a), 6); }
++  g.font = '700 10px ' + (getComputedStyle(document.body).fontFamily || 'sans-serif'); g.textBaseline = 'alphabetic';
++  const pxB = G.sp / E.vw.W * Wp, bf = Math.floor((E.vw.a - G.t0) / G.sp), bl = Math.ceil((E.vw.a + E.vw.W - G.t0) / G.sp);
++  for (let b = bf; b <= bl; b++) { const xx = Math.round(X(G.t0 + b * G.sp)) + .5, bar = ((b % 4) + 4) % 4 === 0; if (!bar && pxB < 7) continue; g.fillStyle = bar ? '#8a93a6' : '#4a5466'; g.fillRect(xx - .5, bar ? y0 + 2 : y0 + CHS_RH - 8, 1, bar ? CHS_RH - 4 : 6);
++    if (bar && (pxB * 4 >= 26 || (b / 4) % 2 === 0)) { const n = b / 4 + 1 + (E.r.vox ? G.a.bar : 0); if (n >= 1) { g.fillStyle = '#c9cfdb'; g.fillText(String(n), xx + 3, y0 + CHS_RH - 8); } } }
++  if (E.chsCur != null && !R.playing) { const xx = X(E.chsCur); g.fillStyle = '#3ddc84'; g.beginPath(); g.moveTo(xx - 5, y0 + 1); g.lineTo(xx + 5, y0 + 1); g.lineTo(xx, y0 + 8); g.fill(); }
++  // Laufstrich
++  const pt = chsRunning(E) ? chsPlayT(E) : null; E.chsPt = pt;
++  if (pt != null) { const xx = Math.round(X(pt)) + .5; g.fillStyle = '#3ddc84'; g.fillRect(xx - 1, 0, 2, Hp); }
++  const pl = E.chsRul.querySelector('[data-a=play]'), lp = E.chsRul.querySelector('[data-a=loop]'), run = chsRunning(E);
++  if (pl._run !== run) { pl._run = run; pl.innerHTML = run ? CHS_SVG.stop : CHS_SVG.play; pl.classList.toggle('on', run); pl.setAttribute('aria-label', run ? 'Stopp' : 'Ab Lineal abspielen'); }
++  const lon = !!(E.chsLoop && E.chsLoop.on); if (lp._on !== lon) { lp._on = lon; lp.classList.toggle('on', lon); lp.setAttribute('aria-pressed', String(lon)); }
++}
++function chsEdClosed(E) { if (!E) return; if (E.chsRq) cancelAnimationFrame(E.chsRq); CHS.pinch = null; CHS.pts.clear(); if (CHS.run && chsHideKey(CHS.run.r) === chsHideKey(E.r) && CHS.run.mode === 'clip' && CHS.run.lp) { clearInterval(CHS.loopT); CHS.loopT = 0; CHS.run.lp = null; } if (CHS.run && CHS.run.song0 !== undefined && S.song) { S.song.loop = CHS.run.song0; delete CHS.run.song0; UI.dirty.song = true; } }
++
++/* Vorhören nach einer Tonhöhen-Änderung: sobald die neue Fassung gerechnet ist, die Note kurz allein (im Loop: live, nichts extra) */
++function chsAudition(E, k) {
++  if (!E || k == null || k < 0) return; const x = tkRef(E.r); if (!x) return;
++  if (chsRunning(E)) return;                                          // läuft der Editor: die neue Fassung kommt im nächsten Durchgang (tkTrackResync / g6Refresh)
++  ensureAudio(); const c = AU.ctx; if (!c) return;
++  const a = x.a, voice = E.voice, id = E.id, tok = CHS.aud = {};
++  const n = voice != null ? (a.chor && a.chor.voices[voice] && a.chor.voices[voice].n[k]) : (g2Notes(id) || [])[k]; if (!n) return;
++  const old = voice != null ? null : tkHeard(id, a);
++  const t0 = performance.now();
++  const go = () => {
++    if (CHS.aud !== tok) return; const y = tkRef(E.r); if (!y) return; const A = y.a;
++    let b = null, off = 0;
++    if (voice != null) { const v = A.chor && A.chor.voices[voice]; if (!v) return; if (!g6Ready(A) && performance.now() - t0 < 4000) { setTimeout(go, 50); return; } b = g6pcIs2(A) ? g6pcBuf(A, v, 0) : g6Buf(A, v, 0); off = b && b.g6pT0 ? b.g6pT0 : 0; }
++    else { if ((!g2Ready(id, A) || tkHeard(id, A) === old) && performance.now() - t0 < 4000) { if (!g2Ready(id, A)) tkPlayBuf(id, A); setTimeout(go, 50); return; } b = tkHeard(id, A); }
++    if (!b) return;
++    const s0 = Math.max(0, n.t0 - .04 - off), dur = Math.min(1.6, Math.max(.15, n.t1 - n.t0 + .1)); if (s0 >= b.duration) return;
++    const now = c.currentTime + .02, src = c.createBufferSource(), gn = c.createGain(); src.buffer = b;
++    gn.gain.setValueAtTime(0, now); gn.gain.linearRampToValueAtTime(.9, now + .01); gn.gain.setValueAtTime(.9, now + dur - .03); gn.gain.linearRampToValueAtTime(0, now + dur);
++    src.connect(gn); gn.connect(AU.masterSum || c.destination); src.start(now, s0, dur + .01); src.onended = () => { try { gn.disconnect(); } catch (e) {} };
++    CHS.lastAud = {k, voice, s0: +s0.toFixed(4), dur: +dur.toFixed(3), ms: Math.round(performance.now() - t0), buf: wpBid(b)};
++  };
++  setTimeout(go, 30);
++}
++
++/* ---------- Test-API ---------- */
++const CHS_API = {
++  chsInfo: () => { const L = chsTrk(); return {lanes: L ? deep(L.lanes) : [], db: L && L.db || 0, sum: L && L.sum || 0, cpl: !(L && L.cpl === false), ref: L ? L.ref : null, open: chsIsOpen(), extra: chsMxExtra(), lead: chsVolDb(),
++    mx: CHS.mx ? CHS.mx.rows.map(r => ({kind: r.kind, id: r.id, vis: !r.h.classList.contains('mxoff'), h: Math.round(r.h.getBoundingClientRect().height), cells: r.cells.filter(c => c.el.classList.contains('filled')).map(c => +c.el.dataset.s)})) : [],
++    sv: SV.rows ? SV.rows.filter(x => chsSvCode(x) != null) : [], run: CHS.run ? {mode: CHS.run.mode, s: CHS.run.s, b0: CHS.run.b0, lp: CHS.run.lp ? Object.assign({}, CHS.run.lp) : null} : null, log: CHS.log.slice(), aud: CHS.lastAud || null}; },
++  chsSet: (k, v) => chsSet(k, v, true), chsLaneSet: (id, k, v) => chsLaneSet(id, k, v, true), chsCouple: on => chsCouple(on), chsOpen: on => chsSetOpen(on, true), chsSolo: id => chsSolo(id),
++  chsGrpK: r => { const x = tkRef(r || {t: stimmeT(), s: R.selS}); return x ? chsGrpK(x.a) : null; },
++  chsLaneK: id => chsLaneK(id),
++  // laufende Knoten: Gruppen-Pegel (lvl) und Stimmen-Pegel je Kopie
++  chsNodes: () => (AU.ctx ? TK.src.filter(r => !r.dead && r.chG).map(r => ({lvl: r.chG.lvl.gain.value, ch: (r.ch || []).map(x => ({vi: x.vi, vg: x.vg.gain.value, pan: x.pan ? x.pan.pan.value : 0}))})) : []),
++  chsMixer: id => { chsMixer(EL.grid, id || null); return !!(UI.pop && UI.pop.name === 'chsmix'); },
++  chsPlayFrom: t => { const E = G2.ed || WP.ed; return E ? chsPlayFrom(E, t) : false; },
++  chsLoop: (a, b, on) => { const E = G2.ed || WP.ed; if (!E) return false; E.chsLoop = a == null ? null : {a, b, on: on !== false}; chsEdOverlay(E); return true; },
++  chsStop: () => chsStop(),
++  chsEd: () => { const E = G2.ed || WP.ed; if (!E) return null; const rc = E.cv.getBoundingClientRect(), G = chsGrid(E); return {kind: chsEdKind(E), view: {a: E.vw.a, W: E.vw.W}, zoom: E.zoom, chsW: E.chsW || 0, loop: E.chsLoop ? Object.assign({}, E.chsLoop) : null, cur: E.chsCur, pt: E.chsPt == null ? null : E.chsPt, sel: E.sel, t0: G ? G.t0 : null, sp: G ? G.sp : null, L: G ? G.L : null,
++    cv: {x: rc.left, y: rc.top, w: rc.width, h: rc.height}, rul: (() => { const r = E.chsRul && E.chsRul.querySelector('.chsrz').getBoundingClientRect(); return r ? {x: r.left, y: r.top, w: r.width, h: r.height} : null; })(), lead: !!E.chsLead, hide: [...G6PG.hide]}; },
++  chsHide: r => [...chsHideOf(r || {t: stimmeT(), s: R.selS})]
++};
++/* CHS-END */
+ /* G7-BEGIN */
+ /* =====================================================================================================================
+    G7 (Nachtrag 5): Gesang folgt dem Transponieren. STIMME-Clips und Song-Stimme werden vom Transponieren (Träger, „Eine Skala“,
+@@ -58173,7 +58796,8 @@
+ Object.assign(SYNQUENZER, G6PE_API);              // G6+e: Blatt „Chor“ neu
+ Object.assign(SYNQUENZER, G6PF_API);              // G6+f: Entkoppeln, Als Chor-Stimme duplizieren
+ Object.assign(SYNQUENZER, G6PG_API);              // G6+g: farbige Schatten, Legende, Selbst singen v2
+-Object.assign(SYNQUENZER, G6PH_API);              // G6+h: Chor im Song und im Video
++Object.assign(SYNQUENZER, G6PH_API);
++Object.assign(SYNQUENZER, CHS_API);                 // CHORSP: Background-Gruppe, Gesangs-Editor              // G6+h: Chor im Song und im Video
+ Object.assign(SYNQUENZER, G7_API);                // G7: Gesang folgt dem Transponieren
+ Object.assign(SYNQUENZER, vvApi());                        // VV1
+ Object.assign(SYNQUENZER, vv2Api());                       // VV2

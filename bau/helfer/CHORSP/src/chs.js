@@ -258,6 +258,7 @@ function chsSvLabels() {
   }
 }
 function chsSvDraw(g, song, XB, ru, rh, W) {
+  chsLanesChanged(stimmeT() >= 0 ? chsLanes().length : 0);
   const sk = stimmeT() + '|' + chsIsOpen() + '|' + chsLanes().map(l => l.id).join();
   if (CHS.svKey !== sk) { CHS.svKey = sk; requestAnimationFrame(() => { if (UI.songView) { svLayout(); UI.dirty.song = true; } }); }
   chsSvLabels();
