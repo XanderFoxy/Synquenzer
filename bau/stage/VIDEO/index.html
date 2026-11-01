@@ -52561,7 +52561,7 @@ function vvAppShot(g, W, H, sh, st) {
 function vvDrawApp(g, t, rect, o) {
   o = o || {}; const r = VV.last; if (!r && !VV4B.st) return null;   // Merge 4.28.0: VV4B.st = the state the director is drawing right now
   const st = VV4B.st || vvStateAt(r, Math.max(0, Math.min(r.dur, t || 0))), view = vvViewOf(o.view || (VV.lastRt && VV.lastRt.view) || vvPrefs().view);
-  const rt = o.rt || (VV.lastRt && (VV4B.st || (VV.lastRt.A === r.a && VV.lastRt.B === r.b)) ? VV.lastRt : vvRun({range: {a: r.a, b: r.b}, bpm: r.bpm, view}));
+  const rt = o.rt || (VV.lastRt && (VV4B.st || (VV.lastRt.A === r.a && VV.lastRt.B === r.b)) ? VV.lastRt : vvRun(r ? {range: {a: r.a, b: r.b}, bpm: r.bpm, view} : {view}));
   const sh = view === 'auto' ? vvShotAt(rt, st.sb) : {k: 0, v: view, t: null};
   const R0 = rect || {x: 0, y: 0, w: g.canvas.width, h: g.canvas.height}, k = Math.min(R0.w / VV4A_W, R0.h / VV4A_H);
   g.save(); g.beginPath(); g.rect(R0.x, R0.y, R0.w, R0.h); g.clip();
