@@ -13094,6 +13094,10 @@ const RecHelpers = (() => {
         // resize grip
         if (r.w >= 18) { x.fillStyle = '#0b0c0f'; x.globalAlpha = .5; x.fillRect(r.x + r.w - 5, r.y + r.h * .3, 2, r.h * .4); x.globalAlpha = 1; }
       }
+      if (opts.syl) { const SY = opts.syl(c.notes); if (SY && SY.size) {         /* G9E: Silbe klein unter dem Noten-Anfang (links unten, nie am Griff rechts) */
+        x.font = '600 10px ' + tok('--font-ui', 'sans-serif'); x.textBaseline = 'alphabetic';
+        for (const [nt, tx] of SY) { const r = noteRect(nt); if (r.x > V.W || r.x + 60 < 0 || r.y > V.H || r.y + r.h < -14) continue;
+          const w = Math.min(64, x.measureText(tx).width + 6), yy = r.y + r.h - 2; x.fillStyle = 'rgba(11,12,15,.85)'; rr(x, r.x + 1, yy, w, 13, 3); x.fill(); x.fillStyle = C.amber; x.fillText(tx, r.x + 4, yy + 10, w - 5); } } }
       mmDraw(C);                                                    /* N2 */
       if (gst && gst.kind === 'marquee') { const m = gst.rect; x.strokeStyle = C.sel; x.setLineDash([4, 3]); x.strokeRect(m.x + .5, m.y + .5, m.w, m.h); x.setLineDash([]); x.fillStyle = C.sel; x.globalAlpha = .08; x.fillRect(m.x, m.y, m.w, m.h); x.globalAlpha = 1; }
       // keys
@@ -18553,6 +18557,7 @@ const newSeed = () => (Math.random() * 2147483647) | 0;
 // extra note fields (§3.4, §3.5): o raw onset (all clips); a accent, p chance, r ratchet, m timing, lk locks (drum clips)
 function normNoteExtras(src, out, kind) {
   if (isNum(src.o) && src.o >= 0) out.o = +(+src.o).toFixed(4);
+  if (typeof src.sy === 'string' && kind !== 'drum') { const y = src.sy.replace(/[\s\u0000-\u001f\u007f]/g, '').slice(0, 24); if (y) out.sy = y; }   // G9E: Silbe (G5 „In Melodie umwandeln“)
   if (kind !== 'drum') return out;
   if (src.a) out.a = 1;
   if (isNum(src.p) && src.p < 1) out.p = clamp(Math.round(src.p * 100) / 100, .05, 1);
@@ -18910,7 +18915,7 @@ function freshProjectName(d) {
 function newProject(opts) { const p = normalizeProject(newProjectRaw(!!(opts && opts.init))); p.name = freshProjectName(); return p; }
 const demoProject = () => normalizeProject(demoProjectRaw());
 function cleanKey(k) { const o = {root: k.root, scale: k.scale}; if (k.ref != null) o.ref = k.ref; o.src = k.src || 'auto'; return o; }
-const NOTE_X = ['o', 'a', 'p', 'r', 'm'];
+const NOTE_X = ['o', 'a', 'p', 'r', 'm', 'sy'];
 function cleanNote(n) { const o = {t: n.t, d: n.d, n: n.n, v: n.v}; for (const k of NOTE_X) if (n[k] != null) o[k] = n[k]; if (n.lk) o.lk = Object.assign({}, n.lk); return o; }
 /* D1: Drum-Sequencer – Länge je Spur (Polymeter, 1–64 Schritte) und Richtung. clip.lanes = {gm: {len, dir, seed}}; nur Abweichungen
    vom Standard (len fehlt = Clip-Länge, dir fehlt = vorwärts). Schritt g zählt ab Clip-Start durch (nicht je Clip-Runde): eine Spur mit
@@ -34875,6 +34880,7 @@ function buildRoll() {
     onPrefs: p => { ROLLP.grid = p.grid; ROLLP.fold = p.fold; },
     onStep: on => { if (on) cancelTapStop(t, s); STEPQ.notes.length = 0; },
     onQuant: sel => openQuantSheet(t, s, sel),
+    syl: t === MEL_T ? ns => lyNoteSyl(ns, lySylScene(s)) : null,          // G9E: Silben an den Noten
     onTick: () => haptic('tick')});
   head.append(folChip('roll'), x);
   if (land && ED.roll.el.bar && ROLLP.kb) { const kbB = [...ED.roll.el.bar.children].find(b => b.textContent === '⌨'); if (kbB) kbB.classList.add('on'); }
@@ -34938,6 +34944,7 @@ function buildMelodyRoll() {
     reg: folReg('mel'), onHand: () => folHand('mel'),
     onPrefs: p => { ROLLP.grid = p.grid; },
     onStep: () => { STEPQ.notes.length = 0; },
+    syl: ns => lyNoteSyl(ns, lySylSong()),                                  // G9E: Silben an den Noten
     onTick: () => haptic('tick')});
   if (!land) { const ac = el('button', 'hb rb mclip', 'Als Clip'); ac.title = AC_T; ac.setAttribute('aria-label', AC_T); onTap(ac, () => melodyToClip()); head.appendChild(ac); }
   head.append(folChip('mel'), x);
@@ -45000,7 +45007,7 @@ function tkHeardMap(id, a) {
    Zeit: Transport-Schlag (hörbar) → Clip-/Song-Lage → Sekunde im klingenden Puffer (a.in + …) ↔ Silben-Anker durch die Zeitkarte,
    die gerade klingt (tkHeardMap: Dehnen/Quantisieren = wie gehört). Beim Einsingen auf einen Platz mit Text zeigt die Leiste den alten
    Take als Vorlage. Die DOM-Arbeit passiert nur, wenn sich Zeile oder Silbe ändert. */
-const LYB = {on: null, has: null, chk: 0, w: 0, c: null, li: -9, si: -9, act: false, id: null, cls: '', ro: null, rec: false};
+const LYB = {cm: new Map(), on: null, has: null, chk: 0, w: 0, c: null, li: -9, si: -9, act: false, id: null, cls: '', ro: null, rec: false};
 const LY_HOLD = 1.6;                                       // so lange (s) leuchtet eine Silbe höchstens, wenn danach eine Pause kommt
 function lyOn() { if (LYB.on == null) LYB.on = uiPrefs().lyBar !== false; return LYB.on; }
 function lyToggle(on) {
@@ -45012,7 +45019,7 @@ function lyAnyText() { const T = S.takes; if (!T || stimmeT() < 0) return false;
 // Silben eines Takes (gehörte Zeit hs im klingenden Puffer), nur der Teil a.in…a.out; Zeilen nach [Ganzer Text] (w: 2), Pausen und Breite
 function lyPrep(id, a) {
   const m = S.takes && S.takes[id]; if (!lyHas(m)) return null;
-  const mk = wpMarks(id), wp = m.warp || null, c = LYB.c;
+  const mk = wpMarks(id), wp = m.warp || null, ck = id + '|' + a.in + '|' + a.out, c = LYB.cm.get(ck);
   if (c && c.id === id && c.ly === m.ly && c.lyrics === m.lyrics && c.mk === mk && c.wp === wp && c.ain === a.in && c.aout === a.out && c.w === LYB.w && !c.stale) return c;
   let map = null; try { map = tkHeardMap(id, a); } catch (e) { map = null; }
   const ht = t => (map ? VSM.warpTime(map, t) : t);
@@ -45042,7 +45049,10 @@ function lyPrep(id, a) {
   if (S0.length) put(i0, S0.length - 1);
   lines.forEach((L, j) => { for (let i = L.a; i <= L.b; i++) lineOf[i] = j; });
   for (const L of lines) L.txt = S0.slice(L.a, L.b + 1).map((y, j) => (j && y.w ? ' ' : '') + y.x).join('');
-  return (LYB.c = {id, ly: m.ly, lyrics: m.lyrics, mk, wp, ain: a.in, aout: a.out, w: LYB.w, S: S0, hs, lines, lineOf, map: !!map});
+  if (LYB.cm.size > 24) LYB.cm.clear();
+  if (c && c.stale && c.w === LYB.w && c.hs.length === hs.length && c.hs.every((v, i) => v === hs[i]) && c.lines.length === lines.length && c.S.every((y, i) => y.x === S0[i].x)) {   // nur aufgefrischt, nichts geändert: dasselbe Objekt (kein Neuzeichnen)
+    Object.assign(c, {ly: m.ly, lyrics: m.lyrics, mk, wp, stale: false}); return c; }
+  const P = {id, ly: m.ly, lyrics: m.lyrics, mk, wp, ain: a.in, aout: a.out, w: LYB.w, S: S0, hs, lines, lineOf, map: !!map}; LYB.cm.set(ck, P); LYB.c = P; return P;
 }
 // Wo steht der Song-/Clip-Kopf im Take? → {id, a, h (s im klingenden Puffer), d (Schläge bis zum Einsatz, > 0 = davor)}
 function lyWhere(bAud) {
@@ -45109,7 +45119,7 @@ function lyFrame(bAud) {
   if (now - LYB.chk > 500) {                               // selten: gibt es Text? (Takes, Undo, Laden) · Cache auffrischen (Zeitkarte, Puffer)
     LYB.chk = now; if (LYB.ro === null) lyInit();
     const has = lyAnyText(); LYB.has = has; lyBarShow(has, has && !lyOn());
-    if (LYB.c && !R.playing) LYB.c.stale = true;
+    if (!R.playing) for (const c of LYB.cm.values()) c.stale = true;
   }
   if (!LYB.has || !lyOn()) return;
   const r = recActive() || rec.state === 'countin' || rec.state === 'armed' || !!(R.songRec);
@@ -45129,12 +45139,55 @@ function lyFrame(bAud) {
   }
   lyPaint(P, li, si, act, cls);
 }
+// G9E: Silben mit Schlag – Szene s: STIMME-Clip der Szene (Schlag im Clip); Song: song.vox (Song-Schlag). Gleiche Zeit (j) = eine Gruppe.
+function lySylGroups(P, base, a, sp, out) {
+  for (let i = 0; i < P.S.length; i++) { const y = P.S[i], b = base + (y.h - a.in) / sp; const L = out[out.length - 1];
+    if (L && L.i === i - 1 && Math.abs(P.hs[i] - P.hs[i - 1]) < 1e-6) { L.x += y.x; L.i = i; } else out.push({b, x: y.x, i}); }
+  return out;
+}
+function lySylScene(s) {
+  const st = stimmeT(); if (st < 0 || s == null) return null;
+  const c = S.tracks[st].clips[s], a = c && c.audio; if (!a) return null;
+  const P = lyPrep(a.take, a); if (!P || !P.S.length) return null;
+  return lySylGroups(P, Math.min(a.at, c.len * 4), a, spb(), []);
+}
+function lySylSong() {
+  const song = S.song; if (!song || !song.vox || !song.vox.length) return null;
+  const out = [], sp = spb();
+  for (const v of song.vox) { const P = lyPrep(v.take, v); if (!P || !P.S.length) continue; const n0 = out.length; lySylGroups(P, v.bar * 4 + v.at, v, sp, out); for (let i = n0; i < out.length; i++) out[i].i = -1; }
+  return out.sort((p, q) => p.b - q.b);
+}
+// Note ↔ Silbe über die Zeit: je Silbe die nächste freie Note, deren Anfang ≤ tol Schläge entfernt ist; gespeicherte Silbe (sy, aus G5) geht vor
+function lyNoteSyl(ns, Y, tol) {
+  const out = new Map(); if (!ns || !ns.length) return out;
+  for (const n of ns) if (n.sy) out.set(n, n.sy);
+  if (!Y || !Y.length || out.size) return out;
+  tol = tol || .3; const o = ns.slice().sort((p, q) => p.t - q.t);
+  for (const y of Y) {
+    let lo = 0, hi = o.length - 1; while (lo < hi) { const k = (lo + hi) >> 1; if (o[k].t < y.b) lo = k + 1; else hi = k; }
+    let best = null, bd = tol + 1e-9;
+    for (let k = Math.max(0, lo - 2); k <= Math.min(o.length - 1, lo + 2); k++) { const d = Math.abs(o[k].t - y.b); if (d <= bd && !out.has(o[k])) { bd = d; best = o[k]; } }
+    if (best) out.set(best, y.x);
+  }
+  return out;
+}
+// G2: Noten (t0 in Sekunden des klingenden Puffers) ↔ Silben-Zeit; Ergebnis Map(Index → Text)
+function lyG2Syl(id, a, ns) {
+  if (!ns || !ns.length) return null; const P = lyPrep(id, a || {in: 0, out: Infinity}); if (!P || !P.S.length) return null;
+  const Y = lySylGroups(P, 0, {in: 0}, 1, []), fake = ns.map((n, k) => ({t: n.t0, k})), M = lyNoteSyl(fake, Y, .15), out = new Map();
+  for (const [f, tx] of M) out.set(f.k, tx);
+  return out.size ? out : null;
+}
+// G5 „In Melodie umwandeln“: Silben an die neuen Noten (Feld sy)
+function lyG5Give(notes, Y) { if (!Y || !Y.length) return 0; const M = lyNoteSyl(notes.map(n => (n.sy ? Object.assign({}, n, {sy: undefined, _n: n}) : Object.assign({}, n, {_n: n}))), Y); let k = 0; for (const [f, tx] of M) { f._n.sy = tx; k++; } return k; }
 const LY_API = {
   lyBar: () => { const B = document.getElementById('lyBar'), A = document.getElementById('lyA'), Bn = document.getElementById('lyB');
     const n = A ? [...A.children].findIndex(e => e.className === 'n') : -1, d = A ? [...A.children].filter(e => e.className === 'd').length : 0;
     return {shown: !!(EL.kbArea && EL.kbArea.classList.contains('ly')), on: lyOn(), off: !!(B && B.classList.contains('off')), vorl: !!(B && B.classList.contains('vorl')),
       a: A ? A.textContent : '', b: Bn ? Bn.textContent : '', now: n >= 0 ? A.children[n].textContent : null, nowIdx: LYB.P && n >= 0 ? LYB.P.lines[LYB.li].a + n : -1, done: d, li: LYB.li, st: B ? B.dataset.st || '' : ''}; },
   lyToggle: on => lyToggle(on),
+  lyNotes: s => { const c = s == null ? (S.song && curMel(S.song)) : S.tracks[MEL_T].clips[s]; if (!c) return null; const M = lyNoteSyl(c.notes, s == null ? lySylSong() : lySylScene(s)); return c.notes.filter(n => M.has(n)).map(n => ({t: n.t, x: M.get(n), sy: n.sy || null})); },
+  lyG2: () => { const E = G2.ed; if (!E) return null; const x = tkRef(E.r); const M = x && lyG2Syl(E.id, x.a, g2Voice(E) ? null : g2Notes(E.id)); return M ? [...M].map(([k, tx]) => ({k, x: tx})) : []; },
   lyPrep: () => (LYB.c ? {n: LYB.c.S.length, hs: [...LYB.c.hs], lines: LYB.c.lines.map(l => l.txt), map: LYB.c.map} : null),
 };
 // eine G9-Änderung schreiben ohne Undo (Marken-Haken, automatische Erkennung): ly normalisiert, lyrics = Klartext (§5.3)
@@ -46200,6 +46253,7 @@ function g5Scene(r, clip, A, cfg, t0) {
   tr.clips[si] = {len: clip.len, key: {root: sk.root, scale: sk.scale, src: 'auto'}, notes: [], take: clip.audio.take};
   const res = {kind: 'g5', track: MEL_T, si, len: clip.len, start: 0, A, cfg, oct: 0, snap: cfg.snap, grid: cfg.grid, base: null, from: -0.25, to: L, first: false, clip: tr.clips[si]};
   vsApply(res);
+  try { lyG5Give(tr.clips[si].notes, lySylScene(si)); } catch (e) { logErr(e); }   // G9E: Silben mitgeben
   clipChanged(MEL_T, si); selectSlot(MEL_T, si);
   VS.res = res; markDirty(); UI.dirty.all = true;
   vsResSheet();
@@ -46217,6 +46271,7 @@ function g5Song(v, A, cfg, t0) {
     if (o >= L - 1e-6) continue;
     add.push({t: +(v.bar * 4 + o).toFixed(4), d: rd4(Math.max(1 / 32, Math.min(n.d, L - o))), n: n.n, v: rv3(n.v)});
   }
+  try { const P = lyPrep(v.take, v); if (P && P.S.length) lyG5Give(add, lySylGroups(P, v.bar * 4 + v.at, v, spb(), [])); } catch (e) { logErr(e); }   // G9E: Silben mitgeben
   G5.last = {kind: 'song', bar: v.bar, notes: add.length, track: t, ms: Math.round(performance.now() - t0)};
   if (!add.length) { toast('Kein Gesang erkannt'); return false; }
   const before = songSnapshot(), m = song.mel[t] || (song.mel[t] = melEmpty());
@@ -46762,6 +46817,9 @@ function g2Paint() {
     if (k === E.sel) { g.strokeStyle = '#ffffff'; g.lineWidth = 2; g.strokeRect(x0 + 1, y - h / 2 + 1, w - 2, h - 2); }
     if (w > 22 && h >= 9) { g.fillStyle = '#16120a'; g.fillText(noteNames()[((Math.round(t) % 12) + 12) % 12] + (Math.floor(Math.round(t) / 12) - 1), x0 + 3, y + 3.5, w - 4); }
   });
+  const SY = Vc ? null : lyG2Syl(id, a, ns);                                // G9E: Silbe klein unter dem Block (gleiche Anfangszeit)
+  if (SY) for (const [k, tx] of SY) { const b = E.blk[k]; if (!b || b.x1 < 0 || b.x0 > Wp) continue; const h = Math.max(4, rowH - 2), tw = Math.min(64, g.measureText(tx).width + 6), yy = Math.min(Hp - 13, b.y + h / 2 + 1);
+    g.fillStyle = 'rgba(11,12,15,.85)'; g.fillRect(b.x0, yy, tw, 12); g.fillStyle = '#ffd27a'; g.fillText(tx, b.x0 + 3, yy + 9.5, tw - 4); }
   // Bedienung
   const md = Vc ? '' : !P || !P.q ? 'off' : P.mode;
   E.chips.querySelectorAll('button[data-v]').forEach(bt => { const v = bt.dataset.v, on = v === md; if (v === 'off' || v === 'soft' || v === 'hard') { bt.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on)); } if (v !== 'up' && v !== 'dn' && v !== 'zoom') bt.disabled = !!Vc; });
