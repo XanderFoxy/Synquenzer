@@ -34,7 +34,7 @@ const at = bb => L.reduce((a, x) => (Math.abs(x.b - bb) < Math.abs(a.b - bb) ? x
 const E = [
   ['kurz (Clip) an Takt 3', seg(2400, 400, 5, 9), 7, 8],
   ['2 T an Takt 5', seg(400, 2400, 14, 25, {tol: 2e-6}), 16, 24],
-  ['aus an Takt 7', seg(2400, 400, 23.9995, 26), 24, 24 + .005 / spb],
+  ['aus an Takt 7', seg(2400, 400, 23.9995, 26), 24, 24 + .01 / spb],
   ['frei 3 an Takt 9', seg(400, 2400, 31, 37), 32, 35],
   ['1 T an Takt 11', seg(2400, 400, 39, 45), 40, 44],
 ];

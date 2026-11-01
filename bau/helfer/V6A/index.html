@@ -22770,6 +22770,7 @@ function v6aTick(b0, b1) {
   for (let i = 0; i < NT(); i++) {
     if (V6A.ed && V6A.ed.i === i) continue;
     const p = R.pend[i], want = p ? v6aSt(i, p.slot, p.own) : v6aSt(i, R.slot[i], R.own[i]), cur = R.v6aCur[i], sig = v6aSig(want);
+    if (fresh && (cur || want)) { const t = c.currentTime; v6aGo(i, want, t, t, t, 1); continue; }   // ▶: the state at once (also ends a glide the ■ left)
     if (cur ? cur.sig === sig : !want) continue;
     if (!p && cur && cur.at != null && cur.at > nb - 1e-6 && !fresh) continue;              // a song edge already gliding toward its bar line
     if (fresh || (!p && !cur)) { const t = c.currentTime; v6aGo(i, want, t, t, t, 1); continue; }      // ▶: the state at once (nothing sounds yet)
@@ -22818,7 +22819,7 @@ function v6aGlNorm(g) {
   return g.x === 'free' ? {x: 'free', n: clamp(Math.round(+g.n) || 4, 1, 32)} : {x: g.x};
 }
 /* ◆ bearbeiten (spec v3 §6.2, Nachtrag 8 A9): while the ◆ editor is open on track i, track.sound is the working copy (Grundklang ⊕ the
-   clip's state) – every editor (VA, FM, WT, MS 2000) works on it as it is and the engine plays it. [Grundklang] (or closing, another
+   clip's state) – every editor (VA, FM, WT, eng 3) works on it as it is and the engine plays it. [Grundklang] (or closing, another
    track, undo past the start, saving) writes the differences into clip.st and puts the Grundklang back: one undo step 'clip'. */
 function v6aEdRef(i) {
   const tr = S.tracks[i]; if (!tr) return null;
@@ -22841,9 +22842,7 @@ function v6aEdStart(i, ref) {
   const base = tr.sound, st = v6aStOk(i, clip.st) ? clip.st : null;
   const own = ref.own ? v6aOwnId(clip) || ref.own : null;
   V6A.ed = {i, s: ref.s, own, base, undoN: UNDO.length, before: own ? JSON.stringify(clip) : cleanClip(clip), x: clip.st ? {x: clip.st.x, n: clip.st.n} : null};
-  const E = AU.synth[i]; if (E && !E.dead) E.v6a({off: 1});
-  if (R.v6aRun) R.v6aRun[i] = null;
-  tr.sound = deep(st ? v6aApply(base, st) : base);
+  tr.sound = deep(st ? v6aApply(base, st) : base);                   // a running glide goes on; a knob that is turned follows the hand (KZ6)
   UI.sndVer++; UI.dirty.strip = UI.dirty.grid = UI.dirty.edHead = true;
   if (tr.kind === 'synth') { syncEngine(i, true); applyTrackParams(i, false); } else applyTrackParams(i, false);
   v6aEdUi();
