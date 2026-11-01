@@ -31,7 +31,8 @@ self.addEventListener('fetch', e => {
     const cached = () => caches.open(CACHE).then(ca => ca.match(PAGE)).catch(() => undefined);
     e.respondWith(new Promise(res => {
       let done = false; const fin = r => { if (!done && r) { done = true; res(r); } };
-      const t = setTimeout(() => cached().then(fin), SLOW);                // weak signal: start from the cached copy
+      // VW (01.11.): ein Aufruf mit ?v=<Version> will genau die neue Fassung – dann nicht nach 3 s auf die alte Kopie ausweichen (nur offline)
+      const t = u.searchParams.has('v') ? 0 : setTimeout(() => cached().then(fin), SLOW);   // weak signal: start from the cached copy
       net.then(r => { clearTimeout(t); fin(r); }, () => { clearTimeout(t); cached().then(r => fin(r || Response.error())); });
     }));
     e.waitUntil(net.then(() => put, () => {}));
