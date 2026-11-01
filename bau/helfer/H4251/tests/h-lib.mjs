@@ -78,3 +78,24 @@ export async function waitBeat(p, b, t = 120000) { await p.waitForFunction(b => 
 export async function idle(p) { await p.waitForFunction(() => !SYNQUENZER.vsInfo().busy && !SYNQUENZER.tkInfo().pend.length && SYNQUENZER.tkInfo().writes === 0, null, {timeout: 60000}); await sleep(200); }
 export async function log(p) { return p.evaluate(() => SYNQUENZER.noteLog(4096)); }
 export const T = () => { let n = 0, f = 0; const ok = (id, c, info) => { n++; if (!c) f++; console.log((c ? 'PASS ' : 'FAIL ') + id + (info ? ' — ' + info : '')); return c; }; ok.sum = () => { console.log('ERGEBNIS', n - f, '/', n, 'PASS'); return f; }; return ok; };
+export const FMT = {P1: [390, 844], P2: [375, 667], P3: [320, 568], L1: [844, 390], L2: [667, 375], XL: [926, 428]};
+// M-PLATZ: Knöpfe ≥ 44 × 44, im Bild, Text nicht abgeschnitten (sel = Knöpfe, box = Textflächen)
+export async function platz(p, sel, box) {
+  return p.evaluate(([sel, box]) => {
+    const bad = [], W = innerWidth, Hh = innerHeight;
+    for (const b of document.querySelectorAll(sel)) {
+      const r = b.getBoundingClientRect(); if (!r.width && !r.height) continue;
+      const nm = (b.textContent || b.getAttribute('aria-label') || '').trim().slice(0, 20);
+      if (r.width < 43.5 || r.height < 43.5) bad.push(nm + ' ' + r.width.toFixed(0) + '×' + r.height.toFixed(0));
+      if (r.left < -0.5 || r.right > W + 0.5 || r.top < -0.5 || r.bottom > Hh + 0.5) bad.push(nm + ' außerhalb');
+      if (b.scrollWidth > b.clientWidth + 1) bad.push(nm + ' Text abgeschnitten');
+      for (const c of b.querySelectorAll('*')) if (c.scrollWidth > c.clientWidth + 1 && getComputedStyle(c).overflow === 'hidden') bad.push(nm + ' Teil abgeschnitten');
+    }
+    for (const e of box ? document.querySelectorAll(box) : []) {
+      const r = e.getBoundingClientRect(); if (!r.width) continue;
+      if (e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1) bad.push('Text ' + e.id + ' abgeschnitten');
+      if (r.left < -0.5 || r.right > W + 0.5) bad.push('Text ' + e.id + ' außerhalb');
+    }
+    return bad;
+  }, [sel, box || null]);
+}

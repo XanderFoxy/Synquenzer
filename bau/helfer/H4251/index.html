@@ -1462,7 +1462,8 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 .rs-n{flex-direction:column;gap:2px}.rs-n b{font:inherit}.rs-n small{font:600 9px/1 var(--font-ui);opacity:.8;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rs-nt{flex:0 0 44px;width:44px;min-width:44px;height:44px;padding:0}
 .rs-pre.gd{flex-wrap:wrap;row-gap:4px}.rs-gd{flex:1 0 100%;display:flex;align-items:center;gap:6px;min-width:0}.rs-gd .seg button{height:44px;min-width:62px}
-.rstart .rs-t.rs-v{height:44px}
+@media (max-width:400px),(orientation:landscape) and (max-width:700px){.rs-tg.v4 .lbl{display:none}.rs-tg.v4 .rs-t{letter-spacing:0;padding:0 2px}}   /* H2: 4 Chips bei 320 px und L2 */
+@media (orientation:landscape){.rstart .rs-tg .rs-t,.rstart .rs-tg .rs-nt{height:44px}}   /* H2 (M-PLATZ): Ziele-Zeile ≥ 44 auch quer */
 .rs-pk{flex-wrap:wrap;row-gap:4px}.rs-pk .rs-t{flex:1 0 44px;min-width:44px}
 @media (orientation:portrait) and (max-height:700px){.rstart.one .rs-mode{display:none}}
 @media (orientation:portrait) and (max-height:600px){.rstart .rs-mode{display:none}}
@@ -1514,6 +1515,7 @@ a.mbtn[aria-disabled=true]{opacity:.55}
 }
 .plist.lpl small{font:600 10px/1 var(--font-num);color:var(--text-dim)}
 .cq .seg button{height:44px}   /* V2e N7S-40: P ≥ 44 × 44 */
+.vclk .seg button,#roVc button{height:44px}   /* H3 (4.25.1): Klick beim Singen ≥ 44 × 44 */
 .cq-pv{margin:10px 0 6px;font:600 12px/1.3 var(--font-ui);color:#ffcf7a}
 .cq-go{width:100%;height:44px;font:700 13px/1 var(--font-ui)}
 .bpmbig{font:700 54px/1 var(--font-num);text-align:center;margin:4px 0 10px}
@@ -19434,7 +19436,7 @@ function tick(h) {
         if (b <= R.lastClick) continue;                            // never click the same beat twice (float edges)
         R.lastClick = b;
         if (b < 0) { if (R.countIn) click(b2t(b), ((b % 4) + 4) % 4 === 0); }    // count-in: the first beat of each bar accented
-        else if (S.settings.metro || (recClickOn(b) && (rec.vox ? UI.vocClick === 'always' : S.settings.metroInRec))) click(b2t(b), b % 4 === 0);   // H3: beim Singen „Nur Einzähler“
+        else if (S.settings.metro || (recClickOn(b) && (rec.vox ? UI.vocClick === 'always' : S.settings.metroInRec)) || recCdClick(b)) click(b2t(b), b % 4 === 0);   // H3: beim Singen „Nur Einzähler“; H4: Vorzähler
       }
       // Pumpen on every 1/4 or 1/8 (§8.1, fxBus.pumpSrc); with 'kick' drumHit calls onKickScheduled
       if (S.fxBus.pumpSrc !== 'kick' && anyPump()) {
@@ -20261,7 +20263,7 @@ function songRecStartOver(o) {
   sr.mute = tg.mel && noteT != null && (mode === 'over' || mode === 'replace') ? {t: noteT, a: from * 4 - .25, b: to != null ? to * 4 - .25 : Infinity} : null;
   if (sr.mute) takeMuteNow(sr.mute);
   sr.guide = !!(UI.recGuide && recMicOn());                        // H7: alte Stimme als Vorlage hörbar
-  tkSongBegin(sr); if (sr.vox) { tkOriginHint(); tkVoxResync(true); }   // VS3: mit 🎤 nimmt die Song-Aufnahme die Stimme auf (STIMME-Spur)
+  tkSongBegin(sr); if (sr.vox) { tkOriginHint(); tkVoxResync(true); recCdCatchUp(); }   // H4: Vorlauf-Klicks   // VS3: mit 🎤 nimmt die Song-Aufnahme die Stimme auf (STIMME-Spur)
   MEL.open.clear(); MEL.warned = false;
   if (tg.mel && noteT != null && R.selT !== noteT && S.tracks[noteT].kind === 'synth') selectTrack(noteT);
   if (tg.mel && noteT === song.melodyTrack) melShareHint();
@@ -21157,6 +21159,7 @@ function recWithScene(ti, si) {
 }
 function recBeglNames() { const o = []; for (let j = 0; j < NT(); j++) if (j !== rec.track && S.tracks[j] && (R.pend[j] ? R.pend[j].slot : R.slot[j]) >= 0) o.push(S.tracks[j].name); return o; }
 function recCiTgt() {
+  if (rec.state === 'off' && R.songRec && R.songRec.over && R.songRec.vox) return 'Song · ' + recTgLong(R.songRec.tg, R.songRec.nt).join(', ') + ' ab Takt ' + (R.songRec.from + 1);   // H4
   if (rec.state === 'off' || rec.track < 0 || !S.tracks[rec.track]) return '';
   const base = S.tracks[rec.track].name + ' · Szene ' + (rec.scene + 1);
   if (!rec.vox) return base;
@@ -21170,6 +21173,22 @@ function recCiHint() {
   const vox = (rec.state !== 'off' && rec.vox) || (R.songRec && recMicOn());
   if (!vox) return '';
   return ST.route === 'speaker' ? '🔈 Ohne Kopfhörer kommt die Musik leise aus der Hörmuschel – Kabel-Kopfhörer einstecken' : ST.route === 'bt' ? 'Bluetooth: Telefonklang und Verzögerung – besser Kabel-Kopfhörer' : '';
+}
+// H4 (4.25.1): Schläge bis zum Aufnahme-Start (Szene: ● wartet auf den Taktstrich; Song: Vorlauf) – nur Gesangs-Aufnahmen, sonst null
+function recCdStart() {
+  if (rec.vox && (rec.state === 'armed' || recActive())) return rec.startBeat;   // recBegin kommt mit dem Vorlauf der Planung etwas früher
+  const sr = R.songRec;
+  if (sr && sr.over && !sr.pass && sr.vox && R.songPlay) { const sb = sr.startBeat; if (sb != null) return sb; }
+  return null;
+}
+function recCdLeft(bAud) { const sb = recCdStart(); return sb == null ? null : sb - bAud; }
+// H4: Klick im Vorzähler bei laufender Musik / im Song-Vorlauf (Einzähler-Takte vor dem Start, Einzähler „Aus“ = keiner)
+function recCdClick(b) { const sb = recCdStart(); if (sb == null) return false; const n = R.songRec ? Math.min(1, S.settings.countIn | 0) : S.settings.countIn | 0; return n > 0 && b >= sb - 4 * n - 1e-9 && b < sb - 1e-9; }
+// H4: schon eingeplante Schläge bis zum Planungs-Horizont bekommen ihren Vorzähler-Klick sofort (der Tick ist an ihnen vorbei)
+function recCdCatchUp() {
+  const c = AU.ctx; if (!c || !R.playing || S.settings.metro) return;
+  const b0 = Math.ceil(t2b(c.currentTime + .005) - 1e-9);
+  for (let b = Math.max(0, b0); b <= R.lastClick && b < R.schedBeat; b++) if (recCdClick(b)) click(b2t(b), b % 4 === 0);
 }
 function recPress(atT) {
   ensureAudio(); const c = AU.ctx; if (!c) return;
@@ -21215,6 +21234,7 @@ function recPress(atT) {
       if (rec.startBeat < R.schedBeat) recBegin();
     }
   }
+  if (rec.vox && rec.state === 'armed' && R.playing) recCdCatchUp();   // H4
   UI.dirty.all = true;
 }
 // the Bezug of a new take: under a Träger the key that makes it play back as played (src 'carrier', never re-detected),
@@ -24644,9 +24664,9 @@ function openRecStart(anchor) {
         return `<button class="rb rs-m${m === mode ? ' on' : ''}" data-m="${m}" aria-pressed="${m === mode}"><b>${recModeName(m)}</b><small>${r}</small></button>`; };
       const tgRow = pickT
         ? `<div class="rs-tg rs-pk"><span class="lbl">Noten auf</span>` + synthTracks().map(t => `<button class="rb rs-t${t === nt ? ' on' : ''}" data-nt="${t}">${esc(trShort(t))}</button>`).join('') + `</div>`
-        : `<div class="rs-tg"><span class="lbl">Ziele</span>` + [['clips', 'CLIPS'], ['chords', 'AKKORDE']].map(([k, l]) => `<button class="rb rs-t${tg[k] ? ' on' : ''}" data-t="${k}" aria-pressed="${tg[k]}">${tg[k] ? '✓' : ''}${l}</button>`).join('') +
+        : `<div class="rs-tg${mic ? ' v4' : ''}"><span class="lbl">Ziele</span>` + [['clips', 'CLIPS'], ['chords', 'AKKORDE']].map(([k, l]) => `<button class="rb rs-t${tg[k] ? ' on' : ''}" data-t="${k}" aria-pressed="${tg[k]}">${tg[k] ? '✓' : ''}${l}</button>`).join('') +
           `<button class="rb rs-t rs-n${tg.mel ? ' on' : ''}" data-t="mel" aria-pressed="${tg.mel}" aria-label="Noten auf ${esc(tn)}"><b>${tg.mel ? '✓' : ''}NOTEN</b><small>${esc(tn)}</small></button>` +
-          (mic ? `<button class="rb rs-t rs-v${vox ? ' on' : ''}" data-t="vox" aria-pressed="${vox}" aria-label="Gesang aufnehmen">${vox ? '✓' : ''}🎤 GESANG</button>` : '') +
+          (mic ? `<button class="rb rs-t rs-n rs-v${vox ? ' on' : ''}" data-t="vox" aria-pressed="${vox}" aria-label="Gesang aufnehmen"><b>${vox ? '✓' : ''}🎤</b><small>GESANG</small></button>` : '') +
           `<button class="rb rs-nt" data-a="nt" aria-label="Spur für Noten wählen">▾</button></div>`;
       p.innerHTML = `<div class="rs-h"><b>${head}</b><button class="rb rs-x" data-a="x" aria-label="Schließen">✕</button></div>` + tgRow +
         (modes.length ? `<div class="rs-md">${modes.map(mb).join('')}</div>` : '') +
@@ -27039,20 +27059,27 @@ function renderTakt(bAud) {
     EL.takt.classList.toggle('flash', fl);
     if (fl) setTimeout(() => EL.takt.classList.remove('flash'), 110);
   }
-  const ci = R.playing && R.ciRun && bAud < 0;
+  const ci0 = R.playing && R.ciRun && bAud < 0, cd = R.playing ? recCdLeft(bAud) : null;   // H4: auch bei laufender Musik / im Song-Vorlauf
+  const cdOn = !ci0 && cd != null && cd > 0 && cd <= 4 * Math.max(1, S.settings.countIn | 0);
+  if (cdOn) UI.cdWas = true; else if (UI.cdWas && !ci0) { UI.cdWas = false; if (recActive() || (R.songRec && R.songRec.over)) UI.cdGo = performance.now() + 500; }
+  const go = !ci0 && !cdOn && UI.cdGo && performance.now() < UI.cdGo;
+  if (!go) UI.cdGo = 0;
+  const ci = ci0 || cdOn || go;
   if (ci !== UI.last.ci) {
     UI.last.ci = ci; EL.countin.classList.toggle('show', ci);
     // the overlay also names the target of the take: „Synth 4 · Szene 1“ (§3.1)
     if (ci && EL.ciTgt) EL.ciTgt.textContent = recCiTgt();                 // H1: + Begleitung
     if (ci && EL.ciHint) EL.ciHint.textContent = recCiHint();              // H6
   }
-  if (ci) {
-    const d = String(clamp(-Math.floor(bAud), 1, ciMax()));
+  if (go) { if (UI.last.ciNum !== '●') { UI.last.ciNum = '●'; EL.ciNum.textContent = '●'; EL.ciNum.classList.add('go'); } }
+  else if (ci) {
+    if (UI.last.ciNum === '●') EL.ciNum.classList.remove('go');
+    const d = cdOn ? String(Math.max(1, Math.ceil(cd - 1e-6))) : String(clamp(-Math.floor(bAud), 1, ciMax()));
     if (d !== UI.last.ciNum) {
       UI.last.ciNum = d; EL.ciNum.textContent = d;
       if (EL.ciNum.animate) { try { EL.ciNum.animate([{opacity: 1, transform: 'scale(1)'}, {opacity: .2, transform: 'scale(.9)'}], {duration: spb() * 900, easing: 'ease-out', fill: 'forwards'}); } catch (e) {} }
     }
-  } else UI.last.ciNum = null;
+  } else { if (UI.last.ciNum === '●') EL.ciNum.classList.remove('go'); UI.last.ciNum = null; }
 }
 function frame() { requestAnimationFrame(frame); try { uiFrame(); } catch (e) { logErr(e); } }
 
