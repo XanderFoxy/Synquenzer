@@ -4,13 +4,13 @@
 
 1. Ein Tipp auf einen Chor-Stil setzt alles auf einmal: Stimmen, Doppel, Panorama, Abstand zum Lead, Hall/Echo und Klang. Es gibt 80er großer Refrain, Pop modern, Gospel, Barbershop, Rock-Shout, Ballade, Disco/Falsett und New Wave dunkel.
 2. Jede Chorstimme ist eine eigene, benannte Spur („Chor Terz oben“ …) in der Chor-Gruppe unter deiner STIMME-Spur. Jede Spur hat Pegel, Panorama, Solo und Stumm, die Gruppe hat Abstand zum Lead, Hall, Echo und Klang.
-3. „Entkoppeln“ macht eine Chorstimme zur eigenen Aufnahme, die du frei bearbeitest. „Als Chor-Stimme duplizieren“ kopiert deinen Gesang als freie Gegenstimme, danach tippst du „Background“.
-4. In Noten- und Wellenansicht siehst du die Chorstimmen als farbige Schatten (Terz rot, Quinte grün, Oktave blau …), als Vorlage zum Nachsingen.
-5. Alte Projekte klingen genau gleich. Drei kleine Chor-Fehler behebe ich schon in 4.25.2, G6+ kommt als 4.28.0 (≈ 100 h, mit 3 Helfern ≈ 45 h). Von dir brauche ich nur einmal eine SQL-Zeile (`max_format = 6`).
+3. „Entkoppeln“ macht eine Chorstimme zur eigenen Aufnahme, die du frei bearbeitest. „Als Chor-Stimme duplizieren“ kopiert deinen Gesang als freie Gegenstimme (diese Stelle oder die ganze Spur), danach tippst du „Background“.
+4. In Noten- und Wellenansicht siehst du die Chorstimmen als farbige Schatten (Terz rot, Quinte grün, Sexte blau, Oktave violett …), als Vorlage zum Nachsingen.
+5. Alte Projekte klingen genau gleich (einzige Ausnahme ist ein Fehler: zwei Clips mit demselben Take teilten sich bisher die Chor-Regler). Drei kleine Chor-Fehler behebe ich schon in 4.25.2, G6+ kommt als 4.28.0 (≈ 100 h, mit 3 Helfern ≈ 45 h). Von dir brauche ich nur einmal eine SQL-Zeile (`max_format = 6`).
 
 ---
 
-Status: **Entwurf, Fassung 1** (01.11.2026). Grundlage sind Xanders Wünsche in `fragen-xander-9.md`: 31.10. ~22:05 (Genre-Chöre), ~22:35 (Chor-Gruppe,
+Status: **Entwurf, Fassung 2** (01.11.2026; Fassung 1 streng gegen Code und Wünsche geprüft, Änderungen in §4.5). Grundlage sind Xanders Wünsche in `fragen-xander-9.md`: 31.10. ~13:30 (Chor-Rezepte, Doppel, Hall als Send, Echo-/Hallzeiten, selbst nachsingen), ~22:05 (Genre-Chöre), ~22:35 (Chor-Gruppe,
 „Als Chor-Stimme duplizieren“) und ~23:30 Punkt 8 („Chor entkoppeln“) und Punkt 11 (farbige Schatten). Dazu kommen G6 aus `CHANGES-helfer-G267.md` und Nachtrag 9 (G10h/i/j).
 **Alle Zeilen (Z.) beziehen sich auf `synq-snapshots/G-GES-merge.html` (App 4.25.0)** und verschieben sich beim Bau. Der Code-Befund (G6-Block
 Z. 44479–44781, Spur-Modell, Busse, Risiken) ist vollständig eingearbeitet; Fundstellen stehen jeweils am Punkt.
@@ -40,10 +40,11 @@ Z. 44479–44781, Spur-Modell, Busse, Risiken) ist vollständig eingearbeitet; F
 
 | Wunsch (Xander) | Stand 4.25.0 (Befund) | Gelöst in |
 |---|---|---|
-| 22:05 Chor auf Knopfdruck je Genre (Rezept + Abstände + Effekte + Mischung) | 8 Rezepte, nur 2 Mischungen (`G6_REC` Z. 44492, `G6_MIX` Z. 44496); die Mischung ändert **globale** Hall-/Echo-Werte (`g6Mix` Z. 44708) | G6+d, G6+c |
+| 22:05 Chor auf Knopfdruck je Genre (Rezept + Abstände + Effekte + Mischung) | 8 Rezepte, nur 2 Mischungen (`G6_REC` Z. 44492, `G6_MIX` Z. 44496); die Mischung ändert **globale** Hall-/Echo-Werte (`g6Mix` Z. 44696, Zeile Z. 44706) | G6+d, G6+c |
+| 13:30 „Hall als Send, Echo-/Hallzeiten“ je Rezept | v1 setzt Hall-Vorverzögerung und Echo-Teilung **global** (Z. 44706) | G6+c (Vorverzögerung im Gruppen-Send), G6+d (Echo-Zeit nur auf Tipp, §1.2) |
 | 22:35 Jede Chorstimme eine eigene, benannte Spur, Gruppe mit Gruppen-Pegel/-Hall, Solo/Stumm je Stimme | Stimmen sind Stücke **an** der STIMME-Spur; Pegel/Pan/Sends je Stimme nur über die Test-API (`g6VoiceSet` Z. 44714); keine Gruppe, keine Busse | G6+a, G6+c, G6+e |
 | 22:35 Doppel + Verstimmung + Zeitversatz + Panorama „studiomäßig“ | fest im Code: 2 Kopien 12 ms/−6 ct und 24 ms/+8 ct (`G6_COPY` Z. 44494), Panorama nur für 1–3 Stimmen (`G6_PAN` Z. 44565) | G6+b, G6+d, G6+e |
-| 22:35 „Als Chor-Stimme duplizieren“ → freie Gegenstimme, dann Preset „Background“ | fehlt; Take-Felder hängen an der Take-Kennung (Notenziehen würde den Lead ändern) | G6+f |
+| 22:35 „Gesangsspur duplizieren“ / „Als Chor-Stimme duplizieren“ → freie Gegenstimme, dann Preset „Background“ | fehlt; Take-Felder hängen an der Take-Kennung (Notenziehen würde den Lead ändern) | G6+f (diese Stelle oder ganze Spur) |
 | 23:30 Pkt. 8 „Chor entkoppeln“ | fehlt | G6+f |
 | 23:30 Pkt. 11 farbige Schatten (Terz rot, Quinte grün …) als Vorlage zum Nachsingen | fehlt | G6+g (Grundlage), G10i (Klavierrolle) |
 | (Befund) Chor folgt Lead-Änderung und modalem Transponieren nicht | `iv` in Halbtönen fest gespeichert (`g6Build` Z. 44567) | G6+b (Stufen statt Halbtöne) |
@@ -64,14 +65,18 @@ nachsingt oder ganz freigibt. Der Lead bleibt die Referenz, und der Chor ändert
 
 ### 1.1 Chor auf einen Tipp
 
-1. STIMME-Clip ✎ (oder ein Song-Stimmen-Stück) → Takes-Blatt → **[Chor]** öffnet das Blatt **„Chor“** (wie heute, Z. 44733).
+1. STIMME-Clip ✎ (oder ein Song-Stimmen-Stück) → Takes-Blatt → **[Chor]** öffnet das Blatt **„Chor“** (wie heute, `g6Sheet` Z. 44737).
 2. Oben steht das Raster **„Stil“** mit 8 Kacheln: **80er großer Refrain · Pop modern · Gospel · Barbershop · Rock-Shout · Ballade · Disco/Falsett ·
-   New Wave dunkel**. Jede Kachel ist ≥ 44 px hoch, im Hochformat 3 Spalten, quer 4 Spalten × 2 Zeilen. Unter dem Namen steht eine kleine Zeile, z. B. „Terz + Oktave · groß · viel Hall“.
+   New Wave dunkel**. Jede Kachel ist ≥ 52 px hoch, im Hochformat **2 Spalten × 4 Zeilen** (bei 320 px sind 3 Spalten nur ≈ 90 px breit, Name und Zeile passen dort nicht
+   ohne Abschneiden), quer 4 Spalten × 2 Zeilen. Unter dem Namen steht eine kleine Zeile mit **höchstens 20 Zeichen**, z. B. „Terz+Okt · viel Hall“; beide Zeilen
+   passen ohne Umbruch und ohne Auslassungspunkte (M-PLATZ, G6P-41).
 3. **Ein Tipp** rechnet den Chor. Die Kachel zeigt einen Fortschrittsring (ohne Höhenänderung). Der Chor setzt hörbar mit einer 10-ms-Blende ein, **sobald alle Stimmen fertig sind**, nie
    stückweise und nie mit einem Platzhalter-Pegel. Danach erscheint ein Toast: „Gospel: 3 Stimmen · 6 LU unter dem Lead“.
 4. Ein Stil setzt mit diesem einen Tipp: **Rezept** (welche Stimmen in welchen Intervallen), **Doppel** (Anzahl, Zeitversatz, Verstimmung, Breite), **Panorama** und **Pegel** je Stimme,
    **Abstand zum Lead** (LU), **Hall-Send mit Vorverzögerung im Tempo**, **Echo-Send**, **Klang** (Tiefschnitt, Mitte, Luft) und **Zischlaute im Chor**. Die Werte stehen in §3, G6+d.
 5. Ein anderer Stil auf denselben Clip ist wieder ein Tipp und ein Undo-Schritt. Ändert sich nur die Mischung (gleiches Rezept), rechnet nichts neu; der Wechsel ist sofort zu hören (20-ms-Rampen).
+   **[A] Was ein Stil ersetzt:** nur die **errechneten** Stimmen der Stelle. Stimmen mit eigener Aufnahme (`take`: selbst gesungen, entkoppelt, dupliziert) bleiben mit Noten, Pegel, Pan
+   und Doppel erhalten; die Gruppe (`grp`) bekommt die Werte des Stils. Kämen so mehr als 6 Stimmen zusammen, sagt ein Toast „Höchstens 6 Stimmen – eine Stimme löschen“, und nichts ändert sich.
 6. Ein Stil gilt für **diese Stelle** (diesen Clip bzw. dieses Song-Stück). Andere Chor-Stellen ändern sich nie von selbst; das schützt vor „klingt später anders“
    (Xanders K1-Klage). **[Auf alle Chor-Stellen]** im Blatt überträgt die Gruppen-Einstellungen bewusst auf alle Chor-Stellen der Spur (ein Undo).
 
@@ -91,17 +96,24 @@ Unter dem Stil-Raster liegt das **Mischpult der Chor-Gruppe**:
 └────────────────────────────────────────────────────────────┘
 ```
 
-- **Zeile je Chor-Spur** (≥ 48 px hoch). Ganz links steht ein Farbfeld mit Ziffer (3 = Terz, 5 = Quinte, 8 = Oktave …, siehe §1.6). Dann kommt der **Name**; ein Tipp darauf benennt die Spur
-  um (höchstens 24 Zeichen). Es folgen **[S] Solo**, **[M] Stumm**, **Pegel** (−24…+6 dB, Doppeltipp = Wert des Stils), **Pan** (L…R, Doppeltipp = Stil),
-  **[♪]** Noten der Stimme und **[⋯]** mit Doppel, Selbst singen, Entkoppeln und Stimme löschen.
-- **Solo** einer Spur: nur diese Stimme mit der Begleitung, Lead und andere Chor-Spuren schweigen. Solo gilt nur, solange das Blatt offen ist; beim Schließen ist es aus.
+- **Zeile je Chor-Spur** (≥ 48 px hoch). Ganz links steht ein Farbfeld mit Ziffer (3 = Terz, 5 = Quinte, 8 = Oktave …, siehe §1.6). Dann kommt der **Name** (fertig vergeben nach der
+  Namens-Tabelle §2.2, z. B. „Chor Terz oben“); ein Tipp darauf benennt die Spur um (höchstens 24 Zeichen). Es folgen **[S] Solo**, **[M] Stumm**, **Pegel** (−24…+6 dB, Doppeltipp = Wert des Stils),
+  **Pan** (L…R, Doppeltipp = Stil), **[♪]** Noten der Stimme und **[⋯]** mit Doppel, Selbst singen, Entkoppeln und Stimme löschen.
+- **Was wo gilt:** **Pegel, Pan und Doppel** sind Werte der Stimme **an dieser Stelle** (`voices[k].db/pan/w/dbl`, der Stil setzt sie; andere Stellen ändern sich nicht).
+  **Name, Farbe und Stumm** gehören der **Spur** und gelten an allen Stellen. Je Stelle hat jede Spur höchstens eine Stimme (eine Rolle = eine Spur; nur freie Gegenstimmen bekommen je eine eigene Spur).
+- **Solo** einer Spur: nur diese Stimme mit der Begleitung, Lead und andere Chor-Spuren schweigen. Solo gilt nur, solange das Blatt (bzw. der Noten-Editor mit Legende, §1.6) offen ist; beim Schließen ist es aus.
   **Stumm** ist eine Mix-Entscheidung und wird gespeichert. Stumm gilt für diese Spur an **allen** Stellen, denn die Spur ist dieselbe.
-- **Gruppen-Zeile:** **[Chor an/aus]** (A/B mit und ohne Chor), **Abstand zum Lead** (2…20 LU, Schritt 0,5) ist der Gruppen-Pegel: Der Chor als Ganzes liegt immer so viele
-  LU unter dem Lead. Die Spur-Regler verteilen nur **innerhalb** des Chors. Dazu kommen **Hall** und **Echo** (Sends der Gruppe, 0…100 %) und **[Klang ▸]** mit Tiefschnitt (Hz),
-  Mitte (dB), Luft (dB), **Zischlaute im Chor** [ganz] [leiser] [weg] und **Hall-Vorverzögerung** [aus] [1/64] [1/32] [1/16].
+- **Gruppen-Zeile:** **[Chor an/aus]** (A/B mit und ohne Chor; gespeichert als Spur-Merkmal `S.tracks[st].chor.mute`, gilt für alle Stellen, ein Undo-Schritt), **Abstand zum Lead** (2…20 LU, Schritt 0,5)
+  ist der Gruppen-Pegel: Der Chor als Ganzes liegt immer so viele LU unter dem Lead. Die Pegel der Stimmen verteilen nur **innerhalb** des Chors. Dazu kommen **Hall** und **Echo** (Sends der Gruppe, 0…100 %)
+  und **[Klang ▸]** mit Tiefschnitt (Hz), Mitte (dB), Luft (dB), **Zischlaute im Chor** [ganz] [leiser] [weg] und **Hall-Vorverzögerung** [aus] [1/64] [1/32] [1/16].
+- **Echo-/Hallzeiten (Xander 13:30):** Die Hall-Vorverzögerung im Tempo liegt im Gruppen-Send (oben). Die **Echo-Zeit** ist ein Wert des ganzen Songs (globales Echo) und wird vom Stil
+  **nicht** heimlich umgestellt. In [Klang ▸] steht dafür die Zeile „Echo-Zeit des Songs: 1/8. · **[Stil-Wert 1/4 übernehmen]**“ (Vorschläge in G6+d). Ein Tipp stellt die globale
+  Echo-Teilung um (ein Undo-Schritt, Toast „gilt für alle Spuren“). Ohne Vorschlag (Echo-Send 0) fehlt die Zeile. **[W]** Im Studio teilen sich Lead und Background meist das Song-Echo.
 - **[⋯] → Doppel:** Anzahl [1] [2] [3] [4], Zeitversatz (ms), Verstimmung (Cent), Breite (%). Eine Änderung rechnet nur diese Stimme neu.
 - **[+ Stimme ▾]** fügt dieser Stelle eine Stimme hinzu, auch zu einem Stil (z. B. Gospel + Oktave oben): Terz, Quarte, Quinte, Sexte, Oktave je oben/unten,
-  Akkordton oben/unten, Grundton unten, Terz + Oktave, Unisono-Doppel. Höchstens 6 Stimmen je Stelle und 8 Chor-Spuren je Gruppe.
+  Akkordton oben/unten, Grundton unten, Terz + Oktave, Unisono-Doppel. Höchstens 6 Stimmen je Stelle und 8 Chor-Spuren je Gruppe. Eine Rolle, die an der Stelle schon da ist, steht grau in der Liste.
+- **Spur-Grenze:** Braucht ein Stil oder [+ Stimme] eine neue Spur und es gibt schon 8, wird eine **nicht benutzte** Spur (grau, ohne Stimme an irgendeiner Stelle) übernommen und
+  umbenannt. Gibt es keine, sagt ein Toast „Höchstens 8 Chor-Spuren – eine Spur löschen“, und nichts ändert sich. Eine graue Spur hat in [⋯] nur **[Spur löschen]** (ein Undo-Schritt).
 - Die STIMME-Spur ist der Ordner: **Ihr Pegel und ihr Stumm gelten für Lead und Chor zusammen**, damit der Abstand bleibt. Die Chor-Gruppe hat keinen eigenen Platz in der Matrix.
 - **Hochformat:** Die Spur-Zeilen sind zweizeilig (Name und Knöpfe oben, Regler unten). **Querformat:** einzeilig. Die Spur-Liste scrollt **innen**, die Seite nicht.
 
@@ -115,23 +127,27 @@ mit Bildschirmfoto im Funk vorgeschlagen; G10i baut darauf das größere Chor-Ba
 (heute Halbtöne über `g6NoteShift` Z. 44715). Ein langer Druck auf ▲▼ schaltet auf **chromatisch** (Halbton). Jede Geste ist ein Undo-Schritt. Der Lead liegt grau dahinter, die anderen
 Chorstimmen als farbige Schatten (§1.6).
 **Neu:** Der Chor folgt dem Lead. Ziehst du eine Lead-Note von E nach F, wird die Terz oben automatisch A und nicht G♯. Beim Transponieren in eine andere Tonart (auch Dur → Moll)
-bleibt jede Chornote leitereigen. Von Hand geänderte Chornoten behalten ihren Abstand in Stufen.
+bleibt jede Chornote leitereigen. Von Hand geänderte Chornoten behalten ihren Abstand in Stufen. Das gilt für die Chor-Gruppe (v2). Ein Chor aus 4.25 (v1) behält seinen festen
+Halbton-Abstand wie heute (Regel 28); dort zeigt der Editor nach einer Lead-Änderung den Hinweis „Chor (Fassung 4.25) folgt in Halbtönen“ mit **[Auf Chor-Gruppe umstellen]**.
 
 ### 1.4 Entkoppeln (Xander Punkt 8)
 
 1. In der Spur-Zeile [⋯] → **[Entkoppeln]**. Die Meldung „Chor Terz oben ist jetzt eine eigene Aufnahme – folgt dem Lead nicht mehr“ erscheint mit [Rückgängig].
 2. Die Stimme klingt danach **genauso wie vorher**. Sie ist aber jetzt ein eigener Take mit eigener Kennung und erscheint im Takes-Blatt als „Chor Terz oben (aus Take 3)“.
 3. Frei bearbeitbar wie jeder Gesangs-Take: Noten (Tonhöhe, Quantisieren), Marken/Zeitkarte, Säubern. Änderungen am Lead wirken nicht mehr auf diese Stimme, und Änderungen an ihr nicht auf den Lead.
-4. Sie bleibt in ihrer Chor-Spur (Pegel, Pan, Doppel, Solo/Stumm wie vorher) und spielt weiter mit dem Lead-Clip, weil sie zu dieser Stelle gehört. Mit dem Transponieren geht sie mit wie der Lead (G7).
+4. Sie bleibt in ihrer Chor-Spur (Pegel, Pan, Doppel, Solo/Stumm wie vorher) und spielt weiter mit dem Lead-Clip, weil sie zu dieser Stelle gehört (auch nach Klammern oder Rücken, §2.2). Mit dem Transponieren geht sie mit wie der Lead (G7).
 
 ### 1.5 Als Chor-Stimme duplizieren (Xander 22:35)
 
-1. Takes-Blatt eines STIMME-Clips oder Song-Stücks → **[Als Chor-Stimme duplizieren]** (neben [Chor]).
+1. Takes-Blatt eines STIMME-Clips oder Song-Stücks → **[Als Chor-Stimme duplizieren]** (neben [Chor]) → zwei Knöpfe **[Diese Stelle]** · **[Ganze Spur]** (Xander: „Gesangsspur duplizieren“).
 2. Sofort und ohne Rechenzeit entsteht eine neue Chor-Spur **„Gegenstimme 1“** (Farbe gelb = freie Stimme). Sie ist eine Kopie deines Gesangs mit eigener Take-Kennung und klingt zunächst
-   genau wie der Lead.
-3. Der Noten-Editor der Kopie öffnet sich direkt: Noten ziehen ergibt deine eigene Gegenstimme. Der Lead bleibt unberührt.
-4. In der Spur-Zeile steht die Kachel **[Background]**. Ein Tipp setzt Doppel, Panorama, Abstand, Klang und Hall für eine Hintergrundstimme (Werte in G6+d). Mehrere Duplikate werden
-   abwechselnd links und rechts verteilt.
+   in der Tonhöhe genau wie der Lead: eine Kopie ohne Versatz/Verstimmung, Pan Mitte, Pegel 0 dB. Ist die Gruppe der Stelle neu, bekommt sie die Background-Gruppenwerte (G6+d), die Kopie liegt
+   also gleich 9 LU unter dem Lead.
+   **[Ganze Spur]** legt dieselbe Spur „Gegenstimme 1“ an **jeder** Stelle der STIMME-Spur an (alle STIMME-Clips aller Szenen und alle Song-Stimmen, je Stelle eine eigene Take-Kennung, damit Noten-Änderungen an einer Stelle keine andere berühren), ein Gruppen-Undo.
+   Die Noten bearbeitest du danach je Stelle. Stellen, die schon 6 Stimmen haben, werden übersprungen (der Toast nennt ihre Zahl). **Grenze [K]:** `tkNormTakes` (Z. 39783) behält höchstens 512 Takes; würde [Ganze Spur] das überschreiten, sagt ein Toast das vorher, und nichts ändert sich.
+3. Der Noten-Editor der Kopie öffnet sich direkt (bei [Ganze Spur]: die Stelle, von der aus getippt wurde): Noten ziehen ergibt deine eigene Gegenstimme. Der Lead bleibt unberührt.
+4. In der Spur-Zeile steht die Kachel **[Background]**. Ein Tipp setzt Doppel, Panorama und Pegel der Stimme und, falls die Gruppe der Stelle neu ist, Abstand, Klang und Hall (Werte in G6+d);
+   bei [Ganze Spur] an allen Stellen dieser Spur (ein Undo). Mehrere Gegenstimmen werden abwechselnd links und rechts verteilt.
 
 ### 1.6 Farbige Schatten als Vorlage zum Nachsingen (Xander Punkt 11)
 
@@ -141,15 +157,18 @@ bleibt jede Chornote leitereigen. Von Hand geänderte Chornoten behalten ihren A
 |---|---|---|
 | Terz (auch Dezime) | rot | 3 (10) |
 | Quinte | grün | 5 |
-| Oktave (±12) | blau | 8 |
-| Sexte | violett | 6 |
+| Sexte | blau | 6 |
+| Oktave (±12) | violett | 8 |
 | Quarte | orange | 4 |
 | Sekunde / Septime | braun | 2 / 7 |
 | Unisono / Doppel | grau | 1 |
 | freie Gegenstimme (dupliziert, ohne Rezept) | gelb | – |
 
-  Die Farben sind eigene Tokens (`--chor3`, `--chor5` …) für hell und dunkel, mit Kontrast ≥ 3 : 1 zum Hintergrund. **Diese Tabelle gilt auch für G10i.** Sie korrigiert Nachtrag 9 §2.9
-  (Oktave blau statt violett, Sexte violett statt blau), wie Xander es nennt.
+  Die Farben sind eigene Tokens (`--chor3`, `--chor5` …) für hell und dunkel, mit Kontrast ≥ 3 : 1 zum Hintergrund. Xander nennt nur „Terz rot, Quinte grün …“; Sexte blau, Oktave violett und
+  Unisono grau stehen schon in Nachtrag 9 §2.9 und werden übernommen, Quarte, Sekunde/Septime und gelb kommen hier dazu. **Diese Tabelle gilt auch für G10i.**
+- **Farbe der Spur** (Farbfeld, Matrix-Punkt, Song-Streifen, Legenden-Chip): bei Intervall-Rollen (`st±n`, `oct±n`, `uni`) aus der Rolle, bei freien Stimmen gelb. Bei **Akkord-Rollen**
+  (`ch±n`, `root-`, z. B. Gospel, Barbershop) wechselt das Intervall von Note zu Note; Farbfeld und Punkt zeigen dann das **häufigste Intervall der Stimme an dieser Stelle** (gleich häufig: das
+  kleinere), mit dessen Ziffer. Die Schatten färben immer je Note.
 - **Wo:** Im Noten-Editor der Lead-Stimme liegen alle Chorstimmen halbtransparent hinter den Lead-Blöcken, im Marken-/Wellen-Editor (`wpPaint` Z. 42677) als dünne
   farbige Tonhöhenlinien über der Welle. Oben steht eine Legende mit einem Chip je Chor-Spur: **Auge** (zeigen/ausblenden) und **Solo**. Ein Tipp auf einen Schatten öffnet diese Stimme.
 - **Vorlage zum Nachsingen:** [⋯] → **[Selbst singen]**: Die Zielstimme spielt als Führung, der Lead leise (−12 dB, Schalter „Lead leise mithören“). Im offenen Editor ist ihr Schatten kräftig
@@ -160,7 +179,7 @@ bleibt jede Chornote leitereigen. Von Hand geänderte Chornoten behalten ihren A
 
 - Projekte ohne Chor und Chöre aus 4.25.0 klingen bitgleich. Ein alter Chor zeigt im Blatt „Chor (Fassung 4.25)“ mit seinen bisherigen Knöpfen. Ein Tipp auf einen Stil oder
   **[Auf Chor-Gruppe umstellen]** wandelt ihn um (ein Undo-Schritt, der Klang ändert sich, ein Toast sagt das).
-- Lead, Lead-Effekte (G4), Auto-Pegel (VS-P) und die globalen Hall-/Echo-Einstellungen bleiben unberührt.
+- Lead, Lead-Effekte (G4), Auto-Pegel (VS-P) und die globalen Hall-/Echo-Einstellungen bleiben unberührt (die Echo-Zeit nur, wenn man ihren Vorschlag antippt, §1.2).
 
 ---
 
@@ -198,18 +217,26 @@ chor = {
     lane: 'c1',                                   // Chor-Spur (an der STIMME-Spur)
     rule: 'st+2' | 'oct+1' | 'ch+1' | 'ch-1' | 'root-' | 'uni' | 'free' …,   // Rezept-Regel für neue Lead-Noten
     n: [{t0, t1, m, d, o?, x?, iv}],              // je Lead-Note: Stufen d, Oktaven o, chromatisch x; iv = Halbtöne beim Rechnen (nur Rückfall/Anzeige)
-    db, pan, w,                                   // Feinpegel dB, Mitte des Panoramas, Breite der Doppel
+    db, pan, w,                                   // Pegel der Stimme an dieser Stelle (dB), Mitte des Panoramas, Breite der Doppel
     dbl: [{ms, ct, p}],                           // 1–4 Kopien: Versatz, Verstimmung, Pan-Faktor (−1…1 × w)
     take?: {take, in, out, at},                   // selbst gesungen, entkoppelt oder dupliziert (Quelle statt Rechnung)
     dblOff?: true
   }],
-  // Rückfall-Felder für ältere Fassungen: rec, dir, mix werden mitgeschrieben (rec/dir aus dem ersten Intervall, mix = '80')
+  // Rückfall-Felder für ältere Fassungen: rec, dir, mix werden mitgeschrieben (rec/dir aus dem ersten Intervall, mix = '80'),
+  // je Stimme zusätzlich name (= Spur-Name), vol: 1, rev = grp.rev, dly = grp.dly und n[].iv – sonst spielt 4.25.0 rev 0,5 / dly 0 / Name „Stimme“ (g6NormChor Z. 44506f.)
 }
 ```
+- **Rollen (`rule` an der Stimme, `role` an der Spur), feste Schreibweise:** `st±n` (n Leiterstufen, n = 1…7), `oct±n` (n = 1, 2), `ch±n` (n-ter Akkordton über bzw. unter dem Lead, n = 1…3;
+  v1 `g6Above/g6Below`), `root-` (Grundton unter dem Lead wie v1-Bass, Z. 44561), `uni`, `free`; mit Oktav-Zusatz `/o±n` (z. B. Disco „Falsett Terz“ = `st+2/o+1`). Eine Spur wird für eine Stimme
+  **nach genau dieser Zeichenkette** gesucht (also ist `st+2` eine andere Spur als `st+2/o+1`).
+- **Namen (fertig benannt, Xander 22:35):** Eine neue Spur heißt nach ihrer Rolle: `st+2` „Chor Terz oben“, `st-2` „Chor Terz unten“, `st±3` „Chor Quarte oben/unten“, `st±4` „Chor Quinte oben/unten“,
+  `st±5` „Chor Sexte oben/unten“, `oct±1` „Chor Oktave oben/unten“, `st+2/o+1` „Chor Terz + Oktave“, `ch+1` „Chor Akkordton oben“, `ch-1` „Chor Akkordton unten“, `ch-2` „Chor Akkordton unten 2“,
+  `root-` „Chor Grundton“, `uni` „Chor Unisono“, `free` „Gegenstimme n“. Ein Stil kann beim **Anlegen** eigene Namen geben (Gospel: Chor Sopran/Alt/Tenor, Barbershop: Chor Tenor/Bariton/Bass,
+  Disco: Chor Falsett Oktave/Falsett Terz). Eine schon vorhandene Spur behält ihren Namen; umbenannt wird nur durch Antippen des Namens.
 - Zeiten `t0/t1` liegen in **Take-Zeit vor der Zeitkarte**, wie `take.pitch.notes` (G2). Eine Chornote gehört zur Lead-Note mit gleichem `t0` (`tkR6`). Teilt oder verbindet man
   Lead-Noten, gilt eine Chornote für jede Lead-Note, die sie zu ≥ 50 % überdeckt. Lead-Noten ohne Chornote bekommen die `rule` der Stimme.
 - `d` ist der Abstand in Leiterstufen vom Lead-Ton (Terz `2`, Quinte `4`, Sexte `5`, Unisono `0`), `o` sind Oktaven (±12 Halbtöne), `x` ist ein chromatischer Zusatz (−2…2).
-  Die Regeln der Akkord-Rezepte (`ch±1`, `root-`) speichern das Ergebnis beim Rechnen als `d/o`. **Grenzen** wie v1: höchstens 4000 Noten je Stimme, `d` −21…21, `o` −2…2. Neu:
+  Die Regeln der Akkord-Rezepte (`ch±n`, `root-`) speichern das Ergebnis beim Rechnen als `d/o`. **Grenzen** wie v1: höchstens 4000 Noten je Stimme, `d` −21…21, `o` −2…2. Neu:
   höchstens 6 Stimmen (v1: 4) und 4 Kopien.
 - Normalisieren: `g6NormChor` bekommt einen Zweig `c.v === 2` (eigene Funktion `g6pNorm2`) und lässt v1 Zeichen für Zeichen wie heute.
 
@@ -219,12 +246,15 @@ chor = {lanes: [{id: 'c1'…'c8', role: 'st+2'|…|'free', name, mute?: true}], 
 ```
 `normTrack` (Z. 17346f.) übernimmt `chor` nur bei `o.stimme`, und `tkNormProject` (Z. 39823) löscht `chor` zusammen mit `gfx` an jeder anderen Spur. Eine Stimme mit einer `lane`, die es nicht
 gibt (Clip aus einem anderen Projekt eingefügt), bekommt beim Laden eine Spur aus ihrer `rule`. Eine Spur ohne Stimme bleibt, bis man sie im Blatt löscht; sie wird grau „nicht benutzt“
-angezeigt. **Farbe** kommt aus `role`, frei gewählt wird sie nicht (Tabelle §1.6).
+angezeigt. **Farbe** kommt aus `role` (bei Akkord-Rollen aus dem häufigsten Intervall der Stelle, §1.6), frei gewählt wird sie nicht.
 
 **Takes** (`S.takes[id]`, `tkNormTake` Z. 39772): Entkoppelte und duplizierte Stimmen sind **neue Take-Kennungen, die die PCM-Stücke des Lead-Takes mitbenutzen**
 (`chunks` = dieselben Namen `lead:k`; `tkPcm` Z. 39850 liest nach Namen). Neu sind die Felder `of` (Herkunfts-Take) und `src: 'dup'|'chor'` (Liste in `tkNormTake` erweitern; ältere Fassungen
-machen daraus `'rec'`). Kopiert werden `pitch`, `marks`, `warp`, `follow`, `cl`, `rf`, `pre`/`post` (Z. 44122, 42185, 41315, 42973). **`lyrics` werden nicht kopiert:** Der Text bleibt
+machen daraus `'rec'`). Kopiert werden `pitch`, `marks`, `warp`, `follow`, `cl`, `rf`, `pre`/`post` (Z. 44122, 42185, 41315, 42973, `follow: true` Z. 44794). **`lyrics` werden nicht kopiert:** Der Text bleibt
 am Lead (G9). Weil kein PCM kopiert wird, geht es sofort und ist bitgleich, auch bei langen G8-Takes.
+**Zeit der Take-Stimmen:** Entkoppelte und duplizierte Stimmen liegen zeitgleich zum Lead-Take (dieselben Stücke). Abgespielt wird deshalb mit dem Fenster des Lead-Stücks
+`{take: v.take.take, in: a.in, out: a.out, at: a.at}`; das gespeicherte `v.take`-Fenster ist nur Rückfall für ältere Fassungen. So folgen sie Klammern, Anlauf/Ausklang und Rücken (G3, G10b)
+ohne eigenen Schritt. Selbst gesungene Stimmen behalten ihr eigenes Fenster wie heute (`g6Start` Z. 44645).
 
 ### 2.3 Rechenweg v2 (Worker)
 
@@ -241,13 +271,14 @@ am Lead (G9). Weil kein PCM kopiert wird, geht es sofort und ist bitgleich, auch
 5. **Zischlaute im Chor** (`grp.sib`: 0 / −6 / −12 / −18 / weg = −60 dB) werden ebenfalls im Rechengang angewandt. In stimmlosen Abschnitten (aus derselben Analyse, 10-ms-Blenden) wird die Kopie
    abgesenkt; stimmhafte Teile bleiben unberührt. **[W]** Im Studio werden s/sch/t in den Background-Spuren fast immer stark abgesenkt oder entfernt, weil gestapelte Zischlaute
    „zischeln“ und flangen. Das ist der eigentliche Entzischer des Chors; der G4-Entzischer des Leads wirkt schon in der Quelle.
-6. **Selbst gesungene, entkoppelte und duplizierte Stimmen** (`take`): Ihre Quelle ist ihr eigener Take mit seiner eigenen Kette. Die Kopien sind dieselbe Kette + `ct`, ebenfalls im Fenster.
+6. **Selbst gesungene, entkoppelte und duplizierte Stimmen** (`take`): Ihre Quelle ist ihr eigener Take mit seiner eigenen Kette. Die Kopien sind dieselbe Kette + `ct`, ebenfalls im Fenster,
+   und `grp.sib` wirkt auf sie genauso (sonst klänge eine Stimme nach dem Entkoppeln anders, G6P-50).
 7. **Cache nach Bytes statt Anzahl:** höchstens **48 MB** Chor-Puffer (LRU; heute 24 Puffer ganzer Takes, bis ≈ 147 MB). Schlüssel: Plan + Quelle (`wpBid`) + Fenster + `sib`.
    Mischungs-Änderungen (Pegel, Pan, Versatz, Sends, Klang, Abstand) rechnen nie neu.
 8. **Vorausrechnen:** Beim Öffnen des Blatts, beim Starten oder Vormerken eines Clips mit Chor (`R.pend`) und im Song für den nächsten Teil mit Chor (wie `g7Prefetch`
    Z. 44868). Der Worker arbeitet nach Vorrang: läuft gerade > nächster Teil > Rest.
-9. **Lautheit exakt im Worker:** Nach dem Rechnen mischt der Worker die Stimmen **nur zum Messen**. Das umfasst Versatz, Pan-Gesetz (StereoPanner, gleiche Leistung, wie die Web-Audio-Formel), Feinpegel,
-   Spur-Pegel und Gruppen-Klang (Biquad-Beiwerte nach derselben Formel wie `BiquadFilterNode`). Gemessen wird die integrierte Lautheit (BS.1770, Gating, **richtige K-Beiwerte je Abtastrate**)
+9. **Lautheit exakt im Worker:** Nach dem Rechnen mischt der Worker die Stimmen **nur zum Messen**. Das umfasst Versatz, Pan-Gesetz (StereoPanner, gleiche Leistung, wie die Web-Audio-Formel), Pegel der
+   Stimmen (`db`) und Gruppen-Klang (Biquad-Beiwerte nach derselben Formel wie `BiquadFilterNode`). Gemessen wird die integrierte Lautheit (BS.1770, Gating, **richtige K-Beiwerte je Abtastrate**)
    von Chor und Lead im selben Fenster. Daraus folgt der Auto-Pegel `gA = 10^((L_Lead − below − L_Chor)/20)`. **Keine Kalibrier-Konstante und keine Abhängigkeit vom globalen Hall**
    (v1: `G6_CAL`, `g6HallK`). Neu gemessen wird nach jeder Mischungs-Geste (entprellt 150 ms, wenige ms im Worker), Stumm und Solo zählen nicht.
 
@@ -260,16 +291,20 @@ Einstieg wie heute: `scheduleTrack` → `tkSched` (Z. 40309) → `tkPlace` → `
 unverändert. Mitlaufen mit dem Lead (`g6Drop/g6Kill/g6Fade` Z. 44657–44659 in `tkDrop/tkKill/tkFadeAt/tkXfOut` Z. 40237–40250) gilt für beide.
 
 ```
-je Kopie:  Puffer ─▶ Blenden × r.G (Clip-Pegel × VS-P des Leads, wie v1) ─▶ Stimme: 10^(db/20) × Spur-Pegel ─▶ Stumm/Solo ─▶ Pan (pan + p·w) ─┐
+je Kopie:  Puffer ─▶ Blenden × r.G (Clip-Pegel × VS-P des Leads, wie v1) ─▶ Stimme: 10^(db/20) × Stumm/Solo × Vorlage-Faktor ─▶ Pan (pan + p·w) ─┐
                                                                                                                         ▼
 Gruppe je gespieltem Stück:  Summe ─▶ Tiefschnitt (HP 12 dB/Okt.) ─▶ Mitte (Glocke) ─▶ Luft (Kuhschwanz 10 kHz) ─▶ Auto-Pegel gA
-   ─▶ Chor an/aus + Spur-Merkmal „Chor stumm“ ─▶ × STIMME-Pegel/-Stumm (gespiegelt aus applyTrackParams) ─▶ guide (Wert 1, für G10j) ─▶ Master-Summe
-                                                                                         ├─▶ Vorverzögerung (DelayNode, im Tempo) ─▶ Hall-Send ─▶ AU.hallIn
-                                                                                         └─▶ Echo-Send ─▶ AU.echoIn
+   ─▶ × Chor an/aus (Spur-Merkmal `chor.mute`) × STIMME-Pegel (gespiegelt aus applyTrackParams) ─▶ guide (Wert 1, für G10j) ─┬─▶ Master-Summe
+                                                                                                                           ├─▶ Vorverzögerung (DelayNode, im Tempo) ─▶ Hall-Send ─▶ AU.hallIn
+                                                                                                                           └─▶ Echo-Send ─▶ AU.echoIn
 ```
-- **Kein Weg mehr durch die STIMME-Kette:** Drive, Chorus, Pan und Post-Fader-Sends des Leads wirken nicht auf den Chor v2. Damit gibt es keinen doppelten Send mehr.
-  **Pegel und Stumm** der STIMME-Spur gelten trotzdem (Ordner-Verhalten), damit der Abstand zum Lead bleibt. **`N.cut` wird nicht benutzt** (gehört MK7, `mkDryCut` Z. 18321).
-- **Sends nach dem Gruppen-Pegel:** Mit „Chor aus“ oder einer stummen STIMME-Spur schweigt auch der Hall des Chors. **[W]** Gruppen-Sends sind Studio-Standard, und die eigene Vorverzögerung im Send ersetzt
+- **Kein Weg mehr durch die STIMME-Kette** (`buildChain` Z. 17903–17922): Drive, Chorus, Tremolo und Pumpen (`trem`/`duck`), Pan und Post-Fader-Sends des Leads wirken nicht auf den Chor v2.
+  Damit gibt es keinen doppelten Send mehr. Ein Vocoder, der die STIMME-Spur als Eingang abgreift (MK7), hört nur den Lead; bei v1 bleibt es wie heute.
+  **Pegel und Stumm** der STIMME-Spur gelten trotzdem (Ordner-Verhalten), damit der Abstand zum Lead bleibt: Der Pegel wird gespiegelt; „Stumm“ wirkt schon heute, weil eine stumme STIMME-Spur
+  keine Lead-Stücke plant (`scheduleTrack` Z. 19477, `setMute` Z. 37362) und der Chor nur an Lead-Stücken hängt. **`N.cut` wird nicht benutzt** (gehört MK7, `mkDryCut` Z. 18321).
+- **Vorlage-Faktor (für G10j):** Der Stumm/Solo-Knoten jeder Kopie trägt zusätzlich einen Laufzeit-Faktor je Chor-Spur (Wert 1, nie gespeichert). So kann G10j **eine** Chor-Spur als
+  Vorlage +6 dB setzen, während der Rest −10 dB bekommt (`guide` der Gruppe bzw. der übrigen Spuren). Mit `guide` nur an der Gruppe ginge das nicht.
+- **Sends nach dem Gruppen-Pegel und nach `guide`** (wie die Spur-`guide` in Nachtrag 9 §2.10 vor den Sends): Mit „Chor aus“ oder einer stummen STIMME-Spur schweigt auch der Hall des Chors, und eine Vorlage-Absenkung nimmt Hall/Echo mit. **[W]** Gruppen-Sends sind Studio-Standard, und die eigene Vorverzögerung im Send ersetzt
   das globale `predelay` von v1.
 - **Kein Kompressor am Chor [A]:** Die Quelle hat schon die G4-Dynamik des Leads. Der Web-Audio-Kompressor hätte zudem eine eingebaute, browserabhängige Aufholverstärkung, und
   dann stimmt der Abstand in LU nicht mehr.
@@ -288,16 +323,22 @@ Gruppe je gespieltem Stück:  Summe ─▶ Tiefschnitt (HP 12 dB/Okt.) ─▶ Mi
 | Umbenennen, Spur stumm, Chor stumm | ein Schritt (Spur-Daten) |
 | [Auf alle Chor-Stellen] | ein Gruppen-Undo über alle betroffenen Clips und Song-Stücke |
 | Entkoppeln, Als Chor-Stimme duplizieren | ein Gruppen-Undo: Take-Eintrag + Stück + Spur. ↶ entfernt die neue Take-Kennung; die PCM-Stücke bleiben, weil sie dem Lead gehören |
+| [Ganze Spur] (Duplizieren), [Background] auf der ganzen Spur | ein Gruppen-Undo über alle neuen Takes, alle Clips und Song-Stücke und die Spur |
+| [Stil-Wert … übernehmen] (Echo-Zeit) | ein Schritt (`{kind: 'fx'}` wie heute in `g6Mix`) |
+| [Spur löschen] (graue Spur) | ein Schritt (`chorlanes`) |
 | Selbst singen | im Undo der Aufnahme (wie heute `g6Took` Z. 44727) |
 | Noten der Stimme (▲▼, Ziehen) | ein Schritt je Geste, wie `g6Edit` Z. 44674 |
 | Lead-Note ändern | **kein** Chor-Schritt nötig: Der Chor folgt über den Plan (§2.3), die Daten ändern sich nicht |
 
 ### 2.6 Speichern, Laden, Format, ZIP, Aufräumen
 
-- **Format nach Inhalt [A]:** `PROJECT_FORMAT` (Z. 13497) wird 6 (lesbar bis 6). Geschrieben wird **6 nur, wenn** das Projekt v2-Chor, Chor-Spuren oder Takes mit `src: 'dup'|'chor'`
-  enthält, sonst 5 wie bisher (`kvFile` Z. 13689, Datei Z. 13873, Online-Kopf `p_format` Z. 35611/35624). Grund: 4.25.0 würde die Chor-Gruppe beim Speichern **still verlieren**. Es kürzt auf
+- **Format nach Inhalt [A]:** Geschrieben wird **6 nur, wenn** das Projekt v2-Chor, Chor-Spuren oder Takes mit `src: 'dup'|'chor'` enthält, sonst 5 wie bisher.
+  **[K] Umsetzung:** `PROJECT_FORMAT` (Z. 13497) ist heute Lese-Grenze **und** Schreibwert zugleich. Wird es einfach 6, schreibt `kvFile` (Z. 13689, `Math.max(…, PROJECT_FORMAT)`) jedes Projekt
+  als 6. Deshalb wird getrennt: neue Lese-Grenze `PROJECT_FORMAT_READ = 6` an allen Lese-Stellen (Z. 13939/13940/13945, 14141, 17433, `nvLockOf`/`nvNewer` Z. 34707/34708, Z. 34735;
+  `SQStore` Z. 14176 gibt beide aus). `PROJECT_FORMAT` bleibt 5, und an den Schreib-Stellen (`kvFile` Z. 13689, Datei Z. 13873, Online-Text Z. 35611, Online-Kopf `p_format` Z. 35624)
+  steht `fmtOf(proj)` (= 6 bei Chor-Gruppen-Inhalt, sonst `PROJECT_FORMAT`). Grund: 4.25.0 würde die Chor-Gruppe beim Speichern **still verlieren**. Es kürzt auf
   4 Stimmen, verwirft `v`, `lane`, `d`, `grp` und `S.tracks[st].chor` und fällt auf `'80'`/`'terz'` zurück (Z. 44502–44511). Mit Format 6 öffnet eine ältere Fassung das Projekt nur
-  mit Banner und speichert es nicht (NV-Sperre `nvLockOf` Z. 34707, Banner Z. 34711). Gespielt wird dort eine v1-Näherung aus den Rückfall-Feldern `iv`, `pan`, `rev`.
+  mit Banner und speichert es nicht (NV-Sperre `nvLockOf` Z. 34707, Banner Z. 34711). Gespielt wird dort eine v1-Näherung aus den Rückfall-Feldern (`name`, `n[].iv`, `pan`, `vol`, `rev`, `dly`, §2.2).
   **Online braucht dafür `max_format = 6`** (§4.4). Ohne diese Freigabe bleibt das Format 5 und das Risiko oben bestehen.
 - **Deep-equal-Weg:** Normalisieren (§2.2), Clip-/Szenen-/Teil-Kopien (tragen `audio.chor` wie heute), Verlauf, ZIP und Online.
 - **ZIP:** `tkUsedIds` (Z. 40693) und `tkActiveIds` (Z. 39875) zählen alle `voices[].take.take` mit. Heute fehlen selbst gesungene Chor-Takes im ZIP und sind auf einem anderen Gerät
@@ -329,13 +370,13 @@ den Lead auch im Video stumm, Z. 44640). Danach stehen Solo und Scharf wieder wi
 | Chor aus 4.25.0 (v1) | Daten gleich; Klang bitgleich (eingefrorene Konstanten, alter Klangweg, Hall-Kopplung wie 4.25.0); Fenster-Rechnung nur, wenn bitgleich |
 | v1-Chor bearbeiten (Pegel, ♪, Selbst singen) | wie in 4.25.0 (v1-Funktionen bleiben) |
 | v1 → v2 | nur auf Tipp des Nutzers (Stil oder [Auf Chor-Gruppe umstellen]), ein Undo-Schritt, Toast „neue Chor-Fassung – klingt anders“ |
-| G6+0-Korrekturen | ändern keinen Klang: ZIP/Laden, Solo-Rücksetzen und Knoten je Stück. Die Knotenwerte sind dieselben, deshalb bleibt der Render gleich |
-| Lead-Bearbeitung wirkt auf den Chor | gewollt (der Chor ist aus dem Lead gerechnet); wie G10h/G10i nur nach einer Änderung, nie beim Laden |
+| G6+0-Korrekturen | ändern keinen Klang: ZIP/Laden, Solo-Rücksetzen und Knoten je Stück. Die Knotenwerte sind dieselben, deshalb bleibt der Render gleich. **Einzige Ausnahme [K]:** Zwei Stellen mit **demselben** Lead-Take und **verschiedenen** Chor-Werten teilen sich in 4.25.0 die Knoten (Schlüssel `take:Stimme:Kopie` + Spur, Z. 44597/44629); dort gewinnt, je nach Reihenfolge, die zuletzt angewandte Stelle. Ab 4.25.2 klingt jede Stelle mit ihren eigenen Werten. Das ist kein fester Klang, der verloren geht, sondern ein Fehler; er wird im Changelog und im Funk genannt (G6P-03, G6P-04 mit diesem Fall als Ausnahme) |
+| Lead-Bearbeitung wirkt auf den Chor | gewollt (der Chor ist aus dem Lead gerechnet), nur nach einer Änderung, nie beim Laden. **v2:** folgt in Stufen (§2.3). **v1:** wie 4.25.0, der Chor wird aus der geänderten gehörten Fassung mit festem Halbton-Abstand `iv` gerechnet; `iv` wird nie neu berechnet (§4.3, G10i) |
 
 ### 2.10 Leistung (CLAUDE.md Vorrang 1–2)
 
 Nichts beim App-Start. Puffer nur für das Fenster: Barbershop auf 8 Takten bei 120 BPM braucht ≈ 9–13 MB (je nach Anlauf/Ausklang) statt ≈ 37 MB beim ganzen 32-s-Take [S]. Höchstens 48 MB Chor-Puffer. Die Analyse wird mit dem Lead
-geteilt. Mischungs-Gesten rechnen nicht neu. Je Kopie gibt es 3 Knoten, je Stück 7 Knoten, und Gospel (9 Kopien) liegt unter 40 Knoten. Im Haupt-Faden gibt es keinen Task über 50 ms.
+geteilt. Mischungs-Gesten rechnen nicht neu. Je Kopie gibt es 3 Knoten und die Quelle, je Stück 8 Knoten (Tiefschnitt, Mitte, Luft, Pegel, `guide`, Vorverzögerung, Hall-, Echo-Send). Gospel (9 Kopien) braucht so ≈ 44 Knoten je gespieltem Stück, Rock-Shout (8 Kopien) ≈ 40. Im Haupt-Faden gibt es keinen Task über 50 ms.
 Das Mischpult ist DOM, und Regler schreiben nur `AudioParam` (20-ms-Rampe) und Text, ohne Layout-Arbeit.
 
 ---
@@ -366,7 +407,8 @@ ein Knoten statt zwei für selbst gesungene Stimmen in `g6Apply`.
 - [ ] **G6P-01** `g6p-v1` Nr. 3 als ZIP → leeres Profil → Import → Stimme 2 (selbst gesungen) klingt; Offline-Render bitgleich zum Ausgangsgerät.
 - [ ] **G6P-02** „Selbst singen“ scharf, ohne Aufnahme, Blatt schließen → Lead hörbar (RMS = ohne Chor-Solo ±0,1 dB); dasselbe nach Projekt-Laden und im Video-Render.
 - [ ] **G6P-03** Zwei Clips mit demselben Take und Chor: Pegel einer Stimme im einen Clip → der andere Clip spielt unverändert (gemessen). 3 min Wiedergabe → 0 erneute `tkLoad` für Chor-Takes.
-- [ ] **G6P-04** M-G28 bitgleich (die Korrekturen ändern keinen Klang).
+- [ ] **G6P-04** M-G28 bitgleich (die Korrekturen ändern keinen Klang). Einzige erlaubte Abweichung: Projekte mit zwei Stellen desselben Takes und verschiedenen Chor-Werten (§2.9); sie werden
+  vor dem Bau in `synq-snapshots/` und `g6p-v1` gesucht und mit Ergebnis im Changelog genannt.
 
 **Abhängigkeiten:** G6 (4.25.0). **Risiko:** gering.
 
@@ -402,15 +444,15 @@ VS-P (`r.G`), G6+a. **Risiko:** mittel bis hoch (DSP). Der Fenster-Nachweis G6P-
 ### G6+c — Chor-Gruppe im Klangweg · ≈ 12 h
 
 **Inhalt:** §2.4: Knoten je Kopie und je Stück, Gruppen-Summe, Tiefschnitt/Mitte/Luft, Auto-Pegel `gA`, Chor an/aus, Spur stumm, Solo-Logik, STIMME-Pegel/-Stumm gespiegelt,
-Sends nach dem Gruppen-Pegel mit Vorverzögerung im Tempo, `guide`-Knoten (Wert 1) für G10j, Einsatz erst wenn fertig, gleiche Knoten im Offline-Render.
+Sends nach dem Gruppen-Pegel mit Vorverzögerung im Tempo, `guide`-Knoten (Wert 1) und Vorlage-Faktor je Chor-Spur (Wert 1) für G10j, Einsatz erst wenn fertig, gleiche Knoten im Offline-Render.
 - [ ] **G6P-20** Abstand: Für jeden Stil gilt M-LU = `below` ± 0,5 LU (80er 8, Pop 9, Gospel 6, Barbershop 4, Rock-Shout 5, Ballade 10, Disco 7, New Wave 9, Background 9).
   Der globale Hall-Rückweg ×2 ändert den Abstand der trockenen Signale um ≤ 0,1 LU (keine Hall-Kopplung mehr).
-- [ ] **G6P-21** Regler: Abstand 8 → 12 LU ⇒ gemessen 12 ± 0,3. Spur-Pegel Terz +3 dB ⇒ Chor-Gesamt bleibt ±0,3 LU, die Terz liegt +3 ± 0,2 dB über vorher. STIMME-Pegel −6 dB ⇒ Lead und Chor je
+- [ ] **G6P-21** Regler: Abstand 8 → 12 LU ⇒ gemessen 12 ± 0,3. Pegel der Terz +3 dB ⇒ Chor-Gesamt bleibt (±0,3 LU, der Auto-Pegel gleicht aus), die Terz liegt danach +3 ± 0,2 dB lauter **relativ zu den anderen Chor-Stimmen**. STIMME-Pegel −6 dB ⇒ Lead und Chor je
   −6 ± 0,1 dB. STIMME stumm ⇒ Chor ≤ −90 dBFS, Hall-Eingang vom Chor ≤ −120 dBFS.
 - [ ] **G6P-22** Pan (M-PAN): je Kopie `p̂ = clamp(pan + p·w)` ± 0,03 für alle Stile (Tabelle G6+d). Stimm-Pan +0,5 verschiebt alle Kopien um +0,5 (geklemmt).
 - [ ] **G6P-23** Versatz (M-MS): Kopien-Einsatz = Soll-ms ± 0,5 ms gegen die Stimme. Stimme ohne Versatz (Barbershop) 0 ± 0,5 ms zum Lead.
 - [ ] **G6P-24** Solo/Stumm: Solo Spur 2 ⇒ nur Spur 2 + Begleitung (Lead und andere Spuren ≤ −90 dBFS). Stumm Spur 1 ⇒ nur Spur 1 fehlt, auch an einer zweiten Chor-Stelle. Chor aus ⇒
-  Ausgang bitgleich zu „ohne Chor“. Blatt zu ⇒ Solo aus.
+  Ausgang bitgleich zu „ohne Chor“. Blatt zu ⇒ Solo aus. Vorlage-Faktor einer Spur auf 2 (Test-API) ⇒ nur diese Spur +6,0 ± 0,1 dB; zurück auf 1 ⇒ bitgleich.
 - [ ] **G6P-25** Sends: Gruppen-Hall 0 ⇒ Hall-Eingang vom Chor ≤ −120 dBFS. Vorverzögerung 1/32 bei 120 BPM ⇒ 62,5 ± 1 ms (Impuls am Hall-Eingang). Chor aus ⇒ auch Hall/Echo 0. `S.fxBus` ist
   vor und nach jedem Stil deep-equal.
 - [ ] **G6P-26** Klang: Übertragungsfunktion der Gruppe (Rauschen, FFT) = Formel ± 0,3 dB (Tiefschnitt −3 dB bei Soll-Hz ± 3 %, Luft +n dB bei 10 kHz). G6P-20 hält auch mit Klang-Änderung.
@@ -424,7 +466,7 @@ Sends nach dem Gruppen-Pegel mit Vorverzögerung im Tempo, `guide`-Knoten (Wert 
 **Inhalt:** Tabelle unten als Daten (`G6P_STYLE`, eingefroren mit `chor.v = 2`: spätere Feinabstimmung = neue Stil-Fassung, nie Änderung gespeicherter Werte), Anwendung auf eine Stelle
 (Spuren nach `role` finden oder anlegen), Hilfetext je Stil, Kalibrier-Messung je Stil.
 
-**Stimmen und Doppel** (Pegel = Spur-Pegel in dB; Kopien als Versatz ms / Verstimmung ct / Pan-Faktor):
+**Stimmen und Doppel** (Pegel = Pegel der Stimme `db` an dieser Stelle; Namen = Spur-Name beim Anlegen, §2.2; Kopien als Versatz ms / Verstimmung ct / Pan-Faktor):
 
 | Stil | Stimmen (Regel) · Pan · Breite · Pegel | Kopien je Stimme |
 |---|---|---|
@@ -434,7 +476,7 @@ Sends nach dem Gruppen-Pegel mit Vorverzögerung im Tempo, `guide`-Knoten (Wert 
 | **Barbershop** | Tenor (`ch+1`) −0,3 · 0 · −1; Bariton (`ch-1`) +0,3 · 0 · 0; Bass (`root-`) 0 · 0 · +1 | keine Doppel: 1 Kopie 0/0/0 (echte Einzelsänger) |
 | **Rock-Shout** | Unisono 0 · 0,8 · 0; Oktave unten 0 · 0,6 · −3 | 4 je Stimme: 17/−14/−1, 28/+12/+1, 41/−19/−0,5, 52/+17/+0,5 |
 | **Ballade** | Terz oben −0,35 · 0,35 · −1; Sexte unten (`st-5`) +0,35 · 0,35 · −2 | 20/−6/−1, 35/+7/+1 |
-| **Disco/Falsett** | Falsett Oktave (`oct+1`) −0,5 · 0,3 · 0; Falsett Terz (`st+2`, `o+1`) +0,5 · 0,3 · −2 | 10/−7/−1, 18/+7/+1 |
+| **Disco/Falsett** | Falsett Oktave (`oct+1`) −0,5 · 0,3 · 0; Falsett Terz (`st+2/o+1`) +0,5 · 0,3 · −2 | 10/−7/−1, 18/+7/+1 |
 | **New Wave dunkel** | Oktave unten −0,4 · 0 · 0; Quinte unten (`st-4`) +0,4 · 0 · −2 | 1 Kopie: 25/−5/0 bzw. 28/+5/0 |
 | **Background** (eine Spur, kein Rezept) | Pan abwechselnd −0,6 / +0,6 je Gegenstimme · 0,15 · 0 | 12/−6/−1, 24/+8/+1 (= v1-Doppel) |
 
@@ -452,40 +494,47 @@ Sends nach dem Gruppen-Pegel mit Vorverzögerung im Tempo, `guide`-Knoten (Wert 
 | New Wave dunkel | 9 | 80 | −2 @ 2500 | −3 | −12 | 0,60 | 1/32 | 0,25 |
 | Background (nur wenn die Gruppe der Stelle neu ist) | 9 | 180 | −2 @ 400 | +2 | −12 | 0,50 | 1/32 | 0,10 |
 
+**Echo-Zeit-Vorschlag** (nur Anzeige und Knopf in [Klang ▸], §1.2; ändert das globale Echo erst auf Tipp): 80er 1/4 · Pop modern 1/8. · Ballade 1/4. · Disco/Falsett 1/8 ·
+New Wave dunkel 1/4. · Background 1/4 · Gospel, Barbershop, Rock-Shout keiner (Echo-Send 0). 80er und Pop entsprechen v1 (`G6_MIX.echo` Z. 44497f.).
+
 **[W] Begründung kurz:** Background-Stimmen liegen im Studio meist 6–12 dB unter dem Lead. Gang-Rufe und vierstimmiger Satz liegen näher (4–5 LU), weil sie selbst Teil der Melodie sind. Unisono-Doppel
 gehen hart links/rechts, Harmonien gefächert, tiefe Stimmen eher mittig. Doppel liegen bei 10–40 ms Versatz und 4–20 ct Verstimmung; über ≈ 40 ms und ±15 ct klingt es nach Gruppe statt Doppel
 (Rock-Shout, Gospel). Der Tiefschnitt ist im Chor höher als im Lead, damit es nicht mulmt (Ausnahme: Bass im Barbershop). Die Zischlaute im Chor werden gesenkt. Die Hall-Vorverzögerung im Tempo hält
-den Chor trotz viel Hall verständlich. Der Echo-Send nutzt das globale Echo (dessen Teilung bleibt, wie sie ist). „Falsett“ ist eine formant-erhaltende Oktave mit hellem Klang; ob das
+den Chor trotz viel Hall verständlich. Der Echo-Send nutzt das globale Echo (dessen Teilung bleibt, wie sie ist, außer man tippt den Vorschlag). „Falsett“ ist eine formant-erhaltende Oktave mit hellem Klang; ob das
 nach Kopfstimme klingt, prüft die Hörprobe [S].
 
 - [ ] **G6P-30** Je Stil ein Tipp → Daten deep-equal zur Tabelle (Stimmen, Regeln, Kopien, Pan, Breite, Pegel, Gruppe) und Noten-Tabelle je Regel richtig (G-Dur mit Begleitung für `ch±`/`root-`).
-  Gemessen gelten G6P-20/22/23/26 je Stil.
+  Gemessen gelten G6P-20/22/23/26 je Stil. Neue Spuren tragen die Namen aus §2.2 bzw. die Stil-Namen; eine vorhandene Spur behält ihren Namen.
 - [ ] **G6P-31** Ein Tipp ergibt einen Undo-Schritt. Wechsel 80er ↔ Pop modern (anderes Rezept) rechnet neu. Gleiches Rezept mit nur anderer Mischung (Test-Stil) rechnet nicht neu, und der Wechsel ist hörbar ≤ 50 ms ohne Klick.
 - [ ] **G6P-32** Lead unverändert: `S.tracks[st].sound` und `gfx` sowie `S.fxBus` deep-equal vor und nach jedem Stil (v1 änderte sie über `g6Mix`).
 - [ ] **G6P-33** Stil auf einen v1-Chor ⇒ v2 (ein Undo-Schritt, Toast). ↶ ⇒ v1-Daten deep-equal und Render bitgleich.
+- [ ] **G6P-35** Stilwechsel an einer Stelle mit einer entkoppelten und einer selbst gesungenen Stimme ⇒ beide bleiben deep-equal (Noten, `take`, Pegel, Pan, Doppel), nur die errechneten Stimmen
+  wechseln. [Stil-Wert 1/4 übernehmen] ⇒ `S.fxBus.echo.divL` = 1/4, ein Undo-Schritt; ohne Tipp bleibt `S.fxBus` deep-equal (G6P-32).
 - [ ] **G6P-34** Zweite Chor-Stelle mit anderem Stil ⇒ erste Stelle bitgleich (keine Fernwirkung). [Auf alle Chor-Stellen] ⇒ beide `grp` gleich, ein Undo-Schritt.
 
 **Abhängigkeiten:** G6+b, G6+c. **Risiko:** gering (Daten), die Klangwahl prüft die Hörprobe.
 
 ### G6+e — Blatt „Chor“ neu: Stil-Raster, Mischpult, Markierung in Matrix und Song · ≈ 14 h
 
-**Inhalt:** §1.1–§1.3: Stil-Raster, Gruppen-Zeile, Spur-Zeilen, [⋯]-Bereich (Doppel, Selbst singen, Entkoppeln, Stimme löschen), [+ Stimme ▾], [Klang ▸], Umbenennen, Fortschritt
-ohne Höhenänderung, v1-Ansicht „Fassung 4.25“, Hilfetexte, Matrix-Punkte und Song-Streifen **[V-Funk]** (Bild vorher im Funk). CSS-Block nach dem G6-CSS.
+**Inhalt:** §1.1–§1.3: Stil-Raster, Gruppen-Zeile, Spur-Zeilen, [⋯]-Bereich (Doppel, Selbst singen, Entkoppeln, Stimme löschen; graue Spur: Spur löschen), [+ Stimme ▾], [Klang ▸] mit Echo-Zeit-Knopf, Umbenennen, Fortschritt
+ohne Höhenänderung, v1-Ansicht „Fassung 4.25“, Hilfetexte, Matrix-Punkte und Song-Streifen sowie der neue Blatt-Aufbau (ersetzt die 8 Rezept-Knöpfe von 4.25.0) **[V-Funk]** (Bild vorher im Funk). CSS-Block nach dem G6-CSS.
 - [ ] **G6P-40** Ablauf per Touch (CDP) wie Xander: STIMME-Clip ✎ → [Chor] → [Gospel] → 3 Spur-Zeilen „Chor Sopran/Alt/Tenor“ mit Farben. Solo, Stumm, Pegel und Pan je Spur sowie Abstand, Hall, Echo und
   Klang wirken (Messwerte wie G6+c). Jede Geste ist ein Undo-Schritt.
-- [ ] **G6P-41** M-PLATZ in den 6 Formaten: alle Treffer ≥ 44 × 44 px (auch Regler-Griffe), nichts abgeschnitten, keine Seiten-Überbreite. Das Blatt quer kommt ohne Seiten-Scroll aus (die Spur-Liste scrollt innen).
+- [ ] **G6P-41** M-PLATZ in den 6 Formaten: alle Treffer ≥ 44 × 44 px (auch Regler-Griffe), nichts abgeschnitten, keine Seiten-Überbreite. Stil-Kacheln hochkant 2 × 4, quer 4 × 2,
+  Name und Zeile (≤ 20 Zeichen) je einzeilig ohne Auslassungspunkte, auch in P1 320 px. Das Blatt quer kommt ohne Seiten-Scroll aus (die Spur-Liste scrollt innen).
   Kein Layout-Sprung beim Rechnen, beim Aufklappen von [⋯]/[Klang ▸] innerhalb fester Höhe bzw. mit innerem Scroll.
 - [ ] **G6P-42** Umbenennen über die Tastatur (≤ 24 Zeichen). Der Name erscheint in Legende, Takes-Blatt und Song-Tipp. Doppeltipp auf einen Regler ⇒ Stil-Wert.
+  Spur-Grenze: 8 Spuren belegt ⇒ eine graue Spur wird übernommen; keine graue ⇒ Toast, Daten deep-equal. [Spur löschen] auf einer grauen Spur = ein Undo-Schritt.
 - [ ] **G6P-43** Matrix-Punkte/Song-Streifen: richtige Farben und Anzahl. Bildzeit p95 der Matrix und des Songs +≤ 0,3 ms. Ohne Chor bleibt die Ansicht pixelgleich zu 4.25.0.
 - [ ] **G6P-44** Bedien-Tempo: Tipp → Reaktion (Kachel gedrückt) ≤ 50 ms, Regler-Bewegung p95 ≤ 16,7 ms Bildzeit.
 
 **Abhängigkeiten:** G6+a, G6+c, G6+d (Kacheln). **Risiko:** mittel (Platz im Hochformat 320 px).
 
-### G6+f — Entkoppeln und „Als Chor-Stimme duplizieren“ · ≈ 12 h
+### G6+f — Entkoppeln und „Als Chor-Stimme duplizieren“ · ≈ 13 h
 
 **Inhalt:** §1.4/§1.5, §2.2 Takes: neue Take-Kennung mit geteilten Stücken, Felder kopieren, beim Entkoppeln `take.pitch` = Plan der Stimme (Lead-Plan + `c − L` als `sh` je Note,
 gleiche Quantisier-Einstellung). G7 auf diesen Takes: `g7SegOf` (Z. 44866) und `g7Key` (Z. 44817) finden heute nur oberste Stücke und suchen künftig auch in `voices[].take` (Stelle = Lead-Stück).
-G4 wirkt über die STIMME-Spur, VS-P über `vpKick`. Takes-Blatt mit Herkunftszeile, Knopf [Als Chor-Stimme duplizieren], Spur „Gegenstimme n“ (`role 'free'`), Kachel [Background], Noten-Editor öffnet sich.
+G4 wirkt über die STIMME-Spur, VS-P über `vpKick`. Takes-Blatt mit Herkunftszeile, Knopf [Als Chor-Stimme duplizieren] mit [Diese Stelle]/[Ganze Spur], Spur „Gegenstimme n“ (`role 'free'`), Kachel [Background], Noten-Editor öffnet sich.
 - [ ] **G6P-50** Entkoppeln: neue Kennung, `chunks` = die des Leads, Felder übernommen, `lyrics` nicht. Klang vorher = nachher (M-CT ≤ 1 ct je Note, M-LU ± 0,2 LU, M-MS ± 0,5 ms, Rest-Differenz ≤ −60 dB im
   Fenster [S]). Danach gilt: Lead-Note ändern ⇒ Stimme bitgleich; Stimm-Note ändern ⇒ Lead bitgleich.
 - [ ] **G6P-51** Duplizieren: Kopie im Fenster bitgleich zum Lead (gleiche Kette, gleiche Daten), bis man sie ändert. Note ▲ in der Kopie ⇒ Lead bitgleich. [Background] ⇒ Werte wie Tabelle, zweite Gegenstimme auf der
@@ -493,6 +542,8 @@ G4 wirkt über die STIMME-Spur, VS-P über `vpKick`. Takes-Blatt mit Herkunftsze
 - [ ] **G6P-52** G7: Transponieren C → a-Moll nimmt entkoppelte und duplizierte Stimmen mit wie den Lead (je Note = `outPitch` ± 1 ct). Zurück auf 0 ⇒ bitgleich zur Fassung ohne Transponieren.
 - [ ] **G6P-53** Undo: Entkoppeln/Duplizieren = 1 Schritt. Nach ↶ ist die neue Kennung aus `S.takes` verschwunden, und [Aufräumen] löscht keine Lead-Stücke. ZIP ⇒ Kopie als eigenes WAV, Import ⇒ hörbar bitgleich.
 - [ ] **G6P-54** Song-Stück: Duplizieren und Entkoppeln auf einer Song-Stimme gehen genauso (Song-Undo).
+- [ ] **G6P-55** [Ganze Spur] in einem Projekt mit 3 STIMME-Clips und 2 Song-Stimmen ⇒ 5 neue Take-Kennungen, alle in derselben Spur „Gegenstimme 1“, ein Gruppen-Undo (Clips + Song + Spur);
+  ↶ ⇒ deep-equal. Note ▲ an einer Stelle ⇒ die anderen vier bitgleich. Über 512 Takes ⇒ Toast, Daten deep-equal.
 
 **Abhängigkeiten:** G6+a (Takes, `tkGc`), G6+b (Plan), G2-Editor, G7, G4, VS-P, G9 (Text bleibt am Lead), später G10h (die Klavierrolle öffnet entkoppelte Stimmen). **Risiko:** mittel
 (Take-Bindungen an `stimmeT()`/Take-Kennung).
@@ -501,8 +552,8 @@ G4 wirkt über die STIMME-Spur, VS-P über `vpKick`. Takes-Blatt mit Herkunftsze
 
 **Inhalt:** §1.6: Farb-Tokens hell/dunkel, Schatten im G2-Noten-Editor (`g2Paint` Z. 44375) hinter den Lead-Blöcken mit Ziffer, farbige Tonhöhenlinien im Marken-/Wellen-Editor (`wpPaint`
 Z. 42677), Legende mit Auge/Solo, Tipp auf einen Schatten öffnet die Stimme, „Selbst singen“ v2 (Führung, Lead leise, Spur bleibt, Doppel aus), Zeichnen aus einem Bild-Cache (nur bei Änderung neu).
-- [ ] **G6P-60** Farbe und Ziffer je Intervall: Tabelle §1.6 für 30 Fälle richtig (inkl. Dezime = rot „10“, Oktave unten = blau „8“). Kontrast ≥ 3 : 1 hell und dunkel.
-- [ ] **G6P-61** Schatten auf den Chornoten: Start ± 1 px, Zeile = Ton der Stimme für alle Noten; Auge blendet aus; Tipp öffnet die Stimme (Lead grau).
+- [ ] **G6P-60** Farbe und Ziffer je Intervall: Tabelle §1.6 für 30 Fälle richtig (inkl. Dezime = rot „10“, Oktave unten = violett „8“). Akkord-Rolle: Farbfeld = häufigstes Intervall der Stelle (Gleichstand: kleineres). Kontrast ≥ 3 : 1 hell und dunkel.
+- [ ] **G6P-61** Schatten auf den Chornoten: Start ± 1 px, Zeile = Ton der Stimme für alle Noten; Auge blendet aus; Tipp öffnet die Stimme (Lead grau). Solo über die Legende endet mit dem Schließen des Editors.
 - [ ] **G6P-62** Bildzeit mit 4 Stimmen auf einem 32-s-Take p95 +≤ 2 ms; Zoomen/Scrollen ohne Neuberechnung der Schatten-Geometrie (Cache-Treffer).
 - [ ] **G6P-63** Selbst singen v2: Zielstimme hörbar, Lead −12 ± 0,5 dB (Schalter aus ⇒ Lead stumm), andere Spuren stumm. Die Aufnahme ersetzt die Stimme (Spur, Pan und Pegel bleiben, `dblOff`), und ein Undo-Schritt gehört zur Aufnahme.
 
@@ -527,7 +578,7 @@ Sonden, Funk-Antwort mit „Bitte prüfen“ (CLAUDE.md Regel 4).
 - [ ] **G6P-81** „Bitte prüfen“ am iPhone (5 min): Refrain singen → [80er großer Refrain] → klingt groß? [Gospel]/[Barbershop] vergleichen; Spur Solo/Stumm; [Als Chor-Stimme duplizieren] → Note
   ziehen → [Background]; Schatten im Noten-Editor; Speichern, neu laden.
 
-**Summe G6+ ≈ 100 h** (G6+0 3 · a 10 · b 18 · c 12 · d 9 · e 14 · f 12 · g 8 · h 7 · i 7). Davon kommen 3 h vorab in 4.25.2, ≈ 97 h in 4.28.0.
+**Summe G6+ ≈ 101 h** (G6+0 3 · a 10 · b 18 · c 12 · d 9 · e 14 · f 13 · g 8 · h 7 · i 7). Davon kommen 3 h vorab in 4.25.2, ≈ 98 h in 4.28.0.
 
 ---
 
@@ -541,10 +592,10 @@ Sonden, Funk-Antwort mit „Bitte prüfen“ (CLAUDE.md Regel 4).
 | 1 | 4.26.0 / 4.27.0 | Video, dann G9 Songtext (Vorrang laut Xander 19:45) | — | — |
 | 2 | (vorher) | **Funk-Vorschlag [V-Funk]** mit Bildern: Matrix-Punkte, Song-Streifen, Blatt-Aufbau Hochformat/quer; **F-1** (SQL) anfragen | 1 h | parallel zu 4.27.0 |
 | 3 | **4.28.0 Welle 1** | Zweig A `g6p-br-D`: **G6+a** · Zweig B `g6p-br-R`: **G6+b** · Zweig C `g6p-br-K`: **G6+c** (gegen die Datenform aus §2.2) | 10 · 18 · 12 h | ≈ 18 h |
-| 4 | **4.28.0 Welle 2** | A: **G6+f** → **G6+h** · B: **G6+d** → **G6+g** · C: **G6+e** | 19 · 17 · 14 h | ≈ 19 h |
+| 4 | **4.28.0 Welle 2** | A: **G6+f** → **G6+h** · B: **G6+d** → **G6+g** · C: **G6+e** | 20 · 17 · 14 h | ≈ 20 h |
 | 5 | **4.28.0 Welle 3** | **G6+i** Zusammenführen, Abnahme, Hörprobe, Auslieferung | 7 h | ≈ 7 h |
 
-**Kalender 4.28.0 ≈ 45 h** mit 3 Zweigen (Bauzeit ≈ 97 h). Fertige Teilstände gehen sofort als Vorschau raus (Regel 31): nach Welle 1 Stile mit Test-Knöpfen, nach Welle 2 das neue Blatt.
+**Kalender 4.28.0 ≈ 45 h** mit 3 Zweigen (Bauzeit ≈ 98 h). Fertige Teilstände gehen sofort als Vorschau raus (Regel 31): nach Welle 1 Stile mit Test-Knöpfen, nach Welle 2 das neue Blatt.
 
 **Begründung.** G6+0 kommt vorab, weil der ZIP-Fehler Daten kostet. Das ändert keinen Klang. G6+ kommt nach Video und G9 (Xanders Vorrang) und **vor G10**: G10h/i/j brauchen die Chor-Spuren, die
 Stufen-Rechnung und den `guide`-Knoten (Nachtrag 9 §3, Schritt 5). In Welle 1 stehen die drei Grundlagen (Daten, Rechnen, Klangweg). Sie berühren getrennte Blöcke und laufen
@@ -561,16 +612,29 @@ deshalb parallel. Stile, Blatt, Takes und Schatten bauen darauf auf.
 | **G9** (Songtext) | Text nur am Lead | `lyrics` nicht kopieren (f) |
 | **G10h** (Klavierrolle) | entkoppelte/duplizierte Stimmen und Chorstimmen öffnen dort | — |
 | **G10i** (Chor sichtbar) | Farbtabelle §1.6, Schatten (g), Stufen-Rechnung (b) | — |
-| **G10j** (Vorlage) | `guide`-Knoten der Gruppe (c), Chor-Spuren als Vorlage, Song-Haken `g6Took` | — |
+| **G10b** (Clip-Fenster) | entkoppelte/duplizierte Stimmen folgen dem Fenster des Lead-Stücks (§2.2) | — |
+| **G10c/G10d** (Takes, Comping) | Takes mit `of`/`src` im Takes-Blatt mit Herkunft; Chor schweigt, solange `comp` gesetzt ist | — |
+| **G10j** (Vorlage) | `guide`-Knoten der Gruppe und Vorlage-Faktor je Chor-Spur (c), Chor-Spuren als Vorlage, Song-Haken `g6Took` | — |
 | **Video** (VV) | — | `vvTakesReady` + `g6pWaitAll` (h) |
 
 ### 4.3 Auswirkung auf Nachtrag 9 (G10)
 
 - **G10i** wird kleiner (≈ 8 h → ≈ 4 h). „Chor folgt dem Lead“ (Befund 11c) erledigt G6+b über die Stufen, und Farben/Schatten/Legende liefert G6+g. Übrig bleiben die Übernahme in die Klavierrolle,
-  der rote Rand für leiterfremde Chornoten und das Chor-Band. G10-80 wird durch G6P-10 ersetzt. Die Farbtabelle §1.6 gilt (Oktave blau, Sexte violett).
-- **G10j** nutzt den `guide`-Knoten der Gruppe (G6+c) zusätzlich zu den Spur-Knoten. Die Vorlage „Chorstimme“ ist eine Chor-Spur.
+  der rote Rand für leiterfremde Chornoten und das Chor-Band. G10-80 wird durch G6P-10 ersetzt. Die Farbtabelle §1.6 gilt; sie übernimmt die Farben aus Nachtrag 9 §2.9 (Sexte blau,
+  Oktave violett) und ergänzt Quarte, Sekunde/Septime und gelb für freie Stimmen.
+- **G10i und alte Chöre (Regel 28):** Nachtrag 9 §2.9 wollte bei jeder Lead-Änderung die `iv` eines v1-Chors neu berechnen. Das entfällt: v1 bleibt eingefroren (§2.9 dieser Spec), und wer
+  „Chor folgt dem Lead“ will, tippt [Auf Chor-Gruppe umstellen] (§1.3). G10-81 gilt für v2 (Hand-Versatz als `d`/`x` in den Noten). G10-84 heißt für v1: Laden bitgleich (M-G28), und nach einer Lead-Änderung klingt der Chor genau wie
+  in 4.25.0 bei derselben Änderung (gehörte Fassung mit festem `iv`, keine Daten-Änderung am Chor). „Lead-Änderung + Chor-Neuberechnung = 1 Undo“ entfällt, weil sich bei v2 keine Chor-Daten ändern (§2.5).
+- **G10i, Spur-Modell:** Nachtrag 9 §2.9 nennt einen „Umbau `stimmeT()` auf mehrere STIMME-Spuren“. Das ist durch Weg B (§2.1) überholt, es bleibt eine STIMME-Spur. „Schatten aus den
+  Gruppen-Spuren“ heißt hier: Noten aus `voices[].n` der Stelle (v2: Höhe aus Plan `d/o/x` und Lead), Farbe, Name und Auge aus der Spur (`lane`).
+- **G10j** nutzt den `guide`-Knoten der Gruppe (G6+c) und den Vorlage-Faktor je Chor-Spur (§2.4), zusätzlich zu den `guide`-Knoten der Spuren aus Nachtrag 9 §2.10. Die Vorlage „Chorstimme“ ist eine
+  Chor-Spur: Sie bekommt +6 dB über ihren Faktor, die übrigen Chor-Spuren −10 dB. Ein v1-Chor läuft durch die STIMME-Kette und folgt deren `guide` wie der Lead.
+- **G10b** (Klammern, Anlauf/Ausklang, Rücken): Entkoppelte und duplizierte Stimmen spielen mit dem Fenster des Lead-Stücks (§2.2), sie brauchen dort keinen eigenen Schritt. Errechnete Stimmen
+  rechnen nach einer Fenster-Änderung neu (das Fenster steht im Cache-Schlüssel, §2.3 Nr. 7).
+- **G10c/G10d:** Das Takes-Blatt zeigt Takes mit `of` als „Chor Terz oben (aus Take 3)“ bzw. „Gegenstimme 1 (aus Take 3)“; Status-Chip „Chor-Gruppe“ (G10-25). Solange am Lead `comp` gesetzt ist,
+  schweigt auch der Chor v2 (wie Nachtrag 9 §2.4), und [Entkoppeln]/[Als Chor-Stimme duplizieren] sind dann grau mit dem Hinweis „erst Zusammenfügen“.
 - **G10h** öffnet Chorstimmen und entkoppelte Takes in der Klavierrolle. Nachtrag 9 §2.8 nennt „G6+ (entkoppelte Stimmen öffnen im selben Fenster)“ bereits als Abhängigkeit, das passt.
-- Nachtrag 9 schätzt „Entkoppeln ≈ 18 h“. Hier sind es ≈ 12 h für Entkoppeln **und** Duplizieren, weil geteilte PCM-Stücke und der Plan als `take.pitch` das Rendern von Audio ersparen.
+- Nachtrag 9 schätzt „Entkoppeln ≈ 18 h“. Hier sind es ≈ 13 h für Entkoppeln **und** Duplizieren (inkl. [Ganze Spur]), weil geteilte PCM-Stücke und der Plan als `take.pitch` das Rendern von Audio ersparen.
 
 ### 4.4 Offene Punkte (nur Zugang)
 
@@ -584,9 +648,14 @@ deshalb parallel. Stile, Blatt, Takes und Schatten bauen darauf auf.
 - Alle Zeilen sind gelesen, nicht gemessen. Die Abnahmen G6P-NN sind die Messung.
 - **[K] zu prüfen beim Bau:** (1) Die genaue Reihenfolge der `tkExt().proc`-Kette (Säubern → G4 → G2 → Zeitkarte, Z. 44148/43572) für die Fenster-Zeitkarte. (2) Ob die
   G2-Synthese stimmhafte Strecken wirklich unabhängig rechnet; davon hängt G6P-13 für v1 ab. (3) Die Felder `q/str/mode` von `take.pitch` beim Entkoppeln, wenn der Lead **kein** Tonhöhen-Feld hat:
-  Dann bekommt die Kopie `{mode: 'soft', str: 0, q: false, notes: erkannte Noten + sh}`.
+  Dann bekommt die Kopie `{mode: 'soft', str: 0, q: false, notes: erkannte Noten + sh}` (`g2NormPitch` Z. 44108ff rundet `sh` auf ganze Halbtöne, −36…36; das passt, weil `c − L` ganzzahlig ist).
 - **[S] am Gerät:** Rechenzeiten am iPhone (Ziel ≤ 2 × Prüfrechner), ob „Falsett“ nach Kopfstimme klingt, und die Stil-Werte (Hörprobe G6P-81).
 - Versionsnummern vergibt der Dirigent beim Zusammenführen (parallel laufen North, Bit Mask, Innovation, T1 und Magic Scale).
+- **Fassung 2 (strenge Prüfung 01.11.):** Zeilen korrigiert (`g6Mix` Z. 44696/44706, `g6Sheet` Z. 44737). Ergänzt: feste Rollen-Schreibweise und Namens-Tabelle (fertig benannt),
+  Farbe bei Akkord-Rollen, was ein Stil ersetzt, Spur-Grenze 8 mit Übernahme/Löschen, [Ganze Spur] beim Duplizieren (Xander: „Gesangsspur duplizieren“), Anfangswerte der Kopie,
+  Echo-Zeit als Vorschlag auf Tipp (Xander 13:30 „Echo-/Hallzeiten“), Zischlaute auch für Take-Stimmen, Pegel/Pan je Stelle statt „Spur-Pegel“, Vorlage-Faktor je Chor-Spur für G10j,
+  Format-Trennung Lesen/Schreiben (`PROJECT_FORMAT` an 13 Stellen), Rückfall-Felder für 4.25.0, Regel-28-Ausnahme „gleicher Take, verschiedene Chor-Werte“, v1 folgt dem Lead nicht in Stufen,
+  Stil-Kacheln hochkant 2 × 4, Knotenzahl, Farbtabelle wie Nachtrag 9, Abhängigkeiten zu G10b/c/d/i/j.
 
 ## Quellen (kurz, eigene Worte)
 
