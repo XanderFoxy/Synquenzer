@@ -68512,7 +68512,7 @@ function vv2Api() {
    Namen, Raster) liegt je Bildgröße in einem Puffer-Bild, die Glüh-Punkte je Farbe in kleinen Bildern; je Bild kommen nur die
    leuchtenden Punkte, Kurven und Zahlen dazu. Kein Zufall, keine Uhr: zwei Renders geben dieselben Bilder. */
 const VK2_ID = 'kino', VK2_COL = '#ff6a3d', VK2_HOLD = 1.5, VK2_LO = 21, VK2_NK = 88;   // Lauflicht: 88 Tasten A0 … C8; der Morph bleibt 1,5 s stehen
-const VK2 = {cap: new WeakMap(), live: [], bg: null, spr: new Map(), probe: null};
+const VK2 = {cap: new WeakMap(), live: [], bg: null, spr: new Map(), probe: null, full: false};
 const VK2_MK = {'f.cut': 'cutoff', 'f.res': 'res', 'f.type': 'ftype', 'f.eg': 'fenv', 'e2.a': 'aA', 'e2.d': 'aD', 'e2.s': 'aS', 'e2.r': 'aR', 'e1.a': 'fA', 'e1.d': 'fD', 'e1.s': 'fS', 'e1.r': 'fR'};
 const VK2_NM = {cutoff: 'CUTOFF', res: 'RESONANZ', ftype: 'FILTERTYP', fenv: 'FILTER-HK', aA: 'AMP A', aD: 'AMP D', aS: 'AMP S', aR: 'AMP R', fA: 'FILTER A', fD: 'FILTER D', fS: 'FILTER S', fR: 'FILTER R'};
 const VK2_FT = ['LP24', 'LP12', 'BP24', 'BP12', 'HP24', 'HP12'];
@@ -68819,7 +68819,7 @@ function vk2Frame(g, L, rows, st, C) {
       if (acc[s]) { vk2Glow(g, '#ffd28a', x0 + w0 / 2, Rw.y2 + Rw.h2 / 2, cw * .8, .8); g.fillStyle = '#fff6e6'; g.fillRect(x0 + w0 * .3, Rw.y2 + Rw.h2 * .3, w0 * .4, Rw.h2 * .4); }
       if (s === cur) { g.strokeStyle = C.amber; g.lineWidth = .9; g.strokeRect(x0 - .3, Rw.y2 - .3, w0 + .6, Rw.h2 + .6); }
     }
-    pr.steps = Array.from(steps, v => +v.toFixed(2)); pr.acc8 = Array.from(acc);
+    if (VK2.full) { pr.steps = Array.from(steps, v => +v.toFixed(2)); pr.acc8 = Array.from(acc); }   // the step lists only for the test API
     // the newest note (name · velocity 0 … 127) under the name
     if (sub) { g.fillStyle = C.dim; g.textAlign = 'left'; g.font = '600 ' + (L.port ? 7 : 7.5) + 'px ' + C.num; g.fillText(sub, Rw.x + 9, Rw.y + Rw.h * .72); }
     // a glide of this track: the diamond and the progress under the row
@@ -68987,7 +68987,7 @@ function vk2Api() {
     vk2Probe: () => (VK2.probe ? JSON.parse(JSON.stringify(VK2.probe)) : null),
     vk2At: (t, fmt) => {
       const r = VV.last; if (!r) return null; const [W, H] = VV_SIZE[fmt || '16:9'], cv = document.createElement('canvas'); cv.width = W / 3; cv.height = H / 3;
-      const st = vvStateAt(r, t || 0), T0 = performance.now(); vk2Shot(cv.getContext('2d', {alpha: false}), cv.width, cv.height, null, {k: 0, v: VK2_ID}, st, 0, true);
+      const st = vvStateAt(r, t || 0), T0 = performance.now(); VK2.full = true; try { vk2Shot(cv.getContext('2d', {alpha: false}), cv.width, cv.height, null, {k: 0, v: VK2_ID}, st, 0, true); } finally { VK2.full = false; }
       return Object.assign(JSON.parse(JSON.stringify(VK2.probe)), {ms: +(performance.now() - T0).toFixed(2)});
     },
     vk2Runs: () => { const r = VV.last, M = r && r.tl ? VK2.cap.get(r.tl) : null; if (!M) return null;
