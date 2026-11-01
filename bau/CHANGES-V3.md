@@ -1,3 +1,10 @@
+## 4.40.0 — Regler drehen mit, North-Platte auf der Perkussionsspur
+
+- **Regler drehen sichtbar mit:** Wechselt ein Clip mit Klangzustand ◆ (Szene, Songteil, Song-Kante), drehen sich die Regler im offenen Editor jetzt mit demselben Tempo wie der Klang zum neuen Wert und zurück. Greifst du selbst an einen Regler, gilt deine Hand.
+- **North auf der Perkussionsspur:** Seite NORTH → rote Taste **Platte** oben rechts. Das ist dieselbe Platte wie auf der Drum-Spur, im gleichen Aussehen und mit der gleichen Bedienung. Jeder Kanal hat alle Regler (TONE · NOISE · CLICK · MIX · FX · HALL/ECHO), jede Dreh-Geste ist ein Schritt für ↶. Die Seite NORTH selbst bleibt wie sie war.
+- **Querformat:** Die Seite NORTH scrollt quer innen, damit unten nichts abgeschnitten ist. Die übrigen Seiten im Querformat prüfe ich im nächsten Paket.
+Tests: Regeln (live 1×, MS 2000 1×, Marken 0), acorn 0 doppelt / 0 Syntaxfehler, Rauchtest grün; Regler-Fahrt gemessen (Cutoff 300 Hz → 8 kHz schrittweise, Rückfahrt); Platte auf der Perkussionsspur hochkant und quer geöffnet, ohne Fehler.
+
 ## 4.39.0 — North-Pads, Spuren erreichen, Tipp wählt wieder, Stopp-Logik
 
 - **North:** Jedes Pad hatte schon eigene Werte. Die Verwirrung kam von zwei Stellen: Bei Wellen ohne Spektrum (z. B. Kick „Rund“ = Sinus) stand im Feld nur „–“, obwohl der Regler sich bewegte → jetzt steht der Wert immer da, gedimmt mit „ohne Wirkung · A1“. Und **ALLE KANÄLE** blieb beim Pad-Wechsel an (dann wirkt jede Änderung auf alle Pads) → geht jetzt beim Wechsel des Pads aus. Kurze, trockene Kick: DECAY ~12–18, NOISE LVL 0, CLICK 0.
