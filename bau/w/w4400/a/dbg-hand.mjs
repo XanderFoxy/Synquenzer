@@ -1,0 +1,22 @@
+import { chromium } from 'playwright';
+const f = process.argv[2];
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const p = await b.newPage({viewport: {width: 428, height: 926}, hasTouch: true});
+p.on('console', m => console.log('C:', m.text()));
+await p.goto('file://' + f); await p.waitForTimeout(1500);
+await p.evaluate(() => { const Q = window.SYNQUENZER; Q.v6aSetState(2, 0, {p: {cutoff: 300}}); Q.v6aSetState(2, 1, {p: {cutoff: 8000}});
+  Q.v6aSetGlide(2, 0, {x: 'bar1'}); Q.v6aSetGlide(2, 1, {x: 'bar1'}); Q.selectTrack(2); Q.openEditor(); });
+await p.waitForTimeout(400);
+await p.evaluate(() => { const t = [...document.querySelectorAll('#synthSheet button')].find(x => x.textContent.trim() === 'FILTER'); t.click(); });
+await p.evaluate(() => window.SYNQUENZER.launchScene(0)); await p.waitForTimeout(1500);
+await p.evaluate(() => { window.SYNQUENZER.launchScene(1);
+  const o = window.setP; window.setP = function (i, k, v) { console.log('setP ' + i + ' ' + k + ' ' + v + ' ov=' + kv1Ov(2, 'cutoff') + ' hand=' + JSON.stringify(KV1.hand[2] ? [...KV1.hand[2].k] : null)); return o.apply(this, arguments); };
+  const h = window.kv1Hand; window.kv1Hand = function (i, k) { console.log('hand ' + i + ' ' + k + ' ' + new Error().stack.split('\n').slice(2, 5).join(' / ')); return h.apply(this, arguments); }; });
+for (let k = 0; k < 100; k++) { const ph = await p.evaluate(() => { const r = KV1.run[2], t = kv1T(); return r && r.t1 > r.t0 ? (t - r.t0) / (r.t1 - r.t0) : -1; }); if (ph >= .4) break; await p.waitForTimeout(50); }
+const bx = await p.evaluate(() => { const r = document.querySelector('#synthSheet .knob[data-key="cutoff"] svg').getBoundingClientRect(); console.log('before ov=' + kv1Ov(2, 'cutoff') + ' snd=' + (KV1.run[2].snd === S.tracks[2].sound) + ' cur=' + (KV1.run[2].cur === R.v6aCur[2])); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
+await p.mouse.move(bx.x, bx.y); await p.mouse.down();
+await p.evaluate(() => console.log('after down ov=' + kv1Ov(2, 'cutoff') + ' snd=' + (KV1.run[2].snd === S.tracks[2].sound) + ' cur=' + (KV1.run[2].cur === R.v6aCur[2])));
+await p.mouse.move(bx.x, bx.y - 8, {steps: 2}); await p.mouse.move(bx.x, bx.y - 14, {steps: 2});
+await p.evaluate(() => console.log('after move txt=' + document.querySelector('#synthSheet .knob[data-key="cutoff"] .kn').textContent));
+await p.mouse.up();
+await b.close();

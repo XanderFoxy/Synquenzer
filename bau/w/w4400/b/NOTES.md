@@ -40,7 +40,7 @@
 
 ## Getestet
 
-- Das Skript ist `nps-test.mjs`: `node nps-test.mjs <index.html> <ordner>`. Alle 30 Prüfungen sind ok:
+- Das Skript ist `nps-test.mjs`: `node nps-test.mjs <index.html> <ordner>`. Alle 29 Prüfungen sind ok:
   - Seite NORTH: Display und 12 Pads sind da. Ein Pad wählt den Kanal und schlägt (oben laut, unten leise, im Schlag-Log).
   - Die Sektion TONE öffnet die Platte für die Perkussionsspur, Kanal KICK.
   - DECAY ziehen ändert `nk.ch[0].mDec`. Das gibt genau einen Undo-Schritt, und das Programm geht an den Knoten (`PERC.st[0].sent[0]`).

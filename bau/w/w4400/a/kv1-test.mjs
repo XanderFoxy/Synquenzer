@@ -45,9 +45,18 @@ const res = {};
   // Rückfahrt Szene 2 -> 1 und eine Hand während der Fahrt (setParam = Griff an den Regler)
   await p.evaluate(() => window.SYNQUENZER.launchScene(0));
   const B = await follow(p, 'A Rueckfahrt', 3200);
-  await p.evaluate(() => window.SYNQUENZER.setParam(2, 'cutoff', 2000));
-  const H = await follow(p, 'A Hand', 2500);
-  res.Rueck = {monotonFallend: mono(B.map(o => o.n), false), letzter: B[B.length - 1].txt, handZeigt: [...new Set(H.map(o => o.txt))].join(','), grund: H[H.length - 1].grund};
+  res.Rueck = {monotonFallend: mono(B.map(o => o.n), false), letzter: B[B.length - 1].txt};
+  // die Hand greift mitten in der nächsten Fahrt an den CUTOFF-Regler (echte Zeiger-Ereignisse): kein Sprung, danach zeigt er den Griff-Wert
+  await p.evaluate(() => window.SYNQUENZER.launchScene(1));
+  let o; for (let k = 0; k < 80; k++) { o = await read(p); if (o.ph != null && o.ph >= .4 && o.ph < 1) break; await p.waitForTimeout(60); }
+  const bx = await p.evaluate(() => { const r = document.querySelector('#synthSheet .knob[data-key="cutoff"] svg').getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
+  const vorGriff = await read(p);
+  await p.mouse.move(bx.x, bx.y); await p.mouse.down(); await p.mouse.move(bx.x, bx.y - 8, {steps: 2}); await p.mouse.move(bx.x, bx.y - 14, {steps: 2});
+  const imGriff = await read(p);
+  const H = await follow(p, 'A Hand', 2600);
+  await p.mouse.up();
+  const nach = await read(p);
+  res.Hand = {vorGriff: vorGriff.txt + ' (n ' + vorGriff.n + ')', imGriff: imGriff.txt + ' (n ' + imGriff.n + ')', sprungN: +(imGriff.n - vorGriff.n).toFixed(3), haeltWert: new Set(H.map(x => x.txt)).size === 1, nachEnde: nach.txt, grundklangJetzt: nach.grund, amberNachGriff: H.some(x => x.amb)};
   await p.evaluate(() => window.SYNQUENZER.stop()); await p.close();
 }
 // B: konsolidierter Song-Teil (Kette Szene 1 · 2 Takte, Szene 2 · 2 Takte) als Teil abgespielt
