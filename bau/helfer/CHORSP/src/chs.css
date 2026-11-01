@@ -1,0 +1,63 @@
+/* CHS-CSS-BEGIN – CHORSP: Background-Gruppe (Matrix/Song), Mischpult, Lineal im Gesangs-Editor */
+#clipGrid .chsth{position:relative;min-width:0;min-height:0;height:100%;text-align:left;padding:2px 4px 2px 9px;background:linear-gradient(var(--chassis-2),var(--chassis));border:1px solid var(--line);border-radius:var(--r-s);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:2px;overflow:hidden;color:var(--text)}
+#clipGrid .chsth::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--cc,var(--text-faint))}
+#clipGrid .chsth .chsnm{font:700 11px/13px var(--font-ui);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#clipGrid .chsth .chssb{font:600 10px/1 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#clipGrid .chsth.chsgrp{flex-direction:row;flex-wrap:wrap;align-items:center;align-content:center;justify-content:flex-start;column-gap:4px;padding-left:6px;background:linear-gradient(var(--chassis-3),var(--chassis-2))}
+#clipGrid .chsth.chsgrp::before{background:repeating-linear-gradient(var(--chor3) 0 25%,var(--chor5) 0 50%,var(--chor6) 0 75%,var(--chor8) 0 100%)}
+#clipGrid .chsth.chsgrp .chssb{flex-basis:100%}
+#clipGrid .chstri{display:inline-grid;place-items:center;width:12px;transition:transform .15s;color:var(--text-dim)}
+#clipGrid .chsth.open .chstri,.sv-l .chstri.open{transform:rotate(90deg)}
+#clipGrid .chsth .chssw{position:absolute;right:3px;top:3px;min-width:16px;height:16px;padding:0 2px;border-radius:4px;background:var(--cc);color:#0e1014;font:800 10px/16px var(--font-num);font-style:normal;text-align:center}
+#clipGrid .chsth:not(.chsgrp) .chsnm{padding-right:18px}
+#clipGrid .chsth.muted .chsnm{opacity:.45;text-decoration:line-through}
+#clipGrid .chsc{position:relative;min-width:0;min-height:0;padding:0;border:1px dashed var(--line);border-radius:6px;overflow:hidden;background:transparent}
+#clipGrid .chsc.filled{border:1px solid rgba(255,255,255,.05);background:color-mix(in srgb,var(--cc,var(--text-faint)) 16%,transparent)}
+#clipGrid .chsc.chsgrp.filled{background:rgba(255,255,255,.04)}
+#clipGrid .chsc.muted{opacity:.45}
+#clipGrid .chsc .chsmini{position:absolute;inset:3px;pointer-events:none}
+#clipGrid .chsc .chsmini svg{width:100%;height:100%;display:block}
+#clipGrid .chsc .chsmini rect{fill:var(--cc,#999)}
+#clipGrid .chse{min-width:0;min-height:0;padding:0;border:1px solid var(--line);border-radius:var(--r-s);background:var(--chassis);color:var(--text-dim);font:800 12px/1 var(--font-ui);display:grid;place-items:center}
+#clipGrid .chse.on{background:var(--amber);color:var(--ink);border-color:var(--amber)}
+.sv-l.chs{cursor:pointer;opacity:1}
+.sv-l.chs.chsgrp{color:var(--text);gap:3px}
+.sv-l.chs .chstri{display:inline-grid;place-items:center;width:12px;transition:transform .15s}
+.sv-l.chs .chsdg{flex:none;min-width:12px;height:12px;padding:0 2px;border-radius:3px;background:var(--tc);color:#0e1014;font:800 9px/12px var(--font-num);text-align:center}
+.sv-l.chs.muted span{opacity:.45;text-decoration:line-through}
+.chsmix{width:min(560px,calc(100vw - 16px))}
+.chsmix .chs-mh{display:flex;align-items:center;gap:6px;margin:0 0 4px}
+.chsmix .chs-mh b{flex:1 1 auto;font:700 13px/1.2 var(--font-ui);letter-spacing:.04em;text-transform:uppercase;min-width:0}
+.chsmix .chs-mh .rb{min-height:44px;min-width:44px;padding:0 10px}
+.chsmix .rb.on{background:var(--amber);color:var(--ink);border-color:var(--amber)}
+.chsmix .chs-mg{display:grid;grid-template-columns:1fr;gap:0}
+.chsmix .chs-note{margin:0 0 6px;font-size:11px;line-height:1.3}
+.chsmix .chs-sl{display:flex;align-items:center;gap:6px;min-width:0;min-height:44px}
+.chsmix .chs-sll{flex:0 0 78px;font:700 10px/1.1 var(--font-ui);color:var(--text-dim)}
+.chsmix .chs-lr .chs-sll{flex-basis:34px}
+.chsmix .chs-sl output{flex:0 0 58px;font:600 11px/1 var(--font-num);text-align:right;white-space:nowrap;color:var(--text)}
+.chsmix .chs-sl input[type=range]{flex:1 1 auto;min-width:44px;width:100%;height:44px;margin:0;background:transparent;-webkit-appearance:none;appearance:none;touch-action:none}
+.chsmix .chs-sl input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--line)}
+.chsmix .chs-sl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-10px;border-radius:50%;background:var(--cc,var(--t8));border:2px solid var(--chassis)}
+.chsmix .chs-lanes{max-height:min(46vh,340px);overflow-y:auto;overscroll-behavior:contain;border-top:1px solid var(--line)}
+.chsmix .chs-lane{padding:2px 0 2px 8px;border-bottom:1px solid var(--line);box-shadow:inset 4px 0 0 var(--cc)}
+.chsmix .chs-lane.hl{background:rgba(255,255,255,.05)}
+.chsmix .chs-lane.muted b{opacity:.5;text-decoration:line-through}
+.chsmix .chs-lt{display:flex;align-items:center;gap:4px;min-height:44px}
+.chsmix .chs-lt b{flex:1 1 auto;min-width:0;font:600 13px/1.2 var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chsmix .chs-chip{flex:none;display:grid;place-items:center;min-width:22px;height:22px;padding:0 3px;border-radius:4px;background:var(--cc);color:#0e1014;font:800 12px/1 var(--font-num);font-style:normal}
+.chsmix .chs-lt .rb{flex:none;width:44px;height:44px;min-width:44px;padding:0;font:800 13px/1 var(--font-ui)}
+.chsmix .chs-lr{display:grid;grid-template-columns:1fr 1fr;column-gap:10px}
+.chsmix .chs-mf{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.chsmix .chs-mf .mbtn{width:100%;min-height:44px;margin:0;padding:0 6px;line-height:1.12}
+@media (orientation:portrait){.chsmix .chs-lr{grid-template-columns:1fr}}
+#wpSheet .wpcv .chsov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+#wpSheet .wpcv .chsrul{position:absolute;left:0;right:0;bottom:0;height:44px;z-index:3;display:flex;align-items:stretch;touch-action:none}
+#wpSheet .wpcv .chsrul .chsrz{flex:1 1 auto;min-width:0;touch-action:none;cursor:pointer}
+#wpSheet .wpcv .chsrul .rb{flex:none;width:44px;height:44px;min-width:44px;padding:0;display:grid;place-items:center;border:0;border-radius:6px;background:rgba(28,31,37,.9);color:var(--text)}
+#wpSheet .wpcv .chsrul .rb.on{background:var(--amber);color:var(--ink)}
+#wpSheet .wpcv .chsrul .chspl.on{background:var(--play,#3ddc84);color:#0e1014}
+#wpSheet .wpcv.chsr .wpinfo{bottom:46px;left:48px;max-width:calc(100% - 100px)}
+#wpSheet .g6pgc .chscur{opacity:.35}
+#wpSheet .g6pgc.chslead .g6pgsw{background:#969eac}
+/* CHS-CSS-END */
