@@ -68,7 +68,9 @@ function g9AsrWorkerMain() {
     await cache(m.cache);
     if (!T) T = await import(await blobOf(m.lib, 'text/javascript'));
     const E = T.env;
-    E.allowLocalModels = false; E.allowRemoteModels = false;          // nur aus dem eigenen Cache, nie Netz
+    E.allowLocalModels = false; E.allowRemoteModels = true;            // Pfade wie Modell-Ablage, Inhalt nur aus dem eigenen Cache:
+    E.fetch = async u => { throw new Error('nicht im Cache: ' + String(u).split('/').pop()); };   // die Bibliothek lädt nie selbst
+    E.remotePathTemplate = '{model}/resolve/' + m.rev + '/';         // feste Revision für alle Dateien (die Bibliothek reicht revision nicht überall durch)
     E.useBrowserCache = false; E.useCustomCache = true; E.useWasmCache = false;
     E.customCache = {match: k => CA.match(k), put: async () => {}};
     const ow = E.backends.onnx.wasm, sfx = m.how === 'webgpu' ? '.asyncify' : '';
@@ -95,7 +97,8 @@ function g9AsrWorkerMain() {
     const t0 = performance.now(), x = m.x;
     const lang = m.lang === 'de' || m.lang === 'en' ? m.lang : await detect(x);
     const t1 = performance.now();
-    const r = await P(x, {return_timestamps: 'word', language: lang, task: 'transcribe'});
+    // Obergrenze nach Fensterlänge (Gesang ≤ ≈ 6 Token/s): eine Wiederholungs-Schleife kostet so höchstens Sekunden statt eines vollen Laufs
+    const r = await P(x, {return_timestamps: 'word', language: lang, task: 'transcribe', max_new_tokens: Math.min(440, Math.ceil(x.length / 16000 * 6) + 16)});
     const words = [];
     for (const c of (r && r.chunks) || []) {
       const t = String(c.text || '').trim(); if (!t) continue;
