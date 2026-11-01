@@ -1,0 +1,5 @@
+PASS BM1-12 Chromium: zwei Offline-Render nach reset bitgleich (48 kHz) — Differenz 0, Pegel -24.0 dBFS
+PASS BM1-12 Chromium: zwei Offline-Render nach reset bitgleich (44.1 kHz) — Differenz 0, Pegel -23.9 dBFS
+PASS BM1-13 Chromium (echter AudioWorklet, nur Messwert): Bit-Mask-Stimme gegen VA-Stimme — 0.92 × (Bit Mask 1 Stimme 1.20 %, 12 Stimmen + FX1 CH4 + FX2 RV3 7.99 % (max 10.39 %, Quantum max 7 ms), Leerlauf 0.000 %; VA-Stimme 1.30 %)
+PASS BM1 Chromium: App startet ohne Konsolenfehler, Block sq-bm-src läuft — keine Fehler
+rc=0
