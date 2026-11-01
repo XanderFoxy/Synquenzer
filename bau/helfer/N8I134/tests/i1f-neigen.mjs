@@ -14,7 +14,7 @@ const serve = port => http.createServer((q, r) => {
   const u = decodeURIComponent(q.url.split('?')[0]);
   if (u === '/frame.html') {   // a small page with the NEIGEN source and a button (for the iframe cases)
     r.setHeader('content-type', 'text/html');
-    return r.end('<!doctype html><meta charset="utf-8"><button id="nb" style="width:140px;height:64px">N</button><script src="/bau/helfer/I3U/src/neigen.js"></script><script>document.getElementById("nb").addEventListener("click",()=>{window.__st=NEIGEN.tap();});</script>');
+    return r.end('<!doctype html><meta charset="utf-8"><button id="nb" style="width:140px;height:64px">N</button><script src="/bau/helfer/N8I134/src/neigen.js"></script><script>document.getElementById("nb").addEventListener("click",()=>{window.__st=NEIGEN.tap();});</script>');
   }
   if (u.startsWith('/host-')) {   // a page that embeds frame.html from origin `port`
     const fp = u.slice(6, -5); r.setHeader('content-type', 'text/html');
@@ -57,7 +57,7 @@ async function appPage(o = {}) {
     try { await c.send('Emulation.setSensorOverrideEnabled', {enabled: true, type: 'relative-orientation'}); }
     catch (e) { sensor = 'dor'; }
   }
-  await p.goto(`http://localhost:${PA}/bau/helfer/I3U/${appName}`);
+  await p.goto(`http://localhost:${PA}/bau/helfer/N8I134/${appName}`);
   await p.waitForFunction(() => window.SYNQUENZER && window.SYNQUENZER.version, null, {timeout: 30000});
   await p.evaluate(() => {
     if (typeof srLoad === 'function') srLoad();

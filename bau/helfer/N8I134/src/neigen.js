@@ -20,7 +20,7 @@ const NEIGEN = (() => {
 
   const hooks = {
     _x: 0,
-    get: () => (typeof srGet === 'function' && srGet.length === 0 ? +srGet() || 0 : hooks._x),
+    get: () => (typeof R !== 'undefined' && R && R.sr && typeof srHand === 'function' ? +R.sr.x || 0 : hooks._x),   // I1c: the hand position
     hand: (x, phase) => { if (typeof srHand === 'function') srHand(x, 'neigen', phase); else hooks._x = x; }};
 
   // R = Rz(alpha) · Rx(beta) · Ry(gamma) (W3C, intrinsic Z-X'-Y''), row-major into out

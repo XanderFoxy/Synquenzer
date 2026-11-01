@@ -155,6 +155,46 @@ ok('I3-37 Tabelle im Worklet', rF.lf && rF.lf[0] === true, JSON.stringify(rF.lf)
 ok('I3-02 l1f Speichern → Laden deep-equal, Form 5 bleibt', rF.eq && rF.shape === 5);
 ok('I3-02 need enthält lf', rF.need.includes('lf'), JSON.stringify(rF.need));
 
+
+// ---- I1b native (forceNative): a new native voice plays the effective cutoff; track volume (fx.vol) and a drum slot (drum.kick.tDec)
+// follow the knob on the main thread; I1-17 drums per hit at 0 / 0.5 / 1
+const rN = await p.evaluate(async () => {
+  SYNQUENZER.sr.clear(); const uid = S.tracks[0].uid, du = S.tracks[DRUM_T].uid;
+  SYNQUENZER.sr.target({p: 1, u: {[uid]: {c: {cutoff: .3, 'fx.vol': -.2}}, [du]: {c: {'drum.kick.tDec': .2}}}});
+  UI.forceNative = true; syncEngines(); await new Promise(r => setTimeout(r, 150));
+  const out = {wk: !!AU.synth[0]};
+  const dec = x => { R.sr.x = x; return srDrumP('kick', slotParams('kick'), AU.ctx.currentTime).tDec; };
+  const D = DPD.tDec, b = slotParams('kick').tDec;
+  out.d0 = dec(0) === b; out.d1 = Math.abs(toNorm(D, dec(1)) - toNorm(D, b) - .2) < 1e-6; out.d5 = Math.abs(toNorm(D, dec(.5)) - toNorm(D, b) - .1) < 1e-6;
+  SYNQUENZER.sr.set(1); await new Promise(r => setTimeout(r, 120));
+  const v = spawnVoice(0, 60, .8, AU.ctx.currentTime + .05, {src: 'audition'});
+  out.vP = v ? v.P.cutoff : null; out.want = heardAt(0, 'cutoff'); out.base = S.tracks[0].sound.p.cutoff;
+  out.vol = trackFx(S.tracks[0]).vol; out.volWant = fromNorm(PD['fx.vol'], toNorm(PD['fx.vol'], fxOfSound(S.tracks[0].sound).vol) - .2);
+  if (v) v.release(AU.ctx.currentTime + .2);
+  UI.forceNative = false; SYNQUENZER.sr.clear(); syncEngines(); await new Promise(r => setTimeout(r, 150));
+  out.back = !!AU.synth[0] && trackFx(S.tracks[0]).vol === fxOfSound(S.tracks[0].sound).vol;
+  return out;
+});
+ok('I1-18 nativ: neue Stimme spielt den gehörten Cutoff', !rN.wk && rN.vP != null && Math.abs(rN.vP - rN.want) < 1e-6 && rN.vP !== rN.base, Math.round(rN.base) + ' → ' + Math.round(rN.vP || 0) + ' Hz');
+ok('I1b Spur-Lautstärke folgt dem Super-Regler (Hauptfaden)', Math.abs(rN.vol - rN.volWant) < 1e-9, rN.vol.toFixed(3));
+ok('I1-17 Drums je Schlag: 0 / 0,5 / 1 = Grund / Mitte / Ziel', rN.d0 && rN.d5 && rN.d1);
+ok('I1b ohne Super-Regler wieder Grundwerte, Worklet zurück', rN.back);
+
+// ---- I4c one note source: taps in an analysis -> tap notes in vsNotesOf's form; without taps vsNotesOf as before (I4-28)
+const rT = await p.evaluate(() => {
+  const hop = 80, fs = 16000, dt = hop / fs, n = Math.round(2 / dt), f0 = new Float64Array(n), rms = new Float64Array(n).fill(-200);
+  for (let i = 0; i < n; i++) { f0[i] = 440 * Math.pow(2, (69 + (i * dt >= 1 ? 3 : 0) - 69) / 12); rms[i] = -20; }
+  const tr = {f0, rms, n, hop, fs}, A = {tr, fs, hop, beatOf: s => s * 2, key: {root: 9, scale: 'aeolian'}};
+  const without = JSON.stringify(vsNotesOf(Object.assign({}, A), {snap: true}));
+  const A2 = Object.assign({}, A, {tips: [0, .5, 1, 1.5].map(s => ({s0: s + .01, s1: s + .4}))});
+  const w = vsNotesOf(A2, {snap: true}), again = vsNotesOf(A2, {snap: true});
+  return {n: w.notes.length, pitches: w.notes.map(x => x.n).join(','), form: w.notes.every(x => 'b' in x && 'd' in x && 'v' in x && 'raw' in x), tip: w.tip, cached: w === again,
+    stimme: vsNotesOf(A2, {snap: true, rh: 'stimme'}).notes.length, without: without === JSON.stringify(vsNotesOf(Object.assign({}, A), {snap: true})), line: tipLine(w.tip)};
+});
+ok('I4-33 eine Notenquelle: 4 Tipps → 4 Noten in derselben Form', rT.n === 4 && rT.form && rT.pitches === '69,69,72,72', rT.pitches + ' · ' + rT.line);
+ok('I4c Ergebnis je Analyse zwischengespeichert', rT.cached);
+ok('I4-28 ohne Tipps bzw. rh „stimme“: VS2 wie vorher', rT.without && rT.stimme === 2, 'VS2: ' + rT.stimme + ' Noten');
+
 ok('Konsole ohne Fehler', errs.length === 0, errs.slice(0, 3).join(' | '));
 await b.close();
 console.log(fails ? 'FEHLER: ' + fails : 'ALLES GRÜN', '(' + res.length + ' Punkte)');
