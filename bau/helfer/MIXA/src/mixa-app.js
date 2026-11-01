@@ -200,7 +200,7 @@ function mixaMoveTaps(from, to) {
   try { if (UI.g10Out && UI.g10Out.an && UI.g10Out.an.context === AU.ctx) { try { from.disconnect(UI.g10Out.an); } catch (e) {} to.connect(UI.g10Out.an); } } catch (e) {}
 }
 function mixaAbSet(A, now) {
-  const c = AU.ctx, t = c.currentTime, on = !!A.on && !MIXA.ab;
+  const c = AU.ctx, t = c.currentTime, on = !!A.on && !(MIXA.ab && !UI.vvOff);   // Video/GarageBand: immer der Auto-Master
   if (now) { A.ga.gain.value = on ? 0 : 1; A.gb.gain.value = on ? 1 : 0; return; }
   for (const [g, v] of [[A.ga, on ? 0 : 1], [A.gb, on ? 1 : 0]]) { g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(v, t, 0.008); }
 }

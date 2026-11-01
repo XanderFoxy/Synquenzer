@@ -287,7 +287,7 @@ function mixaDspMake() {
       let pw = a, pl = Ld[a]; for (let w = a; w < lim; w++) if (Ld[w] > pl) { pl = Ld[w]; pw = w; }
       let aw = a; while (aw < pw && Ld[aw] < pl - 1) aw++;
       att.push((aw - a + 0.5) * ms);
-      if (pw + n2 < nx) d200.push(Ld[pw + n2] - pl); if (pw + n5 < nx) d500.push(Ld[pw + n5] - pl);
+      if (aw + n2 < nx) d200.push(Ld[aw + n2] - pl); if (aw + n5 < nx) d500.push(Ld[aw + n5] - pl);   // ab dem Erreichen der Spitze (−1 dB)
       let mn = pl, se = 0, sc = 0; for (let w = pw; w < nx; w++) { if (Ld[w] < mn) mn = Ld[w]; se += Math.pow(10, (Ld[w] - pl) / 10); sc++; }
       gap.push(mn - pl); if (sc) sus.push(lg(se / sc));
       if (k + 1 < on.length) ioi.push((on[k + 1] - a) * ms);
@@ -326,7 +326,7 @@ function mixaDspMake() {
     const L = ns && ns.n >= 3 ? ns.durB : null, att = f && !f.silent ? f.att : null, gap = f && !f.silent ? f.gap : null, d200 = f && !f.silent ? f.d200 : null, sus = f && !f.silent ? f.sus : null;
     if (cls === 'drums') return 'kurz';
     if ((att != null && att >= 60) || (L != null && L >= 1.5 && (sus == null || sus >= -8))) return 'schwebend';
-    if ((L != null && L <= 0.3) || (gap != null && gap <= -20 && (L == null || L <= 0.6)) || (d200 != null && d200 <= -18 && (L == null || L <= 0.6))) return 'kurz';
+    if ((L != null && L <= 0.3) || (gap != null && gap <= -20 && (L != null ? L <= 0.6 : d200 != null && d200 <= -12)) || (d200 != null && d200 <= -18 && (L == null || L <= 0.6))) return 'kurz';   // ohne Noten (Gesang): erst mit schnellem Abfall
     return 'ausklingend';
   }
 
