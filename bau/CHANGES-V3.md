@@ -1,3 +1,10 @@
+## 4.35.0 — Spurkopf, Zoom im Song, Versionen eines Clips
+
+- **Spurkopf (Matrix links, im Song die Namensspalte):** Tipp = stumm, **Halten = Solo** (gelbes S, andere gedimmt), **waagrecht schieben = Lautstärke** mit dB-Anzeige; Doppeltipp auf den Schieber = 0 dB. Solo gilt nur live (nicht im Export, nicht gespeichert). Das Spur-Blatt (＋ Spur, entfernen …) liegt jetzt auf **■ der Zeile halten**. Im Song: Tipp auf den Namen wählt die Spur nicht mehr, sondern schaltet stumm (und wählt sie mit).
+- **Song zoomen:** mit **zwei Fingern** von „Schläge sehen“ bis „ganzer Song“; Doppeltipp mit zwei Fingern = ganzer Song und zurück. Ganz weit draußen werden Teile zu Farbblöcken mit Namen. **Mini-Karte:** Marke halten und weit ziehen → unten erscheint der ganze Song zum Hinziehen. Zoom bleibt je Projekt im Gerät.
+- **Versionen eines Clips:** Zelle im Song halten → oben „Versionen: v1 · v2 · ＋“. ＋ macht eine Kopie und öffnet den Editor, Tipp auf v2 setzt sie an diese Stelle (ganzer Teil), **[Überall v2]** überall. v1 bleibt immer das Original. Schild „v2“ auf der Zelle.
+- Offen: die drei Pakete wurden zusammen nur mit Rauchtest geprüft (Xanders Regel „wenig testen“). Ganz weit herausgezoomt zeigt die Zelle kein „v2“-Schild (zu schmal).
+
 ## 4.34.0 — Chor-Spuren, Warp-Editor, Mix-Assistent, Perkussionsspur
 
 Grundlage 4.33.0 + vier Pakete in einem Durchgang (CHORSP, G10E, MIXA, PERC).
