@@ -16,6 +16,10 @@ console.log(JSON.stringify(await p.evaluate(async () => {
   run('bgOnly', t => { g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(vk2Bg(W, H, 3, L, rows, C), 0, 0); });
   run('syn', t => { const st = vvStateAt(r, t), X = vk2Src(st); for (const i of rows) if (vk2Kind(i) === 'syn') vk2Syn(i, st, X); });
   const G0 = window.vk2Glow; window.vk2Glow = () => {}; run('kinoNoGlow', t => vvDrawShot(g, W, H, rt, {k: 0, v: 'kino'}, vvStateAt(r, t), t)); window.vk2Glow = G0;
+  const P0 = window.vk2Panels; window.vk2Panels = () => {}; run('kinoNoPanels', t => vvDrawShot(g, W, H, rt, {k: 0, v: 'kino'}, vvStateAt(r, t), t)); window.vk2Panels = P0;
+  const H0 = window.vk2Head; window.vk2Head = () => {}; run('kinoNoHead', t => vvDrawShot(g, W, H, rt, {k: 0, v: 'kino'}, vvStateAt(r, t), t)); window.vk2Head = H0;
+  const D0 = window.vk2Path; window.vk2Path = (g, P, F) => { g.beginPath(); return {x: P.x, y: P.y}; }; run('kinoNoCurves', t => vvDrawShot(g, W, H, rt, {k: 0, v: 'kino'}, vvStateAt(r, t), t)); window.vk2Path = D0;
+  run('kino2', t => vvDrawShot(g, W, H, rt, {k: 0, v: 'kino'}, vvStateAt(r, t), t));
   return out;
 })));
 await b.close();

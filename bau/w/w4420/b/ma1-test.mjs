@@ -50,10 +50,10 @@ await p.screenshot({path: OUT + 'ma1-modmodus.png'});
 await p.evaluate(() => SYNQUENZER.modMode(null));
 // ---- 3. stopped: the knobs stay calm (envelope 0); LFO free-running as before
 await p.evaluate(() => SYNQUENZER.stop());
-// ---- 4. mk plate: PATCH 1 LFO 1 → CUTOFF, PATCH 2 EG 2 → PAN
+// ---- 4. mk plate: PATCH 1 LFO 1 → CUTOFF, PATCH 2 EG 1 → PAN
 const mkInfo = await p.evaluate(() => {
   const A = SYNQUENZER; A.setEngine(0, 'mk');
-  for (const [k, v] of [['t.0.p.0.s', 2], ['t.0.p.0.d', 4], ['t.0.p.0.i', 45], ['t.0.p.1.s', 1], ['t.0.p.1.d', 6], ['t.0.p.1.i', 50], ['t.0.p.2.i', 0], ['t.0.p.3.i', 0], ['t.0.l1.f', 70]]) A.mkSet(0, k, v);
+  for (const [k, v] of [['t.0.p.0.s', 2], ['t.0.p.0.d', 4], ['t.0.p.0.i', 45], ['t.0.p.1.s', 0], ['t.0.p.1.d', 6], ['t.0.p.1.i', 55], ['t.0.e1.a', 0], ['t.0.e1.d', 55], ['t.0.e1.s', 0], ['t.0.e1.r', 20], ['t.0.p.2.i', 0], ['t.0.p.3.i', 0], ['t.0.l1.f', 70], ['t.0.f.cut', 62]]) A.mkSet(0, k, v);
   ED.tab = 'geraet'; safeRebuild(buildSynthEd); MKUI.P.mode = 'edit';
   try { MKUI.k1.jump('t.0.f.cut'); } catch (e) {}
   A.launchClip(0, 0); A.play();
@@ -67,7 +67,8 @@ const s3 = await sample(60, mkS);
 const nums = (a, k) => a.map(x => x[k]).filter(x => typeof x === 'number');
 const rg = (a, k) => { const v = nums(a, k); return v.length ? Math.max(...v) - Math.min(...v) : 0; };
 ok(s3.some(x => x['f.cutR'] > 0) && rg(s3, 'f.cut') > 5, 'Platte: CUTOFF-Bogen + Punkt bewegt sich (PATCH LFO 1)', {range: rg(s3, 'f.cut'), n: nums(s3, 'f.cut').length});
-ok(s3.some(x => x['a.panR'] > 0) && rg(s3, 'a.pan') > 5, 'Platte: PAN-Punkt schlägt mit EG 2 an', {range: rg(s3, 'a.pan')});
+ok(s3.some(x => x['a.panR'] > 0) && rg(s3, 'a.pan') > 5, 'Platte: PAN-Punkt schlägt mit EG 1 je Note an', {range: rg(s3, 'a.pan')});
+await p.waitForFunction(() => { const K = MKUI.PL.ui.knob; return K['f.cut'].ma1 && K['f.cut'].ma1.a != null && K['a.pan'].ma1 && K['a.pan'].ma1.a != null && Math.abs(K['a.pan'].ma1.a - (-135 + 270 * .5)) > 20; }, null, {timeout: 4000}).catch(() => {});
 await p.screenshot({path: OUT + 'ma1-platte.png'});
 await p.evaluate(() => SYNQUENZER.stop());
 console.log(`MA1: ${N - F}/${N} grün` + (errs.length ? ' · errs ' + JSON.stringify(errs).slice(0, 400) : ' · keine Konsolenfehler'));

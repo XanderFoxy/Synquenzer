@@ -10265,7 +10265,7 @@ function ma1Frame() {
     const K_ = PL.ui.knob[id], d = defOf(id); if (!K_ || !d) continue;
     let o = K_.ma1;
     if (!o) {
-      K_.n.insertAdjacentHTML('beforeend', '<svg class="ma1mk" viewBox="0 0 33 33" aria-hidden="true"><path class="r"/><g class="dg"><circle class="h" cx="16.5" cy="-1.1" r="2.9"/><circle class="d" cx="16.5" cy="-1.1" r="1.6"/></g></svg>');
+      K_.n.insertAdjacentHTML('beforeend', '<svg class="ma1mk" viewBox="0 0 33 33" aria-hidden="true"><path class="r"/><g class="dg"><circle class="h" cx="16.5" cy="-1.1" r="3.4"/><circle class="d" cx="16.5" cy="-1.1" r="2"/></g></svg>');
       const svg = K_.n.lastChild; o = K_.ma1 = {svg, r: svg.querySelector('.r'), g: svg.querySelector('.dg'), rk: '', a: null, c: ''}; MA1.ids.add(id);
     }
     const base = get(d); let lo = 0, hi = 0, x = 0, main = rs[0];

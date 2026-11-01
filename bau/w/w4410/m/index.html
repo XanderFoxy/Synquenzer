@@ -68645,7 +68645,7 @@ function vk2Db(f, fc, res, ft) {
 const VK2_DB = [24, -42], vk2L0 = Math.log10(20), vk2L1 = Math.log10(20000);
 // the path of a filter curve in plot P (log 20 Hz … 20 kHz, +24 … −42 dB); the cutoff itself is one of the points (the resonance peak)
 function vk2Path(g, P, F) {
-  const n = 72, fx = clamp((Math.log10(F.fc) - vk2L0) / (vk2L1 - vk2L0), 0, 1), Y = db => P.y + (VK2_DB[0] - clamp(db, VK2_DB[1], VK2_DB[0])) / (VK2_DB[0] - VK2_DB[1]) * P.h;
+  const n = 56, fx = clamp((Math.log10(F.fc) - vk2L0) / (vk2L1 - vk2L0), 0, 1), Y = db => P.y + (VK2_DB[0] - clamp(db, VK2_DB[1], VK2_DB[0])) / (VK2_DB[0] - VK2_DB[1]) * P.h;
   g.beginPath(); let done = false;
   for (let j = 0; j <= n; j++) {
     let u = j / n; if (!done && u >= fx) { done = true; if (u > fx + 1e-6) { g.lineTo(P.x + fx * P.w, Y(vk2Db(F.fc, F.fc, F.res, F.ft))); } }
