@@ -50565,7 +50565,9 @@ function konSig(song, a, e) {
   return (h1 >>> 0).toString(36) + '.' + (h2 >>> 0).toString(36) + '.' + s.length.toString(36);
 }
 // the Ursprung chunk: the range as it is (state at a explicit, own clips, melody, marks clipped, the song voice); no Video-Regie
-function konCut(song, a, e) { const ch = songCut(song, a, e); delete ch.video; const v = g3VoxCut(song, a, e); if (v.length) ch.vox = v; return deep(ch); }
+function konCut(song, a, e) { const ch = konChFix(song, songCut(song, a, e)); delete ch.video; const v = g3VoxCut(song, a, e); if (v.length) ch.vox = v; return deep(ch); }
+// a chunk that starts without a chord there (ORIGINAL) says so at its beat 0 — wherever it lands it does not take the chord before it
+function konChFix(song, ch) { if (song.carrier.length && !ch.carrier.some(c => c.beat < 1e-6)) ch.carrier.unshift({beat: 0, target: null}); return ch; }
 // API konsolidieren(a, e, name): [a, e) becomes ONE new part (S2), the range shows it, the Ursprung is kept; one undo group [part, song]
 function konDo(a, e, name) {
   const song = S.song; if (!song || R.songRec) return false;
@@ -50645,12 +50647,12 @@ function konBlkAction(id, kind, arg) {
     if (kind === 'dissolve') { s.blocks = s.blocks.filter(x => x !== b); return; }
     let n = clamp(Math.round(arg) || 0, 0, s.bars);
     if (kind === 'move') {
-      const ch = songCut(s, a, e); ch.vox = g3VoxCut(s, a, e);
+      const ch = konChFix(s, songCut(s, a, e)); ch.vox = g3VoxCut(s, a, e);
       s.blocks = s.blocks.filter(x => x !== b);
       opDelete(s, a, e); if (n > a) n -= L; opInsert(s, n, ch, true);
       (s.blocks || (s.blocks = [])).push(Object.assign({}, b, {a: n})); s.blocks.sort((x, y) => x.a - y.a); res = {id, a: n};
     } else {
-      opInsert(s, n, songCut(s, a, e));
+      opInsert(s, n, konChFix(s, songCut(s, a, e)));
       const nid = konBlkNewId(s); s.blocks.push({id: nid, a: n, len: L, name: konBlkName(s)}); s.blocks.sort((x, y) => x.a - y.a); res = {id: nid, a: n};
     }
   });
