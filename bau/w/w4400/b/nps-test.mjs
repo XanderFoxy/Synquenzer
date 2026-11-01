@@ -112,6 +112,11 @@ const offs = iq.i.hits.filter(h => h.x < -1 || h.y < -1 || h.x + h.w > 927 || h.
 ok('platte.quer.tasten', offs.length === 0, offs.slice(0, 4));
 await p.screenshot({path: out + '/nps-platte-quer.png'});
 await tap(p, '#ndp .ndpx'); await p.waitForTimeout(200);
+// Sektion NOISE auf Seite NORTH: Platte in NOISE, Rad/Display auf einem NOISE-Regler
+await tap(p, '.percsec[data-s="noise"]'); await p.waitForTimeout(400);
+const iz = await p.evaluate(() => { const i = SYNQUENZER.ndpInfo(); return {sec: i.sec, focus: i.focus, enc: i.enc, strip: i.strip}; });
+ok('platte.sektion.noise', iz.sec === 'noise' && /^mN/.test(iz.focus) && iz.enc === 'val', iz);
+await tap(p, '#ndp .ndpx'); await p.waitForTimeout(200);
 ok('fehler.quer', p.errs.length === 0, p.errs);
 await p.close();
 await b.close();

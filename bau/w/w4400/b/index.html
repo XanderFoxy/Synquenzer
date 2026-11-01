@@ -7893,6 +7893,7 @@ function qBind(o) {
   if (t < 0) { qUnbind(true); return; }
   if (!QP()) Q.sub = MDE.sub;
   Q.t = t; if (o.c != null) Q.c = clamp(o.c | 0, 0, 11);
+  if (o.sec && SEC_BY[o.sec]) { P.sec = o.sec; P.enc = 'val'; secFocus(); MDE.sub = o.sec === 'kit' ? 'mix' : o.sec; }   // Sektion von Seite NORTH: Rad + Display auf ihren ersten Regler
   DRUM_T = t; MD_KIT_NAMES = percKits().map(k => k.name); P.root.classList.add('ndpperc');
 }
 function qUnbind(quiet) {
