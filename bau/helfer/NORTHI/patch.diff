@@ -1,0 +1,401 @@
+diff --git a/R-4300.html b/index.html
+index 4295b74..56a842b 100644
+--- a/R-4300.html
++++ b/index.html
+@@ -4243,6 +4243,26 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
+ @media (orientation:landscape){.mdkit .knob.mdc{min-width:76px}}
+ @media (orientation:landscape){.pg-md .dinst.sm{display:inline-flex}.pg-md .drow .dsel .lbl{display:none}}
+ .pg-mdk{flex:1 1 auto;height:100%;overflow:hidden}.mdkr .seg button{min-width:44px}
++/* NDI-CSS-BEGIN */
++/* Instrument-Schalter Drums | North im Kopf des Drum-Editors (wie VA | FM | WT im Synth-Kopf), Trefferfläche >= 44 px */
++#drumSheet .sh-head .seg.ndiinst{margin-left:2px;flex:none;gap:3px}
++#drumSheet .sh-head .seg.ndiinst button{position:relative;min-width:50px;padding:0 7px;font-size:12px;z-index:1}
++#drumSheet .sh-head .seg.ndiinst button::before{content:'';position:absolute;left:0;right:0;top:-6px;bottom:-6px}
++#drumSheet .sh-head .seg.ndiinst.ndimix button{color:var(--dim,#9aa)}
++#drumSheet .sh-head .seg.ndiinst.ndimix button[data-ndi="md"]::after{content:'';position:absolute;right:3px;top:3px;width:5px;height:5px;border-radius:50%;background:var(--amber,#e9a83a)}
++@media (orientation:landscape){#drumSheet .sh-head .seg.ndiinst button::before{top:-4px;bottom:-8px}}
++@media (orientation:portrait) and (max-width:389px){#drumSheet .sh-head .seg.ndiinst button{min-width:44px;padding:0 4px;font-size:11px}}
++/* Kit-Browser: North-Zeilen, die nicht laden (grau mit Grund) bzw. deren Engine hier nicht läuft (Grund in Bernstein) */
++.brow.ndioff .bmain b,.brow.ndioff .bmain span,.brow.ndioff .bpv,.brow.ndioff .beng{opacity:.45}
++.brow.ndioff .bmain span.ndiwhy,.brow.ndiwarn .bmain span{opacity:1;color:var(--amber,#e9a83a)}
++.plist.ndinorth{border-top:1px solid rgba(255,255,255,.12);margin-top:6px;padding-top:6px}
++/* Hinweis „Neue Version – Tippen zum Laden“: klein, an der Stelle der Hinweise, blockiert nichts */
++.ndiupd{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 58px);transform:translateX(-50%);z-index:69;display:flex;width:max-content;box-sizing:border-box;align-items:center;gap:2px;max-width:calc(100vw - 24px);
++  border-radius:8px;background:rgba(20,22,26,.96);border:1px solid var(--amber,#e9a83a);box-shadow:0 6px 18px rgba(0,0,0,.5)}
++.ndiupd button{min-height:44px;background:none;border:0;color:var(--amber,#e9a83a);font:700 13px/1.2 var(--font-ui);touch-action:manipulation}
++.ndiupd .ndiupd-go{padding:0 6px 0 12px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
++.ndiupd .ndiupd-x{min-width:44px;color:var(--dim,#9aa);font-size:14px}
++/* NDI-CSS-END */
+ /* NDSTAGE: alle Tasten der North-Seiten >= 44 px – Instrument-Chips (Zeile A) und die Unter-Reiter TONE … FX bzw. KIT │ North */
+ .pg-md>.vchips .vchip{min-height:44px}
+ #drumSheet .sh-subs:has(.stab[data-sub="tone"]) .stab,#drumSheet .sh-subs:has(.stab[data-sub="md"]) .stab{min-height:44px;height:44px}
+@@ -18880,6 +18900,13 @@ const MK_LABEL = 'MS 2000';
+   window.SynthHost = H;
+ })();
+ </script>
++<script>/* NDI: Lade-Diagnose der Drum-Synthese North. Wirft der folgende ND1/ND3-Block (Syntax oder Laufzeit), bleibt der Grund hier stehen
++   (Menü → Version, Kit-Browser „North lädt nicht: …“). Bewusst schlicht gehalten, damit dieser Teil selbst überall läuft. */
++window.NDI_BOOT = {st: 'vor', err: null};
++window.NDI_BOOT.on = function (e) { var B = window.NDI_BOOT; if (B.st !== 'ok' && !B.err) B.err = String((e && e.message) || 'Skriptfehler').replace(/^Uncaught /, '') + (e && e.lineno ? ' (Zeile ' + e.lineno + ')' : ''); };
++window.addEventListener('error', window.NDI_BOOT.on);
++const MD_NAME = 'North';   // NDI: der Name steht hier (nicht im ND1-Block): fällt der Block aus, bleiben Menü, Hilfe und Editor-Texte heil
++</script>
+ <script>
+ /* ND1 ===== drum model engine (Nachtrag 6): main-thread side of the worklet 'synq-md' (source: script#sq-md-src) =====
+    MD_NAME is the one writing of the engine's display name (section 0.4). Nothing here runs or loads by itself: the module is
+@@ -18899,7 +18926,7 @@ const MK_LABEL = 'MS 2000';
+    MDX.INIT / MDX.KIT0 / MDX.R            INIT SOUND, kit effects, ranges; scales T G fN fE Q, VERH, VERST, dlyTime, dlBForTime
+    MDX.scl(code, start, n)                SCL PRE: the pitches of n model channels from the lowest one (not stored)
+    MDX.info()                             state, load (fraction of real time), late hits, nodes (engineInfo().md) */
+-const MD_NAME = 'North';
++// NDI: const MD_NAME = 'North' steht im Lade-Diagnose-Skript davor
+ const MDX = (() => {
+   const L = {
+     mWav: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 't1', 't2', 'F1', 'F2', 'F3', 'F4', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+@@ -19061,6 +19088,7 @@ const MDX = (() => {
+     load, node, render, info, setLim, nodes: NODES, cpu: load1, src};
+ })();
+ window.MDX = MDX;
++if (window.NDI_BOOT) window.NDI_BOOT.st = 'mdx';   // NDI: Engine-Teil gelaufen
+ /* ND3 ===== own start programs (45 in 9 categories) and 4 kits for the drum model engine (Nachtrag 6, ND3) =====
+    No factory data of any instrument: every value below comes from the ND3 table of the spec (start values) plus the CH LEVEL
+    (mLvl) found by measurement for the ND3-03 level targets. A program is INIT SOUND (MDX.INIT) plus the listed fields.
+@@ -19068,7 +19096,7 @@ window.MDX = MDX;
+    MDX.prog(name)            the full program (a new object, normalised) or null
+    MDX.roleProg(slotId)      the program a pad gets on its first switch to source md (ND3 item 2)
+    MDX.kits                  [{name, info, slots: {slotId: program}, md: kit effects}] all 12 pads source md */
+-(function () {
++(function () { try {   // NDI: ein Fehler in den Kit-Daten lässt MDX stehen und wird gemeldet (nicht still leer)
+   const C = (cat, name, o) => Object.assign({mName: name, mCat: cat}, o);
+   const kZu = {mWav: 'C2', mPit: 58, mSpc: 50, mFrq: 38, mDyf: 3, mDec: 14, mDm: 'E3', mNtyp: 'H2', mNfrq: 44, mNdec: 12, mNdm: 'E3', mNlv: 22, mMono: 1};
+   const tom = {mWav: 'd2', mSpc: 36, mFrq: 18, mDyf: 4, mDec: 31, mDm: 'E1', mBnd: 14, mBt: 22, mNtyp: 'L1', mNfrq: 22, mNdec: 14, mNlv: 10, mCty: 'n3', mClv: 14};
+@@ -19151,7 +19179,8 @@ window.MDX = MDX;
+       {dlM: 'b', dlB: 150}, {hatO: {mWav: 'C3'}})];
+   MDX.progs = progs; MDX.prog = prog; MDX.ROLE = ROLE; MDX.roleProg = id => (ROLE[id] ? prog(ROLE[id]) : null); MDX.kits = kits;
+   MDX.CATS = ['bd', 'Sn', 'to', 'HH', 'Cy', 'Pc', 'Be', 'Tu', 'Ef'];
+-})();
++} catch (e) { MDX.kitErr = 'Kit-Daten: ' + String((e && e.message) || e); if (window.NDI_BOOT && !window.NDI_BOOT.err) window.NDI_BOOT.err = MDX.kitErr; } })();   // NDI
++if (window.NDI_BOOT && window.NDI_BOOT.st === 'mdx' && !window.NDI_BOOT.err) window.NDI_BOOT.st = 'ok';   // NDI
+ /* /ND1 /ND3 */
+ </script>
+ <script>
+@@ -20790,15 +20819,40 @@ const FACTORY = SQF.ANALOG.concat(SQF.FM6 || [], WT_FACTORY);
+ const DRUM_FACTORY = (SQF.KITS || []).map(k => Object.assign({}, k, {base: k.base || k.name, demo: 'drums', ref: KIT_REF[k.name] || 'Drum-Kit', fx: k.fx || {drive: 0, rev: .08, dly: 0, vol: .85, pan: 0}}));
+ // NDSTAGE (ND3 Punkt 3, ND4 Punkt 10): die 4 Kits der Drum-Engine im Kit-Browser nach den Werks-Kits. Alle 12 Pads Quelle MD_NAME
+ // (Programm in slot.md), Kit-Effekte p.md; die Drum-Felder der Slots = Rom Pop (Rückfall ohne AudioWorklet). Die alten Kits bleiben unverändert.
+-const MD_KIT_FACTORY = (typeof MDX !== 'undefined' && MDX.kits ? MDX.kits : []).map(k => {
++// NDI: Zustand der Engine beim Start. window.MDX statt typeof MDX: wirft der ND1-Block zur Laufzeit, stünde die Konstante in der TDZ und
++// typeof würfe hier (die ganze App stünde). Fehlt etwas, bleiben die North-Kits als graue Zeilen mit Grund stehen – nie still weg.
++const NDI_NM = typeof MD_NAME === 'string' ? MD_NAME : 'North';
++const NDI_KIT_NAMES = ['Fell & Holz', 'Modell-Analog', 'Gestimmt', 'Schräg'];   // NDI: Rückfall-Namen (= MDX.kits) für die grauen Zeilen
++const NDI = (() => {
++  const B = window.NDI_BOOT || {st: 'vor', err: null}; try { if (B.on) window.removeEventListener('error', B.on); } catch (e) {}
++  const M = window.MDX || null; let why = null;
++  if (!M) why = B.err || 'Engine-Block nicht ausgeführt';
++  else if (!Array.isArray(M.kits) || !M.kits.length) why = M.kitErr || B.err || 'Kit-Daten fehlen';
++  return {M, why, boot: B.st, kitErr: []};
++})();
++const MD_KIT_FACTORY = (NDI.M && Array.isArray(NDI.M.kits) ? NDI.M.kits : []).map(k => { try {   // NDI: je Kit abgesichert
+   const R = (DrumKits.KITS && DrumKits.KITS['Rom Pop']) || {}, slots = {};
+   for (const id of MDX.ORDER) slots[id] = Object.assign(JSON.parse(JSON.stringify(R[id] || {})), {md: Object.assign({}, k.slots[id], {src: 'md'})});
+   return {id: kitId(k.name), name: k.name, cat: 'drums', engine: 'drum', ev: 1, base: null, demo: 'drums', ref: MD_NAME + ' · ' + k.info,
+     tip: 'Kit der Drum-Synthese ' + MD_NAME + ': ' + k.info + '. Jedes Pad ist ein ' + MD_NAME + '-Kanal; im Drum-Editor SOUND lässt sich jedes Pad einzeln auf die Drum-Stimme zurückschalten.',
+     p: slots, md: k.md, fx: {drive: 0, chorus: {mode: 'off', mix: 1, rate: 1, depth: 1}, rev: 0, dly: 0, vol: .85, pan: 0}};
+-});
++} catch (e) { NDI.kitErr.push((k && k.name || 'Kit') + ': ' + String((e && e.message) || e)); return null; } }).filter(Boolean);   // NDI
+ DRUM_FACTORY.push(...MD_KIT_FACTORY);
+ const MD_KIT_NAMES = MD_KIT_FACTORY.map(k => k.name);
++// NDI: North-Kits, die nicht gebaut werden konnten – stehen grau mit Grund in Liste, Blättern und Reiter North (nicht ladbar)
++const NDI_OFF = NDI_KIT_NAMES.filter(n => !MD_KIT_NAMES.includes(n)).map(n => ({id: kitId(n), name: n, cat: 'drums', engine: 'drum', ndiOff: true}));
++if (NDI_OFF.length && !NDI.why) NDI.why = NDI.kitErr[0] || 'Kit-Daten unvollständig';
++// NDI: „North leer“ – alle 12 Pads North mit INIT-Programmen, Kit-Effekte neutral; Drum-Felder = Rom Pop (Rückfall wie bei den North-Kits)
++const NDI_LEER = (() => {
++  const base = {id: kitId('North leer'), name: 'North leer', cat: 'drums', engine: 'drum', ev: 1, base: null, demo: 'drums', ref: NDI_NM + ' · alle 12 Pads, INIT-Programme',
++    tip: 'Leeres ' + NDI_NM + '-Kit: jedes Pad ist ein ' + NDI_NM + '-Kanal mit INIT SOUND, ohne Hall und Echo. Von hier aus baust du dein eigenes ' + NDI_NM + '-Kit (Drum-Editor SOUND).'};
++  if (NDI.why) return Object.assign(base, {ndiOff: true});
++  try {
++    const R = (DrumKits.KITS && DrumKits.KITS['Rom Pop']) || {}, slots = {};
++    for (const id of NDI.M.ORDER) slots[id] = Object.assign(JSON.parse(JSON.stringify(R[id] || {})), {md: Object.assign({}, NDI.M.INIT, {src: 'md'})});
++    return Object.assign(base, {p: slots, md: NDI.M.normKit(Object.assign({}, NDI.M.KIT0)), fx: {drive: 0, chorus: {mode: 'off', mix: 1, rate: 1, depth: 1}, rev: 0, dly: 0, vol: .85, pan: 0}});
++  } catch (e) { NDI.kitErr.push('North leer: ' + String((e && e.message) || e)); return Object.assign(base, {ndiOff: true}); }
++})();
+ /* V0b (§12.7, A.2): INIT sounds — no routes, neutral effects, sends 0, −18 LUFS on the lead phrase (v3-v0b-init.mjs); not in
+    factory() (the 46 stay), chip „Init“. INIT Drums (ev2): each pad its model's basic layer (DEFAULTS alone are silent),
+    pad level .85, room / gate 0, no locks (V1a: ev3). */
+@@ -20844,6 +20898,7 @@ const INIT_KIT = {id: 'f-kit-init-drums', name: 'INIT Drums', cat: 'drums', engi
+   p: initKitSlots(), fx: {drive: 0, chorus: {mode: 'off', mix: 1, rate: 1, depth: 1}, rev: 0, dly: 0, vol: .85, pan: 0}};
+ const INIT_IDS = {analog: 'f-init-analog', fm6: 'f-init-fm', fm2: 'f-init-fm', wt: 'f-init-tabelle', mk: 'f-init-am', drum: 'f-kit-init-drums'};
+ const FACTORY_BY_ID = new Map(FACTORY.concat(DRUM_FACTORY, INIT_SYNTH, [INIT_KIT]).map(f => [f.id, f]));
++if (!NDI_LEER.ndiOff) FACTORY_BY_ID.set(NDI_LEER.id, NDI_LEER);   // NDI: „North leer“ ladbar (nicht im Reiter Kits, nur unter North)
+ /* V2a (§4.3): „Melodie-Lead“ = Mini-Lead as POLY, 4 voices, no glide — the MELODIE track's sound. Not a browser entry (the
+    factory list stays as it is); FACTORY_BY_ID knows it so origin lookups (Init chip, A/B, native trim) work */
+ const MEL_LEAD_ID = 'f-melodie-lead';
+@@ -22423,8 +22478,9 @@ function engChip(i) {
+   lab(); s.update = lab;
+   onTap(b, () => openPop(b, p => {
+     const cur = engKey(S.tracks[i].sound.engine);
+-    p.innerHTML = '<h4>Klangerzeugung</h4><div class="plist">' + [['analog', 'VA'], ['fm6', 'FM'], ['wt', 'WT'], ['mk', MK_LABEL]].map(([e, l]) => `<button class="rb${e === cur ? ' on' : ''}" data-e="${e}">${esc(l)}</button>`).join('') + '</div>';
++    p.innerHTML = '<h4>Klangerzeugung</h4><div class="plist">' + [['analog', 'VA'], ['fm6', 'FM'], ['wt', 'WT'], ['mk', MK_LABEL]].map(([e, l]) => `<button class="rb${e === cur ? ' on' : ''}" data-e="${e}">${esc(l)}</button>`).join('') + '</div>' + NDI_ENTRY_H;   // NDI: + North
+     guardTouch(p);
++    onTap(p, () => ndiGoNorth(), 'button[data-nd]');   // NDI
+     onTap(p, x => { closePop(); const e = x.dataset.e; if (e === engKey(S.tracks[i].sound.engine)) return; const bf = soundSnapshot(i); setEngine(i, e); commitSound(i, bf, 'Klangerzeugung'); if (ED.lcd) lcdShow('Klangerzeugung', ENGINE_LABEL[e]); }, 'button[data-e]');
+   }, {name: 'engchip'}));
+   return s;
+@@ -33528,10 +33584,11 @@ function openEdMore(anchor, t) {
+     p.innerHTML = `<h4>${esc(tr.name)}</h4><div class="plist edmore"><button class="rb" data-a="init"><b>Init</b><small>${esc(what)}</small></button>` +
+       (wiaHere ? `<button class="rb${UI.wia ? ' on' : ''}" data-a="wia"><b>◎ Was ist anders?</b><small>zeigt, welche Regler diesen Sound machen</small></button>` : '') +
+       (!drum ? `<button class="rb" data-a="k1m"><b>Modulationen (${k1Mods(t).length})</b><small>jede aktive Modulation · Tipp = zum Regler, ✕ = löschen</small></button>` : '') +   // K1
++      (!drum ? `<button class="rb" data-a="ndi"><b>${esc(NDI_NM)} · Drum-Synthese</b><small>Drum-Spur mit ${esc(NDI_NM)}: Kits im Reiter ${esc(NDI_NM)}</small></button>` : '') +   // NDI
+       (!drum && kbFest() ? `<button class="rb" data-a="kbpos"><b>Anschlag POSITION</b><small>Tastatur spielt fest 0,8 – Anschlag-Regler wirken nur bei Noten mit eigener VEL</small></button>` : '') +
+       (!drum && tr.sound.engine === 'mk' && mkLoaded() ? '<button class="rb" data-a="tcopy"><b>Timbre kopieren ▸</b><small>UTILITY · aus einem gesicherten Sound</small></button><button class="rb" data-a="tswap"><b>Timbre tauschen</b><small>UTILITY · T1 ⇄ T2</small></button><button class="rb" data-a="tinit"><b>Timbre neu</b><small>UTILITY · das gewählte Timbre auf INIT</small></button><button class="rb" data-a="sqtools"><b>Sequenz-Werkzeuge ▸</b><small>UTILITY · neu, kopieren, tauschen</small></button>' : '') + '</div>';   // MK3
+     guardTouch(p);
+-    onTap(p, b => { closePop(); const a = b.dataset.a; if (a === 'init') initSound(t); else if (a === 'wia') wiaToggle(); else if (a === 'kbpos') kbVelPos(); else if (a === 'k1m') openK1Mods(anchor, t);
++    onTap(p, b => { closePop(); const a = b.dataset.a; if (a === 'ndi') { ndiGoNorth(); return; } if (a === 'init') initSound(t); else if (a === 'wia') wiaToggle(); else if (a === 'kbpos') kbVelPos(); else if (a === 'k1m') openK1Mods(anchor, t);   // NDI: ndi
+       else if (a === 'tcopy') MKUI.timCopyPop(anchor, t); else if (a === 'tswap') MKUI.timSwap(t); else if (a === 'tinit') MKUI.timInit(t); else if (a === 'sqtools') MKUI.seqToolsPop(anchor, t); }, 'button[data-a]');
+   }, {name: 'edmore'});
+ }
+@@ -37360,7 +37417,32 @@ const demoForCat = c => ({bass: 'bass', lead: 'lead', poly: 'chord', flaeche: 'p
+    Name = load silently (one undo, toast); ▶ = preview (one at a time). Filter = the track's engine, „Alle Engines“ on
+    request (active engine first); another engine's sound loads only from there („wechselt zu VA“). Drums: kits. ---------- */
+ const BR = {t: 0, cat: 'kits', role: 'alle', all: false, eng: null, open: null, more: null, ren: null, list: null, bank: 0, kp: 0};   // MK8: bank 1-8 = the 16 places of A-H; MK8b: kp 1-8 = a genre of the collection Micro
+-const DCATS2 = [['kits', 'Kits', 'Kits'], ['ekits', 'Eigene', 'Eigene Kits'], ['dinit', 'Init', 'Init']];
++const DCATS2 = [['kits', 'Kits', 'Kits'], ['ekits', 'Eigene', 'Eigene Kits'], ['dinit', 'Init', 'Init'], ['north', NDI_NM, NDI_NM]];   // NDI: Reiter North (hinten: nichts verschoben)
++// NDI: North im Kit-Browser – die 4 North-Kits (graue, wenn sie nicht laden), „North leer“, eigene gesicherte Kits mit North-Pads
++const ndiIsNorthKit = s => !!(s && s.p && s.p.slots && typeof s.p.slots === 'object' && Object.keys(s.p.slots).some(id => { const x = s.p.slots[id]; return !!(x && x.md && x.md.src === 'md'); }));
++const ndiIsNorthRec = r => !!r && (MD_KIT_NAMES.includes(r.name) && r.id === kitId(r.name) || r.id === NDI_LEER.id);
++function ndiNorthList() { const own = (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine === 'drum' && ndiIsNorthKit(s)); return MD_KIT_FACTORY.concat(NDI_OFF, [NDI_LEER], own); }
++// Zustand für Menü und Zeilen: {st: 'ok' | 'load' | 'off', why, line}
++function ndiStatus() {
++  if (NDI.why) return {st: 'off', why: NDI.why, line: 'nicht verfügbar (' + NDI.why + ')'};
++  if (UI.forceNative) return {st: 'off', why: 'Worklet abgeschaltet', line: 'nicht verfügbar (Worklet abgeschaltet – Pads spielen ihre Drum-Stimme)'};
++  const c = AU.ctx;
++  if (typeof AudioWorkletNode !== 'function' || (c && !c.audioWorklet)) return {st: 'off', why: 'AudioWorklet fehlt', line: 'nicht verfügbar (AudioWorklet fehlt – Pads spielen ihre Drum-Stimme)'};
++  let i = {}; try { i = NDI.M.info(); } catch (e) {}
++  if (MDS.st === 'failed' || i.state === 'failed') { const w = i.err || 'Modul lädt nicht'; return {st: 'off', why: w, line: 'nicht verfügbar (' + w + ')'}; }
++  if (MDS.st === 'loading' || i.state === 'loading') return {st: 'load', why: null, line: 'lädt …'};
++  return {st: 'ok', why: null, line: 'bereit · ' + MD_KIT_FACTORY.length + ' Kits, ' + ((NDI.M.progs || []).length) + ' Programme' + (i.state === 'ready' ? ' · Engine geladen (' + (i.how || '?') + ', ' + (i.loadMs | 0) + ' ms)' : (c ? ' · Engine lädt beim ersten ' + NDI_NM + '-Pad' : ' · Engine startet mit dem ersten Tippen'))};
++}
++// Unterzeile einer Kit-Zeile: graue North-Plätze nennen den Grund; läuft die Engine hier nicht, steht er hinter der Beschreibung
++function ndiRef(f, ref) {
++  if (f.ndiOff) return NDI_NM + ' lädt nicht: ' + NDI.why;
++  if (f.engine === 'drum' && (ndiIsNorthRec(f) || (f.id && f.id.startsWith('u-') && ndiIsNorthKit(f)))) { const s = ndiStatus(); if (s.st === 'off') return ref + ' · ' + NDI_NM + ' lädt nicht: ' + s.why + ' (spielt Drum-Stimmen)'; }
++  return ref;
++}
++const ndiRowCls = f => (f.ndiOff ? ' ndioff' : f.engine === 'drum' && ndiIsNorthRec(f) && ndiStatus().st === 'off' ? ' ndiwarn' : '');
++// „North · Drum-Synthese“ in den Instrument-Listen: wählt die Drum-Spur und öffnet ihre Kits im Reiter North (lädt nichts von selbst)
++function ndiGoNorth() { closePop(); selectTrack(DRUM_T); openBrowser(DRUM_T, 'north'); }
++const NDI_ENTRY_H = '<div class="plist ndinorth"><button class="rb" data-nd="1"><b>' + NDI_NM + ' · Drum-Synthese</b></button></div>';
+ // the records of scope {all, eng, role} on track t: 'alle' = factory + own, 'eigene' = own, else that role's factory sounds
+ function brPool(t, sc) {
+   const tr = S.tracks[t], own = (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine !== 'drum' && s.engine !== MD_LIB);   // ND4: eigene Programme nur unter Programm ▾
+@@ -37372,7 +37454,7 @@ function brPool(t, sc) {
+ }
+ function brList(t, sc) {
+   const tr = S.tracks[t]; if (!tr) return [];
+-  if (tr.kind === 'drum') return BR.cat === 'ekits' ? (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine === 'drum') : BR.cat === 'dinit' ? [INIT_KIT] : DRUM_FACTORY;
++  if (tr.kind === 'drum') return BR.cat === 'ekits' ? (LIB.ok ? LIB.lib.all() : []).filter(s => s.engine === 'drum') : BR.cat === 'dinit' ? [INIT_KIT] : BR.cat === 'north' ? ndiNorthList() : DRUM_FACTORY.concat(NDI_OFF);   // NDI
+   if (sc.kp && !sc.all && (sc.eng || engKey(tr.sound.engine)) === 'mk' && mkLoad() && window.MKK) return MKK.list(sc.kp);   // MK8b: the 16 programs of a Micro genre
+   if (sc.bank && !sc.all && (sc.eng || engKey(tr.sound.engine)) === 'mk' && mkLoad() && window.MKF) return MKF.bankList(sc.bank);   // MK8: exactly the 16 places (own sound instead of the factory one)
+   const {fac, own} = brPool(t, sc);
+@@ -37393,7 +37475,7 @@ function brDefaultRole(t, e) {
+   const r = soundRole(rec || snd), sc = {all: false, eng: e};
+   return r && brRoles(t, sc).some(([id]) => id === r) ? r : 'alle';
+ }
+-function openBrowser(t) {
++function openBrowser(t, ndiCat) {   // NDI: ndiCat = Reiter beim Öffnen (z. B. 'north')
+   if (t == null) t = R.selT;
+   const tr = S.tracks[t]; if (!tr) return;
+   if (!EL.sndSheet.classList.contains('open')) UI.shield = null;
+@@ -37401,7 +37483,7 @@ function openBrowser(t) {
+   R.editor = 'browser'; BR.t = t; BR.more = BR.ren = null;
+   const rec = originRec(tr.sound);
+   // §11.2: the drum track's categories are „Kits“, „Eigene Kits“ (and V0b „Init“)
+-  if (tr.kind === 'drum') BR.cat = rec && rec.id && rec.id.startsWith('u-') ? 'ekits' : rec && rec.id === INIT_KIT.id ? 'dinit' : 'kits';
++  if (tr.kind === 'drum') BR.cat = DCATS2.some(c => c[0] === ndiCat) ? ndiCat : rec && rec.id && rec.id.startsWith('u-') ? 'ekits' : rec && rec.id === INIT_KIT.id ? 'dinit' : ndiIsNorthRec(rec) ? 'north' : 'kits';   // NDI: North-Kit offen = Reiter North
+   else { BR.all = false; BR.eng = null; BR.role = brDefaultRole(t, engKey(tr.sound.engine)); }    // EN-04: the track's engine first
+   BR.bank = 0; BR.kp = 0;
+   if (tr.kind === 'synth' && tr.sound.engine === 'mk' && mkLoad() && window.MKF) { const c = MKF.cur(t); if (c) { BR.bank = c.bank; BR.role = 'alle'; } const k = window.MKK && MKK.of(tr.sound.origin); if (k) { BR.kp = k.g; BR.role = 'alle'; } }   // MK8b: a Micro program opens its genre   // MK8: a program opens its bank
+@@ -37474,8 +37556,9 @@ function brScope(sc, anchor) {
+   else {
+     openPop(anchor, p => {
+       p.innerHTML = '<h4>Andere Engine ansehen</h4><div class="plist breng">' + [['analog', 'VA'], ['fm6', 'FM'], ['wt', 'WT'], ['mk', MK_LABEL]].map(([e, l]) =>
+-        `<button class="rb${e === (BR.eng || e0) ? ' on' : ''}" data-e="${e}">${l}${e === e0 ? ' · Spur' : ''}</button>`).join('') + '</div><p class="small">Laden aus einer anderen Engine wechselt die Klangerzeugung der Spur (mit Rückgängig).</p>';
++        `<button class="rb${e === (BR.eng || e0) ? ' on' : ''}" data-e="${e}">${l}${e === e0 ? ' · Spur' : ''}</button>`).join('') + '</div>' + NDI_ENTRY_H + '<p class="small">Laden aus einer anderen Engine wechselt die Klangerzeugung der Spur (mit Rückgängig).</p>';   // NDI: + North
+       guardTouch(p);
++      onTap(p, () => ndiGoNorth(), 'button[data-nd]');   // NDI
+       onTap(p, b => { closePop(); const e = b.dataset.e; BR.eng = e === e0 ? null : e; BR.role = 'alle'; BR.bank = 0; BR.kp = 0; BR.more = BR.ren = null; if (e === 'mk') mkLoad(); brRefresh(); }, 'button[data-e]');
+     }, {name: 'breng'});
+     return;
+@@ -37520,11 +37603,11 @@ function brRefresh() {
+     : '<div class="mempty">Keine Sounds.</div>';
+   for (const f of items) {
+     const own = f.id && f.id.startsWith('u-'), loaded = snd.origin === f.id, open = BR.open === f.id, playing = PV.on && PV.id === f.id;
+-    const nv = SQStore.isForeign(f), ref = nv ? SQStore.NV_NAME : own ? (f.engine === 'drum' ? 'Eigenes Kit' + (f.p && f.p.base ? ' · aus ' + f.p.base : '') : f.bank && window.MKF ? MKF.label(f.bank, f.slot) + ' · eigener Klang' : ROLE_LABEL[soundRole(f)] || CAT_LABEL[f.cat] || 'Eigene') : (f.ref || '');
+-    h += `<div class="brow${loaded ? ' cur' : ''}${open ? ' open' : ''}" data-id="${esc(f.id)}" data-engine="${esc(engKey(f.engine))}">` +
++    const nv = SQStore.isForeign(f), ref = ndiRef(f, nv ? SQStore.NV_NAME : own ? (f.engine === 'drum' ? 'Eigenes Kit' + (f.p && f.p.base ? ' · aus ' + f.p.base : '') : f.bank && window.MKF ? MKF.label(f.bank, f.slot) + ' · eigener Klang' : ROLE_LABEL[soundRole(f)] || CAT_LABEL[f.cat] || 'Eigene') : (f.ref || ''));   // NDI: ndiRef
++    h += `<div class="brow${loaded ? ' cur' : ''}${open ? ' open' : ''}${ndiRowCls(f)}" data-id="${esc(f.id)}" data-engine="${esc(engKey(f.engine))}">` +   // NDI: ndiRowCls
+       `<button class="bpv rb${playing ? ' on' : ''}" data-act="pv" aria-label="${playing ? 'Vorhören beenden' : 'Vorhören'} ${esc(f.name)}">${playing ? '■' : '▶'}</button>` +
+-      `<button class="bmain" data-act="load" aria-label="${esc(f.name)} laden"><b>${esc(f.name)}</b>${f.kp && !own && ref.includes(' · ') ? `<span class="bkp">${esc(ref.slice(0, ref.lastIndexOf(' · '))).replace(/^(.*) (\d\d)$/, '<i>$1</i> <i>$2 ·</i>')} ${esc(ref.slice(ref.lastIndexOf(' · ') + 3))}</span>` : `<span>${esc(ref)}</span>`}</button>` +   // G-MK8b-merge: a Micro sub-label breaks between genre, „NN ·“ and role instead of „…“ (320 px)
+-      `<span class="beng">${nv ? 'NEU' : ENGINE_LABEL[f.engine] || 'VA'}</span>` +
++      `<button class="bmain" data-act="load" aria-label="${esc(f.name)} laden"><b>${esc(f.name)}</b>${f.ndiOff ? `<span class="ndiwhy">${esc(ref)}</span>` : f.kp && !own && ref.includes(' · ') ? `<span class="bkp">${esc(ref.slice(0, ref.lastIndexOf(' · '))).replace(/^(.*) (\d\d)$/, '<i>$1</i> <i>$2 ·</i>')} ${esc(ref.slice(ref.lastIndexOf(' · ') + 3))}</span>` : `<span>${esc(ref)}</span>`}</button>` +   // G-MK8b-merge: a Micro sub-label breaks between genre, „NN ·“ and role instead of „…“ (320 px) · NDI: graue North-Zeile nennt den Grund (span.ndiwhy)
++      `<span class="beng">${nv ? 'NEU' : f.engine === 'drum' && (f.ndiOff || ndiIsNorthRec(f)) ? 'NORTH' : ENGINE_LABEL[f.engine] || 'VA'}</span>` +   // NDI: North-Zeilen
+       `<button class="binfo" data-act="info" aria-label="Trick zu ${esc(f.name)}">ⓘ</button>` +
+       (own || f.kp ? `<button class="bmore rb" data-act="more" aria-label="Mehr zu ${esc(f.name)}">⋯</button>` : '') + '</div>';   // MK8b: Micro rows: Laden / Auf Platz schreiben
+     if (open && f.tip) h += `<div class="btip" data-id="${esc(f.id)}">ⓘ ${esc(f.tip)}</div>`;
+@@ -37559,6 +37642,7 @@ function brLoad(rec) {
+ function brTap(b) {
+   const row = b.closest('[data-id]'), id = row && row.dataset.id, act = b.dataset.act, t = BR.t;
+   const rec = id ? (FACTORY_BY_ID.get(id) || (LIB.ok ? LIB.lib.get(id) : null)) : null;
++  if (!rec && id && (NDI_OFF.some(k => k.id === id) || (NDI_LEER.ndiOff && id === NDI_LEER.id)) && (act === 'load' || act === 'pv' || act === 'info')) { toast(NDI_NM + ' lädt nicht: ' + NDI.why); return; }   // NDI
+   if (act === 'load' && rec) brLoad(rec);
+   else if (act === 'pv' && rec) {
+     if (PV.on && PV.id === rec.id) previewStop(); else previewFor(t, rec);
+@@ -37917,7 +38001,7 @@ function applyDrumSound(snd) {
+ function kitSound(q) {
+   const s = String(q == null ? '' : q).trim();
+   const n = kitName(s) || (FACTORY_BY_ID.has(s) && FACTORY_BY_ID.get(s).engine === 'drum' ? FACTORY_BY_ID.get(s).name : null) || (s.toLowerCase() === INIT_KIT.name.toLowerCase() ? INIT_KIT.name : null)
+-    || MD_KIT_NAMES.find(k => k.toLowerCase() === s.toLowerCase()) || null;   // NDSTAGE: North-Kits per Name
++    || MD_KIT_NAMES.find(k => k.toLowerCase() === s.toLowerCase()) || (!NDI_LEER.ndiOff && s.toLowerCase() === NDI_LEER.name.toLowerCase() ? NDI_LEER.name : null) || null;   // NDSTAGE: North-Kits per Name (NDI: + North leer)
+   if (n) return factorySound(kitId(n));
+   if (LIB.ok) { const u = LIB.lib.get(s) || LIB.lib.all().find(x => x.engine === 'drum' && x.name.toLowerCase() === s.toLowerCase()); if (u && u.engine === 'drum') return soundCopy(u); }
+   return null;
+@@ -38060,11 +38144,16 @@ function dKnobs(pg, groups, cls) {
+   pg.appendChild(w); return w;
+ }
+ // kit step ‹ › (factory kits, then own kits)
+-function kitList() { const own = LIB.ok ? LIB.lib.all().filter(s => s.engine === 'drum') : []; return KIT_NAMES.concat(MD_KIT_NAMES).map(n => ({id: kitId(n), name: n})).concat(own.map(u => ({id: u.id, name: u.name}))); }
++// NDI: North-Kits, die nicht laden, stehen mit off: true in der Liste (nach den geladenen North-Kits)
++function kitList() { const own = LIB.ok ? LIB.lib.all().filter(s => s.engine === 'drum') : []; return KIT_NAMES.concat(MD_KIT_NAMES).map(n => ({id: kitId(n), name: n})).concat(NDI_OFF.map(k => ({id: k.id, name: k.name, off: true})), own.map(u => ({id: u.id, name: u.name}))); }
+ function stepKit(dir) {
+   const L = kitList(), cur = drumSnd().origin, k = L.findIndex(x => x.id === cur);
+-  const nx = L[((k < 0 ? (dir > 0 ? -1 : 0) : k) + dir + L.length) % L.length];
++  // NDI: ein grauer North-Platz wird beim Blättern genannt (Hinweis mit Grund) und übersprungen – nie still
++  let i = k < 0 ? (dir > 0 ? -1 : 0) : k, nx = null; const skip = [];
++  for (let n = 0; n < L.length; n++) { i = (i + dir + L.length) % L.length; if (!L[i].off) { nx = L[i]; break; } skip.push(L[i].name); }
++  if (!nx) { toast(NDI_NM + ' lädt nicht: ' + NDI.why); return; }
+   soundEdit(DRUM_T, 'Kit ' + nx.name, () => loadKit(nx.id));
++  if (skip.length) toast('„' + skip.join('“, „') + '“ übersprungen – ' + NDI_NM + ' lädt nicht: ' + NDI.why);
+ }
+ function drumHeadRefresh() {
+   const H = ED.dhdr; if (!H || !H.name.isConnected) return;
+@@ -38100,6 +38189,7 @@ function buildDrumEd() {
+   onTap(hear, () => drumAudition(ED.dVoice));
+   F.r2.append(kit, save, dice, hear);
+   sheetButtons(F.r1, F.r2, true);
++  F.r1.insertBefore(ndiInstSeg(), F.r1.querySelector('.sh-title').nextSibling);   // NDI: Instrument-Schalter Drums | North
+   const em = el('button', 'hb rb edm edmd', '⋯'); em.setAttribute('aria-label', 'Mehr: Init'); em.title = 'Mehr: Init (neutrales Kit)'; onTap(em, () => openEdMore(em, DRUM_T));
+   F.r1.insertBefore(em, F.r1.querySelector('.hb.ur'));
+   if (ED.dTab === 'steps') F.r1.insertBefore(folChip('steps'), em);           // V0b FOLGEN (§5.1)
+@@ -38122,6 +38212,30 @@ function buildDrumEd() {
+   mdHeadSolo(); sh.classList.toggle('mdsub', mdp && ED.dTab === 'sound');   // ND2: „SOLO PART“ im Kopf, Unter-Reiter 44 px
+   sh.classList.add('open');
+ }
++// NDI: Instrument der Drum-Spur – 'drum' (kein Pad North), 'md' (alle 12 Pads North), 'mix' (einzelne Pads, SOUND → Quelle)
++function ndiInstState() { const snd = drumSnd(); if (!snd || snd.engine !== 'drum') return 'drum'; let n = 0; for (const v of DRUM_VOICES) if (mdIsSrc(v.id)) n++; return n === 0 ? 'drum' : n === DRUM_VOICES.length ? 'md' : 'mix'; }
++function ndiInstSeg() {
++  const cur = ndiInstState(), s = el('div', 'seg eng ndiinst' + (cur === 'mix' ? ' ndimix' : ''));
++  s.setAttribute('role', 'group'); s.setAttribute('aria-label', 'Instrument der Drum-Spur' + (cur === 'mix' ? ' (gemischt)' : ''));
++  for (const [v, l, t] of [['drum', 'Drums', 'Instrument: Drums (Drum-Stimmen)'], ['md', NDI_NM, 'Instrument: ' + NDI_NM + ' (Drum-Synthese, alle Pads)']]) {
++    const b = el('button', v === cur ? 'on' : '', esc(l)); b.dataset.ndi = v; b.title = t; b.setAttribute('aria-label', t); b.setAttribute('aria-pressed', String(v === cur)); s.appendChild(b);
++  }
++  if (cur === 'mix') s.title = 'Gemischt: einzelne Pads spielen ' + NDI_NM + ' (SOUND → Quelle)';
++  onTap(s, b => ndiSetInstrument(b.dataset.ndi), 'button');
++  return s;
++}
++// alle Pads auf eine Quelle: North = jedes Pad sein gemerktes Programm, sonst das Rollen-Programm (MDX.roleProg, wie [Quelle ▾]); ein Undo-Schritt
++function ndiSetInstrument(src) {
++  if (src !== 'md' && src !== 'drum') throw new Error('Unbekanntes Instrument: ' + src);
++  if (ndiInstState() === src) return false;
++  if (src === 'md' && NDI.why) { toast(NDI_NM + ' lädt nicht: ' + NDI.why); haptic('err'); return false; }
++  const r = soundEdit(DRUM_T, 'Instrument ' + (src === 'md' ? NDI_NM : 'Drums'), () => { let ch = false; for (const v of DRUM_VOICES) ch = mdSetSrc(v.id, src) || ch; return ch; });
++  if (R.editor === 'drum') safeRebuild(buildDrumEd);
++  if (R.editor === 'browser' && isDrum(BR.t)) brRefresh();
++  if (ED.lcd) lcdShow('Instrument', src === 'md' ? NDI_NM : 'Drums');
++  toast('Alle Pads: ' + (src === 'md' ? NDI_NM + ' (Drum-Synthese)' : 'Drum-Stimme'), [{label: 'Rückgängig', fn: () => undo()}]);
++  return r;
++}
+ // SOUND: chips · [Modell ▾] [Sound laden ▾] · the model's 4–6 macros · Pegel, Panorama, Raum, Gate
+ function pageDrumSound(pg) {
+   const sl = DRUM_VOICES[ED.dVoice], P = slotParams(sl.id), M = DrumSynth.MODELS[P.model] || DrumSynth.MODELS[sl.model];
+@@ -40131,6 +40245,51 @@ function openMenu(goto) {
+   if (goto === 'online') requestAnimationFrame(() => { try { sOn.scrollIntoView({block: 'start'}); } catch (e) {} });
+ }
+ function closeMenu() { if (EL.menu.classList.contains('open')) shieldTap(); EL.menu.classList.remove('open'); if (R.editor === 'menu') R.editor = null; UI.menuStatus = UI.menuInfo = UI.projBox = UI.histBox = UI.menuCloud = null; UI.dirty.all = true; }
++/* NDI: Hinweis auf eine neuere Fassung. Der Service-Worker startet die App nach 3 s aus dem Cache und legt die Antwort des Netzes danach
++   in den Cache (sw.js unverändert). Die App liest selbst – ohne eigenen Netz-Zugriff – die Fassung der Seite im Cache 'synq-app-1'
++   (nach dem Start, später noch zweimal, beim Zurückkommen in die App). Ist sie neuer als die laufende: kleiner Hinweis, ein Tipp sichert
++   (wie beim Schließen) und lädt neu. Kopf-Merkmale der Antwort (ETag, Datum, Länge) sparen das erneute Lesen derselben Fassung. */
++const NDU = {seen: '', v: null, shown: false, hide: false, busy: false, last: 0, el: null, n: 0};
++function ndiVerCode(v) { const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(String(v || '')); return m ? +m[1] * 1e6 + +m[2] * 1e3 + +m[3] : 0; }
++function ndiPageUrl() { return location.origin === CLOUD.origin && location.pathname.startsWith(CLOUD.path) ? CLOUD.origin + CLOUD.path : new URL('./', location.href).href; }
++async function ndiUpdCheck(force) {
++  if (NDU.busy || NDU.shown) return NDU.v;
++  if (typeof caches === 'undefined' || !/^https?:$/.test(location.protocol)) return null;
++  NDU.busy = true; NDU.last = Date.now(); NDU.n++;
++  try {
++    const ca = await caches.open('synq-app-1'), r = await ca.match(ndiPageUrl()); if (!r) return null;
++    const key = ['etag', 'last-modified', 'content-length', 'date'].map(h => r.headers.get(h) || '').join('|');
++    if (!force && key !== '|||' && key === NDU.seen) return null;
++    NDU.seen = key;
++    const m = /const VERSION = '(\d+\.\d+\.\d+)'/.exec(await r.text()); if (!m) return null;
++    if (ndiVerCode(m[1]) > ndiVerCode(VERSION)) { NDU.v = m[1]; ndiUpdShow(m[1]); }
++    return m[1];
++  } catch (e) { return null; } finally { NDU.busy = false; }
++}
++function ndiUpdShow(v) {
++  if (NDU.shown || NDU.hide || !document.body) return; NDU.shown = true;
++  const w = el('div', 'ndiupd'); w.setAttribute('role', 'status');
++  const go = el('button', 'ndiupd-go', 'Neue Version ' + esc(v) + ' – Tippen zum Laden'), x = el('button', 'ndiupd-x', '✕');
++  x.setAttribute('aria-label', 'Hinweis schließen');
++  onTap(go, () => ndiUpdReload()); onTap(x, () => { NDU.hide = true; w.remove(); NDU.el = null; });
++  w.append(go, x); document.body.appendChild(w); NDU.el = w;
++}
++// sichern wie beim Schließen (Rettungskopie + Schreiben, Verlauf, Online-Stand), dann neu laden; nie mitten in einer Aufnahme
++function ndiUpdReload() {
++  if ((typeof rec !== 'undefined' && rec && rec.state !== 'off') || R.songRec) { toast('Erst Aufnahme beenden – dann neu laden'); return false; }
++  const go = NDU.el && NDU.el.querySelector('.ndiupd-go'); if (go) go.textContent = 'Wird gesichert …';
++  try { histLeave(); } catch (e) {}
++  try { if (typeof cloudFlushNow === 'function') cloudFlushNow(); } catch (e) {}
++  const fin = () => { NDU.reload = true; try { (window.__ndiReload || (() => location.reload()))(); } catch (e) {} };
++  Promise.race([saveNow(), new Promise(r => setTimeout(r, 2500))]).then(fin, fin);
++  return true;
++}
++function ndiUpdInit() {
++  if (typeof caches === 'undefined' || !/^https?:$/.test(location.protocol)) return;
++  for (const ms of [4000, 25000, 90000]) setTimeout(() => ndiUpdCheck(), ms);
++  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - NDU.last > 20000) ndiUpdCheck(); });
++}
++ndiUpdInit();
+ // Menü → Info: „Worklet (blob)“ or „Kompatibel“ + the reason (§2.5)
+ function synthStatus() {
+   const st = SynthHost.state;
+@@ -40144,7 +40303,8 @@ function renderMenuInfo() {
+   const box = UI.menuInfo; if (!box) return;
+   const c = AU.ctx, a = audioState();
+   const rows = [
+-    ['Version', 'SYNQUENZER ' + VERSION],
++    ['Version', 'SYNQUENZER ' + VERSION + (NDU.v ? ' · neue Version ' + NDU.v + ' geladen (Hinweis oben antippen)' : '')],   // NDI
++    ['North', ndiStatus().line],   // NDI: North: bereit / lädt / nicht verfügbar (Grund)
+     ['Speicher', (kv ? (STORE_LABEL[kv.mode] || kv.mode) : '…') + (UI.persist ? ' · ' + ({persisted: 'dauerhaft', 'best-effort': 'bestmöglich', 'n/a': 'ohne Garantie'}[UI.persist] || UI.persist) : '')],
+     ['Audio', {running: 'läuft', suspended: 'pausiert', interrupted: 'unterbrochen', closed: 'beendet', none: 'noch nicht gestartet (einmal tippen)'}[a] || a],
+     ['Abtastrate', c ? c.sampleRate + ' Hz' : '–'],
+@@ -56995,7 +57155,9 @@ const SYNQUENZER = {
+   pad: (voice, vel) => { const vd = resolveDrum(voice); if (!vd) throw new Error('Unbekannte Drum-Stimme: ' + voice); padHit(vd.gm, vel == null ? .8 : vel); },
+   // WP6 (§16): drums
+   setKit: (key, v) => setKit(key, v), euclid: (voice, k, rot, bar) => euclid(voice, k, rot, bar), applyPattern: (name, bar) => applyPattern(name, bar),
+-  kits: () => kitList().map(k => ({id: k.id, name: k.name})), patterns: () => Object.keys(DRUM_PATTERNS),
++  kits: () => kitList().map(k => Object.assign({id: k.id, name: k.name}, k.off ? {off: true} : {})), patterns: () => Object.keys(DRUM_PATTERNS),   // NDI: off = North lädt nicht
++  ndiInstrument: v => (v == null ? ndiInstState() : ndiSetInstrument(v)), ndiStatus: () => ndiStatus(), ndiBoot: () => ({st: NDI.boot, why: NDI.why, kitErr: NDI.kitErr.slice()}),   // NDI
++  ndiNorthList: () => ndiNorthList().map(k => Object.assign({id: k.id, name: k.name}, k.ndiOff ? {off: true} : {})), ndiUpdCheck: f => ndiUpdCheck(f), ndiUpd: () => ({v: NDU.v, shown: NDU.shown, n: NDU.n}), ndiGoNorth: () => ndiGoNorth(),   // NDI
+   drumSlot: voice => { const sl = resolveDrum(voice); if (!sl) throw new Error('Unbekannte Drum-Stimme: ' + voice); return deep(slotParams(sl.id)); },
+   // WP6 (§16, §3.9): song
+   // V2b: + `melody` (read-only alias of the chosen track's song melody, like WP6; not stored)
+@@ -57116,7 +57278,7 @@ const SYNQUENZER = {
+   },
+   previewState: () => ({on: PV.on, id: PV.id, track: PV.t, voices: PV.voices.filter(v => !v.dead).length}),
+   soundEdited: t => { const snd = sndOf(t); return !!(snd && soundEdited(snd)); },
+-  openBrowser: t => openBrowser(t), closeBrowser: () => closeBrowser(false), applyBusHint: () => applyBusHint(),
++  openBrowser: (t, c) => openBrowser(t, c), closeBrowser: () => closeBrowser(false), applyBusHint: () => applyBusHint(),   // NDI: c = Reiter (z. B. 'north')
+   exportSounds: ids => exportSounds(ids), importSounds: text => importSoundsText(typeof text === 'string' ? text : JSON.stringify(text)),
+   audition: async (t, note, ms) => {
+     ensureAudio(); const tr = S.tracks[t]; if (!tr) throw new Error('Keine Spur: ' + t);
