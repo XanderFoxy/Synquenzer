@@ -1,0 +1,11 @@
+/* NDP-CSS-BEGIN – die North-Platte (Paket ND-P): eigenes Instrument-Gesicht der Drum-Engine MD_NAME. Rote Front, schwarze
+   Beschriftungsfelder, beleuchtete Tasten, 3-stelliges Siebensegment-Display, großes Rad. Nur Formen aus CSS/SVG, keine Bilder. */
+.hb.ndpk{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;height:44px;min-height:44px;min-width:58px;padding:0 8px;border-radius:8px;font-weight:800;letter-spacing:.02em;color:#fff;
+  background:linear-gradient(180deg,hsl(356 72% 46%),hsl(356 76% 34%));border:1px solid hsl(356 70% 22%)}
+.hb.ndpk .led{width:7px;height:7px;border-radius:50%;background:#4a0d0a;flex:none}
+.hb.ndpk.on .led{background:#ffd9a8;box-shadow:0 0 6px #ffb070}
+.rb.ndpopen{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:64px;min-height:44px;padding:0 8px;line-height:1.05;color:#fff;
+  background:linear-gradient(180deg,hsl(356 72% 46%),hsl(356 76% 34%));border:1px solid hsl(356 70% 22%);border-radius:8px}
+.rb.ndpopen b{font-size:13px;font-weight:800}.rb.ndpopen small{font-size:10px;opacity:.85;letter-spacing:.06em;text-transform:uppercase}
+#app.ndpon{visibility:hidden}
+/* NDP-CSS-END */
