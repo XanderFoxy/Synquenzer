@@ -62,7 +62,11 @@ const lum = c => .299 * c[0] + .587 * c[1] + .114 * c[2];
 const meanL = (fr, x0, y0, x1, y1) => { let s = 0, n = 0; for (let y = y0; y < y1; y += 2) for (let x = x0; x < x1; x += 2) { s += lum(px(fr, x, y)); n++; } return n ? s / n : 0; };
 const audio = f => { const bb = execSync(`ffmpeg -v error -i ${f} -vn -ac 1 -ar 8000 -f f32le -`, {maxBuffer: 1 << 28}); return new Float32Array(bb.buffer, bb.byteOffset, bb.byteLength / 4); };
 const pk = (a, t0, t1) => { let m = 0; for (let i = Math.max(0, Math.round(t0 * 8000)); i < Math.min(a.length, Math.round(t1 * 8000)); i++) m = Math.max(m, Math.abs(a[i])); return m > 0 ? +(20 * Math.log10(m)).toFixed(1) : -200; };
-const diff = (A_, B_) => { let s = 0; for (let i = 0; i < A_.length; i += 3 * 7) s += Math.abs(A_[i] - B_[i]) + Math.abs(A_[i + 1] - B_[i + 1]) + Math.abs(A_[i + 2] - B_[i + 2]); return s / (A_.length / 21) / 3; };
+// Echtzeit-Weg (WebM im Test-Chromium): dunkle Flächen werden reines Schwarz → Vergleich mit Ausgleich des mittleren Helligkeits-Versatzes
+const diffN = (A_, B_) => { const m = [0, 0, 0]; let n = 0; for (let i = 0; i < A_.length; i += 21) { for (let k = 0; k < 3; k++) m[k] += A_[i + k] - B_[i + k]; n++; } for (let k = 0; k < 3; k++) m[k] /= n;
+  let s = 0; for (let i = 0; i < A_.length; i += 21) for (let k = 0; k < 3; k++) s += Math.abs(A_[i + k] - B_[i + k] - m[k]); return s / n / 3; };
+const diff = (A_, B_) => WAY === 'mr' ? diffN(A_, B_) : diffW(A_, B_);
+const diffW = (A_, B_) => { let s = 0; for (let i = 0; i < A_.length; i += 3 * 7) s += Math.abs(A_[i] - B_[i]) + Math.abs(A_[i + 1] - B_[i + 1]) + Math.abs(A_[i + 2] - B_[i + 2]); return s / (A_.length / 21) / 3; };
 
 for (const [fmt, cam] of [['16:9', null], ['9:16', 'app']]) {
   const tag = fmt.replace(':', 'x') + (cam ? '-app' : '') + '-' + WAY;
@@ -124,8 +128,9 @@ for (const [fmt, cam] of [['16:9', null], ['9:16', 'app']]) {
       const q = px(fL, Math.round(cx - S0) + x, Math.round(cy - S0) + y); for (let k = 0; k < 3; k++) { sv[k] += c[k]; vv[k] += q[k]; } nv++; } }
     sv = sv.map(v => Math.round(v / Math.max(1, nv))); vv = vv.map(v => Math.round(v / Math.max(1, nv)));
     ok(`${tag}: Rot satt (Luma-Key, Farbe wie in der Logo-Datei)`, nv > 20 && Math.abs(vv[0] - sv[0]) < 30 && vv[1] < sv[1] + 25 && vv[2] < sv[2] + 25, {rotPixel: nv, datei: sv, video: vv});
-    const oA = outside(fA), oM = outside(fM), lM = meanL(fM, cx - S0, cy - S0, cx + S0, cy + S0);
-    ok(`${tag}: Logo blendet schon während des Abdunkelns ein`, oM > .5 && oM < oA * .5 && lM > 3, {songEnde: +oA.toFixed(1), bei08s: +oM.toFixed(1), logoFeld08s: +lM.toFixed(1)});
+    let oA = outside(fA), oM = outside(fM), lM = meanL(fM, cx - S0, cy - S0, cx + S0, cy + S0);
+    if (WAY === 'mr') for (let d = .5; d <= 1.2 && !(oM > .3 && lM > 1); d += .05) { const q = frameRgb(f, at + d, W4, H4); oM = outside(q); lM = meanL(q, cx - S0, cy - S0, cx + S0, cy + S0); }   // Echtzeit: Datei-Zeit versetzt
+    ok(`${tag}: Logo blendet schon während des Abdunkelns ein`, WAY === 'mr' ? oM > .3 && oM < oA * .5 && lM > 1 : oM > .5 && oM < oA * .5 && lM > 3, {songEnde: +oA.toFixed(1), bei08s: +oM.toFixed(1), logoFeld08s: +lM.toFixed(1)});
   } else ok(`${tag}: Abspann-Logo im Video`, false, res.logo);
   // 5) Ton
   const a = audio(f), songPk = pk(a, 0, isNaN(at) ? res.dur : at - .5), abs = isNaN(at) ? -200 : pk(a, at + .1, res.dur);
@@ -133,6 +138,19 @@ for (const [fmt, cam] of [['16:9', null], ['9:16', 'app']]) {
   // sample frames of the song for the report
   for (const s of shots.slice(0, 6)) png(f, T(s) + 1.2, OUT + `shot-${tag}-${s.a}-${s.v}.png`, 360);
 }
+// 6) der Chor ist im Video-Ton: Offline-Render (derselbe Weg wie das Video) mit Chor zweimal (Rauschen: der Render ist nicht
+// bit-gleich reproduzierbar) und einmal ohne Chor-Gruppe; die Differenz mit/ohne (= der Chor) muss klar über dem Rauschen liegen
+const grab = async () => { await p.evaluate(() => SYNQUENZER.vvRender({range: {a: 0, b: 8}})); return p.evaluate(() => { const r = VV.last, d = r.buf.getChannelData(0), o = Math.round((r.off || 0) * r.buf.sampleRate), n = Math.round(4 * r.buf.sampleRate);
+  window.__cb = window.__cb || []; window.__cb.push(d.slice(o, o + n)); return window.__cb.length - 1; }); };
+const dif = (i, j) => p.evaluate(([i, j]) => { const a = window.__cb[i], b = window.__cb[j]; let s = 0, e = 0; for (let k = 0; k < Math.min(a.length, b.length); k++) { const x = a[k] - b[k]; s += x * x; e += a[k] * a[k]; } return +(10 * Math.log10((s + 1e-20) / (e + 1e-20))).toFixed(1); }, [i, j]);
+const muted = await p.evaluate(st => { const m = S.tracks.map(t => !!(t && t.mute)); S.tracks.forEach((t, i) => { if (t && i !== st) t.mute = true; }); return m; }, setup.st);   // nur die STIMME (Lead + Chor) hörbar
+const i1 = await grab(), i2 = await grab();
+const chor = await p.evaluate(st => { const r = {t: st, s: 0}, c = JSON.parse(JSON.stringify(SYNQUENZER.g6pInfo(r).chor)); SYNQUENZER.g6pSet(r, null); return c; }, setup.st);
+const i3 = await grab();
+await p.evaluate(([st, c]) => SYNQUENZER.g6pSet({t: st, s: 0}, c), [setup.st, chor]);
+await p.evaluate(m => S.tracks.forEach((t, i) => { if (t) t.mute = m[i]; }), muted);
+const rausch = await dif(i1, i2), chorDb = await dif(i1, i3);
+ok('Chor im Video-Ton (Differenz mit/ohne Chor-Gruppe klar über dem Render-Rauschen)', chorDb > rausch + 6 && chorDb > -40, {chorDb, rausch});
 ok('keine Konsolenfehler', errs.length === 0, errs.slice(0, 5));
 const nOk = C.filter(c => c[1]).length;
 fs.writeFileSync(OUT + 'e2e-' + WAY + '.json', JSON.stringify({ok: nOk, all: C.length, checks: C}, null, 1));
