@@ -1,0 +1,473 @@
+--- a/bau/snapshots/R-4300.html
++++ b/bau/helfer/SX126/index.html
+@@ -4247,6 +4247,41 @@
+ .pg-md>.vchips .vchip{min-height:44px}
+ #drumSheet .sh-subs:has(.stab[data-sub="tone"]) .stab,#drumSheet .sh-subs:has(.stab[data-sub="md"]) .stab{min-height:44px;height:44px}
+ /* Ende ND2 */
++/* SX126-CSS-BEGIN: SX1 Ausblenden (Marken-Blatt, Blatt „Video“) · SX2 Klinge (Messer am Taktstrich, [Bei Takt …]) · SX6 Form-Vorlage */
++.msheet .sx126-rows{display:flex;flex-direction:column;gap:4px;margin-top:4px}
++.msheet .sx1-r{align-items:center}
++.msheet .sx1-r .sx1-l{flex:0 1 auto;min-width:0;padding:0 4px 0 2px;font:700 10px/1.15 var(--font-ui);letter-spacing:.04em;text-transform:uppercase;color:var(--text-dim)}
++.msheet .sx1-r .sx1-b{flex:1 1 0;min-width:44px;max-width:72px}
++.msheet .sx1-r .sx1-b.on,.msheet .sx2-r .sx2-sb.on{border-color:var(--sel);color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}
++.msheet .sx2-sb{display:inline-flex;align-items:center;justify-content:center;gap:6px}
++.msheet .sx2-r:not(.sx2-pick) .sx2-sb,.msheet .kon-r .sx2-sb{flex:0 1 auto;min-width:132px;padding:0 12px}
++.msheet .sx2-pick .sx2-sb{flex:0 0 auto;padding:0 8px}
++.msheet .sx2-sb .sx2-i{flex:none}
++.msheet .sx2-bars{flex:1 1 auto;min-width:0;display:flex;gap:4px;overflow-x:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x;scrollbar-width:none}
++.msheet .sx2-bars::-webkit-scrollbar{display:none}
++.msheet .sx2-n{flex:0 0 44px;width:44px;height:44px;padding:0;font:700 13px/1 var(--font-num)}
++.msheet .sx2-n.mid{border-color:#6b4c16;color:#ffcf7a}
++.sv-cw .sx2-k{position:absolute;z-index:4;width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:22px;color:#111;background:#ffb22e;border-color:#ffcf7a;box-shadow:0 2px 8px rgba(0,0,0,.55)}
++.sv-cw .sx2-k[hidden]{display:none}
++.sv-cw .sx2-k .sx2-i{width:22px;height:22px}
++.sv-cw .sx2-k::before{content:'';position:absolute;left:21px;top:-6px;width:2px;height:7px;background:#ffb22e}
++.vvrow.sx1-vr .sx1-box{display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0}
++.vvsheet .seg.vvseg.sx1-seg button{min-width:44px;padding:0 8px}
++.vvrow.sx1-vr .sx1-h{flex:1 1 auto;min-width:0;max-height:28px;font:500 11px/1.2 var(--font-ui);color:var(--text-dim);overflow:hidden;overflow-wrap:anywhere}
++@media (orientation:landscape){
++  .vvsheet .vvb.vvlq{grid-template-rows:minmax(0,1fr) auto auto}
++  .vvb.vvlq>.vvrow.sx1-vr{grid-column:1;grid-row:3}
++  .vvb.vvlq>.vvctl{grid-row:1 / span 3}
++}
++.pop.sx6pop{width:min(340px,calc(100vw - 16px))}
++.pop.sx6pop h4{margin:0 0 8px}
++.pop.sx6pop .sx6-l{display:flex;flex-direction:column;gap:6px;max-height:min(60vh,420px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
++.pop.sx6pop .sx6-t{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:56px;height:auto;padding:8px 10px;text-align:left;white-space:normal}
++.pop.sx6pop .sx6-t b{font:700 13px/1.1 var(--font-ui);color:var(--text)}
++.pop.sx6pop .sx6-t small{font:500 11px/1.25 var(--font-ui);color:var(--text-dim)}
++.pop.sx6pop .sx6-t .sx6-d{color:#ffcf7a}
++.pop.sx6pop .small{margin-top:8px}
++/* SX126-CSS-END */
+ </style>
+ </head>
+ <body>
+@@ -19538,13 +19573,14 @@
+     const M = {input: ctx.createGain()};
+     M.glue = ctx.createDynamicsCompressor(); M.trim = ctx.createGain(); M.drive = ctx.createWaveShaper(); M.vol = ctx.createGain();
+     M.lim = ctx.createDynamicsCompressor(); M.ceil = ctx.createWaveShaper(); M.pre = ctx.createGain(); M.analyser = ctx.createAnalyser();
++    M.fade = ctx.createGain();   // SX126: Ausblenden am Song-Ende (gain 1 = bitgenau durch); pre → fade → ceil, alle Abgriffe hinter ceil hören es mit
+     M.lim.threshold.value = -1.5; M.lim.knee.value = 0; M.lim.ratio.value = 20; M.lim.attack.value = 0.001; M.lim.release.value = 0.09;
+     // soft ceiling: linear to 0.8, tanh knee to ~0.98, inputs up to +6 dBFS handled (pre 0.5 / curve f(2u))
+     const n = 4097, c = new Float32Array(n), k = 0.8, top = 0.98;
+     for (let i = 0; i < n; i++) { const x = (i / (n - 1) * 2 - 1) * 2, a = Math.abs(x); c[i] = Math.sign(x) * (a <= k ? a : k + (top - k) * Math.tanh((a - k) / (top - k))); }
+     M.ceil.curve = c; M.ceil.oversample = 'none'; M.pre.gain.value = 0.5;   // '2x' adds 128 samples latency AND its filter overshoots the ceiling (measured 1.029)
+     M.input.connect(M.glue); M.glue.connect(M.trim); M.trim.connect(M.drive); M.drive.connect(M.vol); M.vol.connect(M.lim);
+-    M.lim.connect(M.pre); M.pre.connect(M.ceil); M.ceil.connect(ctx.destination); M.ceil.connect(M.analyser);
++    M.lim.connect(M.pre); M.pre.connect(M.fade); M.fade.connect(M.ceil); M.ceil.connect(ctx.destination); M.ceil.connect(M.analyser);   // SX126: M.fade
+     M.analyser.fftSize = 2048;
+     /* p = {thr -30..0, ratio 1..8, attack s, release s, makeup dB, drive 0..1, vol 0..1} ; glue thr 0 & ratio 1 = transparent */
+     M.set = function (p, t = ctx.currentTime) {
+@@ -21483,6 +21519,7 @@
+   const vdir = vvDirNorm(o.video, bars, nt); if (vdir) v4.video = vdir;                                 // VV2: Video-Regie im Song
+   const gb = ggbNorm(o.gb); if (gb) v4.gb = gb;                                                      // G-GB: Daten des letzten Instrumental-Exports
+   konSongNorm(o, v4, bars, pk, nt);                                                                     // KON: Blöcke, Ursprung (konsolidiert)
++  sx1Norm(o, v4);                                                                                       // SX126: song.fade (Ausblenden am Ende)
+   return Object.assign({bars, loop: normLoop(o.loop, bars), melodyTrack: mt, lanes, carrier, mel}, v4);
+ }
+ function ownNorm(c, pk, nt) {
+@@ -23737,6 +23774,7 @@
+   } catch (e) { tickErr(e); }
+   finally { if (b1 != null && R.playing && R.runId === run && b1 > R.schedBeat) R.schedBeat = b1; }
+   try { if (R.playing && R.songEndBeat != null) songEndCheck(); } catch (e) { tickErr(e); }
++  try { sx1Tick(); } catch (e) { tickErr(e); }                  // SX126: die Ausblend-Rampe am Master
+ }
+ function tickAhead(h) { if (AU.ctx && R.playing) tick(h || .3); }
+ function scheduleTrack(i, from, to, late) {
+@@ -24144,6 +24182,7 @@
+ // why: 'end' = the song reached its end (next ▶ starts at bar 1 again); otherwise the bar it stopped in is remembered (N0c)
+ function songPlayEnd(stopTransport, why) {
+   if (!R.songPlay) return;
++  try { sx1End(); } catch (e) { logErr(e); }                    // SX126
+   if (SREC.on) songAudioStop(false);
+   if (R.melRec) melRecEnd();
+   if (R.songRec) songRecEnd();
+@@ -27302,6 +27341,7 @@
+   const kt = el('button', 'rb mbtn kbtn', '＋ Teil einsetzen ▾'); kt.setAttribute('aria-label', 'Einen Teil oder eine Szene als Song-Anfang einsetzen');
+   for (const b of [kb, kt]) b.addEventListener('pointerdown', e => e.stopPropagation());       // not a song-grid gesture
+   onTap(kb, () => openKette(kb)); onTap(kt, () => openPlacePick(kt, 0)); kr.append(kb, kt); empty.appendChild(kr);
++  sx6EmptyBtn(kr);                                                  // SX126: [Aus Vorlage …]
+   const hint = el('div', 'sv-hint'); SV.hint = hint;
+   const fol = el('button', 'rb sv-fol folc'); fol.hidden = true; fol._sig = ''; SV.fol = fol; folSizer(fol);
+   fol.addEventListener('pointerdown', e => e.stopPropagation());       // not a song-grid gesture
+@@ -29136,6 +29176,7 @@
+ // the key name as long as it fits: ≤ 8 characters, else 6 (P3), else the short form of N7-R2 („STR“, „REF“ …)
+ const PART_SHORT = {intro: 'INT', strophe: 'STR', pre: 'PRE', refrain: 'REF', bridge: 'BRI', break: 'BRK', outro: 'OUT', szene: 'SZ'};
+ function partShortForm(name) {
++  const ab = /^(.*\S)\s([A-Z])$/.exec(String(name).trim()); if (ab) return partShortForm(ab[1]) + ' ' + ab[2];   // SX126: „Refrain A“ → „REF A“ (Klinge)
+   const m = /^(.*?)\s*(\d+)?$/.exec(String(name).trim()), base = (m && m[1]) || name, num = m && m[2] ? m[2] : '';
+   const k = base.toLowerCase(); if (k === 'teil' && num) return 'T' + num;
+   return (PART_SHORT[k] || base.replace(/\s+/g, '').slice(0, 3).toUpperCase()) + num;
+@@ -29888,6 +29929,7 @@
+   if (UI.pop && UI.pop.name === 'block') { closePop(); return; }      // KON: the Block-Blatt lets the song through like the Marken-Blatt
+   // the Marken-Blatt lets the song through: a tap anywhere but into the chosen mark only closes it (never edits underneath)
+   if (UI.pop && UI.pop.name === 'mark') { const m = row === -1 ? svMarkAt(bar) : null; if (!(m && !svMarkOpen(m))) { closePop(); return; } }   // another mark: its sheet
++  if (row === -1 && sx2RulerTap(x)) return;                        // SX126: Klinge am Taktstrich einer geöffneten Marke
+   if (row === -1) { svRulerTapX(bar); return; }      // V0c N7-R7 + V2e marks: the ruler selects (yellow) and sets the Positionsmarke, never jumps
+   if (!song) { toast('Noch kein Song – erst ● SONG'); return; }
+   if (row < svChordRow()) { const t = SV.rows[row]; if (t < 0 || bar > song.bars) return; if (isStimmeT(t) && tkVoxAt(bar)) { tkSheet({vox: tkVoxAt(bar).id}); return; }   // VS3: Song-Stimme → Takes-Blatt
+@@ -30040,6 +30082,7 @@
+         `</div><div class="ms-r">` + B('rec', '● Neu aufnehmen …', {cls: 'ms-rec'}) + `</div></div>` + vvDirRow(m.a, m.a + m.len, 'ms-b');   // VV2: Zeile „Video“
+       s012MarkSheetPaint(p, m);   /* S0/S2 */
+       konMarkSheetPaint(p, m);    /* KON: [Als neuen Teil konsolidieren] [Zurückholen] */
++      sx126MarkSheetPaint(p, m);  // SX126: [Bei Takt …] (Klinge), beim letzten Teil „Ausblenden am Ende“
+       for (const b of p.querySelectorAll('.ms-b')) if (b.scrollWidth > b.clientWidth + 1) b.classList.add('tight');
+     };
+     paint(); p._paint = paint;
+@@ -30953,6 +30996,7 @@
+     const nm = mk ? trackTag(i) + ' ♪' : svShort(i); if (sp.textContent !== nm) sp.textContent = nm;
+     if ((d.dataset.mel || '') !== mk) { d.dataset.mel = mk; d.classList.toggle('mcho', cho); }
+     const st = i === R.selT; if (d.classList.contains('sel') !== st) { d.classList.toggle('sel', st); d.setAttribute('aria-pressed', String(st)); } } }
++  sx2Place();                                                        // SX126: das Messer folgt dem Taktstrich
+ }
+ /* melody lane → the piano roll on the chosen track's song melody (§3.9, V2b: song.mel[melodyTrack]): the clip editor with the melody as its clip; every gesture is one
+    undo step (kind 'song'); notes stay as heard (never mapped). [Als Clip] (P1 „Melodie → Clip“): the selected bar range
+@@ -53861,6 +53905,7 @@
+     await vvSwapIn(oc, wk, off);
+     const PS = performance.now();
+     if (!songPlayStart(a)) throw new Error('Song startet nicht');
++    R.songPlay.sx1End = R.songPlay.off + b * sx1Bpb();            // SX126: das Ausblenden endet am Ende des Bereichs
+     vvProf('swapIn', performance.now() - PS);
+   } catch (e) { if (off.sv) vvSwapOut(off.sv); VV.off = null; UI.vvOff = false; throw e; }
+   const t0 = R.startTime, endB = b < song.bars ? R.songPlay.off + b * 4 : null, q = t => Math.ceil(t * sr / 128) * 128 / sr;
+@@ -54661,11 +54706,12 @@
+   lgBox.append(bLogo, bFile); const rowL = rowOf('Abspann', lgBox);
+   const acts = el('div', 'vvacts'), bPrev = el('button', 'rb vvbtn', '▶ Vorschau'), bMake = el('button', 'rb vvbtn go', 'Video erstellen');
+   bPrev.setAttribute('aria-label', 'Vorschau mit Ton'); acts.append(bPrev, bMake); ctl.appendChild(acts);
++  const sx1 = sx1VvRow(ctl, acts);                                 // SX126: Zeile „Ausblenden“
+   const bar = el('div', 'vvprog', '<i></i><span></span>'), bCan = el('button', 'rb vvbtn', 'Abbrechen'); bar.appendChild(bCan);
+   const done = el('div', 'vvdone'), bShare = el('button', 'rb vvbtn go', 'Teilen'), bSave = el('button', 'rb vvbtn', 'Sichern');
+   done.append(bShare, bSave); ctl.append(bar, done);
+   const way = el('div', 'vvway'), wayT = el('span', ''); way.append(wayT); ctl.appendChild(way);
+-  Object.assign(VV, {ui: {sh, cv, stage, segF, segV, segC, rng, segR, rowR, bPrev, bMake, bar, bCan, done, bShare, bSave, way, wayT, bLogo, bFile, rowL, acts, ctl, body}});
++  Object.assign(VV, {ui: {sh, cv, stage, segF, segV, segC, rng, segR, rowR, bPrev, bMake, bar, bCan, done, bShare, bSave, way, wayT, bLogo, bFile, rowL, acts, ctl, body, sx1}});   // SX126: sx1
+   onTap(bLogo, () => vvlToggle()); onTap(bFile, () => vvlPick()); vvlLoad();   // VV-LOGO
+   onTap(bPrev, () => { if (VV.prev) vvPrevStop(); else vvPrevStart(); });
+   onTap(bMake, () => vvGo());
+@@ -54693,6 +54739,7 @@
+     let lq = false; try { lq = matchMedia('(orientation:landscape)').matches; } catch (e) {}
+     if (lq && u.rowL.parentNode !== u.body) u.body.appendChild(u.rowL); else if (!lq && u.rowL.parentNode !== u.ctl) u.ctl.insertBefore(u.rowL, u.acts);
+     u.body.classList.toggle('vvlq', lq);
++    sx1VvFit(u, lq);                                                // SX126
+   }
+   const [W, H] = VV_SIZE[vvPrefs().fmt], bw = Math.floor(u.stage.clientWidth), bh = Math.floor(u.stage.clientHeight), k = Math.min(bw / W, bh / H) || .1;
+   const cw = Math.max(10, Math.min(bw, Math.round(W * k))), ch = Math.max(10, Math.min(bh, Math.round(H * k)));
+@@ -54715,6 +54762,7 @@
+   u.rng.textContent = !rg ? 'Noch kein Song – erst ● SONG' : 'ganzer Song';
+   u.rng.style.display = hs ? 'none' : ''; u.segR.style.display = hs ? '' : 'none'; u.rowR.classList.toggle('txt', !hs); u.sh.classList.toggle('sel', hs);   // short landscape: the 44-px choice row fits without scrolling
+   u.segR.update();
++  sx1VvSync(u);                                                     // SX126
+   const busy = VV.busy;
+   u.sh.classList.toggle('busy', busy); u.sh.classList.toggle('has', !!(VV.res && VV.res.blob) && !busy);
+   for (const b of [...u.segF.children, ...u.segV.children, ...u.segR.children]) b.disabled = busy;
+@@ -54733,6 +54781,7 @@
+   if (VV.busy || VV.prev) return;
+   const rg = vvRange(true); if (!rg) return;
+   if (!songPlayStart(rg.a)) return;
++  if (rg.sel && R.songPlay) R.songPlay.sx1End = R.songPlay.off + rg.b * sx1Bpb();   // SX126: Vorschau einer Auswahl blendet an ihrem Ende aus
+   VV.prev = {b: rg.b, sel: rg.sel, rt: vvRun({view: vvViewOf(vvPrefs().view), range: rg})};   // VV2
+   const loop = () => {
+     if (!VV.prev || !VV.ui) return;
+@@ -58152,6 +58201,294 @@
+   const L4 = partLen(S.parts[rp.i]) * 4, t = audBeat(), k = Math.floor((t - rp.startBeat) / L4 + 1e-9), A = rp.startBeat + (k - 1) * L4;
+   return k >= 1 && A >= (rp.from != null ? rp.from : rp.startBeat) - 1e-6;
+ }
++/* SX126-BEGIN: SX1 Song-Ende ausblenden · SX2 Klinge (Teil am Taktstrich teilen) · SX6 Form-Vorlage
++   (spec/konzept-schnitt-uebergaenge-video.md). Daten nur additiv (Format 5): song.fade = {out: Schläge}; ohne Wert fehlt das Feld
++   ganz, die Datei bleibt Zeichen für Zeichen gleich. Die Rampe liegt EINMAL am Master (AU.M.fade zwischen pre und ceil): Live,
++   „Song als Audio“, Video-Offline-Render und WAV-Export (GarageBand) laufen durch denselben Knoten und dieselbe Planung (sx1Tick
++   im Takt-Planer). Ohne Wert bleibt der Knoten auf 1 (×1 ist bitgenau). */
++
++// Schläge je Takt: die eine Stelle dafür (T1 Taktarten ändert nur grid())
++function sx1Bpb() { return grid().beatsPerBar; }
++// normSong: song.fade nur übernehmen, wenn es gültig ist (1 … 256 Schläge)
++function sx1Norm(o, v4) {
++  const f = o && o.fade;
++  if (f && typeof f === 'object' && isNum(f.out) && f.out > 0) v4.fade = {out: Math.min(256, Math.max(1, Math.round(f.out)))};
++}
++function sx1Out(song) { const f = song && song.fade; return f && f.out > 0 ? f.out : 0; }
++function sx1Bars(song) { const o = sx1Out(song), b = sx1Bpb(); return o && o % b === 0 ? o / b : 0; }
++// die Kurve (x = 0 … 1 über die Strecke, xd = Beginn des letzten Schlags): bis xd weich auf −36 dB (−36 · u²), im letzten
++// Schlag zügig weiter auf −62 dB. So hört die Musik (Spitze 0 … −24 dBFS) erst im letzten Schlag auf, über −60 dBFS zu liegen.
++function sx1Gain(x, xd) {
++  x = x <= 0 ? 0 : x >= 1 ? 1 : x; xd = xd > 0 && xd < 1 ? xd : 1;
++  const d = x <= xd ? -36 * (x / xd) * (x / xd) : -36 - 26 * (x - xd) / (1 - xd);
++  return Math.pow(10, d / 20);
++}
++function sx1Node() { return AU.M && AU.M.fade ? AU.M.fade : null; }
++// das Ende dessen, was gerade spielt (Transport-Schläge): Ende der Video-/Export-Auswahl, sonst das Song-Ende; null = kein Ende
++// (Schleife an, Song-Aufnahme)
++function sx1EndBeat() {
++  const sp = R.songPlay, song = S.song; if (!sp || !song || !R.playing || R.songRec) return null;
++  if (sp.sx1End != null) return sp.sx1End;
++  if (song.loop && song.loop.on) return null;
++  return sp.off + song.bars * sx1Bpb();
++}
++function sx1Hold(gp, now) { if (gp.cancelAndHoldAtTime) gp.cancelAndHoldAtTime(now); else { const v = gp.value; gp.cancelScheduledValues(now); gp.setValueAtTime(v, now); } }
++// die Rampe [tS, tE] (Kontext-Zeit am Knoten) planen; mitten in der Strecke geht es vom jetzigen Wert weiter (fällt nur)
++function sx1Sched(g, tS, tE, beat) {
++  const st = g._sx1 || (g._sx1 = {}), gp = g.gain, now = g.context.currentTime, v0 = Math.min(1, Math.max(0, gp.value));
++  const xd = 1 - Math.min(beat > 0 ? beat : spb(), (tE - tS) * .25) / Math.max(1e-6, tE - tS);   // Abtauchen: 1 Schlag, höchstens ¼ der Strecke
++  clearTimeout(st.rT); st.rT = 0;
++  sx1Hold(gp, now);
++  let xa = 0, ta = tS;
++  if (tE <= now + 1e-4) { gp.linearRampToValueAtTime(0, now + .02); Object.assign(st, {on: true, tS, tE}); return; }
++  if (tS > now + 1e-4) { if (v0 < 1 - 1e-6) gp.linearRampToValueAtTime(1, Math.min(tS, now + .05)); gp.setValueAtTime(1, tS); }
++  else { xa = (now - tS) / (tE - tS); ta = now; }
++  const N = 96, top = tS > now + 1e-4 ? 1 : v0;
++  for (let k = 1; k <= N; k++) gp.linearRampToValueAtTime(Math.min(top, sx1Gain(xa + (1 - xa) * k / N, xd)), ta + (tE - ta) * k / N);
++  gp.linearRampToValueAtTime(0, tE + .01);
++  Object.assign(st, {on: true, tS, tE});
++}
++// zurück auf 1 (Ausblenden ausgeschaltet, Schleife an, neuer Start)
++function sx1Back(g, sec) {
++  const st = g._sx1 || (g._sx1 = {}), gp = g.gain, now = g.context.currentTime;
++  clearTimeout(st.rT); st.rT = 0; st.on = false;
++  sx1Hold(gp, now); gp.linearRampToValueAtTime(1, now + sec);
++}
++// je Planer-Durchlauf (tick): liegt die Rampe noch richtig? (Tempo, Wert, Auswahl-Ende) – sonst neu planen
++function sx1Tick() {
++  const g = sx1Node(); if (!g) return;
++  const st = g._sx1;
++  if (st && st.rT && R.playing) { if (AU.M && AU.M.fade === g) { try { tailKill(); } catch (e) { logErr(e); } } sx1Back(g, .03); }   // neu gestartet, bevor die Ausklang-Pause um war
++  if (!R.songPlay) return;
++  const F = sx1Out(S.song), eb = F ? sx1EndBeat() : null;
++  if (eb == null) { if (st && st.on) sx1Back(g, .3); return; }
++  const lat = AU.graphLat || 0, tE = b2t(eb) + lat, tS = b2t(eb - F) + lat;
++  if (st && st.on && Math.abs(st.tE - tE) < 2e-3 && Math.abs(st.tS - tS) < 2e-3) return;
++  sx1Sched(g, tS, tE, spb());
++}
++// songPlayEnd: live endet der Song (oder ■) – war die Rampe schon im Gang, wird es ganz still, Hall und Echo werden abgeschnitten
++// (sie lägen sonst voll laut hinter dem Ende), danach wieder 1. Offline bleibt die Rampe stehen: der Ausklang ist still.
++function sx1End() {
++  const g = sx1Node(), st = g && g._sx1; if (!st || !st.on) return;
++  const c = g.context; if (typeof OfflineAudioContext === 'function' && c instanceof OfflineAudioContext) return;
++  const now = c.currentTime;
++  if (now < st.tS) { sx1Back(g, .02); return; }
++  st.on = false; sx1Hold(g.gain, now); g.gain.setTargetAtTime(0, now, .015);
++  clearTimeout(st.rT);
++  st.rT = setTimeout(() => {
++    if (AU.M && AU.M.fade === g && AU.ctx === c) { try { tailKill(); } catch (e) { logErr(e); } }
++    st.rT = setTimeout(() => { st.rT = 0; sx1Back(g, .05); }, 350);
++  }, 400);
++}
++// eine Geste = 1 Undo; bars 0 = aus
++function sx1Set(bars) {
++  const song = S.song; if (!song || !song.bars) return false;
++  bars = Math.max(0, Math.min(64, Math.round(+bars || 0)));
++  const want = bars * sx1Bpb(); if (want === sx1Out(song)) return false;
++  return !!songEdit(bars ? 'Ausblenden am Ende: ' + bars + ' Takte' : 'Ausblenden aus', s => { if (want) s.fade = {out: want}; else delete s.fade; });
++}
++function sx1Info() {
++  const g = sx1Node(), st = (g && g._sx1) || {};
++  return {out: sx1Out(S.song), bars: sx1Bars(S.song), bpb: sx1Bpb(), gain: g ? g.gain.value : null, on: !!st.on, tS: st.tS == null ? null : st.tS, tE: st.tE == null ? null : st.tE, wait: !!st.rT};
++}
++const SX1_BARS = [0, 2, 4, 8];
++const sx1Lbl = n => (n ? (n === 8 ? '8 Takte' : String(n)) : 'aus');
++// Marken-Blatt: der letzte Teil (die Marke ganz hinten)
++function sx1IsLast(song, m) { return !!song && !song.marks.some(x => x.a > m.a); }
++function sx1RowHtml(song) {
++  const cur = sx1Bars(song), any = sx1Out(song) > 0;
++  return `<div class="ms-r sx1-r"><span class="sx1-l">Ausblenden am Ende</span>` + SX1_BARS.map(n => {
++    const on = n ? cur === n : !any;
++    return `<button class="rb ms-b sx1-b${on ? ' on' : ''}" data-sx="f${n}" aria-pressed="${on}" aria-label="${n ? 'Ausblenden über die letzten ' + n + ' Takte' : 'Ausblenden aus'}">${sx1Lbl(n)}</button>`;
++  }).join('') + `</div>`;
++}
++// Blatt „Video“: Zeile „Ausblenden“ (gilt am Ende der Auswahl bzw. am Song-Ende)
++function sx1VvRow(ctl, acts) {
++  const r = el('div', 'vvrow sx1-vr'); r.appendChild(el('span', 'lbl', 'Ausblenden'));
++  const seg = makeSeg(SX1_BARS.map(n => [String(n), sx1Lbl(n), n ? 'Ausblenden über die letzten ' + n + ' Takte' : 'Ausblenden aus']), () => {
++    const s = S.song, b = sx1Bars(s); return b ? String(b) : sx1Out(s) ? '' : '0';
++  }, v => { sx1Set(+v); }, 'vvseg sx1-seg');
++  const hint = el('small', 'sx1-h', '');
++  const box = el('span', 'sx1-box'); box.append(seg, hint); r.appendChild(box);
++  ctl.insertBefore(r, acts);
++  return {r, seg, hint};
++}
++function sx1VvSync(u) {
++  const x = u && u.sx1; if (!x) return;
++  x.seg.update();
++  const ok = !!(S.song && S.song.bars) && !VV.busy; for (const b of x.seg.children) b.disabled = !ok;
++  const t = !sx1Out(S.song) ? '' : vvHasSel() && VV.useSel !== false ? 'Auswahl-Ende' : 'Song-Ende';
++  if (x.hint.textContent !== t) x.hint.textContent = t;
++}
++// quer: die Zeile liegt unter der Vorschau (wie „Abspann“), damit die Bedienspalte ohne Rollen passt
++function sx1VvFit(u, lq) {
++  const x = u && u.sx1; if (!x) return;
++  if (lq && x.r.parentNode !== u.body) u.body.appendChild(x.r); else if (!lq && x.r.parentNode !== u.ctl) u.ctl.insertBefore(x.r, u.acts);
++}
++
++/* ---------- SX2 Klinge: einen Teil am Taktstrich teilen. Der Inhalt bleibt, wie er ist (nur die Marken ändern sich: marksCut mit
++   split), es klingt gleich. Die Hälften heißen „Refrain A“ und „Refrain B“; sie sind freie Marken ohne Teil-Vorlage (sonst würde
++   ein späteres „Auf alle übertragen“/Teil-Vorlage-Ändern jede Hälfte wieder auf die volle Länge aufziehen). 1 Undo. ---------- */
++const SX2_SVG = '<svg class="sx2-i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="6" cy="6" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.6 7.6 20 17M8.6 16.4 20 7M12.6 12h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
++const SX2_HIT = 12;                                                  // px links/rechts vom Taktstrich (die Mitte des Takts wählt weiter)
++function sx2Names(song, base) {
++  const q = /^(.*\S) ([A-Z])$/.exec(base);
++  if (q) {                                                           // „Refrain A“ noch einmal geteilt: A bleibt, B bekommt den nächsten freien Buchstaben
++    const used = new Set(song.marks.map(x => markLabel(x)));
++    for (let c = q[2].charCodeAt(0) + 1; c <= 90; c++) { const n = q[1].slice(0, 10) + ' ' + String.fromCharCode(c); if (!used.has(n)) return [base, n]; }
++    return [base, base];
++  }
++  const s = base.slice(0, 10).trim() || 'Teil';
++  return [s + ' A', s + ' B'];
++}
++// API: die Marke id am Takt n (0-basiert: B beginnt bei Takt n + 1) teilen → {a, b} (Ids der Hälften) oder false
++function sx2Split(id, n) {
++  const song = S.song, m0 = song && song.marks.find(x => x.id === id); if (!m0 || songTakeOpen()) return false;
++  n = Math.round(+n); if (!(n > m0.a && n < m0.a + m0.len)) return false;
++  const nm = sx2Names(song, markLabel(m0));
++  const r = songEdit(markLabel(m0) + ' geteilt · Takt ' + (n + 1), s => {
++    marksCut(s, n, n, true);
++    const A = s.marks.find(x => x.id === id), B = s.marks.find(x => x.a === n && x.id !== id); if (!A || !B) return null;
++    A.name = nm[0]; B.name = nm[1]; A.part = null; B.part = null;
++    return {a: A.id, b: B.id};
++  });
++  return r && r !== true ? r : false;
++}
++// Taktleiste: in einer geöffneten Marke (Taktnummern sichtbar) nahe an einem inneren Taktstrich → das Messer erscheint dort
++function sx2RulerTap(x) {
++  const song = S.song; if (!song || R.songRec) { sx2Hide(); return false; }
++  const cw = SV.cellW, px = x + SV.x, n = Math.round(px / cw);
++  if (Math.abs(px - n * cw) > SX2_HIT) { sx2Hide(); return false; }
++  const m = song.marks.find(z => n > z.a && n < z.a + z.len);
++  if (!m || !svMarkOpen(m)) { sx2Hide(); return false; }
++  if (SV.sx2 && SV.sx2.id === m.id && SV.sx2.n === n) { sx2Hide(); return true; }   // noch einmal auf denselben Strich: weg
++  SV.sx2 = {id: m.id, n, ver: UI.songVer | 0}; haptic('tick');
++  lcdOrToast('Teilen bei Takt ' + (n + 1) + '? Messer antippen');
++  sx2Place(); return true;
++}
++function sx2Hide() { if (!SV.sx2) return; SV.sx2 = null; sx2Place(); }
++function sx2Btn() {
++  let b = SV.sx2b; if (b && b.isConnected) return b;
++  if (!SV.wrap) return null;
++  b = SV.sx2b = el('button', 'rb sx2-k', SX2_SVG); b.hidden = true;
++  b.addEventListener('pointerdown', e => e.stopPropagation());       // keine Geste der Song-Fläche
++  onTap(b, () => sx2Go());
++  SV.wrap.appendChild(b); return b;
++}
++// svDraw: das Messer folgt dem Taktstrich (Rollen) und verschwindet, sobald es nicht mehr passt
++function sx2Place() {
++  const s = SV.sx2, b0 = SV.sx2b;
++  if (!s) { if (b0 && !b0.hidden) b0.hidden = true; return; }
++  const song = S.song, m = song && song.marks.find(z => z.id === s.id);
++  if (!m || !(s.n > m.a && s.n < m.a + m.len) || !svMarkOpen(m) || (UI.songVer | 0) !== s.ver || R.songRec || !UI.songView) { SV.sx2 = null; if (b0) b0.hidden = true; return; }
++  const b = sx2Btn(); if (!b) return;
++  const x = s.n * SV.cellW - SV.x;
++  if (x < 0 || x > SV.w) { if (!b.hidden) b.hidden = true; return; }
++  const L = Math.round(x - 22) + 'px', T = Math.round(SV.rulerH + 1) + 'px', lab = markLabel(m) + ' bei Takt ' + (s.n + 1) + ' teilen';
++  if (b.style.left !== L) b.style.left = L; if (b.style.top !== T) b.style.top = T;
++  if (b.getAttribute('aria-label') !== lab) b.setAttribute('aria-label', lab);
++  if (b.hidden) b.hidden = false;
++}
++function sx2Go() {
++  const s = SV.sx2; SV.sx2 = null; sx2Place();
++  if (!s || svRecBusy()) return;
++  const song = S.song, m = song && song.marks.find(z => z.id === s.id); if (!m) return;
++  const r = sx2Split(s.id, s.n); if (!r) return;
++  const A = song.marks.find(z => z.id === r.a), B = song.marks.find(z => z.id === r.b);
++  haptic('pop'); toast((A ? markLabel(A) : '') + ' | ' + (B ? markLabel(B) : '') + ' · geteilt', songUndoAct()); svButtons(); UI.dirty.song = true;
++}
++
++/* ---------- Marken-Blatt: [Bei Takt …] (Klinge) und beim letzten Teil „Ausblenden am Ende“ ---------- */
++function sx126MarkSheetPaint(p, m) {
++  if (p.classList.contains('s0-ed')) return;
++  if (!p._sx126) { p._sx126 = true; onTap(p, b => sx126MarkTap(p, b), 'button[data-sx]'); }
++  const song = S.song; if (!song) return;
++  let h = '';
++  const kr = p.querySelector('.kon-r'), knife = `<button class="rb ms-b sx2-sb" data-sx="pk" aria-label="Den Teil an einem Taktstrich teilen">${SX2_SVG}<span>Bei Takt …</span></button>`;
++  if (m.len >= 2 && p._sx2pick !== m.id && kr) kr.insertAdjacentHTML('beforeend', knife);   // keine Zeile mehr: neben [Als neuen Teil konsolidieren]
++  else if (m.len >= 2) {
++    if (p._sx2pick === m.id) {
++      const bars = []; for (let n = m.a + 1; n < m.a + m.len; n++) bars.push(n);
++      const mid = m.a + Math.floor(m.len / 2);
++      h += `<div class="ms-r sx2-r sx2-pick"><button class="rb ms-b sx2-sb on" data-sx="pk" aria-label="Teilen schließen">${SX2_SVG}<span>B ab Takt</span></button>` +
++        `<div class="sx2-bars pan-x">` + bars.map(n => `<button class="rb sx2-n${n === mid ? ' mid' : ''}" data-sx="c${n}" aria-label="Teilen: B beginnt bei Takt ${n + 1}">${n + 1}</button>`).join('') + `</div></div>`;
++    } else h += `<div class="ms-r sx2-r">${knife}</div>`;
++  }
++  if (sx1IsLast(song, m)) h += sx1RowHtml(song);
++  if (!h) return;
++  const anchor = p.querySelector('.kon-r') || p.querySelector('.ms-bb'); if (!anchor) return;
++  anchor.insertAdjacentHTML('afterend', `<div class="sx126-rows">${h}</div>`);
++}
++function sx126MarkTap(p, b) {
++  const id = SV.mark, song = S.song, m = song && song.marks.find(x => x.id === id); if (!m) { closePop(); return; }
++  const a = b.dataset.sx;
++  if (a === 'pk') { p._sx2pick = p._sx2pick === m.id ? null : m.id; haptic('tick'); if (p._paint) p._paint(); popDock(p); return; }
++  if (a[0] === 'c') {
++    const n = +a.slice(1); if (svRecBusy()) return; closePop();
++    const r = sx2Split(m.id, n); if (!r) return;
++    const A = song.marks.find(z => z.id === r.a), B = song.marks.find(z => z.id === r.b);
++    haptic('pop'); toast((A ? markLabel(A) : '') + ' | ' + (B ? markLabel(B) : '') + ' · geteilt', songUndoAct()); svButtons(); UI.dirty.song = true; return;
++  }
++  if (a[0] === 'f') {
++    const n = +a.slice(1);
++    if (sx1Set(n)) { haptic('tick'); toast(n ? 'Ausblenden über die letzten ' + n + ' Takte' : 'Ausblenden aus', songUndoAct()); }
++    if (p._paint) p._paint(); popDock(p);
++  }
++}
++
++/* ---------- SX6 Form-Vorlage: Neuer Song → [Aus Vorlage …] legt leere, benannte Marken an (1 Undo) ---------- */
++const SX6_TPL = [
++  {k: 'synthpop84', name: 'Synthpop 84', form: [['Intro', 4], ['Strophe', 8], ['Refrain', 8], ['Strophe', 8], ['Refrain', 8], ['Bridge', 4], ['Refrain', 8], ['Outro', 4]]},
++  {k: 'ballade', name: 'Ballade', form: [['Intro', 4], ['Strophe', 8], ['Pre', 4], ['Refrain', 8], ['Strophe', 8], ['Pre', 4], ['Refrain', 8], ['Bridge', 8], ['Refrain', 8], ['Outro', 4]]},
++  {k: 'club', name: 'Club', form: [['Intro', 8], ['Aufbau', 8], ['Drop', 16], ['Break', 8], ['Aufbau', 8], ['Drop', 16], ['Outro', 8]]},
++  {k: 'kurz', name: 'Kurz fürs Video', form: [['Intro', 2], ['Strophe', 4], ['Refrain', 8], ['Outro', 2]]},
++];
++const sx6Bars = T => T.form.reduce((s, x) => s + x[1], 0);
++const sx6Form = T => T.form.map(x => x[0] + ' ' + x[1]).join(' · ');
++function sx6Dur(T) { const s = Math.round(sx6Bars(T) * sx1Bpb() * spb()); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
++// API: die Vorlage k auf einen leeren Song → Anzahl Takte oder false
++function sx6Apply(k) {
++  const T = SX6_TPL.find(x => x.k === k); if (!T) return false;
++  if (songHasContent()) { toast('Eine Vorlage geht nur bei einem neuen, leeren Song'); return false; }
++  if (songTakeOpen()) return false;
++  const r = songEdit('Vorlage ' + T.name, s => {
++    for (const [name, len] of T.form) opInsert(s, s.bars, {len, lanes: s.lanes.map(() => [{bar: 0, slot: -1}]), carrier: [], xp: [], mel: {}, marks: [{a: 0, len, name}]});
++  });
++  if (!r) return false;
++  SV.x = 0; SV.sel = null; SV.pos = 0; UI.dirty.song = true;
++  return S.song.bars;
++}
++function sx6EmptyBtn(kr) {
++  const b = el('button', 'rb mbtn kbtn sx6-b', 'Aus Vorlage …'); b.setAttribute('aria-label', 'Neuer Song aus einer Form-Vorlage (leere, benannte Teile)');
++  b.addEventListener('pointerdown', e => e.stopPropagation());       // keine Geste der Song-Fläche
++  onTap(b, () => sx6Open(b)); kr.appendChild(b);
++}
++function sx6Open(anchor) {
++  if (songHasContent()) { toast('Eine Vorlage geht nur bei einem neuen, leeren Song'); return; }
++  openPop(anchor, p => {
++    p.classList.add('sx6pop'); guardTouch(p);
++    p.innerHTML = '<h4>Neuer Song aus Vorlage</h4><div class="sx6-l pan-y">' + SX6_TPL.map(T => `<button class="rb sx6-t" data-sx6="${T.k}"><b>${esc(T.name)}</b><small>${esc(sx6Form(T))}</small><small class="sx6-d">${sx6Bars(T)} Takte · ≈ ${sx6Dur(T)} bei ${Math.round(S.bpm)} BPM</small></button>`).join('') + '</div>' +
++      '<div class="small">Legt leere, benannte Teile an – rückgängig mit ↶</div>';
++    onTap(p, b => {
++      const T = SX6_TPL.find(x => x.k === b.dataset.sx6); if (!T) return;
++      closePop(); const n = sx6Apply(T.k);
++      if (n) { haptic('pop'); toast('Vorlage ' + T.name + ': ' + n + ' Takte · ' + T.form.length + ' Teile', songUndoAct()); svButtons(); }
++    }, 'button[data-sx6]');
++  }, {name: 'sx6'});
++}
++const SX126_API = {
++  // SX1: bars (0 | 2 | 4 | 8 …, null = aus) setzen und/oder lesen
++  sx1Fade: bars => { if (bars !== undefined) sx1Set(bars == null ? 0 : bars); return sx1Info(); },
++  sx1Info: () => sx1Info(),
++  sx1Bpb: () => sx1Bpb(),
++  // SX2: Marke id bei Takt n (0-basiert, B beginnt dort) teilen; sx2Knife: das Messer in der Taktleiste zeigen (Test)
++  sx2Split: (id, n) => sx2Split(id, n),
++  sx2Knife: () => { const b = SV.sx2b; return SV.sx2 ? {id: SV.sx2.id, n: SV.sx2.n, shown: !!(b && !b.hidden), rect: b && !b.hidden ? (r => ({x: r.left, y: r.top, w: r.width, h: r.height}))(b.getBoundingClientRect()) : null} : null; },
++  // SX6: die Vorlagen und eine anwenden
++  sx6Templates: () => SX6_TPL.map(T => ({k: T.k, name: T.name, form: T.form.map(x => ({name: x[0], bars: x[1]})), bars: sx6Bars(T)})),
++  sx6Apply: k => sx6Apply(k),
++};
++/* SX126-END */
+ // every state-changing API call leaves the UI rendered (no need to wait for the next animation frame)
+ function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
+ Object.assign(SYNQUENZER, G4_API, G5_API);        // G4: Gesangs-Effekte · G5: Gesang → Melodie
+@@ -58183,6 +58520,7 @@
+ Object.assign(SYNQUENZER, vv4aApi());                      // VV4-A
+ Object.assign(SYNQUENZER, vv4Api());                       // VV4-C / VV4-E
+ Object.assign(SYNQUENZER, vv4bdApi());                      // VV4-B/D
++Object.assign(SYNQUENZER, SX126_API);                       // SX126: Ausblenden, Klinge, Form-Vorlage
+ const NO_SYNC = new Set(['oneScaleOf', 'kbScaleNow', 'micCheck', 'micCheckJson', 'micCheckEstimate', 'cloud', 'cloudProjects', 'cloudVersions', 'cloudHandoff', 'state', 'project', 'runtime', 'getClip', 'getParam', 'noteLog', 'voices', 'timeline', 'serialize', 'buildMidi', 'buildZip', 'crc32', 'meter', 'outPitch', 'migrate', 'tapTempo',
+   'getSound', 'mods', 'library', 'factory', 'previewState', 'soundEdited', 'fmxView', 'fmxPreview', 'fmxBadge',
+   'history', 'projects', 'storage', 'engineInfo', 'getBusFx', 'wake', 'gestures', 'roll', 'rollApi', 'detectKey', 'sceneKey',

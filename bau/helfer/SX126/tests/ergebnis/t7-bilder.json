@@ -1,0 +1,560 @@
+{
+ "428x926": {
+  "markenblatt": {
+   "tasten": [
+    {
+     "t": "Den Teil an einem Taktstrich t",
+     "w": 132,
+     "h": 44,
+     "l": 288,
+     "r": 420,
+     "b": 782,
+     "tp": 738
+    },
+    {
+     "t": "Ausblenden aus",
+     "w": 67,
+     "h": 44,
+     "l": 142,
+     "r": 208,
+     "b": 830,
+     "tp": 786
+    },
+    {
+     "t": "Ausblenden über die letzten 2 ",
+     "w": 67,
+     "h": 44,
+     "l": 212,
+     "r": 279,
+     "b": 830,
+     "tp": 786
+    },
+    {
+     "t": "Ausblenden über die letzten 4 ",
+     "w": 67,
+     "h": 44,
+     "l": 283,
+     "r": 349,
+     "b": 830,
+     "tp": 786
+    },
+    {
+     "t": "Ausblenden über die letzten 8 ",
+     "w": 67,
+     "h": 44,
+     "l": 353,
+     "r": 420,
+     "b": 830,
+     "tp": 786
+    }
+   ],
+   "passt": {
+    "top": 525,
+    "bottom": 926,
+    "vh": 926,
+    "vw": 428,
+    "right": 428,
+    "rows": [
+     true
+    ]
+   },
+   "ok": true
+  },
+  "ersterTeil": {
+   "fade": false,
+   "klinge": true,
+   "ok": true
+  },
+  "messer": {
+   "kn": {
+    "id": "M2",
+    "n": 6,
+    "shown": true,
+    "rect": {
+     "x": 270,
+     "y": 125,
+     "w": 44,
+     "h": 44
+    }
+   },
+   "ok": true
+  },
+  "videoblatt": {
+   "tasten": [
+    {
+     "t": "Ausblenden aus",
+     "w": 44,
+     "h": 44,
+     "l": 113,
+     "r": 157,
+     "b": 769,
+     "tp": 725
+    },
+    {
+     "t": "Ausblenden über die letzten 2 ",
+     "w": 44,
+     "h": 44,
+     "l": 159,
+     "r": 203,
+     "b": 769,
+     "tp": 725
+    },
+    {
+     "t": "Ausblenden über die letzten 4 ",
+     "w": 44,
+     "h": 44,
+     "l": 205,
+     "r": 249,
+     "b": 769,
+     "tp": 725
+    },
+    {
+     "t": "Ausblenden über die letzten 8 ",
+     "w": 63,
+     "h": 44,
+     "l": 251,
+     "r": 314,
+     "b": 769,
+     "tp": 725
+    }
+   ],
+   "info": {
+    "ctlRollt": false,
+    "zeile": {
+     "top": 722,
+     "bottom": 772,
+     "right": 416
+    },
+    "vh": 926,
+    "vw": 428,
+    "hint": "Auswahl-Ende",
+    "on": [
+     "4"
+    ]
+   },
+   "ok": true
+  },
+  "videoTipp": {
+   "out": 8,
+   "undo": 3,
+   "on": [
+    "2"
+   ],
+   "undoSchritte": 1,
+   "ok": true
+  },
+  "leer": {
+   "tasten": [
+    {
+     "t": "Song aus einer Kette von Szene",
+     "w": 155,
+     "h": 44,
+     "l": 95,
+     "r": 250,
+     "b": 330,
+     "tp": 286
+    },
+    {
+     "t": "Einen Teil oder eine Szene als",
+     "w": 143,
+     "h": 44,
+     "l": 258,
+     "r": 401,
+     "b": 330,
+     "tp": 286
+    },
+    {
+     "t": "Neuer Song aus einer Form-Vorl",
+     "w": 123,
+     "h": 44,
+     "l": 187,
+     "r": 309,
+     "b": 382,
+     "tp": 338
+    }
+   ],
+   "ok": true
+  },
+  "vorlagenPop": {
+   "top": 388,
+   "bottom": 778,
+   "left": 78,
+   "right": 418,
+   "ok": true
+  },
+  "errors": [],
+  "ok": true
+ },
+ "926x428": {
+  "markenblatt": {
+   "tasten": [
+    {
+     "t": "Den Teil an einem Taktstrich t",
+     "w": 132,
+     "h": 44,
+     "l": 786,
+     "r": 918,
+     "b": 284,
+     "tp": 240
+    },
+    {
+     "t": "Ausblenden aus",
+     "w": 72,
+     "h": 44,
+     "l": 142,
+     "r": 214,
+     "b": 332,
+     "tp": 288
+    },
+    {
+     "t": "Ausblenden über die letzten 2 ",
+     "w": 72,
+     "h": 44,
+     "l": 218,
+     "r": 290,
+     "b": 332,
+     "tp": 288
+    },
+    {
+     "t": "Ausblenden über die letzten 4 ",
+     "w": 72,
+     "h": 44,
+     "l": 294,
+     "r": 366,
+     "b": 332,
+     "tp": 288
+    },
+    {
+     "t": "Ausblenden über die letzten 8 ",
+     "w": 72,
+     "h": 44,
+     "l": 370,
+     "r": 442,
+     "b": 332,
+     "tp": 288
+    }
+   ],
+   "passt": {
+    "top": 119,
+    "bottom": 428,
+    "vh": 428,
+    "vw": 926,
+    "right": 926,
+    "rows": [
+     true
+    ]
+   },
+   "ok": true
+  },
+  "ersterTeil": {
+   "fade": false,
+   "klinge": true,
+   "ok": true
+  },
+  "messer": {
+   "kn": {
+    "id": "M2",
+    "n": 6,
+    "shown": true,
+    "rect": {
+     "x": 355,
+     "y": 64,
+     "w": 44,
+     "h": 44
+    }
+   },
+   "ok": true
+  },
+  "videoblatt": {
+   "tasten": [
+    {
+     "t": "Ausblenden aus",
+     "w": 44,
+     "h": 44,
+     "l": 113,
+     "r": 157,
+     "b": 415,
+     "tp": 371
+    },
+    {
+     "t": "Ausblenden über die letzten 2 ",
+     "w": 44,
+     "h": 44,
+     "l": 159,
+     "r": 203,
+     "b": 415,
+     "tp": 371
+    },
+    {
+     "t": "Ausblenden über die letzten 4 ",
+     "w": 44,
+     "h": 44,
+     "l": 205,
+     "r": 249,
+     "b": 415,
+     "tp": 371
+    },
+    {
+     "t": "Ausblenden über die letzten 8 ",
+     "w": 63,
+     "h": 44,
+     "l": 251,
+     "r": 314,
+     "b": 415,
+     "tp": 371
+    }
+   ],
+   "info": {
+    "ctlRollt": false,
+    "zeile": {
+     "top": 368,
+     "bottom": 418,
+     "right": 580
+    },
+    "vh": 428,
+    "vw": 926,
+    "hint": "Auswahl-Ende",
+    "on": [
+     "4"
+    ]
+   },
+   "ok": true
+  },
+  "videoTipp": {
+   "out": 8,
+   "undo": 3,
+   "on": [
+    "2"
+   ],
+   "undoSchritte": 1,
+   "ok": true
+  },
+  "leer": {
+   "tasten": [
+    {
+     "t": "Song aus einer Kette von Szene",
+     "w": 155,
+     "h": 44,
+     "l": 237,
+     "r": 392,
+     "b": 180,
+     "tp": 136
+    },
+    {
+     "t": "Einen Teil oder eine Szene als",
+     "w": 143,
+     "h": 44,
+     "l": 400,
+     "r": 544,
+     "b": 180,
+     "tp": 136
+    },
+    {
+     "t": "Neuer Song aus einer Form-Vorl",
+     "w": 123,
+     "h": 44,
+     "l": 329,
+     "r": 452,
+     "b": 232,
+     "tp": 188
+    }
+   ],
+   "ok": true
+  },
+  "vorlagenPop": {
+   "top": 8,
+   "bottom": 332,
+   "left": 221,
+   "right": 561,
+   "ok": true
+  },
+  "errors": [],
+  "ok": true
+ },
+ "428x650": {
+  "markenblatt": {
+   "tasten": [
+    {
+     "t": "Den Teil an einem Taktstrich t",
+     "w": 132,
+     "h": 44,
+     "l": 288,
+     "r": 420,
+     "b": 506,
+     "tp": 462
+    },
+    {
+     "t": "Ausblenden aus",
+     "w": 67,
+     "h": 44,
+     "l": 142,
+     "r": 208,
+     "b": 554,
+     "tp": 510
+    },
+    {
+     "t": "Ausblenden über die letzten 2 ",
+     "w": 67,
+     "h": 44,
+     "l": 212,
+     "r": 279,
+     "b": 554,
+     "tp": 510
+    },
+    {
+     "t": "Ausblenden über die letzten 4 ",
+     "w": 67,
+     "h": 44,
+     "l": 283,
+     "r": 349,
+     "b": 554,
+     "tp": 510
+    },
+    {
+     "t": "Ausblenden über die letzten 8 ",
+     "w": 67,
+     "h": 44,
+     "l": 353,
+     "r": 420,
+     "b": 554,
+     "tp": 510
+    }
+   ],
+   "passt": {
+    "top": 249,
+    "bottom": 650,
+    "vh": 650,
+    "vw": 428,
+    "right": 428,
+    "rows": [
+     true
+    ]
+   },
+   "ok": true
+  },
+  "ersterTeil": {
+   "fade": false,
+   "klinge": true,
+   "ok": true
+  },
+  "messer": {
+   "kn": {
+    "id": "M2",
+    "n": 6,
+    "shown": true,
+    "rect": {
+     "x": 270,
+     "y": 119,
+     "w": 44,
+     "h": 44
+    }
+   },
+   "ok": true
+  },
+  "videoblatt": {
+   "tasten": [
+    {
+     "t": "Ausblenden aus",
+     "w": 44,
+     "h": 44,
+     "l": 113,
+     "r": 157,
+     "b": 493,
+     "tp": 449
+    },
+    {
+     "t": "Ausblenden über die letzten 2 ",
+     "w": 44,
+     "h": 44,
+     "l": 159,
+     "r": 203,
+     "b": 493,
+     "tp": 449
+    },
+    {
+     "t": "Ausblenden über die letzten 4 ",
+     "w": 44,
+     "h": 44,
+     "l": 205,
+     "r": 249,
+     "b": 493,
+     "tp": 449
+    },
+    {
+     "t": "Ausblenden über die letzten 8 ",
+     "w": 63,
+     "h": 44,
+     "l": 251,
+     "r": 314,
+     "b": 493,
+     "tp": 449
+    }
+   ],
+   "info": {
+    "ctlRollt": false,
+    "zeile": {
+     "top": 446,
+     "bottom": 496,
+     "right": 416
+    },
+    "vh": 650,
+    "vw": 428,
+    "hint": "Auswahl-Ende",
+    "on": [
+     "4"
+    ]
+   },
+   "ok": true
+  },
+  "videoTipp": {
+   "out": 8,
+   "undo": 3,
+   "on": [
+    "2"
+   ],
+   "undoSchritte": 1,
+   "ok": true
+  },
+  "leer": {
+   "tasten": [
+    {
+     "t": "Song aus einer Kette von Szene",
+     "w": 155,
+     "h": 44,
+     "l": 95,
+     "r": 250,
+     "b": 242,
+     "tp": 198
+    },
+    {
+     "t": "Einen Teil oder eine Szene als",
+     "w": 143,
+     "h": 44,
+     "l": 258,
+     "r": 401,
+     "b": 242,
+     "tp": 198
+    },
+    {
+     "t": "Neuer Song aus einer Form-Vorl",
+     "w": 123,
+     "h": 44,
+     "l": 187,
+     "r": 309,
+     "b": 294,
+     "tp": 250
+    }
+   ],
+   "ok": true
+  },
+  "vorlagenPop": {
+   "top": 8,
+   "bottom": 398,
+   "left": 78,
+   "right": 418,
+   "ok": true
+  },
+  "errors": [],
+  "ok": true
+ }
+}

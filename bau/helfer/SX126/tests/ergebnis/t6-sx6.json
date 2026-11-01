@@ -1,0 +1,77 @@
+{
+ "vorlagen": {
+  "n": 4,
+  "namen": [
+   "Synthpop 84 (52)",
+   "Ballade (64)",
+   "Club (72)",
+   "Kurz fürs Video (16)"
+  ],
+  "ok": true
+ },
+ "knopf": {
+  "x": 186.640625,
+  "y": 338.28125,
+  "w": 122.71875,
+  "h": 44
+ },
+ "liste": [
+  {
+   "k": "synthpop84",
+   "h": 79.546875
+  },
+  {
+   "k": "ballade",
+   "h": 79.546875
+  },
+  {
+   "k": "club",
+   "h": 79.546875
+  },
+  {
+   "k": "kurz",
+   "h": 65.796875
+  }
+ ],
+ "synthpop84": {
+  "bars": 52,
+  "marks": [
+   "Intro 4",
+   "Strophe 8",
+   "Refrain 8",
+   "Strophe 8",
+   "Refrain 8",
+   "Bridge 4",
+   "Refrain 8",
+   "Outro 4"
+  ],
+  "lanes": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "undo": 2,
+  "empty": true,
+  "undoSchritte": 1,
+  "ok": true
+ },
+ "klang": {
+  "peak": 0,
+  "noten": 0,
+  "ok": true
+ },
+ "undo": {
+  "gleich": true,
+  "ok": true
+ },
+ "mitInhalt": {
+  "r": false,
+  "gleich": true,
+  "bars": 72,
+  "ok": true
+ },
+ "errors": []
+}

@@ -1,0 +1,94 @@
+{
+ "messer": {
+  "blatt": true,
+  "offen": true,
+  "kanteOhneMesser": true,
+  "messer": {
+   "id": "M2",
+   "n": 6,
+   "shown": true,
+   "rect": {
+    "x": 270,
+    "y": 125,
+    "w": 44,
+    "h": 44
+   }
+  },
+  "ok": true
+ },
+ "teilen": {
+  "marken": [
+   {
+    "id": "M1",
+    "a": 0,
+    "len": 4,
+    "name": "Strophe",
+    "part": null
+   },
+   {
+    "id": "M2",
+    "a": 4,
+    "len": 2,
+    "name": "Refrain A",
+    "part": null
+   },
+   {
+    "id": "M3",
+    "a": 6,
+    "len": 2,
+    "name": "Refrain B",
+    "part": null
+   }
+  ],
+  "undoSchritte": 1,
+  "toast": "Refrain A | Refrain B · geteiltRückgängig",
+  "notenGleich": true,
+  "durGleich": true,
+  "maxPegelDiffDb": 0.07,
+  "ok": true
+ },
+ "undo": {
+  "gleich": true,
+  "ok": true
+ },
+ "nochmal": {
+  "namen": [
+   "Strophe",
+   "Refrain A",
+   "Refrain B",
+   "Refrain C"
+  ],
+  "ok": true
+ },
+ "blatt": {
+  "knopf": {
+   "x": 288,
+   "y": 786,
+   "w": 132,
+   "h": 44,
+   "t": "Bei Takt …"
+  },
+  "chips": [
+   "2",
+   "3",
+   "4"
+  ],
+  "chipMin": 44,
+  "namen": [
+   "Strophe A@1",
+   "Strophe B@3",
+   "Refrain A@5",
+   "Refrain B@7",
+   "Refrain C@8"
+  ],
+  "ok": true
+ },
+ "grenzen": {
+  "kante": false,
+  "aussen": false,
+  "gleich": true,
+  "ok": true
+ },
+ "errors": []
+}
+OK
