@@ -58,7 +58,9 @@ Die Karte wird bei jeder Änderung (markDirty, Undo/Redo, Laden) neu gebaut, son
    1 = 1100 Hz (wie heute), 0 = 1100 Hz mit halbem Pegel. Klickzeit sample-genau `b2t(Taktbeginn + k × Zählzeit)`. 4/4 = exakt die
    alten Klicks. Einzähler „1 Takt“/„2 Takte“ = 1/2 Takte der Taktart am Startpunkt (z. B. 3/4 → 3 Schläge).
 4. **Drum-Pattern:** Schritte bleiben 1/16 (0,25 Schlag); Schritte je Takt = Schläge × 4 (3/4 = 12, 6/8 = 12, 7/8 = 14, 5/4 = 20,
-   12/8 = 24, 2/4 = 8). Umrechnung beim Ändern der Clip-Taktart (§5).
+   12/8 = 24, 2/4 = 8). Spalten hochkant 4/4 wie bisher (8), sonst 6 / 7 / 5 / 6 / 8 (eine Zeile = Schlag bzw. Gruppe, ≥ 44 px),
+   quer eine Zeile (20/24 Schritte: zwei). Dunklere Zellen an Schlag-/Gruppenanfängen. Umrechnung beim Ändern der Clip-Taktart (§5).
+   Neue Drum-Clips bekommen die Taktart ihrer Stelle.
 5. **Arpeggiator / Sequencer:** laufen in Schlägen (Rate 1/8 usw. unverändert). Neustart „pro Takt“ (Transposer `change: 'bar'`)
    nutzt `grid().beatsPerBar`.
 6. **Chor / Gesang:** Takes und Teile bleiben in Schlägen bzw. Takt-Indizes; Vorlauf/Anlauf in Takten (`G3_PRE_BARS`) und
@@ -74,9 +76,9 @@ Die Karte wird bei jeder Änderung (markDirty, Undo/Redo, Laden) neu gebaut, son
 
 ## 5. Taktart ändern (Bedienung)
 
-- **Song-Taktart:** Song-Blatt (⋯ des Songs) → Zeile „Taktart“ mit 7 Knöpfen (≥ 44 px). Gilt für Szenen und alle Teile ohne
-  eigene Taktart. Ein Schritt im Undo.
-- **Teil-Taktart:** Marken-Blatt (Tipp auf eine Teil-Marke) → „Taktart“: [wie Song] + 7 Knöpfe. Toast „Für alle ‚Strophe‘“ (wie
+- **Song-Taktart:** Tempo-Fenster (Tipp auf BPM) → „Taktart des Songs“ mit 7 Knöpfen (4 Spalten, ≥ 44 px). Gilt für Szenen und
+  alle Teile ohne eigene Taktart. Ein Schritt im Undo.
+- **Teil-Taktart:** Marken-Blatt (Tipp auf eine Teil-Marke) → [Taktart ▾] klappt [wie Song] + 7 Knöpfe auf. Toast „Für alle ‚Strophe‘“ (wie
   bei Akkorden). Ein Schritt im Undo.
 - **Song-Daten mitnehmen:** Ändert sich die Länge eines Takts, rutschen alle Schlag-Positionen dahinter mit (Träger, Teil-Transposition,
   Melodie, Video-Regie, Takes, Übergänge, Fahrten), so dass jedes Ereignis im selben Takt an derselben Stelle (Schlag-Abstand zum
@@ -85,9 +87,11 @@ Die Karte wird bei jeder Änderung (markDirty, Undo/Redo, Laden) neu gebaut, son
 - **Clip-Taktart:** Clip-Blatt → „Taktart“ (zeigt die Taktart des Clips). Neue Clips (Aufnahme, leere Zelle) bekommen die Taktart,
   die an ihrer Stelle gilt. Wechsel = Umrechnung Takt für Takt: jeder Takt behält seine Noten an derselben Stelle; was über den
   neuen Takt hinausgeht, fällt weg; ist der neue Takt länger, wird der Rest mit der **zweiten Hälfte** des alten Takts aufgefüllt
-  (4/4 → 5/4: Schlag 5 = Schlag 3; Backbeat-Muster bleibt Backbeat). 4/4 → 6/8/12/8 (Achtel-Gefühl): Achtel-Positionen werden
-  auf die Zählzeiten verteilt (Schlag k der ♩-Takte → Achtel-Gruppe k), d. h. Bassdrum auf 1 bleibt auf 1, Snare auf 2/4 landet
-  auf Gruppe 2 (Zählzeit 4 in 6/8). Ein Undo-Schritt.
+  (4/4 → 5/4: Schlag 5 = Schlag 3). Gilt für ♩ ↔ ♩, 6/8 ↔ 12/8 und alles mit 7/8.
+  ♩-Takt → 6/8 / 12/8: Schlag k → Gruppe k (punktierte ♩), innerhalb ternär: 16tel 0 · ¼ · ½ · ¾ → 0 · ½ · 1 · 1¼ Schlag
+  (gerade Achtel → „1 . 3“ jeder Gruppe). Bassdrum auf 1 bleibt auf 1, Snare auf 2 landet auf Gruppe 2 (Zählzeit 4 in 6/8).
+  Hat das Ziel mehr Gruppen/Schläge als die Quelle, wiederholt sich der Takt von vorn. 6/8 → 4/4 umgekehrt
+  (4/4 → 6/8 → 4/4 ergibt wieder das Original). Ein Undo-Schritt.
 - Beim Ändern der **Song-Taktart** fragt ein Toast: [Clips umrechnen] (alle Szenen-Clips ohne eigene andere Taktart) – sonst
   bleiben die Clips wie sie sind (polymetrisch, Klang unverändert, Regel 28).
 
@@ -102,6 +106,7 @@ Die Karte wird bei jeder Änderung (markDirty, Undo/Redo, Laden) neu gebaut, son
 - T1-06 MIDI-Export enthält `FF 58` mit richtigen Werten und Ticks.
 - T1-07 Video/GarageBand: Klickmuster des Vorzählers, Taktgrenzen der Regie.
 - T1-08 Alte Songs bitgleich: ohne Taktart sind Projekt-JSON, Taktkarte (`x*4`) und Offline-Render zeichengleich zu 4.30.0.
+- T1-09 Layout in 390×844, 375×667, 320×568, 844×390, 667×375, 926×428 (`tests/t1-layout.mjs`).
 - Regressions: `bau/tests/smoke.mjs`, `orch-mk-check.mjs`, `v3-mk2-wellen.mjs`.
 
 ## 7. Nicht in T1 (Fragen an Xander, nicht gebaut – Regel 27)
@@ -109,3 +114,10 @@ Die Karte wird bei jeder Änderung (markDirty, Undo/Redo, Laden) neu gebaut, son
 - Tempo in punktierten Vierteln für 6/8/12/8 anzeigen (heute ♩ = bpm).
 - Eigene Gruppierungen (z. B. 7/8 als 3+2+2, 5/4 als 2+3) und weitere Taktarten (9/8, 5/8 …).
 - Form-Zyklen „1 Takt der Taktart“ für LFO/Pumpen (I3 §4.9) – Formen bleiben in Schlägen.
+
+## 8. Format
+
+Ein Projekt mit Taktart-Feld wird mit **Format 7** gespeichert (`fmtOf`), `PROJECT_FORMAT_READ` = 7. So öffnet 4.30.0 (liest bis 6)
+ein Taktarten-Projekt gesperrt mit dem vorhandenen Hinweis „aus einer neueren Version“, statt es still als 4/4 zu spielen und die
+Felder beim Speichern zu verlieren (Nachtrag 8 §I1 „Spätere Pakete tragen ihre Merkmale ein (… T1 …)“; `S.need` gibt es in 4.30.0
+noch nicht). Projekte ohne Taktart bleiben bei Format 5/6.

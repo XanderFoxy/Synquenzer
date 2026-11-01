@@ -21282,6 +21282,8 @@ function tkMap() {
   }
   return TKM = o;
 }
+function t1ChunkBeats(marks, len) { let L = 0; for (let b = 0; b < len; b++) { const m = marks.find(x => b >= x.a && b < x.a + x.len); L += tsBeats(m && m.ts ? m.ts : (S && S.ts) || null); } return L; }   // T1: Schläge eines Abschnitts
+function t1SceneBB() { return tkPlain() ? 4 : tsBeats(S.ts); }   // Schläge je Takt ohne Song (Szenen, Teile, Akkord-Zeilen)
 function tkSame(m) { for (const e of m.ex) { const k = e[0]; if (k.a !== e[1] || k.len !== e[2] || k.ts !== e[3]) return false; } return true; }   // Marken mit Taktart in place geändert
 function tkPlain() { return tkMap().plain; }
 // Song-Schlag des Taktstrichs b (auch Bruchteile und hinter dem Ende; vor 0 mit der Song-Taktart)
@@ -27940,7 +27942,7 @@ function partStartBeat(i, atT) {
   if (!R.playing) return 0;
   const nb = nextBarFromAudible(atT != null ? pressTime(atT) : undefined), p = S.parts[i];
   if (p && p.start === 'end' && R.part && S.parts[R.part.i]) {
-    const L = partLen(S.parts[R.part.i]) * 4, st = R.part.startBeat;
+    const L = partLen(S.parts[R.part.i]) * t1SceneBB(), st = R.part.startBeat;   // T1
     return st + Math.max(1, Math.ceil((nb - st) / L - 1e-9)) * L;
   }
   return nb;
@@ -28176,7 +28178,7 @@ function partTakeOver(i) { if (R.part && !R.partApplying && !R.songApplying) (R.
 const partLaneFree = (p, lane) => !!(p && p.src !== 'fang' && p.src !== 'song' && lane && lane.length === 1 && lane[0].bar === 0 && !(lane[0].ph > 1e-6));
 // apply the part's state at transport beat `at` (a bar line) as if it had started (phase) at st
 function partStateAt(p, st, at) {
-  const L4 = partLen(p) * 4, pos = at - st, k = Math.floor(pos / L4 + 1e-9), P = st + k * L4, j = Math.round((pos - k * L4) / 4);
+  const Q4 = t1SceneBB(), L4 = partLen(p) * Q4, pos = at - st, k = Math.floor(pos / L4 + 1e-9), P = st + k * L4, j = Math.round((pos - k * L4) / Q4);   // T1: Takte der Song-Taktart
   R.partApplying = true;
   try {
     for (let t = 0; t < NT(); t++) {
@@ -28187,7 +28189,7 @@ function partStateAt(p, st, at) {
         if (e.bar > j) break;
         if (e.bar === 0) { slot = e.slot; cs = P0 - (e.ph || 0); }
         else if (e.slot < 0) slot = -1;
-        else if (e.re || e.slot !== slot) { slot = e.slot; cs = P + e.bar * 4 - (e.ph || 0); }
+        else if (e.re || e.slot !== slot) { slot = e.slot; cs = P + e.bar * Q4 - (e.ph || 0); }
       }
       if (slot == null) continue;
       const target = slot >= 0 && S.tracks[t].clips[slot] ? slot : -1;
@@ -28199,10 +28201,10 @@ function partStateAt(p, st, at) {
 // tick (partTick): the lane events of the running part at the bar lines in [b0, b1)
 function partLaneTick(rp, b0, b1) {
   const p = partObj(rp); if (!p || !p.lanes) return;
-  const L4 = partLen(p) * 4, st = rp.startBeat, from = rp.from != null ? rp.from : st;
-  for (let B = Math.ceil(b0 / 4 - 1e-9) * 4; B < b1 - 1e-9; B += 4) {
+  const Q4 = t1SceneBB(), L4 = partLen(p) * Q4, st = rp.startBeat, from = rp.from != null ? rp.from : st;   // T1
+  for (let B = Math.ceil(b0 / Q4 - 1e-9) * Q4; B < b1 - 1e-9; B += Q4) {
     if (B <= from + 1e-6) continue;                                   // the start itself was applied with the tap
-    const pos = B - st, k = Math.floor(pos / L4 + 1e-9), j = Math.round((pos - k * L4) / 4), P = st + k * L4;
+    const pos = B - st, k = Math.floor(pos / L4 + 1e-9), j = Math.round((pos - k * L4) / Q4), P = st + k * L4;
     R.partApplying = true;
     try {
       for (let t = 0; t < NT(); t++) {
@@ -57856,7 +57858,7 @@ function s1ChunkMel(p, L) {
 // partTick: the part's melody in its circle (as heard, like the song melody; a track the hand took is left alone)
 function s1PartMelTick(rp, b0, b1) {
   const p = partObj(rp); if (!p || !p.mel || !AU.ctx) return;
-  const L4 = partLen(p) * 4, st = rp.startBeat, lo = Math.max(b0, rp.from != null ? rp.from : st, rp.s1To != null ? rp.s1To : -Infinity);
+  const L4 = partLen(p) * t1SceneBB(), st = rp.startBeat, lo = Math.max(b0, rp.from != null ? rp.from : st, rp.s1To != null ? rp.s1To : -Infinity);
   if (b1 <= lo + 1e-9) return;
   rp.s1To = b1;                                                         // partDue may run a window again: never twice
   for (const k of Object.keys(p.mel)) {
@@ -58078,14 +58080,15 @@ function konChNorm(c, pk, nt) {
     }
     return out.sort((a, b) => a.bar - b.bar);
   });
-  const carrier = (Array.isArray(c.carrier) ? c.carrier : []).filter(x => x && isNum(x.beat)).map(x => ({beat: +clamp(x.beat, 0, len * 4).toFixed(4), target: normTarget(x.target)}));
+  const mk0 = marksNorm(c.marks, len), cB = mk0.some(m => m.ts) || (typeof S !== 'undefined' && S && S.ts) ? t1ChunkBeats(mk0, len) : len * 4;   // T1: Block-Länge in Schlägen nach Taktart
+  const carrier = (Array.isArray(c.carrier) ? c.carrier : []).filter(x => x && isNum(x.beat)).map(x => ({beat: +clamp(x.beat, 0, cB).toFixed(4), target: normTarget(x.target)}));
   const xp = (Array.isArray(c.xp) ? c.xp : []).filter(x => x && isNum(x.beat) && isNum(x.semi) && x.beat >= 0).map(x => ({beat: +x.beat, semi: clamp(Math.round(x.semi), -12, 12)}));
   const mel = {};
   if (c.mel && typeof c.mel === 'object' && !Array.isArray(c.mel)) for (const k of Object.keys(c.mel)) {
     const t = +k; if (!Number.isInteger(t) || t < 0 || t >= nt || !Array.isArray(c.mel[k])) continue;
     const ns = c.mel[k].filter(n => n && isNum(n.t) && isNum(n.d) && isNum(n.n) && isNum(n.v)).slice(0, 4096).map(n => cleanNote(n)); if (ns.length) mel[t] = ns;
   }
-  const o = {len, lanes, carrier, xp, mel, marks: marksNorm(c.marks, len), own};
+  const o = {len, lanes, carrier, xp, mel, marks: mk0, own};
   const vox = Array.isArray(c.vox) && c.vox.length ? tkNormVox(c.vox) : null; if (vox) o.vox = vox;
   return o;
 }
