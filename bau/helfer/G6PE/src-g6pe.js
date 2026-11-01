@@ -136,6 +136,10 @@ function g6peEdit(r, label, fn, opt) {
   opt = opt || {}; const x = tkRef(r); if (!x) return false;
   const st = g6pTrackOf(r), lb = opt.lanes ? g6peLaneSnap(st) : null, snap = opt.before;
   const items = [];
+  if (snap != null) {   // Regler-Geste: nur ein Schritt, wenn sich wirklich etwas geändert hat
+    const nowS = r.vox ? (() => { const v = S.song.vox.find(z => z.id === r.vox), n = tkNormAudio(v); if (n && n.chor) v.chor = n.chor; return songSnapshot(); })() : JSON.stringify(cleanClip(x.clip));
+    if (nowS === (r.vox ? snap : JSON.stringify(snap))) return false;
+  }
   if (r.vox) { const before = snap != null ? snap : songSnapshot(); if (fn(x.a) === false) { if (opt.lanes) g6peLaneRestore(st, lb); return false; } const v = S.song.vox.find(z => z.id === r.vox), n = tkNormAudio(v); if (n && n.chor) v.chor = n.chor; else delete v.chor; items.push({kind: 'song', before}); songChanged(); }
   else { const before = snap != null ? snap : cleanClip(x.clip); if (fn(x.clip.audio) === false) { if (opt.lanes) g6peLaneRestore(st, lb); return false; } const n = tkNormAudio(x.clip.audio); if (n && n.chor) x.clip.audio.chor = n.chor; else delete x.clip.audio.chor; items.push({kind: 'clip', track: r.t, scene: r.s, before: before ? cleanClip(before) : null}); clipChanged(r.t, r.s); }
   if (opt.lanes) items.push({kind: 'chorlanes', track: st, before: lb});
@@ -243,6 +247,7 @@ function g6peSlider(id, min, max, step, val, txt, cls) {
   return `<label class="g6pe-sl ${cls || ''}"><span class="g6pe-sll">${id.lab}</span><input type="range" class="pan-x" min="${min}" max="${max}" step="${step}" value="${val}" data-sl="${id.k}"${id.i != null ? ` data-i="${id.i}"` : ''} aria-label="${esc(id.aria || id.lab)}"><output>${esc(txt)}</output></label>`;
 }
 function g6pePaint(p, X) {
+  if (G6PE.hold) { G6PE.pend = true; return; }
   const {r, a, c, st} = X, tc = S.tracks[st] && S.tracks[st].chor, lanes = tc ? tc.lanes : [], busy = G6PE.busy && G6PE.busy.k;
   const tiles = G6PE_TILES.map(([k, n, z]) => `<button class="mbtn g6pe-tile${busy === k ? ' busy' : ''}" data-sty="${k}"${c && c.style === k ? ' aria-pressed="true"' : ''}${busy ? ' disabled' : ''}><b>${esc(n)}</b><small>${esc(z)}</small></button>`).join('');
   let h = `<h4>Chor · STIMME · ${esc(X.x.label)}</h4><div class="g6pe-grid" role="group" aria-label="Stil">${tiles}</div>`;
@@ -282,7 +287,7 @@ function g6pePaint(p, X) {
         const nd = v.dblOff ? 0 : v.dbl.length, d0 = v.dbl[0] || {ms: 0, ct: 0};
         row += `<div class="g6pe-dot"><div class="g6pe-seg"><span>Doppel</span>` + [1, 2, 3, 4].map(n => `<button class="mbtn rb" data-dbl="${n}" data-i="${k}"${nd === n ? ' aria-pressed="true"' : ''}>${n}</button>`).join('') + '</div>' +
           g6peSlider({k: 'ms', i: k, lab: 'Versatz'}, 0, 60, 1, Math.round(Math.abs(v.dbl[v.dbl.length - 1].ms - (v.dbl.length > 1 ? 0 : 0))), Math.round(v.dbl[v.dbl.length - 1].ms) + ' ms') +
-          g6peSlider({k: 'ct', i: k, lab: 'Verstimmt'}, 0, 30, 1, Math.round(Math.max(...v.dbl.map(q => Math.abs(q.ct)))), Math.round(Math.max(...v.dbl.map(q => Math.abs(q.ct)))) + ' ct') +
+          g6peSlider({k: 'ct', i: k, lab: 'Cent', aria: 'Verstimmung'}, 0, 30, 1, Math.round(Math.max(...v.dbl.map(q => Math.abs(q.ct)))), Math.round(Math.max(...v.dbl.map(q => Math.abs(q.ct)))) + ' ct') +
           g6peSlider({k: 'w', i: k, lab: 'Breite'}, 0, 100, 1, Math.round(v.w * 100), Math.round(v.w * 100) + ' %') +
           `<div class="g6pe-acts"><button class="mbtn rb" data-self="${k}">Selbst singen</button><button class="mbtn rb" data-pe="dec" data-i="${k}"${v.take ? ' disabled' : ''}>Entkoppeln</button><button class="mbtn rb" data-pe="vdel" data-i="${k}">Stimme löschen</button></div></div>`;
       } else row += `<div class="g6pe-dot"><div class="g6pe-acts">${used ? '<span class="small">Spur wird an einer anderen Stelle benutzt</span>' : `<button class="mbtn rb" data-pe="ldel" data-l="${l.id}">Spur löschen</button>`}</div></div>`;
@@ -410,8 +415,16 @@ function g6peStyleVal(c, k, i) {
   return k === 'db' || k === 'pan' || k === 'w' ? sv[k] : null;
 }
 function g6peSlBind(p) {
+  // während ein Regler gehalten wird, kein Neuaufbau des Blatts (fertig gerechnete Stimmen o. ä.) – danach einmal nachholen
+  const hold = e => { if (e.target && e.target.dataset && e.target.dataset.sl) G6PE.hold = true; };
+  const free = () => { if (!G6PE.hold) return; G6PE.hold = false; if (G6PE.pend) { G6PE.pend = false; setTimeout(() => g6SheetPaint(), 0); } };
+  // Geister-Tipp: nach einem Tipp, der das Blatt umbaut, landen die nachgeschobenen Maus-Ereignisse auf dem Regler darunter – ignorieren
+  const ghost = () => !G6PE.hold && UI.ghost && performance.now() - UI.ghost.t < 600;
+  p.addEventListener('mousedown', e => { if (e.target && e.target.dataset && e.target.dataset.sl && ghost()) { e.preventDefault(); e.stopPropagation(); } }, true);
+  p.addEventListener('pointerdown', hold, true); p.addEventListener('pointerup', free); p.addEventListener('pointercancel', free); p.addEventListener('lostpointercapture', free);
   p.addEventListener('input', e => {
     const el = e.target; if (!el.dataset || !el.dataset.sl) return; const X = g6peCur(); if (!X || !X.c || X.c.v !== 2) return;
+    if (!G6PE.hold && UI.ghost && performance.now() - UI.ghost.t < 600 && !(G6PE.live && G6PE.live.el === el)) { G6PE.pend = false; setTimeout(() => g6SheetPaint(), 0); return; }   // Geister-Tipp: Wert bleibt
     if (!G6PE.live || G6PE.live.el !== el) G6PE.live = {el, before: X.r.vox ? songSnapshot() : cleanClip(X.x.clip)};
     const v = g6peSlVal(el), i = +el.dataset.i; g6peSlPut(X.c, el.dataset.sl, i, v);
     const o = el.parentNode.querySelector('output'); if (o) o.textContent = g6peSlTxt(el.dataset.sl, v);
@@ -420,18 +433,18 @@ function g6peSlBind(p) {
   p.addEventListener('change', e => {
     const el = e.target; if (!el.dataset || !el.dataset.sl || !G6PE.live || G6PE.live.el !== el) return; const L = G6PE.live; G6PE.live = null;
     const X = g6peCur(); if (!X) return; const k = el.dataset.sl;
-    if (g6peEdit(X.r, G6PE_LBL[k] || 'Chor', () => {}, {before: L.before})) UNDO[UNDO.length - 1].g6pe = el;
+    if (g6peEdit(X.r, G6PE_LBL[k] || 'Chor', () => {}, {before: L.before})) UNDO[UNDO.length - 1].g6pe = k + ':' + (el.dataset.i || '');
     if (k === 'below') toast('Chor ' + String(X.c.grp.below).replace('.', ',') + ' dB unter dem Lead');
   });
   // Doppeltipp auf einen Regler = Wert des Stils (ein Schritt)
   p.addEventListener('pointerup', e => {
-    const el = e.target; if (!el.dataset || !el.dataset.sl) return; const t = performance.now(), T = G6PE.tap;
-    G6PE.tap = {el, t, x: e.clientX};
-    if (!T || T.el !== el || t - T.t > 320 || Math.abs(T.x - e.clientX) > 16) return;
+    const el = e.target; if (!el.dataset || !el.dataset.sl) return; const t = performance.now(), T = G6PE.tap, id = el.dataset.sl + ':' + (el.dataset.i || '');
+    G6PE.tap = {id, t, x: e.clientX};
+    if (!T || T.id !== id || t - T.t > 320 || Math.abs(T.x - e.clientX) > 16) return;
     G6PE.tap = null; const X = g6peCur(); if (!X || !X.c || X.c.v !== 2) return; const k = el.dataset.sl, i = +el.dataset.i, sv = g6peStyleVal(X.c, k, i); if (sv == null) return;
     setTimeout(() => {   // nach den change-Ereignissen der beiden Tipps: deren Schritte zurücknehmen → ein Schritt „= Stil“
       G6PE.live = null; const lim = performance.now() - 900;
-      while (UNDO.length && UNDO[UNDO.length - 1].g6pe === el && UNDO[UNDO.length - 1].time > lim) { const u = UNDO.pop(); if (u.kind === 'group') groupSwap(u, true); else undoApply(u, u.before); }
+      while (UNDO.length && UNDO[UNDO.length - 1].g6pe === id && UNDO[UNDO.length - 1].time > lim) { const u = UNDO.pop(); if (u.kind === 'group') groupSwap(u, true); else undoApply(u, u.before); }
       REDO.length = 0;
       g6peEdit(X.r, (G6PE_LBL[k] || 'Chor') + ' = Stil', au => { g6peSlPut(au.chor, k, i, sv); });
       g6SheetPaint();
@@ -458,6 +471,8 @@ const G6PE_API = {
   g6peMul: (r, k) => { r = r || {t: stimmeT(), s: R.selS}; const x = tkRef(r), v = x && x.a.chor && x.a.chor.voices[k]; return v ? g6pVoiceMul(x.a, v) : null; },
   g6peLeadDb: () => g6peLeadDb(stimmeT()),
   g6peLeadVol: v => { const st = stimmeT(), f = S.tracks[st].sound.fx; f.vol = clamp(v, 0, 1); applyTrackParams(st); g6peHear(); return f.vol; },
+  g6peRoundtrip: () => { importJSON(serializeProject()); return true; },
+  g6peUndoLabels: n => UNDO.slice(-(n || 8)).map(u => u.label),
   g6peTiles: () => G6PE_TILES.map(t => ({k: t[0], name: t[1], line: t[2]}))
 };
 /* G6PE-END */

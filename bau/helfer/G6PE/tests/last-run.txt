@@ -1,0 +1,80 @@
+✓ G6P-40: Takes-Blatt → [Chor] öffnet das Blatt mit Stil-Raster
+✓ G6P-41: kein Layout-Sprung beim Rechnen (Kachel 52 → 52 px, Ring: true)
+✓ G6P-40: [Gospel] → Spuren ["Chor Sopran","Chor Alt","Chor Tenor"]
+✓ G6P-40: 3 Spur-Zeilen mit Farbfeld [{"n":"Chor Sopran","cc":"rgb(255, 93, 93)","z":"3"},{"n":"Chor Alt","cc":"rgb(255, 93, 93)","z":"3"},{"n":"Chor Tenor","cc":"rgb(90, 168, 255)","z":"6"}]
+✓ G6P-40: Daten v2 laut Stil (Abstand 6, Pan Sopran −0,45)
+✓ G6P-40: Stil-Tipp = 1 Undo-Schritt inkl. chorlanes {"kind":"group","label":"Chor · Gospel","items":["clip","chorlanes"]}
+✓ G6P-40: [S] Solo Spur 2 (Laufzeit, kein Undo) solo=1
+✓ G6P-40: Solo wieder aus
+✓ G6P-40: [M] Stumm Spur 1 = 1 Undo-Schritt (Chor-Spur stumm) · Faktor Stimme 1 = 0, Stimme 2 = 1
+✓ G6P-40: Stumm wirkt nur auf Spur 1
+✓ G6P-40: ↶ Stumm → Spur 1 klingt wieder
+✓ G6P-40: Pegel Spur 2 ziehen = 1 Undo-Schritt (Chor-Pegel) · db = -18
+✓ G6P-40: Pegel Spur 2 gesenkt
+✓ G6P-40: Pan Spur 3 ziehen = 1 Undo-Schritt (Chor-Pan) · pan = 0.8
+✓ G6P-40: Regler „Chor“ (Abstand) = 1 Undo-Schritt (Chor-Abstand) · below = 18
+✓ G6P-40: Hall = 1 Undo-Schritt (Chor-Hall) · rev = 0.9
+✓ G6P-40: Echo = 1 Undo-Schritt (Chor-Echo) · dly = 0.4
+✓ G6P-40: [Klang ▸] klappt auf (kein Undo)
+✓ G6P-40: Tiefschnitt = 1 Undo-Schritt (Chor-Tiefschnitt) · hp = 310
+✓ G6P-40: Zischlaute [weg] = 1 Undo-Schritt (Chor · Zischlaute) · sib = -60
+✓ G6P-40: Hall-Vorverzögerung 1/16 = 1 Undo-Schritt (Chor · Hall-Vorverzögerung)
+✓ G6P-40: [⋯] Doppel 4 = 1 Undo-Schritt (Chor · Doppel) · dbl = 4
+✓ G6P-40: [⋯] Breite = 1 Undo-Schritt (Chor-Breite)
+✓ G6P-40: ↶ bis zum Stil → Gospel-Werte zurück
+✓ G6P-40: ↷ alle Schritte → deep-equal
+✓ G6P-K1: gekoppelt (Standard AN) → Chor geht mit dem Lead-Regler (-8.2 dB, kein Ausgleich)
+✓ G6P-40: [Gekoppelt] aus = 1 Undo-Schritt (Chor entkoppelt vom Lead-Regler)
+✓ G6P-K1: Kopplung aus, Lead −6 dB → Chor-Ausgleich +6.00 dB (Chor unverändert)
+✓ G6P-40: [Gekoppelt] wieder an = 1 Undo-Schritt (Chor gekoppelt)
+✓ G6P-K1: wieder an → Abstand bleibt (below 18 → 12)
+✓ G6P-42: Umbenennen per Tastatur, ≤ 24 Zeichen: „Tenor hoch und weit weg“
+✓ G6P-42: Doppeltipp auf Pegel → Stil-Wert 0 dB, ein Schritt (Δundo 1, Chor-Pegel = Stil)
+✓ G6P-40: [+ Stimme] – vorhandene Rolle grau
+✓ G6P-40: + Oktave oben → neue Spur „Chor Oktave oben“
+✓ G6P-42: Stimme gelöscht → Spur grau „nicht benutzt“
+✓ G6P-42: [Spur löschen] auf grauer Spur = 1 Undo-Schritt
+✓ M-SAVE: Speichern → Laden deep-equal (Chor v2 + Chor-Spuren)
+✓ Smoke: keine Fehler []
+✓ v1: Blatt zeigt „Chor (Fassung 4.25)“ mit den alten Knöpfen
+✓ v1 → [Auf Chor-Gruppe umstellen] → v2, Spur „Chor Terz oben“
+✓ v1: ↶ → v1-Daten deep-equal, keine Chor-Spuren
+✓ Smoke v1: keine Fehler []
+✓ G6P-41 P1: Kacheln 2 × 4, Höhe 52
+✓ G6P-41 P1: leeres Blatt – nichts abgeschnitten/zu klein [[],[],[]]
+✓ G6P-41 P1 mix: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ G6P-41 P1 dot: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ G6P-41 P1 klang: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ Smoke P1: keine Fehler []
+✓ G6P-41 P2: Kacheln 2 × 4, Höhe 52
+✓ G6P-41 P2: leeres Blatt – nichts abgeschnitten/zu klein [[],[],[]]
+✓ G6P-41 P2 mix: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ G6P-41 P2 dot: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ G6P-41 P2 klang: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ Smoke P2: keine Fehler []
+✓ G6P-41 P3: Kacheln 2 × 4, Höhe 52
+✓ G6P-41 P3: leeres Blatt – nichts abgeschnitten/zu klein [[],[],[]]
+✓ G6P-41 P3 mix: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ G6P-41 P3 dot: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ G6P-41 P3 klang: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ Smoke P3: keine Fehler []
+✓ G6P-41 L1: Kacheln 4 × 2, Höhe 52
+✓ G6P-41 L1: leeres Blatt – nichts abgeschnitten/zu klein [[],[],[]]
+✓ G6P-41 L1 mix: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ G6P-41 L1 dot: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ G6P-41 L1 klang: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ Smoke L1: keine Fehler []
+✓ G6P-41 L2: Kacheln 4 × 2, Höhe 52
+✓ G6P-41 L2: leeres Blatt – nichts abgeschnitten/zu klein [[],[],[]]
+✓ G6P-41 L2 mix: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ G6P-41 L2 dot: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ G6P-41 L2 klang: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ Smoke L2: keine Fehler []
+✓ G6P-41 XL: Kacheln 4 × 2, Höhe 52
+✓ G6P-41 XL: leeres Blatt – nichts abgeschnitten/zu klein [[],[],[]]
+✓ G6P-41 XL mix: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ G6P-41 XL dot: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ G6P-41 XL klang: Treffer ≥ 44, nichts abgeschnitten, Blatt im Bild, keine Seiten-Überbreite, Spur-Liste scrollt innen 
+✓ Smoke XL: keine Fehler []
+
+alle grün
