@@ -3849,6 +3849,61 @@ svg.alg .op.sel rect{stroke:#fff;stroke-width:2.6}
 .tksheet .ggbrg .mbtn{width:100%;height:auto;min-height:44px;margin:0;line-height:1.15;padding:2px 6px}
 .tksheet .ggbrg .mbtn[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--t8)}
 @media (max-height:440px){.tksheet .ggbhelp{columns:2;column-gap:12px}.tksheet .ggbhelp > div{break-inside:avoid}.tksheet .ggb{margin:4px 0 2px;padding-top:4px}}
+/* G10C-CSS-BEGIN: Takes-Verwaltung (Kopf mit ✕ immer sichtbar, Inhalt rollt; Zeile mit Mini-Welle, Status, Chips, Seiten-Knöpfen)
+   G10c + 4.30.1: der feste Kopf ist der psh-Kopf (✕, Ablegen, Transport); das Blatt selbst rollt darunter (.pop.psh), .g10c-bd ist nur
+   der neu gezeichnete Körper. scroll-padding: was ins Bild gerollt wird (Bearbeiten, Namensfeld), landet unter dem Kopf, nicht dahinter */
+.pop.tksheet.g10c{scroll-padding-top:60px;scroll-padding-bottom:8px}
+.tksheet.g10c .g10c-sum{line-height:1.25;margin:0 0 2px}
+.tksheet.g10c .g10c-bd{display:block}
+.tksheet.g10c .tklist{max-height:none;overflow:visible}
+.tksheet .g10c-row{display:flex;gap:6px;align-items:stretch;transition:transform .12s ease-out;border-radius:10px}
+.tksheet .g10c-row.g10c-sdel{box-shadow:inset 0 0 0 2px #ff5a4f}
+.tksheet .g10c-pick{flex:1 1 auto;min-width:0;min-height:88px;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:2px;text-align:left;padding:4px 8px;border-left:4px solid transparent}
+.tksheet .g10c-row.g10c-t1 .g10c-pick{border-left-color:#3ecf6e}.tksheet .g10c-row.g10c-t2 .g10c-pick{border-left-color:#f2c230}.tksheet .g10c-row.g10c-t3 .g10c-pick{border-left-color:#ff5a4f}
+.tksheet .g10c-row.g10c-t4 .g10c-pick{border-left-color:#4aa3ff}.tksheet .g10c-row.g10c-t5 .g10c-pick{border-left-color:#8a8f98}
+.tksheet .g10c-row:not(.on) .g10c-pick{opacity:.9}
+.tksheet .g10c-l1{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}
+.tksheet .g10c-l1 b{flex:0 0 auto}
+.tksheet .g10c-nm{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.tksheet .g10c-st{flex:0 0 auto;font-style:normal;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:1px 5px;border-radius:5px;background:rgba(150,156,170,.18);color:var(--text-dim,#9aa0aa)}
+.tksheet .g10c-st.on{background:var(--t8);color:#16121f}
+.tksheet .g10c-dot{flex:0 0 10px;width:10px;height:10px;border-radius:50%}
+.tksheet .g10c-fv{flex:0 0 auto;display:inline-flex;color:#f2c230;font-style:normal}
+.tksheet .g10c-fv svg{width:14px;height:14px}
+.tksheet .g10c-wvb{position:relative;display:block;height:20px;width:100%}
+.tksheet .g10c-wv{display:block;width:100%;height:20px}
+.tksheet .g10c-ph{position:absolute;left:0;top:-2px;bottom:-2px;width:2px;background:#fff;border-radius:1px;will-change:transform}
+.tksheet .g10c-meta{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.75;font-size:11px}
+.tksheet .g10c-chips{display:flex;gap:4px;min-width:0;overflow:hidden;white-space:nowrap}
+.tksheet .g10c-chip{flex:0 0 auto;font-style:normal;font-size:10px;line-height:15px;padding:0 5px;border-radius:5px;border:1px solid rgba(196,161,255,.55)}
+.tksheet .g10c-chip.raw{border-color:rgba(150,156,170,.45);color:var(--text-dim,#9aa0aa)}
+.tksheet .g10c-chip.more{border-style:dashed}
+.tksheet .g10c-chip[hidden]{display:none}
+.tksheet .g10c-side{flex:0 0 94px;display:grid;grid-template-columns:44px 44px;grid-template-rows:44px 44px;gap:6px;align-content:center}
+.tksheet .g10c-side .mbtn{width:44px;min-width:44px;height:44px;min-height:44px;margin:0;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.tksheet .g10c-side .g10c-pv.on,.tksheet .g10c-edb.on{box-shadow:inset 0 0 0 2px var(--t8)}
+.tksheet .g10c-fav.on,.tksheet .g10c-fav2.on{color:#f2c230}
+.tksheet .g10c-ed{margin:0 0 4px;padding:8px;border-radius:10px;background:rgba(196,161,255,.08);box-shadow:inset 0 0 0 1px rgba(196,161,255,.35);display:flex;flex-direction:column;gap:6px}
+.tksheet .g10c-edn{display:flex;gap:6px}
+.tksheet .g10c-name{flex:1 1 auto;min-width:0;height:44px;box-sizing:border-box;padding:0 10px;border-radius:8px;border:1px solid var(--line,#333);background:rgba(0,0,0,.25);color:inherit;font:16px/1 var(--font-ui,system-ui)}
+.tksheet .g10c-edn .mbtn{flex:0 0 auto;min-width:64px;min-height:44px;margin:0}
+.tksheet .g10c-sws{display:grid;grid-template-columns:repeat(6,minmax(44px,1fr));gap:4px}
+.tksheet .g10c-sw{min-width:44px;min-height:44px;height:auto;margin:0;padding:3px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.tksheet .g10c-sw small{font-size:9px;line-height:1.1;white-space:nowrap}
+.tksheet .g10c-sw.on{box-shadow:inset 0 0 0 2px var(--t8)}
+.tksheet .g10c-swd{width:16px;height:16px;border-radius:50%;display:block}
+.tksheet .g10c-swd.none{border:1.5px dashed rgba(170,176,190,.8);box-sizing:border-box}
+.tksheet .g10c-edr{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tksheet .g10c-edr .mbtn{min-height:44px;margin:0;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.tksheet .g10c-foot{display:grid;grid-template-columns:3fr 2fr;gap:6px;margin:0 0 6px}
+.tksheet .g10c-foot .mbtn{width:100%;min-height:44px;height:auto;margin:0;line-height:1.15;padding:2px 6px}
+.tksheet .g10c-ask{margin:0 0 6px;padding:6px 8px;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(255,90,79,.6)}
+.tksheet .g10c-askr{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+.tksheet .g10c-askr .mbtn{min-height:44px;margin:0;width:100%}
+.tksheet .g10c-gcyes{color:#ff8a80}
+.tksheet .savrow.g10c-sav{grid-template-columns:1fr 1fr 1fr}
+@media (max-height:440px){.pop.tksheet.g10c{scroll-padding-top:56px}.tksheet .g10c-pick{min-height:88px}}
+/* G10C-CSS-END */
 .micb .led{width:8px;height:8px;border-radius:50%;background:var(--led-off);flex:none}
 #segMic.on{background:var(--rec-dim);color:#fff;box-shadow:inset 0 0 0 1px var(--rec)}
 #segMic.on .led{background:var(--rec);box-shadow:0 0 8px var(--rec)}
@@ -20532,7 +20587,7 @@ const LOGO_SVG = '<svg role="img" aria-label="One Day in Rome" shape-rendering="
 /* =====================================================================
    CORE: utilities, descriptors, presets, kits, project model
    ===================================================================== */
-const VERSION = '4.30.1';
+const VERSION = '4.31.0';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const deep = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -31579,7 +31634,7 @@ function pshSafe() {
   const cs = getComputedStyle(e); return {t: parseFloat(cs.paddingTop) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0};
 }
 const pshLoopOn = () => uiPrefs().pshLoop !== false;              // Vorgabe: Schleife an (wie ein Clip in der Matrix)
-// the head of a sheet pop; o = {title(), ref() (Transport), valid(), repaint(p)}
+// the head of a sheet pop; o = {title(), ref() (Transport), valid(), repaint(p), play() (vor ▶/⏮: eigenes Abspielen des Blatts beenden), dock() (vor dem Ablegen)}
 function pshMake(p, o) {
   const tr = !!o.ref;
   const hd = el('div', 'psh-h', '<i class="psh-grip" aria-hidden="true"></i><b class="psh-t"></b>' +
@@ -31628,6 +31683,7 @@ function pshTap(p, a) {
   if (a === 'x') { if (p.classList.contains('abg')) pshDockClose(); else if (UI.pop && UI.pop.el === p) closePop(); return; }
   if (a === 'dock') { if (p.classList.contains('abg')) pshUndock(); else pshDock(); return; }
   const r = o.ref ? o.ref() : null; if (!r) return;
+  if ((a === 'play' || a === 'first') && o.play) { try { o.play(); } catch (e) { logErr(e); } }   // z. B. Takes: Vorhören endet, bevor die Stelle spielt
   if (a === 'play') { if (R.playing) { stop(); pshWatch(); } else pshStart(r); return; }
   if (a === 'first') { pshStart(r); return; }
   if (a === 'loop') { pshLoopSet(!pshLoopOn()); haptic('tick'); pshHeadSync(p); }
@@ -31639,7 +31695,10 @@ function pshLayer() {
 const pshScrolls = p => [p].concat([...p.querySelectorAll('.pan-y')]);
 function pshDock() {
   const P = UI.pop; if (!P || !P.sheet) return false;
-  const p = P.el; P.scr = pshScrolls(p).map(x => x.scrollTop); P.pos = {l: p.style.left, t: p.style.top};
+  const p = P.el;
+  if (P.sheet.dock) { try { P.sheet.dock(p); } catch (e) { logErr(e); } }   // z. B. Takes: getippten Namen übernehmen, Vorhören stoppen
+  try { const ae = document.activeElement; if (ae && ae !== p && p.contains(ae) && ae.blur) ae.blur(); } catch (e) {}   // ein Feld im Blatt gibt den Fokus ab (Tastatur geht zu)
+  P.scr = pshScrolls(p).map(x => x.scrollTop); P.pos = {l: p.style.left, t: p.style.top};
   UI.pop = null; EL.popLayer.classList.remove('open');           // die modale Ebene geht, die Leiste liegt in ihrer eigenen
   p.classList.add('abg'); pshLayer().appendChild(p); PSH.dock = P;
   pshHeadSync(p); haptic('tick');
@@ -44598,7 +44657,7 @@ function stSheetFill(p) {
   if (ST.dropN) W.push(ST.dropN + ' Aussetzer markiert');
   if (W.length) html += '<div class="st-warn">' + W.map(x => '⚠ ' + esc(x)).join('<br>') + '</div>';
   const vc = vsCfg();                                          // VS2: Quelle, Einrasten, Oktave sperren (nur Instrument)
-  html += '</div><div class="st-c2"><div class="st-lbl">Stimme → Noten</div>' + vsMelRowHTML(vc) + segHTML('vsSrc', [['voice', '🎤 Stimme'], ['inst', '🎸 Instrument']], vc.src) +
+  html += '</div><div class="st-c2"><div class="st-lbl">Stimme → Noten</div>' + vsMelRowHTML(vc) + g10cPassRow() +   /* G10c */ segHTML('vsSrc', [['voice', '🎤 Stimme'], ['inst', '🎸 Instrument']], vc.src) +
     `<div class="st-vs"><button class="rb${vc.snap ? ' on' : ''}" data-vs="snap" aria-pressed="${vc.snap}">${vc.snap ? '✓ In Tonart einrasten' : 'Frei (nicht einrasten)'}</button>` +
     (vc.src === 'inst' ? `<button class="rb${vc.lock ? ' on' : ''}" data-vs="lock" aria-pressed="${vc.lock}">${vc.lock ? '✓ ' : ''}Oktave sperren</button>` : '') + '</div></div>';
   html += `<div class="st-c3"><div class="st-btns"><button class="rb st-cal"${!ST.on || cal || ST.phase !== 'live' ? ' disabled' : ''}>Einmessen</button><button class="rb st-go ${ST.on ? 'off' : ''}">${ST.on ? '✕ Mikro aus' : '🎤 Mikro an'}</button></div>`;
@@ -44615,6 +44674,7 @@ function bindStSheet(p) {
     if (b.closest('#stRoute')) { haptic('tick'); stSetRoute(b.dataset.v, 'gewählt'); return; }
     if (b.closest('#vsSrc')) { haptic('tick'); vsCfgSet({src: b.dataset.v}); return; }      // VS2
     if (b.closest('#vsMel')) { haptic('tick'); vsCfgSet({mel: b.dataset.v === '1'}); popFit(p); return; }   // VS-L
+    if (b.closest('#g10cPass')) { haptic('tick'); setUiPref('g10cPasses', b.dataset.v === '1'); stSheetFill(p); return; }   // G10c: Durchgänge als Takes
     if (b.dataset.vs === 'snap') { haptic('tick'); vsCfgSet({snap: !vsCfg().snap}); return; }
     if (b.dataset.vs === 'lock') { haptic('tick'); vsCfgSet({lock: !vsCfg().lock}); return; }
     if (b.dataset.nd) { stNudge(+b.dataset.nd); return; }
@@ -45602,7 +45662,7 @@ function viewState(kind) {
      tkStartSrc(o)                                                          ein Abspiel-Stück planen (Szene, Song, offline)
      tkTrackResync(i) / tkVoxResync(true)                                   nach einer Änderung neu hören
    ===================================================================================================================== */
-function tkExt() { const w = typeof window !== 'undefined' ? window : globalThis; return w.__synqTkExt || (w.__synqTkExt = {take: [], audio: [], proc: [], place: []}); }
+function tkExt() { const w = typeof window !== 'undefined' ? window : globalThis; const x = w.__synqTkExt || (w.__synqTkExt = {take: [], audio: [], proc: [], place: []}); if (!x.seg) x.seg = []; return x; }   /* G10c: + seg (Segment-Felder oben und in alt) */
 function tkR6(v) { return +(+v).toFixed(6); }
 function tkNormTake(m) {
   if (!m || typeof m !== 'object') return null;
@@ -45626,7 +45686,9 @@ function tkNormSeg(a) {
   if (!a || typeof a !== 'object' || typeof a.take !== 'string' || !UID_RE.test(a.take)) return null;
   const i = isNum(a.in) ? Math.max(0, a.in) : 0, o = isNum(a.out) ? Math.min(a.out, 3600) : 0;
   if (!(o > i + 1e-4)) return null;
-  return {take: a.take, in: tkR6(i), out: tkR6(o), at: isNum(a.at) ? tkR6(clamp(a.at, 0, 256)) : 0};   /* G8: Stücke in Clips bis 64 Takte */
+  const s = {take: a.take, in: tkR6(i), out: tkR6(o), at: isNum(a.at) ? tkR6(clamp(a.at, 0, 256)) : 0};   /* G8: Stücke in Clips bis 64 Takte */
+  for (const f of tkExt().seg) { try { f(a, s); } catch (e) {} }   // G10c: Segment-Felder (no, name, tag, fav, r …)
+  return s;
 }
 function tkNormAudio(a) {
   const s = tkNormSeg(a); if (!s) return null;
@@ -46255,33 +46317,40 @@ function tkVoiceTake(o) {
   const tr = S.tracks[st], old = tr.clips[o.si], before = old ? cleanClip(old) : null;
   let L = (old && old.audio ? old.len : o.len) * 4, grow = 0, gcs = o.cs; const sp = spb();
   // Overdub auf einem laufenden Audio-Clip: ein voller Durchgang am Clip-Raster (der jüngste), sonst ab dem Anfang der Aufnahme
-  let a = o.a, at = 0;
+  let a = o.a, at = 0, passes = 1;
   if (old && old.audio) {
     const ph = R.playing && R.slot[st] === o.si && !R.pend[st] ? R.cstart[st] : o.cs; let c0 = ph + Math.floor((o.b - L - ph) / L + 1e-9) * L; if (c0 + L > o.b + 1e-6) c0 -= L;
     // VS-L (Nachtrag 4 L.1.2): länger als der alte Clip → der Clip wird so lang wie die neue Aufnahme (ganze Takte ab dem Taktstrich, der ihrem Anfang am nächsten liegt, ≤ 64 – G8), der Take ist die ganze Aufnahme
     // VS-L-fix: ● kurz vor dem Taktstrich zählt ab diesem Taktstrich (nicht ab dem Takt davor); gleich lang, aber kein voller Durchgang im Clip-Raster → ebenso die ganze Aufnahme (sonst fehlte ihr letzter Takt)
     const gp = R.playing && R.slot[st] === o.si && !R.pend[st] ? R.cstart[st] : 0, g0 = gp + Math.round((o.a - gp) / 4) * 4, nb = clamp(Math.round((o.b - g0) / 4), 1, 64);   /* G-GES: Wachsen bis 64 Takte wie G8-Clips */
-    if (nb > old.len || (nb === old.len && c0 < o.a - 0.25)) { grow = nb; L = nb * 4; gcs = g0; if (o.a - g0 <= 0.25) { a = g0; at = 0; } else { a = o.a; at = o.a - g0; } }
+    const pOn = g10cPassesOn(o);                                  // G10c: Durchgänge als Takes – bei fester Länge wächst der Clip nicht (VS-L gilt bei AUTO)
+    if (!(pOn && rec.fixedLen) && (nb > old.len || (nb === old.len && c0 < o.a - 0.25))) { grow = nb; L = nb * 4; gcs = g0; if (o.a - g0 <= 0.25) { a = g0; at = 0; } else { a = o.a; at = o.a - g0; } }
     else if (c0 >= o.a - 0.25) { a = c0; at = 0; } else { a = o.a; at = ((o.a - ph) % L + L) % L; }
+    if (pOn && !grow) { const cF = ph + Math.ceil((o.a - 0.25 - ph) / L - 1e-9) * L, n = Math.round((c0 - cF) / L) + 1; if (n >= 2 && c0 >= o.a - 0.25) { passes = n; a = cF; at = 0; } }   // G10c: jede volle Runde ein Take
   }
-  const b = Math.min(o.b, a + L - at);
+  const b = Math.min(o.b, a + passes * L - at);
   const job = {kind: o.kind};
   const tk = tkMakeTake(a, b, o.kind, () => { if (o.kind === 'rec') TK.recJob = null; else TK.fangJob = null; });
   if (tk && old && old.audio) G3.noPre.add(tk.id);                 /* G3: Overdub – davor liegt die vorige Runde */
   if (!tk) { for (const it of items.reverse()) undoApply(it, it.before); return null; }
   if (o.kind === 'rec') TK.recJob = job; else TK.fangJob = job;
   const seg = {take: tk.id, in: tkR6(tk.inSec), out: tkR6(tk.inSec + (b - a - tk.lateBeats) * sp), at: tkR6(at + tk.lateBeats)};
+  const runs = passes > 1 ? g10cPassSegs(tk, passes, L, sp) : null;   // G10c: Runden 1…n (gleiche Take-id, je eine Runde am Clip-Raster)
+  if (runs) Object.assign(seg, runs[runs.length - 1]);
   let clip;
   if (old && old.audio) {
     clip = deep(old);
-    const prev = {take: clip.audio.take, in: clip.audio.in, out: clip.audio.out, at: clip.audio.at};
-    Object.assign(clip.audio, seg);
-    clip.audio.alt = [prev].concat(clip.audio.alt || []).slice(0, 16);
+    g10cStamp(clip.audio);                                       // G10c: alte Takes behalten ihre Nummer
+    const prev = Object.assign({take: clip.audio.take, in: clip.audio.in, out: clip.audio.out, at: clip.audio.at}, g10cSegF(clip.audio));
+    g10cSegSet(clip.audio, null); Object.assign(clip.audio, seg);
+    clip.audio.alt = (runs ? runs.slice(0, -1).reverse() : []).concat([prev], clip.audio.alt || []).slice(0, 16);   // G10c: jüngere Runden oben
     if (grow) clip.len = grow;                                   // VS-L
     if (typeof g6Took === 'function') g6Took(st, o.si, clip, prev, seg);   // G6: „Selbst singen“ – der neue Take wird die Chor-Stimme
+    g10cStamp(clip.audio);                                       // G10c: der neue Take bekommt die nächste Nummer
   } else {
     const k = sceneKeyOf(o.si) || S.key;
     clip = {len: clamp(Math.round(L / 4), 1, 64), key: {root: k.root, scale: k.scale, src: 'auto'}, notes: [], audio: tkNormAudio(seg)};   /* G8 */
+    g10cStamp(clip.audio);
   }
   tr.clips[o.si] = clip;
   if (o.mel && S.tracks[MEL_T] && S.tracks[MEL_T].clips[o.si] === o.mel) o.mel.take = tk.id;
@@ -46343,12 +46412,13 @@ function tkSongCommit(sr, endBar, ins) {
   for (const o of vx) {
     const a0 = o.bar, a1 = o.bar + o.len;
     if (a1 <= from || a0 >= E) { kept.push(o); continue; }
-    if (sr.mode === 'overdub') { const sh = (from - a0) * 4; lostTake.push({take: o.take, in: tkR6(o.in + Math.max(0, sh - o.at) * sp), out: o.out, at: tkR6(Math.max(0, o.at - sh))}); }
+    if (sr.mode === 'overdub') { const sh = (from - a0) * 4; g10cStamp(o); lostTake.push(Object.assign({take: o.take, in: tkR6(o.in + Math.max(0, sh - o.at) * sp), out: o.out, at: tkR6(Math.max(0, o.at - sh))}, g10cSegF(o))); }   // G10c: Felder wandern mit
     if (a0 < from) kept.push(tkVoxTrim(o, a0, from, sp));
     if (a1 > E) kept.push(tkVoxTrim(o, E, a1, sp));
   }
   const nv = tkNormAudio(Object.assign({}, clip, {alt: lostTake.filter(x => x.out > x.in + 1e-3)}));
   if (!nv) return;
+  g10cStamp(nv);                                                    // G10c: neues Stück bekommt die nächste Nummer
   kept.push(Object.assign({id: tkVoxId(kept), bar: from, len: E - from}, nv));
   song.vox = tkNormVox(kept) || undefined; if (!song.vox) delete song.vox;
   if (E > song.bars && sr.mode !== 'insert') songSetBars(song, Math.min(E, SONG_MAX_BARS));
@@ -46407,16 +46477,18 @@ function tkRef(r) {   // r = {t, s} (Szene-Clip) oder {vox: id}
   if (r.vox) { const v = S.song && S.song.vox ? S.song.vox.find(x => x.id === r.vox) : null; return v ? {a: v, label: 'Song · Takt ' + (v.bar + 1) + (v.len > 1 ? '–' + (v.bar + v.len) : '')} : null; }
   const c = S.tracks[r.t] && S.tracks[r.t].clips[r.s]; return c && c.audio ? {a: c.audio, clip: c, label: 'Szene ' + (r.s + 1)} : null;
 }
-const tkSegs = a => [{take: a.take, in: a.in, out: a.out, at: a.at}].concat(a.alt || []);
+const tkSegs = a => [Object.assign({take: a.take, in: a.in, out: a.out, at: a.at}, g10cSegF(a))].concat(a.alt || []);   // G10c: + Segment-Felder des obersten Stücks
 // Take k (0 = der aktive) nach oben holen / löschen – je ein Undo
 function tkPick(r, k, del) {
   const x = tkRef(r); if (!x) return false;
   const segs = tkSegs(x.a); if (k < 0 || k >= segs.length || (!del && k === 0)) return false;
   const label = del ? 'Take gelöscht' : 'Take gewählt';
   const apply = a => {
+    if (del) g10cStamp(a);                                          // G10c: feste Nummern vor dem Löschen festhalten
     const ss = tkSegs(a), pick = ss[k];
     if (del) ss.splice(k, 1); else { ss.splice(k, 1); ss.unshift(pick); }
     if (!ss.length) return false;
+    g10cSegSet(a, ss[0]);                                           // G10c: Name/Farbe/★/Nummer gehören zum Stück, nicht zum Platz
     Object.assign(a, {take: ss[0].take, in: ss[0].in, out: ss[0].out, at: ss[0].at});
     if (ss.length > 1) a.alt = ss.slice(1); else delete a.alt;
     return true;
@@ -46444,14 +46516,17 @@ function tkSheet(r, anchor) {
   }
   if (!tkRef(r)) return false;
   if (pshReopen('takes', pshSame(TK.sheet, r))) return true;      // 4.30.1
-  TK.sheet = r;
-  openPop(anchor || EL.top, p => { p.classList.add('tksheet'); guardTouch(p); tkSheetPaint(p);
+  TK.sheet = r; G10C.ed = -1; G10C.gcAsk = false; g10cPvStop();   // G10c
+  openPop(anchor || EL.top, p => { p.classList.add('tksheet', 'g10c'); guardTouch(p); tkSheetPaint(p); g10cGest(p);
     onTap(p, b => {
       const d = b.dataset, rr = TK.sheet; if (!rr) return;
       if (d.a && d.a.slice(0, 3) === 'ggb') { ggbTap(b); return; }   // G-GB
-      if (d.k != null) { tkPick(rr, +d.k, d.del === '1'); return; }
+      if (d.a && d.a.slice(0, 4) === 'g10c' && g10cTap(b, rr)) return;   // G10c
+      if (d.k != null && d.del === '1') { g10cDel(rr, +d.k); return; }   // G10c: Löschen mit ↶ im Hinweis
+      if (d.k != null && performance.now() - G10C.hold < 700) return;   // G10c: Halten/Wischen ist kein Tipp
+      if (d.k != null) { g10cNameCommit(); G10C.ed = -1; tkPick(rr, +d.k, false); return; }
       if (d.a === 'ab') { tkPick(rr, 1, false); return; }
-      if (d.a === 'wav') { const x = tkRef(rr); if (x) tkExportWav(x.a.take); return; }
+      if (d.a === 'wav') { const x = tkRef(rr); if (x) tkExportWav(x.a.take, x.a.name || (S.takes[x.a.take] && S.takes[x.a.take].name)); return; }   // G10c: Name im Dateinamen
       if (d.a === 'zip') { tkExportZip(); return; }
       if (d.a === 'wp') { closePop(); wpOpen(rr); return; }      // VS5a: Marken-Editor
       if (d.a === 'g5') { closePop(); g5Convert(rr); return; }   // G5: Gesang → Melodie
@@ -46459,43 +46534,477 @@ function tkSheet(r, anchor) {
       if (d.a === 'g2') { closePop(); g2Open(rr); return; }      // G2: Tonhöhe · Noten
       if (d.a === 'g6') { closePop(); g6Sheet(rr); return; }     // G6: Chor
       if (g6pfSheetTap(d, rr)) return;                            // G6+f: Als Chor-Stimme duplizieren, Herkunft
-      if (d.a === 'gc') { tkGc().then(n => { toast(n ? n + (n === 1 ? ' altes Stück' : ' alte Stücke') + ' gelöscht' : 'Nichts aufzuräumen'); if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); }); return; }
+      if (d.a === 'gc') { G10C.gcAsk = true; G10C.gcSig = ''; g10cGcEstimate(); tkSheetPaint(p); return; }   // G10c: Aufräumen mit Größe, nach Rückfrage
       if (d.a === 'x') closePop();
     }, 'button[data-k],button[data-a]');
-  }, {name: 'takes', sheet: {title: ab => { const y = ab && TK.sheet && tkRef(TK.sheet); return 'Takes' + (y ? ' · ' + y.label : ''); }, ref: () => TK.sheet, valid: () => !!(TK.sheet && tkRef(TK.sheet)), repaint: p => tkSheetPaint(p)},   // 4.30.1: Kopf
-    onClose: () => { TK.dupAsk = false; clSheetClosed(); }});
+  }, {name: 'takes', sheet: {title: ab => { const y = ab && TK.sheet && tkRef(TK.sheet); return 'Takes' + (y ? ' · ' + y.label : ''); }, ref: () => TK.sheet, valid: () => !!(TK.sheet && tkRef(TK.sheet)), repaint: p => tkSheetPaint(p),   // 4.30.1: Kopf
+      play: () => { if (G10C.pv) { g10cPvStop(); g10cRepaint(); } },   // G10c + 4.30.1: ▶/⏮ im Kopf beendet das Vorhören (nie beides zugleich)
+      dock: () => { g10cNameCommit(); g10cPvStop(); }},           // G10c + 4.30.1: Ablegen übernimmt den getippten Namen (Bearbeiten-Zeile bleibt offen) und stoppt das Vorhören
+    onClose: () => { TK.dupAsk = false; clSheetClosed(); g10cNameCommit(); g10cPvStop(); G10C.ed = -1; G10C.gcAsk = false; }});   // G10c
   return true;
 }
 function tkSheetPaint(p) {
   const r = TK.sheet, x = r && tkRef(r); if (!x) { closePop(); return; }
-  const segs = tkSegs(x.a), ok = tkAudioOk();
-  // K4 (4.25.2): feste Nummern – Take 1 = älteste Aufnahme in diesem Clip (S.takes[id].created, bei Gleichstand nach in)
-  const cr = sg => (S.takes && S.takes[sg.take] ? +S.takes[sg.take].created || 0 : 0), ord = segs.map((sg, k) => k).sort((i, j) => (cr(segs[i]) - cr(segs[j])) || (segs[i].in - segs[j].in) || (j - i)), no = [];
-  ord.forEach((k, n) => { no[k] = n + 1; });
-  const rows = segs.map((sg, k) => {
-    const m = S.takes && S.takes[sg.take], d = new Date(m ? m.created : 0), miss = TK.missing.has(sg.take);
-    const info = (m ? (m.name ? m.name + ' · ' + tkFmtDur(sg.out - sg.in) : tkFmtDur(sg.out - sg.in) + ' · ' + z2(d.getHours()) + ':' + z2(d.getMinutes()) + ' · ' + (ST_RSHORT[m.route] || '')) : '?') + (miss ? ' · fehlt hier' : '');   // G-GB: Name „GarageBand hh:mm“
-    return `<div class="tkrow${k === 0 ? ' on' : ''}"><button class="mbtn rb tk-pick" data-k="${k}"${k === 0 ? ' aria-pressed="true"' : ''}><b>${k === 0 ? '● ' : '○ '}Take ${no[k]}</b><small>${esc(info)}</small></button>` +
-      `<button class="mbtn rb tk-del" data-k="${k}" data-del="1" aria-label="Take ${no[k]} löschen">✕</button></div>`;
-  }).join('');
+  const t0 = performance.now(), segs = tkSegs(x.a), ok = tkAudioOk(), no = g10cNos(segs);   // G10c: feste Nummern (no), sonst K4
+  if (G10C.ed >= segs.length) G10C.ed = -1;
+  /* G10c + 4.30.1: ein Blatt, ein Bildlauf – das Blatt selbst rollt (wie Chor und Mikro), der Kopf (psh: ✕, Ablegen, Transport) klebt oben.
+     Neu gezeichnet wird nur der Körper .g10c-bd: der Kopf bleibt dasselbe Element (kein Verdoppeln, kein Verlieren, ein Finger auf dem
+     Kopf verliert seine Geste nicht), der Bildlauf-Stand bleibt */
+  let bd = p.querySelector(':scope > .g10c-bd'); if (!bd) { bd = el('div', 'g10c-bd'); p.appendChild(bd); }
+  const sc = p.scrollTop;
+  const rows = segs.map((sg, k) => g10cRowHtml(x, sg, k, no[k], ok)).join('');
   const est = TK.est ? 'Speicher: ' + tkMB(TK.est.usage) + ' belegt · ' + tkMB(Math.max(0, TK.est.quota - TK.est.usage)) + ' frei' : 'Speicher: …';
   const per = TK.persist === 'persisted' ? ' · dauerhaft ✓' : TK.persist === 'best-effort' ? ' · nicht dauerhaft – ab und zu exportieren' : '';
-  p.innerHTML = `<h4>STIMME · ${esc(x.label)} · ${segs.length} ${segs.length === 1 ? 'Take' : 'Takes'}</h4>` +
+  bd.innerHTML = g10cHead(x, segs) +
     (ok ? '' : '<div class="small warn">Audio nur auf der eigenen Seite</div>') +
     `<div class="tklist pan-y">${rows}${g6pfSheetRows(x.a)}</div>` +   /* G6+f: Herkunft der Chor-Stimmen-Takes */
+    g10cFoot(x, segs, ok) +
     `<div class="small">${esc(est + per)}</div>` +
     (ok ? '<button class="mbtn rb tk-wp" data-a="wp">✎ Marken · Quantisieren</button>' : '') +
     (ok ? `<div class="tkg57"><button class="mbtn rb tk-g5" data-a="g5"${G5.busy || TK.missing.has(x.a.take) ? ' disabled' : ''}>In Melodie umwandeln</button>` +   // G5
       `<button class="mbtn rb tk-g7${g7Follows(x.a.take) ? ' on' : ''}" data-a="g7" aria-pressed="${g7Follows(x.a.take)}">${g7Follows(x.a.take) ? '✓ ' : ''}folgt Transponieren</button></div>` : '') +   // G-GES: G7 je Take
     (ok ? '<div class="tkedrow">' + (TK.dupAsk ? g6pfSheetBtn(x.a) : '<button class="mbtn rb tk-g2" data-a="g2">♪ Tonhöhe · Noten</button><button class="mbtn rb tk-g6" data-a="g6">Chor</button>' + g6pfSheetBtn(x.a)) + '</div>' : '') +   /* G2 */
-    `<div class="savrow"><button class="mbtn rb" data-a="ab"${segs.length > 1 ? '' : ' disabled'}>A/B</button><button class="mbtn rb" data-a="wav"${ok ? '' : ' disabled'}>WAV</button><button class="mbtn rb" data-a="zip"${ok ? '' : ' disabled'}>ZIP + Projekt</button><button class="mbtn rb" data-a="gc"${ok ? '' : ' disabled'}>Aufräumen</button></div>` +
+    `<div class="savrow g10c-sav"><button class="mbtn rb" data-a="ab"${segs.length > 1 ? '' : ' disabled'}>A/B</button><button class="mbtn rb" data-a="wav"${ok ? '' : ' disabled'}>WAV</button><button class="mbtn rb" data-a="zip"${ok ? '' : ' disabled'}>ZIP + Projekt</button></div>` +
     (ok && S.song && S.song.bars ? ggbHtml() : '') +              // G-GB: Mit GarageBand aufnehmen (braucht einen Song)
-    '<div class="small">Oben = der hörbare Take. Ein Tipp holt einen älteren Take nach oben (A/B: die zwei obersten tauschen). ✕ = löschen, ↶ holt ihn zurück.</div>';
+    '<div class="small">Tipp = hörbar machen (A/B: die zwei obersten tauschen). Halten oder ✎ = Name, Farbe, ★. Nach links wischen oder ✕ = löschen, ↶ holt ihn zurück.</div>';
+  if (p._psh) pshKeep(p);                                         // 4.30.1: Kopf als erstes Kind (Titel, Schleife)
   clSheet(p, x);                                                  // VS4: SÄUBERN, A/B Roh │ Sauber
+  if (p.scrollTop !== sc) p.scrollTop = sc;
+  if (UI.pop && UI.pop.el === p) popFit(p);                       // gewachsen (Bearbeiten offen): bleibt im Bild
   if (ok && typeof g2Pre === 'function') g2Pre(x.a.take);         // G2: Töne schon suchen (Worker), bevor ♪ Tonhöhe getippt wird
   if (!TK.est || performance.now() - (TK.estT || 0) > 5000) { TK.estT = performance.now(); try { navigator.storage.estimate().then(e => { TK.est = e; const q = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null; if (q && q === p) tkSheetPaint(p); }, () => {}); } catch (e) {} }
+  // G10c: Mini-Wellen (gecacht, sonst im Hintergrund), Chips „+n“, Aufräumen-Größe
+  if (p.isConnected) { g10cDrawAll(); g10cFitChips(p); } else requestAnimationFrame(() => { if (p.isConnected) { g10cDrawAll(); g10cFitChips(p); } });
+  if (ok) { for (const sg of segs) g10cWant(sg.take, sg); if (!(G10C.gcEst && G10C.gcEst.sig === g10cGcSig())) setTimeout(() => { if (UI.pop && UI.pop.el === p) g10cGcEstimate(); }, 0); }
+  const inp = p.querySelector('.g10c-name'); if (inp && G10C.focus) { G10C.focus = false; try { inp.focus(); } catch (e) {} }
+  if (G10C.pv && G10C.pv.s) g10cPvLoop();
+  G10C.ms = performance.now() - t0;
 }
 function tkMB(b) { b = +b || 0; return b >= 1e9 ? fmtDec(b / 1e9, 1) + ' GB' : Math.round(b / 1e6) + ' MB'; }
+
+/* =====================================================================================================================
+   G10c (Nachtrag 9 §2.3): Takes-Verwaltung. Feste Nummern, Name, Farbe, ★, Mini-Welle je Take, Vorhören, hörbar/stumm,
+   Löschen mit ↶, „Andere Takes löschen (★ bleiben)“, Aufräumen mit Größe. Daten nur additiv als Segment-Felder
+   (no, name, tag, fav, r) am Stück {take, in, out, at} – oben und in alt (tkExt().seg). Fehlen sie, ist alles wie 4.30.0.
+   Mini-Wellen: aus dem PCM16 im Audio-Store (Stück für Stück, kein AudioBuffer), Zeitachse über die Zeitkarte, Cache pk:<id>:<in>:<out>.
+   ===================================================================================================================== */
+const G10C_SF = ['no', 'name', 'tag', 'fav', 'r'];
+const G10C_TAGS = [null, {c: '#3ecf6e', n: 'gut'}, {c: '#f2c230', n: 'vielleicht'}, {c: '#ff5a4f', n: 'raus'}, {c: '#4aa3ff', n: 'blau'}, {c: '#8a8f98', n: 'grau'}];
+const G10C_SRC = {fang: 'FANG', rec: 'REC', song: 'SONG', import: 'Datei', dup: 'Duplikat', chor: 'Chor'};
+const G10C_ROUTE = {speaker: 'Lautsprecher', wired: 'Kabel', bt: 'Bluetooth', datei: 'Datei'};
+const G10C = {pk: new Map(), q: [], qRun: false, ed: -1, gcAsk: false, gcEst: null, gcSig: '', pv: null, pvT: 0, hold: 0, ms: 0, pkMs: 0, pkN: 0};
+function g10cNormName(v) { return typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 24).trim() : ''; }
+tkExt().seg.push((m, s) => {
+  if (isNum(m.no) && m.no >= 1 && m.no <= 9999) s.no = Math.round(m.no);
+  const nm = g10cNormName(m.name); if (nm) s.name = nm;
+  if (isNum(m.tag) && m.tag >= 1 && m.tag <= 5) s.tag = Math.round(m.tag);
+  if (m.fav === true) s.fav = true;
+  if (isNum(m.r) && m.r >= 1 && m.r <= 9999) s.r = Math.round(m.r);
+});
+// die Segment-Felder eines Stücks (nur die gesetzten) / setzen (null = alle weg)
+function g10cSegF(a) { const o = {}; if (a) for (const k of G10C_SF) if (a[k] !== undefined) o[k] = a[k]; return o; }
+function g10cSegSet(a, from) { for (const k of G10C_SF) delete a[k]; if (from) for (const k of G10C_SF) if (from[k] !== undefined) a[k] = from[k]; }
+// die Objekte der Stücke (0 = das Audio selbst, dann alt)
+const g10cSegObjs = a => [a].concat(a.alt || []);
+/* Anzeige-Nummern: gesetzte Nummern bleiben; fehlt sie bei allen (alte Takes), zählt K4 (Take 1 = älteste Aufnahme im Clip);
+   fehlt sie nur bei einigen (neue Takes aus älteren Wegen), bekommen diese nach Alter die nächsten Nummern */
+function g10cNos(segs) {
+  const cr = sg => (S.takes && S.takes[sg.take] ? +S.takes[sg.take].created || 0 : 0);
+  const ord = segs.map((sg, k) => k).sort((i, j) => (cr(segs[i]) - cr(segs[j])) || (segs[i].in - segs[j].in) || (j - i)), no = [];
+  const has = segs.some(sg => isNum(sg.no));
+  if (!has) { ord.forEach((k, n) => { no[k] = n + 1; }); return no; }
+  let mx = 0; segs.forEach((sg, k) => { if (isNum(sg.no)) { no[k] = sg.no; mx = Math.max(mx, sg.no); } });
+  for (const k of ord) if (no[k] == null) no[k] = ++mx;
+  return no;
+}
+// die angezeigten Nummern festschreiben (beim Anlegen, Löschen und Bearbeiten – gehört zum Undo der Stelle)
+function g10cStamp(a) {
+  if (!a || !a.take) return a;
+  const objs = g10cSegObjs(a), no = g10cNos(tkSegs(a));
+  objs.forEach((o, k) => { if (!isNum(o.no)) o.no = no[k]; });
+  return a;
+}
+/* Durchgänge als Takes (Geräte-Einstellung, Standard An): ● REC über mehrere Loop-Runden eines Clips mit fester Länge → je Runde ein
+   Segment {take: gleiche id, in, out, at, r}; kein neues Audio. Nicht bei FANG, nicht während „Selbst singen“ (G6) */
+const g10cFileName = nm => { const t = g10cNormName(nm).replace(/[^0-9A-Za-zÄÖÜäöüß_-]+/g, '-').replace(/^-+|-+$/g, ''); return t ? '-' + t : ''; };
+const g10cPassesPref = () => uiPrefs().g10cPasses !== false;
+function g10cPassesOn(o) { return !!o && o.kind === 'rec' && g10cPassesPref() && !(typeof G6 !== 'undefined' && G6.arm); }
+function g10cPassSegs(tk, n, L, sp) {
+  const out = [], late = tk.lateBeats || 0;
+  for (let j = 0; j < n; j++) {
+    const x0 = j * L, x1 = (j + 1) * L; if (x1 <= late + 1e-9) continue;
+    out.push({take: tk.id, in: tkR6(tk.inSec + Math.max(0, x0 - late) * sp), out: tkR6(tk.inSec + (x1 - late) * sp), at: tkR6(Math.max(0, late - x0)), r: j + 1});
+  }
+  return out.length ? out : null;
+}
+const g10cPassRow = () => '<div class="st-mel g10c-pass"><span>Durchgänge als Takes</span>' + segHTML('g10cPass', [['1', 'An'], ['0', 'Aus']], g10cPassesPref() ? '1' : '0') + '</div>';
+// eine Änderung an der Take-Liste einer Stelle: ein Undo (Clip bzw. Song), Blatt neu
+function g10cEdit(r, label, fn) {
+  const x = tkRef(r); if (!x) return false;
+  if (r.vox) {
+    const before = songSnapshot(), v = S.song.vox.find(z => z.id === r.vox);
+    if (fn(v) === false) return false;
+    pushSongUndo(before, label); songChanged();
+  } else {
+    const c = x.clip, before = cleanClip(c);
+    if (fn(c.audio) === false) return false;
+    pushUndo(r.t, r.s, before, label); clipChanged(r.t, r.s);
+  }
+  markDirty(); UI.dirty.all = true; haptic('tick');
+  g10cRepaint();
+  return true;
+}
+function g10cRepaint() { if (UI.pop && UI.pop.name === 'takes') tkSheetPaint(UI.pop.el); }
+function g10cSetField(r, k, f, v) {
+  const x = tkRef(r); if (!x) return false;
+  const segs = tkSegs(x.a); if (k < 0 || k >= segs.length) return false;
+  const label = f === 'name' ? 'Take benannt' : f === 'tag' ? 'Take markiert' : f === 'fav' ? (v ? 'Favorit' : 'Kein Favorit') : 'Take';
+  return g10cEdit(r, label, a => {
+    g10cStamp(a);
+    const o = g10cSegObjs(a)[k]; if (!o) return false;
+    const cur = o[f];
+    if (f === 'name') { v = g10cNormName(v); if ((cur || '') === v) return false; if (v) o.name = v; else delete o.name; }
+    else if (f === 'tag') { v = v | 0; if ((cur | 0) === v) return false; if (v >= 1 && v <= 5) o.tag = v; else delete o.tag; }
+    else if (f === 'fav') { if (!!cur === !!v) return false; if (v) o.fav = true; else delete o.fav; }
+    return true;
+  });
+}
+// Löschen mit ↶ im Hinweis
+function g10cDel(r, k) {
+  const x = tkRef(r); if (!x) return false;
+  const segs = tkSegs(x.a); if (k < 0 || k >= segs.length) return false;
+  const no = g10cNos(segs)[k];
+  if (G10C.pv && G10C.pv.take === segs[k].take) g10cPvStop();
+  G10C.ed = -1;
+  const ok = tkPick(r, k, true);
+  if (ok) toast('Take ' + no + ' gelöscht', {label: 'Rückgängig', fn: () => undo()});
+  return ok;
+}
+// „Andere Takes löschen (★ bleiben)“: der hörbare und alle ★ bleiben, ein Undo
+function g10cDelOthers(r) {
+  const x = tkRef(r); if (!x) return false;
+  const segs = tkSegs(x.a), n = segs.filter((sg, k) => k > 0 && !sg.fav).length;
+  if (!n) { toast('Nichts zu löschen – nur der hörbare Take und ★'); return false; }
+  g10cPvStop(); G10C.ed = -1;
+  const ok = g10cEdit(r, 'Andere Takes gelöscht', a => {
+    g10cStamp(a);
+    const keep = (a.alt || []).filter(sg => sg.fav);
+    if (keep.length) a.alt = keep; else delete a.alt;
+    return true;
+  });
+  if (ok) { if (!r.vox) tkTrackResync(r.t); else tkVoxResync(true); toast(n + (n === 1 ? ' Take' : ' Takes') + ' gelöscht · ★ bleiben', {label: 'Rückgängig', fn: () => undo()}); }
+  return ok;
+}
+
+/* ---------- Mini-Welle: 64 Werte (0…255), aus dem PCM16 im Audio-Store, ohne AudioBuffer ---------- */
+const G10C_PK_N = 64;
+function g10cPkKey(id, a) {
+  const m = S.takes && S.takes[id], w = typeof wpWarp === 'function' ? wpWarp(id) : null;
+  return 'pk:' + id + ':' + a.in + ':' + a.out + (w ? ':' + wpMapInfo(w.map).key : '') + (m ? ':' + m.len : '');
+}
+// gehörte Sekunde → Quell-Sekunde (Zeitkarte src → dst wie tkHeardMap). Dehnen: linear; Scheiben: jede Scheibe läuft ab dst[k] in
+// Original-Tempo bis zu ihrem Ende (danach Lücke = null), wie die gerenderte Fassung
+function g10cSrcAt(w, t) {
+  const mp = w && w.map; if (!mp) return t;
+  const s = mp.src, d = mp.dst, n = d.length;
+  if (t <= d[0]) return s[0] + (t - d[0]);
+  if (t >= d[n - 1]) return s[n - 1] + (t - d[n - 1]);
+  let lo = 0, hi = n - 1; while (hi - lo > 1) { const md = (lo + hi) >> 1; if (d[md] <= t) lo = md; else hi = md; }
+  if (w.mode !== 'stretch') { const x = s[lo] + (t - d[lo]); return x <= s[hi] + 1e-9 ? x : null; }
+  const f = (t - d[lo]) / (d[hi] - d[lo] || 1); return s[lo] + f * (s[hi] - s[lo]);
+}
+function g10cPeaks(id, a) { return G10C.pk.get(g10cPkKey(id, a)) || null; }
+function g10cWant(id, a) {
+  if (!tkAudioOk() || TK.missing.has(id) || !(S.takes && S.takes[id])) return;
+  const key = g10cPkKey(id, a); if (G10C.pk.has(key) || G10C.q.some(j => j.key === key)) return;
+  G10C.q.push({key, id, a: {in: a.in, out: a.out}});
+  if (!G10C.qRun) g10cPkRun();
+}
+const g10cYield = () => new Promise(res => (typeof requestIdleCallback === 'function' ? requestIdleCallback(() => res(), {timeout: 30}) : setTimeout(res, 0)));
+async function g10cPkRun() {
+  G10C.qRun = true;
+  try {
+    while (G10C.q.length) {
+      const j = G10C.q.shift(); if (G10C.pk.has(j.key)) continue;
+      let pk = null; const t0 = performance.now();
+      try { pk = await g10cPkCalc(j.id, j.a); } catch (e) { logErr(e); }
+      G10C.pkMs += performance.now() - t0; G10C.pkN++;
+      if (pk) { if (G10C.pk.size > 512) G10C.pk.delete(G10C.pk.keys().next().value); G10C.pk.set(j.key, pk); g10cDrawAll(); }
+    }
+  } finally { G10C.qRun = false; }
+}
+async function g10cPkCalc(id, a) {
+  const m = S.takes && S.takes[id]; if (!m || !kv || !kv.aget) return null;
+  const w = typeof wpWarp === 'function' ? wpWarp(id) : null, sr = m.sr, N = G10C_PK_N, U = w ? 8 : 1, M = N * U;   // mit Zeitkarte: 8 Teilstücke je Punkt
+  const lo = new Float64Array(M), hi = new Float64Array(M), dt = (a.out - a.in) / M;
+  for (let k = 0; k < M; k++) {
+    const x0 = g10cSrcAt(w, a.in + k * dt), x1 = g10cSrcAt(w, a.in + (k + 1) * dt - 1e-9);
+    if (x0 == null || x1 == null) { lo[k] = hi[k] = -1; continue; }   // Lücke zwischen Scheiben (Teilstücke sind fein genug)
+    const p0 = x0, p1 = x1;
+    lo[k] = clamp(Math.min(p0, p1) * sr, 0, m.len); hi[k] = clamp(Math.max(p0, p1) * sr, 0, m.len);
+  }
+  const pk = new Float32Array(M), out = new Uint8Array(N);
+  let s0 = Infinity, s1 = -Infinity; for (let k = 0; k < M; k++) if (hi[k] > lo[k]) { s0 = Math.min(s0, lo[k]); s1 = Math.max(s1, hi[k]); }
+  for (let c = 0; c < m.chunks.length && s1 > s0; c++) {
+    const c0 = c * TK_CHUNK, c1 = Math.min(m.len, c0 + TK_CHUNK); if (c1 <= s0 || c0 >= s1) continue;
+    const b = await kv.aget(m.chunks[c]); if (!b) return null;
+    const d = b instanceof ArrayBuffer ? new Int16Array(b) : ArrayBuffer.isView(b) ? new Int16Array(b.buffer, b.byteOffset, b.byteLength >> 1) : null; if (!d) return null;
+    const tA = performance.now();
+    for (let k = 0; k < M; k++) {
+      if (!(hi[k] > lo[k])) continue;
+      const i0 = Math.max(c0, Math.floor(lo[k])), i1 = Math.min(c1, Math.ceil(hi[k])); if (i1 <= i0) continue;
+      let p = pk[k]; for (let i = i0; i < i1; i += 2) { const v = d[i - c0]; const av = v < 0 ? -v : v; if (av > p) p = av; } pk[k] = p;
+    }
+    if (performance.now() - tA > 4) await g10cYield(); else await Promise.resolve();
+  }
+  for (let k = 0; k < N; k++) { let p = 0; for (let u = 0; u < U; u++) p = Math.max(p, pk[k * U + u]); out[k] = Math.round(255 * Math.sqrt(Math.min(1, p / 32767))); }
+  return out;
+}
+function g10cDraw(cv, pk, on, tag) {
+  const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+  const dpr = Math.min(3, window.devicePixelRatio || 1), W = Math.round(w * dpr), H = Math.round(h * dpr);
+  if (cv.width !== W) cv.width = W; if (cv.height !== H) cv.height = H;
+  const g = cv.getContext('2d'); if (!g) return; g.clearRect(0, 0, W, H);
+  const cs = getComputedStyle(cv);
+  g.fillStyle = on ? (cs.getPropertyValue('--t8').trim() || '#c4a1ff') : 'rgba(170,176,190,.55)';
+  const N = pk ? pk.length : G10C_PK_N, bw = W / N, mid = H / 2;
+  if (!pk) { g.fillRect(0, mid - .5 * dpr, W, Math.max(1, dpr)); return; }
+  for (let k = 0; k < N; k++) { const v = pk[k] / 255, bh = Math.max(dpr, v * (H - 2 * dpr)); g.fillRect(k * bw + .5 * dpr, mid - bh / 2, Math.max(dpr, bw - dpr), bh); }
+}
+function g10cDrawAll() {
+  const p = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null, x = TK.sheet && tkRef(TK.sheet); if (!p || !x) return;
+  const segs = tkSegs(x.a);
+  p.querySelectorAll('canvas.g10c-wv').forEach(cv => { const k = +cv.dataset.k, sg = segs[k]; if (sg) g10cDraw(cv, g10cPeaks(sg.take, sg), k === 0, sg.tag | 0); });
+}
+
+/* ---------- Vorhören: ein Take allein (Transport steht), durch die STIMME-Spur, mit Lauflinie ---------- */
+async function g10cPv(r, k) {
+  if (G10C.pv && G10C.pv.k === k && G10C.pv.r === r) { g10cPvStop(); g10cRepaint(); return; }
+  g10cPvStop();
+  if (R.playing) { toast('Läuft gerade – ein Tipp auf den Take macht ihn hörbar'); return; }
+  const x = tkRef(r); if (!x) return; const sg = tkSegs(x.a)[k], st = stimmeT(); if (!sg || st < 0) return;
+  const c = ensureAudio(); if (!c || !AU.tracks[st] || !AU.tracks[st].trackIn) return;
+  const tok = G10C.pv = {r, k, take: sg.take, wait: true};
+  g10cRepaint();
+  if (!tkBuffer(sg.take)) { tkLoad(sg.take); const w = TK.wait.get(sg.take); if (w) { try { await w; } catch (e) {} } }
+  if (G10C.pv !== tok) return;
+  if (R.playing) { G10C.pv = null; g10cRepaint(); return; }      // G10c + 4.30.1: inzwischen läuft der Transport (▶ im Kopf) – nicht beides
+  const raw = tkBuffer(sg.take); if (!raw) { G10C.pv = null; toast('Take fehlt auf diesem Gerät'); g10cRepaint(); return; }
+  let b = null; try { b = tkPlayBuf(sg.take, sg); } catch (e) { b = null; } b = b || raw;
+  const V = vpGet(b), G = (isNum(x.a.gain) ? x.a.gain : 1) * (V ? V.g : 1), dur = Math.max(.01, Math.min(sg.out, b.duration) - sg.in);
+  const s = c.createBufferSource(), g = c.createGain(), t0 = c.currentTime + .03;
+  s.buffer = b; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(G, t0 + .005); g.gain.setValueAtTime(G, t0 + Math.max(.006, dur - .01)); g.gain.linearRampToValueAtTime(0, t0 + dur);
+  s.connect(g); g.connect(AU.tracks[st].trackIn);
+  try { s.start(t0, Math.max(0, sg.in)); s.stop(t0 + dur + .01); } catch (e) { G10C.pv = null; logErr(e); return; }
+  Object.assign(tok, {wait: false, s, g, t0, dur});
+  s.onended = () => { if (G10C.pv === tok) { G10C.pv = null; g10cRepaint(); } try { s.disconnect(); g.disconnect(); } catch (e) {} };
+  g10cRepaint(); g10cPvLoop();
+}
+function g10cPvStop() {
+  const v = G10C.pv; G10C.pv = null; if (!v || !v.s) return;
+  try { const c = AU.ctx, t = c.currentTime; v.g.gain.cancelScheduledValues(t); v.g.gain.setValueAtTime(v.g.gain.value, t); v.g.gain.linearRampToValueAtTime(0, t + .008); v.s.stop(t + .012); } catch (e) {}
+}
+// Lauflinie: genau eine Bild-Schleife (ein Neuzeichnen des Blatts startet keine zweite); Blatt zu/abgelegt oder Transport läuft → Vorhören endet
+const g10cPvLoop = () => { if (!G10C.pvT) G10C.pvT = requestAnimationFrame(g10cPvTick); };
+function g10cPvTick() {
+  G10C.pvT = 0;
+  const v = G10C.pv; if (!v || !v.s || !AU.ctx) return;
+  const p = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null, ln = p && p.querySelector('.g10c-row[data-k="' + v.k + '"] .g10c-ph');
+  if (!p) { g10cPvStop(); return; }
+  if (R.playing) { g10cPvStop(); g10cRepaint(); return; }       // G10c + 4.30.1: der Transport (Kopf, Taste, MIDI) hat Vorrang
+  if (ln) { const f = clamp((AU.ctx.currentTime - v.t0) / v.dur, 0, 1); ln.style.transform = 'translateX(' + (f * (ln.parentNode.clientWidth - 2)).toFixed(1) + 'px)'; }
+  g10cPvLoop();
+}
+
+/* ---------- Aufräumen: was das Projekt nicht mehr nennt, endgültig löschen (Größe vorher) ---------- */
+function g10cRefIds() {
+  const ids = new Set(tkUsedIds());
+  for (const id of [...ids]) { const m = S.takes[id]; if (m && m.of) ids.add(m.of); }
+  return ids;
+}
+const g10cUnused = () => Object.keys(S.takes || {}).filter(id => !g10cRefIds().has(id) && !TK.pend.has(id));
+// wie tkGc, aber für Takes, die gleich wegfallen (drop): deren Nennung in ↶/↷ und im alten Autosave zählt nicht
+async function g10cGcPlan(drop) {
+  if (!kv || !kv.akeys) return {keys: [], bytes: 0};
+  const keep = new Set(Object.keys(S.takes || {}).filter(id => !drop.has(id))), keepCh = new Set();
+  const chunksOf = s => { for (const m of s.match(/[0-9a-v]{10}:[0-9a-z]+(?::[0-9]+)?/g) || []) if (!drop.has(m.slice(0, 10))) keepCh.add(m); };
+  for (const id of keep) { const m = S.takes[id]; for (const c of m.chunks || []) keepCh.add(c); if (m.of) keep.add(m.of); }
+  if (!drop.size) for (const u of UNDO.concat(REDO)) { const s = JSON.stringify(u.before || '') + JSON.stringify(u.items || ''); for (const m of s.match(/[0-9a-v]{10}/g) || []) keep.add(m); chunksOf(s); }
+  for (const k of await kv.keys('')) {
+    if (!/^(project|proj:|hist:)/.test(k) || (drop.size && k === 'project')) continue;
+    let v = null; try { v = await kv.get(k); } catch (e) {} const s = v ? JSON.stringify(v) : ''; if (s.indexOf('"takes"') < 0) continue;
+    for (const m of s.match(/"([0-9a-v]{10})":\{"sr"/g) || []) keep.add(m.slice(1, 11)); chunksOf(s);
+    for (const m of s.match(/\\?"of\\?":\\?"([0-9a-v]{10})/g) || []) keep.add(m.slice(-10));
+  }
+  const keys = []; let bytes = 0;
+  for (const k of await kv.akeys()) {
+    const id = String(k).split(':')[0]; if (keep.has(id) || keepCh.has(String(k)) || TK.pend.has(id)) continue;
+    let n = 0; try { const b = await kv.aget(k); n = b ? (b.byteLength || (b.buffer && b.buffer.byteLength) || 0) : 0; } catch (e) {}
+    keys.push(k); bytes += n;
+  }
+  return {keys, bytes};
+}
+function g10cGcSig() { return Object.keys(S.takes || {}).join(',') + '|' + JSON.stringify([...g10cRefIds()]) + '|' + UNDO.length + '|' + REDO.length; }
+async function g10cGcEstimate() {
+  const sig = g10cGcSig(); if (G10C.gcSig === sig && G10C.gcEst) return G10C.gcEst;
+  G10C.gcSig = sig;
+  const drop = new Set(g10cUnused()), p = await g10cGcPlan(drop);
+  G10C.gcEst = {bytes: p.bytes, keys: p.keys.length, drop: drop.size, sig};
+  if (G10C.gcSig === sig) g10cRepaint();
+  return G10C.gcEst;
+}
+// endgültig: gelöschte Takes aus dem Projekt, Autosave schreiben, dann die Stücke im Audio-Store löschen. ↶ bringt sie danach nicht zurück
+async function g10cGcRun() {
+  const drop = new Set(g10cUnused());
+  g10cPvStop();
+  if (drop.size) {
+    for (const id of drop) { delete S.takes[id]; TK.buf.delete(id); }
+    if (!Object.keys(S.takes).length) delete S.takes;
+    UNDO.length = 0; REDO.length = 0; UI.dirty.all = true;     // der Verlauf nennt die gelöschten Takes – er wird geleert (steht im Hinweis)
+    markDirty(); try { if (autosave) await autosave.flush(); } catch (e) {}
+  }
+  const p = await g10cGcPlan(drop); let n = 0;
+  for (const k of p.keys) { try { await kv.adel(k); n++; } catch (e) {} }
+  TK.gc = {deleted: n, kept: Object.keys(S.takes || {}).length, bytes: p.bytes, takes: drop.size};
+  G10C.gcAsk = false; G10C.gcEst = null; G10C.gcSig = '';
+  toast(n ? tkMB(p.bytes) + ' frei · ' + drop.size + (drop.size === 1 ? ' Take' : ' Takes') + ' endgültig gelöscht' : 'Nichts aufzuräumen');
+  g10cRepaint();
+  return {deleted: n, bytes: p.bytes, takes: drop.size};
+}
+
+/* ---------- Blatt: Kopf, Zeilen, Bearbeiten, Fuß ---------- */
+const G10C_SVG_PLAY = '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M6 4l10 6-10 6z" fill="currentColor"/></svg>';
+const G10C_SVG_STOP = '<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor"/></svg>';
+const g10cStar = on => `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M10 2.2l2.4 5 5.4.7-4 3.8 1 5.4L10 14.5l-4.8 2.6 1-5.4-4-3.8 5.4-.7z" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+function g10cChips(x, sg, k) {
+  const m = S.takes && S.takes[sg.take], out = []; if (!m) return out;
+  const w = typeof wpWarp === 'function' ? wpWarp(sg.take) : null;
+  if (w) out.push(w.mode === 'stretch' ? 'Dehnen ' + w.res : 'Q ' + w.res);
+  if (m.cl | 0) out.push('Säubern ' + (m.cl | 0));
+  if (m.pitch) out.push('♪');
+  if (typeof g7Follows === 'function' && g7Follows(sg.take)) out.push('⇅');
+  if ((typeof lyHas === 'function' && lyHas(m)) || m.ly) out.push('Text');
+  if (k === 0 && x.a.chor) out.push(x.a.chor.v === 2 ? 'Chor-Gruppe' : 'Chor');
+  return out;
+}
+// G10c + 4.30.1: Titel und ✕ stehen im festen Kopf des Blatts (psh: „Takes“, ⏮ ▶ Schleife, Ablegen, ✕) – hier nur noch die Zeile darunter
+// mit Anzahl und Stelle (rollt mit, damit die Liste Platz hat; abgelegt nennt der Kopf die Stelle)
+function g10cHead(x, segs) {
+  const n = segs.length, where = TK.sheet && TK.sheet.vox ? 'im ' + x.label : 'in ' + x.label;
+  return `<div class="small g10c-sum">${n} ${n === 1 ? 'Aufnahme' : 'Aufnahmen'} ${esc(where)} · oben = hörbar · neu oben</div>`;
+}
+function g10cRowHtml(x, sg, k, no, ok) {
+  const m = S.takes && S.takes[sg.take], d = new Date(m ? m.created : 0), miss = TK.missing.has(sg.take), tag = sg.tag | 0, T = G10C_TAGS[tag];
+  const nm = sg.name || (m && m.name) || '', pv = G10C.pv && G10C.pv.k === k && G10C.pv.r === TK.sheet;
+  const meta = m ? [G10C_SRC[m.src] || 'REC'].concat(sg.r ? ['Runde ' + sg.r] : [], [tkFmtDur(sg.out - sg.in), z2(d.getHours()) + ':' + z2(d.getMinutes())], m.src === 'import' ? [] : [G10C_ROUTE[m.route] || '']).filter(Boolean).join(' · ') : '?';
+  const chips = g10cChips(x, sg, k);
+  const st = k === 0 ? '<i class="g10c-st on">hörbar</i>' : '<i class="g10c-st">stumm</i>';
+  return `<div class="tkrow g10c-row${k === 0 ? ' on' : ''}${tag ? ' g10c-t' + tag : ''}" data-k="${k}">` +
+    `<button class="mbtn rb tk-pick g10c-pick" data-k="${k}"${k === 0 ? ' aria-pressed="true"' : ''} aria-label="Take ${no}${nm ? ' ' + esc(nm) : ''}${k === 0 ? ', hörbar' : ', stumm – antippen macht ihn hörbar'}">` +
+      `<span class="g10c-l1">${st}<b>Take ${no}</b>${nm ? `<span class="g10c-nm">${esc(nm)}</span>` : ''}${T ? `<i class="g10c-dot" style="background:${T.c}" title="${T.n}"></i>` : ''}${sg.fav ? '<i class="g10c-fv" aria-label="Favorit">' + g10cStar(true) + '</i>' : ''}</span>` +
+      `<span class="g10c-wvb"><canvas class="g10c-wv" data-k="${k}"></canvas>${pv ? '<i class="g10c-ph"></i>' : ''}</span>` +
+      `<small class="g10c-meta">${esc(meta)}${miss ? ' · fehlt hier' : ''}</small>` +
+      `<span class="g10c-chips">${chips.length ? chips.map(c => `<i class="g10c-chip">${esc(c)}</i>`).join('') : '<i class="g10c-chip raw">roh</i>'}<i class="g10c-chip more" hidden></i></span>` +
+    '</button>' +
+    `<div class="g10c-side"><button class="mbtn rb g10c-pv${pv ? ' on' : ''}" data-a="g10c-pv" data-k="${k}"${ok && !miss ? '' : ' disabled'} aria-label="${pv ? 'Vorhören stoppen' : 'Take ' + no + ' vorhören'}">${pv ? G10C_SVG_STOP : G10C_SVG_PLAY}</button>` +
+      `<button class="mbtn rb tk-del" data-k="${k}" data-del="1" aria-label="Take ${no} löschen">✕</button>` +
+      `<button class="mbtn rb g10c-edb${G10C.ed === k ? ' on' : ''}" data-a="g10c-ed" data-k="${k}" aria-label="Take ${no} benennen und markieren" aria-expanded="${G10C.ed === k}">✎</button>` +
+      `<button class="mbtn rb g10c-fav${sg.fav ? ' on' : ''}" data-a="g10c-fav" data-k="${k}" aria-pressed="${!!sg.fav}" aria-label="Take ${no} Favorit">${g10cStar(!!sg.fav)}</button></div>` +
+    '</div>' + (G10C.ed === k ? g10cEdHtml(sg, k, no) : '');
+}
+function g10cEdHtml(sg, k, no) {
+  const tag = sg.tag | 0;
+  const sw = G10C_TAGS.map((T, i) => `<button class="mbtn rb g10c-sw${tag === i ? ' on' : ''}" data-a="g10c-tag" data-k="${k}" data-v="${i}" aria-pressed="${tag === i}" aria-label="${T ? 'Farbe ' + T.n : 'keine Farbe'}">` +
+    `<i class="g10c-swd${T ? '' : ' none'}"${T ? ` style="background:${T.c}"` : ''}></i><small>${T ? T.n : 'keine'}</small></button>`).join('');
+  return `<div class="g10c-ed" data-k="${k}"><div class="g10c-edn"><input class="g10c-name" type="text" maxlength="24" enterkeyhint="done" autocomplete="off" spellcheck="false" placeholder="Name für Take ${no}" value="${esc(sg.name || '')}" aria-label="Name für Take ${no}">` +
+    `<button class="mbtn rb" data-a="g10c-edok" data-k="${k}">Fertig</button></div><div class="g10c-sws">${sw}</div>` +
+    `<div class="g10c-edr"><button class="mbtn rb g10c-fav2${sg.fav ? ' on' : ''}" data-a="g10c-fav" data-k="${k}" aria-pressed="${!!sg.fav}">${g10cStar(!!sg.fav)} Favorit</button>` +
+    `<button class="mbtn rb g10c-del2" data-k="${k}" data-del="1">✕ Löschen</button></div></div>`;
+}
+function g10cFoot(x, segs, ok) {
+  const nOth = segs.filter((sg, k) => k > 0 && !sg.fav).length, e = G10C.gcEst && G10C.gcEst.sig === g10cGcSig() ? G10C.gcEst : null;
+  const gl = e ? (e.bytes > 0 ? 'Aufräumen · ' + tkMB(e.bytes) : 'Aufräumen · 0 MB') : 'Aufräumen · …';
+  let h = `<div class="g10c-foot"><button class="mbtn rb g10c-oth" data-a="g10c-oth"${nOth ? '' : ' disabled'}>Andere Takes löschen (★ bleiben)</button>` +
+    `<button class="mbtn rb g10c-gc" data-a="gc"${ok ? '' : ' disabled'}>${esc(gl)}</button></div>`;
+  if (G10C.gcAsk) h += `<div class="g10c-ask"><div class="small">Gelöschte Takes endgültig entfernen${e ? ' (' + tkMB(e.bytes) + ')' : ''}? Der Verlauf (↶) wird dabei geleert.` +
+    (e && e.drop && !e.bytes ? ' Die gelöschten Takes stecken noch in gespeicherten Versionen oder Projekten – dort bleiben sie.' : '') + '</div>' +
+    '<div class="g10c-askr"><button class="mbtn rb" data-a="g10c-gcno">Abbrechen</button><button class="mbtn rb g10c-gcyes" data-a="g10c-gcyes">Endgültig löschen</button></div></div>';
+  return h;
+}
+// „+n“ statt abgeschnittener Chips
+function g10cFitChips(p) {
+  p.querySelectorAll('.g10c-chips').forEach(box => {
+    const more = box.querySelector('.more'), cs = [...box.querySelectorAll('.g10c-chip:not(.more)')];
+    cs.forEach(c => { c.hidden = false; }); more.hidden = true;
+    if (box.scrollWidth <= box.clientWidth + 1) return;
+    more.hidden = false;
+    for (let n = cs.length - 1; n >= 1 && box.scrollWidth > box.clientWidth + 1; n--) { cs[n].hidden = true; more.textContent = '+' + (cs.length - n); }
+  });
+}
+function g10cTap(b, rr) {
+  const d = b.dataset, k = d.k != null ? +d.k : -1;
+  if (d.a === 'g10c-pv') { g10cPv(rr, k); return true; }
+  if (d.a === 'g10c-fav') { const x = tkRef(rr), sg = x && tkSegs(x.a)[k]; if (sg) g10cSetField(rr, k, 'fav', !sg.fav); return true; }
+  if (d.a === 'g10c-ed') { G10C.ed = G10C.ed === k ? -1 : k; g10cRepaint(); return true; }
+  if (d.a === 'g10c-edok') { g10cNameCommit(); G10C.ed = -1; g10cRepaint(); return true; }
+  if (d.a === 'g10c-tag') { g10cNameCommit(); g10cSetField(rr, k, 'tag', +d.v); return true; }
+  if (d.a === 'g10c-oth') { g10cDelOthers(rr); return true; }
+  if (d.a === 'g10c-gcno') { G10C.gcAsk = false; g10cRepaint(); return true; }
+  if (d.a === 'g10c-gcyes') { g10cGcRun(); return true; }
+  return false;
+}
+// Name übernehmen (Fertig, Eingabe, Verlassen des Felds) – ein Undo, nur bei Änderung
+function g10cNameCommit() {
+  const p = UI.pop && UI.pop.name === 'takes' ? UI.pop.el : null, inp = p && p.querySelector('.g10c-name'), ed = inp && inp.closest('.g10c-ed');
+  if (!inp || !ed || inp._g10cDone) return;
+  inp._g10cDone = true;
+  const rr = TK.sheet, k = +ed.dataset.k, x = rr && tkRef(rr), sg = x && tkSegs(x.a)[k];
+  if (sg && g10cNormName(inp.value) !== (sg.name || '')) g10cSetField(rr, k, 'name', inp.value);
+}
+// Halten (450 ms) auf einer Zeile öffnet Bearbeiten; Wisch nach links löscht (✕ bleibt)
+function g10cGest(p) {
+  let g = null;
+  p.addEventListener('pointerdown', e => {
+    const b = e.target.closest && e.target.closest('.g10c-pick'); if (!b || e.button > 0) { g = null; return; }
+    const row = b.closest('.g10c-row'), k = +b.dataset.k;
+    g = {id: e.pointerId, x: e.clientX, y: e.clientY, k, row, sw: false, long: false};
+    const me = g; me.tm = setTimeout(() => { if (g === me && !me.sw) { me.long = true; G10C.hold = performance.now(); G10C.ed = k; haptic('pop'); g10cRepaint(); } }, 450);
+  });
+  p.addEventListener('pointermove', e => {
+    if (!g || g.id !== e.pointerId) return;
+    const dx = e.clientX - g.x, dy = e.clientY - g.y;
+    if (!g.sw && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) clearTimeout(g.tm);
+    if (!g.sw && dx < -14 && Math.abs(dx) > 1.5 * Math.abs(dy)) g.sw = true;
+    if (g.sw && g.row.isConnected) { g.row.style.transform = 'translateX(' + Math.min(0, dx) + 'px)'; g.row.classList.toggle('g10c-sdel', dx < -80); }
+  });
+  const end = e => {
+    if (!g || g.id !== e.pointerId) return;
+    const s = g; g = null; clearTimeout(s.tm);
+    if (s.long) G10C.hold = performance.now();                     // Loslassen nach dem Halten ist kein Tipp, auch nach mehr als 700 ms
+    if (s.sw) {
+      const dx = e.clientX - s.x;
+      if (s.row.isConnected) { s.row.style.transform = ''; s.row.classList.remove('g10c-sdel'); }
+      if (e.type === 'pointerup' && dx < -80 && TK.sheet) { G10C.hold = performance.now(); g10cDel(TK.sheet, s.k); }
+    }
+  };
+  p.addEventListener('pointerup', end); p.addEventListener('pointercancel', end);
+  p.addEventListener('focusout', e => { if (e.target && e.target.classList && e.target.classList.contains('g10c-name')) g10cNameCommit(); });
+  p.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target && e.target.classList && e.target.classList.contains('g10c-name')) { e.preventDefault(); g10cNameCommit(); G10C.ed = -1; g10cRepaint(); } });
+}
+const G10C_API = {
+  g10cInfo: () => { const r = TK.sheet, x = r && tkRef(r), segs = x ? tkSegs(x.a) : []; return {segs: deep(segs), nos: g10cNos(segs), ed: G10C.ed, pv: G10C.pv ? {k: G10C.pv.k, take: G10C.pv.take, wait: !!G10C.pv.wait} : null, pkN: G10C.pkN, pkMs: G10C.pkMs, q: G10C.q.length, run: G10C.qRun, est: G10C.gcEst, ms: G10C.ms}; },
+  g10cPeaks: (k) => { const r = TK.sheet, x = r && tkRef(r), sg = x && tkSegs(x.a)[k]; const pk = sg && g10cPeaks(sg.take, sg); return pk ? Array.from(pk) : null; },
+  g10cPeaksOf: (id, a) => { const pk = g10cPeaks(id, a); return pk ? Array.from(pk) : null; },
+  g10cWaitPeaks: async () => { for (let i = 0; i < 400 && (G10C.qRun || G10C.q.length); i++) await new Promise(r => setTimeout(r, 10)); return G10C.pkN; },
+  g10cClearPeaks: () => { G10C.pk.clear(); G10C.pkN = 0; G10C.pkMs = 0; return true; },
+  g10cSet: (r, k, f, v) => g10cSetField(r, k, f, v),
+  g10cDel: (r, k) => g10cDel(r, k),
+  g10cDelOthers: r => g10cDelOthers(r),
+  g10cGcEstimate: async () => { G10C.gcSig = ''; return g10cGcEstimate(); },
+  g10cGcRun: () => g10cGcRun(),
+  g10cNos: a => g10cNos(tkSegs(a)),
+  g10cWavName: nm => g10cFileName(nm),
+};
 
 /* ---------- WAV (48 kHz bzw. Abtastrate des Takes, 16 Bit, mono; bitgleich zum gespeicherten Roh-Take, N7V-20) ---------- */
 function tkWav(pcm, sr) {
@@ -46524,11 +47033,11 @@ function tkWavRead(u8) {
   } catch (e) {}
   return null;
 }
-async function tkExportWav(id) {
+async function tkExportWav(id, nm) {   // G10c: nm = Name des gewählten Stücks (im Dateinamen)
   const m = S.takes && S.takes[id]; if (!m) return false;
   const pcm = await tkPcm(id); if (!pcm) { toast('Take fehlt auf diesem Gerät'); return false; }
   const d = new Date(m.created || Date.now());
-  return deliver('synquenzer-take-' + d.getFullYear() + z2(d.getMonth() + 1) + z2(d.getDate()) + '-' + z2(d.getHours()) + z2(d.getMinutes()) + '-' + id.slice(0, 4), tkWav(pcm, m.sr), 'wav', 'Take als WAV');
+  return deliver('synquenzer-take-' + d.getFullYear() + z2(d.getMonth() + 1) + z2(d.getDate()) + '-' + z2(d.getHours()) + z2(d.getMinutes()) + '-' + id.slice(0, 4) + g10cFileName(nm), tkWav(pcm, m.sr), 'wav', 'Take als WAV');
 }
 // ZIP: Projekt-Datei (JSON wie [Speichern]) + takes/<id>.wav je Take, den das Projekt nennt
 async function tkZipBytes() {
@@ -46699,8 +47208,8 @@ const TK_API = {
     if (st < 0 || !pcm.length) return null;
     const s = clamp(o.scene | 0, 0, N_SCN - 1), old = S.tracks[st].clips[s], before = old ? cleanClip(old) : null, r = tkAddPcmTake(pcm, sr, 'rec');
     const seg = {take: r.id, in: 0, out: tkR6(pcm.length / sr), at: tkR6(o.at || 0)};
-    if (old && old.audio) { const c = deep(old), prev = {take: c.audio.take, in: c.audio.in, out: c.audio.out, at: c.audio.at}; Object.assign(c.audio, seg); c.audio.alt = [prev].concat(c.audio.alt || []).slice(0, 16); if (typeof g6Took === 'function') g6Took(st, s, c, prev, seg); S.tracks[st].clips[s] = c; }
-    else { const k = sceneKeyOf(s) || S.key; S.tracks[st].clips[s] = {len: clamp(o.len || 1, 1, 64), key: {root: k.root, scale: k.scale, src: 'auto'}, notes: [], audio: tkNormAudio(seg)}; }
+    if (old && old.audio) { const c = deep(old); g10cStamp(c.audio); const prev = Object.assign({take: c.audio.take, in: c.audio.in, out: c.audio.out, at: c.audio.at}, g10cSegF(c.audio)); g10cSegSet(c.audio, null); Object.assign(c.audio, seg); c.audio.alt = [prev].concat(c.audio.alt || []).slice(0, 16); if (typeof g6Took === 'function') g6Took(st, s, c, prev, seg); g10cStamp(c.audio); S.tracks[st].clips[s] = c; }   // G10c: Segment-Felder
+    else { const k = sceneKeyOf(s) || S.key; S.tracks[st].clips[s] = {len: clamp(o.len || 1, 1, 64), key: {root: k.root, scale: k.scale, src: 'auto'}, notes: [], audio: tkNormAudio(seg)}; g10cStamp(S.tracks[st].clips[s].audio); }
     undoPush({kind: 'group', label: 'Stimme', items: items.concat([{kind: 'takes', before: tb}, {kind: 'clip', track: st, scene: s, before}]), tk: 1});
     clipChanged(st, s); if (R.playing) tkTrackResync(st); markDirty(); UI.dirty.all = true;
     return r.stored.then(ok => ({id: r.id, track: st, scene: s, stored: ok}));
@@ -53053,8 +53562,7 @@ function g6pfZipProject() {
 }
 /* ---------- Anzeige: Herkunftszeilen im Takes-Blatt ---------- */
 function g6pfTakeNo(a, id) {
-  const segs = tkSegs(a), cr = sg => (S.takes && S.takes[sg.take] ? +S.takes[sg.take].created || 0 : 0), ord = segs.map((sg, k) => k).sort((i, j) => (cr(segs[i]) - cr(segs[j])) || (segs[i].in - segs[j].in) || (j - i));
-  const k = segs.findIndex(sg => sg.take === id); return k < 0 ? 0 : ord.indexOf(k) + 1;
+  const segs = tkSegs(a), k = segs.findIndex(sg => sg.take === id); return k < 0 ? 0 : g10cNos(segs)[k];   // G10c: feste Nummern
 }
 function g6pfLaneName(v) { const st = stimmeT(), L = st >= 0 && S.tracks[st].chor, l = L && v.lane ? L.lanes.find(z => z.id === v.lane) : null; return (l && l.name) || v.name; }
 function g6pfOrigins(a) {
@@ -55247,13 +55755,15 @@ function ggbPlace(pcm, sr, name) {
       const out = Math.min(x.out, i + ((Math.min(o.bar + o.len, p1) - p0) * 4 - at) * sp);
       if (!(out > i + 1e-3) || at >= (p1 - p0) * 4 - 1e-6) return;
       const q = alt.find(y => y.take === x.take && Math.abs(y.out - i) < 1e-4 && Math.abs(y.at + (y.out - y.in) / sp - at) < 1e-4);   // zwei Stücke desselben Takes: wieder eins
-      if (q) q.out = tkR6(out); else alt.push({take: x.take, in: tkR6(i), out: tkR6(out), at: tkR6(at)});
+      if (q) q.out = tkR6(out); else alt.push(Object.assign({take: x.take, in: tkR6(i), out: tkR6(out), at: tkR6(at)}, g10cSegF(x)));   // G10c: Felder wandern mit
     };
+    for (const o of old) g10cStamp(o);                                // G10c: Nummern der alten Stücke festhalten
     for (const o of old) if (o.bar < p1 && o.bar + o.len > p0) add(o, o);
     for (const o of old) if (o.bar < p1 && o.bar + o.len > p0) for (const x of o.alt || []) add(o, x);
     const i0 = tkR6(inS + (p0 - from) * barSec), o0 = k + 1 < cuts.length ? tkR6(Math.min(outS, inS + (p1 - from) * barSec)) : outS;
     const nv = tkNormAudio({take: r.id, in: i0, out: o0, at: 0, alt: alt.slice(0, 16)});
     if (!nv) continue;
+    g10cStamp(nv);                                                  // G10c
     const id = tkVoxId(kept); ids.push(id);
     kept.push(Object.assign({id, bar: p0, len: p1 - p0}, nv));
   }
@@ -58424,6 +58934,7 @@ function s1Lit() {
 function uiSync() { try { if (EL.app) uiFrame(); } catch (e) { logErr(e); } }
 Object.assign(SYNQUENZER, G4_API, G5_API);        // G4: Gesangs-Effekte · G5: Gesang → Melodie
 Object.assign(SYNQUENZER, TK_API);                // VS3: STIMME-Spur & Takes
+Object.assign(SYNQUENZER, G10C_API);              // G10c: Takes-Verwaltung
 Object.assign(SYNQUENZER, G3_API);                // G3: Vorlauf/Ausklang
 Object.assign(SYNQUENZER, G8_API);                // G8: lange Aufnahmen
 Object.assign(SYNQUENZER, CL_API);                // VS4: Säubern
