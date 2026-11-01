@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+const f = process.argv[2];
+const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const p = await b.newPage({viewport: {width: 428, height: 926}, hasTouch: true});
+const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('file://' + f); await p.waitForTimeout(1500);
+const r = await p.evaluate(() => { const Q = window.SYNQUENZER; const st = Q.state(); return {tr: st.project.tracks.map((t, i) => ({i, kind: t.kind, eng: t.sound && t.sound.engine, clips: t.clips.map(c => c ? (c.notes ? c.notes.length : 'x') : null)})), bpm: st.project.bpm, NS: st.project.tracks[0].clips.length, rt: Object.keys(st.runtime)}; });
+console.log(JSON.stringify(r));
+console.log('errors', JSON.stringify(errs));
+await b.close();
